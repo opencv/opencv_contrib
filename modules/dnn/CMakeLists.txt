@@ -48,11 +48,20 @@ ocv_add_perf_tests()
 # ----------------------------------------------------------------------------
 # Download pre-trained models for complex testing on GoogLeNet and AlexNet
 # ----------------------------------------------------------------------------
-OCV_OPTION(${the_module}_DOWNLOAD_CAFFE_MODELS "Use GoogLeNet Caffe model for testing" OFF IF BUILD_TESTS AND DEFINED ENV{OPENCV_TEST_DATA_PATH})
-if(BUILD_TESTS AND DEFINED ENV{OPENCV_TEST_DATA_PATH} AND (DOWNLOAD_EXTERNAL_TEST_DATA OR ${the_module}_DOWNLOAD_CAFFE_MODELS))
+OCV_OPTION(${the_module}_DOWNLOAD_MODELS "Use GoogLeNet Caffe model for testing" OFF IF BUILD_TESTS AND DEFINED ENV{OPENCV_TEST_DATA_PATH})
+if(BUILD_TESTS AND DEFINED ENV{OPENCV_TEST_DATA_PATH} AND (DOWNLOAD_EXTERNAL_TEST_DATA OR ${the_module}_DOWNLOAD_MODELS))
     add_custom_command( TARGET opencv_test_${name} POST_BUILD
                         COMMAND ${CMAKE_COMMAND} -Dmodel=GoogleNet -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/download_model.cmake)
+    add_custom_command( TARGET opencv_test_${name} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -Dmodel=Alexnet -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/download_model.cmake)
+    add_custom_command( TARGET opencv_test_${name} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -Dmodel=Inception -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/download_model.cmake)
+    add_custom_command( TARGET opencv_test_${name} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -Dmodel=Enet -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/download_model.cmake)
     add_definitions(-DENABLE_CAFFE_MODEL_TESTS=1)
+    add_definitions(-DENABLE_CAFFE_ALEXNET_TEST=1)
+    add_definitions(-DENABLE_TF_INCEPTION_TESTS=1)
+    add_definitions(-DENABLE_TORCH_ENET_TESTS=1)
 endif()
 
 # ----------------------------------------------------------------------------

@@ -106,23 +106,23 @@ static XMat getPlane(XMat &m, int n, int cn)
 void LRNLayerImpl::channelNoramlization(Blob &src, Blob &dst)
 {
     if (!useOpenCL)
-        channelNoramlization_<Mat>(src, dst);
+        channelNormalization_<Mat>(src, dst);
     else
     {
         //channelNoramlization_ocl(src.getRefConst<UMat>(), dst.getRef<UMat>()); //consumes a lot of memory
-        channelNoramlization_<UMat>(src, dst);
+        channelNormalization_<UMat>(src, dst);
     }
 }
 
 template<typename XMat>
-void LRNLayerImpl::channelNoramlization_(Blob &srcBlob, Blob &dstBlob)
+void LRNLayerImpl::channelNormalization_(Blob &srcBlob, Blob &dstBlob)
 {
     int num = srcBlob.num();
     int channels = srcBlob.channels();
     int ksize = (size - 1) / 2;
     int sizeNormFactor = normBySize ? size : 1;
 
-    XMat srcMat = srcBlob.getRefConst<XMat>();
+    XMat srcMat = srcBlob.getRefConst<XMat>().clone();
     XMat dstMat = dstBlob.getRef<XMat>();
 
     for (int n = 0; n < num; n++)
@@ -156,7 +156,7 @@ void LRNLayerImpl::channelNoramlization_(Blob &srcBlob, Blob &dstBlob)
     }
 }
 
-bool LRNLayerImpl::channelNoramlization_ocl(const UMat &src, UMat &dst)
+bool LRNLayerImpl::channelNormalization_ocl(const UMat &src, UMat &dst)
 {
 #ifdef HAVE_OPENCL
     if (src.offset != 0 || dst.offset != 0) //TODO: add offset

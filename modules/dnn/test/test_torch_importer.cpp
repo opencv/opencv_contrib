@@ -42,6 +42,7 @@
 #if defined(ENABLE_TORCH_IMPORTER) && ENABLE_TORCH_IMPORTER
 #if defined(ENABLE_TORCH_TESTS) && ENABLE_TORCH_TESTS
 #include "test_precomp.hpp"
+#include "npy_blob.hpp"
 
 namespace cvtest
 {
@@ -52,9 +53,13 @@ using namespace cv;
 using namespace cv::dnn;
 
 template<typename TStr>
-static std::string _tf(TStr filename)
+static std::string _tf(TStr filename, bool inTorchDir = true)
 {
-    return (getOpenCVExtraDir() + "/dnn/torch/") + filename;
+    String path = getOpenCVExtraDir() + "/dnn/";
+    if (inTorchDir)
+        path += "torch/";
+    path += filename;
+    return path;
 }
 
 TEST(Torch_Importer, simple_read)
@@ -82,6 +87,8 @@ static void runTorchNet(String prefix, String outLayerName, bool isBinary)
 
     net.setBlob(".0", inp);
     net.forward();
+    if (outLayerName.empty())
+        outLayerName = net.getLayerNames().back();
     Blob out = net.getBlob(outLayerName);
 
     normAssert(outRef, out);
@@ -122,6 +129,37 @@ TEST(Torch_Importer, run_concat)
 {
     runTorchNet("net_concat", "l2_torchMerge", false);
 }
+
+TEST(Torch_Importer, run_deconv)
+{
+    runTorchNet("net_deconv", "", false);
+}
+
+#if defined(ENABLE_TORCH_ENET_TESTS)
+
+TEST(Torch_Importer, ENet_accuracy)
+{
+    Net net;
+    {
+        Ptr<Importer> importer = createTorchImporter(_tf("Enet-model-best.net", false));
+        ASSERT_TRUE(importer != NULL);
+        importer->populateNet(net);
+    }
+
+    Mat sample = imread(_tf("street.png", false));
+    cv::cvtColor(sample, sample, cv::COLOR_BGR2RGB);
+    sample.convertTo(sample, CV_32F, 1/255.0);
+    dnn::Blob inputBlob = dnn::Blob::fromImages(sample);
+
+    net.setBlob("", inputBlob);
+    net.forward();
+    dnn::Blob out = net.getBlob(net.getLayerNames().back());
+
+    Blob ref = blobFromNPY(_tf("torch_enet_prob.npy", false));
+    normAssert(ref, out);
+}
+
+#endif
 
 }
 #endif

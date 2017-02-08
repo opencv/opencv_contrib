@@ -375,6 +375,7 @@ struct TorchImporter : public ::cv::dnn::Importer
             int typeStorage = parseStorageType(className);
             CV_Assert(typeStorage >= 0 && typeTensor == typeStorage);
             readTorchStorage(indexStorage, typeStorage);
+            typeTensor = storages[indexStorage].type();
             readedIndexes.insert(indexStorage);
         }
 
@@ -723,7 +724,10 @@ struct TorchImporter : public ::cv::dnn::Importer
                 layerParams.set("adj_h", static_cast<int>(scalarParams.get<double>("adjH")));
                 layerParams.set("num_output", static_cast<int>(scalarParams.get<double>("nOutputPlane")));
 
-                layerParams.blobs.push_back(tensorParams["weight"].second);
+                Blob weights = tensorParams["weight"].second;
+                BlobShape shape = weights.shape(),
+                        reorderedShape = BlobShape(shape[1], shape[0], shape[2], shape[3]);
+                layerParams.blobs.push_back(weights.reshape(reorderedShape));
 
                 bool bias = tensorParams.count("bias");
                 layerParams.set("bias_term", bias);

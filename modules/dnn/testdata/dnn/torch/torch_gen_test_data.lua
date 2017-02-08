@@ -65,3 +65,7 @@ net_concat:add(nn.ReLU())
 net_concat:add(nn.Tanh())
 net_concat:add(nn.Sigmoid())
 save(net_concat, torch.rand(2, 6, 4, 3) - 0.5, 'net_concat')
+
+local net_deconv = nn.Sequential()
+net_deconv:add(nn.SpatialFullConvolution(3, 9, 4, 5, 1, 2, 0, 1, 0, 1))
+save(net_deconv, torch.rand(2, 3, 4, 3) - 0.5, 'net_deconv')
