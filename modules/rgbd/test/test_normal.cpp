@@ -248,23 +248,26 @@ protected:
     try
     {
       Mat_<unsigned char> plane_mask;
-      for (int method = 0; method < 3; ++method)
+      for (unsigned char i = 0; i < 3; ++i)
       {
+        RgbdNormals::RGBD_NORMALS_METHOD method;
         // inner vector: whether it's 1 plane or 3 planes
         // outer vector: float or double
         std::vector<std::vector<float> > errors(2);
         errors[0].resize(4);
         errors[1].resize(4);
-        switch (method)
+        switch (i)
         {
-          case (RgbdNormals::RGBD_NORMALS_METHOD_FALS):
+          case 0:
+            method = RgbdNormals::RGBD_NORMALS_METHOD_FALS;
             std::cout << std::endl << "*** FALS" << std::endl;
             errors[0][0] = 0.006f;
             errors[0][1] = 0.03f;
             errors[1][0] = 0.00008f;
             errors[1][1] = 0.02f;
             break;
-          case (RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD):
+          case 1:
+            method = RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD;
             std::cout << std::endl << "*** LINEMOD" << std::endl;
             errors[0][0] = 0.04f;
             errors[0][1] = 0.07f;
@@ -276,7 +279,8 @@ protected:
             errors[1][2] = 0.05f; // depth 16U 1 plane
             errors[1][3] = 0.08f; // depth 16U 3 planes
             break;
-          case (RgbdNormals::RGBD_NORMALS_METHOD_SRI):
+          case 2:
+            method = RgbdNormals::RGBD_NORMALS_METHOD_SRI;
             std::cout << std::endl << "*** SRI" << std::endl;
             errors[0][0] = 0.02f;
             errors[0][1] = 0.04f;
@@ -284,6 +288,7 @@ protected:
             errors[1][1] = 0.04f;
             break;
           default:
+            method = (RgbdNormals::RGBD_NORMALS_METHOD)-1;
             CV_Error(0, "");
         }
 

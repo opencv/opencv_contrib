@@ -694,7 +694,7 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
       return;
     switch (method_)
     {
-      case (RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD):
+      case RgbdNormals::RGBD_NORMALS_METHOD_LINEMOD:
       {
         if (depth == CV_32F)
           delete reinterpret_cast<const LINEMOD<float> *>(rgbd_normals_impl_);
@@ -702,7 +702,7 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
           delete reinterpret_cast<const LINEMOD<double> *>(rgbd_normals_impl_);
         break;
       }
-      case (RgbdNormals::RGBD_NORMALS_METHOD_SRI):
+      case RgbdNormals::RGBD_NORMALS_METHOD_SRI:
       {
         if (depth == CV_32F)
           delete reinterpret_cast<const SRI<float> *>(rgbd_normals_impl_);

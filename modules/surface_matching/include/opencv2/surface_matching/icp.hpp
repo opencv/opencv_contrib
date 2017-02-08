@@ -83,8 +83,8 @@ public:
 
   CV_WRAP enum
   {
-    ICP_SAMPLING_TYPE_UNIFORM = 0,
-    ICP_SAMPLING_TYPE_GELFAND = 1,
+    ICP_SAMPLING_TYPE_UNIFORM,
+    ICP_SAMPLING_TYPE_GELFAND
   };
 
   CV_WRAP ICP()
@@ -93,7 +93,7 @@ public:
     m_rejectionScale = 2.5f;
     m_maxIterations = 250;
     m_numLevels = 6;
-    m_sampleType = ICP::ICP_SAMPLING_TYPE_UNIFORM;
+    m_sampleType = ICP_SAMPLING_TYPE_UNIFORM;
     m_numNeighborsCorr = 1;
   }
 
