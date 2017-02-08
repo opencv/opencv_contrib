@@ -50,7 +50,7 @@ static void subtractColumns(Mat srcPC, double mean[3])
 
   for (int i=0; i<height; i++)
   {
-    float *row = srcPC.ptr<float>(i);
+    float *row = (float*)(&srcPC.data[i*srcPC.step]);
     {
       row[0]-=(float)mean[0];
       row[1]-=(float)mean[1];
@@ -68,7 +68,7 @@ static void computeMeanCols(Mat srcPC, double mean[3])
 
   for (int i=0; i<height; i++)
   {
-    const float *row = srcPC.ptr<float>(i);
+    const float *row = (float*)(&srcPC.data[i*srcPC.step]);
     {
       mean1 += (double)row[0];
       mean2 += (double)row[1];
@@ -100,7 +100,7 @@ static double computeDistToOrigin(Mat srcPC)
 
   for (int i=0; i<height; i++)
   {
-    const float *row = srcPC.ptr<float>(i);
+    const float *row = (float*)(&srcPC.data[i*srcPC.step]);
     dist += sqrt(row[0]*row[0]+row[1]*row[1]+row[2]*row[2]);
   }
 
@@ -203,11 +203,11 @@ static void minimizePointToPlaneMetric(Mat Src, Mat Dst, Mat& X)
 #endif
   for (int i=0; i<Src.rows; i++)
   {
-    const double *srcPt = Src.ptr<double>(i);
-    const double *dstPt = Dst.ptr<double>(i);
+    const double *srcPt = (double*)&Src.data[i*Src.step];
+    const double *dstPt = (double*)&Dst.data[i*Dst.step];
     const double *normals = &dstPt[3];
-    double *bVal = b.ptr<double>(i);
-    double *aRow = A.ptr<double>(i);
+    double *bVal = (double*)&b.data[i*b.step];
+    double *aRow = (double*)&A.data[i*A.step];
 
     const double sub[3]={dstPt[0]-srcPt[0], dstPt[1]-srcPt[1], dstPt[2]-srcPt[2]};
 
@@ -462,10 +462,10 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
         {
           const int indModel = indicesModel[di];
           const int indScene = indicesScene[di];
-          const float *srcPt = srcPCT.ptr<float>(indModel);
-          const float *dstPt = dstPC0.ptr<float>(indScene);
-          double *srcMatchPt = Src_Match.ptr<double>(di);
-          double *dstMatchPt = Dst_Match.ptr<double>(di);
+          const float *srcPt = (float*)&srcPCT.data[indModel*srcPCT.step];
+          const float *dstPt = (float*)&dstPC0.data[indScene*dstPC0.step];
+          double *srcMatchPt = (double*)&Src_Match.data[di*Src_Match.step];
+          double *dstMatchPt = (double*)&Dst_Match.data[di*Dst_Match.step];
           int ci=0;
 
           for (ci=0; ci<srcPCT.cols; ci++)
