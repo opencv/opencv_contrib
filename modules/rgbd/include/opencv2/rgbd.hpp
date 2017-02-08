@@ -56,42 +56,42 @@ namespace rgbd
    * a limit. For a float/double, we just check if it is a NaN
    * @param depth the depth to check for validity
    */
-  CV_EXPORTS_W
+  CV_EXPORTS
   inline bool
   isValidDepth(const float & depth)
   {
     return !cvIsNaN(depth);
   }
-  CV_EXPORTS_W
+  CV_EXPORTS
   inline bool
   isValidDepth(const double & depth)
   {
     return !cvIsNaN(depth);
   }
-  CV_EXPORTS_W
+  CV_EXPORTS
   inline bool
-  isValidDepth(const short & depth)
+  isValidDepth(const short int & depth)
   {
-    return (depth != std::numeric_limits<short>::min()) && (depth != std::numeric_limits<short>::max());
+    return (depth != std::numeric_limits<short int>::min()) && (depth != std::numeric_limits<short int>::max());
   }
-  CV_EXPORTS_W
+  CV_EXPORTS
   inline bool
-  isValidDepth(const ushort & depth)
+  isValidDepth(const unsigned short int & depth)
   {
-    return (depth != std::numeric_limits<ushort>::min())
-        && (depth != std::numeric_limits<ushort>::max());
+    return (depth != std::numeric_limits<unsigned short int>::min())
+        && (depth != std::numeric_limits<unsigned short int>::max());
   }
-  CV_EXPORTS_W
+  CV_EXPORTS
   inline bool
   isValidDepth(const int & depth)
   {
     return (depth != std::numeric_limits<int>::min()) && (depth != std::numeric_limits<int>::max());
   }
-  CV_EXPORTS_W
+  CV_EXPORTS
   inline bool
-  isValidDepth(const uint & depth)
+  isValidDepth(const unsigned int & depth)
   {
-    return (depth != std::numeric_limits<uint>::min()) && (depth != std::numeric_limits<uint>::max());
+    return (depth != std::numeric_limits<unsigned int>::min()) && (depth != std::numeric_limits<unsigned int>::max());
   }
 
   /** Object that can compute the normals in an image.
@@ -104,22 +104,22 @@ namespace rgbd
    * ``Gradient Response Maps for Real-Time Detection of Texture-Less Objects``
    * by S. Hinterstoisser, C. Cagniart, S. Ilic, P. Sturm, N. Navab, P. Fua, and V. Lepetit
    */
-  class CV_EXPORTS_W RgbdNormals: public Algorithm
+  class CV_EXPORTS RgbdNormals: public Algorithm
   {
   public:
-    CV_WRAP enum
+    enum RGBD_NORMALS_METHOD
     {
-      RGBD_NORMALS_METHOD_FALS = 1, RGBD_NORMALS_METHOD_LINEMOD = 2, RGBD_NORMALS_METHOD_SRI = 3,
+      RGBD_NORMALS_METHOD_FALS, RGBD_NORMALS_METHOD_LINEMOD, RGBD_NORMALS_METHOD_SRI
     };
 
-    CV_WRAP RgbdNormals()
+    RgbdNormals()
         :
           rows_(0),
           cols_(0),
           depth_(0),
           K_(Mat()),
           window_size_(0),
-          method_(RgbdNormals::RGBD_NORMALS_METHOD_FALS),
+          method_(RGBD_NORMALS_METHOD_FALS),
           rgbd_normals_impl_(0)
     {
     }
@@ -132,10 +132,10 @@ namespace rgbd
      * @param window_size the window size to compute the normals: can only be 1,3,5 or 7
      * @param method one of the methods to use: RGBD_NORMALS_METHOD_SRI, RGBD_NORMALS_METHOD_FALS
      */
-    CV_WRAP RgbdNormals(int rows, int cols, int depth, InputArray K, int window_size = 5, int method =
-        RgbdNormals::RGBD_NORMALS_METHOD_FALS);
+    RgbdNormals(int rows, int cols, int depth, InputArray K, int window_size = 5, int method =
+        RGBD_NORMALS_METHOD_FALS);
 
-    CV_WRAP ~RgbdNormals();
+    ~RgbdNormals();
 
     /** Given a set of 3d points in a depth image, compute the normals at each point.
      * @param points a rows x cols x 3 matrix of CV_32F/CV64F or a rows x cols x 1 CV_U16S
@@ -144,64 +144,57 @@ namespace rgbd
     void
     operator()(InputArray points, OutputArray normals) const;
 
-    /** Given a set of 3d points in a depth image, compute the normals at each point.
-     * @param points a rows x cols x 3 matrix of CV_32F/CV64F or a rows x cols x 1 CV_U16S
-     * @param normals a rows x cols x 3 matrix
-     */
-    CV_WRAP void
-    compute(InputArray points, OutputArray normals) const;
-
     /** Initializes some data that is cached for later computation
      * If that function is not called, it will be called the first time normals are computed
      */
-    CV_WRAP void
+    void
     initialize() const;
 
-    CV_WRAP int getRows() const
+    int getRows() const
     {
         return rows_;
     }
-    CV_WRAP void setRows(int val)
+    void setRows(int val)
     {
         rows_ = val;
     }
-    CV_WRAP int getCols() const
+    int getCols() const
     {
         return cols_;
     }
-    CV_WRAP void setCols(int val)
+    void setCols(int val)
     {
         cols_ = val;
     }
-    CV_WRAP int getWindowSize() const
+    int getWindowSize() const
     {
         return window_size_;
     }
-    CV_WRAP void setWindowSize(int val)
+    void setWindowSize(int val)
     {
         window_size_ = val;
     }
-    CV_WRAP int getDepth() const
+    int getDepth() const
     {
         return depth_;
     }
-    CV_WRAP void setDepth(int val)
+    void setDepth(int val)
     {
         depth_ = val;
     }
-    CV_WRAP cv::Mat getK() const
+    cv::Mat getK() const
     {
         return K_;
     }
-    CV_WRAP void setK(const cv::Mat &val)
+    void setK(const cv::Mat &val)
     {
         K_ = val;
     }
-    CV_WRAP int getMethod() const
+    int getMethod() const
     {
         return method_;
     }
-    CV_WRAP void setMethod(int val)
+    void setMethod(int val)
     {
         method_ = val;
     }
@@ -219,23 +212,23 @@ namespace rgbd
 
   /** Object that can clean a noisy depth image
    */
-  class CV_EXPORTS_W DepthCleaner: public Algorithm
+  class CV_EXPORTS DepthCleaner: public Algorithm
   {
   public:
     /** NIL method is from
      * ``Modeling Kinect Sensor Noise for Improved 3d Reconstruction and Tracking``
      * by C. Nguyen, S. Izadi, D. Lovel
      */
-    CV_WRAP enum
+    enum DEPTH_CLEANER_METHOD
     {
       DEPTH_CLEANER_NIL
     };
 
-    CV_WRAP DepthCleaner()
+    DepthCleaner()
         :
           depth_(0),
           window_size_(0),
-          method_(DepthCleaner::DEPTH_CLEANER_NIL),
+          method_(DEPTH_CLEANER_NIL),
           depth_cleaner_impl_(0)
     {
     }
@@ -245,9 +238,9 @@ namespace rgbd
      * @param window_size the window size to compute the normals: can only be 1,3,5 or 7
      * @param method one of the methods to use: RGBD_NORMALS_METHOD_SRI, RGBD_NORMALS_METHOD_FALS
      */
-    CV_WRAP DepthCleaner(int depth, int window_size = 5, int method = DepthCleaner::DEPTH_CLEANER_NIL);
+    DepthCleaner(int depth, int window_size = 5, int method = DEPTH_CLEANER_NIL);
 
-    CV_WRAP ~DepthCleaner();
+    ~DepthCleaner();
 
     /** Given a set of 3d points in a depth image, compute the normals at each point.
      * @param points a rows x cols x 3 matrix of CV_32F/CV64F or a rows x cols x 1 CV_U16S
@@ -256,40 +249,33 @@ namespace rgbd
     void
     operator()(InputArray points, OutputArray depth) const;
 
-    /** Given a set of 3d points in a depth image, compute the normals at each point.
-     * @param points a rows x cols x 3 matrix of CV_32F/CV64F or a rows x cols x 1 CV_U16S
-     * @param depth a rows x cols matrix of the cleaned up depth
-     */
-    CV_WRAP void
-    compute(InputArray points, OutputArray depth) const;
-
     /** Initializes some data that is cached for later computation
      * If that function is not called, it will be called the first time normals are computed
      */
-    CV_WRAP void
+    void
     initialize() const;
 
-    CV_WRAP int getWindowSize() const
+    int getWindowSize() const
     {
         return window_size_;
     }
-    CV_WRAP void setWindowSize(int val)
+    void setWindowSize(int val)
     {
         window_size_ = val;
     }
-    CV_WRAP int getDepth() const
+    int getDepth() const
     {
         return depth_;
     }
-    CV_WRAP void setDepth(int val)
+    void setDepth(int val)
     {
         depth_ = val;
     }
-    CV_WRAP int getMethod() const
+    int getMethod() const
     {
         return method_;
     }
-    CV_WRAP void setMethod(int val)
+    void setMethod(int val)
     {
         method_ = val;
     }
@@ -323,7 +309,7 @@ namespace rgbd
    * @param registeredDepth the result of transforming the depth into the external camera
    * @param depthDilation whether or not the depth is dilated to avoid holes and occlusion errors (optional)
    */
-  CV_EXPORTS_W
+  CV_EXPORTS
   void
   registerDepth(InputArray unregisteredCameraMatrix, InputArray registeredCameraMatrix, InputArray registeredDistCoeffs,
                 InputArray Rt, InputArray unregisteredDepth, const Size& outputImagePlaneSize,
@@ -335,7 +321,7 @@ namespace rgbd
    * @param in_points the list of xy coordinates
    * @param points3d the resulting 3d points
    */
-  CV_EXPORTS_W
+  CV_EXPORTS
   void
   depthTo3dSparse(InputArray depth, InputArray in_K, InputArray in_points, OutputArray points3d);
 
@@ -348,7 +334,7 @@ namespace rgbd
    *        depth of `K` if `depth` is of depth CV_U
    * @param mask the mask of the points to consider (can be empty)
    */
-  CV_EXPORTS_W
+  CV_EXPORTS
   void
   depthTo3d(InputArray depth, InputArray K, OutputArray points3d, InputArray mask = noArray());
 
@@ -360,21 +346,21 @@ namespace rgbd
    * @param depth the desired output depth (floats or double)
    * @param out The rescaled float depth image
    */
-  CV_EXPORTS_W
+  CV_EXPORTS
   void
   rescaleDepth(InputArray in, int depth, OutputArray out);
 
   /** Object that can compute planes in an image
    */
-  class CV_EXPORTS_W RgbdPlane: public Algorithm
+  class CV_EXPORTS RgbdPlane: public Algorithm
   {
   public:
-    CV_WRAP enum
+    enum RGBD_PLANE_METHOD
     {
       RGBD_PLANE_METHOD_DEFAULT
     };
 
-    CV_WRAP RgbdPlane(int method = RgbdPlane::RGBD_PLANE_METHOD_DEFAULT)
+    RgbdPlane(RGBD_PLANE_METHOD method = RGBD_PLANE_METHOD_DEFAULT)
         :
           method_(method),
           block_size_(40),
@@ -398,18 +384,6 @@ namespace rgbd
     operator()(InputArray points3d, InputArray normals, OutputArray mask,
                OutputArray plane_coefficients);
 
-    /** Find The planes in a depth image
-     * @param points3d the 3d points organized like the depth image: rows x cols with 3 channels
-     * @param normals the normals for every point in the depth image
-     * @param mask An image where each pixel is labeled with the plane it belongs to
-     *        and 255 if it does not belong to any plane
-     * @param plane_coefficients the coefficients of the corresponding planes (a,b,c,d) such that ax+by+cz+d=0, norm(a,b,c)=1
-     *        and c < 0 (so that the normal points towards the camera)
-     */
-    CV_WRAP void
-    find(InputArray points3d, InputArray normals, OutputArray mask,
-               OutputArray plane_coefficients);
-
     /** Find The planes in a depth image but without doing a normal check, which is faster but less accurate
      * @param points3d the 3d points organized like the depth image: rows x cols with 3 channels
      * @param mask An image where each pixel is labeled with the plane it belongs to
@@ -419,68 +393,59 @@ namespace rgbd
     void
     operator()(InputArray points3d, OutputArray mask, OutputArray plane_coefficients);
 
-    /** Find The planes in a depth image but without doing a normal check, which is faster but less accurate
-     * @param points3d the 3d points organized like the depth image: rows x cols with 3 channels
-     * @param mask An image where each pixel is labeled with the plane it belongs to
-     *        and 255 if it does not belong to any plane
-     * @param plane_coefficients the coefficients of the corresponding planes (a,b,c,d) such that ax+by+cz+d=0
-     */
-    CV_WRAP void
-    find(InputArray points3d, OutputArray mask, OutputArray plane_coefficients);
-
-    CV_WRAP int getBlockSize() const
+    int getBlockSize() const
     {
         return block_size_;
     }
-    CV_WRAP void setBlockSize(int val)
+    void setBlockSize(int val)
     {
         block_size_ = val;
     }
-    CV_WRAP int getMinSize() const
+    int getMinSize() const
     {
         return min_size_;
     }
-    CV_WRAP void setMinSize(int val)
+    void setMinSize(int val)
     {
         min_size_ = val;
     }
-    CV_WRAP int getMethod() const
+    int getMethod() const
     {
         return method_;
     }
-    CV_WRAP void setMethod(int val)
+    void setMethod(int val)
     {
         method_ = val;
     }
-    CV_WRAP double getThreshold() const
+    double getThreshold() const
     {
         return threshold_;
     }
-    CV_WRAP void setThreshold(double val)
+    void setThreshold(double val)
     {
         threshold_ = val;
     }
-    CV_WRAP double getSensorErrorA() const
+    double getSensorErrorA() const
     {
         return sensor_error_a_;
     }
-    CV_WRAP void setSensorErrorA(double val)
+    void setSensorErrorA(double val)
     {
         sensor_error_a_ = val;
     }
-    CV_WRAP double getSensorErrorB() const
+    double getSensorErrorB() const
     {
         return sensor_error_b_;
     }
-    CV_WRAP void setSensorErrorB(double val)
+    void setSensorErrorB(double val)
     {
         sensor_error_b_ = val;
     }
-    CV_WRAP double getSensorErrorC() const
+    double getSensorErrorC() const
     {
         return sensor_error_c_;
     }
-    CV_WRAP void setSensorErrorC(double val)
+    void setSensorErrorC(double val)
     {
         sensor_error_c_ = val;
     }
@@ -500,27 +465,27 @@ namespace rgbd
 
   /** Object that contains a frame data.
    */
-  struct CV_EXPORTS_W RgbdFrame
+  struct CV_EXPORTS RgbdFrame
   {
-      CV_WRAP RgbdFrame();
-      CV_WRAP RgbdFrame(const Mat& image, const Mat& depth, const Mat& mask=Mat(), const Mat& normals=Mat(), int ID=-1);
-      CV_WRAP virtual ~RgbdFrame();
+      RgbdFrame();
+      RgbdFrame(const Mat& image, const Mat& depth, const Mat& mask=Mat(), const Mat& normals=Mat(), int ID=-1);
+      virtual ~RgbdFrame();
 
-      CV_WRAP virtual void
+      virtual void
       release();
 
-      CV_PROP_RW int ID;
-      CV_PROP_RW Mat image;
-      CV_PROP_RW Mat depth;
-      CV_PROP_RW Mat mask;
-      CV_PROP_RW Mat normals;
+      int ID;
+      Mat image;
+      Mat depth;
+      Mat mask;
+      Mat normals;
   };
 
   /** Object that contains a frame data that is possibly needed for the Odometry.
    * It's used for the efficiency (to pass precomputed/cached data of the frame that participates
    * in the Odometry processing several times).
    */
-  struct CV_EXPORTS_W OdometryFrame : public RgbdFrame
+  struct CV_EXPORTS OdometryFrame : public RgbdFrame
   {
     /** These constants are used to set a type of cache which has to be prepared depending on the frame role:
      * srcFrame or dstFrame (see compute method of the Odometry class). For the srcFrame and dstFrame different cache data may be required,
@@ -529,72 +494,72 @@ namespace rgbd
      * @param CACHE_DST The cache data for the dstFrame will be prepared.
      * @param CACHE_ALL The cache data for both srcFrame and dstFrame roles will be computed.
      */
-    CV_WRAP enum
+    enum
     {
       CACHE_SRC = 1, CACHE_DST = 2, CACHE_ALL = CACHE_SRC + CACHE_DST
     };
 
-    CV_WRAP OdometryFrame();
-    CV_WRAP OdometryFrame(const Mat& image, const Mat& depth, const Mat& mask=Mat(), const Mat& normals=Mat(), int ID=-1);
+    OdometryFrame();
+    OdometryFrame(const Mat& image, const Mat& depth, const Mat& mask=Mat(), const Mat& normals=Mat(), int ID=-1);
 
-    CV_WRAP virtual void
+    virtual void
     release();
 
-    CV_WRAP void
+    void
     releasePyramids();
 
-    CV_PROP_RW std::vector<Mat> pyramidImage;
-    CV_PROP_RW std::vector<Mat> pyramidDepth;
-    CV_PROP_RW std::vector<Mat> pyramidMask;
+    std::vector<Mat> pyramidImage;
+    std::vector<Mat> pyramidDepth;
+    std::vector<Mat> pyramidMask;
 
-    CV_PROP_RW std::vector<Mat> pyramidCloud;
+    std::vector<Mat> pyramidCloud;
 
-    CV_PROP_RW std::vector<Mat> pyramid_dI_dx;
-    CV_PROP_RW std::vector<Mat> pyramid_dI_dy;
-    CV_PROP_RW std::vector<Mat> pyramidTexturedMask;
+    std::vector<Mat> pyramid_dI_dx;
+    std::vector<Mat> pyramid_dI_dy;
+    std::vector<Mat> pyramidTexturedMask;
 
-    CV_PROP_RW std::vector<Mat> pyramidNormals;
-    CV_PROP_RW std::vector<Mat> pyramidNormalsMask;
+    std::vector<Mat> pyramidNormals;
+    std::vector<Mat> pyramidNormalsMask;
   };
 
   /** Base class for computation of odometry.
    */
-  class CV_EXPORTS_W Odometry: public Algorithm
+  class CV_EXPORTS Odometry: public Algorithm
   {
   public:
 
     /** A class of transformation*/
-    CV_WRAP enum
+    enum
     {
       ROTATION = 1, TRANSLATION = 2, RIGID_BODY_MOTION = 4
     };
 
-    CV_WRAP static inline float
+    static inline float
     DEFAULT_MIN_DEPTH()
     {
       return 0.f; // in meters
     }
-    CV_WRAP static inline float
+    static inline float
     DEFAULT_MAX_DEPTH()
     {
       return 4.f; // in meters
     }
-    CV_WRAP static inline float
+    static inline float
     DEFAULT_MAX_DEPTH_DIFF()
     {
       return 0.07f; // in meters
     }
-    CV_WRAP static inline float
+    static inline float
     DEFAULT_MAX_POINTS_PART()
     {
       return 0.07f; // in [0, 1]
     }
-    CV_WRAP static inline float
+    static inline float
     DEFAULT_MAX_TRANSLATION()
     {
       return 0.15f; // in meters
     }
-    CV_WRAP static inline float
+    static inline float
     DEFAULT_MAX_ROTATION()
     {
       return 15; // in degrees
@@ -618,14 +583,14 @@ namespace rgbd
      Rt is 4x4 matrix of CV_64FC1 type.
      * @param initRt Initial transformation from the source frame to the destination one (optional)
      */
-    CV_WRAP bool
+    bool
     compute(const Mat& srcImage, const Mat& srcDepth, const Mat& srcMask, const Mat& dstImage, const Mat& dstDepth,
             const Mat& dstMask, Mat& Rt, const Mat& initRt = Mat()) const;
 
     /** One more method to compute a transformation from the source frame to the destination one.
      * It is designed to save on computing the frame data (image pyramids, normals, etc.).
      */
-    CV_WRAP bool
+    bool
     compute(Ptr<OdometryFrame>& srcFrame, Ptr<OdometryFrame>& dstFrame, Mat& Rt, const Mat& initRt = Mat()) const;
 
     /** Prepare a cache for the frame. The function checks the precomputed/passed data (throws the error if this data
@@ -634,18 +599,18 @@ namespace rgbd
      * @param frame The odometry which will process the frame.
      * @param cacheType The cache type: CACHE_SRC, CACHE_DST or CACHE_ALL.
      */
-    CV_WRAP virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
+    virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
-    CV_WRAP static Ptr<Odometry> create(const String & odometryType);
+    static Ptr<Odometry> create(const String & odometryType);
 
     /** @see setCameraMatrix */
-    CV_WRAP virtual cv::Mat getCameraMatrix() const = 0;
+    virtual cv::Mat getCameraMatrix() const = 0;
     /** @copybrief getCameraMatrix @see getCameraMatrix */
-    CV_WRAP virtual void setCameraMatrix(const cv::Mat &val) = 0;
+    virtual void setCameraMatrix(const cv::Mat &val) = 0;
     /** @see setTransformType */
-    CV_WRAP virtual int getTransformType() const = 0;
+    virtual int getTransformType() const = 0;
     /** @copybrief getTransformType @see getTransformType */
-    CV_WRAP virtual void setTransformType(int val) = 0;
+    virtual void setTransformType(int val) = 0;
 
   protected:
     virtual void
@@ -659,10 +624,10 @@ namespace rgbd
   /** Odometry based on the paper "Real-Time Visual Odometry from Dense RGB-D Images",
    * F. Steinbucker, J. Strum, D. Cremers, ICCV, 2011.
    */
-  class CV_EXPORTS_W RgbdOdometry: public Odometry
+  class CV_EXPORTS RgbdOdometry: public Odometry
   {
   public:
-    CV_WRAP RgbdOdometry();
+    RgbdOdometry();
     /** Constructor.
      * @param cameraMatrix Camera matrix
      * @param minDepth Pixels with depth less than minDepth will not be used (in meters)
@@ -675,90 +640,90 @@ namespace rgbd
      * @param maxPointsPart The method uses a random pixels subset of size frameWidth x frameHeight x pointsPart
      * @param transformType Class of transformation
      */
-    CV_WRAP RgbdOdometry(const Mat& cameraMatrix, float minDepth = Odometry::DEFAULT_MIN_DEPTH(), float maxDepth = Odometry::DEFAULT_MAX_DEPTH(),
-                 float maxDepthDiff = Odometry::DEFAULT_MAX_DEPTH_DIFF(), const std::vector<int>& iterCounts = std::vector<int>(),
-                 const std::vector<float>& minGradientMagnitudes = std::vector<float>(), float maxPointsPart = Odometry::DEFAULT_MAX_POINTS_PART(),
-                 int transformType = Odometry::RIGID_BODY_MOTION);
+    RgbdOdometry(const Mat& cameraMatrix, float minDepth = DEFAULT_MIN_DEPTH(), float maxDepth = DEFAULT_MAX_DEPTH(),
+                 float maxDepthDiff = DEFAULT_MAX_DEPTH_DIFF(), const std::vector<int>& iterCounts = std::vector<int>(),
+                 const std::vector<float>& minGradientMagnitudes = std::vector<float>(), float maxPointsPart = DEFAULT_MAX_POINTS_PART(),
+                 int transformType = RIGID_BODY_MOTION);
 
-    CV_WRAP virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
+    virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
-    CV_WRAP cv::Mat getCameraMatrix() const
+    cv::Mat getCameraMatrix() const
     {
         return cameraMatrix;
     }
-    CV_WRAP void setCameraMatrix(const cv::Mat &val)
+    void setCameraMatrix(const cv::Mat &val)
     {
         cameraMatrix = val;
     }
-    CV_WRAP double getMinDepth() const
+    double getMinDepth() const
     {
         return minDepth;
     }
-    CV_WRAP void setMinDepth(double val)
+    void setMinDepth(double val)
     {
         minDepth = val;
     }
-    CV_WRAP double getMaxDepth() const
+    double getMaxDepth() const
     {
         return maxDepth;
     }
-    CV_WRAP void setMaxDepth(double val)
+    void setMaxDepth(double val)
     {
         maxDepth = val;
     }
-    CV_WRAP double getMaxDepthDiff() const
+    double getMaxDepthDiff() const
     {
         return maxDepthDiff;
     }
-    CV_WRAP void setMaxDepthDiff(double val)
+    void setMaxDepthDiff(double val)
     {
         maxDepthDiff = val;
     }
-    CV_WRAP cv::Mat getIterationCounts() const
+    cv::Mat getIterationCounts() const
     {
         return iterCounts;
     }
-    CV_WRAP void setIterationCounts(const cv::Mat &val)
+    void setIterationCounts(const cv::Mat &val)
     {
         iterCounts = val;
     }
-    CV_WRAP cv::Mat getMinGradientMagnitudes() const
+    cv::Mat getMinGradientMagnitudes() const
     {
         return minGradientMagnitudes;
     }
-    CV_WRAP void setMinGradientMagnitudes(const cv::Mat &val)
+    void setMinGradientMagnitudes(const cv::Mat &val)
     {
         minGradientMagnitudes = val;
     }
-    CV_WRAP double getMaxPointsPart() const
+    double getMaxPointsPart() const
     {
         return maxPointsPart;
     }
-    CV_WRAP void setMaxPointsPart(double val)
+    void setMaxPointsPart(double val)
     {
         maxPointsPart = val;
     }
-    CV_WRAP int getTransformType() const
+    int getTransformType() const
     {
         return transformType;
     }
-    CV_WRAP void setTransformType(int val)
+    void setTransformType(int val)
     {
         transformType = val;
     }
-    CV_WRAP double getMaxTranslation() const
+    double getMaxTranslation() const
     {
         return maxTranslation;
     }
-    CV_WRAP void setMaxTranslation(double val)
+    void setMaxTranslation(double val)
     {
         maxTranslation = val;
     }
-    CV_WRAP double getMaxRotation() const
+    double getMaxRotation() const
     {
         return maxRotation;
     }
-    CV_WRAP void setMaxRotation(double val)
+    void setMaxRotation(double val)
     {
         maxRotation = val;
     }
@@ -789,10 +754,10 @@ namespace rgbd
   /** Odometry based on the paper "KinectFusion: Real-Time Dense Surface Mapping and Tracking",
    * Richard A. Newcombe, Andrew Fitzgibbon, at al, SIGGRAPH, 2011.
    */
-  class CV_EXPORTS_W ICPOdometry: public Odometry
+  class ICPOdometry: public Odometry
   {
   public:
-    CV_WRAP ICPOdometry();
+    ICPOdometry();
     /** Constructor.
      * @param cameraMatrix Camera matrix
      * @param minDepth Pixels with depth less than minDepth will not be used
@@ -803,85 +768,85 @@ namespace rgbd
      * @param iterCounts Count of iterations on each pyramid level.
      * @param transformType Class of trasformation
      */
-    CV_WRAP ICPOdometry(const Mat& cameraMatrix, float minDepth = Odometry::DEFAULT_MIN_DEPTH(), float maxDepth = Odometry::DEFAULT_MAX_DEPTH(),
-                float maxDepthDiff = Odometry::DEFAULT_MAX_DEPTH_DIFF(), float maxPointsPart = Odometry::DEFAULT_MAX_POINTS_PART(),
-                const std::vector<int>& iterCounts = std::vector<int>(), int transformType = Odometry::RIGID_BODY_MOTION);
+    ICPOdometry(const Mat& cameraMatrix, float minDepth = DEFAULT_MIN_DEPTH(), float maxDepth = DEFAULT_MAX_DEPTH(),
+                float maxDepthDiff = DEFAULT_MAX_DEPTH_DIFF(), float maxPointsPart = DEFAULT_MAX_POINTS_PART(),
+                const std::vector<int>& iterCounts = std::vector<int>(), int transformType = RIGID_BODY_MOTION);
 
-    CV_WRAP virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
+    virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
-    CV_WRAP cv::Mat getCameraMatrix() const
+    cv::Mat getCameraMatrix() const
     {
         return cameraMatrix;
     }
-    CV_WRAP void setCameraMatrix(const cv::Mat &val)
+    void setCameraMatrix(const cv::Mat &val)
     {
         cameraMatrix = val;
     }
-    CV_WRAP double getMinDepth() const
+    double getMinDepth() const
     {
         return minDepth;
     }
-    CV_WRAP void setMinDepth(double val)
+    void setMinDepth(double val)
     {
         minDepth = val;
     }
-    CV_WRAP double getMaxDepth() const
+    double getMaxDepth() const
     {
         return maxDepth;
     }
-    CV_WRAP void setMaxDepth(double val)
+    void setMaxDepth(double val)
     {
         maxDepth = val;
     }
-    CV_WRAP double getMaxDepthDiff() const
+    double getMaxDepthDiff() const
     {
         return maxDepthDiff;
     }
-    CV_WRAP void setMaxDepthDiff(double val)
+    void setMaxDepthDiff(double val)
     {
         maxDepthDiff = val;
     }
-    CV_WRAP cv::Mat getIterationCounts() const
+    cv::Mat getIterationCounts() const
     {
         return iterCounts;
     }
-    CV_WRAP void setIterationCounts(const cv::Mat &val)
+    void setIterationCounts(const cv::Mat &val)
     {
         iterCounts = val;
     }
-    CV_WRAP double getMaxPointsPart() const
+    double getMaxPointsPart() const
     {
         return maxPointsPart;
     }
-    CV_WRAP void setMaxPointsPart(double val)
+    void setMaxPointsPart(double val)
     {
         maxPointsPart = val;
     }
-    CV_WRAP int getTransformType() const
+    int getTransformType() const
     {
         return transformType;
     }
-    CV_WRAP void setTransformType(int val)
+    void setTransformType(int val)
     {
         transformType = val;
     }
-    CV_WRAP double getMaxTranslation() const
+    double getMaxTranslation() const
     {
         return maxTranslation;
     }
-    CV_WRAP void setMaxTranslation(double val)
+    void setMaxTranslation(double val)
     {
         maxTranslation = val;
     }
-    CV_WRAP double getMaxRotation() const
+    double getMaxRotation() const
     {
         return maxRotation;
     }
-    CV_WRAP void setMaxRotation(double val)
+    void setMaxRotation(double val)
     {
         maxRotation = val;
     }
-    CV_WRAP Ptr<RgbdNormals> getNormalsComputer() const
+    Ptr<RgbdNormals> getNormalsComputer() const
     {
         return normalsComputer;
     }
@@ -913,10 +878,10 @@ namespace rgbd
   /** Odometry that merges RgbdOdometry and ICPOdometry by minimize sum of their energy functions.
    */
 
-  class CV_EXPORTS_W RgbdICPOdometry: public Odometry
+  class RgbdICPOdometry: public Odometry
   {
   public:
-    CV_WRAP RgbdICPOdometry();
+    RgbdICPOdometry();
     /** Constructor.
      * @param cameraMatrix Camera matrix
      * @param minDepth Pixels with depth less than minDepth will not be used
@@ -929,95 +894,95 @@ namespace rgbd
      *                              if they have gradient magnitude less than minGradientMagnitudes[level].
      * @param transformType Class of trasformation
      */
-    CV_WRAP RgbdICPOdometry(const Mat& cameraMatrix, float minDepth = Odometry::DEFAULT_MIN_DEPTH(), float maxDepth = Odometry::DEFAULT_MAX_DEPTH(),
-                    float maxDepthDiff = Odometry::DEFAULT_MAX_DEPTH_DIFF(), float maxPointsPart = Odometry::DEFAULT_MAX_POINTS_PART(),
+    RgbdICPOdometry(const Mat& cameraMatrix, float minDepth = DEFAULT_MIN_DEPTH(), float maxDepth = DEFAULT_MAX_DEPTH(),
+                    float maxDepthDiff = DEFAULT_MAX_DEPTH_DIFF(), float maxPointsPart = DEFAULT_MAX_POINTS_PART(),
                     const std::vector<int>& iterCounts = std::vector<int>(),
                     const std::vector<float>& minGradientMagnitudes = std::vector<float>(),
-                    int transformType = Odometry::RIGID_BODY_MOTION);
+                    int transformType = RIGID_BODY_MOTION);
 
-    CV_WRAP virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
+    virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
 
-    CV_WRAP cv::Mat getCameraMatrix() const
+    cv::Mat getCameraMatrix() const
     {
         return cameraMatrix;
     }
-    CV_WRAP void setCameraMatrix(const cv::Mat &val)
+    void setCameraMatrix(const cv::Mat &val)
     {
         cameraMatrix = val;
     }
-    CV_WRAP double getMinDepth() const
+    double getMinDepth() const
     {
         return minDepth;
     }
-    CV_WRAP void setMinDepth(double val)
+    void setMinDepth(double val)
     {
         minDepth = val;
     }
-    CV_WRAP double getMaxDepth() const
+    double getMaxDepth() const
     {
         return maxDepth;
     }
-    CV_WRAP void setMaxDepth(double val)
+    void setMaxDepth(double val)
     {
         maxDepth = val;
     }
-    CV_WRAP double getMaxDepthDiff() const
+    double getMaxDepthDiff() const
     {
         return maxDepthDiff;
     }
-    CV_WRAP void setMaxDepthDiff(double val)
+    void setMaxDepthDiff(double val)
     {
         maxDepthDiff = val;
     }
-    CV_WRAP double getMaxPointsPart() const
+    double getMaxPointsPart() const
     {
         return maxPointsPart;
     }
-    CV_WRAP void setMaxPointsPart(double val)
+    void setMaxPointsPart(double val)
     {
         maxPointsPart = val;
     }
-    CV_WRAP cv::Mat getIterationCounts() const
+    cv::Mat getIterationCounts() const
     {
         return iterCounts;
     }
-    CV_WRAP void setIterationCounts(const cv::Mat &val)
+    void setIterationCounts(const cv::Mat &val)
     {
         iterCounts = val;
     }
-    CV_WRAP cv::Mat getMinGradientMagnitudes() const
+    cv::Mat getMinGradientMagnitudes() const
     {
         return minGradientMagnitudes;
     }
-    CV_WRAP void setMinGradientMagnitudes(const cv::Mat &val)
+    void setMinGradientMagnitudes(const cv::Mat &val)
     {
         minGradientMagnitudes = val;
     }
-    CV_WRAP int getTransformType() const
+    int getTransformType() const
     {
         return transformType;
     }
-    CV_WRAP void setTransformType(int val)
+    void setTransformType(int val)
     {
         transformType = val;
     }
-    CV_WRAP double getMaxTranslation() const
+    double getMaxTranslation() const
     {
         return maxTranslation;
     }
-    CV_WRAP void setMaxTranslation(double val)
+    void setMaxTranslation(double val)
     {
         maxTranslation = val;
     }
-    CV_WRAP double getMaxRotation() const
+    double getMaxRotation() const
     {
         return maxRotation;
     }
-    CV_WRAP void setMaxRotation(double val)
+    void setMaxRotation(double val)
     {
         maxRotation = val;
     }
-    CV_WRAP Ptr<RgbdNormals> getNormalsComputer() const
+    Ptr<RgbdNormals> getNormalsComputer() const
     {
         return normalsComputer;
     }
@@ -1061,10 +1026,10 @@ namespace rgbd
    * @param warpedDepth The warped depth.
    * @param warpedMask The warped mask.
    */
-  CV_EXPORTS_W
+  CV_EXPORTS
   void
-  warpFrame(const InputArray image, const InputArray depth, const InputArray mask, const Mat& Rt, const Mat& cameraMatrix,
-            const Mat& distCoeff, OutputArray warpedImage, OutputArray warpedDepth = noArray(), OutputArray warpedMask = noArray());
+  warpFrame(const Mat& image, const Mat& depth, const Mat& mask, const Mat& Rt, const Mat& cameraMatrix,
+            const Mat& distCoeff, Mat& warpedImage, Mat* warpedDepth = 0, Mat* warpedMask = 0);
 
 // TODO Depth interpolation
 // Curvature

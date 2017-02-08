@@ -44,7 +44,7 @@ namespace rgbd
   class DepthCleanerImpl
   {
   public:
-    DepthCleanerImpl(int window_size, int depth, int method)
+    DepthCleanerImpl(int window_size, int depth, DepthCleaner::DEPTH_CLEANER_METHOD method)
         :
           depth_(depth),
           window_size_(window_size),
@@ -68,7 +68,7 @@ namespace rgbd
   protected:
     int depth_;
     int window_size_;
-    int method_;
+    DepthCleaner::DEPTH_CLEANER_METHOD method_;
   };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -84,7 +84,7 @@ namespace rgbd
     typedef Vec<T, 3> Vec3T;
     typedef Matx<T, 3, 3> Mat33T;
 
-    NIL(int window_size, int depth, int method)
+    NIL(int window_size, int depth, DepthCleaner::DEPTH_CLEANER_METHOD method)
         :
           DepthCleanerImpl(window_size, depth, method)
     {
@@ -272,20 +272,6 @@ namespace rgbd
       initialize_cleaner_impl();
     else if (!reinterpret_cast<DepthCleanerImpl *>(depth_cleaner_impl_)->validate(depth_, window_size_, method_))
       initialize_cleaner_impl();
-  }
-
-  /** Given a set of 3d points in a depth image, compute the normals at each point
-   * using the SRI method described in
-   * ``Fast and Accurate Computation of Surface Normals from Range Images``
-   * by H. Badino, D. Huber, Y. Park and T. Kanade
-   * @param depth depth a float depth image. Or it can be rows x cols x 3 is they are 3d points
-   * @param window_size the window size on which to compute the derivatives
-   * @return normals a rows x cols x 3 matrix
-   */
-  void
-  DepthCleaner::compute(InputArray depth_in_array, OutputArray depth_out_array) const
-  {
-      this->operator()(depth_in_array, depth_out_array);
   }
 
   /** Given a set of 3d points in a depth image, compute the normals at each point

@@ -60,29 +60,29 @@ namespace linemod {
 /**
  * \brief Discriminant feature described by its location and label.
  */
-struct CV_EXPORTS_W Feature
+struct CV_EXPORTS Feature
 {
-  CV_PROP_RW int x; ///< x offset
-  CV_PROP_RW int y; ///< y offset
-  CV_PROP_RW int label; ///< Quantization
+  int x; ///< x offset
+  int y; ///< y offset
+  int label; ///< Quantization
 
-  CV_WRAP Feature() : x(0), y(0), label(0) {}
-  CV_WRAP Feature(int x, int y, int label);
+  Feature() : x(0), y(0), label(0) {}
+  Feature(int x, int y, int label);
 
-  CV_WRAP void read(const FileNode& fn);
+  void read(const FileNode& fn);
   void write(FileStorage& fs) const;
 };
 
 inline Feature::Feature(int _x, int _y, int _label) : x(_x), y(_y), label(_label) {}
 
-struct CV_EXPORTS_W Template
+struct CV_EXPORTS Template
 {
-  CV_PROP_RW int width;
-  CV_PROP_RW int height;
-  CV_PROP_RW int pyramid_level;
-  CV_PROP_RW std::vector<Feature> features;
+  int width;
+  int height;
+  int pyramid_level;
+  std::vector<Feature> features;
 
-  CV_WRAP void read(const FileNode& fn);
+  void read(const FileNode& fn);
   void write(FileStorage& fs) const;
 };
 
@@ -153,7 +153,7 @@ inline QuantizedPyramid::Candidate::Candidate(int x, int y, int label, float _sc
  *
  * \todo Max response, to allow optimization of summing (255/MAX) features as uint8
  */
-class CV_EXPORTS_W Modality
+class CV_EXPORTS Modality
 {
 public:
   // Virtual destructor
@@ -200,7 +200,7 @@ protected:
 /**
  * \brief Modality that computes quantized gradient orientations from a color image.
  */
-class CV_EXPORTS_W ColorGradient : public Modality
+class CV_EXPORTS ColorGradient : public Modality
 {
 public:
   /**
@@ -235,7 +235,7 @@ protected:
 /**
  * \brief Modality that computes quantized surface normals from a dense depth map.
  */
-class CV_EXPORTS_W DepthNormal : public Modality
+class CV_EXPORTS DepthNormal : public Modality
 {
 public:
   /**
@@ -279,13 +279,13 @@ void colormap(const Mat& quantized, Mat& dst);
 /**
  * \brief Represents a successful template match.
  */
-struct CV_EXPORTS_W Match
+struct CV_EXPORTS Match
 {
-  CV_WRAP Match()
+  Match()
   {
   }
 
-  CV_WRAP Match(int x, int y, float similarity, const String& class_id, int template_id);
+  Match(int x, int y, float similarity, const String& class_id, int template_id);
 
   /// Sort matches with high similarity to the front
   bool operator<(const Match& rhs) const
@@ -302,11 +302,11 @@ struct CV_EXPORTS_W Match
     return x == rhs.x && y == rhs.y && similarity == rhs.similarity && class_id == rhs.class_id;
   }
 
-  CV_PROP_RW int x;
-  CV_PROP_RW int y;
-  CV_PROP_RW float similarity;
-  CV_PROP_RW String class_id;
-  CV_PROP_RW int template_id;
+  int x;
+  int y;
+  float similarity;
+  String class_id;
+  int template_id;
 };
 
 inline
@@ -318,7 +318,7 @@ Match::Match(int _x, int _y, float _similarity, const String& _class_id, int _te
  * \brief Object detector using the LINE template matching algorithm with any set of
  * modalities.
  */
-class CV_EXPORTS_W Detector
+class CV_EXPORTS Detector
 {
 public:
   /**
@@ -440,7 +440,7 @@ protected:
  *
  * Default parameter settings suitable for VGA images.
  */
-CV_EXPORTS_W Ptr<linemod::Detector> getDefaultLINE();
+CV_EXPORTS Ptr<Detector> getDefaultLINE();
 
 /**
  * \brief Factory function for detector using LINE-MOD algorithm with color gradients
@@ -448,7 +448,7 @@ CV_EXPORTS_W Ptr<linemod::Detector> getDefaultLINE();
  *
  * Default parameter settings suitable for VGA images.
  */
-CV_EXPORTS_W Ptr<linemod::Detector> getDefaultLINEMOD();
+CV_EXPORTS Ptr<Detector> getDefaultLINEMOD();
 
 //! @}
 
