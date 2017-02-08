@@ -52,7 +52,7 @@
 /** @defgroup dnn_modern Deep Learning Modern Module
 @{
 
-Base class for tiny-cnn converter
+Base class for tiny-dnn converter
 
 @}
 */
@@ -69,7 +69,7 @@ public:
 
 /** @brief Class implementing the CaffeConverter.
 
-Implementation of tiny-cnn Caffe converter.
+Implementation of tiny-dnn Caffe converter.
 Loads a pretrained Caffe model. Only support simple sequential models.
 
  */

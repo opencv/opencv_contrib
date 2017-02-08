@@ -21,7 +21,7 @@ include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 
 if(NOT TinyDNN_FOUND)
-    message(STATUS "Module opencv_dnn_modern disabled because tiny-cnn was not found")
+    message(STATUS "Module opencv_dnn_modern disabled because tiny-dnn was not found")
     ocv_module_disable(dnn_modern)
     return()
 elseif(NOT COMPILER_SUPPORTS_CXX11)

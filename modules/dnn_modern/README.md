@@ -28,7 +28,7 @@ Installation
 
 **Extra**
 
-  You can enable some optimizations just for tiny-cnn backend
+  You can enable some optimizations just for tiny-dnn backend
 
     cmake -DTINYDNN_USE_SSE=ON ..
     cmake -DTINYDNN_USE_AVX=ON ..

@@ -8,7 +8,7 @@
 # Accepts the following variables as input:
 #
 #   TinyDNN_ROOT - (as a CMake or environment variable)
-#                  The root directory of the tiny-cnn install prefix
+#                  The root directory of the tiny-dnn install prefix
 
 message(STATUS "Looking for tiny_dnn.h")
 
