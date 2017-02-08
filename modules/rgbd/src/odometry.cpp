@@ -941,7 +941,7 @@ template<class ImageElemType>
 static void
 warpFrameImpl(const Mat& image, const Mat& depth, const Mat& mask,
               const Mat& Rt, const Mat& cameraMatrix, const Mat& distCoeff,
-              OutputArray& _warpedImage, OutputArray& warpedDepth, OutputArray& warpedMask)
+              OutputArray _warpedImage, OutputArray warpedDepth, OutputArray warpedMask)
 {
     CV_Assert(image.size() == depth.size());
     
@@ -1407,7 +1407,7 @@ bool RgbdICPOdometry::computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<
 void
 warpFrame(const Mat& image, const Mat& depth, const Mat& mask,
           const Mat& Rt, const Mat& cameraMatrix, const Mat& distCoeff,
-          OutputArray& warpedImage, OutputArray& warpedDepth, OutputArray& warpedMask)
+          OutputArray warpedImage, OutputArray warpedDepth, OutputArray warpedMask)
 {
     if(image.type() == CV_8UC1)
         warpFrameImpl<uchar>(image, depth, mask, Rt, cameraMatrix, distCoeff, warpedImage, warpedDepth, warpedMask);

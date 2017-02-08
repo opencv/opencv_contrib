@@ -1029,7 +1029,7 @@ namespace rgbd
   CV_EXPORTS_W
   void
   warpFrame(const Mat& image, const Mat& depth, const Mat& mask, const Mat& Rt, const Mat& cameraMatrix,
-            const Mat& distCoeff, OutputArray& warpedImage, OutputArray& warpedDepth = noArray(), OutputArray& warpedMask = noArray());
+            const Mat& distCoeff, OutputArray warpedImage, OutputArray warpedDepth = noArray(), OutputArray warpedMask = noArray());
 
 // TODO Depth interpolation
 // Curvature
