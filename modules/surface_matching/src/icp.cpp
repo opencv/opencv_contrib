@@ -382,13 +382,13 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
 
     while ( (!(fval_perc<(1+TolP) && fval_perc>(1-TolP))) && i<MaxIterationsPyr)
     {
-      size_t di=0, selInd = 0;
+      int di = 0, selInd = 0;
 
       queryPCFlann(flann, Src_Moved, Indices, Distances);
 
       for (di=0; di<numElSrc; di++)
       {
-        newI[di] = (int)di;
+        newI[di] = di;
         newJ[di] = indices[di];
       }
 
@@ -455,8 +455,8 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
       if (selInd)
       {
 
-        Mat Src_Match = Mat((int)selInd, srcPCT.cols, CV_64F);
-        Mat Dst_Match = Mat((int)selInd, srcPCT.cols, CV_64F);
+        Mat Src_Match = Mat(selInd, srcPCT.cols, CV_64F);
+        Mat Dst_Match = Mat(selInd, srcPCT.cols, CV_64F);
 
         for (di=0; di<selInd; di++)
         {
