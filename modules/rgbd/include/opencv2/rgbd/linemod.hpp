@@ -101,14 +101,14 @@ public:
    * \param[out] dst The destination 8-bit image. For each pixel at most one bit is set,
    *                 representing its classification.
    */
-  virtual void quantize(CV_OUT Mat& dst) const =0;
+  virtual void quantize(Mat& dst) const =0;
 
   /**
    * \brief Extract most discriminant features at current pyramid level to form a new template.
    *
    * \param[out] templ The new template.
    */
-  virtual bool extractTemplate(CV_OUT Template& templ) const =0;
+  virtual bool extractTemplate(Template& templ) const =0;
 
   /**
    * \brief Go to the next pyramid level.
@@ -142,7 +142,7 @@ protected:
    * \param[in]  distance     Hint for desired distance between features.
    */
   static void selectScatteredFeatures(const std::vector<Candidate>& candidates,
-                                      CV_OUT std::vector<Feature>& features,
+                                      std::vector<Feature>& features,
                                       size_t num_features, float distance);
 };
 
@@ -324,7 +324,7 @@ public:
   /**
    * \brief Empty constructor, initialize with read().
    */
-  CV_WRAP Detector();
+  Detector();
 
   /**
    * \brief Constructor.
@@ -333,7 +333,7 @@ public:
    * \param T_pyramid        Value of the sampling step T at each pyramid level. The
    *                         number of pyramid levels is T_pyramid.size().
    */
-  CV_WRAP Detector(const std::vector< Ptr<Modality> >& modalities, const std::vector<int>& T_pyramid);
+  Detector(const std::vector< Ptr<Modality> >& modalities, const std::vector<int>& T_pyramid);
 
   /**
    * \brief Detect objects by template matching.
@@ -350,7 +350,7 @@ public:
    *                       the same size as sources.  Each element must be
    *                       empty or the same size as its corresponding source.
    */
-  CV_WRAP void match(const std::vector<Mat>& sources, float threshold, CV_OUT std::vector<Match>& matches,
+  void match(const std::vector<Mat>& sources, float threshold, std::vector<Match>& matches,
              const std::vector<String>& class_ids = std::vector<String>(),
              OutputArrayOfArrays quantized_images = noArray(),
              const std::vector<Mat>& masks = std::vector<Mat>()) const;
@@ -365,13 +365,13 @@ public:
    *
    * \return Template ID, or -1 if failed to extract a valid template.
    */
-  CV_WRAP int addTemplate(const std::vector<Mat>& sources, const String& class_id,
-          const Mat& object_mask, CV_OUT Rect* bounding_box = NULL);
+  int addTemplate(const std::vector<Mat>& sources, const String& class_id,
+          const Mat& object_mask, Rect* bounding_box = NULL);
 
   /**
    * \brief Add a new object template computed by external means.
    */
-  CV_WRAP int addSyntheticTemplate(const std::vector<Template>& templates, const String& class_id);
+  int addSyntheticTemplate(const std::vector<Template>& templates, const String& class_id);
 
   /**
    * \brief Get the modalities used by this detector.
@@ -379,17 +379,17 @@ public:
    * You are not permitted to add/remove modalities, but you may dynamic_cast them to
    * tweak parameters.
    */
-  CV_WRAP const std::vector< Ptr<Modality> >& getModalities() const { return modalities; }
+  const std::vector< Ptr<Modality> >& getModalities() const { return modalities; }
 
   /**
    * \brief Get sampling step T at pyramid_level.
    */
-  CV_WRAP int getT(int pyramid_level) const { return T_at_level[pyramid_level]; }
+  int getT(int pyramid_level) const { return T_at_level[pyramid_level]; }
 
   /**
    * \brief Get number of pyramid levels used by this detector.
    */
-  CV_WRAP int pyramidLevels() const { return pyramid_levels; }
+  int pyramidLevels() const { return pyramid_levels; }
 
   /**
    * \brief Get the template pyramid identified by template_id.
@@ -397,13 +397,13 @@ public:
    * For example, with 2 modalities (Gradient, Normal) and two pyramid levels
    * (L0, L1), the order is (GradientL0, NormalL0, GradientL1, NormalL1).
    */
-  CV_WRAP const std::vector<Template>& getTemplates(const String& class_id, int template_id) const;
+  const std::vector<Template>& getTemplates(const String& class_id, int template_id) const;
 
-  CV_WRAP int numTemplates() const;
-  CV_WRAP int numTemplates(const String& class_id) const;
-  CV_WRAP int numClasses() const { return static_cast<int>(class_templates.size()); }
+  int numTemplates() const;
+  int numTemplates(const String& class_id) const;
+  int numClasses() const { return static_cast<int>(class_templates.size()); }
 
-  CV_WRAP std::vector<String> classIds() const;
+  std::vector<String> classIds() const;
 
   void read(const FileNode& fn);
   void write(FileStorage& fs) const;
@@ -411,9 +411,9 @@ public:
   String readClass(const FileNode& fn, const String &class_id_override = "");
   void writeClass(const String& class_id, FileStorage& fs) const;
 
-  CV_WRAP void readClasses(const std::vector<String>& class_ids,
+  void readClasses(const std::vector<String>& class_ids,
                    const String& format = "templates_%s.yml.gz");
-  CV_WRAP void writeClasses(const String& format = "templates_%s.yml.gz") const;
+  void writeClasses(const String& format = "templates_%s.yml.gz") const;
 
 protected:
   std::vector< Ptr<Modality> > modalities;
