@@ -464,8 +464,8 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
           const int indScene = indicesScene[di];
           const float *srcPt = srcPCT.ptr<float>(indModel);
           const float *dstPt = dstPC0.ptr<float>(indScene);
-          double *srcMatchPt = Src_Match.ptr<double>((int)di);
-          double *dstMatchPt = Dst_Match.ptr<double>((int)di);
+          double *srcMatchPt = Src_Match.ptr<double>(di);
+          double *dstMatchPt = Dst_Match.ptr<double>(di);
           int ci=0;
 
           for (ci=0; ci<srcPCT.cols; ci++)
