@@ -112,7 +112,7 @@ public:
    *  \brief Left multiplies the existing pose in order to update the transformation
    *  \param [in] IncrementalPose New pose to apply
    */
-  CV_WRAP void appendPose(const double IncrementalPose[16]);
+  CV_WRAP void appendPose(double IncrementalPose[16]);
   CV_WRAP void printPose();
 
   CV_WRAP Pose3DPtr clone();
@@ -127,7 +127,7 @@ public:
   double alpha, residual;
   uint modelIndex;
   uint numVotes;
-  CV_PROP_RW std::vector<double> pose;
+  CV_PROP std::vector<double> pose;
   double angle;
   double t[3];
   double q[4];

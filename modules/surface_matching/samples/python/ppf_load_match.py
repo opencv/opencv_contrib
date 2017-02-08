@@ -38,6 +38,10 @@
 #
 # PPF Author: Tolga Birdal <tbirdal AT gmail.com>
 # Python wrapper by: Hamdi Sahloul <hamdisahloul AT hotmail.com>
+#
+# Known issues:
+#   `Pose3D.appendPose()` resets the pose instead of incrementing it [called inside `icp.registerModelToScene()`].
+#   `ppf_match_3d.transformPCPose()` not functional yet
 
 import cv2;
 import sys;
