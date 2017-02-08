@@ -86,8 +86,7 @@ namespace cv
 namespace bioinspired
 {
 
-class TransientAreasSegmentationModuleImpl :
-	protected BasicRetinaFilter
+class TransientAreasSegmentationModuleImpl : protected BasicRetinaFilter
 {
 public:
 
@@ -105,7 +104,7 @@ public:
     /**
      * @return the size of the manage input and output images
      */
-    Size getSize(){return cv::Size(getNBcolumns(), getNBrows());};
+    Size getSize(){return cv::Size(getNBcolumns(), getNBrows());}
 
     /**
      * try to open an XML segmentation parameters file to adjust current segmentation instance setup
@@ -189,19 +188,19 @@ protected:
      * access function
      * @return the local motion energy level picture (experimental, not usefull)
      */
-    inline const std::valarray<float> &getLocalMotionPicture() const {return _localMotion;};
+    inline const std::valarray<float> &getLocalMotionPicture() const {return _localMotion;}
 
     /**
      * access function
      * @return the neighborhood motion energy level picture (experimental, not usefull)
      */
-    inline const std::valarray<float> &getNeighborhoodMotionPicture() const {return _neighborhoodMotion;};
+    inline const std::valarray<float> &getNeighborhoodMotionPicture() const {return _neighborhoodMotion;}
 
     /**
      * access function
      * @return the motion energy context level picture (experimental, not usefull)
      */
-    inline const std::valarray<float> &getMotionContextPicture() const {return _contextMotionEnergy;};
+    inline const std::valarray<float> &getMotionContextPicture() const {return _contextMotionEnergy;}
 
     struct cv::bioinspired::SegmentationParameters _segmentationParameters;
     // template buffers and related acess pointers
@@ -220,25 +219,25 @@ protected:
     // Buffer conversion utilities
     void _convertValarrayBuffer2cvMat(const std::valarray<bool> &grayMatrixToConvert, const unsigned int nbRows, const unsigned int nbColumns, OutputArray outBuffer);
     bool _convertCvMat2ValarrayBuffer(InputArray inputMat, std::valarray<float> &outputValarrayMatrix);
-	
+
     const TransientAreasSegmentationModuleImpl & operator = (const TransientAreasSegmentationModuleImpl &);
 };
 
 class TransientAreasSegmentationModuleImpl_: public  TransientAreasSegmentationModule
 {
 public:
-	TransientAreasSegmentationModuleImpl_(const Size size):_segmTool(size){};
-    inline virtual Size getSize(){return _segmTool.getSize();};
-    inline virtual void write( cv::FileStorage& fs ) const{_segmTool.write(fs);};
-    inline virtual void setup(String segmentationParameterFile, const bool applyDefaultSetupOnFailure){_segmTool.setup(segmentationParameterFile, applyDefaultSetupOnFailure);};
-    inline virtual void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure){_segmTool.setup(fs, applyDefaultSetupOnFailure);};
-    inline virtual void setup(SegmentationParameters newParameters){_segmTool.setup(newParameters);};
-    inline virtual const String printSetup(){return _segmTool.printSetup();};
-    inline virtual struct SegmentationParameters getParameters(){return _segmTool.getParameters();};
-    inline virtual void write( String fs ) const{_segmTool.write(fs);};
-    inline virtual void run(InputArray inputToSegment, const int channelIndex){_segmTool.run(inputToSegment, channelIndex);};
-    inline virtual void getSegmentationPicture(OutputArray transientAreas){return _segmTool.getSegmentationPicture(transientAreas);};
-    inline virtual void clearAllBuffers(){_segmTool.clearAllBuffers();};
+    TransientAreasSegmentationModuleImpl_(const Size size):_segmTool(size){}
+    inline virtual Size getSize(){return _segmTool.getSize();}
+    inline virtual void write( cv::FileStorage& fs ) const{_segmTool.write(fs);}
+    inline virtual void setup(String segmentationParameterFile, const bool applyDefaultSetupOnFailure){_segmTool.setup(segmentationParameterFile, applyDefaultSetupOnFailure);}
+    inline virtual void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure){_segmTool.setup(fs, applyDefaultSetupOnFailure);}
+    inline virtual void setup(SegmentationParameters newParameters){_segmTool.setup(newParameters);}
+    inline virtual const String printSetup(){return _segmTool.printSetup();}
+    inline virtual struct SegmentationParameters getParameters(){return _segmTool.getParameters();}
+    inline virtual void write( String fs ) const{_segmTool.write(fs);}
+    inline virtual void run(InputArray inputToSegment, const int channelIndex){_segmTool.run(inputToSegment, channelIndex);}
+    inline virtual void getSegmentationPicture(OutputArray transientAreas){return _segmTool.getSegmentationPicture(transientAreas);}
+    inline virtual void clearAllBuffers(){_segmTool.clearAllBuffers();}
 
 private:
     TransientAreasSegmentationModuleImpl _segmTool;
@@ -250,7 +249,7 @@ private:
 */
 Ptr<TransientAreasSegmentationModule> createTransientAreasSegmentationModule(Size inputSize){
     return makePtr<TransientAreasSegmentationModuleImpl_>(inputSize);
-};
+}
 
 // Constructor and destructors
 TransientAreasSegmentationModuleImpl::TransientAreasSegmentationModuleImpl(const Size size)
@@ -288,8 +287,8 @@ void TransientAreasSegmentationModuleImpl::clearAllBuffers()
 
 struct SegmentationParameters TransientAreasSegmentationModuleImpl::getParameters()
 {
-	return _segmentationParameters;
-};
+    return _segmentationParameters;
+}
 
 // setup from XML file
 void TransientAreasSegmentationModuleImpl::setup(String segmentationParameterFile, const bool applyDefaultSetupOnFailure)
@@ -350,9 +349,6 @@ void TransientAreasSegmentationModuleImpl::setup(cv::FileStorage &fs, const bool
         std::cout<<"SegmentationModule::setup: wrong/unappropriate xml parameter file : error report :`n=>"<<e.what()<<std::endl;
         std::cout<<"=> keeping current parameters"<<std::endl;
     }
-
-    // report current configuration
-    printf("%s\n", printSetup().c_str());
 }
 
 // setup parameters for the 2 filters that allow the segmentation
@@ -592,9 +588,3 @@ bool TransientAreasSegmentationModuleImpl::_convertCvMat2ValarrayBuffer(InputArr
 }
 
 }} //namespaces end : cv and bioinspired
-
-
-
-
-
-

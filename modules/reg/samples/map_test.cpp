@@ -36,12 +36,9 @@
 //M*/
 
 #include <iostream>
-#define _USE_MATH_DEFINES
-#include <cmath>
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp> // OpenCV window I/O
 #include <opencv2/imgproc.hpp> // OpenCV image transformations
-#include <opencv2/imgproc.hpp>
 #include <opencv2/imgproc/types_c.h>
 #include <opencv2/imgcodecs/imgcodecs_c.h>
 #include <opencv2/highgui/highgui_c.h>

@@ -47,8 +47,8 @@ using namespace cv::ximgproc;
 using namespace std;
 
 int aa = 100, ww = 10;
-Mat dx, dy;
-UMat img;
+
+Ptr<Mat> img;
 const char* window_name = "Gradient Modulus";
 
 static void DisplayImage(Mat x,string s)
@@ -77,8 +77,8 @@ static void PaillouFilter(int, void*)
     Mat dst;
     double a=aa/100.0,w=ww/100.0;
     Mat rx,ry;
-    GradientPaillouX(img,rx,a,w);
-    GradientPaillouY(img,ry,a,w);
+    GradientPaillouX(*img.get(),rx,a,w);
+    GradientPaillouY(*img.get(),ry,a,w);
     DisplayImage(rx, "Gx");
     DisplayImage(ry, "Gy");
     add(rx.mul(rx),ry.mul(ry),dst);
@@ -89,13 +89,15 @@ static void PaillouFilter(int, void*)
 
 int main(int argc, char* argv[])
 {
-    if (argc==2)
-        imread(argv[1]).copyTo(img);
-    if (img.empty())
+	Mat *m=new Mat;
+	if (argc == 2)
+		*m = imread(argv[1]);
+	if (m->empty())
     {
         cout << "File not found or empty image\n";
     }
-    imshow("Original",img);
+	img = Ptr<Mat>(m);
+	imshow("Original",*img.get());
     namedWindow( window_name, WINDOW_AUTOSIZE );
 
     /// Create a Trackbar for user to enter threshold

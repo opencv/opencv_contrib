@@ -1,7 +1,7 @@
 #include "op_blas.hpp"
 
-#if HAVE_CBLAS
-#include "opencv_cblas.hpp"
+#ifdef HAVE_LAPACK
+#include "opencv_lapack.h"
 #endif
 
 #include <iostream>
@@ -99,15 +99,7 @@ public:
 
 void gemmCPU(const Mat &A, const Mat &B, double alpha, Mat &C, double beta, int flags /*= 0*/)
 {
-    if( C.type() == CV_32F && flags == 0 )
-    {
-        GEMMInvoker invoker(&A, &B, alpha, &C, beta);
-        double granularity = 10000000./((double)A.rows*A.cols);
-        parallel_for_(Range(0, B.cols), invoker, granularity);
-    }
-    else
-    {
-    #if HAVE_CBLAS
+    #ifdef HAVE_LAPACK
     bool transA = static_cast<bool>(flags & GEMM_1_T);
     bool transB = static_cast<bool>(flags & GEMM_2_T);
     bool transC = static_cast<bool>(flags & GEMM_3_T);
@@ -145,9 +137,15 @@ void gemmCPU(const Mat &A, const Mat &B, double alpha, Mat &C, double beta, int 
         CV_Error(Error::BadDepth, "Only floating point types are supported");
     }
     #else
-    cv::gemm(A, B, alpha, C, beta, C, flags);
-    #endif
+    if( C.type() == CV_32F && flags == 0 )
+    {
+        GEMMInvoker invoker(&A, &B, alpha, &C, beta);
+        double granularity = 10000000./((double)A.rows*A.cols);
+        parallel_for_(Range(0, B.cols), invoker, granularity);
     }
+    else
+        cv::gemm(A, B, alpha, C, beta, C, flags);
+    #endif
 }
 
 int getBlasThreads()

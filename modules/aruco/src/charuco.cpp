@@ -656,7 +656,7 @@ static bool _arePointsEnoughForPoseEstimation(const vector< Point3f > &points) {
   */
 bool estimatePoseCharucoBoard(InputArray _charucoCorners, InputArray _charucoIds,
                               const Ptr<CharucoBoard> &_board, InputArray _cameraMatrix, InputArray _distCoeffs,
-                              OutputArray _rvec, OutputArray _tvec) {
+                              OutputArray _rvec, OutputArray _tvec, bool useExtrinsicGuess) {
 
     CV_Assert((_charucoCorners.getMat().total() == _charucoIds.getMat().total()));
 
@@ -674,7 +674,7 @@ bool estimatePoseCharucoBoard(InputArray _charucoCorners, InputArray _charucoIds
     // points need to be in different lines, check if detected points are enough
     if(!_arePointsEnoughForPoseEstimation(objPoints)) return false;
 
-    solvePnP(objPoints, _charucoCorners, _cameraMatrix, _distCoeffs, _rvec, _tvec);
+    solvePnP(objPoints, _charucoCorners, _cameraMatrix, _distCoeffs, _rvec, _tvec, useExtrinsicGuess);
 
     return true;
 }

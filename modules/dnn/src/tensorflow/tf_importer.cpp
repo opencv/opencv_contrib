@@ -9,7 +9,7 @@
 Implementation of Tensorflow models parser
 */
 
-#include "precomp.hpp"
+#include "../precomp.hpp"
 using namespace cv;
 using namespace cv::dnn;
 

@@ -46,7 +46,9 @@
 #pragma warning( disable : 4267 )
 #endif
 
+#ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
+#endif
 
 #include <algorithm>
 #include "opencv2/core/utility.hpp"

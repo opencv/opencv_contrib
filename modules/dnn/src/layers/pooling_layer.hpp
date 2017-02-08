@@ -58,9 +58,9 @@ class PoolingLayerImpl : public PoolingLayer
 
     bool pooling_ocl(const char *kname, const Blob &src, Blob &dst, Blob *mask = NULL);
 
-    void maxPooling(Blob &src, Blob &dst);
-    void maxPooling_cpu(Blob &src, Blob &dst);
-    bool maxPooling_ocl(Blob &src, Blob &dst);
+    void maxPooling(Blob &src, Blob &dst, Blob &mask);
+    void maxPooling_cpu(Blob &src, Blob &dst, Blob &mask);
+    bool maxPooling_ocl(Blob &src, Blob &dst, Blob &mask);
 
     void avePooling(Blob &src, Blob &dst);
     void avePooling_cpu(Blob &src, Blob &dst);

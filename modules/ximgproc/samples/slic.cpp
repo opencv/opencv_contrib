@@ -19,7 +19,7 @@ static const char* keys =
     "{h help      | | help menu}"
     "{c camera    |0| camera id}"
     "{i image     | | image file}"
-    "{a algorithm |1| SLIC(0),SLICO(1)}"
+    "{a algorithm |1| SLIC(0),SLICO(1),MSLIC(2)}"
     ;
 
 int main(int argc, char** argv)
@@ -63,7 +63,7 @@ int main(int argc, char** argv)
     }
 
     namedWindow(window_name, 0);
-    createTrackbar("Algorithm", window_name, &algorithm, 1, 0);
+    createTrackbar("Algorithm", window_name, &algorithm, 2, 0);
     createTrackbar("Region size", window_name, &region_size, 200, 0);
     createTrackbar("Ruler", window_name, &ruler, 100, 0);
     createTrackbar("Connectivity", window_name, &min_element_size, 100, 0);

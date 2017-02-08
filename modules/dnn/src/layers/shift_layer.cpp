@@ -39,17 +39,17 @@ public:
     virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs, const std::vector<Blob>& blobs) {
         for (size_t ii = 0; ii < outputs.size(); ii++)
         {
-          Blob &inpBlob = *inputs[ii];
-          Blob &outBlob = outputs[ii];
+            Blob &inpBlob = *inputs[ii];
+            Blob &outBlob = outputs[ii];
 
-          inpBlob.matRef().copyTo(outBlob.matRef());
+            inpBlob.matRef().copyTo(outBlob.matRef());
 
-          for (int n = 0; n < inpBlob.num(); n++)
-          {
-            Mat dstMat(inpBlob.channels(), inpBlob.rows() * inpBlob.cols(),
-                       outBlob.type(), outBlob.ptr(n));
-           dnn::gemm(blobs[0].matRefConst(), biasOnesMat, 1, dstMat, 1); //TODO: gemv
-          }
+            for (int n = 0; n < inpBlob.num(); n++)
+            {
+                Mat dstMat(inpBlob.channels(), inpBlob.rows() * inpBlob.cols(),
+                           outBlob.type(), outBlob.ptr(n));
+                dnn::gemm(blobs[0].matRefConst(), biasOnesMat, 1, dstMat, 1); //TODO: gemv
+            }
         }
     }
 
@@ -133,7 +133,7 @@ ShiftLayer::ShiftLayer(LayerParams &params) : Layer(params)
 {
     CV_Assert(blobs.size() == 1);
 
-    #if HAVE_CBLAS
+    #ifdef HAVE_LAPACK
     {
         if (getBlasThreads() != cv::getThreadNum())
         {

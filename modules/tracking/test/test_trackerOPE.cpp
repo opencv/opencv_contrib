@@ -380,56 +380,56 @@ PARAM_TEST_CASE(OPE_Overlap, string, float)
   }
 };
 
-TEST_P(OPE_Distance, MIL)
+TEST_P(OPE_Distance, DISABLED_MIL)
 {
   TrackerOPETest test( Tracker::create( "MIL" ), TrackerOPETest::DISTANCE, dataset, threshold );
   test.run();
   RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
-TEST_P(OPE_Overlap, MIL)
+TEST_P(OPE_Overlap, DISABLED_MIL)
 {
   TrackerOPETest test( Tracker::create( "MIL" ), TrackerOPETest::OVERLAP, dataset, threshold );
   test.run();
   RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
-TEST_P(OPE_Distance, Boosting)
+TEST_P(OPE_Distance, DISABLED_Boosting)
 {
   TrackerOPETest test( Tracker::create( "BOOSTING" ), TrackerOPETest::DISTANCE, dataset, threshold );
   test.run();
   RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
-TEST_P(OPE_Overlap, Boosting)
+TEST_P(OPE_Overlap, DISABLED_Boosting)
 {
   TrackerOPETest test( Tracker::create( "BOOSTING" ), TrackerOPETest::OVERLAP, dataset, threshold );
   test.run();
   RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
-TEST_P(OPE_Distance, TLD)
+TEST_P(OPE_Distance, DISABLED_TLD)
 {
   TrackerOPETest test( Tracker::create( "TLD" ), TrackerOPETest::DISTANCE, dataset, threshold );
   test.run();
   RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
-TEST_P(OPE_Overlap, TLD)
+TEST_P(OPE_Overlap, DISABLED_TLD)
 {
   TrackerOPETest test( Tracker::create( "TLD" ), TrackerOPETest::OVERLAP, dataset, threshold );
   test.run();
   RecordProperty( "ratioSuccess", test.getRatioSucc() );
 }
 
-TEST_P(OPE_Distance, GOTURN)
+TEST_P(OPE_Distance, DISABLED_GOTURN)
 {
   TrackerOPETest test(Tracker::create("GOTURN"), TrackerOPETest::DISTANCE, dataset, threshold);
   test.run();
   RecordProperty("ratioSuccess", test.getRatioSucc());
 }
 
-TEST_P(OPE_Overlap, GOTURN)
+TEST_P(OPE_Overlap, DISABLED_GOTURN)
 {
   TrackerOPETest test(Tracker::create("GOTURN"), TrackerOPETest::OVERLAP, dataset, threshold);
   test.run();

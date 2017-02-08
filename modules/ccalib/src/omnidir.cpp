@@ -1125,7 +1125,7 @@ double cv::omnidir::calibrate(InputArrayOfArrays patternPoints, InputArrayOfArra
 		double epsilon = 0.01 * std::pow(0.9, (double)iter/10);
         cv::omnidir::internal::computeJacobian(_patternPoints, _imagePoints, currentParam, JTJ_inv, JTError, flags, epsilon);
 
-        // Gauss¨CNewton
+        // Gauss - Newton
         Mat G = alpha_smooth2*JTJ_inv * JTError;
 
         omnidir::internal::fillFixed(G, flags, n);
@@ -1278,7 +1278,7 @@ double cv::omnidir::stereoCalibrate(InputOutputArrayOfArrays objectPoints, Input
         cv::omnidir::internal::computeJacobianStereo(_objectPointsFilt, _imagePoints1Filt, _imagePoints2Filt, currentParam,
 			JTJ_inv, JTError, flags, epsilon);
 
-        // Gauss¨CNewton
+        // Gauss - Newton
         Mat G = alpha_smooth2*JTJ_inv * JTError;
 
         omnidir::internal::fillFixedStereo(G, flags, n);
