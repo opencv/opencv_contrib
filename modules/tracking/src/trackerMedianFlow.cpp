@@ -174,23 +174,25 @@ size_t filterPointsInVectors(std::vector<T>& status, std::vector<Point2f>& vec1,
     {
         if(status[first_bad_idx] != goodValue)
             break;
-        else
-            first_bad_idx++;
+        first_bad_idx++;
     }
 
-    if (first_bad_idx < status.size())
+    if (first_bad_idx >= status.size())
+        return first_bad_idx;
+
+    for(size_t i = first_bad_idx + 1; i < status.size(); i++)
     {
-        for(size_t i = first_bad_idx + 1; i < status.size(); i++)
-            if (status[i] == goodValue)
-            {
-                status[first_bad_idx] = goodValue;
-                vec1[first_bad_idx] = vec1[i];
-                vec2[first_bad_idx] = vec2[i];
-                first_bad_idx++;
-            }
-        vec1.erase(vec1.begin() + first_bad_idx, vec1.end());
-        vec2.erase(vec2.begin() + first_bad_idx, vec2.end());
+        if (status[i] != goodValue)
+            continue;
+
+        status[first_bad_idx] = goodValue;
+        vec1[first_bad_idx] = vec1[i];
+        vec2[first_bad_idx] = vec2[i];
+        first_bad_idx++;
     }
+    vec1.erase(vec1.begin() + first_bad_idx, vec1.end());
+    vec2.erase(vec2.begin() + first_bad_idx, vec2.end());
+
     return first_bad_idx;
 }
 
