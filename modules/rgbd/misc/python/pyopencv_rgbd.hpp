@@ -1,7 +1,7 @@
 #ifdef HAVE_OPENCV_RGBD
 typedef std::vector<linemod::Template> vector_Template;
 typedef std::vector<linemod::Match> vector_Match;
-typedef std::vector< Ptr<linemod::Modality> > vector_Ptr_Modality;
+typedef std::vector<Ptr<linemod::Modality>> vector_Ptr_Modality;
 
 template<>
 bool pyopencv_to(PyObject *o, linemod::Feature &feature, const char *name);
@@ -69,9 +69,9 @@ template<> struct pyopencvVecConverter<linemod::Match>
 	}
 };
 
-template<> struct pyopencvVecConverter< Ptr<linemod::Modality> >
+template<> struct pyopencvVecConverter<Ptr<linemod::Modality>>
 {
-	static bool to(PyObject* obj, std::vector< Ptr<linemod::Modality> >& value, const ArgInfo info)
+	static bool to(PyObject* obj, std::vector<Ptr<linemod::Modality>>& value, const ArgInfo info)
 	{
 		if (PyArray_Check(obj))
 		{
@@ -82,7 +82,7 @@ template<> struct pyopencvVecConverter< Ptr<linemod::Modality> >
 		return pyopencv_to_generic_vec(obj, value, info);
 	}
 
-	static PyObject* from(const std::vector< Ptr<linemod::Modality> >& value)
+	static PyObject* from(const std::vector<Ptr<linemod::Modality>>& value)
 	{
 		return pyopencv_from_generic_vec(value);
 	}
@@ -107,9 +107,9 @@ bool pyopencv_to(PyObject *o, std::vector<linemod::Match> &matches, const char *
 }
 
 template<>
-bool pyopencv_to(PyObject *o, std::vector< Ptr<linemod::Modality> > &modalities, const char *name) //required for std::vector< Ptr<Modality> > modalities
+bool pyopencv_to(PyObject *o, std::vector<Ptr<linemod::Modality>> &modalities, const char *name) //required for std::vector<Ptr<Modality>> modalities
 {
-	return pyopencvVecConverter< Ptr<linemod::Modality> >::to(o, modalities, ArgInfo(name, false));
+	return pyopencvVecConverter<Ptr<linemod::Modality>>::to(o, modalities, ArgInfo(name, false));
 }
 
 template<>
