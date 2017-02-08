@@ -543,7 +543,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, std::vector<Po
   for (size_t i=0; i<poses.size(); i++)
   {
     double poseICP[16]={0};
-    Mat srcTemp = transformPCPose(srcPC, &(poses[i]->pose[0]));
+    Mat srcTemp = transformPCPose(srcPC, poses[i]->pose);
     registerModelToScene(srcTemp, dstPC, poses[i]->residual, poseICP);
     poses[i]->appendPose(poseICP);
   }
