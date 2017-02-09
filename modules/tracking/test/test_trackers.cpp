@@ -461,7 +461,7 @@ PARAM_TEST_CASE(DistanceAndOverlap, string)
 
 TEST_P(DistanceAndOverlap, MedianFlow)
 {
-  TrackerTest test( Tracker::create( "MEDIANFLOW" ), dataset, 120, .2f, NoTransform, 1, 1);
+  TrackerTest test( Tracker::create( "MEDIANFLOW" ), dataset, 35, .55f, NoTransform, 1, 1);
   test.run();
 }
 
@@ -486,7 +486,7 @@ TEST_P(DistanceAndOverlap, TLD)
 //Tests with shifted initial window
 TEST_P(DistanceAndOverlap, Shifted_Data_MedianFlow)
 {
-  TrackerTest test( Tracker::create( "MEDIANFLOW" ), dataset, 120, .2f, CenterShiftLeft, 1, 1);
+  TrackerTest test( Tracker::create( "MEDIANFLOW" ), dataset, 80, .3f, CenterShiftLeft, 1, 1);
   test.run();
 }
 
@@ -511,7 +511,7 @@ TEST_P(DistanceAndOverlap, Shifted_Data_TLD)
 //Tests with scaled initial window
 TEST_P(DistanceAndOverlap, Scaled_Data_MedianFlow)
 {
-  TrackerTest test( Tracker::create( "MEDIANFLOW" ), dataset, 120, .2f, Scale_1_1, 1, 1);
+  TrackerTest test( Tracker::create( "MEDIANFLOW" ), dataset, 25, .45f, Scale_1_1, 1, 1);
   test.run();
 }
 
