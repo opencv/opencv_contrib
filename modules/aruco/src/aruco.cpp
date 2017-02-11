@@ -788,7 +788,7 @@ class MarkerSubpixelParallel : public ParallelLoopBody {
  * Line fitting  A * B = C :: Called from function refineCandidateLines
  * @param nContours, contour-container
  */
-static Point3f interpolate2Dline(const std::vector<cv::Point2f>& nContours){
+static Point3f _interpolate2Dline(const std::vector<cv::Point2f>& nContours){
 	float minX, minY, maxX, maxY;
 	minX = maxX = nContours[0].x;
 	minY = maxY = nContours[0].y;
@@ -833,13 +833,13 @@ static Point3f interpolate2Dline(const std::vector<cv::Point2f>& nContours){
  * @param nLine2
  * @return Crossed Point
  */
-static Point2f getCrossPoint(Point3f nLine1, Point3f nLine2){
+static Point2f _getCrossPoint(Point3f nLine1, Point3f nLine2){
 	Matx22f A(nLine1.x, nLine1.y, nLine2.x, nLine2.y);
 	Vec2f B(-nLine1.z, -nLine2.z);
 	return Vec2f(A.solve(B).val);
 }
 
-static void distortPoints(vector<cv::Point2f>& in, const Mat& camMatrix, const Mat& distCoeff) {
+static void _distortPoints(vector<cv::Point2f>& in, const Mat& camMatrix, const Mat& distCoeff) {
     // trivial extrinsics
     Matx31f Rvec(0,0,0);
     Matx31f Tvec(0,0,0);
@@ -861,7 +861,7 @@ static void distortPoints(vector<cv::Point2f>& in, const Mat& camMatrix, const M
  * @param camMatrix, cameraMatrix input 3x3 floating-point camera matrix
  * @param distCoeff, distCoeffs vector of distortion coefficient
  */
-static void refineCandidateLines(std::vector<Point>& nContours, std::vector<Point2f>& nCorners, const Mat& camMatrix, const Mat& distCoeff){
+static void _refineCandidateLines(std::vector<Point>& nContours, std::vector<Point2f>& nCorners, const Mat& camMatrix, const Mat& distCoeff){
 	vector<Point2f> contour2f(nContours.begin(), nContours.end());
 
 	if(!camMatrix.empty() && !distCoeff.empty()){
@@ -902,7 +902,7 @@ static void refineCandidateLines(std::vector<Point>& nContours, std::vector<Poin
 	// calculate the line :: who passes through the grouped points
 	Point3f lines[4];
 	for(int i=0; i<4; i++){
-		lines[i]=interpolate2Dline(cntPts[i]);
+		lines[i]=_interpolate2Dline(cntPts[i]);
 	}
 
 	/*
@@ -916,13 +916,13 @@ static void refineCandidateLines(std::vector<Point>& nContours, std::vector<Poin
 	 */
 	for(int i=0; i < 4; i++){
 		if(inc<0)
-			nCorners[i] = getCrossPoint(lines[ i ], lines[ (i+1)%4 ]);	// 01 12 23 30
+			nCorners[i] = _getCrossPoint(lines[ i ], lines[ (i+1)%4 ]);	// 01 12 23 30
 		else
-			nCorners[i] = getCrossPoint(lines[ i ], lines[ (i+3)%4 ]);	// 30 01 12 23
+			nCorners[i] = _getCrossPoint(lines[ i ], lines[ (i+3)%4 ]);	// 30 01 12 23
 	}
 
 	if(!camMatrix.empty() && !distCoeff.empty()){
-		distortPoints(nCorners, camMatrix, distCoeff);
+		_distortPoints(nCorners, camMatrix, distCoeff);
 	}
 }
 
@@ -977,7 +977,7 @@ void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Output
     if( _params->cornerRefinementMethod == CORNER_REFINE_CONTOUR){
 
         if(! _ids.empty()){
-            refineCandidateLines(contours[0], candidates[0], camMatrix.getMat(), distCoeff.getMat());
+            _refineCandidateLines(contours[0], candidates[0], camMatrix.getMat(), distCoeff.getMat());
 
             // copy the corners to the output array
             _copyVector2Output(candidates, _corners);
