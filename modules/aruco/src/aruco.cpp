@@ -847,8 +847,8 @@ static void _distortPoints(vector<cv::Point2f>& in, const Mat& camMatrix, const 
     // calculate 3d points and then reproject, so opencv makes the distortion internally
     vector<cv::Point3f> cornersPoints3d;
     for (unsigned int i = 0; i < in.size(); i++){
-    	float x= (in[i].x - camMatrix.at<double>(0, 2)) / camMatrix.at<double>(0, 0);
-    	float y= (in[i].y - camMatrix.at<double>(1, 2)) / camMatrix.at<double>(1, 1);
+        float x= (in[i].x - camMatrix.at<double>(0, 2)) / camMatrix.at<double>(0, 0);
+        float y= (in[i].y - camMatrix.at<double>(1, 2)) / camMatrix.at<double>(1, 1);
         cornersPoints3d.push_back(Point3f(x,y,1));
     }
     cv::projectPoints(cornersPoints3d, Rvec, Tvec, camMatrix, distCoeff, in);
