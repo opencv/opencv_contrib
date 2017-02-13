@@ -195,7 +195,7 @@ public:
   int getDescriptorType() const { return params.descriptorType; }
 };
 
-template < int T > class CV_EXPORTS_W GPCForest : public Algorithm
+template < int T > class GPCForest : public Algorithm
 {
 private:
   struct Trail
