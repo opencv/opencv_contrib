@@ -135,6 +135,11 @@ TEST(Torch_Importer, run_deconv)
     runTorchNet("net_deconv", "", false);
 }
 
+TEST(Torch_Importer, run_batch_norm)
+{
+    runTorchNet("net_batch_norm", "", false);
+}
+
 #if defined(ENABLE_TORCH_ENET_TESTS)
 
 TEST(Torch_Importer, ENet_accuracy)

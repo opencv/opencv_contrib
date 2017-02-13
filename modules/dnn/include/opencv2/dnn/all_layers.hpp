@@ -406,13 +406,19 @@ namespace dnn
     class CV_EXPORTS_W BatchNormLayer : public Layer
     {
     public:
-        static CV_WRAP Ptr<BatchNormLayer> create(float eps, bool has_weights, bool has_bias);
+        static CV_WRAP Ptr<BatchNormLayer> create(bool hasWeights, bool hasBias, float epsilon);
     };
 
     class CV_EXPORTS_W MaxUnpoolLayer : public Layer
     {
     public:
         static CV_WRAP Ptr<MaxUnpoolLayer> create(Size unpoolSize);
+    };
+
+    class CV_EXPORTS_W ScaleLayer : public Layer
+    {
+    public:
+        static CV_WRAP Ptr<ScaleLayer> create(bool hasBias);
     };
 
 //! @}

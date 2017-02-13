@@ -6,11 +6,12 @@
 // Third party copyrights are property of their respective owners.
 
 /*
-Declaration of Batch Normalization layer.
+Declaration of scale layer, which multiplies and shifts channels in input blob.
 */
 
-#ifndef __OPENCV_DNN_LAYERS_BATCH_NORM_LAYER_HPP__
-#define __OPENCV_DNN_LAYERS_BATCH_NORM_LAYER_HPP__
+
+#ifndef __OPENCV_DNN_LAYERS_SCALE_LAYER_HPP__
+#define __OPENCV_DNN_LAYERS_SCALE_LAYER_HPP__
 #include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
@@ -18,20 +19,18 @@ namespace cv
 namespace dnn
 {
 
-class BatchNormLayerImpl : public BatchNormLayer
+class ScaleLayerImpl : public ScaleLayer
 {
 public:
-    BatchNormLayerImpl(bool hasWeights_, bool hasBias_, float epsilon_);
-
+    ScaleLayerImpl(bool hasBias_): hasBias(hasBias_) {}
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
 private:
-    bool hasWeights, hasBias;
-    float epsilon;
+    bool hasBias;
 };
 
 }
 }
-#endif // __OPENCV_DNN_LAYERS_BATCH_NORM_LAYER_HPP__
+
+#endif // __OPENCV_DNN_LAYERS_SCALE_LAYER_HPP__

@@ -286,13 +286,12 @@ template<> //BatchNormLayer specialization
 Ptr<Layer> createLayerFromCaffe<BatchNormLayer>(LayerParams& params)
 {
     const std::vector<Blob> &blobs = params.blobs;
-    CV_Assert(blobs.size() == 4);
+    CV_Assert(blobs.size() >= 3);
 
-    float eps = params.get<float>("eps");
     bool hasWeights = params.get<bool>("has_weight", false);
     bool hasBias = params.get<bool>("has_bias", false);
-
-    Ptr<BatchNormLayer> l = BatchNormLayer::create(eps, hasWeights, hasBias);
+    float epsilon = params.get<float>("eps", 1E-5);
+    Ptr<BatchNormLayer> l = BatchNormLayer::create(hasWeights, hasBias, epsilon);
     l->setParamsFrom(params);
 
     return Ptr<Layer>(l);
@@ -314,6 +313,15 @@ Ptr<Layer> createLayerFromCaffe<MaxUnpoolLayer>(LayerParams& params)
    Size outSize(params.get<int>("out_w"),
                 params.get<int>("out_h"));
    Ptr<MaxUnpoolLayer> l = MaxUnpoolLayer::create(outSize);
+
+   return Ptr<Layer>(l);
+}
+
+template<> //ScaleLayer specialization
+Ptr<Layer> createLayerFromCaffe<ScaleLayer>(LayerParams& params)
+{
+   Ptr<ScaleLayer> l = ScaleLayer::create(params.get<bool>("bias_term", false));
+   l->setParamsFrom(params);
 
    return Ptr<Layer>(l);
 }
@@ -342,6 +350,6 @@ template Ptr<Layer> createLayerFromCaffe<EltwiseLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<BatchNormLayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<ChannelsPReLULayer>(LayerParams&);
 template Ptr<Layer> createLayerFromCaffe<MaxUnpoolLayer>(LayerParams&);
-
+template Ptr<Layer> createLayerFromCaffe<ScaleLayer>(LayerParams&);
 }
 }

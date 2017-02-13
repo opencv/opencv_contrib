@@ -215,6 +215,11 @@ TEST(Layer_Test_Reshape, squeeze)
     EXPECT_EQ(outVec[0].shape(), BlobShape(4, 3, 2));
 }
 
+TEST(Layer_Test_BatchNorm, Accuracy)
+{
+     OCL_OFF(testLayerUsingCaffeModels("layer_batch_norm", true));
+}
+
 //template<typename XMat>
 //static void test_Layer_Concat()
 //{
