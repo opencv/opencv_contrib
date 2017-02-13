@@ -183,9 +183,49 @@ public:
 @param decisionThreshold Threshold value, above which it is marked foreground, else background.
  */
 CV_EXPORTS_W Ptr<BackgroundSubtractorGMG> createBackgroundSubtractorGMG(int initializationFrames=120,
-                                                                        double decisionThreshold=0.8);                                  
+                                                                        double decisionThreshold=0.8);
 
 //! @}
+
+/** @brief Background subtraction based on counting.
+ *  About as fast as MOG2 on a high end system.
+ *  More than twice faster than MOG2 on cheap hardware (benchmarked on Raspberry Pi3).
+ *  Algorithm by Sagi Zeevi
+ *  @see createBackgroundSubtractorCNT()
+ */
+class CV_EXPORTS_W BackgroundSubtractorCNT  : public BackgroundSubtractor
+{
+public:
+    // BackgroundSubtractor interface
+    CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1) = 0;
+    CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const = 0;
+
+    /// @see createBackgroundSubtractorCNT()
+    CV_WRAP virtual int getMinPixelStability() const = 0;
+    /// @see createBackgroundSubtractorCNT()
+    CV_WRAP virtual void setMinPixelStability(int value) = 0;
+
+    /// @see createBackgroundSubtractorCNT()
+    CV_WRAP virtual int getMaxPixelStability() const = 0;
+    /// see @see createBackgroundSubtractorCNT()
+    CV_WRAP virtual void setMaxPixelStability(int value) = 0;
+
+    /// @see createBackgroundSubtractorCNT()
+    CV_WRAP virtual bool getUseHistory() const = 0;
+    /// @see createBackgroundSubtractorCNT()
+    CV_WRAP virtual void setUseHistory(bool value) = 0;
+
+    /// @see createBackgroundSubtractorCNT()
+    CV_WRAP virtual bool getIsParallel() const = 0;
+    /// @see createBackgroundSubtractorCNT()
+    CV_WRAP virtual void setIsParallel(bool value) = 0;
+};
+
+CV_EXPORTS_W Ptr<BackgroundSubtractorCNT>
+createBackgroundSubtractorCNT(int minPixelStability = 15,
+                              bool useHistory = true,
+                              int maxPixelStability = 15*60,
+                              bool isParallel = true);
 
 }
 }
