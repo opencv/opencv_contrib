@@ -192,6 +192,7 @@ size_t filterPointsInVectors(std::vector<T>& status, std::vector<Point2f>& vec1,
     }
     vec1.erase(vec1.begin() + first_bad_idx, vec1.end());
     vec2.erase(vec2.begin() + first_bad_idx, vec2.end());
+    status.erase(status.begin() + first_bad_idx, status.end());
 
     return first_bad_idx;
 }

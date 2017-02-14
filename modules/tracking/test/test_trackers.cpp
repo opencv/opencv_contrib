@@ -83,8 +83,8 @@ class TrackerTest
 {
  public:
 
-  TrackerTest(Ptr<Tracker> _tracker, string _video, float _overlapThreshold,
-                 float _distanceThreshold, int _shift = NoTransform, int _segmentIdx = 1, int _numSegments = 10 );
+  TrackerTest(Ptr<Tracker> _tracker, string _video, float _distanceThreshold,
+                 float _overlapThreshold, int _shift = NoTransform, int _segmentIdx = 1, int _numSegments = 10 );
   virtual ~TrackerTest();
   virtual void run();
 
@@ -117,12 +117,12 @@ class TrackerTest
 
 };
 
-TrackerTest::TrackerTest(Ptr<Tracker> _tracker, string _video, float _overlapThreshold,
-                                float _distanceThreshold, int _shift, int _segmentIdx, int _numSegments ) :
+TrackerTest::TrackerTest(Ptr<Tracker> _tracker, string _video, float _distanceThreshold,
+                                float _overlapThreshold, int _shift, int _segmentIdx, int _numSegments ) :
     tracker( _tracker ),
     video( _video ),
-    overlapThreshold( _distanceThreshold ),
-    distanceThreshold( _overlapThreshold ),
+    overlapThreshold( _overlapThreshold ),
+    distanceThreshold( _distanceThreshold ),
     segmentIdx(_segmentIdx),
     shift(_shift),
     numSegments(_numSegments)
@@ -156,30 +156,8 @@ float TrackerTest::calcDistance( Rect a, Rect b )
 
 float TrackerTest::calcOverlap( Rect a, Rect b )
 {
-  float aArea = (float)(a.width * a.height);
-  float bArea = (float)(b.width * b.height);
-
-  if( aArea < bArea )
-  {
-    a.x -= ( b.width - a.width ) / 2;
-    a.y -= ( b.height - a.height ) / 2;
-    a.width = b.width;
-    a.height = b.height;
-  }
-  else
-  {
-    b.x -= ( a.width - b.width ) / 2;
-    b.y -= ( a.height - b.height ) / 2;
-    b.width = a.width;
-    b.height = a.height;
-  }
-
-  Rect rectIntersection = a & b;
-  Rect rectUnion = a | b;
-  float iArea = (float)(rectIntersection.width * rectIntersection.height);
-  float uArea = (float)(rectUnion.width * rectUnion.height);
-  float overlap = iArea / uArea;
-  return overlap;
+  float rectIntersectionArea = (float)(a & b).area();
+  return rectIntersectionArea / (a.area() + b.area() - rectIntersectionArea);
 }
 
 Rect TrackerTest::applyShift(Rect bb)
@@ -461,19 +439,19 @@ PARAM_TEST_CASE(DistanceAndOverlap, string)
 
 TEST_P(DistanceAndOverlap, MedianFlow)
 {
-  TrackerTest test( Tracker::create( "MEDIANFLOW" ), dataset, 120, .2f, NoTransform, 1, 1);
+  TrackerTest test( Tracker::create( "MEDIANFLOW" ), dataset, 35, .5f, NoTransform, 1, 1);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, MIL)
 {
-  TrackerTest test( Tracker::create( "MIL" ), dataset, 30, 0.65f, NoTransform);
+  TrackerTest test( Tracker::create( "MIL" ), dataset, 30, .65f, NoTransform);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Boosting)
 {
-  TrackerTest test( Tracker::create( "BOOSTING" ), dataset, 70, .65f, NoTransform);
+  TrackerTest test( Tracker::create( "BOOSTING" ), dataset, 70, .7f, NoTransform);
   test.run();
 }
 
@@ -486,13 +464,13 @@ TEST_P(DistanceAndOverlap, TLD)
 //Tests with shifted initial window
 TEST_P(DistanceAndOverlap, Shifted_Data_MedianFlow)
 {
-  TrackerTest test( Tracker::create( "MEDIANFLOW" ), dataset, 120, .2f, CenterShiftLeft, 1, 1);
+  TrackerTest test( Tracker::create( "MEDIANFLOW" ), dataset, 80, .2f, CenterShiftLeft, 1, 1);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Shifted_Data_MIL)
 {
-  TrackerTest test( Tracker::create( "MIL" ), dataset, 30, 0.65f, CenterShiftLeft);
+  TrackerTest test( Tracker::create( "MIL" ), dataset, 30, .6f, CenterShiftLeft);
   test.run();
 }
 
@@ -511,25 +489,25 @@ TEST_P(DistanceAndOverlap, Shifted_Data_TLD)
 //Tests with scaled initial window
 TEST_P(DistanceAndOverlap, Scaled_Data_MedianFlow)
 {
-  TrackerTest test( Tracker::create( "MEDIANFLOW" ), dataset, 120, .2f, Scale_1_1, 1, 1);
+  TrackerTest test( Tracker::create( "MEDIANFLOW" ), dataset, 25, .5f, Scale_1_1, 1, 1);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Scaled_Data_MIL)
 {
-  TrackerTest test( Tracker::create( "MIL" ), dataset, 30, 0.65f, Scale_1_1);
+  TrackerTest test( Tracker::create( "MIL" ), dataset, 30, .7f, Scale_1_1);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Scaled_Data_Boosting)
 {
-  TrackerTest test( Tracker::create( "BOOSTING" ), dataset, 80, .65f, Scale_1_1);
+  TrackerTest test( Tracker::create( "BOOSTING" ), dataset, 80, .7f, Scale_1_1);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Scaled_Data_TLD)
 {
-  TrackerTest test( Tracker::create( "TLD" ), dataset, 120, .4f, Scale_1_1);
+  TrackerTest test( Tracker::create( "TLD" ), dataset, 120, .45f, Scale_1_1);
   test.run();
 }
 
