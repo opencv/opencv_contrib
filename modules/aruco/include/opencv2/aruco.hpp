@@ -172,7 +172,7 @@ struct CV_EXPORTS_W DetectorParameters {
  * correct codification. Useful for debugging purposes.
  * @param cameraMatrix optional input 3x3 floating-point camera matrix
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
- * @param distCoeffs optional vector of distortion coefficients
+ * @param distCoeff optional vector of distortion coefficients
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
  *
  * Performs marker detection in the input image. Only markers included in the specific dictionary

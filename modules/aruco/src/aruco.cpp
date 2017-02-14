@@ -800,14 +800,14 @@ static Point3f _interpolate2Dline(const std::vector<cv::Point2f>& nContours){
 		maxY = nContours[i].y > maxY ? nContours[i].y : maxY;
 	}
 
-	Mat A = Mat::ones(nContours.size(), 2, CV_32F); // Coefficient Matrix (N x 2)
-	Mat B(nContours.size(), 1, CV_32F);				// Variables   Matrix (N x 1)
+	Mat A = Mat::ones((int)nContours.size(), 2, CV_32F); // Coefficient Matrix (N x 2)
+	Mat B((int)nContours.size(), 1, CV_32F);				// Variables   Matrix (N x 1)
 	Mat C;											// Constant
 
 	if(maxX - minX > maxY - minY){
 		for(unsigned int i =0; i < nContours.size(); i++){
-			A.at<float>(i,0)= nContours[i].x;
-			B.at<float>(i,0)= nContours[i].y;
+            A.at<float>(i,0)= nContours[i].x;
+            B.at<float>(i,0)= nContours[i].y;
 		}
 
 		solve(A, B, C, DECOMP_NORMAL);
@@ -847,8 +847,8 @@ static void _distortPoints(vector<cv::Point2f>& in, const Mat& camMatrix, const 
     // calculate 3d points and then reproject, so opencv makes the distortion internally
     vector<cv::Point3f> cornersPoints3d;
     for (unsigned int i = 0; i < in.size(); i++){
-        float x= (in[i].x - camMatrix.at<double>(0, 2)) / camMatrix.at<double>(0, 0);
-        float y= (in[i].y - camMatrix.at<double>(1, 2)) / camMatrix.at<double>(1, 1);
+        float x= (in[i].x - float(camMatrix.at<double>(0, 2))) / float(camMatrix.at<double>(0, 0));
+        float y= (in[i].y - float(camMatrix.at<double>(1, 2))) / float(camMatrix.at<double>(1, 1));
         cornersPoints3d.push_back(Point3f(x,y,1));
     }
     cv::projectPoints(cornersPoints3d, Rvec, Tvec, camMatrix, distCoeff, in);
