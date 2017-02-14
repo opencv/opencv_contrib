@@ -60,29 +60,29 @@ namespace linemod {
 /**
  * \brief Discriminant feature described by its location and label.
  */
-struct CV_EXPORTS Feature
+struct CV_EXPORTS_W Feature
 {
-  int x; ///< x offset
-  int y; ///< y offset
-  int label; ///< Quantization
+  CV_PROP_RW int x; ///< x offset
+  CV_PROP_RW int y; ///< y offset
+  CV_PROP_RW int label; ///< Quantization
 
-  Feature() : x(0), y(0), label(0) {}
-  Feature(int x, int y, int label);
+  CV_WRAP Feature() : x(0), y(0), label(0) {}
+  CV_WRAP Feature(int x, int y, int label);
 
-  void read(const FileNode& fn);
+  CV_WRAP void read(const FileNode& fn);
   void write(FileStorage& fs) const;
 };
 
 inline Feature::Feature(int _x, int _y, int _label) : x(_x), y(_y), label(_label) {}
 
-struct CV_EXPORTS Template
+struct CV_EXPORTS_W Template
 {
-  int width;
-  int height;
-  int pyramid_level;
-  std::vector<Feature> features;
+  CV_PROP_RW int width;
+  CV_PROP_RW int height;
+  CV_PROP_RW int pyramid_level;
+  CV_PROP_RW std::vector<Feature> features;
 
-  void read(const FileNode& fn);
+  CV_WRAP void read(const FileNode& fn);
   void write(FileStorage& fs) const;
 };
 
@@ -101,14 +101,14 @@ public:
    * \param[out] dst The destination 8-bit image. For each pixel at most one bit is set,
    *                 representing its classification.
    */
-  virtual void quantize(Mat& dst) const =0;
+  virtual void quantize(CV_OUT Mat& dst) const =0;
 
   /**
    * \brief Extract most discriminant features at current pyramid level to form a new template.
    *
    * \param[out] templ The new template.
    */
-  virtual bool extractTemplate(Template& templ) const =0;
+  virtual bool extractTemplate(CV_OUT Template& templ) const =0;
 
   /**
    * \brief Go to the next pyramid level.
@@ -142,7 +142,7 @@ protected:
    * \param[in]  distance     Hint for desired distance between features.
    */
   static void selectScatteredFeatures(const std::vector<Candidate>& candidates,
-                                      std::vector<Feature>& features,
+                                      CV_OUT std::vector<Feature>& features,
                                       size_t num_features, float distance);
 };
 
@@ -153,7 +153,7 @@ inline QuantizedPyramid::Candidate::Candidate(int x, int y, int label, float _sc
  *
  * \todo Max response, to allow optimization of summing (255/MAX) features as uint8
  */
-class CV_EXPORTS Modality
+class CV_EXPORTS_W Modality
 {
 public:
   // Virtual destructor
@@ -200,7 +200,7 @@ protected:
 /**
  * \brief Modality that computes quantized gradient orientations from a color image.
  */
-class CV_EXPORTS ColorGradient : public Modality
+class CV_EXPORTS_W ColorGradient : public Modality
 {
 public:
   /**
@@ -235,7 +235,7 @@ protected:
 /**
  * \brief Modality that computes quantized surface normals from a dense depth map.
  */
-class CV_EXPORTS DepthNormal : public Modality
+class CV_EXPORTS_W DepthNormal : public Modality
 {
 public:
   /**
@@ -279,13 +279,13 @@ void colormap(const Mat& quantized, Mat& dst);
 /**
  * \brief Represents a successful template match.
  */
-struct CV_EXPORTS Match
+struct CV_EXPORTS_W Match
 {
-  Match()
+  CV_WRAP Match()
   {
   }
 
-  Match(int x, int y, float similarity, const String& class_id, int template_id);
+  CV_WRAP Match(int x, int y, float similarity, const String& class_id, int template_id);
 
   /// Sort matches with high similarity to the front
   bool operator<(const Match& rhs) const
@@ -302,11 +302,11 @@ struct CV_EXPORTS Match
     return x == rhs.x && y == rhs.y && similarity == rhs.similarity && class_id == rhs.class_id;
   }
 
-  int x;
-  int y;
-  float similarity;
-  String class_id;
-  int template_id;
+  CV_PROP_RW int x;
+  CV_PROP_RW int y;
+  CV_PROP_RW float similarity;
+  CV_PROP_RW String class_id;
+  CV_PROP_RW int template_id;
 };
 
 inline
@@ -318,13 +318,13 @@ Match::Match(int _x, int _y, float _similarity, const String& _class_id, int _te
  * \brief Object detector using the LINE template matching algorithm with any set of
  * modalities.
  */
-class CV_EXPORTS Detector
+class CV_EXPORTS_W Detector
 {
 public:
   /**
    * \brief Empty constructor, initialize with read().
    */
-  Detector();
+  CV_WRAP Detector();
 
   /**
    * \brief Constructor.
@@ -333,7 +333,7 @@ public:
    * \param T_pyramid        Value of the sampling step T at each pyramid level. The
    *                         number of pyramid levels is T_pyramid.size().
    */
-  Detector(const std::vector< Ptr<Modality> >& modalities, const std::vector<int>& T_pyramid);
+  CV_WRAP Detector(const std::vector< Ptr<Modality> >& modalities, const std::vector<int>& T_pyramid);
 
   /**
    * \brief Detect objects by template matching.
@@ -350,7 +350,7 @@ public:
    *                       the same size as sources.  Each element must be
    *                       empty or the same size as its corresponding source.
    */
-  void match(const std::vector<Mat>& sources, float threshold, std::vector<Match>& matches,
+  CV_WRAP void match(const std::vector<Mat>& sources, float threshold, CV_OUT std::vector<Match>& matches,
              const std::vector<String>& class_ids = std::vector<String>(),
              OutputArrayOfArrays quantized_images = noArray(),
              const std::vector<Mat>& masks = std::vector<Mat>()) const;
@@ -365,13 +365,13 @@ public:
    *
    * \return Template ID, or -1 if failed to extract a valid template.
    */
-  int addTemplate(const std::vector<Mat>& sources, const String& class_id,
-          const Mat& object_mask, Rect* bounding_box = NULL);
+  CV_WRAP int addTemplate(const std::vector<Mat>& sources, const String& class_id,
+          const Mat& object_mask, CV_OUT Rect* bounding_box = NULL);
 
   /**
    * \brief Add a new object template computed by external means.
    */
-  int addSyntheticTemplate(const std::vector<Template>& templates, const String& class_id);
+  CV_WRAP int addSyntheticTemplate(const std::vector<Template>& templates, const String& class_id);
 
   /**
    * \brief Get the modalities used by this detector.
@@ -379,17 +379,17 @@ public:
    * You are not permitted to add/remove modalities, but you may dynamic_cast them to
    * tweak parameters.
    */
-  const std::vector< Ptr<Modality> >& getModalities() const { return modalities; }
+  CV_WRAP const std::vector< Ptr<Modality> >& getModalities() const { return modalities; }
 
   /**
    * \brief Get sampling step T at pyramid_level.
    */
-  int getT(int pyramid_level) const { return T_at_level[pyramid_level]; }
+  CV_WRAP int getT(int pyramid_level) const { return T_at_level[pyramid_level]; }
 
   /**
    * \brief Get number of pyramid levels used by this detector.
    */
-  int pyramidLevels() const { return pyramid_levels; }
+  CV_WRAP int pyramidLevels() const { return pyramid_levels; }
 
   /**
    * \brief Get the template pyramid identified by template_id.
@@ -397,13 +397,13 @@ public:
    * For example, with 2 modalities (Gradient, Normal) and two pyramid levels
    * (L0, L1), the order is (GradientL0, NormalL0, GradientL1, NormalL1).
    */
-  const std::vector<Template>& getTemplates(const String& class_id, int template_id) const;
+  CV_WRAP const std::vector<Template>& getTemplates(const String& class_id, int template_id) const;
 
-  int numTemplates() const;
-  int numTemplates(const String& class_id) const;
-  int numClasses() const { return static_cast<int>(class_templates.size()); }
+  CV_WRAP int numTemplates() const;
+  CV_WRAP int numTemplates(const String& class_id) const;
+  CV_WRAP int numClasses() const { return static_cast<int>(class_templates.size()); }
 
-  std::vector<String> classIds() const;
+  CV_WRAP std::vector<String> classIds() const;
 
   void read(const FileNode& fn);
   void write(FileStorage& fs) const;
@@ -411,9 +411,9 @@ public:
   String readClass(const FileNode& fn, const String &class_id_override = "");
   void writeClass(const String& class_id, FileStorage& fs) const;
 
-  void readClasses(const std::vector<String>& class_ids,
+  CV_WRAP void readClasses(const std::vector<String>& class_ids,
                    const String& format = "templates_%s.yml.gz");
-  void writeClasses(const String& format = "templates_%s.yml.gz") const;
+  CV_WRAP void writeClasses(const String& format = "templates_%s.yml.gz") const;
 
 protected:
   std::vector< Ptr<Modality> > modalities;
@@ -440,7 +440,7 @@ protected:
  *
  * Default parameter settings suitable for VGA images.
  */
-CV_EXPORTS Ptr<Detector> getDefaultLINE();
+CV_EXPORTS_W Ptr<linemod::Detector> getDefaultLINE();
 
 /**
  * \brief Factory function for detector using LINE-MOD algorithm with color gradients
@@ -448,7 +448,7 @@ CV_EXPORTS Ptr<Detector> getDefaultLINE();
  *
  * Default parameter settings suitable for VGA images.
  */
-CV_EXPORTS Ptr<Detector> getDefaultLINEMOD();
+CV_EXPORTS_W Ptr<linemod::Detector> getDefaultLINEMOD();
 
 //! @}
 

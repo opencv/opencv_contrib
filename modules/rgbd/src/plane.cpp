@@ -524,11 +524,24 @@ private:
   unsigned char plane_index_;
   /** THe block size as defined in the main algorithm */
   int block_size_;
-  
+
   const InlierFinder & operator = (const InlierFinder &);
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+  void
+  RgbdPlane::find(InputArray points3d_in, OutputArray mask_out, OutputArray plane_coefficients)
+  {
+    this->operator()(points3d_in, mask_out, plane_coefficients);
+  }
+
+  void
+  RgbdPlane::find(InputArray points3d_in, InputArray normals_in, OutputArray mask_out,
+                        OutputArray plane_coefficients_out)
+  {
+      this->operator()(points3d_in, normals_in, mask_out, plane_coefficients_out);
+  }
 
   void
   RgbdPlane::operator()(InputArray points3d_in, OutputArray mask_out, OutputArray plane_coefficients)
@@ -582,7 +595,7 @@ private:
         plane = Ptr<PlaneBase>(new Plane(plane_grid.m_(y, x), n, (int)index_plane));
       else
         plane = Ptr<PlaneBase>(new PlaneABC(plane_grid.m_(y, x), n, (int)index_plane,
-			(float)sensor_error_a_, (float)sensor_error_b_, (float)sensor_error_c_));
+            (float)sensor_error_a_, (float)sensor_error_b_, (float)sensor_error_c_));
 
       Mat_<unsigned char> plane_mask = Mat_<unsigned char>::zeros(points3d.rows / block_size_,
                                                                           points3d.cols / block_size_);

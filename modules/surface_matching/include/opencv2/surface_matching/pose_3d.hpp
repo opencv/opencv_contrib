@@ -67,84 +67,87 @@ typedef Ptr<PoseCluster3D> PoseCluster3DPtr;
 * various helper methods to work with poses
 *
 */
-class CV_EXPORTS Pose3D
+class CV_EXPORTS_W Pose3D
 {
 public:
-  Pose3D()
+  CV_WRAP Pose3D()
   {
     alpha=0;
     modelIndex=0;
     numVotes=0;
     residual = 0;
 
-    for (int i=0; i<16; i++)
-      pose[i]=0;
+    pose.resize(16);
+    std::fill(pose.begin(), pose.end(), 0);
   }
 
-  Pose3D(double Alpha, unsigned int ModelIndex=0, unsigned int NumVotes=0)
+  CV_WRAP Pose3D(double Alpha, uint ModelIndex=0, uint NumVotes=0)
   {
     alpha = Alpha;
     modelIndex = ModelIndex;
     numVotes = NumVotes;
     residual=0;
 
-    for (int i=0; i<16; i++)
-      pose[i]=0;
+    pose.resize(16);
+    std::fill(pose.begin(), pose.end(), 0);
   }
 
   /**
    *  \brief Updates the pose with the new one
    *  \param [in] NewPose New pose to overwrite
    */
-  void updatePose(double NewPose[16]);
+  CV_WRAP void updatePose(double NewPose[16]);
 
   /**
    *  \brief Updates the pose with the new one
    */
-  void updatePose(double NewR[9], double NewT[3]);
+  CV_WRAP void updatePose(double NewR[9], double NewT[3]);
 
   /**
    *  \brief Updates the pose with the new one, but this time using quaternions to represent rotation
    */
-  void updatePoseQuat(double Q[4], double NewT[3]);
+  CV_WRAP void updatePoseQuat(double Q[4], double NewT[3]);
 
   /**
    *  \brief Left multiplies the existing pose in order to update the transformation
    *  \param [in] IncrementalPose New pose to apply
    */
-  void appendPose(double IncrementalPose[16]);
-  void printPose();
+  CV_WRAP void appendPose(const double IncrementalPose[16]);
+  CV_WRAP void printPose();
 
-  Pose3DPtr clone();
+  CV_WRAP Pose3DPtr clone();
 
   int writePose(FILE* f);
   int readPose(FILE* f);
   int writePose(const std::string& FileName);
   int readPose(const std::string& FileName);
 
-  virtual ~Pose3D() {}
+  CV_WRAP virtual ~Pose3D() {}
 
   double alpha, residual;
-  unsigned int modelIndex;
-  unsigned int numVotes;
-  double pose[16], angle, t[3], q[4];
+  uint modelIndex;
+  uint numVotes;
+  CV_PROP_RW std::vector<double> pose;
+  double angle;
+  double t[3];
+  double q[4];
 };
 
 /**
-* @brief When multiple poses (see Pose3D) are grouped together (contribute to the same transformation) 
+* @brief When multiple poses (see Pose3D) are grouped together (contribute to the same transformation)
 * pose clusters occur. This class is a general container for such groups of poses. It is possible to store,
 * load and perform IO on these poses.
 */
-class CV_EXPORTS PoseCluster3D
+class CV_EXPORTS_W PoseCluster3D
 {
 public:
-  PoseCluster3D()
+  CV_WRAP PoseCluster3D()
   {
     numVotes=0;
     id=0;
   }
 
-  PoseCluster3D(Pose3DPtr newPose)
+  CV_WRAP PoseCluster3D(Pose3DPtr newPose)
   {
     poseList.clear();
     poseList.push_back(newPose);
@@ -152,14 +155,14 @@ public:
     id=0;
   }
 
-  PoseCluster3D(Pose3DPtr newPose, int newId)
+  CV_WRAP PoseCluster3D(Pose3DPtr newPose, int newId)
   {
     poseList.push_back(newPose);
     this->numVotes = newPose->numVotes;
     this->id = newId;
   }
 
-  virtual ~PoseCluster3D()
+  CV_WRAP virtual ~PoseCluster3D()
   {}
 
   /**
@@ -167,7 +170,7 @@ public:
    *  in order to preserve the consistency
    *  \param [in] newPose Pose to add to the cluster
    */
-  void addPose(Pose3DPtr newPose);
+  CV_WRAP void addPose(Pose3DPtr newPose);
 
   int writePoseCluster(FILE* f);
   int readPoseCluster(FILE* f);
