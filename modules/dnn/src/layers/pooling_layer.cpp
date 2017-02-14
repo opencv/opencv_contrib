@@ -132,7 +132,7 @@ void PoolingLayerImpl::maxPooling(Blob &src, Blob &dst, Blob &mask)
 
 bool PoolingLayerImpl::maxPooling_ocl(Blob &src, Blob &dst, Blob &mask)
 {
-    return pooling_ocl("MaxPoolForward", src, dst);
+    return pooling_ocl("MaxPoolForward", src, dst, &mask);
 }
 
 void PoolingLayerImpl::avePooling(Blob &src, Blob &dst)
@@ -201,22 +201,36 @@ bool PoolingLayerImpl::pooling_ocl(const char *kname, const Blob &src, Blob &dst
 {
     const UMat &srcMat = src.umatRefConst();
     UMat &dstMat = dst.umatRef();
-    UMat* indexesMat = mask == NULL ? NULL : &dst.umatRef();
+    UMat *maskUMat = mask == NULL ? NULL : &mask->umatRef();
+    CV_Assert(maskUMat == NULL || maskUMat->type() == CV_32FC1); // FIXIT CV_32SC1
+    CV_Assert(maskUMat == NULL || maskUMat->offset == 0);
 
     CV_Assert(srcMat.offset == 0 && dstMat.offset == 0);
 
-    ocl::Kernel ker(kname, ocl::dnn::pooling_oclsrc, String("-DT=") + ocl::typeToStr(src.type()));
+    ocl::Kernel ker(kname, ocl::dnn::pooling_oclsrc,
+        cv::format("-DT=%s%s", ocl::typeToStr(src.type()), maskUMat ? " -DMASK=1" : ""));
     if (ker.empty())
         return false;
 
     BlobShape s = src.shape();
     size_t nthreads = dst.total();
-    ker.args((int)nthreads,
+    if (maskUMat)
+    {
+        ker.args((int)nthreads,
              ocl::KernelArg::PtrReadOnly(srcMat), s[0], s[1], s[2], s[3],
              out.height, out.width, kernel.height, kernel.width,
              stride.height, stride.width, pad.height, pad.width,
              ocl::KernelArg::PtrWriteOnly(dstMat),
-             ocl::KernelArg(ocl::KernelArg::PTR_ONLY + ocl::KernelArg::WRITE_ONLY, indexesMat));
+             ocl::KernelArg::PtrWriteOnly(*maskUMat));
+    }
+    else
+    {
+        ker.args((int)nthreads,
+             ocl::KernelArg::PtrReadOnly(srcMat), s[0], s[1], s[2], s[3],
+             out.height, out.width, kernel.height, kernel.width,
+             stride.height, stride.width, pad.height, pad.width,
+             ocl::KernelArg::PtrWriteOnly(dstMat));
+    }
 
     size_t wgSize = ocl::Device::getDefault().maxWorkGroupSize();
     if (!ker.run(1, &nthreads, &wgSize, true))
