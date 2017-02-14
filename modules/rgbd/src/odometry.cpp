@@ -941,7 +941,7 @@ template<class ImageElemType>
 static void
 warpFrameImpl(const Mat& image, const Mat& depth, const Mat& mask,
               const Mat& Rt, const Mat& cameraMatrix, const Mat& distCoeff,
-              Mat& warpedImage, Mat* warpedDepth, Mat* warpedMask)
+              OutputArray _warpedImage, OutputArray warpedDepth, OutputArray warpedMask)
 {
     CV_Assert(image.size() == depth.size());
     
@@ -954,7 +954,8 @@ warpFrameImpl(const Mat& image, const Mat& depth, const Mat& mask,
     projectPoints(transformedCloud.reshape(3, 1), Mat::eye(3, 3, CV_64FC1), Mat::zeros(3, 1, CV_64FC1), cameraMatrix,
                 distCoeff, points2d);
 
-    warpedImage = Mat(image.size(), image.type(), Scalar::all(0));
+    _warpedImage.create(image.size(), image.type());
+    Mat warpedImage = _warpedImage.getMat();
 
     Mat zBuffer(image.size(), CV_32FC1, std::numeric_limits<float>::max());
     const Rect rect = Rect(0, 0, image.cols, image.rows);
@@ -978,13 +979,13 @@ warpFrameImpl(const Mat& image, const Mat& depth, const Mat& mask,
         }
     }
 
-    if(warpedMask)
-        *warpedMask = zBuffer != std::numeric_limits<float>::max();
+    if(warpedMask.needed())
+        Mat(zBuffer != std::numeric_limits<float>::max()).copyTo(warpedMask);
 
-    if(warpedDepth)
+    if(warpedDepth.needed())
     {
         zBuffer.setTo(std::numeric_limits<float>::quiet_NaN(), zBuffer == std::numeric_limits<float>::max());
-        *warpedDepth = zBuffer;
+        zBuffer.copyTo(warpedDepth);
     }
 }
 
@@ -1406,7 +1407,7 @@ bool RgbdICPOdometry::computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<
 void
 warpFrame(const Mat& image, const Mat& depth, const Mat& mask,
           const Mat& Rt, const Mat& cameraMatrix, const Mat& distCoeff,
-          Mat& warpedImage, Mat* warpedDepth, Mat* warpedMask)
+          OutputArray warpedImage, OutputArray warpedDepth, OutputArray warpedMask)
 {
     if(image.type() == CV_8UC1)
         warpFrameImpl<uchar>(image, depth, mask, Rt, cameraMatrix, distCoeff, warpedImage, warpedDepth, warpedMask);
