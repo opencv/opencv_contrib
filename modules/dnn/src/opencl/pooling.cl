@@ -24,8 +24,16 @@
  * POSSIBILITY OF SUCH DAMAGE.
  **************************************************************************************/
 
-__kernel void MaxPoolForward(const int nthreads, __global T* bottom_data, const int num, const int channels, const int height, const int width, const int pooled_height, const int pooled_width, const int kernel_h, const int kernel_w, const int stride_h, const int stride_w, const int pad_h, const int pad_w, __global T* top_data, __global int* mask
-) {
+__kernel void MaxPoolForward(const int nthreads,
+    __global T* bottom_data, const int num, const int channels, const int height, const int width,
+    const int pooled_height, const int pooled_width, const int kernel_h, const int kernel_w,
+    const int stride_h, const int stride_w, const int pad_h, const int pad_w,
+    __global T* top_data
+#ifdef MASK
+    , __global float* mask
+#endif
+    )
+{
   int index = get_global_id(0);
   int tmp = get_global_size(0);
   for(index; index < nthreads; index += tmp) {
@@ -51,15 +59,25 @@ __kernel void MaxPoolForward(const int nthreads, __global T* bottom_data, const 
         }
       }
     }
+
     top_data[index] = maxval;
 
-    if (mask) {
-      mask[index] = maxidx;
-    }
+#ifdef MASK
+    mask[index] = maxidx;
+#endif
   }
 }
 
-__kernel void AvePoolForward(const int nthreads, __global T* bottom_data, const int num, const int channels, const int height, const int width, const int pooled_height, const int pooled_width, const int kernel_h, const int kernel_w, const int stride_h, const int stride_w, const int pad_h, const int pad_w,__global T* top_data) {
+__kernel void AvePoolForward(const int nthreads,
+    __global T* bottom_data, const int num, const int channels, const int height, const int width,
+    const int pooled_height, const int pooled_width, const int kernel_h, const int kernel_w,
+    const int stride_h, const int stride_w, const int pad_h, const int pad_w,
+    __global T* top_data
+#ifdef MASK
+    , __global float* mask // NOT USED
+#endif
+    )
+{
   int index = get_global_id(0);
   int tmp = get_global_size(0);
   for(index; index < nthreads; index+=tmp) {
