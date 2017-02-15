@@ -72,17 +72,22 @@ Ptr<Layer> createLayerFromCaffe<PoolingLayer>(LayerParams &params)
                            pad.height, pad.width, stride.height, stride.width, padMode);
     //getCaffeConvParams(params, kernel, pad, stride);
 
+    Ptr<Layer> l;
     if (!globalPooling)
-        return Ptr<Layer>(PoolingLayer::create(type, kernel, stride, pad, padMode));
+        l = PoolingLayer::create(type, kernel, stride, pad, padMode);
     else
-        return Ptr<Layer>(PoolingLayer::createGlobal(type));
+        l = PoolingLayer::createGlobal(type);
+    l->setParamsFrom(params);
+    return l;
 }
 
 template<>
 Ptr<Layer> createLayerFromCaffe<SoftmaxLayer>(LayerParams &params)
 {
     int axis = params.get<int>("axis", 1);
-    return Ptr<Layer>(SoftmaxLayer::create(axis));
+    Ptr<Layer> l(SoftmaxLayer::create(axis));
+    l->setParamsFrom(params);
+    return l;
 }
 
 template<> //InnerProduct specialization
@@ -129,17 +134,21 @@ Ptr<Layer> createLayerFromCaffe<LRNLayer>(LayerParams& params)
     double bias = params.get<double>("bias", 1);
     bool normBySize = params.get<bool>("norm_by_size", true);
 
-    return Ptr<Layer>(LRNLayer::create(type, size, alpha, beta, bias, normBySize));
+    Ptr<Layer> l(LRNLayer::create(type, size, alpha, beta, bias, normBySize));
+    l->setParamsFrom(params);
+    return l;
 }
 
 template<>
 Ptr<Layer> createLayerFromCaffe<MVNLayer>(LayerParams &params)
 {
-    return Ptr<Layer>(MVNLayer::create(
+    Ptr<Layer> l(MVNLayer::create(
         params.get<bool>("normalize_variance", true),
         params.get<bool>("across_channels", false),
         params.get<double>("eps", 1e-9)
     ));
+    l->setParamsFrom(params);
+    return l;
 }
 
 /* Reshape layers */
@@ -164,13 +173,17 @@ Ptr<Layer> createLayerFromCaffe<ReshapeLayer>(LayerParams &params)
     else
         newShape = Shape::all(0);
 
-    return Ptr<Layer>(ReshapeLayer::create(newShape, applyingRange, enableReordering));
+    Ptr<Layer> l(ReshapeLayer::create(newShape, applyingRange, enableReordering));
+    l->setParamsFrom(params);
+    return l;
 }
 
 template<>
 Ptr<Layer> createLayerFromCaffe<ConcatLayer>(LayerParams& params)
 {
-    return Ptr<Layer>(ConcatLayer::create(params.get<int>("axis", 1)));
+    Ptr<Layer> l(ConcatLayer::create(params.get<int>("axis", 1)));
+    l->setParamsFrom(params);
+    return l;
 }
 
 template<>
@@ -189,7 +202,9 @@ Ptr<Layer> createLayerFromCaffe<SplitLayer>(LayerParams &params)
         outputsCount = -1;
     }
 
-    return Ptr<Layer>(SplitLayer::create(outputsCount));
+    Ptr<Layer> l(SplitLayer::create(outputsCount));
+    l->setParamsFrom(params);
+    return l;
 }
 
 template<>
@@ -197,9 +212,10 @@ Ptr<Layer> createLayerFromCaffe<SliceLayer>(LayerParams& params)
 {
     int axis = params.get<int>("axis", 1);
 
+    Ptr<Layer> l;
     if (!params.has("slice_point"))
     {
-        return Ptr<Layer>(SliceLayer::create(axis));
+        l = SliceLayer::create(axis);
     }
     else
     {
@@ -208,8 +224,10 @@ Ptr<Layer> createLayerFromCaffe<SliceLayer>(LayerParams& params)
         for (int i = 0; i < indicesValue.size(); i++)
             sliceIndices[i] = indicesValue.get<int>(i);
 
-        return Ptr<Layer>(SliceLayer::create(axis, sliceIndices));
+        l = SliceLayer::create(axis, sliceIndices);
     }
+    l->setParamsFrom(params);
+    return l;
 }
 
 /* Activation layers */
@@ -224,7 +242,9 @@ template<> //ReLU specialization
 Ptr<Layer> createLayerFromCaffe<ReLULayer>(LayerParams& params)
 {
     float negative_slope = params.get<float>("negative_slope", 0.f);
-    return Ptr<Layer>(ReLULayer::create(negative_slope));
+    Ptr<Layer> l(ReLULayer::create(negative_slope));
+    l->setParamsFrom(params);
+    return l;
 }
 
 template<> //Power specialization
@@ -233,7 +253,9 @@ Ptr<Layer> createLayerFromCaffe<PowerLayer>(LayerParams& params)
     float power = params.get<float>("power", 1.0f);
     float scale = params.get<float>("scale", 1.0f);
     float shift = params.get<float>("shift", 0.0f);
-    return Ptr<Layer>(PowerLayer::create(power, scale, shift));
+    Ptr<Layer> l(PowerLayer::create(power, scale, shift));
+    l->setParamsFrom(params);
+    return l;
 }
 
 template<> //CropLayer specialization
@@ -249,7 +271,9 @@ Ptr<Layer> createLayerFromCaffe<CropLayer>(LayerParams& params)
             offset.push_back(paramOffset->get<int>(i));
     }
 
-    return Ptr<Layer>(CropLayer::create(start_axis, offset));
+    Ptr<Layer> l(CropLayer::create(start_axis, offset));
+    l->setParamsFrom(params);
+    return l;
 }
 
 template<> //Eltwise specialization
@@ -279,7 +303,9 @@ Ptr<Layer> createLayerFromCaffe<EltwiseLayer>(LayerParams& params)
             coeffs[i] = paramCoeff.get<int>(i);
         }
     }
-    return Ptr<Layer>(EltwiseLayer::create(op, coeffs));
+    Ptr<Layer> l(EltwiseLayer::create(op, coeffs));
+    l->setParamsFrom(params);
+    return l;
 }
 
 template<> //BatchNormLayer specialization
@@ -313,6 +339,7 @@ Ptr<Layer> createLayerFromCaffe<MaxUnpoolLayer>(LayerParams& params)
    Size outSize(params.get<int>("out_w"),
                 params.get<int>("out_h"));
    Ptr<MaxUnpoolLayer> l = MaxUnpoolLayer::create(outSize);
+   l->setParamsFrom(params);
 
    return Ptr<Layer>(l);
 }
