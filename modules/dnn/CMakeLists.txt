@@ -4,7 +4,7 @@ endif()
 
 set(the_description "Deep neural network module. It allows to load models from different frameworks and to make forward pass")
 
-ocv_add_module(dnn opencv_core opencv_imgproc PRIVATE_REQUIRED "${LAPACK_LIBRARIES}" WRAP python matlab)
+ocv_add_module(dnn opencv_core opencv_imgproc WRAP python matlab)
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-shadow -Wno-parentheses -Wmaybe-uninitialized -Wsign-promo
                                      -Wmissing-declarations -Wmissing-prototypes
 )
@@ -40,7 +40,7 @@ ocv_source_group("Src\\protobuf" FILES ${PROTOBUF_SRCS} ${PROTOBUF_HDRS})
 ocv_module_include_directories(include ${PROTOBUF_INCLUDE_DIR})
 
 ocv_glob_module_sources(${PROTOBUF_SRCS} ${PROTOBUF_HDRS} ${CBLAS_H_PROXY_PATH})
-ocv_create_module(${PROTOBUF_LIBRARIES})
+ocv_create_module(${PROTOBUF_LIBRARIES} ${LAPACK_LIBRARIES})
 ocv_add_samples()
 ocv_add_accuracy_tests()
 ocv_add_perf_tests()
