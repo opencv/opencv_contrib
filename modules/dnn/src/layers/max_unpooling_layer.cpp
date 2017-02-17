@@ -28,6 +28,8 @@ void MaxUnpoolLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<
     outShape[2] = outSize.height;
     outShape[3] = outSize.width;
 
+    CV_Assert(inputs[0]->total() == inputs[1]->total());
+
     outputs.resize(1);
     outputs[0].create(outShape);
 }

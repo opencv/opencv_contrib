@@ -23,6 +23,7 @@ const String keys =
         "{c_names c || path to file with classnames for channels (optional, categories.txt) }"
         "{result r  || path to save output blob (optional, binary format, NCHW order) }"
         "{show s    || whether to show all output channels or not}"
+        "{o_blob    || output blob's name. If empty, last blob's name in net is used}"
         ;
 
 std::vector<String> readClassNames(const char *filename);
@@ -112,7 +113,13 @@ int main(int argc, char **argv)
 
     //! [Gather output]
 
-    dnn::Blob prob = net.getBlob(net.getLayerNames().back());   //gather output of "prob" layer
+    String oBlob = net.getLayerNames().back();
+    if (!parser.get<String>("o_blob").empty())
+    {
+        oBlob = parser.get<String>("o_blob");
+    }
+
+    dnn::Blob prob = net.getBlob(oBlob);   //gather output of "prob" layer
 
     Mat& result = prob.matRef();
 
