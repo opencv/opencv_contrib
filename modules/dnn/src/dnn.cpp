@@ -568,7 +568,7 @@ Ptr<Layer> Net::getLayer(LayerId layerId)
 {
     LayerData &ld = impl->getLayerData(layerId);
     if (!ld.layerInstance)
-        CV_Error(Error::StsNullPtr, format("Requseted layer \"%s\" was not initialized", ld.name.c_str()));
+        CV_Error(Error::StsNullPtr, format("Requested layer \"%s\" was not initialized", ld.name.c_str()));
     return ld.layerInstance;
 }
 
@@ -576,7 +576,7 @@ std::vector<Ptr<Layer> > Net::getLayerInputs(LayerId layerId)
 {
     LayerData &ld = impl->getLayerData(layerId);
     if (!ld.layerInstance)
-        CV_Error(Error::StsNullPtr, format("Requseted layer \"%s\" was not initialized", ld.name.c_str()));
+        CV_Error(Error::StsNullPtr, format("Requested layer \"%s\" was not initialized", ld.name.c_str()));
 
     std::vector<Ptr<Layer> > inputLayers;
     inputLayers.reserve(ld.inputLayersId.size());
