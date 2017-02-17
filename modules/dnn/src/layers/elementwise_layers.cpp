@@ -14,7 +14,9 @@ Ptr<_Layer> _Layer::create() { \
 
 Ptr<ReLULayer> ReLULayer::create(double negativeSlope)
 {
-    return Ptr<ReLULayer>(new ElementWiseLayer<ReLUFunctor>(ReLUFunctor(negativeSlope)));
+    Ptr<ReLULayer> layer(new ElementWiseLayer<ReLUFunctor>(ReLUFunctor(negativeSlope)));
+    layer->negativeSlope = negativeSlope;
+    return layer;
 }
 
 Ptr<TanHLayer> TanHLayer::create()
@@ -40,7 +42,11 @@ Ptr<BNLLLayer> BNLLLayer::create()
 Ptr<PowerLayer> PowerLayer::create(double power /*= 1*/, double scale /*= 1*/, double shift /*= 0*/)
 {
     const PowerFunctor f(power, scale, shift);
-    return Ptr<PowerLayer>(new ElementWiseLayer<PowerFunctor>(f));
+    Ptr<PowerLayer> layer(new ElementWiseLayer<PowerFunctor>(f));
+    layer->power = power;
+    layer->scale = scale;
+    layer->shift = shift;
+    return layer;
 }
 
 ////////////////////////////////////////////////////////////////////////////
