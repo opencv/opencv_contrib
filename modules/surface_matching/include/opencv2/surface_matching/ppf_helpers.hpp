@@ -89,7 +89,7 @@ Mat samplePCUniformInd(Mat PC, int sampleStep, std::vector<int>& indices);
  *  @param [in] zrange Z components (min and max) of the bounding box of the model
  *  @param [in] sample_step_relative The point cloud is sampled such that all points
  *  have a certain minimum distance. This minimum distance is determined relatively using
- *  the parameter sample_step_relative. 
+ *  the parameter sample_step_relative.
  *  @param [in] weightByCenter The contribution of the quantized data points can be weighted
  *  by the distance to the origin. This parameter enables/disables the use of weighting.
  *  @return Sampled point cloud
@@ -135,7 +135,7 @@ CV_EXPORTS void getRandomPose(double Pose[16]);
 
 /**
  *  Adds a uniform noise in the given scale to the input point cloud
- *  @param [in] pc Input point cloud (CV_32F family). 
+ *  @param [in] pc Input point cloud (CV_32F family).
  *  @param [in] scale Input scale of the noise. The larger the scale, the more noisy the output
 */
 CV_EXPORTS Mat addNoisePC(Mat pc, double scale);
@@ -148,13 +148,13 @@ CV_EXPORTS Mat addNoisePC(Mat pc, double scale);
  *  If PCNormals is provided to be an Nx6 matrix, then no new allocation
  *  is made, instead the existing memory is overwritten.
  *  @param [in] PC Input point cloud to compute the normals for.
- *  @param [in] PCNormals Output point cloud
+ *  @param [out] PCNormals Output point cloud
  *  @param [in] NumNeighbors Number of neighbors to take into account in a local region
  *  @param [in] FlipViewpoint Should normals be flipped to a viewing direction?
  *  @param [in] viewpoint
  *  @return Returns 0 on success
  */
-CV_EXPORTS int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNeighbors, const bool FlipViewpoint, const double viewpoint[3]);
+CV_EXPORTS_W int computeNormalsPC3d(const Mat& PC, CV_OUT Mat& PCNormals, const int NumNeighbors, const bool FlipViewpoint, const Vec3d& viewpoint);
 
 //! @}
 
