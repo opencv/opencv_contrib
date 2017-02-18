@@ -46,9 +46,7 @@
 #include <cmath>
 #include <opencv2/dnn/all_layers.hpp>
 #include <opencv2/core/ocl.hpp>
-#ifdef HAVE_OPENCL
-#include "modules/dnn/opencl_kernels_dnn.hpp"
-#endif
+#include "opencl_kernels_dnn.hpp"
 
 namespace cv
 {
@@ -287,7 +285,9 @@ struct PowerFunctor
 {
     typedef PowerLayer Layer;
 
-    double power, scale, shift;
+    const double power;
+    const double scale;
+    const double shift;
 
     PowerFunctor(double power_, double scale_ = 1, double shift_ = 0)
         : power(power_), scale(scale_), shift(shift_) {}
@@ -295,7 +295,7 @@ struct PowerFunctor
     template<typename TFloat>
     inline TFloat operator()(TFloat x) const
     {
-        return pow((TFloat)shift + (TFloat)scale * x, (TFloat)power);
+        return power == 1.0 ? (TFloat)shift + (TFloat)scale * x : pow((TFloat)shift + (TFloat)scale * x, (TFloat)power);
     }
 
     #ifdef HAVE_OPENCL
@@ -311,6 +311,16 @@ struct PowerFunctor
         return true;
     }
     #endif
+};
+
+class ChannelsPReLULayerImpl : public ChannelsPReLULayer
+{
+public:
+    ChannelsPReLULayerImpl() {}
+
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 };
 
 }

@@ -367,8 +367,8 @@ void GrayCodePattern_Impl::getImagesForShadowMasks( InputOutputArray blackImage,
   Mat& blackImage_ = *( Mat* ) blackImage.getObj();
   Mat& whiteImage_ = *( Mat* ) whiteImage.getObj();
 
-  blackImage_ = Mat( params.height, params.width, CV_8UC3, Scalar( 0, 0, 0 ) );
-  whiteImage_ = Mat( params.height, params.width, CV_8UC3, Scalar( 255, 255, 255 ) );
+  blackImage_ = Mat( params.height, params.width, CV_8U, Scalar( 0 ) );
+  whiteImage_ = Mat( params.height, params.width, CV_8U, Scalar( 255 ) );
 }
 
 // For a (x,y) pixel of the camera returns the corresponding projector's pixel

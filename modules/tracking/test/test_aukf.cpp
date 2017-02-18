@@ -204,7 +204,7 @@ TEST(AUKF, br_landing_point)
     ASSERT_NEAR(landing_coordinate, landing_y, abs_error);
 }
 
-TEST(AUKF, br_mean_squared_error)
+TEST(DISABLED_AUKF, DISABLED_br_mean_squared_error)
 {
     const double velocity_treshold = 0.004;
     const double state_treshold = 0.04;
@@ -344,7 +344,7 @@ public:
     }
 };
 
-TEST(AUKF, ungm_mean_squared_error)
+TEST(AUKF, DISABLED_ungm_mean_squared_error)
 {
 
     const double alpha = 1.5;

@@ -40,6 +40,7 @@
 //M*/
 
 #include "test_precomp.hpp"
+#include "npy_blob.hpp"
 
 namespace cvtest
 {
@@ -72,5 +73,70 @@ TEST(Test_Caffe, read_googlenet)
         importer->populateNet(net);
     }
 }
+
+#if defined(ENABLE_CAFFE_MODEL_TESTS)
+
+#if defined(ENABLE_CAFFE_ALEXNET_TEST) //AlexNet is disabled now
+
+TEST(Reproducibility_AlexNet, Accuracy)
+{
+    Net net;
+    {
+        Ptr<Importer> importer = createCaffeImporter(_tf("bvlc_alexnet.prototxt"), _tf("bvlc_alexnet.caffemodel"));
+        ASSERT_TRUE(importer != NULL);
+        importer->populateNet(net);
+    }
+
+    Mat sample = imread(_tf("grace_hopper_227.png"));
+    ASSERT_TRUE(!sample.empty());
+    cv::cvtColor(sample, sample, cv::COLOR_BGR2RGB);
+
+    Size inputSize(227, 227);
+
+    if (sample.size() != inputSize)
+        resize(sample, sample, inputSize);
+
+    net.setBlob(".data", dnn::Blob::fromImages(sample));
+    net.forward();
+
+    Blob out = net.getBlob("prob");
+    Blob ref = blobFromNPY(_tf("caffe_alexnet_prob.npy"));
+    normAssert(ref, out);
+}
+
+#endif
+
+#if defined(ENABLE_CAFFE_FCN_TEST)
+
+TEST(Reproducibility_FCN, Accuracy)
+{
+    Net net;
+    {
+        Ptr<Importer> importer = createCaffeImporter(_tf("fcn8s-heavy-pascal.prototxt"), _tf("fcn8s-heavy-pascal.caffemodel"));
+        ASSERT_TRUE(importer != NULL);
+        importer->populateNet(net);
+    }
+
+    Mat sample = imread(_tf("street.png"));
+    ASSERT_TRUE(!sample.empty());
+
+    Size inputSize(500, 500);
+    if (sample.size() != inputSize)
+        resize(sample, sample, inputSize);
+
+    cv::cvtColor(sample, sample, cv::COLOR_BGR2RGB);
+
+    net.setBlob(".data", dnn::Blob::fromImages(sample));
+    net.forward();
+
+    Blob out = net.getBlob("score");
+
+    Blob ref = blobFromNPY(_tf("caffe_fcn8s_prob.npy"));
+    normAssert(ref, out);
+}
+
+#endif
+
+#endif
 
 }

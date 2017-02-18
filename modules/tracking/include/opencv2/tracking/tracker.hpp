@@ -1156,9 +1156,16 @@ class CV_EXPORTS TrackerMedianFlow : public Tracker
  public:
   struct CV_EXPORTS Params
   {
-    Params();
-    int pointsInGrid; //!<square root of number of keypoints used; increase it to trade
-                      //!<accurateness for speed; default value is sensible and recommended
+    Params(); //!<default constructor
+              //!<note that the default values of parameters are recommended for most of use cases
+    int pointsInGrid;      //!<square root of number of keypoints used; increase it to trade
+                           //!<accurateness for speed
+    cv::Size winSize;      //!<window size parameter for Lucas-Kanade optical flow
+    int maxLevel;          //!<maximal pyramid level number for Lucas-Kanade optical flow
+    TermCriteria termCriteria; //!<termination criteria for Lucas-Kanade optical flow
+    cv::Size winSizeNCC;   //!<window size around a point for normalized cross-correlation check
+    double maxMedianLengthOfDisplacementDifference; //!<criterion for loosing the tracked object
+
     void read( const FileNode& /*fn*/ );
     void write( FileStorage& /*fs*/ ) const;
   };

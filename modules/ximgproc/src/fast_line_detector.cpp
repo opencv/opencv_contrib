@@ -182,10 +182,10 @@ void FastLineDetectorImpl::drawSegments(InputOutputArray _image, InputArray line
             getAngle(seg);
             double ang = (double)seg.angle;
             Point2i p1;
-            p1.x = (int)round(seg.x2 - gap*cos(arrow_angle * CV_PI / 180.0 + ang));
-            p1.y = (int)round(seg.y2 - gap*sin(arrow_angle * CV_PI / 180.0 + ang));
+            p1.x = cvRound(seg.x2 - gap*cos(arrow_angle * CV_PI / 180.0 + ang));
+            p1.y = cvRound(seg.y2 - gap*sin(arrow_angle * CV_PI / 180.0 + ang));
             pointInboardTest(_image.getMatRef(), p1);
-            line(_image.getMatRef(), Point((int)round(seg.x2), (int)round(seg.y2)), p1, Scalar(0,0,255), 1);
+            line(_image.getMatRef(), Point(cvRound(seg.x2), cvRound(seg.y2)), p1, Scalar(0,0,255), 1);
         }
     }
 }
@@ -717,14 +717,14 @@ void FastLineDetectorImpl::drawSegment(Mat& mat, const SEGMENT& seg, Scalar bgr,
     double arrow_angle = 30.0;
 
     Point2i p1;
-    p1.x = (int)round(seg.x2 - gap*cos(arrow_angle * CV_PI / 180.0 + ang));
-    p1.y = (int)round(seg.y2 - gap*sin(arrow_angle * CV_PI / 180.0 + ang));
+    p1.x = cvRound(seg.x2 - gap*cos(arrow_angle * CV_PI / 180.0 + ang));
+    p1.y = cvRound(seg.y2 - gap*sin(arrow_angle * CV_PI / 180.0 + ang));
     pointInboardTest(mat, p1);
 
-    line(mat, Point((int)round(seg.x1), (int)round(seg.y1)),
-            Point((int)round(seg.x2), (int)round(seg.y2)), bgr, thickness, 1);
+    line(mat, Point(cvRound(seg.x1), cvRound(seg.y1)),
+            Point(cvRound(seg.x2), cvRound(seg.y2)), bgr, thickness, 1);
     if(directed)
-        line(mat, Point((int)round(seg.x2), (int)round(seg.y2)), p1, bgr, thickness, 1);
+        line(mat, Point(cvRound(seg.x2), cvRound(seg.y2)), p1, bgr, thickness, 1);
 }
 } // namespace cv
 } // namespace ximgproc

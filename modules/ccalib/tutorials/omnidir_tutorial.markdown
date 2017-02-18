@@ -169,7 +169,7 @@ int pointType = omnidir::XYZRGB;
 cv::Matx33d KNew(imgSize.width / 3.1415, 0, 0, 0, imgSize.height / 3.1415, 0, 0, 0, 1);
 Mat imageRec1, imageRec2, pointCloud;
 
-cv::omnidir::stereoReconstruct(img1, img2, K1, D1, xi1, K2, D2, xi2, R, T, flag, numDisparities, SADWindowSize, imageRec1, imageRec2, disMap, imgSize, KNew, pointCloud);
+cv::omnidir::stereoReconstruct(img1, img2, K1, D1, xi1, K2, D2, xi2, R, T, flag, numDisparities, SADWindowSize, disMap, imageRec1, imageRec2, imgSize, KNew, pointCloud);
 ```
 
 Here variable ```flag``` indicates the recectify type, only ```RECTIFY_LONGLATI```(recommend) and ```RECTIFY_PERSPECTIVE``` make sense. ```numDisparities``` is the max disparity value and ```SADWindowSize``` is the window size of ```cv::StereoSGBM```. ```pointType``` is a flag to define the type of point cloud, ```omnidir::XYZRGB``` each point is a 6-dimensional vector, the first three elements are xyz coordinate, the last three elements are rgb color information. Another type ```omnidir::XYZ``` means each point is 3-dimensional and has only xyz coordiante.

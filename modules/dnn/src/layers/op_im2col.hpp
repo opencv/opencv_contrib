@@ -115,6 +115,92 @@ public:
 };
 
 template <typename Dtype>
+class im2row_CpuPBody : public cv::ParallelLoopBody
+{
+    const Dtype* data_im;
+    int channels, height, width;
+    int kernel_h, kernel_w;
+    int pad_h, pad_w;
+    int stride_h, stride_w;
+    int dilation_h, dilation_w;
+    Dtype* data_col;
+    int height_col, width_col, channels_col;
+
+    im2row_CpuPBody() {}
+public:
+
+    static void run(const Dtype* data_im,
+                    int channels, int height, int width,
+                    int kernel_h, int kernel_w,
+                    int pad_h, int pad_w,
+                    int stride_h, int stride_w,
+                    int dilation_h, int dilation_w,
+                    int height_col, int width_col,
+                    Dtype* data_col)
+    {
+        im2row_CpuPBody<Dtype> t;
+
+        t.data_im = data_im;
+        t.data_col = data_col;
+        t.channels = channels; t.height = height; t.width = width;
+        t.kernel_h = kernel_h; t.kernel_w = kernel_w;
+        t.pad_h = pad_h; t.pad_w = pad_w;
+        t.stride_h = stride_h; t.stride_w = stride_w;
+        t.dilation_h = dilation_h; t.dilation_w = dilation_w;
+
+        t.height_col = height_col;
+        t.width_col = width_col;
+        t.channels_col = channels * kernel_h * kernel_w;
+
+        cv::parallel_for_(Range(0, t.height_col*t.width_col), t, 16);
+    }
+
+    virtual void operator ()(const Range &r) const
+    {
+        int dh = dilation_h, dw = dilation_w;
+        Dtype* data_col_ = data_col;
+        const Dtype* data_im_ = data_im;
+
+        for (int row = r.start; row < r.end; ++row)
+        {
+            int out_c = row % width_col;
+            int out_r = row / width_col;
+            int out_row_offset = row*kernel_h*kernel_w*channels;
+
+            int start_in_r = out_r * stride_h - pad_h;
+            int start_in_c = out_c * stride_w - pad_w;
+            int start_k_r = std::max(0, cvCeil(-start_in_r/(float)dilation_h));
+            int end_k_r = std::min(kernel_h, cvCeil((height - start_in_r)/(float)dilation_h));
+            int start_k_c = std::max(0, cvCeil(-start_in_c/(float)dilation_w));
+            int end_k_c = std::min(kernel_w, cvCeil((width - start_in_c)/(float)dilation_w));
+
+            for(int i_c = 0; i_c < channels; i_c++)
+            {
+                int channels_offset = i_c * width * height;
+                int out_ch_offset = i_c*kernel_h*kernel_w;
+                int in_r = start_in_r + start_k_r*dilation_h;
+
+                for(int k_r = start_k_r; k_r < end_k_r; k_r++, in_r += dh)
+                {
+                    int row_offset = in_r*width;
+                    int out_col_offset = k_r*kernel_w;
+                    int in_c = start_in_c + start_k_c*dilation_w;
+
+                    for(int k_c = start_k_c; k_c < end_k_c; k_c++, in_c += dw)
+                    {
+                        int in_index = channels_offset + row_offset + in_c;
+
+                        int out_index = out_row_offset + out_ch_offset + out_col_offset + k_c;
+
+                        data_col_[out_index] = data_im_[in_index];
+                    }
+                }
+            }
+        }
+    }
+};
+
+template <typename Dtype>
 class col2im_CpuPBody : public cv::ParallelLoopBody
 {
     const Dtype* data_col;
@@ -154,6 +240,10 @@ public:
 
     virtual void operator ()(const Range &r) const
     {
+        const Dtype* data_col_ = data_col;
+        Dtype* data_im_ = data_im;
+        int coeff_h_col = (1 - stride_h * kernel_w * height_col) * width_col;
+        int coeff_w_col = (1 - stride_w * height_col * width_col);
         for (int index = r.start; index < r.end; index++)
         {
             Dtype val = 0;
@@ -170,14 +260,13 @@ public:
             // equivalent implementation
             int offset =
             (c * kernel_h * kernel_w + h * kernel_w + w) * height_col * width_col;
-            int coeff_h_col = (1 - stride_h * kernel_w * height_col) * width_col;
-            int coeff_w_col = (1 - stride_w * height_col * width_col);
+
             for (int h_col = h_col_start; h_col < h_col_end; ++h_col) {
               for (int w_col = w_col_start; w_col < w_col_end; ++w_col) {
-                val += data_col[offset + h_col * coeff_h_col + w_col * coeff_w_col];
+                val += data_col_[offset + h_col * coeff_h_col + w_col * coeff_w_col];
               }
             }
-            data_im[index] = val;
+            data_im_[index] = val;
         }
     }
 };
