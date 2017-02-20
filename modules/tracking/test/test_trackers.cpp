@@ -482,7 +482,7 @@ TEST_P(DistanceAndOverlap, Shifted_Data_Boosting)
 
 TEST_P(DistanceAndOverlap, Shifted_Data_TLD)
 {
-  TrackerTest test( Tracker::create( "TLD" ), dataset, 120, .4f, CenterShiftLeft);
+  TrackerTest test( Tracker::create( "TLD" ), dataset, 120, .2f, CenterShiftLeft);
   test.run();
 }
 /***************************************************************************************/
