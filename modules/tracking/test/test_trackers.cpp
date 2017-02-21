@@ -455,6 +455,12 @@ TEST_P(DistanceAndOverlap, Boosting)
   test.run();
 }
 
+TEST_P(DistanceAndOverlap, KCF)
+{
+  TrackerTest test( Tracker::create( "KCF" ), dataset, 20, .35f, NoTransform, 5);
+  test.run();
+}
+
 TEST_P(DistanceAndOverlap, DISABLED_TLD)
 {
   TrackerTest test( Tracker::create( "TLD" ), dataset, 60, .4f, NoTransform);
@@ -480,6 +486,12 @@ TEST_P(DistanceAndOverlap, Shifted_Data_Boosting)
   test.run();
 }
 
+TEST_P(DistanceAndOverlap, Shifted_Data_KCF)
+{
+  TrackerTest test( Tracker::create( "KCF" ), dataset, 20, .4f, CenterShiftLeft, 5);
+  test.run();
+}
+
 TEST_P(DistanceAndOverlap, DISABLED_Shifted_Data_TLD)
 {
   TrackerTest test( Tracker::create( "TLD" ), dataset, 120, .4f, CenterShiftLeft);
@@ -502,6 +514,12 @@ TEST_P(DistanceAndOverlap, Scaled_Data_MIL)
 TEST_P(DistanceAndOverlap, Scaled_Data_Boosting)
 {
   TrackerTest test( Tracker::create( "BOOSTING" ), dataset, 80, .7f, Scale_1_1);
+  test.run();
+}
+
+TEST_P(DistanceAndOverlap, Scaled_Data_KCF)
+{
+  TrackerTest test( Tracker::create( "KCF" ), dataset, 20, .4f, Scale_1_1, 5);
   test.run();
 }
 
