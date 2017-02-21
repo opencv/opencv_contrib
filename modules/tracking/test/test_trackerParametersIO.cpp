@@ -7,7 +7,7 @@
 
 using namespace cv;
 
-TEST(MEDIAN_FLOW_Parameters_IO, MEDIAN_FLOW)
+TEST(MEDIAN_FLOW_Parameters, IO)
 {
     TrackerMedianFlow::Params parameters;
 
@@ -40,7 +40,7 @@ TEST(MEDIAN_FLOW_Parameters_IO, MEDIAN_FLOW)
 }
 
 
-TEST(MEDIAN_FLOW_Parameters_IO_Default_Value_If_Absent, MEDIAN_FLOW)
+TEST(MEDIAN_FLOW_Parameters, Default_Value_If_Absent)
 {
     TrackerMedianFlow::Params defaultParameters;
 
