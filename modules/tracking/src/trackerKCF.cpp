@@ -188,7 +188,7 @@ namespace cv{
    * - creating a gaussian response for the training ground-truth
    * - perform FFT to the gaussian response
    */
-  bool TrackerKCFImpl::initImpl( const Mat& /*image*/, const Rect2d& boundingBox ){
+  bool TrackerKCFImpl::initImpl( const Mat& image, const Rect2d& boundingBox ){
     frame=0;
     roi = boundingBox;
 
@@ -256,7 +256,11 @@ namespace cv{
       || use_custom_extractor_npca
     );
 
-    // TODO: return true only if roi inside the image
+    //return true only if roi has intersection with the image
+    if((roi & Rect2d(0,0, resizeImage ? image.cols / 2 : image.cols,
+                     resizeImage ? image.rows / 2 : image.rows)) == Rect2d())
+        return false;
+
     return true;
   }
 
@@ -576,11 +580,8 @@ namespace cv{
     Rect region=_roi;
 
     // return false if roi is outside the image
-    if((_roi.x+_roi.width<0)
-      ||(_roi.y+_roi.height<0)
-      ||(_roi.x>=img.cols)
-      ||(_roi.y>=img.rows)
-    )return false;
+    if((roi & Rect2d(0,0, img.cols, img.rows)) == Rect2d() )
+        return false;
 
     // extract patch inside the image
     if(_roi.x<0){region.x=0;region.width+=_roi.x;}
