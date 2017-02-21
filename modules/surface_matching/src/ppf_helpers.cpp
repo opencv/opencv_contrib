@@ -720,7 +720,7 @@ void meanCovLocalPCInd(const float* pc, const int* Indices, const int ws, const 
 
 }
 
-CV_EXPORTS int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNeighbors, const bool FlipViewpoint, const double viewpoint[3])
+CV_EXPORTS int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNeighbors, const bool FlipViewpoint, const Vec3d& viewpoint)
 {
   int i;
 
