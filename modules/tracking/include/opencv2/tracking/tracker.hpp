@@ -1219,9 +1219,9 @@ public:
   -   "CN" -- Color-names feature
   */
   enum MODE {
-    GRAY = (1u << 0),
-    CN = (1u << 1),
-    CUSTOM = (1u << 2)
+    GRAY   = (1 << 0),
+    CN     = (1 << 1),
+    CUSTOM = (1 << 2)
   };
 
   struct CV_EXPORTS Params
@@ -1252,8 +1252,8 @@ public:
     bool compress_feature;        //!<  activate the pca method to compress the features
     int max_patch_size;           //!<  threshold for the ROI size
     int compressed_size;          //!<  feature size after compression
-    unsigned int desc_pca;        //!<  compressed descriptors of TrackerKCF::MODE
-    unsigned int desc_npca;       //!<  non-compressed descriptors of TrackerKCF::MODE
+    int desc_pca;        //!<  compressed descriptors of TrackerKCF::MODE
+    int desc_npca;       //!<  non-compressed descriptors of TrackerKCF::MODE
   };
 
   virtual void setFeatureExtractor(void(*)(const Mat, const Rect, Mat&), bool pca_func = false);
