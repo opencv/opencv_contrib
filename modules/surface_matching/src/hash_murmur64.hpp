@@ -26,7 +26,7 @@ THE SOFTWARE.
 // Block read - if your platform needs to do endian-swapping or can only
 // handle aligned reads, do the conversion here
 
-FORCE_INLINE unsigned int getblock ( const unsigned int * p, int i )
+FORCE_INLINE uint getblock ( const uint * p, int i )
 {
   return p[i];
 }
@@ -36,7 +36,7 @@ FORCE_INLINE unsigned int getblock ( const unsigned int * p, int i )
 
 // avalanches all bits to within 0.25% bias
 
-FORCE_INLINE unsigned int fmix32 ( unsigned int h )
+FORCE_INLINE uint fmix32 ( uint h )
 {
   h ^= h >> 16;
   h *= 0x85ebca6b;
@@ -49,7 +49,7 @@ FORCE_INLINE unsigned int fmix32 ( unsigned int h )
 
 //-----------------------------------------------------------------------------
 
-FORCE_INLINE void bmix32 ( unsigned int & h1, unsigned int & k1, unsigned int & c1, unsigned int & c2 )
+FORCE_INLINE void bmix32 ( uint & h1, uint & k1, uint & c1, uint & c2 )
 {
   k1 *= c1;
   k1  = ROTL32(k1,11);
@@ -64,7 +64,7 @@ FORCE_INLINE void bmix32 ( unsigned int & h1, unsigned int & k1, unsigned int & 
 
 //-----------------------------------------------------------------------------
 
-FORCE_INLINE void bmix32 ( unsigned int & h1, unsigned int & h2, unsigned int & k1, unsigned int & k2, unsigned int & c1, unsigned int & c2 )
+FORCE_INLINE void bmix32 ( uint & h1, uint & h2, uint & k1, uint & k2, uint & c1, uint & c2 )
 {
   k1 *= c1;
   k1  = ROTL32(k1,11);
@@ -89,26 +89,26 @@ FORCE_INLINE void bmix32 ( unsigned int & h1, unsigned int & h2, unsigned int & 
 
 //----------
 
-FORCE_INLINE void hashMurmurx64 ( const void * key, const int len, const unsigned int seed, void * out )
+FORCE_INLINE void hashMurmurx64 ( const void * key, const int len, const uint seed, void * out )
 {
-  const unsigned char * data = (const unsigned char*)key;
+  const uchar * data = (const uchar*)key;
   const int nblocks = len / 8;
 
-  unsigned int h1 = 0x8de1c3ac ^ seed;
-  unsigned int h2 = 0xbab98226 ^ seed;
+  uint h1 = 0x8de1c3ac ^ seed;
+  uint h2 = 0xbab98226 ^ seed;
 
-  unsigned int c1 = 0x95543787;
-  unsigned int c2 = 0x2ad7eb25;
+  uint c1 = 0x95543787;
+  uint c2 = 0x2ad7eb25;
 
   //----------
   // body
 
-  const unsigned int * blocks = (const unsigned int *)(data + nblocks*8);
+  const uint * blocks = (const uint *)(data + nblocks*8);
 
   for (int i = -nblocks; i; i++)
   {
-    unsigned int k1 = getblock(blocks,i*2+0);
-    unsigned int k2 = getblock(blocks,i*2+1);
+    uint k1 = getblock(blocks,i*2+0);
+    uint k2 = getblock(blocks,i*2+1);
 
     bmix32(h1,h2,k1,k2,c1,c2);
   }
@@ -116,10 +116,10 @@ FORCE_INLINE void hashMurmurx64 ( const void * key, const int len, const unsigne
   //----------
   // tail
 
-  const unsigned char * tail = (const unsigned char*)(data + nblocks*8);
+  const uchar * tail = (const uchar*)(data + nblocks*8);
 
-  unsigned int k1 = 0;
-  unsigned int k2 = 0;
+  uint k1 = 0;
+  uint k2 = 0;
 
   switch (len & 7)
   {
@@ -154,8 +154,8 @@ FORCE_INLINE void hashMurmurx64 ( const void * key, const int len, const unsigne
   h1 += h2;
   h2 += h1;
 
-  ((unsigned int*)out)[0] = h1;
-  ((unsigned int*)out)[1] = h2;
+  ((uint*)out)[0] = h1;
+  ((uint*)out)[1] = h2;
 }
 
 

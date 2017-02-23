@@ -45,29 +45,15 @@ namespace cv
 namespace ppf_match_3d
 {
 
-void Pose3D::updatePose(double NewPose[16])
+void Pose3D::updatePose(Matx44d& NewPose)
 {
-  double R[9];
+  Matx33d R;
 
-  for (int i=0; i<16; i++)
-    pose[i]=NewPose[i];
-
-  R[0] = pose[0];
-  R[1] = pose[1];
-  R[2] = pose[2];
-  R[3] = pose[4];
-  R[4] = pose[5];
-  R[5] = pose[6];
-  R[6] = pose[8];
-  R[7] = pose[9];
-  R[8] = pose[10];
-
-  t[0]=pose[3];
-  t[1]=pose[7];
-  t[2]=pose[11];
+  pose = NewPose;
+  poseToRT(pose, R, t);
 
   // compute the angle
-  const double trace = R[0] + R[4] + R[8];
+  const double trace = cv::trace(R);
 
   if (fabs(trace - 3) <= EPS)
   {
@@ -87,27 +73,12 @@ void Pose3D::updatePose(double NewPose[16])
   dcmToQuat(R, q);
 }
 
-void Pose3D::updatePose(double NewR[9], double NewT[3])
+void Pose3D::updatePose(Matx33d& NewR, Vec3d& NewT)
 {
-  pose[0]=NewR[0];
-  pose[1]=NewR[1];
-  pose[2]=NewR[2];
-  pose[3]=NewT[0];
-  pose[4]=NewR[3];
-  pose[5]=NewR[4];
-  pose[6]=NewR[5];
-  pose[7]=NewT[1];
-  pose[8]=NewR[6];
-  pose[9]=NewR[7];
-  pose[10]=NewR[8];
-  pose[11]=NewT[2];
-  pose[12]=0;
-  pose[13]=0;
-  pose[14]=0;
-  pose[15]=1;
+  rtToPose(NewR, NewT, pose);
 
   // compute the angle
-  const double trace = NewR[0] + NewR[4] + NewR[8];
+  const double trace = cv::trace(NewR);
 
   if (fabs(trace - 3) <= EPS)
   {
@@ -127,35 +98,17 @@ void Pose3D::updatePose(double NewR[9], double NewT[3])
   dcmToQuat(NewR, q);
 }
 
-void Pose3D::updatePoseQuat(double Q[4], double NewT[3])
+void Pose3D::updatePoseQuat(Vec4d& Q, Vec3d& NewT)
 {
-  double NewR[9];
+  Matx33d NewR;
 
   quatToDCM(Q, NewR);
-  q[0]=Q[0];
-  q[1]=Q[1];
-  q[2]=Q[2];
-  q[3]=Q[3];
+  q = Q;
 
-  pose[0]=NewR[0];
-  pose[1]=NewR[1];
-  pose[2]=NewR[2];
-  pose[3]=NewT[0];
-  pose[4]=NewR[3];
-  pose[5]=NewR[4];
-  pose[6]=NewR[5];
-  pose[7]=NewT[1];
-  pose[8]=NewR[6];
-  pose[9]=NewR[7];
-  pose[10]=NewR[8];
-  pose[11]=NewT[2];
-  pose[12]=0;
-  pose[13]=0;
-  pose[14]=0;
-  pose[15]=1;
+  rtToPose(NewR, NewT, pose);
 
   // compute the angle
-  const double trace = NewR[0] + NewR[4] + NewR[8];
+  const double trace = cv::trace(NewR);
 
   if (fabs(trace - 3) <= EPS)
   {
@@ -175,28 +128,15 @@ void Pose3D::updatePoseQuat(double Q[4], double NewT[3])
 }
 
 
-void Pose3D::appendPose(double IncrementalPose[16])
+void Pose3D::appendPose(Matx44d& IncrementalPose)
 {
-  double R[9], PoseFull[16]={0};
+  Matx33d R;
+  Matx44d PoseFull = IncrementalPose * this->pose;
 
-  matrixProduct44(IncrementalPose, this->pose, PoseFull);
-
-  R[0] = PoseFull[0];
-  R[1] = PoseFull[1];
-  R[2] = PoseFull[2];
-  R[3] = PoseFull[4];
-  R[4] = PoseFull[5];
-  R[5] = PoseFull[6];
-  R[6] = PoseFull[8];
-  R[7] = PoseFull[9];
-  R[8] = PoseFull[10];
-
-  t[0]=PoseFull[3];
-  t[1]=PoseFull[7];
-  t[2]=PoseFull[11];
+  poseToRT(PoseFull, R, t);
 
   // compute the angle
-  const double trace = R[0] + R[4] + R[8];
+  const double trace = cv::trace(R);
 
   if (fabs(trace - 3) <= EPS)
   {
@@ -215,42 +155,25 @@ void Pose3D::appendPose(double IncrementalPose[16])
   // compute the quaternion
   dcmToQuat(R, q);
 
-  for (int i=0; i<16; i++)
-    pose[i]=PoseFull[i];
+  pose = PoseFull;
 }
 
 Pose3DPtr Pose3D::clone()
 {
   Ptr<Pose3D> new_pose(new Pose3D(alpha, modelIndex, numVotes));
-  for (int i=0; i<16; i++)
-    new_pose->pose[i]= this->pose[i];
 
-  new_pose->q[0]=q[0];
-  new_pose->q[1]=q[1];
-  new_pose->q[2]=q[2];
-  new_pose->q[3]=q[3];
-
-  new_pose->t[0]=t[0];
-  new_pose->t[1]=t[1];
-  new_pose->t[2]=t[2];
-
-  new_pose->angle=angle;
+  new_pose->pose = this->pose;
+  new_pose->q = q;
+  new_pose->t = t;
+  new_pose->angle = angle;
 
   return new_pose;
 }
 
 void Pose3D::printPose()
 {
-  printf("\n-- Pose to Model Index %d: NumVotes = %d, Residual = %f\n", this->modelIndex, this->numVotes, this->residual);
-  for (int j=0; j<4; j++)
-  {
-    for (int k=0; k<4; k++)
-    {
-      printf("%f ", this->pose[j*4+k]);
-    }
-    printf("\n");
-  }
-  printf("\n");
+  printf("\n-- Pose to Model Index %d: NumVotes = %d, Residual = %f\n", (uint)this->modelIndex, (uint)this->numVotes, this->residual);
+  std::cout << this->pose << std::endl;
 }
 
 int Pose3D::writePose(FILE* f)
@@ -260,9 +183,9 @@ int Pose3D::writePose(FILE* f)
   fwrite(&angle, sizeof(double), 1, f);
   fwrite(&numVotes, sizeof(int), 1, f);
   fwrite(&modelIndex, sizeof(int), 1, f);
-  fwrite(pose, sizeof(double)*16, 1, f);
-  fwrite(t, sizeof(double)*3, 1, f);
-  fwrite(q, sizeof(double)*4, 1, f);
+  fwrite(pose.val, sizeof(double)*16, 1, f);
+  fwrite(t.val, sizeof(double)*3, 1, f);
+  fwrite(q.val, sizeof(double)*4, 1, f);
   fwrite(&residual, sizeof(double), 1, f);
   return 0;
 }
@@ -277,9 +200,9 @@ int Pose3D::readPose(FILE* f)
     status = fread(&angle, sizeof(double), 1, f);
     status = fread(&numVotes, sizeof(int), 1, f);
     status = fread(&modelIndex, sizeof(int), 1, f);
-    status = fread(pose, sizeof(double)*16, 1, f);
-    status = fread(t, sizeof(double)*3, 1, f);
-    status = fread(q, sizeof(double)*4, 1, f);
+    status = fread(pose.val, sizeof(double)*16, 1, f);
+    status = fread(t.val, sizeof(double)*3, 1, f);
+    status = fread(q.val, sizeof(double)*4, 1, f);
     status = fread(&residual, sizeof(double), 1, f);
     return 0;
   }

@@ -50,10 +50,10 @@ typedef cv::flann::GenericIndex< Distance_32F > FlannIndex;
 
 void shuffle(int *array, size_t n);
 Mat genRandomMat(int rows, int cols, double mean, double stddev, int type);
-void getRandQuat(double q[4]);
-void getRandomRotation(double R[9]);
-void meanCovLocalPC(const float* pc, const int ws, const int point_count, double CovMat[3][3], double Mean[4]);
-void meanCovLocalPCInd(const float* pc, const int* Indices, const int ws, const int point_count, double CovMat[3][3], double Mean[4]);
+void getRandQuat(Vec4d& q);
+void getRandomRotation(Matx33d& R);
+void meanCovLocalPC(const Mat& pc, const int point_count, Matx33d& CovMat, Vec3d& Mean);
+void meanCovLocalPCInd(const Mat& pc, const int* Indices, const int point_count, Matx33d& CovMat, Vec3d& Mean);
 
 static std::vector<std::string> split(const std::string &text, char sep) {
   std::vector<std::string> tokens;
@@ -183,7 +183,7 @@ void writePLY(Mat PC, const char* FileName)
   {
     const float* point = PC.ptr<float>(pi);
 
-    outFile << point[0] << " "<<point[1]<<" "<<point[2];
+    outFile << point[0] << " " << point[1] << " " << point[2];
 
     if (vertNum==6)
     {
@@ -238,7 +238,7 @@ void writePLYVisibleNormals(Mat PC, const char* FileName)
     if (hasNormals)
     {
       outFile << " 127 127 127" << std::endl;
-      outFile << point[0]+point[3] << " " << point[1]+point[4] << " " << point[2]+point[5];
+      outFile << point[0] + point[3] << " " << point[1] + point[4] << " " << point[2] + point[5];
       outFile << " 255 0 0";
     }
 
@@ -306,7 +306,7 @@ void queryPCFlann(void* flannIndex, Mat& pc, Mat& indices, Mat& distances, const
 // uses a volume instead of an octree
 // TODO: Right now normals are required.
 // This is much faster than sample_pc_octree
-Mat samplePCByQuantization(Mat pc, float xrange[2], float yrange[2], float zrange[2], float sampleStep, int weightByCenter)
+Mat samplePCByQuantization(Mat pc, Vec2f& xrange, Vec2f& yrange, Vec2f& zrange, float sampleStep, int weightByCenter)
 {
   std::vector< std::vector<int> > map;
 
@@ -466,7 +466,7 @@ void shuffle(int *array, size_t n)
 }
 
 // compute the standard bounding box
-void computeBboxStd(Mat pc, float xRange[2], float yRange[2], float zRange[2])
+void computeBboxStd(Mat pc, Vec2f& xRange, Vec2f& yRange, Vec2f& zRange)
 {
   Mat pcPts = pc.colRange(0, 3);
   int num = pcPts.rows;
@@ -513,9 +513,9 @@ Mat normalizePCCoeff(Mat pc, float scale, float* Cx, float* Cy, float* Cz, float
   pc.col(1).copyTo(y);
   pc.col(2).copyTo(z);
 
-  float cx = (float) cv::mean(x).val[0];
-  float cy = (float) cv::mean(y).val[0];
-  float cz = (float) cv::mean(z).val[0];
+  float cx = (float) cv::mean(x)[0];
+  float cy = (float) cv::mean(y)[0];
+  float cz = (float) cv::mean(z)[0];
 
   cv::minMaxIdx(pc, &minVal, &maxVal);
 
@@ -559,11 +559,12 @@ Mat transPCCoeff(Mat pc, float scale, float Cx, float Cy, float Cz, float MinVal
   return pcn;
 }
 
-Mat transformPCPose(Mat pc, const double Pose[16])
+Mat transformPCPose(Mat pc, const Matx44d& Pose)
 {
   Mat pct = Mat(pc.rows, pc.cols, CV_32F);
 
-  double R[9], t[3];
+  Matx33d R;
+  Vec3d t;
   poseToRT(Pose, R, t);
 
 #if defined _OPENMP
@@ -572,37 +573,29 @@ Mat transformPCPose(Mat pc, const double Pose[16])
   for (int i=0; i<pc.rows; i++)
   {
     const float *pcData = pc.ptr<float>(i);
-    float *pcDataT = pct.ptr<float>(i);
-    const float *n1 = &pcData[3];
-    float *nT = &pcDataT[3];
+    const Vec3f n1(&pcData[3]);
 
-    double p[4] = {(double)pcData[0], (double)pcData[1], (double)pcData[2], 1};
-    double p2[4];
-
-    matrixProduct441(Pose, p, p2);
+    Vec4d p = Pose * Vec4d(pcData[0], pcData[1], pcData[2], 1);
+    Vec3d p2(p.val);
 
     // p2[3] should normally be 1
-    if (fabs(p2[3])>EPS)
+    if (fabs(p[3]) > EPS)
     {
-      pcDataT[0] = (float)(p2[0]/p2[3]);
-      pcDataT[1] = (float)(p2[1]/p2[3]);
-      pcDataT[2] = (float)(p2[2]/p2[3]);
+      Mat((1.0 / p[3]) * p2).reshape(1, 1).convertTo(pct.row(i).colRange(0, 3), CV_32F);
     }
 
     // If the point cloud has normals,
     // then rotate them as well
     if (pc.cols == 6)
     {
-      double n[3] = { (double)n1[0], (double)n1[1], (double)n1[2] }, n2[3];
+      Vec3d n(n1), n2;
 
-      matrixProduct331(R, n, n2);
-      double nNorm = sqrt(n2[0]*n2[0]+n2[1]*n2[1]+n2[2]*n2[2]);
+      n2 = R * n;
+      double nNorm = cv::norm(n2);
 
-      if (nNorm>EPS)
+      if (nNorm > EPS)
       {
-        nT[0]=(float)(n2[0]/nNorm);
-        nT[1]=(float)(n2[1]/nNorm);
-        nT[2]=(float)(n2[2]/nNorm);
+        Mat((1.0 / nNorm) * n2).reshape(1, 1).convertTo(pct.row(i).colRange(3, 6), CV_32F);
       }
     }
   }
@@ -621,32 +614,28 @@ Mat genRandomMat(int rows, int cols, double mean, double stddev, int type)
   return matr;
 }
 
-void getRandQuat(double q[4])
+void getRandQuat(Vec4d& q)
 {
   q[0] = (float)rand()/(float)(RAND_MAX);
   q[1] = (float)rand()/(float)(RAND_MAX);
   q[2] = (float)rand()/(float)(RAND_MAX);
   q[3] = (float)rand()/(float)(RAND_MAX);
 
-  double n = sqrt(q[0]*q[0]+q[1]*q[1]+q[2]*q[2]+q[3]*q[3]);
-  q[0]/=n;
-  q[1]/=n;
-  q[2]/=n;
-  q[3]/=n;
-
+  q *= 1.0 / cv::norm(q);
   q[0]=fabs(q[0]);
 }
 
-void getRandomRotation(double R[9])
+void getRandomRotation(Matx33d& R)
 {
-  double q[4];
+  Vec4d q;
   getRandQuat(q);
   quatToDCM(q, R);
 }
 
-void getRandomPose(double Pose[16])
+void getRandomPose(Matx44d& Pose)
 {
-  double R[9], t[3];
+  Matx33d R;
+  Vec3d t;
 
   srand((unsigned int)time(0));
   getRandomRotation(R);
@@ -672,84 +661,37 @@ to improve accuracy and increase speed
 Also, view point flipping as in point cloud library is implemented
 */
 
-void meanCovLocalPC(const float* pc, const int ws, const int point_count, double CovMat[3][3], double Mean[4])
+void meanCovLocalPC(const Mat& pc, const int point_count, Matx33d& CovMat, Vec3d& Mean)
 {
-  int i;
-  double accu[16]={0};
-
-  // For each point in the cloud
-  for (i = 0; i < point_count; ++i)
-  {
-    const float* cloud = &pc[i*ws];
-    accu [0] += cloud[0] * cloud[0];
-    accu [1] += cloud[0] * cloud[1];
-    accu [2] += cloud[0] * cloud[2];
-    accu [3] += cloud[1] * cloud[1]; // 4
-    accu [4] += cloud[1] * cloud[2]; // 5
-    accu [5] += cloud[2] * cloud[2]; // 8
-    accu [6] += cloud[0];
-    accu [7] += cloud[1];
-    accu [8] += cloud[2];
-  }
-
-  for (i = 0; i < 9; ++i)
-    accu[i]/=(double)point_count;
-
-  Mean[0] = accu[6];
-  Mean[1] = accu[7];
-  Mean[2] = accu[8];
-  Mean[3] = 0;
-  CovMat[0][0] = accu [0] - accu [6] * accu [6];
-  CovMat[0][1] = accu [1] - accu [6] * accu [7];
-  CovMat[0][2] = accu [2] - accu [6] * accu [8];
-  CovMat[1][1] = accu [3] - accu [7] * accu [7];
-  CovMat[1][2] = accu [4] - accu [7] * accu [8];
-  CovMat[2][2] = accu [5] - accu [8] * accu [8];
-  CovMat[1][0] = CovMat[0][1];
-  CovMat[2][0] = CovMat[0][2];
-  CovMat[2][1] = CovMat[1][2];
-
+  cv::calcCovarMatrix(pc.rowRange(0, point_count), CovMat, Mean, cv::COVAR_NORMAL | cv::COVAR_ROWS);
+  CovMat *= 1.0 / (point_count - 1);
 }
 
-void meanCovLocalPCInd(const float* pc, const int* Indices, const int ws, const int point_count, double CovMat[3][3], double Mean[4])
+void meanCovLocalPCInd(const Mat& pc, const int* Indices, const int point_count, Matx33d& CovMat, Vec3d& Mean)
 {
-  int i;
-  double accu[16]={0};
+  int i, j, k;
 
+  CovMat = Matx33d::all(0);
+  Mean = Vec3d::all(0);
   for (i = 0; i < point_count; ++i)
   {
-    const float* cloud = &pc[ Indices[i] * ws ];
-    accu [0] += cloud[0] * cloud[0];
-    accu [1] += cloud[0] * cloud[1];
-    accu [2] += cloud[0] * cloud[2];
-    accu [3] += cloud[1] * cloud[1]; // 4
-    accu [4] += cloud[1] * cloud[2]; // 5
-    accu [5] += cloud[2] * cloud[2]; // 8
-    accu [6] += cloud[0];
-    accu [7] += cloud[1];
-    accu [8] += cloud[2];
+    const float* cloud = pc.ptr<float>(Indices[i]);
+    for (j = 0; j < 3; ++j)
+    {
+      for (k = 0; k < 3; ++k)
+        CovMat(j, k) += cloud[j] * cloud[k];
+      Mean[j] += cloud[j];
+    }
   }
+  Mean *= 1.0 / point_count;
+  CovMat *= 1.0 / point_count;
 
-  for (i = 0; i < 9; ++i)
-    accu[i]/=(double)point_count;
-
-  Mean[0] = accu[6];
-  Mean[1] = accu[7];
-  Mean[2] = accu[8];
-  Mean[3] = 0;
-  CovMat[0][0] = accu [0] - accu [6] * accu [6];
-  CovMat[0][1] = accu [1] - accu [6] * accu [7];
-  CovMat[0][2] = accu [2] - accu [6] * accu [8];
-  CovMat[1][1] = accu [3] - accu [7] * accu [7];
-  CovMat[1][2] = accu [4] - accu [7] * accu [8];
-  CovMat[2][2] = accu [5] - accu [8] * accu [8];
-  CovMat[1][0] = CovMat[0][1];
-  CovMat[2][0] = CovMat[0][2];
-  CovMat[2][1] = CovMat[1][2];
-
+  for (j = 0; j < 3; ++j)
+    for (k = 0; k < 3; ++k)
+      CovMat(j, k) -= Mean[j] * Mean[k];
 }
 
-CV_EXPORTS int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNeighbors, const bool FlipViewpoint, const Vec3d& viewpoint)
+int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNeighbors, const bool FlipViewpoint, const Vec3f& viewpoint)
 {
   int i;
 
@@ -759,85 +701,44 @@ CV_EXPORTS int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNe
     CV_Error(cv::Error::BadImageSize, "PC should have 3 or 6 elements in its columns");
   }
 
-  int sizes[2] = {PC.rows, 3};
-  int sizesResult[2] = {PC.rows, NumNeighbors};
-  float* dataset = new float[PC.rows*3];
-  float* distances = new float[PC.rows*NumNeighbors];
-  int* indices = new int[PC.rows*NumNeighbors];
+  PCNormals.create(PC.rows, 6, CV_32F);
+  Mat PCInput = PCNormals.colRange(0, 3);
+  Mat Distances(PC.rows, NumNeighbors, CV_32F);
+  Mat Indices(PC.rows, NumNeighbors, CV_32S);
 
-  for (i=0; i<PC.rows; i++)
-  {
-    const float* src = PC.ptr<float>(i);
-    float* dst = (float*)(&dataset[i*3]);
-
-    dst[0] = src[0];
-    dst[1] = src[1];
-    dst[2] = src[2];
-  }
-
-  Mat PCInput(2, sizes, CV_32F, dataset, 0);
+  PC.rowRange(0, PC.rows).colRange(0, 3).copyTo(PCNormals.rowRange(0, PC.rows).colRange(0, 3));
 
   void* flannIndex = indexPCFlann(PCInput);
-
-  Mat Indices(2, sizesResult, CV_32S, indices, 0);
-  Mat Distances(2, sizesResult, CV_32F, distances, 0);
 
   queryPCFlann(flannIndex, PCInput, Indices, Distances, NumNeighbors);
   destroyFlann(flannIndex);
   flannIndex = 0;
 
-  PCNormals = Mat(PC.rows, 6, CV_32F);
-
+#if defined _OPENMP
+#pragma omp parallel for
+#endif
   for (i=0; i<PC.rows; i++)
   {
-    double C[3][3], mu[4];
-    const float* pci = &dataset[i*3];
-    float* pcr = PCNormals.ptr<float>(i);
-    double nr[3];
-
-    int* indLocal = &indices[i*NumNeighbors];
+    Matx33d C;
+    Vec3d mu;
+    const int* indLocal = Indices.ptr<int>(i);
 
     // compute covariance matrix
-    meanCovLocalPCInd(dataset, indLocal, 3, NumNeighbors, C, mu);
+    meanCovLocalPCInd(PCNormals, indLocal, NumNeighbors, C, mu);
 
     // eigenvectors of covariance matrix
-    Mat cov(3, 3, CV_64F), eigVect, eigVal;
-    double* covData = (double*)cov.data;
-    covData[0] = C[0][0];
-    covData[1] = C[0][1];
-    covData[2] = C[0][2];
-    covData[3] = C[1][0];
-    covData[4] = C[1][1];
-    covData[5] = C[1][2];
-    covData[6] = C[2][0];
-    covData[7] = C[2][1];
-    covData[8] = C[2][2];
-    eigen(cov, eigVal, eigVect);
-    Mat lowestEigVec;
-    //the eigenvector for the lowest eigenvalue is in the last row
-    eigVect.row(eigVect.rows - 1).copyTo(lowestEigVec);
-    double* eigData = (double*)lowestEigVec.data;
-    nr[0] = eigData[0];
-    nr[1] = eigData[1];
-    nr[2] = eigData[2];
-
-    pcr[0] = pci[0];
-    pcr[1] = pci[1];
-    pcr[2] = pci[2];
+    Mat eigVect, eigVal;
+    eigen(C, eigVal, eigVect);
+    eigVect.row(2).convertTo(PCNormals.row(i).colRange(3, 6), CV_32F);
 
     if (FlipViewpoint)
     {
-      flipNormalViewpoint(pci, viewpoint[0], viewpoint[1], viewpoint[2], &nr[0], &nr[1], &nr[2]);
+      Vec3f nr(PCNormals.ptr<float>(i) + 3);
+      Vec3f pci(PCNormals.ptr<float>(i));
+      flipNormalViewpoint(pci, viewpoint, nr);
+      Mat(nr).reshape(1, 1).copyTo(PCNormals.row(i).colRange(3, 6));
     }
-
-    pcr[3] = (float)nr[0];
-    pcr[4] = (float)nr[1];
-    pcr[5] = (float)nr[2];
   }
-
-  delete[] indices;
-  delete[] distances;
-  delete[] dataset;
 
   return 1;
 }
