@@ -86,7 +86,7 @@ Mat loadPLYSimple(const char* fileName, int withNormals)
 
   for (int i = 0; i < numVertices; i++)
   {
-    float* data = (float*)(&cloud.data[i*cloud.step[0]]);
+    float* data = cloud.ptr<float>(i);
     if (withNormals)
     {
       ifs >> data[0] >> data[1] >> data[2] >> data[3] >> data[4] >> data[5];
@@ -148,7 +148,7 @@ void writePLY(Mat PC, const char* FileName)
 
   for ( int pi = 0; pi < pointNum; ++pi )
   {
-    const float* point = (float*)(&PC.data[ pi*PC.step ]);
+    const float* point = PC.ptr<float>(pi);
 
     outFile << point[0] << " "<<point[1]<<" "<<point[2];
 
@@ -202,7 +202,7 @@ void writePLYVisibleNormals(Mat PC, const char* FileName)
 
   for (int pi = 0; pi < pointNum; ++pi)
   {
-    const float* point = (float*)(&PC.data[pi*PC.step]);
+    const float* point = PC.ptr<float>(pi);
 
     outFile << point[0] << " " << point[1] << " " << point[2];
 
@@ -295,7 +295,7 @@ Mat samplePCByQuantization(Mat pc, float xrange[2], float yrange[2], float zrang
   //#pragma omp parallel for
   for (int i=0; i<pc.rows; i++)
   {
-    const float* point = (float*)(&pc.data[i * pc.step]);
+    const float* point = pc.ptr<float>(i);
 
     // quantize a point
     const int xCell =(int) ((float)numSamplesDim*(point[0]-xrange[0])/xr);
@@ -342,7 +342,7 @@ Mat samplePCByQuantization(Mat pc, float xrange[2], float yrange[2], float zrang
         for (int j=0; j<cn; j++)
         {
           const int ptInd = curCell[j];
-          float* point = (float*)(&pc.data[ptInd * pc.step]);
+          float* point = pc.ptr<float>(ptInd);
           const double dx = point[0]-xc;
           const double dy = point[1]-yc;
           const double dz = point[2]-zc;
@@ -380,7 +380,7 @@ Mat samplePCByQuantization(Mat pc, float xrange[2], float yrange[2], float zrang
         for (int j=0; j<cn; j++)
         {
           const int ptInd = curCell[j];
-          float* point = (float*)(&pc.data[ptInd * pc.step]);
+          float* point = pc.ptr<float>(ptInd);
 
           px += (double)point[0];
           py += (double)point[1];
@@ -399,7 +399,7 @@ Mat samplePCByQuantization(Mat pc, float xrange[2], float yrange[2], float zrang
 
       }
 
-      float *pcData = (float*)(&pcSampled.data[c*pcSampled.step[0]]);
+      float *pcData = pcSampled.ptr<float>(c);
       pcData[0]=(float)px;
       pcData[1]=(float)py;
       pcData[2]=(float)pz;
@@ -542,8 +542,8 @@ Mat transformPCPose(Mat pc, double Pose[16])
 #endif
   for (int i=0; i<pc.rows; i++)
   {
-    const float *pcData = (float*)(&pc.data[i*pc.step]);
-    float *pcDataT = (float*)(&pct.data[i*pct.step]);
+    const float *pcData = pc.ptr<float>(i);
+    float *pcDataT = pct.ptr<float>(i);
     const float *n1 = &pcData[3];
     float *nT = &pcDataT[3];
 
@@ -738,7 +738,7 @@ CV_EXPORTS int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNe
 
   for (i=0; i<PC.rows; i++)
   {
-    const float* src = (float*)(&PC.data[i*PC.step]);
+    const float* src = PC.ptr<float>(i);
     float* dst = (float*)(&dataset[i*3]);
 
     dst[0] = src[0];
@@ -763,7 +763,7 @@ CV_EXPORTS int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNe
   {
     double C[3][3], mu[4];
     const float* pci = &dataset[i*3];
-    float* pcr = (float*)(&PCNormals.data[i*PCNormals.step]);
+    float* pcr = PCNormals.ptr<float>(i);
     double nr[3];
 
     int* indLocal = &indices[i*NumNeighbors];
