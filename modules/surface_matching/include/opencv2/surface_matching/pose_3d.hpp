@@ -77,42 +77,40 @@ public:
     numVotes=0;
     residual = 0;
 
-    for (int i=0; i<16; i++)
-      pose[i]=0;
+    pose = Matx44d::all(0);
   }
 
-  Pose3D(double Alpha, unsigned int ModelIndex=0, unsigned int NumVotes=0)
+  Pose3D(double Alpha, size_t ModelIndex=0, size_t NumVotes=0)
   {
     alpha = Alpha;
     modelIndex = ModelIndex;
     numVotes = NumVotes;
     residual=0;
 
-    for (int i=0; i<16; i++)
-      pose[i]=0;
+    pose = Matx44d::all(0);
   }
 
   /**
    *  \brief Updates the pose with the new one
    *  \param [in] NewPose New pose to overwrite
    */
-  void updatePose(double NewPose[16]);
+  void updatePose(Matx44d& NewPose);
 
   /**
    *  \brief Updates the pose with the new one
    */
-  void updatePose(double NewR[9], double NewT[3]);
+  void updatePose(Matx33d& NewR, Vec3d& NewT);
 
   /**
    *  \brief Updates the pose with the new one, but this time using quaternions to represent rotation
    */
-  void updatePoseQuat(double Q[4], double NewT[3]);
+  void updatePoseQuat(Vec4d& Q, Vec3d& NewT);
 
   /**
    *  \brief Left multiplies the existing pose in order to update the transformation
    *  \param [in] IncrementalPose New pose to apply
    */
-  void appendPose(double IncrementalPose[16]);
+  void appendPose(Matx44d& IncrementalPose);
   void printPose();
 
   Pose3DPtr clone();
@@ -125,17 +123,19 @@ public:
   virtual ~Pose3D() {}
 
   double alpha, residual;
-  unsigned int modelIndex;
-  unsigned int numVotes;
-  double pose[16], angle, t[3], q[4];
+  size_t modelIndex, numVotes;
+  Matx44d pose;
+  double angle;
+  Vec3d t;
+  Vec4d q;
 };
 
 /**
-* @brief When multiple poses (see Pose3D) are grouped together (contribute to the same transformation) 
+* @brief When multiple poses (see Pose3D) are grouped together (contribute to the same transformation)
 * pose clusters occur. This class is a general container for such groups of poses. It is possible to store,
 * load and perform IO on these poses.
 */
-class CV_EXPORTS PoseCluster3D
+class CV_EXPORTS_W PoseCluster3D
 {
 public:
   PoseCluster3D()
@@ -175,7 +175,7 @@ public:
   int readPoseCluster(const std::string& FileName);
 
   std::vector<Pose3DPtr> poseList;
-  int numVotes;
+  size_t numVotes;
   int id;
 };
 
