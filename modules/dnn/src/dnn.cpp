@@ -568,8 +568,23 @@ Ptr<Layer> Net::getLayer(LayerId layerId)
 {
     LayerData &ld = impl->getLayerData(layerId);
     if (!ld.layerInstance)
-        CV_Error(Error::StsNullPtr, format("Requseted layer \"%s\" was not initialized", ld.name.c_str()));
+        CV_Error(Error::StsNullPtr, format("Requested layer \"%s\" was not initialized", ld.name.c_str()));
     return ld.layerInstance;
+}
+
+std::vector<Ptr<Layer> > Net::getLayerInputs(LayerId layerId)
+{
+    LayerData &ld = impl->getLayerData(layerId);
+    if (!ld.layerInstance)
+        CV_Error(Error::StsNullPtr, format("Requested layer \"%s\" was not initialized", ld.name.c_str()));
+
+    std::vector<Ptr<Layer> > inputLayers;
+    inputLayers.reserve(ld.inputLayersId.size());
+    std::set<int>::iterator it;
+    for (it = ld.inputLayersId.begin(); it != ld.inputLayersId.end(); ++it) {
+        inputLayers.push_back(getLayer(*it));
+    }
+    return inputLayers;
 }
 
 std::vector<String> Net::getLayerNames() const
@@ -591,6 +606,24 @@ bool Net::empty() const
 {
     return impl->layers.size() <= 1; //first layer is default Data layer
 }
+
+std::vector<int> Net::getUnconnectedOutLayers() const
+{
+    std::vector<int> layersIds;
+
+    Impl::MapIdToLayerData::iterator it;
+    for (it = impl->layers.begin(); it != impl->layers.end(); it++)
+    {
+        int lid = it->first;
+        LayerData &ld = it->second;
+
+        if (ld.requiredOutputs.size() == 0)
+            layersIds.push_back(lid);
+    }
+
+    return layersIds;
+}
+
 
 //////////////////////////////////////////////////////////////////////////
 

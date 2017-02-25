@@ -1237,7 +1237,7 @@ void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
   */
 int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Ptr<Board> &board,
                       InputArray _cameraMatrix, InputArray _distCoeffs, OutputArray _rvec,
-                      OutputArray _tvec) {
+                      OutputArray _tvec, bool useExtrinsicGuess) {
 
     CV_Assert(_corners.total() == _ids.total());
 
@@ -1250,13 +1250,6 @@ int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Ptr<Bo
     if(objPoints.total() == 0) // 0 of the detected markers in board
         return 0;
 
-    bool useExtrinsicGuess = true;
-    if (_rvec.empty() || _tvec.empty())
-    {
-        _rvec.create(3, 1, CV_64FC1);
-        _tvec.create(3, 1, CV_64FC1);
-        useExtrinsicGuess = false;
-    }
     solvePnP(objPoints, imgPoints, _cameraMatrix, _distCoeffs, _rvec, _tvec, useExtrinsicGuess);
 
     // divide by four since all the four corners are concatenated in the array for each marker
@@ -1278,12 +1271,17 @@ void GridBoard::draw(Size outSize, OutputArray _img, int marginSize, int borderB
 Ptr<Board> Board::create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &dictionary, InputArray ids) {
 
     CV_Assert(objPoints.total() == ids.total());
-    CV_Assert(objPoints.type() == CV_32FC3);
+    CV_Assert(objPoints.type() == CV_32FC3 || objPoints.type() == CV_32FC1);
 
     std::vector< std::vector< Point3f > > obj_points_vector;
     for (unsigned int i = 0; i < objPoints.total(); i++) {
         std::vector<Point3f> corners;
         Mat corners_mat = objPoints.getMat(i);
+
+        if(corners_mat.type() == CV_32FC1)
+            corners_mat = corners_mat.reshape(3);
+        CV_Assert(corners_mat.total() == 4);
+
         for (int j = 0; j < 4; j++) {
             corners.push_back(corners_mat.at<Point3f>(j));
         }

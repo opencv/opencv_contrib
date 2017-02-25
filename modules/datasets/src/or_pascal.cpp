@@ -41,7 +41,7 @@
 
 #include "opencv2/datasets/or_pascal.hpp"
 #include "opencv2/datasets/util.hpp"
-#include <opencv2/datasets/tinyxml2/tinyxml2.h>
+#include "tinyxml2/tinyxml2.h"
 #include <fstream>
 
 namespace cv

@@ -30,11 +30,11 @@ const char *THDiskFile_name(THFile *self)
 
 /* workaround mac osx lion ***insane*** fread bug */
 #ifdef __APPLE__
-size_t fread__(void *ptr, size_t size, size_t nitems, FILE *stream)
+static size_t fread__(void *ptr, size_t size, size_t nitems, FILE *stream)
 {
   size_t nread = 0;
   while(!feof(stream) && !ferror(stream) && (nread < nitems))
-    nread += fread((char*)ptr+nread*size, size, THMin(2147483648/size, nitems-nread), stream);
+    nread += fread((char*)ptr+nread*size, size, THMin(2147483648UL/size, nitems-nread), stream);
   return nread;
 }
 #else

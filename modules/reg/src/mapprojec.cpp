@@ -45,7 +45,7 @@ namespace reg {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MapProjec::MapProjec(void)
+MapProjec::MapProjec()
     : projTr_(Matx<double, 3, 3>::eye())
 {
 }
@@ -57,13 +57,14 @@ MapProjec::MapProjec(const Matx<double, 3, 3>& projTr)
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MapProjec::~MapProjec(void)
+MapProjec::~MapProjec()
 {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void MapProjec::inverseWarp(const Mat& img1, Mat& img2) const
+void MapProjec::inverseWarp(InputArray _img1, OutputArray img2) const
 {
+    Mat img1 = _img1.getMat();
     // Rows and columns in destination
     Mat dest_r, dest_c;
     dest_r.create(img1.size(), CV_32FC1);
@@ -95,10 +96,10 @@ Ptr<Map> MapProjec::inverseMap(void) const
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void MapProjec::compose(const Map& map)
+void MapProjec::compose(Ptr<Map> map)
 {
     // Composition of homographies H and H' is (H o H') = H'*H
-    const MapProjec& mapProj = static_cast<const MapProjec&>(map);
+    const MapProjec& mapProj = static_cast<const MapProjec&>(*map);
     Matx<double, 3, 3> compProjTr = mapProj.getProjTr()*projTr_;
     projTr_ = compProjTr;
 }

@@ -182,6 +182,9 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
         /** @brief Returns pointer to layer with specified name which the network use. */
         CV_WRAP Ptr<Layer> getLayer(LayerId layerId);
 
+        /** @brief Returns pointers to input layers of specific layer. */
+        CV_WRAP std::vector<Ptr<Layer> > getLayerInputs(LayerId layerId);
+
         /** @brief Delete layer for the network (not implemented yet) */
         CV_WRAP void deleteLayer(LayerId layer);
 
@@ -270,6 +273,9 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          */
         CV_WRAP Blob getParam(LayerId layer, int numParam = 0);
 
+        /** @brief Returns indexes of layers with unconnected outputs.
+         */
+        CV_WRAP std::vector<int> getUnconnectedOutLayers() const;
     private:
 
         struct Impl;

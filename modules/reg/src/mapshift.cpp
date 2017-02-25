@@ -46,23 +46,26 @@ namespace reg {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MapShift::MapShift(void) : shift_()
+MapShift::MapShift() : shift_()
 {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MapShift::MapShift(const Vec<double, 2>& shift) : shift_(shift)
+MapShift::MapShift(InputArray shift)
+{
+    Mat shiftMat = shift.getMat();
+    shiftMat.copyTo(shift_);
+}
+
+////////////////////////////////////////////////////////////////////////////////////////////////////
+MapShift::~MapShift()
 {
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MapShift::~MapShift(void)
+void MapShift::inverseWarp(InputArray _img1, OutputArray img2) const
 {
-}
-
-////////////////////////////////////////////////////////////////////////////////////////////////////
-void MapShift::inverseWarp(const Mat& img1, Mat& img2) const
-{
+    Mat img1 = _img1.getMat();
     // Rows and columns in destination
     Mat dest_r, dest_c;
     dest_r.create(img1.size(), CV_32FC1);
@@ -91,10 +94,10 @@ Ptr<Map> MapShift::inverseMap(void) const
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void MapShift::compose(const Map& map)
+void MapShift::compose(cv::Ptr<Map> map)
 {
     // Composition of transformations T and T' is (T o T') = b + b'
-    const MapShift& mapShift = static_cast<const MapShift&>(map);
+    const MapShift& mapShift = static_cast<const MapShift&>(*map);
     shift_ += mapShift.getShift();
 }
 

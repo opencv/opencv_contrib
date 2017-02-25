@@ -118,7 +118,7 @@ The function transforms a binary blob image into a skeletized form using the tec
 
 @param src Source 8-bit single-channel image, containing binary blobs, with blobs having 255 pixel values.
 @param dst Destination image of the same size and the same type as src. The function can work in-place.
-@param thinningType Value that defines which thinning algorithm should be used. See cv::ThinningTypes
+@param thinningType Value that defines which thinning algorithm should be used. See cv::ximgproc::ThinningTypes
  */
 CV_EXPORTS_W void thinning( InputArray src, OutputArray dst, int thinningType = THINNING_ZHANGSUEN);
 

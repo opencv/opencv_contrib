@@ -42,12 +42,4 @@
 
 #include "perf_precomp.hpp"
 
-static const char * impls[] =
-{
-#ifdef HAVE_OPENCV_OCL
-    "ocl",
-#endif
-    "plain"
-};
-
-CV_PERF_TEST_MAIN_WITH_IMPLS(ocl, impls, ::perf::TestBase::setModulePerformanceStrategy(::perf::PERF_STRATEGY_SIMPLE))
+CV_PERF_TEST_MAIN(bioinspired)

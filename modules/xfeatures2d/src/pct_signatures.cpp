@@ -397,7 +397,7 @@ namespace cv
                 break;
             case REGULAR:
             {
-                int gridSize = (int)ceil(sqrt(count));
+                int gridSize = (int)ceil(sqrt((float)count));
                 const float step = 1.0f / gridSize;
                 const float halfStep = step / 2;
                 float x = halfStep;

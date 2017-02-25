@@ -997,6 +997,24 @@ TEST( Features2d_Detector_STAR, regression )
     test.safe_run();
 }
 
+TEST( Features2d_Detector_Harris_Laplace, regression )
+{
+    CV_FeatureDetectorTest test( "detector-harris-laplace", HarrisLaplaceFeatureDetector::create() );
+    test.safe_run();
+}
+
+TEST( Features2d_Detector_Harris_Laplace_Affine_Keypoint_Invariance, regression )
+{
+    CV_FeatureDetectorTest test( "detector-harris-laplace", AffineFeature2D::create(HarrisLaplaceFeatureDetector::create()));
+    test.safe_run();
+}
+
+TEST( Features2d_Detector_Harris_Laplace_Affine, regression )
+{
+    CV_FeatureDetectorTest test( "detector-harris-laplace-affine", AffineFeature2D::create(HarrisLaplaceFeatureDetector::create()));
+    test.safe_run();
+}
+
 /*
  * Descriptors
  */
