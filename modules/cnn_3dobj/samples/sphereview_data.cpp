@@ -50,7 +50,7 @@ using namespace cv::cnn_3dobj;
  * @function listDir
  * @brief Making all files names under a directory into a list
  */
-void listDir(const char *path, std::vector<String>& files, bool r)
+static void listDir(const char *path, std::vector<String>& files, bool r)
 {
     DIR *pDir;
     struct dirent *ent;
@@ -112,8 +112,8 @@ int main(int argc, char *argv[])
     int ite_depth = parser.get<int>("ite_depth");
     String plymodel = parser.get<String>("plymodel");
     String imagedir = parser.get<String>("imagedir");
-    string labeldir = parser.get<String>("labeldir");
-    String bakgrdir = parser.get<string>("bakgrdir");
+    String labeldir = parser.get<String>("labeldir");
+    String bakgrdir = parser.get<String>("bakgrdir");
     int label_class = parser.get<int>("label_class");
     int label_item = parser.get<int>("label_item");
     float cam_head_x = parser.get<float>("cam_head_x");
@@ -144,7 +144,7 @@ int main(int argc, char *argv[])
         obj_dist = 370;
         bg_dist = 400;
     }
-    if (label_class == 5 | label_class == 10 | label_class == 11 | label_class == 12)
+    if (label_class == 5 || label_class == 10 || label_class == 11 || label_class == 12)
         ite_depth = ite_depth + 1;
     cv::cnn_3dobj::icoSphere ViewSphere(10,ite_depth);
     std::vector<cv::Point3d> campos;
@@ -218,8 +218,7 @@ int main(int argc, char *argv[])
         }
     }
     std::fstream imglabel;
-    char* p=(char*)labeldir.data();
-    imglabel.open(p, fstream::app|fstream::out);
+    imglabel.open(labeldir.c_str(), fstream::app|fstream::out);
     bool camera_pov = true;
     /* Create a window using viz. */
     viz::Viz3d myWindow("Coordinate Frame");
@@ -227,7 +226,7 @@ int main(int argc, char *argv[])
     myWindow.setWindowSize(Size(image_size,image_size));
     /* Set background color. */
     myWindow.setBackgroundColor(viz::Color::gray());
-    myWindow.spin();
+    myWindow.spinOnce();
     /* Create a Mesh widget, loading .ply models. */
     viz::Mesh objmesh = viz::Mesh::load(plymodel);
     /* Get the center of the generated mesh widget, cause some .ply files, this could be ignored if you are using PASCAL database*/
@@ -249,8 +248,7 @@ int main(int argc, char *argv[])
     cam_y_dir.x = cam_head_x;
     cam_y_dir.y = cam_head_y;
     cam_y_dir.z = cam_head_z;
-    char* temp = new char;
-    char* bgname = new char;
+    char temp[1024];
     std::vector<String> name_bkg;
     if (bakgrdir.size() != 0)
     {
@@ -262,7 +260,7 @@ int main(int argc, char *argv[])
         }
     }
     /* Images will be saved as .png files. */
-    int cnt_img;
+    size_t cnt_img;
     srand((int)time(0));
     do
     {

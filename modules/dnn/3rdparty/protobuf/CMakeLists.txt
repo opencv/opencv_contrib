@@ -16,9 +16,15 @@ if(MSVC)
                                        /wd4702 /wd4456 /wd4457 /wd4065 /wd4310 /wd4661 /wd4506
   )
 else()
-  ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-deprecated -Wmissing-prototypes -Wmissing-declarations -Wshadow -Wunused-parameter -Wunused-local-typedefs -Wsign-compare -Wsign-promo -Wundef
-                                       -Wtautological-undefined-compare
-                                       -Wignored-qualifiers -Wextra -Wunused-function -Wunused-const-variable
+  ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-deprecated -Wmissing-prototypes -Wmissing-declarations -Wshadow
+                                       -Wunused-parameter -Wunused-local-typedefs -Wsign-compare -Wsign-promo
+                                       -Wundef -Wtautological-undefined-compare -Wignored-qualifiers -Wextra
+                                       -Wunused-function -Wunused-const-variable
+  )
+endif()
+if(CV_ICC)
+  ocv_warnings_disable(CMAKE_CXX_FLAGS
+      -wd265 -wd858 -wd873 -wd2196
   )
 endif()
 
@@ -35,7 +41,7 @@ function(append_if_exist OUTPUT_LIST)
     set(${OUTPUT_LIST} ${${OUTPUT_LIST}} PARENT_SCOPE)
 endfunction()
 
-set(PROTOBUF_ROOT ${CMAKE_CURRENT_SOURCE_DIR}/sources/protobuf-3.1.0)
+set(PROTOBUF_ROOT "${PROTOBUF_CPP_PATH}/protobuf-3.1.0")
 
 if(MSVC)
   set(ATOMICOPS_INTERNALS ${PROTOBUF_ROOT}/src/google/protobuf/stubs/atomicops_internals_x86_msvc.cc)

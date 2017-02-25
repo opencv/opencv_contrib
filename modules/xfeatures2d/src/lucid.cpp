@@ -100,12 +100,14 @@ namespace cv {
         // gliese581h suggested filling a cv::Mat with descriptors to enable BFmatcher compatibility
         // speed-ups and enhancements by gliese581h
         void LUCIDImpl::compute(InputArray _src, std::vector<KeyPoint> &keypoints, OutputArray _desc) {
-            if (_src.getMat().empty())
+            cv::Mat src_input = _src.getMat();
+            if (src_input.empty())
                 return;
+            CV_Assert(src_input.depth() == CV_8U && src_input.channels() == 3);
 
             Mat_<Vec3b> src;
 
-            blur(_src.getMat(), src, cv::Size(b_kernel, b_kernel));
+            blur(src_input, src, cv::Size(b_kernel, b_kernel));
 
             int x, y, j, d, p, m = (l_kernel*2+1)*(l_kernel*2+1)*3, width = src.cols, height = src.rows, r, c;
 

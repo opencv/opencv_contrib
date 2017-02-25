@@ -45,10 +45,63 @@
 #include "opencv2/tracking.hpp"
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/ocl.hpp"
+#include <typeinfo>
+#include "opencv2/core/hal/hal.hpp"
 
 namespace cv
 {
 	extern const double ColorNames[][10];
-}
+
+    namespace tracking {
+
+    /* Cholesky decomposition
+     The function performs Cholesky decomposition <https://en.wikipedia.org/wiki/Cholesky_decomposition>.
+     A - the Hermitian, positive-definite matrix,
+     astep - size of row in A,
+     asize - number of cols and rows in A,
+     L - the lower triangular matrix, A = L*Lt.
+    */
+
+    template<typename _Tp> bool
+    inline callHalCholesky( _Tp* L, size_t lstep, int lsize );
+
+    template<> bool
+    inline callHalCholesky<float>( float* L, size_t lstep, int lsize )
+    {
+        return hal::Cholesky32f(L, lstep, lsize, NULL, 0, 0);
+    }
+
+    template<> bool
+    inline callHalCholesky<double>( double* L, size_t lstep, int lsize)
+    {
+        return hal::Cholesky64f(L, lstep, lsize, NULL, 0, 0);
+    }
+
+    template<typename _Tp> bool
+    inline choleskyDecomposition( const _Tp* A, size_t astep, int asize, _Tp* L, size_t lstep )
+    {
+        bool success = false;
+
+        astep /= sizeof(_Tp);
+        lstep /= sizeof(_Tp);
+
+        for(int i = 0; i < asize; i++)
+            for(int j = 0; j <= i; j++)
+                L[i*lstep + j] = A[i*astep + j];
+
+       success = callHalCholesky(L, lstep*sizeof(_Tp), asize);
+
+       if(success)
+       {
+           for(int i = 0; i < asize; i++ )
+               for(int j = i + 1; j < asize; j++ )
+                   L[i*lstep + j] = 0.0;
+       }
+
+        return success;
+    }
+
+    } // tracking
+} // cv
 
 #endif

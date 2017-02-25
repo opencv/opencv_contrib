@@ -82,7 +82,7 @@ void FullyConnectedLayerImpl::allocate(const std::vector<Blob*> &input, std::vec
     for (size_t i = 0; i < input.size(); i++)
     {
         CV_Assert(i == 0 || (input[i]->equalShape(*input[0]) && input[i]->type() == dtype));
-        Shape outShape = input[i]->shape().slice(0, axis) + Shape(numOutput);
+        Shape outShape = Shape(outerSize, numOutput);
         output[i].create(outShape, dtype, allocFlags);
     }
 }

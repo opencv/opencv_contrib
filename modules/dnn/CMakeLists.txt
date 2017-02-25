@@ -15,6 +15,20 @@ ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-shadow -Wno-parentheses -Wmaybe-uninit
 )
 ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4701 /wd4100)
 
+if(MSVC)
+  add_definitions( -D_CRT_SECURE_NO_WARNINGS=1 )
+  ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4244 /wd4267 /wd4018 /wd4355 /wd4800 /wd4251 /wd4996 /wd4146
+                                       /wd4305 /wd4127 /wd4100 /wd4512 /wd4125 /wd4389 /wd4510 /wd4610
+                                       /wd4702 /wd4456 /wd4457 /wd4065 /wd4310 /wd4661 /wd4506
+  )
+else()
+  ocv_warnings_disable(CMAKE_CXX_FLAGS -Wno-deprecated -Wmissing-prototypes -Wmissing-declarations -Wshadow
+                                       -Wunused-parameter -Wunused-local-typedefs -Wsign-compare -Wsign-promo
+                                       -Wundef -Wtautological-undefined-compare -Wignored-qualifiers -Wextra
+                                       -Wunused-function -Wunused-const-variable -Wdeprecated-declarations
+  )
+endif()
+
 # ----------------------------------------------------------------------------
 # Resolve libprotobuf dependency
 # ----------------------------------------------------------------------------
@@ -22,34 +36,11 @@ include(cmake/OpenCVFindLibProtobuf.cmake)
 ocv_source_group("Src\\protobuf" FILES ${PROTOBUF_SRCS} ${PROTOBUF_HDRS})
 ocv_module_include_directories(include ${PROTOBUF_INCLUDE_DIR})
 
-# ----------------------------------------------------------------------------
-# Try to find BLAS libraries
-# ----------------------------------------------------------------------------
-OCV_OPTION(${the_module}_WITH_BLAS "Use external BLAS library to speedup processing" OFF)
-include(cmake/OpenCVFindCBLAS.cmake)
-
 ocv_glob_module_sources(${PROTOBUF_SRCS} ${PROTOBUF_HDRS} ${CBLAS_H_PROXY_PATH})
 ocv_create_module(${PROTOBUF_LIBRARIES})
 ocv_add_samples()
 ocv_add_accuracy_tests()
 ocv_add_perf_tests()
-
-# ----------------------------------------------------------------------------
-# Link BLAS
-# ----------------------------------------------------------------------------
-if(${the_module}_WITH_BLAS AND HAVE_BLAS)
-    add_definitions(-DHAVE_CBLAS=1)
-    ocv_module_include_directories(${${the_module}_BLAS_INCLUDE_DIR})
-    ocv_add_dependencies(${the_module} ${${the_module}_BLAS_LIBRARIES})
-    target_link_libraries(${the_module} ${${the_module}_BLAS_LIBRARIES})
-
-    if(${the_module}_BLAS_BINARIES)
-        ocv_install_target(${the_module} EXPORT ${the_module}_BLAS_BINARIES
-                           RUNTIME DESTINATION ${OPENCV_BIN_INSTALL_PATH} COMPONENT libs)
-    endif()
-else()
-    add_definitions(-DHAVE_CBLAS=0)
-endif()
 
 # ----------------------------------------------------------------------------
 # Download pre-trained models for complex testing on GoogLeNet and AlexNet

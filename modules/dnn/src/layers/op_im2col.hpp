@@ -70,6 +70,7 @@ public:
                     int pad_h, int pad_w,
                     int stride_h, int stride_w,
                     int dilation_h, int dilation_w,
+                    int height_col, int width_col,
                     Dtype* data_col)
     {
         im2col_CpuPBody<Dtype> t;
@@ -82,8 +83,8 @@ public:
         t.stride_h = stride_h; t.stride_w = stride_w;
         t.dilation_h = dilation_h; t.dilation_w = dilation_w;
 
-        t.height_col = (height + 2 * pad_h - (dilation_h * (kernel_h - 1) + 1)) / stride_h + 1;
-        t.width_col = (width + 2 * pad_w - (dilation_w * (kernel_w - 1) + 1)) / stride_w + 1;
+        t.height_col = height_col;
+        t.width_col = width_col;
         t.channels_col = channels * kernel_h * kernel_w;
 
         cv::parallel_for_(Range(0, t.channels_col), t);

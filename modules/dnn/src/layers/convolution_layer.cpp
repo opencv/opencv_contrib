@@ -202,9 +202,13 @@ void ConvolutionLayerImpl::im2col(const Mat &srcImg, Mat &dstCol)
 
     Mat &colMat = colBlob.matRef();
     if (srcImg.type() == CV_32F)
-        im2col_CpuPBody<float>::run(srcImg.ptr<float>(), inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, dilation.height, dilation.width, colMat.ptr<float>());
+        im2col_CpuPBody<float>::run(srcImg.ptr<float>(), inpGroupCn, inpH, inpW, kernel.height,
+                                    kernel.width, pad.height, pad.width, stride.height, stride.width,
+                                    dilation.height, dilation.width, outH, outW, colMat.ptr<float>());
     if (srcImg.type() == CV_64F)
-        im2col_CpuPBody<double>::run(srcImg.ptr<double>(), inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, dilation.height, dilation.width, colMat.ptr<double>());
+        im2col_CpuPBody<double>::run(srcImg.ptr<double>(), inpGroupCn, inpH, inpW, kernel.height,
+                                     kernel.width, pad.height, pad.width, stride.height, stride.width,
+                                     dilation.height, dilation.width, outH, outW, colMat.ptr<double>());
 
     dstCol = colMat;
 }
@@ -214,10 +218,17 @@ void ConvolutionLayerImpl::computeInpOutShape(const Blob &input)
     inpH = input.rows();
     inpW = input.cols();
     inpCn = input.channels();
-
-    outH = (inpH + 2 * pad.height - (dilation.height * (kernel.height - 1) + 1)) / stride.height + 1;
-    outW = (inpW + 2 * pad.width - (dilation.width * (kernel.width - 1) + 1)) / stride.width + 1;
     outCn = numOutput;
+
+    if (padMode.empty())
+    {
+        outH = (inpH + 2 * pad.height - (dilation.height * (kernel.height - 1) + 1)) / stride.height + 1;
+        outW = (inpW + 2 * pad.width - (dilation.width * (kernel.width - 1) + 1)) / stride.width + 1;
+    }
+    else
+    {
+        getConvPoolOutParams(inpH, inpW, kernel, stride, pad, padMode, outH, outW);
+    }
 
     topH = outH; topW = outW; topCn = outCn;
 }

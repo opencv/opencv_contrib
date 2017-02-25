@@ -40,84 +40,75 @@
 //M*/
 
 #include "test_precomp.hpp"
+
 #include <string>
 
 using namespace std;
 using namespace cv;
 
-class CV_FuzzyImageTest : public cvtest::BaseTest
+TEST(fuzzy_image, inpainting)
 {
-public:
-    CV_FuzzyImageTest();
-    ~CV_FuzzyImageTest();
-protected:
-    void run(int);
-};
-
-CV_FuzzyImageTest::CV_FuzzyImageTest()
-{
-}
-CV_FuzzyImageTest::~CV_FuzzyImageTest() {}
-
-void CV_FuzzyImageTest::run( int )
-{
-    string folder = string(ts->get_data_path()) + "fuzzy/";
+    string folder = string(cvtest::TS::ptr()->get_data_path()) + "fuzzy/";
     Mat orig = imread(folder + "orig.png");
     Mat exp1 = imread(folder + "exp1.png");
     Mat exp2 = imread(folder + "exp2.png");
     Mat exp3 = imread(folder + "exp3.png");
-    Mat mask1 = imread(folder + "mask1.png");
-    Mat mask2 = imread(folder + "mask2.png");
+    Mat mask1 = imread(folder + "mask1.png", IMREAD_GRAYSCALE);
+    Mat mask2 = imread(folder + "mask2.png", IMREAD_GRAYSCALE);
 
-    if (orig.empty() || exp1.empty() || exp2.empty() || mask1.empty() || mask2.empty())
-    {
-        ts->set_failed_test_info( cvtest::TS::FAIL_INVALID_TEST_DATA );
-        return;
-    }
+    EXPECT_TRUE(!orig.empty() && !exp1.empty() && !exp2.empty() && !exp3.empty() && !mask1.empty() && !mask2.empty());
 
-    // Conversion because of comparison.
-
-    orig.convertTo(orig, CV_32F);
-    exp1.convertTo(exp1, CV_32F);
-    exp2.convertTo(exp2, CV_32F);
-    exp3.convertTo(exp3, CV_32F);
-
-    Mat res1, res2,res3;
+    Mat res1, res2, res3;
     ft::inpaint(orig, mask1, res1, 2, ft::LINEAR, ft::ONE_STEP);
     ft::inpaint(orig, mask2, res2, 2, ft::LINEAR, ft::MULTI_STEP);
     ft::inpaint(orig, mask2, res3, 2, ft::LINEAR, ft::ITERATIVE);
 
-    Mat diff1, diff2, diff3;
-    absdiff(orig, res1, diff1);
-    absdiff(orig, res2, diff2);
-    absdiff(orig, res3, diff3);
+    res1.convertTo(res1, CV_8UC3);
+    res2.convertTo(res2, CV_8UC3);
+    res3.convertTo(res3, CV_8UC3);
 
-    double n1 = cvtest::norm(diff1.reshape(1), NORM_INF, mask1.reshape(1));
-    double n2 = cvtest::norm(diff2.reshape(1), NORM_INF, mask2.reshape(1));
-    double n3 = cvtest::norm(diff3.reshape(1), NORM_INF, mask2.reshape(1));
+    double n1 = cvtest::norm(exp1, res1, NORM_INF);
+    double n2 = cvtest::norm(exp2, res2, NORM_INF);
+    double n3 = cvtest::norm(exp3, res3, NORM_INF);
 
-    if (n1 != 0 || n2 != 0 || n3 != 0)
-    {
-        ts->set_failed_test_info( cvtest::TS::FAIL_MISMATCH );
-        return;
-    }
-
-    absdiff(exp1, res1, diff1);
-    absdiff(exp2, res2, diff2);
-    absdiff(exp3, res3, diff3);
-
-    n1 = cvtest::norm(diff1.reshape(1), NORM_INF, mask1.reshape(1));
-    n2 = cvtest::norm(diff2.reshape(1), NORM_INF, mask2.reshape(1));
-    n3 = cvtest::norm(diff3.reshape(1), NORM_INF, mask2.reshape(1));
-
-    const int jpeg_thres = 3;
-    if (n1 > jpeg_thres || n2 > jpeg_thres || n3 > jpeg_thres)
-    {
-        ts->set_failed_test_info( cvtest::TS::FAIL_BAD_ACCURACY );
-        return;
-    }
-
-    ts->set_failed_test_info(cvtest::TS::OK);
+    EXPECT_LE(n1, 1);
+    EXPECT_LE(n2, 1);
+    EXPECT_LE(n3, 1);
 }
 
-TEST(Fuzzy_image, regression) { CV_FuzzyImageTest test; test.safe_run(); }
+TEST(fuzzy_image, filtering)
+{
+    string folder = string(cvtest::TS::ptr()->get_data_path()) + "fuzzy/";
+    Mat orig = imread(folder + "orig.png");
+    Mat exp4 = imread(folder + "exp4.png");
+
+    EXPECT_TRUE(!orig.empty() && !exp4.empty());
+
+    Mat kernel;
+    ft::createKernel(ft::LINEAR, 20, kernel, 3);
+
+    Mat res4;
+    ft::filter(orig, kernel, res4);
+
+    res4.convertTo(res4, CV_8UC3);
+
+    double n1 = cvtest::norm(exp4, res4, NORM_INF);
+
+    EXPECT_LE(n1, 1);
+}
+
+TEST(fuzzy_image, kernel)
+{
+    Mat kernel1;
+    ft::createKernel(ft::LINEAR, 2, kernel1, 1);
+
+    Mat vector1 = (Mat_<float>(5, 1) << 0, 0.5, 1, 0.5, 0);
+    Mat vector2 = (Mat_<float>(1, 5) << 0, 0.5, 1, 0.5, 0);
+
+    Mat kernel2;
+    ft::createKernel(vector1, vector2, kernel2, 1);
+
+    double diff = cvtest::norm(kernel1, kernel2, NORM_INF);
+
+    EXPECT_DOUBLE_EQ(diff, 0);
+}

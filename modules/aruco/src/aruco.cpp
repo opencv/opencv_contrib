@@ -920,13 +920,8 @@ static void _getBoardObjectAndImagePoints(const Ptr<Board> &_board, InputArray _
     }
 
     // create output
-    _objPoints.create((int)objPnts.size(), 1, CV_32FC3);
-    for(unsigned int i = 0; i < objPnts.size(); i++)
-        _objPoints.getMat().ptr< Point3f >(0)[i] = objPnts[i];
-
-    _imgPoints.create((int)objPnts.size(), 1, CV_32FC2);
-    for(unsigned int i = 0; i < imgPnts.size(); i++)
-        _imgPoints.getMat().ptr< Point2f >(0)[i] = imgPnts[i];
+    Mat(objPnts).copyTo(_objPoints);
+    Mat(imgPnts).copyTo(_imgPoints);
 }
 
 
@@ -937,7 +932,7 @@ static void _getBoardObjectAndImagePoints(const Ptr<Board> &_board, InputArray _
 static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArrayOfArrays _detectedCorners,
                                       InputOutputArray _detectedIds, InputArray _cameraMatrix,
                                       InputArray _distCoeffs,
-                                      OutputArrayOfArrays _undetectedMarkersProjectedCorners,
+                                      vector< vector< Point2f > >& _undetectedMarkersProjectedCorners,
                                       OutputArray _undetectedMarkersIds) {
 
     // first estimate board pose with the current avaible markers
@@ -972,18 +967,8 @@ static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArray
 
 
     // parse output
-    _undetectedMarkersIds.create((int)undetectedIds.size(), 1, CV_32SC1);
-    for(unsigned int i = 0; i < undetectedIds.size(); i++)
-        _undetectedMarkersIds.getMat().ptr< int >(0)[i] = undetectedIds[i];
-
-    _undetectedMarkersProjectedCorners.create((int)undetectedCorners.size(), 1, CV_32FC2);
-    for(unsigned int i = 0; i < undetectedCorners.size(); i++) {
-        _undetectedMarkersProjectedCorners.create(4, 1, CV_32FC2, i, true);
-        for(int j = 0; j < 4; j++) {
-            _undetectedMarkersProjectedCorners.getMat(i).ptr< Point2f >()[j] =
-                undetectedCorners[i][j];
-        }
-    }
+    Mat(undetectedIds).copyTo(_undetectedMarkersIds);
+    _undetectedMarkersProjectedCorners = undetectedCorners;
 }
 
 
@@ -994,7 +979,7 @@ static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArray
   */
 static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArrayOfArrays _detectedCorners,
                                       InputOutputArray _detectedIds,
-                                      OutputArrayOfArrays _undetectedMarkersProjectedCorners,
+                                      vector< vector< Point2f > >& _undetectedMarkersProjectedCorners,
                                       OutputArray _undetectedMarkersIds) {
 
 
@@ -1042,20 +1027,14 @@ static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArray
     // get homography from detected markers
     Mat transformation = findHomography(detectedMarkersObj2DAll, imageCornersAll);
 
-    _undetectedMarkersProjectedCorners.create((int)undetectedMarkersIds.size(), 1, CV_32FC2);
+    _undetectedMarkersProjectedCorners.resize(undetectedMarkersIds.size());
 
     // for each undetected marker, apply transformation
     for(unsigned int i = 0; i < undetectedMarkersObj2D.size(); i++) {
-        Mat projectedMarker;
-        perspectiveTransform(undetectedMarkersObj2D[i], projectedMarker, transformation);
-
-        _undetectedMarkersProjectedCorners.create(4, 1, CV_32FC2, i, true);
-        projectedMarker.copyTo(_undetectedMarkersProjectedCorners.getMat(i));
+        perspectiveTransform(undetectedMarkersObj2D[i], _undetectedMarkersProjectedCorners[i], transformation);
     }
 
-    _undetectedMarkersIds.create((int)undetectedMarkersIds.size(), 1, CV_32SC1);
-    for(unsigned int i = 0; i < undetectedMarkersIds.size(); i++)
-        _undetectedMarkersIds.getMat().ptr< int >(0)[i] = undetectedMarkersIds[i];
+    Mat(undetectedMarkersIds).copyTo(_undetectedMarkersIds);
 }
 
 
@@ -1216,9 +1195,7 @@ void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
         _detectedIds.clear();
 
         // parse output
-        _detectedIds.create((int)finalAcceptedIds.size(), 1, CV_32SC1);
-        for(unsigned int i = 0; i < finalAcceptedIds.size(); i++)
-            _detectedIds.getMat().ptr< int >(0)[i] = finalAcceptedIds[i];
+        Mat(finalAcceptedIds).copyTo(_detectedIds);
 
         _detectedCorners.create((int)finalAcceptedCorners.size(), 1, CV_32FC2);
         for(unsigned int i = 0; i < finalAcceptedCorners.size(); i++) {
@@ -1248,10 +1225,7 @@ void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
         }
 
         if(_recoveredIdxs.needed()) {
-            _recoveredIdxs.create((int)recoveredIdxs.size(), 1, CV_32SC1);
-            for(unsigned int i = 0; i < recoveredIdxs.size(); i++) {
-                _recoveredIdxs.getMat().ptr< int >()[i] = recoveredIdxs[i];
-            }
+            Mat(recoveredIdxs).copyTo(_recoveredIdxs);
         }
     }
 }

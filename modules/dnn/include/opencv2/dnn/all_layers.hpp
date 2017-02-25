@@ -210,6 +210,7 @@ namespace dnn
     public:
 
         CV_PROP_RW Size kernel, stride, pad, dilation;
+        CV_PROP_RW String padMode;
     };
 
     class CV_EXPORTS_W ConvolutionLayer : public BaseConvolutionLayer
@@ -238,9 +239,12 @@ namespace dnn
         CV_PROP_RW int type;
 
         CV_PROP_RW int size;
-        CV_PROP_RW double alpha, beta;
+        CV_PROP_RW double alpha, beta, bias;
+        CV_PROP_RW bool normBySize;
 
-        static CV_WRAP Ptr<LRNLayer> create(int type = LRNLayer::CHANNEL_NRM, int size = 5, double alpha = 1, double beta = 0.75);
+        static CV_WRAP Ptr<LRNLayer> create(int type = LRNLayer::CHANNEL_NRM, int size = 5,
+                                            double alpha = 1, double beta = 0.75, double bias = 1,
+                                            bool normBySize = true);
     };
 
     class CV_EXPORTS_W PoolingLayer : public Layer
@@ -257,8 +261,11 @@ namespace dnn
         CV_PROP_RW int type;
         CV_PROP_RW Size kernel, stride, pad;
         CV_PROP_RW bool globalPooling;
+        CV_PROP_RW String padMode;
 
-        static CV_WRAP Ptr<PoolingLayer> create(int type = PoolingLayer::MAX, Size kernel = Size(2, 2), Size stride = Size(1, 1), Size pad = Size(0, 0));
+        static CV_WRAP Ptr<PoolingLayer> create(int type = PoolingLayer::MAX, Size kernel = Size(2, 2),
+                                                Size stride = Size(1, 1), Size pad = Size(0, 0),
+                                                const cv::String& padMode = "");
         static CV_WRAP Ptr<PoolingLayer> createGlobal(int type = PoolingLayer::MAX);
     };
 
@@ -294,7 +301,8 @@ namespace dnn
         CV_PROP_RW BlobShape newShapeDesc;
         CV_PROP_RW Range newShapeRange;
 
-        static CV_WRAP Ptr<ReshapeLayer> create(const BlobShape &newShape, Range applyingRange = Range::all());
+        static CV_WRAP Ptr<ReshapeLayer> create(const BlobShape &newShape, Range applyingRange = Range::all(),
+                                                bool enableReordering = false);
     };
 
     class CV_EXPORTS_W ConcatLayer : public Layer

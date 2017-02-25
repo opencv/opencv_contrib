@@ -62,13 +62,13 @@ public:
     * @param control - the current control vector,
     * @return the predicted estimate of the state.
     */
-    virtual Mat predict( const Mat& control = Mat() ) = 0;
+    virtual Mat predict( InputArray control = noArray() ) = 0;
 
     /** The function performs correction step of the algorithm
     * @param measurement - the current measurement vector,
     * @return the corrected estimate of the state.
     */
-    virtual Mat correct( const Mat& measurement ) = 0;
+    virtual Mat correct( InputArray measurement ) = 0;
 
     /**
     * @return the process noise cross-covariance matrix.

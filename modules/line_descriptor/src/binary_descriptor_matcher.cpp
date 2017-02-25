@@ -54,7 +54,7 @@ namespace line_descriptor
 /* constructor */
 BinaryDescriptorMatcher::BinaryDescriptorMatcher()
 {
-  dataset = new Mihasher( 256, 32 );
+  dataset = Ptr<Mihasher>(new Mihasher( 256, 32 ));
   nextAddedIndex = 0;
   numImages = 0;
   descrInDS = 0;
@@ -83,7 +83,7 @@ void BinaryDescriptorMatcher::add( const std::vector<Mat>& descriptors )
 void BinaryDescriptorMatcher::train()
 {
   if( !dataset )
-    dataset = new Mihasher( 256, 32 );
+    dataset = Ptr<Mihasher>(new Mihasher( 256, 32 ));
 
   if( descriptorsMat.rows > 0 )
     dataset->populate( descriptorsMat, descriptorsMat.rows, descriptorsMat.cols );
@@ -97,7 +97,7 @@ void BinaryDescriptorMatcher::clear()
 {
   descriptorsMat.release();
   indexesMap.clear();
-  dataset = 0;
+  dataset.release();
   nextAddedIndex = 0;
   numImages = 0;
   descrInDS = 0;
@@ -596,7 +596,7 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, std::vec
 void BinaryDescriptorMatcher::Mihasher::batchquery( UINT32 * results, UINT32 *numres, const cv::Mat & queries, UINT32 numq, int dim1queries )
 {
   /* create and initialize a bitarray */
-  counter = new bitarray;
+  counter = makePtr<bitarray>();
   counter->init( N );
 
   UINT32 *res = new UINT32[K * ( D + 1 )];
@@ -627,8 +627,6 @@ void BinaryDescriptorMatcher::Mihasher::batchquery( UINT32 * results, UINT32 *nu
 
   delete[] res;
   delete[] chunks;
-
-  delete counter;
 }
 
 /* execute a single query */
@@ -769,12 +767,12 @@ BinaryDescriptorMatcher::Mihasher::Mihasher( int B_val, int _m )
    (m-mplus) is the number of chunks with (b-1) bits */
   mplus = B - m * ( b - 1 );
 
-  xornum = new UINT32[d + 2];
+  xornum.resize(d + 2);
   xornum[0] = 0;
   for ( int i = 0; i <= d; i++ )
     xornum[i + 1] = xornum[i] + (UINT32) choose( b, i );
 
-  H = new SparseHashtable[m];
+  H.resize(m);
 
   /* H[i].init might fail */
   for ( int i = 0; i < mplus; i++ )
@@ -792,8 +790,6 @@ void BinaryDescriptorMatcher::Mihasher::setK( int K_val )
 /* desctructor */
 BinaryDescriptorMatcher::Mihasher::~Mihasher()
 {
-  delete[] xornum;
-  delete[] H;
 }
 
 /* populate tables */
@@ -821,7 +817,6 @@ void BinaryDescriptorMatcher::Mihasher::populate( cv::Mat & _codes, UINT32 N_val
 /* constructor */
 BinaryDescriptorMatcher::SparseHashtable::SparseHashtable()
 {
-  table = NULL;
   size = 0;
   b = 0;
 }
@@ -835,7 +830,7 @@ int BinaryDescriptorMatcher::SparseHashtable::init( int _b )
     return 1;
 
   size = UINT64_1 << ( b - 5 );  // size = 2 ^ b
-  table = (BucketGroup*) calloc( (size_t)size, sizeof(BucketGroup) );
+  table = std::vector<BucketGroup>((size_t)size, BucketGroup(false));
 
   return 0;
 
@@ -844,26 +839,28 @@ int BinaryDescriptorMatcher::SparseHashtable::init( int _b )
 /* destructor */
 BinaryDescriptorMatcher::SparseHashtable::~SparseHashtable()
 {
-  free (table);
 }
 
 /* insert data */
 void BinaryDescriptorMatcher::SparseHashtable::insert( UINT64 index, UINT32 data )
 {
-  table[index >> 5].insert( (int) ( index % 32 ), data );
+  table[(size_t)(index >> 5)].insert( (int) ( index & 31 ), data );
 }
 
 /* query data */
 UINT32* BinaryDescriptorMatcher::SparseHashtable::query( UINT64 index, int *Size )
 {
-  return table[index >> 5].query( (int) ( index % 32 ), Size );
+  return table[(size_t)(index >> 5)].query( (int) ( index & 31 ), Size );
 }
 
 /* constructor */
-BinaryDescriptorMatcher::BucketGroup::BucketGroup()
+BinaryDescriptorMatcher::BucketGroup::BucketGroup(bool needAllocateGroup)
 {
   empty = 0;
-  group = std::vector < uint32_t > ( 2, 0 );
+  if (needAllocateGroup)
+    group = std::vector < uint32_t > ( 2, 0 );
+  else
+    group = std::vector < uint32_t > ( 0, 0 );
 }
 
 /* destructor */

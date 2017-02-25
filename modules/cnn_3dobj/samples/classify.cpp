@@ -38,7 +38,7 @@
  * @author Yida Wang
  */
 #include <opencv2/cnn_3dobj.hpp>
-#include <opencv2/features2d/features2d.hpp>
+#include <opencv2/features2d.hpp>
 #include <iomanip>
 using namespace cv;
 using namespace std;
@@ -48,7 +48,7 @@ using namespace cv::cnn_3dobj;
  * @function listDir
  * @brief Making all files names under a directory into a list
  */
-void listDir(const char *path, std::vector<String>& files, bool r)
+static void listDir(const char *path, std::vector<String>& files, bool r)
 {
     DIR *pDir;
     struct dirent *ent;
@@ -82,7 +82,7 @@ void listDir(const char *path, std::vector<String>& files, bool r)
  * @function featureWrite
  * @brief Writing features of gallery images into binary files
  */
-int featureWrite(const Mat &features, const String &fname)
+static int featureWrite(const Mat &features, const String &fname)
 {
     ofstream ouF;
     ouF.open(fname.c_str(), std::ofstream::binary);
@@ -131,7 +131,6 @@ int main(int argc, char** argv)
     String feature_blob = parser.get<String>("feature_blob");
     int num_candidate = parser.get<int>("num_candidate");
     String device = parser.get<String>("device");
-    int dev_id = parser.get<int>("dev_id");
     int gallery_out = parser.get<int>("gallery_out");
     /* Initialize a net work with Device */
     cv::cnn_3dobj::descriptorExtractor descriptor(device);
@@ -167,7 +166,7 @@ int main(int argc, char** argv)
     {
         std::cout << std::endl << "---------- Features of gallery images ----------" << std::endl;
         /* Print features of the reference images. */
-        for (unsigned int i = 0; i < feature_reference.rows; i++)
+        for (int i = 0; i < feature_reference.rows; i++)
             std::cout << feature_reference.row(i) << endl;
         std::cout << std::endl << "---------- Saving features of gallery images into feature.bin ----------" << std::endl;
         featureWrite(feature_reference, "feature.bin");
@@ -179,7 +178,7 @@ int main(int argc, char** argv)
         std::cout << std::endl << "---------- Features of gallery images ----------" << std::endl;
         std::vector<std::pair<String, float> > prediction;
         /* Print features of the reference images. */
-        for (unsigned int i = 0; i < feature_reference.rows; i++)
+        for (int i = 0; i < feature_reference.rows; i++)
             std::cout << feature_reference.row(i) << endl;
         cv::Mat feature_test;
         descriptor.extract(img, feature_test, feature_blob);

@@ -66,7 +66,7 @@ namespace cvtest {
     TEST(xphoto_grayworld_white_balance, regression)
     {
         String dir = cvtest::TS::ptr()->get_data_path() + "cv/xphoto/simple_white_balance/";
-        const int nTests = 14;
+        const int nTests = 8;
         const float wb_thresh = 0.5f;
         const float acc_thresh = 2.f;
         Ptr<xphoto::GrayworldWB> wb = xphoto::createGrayworldWB();

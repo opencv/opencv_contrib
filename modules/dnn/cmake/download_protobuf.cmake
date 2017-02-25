@@ -1,6 +1,6 @@
 set(PROTOBUF_CPP_NAME "libprotobuf")
 set(PROTOBUF_CPP_DOWNLOAD_HASH "bd5e3eed635a8d32e2b99658633815ef")
-set(PROTOBUF_CPP_PATH "${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/protobuf/sources") # /protobuf-3.1.0 subdirectory
+set(PROTOBUF_CPP_PATH "${CMAKE_CURRENT_BINARY_DIR}/3rdparty/protobuf/sources") # /protobuf-3.1.0 subdirectory
 
 set(OPENCV_PROTOBUF_CPP_DOWNLOAD_URL ${OPENCV_PROTOBUF_URL};$ENV{OPENCV_PROTOBUF_URL};https://github.com/google/protobuf/releases/download/)
 

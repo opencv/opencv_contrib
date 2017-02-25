@@ -53,12 +53,14 @@ namespace cv
 namespace dnn
 {
 
-LRNLayerImpl::LRNLayerImpl(int type_, int size_, double alpha_, double beta_)
+LRNLayerImpl::LRNLayerImpl(int type_, int size_, double alpha_, double beta_, double bias_, bool normBySize_)
 {
     type = type_;
     size = size_;
     alpha = alpha_;
     beta = beta_;
+    bias = bias_;
+    normBySize = normBySize_;
 }
 
 void LRNLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
@@ -118,6 +120,7 @@ void LRNLayerImpl::channelNoramlization_(Blob &srcBlob, Blob &dstBlob)
     int num = srcBlob.num();
     int channels = srcBlob.channels();
     int ksize = (size - 1) / 2;
+    int sizeNormFactor = normBySize ? size : 1;
 
     XMat srcMat = srcBlob.getRefConst<XMat>();
     XMat dstMat = dstBlob.getRef<XMat>();
@@ -146,7 +149,7 @@ void LRNLayerImpl::channelNoramlization_(Blob &srcBlob, Blob &dstBlob)
             }
 
             XMat dst = getPlane(dstMat, n, cn);
-            accum.convertTo(dst, dst.type(), alpha/size, 1);
+            accum.convertTo(dst, dst.type(), alpha/sizeNormFactor, bias);
             cv::pow(dst, beta, dst);
             cv::divide(getPlane(srcMat, n, cn), dst, dst);
         }
@@ -171,13 +174,15 @@ bool LRNLayerImpl::channelNoramlization_ocl(const UMat &src, UMat &dst)
 
     Shape shape = Shape::like(src);
     int ksize = (size - 1) / 2;
+    int sizeNormFactor = normBySize ? size : 1;
+    // TODO: add bias
     size_t wgSize = ocl::Device::getDefault().maxWorkGroupSize();
     UMat &scaleBuf = buf.umatRef();
 
     size_t nthreads = (size_t)(shape.total() / shape[1]);
     kerScale.args((int)nthreads,
                   ocl::KernelArg::PtrReadOnly(src), shape[0], shape[1], shape[2], shape[3],
-                  size, (float)(alpha/size), (float)ksize, ocl::KernelArg::PtrWriteOnly(scaleBuf));
+                  size, (float)(alpha/sizeNormFactor), (float)ksize, ocl::KernelArg::PtrWriteOnly(scaleBuf));
     if (!kerScale.run(1, &nthreads, &wgSize, true))
         return false;
 
@@ -223,6 +228,7 @@ void LRNLayerImpl::spatialNormalization_(Blob &srcBlob, Blob &dstBlob)
 {
     int num = srcBlob.num();
     int channels = srcBlob.channels();
+    int sizeNormFactor = normBySize ? size*size : 1;
 
     XMat srcMat = srcBlob.getRefConst<XMat>();
     XMat dstMat = dstBlob.getRef<XMat>();
@@ -236,7 +242,7 @@ void LRNLayerImpl::spatialNormalization_(Blob &srcBlob, Blob &dstBlob)
 
             sqrBoxFilter_(src, dst);
 
-            dst.convertTo(dst, dst.type(), alpha/(size*size), 1);
+            dst.convertTo(dst, dst.type(), alpha/sizeNormFactor, bias);
             cv::pow(dst, beta, dst);
             cv::divide(src, dst, dst);
         }
@@ -244,9 +250,10 @@ void LRNLayerImpl::spatialNormalization_(Blob &srcBlob, Blob &dstBlob)
 }
 
 
-Ptr<LRNLayer> LRNLayer::create(int type, int size, double alpha, double beta)
+Ptr<LRNLayer> LRNLayer::create(int type, int size, double alpha, double beta, double bias,
+                               bool normBySize)
 {
-    return Ptr<LRNLayer>(new LRNLayerImpl(type, size, alpha, beta));
+    return Ptr<LRNLayer>(new LRNLayerImpl(type, size, alpha, beta, bias, normBySize));
 }
 
 }
