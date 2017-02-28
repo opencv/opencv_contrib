@@ -161,8 +161,8 @@ bool TrackerGOTURNImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     targetPatch.convertTo(targetPatch, CV_32F);
     searchPatch.convertTo(searchPatch, CV_32F);
 
-    dnn::Blob targetBlob = dnn::Blob(targetPatch);
-    dnn::Blob searchBlob = dnn::Blob(searchPatch);
+    dnn::Blob targetBlob = dnn::Blob::fromImages(targetPatch);
+    dnn::Blob searchBlob = dnn::Blob::fromImages(searchPatch);
 
     net.setBlob(".data1", targetBlob);
     net.setBlob(".data2", searchBlob);
