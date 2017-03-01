@@ -944,7 +944,7 @@ class MarkerContourParallel : public ParallelLoopBody {
     }
 
     private:
-    MarkerContourParallel &operator=(const MarkerSubpixelParallel &){
+    MarkerContourParallel &operator=(const MarkerContourParallel &){
         return *this;
     }
 
