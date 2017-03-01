@@ -926,6 +926,36 @@ static void _refineCandidateLines(std::vector<Point>& nContours, std::vector<Poi
 	}
 }
 
+
+/**
+  * ParallelLoopBody class for the parallelization of the marker corner contour refinement
+  * Called from function detectMarkers()
+  */
+class MarkerContourParallel : public ParallelLoopBody {
+    public:
+    MarkerContourParallel( vector< vector< Point > >& _contours, vector< vector< Point2f > >& _candidates,  const Mat& _camMatrix, const Mat& _distCoeff)
+        : contours(_contours), candidates(_candidates), camMatrix(_camMatrix), distCoeff(_distCoeff){}
+
+    void operator()(const Range &range) const {
+
+        for(int i = range.start; i < range.end; i++) {
+            _refineCandidateLines(contours[i], candidates[i], camMatrix, distCoeff);
+        }
+    }
+
+    private:
+    MarkerContourParallel &operator=(const MarkerSubpixelParallel &){
+        return *this;
+    }
+
+    vector< vector< Point > >& contours;
+    vector< vector< Point2f > >& candidates;
+    const Mat& camMatrix;
+    const Mat& distCoeff;
+};
+
+
+
 /**
   */
 void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, OutputArrayOfArrays _corners,
@@ -977,7 +1007,9 @@ void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Output
     if( _params->cornerRefinementMethod == CORNER_REFINE_CONTOUR){
 
         if(! _ids.empty()){
-            _refineCandidateLines(contours[0], candidates[0], camMatrix.getMat(), distCoeff.getMat());
+
+            // do corner refinement using the contours for each detected markers
+            parallel_for_(Range(0, _corners.cols()), MarkerContourParallel(contours, candidates, camMatrix.getMat(), distCoeff.getMat()));
 
             // copy the corners to the output array
             _copyVector2Output(candidates, _corners);
