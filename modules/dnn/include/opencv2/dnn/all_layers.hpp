@@ -412,7 +412,7 @@ namespace dnn
     class CV_EXPORTS_W MaxUnpoolLayer : public Layer
     {
     public:
-        static CV_WRAP Ptr<MaxUnpoolLayer> create(Size unpoolSize);
+        static CV_WRAP Ptr<MaxUnpoolLayer> create(Size poolKernel, Size poolPad, Size poolStride);
     };
 
     class CV_EXPORTS_W ScaleLayer : public Layer
