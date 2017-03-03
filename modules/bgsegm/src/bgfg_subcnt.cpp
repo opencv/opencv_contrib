@@ -50,21 +50,10 @@ namespace cv
 namespace bgsegm
 {
 
-/** @brief Implementation of background subtraction based on counting.
- *  About as fast as MOG2 on a high end system (benchmarked on )
- *  More than twice faster than MOG2 on cheap hardware (benchmarked on Raspberry Pi3).
- *  Algorithm by Sagi Zeevi
- */
 class BackgroundSubtractorCNTImpl: public BackgroundSubtractorCNT
 {
 public:
-    /**
-     * @brief BackgroundSubtractorCNTImpl
-     * @param stability number of frames with same pixel color to consider stable
-     * @param useHistory determines if we're giving a pixel credit for being stable for a long time
-     * @param maxStability maximum allowed credit for a pixel in history
-     * @param isParallel determines if we're parallelizing the algorithm
-     */
+
     BackgroundSubtractorCNTImpl(int minStability,
                                 bool useHistory,
                                 int maxStability,
