@@ -228,9 +228,9 @@ public:
 
 /** @brief Creates a CNT Background Subtractor
 
-@param stability number of frames with same pixel color to consider stable
+@param minPixelStability number of frames with same pixel color to consider stable
 @param useHistory determines if we're giving a pixel credit for being stable for a long time
-@param maxStability maximum allowed credit for a pixel in history
+@param maxPixelStability maximum allowed credit for a pixel in history
 @param isParallel determines if we're parallelizing the algorithm
  */
 
