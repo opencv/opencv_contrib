@@ -38,7 +38,7 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 //M*/
-
+#include "opencv2/opencv_modules.hpp"
 #include "gtrTracker.hpp"
 
 
@@ -54,9 +54,16 @@ void TrackerGOTURN::Params::write(cv::FileStorage& /*fs*/) const {}
 
 Ptr<TrackerGOTURN> TrackerGOTURN::createTracker(const TrackerGOTURN::Params &parameters)
 {
+#ifdef HAVE_OPENCV_DNN
     return Ptr<gtr::TrackerGOTURNImpl>(new gtr::TrackerGOTURNImpl(parameters));
+#else
+    (void)(parameters);
+    CV_ErrorNoReturn(cv::Error::StsNotImplemented , "to use GOTURN, the tracking module needs to be built with opencv_dnn !");
+#endif
 }
 
+
+#ifdef HAVE_OPENCV_DNN
 namespace gtr
 {
 
@@ -183,9 +190,11 @@ bool TrackerGOTURNImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     //Set new model image and BB from current frame
     ((TrackerGOTURNModel*)static_cast<TrackerModel*>(model))->setImage(curFrame);
     ((TrackerGOTURNModel*)static_cast<TrackerModel*>(model))->setBoudingBox(curBB);
+
     return true;
 }
 
 }
+#endif // OPENCV_HAVE_DNN
 
 }
