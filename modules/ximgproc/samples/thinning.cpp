@@ -11,6 +11,7 @@ using namespace cv;
 int main()
 {
     Mat img = imread("opencv-logo.png", IMREAD_COLOR);
+    resize(img, img, Size(), 0.5, 0.5);
 
     /// Threshold the input image
     Mat img_grayscale, img_binary;
@@ -19,8 +20,8 @@ int main()
 
     /// Apply thinning to get a skeleton
     Mat img_thinning_ZS, img_thinning_GH;
-    //ximgproc::thinning(img_binary, img_thinning_ZS, THINNING_ZHANGSUEN);
-    //ximgproc::thinning(img_binary, img_thinning_GH, THINNING_GUOHALL);
+    ximgproc::thinning(img_binary, img_thinning_ZS, ximgproc::THINNING_ZHANGSUEN);
+    ximgproc::thinning(img_binary, img_thinning_GH, ximgproc::THINNING_GUOHALL);
 
     /// Make 3 channel images from thinning result
     Mat result_ZS(img.rows, img.cols, CV_8UC3), result_GH(img.rows, img.cols, CV_8UC3);
