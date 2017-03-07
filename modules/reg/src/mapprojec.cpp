@@ -51,8 +51,8 @@ MapProjec::MapProjec()
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MapProjec::MapProjec(const Matx<double, 3, 3>& projTr)
-    : projTr_(projTr)
+MapProjec::MapProjec(InputArray projTr)
+    : projTr_(projTr.getMat())
 {
 }
 

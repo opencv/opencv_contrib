@@ -62,7 +62,7 @@ public:
      * \param[in] linTr Linear part of the affine transformation
      * \param[in] shift Displacement part of the affine transformation
      */
-    MapAffine(const cv::Matx<double, 2, 2>& linTr, const cv::Vec<double, 2>& shift);
+    CV_WRAP MapAffine(InputArray linTr, InputArray shift);
 
     /*!
      * Destructor
