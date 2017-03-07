@@ -62,7 +62,7 @@ public:
      * Constructor providing explicit values
      * \param[in] projTr Projective transformation
      */
-    MapProjec(const cv::Matx<double, 3, 3>& projTr);
+    CV_WRAP MapProjec(InputArray projTr);
 
     /*!
      * Destructor
