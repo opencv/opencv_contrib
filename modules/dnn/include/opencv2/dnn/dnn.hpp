@@ -314,7 +314,7 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
     /** @brief Reads a network model stored in TensorFlow model files.
       * @details This is shortcut consisting from createTensorflowImporter and Importer::populateNet calls.
       */
-    CV_EXPORTS_W Ptr<Net> readNetFromTensorflow(const String &model);
+    CV_EXPORTS Ptr<Net> readNetFromTensorflow(const String &model);
 
     /** @brief Creates the importer of <a href="http://torch.ch">Torch7</a> framework network.
      *  @param filename path to the file, dumped from Torch by using torch.save() function.
