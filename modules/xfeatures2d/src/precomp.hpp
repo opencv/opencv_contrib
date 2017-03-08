@@ -61,4 +61,6 @@
 
 #include "opencv2/core/private.hpp"
 
+#define USE_AVX2  (cv::checkHardwareSupport(CV_CPU_AVX2))
+
 #endif
