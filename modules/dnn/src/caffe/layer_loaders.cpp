@@ -336,9 +336,10 @@ Ptr<Layer> createLayerFromCaffe<ChannelsPReLULayer>(LayerParams& params)
 template<> //MaxUnpoolLayer specialization
 Ptr<Layer> createLayerFromCaffe<MaxUnpoolLayer>(LayerParams& params)
 {
-   Size outSize(params.get<int>("out_w"),
-                params.get<int>("out_h"));
-   Ptr<MaxUnpoolLayer> l = MaxUnpoolLayer::create(outSize);
+   Size poolKernel(params.get<int>("pool_k_w"), params.get<int>("pool_k_h")),
+        poolPad(params.get<int>("pool_pad_w"), params.get<int>("pool_pad_h")),
+        poolStride(params.get<int>("pool_stride_w"), params.get<int>("pool_stride_h"));
+   Ptr<MaxUnpoolLayer> l = MaxUnpoolLayer::create(poolKernel, poolPad, poolStride);
    l->setParamsFrom(params);
 
    return Ptr<Layer>(l);

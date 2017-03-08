@@ -297,7 +297,7 @@ public:
     computeSaliencyImpl function). The bigger value these scores are, it is more likely to be an
     object window.
      */
-  std::vector<float> getobjectnessValues();
+  CV_WRAP std::vector<float> getobjectnessValues();
 
   /** @brief This is a utility function that allows to set the correct path from which the algorithm will load
     the trained model.

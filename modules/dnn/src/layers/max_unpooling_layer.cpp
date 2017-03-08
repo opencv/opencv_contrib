@@ -16,19 +16,20 @@ namespace cv
 namespace dnn
 {
 
-MaxUnpoolLayerImpl::MaxUnpoolLayerImpl(Size outSize_):
-    outSize(outSize_)
+MaxUnpoolLayerImpl::MaxUnpoolLayerImpl(Size poolKernel_, Size poolPad_, Size poolStride_):
+    poolKernel(poolKernel_),
+    poolPad(poolPad_),
+    poolStride(poolStride_)
 {}
 
 void MaxUnpoolLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     CV_Assert(inputs.size() == 2);
+    CV_Assert(inputs[0]->total() == inputs[1]->total());
 
     BlobShape outShape = inputs[0]->shape();
-    outShape[2] = outSize.height;
-    outShape[3] = outSize.width;
-
-    CV_Assert(inputs[0]->total() == inputs[1]->total());
+    outShape[2] = (outShape[2] - 1) * poolStride.height + poolKernel.height - 2 * poolPad.height;
+    outShape[3] = (outShape[3] - 1) * poolStride.width + poolKernel.width - 2 * poolPad.width;
 
     outputs.resize(1);
     outputs[0].create(outShape);
@@ -63,9 +64,9 @@ void MaxUnpoolLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &
     }
 }
 
-Ptr<MaxUnpoolLayer> MaxUnpoolLayer::create(Size unpoolSize)
+Ptr<MaxUnpoolLayer> MaxUnpoolLayer::create(Size poolKernel, Size poolPad, Size poolStride)
 {
-    return Ptr<MaxUnpoolLayer>(new MaxUnpoolLayerImpl(unpoolSize));
+    return Ptr<MaxUnpoolLayer>(new MaxUnpoolLayerImpl(poolKernel, poolPad, poolStride));
 }
 
 }

@@ -51,8 +51,8 @@ MapAffine::MapAffine()
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MapAffine::MapAffine(const Matx<double, 2, 2>& linTr, const Vec<double, 2>& shift)
-    : linTr_(linTr), shift_(shift)
+MapAffine::MapAffine(InputArray linTr, InputArray shift)
+    : linTr_(linTr.getMat()), shift_(shift.getMat())
 {
 }
 
