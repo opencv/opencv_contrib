@@ -166,7 +166,7 @@ private:
 
   bool matchPose(const Pose3D& sourcePose, const Pose3D& targetPose);
 
-  void clusterPoses(std::vector<Pose3DPtr> poseList, int numPoses, std::vector<Pose3DPtr> &finalPoses);
+  void clusterPoses(std::vector<Pose3DPtr>& poseList, int numPoses, std::vector<Pose3DPtr> &finalPoses);
 
   bool trained;
 };
