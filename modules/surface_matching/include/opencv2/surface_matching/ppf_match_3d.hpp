@@ -101,7 +101,7 @@ public:
   /**
    * \brief Empty constructor. Sets default arguments
    */
-  PPF3DDetector();
+  CV_WRAP PPF3DDetector();
 
   /**
     * Constructor with arguments
@@ -109,7 +109,7 @@ public:
     * @param [in] relativeDistanceStep The discretization distance of the point pair distance relative to the model's diameter. This value has a direct impact on the hashtable. Using small values would lead to too fine discretization, and thus ambiguity in the bins of hashtable. Too large values would lead to no discrimination over the feature vectors and different point pair features would be assigned to the same bin. This argument defaults to the value of RelativeSamplingStep. For noisy scenes, the value can be increased to improve the robustness of the matching against noisy points.
     * @param [in] numAngles Set the discretization of the point pair orientation as the number of subdivisions of the angle. This value is the equivalent of RelativeDistanceStep for the orientations. Increasing the value increases the precision of the matching but decreases the robustness against incorrect normal directions. Decreasing the value decreases the precision of the matching but increases the robustness against incorrect normal directions. For very noisy scenes where the normal directions can not be computed accurately, the value can be set to 25 or 20.
     */
-  PPF3DDetector(const double relativeSamplingStep, const double relativeDistanceStep=0.05, const double numAngles=30);
+  CV_WRAP PPF3DDetector(const double relativeSamplingStep, const double relativeDistanceStep=0.05, const double numAngles=30);
 
   virtual ~PPF3DDetector();
 
@@ -128,7 +128,7 @@ public:
     *
     *  \details Uses the parameters set in the constructor to downsample and learn a new model. When the model is learnt, the instance gets ready for calling "match".
     */
-  void trainModel(const Mat& Model);
+  CV_WRAP void trainModel(const Mat& Model);
 
   /**
     *  \brief Matches a trained model across a provided scene.
@@ -138,7 +138,7 @@ public:
     *  @param [in] relativeSceneSampleStep The ratio of scene points to be used for the matching after sampling with relativeSceneDistance. For example, if this value is set to 1.0/5.0, every 5th point from the scene is used for pose estimation. This parameter allows an easy trade-off between speed and accuracy of the matching. Increasing the value leads to less points being used and in turn to a faster but less accurate pose computation. Decreasing the value has the inverse effect.
     *  @param [in] relativeSceneDistance Set the distance threshold relative to the diameter of the model. This parameter is equivalent to relativeSamplingStep in the training stage. This parameter acts like a prior sampling with the relativeSceneSampleStep parameter.
     */
-  void match(const Mat& scene, std::vector<Pose3DPtr> &results, const double relativeSceneSampleStep=1.0/5.0, const double relativeSceneDistance=0.03);
+  CV_WRAP void match(const Mat& scene, CV_OUT std::vector<Pose3DPtr> &results, const double relativeSceneSampleStep=1.0/5.0, const double relativeSceneDistance=0.03);
 
   void read(const FileNode& fn);
   void write(FileStorage& fs) const;
