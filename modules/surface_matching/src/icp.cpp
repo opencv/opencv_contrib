@@ -322,7 +322,6 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
   // initialize pose
   matrixIdentity(4, pose.val);
 
-  void* flann = indexPCFlann(dstPC0);
   Mat M = Mat::eye(4,4,CV_64F);
 
   double tempResidual = 0;
@@ -342,18 +341,14 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
     Mat srcPCT = transformPCPose(srcPC0, pose.val);
 
     const int sampleStep = cvRound((double)n/(double)numSamples);
-    std::vector<int> srcSampleInd;
 
+    srcPCT = samplePCUniform(srcPCT, sampleStep);
     /*
-    Note by Tolga Birdal
-    Downsample the model point clouds. If more optimization is required,
-    one could also downsample the scene points, but I think this might
-    decrease the accuracy. That's why I won't be implementing it at this
-    moment.
-
-    Also note that you have to compute a KD-tree for each level.
+    Tolga Birdal thinks that downsampling the scene points might decrease the accuracy.
+    Hamdi Sahloul, however, noticed that accuracy increased (pose residual decreased slightly).
     */
-    srcPCT = samplePCUniformInd(srcPCT, sampleStep, srcSampleInd);
+    Mat dstPCS = samplePCUniform(dstPC0, sampleStep);
+    void* flann = indexPCFlann(dstPCS);
 
     double fval_old=9999999999;
     double fval_perc=0;
@@ -416,7 +411,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
       // is assigned to the same model point m_j, then select p_i that corresponds
       // to the minimum distance
 
-      hashtable_int* duplicateTable = getHashtable(newJ, numElSrc, dstPC0.rows);
+      hashtable_int* duplicateTable = getHashtable(newJ, numElSrc, dstPCS.rows);
 
       for (di=0; di<duplicateTable->size; di++)
       {
@@ -463,7 +458,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
           const int indModel = indicesModel[di];
           const int indScene = indicesScene[di];
           const float *srcPt = srcPCT.ptr<float>(indModel);
-          const float *dstPt = dstPC0.ptr<float>(indScene);
+          const float *dstPt = dstPCS.ptr<float>(indScene);
           double *srcMatchPt = Src_Match.ptr<double>(di);
           double *dstMatchPt = Dst_Match.ptr<double>(di);
           int ci=0;
@@ -516,6 +511,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
     delete[] indices;
 
     tempResidual = fval_min;
+    destroyFlann(flann);
   }
 
   // Pose(1:3, 4) = Pose(1:3, 4)./scale;
@@ -533,7 +529,6 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
 
   residual = tempResidual;
 
-  destroyFlann(flann);
   return 0;
 }
 
