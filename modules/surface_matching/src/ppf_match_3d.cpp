@@ -327,7 +327,7 @@ bool PPF3DDetector::matchPose(const Pose3D& sourcePose, const Pose3D& targetPose
   return (phi<this->rotation_threshold && dNorm < this->position_threshold);
 }
 
-void PPF3DDetector::clusterPoses(std::vector<Pose3DPtr> poseList, int numPoses, std::vector<Pose3DPtr> &finalPoses)
+void PPF3DDetector::clusterPoses(std::vector<Pose3DPtr>& poseList, int numPoses, std::vector<Pose3DPtr> &finalPoses)
 {
   std::vector<PoseCluster3DPtr> poseClusters;
 
