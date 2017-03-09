@@ -645,7 +645,12 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
 
     Pose3DPtr pose(new Pose3D(alpha, refIndMax, maxVotes));
     pose->updatePose(rawPose);
-    poseList.push_back(pose);
+    #if defined (_OPENMP)
+    #pragma omp critical
+    #endif
+    {
+      poseList.push_back(pose);
+    }
 
 #if defined (_OPENMP)
     free(accumulator);
