@@ -45,6 +45,9 @@
 //1 - Train you own GOTURN model using <https://github.com/Auron-X/GOTURN_Training_Toolkit>
 //2 - Download pretrained caffemodel from <https://github.com/opencv/opencv_extra>
 
+#include "opencv2/opencv_modules.hpp"
+#if defined(HAVE_OPENCV_DNN) && defined(HAVE_OPENCV_DATASETS)
+
 #include "opencv2/datasets/track_alov.hpp"
 #include <opencv2/core/utility.hpp>
 #include <opencv2/tracking.hpp>
@@ -65,8 +68,8 @@ static bool startSelection = false;
 Rect2d boundingBox;
 
 static const char* keys =
-{ "{@dataset_path     |true| Dataset path     }"
-"{@dataset_id     |1| Dataset ID     }"
+{ "{@dataset_path     || Dataset path   }"
+  "{@dataset_id      |1| Dataset ID     }"
 };
 
 static void onMouse(int event, int x, int y, int, void*)
@@ -144,9 +147,14 @@ int main(int argc, char *argv[])
     Ptr<cv::datasets::TRACK_alov> dataset = TRACK_alov::create();
     dataset->load(datasetRootPath);
     dataset->initDataset(datasetID);
-
     //Read first frame
     dataset->getNextFrame(frame);
+    if (frame.empty())
+    {
+        cout << "invalid dataset: " << datasetRootPath << endl;
+        return -2;
+    }
+
     frame.copyTo(image);
     rectangle(image, boundingBox, Scalar(255, 0, 0), 2, 1);
     imshow("GOTURN Tracking", image);
@@ -215,3 +223,11 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
+#else // ! HAVE_OPENCV_DNN && HAVE_OPENCV_DATASETS
+#include <opencv2/core.hpp>
+int main() {
+    CV_Error(cv::Error::StsNotImplemented , "this sample needs to be built with opencv_datasets and opencv_dnn !");
+    return -1;
+}
+#endif
