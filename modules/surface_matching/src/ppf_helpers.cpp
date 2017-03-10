@@ -530,7 +530,7 @@ Mat transPCCoeff(Mat pc, float scale, float Cx, float Cy, float Cz, float MinVal
   return pcn;
 }
 
-Mat transformPCPose(Mat pc, double Pose[16])
+Mat transformPCPose(Mat pc, const double Pose[16])
 {
   Mat pct = Mat(pc.rows, pc.cols, CV_32F);
 

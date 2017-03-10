@@ -125,7 +125,7 @@ Mat transPCCoeff(Mat pc, float scale, float Cx, float Cy, float Cz, float MinVal
  *  @param [in] Pose 4x4 pose matrix, but linearized in row-major form.
  *  @return Transformed point cloud
 */
-CV_EXPORTS Mat transformPCPose(Mat pc, double Pose[16]);
+CV_EXPORTS Mat transformPCPose(Mat pc, const double Pose[16]);
 
 /**
  *  Generate a random 4x4 pose matrix
