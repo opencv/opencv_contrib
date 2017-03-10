@@ -94,7 +94,7 @@ typedef struct THash
   * detector.match(pcTest, results, 1.0/5.0,0.05);
   * @endcode
   */
-class CV_EXPORTS PPF3DDetector
+class CV_EXPORTS_W PPF3DDetector
 {
 public:
 
@@ -160,9 +160,9 @@ protected:
   void clearTrainingModels();
 
 private:
-  void computePPFFeatures(const double p1[4], const double n1[4],
-                          const double p2[4], const double n2[4],
-                          double f[4]);
+  void computePPFFeatures(const Vec3d& p1, const Vec3d& n1,
+                          const Vec3d& p2, const Vec3d& n2,
+                          Vec4d& f);
 
   bool matchPose(const Pose3D& sourcePose, const Pose3D& targetPose);
 
