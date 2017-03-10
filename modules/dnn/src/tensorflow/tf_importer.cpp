@@ -738,7 +738,7 @@ Ptr<Importer> cv::dnn::createTensorflowImporter(const String &model)
     return Ptr<Importer>(new TFImporter(model.c_str()));
 }
 
-Ptr<Net> cv::dnn::readNetFromTensorflow(const String &model)
+Net cv::dnn::readNetFromTensorflow(const String &model)
 {
     Ptr<Importer> tensorflowImporter;
     tensorflowImporter = createTensorflowImporter(model);
@@ -746,7 +746,7 @@ Ptr<Net> cv::dnn::readNetFromTensorflow(const String &model)
     Net net;
     if (tensorflowImporter)
         tensorflowImporter->populateNet(net);
-    return makePtr<Net>(net);
+    return net;
 }
 
 #else //HAVE_PROTOBUF
@@ -757,10 +757,10 @@ Ptr<Importer> cv::dnn::createTensorflowImporter(const String&)
     return Ptr<Importer>();
 }
 
-Ptr<Net> cv::dnn::readNetFromTensorflow(const String &model)
+Net cv::dnn::readNetFromTensorflow(const String&)
 {
     CV_Error(cv::Error::StsNotImplemented, "libprotobuf required to import data from TensorFlow models");
-    return Ptr<Net>();
+    return Net();
 }
 
 #endif //HAVE_PROTOBUF
