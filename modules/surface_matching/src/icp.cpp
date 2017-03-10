@@ -452,7 +452,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
 
       hashtableDestroy(duplicateTable);
 
-      if (selInd)
+      if (selInd >= 6)
       {
 
         Mat Src_Match = Mat(selInd, srcPCT.cols, CV_64F);
