@@ -43,6 +43,7 @@ the use of this software, even if advised of the possibility of such damage.
 #define __OPENCV_OPTFLOW_PRECOMP_HPP__
 
 #include <opencv2/optflow.hpp>
+#include <opencv2/optflow/nonfree.hpp>
 #include <opencv2/video.hpp>
 #include <opencv2/imgproc.hpp>
 #include "opencv2/core/ocl.hpp"
