@@ -1,3 +1,7 @@
+#include <iostream>
+
+#ifdef HAVE_OPENCV_ML
+
 #include "opencv2/opencv_modules.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui.hpp"
@@ -7,7 +11,6 @@
 #include "opencv2/ml.hpp"
 
 #include <fstream>
-#include <iostream>
 #include <memory>
 #include <functional>
 
@@ -2624,3 +2627,13 @@ int main(int argc, char** argv)
     }
     return 0;
 }
+
+#else
+
+int main()
+{
+    std::cerr << "OpenCV was built without ml module" << std::endl;
+    return 0;
+}
+
+#endif // HAVE_OPENCV_ML

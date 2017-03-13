@@ -1,6 +1,9 @@
 /*
  * shape_context.cpp -- Shape context demo for shape matching
  */
+#include <iostream>
+
+#ifdef HAVE_OPENCV_SHAPE
 
 #include "opencv2/shape.hpp"
 #include "opencv2/imgcodecs.hpp"
@@ -9,7 +12,6 @@
 #include "opencv2/features2d.hpp"
 #include "opencv2/xfeatures2d.hpp"
 #include <opencv2/core/utility.hpp>
-#include <iostream>
 #include <string>
 
 using namespace std;
@@ -74,3 +76,13 @@ int main(int argc, char** argv)
 
     return 0;
 }
+
+#else
+
+int main()
+{
+    std::cerr << "OpenCV was built without shape module" << std::endl;
+    return 0;
+}
+
+#endif // HAVE_OPENCV_SHAPE

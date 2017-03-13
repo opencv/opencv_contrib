@@ -4,6 +4,7 @@
 #include <opencv2/highgui.hpp>
 #include <iostream>
 #include <cstring>
+#include "roiSelector.hpp"
 
 using namespace std;
 using namespace cv;

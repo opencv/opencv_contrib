@@ -36,7 +36,6 @@
 
 #include "precomp.hpp"
 #include <opencv2/ximgproc.hpp>
-#include <opencv2/highgui.hpp>
 
 namespace cv
 {

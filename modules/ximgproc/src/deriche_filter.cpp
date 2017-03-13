@@ -34,7 +34,6 @@
  *  the use of this software, even if advised of the possibility of such damage.
  */
 #include "precomp.hpp"
-#include "opencv2/highgui.hpp"
 #include <math.h>
 #include <vector>
 #include <iostream>
