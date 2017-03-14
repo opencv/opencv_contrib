@@ -1,10 +1,3 @@
-/*
- * FGBGTest.cpp
- *
- *  Created on: May 7, 2012
- *      Author: Andrew B. Godbehere
- */
-
 #include "opencv2/bgsegm.hpp"
 #include "opencv2/videoio.hpp"
 #include "opencv2/highgui.hpp"
@@ -14,37 +7,67 @@
 using namespace cv;
 using namespace cv::bgsegm;
 
-static void help()
+const String about =
+    "\nA program demonstrating the use and capabilities of different background subtraction algrorithms\n"
+    "Using OpenCV version " + String(CV_VERSION) +
+    "\nPress q or ESC to exit\n";
+
+const String keys =
+        "{help h usage ? |      | print this message   }"
+        "{vid            |      | path to a video file }"
+        "{algo           | GMG  | name of the algorithm (GMG, CNT, KNN, MOG, MOG2) }"
+        ;
+
+static Ptr<BackgroundSubtractor> createBGSubtractorByName(const String& algoName)
 {
-    std::cout <<
-    "\nA program demonstrating the use and capabilities of a particular BackgroundSubtraction\n"
-    "algorithm described in A. Godbehere, A. Matsukawa, K. Goldberg, \n"
-    "\"Visual Tracking of Human Visitors under Variable-Lighting Conditions for a Responsive\n"
-    "Audio Art Installation\", American Control Conference, 2012, used in an interactive\n"
-    "installation at the Contemporary Jewish Museum in San Francisco, CA from March 31 through\n"
-    "July 31, 2011.\n"
-    "Call:\n"
-    "./BackgroundSubtractorGMG_sample\n"
-    "Using OpenCV version " << CV_VERSION << "\n"<<std::endl;
+    Ptr<BackgroundSubtractor> algo;
+    if(algoName == String("GMG"))
+        algo = createBackgroundSubtractorGMG(20, 0.7);
+    else if(algoName == String("CNT"))
+        algo = createBackgroundSubtractorCNT();
+    else if(algoName == String("KNN"))
+        algo = createBackgroundSubtractorKNN();
+    else if(algoName == String("MOG"))
+        algo = createBackgroundSubtractorMOG();
+    else if(algoName == String("MOG2"))
+        algo = createBackgroundSubtractorMOG2();
+
+    return algo;
 }
 
 int main(int argc, char** argv)
 {
-    help();
-
     setUseOptimized(true);
     setNumThreads(8);
 
-    Ptr<BackgroundSubtractor> fgbg = createBackgroundSubtractorGMG(20, 0.7);
-    if (!fgbg)
+    CommandLineParser parser(argc, argv, keys);
+    parser.about(about);
+    parser.printMessage();
+    if (parser.has("help"))
     {
-        std::cerr << "Failed to create BackgroundSubtractor.GMG Algorithm." << std::endl;
+        parser.printMessage();
+        return 0;
+    }
+
+    String videoPath = parser.get<String>("vid");
+    String algoName = parser.get<String>("algo");
+
+    if (!parser.check())
+    {
+        parser.printErrors();
+        return 0;
+    }
+
+    Ptr<BackgroundSubtractor> bgfs = createBGSubtractorByName(algoName);
+    if (!bgfs)
+    {
+        std::cerr << "Failed to create " << algoName << " background subtractor" << std::endl;
         return -1;
     }
 
     VideoCapture cap;
     if (argc > 1)
-        cap.open(argv[1]);
+        cap.open(videoPath);
     else
         cap.open(0);
 
@@ -65,7 +88,7 @@ int main(int argc, char** argv)
         if (frame.empty())
             break;
 
-        fgbg->apply(frame, fgmask);
+        bgfs->apply(frame, fgmask);
 
         frame.convertTo(segm, CV_8U, 0.5);
         add(frame, Scalar(100, 100, 0), segm, fgmask);
