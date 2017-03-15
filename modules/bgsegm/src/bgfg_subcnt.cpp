@@ -341,9 +341,12 @@ private:
 
 void BackgroundSubtractorCNTImpl::apply(InputArray image, OutputArray _fgmask, double learningRate)
 {
-    CV_Assert(image.type() == CV_8UC1);
+    CV_Assert(image.depth() == CV_8U);
 
     Mat frameIn = image.getMat();
+    if(frameIn.channels() != 1)
+        cvtColor(frameIn, frameIn, COLOR_BGR2GRAY);
+
     _fgmask.create(image.size(), CV_8U); // OutputArray usage requires this step
     Mat fgMask = _fgmask.getMat();
 
