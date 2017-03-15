@@ -5,13 +5,16 @@
 *      Author: erublee
 */
 
+#include <iostream>
+
+#ifdef HAVE_OPENCV_CALIB3D
+
 #include "opencv2/calib3d.hpp"
 #include "opencv2/videoio.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/features2d.hpp"
 #include "opencv2/xfeatures2d.hpp"
-#include <iostream>
 #include <list>
 #include <vector>
 
@@ -232,3 +235,13 @@ int main(int ac, char ** av)
     }
     return 0;
 }
+
+#else
+
+int main()
+{
+    std::cerr << "OpenCV was built without calib3d module" << std::endl;
+    return 0;
+}
+
+#endif

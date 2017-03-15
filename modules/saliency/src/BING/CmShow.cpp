@@ -42,7 +42,7 @@
 #include "../precomp.hpp"
 #include "CmShow.hpp"
 #include "opencv2/core.hpp"
-#include <opencv2/highgui.hpp>
+// #include <opencv2/highgui.hpp>
 
 typedef std::pair<int, int> CostiIdx;
 
@@ -51,7 +51,7 @@ namespace cv
 namespace saliency
 {
 
-Mat CmShow::HistBins( CMat& color3f, CMat& val, CStr& title, bool descendShow, CMat &with )
+Mat CmShow::HistBins( CMat& color3f, CMat& val, bool descendShow, CMat &with )
 {
   // Prepare data
   int H = 300, spaceH = 6, barH = 10, n = color3f.cols;
@@ -98,7 +98,6 @@ Mat CmShow::HistBins( CMat& color3f, CMat& val, CStr& title, bool descendShow, C
 
     x += binW[idx];
   }
-  imshow( String( title.c_str() ), showImg3b );
   return showImg3b;
 }
 

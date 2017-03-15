@@ -159,7 +159,7 @@ namespace cv
 			return cv::Rect2d(x, y, w, h);
 		}
 
-		cv::Mat tld_getNextDatasetFrame()
+		cv::String tld_getNextDatasetFrame()
 		{
 			char fullPath[100];
 			char numStr[10];
@@ -178,7 +178,7 @@ namespace cv
 			else strcat(fullPath, ".jpg");
 			frameNum++;
 
-			return cv::imread(fullPath);
+			return fullPath;
 		}
 
 	}
