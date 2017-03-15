@@ -535,7 +535,10 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
 // source point clouds are assumed to contain their normals
 int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, std::vector<Pose3DPtr>& poses)
 {
-  for (size_t i=0; i<poses.size(); i++)
+  #if defined _OPENMP
+  #pragma omp parallel for
+  #endif
+  for (int i=0; i<(int)poses.size(); i++)
   {
     Matx44d poseICP = Matx44d::eye();
     Mat srcTemp = transformPCPose(srcPC, poses[i]->pose);
