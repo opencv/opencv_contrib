@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
         ocr->run(group_img, output, &boxes, &words, &confidences, OCR_LEVEL_WORD);
 
         output.erase(remove(output.begin(), output.end(), '\n'), output.end());
-        //cout << "OCR output = \"" << output << "\" lenght = " << output.size() << endl;
+        //cout << "OCR output = \"" << output << "\" length = " << output.size() << endl;
         if (output.size() < 3)
             continue;
 
