@@ -39,8 +39,8 @@
 //
 //M*/
 
-#if defined(ENABLE_TORCH_IMPORTER) && ENABLE_TORCH_IMPORTER
-#if defined(ENABLE_TORCH_TESTS) && ENABLE_TORCH_TESTS
+#ifdef ENABLE_TORCH_IMPORTER
+
 #include "test_precomp.hpp"
 #include "npy_blob.hpp"
 
@@ -158,13 +158,12 @@ TEST(Torch_Importer, net_cadd_table)
     runTorchNet("net_cadd_table");
 }
 
-#if defined(ENABLE_TORCH_ENET_TESTS)
-
 TEST(Torch_Importer, ENet_accuracy)
 {
     Net net;
     {
-        Ptr<Importer> importer = createTorchImporter(_tf("Enet-model-best.net", false));
+        const string model = findDataFile("dnn/Enet-model-best.net", false);
+        Ptr<Importer> importer = createTorchImporter(model, true);
         ASSERT_TRUE(importer != NULL);
         importer->populateNet(net);
     }
@@ -182,8 +181,6 @@ TEST(Torch_Importer, ENet_accuracy)
     normAssert(ref, out);
 }
 
-#endif
-
 }
-#endif
+
 #endif
