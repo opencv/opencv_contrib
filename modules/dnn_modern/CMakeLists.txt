@@ -15,6 +15,23 @@ list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 # MODULE REQUIREMENTS
 # ----------------------------------------------------------------------------
 
+set(TINY_DNN_CPP_PATH "${OpenCV_BINARY_DIR}/3rdparty/tinydnn")
+set(TINY_DNN_CPP_ROOT "${TINY_DNN_CPP_PATH}/tiny-dnn-1.0.0a3")
+ocv_download(FILENAME "v1.0.0a3.tar.gz"
+               HASH "adb1c512e09ca2c7a6faef36f9c53e59"
+               URL
+                 "${OPENCV_TINY_DNN_URL}"
+                 "$ENV{OPENCV_TINY_DNN_URL}"
+                 "https://github.com/tiny-dnn/tiny-dnn/archive/"
+               DESTINATION_DIR "${TINY_DNN_CPP_PATH}"
+               STATUS TINY_DNN_DOWNLOAD_SUCCESS
+               ID "tiny-dnn"
+               UNPACK RELATIVE_URL)
+
+if(NOT TINY_DNN_DOWNLOAD_SUCCESS)
+  message(STATUS "Failed to download tiny-dnn sources")
+endif()
+
 find_package(TinyDNN QUIET)
 
 include(CheckCXXCompilerFlag)
@@ -59,12 +76,22 @@ if(TINYDNN_USE_NNPACK)
    list(APPEND REQUIRED_LIBRARIES ${NNPACK_LIB})
 endif()
 
-# we need to disable seializer unless we import cereal
-add_definitions(-DCNN_NO_SERIALIZATION)
+# we need to disable seializer unless we import cereal and we gonna use caffe converter
+add_definitions(-DCNN_NO_SERIALIZATION -DCNN_USE_CAFFE_CONVERTER)
 
 # NOTE: In case that proto files already exist,
 #       this is not needed anymore.
-find_package(Protobuf)
+find_package(Protobuf QUIET)
+
+if(DEFINED PROTOBUF_PROTOC_EXECUTABLE AND EXISTS ${PROTOBUF_PROTOC_EXECUTABLE})
+  execute_process(COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} caffe.proto --cpp_out=./
+                  WORKING_DIRECTORY ${TINYDNN_INCLUDE_DIRS}/tiny_dnn/io/caffe)
+else()
+  message(STATUS "The protocol buffer compiler is not found (PROTOBUF_PROTOC_EXECUTABLE='${PROTOBUF_PROTOC_EXECUTABLE}')")
+  ocv_module_disable(dnn_modern)
+  return()
+endif()
+
 list(APPEND REQUIRED_LIBRARIES ${PROTOBUF_LIBRARIES})
 
 ####
@@ -76,7 +103,6 @@ list(APPEND REQUIRED_LIBRARIES ${PROTOBUF_LIBRARIES})
 
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
-message(STATUS "C++11 support has been enabled by default.")
 
 # Unix
 if(CMAKE_COMPILER_IS_GNUCXX OR MINGW OR
@@ -138,7 +164,9 @@ endif()
 # DNN-MODERN MODULE
 # ----------------------------------------------------------------------------
 
-ocv_define_module(dnn_modern opencv_core opencv_imgproc opencv_imgcodecs WRAP python)
+ocv_define_module(dnn_modern opencv_core opencv_imgproc WRAP python)
 ocv_target_link_libraries(${the_module} ${REQUIRED_LIBRARIES})
 ocv_target_include_directories(${the_module} ${TINYDNN_INCLUDE_DIRS})
-target_compile_options(${the_module} PRIVATE "-Wno-error=non-virtual-dtor")
+ocv_warnings_disable(CMAKE_CXX_FLAGS
+  -Wnon-virtual-dtor -Wunused-parameter -Wshadow -Wundef
+  /wd4265 /wd4100 /wd4458 /wd4244 /wd4456)

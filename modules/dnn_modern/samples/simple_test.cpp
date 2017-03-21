@@ -1,7 +1,9 @@
 #include <opencv2/dnn_modern.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 #include <iostream>
 #include <fstream>
+
 
 using namespace std;
 using namespace cv;
@@ -79,7 +81,7 @@ int main(int argc, char* argv[]) {
 
     // inference !
     vector<float_t> scores;
-    caffe_ptr->eval(img, &scores);
+    caffe_ptr->eval(img, scores);
 
     // retrieve n labels
     const int n = 5;
