@@ -1165,7 +1165,7 @@ inline void SuperpixelLSCImpl::GetFeatureSpace()
     }
 
     // compute m_W normalization array
-    m_W = Mat( m_height, m_width, CV_32F );
+    m_W = Mat( m_height, m_width, CV_32F, 0.0f );
     parallel_for_( Range(0, m_width), FeatureSpaceWeights( m_chvec, &m_W,
                    sigmaX1, sigmaX2, sigmaY1, sigmaY2, sigmaC1, sigmaC2,
                    m_nr_channels, m_chvec_max, m_dist_coeff, m_color_coeff,
