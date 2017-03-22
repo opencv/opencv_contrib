@@ -61,6 +61,9 @@ public:
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
     void checkInputs(const std::vector<Blob*> &inputs);
+
+    virtual void getOutShapes(const std::vector<BlobShape> &inputs,
+                          std::vector<BlobShape> &outputs, const int requiredOutputs) const;
 };
 }
 }

@@ -112,6 +112,33 @@ void ConcatLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob> &ou
     }
 }
 
+void ConcatLayerImpl::getOutShapes(const std::vector<BlobShape> &inputs,
+                          std::vector<BlobShape> &outputs, const int requiredOutputs) const
+{
+    CV_Assert(inputs.size() > 0);
+    outputs.clear();
+    outputs.push_back(inputs[0]);
+    int cAxis = outputs.back().canonicalAxis(axis);
+
+    int axisSum = 0;
+    for (size_t i = 0; i < inputs.size(); i++)
+    {
+        BlobShape curShape = inputs[i];
+
+        CV_Assert(curShape.dims() == outputs.back().dims());
+        for (int curAxis = 0; curAxis < outputs.back().dims(); curAxis++)
+        {
+            if (curAxis != cAxis && outputs.back()[curAxis] != curShape[curAxis])
+                CV_Error(Error::StsBadSize, "Inconsitent shape for ConcatLayer");
+        }
+
+        axisSum += curShape[cAxis];
+    }
+
+    outputs.back()[cAxis] = axisSum;
+
+}
+
 Ptr<ConcatLayer> ConcatLayer::create(int axis)
 {
     return Ptr<ConcatLayer>(new ConcatLayerImpl(axis));

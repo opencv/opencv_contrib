@@ -184,6 +184,24 @@ PriorBoxLayer::PriorBoxLayer(LayerParams &params) : Layer(params)
     }
 }
 
+void PriorBoxLayer::getOutShapes(const std::vector<BlobShape> &inputs,
+                                 std::vector<BlobShape> &outputs, const int requiredOutputs) const
+{
+    CV_Assert(inputs.size() == 2);
+
+    int layerHeight = inputs[0][2];
+    int layerWidth = inputs[0][3];
+
+    // Since all images in a batch has same height and width, we only need to
+    // generate one set of priors which can be shared across all images.
+    size_t outNum = 1;
+    // 2 channels. First channel stores the mean of each prior coordinate.
+    // Second channel stores the variance of each prior coordinate.
+    size_t outChannels = 2;
+
+    outputs.resize(1, BlobShape(outNum, outChannels, layerHeight * layerWidth * _numPriors * 4));
+}
+
 void PriorBoxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     CV_Assert(inputs.size() == 2);
@@ -303,5 +321,20 @@ void PriorBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outpu
         }
     }
 }
+
+long PriorBoxLayer::getFLOPS(const std::vector<BlobShape> &inputs,
+                             const std::vector<BlobShape> &outputs) const
+{
+    (void)outputs; // suppress unused variable warning
+    long flops = 0;
+
+    for (int i = 0; i < inputs.size(); i++)
+    {
+        flops += inputs[i].total(2) * _numPriors * 4;
+    }
+
+    return flops;
+}
+
 }
 }

@@ -52,7 +52,6 @@ public:
             }
         }
     }
-
 protected:
     virtual void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs, const std::vector<Blob>& blobs) {
         CV_Assert(inputs.size() > 0);
@@ -151,6 +150,20 @@ void ShiftLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &o
 void ShiftLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     impl->forward(inputs, outputs, blobs);
+}
+
+long ShiftLayer::getFLOPS(const std::vector<BlobShape> &inputs,
+                          const std::vector<BlobShape> &outputs) const
+{
+    (void)outputs; // suppress unused variable warning
+    long flops = 0;
+
+    for(int i= 0; i < inputs.size(); i++)
+    {
+       flops += inputs[i].total();
+    }
+
+    return flops;
 }
 
 }

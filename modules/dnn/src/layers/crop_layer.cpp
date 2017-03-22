@@ -54,6 +54,20 @@ CropLayerImpl::CropLayerImpl(int start_axis_, const std::vector<int> &offset_)
     offset = offset_;
 }
 
+void CropLayerImpl::getOutShapes(const std::vector<BlobShape> &inputs,
+                                 std::vector<BlobShape> &outputs, const int requiredOutputs) const
+{
+    CV_Assert(inputs.size() == 2);
+
+    BlobShape dstShape = inputs[0];
+    for (int i = inputs[0].canonicalAxis(startAxis); i < inputs[0].dims(); i++)
+    {
+        dstShape[i] = inputs[1].size(i);
+    }
+
+    outputs.resize(1, dstShape);
+}
+
 void CropLayerImpl::allocate(const std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
 {
     CV_Assert(2 == inputs.size());

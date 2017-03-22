@@ -124,6 +124,30 @@ void PermuteLayer::computeStrides()
     _count = _oldStride[0] * _oldDimensionSize[0];
 }
 
+void PermuteLayer::getOutShapes(const std::vector<BlobShape> &inputs,
+                                std::vector<BlobShape> &outputs, const int requiredOutputs) const
+{
+    if(!_needsPermute)
+        return Layer::getOutShapes(inputs, outputs, requiredOutputs);
+
+    CV_Assert(inputs.size() > 0);
+    CV_Assert((int)_numAxes == inputs[0].dims());
+
+    BlobShape shapeBefore = inputs[0], shapeAfter;
+    for (size_t i = 0; i < _numAxes; i++)
+    {
+        shapeAfter[i] = shapeBefore[_order[i]];
+    }
+
+    outputs.clear();
+
+    for (size_t i = 0; i < inputs.size(); i++)
+    {
+        CV_Assert(inputs[i][2] == shapeBefore[2] && inputs[i][3] == shapeBefore[3]);
+        outputs.push_back(BlobShape(_newDimensionSize));
+    }
+}
+
 void PermuteLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     if(!_needsPermute)

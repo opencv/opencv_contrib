@@ -54,6 +54,17 @@ SplitLayerImpl::SplitLayerImpl(int outputsCount_ /*= -1*/)
     outputsCount = outputsCount_;
 }
 
+void SplitLayerImpl::getOutShapes(const std::vector<BlobShape> &inputs,
+                                  std::vector<BlobShape> &outputs,
+                                  const int requiredOutputs) const
+{
+    CV_Assert(inputs.size() == 1);
+
+    outputs.resize(outputsCount >= 0 ? outputsCount : requiredOutputs,
+                   inputs[0]);
+
+}
+
 void SplitLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     CV_Assert(inputs.size() == 1);

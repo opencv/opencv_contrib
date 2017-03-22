@@ -120,6 +120,17 @@ namespace dnn
         };
     }
 
+    long EltwiseLayerImpl::getFLOPS(const std::vector<BlobShape> &inputs,
+                                    const std::vector<BlobShape> &outputs) const
+    {
+        (void)outputs; // suppress unused variable warning
+        CV_Assert(inputs.size());
+
+        long flops = inputs.size() * inputs[0].total();
+
+        return flops;
+    }
+
     Ptr<EltwiseLayer> EltwiseLayer::create(EltwiseOp op, const std::vector<int> &coeffs)
     {
         return Ptr<EltwiseLayer>(new EltwiseLayerImpl(op, coeffs));

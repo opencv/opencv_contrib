@@ -68,6 +68,42 @@ void FlattenLayer::checkInputs(const std::vector<Blob*> &inputs)
     }
 }
 
+void FlattenLayer::getOutShapes(const std::vector<BlobShape> &inputs,
+                                std::vector<BlobShape> &outputs,
+                                const int requiredOutputs) const
+{
+    CV_Assert(inputs.size() > 0);
+
+    int numAxes = inputs[0].dims();
+    int startAxis = inputs[0].canonicalAxis(_startAxis);
+    int endAxis = inputs[0].canonicalAxis(_endAxis);
+
+    for (size_t i = 1; i < inputs.size(); i++)
+    {
+        CV_Assert(inputs[i] == inputs[0]);
+    }
+
+
+    CV_Assert(startAxis >= 0);
+    CV_Assert(endAxis >= startAxis && endAxis < (int)numAxes);
+
+    size_t flattenedDimensionSize = inputs[0].total(startAxis, endAxis);
+
+    std::vector<int> outputShapeVec;
+    for (int i = 0; i < startAxis; i++)
+    {
+        outputShapeVec.push_back(inputs[0][i]);
+    }
+    outputShapeVec.push_back(flattenedDimensionSize);
+    for (size_t i = endAxis + 1; i < numAxes; i++)
+    {
+        outputShapeVec.push_back(inputs[0][i]);
+    }
+    CV_Assert(outputShapeVec.size() <= 4);
+
+    outputs.resize(inputs.size(), BlobShape(outputShapeVec));
+}
+
 void FlattenLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     checkInputs(inputs);

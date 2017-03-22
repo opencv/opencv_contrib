@@ -160,6 +160,17 @@ public:
             }
         }
     }
+
+    virtual long getFLOPS(const std::vector<BlobShape> &inputs,
+                          const std::vector<BlobShape> &outputs) const
+    {
+        long flops = 0;
+        for (int i = 0; i < outputs.size(); i++)
+        {
+            flops += outputs[i].total() * func.getFLOPSPerElement();
+        }
+        return flops;
+    }
 };
 
 #ifdef HAVE_OPENCL
@@ -199,6 +210,8 @@ struct ReLUFunctor
         return true;
     }
     #endif
+
+    long getFLOPSPerElement() const {return 1;}
 };
 
 struct TanHFunctor
@@ -219,6 +232,8 @@ struct TanHFunctor
         return true;
     }
     #endif
+
+    long getFLOPSPerElement() const {return 1;}
 };
 
 struct SigmoidFunctor
@@ -239,6 +254,8 @@ struct SigmoidFunctor
         return true;
     }
     #endif
+
+    long getFLOPSPerElement() const {return 3;}
 };
 
 struct AbsValFunctor
@@ -259,6 +276,8 @@ struct AbsValFunctor
         return true;
     }
     #endif
+
+    long getFLOPSPerElement() const {return 1;}
 };
 
 struct BNLLFunctor
@@ -279,6 +298,8 @@ struct BNLLFunctor
         return true;
     }
     #endif
+
+    long getFLOPSPerElement() const {return 5;}
 };
 
 struct PowerFunctor
@@ -311,6 +332,8 @@ struct PowerFunctor
         return true;
     }
     #endif
+
+    long getFLOPSPerElement() const {return 3;}
 };
 
 class ChannelsPReLULayerImpl : public ChannelsPReLULayer
@@ -321,6 +344,9 @@ public:
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
+    virtual long getFLOPS(const std::vector<BlobShape> &inputs,
+                          const std::vector<BlobShape> &outputs) const;
 };
 
 }

@@ -84,6 +84,20 @@ void ChannelsPReLULayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blo
     }
 }
 
+long ChannelsPReLULayerImpl::getFLOPS(const std::vector<BlobShape> &inputs,
+                                      const std::vector<BlobShape> &outputs) const
+{
+    (void)inputs; // suppress unused variable warning
+    long flops = 0;
+
+    for (int i = 0; i < outputs.size(); i++)
+    {
+        flops += outputs[i].total() * 3;
+    }
+
+    return flops;
+}
+
 Ptr<ChannelsPReLULayer> ChannelsPReLULayer::create()
 {
     return Ptr<ChannelsPReLULayer>(new ChannelsPReLULayerImpl());

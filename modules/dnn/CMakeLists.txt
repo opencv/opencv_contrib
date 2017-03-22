@@ -64,6 +64,11 @@ if(BUILD_TESTS AND DEFINED ENV{OPENCV_TEST_DATA_PATH} AND (DOWNLOAD_EXTERNAL_TES
     add_definitions(-DENABLE_TORCH_ENET_TESTS=1)
 endif()
 
+    add_definitions(-DENABLE_CAFFE_MODEL_TESTS=1)
+    add_definitions(-DENABLE_CAFFE_ALEXNET_TEST=1)
+    add_definitions(-DENABLE_TF_INCEPTION_TESTS=1)
+    add_definitions(-DENABLE_TORCH_ENET_TESTS=1)
+
 # ----------------------------------------------------------------------------
 # Torch7 importer of blobs and models, produced by Torch.nn module
 # ----------------------------------------------------------------------------

@@ -56,6 +56,21 @@ FullyConnectedLayerImpl::FullyConnectedLayerImpl(int axis_)
     axis = axis_;
 }
 
+void FullyConnectedLayerImpl::getOutShapes(const std::vector<BlobShape> &inputs,
+                                           std::vector<BlobShape> &outputs,
+                                           const int requiredOutputs) const
+{
+    CV_Assert(inputs.size() > 0);
+    CV_Assert(1 <= blobs.size() && blobs.size() <= 2);
+    CV_Assert(blobs[0].dims() == 2);
+
+    int cAxis = inputs[0].canonicalAxis(axis);
+    int outerSize = inputs[0].total(0, cAxis);
+    int numOutput = blobs[0].size(0);
+    Shape outShape = Shape(outerSize, numOutput);
+    outputs.resize(inputs.size(), outShape);
+}
+
 void FullyConnectedLayerImpl::allocate(const std::vector<Blob*> &input, std::vector<Blob> &output)
 {
     CV_Assert(input.size() > 0);
@@ -119,6 +134,21 @@ void FullyConnectedLayerImpl::forward_(std::vector<Blob *> &input, std::vector<B
     }
 }
 
+long FullyConnectedLayerImpl::getFLOPS(const std::vector<BlobShape> &inputs,
+                                       const std::vector<BlobShape> &outputs) const
+{
+    (void)inputs; // suppress unused variable warning
+    long flops = 0;
+
+    int innerSize = blobs[0].size(1);
+    for(int i = 0; i < outputs.size(); i++)
+    {
+        flops += 3*innerSize*outputs[i].total();
+    }
+
+    return flops;
+
+}
 
 Ptr<InnerProductLayer> InnerProductLayer::create(int axis)
 {

@@ -215,6 +215,20 @@ void SoftMaxLayerImpl::forward_cpu(Blob &src, Blob &dst)
     }
 }
 
+long SoftMaxLayerImpl::getFLOPS(const std::vector<BlobShape> &inputs,
+                                const std::vector<BlobShape> &outputs) const
+{
+    (void)outputs; // suppress unused variable warning
+    long flops = 0;
+
+    for (int i = 0; i < inputs.size(); i++)
+    {
+        flops += 4*inputs[i].total();
+    }
+
+    return flops;
+}
+
 Ptr<SoftmaxLayer> SoftmaxLayer::create(int axis)
 {
     return Ptr<SoftmaxLayer>(new SoftMaxLayerImpl(axis));

@@ -309,6 +309,70 @@ void PoolingLayerImpl::computeOutputShape(Size inpSz)
     }
 }
 
+void PoolingLayerImpl::getOutShapes(const std::vector<BlobShape> &inputs,
+                          std::vector<BlobShape> &outputs, const int requiredOutputs) const
+{
+    CV_Assert(inputs.size() != 0);
+    Size in(inputs[0][3], inputs[0][2]), out;
+
+    if (padMode.empty()) {
+        //Yeah, something strange Caffe scheme-)
+        out.height = static_cast<int>(ceil(static_cast<float>(in.height + 2 * pad.height -
+                                                              kernel.height) / stride.height)) + 1;
+        out.width = static_cast<int>(ceil(static_cast<float>(in.width + 2 * pad.width -
+                                                             kernel.width) / stride.width)) + 1;
+
+        if (pad.height || pad.width)
+        {
+            // If we have padding, ensure that the last pooling starts strictly
+            // inside the image (instead of at the padding); otherwise clip the last.
+            if ((out.height - 1) * stride.height >= in.height + pad.height)
+                --out.height;
+            if ((out.width - 1) * stride.width >= in.width + pad.width)
+                --out.width;
+            CV_Assert((out.height - 1) * stride.height < in.height + pad.height);
+            CV_Assert((out.width - 1) * stride.width < in.width + pad.width);
+        }
+    }
+    else
+    {
+        cv::Size pad;
+        getConvPoolOutParams(in.height, in.width, kernel, stride, pad,
+                             padMode, out.height, out.width);
+    }
+
+    outputs.resize(type == MAX ? 2 * inputs.size() : inputs.size());
+    for (size_t i = 0; i < inputs.size(); i++)
+    {
+        size_t index = type == MAX ? 2*i : i;
+        outputs[index] = BlobShape(inputs[i][0], inputs[i][1], out.height, out.width);
+
+        if (type == MAX)
+            outputs[index + 1] = BlobShape(inputs[i][0], inputs[i][1], out.height, out.width);
+    }
+}
+
+long PoolingLayerImpl::getFLOPS(const std::vector<BlobShape> &inputs,
+                                const std::vector<BlobShape> &outputs) const
+{
+    (void)inputs; // suppress unused variable warning
+    long flops = 0;
+
+    for(int i = 0; i < outputs.size(); i++)
+    {
+        if (type == MAX)
+        {
+            if (i%2 == 0)
+                flops += outputs[i].total()*kernel.area();
+        }
+        else
+        {
+            flops += outputs[i].total()*(kernel.area() + 1);
+        }
+    }
+    return flops;
+}
+
 Ptr<PoolingLayer> PoolingLayer::create(int type, Size kernel, Size stride, Size pad,
                                        const String& padMode)
 {

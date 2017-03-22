@@ -265,6 +265,52 @@ void ConvolutionLayerImpl::im2row(const UMat &srcImg, UMat &dstCol)
     CV_Error(cv::Error::StsNotImplemented, "");
 }
 
+void ConvolutionLayerImpl::getOutShapes(const std::vector<BlobShape> &inputs,
+                                        std::vector<BlobShape> &outputs, const int requiredOutputs) const
+{
+    CV_Assert(blobs.size() != 0);
+    CV_Assert(inputs.size() != 0);
+
+    int inpCn = inputs[0][1];
+    int inpH = inputs[0][2];
+    int inpW = inputs[0][3];
+
+    int outCn = blobs[0].num(), outH, outW;
+
+    if (padMode.empty())
+    {
+        outH = (inpH + 2 * pad.height - (dilation.height * (kernel.height - 1) + 1)) / stride.height + 1;
+        outW = (inpW + 2 * pad.width - (dilation.width * (kernel.width - 1) + 1)) / stride.width + 1;
+    }
+    else
+    {
+        Size pad;
+        getConvPoolOutParams(inpH, inpW, kernel, stride, pad, padMode, outH, outW);
+    }
+
+    int group = inpCn / blobs[0].channels();
+
+    CV_Assert(inpCn % group == 0 && outCn % group == 0);
+    CV_Assert(blobs[0].num() == outCn && blobs[0].channels() == inpCn / group);
+
+    BlobShape outShape(inputs[0][0], outCn, outH, outW);
+    outputs.resize(inputs.size(), outShape);
+}
+
+long ConvolutionLayerImpl::getFLOPS(const std::vector<BlobShape> &inputs,
+                                    const std::vector<BlobShape> &outputs) const
+{
+    CV_Assert(inputs.size() == outputs.size());
+
+    long flops = 0;
+    for (int i = 0; i < inputs.size(); i++)
+    {
+        flops += outputs[i].total()*(2*kernel.area()*inputs[i][1] + 1);
+    }
+
+    return flops;
+}
+
 //Deconvolution
 
 void DeConvolutionLayerImpl::computeInpOutShape(const Blob &inpBlob)
@@ -363,6 +409,45 @@ void DeConvolutionLayerImpl::col2im(const UMat &colMat, UMat &dstImg)
     CV_Error(Error::StsInternal, "");
     dstImg = colMat;
 #endif
+}
+
+void DeConvolutionLayerImpl::getOutShapes(const std::vector<BlobShape> &inputs,
+                                          std::vector<BlobShape> &outputs, const int requiredOutputs) const
+{
+    CV_Assert(!bias || blobs[1].total() == (size_t)blobs[0].num());
+    CV_Assert(inputs.size() != 0);
+
+    int inpCn = inputs[0][1];
+    int inpH = inputs[0][2];
+    int inpW = inputs[0][3];
+
+    int outH = stride.height * (inpH - 1) + kernel.height - 2 * pad.height + adjustPad.height;
+    int outW = stride.width * (inpW - 1) + kernel.width - 2 * pad.width + adjustPad.width;
+    int outCn = blobs[0].num();
+
+    int group = inpCn / blobs[0].channels();
+
+    CV_Assert(inpCn % group == 0 && outCn % group == 0);
+    CV_Assert(blobs[0].num() == outCn && blobs[0].channels() == inpCn / group);
+
+    BlobShape outShape(inputs[0][0], outCn, outH, outW);
+    outputs.resize(inputs.size(), outShape);
+}
+
+long DeConvolutionLayerImpl::getFLOPS(const std::vector<BlobShape> &inputs,
+                                      const std::vector<BlobShape> &outputs) const
+{
+    CV_Assert(inputs.size() == outputs.size());
+
+    float flops = 0;
+    int outChannels = blobs[0].num();
+
+    for (int i = 0; i < inputs.size(); i++)
+    {
+        flops += 2*outChannels*kernel.area()*inputs[i].total();
+    }
+
+    return flops;
 }
 
 //Initializers

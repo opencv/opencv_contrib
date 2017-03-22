@@ -56,6 +56,17 @@ ReshapeLayerImpl::ReshapeLayerImpl(const BlobShape &newShape_, Range applyingRan
     newShapeRange = applyingRange_;
 }
 
+void ReshapeLayerImpl::getOutShapes(const std::vector<BlobShape> &inputs,
+                                    std::vector<BlobShape> &outputs, const int requiredOutputs) const
+{
+    outputs.clear();
+
+    for (size_t i = 0; i < inputs.size(); i++)
+    {
+        outputs.push_back(computeShapeByReshapeMask(inputs[i], newShapeDesc, newShapeRange));
+    }
+}
+
 void ReshapeLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     outputs.resize(inputs.size());

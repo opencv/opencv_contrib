@@ -64,6 +64,20 @@ void MaxUnpoolLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &
     }
 }
 
+void MaxUnpoolLayerImpl::getOutShapes(const std::vector<BlobShape> &inputs,
+                      std::vector<BlobShape> &outputs, const int requiredOutputs) const
+{
+    CV_Assert(inputs.size() == 2);
+    CV_Assert(inputs[0].total() == inputs[1].total());
+
+    BlobShape outShape = inputs[0];
+    outShape[2] = (outShape[2] - 1) * poolStride.height + poolKernel.height - 2 * poolPad.height;
+    outShape[3] = (outShape[3] - 1) * poolStride.width + poolKernel.width - 2 * poolPad.width;
+
+    outputs.clear();
+    outputs.push_back(outShape);
+}
+
 Ptr<MaxUnpoolLayer> MaxUnpoolLayer::create(Size poolKernel, Size poolPad, Size poolStride)
 {
     return Ptr<MaxUnpoolLayer>(new MaxUnpoolLayerImpl(poolKernel, poolPad, poolStride));

@@ -133,6 +133,51 @@ void SliceLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob> &out
     }
 }
 
+void SliceLayerImpl::getOutShapes(const std::vector<BlobShape> &inputs,
+                                  std::vector<BlobShape> &outputs, const int requiredOutputs) const
+{
+    CV_Assert(inputs.size() == 1);
+
+    outputs.clear();
+
+    BlobShape inpShape = inputs[0];
+    int cAxis = inpShape.canonicalAxis(axis);
+    int axisSize = inpShape[cAxis];
+
+    if (sliceIndices.size()) //divide blob with respect to passed parameters
+    {
+        std::vector<int> outAxisSize;
+        int prevSlice = 0;
+
+        for (size_t i = 0; i < sliceIndices.size(); i++)
+        {
+            if (!(prevSlice < sliceIndices[i] && sliceIndices[i] < axisSize))
+                CV_Error(Error::StsBadArg, "Slice indices should be positive, increased and don't exceed size of sliced dimension");
+
+            outAxisSize.push_back(sliceIndices[i] - prevSlice);
+            prevSlice = sliceIndices[i];
+        }
+        outAxisSize.push_back(axisSize - prevSlice);
+
+        for (size_t i = 0; i < outAxisSize.size(); i++)
+        {
+            inpShape[cAxis] = outAxisSize[i];
+            outputs.push_back(inpShape);
+        }
+    }
+    else //divide blob with respect to count of output blobs
+    {
+        CV_Assert(requiredOutputs > 0 && axisSize % requiredOutputs == 0);
+        int outAxisSize = axisSize / (int)requiredOutputs;
+
+        for (size_t i = 0; i < requiredOutputs; i++)
+        {
+            inpShape[cAxis] = outAxisSize;
+            outputs.push_back(inpShape);
+        }
+    }
+}
+
 Ptr<SliceLayer> SliceLayer::create(int axis)
 {
     return Ptr<SliceLayer>(new SliceLayerImpl(axis));

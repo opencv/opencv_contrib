@@ -28,6 +28,8 @@ public:
 
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
+    virtual void getOutShapes(const std::vector<BlobShape> &inputs,
+                          std::vector<BlobShape> &outputs, const int requiredOutputs) const;
 private:
     Size poolKernel;
     Size poolPad;

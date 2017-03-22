@@ -51,6 +51,18 @@ void ScaleLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outp
     }
 }
 
+long ScaleLayerImpl::getFLOPS(const std::vector<BlobShape> &inputs,
+                              const std::vector<BlobShape> &outputs) const
+{
+    (void)outputs; // suppress unused variable warning
+    long flops = 0;
+    for(int i = 0; i < inputs.size(); i++)
+    {
+        flops += 2*inputs[i].total();
+    }
+    return flops;
+}
+
 Ptr<ScaleLayer> ScaleLayer::create(bool hasBias)
 {
     return Ptr<ScaleLayer>(new ScaleLayerImpl(hasBias));

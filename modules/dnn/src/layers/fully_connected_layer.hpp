@@ -64,6 +64,11 @@ public:
     FullyConnectedLayerImpl(int axisCan = 1);
     void allocate(const std::vector<Blob*> &input, std::vector<Blob> &output);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
+    virtual void getOutShapes(const std::vector<BlobShape> &inputs,
+                          std::vector<BlobShape> &outputs, const int requiredOutputs) const;
+    virtual long getFLOPS(const std::vector<BlobShape> &inputs,
+                          const std::vector<BlobShape> &outputs) const;
 };
 
 }

@@ -176,6 +176,38 @@ public:
         blobs[2].reshape(Shape(1, (int)bias.total()));
     }
 
+    virtual void getOutShapes(const std::vector<BlobShape> &inputs,
+                          std::vector<BlobShape> &outputs, const int requiredOutputs) const
+    {
+        CV_Assert(blobs.size() == 3);
+        CV_Assert(inputs.size() == 1);
+
+        int numOut = blobs[0].size(1);
+        int numInp = blobs[1].size(1);
+
+        Shape outTailShape;
+        if (outTailShape.isEmpty())
+            outTailShape = Shape(numOut);
+
+        CV_Assert(outTailShape.total() == numOut);
+
+        BlobShape outShape;
+        if (useTimestampDim)
+        {
+            CV_Assert(inputs[0].dims() >= 2 && (int)inputs[0].total(2) == numInp);
+            int numSamples = inputs[0].size(1);
+            outShape = Shape(inputs[0].size(0), numSamples) + outTailShape;
+        }
+        else
+        {
+            CV_Assert(inputs[0].dims() >= 1 && (int)inputs[0].total(1) == numInp);
+            int numSamples = inputs[0].size(0);
+            outShape = Shape(numSamples) + outTailShape;
+        }
+
+        outputs.resize( (produceCellOutput) ? 2 : 1 , outShape);
+    }
+
     void allocate(const std::vector<Blob*> &input, std::vector<Blob> &output)
     {
         CV_Assert(blobs.size() == 3);
@@ -357,6 +389,26 @@ public:
         blobs[2] = W_hh;
         blobs[3] = W_ho;
         blobs[4] = b_o;
+    }
+
+    virtual void getOutShapes(const std::vector<BlobShape> &inputs,
+                          std::vector<BlobShape> &outputs, const int requiredOutputs) const
+    {
+        CV_Assert(inputs.size() >= 1 && inputs.size() <= 2);
+
+        Mat Who = blobs[3].matRefConst();
+        Mat Wxh = blobs[0].matRefConst();
+
+        int numTimestamps = inputs[0].size(0);
+        int numSamples = inputs[0].size(1);
+
+        int numO = Who.rows;
+        int numH = Wxh.rows;
+
+        outputs.clear();
+        outputs.push_back(Shape(numTimestamps, numSamples, numO));
+        if (produceH)
+            outputs.push_back(Shape(numTimestamps, numSamples, numH));
     }
 
     void allocate(const std::vector<Blob*> &input, std::vector<Blob> &output)
