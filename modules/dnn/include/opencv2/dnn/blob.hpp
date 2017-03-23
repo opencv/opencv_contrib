@@ -120,6 +120,7 @@ namespace dnn
 
         bool equal(const BlobShape &other) const;       //!< Checks equality of two shapes.
         bool operator== (const BlobShape &r) const;     //!< @sa equal()
+        bool operator!= (const BlobShape &r) const {return !this->operator ==(r);}//!< Checks inequality
 
         BlobShape operator+ (const BlobShape &r) const; //!< Contacenates two shapes.
 

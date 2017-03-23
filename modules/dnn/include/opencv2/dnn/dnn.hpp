@@ -286,14 +286,14 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          * @param netInputShapes vector of shapes for all net inputs.
          * @returns computed FLOP.
          */
-        CV_WRAP long getFLOPS(const std::vector<BlobShape>& netInputShapes) const;
+        CV_WRAP int64 getFLOPS(const std::vector<BlobShape>& netInputShapes) const;
         /** @overload */
-        CV_WRAP long getFLOPS(const BlobShape& netInputShape) const;
+        CV_WRAP int64 getFLOPS(const BlobShape& netInputShape) const;
         /** @overload */
-        CV_WRAP long getFLOPS(const int layerId,
+        CV_WRAP int64 getFLOPS(const int layerId,
                               const std::vector<BlobShape>& netInputShapes) const;
         /** @overload */
-        CV_WRAP long getFLOPS(const int layerId,
+        CV_WRAP int64 getFLOPS(const int layerId,
                               const BlobShape& netInputShape) const;
 
         /** @brief Returns list of types for layer used in model.
@@ -349,11 +349,11 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
 
         /** @brief Returns input and output shapes for layer with specified
          * id in loaded model; preliminary inferencing isn't necessary.
-         *  @param netInputShapes shapes for all input blobs in net input layer.
-         *  @param layersIds id for layer.
-         *  @param inLayersShapes output parameter for input layers shapes;
+         *  @param netInputShape shape input blob in net input layer.
+         *  @param layerId id for layer.
+         *  @param inLayerShapes output parameter for input layers shapes;
          * order is the same as in layersIds
-         *  @param outLayersShapes output parameter for output layers shapes;
+         *  @param outLayerShapes output parameter for output layers shapes;
          * order is the same as in layersIds
          */
         CV_WRAP void getLayerShapes(const BlobShape& netInputShape,

@@ -54,64 +54,6 @@ ConcatLayerImpl::ConcatLayerImpl(int axis_ /*= 1*/)
     axis = axis_;
 }
 
-void ConcatLayerImpl::allocate(const std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
-{
-    CV_Assert(inputs.size() > 0);
-
-    BlobShape refShape = inputs[0]->shape();
-    axisIdx = inputs[0]->canonicalAxis(axis);
-
-    int axisSum = 0;
-    useOpenCL = false;
-    for (size_t i = 0; i < inputs.size(); i++)
-    {
-        BlobShape curShape = inputs[i]->shape();
-
-        CV_Assert(curShape.dims() == refShape.dims() && inputs[i]->type() == inputs[0]->type());
-        for (int curAxis = 0; curAxis < refShape.dims(); curAxis++)
-        {
-            if (curAxis != axisIdx && refShape[curAxis] != curShape[curAxis])
-                CV_Error(Error::StsBadSize, "Inconsitent shape for ConcatLayer");
-        }
-
-        axisSum += curShape[axisIdx];
-        useOpenCL |= inputs[i]->getState() == Blob::HEAD_AT_MAT;
-    }
-
-    refShape[axisIdx] = axisSum;
-    useOpenCL &= ocl::useOpenCL();
-    int allocFlags = (useOpenCL) ? Blob::ALLOC_UMAT : Blob::ALLOC_MAT;
-
-    outputs.resize(1);
-    outputs[0].create(refShape, inputs[0]->type(), allocFlags);
-}
-
-
-void ConcatLayerImpl::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
-{
-    #ifdef HAVE_OPENCL
-    if (useOpenCL)
-        forward_<UMat>(inputs, outputs);
-    else
-    #endif
-        forward_<Mat>(inputs, outputs);
-}
-
-template<typename XMat>
-void ConcatLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
-{
-    XMat& outMat = outputs[0].getRef<XMat>();
-    std::vector<Range> ranges(outputs[0].dims(), Range::all());
-
-    ranges[axisIdx].start = 0;
-    for (size_t i = 0; i < inputs.size(); i++)
-    {
-        ranges[axisIdx].end = ranges[axisIdx].start + inputs[i]->size(axisIdx);
-        inputs[i]->getRefConst<XMat>().copyTo(outMat(&ranges[0]));
-        ranges[axisIdx].start = ranges[axisIdx].end;
-    }
-}
-
 void ConcatLayerImpl::getOutShapes(const std::vector<BlobShape> &inputs,
                           std::vector<BlobShape> &outputs, const int requiredOutputs) const
 {
@@ -136,7 +78,34 @@ void ConcatLayerImpl::getOutShapes(const std::vector<BlobShape> &inputs,
     }
 
     outputs.back()[cAxis] = axisSum;
+}
 
+void ConcatLayerImpl::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+{
+    #ifdef HAVE_OPENCL
+    if (false/*OpenCL is turned off*/)
+        forward_<UMat>(inputs, outputs);
+    else
+    #endif
+        forward_<Mat>(inputs, outputs);
+}
+
+template<typename XMat>
+void ConcatLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+{
+    CV_Assert(inputs.size() > 0);
+
+    XMat& outMat = outputs[0].getRef<XMat>();
+    std::vector<Range> ranges(outputs[0].dims(), Range::all());
+    axisIdx = inputs[0]->canonicalAxis(axis);
+
+    ranges[axisIdx].start = 0;
+    for (size_t i = 0; i < inputs.size(); i++)
+    {
+        ranges[axisIdx].end = ranges[axisIdx].start + inputs[i]->size(axisIdx);
+        inputs[i]->getRefConst<XMat>().copyTo(outMat(&ranges[0]));
+        ranges[axisIdx].start = ranges[axisIdx].end;
+    }
 }
 
 Ptr<ConcatLayer> ConcatLayer::create(int axis)

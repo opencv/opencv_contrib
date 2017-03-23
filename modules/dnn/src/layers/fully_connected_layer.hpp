@@ -52,7 +52,7 @@ namespace dnn
 class FullyConnectedLayerImpl : public InnerProductLayer
 {
     int axisCan, dtype;
-    int numOutput, innerSize, outerSize;
+    int outerSize;
     bool bias, useOpenCL;
     Blob biasOnesBlob;
 

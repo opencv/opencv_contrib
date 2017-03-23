@@ -57,15 +57,8 @@ public:
 
 protected:
     void init();
-    virtual void computeInpOutShape(const Blob &inpBlob) = 0;
+    virtual BlobShape computeColRowShape(const BlobShape &inpShape, const BlobShape &outShape) const = 0;
     bool is1x1() const;
-
-    int numOutput, group;
-    int inpH, inpW, inpCn;
-    int outH, outW, outCn;
-    int inpGroupCn, outGroupCn;
-    int ksize;
-    BlobShape colRowBlobShape;
 
     bool bias;
     bool tryUseOpenCL, useOpenCL;
@@ -85,14 +78,14 @@ public:
     virtual long getFLOPS(const std::vector<BlobShape> &inputs,
                           const std::vector<BlobShape> &outputs) const;
 protected:
-    virtual void computeInpOutShape(const Blob &inpBlob);
+    virtual BlobShape computeColRowShape(const BlobShape &inpShape, const BlobShape &outShape) const;
 
     template<typename XMat>
     void forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void im2col(const  Mat &srcImg,  Mat &dstCol);
-    void im2row(const  Mat &srcImg,  Mat &dstRow);
-    void im2col(const UMat &srcImg, UMat &dstCol);
-    void im2row(const UMat &srcImg, UMat &dstCol);
+    void im2col(const  Mat &srcImg,  Mat &dstCol, const BlobShape& inShape, const BlobShape& outShape);
+    void im2row(const  Mat &srcImg,  Mat &dstRow, const BlobShape& inShape, const BlobShape& outShape);
+    void im2col(const UMat &srcImg, UMat &dstCol, const BlobShape& inShape, const BlobShape& outShape);
+    void im2row(const UMat &srcImg, UMat &dstCol, const BlobShape& inShape, const BlobShape& outShape);
 };
 
 class DeConvolutionLayerImpl : public BaseConvolutionLayerImpl
@@ -105,13 +98,12 @@ public:
     virtual long getFLOPS(const std::vector<BlobShape> &inputs,
                           const std::vector<BlobShape> &outputs) const;
 protected:
-
-    virtual void computeInpOutShape(const Blob &inpBlob);
+    virtual BlobShape computeColRowShape(const BlobShape &inpShape, const BlobShape &outShape) const;
 
     template<typename XMat>
     void forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void col2im(const  Mat &colMat, Mat  &dstImg);
-    void col2im(const UMat &colMat, UMat &dstImg);
+    void col2im(const  Mat &colMat, Mat  &dstImg, const BlobShape& inShape, const BlobShape& outShape);
+    void col2im(const UMat &colMat, UMat &dstImg, const BlobShape& inShape, const BlobShape& outShape);
 };
 
 //Importers

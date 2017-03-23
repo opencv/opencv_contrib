@@ -65,9 +65,9 @@ void FullyConnectedLayerImpl::getOutShapes(const std::vector<BlobShape> &inputs,
     CV_Assert(blobs[0].dims() == 2);
 
     int cAxis = inputs[0].canonicalAxis(axis);
-    int outerSize = inputs[0].total(0, cAxis);
+    int outerSize_ = inputs[0].total(0, cAxis);
     int numOutput = blobs[0].size(0);
-    Shape outShape = Shape(outerSize, numOutput);
+    Shape outShape = Shape(outerSize_, numOutput);
     outputs.resize(inputs.size(), outShape);
 }
 
@@ -80,8 +80,8 @@ void FullyConnectedLayerImpl::allocate(const std::vector<Blob*> &input, std::vec
     bias = (blobs.size() >= 1);
     axisCan = input[0]->canonicalAxis(axis);
     dtype = input[0]->type();
-    numOutput = blobs[0].size(0);
-    innerSize = blobs[0].size(1);
+    int numOutput = blobs[0].size(0);
+    int innerSize = blobs[0].size(1);
     outerSize = input[0]->total(0, axisCan);
 
     CV_Assert((size_t)innerSize == input[0]->total(axisCan));
@@ -92,14 +92,6 @@ void FullyConnectedLayerImpl::allocate(const std::vector<Blob*> &input, std::vec
 
     biasOnesBlob.create(Shape(outerSize, 1), dtype, allocFlags);
     biasOnesBlob.setTo(1);
-
-    output.resize(input.size());
-    for (size_t i = 0; i < input.size(); i++)
-    {
-        CV_Assert(i == 0 || (input[i]->equalShape(*input[0]) && input[i]->type() == dtype));
-        Shape outShape = Shape(outerSize, numOutput);
-        output[i].create(outShape, dtype, allocFlags);
-    }
 }
 
 void FullyConnectedLayerImpl::forward(std::vector<Blob*> &input, std::vector<Blob> &output)
@@ -117,6 +109,8 @@ void FullyConnectedLayerImpl::forward_(std::vector<Blob *> &input, std::vector<B
 {
     const XMat &weight = blobs[0].getRefConst<XMat>();
     const XMat *biasMat = NULL, *biasOnesMat = NULL;
+    int numOutput = blobs[0].size(0);
+    int innerSize = blobs[0].size(1);
     if (bias)
     {
         biasOnesMat = &biasOnesBlob.getRefConst<XMat>();

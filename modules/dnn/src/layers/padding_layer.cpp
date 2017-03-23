@@ -44,20 +44,6 @@ void PaddingLayer::getOutShapes(const std::vector<BlobShape> &inputs,
     }
 }
 
-void PaddingLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
-{
-    outputs.resize(inputs.size());
-    for(int i = 0; i < inputs.size(); i++)
-    {
-        BlobShape shape = inputs[i]->shape();
-        int dim = getPadDim(shape);
-        CV_Assert(dim < shape.dims());
-
-        shape[dim] += padding;
-        outputs[i].create(shape);
-    }
-}
-
 void PaddingLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     for(int i = 0; i < inputs.size(); i++)

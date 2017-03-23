@@ -51,9 +51,6 @@ class FlattenLayer : public Layer
 {
     int _startAxis;
     int _endAxis;
-    size_t _numAxes;
-
-    BlobShape resultShape;
 
 public:
     FlattenLayer(LayerParams &params);

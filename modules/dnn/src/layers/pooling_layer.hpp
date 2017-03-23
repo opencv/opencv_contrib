@@ -52,9 +52,6 @@ namespace dnn
 class PoolingLayerImpl : public PoolingLayer
 {
     bool useOpenCL;
-    Size inp, out;
-
-    void computeOutputShape(Size inpSz);
 
     bool pooling_ocl(const char *kname, const Blob &src, Blob &dst, Blob *mask = NULL);
 

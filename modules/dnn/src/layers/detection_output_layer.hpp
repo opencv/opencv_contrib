@@ -64,9 +64,6 @@ class DetectionOutputLayer : public Layer
     int _keepTopK;
     float _confidenceThreshold;
 
-    int _num;
-    int _numPriors;
-
     float _nmsThreshold;
     int _topK;
 
@@ -77,7 +74,7 @@ public:
     DetectionOutputLayer(LayerParams &params);
     virtual void getOutShapes(const std::vector<BlobShape> &inputs,
                           std::vector<BlobShape> &outputs, const int requiredOutputs) const;
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs) {}
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
     void checkInputs(const std::vector<Blob*> &inputs);

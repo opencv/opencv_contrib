@@ -49,17 +49,6 @@ namespace dnn
 {
 class PriorBoxLayer : public Layer
 {
-    size_t _layerWidth;
-    size_t _layerHeight;
-
-    size_t _imageWidth;
-    size_t _imageHeight;
-
-    size_t _outChannelSize;
-
-    float _stepX;
-    float _stepY;
-
     float _minSize;
     float _maxSize;
 

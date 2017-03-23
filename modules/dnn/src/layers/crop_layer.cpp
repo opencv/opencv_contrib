@@ -87,18 +87,16 @@ void CropLayerImpl::allocate(const std::vector<Blob *> &inputs, std::vector<Blob
     else if (offset.size() > 1)
     {
         if ((int)offset.size() != dims - start_axis)
-            CV_Error(Error::StsBadArg, "number of offset values specified must be equal to the number of dimensions following axis.");
+            CV_Error(Error::StsBadArg, "number of offset values specified must be"
+                                       " equal to the number of dimensions following axis.");
 
         for (int i = start_axis; i < dims; i++)
             offset_final[i] = offset[i - start_axis];
     }
 
-    BlobShape dstShape = inpBlob.shape();
     crop_ranges.resize(dims, Range::all());
     for (int i = start_axis; i < dims; i++)
     {
-        dstShape[i] = inpSzBlob.size(i);
-
         if (!offset.empty()) //normal case
         {
             if (offset_final[i] < 0 || offset_final[i] + inpSzBlob.size(i) > inpBlob.size(i))
@@ -115,9 +113,6 @@ void CropLayerImpl::allocate(const std::vector<Blob *> &inputs, std::vector<Blob
             crop_ranges[i] = Range(cur_crop, cur_crop + inpSzBlob.size(i));
         }
     }
-
-    outputs.resize(1);
-    outputs[0].create(dstShape);
 }
 
 void CropLayerImpl::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)

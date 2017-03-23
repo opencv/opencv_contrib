@@ -51,7 +51,6 @@ namespace dnn
 
 class ConcatLayerImpl : public ConcatLayer
 {
-    bool useOpenCL;
     int axisIdx;
 
     template<typename XMat>
@@ -60,7 +59,7 @@ class ConcatLayerImpl : public ConcatLayer
 public:
     ConcatLayerImpl(int axis_ = 1);
 
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs) {}
 
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
