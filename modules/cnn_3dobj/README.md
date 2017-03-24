@@ -42,37 +42,16 @@ $ cd usr/local/include/opencv2/
 $ sudo rm -rf cnn_3dobj.hpp
 ```
 ####And then redo the compiling steps above again.
-===========================================================
-#Building samples
-```
-$ cd <opencv_contrib>/modules/cnn_3dobj/samples
-$ mkdir build
-$ cd build
-$ cmake ..
-$ make
-```
-===========================================================
 #Demos
 ##Demo1: Training set data generation
 ####Image generation for different poses: by default, there are 4 models used and there will be 276 images in all in which each class contains 69 iamges. If you want to use additional .ply models, it is necessary to change the class number parameter to the new class number and also give it a new class label. If you want to train the network and extract feature from RGB images, set the parameter rgb_use as 1.
 ```
-$ ./sphereview_test -plymodel=../data/3Dmodel/ape.ply -label_class=0 -cam_head_x=0 -cam_head_y=0 -cam_head_z=1
-```
-####press 'Q' to start 2D image genaration
-```
-$ ./sphereview_test -plymodel=../data/3Dmodel/ant.ply -label_class=1 -cam_head_x=0 -cam_head_y=-1 -cam_head_z=0
-```
-```
-$ ./sphereview_test -plymodel=../data/3Dmodel/cow.ply -label_class=2 -cam_head_x=0 -cam_head_y=-1 -cam_head_z=0
-```
-```
-$ ./sphereview_test -plymodel=../data/3Dmodel/plane.ply -label_class=3 -cam_head_x=0 -cam_head_y=-1 -cam_head_z=0
-```
-```
-$ ./sphereview_test -plymodel=../data/3Dmodel/bunny.ply -label_class=4 -cam_head_x=0 -cam_head_y=-1 -cam_head_z=0
-```
-```
-$ ./sphereview_test -plymodel=../data/3Dmodel/horse.ply -label_class=5 -cam_head_x=0 -cam_head_y=0 -cam_head_z=-1
+$ ./example_cnn_3dobj_sphereview_data -plymodel=../data/3Dmodel/ape.ply -label_class=0 -cam_head_x=0 -cam_head_y=0 -cam_head_z=1
+$ ./example_cnn_3dobj_sphereview_data -plymodel=../data/3Dmodel/ant.ply -label_class=1 -cam_head_x=0 -cam_head_y=-1 -cam_head_z=0
+$ ./example_cnn_3dobj_sphereview_data -plymodel=../data/3Dmodel/cow.ply -label_class=2 -cam_head_x=0 -cam_head_y=-1 -cam_head_z=0
+$ ./example_cnn_3dobj_sphereview_data -plymodel=../data/3Dmodel/plane.ply -label_class=3 -cam_head_x=0 -cam_head_y=-1 -cam_head_z=0
+$ ./example_cnn_3dobj_sphereview_data -plymodel=../data/3Dmodel/bunny.ply -label_class=4 -cam_head_x=0 -cam_head_y=-1 -cam_head_z=0
+$ ./example_cnn_3dobj_sphereview_data -plymodel=../data/3Dmodel/horse.ply -label_class=5 -cam_head_x=0 -cam_head_y=0 -cam_head_z=-1
 ```
 ####When all images are created in images_all folder as a collection of training images for network tranining and as a gallery of reference images for classification, then proceed onward.
 ####After this demo, the binary files of images and labels will be stored as 'binary_image' and 'binary_label' in current path. You should copy them into the leveldb folder for Caffe triplet training. For example: copy these 2 files in <caffe_source_directory>/data/linemod and rename them as 'binary_image_train', 'binary_image_test' and 'binary_label_train', 'binary_label_train'. Here I use the same as trianing and testing data but you can use different data for training and testing. It's important to observe the error on the testing data to check whether the training data is suitable for the your aim. Error should be obseved to keep decreasing and remain much smaller than the initial error.
@@ -92,17 +71,17 @@ $ cd <opencv_contrib>/modules/cnn_3dobj/samples/build
 ```
 ####Classification: This will extract features of a single image and compare it with features of a gallery of samples for prediction. This demo uses a set of images for feature extraction in a given path, these features will be a reference for prediction on the target image. The Caffe model and the network prototxt file are in <opencv_contrib>/modules/cnn_3dobj/testdata/cv. Just run:
 ```
-$ ./classify_test
+$ ./example_cnn_3dobj_classify
 ```
 ####if you want to extract mean classification and pose estimation performance from all the training images, you can run this:
 ```
-$ ./classify_test -mean_file=../data/images_mean/triplet_mean.binaryproto
+$ ./example_cnn_3dobj_classify -mean_file=../data/images_mean/triplet_mean.binaryproto
 ```
 ===========================================================
 ##Demo3: Model performance test
 ####This demo will run a performance test of a trained CNN model on several images. If the the model fails on telling different samples from seperate classes apart, or is confused on samples with similar pose but from different classes, this will give some information for model analysis.
 ```
-$ ./model_test
+$ ./example_cnn_3dobj_model_analysis
 ```
 ===========================================================
 #Test

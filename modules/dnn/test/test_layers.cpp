@@ -154,6 +154,7 @@ TEST(Layer_Test_DeConvolution, Accuracy)
 {
      OCL_OFF(testLayerUsingCaffeModels("layer_deconvolution", true, false));
 }
+
 OCL_TEST(Layer_Test_DeConvolution, Accuracy)
 {
      OCL_ON(testLayerUsingCaffeModels("layer_deconvolution", true, false););
@@ -212,6 +213,11 @@ TEST(Layer_Test_Reshape, squeeze)
     rl->forward(inpVec, outVec);
 
     EXPECT_EQ(outVec[0].shape(), BlobShape(4, 3, 2));
+}
+
+TEST(Layer_Test_BatchNorm, Accuracy)
+{
+     OCL_OFF(testLayerUsingCaffeModels("layer_batch_norm", true));
 }
 
 //template<typename XMat>

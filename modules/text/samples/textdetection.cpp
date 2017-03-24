@@ -32,7 +32,6 @@ int main(int argc, const char * argv[])
 
     if (argc < 2) show_help_and_exit(argv[0]);
 
-    namedWindow("grouping",WINDOW_NORMAL);
     Mat src = imread(argv[1]);
 
     // Extract channels to be processed individually
@@ -70,8 +69,8 @@ int main(int argc, const char * argv[])
     imshow("grouping",src);
 
     cout << "Done!" << endl << endl;
-    cout << "Press 'e' to show the extracted Extremal Regions, any other key to exit." << endl << endl;
-    if( waitKey (-1) == 101)
+    cout << "Press 'space' to show the extracted Extremal Regions, any other key to exit." << endl << endl;
+    if ((waitKey()&0xff) == ' ')
         er_show(channels,regions);
 
     // memory clean-up

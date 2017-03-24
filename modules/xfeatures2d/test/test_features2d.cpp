@@ -997,6 +997,24 @@ TEST( Features2d_Detector_STAR, regression )
     test.safe_run();
 }
 
+TEST( Features2d_Detector_Harris_Laplace, regression )
+{
+    CV_FeatureDetectorTest test( "detector-harris-laplace", HarrisLaplaceFeatureDetector::create() );
+    test.safe_run();
+}
+
+TEST( Features2d_Detector_Harris_Laplace_Affine_Keypoint_Invariance, regression )
+{
+    CV_FeatureDetectorTest test( "detector-harris-laplace", AffineFeature2D::create(HarrisLaplaceFeatureDetector::create()));
+    test.safe_run();
+}
+
+TEST( Features2d_Detector_Harris_Laplace_Affine, regression )
+{
+    CV_FeatureDetectorTest test( "detector-harris-laplace-affine", AffineFeature2D::create(HarrisLaplaceFeatureDetector::create()));
+    test.safe_run();
+}
+
 /*
  * Descriptors
  */
@@ -1050,6 +1068,68 @@ TEST( Features2d_DescriptorExtractor_LATCH, regression )
     test.safe_run();
 }
 
+TEST( Features2d_DescriptorExtractor_VGG, regression )
+{
+    CV_DescriptorExtractorTest<L2<float> > test( "descriptor-vgg",  0.03f,
+                                             VGG::create() );
+    test.safe_run();
+}
+
+TEST( Features2d_DescriptorExtractor_BGM, regression )
+{
+    CV_DescriptorExtractorTest<Hamming> test( "descriptor-boostdesc-bgm",
+                                            (CV_DescriptorExtractorTest<Hamming>::DistanceType)12.f,
+                                            BoostDesc::create(BoostDesc::BGM) );
+    test.safe_run();
+}
+
+TEST( Features2d_DescriptorExtractor_BGM_HARD, regression )
+{
+    CV_DescriptorExtractorTest<Hamming> test( "descriptor-boostdesc-bgm_hard",
+                                            (CV_DescriptorExtractorTest<Hamming>::DistanceType)12.f,
+                                            BoostDesc::create(BoostDesc::BGM_HARD) );
+    test.safe_run();
+}
+
+TEST( Features2d_DescriptorExtractor_BGM_BILINEAR, regression )
+{
+    CV_DescriptorExtractorTest<Hamming> test( "descriptor-boostdesc-bgm_bilinear",
+                                            (CV_DescriptorExtractorTest<Hamming>::DistanceType)15.f,
+                                            BoostDesc::create(BoostDesc::BGM_BILINEAR) );
+    test.safe_run();
+}
+
+TEST( Features2d_DescriptorExtractor_LBGM, regression )
+{
+    CV_DescriptorExtractorTest<L2<float> > test( "descriptor-boostdesc-lbgm",
+                                           1.0f,
+                                           BoostDesc::create(BoostDesc::LBGM) );
+    test.safe_run();
+}
+
+TEST( Features2d_DescriptorExtractor_BINBOOST_64, regression )
+{
+    CV_DescriptorExtractorTest<Hamming> test( "descriptor-boostdesc-binboost_64",
+                                            (CV_DescriptorExtractorTest<Hamming>::DistanceType)12.f,
+                                            BoostDesc::create(BoostDesc::BINBOOST_64) );
+    test.safe_run();
+}
+
+TEST( Features2d_DescriptorExtractor_BINBOOST_128, regression )
+{
+    CV_DescriptorExtractorTest<Hamming> test( "descriptor-boostdesc-binboost_128",
+                                            (CV_DescriptorExtractorTest<Hamming>::DistanceType)12.f,
+                                            BoostDesc::create(BoostDesc::BINBOOST_128) );
+    test.safe_run();
+}
+
+TEST( Features2d_DescriptorExtractor_BINBOOST_256, regression )
+{
+    CV_DescriptorExtractorTest<Hamming> test( "descriptor-boostdesc-binboost_256",
+                                            (CV_DescriptorExtractorTest<Hamming>::DistanceType)12.f,
+                                            BoostDesc::create(BoostDesc::BINBOOST_256) );
+    test.safe_run();
+}
 
 
 /*#if CV_SSE2

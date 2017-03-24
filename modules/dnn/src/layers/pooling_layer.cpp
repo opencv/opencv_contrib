@@ -60,18 +60,19 @@ PoolingLayerImpl::PoolingLayerImpl()
     globalPooling = false;
 }
 
-PoolingLayerImpl::PoolingLayerImpl(int type_, Size kernel_, Size stride_, Size pad_)
+PoolingLayerImpl::PoolingLayerImpl(int type_, Size kernel_, Size stride_, Size pad_, const String &padMode_)
 {
     globalPooling = false;
     type = type_;
     kernel = kernel_;
     pad = pad_;
     stride = stride_;
+    padMode = padMode_;
 }
 
 void PoolingLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
-    CV_Assert(inputs.size() > 0);
+    CV_Assert(inputs.size() == 1);
 
     inp = inputs[0]->size2();
 
@@ -84,11 +85,19 @@ void PoolingLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Bl
 
     useOpenCL = ocl::useOpenCL();
 
-    outputs.resize(inputs.size());
+    outputs.resize(type == MAX ? 2 * inputs.size() : inputs.size());
     for (size_t i = 0; i < inputs.size(); i++)
     {
         CV_Assert(inputs[i]->rows() == inp.height && inputs[i]->cols() == inp.width);
-        outputs[i].create(BlobShape(inputs[i]->num(), inputs[i]->channels(), out.height, out.width));
+        if (type == MAX)
+        {
+            outputs[2 * i].create(BlobShape(inputs[i]->num(), inputs[i]->channels(), out.height, out.width));
+            outputs[2 * i + 1].create(BlobShape(inputs[i]->num(), inputs[i]->channels(), out.height, out.width));
+        }
+        else
+        {
+           outputs[i].create(BlobShape(inputs[i]->num(), inputs[i]->channels(), out.height, out.width));
+        }
     }
 }
 
@@ -99,7 +108,7 @@ void PoolingLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &ou
         switch (type)
         {
         case MAX:
-            maxPooling(*inputs[ii], outputs[ii]);
+            maxPooling(*inputs[ii], outputs[2 * ii], outputs[2 * ii + 1]);
             break;
         case AVE:
             avePooling(*inputs[ii], outputs[ii]);
@@ -111,19 +120,19 @@ void PoolingLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &ou
     }
 }
 
-void PoolingLayerImpl::maxPooling(Blob &src, Blob &dst)
+void PoolingLayerImpl::maxPooling(Blob &src, Blob &dst, Blob &mask)
 {
     if (!useOpenCL)
-        maxPooling_cpu(src, dst);
+        maxPooling_cpu(src, dst, mask);
     else
     {
-        CV_Assert(maxPooling_ocl(src, dst));
+        CV_Assert(maxPooling_ocl(src, dst, mask));
     }
 }
 
-bool PoolingLayerImpl::maxPooling_ocl(Blob &src, Blob &dst)
+bool PoolingLayerImpl::maxPooling_ocl(Blob &src, Blob &dst, Blob &mask)
 {
-    return pooling_ocl("MaxPoolForward", src, dst);
+    return pooling_ocl("MaxPoolForward", src, dst, &mask);
 }
 
 void PoolingLayerImpl::avePooling(Blob &src, Blob &dst)
@@ -141,7 +150,7 @@ bool PoolingLayerImpl::avePooling_ocl(Blob &src, Blob &dst)
     return pooling_ocl("AvePoolForward", src, dst);
 }
 
-void PoolingLayerImpl::maxPooling_cpu(Blob &src, Blob &dst)
+void PoolingLayerImpl::maxPooling_cpu(Blob &src, Blob &dst, Blob &mask)
 {
     CV_DbgAssert(dst.rows() == out.height && dst.cols() == out.width);
 
@@ -151,6 +160,7 @@ void PoolingLayerImpl::maxPooling_cpu(Blob &src, Blob &dst)
         {
             const float *srcData = src.ptrf(n, c);
             float *dstData = dst.ptrf(n, c);
+            float *dstMaskData = mask.ptrf(n, c);
 
             for (int ph = 0; ph < out.height; ++ph)
             {
@@ -164,16 +174,21 @@ void PoolingLayerImpl::maxPooling_cpu(Blob &src, Blob &dst)
                     wstart = max(wstart, 0);
                     const int poolIndex = ph * out.width + pw;
                     float max_val = -FLT_MAX;
+                    int max_index = -1;
 
                     for (int h = hstart; h < hend; ++h)
                         for (int w = wstart; w < wend; ++w)
                         {
                             const int index = h * inp.width + w;
                             if (srcData[index] > max_val)
+                            {
                                 max_val = srcData[index];
+                                max_index = index;
+                            }
                         }
 
                     dstData[poolIndex] = max_val;
+                    dstMaskData[poolIndex] = max_index;
                 }
             }
         }
@@ -186,19 +201,36 @@ bool PoolingLayerImpl::pooling_ocl(const char *kname, const Blob &src, Blob &dst
 {
     const UMat &srcMat = src.umatRefConst();
     UMat &dstMat = dst.umatRef();
-    CV_Assert(mask == NULL && srcMat.offset == 0 && dstMat.offset == 0);
+    UMat *maskUMat = mask == NULL ? NULL : &mask->umatRef();
+    CV_Assert(maskUMat == NULL || maskUMat->type() == CV_32FC1); // FIXIT CV_32SC1
+    CV_Assert(maskUMat == NULL || maskUMat->offset == 0);
 
-    ocl::Kernel ker(kname, ocl::dnn::pooling_oclsrc, String("-DT=") + ocl::typeToStr(src.type()));
+    CV_Assert(srcMat.offset == 0 && dstMat.offset == 0);
+
+    ocl::Kernel ker(kname, ocl::dnn::pooling_oclsrc,
+        cv::format("-DT=%s%s", ocl::typeToStr(src.type()), maskUMat ? " -DMASK=1" : ""));
     if (ker.empty())
         return false;
 
     BlobShape s = src.shape();
     size_t nthreads = dst.total();
-    ker.args((int)nthreads,
+    if (maskUMat)
+    {
+        ker.args((int)nthreads,
+             ocl::KernelArg::PtrReadOnly(srcMat), s[0], s[1], s[2], s[3],
+             out.height, out.width, kernel.height, kernel.width,
+             stride.height, stride.width, pad.height, pad.width,
+             ocl::KernelArg::PtrWriteOnly(dstMat),
+             ocl::KernelArg::PtrWriteOnly(*maskUMat));
+    }
+    else
+    {
+        ker.args((int)nthreads,
              ocl::KernelArg::PtrReadOnly(srcMat), s[0], s[1], s[2], s[3],
              out.height, out.width, kernel.height, kernel.width,
              stride.height, stride.width, pad.height, pad.width,
              ocl::KernelArg::PtrWriteOnly(dstMat));
+    }
 
     size_t wgSize = ocl::Device::getDefault().maxWorkGroupSize();
     if (!ker.run(1, &nthreads, &wgSize, true))
@@ -251,26 +283,36 @@ void PoolingLayerImpl::avePooling_cpu(Blob &src, Blob &dst)
 
 void PoolingLayerImpl::computeOutputShape(Size inpSz)
 {
-    //Yeah, something strange Caffe scheme-)
-    out.height = static_cast<int>(ceil(static_cast<float>(inpSz.height + 2 * pad.height - kernel.height) / stride.height)) + 1;
-    out.width = static_cast<int>(ceil(static_cast<float>(inpSz.width + 2 * pad.width - kernel.width) / stride.width)) + 1;
+    if (padMode.empty()) {
+        //Yeah, something strange Caffe scheme-)
+        out.height = static_cast<int>(ceil(static_cast<float>(inpSz.height + 2 * pad.height -
+                                                              kernel.height) / stride.height)) + 1;
+        out.width = static_cast<int>(ceil(static_cast<float>(inpSz.width + 2 * pad.width -
+                                                             kernel.width) / stride.width)) + 1;
 
-    if (pad.height || pad.width)
+        if (pad.height || pad.width)
+        {
+            // If we have padding, ensure that the last pooling starts strictly
+            // inside the image (instead of at the padding); otherwise clip the last.
+            if ((out.height - 1) * stride.height >= inpSz.height + pad.height)
+                --out.height;
+            if ((out.width - 1) * stride.width >= inpSz.width + pad.width)
+                --out.width;
+            CV_Assert((out.height - 1) * stride.height < inpSz.height + pad.height);
+            CV_Assert((out.width - 1) * stride.width < inpSz.width + pad.width);
+        }
+    }
+    else
     {
-        // If we have padding, ensure that the last pooling starts strictly
-        // inside the image (instead of at the padding); otherwise clip the last.
-        if ((out.height - 1) * stride.height >= inpSz.height + pad.height)
-            --out.height;
-        if ((out.width - 1) * stride.width >= inpSz.width + pad.width)
-            --out.width;
-        CV_Assert((out.height - 1) * stride.height < inpSz.height + pad.height);
-        CV_Assert((out.width - 1) * stride.width < inpSz.width + pad.width);
+        getConvPoolOutParams(inpSz.height, inpSz.width, kernel, stride, pad,
+                             padMode, out.height, out.width);
     }
 }
 
-Ptr<PoolingLayer> PoolingLayer::create(int type, Size kernel, Size stride, Size pad)
+Ptr<PoolingLayer> PoolingLayer::create(int type, Size kernel, Size stride, Size pad,
+                                       const String& padMode)
 {
-    return Ptr<PoolingLayer>(new PoolingLayerImpl(type, kernel, stride, pad));
+    return Ptr<PoolingLayer>(new PoolingLayerImpl(type, kernel, stride, pad, padMode));
 }
 
 Ptr<PoolingLayer> PoolingLayer::createGlobal(int type)

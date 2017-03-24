@@ -96,6 +96,9 @@ namespace cv
 namespace dpm
 {
 
+//! @addtogroup dpm
+//! @{
+
 /** @brief This is a C++ abstract class, it provides external user API to work with DPM.
  */
 class CV_EXPORTS_W DPMDetector
@@ -141,6 +144,8 @@ public:
 
     virtual ~DPMDetector(){}
 };
+
+//! @}
 
 } // namespace dpm
 } // namespace cv

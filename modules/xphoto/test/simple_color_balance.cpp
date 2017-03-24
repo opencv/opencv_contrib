@@ -5,8 +5,7 @@ namespace cvtest
     TEST(xphoto_simplecolorbalance, regression)
     {
         cv::String dir = cvtest::TS::ptr()->get_data_path() + "cv/xphoto/simple_white_balance/";
-        int nTests = 12;
-        float threshold = 0.005f;
+        int nTests = 8;
         cv::Ptr<cv::xphoto::WhiteBalancer> wb = cv::xphoto::createSimpleWB();
 
         for (int i = 0; i < nTests; ++i)
@@ -15,17 +14,41 @@ namespace cvtest
             cv::Mat src = cv::imread( srcName, 1 );
             ASSERT_TRUE(!src.empty());
 
-            cv::String previousResultName = dir + cv::format( "results/%02d.png", i + 1 );
+            cv::String previousResultName = dir + cv::format( "results/%02d.jpg", i + 1 );
             cv::Mat previousResult = cv::imread( previousResultName, 1 );
 
             cv::Mat currentResult;
             wb->balanceWhite(src, currentResult);
 
-            cv::Mat sqrError = ( currentResult - previousResult )
-                .mul( currentResult - previousResult );
-            cv::Scalar mse = cv::sum(sqrError) / cv::Scalar::all( double( sqrError.total()*sqrError.channels() ) );
+            double psnr = cv::PSNR(currentResult, previousResult);
 
-            EXPECT_LE( mse[0]+mse[1]+mse[2]+mse[3], threshold );
+            EXPECT_GE( psnr, 30 );
         }
+    }
+
+    TEST(xphoto_simplecolorbalance, max_value)
+    {
+        const float oldMax = 24000., newMax = 65536.;
+
+        Mat test = Mat::zeros(3,3,CV_32FC1);
+        test.at<float>(0, 0) = oldMax;
+        test.at<float>(0, 1) = oldMax / 2;
+        test.at<float>(0, 2) = oldMax / 4;
+
+        double minSrc, maxSrc;
+        cv::minMaxIdx(test, &minSrc, &maxSrc);
+
+        cv::Ptr<cv::xphoto::SimpleWB> wb = cv::xphoto::createSimpleWB();
+        wb->setInputMin((float)minSrc);
+        wb->setInputMax((float)maxSrc);
+        wb->setOutputMin(0);
+        wb->setOutputMax(newMax);
+
+        wb->balanceWhite(test, test);
+
+        double minDst, maxDst;
+        cv::minMaxIdx(test, &minDst, &maxDst);
+
+        ASSERT_NEAR(maxDst, newMax, newMax*1e-4);
     }
 }

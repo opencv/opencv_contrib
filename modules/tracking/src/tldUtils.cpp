@@ -49,34 +49,6 @@ namespace tld
 
 //Debug functions and variables
 Rect2d etalon(14.0, 110.0, 20.0, 20.0);
-void drawWithRects(const Mat& img, std::vector<Rect2d>& blackOnes, Rect2d whiteOne)
-{
-    Mat image;
-    img.copyTo(image);
-    if( whiteOne.width >= 0 )
-        rectangle( image, whiteOne, 255, 1, 1 );
-    for( int i = 0; i < (int)blackOnes.size(); i++ )
-        rectangle( image, blackOnes[i], 0, 1, 1 );
-    imshow("img", image);
-}
-void drawWithRects(const Mat& img, std::vector<Rect2d>& blackOnes, std::vector<Rect2d>& whiteOnes, String filename)
-{
-    Mat image;
-    static int frameCounter = 1;
-    img.copyTo(image);
-    for( int i = 0; i < (int)whiteOnes.size(); i++ )
-        rectangle( image, whiteOnes[i], 255, 1, 1 );
-    for( int i = 0; i < (int)blackOnes.size(); i++ )
-        rectangle( image, blackOnes[i], 0, 1, 1 );
-    imshow("img", image);
-    if( filename.length() > 0 )
-    {
-        char inbuf[100];
-        sprintf(inbuf, "%s%d.jpg", filename.c_str(), frameCounter);
-        imwrite(inbuf, image);
-        frameCounter++;
-    }
-}
 void myassert(const Mat& img)
 {
     int count = 0;

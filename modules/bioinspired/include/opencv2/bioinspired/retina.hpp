@@ -226,8 +226,9 @@ public:
     - warning, Exceptions are thrown if read XML file is not valid
     @param retinaParameterFile the parameters filename
     @param applyDefaultSetupOnFailure set to true if an error must be thrown on error
-    You can retreive the current parameers structure using method Retina::getParameters and update
-    it before running method Retina::setup
+
+    You can retrieve the current parameters structure using the method Retina::getParameters and update
+    it before running method Retina::setup.
      */
     CV_WRAP virtual void setup(String retinaParameterFile="", const bool applyDefaultSetupOnFailure=true)=0;
 
@@ -445,11 +446,6 @@ underscaled, then a reduction of the output is allowed without precision leak
 the log scale that is applied
  */
 CV_EXPORTS_W Ptr<Retina> createRetina(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
-
-#ifdef HAVE_OPENCV_OCL
-Ptr<Retina> createRetina_OCL(Size inputSize);
-Ptr<Retina> createRetina_OCL(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
-#endif
 
 //! @}
 

@@ -75,72 +75,35 @@ kernel void horizontalCausalFilter_addInput(
         output + mad24(gid, elements_per_row, out_offset / 4);
 
     float res;
-    float4 in_v4, out_v4, res_v4 = (float4)(0);
+    float4 in_v4, out_v4, sum_v4, res_v4 = (float4)(0);
     //vectorize to increase throughput
     for(int i = 0; i < cols / 4; ++i, iptr += 4, optr += 4)
     {
         in_v4  = vload4(0, iptr);
-        out_v4 = vload4(0, optr);
+        out_v4 = vload4(0, optr) * _tau;
+        sum_v4 = in_v4 + out_v4;
 
-        res_v4.x = in_v4.x + _tau * out_v4.x + _a * res_v4.w;
-        res_v4.y = in_v4.y + _tau * out_v4.y + _a * res_v4.x;
-        res_v4.z = in_v4.z + _tau * out_v4.z + _a * res_v4.y;
-        res_v4.w = in_v4.w + _tau * out_v4.w + _a * res_v4.z;
+        res_v4.x = sum_v4.x + _a * res_v4.w;
+        res_v4.y = sum_v4.y + _a * res_v4.x;
+        res_v4.z = sum_v4.z + _a * res_v4.y;
+        res_v4.w = sum_v4.w + _a * res_v4.z;
 
         vstore4(res_v4, 0, optr);
     }
-    res = res_v4.w;
-    // there may be left some
-    for(int i = 0; i < cols % 4;  ++i, ++iptr, ++optr)
-    {
-        res = *iptr + _tau * *optr + _a * res;
-        *optr = res;
-    }
-}
 
-//_horizontalAnticausalFilter
-kernel void horizontalAnticausalFilter(
-    global float * output,
-    const int cols,
-    const int rows,
-    const int elements_per_row,
-    const int out_offset,
-    const float _a
-)
-{
-    int gid = get_global_id(0);
-    if(gid >= rows)
-    {
-        return;
-    }
-
-    global float * optr = output +
-                          mad24(gid + 1, elements_per_row, - 1 + out_offset / 4);
-
-    float4 result_v4 = (float4)(0), out_v4;
-    float result = 0;
-    // we assume elements_per_row is multple of WIDTH_MULTIPLE
-    for(int i = 0; i < WIDTH_MULTIPLE; ++ i, -- optr)
-    {
-        if(i >= elements_per_row - cols)
-        {
-            result = *optr + _a * result;
-        }
-        *optr = result;
-    }
-    result_v4.x = result;
-    optr -= 3;
-    for(int i = WIDTH_MULTIPLE / 4; i < elements_per_row / 4; ++i, optr -= 4)
+    optr = output + mad24(gid + 1, elements_per_row, -4 + out_offset / 4);
+    res_v4 = (float4)(0);
+    for(int i = 0; i < elements_per_row / 4; ++i, optr -= 4)
     {
         // shift left, `offset` is type `size_t` so it cannot be negative
         out_v4 = vload4(0, optr);
 
-        result_v4.w = out_v4.w + _a * result_v4.x;
-        result_v4.z = out_v4.z + _a * result_v4.w;
-        result_v4.y = out_v4.y + _a * result_v4.z;
-        result_v4.x = out_v4.x + _a * result_v4.y;
+        res_v4.w = out_v4.w + _a * res_v4.x;
+        res_v4.z = out_v4.z + _a * res_v4.w;
+        res_v4.y = out_v4.y + _a * res_v4.z;
+        res_v4.x = out_v4.x + _a * res_v4.y;
 
-        vstore4(result_v4, 0, optr);
+        vstore4(res_v4, 0, optr);
     }
 }
 
@@ -151,26 +114,37 @@ kernel void verticalCausalFilter(
     const int rows,
     const int elements_per_row,
     const int out_offset,
-    const float _a
+    const float _a,
+    const float _gain
 )
 {
-    int gid = get_global_id(0);
+    int gid = get_global_id(0) * 2;
     if(gid >= cols)
     {
         return;
     }
 
     global float * optr = output + gid + out_offset / 4;
-    float result = 0;
+    float2 input;
+    float2 result = (float2)0;
     for(int i = 0; i < rows; ++i, optr += elements_per_row)
     {
-        result = *optr + _a * result;
-        *optr = result;
+        input = vload2(0, optr);
+        result = input + _a * result;
+        vstore2(result, 0, optr);
+    }
+
+    optr = output + (rows - 1) * elements_per_row + gid + out_offset / 4;
+    result = (float2)0;
+    for(int i = 0; i < rows; ++i, optr -= elements_per_row)
+    {
+        input = vload2(0, optr);
+        result = input + _a * result;
+        vstore2(_gain * result, 0, optr);
     }
 }
 
-//_verticalCausalFilter
-kernel void verticalAnticausalFilter_multGain(
+kernel void verticalCausalFilter_multichannel(
     global float * output,
     const int cols,
     const int rows,
@@ -180,74 +154,69 @@ kernel void verticalAnticausalFilter_multGain(
     const float _gain
 )
 {
-    int gid = get_global_id(0);
+    int gid = get_global_id(0) * 2;
     if(gid >= cols)
     {
         return;
     }
 
-    global float * optr = output + (rows - 1) * elements_per_row + gid + out_offset / 4;
-    float result = 0;
-    for(int i = 0; i < rows; ++i, optr -= elements_per_row)
+    global float * optr[3];
+    float2 input[3];
+    float2 result[3] = { (float2)0, (float2)0, (float2)0 };
+
+    optr[0] = output + gid + out_offset / 4;
+    optr[1] = output + gid + out_offset / 4 + rows * elements_per_row;
+    optr[2] = output + gid + out_offset / 4 + 2 * rows * elements_per_row;
+
+    for(int i = 0; i < rows; ++i)
     {
-        result = *optr + _a * result;
-        *optr = _gain * result;
+        input[0] = vload2(0, optr[0]);
+        input[1] = vload2(0, optr[1]);
+        input[2] = vload2(0, optr[2]);
+
+        result[0] = input[0] + _a * result[0];
+        result[1] = input[1] + _a * result[1];
+        result[2] = input[2] + _a * result[2];
+
+        vstore2(result[0], 0, optr[0]);
+        vstore2(result[1], 0, optr[1]);
+        vstore2(result[2], 0, optr[2]);
+
+        optr[0] += elements_per_row;
+        optr[1] += elements_per_row;
+        optr[2] += elements_per_row;
+    }
+
+    optr[0] = output + (rows - 1) * elements_per_row + gid + out_offset / 4;
+    optr[1] = output + (rows - 1) * elements_per_row + gid + out_offset / 4 + rows * elements_per_row;
+    optr[2] = output + (rows - 1) * elements_per_row + gid + out_offset / 4 + 2 * rows * elements_per_row;
+    result[0] = result[1] = result[2] = (float2)0;
+
+    for(int i = 0; i < rows; ++i)
+    {
+        input[0] = vload2(0, optr[0]);
+        input[1] = vload2(0, optr[1]);
+        input[2] = vload2(0, optr[2]);
+
+        result[0] = input[0] + _a * result[0];
+        result[1] = input[1] + _a * result[1];
+        result[2] = input[2] + _a * result[2];
+
+        vstore2(_gain * result[0], 0, optr[0]);
+        vstore2(_gain * result[1], 0, optr[1]);
+        vstore2(_gain * result[2], 0, optr[2]);
+
+        optr[0] -= elements_per_row;
+        optr[1] -= elements_per_row;
+        optr[2] -= elements_per_row;
     }
 }
+
 //
 // end of _spatiotemporalLPfilter
 /////////////////////////////////////////////////////////////////////
 
-//////////////// horizontalAnticausalFilter_Irregular ////////////////
-kernel void horizontalAnticausalFilter_Irregular(
-    global float * output,
-    global float * buffer,
-    const int cols,
-    const int rows,
-    const int elements_per_row,
-    const int out_offset,
-    const int buffer_offset
-)
-{
-    int gid = get_global_id(0);
-    if(gid >= rows)
-    {
-        return;
-    }
-
-    global float * optr =
-        output + mad24(rows - gid, elements_per_row, -1 + out_offset / 4);
-    global float * bptr =
-        buffer + mad24(rows - gid, elements_per_row, -1 + buffer_offset / 4);
-
-    float4 buf_v4, out_v4, res_v4 = (float4)(0);
-    float result = 0;
-    // we assume elements_per_row is multple of WIDTH_MULTIPLE
-    for(int i = 0; i < WIDTH_MULTIPLE; ++ i, -- optr, -- bptr)
-    {
-        if(i >= elements_per_row - cols)
-        {
-            result = *optr + *bptr * result;
-        }
-        *optr = result;
-    }
-    res_v4.x = result;
-    optr -= 3;
-    bptr -= 3;
-    for(int i = WIDTH_MULTIPLE / 4; i < elements_per_row / 4; ++i, optr -= 4, bptr -= 4)
-    {
-        buf_v4 = vload4(0, bptr);
-        out_v4 = vload4(0, optr);
-
-        res_v4.w = out_v4.w + buf_v4.w * res_v4.x;
-        res_v4.z = out_v4.z + buf_v4.z * res_v4.w;
-        res_v4.y = out_v4.y + buf_v4.y * res_v4.z;
-        res_v4.x = out_v4.x + buf_v4.x * res_v4.y;
-
-        vstore4(res_v4, 0, optr);
-    }
-}
-
+//////////////// verticalCausalFilter_Irregular ////////////////
 //////////////// verticalCausalFilter_Irregular ////////////////
 kernel void verticalCausalFilter_Irregular(
     global float * output,
@@ -256,22 +225,61 @@ kernel void verticalCausalFilter_Irregular(
     const int rows,
     const int elements_per_row,
     const int out_offset,
-    const int buffer_offset
+    const int buffer_offset,
+    const float gain
 )
 {
-    int gid = get_global_id(0);
+    int gid = get_global_id(0) * 2;
     if(gid >= cols)
     {
         return;
     }
 
-    global float * optr = output + gid + out_offset / 4;
+    global float * optr[3];
     global float * bptr = buffer + gid + buffer_offset / 4;
-    float result = 0;
-    for(int i = 0; i < rows; ++i, optr += elements_per_row, bptr += elements_per_row)
+    float2 result[3] = { (float2)0, (float2)0, (float2)0 };
+    float2 grad, input[3];
+    optr[0] = output + gid + out_offset / 4;
+    optr[1] = output + gid + out_offset / 4 + rows * elements_per_row;
+    optr[2] = output + gid + out_offset / 4 + 2 * rows * elements_per_row;
+    for(int i = 0; i < rows; ++i, bptr += elements_per_row)
     {
-        result = *optr + *bptr * result;
-        *optr = result;
+        input[0] = vload2(0, optr[0]);
+        input[1] = vload2(0, optr[1]);
+        input[2] = vload2(0, optr[2]);
+        grad = vload2(0, bptr);
+        result[0] = input[0] + grad * result[0];
+        result[1] = input[1] + grad * result[1];
+        result[2] = input[2] + grad * result[2];
+        vstore2(result[0], 0, optr[0]);
+        vstore2(result[1], 0, optr[1]);
+        vstore2(result[2], 0, optr[2]);
+        optr[0] += elements_per_row;
+        optr[1] += elements_per_row;
+        optr[2] += elements_per_row;
+    }
+
+    int start_idx = mad24(rows - 1, elements_per_row, gid);
+    optr[0] = output + start_idx + out_offset / 4;
+    optr[1] = output + start_idx + out_offset / 4 + rows * elements_per_row;
+    optr[2] = output + start_idx + out_offset / 4 + 2 * rows * elements_per_row;
+    bptr = buffer + start_idx + buffer_offset / 4;
+    result[0] = result[1] = result[2] = (float2)0;
+    for(int i = 0; i < rows; ++i, bptr -= elements_per_row)
+    {
+        input[0] = vload2(0, optr[0]);
+        input[1] = vload2(0, optr[1]);
+        input[2] = vload2(0, optr[2]);
+        grad = vload2(0, bptr);
+        result[0] = input[0] + grad * result[0];
+        result[1] = input[1] + grad * result[1];
+        result[2] = input[2] + grad * result[2];
+        vstore2(gain * result[0], 0, optr[0]);
+        vstore2(gain * result[1], 0, optr[1]);
+        vstore2(gain * result[2], 0, optr[2]);
+        optr[0] -= elements_per_row;
+        optr[1] -= elements_per_row;
+        optr[2] -= elements_per_row;
     }
 }
 
@@ -314,41 +322,22 @@ kernel void adaptiveHorizontalCausalFilter_addInput(
 
         vstore4(res_v4, 0, optr);
     }
-    for(int i = 0; i < cols % 4; ++i, ++iptr, ++gptr, ++optr)
+
+    optr = output + mad24(gid + 1, elements_per_row, -4 + out_offset / 4);
+    gptr = gradient + mad24(gid + 1, elements_per_row, -4 + grad_offset / 4);
+    res_v4 = (float4)(0);
+
+    for(int i = 0; i < cols / 4; ++i, gptr -= 4, optr -= 4)
     {
-        res_v4.w = *iptr + *gptr * res_v4.w;
-        *optr = res_v4.w;
-    }
-}
+        grad_v4 = vload4(0, gptr);
+        out_v4 = vload4(0, optr);
 
-//////////////// _adaptiveVerticalAnticausalFilter_multGain ////////////////
-kernel void adaptiveVerticalAnticausalFilter_multGain(
-    global const float * gradient,
-    global float * output,
-    const int cols,
-    const int rows,
-    const int elements_per_row,
-    const int grad_offset,
-    const int out_offset,
-    const float gain
-)
-{
-    int gid = get_global_id(0);
-    if(gid >= cols)
-    {
-        return;
-    }
+        res_v4.w = out_v4.w + grad_v4.w * res_v4.x;
+        res_v4.z = out_v4.z + grad_v4.z * res_v4.w;
+        res_v4.y = out_v4.y + grad_v4.y * res_v4.z;
+        res_v4.x = out_v4.x + grad_v4.x * res_v4.y;
 
-    int start_idx = mad24(rows - 1, elements_per_row, gid);
-
-    global const float * gptr = gradient + start_idx + grad_offset / 4;
-    global float * optr = output + start_idx + out_offset / 4;
-
-    float result = 0;
-    for(int i = 0; i < rows; ++i, gptr -= elements_per_row, optr -= elements_per_row)
-    {
-        result = *optr + *gptr * result;
-        *optr = gain * result;
+        vstore4(res_v4, 0, optr);
     }
 }
 
@@ -367,17 +356,18 @@ kernel void localLuminanceAdaptation(
     const float _maxInputValue
 )
 {
-    int gidx = get_global_id(0), gidy = get_global_id(1);
+    int gidx = get_global_id(0) * 4, gidy = get_global_id(1);
     if(gidx >= cols || gidy >= rows)
     {
         return;
     }
     int offset = mad24(gidy, elements_per_row, gidx);
-
-    float X0 = luma[offset] * _localLuminanceFactor + _localLuminanceAddon;
-    float input_val = input[offset];
+    float4 luma_vec = vload4(0, luma + offset);
+    float4 X0 = luma_vec * _localLuminanceFactor + _localLuminanceAddon;
+    float4 input_val = vload4(0, input + offset);
     // output of the following line may be different between GPU and CPU
-    output[offset] = (_maxInputValue + X0) * input_val / (input_val + X0 + 0.00000000001f);
+    float4 out_vec = (_maxInputValue + X0) * input_val / (input_val + X0 + 0.00000000001f);
+    vstore4(out_vec, 0, output + offset);
 }
 // end of basicretinafilter
 //------------------------------------------------------
@@ -403,7 +393,7 @@ kernel void amacrineCellsComputing(
     const float coeff
 )
 {
-    int gidx = get_global_id(0), gidy = get_global_id(1);
+    int gidx = get_global_id(0) * 4, gidy = get_global_id(1);
     if(gidx >= cols || gidy >= rows)
     {
         return;
@@ -417,13 +407,16 @@ kernel void amacrineCellsComputing(
     out_on      += offset;
     out_off     += offset;
 
-    float magnoXonPixelResult = coeff * (*out_on + *opl_on - *prev_in_on);
-    *out_on = fmax(magnoXonPixelResult, 0);
-    float magnoXoffPixelResult = coeff * (*out_off + *opl_off - *prev_in_off);
-    *out_off = fmax(magnoXoffPixelResult, 0);
+    float4 val_opl_on = vload4(0, opl_on);
+    float4 val_opl_off = vload4(0, opl_off);
 
-    *prev_in_on = *opl_on;
-    *prev_in_off = *opl_off;
+    float4 magnoXonPixelResult = coeff * (vload4(0, out_on) + val_opl_on - vload4(0, prev_in_on));
+    vstore4(fmax(magnoXonPixelResult, 0), 0, out_on);
+    float4 magnoXoffPixelResult = coeff * (vload4(0, out_off) + val_opl_off - vload4(0, prev_in_off));
+    vstore4(fmax(magnoXoffPixelResult, 0), 0, out_off);
+
+    vstore4(val_opl_on, 0, prev_in_on);
+    vstore4(val_opl_off, 0, prev_in_off);
 }
 
 /////////////////////////////////////////////////////////
@@ -457,11 +450,7 @@ kernel void OPL_OnOffWaysComputing(
     parvo_off += offset;
 
     float4 diff = *photo_out - *horiz_out;
-    float4 isPositive;// = convert_float4(diff > (float4)(0.0f, 0.0f, 0.0f, 0.0f));
-    isPositive.x = diff.x > 0.0f;
-    isPositive.y = diff.y > 0.0f;
-    isPositive.z = diff.z > 0.0f;
-    isPositive.w = diff.w > 0.0f;
+    float4 isPositive = convert_float4(abs(diff > (float4)0.0f));
     float4 res_on  = isPositive * diff;
     float4 res_off = (isPositive - (float4)(1.0f)) * diff;
 
@@ -491,14 +480,19 @@ kernel void runColorMultiplexingBayer(
     const int elements_per_row
 )
 {
-    int gidx = get_global_id(0), gidy = get_global_id(1);
+    int gidx = get_global_id(0) * 4, gidy = get_global_id(1);
     if(gidx >= cols || gidy >= rows)
     {
         return;
     }
 
     int offset = mad24(gidy, elements_per_row, gidx);
-    output[offset] = input[bayerSampleOffset(elements_per_row, rows, gidx, gidy)];
+    float4 val;
+    val.x = input[bayerSampleOffset(elements_per_row, rows, gidx + 0, gidy)];
+    val.y = input[bayerSampleOffset(elements_per_row, rows, gidx + 1, gidy)];
+    val.z = input[bayerSampleOffset(elements_per_row, rows, gidx + 2, gidy)];
+    val.w = input[bayerSampleOffset(elements_per_row, rows, gidx + 3, gidy)];
+    vstore4(val, 0, output + offset);
 }
 
 kernel void runColorDemultiplexingBayer(
@@ -509,14 +503,18 @@ kernel void runColorDemultiplexingBayer(
     const int elements_per_row
 )
 {
-    int gidx = get_global_id(0), gidy = get_global_id(1);
+    int gidx = get_global_id(0) * 4, gidy = get_global_id(1);
     if(gidx >= cols || gidy >= rows)
     {
         return;
     }
 
     int offset = mad24(gidy, elements_per_row, gidx);
-    output[bayerSampleOffset(elements_per_row, rows, gidx, gidy)] = input[offset];
+    float4 val = vload4(0, input + offset);
+    output[bayerSampleOffset(elements_per_row, rows, gidx + 0, gidy)] = val.x;
+    output[bayerSampleOffset(elements_per_row, rows, gidx + 1, gidy)] = val.y;
+    output[bayerSampleOffset(elements_per_row, rows, gidx + 2, gidy)] = val.z;
+    output[bayerSampleOffset(elements_per_row, rows, gidx + 3, gidy)] = val.w;
 }
 
 kernel void demultiplexAssign(
@@ -550,16 +548,16 @@ kernel void normalizeGrayOutputCentredSigmoide(
 )
 
 {
-    int gidx = get_global_id(0), gidy = get_global_id(1);
+    int gidx = get_global_id(0) * 4, gidy = get_global_id(1);
     if(gidx >= cols || gidy >= rows)
     {
         return;
     }
     int offset = mad24(gidy, elements_per_row, gidx);
 
-    float input_val = input[offset];
-    output[offset] = meanval +
-                     (meanval + X0) * (input_val - meanval) / (fabs(input_val - meanval) + X0);
+    float4 input_val = vload4(0, input + offset);
+    input_val =  meanval + (meanval + X0) * (input_val - meanval) / (fabs(input_val - meanval) + X0);
+    vstore4(input_val, 0, output + offset);
 }
 
 //// normalize by photoreceptors density
@@ -575,7 +573,7 @@ kernel void normalizePhotoDensity(
     const float pG
 )
 {
-    const int gidx = get_global_id(0), gidy = get_global_id(1);
+    const int gidx = get_global_id(0) * 4, gidy = get_global_id(1);
     if(gidx >= cols || gidy >= rows)
     {
         return;
@@ -583,16 +581,19 @@ kernel void normalizePhotoDensity(
     const int offset = mad24(gidy, elements_per_row, gidx);
     int index = offset;
 
-    float Cr = chroma[index] * colorDensity[index];
+    float4 Cr = vload4(0, chroma + index) * vload4(0, colorDensity + index);
     index += elements_per_row * rows;
-    float Cg = chroma[index] * colorDensity[index];
+    float4 Cg = vload4(0, chroma + index) * vload4(0, colorDensity + index);
     index += elements_per_row * rows;
-    float Cb = chroma[index] * colorDensity[index];
+    float4 Cb = vload4(0, chroma + index) * vload4(0, colorDensity + index);
 
-    const float luma_res = (Cr + Cg + Cb) * pG;
-    luma[offset] = luma_res;
-    demultiplex[bayerSampleOffset(elements_per_row, rows, gidx, gidy)] =
-        multiplex[offset] - luma_res;
+    const float4 luma_res = (Cr + Cg + Cb) * pG;
+    vstore4(luma_res, 0, luma + offset);
+    float4 res_v4 = vload4(0, multiplex + offset) - luma_res;
+    demultiplex[bayerSampleOffset(elements_per_row, rows, gidx + 0, gidy)] = res_v4.x;
+    demultiplex[bayerSampleOffset(elements_per_row, rows, gidx + 1, gidy)] = res_v4.y;
+    demultiplex[bayerSampleOffset(elements_per_row, rows, gidx + 2, gidy)] = res_v4.z;
+    demultiplex[bayerSampleOffset(elements_per_row, rows, gidx + 3, gidy)] = res_v4.w;
 }
 
 
@@ -629,7 +630,8 @@ kernel void computeGradient(
 
     const float horiz_grad = 0.5f * h_grad + 0.25f * (h_grad_p + h_grad_n);
     const float verti_grad = 0.5f * v_grad + 0.25f * (v_grad_p + v_grad_n);
-    const bool is_vertical_greater = horiz_grad < verti_grad;
+    const bool is_vertical_greater = (horiz_grad < verti_grad) &&
+                                     ((verti_grad - horiz_grad) > 1e-5);
 
     gradient[offset + elements_per_row * rows] = is_vertical_greater ? 0.06f : 0.57f;
     gradient[offset                          ] = is_vertical_greater ? 0.57f : 0.06f;
@@ -647,7 +649,7 @@ kernel void substractResidual(
     const float pB
 )
 {
-    const int gidx = get_global_id(0), gidy = get_global_id(1);
+    const int gidx = get_global_id(0) * 4, gidy = get_global_id(1);
     if(gidx >= cols || gidy >= rows)
     {
         return;
@@ -658,12 +660,15 @@ kernel void substractResidual(
         mad24(gidy + rows, elements_per_row, gidx),
         mad24(gidy + 2 * rows, elements_per_row, gidx)
     };
-    float vals[3] = {input[indices[0]], input[indices[1]], input[indices[2]]};
-    float residu = pR * vals[0] + pG * vals[1] + pB * vals[2];
+    float4 vals[3];
+    vals[0] = vload4(0, input + indices[0]);
+    vals[1] = vload4(0, input + indices[1]);
+    vals[2] = vload4(0, input + indices[2]);
 
-    input[indices[0]] = vals[0] - residu;
-    input[indices[1]] = vals[1] - residu;
-    input[indices[2]] = vals[2] - residu;
+    float4 residu = pR * vals[0] + pG * vals[1] + pB * vals[2];
+    vstore4(vals[0] - residu, 0, input + indices[0]);
+    vstore4(vals[1] - residu, 0, input + indices[1]);
+    vstore4(vals[2] - residu, 0, input + indices[2]);
 }
 
 ///// clipRGBOutput_0_maxInputValue /////
@@ -675,15 +680,15 @@ kernel void clipRGBOutput_0_maxInputValue(
     const float maxVal
 )
 {
-    const int gidx = get_global_id(0), gidy = get_global_id(1);
+    const int gidx = get_global_id(0) * 4, gidy = get_global_id(1);
     if(gidx >= cols || gidy >= rows)
     {
         return;
     }
     const int offset = mad24(gidy, elements_per_row, gidx);
-    float val = input[offset];
+    float4 val = vload4(0, input + offset);
     val = clamp(val, 0.0f, maxVal);
-    input[offset] = val;
+    vstore4(val, 0, input + offset);
 }
 
 //// normalizeGrayOutputNearZeroCentreredSigmoide ////
@@ -697,15 +702,16 @@ kernel void normalizeGrayOutputNearZeroCentreredSigmoide(
     const float X0cube
 )
 {
-    const int gidx = get_global_id(0), gidy = get_global_id(1);
+    const int gidx = get_global_id(0) * 4, gidy = get_global_id(1);
     if(gidx >= cols || gidy >= rows)
     {
         return;
     }
     const int offset = mad24(gidy, elements_per_row, gidx);
-    float currentCubeLuminance = input[offset];
+    float4 currentCubeLuminance = vload4(0, input + offset);
     currentCubeLuminance = currentCubeLuminance * currentCubeLuminance * currentCubeLuminance;
-    output[offset] = currentCubeLuminance * X0cube / (X0cube + currentCubeLuminance);
+    float4 val = currentCubeLuminance * X0cube / (X0cube + currentCubeLuminance);
+    vstore4(val, 0, output + offset);
 }
 
 //// centerReductImageLuminance ////
@@ -718,15 +724,16 @@ kernel void centerReductImageLuminance(
     const float std_dev
 )
 {
-    const int gidx = get_global_id(0), gidy = get_global_id(1);
+    const int gidx = get_global_id(0) * 4, gidy = get_global_id(1);
     if(gidx >= cols || gidy >= rows)
     {
         return;
     }
     const int offset = mad24(gidy, elements_per_row, gidx);
 
-    float val = input[offset];
-    input[offset] = (val - mean) / std_dev;
+    float4 val = vload4(0, input + offset);
+    val = (val - mean) / std_dev;
+    vstore4(val, 0, input + offset);
 }
 
 //// inverseValue ////
@@ -737,13 +744,15 @@ kernel void inverseValue(
     const int elements_per_row
 )
 {
-    const int gidx = get_global_id(0), gidy = get_global_id(1);
+    const int gidx = get_global_id(0) * 4, gidy = get_global_id(1);
     if(gidx >= cols || gidy >= rows)
     {
         return;
     }
     const int offset = mad24(gidy, elements_per_row, gidx);
-    input[offset] = 1.f / input[offset];
+    float4 val = vload4(0, input + offset);
+    val = 1.f / val;
+    vstore4(val, 0, input + offset);
 }
 
 #define CV_PI 3.1415926535897932384626433832795

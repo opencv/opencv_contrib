@@ -49,7 +49,6 @@
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/private.hpp"
 #include "opencv2/core/cvdef.h"
-#include "opencv2/highgui.hpp"
 #include "opencv2/calib3d.hpp"
 
 #include <algorithm>

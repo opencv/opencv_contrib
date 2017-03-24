@@ -11,7 +11,7 @@
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
  *
- *  *Redistributions of source code must retain the above copyright notice,
+ *  * Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
  *
  *  * Redistributions in binary form must reproduce the above copyright notice,
@@ -51,8 +51,8 @@ namespace ximgproc {
 *
 * For more details about this implementation, please see @cite paillou1997detecting
 *
-* @param   op          Source 8-bit or 16bit image, 1-channel or 3-channel image.
-* @param   _dst        result CV_32F image with same numeber of channel than op.
+* @param   op          Source CV_8U(S) or CV_16U(S), 1-channel or 3-channels image.
+* @param   _dst        result CV_32F image with same number of channel than op.
 * @param   omega double see paper
 * @param   alpha double see paper
 *

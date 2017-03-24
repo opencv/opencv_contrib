@@ -146,6 +146,7 @@ class CV_EXPORTS_W CharucoBoard : public Board {
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
  * @param distCoeffs optional vector of distortion coefficients
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
+ * @param minMarkers number of adjacent markers that must be detected to return a charuco corner
  *
  * This function receives the detected markers and returns the 2D position of the chessboard corners
  * from a ChArUco board using the detected Aruco markers. If camera parameters are provided,
@@ -158,7 +159,7 @@ CV_EXPORTS_W int interpolateCornersCharuco(InputArrayOfArrays markerCorners, Inp
                                            InputArray image, const Ptr<CharucoBoard> &board,
                                            OutputArray charucoCorners, OutputArray charucoIds,
                                            InputArray cameraMatrix = noArray(),
-                                           InputArray distCoeffs = noArray());
+                                           InputArray distCoeffs = noArray(), int minMarkers = 2);
 
 
 
@@ -173,8 +174,9 @@ CV_EXPORTS_W int interpolateCornersCharuco(InputArrayOfArrays markerCorners, Inp
  * @param distCoeffs vector of distortion coefficients
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
  * @param rvec Output vector (e.g. cv::Mat) corresponding to the rotation vector of the board
- * (@sa Rodrigues).
+ * (see cv::Rodrigues).
  * @param tvec Output vector (e.g. cv::Mat) corresponding to the translation vector of the board.
+ * @param useExtrinsicGuess defines whether initial guess for \b rvec and \b tvec will be used or not.
  *
  * This function estimates a Charuco board pose from some detected corners.
  * The function checks if the input corners are enough and valid to perform pose estimation.
@@ -182,7 +184,8 @@ CV_EXPORTS_W int interpolateCornersCharuco(InputArrayOfArrays markerCorners, Inp
  */
 CV_EXPORTS_W bool estimatePoseCharucoBoard(InputArray charucoCorners, InputArray charucoIds,
                                            const Ptr<CharucoBoard> &board, InputArray cameraMatrix,
-                                           InputArray distCoeffs, OutputArray rvec, OutputArray tvec);
+                                           InputArray distCoeffs, OutputArray rvec, OutputArray tvec,
+                                           bool useExtrinsicGuess = false);
 
 
 

@@ -163,7 +163,7 @@ int Dictionary::getDistanceToId(InputArray bits, int id, bool allRotations) cons
  */
 void Dictionary::drawMarker(int id, int sidePixels, OutputArray _img, int borderBits) const {
 
-    CV_Assert(sidePixels > markerSize);
+    CV_Assert(sidePixels >= (markerSize + 2*borderBits));
     CV_Assert(id < bytesList.rows);
     CV_Assert(borderBits > 0);
 

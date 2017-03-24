@@ -235,15 +235,15 @@ class CV_EXPORTS_W Board {
     *
     */
     CV_WRAP static Ptr<Board> create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &dictionary, InputArray ids);
-    // array of object points of all the marker corners in the board
-    // each marker include its 4 corners, i.e. for M markers, the size is Mx4
+    /// array of object points of all the marker corners in the board
+    /// each marker include its 4 corners in CCW order. For M markers, the size is Mx4.
     CV_PROP std::vector< std::vector< Point3f > > objPoints;
 
-    // the dictionary of markers employed for this board
+    /// the dictionary of markers employed for this board
     CV_PROP Ptr<Dictionary> dictionary;
 
-    // vector of the identifiers of the markers in the board (same size than objPoints)
-    // The identifiers refers to the board dictionary
+    /// vector of the identifiers of the markers in the board (same size than objPoints)
+    /// The identifiers refers to the board dictionary
     CV_PROP std::vector< int > ids;
 };
 
@@ -331,8 +331,9 @@ class CV_EXPORTS_W GridBoard : public Board {
  * @param distCoeffs vector of distortion coefficients
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
  * @param rvec Output vector (e.g. cv::Mat) corresponding to the rotation vector of the board
- * (@sa Rodrigues). Used as initial guess if not empty.
+ * (see cv::Rodrigues). Used as initial guess if not empty.
  * @param tvec Output vector (e.g. cv::Mat) corresponding to the translation vector of the board.
+ * @param useExtrinsicGuess defines whether initial guess for \b rvec and \b tvec will be used or not.
  * Used as initial guess if not empty.
  *
  * This function receives the detected markers and returns the pose of a marker board composed
@@ -346,7 +347,7 @@ class CV_EXPORTS_W GridBoard : public Board {
  */
 CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, const Ptr<Board> &board,
                                    InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec,
-                                   OutputArray tvec);
+                                   OutputArray tvec, bool useExtrinsicGuess = false);
 
 
 

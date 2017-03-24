@@ -59,7 +59,6 @@ Explanation
 
     Using this function, you can select the bounding box of the tracked object using a GUI.
     With default parameters, the selection is started from the center of the box and a middle cross will be shown.
-    See @ref cv::selectROI for more detailed information.
 
 -#  **Initializing the tracker object**
 

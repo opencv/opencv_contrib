@@ -920,13 +920,8 @@ static void _getBoardObjectAndImagePoints(const Ptr<Board> &_board, InputArray _
     }
 
     // create output
-    _objPoints.create((int)objPnts.size(), 1, CV_32FC3);
-    for(unsigned int i = 0; i < objPnts.size(); i++)
-        _objPoints.getMat().ptr< Point3f >(0)[i] = objPnts[i];
-
-    _imgPoints.create((int)objPnts.size(), 1, CV_32FC2);
-    for(unsigned int i = 0; i < imgPnts.size(); i++)
-        _imgPoints.getMat().ptr< Point2f >(0)[i] = imgPnts[i];
+    Mat(objPnts).copyTo(_objPoints);
+    Mat(imgPnts).copyTo(_imgPoints);
 }
 
 
@@ -937,7 +932,7 @@ static void _getBoardObjectAndImagePoints(const Ptr<Board> &_board, InputArray _
 static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArrayOfArrays _detectedCorners,
                                       InputOutputArray _detectedIds, InputArray _cameraMatrix,
                                       InputArray _distCoeffs,
-                                      OutputArrayOfArrays _undetectedMarkersProjectedCorners,
+                                      vector< vector< Point2f > >& _undetectedMarkersProjectedCorners,
                                       OutputArray _undetectedMarkersIds) {
 
     // first estimate board pose with the current avaible markers
@@ -972,18 +967,8 @@ static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArray
 
 
     // parse output
-    _undetectedMarkersIds.create((int)undetectedIds.size(), 1, CV_32SC1);
-    for(unsigned int i = 0; i < undetectedIds.size(); i++)
-        _undetectedMarkersIds.getMat().ptr< int >(0)[i] = undetectedIds[i];
-
-    _undetectedMarkersProjectedCorners.create((int)undetectedCorners.size(), 1, CV_32FC2);
-    for(unsigned int i = 0; i < undetectedCorners.size(); i++) {
-        _undetectedMarkersProjectedCorners.create(4, 1, CV_32FC2, i, true);
-        for(int j = 0; j < 4; j++) {
-            _undetectedMarkersProjectedCorners.getMat(i).ptr< Point2f >()[j] =
-                undetectedCorners[i][j];
-        }
-    }
+    Mat(undetectedIds).copyTo(_undetectedMarkersIds);
+    _undetectedMarkersProjectedCorners = undetectedCorners;
 }
 
 
@@ -994,7 +979,7 @@ static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArray
   */
 static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArrayOfArrays _detectedCorners,
                                       InputOutputArray _detectedIds,
-                                      OutputArrayOfArrays _undetectedMarkersProjectedCorners,
+                                      vector< vector< Point2f > >& _undetectedMarkersProjectedCorners,
                                       OutputArray _undetectedMarkersIds) {
 
 
@@ -1042,20 +1027,14 @@ static void _projectUndetectedMarkers(const Ptr<Board> &_board, InputOutputArray
     // get homography from detected markers
     Mat transformation = findHomography(detectedMarkersObj2DAll, imageCornersAll);
 
-    _undetectedMarkersProjectedCorners.create((int)undetectedMarkersIds.size(), 1, CV_32FC2);
+    _undetectedMarkersProjectedCorners.resize(undetectedMarkersIds.size());
 
     // for each undetected marker, apply transformation
     for(unsigned int i = 0; i < undetectedMarkersObj2D.size(); i++) {
-        Mat projectedMarker;
-        perspectiveTransform(undetectedMarkersObj2D[i], projectedMarker, transformation);
-
-        _undetectedMarkersProjectedCorners.create(4, 1, CV_32FC2, i, true);
-        projectedMarker.copyTo(_undetectedMarkersProjectedCorners.getMat(i));
+        perspectiveTransform(undetectedMarkersObj2D[i], _undetectedMarkersProjectedCorners[i], transformation);
     }
 
-    _undetectedMarkersIds.create((int)undetectedMarkersIds.size(), 1, CV_32SC1);
-    for(unsigned int i = 0; i < undetectedMarkersIds.size(); i++)
-        _undetectedMarkersIds.getMat().ptr< int >(0)[i] = undetectedMarkersIds[i];
+    Mat(undetectedMarkersIds).copyTo(_undetectedMarkersIds);
 }
 
 
@@ -1216,9 +1195,7 @@ void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
         _detectedIds.clear();
 
         // parse output
-        _detectedIds.create((int)finalAcceptedIds.size(), 1, CV_32SC1);
-        for(unsigned int i = 0; i < finalAcceptedIds.size(); i++)
-            _detectedIds.getMat().ptr< int >(0)[i] = finalAcceptedIds[i];
+        Mat(finalAcceptedIds).copyTo(_detectedIds);
 
         _detectedCorners.create((int)finalAcceptedCorners.size(), 1, CV_32FC2);
         for(unsigned int i = 0; i < finalAcceptedCorners.size(); i++) {
@@ -1248,10 +1225,7 @@ void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
         }
 
         if(_recoveredIdxs.needed()) {
-            _recoveredIdxs.create((int)recoveredIdxs.size(), 1, CV_32SC1);
-            for(unsigned int i = 0; i < recoveredIdxs.size(); i++) {
-                _recoveredIdxs.getMat().ptr< int >()[i] = recoveredIdxs[i];
-            }
+            Mat(recoveredIdxs).copyTo(_recoveredIdxs);
         }
     }
 }
@@ -1263,7 +1237,7 @@ void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
   */
 int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Ptr<Board> &board,
                       InputArray _cameraMatrix, InputArray _distCoeffs, OutputArray _rvec,
-                      OutputArray _tvec) {
+                      OutputArray _tvec, bool useExtrinsicGuess) {
 
     CV_Assert(_corners.total() == _ids.total());
 
@@ -1276,13 +1250,6 @@ int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Ptr<Bo
     if(objPoints.total() == 0) // 0 of the detected markers in board
         return 0;
 
-    bool useExtrinsicGuess = true;
-    if (_rvec.empty() || _tvec.empty())
-    {
-        _rvec.create(3, 1, CV_64FC1);
-        _tvec.create(3, 1, CV_64FC1);
-        useExtrinsicGuess = false;
-    }
     solvePnP(objPoints, imgPoints, _cameraMatrix, _distCoeffs, _rvec, _tvec, useExtrinsicGuess);
 
     // divide by four since all the four corners are concatenated in the array for each marker
@@ -1304,12 +1271,17 @@ void GridBoard::draw(Size outSize, OutputArray _img, int marginSize, int borderB
 Ptr<Board> Board::create(InputArrayOfArrays objPoints, const Ptr<Dictionary> &dictionary, InputArray ids) {
 
     CV_Assert(objPoints.total() == ids.total());
-    CV_Assert(objPoints.type() == CV_32FC3);
+    CV_Assert(objPoints.type() == CV_32FC3 || objPoints.type() == CV_32FC1);
 
     std::vector< std::vector< Point3f > > obj_points_vector;
     for (unsigned int i = 0; i < objPoints.total(); i++) {
         std::vector<Point3f> corners;
         Mat corners_mat = objPoints.getMat(i);
+
+        if(corners_mat.type() == CV_32FC1)
+            corners_mat = corners_mat.reshape(3);
+        CV_Assert(corners_mat.total() == 4);
+
         for (int j = 0; j < 4; j++) {
             corners.push_back(corners_mat.at<Point3f>(j));
         }
@@ -1457,8 +1429,7 @@ void _drawPlanarBoardImpl(Board *_board, Size outSize, OutputArray _img, int mar
     _img.create(outSize, CV_8UC1);
     Mat out = _img.getMat();
     out.setTo(Scalar::all(255));
-    Mat outNoMargins =
-        out.colRange(marginSize, out.cols - marginSize).rowRange(marginSize, out.rows - marginSize);
+    out.adjustROI(-marginSize, -marginSize, -marginSize, -marginSize);
 
     // calculate max and min values in XY plane
     CV_Assert(_board->objPoints.size() > 0);
@@ -1475,70 +1446,59 @@ void _drawPlanarBoardImpl(Board *_board, Size outSize, OutputArray _img, int mar
         }
     }
 
-    float sizeX, sizeY;
-    sizeX = maxX - minX;
-    sizeY = maxY - minY;
+    float sizeX = maxX - minX;
+    float sizeY = maxY - minY;
 
     // proportion transformations
-    float xReduction = sizeX / float(outNoMargins.cols);
-    float yReduction = sizeY / float(outNoMargins.rows);
+    float xReduction = sizeX / float(out.cols);
+    float yReduction = sizeY / float(out.rows);
 
     // determine the zone where the markers are placed
-    Mat markerZone;
     if(xReduction > yReduction) {
         int nRows = int(sizeY / xReduction);
-        int rowsMargins = (outNoMargins.rows - nRows) / 2;
-        markerZone = outNoMargins.rowRange(rowsMargins, outNoMargins.rows - rowsMargins);
+        int rowsMargins = (out.rows - nRows) / 2;
+        out.adjustROI(-rowsMargins, -rowsMargins, 0, 0);
     } else {
         int nCols = int(sizeX / yReduction);
-        int colsMargins = (outNoMargins.cols - nCols) / 2;
-        markerZone = outNoMargins.colRange(colsMargins, outNoMargins.cols - colsMargins);
+        int colsMargins = (out.cols - nCols) / 2;
+        out.adjustROI(0, 0, -colsMargins, -colsMargins);
     }
 
     // now paint each marker
     Dictionary &dictionary = *(_board->dictionary);
+    Mat marker;
+    Point2f outCorners[3];
+    Point2f inCorners[3];
     for(unsigned int m = 0; m < _board->objPoints.size(); m++) {
-
         // transform corners to markerZone coordinates
-        vector< Point2f > outCorners;
-        outCorners.resize(4);
-        for(int j = 0; j < 4; j++) {
-            Point2f p0, p1, pf;
-            p0 = Point2f(_board->objPoints[m][j].x, _board->objPoints[m][j].y);
-            // remove negativity
-            p1.x = p0.x - minX;
-            p1.y = p0.y - minY;
-            pf.x = p1.x * float(markerZone.cols - 1) / sizeX;
-            pf.y = float(markerZone.rows - 1) - p1.y * float(markerZone.rows - 1) / sizeY;
+        for(int j = 0; j < 3; j++) {
+            Point2f pf = Point2f(_board->objPoints[m][j].x, _board->objPoints[m][j].y);
+            // move top left to 0, 0
+            pf -= Point2f(minX, minY);
+            pf.x = pf.x / sizeX * float(out.cols);
+            pf.y = (1.0f - pf.y / sizeY) * float(out.rows);
             outCorners[j] = pf;
         }
 
-        // get tiny marker
-        int tinyMarkerSize = 10 * dictionary.markerSize + 2;
-        Mat tinyMarker;
-        dictionary.drawMarker(_board->ids[m], tinyMarkerSize, tinyMarker, borderBits);
+        // get marker
+        Size dst_sz(outCorners[2] - outCorners[0]); // assuming CCW order
+        dictionary.drawMarker(_board->ids[m], dst_sz.width, marker, borderBits);
+
+        if((outCorners[0].y == outCorners[1].y) && (outCorners[1].x == outCorners[2].x)) {
+            // marker is aligned to image axes
+            marker.copyTo(out(Rect(outCorners[0], dst_sz)));
+            continue;
+        }
 
         // interpolate tiny marker to marker position in markerZone
-        Mat inCorners(4, 1, CV_32FC2);
-        inCorners.ptr< Point2f >(0)[0] = Point2f(0, 0);
-        inCorners.ptr< Point2f >(0)[1] = Point2f((float)tinyMarker.cols, 0);
-        inCorners.ptr< Point2f >(0)[2] = Point2f((float)tinyMarker.cols, (float)tinyMarker.rows);
-        inCorners.ptr< Point2f >(0)[3] = Point2f(0, (float)tinyMarker.rows);
+        inCorners[0] = Point2f(-0.5f, -0.5f);
+        inCorners[1] = Point2f(marker.cols - 0.5f, -0.5f);
+        inCorners[2] = Point2f(marker.cols - 0.5f, marker.rows - 0.5f);
 
         // remove perspective
-        Mat transformation = getPerspectiveTransform(inCorners, outCorners);
-        Mat aux;
-        const char borderValue = 127;
-        warpPerspective(tinyMarker, aux, transformation, markerZone.size(), INTER_NEAREST,
-                        BORDER_CONSTANT, Scalar::all(borderValue));
-
-        // copy only not-border pixels
-        for(int y = 0; y < aux.rows; y++) {
-            for(int x = 0; x < aux.cols; x++) {
-                if(aux.at< unsigned char >(y, x) == borderValue) continue;
-                markerZone.at< unsigned char >(y, x) = aux.at< unsigned char >(y, x);
-            }
-        }
+        Mat transformation = getAffineTransform(inCorners, outCorners);
+        warpAffine(marker, out, transformation, out.size(), INTER_LINEAR,
+                        BORDER_TRANSPARENT);
     }
 }
 

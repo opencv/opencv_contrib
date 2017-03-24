@@ -37,23 +37,19 @@ or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
 */
 
-/*
-Implementation of the PCAFlow algorithm from the following paper:
-http://files.is.tue.mpg.de/black/papers/cvpr2015_pcaflow.pdf
-
-@inproceedings{Wulff:CVPR:2015,
-  title = {Efficient Sparse-to-Dense Optical Flow Estimation using a Learned Basis and Layers},
-  author = {Wulff, Jonas and Black, Michael J.},
-  booktitle = { IEEE Conf. on Computer Vision and Pattern Recognition (CVPR) 2015},
-  month = jun,
-  year = {2015}
-}
-
-There are some key differences which distinguish this algorithm from the original PCAFlow (see paper):
-  - Discrete Cosine Transform basis is used instead of basis extracted with PCA.
-    Reasoning: DCT basis has comparable performance and it doesn't require additional storage space.
-    Also, this decision helps to avoid overloading the algorithm with a lot of external input.
-  - Usage of built-in OpenCV feature tracking instead of libviso.
+/**
+ * @file   pcaflow.hpp
+ * @author Vladislav Samsonov <vvladxx@gmail.com>
+ * @brief  Implementation of the PCAFlow algorithm from the following paper:
+ * http://files.is.tue.mpg.de/black/papers/cvpr2015_pcaflow.pdf
+ *
+ * @cite Wulff:CVPR:2015
+ *
+ * There are some key differences which distinguish this algorithm from the original PCAFlow (see paper):
+ * - Discrete Cosine Transform basis is used instead of basis extracted with PCA.
+ *   Reasoning: DCT basis has comparable performance and it doesn't require additional storage space.
+ *   Also, this decision helps to avoid overloading the algorithm with a lot of external input.
+ * - Usage of built-in OpenCV feature tracking instead of libviso.
 */
 
 #ifndef __OPENCV_OPTFLOW_PCAFLOW_HPP__
@@ -67,7 +63,10 @@ namespace cv
 namespace optflow
 {
 
-/*
+//! @addtogroup optflow
+//! @{
+
+/** @brief
  * This class can be used for imposing a learned prior on the resulting optical flow.
  * Solution will be regularized according to this prior.
  * You need to generate appropriate prior file with "learn_prior.py" script beforehand.
@@ -90,6 +89,8 @@ public:
   void fillConstraints( float *A1, float *A2, float *b1, float *b2 ) const;
 };
 
+/** @brief PCAFlow algorithm.
+ */
 class CV_EXPORTS_W OpticalFlowPCAFlow : public DenseOpticalFlow
 {
 protected:
@@ -103,6 +104,15 @@ protected:
   bool useOpenCL;
 
 public:
+  /** @brief Creates an instance of PCAFlow algorithm.
+   * @param _prior Learned prior or no prior (default). @see cv::optflow::PCAPrior
+   * @param _basisSize Number of basis vectors.
+   * @param _sparseRate Controls density of sparse matches.
+   * @param _retainedCornersFraction Retained corners fraction.
+   * @param _occlusionsThreshold Occlusion threshold.
+   * @param _dampingFactor Regularization term for solving least-squares. It is not related to the prior regularization.
+   * @param _claheClip Clip parameter for CLAHE.
+   */
   OpticalFlowPCAFlow( Ptr<const PCAPrior> _prior = Ptr<const PCAPrior>(), const Size _basisSize = Size( 18, 14 ),
                       float _sparseRate = 0.024, float _retainedCornersFraction = 0.2,
                       float _occlusionsThreshold = 0.0003, float _dampingFactor = 0.00002, float _claheClip = 14 );
@@ -127,7 +137,12 @@ private:
   OpticalFlowPCAFlow& operator=( const OpticalFlowPCAFlow& ); // make it non-assignable
 };
 
+/** @brief Creates an instance of PCAFlow
+*/
 CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_PCAFlow();
+
+//! @}
+
 }
 }
 

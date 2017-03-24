@@ -71,6 +71,7 @@ namespace cv
 			std::vector<int> timeStampsPositive, timeStampsNegative;
 			int timeStampPositiveNext, timeStampNegativeNext;
 			double originalVariance_;
+			std::vector<double> srValues;
 
 			double getOriginalVariance(){ return originalVariance_; }
 

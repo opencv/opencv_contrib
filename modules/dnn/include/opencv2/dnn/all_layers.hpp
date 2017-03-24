@@ -209,7 +209,8 @@ namespace dnn
     {
     public:
 
-        CV_PROP_RW Size kernel, stride, pad, dilation;
+        CV_PROP_RW Size kernel, stride, pad, dilation, adjustPad;
+        CV_PROP_RW String padMode;
     };
 
     class CV_EXPORTS_W ConvolutionLayer : public BaseConvolutionLayer
@@ -223,7 +224,7 @@ namespace dnn
     {
     public:
 
-        static CV_WRAP Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size stride = Size(1, 1), Size pad = Size(0, 0), Size dilation = Size(1, 1));
+        static CV_WRAP Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size stride = Size(1, 1), Size pad = Size(0, 0), Size dilation = Size(1, 1), Size adjustPad = Size());
     };
 
     class CV_EXPORTS_W LRNLayer : public Layer
@@ -238,9 +239,12 @@ namespace dnn
         CV_PROP_RW int type;
 
         CV_PROP_RW int size;
-        CV_PROP_RW double alpha, beta;
+        CV_PROP_RW double alpha, beta, bias;
+        CV_PROP_RW bool normBySize;
 
-        static CV_WRAP Ptr<LRNLayer> create(int type = LRNLayer::CHANNEL_NRM, int size = 5, double alpha = 1, double beta = 0.75);
+        static CV_WRAP Ptr<LRNLayer> create(int type = LRNLayer::CHANNEL_NRM, int size = 5,
+                                            double alpha = 1, double beta = 0.75, double bias = 1,
+                                            bool normBySize = true);
     };
 
     class CV_EXPORTS_W PoolingLayer : public Layer
@@ -257,8 +261,11 @@ namespace dnn
         CV_PROP_RW int type;
         CV_PROP_RW Size kernel, stride, pad;
         CV_PROP_RW bool globalPooling;
+        CV_PROP_RW String padMode;
 
-        static CV_WRAP Ptr<PoolingLayer> create(int type = PoolingLayer::MAX, Size kernel = Size(2, 2), Size stride = Size(1, 1), Size pad = Size(0, 0));
+        static CV_WRAP Ptr<PoolingLayer> create(int type = PoolingLayer::MAX, Size kernel = Size(2, 2),
+                                                Size stride = Size(1, 1), Size pad = Size(0, 0),
+                                                const cv::String& padMode = "");
         static CV_WRAP Ptr<PoolingLayer> createGlobal(int type = PoolingLayer::MAX);
     };
 
@@ -294,7 +301,8 @@ namespace dnn
         CV_PROP_RW BlobShape newShapeDesc;
         CV_PROP_RW Range newShapeRange;
 
-        static CV_WRAP Ptr<ReshapeLayer> create(const BlobShape &newShape, Range applyingRange = Range::all());
+        static CV_WRAP Ptr<ReshapeLayer> create(const BlobShape &newShape, Range applyingRange = Range::all(),
+                                                bool enableReordering = false);
     };
 
     class CV_EXPORTS_W ConcatLayer : public Layer
@@ -331,6 +339,12 @@ namespace dnn
         CV_PROP_RW double negativeSlope;
 
         static CV_WRAP Ptr<ReLULayer> create(double negativeSlope = 0);
+    };
+
+    class CV_EXPORTS_W ChannelsPReLULayer : public Layer
+    {
+    public:
+        static CV_WRAP Ptr<ChannelsPReLULayer> create();
     };
 
     class CV_EXPORTS_W TanHLayer : public Layer
@@ -387,6 +401,24 @@ namespace dnn
         };
 
         static Ptr<EltwiseLayer> create(EltwiseOp op, const std::vector<int> &coeffs);
+    };
+
+    class CV_EXPORTS_W BatchNormLayer : public Layer
+    {
+    public:
+        static CV_WRAP Ptr<BatchNormLayer> create(bool hasWeights, bool hasBias, float epsilon);
+    };
+
+    class CV_EXPORTS_W MaxUnpoolLayer : public Layer
+    {
+    public:
+        static CV_WRAP Ptr<MaxUnpoolLayer> create(Size poolKernel, Size poolPad, Size poolStride);
+    };
+
+    class CV_EXPORTS_W ScaleLayer : public Layer
+    {
+    public:
+        static CV_WRAP Ptr<ScaleLayer> create(bool hasBias);
     };
 
 //! @}

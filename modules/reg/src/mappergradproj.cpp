@@ -44,21 +44,22 @@ namespace reg {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MapperGradProj::MapperGradProj(void)
+MapperGradProj::MapperGradProj()
 {
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MapperGradProj::~MapperGradProj(void)
+MapperGradProj::~MapperGradProj()
 {
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void MapperGradProj::calculate(
-    const cv::Mat& img1, const cv::Mat& image2, cv::Ptr<Map>& res) const
+cv::Ptr<Map> MapperGradProj::calculate(
+    InputArray _img1, InputArray image2, cv::Ptr<Map> init) const
 {
+    Mat img1 = _img1.getMat();
     Mat gradx, grady, imgDiff;
     Mat img2;
 
@@ -66,11 +67,11 @@ void MapperGradProj::calculate(
     CV_DbgAssert(img1.channels() == image2.channels());
     CV_DbgAssert(img1.channels() == 1 || img1.channels() == 3);
 
-    if(!res.empty()) {
+    if(!init.empty()) {
         // We have initial values for the registration: we move img2 to that initial reference
-        res->inverseWarp(image2, img2);
+        init->inverseWarp(image2, img2);
     } else {
-        img2 = image2;
+        img2 = image2.getMat();
     }
 
     // Get gradient in all channels
@@ -195,16 +196,19 @@ void MapperGradProj::calculate(
     Vec<double, 8> k = A.inv(DECOMP_CHOLESKY)*b;
 
     Matx<double, 3, 3> H(k(0) + 1., k(1), k(2), k(3), k(4) + 1., k(5), k(6), k(7), 1.);
-    if(res.empty()) {
-        res = Ptr<Map>(new MapProjec(H));
+    if(init.empty()) {
+        return Ptr<Map>(new MapProjec(H));
     } else {
-        MapProjec newTr(H);
-        res->compose(newTr);
+        Ptr<MapProjec> newTr(new MapProjec(H));
+        MapProjec* initPtr = dynamic_cast<MapProjec*>(init.get());
+        Ptr<MapProjec> oldTr(new MapProjec(initPtr->getProjTr()));
+        oldTr->compose(newTr);
+        return oldTr;
    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-cv::Ptr<Map> MapperGradProj::getMap(void) const
+cv::Ptr<Map> MapperGradProj::getMap() const
 {
     return cv::Ptr<Map>(new MapProjec());
 }

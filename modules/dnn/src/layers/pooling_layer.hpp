@@ -1,4 +1,4 @@
-﻿/*M///////////////////////////////////////////////////////////////////////////////////////
+/*M///////////////////////////////////////////////////////////////////////////////////////
 //
 //  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
 //
@@ -58,9 +58,9 @@ class PoolingLayerImpl : public PoolingLayer
 
     bool pooling_ocl(const char *kname, const Blob &src, Blob &dst, Blob *mask = NULL);
 
-    void maxPooling(Blob &src, Blob &dst);
-    void maxPooling_cpu(Blob &src, Blob &dst);
-    bool maxPooling_ocl(Blob &src, Blob &dst);
+    void maxPooling(Blob &src, Blob &dst, Blob &mask);
+    void maxPooling_cpu(Blob &src, Blob &dst, Blob &mask);
+    bool maxPooling_ocl(Blob &src, Blob &dst, Blob &mask);
 
     void avePooling(Blob &src, Blob &dst);
     void avePooling_cpu(Blob &src, Blob &dst);
@@ -69,7 +69,7 @@ class PoolingLayerImpl : public PoolingLayer
 public:
 
     PoolingLayerImpl();
-    PoolingLayerImpl(int type, Size kernel, Size stride, Size pad);
+    PoolingLayerImpl(int type, Size kernel, Size stride, Size pad, const String& padMode);
 
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
@@ -77,4 +77,5 @@ public:
 
 }
 }
+
 #endif

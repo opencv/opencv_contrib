@@ -128,6 +128,17 @@ int main( int argc, char** argv )
     }
 
   }
+  else if( saliency_algorithm.find( "FINE_GRAINED" ) == 0 )
+  {
+    Mat saliencyMap;
+    if( saliencyAlgorithm->computeSaliency( image, saliencyMap ) )
+    {
+      imshow( "Saliency Map", saliencyMap );
+      imshow( "Original Image", image );
+      waitKey( 0 );
+    }
+
+  }
   else if( saliency_algorithm.find( "BING" ) == 0 )
   {
     if( training_path.empty() )

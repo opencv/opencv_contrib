@@ -182,6 +182,9 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
         /** @brief Returns pointer to layer with specified name which the network use. */
         CV_WRAP Ptr<Layer> getLayer(LayerId layerId);
 
+        /** @brief Returns pointers to input layers of specific layer. */
+        CV_WRAP std::vector<Ptr<Layer> > getLayerInputs(LayerId layerId);
+
         /** @brief Delete layer for the network (not implemented yet) */
         CV_WRAP void deleteLayer(LayerId layer);
 
@@ -270,6 +273,9 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          */
         CV_WRAP Blob getParam(LayerId layer, int numParam = 0);
 
+        /** @brief Returns indexes of layers with unconnected outputs.
+         */
+        CV_WRAP std::vector<int> getUnconnectedOutLayers() const;
     private:
 
         struct Impl;
@@ -298,6 +304,12 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
       * @details This is shortcut consisting from createCaffeImporter and Net::populateNet calls.
       */
     CV_EXPORTS_W Net readNetFromCaffe(const String &prototxt, const String &caffeModel = String());
+
+    /** @brief Creates the importer of <a href="http://www.tensorflow.org">TensorFlow</a> framework network.
+     *  @param model   path to the .pb file with binary protobuf description of the network architecture.
+     *  @returns Pointer to the created importer, NULL in failure cases.
+     */
+    CV_EXPORTS Ptr<Importer> createTensorflowImporter(const String &model);
 
     /** @brief Creates the importer of <a href="http://torch.ch">Torch7</a> framework network.
      *  @param filename path to the file, dumped from Torch by using torch.save() function.
