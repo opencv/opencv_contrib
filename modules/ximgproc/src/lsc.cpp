@@ -768,22 +768,25 @@ inline void SuperpixelLSCImpl::PostEnforceLabelConnectivity( int threshold )
 
       double W = W1 + W2;
 
-      for ( int b = 0; b < m_nr_channels; b++ )
+      if ( (Label1 > 0) && (Label2 > 0) )
       {
-        centerC1[b][Label2] = float((W2*centerC1[b][Label2] + W1*centerC1[b][Label1]) / W);
-        centerC2[b][Label2] = float((W2*centerC2[b][Label2] + W1*centerC2[b][Label1]) / W);
-      }
-      centerX1[Label2] = float((W2*centerX1[Label2] + W1*centerX1[Label1]) / W);
-      centerX2[Label2] = float((W2*centerX2[Label2] + W1*centerX2[Label1]) / W);
-      centerY1[Label2] = float((W2*centerY1[Label2] + W1*centerY1[Label1]) / W);
-      centerY2[Label2] = float((W2*centerY2[Label2] + W1*centerY2[Label1]) / W);
+        for ( int b = 0; b < m_nr_channels; b++ )
+        {
+          centerC1[b][Label2] = float((W2*centerC1[b][Label2] + W1*centerC1[b][Label1]) / W);
+          centerC2[b][Label2] = float((W2*centerC2[b][Label2] + W1*centerC2[b][Label1]) / W);
+        }
+        centerX1[Label2] = float((W2*centerX1[Label2] + W1*centerX1[Label1]) / W);
+        centerX2[Label2] = float((W2*centerX2[Label2] + W1*centerX2[Label1]) / W);
+        centerY1[Label2] = float((W2*centerY1[Label2] + W1*centerY1[Label1]) / W);
+        centerY2[Label2] = float((W2*centerY2[Label2] + W1*centerY2[Label1]) / W);
 
-      centerW[Label2] = (float)W;
-      for( size_t i = 0; i < (*S).xLoc.size(); i++ )
-      {
-        int x = (*S).xLoc[i];
-        int y = (*S).yLoc[i];
-        m_klabels.at<int>(y,x) = Label2;
+        centerW[Label2] = (float)W;
+        for( size_t i = 0; i < (*S).xLoc.size(); i++ )
+        {
+          int x = (*S).xLoc[i];
+          int y = (*S).yLoc[i];
+          m_klabels.at<int>(y,x) = Label2;
+        }
       }
 
       vector<Superpixel>::iterator Stmp;
