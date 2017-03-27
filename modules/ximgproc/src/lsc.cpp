@@ -796,8 +796,23 @@ inline void SuperpixelLSCImpl::PostEnforceLabelConnectivity( int threshold )
         Size[Label2] = Size[Label1] + Size[Label2];
         if( Size[Label2] >= threshold )
         {
-          Sarray.erase( S );
-          Sarray.erase( Stmp );
+          if( S == Stmp )
+          {
+            // erasing only one should be sufficient when the iterators are the same
+            // (maybe the case S == Stmp is not even possible?)
+            Sarray.erase( S );
+          }
+          else if( S < Stmp )
+          {
+            // erase the latter element first, so the other iterator is not invalidated
+            Sarray.erase( Stmp );
+            Sarray.erase( S );
+          }
+          else
+          {
+            Sarray.erase( S );
+            Sarray.erase( Stmp );
+          }
         }
         else
         {
