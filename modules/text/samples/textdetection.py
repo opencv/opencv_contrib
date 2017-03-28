@@ -44,7 +44,7 @@ for channel in channels:
   regions = cv2.text.detectRegions(channel,er1,er2)
 
   rects = cv2.text.erGrouping(img,channel,[r.tolist() for r in regions])
-  #rects = cv2.text.erGrouping(img,gray,[x.tolist() for x in regions], cv2.text.ERGROUPING_ORIENTATION_ANY,'../../GSoC2014/opencv_contrib/modules/text/samples/trained_classifier_erGrouping.xml',0.5)
+  #rects = cv2.text.erGrouping(img,channel,[x.tolist() for x in regions], cv2.text.ERGROUPING_ORIENTATION_ANY,'../../GSoC2014/opencv_contrib/modules/text/samples/trained_classifier_erGrouping.xml',0.5)
 
   #Visualization
   for r in range(0,np.shape(rects)[0]):
