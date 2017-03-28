@@ -9,8 +9,6 @@
 Test for Tensorflow models loading
 */
 
-#if defined(ENABLE_TF_INCEPTION_TESTS)
-
 #include "test_precomp.hpp"
 #include "npy_blob.hpp"
 
@@ -30,7 +28,8 @@ TEST(Test_TensorFlow, read_inception)
 {
     Net net;
     {
-        Ptr<Importer> importer = createTensorflowImporter(_tf("tensorflow_inception_graph.pb"));
+        const string model = findDataFile("dnn/tensorflow_inception_graph.pb", false);
+        Ptr<Importer> importer = createTensorflowImporter(model);
         ASSERT_TRUE(importer != NULL);
         importer->populateNet(net);
     }
@@ -54,7 +53,8 @@ TEST(Test_TensorFlow, inception_accuracy)
 {
     Net net;
     {
-        Ptr<Importer> importer = createTensorflowImporter(_tf("tensorflow_inception_graph.pb"));
+        const string model = findDataFile("dnn/tensorflow_inception_graph.pb", false);
+        Ptr<Importer> importer = createTensorflowImporter(model);
         ASSERT_TRUE(importer != NULL);
         importer->populateNet(net);
     }
@@ -76,5 +76,3 @@ TEST(Test_TensorFlow, inception_accuracy)
 }
 
 }
-
-#endif

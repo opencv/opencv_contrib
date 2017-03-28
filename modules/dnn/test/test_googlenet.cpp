@@ -39,7 +39,6 @@
 //
 //M*/
 
-#if defined(ENABLE_CAFFE_MODEL_TESTS)
 #include "test_precomp.hpp"
 #include "npy_blob.hpp"
 #include <opencv2/core/ocl.hpp>
@@ -61,7 +60,9 @@ static void launchGoogleNetTest()
 {
     Net net;
     {
-        Ptr<Importer> importer = createCaffeImporter(_tf("bvlc_googlenet.prototxt"), _tf("bvlc_googlenet.caffemodel"));
+        const string proto = findDataFile("dnn/bvlc_googlenet.prototxt", false);
+        const string model = findDataFile("dnn/bvlc_googlenet.caffemodel", false);
+        Ptr<Importer> importer = createCaffeImporter(proto, model);
         ASSERT_TRUE(importer != NULL);
         importer->populateNet(net);
     }
@@ -91,4 +92,3 @@ OCL_TEST(Reproducibility_GoogLeNet, Accuracy)
 }
 
 }
-#endif

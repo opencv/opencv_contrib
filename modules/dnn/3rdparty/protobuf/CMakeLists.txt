@@ -41,7 +41,7 @@ function(append_if_exist OUTPUT_LIST)
     set(${OUTPUT_LIST} ${${OUTPUT_LIST}} PARENT_SCOPE)
 endfunction()
 
-set(PROTOBUF_ROOT "${PROTOBUF_CPP_PATH}/protobuf-3.1.0")
+set(PROTOBUF_ROOT "${PROTOBUF_CPP_ROOT}")
 
 if(MSVC)
   set(ATOMICOPS_INTERNALS ${PROTOBUF_ROOT}/src/google/protobuf/stubs/atomicops_internals_x86_msvc.cc)
