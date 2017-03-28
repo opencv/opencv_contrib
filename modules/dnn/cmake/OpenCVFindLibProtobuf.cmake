@@ -36,6 +36,7 @@ else()
                  "$ENV{OPENCV_PROTOBUF_URL}"
                  "https://github.com/google/protobuf/releases/download/v3.1.0/"
                DESTINATION_DIR "${PROTOBUF_CPP_PATH}"
+               ID PROTOBUF
                STATUS res
                UNPACK RELATIVE_URL)
   if(NOT res)

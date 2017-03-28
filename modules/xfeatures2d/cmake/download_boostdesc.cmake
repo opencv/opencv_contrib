@@ -26,6 +26,7 @@ function(download_boost_descriptors dst_dir status_var)
                    "$ENV{OPENCV_BOOSTDESC_URL}"
                    "https://raw.githubusercontent.com/opencv/opencv_3rdparty/${OPENCV_3RDPARTY_COMMIT}/"
                  DESTINATION_DIR ${dst_dir}
+                 ID "xfeatures2d/boostdesc"
                  RELATIVE_URL
                  STATUS res)
     if(NOT res)
