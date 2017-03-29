@@ -63,12 +63,12 @@ void PaddingLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &output
 
         std::vector<Range> srcRanges(inShape.dims(), Range::all()), dstRanges = srcRanges;
 
-        for(int i = 0; i < srcDstRanges.size(); i++)
+        for(int j = 0; j < srcDstRanges.size(); j++)
         {
-            if(!srcDstRanges[i].first.empty())
+            if(!srcDstRanges[j].first.empty())
             {
-                srcRanges[dim] = srcDstRanges[i].first;
-                dstRanges[dim] = srcDstRanges[i].second;
+                srcRanges[dim] = srcDstRanges[j].first;
+                dstRanges[dim] = srcDstRanges[j].second;
                 Mat dst = outputs[i].matRef()(&dstRanges[0]);
                 Mat src = inputs[i]->matRef()(&srcRanges[0]).clone();
                 src.copyTo(dst);
