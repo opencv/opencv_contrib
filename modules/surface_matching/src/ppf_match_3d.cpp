@@ -300,6 +300,34 @@ void PPF3DDetector::trainModel(const Mat &PC)
   trained = true;
 }
 
+void PPF3DDetector::read(const FileNode& fn)
+{
+    CV_Assert(!fn["sampling_step_relative"].empty() &&
+            !fn["sampling_step_relative"].empty() &&
+            !fn["distance_step_relative"].empty() &&
+            !fn["num_angles"].empty() &&
+            !fn["position_threshold"].empty() &&
+            !fn["use_weighted_clustering"].empty());
+
+    fn["sampling_step_relative"] >> sampling_step_relative;
+    fn["distance_step_relative"] >> distance_step_relative;
+    fn["num_angles"] >> angle_step_relative;
+
+    fn["position_threshold"] >> position_threshold;
+    fn["rotation_threshold"] >> rotation_threshold;
+    fn["use_weighted_clustering"] >> use_weighted_avg;
+}
+
+void PPF3DDetector::write(FileStorage& fs) const
+{
+    fs << "sampling_step_relative" << sampling_step_relative;
+    fs << "distance_step_relative" << distance_step_relative;
+    fs << "num_angles" << angle_step_relative;
+
+    fs << "position_threshold" << position_threshold;
+    fs << "rotation_threshold" << rotation_threshold;
+    fs << "use_weighted_clustering" << use_weighted_avg;
+}
 
 
 ///////////////////////// MATCHING ////////////////////////////////////////
