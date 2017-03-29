@@ -231,7 +231,7 @@ inline void updateBCB(int &num,int *f,int *b,int i,int v)
  *                If F is 3-channel, perform k-means clustering
  *                If F is 1-channel, only perform type-casting
  ***************************************************************/
-void featureIndexing(Mat &F, float **&wMap, int &nF, float sigmaI, WMFWeightType weightType){
+void featureIndexing(Mat &F, float **&wMap, int &nF, float sigmaI, int weightType){
     // Configuration and Declaration
     Mat FNew;
     int cols = F.cols, rows = F.rows;
@@ -636,7 +636,7 @@ namespace cv
 {
 namespace ximgproc
 {
-void weightedMedianFilter(InputArray joint, InputArray src, OutputArray dst, int r, double sigma, WMFWeightType weightType, Mat mask)
+void weightedMedianFilter(InputArray joint, InputArray src, OutputArray dst, int r, double sigma, int weightType, InputArray mask)
 {
     CV_Assert(!src.empty());
     CV_Assert(r > 0 && sigma > 0);
@@ -697,7 +697,7 @@ void weightedMedianFilter(InputArray joint, InputArray src, OutputArray dst, int
     //Filtering - Joint-Histogram Framework
     for(int i=0; i<(int)Is.size(); i++)
     {
-        Is[i] = filterCore(Is[i], F, wMap, r, nF,nI,mask);
+        Is[i] = filterCore(Is[i], F, wMap, r, nF, nI, mask.getMat());
     }
     float2D_release(wMap);
 
