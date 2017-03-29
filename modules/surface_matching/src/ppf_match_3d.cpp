@@ -129,6 +129,9 @@ PPF3DDetector::PPF3DDetector()
   angle_step = angle_step_radians;
   trained = false;
 
+  hash_table = NULL;
+  hash_nodes = NULL;
+
   setSearchParams();
 }
 
@@ -141,6 +144,9 @@ PPF3DDetector::PPF3DDetector(const double RelativeSamplingStep, const double Rel
   //SceneSampleStep = 1.0/RelativeSceneSampleStep;
   angle_step = angle_step_radians;
   trained = false;
+
+  hash_table = NULL;
+  hash_nodes = NULL;
 
   setSearchParams();
 }
