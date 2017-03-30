@@ -19,7 +19,7 @@ function(download_boost_descriptors dst_dir status_var)
 
   set(${status_var} TRUE PARENT_SCOPE)
   foreach(id ${ids})
-    ocv_download(FILENAME ${name_${id}}
+    ocv_download(PACKAGE ${name_${id}}
                  HASH ${hash_${id}}
                  URL
                    "${OPENCV_BOOSTDESC_URL}"
