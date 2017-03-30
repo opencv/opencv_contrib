@@ -887,9 +887,8 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
 
 
 
-void getBoardObjectAndImagePoints(const Ptr<Board> &board, InputArray detectedIds,
-                                          InputArrayOfArrays detectedCorners,
-                                          OutputArray imgPoints, OutputArray objPoints) {
+void getBoardObjectAndImagePoints(const Ptr<Board> &board, InputArrayOfArrays detectedCorners,
+    InputArray detectedIds, OutputArray objPoints, OutputArray imgPoints) {
 
     CV_Assert(board->ids.size() == board->objPoints.size());
     CV_Assert(detectedIds.total() == detectedCorners.total());
@@ -1239,7 +1238,7 @@ int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Ptr<Bo
 
     // get object and image points for the solvePnP function
     Mat objPoints, imgPoints;
-    getBoardObjectAndImagePoints(board, _ids, _corners, imgPoints, objPoints);
+    getBoardObjectAndImagePoints(board, _corners, _ids, objPoints, imgPoints);
 
     CV_Assert(imgPoints.total() == objPoints.total());
 
@@ -1540,8 +1539,8 @@ double calibrateCameraAruco(InputArrayOfArrays _corners, InputArray _ids, InputA
         }
         markerCounter += nMarkersInThisFrame;
         Mat currentImgPoints, currentObjPoints;
-        getBoardObjectAndImagePoints(board, thisFrameIds, thisFrameCorners, currentImgPoints,
-                                      currentObjPoints);
+        getBoardObjectAndImagePoints(board, thisFrameCorners, thisFrameIds, currentObjPoints,
+            currentImgPoints);
         if(currentImgPoints.total() > 0 && currentObjPoints.total() > 0) {
             processedImagePoints.push_back(currentImgPoints);
             processedObjectPoints.push_back(currentObjPoints);

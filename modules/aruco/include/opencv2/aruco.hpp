@@ -540,13 +540,13 @@ CV_EXPORTS_W double calibrateCameraAruco(
  * image points and object points to call solvePnP
  *
  * @param board Marker board layout.
- * @param detectedIds List of identifiers for each marker.
  * @param detectedCorners List of detected marker corners of the board.
- * @param imgPoints Vector of vectors of the projections of board marker corner points.
+ * @param detectedIds List of identifiers for each marker.
  * @param objPoints Vector of vectors of board marker points in the board coordinate space.
+ * @param imgPoints Vector of vectors of the projections of board marker corner points.
 */
-void getBoardObjectAndImagePoints(const Ptr<Board> &board, InputArray detectedIds,
-    InputArrayOfArrays detectedCorners, OutputArray imgPoints, OutputArray objPoints);
+void getBoardObjectAndImagePoints(const Ptr<Board> &board, InputArrayOfArrays detectedCorners,
+  InputArray detectedIds, OutputArray objPoints, OutputArray imgPoints);
 
 
 //! @}
