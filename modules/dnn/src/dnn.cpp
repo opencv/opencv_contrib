@@ -414,14 +414,14 @@ struct Net::Impl
         }
 
         //forward itself
-        try
+        //try
         {
             ld.layerInstance->forward(ld.inputBlobs, ld.outputBlobs);
         }
-        catch (const cv::Exception &err)
+        /*catch (const cv::Exception &err)
         {
             CV_RETHROW_ERROR(err, format("The following error occured while making forward() for layer \"%s\": %s", ld.name.c_str(), err.err.c_str()));
-        }
+        }*/
 
         ld.flag = 1;
     }
@@ -509,7 +509,7 @@ void Net::setNetInputs(const std::vector<String> &inputBlobNames)
     impl->netInputLayer->setNames(inputBlobNames);
 }
 
-void Net::setBlob(String outputName, const Blob &blob)
+void Net::setBlob(String outputName, const Mat &blob_)
 {
     LayerPin pin = impl->getPinByAlias(outputName);
     if (!pin.valid())
@@ -517,10 +517,12 @@ void Net::setBlob(String outputName, const Blob &blob)
 
     LayerData &ld = impl->layers[pin.lid];
     ld.outputBlobs.resize( std::max(pin.oid+1, (int)ld.requiredOutputs.size()) );
+    Blob blob;
+    blob.fill(blob_.clone());
     ld.outputBlobs[pin.oid] = blob;
 }
 
-Blob Net::getBlob(String outputName)
+Mat Net::getBlob(String outputName)
 {
     LayerPin pin = impl->getPinByAlias(outputName);
     if (!pin.valid())
@@ -532,7 +534,7 @@ Blob Net::getBlob(String outputName)
         CV_Error(Error::StsOutOfRange, "Layer \"" + ld.name + "\" produce only " + toString(ld.outputBlobs.size()) +
                                        " outputs, the #" + toString(pin.oid) + " was requsted");
     }
-    return ld.outputBlobs[pin.oid];
+    return ld.outputBlobs[pin.oid].matRef();
 }
 
 Blob Net::getParam(LayerId layer, int numParam)

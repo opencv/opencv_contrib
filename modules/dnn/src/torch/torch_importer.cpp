@@ -52,11 +52,11 @@ namespace dnn {
 #if defined(ENABLE_TORCH_IMPORTER) && ENABLE_TORCH_IMPORTER
 #include "THDiskFile.h"
 
-#ifdef NDEBUG
+//#ifdef NDEBUG
 static bool dbgPrint = false;
-#else
-static bool dbgPrint = true;
-#endif
+//#else
+//static bool dbgPrint = true;
+//#endif
 
 enum LuaType
 {
@@ -963,13 +963,13 @@ Ptr<Importer> createTorchImporter(const String &filename, bool isBinary)
 }
 
 
-Blob readTorchBlob(const String &filename, bool isBinary)
+Mat readTorchBlob(const String &filename, bool isBinary)
 {
     Ptr<TorchImporter> importer(new TorchImporter(filename, isBinary));
     importer->readObject();
     CV_Assert(importer->tensors.size() == 1);
 
-    return importer->tensors.begin()->second;
+    return importer->tensors.begin()->second.matRef();
 }
 #else
 

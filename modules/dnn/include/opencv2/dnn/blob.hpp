@@ -154,11 +154,13 @@ namespace dnn
         /** @brief Constructs Blob from existing Mat or UMat. */
         Blob(InputArray data);
 
-        /** @brief Constructs 4-dimensional blob (so-called batch) from image or array of images.
-         * @param image 2-dimensional multi-channel or 3-dimensional single-channel image (or array of such images)
+        /** @brief Constructs 4-dimensional blob from image.
+         * @param image 2-dimensional 3- or 4-channel image (or array of such images)
          * @param dstCn specifies size of second axis of ouptut blob
          */
-        static Blob fromImages(InputArray image, int dstCn = -1);
+        static Mat fromImage(const Mat& image, double scalefactor=1.0, bool swapRB=true);
+
+        static Mat fromImages(const std::vector<Mat>& image, double scalefactor=1.0, bool swapRB=true);
 
         /** @brief Works like Blob::fromImages() but in-place. */
         void batchFromImages(InputArray image, int dstCn = -1);

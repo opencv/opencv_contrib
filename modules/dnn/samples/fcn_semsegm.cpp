@@ -45,11 +45,11 @@ static vector<cv::Vec3b> readColors(const string &filename = "pascal-classes.txt
     return colors;
 }
 
-static void colorizeSegmentation(dnn::Blob &score, const vector<cv::Vec3b> &colors, cv::Mat &segm)
+static void colorizeSegmentation(const Mat &score, const vector<cv::Vec3b> &colors, cv::Mat &segm)
 {
-    const int rows = score.rows();
-    const int cols = score.cols();
-    const int chns = score.channels();
+    const int rows = score.size[2];
+    const int cols = score.size[3];
+    const int chns = score.size[1];
 
     cv::Mat maxCl(rows, cols, CV_8UC1);
     cv::Mat maxVal(rows, cols, CV_32FC1);
@@ -57,7 +57,7 @@ static void colorizeSegmentation(dnn::Blob &score, const vector<cv::Vec3b> &colo
     {
         for (int row = 0; row < rows; row++)
         {
-            const float *ptrScore = score.ptrf(0, ch, row);
+            const float *ptrScore = score.ptr<float>(0, ch, row);
             uchar *ptrMaxCl = maxCl.ptr<uchar>(row);
             float *ptrMaxVal = maxVal.ptr<float>(row);
             for (int col = 0; col < cols; col++)
@@ -132,7 +132,7 @@ int main(int argc, char **argv)
     }
 
     resize(img, img, Size(500, 500));       //FCN accepts 500x500 RGB-images
-    dnn::Blob inputBlob = dnn::Blob::fromImages(img);   //Convert Mat to dnn::Blob batch of images
+    Mat inputBlob = dnn::Blob::fromImage(img);   //Convert Mat to dnn::Blob batch of images
     //! [Prepare blob]
 
     //! [Set input blob]
@@ -147,13 +147,13 @@ int main(int argc, char **argv)
     //! [Make forward pass]
 
     //! [Gather output]
-    dnn::Blob score = net.getBlob("score");
+    Mat score = net.getBlob("score");
 
-    cv::Mat colorize;
+    Mat colorize;
     colorizeSegmentation(score, colors, colorize);
-    cv::Mat show;
-    cv::addWeighted(img, 0.4, colorize, 0.6, 0.0, show);
-    cv::imshow("show", show);
-    cv::waitKey(0);
+    Mat show;
+    addWeighted(img, 0.4, colorize, 0.6, 0.0, show);
+    imshow("show", show);
+    waitKey(0);
     return 0;
 } //main

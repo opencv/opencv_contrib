@@ -248,13 +248,13 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          *  @note If updating blob is not empty then @p blob must have the same shape,
          *  because network reshaping is not implemented yet.
          */
-        CV_WRAP void setBlob(String outputName, const Blob &blob);
+        CV_WRAP void setBlob(String outputName, const Mat &blob);
 
         /** @brief Returns the layer output blob.
          *  @param outputName the descriptor of the returning layer output blob.
          *  @see connect(String, String)
          */
-        CV_WRAP Blob getBlob(String outputName);
+        CV_WRAP Mat getBlob(String outputName);
 
         /** @brief Sets the new value for the learned param of the layer.
          *  @param layer name or id of the layer.
@@ -341,7 +341,7 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
     /** @brief Loads blob which was serialized as torch.Tensor object of Torch7 framework.
      *  @warning This function has the same limitations as createTorchImporter().
      */
-    CV_EXPORTS_W Blob readTorchBlob(const String &filename, bool isBinary = true);
+    CV_EXPORTS_W Mat readTorchBlob(const String &filename, bool isBinary = true);
 
 //! @}
 }

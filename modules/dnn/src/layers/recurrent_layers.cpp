@@ -118,41 +118,42 @@ public:
         produceCellOutput = produce;
     }
 
-    void setC(const Blob &C)
+    void setC(const Mat &C)
     {
-        CV_Assert(cInternal.empty() || C.total() == cInternal.total());
+        CV_Assert(C.type() == CV_32F);
         if (!cInternal.empty())
-            C.reshaped(Shape::like(cInternal)).matRefConst().copyTo(cInternal);
+        {
+            CV_Assert(C.total() == cInternal.total() && cInternal.isContinuous());
+            Mat cInternal_(C.dims, &C.size.p[0], C.type(), cInternal.ptr());
+            C.copyTo(cInternal_);
+        }
         else
-            C.matRefConst().copyTo(cInternal);
+            C.copyTo(cInternal);
     }
 
-    void setH(const Blob &H)
+    void setH(const Mat &H)
     {
-        CV_Assert(hInternal.empty() || H.total() == hInternal.total());
+        CV_Assert(H.type() == CV_32F);
         if (!hInternal.empty())
-            H.reshaped(Shape::like(hInternal)).matRefConst().copyTo(hInternal);
+        {
+            CV_Assert(H.total() == hInternal.total() && hInternal.isContinuous());
+            Mat hInternal_(H.dims, &H.size.p[0], H.type(), hInternal.ptr());
+            H.copyTo(hInternal_);
+        }
         else
-            H.matRefConst().copyTo(hInternal);
+            H.copyTo(hInternal);
     }
 
-    Blob getC() const
+    Mat getC() const
     {
-        CV_Assert(!cInternal.empty());
-
-        //TODO: add convinient Mat -> Blob constructor
-        Blob res(outTsShape, cInternal.type());
-        res.fill(res.shape(), res.type(), cInternal.data);
-        return res;
+        CV_Assert(outTsShape.total() == cInternal.total());
+        return Mat(outTsShape.dims(), outTsShape.ptr(), cInternal.type(), (char*)cInternal.ptr());
     }
 
-    Blob getH() const
+    Mat getH() const
     {
-        CV_Assert(!hInternal.empty());
-
-        Blob res(outTsShape, hInternal.type());
-        res.fill(res.shape(), res.type(), hInternal.data);
-        return res;
+        CV_Assert(outTsShape.total() == hInternal.total());
+        return Mat(outTsShape.dims(), outTsShape.ptr(), hInternal.type(), (char*)hInternal.ptr());
     }
 
     void setOutShape(const Shape &outTailShape_)
@@ -161,18 +162,18 @@ public:
         outTailShape = outTailShape_;
     }
 
-    void setWeights(const Blob &Wh, const Blob &Wx, const Blob &bias)
+    void setWeights(const Mat &Wh, const Mat &Wx, const Mat &bias)
     {
-        CV_Assert(Wh.dims() == 2 && Wx.dims() == 2);
-        CV_Assert(Wh.size(0) == Wx.size(0));
-        CV_Assert(Wh.size(0) == 4*Wh.size(1));
-        CV_Assert(Wh.size(0) == (int)bias.total());
+        CV_Assert(Wh.dims == 2 && Wx.dims == 2);
+        CV_Assert(Wh.rows == Wx.rows);
+        CV_Assert(Wh.rows == 4*Wh.cols);
+        CV_Assert(Wh.rows == (int)bias.total());
         CV_Assert(Wh.type() == Wx.type() && Wx.type() == bias.type());
 
         blobs.resize(3);
-        blobs[0] = Wh;
-        blobs[1] = Wx;
-        blobs[2] = bias;
+        blobs[0] = Blob(Wh.clone());
+        blobs[1] = Blob(Wx.clone());
+        blobs[2] = Blob(bias.clone());
         blobs[2].reshape(Shape(1, (int)bias.total()));
     }
 
@@ -344,19 +345,19 @@ public:
         produceH = produce;
     }
 
-    void setWeights(const Blob &W_xh, const Blob &b_h, const Blob &W_hh, const Blob &W_ho, const Blob &b_o)
+    void setWeights(const Mat &W_xh, const Mat &b_h, const Mat &W_hh, const Mat &W_ho, const Mat &b_o)
     {
-        CV_Assert(W_hh.dims() == 2 && W_xh.dims() == 2);
-        CV_Assert(W_hh.size(0) == W_xh.size(0) && W_hh.size(0) == W_hh.size(1) && (int)b_h.total() == W_xh.size(0));
-        CV_Assert(W_ho.size(0) == (int)b_o.total());
-        CV_Assert(W_ho.size(1) == W_hh.size(1));
+        CV_Assert(W_hh.dims == 2 && W_xh.dims == 2);
+        CV_Assert(W_hh.size[0] == W_xh.size[0] && W_hh.size[0] == W_hh.size[1] && (int)b_h.total() == W_xh.size[0]);
+        CV_Assert(W_ho.size[0] == (int)b_o.total());
+        CV_Assert(W_ho.size[1] == W_hh.size[1]);
 
         blobs.resize(5);
-        blobs[0] = W_xh;
-        blobs[1] = b_h;
-        blobs[2] = W_hh;
-        blobs[3] = W_ho;
-        blobs[4] = b_o;
+        blobs[0] = Blob(W_xh.clone());
+        blobs[1] = Blob(b_h.clone());
+        blobs[2] = Blob(W_hh.clone());
+        blobs[3] = Blob(W_ho.clone());
+        blobs[4] = Blob(b_o.clone());
     }
 
     void allocate(const std::vector<Blob*> &input, std::vector<Blob> &output)

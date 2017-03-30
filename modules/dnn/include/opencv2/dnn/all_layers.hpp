@@ -109,7 +109,7 @@ namespace dnn
         @param Wx is matrix defining how current input is transformed to internal gates (i.e. according to abovemtioned notation is @f$ W_x @f$)
         @param b  is bias vector (i.e. according to abovemtioned notation is @f$ b @f$)
         */
-        CV_WRAP virtual void setWeights(const Blob &Wh, const Blob &Wx, const Blob &b) = 0;
+        CV_WRAP virtual void setWeights(const Mat &Wh, const Mat &Wx, const Mat &b) = 0;
 
         /** @brief Specifies shape of output blob which will be [[`T`], `N`] + @p outTailShape.
           * @details If this parameter is empty or unset then @p outTailShape = [`Wh`.size(0)] will be used,
@@ -120,16 +120,16 @@ namespace dnn
         /** @brief Set @f$ h_{t-1} @f$ value that will be used in next forward() calls.
           * @details By-default @f$ h_{t-1} @f$ is inited by zeros and updated after each forward() call.
           */
-        CV_WRAP virtual void setH(const Blob &H) = 0;
+        CV_WRAP virtual void setH(const Mat &H) = 0;
         /** @brief Returns current @f$ h_{t-1} @f$ value (deep copy). */
-        CV_WRAP virtual Blob getH() const = 0;
+        CV_WRAP virtual Mat getH() const = 0;
 
         /** @brief Set @f$ c_{t-1} @f$ value that will be used in next forward() calls.
           * @details By-default @f$ c_{t-1} @f$ is inited by zeros and updated after each forward() call.
           */
-        CV_WRAP virtual void setC(const Blob &C) = 0;
+        CV_WRAP virtual void setC(const Mat &C) = 0;
         /** @brief Returns current @f$ c_{t-1} @f$ value (deep copy). */
-        CV_WRAP virtual Blob getC() const = 0;
+        CV_WRAP virtual Mat getC() const = 0;
 
         /** @brief Specifies either interpet first dimension of input blob as timestamp dimenion either as sample.
           *
@@ -184,7 +184,7 @@ namespace dnn
         @param Who is @f$ W_{xo} @f$ matrix
         @param bo  is @f$ b_{o}  @f$ vector
         */
-        CV_WRAP virtual void setWeights(const Blob &Wxh, const Blob &bh, const Blob &Whh, const Blob &Who, const Blob &bo) = 0;
+        CV_WRAP virtual void setWeights(const Mat &Wxh, const Mat &bh, const Mat &Whh, const Mat &Who, const Mat &bo) = 0;
 
         /** @brief If this flag is set to true then layer will produce @f$ h_t @f$ as second output.
          * @details Shape of the second output is the same as first output.

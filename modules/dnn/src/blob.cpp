@@ -225,11 +225,62 @@ void Blob::batchFromImages(InputArray image, int dstCn)
     }
 }
 
-Blob Blob::fromImages(InputArray image, int dstCn)
+Mat Blob::fromImage(const Mat& image_, double scalefactor, bool swapRB)
 {
-    Blob res;
-    res.batchFromImages(image, dstCn);
-    return res;
+    Mat image;
+    if(image_.depth() == CV_8U)
+    {
+        image_.convertTo(image, CV_32F, scalefactor);
+    }
+    else
+        image = image_;
+    CV_Assert(image.dims == 2 && image.depth() == CV_32F);
+    int nch = image.channels();
+    CV_Assert(nch == 3 || nch == 4);
+    int sz[] = { 1, 3, image.rows, image.cols };
+    Mat blob(4, sz, CV_32F);
+    Mat ch[4];
+    for( int j = 0; j < 3; j++ )
+        ch[j] = Mat(image.rows, image.cols, CV_32F, blob.ptr(0, j));
+    if(swapRB)
+        std::swap(ch[0], ch[2]);
+    split(image, ch);
+    return blob;
+}
+
+Mat Blob::fromImages(const std::vector<Mat>& images, double scalefactor, bool swapRB)
+{
+    size_t i, nimages = images.size();
+    if(nimages == 0)
+        return Mat();
+    Mat image0 = images[0];
+    int nch = image0.channels();
+    CV_Assert(image0.dims == 2 && (nch == 3 || nch == 4));
+    int sz[] = { (int)nimages, 3, image0.rows, image0.cols };
+    Mat blob(4, sz, CV_32F), image;
+    Mat ch[4];
+
+    for( i = 0; i < nimages; i++ )
+    {
+        Mat image_ = images[i];
+        if(image_.depth() == CV_8U)
+        {
+            image_.convertTo(image, CV_32F, scalefactor);
+        }
+        else
+            image = image_;
+        CV_Assert(image.depth() == CV_32F);
+        nch = image.channels();
+        CV_Assert(image.dims == 2 && (nch == 3 || nch == 4));
+        CV_Assert(image.size() == image0.size());
+
+        for( int j = 0; j < 3; j++ )
+            ch[j] = Mat(image.rows, image.cols, CV_32F, blob.ptr((int)i, j));
+        if(swapRB)
+            std::swap(ch[0], ch[2]);
+        split(image, ch);
+    }
+    return blob;
 }
 
 void Blob::fill(const BlobShape &shape, int type, void *data, bool deepCopy)
