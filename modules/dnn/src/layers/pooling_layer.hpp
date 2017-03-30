@@ -51,7 +51,14 @@ namespace dnn
 
 class PoolingLayerImpl : public PoolingLayer
 {
-    bool useOpenCL;
+public:
+
+    PoolingLayerImpl();
+    PoolingLayerImpl(int type, Size kernel, Size stride, Size pad, const String& padMode);
+
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    
     Size inp, out;
 
     void computeOutputShape(Size inpSz);
@@ -65,14 +72,6 @@ class PoolingLayerImpl : public PoolingLayer
     void avePooling(Blob &src, Blob &dst);
     void avePooling_cpu(Blob &src, Blob &dst);
     bool avePooling_ocl(Blob &src, Blob &dst);
-
-public:
-
-    PoolingLayerImpl();
-    PoolingLayerImpl(int type, Size kernel, Size stride, Size pad, const String& padMode);
-
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 };
 
 }

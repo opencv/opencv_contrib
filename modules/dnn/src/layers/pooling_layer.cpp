@@ -83,8 +83,6 @@ void PoolingLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Bl
 
     computeOutputShape(inp);
 
-    useOpenCL = ocl::useOpenCL();
-
     outputs.resize(type == MAX ? 2 * inputs.size() : inputs.size());
     for (size_t i = 0; i < inputs.size(); i++)
     {
@@ -121,36 +119,6 @@ void PoolingLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &ou
 }
 
 void PoolingLayerImpl::maxPooling(Blob &src, Blob &dst, Blob &mask)
-{
-    if (!useOpenCL)
-        maxPooling_cpu(src, dst, mask);
-    else
-    {
-        CV_Assert(maxPooling_ocl(src, dst, mask));
-    }
-}
-
-bool PoolingLayerImpl::maxPooling_ocl(Blob &src, Blob &dst, Blob &mask)
-{
-    return pooling_ocl("MaxPoolForward", src, dst, &mask);
-}
-
-void PoolingLayerImpl::avePooling(Blob &src, Blob &dst)
-{
-    if (!useOpenCL)
-        avePooling_cpu(src, dst);
-    else
-    {
-        CV_Assert(avePooling_ocl(src, dst));
-    }
-}
-
-bool PoolingLayerImpl::avePooling_ocl(Blob &src, Blob &dst)
-{
-    return pooling_ocl("AvePoolForward", src, dst);
-}
-
-void PoolingLayerImpl::maxPooling_cpu(Blob &src, Blob &dst, Blob &mask)
 {
     CV_DbgAssert(dst.rows() == out.height && dst.cols() == out.width);
 
@@ -195,57 +163,7 @@ void PoolingLayerImpl::maxPooling_cpu(Blob &src, Blob &dst, Blob &mask)
     }
 }
 
-
-#ifdef HAVE_OPENCL
-bool PoolingLayerImpl::pooling_ocl(const char *kname, const Blob &src, Blob &dst, Blob *mask)
-{
-    const UMat &srcMat = src.umatRefConst();
-    UMat &dstMat = dst.umatRef();
-    UMat *maskUMat = mask == NULL ? NULL : &mask->umatRef();
-    CV_Assert(maskUMat == NULL || maskUMat->type() == CV_32FC1); // FIXIT CV_32SC1
-    CV_Assert(maskUMat == NULL || maskUMat->offset == 0);
-
-    CV_Assert(srcMat.offset == 0 && dstMat.offset == 0);
-
-    ocl::Kernel ker(kname, ocl::dnn::pooling_oclsrc,
-        cv::format("-DT=%s%s", ocl::typeToStr(src.type()), maskUMat ? " -DMASK=1" : ""));
-    if (ker.empty())
-        return false;
-
-    BlobShape s = src.shape();
-    size_t nthreads = dst.total();
-    if (maskUMat)
-    {
-        ker.args((int)nthreads,
-             ocl::KernelArg::PtrReadOnly(srcMat), s[0], s[1], s[2], s[3],
-             out.height, out.width, kernel.height, kernel.width,
-             stride.height, stride.width, pad.height, pad.width,
-             ocl::KernelArg::PtrWriteOnly(dstMat),
-             ocl::KernelArg::PtrWriteOnly(*maskUMat));
-    }
-    else
-    {
-        ker.args((int)nthreads,
-             ocl::KernelArg::PtrReadOnly(srcMat), s[0], s[1], s[2], s[3],
-             out.height, out.width, kernel.height, kernel.width,
-             stride.height, stride.width, pad.height, pad.width,
-             ocl::KernelArg::PtrWriteOnly(dstMat));
-    }
-
-    size_t wgSize = ocl::Device::getDefault().maxWorkGroupSize();
-    if (!ker.run(1, &nthreads, &wgSize, true))
-        return false;
-
-    return true;
-}
-#else
-bool PoolingLayerImpl::pooling_ocl(const char*, const Blob&, Blob&, Blob*)
-{
-    return false;
-}
-#endif
-
-void PoolingLayerImpl::avePooling_cpu(Blob &src, Blob &dst)
+void PoolingLayerImpl::avePooling(Blob &src, Blob &dst)
 {
     for (int n = 0; n < src.num(); ++n)
     {

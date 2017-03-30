@@ -51,26 +51,17 @@ namespace dnn
 
 class LRNLayerImpl : public LRNLayer
 {
-    bool useOpenCL;
-    Blob buf;
-
-    void channelNoramlization(Blob &src, Blob &dst);
-    template<typename XMat>
-    void channelNormalization_(Blob &src, Blob &dst);
-    bool channelNormalization_ocl(const UMat &src, UMat &dst);
-
-    void spatialNormalization(Blob &src, Blob &dst);
-    template<typename XMat>
-    void spatialNormalization_(Blob &src, Blob &dst);
-    template<typename XMat>
-    void sqrBoxFilter_(const XMat &src, XMat &dst);
-
 public:
-
     LRNLayerImpl(int type = CHANNEL_NRM, int size = 5, double alpha = 1,
                  double beta = 0.75, double bias = 1, bool normBySize = true);
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
+    void channelNormalization(Blob &src, Blob &dst);
+    void spatialNormalization(Blob &src, Blob &dst);
+    void sqrBoxFilter_(const Mat &src, Mat &dst);
+
+    Blob buf;
 };
 
 }

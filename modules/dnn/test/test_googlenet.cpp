@@ -82,13 +82,7 @@ static void launchGoogleNetTest()
 
 TEST(Reproducibility_GoogLeNet, Accuracy)
 {
-    OCL_OFF(launchGoogleNetTest());
-}
-
-OCL_TEST(Reproducibility_GoogLeNet, Accuracy)
-{
-    OCL_ON(launchGoogleNetTest());
-    OCL_OFF();
+    launchGoogleNetTest();
 }
 
 }

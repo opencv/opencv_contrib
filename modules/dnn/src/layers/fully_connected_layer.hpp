@@ -51,19 +51,15 @@ namespace dnn
 
 class FullyConnectedLayerImpl : public InnerProductLayer
 {
-    int axisCan, dtype;
-    int numOutput, innerSize, outerSize;
-    bool bias, useOpenCL;
-    Blob biasOnesBlob;
-
-    template<typename XMat>
-    void forward_(std::vector<Blob*> &input, std::vector<Blob> &output);
-
 public:
-
     FullyConnectedLayerImpl(int axisCan = 1);
     void allocate(const std::vector<Blob*> &input, std::vector<Blob> &output);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
+    int axisCan, dtype;
+    int numOutput, innerSize, outerSize;
+    bool bias;
+    Blob biasOnesBlob;
 };
 
 }

@@ -51,15 +51,14 @@ namespace dnn
 
 class ReshapeLayerImpl : public ReshapeLayer
 {
-    std::vector<BlobShape> outShapes;
-    bool enableReordering;
-
 public:
     ReshapeLayerImpl(const BlobShape &newShape_, Range applyingRange_, bool enableReordering_);
 
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
+    std::vector<BlobShape> outShapes;
+    bool enableReordering;
 };
 
 Ptr<Layer> createFlattenLayer(LayerParams&);

@@ -24,10 +24,8 @@ public:
     BatchNormLayerImpl(bool hasWeights_, bool hasBias_, float epsilon_);
 
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
-private:
     bool hasWeights, hasBias;
     float epsilon;
 };

@@ -63,95 +63,23 @@ void SoftMaxLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Bl
     CV_Assert(inputs.size() == 1);
     axis = inputs[0]->canonicalAxis(axisRaw);
 
-    useOpenCL = ocl::useOpenCL();
-
     BlobShape shape = inputs[0]->shape();
     outerSize = shape.total(0, axis);
     channels = shape[axis];
     innerSize = shape.total(axis + 1);
 
-    int allocFlag = (useOpenCL) ? Blob::ALLOC_UMAT : Blob::ALLOC_MAT;
     shape[axis] = 1;
-    buf.create(shape, inputs[0]->type(), allocFlag);
+    buf.create(shape, inputs[0]->type());
 
     outputs.resize(1);
-    outputs[0].create(inputs[0]->shape(), inputs[0]->type(), allocFlag);
+    outputs[0].create(inputs[0]->shape(), inputs[0]->type());
 }
 
 void SoftMaxLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     Blob &src = *inputs[0];
     Blob &dst = outputs[0];
-
-    if (!useOpenCL)
-        forward_cpu(src, dst);
-    else
-    {
-        CV_Assert(forward_ocl(src, dst));
-    }
-}
-
-#ifdef HAVE_OPENCL
-bool SoftMaxLayerImpl::forward_ocl(Blob &src, Blob &dst)
-{
-    const UMat &srcMat = src.umatRefConst();
-    UMat &dstMat = dst.umatRef();
-    srcMat.copyTo(dstMat);
-    UMat &bufMat = buf.umatRef();
-    CV_Assert(dstMat.offset == 0);
-
-    String buildOpts = String("-DT=") + ocl::typeToStr(src.type());
-    ocl::Kernel kmax, ksub, ksum, kdiv;
-
-    if (!kmax.create("kernel_channel_max", ocl::dnn::softmax_oclsrc, buildOpts))
-        return false;
-
-    if (!ksub.create("kernel_channel_subtract", ocl::dnn::softmax_oclsrc, buildOpts))
-        return false;
-
-    if (!ksum.create("kernel_channel_sum", ocl::dnn::softmax_oclsrc, buildOpts))
-        return false;
-
-    if (!kdiv.create("kernel_channel_div", ocl::dnn::softmax_oclsrc, buildOpts))
-        return false;
-
-    size_t wgSize = ocl::Device::getDefault().maxWorkGroupSize();
-    size_t bufSize = buf.total();
-    size_t totalSize = src.total();
-
-    kmax.args((int)outerSize, (int)channels, (int)innerSize,
-              ocl::KernelArg::PtrReadOnly(dstMat), ocl::KernelArg::PtrReadWrite(bufMat));
-    if (!kmax.run(1, &bufSize, &wgSize, true))
-        return false;
-
-    ksub.args((int)totalSize, (int)outerSize, (int)channels, (int)innerSize,
-              ocl::KernelArg::PtrReadOnly(bufMat), ocl::KernelArg::PtrReadWrite(dstMat));
-    if (!ksub.run(1, &totalSize, &wgSize, true))
-        return false;
-
-    cv::exp(dstMat, dstMat);
-
-    ksum.args((int)outerSize, (int)channels, (int)innerSize,
-              ocl::KernelArg::PtrReadOnly(dstMat), ocl::KernelArg::PtrReadWrite(bufMat));
-    if (!ksum.run(1, &bufSize, &wgSize, true))
-        return false;
-
-    kdiv.args((int)totalSize, (int)outerSize, (int)channels, (int)innerSize,
-              ocl::KernelArg::PtrReadOnly(bufMat), ocl::KernelArg::PtrReadWrite(dstMat));
-    if (!kdiv.run(1, &totalSize, &wgSize, true))
-        return false;
-
-    return true;
-}
-#else
-bool SoftMaxLayerImpl::forward_ocl(Blob&, Blob&)
-{
-    return false;
-}
-#endif
-
-void SoftMaxLayerImpl::forward_cpu(Blob &src, Blob &dst)
-{
+    
     CV_Assert(src.type() == CV_32F);
 
     float *srcPtr = src.ptrf();

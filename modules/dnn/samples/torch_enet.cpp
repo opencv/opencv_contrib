@@ -34,7 +34,6 @@ static void colorizeSegmentation(const Mat &score, Mat &segm,
 int main(int argc, char **argv)
 {
     CommandLineParser parser(argc, argv, keys);
-    ocl::setUseOpenCL(false);
 
     if (parser.has("help"))
     {

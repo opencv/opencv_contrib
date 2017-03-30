@@ -72,10 +72,7 @@ void FullyConnectedLayerImpl::allocate(const std::vector<Blob*> &input, std::vec
     CV_Assert((size_t)innerSize == input[0]->total(axisCan));
     CV_Assert(!bias || (size_t)numOutput == blobs[1].total());
 
-    useOpenCL = ocl::useOpenCL();
-    int allocFlags = useOpenCL ? Blob::ALLOC_UMAT : Blob::ALLOC_UMAT;
-
-    biasOnesBlob.create(Shape(outerSize, 1), dtype, allocFlags);
+    biasOnesBlob.create(Shape(outerSize, 1), dtype);
     biasOnesBlob.setTo(1);
 
     output.resize(input.size());
@@ -83,35 +80,24 @@ void FullyConnectedLayerImpl::allocate(const std::vector<Blob*> &input, std::vec
     {
         CV_Assert(i == 0 || (input[i]->equalShape(*input[0]) && input[i]->type() == dtype));
         Shape outShape = Shape(outerSize, numOutput);
-        output[i].create(outShape, dtype, allocFlags);
+        output[i].create(outShape, dtype);
     }
 }
 
 void FullyConnectedLayerImpl::forward(std::vector<Blob*> &input, std::vector<Blob> &output)
 {
-    #ifdef HAVE_OPENCL
-    if (useOpenCL)
-        forward_<UMat>(input, output);
-    else
-    #endif
-        forward_<Mat>(input, output);
-}
-
-template<typename XMat>
-void FullyConnectedLayerImpl::forward_(std::vector<Blob *> &input, std::vector<Blob> &output)
-{
-    const XMat &weight = blobs[0].getRefConst<XMat>();
-    const XMat *biasMat = NULL, *biasOnesMat = NULL;
+    const Mat &weight = blobs[0].matRefConst();
+    const Mat *biasMat = NULL, *biasOnesMat = NULL;
     if (bias)
     {
-        biasOnesMat = &biasOnesBlob.getRefConst<XMat>();
-        biasMat = &blobs[1].getRefConst<XMat>();
+        biasOnesMat = &biasOnesBlob.matRefConst();
+        biasMat = &blobs[1].matRefConst();
     }
 
     for (size_t i = 0; i < input.size(); i++)
     {
-        const XMat srcMat = reshaped(input[i]->getRefConst<XMat>(), Shape(outerSize, innerSize));
-        XMat dstMat = reshaped(output[i].getRef<XMat>(), Shape(outerSize, numOutput));
+        Mat srcMat = reshaped(input[i]->matRefConst(), Shape(outerSize, innerSize));
+        Mat dstMat = reshaped(output[i].matRef(), Shape(outerSize, numOutput));
         dnn::gemm(srcMat, weight, 1, dstMat, 0, GEMM_2_T);
 
         if (bias)

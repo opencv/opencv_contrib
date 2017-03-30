@@ -51,20 +51,14 @@ namespace dnn
 
 class SoftMaxLayerImpl : public SoftmaxLayer
 {
-    int axis, axisRaw;
-    Blob buf;
-    bool useOpenCL;
-    size_t outerSize, channels, innerSize;
-
-
-    bool forward_ocl(Blob &src, Blob &dst);
-    void forward_cpu(Blob &src, Blob &dst);
-
 public:
-
     SoftMaxLayerImpl(int axis = 1);
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
+    int axis, axisRaw;
+    Blob buf;
+    size_t outerSize, channels, innerSize;
 };
 
 }

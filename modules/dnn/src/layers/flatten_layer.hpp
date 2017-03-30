@@ -49,18 +49,18 @@ namespace dnn
 {
 class FlattenLayer : public Layer
 {
-    int _startAxis;
-    int _endAxis;
-    size_t _numAxes;
-
-    BlobShape resultShape;
-
 public:
     FlattenLayer(LayerParams &params);
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
     void checkInputs(const std::vector<Blob*> &inputs);
+
+    int _startAxis;
+    int _endAxis;
+    size_t _numAxes;
+
+    BlobShape resultShape;
 };
 }
 }

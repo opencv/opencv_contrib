@@ -49,6 +49,11 @@ namespace dnn
 {
 class PermuteLayer : public Layer
 {
+public:
+    PermuteLayer(LayerParams &params);
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
     size_t _count;
     std::vector<size_t> _order;
 
@@ -64,11 +69,6 @@ class PermuteLayer : public Layer
     void checkCurrentOrder(int currentOrder);
     void checkNeedForPermutation();
     void computeStrides();
-
-public:
-    PermuteLayer(LayerParams &params);
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 };
 }
 }

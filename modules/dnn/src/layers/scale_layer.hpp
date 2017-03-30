@@ -26,7 +26,6 @@ public:
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
-private:
     bool hasBias;
 };
 

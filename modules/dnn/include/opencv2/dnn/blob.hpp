@@ -156,7 +156,9 @@ namespace dnn
 
         /** @brief Constructs 4-dimensional blob from image.
          * @param image 2-dimensional 3- or 4-channel image (or array of such images)
-         * @param dstCn specifies size of second axis of ouptut blob
+         * @param scaleFactor the scale factor applied during 8u to 32f conversion
+         * @param swapRB whether red and blue channels should be swapped during image to tensor conversion;
+                          most networks are trained on RGB images, not BGR ones, so the flag is usually true
          */
         static Mat fromImage(const Mat& image, double scalefactor=1.0, bool swapRB=true);
 

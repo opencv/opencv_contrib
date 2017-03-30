@@ -87,7 +87,6 @@ static void colorizeSegmentation(const Mat &score, const vector<cv::Vec3b> &colo
 int main(int argc, char **argv)
 {
     cv::dnn::initModule();          //Required if OpenCV is built as static libs
-    cv::ocl::setUseOpenCL(false);   //OpenCL switcher
 
     String modelTxt = fcnType + "-heavy-pascal.prototxt";
     String modelBin = fcnType + "-heavy-pascal.caffemodel";

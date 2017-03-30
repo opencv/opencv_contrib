@@ -55,7 +55,6 @@ public:
     BaseConvolutionLayerImpl();
     virtual void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
-protected:
     void init();
     virtual void computeInpOutShape(const Blob &inpBlob) = 0;
     bool is1x1() const;
@@ -68,10 +67,7 @@ protected:
     BlobShape colRowBlobShape;
 
     bool bias;
-    bool tryUseOpenCL, useOpenCL;
-
     Blob colRowBlob, biasOnesBlob;
-
 };
 
 //TODO: simultaneously convolution and bias addition for cache optimization
@@ -79,16 +75,10 @@ class ConvolutionLayerImpl : public BaseConvolutionLayerImpl
 {
 public:
     virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-
-protected:
     virtual void computeInpOutShape(const Blob &inpBlob);
 
-    template<typename XMat>
-    void forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void im2col(const  Mat &srcImg,  Mat &dstCol);
     void im2row(const  Mat &srcImg,  Mat &dstRow);
-    void im2col(const UMat &srcImg, UMat &dstCol);
-    void im2row(const UMat &srcImg, UMat &dstCol);
 };
 
 class DeConvolutionLayerImpl : public BaseConvolutionLayerImpl
@@ -96,14 +86,8 @@ class DeConvolutionLayerImpl : public BaseConvolutionLayerImpl
 public:
     virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
-protected:
-
     virtual void computeInpOutShape(const Blob &inpBlob);
-
-    template<typename XMat>
-    void forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void col2im(const  Mat &colMat, Mat  &dstImg);
-    void col2im(const UMat &colMat, UMat &dstImg);
 };
 
 //Importers

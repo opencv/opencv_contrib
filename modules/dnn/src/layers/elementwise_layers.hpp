@@ -61,7 +61,6 @@ using std::pow;
 template<typename Func>
 class ElementWiseLayer : public Func::Layer
 {
-    bool useOpenCL;
     Func func;
 
     template<typename Dtype>
@@ -89,55 +88,15 @@ public:
 
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
     {
-        useOpenCL = ocl::useOpenCL();
-
         outputs.resize(inputs.size());
         for (size_t i = 0; i < inputs.size(); i++)
         {
             outputs[i].shareFrom(*inputs[i]); //no data copy
-
-            //hotfix: shareFrom doesn't provide properly Mat/UMat switching
-            if (useOpenCL)
-                outputs[i].umatRef() = inputs[i]->umatRefConst();
-            else
-                outputs[i].matRef() = inputs[i]->matRefConst();
+            outputs[i].matRef() = inputs[i]->matRefConst();
         }
     }
 
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
-    {
-        #ifdef HAVE_OPENCL
-        if (useOpenCL)
-            forwardOCL(inputs, outputs);
-        else
-        #endif
-            forwardCPU(inputs, outputs);
-    }
-
-    #ifdef HAVE_OPENCL
-    void forwardOCL(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
-    {
-        size_t wgSize = ocl::Device::getDefault().maxWorkGroupSize();
-
-        for (size_t i = 0; i < inputs.size(); i++)
-        {
-            const UMat &src = inputs[i]->umatRefConst();
-            UMat &dst = outputs[i].umatRef();
-            CV_Assert(src.isContinuous() && dst.isContinuous() && !src.offset && !dst.offset);
-
-            ocl::Kernel ker;
-            CV_Assert(func.initKernel(ker, src));
-            ker.set(0, (int)src.total());
-            ker.set(1, ocl::KernelArg::PtrReadOnly(src));
-            ker.set(2, ocl::KernelArg::PtrWriteOnly(dst));
-
-            size_t gSize = src.total();
-            CV_Assert(ker.run(1, &gSize, &wgSize, true));
-        }
-    }
-    #endif
-
-    void forwardCPU(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
     {
         for (size_t i = 0; i < inputs.size(); i++)
         {
@@ -162,17 +121,9 @@ public:
     }
 };
 
-#ifdef HAVE_OPENCL
-static String oclGetTMacro(const UMat &m)
-{
-    return String("-DT=") + ocl::typeToStr(m.type()) + String(" ");
-}
-#endif
-
 struct ReLUFunctor
 {
     typedef ReLULayer Layer;
-
     double slope;
 
     ReLUFunctor(double slope_)
@@ -183,22 +134,6 @@ struct ReLUFunctor
     {
         return (x >= (TFloat)0) ? x : (TFloat)slope * x;
     }
-
-    #ifdef HAVE_OPENCL
-    bool initKernel(ocl::Kernel &ker, const UMat &src) const
-    {
-        const char *buildoptSlope = (slope == 0) ? "-DRELU_NO_SLOPE" : "";
-        String buildopt = oclGetTMacro(src) + buildoptSlope;
-
-        if (!ker.create("ReLUForward", ocl::dnn::activations_oclsrc, buildopt))
-            return false;
-
-        if (slope != 0)
-            ker.set(3, (float)slope);
-
-        return true;
-    }
-    #endif
 };
 
 struct TanHFunctor
@@ -210,15 +145,6 @@ struct TanHFunctor
     {
         return tanh(x);
     }
-
-    #ifdef HAVE_OPENCL
-    bool initKernel(ocl::Kernel &ker, const UMat &src) const
-    {
-        if (!ker.create("TanHForward", ocl::dnn::activations_oclsrc, oclGetTMacro(src)))
-            return false;
-        return true;
-    }
-    #endif
 };
 
 struct SigmoidFunctor
@@ -230,15 +156,6 @@ struct SigmoidFunctor
     {
         return (TFloat)1 / ((TFloat)1 + exp(-x));
     }
-
-    #ifdef HAVE_OPENCL
-    bool initKernel(ocl::Kernel &ker, const UMat &src) const
-    {
-        if (!ker.create("SigmoidForward", ocl::dnn::activations_oclsrc, oclGetTMacro(src)))
-            return false;
-        return true;
-    }
-    #endif
 };
 
 struct AbsValFunctor
@@ -250,15 +167,6 @@ struct AbsValFunctor
     {
         return abs(x);
     }
-
-    #ifdef HAVE_OPENCL
-    bool initKernel(ocl::Kernel &ker, const UMat &src) const
-    {
-        if (!ker.create("AbsValForward", ocl::dnn::activations_oclsrc, oclGetTMacro(src)))
-            return false;
-        return true;
-    }
-    #endif
 };
 
 struct BNLLFunctor
@@ -270,15 +178,6 @@ struct BNLLFunctor
     {
         return log((TFloat)1 + exp(-abs(x)));
     }
-
-    #ifdef HAVE_OPENCL
-    bool initKernel(ocl::Kernel &ker, const UMat &src) const
-    {
-        if (!ker.create("BNLLForward", ocl::dnn::activations_oclsrc, oclGetTMacro(src)))
-            return false;
-        return true;
-    }
-    #endif
 };
 
 struct PowerFunctor
@@ -297,20 +196,6 @@ struct PowerFunctor
     {
         return power == 1.0 ? (TFloat)shift + (TFloat)scale * x : pow((TFloat)shift + (TFloat)scale * x, (TFloat)power);
     }
-
-    #ifdef HAVE_OPENCL
-    bool initKernel(ocl::Kernel &ker, const UMat &src) const
-    {
-        if (!ker.create("PowForward", ocl::dnn::activations_oclsrc, oclGetTMacro(src)))
-            return false;
-
-        ker.set(3, (float)power);
-        ker.set(4, (float)scale);
-        ker.set(5, (float)shift);
-
-        return true;
-    }
-    #endif
 };
 
 class ChannelsPReLULayerImpl : public ChannelsPReLULayer

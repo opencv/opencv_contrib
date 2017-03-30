@@ -26,7 +26,6 @@ public:
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
-private:
     int getPadDim(const BlobShape& shape) const;
     int paddingDim, padding, inputDims, index;
     float paddingValue;
