@@ -493,7 +493,7 @@ Mat filterCore(Mat &I, Mat &F, float **wMap, int r=20, int nF=256, int nI=256, M
             // Move cut-point to the left
             if(balanceWeight >= 0)
             {
-                for(;balanceWeight >= 0 && curMedianVal; curMedianVal--)
+                for(;balanceWeight >= 0 && curMedianVal > 0; curMedianVal--)
                 {
                     float curWeight = 0;
                     int *nextHist = H[curMedianVal];
@@ -539,8 +539,13 @@ Mat filterCore(Mat &I, Mat &F, float **wMap, int r=20, int nF=256, int nI=256, M
             }
 
             // Weighted median is found and written to the output image
-            if(balanceWeight<0)outImg.ptr<int>(y,x)[0] = curMedianVal+1;
-            else outImg.ptr<int>(y,x)[0] = curMedianVal;
+            if(curMedianVal != -1)
+            {
+                if(balanceWeight < 0)
+                    outImg.ptr<int>(y,x)[0] = curMedianVal+1;
+                else
+                    outImg.ptr<int>(y,x)[0] = curMedianVal;
+            }
 
             // Update joint-histogram and BCB when local window is shifted.
             int fval,gval,*curHist;
