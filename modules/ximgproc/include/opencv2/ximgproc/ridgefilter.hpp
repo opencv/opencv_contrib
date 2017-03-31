@@ -13,7 +13,8 @@ namespace ximgproc
 {
 //! @addtogroup ximgproc_filters
 //! @{
-/** @brief Ridge detection algorithm based on the Hessian Matrix.
+/** @brief Ridge detection algorithm based on the Hessian Matrix described in:
+https://link.springer.com/article/10.1023%2FA%3A1008379107611
  */
 class CV_EXPORTS_W RidgeDetectionFilter : public Algorithm
 {
