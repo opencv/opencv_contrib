@@ -886,7 +886,7 @@ static void _refineCandidateLines(std::vector<Point>& nContours, std::vector<Poi
 		cntPts[group].push_back(contour2f[i]);
 	}
 
-	// saves into corresponding group
+	// saves extra group into corresponding
 	if( !cntPts[4].empty() ){
 		for( unsigned int i=0; i < cntPts[4].size() ; i++ )
 			cntPts[group].push_back(cntPts[4].at(i));
