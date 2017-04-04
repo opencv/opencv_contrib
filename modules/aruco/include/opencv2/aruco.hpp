@@ -545,7 +545,7 @@ CV_EXPORTS_W double calibrateCameraAruco(
  * @param objPoints Vector of vectors of board marker points in the board coordinate space.
  * @param imgPoints Vector of vectors of the projections of board marker corner points.
 */
-void getBoardObjectAndImagePoints(const Ptr<Board> &board, InputArrayOfArrays detectedCorners,
+CV_EXPORTS_W void getBoardObjectAndImagePoints(const Ptr<Board> &board, InputArrayOfArrays detectedCorners,
   InputArray detectedIds, OutputArray objPoints, OutputArray imgPoints);
 
 
