@@ -278,6 +278,9 @@ void SuperpixelSLICImpl::initialize()
 
 void SuperpixelSLICImpl::iterate( int num_iterations )
 {
+    // store total iterations
+    m_iterations = num_iterations;
+
     if( m_algorithm == SLICO )
       PerformSLICO( num_iterations );
     else if( m_algorithm == SLIC )
