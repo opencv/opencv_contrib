@@ -1375,10 +1375,6 @@ inline void SuperpixelSLICImpl::PerformMSLIC( const int&  itrnum )
     for( int b = 0; b < m_nr_channels; b++ )
       sigma[b].resize(m_numlabels, 0);
 
-    vector<float> sigmax(m_numlabels, 0);
-    vector<float> sigmay(m_numlabels, 0);
-    vector<int> clustersize(m_numlabels, 0);
-
     Mat distvec( m_height, m_width, CV_32F );
 
     const float xywt = (m_region_size/m_ruler)*(m_region_size/m_ruler);
