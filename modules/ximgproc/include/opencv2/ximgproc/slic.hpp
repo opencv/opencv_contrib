@@ -72,7 +72,7 @@ extremely easy to use a lone parameter specifies the number of superpixels and t
 the algorithm makes it very practical.
 Several optimizations are available for SLIC class:
 SLICO stands for "Zero parameter SLIC" and it is an optimization of baseline SLIC descibed in @cite Achanta2012.
-MSLIC stands for "Manifold SLIC" and it is an optimization of baseline SLIC described in @cite Liu_2016_CVPR.
+MSLIC stands for "Manifold SLIC" and it is an optimization of baseline SLIC described in @cite Liu_2017_IEEE.
  */
 
 class CV_EXPORTS_W SuperpixelSLIC : public Algorithm
