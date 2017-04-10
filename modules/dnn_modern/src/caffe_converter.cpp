@@ -43,9 +43,10 @@
  */
 
 #include "precomp.hpp"
+#include <opencv2/imgproc.hpp>
 
-#define CNN_USE_CAFFE_CONVERTER
 #include <tiny_dnn/tiny_dnn.h>
+#include <tiny_dnn/io/caffe/caffe.pb.cc>
 
 using namespace tiny_dnn;
 using namespace tiny_dnn::activation;
@@ -59,9 +60,9 @@ namespace dnn2 {
  */
 class CaffeConverter_Impl : public CaffeConverter {
  public:
-    explicit CaffeConverter_Impl(const cv::String& model_file,
-                                 const cv::String& trained_file,
-                                 const cv::String& mean_file) {
+    explicit CaffeConverter_Impl(const String& model_file,
+                                 const String& trained_file,
+                                 const String& mean_file) {
         net_ = create_net_from_caffe_prototxt(model_file);
         reload_weight_from_caffe_protobinary(trained_file, net_.get());
 
@@ -73,31 +74,31 @@ class CaffeConverter_Impl : public CaffeConverter {
 
     ~CaffeConverter_Impl() {}
 
-    virtual void eval(const cv::InputArray image, std::vector<float>* results);
+    virtual void eval(InputArray image, std::vector<float>& results);
 
  private:
-    cv::Mat compute_mean(const string& mean_file, const size_t width,
+    Mat compute_mean(const string& mean_file, const size_t width,
 		         const size_t height);
 
-    cv::ColorConversionCodes get_cvt_codes(const int src_channels,
+    ColorConversionCodes get_cvt_codes(const int src_channels,
                                            const int dst_channels);
 
-    void preprocess(const cv::Mat& img, const cv::Mat& mean,
-		    const int num_channels, const cv::Size& geometry,
-		    vector<cv::Mat>* input_channels);
+    void preprocess(const Mat& img, const Mat& mean,
+            const int num_channels, const Size& geometry,
+            vector<Mat>* input_channels);
 
-    cv::Mat mean_;
+    Mat mean_;
     std::shared_ptr<network<sequential>> net_;
 };
 
-cv::Mat
+Mat
 CaffeConverter_Impl::compute_mean(const string& mean_file,
                                   const size_t width,
 				  const size_t height) {
     caffe::BlobProto blob;
     ::detail::read_proto_from_binary(mean_file, &blob);
 
-    vector<cv::Mat> channels;
+    vector<Mat> channels;
     auto data = blob.mutable_data()->mutable_data();
 
     const size_t offset = blob.height() * blob.width();
@@ -106,69 +107,69 @@ CaffeConverter_Impl::compute_mean(const string& mean_file,
         channels.emplace_back(blob.height(), blob.width(), CV_32FC1, data);
     }
 
-    cv::Mat mean;
-    cv::merge(channels, mean);
+    Mat meanChannel;
+    merge(channels, meanChannel);
 
-    return cv::Mat(cv::Size(width, height), mean.type(), cv::mean(mean));
+    return Mat(Size(width, height), meanChannel.type(), mean(meanChannel));
 }
 
-cv::ColorConversionCodes
+ColorConversionCodes
 CaffeConverter_Impl::get_cvt_codes(const int src_channels,
                                    const int dst_channels) {
     assert(src_channels != dst_channels);
 
     if (dst_channels == 3) {
-        return src_channels == 1 ? cv::COLOR_GRAY2BGR : cv::COLOR_BGRA2BGR;
+        return src_channels == 1 ? COLOR_GRAY2BGR : COLOR_BGRA2BGR;
     } else if (dst_channels == 1) {
-        return src_channels == 3 ? cv::COLOR_BGR2GRAY : cv::COLOR_BGRA2GRAY;
+        return src_channels == 3 ? COLOR_BGR2GRAY : COLOR_BGRA2GRAY;
     } else {
         throw runtime_error("unsupported color code");
     }
 }
 
-void CaffeConverter_Impl::preprocess(const cv::Mat& img,
-                                     const cv::Mat& mean,
+void CaffeConverter_Impl::preprocess(const Mat& img,
+                                     const Mat& mean,
                                      const int num_channels,
-                                     const cv::Size& geometry,
-                                     vector<cv::Mat>* input_channels) {
-    cv::Mat sample;
+                                     const Size& geometry,
+                                     vector<Mat>* input_channels) {
+    Mat sample;
 
     // convert color
     if (img.channels() != num_channels) {
-        cv::cvtColor(img, sample,
+        cvtColor(img, sample,
                      get_cvt_codes(img.channels(), num_channels));
     } else {
         sample = img;
     }
 
     // resize
-    cv::Mat sample_resized;
-    cv::resize(sample, sample_resized, geometry);
+    Mat sample_resized;
+    resize(sample, sample_resized, geometry);
 
-    cv::Mat sample_float;
+    Mat sample_float;
     sample_resized.convertTo(sample_float,
                              num_channels == 3 ? CV_32FC3 : CV_32FC1);
 
     // subtract mean
     if (mean.size().width > 0) {
-        cv::Mat sample_normalized;
-        cv::subtract(sample_float, mean, sample_normalized);
-        cv::split(sample_normalized, *input_channels);
+        Mat sample_normalized;
+        subtract(sample_float, mean, sample_normalized);
+        split(sample_normalized, *input_channels);
     }
     else {
-        cv::split(sample_float, *input_channels);
+        split(sample_float, *input_channels);
     }
 }
 
-void CaffeConverter_Impl::eval(const cv::InputArray image,
-                               std::vector<float>* results) {
-    const cv::Mat img = image.getMat();
+void CaffeConverter_Impl::eval(InputArray image,
+                               std::vector<float>& results) {
+    const Mat img = image.getMat();
 
     const size_t channels = (*net_)[0]->in_data_shape()[0].depth_;
     const size_t width    = (*net_)[0]->in_data_shape()[0].width_;
     const size_t height   = (*net_)[0]->in_data_shape()[0].height_;
 
-    vector<cv::Mat> input_channels;
+    vector<Mat> input_channels;
     vector<float> inputvec(width*height*channels);
 
     for (size_t i = 0; i < channels; i++) {
@@ -177,7 +178,7 @@ void CaffeConverter_Impl::eval(const cv::InputArray image,
     }
 
     // subtract mean from input
-    preprocess(img, mean_, 3, cv::Size(width, height), &input_channels);
+    preprocess(img, mean_, 3, Size(width, height), &input_channels);
 
     const vector<tiny_dnn::float_t> vec(inputvec.begin(), inputvec.end());
 
@@ -185,17 +186,17 @@ void CaffeConverter_Impl::eval(const cv::InputArray image,
     auto result = net_->predict(vec);
 
     // allocate output
-    results->clear();
-    results->reserve(result.size());
+    results.clear();
+    results.reserve(result.size());
 
     for (size_t i = 0; i < result.size(); i++) {
-        results->push_back(result[i]);
+        results.push_back(result[i]);
     }
 }
 
-Ptr<CaffeConverter> CaffeConverter::create(const cv::String& model_file,
-                                           const cv::String& trained_file,
-                                           const cv::String& mean_file) {
+Ptr<CaffeConverter> CaffeConverter::create(const String& model_file,
+                                           const String& trained_file,
+                                           const String& mean_file) {
     return makePtr<CaffeConverter_Impl>(model_file, trained_file, mean_file);
 }
 

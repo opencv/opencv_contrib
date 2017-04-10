@@ -46,25 +46,33 @@
 #define __OPENCV_DNN_M_HPP__
 
 #include "opencv2/core.hpp"
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/imgproc.hpp"
 
 /** @defgroup dnn_modern Deep Learning Modern Module
-@{
-
-Base class for tiny-dnn converter
-
-@}
+ * This module is based on the [tiny-dnn](https://github.com/tiny-dnn/tiny-dnn) framework.
+ * The module uses tiny-dnn to load and run pre-trained Caffe models.
+ * tiny-dnn's converter only supports single input/single output network without branches.
 */
+
 
 namespace cv {
 namespace dnn2 {
 
+//! @addtogroup dnn_modern
+//! @{
+
+/** @brief Base class for tiny-dnn converter.
+ */
 class CV_EXPORTS_W BaseConverter
 {
 public:
     virtual ~BaseConverter() {};
-    virtual void eval(const cv::InputArray image, std::vector<float_t>* results) = 0;
+
+    /**
+    @brief Evaluates single model output on single model input.
+    @param image input image.
+    @param results output form model.
+    */
+    CV_WRAP virtual void eval(InputArray image, std::vector<float>& results) = 0;
 };
 
 /** @brief Class implementing the CaffeConverter.
@@ -77,20 +85,22 @@ class CV_EXPORTS_W CaffeConverter : public BaseConverter {
  public:
 
     /**
-        @param model_file path to the prototxt file.
-        @param trained_file path to the caffemodel file.
-        @param mean_file path to binaryproto file.
-    */
-    CV_WRAP static Ptr<CaffeConverter> create(const cv::String& model_file,
-                                              const cv::String& trained_file,
-                                              const cv::String& mean_file=cv::String());
+    @brief Creates a CaffeConverter object.
 
-    virtual void eval(const cv::InputArray image, std::vector<float_t>* results) = 0;
+    @param model_file path to the prototxt file.
+    @param trained_file path to the caffemodel file.
+    @param mean_file path to binaryproto file.
+    */
+    CV_WRAP static Ptr<CaffeConverter> create(const String& model_file,
+                                              const String& trained_file,
+                                              const String& mean_file = String());
+
+    CV_WRAP virtual void eval(InputArray image, CV_OUT std::vector<float>& results) = 0;
 };
 
+//! @}
 } // namespace dnn2
 } // namespace cv
-
 #endif
 
 /* End of file. */
