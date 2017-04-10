@@ -122,6 +122,11 @@ public:
 	void read(const FileNode& fn);
 	void write(FileStorage& fs) const;
 
+    Ptr<TrackerModel> getModel()
+    {
+      return model;
+    }
+
 	class Pexpert
 	{
 	public:
