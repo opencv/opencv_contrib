@@ -6,10 +6,10 @@
  * email : Radhakrishna [dot] Achanta [at] epfl [dot] ch
  * web : http://ivrl.epfl.ch/people/achanta
  *
- * MSLIC Copyright (c) 2016
+ * MSLIC Copyright (c) 2016, 2017
  * Yong-Jin Liu
  * email : liuyongjin [at] tsinghua [dot] edu [dot] cn
- * web : http://cg.cs.tsinghua.edu.cn/people/~Yongjin/yongjin.htm
+ * web : http://47.89.51.189/liuyj
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -49,10 +49,11 @@
  Aurelien Lucchi, Pascal Fua, and Sabine Süsstrunk, EPFL Technical
  Report no. 149300, June 2010.
 
- "Manifold SLIC: A Fast Method to Compute Content-Sensitive Superpixels"
+ "Intrinsic Manifold SLIC: A Simple and Efficient Method for Computing
+ Content-Sensitive Superpixels"
  Yong-Jin Liu, Cheng-Chi Yu, Min-Jing Yu, Ying He,
- The IEEE Conference on Computer Vision and Pattern Recognition (CVPR),
- 2016, pp. 651-659.
+ IEEE Transactions on Pattern Analysis and Machine Intelligence,
+ March 2017, Issue 99.
 
  OpenCV port by: Cristian Balint <cristian dot balint at gmail dot com>
  */
