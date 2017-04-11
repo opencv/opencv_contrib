@@ -887,18 +887,13 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
 
 
 
-/**
-  * @brief Given a board configuration and a set of detected markers, returns the corresponding
-  * image points and object points to call solvePnP
-  */
-static void _getBoardObjectAndImagePoints(const Ptr<Board> &_board, InputArray _detectedIds,
-                                          InputArrayOfArrays _detectedCorners,
-                                          OutputArray _imgPoints, OutputArray _objPoints) {
+void getBoardObjectAndImagePoints(const Ptr<Board> &board, InputArrayOfArrays detectedCorners,
+    InputArray detectedIds, OutputArray objPoints, OutputArray imgPoints) {
 
-    CV_Assert(_board->ids.size() == _board->objPoints.size());
-    CV_Assert(_detectedIds.total() == _detectedCorners.total());
+    CV_Assert(board->ids.size() == board->objPoints.size());
+    CV_Assert(detectedIds.total() == detectedCorners.total());
 
-    size_t nDetectedMarkers = _detectedIds.total();
+    size_t nDetectedMarkers = detectedIds.total();
 
     vector< Point3f > objPnts;
     objPnts.reserve(nDetectedMarkers);
@@ -908,20 +903,20 @@ static void _getBoardObjectAndImagePoints(const Ptr<Board> &_board, InputArray _
 
     // look for detected markers that belong to the board and get their information
     for(unsigned int i = 0; i < nDetectedMarkers; i++) {
-        int currentId = _detectedIds.getMat().ptr< int >(0)[i];
-        for(unsigned int j = 0; j < _board->ids.size(); j++) {
-            if(currentId == _board->ids[j]) {
+        int currentId = detectedIds.getMat().ptr< int >(0)[i];
+        for(unsigned int j = 0; j < board->ids.size(); j++) {
+            if(currentId == board->ids[j]) {
                 for(int p = 0; p < 4; p++) {
-                    objPnts.push_back(_board->objPoints[j][p]);
-                    imgPnts.push_back(_detectedCorners.getMat(i).ptr< Point2f >(0)[p]);
+                    objPnts.push_back(board->objPoints[j][p]);
+                    imgPnts.push_back(detectedCorners.getMat(i).ptr< Point2f >(0)[p]);
                 }
             }
         }
     }
 
     // create output
-    Mat(objPnts).copyTo(_objPoints);
-    Mat(imgPnts).copyTo(_imgPoints);
+    Mat(objPnts).copyTo(objPoints);
+    Mat(imgPnts).copyTo(imgPoints);
 }
 
 
@@ -1243,7 +1238,7 @@ int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Ptr<Bo
 
     // get object and image points for the solvePnP function
     Mat objPoints, imgPoints;
-    _getBoardObjectAndImagePoints(board, _ids, _corners, imgPoints, objPoints);
+    getBoardObjectAndImagePoints(board, _corners, _ids, objPoints, imgPoints);
 
     CV_Assert(imgPoints.total() == objPoints.total());
 
@@ -1544,8 +1539,8 @@ double calibrateCameraAruco(InputArrayOfArrays _corners, InputArray _ids, InputA
         }
         markerCounter += nMarkersInThisFrame;
         Mat currentImgPoints, currentObjPoints;
-        _getBoardObjectAndImagePoints(board, thisFrameIds, thisFrameCorners, currentImgPoints,
-                                      currentObjPoints);
+        getBoardObjectAndImagePoints(board, thisFrameCorners, thisFrameIds, currentObjPoints,
+            currentImgPoints);
         if(currentImgPoints.total() > 0 && currentObjPoints.total() > 0) {
             processedImagePoints.push_back(currentImgPoints);
             processedObjectPoints.push_back(currentObjPoints);
