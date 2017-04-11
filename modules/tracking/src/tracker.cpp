@@ -41,12 +41,6 @@
 
 #include "precomp.hpp"
 
-#undef BOILERPLATE_CODE
-#define BOILERPLATE_CODE(name,classname)\
-  if(trackerType==name){\
-      return classname::createTracker();\
-  }
-
 namespace cv
 {
 
@@ -58,7 +52,7 @@ Tracker::~Tracker()
 {
 }
 
-bool Tracker::init( const Mat& image, const Rect2d& boundingBox )
+bool Tracker::init( InputArray image, const Rect2d& boundingBox )
 {
 
   if( isInit )
@@ -73,7 +67,7 @@ bool Tracker::init( const Mat& image, const Rect2d& boundingBox )
   featureSet = Ptr<TrackerFeatureSet>( new TrackerFeatureSet() );
   model = Ptr<TrackerModel>();
 
-  bool initTracker = initImpl( image, boundingBox );
+  bool initTracker = initImpl( image.getMat(), boundingBox );
 
   //check if the model component is initialized
   if( model == 0 )
@@ -90,7 +84,7 @@ bool Tracker::init( const Mat& image, const Rect2d& boundingBox )
   return initTracker;
 }
 
-bool Tracker::update( const Mat& image, Rect2d& boundingBox )
+bool Tracker::update( InputArray image, Rect2d& boundingBox )
 {
 
   if( !isInit )
@@ -101,19 +95,7 @@ bool Tracker::update( const Mat& image, Rect2d& boundingBox )
   if( image.empty() )
     return false;
 
-  return updateImpl( image, boundingBox );
-}
-
-Ptr<Tracker> Tracker::create( const String& trackerType )
-{
-  BOILERPLATE_CODE("MIL",TrackerMIL);
-  BOILERPLATE_CODE("BOOSTING",TrackerBoosting);
-  BOILERPLATE_CODE("MEDIANFLOW",TrackerMedianFlow);
-  BOILERPLATE_CODE("TLD",TrackerTLD);
-  BOILERPLATE_CODE("KCF",TrackerKCF);
-  BOILERPLATE_CODE("GOTURN", TrackerGOTURN);
-
-  return Ptr<Tracker>();
+  return updateImpl( image.getMat(), boundingBox );
 }
 
 } /* namespace cv */

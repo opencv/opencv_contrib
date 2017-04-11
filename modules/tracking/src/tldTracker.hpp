@@ -98,7 +98,7 @@ public:
 	TrackerProxyImpl(Tparams params = Tparams()) :params_(params){}
 	bool init(const Mat& image, const Rect2d& boundingBox)
 	{
-		trackerPtr = T::createTracker();
+        trackerPtr = T::create();
 		return trackerPtr->init(image, boundingBox);
 	}
 	bool update(const Mat& image, Rect2d& boundingBox)

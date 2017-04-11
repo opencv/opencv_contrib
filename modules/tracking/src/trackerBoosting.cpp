@@ -97,8 +97,11 @@ void TrackerBoosting::Params::write( cv::FileStorage& fs ) const
 /*
  * Constructor
  */
-Ptr<TrackerBoosting> TrackerBoosting::createTracker(const TrackerBoosting::Params &parameters){
+Ptr<TrackerBoosting> TrackerBoosting::create(const TrackerBoosting::Params &parameters){
     return Ptr<TrackerBoostingImpl>(new TrackerBoostingImpl(parameters));
+}
+Ptr<TrackerBoosting> TrackerBoosting::create(){
+    return Ptr<TrackerBoostingImpl>(new TrackerBoostingImpl());
 }
 TrackerBoostingImpl::TrackerBoostingImpl( const TrackerBoostingImpl::Params &parameters ) :
     params( parameters )
