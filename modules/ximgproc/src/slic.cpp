@@ -279,6 +279,9 @@ void SuperpixelSLICImpl::initialize()
 
 void SuperpixelSLICImpl::iterate( int num_iterations )
 {
+    // store total iterations
+    m_iterations = num_iterations;
+
     if( m_algorithm == SLICO )
       PerformSLICO( num_iterations );
     else if( m_algorithm == SLIC )
@@ -1372,10 +1375,6 @@ inline void SuperpixelSLICImpl::PerformMSLIC( const int&  itrnum )
     vector< vector<float> > sigma(m_nr_channels);
     for( int b = 0; b < m_nr_channels; b++ )
       sigma[b].resize(m_numlabels, 0);
-
-    vector<float> sigmax(m_numlabels, 0);
-    vector<float> sigmay(m_numlabels, 0);
-    vector<int> clustersize(m_numlabels, 0);
 
     Mat distvec( m_height, m_width, CV_32F );
 
