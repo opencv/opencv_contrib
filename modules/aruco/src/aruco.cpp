@@ -63,7 +63,7 @@ DetectorParameters::DetectorParameters()
       minCornerDistanceRate(0.05),
       minDistanceToBorder(3),
       minMarkerDistanceRate(0.05),
-      doCornerRefinement(false),
+      cornerRefinementMethod(CORNER_REFINE_NONE),
       cornerRefinementWinSize(5),
       cornerRefinementMaxIterations(30),
       cornerRefinementMinAccuracy(0.1),
@@ -602,7 +602,7 @@ static void _copyVector2Output(vector< vector< Point2f > > &vec, OutputArrayOfAr
  * @brief Identify square candidates according to a marker dictionary
  */
 static void _identifyCandidates(InputArray _image, vector< vector< Point2f > >& _candidates,
-                                InputArrayOfArrays _contours, const Ptr<Dictionary> &_dictionary,
+                                vector< vector<Point> >& _contours, const Ptr<Dictionary> &_dictionary,
                                 vector< vector< Point2f > >& _accepted, vector< int >& ids,
                                 const Ptr<DetectorParameters> &params,
                                 OutputArrayOfArrays _rejected = noArray()) {
@@ -611,6 +611,8 @@ static void _identifyCandidates(InputArray _image, vector< vector< Point2f > >& 
 
     vector< vector< Point2f > > accepted;
     vector< vector< Point2f > > rejected;
+
+    vector< vector< Point > > contours;
 
     CV_Assert(_image.getMat().total() != 0);
 
@@ -639,6 +641,9 @@ static void _identifyCandidates(InputArray _image, vector< vector< Point2f > >& 
         if(validCandidates[i] == 1) {
             accepted.push_back(_candidates[i]);
             ids.push_back(idsTmp[i]);
+
+            contours.push_back(_contours[i]);
+
         } else {
             rejected.push_back(_candidates[i]);
         }
@@ -646,6 +651,8 @@ static void _identifyCandidates(InputArray _image, vector< vector< Point2f > >& 
 
     // parse output
     _accepted = accepted;
+
+    _contours= contours;
 
     if(_rejected.needed()) {
         _copyVector2Output(rejected, _rejected);
@@ -656,7 +663,7 @@ static void _identifyCandidates(InputArray _image, vector< vector< Point2f > >& 
 /**
   * @brief Final filter of markers after its identification
   */
-static void _filterDetectedMarkers(vector< vector< Point2f > >& _corners, vector< int >& _ids) {
+static void _filterDetectedMarkers(vector< vector< Point2f > >& _corners, vector< int >& _ids, vector< vector< Point> >& _contours) {
 
     CV_Assert(_corners.size() == _ids.size());
     if(_corners.empty()) return;
@@ -707,15 +714,21 @@ static void _filterDetectedMarkers(vector< vector< Point2f > >& _corners, vector
         vector< vector< Point2f > >::iterator filteredCorners = _corners.begin();
         vector< int >::iterator filteredIds = _ids.begin();
 
+        vector< vector< Point > >::iterator filteredContours = _contours.begin();
+
         for(unsigned int i = 0; i < toRemove.size(); i++) {
             if(!toRemove[i]) {
                 *filteredCorners++ = _corners[i];
                 *filteredIds++ = _ids[i];
+
+                *filteredContours++ = _contours[i];
             }
         }
 
         _ids.erase(filteredIds, _ids.end());
         _corners.erase(filteredCorners, _corners.end());
+
+        _contours.erase(filteredContours, _contours.end());
     }
 }
 
@@ -771,13 +784,183 @@ class MarkerSubpixelParallel : public ParallelLoopBody {
     const Ptr<DetectorParameters> &params;
 };
 
+/**
+ * Line fitting  A * B = C :: Called from function refineCandidateLines
+ * @param nContours, contour-container
+ */
+static Point3f _interpolate2Dline(const std::vector<cv::Point2f>& nContours){
+	float minX, minY, maxX, maxY;
+	minX = maxX = nContours[0].x;
+	minY = maxY = nContours[0].y;
+
+	for(unsigned int i = 0; i< nContours.size(); i++){
+		minX = nContours[i].x < minX ? nContours[i].x : minX;
+		minY = nContours[i].y < minY ? nContours[i].y : minY;
+		maxX = nContours[i].x > maxX ? nContours[i].x : maxX;
+		maxY = nContours[i].y > maxY ? nContours[i].y : maxY;
+	}
+
+	Mat A = Mat::ones((int)nContours.size(), 2, CV_32F); // Coefficient Matrix (N x 2)
+	Mat B((int)nContours.size(), 1, CV_32F);				// Variables   Matrix (N x 1)
+	Mat C;											// Constant
+
+	if(maxX - minX > maxY - minY){
+		for(unsigned int i =0; i < nContours.size(); i++){
+            A.at<float>(i,0)= nContours[i].x;
+            B.at<float>(i,0)= nContours[i].y;
+		}
+
+		solve(A, B, C, DECOMP_NORMAL);
+
+		return Point3f(C.at<float>(0, 0), -1., C.at<float>(1, 0));
+	}
+	else{
+		for(unsigned int i =0; i < nContours.size(); i++){
+			A.at<float>(i,0)= nContours[i].y;
+			B.at<float>(i,0)= nContours[i].x;
+		}
+
+		solve(A, B, C, DECOMP_NORMAL);
+
+		return Point3f(-1., C.at<float>(0, 0), C.at<float>(1, 0));
+	}
+
+}
+
+/**
+ * Find the Point where the lines crosses :: Called from function refineCandidateLines
+ * @param nLine1
+ * @param nLine2
+ * @return Crossed Point
+ */
+static Point2f _getCrossPoint(Point3f nLine1, Point3f nLine2){
+	Matx22f A(nLine1.x, nLine1.y, nLine2.x, nLine2.y);
+	Vec2f B(-nLine1.z, -nLine2.z);
+	return Vec2f(A.solve(B).val);
+}
+
+static void _distortPoints(vector<cv::Point2f>& in, const Mat& camMatrix, const Mat& distCoeff) {
+    // trivial extrinsics
+    Matx31f Rvec(0,0,0);
+    Matx31f Tvec(0,0,0);
+
+    // calculate 3d points and then reproject, so opencv makes the distortion internally
+    vector<cv::Point3f> cornersPoints3d;
+    for (unsigned int i = 0; i < in.size(); i++){
+        float x= (in[i].x - float(camMatrix.at<double>(0, 2))) / float(camMatrix.at<double>(0, 0));
+        float y= (in[i].y - float(camMatrix.at<double>(1, 2))) / float(camMatrix.at<double>(1, 1));
+        cornersPoints3d.push_back(Point3f(x,y,1));
+    }
+    cv::projectPoints(cornersPoints3d, Rvec, Tvec, camMatrix, distCoeff, in);
+}
+
+/**
+ * Refine Corners using the contour vector :: Called from function detectMarkers
+ * @param nContours, contour-container
+ * @param nCorners, candidate Corners
+ * @param camMatrix, cameraMatrix input 3x3 floating-point camera matrix
+ * @param distCoeff, distCoeffs vector of distortion coefficient
+ */
+static void _refineCandidateLines(std::vector<Point>& nContours, std::vector<Point2f>& nCorners, const Mat& camMatrix, const Mat& distCoeff){
+	vector<Point2f> contour2f(nContours.begin(), nContours.end());
+
+	if(!camMatrix.empty() && !distCoeff.empty()){
+		undistortPoints(contour2f, contour2f, camMatrix, distCoeff);
+	}
+
+	/* 5 groups :: to group the edges
+	 * 4 - classified by its corner
+	 * extra group - (temporary) if contours do not begin with a corner
+	 */
+	vector<Point2f> cntPts[5];
+	int cornerIndex[4]={-1};
+	int group=4;
+
+	for ( unsigned int i =0; i < nContours.size(); i++ ) {
+		for(unsigned int j=0; j<4; j++){
+			if ( nCorners[j] == contour2f[i] ){
+				cornerIndex[j] = i;
+				group=j;
+			}
+		}
+		cntPts[group].push_back(contour2f[i]);
+	}
+
+	// saves extra group into corresponding
+	if( !cntPts[4].empty() ){
+		for( unsigned int i=0; i < cntPts[4].size() ; i++ )
+			cntPts[group].push_back(cntPts[4].at(i));
+		cntPts[4].clear();
+	}
+
+	//Evaluate contour direction :: using the position of the detected corners
+	int inc=1;
+
+        inc = ( (cornerIndex[0] > cornerIndex[1]) &&  (cornerIndex[3] > cornerIndex[0]) ) ? -1:inc;
+	inc = ( (cornerIndex[2] > cornerIndex[3]) &&  (cornerIndex[1] > cornerIndex[2]) ) ? -1:inc;
+
+	// calculate the line :: who passes through the grouped points
+	Point3f lines[4];
+	for(int i=0; i<4; i++){
+		lines[i]=_interpolate2Dline(cntPts[i]);
+	}
+
+	/*
+	 * calculate the corner :: where the lines crosses to each other
+	 * clockwise direction		no clockwise direction
+	 *      0                           1
+	 *      .---. 1                     .---. 2
+	 *      |   |                       |   |
+	 *    3 .___.                     0 .___.
+	 *          2                           3
+	 */
+	for(int i=0; i < 4; i++){
+		if(inc<0)
+			nCorners[i] = _getCrossPoint(lines[ i ], lines[ (i+1)%4 ]);	// 01 12 23 30
+		else
+			nCorners[i] = _getCrossPoint(lines[ i ], lines[ (i+3)%4 ]);	// 30 01 12 23
+	}
+
+	if(!camMatrix.empty() && !distCoeff.empty()){
+		_distortPoints(nCorners, camMatrix, distCoeff);
+	}
+}
+
+
+/**
+  * ParallelLoopBody class for the parallelization of the marker corner contour refinement
+  * Called from function detectMarkers()
+  */
+class MarkerContourParallel : public ParallelLoopBody {
+    public:
+    MarkerContourParallel( vector< vector< Point > >& _contours, vector< vector< Point2f > >& _candidates,  const Mat& _camMatrix, const Mat& _distCoeff)
+        : contours(_contours), candidates(_candidates), camMatrix(_camMatrix), distCoeff(_distCoeff){}
+
+    void operator()(const Range &range) const {
+
+        for(int i = range.start; i < range.end; i++) {
+            _refineCandidateLines(contours[i], candidates[i], camMatrix, distCoeff);
+        }
+    }
+
+    private:
+    MarkerContourParallel &operator=(const MarkerContourParallel &){
+        return *this;
+    }
+
+    vector< vector< Point > >& contours;
+    vector< vector< Point2f > >& candidates;
+    const Mat& camMatrix;
+    const Mat& distCoeff;
+};
+
 
 
 /**
   */
 void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, OutputArrayOfArrays _corners,
                    OutputArray _ids, const Ptr<DetectorParameters> &_params,
-                   OutputArrayOfArrays _rejectedImgPoints) {
+                   OutputArrayOfArrays _rejectedImgPoints, InputArrayOfArrays camMatrix, InputArrayOfArrays distCoeff) {
 
     CV_Assert(!_image.empty());
 
@@ -795,14 +978,14 @@ void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Output
                         _rejectedImgPoints);
 
     /// STEP 3: Filter detected markers;
-    _filterDetectedMarkers(candidates, ids);
+    _filterDetectedMarkers(candidates, ids, contours);
 
     // copy to output arrays
     _copyVector2Output(candidates, _corners);
     Mat(ids).copyTo(_ids);
 
-    /// STEP 4: Corner refinement
-    if(_params->doCornerRefinement) {
+    /// STEP 4: Corner refinement :: use corner subpix
+    if( _params->cornerRefinementMethod == CORNER_REFINE_SUBPIX ) {
         CV_Assert(_params->cornerRefinementWinSize > 0 && _params->cornerRefinementMaxIterations > 0 &&
                   _params->cornerRefinementMinAccuracy > 0);
 
@@ -818,6 +1001,19 @@ void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Output
         // this is the parallel call for the previous commented loop (result is equivalent)
         parallel_for_(Range(0, _corners.cols()),
                       MarkerSubpixelParallel(&grey, _corners, _params));
+    }
+
+    /// STEP 4, Optional : Corner refinement :: use contour container
+    if( _params->cornerRefinementMethod == CORNER_REFINE_CONTOUR){
+
+        if(! _ids.empty()){
+
+            // do corner refinement using the contours for each detected markers
+            parallel_for_(Range(0, _corners.cols()), MarkerContourParallel(contours, candidates, camMatrix.getMat(), distCoeff.getMat()));
+
+            // copy the corners to the output array
+            _copyVector2Output(candidates, _corners);
+        }
     }
 }
 
@@ -861,7 +1057,7 @@ class SinglePoseEstimationParallel : public ParallelLoopBody {
   */
 void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
                                InputArray _cameraMatrix, InputArray _distCoeffs,
-                               OutputArray _rvecs, OutputArray _tvecs) {
+                               OutputArray _rvecs, OutputArray _tvecs, OutputArray _objPoints) {
 
     CV_Assert(markerLength > 0);
 
@@ -883,6 +1079,9 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
     parallel_for_(Range(0, nMarkers),
                   SinglePoseEstimationParallel(markerObjPoints, _corners, _cameraMatrix,
                                                _distCoeffs, rvecs, tvecs));
+    if(_objPoints.needed()){
+        markerObjPoints.convertTo(_objPoints, -1);
+    }
 }
 
 
@@ -1161,7 +1360,7 @@ void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
         if(closestCandidateIdx >= 0) {
 
             // subpixel refinement
-            if(params.doCornerRefinement) {
+            if(_params->cornerRefinementMethod == CORNER_REFINE_SUBPIX) {
                 CV_Assert(params.cornerRefinementWinSize > 0 &&
                           params.cornerRefinementMaxIterations > 0 &&
                           params.cornerRefinementMinAccuracy > 0);

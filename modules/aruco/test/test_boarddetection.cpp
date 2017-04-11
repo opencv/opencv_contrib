@@ -299,7 +299,7 @@ void CV_ArucoRefine::run(int) {
                 vector< int > ids;
                 Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
                 params->minDistanceToBorder = 3;
-                params->doCornerRefinement = true;
+                params->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;
                 params->markerBorderBits = markerBorder;
                 aruco::detectMarkers(img, dictionary, corners, ids, params, rejected);
 
