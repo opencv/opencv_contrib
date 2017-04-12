@@ -95,7 +95,7 @@ typedef cv::Ptr<TonemapDrago> Ptr_TonemapDrago;
 typedef cv::Ptr<TonemapDurand> Ptr_TonemapDurand;
 typedef cv::Ptr<TonemapMantiuk> Ptr_TonemapMantiuk;
 typedef cv::Ptr<TonemapReinhard> Ptr_TonemapReinhard;
-
+typedef cv::Ptr<float> Ptr_float;
 
 // ----------------------------------------------------------------------------
 //                          PREDECLARATIONS
@@ -522,6 +522,11 @@ public:
   Bridge& operator=(const Ptr_TonemapReinhard& ) { return *this; }
   Ptr_TonemapReinhard toPtrTonemapReinhard() { return Ptr_TonemapReinhard(); }
   operator Ptr_TonemapReinhard() { return toPtrTonemapReinhard(); }
+
+  // ---------------------------   Ptr_float   ----------------------
+  Bridge& operator=(const Ptr_float& ) { return *this; }
+  Ptr_float toPtrFloat() { return Ptr_float(); }
+  operator Ptr_float() { return toPtrFloat(); }
 }; // class Bridge
 
 
