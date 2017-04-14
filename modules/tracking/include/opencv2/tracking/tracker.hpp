@@ -1236,6 +1236,7 @@ public:
     */
     void write(FileStorage& /*fs*/) const;
 
+    double detect_thresh;         //!<  detection confidence threshold
     double sigma;                 //!<  gaussian kernel bandwidth
     double lambda;                //!<  regularization
     double interp_factor;         //!<  linear interpolation factor for adaptation
