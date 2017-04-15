@@ -182,7 +182,7 @@ void CaffeConverter_Impl::eval(const cv::InputArray image,
     const vector<tiny_dnn::float_t> vec(inputvec.begin(), inputvec.end());
 
     // perform inderence
-    auto result = net_->predict();
+    auto result = net_->predict(vec);
 
     // allocate output
     results->clear();

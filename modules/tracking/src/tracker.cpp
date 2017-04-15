@@ -112,6 +112,7 @@ Ptr<Tracker> Tracker::create( const String& trackerType )
   BOILERPLATE_CODE("TLD",TrackerTLD);
   BOILERPLATE_CODE("KCF",TrackerKCF);
   BOILERPLATE_CODE("GOTURN", TrackerGOTURN);
+
   return Ptr<Tracker>();
 }
 

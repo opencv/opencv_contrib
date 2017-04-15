@@ -737,14 +737,8 @@ struct TorchImporter : public ::cv::dnn::Importer
             else if (nnName == "SpatialMaxUnpooling")
             {
                 readTorchTable(scalarParams, tensorParams);
-
-                CV_Assert(scalarParams.has("oheight") &&
-                          scalarParams.has("owidth"));
-
                 CV_Assert(tensorParams.count("indices"));
 
-                layerParams.set("out_h", static_cast<int>(scalarParams.get<double>("oheight")));
-                layerParams.set("out_w", static_cast<int>(scalarParams.get<double>("owidth"))/2);
                 layerParams.set("indices_blob_id", tensorParams["indices"].first);
                 curModule->modules.push_back(newModule);
             }
@@ -908,13 +902,10 @@ struct TorchImporter : public ::cv::dnn::Importer
                 return id;
             }
             else if (module->thName == "SpatialMaxUnpooling") {
-                String name = generateLayerName("torchMaxUnpooling");
-                int id = net.addLayer(name, "MaxUnpool", module->params);
-                net.connect(prevLayerId, 0, id, 0);
-
                 CV_Assert(module->params.has("indices_blob_id"));
-
                 int indicesBlobId = module->params.get<int>("indices_blob_id");
+                std::pair<int, Module*> poolingLayer;
+                poolingLayer.first = -1;
 
                 for(int i = 0; i < addedModules.size(); i++)
                 {
@@ -922,10 +913,24 @@ struct TorchImporter : public ::cv::dnn::Importer
                         addedModules[i].second->params.has("indices_blob_id") &&
                         addedModules[i].second->params.get<int>("indices_blob_id") == indicesBlobId)
                     {
-                        net.connect(addedModules[i].first, 1, id, 1);
+                        poolingLayer = addedModules[i];
                         break;
                     }
                 }
+
+                module->params.set("pool_k_h", poolingLayer.second->params.get<int>("kernel_h"));
+                module->params.set("pool_k_w", poolingLayer.second->params.get<int>("kernel_w"));
+                module->params.set("pool_stride_h", poolingLayer.second->params.get<int>("stride_h"));
+                module->params.set("pool_stride_w", poolingLayer.second->params.get<int>("stride_w"));
+                module->params.set("pool_pad_h", poolingLayer.second->params.get<int>("pad_h"));
+                module->params.set("pool_pad_w", poolingLayer.second->params.get<int>("pad_w"));
+
+                String name = generateLayerName("torchMaxUnpooling");
+                int id = net.addLayer(name, "MaxUnpool", module->params);
+                net.connect(prevLayerId, 0, id, 0);
+
+                CV_Assert(poolingLayer.first != -1);
+                net.connect(poolingLayer.first, 1, id, 1);
 
                 return id;
             }

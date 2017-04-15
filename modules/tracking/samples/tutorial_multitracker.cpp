@@ -14,6 +14,7 @@
 #include <iostream>
 #include <cstring>
 #include <ctime>
+#include "roiSelector.hpp"
 
 using namespace std;
 using namespace cv;

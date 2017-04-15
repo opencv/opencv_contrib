@@ -11,7 +11,6 @@
 
 #include "opencv2/ts.hpp"
 #include "opencv2/structured_light.hpp"
-#include <opencv2/rgbd.hpp>
 #include <iostream>
 
 #endif

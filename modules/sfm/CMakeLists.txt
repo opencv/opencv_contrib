@@ -2,14 +2,14 @@ set(the_description "SFM algorithms")
 
 
 ### LIBMV LIGHT EXTERNAL DEPENDENCIES ###
-
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 find_package(Gflags QUIET)
 find_package(Ceres QUIET)
 if(NOT Ceres_FOUND)  # Looks like Ceres find glog on the own, so separate search isn't necessary
   find_package(Glog QUIET)
 endif()
 
-if((gflags_FOUND OR GFLAGS_FOUND) AND (glog_FOUND OR GLOG_FOUND))
+if((gflags_FOUND OR GFLAGS_FOUND OR GFLAGS_INCLUDE_DIRS) AND (glog_FOUND OR GLOG_FOUND OR GLOG_INCLUDE_DIRS))
   set(_fname "${CMAKE_CURRENT_BINARY_DIR}/test_sfm_deps.cpp")
   file(WRITE "${_fname}" "#include <glog/logging.h>\n#include <gflags/gflags.h>\nint main() { (void)(0); return 0; }\n")
   try_compile(SFM_DEPS_OK "${CMAKE_BINARY_DIR}" "${_fname}"

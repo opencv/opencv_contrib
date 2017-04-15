@@ -58,7 +58,7 @@ double generateRandomLaplacian(double b, double m)
         return m - b*log(n);
 }
 
-Rect2f anno2rect(vector<Point2f> annoBB)
+Rect2f anno2rect(std::vector<Point2f> annoBB)
 {
     Rect2f rectBB;
     rectBB.x = min(annoBB[0].x, annoBB[1].x);
@@ -69,9 +69,9 @@ Rect2f anno2rect(vector<Point2f> annoBB)
     return rectBB;
 }
 
-vector <TrainingSample> gatherFrameSamples(Mat prevFrame, Mat currFrame, Rect2f prevBB, Rect2f currBB)
+std::vector <TrainingSample> gatherFrameSamples(Mat prevFrame, Mat currFrame, Rect2f prevBB, Rect2f currBB)
 {
-    vector <TrainingSample> trainingSamples;
+    std::vector <TrainingSample> trainingSamples;
     Point2f currCenter, prevCenter;
     Rect2f targetPatchRect, searchPatchRect;
     Mat targetPatch, searchPatch;

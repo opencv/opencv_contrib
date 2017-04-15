@@ -65,7 +65,7 @@ int main(int argc, char** argv)
   cv::ppf_match_3d::loadPLYSimple(modelFileName.c_str(), 1).copyTo(points);
 
   cout << "Computing normals\n";
-  double viewpoint[3] = { 0.0, 0.0, 0.0 };
+  cv::Vec3d viewpoint(0, 0, 0);
   cv::ppf_match_3d::computeNormalsPC3d(points, pointsAndNormals, 6, false, viewpoint);
 
   std::cout << "Writing points\n";

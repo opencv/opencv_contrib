@@ -43,7 +43,7 @@
 #include "opencv2/core/core_c.h"
 #include "opencv2/core/private.hpp"
 #include "opencv2/flann/miniflann.hpp"
-#include "opencv2/highgui.hpp"
+#include "opencv2/imgcodecs.hpp"
 #include "precomp.hpp"
 #include "opencl_kernels_optflow.hpp"
 
