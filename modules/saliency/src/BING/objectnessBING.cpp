@@ -39,7 +39,7 @@
  //
  //M*/
 
-#include "precomp.hpp"
+#include "../precomp.hpp"
 
 #include "BING/kyheader.hpp"
 #include "CmTimer.hpp"
@@ -85,12 +85,12 @@ void ObjectnessBING::setColorSpace( int clr )
   _bbResDir = _resultsDir + "/" + std::string( format( "BBoxesB%gW%d%s/", _base, _W, _clrName[_Clr] ).c_str() );
 }
 
-void ObjectnessBING::setTrainingPath( std::string trainingPath )
+void ObjectnessBING::setTrainingPath( const String& trainingPath )
 {
   _trainingPath = trainingPath;
 }
 
-void ObjectnessBING::setBBResDir( std::string resultsDir )
+void ObjectnessBING::setBBResDir(const String &resultsDir )
 {
   _resultsDir = resultsDir;
 }
@@ -475,7 +475,7 @@ bool ObjectnessBING::computeSaliencyImpl( InputArray image, OutputArray objectne
   unsigned long int valIdxesSize = (unsigned long int) finalBoxes.getvalIdxes().size();
   objectnessValues.resize( valIdxesSize );
   for ( uint i = 0; i < valIdxesSize; i++ )
-    objectnessValues[i] = finalBoxes.getvalIdxes()[i].first;
+    objectnessValues[finalBoxes.getvalIdxes()[i].second] = finalBoxes.getvalIdxes()[i].first;
 
   return true;
 }

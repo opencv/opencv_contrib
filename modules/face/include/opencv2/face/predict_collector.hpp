@@ -44,59 +44,84 @@ the use of this software, even if advised of the possibility of such damage.
 
 #ifndef __OPENCV_PREDICT_COLLECTOR_HPP__
 #define __OPENCV_PREDICT_COLLECTOR_HPP__
+
+#include <vector>
+#include <map>
+#include <utility>
 #include <cfloat>
-#include "opencv2/core/cvdef.h"
+
 #include "opencv2/core/cvstd.hpp"
+
 namespace cv {
 namespace face {
 //! @addtogroup face
 //! @{
 /** @brief Abstract base class for all strategies of prediction result handling
 */
-class CV_EXPORTS_W PredictCollector {
-protected:
-    double _threshhold;
-    int _size;
-    int _state;
+class CV_EXPORTS_W PredictCollector
+{
 public:
-    /** @brief creates new predict collector with given threshhold */
-    PredictCollector(double threshhold = DBL_MAX) :_threshhold(threshhold) {};
-    CV_WRAP virtual ~PredictCollector() {}
-    /** @brief called once at start of recognition
+    virtual ~PredictCollector() {}
+
+    /** @brief Interface method called by face recognizer before results processing
     @param size total size of prediction evaluation that recognizer could perform
-    @param state user defined send-to-back optional value to allow multi-thread, multi-session or aggregation scenarios
     */
-    CV_WRAP virtual void init(const int size, const int state = 0);
-    /** @brief called with every recognition result
+    virtual void init(size_t size) { (void)size; }
+
+    /** @brief Interface method called by face recognizer for each result
     @param label current prediction label
     @param dist current prediction distance (confidence)
-    @param state user defined send-to-back optional value to allow multi-thread, multi-session or aggregation scenarios
-    @return true if recognizer should proceed prediction , false - if recognizer should terminate prediction
     */
-    CV_WRAP virtual bool emit(const int label, const double dist, const int state = 0); //not abstract while Python generation require non-abstract class
+    virtual bool collect(int label, double dist) = 0;
 };
 
-/** @brief default predict collector that trace minimal distance with treshhold checking (that is default behavior for most predict logic)
+/** @brief Default predict collector
+
+Trace minimal distance with treshhold checking (that is default behavior for most predict logic)
 */
-class CV_EXPORTS_W MinDistancePredictCollector : public PredictCollector {
-private:
-    int _label;
-    double _dist;
+class CV_EXPORTS_W StandardCollector : public PredictCollector
+{
 public:
-    /** @brief creates new MinDistancePredictCollector with given threshhold */
-    CV_WRAP MinDistancePredictCollector(double threshhold = DBL_MAX) : PredictCollector(threshhold) {
-        _label = 0;
-        _dist = DBL_MAX;
+    struct PredictResult
+    {
+        int label;
+        double distance;
+        PredictResult(int label_ = -1, double distance_ = DBL_MAX) : label(label_), distance(distance_) {}
     };
-    CV_WRAP bool emit(const int label, const double dist, const int state = 0);
-    /** @brief result label, 0 if not found */
-    CV_WRAP int getLabel() const;
-    /** @brief result distance (confidence) DBL_MAX if not found */
-    CV_WRAP double getDist() const;
-    /** @brief factory method to create cv-pointers to MinDistancePredictCollector */
-    CV_WRAP static Ptr<MinDistancePredictCollector> create(double threshold = DBL_MAX);
+protected:
+    double threshold;
+    PredictResult minRes;
+    std::vector<PredictResult> data;
+public:
+    /** @brief Constructor
+    @param threshold_ set threshold
+    */
+    StandardCollector(double threshold_ = DBL_MAX);
+    /** @brief overloaded interface method */
+    void init(size_t size);
+    /** @brief overloaded interface method */
+    bool collect(int label, double dist);
+    /** @brief Returns label with minimal distance */
+    CV_WRAP int getMinLabel() const;
+    /** @brief Returns minimal distance value */
+    CV_WRAP double getMinDist() const;
+    /** @brief Return results as vector
+    @param sorted If set, results will be sorted by distance
+    Each values is a pair of label and distance.
+    */
+    CV_WRAP std::vector< std::pair<int, double> > getResults(bool sorted = false) const;
+    /** @brief Return results as map
+    Labels are keys, values are minimal distances
+    */
+    std::map<int, double> getResultsMap() const;
+    /** @brief Static constructor
+    @param threshold set threshold
+    */
+    CV_WRAP static Ptr<StandardCollector> create(double threshold = DBL_MAX);
 };
+
 //! @}
 }
 }
+
 #endif

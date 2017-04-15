@@ -39,9 +39,10 @@
 //
 //M*/
 
-#if defined(ENABLE_TORCH_IMPORTER) && ENABLE_TORCH_IMPORTER
-#if defined(ENABLE_TORCH_TESTS) && ENABLE_TORCH_TESTS
+#ifdef ENABLE_TORCH_IMPORTER
+
 #include "test_precomp.hpp"
+#include "npy_blob.hpp"
 
 namespace cvtest
 {
@@ -52,9 +53,13 @@ using namespace cv;
 using namespace cv::dnn;
 
 template<typename TStr>
-static std::string _tf(TStr filename)
+static std::string _tf(TStr filename, bool inTorchDir = true)
 {
-    return (getOpenCVExtraDir() + "/dnn/torch/") + filename;
+    String path = getOpenCVExtraDir() + "/dnn/";
+    if (inTorchDir)
+        path += "torch/";
+    path += filename;
+    return path;
 }
 
 TEST(Torch_Importer, simple_read)
@@ -67,7 +72,8 @@ TEST(Torch_Importer, simple_read)
     importer->populateNet(net);
 }
 
-static void runTorchNet(String prefix, String outLayerName, bool isBinary)
+static void runTorchNet(String prefix, String outLayerName = "",
+                        bool check2ndBlob = false, bool isBinary = false)
 {
     String suffix = (isBinary) ? ".dat" : ".txt";
 
@@ -82,47 +88,99 @@ static void runTorchNet(String prefix, String outLayerName, bool isBinary)
 
     net.setBlob(".0", inp);
     net.forward();
+    if (outLayerName.empty())
+        outLayerName = net.getLayerNames().back();
     Blob out = net.getBlob(outLayerName);
 
     normAssert(outRef, out);
+
+    if (check2ndBlob)
+    {
+        Blob out2 = net.getBlob(outLayerName + ".1");
+        Blob ref2 = readTorchBlob(_tf(prefix + "_output_2" + suffix), isBinary);
+        normAssert(out2, ref2);
+    }
 }
 
 TEST(Torch_Importer, run_convolution)
 {
-    runTorchNet("net_conv", "l1_Convolution", false);
+    runTorchNet("net_conv");
 }
 
 TEST(Torch_Importer, run_pool_max)
 {
-    runTorchNet("net_pool_max", "l1_Pooling", false);
+    runTorchNet("net_pool_max", "", true);
 }
 
 TEST(Torch_Importer, run_pool_ave)
 {
-    runTorchNet("net_pool_ave", "l1_Pooling", false);
+    runTorchNet("net_pool_ave");
 }
 
 TEST(Torch_Importer, run_reshape)
 {
-    runTorchNet("net_reshape", "l1_Reshape", false);
-    runTorchNet("net_reshape_batch", "l1_Reshape", false);
+    runTorchNet("net_reshape");
+    runTorchNet("net_reshape_batch");
 }
 
 TEST(Torch_Importer, run_linear)
 {
-    runTorchNet("net_linear_2d", "l1_InnerProduct", false);
+    runTorchNet("net_linear_2d");
 }
 
 TEST(Torch_Importer, run_paralel)
 {
-    runTorchNet("net_parallel", "l2_torchMerge", false);
+    runTorchNet("net_parallel", "l2_torchMerge");
 }
 
 TEST(Torch_Importer, run_concat)
 {
-    runTorchNet("net_concat", "l2_torchMerge", false);
+    runTorchNet("net_concat", "l2_torchMerge");
+}
+
+TEST(Torch_Importer, run_deconv)
+{
+    runTorchNet("net_deconv");
+}
+
+TEST(Torch_Importer, run_batch_norm)
+{
+    runTorchNet("net_batch_norm");
+}
+
+TEST(Torch_Importer, net_prelu)
+{
+    runTorchNet("net_prelu");
+}
+
+TEST(Torch_Importer, net_cadd_table)
+{
+    runTorchNet("net_cadd_table");
+}
+
+TEST(Torch_Importer, ENet_accuracy)
+{
+    Net net;
+    {
+        const string model = findDataFile("dnn/Enet-model-best.net", false);
+        Ptr<Importer> importer = createTorchImporter(model, true);
+        ASSERT_TRUE(importer != NULL);
+        importer->populateNet(net);
+    }
+
+    Mat sample = imread(_tf("street.png", false));
+    cv::cvtColor(sample, sample, cv::COLOR_BGR2RGB);
+    sample.convertTo(sample, CV_32F, 1/255.0);
+    dnn::Blob inputBlob = dnn::Blob::fromImages(sample);
+
+    net.setBlob("", inputBlob);
+    net.forward();
+    dnn::Blob out = net.getBlob(net.getLayerNames().back());
+
+    Blob ref = blobFromNPY(_tf("torch_enet_prob.npy", false));
+    normAssert(ref, out);
 }
 
 }
-#endif
+
 #endif

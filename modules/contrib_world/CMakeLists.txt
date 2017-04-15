@@ -5,18 +5,26 @@ set(BUILD_opencv_contrib_world_INIT OFF) # disabled by default
 
 # add new submodules to this list
 set(OPENCV_MODULE_CHILDREN
+  aruco
   bgsegm
   bioinspired
   ccalib
   cvv
   datasets
+  dnn
+  dpm
   face
-  latentsvm
+  fuzzy
+  hdf
   line_descriptor
   optflow
+  plot
   reg
   rgbd
   saliency
+  sfm
+  stereo
+  structured_light
   surface_matching
   text
   tracking

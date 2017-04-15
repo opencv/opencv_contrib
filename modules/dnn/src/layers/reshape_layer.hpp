@@ -42,30 +42,29 @@
 #ifndef __OPENCV_DNN_LAYERS_RESHAPE_LAYER_HPP__
 #define __OPENCV_DNN_LAYERS_RESHAPE_LAYER_HPP__
 #include "../precomp.hpp"
+#include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
 {
 namespace dnn
 {
 
-class ReshapeLayer : public Layer
+class ReshapeLayerImpl : public ReshapeLayer
 {
+    std::vector<BlobShape> outShapes;
+    bool enableReordering;
+
 public:
-    ReshapeLayer(LayerParams &params);
+    ReshapeLayerImpl(const BlobShape &newShape_, Range applyingRange_, bool enableReordering_);
 
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
-    void forward(std::vector<Blob*>&, std::vector<Blob>&) {}
-
-protected:
-    BlobShape shapeDesc;
-    int inAxis, inNumAxes, autoAxisIdx;
-
-    void computeOutputShape(int startAxis, int endAxis, BlobShape &inpShape, BlobShape &outShape);
+    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 };
 
 Ptr<Layer> createFlattenLayer(LayerParams&);
 
 }
 }
+
 #endif

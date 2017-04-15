@@ -44,21 +44,22 @@ namespace reg {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MapperGradSimilar::MapperGradSimilar(void)
+MapperGradSimilar::MapperGradSimilar()
 {
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MapperGradSimilar::~MapperGradSimilar(void)
+MapperGradSimilar::~MapperGradSimilar()
 {
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void MapperGradSimilar::calculate(
-    const cv::Mat& img1, const cv::Mat& image2, cv::Ptr<Map>& res) const
+cv::Ptr<Map> MapperGradSimilar::calculate(
+    InputArray _img1, InputArray image2, cv::Ptr<Map> init) const
 {
+    Mat img1 = _img1.getMat();
     Mat gradx, grady, imgDiff;
     Mat img2;
 
@@ -66,11 +67,11 @@ void MapperGradSimilar::calculate(
     CV_DbgAssert(img1.channels() == image2.channels());
     CV_DbgAssert(img1.channels() == 1 || img1.channels() == 3);
 
-    if(!res.empty()) {
+    if(!init.empty()) {
         // We have initial values for the registration: we move img2 to that initial reference
-        res->inverseWarp(image2, img2);
+        init->inverseWarp(image2, img2);
     } else {
-        img2 = image2;
+        img2 = image2.getMat();
     }
 
     // Get gradient in all channels
@@ -126,16 +127,19 @@ void MapperGradSimilar::calculate(
 
     Matx<double, 2, 2> linTr(k(0) + 1., k(1), -k(1), k(0) + 1.);
     Vec<double, 2> shift(k(2), k(3));
-    if(res.empty()) {
-        res = Ptr<Map>(new MapAffine(linTr, shift));
+    if(init.empty()) {
+        return Ptr<Map>(new MapAffine(linTr, shift));
     } else {
-        MapAffine newTr(linTr, shift);
-        res->compose(newTr);
+        Ptr<MapAffine> newTr(new MapAffine(linTr, shift));
+        MapAffine* initPtr = dynamic_cast<MapAffine*>(init.get());
+        Ptr<MapAffine> oldTr(new MapAffine(initPtr->getLinTr(), initPtr->getShift()));
+        oldTr->compose(newTr);
+        return oldTr;
    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-cv::Ptr<Map> MapperGradSimilar::getMap(void) const
+cv::Ptr<Map> MapperGradSimilar::getMap() const
 {
     return cv::Ptr<Map>(new MapAffine());
 }

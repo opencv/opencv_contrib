@@ -48,7 +48,7 @@ const char* keys  =
         "{@outfile |<none> | Output image }"
         "{w        |       | Number of markers in X direction }"
         "{h        |       | Number of markers in Y direction }"
-        "{l        |       | Marker side lenght (in pixels) }"
+        "{l        |       | Marker side length (in pixels) }"
         "{s        |       | Separation between two consecutive markers in the grid (in pixels)}"
         "{d        |       | dictionary: DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2,"
         "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "
@@ -93,15 +93,15 @@ int main(int argc, char *argv[]) {
     imageSize.height =
         markersY * (markerLength + markerSeparation) - markerSeparation + 2 * margins;
 
-    aruco::Dictionary dictionary =
+    Ptr<aruco::Dictionary> dictionary =
         aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
 
-    aruco::GridBoard board = aruco::GridBoard::create(markersX, markersY, float(markerLength),
+    Ptr<aruco::GridBoard> board = aruco::GridBoard::create(markersX, markersY, float(markerLength),
                                                       float(markerSeparation), dictionary);
 
     // show created board
     Mat boardImage;
-    board.draw(imageSize, boardImage, margins, borderBits);
+    board->draw(imageSize, boardImage, margins, borderBits);
 
     if(showImage) {
         imshow("board", boardImage);

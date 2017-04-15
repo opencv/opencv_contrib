@@ -39,14 +39,15 @@
  //
  //M*/
 
-#include <opencv2/line_descriptor.hpp>
+#include <iostream>
 
+#ifdef HAVE_OPENCV_FEATURES2D
+
+#include <opencv2/line_descriptor.hpp>
 #include "opencv2/core/utility.hpp"
 #include <opencv2/imgproc.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/highgui.hpp>
-
-#include <iostream>
 
 using namespace cv;
 using namespace cv::line_descriptor;
@@ -121,3 +122,13 @@ int main( int argc, char** argv )
   imshow( "Lines", output );
   waitKey();
 }
+
+#else
+
+int main()
+{
+    std::cerr << "OpenCV was built without features2d module" << std::endl;
+    return 0;
+}
+
+#endif // HAVE_OPENCV_FEATURES2D

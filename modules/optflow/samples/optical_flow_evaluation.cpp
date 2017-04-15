@@ -1,7 +1,9 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/video.hpp"
 #include "opencv2/optflow.hpp"
+#include "opencv2/core/ocl.hpp"
 #include <fstream>
+#include <limits>
 
 using namespace std;
 using namespace cv;
@@ -10,11 +12,13 @@ using namespace optflow;
 const String keys = "{help h usage ? |      | print this message   }"
         "{@image1        |      | image1               }"
         "{@image2        |      | image2               }"
-        "{@algorithm     |      | [farneback, simpleflow, tvl1, deepflow or sparsetodenseflow] }"
+        "{@algorithm     |      | [farneback, simpleflow, tvl1, deepflow, sparsetodenseflow, pcaflow, DISflow_ultrafast, DISflow_fast, DISflow_medium] }"
         "{@groundtruth   |      | path to the .flo file  (optional), Middlebury format }"
         "{m measure      |endpoint| error measure - [endpoint or angular] }"
         "{r region       |all   | region to compute stats about [all, discontinuities, untextured] }"
-        "{d display      |      | display additional info images (pauses program execution) }";
+        "{d display      |      | display additional info images (pauses program execution) }"
+        "{g gpu          |      | use OpenCL}"
+        "{prior          |      | path to a prior file for PCAFlow}";
 
 inline bool isFlowCorrect( const Point2f u )
 {
@@ -40,7 +44,7 @@ static Mat endpointError( const Mat_<Point2f>& flow1, const Mat_<Point2f>& flow2
                 const Point2f diff = u1 - u2;
                 result.at<float>(i, j) = sqrt((float)diff.ddot(diff)); //distance
             } else
-                result.at<float>(i, j) = NAN;
+                result.at<float>(i, j) = std::numeric_limits<float>::quiet_NaN();
         }
     }
     return result;
@@ -61,7 +65,7 @@ static Mat angularError( const Mat_<Point2f>& flow1, const Mat_<Point2f>& flow2 
             if ( isFlowCorrect(u1) && isFlowCorrect(u2) )
                 result.at<float>(i, j) = acos((float)(u1.ddot(u2) / norm(u1) * norm(u2)));
             else
-                result.at<float>(i, j) = NAN;
+                result.at<float>(i, j) = std::numeric_limits<float>::quiet_NaN();
         }
     }
     return result;
@@ -199,12 +203,16 @@ int main( int argc, char** argv )
     String error_measure = parser.get<String>("measure");
     String region = parser.get<String>("region");
     bool display_images = parser.has("display");
+    const bool useGpu = parser.has("gpu");
 
     if ( !parser.check() )
     {
         parser.printErrors();
         return 0;
     }
+
+    cv::ocl::setUseOpenCL(useGpu);
+    printf("OpenCL Enabled: %u\n", useGpu && cv::ocl::haveOpenCL());
 
     Mat i1, i2;
     Mat_<Point2f> flow, ground_truth;
@@ -228,7 +236,7 @@ int main( int argc, char** argv )
     if ( i2.depth() != CV_8U )
         i2.convertTo(i2, CV_8U);
 
-    if ( (method == "farneback" || method == "tvl1" || method == "deepflow") && i1.channels() == 3 )
+    if ( (method == "farneback" || method == "tvl1" || method == "deepflow" || method == "DISflow_ultrafast" || method == "DISflow_fast" || method == "DISflow_medium") && i1.channels() == 3 )
     {   // 1-channel images are expected
         cvtColor(i1, i1, COLOR_BGR2GRAY);
         cvtColor(i2, i2, COLOR_BGR2GRAY);
@@ -251,6 +259,21 @@ int main( int argc, char** argv )
         algorithm = createOptFlow_DeepFlow();
     else if ( method == "sparsetodenseflow" )
         algorithm = createOptFlow_SparseToDense();
+    else if ( method == "pcaflow" ) {
+        if ( parser.has("prior") ) {
+            String prior = parser.get<String>("prior");
+            printf("Using prior file: %s\n", prior.c_str());
+            algorithm = makePtr<OpticalFlowPCAFlow>(makePtr<PCAPrior>(prior.c_str()));
+        }
+        else
+            algorithm = createOptFlow_PCAFlow();
+    }
+    else if ( method == "DISflow_ultrafast" )
+        algorithm = createOptFlow_DIS(DISOpticalFlow::PRESET_ULTRAFAST);
+    else if (method == "DISflow_fast")
+        algorithm = createOptFlow_DIS(DISOpticalFlow::PRESET_FAST);
+    else if (method == "DISflow_medium")
+        algorithm = createOptFlow_DIS(DISOpticalFlow::PRESET_MEDIUM);
     else
     {
         printf("Wrong method!\n");
@@ -260,7 +283,12 @@ int main( int argc, char** argv )
 
     double startTick, time;
     startTick = (double) getTickCount(); // measure time
-    algorithm->calc(i1, i2, flow);
+
+    if (useGpu)
+        algorithm->calc(i1, i2, flow.getUMat(ACCESS_RW));
+    else
+        algorithm->calc(i1, i2, flow);
+
     time = ((double) getTickCount() - startTick) / getTickFrequency();
     printf("\nTime [s]: %.3f\n", time);
     if(display_images)

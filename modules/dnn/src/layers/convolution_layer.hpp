@@ -42,51 +42,75 @@
 #ifndef __OPENCV_DNN_LAYERS_CONVOLUTION_LAYER_HPP__
 #define __OPENCV_DNN_LAYERS_CONVOLUTION_LAYER_HPP__
 #include "../precomp.hpp"
+#include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
 {
 namespace dnn
 {
-    //TODO: simultaneously convolution and bias addition for cache optimization
-    class ConvolutionLayer : public Layer
-    {
-    protected:
-        bool bias;
-        int numOutput, group;
-        int padH, padW;
-        int kerH, kerW;
-        int strideH, strideW;
 
-        int inpH, inpW, inpCn;
-        int outH, outW, outCn;
-        int topH, topW, topCn; //switched between inp/out on deconv/conv
-        int inpGroupCn, outGroupCn;
-        int ksize;
+class BaseConvolutionLayerImpl : public ConvolutionLayer
+{
+public:
+    BaseConvolutionLayerImpl();
+    virtual void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
-        bool useOpenCL;
-        Mat colMat, biasOnesMat;
+protected:
+    void init();
+    virtual void computeInpOutShape(const Blob &inpBlob) = 0;
+    bool is1x1() const;
 
-        inline bool is1x1() const;
-        virtual void computeInpOutShape(const Blob &inpBlob);
-        void im2col(Blob &inpBlob, int imNum, int cnGroup);
+    int numOutput, group;
+    int inpH, inpW, inpCn;
+    int outH, outW, outCn;
+    int inpGroupCn, outGroupCn;
+    int ksize;
+    BlobShape colRowBlobShape;
 
-    public:
-        ConvolutionLayer() {}
-        ConvolutionLayer(LayerParams &params);
-        void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    };
+    bool bias;
+    bool tryUseOpenCL, useOpenCL;
 
-    class DeConvolutionLayer : public ConvolutionLayer
-    {
-    protected:
-        void computeInpOutShape(const Blob &inpBlob);
-        void col2im(Mat &dstMat);
+    Blob colRowBlob, biasOnesBlob;
 
-    public:
-        DeConvolutionLayer(LayerParams &params);
-        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    };
+};
+
+//TODO: simultaneously convolution and bias addition for cache optimization
+class ConvolutionLayerImpl : public BaseConvolutionLayerImpl
+{
+public:
+    virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
+protected:
+    virtual void computeInpOutShape(const Blob &inpBlob);
+
+    template<typename XMat>
+    void forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void im2col(const  Mat &srcImg,  Mat &dstCol);
+    void im2row(const  Mat &srcImg,  Mat &dstRow);
+    void im2col(const UMat &srcImg, UMat &dstCol);
+    void im2row(const UMat &srcImg, UMat &dstCol);
+};
+
+class DeConvolutionLayerImpl : public BaseConvolutionLayerImpl
+{
+public:
+    virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
+protected:
+
+    virtual void computeInpOutShape(const Blob &inpBlob);
+
+    template<typename XMat>
+    void forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void col2im(const  Mat &colMat, Mat  &dstImg);
+    void col2im(const UMat &colMat, UMat &dstImg);
+};
+
+//Importers
+Ptr<Layer> createConvolutionLayerFromCaffe(LayerParams &params);
+Ptr<Layer> createDeconvolutionLayerFromCaffe(LayerParams &params);
+
 }
 }
+
 #endif

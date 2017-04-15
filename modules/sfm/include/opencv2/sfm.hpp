@@ -38,6 +38,7 @@
 
 #include <opencv2/sfm/conditioning.hpp>
 #include <opencv2/sfm/fundamental.hpp>
+#include <opencv2/sfm/io.hpp>
 #include <opencv2/sfm/numeric.hpp>
 #include <opencv2/sfm/projection.hpp>
 #include <opencv2/sfm/triangulation.hpp>
@@ -77,6 +78,7 @@ This module has been originally developed as a project for Google Summer of Code
   @{
     @defgroup conditioning Conditioning
     @defgroup fundamental Fundamental
+    @defgroup io Input/Output
     @defgroup numeric Numeric
     @defgroup projection Projection
     @defgroup robust Robust Estimation

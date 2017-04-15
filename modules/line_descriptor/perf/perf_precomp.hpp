@@ -53,7 +53,6 @@
 
 #include "opencv2/ts.hpp"
 #include "opencv2/highgui.hpp"
-#include "opencv2/features2d.hpp"
 #include "opencv2/line_descriptor.hpp"
 
 #ifdef GTEST_CREATE_SHARED_LIBRARY

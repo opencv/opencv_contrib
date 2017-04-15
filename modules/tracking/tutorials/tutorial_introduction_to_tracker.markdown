@@ -28,8 +28,8 @@ Explanation
     as shown in help. In the help, it means that the image files are numbered with 4 digits
     (e.g. the file naming will be 0001.jpg, 0002.jpg, and so on).
 
-    You can find video samples in Itseez/opencv_extra/testdata/cv/tracking
-    <https://github.com/Itseez/opencv_extra/tree/master/testdata/cv/tracking>
+    You can find video samples in opencv_extra/testdata/cv/tracking
+    <https://github.com/opencv/opencv_extra/tree/master/testdata/cv/tracking>
 
 -#  **Declares the required variables**
 
@@ -59,7 +59,6 @@ Explanation
 
     Using this function, you can select the bounding box of the tracked object using a GUI.
     With default parameters, the selection is started from the center of the box and a middle cross will be shown.
-    See @ref cv::selectROI for more detailed information.
 
 -#  **Initializing the tracker object**
 

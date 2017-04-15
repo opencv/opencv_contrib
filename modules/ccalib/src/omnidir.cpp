@@ -1058,7 +1058,7 @@ void cv::omnidir::internal::compose_motion(InputArray _om1, InputArray _T1, Inpu
     dT3dom1 = Mat::zeros(3, 3, CV_64FC1);
 }
 
-double cv::omnidir::calibrate(InputArray patternPoints, InputArray imagePoints, Size size,
+double cv::omnidir::calibrate(InputArrayOfArrays patternPoints, InputArrayOfArrays imagePoints, Size size,
     InputOutputArray K, InputOutputArray xi, InputOutputArray D, OutputArrayOfArrays omAll, OutputArrayOfArrays tAll,
     int flags, TermCriteria criteria, OutputArray idx)
 {
@@ -1125,7 +1125,7 @@ double cv::omnidir::calibrate(InputArray patternPoints, InputArray imagePoints, 
 		double epsilon = 0.01 * std::pow(0.9, (double)iter/10);
         cv::omnidir::internal::computeJacobian(_patternPoints, _imagePoints, currentParam, JTJ_inv, JTError, flags, epsilon);
 
-        // Gauss¨CNewton
+        // Gauss - Newton
         Mat G = alpha_smooth2*JTJ_inv * JTError;
 
         omnidir::internal::fillFixed(G, flags, n);
@@ -1278,7 +1278,7 @@ double cv::omnidir::stereoCalibrate(InputOutputArrayOfArrays objectPoints, Input
         cv::omnidir::internal::computeJacobianStereo(_objectPointsFilt, _imagePoints1Filt, _imagePoints2Filt, currentParam,
 			JTJ_inv, JTError, flags, epsilon);
 
-        // Gauss¨CNewton
+        // Gauss - Newton
         Mat G = alpha_smooth2*JTJ_inv * JTError;
 
         omnidir::internal::fillFixedStereo(G, flags, n);
@@ -1306,8 +1306,8 @@ double cv::omnidir::stereoCalibrate(InputOutputArrayOfArrays objectPoints, Input
     }
     if (om.empty())
     {
-        om.create(1, 3, CV_64F);
-        T.create(1, 3, CV_64F);
+        om.create(3, 1, CV_64F);
+        T.create(3, 1, CV_64F);
     }
     if (omL.empty())
     {

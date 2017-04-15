@@ -41,6 +41,8 @@
 
 #include "tldDetector.hpp"
 
+#include <opencv2/core/utility.hpp>
+
 namespace cv
 {
 	namespace tld
@@ -63,7 +65,7 @@ namespace cv
 		}
 
 		// Calculate Relative similarity of the patch (NN-Model)
-		double TLDDetector::Sr(const Mat_<uchar>& patch)
+		double TLDDetector::Sr(const Mat_<uchar>& patch) const
 		{
 			double splus = 0.0, sminus = 0.0;
 			Mat_<uchar> modelSample(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
@@ -189,7 +191,7 @@ namespace cv
 #endif
 
 		// Calculate Conservative similarity of the patch (NN-Model)
-		double TLDDetector::Sc(const Mat_<uchar>& patch)
+		double TLDDetector::Sc(const Mat_<uchar>& patch) const
 		{
 			double splus = 0.0, sminus = 0.0;
 			Mat_<uchar> modelSample(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
@@ -298,10 +300,38 @@ namespace cv
 
 		//Detection - returns most probable new target location (Max Sc)
 
+		class CalcScSrParallelLoopBody: public cv::ParallelLoopBody
+		{
+		public:
+			explicit CalcScSrParallelLoopBody (TLDDetector * detector, Size initSize):
+				detectorF (detector),
+				initSizeF (initSize)
+			{
+			}
+
+			virtual void operator () (const cv::Range & r) const
+			{
+				for (int ind = r.start; ind < r.end; ++ind)
+				{
+					resample(detectorF->resized_imgs[detectorF->ensScaleIDs[ind]],
+						Rect2d(detectorF->ensBuffer[ind], initSizeF),
+						detectorF->standardPatches[ind]);
+
+					detectorF->scValues[ind] = detectorF->Sc (detectorF->standardPatches[ind]);
+					detectorF->srValues[ind] = detectorF->Sr (detectorF->standardPatches[ind]);
+				}
+			}
+
+			TLDDetector * detectorF;
+			const Size initSizeF;
+		private:
+			CalcScSrParallelLoopBody (const CalcScSrParallelLoopBody&);
+			CalcScSrParallelLoopBody& operator= (const CalcScSrParallelLoopBody&);
+		};
+
 		bool TLDDetector::detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches, Size initSize)
 		{
 			patches.clear();
-			Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
 			Mat tmp;
 			int dx = initSize.width / 10, dy = initSize.height / 10;
 			Size2d size = img.size();
@@ -310,9 +340,13 @@ namespace cv
 			double maxSc = -5.0;
 			Rect2d maxScRect;
 			int scaleID;
-			std::vector <Mat> resized_imgs, blurred_imgs;
-			std::vector <Point> varBuffer, ensBuffer;
-			std::vector <int> varScaleIDs, ensScaleIDs;
+
+			resized_imgs.clear ();
+			blurred_imgs.clear ();
+			varBuffer.clear ();
+			ensBuffer.clear ();
+			varScaleIDs.clear ();
+			ensScaleIDs.clear ();
 
 			//Detection part
 			//Generate windows and filter by variance
@@ -353,16 +387,34 @@ namespace cv
 				ensScaleIDs.push_back(varScaleIDs[i]);
 			}
 
+			//Batch preparation
+			srValues.resize (ensBuffer.size());
+			scValues.resize (ensBuffer.size());
+
+			//Carefully resize standard patches with reference-counted Mat members
+			const int oldPatchesSize = (int)standardPatches.size();
+			standardPatches.resize (ensBuffer.size());
+			if ((int)ensBuffer.size() > oldPatchesSize)
+			{
+				Mat_<uchar> standardPatch(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
+				for (int i = oldPatchesSize; i < (int)ensBuffer.size(); ++i)
+				{
+					standardPatches[i] = standardPatch.clone();
+				}
+			}
+
+			//Batch calculation
+			cv::parallel_for_ (cv::Range (0, (int)ensBuffer.size ()), CalcScSrParallelLoopBody (this, initSize));
+
 			//NN classification
 			for (int i = 0; i < (int)ensBuffer.size(); i++)
 			{
 				LabeledPatch labPatch;
 				double curScale = pow(SCALE_STEP, ensScaleIDs[i]);
 				labPatch.rect = Rect2d(ensBuffer[i].x*curScale, ensBuffer[i].y*curScale, initSize.width * curScale, initSize.height * curScale);
-				resample(resized_imgs[ensScaleIDs[i]], Rect2d(ensBuffer[i], initSize), standardPatch);
 
-				double srValue, scValue;
-				srValue = Sr(standardPatch);
+				const double srValue = srValues[i];
+				const double scValue = scValues[i];
 
 				////To fix: Check the paper, probably this cause wrong learning
 				//
@@ -380,7 +432,7 @@ namespace cv
 				{
 					npos++;
 				}
-				scValue = Sc(standardPatch);
+
 				if (scValue > maxSc)
 				{
 					maxSc = scValue;

@@ -49,15 +49,15 @@ namespace reg {
 /*!
  * Gradient mapper for a projective transformation
  */
-class CV_EXPORTS MapperGradProj: public Mapper
+class CV_EXPORTS_W MapperGradProj: public Mapper
 {
 public:
-    MapperGradProj(void);
-    ~MapperGradProj(void);
+    CV_WRAP MapperGradProj();
+    ~MapperGradProj();
 
-    virtual void calculate(const cv::Mat& img1, const cv::Mat& img2, cv::Ptr<Map>& res) const;
+    CV_WRAP virtual cv::Ptr<Map> calculate(InputArray img1, InputArray img2, cv::Ptr<Map> init = cv::Ptr<Map>()) const;
 
-    cv::Ptr<Map> getMap(void) const;
+    CV_WRAP cv::Ptr<Map> getMap() const;
 };
 
 //! @}

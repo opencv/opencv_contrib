@@ -155,12 +155,17 @@ bool UpgradeV1LayerParameter(const V1LayerParameter& v1_layer_param,
 
 const char* UpgradeV1LayerType(const V1LayerParameter_LayerType type);
 
+bool NetNeedsBatchNormUpgrade(const NetParameter& net_param);
+
+void UpgradeNetBatchNorm(NetParameter* net_param);
+
 // Check for deprecations and upgrade the NetParameter as needed.
 bool UpgradeNetAsNeeded(const string& param_file, NetParameter* param);
 
 
 bool NetNeedsUpgrade(const NetParameter& net_param) {
-  return NetNeedsV0ToV1Upgrade(net_param) || NetNeedsV1ToV2Upgrade(net_param);
+  return NetNeedsV0ToV1Upgrade(net_param) || NetNeedsV1ToV2Upgrade(net_param) ||
+          NetNeedsBatchNormUpgrade(net_param);
 }
 
 bool NetNeedsV0ToV1Upgrade(const NetParameter& net_param) {
@@ -340,7 +345,7 @@ bool UpgradeV0LayerParameter(const V1LayerParameter& v0_layer_connection,
     }
     if (v0_layer_param.has_pad()) {
       if (type == "conv") {
-        layer_param->mutable_convolution_param()->set_pad(v0_layer_param.pad());
+        layer_param->mutable_convolution_param()->add_pad(v0_layer_param.pad());
       } else if (type == "pool") {
         layer_param->mutable_pooling_param()->set_pad(v0_layer_param.pad());
       } else {
@@ -350,7 +355,7 @@ bool UpgradeV0LayerParameter(const V1LayerParameter& v0_layer_connection,
     }
     if (v0_layer_param.has_kernelsize()) {
       if (type == "conv") {
-        layer_param->mutable_convolution_param()->set_kernel_size(
+        layer_param->mutable_convolution_param()->add_kernel_size(
             v0_layer_param.kernelsize());
       } else if (type == "pool") {
         layer_param->mutable_pooling_param()->set_kernel_size(
@@ -371,7 +376,7 @@ bool UpgradeV0LayerParameter(const V1LayerParameter& v0_layer_connection,
     }
     if (v0_layer_param.has_stride()) {
       if (type == "conv") {
-        layer_param->mutable_convolution_param()->set_stride(
+        layer_param->mutable_convolution_param()->add_stride(
             v0_layer_param.stride());
       } else if (type == "pool") {
         layer_param->mutable_pooling_param()->set_stride(
@@ -774,6 +779,14 @@ bool UpgradeNetAsNeeded(const string& param_file, NetParameter* param) {
                 << "V1LayerParameter";
     }
   }
+  // NetParameter uses old style batch norm layers; try to upgrade it.
+  if (NetNeedsBatchNormUpgrade(*param)) {
+    LOG(INFO) << "Attempting to upgrade batch norm layers using deprecated "
+              << "params: " << param_file;
+    UpgradeNetBatchNorm(param);
+    LOG(INFO) << "Successfully upgraded batch norm layers using deprecated "
+              << "params.";
+  }
   return success;
 }
 
@@ -795,6 +808,29 @@ bool UpgradeV1Net(const NetParameter& v1_net_param, NetParameter* net_param) {
     }
   }
   return is_fully_compatible;
+}
+
+bool NetNeedsBatchNormUpgrade(const NetParameter& net_param) {
+  for (int i = 0; i < net_param.layer_size(); ++i) {
+    // Check if BatchNorm layers declare three parameters, as required by
+    // the previous BatchNorm layer definition.
+    if (net_param.layer(i).type() == "BatchNorm"
+        && net_param.layer(i).param_size() == 3) {
+      return true;
+    }
+  }
+  return false;
+}
+
+void UpgradeNetBatchNorm(NetParameter* net_param) {
+  for (int i = 0; i < net_param->layer_size(); ++i) {
+    // Check if BatchNorm layers declare three parameters, as required by
+    // the previous BatchNorm layer definition.
+    if (net_param->layer(i).type() == "BatchNorm"
+        && net_param->layer(i).param_size() == 3) {
+      net_param->mutable_layer(i)->clear_param();
+    }
+  }
 }
 
 bool UpgradeV1LayerParameter(const V1LayerParameter& v1_layer_param,

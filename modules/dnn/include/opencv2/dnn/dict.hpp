@@ -59,10 +59,12 @@ namespace dnn
 struct DictValue
 {
     DictValue(const DictValue &r);
-    DictValue(int p = 0)        : type(Param::INT), pi(new AutoBuffer<int64,1>) { (*pi)[0] = p; }       //!< Constructs integer scalar
+    DictValue(int64 i = 0)      : type(Param::INT), pi(new AutoBuffer<int64,1>) { (*pi)[0] = i; }       //!< Constructs integer scalar
+    DictValue(int i)            : type(Param::INT), pi(new AutoBuffer<int64,1>) { (*pi)[0] = i; }       //!< Constructs integer scalar
     DictValue(unsigned p)       : type(Param::INT), pi(new AutoBuffer<int64,1>) { (*pi)[0] = p; }       //!< Constructs integer scalar
     DictValue(double p)         : type(Param::REAL), pd(new AutoBuffer<double,1>) { (*pd)[0] = p; }     //!< Constructs floating point scalar
-    DictValue(const String &p)  : type(Param::STRING), ps(new AutoBuffer<String,1>) { (*ps)[0] = p; }   //!< Constructs string scalar
+    DictValue(const String &s)  : type(Param::STRING), ps(new AutoBuffer<String,1>) { (*ps)[0] = s; }   //!< Constructs string scalar
+    DictValue(const char *s)    : type(Param::STRING), ps(new AutoBuffer<String,1>) { (*ps)[0] = s; }   //!< @overload
 
     template<typename TypeIter>
     static DictValue arrayInt(TypeIter begin, int size);    //!< Constructs integer array
@@ -95,10 +97,10 @@ private:
         AutoBuffer<int64, 1> *pi;
         AutoBuffer<double, 1> *pd;
         AutoBuffer<String, 1> *ps;
-        void *p;
+        void *pv;
     };
 
-    DictValue(int _type, void *_p) : type(_type), p(_p) {}
+    DictValue(int _type, void *_p) : type(_type), pv(_p) {}
     void release();
 };
 
@@ -111,7 +113,7 @@ class CV_EXPORTS Dict
 public:
 
     //! Checks a presence of the @p key in the dictionary.
-    bool has(const String &key);
+    bool has(const String &key) const;
 
     //! If the @p key in the dictionary then returns pointer to its value, else returns NULL.
     DictValue *ptr(const String &key);

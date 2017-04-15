@@ -58,7 +58,7 @@ const char* about =
 const char* keys  =
         "{w        |       | Number of squares in X direction }"
         "{h        |       | Number of squares in Y direction }"
-        "{l        |       | Marker side lenght (in meters) }"
+        "{l        |       | Marker side length (in meters) }"
         "{s        |       | Separation between two consecutive markers in the grid (in meters) }"
         "{d        |       | dictionary: DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2,"
         "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "
@@ -76,30 +76,30 @@ const char* keys  =
 
 /**
  */
-static bool readDetectorParameters(string filename, aruco::DetectorParameters &params) {
+static bool readDetectorParameters(string filename, Ptr<aruco::DetectorParameters> &params) {
     FileStorage fs(filename, FileStorage::READ);
     if(!fs.isOpened())
         return false;
-    fs["adaptiveThreshWinSizeMin"] >> params.adaptiveThreshWinSizeMin;
-    fs["adaptiveThreshWinSizeMax"] >> params.adaptiveThreshWinSizeMax;
-    fs["adaptiveThreshWinSizeStep"] >> params.adaptiveThreshWinSizeStep;
-    fs["adaptiveThreshConstant"] >> params.adaptiveThreshConstant;
-    fs["minMarkerPerimeterRate"] >> params.minMarkerPerimeterRate;
-    fs["maxMarkerPerimeterRate"] >> params.maxMarkerPerimeterRate;
-    fs["polygonalApproxAccuracyRate"] >> params.polygonalApproxAccuracyRate;
-    fs["minCornerDistanceRate"] >> params.minCornerDistanceRate;
-    fs["minDistanceToBorder"] >> params.minDistanceToBorder;
-    fs["minMarkerDistanceRate"] >> params.minMarkerDistanceRate;
-    fs["doCornerRefinement"] >> params.doCornerRefinement;
-    fs["cornerRefinementWinSize"] >> params.cornerRefinementWinSize;
-    fs["cornerRefinementMaxIterations"] >> params.cornerRefinementMaxIterations;
-    fs["cornerRefinementMinAccuracy"] >> params.cornerRefinementMinAccuracy;
-    fs["markerBorderBits"] >> params.markerBorderBits;
-    fs["perspectiveRemovePixelPerCell"] >> params.perspectiveRemovePixelPerCell;
-    fs["perspectiveRemoveIgnoredMarginPerCell"] >> params.perspectiveRemoveIgnoredMarginPerCell;
-    fs["maxErroneousBitsInBorderRate"] >> params.maxErroneousBitsInBorderRate;
-    fs["minOtsuStdDev"] >> params.minOtsuStdDev;
-    fs["errorCorrectionRate"] >> params.errorCorrectionRate;
+    fs["adaptiveThreshWinSizeMin"] >> params->adaptiveThreshWinSizeMin;
+    fs["adaptiveThreshWinSizeMax"] >> params->adaptiveThreshWinSizeMax;
+    fs["adaptiveThreshWinSizeStep"] >> params->adaptiveThreshWinSizeStep;
+    fs["adaptiveThreshConstant"] >> params->adaptiveThreshConstant;
+    fs["minMarkerPerimeterRate"] >> params->minMarkerPerimeterRate;
+    fs["maxMarkerPerimeterRate"] >> params->maxMarkerPerimeterRate;
+    fs["polygonalApproxAccuracyRate"] >> params->polygonalApproxAccuracyRate;
+    fs["minCornerDistanceRate"] >> params->minCornerDistanceRate;
+    fs["minDistanceToBorder"] >> params->minDistanceToBorder;
+    fs["minMarkerDistanceRate"] >> params->minMarkerDistanceRate;
+    fs["cornerRefinementMethod"] >> params->cornerRefinementMethod;
+    fs["cornerRefinementWinSize"] >> params->cornerRefinementWinSize;
+    fs["cornerRefinementMaxIterations"] >> params->cornerRefinementMaxIterations;
+    fs["cornerRefinementMinAccuracy"] >> params->cornerRefinementMinAccuracy;
+    fs["markerBorderBits"] >> params->markerBorderBits;
+    fs["perspectiveRemovePixelPerCell"] >> params->perspectiveRemovePixelPerCell;
+    fs["perspectiveRemoveIgnoredMarginPerCell"] >> params->perspectiveRemoveIgnoredMarginPerCell;
+    fs["maxErroneousBitsInBorderRate"] >> params->maxErroneousBitsInBorderRate;
+    fs["minOtsuStdDev"] >> params->minOtsuStdDev;
+    fs["errorCorrectionRate"] >> params->errorCorrectionRate;
     return true;
 }
 
@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
     }
 
     int markersX = parser.get<int>("w");
-    int markersY = parser.get<int>("w");
+    int markersY = parser.get<int>("h");
     float markerLength = parser.get<float>("l");
     float markerSeparation = parser.get<float>("s");
     int dictionaryId = parser.get<int>("d");
@@ -173,7 +173,7 @@ int main(int argc, char *argv[]) {
     if(parser.get<bool>("zt")) calibrationFlags |= CALIB_ZERO_TANGENT_DIST;
     if(parser.get<bool>("pc")) calibrationFlags |= CALIB_FIX_PRINCIPAL_POINT;
 
-    aruco::DetectorParameters detectorParams;
+    Ptr<aruco::DetectorParameters> detectorParams = aruco::DetectorParameters::create();
     if(parser.has("dp")) {
         bool readOk = readDetectorParameters(parser.get<string>("dp"), detectorParams);
         if(!readOk) {
@@ -205,12 +205,13 @@ int main(int argc, char *argv[]) {
         waitTime = 10;
     }
 
-    aruco::Dictionary dictionary =
+    Ptr<aruco::Dictionary> dictionary =
         aruco::getPredefinedDictionary(aruco::PREDEFINED_DICTIONARY_NAME(dictionaryId));
 
     // create board object
-    aruco::GridBoard board =
-        aruco::GridBoard::create(markersX, markersY, markerLength, markerSeparation, dictionary);
+    Ptr<aruco::GridBoard> gridboard =
+            aruco::GridBoard::create(markersX, markersY, markerLength, markerSeparation, dictionary);
+    Ptr<aruco::Board> board = gridboard.staticCast<aruco::Board>();
 
     // collected frames for calibration
     vector< vector< vector< Point2f > > > allCorners;

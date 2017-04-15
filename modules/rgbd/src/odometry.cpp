@@ -49,8 +49,8 @@ namespace rgbd
 
 enum
 {
-    RGBD_ODOMETRY = 1, 
-    ICP_ODOMETRY = 2, 
+    RGBD_ODOMETRY = 1,
+    ICP_ODOMETRY = 2,
     MERGED_ODOMETRY = RGBD_ODOMETRY + ICP_ODOMETRY
 };
 
@@ -436,7 +436,7 @@ void computeProjectiveMatrix(const Mat& ksi, Mat& Rt)
 
     eigen2cv(g, Rt);
 #else
-    // TODO: check computeProjectiveMatrix when there is not eigen library, 
+    // TODO: check computeProjectiveMatrix when there is not eigen library,
     //       because it gives less accurate pose of the camera
     Rt = Mat::eye(4, 4, CV_64FC1);
 
@@ -462,7 +462,7 @@ void computeCorresps(const Mat& K, const Mat& K_inv, const Mat& Rt,
     CV_Assert(Rt.type() == CV_64FC1);
 
     Mat corresps(depth1.size(), CV_16SC2, Scalar::all(-1));
-    
+
     Rect r(0, 0, depth1.cols, depth1.rows);
     Mat Kt = Rt(Rect(3,0,1,3)).clone();
     Kt = K * Kt;
@@ -486,7 +486,7 @@ void computeCorresps(const Mat& K, const Mat& K_inv, const Mat& Rt,
             KRK_inv3_u1[u1] = (float)(KRK_inv_ptr[3] * u1);
             KRK_inv6_u1[u1] = (float)(KRK_inv_ptr[6] * u1);
         }
-        
+
         for(int v1 = 0; v1 < depth1.rows; v1++)
         {
             KRK_inv1_v1_plus_KRK_inv2[v1] = (float)(KRK_inv_ptr[1] * v1 + KRK_inv_ptr[2]);
@@ -506,16 +506,16 @@ void computeCorresps(const Mat& K, const Mat& K_inv, const Mat& Rt,
             if(mask1_row[u1])
             {
                 CV_DbgAssert(!cvIsNaN(d1));
-                float transformed_d1 = static_cast<float>(d1 * (KRK_inv6_u1[u1] + KRK_inv7_v1_plus_KRK_inv8[v1]) + 
+                float transformed_d1 = static_cast<float>(d1 * (KRK_inv6_u1[u1] + KRK_inv7_v1_plus_KRK_inv8[v1]) +
                                                           Kt_ptr[2]);
                 if(transformed_d1 > 0)
                 {
                     float transformed_d1_inv = 1.f / transformed_d1;
-                    int u0 = cvRound(transformed_d1_inv * (d1 * (KRK_inv0_u1[u1] + KRK_inv1_v1_plus_KRK_inv2[v1]) + 
+                    int u0 = cvRound(transformed_d1_inv * (d1 * (KRK_inv0_u1[u1] + KRK_inv1_v1_plus_KRK_inv2[v1]) +
                                                            Kt_ptr[0]));
-                    int v0 = cvRound(transformed_d1_inv * (d1 * (KRK_inv3_u1[u1] + KRK_inv4_v1_plus_KRK_inv5[v1]) + 
+                    int v0 = cvRound(transformed_d1_inv * (d1 * (KRK_inv3_u1[u1] + KRK_inv4_v1_plus_KRK_inv5[v1]) +
                                                            Kt_ptr[1]));
-                    
+
                     if(r.contains(Point(u0,v0)))
                     {
                         float d0 = depth0.at<float>(v0,u0);
@@ -527,7 +527,7 @@ void computeCorresps(const Mat& K, const Mat& K_inv, const Mat& Rt,
                             {
                                 int exist_u1 = c[0], exist_v1 = c[1];
 
-                                float exist_d1 = (float)(depth1.at<float>(exist_v1,exist_u1) * 
+                                float exist_d1 = (float)(depth1.at<float>(exist_v1,exist_u1) *
                                     (KRK_inv6_u1[exist_u1] + KRK_inv7_v1_plus_KRK_inv8[exist_v1]) + Kt_ptr[2]);
 
                                 if(transformed_d1 > exist_d1)
@@ -631,7 +631,7 @@ void calcICPEquationCoeffsTranslation(double* C, const Point3f& /*p0*/, const Ve
 typedef
 void (*CalcICPEquationCoeffsPtr)(double*, const Point3f&, const Vec3f&);
 
-static 
+static
 void calcRgbdLsmMatrices(const Mat& image0, const Mat& cloud0, const Mat& Rt,
                const Mat& image1, const Mat& dI_dx1, const Mat& dI_dy1,
                const Mat& corresps, double fx, double fy, double sobelScaleIn,
@@ -657,8 +657,8 @@ void calcRgbdLsmMatrices(const Mat& image0, const Mat& cloud0, const Mat& Rt,
          const Vec4i& c = corresps_ptr[correspIndex];
          int u0 = c[0], v0 = c[1];
          int u1 = c[2], v1 = c[3];
-              
-         diffs_ptr[correspIndex] = static_cast<float>(static_cast<int>(image0.at<uchar>(v0,u0)) - 
+
+         diffs_ptr[correspIndex] = static_cast<float>(static_cast<int>(image0.at<uchar>(v0,u0)) -
                                                       static_cast<int>(image1.at<uchar>(v1,u1)));
          sigma += diffs_ptr[correspIndex] * diffs_ptr[correspIndex];
     }
@@ -697,8 +697,8 @@ void calcRgbdLsmMatrices(const Mat& image0, const Mat& cloud0, const Mat& Rt,
 
             AtB_ptr[y] += A_ptr[y] * w * diffs_ptr[correspIndex];
         }
-    }		
-    
+    }
+
     for(int y = 0; y < transformDim; y++)
         for(int x = y+1; x < transformDim; x++)
             AtA.at<double>(x,y) = AtA.at<double>(y,x);
@@ -790,16 +790,16 @@ bool solveSystem(const Mat& AtA, const Mat& AtB, double detThreshold, Mat& x)
     return true;
 }
 
-static 
+static
 bool testDeltaTransformation(const Mat& deltaRt, double maxTranslation, double maxRotation)
 {
     double translation = norm(deltaRt(Rect(3, 0, 1, 3)));
-    
+
     Mat rvec;
     Rodrigues(deltaRt(Rect(0,0,3,3)), rvec);
-    
+
     double rotation = norm(rvec) * 180. / CV_PI;
-    
+
     return translation <= maxTranslation && rotation <= maxRotation;
 }
 
@@ -920,9 +920,9 @@ bool RGBDICPOdometryImpl(Mat& Rt, const Mat& initRt,
             isOk = true;
         }
     }
-    
+
     Rt = resultRt;
-        
+
     if(isOk)
     {
         Mat deltaRt;
@@ -941,24 +941,25 @@ template<class ImageElemType>
 static void
 warpFrameImpl(const Mat& image, const Mat& depth, const Mat& mask,
               const Mat& Rt, const Mat& cameraMatrix, const Mat& distCoeff,
-              Mat& warpedImage, Mat* warpedDepth, Mat* warpedMask)
+              OutputArray _warpedImage, OutputArray warpedDepth, OutputArray warpedMask)
 {
     CV_Assert(image.size() == depth.size());
-    
+
     Mat cloud;
     depthTo3d(depth, cameraMatrix, cloud);
-    
+
     std::vector<Point2f> points2d;
     Mat transformedCloud;
     perspectiveTransform(cloud, transformedCloud, Rt);
     projectPoints(transformedCloud.reshape(3, 1), Mat::eye(3, 3, CV_64FC1), Mat::zeros(3, 1, CV_64FC1), cameraMatrix,
                 distCoeff, points2d);
 
-    warpedImage = Mat(image.size(), image.type(), Scalar::all(0));
+    _warpedImage.create(image.size(), image.type());
+    Mat warpedImage = _warpedImage.getMat();
 
     Mat zBuffer(image.size(), CV_32FC1, std::numeric_limits<float>::max());
     const Rect rect = Rect(0, 0, image.cols, image.rows);
-    
+
     for (int y = 0; y < image.rows; y++)
     {
         //const Point3f* cloud_row = cloud.ptr<Point3f>(y);
@@ -978,13 +979,13 @@ warpFrameImpl(const Mat& image, const Mat& depth, const Mat& mask,
         }
     }
 
-    if(warpedMask)
-        *warpedMask = zBuffer != std::numeric_limits<float>::max();
+    if(warpedMask.needed())
+        Mat(zBuffer != std::numeric_limits<float>::max()).copyTo(warpedMask);
 
-    if(warpedDepth)
+   if(warpedDepth.needed())
     {
         zBuffer.setTo(std::numeric_limits<float>::quiet_NaN(), zBuffer == std::numeric_limits<float>::max());
-        *warpedDepth = zBuffer;
+        zBuffer.copyTo(warpedDepth);
     }
 }
 
@@ -1406,7 +1407,7 @@ bool RgbdICPOdometry::computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<
 void
 warpFrame(const Mat& image, const Mat& depth, const Mat& mask,
           const Mat& Rt, const Mat& cameraMatrix, const Mat& distCoeff,
-          Mat& warpedImage, Mat* warpedDepth, Mat* warpedMask)
+          OutputArray warpedImage, OutputArray warpedDepth, OutputArray warpedMask)
 {
     if(image.type() == CV_8UC1)
         warpFrameImpl<uchar>(image, depth, mask, Rt, cameraMatrix, distCoeff, warpedImage, warpedDepth, warpedMask);

@@ -343,3 +343,73 @@ PERF_TEST_P(tracking, tld, testing::Combine(TESTSET_NAMES, SEGMENTS))
   SANITY_CHECK( bbs_mat, 15, ERROR_RELATIVE );
 
 }
+
+PERF_TEST_P(tracking, GOTURN, testing::Combine(TESTSET_NAMES, SEGMENTS))
+{
+  string video = get<0>(GetParam());
+  int segmentId = get<1>(GetParam());
+
+  int startFrame;
+  string prefix;
+  string suffix;
+  string datasetMeta = getDataPath(TRACKING_DIR + "/" + video + "/" + video + ".yml");
+  checkData(datasetMeta, startFrame, prefix, suffix);
+  int gtStartFrame = startFrame;
+
+  vector<Rect> gtBBs;
+  string gtFile = getDataPath(TRACKING_DIR + "/" + video + "/gt.txt");
+  if (!getGroundTruth(gtFile, gtBBs))
+    FAIL() << "Ground truth file " << gtFile << " can not be read" << endl;
+  int bbCounter = (int)gtBBs.size();
+
+  Mat frame;
+  bool initialized = false;
+  vector<Rect> bbs;
+
+  Ptr<Tracker> tracker = Tracker::create("GOTURN");
+  string folder = TRACKING_DIR + "/" + video + "/" + FOLDER_IMG;
+  int numSegments = (sizeof(SEGMENTS) / sizeof(int));
+  int endFrame = 0;
+  getSegment(segmentId, numSegments, bbCounter, startFrame, endFrame);
+
+  Rect currentBBi = gtBBs[startFrame - gtStartFrame];
+  Rect2d currentBB(currentBBi);
+
+  TEST_CYCLE_N(1)
+  {
+    VideoCapture c;
+    c.open(getDataPath(TRACKING_DIR + "/" + video + "/" + FOLDER_IMG + "/" + video + ".webm"));
+    c.set(CAP_PROP_POS_FRAMES, startFrame);
+    for (int frameCounter = startFrame; frameCounter < endFrame; frameCounter++)
+    {
+      c >> frame;
+
+      if (frame.empty())
+      {
+        break;
+      }
+
+      if (!initialized)
+      {
+        if (!tracker->init(frame, currentBB))
+        {
+          FAIL() << "Could not initialize tracker" << endl;
+          return;
+        }
+        initialized = true;
+      }
+      else if (initialized)
+      {
+        tracker->update(frame, currentBB);
+      }
+      bbs.push_back(currentBB);
+
+    }
+  }
+  //save the bounding boxes in a Mat
+  Mat bbs_mat((int)bbs.size(), 4, CV_32F);
+  getMatOfRects(bbs, bbs_mat);
+
+  SANITY_CHECK(bbs_mat, 15, ERROR_RELATIVE);
+
+}

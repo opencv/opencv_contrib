@@ -41,38 +41,17 @@
 
 #include "opencv2/core.hpp"
 #include "opencv2/imgcodecs.hpp"
-
-#include "opencv2/face.hpp"
 #include "opencv2/datasets/fr_lfw.hpp"
 
 #include <iostream>
-
 #include <cstdio>
-
 #include <string>
 #include <vector>
-#include <map>
 
 using namespace std;
 using namespace cv;
 using namespace cv::datasets;
-using namespace cv::face;
 
-map<string, int> people;
-
-int getLabel(const string &imagePath);
-int getLabel(const string &imagePath)
-{
-    size_t pos = imagePath.find('/');
-    string curr = imagePath.substr(0, pos);
-    map<string, int>::iterator it = people.find(curr);
-    if (people.end() == it)
-    {
-        people.insert(make_pair(curr, (int)people.size()));
-        it = people.find(curr);
-    }
-    return (*it).second;
-}
 
 int main(int argc, const char *argv[])
 {
@@ -90,9 +69,8 @@ int main(int argc, const char *argv[])
     }
     string trainMethod(parser.get<string>("train"));
 
-    // These vectors hold the images and corresponding labels.
-    vector<Mat> images;
-    vector<int> labels;
+    // our trained threshold for "same":
+    double threshold = 0;
 
     // load dataset
     Ptr<FR_lfw> dataset = FR_lfw::create();
@@ -106,33 +84,26 @@ int main(int argc, const char *argv[])
         printf("train size: %u\n", (numSplits-1) * (unsigned int)dataset->getTest().size());
     printf("test size: %u\n", (unsigned int)dataset->getTest().size());
 
-    // 2200 pairsDevTrain, first split: correct: 373, from: 600 -> 62.1667%
-    Ptr<FaceRecognizer> model = createLBPHFaceRecognizer();
-    // 2200 pairsDevTrain, first split: correct: correct: 369, from: 600 -> 61.5%
-    //Ptr<FaceRecognizer> model = createEigenFaceRecognizer();
-    // 2200 pairsDevTrain, first split: correct: 372, from: 600 -> 62%
-    //Ptr<FaceRecognizer> model = createFisherFaceRecognizer();
 
     if (trainMethod == "dev") // train on personsDevTrain.txt
     {
+        // collect average same-distances:
+        double avg = 0;
+        int count = 0;
         for (unsigned int i=0; i<dataset->getTrain().size(); ++i)
         {
             FR_lfwObj *example = static_cast<FR_lfwObj *>(dataset->getTrain()[i].get());
 
-            int currNum = getLabel(example->image1);
-            Mat img = imread(path+example->image1, IMREAD_GRAYSCALE);
-            images.push_back(img);
-            labels.push_back(currNum);
-
-            currNum = getLabel(example->image2);
-            img = imread(path+example->image2, IMREAD_GRAYSCALE);
-            images.push_back(img);
-            labels.push_back(currNum);
+            Mat a = imread(path+example->image1, IMREAD_GRAYSCALE);
+            Mat b = imread(path+example->image2, IMREAD_GRAYSCALE);
+            double dist = norm(a,b);
+            if (example->same)
+            {
+                avg += dist;
+                count ++;
+            }
         }
-        model->train(images, labels);
-        //string saveModelPath = "face-rec-model.txt";
-        //cout << "Saving the trained model to " << saveModelPath << endl;
-        //model->save(saveModelPath);
+        threshold = avg / count;
     }
 
     vector<double> p;
@@ -140,8 +111,8 @@ int main(int argc, const char *argv[])
     {
         if (trainMethod == "split") // train on the remaining 9 splits from pairs.txt
         {
-            images.clear();
-            labels.clear();
+            double avg = 0;
+            int count = 0;
             for (unsigned int j2=0; j2<numSplits; ++j2)
             {
                 if (j==j2) continue; // skip test split for training
@@ -150,19 +121,17 @@ int main(int argc, const char *argv[])
                 for (unsigned int i=0; i<curr.size(); ++i)
                 {
                     FR_lfwObj *example = static_cast<FR_lfwObj *>(curr[i].get());
-
-                    int currNum = getLabel(example->image1);
-                    Mat img = imread(path+example->image1, IMREAD_GRAYSCALE);
-                    images.push_back(img);
-                    labels.push_back(currNum);
-
-                    currNum = getLabel(example->image2);
-                    img = imread(path+example->image2, IMREAD_GRAYSCALE);
-                    images.push_back(img);
-                    labels.push_back(currNum);
+                    Mat a = imread(path+example->image1, IMREAD_GRAYSCALE);
+                    Mat b = imread(path+example->image2, IMREAD_GRAYSCALE);
+                    double dist = norm(a,b);
+                    if (example->same)
+                    {
+                        avg += dist;
+                        count ++;
+                    }
                 }
             }
-            model->train(images, labels);
+            threshold = avg / count;
         }
 
         unsigned int incorrect = 0, correct = 0;
@@ -171,26 +140,18 @@ int main(int argc, const char *argv[])
         {
             FR_lfwObj *example = static_cast<FR_lfwObj *>(curr[i].get());
 
-            //int currNum = getLabel(example->image1);
-            Mat img = imread(path+example->image1, IMREAD_GRAYSCALE);
-            int predictedLabel1 = model->predict(img);
-
-            //currNum = getLabel(example->image2);
-            img = imread(path+example->image2, IMREAD_GRAYSCALE);
-            int predictedLabel2 = model->predict(img);
-
-            if ((predictedLabel1 == predictedLabel2 && example->same) ||
-                (predictedLabel1 != predictedLabel2 && !example->same))
-            {
+            Mat a = imread(path+example->image1, IMREAD_GRAYSCALE);
+            Mat b = imread(path+example->image2, IMREAD_GRAYSCALE);
+            bool same = (norm(a,b) <= threshold);
+            if (same == example->same)
                 correct++;
-            } else
-            {
+            else
                 incorrect++;
-            }
         }
         p.push_back(1.0*correct/(correct+incorrect));
         printf("correct: %u, from: %u -> %f\n", correct, correct+incorrect, p.back());
     }
+
     double mu = 0.0;
     for (vector<double>::iterator it=p.begin(); it!=p.end(); ++it)
     {
