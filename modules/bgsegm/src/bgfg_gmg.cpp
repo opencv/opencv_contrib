@@ -41,7 +41,7 @@
 //M*/
 
 /*
- * This class implements an algorithm described in "Visual Tracking of Human Visitors under
+ * This class implements a particular BackgroundSubtraction algorithm described in "Visual Tracking of Human Visitors under
  * Variable-Lighting Conditions for a Responsive Audio Art Installation," A. Godbehere,
  * A. Matsukawa, K. Goldberg, American Control Conference, Montreal, June 2012.
  *
