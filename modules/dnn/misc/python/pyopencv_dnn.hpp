@@ -26,4 +26,10 @@ bool pyopencv_to(PyObject *o, dnn::DictValue &dv, const char *name)
         return false;
 }
 
+template<>
+bool pyopencv_to(PyObject *o, std::vector<Mat> &blobs, const char *name) //required for Layer::blobs RW
+{
+  return pyopencvVecConverter<Mat>::to(o, blobs, ArgInfo(name, false));
+}
+
 #endif
