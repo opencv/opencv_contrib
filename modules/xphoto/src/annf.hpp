@@ -128,11 +128,19 @@ KDTree(const cv::Mat &img, const int _leafNumber, const int _zeroThresh)
       leafNumber(_leafNumber), zeroThresh(_zeroThresh)
 ///////////////////////////////////////////////////
 {
-    CV_Assert( img.isContinuous() );
+    int imgch = img.channels();
+    CV_Assert( img.isContinuous() && imgch <= cn);
 
-    std::copy( (cv::Vec <Tp, cn> *) img.data,
-        (cv::Vec <Tp, cn> *) img.data + img.total(),
-        std::back_inserter(data) );
+    for(size_t i = 0; i < img.total(); i++)
+    {
+        cv::Vec<Tp, cn> v = cv::Vec<Tp, cn>::all((Tp)0);
+        for (int c = 0; c < imgch; c++)
+        {
+            v[c] = *((Tp*)(img.data) + i*imgch + c);
+        }
+        data.push_back(v);
+    }
+
     generate_seq( std::back_inserter(idx), 0, int(data.size()) );
     std::fill_n( std::back_inserter(nodes),
         int(data.size()), cv::Point2i(0, 0) );
