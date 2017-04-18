@@ -1,6 +1,8 @@
 #ifdef HAVE_OPENCV_DNN
 typedef dnn::DictValue LayerId;
 typedef std::vector<cv::dnn::Blob> vector_Blob;
+typedef std::vector<cv::dnn::BlobShape> vector_BlobShape;
+typedef std::vector<std::vector<cv::dnn::BlobShape> > vector_vector_BlobShape;
 
 template<>
 bool pyopencv_to(PyObject *o, dnn::Blob &blob, const char *name);
@@ -25,9 +27,37 @@ template<> struct pyopencvVecConverter<dnn::Blob>
 };
 
 template<>
+bool pyopencv_to(PyObject *o, dnn::BlobShape &shape, const char *name);
+
+template<> struct pyopencvVecConverter<dnn::BlobShape>
+{
+    static bool to(PyObject* obj, std::vector<dnn::BlobShape>& value, const ArgInfo info)
+    {
+        if (PyArray_Check(obj))
+        {
+            value.resize(1);
+            return pyopencv_to(obj, value[0], info.name);
+        }
+
+        return pyopencv_to_generic_vec(obj, value, info);
+    }
+
+    static PyObject* from(const std::vector<dnn::BlobShape>& value)
+    {
+        return pyopencv_from_generic_vec(value);
+    }
+};
+
+template<>
 bool pyopencv_to(PyObject *o, std::vector<dnn::Blob> &blobs, const char *name) //required for Layer::blobs RW
 {
     return pyopencvVecConverter<dnn::Blob>::to(o, blobs, ArgInfo(name, false));
+}
+
+template<>
+bool pyopencv_to(PyObject *o, std::vector<dnn::BlobShape> &blobShapes, const char *name) //required for Layer::blobs RW
+{
+    return pyopencvVecConverter<dnn::BlobShape>::to(o, blobShapes, ArgInfo(name, false));
 }
 
 template<>

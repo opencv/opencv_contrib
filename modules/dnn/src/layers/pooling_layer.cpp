@@ -74,30 +74,57 @@ void PoolingLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Bl
 {
     CV_Assert(inputs.size() == 1);
 
-    inp = inputs[0]->size2();
+    cv::Size inp = inputs[0]->size2(), out = outputs[0].size2();
 
     if(globalPooling)
     {
         kernel = inp;
     }
 
-    computeOutputShape(inp);
+    getConvPoolPaddings(inp, out, kernel, stride, padMode, pad);
 
     useOpenCL = ocl::useOpenCL();
+}
+
+void PoolingLayerImpl::getOutShapes(const std::vector<BlobShape> &inputs,
+                          std::vector<BlobShape> &outputs, const int requiredOutputs) const
+{
+    CV_Assert(inputs.size() != 0);
+    Size in(inputs[0][3], inputs[0][2]), out;
+
+    if (padMode.empty()) {
+        //Yeah, something strange Caffe scheme-)
+        out.height = static_cast<int>(ceil(static_cast<float>(in.height + 2 * pad.height -
+                                                              kernel.height) / stride.height)) + 1;
+        out.width = static_cast<int>(ceil(static_cast<float>(in.width + 2 * pad.width -
+                                                             kernel.width) / stride.width)) + 1;
+
+        if (pad.height || pad.width)
+        {
+            // If we have padding, ensure that the last pooling starts strictly
+            // inside the image (instead of at the padding); otherwise clip the last.
+            if ((out.height - 1) * stride.height >= in.height + pad.height)
+                --out.height;
+            if ((out.width - 1) * stride.width >= in.width + pad.width)
+                --out.width;
+            CV_Assert((out.height - 1) * stride.height < in.height + pad.height);
+            CV_Assert((out.width - 1) * stride.width < in.width + pad.width);
+        }
+    }
+    else
+    {
+        getConvPoolOutParams(in, kernel, stride,
+                             padMode, out);
+    }
 
     outputs.resize(type == MAX ? 2 * inputs.size() : inputs.size());
     for (size_t i = 0; i < inputs.size(); i++)
     {
-        CV_Assert(inputs[i]->rows() == inp.height && inputs[i]->cols() == inp.width);
+        size_t index = type == MAX ? 2*i : i;
+        outputs[index] = BlobShape(inputs[i][0], inputs[i][1], out.height, out.width);
+
         if (type == MAX)
-        {
-            outputs[2 * i].create(BlobShape(inputs[i]->num(), inputs[i]->channels(), out.height, out.width));
-            outputs[2 * i + 1].create(BlobShape(inputs[i]->num(), inputs[i]->channels(), out.height, out.width));
-        }
-        else
-        {
-           outputs[i].create(BlobShape(inputs[i]->num(), inputs[i]->channels(), out.height, out.width));
-        }
+            outputs[index + 1] = BlobShape(inputs[i][0], inputs[i][1], out.height, out.width);
     }
 }
 
@@ -152,8 +179,8 @@ bool PoolingLayerImpl::avePooling_ocl(Blob &src, Blob &dst)
 
 void PoolingLayerImpl::maxPooling_cpu(Blob &src, Blob &dst, Blob &mask)
 {
-    CV_DbgAssert(dst.rows() == out.height && dst.cols() == out.width);
-
+    int inpH = src.rows(), inpW = src.cols(),
+            outH = dst.rows(), outW = dst.cols();
     for (int n = 0; n < src.num(); ++n)
     {
         for (int c = 0; c < src.channels(); ++c)
@@ -162,24 +189,24 @@ void PoolingLayerImpl::maxPooling_cpu(Blob &src, Blob &dst, Blob &mask)
             float *dstData = dst.ptrf(n, c);
             float *dstMaskData = mask.ptrf(n, c);
 
-            for (int ph = 0; ph < out.height; ++ph)
+            for (int ph = 0; ph < outH; ++ph)
             {
-                for (int pw = 0; pw < out.width; ++pw)
+                for (int pw = 0; pw < outW; ++pw)
                 {
                     int hstart = ph * stride.height - pad.height;
                     int wstart = pw * stride.width - pad.width;
-                    int hend = min(hstart + kernel.height, inp.height);
-                    int wend = min(wstart + kernel.width, inp.width);
+                    int hend = min(hstart + kernel.height, inpH);
+                    int wend = min(wstart + kernel.width, inpW);
                     hstart = max(hstart, 0);
                     wstart = max(wstart, 0);
-                    const int poolIndex = ph * out.width + pw;
+                    const int poolIndex = ph * outW + pw;
                     float max_val = -FLT_MAX;
                     int max_index = -1;
 
                     for (int h = hstart; h < hend; ++h)
                         for (int w = wstart; w < wend; ++w)
                         {
-                            const int index = h * inp.width + w;
+                            const int index = h * inpW + w;
                             if (srcData[index] > max_val)
                             {
                                 max_val = srcData[index];
@@ -199,6 +226,7 @@ void PoolingLayerImpl::maxPooling_cpu(Blob &src, Blob &dst, Blob &mask)
 #ifdef HAVE_OPENCL
 bool PoolingLayerImpl::pooling_ocl(const char *kname, const Blob &src, Blob &dst, Blob *mask)
 {
+    int outH = dst.rows(), outW = dst.cols();
     const UMat &srcMat = src.umatRefConst();
     UMat &dstMat = dst.umatRef();
     UMat *maskUMat = mask == NULL ? NULL : &mask->umatRef();
@@ -218,7 +246,7 @@ bool PoolingLayerImpl::pooling_ocl(const char *kname, const Blob &src, Blob &dst
     {
         ker.args((int)nthreads,
              ocl::KernelArg::PtrReadOnly(srcMat), s[0], s[1], s[2], s[3],
-             out.height, out.width, kernel.height, kernel.width,
+             outH, outW, kernel.height, kernel.width,
              stride.height, stride.width, pad.height, pad.width,
              ocl::KernelArg::PtrWriteOnly(dstMat),
              ocl::KernelArg::PtrWriteOnly(*maskUMat));
@@ -227,7 +255,7 @@ bool PoolingLayerImpl::pooling_ocl(const char *kname, const Blob &src, Blob &dst
     {
         ker.args((int)nthreads,
              ocl::KernelArg::PtrReadOnly(srcMat), s[0], s[1], s[2], s[3],
-             out.height, out.width, kernel.height, kernel.width,
+             outH, outW, kernel.height, kernel.width,
              stride.height, stride.width, pad.height, pad.width,
              ocl::KernelArg::PtrWriteOnly(dstMat));
     }
@@ -247,6 +275,8 @@ bool PoolingLayerImpl::pooling_ocl(const char*, const Blob&, Blob&, Blob*)
 
 void PoolingLayerImpl::avePooling_cpu(Blob &src, Blob &dst)
 {
+    int inpH = src.rows(), inpW = src.cols(),
+            outH = dst.rows(), outW = dst.cols();
     for (int n = 0; n < src.num(); ++n)
     {
         for (int c = 0; c < src.channels(); ++c)
@@ -254,59 +284,52 @@ void PoolingLayerImpl::avePooling_cpu(Blob &src, Blob &dst)
             const float *srcData = src.ptrf(n, c);
             float *dstData = dst.ptrf(n, c);
 
-            for (int ph = 0; ph < out.height; ++ph)
+            for (int ph = 0; ph < outH; ++ph)
             {
-                for (int pw = 0; pw < out.width; ++pw)
+                for (int pw = 0; pw < outW; ++pw)
                 {
                     int hstart = ph * stride.height - pad.height;
                     int wstart = pw * stride.width - pad.width;
-                    int hend = min(hstart + kernel.height, inp.height + pad.height);
-                    int wend = min(wstart + kernel.width, inp.width + pad.width);
+                    int hend = min(hstart + kernel.height, inpH + pad.height);
+                    int wend = min(wstart + kernel.width, inpW + pad.width);
                     int poolSize = (hend - hstart) * (wend - wstart);
                     hstart = max(hstart, 0);
                     wstart = max(wstart, 0);
-                    hend = min(hend, inp.height);
-                    wend = min(wend, inp.width);
+                    hend = min(hend, inpH);
+                    wend = min(wend, inpW);
 
-                    dstData[ph * out.width + pw] = 0.f;
+                    dstData[ph * outW + pw] = 0.f;
 
                     for (int h = hstart; h < hend; ++h)
                         for (int w = wstart; w < wend; ++w)
-                            dstData[ph * out.width + pw] += srcData[h * inp.width + w];
+                            dstData[ph * outW + pw] += srcData[h * inpW + w];
 
-                    dstData[ph * out.width + pw] /= poolSize;
+                    dstData[ph * outW + pw] /= poolSize;
                 }
             }
         }
     }
 }
 
-void PoolingLayerImpl::computeOutputShape(Size inpSz)
+long PoolingLayerImpl::getFLOPS(const std::vector<BlobShape> &inputs,
+                                const std::vector<BlobShape> &outputs) const
 {
-    if (padMode.empty()) {
-        //Yeah, something strange Caffe scheme-)
-        out.height = static_cast<int>(ceil(static_cast<float>(inpSz.height + 2 * pad.height -
-                                                              kernel.height) / stride.height)) + 1;
-        out.width = static_cast<int>(ceil(static_cast<float>(inpSz.width + 2 * pad.width -
-                                                             kernel.width) / stride.width)) + 1;
+    (void)inputs; // suppress unused variable warning
+    long flops = 0;
 
-        if (pad.height || pad.width)
+    for(int i = 0; i < outputs.size(); i++)
+    {
+        if (type == MAX)
         {
-            // If we have padding, ensure that the last pooling starts strictly
-            // inside the image (instead of at the padding); otherwise clip the last.
-            if ((out.height - 1) * stride.height >= inpSz.height + pad.height)
-                --out.height;
-            if ((out.width - 1) * stride.width >= inpSz.width + pad.width)
-                --out.width;
-            CV_Assert((out.height - 1) * stride.height < inpSz.height + pad.height);
-            CV_Assert((out.width - 1) * stride.width < inpSz.width + pad.width);
+            if (i%2 == 0)
+                flops += outputs[i].total()*kernel.area();
+        }
+        else
+        {
+            flops += outputs[i].total()*(kernel.area() + 1);
         }
     }
-    else
-    {
-        getConvPoolOutParams(inpSz.height, inpSz.width, kernel, stride, pad,
-                             padMode, out.height, out.width);
-    }
+    return flops;
 }
 
 Ptr<PoolingLayer> PoolingLayer::create(int type, Size kernel, Size stride, Size pad,

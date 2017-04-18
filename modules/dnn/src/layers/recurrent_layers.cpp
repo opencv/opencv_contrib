@@ -176,6 +176,38 @@ public:
         blobs[2].reshape(Shape(1, (int)bias.total()));
     }
 
+    virtual void getOutShapes(const std::vector<BlobShape> &inputs,
+                          std::vector<BlobShape> &outputs, const int requiredOutputs) const
+    {
+        CV_Assert(blobs.size() == 3);
+        CV_Assert(inputs.size() == 1);
+
+        int numOut_ = blobs[0].size(1);
+        int numInp_ = blobs[1].size(1);
+
+        Shape outTailShape_;
+        if (outTailShape_.isEmpty())
+            outTailShape_ = Shape(numOut_);
+
+        CV_Assert(outTailShape_.total() == numOut_);
+
+        BlobShape outShape;
+        if (useTimestampDim)
+        {
+            CV_Assert(inputs[0].dims() >= 2 && (int)inputs[0].total(2) == numInp_);
+            int numSamples_ = inputs[0].size(1);
+            outShape = Shape(inputs[0].size(0), numSamples_) + outTailShape_;
+        }
+        else
+        {
+            CV_Assert(inputs[0].dims() >= 1 && (int)inputs[0].total(1) == numInp_);
+            int numSamples_ = inputs[0].size(0);
+            outShape = Shape(numSamples_) + outTailShape_;
+        }
+
+        outputs.resize( (produceCellOutput) ? 2 : 1 , outShape);
+    }
+
     void allocate(const std::vector<Blob*> &input, std::vector<Blob> &output)
     {
         CV_Assert(blobs.size() == 3);
@@ -211,10 +243,13 @@ public:
         CV_Assert(dtype == CV_32F || dtype == CV_64F);
         CV_Assert(Wh.type() == dtype);
 
-        output.resize( (produceCellOutput) ? 2 : 1 );
-        output[0].create(outResShape, dtype);
-        if (produceCellOutput)
-            output[1].create(outResShape, dtype);
+        if (output.empty())
+        {
+            output.resize( (produceCellOutput) ? 2 : 1 );
+            output[0].create(outResShape, dtype);
+            if (produceCellOutput)
+                output[1].create(outResShape, dtype);
+        }
 
         if (hInternal.empty())
         {
@@ -359,6 +394,26 @@ public:
         blobs[4] = b_o;
     }
 
+    virtual void getOutShapes(const std::vector<BlobShape> &inputs,
+                          std::vector<BlobShape> &outputs, const int requiredOutputs) const
+    {
+        CV_Assert(inputs.size() >= 1 && inputs.size() <= 2);
+
+        Mat Who_ = blobs[3].matRefConst();
+        Mat Wxh_ = blobs[0].matRefConst();
+
+        int numTimestamps_ = inputs[0].size(0);
+        int numSamples_ = inputs[0].size(1);
+
+        int numO_ = Who_.rows;
+        int numH_ = Wxh_.rows;
+
+        outputs.clear();
+        outputs.push_back(Shape(numTimestamps_, numSamples_, numO_));
+        if (produceH)
+            outputs.push_back(Shape(numTimestamps_, numSamples_, numH_));
+    }
+
     void allocate(const std::vector<Blob*> &input, std::vector<Blob> &output)
     {
         CV_Assert(input.size() >= 1 && input.size() <= 2);
@@ -390,7 +445,8 @@ public:
         bh = bh.reshape(1, 1); //is 1 x numH Mat
         bo = bo.reshape(1, 1); //is 1 x numO Mat
 
-        reshapeOutput(output);
+        if (output.empty())
+            reshapeOutput(output);
     }
 
     void reshapeOutput(std::vector<Blob> &output)

@@ -134,6 +134,10 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
         Layer();
         explicit Layer(const LayerParams &params);      //!< Initializes only #name, #type and #blobs fields.
         void setParamsFrom(const LayerParams &params);  //!< Initializes only #name, #type and #blobs fields.
+        virtual long getFLOPS(const std::vector<BlobShape> &inputs,
+                              const std::vector<BlobShape> &outputs) const {(void)inputs; (void)outputs; return 0;}
+        virtual void getOutShapes(const std::vector<BlobShape> &inputs,
+                              std::vector<BlobShape> &outputs, const int requiredOutputs) const;
         virtual ~Layer();
     };
 
@@ -150,6 +154,10 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
     class CV_EXPORTS_W_SIMPLE Net
     {
     public:
+        /** @brief Container for strings and integers. */
+        typedef DictValue LayerId;
+        /** @brief Container for blobs shapes. */
+        typedef std::vector<BlobShape> ShapesVec;
 
         CV_WRAP Net();  //!< Default constructor.
         CV_WRAP ~Net(); //!< Destructor frees the net only if there aren't references to the net anymore.
@@ -175,9 +183,6 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
         CV_WRAP int getLayerId(const String &layer);
 
         CV_WRAP std::vector<String> getLayerNames() const;
-
-        /** @brief Container for strings and integers. */
-        typedef DictValue LayerId;
 
         /** @brief Returns pointer to layer with specified name which the network use. */
         CV_WRAP Ptr<Layer> getLayer(LayerId layerId);
@@ -276,6 +281,91 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
         /** @brief Returns indexes of layers with unconnected outputs.
          */
         CV_WRAP std::vector<int> getUnconnectedOutLayers() const;
+
+        /** @brief Computes FLOP for whole loaded model with specified input shapes.
+         * @param netInputShapes vector of shapes for all net inputs.
+         * @returns computed FLOP.
+         */
+        CV_WRAP int64 getFLOPS(const std::vector<BlobShape>& netInputShapes) const;
+        /** @overload */
+        CV_WRAP int64 getFLOPS(const BlobShape& netInputShape) const;
+        /** @overload */
+        CV_WRAP int64 getFLOPS(const int layerId,
+                              const std::vector<BlobShape>& netInputShapes) const;
+        /** @overload */
+        CV_WRAP int64 getFLOPS(const int layerId,
+                              const BlobShape& netInputShape) const;
+
+        /** @brief Returns list of types for layer used in model.
+         * @param layersTypes output parameter for returning types.
+         */
+        CV_WRAP void getLayerTypes(std::vector<String>& layersTypes) const;
+
+        /** @brief Returns count of layers of specified type.
+         * @param layerType type.
+         * @returns count of layers
+         */
+        CV_WRAP int getLayersCount(const String& layerType) const;
+
+        /** @brief Computes bytes number which are requered to store
+         * all weights and intermediate blobs for model.
+         * @param netInputShapes vector of shapes for all net inputs.
+         * @param weights output parameter to store resulting bytes for weights.
+         * @param blobs output parameter to store resulting bytes for intermediate blobs.
+         */
+        CV_WRAP void getMemoryConsumption(const std::vector<BlobShape>& netInputShapes,
+                                          size_t& weights, size_t& blobs) const;
+        /** @overload */
+        CV_WRAP void getMemoryConsumption(const BlobShape& netInputShape,
+                                          size_t& weights, size_t& blobs) const;
+        /** @overload */
+        CV_WRAP void getMemoryConsumption(const int layerId,
+                                          const std::vector<BlobShape>& netInputShapes,
+                                          size_t& weights, size_t& blobs) const;
+        /** @overload */
+        CV_WRAP void getMemoryConsumption(const int layerId,
+                                          const BlobShape& netInputShape,
+                                          size_t& weights, size_t& blobs) const;
+
+        /** @brief Returns input and output shapes for all layers in loaded model;
+         *  preliminary inferencing isn't necessary.
+         *  @param netInputShapes shapes for all input blobs in net input layer.
+         *  @param layersIds output parameter for layer IDs.
+         *  @param inLayersShapes output parameter for input layers shapes;
+         * order is the same as in layersIds
+         *  @param outLayersShapes output parameter for output layers shapes;
+         * order is the same as in layersIds
+         */
+        CV_WRAP void getLayersShapes(const std::vector<BlobShape>& netInputShapes,
+                                     std::vector<int>* layersIds,
+                                     std::vector<std::vector<BlobShape> >* inLayersShapes,
+                                     std::vector<std::vector<BlobShape> >* outLayersShapes) const;
+
+        /** @overload */
+        CV_WRAP void getLayersShapes(const BlobShape& netInputShape,
+                                     std::vector<int>* layersIds,
+                                     std::vector<std::vector<BlobShape> >* inLayersShapes,
+                                     std::vector<std::vector<BlobShape> >* outLayersShapes) const;
+
+        /** @brief Returns input and output shapes for layer with specified
+         * id in loaded model; preliminary inferencing isn't necessary.
+         *  @param netInputShape shape input blob in net input layer.
+         *  @param layerId id for layer.
+         *  @param inLayerShapes output parameter for input layers shapes;
+         * order is the same as in layersIds
+         *  @param outLayerShapes output parameter for output layers shapes;
+         * order is the same as in layersIds
+         */
+        CV_WRAP void getLayerShapes(const BlobShape& netInputShape,
+                                    const int layerId,
+                                    std::vector<BlobShape>* inLayerShapes,
+                                    std::vector<BlobShape>* outLayerShapes) const;
+
+        /** @overload */
+        CV_WRAP void getLayerShapes(const std::vector<BlobShape>& netInputShapes,
+                                    const int layerId,
+                                    std::vector<BlobShape>* inLayerShapes,
+                                    std::vector<BlobShape>* outLayerShapes) const;
     private:
 
         struct Impl;

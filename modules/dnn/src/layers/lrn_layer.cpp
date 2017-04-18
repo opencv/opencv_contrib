@@ -86,7 +86,7 @@ void LRNLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &output
     switch (type)
     {
     case CHANNEL_NRM:
-        channelNoramlization(src, dst);
+        channelNormalization(src, dst);
         break;
     case SPATIAL_NRM:
         spatialNormalization(src, dst);
@@ -103,7 +103,7 @@ static XMat getPlane(XMat &m, int n, int cn)
     return reshaped(slice(m, n, cn), BlobShape::like(m).slice(2));
 }
 
-void LRNLayerImpl::channelNoramlization(Blob &src, Blob &dst)
+void LRNLayerImpl::channelNormalization(Blob &src, Blob &dst)
 {
     if (!useOpenCL)
         channelNormalization_<Mat>(src, dst);
@@ -249,6 +249,34 @@ void LRNLayerImpl::spatialNormalization_(Blob &srcBlob, Blob &dstBlob)
     }
 }
 
+long LRNLayerImpl::getFLOPS(const std::vector<BlobShape> &inputs,
+                            const std::vector<BlobShape> &outputs) const
+{
+    (void)outputs; // suppress unused variable warning
+    CV_Assert(inputs.size() > 0);
+    long flops = 0;
+
+    for(int i = 0; i < inputs.size(); i++)
+    {
+        if (type == CHANNEL_NRM)
+        {
+            int channels = inputs[i][1];
+            int ksize = (size - 1) / 2;
+
+            flops += inputs[i][0]*(std::min(ksize, channels)*2*inputs[i].total(2) + channels*4*inputs[i].total(2));
+
+            if (ksize < channels)
+            {
+                flops += (size + 2*(channels - size))*inputs[i].total(2);
+            }
+        }
+        else
+        {
+            flops += inputs[i].total()*(2*size*size + 2);
+        }
+    }
+    return flops;
+}
 
 Ptr<LRNLayer> LRNLayer::create(int type, int size, double alpha, double beta, double bias,
                                bool normBySize)

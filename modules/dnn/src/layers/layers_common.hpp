@@ -56,9 +56,11 @@ void getConvolutionKernelParams(LayerParams &params, int &kernelH, int &kernelW,
 void getPoolingKernelParams(LayerParams &params, int &kernelH, int &kernelW, bool &globalPooling,
                             int &padH, int &padW, int &strideH, int &strideW, cv::String& padMode);
 
-void getConvPoolOutParams(const int inputH, const int inputW, const cv::Size& kernel,
-                          const cv::Size& stride, cv::Size &pad, const cv::String& padMode,
-                          int &outH, int &outW);
+void getConvPoolOutParams(const cv::Size &inp, const cv::Size& kernel,
+                          const cv::Size& stride, const cv::String& padMode, cv::Size &out);
+
+void getConvPoolPaddings(const cv::Size& inp, const cv::Size& out, const cv::Size &kernel, const cv::Size &stride,
+                         const cv::String &padMode, cv::Size& pad);
 }
 }
 

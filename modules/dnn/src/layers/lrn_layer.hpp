@@ -54,7 +54,7 @@ class LRNLayerImpl : public LRNLayer
     bool useOpenCL;
     Blob buf;
 
-    void channelNoramlization(Blob &src, Blob &dst);
+    void channelNormalization(Blob &src, Blob &dst);
     template<typename XMat>
     void channelNormalization_(Blob &src, Blob &dst);
     bool channelNormalization_ocl(const UMat &src, UMat &dst);
@@ -71,6 +71,8 @@ public:
                  double beta = 0.75, double bias = 1, bool normBySize = true);
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    virtual long getFLOPS(const std::vector<BlobShape> &inputs,
+                          const std::vector<BlobShape> &outputs) const;
 };
 
 }

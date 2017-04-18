@@ -51,9 +51,6 @@ namespace dnn
 
 class SliceLayerImpl : public SliceLayer
 {
-    bool useOpenCL;
-    int axisIdx;
-
     template<typename XMat>
     void forward_(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
 
@@ -61,9 +58,12 @@ public:
     SliceLayerImpl(int axis_ = 1);
     SliceLayerImpl(int axis_, const std::vector<int> &sliceIndices_);
 
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs) {}
 
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
+    virtual void getOutShapes(const std::vector<BlobShape> &inputs,
+                          std::vector<BlobShape> &outputs, const int requiredOutputs) const;
 };
 
 }

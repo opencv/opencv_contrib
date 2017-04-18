@@ -29,17 +29,18 @@ PaddingLayer::PaddingLayer(LayerParams &params)
         CV_Error(cv::Error::StsNotImplemented, "Negative padding and dim aren't supported");
 }
 
-void PaddingLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void PaddingLayer::getOutShapes(const std::vector<BlobShape> &inputs,
+                                std::vector<BlobShape> &outputs, const int requiredOutputs) const
 {
-    outputs.resize(inputs.size());
+    outputs.clear();
     for(int i = 0; i < inputs.size(); i++)
     {
-        BlobShape shape = inputs[i]->shape();
+        BlobShape shape = inputs[i];
         int dim = getPadDim(shape);
         CV_Assert(dim < shape.dims());
 
         shape[dim] += padding;
-        outputs[i].create(shape);
+        outputs.push_back(shape);
     }
 }
 

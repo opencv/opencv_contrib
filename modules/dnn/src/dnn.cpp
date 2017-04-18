@@ -150,6 +150,11 @@ private:
 
 struct Net::Impl
 {
+    typedef std::vector<BlobShape> ShapesVec;
+    typedef std::pair<ShapesVec, ShapesVec> LayerShapes;
+    typedef std::map<int, LayerShapes> LayersShapesMap;
+    typedef std::map<int, LayerData> MapIdToLayerData;
+
     Impl()
     {
         //allocate fake net input layer
@@ -168,8 +173,7 @@ struct Net::Impl
     Ptr<DataLayer> netInputLayer;
     std::vector<int> netOutputs;
 
-    typedef std::map<int, LayerData> MapIdToLayerData;
-    std::map<int, LayerData> layers;
+    MapIdToLayerData layers;
     std::map<String, int> layerNameToId;
 
     int lastLayerId;
@@ -340,7 +344,7 @@ struct Net::Impl
     #define CV_RETHROW_ERROR(err, newmsg)\
         cv::error(err.code, newmsg, err.func.c_str(), err.file.c_str(), err.line)
 
-    void allocateLayer(int lid)
+    void allocateLayer(int lid, const LayersShapesMap& layersShapes)
     {
         LayerData &ld = layers[lid];
 
@@ -354,7 +358,7 @@ struct Net::Impl
 
         //allocate parents
         for (set<int>::iterator i = ld.inputLayersId.begin(); i != ld.inputLayersId.end(); i++)
-            allocateLayer(*i);
+            allocateLayer(*i, layersShapes);
 
         //bind inputs
         ld.inputBlobs.resize(ld.inputBlobsId.size());
@@ -366,11 +370,22 @@ struct Net::Impl
             ld.inputBlobs[i] = &layers[from.lid].outputBlobs[from.oid];
         }
 
-        //allocate layer
-        ld.outputBlobs.resize(std::max((size_t)1, ld.requiredOutputs.size())); //layer produce at least one output blob
+        LayersShapesMap::const_iterator layerShapesIt = layersShapes.find(lid);
+
+        CV_Assert(layerShapesIt != layersShapes.end());
+        const ShapesVec& outShapes = layerShapesIt->second.second;
+        CV_Assert(ld.requiredOutputs.size() <= outShapes.size());
+        ld.outputBlobs.resize(std::max((size_t)1, outShapes.size())); //layer produce at least one output blob
+        for(int i = 0; i < outShapes.size() && i < outShapes.size(); i++)
+        {
+            if (ld.outputBlobs[i].shape() != outShapes[i])
+                ld.outputBlobs[i].create(outShapes[i]);
+        }
+
+        Ptr<Layer> layerPtr = ld.getLayerInstance();
         try
         {
-            Ptr<Layer> layerPtr = ld.getLayerInstance();
+            //allocate layer
             layerPtr->allocate(ld.inputBlobs, ld.outputBlobs);
         }
         catch (const cv::Exception &err)
@@ -387,10 +402,20 @@ struct Net::Impl
         for (it = layers.begin(); it != layers.end(); it++)
             it->second.flag = 0;
 
+        CV_Assert(!layers[0].outputBlobs.empty());
+        std::vector<BlobShape> inputShapes;
+        for(int i = 0; i < layers[0].outputBlobs.size(); i++)
+        {
+            CV_Assert(layers[0].outputBlobs[i].total());
+            inputShapes.push_back(layers[0].outputBlobs[i].shape());
+        }
+        LayersShapesMap layersShapes;
+        getLayersShapes(inputShapes, layersShapes);
+
         for (it = layers.begin(); it != layers.end(); it++)
         {
             int lid = it->first;
-            allocateLayer(lid);
+            allocateLayer(lid, layersShapes);
         }
     }
 
@@ -434,6 +459,55 @@ struct Net::Impl
 
         for (it = layers.begin(); it != layers.end(); it++)
             forwardLayer(it->second, false);
+    }
+
+    void getLayerShapesRecursively(int id, LayersShapesMap& inOutShapes)
+    {
+        std::vector<LayerPin>& inputLayerIds = layers[id].inputBlobsId;
+
+        if (inOutShapes[id].first.empty())
+        {
+            for(int i = 0; i < inputLayerIds.size(); i++)
+            {
+                int layerId = inputLayerIds[i].lid;
+                LayersShapesMap::iterator it =
+                        inOutShapes.find(layerId);
+                if(it == inOutShapes.end() ||
+                        it->second.second.empty())
+                {
+                    getLayerShapesRecursively(layerId, inOutShapes);
+                }
+                const BlobShape& shape = inOutShapes[layerId].second[inputLayerIds[i].oid];
+                inOutShapes[id].first.push_back(shape);
+            }
+        }
+        const std::vector<BlobShape>& is = inOutShapes[id].first;
+        std::vector<BlobShape>& os = inOutShapes[id].second;
+        int requiredOutputs = layers[id].requiredOutputs.size();
+        layers[id].getLayerInstance()->getOutShapes(is, os, requiredOutputs);
+    }
+
+    void getLayersShapes(const std::vector<BlobShape>& netInputShapes,
+                         LayersShapesMap& inOutShapes)
+    {
+        inOutShapes.clear();
+
+        inOutShapes[0].first = netInputShapes; //insert shape for first input layer
+        for (MapIdToLayerData::iterator it = layers.begin();
+             it != layers.end(); it++)
+        {
+            getLayerShapesRecursively(it->first, inOutShapes);
+        }
+    }
+
+    void getLayerShapes(const std::vector<BlobShape>& netInputShapes,
+                        const int layerId,
+                        LayerShapes& shapes)
+    {
+        LayersShapesMap inOutShapes;
+        inOutShapes[0].first = netInputShapes; //insert shape for first input layer
+        getLayerShapesRecursively(layerId, inOutShapes);
+        shapes = inOutShapes[layerId];
     }
 };
 
@@ -624,6 +698,208 @@ std::vector<int> Net::getUnconnectedOutLayers() const
     return layersIds;
 }
 
+namespace
+{
+
+}
+
+void Net::getLayersShapes(const std::vector<BlobShape>& netInputShapes,
+                          std::vector<int>* layersIds,
+                          std::vector<std::vector<BlobShape> >* inLayersShapes,
+                          std::vector<std::vector<BlobShape> >* outLayersShapes) const
+{
+    if ((layersIds || inLayersShapes || outLayersShapes) == false)
+        return;
+
+    if (layersIds) layersIds->clear();
+    if (inLayersShapes) inLayersShapes->clear();
+    if (outLayersShapes) outLayersShapes->clear();
+
+    Impl::LayersShapesMap inOutShapes;
+    impl->getLayersShapes(netInputShapes, inOutShapes);
+
+    for(Impl::LayersShapesMap::const_iterator it = inOutShapes.begin();
+        it != inOutShapes.end(); it++)
+    {
+        if (layersIds)
+            layersIds->push_back(it->first);
+        if (inLayersShapes)
+            inLayersShapes->push_back(it->second.first);
+        if (outLayersShapes)
+            outLayersShapes->push_back(it->second.second);
+    }
+}
+
+void Net::getLayersShapes(const BlobShape& netInputShape,
+                          std::vector<int>* layerIds,
+                          std::vector<std::vector<BlobShape> >* inLayersShapes,
+                          std::vector<std::vector<BlobShape> >* outLayersShapes) const
+{
+    getLayersShapes(std::vector<BlobShape>(1, netInputShape),
+                    layerIds, inLayersShapes, outLayersShapes);
+}
+
+void Net::getLayerShapes(const BlobShape& netInputShape,
+                         const int layerId,
+                         std::vector<BlobShape>* inLayerShapes,
+                         std::vector<BlobShape>* outLayerShapes) const
+{
+    getLayerShapes(std::vector<BlobShape>(1, netInputShape),
+                   layerId, inLayerShapes, outLayerShapes);
+
+}
+
+void Net::getLayerShapes(const std::vector<BlobShape>& netInputShapes,
+                    const int layerId,
+                    std::vector<BlobShape>* inLayerShapes,
+                    std::vector<BlobShape>* outLayerShapes) const
+{
+    Impl::LayerShapes shapes;
+    impl->getLayerShapes(netInputShapes, layerId, shapes);
+    if (inLayerShapes)
+        *inLayerShapes = shapes.first;
+    if (outLayerShapes)
+        *outLayerShapes = shapes.second;
+}
+
+int64 Net::getFLOPS(const std::vector<BlobShape>& netInputShapes) const
+{
+    int64 flops = 0;
+    std::vector<int> ids;
+    std::vector<std::vector<BlobShape> > inShapes, outShapes;
+    getLayersShapes(netInputShapes, &ids, &inShapes, &outShapes);
+    CV_Assert(inShapes.size() == outShapes.size());
+    CV_Assert(inShapes.size() == ids.size());
+
+    for(int i = 0; i < ids.size(); i++)
+    {
+        flops += impl->layers[ids[i]].getLayerInstance()->getFLOPS(inShapes[i],
+                                                                   outShapes[i]);
+    }
+
+    return flops;
+}
+
+int64 Net::getFLOPS(const BlobShape& netInputShape) const
+{
+    return getFLOPS(std::vector<BlobShape>(1, netInputShape));
+}
+
+int64 Net::getFLOPS(const int layerId,
+              const std::vector<BlobShape>& netInputShapes) const
+{
+    Impl::MapIdToLayerData::iterator layer = impl->layers.find(layerId);
+    CV_Assert(layer != impl->layers.end());
+
+    Impl::LayerShapes shapes;
+    impl->getLayerShapes(netInputShapes, layerId, shapes);
+
+    return layer->second.getLayerInstance()->getFLOPS(shapes.first,
+                                                      shapes.second);
+}
+
+int64 Net::getFLOPS(const int layerId,
+              const BlobShape& netInputShape) const
+{
+    return getFLOPS(layerId, std::vector<BlobShape>(1, netInputShape));
+}
+
+void Net::getLayerTypes(std::vector<String>& layersTypes) const
+{
+    layersTypes.clear();
+
+    std::map<String, int> layers;
+    for (Impl::MapIdToLayerData::iterator it = impl->layers.begin();
+         it != impl->layers.end(); it++)
+    {
+        if (layers.find(it->second.type) == layers.end())
+            layers[it->second.type] = 0;
+        layers[it->second.type]++;
+    }
+
+    for (std::map<String, int>::iterator it = layers.begin();
+         it != layers.end(); it++)
+    {
+        layersTypes.push_back(it->first);
+    }
+}
+
+int Net::getLayersCount(const String& layerType) const
+{
+    int count = 0;
+    for (Impl::MapIdToLayerData::iterator it = impl->layers.begin();
+         it != impl->layers.end(); it++)
+    {
+        if (it->second.type == layerType)
+            count++;
+    }
+    return count;
+}
+
+void Net::getMemoryConsumption(const int layerId,
+                               const std::vector<BlobShape>& netInputShapes,
+                               size_t& weights, size_t& blobs) const
+{
+    Impl::MapIdToLayerData::iterator layer = impl->layers.find(layerId);
+    CV_Assert(layer != impl->layers.end());
+
+    weights = blobs = 0;
+
+    for(int i = 0; i < layer->second.params.blobs.size(); i++)
+    {
+        const Blob& weightsBlob = layer->second.params.blobs[i];
+        weights += weightsBlob.total()*weightsBlob.elemSize();
+    }
+
+    std::vector<BlobShape> outLayerShapes;
+    getLayerShapes(netInputShapes, layerId, 0, &outLayerShapes);
+    for(int i = 0; i < outLayerShapes.size(); i++)
+    {
+        blobs += outLayerShapes[i].total() * sizeof(float);
+    }
+}
+
+void Net::getMemoryConsumption(const std::vector<BlobShape>& netInputShapes,
+                               size_t& weights, size_t& blobs) const
+{
+    std::vector<int> layerIds;
+    std::vector<std::vector<BlobShape> > outLayerShapes;
+
+    getLayersShapes(netInputShapes, &layerIds, 0, &outLayerShapes);
+
+    weights = blobs = 0;
+    for(int i = 0; i < layerIds.size(); i++)
+    {
+        Impl::MapIdToLayerData::iterator layer = impl->layers.find(layerIds[i]);
+        CV_Assert(layer != impl->layers.end());
+
+        for(int j = 0; j < layer->second.params.blobs.size(); j++)
+        {
+            const Blob& weightsBlob = layer->second.params.blobs[j];
+            weights += weightsBlob.total()*weightsBlob.elemSize();
+        }
+
+        for(int j = 0; j < outLayerShapes[i].size(); j++)
+        {
+            blobs += outLayerShapes[i][j].total() * sizeof(float);
+        }
+    }
+}
+
+void Net::getMemoryConsumption(const int layerId,
+                               const BlobShape& netInputShape,
+                               size_t& weights, size_t& blobs) const
+{
+    getMemoryConsumption(layerId, std::vector<BlobShape>(1, netInputShape),
+                         weights, blobs);
+}
+
+void Net::getMemoryConsumption(const BlobShape& netInputShape,
+                               size_t& weights, size_t& blobs) const
+{
+    getMemoryConsumption(std::vector<BlobShape>(1, netInputShape),
+                         weights, blobs);
+}
 
 //////////////////////////////////////////////////////////////////////////
 
@@ -689,6 +965,12 @@ void Layer::run(const std::vector<Blob> &inputs, std::vector<Blob> &outputs)
     vecToPVec(inputs, inputsp);
     this->allocate(inputsp, outputs);
     this->forward(inputsp, outputs);
+}
+
+void Layer::getOutShapes(const std::vector<BlobShape> &inputs,
+                              std::vector<BlobShape> &outputs, const int requiredOutputs) const
+{
+    outputs = inputs;
 }
 
 Layer::~Layer() {}

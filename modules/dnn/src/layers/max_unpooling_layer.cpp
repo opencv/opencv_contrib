@@ -22,17 +22,18 @@ MaxUnpoolLayerImpl::MaxUnpoolLayerImpl(Size poolKernel_, Size poolPad_, Size poo
     poolStride(poolStride_)
 {}
 
-void MaxUnpoolLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void MaxUnpoolLayerImpl::getOutShapes(const std::vector<BlobShape> &inputs,
+                      std::vector<BlobShape> &outputs, const int requiredOutputs) const
 {
     CV_Assert(inputs.size() == 2);
-    CV_Assert(inputs[0]->total() == inputs[1]->total());
+    CV_Assert(inputs[0].total() == inputs[1].total());
 
-    BlobShape outShape = inputs[0]->shape();
+    BlobShape outShape = inputs[0];
     outShape[2] = (outShape[2] - 1) * poolStride.height + poolKernel.height - 2 * poolPad.height;
     outShape[3] = (outShape[3] - 1) * poolStride.width + poolKernel.width - 2 * poolPad.width;
 
-    outputs.resize(1);
-    outputs[0].create(outShape);
+    outputs.clear();
+    outputs.push_back(outShape);
 }
 
 void MaxUnpoolLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)

@@ -158,24 +158,22 @@ void DetectionOutputLayer::checkInputs(const std::vector<Blob*> &inputs)
     }
 }
 
-void DetectionOutputLayer::allocate(const std::vector<Blob*> &inputs,
-                                    std::vector<Blob> &outputs)
+void DetectionOutputLayer::getOutShapes(const std::vector<BlobShape> &inputs,
+                          std::vector<BlobShape> &outputs, const int requiredOutputs) const
 {
     CV_Assert(inputs.size() > 0);
-    CV_Assert(inputs[0]->num() == inputs[1]->num());
-    _num = inputs[0]->num();
+    CV_Assert(inputs[0][0] == inputs[1][0]);
 
-    _numPriors = inputs[2]->rows() / 4;
-    CV_Assert((_numPriors * _numLocClasses * 4) == inputs[0]->channels());
-    CV_Assert(int(_numPriors * _numClasses) == inputs[1]->channels());
+    int numPriors = inputs[2][2] / 4;
+    CV_Assert((numPriors * _numLocClasses * 4) == inputs[0][1]);
+    CV_Assert(int(numPriors * _numClasses) == inputs[1][1]);
 
     // num() and channels() are 1.
     // Since the number of bboxes to be kept is unknown before nms, we manually
     // set it to (fake) 1.
     // Each row is a 7 dimension std::vector, which stores
     // [image_id, label, confidence, xmin, ymin, xmax, ymax]
-    BlobShape outputShape = BlobShape(1, 1, 1, 7);
-    outputs[0].create(BlobShape(outputShape));
+    outputs.resize(1, BlobShape(1, 1, 1, 7));
 }
 
 void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
@@ -184,6 +182,11 @@ void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
     const float* locationData = inputs[0]->ptrf();
     const float* confidenceData = inputs[1]->ptrf();
     const float* priorData = inputs[2]->ptrf();
+
+    int _num = inputs[0]->num();
+    int _numPriors = inputs[2]->rows() / 4;
+    CV_Assert((_numPriors * _numLocClasses * 4) == inputs[0]->channels());
+    CV_Assert(int(_numPriors * _numClasses) == inputs[1]->channels());
 
     // Retrieve all location predictions.
     std::vector<LabelBBox> allLocationPredictions;

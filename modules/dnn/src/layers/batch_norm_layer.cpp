@@ -78,6 +78,19 @@ void BatchNormLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &
     }
 }
 
+long BatchNormLayerImpl::getFLOPS(const std::vector<BlobShape> &inputs,
+                                  const std::vector<BlobShape> &outputs) const
+{
+    (void)outputs; // suppress unused variable warning
+
+    long flops = 0;
+    for(int i = 0; i < inputs.size(); i++)
+    {
+        flops += 3*inputs[i].total();
+    }
+    return flops;
+}
+
 Ptr<BatchNormLayer> BatchNormLayer::create(bool hasWeights, bool hasBias, float epsilon)
 {
     return Ptr<BatchNormLayer>(new BatchNormLayerImpl(hasWeights, hasBias, epsilon));

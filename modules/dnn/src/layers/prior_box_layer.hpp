@@ -49,17 +49,6 @@ namespace dnn
 {
 class PriorBoxLayer : public Layer
 {
-    size_t _layerWidth;
-    size_t _layerHeight;
-
-    size_t _imageWidth;
-    size_t _imageHeight;
-
-    size_t _outChannelSize;
-
-    float _stepX;
-    float _stepY;
-
     float _minSize;
     float _maxSize;
 
@@ -95,6 +84,11 @@ public:
 
     void getAspectRatios(const LayerParams &params);
     void getVariance(const LayerParams &params);
+
+    virtual void getOutShapes(const std::vector<BlobShape> &inputs,
+                          std::vector<BlobShape> &outputs, const int requiredOutputs) const;
+    virtual long getFLOPS(const std::vector<BlobShape> &inputs,
+                          const std::vector<BlobShape> &outputs) const;
 };
 }
 }

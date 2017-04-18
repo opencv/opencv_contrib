@@ -91,6 +91,17 @@ void MVNLayerImpl::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outpu
     }
 }
 
+long MVNLayerImpl::getFLOPS(const std::vector<BlobShape> &inputs,
+                            const std::vector<BlobShape> &outputs) const
+{
+    (void)outputs; // suppress unused variable warning
+    long flops = 0;
+    for(int i = 0; i < inputs.size(); i++)
+    {
+        flops += 6*inputs[i].total() + 3*inputs[i].total(0, normVariance ? 2 : 1);
+    }
+    return flops;
+}
 
 Ptr<MVNLayer> MVNLayer::create(bool normVariance, bool acrossChannels, double eps)
 {

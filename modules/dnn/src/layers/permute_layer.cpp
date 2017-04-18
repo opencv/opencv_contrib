@@ -107,7 +107,31 @@ PermuteLayer::PermuteLayer(LayerParams &params) : Layer(params)
     checkNeedForPermutation();
 }
 
-void PermuteLayer::computeStrides()
+void PermuteLayer::getOutShapes(const std::vector<BlobShape> &inputs,
+                                std::vector<BlobShape> &outputs, const int requiredOutputs) const
+{
+    if(!_needsPermute)
+        return Layer::getOutShapes(inputs, outputs, requiredOutputs);
+
+    CV_Assert(inputs.size() > 0);
+    CV_Assert((int)_numAxes == inputs[0].dims());
+
+    BlobShape shapeBefore = inputs[0], shapeAfter;
+    for (size_t i = 0; i < _numAxes; i++)
+    {
+        shapeAfter[i] = shapeBefore[_order[i]];
+    }
+
+    outputs.clear();
+
+    for (size_t i = 0; i < inputs.size(); i++)
+    {
+        CV_Assert(inputs[i][2] == shapeBefore[2] && inputs[i][3] == shapeBefore[3]);
+        outputs.push_back(BlobShape(shapeAfter));
+    }
+}
+
+void PermuteLayer::computeStrides(const BlobShape &shapeBefore, const BlobShape &shapeAfter)
 {
     _oldStride.resize(_numAxes);
     _newStride.resize(_numAxes);
@@ -117,11 +141,11 @@ void PermuteLayer::computeStrides()
 
     for(int i = _numAxes - 2; i >= 0; i--)
     {
-        _oldStride[i] = _oldStride[i + 1] * _oldDimensionSize[i + 1];
-        _newStride[i] = _newStride[i + 1] * _newDimensionSize[i + 1];
+        _oldStride[i] = _oldStride[i + 1] * shapeBefore[i + 1];
+        _newStride[i] = _newStride[i + 1] * shapeAfter[i + 1];
     }
 
-    _count = _oldStride[0] * _oldDimensionSize[0];
+    _count = _oldStride[0] * shapeBefore[0];
 }
 
 void PermuteLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
@@ -134,21 +158,7 @@ void PermuteLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> 
     CV_Assert(inputs.size() > 0);
     CV_Assert((int)_numAxes == inputs[0]->shape().dims());
 
-    outputs.resize(inputs.size());
-
-    _oldDimensionSize = inputs[0]->shape();
-    for (size_t i = 0; i < _numAxes; i++)
-    {
-        _newDimensionSize[i] = _oldDimensionSize[_order[i]];
-    }
-
-    for (size_t i = 0; i < inputs.size(); i++)
-    {
-        CV_Assert(inputs[i]->rows() == _oldDimensionSize[2] && inputs[i]->cols() == _oldDimensionSize[3]);
-        outputs[i].create(BlobShape(_newDimensionSize));
-    }
-
-    computeStrides();
+    computeStrides(inputs[0]->shape(), outputs[0].shape());
 }
 
 void PermuteLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
@@ -157,7 +167,7 @@ void PermuteLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &output
     {
         for (size_t j = 0; j < inputs.size(); j++)
         {
-            outputs[j].matRef() = inputs[j]->matRef();
+            outputs[j].shareFrom(*inputs[j]);
         }
         return;
     }

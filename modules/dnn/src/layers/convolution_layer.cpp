@@ -54,11 +54,7 @@ namespace dnn
 {
 
 BaseConvolutionLayerImpl::BaseConvolutionLayerImpl():
-    numOutput(-1), group(-1),
-    inpH(0), inpW(0), inpCn(0),
-    outH(0), outW(0), outCn(0),
-    inpGroupCn(0), outGroupCn(0),
-    ksize(0), bias(false), tryUseOpenCL(false)
+    bias(false), tryUseOpenCL(false)
 {
 #ifdef HAVE_LAPACK
     if (getBlasThreads() != cv::getThreadNum())
@@ -92,25 +88,20 @@ void BaseConvolutionLayerImpl::allocate(const std::vector<Blob*> &inputs, std::v
         CV_Assert(inputs[i]->rows() == input.rows() && inputs[i]->cols() == input.cols());
     }
 
-    computeInpOutShape(input);
+    getConvPoolPaddings(input.size2(), outputs[0].size2(), kernel, stride, padMode, pad);
 
     int allocFlags = useOpenCL ? Blob::ALLOC_UMAT : Blob::ALLOC_MAT;
 
     if (bias)
     {
-        biasOnesBlob.create(Shape(1, outH * outW), input.type(), allocFlags);
+        biasOnesBlob.create(Shape(1, outputs[0].size2().area()), input.type(), allocFlags);
         biasOnesBlob.setTo(1);
-    }
-
-    outputs.resize(inputs.size());
-    for (size_t i = 0; i < inputs.size(); i++)
-    {
-        outputs[i].create(Shape(inputs[i]->num(), outCn, outH, outW), input.type(), allocFlags);
     }
 
     if (!is1x1())
     {
-        colRowBlob.create(colRowBlobShape, input.type(), allocFlags);
+        colRowBlob.create(computeColRowShape(input.shape(), outputs[0].shape()),
+                input.type(), allocFlags);
         colRowBlob.setTo(0);
     }
 }
@@ -122,37 +113,45 @@ bool BaseConvolutionLayerImpl::is1x1() const
            (dilation.height == 1 && dilation.width == 1);
 }
 
-void ConvolutionLayerImpl::computeInpOutShape(const Blob &input)
+BlobShape ConvolutionLayerImpl::computeColRowShape(const BlobShape &inpShape, const BlobShape &outShape) const
 {
+    Size out(outShape[3], outShape[2]);
+    int inpGroupCn = blobs[0].channels();
+    int ksize = inpGroupCn * kernel.height * kernel.width;
+    return BlobShape(out.area(), ksize);
+}
+
+void ConvolutionLayerImpl::getOutShapes(const std::vector<BlobShape> &inputs,
+                                        std::vector<BlobShape> &outputs, const int requiredOutputs) const
+{
+    CV_Assert(blobs.size() != 0);
     CV_Assert(!bias || blobs[1].total() == (size_t)blobs[0].num());
+    CV_Assert(inputs.size() != 0);
 
-    numOutput = blobs[0].num();
+    int inpCn = inputs[0][1];
+    int inpH = inputs[0][2];
+    int inpW = inputs[0][3];
 
-    inpH = input.rows();
-    inpW = input.cols();
-    inpCn = input.channels();
-    outCn = numOutput;
+    int outCn = blobs[0].num();
+    Size out;
 
     if (padMode.empty())
     {
-        outH = (inpH + 2 * pad.height - (dilation.height * (kernel.height - 1) + 1)) / stride.height + 1;
-        outW = (inpW + 2 * pad.width - (dilation.width * (kernel.width - 1) + 1)) / stride.width + 1;
+        out.height = (inpH + 2 * pad.height - (dilation.height * (kernel.height - 1) + 1)) / stride.height + 1;
+        out.width = (inpW + 2 * pad.width - (dilation.width * (kernel.width - 1) + 1)) / stride.width + 1;
     }
     else
     {
-        getConvPoolOutParams(inpH, inpW, kernel, stride, pad, padMode, outH, outW);
+        getConvPoolOutParams(Size(inpH, inpW), kernel, stride, padMode, out);
     }
 
-    group = inpCn / blobs[0].channels();
+    int group = inpCn / blobs[0].channels();
 
     CV_Assert(inpCn % group == 0 && outCn % group == 0);
     CV_Assert(blobs[0].num() == outCn && blobs[0].channels() == inpCn / group);
 
-    outGroupCn = outCn / group;
-    inpGroupCn = inpCn / group;
-    ksize = inpGroupCn * kernel.height * kernel.width;
-
-    colRowBlobShape = BlobShape(outH * outW, ksize);
+    BlobShape outShape(inputs[0][0], outCn, out.height, out.width);
+    outputs.resize(inputs.size(), outShape);
 }
 
 template<typename XMat>
@@ -160,12 +159,21 @@ void ConvolutionLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob
 {
     CV_Assert(inputs.size() > 0);
 
+    int outCn = blobs[0].num();
+    int inpCn = inputs[0]->size(1);
+    int inpGroupCn = blobs[0].channels();
+    int ksize = inpGroupCn * kernel.height * kernel.width;
+
     XMat weightsMat = reshaped(blobs[0].getRefConst<XMat>(), Shape(outCn, ksize));
     XMat biasesMat  = (bias) ? reshaped(blobs[1].getRefConst<XMat>(), Shape(outCn, 1)) : XMat();
 
     for (size_t ii = 0; ii < outputs.size(); ii++)
     {
         int numImg = inputs[ii]->size(0);
+        int outH = outputs[ii].size(2), outW = outputs[ii].size(3);
+        int group = inpCn / blobs[0].channels();
+        int outGroupCn = outCn / group;
+
         XMat inpMat = inputs[ii]->getRefConst<XMat>();
         XMat outMat = reshaped(outputs[ii].getRef<XMat>(), Shape(numImg*group*outGroupCn, outH*outW));
 
@@ -175,7 +183,7 @@ void ConvolutionLayerImpl::forward_(std::vector<Blob*> &inputs, std::vector<Blob
             {
                 XMat colMat, curInp = slice(inpMat, n, _Range(g * inpGroupCn, inpGroupCn));
 
-                im2row(curInp, colMat);
+                im2row(curInp, colMat, inputs[ii]->shape(), outputs[ii].shape());
 
                 _Range kerRange(g * outGroupCn, outGroupCn);
                 XMat kerMat = weightsMat.rowRange(kerRange);
@@ -202,14 +210,19 @@ void ConvolutionLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob>
         forward_<UMat>(inputs, outputs);
 }
 
-void ConvolutionLayerImpl::im2col(const UMat &srcImg, UMat &dstCol)
+void ConvolutionLayerImpl::im2col(const UMat &srcImg, UMat &dstCol, const BlobShape& inShape, const BlobShape& outShape)
 {
+    int outH = outShape[2], outW = outShape[3];
+    int inpGroupCn = blobs[0].channels();
+    int ksize = inpGroupCn * kernel.height * kernel.width;
     if (is1x1())
     {
         dstCol = reshaped(srcImg, Shape(ksize, outH*outW));
         return;
     }
 #ifdef HAVE_OPENCL
+    int inpH = inShape[2];
+    int inpW = inShape[3];
     CV_Assert(im2col_ocl(srcImg, inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, dilation.height, dilation.width, this->colRowBlob.umatRef()));
     dstCol = this->colRowBlob.umatRefConst();
 #else
@@ -218,8 +231,13 @@ void ConvolutionLayerImpl::im2col(const UMat &srcImg, UMat &dstCol)
 #endif
 }
 
-void ConvolutionLayerImpl::im2col(const Mat &srcImg, Mat &dstCol)
+void ConvolutionLayerImpl::im2col(const Mat &srcImg, Mat &dstCol, const BlobShape& inShape, const BlobShape& outShape)
 {
+    int inpH = inShape[2];
+    int inpW = inShape[3];
+    int outH = outShape[2], outW = outShape[3];
+    int inpGroupCn = blobs[0].channels();
+    int ksize = inpGroupCn * kernel.height * kernel.width;
     if (is1x1())
     {
         dstCol = reshaped(srcImg, Shape(ksize, outH*outW));
@@ -239,8 +257,14 @@ void ConvolutionLayerImpl::im2col(const Mat &srcImg, Mat &dstCol)
     dstCol = colMat;
 }
 
-void ConvolutionLayerImpl::im2row(const  Mat &srcImg,  Mat &dstRow)
+void ConvolutionLayerImpl::im2row(const  Mat &srcImg,  Mat &dstRow, const BlobShape& inShape, const BlobShape& outShape)
 {
+    int inpH = inShape[2];
+    int inpW = inShape[3];
+    int outH = outShape[2], outW = outShape[3];
+    int inpGroupCn = blobs[0].channels();
+    int ksize = inpGroupCn * kernel.height * kernel.width;
+
     if (is1x1())
     {
         dstRow = reshaped(srcImg, Shape(ksize, outH*outW)).t();
@@ -260,36 +284,61 @@ void ConvolutionLayerImpl::im2row(const  Mat &srcImg,  Mat &dstRow)
     dstRow = colMat;
 }
 
-void ConvolutionLayerImpl::im2row(const UMat &srcImg, UMat &dstCol)
+void ConvolutionLayerImpl::im2row(const UMat &srcImg, UMat &dstCol, const BlobShape& inShape, const BlobShape& outShape)
 {
     CV_Error(cv::Error::StsNotImplemented, "");
 }
 
+long ConvolutionLayerImpl::getFLOPS(const std::vector<BlobShape> &inputs,
+                                    const std::vector<BlobShape> &outputs) const
+{
+    CV_Assert(inputs.size() == outputs.size());
+
+    long flops = 0;
+    for (int i = 0; i < inputs.size(); i++)
+    {
+        flops += outputs[i].total()*(2*kernel.area()*inputs[i][1] + 1);
+    }
+
+    return flops;
+}
+
 //Deconvolution
 
-void DeConvolutionLayerImpl::computeInpOutShape(const Blob &inpBlob)
+BlobShape DeConvolutionLayerImpl::computeColRowShape(const BlobShape &inpShape,
+                                                     const BlobShape &outShape) const
+{
+    int inpCn = inpShape[1];
+    int inpH = inpShape[2];
+    int inpW = inpShape[3];
+    int outCn = outShape[1];
+    int group = inpCn / blobs[0].channels();
+    int outGroupCn = outCn / group;
+    int ksize = outGroupCn * kernel.height * kernel.width;
+    return BlobShape(ksize, inpH * inpW);
+}
+
+void DeConvolutionLayerImpl::getOutShapes(const std::vector<BlobShape> &inputs,
+                                          std::vector<BlobShape> &outputs, const int requiredOutputs) const
 {
     CV_Assert(!bias || blobs[1].total() == (size_t)blobs[0].num());
+    CV_Assert(inputs.size() != 0);
 
-    numOutput = blobs[0].num();
+    int inpCn = inputs[0][1];
+    int inpH = inputs[0][2];
+    int inpW = inputs[0][3];
 
-    inpH = inpBlob.rows();
-    inpW = inpBlob.cols();
-    inpCn = inpBlob.channels();
+    int outH = stride.height * (inpH - 1) + kernel.height - 2 * pad.height + adjustPad.height;
+    int outW = stride.width * (inpW - 1) + kernel.width - 2 * pad.width + adjustPad.width;
+    int outCn = blobs[0].num();
 
-    outH = stride.height * (inpH - 1) + kernel.height - 2 * pad.height + adjustPad.height;
-    outW = stride.width * (inpW - 1) + kernel.width - 2 * pad.width + adjustPad.width;
-    outCn = numOutput;
-
-    group = inpCn / blobs[0].channels();
-    outGroupCn = outCn / group;
-    inpGroupCn = inpCn / group;
-    ksize = outGroupCn * kernel.height * kernel.width;
+    int group = inpCn / blobs[0].channels();
 
     CV_Assert(inpCn % group == 0 && outCn % group == 0);
     CV_Assert(blobs[0].num() == outCn && blobs[0].channels() == inpCn / group);
 
-    colRowBlobShape = BlobShape(ksize, inpH * inpW);
+    BlobShape outShape(inputs[0][0], outCn, outH, outW);
+    outputs.resize(inputs.size(), outShape);
 }
 
 void DeConvolutionLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
@@ -303,11 +352,26 @@ void DeConvolutionLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blo
 template<typename XMat>
 void DeConvolutionLayerImpl::forward_(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
 {
+    CV_Assert(inputs.size() == outputs.size());
+
+    int outCn = blobs[0].num();
+    int inpCn = inputs[0]->size(1);
+    int group = inpCn / blobs[0].channels();
+    int outGroupCn = outCn / group;
+    int ksize = outGroupCn * kernel.height * kernel.width;
+
     XMat weightsMat = reshaped(blobs[0].getRefConst<XMat>(), Shape(inpCn, ksize));
     XMat biasesMat  = (bias) ? reshaped(blobs[1].getRefConst<XMat>(), Shape(outCn, 1)) : XMat();
 
     for (size_t ii = 0; ii < outputs.size(); ii++)
     {
+        int inpH = inputs[ii]->size(2);
+        int inpW = inputs[ii]->size(3);
+        int outH = outputs[ii].size(2), outW = outputs[ii].size(3);
+        int group = inpCn / blobs[0].channels();
+        int inpGroupCn = blobs[0].channels();
+        int outGroupCn = outCn / group;
+
         int numImg = inputs[ii]->size(0);
         XMat convBlob = reshaped(inputs[ii]->getRefConst<XMat>(), Shape(numImg*inpCn, inpH*inpW));
         XMat decnBlob = reshaped(outputs[ii].getRef<XMat>(), Shape(numImg*outCn, outH*outW));
@@ -325,7 +389,7 @@ void DeConvolutionLayerImpl::forward_(std::vector<Blob *> &inputs, std::vector<B
                 dnn::gemm(wghtMat, convMat, 1, colMat, 0, GEMM_1_T);
 
                 if (!is1x1())
-                    col2im(colMat, dstMat);
+                    col2im(colMat, dstMat, inputs[ii]->shape(), outputs[ii].shape());
 
                 if (bias)
                 {
@@ -337,8 +401,12 @@ void DeConvolutionLayerImpl::forward_(std::vector<Blob *> &inputs, std::vector<B
     }
 }
 
-void DeConvolutionLayerImpl::col2im(const Mat &colMat, Mat &dstImg)
+void DeConvolutionLayerImpl::col2im(const Mat &colMat, Mat &dstImg, const BlobShape& inShape, const BlobShape& outShape)
 {
+    int outCn = outShape[1], outH = outShape[2], outW = outShape[3];
+    int inpCn = inShape[1];
+    int group = inpCn / blobs[0].channels();
+    int outGroupCn = outCn / group;
     if (is1x1())
     {
         dstImg = colMat;
@@ -347,10 +415,10 @@ void DeConvolutionLayerImpl::col2im(const Mat &colMat, Mat &dstImg)
     if (dstImg.type() == CV_32F)
         col2im_CpuPBody<float>::run(colMat.ptr<float>(), outGroupCn, outH, outW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, dstImg.ptr<float>());
     if (dstImg.type() == CV_64F)
-        col2im_CpuPBody<double>::run(colMat.ptr<double>(), inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, dstImg.ptr<double>());
+        col2im_CpuPBody<double>::run(colMat.ptr<double>(), outGroupCn, outH, outW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, dstImg.ptr<double>());
 }
 
-void DeConvolutionLayerImpl::col2im(const UMat &colMat, UMat &dstImg)
+void DeConvolutionLayerImpl::col2im(const UMat &colMat, UMat &dstImg, const BlobShape& inShape, const BlobShape& outShape)
 {
     if (is1x1())
     {
@@ -358,11 +426,31 @@ void DeConvolutionLayerImpl::col2im(const UMat &colMat, UMat &dstImg)
         return;
     }
 #ifdef HAVE_OPENCL
-    CV_Assert(col2im_ocl(colMat, inpGroupCn, inpH, inpW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, dstImg));
+    int outCn = outShape[1], outH = outShape[2], outW = outShape[3];
+    int inpCn = inShape[1];
+    int group = inpCn / blobs[0].channels();
+    int outGroupCn = outCn / group;
+    CV_Assert(col2im_ocl(colMat, outGroupCn, outH, outW, kernel.height, kernel.width, pad.height, pad.width, stride.height, stride.width, dstImg));
 #else
     CV_Error(Error::StsInternal, "");
     dstImg = colMat;
 #endif
+}
+
+long DeConvolutionLayerImpl::getFLOPS(const std::vector<BlobShape> &inputs,
+                                      const std::vector<BlobShape> &outputs) const
+{
+    CV_Assert(inputs.size() == outputs.size());
+
+    float flops = 0;
+    int outChannels = blobs[0].num();
+
+    for (int i = 0; i < inputs.size(); i++)
+    {
+        flops += 2*outChannels*kernel.area()*inputs[i].total();
+    }
+
+    return flops;
 }
 
 //Initializers

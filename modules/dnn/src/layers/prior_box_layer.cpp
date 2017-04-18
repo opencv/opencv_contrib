@@ -184,18 +184,13 @@ PriorBoxLayer::PriorBoxLayer(LayerParams &params) : Layer(params)
     }
 }
 
-void PriorBoxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void PriorBoxLayer::getOutShapes(const std::vector<BlobShape> &inputs,
+                                 std::vector<BlobShape> &outputs, const int requiredOutputs) const
 {
     CV_Assert(inputs.size() == 2);
 
-    _layerWidth = inputs[0]->cols();
-    _layerHeight = inputs[0]->rows();
-
-    _imageWidth = inputs[1]->cols();
-    _imageHeight = inputs[1]->rows();
-
-    _stepX = static_cast<float>(_imageWidth) / _layerWidth;
-    _stepY = static_cast<float>(_imageHeight) / _layerHeight;
+    int layerHeight = inputs[0][2];
+    int layerWidth = inputs[0][3];
 
     // Since all images in a batch has same height and width, we only need to
     // generate one set of priors which can be shared across all images.
@@ -203,49 +198,63 @@ void PriorBoxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob>
     // 2 channels. First channel stores the mean of each prior coordinate.
     // Second channel stores the variance of each prior coordinate.
     size_t outChannels = 2;
-    _outChannelSize = _layerHeight * _layerWidth * _numPriors * 4;
 
-    outputs[0].create(BlobShape(outNum, outChannels, _outChannelSize));
+    outputs.resize(1, BlobShape(outNum, outChannels, layerHeight * layerWidth * _numPriors * 4));
+}
+
+void PriorBoxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+{
+    CV_Assert(inputs.size() == 2);
+
     outputs[0].matRef() = 0;
 }
 
 void PriorBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
-    (void)inputs; // to suppress unused parameter warning
+    int layerWidth = inputs[0]->cols();
+    int layerHeight = inputs[0]->rows();
+
+    int imageWidth = inputs[1]->cols();
+    int imageHeight = inputs[1]->rows();
+
+    float stepX = static_cast<float>(imageWidth) / layerWidth;
+    float stepY = static_cast<float>(imageHeight) / layerHeight;
+
+    int outChannelSize = layerHeight * layerWidth * _numPriors * 4;
 
     float* outputPtr = outputs[0].ptrf();
 
     // first prior: aspect_ratio = 1, size = min_size
     int idx = 0;
-    for (size_t h = 0; h < _layerHeight; ++h)
+    for (size_t h = 0; h < layerHeight; ++h)
     {
-        for (size_t w = 0; w < _layerWidth; ++w)
+        for (size_t w = 0; w < layerWidth; ++w)
         {
             _boxWidth = _boxHeight = _minSize;
 
-            float center_x = (w + 0.5) * _stepX;
-            float center_y = (h + 0.5) * _stepY;
+            float center_x = (w + 0.5) * stepX;
+            float center_y = (h + 0.5) * stepY;
             // xmin
-            outputPtr[idx++] = (center_x - _boxWidth / 2.) / _imageWidth;
+            outputPtr[idx++] = (center_x - _boxWidth / 2.) / imageWidth;
             // ymin
-            outputPtr[idx++] = (center_y - _boxHeight / 2.) / _imageHeight;
+            outputPtr[idx++] = (center_y - _boxHeight / 2.) / imageHeight;
             // xmax
-            outputPtr[idx++] = (center_x + _boxWidth / 2.) / _imageWidth;
+            outputPtr[idx++] = (center_x + _boxWidth / 2.) / imageWidth;
             // ymax
-            outputPtr[idx++] = (center_y + _boxHeight / 2.) / _imageHeight;
+            outputPtr[idx++] = (center_y + _boxHeight / 2.) / imageHeight;
 
             if (_maxSize > 0)
             {
                 // second prior: aspect_ratio = 1, size = sqrt(min_size * max_size)
                 _boxWidth = _boxHeight = sqrt(_minSize * _maxSize);
                 // xmin
-                outputPtr[idx++] = (center_x - _boxWidth / 2.) / _imageWidth;
+                outputPtr[idx++] = (center_x - _boxWidth / 2.) / imageWidth;
                 // ymin
-                outputPtr[idx++] = (center_y - _boxHeight / 2.) / _imageHeight;
+                outputPtr[idx++] = (center_y - _boxHeight / 2.) / imageHeight;
                 // xmax
-                outputPtr[idx++] = (center_x + _boxWidth / 2.) / _imageWidth;
+                outputPtr[idx++] = (center_x + _boxWidth / 2.) / imageWidth;
                 // ymax
-                outputPtr[idx++] = (center_y + _boxHeight / 2.) / _imageHeight;
+                outputPtr[idx++] = (center_y + _boxHeight / 2.) / imageHeight;
             }
 
             // rest of priors
@@ -259,20 +268,20 @@ void PriorBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outpu
                 _boxWidth = _minSize * sqrt(ar);
                 _boxHeight = _minSize / sqrt(ar);
                 // xmin
-                outputPtr[idx++] = (center_x - _boxWidth / 2.) / _imageWidth;
+                outputPtr[idx++] = (center_x - _boxWidth / 2.) / imageWidth;
                 // ymin
-                outputPtr[idx++] = (center_y - _boxHeight / 2.) / _imageHeight;
+                outputPtr[idx++] = (center_y - _boxHeight / 2.) / imageHeight;
                 // xmax
-                outputPtr[idx++] = (center_x + _boxWidth / 2.) / _imageWidth;
+                outputPtr[idx++] = (center_x + _boxWidth / 2.) / imageWidth;
                 // ymax
-                outputPtr[idx++] = (center_y + _boxHeight / 2.) / _imageHeight;
+                outputPtr[idx++] = (center_y + _boxHeight / 2.) / imageHeight;
             }
         }
     }
     // clip the prior's coordidate such that it is within [0, 1]
     if (_clip)
     {
-        for (size_t d = 0; d < _outChannelSize; ++d)
+        for (size_t d = 0; d < outChannelSize; ++d)
         {
             outputPtr[d] = std::min<float>(std::max<float>(outputPtr[d], 0.), 1.);
         }
@@ -287,9 +296,9 @@ void PriorBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outpu
     else
     {
         int count = 0;
-        for (size_t h = 0; h < _layerHeight; ++h)
+        for (size_t h = 0; h < layerHeight; ++h)
         {
-            for (size_t w = 0; w < _layerWidth; ++w)
+            for (size_t w = 0; w < layerWidth; ++w)
             {
                 for (size_t i = 0; i < _numPriors; ++i)
                 {
@@ -303,5 +312,20 @@ void PriorBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outpu
         }
     }
 }
+
+long PriorBoxLayer::getFLOPS(const std::vector<BlobShape> &inputs,
+                             const std::vector<BlobShape> &outputs) const
+{
+    (void)outputs; // suppress unused variable warning
+    long flops = 0;
+
+    for (int i = 0; i < inputs.size(); i++)
+    {
+        flops += inputs[i].total(2) * _numPriors * 4;
+    }
+
+    return flops;
+}
+
 }
 }

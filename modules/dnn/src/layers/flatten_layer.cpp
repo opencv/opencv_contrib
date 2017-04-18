@@ -61,47 +61,59 @@ void FlattenLayer::checkInputs(const std::vector<Blob*> &inputs)
     CV_Assert(inputs.size() > 0);
     for (size_t i = 1; i < inputs.size(); i++)
     {
-        for (size_t j = 0; j < _numAxes; j++)
+        for (size_t j = 0; j < inputs[0]->dims(); j++)
         {
             CV_Assert(inputs[i]->shape()[j] == inputs[0]->shape()[j]);
         }
     }
 }
 
+void FlattenLayer::getOutShapes(const std::vector<BlobShape> &inputs,
+                                std::vector<BlobShape> &outputs,
+                                const int requiredOutputs) const
+{
+    CV_Assert(inputs.size() > 0);
+
+    int numAxes = inputs[0].dims();
+    int startAxis = inputs[0].canonicalAxis(_startAxis);
+    int endAxis = inputs[0].canonicalAxis(_endAxis);
+
+    for (size_t i = 1; i < inputs.size(); i++)
+    {
+        CV_Assert(inputs[i] == inputs[0]);
+    }
+
+
+    CV_Assert(startAxis >= 0);
+    CV_Assert(endAxis >= startAxis && endAxis < (int)numAxes);
+
+    size_t flattenedDimensionSize = inputs[0].total(startAxis, endAxis);
+
+    std::vector<int> outputShapeVec;
+    for (int i = 0; i < startAxis; i++)
+    {
+        outputShapeVec.push_back(inputs[0][i]);
+    }
+    outputShapeVec.push_back(flattenedDimensionSize);
+    for (size_t i = endAxis + 1; i < numAxes; i++)
+    {
+        outputShapeVec.push_back(inputs[0][i]);
+    }
+    CV_Assert(outputShapeVec.size() <= 4);
+
+    outputs.resize(inputs.size(), BlobShape(outputShapeVec));
+}
+
 void FlattenLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
 {
     checkInputs(inputs);
 
-    _numAxes = inputs[0]->dims();
-    _endAxis = inputs[0]->canonicalAxis(_endAxis);
-    CV_Assert(_startAxis >= 0);
-    CV_Assert(_endAxis >= _startAxis && _endAxis < (int)_numAxes);
-
-    size_t flattenedDimensionSize = 1;
-    for (int i = _startAxis; i <= _endAxis; i++)
-    {
-        flattenedDimensionSize *= inputs[0]->size(i);
-    }
-
-    std::vector<int> outputShapeVec;
-    for (int i = 0; i < _startAxis; i++)
-    {
-        outputShapeVec.push_back(inputs[0]->size(i));
-    }
-    outputShapeVec.push_back(flattenedDimensionSize);
-    for (size_t i = _endAxis + 1; i < _numAxes; i++)
-    {
-        outputShapeVec.push_back(inputs[0]->size(i));
-    }
-    CV_Assert(outputShapeVec.size() <= 4);
-
-    resultShape = BlobShape(outputShapeVec);
-
     for (size_t i = 0; i < inputs.size(); i++)
     {
         //in-place
+        BlobShape outShape = outputs[i].shape();
         outputs[i].shareFrom(*inputs[i]);
-        outputs[i].reshape(resultShape);
+        outputs[i].reshape(outShape);
     }
 }
 
@@ -109,8 +121,9 @@ void FlattenLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &output
 {
     for (size_t j = 0; j < inputs.size(); j++)
     {
+        BlobShape outShape = outputs[j].shape();
         outputs[j].shareFrom(*inputs[j]);
-        outputs[j].reshape(resultShape);
+        outputs[j].reshape(outShape);
     }
 }
 }

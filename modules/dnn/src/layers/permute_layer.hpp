@@ -52,9 +52,6 @@ class PermuteLayer : public Layer
     size_t _count;
     std::vector<size_t> _order;
 
-    BlobShape _oldDimensionSize;
-    BlobShape _newDimensionSize;
-
     std::vector<size_t> _oldStride;
     std::vector<size_t> _newStride;
     bool _needsPermute;
@@ -63,12 +60,15 @@ class PermuteLayer : public Layer
 
     void checkCurrentOrder(int currentOrder);
     void checkNeedForPermutation();
-    void computeStrides();
+    void computeStrides(const BlobShape& shapeBefore, const BlobShape& shapeAfter);
 
 public:
     PermuteLayer(LayerParams &params);
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+
+    virtual void getOutShapes(const std::vector<BlobShape> &inputs,
+                          std::vector<BlobShape> &outputs, const int requiredOutputs) const;
 };
 }
 }

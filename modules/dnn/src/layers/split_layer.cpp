@@ -54,17 +54,15 @@ SplitLayerImpl::SplitLayerImpl(int outputsCount_ /*= -1*/)
     outputsCount = outputsCount_;
 }
 
-void SplitLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void SplitLayerImpl::getOutShapes(const std::vector<BlobShape> &inputs,
+                                  std::vector<BlobShape> &outputs,
+                                  const int requiredOutputs) const
 {
     CV_Assert(inputs.size() == 1);
-    useOpenCL = ocl::useOpenCL() && inputs[0]->getState() == Blob::HEAD_AT_UMAT;
-    int allocFlags = useOpenCL ? Blob::ALLOC_UMAT : Blob::ALLOC_MAT;
 
-    if (outputsCount >= 0)
-        outputs.resize(outputsCount);
+    outputs.resize(outputsCount >= 0 ? outputsCount : requiredOutputs,
+                   inputs[0]);
 
-    for (size_t i = 0; i < outputs.size(); i++)
-        outputs[i].create(inputs[0]->shape(), inputs[0]->type(), allocFlags);
 }
 
 void SplitLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)

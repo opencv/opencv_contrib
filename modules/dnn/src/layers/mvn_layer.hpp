@@ -56,6 +56,8 @@ public:
     MVNLayerImpl(bool normVariance_ = true, bool acrossChannels_ = false, double eps_ = 1e-9);
     void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
     void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    virtual long getFLOPS(const std::vector<BlobShape> &inputs,
+                          const std::vector<BlobShape> &outputs) const;
 };
 
 }

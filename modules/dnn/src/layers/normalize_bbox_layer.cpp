@@ -135,7 +135,7 @@ void NormalizeBBoxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<
 
     for(size_t i = 0; i < inputs.size(); i++)
     {
-        outputs[i].create(BlobShape(inputs[0]->shape()));
+        outputs[i].create(inputs[0]->shape());
     }
 }
 
