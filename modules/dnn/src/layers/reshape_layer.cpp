@@ -49,42 +49,109 @@ namespace cv
 namespace dnn
 {
 
-ReshapeLayerImpl::ReshapeLayerImpl(const BlobShape &newShape_, Range applyingRange_, bool enableReordering_) :
+static void computeShapeByReshapeMask(const std::vector<int> &srcShape,
+                               const std::vector<int> &maskShape,
+                               Range srcRange /*= Range::all()*/,
+                               std::vector<int>& dstShape)
+{
+    int srcShapeSize = (int)srcShape.size();
+    int maskShapeSize = (int)maskShape.size();
+
+    if (srcRange == Range::all())
+        srcRange = Range(0, srcShapeSize);
+    else
+    {
+        int sz = srcRange.size();
+        srcRange.start = srcRange.start < 0 ? srcRange.start + srcShapeSize : srcRange.start;
+        srcRange.end = srcRange.end == INT_MAX ? srcShapeSize : srcRange.start + sz;
+    }
+
+    CV_Assert(0 <= srcRange.start && srcRange.start <= srcRange.end && srcRange.end <= srcShapeSize);
+    int dstShapeSize = srcShapeSize - srcRange.size() + maskShapeSize;
+    dstShape.resize(dstShapeSize);
+
+    std::copy(srcShape.begin(), srcShape.begin() + srcRange.start, dstShape.begin());
+    std::copy(srcShape.begin() + srcRange.end, srcShape.begin() + srcShapeSize, dstShape.begin() + srcRange.start + maskShapeSize);
+
+    int inferDim = -1;
+    for (int i = 0; i < maskShapeSize; i++)
+    {
+        if (maskShape[i] > 0)
+        {
+            dstShape[srcRange.start + i] = maskShape[i];
+        }
+        else if (maskShape[i] == 0)
+        {
+            if (srcRange.start + i >= srcShapeSize)
+                CV_Error(Error::StsBadArg, format("Copy dim[%d] (which has zero size) is out of the source shape bounds", srcRange.start + i));
+            dstShape[srcRange.start + i] = srcShape[srcRange.start + i];
+        }
+        else if (maskShape[i] == -1)
+        {
+            if (inferDim != -1)
+                CV_Error(Error::StsAssert, "Duplicate of inferred dim (which is denoted by -1)");
+            inferDim = srcRange.start + i;
+            dstShape[inferDim] = 1;
+        }
+        else
+            CV_Error(Error::StsBadArg, "maskShape[i] >= -1");
+    }
+
+    size_t srcTotal = shapeTotal(srcShape);
+    size_t dstTotal = shapeTotal(dstShape);
+
+    if (inferDim != -1)
+    {
+        if (srcTotal % dstTotal != 0)
+            CV_Error(Error::StsBackTrace, "Can't infer a dim denoted by -1");
+        
+        dstShape[inferDim] = (int)(srcTotal / dstTotal);
+    }
+    else
+    {
+        CV_Assert(srcTotal == dstTotal);
+    }
+}
+
+ReshapeLayerImpl::ReshapeLayerImpl(const std::vector<int> &newShape_,
+                                   Range applyingRange_,
+                                   bool enableReordering_) :
     enableReordering(enableReordering_)
 {
     newShapeDesc = newShape_;
     newShapeRange = applyingRange_;
 }
 
-void ReshapeLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void ReshapeLayerImpl::allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     outputs.resize(inputs.size());
     outShapes.resize(inputs.size());
 
     for (size_t i = 0; i < inputs.size(); i++)
     {
-        outShapes[i] = computeShapeByReshapeMask(inputs[i]->shape(), newShapeDesc, newShapeRange);
-        outputs[i].shareFrom(*inputs[i]);
-        outputs[i].reshape(outShapes[i]);
+        std::vector<int> inputShape(inputs[i]->size.p, inputs[i]->size.p + inputs[i]->dims);
+        computeShapeByReshapeMask(inputShape, newShapeDesc, newShapeRange, outShapes[i]);
+        outputs[i] = inputs[i]->reshape(1, outShapes[i]);
     }
 }
 
-void ReshapeLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void ReshapeLayerImpl::forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     for (size_t i = 0; i < outputs.size(); i++)
     {
-        Blob srcBlob = *inputs[i];
-        BlobShape inputShape = inputs[i]->shape();
-        bool channelsReduced = inputShape.dims() > outShapes[i].dims() ||
-                (inputShape.dims() == 4 && inputShape[1] > outShapes[i][1]);
-        bool performReordering = enableReordering && inputShape.dims() == 4 && channelsReduced;
+        Mat srcBlob = *inputs[i];
+        int dims = srcBlob.dims;
+        std::vector<int> inputShape(srcBlob.size.p, srcBlob.size.p + dims);
+        bool channelsReduced = dims > (int)outShapes[i].size() ||
+                (dims == 4 && inputShape[1] > outShapes[i][1]);
+        bool performReordering = enableReordering && dims == 4 && channelsReduced;
 
         if (performReordering)
         {
-            Blob reordered_blob(inputShape, inputs[i]->type());
+            Mat reordered_blob(inputShape, srcBlob.type());
 
-            float *dstData = reordered_blob.matRef().ptr<float>();
-            const float *srcData = srcBlob.matRefConst().ptr<float>();
+            float *dstData = reordered_blob.ptr<float>();
+            const float *srcData = srcBlob.ptr<float>();
 
             int num = inputShape[0], channels = inputShape[1], height = inputShape[2], width = inputShape[3];
             int total = num*channels*height*width;
@@ -107,12 +174,12 @@ void ReshapeLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &ou
             srcBlob = reordered_blob;
         }
 
-        outputs[i].shareFrom(srcBlob);
-        outputs[i].reshape(outShapes[i]);
+        // TODO: we should not assign srcBlob if performReordering is true.
+        outputs[i] = srcBlob.reshape(1, outShapes[i]);
     }
 }
 
-Ptr<ReshapeLayer> ReshapeLayer::create(const BlobShape &newShape, Range applyingRange /*= Range::all()*/,
+Ptr<ReshapeLayer> ReshapeLayer::create(const std::vector<int> &newShape, Range applyingRange /*= Range::all()*/,
                                        bool enableReordering /*= false*/)
 {
     return Ptr<ReshapeLayer>(new ReshapeLayerImpl(newShape, applyingRange, enableReordering));

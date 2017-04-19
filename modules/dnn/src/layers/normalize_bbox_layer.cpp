@@ -101,27 +101,27 @@ NormalizeBBoxLayer::NormalizeBBoxLayer(LayerParams &params) : Layer(params)
     _channel_shared = getParameter<bool>(params, "channel_shared");
 }
 
-void NormalizeBBoxLayer::checkInputs(const std::vector<Blob*> &inputs)
+void NormalizeBBoxLayer::checkInputs(const std::vector<Mat*> &inputs)
 {
     CV_Assert(inputs.size() > 0);
     for (size_t i = 1; i < inputs.size(); i++)
     {
-        for (size_t j = 0; j < _numAxes; j++)
-        {
-            CV_Assert(inputs[i]->shape()[j] == inputs[0]->shape()[j]);
-        }
+        CV_Assert(inputs[i]->size == inputs[0]->size);
     }
-    CV_Assert(inputs[0]->dims() > 2);
+    CV_Assert(inputs[0]->dims > 2);
 }
 
-void NormalizeBBoxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void NormalizeBBoxLayer::allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     checkInputs(inputs);
 
-    _num = inputs[0]->num();
-    _channels = inputs[0]->shape()[1];
-    _rows = inputs[0]->shape()[2];
-    _cols = inputs[0]->shape()[3];
+    const Mat& inp0 = *inputs[0];
+    CV_Assert(inp0.dims == 4 && inp0.type() == CV_32F);
+
+    _num = inp0.size[0];
+    _channels = inp0.size[1];
+    _rows = inp0.size[2];
+    _cols = inp0.size[3];
 
     _channelSize = _rows * _cols;
     _imageSize = _channelSize * _channels;
@@ -132,14 +132,16 @@ void NormalizeBBoxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<
     _sumSpatialMultiplier = Mat(1, _channelSize, CV_32F, Scalar(1.0));
 
     _scale = blobs[0];
+    size_t i, ninputs = inputs.size();
+    outputs.resize(ninputs);
 
-    for(size_t i = 0; i < inputs.size(); i++)
+    for(i = 0; i < ninputs; i++)
     {
-        outputs[i].create(BlobShape(inputs[0]->shape()));
+        outputs[i].create(inp0.dims, inp0.size.p, inp0.type());
     }
 }
 
-void NormalizeBBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void NormalizeBBoxLayer::forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     Mat zeroBuffer(_channels, _channelSize, CV_32F, Scalar(0));
     Mat absDiff;
@@ -148,8 +150,8 @@ void NormalizeBBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &
     {
         for (size_t n = 0; n < _num; ++n)
         {
-            Mat src = Mat(_channels, _channelSize, CV_32F, inputs[j]->ptrf(n));
-            Mat dst = Mat(_channels, _channelSize, CV_32F, outputs[j].ptrf(n));
+            Mat src = Mat(_channels, _channelSize, CV_32F, inputs[j]->ptr<float>(n));
+            Mat dst = Mat(_channels, _channelSize, CV_32F, outputs[j].ptr<float>(n));
 
             _buffer = src.mul(src);
 
@@ -184,13 +186,13 @@ void NormalizeBBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &
             if (_channel_shared)
             {
                 // _scale: 1 x 1
-                dst *= _scale.matRefConst().at<float>(0, 0);
+                dst *= _scale.at<float>(0, 0);
             }
             else
             {
                 // _scale: _channels x 1
                 // _channels x 1 * 1 x _channelSize -> _channels x _channelSize
-                gemmCPU(_scale.matRefConst(), _sumSpatialMultiplier, 1, _buffer, 0);
+                gemmCPU(_scale, _sumSpatialMultiplier, 1, _buffer, 0);
 
                 dst = dst.mul(_buffer);
            }

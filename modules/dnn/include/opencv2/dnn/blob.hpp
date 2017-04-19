@@ -46,6 +46,8 @@
 #include <ostream>
 #include <iostream>
 
+#if 0
+
 namespace cv
 {
 namespace dnn
@@ -341,5 +343,7 @@ public:
 }
 
 #include "blob.inl.hpp"
+
+#endif
 
 #endif

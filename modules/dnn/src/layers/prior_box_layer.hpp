@@ -51,8 +51,8 @@ class PriorBoxLayer : public Layer
 {
 public:
     PriorBoxLayer(LayerParams &params);
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
 
     template<typename T>
     T getParameter(const LayerParams &params,

@@ -1,6 +1,7 @@
 #include "../precomp.hpp"
 #include "elementwise_layers.hpp"
 #include "opencv2/imgproc.hpp"
+#include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
 {
@@ -51,35 +52,38 @@ Ptr<PowerLayer> PowerLayer::create(double power /*= 1*/, double scale /*= 1*/, d
 
 ////////////////////////////////////////////////////////////////////////////
 
-void ChannelsPReLULayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void ChannelsPReLULayerImpl::allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     CV_Assert(blobs.size() == 1);
 
     outputs.resize(inputs.size());
     for (size_t i = 0; i < inputs.size(); i++)
     {
-        outputs[i].create(inputs[i]->shape());
+        outputs[i].create(inputs[i]->dims, inputs[i]->size.p, inputs[i]->type());
     }
 }
 
-void ChannelsPReLULayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void ChannelsPReLULayerImpl::forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     CV_Assert(inputs.size() == 1);
 
-    Blob &inpBlob = *inputs[0];
+    Mat &inpBlob = *inputs[0];
 
     for (size_t ii = 0; ii < outputs.size(); ii++)
     {
-        Blob &outBlob = outputs[ii];
+        Mat &outBlob = outputs[ii];
 
-        CV_Assert(blobs[0].total() == inpBlob.channels());
+        CV_Assert(blobs[0].total() == inpBlob.size[1]);
 
-        for (int n = 0; n < inpBlob.channels(); n++)
+        for (int n = 0; n < inpBlob.size[1]; n++)
         {
-            float slopeWeight = blobs[0].matRefConst().at<float>(n);
+            float slopeWeight = blobs[0].at<float>(n);
 
-            cv::threshold(inpBlob.getPlane(0, n), outBlob.getPlane(0, n), 0, 0, cv::THRESH_TOZERO_INV);
-            outBlob.getPlane(0, n) = inpBlob.getPlane(0, n) + (slopeWeight - 1)*outBlob.getPlane(0, n);
+            Mat inpBlobPlane = getPlane(inpBlob, 0, n);
+            Mat outBlobPlane = getPlane(outBlob, 0, n);
+
+            threshold(inpBlobPlane, outBlobPlane, 0, 0, cv::THRESH_TOZERO_INV);
+            scaleAdd(outBlobPlane, slopeWeight-1, inpBlobPlane, outBlobPlane);
         }
     }
 }

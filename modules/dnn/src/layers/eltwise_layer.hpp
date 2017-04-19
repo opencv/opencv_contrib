@@ -54,8 +54,8 @@ namespace dnn
         std::vector<int> coeffs;
     public:
         EltwiseLayerImpl(EltwiseOp op, const std::vector<int> &coeffs);
-        void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+        void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+        void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
     };
 }
 }

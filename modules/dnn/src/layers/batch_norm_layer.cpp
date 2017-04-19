@@ -22,57 +22,63 @@ BatchNormLayerImpl::BatchNormLayerImpl(bool hasWeights_, bool hasBias_, float ep
     epsilon(epsilon_)
 {}
 
-void BatchNormLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void BatchNormLayerImpl::allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     CV_Assert(blobs.size() >= 2);
 
     outputs.resize(inputs.size());
     for (size_t i = 0; i < inputs.size(); i++)
     {
-        CV_Assert(blobs[0].total() == inputs[i]->channels());
-        CV_Assert(blobs[1].total() == inputs[i]->channels());
-        outputs[i].create(inputs[i]->shape());
+        CV_Assert(blobs[0].total() == inputs[i]->size[1]);
+        CV_Assert(blobs[1].total() == inputs[i]->size[1]);
+        Mat* inp = inputs[i];
+        outputs[i].create(inp->dims, &inp->size.p[0], inp->type());
     }
 }
 
-void BatchNormLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void BatchNormLayerImpl::forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     CV_Assert(inputs.size() == 1);
 
-    Blob &inpBlob = *inputs[0];
+    Mat &inpBlob = *inputs[0];
 
     int weightsBlobIndex = 2;
     int biasBlobIndex = weightsBlobIndex + hasWeights;
 
     float varMeanScale = 1;
     if (!hasWeights && !hasBias) {
-        varMeanScale = *blobs[2].ptrf();
+        varMeanScale = *blobs[2].ptr<float>();
         if (varMeanScale != 0)
             varMeanScale = 1/varMeanScale;
     }
 
     Mat invStdMat;
-    cv::pow(blobs[1].matRefConst()*varMeanScale + epsilon, -0.5, invStdMat);
+    cv::pow(blobs[1]*varMeanScale + epsilon, -0.5, invStdMat);
+
+    int rows = inpBlob.size[2];
+    int cols = inpBlob.size[3];
 
     for (size_t ii = 0; ii < outputs.size(); ii++)
     {
-      Blob &outBlob = outputs[ii];
+      Mat &outBlob = outputs[ii];
 
       if (hasWeights)
-        CV_Assert(inpBlob.channels() == blobs[weightsBlobIndex].total());
+        CV_Assert(inpBlob.size[1] == blobs[weightsBlobIndex].total());
 
       if (hasBias)
-        CV_Assert(inpBlob.channels() == blobs[biasBlobIndex].total());
+        CV_Assert(inpBlob.size[1] == blobs[biasBlobIndex].total());
 
-      for(int num = 0; num < outBlob.num(); num++)
+      for(int num = 0; num < outBlob.size[0]; num++)
       {
-          for (int n = 0; n < outBlob.channels(); n++)
+          for (int n = 0; n < outBlob.size[1]; n++)
           {
-              float mean = blobs[0].matRefConst().at<float>(n)*varMeanScale;
+              float mean = blobs[0].at<float>(n)*varMeanScale;
               double invstd = invStdMat.at<float>(n);
-              float w = hasWeights ? blobs[weightsBlobIndex].matRefConst().at<float>(n) : 1;
-              float b = hasBias ? blobs[biasBlobIndex].matRefConst().at<float>(n) : 0;
-              outBlob.getPlane(num, n) = (inpBlob.getPlane(num, n) - mean)*w*invstd + b;
+              float w = hasWeights ? blobs[weightsBlobIndex].at<float>(n) : 1;
+              float b = hasBias ? blobs[biasBlobIndex].at<float>(n) : 0;
+              Mat inpBlobPlane(rows, cols, CV_32F, inpBlob.ptr<float>(num, n));
+              Mat outBlobPlane(rows, cols, CV_32F, outBlob.ptr<float>(num, n));
+              inpBlobPlane.convertTo(outBlobPlane, CV_32F, w*invstd, b - mean*w*invstd);
           }
       }
     }

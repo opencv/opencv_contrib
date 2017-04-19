@@ -147,43 +147,40 @@ DetectionOutputLayer::DetectionOutputLayer(LayerParams &params) : Layer(params)
     CV_Assert(_nmsThreshold > 0.);
 }
 
-void DetectionOutputLayer::checkInputs(const std::vector<Blob*> &inputs)
+void DetectionOutputLayer::checkInputs(const std::vector<Mat*> &inputs)
 {
     for (size_t i = 1; i < inputs.size(); i++)
     {
-        for (size_t j = 0; j < _numAxes; j++)
-        {
-            CV_Assert(inputs[i]->shape()[j] == inputs[0]->shape()[j]);
-        }
+        CV_Assert(inputs[i]->size == inputs[0]->size);
     }
 }
 
-void DetectionOutputLayer::allocate(const std::vector<Blob*> &inputs,
-                                    std::vector<Blob> &outputs)
+void DetectionOutputLayer::allocate(const std::vector<Mat*> &inputs,
+                                    std::vector<Mat> &outputs)
 {
     CV_Assert(inputs.size() > 0);
-    CV_Assert(inputs[0]->num() == inputs[1]->num());
-    _num = inputs[0]->num();
+    CV_Assert(inputs[0]->size[0] == inputs[1]->size[0]);
+    _num = inputs[0]->size[0];
 
-    _numPriors = inputs[2]->rows() / 4;
-    CV_Assert((_numPriors * _numLocClasses * 4) == inputs[0]->channels());
-    CV_Assert(int(_numPriors * _numClasses) == inputs[1]->channels());
+    _numPriors = inputs[2]->size[2] / 4;
+    CV_Assert((_numPriors * _numLocClasses * 4) == inputs[0]->size[1]);
+    CV_Assert(int(_numPriors * _numClasses) == inputs[1]->size[1]);
 
     // num() and channels() are 1.
     // Since the number of bboxes to be kept is unknown before nms, we manually
     // set it to (fake) 1.
     // Each row is a 7 dimension std::vector, which stores
     // [image_id, label, confidence, xmin, ymin, xmax, ymax]
-    BlobShape outputShape = BlobShape(1, 1, 1, 7);
-    outputs[0].create(BlobShape(outputShape));
+    int outputShape[] = {1, 1, 1, 7};
+    outputs[0].create(4, outputShape, CV_32F);
 }
 
-void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
-                                   std::vector<Blob> &outputs)
+void DetectionOutputLayer::forward(std::vector<Mat*> &inputs,
+                                   std::vector<Mat> &outputs)
 {
-    const float* locationData = inputs[0]->ptrf();
-    const float* confidenceData = inputs[1]->ptrf();
-    const float* priorData = inputs[2]->ptrf();
+    const float* locationData = inputs[0]->ptr<float>();
+    const float* confidenceData = inputs[1]->ptr<float>();
+    const float* priorData = inputs[2]->ptr<float>();
 
     // Retrieve all location predictions.
     std::vector<LabelBBox> allLocationPredictions;
@@ -293,11 +290,9 @@ void DetectionOutputLayer::forward(std::vector<Blob*> &inputs,
         CV_ErrorNoReturn(Error::StsError, "Couldn't find any detections");
         return;
     }
-    std::vector<int> outputsShape(2, 1);
-    outputsShape.push_back(numKept);
-    outputsShape.push_back(7);
-    outputs[0].create(outputsShape);
-    float* outputsData = outputs[0].ptrf();
+    int outputShape[] = {1, 1, numKept, 7};
+    outputs[0].create(4, outputShape, CV_32F);
+    float* outputsData = outputs[0].ptr<float>();
 
     int count = 0;
     for (int i = 0; i < _num; ++i)

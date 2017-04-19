@@ -42,6 +42,8 @@
 #include "precomp.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
 
+#if 0
+
 namespace cv
 {
 namespace dnn
@@ -225,64 +227,6 @@ void Blob::batchFromImages(InputArray image, int dstCn)
     }
 }
 
-Mat Blob::fromImage(const Mat& image_, double scalefactor, bool swapRB)
-{
-    Mat image;
-    if(image_.depth() == CV_8U)
-    {
-        image_.convertTo(image, CV_32F, scalefactor);
-    }
-    else
-        image = image_;
-    CV_Assert(image.dims == 2 && image.depth() == CV_32F);
-    int nch = image.channels();
-    CV_Assert(nch == 3 || nch == 4);
-    int sz[] = { 1, 3, image.rows, image.cols };
-    Mat blob(4, sz, CV_32F);
-    Mat ch[4];
-    for( int j = 0; j < 3; j++ )
-        ch[j] = Mat(image.rows, image.cols, CV_32F, blob.ptr(0, j));
-    if(swapRB)
-        std::swap(ch[0], ch[2]);
-    split(image, ch);
-    return blob;
-}
-
-Mat Blob::fromImages(const std::vector<Mat>& images, double scalefactor, bool swapRB)
-{
-    size_t i, nimages = images.size();
-    if(nimages == 0)
-        return Mat();
-    Mat image0 = images[0];
-    int nch = image0.channels();
-    CV_Assert(image0.dims == 2 && (nch == 3 || nch == 4));
-    int sz[] = { (int)nimages, 3, image0.rows, image0.cols };
-    Mat blob(4, sz, CV_32F), image;
-    Mat ch[4];
-
-    for( i = 0; i < nimages; i++ )
-    {
-        Mat image_ = images[i];
-        if(image_.depth() == CV_8U)
-        {
-            image_.convertTo(image, CV_32F, scalefactor);
-        }
-        else
-            image = image_;
-        CV_Assert(image.depth() == CV_32F);
-        nch = image.channels();
-        CV_Assert(image.dims == 2 && (nch == 3 || nch == 4));
-        CV_Assert(image.size() == image0.size());
-
-        for( int j = 0; j < 3; j++ )
-            ch[j] = Mat(image.rows, image.cols, CV_32F, blob.ptr((int)i, j));
-        if(swapRB)
-            std::swap(ch[0], ch[2]);
-        split(image, ch);
-    }
-    return blob;
-}
-
 void Blob::fill(const BlobShape &shape, int type, void *data, bool deepCopy)
 {
     if (deepCopy)
@@ -410,63 +354,8 @@ std::ostream &operator<< (std::ostream &stream, const BlobShape &shape)
     return stream << "]";
 }
 
-BlobShape computeShapeByReshapeMask(const BlobShape &srcShape, const BlobShape &maskShape, Range srcRange /*= Range::all()*/)
-{
-    if (srcRange == Range::all())
-        srcRange = Range(0, srcShape.dims());
-    else
-    {
-        int sz = srcRange.size();
-        srcRange.start = srcShape.canonicalAxis(srcRange.start);
-        srcRange.end =  (srcRange.end == INT_MAX) ? srcShape.dims() : srcRange.start + sz;
-    }
-
-    CV_Assert(0 <= srcRange.start && srcRange.start <= srcRange.end && srcRange.end <= srcShape.dims());
-    BlobShape dstShape(srcShape.dims() - srcRange.size() + maskShape.dims(), (const int*)NULL);
-
-    std::copy(srcShape.ptr(), srcShape.ptr() + srcRange.start, dstShape.ptr());
-    std::copy(srcShape.ptr() + srcRange.end, srcShape.ptr() + srcShape.dims(), dstShape.ptr() + srcRange.start + maskShape.dims());
-
-    int inferDim = -1;
-    for (int i = 0; i < maskShape.dims(); i++)
-    {
-        if (maskShape[i] > 0)
-        {
-            dstShape[srcRange.start + i] = maskShape[i];
-        }
-        else if (maskShape[i] == 0)
-        {
-            if (srcRange.start + i >= srcShape.dims())
-                CV_Error(Error::StsBadArg, format("Copy dim[%d] (which has zero size) is out of the source shape bounds", srcRange.start + i));
-            dstShape[srcRange.start + i] = srcShape[srcRange.start + i];
-        }
-        else if (maskShape[i] == -1)
-        {
-            if (inferDim != -1)
-                CV_Error(Error::StsAssert, "Duplicate of inferred dim (which is denoted by -1)");
-            inferDim = srcRange.start + i;
-            dstShape[inferDim] = 1;
-        }
-        else
-            CV_Error(Error::StsBadArg, "maskShape[i] >= -1");
-    }
-
-    if (inferDim != -1)
-    {
-        ptrdiff_t srcTotal = srcShape.total();
-        ptrdiff_t dstTotal = dstShape.total();
-        if (srcTotal % dstTotal != 0)
-            CV_Error(Error::StsBackTrace, "Can't infer a dim denoted by -1");
-
-        dstShape[inferDim] = (int)(srcTotal / dstTotal);
-    }
-    else
-    {
-        CV_Assert(srcShape.total() == dstShape.total());
-    }
-
-    return dstShape;
-}
-
 }
 }
+
+#endif
+

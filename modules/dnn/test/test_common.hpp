@@ -56,10 +56,4 @@ inline void normAssert(cv::InputArray ref, cv::InputArray test, const char *comm
     EXPECT_LE(normInf, 0.08) << comment;
 }
 
-inline void normAssert(cv::dnn::Blob &ref, cv::dnn::Blob &test, const char *comment = "")
-{
-    ASSERT_EQ(ref.shape(), test.shape()) << comment;
-    normAssert(ref.matRefConst(), test.matRefConst(), comment);
-}
-
 #endif

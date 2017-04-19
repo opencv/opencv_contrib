@@ -56,61 +56,51 @@ FlattenLayer::FlattenLayer(LayerParams &params) : Layer(params)
     _endAxis = params.get<int>("end_axis", -1);
 }
 
-void FlattenLayer::checkInputs(const std::vector<Blob*> &inputs)
+void FlattenLayer::checkInputs(const std::vector<Mat*> &inputs)
 {
     CV_Assert(inputs.size() > 0);
     for (size_t i = 1; i < inputs.size(); i++)
     {
-        for (size_t j = 0; j < _numAxes; j++)
-        {
-            CV_Assert(inputs[i]->shape()[j] == inputs[0]->shape()[j]);
-        }
+        CV_Assert(inputs[i]->size == inputs[0]->size);
     }
 }
 
-void FlattenLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void FlattenLayer::allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     checkInputs(inputs);
+    const Mat& inp0 = *inputs[0];
 
-    _numAxes = inputs[0]->dims();
-    _endAxis = inputs[0]->canonicalAxis(_endAxis);
+    _numAxes = inp0.dims;
+    _endAxis = _endAxis < 0 ? _endAxis + _numAxes : _endAxis;
     CV_Assert(_startAxis >= 0);
     CV_Assert(_endAxis >= _startAxis && _endAxis < (int)_numAxes);
 
-    size_t flattenedDimensionSize = 1;
-    for (int i = _startAxis; i <= _endAxis; i++)
-    {
-        flattenedDimensionSize *= inputs[0]->size(i);
-    }
+    size_t flattenedDimensionSize = inp0.total(_startAxis, _endAxis+1);
 
-    std::vector<int> outputShapeVec;
+    resultShape.clear();
     for (int i = 0; i < _startAxis; i++)
     {
-        outputShapeVec.push_back(inputs[0]->size(i));
+        resultShape.push_back(inp0.size[i]);
     }
-    outputShapeVec.push_back(flattenedDimensionSize);
+    resultShape.push_back(flattenedDimensionSize);
     for (size_t i = _endAxis + 1; i < _numAxes; i++)
     {
-        outputShapeVec.push_back(inputs[0]->size(i));
+        resultShape.push_back(inp0.size[i]);
     }
-    CV_Assert(outputShapeVec.size() <= 4);
-
-    resultShape = BlobShape(outputShapeVec);
+    CV_Assert(resultShape.size() <= 4);
 
     for (size_t i = 0; i < inputs.size(); i++)
     {
         //in-place
-        outputs[i].shareFrom(*inputs[i]);
-        outputs[i].reshape(resultShape);
+        outputs[i] = inputs[i]->reshape(1, (int)resultShape.size(), &resultShape[0]);
     }
 }
 
-void FlattenLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void FlattenLayer::forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
-    for (size_t j = 0; j < inputs.size(); j++)
+    for (size_t i = 0; i < inputs.size(); i++)
     {
-        outputs[j].shareFrom(*inputs[j]);
-        outputs[j].reshape(resultShape);
+        outputs[i] = inputs[i]->reshape(1, (int)resultShape.size(), &resultShape[0]);
     }
 }
 }

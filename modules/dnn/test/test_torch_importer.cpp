@@ -169,7 +169,7 @@ TEST(Torch_Importer, ENet_accuracy)
     }
 
     Mat sample = imread(_tf("street.png", false));
-    Mat inputBlob = dnn::Blob::fromImage(sample, 1./255);
+    Mat inputBlob = blobFromImage(sample, 1./255);
 
     net.setBlob("", inputBlob);
     net.forward();

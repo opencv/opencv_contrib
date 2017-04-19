@@ -56,48 +56,50 @@ FullyConnectedLayerImpl::FullyConnectedLayerImpl(int axis_)
     axis = axis_;
 }
 
-void FullyConnectedLayerImpl::allocate(const std::vector<Blob*> &input, std::vector<Blob> &output)
+void FullyConnectedLayerImpl::allocate(const std::vector<Mat*> &input, std::vector<Mat> &output)
 {
     CV_Assert(input.size() > 0);
+    const Mat& inp0 = *input[0];
+    
     CV_Assert(1 <= blobs.size() && blobs.size() <= 2);
-    CV_Assert(blobs[0].dims() == 2);
+    CV_Assert(blobs[0].dims == 2);
 
     bias = (blobs.size() >= 1);
-    axisCan = input[0]->canonicalAxis(axis);
-    dtype = input[0]->type();
-    numOutput = blobs[0].size(0);
-    innerSize = blobs[0].size(1);
-    outerSize = input[0]->total(0, axisCan);
+    axisCan = axis < 0 ? axis + inp0.dims : axis;
+    dtype = inp0.type();
+    numOutput = blobs[0].size[0];
+    innerSize = blobs[0].size[1];
+    outerSize = inp0.total(0, axisCan);
+    size_t innerSize0 = inp0.total(axisCan);
 
-    CV_Assert((size_t)innerSize == input[0]->total(axisCan));
+    CV_Assert((size_t)innerSize == innerSize0);
     CV_Assert(!bias || (size_t)numOutput == blobs[1].total());
 
-    biasOnesBlob.create(Shape(outerSize, 1), dtype);
-    biasOnesBlob.setTo(1);
+    biasOnesBlob.create(outerSize, 1, dtype);
+    biasOnesBlob.setTo(1.);
 
     output.resize(input.size());
     for (size_t i = 0; i < input.size(); i++)
     {
-        CV_Assert(i == 0 || (input[i]->equalShape(*input[0]) && input[i]->type() == dtype));
-        Shape outShape = Shape(outerSize, numOutput);
-        output[i].create(outShape, dtype);
+        CV_Assert(i == 0 || (input[i]->size == input[0]->size && input[i]->type() == dtype));
+        output[i].create(outerSize, numOutput, dtype);
     }
 }
 
-void FullyConnectedLayerImpl::forward(std::vector<Blob*> &input, std::vector<Blob> &output)
+void FullyConnectedLayerImpl::forward(std::vector<Mat*> &input, std::vector<Mat> &output)
 {
-    const Mat &weight = blobs[0].matRefConst();
+    const Mat &weight = blobs[0];
     const Mat *biasMat = NULL, *biasOnesMat = NULL;
     if (bias)
     {
-        biasOnesMat = &biasOnesBlob.matRefConst();
-        biasMat = &blobs[1].matRefConst();
+        biasOnesMat = &biasOnesBlob;
+        biasMat = &blobs[1];
     }
 
     for (size_t i = 0; i < input.size(); i++)
     {
-        Mat srcMat = reshaped(input[i]->matRefConst(), Shape(outerSize, innerSize));
-        Mat dstMat = reshaped(output[i].matRef(), Shape(outerSize, numOutput));
+        Mat srcMat = input[i]->reshape(1, outerSize);
+        Mat dstMat = output[i].reshape(1, outerSize);
         dnn::gemm(srcMat, weight, 1, dstMat, 0, GEMM_2_T);
 
         if (bias)

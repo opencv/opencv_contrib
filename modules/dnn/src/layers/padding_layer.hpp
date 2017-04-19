@@ -23,10 +23,10 @@ class PaddingLayer : public Layer
 public:
     PaddingLayer() {}
     PaddingLayer(LayerParams &params);
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    int getPadDim(const std::vector<int>& shape) const;
 
-    int getPadDim(const BlobShape& shape) const;
     int paddingDim, padding, inputDims, index;
     float paddingValue;
 };

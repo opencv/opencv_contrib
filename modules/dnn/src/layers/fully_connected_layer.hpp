@@ -53,13 +53,13 @@ class FullyConnectedLayerImpl : public InnerProductLayer
 {
 public:
     FullyConnectedLayerImpl(int axisCan = 1);
-    void allocate(const std::vector<Blob*> &input, std::vector<Blob> &output);
-    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void allocate(const std::vector<Mat*> &input, std::vector<Mat> &output);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
 
     int axisCan, dtype;
     int numOutput, innerSize, outerSize;
     bool bias;
-    Blob biasOnesBlob;
+    Mat biasOnesBlob;
 };
 
 }

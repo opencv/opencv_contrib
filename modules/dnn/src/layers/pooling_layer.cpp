@@ -70,11 +70,11 @@ PoolingLayerImpl::PoolingLayerImpl(int type_, Size kernel_, Size stride_, Size p
     padMode = padMode_;
 }
 
-void PoolingLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void PoolingLayerImpl::allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     CV_Assert(inputs.size() == 1);
 
-    inp = inputs[0]->size2();
+    inp = Size(inputs[0]->size[3], inputs[0]->size[2]);
 
     if(globalPooling)
     {
@@ -86,20 +86,23 @@ void PoolingLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Bl
     outputs.resize(type == MAX ? 2 * inputs.size() : inputs.size());
     for (size_t i = 0; i < inputs.size(); i++)
     {
-        CV_Assert(inputs[i]->rows() == inp.height && inputs[i]->cols() == inp.width);
+        const Mat& inp_i = *inputs[i];
+        CV_Assert(inp_i.size[2] == inp.height && inp_i.size[3] == inp.width);
+        int outsz[] = { inp_i.size[0], inp_i.size[1], out.height, out.width };
+
         if (type == MAX)
         {
-            outputs[2 * i].create(BlobShape(inputs[i]->num(), inputs[i]->channels(), out.height, out.width));
-            outputs[2 * i + 1].create(BlobShape(inputs[i]->num(), inputs[i]->channels(), out.height, out.width));
+            outputs[2 * i].create(4, outsz, CV_32F);
+            outputs[2 * i + 1].create(4, outsz, CV_32F);
         }
         else
         {
-           outputs[i].create(BlobShape(inputs[i]->num(), inputs[i]->channels(), out.height, out.width));
+            outputs[i].create(4, outsz, CV_32F);
         }
     }
 }
 
-void PoolingLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void PoolingLayerImpl::forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     for (size_t ii = 0; ii < inputs.size(); ii++)
     {
@@ -118,17 +121,17 @@ void PoolingLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &ou
     }
 }
 
-void PoolingLayerImpl::maxPooling(Blob &src, Blob &dst, Blob &mask)
+void PoolingLayerImpl::maxPooling(Mat &src, Mat &dst, Mat &mask)
 {
-    CV_DbgAssert(dst.rows() == out.height && dst.cols() == out.width);
+    CV_DbgAssert(dst.size[2] == out.height && dst.size[3] == out.width);
 
-    for (int n = 0; n < src.num(); ++n)
+    for (int n = 0; n < src.size[0]; ++n)
     {
-        for (int c = 0; c < src.channels(); ++c)
+        for (int c = 0; c < src.size[1]; ++c)
         {
-            const float *srcData = src.ptrf(n, c);
-            float *dstData = dst.ptrf(n, c);
-            float *dstMaskData = mask.ptrf(n, c);
+            const float *srcData = src.ptr<float>(n, c);
+            float *dstData = dst.ptr<float>(n, c);
+            float *dstMaskData = mask.ptr<float>(n, c);
 
             for (int ph = 0; ph < out.height; ++ph)
             {
@@ -163,14 +166,14 @@ void PoolingLayerImpl::maxPooling(Blob &src, Blob &dst, Blob &mask)
     }
 }
 
-void PoolingLayerImpl::avePooling(Blob &src, Blob &dst)
+void PoolingLayerImpl::avePooling(Mat &src, Mat &dst)
 {
-    for (int n = 0; n < src.num(); ++n)
+    for (int n = 0; n < src.size[0]; ++n)
     {
-        for (int c = 0; c < src.channels(); ++c)
+        for (int c = 0; c < src.size[1]; ++c)
         {
-            const float *srcData = src.ptrf(n, c);
-            float *dstData = dst.ptrf(n, c);
+            const float *srcData = src.ptr<float>(n, c);
+            float *dstData = dst.ptr<float>(n, c);
 
             for (int ph = 0; ph < out.height; ++ph)
             {

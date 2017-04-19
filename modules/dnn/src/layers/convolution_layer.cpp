@@ -71,43 +71,44 @@ BaseConvolutionLayerImpl::BaseConvolutionLayerImpl():
 void BaseConvolutionLayerImpl::init()
 {
     CV_Assert(blobs.size() >= 1 && blobs.size() <= 2);
-    CV_Assert(blobs[0].dims() == 4 && blobs[0].cols() == kernel.width && blobs[0].rows() == kernel.height);
+    CV_Assert(blobs[0].dims == 4 && blobs[0].size[3] == kernel.width && blobs[0].size[2] == kernel.height);
 
     bias = (blobs.size() >= 2);
 }
 
-void BaseConvolutionLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void BaseConvolutionLayerImpl::allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     CV_Assert(inputs.size() > 0);
 
     init();
 
-    const Blob &input = *inputs[0];
-    CV_Assert(input.dims() == 4 && (input.type() == CV_32F || input.type() == CV_64F));
+    const Mat &input = *inputs[0];
+    CV_Assert(input.dims == 4 && (input.type() == CV_32F || input.type() == CV_64F));
     for (size_t i = 0; i < inputs.size(); i++)
     {
         CV_Assert(inputs[i]->type() == input.type());
-        CV_Assert(inputs[i]->dims() == 4 && inputs[i]->channels() == input.channels());
-        CV_Assert(inputs[i]->rows() == input.rows() && inputs[i]->cols() == input.cols());
+        CV_Assert(inputs[i]->dims == 4 && inputs[i]->size[1] == input.size[1]);
+        CV_Assert(inputs[i]->size[2] == input.size[2] && inputs[i]->size[3] == input.size[3]);
     }
 
     computeInpOutShape(input);
 
     if (bias)
     {
-        biasOnesBlob.create(Shape(1, outH * outW), input.type());
+        biasOnesBlob.create(1, outH * outW, input.type());
         biasOnesBlob.setTo(1);
     }
 
     outputs.resize(inputs.size());
     for (size_t i = 0; i < inputs.size(); i++)
     {
-        outputs[i].create(Shape(inputs[i]->num(), outCn, outH, outW), input.type());
+        int sz[] = { inputs[i]->size[0], outCn, outH, outW };
+        outputs[i].create(4, sz, input.type());
     }
 
     if (!is1x1())
     {
-        colRowBlob.create(colRowBlobShape, input.type());
+        colRowBlob.create((int)colRowBlobShape.size(), &colRowBlobShape[0], input.type());
         colRowBlob.setTo(0);
     }
 }
@@ -119,15 +120,15 @@ bool BaseConvolutionLayerImpl::is1x1() const
            (dilation.height == 1 && dilation.width == 1);
 }
 
-void ConvolutionLayerImpl::computeInpOutShape(const Blob &input)
+void ConvolutionLayerImpl::computeInpOutShape(const Mat &input)
 {
-    CV_Assert(!bias || blobs[1].total() == (size_t)blobs[0].num());
+    CV_Assert(!bias || blobs[1].total() == (size_t)blobs[0].size[0]);
 
-    numOutput = blobs[0].num();
+    numOutput = blobs[0].size[0];
 
-    inpH = input.rows();
-    inpW = input.cols();
-    inpCn = input.channels();
+    inpH = input.size[2];
+    inpW = input.size[3];
+    inpCn = input.size[1];
     outCn = numOutput;
 
     if (padMode.empty())
@@ -140,30 +141,32 @@ void ConvolutionLayerImpl::computeInpOutShape(const Blob &input)
         getConvPoolOutParams(inpH, inpW, kernel, stride, pad, padMode, outH, outW);
     }
 
-    group = inpCn / blobs[0].channels();
+    group = inpCn / blobs[0].size[1];
 
     CV_Assert(inpCn % group == 0 && outCn % group == 0);
-    CV_Assert(blobs[0].num() == outCn && blobs[0].channels() == inpCn / group);
+    CV_Assert(blobs[0].size[0] == outCn && blobs[0].size[1] == inpCn / group);
 
     outGroupCn = outCn / group;
     inpGroupCn = inpCn / group;
     ksize = inpGroupCn * kernel.height * kernel.width;
 
-    colRowBlobShape = BlobShape(outH * outW, ksize);
+    colRowBlobShape.clear();
+    colRowBlobShape.push_back(outH*outW);
+    colRowBlobShape.push_back(ksize);
 }
 
-void ConvolutionLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void ConvolutionLayerImpl::forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     CV_Assert(inputs.size() > 0);
 
-    Mat weightsMat = reshaped(blobs[0].matRefConst(), Shape(outCn, ksize));
-    Mat biasesMat  = (bias) ? reshaped(blobs[1].matRefConst(), Shape(outCn, 1)) : Mat();
+    Mat weightsMat = blobs[0].reshape(1, outCn);
+    Mat biasesMat  = bias ? blobs[1].reshape(1, outCn) : Mat();
 
     for (size_t ii = 0; ii < outputs.size(); ii++)
     {
-        int numImg = inputs[ii]->size(0);
-        Mat inpMat = inputs[ii]->matRefConst();
-        Mat outMat = reshaped(outputs[ii].matRef(), Shape(numImg*group*outGroupCn, outH*outW));
+        int numImg = inputs[ii]->size[0];
+        Mat inpMat = *inputs[ii];
+        Mat outMat = outputs[ii].reshape(1, numImg*group*outGroupCn);
 
         for (int n = 0; n < numImg; n++)
         {
@@ -183,7 +186,7 @@ void ConvolutionLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob>
 
                 if (bias)
                 {
-                    dnn::gemm(biasesMat.rowRange(kerRange), biasOnesBlob.matRefConst(), 1, dstMat, 1);
+                    dnn::gemm(biasesMat.rowRange(kerRange), biasOnesBlob, 1, dstMat, 1);
                 }
             }
         }
@@ -194,11 +197,11 @@ void ConvolutionLayerImpl::im2col(const Mat &srcImg, Mat &dstCol)
 {
     if (is1x1())
     {
-        dstCol = reshaped(srcImg, Shape(ksize, outH*outW));
+        dstCol = srcImg.reshape(1, ksize);
         return;
     }
 
-    Mat &colMat = colRowBlob.matRef();
+    Mat &colMat = colRowBlob;
     if (srcImg.type() == CV_32F)
         im2col_CpuPBody<float>::run(srcImg.ptr<float>(), inpGroupCn, inpH, inpW, kernel.height,
                                     kernel.width, pad.height, pad.width, stride.height, stride.width,
@@ -215,11 +218,11 @@ void ConvolutionLayerImpl::im2row(const  Mat &srcImg,  Mat &dstRow)
 {
     if (is1x1())
     {
-        dstRow = reshaped(srcImg, Shape(ksize, outH*outW)).t();
+        dstRow = srcImg.reshape(1, ksize).t();
         return;
     }
 
-    Mat &colMat = colRowBlob.matRef();
+    Mat &colMat = colRowBlob;
     if (srcImg.type() == CV_32F)
         im2row_CpuPBody<float>::run(srcImg.ptr<float>(), inpGroupCn, inpH, inpW, kernel.height,
                                     kernel.width, pad.height, pad.width, stride.height, stride.width,
@@ -234,48 +237,50 @@ void ConvolutionLayerImpl::im2row(const  Mat &srcImg,  Mat &dstRow)
 
 //Deconvolution
 
-void DeConvolutionLayerImpl::computeInpOutShape(const Blob &inpBlob)
+void DeConvolutionLayerImpl::computeInpOutShape(const Mat &inpBlob)
 {
-    CV_Assert(!bias || blobs[1].total() == (size_t)blobs[0].num());
+    CV_Assert(!bias || blobs[1].total() == (size_t)blobs[0].size[0]);
 
-    numOutput = blobs[0].num();
+    numOutput = blobs[0].size[0];
 
-    inpH = inpBlob.rows();
-    inpW = inpBlob.cols();
-    inpCn = inpBlob.channels();
+    inpH = inpBlob.size[2];
+    inpW = inpBlob.size[3];
+    inpCn = inpBlob.size[1];
 
     outH = stride.height * (inpH - 1) + kernel.height - 2 * pad.height + adjustPad.height;
     outW = stride.width * (inpW - 1) + kernel.width - 2 * pad.width + adjustPad.width;
     outCn = numOutput;
 
-    group = inpCn / blobs[0].channels();
+    group = inpCn / blobs[0].size[1];
     outGroupCn = outCn / group;
     inpGroupCn = inpCn / group;
     ksize = outGroupCn * kernel.height * kernel.width;
 
     CV_Assert(inpCn % group == 0 && outCn % group == 0);
-    CV_Assert(blobs[0].num() == outCn && blobs[0].channels() == inpCn / group);
+    CV_Assert(blobs[0].size[0] == outCn && blobs[0].size[1] == inpCn / group);
 
-    colRowBlobShape = BlobShape(ksize, inpH * inpW);
+    colRowBlobShape.clear();
+    colRowBlobShape.push_back(ksize);
+    colRowBlobShape.push_back(inpH * inpW);
 }
 
-void DeConvolutionLayerImpl::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+void DeConvolutionLayerImpl::forward(std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
 {
-    Mat weightsMat = reshaped(blobs[0].matRefConst(), Shape(inpCn, ksize));
-    Mat biasesMat  = (bias) ? reshaped(blobs[1].matRefConst(), Shape(outCn, 1)) : Mat();
+    Mat weightsMat = blobs[0].reshape(1, inpCn);
+    Mat biasesMat  = bias ? blobs[1].reshape(1, outCn) : Mat();
 
     for (size_t ii = 0; ii < outputs.size(); ii++)
     {
-        int numImg = inputs[ii]->size(0);
-        Mat convBlob = reshaped(inputs[ii]->matRefConst(), Shape(numImg*inpCn, inpH*inpW));
-        Mat decnBlob = reshaped(outputs[ii].matRef(), Shape(numImg*outCn, outH*outW));
+        int numImg = inputs[ii]->size[0];
+        Mat convBlob = inputs[ii]->reshape(1, numImg*inpCn);
+        Mat decnBlob = outputs[ii].reshape(1, numImg*outCn);
 
         for (int n = 0; n < numImg; n++)
         {
             for (int g = 0; g < group; g++)
             {
                 Mat dstMat = decnBlob.rowRange(_Range((g + n * group) * outGroupCn, outGroupCn));
-                Mat &colMat = (is1x1()) ? dstMat : colRowBlob.matRef();
+                Mat &colMat = (is1x1()) ? dstMat : colRowBlob;
 
                 Mat convMat = convBlob.rowRange(_Range((g + n * group) * inpGroupCn, inpGroupCn));
                 Mat wghtMat = weightsMat.rowRange(_Range(g * inpGroupCn, inpGroupCn));
@@ -288,7 +293,7 @@ void DeConvolutionLayerImpl::forward(std::vector<Blob *> &inputs, std::vector<Bl
                 if (bias)
                 {
                     Mat curBiasMat = biasesMat.rowRange(_Range(g * outGroupCn, outGroupCn));
-                    dnn::gemm(curBiasMat, biasOnesBlob.matRefConst(), 1, dstMat, 1);
+                    dnn::gemm(curBiasMat, biasOnesBlob, 1, dstMat, 1);
                 }
             }
         }

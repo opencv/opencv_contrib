@@ -54,14 +54,14 @@ class LRNLayerImpl : public LRNLayer
 public:
     LRNLayerImpl(int type = CHANNEL_NRM, int size = 5, double alpha = 1,
                  double beta = 0.75, double bias = 1, bool normBySize = true);
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
 
-    void channelNormalization(Blob &src, Blob &dst);
-    void spatialNormalization(Blob &src, Blob &dst);
+    void channelNormalization(Mat &src, Mat &dst);
+    void spatialNormalization(Mat &src, Mat &dst);
     void sqrBoxFilter_(const Mat &src, Mat &dst);
 
-    Blob buf;
+    Mat buf;
 };
 
 }

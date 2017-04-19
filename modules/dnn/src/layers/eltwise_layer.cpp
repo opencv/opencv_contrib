@@ -53,64 +53,62 @@ namespace dnn
         coeffs = coeffs_;
     }
 
-    void EltwiseLayerImpl::allocate(const std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+    void EltwiseLayerImpl::allocate(const std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
     {
         CV_Assert(2 <= inputs.size());
         CV_Assert(coeffs.size() == 0 || coeffs.size() == inputs.size());
         CV_Assert(op == SUM || coeffs.size() == 0);
 
-        const BlobShape &shape0 = inputs[0]->shape();
         for (size_t i = 1; i < inputs.size(); ++i)
         {
-            BlobShape iShape = inputs[i]->shape();
-            CV_Assert(shape0 == iShape);
+            CV_Assert(inputs[i]->size == inputs[0]->size);
         }
         outputs.resize(1);
-        outputs[0].create(shape0);
+        outputs[0].create(inputs[0]->dims, inputs[0]->size.p, inputs[0]->type());
     }
 
-    void EltwiseLayerImpl::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+    void EltwiseLayerImpl::forward(std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
     {
         switch (op)
         {
         case SUM:
             {
                 CV_Assert(coeffs.size() == 0 || coeffs.size() == inputs.size());
-                Mat& output = outputs[0].matRef();
+                Mat& output = outputs[0];
                 output.setTo(0.);
                 if (0 < coeffs.size())
                 {
                     for (size_t i = 0; i < inputs.size(); i++)
                     {
-                        output += inputs[i]->matRefConst() * coeffs[i];
+                        output += *inputs[i] * coeffs[i];
                     }
                 }
                 else
                 {
                     for (size_t i = 0; i < inputs.size(); i++)
                     {
-                        output += inputs[i]->matRefConst();
+                        output += *inputs[i];
                     }
                 }
             }
             break;
         case PROD:
             {
-                Mat& output = outputs[0].matRef();
+                Mat& output = outputs[0];
                 output.setTo(1.);
                 for (size_t i = 0; i < inputs.size(); i++)
                 {
-                    output = output.mul(inputs[i]->matRefConst());
+                    output = output.mul(*inputs[i]);
                 }
             }
             break;
         case MAX:
             {
-                Mat& output = outputs[0].matRef();
-                cv::max(inputs[0]->matRefConst(), inputs[1]->matRefConst(), output);
+                Mat& output = outputs[0];
+                cv::max(*inputs[0], *inputs[1], output);
                 for (size_t i = 2; i < inputs.size(); i++)
                 {
-                    cv::max(output, inputs[i]->matRefConst(), output);
+                    cv::max(output, *inputs[i], output);
                 }
             }
             break;

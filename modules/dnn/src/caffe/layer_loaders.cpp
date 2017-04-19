@@ -93,7 +93,7 @@ Ptr<Layer> createLayerFromCaffe<SoftmaxLayer>(LayerParams &params)
 template<> //InnerProduct specialization
 Ptr<Layer> createLayerFromCaffe<InnerProductLayer>(LayerParams &params)
 {
-    const std::vector<Blob> &blobs = params.blobs;
+    const std::vector<Mat> &blobs = params.blobs;
     CV_Assert(1 <= blobs.size() && blobs.size() <= 2);
 
     int numOutputs = params.get<int>("num_output");
@@ -101,14 +101,14 @@ Ptr<Layer> createLayerFromCaffe<InnerProductLayer>(LayerParams &params)
     bool bias = params.get<bool>("bias_term", true);
     int axis = params.get<int>("axis", 1);
 
-    CV_Assert(blobs[0].dims() >= 2 && (size_t)(innerSize * numOutputs) == blobs[0].total());
+    CV_Assert(blobs[0].dims >= 2 && (size_t)(innerSize * numOutputs) == blobs[0].total());
     CV_Assert(!bias || (blobs.size() == 2 && (size_t)numOutputs == blobs[1].total()));
 
     Ptr<InnerProductLayer> l = InnerProductLayer::create(axis);
     l->setParamsFrom(params);
-    l->blobs[0].reshape(Shape(numOutputs, innerSize));
+    l->blobs[0] = l->blobs[0].reshape(1, numOutputs);
     if (bias)
-        l->blobs[1].reshape(Shape(1, numOutputs));
+        l->blobs[1] = l->blobs[1].reshape(1, 1);
 
     return Ptr<Layer>(l);
 }
@@ -162,16 +162,15 @@ Ptr<Layer> createLayerFromCaffe<ReshapeLayer>(LayerParams &params)
     CV_Assert(numAxes >= -1);
     Range applyingRange = (numAxes == -1) ? Range(axis, INT_MAX) : Range(axis, axis + numAxes);
 
-    Shape newShape;
+    std::vector<int> newShape;
     if (params.has("dim"))
     {
         const DictValue &paramShape = params.get("dim");
-        newShape = Shape::all(paramShape.size());
-        for (int i = 0; i < paramShape.size(); i++)
+        int i, dims = paramShape.size();
+        newShape.resize(dims);
+        for (i = 0; i < dims; i++)
             newShape[i] = paramShape.get<int>(i);
     }
-    else
-        newShape = Shape::all(0);
 
     Ptr<Layer> l(ReshapeLayer::create(newShape, applyingRange, enableReordering));
     l->setParamsFrom(params);
@@ -311,7 +310,7 @@ Ptr<Layer> createLayerFromCaffe<EltwiseLayer>(LayerParams& params)
 template<> //BatchNormLayer specialization
 Ptr<Layer> createLayerFromCaffe<BatchNormLayer>(LayerParams& params)
 {
-    const std::vector<Blob> &blobs = params.blobs;
+    const std::vector<Mat> &blobs = params.blobs;
     CV_Assert(blobs.size() >= 3);
 
     bool hasWeights = params.get<bool>("has_weight", false);

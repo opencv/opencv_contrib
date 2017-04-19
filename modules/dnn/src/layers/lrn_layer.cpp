@@ -63,22 +63,24 @@ LRNLayerImpl::LRNLayerImpl(int type_, int size_, double alpha_, double beta_, do
     normBySize = normBySize_;
 }
 
-void LRNLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void LRNLayerImpl::allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
-    CV_Assert(inputs.size() == 1 && inputs[0]->dims() == 4);
+    CV_Assert(inputs.size() == 1 && inputs[0]->dims == 4);
     CV_Assert(type == CHANNEL_NRM || type == SPATIAL_NRM);
 
+    const Mat& inp0 = *inputs[0];
+
     if (type == SPATIAL_NRM)
-        buf.create(inputs[0]->shape().slice(2), inputs[0]->type(), Blob::ALLOC_MAT);
+        buf.create(inp0.size[2], inp0.size[3], inp0.type());
 
     outputs.resize(1);
-    outputs[0].create(inputs[0]->shape(), inputs[0]->type());
+    outputs[0].create(inp0.dims, inp0.size.p, inp0.type());
 }
 
-void LRNLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void LRNLayerImpl::forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
-    Blob &src = *inputs[0];
-    Blob &dst = outputs[0];
+    Mat &src = *inputs[0];
+    Mat &dst = outputs[0];
 
     switch (type)
     {
@@ -94,20 +96,15 @@ void LRNLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &output
     }
 }
 
-static Mat getPlane(Mat &m, int n, int cn)
+void LRNLayerImpl::channelNormalization(Mat &srcBlob, Mat &dstBlob)
 {
-    return reshaped(slice(m, n, cn), BlobShape::like(m).slice(2));
-}
-
-void LRNLayerImpl::channelNormalization(Blob &srcBlob, Blob &dstBlob)
-{
-    int num = srcBlob.num();
-    int channels = srcBlob.channels();
+    int num = srcBlob.size[0];
+    int channels = srcBlob.size[1];
     int ksize = (size - 1) / 2;
     int sizeNormFactor = normBySize ? size : 1;
 
-    Mat srcMat = srcBlob.matRefConst().clone();
-    Mat dstMat = dstBlob.matRef();
+    Mat srcMat = srcBlob.clone();
+    Mat dstMat = dstBlob;
 
     for (int n = 0; n < num; n++)
     {
@@ -146,14 +143,14 @@ void LRNLayerImpl::sqrBoxFilter_(const Mat &src, Mat &dst)
     cv::sqrBoxFilter(srcRawWrapper, dst, dst.depth(), Size(size, size), Point(-1, -1), false, BORDER_CONSTANT);
 }
 
-void LRNLayerImpl::spatialNormalization(Blob &srcBlob, Blob &dstBlob)
+void LRNLayerImpl::spatialNormalization(Mat &srcBlob, Mat &dstBlob)
 {
-    int num = srcBlob.num();
-    int channels = srcBlob.channels();
+    int num = srcBlob.size[0];
+    int channels = srcBlob.size[1];
     int sizeNormFactor = normBySize ? size*size : 1;
 
-    Mat srcMat = srcBlob.matRefConst();
-    Mat dstMat = dstBlob.matRef();
+    Mat srcMat = srcBlob;
+    Mat dstMat = dstBlob;
 
     for (int n = 0; n < num; n++)
     {

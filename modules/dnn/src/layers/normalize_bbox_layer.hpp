@@ -54,7 +54,7 @@ class NormalizeBBoxLayer : public Layer
     Mat _sumChannelMultiplier;
     Mat _sumSpatialMultiplier;
 
-    Blob _scale;
+    Mat _scale;
 
     float _eps;
     bool _across_spatial;
@@ -73,10 +73,10 @@ class NormalizeBBoxLayer : public Layer
 
 public:
     NormalizeBBoxLayer(LayerParams &params);
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
 
-    void checkInputs(const std::vector<Blob*> &inputs);
+    void checkInputs(const std::vector<Mat*> &inputs);
 
     template<typename T>
     T getParameter(const LayerParams &params,

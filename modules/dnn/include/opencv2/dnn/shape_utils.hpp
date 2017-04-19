@@ -43,14 +43,13 @@
 #define __OPENCV_DNN_DNN_SHAPE_UTILS_HPP__
 
 #include <opencv2/core.hpp>
+#include <opencv2/core/types_c.h>
 #include <ostream>
 
 namespace cv {
 namespace dnn {
 
 //Useful shortcut
-typedef BlobShape Shape;
-
 inline std::ostream &operator<< (std::ostream &s, cv::Range &r)
 {
     return s << "[" << r.start << ", " << r.end << ")";
@@ -59,7 +58,7 @@ inline std::ostream &operator<< (std::ostream &s, cv::Range &r)
 //Reshaping
 //TODO: add -1 specifier for automatic size inferring
 
-template<typename Mat>
+/*template<typename Mat>
 void reshape(Mat &m, const BlobShape &shape)
 {
     m = m.reshape(1, shape.dims(), shape.ptr());
@@ -69,7 +68,7 @@ template<typename Mat>
 Mat reshaped(const Mat &m, const BlobShape &shape)
 {
     return m.reshape(1, shape.dims(), shape.ptr());
-}
+}*/
 
 
 //Slicing
@@ -80,22 +79,19 @@ struct _Range : public cv::Range
     _Range(int start, int size = 1) : cv::Range(start, start + size) {}
 };
 
-template<typename Mat>
-Mat slice(const Mat &m, const _Range &r0)
+static inline Mat slice(const Mat &m, const _Range &r0)
 {
-    //CV_Assert(m.dims >= 1);
-    cv::AutoBuffer<cv::Range, 4> ranges(m.dims);
+    Range ranges[CV_MAX_DIM];
     for (int i = 1; i < m.dims; i++)
         ranges[i] = Range::all();
     ranges[0] = r0;
     return m(&ranges[0]);
 }
 
-template<typename Mat>
-Mat slice(const Mat &m, const _Range &r0, const _Range &r1)
+static inline Mat slice(const Mat &m, const _Range &r0, const _Range &r1)
 {
     CV_Assert(m.dims >= 2);
-    cv::AutoBuffer<cv::Range, 4> ranges(m.dims);
+    Range ranges[CV_MAX_DIM];
     for (int i = 2; i < m.dims; i++)
         ranges[i] = Range::all();
     ranges[0] = r0;
@@ -103,11 +99,10 @@ Mat slice(const Mat &m, const _Range &r0, const _Range &r1)
     return m(&ranges[0]);
 }
 
-template<typename Mat>
-Mat slice(const Mat &m, const _Range &r0, const _Range &r1, const _Range &r2)
+static inline Mat slice(const Mat &m, const _Range &r0, const _Range &r1, const _Range &r2)
 {
-    CV_Assert(m.dims <= 3);
-    cv::AutoBuffer<cv::Range, 4> ranges(m.dims);
+    CV_Assert(m.dims >= 3);
+    Range ranges[CV_MAX_DIM];
     for (int i = 3; i < m.dims; i++)
         ranges[i] = Range::all();
     ranges[0] = r0;
@@ -116,11 +111,10 @@ Mat slice(const Mat &m, const _Range &r0, const _Range &r1, const _Range &r2)
     return m(&ranges[0]);
 }
 
-template<typename Mat>
-Mat slice(const Mat &m, const _Range &r0, const _Range &r1, const _Range &r2, const _Range &r3)
+static inline Mat slice(const Mat &m, const _Range &r0, const _Range &r1, const _Range &r2, const _Range &r3)
 {
-    CV_Assert(m.dims <= 4);
-    cv::AutoBuffer<cv::Range, 4> ranges(m.dims);
+    CV_Assert(m.dims >= 4);
+    Range ranges[CV_MAX_DIM];
     for (int i = 4; i < m.dims; i++)
         ranges[i] = Range::all();
     ranges[0] = r0;
@@ -130,7 +124,28 @@ Mat slice(const Mat &m, const _Range &r0, const _Range &r1, const _Range &r2, co
     return m(&ranges[0]);
 }
 
-BlobShape computeShapeByReshapeMask(const BlobShape &srcShape, const BlobShape &maskShape, Range srcRange = Range::all());
+static inline Mat getPlane(const Mat &m, int n, int cn)
+{
+    CV_Assert(m.dims > 2);
+    Range range[CV_MAX_DIM];
+    int sz[CV_MAX_DIM];
+    for(int i = 2; i < m.dims; i++)
+    {
+        sz[i-2] = m.size.p[i];
+        range[i] = Range::all();
+    }
+    range[0] = Range(n, n+1);
+    range[1] = Range(cn, cn+1);
+    return m(range).reshape(1, m.dims-2, sz);
+}
+
+static inline size_t shapeTotal(const std::vector<int>& shape)
+{
+    size_t i, n = shape.size(), p = 1;
+    for( i = 0; i < n; i++ ) p *= shape[i];
+
+    return p;
+}
 
 }
 }

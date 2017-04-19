@@ -124,7 +124,7 @@ void PermuteLayer::computeStrides()
     _count = _oldStride[0] * _oldDimensionSize[0];
 }
 
-void PermuteLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void PermuteLayer::allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     if(!_needsPermute)
     {
@@ -132,52 +132,76 @@ void PermuteLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> 
     }
 
     CV_Assert(inputs.size() > 0);
-    CV_Assert((int)_numAxes == inputs[0]->shape().dims());
+    const Mat& inp0 = *inputs[0];
+    CV_Assert((int)_numAxes == inp0.dims);
 
     outputs.resize(inputs.size());
 
-    _oldDimensionSize = inputs[0]->shape();
+    _newDimensionSize.resize(_numAxes);
+    _oldDimensionSize.resize(_numAxes);
+
     for (size_t i = 0; i < _numAxes; i++)
     {
-        _newDimensionSize[i] = _oldDimensionSize[_order[i]];
+        _oldDimensionSize[i] = inp0.size[i];
+        _newDimensionSize[i] = inp0.size[_order[i]];
     }
 
     for (size_t i = 0; i < inputs.size(); i++)
     {
-        CV_Assert(inputs[i]->rows() == _oldDimensionSize[2] && inputs[i]->cols() == _oldDimensionSize[3]);
-        outputs[i].create(BlobShape(_newDimensionSize));
+        CV_Assert(inputs[i]->size == inp0.size);
+        outputs[i].create(_numAxes, &_newDimensionSize[0], CV_32F);
     }
 
     computeStrides();
 }
 
-void PermuteLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void PermuteLayer::forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
+    size_t k, ninputs = inputs.size();
     if(!_needsPermute)
     {
-        for (size_t j = 0; j < inputs.size(); j++)
-        {
-            outputs[j].matRef() = inputs[j]->matRef();
-        }
-        return;
+        for (k = 0; k < ninputs; k++)
+            outputs[k] = *inputs[k];
     }
-
-    for (size_t k = 0; k < inputs.size(); k++)
+    else
     {
-        float *srcData = inputs[k]->ptrf();
-        float *dstData = outputs[k].ptrf();
+        size_t i, j, count = _count, numAxes = _numAxes;
+        const size_t* newStride = &_newStride[0];
+        const size_t* oldStride = &_oldStride[0];
+        const size_t* order = &_order[0];
 
-        for (size_t i = 0; i < _count; ++i)
+        for (k = 0; k < ninputs; k++)
         {
-            int oldPosition = 0;
-            int newPosition = i;
+            const Mat& inp = *inputs[k];
+            Mat& out = outputs[k];
 
-            for (size_t j = 0; j < _numAxes; ++j)
+            CV_Assert(inp.dims == numAxes && inp.size == inputs[0]->size);
+            CV_Assert(out.dims == numAxes && out.size == outputs[0].size);
+
+            for( i = 0; i < numAxes; i++ )
             {
-                oldPosition += (newPosition / _newStride[j]) * _oldStride[_order[j]];
-                newPosition %= _newStride[j];
+                CV_Assert(inp.size[i] == _oldDimensionSize[i]);
+                CV_Assert(out.size[i] == _newDimensionSize[i]);
             }
-            dstData[i] = srcData[oldPosition];
+
+            CV_Assert(inp.isContinuous() && out.isContinuous());
+            CV_Assert(inp.type() == CV_32F && out.type() == CV_32F);
+
+            const float *srcData = inp.ptr<float>();
+            float *dstData = out.ptr<float>();
+
+            for (i = 0; i < count; ++i)
+            {
+                size_t oldPosition = 0;
+                size_t newPosition = i;
+
+                for (j = 0; j < numAxes; ++j)
+                {
+                    oldPosition += (newPosition / newStride[j]) * oldStride[order[j]];
+                    newPosition %= newStride[j];
+                }
+                dstData[i] = srcData[oldPosition];
+            }
         }
     }
 }

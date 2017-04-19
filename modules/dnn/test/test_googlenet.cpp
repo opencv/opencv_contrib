@@ -72,7 +72,7 @@ static void launchGoogleNetTest()
     inpMats.push_back( imread(_tf("googlenet_1.jpg")) );
     ASSERT_TRUE(!inpMats[0].empty() && !inpMats[1].empty());
 
-    net.setBlob(".data", Blob::fromImages(inpMats, 1.));
+    net.setBlob(".data", blobFromImages(inpMats, 1.));
     net.forward();
 
     Mat out = net.getBlob("prob");

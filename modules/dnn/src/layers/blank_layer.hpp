@@ -56,14 +56,14 @@ namespace dnn
 
         }
 
-        void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+        void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
         {
             outputs.resize(inputs.size());
             for (size_t i = 0; i < inputs.size(); i++)
-                outputs[i].shareFrom(*inputs[i]);
+                outputs[i] = *inputs[i];
         }
 
-        void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+        void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
         {
             for (size_t i = 0; i < inputs.size(); i++)
                 outputs[i] = *inputs[i];

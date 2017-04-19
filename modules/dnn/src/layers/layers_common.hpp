@@ -59,6 +59,7 @@ void getPoolingKernelParams(LayerParams &params, int &kernelH, int &kernelW, boo
 void getConvPoolOutParams(const int inputH, const int inputW, const cv::Size& kernel,
                           const cv::Size& stride, cv::Size &pad, const cv::String& padMode,
                           int &outH, int &outW);
+
 }
 }
 

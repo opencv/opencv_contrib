@@ -20,58 +20,58 @@ namespace dnn
 
 class ShiftLayerImpl {
 public:
-    static Ptr<ShiftLayerImpl> create(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs,
-                                          const std::vector<Blob>& blobs);
+    static Ptr<ShiftLayerImpl> create(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs,
+                                          const std::vector<Mat>& blobs);
 
     virtual ~ShiftLayerImpl() {}
 
-    virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs, const std::vector<Blob>& blobs) = 0;
+    virtual void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, const std::vector<Mat>& blobs) = 0;
 
 protected:
     ShiftLayerImpl() {}
-    virtual void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs, const std::vector<Blob>& blobs) = 0;
+    virtual void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs, const std::vector<Mat>& blobs) = 0;
 };
 
 namespace {
 
 class ShiftChannelsLayerImpl : public ShiftLayerImpl {
 public:
-    virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs, const std::vector<Blob>& blobs) {
+    virtual void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, const std::vector<Mat>& blobs) {
         for (size_t ii = 0; ii < outputs.size(); ii++)
         {
-            Blob &inpBlob = *inputs[ii];
-            Blob &outBlob = outputs[ii];
+            Mat &inpBlob = *inputs[ii];
+            Mat &outBlob = outputs[ii];
 
-            inpBlob.matRef().copyTo(outBlob.matRef());
+            inpBlob.copyTo(outBlob);
 
-            for (int n = 0; n < inpBlob.num(); n++)
+            for (int n = 0; n < inpBlob.size[0]; n++)
             {
-                Mat dstMat(inpBlob.channels(), inpBlob.rows() * inpBlob.cols(),
+                Mat dstMat(inpBlob.size[1], inpBlob.size[2] * inpBlob.size[3],
                            outBlob.type(), outBlob.ptr(n));
-                dnn::gemm(blobs[0].matRefConst(), biasOnesMat, 1, dstMat, 1); //TODO: gemv
+                dnn::gemm(blobs[0], biasOnesMat, 1, dstMat, 1); //TODO: gemv
             }
         }
     }
 
 protected:
-    virtual void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs, const std::vector<Blob>& blobs) {
+    virtual void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs, const std::vector<Mat>& blobs) {
         CV_Assert(inputs.size() > 0);
 
-        const Blob &inpBlob = *inputs[0];
-        CV_Assert(inpBlob.dims() == 4 && inpBlob.type() == CV_32F);
-        const Blob &biasBlob = blobs[0];
-        CV_Assert(biasBlob.total() == (size_t)inpBlob.channels());
+        const Mat &inpBlob = *inputs[0];
+        CV_Assert(inpBlob.dims == 4 && inpBlob.type() == CV_32F);
+        const Mat &biasBlob = blobs[0];
+        CV_Assert(biasBlob.total() == (size_t)inpBlob.size[1]);
 
         outputs.resize(inputs.size());
         for (size_t i = 0; i < inputs.size(); i++)
         {
             CV_Assert(inputs[i]->type() == inpBlob.type());
-            CV_Assert(inputs[i]->dims() == 4 && inputs[i]->channels() == inpBlob.channels());
+            CV_Assert(inputs[i]->dims == 4 && inputs[i]->size[1] == inpBlob.size[1]);
 
-            outputs[i].shareFrom(*inputs[i]);
+            outputs[i] = *inputs[i];
         }
 
-        biasOnesMat = Mat::ones(1, inpBlob.rows() * inpBlob.cols(), inpBlob.type());
+        biasOnesMat = Mat::ones(1, inpBlob.size[2] * inpBlob.size[3], inpBlob.type());
     }
 
 private:
@@ -81,46 +81,46 @@ private:
 
 class ShiftElementsLayerImpl : public ShiftLayerImpl {
 public:
-    virtual void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs, const std::vector<Blob>& blobs) {
+    virtual void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, const std::vector<Mat>& blobs) {
         for (size_t ii = 0; ii < outputs.size(); ii++)
         {
-          Blob &inpBlob = *inputs[ii];
-          Blob &outBlob = outputs[ii];
+          Mat &inpBlob = *inputs[ii];
+          Mat &outBlob = outputs[ii];
 
-          outBlob.matRef() = inpBlob.matRef() + blobs[0].matRefConst();
+          outBlob = inpBlob + blobs[0];
         }
     }
 
 protected:
-    virtual void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs, const std::vector<Blob>& blobs) {
+    virtual void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs, const std::vector<Mat>& blobs) {
         CV_Assert(inputs.size() > 0);
 
-        const Blob &inpBlob = *inputs[0];
+        const Mat &inpBlob = *inputs[0];
         CV_Assert(inpBlob.type() == CV_32F);
-        const Blob &biasBlob = blobs[0];
-        CV_Assert(biasBlob.dims() == inpBlob.dims());
+        const Mat &biasBlob = blobs[0];
+        CV_Assert(biasBlob.dims == inpBlob.dims);
 
         outputs.resize(inputs.size());
         for (size_t i = 0; i < inputs.size(); i++)
         {
             CV_Assert(inputs[i]->type() == inpBlob.type());
-            CV_Assert(inputs[i]->dims() == inpBlob.dims());
+            CV_Assert(inputs[i]->dims == inpBlob.dims);
 
-            outputs[i].shareFrom(*inputs[i]);
+            outputs[i] = *inputs[i];
         }
     }
 };
 
 }
 
-Ptr<ShiftLayerImpl> ShiftLayerImpl::create(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs,
-                                      const std::vector<Blob>& blobs) {
+Ptr<ShiftLayerImpl> ShiftLayerImpl::create(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs,
+                                      const std::vector<Mat>& blobs) {
     Ptr<ShiftLayerImpl> impl;
 
     CV_Assert(inputs.size() > 0);
     CV_Assert(blobs.size() > 0);
 
-    if(inputs[0]->dims() == blobs[0].dims())
+    if(inputs[0]->dims == blobs[0].dims)
         impl = Ptr<ShiftLayerImpl>(new ShiftElementsLayerImpl);
     else
         impl = Ptr<ShiftLayerImpl>(new ShiftChannelsLayerImpl);
@@ -143,12 +143,12 @@ ShiftLayer::ShiftLayer(LayerParams &params) : Layer(params)
     #endif
 }
 
-void ShiftLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void ShiftLayer::allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     impl = ShiftLayerImpl::create(inputs, outputs, blobs);
 }
 
-void ShiftLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void ShiftLayer::forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     impl->forward(inputs, outputs, blobs);
 }

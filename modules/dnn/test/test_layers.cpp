@@ -65,13 +65,13 @@ static String _tf(TString filename)
 void runLayer(Ptr<Layer> layer, std::vector<Mat> &inpBlobs, std::vector<Mat> &outBlobs)
 {
     size_t i, ninputs = inpBlobs.size();
-    std::vector<Blob> inp_(ninputs);
-    std::vector<Blob*> inp(ninputs);
-    std::vector<Blob> outp;
+    std::vector<Mat> inp_(ninputs);
+    std::vector<Mat*> inp(ninputs);
+    std::vector<Mat> outp;
 
     for( i = 0; i < ninputs; i++ )
     {
-        inp_[i] = Blob(inpBlobs[i].clone());
+        inp_[i] = inpBlobs[i].clone();
         inp[i] = &inp_[i];
     }
 
@@ -81,7 +81,7 @@ void runLayer(Ptr<Layer> layer, std::vector<Mat> &inpBlobs, std::vector<Mat> &ou
     size_t noutputs = outp.size();
     outBlobs.resize(noutputs);
     for( i = 0; i < noutputs; i++ )
-        outBlobs[i] = outp[i].matRef();
+        outBlobs[i] = outp[i];
 }
 
 
@@ -163,15 +163,20 @@ TEST(Layer_Test_Reshape, squeeze)
     params.set("axis", 2);
     params.set("num_axes", 1);
 
-    Blob inp(BlobShape(4, 3, 1, 2));
-    std::vector<Blob*> inpVec(1, &inp);
-    std::vector<Blob> outVec;
+    int sz[] = {4, 3, 1, 2};
+    Mat inp(4, sz, CV_32F);
+    std::vector<Mat*> inpVec(1, &inp);
+    std::vector<Mat> outVec;
 
     Ptr<Layer> rl = LayerFactory::createLayerInstance("Reshape", params);
     rl->allocate(inpVec, outVec);
     rl->forward(inpVec, outVec);
 
-    EXPECT_EQ(outVec[0].shape(), BlobShape(4, 3, 2));
+    Mat& out = outVec[0];
+    std::vector<int> shape(out.size.p, out.size.p + out.dims);
+    int sh0[] = {4, 3, 2};
+    std::vector<int> shape0(sh0, sh0+3);
+    EXPECT_TRUE(shapeEqual(shape, shape0));
 }
 
 TEST(Layer_Test_BatchNorm, Accuracy)

@@ -86,22 +86,21 @@ public:
     ElementWiseLayer() {}
     ElementWiseLayer(const Func &f) : func(f) {}
 
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
     {
         outputs.resize(inputs.size());
         for (size_t i = 0; i < inputs.size(); i++)
         {
-            outputs[i].shareFrom(*inputs[i]); //no data copy
-            outputs[i].matRef() = inputs[i]->matRefConst();
+            outputs[i] = *inputs[i];
         }
     }
 
-    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
     {
         for (size_t i = 0; i < inputs.size(); i++)
         {
-            const Mat &src = inputs[i]->matRefConst();
-            Mat &dst = outputs[i].matRef();
+            const Mat &src = *inputs[i];
+            Mat &dst = outputs[i];
             CV_Assert(src.ptr() == dst.ptr() && src.isContinuous());
 
             Range sizeRange = Range(0, dst.total());
@@ -203,9 +202,9 @@ class ChannelsPReLULayerImpl : public ChannelsPReLULayer
 public:
     ChannelsPReLULayerImpl() {}
 
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
 
-    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
 };
 
 }

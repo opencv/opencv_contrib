@@ -93,7 +93,7 @@ TEST(Reproducibility_AlexNet, Accuracy)
     if (sample.size() != inputSize)
         resize(sample, sample, inputSize);
 
-    net.setBlob(".data", dnn::Blob::fromImage(sample, 1.));
+    net.setBlob(".data", blobFromImage(sample, 1.));
     net.forward();
 
     Mat out = net.getBlob("prob");
@@ -119,7 +119,7 @@ TEST(Reproducibility_FCN, Accuracy)
     if (sample.size() != inputSize)
         resize(sample, sample, inputSize);
 
-    net.setBlob(".data", dnn::Blob::fromImage(sample, 1.));
+    net.setBlob(".data", blobFromImage(sample, 1.));
     net.forward();
 
     Mat out = net.getBlob("score");

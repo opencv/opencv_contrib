@@ -56,30 +56,33 @@ MVNLayerImpl::MVNLayerImpl(bool normVariance_, bool acrossChannels_, double eps_
     eps = eps_;
 }
 
-void MVNLayerImpl::allocate(const std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+void MVNLayerImpl::allocate(const std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
 {
     outputs.resize(inputs.size());
     for (size_t i = 0; i < inputs.size(); i++)
     {
-        CV_Assert(!acrossChannels || inputs[i]->dims() >= 2);
-        outputs[i].create(inputs[i]->shape(), inputs[i]->type());
+        int dims = inputs[i]->dims;
+        CV_Assert(!acrossChannels || dims >= 2);
+        outputs[i].create(dims, inputs[i]->size.p, inputs[i]->type());
     }
 }
 
-void MVNLayerImpl::forward(std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+void MVNLayerImpl::forward(std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
 {
     for (size_t inpIdx = 0; inpIdx < inputs.size(); inpIdx++)
     {
-        Blob &inpBlob = *inputs[inpIdx];
-        Blob &outBlob = outputs[inpIdx];
+        Mat &inpBlob = *inputs[inpIdx];
+        Mat &outBlob = outputs[inpIdx];
 
         int splitDim = (acrossChannels) ? 1 : 2;
-        Shape workSize((int)inpBlob.total(0, splitDim), (int)inpBlob.total(splitDim));
-        Mat inpMat = reshaped(inpBlob.matRefConst(), workSize);
-        Mat outMat = reshaped(outBlob.matRef(), workSize);
+        int i, newRows = 1;
+        for( i = 0; i < splitDim; i++ )
+            newRows *= inpBlob.size[i];
+        Mat inpMat = inpBlob.reshape(1, newRows);
+        Mat outMat = outBlob.reshape(1, newRows);
 
         Scalar mean, dev;
-        for (int i = 0; i < workSize[0]; i++)
+        for ( i = 0; i < newRows; i++)
         {
             Mat inpRow = inpMat.row(i);
             Mat outRow = outMat.row(i);

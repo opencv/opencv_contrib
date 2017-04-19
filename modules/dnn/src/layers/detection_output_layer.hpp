@@ -75,10 +75,10 @@ class DetectionOutputLayer : public Layer
 
 public:
     DetectionOutputLayer(LayerParams &params);
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
 
-    void checkInputs(const std::vector<Blob*> &inputs);
+    void checkInputs(const std::vector<Mat*> &inputs);
     void getCodeType(LayerParams &params);
 
     template<typename T>

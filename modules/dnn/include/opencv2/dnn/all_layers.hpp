@@ -115,7 +115,7 @@ namespace dnn
           * @details If this parameter is empty or unset then @p outTailShape = [`Wh`.size(0)] will be used,
           * where `Wh` is parameter from setWeights().
           */
-        CV_WRAP virtual void setOutShape(const BlobShape &outTailShape = BlobShape::empty()) = 0;
+        CV_WRAP virtual void setOutShape(const std::vector<int> &outTailShape = std::vector<int>()) = 0;
 
         /** @brief Set @f$ h_{t-1} @f$ value that will be used in next forward() calls.
           * @details By-default @f$ h_{t-1} @f$ is inited by zeros and updated after each forward() call.
@@ -156,7 +156,7 @@ namespace dnn
          * If setUseTimstampsDim() is set to fase then @p input[0] should contain single timestamp, its shape should has form [`N`, `[data dims]`] with at least one dimension.
          * (i.e. @f$ x_{t}^{stream} @f$ is stored inside @p input[0][stream, ...]).
         */
-        void forward(std::vector<Blob*> &input, std::vector<Blob> &output);
+        void forward(std::vector<Mat*> &input, std::vector<Mat> &output);
 
         int inputNameToIndex(String inputName);
 
@@ -200,9 +200,9 @@ namespace dnn
 
         @p output[0] will have shape [`T`, `N`, @f$N_o@f$], where @f$N_o@f$ is number of rows in @f$ W_{xo} @f$ matrix.
 
-        If setProduceHiddenOutput() is set to true then @p output[1] will contain a Blob with shape [`T`, `N`, @f$N_h@f$], where @f$N_h@f$ is number of rows in @f$ W_{hh} @f$ matrix.
+        If setProduceHiddenOutput() is set to true then @p output[1] will contain a Mat with shape [`T`, `N`, @f$N_h@f$], where @f$N_h@f$ is number of rows in @f$ W_{hh} @f$ matrix.
         */
-        void forward(std::vector<Blob*> &input, std::vector<Blob> &output);
+        void forward(std::vector<Mat*> &input, std::vector<Mat> &output);
     };
 
     class CV_EXPORTS_W BaseConvolutionLayer : public Layer
@@ -298,10 +298,10 @@ namespace dnn
     class CV_EXPORTS_W ReshapeLayer : public Layer
     {
     public:
-        CV_PROP_RW BlobShape newShapeDesc;
+        CV_PROP_RW std::vector<int> newShapeDesc;
         CV_PROP_RW Range newShapeRange;
 
-        static CV_WRAP Ptr<ReshapeLayer> create(const BlobShape &newShape, Range applyingRange = Range::all(),
+        static CV_WRAP Ptr<ReshapeLayer> create(const std::vector<int> &newShape, Range applyingRange = Range::all(),
                                                 bool enableReordering = false);
     };
 

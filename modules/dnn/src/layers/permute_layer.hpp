@@ -51,14 +51,14 @@ class PermuteLayer : public Layer
 {
 public:
     PermuteLayer(LayerParams &params);
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
 
     size_t _count;
     std::vector<size_t> _order;
 
-    BlobShape _oldDimensionSize;
-    BlobShape _newDimensionSize;
+    std::vector<int> _oldDimensionSize;
+    std::vector<int> _newDimensionSize;
 
     std::vector<size_t> _oldStride;
     std::vector<size_t> _newStride;

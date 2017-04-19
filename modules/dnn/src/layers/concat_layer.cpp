@@ -54,45 +54,44 @@ ConcatLayerImpl::ConcatLayerImpl(int axis_ /*= 1*/)
     axis = axis_;
 }
 
-void ConcatLayerImpl::allocate(const std::vector<Blob *> &inputs, std::vector<Blob> &outputs)
+void ConcatLayerImpl::allocate(const std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
 {
     CV_Assert(inputs.size() > 0);
 
-    BlobShape refShape = inputs[0]->shape();
-    axisIdx = inputs[0]->canonicalAxis(axis);
+    int dims = inputs[0]->dims, type = inputs[0]->type();
+    std::vector<int> refShape(inputs[0]->size.p, inputs[0]->size.p + dims);
+    axisIdx = axis < 0 ? axis + dims : axis;
 
     int axisSum = 0;
     for (size_t i = 0; i < inputs.size(); i++)
     {
-        BlobShape curShape = inputs[i]->shape();
-
-        CV_Assert(curShape.dims() == refShape.dims() && inputs[i]->type() == inputs[0]->type());
-        for (int curAxis = 0; curAxis < refShape.dims(); curAxis++)
+        CV_Assert(inputs[i]->type() == type);
+        for (int curAxis = 0; curAxis < dims; curAxis++)
         {
-            if (curAxis != axisIdx && refShape[curAxis] != curShape[curAxis])
+            if (curAxis != axisIdx && inputs[0]->size[curAxis] != inputs[i]->size[curAxis])
                 CV_Error(Error::StsBadSize, "Inconsitent shape for ConcatLayer");
         }
 
-        axisSum += curShape[axisIdx];
+        axisSum += inputs[i]->size[axisIdx];
     }
 
     refShape[axisIdx] = axisSum;
 
     outputs.resize(1);
-    outputs[0].create(refShape, inputs[0]->type());
+    outputs[0].create(dims, &refShape[0], type);
 }
 
 
-void ConcatLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void ConcatLayerImpl::forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
-    Mat& outMat = outputs[0].matRef();
-    std::vector<Range> ranges(outputs[0].dims(), Range::all());
+    Mat& outMat = outputs[0];
+    std::vector<Range> ranges(outputs[0].dims, Range::all());
 
     ranges[axisIdx].start = 0;
     for (size_t i = 0; i < inputs.size(); i++)
     {
-        ranges[axisIdx].end = ranges[axisIdx].start + inputs[i]->size(axisIdx);
-        inputs[i]->matRefConst().copyTo(outMat(&ranges[0]));
+        ranges[axisIdx].end = ranges[axisIdx].start + inputs[i]->size[axisIdx];
+        inputs[i]->copyTo(outMat(&ranges[0]));
         ranges[axisIdx].start = ranges[axisIdx].end;
     }
 }

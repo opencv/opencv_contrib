@@ -29,27 +29,34 @@ PaddingLayer::PaddingLayer(LayerParams &params)
         CV_Error(cv::Error::StsNotImplemented, "Negative padding and dim aren't supported");
 }
 
-void PaddingLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void PaddingLayer::allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
-    outputs.resize(inputs.size());
-    for(int i = 0; i < inputs.size(); i++)
+    size_t i, ninputs = inputs.size();
+    outputs.resize(ninputs);
+
+    for( i = 0; i < ninputs; i++ )
     {
-        BlobShape shape = inputs[i]->shape();
+        const Mat& inp = *inputs[i];
+        int dims = inp.dims;
+        std::vector<int> shape(inp.size.p, inp.size.p + dims);
         int dim = getPadDim(shape);
-        CV_Assert(dim < shape.dims());
+        CV_Assert(dim < dims);
 
         shape[dim] += padding;
-        outputs[i].create(shape);
+        outputs[i].create(dims, &shape[0], inp.type());
     }
 }
 
-void PaddingLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void PaddingLayer::forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     for(int i = 0; i < inputs.size(); i++)
     {
-        outputs[i].matRef() = paddingValue;
-        BlobShape inShape = inputs[i]->shape();
-        BlobShape outShape = outputs[i].shape();
+        outputs[i] = paddingValue;
+        const Mat& inp = *inputs[i];
+        Mat& out = outputs[i];
+        int dims = inp.dims;
+        std::vector<int> inShape(inp.size.p, inp.size.p + dims);
+        std::vector<int> outShape(out.size.p, out.size.p + dims);
         int dim = getPadDim(inShape);
 
         int actualIndex = index;
@@ -61,7 +68,7 @@ void PaddingLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &output
         srcDstRanges.push_back(std::make_pair(Range(actualIndex, inShape[dim]),
                                               Range(actualIndex + padding, outShape[dim])));
 
-        std::vector<Range> srcRanges(inShape.dims(), Range::all()), dstRanges = srcRanges;
+        std::vector<Range> srcRanges(dims, Range::all()), dstRanges = srcRanges;
 
         for(int j = 0; j < srcDstRanges.size(); j++)
         {
@@ -69,17 +76,17 @@ void PaddingLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &output
             {
                 srcRanges[dim] = srcDstRanges[j].first;
                 dstRanges[dim] = srcDstRanges[j].second;
-                Mat dst = outputs[i].matRef()(&dstRanges[0]);
-                Mat src = inputs[i]->matRef()(&srcRanges[0]).clone();
+                Mat dst = out(&dstRanges[0]);
+                Mat src = inp(&srcRanges[0]).clone();
                 src.copyTo(dst);
             }
         }
     }
 }
 
-int PaddingLayer::getPadDim(const BlobShape& shape) const
+int PaddingLayer::getPadDim(const std::vector<int>& shape) const
 {
-    return inputDims > 0 && shape.dims() > inputDims ? paddingDim + 1 : paddingDim;
+    return inputDims > 0 && (int)shape.size() > inputDims ? paddingDim + 1 : paddingDim;
 }
 
 }

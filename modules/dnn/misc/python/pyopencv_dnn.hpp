@@ -33,7 +33,7 @@ bool pyopencv_to(PyObject *o, std::vector<dnn::Blob> &blobs, const char *name) /
 template<>
 bool pyopencv_to(PyObject *o, dnn::Blob &blob, const char *name)
 {
-    Mat &dst = blob.matRef();
+    Mat &dst = blob;
     if (!pyopencv_to(o, dst, name))
         return false;
 
@@ -59,7 +59,7 @@ bool pyopencv_to(PyObject *o, dnn::Blob &blob, const char *name)
 template<>
 PyObject *pyopencv_from(const dnn::Blob &blob)
 {
-    return pyopencv_from(blob.matRefConst());
+    return pyopencv_from(blob);
 }
 
 template<>

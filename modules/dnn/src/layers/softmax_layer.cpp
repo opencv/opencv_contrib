@@ -58,33 +58,36 @@ SoftMaxLayerImpl::SoftMaxLayerImpl(int axis)
     axisRaw = axis;
 }
 
-void SoftMaxLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void SoftMaxLayerImpl::allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     CV_Assert(inputs.size() == 1);
-    axis = inputs[0]->canonicalAxis(axisRaw);
+    const Mat& inp0 = *inputs[0];
+    int dims = inp0.dims;
+    axis = axisRaw < 0 ? axisRaw + dims : axisRaw;
 
-    BlobShape shape = inputs[0]->shape();
-    outerSize = shape.total(0, axis);
-    channels = shape[axis];
-    innerSize = shape.total(axis + 1);
+    outerSize = inp0.total(0, axis);
+    channels = inp0.size[axis];
+    innerSize = inp0.total(axis + 1);
 
+    std::vector<int> shape(inp0.size.p, inp0.size.p + dims);
     shape[axis] = 1;
-    buf.create(shape, inputs[0]->type());
+    buf.create(shape, inp0.type());
 
     outputs.resize(1);
-    outputs[0].create(inputs[0]->shape(), inputs[0]->type());
+    outputs[0].create(inp0.dims, inp0.size.p, inp0.type());
 }
 
-void SoftMaxLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void SoftMaxLayerImpl::forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
-    Blob &src = *inputs[0];
-    Blob &dst = outputs[0];
+    const Mat &src = *inputs[0];
+    Mat &dst = outputs[0];
     
     CV_Assert(src.type() == CV_32F);
+    CV_Assert(src.isContinuous() && dst.isContinuous());
 
-    float *srcPtr = src.ptrf();
-    float *dstPtr = dst.ptrf();
-    float *bufPtr = buf.ptrf();
+    const float *srcPtr = src.ptr<float>();
+    float *dstPtr = dst.ptr<float>();
+    float *bufPtr = buf.ptr<float>();
 
     size_t outerStep = src.total(axis);
     size_t cnStep = src.total(axis + 1);
@@ -117,7 +120,7 @@ void SoftMaxLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &ou
         }
     }
 
-    cv::exp(dst.matRef(), dst.matRef());
+    cv::exp(dst, dst);
 
     for (size_t outerDim = 0; outerDim < outerSize; outerDim++)
     {

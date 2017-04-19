@@ -184,15 +184,15 @@ PriorBoxLayer::PriorBoxLayer(LayerParams &params) : Layer(params)
     }
 }
 
-void PriorBoxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void PriorBoxLayer::allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     CV_Assert(inputs.size() == 2);
 
-    _layerWidth = inputs[0]->cols();
-    _layerHeight = inputs[0]->rows();
+    _layerWidth = inputs[0]->size[3];
+    _layerHeight = inputs[0]->size[2];
 
-    _imageWidth = inputs[1]->cols();
-    _imageHeight = inputs[1]->rows();
+    _imageWidth = inputs[1]->size[3];
+    _imageHeight = inputs[1]->size[2];
 
     _stepX = static_cast<float>(_imageWidth) / _layerWidth;
     _stepY = static_cast<float>(_imageHeight) / _layerHeight;
@@ -205,15 +205,15 @@ void PriorBoxLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob>
     size_t outChannels = 2;
     _outChannelSize = _layerHeight * _layerWidth * _numPriors * 4;
 
-    outputs[0].create(BlobShape(outNum, outChannels, _outChannelSize));
-    outputs[0].matRef() = 0;
+    int outsz[] = { outNum, outChannels, (int)_outChannelSize };
+    outputs[0].create(3, outsz, CV_32F);
 }
 
-void PriorBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void PriorBoxLayer::forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     (void)inputs; // to suppress unused parameter warning
 
-    float* outputPtr = outputs[0].ptrf();
+    float* outputPtr = outputs[0].ptr<float>();
 
     // first prior: aspect_ratio = 1, size = min_size
     int idx = 0;
@@ -278,10 +278,10 @@ void PriorBoxLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outpu
         }
     }
     // set the variance.
-    outputPtr = outputs[0].ptrf(0, 1);
+    outputPtr = outputs[0].ptr<float>(0, 1);
     if(_variance.size() == 1)
     {
-        Mat secondChannel(outputs[0].rows(), outputs[0].cols(), CV_32F, outputPtr);
+        Mat secondChannel(outputs[0].size[2], outputs[0].size[3], CV_32F, outputPtr);
         secondChannel.setTo(Scalar(_variance[0]));
     }
     else

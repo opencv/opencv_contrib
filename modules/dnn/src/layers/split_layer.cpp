@@ -54,22 +54,23 @@ SplitLayerImpl::SplitLayerImpl(int outputsCount_ /*= -1*/)
     outputsCount = outputsCount_;
 }
 
-void SplitLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void SplitLayerImpl::allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     CV_Assert(inputs.size() == 1);
+    const Mat& inp0 = *inputs[0];
 
     if (outputsCount >= 0)
         outputs.resize(outputsCount);
 
     for (size_t i = 0; i < outputs.size(); i++)
-        outputs[i].create(inputs[0]->shape(), inputs[0]->type());
+        outputs[i].create(inp0.dims, inp0.size.p, inp0.type());
 }
 
-void SplitLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void SplitLayerImpl::forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     for (size_t i = 0; i < outputs.size(); i++)
     {
-        inputs[0]->matRefConst().copyTo(outputs[i].matRef());
+        inputs[0]->copyTo(outputs[i]);
     }
 }
 

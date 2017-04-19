@@ -61,14 +61,15 @@ SliceLayerImpl::SliceLayerImpl(int axis_, const std::vector<int> &sliceIndices_)
     sliceIndices = sliceIndices_;
 }
 
-void SliceLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void SliceLayerImpl::allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
     CV_Assert(inputs.size() == 1);
-    const Blob &inpBlob = *inputs[0];
+    const Mat &inpBlob = *inputs[0];
+    int dims = inpBlob.dims;
 
-    axisIdx = inpBlob.canonicalAxis(axis);
-    int axisSize = inpBlob.size(axisIdx);
-    BlobShape inpShape = inpBlob.shape();
+    axisIdx = axis < 0 ? axis + dims : axis;
+    int axisSize = inpBlob.size[axisIdx];
+    std::vector<int> inpShape(inpBlob.size.p, inpBlob.size.p + dims);
 
     if (sliceIndices.size()) //divide blob with respect to passed parameters
     {
@@ -105,16 +106,16 @@ void SliceLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob
     }
 }
 
-void SliceLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+void SliceLayerImpl::forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {
-    const Mat& inpMat = inputs[0]->matRefConst();
-    std::vector<Range> ranges(inputs[0]->dims(), Range::all());
+    const Mat& inpMat = *inputs[0];
+    std::vector<Range> ranges(inpMat.dims, Range::all());
 
     ranges[axisIdx].start = 0;
     for (size_t i = 0; i < outputs.size(); i++)
     {
-        ranges[axisIdx].end = ranges[axisIdx].start + outputs[i].size(axisIdx);
-        inpMat(&ranges[0]).copyTo(outputs[i].matRef());
+        ranges[axisIdx].end = ranges[axisIdx].start + outputs[i].size[axisIdx];
+        inpMat(&ranges[0]).copyTo(outputs[i]);
         ranges[axisIdx].start = ranges[axisIdx].end;
     }
 }

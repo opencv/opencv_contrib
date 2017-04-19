@@ -54,8 +54,8 @@ class SplitLayerImpl : public SplitLayer
 public:
     SplitLayerImpl(int outputsCount_ = -1);
 
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
 };
 
 }

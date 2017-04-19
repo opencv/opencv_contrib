@@ -56,22 +56,22 @@ public:
     PoolingLayerImpl();
     PoolingLayerImpl(int type, Size kernel, Size stride, Size pad, const String& padMode);
 
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
     
     Size inp, out;
 
     void computeOutputShape(Size inpSz);
 
-    bool pooling_ocl(const char *kname, const Blob &src, Blob &dst, Blob *mask = NULL);
+    bool pooling_ocl(const char *kname, const Mat &src, Mat &dst, Mat *mask = NULL);
 
-    void maxPooling(Blob &src, Blob &dst, Blob &mask);
-    void maxPooling_cpu(Blob &src, Blob &dst, Blob &mask);
-    bool maxPooling_ocl(Blob &src, Blob &dst, Blob &mask);
+    void maxPooling(Mat &src, Mat &dst, Mat &mask);
+    void maxPooling_cpu(Mat &src, Mat &dst, Mat &mask);
+    bool maxPooling_ocl(Mat &src, Mat &dst, Mat &mask);
 
-    void avePooling(Blob &src, Blob &dst);
-    void avePooling_cpu(Blob &src, Blob &dst);
-    bool avePooling_ocl(Blob &src, Blob &dst);
+    void avePooling(Mat &src, Mat &dst);
+    void avePooling_cpu(Mat &src, Mat &dst);
+    bool avePooling_ocl(Mat &src, Mat &dst);
 };
 
 }

@@ -55,8 +55,8 @@ public:
     SliceLayerImpl(int axis_ = 1);
     SliceLayerImpl(int axis_, const std::vector<int> &sliceIndices_);
 
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
 
     int axisIdx;
 };

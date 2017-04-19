@@ -52,12 +52,12 @@ namespace dnn
 class ReshapeLayerImpl : public ReshapeLayer
 {
 public:
-    ReshapeLayerImpl(const BlobShape &newShape_, Range applyingRange_, bool enableReordering_);
+    ReshapeLayerImpl(const std::vector<int> &newShape_, Range applyingRange_, bool enableReordering_);
 
-    void allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
-    void forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs);
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
 
-    std::vector<BlobShape> outShapes;
+    std::vector<std::vector<int> > outShapes;
     bool enableReordering;
 };
 
