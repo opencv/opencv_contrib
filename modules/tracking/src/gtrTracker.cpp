@@ -165,8 +165,8 @@ bool TrackerGOTURNImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     searchPatch = searchPatch - 128;
 
     //Convert to Float type
-    Mat targetBlob = dnn::Blob::fromImage(targetPatch);
-    Mat searchBlob = dnn::Blob::fromImage(searchPatch);
+    Mat targetBlob = dnn::blobFromImage(targetPatch);
+    Mat searchBlob = dnn::blobFromImage(searchPatch);
 
     net.setBlob(".data1", targetBlob);
     net.setBlob(".data2", searchBlob);
