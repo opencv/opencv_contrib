@@ -41,18 +41,6 @@
 
 #include "precomp.hpp"
 #include "caffe/layer_loaders.hpp"
-#include "layers/blank_layer.hpp"
-
-#include "layers/crop_layer.hpp"
-#include "layers/eltwise_layer.hpp"
-#include "layers/flatten_layer.hpp"
-#include "layers/permute_layer.hpp"
-#include "layers/prior_box_layer.hpp"
-#include "layers/detection_output_layer.hpp"
-#include "layers/normalize_bbox_layer.hpp"
-#include "layers/shift_layer.hpp"
-#include "layers/padding_layer.hpp"
-#include "layers/scale_layer.hpp"
 
 namespace cv
 {

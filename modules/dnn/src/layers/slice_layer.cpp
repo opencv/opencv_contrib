@@ -41,14 +41,24 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include "slice_layer.hpp"
-#include <opencv2/core/ocl.hpp>
 #include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
 {
 namespace dnn
 {
+
+class SliceLayerImpl : public SliceLayer
+{
+public:
+    SliceLayerImpl(int axis_ = 1);
+    SliceLayerImpl(int axis_, const std::vector<int> &sliceIndices_);
+
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    
+    int axisIdx;
+};
 
 SliceLayerImpl::SliceLayerImpl(int axis_ /*= 1*/)
 {

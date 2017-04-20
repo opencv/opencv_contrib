@@ -40,9 +40,7 @@
 //M*/
 
 #include "../precomp.hpp"
-#include <opencv2/core/ocl.hpp>
 #include "layers_common.hpp"
-#include "convolution_layer.hpp"
 #include "op_im2col.hpp"
 #include "op_blas.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
@@ -52,6 +50,48 @@ namespace cv
 {
 namespace dnn
 {
+
+class BaseConvolutionLayerImpl : public ConvolutionLayer
+{
+public:
+    BaseConvolutionLayerImpl();
+    virtual void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+
+    void init();
+    virtual void computeInpOutShape(const Mat &inpBlob) = 0;
+    bool is1x1() const;
+
+    int numOutput, group;
+    int inpH, inpW, inpCn;
+    int outH, outW, outCn;
+    int inpGroupCn, outGroupCn;
+    int ksize;
+    std::vector<int> colRowBlobShape;
+
+    bool bias;
+    Mat colRowBlob, biasOnesBlob;
+};
+
+//TODO: simultaneously convolution and bias addition for cache optimization
+class ConvolutionLayerImpl : public BaseConvolutionLayerImpl
+{
+public:
+    virtual void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    virtual void computeInpOutShape(const Mat &inpBlob);
+
+    void im2col(const  Mat &srcImg,  Mat &dstCol);
+    void im2row(const  Mat &srcImg,  Mat &dstRow);
+};
+
+class DeConvolutionLayerImpl : public BaseConvolutionLayerImpl
+{
+public:
+    virtual void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    
+    virtual void computeInpOutShape(const Mat &inpBlob);
+    void col2im(const  Mat &colMat, Mat  &dstImg);
+};
+
 
 BaseConvolutionLayerImpl::BaseConvolutionLayerImpl():
     numOutput(-1), group(-1),

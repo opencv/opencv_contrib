@@ -41,13 +41,24 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include "reshape_layer.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
 {
 namespace dnn
 {
+
+class ReshapeLayerImpl : public ReshapeLayer
+{
+public:
+    ReshapeLayerImpl(const std::vector<int> &newShape_, Range applyingRange_, bool enableReordering_);
+
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+
+    std::vector<std::vector<int> > outShapes;
+    bool enableReordering;
+};
 
 static void computeShapeByReshapeMask(const std::vector<int> &srcShape,
                                const std::vector<int> &maskShape,

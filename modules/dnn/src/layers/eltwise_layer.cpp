@@ -41,12 +41,21 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include "eltwise_layer.hpp"
 
 namespace cv
 {
 namespace dnn
 {
+    class EltwiseLayerImpl : public EltwiseLayer
+    {
+        EltwiseOp op;
+        std::vector<int> coeffs;
+    public:
+        EltwiseLayerImpl(EltwiseOp op, const std::vector<int> &coeffs);
+        void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+        void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    };
+
     EltwiseLayerImpl::EltwiseLayerImpl(EltwiseOp op_, const std::vector<int> &coeffs_)
     {
         op = op_;

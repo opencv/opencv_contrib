@@ -38,29 +38,35 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 //M*/
-
-#ifndef __OPENCV_DNN_LAYERS_SOFTMAX_LAYER_HPP__
-#define __OPENCV_DNN_LAYERS_SOFTMAX_LAYER_HPP__
 #include "../precomp.hpp"
-#include <opencv2/dnn/all_layers.hpp>
 
 namespace cv
 {
 namespace dnn
 {
-
-class SoftMaxLayerImpl : public SoftmaxLayer
+class BlankLayerImpl : public BlankLayer
 {
 public:
-    SoftMaxLayerImpl(int axis = 1);
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    BlankLayerImpl(const LayerParams&) {}
 
-    int axis, axisRaw;
-    Mat buf;
-    size_t outerSize, channels, innerSize;
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    {
+        outputs.resize(inputs.size());
+        for (size_t i = 0; i < inputs.size(); i++)
+            outputs[i] = *inputs[i];
+    }
+
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    {
+        for (size_t i = 0; i < inputs.size(); i++)
+            outputs[i] = *inputs[i];
+    }
 };
 
+Ptr<BlankLayer> BlankLayer::create(const LayerParams& params)
+{
+    return Ptr<BlankLayer>(new BlankLayerImpl(params));
+}
+
 }
 }
-#endif

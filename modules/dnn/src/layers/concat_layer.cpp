@@ -41,13 +41,22 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include "concat_layer.hpp"
-#include <opencv2/core/ocl.hpp>
 
 namespace cv
 {
 namespace dnn
 {
+
+class ConcatLayerImpl : public ConcatLayer
+{
+public:
+    ConcatLayerImpl(int axis_ = 1);
+
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    
+    int axisIdx;
+};
 
 ConcatLayerImpl::ConcatLayerImpl(int axis_ /*= 1*/)
 {

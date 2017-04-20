@@ -9,12 +9,24 @@
 Implementation of Batch Normalization layer.
 */
 
-#include "batch_norm_layer.hpp"
+#include "../precomp.hpp"
 
 namespace cv
 {
 namespace dnn
 {
+
+class BatchNormLayerImpl : public BatchNormLayer
+{
+public:
+    BatchNormLayerImpl(bool hasWeights_, bool hasBias_, float epsilon_);
+
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+
+    bool hasWeights, hasBias;
+    float epsilon;
+};
 
 BatchNormLayerImpl::BatchNormLayerImpl(bool hasWeights_, bool hasBias_, float epsilon_):
     hasWeights(hasWeights_),

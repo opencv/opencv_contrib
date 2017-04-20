@@ -41,15 +41,26 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include "fully_connected_layer.hpp"
 #include "op_blas.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
-#include <opencv2/core/ocl.hpp>
 
 namespace cv
 {
 namespace dnn
 {
+
+class FullyConnectedLayerImpl : public InnerProductLayer
+{
+public:
+    FullyConnectedLayerImpl(int axisCan = 1);
+    void allocate(const std::vector<Mat*> &input, std::vector<Mat> &output);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+
+    int axisCan, dtype;
+    int numOutput, innerSize, outerSize;
+    bool bias;
+    Mat biasOnesBlob;
+};
 
 FullyConnectedLayerImpl::FullyConnectedLayerImpl(int axis_)
 {

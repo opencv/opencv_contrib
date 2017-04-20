@@ -11,13 +11,22 @@ Implementation of Scale layer.
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include "scale_layer.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
 {
 namespace dnn
 {
+
+class ScaleLayerImpl : public ScaleLayer
+{
+public:
+    ScaleLayerImpl(bool hasBias_): hasBias(hasBias_) {}
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    
+    bool hasBias;
+};
 
 void ScaleLayerImpl::allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
 {

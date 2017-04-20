@@ -41,11 +41,8 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include "pooling_layer.hpp"
-#include "opencl_kernels_dnn.hpp"
 #include <float.h>
 #include <algorithm>
-#include <opencv2/core/ocl.hpp>
 using std::max;
 using std::min;
 
@@ -53,6 +50,31 @@ namespace cv
 {
 namespace dnn
 {
+class PoolingLayerImpl : public PoolingLayer
+{
+public:
+
+    PoolingLayerImpl();
+    PoolingLayerImpl(int type, Size kernel, Size stride, Size pad, const String& padMode);
+
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+
+    Size inp, out;
+
+    void computeOutputShape(Size inpSz);
+
+    bool pooling_ocl(const char *kname, const Mat &src, Mat &dst, Mat *mask = NULL);
+
+    void maxPooling(Mat &src, Mat &dst, Mat &mask);
+    void maxPooling_cpu(Mat &src, Mat &dst, Mat &mask);
+    bool maxPooling_ocl(Mat &src, Mat &dst, Mat &mask);
+
+    void avePooling(Mat &src, Mat &dst);
+    void avePooling_cpu(Mat &src, Mat &dst);
+    bool avePooling_ocl(Mat &src, Mat &dst);
+};
+
 //TODO: add ceil_mode param
 
 PoolingLayerImpl::PoolingLayerImpl()

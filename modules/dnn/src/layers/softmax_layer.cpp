@@ -41,9 +41,6 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include "softmax_layer.hpp"
-#include <opencv2/core/ocl.hpp>
-#include "opencl_kernels_dnn.hpp"
 #include <algorithm>
 #include <stdlib.h>
 using std::max;
@@ -52,6 +49,18 @@ namespace cv
 {
 namespace dnn
 {
+
+class SoftMaxLayerImpl : public SoftmaxLayer
+{
+public:
+    SoftMaxLayerImpl(int axis = 1);
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+
+    int axis, axisRaw;
+    Mat buf;
+    size_t outerSize, channels, innerSize;
+};
 
 SoftMaxLayerImpl::SoftMaxLayerImpl(int axis)
 {

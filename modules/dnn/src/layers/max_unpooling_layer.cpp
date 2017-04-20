@@ -11,13 +11,25 @@ Implementation of Batch Normalization layer.
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include "max_unpooling_layer.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
 {
 namespace dnn
 {
+
+class MaxUnpoolLayerImpl : public MaxUnpoolLayer
+{
+public:
+    MaxUnpoolLayerImpl(Size poolKernel_, Size poolPad_, Size poolStride_);
+
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+
+    Size poolKernel;
+    Size poolPad;
+    Size poolStride;
+};
 
 MaxUnpoolLayerImpl::MaxUnpoolLayerImpl(Size poolKernel_, Size poolPad_, Size poolStride_):
     poolKernel(poolKernel_),

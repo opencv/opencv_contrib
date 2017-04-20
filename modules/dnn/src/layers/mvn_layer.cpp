@@ -41,13 +41,21 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include "mvn_layer.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
 {
 namespace dnn
 {
+
+class MVNLayerImpl : public MVNLayer
+{
+public:
+    MVNLayerImpl(bool normVariance_ = true, bool acrossChannels_ = false, double eps_ = 1e-9);
+
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+};
 
 MVNLayerImpl::MVNLayerImpl(bool normVariance_, bool acrossChannels_, double eps_)
 {

@@ -45,7 +45,6 @@
 #include <vector>
 #include <opencv2/core.hpp>
 #include <opencv2/dnn/dict.hpp>
-#include <opencv2/dnn/blob.hpp>
 
 namespace cv
 {

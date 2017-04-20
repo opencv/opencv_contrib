@@ -41,12 +41,21 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include "crop_layer.hpp"
 
 namespace cv
 {
 namespace dnn
 {
+
+class CropLayerImpl : public CropLayer
+{
+    std::vector<Range> crop_ranges;
+
+public:
+    CropLayerImpl(int start_axis, const std::vector<int> &offset);
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+};
 
 CropLayerImpl::CropLayerImpl(int start_axis_, const std::vector<int> &offset_)
 {

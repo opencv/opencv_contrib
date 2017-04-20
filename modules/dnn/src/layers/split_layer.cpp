@@ -41,13 +41,21 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include "split_layer.hpp"
-#include <opencv2/core/ocl.hpp>
 
 namespace cv
 {
 namespace dnn
 {
+
+class SplitLayerImpl : public SplitLayer
+{
+public:
+    SplitLayerImpl(int outputsCount_ = -1);
+
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+};
+
 
 SplitLayerImpl::SplitLayerImpl(int outputsCount_ /*= -1*/)
 {

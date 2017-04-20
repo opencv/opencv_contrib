@@ -41,10 +41,7 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include "lrn_layer.hpp"
-#include "opencl_kernels_dnn.hpp"
 #include <opencv2/imgproc.hpp>
-#include <opencv2/core/ocl.hpp>
 #include <opencv2/dnn/shape_utils.hpp>
 #include <algorithm>
 
@@ -52,6 +49,21 @@ namespace cv
 {
 namespace dnn
 {
+
+class LRNLayerImpl : public LRNLayer
+{
+public:
+    LRNLayerImpl(int type = CHANNEL_NRM, int size = 5, double alpha = 1,
+                 double beta = 0.75, double bias = 1, bool normBySize = true);
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+
+    void channelNormalization(Mat &src, Mat &dst);
+    void spatialNormalization(Mat &src, Mat &dst);
+    void sqrBoxFilter_(const Mat &src, Mat &dst);
+    
+    Mat buf;
+};
 
 LRNLayerImpl::LRNLayerImpl(int type_, int size_, double alpha_, double beta_, double bias_, bool normBySize_)
 {
