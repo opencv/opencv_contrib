@@ -93,6 +93,7 @@ else()
 endif()
 
 list(APPEND REQUIRED_LIBRARIES ${PROTOBUF_LIBRARIES})
+include_directories(SYSTEM ${PROTOBUF_INCLUDE_DIRS})
 
 ####
 # Setup the compiler options
