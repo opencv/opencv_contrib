@@ -83,7 +83,7 @@ namespace dnn
     {
     public:
         /** Creates instance of LSTM layer */
-        static Ptr<LSTMLayer> create();
+        static Ptr<LSTMLayer> create(const LayerParams& params);
 
         /** Set trained weights for LSTM layer.
         LSTM behavior on each step is defined by current input, previous output, previous cell state and learned weights.
@@ -162,10 +162,8 @@ namespace dnn
          * If setUseTimstampsDim() is set to fase then @p input[0] should contain single timestamp, its shape should has form [`N`, `[data dims]`] with at least one dimension.
          * (i.e. @f$ x_{t}^{stream} @f$ is stored inside @p input[0][stream, ...]).
         */
-        void forward(std::vector<Mat*> &input, std::vector<Mat> &output);
 
         int inputNameToIndex(String inputName);
-
         int outputNameToIndex(String outputName);
     };
 
@@ -174,7 +172,7 @@ namespace dnn
     {
     public:
         /** Creates instance of RNNLayer */
-        static Ptr<RNNLayer> create();
+        static Ptr<RNNLayer> create(const LayerParams& params);
 
         /** Setups learned weights.
 
@@ -208,13 +206,11 @@ namespace dnn
 
         If setProduceHiddenOutput() is set to true then @p output[1] will contain a Mat with shape [`T`, `N`, @f$N_h@f$], where @f$N_h@f$ is number of rows in @f$ W_{hh} @f$ matrix.
         */
-        void forward(std::vector<Mat*> &input, std::vector<Mat> &output);
     };
 
     class CV_EXPORTS BaseConvolutionLayer : public Layer
     {
     public:
-
         Size kernel, stride, pad, dilation, adjustPad;
         String padMode;
     };
@@ -222,21 +218,18 @@ namespace dnn
     class CV_EXPORTS ConvolutionLayer : public BaseConvolutionLayer
     {
     public:
-
-        static Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size stride = Size(1, 1), Size pad = Size(0, 0), Size dilation = Size(1, 1));
+        static Ptr<BaseConvolutionLayer> create(const LayerParams& params);
     };
 
     class CV_EXPORTS DeconvolutionLayer : public BaseConvolutionLayer
     {
     public:
-
-        static Ptr<BaseConvolutionLayer> create(Size kernel = Size(3, 3), Size stride = Size(1, 1), Size pad = Size(0, 0), Size dilation = Size(1, 1), Size adjustPad = Size());
+        static Ptr<BaseConvolutionLayer> create(const LayerParams& params);
     };
 
     class CV_EXPORTS LRNLayer : public Layer
     {
     public:
-
         enum Type
         {
             CHANNEL_NRM,
@@ -245,18 +238,15 @@ namespace dnn
         int type;
 
         int size;
-        double alpha, beta, bias;
+        float alpha, beta, bias;
         bool normBySize;
 
-        static Ptr<LRNLayer> create(int type = LRNLayer::CHANNEL_NRM, int size = 5,
-                                            double alpha = 1, double beta = 0.75, double bias = 1,
-                                            bool normBySize = true);
+        static Ptr<LRNLayer> create(const LayerParams& params);
     };
 
     class CV_EXPORTS PoolingLayer : public Layer
     {
     public:
-
         enum Type
         {
             MAX,
@@ -269,34 +259,29 @@ namespace dnn
         bool globalPooling;
         String padMode;
 
-        static Ptr<PoolingLayer> create(int type = PoolingLayer::MAX, Size kernel = Size(2, 2),
-                                                Size stride = Size(1, 1), Size pad = Size(0, 0),
-                                                const cv::String& padMode = "");
-        static Ptr<PoolingLayer> createGlobal(int type = PoolingLayer::MAX);
+        static Ptr<PoolingLayer> create(const LayerParams& params);
     };
 
     class CV_EXPORTS SoftmaxLayer : public Layer
     {
     public:
-
-        static Ptr<SoftmaxLayer> create(int axis = 1);
+        static Ptr<SoftmaxLayer> create(const LayerParams& params);
     };
 
     class CV_EXPORTS InnerProductLayer : public Layer
     {
     public:
         int axis;
-
-        static Ptr<InnerProductLayer> create(int axis = 1);
+        static Ptr<InnerProductLayer> create(const LayerParams& params);
     };
 
     class CV_EXPORTS MVNLayer : public Layer
     {
     public:
-        double eps;
+        float eps;
         bool normVariance, acrossChannels;
 
-        static Ptr<MVNLayer> create(bool normVariance = true, bool acrossChannels = false, double eps = 1e-9);
+        static Ptr<MVNLayer> create(const LayerParams& params);
     };
 
     /* Reshaping */
@@ -307,14 +292,13 @@ namespace dnn
         std::vector<int> newShapeDesc;
         Range newShapeRange;
 
-        static Ptr<ReshapeLayer> create(const std::vector<int> &newShape, Range applyingRange = Range::all(),
-                                                bool enableReordering = false);
+        static Ptr<ReshapeLayer> create(const LayerParams& params);
     };
 
     class CV_EXPORTS FlattenLayer : public Layer
     {
     public:
-        static Ptr<FlattenLayer> create(LayerParams &params);
+        static Ptr<FlattenLayer> create(const LayerParams &params);
     };
 
     class CV_EXPORTS ConcatLayer : public Layer
@@ -322,7 +306,7 @@ namespace dnn
     public:
         int axis;
 
-        static Ptr<ConcatLayer> create(int axis = 1);
+        static Ptr<ConcatLayer> create(const LayerParams &params);
     };
 
     class CV_EXPORTS SplitLayer : public Layer
@@ -330,7 +314,7 @@ namespace dnn
     public:
         int outputsCount; //!< Number of copies that will be produced (is ignored when negative).
 
-        static Ptr<SplitLayer> create(int outputsCount = -1);
+        static Ptr<SplitLayer> create(const LayerParams &params);
     };
 
     class CV_EXPORTS SliceLayer : public Layer
@@ -339,8 +323,7 @@ namespace dnn
         int axis;
         std::vector<int> sliceIndices;
 
-        static Ptr<SliceLayer> create(int axis);
-        static Ptr<SliceLayer> create(int axis, const std::vector<int> &sliceIndices);
+        static Ptr<SliceLayer> create(const LayerParams &params);
     };
 
     class CV_EXPORTS PermuteLayer : public Layer
@@ -360,47 +343,43 @@ namespace dnn
     class CV_EXPORTS ReLULayer : public Layer
     {
     public:
-        double negativeSlope;
-
-        static Ptr<ReLULayer> create(double negativeSlope = 0);
+        static Ptr<ReLULayer> create(const LayerParams &params);
     };
 
     class CV_EXPORTS ChannelsPReLULayer : public Layer
     {
     public:
-        static Ptr<ChannelsPReLULayer> create();
+        static Ptr<ChannelsPReLULayer> create(const LayerParams& params);
     };
 
     class CV_EXPORTS TanHLayer : public Layer
     {
     public:
-        static Ptr<TanHLayer> create();
+        static Ptr<TanHLayer> create(const LayerParams &params);
     };
 
     class CV_EXPORTS SigmoidLayer : public Layer
     {
     public:
-        static Ptr<SigmoidLayer> create();
+        static Ptr<SigmoidLayer> create(const LayerParams &params);
     };
 
     class CV_EXPORTS BNLLLayer : public Layer
     {
     public:
-        static Ptr<BNLLLayer> create();
+        static Ptr<BNLLLayer> create(const LayerParams &params);
     };
 
     class CV_EXPORTS AbsLayer : public Layer
     {
     public:
-        static Ptr<AbsLayer> create();
+        static Ptr<AbsLayer> create(const LayerParams &params);
     };
 
     class CV_EXPORTS PowerLayer : public Layer
     {
     public:
-        double power, scale, shift;
-
-        static Ptr<PowerLayer> create(double power = 1, double scale = 1, double shift = 0);
+        static Ptr<PowerLayer> create(const LayerParams &params);
     };
 
     /* Layers using in semantic segmentation */
@@ -411,7 +390,7 @@ namespace dnn
         int startAxis;
         std::vector<int> offset;
 
-        static Ptr<CropLayer> create(int start_axis, const std::vector<int> &offset);
+        static Ptr<CropLayer> create(const LayerParams &params);
     };
 
     class CV_EXPORTS EltwiseLayer : public Layer
@@ -424,25 +403,25 @@ namespace dnn
             MAX = 2,
         };
 
-        static Ptr<EltwiseLayer> create(EltwiseOp op, const std::vector<int> &coeffs);
+        static Ptr<EltwiseLayer> create(const LayerParams &params);
     };
 
     class CV_EXPORTS BatchNormLayer : public Layer
     {
     public:
-        static Ptr<BatchNormLayer> create(bool hasWeights, bool hasBias, float epsilon);
+        static Ptr<BatchNormLayer> create(const LayerParams &params);
     };
 
     class CV_EXPORTS MaxUnpoolLayer : public Layer
     {
     public:
-        static Ptr<MaxUnpoolLayer> create(Size poolKernel, Size poolPad, Size poolStride);
+        static Ptr<MaxUnpoolLayer> create(const LayerParams &params);
     };
 
     class CV_EXPORTS ScaleLayer : public Layer
     {
     public:
-        static Ptr<ScaleLayer> create(bool hasBias);
+        static Ptr<ScaleLayer> create(const LayerParams& params);
     };
 
     class CV_EXPORTS ShiftLayer : public Layer

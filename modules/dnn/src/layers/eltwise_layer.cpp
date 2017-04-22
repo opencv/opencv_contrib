@@ -46,23 +46,43 @@ namespace cv
 {
 namespace dnn
 {
-    class EltwiseLayerImpl : public EltwiseLayer
-    {
-        EltwiseOp op;
-        std::vector<int> coeffs;
-    public:
-        EltwiseLayerImpl(EltwiseOp op, const std::vector<int> &coeffs);
-        void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
-        void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
-    };
 
-    EltwiseLayerImpl::EltwiseLayerImpl(EltwiseOp op_, const std::vector<int> &coeffs_)
+class EltwiseLayerImpl : public EltwiseLayer
+{
+public:
+    EltwiseOp op;
+    std::vector<int> coeffs;
+
+    EltwiseLayerImpl(const LayerParams& params)
     {
-        op = op_;
-        coeffs = coeffs_;
+        setParamsFrom(params);
+        op = EltwiseLayer::SUM;
+        if (params.has("operation"))
+        {
+            String operation = params.get<String>("operation").toLowerCase();
+            if (operation == "prod")
+                op = EltwiseLayer::PROD;
+            else if (operation == "sum")
+                op = EltwiseLayer::SUM;
+            else if (operation == "max")
+                op = EltwiseLayer::MAX;
+            else
+                CV_Error(cv::Error::StsBadArg, "Unknown operaticon type \"" + operation + "\"");
+        }
+
+        if (params.has("coeff"))
+        {
+            DictValue paramCoeff = params.get("coeff");
+            int i, n = paramCoeff.size();
+            coeffs.resize(n);
+            for (i = 0; i < n; i++)
+            {
+                coeffs[i] = paramCoeff.get<int>(i);
+            }
+        }
     }
 
-    void EltwiseLayerImpl::allocate(const std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
+    void allocate(const std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
     {
         CV_Assert(2 <= inputs.size());
         CV_Assert(coeffs.size() == 0 || coeffs.size() == inputs.size());
@@ -76,11 +96,11 @@ namespace dnn
         outputs[0].create(inputs[0]->dims, inputs[0]->size.p, inputs[0]->type());
     }
 
-    void EltwiseLayerImpl::forward(std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
+    void forward(std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
     {
         switch (op)
         {
-        case SUM:
+            case SUM:
             {
                 CV_Assert(coeffs.size() == 0 || coeffs.size() == inputs.size());
                 Mat& output = outputs[0];
@@ -100,8 +120,8 @@ namespace dnn
                     }
                 }
             }
-            break;
-        case PROD:
+                break;
+            case PROD:
             {
                 Mat& output = outputs[0];
                 output.setTo(1.);
@@ -110,8 +130,8 @@ namespace dnn
                     output = output.mul(*inputs[i]);
                 }
             }
-            break;
-        case MAX:
+                break;
+            case MAX:
             {
                 Mat& output = outputs[0];
                 cv::max(*inputs[0], *inputs[1], output);
@@ -120,16 +140,18 @@ namespace dnn
                     cv::max(output, *inputs[i], output);
                 }
             }
-            break;
-        default:
-            CV_Assert(0);
-            break;
-        };
+                break;
+            default:
+                CV_Assert(0);
+                break;
+        }
     }
+};
 
-    Ptr<EltwiseLayer> EltwiseLayer::create(EltwiseOp op, const std::vector<int> &coeffs)
-    {
-        return Ptr<EltwiseLayer>(new EltwiseLayerImpl(op, coeffs));
-    }
+Ptr<EltwiseLayer> EltwiseLayer::create(const LayerParams& params)
+{
+    return Ptr<EltwiseLayer>(new EltwiseLayerImpl(params));
+}
+
 }
 }

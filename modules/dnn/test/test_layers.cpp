@@ -247,7 +247,7 @@ public:
         Wx = Mat::ones(4 * numOut, numInp, CV_32F);
         b  = Mat::ones(4 * numOut, 1, CV_32F);
 
-        layer = LSTMLayer::create();
+        layer = LSTMLayer::create(LayerParams());
         layer->setWeights(Wh, Wx, b);
         layer->setOutShape(outShape_);
     }
@@ -300,7 +300,7 @@ TEST_F(Layer_LSTM_Test, get_set_test)
 
 TEST(Layer_LSTM_Test_Accuracy_with_, CaffeRecurrent)
 {
-    Ptr<LSTMLayer> layer = LSTMLayer::create();
+    Ptr<LSTMLayer> layer = LSTMLayer::create(LayerParams());
 
     Mat Wx = blobFromNPY(_tf("lstm.prototxt.w_0.npy"));
     Mat Wh = blobFromNPY(_tf("lstm.prototxt.w_2.npy"));
@@ -317,7 +317,7 @@ TEST(Layer_LSTM_Test_Accuracy_with_, CaffeRecurrent)
 
 TEST(Layer_RNN_Test_Accuracy_with_, CaffeRecurrent)
 {
-    Ptr<RNNLayer> layer = RNNLayer::create();
+    Ptr<RNNLayer> layer = RNNLayer::create(LayerParams());
 
     layer->setWeights(
                 blobFromNPY(_tf("rnn.prototxt.w_0.npy")),
@@ -357,7 +357,7 @@ public:
         Who = Mat::ones(nO, nH, CV_32F);
         bo  = Mat::ones(nO, 1, CV_32F);
 
-        layer = RNNLayer::create();
+        layer = RNNLayer::create(LayerParams());
         layer->setProduceHiddenOutput(true);
         layer->setWeights(Wxh, bh, Whh, Who, bo);
     }

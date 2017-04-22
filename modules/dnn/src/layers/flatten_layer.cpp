@@ -52,15 +52,23 @@ namespace dnn
 class FlattenLayerImpl : public FlattenLayer
 {
 public:
-    FlattenLayerImpl(LayerParams &params)
+    FlattenLayerImpl(const LayerParams &params)
     {
         _startAxis = params.get<int>("axis", 1);
         _endAxis = params.get<int>("end_axis", -1);
         setParamsFrom(params);
     }
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs){
-        checkInputs(inputs);
+
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    {
+        size_t i, ninputs = inputs.size();
+        CV_Assert(ninputs > 0);
         const Mat& inp0 = *inputs[0];
+
+        for (i = 1; i < ninputs; i++)
+        {
+            CV_Assert(inputs[i]->size == inp0.size);
+        }
 
         _numAxes = inp0.dims;
         _endAxis = _endAxis < 0 ? _endAxis + _numAxes : _endAxis;
@@ -70,18 +78,18 @@ public:
         size_t flattenedDimensionSize = inp0.total(_startAxis, _endAxis+1);
 
         resultShape.clear();
-        for (int i = 0; i < _startAxis; i++)
+        for (int j = 0; j < _startAxis; j++)
         {
-            resultShape.push_back(inp0.size[i]);
+            resultShape.push_back(inp0.size[j]);
         }
         resultShape.push_back(flattenedDimensionSize);
-        for (size_t i = _endAxis + 1; i < _numAxes; i++)
+        for (int j = _endAxis + 1; j < _numAxes; j++)
         {
-            resultShape.push_back(inp0.size[i]);
+            resultShape.push_back(inp0.size[j]);
         }
         CV_Assert(resultShape.size() <= 4);
 
-        for (size_t i = 0; i < inputs.size(); i++)
+        for (i = 0; i < ninputs; i++)
         {
             //in-place
             outputs[i] = inputs[i]->reshape(1, (int)resultShape.size(), &resultShape[0]);
@@ -96,15 +104,6 @@ public:
         }
     }
 
-    void checkInputs(const std::vector<Mat*> &inputs)
-    {
-        CV_Assert(inputs.size() > 0);
-        for (size_t i = 1; i < inputs.size(); i++)
-        {
-            CV_Assert(inputs[i]->size == inputs[0]->size);
-        }
-    }
-
     int _startAxis;
     int _endAxis;
     size_t _numAxes;
@@ -112,7 +111,7 @@ public:
     std::vector<int> resultShape;
 };
 
-Ptr<FlattenLayer> FlattenLayer::create(LayerParams& params)
+Ptr<FlattenLayer> FlattenLayer::create(const LayerParams& params)
 {
     return Ptr<FlattenLayer>(new FlattenLayerImpl(params));
 }

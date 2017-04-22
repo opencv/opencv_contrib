@@ -49,85 +49,89 @@ namespace dnn
 
 class CropLayerImpl : public CropLayer
 {
-    std::vector<Range> crop_ranges;
-
 public:
-    CropLayerImpl(int start_axis, const std::vector<int> &offset);
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    CropLayerImpl(const LayerParams& params)
+    {
+        setParamsFrom(params);
+        startAxis = params.get<int>("axis", 2);
+        const DictValue *paramOffset = params.ptr("offset");
+
+        if (paramOffset)
+        {
+            for (int i = 0; i < paramOffset->size(); i++)
+                offset.push_back(paramOffset->get<int>(i));
+        }
+    }
+
+    void allocate(const std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
+    {
+        CV_Assert(2 == inputs.size());
+
+        const Mat &inpBlob = *inputs[0];
+        const Mat &inpSzBlob = *inputs[1];
+
+        int dims = inpBlob.dims;
+        int start_axis = startAxis < 0 ? startAxis + dims : startAxis;
+
+        std::vector<int> offset_final(dims, 0);
+        if (offset.size() == 1)
+        {
+            for (int i = start_axis; i < dims; i++)
+                offset_final[i] = offset[0];
+        }
+        else if (offset.size() > 1)
+        {
+            if ((int)offset.size() != dims - start_axis)
+                CV_Error(Error::StsBadArg, "number of offset values specified must be equal to the number of dimensions following axis.");
+
+            for (int i = start_axis; i < dims; i++)
+                offset_final[i] = offset[i - start_axis];
+        }
+
+        std::vector<int> dstShape(dims);
+        crop_ranges.resize(dims, Range::all());
+        for (int i = 0; i < dims; i++)
+        {
+            dstShape[i] = inpSzBlob.size[i];
+            if( i < start_axis )
+                continue;
+
+            if (!offset.empty()) //normal case
+            {
+                if (offset_final[i] < 0 || offset_final[i] + inpSzBlob.size[i] > inpBlob.size[i])
+                    CV_Error(Error::StsBadArg, "invalid crop parameters");
+
+                crop_ranges[i] = Range(offset_final[i], offset_final[i] + inpSzBlob.size[i]);
+            }
+            else //detect offset automatically so that cropped image is center of original one
+            {
+                if (inpSzBlob.size[i] > inpBlob.size[i])
+                    CV_Error(Error::StsBadArg, "invalid output blob size");
+
+                int cur_crop = (inpBlob.size[i] - inpSzBlob.size[i]) / 2;
+                crop_ranges[i] = Range(cur_crop, cur_crop + inpSzBlob.size[i]);
+            }
+        }
+
+        outputs.resize(1);
+        outputs[0].create(dims, &dstShape[0], inpBlob.type());
+    }
+    
+    void forward(std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
+    {
+        Mat &input = *inputs[0];
+        Mat &output = outputs[0];
+        
+        input(&crop_ranges[0]).copyTo(output);
+    }
+
+    std::vector<Range> crop_ranges;
 };
 
-CropLayerImpl::CropLayerImpl(int start_axis_, const std::vector<int> &offset_)
+
+Ptr<CropLayer> CropLayer::create(const LayerParams& params)
 {
-    startAxis = start_axis_;
-    offset = offset_;
-}
-
-void CropLayerImpl::allocate(const std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
-{
-    CV_Assert(2 == inputs.size());
-
-    const Mat &inpBlob = *inputs[0];
-    const Mat &inpSzBlob = *inputs[1];
-
-    int dims = inpBlob.dims;
-    int start_axis = startAxis < 0 ? startAxis + dims : startAxis;
-
-    std::vector<int> offset_final(dims, 0);
-    if (offset.size() == 1)
-    {
-        for (int i = start_axis; i < dims; i++)
-            offset_final[i] = offset[0];
-    }
-    else if (offset.size() > 1)
-    {
-        if ((int)offset.size() != dims - start_axis)
-            CV_Error(Error::StsBadArg, "number of offset values specified must be equal to the number of dimensions following axis.");
-
-        for (int i = start_axis; i < dims; i++)
-            offset_final[i] = offset[i - start_axis];
-    }
-
-    std::vector<int> dstShape(dims);
-    crop_ranges.resize(dims, Range::all());
-    for (int i = 0; i < dims; i++)
-    {
-        dstShape[i] = inpSzBlob.size[i];
-        if( i < start_axis )
-            continue;
-
-        if (!offset.empty()) //normal case
-        {
-            if (offset_final[i] < 0 || offset_final[i] + inpSzBlob.size[i] > inpBlob.size[i])
-                CV_Error(Error::StsBadArg, "invalid crop parameters");
-
-            crop_ranges[i] = Range(offset_final[i], offset_final[i] + inpSzBlob.size[i]);
-        }
-        else //detect offset automatically so that cropped image is center of original one
-        {
-            if (inpSzBlob.size[i] > inpBlob.size[i])
-                CV_Error(Error::StsBadArg, "invalid output blob size");
-
-            int cur_crop = (inpBlob.size[i] - inpSzBlob.size[i]) / 2;
-            crop_ranges[i] = Range(cur_crop, cur_crop + inpSzBlob.size[i]);
-        }
-    }
-
-    outputs.resize(1);
-    outputs[0].create(dims, &dstShape[0], inpBlob.type());
-}
-
-void CropLayerImpl::forward(std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
-{
-    Mat &input = *inputs[0];
-    Mat &output = outputs[0];
-
-    input(&crop_ranges[0]).copyTo(output);
-}
-
-Ptr<CropLayer> CropLayer::create(int start_axis, const std::vector<int> &offset)
-{
-    return Ptr<CropLayer>(new CropLayerImpl(start_axis, offset));
+    return Ptr<CropLayer>(new CropLayerImpl(params));
 }
 
 }

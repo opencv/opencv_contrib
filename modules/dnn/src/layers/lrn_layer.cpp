@@ -53,138 +53,139 @@ namespace dnn
 class LRNLayerImpl : public LRNLayer
 {
 public:
-    LRNLayerImpl(int type = CHANNEL_NRM, int size = 5, double alpha = 1,
-                 double beta = 0.75, double bias = 1, bool normBySize = true);
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    LRNLayerImpl(const LayerParams& params)
+    {
+        setParamsFrom(params);
+        type = -1;
+        String nrmType = params.get<String>("norm_region", "ACROSS_CHANNELS");
+        if (nrmType == "ACROSS_CHANNELS")
+            type = LRNLayer::CHANNEL_NRM;
+        else if (nrmType == "WITHIN_CHANNEL")
+            type = LRNLayer::SPATIAL_NRM;
+        else
+            CV_Error(Error::StsBadArg, "Unknown region type \"" + nrmType + "\"");
 
-    void channelNormalization(Mat &src, Mat &dst);
-    void spatialNormalization(Mat &src, Mat &dst);
-    void sqrBoxFilter_(const Mat &src, Mat &dst);
+        size = params.get<int>("local_size", 5);
+        if (size % 2 != 1 || size <= 0)
+            CV_Error(Error::StsBadArg, "LRN layer supports only positive odd values for local_size");
+
+        alpha = params.get<double>("alpha", 1);
+        beta = params.get<double>("beta", 0.75);
+        bias = params.get<double>("bias", 1);
+        normBySize = params.get<bool>("norm_by_size", true);
+    }
+
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    {
+        CV_Assert(inputs.size() == 1 && inputs[0]->dims == 4);
+        CV_Assert(type == CHANNEL_NRM || type == SPATIAL_NRM);
+
+        const Mat& inp0 = *inputs[0];
+
+        if (type == SPATIAL_NRM)
+            buf.create(inp0.size[2], inp0.size[3], inp0.type());
+
+        outputs.resize(1);
+        outputs[0].create(inp0.dims, inp0.size.p, inp0.type());
+    }
+
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    {
+        Mat &src = *inputs[0];
+        Mat &dst = outputs[0];
+
+        switch (type)
+        {
+            case CHANNEL_NRM:
+                channelNormalization(src, dst);
+                break;
+            case SPATIAL_NRM:
+                spatialNormalization(src, dst);
+                break;
+            default:
+                CV_Error(Error::StsNotImplemented, "Unimplemented mode of LRN layer");
+                break;
+        }
+    }
+
+    void channelNormalization(Mat &srcBlob, Mat &dstBlob)
+    {
+        int num = srcBlob.size[0];
+        int channels = srcBlob.size[1];
+        int ksize = (size - 1) / 2;
+        int sizeNormFactor = normBySize ? size : 1;
+
+        Mat srcMat = srcBlob.clone();
+        Mat dstMat = dstBlob;
+
+        for (int n = 0; n < num; n++)
+        {
+            Mat accum = getPlane(dstMat, n, channels-1); //trick for memory saving
+            accum.setTo(0);
+
+            for (int cn = 0; cn < std::min(ksize, channels); cn++)
+                cv::accumulateSquare(getPlane(srcMat, n, cn), accum);
+
+            for (int cn = 0; cn < channels; cn++)
+            {
+                if (cn + ksize < channels)
+                {
+                    cv::accumulateSquare(getPlane(srcMat, n, cn + ksize), accum);
+                }
+
+                if (cn - ksize - 1 >= 0)
+                {
+                    //subtractSquare
+                    Mat left = getPlane(srcMat, n, cn - ksize - 1);
+                    cv::pow(left, 2, left);
+                    cv::subtract(accum, left, accum);
+                }
+
+                Mat dst = getPlane(dstMat, n, cn);
+                accum.convertTo(dst, dst.type(), alpha/sizeNormFactor, bias);
+                cv::pow(dst, beta, dst);
+                cv::divide(getPlane(srcMat, n, cn), dst, dst);
+            }
+        }
+    }
+
+    void sqrBoxFilter_(const Mat &src, Mat &dst)
+    {
+        Mat srcRawWrapper(src.rows, src.cols, src.type(), src.data, src.step[0]);
+        cv::sqrBoxFilter(srcRawWrapper, dst, dst.depth(), Size(size, size), Point(-1, -1), false, BORDER_CONSTANT);
+    }
+
+    void spatialNormalization(Mat &srcBlob, Mat &dstBlob)
+    {
+        int num = srcBlob.size[0];
+        int channels = srcBlob.size[1];
+        int sizeNormFactor = normBySize ? size*size : 1;
+
+        Mat srcMat = srcBlob;
+        Mat dstMat = dstBlob;
+
+        for (int n = 0; n < num; n++)
+        {
+            for (int cn = 0; cn < channels; cn++)
+            {
+                Mat src = getPlane(srcMat, n, cn);
+                Mat dst = getPlane(dstMat, n, cn);
+                
+                sqrBoxFilter_(src, dst);
+                
+                dst.convertTo(dst, dst.type(), alpha/sizeNormFactor, bias);
+                cv::pow(dst, beta, dst);
+                cv::divide(src, dst, dst);
+            }
+        }
+    }
     
     Mat buf;
 };
 
-LRNLayerImpl::LRNLayerImpl(int type_, int size_, double alpha_, double beta_, double bias_, bool normBySize_)
+Ptr<LRNLayer> LRNLayer::create(const LayerParams& params)
 {
-    type = type_;
-    size = size_;
-    alpha = alpha_;
-    beta = beta_;
-    bias = bias_;
-    normBySize = normBySize_;
-}
-
-void LRNLayerImpl::allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
-{
-    CV_Assert(inputs.size() == 1 && inputs[0]->dims == 4);
-    CV_Assert(type == CHANNEL_NRM || type == SPATIAL_NRM);
-
-    const Mat& inp0 = *inputs[0];
-
-    if (type == SPATIAL_NRM)
-        buf.create(inp0.size[2], inp0.size[3], inp0.type());
-
-    outputs.resize(1);
-    outputs[0].create(inp0.dims, inp0.size.p, inp0.type());
-}
-
-void LRNLayerImpl::forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
-{
-    Mat &src = *inputs[0];
-    Mat &dst = outputs[0];
-
-    switch (type)
-    {
-    case CHANNEL_NRM:
-        channelNormalization(src, dst);
-        break;
-    case SPATIAL_NRM:
-        spatialNormalization(src, dst);
-        break;
-    default:
-        CV_Error(Error::StsNotImplemented, "Unimplemented mode of LRN layer");
-        break;
-    }
-}
-
-void LRNLayerImpl::channelNormalization(Mat &srcBlob, Mat &dstBlob)
-{
-    int num = srcBlob.size[0];
-    int channels = srcBlob.size[1];
-    int ksize = (size - 1) / 2;
-    int sizeNormFactor = normBySize ? size : 1;
-
-    Mat srcMat = srcBlob.clone();
-    Mat dstMat = dstBlob;
-
-    for (int n = 0; n < num; n++)
-    {
-        Mat accum = getPlane(dstMat, n, channels-1); //trick for memory saving
-        accum.setTo(0);
-
-        for (int cn = 0; cn < std::min(ksize, channels); cn++)
-            cv::accumulateSquare(getPlane(srcMat, n, cn), accum);
-
-        for (int cn = 0; cn < channels; cn++)
-        {
-            if (cn + ksize < channels)
-            {
-                cv::accumulateSquare(getPlane(srcMat, n, cn + ksize), accum);
-            }
-
-            if (cn - ksize - 1 >= 0)
-            {
-                //subtractSquare
-                Mat left = getPlane(srcMat, n, cn - ksize - 1);
-                cv::pow(left, 2, left);
-                cv::subtract(accum, left, accum);
-            }
-
-            Mat dst = getPlane(dstMat, n, cn);
-            accum.convertTo(dst, dst.type(), alpha/sizeNormFactor, bias);
-            cv::pow(dst, beta, dst);
-            cv::divide(getPlane(srcMat, n, cn), dst, dst);
-        }
-    }
-}
-
-void LRNLayerImpl::sqrBoxFilter_(const Mat &src, Mat &dst)
-{
-    Mat srcRawWrapper(src.rows, src.cols, src.type(), src.data, src.step[0]);
-    cv::sqrBoxFilter(srcRawWrapper, dst, dst.depth(), Size(size, size), Point(-1, -1), false, BORDER_CONSTANT);
-}
-
-void LRNLayerImpl::spatialNormalization(Mat &srcBlob, Mat &dstBlob)
-{
-    int num = srcBlob.size[0];
-    int channels = srcBlob.size[1];
-    int sizeNormFactor = normBySize ? size*size : 1;
-
-    Mat srcMat = srcBlob;
-    Mat dstMat = dstBlob;
-
-    for (int n = 0; n < num; n++)
-    {
-        for (int cn = 0; cn < channels; cn++)
-        {
-            Mat src = getPlane(srcMat, n, cn);
-            Mat dst = getPlane(dstMat, n, cn);
-
-            sqrBoxFilter_(src, dst);
-
-            dst.convertTo(dst, dst.type(), alpha/sizeNormFactor, bias);
-            cv::pow(dst, beta, dst);
-            cv::divide(src, dst, dst);
-        }
-    }
-}
-
-
-Ptr<LRNLayer> LRNLayer::create(int type, int size, double alpha, double beta, double bias,
-                               bool normBySize)
-{
-    return Ptr<LRNLayer>(new LRNLayerImpl(type, size, alpha, beta, bias, normBySize));
+    return Ptr<LRNLayer>(new LRNLayerImpl(params));
 }
 
 }

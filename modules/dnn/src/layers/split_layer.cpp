@@ -50,42 +50,45 @@ namespace dnn
 class SplitLayerImpl : public SplitLayer
 {
 public:
-    SplitLayerImpl(int outputsCount_ = -1);
+    SplitLayerImpl(const LayerParams &params)
+    {
+        setParamsFrom(params);
+        //TODO: maybe "top_count" param is useless because it can be determined by output connections number
+        if (params.has("top_count"))
+        {
+            outputsCount = params.get<int>("top_count");
+            CV_Assert(outputsCount >= 0);
+        }
+        else
+        {
+            outputsCount = -1;
+        }
+    }
 
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    {
+        CV_Assert(inputs.size() == 1);
+        const Mat& inp0 = *inputs[0];
+
+        if (outputsCount >= 0)
+            outputs.resize(outputsCount);
+
+        for (size_t i = 0; i < outputs.size(); i++)
+            outputs[i].create(inp0.dims, inp0.size.p, inp0.type());
+    }
+
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    {
+        for (size_t i = 0; i < outputs.size(); i++)
+        {
+            inputs[0]->copyTo(outputs[i]);
+        }
+    }
 };
 
-
-SplitLayerImpl::SplitLayerImpl(int outputsCount_ /*= -1*/)
+Ptr<SplitLayer> SplitLayer::create(const LayerParams& params)
 {
-    outputsCount = outputsCount_;
-}
-
-void SplitLayerImpl::allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
-{
-    CV_Assert(inputs.size() == 1);
-    const Mat& inp0 = *inputs[0];
-
-    if (outputsCount >= 0)
-        outputs.resize(outputsCount);
-
-    for (size_t i = 0; i < outputs.size(); i++)
-        outputs[i].create(inp0.dims, inp0.size.p, inp0.type());
-}
-
-void SplitLayerImpl::forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
-{
-    for (size_t i = 0; i < outputs.size(); i++)
-    {
-        inputs[0]->copyTo(outputs[i]);
-    }
-}
-
-
-Ptr<SplitLayer> SplitLayer::create(int outputsCount)
-{
-    return Ptr<SplitLayer>(new SplitLayerImpl(outputsCount));
+    return Ptr<SplitLayer>(new SplitLayerImpl(params));
 }
 
 }

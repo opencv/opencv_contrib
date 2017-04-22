@@ -355,7 +355,7 @@ void DeConvolutionLayerImpl::col2im(const Mat &colMat, Mat &dstImg)
 
 //Initializers
 
-Ptr<BaseConvolutionLayer> ConvolutionLayer::create(Size kernel, Size stride, Size pad, Size dilation)
+/*Ptr<BaseConvolutionLayer> ConvolutionLayer::create(Size kernel, Size stride, Size pad, Size dilation)
 {
     ConvolutionLayerImpl *l = new ConvolutionLayerImpl();
     l->kernel = kernel;
@@ -375,6 +375,40 @@ Ptr<BaseConvolutionLayer> DeconvolutionLayer::create(Size kernel, Size stride, S
     l->adjustPad = adjustPad;
 
     return Ptr<BaseConvolutionLayer>(l);
+}*/
+
+//Convolution and Deconvolution
+static void initConvDeconvLayerFromCaffe(Ptr<BaseConvolutionLayer> l, const LayerParams &params)
+{
+    l->setParamsFrom(params);
+    getConvolutionKernelParams(params, l->kernel.height, l->kernel.width, l->pad.height,
+                               l->pad.width, l->stride.height, l->stride.width, l->dilation.height,
+                               l->dilation.width, l->padMode);
+
+    bool bias = params.get<bool>("bias_term", true);
+    int numOutput = params.get<int>("num_output");
+    int group = params.get<int>("group", 1);
+
+    l->adjustPad.height = params.get<int>("adj_h", 0);
+    l->adjustPad.width = params.get<int>("adj_w", 0);
+
+    CV_Assert(numOutput % group == 0);
+    CV_Assert((bias && l->blobs.size() == 2) || (!bias && l->blobs.size() == 1));
+}
+
+Ptr<BaseConvolutionLayer> ConvolutionLayer::create(const LayerParams &params)
+{
+    Ptr<BaseConvolutionLayer> l(new ConvolutionLayerImpl);
+    initConvDeconvLayerFromCaffe(l, params);
+    return l;
+}
+
+Ptr<BaseConvolutionLayer> DeconvolutionLayer::create(const LayerParams &params)
+{
+    Ptr<BaseConvolutionLayer> l(new DeConvolutionLayerImpl);
+    initConvDeconvLayerFromCaffe(l, params);
+    
+    return l;
 }
 
 }

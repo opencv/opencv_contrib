@@ -96,8 +96,9 @@ class LSTMLayerImpl : public LSTMLayer
 
 public:
 
-    LSTMLayerImpl()
+    LSTMLayerImpl(const LayerParams& params)
     {
+        setParamsFrom(params);
         type = "LSTM";
         useTimestampDim = true;
         produceCellOutput = false;
@@ -302,14 +303,9 @@ public:
     }
 };
 
-Ptr<LSTMLayer> LSTMLayer::create()
+Ptr<LSTMLayer> LSTMLayer::create(const LayerParams& params)
 {
-    return Ptr<LSTMLayer>(new LSTMLayerImpl());
-}
-
-void LSTMLayer::forward(std::vector<Mat*>&, std::vector<Mat>&)
-{
-    CV_Error(Error::StsInternal, "This function should be unreached");
+    return Ptr<LSTMLayer>(new LSTMLayerImpl(params));
 }
 
 int LSTMLayer::inputNameToIndex(String inputName)
@@ -341,8 +337,9 @@ class RNNLayerImpl : public RNNLayer
 
 public:
 
-    RNNLayerImpl()
+    RNNLayerImpl(const LayerParams& params)
     {
+        setParamsFrom(params);
         type = "RNN";
         produceH = false;
     }
@@ -442,14 +439,9 @@ public:
     }
 };
 
-void RNNLayer::forward(std::vector<Mat*>&, std::vector<Mat>&)
+CV_EXPORTS_W Ptr<RNNLayer> RNNLayer::create(const LayerParams& params)
 {
-    CV_Error(Error::StsInternal, "This function should be unreached");
-}
-
-CV_EXPORTS_W Ptr<RNNLayer> RNNLayer::create()
-{
-    return Ptr<RNNLayer>(new RNNLayerImpl());
+    return Ptr<RNNLayer>(new RNNLayerImpl(params));
 }
 
 }
