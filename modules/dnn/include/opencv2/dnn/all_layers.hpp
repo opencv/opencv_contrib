@@ -152,7 +152,7 @@ namespace dnn
          */
         virtual void setProduceCellOutput(bool produce = false) = 0;
 
-        /** In common case it use single input with @f$x_t@f$ values to compute output(s) @f$h_t@f$ (and @f$c_t@f$).
+        /* In common case it use single input with @f$x_t@f$ values to compute output(s) @f$h_t@f$ (and @f$c_t@f$).
          * @param input should contain packed values @f$x_t@f$
          * @param output contains computed outputs: @f$h_t@f$ (and @f$c_t@f$ if setProduceCellOutput() flag was set to true).
          *
