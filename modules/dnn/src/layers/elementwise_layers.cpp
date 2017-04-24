@@ -6,7 +6,7 @@ namespace cv
 {
 namespace dnn
 {
-    
+
 using std::abs;
 using std::exp;
 using std::tanh;

@@ -244,6 +244,6 @@ Ptr<PoolingLayer> PoolingLayer::create(const LayerParams& params)
 {
     return Ptr<PoolingLayer>(new PoolingLayerImpl(params));
 }
-    
+
 }
 }

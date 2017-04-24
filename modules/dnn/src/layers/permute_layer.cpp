@@ -189,15 +189,15 @@ public:
 
                 CV_Assert(inp.isContinuous() && out.isContinuous());
                 CV_Assert(inp.type() == CV_32F && out.type() == CV_32F);
-                
+
                 const float *srcData = inp.ptr<float>();
                 float *dstData = out.ptr<float>();
-                
+
                 for (i = 0; i < count; ++i)
                 {
                     size_t oldPosition = 0;
                     size_t newPosition = i;
-                    
+
                     for (j = 0; j < numAxes; ++j)
                     {
                         oldPosition += (newPosition / newStride[j]) * oldStride[order[j]];

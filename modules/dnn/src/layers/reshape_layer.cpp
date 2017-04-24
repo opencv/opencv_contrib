@@ -103,7 +103,7 @@ static void computeShapeByReshapeMask(const std::vector<int> &srcShape,
     {
         if (srcTotal % dstTotal != 0)
             CV_Error(Error::StsBackTrace, "Can't infer a dim denoted by -1");
-        
+
         dstShape[inferDim] = (int)(srcTotal / dstTotal);
     }
     else
@@ -184,10 +184,10 @@ public:
                         }
                     }
                 }
-                
+
                 srcBlob = reordered_blob;
             }
-            
+
             // TODO: we should not assign srcBlob if performReordering is true.
             outputs[i] = srcBlob.reshape(1, outShapes[i]);
         }

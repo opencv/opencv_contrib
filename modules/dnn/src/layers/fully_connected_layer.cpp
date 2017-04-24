@@ -115,7 +115,7 @@ public:
             Mat srcMat = input[i]->reshape(1, outerSize);
             Mat dstMat = output[i].reshape(1, outerSize);
             dnn::gemm(srcMat, weight, 1, dstMat, 0, GEMM_2_T);
-            
+
             if (bias)
                 dnn::gemm(*biasOnesMat, *biasMat, 1, dstMat, 1);
         }

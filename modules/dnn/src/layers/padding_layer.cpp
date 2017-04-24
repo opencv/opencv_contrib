@@ -87,7 +87,7 @@ public:
             }
         }
     }
-    
+
     int getPadDim(const std::vector<int>& shape) const
     {
         return inputDims > 0 && (int)shape.size() > inputDims ? paddingDim + 1 : paddingDim;

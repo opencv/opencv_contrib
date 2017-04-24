@@ -87,7 +87,7 @@ class DeConvolutionLayerImpl : public BaseConvolutionLayerImpl
 {
 public:
     virtual void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs);
-    
+
     virtual void computeInpOutShape(const Mat &inpBlob);
     void col2im(const  Mat &colMat, Mat  &dstImg);
 };
@@ -407,7 +407,7 @@ Ptr<BaseConvolutionLayer> DeconvolutionLayer::create(const LayerParams &params)
 {
     Ptr<BaseConvolutionLayer> l(new DeConvolutionLayerImpl);
     initConvDeconvLayerFromCaffe(l, params);
-    
+
     return l;
 }
 

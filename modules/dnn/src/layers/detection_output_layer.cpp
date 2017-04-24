@@ -692,11 +692,11 @@ public:
     {
         // Sanity check.
         CV_Assert(bboxes.size() == scores.size());
-        
+
         // Get top_k scores (with corresponding indices).
         std::vector<std::pair<float, int> > score_index_vec;
         GetMaxScoreIndex(scores, score_threshold, top_k, &score_index_vec);
-        
+
         // Do nms.
         indices->clear();
         while (score_index_vec.size() != 0)
@@ -723,7 +723,7 @@ public:
             score_index_vec.erase(score_index_vec.begin());
         }
     }
-    
+
     // Get max scores with corresponding indices.
     //    scores: a set of scores.
     //    threshold: only consider scores higher than the threshold.
@@ -740,11 +740,11 @@ public:
                 score_index_vec->push_back(std::make_pair(scores[i], i));
             }
         }
-        
+
         // Sort the score pair according to the scores in descending order
         std::stable_sort(score_index_vec->begin(), score_index_vec->end(),
                          util::SortScorePairDescend<int>);
-        
+
         // Keep top_k scores if needed.
         if (top_k > -1 && top_k < (int)score_index_vec->size())
         {

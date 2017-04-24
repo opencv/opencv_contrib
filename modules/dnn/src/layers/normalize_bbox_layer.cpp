@@ -201,10 +201,10 @@ public:
                     // scale the layer
                     // _channels x 1 * (_channelSize x 1)T -> _channels x _channelSize
                     gemmCPU(_sumChannelMultiplier, norm, 1, _buffer, 0, GEMM_2_T);
-                    
+
                     dst = src / _buffer;
                 }
-                
+
                 // scale the output
                 if (_channel_shared)
                 {
@@ -216,7 +216,7 @@ public:
                     // _scale: _channels x 1
                     // _channels x 1 * 1 x _channelSize -> _channels x _channelSize
                     gemmCPU(_scale, _sumSpatialMultiplier, 1, _buffer, 0);
-                    
+
                     dst = dst.mul(_buffer);
                 }
             }

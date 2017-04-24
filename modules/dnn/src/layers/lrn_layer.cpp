@@ -170,16 +170,16 @@ public:
             {
                 Mat src = getPlane(srcMat, n, cn);
                 Mat dst = getPlane(dstMat, n, cn);
-                
+
                 sqrBoxFilter_(src, dst);
-                
+
                 dst.convertTo(dst, dst.type(), alpha/sizeNormFactor, bias);
                 cv::pow(dst, beta, dst);
                 cv::divide(src, dst, dst);
             }
         }
     }
-    
+
     Mat buf;
 };
 

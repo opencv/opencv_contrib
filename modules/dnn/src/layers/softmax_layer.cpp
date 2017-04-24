@@ -138,7 +138,7 @@ public:
                 for (size_t i = 0; i < innerSize; i++)
                     bufPtr[bufOffset + i] += dstPtr[srcOffset + cnDim * cnStep + i];
             }
-            
+
             //divide by computed sum
             for (size_t cnDim = 0; cnDim < channels; cnDim++)
             {

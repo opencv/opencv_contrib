@@ -60,14 +60,14 @@ public:
     {
         CV_Assert(inputs.size() > 0);
 
-        int dims = inputs[0]->dims, type = inputs[0]->type();
+        int dims = inputs[0]->dims, dtype = inputs[0]->type();
         std::vector<int> refShape(inputs[0]->size.p, inputs[0]->size.p + dims);
         axisIdx = axis < 0 ? axis + dims : axis;
 
         int axisSum = 0;
         for (size_t i = 0; i < inputs.size(); i++)
         {
-            CV_Assert(inputs[i]->type() == type);
+            CV_Assert(inputs[i]->type() == dtype);
             for (int curAxis = 0; curAxis < dims; curAxis++)
             {
                 if (curAxis != axisIdx && inputs[0]->size[curAxis] != inputs[i]->size[curAxis])
@@ -80,7 +80,7 @@ public:
         refShape[axisIdx] = axisSum;
 
         outputs.resize(1);
-        outputs[0].create(dims, &refShape[0], type);
+        outputs[0].create(dims, &refShape[0], dtype);
     }
 
 

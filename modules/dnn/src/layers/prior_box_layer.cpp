@@ -200,7 +200,7 @@ public:
 
         // Since all images in a batch has same height and width, we only need to
         // generate one set of priors which can be shared across all images.
-        size_t outNum = 1;
+        int outNum = 1;
         // 2 channels. First channel stores the mean of each prior coordinate.
         // Second channel stores the variance of each prior coordinate.
         size_t outChannels = 2;
@@ -324,12 +324,12 @@ public:
 
     std::vector<float> _aspectRatios;
     std::vector<float> _variance;
-    
+
     bool _flip;
     bool _clip;
-    
+
     size_t _numPriors;
-    
+
     static const size_t _numAxes = 4;
     static const std::string _layerName;
 };

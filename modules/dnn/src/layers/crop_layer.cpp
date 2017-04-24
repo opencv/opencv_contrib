@@ -116,12 +116,12 @@ public:
         outputs.resize(1);
         outputs[0].create(dims, &dstShape[0], inpBlob.type());
     }
-    
+
     void forward(std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
     {
         Mat &input = *inputs[0];
         Mat &output = outputs[0];
-        
+
         input(&crop_ranges[0]).copyTo(output);
     }
 

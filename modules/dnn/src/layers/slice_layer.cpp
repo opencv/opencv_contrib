@@ -124,7 +124,7 @@ public:
             ranges[axisIdx].start = ranges[axisIdx].end;
         }
     }
-    
+
     int axisIdx;
 };
 
