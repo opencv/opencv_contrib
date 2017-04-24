@@ -130,7 +130,7 @@ int main(int argc, char **argv)
     }
 
     resize(img, img, Size(500, 500));       //FCN accepts 500x500 RGB-images
-    Mat inputBlob = dnn::Blob::fromImage(img);   //Convert Mat to dnn::Blob batch of images
+    Mat inputBlob = blobFromImage(img);   //Convert Mat to batch of images
     //! [Prepare blob]
 
     //! [Set input blob]

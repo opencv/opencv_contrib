@@ -97,7 +97,7 @@ int main(int argc, char **argv)
     if (inputImgSize != img.size())
         resize(img, img, inputImgSize);       //Resize image to input size
 
-    Mat inputBlob = blobFromImage(img);   //Convert Mat to dnn::Blob image batch
+    Mat inputBlob = blobFromImage(img);   //Convert Mat to image batch
     //! [Prepare blob]
 
     //! [Set input blob]

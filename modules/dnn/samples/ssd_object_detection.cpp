@@ -101,7 +101,7 @@ int main(int argc, char** argv)
     //! [Prepare blob]
     Mat preprocessedFrame = preprocess(frame);
 
-    Mat inputBlob = dnn::Blob::fromImage(preprocessedFrame); //Convert Mat to dnn::Blob image
+    Mat inputBlob = blobFromImage(preprocessedFrame); //Convert Mat to batch of images
     //! [Prepare blob]
 
     //! [Set input blob]

@@ -41,7 +41,7 @@ Explanation
 
    Now image is actually a 3-dimensional array with 224x224x3 shape.
 
-   Next, we convert the image to 4-dimensional blob (so-called batch) with 1x3x224x224 shape by using special cv::dnn::Blob::fromImages constructor.
+   Next, we convert the image to 4-dimensional blob (so-called batch) with 1x3x224x224 shape by using special cv::dnn::blobFromImages constructor.
 
 -# Pass the blob to the network
    @snippet dnn/samples/caffe_googlenet.cpp Set input blob
