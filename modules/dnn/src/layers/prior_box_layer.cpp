@@ -203,7 +203,7 @@ public:
         int outNum = 1;
         // 2 channels. First channel stores the mean of each prior coordinate.
         // Second channel stores the variance of each prior coordinate.
-        size_t outChannels = 2;
+        int outChannels = 2;
         _outChannelSize = _layerHeight * _layerWidth * _numPriors * 4;
 
         int outsz[] = { outNum, outChannels, (int)_outChannelSize };
