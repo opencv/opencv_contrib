@@ -67,6 +67,65 @@ static String toString(const T &v)
     return ss.str();
 }
 
+Mat blobFromImage(const Mat& image_, double scalefactor, bool swapRB)
+{
+    Mat image;
+    if(image_.depth() == CV_8U)
+    {
+        image_.convertTo(image, CV_32F, scalefactor);
+    }
+    else
+        image = image_;
+    CV_Assert(image.dims == 2 && image.depth() == CV_32F);
+    int nch = image.channels();
+    CV_Assert(nch == 3 || nch == 4);
+    int sz[] = { 1, 3, image.rows, image.cols };
+    Mat blob(4, sz, CV_32F);
+    Mat ch[4];
+    for( int j = 0; j < 3; j++ )
+        ch[j] = Mat(image.rows, image.cols, CV_32F, blob.ptr(0, j));
+    if(swapRB)
+        std::swap(ch[0], ch[2]);
+    split(image, ch);
+    return blob;
+}
+
+Mat blobFromImages(const std::vector<Mat>& images, double scalefactor, bool swapRB)
+{
+    size_t i, nimages = images.size();
+    if(nimages == 0)
+        return Mat();
+    Mat image0 = images[0];
+    int nch = image0.channels();
+    CV_Assert(image0.dims == 2 && (nch == 3 || nch == 4));
+    int sz[] = { (int)nimages, 3, image0.rows, image0.cols };
+    Mat blob(4, sz, CV_32F), image;
+    Mat ch[4];
+
+    for( i = 0; i < nimages; i++ )
+    {
+        Mat image_ = images[i];
+        if(image_.depth() == CV_8U)
+        {
+            image_.convertTo(image, CV_32F, scalefactor);
+        }
+        else
+            image = image_;
+        CV_Assert(image.depth() == CV_32F);
+        nch = image.channels();
+        CV_Assert(image.dims == 2 && (nch == 3 || nch == 4));
+        CV_Assert(image.size() == image0.size());
+
+        for( int j = 0; j < 3; j++ )
+            ch[j] = Mat(image.rows, image.cols, CV_32F, blob.ptr((int)i, j));
+        if(swapRB)
+            std::swap(ch[0], ch[2]);
+        split(image, ch);
+    }
+    return blob;
+}
+
+
 struct LayerPin
 {
     int lid;
@@ -107,8 +166,8 @@ struct LayerData
     std::set<int> requiredOutputs;
 
     Ptr<Layer> layerInstance;
-    std::vector<Blob> outputBlobs;
-    std::vector<Blob*> inputBlobs;
+    std::vector<Mat> outputBlobs;
+    std::vector<Mat*> inputBlobs;
 
     int flag;
 
@@ -130,8 +189,8 @@ struct LayerData
 //fake layer containing network input blobs
 struct DataLayer : public Layer
 {
-    void allocate(const std::vector<Blob*>&, std::vector<Blob>&) {}
-    void forward(std::vector<Blob*>&, std::vector<Blob>&) {}
+    void allocate(const std::vector<Mat*>&, std::vector<Mat>&) {}
+    void forward(std::vector<Mat*>&, std::vector<Mat>&) {}
 
     int outputNameToIndex(String tgtName)
     {
@@ -348,8 +407,27 @@ struct Net::Impl
         if (ld.flag)
             return;
 
+        size_t ninputs = ld.inputBlobsId.size();
+#if 0
+        printf("layer %s:", ld.name.c_str());
+        for (size_t i = 0; i < ninputs; i++)
+        {
+            int inp_lid = ld.inputBlobsId[i].lid;
+            LayerData &inp_ld = layers[inp_lid];
+            int inp_outputs = (int)inp_ld.outputBlobs.size();
+            std::cout << " " << inp_ld.name << "(" << inp_outputs;
+
+            for( int j = 0; j < inp_outputs; j++ )
+            {
+                std::cout << (j == 0 ? ": " : ", ") << inp_ld.outputBlobs[j].size;
+            }
+            std::cout << ")";
+        }
+        printf("\n");
+#endif
+
         //determine parent layers
-        for (size_t i = 0; i < ld.inputBlobsId.size(); i++)
+        for (size_t i = 0; i < ninputs; i++)
             ld.inputLayersId.insert(ld.inputBlobsId[i].lid);
 
         //allocate parents
@@ -357,8 +435,8 @@ struct Net::Impl
             allocateLayer(*i);
 
         //bind inputs
-        ld.inputBlobs.resize(ld.inputBlobsId.size());
-        for (size_t i = 0; i < ld.inputBlobsId.size(); i++)
+        ld.inputBlobs.resize(ninputs);
+        for (size_t i = 0; i < ninputs; i++)
         {
             LayerPin from = ld.inputBlobsId[i];
             CV_Assert(from.valid());
@@ -368,15 +446,24 @@ struct Net::Impl
 
         //allocate layer
         ld.outputBlobs.resize(std::max((size_t)1, ld.requiredOutputs.size())); //layer produce at least one output blob
-        try
+        //try
         {
             Ptr<Layer> layerPtr = ld.getLayerInstance();
             layerPtr->allocate(ld.inputBlobs, ld.outputBlobs);
+#if 0
+            std::cout << "\toutputs:";
+            size_t noutputs = ld.outputBlobs.size();
+            for (size_t j = 0; j < noutputs; j++)
+            {
+                std::cout << (j == 0 ? " " : ", ") << ld.outputBlobs[j].size;
+            }
+            std::cout << "\n";
+#endif
         }
-        catch (const cv::Exception &err)
+        /*catch (const cv::Exception &err)
         {
             CV_RETHROW_ERROR(err, format("The following error occured while making allocate() for layer \"%s\": %s", ld.name.c_str(), err.err.c_str()));
-        }
+        }*/
 
         ld.flag = 1;
     }
@@ -414,14 +501,14 @@ struct Net::Impl
         }
 
         //forward itself
-        try
+        //try
         {
             ld.layerInstance->forward(ld.inputBlobs, ld.outputBlobs);
         }
-        catch (const cv::Exception &err)
+        /*catch (const cv::Exception &err)
         {
             CV_RETHROW_ERROR(err, format("The following error occured while making forward() for layer \"%s\": %s", ld.name.c_str(), err.err.c_str()));
-        }
+        }*/
 
         ld.flag = 1;
     }
@@ -509,7 +596,7 @@ void Net::setNetInputs(const std::vector<String> &inputBlobNames)
     impl->netInputLayer->setNames(inputBlobNames);
 }
 
-void Net::setBlob(String outputName, const Blob &blob)
+void Net::setBlob(String outputName, const Mat &blob_)
 {
     LayerPin pin = impl->getPinByAlias(outputName);
     if (!pin.valid())
@@ -517,10 +604,10 @@ void Net::setBlob(String outputName, const Blob &blob)
 
     LayerData &ld = impl->layers[pin.lid];
     ld.outputBlobs.resize( std::max(pin.oid+1, (int)ld.requiredOutputs.size()) );
-    ld.outputBlobs[pin.oid] = blob;
+    ld.outputBlobs[pin.oid] = blob_.clone();
 }
 
-Blob Net::getBlob(String outputName)
+Mat Net::getBlob(String outputName)
 {
     LayerPin pin = impl->getPinByAlias(outputName);
     if (!pin.valid())
@@ -535,20 +622,20 @@ Blob Net::getBlob(String outputName)
     return ld.outputBlobs[pin.oid];
 }
 
-Blob Net::getParam(LayerId layer, int numParam)
+Mat Net::getParam(LayerId layer, int numParam)
 {
     LayerData &ld = impl->getLayerData(layer);
 
-    std::vector<Blob> &layerBlobs = ld.layerInstance->blobs;
+    std::vector<Mat> &layerBlobs = ld.layerInstance->blobs;
     CV_Assert(numParam < (int)layerBlobs.size());
     return layerBlobs[numParam];
 }
 
-void Net::setParam(LayerId layer, int numParam, const Blob &blob)
+void Net::setParam(LayerId layer, int numParam, const Mat &blob)
 {
     LayerData &ld = impl->getLayerData(layer);
 
-    std::vector<Blob> &layerBlobs = ld.layerInstance->blobs;
+    std::vector<Mat> &layerBlobs = ld.layerInstance->blobs;
     CV_Assert(numParam < (int)layerBlobs.size());
     //we don't make strong checks, use this function carefully
     layerBlobs[numParam] = blob;
@@ -662,30 +749,30 @@ static void vecToPVec(const std::vector<T> &v, std::vector<T*> &pv)
         pv[i] = const_cast<T*>(&v[i]);
 }
 
-void Layer::allocate(const std::vector<Blob> &inputs, std::vector<Blob> &outputs)
+void Layer::allocate(const std::vector<Mat> &inputs, std::vector<Mat> &outputs)
 {
-    std::vector<Blob*> inputsp;
+    std::vector<Mat*> inputsp;
     vecToPVec(inputs, inputsp);
     this->allocate(inputsp, outputs);
 }
 
-std::vector<Blob> Layer::allocate(const std::vector<Blob> &inputs)
+std::vector<Mat> Layer::allocate(const std::vector<Mat> &inputs)
 {
-    std::vector<Blob> outputs;
+    std::vector<Mat> outputs;
     this->allocate(inputs, outputs);
     return outputs;
 }
 
-void Layer::forward(const std::vector<Blob> &inputs, std::vector<Blob> &outputs)
+void Layer::forward(const std::vector<Mat> &inputs, std::vector<Mat> &outputs)
 {
-    std::vector<Blob*> inputsp;
+    std::vector<Mat*> inputsp;
     vecToPVec(inputs, inputsp);
     this->forward(inputsp, outputs);
 }
 
-void Layer::run(const std::vector<Blob> &inputs, std::vector<Blob> &outputs)
+void Layer::run(const std::vector<Mat> &inputs, std::vector<Mat> &outputs)
 {
-    std::vector<Blob*> inputsp;
+    std::vector<Mat*> inputsp;
     vecToPVec(inputs, inputsp);
     this->allocate(inputsp, outputs);
     this->forward(inputsp, outputs);

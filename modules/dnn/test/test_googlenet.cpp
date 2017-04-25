@@ -72,23 +72,17 @@ static void launchGoogleNetTest()
     inpMats.push_back( imread(_tf("googlenet_1.jpg")) );
     ASSERT_TRUE(!inpMats[0].empty() && !inpMats[1].empty());
 
-    net.setBlob(".data", Blob::fromImages(inpMats));
+    net.setBlob(".data", blobFromImages(inpMats, 1.));
     net.forward();
 
-    Blob out = net.getBlob("prob");
-    Blob ref = blobFromNPY(_tf("googlenet_prob.npy"));
+    Mat out = net.getBlob("prob");
+    Mat ref = blobFromNPY(_tf("googlenet_prob.npy"));
     normAssert(out, ref);
 }
 
 TEST(Reproducibility_GoogLeNet, Accuracy)
 {
-    OCL_OFF(launchGoogleNetTest());
-}
-
-OCL_TEST(Reproducibility_GoogLeNet, Accuracy)
-{
-    OCL_ON(launchGoogleNetTest());
-    OCL_OFF();
+    launchGoogleNetTest();
 }
 
 }

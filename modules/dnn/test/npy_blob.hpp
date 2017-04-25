@@ -44,22 +44,91 @@
 #include "test_precomp.hpp"
 #include "cnpy.h"
 
-inline cv::dnn::Blob blobFromNPY(const cv::String &path)
+namespace cv
+{
+
+inline Mat blobFromNPY(const String &path)
 {
     cnpy::NpyArray npyBlob = cnpy::npy_load(path.c_str());
-    cv::dnn::BlobShape shape((int)npyBlob.shape.size(), (int*)&npyBlob.shape[0]);
-
-    cv::dnn::Blob blob(shape);
-    blob.fill(shape, CV_32F, npyBlob.data);
-
+    Mat blob = Mat((int)npyBlob.shape.size(), (int*)&npyBlob.shape[0], CV_32F, npyBlob.data).clone();
     npyBlob.destruct();
     return blob;
 }
 
-inline void saveBlobToNPY(cv::dnn::Blob &blob, const cv::String &path)
+inline void saveBlobToNPY(const Mat &blob, const String &path)
 {
-    cv::dnn::BlobShape shape = blob.shape();
-    cnpy::npy_save(path.c_str(), blob.ptrf(), (unsigned*)&shape[0], shape.dims());
+    cnpy::npy_save(path.c_str(), blob.ptr<float>(), (unsigned*)&blob.size.p[0], blob.dims);
+}
+
+inline size_t shapeTotal(const std::vector<int>& shape)
+{
+    size_t p = 1, i, n = shape.size();
+    for( i = 0; i < n; i++)
+        p *= shape[i];
+    return p;
+}
+
+inline bool shapeEqual(const std::vector<int>& shape1, const std::vector<int>& shape2)
+{
+    size_t i, n1 = shape1.size(), n2 = shape2.size();
+    if( n1 != n2 )
+        return false;
+    for( i = 0; i < n1; i++ )
+        if( shape1[i] != shape2[i] )
+            return false;
+    return true;
+}
+
+inline std::vector<int> getShape(const Mat& m)
+{
+    return m.empty() ? std::vector<int>() : std::vector<int>(&m.size.p[0], &m.size.p[0] + m.dims);
+}
+
+inline std::vector<int> makeShape(int a0, int a1=-1, int a2=-1, int a3=-1, int a4=-1, int a5=-1)
+{
+    std::vector<int> s;
+    s.push_back(a0);
+    if(a1 > 0)
+    {
+        s.push_back(a1);
+        if(a2 > 0)
+        {
+            s.push_back(a2);
+            if(a3 > 0)
+            {
+                s.push_back(a3);
+                if(a4 > 0)
+                {
+                    s.push_back(a4);
+                    if(a5 > 0)
+                        s.push_back(a5);
+                }
+            }
+        }
+    }
+    return s;
+}
+
+inline std::vector<int> concatShape(const std::vector<int>& a, const std::vector<int>& b)
+{
+    size_t na = a.size(), nb = b.size();
+    std::vector<int> c(na + nb);
+
+    std::copy(a.begin(), a.end(), c.begin());
+    std::copy(b.begin(), b.end(), c.begin() + na);
+
+    return c;
+}
+
+inline void printShape(const String& name, const std::vector<int>& shape)
+{
+    printf("%s: [", name.c_str());
+    size_t i, n = shape.size();
+    for( i = 0; i < n; i++ )
+        printf(" %d", shape[i]);
+    printf(" ]\n");
+}
+
 }
 
 #endif

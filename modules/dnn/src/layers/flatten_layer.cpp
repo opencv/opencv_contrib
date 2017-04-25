@@ -41,7 +41,6 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include "flatten_layer.hpp"
 #include <float.h>
 #include <algorithm>
 
@@ -50,68 +49,72 @@ namespace cv
 namespace dnn
 {
 
-FlattenLayer::FlattenLayer(LayerParams &params) : Layer(params)
+class FlattenLayerImpl : public FlattenLayer
 {
-    _startAxis = params.get<int>("axis", 1);
-    _endAxis = params.get<int>("end_axis", -1);
-}
-
-void FlattenLayer::checkInputs(const std::vector<Blob*> &inputs)
-{
-    CV_Assert(inputs.size() > 0);
-    for (size_t i = 1; i < inputs.size(); i++)
+public:
+    FlattenLayerImpl(const LayerParams &params)
     {
-        for (size_t j = 0; j < _numAxes; j++)
+        _startAxis = params.get<int>("axis", 1);
+        _endAxis = params.get<int>("end_axis", -1);
+        setParamsFrom(params);
+    }
+
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    {
+        size_t i, ninputs = inputs.size();
+        CV_Assert(ninputs > 0);
+        const Mat& inp0 = *inputs[0];
+
+        for (i = 1; i < ninputs; i++)
         {
-            CV_Assert(inputs[i]->shape()[j] == inputs[0]->shape()[j]);
+            CV_Assert(inputs[i]->size == inp0.size);
+        }
+
+        _numAxes = inp0.dims;
+        _endAxis = _endAxis < 0 ? _endAxis + _numAxes : _endAxis;
+        CV_Assert(_startAxis >= 0);
+        CV_Assert(_endAxis >= _startAxis && _endAxis < (int)_numAxes);
+
+        size_t flattenedDimensionSize = inp0.total(_startAxis, _endAxis+1);
+
+        resultShape.clear();
+        for (int j = 0; j < _startAxis; j++)
+        {
+            resultShape.push_back(inp0.size[j]);
+        }
+        resultShape.push_back(flattenedDimensionSize);
+        for (int j = _endAxis + 1; j < _numAxes; j++)
+        {
+            resultShape.push_back(inp0.size[j]);
+        }
+        CV_Assert(resultShape.size() <= 4);
+
+        for (i = 0; i < ninputs; i++)
+        {
+            //in-place
+            outputs[i] = inputs[i]->reshape(1, (int)resultShape.size(), &resultShape[0]);
         }
     }
-}
 
-void FlattenLayer::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    {
+        for (size_t i = 0; i < inputs.size(); i++)
+        {
+            outputs[i] = inputs[i]->reshape(1, (int)resultShape.size(), &resultShape[0]);
+        }
+    }
+
+    int _startAxis;
+    int _endAxis;
+    size_t _numAxes;
+
+    std::vector<int> resultShape;
+};
+
+Ptr<FlattenLayer> FlattenLayer::create(const LayerParams& params)
 {
-    checkInputs(inputs);
-
-    _numAxes = inputs[0]->dims();
-    _endAxis = inputs[0]->canonicalAxis(_endAxis);
-    CV_Assert(_startAxis >= 0);
-    CV_Assert(_endAxis >= _startAxis && _endAxis < (int)_numAxes);
-
-    size_t flattenedDimensionSize = 1;
-    for (int i = _startAxis; i <= _endAxis; i++)
-    {
-        flattenedDimensionSize *= inputs[0]->size(i);
-    }
-
-    std::vector<int> outputShapeVec;
-    for (int i = 0; i < _startAxis; i++)
-    {
-        outputShapeVec.push_back(inputs[0]->size(i));
-    }
-    outputShapeVec.push_back(flattenedDimensionSize);
-    for (size_t i = _endAxis + 1; i < _numAxes; i++)
-    {
-        outputShapeVec.push_back(inputs[0]->size(i));
-    }
-    CV_Assert(outputShapeVec.size() <= 4);
-
-    resultShape = BlobShape(outputShapeVec);
-
-    for (size_t i = 0; i < inputs.size(); i++)
-    {
-        //in-place
-        outputs[i].shareFrom(*inputs[i]);
-        outputs[i].reshape(resultShape);
-    }
+    return Ptr<FlattenLayer>(new FlattenLayerImpl(params));
 }
 
-void FlattenLayer::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
-{
-    for (size_t j = 0; j < inputs.size(); j++)
-    {
-        outputs[j].shareFrom(*inputs[j]);
-        outputs[j].reshape(resultShape);
-    }
-}
 }
 }

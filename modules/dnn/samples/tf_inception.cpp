@@ -32,7 +32,7 @@ const String keys =
         "{result r  || path to save output blob (optional, binary format, NCHW order) }"
         ;
 
-void getMaxClass(dnn::Blob &probBlob, int *classId, double *classProb);
+void getMaxClass(const Mat &probBlob, int *classId, double *classProb);
 std::vector<String> readClassNames(const char *filename);
 
 int main(int argc, char **argv)
@@ -97,9 +97,7 @@ int main(int argc, char **argv)
     if (inputImgSize != img.size())
         resize(img, img, inputImgSize);       //Resize image to input size
 
-    cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
-
-    dnn::Blob inputBlob = dnn::Blob::fromImages(img);   //Convert Mat to dnn::Blob image batch
+    Mat inputBlob = blobFromImage(img);   //Convert Mat to image batch
     //! [Prepare blob]
 
     //! [Set input blob]
@@ -116,11 +114,7 @@ int main(int argc, char **argv)
     tm.stop();
 
     //! [Gather output]
-    dnn::Blob prob = net.getBlob(outBlobName);   //gather output of "prob" layer
-
-    Mat& result = prob.matRef();
-
-    BlobShape shape = prob.shape();
+    Mat result = net.getBlob(outBlobName);   //gather output of "prob" layer
 
     if (!resultFile.empty()) {
         CV_Assert(result.isContinuous());
@@ -130,7 +124,7 @@ int main(int argc, char **argv)
         fout.close();
     }
 
-    std::cout << "Output blob shape " << shape  << std::endl;
+    std::cout << "Output blob shape " << result.size[0] << " x " << result.size[1] << " x " << result.size[2] << " x " << result.size[3] << std::endl;
     std::cout << "Inference time, ms: " << tm.getTimeMilli()  << std::endl;
 
     if (!classNamesFile.empty()) {
@@ -138,7 +132,7 @@ int main(int argc, char **argv)
 
         int classId;
         double classProb;
-        getMaxClass(prob, &classId, &classProb);//find the best class
+        getMaxClass(result, &classId, &classProb);//find the best class
 
         //! [Print results]
         std::cout << "Best class: #" << classId << " '" << classNames.at(classId) << "'" << std::endl;
@@ -149,9 +143,9 @@ int main(int argc, char **argv)
 
 
 /* Find best class for the blob (i. e. class with maximal probability) */
-void getMaxClass(dnn::Blob &probBlob, int *classId, double *classProb)
+void getMaxClass(const Mat &probBlob, int *classId, double *classProb)
 {
-    Mat probMat = probBlob.matRefConst().reshape(1, 1); //reshape the blob to 1x1000 matrix
+    Mat probMat = probBlob.reshape(1, 1); //reshape the blob to 1x1000 matrix
     Point classNumber;
 
     minMaxLoc(probMat, NULL, classProb, NULL, &classNumber);

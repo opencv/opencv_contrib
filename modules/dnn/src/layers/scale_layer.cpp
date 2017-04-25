@@ -9,51 +9,70 @@
 Implementation of Scale layer.
 */
 
-#include "scale_layer.hpp"
+#include "../precomp.hpp"
+#include "layers_common.hpp"
+#include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
 {
 namespace dnn
 {
 
-void ScaleLayerImpl::allocate(const std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
+class ScaleLayerImpl : public ScaleLayer
 {
-    CV_Assert(blobs.size() == 1 + hasBias);
-
-    outputs.resize(inputs.size());
-    for (size_t i = 0; i < inputs.size(); i++)
+public:
+    ScaleLayerImpl(const LayerParams& params)
     {
-        outputs[i].create(inputs[i]->shape());
+        setParamsFrom(params);
+        hasBias = params.get<bool>("bias_term", false);
     }
-}
 
-void ScaleLayerImpl::forward(std::vector<Blob*> &inputs, std::vector<Blob> &outputs)
-{
-    CV_Assert(inputs.size() == 1);
-
-    Blob &inpBlob = *inputs[0];
-
-    for (size_t ii = 0; ii < outputs.size(); ii++)
+    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
     {
-      Blob &outBlob = outputs[ii];
+        CV_Assert(blobs.size() == 1 + hasBias);
 
-      CV_Assert(inpBlob.channels() == blobs[0].total());
-
-      if (hasBias)
-        CV_Assert(inpBlob.channels() == blobs[1].total());
-
-      for (int n = 0; n < inpBlob.channels(); n++)
-      {
-          float w = blobs[0].matRefConst().at<float>(n);
-          float b = hasBias ? blobs[1].matRefConst().at<float>(n) : 0;
-          outBlob.getPlane(0, n) = w*inpBlob.getPlane(0, n) + b;
-      }
+        outputs.resize(inputs.size());
+        for (size_t i = 0; i < inputs.size(); i++)
+        {
+            const Mat& inp = *inputs[i];
+            outputs[i].create(inp.dims, inp.size.p, inp.type());
+        }
     }
-}
 
-Ptr<ScaleLayer> ScaleLayer::create(bool hasBias)
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    {
+        for (size_t ii = 0; ii < outputs.size(); ii++)
+        {
+            Mat &inpBlob = *inputs[ii];
+            Mat &outBlob = outputs[ii];
+
+            CV_Assert(inpBlob.size[1] == blobs[0].total());
+            if (hasBias)
+                CV_Assert(inpBlob.size[1] == blobs[1].total());
+
+            CV_Assert(inpBlob.type() == CV_32F && outBlob.type() == CV_32F);
+
+            for( int cn = 0; cn < inpBlob.size[0]; cn++ )
+            {
+                for (int n = 0; n < inpBlob.size[1]; n++)
+                {
+                    float w = blobs[0].at<float>(n);
+                    float b = hasBias ? blobs[1].at<float>(n) : 0;
+                    Mat outBlobPlane = getPlane(outBlob, cn, n);
+                    Mat inpBlobPlane = getPlane(inpBlob, cn, n);
+                    inpBlobPlane.convertTo(outBlobPlane, CV_32F, w, b);
+                }
+            }
+        }
+    }
+
+    bool hasBias;
+};
+
+
+Ptr<ScaleLayer> ScaleLayer::create(const LayerParams& params)
 {
-    return Ptr<ScaleLayer>(new ScaleLayerImpl(hasBias));
+    return Ptr<ScaleLayer>(new ScaleLayerImpl(params));
 }
 
 }  // namespace dnn

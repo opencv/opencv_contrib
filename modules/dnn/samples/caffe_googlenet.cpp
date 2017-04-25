@@ -50,9 +50,9 @@ using namespace cv::dnn;
 using namespace std;
 
 /* Find best class for the blob (i. e. class with maximal probability) */
-void getMaxClass(dnn::Blob &probBlob, int *classId, double *classProb)
+void getMaxClass(const Mat &probBlob, int *classId, double *classProb)
 {
-    Mat probMat = probBlob.matRefConst().reshape(1, 1); //reshape the blob to 1x1000 matrix
+    Mat probMat = probBlob.reshape(1, 1); //reshape the blob to 1x1000 matrix
     Point classNumber;
 
     minMaxLoc(probMat, NULL, classProb, NULL, &classNumber);
@@ -115,8 +115,7 @@ int main(int argc, char **argv)
     }
 
     resize(img, img, Size(224, 224));                   //GoogLeNet accepts only 224x224 RGB-images
-    cv::cvtColor(img, img, cv::COLOR_BGR2RGB);
-    dnn::Blob inputBlob = dnn::Blob::fromImages(img);   //Convert Mat to dnn::Blob batch of images
+    Mat inputBlob = blobFromImage(img);   //Convert Mat to batch of images
     //! [Prepare blob]
 
     //! [Set input blob]
@@ -128,7 +127,7 @@ int main(int argc, char **argv)
     //! [Make forward pass]
 
     //! [Gather output]
-    dnn::Blob prob = net.getBlob("prob");   //gather output of "prob" layer
+    Mat prob = net.getBlob("prob");   //gather output of "prob" layer
 
     int classId;
     double classProb;

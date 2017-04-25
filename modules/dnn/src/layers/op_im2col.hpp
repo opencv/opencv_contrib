@@ -308,23 +308,6 @@ void col2im_cpu(const Dtype* data_col,
     }
 }
 
-#ifdef HAVE_OPENCL
-bool im2col_ocl(const UMat &img,
-                int channels, int height, int width,
-                int kernel_h, int kernel_w,
-                int pad_h, int pad_w,
-                int stride_h, int stride_w,
-                int dilation_h, int dilation_w,
-                UMat &col);
-
-bool col2im_ocl(const UMat &col,
-                int channels, int height, int width,
-                int kernel_h, int kernel_w,
-                int pad_h, int pad_w,
-                int stride_h, int stride_w,
-                UMat &img);
-#endif
-
 }
 }
 

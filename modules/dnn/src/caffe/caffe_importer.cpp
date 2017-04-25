@@ -192,38 +192,37 @@ public:
         }
     }
 
-    BlobShape blobShapeFromProto(const caffe::BlobProto &pbBlob)
+    void blobShapeFromProto(const caffe::BlobProto &pbBlob, std::vector<int>& shape)
     {
+        shape.clear();
         if (pbBlob.has_num() || pbBlob.has_channels() || pbBlob.has_height() || pbBlob.has_width())
         {
-            return BlobShape(pbBlob.num(), pbBlob.channels(), pbBlob.height(), pbBlob.width());
+            shape.push_back(pbBlob.num());
+            shape.push_back(pbBlob.channels());
+            shape.push_back(pbBlob.height());
+            shape.push_back(pbBlob.width());
         }
         else if (pbBlob.has_shape())
         {
             const caffe::BlobShape &_shape = pbBlob.shape();
-            BlobShape shape = BlobShape::all(_shape.dim_size());
 
             for (int i = 0; i < _shape.dim_size(); i++)
-                shape[i] = (int)_shape.dim(i);
-
-            return shape;
+                shape.push_back((int)_shape.dim(i));
         }
         else
-        {
             CV_Error(Error::StsError, "Unknown shape of input blob");
-            return BlobShape();
-        }
     }
 
-    void blobFromProto(const caffe::BlobProto &pbBlob, cv::dnn::Blob &dstBlob)
+    void blobFromProto(const caffe::BlobProto &pbBlob, cv::Mat &dstBlob)
     {
-        BlobShape shape = blobShapeFromProto(pbBlob);
+        std::vector<int> shape;
+        blobShapeFromProto(pbBlob, shape);
 
-        dstBlob.create(shape, CV_32F);
-        CV_Assert(pbBlob.data_size() == (int)dstBlob.matRefConst().total());
+        dstBlob.create((int)shape.size(), &shape[0], CV_32F);
+        CV_Assert(pbBlob.data_size() == (int)dstBlob.total());
 
         CV_DbgAssert(pbBlob.GetDescriptor()->FindFieldByLowercaseName("data")->cpp_type() == FieldDescriptor::CPPTYPE_FLOAT);
-        float *dstData = dstBlob.matRef().ptr<float>();
+        float *dstData = dstBlob.ptr<float>();
 
         for (int i = 0; i < pbBlob.data_size(); i++)
             dstData[i] = pbBlob.data(i);

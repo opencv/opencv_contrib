@@ -54,7 +54,8 @@ std::string makeName(const std::string& str1, const std::string& str2)
     return str1 + str2;
 }
 
-bool getParameter(LayerParams &params, const std::string& nameBase, const std::string& nameAll, int &parameterH, int &parameterW, bool hasDefault = false, const int& defaultValue = 0)
+bool getParameter(const LayerParams &params, const std::string& nameBase, const std::string& nameAll,
+                  int &parameterH, int &parameterW, bool hasDefault = false, const int& defaultValue = 0)
 {
     std::string nameH = makeName(nameBase, std::string("_h"));
     std::string nameW = makeName(nameBase, std::string("_w"));
@@ -92,7 +93,7 @@ bool getParameter(LayerParams &params, const std::string& nameBase, const std::s
     }
 }
 
-void getKernelSize(LayerParams &params, int &kernelH, int &kernelW)
+void getKernelSize(const LayerParams &params, int &kernelH, int &kernelW)
 {
     if(!util::getParameter(params, "kernel", "kernel_size", kernelH, kernelW))
     {
@@ -102,7 +103,7 @@ void getKernelSize(LayerParams &params, int &kernelH, int &kernelW)
     CV_Assert(kernelH > 0 && kernelW > 0);
 }
 
-void getStrideAndPadding(LayerParams &params, int &padH, int &padW, int &strideH, int &strideW, cv::String& padMode)
+void getStrideAndPadding(const LayerParams &params, int &padH, int &padW, int &strideH, int &strideW, cv::String& padMode)
 {
     util::getParameter(params, "pad", "pad", padH, padW, true, 0);
     util::getParameter(params, "stride", "stride", strideH, strideW, true, 1);
@@ -118,7 +119,7 @@ void getStrideAndPadding(LayerParams &params, int &padH, int &padW, int &strideH
 }
 
 
-void getPoolingKernelParams(LayerParams &params, int &kernelH, int &kernelW, bool &globalPooling,
+void getPoolingKernelParams(const LayerParams &params, int &kernelH, int &kernelW, bool &globalPooling,
                             int &padH, int &padW, int &strideH, int &strideW, cv::String &padMode)
 {
     util::getStrideAndPadding(params, padH, padW, strideH, strideW, padMode);
@@ -142,7 +143,7 @@ void getPoolingKernelParams(LayerParams &params, int &kernelH, int &kernelW, boo
     }
 }
 
-void getConvolutionKernelParams(LayerParams &params, int &kernelH, int &kernelW, int &padH, int &padW,
+void getConvolutionKernelParams(const LayerParams &params, int &kernelH, int &kernelW, int &padH, int &padW,
                                 int &strideH, int &strideW, int &dilationH, int &dilationW, cv::String &padMode)
 {
     util::getKernelSize(params, kernelH, kernelW);

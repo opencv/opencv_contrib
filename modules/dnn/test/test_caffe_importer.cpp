@@ -87,18 +87,17 @@ TEST(Reproducibility_AlexNet, Accuracy)
 
     Mat sample = imread(_tf("grace_hopper_227.png"));
     ASSERT_TRUE(!sample.empty());
-    cv::cvtColor(sample, sample, cv::COLOR_BGR2RGB);
 
     Size inputSize(227, 227);
 
     if (sample.size() != inputSize)
         resize(sample, sample, inputSize);
 
-    net.setBlob(".data", dnn::Blob::fromImages(sample));
+    net.setBlob(".data", blobFromImage(sample, 1.));
     net.forward();
 
-    Blob out = net.getBlob("prob");
-    Blob ref = blobFromNPY(_tf("caffe_alexnet_prob.npy"));
+    Mat out = net.getBlob("prob");
+    Mat ref = blobFromNPY(_tf("caffe_alexnet_prob.npy"));
     normAssert(ref, out);
 }
 
@@ -120,14 +119,11 @@ TEST(Reproducibility_FCN, Accuracy)
     if (sample.size() != inputSize)
         resize(sample, sample, inputSize);
 
-    cv::cvtColor(sample, sample, cv::COLOR_BGR2RGB);
-
-    net.setBlob(".data", dnn::Blob::fromImages(sample));
+    net.setBlob(".data", blobFromImage(sample, 1.));
     net.forward();
 
-    Blob out = net.getBlob("score");
-
-    Blob ref = blobFromNPY(_tf("caffe_fcn8s_prob.npy"));
+    Mat out = net.getBlob("score");
+    Mat ref = blobFromNPY(_tf("caffe_fcn8s_prob.npy"));
     normAssert(ref, out);
 }
 

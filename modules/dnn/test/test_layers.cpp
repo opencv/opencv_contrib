@@ -55,31 +55,33 @@ using namespace cv::dnn;
 template<typename TString>
 static String _tf(TString filename)
 {
-    return (getOpenCVExtraDir() + "/dnn/layers/") + filename;
+    String basetestdir = getOpenCVExtraDir();
+    size_t len = basetestdir.size();
+    if(len > 0 && basetestdir[len-1] != '/' && basetestdir[len-1] != '\\')
+        return (basetestdir + "/dnn/layers") + filename;
+    return (basetestdir + "dnn/layers/") + filename;
 }
 
-
-enum RunLayerMode
+void runLayer(Ptr<Layer> layer, std::vector<Mat> &inpBlobs, std::vector<Mat> &outBlobs)
 {
-    ALLOC_ONLY = 1,
-    FORWARD_ONLY = 2,
-    ALLOC_AND_FORWARD = ALLOC_ONLY | FORWARD_ONLY
-};
+    size_t i, ninputs = inpBlobs.size();
+    std::vector<Mat> inp_(ninputs);
+    std::vector<Mat*> inp(ninputs);
+    std::vector<Mat> outp;
 
-typedef Ptr<std::vector<Blob*> > PtrToVecPtrBlob;
+    for( i = 0; i < ninputs; i++ )
+    {
+        inp_[i] = inpBlobs[i].clone();
+        inp[i] = &inp_[i];
+    }
 
-PtrToVecPtrBlob
-runLayer(Ptr<Layer> layer, std::vector<Blob> &inpBlobs, std::vector<Blob> &outBlobs, int mode = ALLOC_AND_FORWARD)
-{
-    PtrToVecPtrBlob inpPtrs(new std::vector<Blob*>());
-    inpPtrs->reserve(inpBlobs.size());
-    for (size_t i = 0; i < inpBlobs.size(); i++)
-        inpPtrs->push_back(&inpBlobs[i]);
+    layer->allocate(inp, outp);
+    layer->forward(inp, outp);
 
-    if (mode & ALLOC_ONLY) layer->allocate(*inpPtrs, outBlobs);
-    if (mode & FORWARD_ONLY) layer->forward(*inpPtrs, outBlobs);
-
-    return inpPtrs;
+    size_t noutputs = outp.size();
+    outBlobs.resize(noutputs);
+    for( i = 0; i < noutputs; i++ )
+        outBlobs[i] = outp[i];
 }
 
 
@@ -100,102 +102,59 @@ void testLayerUsingCaffeModels(String basename, bool useCaffeModel = false, bool
         importer->populateNet(net);
     }
 
-    Blob inp = blobFromNPY(inpfile);
-    Blob ref = blobFromNPY(outfile);
+    Mat inp = blobFromNPY(inpfile);
+    Mat ref = blobFromNPY(outfile);
 
     net.setBlob(".input", inp);
     net.forward();
-    Blob out = net.getBlob("output");
+    Mat out = net.getBlob("output");
 
     normAssert(ref, out);
 }
 
 TEST(Layer_Test_Softmax, Accuracy)
 {
-     OCL_OFF(testLayerUsingCaffeModels("layer_softmax"));
-}
-OCL_TEST(Layer_Test_Softmax, Accuracy)
-{
-     OCL_ON(testLayerUsingCaffeModels("layer_softmax"));
-     OCL_OFF();
+     testLayerUsingCaffeModels("layer_softmax");
 }
 
 TEST(Layer_Test_LRN_spatial, Accuracy)
 {
-     OCL_OFF(testLayerUsingCaffeModels("layer_lrn_spatial"));
-}
-OCL_TEST(Layer_Test_LRN_spatial, Accuracy)
-{
-     OCL_ON(testLayerUsingCaffeModels("layer_lrn_spatial"));
-     OCL_OFF();
+     testLayerUsingCaffeModels("layer_lrn_spatial");
 }
 
 TEST(Layer_Test_LRN_channels, Accuracy)
 {
-     OCL_OFF(testLayerUsingCaffeModels("layer_lrn_channels"));
-}
-OCL_TEST(Layer_Test_LRN_channels, Accuracy)
-{
-    OCL_ON(testLayerUsingCaffeModels("layer_lrn_channels"));
-    OCL_OFF();
+     testLayerUsingCaffeModels("layer_lrn_channels");
 }
 
 TEST(Layer_Test_Convolution, Accuracy)
 {
-     OCL_OFF(testLayerUsingCaffeModels("layer_convolution", true));
-}
-OCL_TEST(Layer_Test_Convolution, Accuracy)
-{
-     OCL_ON(testLayerUsingCaffeModels("layer_convolution", true));
-     OCL_OFF();
+     testLayerUsingCaffeModels("layer_convolution", true);
 }
 
 TEST(Layer_Test_DeConvolution, Accuracy)
 {
-     OCL_OFF(testLayerUsingCaffeModels("layer_deconvolution", true, false));
-}
-
-OCL_TEST(Layer_Test_DeConvolution, Accuracy)
-{
-     OCL_ON(testLayerUsingCaffeModels("layer_deconvolution", true, false););
-     OCL_OFF();
+     testLayerUsingCaffeModels("layer_deconvolution", true, false);
 }
 
 TEST(Layer_Test_InnerProduct, Accuracy)
 {
-     OCL_OFF(testLayerUsingCaffeModels("layer_inner_product", true));
-}
-OCL_TEST(Layer_Test_InnerProduct, Accuracy)
-{
-    OCL_ON(testLayerUsingCaffeModels("layer_inner_product", true));
-    OCL_OFF();
+     testLayerUsingCaffeModels("layer_inner_product", true);
 }
 
 TEST(Layer_Test_Pooling_max, Accuracy)
 {
-     OCL_OFF(testLayerUsingCaffeModels("layer_pooling_max"));
-     OCL_ON();
-}
-OCL_TEST(Layer_Test_Pooling_max, Accuracy)
-{
-     OCL_ON(testLayerUsingCaffeModels("layer_pooling_max"));
-     OCL_OFF();
+     testLayerUsingCaffeModels("layer_pooling_max");
 }
 
 TEST(Layer_Test_Pooling_ave, Accuracy)
 {
-     OCL_OFF(testLayerUsingCaffeModels("layer_pooling_ave"));
-     OCL_ON();
-}
-OCL_TEST(Layer_Test_Pooling_ave, Accuracy)
-{
-     OCL_ON(testLayerUsingCaffeModels("layer_pooling_ave"));
-     OCL_OFF();
+     testLayerUsingCaffeModels("layer_pooling_ave");
 }
 
 TEST(Layer_Test_MVN, Accuracy)
 {
-     OCL_OFF(testLayerUsingCaffeModels("layer_mvn"));
+     testLayerUsingCaffeModels("layer_mvn");
 }
 
 TEST(Layer_Test_Reshape, squeeze)
@@ -204,20 +163,25 @@ TEST(Layer_Test_Reshape, squeeze)
     params.set("axis", 2);
     params.set("num_axes", 1);
 
-    Blob inp(BlobShape(4, 3, 1, 2));
-    std::vector<Blob*> inpVec(1, &inp);
-    std::vector<Blob> outVec;
+    int sz[] = {4, 3, 1, 2};
+    Mat inp(4, sz, CV_32F);
+    std::vector<Mat*> inpVec(1, &inp);
+    std::vector<Mat> outVec;
 
     Ptr<Layer> rl = LayerFactory::createLayerInstance("Reshape", params);
     rl->allocate(inpVec, outVec);
     rl->forward(inpVec, outVec);
 
-    EXPECT_EQ(outVec[0].shape(), BlobShape(4, 3, 2));
+    Mat& out = outVec[0];
+    std::vector<int> shape(out.size.p, out.size.p + out.dims);
+    int sh0[] = {4, 3, 2};
+    std::vector<int> shape0(sh0, sh0+3);
+    EXPECT_TRUE(shapeEqual(shape, shape0));
 }
 
 TEST(Layer_Test_BatchNorm, Accuracy)
 {
-     OCL_OFF(testLayerUsingCaffeModels("layer_batch_norm", true));
+     testLayerUsingCaffeModels("layer_batch_norm", true);
 }
 
 //template<typename XMat>
@@ -232,16 +196,15 @@ TEST(Layer_Test_BatchNorm, Accuracy)
 //}
 //TEST(Layer_Concat, Accuracy)
 //{
-//    OCL_OFF(test_Layer_Concat<Mat>());
+//    test_Layer_Concat<Mat>());
 //}
 //OCL_TEST(Layer_Concat, Accuracy)
 //{
 //    OCL_ON(test_Layer_Concat<Mat>());
-//    OCL_OFF();
+//    );
 //}
 
-template<typename XMat>
-void test_Reshape_Split_Slice_layers()
+static void test_Reshape_Split_Slice_layers()
 {
     Net net;
     {
@@ -250,46 +213,41 @@ void test_Reshape_Split_Slice_layers()
         importer->populateNet(net);
     }
 
-    Blob input(BlobShape(6, 12));
+    Mat input(6, 12, CV_32F);
     RNG rng(0);
-    rng.fill(input.getRef<XMat>(), RNG::UNIFORM, -1, 1);
+    rng.fill(input, RNG::UNIFORM, -1, 1);
 
     net.setBlob(".input", input);
     net.forward();
-    Blob output = net.getBlob("output");
+    Mat output = net.getBlob("output");
 
     normAssert(input, output);
 }
 TEST(Layer_Test_Reshape_Split_Slice, Accuracy)
 {
-    OCL_OFF(test_Reshape_Split_Slice_layers<Mat>());
-}
-OCL_TEST(Layer_Test_Reshape_Split_Slice, Accuracy)
-{
-    OCL_ON(test_Reshape_Split_Slice_layers<UMat>());
-    OCL_OFF();
+    test_Reshape_Split_Slice_layers();
 }
 
 class Layer_LSTM_Test : public ::testing::Test
 {
 public:
     int numInp, numOut;
-    Blob Wh, Wx, b;
+    Mat Wh, Wx, b;
     Ptr<LSTMLayer> layer;
-    std::vector<Blob> inputs, outputs;
+    std::vector<Mat> inputs, outputs;
 
     Layer_LSTM_Test() {}
 
-    void init(const BlobShape &inpShape_, const BlobShape &outShape_)
+    void init(const std::vector<int> &inpShape_, const std::vector<int> &outShape_)
     {
-        numInp = inpShape_.total();
-        numOut = outShape_.total();
+        numInp = (int)shapeTotal(inpShape_);
+        numOut = (int)shapeTotal(outShape_);
 
-        Wh = Blob(BlobShape(4 * numOut, numOut));
-        Wx = Blob(BlobShape(4 * numOut, numInp));
-        b  = Blob(BlobShape(4 * numOut, 1));
+        Wh = Mat::ones(4 * numOut, numOut, CV_32F);
+        Wx = Mat::ones(4 * numOut, numInp, CV_32F);
+        b  = Mat::ones(4 * numOut, 1, CV_32F);
 
-        layer = LSTMLayer::create();
+        layer = LSTMLayer::create(LayerParams());
         layer->setWeights(Wh, Wx, b);
         layer->setOutShape(outShape_);
     }
@@ -297,27 +255,43 @@ public:
 
 TEST_F(Layer_LSTM_Test, get_set_test)
 {
-    BlobShape TN(4);
-    BlobShape inpShape(5, 3, 2), inpResShape = TN + inpShape;
-    BlobShape outShape(3, 1, 2), outResShape = TN + outShape;
+    const int TN = 4;
+    std::vector<int> inpShape = makeShape(5, 3, 2);
+    std::vector<int> outShape = makeShape(3, 1, 2);
+    std::vector<int> inpResShape = concatShape(makeShape(TN), inpShape);
+    std::vector<int> outResShape = concatShape(makeShape(TN), outShape);
 
     init(inpShape, outShape);
     layer->setProduceCellOutput(true);
     layer->setUseTimstampsDim(false);
     layer->setOutShape(outShape);
 
-    layer->setC(Blob(outResShape));
-    layer->setH(Blob(outResShape));
+    Mat C((int)outResShape.size(), &outResShape[0], CV_32F);
+    randu(C, -1., 1.);
+    Mat H = C.clone();
+    randu(H, -1., 1.);
+    layer->setC(C);
+    layer->setH(H);
 
-    inputs.push_back(Blob(inpResShape));
+    Mat inp((int)inpResShape.size(), &inpResShape[0], CV_32F);
+    randu(inp, -1., 1.);
+
+    inputs.push_back(inp);
     runLayer(layer, inputs, outputs);
 
     EXPECT_EQ(2u, outputs.size());
-    EXPECT_EQ(outResShape, outputs[0].shape());
-    EXPECT_EQ(outResShape, outputs[1].shape());
 
-    EXPECT_EQ(outResShape, layer->getC().shape());
-    EXPECT_EQ(outResShape, layer->getH().shape());
+    printShape("outResShape", outResShape);
+    printShape("out0", getShape(outputs[0]));
+    printShape("out1", getShape(outputs[0]));
+    printShape("C", getShape(layer->getC()));
+    printShape("H", getShape(layer->getH()));
+
+    EXPECT_TRUE(shapeEqual(outResShape, getShape(outputs[0])));
+    EXPECT_TRUE(shapeEqual(outResShape, getShape(outputs[1])));
+
+    EXPECT_TRUE(shapeEqual(outResShape, getShape(layer->getC())));
+    EXPECT_TRUE(shapeEqual(outResShape, getShape(layer->getH())));
 
     EXPECT_EQ(0, layer->inputNameToIndex("x"));
     EXPECT_EQ(0, layer->outputNameToIndex("h"));
@@ -326,24 +300,24 @@ TEST_F(Layer_LSTM_Test, get_set_test)
 
 TEST(Layer_LSTM_Test_Accuracy_with_, CaffeRecurrent)
 {
-    Ptr<LSTMLayer> layer = LSTMLayer::create();
+    Ptr<LSTMLayer> layer = LSTMLayer::create(LayerParams());
 
-    Blob Wx = blobFromNPY(_tf("lstm.prototxt.w_0.npy"));
-    Blob Wh = blobFromNPY(_tf("lstm.prototxt.w_2.npy"));
-    Blob b  = blobFromNPY(_tf("lstm.prototxt.w_1.npy"));
+    Mat Wx = blobFromNPY(_tf("lstm.prototxt.w_0.npy"));
+    Mat Wh = blobFromNPY(_tf("lstm.prototxt.w_2.npy"));
+    Mat b  = blobFromNPY(_tf("lstm.prototxt.w_1.npy"));
     layer->setWeights(Wh, Wx, b);
 
-    Blob inp = blobFromNPY(_tf("recurrent.input.npy"));
-    std::vector<Blob> inputs(1, inp), outputs;
+    Mat inp = blobFromNPY(_tf("recurrent.input.npy"));
+    std::vector<Mat> inputs(1, inp), outputs;
     runLayer(layer, inputs, outputs);
 
-    Blob h_t_reference = blobFromNPY(_tf("lstm.prototxt.h_1.npy"));
+    Mat h_t_reference = blobFromNPY(_tf("lstm.prototxt.h_1.npy"));
     normAssert(h_t_reference, outputs[0]);
 }
 
 TEST(Layer_RNN_Test_Accuracy_with_, CaffeRecurrent)
 {
-    Ptr<RNNLayer> layer = RNNLayer::create();
+    Ptr<RNNLayer> layer = RNNLayer::create(LayerParams());
 
     layer->setWeights(
                 blobFromNPY(_tf("rnn.prototxt.w_0.npy")),
@@ -352,10 +326,10 @@ TEST(Layer_RNN_Test_Accuracy_with_, CaffeRecurrent)
                 blobFromNPY(_tf("rnn.prototxt.w_3.npy")),
                 blobFromNPY(_tf("rnn.prototxt.w_4.npy")) );
 
-    std::vector<Blob> output, input(1, blobFromNPY(_tf("recurrent.input.npy")));
+    std::vector<Mat> output, input(1, blobFromNPY(_tf("recurrent.input.npy")));
     runLayer(layer, input, output);
 
-    Blob h_ref = blobFromNPY(_tf("rnn.prototxt.h_1.npy"));
+    Mat h_ref = blobFromNPY(_tf("rnn.prototxt.h_1.npy"));
     normAssert(h_ref, output[0]);
 }
 
@@ -364,10 +338,10 @@ class Layer_RNN_Test : public ::testing::Test
 {
 public:
     int nX, nH, nO, nT, nS;
-    Blob Whh, Wxh, bh, Who, bo;
+    Mat Whh, Wxh, bh, Who, bo;
     Ptr<RNNLayer> layer;
 
-    std::vector<Blob> inputs, outputs;
+    std::vector<Mat> inputs, outputs;
 
     Layer_RNN_Test()
     {
@@ -377,13 +351,13 @@ public:
         nH = 64;
         nO = 100;
 
-        Whh = Blob(BlobShape(nH, nH));
-        Wxh = Blob(BlobShape(nH, nX));
-        bh  = Blob(BlobShape(nH, 1));
-        Who = Blob(BlobShape(nO, nH));
-        bo  = Blob(BlobShape(nO, 1));
+        Whh = Mat::ones(nH, nH, CV_32F);
+        Wxh = Mat::ones(nH, nX, CV_32F);
+        bh  = Mat::ones(nH, 1, CV_32F);
+        Who = Mat::ones(nO, nH, CV_32F);
+        bo  = Mat::ones(nO, 1, CV_32F);
 
-        layer = RNNLayer::create();
+        layer = RNNLayer::create(LayerParams());
         layer->setProduceHiddenOutput(true);
         layer->setWeights(Wxh, bh, Whh, Who, bo);
     }
@@ -391,12 +365,15 @@ public:
 
 TEST_F(Layer_RNN_Test, get_set_test)
 {
-    inputs.push_back(Blob(BlobShape(nT, nS, 1, nX)));
+    int sz[] = { nT, nS, 1, nX };
+    Mat inp(4, sz, CV_32F);
+    randu(inp, -1., 1.);
+    inputs.push_back(inp);
     runLayer(layer, inputs, outputs);
 
     EXPECT_EQ(outputs.size(), 2u);
-    EXPECT_EQ(outputs[0].shape(), BlobShape(nT, nS, nO));
-    EXPECT_EQ(outputs[1].shape(), BlobShape(nT, nS, nH));
+    EXPECT_TRUE(shapeEqual(getShape(outputs[0]), makeShape(nT, nS, nO)));
+    EXPECT_TRUE(shapeEqual(getShape(outputs[1]), makeShape(nT, nS, nH)));
 }
 
 }

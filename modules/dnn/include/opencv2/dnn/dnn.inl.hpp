@@ -298,6 +298,12 @@ inline DictValue *Dict::ptr(const String &key)
     return (i == dict.end()) ? NULL : &i->second;
 }
 
+inline const DictValue *Dict::ptr(const String &key) const
+{
+    _Dict::const_iterator i = dict.find(key);
+    return (i == dict.end()) ? NULL : &i->second;
+}
+
 inline const DictValue &Dict::get(const String &key) const
 {
     _Dict::const_iterator i = dict.find(key);

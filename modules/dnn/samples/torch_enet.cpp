@@ -27,12 +27,12 @@ const String keys =
         ;
 
 std::vector<String> readClassNames(const char *filename);
-static void colorizeSegmentation(Blob &score, Mat &segm,
+static void colorizeSegmentation(const Mat &score, Mat &segm,
                                  Mat &legend, vector<String> &classNames);
 
 int main(int argc, char **argv)
 {
-    cv::CommandLineParser parser(argc, argv, keys);
+    CommandLineParser parser(argc, argv, keys);
 
     if (parser.has("help"))
     {
@@ -78,31 +78,27 @@ int main(int argc, char **argv)
     //! [Initialize network]
 
     //! [Prepare blob]
-    Mat img = imread(imageFile), input;
+    Mat img = imread(imageFile, 1);
+
     if (img.empty())
     {
         std::cerr << "Can't read image from the file: " << imageFile << std::endl;
         exit(-1);
     }
 
-    cv::Size inputImgSize = cv::Size(512, 512);
+    Size inputImgSize(512, 512);
 
     if (inputImgSize != img.size())
         resize(img, img, inputImgSize);       //Resize image to input size
 
-    if(img.channels() == 3)
-        cv::cvtColor(img, input, cv::COLOR_BGR2RGB);
-
-    input.convertTo(input, CV_32F, 1/255.0);
-
-    dnn::Blob inputBlob = dnn::Blob::fromImages(input);   //Convert Mat to dnn::Blob image batch
+    Mat inputBlob = blobFromImage(img, 1./255, true);   //Convert Mat to image batch
     //! [Prepare blob]
 
     //! [Set input blob]
     net.setBlob("", inputBlob);        //set the network input
     //! [Set input blob]
 
-    cv::TickMeter tm;
+    TickMeter tm;
     tm.start();
 
     //! [Make forward pass]
@@ -119,11 +115,7 @@ int main(int argc, char **argv)
         oBlob = parser.get<String>("o_blob");
     }
 
-    dnn::Blob prob = net.getBlob(oBlob);   //gather output of "prob" layer
-
-    Mat& result = prob.matRef();
-
-    BlobShape shape = prob.shape();
+    Mat result = net.getBlob(oBlob);   //gather output of "prob" layer
 
     if (!resultFile.empty()) {
         CV_Assert(result.isContinuous());
@@ -133,20 +125,21 @@ int main(int argc, char **argv)
         fout.close();
     }
 
-    std::cout << "Output blob shape " << shape  << std::endl;
+    std::cout << "Output blob: " << result.size[0] << " x " << result.size[1] << " x " << result.size[2] << " x " << result.size[3] << "\n";
     std::cout << "Inference time, ms: " << tm.getTimeMilli()  << std::endl;
 
     if (parser.has("show"))
     {
+        size_t nclasses = result.size[1];
         std::vector<String> classNames;
         if(!classNamesFile.empty()) {
             classNames = readClassNames(classNamesFile.c_str());
-            if (classNames.size() > prob.channels())
-                classNames = std::vector<String>(classNames.begin() + classNames.size() - prob.channels(),
+            if (classNames.size() > nclasses)
+                classNames = std::vector<String>(classNames.begin() + classNames.size() - nclasses,
                                                  classNames.end());
         }
         Mat segm, legend;
-        colorizeSegmentation(prob, segm, legend, classNames);
+        colorizeSegmentation(result, segm, legend, classNames);
 
         Mat show;
         addWeighted(img, 0.2, segm, 0.8, 0.0, show);
@@ -184,11 +177,11 @@ std::vector<String> readClassNames(const char *filename)
     return classNames;
 }
 
-static void colorizeSegmentation(Blob &score, Mat &segm, Mat &legend, vector<String> &classNames)
+static void colorizeSegmentation(const Mat &score, Mat &segm, Mat &legend, vector<String> &classNames)
 {
-    const int rows = score.rows();
-    const int cols = score.cols();
-    const int chns = score.channels();
+    const int rows = score.size[2];
+    const int cols = score.size[3];
+    const int chns = score.size[1];
 
     vector<Vec3i> colors;
     RNG rng(12345678);
@@ -200,7 +193,7 @@ static void colorizeSegmentation(Blob &score, Mat &segm, Mat &legend, vector<Str
         colors.push_back(Vec3i(rng.uniform(0, 256), rng.uniform(0, 256), rng.uniform(0, 256)));
         for (int row = 0; row < rows; row++)
         {
-            const float *ptrScore = score.ptrf(0, ch, row);
+            const float *ptrScore = score.ptr<float>(0, ch, row);
             uchar *ptrMaxCl = maxCl.ptr<uchar>(row);
             float *ptrMaxVal = maxVal.ptr<float>(row);
             for (int col = 0; col < cols; col++)

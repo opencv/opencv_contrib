@@ -101,7 +101,7 @@ int main(int argc, char** argv)
     //! [Prepare blob]
     Mat preprocessedFrame = preprocess(frame);
 
-    dnn::Blob inputBlob = dnn::Blob::fromImages(preprocessedFrame); //Convert Mat to dnn::Blob image
+    Mat inputBlob = blobFromImage(preprocessedFrame); //Convert Mat to batch of images
     //! [Prepare blob]
 
     //! [Set input blob]
@@ -113,8 +113,8 @@ int main(int argc, char** argv)
     //! [Make forward pass]
 
     //! [Gather output]
-    dnn::Blob detection = net.getBlob("detection_out");
-    Mat detectionMat(detection.rows(), detection.cols(), CV_32F, detection.ptrf());
+    Mat detection = net.getBlob("detection_out");
+    Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
 
     float confidenceThreshold = parser.get<float>("min_confidence");
     for(int i = 0; i < detectionMat.rows; i++)

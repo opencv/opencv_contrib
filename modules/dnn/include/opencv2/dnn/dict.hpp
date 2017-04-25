@@ -118,6 +118,9 @@ public:
     //! If the @p key in the dictionary then returns pointer to its value, else returns NULL.
     DictValue *ptr(const String &key);
 
+    /** @overload */
+    const DictValue *ptr(const String &key) const;
+
     //! If the @p key in the dictionary then returns its value, else an error will be generated.
     const DictValue &get(const String &key) const;
 

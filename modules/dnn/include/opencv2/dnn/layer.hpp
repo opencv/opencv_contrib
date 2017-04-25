@@ -122,7 +122,7 @@ static _LayerStaticRegisterer __LayerStaticRegisterer_##type(#type, __LayerStati
 template<typename LayerClass>
 Ptr<Layer> _layerDynamicRegisterer(LayerParams &params)
 {
-    return Ptr<Layer>(new LayerClass(params));
+    return Ptr<Layer>(LayerClass::create(params));
 }
 
 //allows automatically register created layer on module load time
