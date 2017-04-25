@@ -41,6 +41,15 @@ public:
             Mat* inp = inputs[i];
             outputs[i].create(inp->dims, &inp->size.p[0], inp->type());
         }
+
+        varMeanScale = 1.f;
+        if (!hasWeights && !hasBias) {
+            varMeanScale = *blobs[2].ptr<float>();
+            if (varMeanScale != 0)
+                varMeanScale = 1/varMeanScale;
+        }
+
+        cv::pow(blobs[1]*varMeanScale + epsilon, -0.5, invStdMat);
     }
 
     void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
@@ -51,16 +60,6 @@ public:
 
         int weightsBlobIndex = 2;
         int biasBlobIndex = weightsBlobIndex + hasWeights;
-
-        float varMeanScale = 1;
-        if (!hasWeights && !hasBias) {
-            varMeanScale = *blobs[2].ptr<float>();
-            if (varMeanScale != 0)
-                varMeanScale = 1/varMeanScale;
-        }
-
-        Mat invStdMat;
-        cv::pow(blobs[1]*varMeanScale + epsilon, -0.5, invStdMat);
 
         int rows = inpBlob.size[2];
         int cols = inpBlob.size[3];
@@ -92,7 +91,8 @@ public:
     }
 
     bool hasWeights, hasBias;
-    float epsilon;
+    float epsilon, varMeanScale;
+    Mat invStdMat;
 };
 
 Ptr<BatchNormLayer> BatchNormLayer::create(const LayerParams& params)

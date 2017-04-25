@@ -98,14 +98,19 @@ int main(int argc, char **argv)
     net.setBlob("", inputBlob);        //set the network input
     //! [Set input blob]
 
+    const int N = 3;
     TickMeter tm;
-    tm.start();
 
     //! [Make forward pass]
-    net.forward();                          //compute output
-    //! [Make forward pass]
-
-    tm.stop();
+    for( int i = 0; i < N; i++ )
+    {
+        TickMeter tm_;
+        tm_.start();
+        net.forward();                          //compute output
+        tm_.stop();
+        if( i == 0 || tm_.getTimeTicks() < tm.getTimeTicks() )
+            tm = tm_;
+    }
 
     //! [Gather output]
 

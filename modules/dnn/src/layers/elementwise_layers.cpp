@@ -15,8 +15,7 @@ using std::pow;
 template<typename Func>
 class ElementWiseLayer : public Func::Layer
 {
-    Func func;
-
+public:
     template<typename Dtype>
     class PBody : public cv::ParallelLoopBody
     {
@@ -35,9 +34,7 @@ class ElementWiseLayer : public Func::Layer
         }
     };
 
-public:
-
-    ElementWiseLayer(const Func &f=Func()) : func(f) {}
+    ElementWiseLayer(bool run_parallel_=false, const Func &f=Func()) : func(f), run_parallel(run_parallel_) {}
 
     void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
     {
@@ -58,9 +55,16 @@ public:
 
             Range sizeRange = Range(0, dst.total());
             CV_Assert(src.type() == CV_32F);
-            cv::parallel_for_(sizeRange, PBody<float>(dst, func));
+            PBody<float> body(dst, func);
+            if( run_parallel )
+                cv::parallel_for_(sizeRange, body);
+            else
+                body(sizeRange);
         }
     }
+
+    Func func;
+    bool run_parallel;
 };
 
 struct ReLUFunctor
@@ -135,8 +139,24 @@ struct PowerFunctor
     template<typename TFloat>
     inline TFloat operator()(TFloat x) const
     {
-        return power == 1.0f ? (TFloat)shift + (TFloat)scale * x :
-            pow((TFloat)shift + (TFloat)scale * x, (TFloat)power);
+        return pow((TFloat)shift + (TFloat)scale * x, (TFloat)power);
+    }
+};
+
+struct PowerFunctor1
+{
+    typedef PowerLayer Layer;
+
+    const float scale;
+    const float shift;
+
+    PowerFunctor1(float scale_ = 1.f, float shift_ = 0)
+    : scale(scale_), shift(shift_) {}
+
+    template<typename TFloat>
+    inline TFloat operator()(TFloat x) const
+    {
+        return (TFloat)shift + (TFloat)scale * x;
     }
 };
 
@@ -165,12 +185,12 @@ public:
     void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
     {
         CV_Assert(inputs.size() == 1);
-
         Mat &inpBlob = *inputs[0];
 
         for (size_t ii = 0; ii < outputs.size(); ii++)
         {
             Mat &outBlob = outputs[ii];
+            CV_Assert(inpBlob.isContinuous() && outBlob.isContinuous());
 
             CV_Assert(blobs[0].total() == inpBlob.size[1]);
 
@@ -181,8 +201,16 @@ public:
                 Mat inpBlobPlane = getPlane(inpBlob, 0, n);
                 Mat outBlobPlane = getPlane(outBlob, 0, n);
 
-                threshold(inpBlobPlane, outBlobPlane, 0, 0, cv::THRESH_TOZERO_INV);
-                scaleAdd(outBlobPlane, slopeWeight-1, inpBlobPlane, outBlobPlane);
+                size_t i, planeTotal = inpBlobPlane.total();
+                const float* inptr = inpBlobPlane.ptr<float>();
+                float* outptr = outBlobPlane.ptr<float>();
+                for( i = 0; i < planeTotal; i++ )
+                {
+                    float val = inptr[i];
+                    outptr[i] = val*(val >= 0.f ? 1.f : slopeWeight);
+                }
+                //threshold(inpBlobPlane, outBlobPlane, 0, 0, cv::THRESH_TOZERO_INV);
+                //scaleAdd(outBlobPlane, slopeWeight-1, inpBlobPlane, outBlobPlane);
             }
         }
     }
@@ -196,7 +224,7 @@ Ptr<_Layer> _Layer::create() { \
 Ptr<ReLULayer> ReLULayer::create(const LayerParams& params)
 {
     float negativeSlope = params.get<float>("negative_slope", 0.f);
-    Ptr<ReLULayer> l(new ElementWiseLayer<ReLUFunctor>(ReLUFunctor(negativeSlope)));
+    Ptr<ReLULayer> l(new ElementWiseLayer<ReLUFunctor>(false, ReLUFunctor(negativeSlope)));
     l->setParamsFrom(params);
 
     return l;
@@ -204,7 +232,7 @@ Ptr<ReLULayer> ReLULayer::create(const LayerParams& params)
 
 Ptr<TanHLayer> TanHLayer::create(const LayerParams& params)
 {
-    Ptr<TanHLayer> l(new ElementWiseLayer<TanHFunctor>());
+    Ptr<TanHLayer> l(new ElementWiseLayer<TanHFunctor>(true));
     l->setParamsFrom(params);
 
     return l;
@@ -212,7 +240,7 @@ Ptr<TanHLayer> TanHLayer::create(const LayerParams& params)
 
 Ptr<SigmoidLayer> SigmoidLayer::create(const LayerParams& params)
 {
-    Ptr<SigmoidLayer> l(new ElementWiseLayer<SigmoidFunctor>());
+    Ptr<SigmoidLayer> l(new ElementWiseLayer<SigmoidFunctor>(true));
     l->setParamsFrom(params);
 
     return l;
@@ -228,7 +256,7 @@ Ptr<AbsLayer> AbsLayer::create(const LayerParams& params)
 
 Ptr<BNLLLayer> BNLLLayer::create(const LayerParams& params)
 {
-    Ptr<BNLLLayer> l(new ElementWiseLayer<BNLLFunctor>());
+    Ptr<BNLLLayer> l(new ElementWiseLayer<BNLLFunctor>(true));
     l->setParamsFrom(params);
 
     return l;
@@ -239,7 +267,9 @@ Ptr<PowerLayer> PowerLayer::create(const LayerParams& params)
     float power = params.get<float>("power", 1.0f);
     float scale = params.get<float>("scale", 1.0f);
     float shift = params.get<float>("shift", 0.0f);
-    Ptr<PowerLayer> l(new ElementWiseLayer<PowerFunctor>(PowerFunctor(power, scale, shift)));
+    Ptr<PowerLayer> l(power == 1.f ?
+                      (PowerLayer*)(new ElementWiseLayer<PowerFunctor1>(false, PowerFunctor1(scale, shift))) :
+                      (PowerLayer*)(new ElementWiseLayer<PowerFunctor>(true, PowerFunctor(power, scale, shift))));
     l->setParamsFrom(params);
 
     return l;
