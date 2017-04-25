@@ -215,12 +215,12 @@ public:
                         int row_offset = in_r*width;
                         int out_col_offset = k_r*kw;
                         int in_c = start_in_c + start_k_c*dw;
-                        
+
                         for(int k_c = start_k_c; k_c < end_k_c; k_c++, in_c += dw)
                         {
                             int in_index = channels_offset + row_offset + in_c;
                             int out_index = out_row_offset + out_ch_offset + out_col_offset + k_c;
-                            
+
                             data_col_[out_index] = data_im_[in_index];
                         }
                     }
@@ -346,7 +346,7 @@ void col2im_cpu(const Dtype* data_col,
             {
                 int h_pad = h * stride_h - pad_h + h_offset * dilation_h;
                 int w_pad = w * stride_w - pad_w + w_offset * dilation_w;
-                
+
                 if (h_pad >= 0 && h_pad < height && w_pad >= 0 && w_pad < width)
                     data_im[(c_im * height + h_pad) * width + w_pad] +=
                     data_col[(c * height_col + h) * width_col + w];
