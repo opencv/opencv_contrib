@@ -304,6 +304,16 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
       */
     CV_EXPORTS_W Net readNetFromCaffe(const String &prototxt, const String &caffeModel = String());
 
+    /** @brief Reads a network model stored in Tensorflow model file.
+      * @details This is shortcut consisting from createTensorflowImporter and Net::populateNet calls.
+      */
+    CV_EXPORTS_W Net readNetFromTensorflow(const String &model);
+
+    /** @brief Reads a network model stored in Torch model file.
+      * @details This is shortcut consisting from createTorchImporter and Net::populateNet calls.
+      */
+    CV_EXPORTS_W Net readNetFromTorch(const String &model, bool isBinary = true);
+
     /** @brief Creates the importer of <a href="http://www.tensorflow.org">TensorFlow</a> framework network.
      *  @param model   path to the .pb file with binary protobuf description of the network architecture.
      *  @returns Pointer to the created importer, NULL in failure cases.

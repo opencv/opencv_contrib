@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 
     Mat inputBlob = blobFromImage(img);   //Convert Mat to image batch
     //! [Prepare blob]
-
+    inputBlob -= 117.0;
     //! [Set input blob]
     net.setBlob(inBlobName, inputBlob);        //set the network input
     //! [Set input blob]
