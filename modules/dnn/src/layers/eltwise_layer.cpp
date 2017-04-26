@@ -98,15 +98,14 @@ public:
 
     void forward(std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
     {
+        Mat& output = outputs[0];
         switch (op)
         {
             case SUM:
-            {
                 CV_Assert(coeffs.size() == 0 || coeffs.size() == inputs.size());
-                Mat& output = outputs[0];
-                output.setTo(0.);
                 if (0 < coeffs.size())
                 {
+                    output.setTo(0.);
                     for (size_t i = 0; i < inputs.size(); i++)
                     {
                         output += *inputs[i] * coeffs[i];
@@ -114,32 +113,26 @@ public:
                 }
                 else
                 {
-                    for (size_t i = 0; i < inputs.size(); i++)
+                    add(*inputs[0], *inputs[1], output);
+                    for (size_t i = 2; i < inputs.size(); i++)
                     {
                         output += *inputs[i];
                     }
                 }
-            }
                 break;
             case PROD:
-            {
-                Mat& output = outputs[0];
                 output.setTo(1.);
                 for (size_t i = 0; i < inputs.size(); i++)
                 {
                     output = output.mul(*inputs[i]);
                 }
-            }
                 break;
             case MAX:
-            {
-                Mat& output = outputs[0];
                 cv::max(*inputs[0], *inputs[1], output);
                 for (size_t i = 2; i < inputs.size(); i++)
                 {
                     cv::max(output, *inputs[i], output);
                 }
-            }
                 break;
             default:
                 CV_Assert(0);
