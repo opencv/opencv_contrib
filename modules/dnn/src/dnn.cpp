@@ -607,7 +607,7 @@ void Net::setBlob(String outputName, const Mat &blob_)
     MatSize prevShape = ld.outputBlobs[pin.oid].size;
     ld.outputBlobs[pin.oid] = blob_.clone();
 
-    impl->netWasAllocated = prevShape == blob_.size;
+    impl->netWasAllocated = impl->netWasAllocated && prevShape == blob_.size;
 }
 
 Mat Net::getBlob(String outputName)
