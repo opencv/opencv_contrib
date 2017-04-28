@@ -41,6 +41,7 @@
 
 #include "test_precomp.hpp"
 #include "npy_blob.hpp"
+#include <opencv2/dnn/shape_utils.hpp>
 
 namespace cvtest
 {

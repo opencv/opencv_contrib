@@ -135,6 +135,8 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
                                      const int requiredOutputs,
                                      std::vector<MatShape> &outputs,
                                      std::vector<MatShape> &internals) const;
+        virtual int64 getFLOPS(const std::vector<MatShape> &inputs,
+                               const std::vector<MatShape> &outputs) const {(void)inputs; (void)outputs; return 0;}
 
         CV_PROP String name; //!< Name of the layer instance, can be used for logging or other internal purposes.
         CV_PROP String type; //!< Type name which was used for creating layer by layer factory.
@@ -323,6 +325,50 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
                                      const int layerId,
                                      std::vector<MatShape>* inLayerShapes,
                                      std::vector<MatShape>* outLayerShapes) const;
+         /** @brief Computes FLOP for whole loaded model with specified input shapes.
+          * @param netInputShapes vector of shapes for all net inputs.
+          * @returns computed FLOP.
+          */
+         CV_WRAP int64 getFLOPS(const std::vector<MatShape>& netInputShapes) const;
+         /** @overload */
+         CV_WRAP int64 getFLOPS(const MatShape& netInputShape) const;
+         /** @overload */
+         CV_WRAP int64 getFLOPS(const int layerId,
+                               const std::vector<MatShape>& netInputShapes) const;
+         /** @overload */
+         CV_WRAP int64 getFLOPS(const int layerId,
+                               const MatShape& netInputShape) const;
+
+         /** @brief Returns list of types for layer used in model.
+          * @param layersTypes output parameter for returning types.
+          */
+         CV_WRAP void getLayerTypes(std::vector<String>& layersTypes) const;
+
+         /** @brief Returns count of layers of specified type.
+          * @param layerType type.
+          * @returns count of layers
+          */
+         CV_WRAP int getLayersCount(const String& layerType) const;
+
+         /** @brief Computes bytes number which are requered to store
+          * all weights and intermediate blobs for model.
+          * @param netInputShapes vector of shapes for all net inputs.
+          * @param weights output parameter to store resulting bytes for weights.
+          * @param blobs output parameter to store resulting bytes for intermediate blobs.
+          */
+         CV_WRAP void getMemoryConsumption(const std::vector<MatShape>& netInputShapes,
+                                           size_t& weights, size_t& blobs) const;
+         /** @overload */
+         CV_WRAP void getMemoryConsumption(const MatShape& netInputShape,
+                                           size_t& weights, size_t& blobs) const;
+         /** @overload */
+         CV_WRAP void getMemoryConsumption(const int layerId,
+                                           const std::vector<MatShape>& netInputShapes,
+                                           size_t& weights, size_t& blobs) const;
+         /** @overload */
+         CV_WRAP void getMemoryConsumption(const int layerId,
+                                           const MatShape& netInputShape,
+                                           size_t& weights, size_t& blobs) const;
     private:
 
         struct Impl;

@@ -117,6 +117,22 @@ public:
         }
     }
 
+    virtual int64 getFLOPS(const std::vector<MatShape> &inputs,
+                           const std::vector<MatShape> &outputs) const
+    {
+        (void)inputs; // suppress unused variable warning
+        long flops = 0;
+
+        int innerSize = blobs[0].size[1];
+        for(int i = 0; i < outputs.size(); i++)
+        {
+            flops += 3*innerSize*total(outputs[i]);
+        }
+
+        return flops;
+
+    }
+
     bool bias;
 };
 

@@ -143,6 +143,17 @@ public:
                 break;
         }
     }
+
+    virtual int64 getFLOPS(const std::vector<MatShape> &inputs,
+                           const std::vector<MatShape> &outputs) const
+    {
+        (void)outputs; // suppress unused variable warning
+        CV_Assert(inputs.size());
+
+        long flops = inputs.size() * total(inputs[0]);
+
+        return flops;
+    }
 };
 
 Ptr<EltwiseLayer> EltwiseLayer::create(const LayerParams& params)
