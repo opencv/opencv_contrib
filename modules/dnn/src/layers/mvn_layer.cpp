@@ -85,6 +85,18 @@ public:
             }
         }
     }
+
+    virtual int64 getFLOPS(const std::vector<MatShape> &inputs,
+                           const std::vector<MatShape> &outputs) const
+    {
+        (void)outputs; // suppress unused variable warning
+        long flops = 0;
+        for(int i = 0; i < inputs.size(); i++)
+        {
+            flops += 6*total(inputs[i]) + 3*total(inputs[i], 0, normVariance ? 2 : 1);
+        }
+        return flops;
+    }
 };
 
 Ptr<MVNLayer> MVNLayer::create(const LayerParams& params)

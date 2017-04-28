@@ -241,6 +241,27 @@ public:
 
         return false;
     }
+
+    virtual int64 getFLOPS(const std::vector<MatShape> &inputs,
+                           const std::vector<MatShape> &outputs) const
+    {
+        (void)inputs; // suppress unused variable warning
+        long flops = 0;
+
+        for(int i = 0; i < outputs.size(); i++)
+        {
+            if (type == MAX)
+            {
+                if (i%2 == 0)
+                    flops += total(outputs[i])*kernel.area();
+            }
+            else
+            {
+                flops += total(outputs[i])*(kernel.area() + 1);
+            }
+        }
+        return flops;
+    }
 };
 
 Ptr<PoolingLayer> PoolingLayer::create(const LayerParams& params)
