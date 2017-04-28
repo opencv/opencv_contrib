@@ -65,19 +65,20 @@ public:
         }
     }
 
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
     {
         CV_Assert(inputs.size() == 1);
-        const Mat& inp0 = *inputs[0];
 
-        if (outputsCount >= 0)
-            outputs.resize(outputsCount);
+        outputs.resize(outputsCount >= 0 ? outputsCount : requiredOutputs,
+                       inputs[0]);
 
-        for (size_t i = 0; i < outputs.size(); i++)
-            outputs[i].create(inp0.dims, inp0.size.p, inp0.type());
+        return false;
     }
 
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         for (size_t i = 0; i < outputs.size(); i++)
         {

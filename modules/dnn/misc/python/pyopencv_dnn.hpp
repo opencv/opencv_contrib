@@ -1,5 +1,7 @@
 #ifdef HAVE_OPENCV_DNN
 typedef dnn::DictValue LayerId;
+typedef std::vector<dnn::MatShape> vector_MatShape;
+typedef std::vector<std::vector<dnn::MatShape> > vector_vector_MatShape;
 
 template<>
 bool pyopencv_to(PyObject *o, dnn::DictValue &dv, const char *name)

@@ -43,6 +43,7 @@
 #include <opencv2/core/ocl.hpp>
 #include <iostream>
 #include "npy_blob.hpp"
+#include <opencv2/dnn/shape_utils.hpp>
 #include <opencv2/dnn/all_layers.hpp>
 #include <opencv2/ts/ocl_test.hpp>
 
@@ -67,16 +68,28 @@ void runLayer(Ptr<Layer> layer, std::vector<Mat> &inpBlobs, std::vector<Mat> &ou
     size_t i, ninputs = inpBlobs.size();
     std::vector<Mat> inp_(ninputs);
     std::vector<Mat*> inp(ninputs);
-    std::vector<Mat> outp;
+    std::vector<Mat> outp, intp;
+    std::vector<MatShape> inputs, outputs, internals;
 
     for( i = 0; i < ninputs; i++ )
     {
         inp_[i] = inpBlobs[i].clone();
         inp[i] = &inp_[i];
+        inputs.push_back(shape(inp_[i]));
     }
 
-    layer->allocate(inp, outp);
-    layer->forward(inp, outp);
+    layer->getMemoryShapes(inputs, 0, outputs, internals);
+    for(int i = 0; i < outputs.size(); i++)
+    {
+        outp.push_back(Mat(outputs[i], CV_32F));
+    }
+    for(int i = 0; i < internals.size(); i++)
+    {
+        intp.push_back(Mat(internals[i], CV_32F));
+    }
+
+    layer->finalize(inp, outp);
+    layer->forward(inp, outp, intp);
 
     size_t noutputs = outp.size();
     outBlobs.resize(noutputs);
@@ -165,18 +178,17 @@ TEST(Layer_Test_Reshape, squeeze)
 
     int sz[] = {4, 3, 1, 2};
     Mat inp(4, sz, CV_32F);
-    std::vector<Mat*> inpVec(1, &inp);
-    std::vector<Mat> outVec;
+    std::vector<Mat> inpVec(1, inp);
+    std::vector<Mat> outVec, intVec;
 
     Ptr<Layer> rl = LayerFactory::createLayerInstance("Reshape", params);
-    rl->allocate(inpVec, outVec);
-    rl->forward(inpVec, outVec);
+    runLayer(rl, inpVec, outVec);
 
     Mat& out = outVec[0];
-    std::vector<int> shape(out.size.p, out.size.p + out.dims);
+    MatShape shape(out.size.p, out.size.p + out.dims);
     int sh0[] = {4, 3, 2};
-    std::vector<int> shape0(sh0, sh0+3);
-    EXPECT_TRUE(shapeEqual(shape, shape0));
+    MatShape shape0(sh0, sh0+3);
+    EXPECT_EQ(shape, shape0);
 }
 
 TEST(Layer_Test_BatchNorm, Accuracy)
@@ -253,10 +265,10 @@ public:
 
     Layer_LSTM_Test() {}
 
-    void init(const std::vector<int> &inpShape_, const std::vector<int> &outShape_)
+    void init(const MatShape &inpShape_, const MatShape &outShape_)
     {
-        numInp = (int)shapeTotal(inpShape_);
-        numOut = (int)shapeTotal(outShape_);
+        numInp = total(inpShape_);
+        numOut = total(outShape_);
 
         Wh = Mat::ones(4 * numOut, numOut, CV_32F);
         Wx = Mat::ones(4 * numOut, numInp, CV_32F);
@@ -271,10 +283,10 @@ public:
 TEST_F(Layer_LSTM_Test, get_set_test)
 {
     const int TN = 4;
-    std::vector<int> inpShape = makeShape(5, 3, 2);
-    std::vector<int> outShape = makeShape(3, 1, 2);
-    std::vector<int> inpResShape = concatShape(makeShape(TN), inpShape);
-    std::vector<int> outResShape = concatShape(makeShape(TN), outShape);
+    MatShape inpShape = shape(5, 3, 2);
+    MatShape outShape = shape(3, 1, 2);
+    MatShape inpResShape = concat(shape(TN), inpShape);
+    MatShape outResShape = concat(shape(TN), outShape);
 
     init(inpShape, outShape);
     layer->setProduceCellOutput(true);
@@ -285,8 +297,6 @@ TEST_F(Layer_LSTM_Test, get_set_test)
     randu(C, -1., 1.);
     Mat H = C.clone();
     randu(H, -1., 1.);
-    layer->setC(C);
-    layer->setH(H);
 
     Mat inp((int)inpResShape.size(), &inpResShape[0], CV_32F);
     randu(inp, -1., 1.);
@@ -296,17 +306,12 @@ TEST_F(Layer_LSTM_Test, get_set_test)
 
     EXPECT_EQ(2u, outputs.size());
 
-    printShape("outResShape", outResShape);
-    printShape("out0", getShape(outputs[0]));
-    printShape("out1", getShape(outputs[0]));
-    printShape("C", getShape(layer->getC()));
-    printShape("H", getShape(layer->getH()));
+    print(outResShape, "outResShape");
+    print(shape(outputs[0]), "out0");
+    print(shape(outputs[0]), "out1");
 
-    EXPECT_TRUE(shapeEqual(outResShape, getShape(outputs[0])));
-    EXPECT_TRUE(shapeEqual(outResShape, getShape(outputs[1])));
-
-    EXPECT_TRUE(shapeEqual(outResShape, getShape(layer->getC())));
-    EXPECT_TRUE(shapeEqual(outResShape, getShape(layer->getH())));
+    EXPECT_EQ(outResShape, shape(outputs[0]));
+    EXPECT_EQ(outResShape, shape(outputs[1]));
 
     EXPECT_EQ(0, layer->inputNameToIndex("x"));
     EXPECT_EQ(0, layer->outputNameToIndex("h"));
@@ -387,8 +392,8 @@ TEST_F(Layer_RNN_Test, get_set_test)
     runLayer(layer, inputs, outputs);
 
     EXPECT_EQ(outputs.size(), 2u);
-    EXPECT_TRUE(shapeEqual(getShape(outputs[0]), makeShape(nT, nS, nO)));
-    EXPECT_TRUE(shapeEqual(getShape(outputs[1]), makeShape(nT, nS, nH)));
+    EXPECT_EQ(shape(outputs[0]), shape(nT, nS, nO));
+    EXPECT_EQ(shape(outputs[1]), shape(nT, nS, nH));
 }
 
 }

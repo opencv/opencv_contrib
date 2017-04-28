@@ -56,7 +56,7 @@ public:
             outputs[i] = *inputs[i];
     }
 
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         for (size_t i = 0; i < inputs.size(); i++)
             outputs[i] = *inputs[i];

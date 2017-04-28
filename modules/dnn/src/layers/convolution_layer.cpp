@@ -43,7 +43,6 @@
 #include "layers_common.hpp"
 #include "op_im2col.hpp"
 #include "op_blas.hpp"
-#include <opencv2/dnn/shape_utils.hpp>
 #include <iostream>
 
 namespace cv
@@ -56,13 +55,6 @@ class BaseConvolutionLayerImpl : public ConvolutionLayer
 public:
     BaseConvolutionLayerImpl()
     {
-        numOutput = -1;
-        group = -1;
-        inpH = inpW = inpCn = 0;
-        outH = outW = outCn = 0;
-        inpGroupCn = outGroupCn = 0;
-        ksize = 0;
-        bias = false;
 #ifdef HAVE_LAPACK
         int nthreads = cv::getThreadNum();
         if (getBlasThreads() != nthreads)
@@ -71,11 +63,12 @@ public:
         }
 #endif
     }
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    void finalize(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
     {
         CV_Assert(inputs.size() > 0);
 
-        init();
+        CV_Assert(blobs.size() >= 1 && blobs.size() <= 2);
+        CV_Assert(blobs[0].dims == 4 && blobs[0].size[3] == kernel.width && blobs[0].size[2] == kernel.height);
 
         const Mat &input = *inputs[0];
         CV_Assert(input.dims == 4 && (input.type() == CV_32F || input.type() == CV_64F));
@@ -86,103 +79,104 @@ public:
             CV_Assert(inputs[i]->size[2] == input.size[2] && inputs[i]->size[3] == input.size[3]);
         }
 
-        computeInpOutShape(input);
-
-        if (bias)
-        {
-            biasOnesBlob.create(1, outH * outW, input.type());
-            biasOnesBlob.setTo(1);
-        }
-
-        outputs.resize(inputs.size());
-        for (size_t i = 0; i < inputs.size(); i++)
-        {
-            int sz[] = { inputs[i]->size[0], outCn, outH, outW };
-            outputs[i].create(4, sz, input.type());
-        }
-
-        if (!is1x1())
-        {
-            colRowBlob.create((int)colRowBlobShape.size(), &colRowBlobShape[0], input.type());
-            colRowBlob.setTo(0);
-        }
+        Size outSize = Size(outputs[0].size[3], outputs[0].size[2]);
+        getConvPoolPaddings(Size(input.size[3], input.size[2]), outSize,
+                kernel, stride, padMode, pad);
     }
 
-    void init()
+    bool hasBias() const
     {
-        CV_Assert(blobs.size() >= 1 && blobs.size() <= 2);
-        CV_Assert(blobs[0].dims == 4 && blobs[0].size[3] == kernel.width && blobs[0].size[2] == kernel.height);
-
-        bias = (blobs.size() >= 2);
+        return blobs.size() >= 2;
     }
-    virtual void computeInpOutShape(const Mat &inpBlob) = 0;
+
+    virtual MatShape computeColRowShape(const MatShape &inpShape, const MatShape &outShape) const = 0;
     bool is1x1() const
     {
         return (kernel.height == 1 && kernel.width == 1) &&
         (stride.height == 1 && stride.width == 1) &&
         (dilation.height == 1 && dilation.width == 1);
     }
-
-    int numOutput, group;
-    int inpH, inpW, inpCn;
-    int outH, outW, outCn;
-    int inpGroupCn, outGroupCn;
-    int ksize;
-    std::vector<int> colRowBlobShape;
-
-    bool bias;
-    Mat colRowBlob, biasOnesBlob;
 };
 
 //TODO: simultaneously convolution and bias addition for cache optimization
 class ConvolutionLayerImpl : public BaseConvolutionLayerImpl
 {
 public:
-    void computeInpOutShape(const Mat &input)
+    MatShape computeColRowShape(const MatShape &inpShape, const MatShape &outShape) const
     {
-        CV_Assert(!bias || blobs[1].total() == (size_t)blobs[0].size[0]);
+        Size out(outShape[3], outShape[2]);
+        int inpGroupCn = blobs[0].size[1];
+        int ksize = inpGroupCn * kernel.height * kernel.width;
+        return shape(out.area(), ksize);
+    }
 
-        numOutput = blobs[0].size[0];
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
+    {
+        CV_Assert(blobs.size() != 0);
+        CV_Assert(!hasBias() || blobs[1].total() == (size_t)blobs[0].size[0]);
+        CV_Assert(inputs.size() != 0);
 
-        inpH = input.size[2];
-        inpW = input.size[3];
-        inpCn = input.size[1];
-        outCn = numOutput;
+        internals.clear();
+
+        int inpCn = inputs[0][1];
+        int inpH = inputs[0][2];
+        int inpW = inputs[0][3];
+
+        int outCn = blobs[0].size[0];
+        Size out;
 
         if (padMode.empty())
         {
-            outH = (inpH + 2 * pad.height - (dilation.height * (kernel.height - 1) + 1)) / stride.height + 1;
-            outW = (inpW + 2 * pad.width - (dilation.width * (kernel.width - 1) + 1)) / stride.width + 1;
+            out.height = (inpH + 2 * pad.height - (dilation.height * (kernel.height - 1) + 1)) / stride.height + 1;
+            out.width = (inpW + 2 * pad.width - (dilation.width * (kernel.width - 1) + 1)) / stride.width + 1;
         }
         else
         {
-            getConvPoolOutParams(inpH, inpW, kernel, stride, pad, padMode, outH, outW);
+            getConvPoolOutParams(Size(inpH, inpW), kernel, stride, padMode, out);
         }
 
-        group = inpCn / blobs[0].size[1];
+        int group = inpCn / blobs[0].size[1];
 
         CV_Assert(inpCn % group == 0 && outCn % group == 0);
-        CV_Assert(blobs[0].size[0] == outCn && blobs[0].size[1] == inpCn / group);
+        CV_Assert(blobs[0].size[0] == outCn);
 
-        outGroupCn = outCn / group;
-        inpGroupCn = inpCn / group;
-        ksize = inpGroupCn * kernel.height * kernel.width;
+        int dims[] = {inputs[0][0], outCn, out.height, out.width};
+        outputs.resize(inputs.size(), shape(dims));
 
-        colRowBlobShape.clear();
-        colRowBlobShape.push_back(outH*outW);
-        colRowBlobShape.push_back(ksize);
+        internals.push_back(MatShape());
+        if (!is1x1())
+            internals[0] = computeColRowShape(inputs[0], outputs[0]);
+
+        if (hasBias())
+            internals.push_back(shape(1, out.area()));
+
+        return false;
     }
 
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         CV_Assert(inputs.size() > 0);
 
+        internals[0].setTo(0);
+
+        if (hasBias())
+            internals[1].setTo(1);
+
+        int outCn = blobs[0].size[0];
+        int inpCn = inputs[0]->size[1];
+        int inpGroupCn = blobs[0].size[1];
+
         Mat weightsMat = blobs[0].reshape(1, outCn);
-        Mat biasesMat  = bias ? blobs[1].reshape(1, outCn) : Mat();
+        Mat biasesMat  = hasBias() ? blobs[1].reshape(1, outCn) : Mat();
 
         for (size_t ii = 0; ii < outputs.size(); ii++)
         {
             int numImg = inputs[ii]->size[0];
+            int group = inpCn / blobs[0].size[1];
+            int outGroupCn = outCn / group;
             Mat inpMat = *inputs[ii];
             Mat outMat = outputs[ii].reshape(1, numImg*group*outGroupCn);
 
@@ -192,7 +186,7 @@ public:
                 {
                     Mat curInp = slice(inpMat, n, _Range(g * inpGroupCn, inpGroupCn));
 
-                    im2row(curInp, colRowBlob);
+                    im2row(curInp, internals[0], shape(inpMat), shape(outputs[ii]));
 
                     _Range kerRange(g * outGroupCn, outGroupCn);
                     Mat kerMat = weightsMat.rowRange(kerRange);
@@ -200,19 +194,25 @@ public:
                     _Range outRange((g + n * group) * outGroupCn, outGroupCn);
                     Mat dstMat = outMat.rowRange(outRange);
 
-                    dnn::gemm(kerMat, colRowBlob, 1, dstMat, 0, GEMM_2_T);
+                    dnn::gemm(kerMat, internals[0], 1, dstMat, 0, GEMM_2_T);
 
-                    if (bias)
+                    if (hasBias())
                     {
-                        dnn::gemm(biasesMat.rowRange(kerRange), biasOnesBlob, 1, dstMat, 1);
+                        dnn::gemm(biasesMat.rowRange(kerRange), internals[1], 1, dstMat, 1);
                     }
                 }
             }
         }
     }
 
-    void im2row(const  Mat &srcImg, Mat &dstRow)
+    void im2row(const  Mat &srcImg, Mat &dstRow, const MatShape& inShape, const MatShape& outShape)
     {
+        int inpH = inShape[2];
+        int inpW = inShape[3];
+        int outH = outShape[2], outW = outShape[3];
+        int inpGroupCn = blobs[0].size[1];
+        int ksize = inpGroupCn * kernel.height * kernel.width;
+
         if (is1x1())
         {
             transpose(srcImg.reshape(1, ksize), dstRow);
@@ -229,52 +229,71 @@ public:
 class DeConvolutionLayerImpl : public BaseConvolutionLayerImpl
 {
 public:
-    void computeInpOutShape(const Mat &inpBlob)
+    MatShape computeColRowShape(const MatShape &inpShape, const MatShape &outShape) const
     {
-        CV_Assert(!bias || blobs[1].total() == (size_t)blobs[0].size[0]);
+        int inpCn = inpShape[1];
+        int inpH = inpShape[2];
+        int inpW = inpShape[3];
+        int outCn = outShape[1];
+        int group = inpCn / blobs[0].size[1];
+        int outGroupCn = outCn / group;
+        int ksize = outGroupCn * kernel.height * kernel.width;
+        return shape(ksize, inpH * inpW);
+    }
 
-        numOutput = blobs[0].size[0];
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
+    {
+        CV_Assert(!hasBias() || blobs[1].total() == (size_t)blobs[0].size[0]);
+        CV_Assert(inputs.size() != 0);
 
-        inpH = inpBlob.size[2];
-        inpW = inpBlob.size[3];
-        inpCn = inpBlob.size[1];
+        int inpCn = inputs[0][1];
+        int inpH = inputs[0][2];
+        int inpW = inputs[0][3];
 
-        outH = stride.height * (inpH - 1) + kernel.height - 2 * pad.height + adjustPad.height;
-        outW = stride.width * (inpW - 1) + kernel.width - 2 * pad.width + adjustPad.width;
-        outCn = numOutput;
+        int outH = stride.height * (inpH - 1) + kernel.height - 2 * pad.height + adjustPad.height;
+        int outW = stride.width * (inpW - 1) + kernel.width - 2 * pad.width + adjustPad.width;
+        int outCn = blobs[0].size[0];
 
-        group = inpCn / blobs[0].size[1];
-        outGroupCn = outCn / group;
-        inpGroupCn = inpCn / group;
-        ksize = outGroupCn * kernel.height * kernel.width;
+        int group = inpCn / blobs[0].size[1];
 
         CV_Assert(inpCn % group == 0 && outCn % group == 0);
         CV_Assert(blobs[0].size[0] == outCn && blobs[0].size[1] == inpCn / group);
 
-        colRowBlobShape.clear();
-        colRowBlobShape.push_back(ksize);
-        colRowBlobShape.push_back(inpH * inpW);
+        int dims[] = {inputs[0][0], outCn, outH, outW};
+        outputs.resize(inputs.size(), shape(dims));
 
-        ofsbuf.resize(ksize*3);
-        for( int k = 0; k < ksize; k++ )
-        {
-            int w_offset = k % kernel.width;
-            int h_offset = (k / kernel.width) % kernel.height;
-            int c_im = k / kernel.height / kernel.width;
-            ofsbuf[k*3] = w_offset;
-            ofsbuf[k*3+1] = h_offset;
-            ofsbuf[k*3+2] = c_im;
-        }
+        internals.push_back(MatShape());
+        if (!is1x1())
+            internals[0] = computeColRowShape(inputs[0], outputs[0]);
+
+        if (hasBias())
+            internals.push_back(shape(1, outH*outW));
+
+        return false;
     }
 
-    void forward(std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
+
+    void forward(std::vector<Mat *> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
+        internals[0].setTo(0);
+        if (hasBias())
+            internals[1].setTo(1);
+
+        int outCn = blobs[0].size[0];
+        int inpCn = inputs[0]->size[1];
         Mat weightsMat = blobs[0].reshape(1, inpCn);
-        Mat biasesMat  = bias ? blobs[1].reshape(1, outCn) : Mat();
+        Mat biasesMat  = hasBias() ? blobs[1].reshape(1, outCn) : Mat();
 
         for (size_t ii = 0; ii < outputs.size(); ii++)
         {
+            int group = inpCn / blobs[0].size[1];
+            int inpGroupCn = blobs[0].size[1];
+            int outGroupCn = outCn / group;
             int numImg = inputs[ii]->size[0];
+
             Mat convBlob = inputs[ii]->reshape(1, numImg*inpCn);
             Mat decnBlob = outputs[ii].reshape(1, numImg*outCn);
 
@@ -283,7 +302,7 @@ public:
                 for (int g = 0; g < group; g++)
                 {
                     Mat dstMat = decnBlob.rowRange(_Range((g + n * group) * outGroupCn, outGroupCn));
-                    Mat &colMat = (is1x1()) ? dstMat : colRowBlob;
+                    Mat &colMat = (is1x1()) ? dstMat : internals[0];
 
                     Mat convMat = convBlob.rowRange(_Range((g + n * group) * inpGroupCn, inpGroupCn));
                     Mat wghtMat = weightsMat.rowRange(_Range(g * inpGroupCn, inpGroupCn));
@@ -291,20 +310,25 @@ public:
                     dnn::gemm(wghtMat, convMat, 1, colMat, 0, GEMM_1_T);
 
                     if (!is1x1())
-                        col2im(colMat, dstMat);
+                        col2im(colMat, dstMat, shape(*inputs[ii]), shape(outputs[ii]));
 
-                    if (bias)
+                    if (hasBias())
                     {
                         Mat curBiasMat = biasesMat.rowRange(_Range(g * outGroupCn, outGroupCn));
-                        dnn::gemm(curBiasMat, biasOnesBlob, 1, dstMat, 1);
+                        dnn::gemm(curBiasMat, internals[1], 1, dstMat, 1);
                     }
                 }
             }
         }
     }
 
-    void col2im(const Mat &colMat, Mat &dstImg)
+    void col2im(const Mat &colMat, Mat &dstImg, const MatShape& inShape, const MatShape& outShape)
     {
+        int outCn = outShape[1], outH = outShape[2], outW = outShape[3];
+        int inpCn = inShape[1];
+        int group = inpCn / blobs[0].size[1];
+        int outGroupCn = outCn / group;
+
         if (is1x1())
         {
             dstImg = colMat;

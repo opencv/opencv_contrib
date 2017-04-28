@@ -27,20 +27,10 @@ public:
         hasBias = params.get<bool>("bias_term", false);
     }
 
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         CV_Assert(blobs.size() == 1 + hasBias);
 
-        outputs.resize(inputs.size());
-        for (size_t i = 0; i < inputs.size(); i++)
-        {
-            const Mat& inp = *inputs[i];
-            outputs[i].create(inp.dims, inp.size.p, inp.type());
-        }
-    }
-
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
-    {
         for (size_t ii = 0; ii < outputs.size(); ii++)
         {
             Mat &inpBlob = *inputs[ii];

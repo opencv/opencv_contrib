@@ -48,10 +48,10 @@ namespace cv
 namespace dnn
 {
 
-static void computeShapeByReshapeMask(const std::vector<int> &srcShape,
-                                      const std::vector<int> &maskShape,
+static void computeShapeByReshapeMask(const MatShape &srcShape,
+                                      const MatShape &maskShape,
                                       Range srcRange /*= Range::all()*/,
-                                      std::vector<int>& dstShape)
+                                      MatShape& dstShape)
 {
     int srcShapeSize = (int)srcShape.size();
     int maskShapeSize = (int)maskShape.size();
@@ -61,7 +61,7 @@ static void computeShapeByReshapeMask(const std::vector<int> &srcShape,
     else
     {
         int sz = srcRange.size();
-        srcRange.start = srcRange.start < 0 ? srcRange.start + srcShapeSize : srcRange.start;
+        srcRange.start = clamp(srcRange.start, srcShapeSize);
         srcRange.end = srcRange.end == INT_MAX ? srcShapeSize : srcRange.start + sz;
     }
 
@@ -96,8 +96,8 @@ static void computeShapeByReshapeMask(const std::vector<int> &srcShape,
             CV_Error(Error::StsBadArg, "maskShape[i] >= -1");
     }
 
-    size_t srcTotal = shapeTotal(srcShape);
-    size_t dstTotal = shapeTotal(dstShape);
+    size_t srcTotal = total(srcShape);
+    size_t dstTotal = total(dstShape);
 
     if (inferDim != -1)
     {
@@ -116,7 +116,8 @@ static void computeShapeByReshapeMask(const std::vector<int> &srcShape,
 class ReshapeLayerImpl : public ReshapeLayer
 {
 public:
-    ReshapeLayerImpl(const LayerParams& params)
+    ReshapeLayerImpl(const LayerParams& params):
+        performReordering(false)
     {
         setParamsFrom(params);
         int axis = params.get<int>("axis", 0);
@@ -136,29 +137,40 @@ public:
         }
     }
 
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
     {
-        outputs.resize(inputs.size());
-        outShapes.resize(inputs.size());
+        outputs.clear();
 
         for (size_t i = 0; i < inputs.size(); i++)
         {
-            std::vector<int> inputShape(inputs[i]->size.p, inputs[i]->size.p + inputs[i]->dims);
-            computeShapeByReshapeMask(inputShape, newShapeDesc, newShapeRange, outShapes[i]);
-            outputs[i] = inputs[i]->reshape(1, outShapes[i]);
+            outputs.push_back(MatShape());
+            computeShapeByReshapeMask(inputs[i], newShapeDesc, newShapeRange, outputs.back());
         }
+
+        return true;
     }
 
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    void finalize(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
     {
-        for (size_t i = 0; i < outputs.size(); i++)
+        CV_Assert(inputs.size());
+        CV_Assert(outputs.size());
+        Mat srcBlob = *inputs[0];
+        int dims = srcBlob.dims;
+        MatShape inputShape = shape(srcBlob), outShape = shape(outputs[0]);
+        bool channelsReduced = dims > (int)outShape.size() ||
+                (dims == 4 && inputShape[1] > outShape[1]);
+        performReordering = enableReordering && dims == 4 && channelsReduced;
+    }
+
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
+    {
+        for (size_t i = 0; i < inputs.size(); i++)
         {
             Mat srcBlob = *inputs[i];
-            int dims = srcBlob.dims;
-            std::vector<int> inputShape(srcBlob.size.p, srcBlob.size.p + dims);
-            bool channelsReduced = dims > (int)outShapes[i].size() ||
-            (dims == 4 && inputShape[1] > outShapes[i][1]);
-            bool performReordering = enableReordering && dims == 4 && channelsReduced;
+            MatShape inputShape = shape(srcBlob), outShape = shape(outputs[i]);
 
             if (performReordering)
             {
@@ -185,16 +197,14 @@ public:
                     }
                 }
 
-                srcBlob = reordered_blob;
+                outputs[i] = reordered_blob.reshape(1, outShape);
             }
-
-            // TODO: we should not assign srcBlob if performReordering is true.
-            outputs[i] = srcBlob.reshape(1, outShapes[i]);
         }
     }
 
+private:
     std::vector<std::vector<int> > outShapes;
-    bool enableReordering;
+    bool enableReordering, performReordering;
 };
 
 Ptr<ReshapeLayer> ReshapeLayer::create(const LayerParams& params)

@@ -41,7 +41,6 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-
 namespace cv
 {
 namespace dnn
@@ -82,21 +81,26 @@ public:
         }
     }
 
-    void allocate(const std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
     {
-        CV_Assert(2 <= inputs.size());
+        CV_Assert(inputs.size() >= 2);
         CV_Assert(coeffs.size() == 0 || coeffs.size() == inputs.size());
         CV_Assert(op == SUM || coeffs.size() == 0);
 
-        for (size_t i = 1; i < inputs.size(); ++i)
+        for (int i = 1; i < inputs.size(); i++)
         {
-            CV_Assert(inputs[i]->size == inputs[0]->size);
+            CV_Assert(inputs[0] == inputs[i]);
         }
-        outputs.resize(1);
-        outputs[0].create(inputs[0]->dims, inputs[0]->size.p, inputs[0]->type());
+
+        outputs.assign(1, inputs[0]);
+
+        return false;
     }
 
-    void forward(std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
+    void forward(std::vector<Mat *> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         Mat& output = outputs[0];
         switch (op)

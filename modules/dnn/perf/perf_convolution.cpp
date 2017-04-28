@@ -1,4 +1,5 @@
 #include "perf_precomp.hpp"
+#include <opencv2/dnn/shape_utils.hpp>
 
 namespace cvtest
 {
@@ -21,14 +22,14 @@ CV_ENUM(GroupSize, GROUP_OFF, GROUP_2);
 //Squared Size
 #define SSZ(n) cv::Size(n, n)
 
-typedef std::pair<std::vector<int>, int> InpShapeNumOut;
+typedef std::pair<MatShape, int> InpShapeNumOut;
 typedef tuple<Size, InpShapeNumOut, GroupSize, StrideSize> ConvParam; //kernel_size, inp shape, groups, stride
 typedef TestBaseWithParam<ConvParam> ConvolutionPerfTest;
 
-static inline std::vector<int> blobShape(int count, int nplanes, int height, int width)
+static inline MatShape blobShape(int count, int nplanes, int height, int width)
 {
     int data[] = {count, nplanes, height, width};
-    return std::vector<int>(data, data+4);
+    return MatShape(data, data+4);
 }
 
 PERF_TEST_P( ConvolutionPerfTest, perf, Combine(
@@ -44,7 +45,7 @@ PERF_TEST_P( ConvolutionPerfTest, perf, Combine(
 
     ConvParam params = GetParam();
     int ksz     = get<0>(params).width;
-    std::vector<int> inpShape = get<1>(params).first;
+    MatShape inpShape = get<1>(params).first;
     int outCn   = get<1>(params).second;
     int groups  = get<2>(params);
     int stride  = (ksz >= 11) ? 4 : (int)get<3>(params);
@@ -69,12 +70,25 @@ PERF_TEST_P( ConvolutionPerfTest, perf, Combine(
     lp.blobs.push_back(biasBlob);
 
     std::vector<Mat*> inpBlobs(1, &inpBlob);
-    std::vector<Mat> outBlobs;
+    std::vector<Mat> outBlobs, internalBlobs;
 
     cv::setNumThreads(cv::getNumberOfCPUs());
 
     Ptr<Layer> layer = cv::dnn::LayerFactory::createLayerInstance("Convolution", lp);
-    layer->allocate(inpBlobs, outBlobs);
+    std::vector<MatShape> inputShapes(1, shape(inpBlob)), outShapes, internals;
+    layer->getMemoryShapes(inputShapes, 0, outShapes, internals);
+    for (int i = 0; i < outShapes.size(); i++)
+    {
+        outBlobs.push_back(Mat(outShapes[i], CV_32F));
+    }
+    for (int i = 0; i < internals.size(); i++)
+    {
+        internalBlobs.push_back(Mat());
+        if (total(internals[i]))
+            internalBlobs.back().create(internals[i], CV_32F);
+    }
+
+    layer->finalize(inpBlobs, outBlobs);
 
     Mat inpBlob2D = inpBlob.reshape(1, outCn);
     Mat wgtBlob2D = wgtBlob.reshape(1, outCn*(inpCn/groups));
@@ -83,7 +97,7 @@ PERF_TEST_P( ConvolutionPerfTest, perf, Combine(
 
     TEST_CYCLE_N(10)
     {
-        layer->forward(inpBlobs, outBlobs);
+        layer->forward(inpBlobs, outBlobs, internalBlobs);
     }
 
     SANITY_CHECK_NOTHING();

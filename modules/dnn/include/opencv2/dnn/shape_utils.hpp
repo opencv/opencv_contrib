@@ -55,22 +55,6 @@ inline std::ostream &operator<< (std::ostream &s, cv::Range &r)
     return s << "[" << r.start << ", " << r.end << ")";
 }
 
-//Reshaping
-//TODO: add -1 specifier for automatic size inferring
-
-/*template<typename Mat>
-void reshape(Mat &m, const BlobShape &shape)
-{
-    m = m.reshape(1, shape.dims(), shape.ptr());
-}
-
-template<typename Mat>
-Mat reshaped(const Mat &m, const BlobShape &shape)
-{
-    return m.reshape(1, shape.dims(), shape.ptr());
-}*/
-
-
 //Slicing
 
 struct _Range : public cv::Range
@@ -139,12 +123,76 @@ static inline Mat getPlane(const Mat &m, int n, int cn)
     return m(range).reshape(1, m.dims-2, sz);
 }
 
-static inline size_t shapeTotal(const std::vector<int>& shape)
+static inline MatShape shape(const int* dims, const int n = 4)
 {
-    size_t i, n = shape.size(), p = 1;
-    for( i = 0; i < n; i++ ) p *= shape[i];
+    MatShape shape;
+    shape.assign(dims, dims + n);
+    return shape;
+}
 
-    return p;
+static inline MatShape shape(const MatSize& size)
+{
+    return shape((const int*)size, size.dims());
+}
+
+static inline MatShape shape(const Mat& mat)
+{
+    return shape(mat.size);
+}
+
+namespace {inline bool is_neg(int i) { return i < 0; }}
+
+static inline MatShape shape(int a0, int a1=-1, int a2=-1, int a3=-1)
+{
+    int dims[] = {a0, a1, a2, a3};
+    MatShape s = shape(dims);
+    s.erase(std::remove_if(s.begin(), s.end(), is_neg), s.end());
+    return s;
+}
+
+static inline int total(const MatShape& shape, int start = -1, int end = -1)
+{
+    if (start == -1) start = 0;
+    if (end == -1) end = shape.size();
+
+    if (shape.empty())
+        return 0;
+
+    int elems = 1;
+    CV_Assert(start < shape.size() && end <= shape.size() &&
+              start <= end);
+    for(int i = start; i < end; i++)
+    {
+        elems *= shape[i];
+    }
+    return elems;
+}
+
+static inline MatShape concat(const MatShape& a, const MatShape& b)
+{
+    MatShape c = a;
+    c.insert(c.end(), b.begin(), b.end());
+
+    return c;
+}
+
+inline void print(const MatShape& shape, const String& name = "")
+{
+    printf("%s: [", name.c_str());
+    size_t i, n = shape.size();
+    for( i = 0; i < n; i++ )
+        printf(" %d", shape[i]);
+    printf(" ]\n");
+}
+
+inline int clamp(int ax, int dims)
+{
+    return ax < 0 ? ax + dims : ax;
+}
+
+inline int clamp(int ax, const MatShape& shape)
+{
+    return clamp(ax, shape.size());
 }
 
 }

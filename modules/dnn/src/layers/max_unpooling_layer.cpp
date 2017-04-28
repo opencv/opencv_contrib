@@ -29,22 +29,25 @@ public:
         poolStride = Size(params.get<int>("pool_stride_w"), params.get<int>("pool_stride_h"));
     }
 
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
     {
         CV_Assert(inputs.size() == 2);
-        const Mat& inp0 = *inputs[0];
-        CV_Assert(inp0.total() == inputs[1]->total());
-        CV_Assert(inp0.dims == 4);
+        CV_Assert(total(inputs[0]) == total(inputs[1]));
 
-        int outShape[] = { inp0.size[0], inp0.size[1], inp0.size[2], inp0.size[3] };
+        MatShape outShape = inputs[0];
         outShape[2] = (outShape[2] - 1) * poolStride.height + poolKernel.height - 2 * poolPad.height;
         outShape[3] = (outShape[3] - 1) * poolStride.width + poolKernel.width - 2 * poolPad.width;
 
-        outputs.resize(1);
-        outputs[0].create(4, outShape, inp0.type());
+        outputs.clear();
+        outputs.push_back(outShape);
+
+        return false;
     }
 
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         CV_Assert(inputs.size() == 2);
         Mat& input = *inputs[0];

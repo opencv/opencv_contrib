@@ -192,7 +192,7 @@ public:
         }
     }
 
-    void blobShapeFromProto(const caffe::BlobProto &pbBlob, std::vector<int>& shape)
+    void blobShapeFromProto(const caffe::BlobProto &pbBlob, MatShape& shape)
     {
         shape.clear();
         if (pbBlob.has_num() || pbBlob.has_channels() || pbBlob.has_height() || pbBlob.has_width())
@@ -215,7 +215,7 @@ public:
 
     void blobFromProto(const caffe::BlobProto &pbBlob, cv::Mat &dstBlob)
     {
-        std::vector<int> shape;
+        MatShape shape;
         blobShapeFromProto(pbBlob, shape);
 
         dstBlob.create((int)shape.size(), &shape[0], CV_32F);
