@@ -184,6 +184,21 @@ TEST(Layer_Test_BatchNorm, Accuracy)
      testLayerUsingCaffeModels("layer_batch_norm", true);
 }
 
+TEST(Layer_Test_ReLU, Accuracy)
+{
+     testLayerUsingCaffeModels("layer_relu");
+}
+
+TEST(Layer_Test_Dropout, Accuracy)
+{
+     testLayerUsingCaffeModels("layer_dropout");
+}
+
+TEST(Layer_Test_Concat, Accuracy)
+{
+     testLayerUsingCaffeModels("layer_concat");
+}
+
 //template<typename XMat>
 //static void test_Layer_Concat()
 //{
