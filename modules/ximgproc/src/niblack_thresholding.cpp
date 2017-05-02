@@ -47,12 +47,15 @@ namespace cv {
 namespace ximgproc {
 
 void niBlackThreshold( InputArray _src, OutputArray _dst, double maxValue,
-        int type, int blockSize, double delta )
+        int type, int blockSize, double k, int binarizationMethod )
 {
     // Input grayscale image
     Mat src = _src.getMat();
     CV_Assert(src.channels() == 1);
     CV_Assert(blockSize % 2 == 1 && blockSize > 1);
+    if (binarizationMethod == BINARIZATION_SAUVOLA) {
+	CV_Assert(src.depth() == CV_8U);
+    }
     type &= THRESH_MASK;
 
     // Compute local threshold (T = mean + k * stddev)
@@ -61,13 +64,35 @@ void niBlackThreshold( InputArray _src, OutputArray _dst, double maxValue,
     Mat thresh;
     {
         // note that: Var[X] = E[X^2] - E[X]^2
-        Mat mean, sqmean, stddev;
+        Mat mean, sqmean, variance, stddev, sqrtVarianceMeanSum;
+        double srcMin, stddevMax;
         boxFilter(src, mean, CV_32F, Size(blockSize, blockSize),
                 Point(-1,-1), true, BORDER_REPLICATE);
         sqrBoxFilter(src, sqmean, CV_32F, Size(blockSize, blockSize),
                 Point(-1,-1), true, BORDER_REPLICATE);
-        sqrt(sqmean - mean.mul(mean), stddev);
-        thresh = mean + stddev * static_cast<float>(delta);
+        variance = sqmean - mean.mul(mean);
+        sqrt(variance, stddev);
+        switch (binarizationMethod)
+        {
+        case BINARIZATION_NIBLACK:
+		thresh = mean + stddev * static_cast<float>(k);
+		break;
+        case BINARIZATION_SAUVOLA:
+		thresh = mean.mul(1. + static_cast<float>(k) * (stddev / 128.0 - 1.));
+		break;
+        case BINARIZATION_WOLF:
+		minMaxIdx(src, &srcMin);
+		minMaxIdx(stddev, NULL, &stddevMax);
+		thresh = mean - static_cast<float>(k) * (mean - srcMin - stddev.mul(mean - srcMin) / stddevMax);
+		break;
+        case BINARIZATION_NICK:
+		sqrt(variance + sqmean, sqrtVarianceMeanSum);
+		thresh = mean + static_cast<float>(k) * sqrtVarianceMeanSum;
+		break;
+        default:
+		CV_Error( CV_StsBadArg, "Unknown binarization method" );
+		break;
+        }
         thresh.convertTo(thresh, src.depth());
     }
 
