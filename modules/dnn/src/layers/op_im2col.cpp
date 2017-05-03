@@ -203,7 +203,7 @@ public:
             }
             else
             {
-                memset(data_col_, 0, kw*kh*channels*sizeof(data_col_[0]));
+                memset(data_col_ + out_row_offset, 0, kh*kw*channels*sizeof(data_col_[0]));
                 for(int i_c = 0; i_c < channels; i_c++)
                 {
                     int channels_offset = i_c * width * height;
