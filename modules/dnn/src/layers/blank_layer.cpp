@@ -47,7 +47,10 @@ namespace dnn
 class BlankLayerImpl : public BlankLayer
 {
 public:
-    BlankLayerImpl(const LayerParams&) {}
+    BlankLayerImpl(const LayerParams& params)
+    {
+        setParamsFrom(params);
+    }
 
     void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
     {
