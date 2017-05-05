@@ -178,7 +178,7 @@ TEST(Torch_Importer, ENet_accuracy)
     // Due to numerical instability in Pooling-Unpooling layers (indexes jittering)
     // thresholds for ENet must be changed. Accuracy of resuults was checked on
     // Cityscapes dataset and difference in mIOU with Torch is 10E-4%
-    normAssert(ref, out, "", 0.0003, 0.4);
+    normAssert(ref, out, "", 0.00044, 0.44);
 }
 
 }
