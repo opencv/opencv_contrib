@@ -30,7 +30,7 @@ The aruco module allows the use of Boards. The main class is the ```cv::aruco::B
     class  Board {
     public:
         std::vector<std::vector<cv::Point3f> > objPoints;
-        cv::aruco::Dictionary dictionary;
+        cv::Ptr<cv::aruco::Dictionary> dictionary;
         std::vector<int> ids;
     };
 ```
@@ -57,10 +57,10 @@ The aruco module provides a specific function, ```estimatePoseBoard()```, to per
     cv::Mat cameraMatrix, distCoeffs;
     readCameraParameters(cameraMatrix, distCoeffs);
     // assume we have a function to create the board object
-    cv::aruco::Board board = createBoard();
+    cv::Ptr<cv::aruco::Board> board = cv::aruco::Board::create();
     ...
-    vector< int > markerIds;
-    vector< vector<Point2f> > markerCorners;
+    std::vector<int> markerIds;
+    std::vector<std::vector<cv::Point2f>> markerCorners;
     cv::aruco::detectMarkers(inputImage, board.dictionary, markerCorners, markerIds);
     // if at least one marker detected
     if(markerIds.size() > 0) {
@@ -137,9 +137,9 @@ After creating a Grid Board, we probably want to print it and use it. A function
 of a ```GridBoard``` is provided in ```cv::aruco::GridBoard::draw()```. For example:
 
 ``` c++
-    cv::aruco::GridBoard board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, dictionary);
+    cv::Ptr<cv::aruco::GridBoard> board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, dictionary);
     cv::Mat boardImage;
-    board.draw( cv::Size(600, 500), boardImage, 10, 1 );
+    board->draw( cv::Size(600, 500), boardImage, 10, 1 );
 ```
 
 - The first parameter is the size of the output image in pixels. In this case 600x500 pixels. If this is not proportional
@@ -170,8 +170,8 @@ Finally, a full example of board detection:
     // camera parameters are read from somewhere
     readCameraParameters(cameraMatrix, distCoeffs);
 
-    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-    cv::aruco::GridBoard board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, dictionary);
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::Ptr<cv::aruco::GridBoard> board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, dictionary);
 
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
@@ -256,10 +256,10 @@ internal bits are not analyzed at all and only the corner distances are evaluate
 This is an example of using the  ```refineDetectedMarkers()``` function:
 
 ``` c++
-    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-    cv::aruco::GridBoard board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, dictionary);
-    vector< int > markerIds;
-    vector< vector<Point2f> > markerCorners, rejectedCandidates;
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::Ptr<cv::aruco::GridBoard> board = cv::aruco::GridBoard::create(5, 7, 0.04, 0.01, dictionary);
+    std::vector<int> markerIds;
+    std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
     cv::aruco::detectMarkers(inputImage, dictionary, markerCorners, markerIds, cv::aruco::DetectorParameters(), rejectedCandidates);
 
     cv::aruco::refineDetectedMarkersinputImage, board, markerCorners, markerIds, rejectedCandidates);
