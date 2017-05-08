@@ -29,7 +29,7 @@ The aruco module provides the ```cv::aruco::CharucoBoard``` class that represent
 This class, as the rest of ChArUco functionalities, are defined in:
 
 ``` c++
-    \#include <opencv2/aruco/charuco.hpp>
+    #include <opencv2/aruco/charuco.hpp>
 ```
 
 To define a ```CharucoBoard```, it is necesary:
