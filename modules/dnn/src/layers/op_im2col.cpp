@@ -153,12 +153,7 @@ public:
         t.width_col = width_col;
         t.channels_col = channels * kernel_h * kernel_w;
 
-        int total = t.height_col*t.width_col;
-#if 1
-        t(Range(0, total));
-#else
-        cv::parallel_for_(Range(0, total), t, 16);
-#endif
+        cv::parallel_for_(Range(0, t.height_col*t.width_col), t, 16);
     }
 
     virtual void operator ()(const Range &r) const
@@ -203,7 +198,6 @@ public:
             }
             else
             {
-                memset(data_col_, 0, kw*kh*channels*sizeof(data_col_[0]));
                 for(int i_c = 0; i_c < channels; i_c++)
                 {
                     int channels_offset = i_c * width * height;
@@ -242,7 +236,6 @@ void im2row(const float* data_im, int channels, int height, int width,
 }
 
 
-#if 0
 template <typename Dtype>
 class col2im_CpuPBody : public cv::ParallelLoopBody
 {
@@ -312,7 +305,6 @@ public:
         }
     }
 };
-#endif
 
 //single-threaded version
 template <typename Dtype>
@@ -360,9 +352,15 @@ void col2im(const float* data_col, int channels, int height, int width,
             int stride_h, int stride_w, int dilation_h, int dilation_w,
             float* data_im, const int* ofsbuf)
 {
-    //col2im_CpuPBody<float>::run(data_col, channels, height, width, kernel_h, kernel_w, pad_h, pad_w, stride_h, stride_w, data_im);
+    (void)dilation_h;
+    (void)dilation_w;
+    (void)ofsbuf;
+    col2im_CpuPBody<float>::run(data_col, channels, height, width, kernel_h,
+                                kernel_w, pad_h, pad_w, stride_h, stride_w, data_im);
+#if 0
     col2im_cpu(data_col, channels, height, width, kernel_h, kernel_w, pad_h, pad_w,
                stride_h, stride_w, dilation_h, dilation_w, data_im, ofsbuf);
+#endif
 }
 
 }

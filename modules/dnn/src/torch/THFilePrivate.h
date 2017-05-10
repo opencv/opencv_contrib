@@ -20,7 +20,7 @@ struct THFileVTable
     long (*readChar)(THFile *self, char *data, long n);
     long (*readShort)(THFile *self, short *data, long n);
     long (*readInt)(THFile *self, int *data, long n);
-    long (*readLong)(THFile *self, long *data, long n);
+    long (*readLong)(THFile *self, int64 *data, long n);
     long (*readFloat)(THFile *self, float *data, long n);
     long (*readDouble)(THFile *self, double *data, long n);
     long (*readString)(THFile *self, const char *format, char **str_);
@@ -29,7 +29,7 @@ struct THFileVTable
     long (*writeChar)(THFile *self, char *data, long n);
     long (*writeShort)(THFile *self, short *data, long n);
     long (*writeInt)(THFile *self, int *data, long n);
-    long (*writeLong)(THFile *self, long *data, long n);
+    long (*writeLong)(THFile *self, int64 *data, long n);
     long (*writeFloat)(THFile *self, float *data, long n);
     long (*writeDouble)(THFile *self, double *data, long n);
     long (*writeString)(THFile *self, const char *str, long size);

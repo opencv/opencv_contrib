@@ -253,10 +253,10 @@ struct TorchImporter : public ::cv::dnn::Importer
         case CV_USRTYPE1:
         {
             double *buf = storageMat.ptr<double>();
-            THFile_readLongRaw(file, (long*)buf, size);
+            THFile_readLongRaw(file, (int64*)buf, size);
 
             for (size_t i = (size_t)size; i-- > 0; )
-                buf[i] = ((long*)buf)[i];
+                buf[i] = ((int64*)buf)[i];
         }
             break;
         default:
@@ -352,8 +352,8 @@ struct TorchImporter : public ::cv::dnn::Importer
     void readTorchTensor(int indexTensor, int typeTensor)
     {
         int ndims = readInt();
-        AutoBuffer<long, 4> sizes(ndims);
-        AutoBuffer<long, 4> steps(ndims);
+        AutoBuffer<int64, 4> sizes(ndims);
+        AutoBuffer<int64, 4> steps(ndims);
         THFile_readLongRaw(file, sizes, ndims);
         THFile_readLongRaw(file, steps, ndims);
         long offset = readLong() - 1;

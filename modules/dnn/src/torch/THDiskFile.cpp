@@ -13,6 +13,7 @@ typedef struct THDiskFile__
     FILE *handle;
     char *name;
     int isNativeEncoding;
+    int longSize;
 
 } THDiskFile;
 
@@ -172,9 +173,17 @@ static void THDiskFile_seek(THFile *self, long position)
   THDiskFile *dfself = (THDiskFile*)(self);
 
   THArgCheck(dfself->handle != NULL, 1, "attempt to use a closed file");
-  THArgCheck(position >= 0, 2, "position must be positive");
 
-  if(fseek(dfself->handle, position, SEEK_SET) < 0)
+#if defined(_WIN64)
+  THArgCheck(position <= (_int64)INT64_MAX, 2, "position must be smaller than INT64_MAX");
+  if(_fseeki64(dfself->handle, (__int64)position, SEEK_SET) < 0)
+#elif defined(_WIN32)
+  THArgCheck(position <= (long)LONG_MAX, 2, "position must be smaller than LONG_MAX");
+  if(fseek(dfself->handle, (long)position, SEEK_SET) < 0)
+#else
+  THArgCheck(position <= (long)LLONG_MAX, 2, "position must be smaller than LLONG_MAX");
+  if(fseeko(dfself->handle, (off_t)position, SEEK_SET) < 0)
+#endif
   {
     dfself->file.hasError = 1;
     if(!dfself->file.isQuiet)
@@ -188,7 +197,13 @@ static void THDiskFile_seekEnd(THFile *self)
 
   THArgCheck(dfself->handle != NULL, 1, "attempt to use a closed file");
 
+#if defined(_WIN64)
+  if(_fseeki64(dfself->handle, 0L, SEEK_END) < 0)
+#elif defined(_WIN32)
   if(fseek(dfself->handle, 0L, SEEK_END) < 0)
+#else
+  if(fseeko(dfself->handle, 0L, SEEK_END) < 0)
+#endif
   {
     dfself->file.hasError = 1;
     if(!dfself->file.isQuiet)
@@ -200,7 +215,20 @@ static long THDiskFile_position(THFile *self)
 {
   THDiskFile *dfself = (THDiskFile*)(self);
   THArgCheck(dfself->handle != NULL, 1, "attempt to use a closed file");
-  return ftell(dfself->handle);
+
+#if defined(_WIN64)
+  __int64 offset = _ftelli64(dfself->handle);
+#elif defined(_WIN32)
+  long offset = ftell(dfself->handle);
+#else
+  off_t offset = ftello(dfself->handle);
+#endif
+  if (offset > -1)
+      return (long)offset;
+  else if(!dfself->file.isQuiet)
+      THError("unable to obtain disk file offset (maybe a long overflow occurred)");
+
+  return 0;
 }
 
 static void THDiskFile_close(THFile *self)
@@ -274,6 +302,23 @@ void THDiskFile_bigEndianEncoding(THFile *self)
 
 /* End of Little and Big Endian Stuff */
 
+void THDiskFile_longSize(THFile *self, int size)
+{
+  THDiskFile *dfself = (THDiskFile*)(self);
+  THArgCheck(dfself->handle != NULL, 1, "attempt to use a closed file");
+  THArgCheck(size == 0 || size == 4 || size == 8, 1, "Invalid long size specified");
+  dfself->longSize = size;
+}
+
+void THDiskFile_noBuffer(THFile *self)
+{
+  THDiskFile *dfself = (THDiskFile*)(self);
+  THArgCheck(dfself->handle != NULL, 1, "attempt to use a closed file");
+  if (setvbuf(dfself->handle, NULL, _IONBF, 0)) {
+    THError("error: cannot disable buffer");
+  }
+}
+
 static void THDiskFile_free(THFile *self)
 {
   THDiskFile *dfself = (THDiskFile*)(self);
@@ -302,12 +347,12 @@ READ_WRITE_METHODS(short, Short,
                    int ret = fprintf(dfself->handle, "%hd", data[i]); if(ret <= 0) break; else nwrite++)
 
 READ_WRITE_METHODS(int, Int,
-                   int ret = fscanf(dfself->handle, "%d", &data[i]); if(ret <= 0) break; else nread++,
+                   int ret = fscanf(dfself->handle, "%d\n\r", &data[i]); if(ret <= 0) break; else nread++,
                    int ret = fprintf(dfself->handle, "%d", data[i]); if(ret <= 0) break; else nwrite++)
 
-READ_WRITE_METHODS(long, Long,
+/*READ_WRITE_METHODS(long, Long,
                    int ret = fscanf(dfself->handle, "%ld", &data[i]); if(ret <= 0) break; else nread++,
-                   int ret = fprintf(dfself->handle, "%ld", data[i]); if(ret <= 0) break; else nwrite++)
+                   int ret = fprintf(dfself->handle, "%ld", data[i]); if(ret <= 0) break; else nwrite++)*/
 
 READ_WRITE_METHODS(float, Float,
                    int ret = fscanf(dfself->handle, "%g", &data[i]); if(ret <= 0) break; else nread++,
@@ -316,6 +361,146 @@ READ_WRITE_METHODS(float, Float,
 READ_WRITE_METHODS(double, Double,
                    int ret = fscanf(dfself->handle, "%lg", &data[i]); if(ret <= 0) break; else nread++,
                    int ret = fprintf(dfself->handle, "%.17g", data[i]); if(ret <= 0) break; else nwrite++)
+
+
+/* For Long we need to rewrite everything, because of the special management of longSize */
+static long THDiskFile_readLong(THFile *self, int64 *data, long n)
+{
+  THDiskFile *dfself = (THDiskFile*)(self);
+  long nread = 0L;
+
+  THArgCheck(dfself->handle != NULL, 1, "attempt to use a closed file");
+  THArgCheck(dfself->file.isReadable, 1, "attempt to read in a write-only file");
+
+  if(dfself->file.isBinary)
+  {
+    if(dfself->longSize == 0 || dfself->longSize == sizeof(int64))
+    {
+      nread = fread__(data, sizeof(int64), n, dfself->handle);
+      if(!dfself->isNativeEncoding && (sizeof(int64) > 1) && (nread > 0))
+        THDiskFile_reverseMemory(data, data, sizeof(int64), nread);
+    } else if(dfself->longSize == 4)
+    {
+      nread = fread__(data, 4, n, dfself->handle);
+      if(!dfself->isNativeEncoding && (nread > 0))
+        THDiskFile_reverseMemory(data, data, 4, nread);
+      long i;
+      for(i = nread; i > 0; i--)
+        data[i-1] = ((int *)data)[i-1];
+    }
+    else /* if(dfself->longSize == 8) */
+    {
+      int big_endian = !THDiskFile_isLittleEndianCPU();
+      int32_t *buffer = (int32_t*)THAlloc(8*n);
+      nread = fread__(buffer, 8, n, dfself->handle);
+      long i;
+      for(i = nread; i > 0; i--)
+        data[i-1] = buffer[2*(i-1) + big_endian];
+      THFree(buffer);
+      if(!dfself->isNativeEncoding && (nread > 0))
+        THDiskFile_reverseMemory(data, data, 4, nread);
+     }
+  }
+  else
+  {
+    long i;
+    for(i = 0; i < n; i++)
+    {
+      long d;
+      int ret = fscanf(dfself->handle, "%ld", &d); if(ret <= 0) break; else nread++;
+      data[i] = d;
+    }
+    if(dfself->file.isAutoSpacing && (n > 0))
+    {
+      int c = fgetc(dfself->handle);
+      if( (c != '\n') && (c != EOF) )
+        ungetc(c, dfself->handle);
+    }
+  }
+
+  if(nread != n)
+  {
+    dfself->file.hasError = 1; /* shouldn't we put hasError to 0 all the time ? */
+    if(!dfself->file.isQuiet)
+      THError("read error: read %d blocks instead of %d", nread, n);
+  }
+
+  return nread;
+}
+
+static long THDiskFile_writeLong(THFile *self, int64 *data, long n)
+{
+  THDiskFile *dfself = (THDiskFile*)(self);
+  long nwrite = 0L;
+
+  THArgCheck(dfself->handle != NULL, 1, "attempt to use a closed file");
+  THArgCheck(dfself->file.isWritable, 1, "attempt to write in a read-only file");
+
+  if(dfself->file.isBinary)
+  {
+    if(dfself->longSize == 0 || dfself->longSize == sizeof(long))
+    {
+      if(dfself->isNativeEncoding)
+      {
+        nwrite = fwrite(data, sizeof(long), n, dfself->handle);
+      }
+      else
+      {
+        char *buffer = (char*)THAlloc(sizeof(long)*n);
+        THDiskFile_reverseMemory(buffer, data, sizeof(long), n);
+        nwrite = fwrite(buffer, sizeof(long), n, dfself->handle);
+        THFree(buffer);
+      }
+    } else if(dfself->longSize == 4)
+    {
+      int32_t *buffer = (int32_t *)THAlloc(4*n);
+      long i;
+      for(i = 0; i < n; i++)
+        buffer[i] = data[i];
+      if(!dfself->isNativeEncoding)
+        THDiskFile_reverseMemory(buffer, buffer, 4, n);
+      nwrite = fwrite(buffer, 4, n, dfself->handle);
+      THFree(buffer);
+    }
+    else /* if(dfself->longSize == 8) */
+    {
+      int big_endian = !THDiskFile_isLittleEndianCPU();
+      int32_t *buffer = (int32_t*)THAlloc(8*n);
+      long i;
+      for(i = 0; i < n; i++)
+      {
+        buffer[2*i + !big_endian] = 0;
+        buffer[2*i + big_endian] = data[i];
+      }
+      if(!dfself->isNativeEncoding)
+        THDiskFile_reverseMemory(buffer, buffer, 8, n);
+      nwrite = fwrite(buffer, 8, n, dfself->handle);
+      THFree(buffer);
+    }
+  }
+  else
+  {
+    long i;
+    for(i = 0; i < n; i++)
+    {
+      long res = 0;
+      int ret = fprintf(dfself->handle, "%ld", res); data[i] = res; if(ret <= 0) break; else nwrite++;
+      if( dfself->file.isAutoSpacing && (i < n-1) )
+        fprintf(dfself->handle, " ");
+    }
+    if(dfself->file.isAutoSpacing && (n > 0))
+      fprintf(dfself->handle, "\n");
+  }
+
+  if(nwrite != n)
+  {
+    dfself->file.hasError = 1;
+    if(!dfself->file.isQuiet)
+      THError("write error: wrote %d blocks instead of %d", nwrite, n);
+  }
+
+  return nwrite;
+}
 
 static long THDiskFile_readString(THFile *self, const char *format, char **str_)
 {
@@ -494,6 +679,7 @@ THFile *THDiskFile_new(const char *name, const char *mode, int isQuiet)
   self->name = (char*)THAlloc(strlen(name)+1);
   strcpy(self->name, name);
   self->isNativeEncoding = 1;
+  self->longSize = 0;
 
   self->file.vtable = &vtable;
   self->file.isQuiet = isQuiet;
@@ -595,6 +781,7 @@ THFile *THPipeFile_new(const char *name, const char *mode, int isQuiet)
   self->name = (char*)THAlloc(strlen(name)+1);
   strcpy(self->name, name);
   self->isNativeEncoding = 1;
+  self->longSize = 0;
 
   self->file.vtable = &vtable;
   self->file.isQuiet = isQuiet;

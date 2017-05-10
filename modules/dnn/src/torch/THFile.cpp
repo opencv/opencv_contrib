@@ -1,7 +1,7 @@
 #if defined(ENABLE_TORCH_IMPORTER) && ENABLE_TORCH_IMPORTER
 #include "THFile.h"
 #include "THFilePrivate.h"
-
+#include <opencv2/core.hpp>
 extern "C"
 {
 
@@ -20,7 +20,7 @@ IMPLEMENT_THFILE_RW(Byte, unsigned char)
 IMPLEMENT_THFILE_RW(Char, char)
 IMPLEMENT_THFILE_RW(Short, short)
 IMPLEMENT_THFILE_RW(Int, int)
-IMPLEMENT_THFILE_RW(Long, long)
+IMPLEMENT_THFILE_RW(Long, int64)
 IMPLEMENT_THFILE_RW(Float, float)
 IMPLEMENT_THFILE_RW(Double, double)
 
@@ -134,7 +134,7 @@ IMPLEMENT_THFILE_SCALAR(Byte, unsigned char)
 IMPLEMENT_THFILE_SCALAR(Char, char)
 IMPLEMENT_THFILE_SCALAR(Short, short)
 IMPLEMENT_THFILE_SCALAR(Int, int)
-IMPLEMENT_THFILE_SCALAR(Long, long)
+IMPLEMENT_THFILE_SCALAR(Long, int64)
 IMPLEMENT_THFILE_SCALAR(Float, float)
 IMPLEMENT_THFILE_SCALAR(Double, double)
 
