@@ -23,6 +23,11 @@
 
 #include <glog/logging.h>
 
+
+#if defined _MSC_VER && _MSC_VER < 1900
+#  define snprintf _snprintf
+#endif
+
 #define LG LOG(INFO)
 #define V0 LOG(INFO)
 #define V1 LOG(INFO)
