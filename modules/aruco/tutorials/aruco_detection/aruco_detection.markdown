@@ -20,7 +20,7 @@ a popular library for detection of square fiducial markers developed by Rafael M
 
 The aruco functionalities are included in:
 ``` c++
-    \#include <opencv2/aruco.hpp>
+    #include <opencv2/aruco.hpp>
 ```
 
 
@@ -71,7 +71,7 @@ For example, lets analyze the following call:
 
 ``` c++
     cv::Mat markerImage;
-    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
     cv::aruco::drawMarker(dictionary, 23, 200, markerImage, 1);
 ```
 
@@ -156,10 +156,10 @@ An example of marker detection:
 ``` c++
     cv::Mat inputImage;
     ...
-    vector< int > markerIds;
-    vector< vector<Point2f> > markerCorners, rejectedCandidates;
-    cv::aruco::DetectorParameters parameters;
-    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    std::vector<int> markerIds;
+    std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
+    cv::Ptr<cv::aruco::DetectorParameters> parameters;
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
     cv::aruco::detectMarkers(inputImage, dictionary, markerCorners, markerIds, parameters, rejectedCandidates);
 ```
 
@@ -204,7 +204,7 @@ camera:
 ``` c++
     cv::VideoCapture inputVideo;
     inputVideo.open(0);
-    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
         inputVideo.retrieve(image);
@@ -263,9 +263,9 @@ information).
 The aruco module provides a function to estimate the poses of all the detected markers:
 
 ``` c++
-    Mat cameraMatrix, distCoeffs;
+    cv::Mat cameraMatrix, distCoeffs;
     ...
-    vector< Vec3d > rvecs, tvecs;
+    std::vector<cv::Vec3d> rvecs, tvecs;
     cv::aruco::estimatePoseSingleMarkers(corners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
 ```
 
@@ -303,7 +303,7 @@ A basic full example for pose estimation from single markers:
     // camera parameters are read from somewhere
     readCameraParameters(cameraMatrix, distCoeffs);
 
-    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
 
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
@@ -311,14 +311,14 @@ A basic full example for pose estimation from single markers:
         image.copyTo(imageCopy);
 
         std::vector<int> ids;
-        std::vector<std::vector<cv::Point2f> > corners;
+        std::vector<std::vector<cv::Point2f>> corners;
         cv::aruco::detectMarkers(image, dictionary, corners, ids);
 
         // if at least one marker detected
         if (ids.size() > 0) {
             cv::aruco::drawDetectedMarkers(imageCopy, corners, ids);
 
-            vector< Mat > rvecs, tvecs;
+            std::vector<cv::Mat> rvecs, tvecs;
             cv::aruco::estimatePoseSingleMarkers(corners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
             // draw axis for each marker
             for(int i=0; i<ids.size(); i++)
@@ -374,7 +374,7 @@ This is the easiest way to select a dictionary. The aruco module includes a set 
  of a variety of marker sizes and number of markers. For instance:
 
 ``` c++
-    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
 ```
 
 DICT_6X6_250 is an example of predefined dictionary of markers with 6x6 bits and a total of 250
@@ -390,7 +390,7 @@ The dictionary can be generated automatically to adjust to the desired number of
 the inter-marker distance is optimized:
 
 ``` c++
-    cv::aruco::Dictionary dictionary = cv::aruco::generateCustomDictionary(36, 5);
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::generateCustomDictionary(36, 5);
 ```
 
 This will generate a customized dictionary composed by 36 markers of 5x5 bits. The process can take several
@@ -432,7 +432,7 @@ Fortunately, a marker can be easily transformed to this form using the static me
 For example:
 
 ``` c++
-    Dictionary dictionary;
+    cv::aruco::Dictionary dictionary;
     // markers of 6x6 bits
     dictionary.markerSize = 6;
     // maximum number of bit corrections
@@ -440,10 +440,11 @@ For example:
 
     // lets create a dictionary of 100 markers
     for(int i=0; i<100; i++)
+    {
         // assume generateMarkerBits() generate a new marker in binary format, so that
         // markerBits is a 6x6 matrix of CV_8UC1 type, only containing 0s and 1s
         cv::Mat markerBits = generateMarkerBits();
-        cv::Mat markerCompressed = getByteListFromBits(markerBits);
+        cv::Mat markerCompressed = cv::aruco::Dictionary::getByteListFromBits(markerBits);
         // add the marker as a new row
         dictionary.bytesList.push_back(markerCompressed);
     }

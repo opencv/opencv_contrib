@@ -29,7 +29,7 @@ The aruco module provides the ```cv::aruco::CharucoBoard``` class that represent
 This class, as the rest of ChArUco functionalities, are defined in:
 
 ``` c++
-    \#include <opencv2/aruco/charuco.hpp>
+    #include <opencv2/aruco/charuco.hpp>
 ```
 
 To define a ```CharucoBoard```, it is necesary:
@@ -60,9 +60,9 @@ Once we have our ```CharucoBoard``` object, we can create an image to print it. 
 ```CharucoBoard::draw()``` method:
 
 ``` c++
-    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
+    cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
     cv::Mat boardImage;
-    board.draw( cv::Size(600, 500), boardImage, 10, 1 );
+    board->draw( cv::Size(600, 500), boardImage, 10, 1 );
 ```
 
 - The first parameter is the size of the output image in pixels. In this case 600x500 pixels. If this is not proportional
@@ -94,8 +94,8 @@ in the board.
 
 So, a detected ChArUco board consists in:
 
-- ```vector<Point2f> charucoCorners``` : list of image positions of the detected corners.
-- ```vector <int> charucoIds``` : ids for each of the detected corners in ```charucoCorners```.
+- ```std::vector<cv::Point2f> charucoCorners``` : list of image positions of the detected corners.
+- ```std::vector<int> charucoIds``` : ids for each of the detected corners in ```charucoCorners```.
 
 The detection of the ChArUco corners is based on the previous detected markers. So that, first markers are detected, and then
 ChArUco corners are interpolated from markers.
@@ -107,11 +107,11 @@ The function that detect the ChArUco corners is ```cv::aruco::interpolateCorners
     cv::Mat cameraMatrix, distCoeffs;
     // camera parameters are read from somewhere
     readCameraParameters(cameraMatrix, distCoeffs);
-    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
     ...
-    vector< int > markerIds;
-    vector< vector<Point2f> > markerCorners;
+    std::vector<int> markerIds;
+    std::vector<std::vector<cv::Point2f>> markerCorners;
     cv::aruco::detectMarkers(inputImage, board.dictionary, markerCorners, markerIds);
 
     // if at least one marker detected
@@ -136,13 +136,13 @@ are optional. A similar example without these parameters would be:
 
 ``` c++
     cv::Mat inputImage;
-    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
     ...
-    vector< int > markerIds;
-    vector< vector<Point2f> > markerCorners;
-    DetectorParameters params;
-    params.doCornerRefinement = false;
+    std::vector<int> markerIds;
+    std::vector<std::vector<cv::Point2f>> markerCorners;
+    cv::Ptr<cv::aruco::DetectorParameters> params;
+    params->doCornerRefinement = false;
     cv::aruco::detectMarkers(inputImage, board.dictionary, markerCorners, markerIds, params);
 
     // if at least one marker detected
@@ -203,11 +203,11 @@ Finally, this is a full example of ChArUco detection (without using calibration 
     cv::VideoCapture inputVideo;
     inputVideo.open(0);
 
-    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
 
-    DetectorParameters params;
-    params.doCornerRefinement = false;
+    cv::Ptr<cv::aruco::DetectorParameters> params;
+    params->doCornerRefinement = false;
 
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
@@ -215,7 +215,7 @@ Finally, this is a full example of ChArUco detection (without using calibration 
         image.copyTo(imageCopy);
 
         std::vector<int> ids;
-        std::vector<std::vector<cv::Point2f> > corners;
+        std::vector<std::vector<cv::Point2f>> corners;
         cv::aruco::detectMarkers(image, dictionary, corners, ids, params);
 
         // if at least one marker detected
@@ -286,8 +286,8 @@ A full example of ChArUco detection with pose estimation:
     // camera parameters are read from somewhere
     readCameraParameters(cameraMatrix, distCoeffs);
 
-    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-    cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
 
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
@@ -295,7 +295,7 @@ A full example of ChArUco detection with pose estimation:
         image.copyTo(imageCopy);
 
         std::vector<int> ids;
-        std::vector<std::vector<cv::Point2f> > corners;
+        std::vector<std::vector<cv::Point2f>> corners;
         cv::aruco::detectMarkers(image, dictionary, corners, ids);
 
         // if at least one marker detected
