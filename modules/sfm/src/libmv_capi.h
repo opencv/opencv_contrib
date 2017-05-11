@@ -88,10 +88,13 @@ struct libmv_Reconstruction {
 void libmv_initLogging(const char* argv0) {
   // Make it so FATAL messages are always print into console.
   char severity_fatal[32];
+  static int initLog=0;
   snprintf(severity_fatal, sizeof(severity_fatal), "%d",
            GLOG_FATAL);
 
-  InitGoogleLogging(argv0);
+  if (!initLog)
+      InitGoogleLogging(argv0);
+  initLog=1;
   SetCommandLineOption("logtostderr", "1");
   SetCommandLineOption("v", "0");
   SetCommandLineOption("stderrthreshold", severity_fatal);
