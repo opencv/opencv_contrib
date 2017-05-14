@@ -43,6 +43,262 @@
 
 using namespace cv;
 
+void ft::FT02D_FL_process(InputArray matrix, const int radius, OutputArray output)
+{
+    CV_Assert(matrix.channels() == 3);
+
+    int borderPadding = 2 * radius + 1;
+    Mat imagePadded;
+
+    copyMakeBorder(matrix, imagePadded, radius, borderPadding, radius, borderPadding, BORDER_CONSTANT, Scalar(0));
+
+    Mat channel[3];
+    split(imagePadded, channel);
+
+    uchar *im_r = channel[2].data;
+    uchar *im_g = channel[1].data;
+    uchar *im_b = channel[0].data;
+
+    int width = imagePadded.cols;
+    int height = imagePadded.rows;
+    int n_width = width / radius + 1;
+    int n_height = height / radius + 1;
+
+    std::vector<uchar> c_r(n_width * n_height);
+    std::vector<uchar> c_g(n_width * n_height);
+    std::vector<uchar> c_b(n_width * n_height);
+
+    int sum_r, sum_g, sum_b, num, c_wei;
+    int c_pos, pos, pos2, wy;
+    int cy = 0;
+    float num_f;
+
+    std::vector<int> wei(radius + 1);
+
+    for (int i = 0; i <= radius; i++)
+    {
+        wei[i] = radius - i;
+    }
+
+    for (int y = radius; y < height - radius; y += radius)
+    {
+        c_pos = cy;
+
+        for (int x = radius; x < width - radius; x += radius)
+        {
+            num = sum_r = sum_g = sum_b = 0;
+
+            for (int y1 = y - radius; y1 <= y + radius; y1++)
+            {
+                pos = y1 * width;
+                wy = wei[abs(y1 - y)];
+
+                for (int x1 = x - radius; x1 <= x + radius; x1++)
+                {
+                    c_wei = wei[abs(x1 - x)] * wy;
+                    pos2 = pos + x1;
+                    sum_r += im_r[pos2] * c_wei;
+                    sum_g += im_g[pos2] * c_wei;
+                    sum_b += im_b[pos2] * c_wei;
+                    num += c_wei;
+                }
+            }
+
+            num_f = 1.0f / (float)num;
+
+            c_r[c_pos] = (uchar)cvRound(sum_r * num_f);
+            c_g[c_pos] = (uchar)cvRound(sum_g * num_f);
+            c_b[c_pos] = (uchar)cvRound(sum_b * num_f);
+
+            c_pos++;
+        }
+
+        cy += n_width;
+    }
+
+    int p1, p2, p3, p4, yw, w1, w2, w3, w4, lx, ly, lx1, ly1, pos_iFT;
+    float num_iFT;
+
+    int output_height = matrix.rows();
+    int output_width = matrix.cols();
+
+    uchar *img_r = new uchar[output_height * output_width];
+    uchar *img_g = new uchar[output_height * output_width];
+    uchar *img_b = new uchar[output_height * output_width];
+
+    for (int y = 0; y < output_height; y++)
+    {
+        ly1 = (y % radius);
+        ly = radius - ly1;
+        yw = y / radius * n_width;
+        pos_iFT = y * output_width;
+
+        for (int x = 0; x < output_width; x++)
+        {
+            lx1 = (x % radius);
+            lx = radius - lx1;
+
+            p1 = x / radius + yw;
+            p2 = p1 + 1;
+            p3 = p1 + n_width;
+            p4 = p3 + 1;
+
+            w1 = lx * ly;
+            w2 = lx1 * ly;
+            w3 = lx * ly1;
+            w4 = lx1 * ly1;
+
+            num_iFT = 1.0f / (float)(w1 + w2 + w3 + w4);
+
+            img_r[pos_iFT] = (uchar)((c_r[p1] * w1 + c_r[p2] * w2 + c_r[p3] * w3 + c_r[p4] * w4) * num_iFT);
+            img_g[pos_iFT] = (uchar)((c_g[p1] * w1 + c_g[p2] * w2 + c_g[p3] * w3 + c_g[p4] * w4) * num_iFT);
+            img_b[pos_iFT] = (uchar)((c_b[p1] * w1 + c_b[p2] * w2 + c_b[p3] * w3 + c_b[p4] * w4) * num_iFT);
+
+            pos_iFT++;
+        }
+    }
+
+    Mat compR(output_height, output_width, CV_8UC1, img_r);
+    Mat compG(output_height, output_width, CV_8UC1, img_g);
+    Mat compB(output_height, output_width, CV_8UC1, img_b);
+
+    std::vector<Mat> oComp;
+
+    oComp.push_back(compB);
+    oComp.push_back(compG);
+    oComp.push_back(compR);
+
+    merge(oComp, output);
+}
+
+void ft::FT02D_FL_process_float(InputArray matrix, const int radius, OutputArray output)
+{
+    CV_Assert(matrix.channels() == 3);
+
+    int borderPadding = 2 * radius + 1;
+    Mat imagePadded;
+
+    copyMakeBorder(matrix, imagePadded, radius, borderPadding, radius, borderPadding, BORDER_CONSTANT, Scalar(0));
+
+    Mat channel[3];
+    split(imagePadded, channel);
+
+    uchar *im_r = channel[2].data;
+    uchar *im_g = channel[1].data;
+    uchar *im_b = channel[0].data;
+
+    int width = imagePadded.cols;
+    int height = imagePadded.rows;
+    int n_width = width / radius + 1;
+    int n_height = height / radius + 1;
+
+    std::vector<float> c_r(n_width * n_height);
+    std::vector<float> c_g(n_width * n_height);
+    std::vector<float> c_b(n_width * n_height);
+
+    int sum_r, sum_g, sum_b, num, c_wei;
+    int c_pos, pos, pos2, wy;
+    int cy = 0;
+    float num_f;
+
+    std::vector<int> wei(radius + 1);
+
+    for (int i = 0; i <= radius; i++)
+    {
+        wei[i] = radius - i;
+    }
+
+    for (int y = radius; y < height - radius; y += radius)
+    {
+        c_pos = cy;
+
+        for (int x = radius; x < width - radius; x += radius)
+        {
+            num = sum_r = sum_g = sum_b = 0;
+
+            for (int y1 = y - radius; y1 <= y + radius; y1++)
+            {
+                pos = y1 * width;
+                wy = wei[abs(y1 - y)];
+
+                for (int x1 = x - radius; x1 <= x + radius; x1++)
+                {
+                    c_wei = wei[abs(x1 - x)] * wy;
+                    pos2 = pos + x1;
+                    sum_r += im_r[pos2] * c_wei;
+                    sum_g += im_g[pos2] * c_wei;
+                    sum_b += im_b[pos2] * c_wei;
+                    num += c_wei;
+                }
+            }
+
+            num_f = 1.0f / (float)num;
+
+            c_r[c_pos] = sum_r * num_f;
+            c_g[c_pos] = sum_g * num_f;
+            c_b[c_pos] = sum_b * num_f;
+
+            c_pos++;
+        }
+
+        cy += n_width;
+    }
+
+    int p1, p2, p3, p4, yw, w1, w2, w3, w4, lx, ly, lx1, ly1, pos_iFT;
+    float num_iFT;
+
+    int output_height = matrix.rows();
+    int output_width = matrix.cols();
+
+    float *img_r = new float[output_height * output_width];
+    float *img_g = new float[output_height * output_width];
+    float *img_b = new float[output_height * output_width];
+
+    for (int y = 0; y < output_height; y++)
+    {
+        ly1 = (y % radius);
+        ly = radius - ly1;
+        yw = y / radius * n_width;
+        pos_iFT = y * output_width;
+
+        for (int x = 0; x < output_width; x++)
+        {
+            lx1 = (x % radius);
+            lx = radius - lx1;
+
+            p1 = x / radius + yw;
+            p2 = p1 + 1;
+            p3 = p1 + n_width;
+            p4 = p3 + 1;
+
+            w1 = lx * ly;
+            w2 = lx1 * ly;
+            w3 = lx * ly1;
+            w4 = lx1 * ly1;
+
+            num_iFT = 1.0f / (float)(w1 + w2 + w3 + w4);
+
+            img_r[pos_iFT] = (c_r[p1] * w1 + c_r[p2] * w2 + c_r[p3] * w3 + c_r[p4] * w4) * num_iFT;
+            img_g[pos_iFT] = (c_g[p1] * w1 + c_g[p2] * w2 + c_g[p3] * w3 + c_g[p4] * w4) * num_iFT;
+            img_b[pos_iFT] = (c_b[p1] * w1 + c_b[p2] * w2 + c_b[p3] * w3 + c_b[p4] * w4) * num_iFT;
+
+            pos_iFT++;
+        }
+    }
+
+    Mat compR(output_height, output_width, CV_32FC1, img_r);
+    Mat compG(output_height, output_width, CV_32FC1, img_g);
+    Mat compB(output_height, output_width, CV_32FC1, img_b);
+
+    std::vector<Mat> oComp;
+
+    oComp.push_back(compB);
+    oComp.push_back(compG);
+    oComp.push_back(compR);
+
+    merge(oComp, output);
+}
+
 void ft::FT02D_components(InputArray matrix, InputArray kernel, OutputArray components, InputArray mask)
 {
     CV_Assert(matrix.channels() == kernel.channels() && mask.channels() == 1);

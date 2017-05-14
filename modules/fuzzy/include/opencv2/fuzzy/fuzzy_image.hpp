@@ -56,7 +56,7 @@ namespace ft
     /** @brief Creates kernel from basic functions.
     @param A Basic function used in axis **x**.
     @param B Basic function used in axis **y**.
-    @param kernel Final 32-b kernel derived from **A** and **B**.
+    @param kernel Final 32-bit kernel derived from **A** and **B**.
     @param chn Number of kernel channels.
 
     The function creates kernel usable for latter fuzzy image processing.
@@ -67,7 +67,7 @@ namespace ft
     @param function Function type could be one of the following:
         -   **LINEAR** Linear basic function.
     @param radius Radius of the basic function.
-    @param kernel Final 32-b kernel.
+    @param kernel Final 32-bit kernel.
     @param chn Number of kernel channels.
 
     The function creates kernel from predefined functions.
