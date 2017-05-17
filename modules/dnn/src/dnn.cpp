@@ -604,10 +604,10 @@ void Net::setBlob(String outputName, const Mat &blob_)
 
     LayerData &ld = impl->layers[pin.lid];
     ld.outputBlobs.resize( std::max(pin.oid+1, (int)ld.requiredOutputs.size()) );
-    MatSize prevShape = ld.outputBlobs[pin.oid].size;
+    bool oldShape = ld.outputBlobs[pin.oid].size == blob_.size;
     ld.outputBlobs[pin.oid] = blob_.clone();
 
-    impl->netWasAllocated = impl->netWasAllocated && prevShape == blob_.size;
+    impl->netWasAllocated = impl->netWasAllocated && oldShape;
 }
 
 Mat Net::getBlob(String outputName)
