@@ -239,7 +239,7 @@ namespace sfm
 
     if ( is_projective )
     {
-      reconstruct_(images, Rs, Ts, K, points3d, false);
+      reconstruct_(images, Rs, Ts, K, points3d);
     }
 
 
