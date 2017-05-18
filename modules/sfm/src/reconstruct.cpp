@@ -152,6 +152,7 @@ namespace sfm
     else
     {
       // TODO: implement me
+      CV_Error(Error::StsNotImplemented, "Affine reconstruction not yet implemented");
     }
 
   }
@@ -180,6 +181,7 @@ namespace sfm
     else
     {
       // TODO: implement me
+      CV_Error(Error::StsNotImplemented, "Affine reconstruction not yet implemented");
     }
 
   }
@@ -223,6 +225,7 @@ namespace sfm
     else
     {
       // TODO: implement me
+      CV_Error(Error::StsNotImplemented, "Affine reconstruction not yet implemented");
     }
 
   }
@@ -239,7 +242,7 @@ namespace sfm
 
     if ( is_projective )
     {
-      reconstruct_(images, Rs, Ts, K, points3d, false);
+      reconstruct_(images, Rs, Ts, K, points3d);
     }
 
 
@@ -248,6 +251,7 @@ namespace sfm
     else
     {
       // TODO: implement me
+      CV_Error(Error::StsNotImplemented, "Affine reconstruction not yet implemented");
     }
 
   }
