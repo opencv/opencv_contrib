@@ -46,6 +46,7 @@
 #include "opencv2/imgcodecs.hpp"
 #include "precomp.hpp"
 #include "opencl_kernels_optflow.hpp"
+#include "opencv2/core/hal/intrin.hpp"
 
 /* Disable "from double to float" and "from size_t to int" warnings.
  * Fixing these would make the code look ugly by introducing explicit cast all around.
