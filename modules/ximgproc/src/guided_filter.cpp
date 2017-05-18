@@ -415,8 +415,8 @@ void GuidedFilterImpl::ComputeCovGuideInv_ParBody::operator()(const Range& range
 
             for (int k = 0; k < 3; k++)
             {
-                register float *a = covars(k, 0).ptr<float>(i);
-                register float *ac = gf.covarsInv(k, 0).ptr<float>(i);
+                 float *a = covars(k, 0).ptr<float>(i);
+                 float *ac = gf.covarsInv(k, 0).ptr<float>(i);
 
                 if (k == 0)
                     mul(det, a, ac, gf.w);
@@ -503,7 +503,7 @@ void GuidedFilterImpl::ComputeCovFromSrcChannelsMul_ParBody::operator()(const Ra
             int start   = (si % 2) ? 0 : gf.gCnNum - 1;
             int end     = (si % 2) ? gf.gCnNum : -1;
 
-            register float *srcMeanLine = srcCnMean[si].ptr<float>(i);
+             float *srcMeanLine = srcCnMean[si].ptr<float>(i);
 
             for (int gi = start; gi != end; gi += step)
             {

@@ -151,9 +151,9 @@ inline float getFloatSignBit()
     return signFloat;
 }
 
-void add_(register float *dst, register float *src1, int w)
+void add_( float *dst,  float *src1, int w)
 {
-    register int j = 0;
+     int j = 0;
 #if CV_SSE
     if (CPU_SUPPORT_SSE1())
     {
@@ -171,9 +171,9 @@ void add_(register float *dst, register float *src1, int w)
         dst[j] += src1[j];
 }
 
-void mul(register float *dst, register float *src1, register float *src2, int w)
+void mul( float *dst,  float *src1,  float *src2, int w)
 {
-    register int j = 0;
+     int j = 0;
 #if CV_SSE
     if (CPU_SUPPORT_SSE1())
     {
@@ -191,9 +191,9 @@ void mul(register float *dst, register float *src1, register float *src2, int w)
         dst[j] = src1[j] * src2[j];
 }
 
-void mul(register float *dst, register float *src1, float src2, int w)
+void mul( float *dst,  float *src1, float src2, int w)
 {
-    register int j = 0;
+     int j = 0;
 #if CV_SSE
     if (CPU_SUPPORT_SSE1())
     {
@@ -211,9 +211,9 @@ void mul(register float *dst, register float *src1, float src2, int w)
         dst[j] = src1[j]*src2;
 }
 
-void mad(register float *dst, register float *src1, float alpha, float beta, int w)
+void mad( float *dst,  float *src1, float alpha, float beta, int w)
 {
-    register int j = 0;
+     int j = 0;
 #if CV_SSE
     if (CPU_SUPPORT_SSE1())
     {
@@ -233,9 +233,9 @@ void mad(register float *dst, register float *src1, float alpha, float beta, int
         dst[j] = alpha*src1[j] + beta;
 }
 
-void sqr_(register float *dst, register float *src1, int w)
+void sqr_( float *dst,  float *src1, int w)
 {
-    register int j = 0;
+     int j = 0;
 #if CV_SSE
     if (CPU_SUPPORT_SSE1())
     {
@@ -252,9 +252,9 @@ void sqr_(register float *dst, register float *src1, int w)
         dst[j] = src1[j] * src1[j];
 }
 
-void sqr_dif(register float *dst, register float *src1, register float *src2, int w)
+void sqr_dif( float *dst,  float *src1,  float *src2, int w)
 {
-    register int j = 0;
+     int j = 0;
 #if CV_SSE
     if (CPU_SUPPORT_SSE1())
     {
@@ -271,9 +271,9 @@ void sqr_dif(register float *dst, register float *src1, register float *src2, in
         dst[j] = (src1[j] - src2[j])*(src1[j] - src2[j]);
 }
 
-void add_mul(register float *dst, register float *src1, register float *src2, int w)
+void add_mul( float *dst,  float *src1,  float *src2, int w)
 {
-    register int j = 0;
+     int j = 0;
 #if CV_SSE
     if (CPU_SUPPORT_SSE1())
     {
@@ -295,9 +295,9 @@ void add_mul(register float *dst, register float *src1, register float *src2, in
     }
 }
 
-void add_sqr(register float *dst, register float *src1, int w)
+void add_sqr( float *dst,  float *src1, int w)
 {
-    register int j = 0;
+     int j = 0;
 #if CV_SSE
     if (CPU_SUPPORT_SSE1())
     {
@@ -318,9 +318,9 @@ void add_sqr(register float *dst, register float *src1, int w)
     }
 }
 
-void add_sqr_dif(register float *dst, register float *src1, register float *src2, int w)
+void add_sqr_dif( float *dst,  float *src1,  float *src2, int w)
 {
-    register int j = 0;
+     int j = 0;
 #if CV_SSE
     if (CPU_SUPPORT_SSE1())
     {
@@ -341,9 +341,9 @@ void add_sqr_dif(register float *dst, register float *src1, register float *src2
     }
 }
 
-void sub_mul(register float *dst, register float *src1, register float *src2, int w)
+void sub_mul( float *dst,  float *src1,  float *src2, int w)
 {
-    register int j = 0;
+     int j = 0;
 #if CV_SSE
     if (CPU_SUPPORT_SSE1())
     {
@@ -363,9 +363,9 @@ void sub_mul(register float *dst, register float *src1, register float *src2, in
         dst[j] -= src1[j] * src2[j];
 }
 
-void sub_mad(register float *dst, register float *src1, register float *src2, float c0, int w)
+void sub_mad( float *dst,  float *src1,  float *src2, float c0, int w)
 {
-    register int j = 0;
+     int j = 0;
 #if CV_SSE
     if (CPU_SUPPORT_SSE1())
     {
@@ -387,9 +387,9 @@ void sub_mad(register float *dst, register float *src1, register float *src2, fl
         dst[j] -= src1[j] * src2[j] + c0;
 }
 
-void det_2x2(register float *dst, register float *a00, register float *a01, register float *a10, register float *a11, int w)
+void det_2x2( float *dst,  float *a00,  float *a01,  float *a10,  float *a11, int w)
 {
-    register int j = 0;
+     int j = 0;
 #if CV_SSE
     if (CPU_SUPPORT_SSE1())
     {
@@ -407,9 +407,9 @@ void det_2x2(register float *dst, register float *a00, register float *a01, regi
         dst[j] = a00[j]*a11[j] - a01[j]*a10[j];
 }
 
-void div_det_2x2(register float *a00, register float *a01, register float *a11, int w)
+void div_det_2x2( float *a00,  float *a01,  float *a11, int w)
 {
-    register int j = 0;
+     int j = 0;
 #if CV_SSE
     if (CPU_SUPPORT_SSE1())
     {
@@ -447,9 +447,9 @@ void div_det_2x2(register float *a00, register float *a01, register float *a11, 
     }
 }
 
-void div_1x(register float *a1, register float *b1, int w)
+void div_1x( float *a1,  float *b1, int w)
 {
-    register int j = 0;
+     int j = 0;
 #if CV_SSE
     if (CPU_SUPPORT_SSE1())
     {
@@ -468,9 +468,9 @@ void div_1x(register float *a1, register float *b1, int w)
     }
 }
 
-void inv_self(register float *src, int w)
+void inv_self( float *src, int w)
 {
-    register int j = 0;
+     int j = 0;
 #if CV_SSE
     if (CPU_SUPPORT_SSE1())
     {
@@ -488,9 +488,9 @@ void inv_self(register float *src, int w)
     }
 }
 
-void sqrt_(register float *dst, register float *src, int w)
+void sqrt_( float *dst,  float *src, int w)
 {
-    register int j = 0;
+     int j = 0;
 #if CV_SSE
     if (CPU_SUPPORT_SSE1())
     {
@@ -506,9 +506,9 @@ void sqrt_(register float *dst, register float *src, int w)
         dst[j] = sqrt(src[j]);
 }
 
-void min_(register float *dst, register float *src1, register float *src2, int w)
+void min_( float *dst,  float *src1,  float *src2, int w)
 {
-    register int j = 0;
+     int j = 0;
 #if CV_SSE
     if (CPU_SUPPORT_SSE1())
     {
@@ -527,9 +527,9 @@ void min_(register float *dst, register float *src1, register float *src2, int w
         dst[j] = std::min(src1[j], src2[j]);
 }
 
-void rf_vert_row_pass(register float *curRow, register float *prevRow, float alphaVal, int w)
+void rf_vert_row_pass( float *curRow,  float *prevRow, float alphaVal, int w)
 {
-    register int j = 0;
+     int j = 0;
 #if CV_SSE
     if (CPU_SUPPORT_SSE1())
     {
