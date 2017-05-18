@@ -68,11 +68,11 @@ static void launchGoogleNetTest()
     }
 
     std::vector<Mat> inpMats;
-    inpMats.push_back( imread(_tf("googlenet_0.jpg")) );
-    inpMats.push_back( imread(_tf("googlenet_1.jpg")) );
+    inpMats.push_back( imread(_tf("googlenet_0.png")) );
+    inpMats.push_back( imread(_tf("googlenet_1.png")) );
     ASSERT_TRUE(!inpMats[0].empty() && !inpMats[1].empty());
 
-    net.setBlob(".data", blobFromImages(inpMats, 1., false));
+    net.setBlob(".data", blobFromImages(inpMats));
     net.forward();
 
     Mat out = net.getBlob("prob");

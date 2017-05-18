@@ -101,6 +101,7 @@ TEST(Reproducibility_AlexNet, Accuracy)
     normAssert(ref, out);
 }
 
+#if !defined(_WIN32) || defined(_WIN64)
 TEST(Reproducibility_FCN, Accuracy)
 {
     Net net;
@@ -126,5 +127,6 @@ TEST(Reproducibility_FCN, Accuracy)
     Mat ref = blobFromNPY(_tf("caffe_fcn8s_prob.npy"));
     normAssert(ref, out);
 }
+#endif
 
 }
