@@ -166,8 +166,8 @@ public:
   virtual void run(InputArrayOfArrays points2d, InputOutputArray K, OutputArray Rs,
                    OutputArray Ts, OutputArray points3d) = 0;
 
-  virtual void run(const std::vector<std::string> &images) = 0;
-  virtual void run(const std::vector<std::string> &images, InputOutputArray K, OutputArray Rs,
+  virtual void run(const std::vector<String> &images) = 0;
+  virtual void run(const std::vector<String> &images, InputOutputArray K, OutputArray Rs,
                    OutputArray Ts, OutputArray points3d) = 0;
 
   CV_WRAP virtual double getError() const = 0;
@@ -219,7 +219,7 @@ public:
       - The images must be ordered as they were an image sequence. Additionally, each frame should be as close as posible to the previous and posterior.
       - For now DAISY features are used in order to compute the 2d points tracks and it only works for 3-4 images.
   */
-  virtual void run(const std::vector<std::string> &images) = 0;
+  virtual void run(const std::vector<String> &images) = 0;
 
   /** @brief Calls the pipeline in order to perform Eclidean reconstruction.
     @param images a vector of string with the images paths.
@@ -232,7 +232,7 @@ public:
       - The images must be ordered as they were an image sequence. Additionally, each frame should be as close as posible to the previous and posterior.
       - For now DAISY features are used in order to compute the 2d points tracks and it only works for 3-4 images.
   */
-  virtual void run(const std::vector<std::string> &images, InputOutputArray K, OutputArray Rs,
+  virtual void run(const std::vector<String> &images, InputOutputArray K, OutputArray Rs,
                    OutputArray Ts, OutputArray points3d) = 0;
 
   /** @brief Returns the computed reprojection error.
