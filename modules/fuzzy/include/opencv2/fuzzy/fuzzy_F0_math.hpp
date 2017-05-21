@@ -56,7 +56,7 @@ namespace ft
     /** @brief Computes components of the array using direct F0-transform.
     @param matrix Input array.
     @param kernel Kernel used for processing. Function **createKernel** can be used.
-    @param components Output 32-bit array for the components.
+    @param components Output 32-bit float array for the components.
     @param mask Mask can be used for unwanted area marking.
 
     The function computes components using predefined kernel and mask.
@@ -64,24 +64,12 @@ namespace ft
     @note
         F-transform technique is described in paper @cite Perf:FT.
      */
-    CV_EXPORTS_AS(FT02D_components1) void FT02D_components(InputArray matrix, InputArray kernel, OutputArray components, InputArray mask);
-
-    /** @brief Computes components of the array using direct F0-transform.
-    @param matrix Input array.
-    @param kernel Kernel used for processing. Function **createKernel** can be used.
-    @param components Output 32-bit array for the components.
-
-    The function computes components using predefined kernel.
-
-    @note
-        F-transform technique is described in paper @cite Perf:FT.
-     */
-    CV_EXPORTS_W void FT02D_components(InputArray matrix, InputArray kernel, OutputArray components);
+    CV_EXPORTS_W void FT02D_components(InputArray matrix, InputArray kernel, OutputArray components, InputArray mask = noArray());
 
     /** @brief Computes inverse F0-transfrom.
-    @param components Input 32-bit single channel array for the components.
+    @param components Input 32-bit float single channel array for the components.
     @param kernel Kernel used for processing. Function **createKernel** can be used.
-    @param output Output 32-bit array.
+    @param output Output 32-bit float array.
     @param width Width of the output array.
     @param height Height of the output array.
 
@@ -93,26 +81,17 @@ namespace ft
     /** @brief Computes F0-transfrom and inverse F0-transfrom at once.
     @param matrix Input matrix.
     @param kernel Kernel used for processing. Function **createKernel** can be used.
-    @param output Output 32-bit array.
+    @param output Output 32-bit float array.
     @param mask Mask used for unwanted area marking.
 
     This function computes F-transfrom and inverse F-transfotm in one step. It is fully sufficient and optimized for **Mat**.
     */
-    CV_EXPORTS_AS(FT02D_process1) void FT02D_process(InputArray matrix, InputArray kernel, OutputArray output, InputArray mask);
-
-    /** @brief Computes F0-transfrom and inverse F0-transfrom at once.
-    @param matrix Input matrix.
-    @param kernel Kernel used for processing. Function **createKernel** can be used.
-    @param output Output 32-bit array.
-
-    This function computes F-transfrom and inverse F-transfotm in one step. It is fully sufficient and optimized for **Mat**.
-    */
-    CV_EXPORTS_W void FT02D_process(InputArray matrix, InputArray kernel, OutputArray output);
+    CV_EXPORTS_W void FT02D_process(InputArray matrix, InputArray kernel, OutputArray output, InputArray mask = noArray());
 
     /** @brief Computes F0-transfrom and inverse F0-transfrom at once and return state.
     @param matrix Input matrix.
     @param kernel Kernel used for processing. Function **createKernel** can be used.
-    @param output Output 32-bit array.
+    @param output Output 32-bit float array.
     @param mask Mask used for unwanted area marking.
     @param maskOutput Mask after one iteration.
     @param firstStop If **true** function returns -1 when first problem appears. In case of **false**, the process is completed and summation of all problems returned.
