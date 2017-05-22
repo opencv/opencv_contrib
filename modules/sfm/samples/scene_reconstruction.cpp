@@ -5,7 +5,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <string>
 
 using namespace std;
 using namespace cv;
@@ -29,7 +28,7 @@ static void help() {
 }
 
 
-int getdir(const string _filename, vector<string> &files)
+int getdir(const string _filename, vector<String> &files)
 {
   ifstream myfile(_filename.c_str());
   if (!myfile.is_open()) {
@@ -57,7 +56,7 @@ int main(int argc, char* argv[])
 
   // Parse the image paths
 
-  vector<string> images_paths;
+  vector<String> images_paths;
   getdir( argv[1], images_paths );
 
 
