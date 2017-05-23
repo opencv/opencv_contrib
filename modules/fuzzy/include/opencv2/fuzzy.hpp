@@ -44,6 +44,7 @@
 
 #include "opencv2/fuzzy/types.hpp"
 #include "opencv2/fuzzy/fuzzy_F0_math.hpp"
+#include "opencv2/fuzzy/fuzzy_F1_math.hpp"
 #include "opencv2/fuzzy/fuzzy_image.hpp"
 
 /**
@@ -52,13 +53,17 @@
 Namespace for all functions is **ft**. The module brings implementation of the last image processing algorithms based on fuzzy mathematics.
 
   @{
-    @defgroup f0_math Math with F0-transfrom support
+    @defgroup f0_math Math with F0-transform support
 
-Fuzzy transform (F-transform) of the 0th degree transform whole image to a vector of its components. These components are used in latter computation.
+Fuzzy transform (F0-transform) of the 0th degree transforms whole image to a matrix of its components. These components are used in latter computation where each of them represents average color of certain subarea.
+
+    @defgroup f1_math Math with F1-transform support
+
+Fuzzy transform (F1-transform) of the 1th degree transforms whole image to a matrix of its components. Each component is polynomial of the 1th degree carrying information about average color and average gradient of certain subarea.
 
     @defgroup f_image Fuzzy image processing
 
-Image proceesing based on F-transform is fast to process and easy to understand.
+Image proceesing based on fuzzy mathematics namely F-transform.
    @}
 
 */

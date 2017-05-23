@@ -301,7 +301,20 @@ void ft::FT02D_FL_process_float(InputArray matrix, const int radius, OutputArray
 
 void ft::FT02D_components(InputArray matrix, InputArray kernel, OutputArray components, InputArray mask)
 {
-    CV_Assert(matrix.channels() == kernel.channels() && mask.channels() == 1);
+    CV_Assert(matrix.channels() == kernel.channels());
+
+    Mat inputMask;
+
+    if (mask.getMat().empty())
+    {
+        inputMask = Mat::ones(matrix.size(), CV_8U);
+    }
+    else
+    {
+        CV_Assert(mask.channels() == 1);
+
+        inputMask = mask.getMat();
+    }
 
     int radiusX = (kernel.cols() - 1) / 2;
     int radiusY = (kernel.rows() - 1) / 2;
@@ -312,7 +325,7 @@ void ft::FT02D_components(InputArray matrix, InputArray kernel, OutputArray comp
     Mat maskPadded;
 
     copyMakeBorder(matrix, matrixPadded, radiusY, kernel.rows(), radiusX, kernel.cols(), BORDER_CONSTANT, Scalar(0));
-    copyMakeBorder(mask, maskPadded, radiusY, kernel.rows(), radiusX, kernel.cols(), BORDER_CONSTANT, Scalar(0));
+    copyMakeBorder(inputMask, maskPadded, radiusY, kernel.rows(), radiusX, kernel.cols(), BORDER_CONSTANT, Scalar(0));
 
     components.create(Bn, An, CV_MAKETYPE(CV_32F, matrix.channels()));
 
@@ -341,13 +354,6 @@ void ft::FT02D_components(InputArray matrix, InputArray kernel, OutputArray comp
             componentsMat.row(o).col(i).setTo(value);
         }
     }
-}
-
-void ft::FT02D_components(InputArray matrix, InputArray kernel, OutputArray components)
-{
-    Mat mask = Mat::ones(matrix.size(), CV_8U);
-
-    ft::FT02D_components(matrix, kernel, components, mask);
 }
 
 void ft::FT02D_inverseFT(InputArray components, InputArray kernel, OutputArray output, int width, int height)
@@ -386,16 +392,22 @@ void ft::FT02D_inverseFT(InputArray components, InputArray kernel, OutputArray o
     outputZeroes(Rect(radiusX, radiusY, width, height)).copyTo(output);
 }
 
-void ft::FT02D_process(InputArray matrix, InputArray kernel, OutputArray output)
-{
-    Mat mask = Mat::ones(matrix.size(), CV_8U);
-
-    ft::FT02D_process(matrix, kernel, output, mask);
-}
-
 void ft::FT02D_process(InputArray matrix, InputArray kernel, OutputArray output, InputArray mask)
 {
-    CV_Assert(matrix.channels() == kernel.channels() && mask.channels() == 1);
+    CV_Assert(matrix.channels() == kernel.channels());
+
+    Mat inputMask;
+
+    if (mask.getMat().empty())
+    {
+        inputMask = Mat::ones(matrix.size(), CV_8U);
+    }
+    else
+    {
+        CV_Assert(mask.channels() == 1);
+
+        inputMask = mask.getMat();
+    }
 
     int radiusX = (kernel.cols() - 1) / 2;
     int radiusY = (kernel.rows() - 1) / 2;
@@ -412,7 +424,7 @@ void ft::FT02D_process(InputArray matrix, InputArray kernel, OutputArray output,
     Mat outputZeroes(outputHeightPadded, outputWidthPadded, output.type(), Scalar(0));
 
     copyMakeBorder(matrix, matrixPadded, radiusY, kernel.rows(), radiusX, kernel.cols(), BORDER_CONSTANT, Scalar(0));
-    copyMakeBorder(mask, maskPadded, radiusY, kernel.rows(), radiusX, kernel.cols(), BORDER_CONSTANT, Scalar(0));
+    copyMakeBorder(inputMask, maskPadded, radiusY, kernel.rows(), radiusX, kernel.cols(), BORDER_CONSTANT, Scalar(0));
 
     for (int i = 0; i < An; i++)
     {
