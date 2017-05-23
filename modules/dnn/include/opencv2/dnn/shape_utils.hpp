@@ -130,14 +130,9 @@ static inline MatShape shape(const int* dims, const int n = 4)
     return shape;
 }
 
-static inline MatShape shape(const MatSize& size)
-{
-    return shape((const int*)size, size.dims());
-}
-
 static inline MatShape shape(const Mat& mat)
 {
-    return shape(mat.size);
+    return shape(mat.size.p, mat.dims);
 }
 
 namespace {inline bool is_neg(int i) { return i < 0; }}
