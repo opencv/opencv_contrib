@@ -1,0 +1,5 @@
+pkg_check_modules(<%= upcase %> REQUIRED <%= self %>)
+add_definitions(${<%= upcase %>_CFLAGS})
+include_directories(${<%= upcase %>_INCLUDE_DIRS})
+link_directories(${<%= upcase %>_LIBRARY_DIRS})
+
