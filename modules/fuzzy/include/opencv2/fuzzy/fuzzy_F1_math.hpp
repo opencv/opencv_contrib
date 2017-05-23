@@ -53,21 +53,18 @@ namespace ft
     //! @addtogroup f1_math
     //! @{
 
-    /** @brief Computes components of the array using direct F1-transform.
+    /** @brief Computes components of the array using direct \f$F^1\f$-transform.
     @param matrix Input array.
-    @param kernel Kernel used for processing. Function **createKernel** can be used.
+    @param kernel Kernel used for processing. Function `ft::createKernel` can be used.
     @param components Output 32-bit float array for the components.
 
     The function computes linear components using predefined kernel.
-
-    @note
-        F-transform technique of first degreee is described in paper @cite Vlas:FT.
     */
     CV_EXPORTS_W void FT12D_components(InputArray matrix, InputArray kernel, OutputArray components);
 
-    /** @brief Computes elements of F1-transform components.
+    /** @brief Computes elements of \f$F^1\f$-transform components.
     @param matrix Input array.
-    @param kernel Kernel used for processing. Function **createKernel** can be used.
+    @param kernel Kernel used for processing. Function `ft::createKernel` can be used.
     @param c00 Elements represent average color.
     @param c10 Elements represent average vertical gradient.
     @param c01 Elements represent average horizontal gradient.
@@ -75,49 +72,48 @@ namespace ft
     @param mask Mask can be used for unwanted area marking.
 
     The function computes components and its elements using predefined kernel and mask.
-
-    @note
-        F-transform technique of first degreee is described in paper @cite Vlas:FT.
     */
     CV_EXPORTS_W void FT12D_polynomial(InputArray matrix, InputArray kernel, OutputArray c00, OutputArray c10, OutputArray c01, OutputArray components, InputArray mask = noArray());
 
-    /** @brief Creates vertical matrix for F1-transform computation.
+    /** @brief Creates vertical matrix for \f$F^1\f$-transform computation.
     @param radius Radius of the basic function.
     @param matrix The vertical matrix.
     @param chn Number of channels.
 
-    The function creates helper vertical matrix for F1-transfrom processing. It is used for gradient computation.
+    The function creates helper vertical matrix for \f$F^1\f$-transfrom processing. It is used for gradient computation.
     */
     CV_EXPORTS_W void FT12D_createPolynomMatrixVertical(int radius, OutputArray matrix, const int chn);
 
-    /** @brief Creates horizontal matrix for F1-transform computation.
+    /** @brief Creates horizontal matrix for \f$F^1\f$-transform computation.
     @param radius Radius of the basic function.
     @param matrix The horizontal matrix.
     @param chn Number of channels.
 
-    The function creates helper horizontal matrix for F1-transfrom processing. It is used for gradient computation.
+    The function creates helper horizontal matrix for \f$F^1\f$-transfrom processing. It is used for gradient computation.
     */
     CV_EXPORTS_W void FT12D_createPolynomMatrixHorizontal(int radius, OutputArray matrix, const int chn);
 
-    /** @brief Computes F1-transfrom and inverse F1-transfrom at once.
+    /** @brief Computes \f$F^1\f$-transfrom and inverse \f$F^1\f$-transfrom at once.
     @param matrix Input matrix.
-    @param kernel Kernel used for processing. Function **createKernel** can be used.
+    @param kernel Kernel used for processing. Function `ft::createKernel` can be used.
     @param output Output 32-bit float array.
     @param mask Mask used for unwanted area marking.
 
-    This function computes F1-transfrom and inverse F1-transfotm in one step. It is fully sufficient and optimized for **Mat**.
+    This function computes \f$F^1\f$-transfrom and inverse \f$F^1\f$-transfotm in one step. It is fully sufficient and optimized for `cv::Mat`.
+
+    @note
+        F-transform technique of first degreee is described in paper @cite Vlas:FT.
     */
     CV_EXPORTS_W void FT12D_process(InputArray matrix, InputArray kernel, OutputArray output, InputArray mask = noArray());
 
-    /** @brief Computes inverse F1-transfrom.
+    /** @brief Computes inverse \f$F^1\f$-transfrom.
     @param components Input 32-bit float single channel array for the components.
     @param kernel Kernel used for processing. The same kernel as for components computation must be used.
     @param output Output 32-bit float array.
     @param width Width of the output array.
     @param height Height of the output array.
 
-    @note
-        F-transform technique of first degreee is described in paper @cite Vlas:FT.
+    Computation of inverse \f$F^1\f$-transform.
     */
     CV_EXPORTS_W void FT12D_inverseFT(InputArray components, InputArray kernel, OutputArray output, int width, int height);
 
