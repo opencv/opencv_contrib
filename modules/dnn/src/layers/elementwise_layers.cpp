@@ -224,7 +224,7 @@ Ptr<_Layer> _Layer::create() { \
 Ptr<ReLULayer> ReLULayer::create(const LayerParams& params)
 {
     float negativeSlope = params.get<float>("negative_slope", 0.f);
-    Ptr<ReLULayer> l(new ElementWiseLayer<ReLUFunctor>(false, ReLUFunctor(negativeSlope)));
+    Ptr<ReLULayer> l(new ElementWiseLayer<ReLUFunctor>(true, ReLUFunctor(negativeSlope)));
     l->setParamsFrom(params);
 
     return l;
