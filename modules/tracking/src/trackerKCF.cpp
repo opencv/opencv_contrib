@@ -341,6 +341,10 @@ namespace cv{
 
       // extract the maximum response
       minMaxLoc( response, &minVal, &maxVal, &minLoc, &maxLoc );
+      if (maxVal < params.detect_thresh)
+      {
+          return false;
+      }
       roi.x+=(maxLoc.x-roi.width/2+1);
       roi.y+=(maxLoc.y-roi.height/2+1);
     }
@@ -821,6 +825,7 @@ namespace cv{
  * Parameters
  */
   TrackerKCF::Params::Params(){
+      detect_thresh = 0.5;
       sigma=0.2;
       lambda=0.01;
       interp_factor=0.075;
@@ -840,6 +845,9 @@ namespace cv{
 
   void TrackerKCF::Params::read( const cv::FileNode& fn ){
       *this = TrackerKCF::Params();
+
+      if (!fn["detect_thresh"].empty())
+          fn["detect_thresh"] >> detect_thresh;
 
       if (!fn["sigma"].empty())
           fn["sigma"] >> sigma;
@@ -883,6 +891,7 @@ namespace cv{
   }
 
   void TrackerKCF::Params::write( cv::FileStorage& fs ) const{
+    fs << "detect_thresh" << detect_thresh;
     fs << "sigma" << sigma;
     fs << "lambda" << lambda;
     fs << "interp_factor" << interp_factor;
