@@ -94,9 +94,6 @@ public:
     int _keepTopK;
     float _confidenceThreshold;
 
-    int _num;
-    int _numPriors;
-
     float _nmsThreshold;
     int _topK;
 
@@ -184,58 +181,62 @@ public:
         }
     }
 
-    void allocate(const std::vector<Mat*> &inputs,
-                                        std::vector<Mat> &outputs)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
     {
         CV_Assert(inputs.size() > 0);
-        CV_Assert(inputs[0]->size[0] == inputs[1]->size[0]);
-        _num = inputs[0]->size[0];
+        CV_Assert(inputs[0][0] == inputs[1][0]);
 
-        _numPriors = inputs[2]->size[2] / 4;
-        CV_Assert((_numPriors * _numLocClasses * 4) == inputs[0]->size[1]);
-        CV_Assert(int(_numPriors * _numClasses) == inputs[1]->size[1]);
+        int numPriors = inputs[2][2] / 4;
+        CV_Assert((numPriors * _numLocClasses * 4) == inputs[0][1]);
+        CV_Assert(int(numPriors * _numClasses) == inputs[1][1]);
 
         // num() and channels() are 1.
         // Since the number of bboxes to be kept is unknown before nms, we manually
         // set it to (fake) 1.
         // Each row is a 7 dimension std::vector, which stores
         // [image_id, label, confidence, xmin, ymin, xmax, ymax]
-        int outputShape[] = {1, 1, 1, 7};
-        outputs[0].create(4, outputShape, CV_32F);
+        outputs.resize(1, shape(1, 1, 1, 7));
+
+        return false;
     }
 
-    void forward(std::vector<Mat*> &inputs,
-                                       std::vector<Mat> &outputs)
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         const float* locationData = inputs[0]->ptr<float>();
         const float* confidenceData = inputs[1]->ptr<float>();
         const float* priorData = inputs[2]->ptr<float>();
 
+        int num = inputs[0]->size[0];
+        int numPriors = inputs[2]->size[2] / 4;
+
         // Retrieve all location predictions.
         std::vector<LabelBBox> allLocationPredictions;
-        GetLocPredictions(locationData, _num, _numPriors, _numLocClasses,
+        GetLocPredictions(locationData, num, numPriors, _numLocClasses,
                           _shareLocation, &allLocationPredictions);
 
         // Retrieve all confidences.
         std::vector<std::map<int, std::vector<float> > > allConfidenceScores;
-        GetConfidenceScores(confidenceData, _num, _numPriors, _numClasses,
+        GetConfidenceScores(confidenceData, num, numPriors, _numClasses,
                             &allConfidenceScores);
 
         // Retrieve all prior bboxes. It is same within a batch since we assume all
         // images in a batch are of same dimension.
         std::vector<caffe::NormalizedBBox> priorBBoxes;
         std::vector<std::vector<float> > priorVariances;
-        GetPriorBBoxes(priorData, _numPriors, &priorBBoxes, &priorVariances);
+        GetPriorBBoxes(priorData, numPriors, &priorBBoxes, &priorVariances);
 
         // Decode all loc predictions to bboxes.
         std::vector<LabelBBox> allDecodedBBoxes;
-        DecodeBBoxesAll(allLocationPredictions, priorBBoxes, priorVariances, _num,
+        DecodeBBoxesAll(allLocationPredictions, priorBBoxes, priorVariances, num,
                         _shareLocation, _numLocClasses, _backgroundLabelId,
                         _codeType, _varianceEncodedInTarget, &allDecodedBBoxes);
 
         int numKept = 0;
         std::vector<std::map<int, std::vector<int> > > allIndices;
-        for (int i = 0; i < _num; ++i)
+        for (int i = 0; i < num; ++i)
         {
             const LabelBBox& decodeBBoxes = allDecodedBBoxes[i];
             const std::map<int, std::vector<float> >& confidenceScores =
@@ -324,7 +325,7 @@ public:
         float* outputsData = outputs[0].ptr<float>();
 
         int count = 0;
-        for (int i = 0; i < _num; ++i)
+        for (int i = 0; i < num; ++i)
         {
             const std::map<int, std::vector<float> >& confidenceScores =
             allConfidenceScores[i];

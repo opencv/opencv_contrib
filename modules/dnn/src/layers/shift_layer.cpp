@@ -11,6 +11,7 @@ Implementation of shift layer, which adds up const values to blob.
 
 #include "../precomp.hpp"
 #include "op_blas.hpp"
+#include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
 {
@@ -35,42 +36,17 @@ public:
 #endif
     }
 
-    virtual void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
     {
-        CV_Assert(inputs.size() > 0);
-        CV_Assert(blobs.size() > 0);
-        const Mat &inpBlob = *inputs[0];
-        CV_Assert(inpBlob.dims == 4 && inpBlob.type() == CV_32F);
-        const Mat &biasBlob = blobs[0];
-        outputs.resize(inputs.size());
-
-        if(inpBlob.dims == biasBlob.dims)
-        {
-            for (size_t i = 0; i < inputs.size(); i++)
-            {
-                CV_Assert(inputs[i]->type() == inpBlob.type());
-                CV_Assert(inputs[i]->dims == inpBlob.dims);
-
-                outputs[i] = *inputs[i];
-            }
-        }
-        else
-        {
-            CV_Assert(biasBlob.total() == (size_t)inpBlob.size[1]);
-
-            for (size_t i = 0; i < inputs.size(); i++)
-            {
-                CV_Assert(inputs[i]->type() == inpBlob.type());
-                CV_Assert(inputs[i]->dims == 4 && inputs[i]->size[1] == inpBlob.size[1]);
-
-                outputs[i] = *inputs[i];
-            }
-
-            biasOnesMat = Mat::ones(1, inpBlob.size[2] * inpBlob.size[3], inpBlob.type());
-        }
+        Layer::getMemoryShapes(inputs, requiredOutputs, outputs, internals);
+        internals.assign(1, shape(1, total(inputs[0], 2)));
+        return true;
     }
 
-    virtual void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    virtual void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         CV_Assert(inputs.size() > 0);
         CV_Assert(blobs.size() > 0);
@@ -87,6 +63,8 @@ public:
         }
         else
         {
+            Mat biasOnesMat = internals[0];
+            biasOnesMat.setTo(1);
             for (size_t ii = 0; ii < outputs.size(); ii++)
             {
                 Mat &inpBlob = *inputs[ii];
@@ -103,8 +81,6 @@ public:
             }
         }
     }
-
-    Mat biasOnesMat;
 };
 
 Ptr<ShiftLayer> ShiftLayer::create(const LayerParams& params)

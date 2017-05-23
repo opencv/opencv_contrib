@@ -36,16 +36,16 @@ public:
 
     ElementWiseLayer(bool run_parallel_=false, const Func &f=Func()) : func(f), run_parallel(run_parallel_) {}
 
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                                         const int requiredOutputs,
+                                         std::vector<MatShape> &outputs,
+                                         std::vector<MatShape> &internals) const
     {
-        outputs.resize(inputs.size());
-        for (size_t i = 0; i < inputs.size(); i++)
-        {
-            outputs[i] = *inputs[i];
-        }
+        Layer::getMemoryShapes(inputs, requiredOutputs, outputs, internals);
+        return true;
     }
 
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         for (size_t i = 0; i < inputs.size(); i++)
         {
@@ -169,20 +169,16 @@ public:
         setParamsFrom(params);
     }
 
-    ////////////////////////////////////////////////////////////////////////////
-
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                                         const int requiredOutputs,
+                                         std::vector<MatShape> &outputs,
+                                         std::vector<MatShape> &internals) const
     {
-        CV_Assert(blobs.size() == 1);
-
-        outputs.resize(inputs.size());
-        for (size_t i = 0; i < inputs.size(); i++)
-        {
-            outputs[i].create(inputs[i]->dims, inputs[i]->size.p, inputs[i]->type());
-        }
+        Layer::getMemoryShapes(inputs, requiredOutputs, outputs, internals);
+        return true;
     }
 
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         CV_Assert(inputs.size() == 1);
         Mat &inpBlob = *inputs[0];

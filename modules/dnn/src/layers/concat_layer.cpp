@@ -56,49 +56,50 @@ public:
         axis = params.get<int>("axis", 1);
     }
 
-    void allocate(const std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
+    virtual bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                                 const int requiredOutputs,
+                                 std::vector<MatShape> &outputs,
+                                 std::vector<MatShape> &internals) const
     {
         CV_Assert(inputs.size() > 0);
-
-        int dims = inputs[0]->dims, dtype = inputs[0]->type();
-        std::vector<int> refShape(inputs[0]->size.p, inputs[0]->size.p + dims);
-        axisIdx = axis < 0 ? axis + dims : axis;
+        outputs.clear();
+        outputs.push_back(inputs[0]);
+        int cAxis = clamp(axis, inputs[0]);
 
         int axisSum = 0;
         for (size_t i = 0; i < inputs.size(); i++)
         {
-            CV_Assert(inputs[i]->type() == dtype);
-            for (int curAxis = 0; curAxis < dims; curAxis++)
+            MatShape curShape = inputs[i];
+
+            CV_Assert(curShape.size() == outputs.back().size());
+            for (int curAxis = 0; curAxis < outputs.back().size(); curAxis++)
             {
-                if (curAxis != axisIdx && inputs[0]->size[curAxis] != inputs[i]->size[curAxis])
+                if (curAxis != cAxis && outputs.back()[curAxis] != curShape[curAxis])
                     CV_Error(Error::StsBadSize, "Inconsitent shape for ConcatLayer");
             }
 
-            axisSum += inputs[i]->size[axisIdx];
+            axisSum += curShape[cAxis];
         }
 
-        refShape[axisIdx] = axisSum;
+        outputs.back()[cAxis] = axisSum;
 
-        outputs.resize(1);
-        outputs[0].create(dims, &refShape[0], dtype);
+        return false;
     }
 
-
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
+        int cAxis = clamp(axis, inputs[0]->dims);
         Mat& outMat = outputs[0];
         std::vector<Range> ranges(outputs[0].dims, Range::all());
 
-        ranges[axisIdx].start = 0;
+        ranges[cAxis].start = 0;
         for (size_t i = 0; i < inputs.size(); i++)
         {
-            ranges[axisIdx].end = ranges[axisIdx].start + inputs[i]->size[axisIdx];
+            ranges[cAxis].end = ranges[cAxis].start + inputs[i]->size[cAxis];
             inputs[i]->copyTo(outMat(&ranges[0]));
-            ranges[axisIdx].start = ranges[axisIdx].end;
+            ranges[cAxis].start = ranges[cAxis].end;
         }
     }
-
-    int axisIdx;
 };
 
 Ptr<ConcatLayer> ConcatLayer::create(const LayerParams& params)

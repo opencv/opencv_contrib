@@ -185,34 +185,41 @@ public:
         }
     }
 
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
     {
         CV_Assert(inputs.size() == 2);
 
-        _layerWidth = inputs[0]->size[3];
-        _layerHeight = inputs[0]->size[2];
-
-        _imageWidth = inputs[1]->size[3];
-        _imageHeight = inputs[1]->size[2];
-
-        _stepX = static_cast<float>(_imageWidth) / _layerWidth;
-        _stepY = static_cast<float>(_imageHeight) / _layerHeight;
+        int layerHeight = inputs[0][2];
+        int layerWidth = inputs[0][3];
 
         // Since all images in a batch has same height and width, we only need to
         // generate one set of priors which can be shared across all images.
-        int outNum = 1;
+        size_t outNum = 1;
         // 2 channels. First channel stores the mean of each prior coordinate.
         // Second channel stores the variance of each prior coordinate.
-        int outChannels = 2;
-        _outChannelSize = _layerHeight * _layerWidth * _numPriors * 4;
+        size_t outChannels = 2;
 
-        int outsz[] = { outNum, outChannels, (int)_outChannelSize };
-        outputs[0].create(3, outsz, CV_32F);
+        outputs.resize(1, shape(outNum, outChannels,
+                                layerHeight * layerWidth * _numPriors * 4));
+
+        return false;
     }
 
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
-        (void)inputs; // to suppress unused parameter warning
+        int _layerWidth = inputs[0]->size[3];
+        int _layerHeight = inputs[0]->size[2];
+
+        int _imageWidth = inputs[1]->size[3];
+        int _imageHeight = inputs[1]->size[2];
+
+        float _stepX = static_cast<float>(_imageWidth) / _layerWidth;
+        float _stepY = static_cast<float>(_imageHeight) / _layerHeight;
+
+        int _outChannelSize = _layerHeight * _layerWidth * _numPriors * 4;
 
         float* outputPtr = outputs[0].ptr<float>();
 
@@ -304,17 +311,6 @@ public:
             }
         }
     }
-
-    size_t _layerWidth;
-    size_t _layerHeight;
-
-    size_t _imageWidth;
-    size_t _imageHeight;
-
-    size_t _outChannelSize;
-
-    float _stepX;
-    float _stepY;
 
     float _minSize;
     float _maxSize;

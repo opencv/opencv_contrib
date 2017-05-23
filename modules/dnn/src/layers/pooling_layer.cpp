@@ -77,39 +77,22 @@ public:
         setParamsFrom(params);
     }
 
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    void finalize(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
     {
         CV_Assert(inputs.size() == 1);
 
-        inp = Size(inputs[0]->size[3], inputs[0]->size[2]);
+        cv::Size inp(inputs[0]->size[3], inputs[0]->size[2]),
+                out(outputs[0].size[3], outputs[0].size[2]);
 
         if(globalPooling)
         {
             kernel = inp;
         }
 
-        computeOutputShape(inp);
-
-        outputs.resize(type == MAX ? 2 * inputs.size() : inputs.size());
-        for (size_t i = 0; i < inputs.size(); i++)
-        {
-            const Mat& inp_i = *inputs[i];
-            CV_Assert(inp_i.size[2] == inp.height && inp_i.size[3] == inp.width);
-            int outsz[] = { inp_i.size[0], inp_i.size[1], out.height, out.width };
-
-            if (type == MAX)
-            {
-                outputs[2 * i].create(4, outsz, CV_32F);
-                outputs[2 * i + 1].create(4, outsz, CV_32F);
-            }
-            else
-            {
-                outputs[i].create(4, outsz, CV_32F);
-            }
-        }
+        getConvPoolPaddings(inp, out, kernel, stride, padMode, pad);
     }
 
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         for (size_t ii = 0; ii < inputs.size(); ii++)
         {
@@ -130,7 +113,8 @@ public:
 
     void maxPooling(Mat &src, Mat &dst, Mat &mask)
     {
-        CV_DbgAssert(dst.size[2] == out.height && dst.size[3] == out.width);
+        Size inp(src.size[3], src.size[2]),
+            out(dst.size[3], dst.size[2]);
 
         for (int n = 0; n < src.size[0]; ++n)
         {
@@ -175,6 +159,8 @@ public:
 
     void avePooling(Mat &src, Mat &dst)
     {
+        Size inp(src.size[3], src.size[2]),
+            out(dst.size[3], dst.size[2]);
         for (int n = 0; n < src.size[0]; ++n)
         {
             for (int c = 0; c < src.size[1]; ++c)
@@ -209,35 +195,52 @@ public:
         }
     }
 
-    void computeOutputShape(Size inpSz)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
     {
+        CV_Assert(inputs.size() != 0);
+        Size in(inputs[0][3], inputs[0][2]), out;
+
         if (padMode.empty()) {
             //Yeah, something strange Caffe scheme-)
-            out.height = static_cast<int>(ceil(static_cast<float>(inpSz.height + 2 * pad.height -
+            out.height = static_cast<int>(ceil(static_cast<float>(in.height + 2 * pad.height -
                                                                   kernel.height) / stride.height)) + 1;
-            out.width = static_cast<int>(ceil(static_cast<float>(inpSz.width + 2 * pad.width -
+            out.width = static_cast<int>(ceil(static_cast<float>(in.width + 2 * pad.width -
                                                                  kernel.width) / stride.width)) + 1;
 
             if (pad.height || pad.width)
             {
                 // If we have padding, ensure that the last pooling starts strictly
                 // inside the image (instead of at the padding); otherwise clip the last.
-                if ((out.height - 1) * stride.height >= inpSz.height + pad.height)
+                if ((out.height - 1) * stride.height >= in.height + pad.height)
                     --out.height;
-                if ((out.width - 1) * stride.width >= inpSz.width + pad.width)
+                if ((out.width - 1) * stride.width >= in.width + pad.width)
                     --out.width;
-                CV_Assert((out.height - 1) * stride.height < inpSz.height + pad.height);
-                CV_Assert((out.width - 1) * stride.width < inpSz.width + pad.width);
+                CV_Assert((out.height - 1) * stride.height < in.height + pad.height);
+                CV_Assert((out.width - 1) * stride.width < in.width + pad.width);
             }
         }
         else
         {
-            getConvPoolOutParams(inpSz.height, inpSz.width, kernel, stride, pad,
-                                 padMode, out.height, out.width);
+            getConvPoolOutParams(in, kernel, stride,
+                                 padMode, out);
         }
-    }
 
-    Size inp, out;
+        outputs.resize(type == MAX ? 2 * inputs.size() : inputs.size());
+        for (size_t i = 0; i < inputs.size(); i++)
+        {
+            size_t index = type == MAX ? 2*i : i;
+            int dims[] = {inputs[i][0], inputs[i][1], out.height, out.width};
+            outputs[index] = shape(dims);
+
+            if (type == MAX)
+                outputs[index + 1] = shape(dims);
+        }
+
+        return false;
+    }
 };
 
 Ptr<PoolingLayer> PoolingLayer::create(const LayerParams& params)

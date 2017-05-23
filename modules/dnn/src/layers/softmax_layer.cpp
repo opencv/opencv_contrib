@@ -60,36 +60,34 @@ public:
         setParamsFrom(params);
     }
 
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
     {
-        CV_Assert(inputs.size() == 1);
-        const Mat& inp0 = *inputs[0];
-        int dims = inp0.dims;
-        axis = axisRaw < 0 ? axisRaw + dims : axisRaw;
-
-        outerSize = inp0.total(0, axis);
-        channels = inp0.size[axis];
-        innerSize = inp0.total(axis + 1);
-
-        std::vector<int> shape(inp0.size.p, inp0.size.p + dims);
-        shape[axis] = 1;
-        buf.create(shape, inp0.type());
-
-        outputs.resize(1);
-        outputs[0].create(inp0.dims, inp0.size.p, inp0.type());
+        bool inplace = Layer::getMemoryShapes(inputs, requiredOutputs, outputs, internals);
+        MatShape shape = inputs[0];
+        int cAxis = clamp(axisRaw, shape.size());
+        shape[cAxis] = 1;
+        internals.assign(1, shape);
+        return inplace;
     }
 
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         const Mat &src = *inputs[0];
         Mat &dst = outputs[0];
+
+        int axis = clamp(axisRaw, src.dims);
+        size_t outerSize = src.total(0, axis), channels = src.size[axis],
+                innerSize = src.total(axis + 1);
 
         CV_Assert(src.type() == CV_32F);
         CV_Assert(src.isContinuous() && dst.isContinuous());
 
         const float *srcPtr = src.ptr<float>();
         float *dstPtr = dst.ptr<float>();
-        float *bufPtr = buf.ptr<float>();
+        float *bufPtr = internals[0].ptr<float>();
 
         size_t outerStep = src.total(axis);
         size_t cnStep = src.total(axis + 1);
@@ -148,9 +146,7 @@ public:
         }
     }
 
-    int axis, axisRaw;
-    Mat buf;
-    size_t outerSize, channels, innerSize;
+    int axisRaw;
 };
 
 Ptr<SoftmaxLayer> SoftmaxLayer::create(const LayerParams& params)

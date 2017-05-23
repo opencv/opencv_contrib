@@ -53,6 +53,8 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
 //! @addtogroup dnn
 //! @{
 
+    typedef std::vector<int> MatShape;
+
     /** @brief Initialize dnn module and built-in layers.
      *
      * This function automatically called on most of OpenCV builds,
@@ -87,33 +89,35 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
         //! List of learned parameters must be stored here to allow read them by using Net::getParam().
         CV_PROP_RW std::vector<Mat> blobs;
 
-        /** @brief Allocates internal buffers and output blobs with respect to the shape of inputs.
+        /** @brief Computes and sets internal parameters according to inputs, outputs and blobs.
          *  @param[in]  input  vector of already allocated input blobs
-         *  @param[out] output vector of output blobs, which must be allocated
+         *  @param[out] output vector of already allocated output blobs
          *
-         * This method must create each produced blob according to shape of @p input blobs and internal layer params.
-         * If this method is called first time then @p output vector consists from empty blobs and its size determined by number of output connections.
-         * This method can be called multiple times if size of any @p input blob was changed.
+         * If this method is called after network has allocated all memory for input and output blobs
+         * and before inferencing.
          */
-        virtual void allocate(const std::vector<Mat*> &input, std::vector<Mat> &output) = 0;
+        virtual void finalize(const std::vector<Mat*> &input, std::vector<Mat> &output);
 
         /** @brief Given the @p input blobs, computes the output @p blobs.
          *  @param[in]  input  the input blobs.
          *  @param[out] output allocated output blobs, which will store results of the computation.
+         *  @param[out] internals allocated internal blobs
          */
-        virtual void forward(std::vector<Mat*> &input, std::vector<Mat> &output) = 0;
+        virtual void forward(std::vector<Mat*> &input, std::vector<Mat> &output, std::vector<Mat> &internals) = 0;
 
         /** @brief @overload */
-        CV_WRAP void allocate(const std::vector<Mat> &inputs, CV_OUT std::vector<Mat> &outputs);
+        CV_WRAP void finalize(const std::vector<Mat> &inputs, CV_OUT std::vector<Mat> &outputs);
 
         /** @brief @overload */
-        CV_WRAP std::vector<Mat> allocate(const std::vector<Mat> &inputs);
+        CV_WRAP std::vector<Mat> finalize(const std::vector<Mat> &inputs);
 
         /** @brief @overload */
-        CV_WRAP void forward(const std::vector<Mat> &inputs, CV_IN_OUT std::vector<Mat> &outputs);
+        CV_WRAP void forward(const std::vector<Mat> &inputs, CV_IN_OUT std::vector<Mat> &outputs,
+                             CV_IN_OUT std::vector<Mat> &internals);
 
         /** @brief Allocates layer and computes output. */
-        CV_WRAP void run(const std::vector<Mat> &inputs, CV_OUT std::vector<Mat> &outputs);
+        CV_WRAP void run(const std::vector<Mat> &inputs, CV_OUT std::vector<Mat> &outputs,
+                         CV_IN_OUT std::vector<Mat> &internals);
 
         /** @brief Returns index of input blob into the input array.
          *  @param inputName label of input blob
@@ -126,6 +130,11 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          *  @see inputNameToIndex()
          */
         virtual int outputNameToIndex(String outputName);
+
+        virtual bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                                     const int requiredOutputs,
+                                     std::vector<MatShape> &outputs,
+                                     std::vector<MatShape> &internals) const;
 
         CV_PROP String name; //!< Name of the layer instance, can be used for logging or other internal purposes.
         CV_PROP String type; //!< Type name which was used for creating layer by layer factory.
@@ -275,6 +284,45 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
         /** @brief Returns indexes of layers with unconnected outputs.
          */
         CV_WRAP std::vector<int> getUnconnectedOutLayers() const;
+        /** @brief Returns input and output shapes for all layers in loaded model;
+          *  preliminary inferencing isn't necessary.
+          *  @param netInputShapes shapes for all input blobs in net input layer.
+          *  @param layersIds output parameter for layer IDs.
+          *  @param inLayersShapes output parameter for input layers shapes;
+          * order is the same as in layersIds
+          *  @param outLayersShapes output parameter for output layers shapes;
+          * order is the same as in layersIds
+          */
+         CV_WRAP void getLayersShapes(const std::vector<MatShape>& netInputShapes,
+                                      std::vector<int>* layersIds,
+                                      std::vector<std::vector<MatShape> >* inLayersShapes,
+                                      std::vector<std::vector<MatShape> >* outLayersShapes) const;
+
+         /** @overload */
+         CV_WRAP void getLayersShapes(const MatShape& netInputShape,
+                                      std::vector<int>* layersIds,
+                                      std::vector<std::vector<MatShape> >* inLayersShapes,
+                                      std::vector<std::vector<MatShape> >* outLayersShapes) const;
+
+         /** @brief Returns input and output shapes for layer with specified
+          * id in loaded model; preliminary inferencing isn't necessary.
+          *  @param netInputShape shape input blob in net input layer.
+          *  @param layerId id for layer.
+          *  @param inLayerShapes output parameter for input layers shapes;
+          * order is the same as in layersIds
+          *  @param outLayerShapes output parameter for output layers shapes;
+          * order is the same as in layersIds
+          */
+         CV_WRAP void getLayerShapes(const MatShape& netInputShape,
+                                     const int layerId,
+                                     std::vector<MatShape>* inLayerShapes,
+                                     std::vector<MatShape>* outLayerShapes) const;
+
+         /** @overload */
+         CV_WRAP void getLayerShapes(const std::vector<MatShape>& netInputShapes,
+                                     const int layerId,
+                                     std::vector<MatShape>* inLayerShapes,
+                                     std::vector<MatShape>* outLayerShapes) const;
     private:
 
         struct Impl;

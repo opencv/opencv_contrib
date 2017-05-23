@@ -33,25 +33,26 @@ public:
             CV_Error(cv::Error::StsNotImplemented, "Negative padding and dim aren't supported");
     }
 
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
     {
-        size_t i, ninputs = inputs.size();
-        outputs.resize(ninputs);
-
-        for( i = 0; i < ninputs; i++ )
+        outputs.clear();
+        for(int i = 0; i < inputs.size(); i++)
         {
-            const Mat& inp = *inputs[i];
-            int dims = inp.dims;
-            std::vector<int> shape(inp.size.p, inp.size.p + dims);
+            MatShape shape = inputs[i];
             int dim = getPadDim(shape);
-            CV_Assert(dim < dims);
+            CV_Assert(dim < shape.size());
 
             shape[dim] += padding;
-            outputs[i].create(dims, &shape[0], inp.type());
+            outputs.push_back(shape);
         }
+
+        return false;
     }
 
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         for(int i = 0; i < inputs.size(); i++)
         {
@@ -59,8 +60,8 @@ public:
             const Mat& inp = *inputs[i];
             Mat& out = outputs[i];
             int dims = inp.dims;
-            std::vector<int> inShape(inp.size.p, inp.size.p + dims);
-            std::vector<int> outShape(out.size.p, out.size.p + dims);
+            MatShape inShape(inp.size.p, inp.size.p + dims);
+            MatShape outShape(out.size.p, out.size.p + dims);
             int dim = getPadDim(inShape);
 
             int actualIndex = index;
@@ -88,7 +89,7 @@ public:
         }
     }
 
-    int getPadDim(const std::vector<int>& shape) const
+    int getPadDim(const MatShape& shape) const
     {
         return inputDims > 0 && (int)shape.size() > inputDims ? paddingDim + 1 : paddingDim;
     }

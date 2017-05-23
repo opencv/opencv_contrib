@@ -63,7 +63,26 @@ public:
         }
     }
 
-    void allocate(const std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
+    {
+        CV_Assert(inputs.size() == 2);
+
+        MatShape dstShape = inputs[0];
+        int start = clamp(startAxis, dstShape);
+        for (int i = start; i < dstShape.size(); i++)
+        {
+            dstShape[i] = inputs[1][i];
+        }
+
+        outputs.resize(1, dstShape);
+
+        return false;
+    }
+
+    void finalize(const std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
     {
         CV_Assert(2 == inputs.size());
 
@@ -71,7 +90,7 @@ public:
         const Mat &inpSzBlob = *inputs[1];
 
         int dims = inpBlob.dims;
-        int start_axis = startAxis < 0 ? startAxis + dims : startAxis;
+        int start_axis = clamp(startAxis, dims);
 
         std::vector<int> offset_final(dims, 0);
         if (offset.size() == 1)
@@ -82,17 +101,16 @@ public:
         else if (offset.size() > 1)
         {
             if ((int)offset.size() != dims - start_axis)
-                CV_Error(Error::StsBadArg, "number of offset values specified must be equal to the number of dimensions following axis.");
+                CV_Error(Error::StsBadArg, "number of offset values specified must be "
+                                           "equal to the number of dimensions following axis.");
 
             for (int i = start_axis; i < dims; i++)
                 offset_final[i] = offset[i - start_axis];
         }
 
-        std::vector<int> dstShape(dims);
         crop_ranges.resize(dims, Range::all());
         for (int i = 0; i < dims; i++)
         {
-            dstShape[i] = inpSzBlob.size[i];
             if( i < start_axis )
                 continue;
 
@@ -112,12 +130,9 @@ public:
                 crop_ranges[i] = Range(cur_crop, cur_crop + inpSzBlob.size[i]);
             }
         }
-
-        outputs.resize(1);
-        outputs[0].create(dims, &dstShape[0], inpBlob.type());
     }
 
-    void forward(std::vector<Mat *> &inputs, std::vector<Mat> &outputs)
+    void forward(std::vector<Mat *> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         Mat &input = *inputs[0];
         Mat &output = outputs[0];

@@ -57,8 +57,8 @@ public:
         setParamsFrom(params);
         CV_Assert(1 <= blobs.size() && blobs.size() <= 2);
 
-        numOutput = params.get<int>("num_output");
-        innerSize = (int)blobs[0].total() / numOutput;
+        int numOutput = params.get<int>("num_output");
+        int innerSize = (int)blobs[0].total() / numOutput;
         bias = params.get<bool>("bias_term", true);
         axis = params.get<int>("axis", 1);
 
@@ -70,43 +70,39 @@ public:
             blobs[1] = blobs[1].reshape(1, 1);
     }
 
-    void allocate(const std::vector<Mat*> &input, std::vector<Mat> &output)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
     {
-        CV_Assert(input.size() > 0);
-        const Mat& inp0 = *input[0];
-
+        CV_Assert(inputs.size() > 0);
         CV_Assert(1 <= blobs.size() && blobs.size() <= 2);
         CV_Assert(blobs[0].dims == 2);
 
-        bias = (blobs.size() >= 1);
-        axisCan = axis < 0 ? axis + inp0.dims : axis;
-        dtype = inp0.type();
-        numOutput = blobs[0].size[0];
-        innerSize = blobs[0].size[1];
-        outerSize = inp0.total(0, axisCan);
-        size_t innerSize0 = inp0.total(axisCan);
+        int cAxis = clamp(axis, inputs[0]);
+        int outerSize = total(inputs[0], 0, cAxis);
+        int numOutput = blobs[0].size[0];
+        outputs.resize(inputs.size(), shape(outerSize, numOutput));
 
-        CV_Assert((size_t)innerSize == innerSize0);
+        internals.push_back(shape(outerSize, 1));
+
         CV_Assert(!bias || (size_t)numOutput == blobs[1].total());
 
-        biasOnesBlob.create(outerSize, 1, dtype);
-        biasOnesBlob.setTo(1.);
-
-        output.resize(input.size());
-        for (size_t i = 0; i < input.size(); i++)
-        {
-            CV_Assert(i == 0 || (input[i]->size == input[0]->size && input[i]->type() == dtype));
-            output[i].create(outerSize, numOutput, dtype);
-        }
+        return false;
     }
 
-    void forward(std::vector<Mat*> &input, std::vector<Mat> &output)
+    void forward(std::vector<Mat*> &input, std::vector<Mat> &output, std::vector<Mat> &internals)
     {
+        internals[0].setTo(1.);
         const Mat &weight = blobs[0];
         const Mat *biasMat = NULL, *biasOnesMat = NULL;
+
+        int axisCan = clamp(axis, input[0]->dims);
+        int outerSize = input[0]->total(0, axisCan);
+
         if (bias)
         {
-            biasOnesMat = &biasOnesBlob;
+            biasOnesMat = &internals[0];
             biasMat = &blobs[1];
         }
 
@@ -121,10 +117,7 @@ public:
         }
     }
 
-    int axisCan, dtype;
-    int numOutput, innerSize, outerSize;
     bool bias;
-    Mat biasOnesBlob;
 };
 
 Ptr<InnerProductLayer> InnerProductLayer::create(const LayerParams& params)

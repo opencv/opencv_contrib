@@ -163,29 +163,41 @@ void getConvolutionKernelParams(const LayerParams &params, int &kernelH, int &ke
 // We pad Pr/2 on the left and Pr - Pr/2 on the right, Pc/2 on the top
 // and Pc - Pc/2 on the bottom.  When Pr or Pc is odd, this means
 // we pad more on the right and bottom than on the top and left.
-void getConvPoolOutParams(const int inputH, const int inputW, const cv::Size &kernel,
-                          const cv::Size &stride, cv::Size& pad, const cv::String &padMode,
-                          int &outH, int &outW)
+void getConvPoolOutParams(const Size& inp, const Size &kernel,
+                          const Size &stride, const String &padMode,
+                          Size& out)
 {
     if (padMode == "VALID")
     {
-        outH = (inputH - kernel.height + stride.height) / stride.height;
-        outW = (inputW - kernel.width + stride.width) / stride.width;
-        pad = cv::Size(0,0);
+        out.height = (inp.height - kernel.height + stride.height) / stride.height;
+        out.width = (inp.width- kernel.width + stride.width) / stride.width;
     }
     else if (padMode == "SAME")
     {
-        outH = (inputH - 1 + stride.height) / stride.height;
-        outW = (inputW - 1 + stride.width) / stride.width;
-        int Ph = std::max(0, (outH - 1) * stride.height + kernel.height - inputH);
-        int Pw = std::max(0, (outW - 1) * stride.width + kernel.width - inputW);
-        // For odd values of total padding, add more padding at the 'right'
-        // side of the given dimension.
-        pad = cv::Size(Pw / 2, Ph / 2);
+        out.height = (inp.height - 1 + stride.height) / stride.height;
+        out.width = (inp.width - 1 + stride.width) / stride.width;
     }
     else
     {
         CV_Error(Error::StsError, "Unsupported padding mode");
+    }
+}
+
+void getConvPoolPaddings(const Size& inp, const Size& out,
+                         const Size &kernel, const Size &stride,
+                         const String &padMode, Size &pad)
+{
+    if (padMode == "VALID")
+    {
+        pad = cv::Size(0,0);
+    }
+    else if (padMode == "SAME")
+    {
+        int Ph = std::max(0, (out.height - 1) * stride.height + kernel.height - inp.height);
+        int Pw = std::max(0, (out.width - 1) * stride.width + kernel.width - inp.width);
+        // For odd values of total padding, add more padding at the 'right'
+        // side of the given dimension.
+        pad = cv::Size(Pw / 2, Ph / 2);
     }
 }
 

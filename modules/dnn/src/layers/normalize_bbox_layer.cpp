@@ -51,31 +51,17 @@ namespace cv
 namespace dnn
 {
 
+namespace
+{
+    const std::string layerName = "NormalizeBBox";
+}
+
 class NormalizeBBoxLayerImpl : public NormalizeBBoxLayer
 {
-public:
-    Mat _buffer;
-
-    Mat _sumChannelMultiplier;
-    Mat _sumSpatialMultiplier;
-
-    Mat _scale;
-
     float _eps;
     bool _across_spatial;
     bool _channel_shared;
-
-    size_t _num;
-    size_t _channels;
-    size_t _rows;
-    size_t _cols;
-
-    size_t _channelSize;
-    size_t _imageSize;
-
-    static const size_t _numAxes = 4;
-    static const std::string _layerName;
-
+public:
     bool getParameterDict(const LayerParams &params,
                           const std::string &parameterName,
                           DictValue& result)
@@ -102,7 +88,7 @@ public:
         {
             if(required)
             {
-                std::string message = _layerName;
+                std::string message = layerName;
                 message += " layer parameter does not contain ";
                 message += parameterName;
                 message += " parameter.";
@@ -127,60 +113,63 @@ public:
     void checkInputs(const std::vector<Mat*> &inputs)
     {
         CV_Assert(inputs.size() > 0);
+        CV_Assert(inputs[0]->dims == 4 && inputs[0]->type() == CV_32F);
         for (size_t i = 1; i < inputs.size(); i++)
         {
+            CV_Assert(inputs[i]->dims == 4 && inputs[i]->type() == CV_32F);
             CV_Assert(inputs[i]->size == inputs[0]->size);
         }
         CV_Assert(inputs[0]->dims > 2);
     }
 
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
+    {
+        bool inplace = Layer::getMemoryShapes(inputs, requiredOutputs, outputs, internals);
+        size_t channels = inputs[0][1];
+        size_t rows = inputs[0][2];
+        size_t cols = inputs[0][3];
+        size_t channelSize = rows * cols;
+
+        internals.assign(1, shape(channels, channelSize));
+        internals.push_back(shape(channels, 1));
+        internals.push_back(shape(1, channelSize));
+
+        return inplace;
+    }
+
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         checkInputs(inputs);
 
+        Mat& buffer = internals[0], sumChannelMultiplier = internals[1],
+                sumSpatialMultiplier = internals[2];
+
+        sumChannelMultiplier.setTo(1.0);
+        sumSpatialMultiplier.setTo(1.0);
+
         const Mat& inp0 = *inputs[0];
-        CV_Assert(inp0.dims == 4 && inp0.type() == CV_32F);
+        size_t num = inp0.size[0];
+        size_t channels = inp0.size[1];
+        size_t channelSize = inp0.size[2] * inp0.size[3];
 
-        _num = inp0.size[0];
-        _channels = inp0.size[1];
-        _rows = inp0.size[2];
-        _cols = inp0.size[3];
-
-        _channelSize = _rows * _cols;
-        _imageSize = _channelSize * _channels;
-
-        _buffer = Mat(_channels, _channelSize, CV_32F);
-
-        _sumChannelMultiplier = Mat(_channels, 1, CV_32F, Scalar(1.0));
-        _sumSpatialMultiplier = Mat(1, _channelSize, CV_32F, Scalar(1.0));
-
-        _scale = blobs[0];
-        size_t i, ninputs = inputs.size();
-        outputs.resize(ninputs);
-
-        for(i = 0; i < ninputs; i++)
-        {
-            outputs[i].create(inp0.dims, inp0.size.p, inp0.type());
-        }
-    }
-
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
-    {
-        Mat zeroBuffer(_channels, _channelSize, CV_32F, Scalar(0));
+        Mat zeroBuffer(channels, channelSize, CV_32F, Scalar(0));
         Mat absDiff;
-
+        Mat scale = blobs[0];
         for (size_t j = 0; j < inputs.size(); j++)
         {
-            for (size_t n = 0; n < _num; ++n)
+            for (size_t n = 0; n < num; ++n)
             {
-                Mat src = Mat(_channels, _channelSize, CV_32F, inputs[j]->ptr<float>(n));
-                Mat dst = Mat(_channels, _channelSize, CV_32F, outputs[j].ptr<float>(n));
+                Mat src = Mat(channels, channelSize, CV_32F, inputs[j]->ptr<float>(n));
+                Mat dst = Mat(channels, channelSize, CV_32F, outputs[j].ptr<float>(n));
 
-                _buffer = src.mul(src);
+                buffer = src.mul(src);
 
                 if (_across_spatial)
                 {
-                    absdiff(_buffer, zeroBuffer, absDiff);
+                    absdiff(buffer, zeroBuffer, absDiff);
 
                     // add eps to avoid overflow
                     double absSum = sum(absDiff)[0] + _eps;
@@ -190,34 +179,34 @@ public:
                 }
                 else
                 {
-                    Mat norm(_channelSize, 1, _buffer.type()); // 1 x _channelSize
+                    Mat norm(channelSize, 1, buffer.type()); // 1 x channelSize
 
-                    // (_channels x_channelSize)T * _channels x 1 -> _channelSize x 1
-                    gemmCPU(_buffer, _sumChannelMultiplier, 1, norm, 0, GEMM_1_T);
+                    // (_channels x channelSize)T * _channels x 1 -> channelSize x 1
+                    gemmCPU(buffer, sumChannelMultiplier, 1, norm, 0, GEMM_1_T);
 
                     // compute norm
                     pow(norm, 0.5f, norm);
 
                     // scale the layer
-                    // _channels x 1 * (_channelSize x 1)T -> _channels x _channelSize
-                    gemmCPU(_sumChannelMultiplier, norm, 1, _buffer, 0, GEMM_2_T);
+                    // _channels x 1 * (channelSize x 1)T -> _channels x channelSize
+                    gemmCPU(sumChannelMultiplier, norm, 1, buffer, 0, GEMM_2_T);
 
-                    dst = src / _buffer;
+                    dst = src / buffer;
                 }
 
                 // scale the output
                 if (_channel_shared)
                 {
                     // _scale: 1 x 1
-                    dst *= _scale.at<float>(0, 0);
+                    dst *= scale.at<float>(0, 0);
                 }
                 else
                 {
                     // _scale: _channels x 1
-                    // _channels x 1 * 1 x _channelSize -> _channels x _channelSize
-                    gemmCPU(_scale, _sumSpatialMultiplier, 1, _buffer, 0);
+                    // _channels x 1 * 1 x channelSize -> _channels x channelSize
+                    gemmCPU(scale, sumSpatialMultiplier, 1, buffer, 0);
 
-                    dst = dst.mul(_buffer);
+                    dst = dst.mul(buffer);
                 }
             }
         }
@@ -225,7 +214,6 @@ public:
 
 };
 
-const std::string NormalizeBBoxLayerImpl::_layerName = std::string("NormalizeBBox");
 
 Ptr<NormalizeBBoxLayer> NormalizeBBoxLayer::create(const LayerParams &params)
 {

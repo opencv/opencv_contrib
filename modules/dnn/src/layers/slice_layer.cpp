@@ -66,66 +66,69 @@ public:
         }
     }
 
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                            const int requiredOutputs,
+                            std::vector<MatShape> &outputs,
+                            std::vector<MatShape> &internals) const
     {
         CV_Assert(inputs.size() == 1);
-        const Mat &inpBlob = *inputs[0];
-        int dims = inpBlob.dims;
 
-        axisIdx = axis < 0 ? axis + dims : axis;
-        int axisSize = inpBlob.size[axisIdx];
-        std::vector<int> inpShape(inpBlob.size.p, inpBlob.size.p + dims);
+        outputs.clear();
+
+        MatShape inpShape = inputs[0];
+        int cAxis = clamp(axis, inpShape.size());
+        int axisSize = inpShape[cAxis];
 
         if (sliceIndices.size()) //divide blob with respect to passed parameters
         {
-            std::vector<int> outAxisSize;
-            int prevSlice = 0;
+           std::vector<int> outAxisSize;
+           int prevSlice = 0;
 
-            for (size_t i = 0; i < sliceIndices.size(); i++)
-            {
-                if (!(prevSlice < sliceIndices[i] && sliceIndices[i] < axisSize))
-                    CV_Error(Error::StsBadArg, "Slice indices should be positive, increased and don't exceed size of sliced dimension");
+           for (size_t i = 0; i < sliceIndices.size(); i++)
+           {
+               if (!(prevSlice < sliceIndices[i] && sliceIndices[i] < axisSize))
+                   CV_Error(Error::StsBadArg, "Slice indices should be positive, increased and don't exceed size of sliced dimension");
 
-                outAxisSize.push_back(sliceIndices[i] - prevSlice);
-                prevSlice = sliceIndices[i];
+               outAxisSize.push_back(sliceIndices[i] - prevSlice);
+               prevSlice = sliceIndices[i];
             }
             outAxisSize.push_back(axisSize - prevSlice);
 
-            outputs.resize(outAxisSize.size());
             for (size_t i = 0; i < outAxisSize.size(); i++)
             {
-                inpShape[axisIdx] = outAxisSize[i];
-                outputs[i].create(inpShape, inpBlob.type());
+               inpShape[cAxis] = outAxisSize[i];
+              outputs.push_back(inpShape);
             }
         }
         else //divide blob with respect to count of output blobs
         {
-            CV_Assert(outputs.size() > 0 && axisSize % outputs.size() == 0);
-            int outAxisSize = axisSize / (int)outputs.size();
+           CV_Assert(requiredOutputs > 0 && axisSize % requiredOutputs == 0);
+           int outAxisSize = axisSize / (int)requiredOutputs;
 
-            for (size_t i = 0; i < outputs.size(); i++)
+           for (size_t i = 0; i < requiredOutputs; i++)
             {
-                inpShape[axisIdx] = outAxisSize;
-                outputs[i].create(inpShape, inpBlob.type());
+               inpShape[cAxis] = outAxisSize;
+               outputs.push_back(inpShape);
             }
         }
+
+        return false;
     }
 
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         const Mat& inpMat = *inputs[0];
         std::vector<Range> ranges(inpMat.dims, Range::all());
+        int cAxis = clamp(axis, inpMat.dims);
 
-        ranges[axisIdx].start = 0;
+        ranges[cAxis].start = 0;
         for (size_t i = 0; i < outputs.size(); i++)
         {
-            ranges[axisIdx].end = ranges[axisIdx].start + outputs[i].size[axisIdx];
+            ranges[cAxis].end = ranges[cAxis].start + outputs[i].size[cAxis];
             inpMat(&ranges[0]).copyTo(outputs[i]);
-            ranges[axisIdx].start = ranges[axisIdx].end;
+            ranges[cAxis].start = ranges[cAxis].end;
         }
     }
-
-    int axisIdx;
 };
 
 Ptr<SliceLayer> SliceLayer::create(const LayerParams& params)

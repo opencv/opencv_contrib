@@ -82,14 +82,11 @@ static void sigmoid(const Mat &src, Mat &dst)
 
 class LSTMLayerImpl : public LSTMLayer
 {
-    int numOut, numTimeStamps, numSamples, numInp;
-    Mat hInternal, cInternal;
-    Mat gates, dummyOnes;
+    int numTimeStamps, numSamples;
     bool allocated;
 
-    std::vector<int> outTailShape;                 //shape of single output sample
-    std::vector<int> outTsMatShape, outTsShape;    //shape of N output samples
-    std::vector<int> outResShape;                  //shape of T timestamps and N output samples
+    MatShape outTailShape;                 //shape of single output sample
+    MatShape outTsShape;    //shape of N output samples
 
     bool useTimestampDim;
     bool produceCellOutput;
@@ -118,47 +115,9 @@ public:
         produceCellOutput = produce;
     }
 
-    void setC(const Mat &C)
+    void setOutShape(const MatShape &outTailShape_)
     {
-        CV_Assert(C.type() == CV_32F);
-        if (!cInternal.empty())
-        {
-            CV_Assert(C.total() == cInternal.total() && cInternal.isContinuous());
-            Mat cInternal_(C.dims, &C.size.p[0], C.type(), cInternal.ptr());
-            C.copyTo(cInternal_);
-        }
-        else
-            C.copyTo(cInternal);
-    }
-
-    void setH(const Mat &H)
-    {
-        CV_Assert(H.type() == CV_32F);
-        if (!hInternal.empty())
-        {
-            CV_Assert(H.total() == hInternal.total() && hInternal.isContinuous());
-            Mat hInternal_(H.dims, &H.size.p[0], H.type(), hInternal.ptr());
-            H.copyTo(hInternal_);
-        }
-        else
-            H.copyTo(hInternal);
-    }
-
-    Mat getC() const
-    {
-        CV_Assert(shapeTotal(outTsShape) == cInternal.total());
-        return Mat((int)outTsShape.size(), &outTsShape[0], cInternal.type(), (char*)cInternal.ptr());
-    }
-
-    Mat getH() const
-    {
-        CV_Assert(shapeTotal(outTsShape) == hInternal.total());
-        return Mat((int)outTsShape.size(), &outTsShape[0], hInternal.type(), (char*)hInternal.ptr());
-    }
-
-    void setOutShape(const std::vector<int> &outTailShape_)
-    {
-        CV_Assert(!allocated || shapeTotal(outTailShape) == shapeTotal(outTailShape_));
+        CV_Assert(!allocated || total(outTailShape) == total(outTailShape_));
         outTailShape = outTailShape_;
     }
 
@@ -176,28 +135,74 @@ public:
         blobs[2] = Mat(bias.clone()).reshape(1, 1);
     }
 
-    void allocate(const std::vector<Mat*> &input, std::vector<Mat> &output)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
+    {
+        CV_Assert(blobs.size() == 3);
+        CV_Assert(inputs.size() == 1);
+        const MatShape& inp0 = inputs[0];
+
+        const Mat &Wh = blobs[0], &Wx = blobs[1];
+        int _numOut = Wh.size[1];
+        int _numInp = Wx.size[1];
+        MatShape outTailShape_(outTailShape), outResShape;
+
+        if (!outTailShape_.empty())
+            CV_Assert(total(outTailShape_) == _numOut);
+        else
+            outTailShape_.assign(1, _numOut);
+
+        int _numTimeStamps, _numSamples;
+        if (useTimestampDim)
+        {
+            CV_Assert(inp0.size() >= 2 && total(inp0, 2) == _numInp);
+            _numTimeStamps = inp0[0];
+            _numSamples = inp0[1];
+            outResShape.push_back(_numTimeStamps);
+        }
+        else
+        {
+            CV_Assert(inp0.size() >= 2 && total(inp0, 1) == _numInp);
+            _numTimeStamps = 1;
+            _numSamples = inp0[0];
+        }
+
+        outResShape.push_back(_numSamples);
+        outResShape.insert(outResShape.end(), outTailShape_.begin(), outTailShape_.end());
+
+        size_t noutputs = produceCellOutput ? 2 : 1;
+        outputs.assign(noutputs, outResShape);
+
+        internals.assign(1, shape(_numSamples, _numOut)); // hInternal
+        internals.push_back(shape(_numSamples, _numOut)); // cInternal
+        internals.push_back(shape(_numSamples, 1)); // dummyOnes
+        internals.push_back(shape(_numSamples, 4*_numOut)); // gates
+
+        return false;
+    }
+
+    void finalize(const std::vector<Mat*> &input, std::vector<Mat> &output)
     {
         CV_Assert(blobs.size() == 3);
         CV_Assert(input.size() == 1);
         const Mat& inp0 = *input[0];
 
         Mat &Wh = blobs[0], &Wx = blobs[1];
-        numOut = Wh.size[1];
-        numInp = Wx.size[1];
+        int numOut = Wh.size[1];
+        int numInp = Wx.size[1];
 
         if (!outTailShape.empty())
-            CV_Assert(shapeTotal(outTailShape) == numOut);
+            CV_Assert(total(outTailShape) == numOut);
         else
             outTailShape.assign(1, numOut);
 
-        outResShape.clear();
         if (useTimestampDim)
         {
             CV_Assert(inp0.dims >= 2 && (int)inp0.total(2) == numInp);
             numTimeStamps = inp0.size[0];
             numSamples = inp0.size[1];
-            outResShape.push_back(numTimeStamps);
         }
         else
         {
@@ -206,61 +211,26 @@ public:
             numSamples = inp0.size[0];
         }
 
-        outResShape.push_back(numSamples);
-        outResShape.insert(outResShape.end(), outTailShape.begin(), outTailShape.end());
-
-        outTsMatShape.clear();
-        outTsMatShape.push_back(numSamples);
-        outTsMatShape.push_back(numOut);
-
         outTsShape.clear();
         outTsShape.push_back(numSamples);
         outTsShape.insert(outTsShape.end(), outTailShape.begin(), outTailShape.end());
 
-        const int dtype = CV_32F;
-        CV_Assert(inp0.type() == dtype && Wh.type() == dtype);
-
-        size_t i, noutputs = produceCellOutput ? 2 : 1;
-        output.resize(noutputs);
-
-        for( i = 0; i < noutputs; i++ )
-            output[i].create(outResShape, dtype);
-
-        if (hInternal.empty())
-        {
-            hInternal.create(outTsMatShape, dtype);
-            hInternal.setTo(0.);
-        }
-        else
-        {
-            CV_Assert(hInternal.total() == (size_t)numSamples*numOut);
-            hInternal = hInternal.reshape(1, outTsMatShape);
-        }
-
-        if (cInternal.empty())
-        {
-            cInternal.create(outTsMatShape, dtype);
-            cInternal.setTo(0.);
-        }
-        else
-        {
-            CV_Assert(cInternal.total() == (size_t)numSamples*numOut);
-            cInternal = cInternal.reshape(1, outTsMatShape);
-        }
-
-        gates.create(numSamples, 4*numOut, dtype);
-
-        dummyOnes.create(numSamples, 1, dtype);
-        dummyOnes.setTo(1.);
-
         allocated = true;
     }
 
-    void forward(std::vector<Mat*> &input, std::vector<Mat> &output)
+    void forward(std::vector<Mat*> &input, std::vector<Mat> &output, std::vector<Mat> &internals)
     {
         const Mat &Wh = blobs[0];
         const Mat &Wx = blobs[1];
         const Mat &bias = blobs[2];
+
+        int numOut = Wh.size[1];
+
+        Mat hInternal = internals[0], cInternal = internals[1],
+                dummyOnes = internals[2], gates = internals[3];
+        hInternal.setTo(0.);
+        cInternal.setTo(0.);
+        dummyOnes.setTo(1.);
 
         int numSamplesTotal = numTimeStamps*numSamples;
         Mat xTs = input[0]->reshape(1, numSamplesTotal);
@@ -332,7 +302,6 @@ class RNNLayerImpl : public RNNLayer
     int dtype;
     Mat Whh, Wxh, bh;
     Mat Who, bo;
-    Mat hCurr, hPrev, dummyBiasOnes;
     bool produceH;
 
 public:
@@ -364,7 +333,36 @@ public:
         blobs[4] = Mat(b_o.clone());
     }
 
-    void allocate(const std::vector<Mat*> &input, std::vector<Mat> &output)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
+    {
+        CV_Assert(inputs.size() >= 1 && inputs.size() <= 2);
+
+        Mat Who_ = blobs[3];
+        Mat Wxh_ = blobs[0];
+
+        int numTimestamps_ = inputs[0][0];
+        int numSamples_ = inputs[0][1];
+
+        int numO_ = Who_.rows;
+        int numH_ = Wxh_.rows;
+
+        outputs.clear();
+        int dims[] = {numTimestamps_, numSamples_, numO_};
+        outputs.push_back(shape(dims, 3));
+        dims[2] = numH_;
+        if (produceH)
+            outputs.push_back(shape(dims, 3));
+
+        internals.assign(2, shape(numSamples_, numH_));
+        internals.push_back(shape(numSamples_, 1));
+
+        return false;
+    }
+
+    void finalize(const std::vector<Mat*> &input, std::vector<Mat> &output)
     {
         CV_Assert(input.size() >= 1 && input.size() <= 2);
 
@@ -388,16 +386,8 @@ public:
         numSamples = inp0.size[1];
         numSamplesTotal = numTimestamps * numSamples;
 
-        hCurr.create(numSamples, numH, dtype);
-        hPrev.create(numSamples, numH, dtype);
-        hPrev.setTo(0.);
-
-        dummyBiasOnes.create(numSamples, 1, dtype);
-        dummyBiasOnes.setTo(1.);
         bh = bh.reshape(1, 1); //is 1 x numH Mat
         bo = bo.reshape(1, 1); //is 1 x numO Mat
-
-        reshapeOutput(output);
     }
 
     void reshapeOutput(std::vector<Mat> &output)
@@ -412,11 +402,17 @@ public:
         }
     }
 
-    void forward(std::vector<Mat*> &input, std::vector<Mat> &output)
+    void forward(std::vector<Mat*> &input, std::vector<Mat> &output, std::vector<Mat> &internals)
     {
         Mat xTs = input[0]->reshape(1, numSamplesTotal);
         Mat oTs = output[0].reshape(1, numSamplesTotal);
         Mat hTs = produceH ? output[1].reshape(1, numSamplesTotal) : Mat();
+        Mat hCurr = internals[0];
+        Mat hPrev = internals[1];
+        Mat dummyBiasOnes = internals[2];
+
+        hPrev.setTo(0.);
+        dummyBiasOnes.setTo(1.);
 
         for (int ts = 0; ts < numTimestamps; ts++)
         {

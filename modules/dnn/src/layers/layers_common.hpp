@@ -44,6 +44,7 @@
 #include <opencv2/dnn.hpp>
 #include "op_blas.hpp"
 #include "op_im2col.hpp"
+#include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
 {
@@ -56,10 +57,13 @@ void getConvolutionKernelParams(const LayerParams &params, int &kernelH, int &ke
 void getPoolingKernelParams(const LayerParams &params, int &kernelH, int &kernelW, bool &globalPooling,
                             int &padH, int &padW, int &strideH, int &strideW, cv::String& padMode);
 
-void getConvPoolOutParams(const int inputH, const int inputW, const cv::Size& kernel,
-                          const cv::Size& stride, cv::Size &pad, const cv::String& padMode,
-                          int &outH, int &outW);
+void getConvPoolOutParams(const Size& inp, const Size &kernel,
+                          const Size &stride, const String &padMode,
+                          Size& out);
 
+void getConvPoolPaddings(const Size& inp, const Size& out,
+                         const Size &kernel, const Size &stride,
+                         const String &padMode, Size &pad);
 }
 }
 

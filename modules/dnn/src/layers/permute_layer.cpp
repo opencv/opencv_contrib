@@ -110,7 +110,35 @@ public:
         checkNeedForPermutation();
     }
 
-    void computeStrides()
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
+    {
+        if(!_needsPermute)
+            return true;
+
+        CV_Assert(inputs.size() > 0);
+        CV_Assert((int)_numAxes == inputs[0].size());
+
+        MatShape shapeBefore = inputs[0], shapeAfter;
+        for (size_t i = 0; i < _numAxes; i++)
+        {
+            shapeAfter[i] = shapeBefore[_order[i]];
+        }
+
+        outputs.clear();
+
+        for (size_t i = 0; i < inputs.size(); i++)
+        {
+            CV_Assert(inputs[i][2] == shapeBefore[2] && inputs[i][3] == shapeBefore[3]);
+            outputs.push_back(shapeAfter);
+        }
+
+        return false;
+    }
+
+    void computeStrides(const MatShape &shapeBefore, const MatShape &shapeAfter)
     {
         _oldStride.resize(_numAxes);
         _newStride.resize(_numAxes);
@@ -120,14 +148,14 @@ public:
 
         for(int i = _numAxes - 2; i >= 0; i--)
         {
-            _oldStride[i] = _oldStride[i + 1] * _oldDimensionSize[i + 1];
-            _newStride[i] = _newStride[i + 1] * _newDimensionSize[i + 1];
+            _oldStride[i] = _oldStride[i + 1] * shapeBefore[i + 1];
+            _newStride[i] = _newStride[i + 1] * shapeAfter[i + 1];
         }
 
-        _count = _oldStride[0] * _oldDimensionSize[0];
+        _count = _oldStride[0] * shapeBefore[0];
     }
 
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    void finalize(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
     {
         if(!_needsPermute)
         {
@@ -138,27 +166,10 @@ public:
         const Mat& inp0 = *inputs[0];
         CV_Assert((int)_numAxes == inp0.dims);
 
-        outputs.resize(inputs.size());
-
-        _newDimensionSize.resize(_numAxes);
-        _oldDimensionSize.resize(_numAxes);
-
-        for (size_t i = 0; i < _numAxes; i++)
-        {
-            _oldDimensionSize[i] = inp0.size[i];
-            _newDimensionSize[i] = inp0.size[_order[i]];
-        }
-
-        for (size_t i = 0; i < inputs.size(); i++)
-        {
-            CV_Assert(inputs[i]->size == inp0.size);
-            outputs[i].create(_numAxes, &_newDimensionSize[0], CV_32F);
-        }
-
-        computeStrides();
+        computeStrides(shape(*inputs[0]), shape(outputs[0]));
     }
 
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         size_t k, ninputs = inputs.size();
         if(!_needsPermute)
