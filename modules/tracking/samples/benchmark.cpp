@@ -3,6 +3,7 @@
 #include "opencv2/tracking.hpp"
 #include "opencv2/videoio.hpp"
 #include "opencv2/plot.hpp"
+#include "samples_utility.hpp"
 #include <fstream>
 #include <iomanip>
 #include <iostream>
@@ -75,10 +76,11 @@ const int LTRC_COUNT = 100;
 struct AlgoWrap
 {
     AlgoWrap(const string &name_)
-        : tracker(Tracker::create(name_)), lastState(NotFound), name(name_), color(getNextColor()),
+        : lastState(NotFound), name(name_), color(getNextColor()),
           numTotal(0), numResponse(0), numPresent(0), numCorrect_0(0), numCorrect_0_5(0),
           timeTotal(0), auc(LTRC_COUNT + 1, 0)
     {
+        tracker = createTrackerByName(name);
     }
 
     enum State

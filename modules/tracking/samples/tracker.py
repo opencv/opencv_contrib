@@ -1,16 +1,25 @@
 import numpy as np
 import cv2
+import sys
+
+if len(sys.argv) != 2:
+    print('Input video name is missing')
+    exit()
 
 cv2.namedWindow("tracking")
-camera = cv2.VideoCapture("E:/code/opencv/samples/data/768x576.avi")
-bbox = (638.0,230.0,56.0,101.0)
-tracker = cv2.Tracker_create("MIL")
+camera = cv2.VideoCapture(sys.argv[1])
+ok, image=camera.read()
+if not ok:
+    print('Failed to read video')
+    exit()
+bbox = cv2.selectROI("tracking", image)
+tracker = cv2.TrackerMIL_create()
 init_once = False
 
 while camera.isOpened():
     ok, image=camera.read()
     if not ok:
-        print 'no image read'
+        print 'no image to read'
         break
 
     if not init_once:

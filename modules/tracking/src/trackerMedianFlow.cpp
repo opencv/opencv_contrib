@@ -73,7 +73,7 @@ using namespace cv;
 
 class TrackerMedianFlowImpl : public TrackerMedianFlow{
 public:
-    TrackerMedianFlowImpl(TrackerMedianFlow::Params paramsIn) {params=paramsIn;isInit=false;}
+    TrackerMedianFlowImpl(TrackerMedianFlow::Params paramsIn = TrackerMedianFlow::Params()) {params=paramsIn;isInit=false;}
     void read( const FileNode& fn );
     void write( FileStorage& fs ) const;
 private:
@@ -482,8 +482,11 @@ void TrackerMedianFlow::Params::write( cv::FileStorage& fs ) const{
     fs << "maxMedianLengthOfDisplacementDifference" << maxMedianLengthOfDisplacementDifference;
 }
 
-Ptr<TrackerMedianFlow> TrackerMedianFlow::createTracker(const TrackerMedianFlow::Params &parameters){
+Ptr<TrackerMedianFlow> TrackerMedianFlow::create(const TrackerMedianFlow::Params &parameters){
     return Ptr<TrackerMedianFlowImpl>(new TrackerMedianFlowImpl(parameters));
+}
+Ptr<TrackerMedianFlow> TrackerMedianFlow::create(){
+    return Ptr<TrackerMedianFlowImpl>(new TrackerMedianFlowImpl());
 }
 
 } /* namespace cv */

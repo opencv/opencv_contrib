@@ -160,8 +160,11 @@ namespace cv{
   /*
  * Constructor
  */
-  Ptr<TrackerKCF> TrackerKCF::createTracker(const TrackerKCF::Params &parameters){
+  Ptr<TrackerKCF> TrackerKCF::create(const TrackerKCF::Params &parameters){
       return Ptr<TrackerKCFImpl>(new TrackerKCFImpl(parameters));
+  }
+  Ptr<TrackerKCF> TrackerKCF::create(){
+      return Ptr<TrackerKCFImpl>(new TrackerKCFImpl());
   }
   TrackerKCFImpl::TrackerKCFImpl( const TrackerKCF::Params &parameters ) :
       params( parameters )
@@ -894,7 +897,4 @@ namespace cv{
     fs << "compressed_size" << compressed_size;
     fs << "pca_learning_rate" << pca_learning_rate;
   }
-
-  void TrackerKCF::setFeatureExtractor(void (*)(const Mat, const Rect, Mat&), bool ){};
-
 } /* namespace cv */

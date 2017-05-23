@@ -14,7 +14,7 @@
 #include <iostream>
 #include <cstring>
 #include <ctime>
-#include "roiSelector.hpp"
+#include "samples_utility.hpp"
 
 using namespace std;
 using namespace cv;
@@ -40,7 +40,7 @@ int main( int argc, char** argv ){
 
   // create the tracker
   //! [create]
-  MultiTracker trackers(trackingAlg);
+  MultiTracker trackers;
   //! [create]
 
   // container of the tracked objects
@@ -57,7 +57,8 @@ int main( int argc, char** argv ){
   // get bounding box
   cap >> frame;
   //! [selectmulti]
-  selectROI("tracker",frame,objects);
+  vector<Rect> ROIs;
+  selectROIs("tracker",frame,ROIs);
   //! [selectmulti]
 
   //quit when the tracked object(s) is not provided
@@ -66,7 +67,14 @@ int main( int argc, char** argv ){
 
   // initialize the tracker
   //! [init]
-  trackers.add(frame,objects);
+  std::vector<Ptr<Tracker> > algorithms;
+  for (size_t i = 0; i < objects.size(); i++)
+  {
+      algorithms.push_back(createTrackerByName(trackingAlg));
+      objects.push_back(ROIs[i]);
+    }
+
+  trackers.add(algorithms,frame,objects);
   //! [init]
 
   // do the tracking
@@ -86,8 +94,8 @@ int main( int argc, char** argv ){
 
     //! [result]
     // draw the tracked object
-    for(unsigned i=0;i<trackers.objects.size();i++)
-      rectangle( frame, trackers.objects[i], Scalar( 255, 0, 0 ), 2, 1 );
+    for(unsigned i=0;i<trackers.getObjects().size();i++)
+      rectangle( frame, trackers.getObjects()[i], Scalar( 255, 0, 0 ), 2, 1 );
     //! [result]
 
     // show image with the tracked object

@@ -52,7 +52,7 @@ int main( int argc, char** argv ){
   BoxExtractor box;
 
   // create the tracker
-  Ptr<Tracker> tracker = Tracker::create( "KCF" );
+  Ptr<Tracker> tracker = TrackerKCF::create();
 
   // set input video
   std::string video = argv[1];

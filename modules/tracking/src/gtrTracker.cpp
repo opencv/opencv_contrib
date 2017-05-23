@@ -52,7 +52,7 @@ void TrackerGOTURN::Params::read(const cv::FileNode& /*fn*/){}
 void TrackerGOTURN::Params::write(cv::FileStorage& /*fs*/) const {}
 
 
-Ptr<TrackerGOTURN> TrackerGOTURN::createTracker(const TrackerGOTURN::Params &parameters)
+Ptr<TrackerGOTURN> TrackerGOTURN::create(const TrackerGOTURN::Params &parameters)
 {
 #ifdef HAVE_OPENCV_DNN
     return Ptr<gtr::TrackerGOTURNImpl>(new gtr::TrackerGOTURNImpl(parameters));
@@ -60,6 +60,10 @@ Ptr<TrackerGOTURN> TrackerGOTURN::createTracker(const TrackerGOTURN::Params &par
     (void)(parameters);
     CV_ErrorNoReturn(cv::Error::StsNotImplemented , "to use GOTURN, the tracking module needs to be built with opencv_dnn !");
 #endif
+}
+Ptr<TrackerGOTURN> TrackerGOTURN::create()
+{
+    return TrackerGOTURN::create(TrackerGOTURN::Params());
 }
 
 
