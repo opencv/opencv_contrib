@@ -5,7 +5,7 @@ using namespace std;
 
 TEST(ximgproc_AnisotropicDiffusion, regression)
 {
-    string folder = string(cvtest::TS::ptr()->get_data_path()) + "shared/";
+    string folder = string(cvtest::TS::ptr()->get_data_path()) + "cv/shared/";
     string original_path = folder + "fruits.png";
 
     Mat original = imread(original_path, IMREAD_COLOR);

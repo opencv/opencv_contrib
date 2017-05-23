@@ -169,7 +169,7 @@ public:
             }
             j *= 3;
 #endif
-            
+
             for( ; j < cols*cn; j += cn )
             {
                 int c0  = psrc0[j], c1 = psrc0[j+1], c2 = psrc0[j+2];
@@ -192,7 +192,7 @@ public:
             }
         }
     }
-    
+
     const Mat* src;
     Mat* dst;
     const float* exptab_;
@@ -283,7 +283,7 @@ void anisotropicDiffusion(InputArray src_, OutputArray dst_, float alpha, float 
 
         ADBody body(&src, &dst, exptab, alpha);
         parallel_for_(Range(0, rows), body, 8);
-        
+
         std::swap(temp0, temp1);
         std::swap(temp0x, temp1x);
     }
@@ -291,4 +291,3 @@ void anisotropicDiffusion(InputArray src_, OutputArray dst_, float alpha, float 
 
 }
 }
-

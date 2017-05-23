@@ -123,19 +123,19 @@ The function transforms a binary blob image into a skeletized form using the tec
 CV_EXPORTS_W void thinning( InputArray src, OutputArray dst, int thinningType = THINNING_ZHANGSUEN);
 
 /** @brief Performs anisotropic diffusian on an image.
- 
+
  The function applies Perona-Malik anisotropic diffusion to an image. This is the solution to the partial differential equation:
- 
+
  \f[{\frac  {\partial I}{\partial t}}={\mathrm  {div}}\left(c(x,y,t)\nabla I\right)=\nabla c\cdot \nabla I+c(x,y,t)\Delta I\f]
- 
+
  Suggested functions for c(x,y,t) are:
- 
+
  \f[c\left(\|\nabla I\|\right)=e^{{-\left(\|\nabla I\|/K\right)^{2}}}\f]
- 
+
  or
- 
+
  \f[ c\left(\|\nabla I\|\right)={\frac {1}{1+\left({\frac  {\|\nabla I\|}{K}}\right)^{2}}} \f]
- 
+
  @param src Grayscale Source image.
  @param dst Destination image of the same size and the same number of channels as src .
  @param alpha The amount of time to step forward by on each iteration (normally, it's between 0 and 1).
