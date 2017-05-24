@@ -989,15 +989,7 @@ Mat readTorchBlob(const String&, bool)
 
 Net readNetFromTorch(const String &model, bool isBinary)
 {
-    Ptr<Importer> importer;
-    try
-    {
-        importer = createTorchImporter(model, isBinary);
-    }
-    catch(...)
-    {
-    }
-
+    Ptr<Importer> importer = createTorchImporter(model, isBinary);
     Net net;
     if (importer)
         importer->populateNet(net);
