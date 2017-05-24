@@ -971,6 +971,22 @@ Mat readTorchBlob(const String &filename, bool isBinary)
     return importer->tensors.begin()->second;
 }
 
+#else
+
+Ptr<Importer> createTorchImporter(const String&, bool)
+{
+    CV_Error(Error::StsNotImplemented, "Torch importer is disabled in current build");
+    return Ptr<Importer>();
+}
+
+Mat readTorchBlob(const String&, bool)
+{
+    CV_Error(Error::StsNotImplemented, "Torch importer is disabled in current build");
+    return Mat();
+}
+
+#endif //defined(ENABLE_TORCH_IMPORTER) && ENABLE_TORCH_IMPORTER
+
 Net readNetFromTorch(const String &model, bool isBinary)
 {
     Ptr<Importer> importer;
@@ -988,20 +1004,5 @@ Net readNetFromTorch(const String &model, bool isBinary)
     return net;
 }
 
-#else
-
-Ptr<Importer> createTorchImporter(const String&, bool)
-{
-    CV_Error(Error::StsNotImplemented, "Torch importer is disabled in current build");
-    return Ptr<Importer>();
-}
-
-Mat readTorchBlob(const String&, bool)
-{
-    CV_Error(Error::StsNotImplemented, "Torch importer is disabled in current build");
-    return Mat();
-}
-
-#endif //defined(ENABLE_TORCH_IMPORTER) && ENABLE_TORCH_IMPORTER
 }
 }
