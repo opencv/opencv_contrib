@@ -971,23 +971,6 @@ Mat readTorchBlob(const String &filename, bool isBinary)
     return importer->tensors.begin()->second;
 }
 
-Net readNetFromTorch(const String &model, bool isBinary)
-{
-    Ptr<Importer> importer;
-    try
-    {
-        importer = createTorchImporter(model, isBinary);
-    }
-    catch(...)
-    {
-    }
-
-    Net net;
-    if (importer)
-        importer->populateNet(net);
-    return net;
-}
-
 #else
 
 Ptr<Importer> createTorchImporter(const String&, bool)
@@ -1003,5 +986,15 @@ Mat readTorchBlob(const String&, bool)
 }
 
 #endif //defined(ENABLE_TORCH_IMPORTER) && ENABLE_TORCH_IMPORTER
+
+Net readNetFromTorch(const String &model, bool isBinary)
+{
+    Ptr<Importer> importer = createTorchImporter(model, isBinary);
+    Net net;
+    if (importer)
+        importer->populateNet(net);
+    return net;
+}
+
 }
 }

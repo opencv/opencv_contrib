@@ -736,23 +736,6 @@ void TFImporter::populateNet(Net dstNet)
 
 } // namespace
 
-Net cv::dnn::readNetFromTensorflow(const String &model)
-{
-    Ptr<Importer> importer;
-    try
-    {
-        importer = createTensorflowImporter(model);
-    }
-    catch(...)
-    {
-    }
-
-    Net net;
-    if (importer)
-        importer->populateNet(net);
-    return net;
-}
-
 Ptr<Importer> cv::dnn::createTensorflowImporter(const String &model)
 {
     return Ptr<Importer>(new TFImporter(model.c_str()));
@@ -767,3 +750,12 @@ Ptr<Importer> cv::dnn::createTensorflowImporter(const String&)
 }
 
 #endif //HAVE_PROTOBUF
+
+Net cv::dnn::readNetFromTensorflow(const String &model)
+{
+    Ptr<Importer> importer = createTensorflowImporter(model);
+    Net net;
+    if (importer)
+        importer->populateNet(net);
+    return net;
+}
