@@ -362,6 +362,18 @@ Ptr<Importer> cv::dnn::createCaffeImporter(const String &prototxt, const String 
     return Ptr<Importer>(new CaffeImporter(prototxt.c_str(), caffeModel.c_str()));
 }
 
+Net cv::dnn::readNetFromCaffe(const String &prototxt, const String &caffeModel /*= String()*/)
+{
+    Ptr<Importer> caffeImporter;
+    caffeImporter = createCaffeImporter(prototxt, caffeModel);
+
+    Net net;
+    if (caffeImporter)
+        caffeImporter->populateNet(net);
+
+    return net;
+}
+
 #else //HAVE_PROTOBUF
 
 Ptr<Importer> cv::dnn::createCaffeImporter(const String&, const String&)
@@ -370,21 +382,10 @@ Ptr<Importer> cv::dnn::createCaffeImporter(const String&, const String&)
     return Ptr<Importer>();
 }
 
-#endif //HAVE_PROTOBUF
-
-Net cv::dnn::readNetFromCaffe(const String &prototxt, const String &caffeModel /*= String()*/)
+Net cv::dnn::readNetFromCaffe(const String&, const String&)
 {
-    Ptr<Importer> caffeImporter;
-    try
-    {
-        caffeImporter = createCaffeImporter(prototxt, caffeModel);
-    }
-    catch(...)
-    {
-    }
-
-    Net net;
-    if (caffeImporter)
-        caffeImporter->populateNet(net);
-    return net;
+    CV_Error(cv::Error::StsNotImplemented, "libprotobuf required to import data from Caffe models");
+    return Net();
 }
+
+#endif //HAVE_PROTOBUF
