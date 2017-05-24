@@ -261,6 +261,7 @@ Ptr<ReLULayer> ReLULayer::create(const LayerParams& params)
     float negativeSlope = params.get<float>("negative_slope", 0.f);
     Ptr<ReLULayer> l(new ElementWiseLayer<ReLUFunctor>(true, ReLUFunctor(negativeSlope)));
     l->setParamsFrom(params);
+    l->negativeSlope = negativeSlope;
 
     return l;
 }
@@ -306,6 +307,9 @@ Ptr<PowerLayer> PowerLayer::create(const LayerParams& params)
                       (PowerLayer*)(new ElementWiseLayer<PowerFunctor1>(false, PowerFunctor1(scale, shift))) :
                       (PowerLayer*)(new ElementWiseLayer<PowerFunctor>(true, PowerFunctor(power, scale, shift))));
     l->setParamsFrom(params);
+    l->power = power;
+    l->scale = scale;
+    l->shift = shift;
 
     return l;
 }
