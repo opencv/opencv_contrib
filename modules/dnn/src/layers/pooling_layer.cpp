@@ -203,7 +203,13 @@ public:
         CV_Assert(inputs.size() != 0);
         Size in(inputs[0][3], inputs[0][2]), out;
 
-        if (padMode.empty()) {
+        if (globalPooling)
+        {
+            out.height = 1;
+            out.width = 1;
+        }
+        else if (padMode.empty())
+        {
             //Yeah, something strange Caffe scheme-)
             out.height = static_cast<int>(ceil(static_cast<float>(in.height + 2 * pad.height -
                                                                   kernel.height) / stride.height)) + 1;

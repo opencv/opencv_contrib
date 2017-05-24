@@ -37,9 +37,9 @@ public:
     ElementWiseLayer(bool run_parallel_=false, const Func &f=Func()) : func(f), run_parallel(run_parallel_) {}
 
     bool getMemoryShapes(const std::vector<MatShape> &inputs,
-                                         const int requiredOutputs,
-                                         std::vector<MatShape> &outputs,
-                                         std::vector<MatShape> &internals) const
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
     {
         Layer::getMemoryShapes(inputs, requiredOutputs, outputs, internals);
         return true;
