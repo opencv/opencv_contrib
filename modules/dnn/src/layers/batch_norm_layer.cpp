@@ -10,6 +10,7 @@ Implementation of Batch Normalization layer.
 */
 
 #include "../precomp.hpp"
+#include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
 {
@@ -76,6 +77,19 @@ public:
                 }
             }
         }
+    }
+
+    virtual int64 getFLOPS(const std::vector<MatShape> &inputs,
+                           const std::vector<MatShape> &outputs) const
+    {
+        (void)outputs; // suppress unused variable warning
+
+        int64 flops = 0;
+        for(int i = 0; i < inputs.size(); i++)
+        {
+            flops += 3*total(inputs[i]);
+        }
+        return flops;
     }
 
     bool hasWeights, hasBias;

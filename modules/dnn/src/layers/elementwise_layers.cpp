@@ -63,6 +63,17 @@ public:
         }
     }
 
+    virtual int64 getFLOPS(const std::vector<MatShape> &inputs,
+                           const std::vector<MatShape> &outputs) const
+    {
+        long flops = 0;
+        for (int i = 0; i < outputs.size(); i++)
+        {
+            flops += total(outputs[i]) * func.getFLOPSPerElement();
+        }
+        return flops;
+    }
+
     Func func;
     bool run_parallel;
 };
@@ -79,6 +90,8 @@ struct ReLUFunctor
     {
         return (x >= (TFloat)0) ? x : (TFloat)slope * x;
     }
+
+    int64 getFLOPSPerElement() const {return 1;}
 };
 
 struct TanHFunctor
@@ -90,6 +103,8 @@ struct TanHFunctor
     {
         return tanh(x);
     }
+
+    int64 getFLOPSPerElement() const {return 1;}
 };
 
 struct SigmoidFunctor
@@ -101,6 +116,8 @@ struct SigmoidFunctor
     {
         return (TFloat)1 / ((TFloat)1 + exp(-x));
     }
+
+    int64 getFLOPSPerElement() const {return 3;}
 };
 
 struct AbsValFunctor
@@ -112,6 +129,8 @@ struct AbsValFunctor
     {
         return abs(x);
     }
+
+    int64 getFLOPSPerElement() const {return 1;}
 };
 
 struct BNLLFunctor
@@ -123,6 +142,8 @@ struct BNLLFunctor
     {
         return log((TFloat)1 + exp(-abs(x)));
     }
+
+    int64 getFLOPSPerElement() const {return 5;}
 };
 
 struct PowerFunctor
@@ -141,6 +162,8 @@ struct PowerFunctor
     {
         return pow((TFloat)shift + (TFloat)scale * x, (TFloat)power);
     }
+
+    int64 getFLOPSPerElement() const {return 3;}
 };
 
 struct PowerFunctor1
@@ -158,6 +181,8 @@ struct PowerFunctor1
     {
         return (TFloat)shift + (TFloat)scale * x;
     }
+
+    int64 getFLOPSPerElement() const {return 2;}
 };
 
 class ChannelsPReLULayerImpl : public ChannelsPReLULayer
@@ -209,6 +234,20 @@ public:
                 //scaleAdd(outBlobPlane, slopeWeight-1, inpBlobPlane, outBlobPlane);
             }
         }
+    }
+
+    virtual int64 getFLOPS(const std::vector<MatShape> &inputs,
+                           const std::vector<MatShape> &outputs) const
+    {
+        (void)inputs; // suppress unused variable warning
+        long flops = 0;
+
+        for (int i = 0; i < outputs.size(); i++)
+        {
+            flops += total(outputs[i]) * 3;
+        }
+
+        return flops;
     }
 };
 

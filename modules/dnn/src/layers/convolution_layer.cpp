@@ -224,6 +224,20 @@ public:
                             dilation.height, dilation.width, outH, outW, dstRow.ptr<float>());
         }
     }
+
+    virtual int64 getFLOPS(const std::vector<MatShape> &inputs,
+                           const std::vector<MatShape> &outputs) const
+    {
+        CV_Assert(inputs.size() == outputs.size());
+
+        int64 flops = 0;
+        for (int i = 0; i < inputs.size(); i++)
+        {
+            flops += total(outputs[i])*(2*kernel.area()*inputs[i][1] + 1);
+        }
+
+        return flops;
+    }
 };
 
 class DeConvolutionLayerImpl : public BaseConvolutionLayerImpl
@@ -337,6 +351,22 @@ public:
         cv::dnn::col2im(colMat.ptr<float>(), outGroupCn, outH, outW, kernel.height, kernel.width,
                         pad.height, pad.width, stride.height, stride.width,
                         dilation.height, dilation.width, dstImg.ptr<float>(), &ofsbuf[0]);
+    }
+
+    virtual int64 getFLOPS(const std::vector<MatShape> &inputs,
+                           const std::vector<MatShape> &outputs) const
+    {
+        CV_Assert(inputs.size() == outputs.size());
+
+        float flops = 0;
+        int outChannels = blobs[0].size[0];
+
+        for (int i = 0; i < inputs.size(); i++)
+        {
+            flops += 2*outChannels*kernel.area()*total(inputs[i]);
+        }
+
+        return flops;
     }
 
     std::vector<int> ofsbuf;

@@ -171,6 +171,35 @@ public:
             }
         }
     }
+
+    virtual int64 getFLOPS(const std::vector<MatShape> &inputs,
+                           const std::vector<MatShape> &outputs) const
+    {
+        (void)outputs; // suppress unused variable warning
+        CV_Assert(inputs.size() > 0);
+        long flops = 0;
+
+        for(int i = 0; i < inputs.size(); i++)
+        {
+            if (type == CHANNEL_NRM)
+            {
+                int channels = inputs[i][1];
+                int ksize = (size - 1) / 2;
+
+                flops += inputs[i][0]*(std::min(ksize, channels)*2*total(inputs[i], 2) + channels*4*total(inputs[i], 2));
+
+                if (ksize < channels)
+                {
+                    flops += (size + 2*(channels - size))*total(inputs[i], 2);
+                }
+            }
+            else
+            {
+                flops += total(inputs[i])*(2*size*size + 2);
+            }
+        }
+        return flops;
+    }
 };
 
 Ptr<LRNLayer> LRNLayer::create(const LayerParams& params)

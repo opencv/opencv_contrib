@@ -146,6 +146,20 @@ public:
         }
     }
 
+    int64 getFLOPS(const std::vector<MatShape> &inputs,
+                  const std::vector<MatShape> &outputs) const
+    {
+        (void)outputs; // suppress unused variable warning
+        int64 flops = 0;
+
+        for (int i = 0; i < inputs.size(); i++)
+        {
+            flops += 4*total(inputs[i]);
+        }
+
+        return flops;
+    }
+
     int axisRaw;
 };
 

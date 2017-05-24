@@ -876,6 +876,144 @@ void Net::getLayerShapes(const Net::Impl::ShapesVec& netInputShapes,
         *outLayerShapes = shapes.out;
 }
 
+int64 Net::getFLOPS(const std::vector<MatShape>& netInputShapes) const
+{
+    int64 flops = 0;
+    std::vector<int> ids;
+    std::vector<std::vector<MatShape> > inShapes, outShapes;
+    getLayersShapes(netInputShapes, &ids, &inShapes, &outShapes);
+    CV_Assert(inShapes.size() == outShapes.size());
+    CV_Assert(inShapes.size() == ids.size());
+
+    for(int i = 0; i < ids.size(); i++)
+    {
+        flops += impl->layers[ids[i]].getLayerInstance()->getFLOPS(inShapes[i],
+                                                                   outShapes[i]);
+    }
+
+    return flops;
+}
+
+int64 Net::getFLOPS(const MatShape& netInputShape) const
+{
+    return getFLOPS(std::vector<MatShape>(1, netInputShape));
+}
+
+int64 Net::getFLOPS(const int layerId,
+              const std::vector<MatShape>& netInputShapes) const
+{
+    Impl::MapIdToLayerData::iterator layer = impl->layers.find(layerId);
+    CV_Assert(layer != impl->layers.end());
+
+    Impl::LayerShapes shapes;
+    impl->getLayerShapes(netInputShapes, layerId, shapes);
+
+    return layer->second.getLayerInstance()->getFLOPS(shapes.in, shapes.out);
+}
+
+int64 Net::getFLOPS(const int layerId,
+              const MatShape& netInputShape) const
+{
+    return getFLOPS(layerId, std::vector<MatShape>(1, netInputShape));
+}
+
+void Net::getLayerTypes(std::vector<String>& layersTypes) const
+{
+    layersTypes.clear();
+
+    std::map<String, int> layers;
+    for (Impl::MapIdToLayerData::iterator it = impl->layers.begin();
+         it != impl->layers.end(); it++)
+    {
+        if (layers.find(it->second.type) == layers.end())
+            layers[it->second.type] = 0;
+        layers[it->second.type]++;
+    }
+
+    for (std::map<String, int>::iterator it = layers.begin();
+         it != layers.end(); it++)
+    {
+        layersTypes.push_back(it->first);
+    }
+}
+
+int Net::getLayersCount(const String& layerType) const
+{
+    int count = 0;
+    for (Impl::MapIdToLayerData::iterator it = impl->layers.begin();
+         it != impl->layers.end(); it++)
+    {
+        if (it->second.type == layerType)
+            count++;
+    }
+    return count;
+}
+
+void Net::getMemoryConsumption(const int layerId,
+                               const std::vector<MatShape>& netInputShapes,
+                               size_t& weights, size_t& blobs) const
+{
+    Impl::MapIdToLayerData::iterator layer = impl->layers.find(layerId);
+    CV_Assert(layer != impl->layers.end());
+
+    weights = blobs = 0;
+
+    for(int i = 0; i < layer->second.params.blobs.size(); i++)
+    {
+        const Mat& weightsBlob = layer->second.params.blobs[i];
+        weights += weightsBlob.total()*weightsBlob.elemSize();
+    }
+
+    std::vector<MatShape> outLayerShapes;
+    getLayerShapes(netInputShapes, layerId, 0, &outLayerShapes);
+    for(int i = 0; i < outLayerShapes.size(); i++)
+    {
+        blobs += total(outLayerShapes[i]) * sizeof(float);
+    }
+}
+
+void Net::getMemoryConsumption(const std::vector<MatShape>& netInputShapes,
+                               size_t& weights, size_t& blobs) const
+{
+    std::vector<int> layerIds;
+    std::vector<std::vector<MatShape> > outLayerShapes;
+
+    getLayersShapes(netInputShapes, &layerIds, 0, &outLayerShapes);
+
+    weights = blobs = 0;
+    for(int i = 0; i < layerIds.size(); i++)
+    {
+        Impl::MapIdToLayerData::iterator layer = impl->layers.find(layerIds[i]);
+        CV_Assert(layer != impl->layers.end());
+
+        for(int j = 0; j < layer->second.params.blobs.size(); j++)
+        {
+            const Mat& weightsBlob = layer->second.params.blobs[j];
+            weights += weightsBlob.total()*weightsBlob.elemSize();
+        }
+
+        for(int j = 0; j < outLayerShapes[i].size(); j++)
+        {
+            blobs += total(outLayerShapes[i][j]) * sizeof(float);
+        }
+    }
+}
+
+void Net::getMemoryConsumption(const int layerId,
+                               const MatShape& netInputShape,
+                               size_t& weights, size_t& blobs) const
+{
+    getMemoryConsumption(layerId, std::vector<MatShape>(1, netInputShape),
+                         weights, blobs);
+}
+
+void Net::getMemoryConsumption(const MatShape& netInputShape,
+                               size_t& weights, size_t& blobs) const
+{
+    getMemoryConsumption(std::vector<MatShape>(1, netInputShape),
+                         weights, blobs);
+}
+
 //////////////////////////////////////////////////////////////////////////
 
 Importer::~Importer() {}
