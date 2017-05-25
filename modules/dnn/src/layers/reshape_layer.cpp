@@ -149,6 +149,7 @@ public:
             outputs.push_back(MatShape());
             computeShapeByReshapeMask(inputs[i], newShapeDesc, newShapeRange, outputs.back());
         }
+        internals = outputs;
 
         return true;
     }
@@ -160,9 +161,16 @@ public:
         Mat srcBlob = *inputs[0];
         int dims = srcBlob.dims;
         MatShape inputShape = shape(srcBlob), outShape = shape(outputs[0]);
-        bool channelsReduced = dims > (int)outShape.size() ||
-                (dims == 4 && inputShape[1] > outShape[1]);
-        performReordering = enableReordering && dims == 4 && channelsReduced;
+
+        // input.total() == output.total(). So if reordering is require,
+        // one of the sizes will be are not equal.
+        // Example where reordering is require: from 1x128x4x4 to 1x2048
+        // Example where reordering is NOT require: from 1x1024x1x1 to 1x1024.
+        bool reorderingRequire = false;
+        const int minDims = min(dims, (int)outShape.size());
+        for (int i = 0; !reorderingRequire && i < minDims; ++i)
+            reorderingRequire = inputShape[i] != outShape[i];
+        performReordering = enableReordering && reorderingRequire;
     }
 
     void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
@@ -170,13 +178,11 @@ public:
         for (size_t i = 0; i < inputs.size(); i++)
         {
             Mat srcBlob = *inputs[i];
-            MatShape inputShape = shape(srcBlob), outShape = shape(outputs[i]);
+            MatShape inputShape = shape(srcBlob);
 
             if (performReordering)
             {
-                Mat reordered_blob(inputShape, srcBlob.type());
-
-                float *dstData = reordered_blob.ptr<float>();
+                float *dstData = internals[i].ptr<float>();
                 const float *srcData = srcBlob.ptr<float>();
 
                 int num = inputShape[0], channels = inputShape[1], height = inputShape[2], width = inputShape[3];
@@ -196,8 +202,7 @@ public:
                         }
                     }
                 }
-
-                outputs[i] = reordered_blob.reshape(1, outShape);
+                internals[i].copyTo(outputs[i]);
             }
         }
     }

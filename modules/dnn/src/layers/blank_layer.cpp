@@ -49,18 +49,16 @@ class BlankLayerImpl : public BlankLayer
 public:
     BlankLayerImpl(const LayerParams&) {}
 
-    void allocate(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
     {
-        outputs.resize(inputs.size());
-        for (size_t i = 0; i < inputs.size(); i++)
-            outputs[i] = *inputs[i];
+        Layer::getMemoryShapes(inputs, requiredOutputs, outputs, internals);
+        return true;
     }
 
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
-    {
-        for (size_t i = 0; i < inputs.size(); i++)
-            outputs[i] = *inputs[i];
-    }
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals) {}
 };
 
 Ptr<BlankLayer> BlankLayer::create(const LayerParams& params)
