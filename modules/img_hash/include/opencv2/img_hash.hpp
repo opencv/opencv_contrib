@@ -1,48 +1,10 @@
-/*M///////////////////////////////////////////////////////////////////////////////////////
-//
-//  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
-//
-//  By downloading, copying, installing or using the software you agree to this license.
-//  If you do not agree to this license, do not download, install,
-//  copy or use the software.
-//
-//
-//                           License Agreement
-//                For Open Source Computer Vision Library
-//
-// Copyright (C) 2015, University of Ostrava, Institute for Research and Applications of Fuzzy Modeling,
-// Pavel Vlasanek, all rights reserved. Third party copyrights are property of their respective owners.
-//
-// Redistribution and use in source and binary forms, with or without modification,
-// are permitted provided that the following conditions are met:
-//
-//   * Redistribution's of source code must retain the above copyright notice,
-//     this list of conditions and the following disclaimer.
-//
-//   * Redistribution's in binary form must reproduce the above copyright notice,
-//     this list of conditions and the following disclaimer in the documentation
-//     and/or other materials provided with the distribution.
-//
-//   * The name of the copyright holders may not be used to endorse or promote products
-//     derived from this software without specific prior written permission.
-//
-// This software is provided by the copyright holders and contributors "as is" and
-// any express or implied warranties, including, but not limited to, the implied
-// warranties of merchantability and fitness for a particular purpose are disclaimed.
-// In no event shall the Intel Corporation or contributors be liable for any direct,
-// indirect, incidental, special, exemplary, or consequential damages
-// (including, but not limited to, procurement of substitute goods or services;
-// loss of use, data, or profits; or business interruption) however caused
-// and on any theory of liability, whether in contract, strict liability,
-// or tort (including negligence or otherwise) arising in any way out of
-// the use of this software, even if advised of the possibility of such damage.
-//
-//M*/
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 
-#ifndef __OPENCV_IMG_HASH_H__
-#define __OPENCV_IMG_HASH_H__
+#ifndef OPENCV_IMG_HASH_H
+#define OPENCV_IMG_HASH_H
 
-#include "opencv2/img_hash/img_hash_base.hpp"
 #include "opencv2/img_hash/average_hash.hpp"
 #include "opencv2/img_hash/block_mean_hash.hpp"
 #include "opencv2/img_hash/color_moment_hash.hpp"
@@ -51,34 +13,66 @@
 #include "opencv2/img_hash/radial_variance_hash.hpp"
 
 /**
-@defgroup img_hash Provide algorithms to extract the hash of images and fast way to figure out most similar images in huge data set
+@defgroup img_hash The module brings implementations of different image hashing algorithms.
 
-Namespace for all functions is **img_hash**. The module brings implementations of different image hashing.
+Provide algorithms to extract the hash of images and fast way to figure out most similar images in
+huge data set.
 
-  @{
-    @defgroup avg_hash Simple and fast perceptual hash algorithm
+Namespace for all functions is cv::img_hash.
 
-    This is a fast image hashing algorithm, but only work on simple case.For more details, please
-    refer to http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
+### Supported Algorithms
 
-    @defgroup p_hash Slower than average_hash, but tolerant of minor modifications
+- Average hash (also called Different hash)
+- PHash (also called Perceptual hash)
+- Marr Hildreth Hash
+- Radial Variance Hash
+- Block Mean Hash (modes 0 and 1)
+- Color Moment Hash (this is the one and only hash algorithm resist to rotation attack(-90~90 degree))
 
-    This algorithm can combat more variation than averageHash, for more details please refer to
-    http://www.hackerfactor.com/blog/index.php?/archives/432-Looks-Like-It.html
+You can study more about image hashing from following paper and websites:
 
-    @defgroup marr_hash Marr-Hildreth Operator Based Hash, slowest but more discriminative
-    http://www.phash.org/docs/pubs/thesis_zauner.pdf
+- "Implementation and benchmarking of perceptual image hash functions" @cite zauner2010implementation
+- "Looks Like It" @cite lookslikeit
 
-    @defgroup radial_var_hash Image hash based on Radon transform.
-    http://www.phash.org/docs/pubs/thesis_zauner.pdf
+### Code Example
 
-    @defgroup block_mean_hash Image hash based on block mean.
-    http://www.phash.org/docs/pubs/thesis_zauner.pdf
+@include samples/hash_samples.cpp
 
-    @defgroup color_moment_hash Image hash based on color moments.
-    http://www.naturalspublishing.com/files/published/54515x71g3omq1.pdf
-   @}
+### Performance under different attacks
+
+![Performance chart](https://3.bp.blogspot.com/-Li-zoGXC6-I/V3Wnp5tbFwI/AAAAAAAAA1Y/iVQkZmI6wWQcpxynuzW4FngJYVdXw3AtgCLcB/s1600/overall_result.JPG)
+
+### Speed comparison with PHash library (100 images from ukbench)
+
+![Hash Computation chart](https://3.bp.blogspot.com/-XIs-olyuK9Q/V3NKRDRzUiI/AAAAAAAAAwU/k99xuDGlCBYwO3ZDZNHcLweuaAt_cpHtwCLcB/s1600/Capture.JPG)
+![Hash comparison chart](https://1.bp.blogspot.com/-anqfh2Awky4/V3NOOKvrQKI/AAAAAAAAAwo/pZjGDDnAPKooOZCCVnzGO4lJjKo7-KjlACLcB/s1600/Capture.JPG)
+
+As you can see, hash computation speed of img_hash module outperform [PHash library](http://www.phash.org/) a lot.
+
+PS : I do not list out the comparison of Average hash, PHash and Color Moment hash, because I cannot
+find them in PHash.
+
+### Motivation
+
+Collects useful image hash algorithms into opencv, so we do not need to rewrite them by ourselves
+again and again or rely on another 3rd party library(ex : PHash library). BOVW or correlation
+matching are good and robust, but they are very slow compare with image hash, if you need to deal
+with large scale CBIR(content based image retrieval) problem, image hash is a more reasonable
+solution.
+
+### More info
+
+You can learn more about img_hash modules from following links, these links show you how to find
+similar image from ukbench dataset, provide thorough benchmark of different attacks(contrast, blur,
+noise(gaussion,pepper and salt), jpeg compression, watermark, resize).
+
+* [Introduction to image hash module of opencv](http://qtandopencv.blogspot.my/2016/06/introduction-to-image-hash-module-of.html)
+* [Speed up image hashing of opencv(img_hash) and introduce color moment hash](http://qtandopencv.blogspot.my/2016/06/speed-up-image-hashing-of-opencvimghash.html)
+
+### Contributors
+
+Tham Ngap Wei, thamngapwei@gmail.com
 
 */
 
-#endif // __OPENCV_IMG_HASH_H__
+#endif // OPENCV_IMG_HASH_H

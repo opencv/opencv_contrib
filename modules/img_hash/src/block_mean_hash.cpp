@@ -1,54 +1,14 @@
-/*M///////////////////////////////////////////////////////////////////////////////////////
-//
-//  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
-//
-//  By downloading, copying, installing or using the software you agree to this license.
-//  If you do not agree to this license, do not download, install,
-//  copy or use the software.
-//
-//
-//                           License Agreement
-//                For Open Source Computer Vision Library
-//
-// Copyright (C) 2015, University of Ostrava, Institute for Research and Applications of Fuzzy Modeling,
-// Pavel Vlasanek, all rights reserved. Third party copyrights are property of their respective owners.
-//
-// Redistribution and use in source and binary forms, with or without modification,
-// are permitted provided that the following conditions are met:
-//
-//   * Redistribution's of source code must retain the above copyright notice,
-//     this list of conditions and the following disclaimer.
-//
-//   * Redistribution's in binary form must reproduce the above copyright notice,
-//     this list of conditions and the following disclaimer in the documentation
-//     and/or other materials provided with the distribution.
-//
-//   * The name of the copyright holders may not be used to endorse or promote products
-//     derived from this software without specific prior written permission.
-//
-// This software is provided by the copyright holders and contributors "as is" and
-// any express or implied warranties, including, but not limited to, the implied
-// warranties of merchantability and fitness for a particular purpose are disclaimed.
-// In no event shall the Intel Corporation or contributors be liable for any direct,
-// indirect, incidental, special, exemplary, or consequential damages
-// (including, but not limited to, procurement of substitute goods or services;
-// loss of use, data, or profits; or business interruption) however caused
-// and on any theory of liability, whether in contract, strict liability,
-// or tort (including negligence or otherwise) arising in any way out of
-// the use of this software, even if advised of the possibility of such damage.
-//
-//M*/
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 
 #include "precomp.hpp"
 
-#include <bitset>
-#include <iostream>
+using namespace cv;
+using namespace cv::img_hash;
+using namespace std;
 
-namespace cv{
-
-namespace img_hash{
-
-namespace{
+namespace {
 
 enum
 {
@@ -62,129 +22,150 @@ enum
     colSize = imgWidth - blockWidth
 };
 
-}
-
-BlockMeanHash::BlockMeanHash(size_t mode)
+class BlockMeanHashImpl : public ImgHashImpl
 {
-    setMode(mode);
-}
-
-BlockMeanHash::~BlockMeanHash()
-{
-
-}
-
-void BlockMeanHash::compute(cv::InputArray inputArr,
-                            cv::OutputArray outputArr)
-{
-    cv::Mat const input = inputArr.getMat();
-    CV_Assert(input.type() == CV_8UC4 ||
-              input.type() == CV_8UC3 ||
-              input.type() == CV_8U);
-
-    cv::resize(input, resizeImg_, cv::Size(imgWidth,imgHeight));
-    if(input.type() == CV_8UC3)
+public:
+    BlockMeanHashImpl(int mode)
     {
-        cv::cvtColor(resizeImg_, grayImg_, CV_BGR2GRAY);
-    }
-    else if(input.type() == CV_8UC4)
-    {
-        cv::cvtColor(resizeImg_, grayImg_, CV_BGRA2GRAY);
-    }
-    else
-    {
-        grayImg_ = resizeImg_;
+        setMode(mode);
     }
 
-    int pixColStep = blockWidth;
-    int pixRowStep = blockHeigth;
-    int numOfBlocks = 0;
-    switch(mode_)
+    ~BlockMeanHashImpl() {}
+
+    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr)
     {
-    case 0:
-    {
-        numOfBlocks = blockPerCol * blockPerRow;
-        break;
-    }
-    case 1:
-    {
-        pixColStep /= 2;
-        pixRowStep /= 2;
-        numOfBlocks = (blockPerCol*2-1) * (blockPerRow*2-1);
-        break;
-    }
-    default:
-        break;
-    }
+        cv::Mat const input = inputArr.getMat();
+        CV_Assert(input.type() == CV_8UC4 ||
+                  input.type() == CV_8UC3 ||
+                  input.type() == CV_8U);
 
-    mean_.resize(numOfBlocks);
-    findMean(pixRowStep, pixColStep);
-    outputArr.create(1, numOfBlocks/8 + numOfBlocks % 8, CV_8U);
-    cv::Mat hash = outputArr.getMat();
-    createHash(hash);
-}
-
-double BlockMeanHash::compare(cv::InputArray hashOne,
-                              cv::InputArray hashTwo) const
-{
-    return norm(hashOne, hashTwo, NORM_HAMMING);
-}
-
-Ptr<BlockMeanHash> BlockMeanHash::create(size_t mode)
-{
-    return makePtr<BlockMeanHash>(mode);
-}
-
-String BlockMeanHash::getDefaultName() const
-{
-    return "BlockMeanHash";
-}
-
-void BlockMeanHash::setMode(size_t mode)
-{
-    CV_Assert(mode == 0 || mode == 1);
-    mode_ = mode;
-}
-
-void BlockMeanHash::createHash(Mat &hash)
-{
-    double const median = cv::mean(grayImg_)[0];
-    uchar *hashPtr = hash.ptr<uchar>(0);
-    std::bitset<8> bits = 0;
-    for(size_t i = 0; i < mean_.size(); ++i)
-    {
-        size_t const residual = i%8;
-        bits[residual] = mean_[i] < median ? 0 : 1;
-        if(residual == 7)
+        cv::resize(input, resizeImg_, cv::Size(imgWidth,imgHeight));
+        if(input.type() == CV_8UC3)
         {
-            *hashPtr = static_cast<uchar>(bits.to_ulong());
-            ++hashPtr;
-        }else if(i == mean_.size() - 1)
+            cv::cvtColor(resizeImg_, grayImg_, CV_BGR2GRAY);
+        }
+        else if(input.type() == CV_8UC4)
         {
-            *hashPtr = bits[residual];
+            cv::cvtColor(resizeImg_, grayImg_, CV_BGRA2GRAY);
+        }
+        else
+        {
+            grayImg_ = resizeImg_;
+        }
+
+        int pixColStep = blockWidth;
+        int pixRowStep = blockHeigth;
+        int numOfBlocks = 0;
+        switch(mode_)
+        {
+        case BLOCK_MEAN_HASH_MODE_0:
+        {
+            numOfBlocks = blockPerCol * blockPerRow;
+            break;
+        }
+        case BLOCK_MEAN_HASH_MODE_1:
+        {
+            pixColStep /= 2;
+            pixRowStep /= 2;
+            numOfBlocks = (blockPerCol*2-1) * (blockPerRow*2-1);
+            break;
+        }
+        default:
+            break;
+        }
+
+        mean_.resize(numOfBlocks);
+        findMean(pixRowStep, pixColStep);
+        outputArr.create(1, numOfBlocks/8 + numOfBlocks % 8, CV_8U);
+        cv::Mat hash = outputArr.getMat();
+        createHash(hash);
+    }
+
+    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const
+    {
+        return norm(hashOne, hashTwo, NORM_HAMMING);
+    }
+
+    void setMode(int mode)
+    {
+        CV_Assert(mode == BLOCK_MEAN_HASH_MODE_0 || mode == BLOCK_MEAN_HASH_MODE_1);
+        mode_ = mode;
+    }
+
+private:
+    void createHash(cv::Mat &hash)
+    {
+        double const median = cv::mean(grayImg_)[0];
+        uchar *hashPtr = hash.ptr<uchar>(0);
+        std::bitset<8> bits = 0;
+        for(size_t i = 0; i < mean_.size(); ++i)
+        {
+            size_t const residual = i%8;
+            bits[residual] = mean_[i] < median ? 0 : 1;
+            if(residual == 7)
+            {
+                *hashPtr = static_cast<uchar>(bits.to_ulong());
+                ++hashPtr;
+            }else if(i == mean_.size() - 1)
+            {
+                *hashPtr = bits[residual];
+            }
         }
     }
-}
-
-void BlockMeanHash::findMean(int pixRowStep, int pixColStep)
-{
-    size_t blockIdx = 0;
-    for(int row = 0; row <= rowSize; row += pixRowStep)
+    void findMean(int pixRowStep, int pixColStep)
     {
-        for(int col = 0; col <= colSize; col += pixColStep)
+        size_t blockIdx = 0;
+        for(int row = 0; row <= rowSize; row += pixRowStep)
         {
-            mean_[blockIdx++] = cv::mean(grayImg_(cv::Rect(col, row, blockWidth, blockHeigth)))[0];
+            for(int col = 0; col <= colSize; col += pixColStep)
+            {
+                mean_[blockIdx++] = cv::mean(grayImg_(cv::Rect(col, row, blockWidth, blockHeigth)))[0];
+            }
         }
     }
-}
 
-void blockMeanHash(cv::InputArray inputArr,
-                   cv::OutputArray outputArr,
-                   size_t mode)
+friend BlockMeanHash;
+
+private:
+    cv::Mat grayImg_;
+    std::vector<double> mean_;
+    int mode_;
+    cv::Mat resizeImg_;
+};
+
+inline BlockMeanHashImpl *getLocalImpl(void *ptr)
 {
-    BlockMeanHash(mode).compute(inputArr, outputArr);
+    BlockMeanHashImpl * impl = dynamic_cast<BlockMeanHashImpl*>(getImpl(ptr));
+    CV_Assert(impl);
+    return impl;
 }
 
 }
 
+//==================================================================================================
+
+namespace cv { namespace img_hash {
+
+Ptr<BlockMeanHash> BlockMeanHash::create(int mode)
+{
+    Ptr<BlockMeanHash> res(new BlockMeanHash);
+    res->pImpl = new BlockMeanHashImpl(mode);
+    return res;
 }
+
+void BlockMeanHash::setMode(int mode)
+{
+    getLocalImpl(pImpl)->setMode(mode);
+}
+
+std::vector<double> BlockMeanHash::getMean() const
+{
+    return getLocalImpl(pImpl)->mean_;
+}
+
+void blockMeanHash(cv::InputArray inputArr, cv::OutputArray outputArr, int mode)
+{
+    BlockMeanHashImpl(mode).compute(inputArr, outputArr);
+}
+
+}} // cv::img_hash::
