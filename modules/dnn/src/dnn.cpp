@@ -70,25 +70,8 @@ static String toString(const T &v)
 
 Mat blobFromImage(const Mat& image_, double scalefactor, bool swapRB)
 {
-    Mat image;
-    if(image_.depth() == CV_8U)
-    {
-        image_.convertTo(image, CV_32F, scalefactor);
-    }
-    else
-        image = image_;
-    CV_Assert(image.dims == 2 && image.depth() == CV_32F);
-    int nch = image.channels();
-    CV_Assert(nch == 3 || nch == 4);
-    int sz[] = { 1, 3, image.rows, image.cols };
-    Mat blob(4, sz, CV_32F);
-    Mat ch[4];
-    for( int j = 0; j < 3; j++ )
-        ch[j] = Mat(image.rows, image.cols, CV_32F, blob.ptr(0, j));
-    if(swapRB)
-        std::swap(ch[0], ch[2]);
-    split(image, ch);
-    return blob;
+    std::vector<Mat> images(1, image_);
+    return blobFromImages(images, scalefactor, swapRB);
 }
 
 Mat blobFromImages(const std::vector<Mat>& images, double scalefactor, bool swapRB)
@@ -98,30 +81,57 @@ Mat blobFromImages(const std::vector<Mat>& images, double scalefactor, bool swap
         return Mat();
     Mat image0 = images[0];
     int nch = image0.channels();
-    CV_Assert(image0.dims == 2 && (nch == 3 || nch == 4));
-    int sz[] = { (int)nimages, 3, image0.rows, image0.cols };
-    Mat blob(4, sz, CV_32F), image;
-    Mat ch[4];
-
-    for( i = 0; i < nimages; i++ )
+    CV_Assert(image0.dims == 2);
+    Mat blob, image;
+    if (nch == 3 || nch == 4)
     {
-        Mat image_ = images[i];
-        if(image_.depth() == CV_8U)
-        {
-            image_.convertTo(image, CV_32F, scalefactor);
-        }
-        else
-            image = image_;
-        CV_Assert(image.depth() == CV_32F);
-        nch = image.channels();
-        CV_Assert(image.dims == 2 && (nch == 3 || nch == 4));
-        CV_Assert(image.size() == image0.size());
+        int sz[] = { (int)nimages, 3, image0.rows, image0.cols };
+        blob = Mat(4, sz, CV_32F);
+        Mat ch[4];
 
-        for( int j = 0; j < 3; j++ )
-            ch[j] = Mat(image.rows, image.cols, CV_32F, blob.ptr((int)i, j));
-        if(swapRB)
-            std::swap(ch[0], ch[2]);
-        split(image, ch);
+        for( i = 0; i < nimages; i++ )
+        {
+            Mat image_ = images[i];
+            if(image_.depth() == CV_8U)
+            {
+                image_.convertTo(image, CV_32F, scalefactor);
+            }
+            else
+                image = image_;
+            CV_Assert(image.depth() == CV_32F);
+            nch = image.channels();
+            CV_Assert(image.dims == 2 && (nch == 3 || nch == 4));
+            CV_Assert(image.size() == image0.size());
+
+            for( int j = 0; j < 3; j++ )
+                ch[j] = Mat(image.rows, image.cols, CV_32F, blob.ptr((int)i, j));
+            if(swapRB)
+                std::swap(ch[0], ch[2]);
+            split(image, ch);
+        }
+    }
+    else
+    {
+       CV_Assert(nch == 1);
+       int sz[] = { (int)nimages, 1, image0.rows, image0.cols };
+       blob = Mat(4, sz, CV_32F);
+
+       for( i = 0; i < nimages; i++ )
+       {
+           Mat image_ = images[i];
+           if(image_.depth() == CV_8U)
+           {
+               image_.convertTo(image, CV_32F, scalefactor);
+           }
+           else
+               image = image_;
+           CV_Assert(image.depth() == CV_32F);
+           nch = image.channels();
+           CV_Assert(image.dims == 2 && (nch == 1));
+           CV_Assert(image.size() == image0.size());
+
+           image.copyTo(Mat(image.rows, image.cols, CV_32F, blob.ptr((int)i, 0)));
+       }
     }
     return blob;
 }
