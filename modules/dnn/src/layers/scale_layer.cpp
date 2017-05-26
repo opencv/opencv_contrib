@@ -67,8 +67,6 @@ public:
         }
         return flops;
     }
-
-    bool hasBias;
 };
 
 

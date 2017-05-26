@@ -91,9 +91,6 @@ public:
         }
         return flops;
     }
-
-    bool hasWeights, hasBias;
-    float epsilon;
 };
 
 Ptr<BatchNormLayer> BatchNormLayer::create(const LayerParams& params)

@@ -329,6 +329,8 @@ namespace dnn
     class CV_EXPORTS ReLULayer : public Layer
     {
     public:
+        float negativeSlope;
+
         static Ptr<ReLULayer> create(const LayerParams &params);
     };
 
@@ -365,6 +367,8 @@ namespace dnn
     class CV_EXPORTS PowerLayer : public Layer
     {
     public:
+        float power, scale, shift;
+
         static Ptr<PowerLayer> create(const LayerParams &params);
     };
 
@@ -395,18 +399,27 @@ namespace dnn
     class CV_EXPORTS BatchNormLayer : public Layer
     {
     public:
+        bool hasWeights, hasBias;
+        float epsilon;
+
         static Ptr<BatchNormLayer> create(const LayerParams &params);
     };
 
     class CV_EXPORTS MaxUnpoolLayer : public Layer
     {
     public:
+        Size poolKernel;
+        Size poolPad;
+        Size poolStride;
+
         static Ptr<MaxUnpoolLayer> create(const LayerParams &params);
     };
 
     class CV_EXPORTS ScaleLayer : public Layer
     {
     public:
+        bool hasBias;
+
         static Ptr<ScaleLayer> create(const LayerParams& params);
     };
 

@@ -47,7 +47,10 @@ namespace dnn
 class BlankLayerImpl : public BlankLayer
 {
 public:
-    BlankLayerImpl(const LayerParams&) {}
+    BlankLayerImpl(const LayerParams& params)
+    {
+        setParamsFrom(params);
+    }
 
     bool getMemoryShapes(const std::vector<MatShape> &inputs,
                          const int requiredOutputs,

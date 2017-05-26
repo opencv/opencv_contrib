@@ -81,10 +81,6 @@ public:
             }
         }
     }
-
-    Size poolKernel;
-    Size poolPad;
-    Size poolStride;
 };
 
 Ptr<MaxUnpoolLayer> MaxUnpoolLayer::create(const LayerParams& params)
