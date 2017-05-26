@@ -142,7 +142,7 @@ are optional. A similar example without these parameters would be:
     std::vector<int> markerIds;
     std::vector<std::vector<cv::Point2f>> markerCorners;
     cv::Ptr<cv::aruco::DetectorParameters> params;
-    params->doCornerRefinement = false;
+    params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
     cv::aruco::detectMarkers(inputImage, board.dictionary, markerCorners, markerIds, params);
 
     // if at least one marker detected
@@ -207,7 +207,7 @@ Finally, this is a full example of ChArUco detection (without using calibration 
     cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
 
     cv::Ptr<cv::aruco::DetectorParameters> params;
-    params->doCornerRefinement = false;
+    params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_NONE;
 
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
