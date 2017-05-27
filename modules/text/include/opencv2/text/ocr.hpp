@@ -61,6 +61,31 @@ enum
     OCR_LEVEL_TEXTLINE
 };
 
+//! Tesseract.PageSegMode Enumeration
+enum page_seg_mode
+{
+    PSM_OSD_ONLY,
+    PSM_AUTO_OSD,
+    PSM_AUTO_ONLY,
+    PSM_AUTO,
+    PSM_SINGLE_COLUMN,
+    PSM_SINGLE_BLOCK_VERT_TEXT,
+    PSM_SINGLE_BLOCK,
+    PSM_SINGLE_LINE,
+    PSM_SINGLE_WORD,
+    PSM_CIRCLE_WORD,
+    PSM_SINGLE_CHAR
+};
+
+//! Tesseract.OcrEngineMode Enumeration
+enum ocr_engine_mode
+{
+    OEM_TESSERACT_ONLY,
+    OEM_CUBE_ONLY,
+    OEM_TESSERACT_CUBE_COMBINED,
+    OEM_DEFAULT
+};
+
 //base class BaseOCR declares a common API that would be used in a typical text recognition scenario
 class CV_EXPORTS_W BaseOCR
 {
@@ -136,7 +161,7 @@ public:
     possible values.
      */
     CV_WRAP static Ptr<OCRTesseract> create(const char* datapath=NULL, const char* language=NULL,
-                                    const char* char_whitelist=NULL, int oem=3, int psmode=3);
+                                    const char* char_whitelist=NULL, int oem=OEM_DEFAULT, int psmode=PSM_AUTO);
 };
 
 
