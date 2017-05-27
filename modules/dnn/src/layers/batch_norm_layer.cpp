@@ -30,6 +30,15 @@ public:
         epsilon = params.get<float>("eps", 1E-5);
     }
 
+    bool getMemoryShapes(const std::vector<MatShape> &inputs,
+                         const int requiredOutputs,
+                         std::vector<MatShape> &outputs,
+                         std::vector<MatShape> &internals) const
+    {
+        Layer::getMemoryShapes(inputs, requiredOutputs, outputs, internals);
+        return true;
+    }
+
     void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         CV_Assert(blobs.size() >= 2);
