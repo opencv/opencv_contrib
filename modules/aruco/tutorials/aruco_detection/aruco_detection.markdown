@@ -702,23 +702,23 @@ Default value: 0.6
 #### Corner Refinement
 
 After markers have been detected and identified, the last step is performing subpixel refinement
-in the corner positions (see OpenCV ```cornerSubPix()```)
+in the corner positions (see OpenCV ```cornerSubPix()``` and ```cv::aruco::CornerRefineMethod```)
 
 Note that this step is optional and it only makes sense if the position of the marker corners have to
 be accurate, for instance for pose estimation. It is usually a time consuming step and it is disabled by default.
 
-- ```bool doCornerRefinement```
+- ```int cornerRefinementMethod```
 
 This parameter determines if the corner subpixel process is performed or not. It can be disabled
 if accurate corners are not necessary.
 
-Default value: false.
+Default value: ```CORNER_REFINE_NONE```.
 
  - ```int cornerRefinementWinSize```
 
 This parameter determines the window size of the subpixel refinement process.
 
-High values can produce that close image corners are included in the window region, so that the
+High values can produce the effect that close image corners are included in the window region, so that the
 marker corner moves to a different and wrong location during the process. Furthermore
 it can affect to performance.
 
