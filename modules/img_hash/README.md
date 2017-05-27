@@ -94,12 +94,12 @@ This module only depend on opencv_core and opencv_imgproc, by now it is not merg
 5. copy the whole folder opencv_contrib/modules/img_hash
 6. check out the branch you want to work at
 7. paste the folder img_hash you copied in to opencv_contrib/modules
-8. build it as other opencv_contrib modules or you can add all of the headers and 
+8. build it as other opencv_contrib modules or you can add all of the headers and
 sources into your project
 
 ### Solution B--sync with master brnach of opencv_contrib
 5. git pull https://github.com/opencv/opencv_contrib
-6. build it as other opencv_contrib modules or you can add all of the headers and 
+6. build it as other opencv_contrib modules or you can add all of the headers and
 sources into your project
 
 To study more details about those git commands, please go to [stack overflow](http://stackoverflow.com/questions/67699/clone-all-remote-branches-with-git)
