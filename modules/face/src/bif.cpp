@@ -127,7 +127,7 @@ void BIFImpl::compute(cv::InputArray _image,
     int fea_dim = 0;
 
     for (size_t i = 0; i < units_.size(); ++i) {
-        computeUnit(static_cast<int>(i), image, fea_units[i]);
+     01   computeUnit(static_cast<int>(i), image, fea_units[i]);
         fea_dim += fea_units[i].rows;
     }
 

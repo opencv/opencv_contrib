@@ -37,8 +37,7 @@ the use of this software, even if advised of the possibility of such damage.
 */
 #ifndef __OPENCV_FACE_ALIGNMENT_HPP__
 #define __OPENCV_FACE_ALIGNMENT_HPP__
-#include "opencv2/core.hpp"
-#include "opencv2/types.hpp"
+
 #include <string>
 #include <vector>
 
@@ -57,8 +56,8 @@ public:
 
 
     CV_WRAP  virtual std::vector<Point2f> getLandmarks(
-            cv::Mat img,
-            const cv::Rect face,
+            Mat img,
+            const Rect face,
             std::vector<Point2f> > initial_feats
         ) const=0;
     /** This function takes the initial image,one of the face and mean shape in the image 
