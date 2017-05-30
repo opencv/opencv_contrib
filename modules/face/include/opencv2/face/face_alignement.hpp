@@ -55,10 +55,10 @@ public:
     CV_WRAP virtual int getNumFaces() const = 0;
 
 
-    CV_WRAP  virtual std::vector<Point2f> getLandmarks(
-            Mat img,
-            const Rect face,
-            std::vector<Point2f> > initial_feats
+    CV_WRAP  virtual std::vector<cv::Point2f> getLandmarks(
+            cv::Mat img,
+            const cv::Rect face,
+            std::vector<cv::Point2f> > initial_feats
         ) const=0;
     /** This function takes the initial image,one of the face and mean shape in the image 
     and returns the landmarks in the image. 
@@ -76,8 +76,9 @@ public:
  */
 
 
-CV_EXPORTS_W cv::Ptr<FaceAlignment> createFaceAlignment(int num_faces = 1, int num_landmarks = 194);
+CV_EXPORTS_W cv::Ptr<FaceAlignment> createFaceAlignment(int num_faces = 1, int num_landmarks = 194,cv::Mat img);
 
 }//face
 }//cv
 #endif
+
