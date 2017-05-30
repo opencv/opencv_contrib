@@ -40,7 +40,9 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include <string>
 #include <vector>
+#include "opencv2/core.hpp"
 
+using namespace std;
 
 namespace cv{ namespace face {
 
@@ -58,7 +60,7 @@ public:
     CV_WRAP  virtual std::vector<Point2f> setLandmarks(
             cv::Mat img,
             const vector<cv::Rect> face,
-            const std::vector< std::vector<cv::Point2f> > > landmarks
+            const std::vector< std::vector<cv::Point2f> > landmarks
         ) const=0;
     /** This function takes the initial image,one of the face and mean shape in the image 
     and returns the landmarks in the image. 
