@@ -1,19 +1,13 @@
 /*
-By downloading, copying, installing or using the software you agree to this license.
-If you do not agree to this license, do not download, install,
+By downloading, copying, installing or using the software you agree to this
+license. If you do not agree to this license, do not download, install,
 copy or use the software.
-
 
                           License Agreement
                For Open Source Computer Vision Library
                        (3-clause BSD License)
 
-Copyright (C) 2000-2015, Intel Corporation, all rights reserved.
-Copyright (C) 2009-2011, Willow Garage Inc., all rights reserved.
-Copyright (C) 2009-2015, NVIDIA Corporation, all rights reserved.
-Copyright (C) 2010-2013, Advanced Micro Devices, Inc., all rights reserved.
-Copyright (C) 2015, OpenCV Foundation, all rights reserved.
-Copyright (C) 2015, Itseez Inc., all rights reserved.
+Copyright (C) 2013, OpenCV Foundation, all rights reserved.
 Third party copyrights are property of their respective owners.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -32,94 +26,58 @@ are permitted provided that the following conditions are met:
 
 This software is provided by the copyright holders and contributors "as is" and
 any express or implied warranties, including, but not limited to, the implied
-warranties of merchantability and fitness for a particular purpose are disclaimed.
-In no event shall copyright holders or contributors be liable for any direct,
-indirect, incidental, special, exemplary, or consequential damages
+warranties of merchantability and fitness for a particular purpose are
+disclaimed. In no event shall copyright holders or contributors be liable for
+any direct, indirect, incidental, special, exemplary, or consequential damages
 (including, but not limited to, procurement of substitute goods or services;
 loss of use, data, or profits; or business interruption) however caused
 and on any theory of liability, whether in contract, strict liability,
 or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
 */
+#ifndef __OPENCV_FACE_ALIGNMENT_HPP__
+#define __OPENCV_FACE_ALIGNMENT_HPP__
 
-
-/*
-This file contains implementation of the bio-inspired features (BIF) approach
-for computing image descriptors, applicable for human age estimation. For more
-details we refer to [1,2].
-
-REFERENCES
-  [1] Guo, Guodong, et al. "Human age estimation using bio-inspired features."
-      Computer Vision and Pattern Recognition, 2009. CVPR 2009.
-  [2] Spizhevoi, A. S., and A. V. Bovyrin. "Estimating human age using
-      bio-inspired features and the ranking method." Pattern Recognition and
-      Image Analysis 25.3 (2015): 547-552.
-*/
-#include "precomp.h"
-#include "opencv2/face/face_alignment.hpp"
-#include "opencv2/objdetect/objdetect.hpp"
-#include "opencv2/highgui/highgui.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/core.hpp"
-#include <fstream>
-#include <iostream>
 #include <string>
-#include <map>
-#include <vector>
-#include <cmath>
-#include <iostream>
 #include <vector>
 
-namespace cv{ namespace face{
 
-const string face_cascade_name = "lbpcascade_frontalface_improved.xml";
+namespace cv{ namespace face {
+
+class CV_EXPORTS_W FaceAlignment : public Algorithm
+{
+public:
+
+/** @returns The number of landmarks detected in an image */
+    CV_WRAP virtual int getNumLandmarks() const = 0;
+
+    /** @returns The number of faces detected in an image */
+    CV_WRAP virtual int getNumFaces() const = 0;
 
 
-class ShapePredictor : public cv::face::FaceAlignment{
- public: 
-    virtual int getNumLandmarks() const {return numlandmarks_;}
-
-    virtual int getNumFaces() const {return numfaces_;}
-
-
-    virtual virtual std::vector<Point2f> setLandmarks(
+    CV_WRAP  virtual std::vector<Point2f> setLandmarks(
             cv::Mat img,
             const vector<cv::Rect> face,
             const std::vector< std::vector<cv::Point2f> > > landmarks
-        ) const;
+        ) const=0;
+    /** This function takes the initial image,one of the face and mean shape in the image 
+    and returns the landmarks in the image. 
+      The description of the arguments is as follows :
+      @param img(cv::Mat)- It recieves a Mat object whose landmarks had to be detected.
+      @param face(cv::Rect)- It recieves one of the bounding rectangle of the faces in the image.
+      @param landmarks(std::vector< std::vector<cv::Point2f> > >)- It recieves position of landmarks of the faces in the image.
+          It is a vector of shapes containing shapes of all the faces in the image**/
 
-  private:
-    int numlandmarks_;
-    int numfaces_;
-    std::vector<cv::Rect> faces;
-    std::vector<cv::Point2f> landmarks;
-    /*Returns all the bounding rectangles enclosing all the faces in an image*/
-    std::vector<cv::Rect> getboundingrect(cv::Mat src);
-    
 };
+/**
+ * @param num_faces The number of faces (>=1) for computing shape.
+ * @param num_landmarks The number of landmarks(=194) according to the HELEN dataset being used.
+ * @returns Object for computing shape.
+ */
 
-vector<Rect> getboundingrect(cv::Mat src){
-  std::vector<Rect> faces;
-  cv::CascadeClassifier face_cascade;  
-  
-  if(!face_cascade.load(face_cascade_name)){
-    cout<<"Error"<<endl;
-    return faces;
-  }
-  
-  Mat frame_gray;
 
-  cvtColor( src, frame_gray, CV_BGR2GRAY );
-  equalizeHist( frame_gray, frame_gray );
+CV_EXPORTS_W cv::Ptr<FaceAlignment> createFaceAlignment(int num_faces = 1, int num_landmarks = 194);
 
-  face_cascade.detectMultiScale( frame_gray, faces, 1.05, 3, 0, Size(30,30) );
-
-  return faces;
-
-}
 }//face
 }//cv
-
-
-
+#endif
