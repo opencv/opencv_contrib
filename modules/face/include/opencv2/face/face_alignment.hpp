@@ -55,18 +55,18 @@ public:
     CV_WRAP virtual int getNumFaces() const = 0;
 
 
-    CV_WRAP  virtual std::vector<cv::Point2f> getLandmarks(
+    CV_WRAP  virtual std::vector<Point2f> setLandmarks(
             cv::Mat img,
-            const cv::Rect face,
-            std::vector<cv::Point2f> > initial_feats
+            const vector<cv::Rect> face,
+            const std::vector< std::vector<cv::Point2f> > > landmarks
         ) const=0;
     /** This function takes the initial image,one of the face and mean shape in the image 
     and returns the landmarks in the image. 
       The description of the arguments is as follows :
-      @param img(Mat)- It recieves a Mat object in which it detects the landmarks.
-      @param face(Rect)- It recieves one of the bounding rectangle of one of the face in the image.
-      @param initial_feats(vector<Point2f>- It recieves initial position of landmarks which is there in the mean image.
-          It is a vector of points which denote the position of landmarks in the image or the initial shape**/
+      @param img(cv::Mat)- It recieves a Mat object whose landmarks had to be detected.
+      @param face(cv::Rect)- It recieves one of the bounding rectangle of the faces in the image.
+      @param landmarks(std::vector< std::vector<cv::Point2f> > >)- It recieves position of landmarks of the faces in the image.
+          It is a vector of shapes containing shapes of all the faces in the image**/
 
 };
 /**
@@ -76,9 +76,8 @@ public:
  */
 
 
-CV_EXPORTS_W cv::Ptr<FaceAlignment> createFaceAlignment(int num_faces = 1, int num_landmarks = 194,cv::Mat img);
+CV_EXPORTS_W cv::Ptr<FaceAlignment> createFaceAlignment(int num_faces = 1, int num_landmarks = 194);
 
 }//face
 }//cv
 #endif
-

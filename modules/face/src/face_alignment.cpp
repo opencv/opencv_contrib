@@ -75,6 +75,7 @@ namespace cv{ namespace face{
 
 const string face_cascade_name = "lbpcascade_frontalface_improved.xml";
 
+
 class ShapePredictor : public cv::face::FaceAlignment{
  public: 
     virtual int getNumLandmarks() const {return numlandmarks_;}
@@ -82,51 +83,43 @@ class ShapePredictor : public cv::face::FaceAlignment{
     virtual int getNumFaces() const {return numfaces_;}
 
 
-    virtual std::vector<Point2f> getLandmarks(
-            Mat img,
-            const Rect face,
-            std::vector<Point2f> > initial_feats
+    virtual virtual std::vector<Point2f> setLandmarks(
+            cv::Mat img,
+            const vector<cv::Rect> face,
+            const std::vector< std::vector<cv::Point2f> > > landmarks
         ) const;
+
   private:
     int numlandmarks_;
     int numfaces_;
     std::vector<cv::Rect> faces;
     std::vector<cv::Point2f> landmarks;
+    /*Returns all the bounding rectangles enclosing all the faces in an image*/
+    std::vector<cv::Rect> getboundingrect(cv::Mat src);
     
 };
 
+vector<Rect> getboundingrect(cv::Mat src){
+  std::vector<Rect> faces;
+  cv::CascadeClassifier face_cascade;  
+  
+  if(!face_cascade.load(face_cascade_name)){
+    cout<<"Error"<<endl;
+    return faces;
+  }
+  
+  Mat frame_gray;
 
+  cvtColor( src, frame_gray, CV_BGR2GRAY );
+  equalizeHist( frame_gray, frame_gray );
 
+  face_cascade.detectMultiScale( frame_gray, faces, 1.05, 3, 0, Size(30,30) );
 
-
-
-
-
-
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
+  return faces;
 
 }
+}//face
+}//cv
 
 
-
-
-
-
-
-
-}
 
