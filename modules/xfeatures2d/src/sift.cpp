@@ -585,8 +585,7 @@ public:
         double _sigma,
         const std::vector<Mat>& _gauss_pyr,
         const std::vector<Mat>& _dog_pyr,
-        std::vector<KeyPoint>& _keypoints,
-        Mutex &_mutex)
+        TLSData<std::vector<KeyPoint> > &_tls_kpts_struct)
 
         : o(_o),
           i(_i),
@@ -600,8 +599,7 @@ public:
           sigma(_sigma),
           gauss_pyr(_gauss_pyr),
           dog_pyr(_dog_pyr),
-          keypoints(_keypoints),
-          mutex(_mutex) { }
+          tls_kpts_struct(_tls_kpts_struct) { }
     void operator()( const cv::Range& range ) const
     {
         const int begin = range.start;
@@ -613,6 +611,8 @@ public:
         const Mat& img = dog_pyr[idx];
         const Mat& prev = dog_pyr[idx-1];
         const Mat& next = dog_pyr[idx+1];
+
+        std::vector<KeyPoint> *tls_kpts = tls_kpts_struct.get();
 
         KeyPoint kpt;
         for( int r = begin; r < end; r++)
@@ -671,8 +671,7 @@ public:
                             if(std::abs(kpt.angle - 360.f) < FLT_EPSILON)
                                 kpt.angle = 0.f;
                             {
-                                AutoLock autoLock(mutex);
-                                keypoints.push_back(kpt);
+                                tls_kpts->push_back(kpt);
                             }
                         }
                     }
@@ -690,8 +689,7 @@ private:
     double sigma;
     const std::vector<Mat>& gauss_pyr;
     const std::vector<Mat>& dog_pyr;
-    std::vector<KeyPoint>& keypoints;
-    Mutex &mutex;
+    TLSData<std::vector<KeyPoint> > &tls_kpts_struct;
 };
 
 //
@@ -704,7 +702,7 @@ void SIFT_Impl::findScaleSpaceExtrema( const std::vector<Mat>& gauss_pyr, const 
     const int threshold = cvFloor(0.5 * contrastThreshold / nOctaveLayers * 255 * SIFT_FIXPT_SCALE);
 
     keypoints.clear();
-    Mutex mutex;
+    TLSData<std::vector<KeyPoint> > tls_kpts_struct;
 
     for( int o = 0; o < nOctaves; o++ )
         for( int i = 1; i <= nOctaveLayers; i++ )
@@ -721,8 +719,14 @@ void SIFT_Impl::findScaleSpaceExtrema( const std::vector<Mat>& gauss_pyr, const 
                     contrastThreshold,
                     edgeThreshold,
                     sigma,
-                    gauss_pyr, dog_pyr, keypoints, mutex));
+                    gauss_pyr, dog_pyr, tls_kpts_struct));
         }
+
+    std::vector<std::vector<KeyPoint>*> kpt_vecs;
+    tls_kpts_struct.gather(kpt_vecs);
+    for (size_t i = 0; i < kpt_vecs.size(); ++i) {
+        keypoints.insert(keypoints.end(), kpt_vecs[i]->begin(), kpt_vecs[i]->end());
+    }
 }
 
 
