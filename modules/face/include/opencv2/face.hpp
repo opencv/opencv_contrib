@@ -374,5 +374,5 @@ protected:
 }}
 
 #include "opencv2/face/facerec.hpp"
-
+#include "opencv2/face/facemark.hpp"
 #endif
