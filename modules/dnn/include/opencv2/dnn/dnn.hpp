@@ -369,6 +369,21 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          CV_WRAP void getMemoryConsumption(const int layerId,
                                            const MatShape& netInputShape,
                                            size_t& weights, size_t& blobs) const;
+
+         /** @brief Computes bytes number which are requered to store
+          * all weights and intermediate blobs for each layer.
+          * @param netInputShapes vector of shapes for all net inputs.
+          * @param layerIds output vector to save layer IDs.
+          * @param weights output parameter to store resulting bytes for weights.
+          * @param blobs output parameter to store resulting bytes for intermediate blobs.
+          */
+         CV_WRAP void getMemoryConsumption(const std::vector<MatShape>& netInputShapes,
+                                           std::vector<int>& layerIds, std::vector<size_t>& weights,
+                                           std::vector<size_t>& blobs) const;
+         /** @overload */
+         CV_WRAP void getMemoryConsumption(const MatShape& netInputShape,
+                                           std::vector<int>& layerIds, std::vector<size_t>& weights,
+                                           std::vector<size_t>& blobs) const;
     private:
 
         struct Impl;

@@ -102,7 +102,7 @@ TEST(Reproducibility_AlexNet, Accuracy)
     normAssert(ref, out);
 }
 
-#if !defined(_WIN32)
+#if !defined(_WIN32) || defined(_WIN64)
 TEST(Reproducibility_FCN, Accuracy)
 {
     Net net;
@@ -120,6 +120,10 @@ TEST(Reproducibility_FCN, Accuracy)
     Size inputSize(500, 500);
     if (sample.size() != inputSize)
         resize(sample, sample, inputSize);
+
+    std::vector<int> layerIds;
+    std::vector<size_t> weights, blobs;
+    net.getMemoryConsumption(shape(1,3,227,227), layerIds, weights, blobs);
 
     net.setBlob(".data", blobFromImage(sample, 1.));
     net.forward();
