@@ -477,7 +477,7 @@ void normalize( const Mat &pts, const int& dim, Mat& normpts, Mat &T )
         averagedist = averagedist+(float)norm(ptstmp);
     }
     averagedist = averagedist / normpts.cols;
-    scale = (float)(sqrt(dim) / averagedist);
+    scale = (float)(sqrt(static_cast<float>(dim)) / averagedist);
 
     normpts = normpts * scale;
 

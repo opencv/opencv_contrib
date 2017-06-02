@@ -570,7 +570,7 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
         localBestScore = score;
       else
       {
-        const double beta = simulatedAnnealingTemperatureCoef * std::sqrt( i ) / ( nSamples * ( scoreGainPos + scoreGainNeg ) );
+        const double beta = simulatedAnnealingTemperatureCoef * std::sqrt( static_cast<float>(i) ) / ( nSamples * ( scoreGainPos + scoreGainNeg ) );
         if ( rng.uniform( 0.0, 1.0 ) > std::exp( -beta * ( localBestScore - score) ) )
           coef[pos] = randomModification;
       }

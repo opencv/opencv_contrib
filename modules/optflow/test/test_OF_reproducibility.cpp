@@ -100,8 +100,8 @@ TEST_P(DenseOpticalFlow_DIS, MultithreadReproducibility)
         // resulting flow should be within the frame bounds:
         double min_val, max_val;
         minMaxLoc(resMultiThread, &min_val, &max_val);
-        EXPECT_LE(abs(min_val), sqrt(size.height * size.height + size.width * size.width));
-        EXPECT_LE(abs(max_val), sqrt(size.height * size.height + size.width * size.width));
+        EXPECT_LE(abs(min_val), sqrt( static_cast<double>(size.height * size.height + size.width * size.width)) );
+        EXPECT_LE(abs(max_val), sqrt( static_cast<double>(size.height * size.height + size.width * size.width)) );
     }
 }
 
@@ -151,8 +151,8 @@ TEST_P(DenseOpticalFlow_VariationalRefinement, MultithreadReproducibility)
         // resulting flow should be within the frame bounds:
         double min_val, max_val;
         minMaxLoc(resMultiThread, &min_val, &max_val);
-        EXPECT_LE(abs(min_val), sqrt(size.height * size.height + size.width * size.width));
-        EXPECT_LE(abs(max_val), sqrt(size.height * size.height + size.width * size.width));
+        EXPECT_LE(abs(min_val), sqrt( static_cast<double>(size.height * size.height + size.width * size.width)) );
+        EXPECT_LE(abs(max_val), sqrt( static_cast<double>(size.height * size.height + size.width * size.width)) );
     }
 }
 
