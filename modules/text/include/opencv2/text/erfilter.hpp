@@ -373,20 +373,21 @@ CV_EXPORTS_W void detectRegions(InputArray image, const Ptr<ERFilter>& er_filter
 
 
 /** @brief Extracts text regions from image.
- *
- * @param image Source image where text blocks needs to be extracted from.  Should be CV_8UC3 (color).
- * @param er_filter1 Extremal Region Filter for the 1st stage classifier of N&M algorithm [Neumann12]
- * @param er_filter2 Extremal Region Filter for the 2nd stage classifier of N&M algorithm [Neumann12]
- * @param groups_rects Output list of rectangle blocks with text
- * @param method Grouping method (see text::erGrouping_Modes). Can be one of ERGROUPING_ORIENTATION_HORIZ, ERGROUPING_ORIENTATION_ANY.
- * @param filename The XML or YAML file with the classifier model (e.g. samples/trained_classifier_erGrouping.xml). Only to use when grouping method is ERGROUPING_ORIENTATION_ANY.
- * @param minProbability The minimum probability for accepting a group. Only to use when grouping method is ERGROUPING_ORIENTATION_ANY.
- *
+
+@param image Source image where text blocks needs to be extracted from.  Should be CV_8UC3 (color).
+@param er_filter1 Extremal Region Filter for the 1st stage classifier of N&M algorithm [Neumann12]
+@param er_filter2 Extremal Region Filter for the 2nd stage classifier of N&M algorithm [Neumann12]
+@param groups_rects Output list of rectangle blocks with text
+@param method Grouping method (see text::erGrouping_Modes). Can be one of ERGROUPING_ORIENTATION_HORIZ, ERGROUPING_ORIENTATION_ANY.
+@param filename The XML or YAML file with the classifier model (e.g. samples/trained_classifier_erGrouping.xml). Only to use when grouping method is ERGROUPING_ORIENTATION_ANY.
+@param minProbability The minimum probability for accepting a group. Only to use when grouping method is ERGROUPING_ORIENTATION_ANY.
+
+
  */
 CV_EXPORTS_W void detectRegions(InputArray image, const Ptr<ERFilter>& er_filter1, const Ptr<ERFilter>& er_filter2, CV_OUT std::vector<Rect> &groups_rects,
                                            int method = ERGROUPING_ORIENTATION_HORIZ,
                                            const String& filename = String(),
-                                           float minProbablity = (float)0.5);
+                                           float minProbability = (float)0.5);
 
 //! @}
 
