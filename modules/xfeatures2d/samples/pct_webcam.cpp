@@ -117,7 +117,7 @@ int main(int argc, char** argv)
             cerr << "Sample count have to be a positive integer: " << argv[1] << endl;
             return 1;
         }
-        initSeedCount = (int)floor(initSampleCount / 4);
+        initSeedCount = (int)floor(static_cast<float>(initSampleCount / 4));
         initSeedCount = std::max(1, initSeedCount);     // fallback if sample count == 1
     }
     if (argc > 2)               // seed count
