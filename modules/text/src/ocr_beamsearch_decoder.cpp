@@ -499,7 +499,7 @@ Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create( Ptr<OCRBeamSearchDecoder
     return makePtr<OCRBeamSearchDecoderImpl>(_classifier, _vocabulary, transition_p, emission_p, _mode, _beam_size);
 }
 
-CV_EXPORTS_W Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(Ptr<OCRBeamSearchDecoder::ClassifierCallback> _classifier,
+Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(Ptr<OCRBeamSearchDecoder::ClassifierCallback> _classifier,
                                                         const String& _vocabulary,
                                                         InputArray transition_p,
                                                         InputArray emission_p,
@@ -509,8 +509,17 @@ CV_EXPORTS_W Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(Ptr<OCRBeamS
     return makePtr<OCRBeamSearchDecoderImpl>(_classifier, _vocabulary, transition_p, emission_p, (decoder_mode)_mode, _beam_size);
 }
 
+Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(const String& _filename,
+                                                        const String& _vocabulary,
+                                                        InputArray transition_p,
+                                                        InputArray emission_p,
+                                                        int _mode,
+                                                        int _beam_size)
+{
+    return makePtr<OCRBeamSearchDecoderImpl>(loadOCRBeamSearchClassifierCNN(_filename), _vocabulary, transition_p, emission_p, (decoder_mode)_mode, _beam_size);
+}
 
-class CV_EXPORTS OCRBeamSearchClassifierCNN : public OCRBeamSearchDecoder::ClassifierCallback
+class OCRBeamSearchClassifierCNN : public OCRBeamSearchDecoder::ClassifierCallback
 {
 public:
     //constructor

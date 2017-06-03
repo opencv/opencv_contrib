@@ -90,7 +90,7 @@ void OCRHMMDecoder::run(Mat& image, Mat& mask, string& output_text, vector<Rect>
         component_confidences->clear();
 }
 
-CV_WRAP String OCRHMMDecoder::run(InputArray image, int min_confidence, int component_level)
+String OCRHMMDecoder::run(InputArray image, int min_confidence, int component_level)
 {
     std::string output1;
     std::string output2;
@@ -109,7 +109,7 @@ CV_WRAP String OCRHMMDecoder::run(InputArray image, int min_confidence, int comp
     return String(output2);
 }
 
-CV_WRAP cv::String OCRHMMDecoder::run(InputArray image, InputArray mask, int min_confidence, int component_level)
+cv::String OCRHMMDecoder::run(InputArray image, InputArray mask, int min_confidence, int component_level)
 {
     std::string output1;
     std::string output2;
@@ -684,8 +684,17 @@ Ptr<OCRHMMDecoder> OCRHMMDecoder::create( Ptr<OCRHMMDecoder::ClassifierCallback>
     return makePtr<OCRHMMDecoderImpl>(_classifier, _vocabulary, transition_p, emission_p, (decoder_mode)_mode);
 }
 
+Ptr<OCRHMMDecoder> OCRHMMDecoder::create( const String& _filename,
+                                          const String& _vocabulary,
+                                          InputArray transition_p,
+                                          InputArray emission_p,
+                                          int _mode,
+                                          int _classifier)
+{
+    return makePtr<OCRHMMDecoderImpl>(loadOCRHMMClassifier(_filename, _classifier), _vocabulary, transition_p, emission_p, (decoder_mode)_mode);
+}
 
-class CV_EXPORTS OCRHMMClassifierKNN : public OCRHMMDecoder::ClassifierCallback
+class OCRHMMClassifierKNN : public OCRHMMDecoder::ClassifierCallback
 {
 public:
     //constructor
@@ -916,6 +925,22 @@ void OCRHMMClassifierKNN::eval( InputArray _mask, vector<int>& out_class, vector
 
 }
 
+Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifier(const String& _filename, int _classifier)
+
+{
+    Ptr<OCRHMMDecoder::ClassifierCallback> pt;
+    switch(_classifier) {
+        case OCR_KNN_CLASSIFIER:
+            pt = loadOCRHMMClassifierNM(_filename);
+            break;
+        case OCR_CNN_CLASSIFIER:
+            pt = loadOCRHMMClassifierCNN(_filename);
+        default:
+            CV_Error(Error::StsBadArg, "Specified HMM classifier is not supported!");
+            break;
+    }
+    return pt;
+}
 
 Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierNM(const String& filename)
 
@@ -923,7 +948,7 @@ Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierNM(const String& file
     return makePtr<OCRHMMClassifierKNN>(std::string(filename));
 }
 
-class CV_EXPORTS OCRHMMClassifierCNN : public OCRHMMDecoder::ClassifierCallback
+class OCRHMMClassifierCNN : public OCRHMMDecoder::ClassifierCallback
 {
 public:
     //constructor
