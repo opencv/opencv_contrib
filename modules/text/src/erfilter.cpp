@@ -279,9 +279,9 @@ void ERFilterNM::er_tree_extract( InputArray image )
 
     // the quads for euler number calculation
     // quads[2][2] and quads[2][3] are never used.
-    // The four lowest bits in each quads[i][j] correspond to the 2x2 binary patterns 
-    // Q_1, Q_2, Q_3 in the Neumann and Matas CVPR 2012 paper 
-    // (see in page 4 at the end of first column). 
+    // The four lowest bits in each quads[i][j] correspond to the 2x2 binary patterns
+    // Q_1, Q_2, Q_3 in the Neumann and Matas CVPR 2012 paper
+    // (see in page 4 at the end of first column).
     // Q_1 and Q_2 have four patterns, while Q_3 has only two.
     const int quads[3][4] =
     {
@@ -1143,6 +1143,17 @@ Ptr<ERFilter> createERFilterNM2(const Ptr<ERFilter::Callback>& cb, float minProb
 
     filter->setMinProbability(minProbability);
     return (Ptr<ERFilter>)filter;
+}
+
+Ptr<ERFilter> createERFilterNM1(const String& filename, int _thresholdDelta,
+                                float _minArea, float _maxArea, float _minProbability,
+                                bool _nonMaxSuppression, float _minProbabilityDiff) {
+    return createERFilterNM1(loadClassifierNM1(filename), _thresholdDelta, _minArea, _maxArea, _minProbability, _nonMaxSuppression, _minProbabilityDiff);
+
+}
+
+Ptr<ERFilter> createERFilterNM2(const String& filename, float _minProbability) {
+    return createERFilterNM2(loadClassifierNM2(filename), _minProbability);
 }
 
 /*!

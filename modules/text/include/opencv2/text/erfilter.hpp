@@ -193,10 +193,10 @@ public:
 loadClassifierNM1, e.g. from file in samples/cpp/trained_classifierNM1.xml
 @param  thresholdDelta :   Threshold step in subsequent thresholds when extracting the component tree
 @param  minArea :   The minimum area (% of image size) allowed for retreived ER's
-@param  minArea :   The maximum area (% of image size) allowed for retreived ER's
+@param  maxArea :   The maximum area (% of image size) allowed for retreived ER's
 @param  minProbability :   The minimum probability P(er|character) allowed for retreived ER's
 @param  nonMaxSuppression :   Whenever non-maximum suppression is done over the branch probabilities
-@param  minProbability :   The minimum probability difference between local maxima and local minima ERs
+@param  minProbabilityDiff :   The minimum probability difference between local maxima and local minima ERs
 
 The component tree of the image is extracted by a threshold increased step by step from 0 to 255,
 incrementally computable descriptors (aspect_ratio, compactness, number of holes, and number of
@@ -227,6 +227,24 @@ features: hole area ratio, convex hull ratio, and number of outer inflexion poin
 CV_EXPORTS_W Ptr<ERFilter> createERFilterNM2(const Ptr<ERFilter::Callback>& cb,
                                                   float minProbability = (float)0.3);
 
+/** @brief Reads an Extremal Region Filter for the 1st stage classifier of N&M algorithm
+    from the provided path e.g. /path/to/cpp/trained_classifierNM1.xml
+
+@overload
+ */
+CV_EXPORTS_W  Ptr<ERFilter> createERFilterNM1(const String& filename,
+                                                  int thresholdDelta = 1, float minArea = (float)0.00025,
+                                                  float maxArea = (float)0.13, float minProbability = (float)0.4,
+                                                  bool nonMaxSuppression = true,
+                                                  float minProbabilityDiff = (float)0.1);
+
+/** @brief Reads an Extremal Region Filter for the 2nd stage classifier of N&M algorithm
+    from the provided path e.g. /path/to/cpp/trained_classifierNM2.xml
+
+@overload
+ */
+CV_EXPORTS_W Ptr<ERFilter> createERFilterNM2(const String& filename,
+                                                  float minProbability = (float)0.3);
 
 /** @brief Allow to implicitly load the default classifier when creating an ERFilter object.
 
