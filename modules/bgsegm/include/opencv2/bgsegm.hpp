@@ -242,6 +242,135 @@ createBackgroundSubtractorCNT(int minPixelStability = 15,
                               int maxPixelStability = 15*60,
                               bool isParallel = true);
 
+enum LSBPCameraMotionCompensation {
+    LSBP_CAMERA_MOTION_COMPENSATION_NONE = 0,
+    LSBP_CAMERA_MOTION_COMPENSATION_LK
+};
+
+/** @brief Implementation of the different yet better algorithm which is called GSOC, as it was implemented during GSOC and was not originated from any paper.
+
+This algorithm demonstrates better performance on CDNET 2014 dataset compared to other algorithms in OpenCV.
+ */
+class CV_EXPORTS_W BackgroundSubtractorGSOC : public BackgroundSubtractor
+{
+public:
+    // BackgroundSubtractor interface
+    CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1) = 0;
+
+    CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const = 0;
+};
+
+/** @brief Background Subtraction using Local SVD Binary Pattern. More details about the algorithm can be found at @cite LGuo2016
+ */
+class CV_EXPORTS_W BackgroundSubtractorLSBP : public BackgroundSubtractor
+{
+public:
+    // BackgroundSubtractor interface
+    CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1) = 0;
+
+    CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const = 0;
+};
+
+/** @brief This is for calculation of the LSBP descriptors.
+ */
+class CV_EXPORTS_W BackgroundSubtractorLSBPDesc
+{
+public:
+    static void calcLocalSVDValues(OutputArray localSVDValues, const Mat& frame);
+
+    static void computeFromLocalSVDValues(OutputArray desc, const Mat& localSVDValues, const Point2i* LSBPSamplePoints);
+
+    static void compute(OutputArray desc, const Mat& frame, const Point2i* LSBPSamplePoints);
+};
+
+/** @brief Creates an instance of BackgroundSubtractorGSOC algorithm.
+
+Implementation of the different yet better algorithm which is called GSOC, as it was implemented during GSOC and was not originated from any paper.
+
+@param mc Whether to use camera motion compensation.
+@param nSamples Number of samples to maintain at each point of the frame.
+@param replaceRate Probability of replacing the old sample - how fast the model will update itself.
+@param propagationRate Probability of propagating to neighbors.
+@param hitsThreshold How many positives the sample must get before it will be considered as a possible replacement.
+@param alpha Scale coefficient for threshold.
+@param beta Bias coefficient for threshold.
+@param blinkingSupressionDecay Blinking supression decay factor.
+@param blinkingSupressionMultiplier Blinking supression multiplier.
+@param noiseRemovalThresholdFacBG Strength of the noise removal for background points.
+@param noiseRemovalThresholdFacFG Strength of the noise removal for foreground points.
+ */
+CV_EXPORTS_W Ptr<BackgroundSubtractorGSOC> createBackgroundSubtractorGSOC(int mc = LSBP_CAMERA_MOTION_COMPENSATION_NONE, int nSamples = 20, float replaceRate = 0.003f, float propagationRate = 0.01f, int hitsThreshold = 32, float alpha = 0.01f, float beta = 0.0022f, float blinkingSupressionDecay = 0.1f, float blinkingSupressionMultiplier = 0.1f, float noiseRemovalThresholdFacBG = 0.0004f, float noiseRemovalThresholdFacFG = 0.0008f);
+
+/** @brief Creates an instance of BackgroundSubtractorLSBP algorithm.
+
+Background Subtraction using Local SVD Binary Pattern. More details about the algorithm can be found at @cite LGuo2016
+
+@param mc Whether to use camera motion compensation.
+@param nSamples Number of samples to maintain at each point of the frame.
+@param LSBPRadius LSBP descriptor radius.
+@param Tlower Lower bound for T-values. See @cite LGuo2016 for details.
+@param Tupper Upper bound for T-values. See @cite LGuo2016 for details.
+@param Tinc Increase step for T-values. See @cite LGuo2016 for details.
+@param Tdec Decrease step for T-values. See @cite LGuo2016 for details.
+@param Rscale Scale coefficient for threshold values.
+@param Rincdec Increase/Decrease step for threshold values.
+@param noiseRemovalThresholdFacBG Strength of the noise removal for background points.
+@param noiseRemovalThresholdFacFG Strength of the noise removal for foreground points.
+@param LSBPthreshold Threshold for LSBP binary string.
+@param minCount Minimal number of matches for sample to be considered as foreground.
+ */
+CV_EXPORTS_W Ptr<BackgroundSubtractorLSBP> createBackgroundSubtractorLSBP(int mc = LSBP_CAMERA_MOTION_COMPENSATION_NONE, int nSamples = 20, int LSBPRadius = 16, float Tlower = 2.0f, float Tupper = 32.0f, float Tinc = 1.0f, float Tdec = 0.05f, float Rscale = 10.0f, float Rincdec = 0.005f, float noiseRemovalThresholdFacBG = 0.0004f, float noiseRemovalThresholdFacFG = 0.0008f, int LSBPthreshold = 8, int minCount = 2);
+
+/** @brief Synthetic frame sequence generator for testing background subtraction algorithms.
+
+ It will generate the moving object on top of the background.
+ It will apply some distortion to the background to make the test more complex.
+ */
+class CV_EXPORTS_W SyntheticSequenceGenerator : public Algorithm
+{
+private:
+    const double amplitude;
+    const double wavelength;
+    const double wavespeed;
+    const double objspeed;
+    unsigned timeStep;
+    Point2d pos;
+    Point2d dir;
+    Mat background;
+    Mat object;
+    RNG rng;
+
+public:
+    /** @brief Creates an instance of SyntheticSequenceGenerator.
+
+    @param background Background image for object.
+    @param object Object image which will move slowly over the background.
+    @param amplitude Amplitude of wave distortion applied to background.
+    @param wavelength Length of waves in distortion applied to background.
+    @param wavespeed How fast waves will move.
+    @param objspeed How fast object will fly over background.
+     */
+    CV_WRAP SyntheticSequenceGenerator(InputArray background, InputArray object, double amplitude, double wavelength, double wavespeed, double objspeed);
+
+    /** @brief Obtain the next frame in the sequence.
+
+    @param frame Output frame.
+    @param gtMask Output ground-truth (reference) segmentation mask object/background.
+     */
+    CV_WRAP void getNextFrame(OutputArray frame, OutputArray gtMask);
+};
+
+/** @brief Creates an instance of SyntheticSequenceGenerator.
+
+@param background Background image for object.
+@param object Object image which will move slowly over the background.
+@param amplitude Amplitude of wave distortion applied to background.
+@param wavelength Length of waves in distortion applied to background.
+@param wavespeed How fast waves will move.
+@param objspeed How fast object will fly over background.
+ */
+CV_EXPORTS_W Ptr<SyntheticSequenceGenerator> createSyntheticSequenceGenerator(InputArray background, InputArray object, double amplitude = 2.0, double wavelength = 20.0, double wavespeed = 0.2, double objspeed = 6.0);
+
 //! @}
 
 }
