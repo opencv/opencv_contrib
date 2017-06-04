@@ -19,7 +19,7 @@ namespace cv
     class CV_EXPORTS_W Facemark : public virtual Algorithm
     {
     public:
-        Facemark();
+
         virtual ~Facemark();
         virtual void read( const FileNode& fn )=0;
         virtual void write( FileStorage& fs ) const=0;
@@ -27,7 +27,7 @@ namespace cv
         /**
         * \brief training the facemark model, input are the file names of image list and landmark annotation
         */
-        void training(String imageList, String groundTruth);
+        virtual bool training(String imageList, String groundTruth);
 
         /**
         * \brief extract landmark points from a face
@@ -55,7 +55,8 @@ namespace cv
 
     protected:
         virtual bool detectImpl( InputArray image, std::vector<Point2f> & landmarks )=0;
-        virtual void trainingImpl(String imageList, String groundTruth)=0;
+        virtual bool trainingImpl(String imageList, String groundTruth)=0;
+
 
         /*circumventable face extractor function*/
         bool(*faceDetector)(const Mat , std::vector<Rect> &  ) ;

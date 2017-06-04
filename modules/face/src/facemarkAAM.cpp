@@ -38,7 +38,7 @@ namespace cv
     protected:
 
         bool detectImpl( InputArray image, std::vector<Point2f> & landmarks );
-        void trainingImpl(String imageList, String groundTruth);
+        bool trainingImpl(String imageList, String groundTruth);
         FacemarkAAM::Params params;
 
     private:
@@ -59,6 +59,7 @@ namespace cv
     FacemarkAAMImpl::FacemarkAAMImpl( const FacemarkAAM::Params &parameters ) :
         params( parameters )
     {
+        isSetDetector =false;
         test = 11;
     }
 
@@ -70,8 +71,9 @@ namespace cv
         params.write( fs );
     }
 
-    void FacemarkAAMImpl::trainingImpl(String imageList, String groundTruth){
+    bool FacemarkAAMImpl::trainingImpl(String imageList, String groundTruth){
         printf("inside the training func %s %s\n", imageList.c_str(), groundTruth.c_str());
+        return true;
     }
 
     bool FacemarkAAMImpl::detectImpl( InputArray image, std::vector<Point2f>& landmarks ){

@@ -11,15 +11,12 @@
 namespace cv
 {
     //namespace face {
-    Facemark::Facemark(){
-        isSetDetector =false;
-    }
 
     Facemark::~Facemark(){
     }
 
-    void Facemark::training(String imageList, String groundTruth){
-        trainingImpl(imageList, groundTruth);
+    bool Facemark::training(String imageList, String groundTruth){
+        return trainingImpl(imageList, groundTruth);
     }
 
     bool Facemark::detect( InputArray image, std::vector<Point2f> & landmarks ){
