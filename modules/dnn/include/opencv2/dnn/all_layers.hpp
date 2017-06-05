@@ -251,6 +251,8 @@ namespace dnn
     class CV_EXPORTS SoftmaxLayer : public Layer
     {
     public:
+        bool logSoftMax;
+
         static Ptr<SoftmaxLayer> create(const LayerParams& params);
     };
 

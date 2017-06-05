@@ -741,6 +741,17 @@ struct TorchImporter : public ::cv::dnn::Importer
                 layerParams.set("indices_blob_id", tensorParams["indices"].first);
                 curModule->modules.push_back(newModule);
             }
+            else if (nnName == "SoftMax")
+            {
+                newModule->apiType = "SoftMax";
+                curModule->modules.push_back(newModule);
+            }
+            else if (nnName == "LogSoftMax")
+            {
+                newModule->apiType = "SoftMax";
+                layerParams.set("log_softmax", true);
+                curModule->modules.push_back(newModule);
+            }
             else
             {
                 CV_Error(Error::StsNotImplemented, "Unknown nn class \"" + className + "\"");
