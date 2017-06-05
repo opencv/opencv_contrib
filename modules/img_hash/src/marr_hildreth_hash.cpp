@@ -167,9 +167,9 @@ private:
     float scaleVal;
 };
 
-inline MarrHildrethHashImpl *getLocalImpl(void *ptr)
+inline MarrHildrethHashImpl *getLocalImpl(ImgHashImpl *ptr)
 {
-    MarrHildrethHashImpl * impl = dynamic_cast<MarrHildrethHashImpl*>(getImpl(ptr));
+    MarrHildrethHashImpl * impl = dynamic_cast<MarrHildrethHashImpl*>(ptr);
     CV_Assert(impl);
     return impl;
 }
@@ -198,7 +198,7 @@ void MarrHildrethHash::setKernelParam(float alpha, float scale)
 Ptr<MarrHildrethHash> MarrHildrethHash::create(float alpha, float scale)
 {
     Ptr<MarrHildrethHash> res(new MarrHildrethHash);
-    res->pImpl = new MarrHildrethHashImpl(alpha, scale);
+    res->pImpl = makePtr<MarrHildrethHashImpl>(alpha, scale);
     return res;
 }
 

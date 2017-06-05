@@ -133,9 +133,9 @@ private:
     cv::Mat resizeImg_;
 };
 
-inline BlockMeanHashImpl *getLocalImpl(void *ptr)
+inline BlockMeanHashImpl *getLocalImpl(ImgHashImpl *ptr)
 {
-    BlockMeanHashImpl * impl = dynamic_cast<BlockMeanHashImpl*>(getImpl(ptr));
+    BlockMeanHashImpl * impl = dynamic_cast<BlockMeanHashImpl*>(ptr);
     CV_Assert(impl);
     return impl;
 }
@@ -149,7 +149,7 @@ namespace cv { namespace img_hash {
 Ptr<BlockMeanHash> BlockMeanHash::create(int mode)
 {
     Ptr<BlockMeanHash> res(new BlockMeanHash);
-    res->pImpl = new BlockMeanHashImpl(mode);
+    res->pImpl = makePtr<BlockMeanHashImpl>(mode);
     return res;
 }
 

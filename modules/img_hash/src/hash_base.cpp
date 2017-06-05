@@ -9,23 +9,20 @@ namespace img_hash{
 
 ImgHashBase::ImgHashBase()
 {
-    pImpl = 0;
 }
 
 ImgHashBase::~ImgHashBase()
 {
-    if (pImpl)
-        delete getImpl(pImpl);
 }
 
 void ImgHashBase::compute(cv::InputArray inputArr, cv::OutputArray outputArr)
 {
-    getImpl(pImpl)->compute(inputArr, outputArr);
+    pImpl->compute(inputArr, outputArr);
 }
 
 double ImgHashBase::compare(cv::InputArray hashOne, cv::InputArray hashTwo) const
 {
-    return getImpl(pImpl)->compare(hashOne, hashTwo);
+    return pImpl->compare(hashOne, hashTwo);
 }
 
 } } // cv::img_hash::

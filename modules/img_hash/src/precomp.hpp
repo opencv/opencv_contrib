@@ -14,6 +14,8 @@
 #include <bitset>
 #include <iostream>
 
+namespace cv{ namespace img_hash {
+
 class ImgHashImpl
 {
 public:
@@ -22,10 +24,6 @@ public:
     virtual ~ImgHashImpl() {}
 };
 
-inline ImgHashImpl *getImpl(void *ptr)
-{
-    CV_Assert(ptr);
-    return static_cast<ImgHashImpl*>(ptr);
-}
+}} // cv::img_hash::
 
 #endif // OPENCV_IMG_HASH_PRECOMP_H

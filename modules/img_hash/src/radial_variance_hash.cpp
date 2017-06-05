@@ -291,9 +291,9 @@ private:
     }
 };
 
-inline RadialVarianceHashImpl *getLocalImpl(void *ptr)
+inline RadialVarianceHashImpl *getLocalImpl(ImgHashImpl *ptr)
 {
-    RadialVarianceHashImpl * impl = dynamic_cast<RadialVarianceHashImpl*>(getImpl(ptr));
+    RadialVarianceHashImpl * impl = dynamic_cast<RadialVarianceHashImpl*>(ptr);
     CV_Assert(impl);
     return impl;
 }
@@ -307,7 +307,7 @@ namespace cv { namespace img_hash {
 Ptr<RadialVarianceHash> RadialVarianceHash::create(double sigma, int numOfAngleLine)
 {
     Ptr<RadialVarianceHash> res(new RadialVarianceHash);
-    res->pImpl = new RadialVarianceHashImpl(sigma, numOfAngleLine);
+    res->pImpl = makePtr<RadialVarianceHashImpl>(sigma, numOfAngleLine);
     return res;
 }
 

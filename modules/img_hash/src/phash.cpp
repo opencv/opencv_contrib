@@ -10,7 +10,7 @@ using namespace std;
 
 namespace {
 
-class CV_EXPORTS_W PHashImpl : public ImgHashImpl
+class PHashImpl : public ImgHashImpl
 {
 public:
     virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr)
@@ -81,7 +81,7 @@ namespace cv { namespace img_hash {
 Ptr<PHash> PHash::create()
 {
     Ptr<PHash> res(new PHash);
-    res->pImpl = new PHashImpl();
+    res->pImpl = makePtr<PHashImpl>();
     return res;
 }
 

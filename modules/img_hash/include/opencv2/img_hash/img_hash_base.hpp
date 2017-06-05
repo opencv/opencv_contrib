@@ -13,6 +13,8 @@ namespace img_hash {
 //! @addtogroup img_hash
 //! @{
 
+class ImgHashImpl;
+
 /** @brief The base class for image hash algorithms
  */
 class CV_EXPORTS_W ImgHashBase : public Algorithm
@@ -34,7 +36,7 @@ public:
 protected:
     ImgHashBase();
 protected:
-    void *pImpl;
+    Ptr<ImgHashImpl> pImpl;
 };
 
 //! @}

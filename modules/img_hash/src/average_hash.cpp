@@ -6,6 +6,7 @@
 
 using namespace cv;
 using namespace std;
+using namespace img_hash;
 
 namespace {
 
@@ -73,7 +74,7 @@ namespace cv { namespace img_hash {
 Ptr<AverageHash> AverageHash::create()
 {
     Ptr<AverageHash> res(new AverageHash());
-    res->pImpl = new AverageHashImpl();
+    res->pImpl = makePtr<AverageHashImpl>();
     return res;
 }
 

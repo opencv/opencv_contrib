@@ -10,7 +10,7 @@ using namespace std;
 
 namespace {
 
-class CV_EXPORTS_W ColorMomentHashImpl : public ImgHashImpl
+class ColorMomentHashImpl : public ImgHashImpl
 {
 public:
     ~ColorMomentHashImpl() {}
@@ -76,12 +76,14 @@ private:
 
 }
 
+//==================================================================================================
+
 namespace cv { namespace img_hash {
 
 Ptr<ColorMomentHash> ColorMomentHash::create()
 {
     Ptr<ColorMomentHash> res(new ColorMomentHash);
-    res->pImpl = new ColorMomentHashImpl();
+    res->pImpl = makePtr<ColorMomentHashImpl>();
     return res;
 }
 
