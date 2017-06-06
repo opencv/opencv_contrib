@@ -41,6 +41,7 @@
 #include "ximgproc/disparity_filter.hpp"
 #include "ximgproc/sparse_match_interpolator.hpp"
 #include "ximgproc/structured_edge_detection.hpp"
+#include "ximgproc/edgeboxes.hpp"
 #include "ximgproc/seeds.hpp"
 #include "ximgproc/segmentation.hpp"
 #include "ximgproc/fast_hough_transform.hpp"
@@ -58,6 +59,8 @@
 
 This module contains implementations of modern structured edge detection algorithms,
 i.e. algorithms which somehow takes into account pixel affinities in natural images.
+
+    @defgroup ximgproc_edgeboxes EdgeBoxes
 
     @defgroup ximgproc_filters Filters
 

@@ -2,6 +2,7 @@ Extended Image Processing
 =========================
 
 - Structured Forests
+- Edge Boxes
 - Domain Transform Filter
 - Guided Filter
 - Adaptive Manifold Filter
