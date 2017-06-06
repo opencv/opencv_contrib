@@ -1,4 +1,5 @@
 #include <opencv2/dnn.hpp>
+#include <opencv2/dnn/shape_utils.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 using namespace cv;
@@ -30,7 +31,7 @@ Mat getMean(const size_t& imageHeight, const size_t& imageWidth)
 Mat preprocess(const Mat& frame)
 {
     Mat preprocessed;
-    frame.convertTo(preprocessed, CV_32FC3);
+    frame.convertTo(preprocessed, CV_32F);
     resize(preprocessed, preprocessed, Size(width, height)); //SSD accepts 300x300 RGB-images
 
     Mat mean = getMean(width, height);
@@ -98,6 +99,8 @@ int main(int argc, char** argv)
 
     cv::Mat frame = cv::imread(parser.get<string>("image"), -1);
 
+    if (frame.channels() == 4)
+        cvtColor(frame, frame, COLOR_BGRA2BGR);
     //! [Prepare blob]
     Mat preprocessedFrame = preprocess(frame);
 

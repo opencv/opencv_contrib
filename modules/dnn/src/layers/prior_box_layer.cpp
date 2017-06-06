@@ -183,6 +183,22 @@ public:
 
             _numPriors += 1;
         }
+
+        if (params.has("step_h") || params.has("step_w")) {
+          CV_Assert(!params.has("step"));
+          _stepY = getParameter<float>(params, "step_h");
+          CV_Assert(_stepY > 0.);
+          _stepX = getParameter<float>(params, "step_w");
+          CV_Assert(_stepX > 0.);
+        } else if (params.has("step")) {
+          const float step = getParameter<float>(params, "step");
+          CV_Assert(step > 0);
+          _stepY = step;
+          _stepX = step;
+        } else {
+          _stepY = 0;
+          _stepX = 0;
+        }
     }
 
     bool getMemoryShapes(const std::vector<MatShape> &inputs,
@@ -216,8 +232,14 @@ public:
         int _imageWidth = inputs[1]->size[3];
         int _imageHeight = inputs[1]->size[2];
 
-        float _stepX = static_cast<float>(_imageWidth) / _layerWidth;
-        float _stepY = static_cast<float>(_imageHeight) / _layerHeight;
+        float stepX, stepY;
+        if (_stepX == 0 || _stepY == 0) {
+          stepX = static_cast<float>(_imageWidth) / _layerWidth;
+          stepY = static_cast<float>(_imageHeight) / _layerHeight;
+        } else {
+          stepX = _stepX;
+          stepY = _stepY;
+        }
 
         int _outChannelSize = _layerHeight * _layerWidth * _numPriors * 4;
 
@@ -231,8 +253,8 @@ public:
             {
                 _boxWidth = _boxHeight = _minSize;
 
-                float center_x = (w + 0.5) * _stepX;
-                float center_y = (h + 0.5) * _stepY;
+                float center_x = (w + 0.5) * stepX;
+                float center_y = (h + 0.5) * stepY;
                 // xmin
                 outputPtr[idx++] = (center_x - _boxWidth / 2.) / _imageWidth;
                 // ymin
@@ -331,6 +353,8 @@ public:
 
     float _boxWidth;
     float _boxHeight;
+
+    float _stepX, _stepY;
 
     std::vector<float> _aspectRatios;
     std::vector<float> _variance;

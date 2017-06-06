@@ -95,6 +95,7 @@ void initModule()
     REG_RUNTIME_LAYER_CLASS(PriorBox,       PriorBoxLayer);
     REG_RUNTIME_LAYER_CLASS(DetectionOutput, DetectionOutputLayer);
     REG_RUNTIME_LAYER_CLASS(NormalizeBBox,  NormalizeBBoxLayer);
+    REG_RUNTIME_LAYER_CLASS(Normalize,      NormalizeBBoxLayer);
     REG_RUNTIME_LAYER_CLASS(Shift,          ShiftLayer);
     REG_RUNTIME_LAYER_CLASS(Padding,        PaddingLayer);
     REG_RUNTIME_LAYER_CLASS(Scale,          ScaleLayer);
