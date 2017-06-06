@@ -345,12 +345,12 @@ static float calcOrientationHist( const Mat& img, Point pt, int radius,
     for( i = -radius, k = 0; i <= radius; i++ )
     {
         int y = pt.y + i;
-        if( y <= 0 || y >= img.rows - 1 )
+        if( y <= 0 || y >= img.rows - 2 )
             continue;
         for( j = -radius; j <= radius; j++ )
         {
             int x = pt.x + j;
-            if( x <= 0 || x >= img.cols - 1 )
+            if( x <= 0 || x >= img.cols - 2 )
                 continue;
 
             float dx = (float)(img.at<sift_wt>(y, x+1) - img.at<sift_wt>(y, x-1));
