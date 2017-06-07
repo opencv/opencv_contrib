@@ -159,6 +159,7 @@ namespace cv
         /*load the points*/
         std::ifstream ss_gt(groundTruth.c_str());
         while (getline (ss_gt, line)){
+            facePts.clear();
             loadFacePoints(line, facePts);
             facePoints.push_back(facePts);
         }
@@ -192,6 +193,7 @@ namespace cv
         /*main process*/
         int cnt = 0;
         std::string x, y;
+        pts.clear();
         while (std::getline(infile, line) && cnt<npts )
         {
             cnt+=1;
