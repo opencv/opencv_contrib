@@ -2,21 +2,26 @@
 #include "opencv2/core.hpp"
 #include "precomp.hpp"
 
+/*dataset parser*/
+#include <fstream>
+#include <sstream>
+#include <string>
+#include <stdlib.h>     /* atoi */
+
 #undef BOILERPLATE_CODE
 #define BOILERPLATE_CODE(name,classname)\
-    if(trackerType==name){\
+    if(facemarkType==name){\
         return classname::create();\
 }
 
 namespace cv
 {
     //namespace face {
-
     Facemark::~Facemark(){
     }
 
-    bool Facemark::training(String imageList, String groundTruth){
-        return trainingImpl(imageList, groundTruth);
+    void Facemark::training(String imageList, String groundTruth){
+        trainingImpl(imageList, groundTruth);
     }
 
     bool Facemark::detect( InputArray image, std::vector<Point2f> & landmarks ){
@@ -42,7 +47,7 @@ namespace cv
         return true;
     }
 
-    Ptr<Facemark> Facemark::create( const String& trackerType ){
+    Ptr<Facemark> Facemark::create( const String& facemarkType ){
         BOILERPLATE_CODE("AAM",FacemarkAAM);
         return Ptr<Facemark>();
     }
@@ -69,7 +74,7 @@ namespace cv
     }
 
 
-    bool Facemark:: getFaces( InputArray image , std::vector<Rect> & faces){
+    bool Facemark::getFaces( InputArray image , std::vector<Rect> & faces){
 
         if(!isSetDetector){
             return false;
@@ -96,6 +101,106 @@ namespace cv
         getFacesHaar(image.getMat(), faces, haarModel);
         printf("process::face detected %i\n",(int)faces.size());
         detect(image.getMat(), faces, landmarks);
+
+        return true;
+    }
+
+    bool Facemark::loadTrainingData(String filename, std::vector<String> & images, std::vector<std::vector<Point2f> > & facePoints, char delim){
+        std::string line;
+        std::string item;
+        std::vector<Point2f> pts;
+        std::vector<float> raw;
+
+        std::ifstream infile(filename.c_str());
+
+        /*clear the output containers*/
+        images.clear();
+        facePoints.clear();
+
+        /*the main loading process*/
+        while (getline (infile, line)){
+            std::istringstream ss(line); // string stream for the current line
+
+            /*pop the image path*/
+            getline (ss, item, delim);
+            images.push_back(item);
+
+            /*load all numbers*/
+            raw.clear();
+            while (getline (ss, item, delim)){
+                raw.push_back(atof(item.c_str()));
+            }
+
+            /*convert to opencv points*/
+            pts.clear();
+            for(unsigned i = 0;i< raw.size();i+=2){
+                pts.push_back(Point2f(raw[i],raw[i+1]));
+            }
+            facePoints.push_back(pts);
+        } // main loading process
+
+        return true;
+    }
+
+    bool Facemark::loadTrainingData(String imageList, String groundTruth, std::vector<String> & images, std::vector<std::vector<Point2f> > & facePoints){
+        std::string line;
+        std::vector<Point2f> facePts;
+
+        /*clear the output containers*/
+        images.clear();
+        facePoints.clear();
+
+        /*load the images path*/
+        std::ifstream infile(imageList.c_str());
+        while (getline (infile, line)){
+            images.push_back(line);
+        }
+
+        /*load the points*/
+        std::ifstream ss_gt(groundTruth.c_str());
+        while (getline (ss_gt, line)){
+            loadFacePoints(line, facePts);
+            facePoints.push_back(facePts);
+        }
+
+        return true;
+    }
+
+    bool Facemark::loadFacePoints(String filename, std::vector<Point2f> & pts){
+        std::string line, item;
+
+        std::ifstream infile(filename.c_str());
+
+        /*pop the version*/
+        std::getline(infile, line);
+        CV_Assert(line.compare(0,7,"version")==0);
+
+        /*pop the number of points*/
+        std::getline(infile, line);
+        CV_Assert(line.compare(0,8,"n_points")==0);
+
+        /*get the number of points*/
+        std::string item_npts;
+        int npts;
+
+        std::istringstream linestream(line);
+        linestream>>item_npts>>npts;
+
+        /*pop out '{' character*/
+        std::getline(infile, line);
+
+        /*main process*/
+        int cnt = 0;
+        std::string x, y;
+        while (std::getline(infile, line) && cnt<npts )
+        {
+            cnt+=1;
+
+            std::istringstream ss(line);
+            ss>>x>>y;
+            pts.push_back(Point2f(atof(x.c_str()),atof(y.c_str())));
+
+        }
 
         return true;
     }

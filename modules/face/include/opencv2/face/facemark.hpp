@@ -27,7 +27,13 @@ namespace cv
         /**
         * \brief training the facemark model, input are the file names of image list and landmark annotation
         */
-        virtual bool training(String imageList, String groundTruth);
+        void training(String imageList, String groundTruth);
+        virtual void saveTrainedModel(String filename)=0;
+        virtual void loadTrainedModel(String filename)=0;
+
+        bool loadTrainingData(String filename , std::vector<String> & images, std::vector<std::vector<Point2f> > & facePoints, char delim = ' ');
+        bool loadTrainingData(String imageList, String groundTruth, std::vector<String> & images, std::vector<std::vector<Point2f> > & facePoints);
+        bool loadFacePoints(String filename, std::vector<Point2f> & pts);
 
         /**
         * \brief extract landmark points from a face
@@ -37,7 +43,7 @@ namespace cv
         bool detect( InputArray image, Rect face, std::vector<Point2f> & landmarks );//!< from an ROI
         bool detect( InputArray image, std::vector<Rect> faces, std::vector<std::vector<Point2f> >& landmarks );//!< from many ROIs
 
-        static Ptr<Facemark> create( const String& trackerType );
+        static Ptr<Facemark> create( const String& facemarkType );
 
         //!<  default face detector
         bool getFacesHaar( const Mat image , std::vector<Rect> & faces, String face_cascade_name);
@@ -55,8 +61,7 @@ namespace cv
 
     protected:
         virtual bool detectImpl( InputArray image, std::vector<Point2f> & landmarks )=0;
-        virtual bool trainingImpl(String imageList, String groundTruth)=0;
-
+        virtual void trainingImpl(String imageList, String groundTruth)=0;
 
         /*circumventable face extractor function*/
         bool(*faceDetector)(const Mat , std::vector<Rect> &  ) ;

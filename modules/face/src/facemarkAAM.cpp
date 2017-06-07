@@ -35,10 +35,12 @@ namespace cv
         void read( const FileNode& /*fn*/ );
         void write( FileStorage& /*fs*/ ) const;
 
+        void saveTrainedModel(String filename);
+        void loadTrainedModel(String filename);
     protected:
 
         bool detectImpl( InputArray image, std::vector<Point2f> & landmarks );
-        bool trainingImpl(String imageList, String groundTruth);
+        void trainingImpl(String imageList, String groundTruth);
         FacemarkAAM::Params params;
 
     private:
@@ -71,9 +73,8 @@ namespace cv
         params.write( fs );
     }
 
-    bool FacemarkAAMImpl::trainingImpl(String imageList, String groundTruth){
+    void FacemarkAAMImpl::trainingImpl(String imageList, String groundTruth){
         printf("inside the training func %s %s\n", imageList.c_str(), groundTruth.c_str());
-        return true;
     }
 
     bool FacemarkAAMImpl::detectImpl( InputArray image, std::vector<Point2f>& landmarks ){
@@ -85,6 +86,14 @@ namespace cv
         Mat img = image.getMat();
         printf("detect::rows->%i landmarks-> %i\n",(int)img.rows,(int)landmarks.size());
         return true;
+    }
+
+    void FacemarkAAMImpl::saveTrainedModel(String filename){
+        printf("save training result %s\n",filename.c_str());
+    }
+
+    void FacemarkAAMImpl::loadTrainedModel(String filename){
+        printf("load trained model %s\n",filename.c_str());
     }
 
 //  } /* namespace face */
