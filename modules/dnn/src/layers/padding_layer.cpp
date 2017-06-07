@@ -30,7 +30,7 @@ public:
         paddingValue = params.get<double>("value", 0);
 
         if(paddingDim < 0 || padding < 0)
-            CV_Error(cv::Error::StsNotImplemented, "Negative padding and dim aren't supported");
+            CV_dnn_Error(cv::Error::StsNotImplemented, "Negative padding and dim aren't supported");
     }
 
     bool getMemoryShapes(const std::vector<MatShape> &inputs,

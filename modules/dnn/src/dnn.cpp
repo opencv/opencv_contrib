@@ -1154,5 +1154,57 @@ Ptr<Layer> LayerFactory::createLayerInstance(const String &_type, LayerParams& p
     }
 }
 
+////////////////////////////////////////////////////////////////////////////////
+
+// Replaces symbols to codes (i.e. whitespaces to %20, new lines to %0A).
+static std::string toURL(const std::string& s)
+{
+    std::ostringstream ss;
+    for (int i = 0, n = s.size(); i < n; ++i)
+    {
+        char symbol = s[i];
+        if (' ' <= symbol && symbol <= '/' || ':' <= symbol && symbol <= '@' ||
+            '[' <= symbol && symbol <= '`' || '{' <= symbol && symbol <= '~')
+        {
+            ss << "%" << std::hex << (int)symbol << std::dec;
+        }
+        else if (symbol == '\n')
+        {
+            ss << "%0A";
+        }
+        else
+        {
+            ss << symbol;
+        }
+    }
+    return ss.str();
+}
+
+static std::string extractBuildInfo(const std::string& title)
+{
+    std::string buildInfo = getBuildInformation();
+
+    int start = buildInfo.find(title);
+    start = buildInfo.find_first_not_of(' ', start + title.size());
+    int end = buildInfo.find('\n', start);
+    // +1 for '\n' symbol
+    return buildInfo.substr(start, end - start + 1);
+}
+
+void submitError(int code, std::string msg, const char* func, const char* file,
+                 int line)
+{
+    std::string platform = extractBuildInfo("Host:");
+    std::ostringstream body;
+    body << "OpenCV: " << extractBuildInfo("Version control:");
+    body << "OpenCV(contrib): " << extractBuildInfo("Version control (extra):");
+    body << "Operating System: " << extractBuildInfo("Host:");
+    body << "\nException at " << file << ":" << line;
+    body << "\n" << msg;
+    msg += ". To submit an issue follow link and add details: "
+           "https://github.com/opencv/opencv_contrib/issues/new?&body=" + toURL(body.str());
+    cv::error(code, msg, func, file, line);
+}
+
 }
 }
