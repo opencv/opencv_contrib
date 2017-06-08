@@ -4219,5 +4219,41 @@ void detectRegions(InputArray image, const Ptr<ERFilter>& er_filter1, const Ptr<
     }
 }
 
+
+void detectRegions(InputArray image, const Ptr<ERFilter>& er_filter1, const Ptr<ERFilter>& er_filter2,
+                                           CV_OUT std::vector<Rect> &groups_rects,
+                                           int method,
+                                           const String& filename,
+                                           float minProbability)
+{
+    // assert correct image type
+    CV_Assert( image.type() == CV_8UC3 );
+
+    CV_Assert( !er_filter1.empty() );
+    CV_Assert( !er_filter2.empty() );
+
+    // Extract channels to be processed individually
+    vector<Mat> channels;
+
+    Mat grey;
+    cvtColor(image,grey,COLOR_RGB2GRAY);
+
+    // here we are only using grey channel
+    channels.push_back(grey);
+    channels.push_back(255-grey);
+
+    vector<vector<ERStat> > regions(channels.size());
+
+    // Apply the default cascade classifier to each independent channel (could be done in parallel)
+    for (int c=0; c<(int)channels.size(); c++)
+    {
+        er_filter1->run(channels[c], regions[c]);
+        er_filter2->run(channels[c], regions[c]);
+    }
+   // Detect character groups
+    vector< vector<Vec2i> > nm_region_groups;
+    erGrouping(image, channels, regions, nm_region_groups, groups_rects, method, filename, minProbability);
+}
+
 }
 }
