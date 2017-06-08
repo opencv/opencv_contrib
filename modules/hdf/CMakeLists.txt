@@ -31,5 +31,5 @@ ocv_warnings_disable(CMAKE_CXX_FLAGS -Winvalid-offsetof)
 
 set(the_description "Hierarchical Data Format I/O")
 ocv_define_module(hdf opencv_core WRAP python)
-ocv_target_link_libraries(${the_module} ${HDF5_LIBRARIES})
+#ocv_target_link_libraries(${the_module} ${HDF5_LIBRARIES})
 ocv_include_directories(${HDF5_INCLUDE_DIRS})

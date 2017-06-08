@@ -115,8 +115,7 @@ endif()
 include_directories(${OCV_TARGET_INCLUDE_DIRS_${the_module}})
 add_subdirectory(src/libmv_light)
 
-ocv_target_link_libraries(${the_module} ${LIBMV_LIGHT_LIBS})
-
+#ocv_target_link_libraries(${the_module} ${LIBMV_LIGHT_LIBS})
 
 ### CREATE OPENCV SFM TESTS ###
 
