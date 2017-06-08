@@ -29,7 +29,7 @@ if(PROTOBUF_FOUND)
 else()
   set(PROTOBUF_CPP_PATH "${OpenCV_BINARY_DIR}/3rdparty/protobuf")
   set(PROTOBUF_CPP_ROOT "${PROTOBUF_CPP_PATH}/protobuf-3.1.0")
-  ocv_download(FILENAME "protobuf-cpp-3.1.0.tar.gz"
+  ocv_download(PACKAGE "protobuf-cpp-3.1.0.tar.gz"
                HASH "bd5e3eed635a8d32e2b99658633815ef"
                URL
                  "${OPENCV_PROTOBUF_URL}"
