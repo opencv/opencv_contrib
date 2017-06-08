@@ -436,6 +436,7 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
      * - nn.SpatialMaxPooling, nn.SpatialAveragePooling
      * - nn.ReLU, nn.TanH, nn.Sigmoid
      * - nn.Reshape
+     * - nn.SoftMax, nn.LogSoftMax
      *
      * Also some equivalents of these classes from cunn, cudnn, and fbcunn may be successfully imported.
      */

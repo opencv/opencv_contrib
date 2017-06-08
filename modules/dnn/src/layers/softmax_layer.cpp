@@ -57,6 +57,7 @@ public:
     SoftMaxLayerImpl(const LayerParams& params)
     {
         axisRaw = params.get<int>("axis", 1);
+        logSoftMax = params.get<int>("log_softmax", false);
         setParamsFrom(params);
     }
 
@@ -142,6 +143,14 @@ public:
             {
                 for (size_t i = 0; i < innerSize; i++)
                     dstPtr[srcOffset + cnDim * cnStep + i] /= bufPtr[bufOffset + i];
+            }
+            if (logSoftMax)
+            {
+                for (size_t cnDim = 0; cnDim < channels; cnDim++)
+                {
+                    for (size_t i = 0; i < innerSize; i++)
+                        dstPtr[srcOffset + cnDim * cnStep + i] = log(dstPtr[srcOffset + cnDim * cnStep + i]);
+                }
             }
         }
     }

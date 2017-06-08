@@ -159,6 +159,18 @@ TEST(Torch_Importer, net_cadd_table)
     runTorchNet("net_cadd_table");
 }
 
+TEST(Torch_Importer, net_softmax)
+{
+    runTorchNet("net_softmax");
+    runTorchNet("net_softmax_spatial");
+}
+
+TEST(Torch_Importer, net_logsoftmax)
+{
+    runTorchNet("net_logsoftmax");
+    runTorchNet("net_logsoftmax_spatial");
+}
+
 TEST(Torch_Importer, ENet_accuracy)
 {
     Net net;
