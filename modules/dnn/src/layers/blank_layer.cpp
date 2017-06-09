@@ -61,7 +61,12 @@ public:
         return true;
     }
 
-    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals) {}
+    void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
+    {
+        for (int i = 0, n = outputs.size(); i < n; ++i)
+            if (outputs[i].data != inputs[i]->data)
+                inputs[i]->copyTo(outputs[i]);
+    }
 };
 
 Ptr<BlankLayer> BlankLayer::create(const LayerParams& params)

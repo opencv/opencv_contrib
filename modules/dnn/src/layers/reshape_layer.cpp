@@ -178,7 +178,7 @@ public:
         for (size_t i = 0; i < inputs.size(); i++)
         {
             Mat srcBlob = *inputs[i];
-            MatShape inputShape = shape(srcBlob);
+            MatShape inputShape = shape(srcBlob), outShape = shape(outputs[i]);
 
             if (performReordering)
             {
@@ -203,6 +203,11 @@ public:
                     }
                 }
                 internals[i].copyTo(outputs[i]);
+            }
+            else
+            {
+                if (outputs[i].data != srcBlob.data)
+                    srcBlob.reshape(1, outShape).copyTo(outputs[i]);
             }
         }
     }

@@ -154,6 +154,11 @@ struct LayerPin
     {
         return (lid == r.lid && oid == r.oid);
     }
+
+    bool operator<(const LayerPin &r) const
+    {
+        return lid < r.lid || lid == r.lid && oid < r.oid;
+    }
 };
 
 struct LayerData
@@ -219,14 +224,138 @@ private:
     std::vector<String> outNames;
 };
 
+struct BlobManager
+{
+public:
+    // Increase references counter to layer output.
+    void addReference(const LayerPin& lp)
+    {
+        std::map<LayerPin, int>::iterator it = refCounter.find(lp);
+        if (it == refCounter.end())
+            refCounter[lp] = 1;
+        else
+            it->second += 1;
+    }
+
+    // Returns number of references to allocated memory that used in specific
+    // layer blob.
+    int numReferences(const LayerPin& lp)
+    {
+        std::map<LayerPin, LayerPin>::iterator mapIt = reuseMap.find(lp);
+        CV_Assert(mapIt != reuseMap.end());
+        LayerPin memHost = mapIt->second;
+
+        std::map<LayerPin, int>::iterator refIt = refCounter.find(memHost);
+        CV_Assert(refIt != refCounter.end());
+        return refIt->second;
+    }
+
+    // Reuse data allocated in <host> inside the <user> blob.
+    void reuse(const LayerPin& host, const LayerPin& user)
+    {
+        CV_Assert(reuseMap.find(user) == reuseMap.end());
+        CV_Assert(reuseMap.find(host) != reuseMap.end());
+        LayerPin memHost = reuseMap[host];
+        reuseMap[user] = memHost;
+        if (refCounter.find(memHost) != refCounter.end())
+        {
+            std::map<LayerPin, int>::iterator userRefIt = refCounter.find(user);
+            if (userRefIt != refCounter.end())
+            {
+                refCounter[memHost] += userRefIt->second;
+                refCounter.erase(userRefIt);
+            }
+            else
+                refCounter[memHost] += 1;
+        }
+    }
+
+    // Decrease references counter to allocated memory inside specific blob.
+    void releaseReference(const LayerPin& lp)
+    {
+        std::map<LayerPin, LayerPin>::iterator mapIt = reuseMap.find(lp);
+        CV_Assert(mapIt != reuseMap.end());
+
+        std::map<LayerPin, int>::iterator refIt = refCounter.find(mapIt->second);
+        CV_Assert(refIt != refCounter.end());
+        CV_Assert(refIt->second > 0);
+        refIt->second -= 1;
+    }
+
+    void reuseOrCreate(const MatShape& shape, const LayerPin& lp, Mat& dst)
+    {
+        std::map<LayerPin, Mat>::iterator hostIt;
+        std::map<LayerPin, int>::iterator refIt;
+
+        const int targetTotal = total(shape);
+        Mat bestBlob;
+        int bestBlobTotal = INT_MAX;
+        LayerPin bestBlobPin;
+        for (hostIt = memHosts.begin(); hostIt != memHosts.end(); ++hostIt)
+        {
+            refIt = refCounter.find(hostIt->first);
+            // Use only blobs that had references before because if not,
+            // it might be used as output.
+            if (refIt != refCounter.end() && refIt->second == 0)
+            {
+                Mat& unusedBlob = hostIt->second;
+                if (unusedBlob.total() >= targetTotal &&
+                    unusedBlob.total() < bestBlobTotal)
+                {
+                    bestBlobPin = hostIt->first;
+                    bestBlob = unusedBlob;
+                    bestBlobTotal = unusedBlob.total();
+                }
+            }
+        }
+        if (!bestBlob.empty())
+        {
+            reuse(bestBlobPin, lp);
+            dst = Mat(shape, CV_32F, bestBlob.data);
+        }
+        else
+        {
+            dst.create(shape, CV_32F);
+            addHost(lp, dst);
+        }
+    }
+
+    // Clear internal state. Calls before an every reallocation.
+    void reset()
+    {
+        refCounter.clear();
+        reuseMap.clear();
+        memHosts.clear();
+    }
+
+private:
+    // Registed allocated memory.
+    void addHost(const LayerPin& lp, const Mat& mat)
+    {
+        CV_Assert(memHosts.find(lp) == memHosts.end());
+        reuseMap[lp] = lp;
+        memHosts[lp] = mat;
+    }
+
+    std::map<LayerPin, int> refCounter;
+    // Maps pin to origin blob (for whom memory was allocated firstly).
+    // For origin blobs key == value.
+    std::map<LayerPin, LayerPin> reuseMap;
+    std::map<LayerPin, Mat> memHosts;
+};
+
 struct Net::Impl
 {
     typedef std::vector<MatShape> ShapesVec;
     struct LayerShapes
     {
         ShapesVec in, out, internal;
-        bool inplace;
-        LayerShapes() {inplace = false;}
+        // No guarantees that layer which support in-place computations
+        // will be computed in-place (input.data_ptr == output.data_ptr).
+        // If layer said that it could work in-place and layers after it
+        // no longer use input blob, we'll set output = input.
+        bool supportInPlace;
+        LayerShapes() {supportInPlace = false;}
     };
 
     typedef std::map<int, LayerShapes> LayersShapesMap;
@@ -252,6 +381,7 @@ struct Net::Impl
 
     MapIdToLayerData layers;
     std::map<String, int> layerNameToId;
+    BlobManager blobManager;
 
     int lastLayerId;
 
@@ -473,29 +603,47 @@ struct Net::Impl
         CV_Assert(ld.requiredOutputs.size() <= outShapes.size());
 
         ld.outputBlobs.resize(std::max((size_t)1, outShapes.size())); //layer produce at least one output blob
+
+        // Check that layer could work in-place.
+        bool inPlace = false;
+        if (layerShapesIt->second.supportInPlace)
+        {
+            if (ld.inputBlobs.size() == 1)
+            {
+                // Get number of references to the input memory.
+                int numRef = blobManager.numReferences(ld.inputBlobsId[0]);
+
+                // If current layer is one and only customer of this blob.
+                inPlace = numRef == 1;
+            }
+        }
+
         for(int i = 0; i < outShapes.size(); i++)
         {
-            if (shape(ld.outputBlobs[i]) != outShapes[i])
+            LayerPin outputBlobPin(ld.id, i);
+            if (inPlace)
             {
-                if (layerShapesIt->second.inplace)
-                {
-                    CV_Assert(ld.inputBlobs.size() == ld.outputBlobs.size());
-                    CV_Assert(ld.inputBlobs[i]->total() == total(outShapes[i]));
-                    ld.outputBlobs[i] = ld.inputBlobs[i]->reshape(1, outShapes[i]);
-                }
-                else
-                {
-                    ld.outputBlobs[i].create(outShapes[i], CV_32F);
-                }
+                CV_Assert(ld.inputBlobs[0]->total() == total(outShapes[i]));
+                // Copy input blob data to every output.
+                ld.outputBlobs[i] = ld.inputBlobs[0]->reshape(1, outShapes[i]);
+                blobManager.reuse(ld.inputBlobsId[0], outputBlobPin);
             }
+            else
+                blobManager.reuseOrCreate(outShapes[i], outputBlobPin, ld.outputBlobs[i]);
         }
 
         const ShapesVec& intShapes = layerShapesIt->second.internal;
         ld.internals.resize(intShapes.size());
         for(int i = 0; i < intShapes.size(); i++)
         {
-            if (shape(ld.internals[i]) != intShapes[i] && total(intShapes[i]))
-                ld.internals[i].create(intShapes[i], CV_32F);
+            if (total(intShapes[i]))
+            {
+                LayerPin intBlobPin(ld.id, ld.outputBlobs.size() + i);
+                // Add reference to itself.
+                blobManager.addReference(intBlobPin);
+
+                blobManager.reuseOrCreate(intShapes[i], intBlobPin, ld.internals[i]);
+            }
         }
 
         Ptr<Layer> layerPtr = ld.getLayerInstance();
@@ -517,6 +665,20 @@ struct Net::Impl
             CV_RETHROW_ERROR(err, format("The following error occured while making allocate() for layer \"%s\": %s", ld.name.c_str(), err.err.c_str()));
         }*/
 
+        // After allocation of layer, we decrease counters to it's input blobs.
+        for (size_t i = 0; i < ld.inputBlobsId.size(); ++i)
+        {
+            blobManager.releaseReference(ld.inputBlobsId[i]);
+        }
+        for (size_t i = 0; i < ld.internals.size(); ++i)
+        {
+            if (total(intShapes[i]))
+            {
+                LayerPin intBlobPin(ld.id, ld.outputBlobs.size() + i);
+                blobManager.releaseReference(intBlobPin);
+            }
+        }
+
         ld.flag = 1;
     }
 
@@ -535,6 +697,14 @@ struct Net::Impl
         }
         LayersShapesMap layersShapes;
         getLayersShapes(inputShapes, layersShapes);
+
+        blobManager.reset();
+        for (it = layers.begin(); it != layers.end(); ++it)
+        {
+            const LayerData& ld = it->second;
+            for (int i = 0; i < ld.inputBlobsId.size(); ++i)
+                blobManager.addReference(ld.inputBlobsId[i]);
+        }
 
         for (it = layers.begin(); it != layers.end(); it++)
         {
@@ -609,7 +779,7 @@ struct Net::Impl
         ShapesVec& os = inOutShapes[id].out;
         ShapesVec& ints = inOutShapes[id].internal;
         int requiredOutputs = layers[id].requiredOutputs.size();
-        inOutShapes[id].inplace =
+        inOutShapes[id].supportInPlace =
                 layers[id].getLayerInstance()->getMemoryShapes(is, requiredOutputs, os, ints);
     }
 
@@ -718,9 +888,13 @@ void Net::setBlob(String outputName, const Mat &blob_)
     LayerData &ld = impl->layers[pin.lid];
     ld.outputBlobs.resize( std::max(pin.oid+1, (int)ld.requiredOutputs.size()) );
     MatShape prevShape = shape(ld.outputBlobs[pin.oid]);
-    ld.outputBlobs[pin.oid] = blob_.clone();
+    bool oldShape = prevShape == shape(blob_);
+    if (oldShape)
+        blob_.copyTo(ld.outputBlobs[pin.oid]);
+    else
+        ld.outputBlobs[pin.oid] = blob_.clone();
 
-    impl->netWasAllocated = impl->netWasAllocated && prevShape == shape(blob_);
+    impl->netWasAllocated = impl->netWasAllocated && oldShape;
 }
 
 Mat Net::getBlob(String outputName)

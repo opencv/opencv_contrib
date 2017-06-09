@@ -20,17 +20,17 @@ public:
     class PBody : public cv::ParallelLoopBody
     {
         Func &func;
-        Dtype *data;
+        Dtype *src, *dst;
     public:
 
-        PBody(Mat &mat, Func &func_) :
-            func(func_), data(mat.ptr<Dtype>())
+        PBody(Mat &src, Mat &dst, Func &func_) :
+            func(func_), src(src.ptr<Dtype>()), dst(dst.ptr<Dtype>())
         {}
 
         void operator()(const Range &r) const
         {
             for (int i = r.start; i < r.end; i++)
-                data[i] = func(data[i]);
+                dst[i] = func(src[i]);
         }
     };
 
@@ -49,13 +49,13 @@ public:
     {
         for (size_t i = 0; i < inputs.size(); i++)
         {
-            const Mat &src = *inputs[i];
+            Mat &src = *inputs[i];
             Mat &dst = outputs[i];
-            CV_Assert(src.ptr() == dst.ptr() && src.isContinuous());
+            CV_Assert(src.isContinuous() && dst.isContinuous());
 
             Range sizeRange = Range(0, dst.total());
             CV_Assert(src.type() == CV_32F);
-            PBody<float> body(dst, func);
+            PBody<float> body(src, dst, func);
             if( run_parallel )
                 cv::parallel_for_(sizeRange, body);
             else

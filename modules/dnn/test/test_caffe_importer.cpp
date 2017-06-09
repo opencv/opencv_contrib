@@ -102,7 +102,7 @@ TEST(Reproducibility_AlexNet, Accuracy)
     normAssert(ref, out);
 }
 
-#if !defined(_WIN32) || defined(_WIN64)
+#if !defined(_WIN32)
 TEST(Reproducibility_FCN, Accuracy)
 {
     Net net;
