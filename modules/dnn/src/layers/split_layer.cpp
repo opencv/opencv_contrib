@@ -72,17 +72,17 @@ public:
     {
         CV_Assert(inputs.size() == 1);
 
-        outputs.resize(outputsCount >= 0 ? outputsCount : requiredOutputs,
-                       inputs[0]);
-
-        return false;
+        Layer::getMemoryShapes(inputs, outputsCount >= 0 ? outputsCount : requiredOutputs,
+                               outputs, internals);
+        return true;
     }
 
     void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         for (size_t i = 0; i < outputs.size(); i++)
         {
-            inputs[0]->copyTo(outputs[i]);
+            if (outputs[i].data != inputs[0]->data)
+                inputs[0]->copyTo(outputs[i]);
         }
     }
 };

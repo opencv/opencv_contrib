@@ -55,6 +55,22 @@ using std::map;
 using std::make_pair;
 using std::set;
 
+namespace
+{
+    typedef std::vector<MatShape> ShapesVec;
+
+    struct LayerShapes
+    {
+        ShapesVec in, out, internal;
+        // No guarantees that layer which support in-place computations
+        // will be computed in-place (input.data_ptr == output.data_ptr).
+        // If layer said that it could work in-place and layers after it
+        // no longer use input blob, we'll set output = input.
+        bool supportInPlace;
+        LayerShapes() {supportInPlace = false;}
+    };
+}
+
 namespace cv
 {
 namespace dnn
@@ -154,6 +170,11 @@ struct LayerPin
     {
         return (lid == r.lid && oid == r.oid);
     }
+
+    bool operator<(const LayerPin &r) const
+    {
+        return lid < r.lid || lid == r.lid && oid < r.oid;
+    }
 };
 
 struct LayerData
@@ -219,16 +240,222 @@ private:
     std::vector<String> outNames;
 };
 
+struct BlobManager
+{
+public:
+    // Increase references counter to layer output.
+    void addReference(const LayerPin& lp)
+    {
+        std::map<LayerPin, int>::iterator it = refCounter.find(lp);
+        if (it == refCounter.end())
+            refCounter[lp] = 1;
+        else
+            it->second += 1;
+    }
+
+    void addReferences(const std::vector<LayerPin>& pins)
+    {
+        for (int i = 0; i < pins.size(); i++)
+        {
+            addReference(pins[i]);
+        }
+    }
+
+    // Returns number of references to allocated memory that used in specific
+    // layer blob.
+    int numReferences(const LayerPin& lp)
+    {
+        std::map<LayerPin, LayerPin>::iterator mapIt = reuseMap.find(lp);
+        CV_Assert(mapIt != reuseMap.end());
+        LayerPin memHost = mapIt->second;
+
+        std::map<LayerPin, int>::iterator refIt = refCounter.find(memHost);
+        CV_Assert(refIt != refCounter.end());
+        return refIt->second;
+    }
+
+    // Reuse data allocated in <host> inside the <user> blob.
+    void reuse(const LayerPin& host, const LayerPin& user)
+    {
+        CV_Assert(reuseMap.find(user) == reuseMap.end());
+        CV_Assert(reuseMap.find(host) != reuseMap.end());
+        LayerPin memHost = reuseMap[host];
+        reuseMap[user] = memHost;
+        if (refCounter.find(memHost) != refCounter.end())
+        {
+            std::map<LayerPin, int>::iterator userRefIt = refCounter.find(user);
+            if (userRefIt != refCounter.end())
+            {
+                refCounter[memHost] += userRefIt->second;
+                refCounter.erase(userRefIt);
+            }
+            else
+                refCounter[memHost] += 1;
+        }
+    }
+
+    // Decrease references counter to allocated memory inside specific blob.
+    void releaseReference(const LayerPin& lp)
+    {
+        std::map<LayerPin, LayerPin>::iterator mapIt = reuseMap.find(lp);
+        CV_Assert(mapIt != reuseMap.end());
+
+        std::map<LayerPin, int>::iterator refIt = refCounter.find(mapIt->second);
+        CV_Assert(refIt != refCounter.end());
+        CV_Assert(refIt->second > 0);
+        refIt->second -= 1;
+    }
+
+    void releaseReferences(const std::vector<LayerPin>& pins)
+    {
+        for (int i = 0; i < pins.size(); i++)
+        {
+            releaseReference(pins[i]);
+        }
+    }
+
+    void reuseOrCreate(const MatShape& shape, const LayerPin& lp, Mat& dst)
+    {
+        std::map<LayerPin, Mat>::iterator hostIt;
+        std::map<LayerPin, int>::iterator refIt;
+
+        const int targetTotal = total(shape);
+        Mat bestBlob;
+        int bestBlobTotal = INT_MAX;
+        LayerPin bestBlobPin;
+        for (hostIt = memHosts.begin(); hostIt != memHosts.end(); ++hostIt)
+        {
+            refIt = refCounter.find(hostIt->first);
+            // Use only blobs that had references before because if not,
+            // it might be used as output.
+            if (refIt != refCounter.end() && refIt->second == 0)
+            {
+                Mat& unusedBlob = hostIt->second;
+                if (unusedBlob.total() >= targetTotal &&
+                    unusedBlob.total() < bestBlobTotal)
+                {
+                    bestBlobPin = hostIt->first;
+                    bestBlob = unusedBlob;
+                    bestBlobTotal = unusedBlob.total();
+                }
+            }
+        }
+        if (!bestBlob.empty())
+        {
+            reuse(bestBlobPin, lp);
+            dst = Mat(shape, CV_32F, bestBlob.data);
+        }
+        else
+        {
+            dst.create(shape, CV_32F);
+            addHost(lp, dst);
+        }
+    }
+
+    void allocateBlobsForLayer(LayerData &ld, const LayerShapes& layerShapes,
+                               std::vector<LayerPin>& pinsForInternalBlobs)
+    {
+        pinsForInternalBlobs.clear();
+
+        std::vector<Mat>& outputBlobs = ld.outputBlobs,
+                &internalBlobs = ld.internals;
+
+        const ShapesVec& outShapes = layerShapes.out,
+                internalShapes = layerShapes.internal;
+
+        outputBlobs.resize(std::max((size_t)1, outShapes.size())); //layer produce at least one output blob
+        internalBlobs.resize(internalShapes.size());
+
+        CV_Assert(ld.requiredOutputs.size() <= outShapes.size());
+
+        // Check that layer could work in-place.
+        bool inPlace = false;
+        if (layerShapes.supportInPlace)
+        {
+            if (ld.inputBlobs.size() == 1)
+            {
+                // Get number of references to the input memory.
+                int numRef = numReferences(ld.inputBlobsId[0]);
+                // If current layer is one and only customer of this blob.
+                inPlace = numRef == 1;
+            }
+        }
+
+        ShapesVec shapes(outShapes);
+        shapes.insert(shapes.end(), internalShapes.begin(), internalShapes.end());
+        std::vector<Mat*> blobs;
+        for(int i = 0; i < outputBlobs.size(); i++)
+        {
+            blobs.push_back(&outputBlobs[i]);
+        }
+
+        for(int i = 0; i < internalBlobs.size(); i++)
+        {
+            blobs.push_back(&internalBlobs[i]);
+            if (total(internalShapes[i]))
+            {
+                pinsForInternalBlobs.push_back(LayerPin(ld.id, ld.outputBlobs.size() + i));
+            }
+        }
+
+        addReferences(pinsForInternalBlobs);
+
+        std::map<int, std::vector<int> > idxSizes;
+        for(int i = 0; i < shapes.size(); i++)
+        {
+            idxSizes[total(shapes[i])].push_back(i);
+        }
+
+        std::map<int, std::vector<int> >::reverse_iterator it;
+        for(it = idxSizes.rbegin(); it != idxSizes.rend(); it++)
+        {
+            for(int j = 0; j < it->second.size(); j++)
+            {
+                int index = it->second[j];
+                if (total(shapes[index]))
+                {
+                    LayerPin blobPin(ld.id, index);
+                    if (index < outShapes.size() && inPlace)
+                    {
+                        CV_Assert(ld.inputBlobs[0]->total() == total(shapes[index]));
+                        ld.outputBlobs[index] = ld.inputBlobs[0]->reshape(1, shapes[index]);
+                        reuse(ld.inputBlobsId[0], blobPin);
+                    }
+                    else
+                    {
+                        reuseOrCreate(shapes[index], blobPin, *blobs[index]);
+                    }
+                }
+            }
+        }
+    }
+
+    // Clear internal state. Calls before an every reallocation.
+    void reset()
+    {
+        refCounter.clear();
+        reuseMap.clear();
+        memHosts.clear();
+    }
+
+private:
+    // Registed allocated memory.
+    void addHost(const LayerPin& lp, const Mat& mat)
+    {
+        CV_Assert(memHosts.find(lp) == memHosts.end());
+        reuseMap[lp] = lp;
+        memHosts[lp] = mat;
+    }
+
+    std::map<LayerPin, int> refCounter;
+    // Maps pin to origin blob (for whom memory was allocated firstly).
+    // For origin blobs key == value.
+    std::map<LayerPin, LayerPin> reuseMap;
+    std::map<LayerPin, Mat> memHosts;
+};
+
 struct Net::Impl
 {
-    typedef std::vector<MatShape> ShapesVec;
-    struct LayerShapes
-    {
-        ShapesVec in, out, internal;
-        bool inplace;
-        LayerShapes() {inplace = false;}
-    };
-
     typedef std::map<int, LayerShapes> LayersShapesMap;
     typedef std::map<int, LayerData> MapIdToLayerData;
 
@@ -252,6 +479,7 @@ struct Net::Impl
 
     MapIdToLayerData layers;
     std::map<String, int> layerNameToId;
+    BlobManager blobManager;
 
     int lastLayerId;
 
@@ -469,37 +697,11 @@ struct Net::Impl
         LayersShapesMap::const_iterator layerShapesIt = layersShapes.find(lid);
 
         CV_Assert(layerShapesIt != layersShapes.end());
-        const ShapesVec& outShapes = layerShapesIt->second.out;
-        CV_Assert(ld.requiredOutputs.size() <= outShapes.size());
 
-        ld.outputBlobs.resize(std::max((size_t)1, outShapes.size())); //layer produce at least one output blob
-        for(int i = 0; i < outShapes.size(); i++)
-        {
-            if (shape(ld.outputBlobs[i]) != outShapes[i])
-            {
-                if (layerShapesIt->second.inplace)
-                {
-                    CV_Assert(ld.inputBlobs.size() == ld.outputBlobs.size());
-                    CV_Assert(ld.inputBlobs[i]->total() == total(outShapes[i]));
-                    ld.outputBlobs[i] = ld.inputBlobs[i]->reshape(1, outShapes[i]);
-                }
-                else
-                {
-                    ld.outputBlobs[i].create(outShapes[i], CV_32F);
-                }
-            }
-        }
-
-        const ShapesVec& intShapes = layerShapesIt->second.internal;
-        ld.internals.resize(intShapes.size());
-        for(int i = 0; i < intShapes.size(); i++)
-        {
-            if (shape(ld.internals[i]) != intShapes[i] && total(intShapes[i]))
-                ld.internals[i].create(intShapes[i], CV_32F);
-        }
+        std::vector<LayerPin> pinsForInternalBlobs;
+        blobManager.allocateBlobsForLayer(ld, layerShapesIt->second, pinsForInternalBlobs);
 
         Ptr<Layer> layerPtr = ld.getLayerInstance();
-        //try
         {
             layerPtr->finalize(ld.inputBlobs, ld.outputBlobs);
 #if 0
@@ -512,10 +714,10 @@ struct Net::Impl
             std::cout << "\n";
 #endif
         }
-        /*catch (const cv::Exception &err)
-        {
-            CV_RETHROW_ERROR(err, format("The following error occured while making allocate() for layer \"%s\": %s", ld.name.c_str(), err.err.c_str()));
-        }*/
+
+        // After allocation of layer, we decrease counters to it's input blobs.
+        blobManager.releaseReferences(ld.inputBlobsId);
+        blobManager.releaseReferences(pinsForInternalBlobs);
 
         ld.flag = 1;
     }
@@ -535,6 +737,13 @@ struct Net::Impl
         }
         LayersShapesMap layersShapes;
         getLayersShapes(inputShapes, layersShapes);
+
+        blobManager.reset();
+        for (it = layers.begin(); it != layers.end(); ++it)
+        {
+            const LayerData& ld = it->second;
+            blobManager.addReferences(ld.inputBlobsId);
+        }
 
         for (it = layers.begin(); it != layers.end(); it++)
         {
@@ -609,7 +818,7 @@ struct Net::Impl
         ShapesVec& os = inOutShapes[id].out;
         ShapesVec& ints = inOutShapes[id].internal;
         int requiredOutputs = layers[id].requiredOutputs.size();
-        inOutShapes[id].inplace =
+        inOutShapes[id].supportInPlace =
                 layers[id].getLayerInstance()->getMemoryShapes(is, requiredOutputs, os, ints);
     }
 
@@ -718,9 +927,13 @@ void Net::setBlob(String outputName, const Mat &blob_)
     LayerData &ld = impl->layers[pin.lid];
     ld.outputBlobs.resize( std::max(pin.oid+1, (int)ld.requiredOutputs.size()) );
     MatShape prevShape = shape(ld.outputBlobs[pin.oid]);
-    ld.outputBlobs[pin.oid] = blob_.clone();
+    bool oldShape = prevShape == shape(blob_);
+    if (oldShape)
+        blob_.copyTo(ld.outputBlobs[pin.oid]);
+    else
+        ld.outputBlobs[pin.oid] = blob_.clone();
 
-    impl->netWasAllocated = impl->netWasAllocated && prevShape == shape(blob_);
+    impl->netWasAllocated = impl->netWasAllocated && oldShape;
 }
 
 Mat Net::getBlob(String outputName)
@@ -827,10 +1040,10 @@ std::vector<int> Net::getUnconnectedOutLayers() const
     return layersIds;
 }
 
-void Net::getLayersShapes(const Net::Impl::ShapesVec& netInputShapes,
+void Net::getLayersShapes(const ShapesVec& netInputShapes,
                           std::vector<int>* layersIds,
-                          std::vector<Net::Impl::ShapesVec>* inLayersShapes,
-                          std::vector<Net::Impl::ShapesVec>* outLayersShapes) const
+                          std::vector<ShapesVec>* inLayersShapes,
+                          std::vector<ShapesVec>* outLayersShapes) const
 {
     if ((layersIds || inLayersShapes || outLayersShapes) == false)
         return;
@@ -856,29 +1069,29 @@ void Net::getLayersShapes(const Net::Impl::ShapesVec& netInputShapes,
 
 void Net::getLayersShapes(const MatShape& netInputShape,
                           std::vector<int>* layerIds,
-                          std::vector<Net::Impl::ShapesVec>* inLayersShapes,
-                          std::vector<Net::Impl::ShapesVec>* outLayersShapes) const
+                          std::vector<ShapesVec>* inLayersShapes,
+                          std::vector<ShapesVec>* outLayersShapes) const
 {
-    getLayersShapes(Net::Impl::ShapesVec(1, netInputShape),
+    getLayersShapes(ShapesVec(1, netInputShape),
                     layerIds, inLayersShapes, outLayersShapes);
 }
 
 void Net::getLayerShapes(const MatShape& netInputShape,
                          const int layerId,
-                         Net::Impl::ShapesVec* inLayerShapes,
-                         Net::Impl::ShapesVec* outLayerShapes) const
+                         ShapesVec* inLayerShapes,
+                         ShapesVec* outLayerShapes) const
 {
-    getLayerShapes(Net::Impl::ShapesVec(1, netInputShape),
+    getLayerShapes(ShapesVec(1, netInputShape),
                    layerId, inLayerShapes, outLayerShapes);
 
 }
 
-void Net::getLayerShapes(const Net::Impl::ShapesVec& netInputShapes,
+void Net::getLayerShapes(const ShapesVec& netInputShapes,
                     const int layerId,
-                    Net::Impl::ShapesVec* inLayerShapes,
-                    Net::Impl::ShapesVec* outLayerShapes) const
+                    ShapesVec* inLayerShapes,
+                    ShapesVec* outLayerShapes) const
 {
-    Impl::LayerShapes shapes;
+    LayerShapes shapes;
     impl->getLayerShapes(netInputShapes, layerId, shapes);
     if (inLayerShapes)
         *inLayerShapes = shapes.in;
@@ -915,7 +1128,7 @@ int64 Net::getFLOPS(const int layerId,
     Impl::MapIdToLayerData::iterator layer = impl->layers.find(layerId);
     CV_Assert(layer != impl->layers.end());
 
-    Impl::LayerShapes shapes;
+    LayerShapes shapes;
     impl->getLayerShapes(netInputShapes, layerId, shapes);
 
     return layer->second.getLayerInstance()->getFLOPS(shapes.in, shapes.out);
@@ -986,26 +1199,14 @@ void Net::getMemoryConsumption(const std::vector<MatShape>& netInputShapes,
                                size_t& weights, size_t& blobs) const
 {
     std::vector<int> layerIds;
-    std::vector<std::vector<MatShape> > outLayerShapes;
-
-    getLayersShapes(netInputShapes, &layerIds, 0, &outLayerShapes);
+    std::vector<size_t> w, b;
+    getMemoryConsumption(netInputShapes, layerIds, w, b);
 
     weights = blobs = 0;
     for(int i = 0; i < layerIds.size(); i++)
     {
-        Impl::MapIdToLayerData::iterator layer = impl->layers.find(layerIds[i]);
-        CV_Assert(layer != impl->layers.end());
-
-        for(int j = 0; j < layer->second.params.blobs.size(); j++)
-        {
-            const Mat& weightsBlob = layer->second.params.blobs[j];
-            weights += weightsBlob.total()*weightsBlob.elemSize();
-        }
-
-        for(int j = 0; j < outLayerShapes[i].size(); j++)
-        {
-            blobs += total(outLayerShapes[i][j]) * sizeof(float);
-        }
+        weights += w[i];
+        blobs += b[i];
     }
 }
 
@@ -1021,6 +1222,47 @@ void Net::getMemoryConsumption(const MatShape& netInputShape,
                                size_t& weights, size_t& blobs) const
 {
     getMemoryConsumption(std::vector<MatShape>(1, netInputShape),
+                         weights, blobs);
+}
+
+void Net::getMemoryConsumption(const std::vector<MatShape>& netInputShapes,
+                                  std::vector<int>& layerIds, std::vector<size_t>& weights,
+                                  std::vector<size_t>& blobs) const
+{
+    layerIds.clear();
+    weights.clear();
+    blobs.clear();
+
+    std::vector<std::vector<MatShape> > outLayerShapes;
+
+    getLayersShapes(netInputShapes, &layerIds, 0, &outLayerShapes);
+
+    for(int i = 0; i < layerIds.size(); i++)
+    {
+        int w = 0, b = 0;
+        Impl::MapIdToLayerData::iterator layer = impl->layers.find(layerIds[i]);
+        CV_Assert(layer != impl->layers.end());
+
+        for(int j = 0; j < layer->second.params.blobs.size(); j++)
+        {
+            const Mat& weightsBlob = layer->second.params.blobs[j];
+            w += weightsBlob.total()*weightsBlob.elemSize();
+        }
+
+        for(int j = 0; j < outLayerShapes[i].size(); j++)
+        {
+            b += total(outLayerShapes[i][j]) * sizeof(float);
+        }
+
+        weights.push_back(w);
+        blobs.push_back(b);
+    }
+}
+
+void Net::getMemoryConsumption(const MatShape& netInputShape, std::vector<int>& layerIds,
+                               std::vector<size_t>& weights, std::vector<size_t>& blobs) const
+{
+    getMemoryConsumption(std::vector<MatShape>(1, netInputShape), layerIds,
                          weights, blobs);
 }
 
