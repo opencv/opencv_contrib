@@ -94,6 +94,8 @@ namespace cv
             void write(FileStorage& /*fs*/) const;
         };
 
+        void training(String imageList, String groundTruth, const FacemarkAAM::Params &parameters);
+        virtual void trainingImpl(String imageList, String groundTruth, const FacemarkAAM::Params &parameters)=0;
 
         /**
         * \brief this BOILERPLATE_CODE is equivalent to the following snippet
