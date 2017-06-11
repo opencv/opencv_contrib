@@ -26,14 +26,31 @@
 # ----------------------------------------------------------------------------
 #  Architecture checks
 # ----------------------------------------------------------------------------
-# make sure we're on a supported architecture with Matlab and python installed
+# make sure we're on a supported architecture with Matlab and Python (with jinja2) installed
 if(APPLE_FRAMEWORK OR ANDROID OR NOT MATLAB_FOUND)
     ocv_module_disable(matlab)
-    return()
-elseif (NOT PYTHON_DEFAULT_AVAILABLE)
+elseif(NOT PYTHON_DEFAULT_AVAILABLE)
     message(WARNING "A required dependency of the matlab module (Python) was not found. Disabling Matlab bindings...")
     ocv_module_disable(matlab)
-    return()
+endif()
+
+if(NOT DEFINED HAVE_PYTHON_JINJA2)
+  # Bindings generator requires Jinja2 python package
+  execute_process(COMMAND "${PYTHON_DEFAULT_EXECUTABLE}" -c "import jinja2; print(jinja2.__version__)"
+                  RESULT_VARIABLE _result
+                  OUTPUT_VARIABLE _jinja2_version
+                  OUTPUT_STRIP_TRAILING_WHITESPACE)
+
+  if(NOT _result EQUAL 0)
+    set(HAVE_PYTHON_JINJA2 0 CACHE INTERNAL "")
+  else()
+    message(STATUS "Python Jinja version: ${_jinja2_version}")
+    set(HAVE_PYTHON_JINJA2 1 CACHE INTERNAL "")
+  endif()
+endif()
+if(NOT HAVE_PYTHON_JINJA2)
+  message(WARNING "A required dependency of the matlab module (Python Jinja2 package) was not found (installation command: \"pip install jinja2\"). Disabling Matlab bindings...")
+  ocv_module_disable(matlab)
 endif()
 
 
@@ -93,7 +110,6 @@ ocv_add_module(matlab   BINDINGS
                                  opencv_calib opencv_calib3d
                                  opencv_stitching opencv_superres
                                  opencv_xfeatures2d
-                                 opencv_hal
 )
 
 # get the commit information
@@ -101,7 +117,6 @@ execute_process(COMMAND git log -1 --pretty=%H OUTPUT_VARIABLE GIT_COMMIT ERROR_
 string(REGEX REPLACE "(\r?\n)+$" "" GIT_COMMIT "${GIT_COMMIT}")
 
 # set the path to the C++ header and doc parser, and template engine
-set(JINJA2_PATH ${CMAKE_SOURCE_DIR}/3rdparty)
 set(HDR_PARSER_PATH ${CMAKE_SOURCE_DIR}/modules/python/src2)
 
 # set mex compiler options
@@ -157,7 +172,6 @@ if (NOT MEX_WORKS)
     execute_process(
         COMMAND ${PYTHON_DEFAULT_EXECUTABLE}
                 ${CMAKE_CURRENT_SOURCE_DIR}/generator/gen_matlab.py
-                --jinja2    ${JINJA2_PATH}
                 --hdrparser ${HDR_PARSER_PATH}
                 --extra     "test=${CMAKE_CURRENT_SOURCE_DIR}/test/test_generator.hpp"
                 --outdir    ${CMAKE_BINARY_DIR}/junk
@@ -216,7 +230,6 @@ add_custom_command(
     OUTPUT ${GENERATE_PROXY}
     COMMAND ${PYTHON_DEFAULT_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/generator/gen_matlab.py
-            --jinja2     ${JINJA2_PATH}
             --hdrparser  ${HDR_PARSER_PATH}
             --moduleroot ${CMAKE_SOURCE_DIR}/modules ${OPENCV_EXTRA_MODULES_PATH}
             --modules    ${opencv_modules}
@@ -224,7 +237,6 @@ add_custom_command(
             --outdir     ${CMAKE_CURRENT_BINARY_DIR}
     COMMAND ${PYTHON_DEFAULT_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/generator/build_info.py
-            --jinja2         ${JINJA2_PATH}
             --os             ${CMAKE_SYSTEM}
             --arch           ${ARCH} ${CMAKE_SYSTEM_PROCESSOR}
             --compiler       ${CMAKE_CXX_COMPILER_ID} ${CMAKE_CXX_COMPILER_VERSION}
@@ -238,7 +250,6 @@ add_custom_command(
             --outdir         ${CMAKE_CURRENT_BINARY_DIR}
     COMMAND ${PYTHON_DEFAULT_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/generator/cvmex.py
-            --jinja2 ${JINJA2_PATH}
             --opts="${MEX_OPTS}"
             --include_dirs="${MEX_INCLUDE_DIRS}"
             --lib_dir="${MEX_LIB_DIR}"
@@ -301,7 +312,6 @@ install(CODE
     "execute_process(
     COMMAND ${PYTHON_DEFAULT_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/generator/cvmex.py
-            --jinja2 ${JINJA2_PATH}
             --opts=${MEX_OPTS}
             --include_dirs=-I${CMAKE_INSTALL_PREFIX}/${OPENCV_INCLUDE_INSTALL_PATH}
             --lib_dir=-L${CMAKE_INSTALL_PREFIX}/${OPENCV_LIB_INSTALL_PATH}
