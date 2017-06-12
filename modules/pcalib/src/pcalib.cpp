@@ -60,7 +60,7 @@ bool PhotometricCalibrator::validImgs(std::vector <Mat> &inputImgs, std::vector<
     if(inputImgs.empty() || exposureTime.empty() || inputImgs.size() != exposureTime.size())
         return false;
 
-    int width, height = 0;
+    int width = 0, height = 0;
     for(size_t i = 0; i < inputImgs.size(); ++ i)
     {
         Mat img;
@@ -90,4 +90,3 @@ bool PhotometricCalibrator::validImgs(std::vector <Mat> &inputImgs, std::vector<
 
 #endif // __OPENCV_PCALIB_CPP__
 #endif // cplusplus
-
