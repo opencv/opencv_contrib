@@ -50,8 +50,7 @@
 #if defined __clang__
 #define AVX_TARGET __attribute__((target("avx, fma")))
 #elif defined __GNUC__
-#define AVX_TARGET
-#pragma GCC target("avx")
+#define AVX_TARGET __attribute__((target("avx")))
 #pragma GCC target("fma")
 #endif
 
