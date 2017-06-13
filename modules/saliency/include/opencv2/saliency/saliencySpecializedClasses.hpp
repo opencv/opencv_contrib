@@ -46,8 +46,10 @@
 #include <string>
 #include <iostream>
 #include <stdint.h>
+#include <vector>
 #include "saliencyBaseClasses.hpp"
 #include "opencv2/core.hpp"
+#include "opencv2/dnn.hpp"
 
 namespace cv
 {
@@ -152,6 +154,44 @@ private:
   void getIntensity(Mat srcArg, Mat dstArg,  Mat dstOnArg,  Mat dstOffArg, bool generateOnOff);
 };
 
+/** @brief the Deep Gaze 1 Saliency approach from @cite
+
+This method use the convolution layers of the pretrained AlexNet, linear combination, center bias and softmax to generate saliency map
+*/
+
+class DeepGaze1 : public StaticSaliency
+{
+private:
+	dnn::Net net;
+	vector<string> layers_names;
+	vector<Mat> training_images;
+	vector<double> weights;
+
+public:
+	DeepGaze1();
+	DeepGaze1(string, string, vector<string>, vector<Mat>);
+  virtual ~DeepGaze1();
+  CV_SRAP bool computeSaliency(InputArray image, OutputArray saliencyMap)
+  {
+    if(image.empty())
+      return false;
+
+    return computeSaliencyImpl(image, slaiencyMap);
+  }
+
+protect:
+  bool computeSaliencyImpl(InputArray image, OutputArray saleicnyMap);
+	void featureMapGenerator(string, vector<Mat>&);
+	Mat comb(vector<Mat>&, vector<double>);
+	Mat softmax(Mat);
+	Mat saliencyMapGenerator(string);
+	void training(vector<Mat>&);
+	vector<double> evalGrad(vector<Mat>&, vector<unsigned>);
+	vector<unsigned> batchIndex(unsigned, unsigned);
+	double loss(vector<double>, vector<double>);
+	vector<double> mapSampler(Mat, vector<unsigned>);
+	vector<unsigned> fixationLoc();
+};
 
 
 
