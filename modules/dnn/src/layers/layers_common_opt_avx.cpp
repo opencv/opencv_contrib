@@ -46,7 +46,7 @@
 
 #if CV_DNN_TRY_AVX
 
-#define AVX2_TARGET __attribute__((target("avx")))
+#define AVX2_TARGET __attribute__((target("avx"), target("fma")))
 
 namespace cv {
 namespace dnn {
