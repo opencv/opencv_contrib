@@ -277,7 +277,7 @@ public:
                 addedBlobs.push_back(BlobNote(net.input(inNum), 0, inNum));
                 netInputs[inNum] = net.input(inNum);
             }
-            dstNet.setNetInputs(netInputs);
+            dstNet.setInputsNames(netInputs);
         }
 
         for (int li = 0; li < layersSize; li++)

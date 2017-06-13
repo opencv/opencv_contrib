@@ -94,10 +94,8 @@ TEST(Reproducibility_AlexNet, Accuracy)
     if (sample.size() != inputSize)
         resize(sample, sample, inputSize);
 
-    net.setBlob(".data", blobFromImage(sample, 1.));
-    net.forward();
-
-    Mat out = net.getBlob("prob");
+    net.setInput(blobFromImage(sample, 1.), "data");
+    Mat out = net.forward("prob");
     Mat ref = blobFromNPY(_tf("caffe_alexnet_prob.npy"));
     normAssert(ref, out);
 }
@@ -125,10 +123,8 @@ TEST(Reproducibility_FCN, Accuracy)
     std::vector<size_t> weights, blobs;
     net.getMemoryConsumption(shape(1,3,227,227), layerIds, weights, blobs);
 
-    net.setBlob(".data", blobFromImage(sample, 1.));
-    net.forward();
-
-    Mat out = net.getBlob("score");
+    net.setInput(blobFromImage(sample, 1.), "data");
+    Mat out = net.forward("score");
     Mat ref = blobFromNPY(_tf("caffe_fcn8s_prob.npy"));
     normAssert(ref, out);
 }
@@ -155,9 +151,8 @@ TEST(Reproducibility_SSD, Accuracy)
     resize(sample, sample, Size(300, 300));
 
     Mat in_blob = blobFromImage(sample);
-    net.setBlob(".data", in_blob);
-    net.forward();
-    Mat out = net.getBlob("detection_out");
+    net.setInput(in_blob, "data");
+    Mat out = net.forward("detection_out");
 
     Mat ref = blobFromNPY(_tf("ssd_out.npy"));
     normAssert(ref, out);

@@ -118,9 +118,8 @@ void testLayerUsingCaffeModels(String basename, bool useCaffeModel = false, bool
     Mat inp = blobFromNPY(inpfile);
     Mat ref = blobFromNPY(outfile);
 
-    net.setBlob(".input", inp);
-    net.forward();
-    Mat out = net.getBlob("output");
+    net.setInput(inp, "input");
+    Mat out = net.forward("output");
 
     normAssert(ref, out);
 }
@@ -244,9 +243,8 @@ static void test_Reshape_Split_Slice_layers()
     RNG rng(0);
     rng.fill(input, RNG::UNIFORM, -1, 1);
 
-    net.setBlob(".input", input);
-    net.forward();
-    Mat output = net.getBlob("output");
+    net.setInput(input, "input");
+    Mat output = net.forward("output");
 
     normAssert(input, output);
 }

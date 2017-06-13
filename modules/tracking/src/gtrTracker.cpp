@@ -172,11 +172,10 @@ bool TrackerGOTURNImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     Mat targetBlob = dnn::blobFromImage(targetPatch);
     Mat searchBlob = dnn::blobFromImage(searchPatch);
 
-    net.setBlob(".data1", targetBlob);
-    net.setBlob(".data2", searchBlob);
+    net.setInput(targetBlob, ".data1");
+    net.setInput(searchBlob, ".data2");
 
-    net.forward();
-    Mat resMat = net.getBlob("scale").reshape(1, 1);
+    Mat resMat = net.forward("scale").reshape(1, 1);
 
     curBB.x = targetPatchRect.x + (resMat.at<float>(0) * targetPatchRect.width / INPUT_SIZE) - targetPatchRect.width;
     curBB.y = targetPatchRect.y + (resMat.at<float>(1) * targetPatchRect.height / INPUT_SIZE) - targetPatchRect.height;

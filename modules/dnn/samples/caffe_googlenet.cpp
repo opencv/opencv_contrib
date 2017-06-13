@@ -119,16 +119,14 @@ int main(int argc, char **argv)
     //! [Prepare blob]
 
     //! [Set input blob]
-    net.setBlob(".data", inputBlob);        //set the network input
+    net.setInput(inputBlob, "data");        //set the network input
     //! [Set input blob]
 
     //! [Make forward pass]
-    net.forward();                          //compute output
+    Mat prob = net.forward("prob");                          //compute output
     //! [Make forward pass]
 
     //! [Gather output]
-    Mat prob = net.getBlob("prob");   //gather output of "prob" layer
-
     int classId;
     double classProb;
     getMaxClass(prob, &classId, &classProb);//find the best class

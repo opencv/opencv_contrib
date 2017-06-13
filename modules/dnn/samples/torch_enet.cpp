@@ -73,24 +73,10 @@ int main(int argc, char **argv)
     //! [Prepare blob]
 
     //! [Set input blob]
-    net.setBlob("", inputBlob);        //set the network input
+    net.setInput(inputBlob, "");        //set the network input
     //! [Set input blob]
 
-    const int N = 3;
     TickMeter tm;
-
-    //! [Make forward pass]
-    for( int i = 0; i < N; i++ )
-    {
-        TickMeter tm_;
-        tm_.start();
-        net.forward();                          //compute output
-        tm_.stop();
-        if( i == 0 || tm_.getTimeTicks() < tm.getTimeTicks() )
-            tm = tm_;
-    }
-
-    //! [Gather output]
 
     String oBlob = net.getLayerNames().back();
     if (!parser.get<String>("o_blob").empty())
@@ -98,7 +84,8 @@ int main(int argc, char **argv)
         oBlob = parser.get<String>("o_blob");
     }
 
-    Mat result = net.getBlob(oBlob);   //gather output of "prob" layer
+    //! [Make forward pass]
+    Mat result = net.forward(oBlob);
 
     if (!resultFile.empty()) {
         CV_Assert(result.isContinuous());

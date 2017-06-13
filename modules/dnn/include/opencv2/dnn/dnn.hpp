@@ -337,19 +337,35 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          * In fact, this layer provides the only way to pass user data into the network.
          * As any other layer, this layer can label its outputs and this function provides an easy way to do this.
          */
-        CV_WRAP void setNetInputs(const std::vector<String> &inputBlobNames);
+        CV_WRAP void setInputsNames(const std::vector<String> &inputBlobNames);
 
-        /** @brief Initializes and allocates all layers. */
-        CV_WRAP void allocate();
-
-        /** @brief Runs forward pass to compute output of layer @p toLayer.
+        /** @brief Runs forward pass to compute output of layer with name @p outputName.
+         *  @param outputName name for layer which output is needed to get
+         *  @return blob for first output of specified layer.
           * @details By default runs forward pass for the whole network.
           */
-        CV_WRAP void forward(LayerId toLayer = String());
-        /** @brief Runs forward pass to compute output of layer @p toLayer, but computations start from @p startLayer */
-        void forward(LayerId startLayer, LayerId toLayer);
-        /** @overload */
-        void forward(const std::vector<LayerId> &startLayers, const std::vector<LayerId> &toLayers);
+        CV_WRAP Mat forward(const String& outputName = String());
+
+        /** @brief Runs forward pass to compute output of layer with name @p outputName.
+         *  @param outputBlobs contains all output blobs for specified layer.
+         *  @param outputName name for layer which output is needed to get
+          * @details If @p outputName is empty, runs forward pass for the whole network.
+          */
+        CV_WRAP void forward(std::vector<Mat>& outputBlobs, const String& outputName = String());
+
+        /** @brief Runs forward pass to compute outputs of layers listed in @p outBlobNames.
+         *  @param outputBlobs contains blobs for first outputs of specified layers.
+         *  @param outBlobNames names for layers which outputs are needed to get
+          */
+        CV_WRAP void forward(std::vector<Mat>& outputBlobs,
+                             const std::vector<String>& outBlobNames);
+
+        /** @brief Runs forward pass to compute outputs of layers listed in @p outBlobNames.
+         *  @param outputBlobs contains all output blobs for each layer specified in @p outBlobNames.
+         *  @param outBlobNames names for layers which outputs are needed to get
+          */
+        CV_WRAP void forward(std::vector<std::vector<Mat> >& outputBlobs,
+                             const std::vector<String>& outBlobNames);
 
         //TODO:
         /** @brief Optimized forward.
@@ -369,7 +385,7 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          * specific target. For layers that not represented in scheduling file
          * or if no manual scheduling used at all, automatic scheduling will be applied.
          */
-        void compileHalide(const std::string& scheduler = "");
+        void setHalideScheduler(const String& scheduler);
 
         /**
          * @brief Ask network to use specific computation backend where it supported.
@@ -379,19 +395,13 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
         void setPreferableBackend(int backendId);
 
         /** @brief Sets the new value for the layer output blob
-         *  @param outputName descriptor of the updating layer output blob.
+         *  @param name descriptor of the updating layer output blob.
          *  @param blob new blob.
          *  @see connect(String, String) to know format of the descriptor.
          *  @note If updating blob is not empty then @p blob must have the same shape,
          *  because network reshaping is not implemented yet.
          */
-        CV_WRAP void setBlob(String outputName, const Mat &blob);
-
-        /** @brief Returns the layer output blob.
-         *  @param outputName the descriptor of the returning layer output blob.
-         *  @see connect(String, String)
-         */
-        CV_WRAP Mat getBlob(String outputName);
+        CV_WRAP void setInput(const Mat &blob, const String& name = "");
 
         /** @brief Sets the new value for the learned param of the layer.
          *  @param layer name or id of the layer.
