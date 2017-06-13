@@ -703,7 +703,7 @@ void TFImporter::populateNet(Net dstNet)
             std::vector<String> netInputs(1);
             netInputs[0] = name;
             layer_id[name] = 0;
-            dstNet.setNetInputs(netInputs);
+            dstNet.setInputsNames(netInputs);
         }
         else if (type == "Split") {
             // TODO: determing axis index remapping by input dimensions order of input blob

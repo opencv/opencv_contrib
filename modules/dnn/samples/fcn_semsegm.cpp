@@ -134,18 +134,15 @@ int main(int argc, char **argv)
     //! [Prepare blob]
 
     //! [Set input blob]
-    net.setBlob(".data", inputBlob);        //set the network input
+    net.setInput(inputBlob, "data");        //set the network input
     //! [Set input blob]
 
     //! [Make forward pass]
     double t = (double)cv::getTickCount();
-    net.forward();                          //compute output
+    Mat score = net.forward("score");                          //compute output
     t = (double)cv::getTickCount() - t;
     printf("processing time: %.1fms\n", t*1000./getTickFrequency());
     //! [Make forward pass]
-
-    //! [Gather output]
-    Mat score = net.getBlob("score");
 
     Mat colorize;
     colorizeSegmentation(score, colors, colorize);

@@ -824,13 +824,20 @@ struct TorchImporter : public ::cv::dnn::Importer
                 mergeParams.set("axis", module->params.get<int>("dimension") - 1);
 
                 splitId = net.addLayer(generateLayerName("torchSplit"), "Split", splitParams);
-                mergeId = net.addLayer(generateLayerName("torchMerge"), "Concat", mergeParams);
                 net.connect(prevLayerId, prevOutNum, splitId, 0);
 
+                std::vector<int> branchIds;
                 for (int i = 0; i < (int)module->modules.size(); i++)
                 {
                     newId = fill(module->modules[i], addedModules, splitId, i);
-                    net.connect(newId, 0, mergeId, i);
+                    branchIds.push_back(newId);
+                }
+
+                mergeId = net.addLayer(generateLayerName("torchMerge"), "Concat", mergeParams);
+
+                for (int i = 0; i < branchIds.size(); i++)
+                {
+                    net.connect(branchIds[i], 0, mergeId, i);
                 }
 
                 addedModules.push_back(std::make_pair(mergeId, module));
@@ -847,15 +854,22 @@ struct TorchImporter : public ::cv::dnn::Importer
                 reshapeParams.set("num_axes", 1);
 
                 splitId = net.addLayer(generateLayerName("torchSplit"), "Slice", splitParams);
-                mergeId = net.addLayer(generateLayerName("torchMerge"), "Concat", mergeParams);
                 reshapeId = net.addLayer(generateLayerName("torchReshape"), "Reshape", reshapeParams);
                 net.connect(prevLayerId, prevOutNum, splitId, 0);
 
+                std::vector<int> branchIds;
                 for (int i = 0; i < (int)module->modules.size(); i++)
                 {
                     net.connect(splitId, i, reshapeId, i);
                     newId = fill(module->modules[i], addedModules, reshapeId, i);
-                    net.connect(newId, 0, mergeId, i);
+                    branchIds.push_back(newId);
+                }
+
+                mergeId = net.addLayer(generateLayerName("torchMerge"), "Concat", mergeParams);
+
+                for (int i = 0; i < branchIds.size(); i++)
+                {
+                    net.connect(branchIds[i], 0, mergeId, i);
                 }
 
                 addedModules.push_back(std::make_pair(mergeId, module));

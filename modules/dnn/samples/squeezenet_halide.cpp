@@ -93,7 +93,7 @@ int main(int argc, char **argv)
     //! [Prepare blob]
 
     //! [Set input blob]
-    net.setBlob("", inputBlob);                      // Set the network input.
+    net.setInput(inputBlob);                      // Set the network input.
     //! [Set input blob]
 
     //! [Enable Halide backend]
@@ -101,15 +101,15 @@ int main(int argc, char **argv)
     //! [Enable Halide backend]
 
     //! [Compile Halide pipeline]
-    net.compileHalide();                             // Compile Halide pipeline.
+//    net.compileHalide();                             // Compile Halide pipeline.
     //! [Compile Halide pipeline]
 
     //! [Make forward pass]
-    net.forward();                                   // Compute output.
+    Mat prob = net.forward("prob");                                   // Compute output.
     //! [Make forward pass]
 
     //! [Gather output]
-    Mat prob = net.getBlob("prob");                  // Gather output of "prob" layer.
+//    net.getBlob();                  // Gather output of "prob" layer.
 
     int classId;
     double classProb;

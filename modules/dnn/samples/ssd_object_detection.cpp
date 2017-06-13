@@ -108,15 +108,13 @@ int main(int argc, char** argv)
     //! [Prepare blob]
 
     //! [Set input blob]
-    net.setBlob(".data", inputBlob);                //set the network input
+    net.setInput(inputBlob, "data");                //set the network input
     //! [Set input blob]
 
     //! [Make forward pass]
-    net.forward();                                  //compute output
+    Mat detection = net.forward("detection_out");                                  //compute output
     //! [Make forward pass]
 
-    //! [Gather output]
-    Mat detection = net.getBlob("detection_out");
     Mat detectionMat(detection.size[2], detection.size[3], CV_32F, detection.ptr<float>());
 
     float confidenceThreshold = parser.get<float>("min_confidence");
