@@ -44,7 +44,6 @@
 #include "op_im2col.hpp"
 #include "op_blas.hpp"
 #include "opencv2/core/hal/intrin.hpp"
-#include "immintrin.h"
 #include <iostream>
 
 namespace cv
@@ -152,7 +151,7 @@ public:
         return false;
     }
 
-    class ParallelConv_ver2 : public cv::ParallelLoopBody
+    class ParallelConv : public cv::ParallelLoopBody
     {
     public:
         enum { BLK_SIZE = 32, BLK_SIZE_CN = 64 };
@@ -168,7 +167,7 @@ public:
         bool is1x1_;
         bool useAVX;
 
-        ParallelConv_ver2() {}
+        ParallelConv() {}
 
         static void run( const Mat& input, Mat& output,
                          const Mat& weights, const Mat& bias,
@@ -186,7 +185,7 @@ public:
                        output.isContinuous() &&
                        (bias.empty() || (bias.isContinuous() && bias.type() == CV_32F &&
                                          bias.total() == (size_t)output.size[1])));
-            ParallelConv_ver2 p;
+            ParallelConv p;
 
             p.input_ = &input;
             p.weights_ = &weights;
@@ -212,7 +211,7 @@ public:
                         ofstab[(k*kernel.height + k_r)*kernel.width + k_c] =
                         (k*height + k_r*dilation.height)*width + k_c*dilation.width;
 
-            p.biasvec_.resize(outCn+1);
+            p.biasvec_.resize(outCn+2);
             float* biasvec = &p.biasvec_[0];
             if( bias.empty() )
             {
@@ -224,7 +223,7 @@ public:
                 for( k = 0; k < outCn; k++ )
                     biasvec[k] = bias.at<float>(k);
             }
-            biasvec[outCn] = biasvec[outCn-1];
+            biasvec[outCn] = biasvec[outCn+1] = biasvec[outCn-1];
             parallel_for_(Range(0, nstripes), p, nstripes);
         }
 
@@ -235,8 +234,11 @@ public:
             int outW = output_->size[3], outH = output_->size[2], outCn = output_->size[1]/ngroups;
             int width = input_->size[3], height = input_->size[2], inpCn = input_->size[1]/ngroups;
             int nstripes = nstripes_;
-            Size kernel = kernel_, pad = pad_, stride = stride_, dilation = dilation_;
-            int karea = kernel.width*kernel.height;
+            int kernel_w = kernel_.width, kernel_h = kernel_.height;
+            int pad_w = pad_.width, pad_h = pad_.height;
+            int stride_w = stride_.width, stride_h = stride_.height;
+            int dilation_w = dilation_.width, dilation_h = dilation_.height;
+            int karea = kernel_w*kernel_h;
             int i, j, k;
             size_t inpPlaneSize = width*height;
             size_t outPlaneSize = outW*outH;
@@ -315,8 +317,8 @@ public:
                                 int out_j = ofs - out_i * outW;
                                 float* rowbuf = rowbuf0 + (ofs - ofs0)*vsz_a;
 
-                                int in_i = out_i * stride.height - pad.height;
-                                int in_j = out_j * stride.width - pad.width;
+                                int in_i = out_i * stride_h - pad_h;
+                                int in_j = out_j * stride_w - pad_w;
                                 const float* imgptr = data_inp0 + (cn0*height + in_i)*width + in_j;
 
                                 for( k = 0; k < vsz; k++ )
@@ -331,24 +333,24 @@ public:
                                 int out_j = ofs - out_i * outW;
                                 float* rowbuf = rowbuf0 + (ofs - ofs0)*vsz_a;
 
-                                int in_i = out_i * stride.height - pad.height;
-                                int in_j = out_j * stride.width - pad.width;
+                                int in_i = out_i * stride_h - pad_h;
+                                int in_j = out_j * stride_w - pad_w;
                                 const float* imgptr = data_inp0 + (cn0*height + in_i)*width + in_j;
 
                                 // this condition should be true for most of the tensor elements, i.e.
                                 // most of the time the kernel aperture is inside the tensor X-Y plane.
-                                if( 0 <= in_i && in_i < height - (kernel.height-1)*dilation.height &&
-                                    0 <= in_j && in_j < width - (kernel.width-1)*dilation.width )
+                                if( 0 <= in_i && in_i < height - (kernel_h-1)*dilation_h &&
+                                    0 <= in_j && in_j < width - (kernel_w-1)*dilation_w )
                                 {
                                     for( k = 0; k < vsz; k++ )
                                         rowbuf[k] = imgptr[ofstab[k]];
                                 }
                                 else
                                 {
-                                    int i0 = std::max(0, (-in_i + dilation.height-1)/dilation.height);
-                                    int i1 = std::min(kernel.height, (height - in_i + dilation.height-1)/dilation.height);
-                                    int j0 = std::max(0, (-in_j + dilation.width-1)/dilation.width);
-                                    int j1 = std::min(kernel.width, (width - in_j + dilation.width-1)/dilation.width);
+                                    int i0 = std::max(0, (-in_i + dilation_h-1)/dilation_h);
+                                    int i1 = std::min(kernel_h, (height - in_i + dilation_h-1)/dilation_h);
+                                    int j0 = std::max(0, (-in_j + dilation_w-1)/dilation_w);
+                                    int j1 = std::min(kernel_w, (width - in_j + dilation_w-1)/dilation_w);
 
                                     // here some non-continous sub-row of the row will not be
                                     // filled from the tensor; we need to make sure that the uncovered
@@ -361,8 +363,8 @@ public:
                                         {
                                             for( j = j0; j < j1; j++ )
                                             {
-                                                int imgofs = i*(dilation.height*width) + j*dilation.width;
-                                                rowbuf[(k*kernel.height + i)*kernel.width + j] = imgptr[imgofs];
+                                                int imgofs = i*(dilation_h*width) + j*dilation_w;
+                                                rowbuf[(k*kernel_h + i)*kernel_w + j] = imgptr[imgofs];
                                             }
                                         }
                                     }
@@ -497,8 +499,8 @@ public:
         Mat biasesMat = hasBias() ? blobs[1].reshape(1, outCn) : Mat();
 
         int nstripes = std::max(getNumThreads(), 1);
-        ParallelConv_ver2::run(*inputs[0], outputs[0], weightsMat, biasesMat,
-                               kernel, pad, stride, dilation, ngroups, nstripes);
+        ParallelConv::run(*inputs[0], outputs[0], weightsMat, biasesMat,
+                          kernel, pad, stride, dilation, ngroups, nstripes);
     }
 
     virtual int64 getFLOPS(const std::vector<MatShape> &inputs,

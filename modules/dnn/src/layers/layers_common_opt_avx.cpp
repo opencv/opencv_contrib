@@ -46,7 +46,7 @@
 
 #if CV_DNN_TRY_AVX
 
-#define AVX2_TARGET __attribute__((target("avx, fma")))
+#define AVX2_TARGET __attribute__((target("avx")))
 
 namespace cv {
 namespace dnn {
@@ -60,88 +60,121 @@ void AVX2_TARGET fastConv_avx( const float* weights, size_t wstep, const float* 
 
     // now compute dot product of the weights
     // and im2row-transformed part of the tensor
-    for( int i = 0; i < outCn; i += 2 )
+    for( int i = 0; i < outCn; i += 3 )
     {
         const float* wptr0 = weights + i*wstep;
         const float* wptr1 = wptr0 + wstep;
+        const float* wptr2 = wptr1 + wstep;
         float* outptr0 = output + i*outPlaneSize;
         float* outptr1 = outptr0 + outPlaneSize;
-        float bias0 = bias[i], bias1 = bias[i+1];
+        float* outptr2 = outptr1 + outPlaneSize;
+        float bias0 = bias[i], bias1 = bias[i+1], bias2 = bias[i+2];
 
-        if( i+1 >= outCn )
+        if( i+2 >= outCn )
+        {
+            wptr2 = wptr1;
+            outptr2 = outptr1;
+            bias2 = bias1;
+            if( i+1 >= outCn )
+            {
+                wptr2 = wptr1 = wptr0;
+                outptr2 = outptr1 = outptr0;
+                bias2 = bias1 = bias0;
+            }
+        }
+        /*if(i+1 >= outCn)
         {
             wptr1 = wptr0;
             outptr1 = outptr0;
             bias1 = bias0;
-        }
+        }*/
 
         int j = 0;
         for( ; j <= blockSize - 4; j += 4 )
         {
             const float* rptr = rowbuf + j*vecsize_aligned;
-            __m256 s0, s1;
+            __m256 s0, s1, s2;
 
             if( initOutput )
             {
                 s0 = _mm256_set1_ps(bias0);
                 s1 = _mm256_set1_ps(bias1);
+                s2 = _mm256_set1_ps(bias2);
             }
             else
             {
                 s0 = _mm256_castps128_ps256(_mm_loadu_ps(outptr0 + j));
                 s1 = _mm256_castps128_ps256(_mm_loadu_ps(outptr1 + j));
+                s2 = _mm256_castps128_ps256(_mm_loadu_ps(outptr2 + j));
             }
 
             __m256 vs00 = _mm256_setzero_ps(), vs01 = _mm256_setzero_ps(),
                    vs02 = _mm256_setzero_ps(), vs03 = _mm256_setzero_ps(),
                    vs10 = _mm256_setzero_ps(), vs11 = _mm256_setzero_ps(),
-                   vs12 = _mm256_setzero_ps(), vs13 = _mm256_setzero_ps();
+                   vs12 = _mm256_setzero_ps(), vs13 = _mm256_setzero_ps(),
+                   vs20 = _mm256_setzero_ps(), vs21 = _mm256_setzero_ps(),
+                   vs22 = _mm256_setzero_ps(), vs23 = _mm256_setzero_ps();
 
             for( int k = 0; k < vecsize; k += 8, rptr += 8 )
             {
-                __m256 w0 = _mm256_load_ps(wptr0 + k), w1 = _mm256_load_ps(wptr1 + k);
-                __m256 r0 = _mm256_load_ps(rptr),
-                       r1 = _mm256_load_ps(rptr + vecsize_aligned),
-                       r2 = _mm256_load_ps(rptr + vecsize_aligned*2),
-                       r3 = _mm256_load_ps(rptr + vecsize_aligned*3);
+                __m256 w0 = _mm256_load_ps(wptr0 + k);
+                __m256 w1 = _mm256_load_ps(wptr1 + k);
+                __m256 w2 = _mm256_load_ps(wptr2 + k);
+                __m256 r0 = _mm256_load_ps(rptr);
 
                 vs00 = _mm256_fmadd_ps(w0, r0, vs00);
-                vs01 = _mm256_fmadd_ps(w0, r1, vs01);
-                vs02 = _mm256_fmadd_ps(w0, r2, vs02);
-                vs03 = _mm256_fmadd_ps(w0, r3, vs03);
                 vs10 = _mm256_fmadd_ps(w1, r0, vs10);
-                vs11 = _mm256_fmadd_ps(w1, r1, vs11);
-                vs12 = _mm256_fmadd_ps(w1, r2, vs12);
-                vs13 = _mm256_fmadd_ps(w1, r3, vs13);
+                vs20 = _mm256_fmadd_ps(w2, r0, vs20);
+
+                r0 = _mm256_load_ps(rptr + vecsize_aligned);
+                vs01 = _mm256_fmadd_ps(w0, r0, vs01);
+                vs11 = _mm256_fmadd_ps(w1, r0, vs11);
+                vs21 = _mm256_fmadd_ps(w2, r0, vs21);
+
+                r0 = _mm256_load_ps(rptr + vecsize_aligned*2);
+                vs02 = _mm256_fmadd_ps(w0, r0, vs02);
+                vs12 = _mm256_fmadd_ps(w1, r0, vs12);
+                vs22 = _mm256_fmadd_ps(w2, r0, vs22);
+
+                r0 = _mm256_load_ps(rptr + vecsize_aligned*3);
+                vs03 = _mm256_fmadd_ps(w0, r0, vs03);
+                vs13 = _mm256_fmadd_ps(w1, r0, vs13);
+                vs23 = _mm256_fmadd_ps(w2, r0, vs23);
             }
 
             __m256 t0 = _mm256_hadd_ps(_mm256_hadd_ps(vs00, vs01), _mm256_hadd_ps(vs02, vs03));
             __m256 t1 = _mm256_hadd_ps(_mm256_hadd_ps(vs10, vs11), _mm256_hadd_ps(vs12, vs13));
+            __m256 t2 = _mm256_hadd_ps(_mm256_hadd_ps(vs20, vs21), _mm256_hadd_ps(vs22, vs23));
 
             t0 = _mm256_add_ps(t0, _mm256_permute2f128_ps(t0, t0, 1));
             t1 = _mm256_add_ps(t1, _mm256_permute2f128_ps(t1, t1, 1));
+            t2 = _mm256_add_ps(t2, _mm256_permute2f128_ps(t2, t2, 1));
 
             s0 = _mm256_add_ps(s0, t0);
             s1 = _mm256_add_ps(s1, t1);
+            s2 = _mm256_add_ps(s2, t2);
 
             _mm_storeu_ps(outptr0 + j, _mm256_castps256_ps128(s0));
             _mm_storeu_ps(outptr1 + j, _mm256_castps256_ps128(s1));
+            _mm_storeu_ps(outptr2 + j, _mm256_castps256_ps128(s2));
         }
 
         for( ; j < blockSize; j++ )
         {
             const float* rptr = rowbuf + j*vecsize_aligned;
-            float s00, s10;
+            float s00, s10, s20;
 
             if( initOutput )
             {
                 s00 = bias0;
                 s10 = bias1;
+                s20 = bias2;
             }
             else
             {
                 s00 = outptr0[j];
                 s10 = outptr1[j];
+                s20 = outptr2[j];
             }
 
             for( int k = 0; k < vecsize; k++ )
@@ -149,10 +182,12 @@ void AVX2_TARGET fastConv_avx( const float* weights, size_t wstep, const float* 
                 float r0 = rptr[k];
                 s00 += wptr0[k]*r0;
                 s10 += wptr1[k]*r0;
+                s20 += wptr2[k]*r0;
             }
 
             outptr0[j] = s00;
             outptr1[j] = s10;
+            outptr2[j] = s20;
         }
     }
     _mm256_zeroupper();
