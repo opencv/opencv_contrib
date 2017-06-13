@@ -41,19 +41,26 @@
 
 #include "precomp.hpp"
 #include "layers_common.hpp"
-#include <immintrin.h>
 #include "opencv2/core/hal/intrin.hpp"
 
 #if CV_DNN_TRY_AVX
 
-#define AVX2_TARGET __attribute__((target("avx"), target("fma")))
+#include <immintrin.h>
+
+#if defined __clang__
+#define AVX_TARGET __attribute__((target("avx, fma")))
+#elif defined __GNUC__
+#define AVX_TARGET
+#pragma GCC target("avx")
+#pragma GCC target("fma")
+#endif
 
 namespace cv {
 namespace dnn {
 
-void AVX2_TARGET fastConv_avx( const float* weights, size_t wstep, const float* bias,
-                               const float* rowbuf, float* output, const int* outShape,
-                               int blockSize, int vecsize, int vecsize_aligned, bool initOutput )
+void AVX_TARGET fastConv_avx( const float* weights, size_t wstep, const float* bias,
+                              const float* rowbuf, float* output, const int* outShape,
+                              int blockSize, int vecsize, int vecsize_aligned, bool initOutput )
 {
     int outCn = outShape[1];
     size_t outPlaneSize = outShape[2]*outShape[3];
