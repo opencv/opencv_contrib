@@ -81,31 +81,11 @@ void fastConv_avx2( const float* weights, size_t wstep, const float* bias,
                 bias2 = bias1 = bias0;
             }
         }
-        /*if(i+1 >= outCn)
-        {
-            wptr1 = wptr0;
-            outptr1 = outptr0;
-            bias1 = bias0;
-        }*/
 
         int j = 0;
         for( ; j <= blockSize - 4; j += 4 )
         {
             const float* rptr = rowbuf + j*vecsize_aligned;
-            __m256 s0, s1, s2;
-
-            if( initOutput )
-            {
-                s0 = _mm256_set1_ps(bias0);
-                s1 = _mm256_set1_ps(bias1);
-                s2 = _mm256_set1_ps(bias2);
-            }
-            else
-            {
-                s0 = _mm256_castps128_ps256(_mm_loadu_ps(outptr0 + j));
-                s1 = _mm256_castps128_ps256(_mm_loadu_ps(outptr1 + j));
-                s2 = _mm256_castps128_ps256(_mm_loadu_ps(outptr2 + j));
-            }
 
             __m256 vs00 = _mm256_setzero_ps(), vs01 = _mm256_setzero_ps(),
                    vs02 = _mm256_setzero_ps(), vs03 = _mm256_setzero_ps(),
@@ -148,6 +128,21 @@ void fastConv_avx2( const float* weights, size_t wstep, const float* bias,
             t0 = _mm256_add_ps(t0, _mm256_permute2f128_ps(t0, t0, 1));
             t1 = _mm256_add_ps(t1, _mm256_permute2f128_ps(t1, t1, 1));
             t2 = _mm256_add_ps(t2, _mm256_permute2f128_ps(t2, t2, 1));
+
+            __m256 s0, s1, s2;
+
+            if( initOutput )
+            {
+                s0 = _mm256_set1_ps(bias0);
+                s1 = _mm256_set1_ps(bias1);
+                s2 = _mm256_set1_ps(bias2);
+            }
+            else
+            {
+                s0 = _mm256_castps128_ps256(_mm_loadu_ps(outptr0 + j));
+                s1 = _mm256_castps128_ps256(_mm_loadu_ps(outptr1 + j));
+                s2 = _mm256_castps128_ps256(_mm_loadu_ps(outptr2 + j));
+            }
 
             s0 = _mm256_add_ps(s0, t0);
             s1 = _mm256_add_ps(s1, t1);
