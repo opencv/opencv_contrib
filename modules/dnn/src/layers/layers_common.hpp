@@ -64,6 +64,18 @@ void getConvPoolOutParams(const Size& inp, const Size &kernel,
 void getConvPoolPaddings(const Size& inp, const Size& out,
                          const Size &kernel, const Size &stride,
                          const String &padMode, Size &pad);
+
+#if defined __i386__ || defined __x86_64__
+#define CV_DNN_TRY_AVX 1
+
+void fastConv_avx(const float* weights, size_t wstep, const float* bias,
+                  const float* rowbuf, float* output, const int* outShape,
+                  int blockSize, int vecsize, int vecsize_aligned, bool initOutput);
+
+#else
+#define CV_DNN_TRY_AVX 0
+#endif
+
 }
 }
 
