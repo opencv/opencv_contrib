@@ -165,7 +165,7 @@ public:
         std::vector<int> ofstab_;
         std::vector<float> biasvec_;
         bool is1x1_;
-        bool useAVX;
+        bool useAVX2;
 
         ParallelConv() {}
 
@@ -199,7 +199,7 @@ public:
             int inpCn = inpCnAll / ngroups;
             int k, outCn = output.size[1];
             p.is1x1_ = kernel == Size(0,0) && pad == Size(0, 0);
-            p.useAVX = checkHardwareSupport(CPU_AVX);
+            p.useAVX2 = checkHardwareSupport(CPU_AVX2);
 
             int ncn = std::min(inpCn, (int)BLK_SIZE_CN);
             p.ofstab_.resize(kernel.width*kernel.height*ncn);
@@ -375,9 +375,9 @@ public:
                         // now compute dot product of the weights
                         // and im2row-transformed part of the tensor
                         int bsz = ofs1 - ofs0;
-                    #if CV_DNN_TRY_AVX
-                        if(useAVX)
-                            fastConv_avx(wptr, wstep, biasptr, rowbuf0, data_out0 + ofs0, outShape, bsz, vsz, vsz_a, cn0 == 0);
+                    #if CV_DNN_TRY_AVX2
+                        if(useAVX2)
+                            fastConv_avx2(wptr, wstep, biasptr, rowbuf0, data_out0 + ofs0, outShape, bsz, vsz, vsz_a, cn0 == 0);
                         else
                     #endif
                         for( int i = 0; i < outCn; i += 2 )
