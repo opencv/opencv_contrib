@@ -46,13 +46,7 @@
 #if CV_DNN_TRY_AVX
 
 #include <immintrin.h>
-
-#if defined __clang__
 #define AVX_TARGET __attribute__((target("avx, fma")))
-#elif defined __GNUC__
-#define AVX_TARGET __attribute__((target("avx")))
-#pragma GCC target("fma")
-#endif
 
 namespace cv {
 namespace dnn {
