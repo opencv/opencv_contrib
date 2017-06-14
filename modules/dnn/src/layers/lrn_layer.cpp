@@ -41,8 +41,9 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include <opencv2/imgproc.hpp>
-#include <opencv2/dnn/shape_utils.hpp>
+#include "opencv2/imgproc.hpp"
+#include "opencv2/dnn/shape_utils.hpp"
+#include "opencv2/core/hal/hal.hpp"
 #include <algorithm>
 
 namespace cv
@@ -100,45 +101,94 @@ public:
         }
     }
 
+    class ChannelLRN : public ParallelLoopBody
+    {
+    public:
+        ChannelLRN(const float* src, float* dst, int channels, int ksize,
+                   float alpha1, float bias1, float beta1,
+                   size_t planeSize, int nsamples, int nstripes)
+        {
+            src_ = src; dst_ = dst;
+            channels_ = channels;
+            ksize_ = ksize;
+            alpha1_ = alpha1; bias1_ = bias1; beta1_ = beta1;
+            planeSize_ = planeSize; nsamples_ = nsamples; nstripes_ = nstripes;
+        }
+
+        void operator()(const Range& r) const
+        {
+            int nsamples = nsamples_, nstripes = nstripes_;
+            size_t planeSize = planeSize_, planeSize_n = planeSize * nsamples;
+            size_t elemsPerStripe = (planeSize_n + nstripes - 1)/nstripes;
+            size_t rstart = r.start*elemsPerStripe;
+            size_t rend = r.end == nstripes ? planeSize_n : r.end*elemsPerStripe;
+            rstart = std::min(rstart, planeSize_n);
+            rend = std::min(rend, planeSize_n);
+            float alpha1 = alpha1_, bias1 = bias1_, beta1 = beta1_;
+            int k, channels = channels_, ksize = ksize_;
+
+            AutoBuffer<float> buf_((channels + ksize*2 + 4)*2);
+            float* acc = (float*)buf_;
+            float* buf = acc + channels + ksize + 1;
+            for( k = 0; k <= ksize; k++ )
+                buf[-k-1] = buf[channels + k] = 0.f;
+
+            for( size_t ofs = rstart; ofs < rend; )
+            {
+                int sampleIdx = (int)(ofs/planeSize);
+                if( sampleIdx >= nsamples )
+                    break;
+                size_t ofs0 = ofs - sampleIdx*planeSize;
+                size_t ofs1 = std::min(planeSize - ofs0, rend - ofs) + ofs;
+                const float* src = src_ + sampleIdx*planeSize*channels + ofs0;
+                float* dst = dst_ + sampleIdx*planeSize*channels + ofs0;
+
+                for( ; ofs < ofs1; ofs++, src++, dst++ )
+                {
+                    for( k = 0; k < channels; k++ )
+                        buf[k] = src[k*planeSize];
+                    float s = 0;
+                    for( k = 0; k < ksize; k++ )
+                        s += buf[k]*buf[k];
+                    for( k = 0; k < channels; k++ )
+                    {
+                        float x1 = buf[k + ksize];
+                        float x0 = buf[k - ksize - 1];
+                        s = std::max(s + (x1 + x0)*(x1 - x0), 0.f);
+                        acc[k] = (float)(alpha1*s + bias1);
+                    }
+
+                    hal::log32f(acc, acc, channels);
+                    for( k = 0; k < channels; k++ )
+                        acc[k] *= beta1;
+                    hal::exp32f(acc, acc, channels);
+
+                    for( k = 0; k < channels; k++ )
+                        dst[k*planeSize] = buf[k]*acc[k];
+                }
+            }
+        }
+
+        const float* src_;
+        float* dst_;
+        float alpha1_, bias1_, beta1_;
+        size_t planeSize_;
+        int channels_, ksize_, nsamples_, nstripes_;
+    };
+
     void channelNormalization(Mat &srcBlob, Mat &dstBlob)
     {
         int num = srcBlob.size[0];
         int channels = srcBlob.size[1];
         int ksize = (size - 1) / 2;
         int sizeNormFactor = normBySize ? size : 1;
+        size_t planeSize = srcBlob.size[2]*srcBlob.size[3];
 
-        Mat srcMat = srcBlob.clone();
-        Mat dstMat = dstBlob;
+        int nstripes = std::max(getNumThreads(), 1);
 
-        for (int n = 0; n < num; n++)
-        {
-            Mat accum = getPlane(dstMat, n, channels-1); //trick for memory saving
-            accum.setTo(0);
-
-            for (int cn = 0; cn < std::min(ksize, channels); cn++)
-                cv::accumulateSquare(getPlane(srcMat, n, cn), accum);
-
-            for (int cn = 0; cn < channels; cn++)
-            {
-                if (cn + ksize < channels)
-                {
-                    cv::accumulateSquare(getPlane(srcMat, n, cn + ksize), accum);
-                }
-
-                if (cn - ksize - 1 >= 0)
-                {
-                    //subtractSquare
-                    Mat left = getPlane(srcMat, n, cn - ksize - 1);
-                    cv::pow(left, 2, left);
-                    cv::subtract(accum, left, accum);
-                }
-
-                Mat dst = getPlane(dstMat, n, cn);
-                accum.convertTo(dst, dst.type(), alpha/sizeNormFactor, bias);
-                cv::pow(dst, beta, dst);
-                cv::divide(getPlane(srcMat, n, cn), dst, dst);
-            }
-        }
+        ChannelLRN clrn(srcBlob.ptr<float>(), dstBlob.ptr<float>(), channels,
+                        ksize, alpha/sizeNormFactor, bias, -beta, planeSize, num, nstripes);
+        parallel_for_(Range(0, nstripes), clrn, nstripes);
     }
 
     void sqrBoxFilter_(const Mat &src, Mat &dst)
