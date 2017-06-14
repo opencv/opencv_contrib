@@ -228,11 +228,12 @@ public:
         std::vector<std::vector<float> > priorVariances;
         GetPriorBBoxes(priorData, numPriors, &priorBBoxes, &priorVariances);
 
+        const bool clip_bbox = false;
         // Decode all loc predictions to bboxes.
         std::vector<LabelBBox> allDecodedBBoxes;
         DecodeBBoxesAll(allLocationPredictions, priorBBoxes, priorVariances, num,
                         _shareLocation, _numLocClasses, _backgroundLabelId,
-                        _codeType, _varianceEncodedInTarget, &allDecodedBBoxes);
+                        _codeType, _varianceEncodedInTarget, clip_bbox, &allDecodedBBoxes);
 
         int numKept = 0;
         std::vector<std::map<int, std::vector<int> > > allIndices;
@@ -266,7 +267,7 @@ public:
                 }
                 const std::vector<caffe::NormalizedBBox>& bboxes =
                 decodeBBoxes.find(label)->second;
-                ApplyNMSFast(bboxes, scores, _confidenceThreshold, _nmsThreshold,
+                ApplyNMSFast(bboxes, scores, _confidenceThreshold, _nmsThreshold, 1.0,
                              _topK, &(indices[c]));
                 numDetections += indices[c].size();
             }
@@ -358,8 +359,7 @@ public:
                     outputsData[count * 7] = i;
                     outputsData[count * 7 + 1] = label;
                     outputsData[count * 7 + 2] = scores[idx];
-                    caffe::NormalizedBBox clipBBox;
-                    ClipBBox(bboxes[idx], &clipBBox);
+                    caffe::NormalizedBBox clipBBox = bboxes[idx];
                     outputsData[count * 7 + 3] = clipBBox.xmin();
                     outputsData[count * 7 + 4] = clipBBox.ymin();
                     outputsData[count * 7 + 5] = clipBBox.xmax();
@@ -417,142 +417,126 @@ public:
     }
 
     // Decode a bbox according to a prior bbox.
-    void DecodeBBox(const caffe::NormalizedBBox& priorBBox, const std::vector<float>& priorVariance,
-                    const CodeType codeType, const bool varianceEncodedInTarget,
-                    const caffe::NormalizedBBox& bbox, caffe::NormalizedBBox* decodeBBox)
-    {
-        if (codeType == caffe::PriorBoxParameter_CodeType_CORNER)
-        {
-            if (varianceEncodedInTarget)
-            {
-                // variance is encoded in target, we simply need to add the offset
-                // predictions.
-                decodeBBox->set_xmin(priorBBox.xmin() + bbox.xmin());
-                decodeBBox->set_ymin(priorBBox.ymin() + bbox.ymin());
-                decodeBBox->set_xmax(priorBBox.xmax() + bbox.xmax());
-                decodeBBox->set_ymax(priorBBox.ymax() + bbox.ymax());
-            }
-            else
-            {
-                // variance is encoded in bbox, we need to scale the offset accordingly.
-                decodeBBox->set_xmin(
-                                     priorBBox.xmin() + priorVariance[0] * bbox.xmin());
-                decodeBBox->set_ymin(
-                                     priorBBox.ymin() + priorVariance[1] * bbox.ymin());
-                decodeBBox->set_xmax(
-                                     priorBBox.xmax() + priorVariance[2] * bbox.xmax());
-                decodeBBox->set_ymax(
-                                     priorBBox.ymax() + priorVariance[3] * bbox.ymax());
-            }
+    void DecodeBBox(
+        const caffe::NormalizedBBox& prior_bbox, const std::vector<float>& prior_variance,
+        const CodeType code_type, const bool variance_encoded_in_target,
+        const bool clip_bbox, const caffe::NormalizedBBox& bbox,
+        caffe::NormalizedBBox* decode_bbox) {
+      if (code_type == caffe::PriorBoxParameter_CodeType_CORNER) {
+        if (variance_encoded_in_target) {
+          // variance is encoded in target, we simply need to add the offset
+          // predictions.
+          decode_bbox->set_xmin(prior_bbox.xmin() + bbox.xmin());
+          decode_bbox->set_ymin(prior_bbox.ymin() + bbox.ymin());
+          decode_bbox->set_xmax(prior_bbox.xmax() + bbox.xmax());
+          decode_bbox->set_ymax(prior_bbox.ymax() + bbox.ymax());
+        } else {
+          // variance is encoded in bbox, we need to scale the offset accordingly.
+          decode_bbox->set_xmin(
+              prior_bbox.xmin() + prior_variance[0] * bbox.xmin());
+          decode_bbox->set_ymin(
+              prior_bbox.ymin() + prior_variance[1] * bbox.ymin());
+          decode_bbox->set_xmax(
+              prior_bbox.xmax() + prior_variance[2] * bbox.xmax());
+          decode_bbox->set_ymax(
+              prior_bbox.ymax() + prior_variance[3] * bbox.ymax());
         }
-        else if (codeType == caffe::PriorBoxParameter_CodeType_CENTER_SIZE)
-        {
-            float priorWidth = priorBBox.xmax() - priorBBox.xmin();
-            CV_Assert(priorWidth > 0);
+      } else if (code_type == caffe::PriorBoxParameter_CodeType_CENTER_SIZE) {
+        float prior_width = prior_bbox.xmax() - prior_bbox.xmin();
+        CV_Assert(prior_width > 0);
+        float prior_height = prior_bbox.ymax() - prior_bbox.ymin();
+        CV_Assert(prior_height > 0);
+        float prior_center_x = (prior_bbox.xmin() + prior_bbox.xmax()) / 2.;
+        float prior_center_y = (prior_bbox.ymin() + prior_bbox.ymax()) / 2.;
 
-            float priorHeight = priorBBox.ymax() - priorBBox.ymin();
-            CV_Assert(priorHeight > 0);
-
-            float priorCenterX = (priorBBox.xmin() + priorBBox.xmax()) / 2.;
-            float priorCenterY = (priorBBox.ymin() + priorBBox.ymax()) / 2.;
-
-            float decodeBBoxCenterX, decodeBBoxCenterY;
-            float decodeBBoxWidth, decodeBBoxHeight;
-            if (varianceEncodedInTarget)
-            {
-                // variance is encoded in target, we simply need to retore the offset
-                // predictions.
-                decodeBBoxCenterX = bbox.xmin() * priorWidth + priorCenterX;
-                decodeBBoxCenterY = bbox.ymin() * priorHeight + priorCenterY;
-                decodeBBoxWidth = exp(bbox.xmax()) * priorWidth;
-                decodeBBoxHeight = exp(bbox.ymax()) * priorHeight;
-            }
-            else
-            {
-                // variance is encoded in bbox, we need to scale the offset accordingly.
-                decodeBBoxCenterX =
-                priorVariance[0] * bbox.xmin() * priorWidth + priorCenterX;
-                decodeBBoxCenterY =
-                priorVariance[1] * bbox.ymin() * priorHeight + priorCenterY;
-                decodeBBoxWidth =
-                exp(priorVariance[2] * bbox.xmax()) * priorWidth;
-                decodeBBoxHeight =
-                exp(priorVariance[3] * bbox.ymax()) * priorHeight;
-            }
-
-            decodeBBox->set_xmin(decodeBBoxCenterX - decodeBBoxWidth / 2.);
-            decodeBBox->set_ymin(decodeBBoxCenterY - decodeBBoxHeight / 2.);
-            decodeBBox->set_xmax(decodeBBoxCenterX + decodeBBoxWidth / 2.);
-            decodeBBox->set_ymax(decodeBBoxCenterY + decodeBBoxHeight / 2.);
+        float decode_bbox_center_x, decode_bbox_center_y;
+        float decode_bbox_width, decode_bbox_height;
+        if (variance_encoded_in_target) {
+          // variance is encoded in target, we simply need to retore the offset
+          // predictions.
+          decode_bbox_center_x = bbox.xmin() * prior_width + prior_center_x;
+          decode_bbox_center_y = bbox.ymin() * prior_height + prior_center_y;
+          decode_bbox_width = exp(bbox.xmax()) * prior_width;
+          decode_bbox_height = exp(bbox.ymax()) * prior_height;
+        } else {
+          // variance is encoded in bbox, we need to scale the offset accordingly.
+          decode_bbox_center_x =
+              prior_variance[0] * bbox.xmin() * prior_width + prior_center_x;
+          decode_bbox_center_y =
+              prior_variance[1] * bbox.ymin() * prior_height + prior_center_y;
+          decode_bbox_width =
+              exp(prior_variance[2] * bbox.xmax()) * prior_width;
+          decode_bbox_height =
+              exp(prior_variance[3] * bbox.ymax()) * prior_height;
         }
-        else
-        {
-            CV_Error(Error::StsBadArg, "Unknown LocLossType.");
-        }
-        float bboxSize = BBoxSize(*decodeBBox);
-        decodeBBox->set_size(bboxSize);
+
+        decode_bbox->set_xmin(decode_bbox_center_x - decode_bbox_width / 2.);
+        decode_bbox->set_ymin(decode_bbox_center_y - decode_bbox_height / 2.);
+        decode_bbox->set_xmax(decode_bbox_center_x + decode_bbox_width / 2.);
+        decode_bbox->set_ymax(decode_bbox_center_y + decode_bbox_height / 2.);
+      } else {
+        CV_Error(Error::StsBadArg, "Unknown LocLossType.");
+      }
+      float bbox_size = BBoxSize(*decode_bbox);
+      decode_bbox->set_size(bbox_size);
+      if (clip_bbox) {
+        ClipBBox(*decode_bbox, decode_bbox);
+      }
     }
 
     // Decode a set of bboxes according to a set of prior bboxes.
-    void DecodeBBoxes(const std::vector<caffe::NormalizedBBox>& priorBBoxes,
-                      const std::vector<std::vector<float> >& priorVariances,
-                      const CodeType codeType, const bool varianceEncodedInTarget,
-                      const std::vector<caffe::NormalizedBBox>& bboxes,
-                      std::vector<caffe::NormalizedBBox>* decodeBBoxes)
-    {
-        CV_Assert(priorBBoxes.size() == priorVariances.size());
-        CV_Assert(priorBBoxes.size() == bboxes.size());
-        int numBBoxes = priorBBoxes.size();
-        if (numBBoxes >= 1)
-        {
-            CV_Assert(priorVariances[0].size() == 4);
-        }
-        decodeBBoxes->clear();
-        for (int i = 0; i < numBBoxes; ++i)
-        {
-            caffe::NormalizedBBox decodeBBox;
-            DecodeBBox(priorBBoxes[i], priorVariances[i], codeType,
-                       varianceEncodedInTarget, bboxes[i], &decodeBBox);
-            decodeBBoxes->push_back(decodeBBox);
-        }
+    void DecodeBBoxes(
+        const std::vector<caffe::NormalizedBBox>& prior_bboxes,
+        const std::vector<std::vector<float> >& prior_variances,
+        const CodeType code_type, const bool variance_encoded_in_target,
+        const bool clip_bbox, const std::vector<caffe::NormalizedBBox>& bboxes,
+        std::vector<caffe::NormalizedBBox>* decode_bboxes) {
+      CV_Assert(prior_bboxes.size() == prior_variances.size());
+      CV_Assert(prior_bboxes.size() == bboxes.size());
+      int num_bboxes = prior_bboxes.size();
+      if (num_bboxes >= 1) {
+        CV_Assert(prior_variances[0].size() == 4);
+      }
+      decode_bboxes->clear();
+      for (int i = 0; i < num_bboxes; ++i) {
+        caffe::NormalizedBBox decode_bbox;
+        DecodeBBox(prior_bboxes[i], prior_variances[i], code_type,
+                   variance_encoded_in_target, clip_bbox, bboxes[i], &decode_bbox);
+        decode_bboxes->push_back(decode_bbox);
+      }
     }
 
     // Decode all bboxes in a batch.
-    void DecodeBBoxesAll(const std::vector<LabelBBox>& allLocPreds,
-                         const std::vector<caffe::NormalizedBBox>& priorBBoxes,
-                         const std::vector<std::vector<float> >& priorVariances,
-                         const size_t num, const bool shareLocation,
-                         const int numLocClasses, const int backgroundLabelId,
-                         const CodeType codeType, const bool varianceEncodedInTarget,
-                         std::vector<LabelBBox>* allDecodeBBoxes)
-    {
-        CV_Assert(allLocPreds.size() == num);
-        allDecodeBBoxes->clear();
-        allDecodeBBoxes->resize(num);
-        for (size_t i = 0; i < num; ++i)
-        {
-            // Decode predictions into bboxes.
-            LabelBBox& decodeBBoxes = (*allDecodeBBoxes)[i];
-            for (int c = 0; c < numLocClasses; ++c)
-            {
-                int label = shareLocation ? -1 : c;
-                if (label == backgroundLabelId)
-                {
-                    // Ignore background class.
-                    continue;
-                }
-                if (allLocPreds[i].find(label) == allLocPreds[i].end())
-                {
-                    // Something bad happened if there are no predictions for current label.
-                    util::make_error<int>("Could not find location predictions for label ", label);
-                }
-                const std::vector<caffe::NormalizedBBox>& labelLocPreds =
-                allLocPreds[i].find(label)->second;
-                DecodeBBoxes(priorBBoxes, priorVariances,
-                             codeType, varianceEncodedInTarget,
-                             labelLocPreds, &(decodeBBoxes[label]));
-            }
+    void DecodeBBoxesAll(const std::vector<LabelBBox>& all_loc_preds,
+        const std::vector<caffe::NormalizedBBox>& prior_bboxes,
+        const std::vector<std::vector<float> >& prior_variances,
+        const int num, const bool share_location,
+        const int num_loc_classes, const int background_label_id,
+        const CodeType code_type, const bool variance_encoded_in_target,
+        const bool clip, std::vector<LabelBBox>* all_decode_bboxes) {
+      CV_Assert(all_loc_preds.size() == num);
+      all_decode_bboxes->clear();
+      all_decode_bboxes->resize(num);
+      for (int i = 0; i < num; ++i) {
+        // Decode predictions into bboxes.
+        LabelBBox& decode_bboxes = (*all_decode_bboxes)[i];
+        for (int c = 0; c < num_loc_classes; ++c) {
+          int label = share_location ? -1 : c;
+          if (label == background_label_id) {
+            // Ignore background class.
+            continue;
+          }
+          if (all_loc_preds[i].find(label) == all_loc_preds[i].end()) {
+            // Something bad happened if there are no predictions for current label.
+            util::make_error<int>("Could not find location predictions for label ", label);
+          }
+          const std::vector<caffe::NormalizedBBox>& label_loc_preds =
+              all_loc_preds[i].find(label)->second;
+          DecodeBBoxes(prior_bboxes, prior_variances,
+                       code_type, variance_encoded_in_target, clip,
+                       label_loc_preds, &(decode_bboxes[label]));
         }
+      }
     }
 
     // Get prior bounding boxes from prior_data.
@@ -686,43 +670,39 @@ public:
     //    top_k: if not -1, keep at most top_k picked indices.
     //    indices: the kept indices of bboxes after nms.
     void ApplyNMSFast(const std::vector<caffe::NormalizedBBox>& bboxes,
-                      const std::vector<float>& scores,
-                      const float score_threshold,
-                      const float nms_threshold, const int top_k,
-                      std::vector<int>* indices)
-    {
-        // Sanity check.
-        CV_Assert(bboxes.size() == scores.size());
+          const std::vector<float>& scores, const float score_threshold,
+          const float nms_threshold, const float eta, const int top_k,
+          std::vector<int>* indices) {
+      // Sanity check.
+      CV_Assert(bboxes.size() == scores.size());
 
-        // Get top_k scores (with corresponding indices).
-        std::vector<std::pair<float, int> > score_index_vec;
-        GetMaxScoreIndex(scores, score_threshold, top_k, &score_index_vec);
+      // Get top_k scores (with corresponding indices).
+      std::vector<std::pair<float, int> > score_index_vec;
+      GetMaxScoreIndex(scores, score_threshold, top_k, &score_index_vec);
 
-        // Do nms.
-        indices->clear();
-        while (score_index_vec.size() != 0)
-        {
-            const int idx = score_index_vec.front().second;
-            bool keep = true;
-            for (size_t k = 0; k < indices->size(); ++k)
-            {
-                if (keep)
-                {
-                    const int kept_idx = (*indices)[k];
-                    float overlap = JaccardOverlap(bboxes[idx], bboxes[kept_idx]);
-                    keep = overlap <= nms_threshold;
-                }
-                else
-                {
-                    break;
-                }
-            }
-            if (keep)
-            {
-                indices->push_back(idx);
-            }
-            score_index_vec.erase(score_index_vec.begin());
+      // Do nms.
+      float adaptive_threshold = nms_threshold;
+      indices->clear();
+      while (score_index_vec.size() != 0) {
+        const int idx = score_index_vec.front().second;
+        bool keep = true;
+        for (int k = 0; k < indices->size(); ++k) {
+          if (keep) {
+            const int kept_idx = (*indices)[k];
+            float overlap = JaccardOverlap(bboxes[idx], bboxes[kept_idx]);
+            keep = overlap <= adaptive_threshold;
+          } else {
+            break;
+          }
         }
+        if (keep) {
+          indices->push_back(idx);
+        }
+        score_index_vec.erase(score_index_vec.begin());
+        if (keep && eta < 1 && adaptive_threshold > 0.5) {
+          adaptive_threshold *= eta;
+        }
+      }
     }
 
     // Get max scores with corresponding indices.

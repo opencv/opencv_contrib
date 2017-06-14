@@ -134,4 +134,32 @@ TEST(Reproducibility_FCN, Accuracy)
 }
 #endif
 
+TEST(Reproducibility_SSD, Accuracy)
+{
+    Net net;
+    {
+        const string proto = findDataFile("dnn/ssd_vgg16.prototxt", false);
+        const string model = findDataFile("dnn/VGG_ILSVRC2016_SSD_300x300_iter_440000.caffemodel", false);
+        Ptr<Importer> importer = createCaffeImporter(proto, model);
+        ASSERT_TRUE(importer != NULL);
+        importer->populateNet(net);
+    }
+
+    Mat sample = imread(_tf("street.png"));
+    ASSERT_TRUE(!sample.empty());
+
+    if (sample.channels() == 4)
+        cvtColor(sample, sample, COLOR_BGRA2BGR);
+
+    sample.convertTo(sample, CV_32F);
+    resize(sample, sample, Size(300, 300));
+
+    Mat in_blob = blobFromImage(sample);
+    net.setBlob(".data", in_blob);
+    net.forward();
+    Mat out = net.getBlob("detection_out");
+
+    Mat ref = blobFromNPY(_tf("ssd_out.npy"));
+    normAssert(ref, out);
+}
 }

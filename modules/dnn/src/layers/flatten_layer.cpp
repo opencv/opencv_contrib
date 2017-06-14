@@ -84,7 +84,7 @@ public:
         CV_Assert(startAxis >= 0);
         CV_Assert(endAxis >= startAxis && endAxis < (int)numAxes);
 
-        size_t flattenedDimensionSize = total(inputs[0], startAxis, endAxis);
+        size_t flattenedDimensionSize = total(inputs[0], startAxis, endAxis + 1);
 
         MatShape outputShapeVec;
         for (int i = 0; i < startAxis; i++)

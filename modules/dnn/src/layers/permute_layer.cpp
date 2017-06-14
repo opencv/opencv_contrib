@@ -124,7 +124,7 @@ public:
         MatShape shapeBefore = inputs[0], shapeAfter;
         for (size_t i = 0; i < _numAxes; i++)
         {
-            shapeAfter[i] = shapeBefore[_order[i]];
+            shapeAfter.push_back(shapeBefore[_order[i]]);
         }
 
         outputs.clear();
@@ -132,6 +132,7 @@ public:
         for (size_t i = 0; i < inputs.size(); i++)
         {
             CV_Assert(inputs[i][2] == shapeBefore[2] && inputs[i][3] == shapeBefore[3]);
+            CV_Assert(total(inputs[i]) == total(shapeAfter));
             outputs.push_back(shapeAfter);
         }
 
@@ -192,11 +193,11 @@ public:
                 CV_Assert(inp.dims == numAxes && inp.size == inputs[0]->size);
                 CV_Assert(out.dims == numAxes && out.size == outputs[0].size);
 
-                for( i = 0; i < numAxes; i++ )
-                {
-                    CV_Assert(inp.size[i] == _oldDimensionSize[i]);
-                    CV_Assert(out.size[i] == _newDimensionSize[i]);
-                }
+//                for( i = 0; i < numAxes; i++ )
+//                {
+//                    CV_Assert(inp.size[i] == _oldDimensionSize[i]);
+//                    CV_Assert(out.size[i] == _newDimensionSize[i]);
+//                }
 
                 CV_Assert(inp.isContinuous() && out.isContinuous());
                 CV_Assert(inp.type() == CV_32F && out.type() == CV_32F);
