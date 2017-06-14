@@ -271,8 +271,9 @@ public:
             const float* biasvec = &biasvec_[0];
             float* data_out0_ = output_->ptr<float>();
             size_t rowbufsz = (size_t)karea*BLK_SIZE_CN*BLK_SIZE;
-            AutoBuffer<float> rowbuf0_(rowbufsz);
-            float* rowbuf0 = rowbuf0_;
+            const int valignBytes = (int)(valign*sizeof(float));
+            AutoBuffer<float> rowbuf0_(rowbufsz + valignBytes);
+            float* rowbuf0 = alignPtr((float*)rowbuf0_, valignBytes);
 
             // we clear the buffer once; ultimately, it lets us to avoid
             // tail processing after running the unrolled/vectorized loop.
