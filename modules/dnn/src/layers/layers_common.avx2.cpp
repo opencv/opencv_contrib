@@ -187,6 +187,69 @@ void fastConv_avx2( const float* weights, size_t wstep, const float* bias,
     _mm256_zeroupper();
 }
 
+// dst = vec * weights^t + bias
+void fastGEMM1T_avx2( const float* vec, const float* weights,
+                      size_t wstep, const float* bias,
+                      float* dst, int nvecs, int vecsize )
+{
+    int i = 0;
+
+    for( ; i <= nvecs - 8; i += 8 )
+    {
+        const float* wptr = weights + i*wstep;
+        __m256 vs0 = _mm256_setzero_ps(), vs1 = _mm256_setzero_ps(),
+               vs2 = _mm256_setzero_ps(), vs3 = _mm256_setzero_ps(),
+               vs4 = _mm256_setzero_ps(), vs5 = _mm256_setzero_ps(),
+               vs6 = _mm256_setzero_ps(), vs7 = _mm256_setzero_ps();
+
+        for( int k = 0; k < vecsize; k += 8, wptr += 8 )
+        {
+            __m256 v = _mm256_load_ps(vec + k);
+
+            vs0 = _mm256_fmadd_ps(_mm256_load_ps(wptr), v, vs0);
+            vs1 = _mm256_fmadd_ps(_mm256_load_ps(wptr + wstep), v, vs1);
+            vs2 = _mm256_fmadd_ps(_mm256_load_ps(wptr + wstep*2), v, vs2);
+            vs3 = _mm256_fmadd_ps(_mm256_load_ps(wptr + wstep*3), v, vs3);
+            vs4 = _mm256_fmadd_ps(_mm256_load_ps(wptr + wstep*4), v, vs4);
+            vs5 = _mm256_fmadd_ps(_mm256_load_ps(wptr + wstep*5), v, vs5);
+            vs6 = _mm256_fmadd_ps(_mm256_load_ps(wptr + wstep*6), v, vs6);
+            vs7 = _mm256_fmadd_ps(_mm256_load_ps(wptr + wstep*7), v, vs7);
+        }
+
+        __m256 s0 = _mm256_hadd_ps(_mm256_hadd_ps(vs0, vs1), _mm256_hadd_ps(vs2, vs3));
+        __m256 s1 = _mm256_hadd_ps(_mm256_hadd_ps(vs4, vs5), _mm256_hadd_ps(vs6, vs7));
+
+        s0 = _mm256_add_ps(s0, _mm256_permute2f128_ps(s0, s0, 1));
+        s1 = _mm256_add_ps(s1, _mm256_permute2f128_ps(s1, s1, 1));
+
+        s0 = _mm256_add_ps(s0, _mm256_castps128_ps256(_mm_loadu_ps(bias + i)));
+        s1 = _mm256_add_ps(s1, _mm256_castps128_ps256(_mm_loadu_ps(bias + i + 4)));
+
+        _mm_storeu_ps(dst + i, _mm256_castps256_ps128(s0));
+        _mm_storeu_ps(dst + i + 4, _mm256_castps256_ps128(s1));
+    }
+
+    float temp = 0.f;
+    for( ; i < nvecs; i++ )
+    {
+        const float* wptr = weights + i*wstep;
+        __m256 vs0 = _mm256_setzero_ps();
+
+        for( int k = 0; k < vecsize; k += 8, wptr += 8 )
+        {
+            __m256 v = _mm256_load_ps(vec + k);
+            vs0 = _mm256_fmadd_ps(_mm256_load_ps(wptr), v, vs0);
+        }
+
+        __m256 s0 = _mm256_hadd_ps(_mm256_hadd_ps(vs0, vs0), vs0);
+        s0 = _mm256_add_ps(s0, _mm256_permute2f128_ps(s0, s0, 1));
+        _mm_store_ss(&temp, _mm256_castps256_ps128(s0));
+        dst[i] = temp + bias[i];
+    }
+
+    _mm256_zeroupper();
+}
+
 }
 }
 
