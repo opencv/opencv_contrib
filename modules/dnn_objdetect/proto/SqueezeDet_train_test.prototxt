@@ -1,0 +1,2 @@
+# SqueezeDet architecture for object detection on PASCAL VOC dataset
+name: "SqueezeDet"
