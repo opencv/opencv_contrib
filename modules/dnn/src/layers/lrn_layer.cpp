@@ -41,6 +41,7 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
+#include "op_halide.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/dnn/shape_utils.hpp"
 #include "opencv2/core/hal/hal.hpp"
@@ -74,6 +75,12 @@ public:
         beta = params.get<double>("beta", 0.75);
         bias = params.get<double>("bias", 1);
         normBySize = params.get<bool>("norm_by_size", true);
+    }
+
+    virtual bool supportBackend(int backendId)
+    {
+        return backendId == DNN_BACKEND_DEFAULT ||
+               backendId == DNN_BACKEND_HALIDE && haveHalide();
     }
 
     void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
@@ -220,6 +227,73 @@ public:
                 cv::divide(src, dst, dst);
             }
         }
+    }
+
+    virtual Ptr<BackendNode> initHalide(const std::vector<Ptr<BackendWrapper> > &inputs)
+    {
+#ifdef HAVE_HALIDE
+        float alphaSize = alpha;
+        if (normBySize)
+            alphaSize /= (type == CHANNEL_NRM ? size : size * size);
+        int width, height, channels, numImgs;
+        Halide::Buffer<float> inputBuffer = halideBuffer(inputs[0]);
+        getCanonicalSize(inputBuffer, &width, &height, &channels, &numImgs);
+
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        Halide::Func top = (name.empty() ? Halide::Func() : Halide::Func(name));
+        Halide::Func padded_sq(name + "_padded_sq");
+        Halide::Func sq("sq");
+        sq(x, y, c, n) = inputBuffer(x, y, c, n) * inputBuffer(x, y, c, n);
+
+        Halide::Func bounded =
+            Halide::BoundaryConditions::constant_exterior(sq, 0, 0, width,
+                                                          0, height,
+                                                          0, channels,
+                                                          0, numImgs);
+        padded_sq(x, y, c, n) = bounded(x, y, c, n);
+
+        Halide::Expr base;
+        if (type == CHANNEL_NRM)
+        {
+            Halide::RDom r((1 - size) / 2, size);
+            base = alphaSize * sum(padded_sq(x, y, c + r, n));
+        }
+        else  // SPATIAL_NRM
+        {
+            Halide::RDom r((1 - size) / 2, size, (1 - size) / 2, size);
+            base = alphaSize * sum(padded_sq(x + r.x, y + r.y, c, n));
+        }
+        base += static_cast<float>(bias);
+        top(x, y, c, n) = inputBuffer(x, y, c, n) / pow(base, beta);
+        return Ptr<BackendNode>(new HalideBackendNode({ padded_sq, top }));
+#endif  // HAVE_HALIDE
+        return Ptr<BackendNode>();
+    }
+
+    virtual void applyHalideScheduler(Ptr<BackendNode>& node,
+                                      const std::vector<Mat*> &inputs,
+                                      const std::vector<Mat> &outputs) const
+    {
+#ifdef  HAVE_HALIDE
+        int outW, outH, outC, outN;
+        getCanonicalSize(outputs[0].size, &outW, &outH, &outC, &outN);
+
+        Halide::Var x("x"), y("y"), c("c"), n("n"), yo("yo"), yi("yi"), tile("tile");
+        Halide::Func& top = node.dynamicCast<HalideBackendNode>()->funcs[1];
+        Halide::Func& padded_sq = node.dynamicCast<HalideBackendNode>()->funcs[0];
+
+        if (outW < 8 || outH <= 2)
+            return;
+
+        top.reorder(x, c, y, n)
+           .split(y, yo, yi, 2)
+           .fuse(yo, n, tile)
+           .parallel(tile)
+           .unroll(yi)
+           .vectorize(x, 8);
+        padded_sq.store_at(top, tile)
+                 .compute_at(top, yi);
+#endif  // HAVE_HALIDE
     }
 
     virtual int64 getFLOPS(const std::vector<MatShape> &inputs,

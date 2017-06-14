@@ -11,6 +11,7 @@ Implementation of Batch Normalization layer.
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
+#include "op_halide.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
@@ -27,6 +28,13 @@ public:
         poolKernel = Size(params.get<int>("pool_k_w"), params.get<int>("pool_k_h"));
         poolPad = Size(params.get<int>("pool_pad_w"), params.get<int>("pool_pad_h"));
         poolStride = Size(params.get<int>("pool_stride_w"), params.get<int>("pool_stride_h"));
+    }
+
+    virtual bool supportBackend(int backendId)
+    {
+        return backendId == DNN_BACKEND_DEFAULT ||
+               backendId == DNN_BACKEND_HALIDE && haveHalide() &&
+               !poolPad.width && !poolPad.height;
     }
 
     bool getMemoryShapes(const std::vector<MatShape> &inputs,
@@ -80,6 +88,54 @@ public:
                 }
             }
         }
+    }
+
+    virtual Ptr<BackendNode> initHalide(const std::vector<Ptr<BackendWrapper> > &input)
+    {
+#ifdef HAVE_HALIDE
+        // Meaningless operation if false because if kernel > stride
+        // it is not deterministic and if kernel < stride we just
+        // skip a part of input data (you'd better change your model).
+        if (poolKernel.width != poolStride.width ||
+            poolKernel.height != poolStride.height)
+            CV_Error(cv::Error::StsNotImplemented,
+                     "Halide backend for maximum unpooling "
+                     "is not support cases when kernel != stride");
+
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        Halide::Func top = (name.empty() ? Halide::Func() : Halide::Func(name));
+        Halide::Buffer<float> inputBuffer = halideBuffer(input[0]);
+        Halide::Buffer<float> indices = halideBuffer(input[1]);
+
+        Halide::Expr pooledX = x / poolKernel.width;
+        Halide::Expr pooledY = y / poolKernel.height;
+
+        const int outW = inputBuffer.width() * poolKernel.width;
+        top(x, y, c, n) = select(y * outW + x == indices(pooledX, pooledY, c, n),
+                                 inputBuffer(pooledX, pooledY, c, n), 0.0f);
+        return Ptr<BackendNode>(new HalideBackendNode(top));
+#endif  // HAVE_HALIDE
+        return Ptr<BackendNode>();
+    }
+
+    virtual void applyHalideScheduler(Ptr<BackendNode>& node,
+                                      const std::vector<Mat*> &inputs,
+                                      const std::vector<Mat> &outputs) const
+    {
+#ifdef HAVE_HALIDE
+        Halide::Var x("x"), y("y"), c("c"), n("n"), tile("tile"), yi("yi"), yo("yo");
+        Halide::Func& top = node.dynamicCast<HalideBackendNode>()->funcs.back();
+
+        int outW, outH, outC, outN;
+        getCanonicalSize(outputs[0].size, &outW, &outH, &outC, &outN);
+
+        top.reorder(x, c, y)
+           .split(y, yo, yi, 2)
+           .fuse(yo, n, tile)
+           .parallel(tile)
+           .unroll(yi)
+           .vectorize(x, outW >= 16 ? 16 : outW);
+#endif  // HAVE_HALIDE
     }
 };
 

@@ -41,6 +41,7 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
+#include "op_halide.hpp"
 
 namespace cv
 {
@@ -86,6 +87,12 @@ public:
         return false;
     }
 
+    virtual bool supportBackend(int backendId)
+    {
+        return backendId == DNN_BACKEND_DEFAULT ||
+               backendId == DNN_BACKEND_HALIDE && haveHalide() && axis == 1;  // By channels
+    }
+
     void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         int cAxis = clamp(axis, inputs[0]->dims);
@@ -99,6 +106,52 @@ public:
             inputs[i]->copyTo(outMat(&ranges[0]));
             ranges[cAxis].start = ranges[cAxis].end;
         }
+    }
+
+    virtual Ptr<BackendNode> initHalide(const std::vector<Ptr<BackendWrapper> > &input)
+    {
+#ifdef HAVE_HALIDE
+        std::vector<Halide::Buffer<> > inputBuffers = halideBuffers(input);
+
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        Halide::Func top = (name.empty() ? Halide::Func() : Halide::Func(name));
+        int offset = inputBuffers[0].channels();
+        Halide::Expr topExpr = select(c < offset,
+                                      inputBuffers[0](x, y, c, n),
+                                      inputBuffers[1](x, y, c - offset, n));
+        for (int i = 2; i < input.size(); ++i)
+        {
+            offset += inputBuffers[i - 1].channels();
+            topExpr = select(c < offset, topExpr,
+                             inputBuffers[i](x, y, c - offset, n));
+        }
+        top(x, y, c, n) = topExpr;
+        return Ptr<BackendNode>(new HalideBackendNode(top));
+#endif  // HAVE_HALIDE
+        return Ptr<BackendNode>();
+    }
+
+    virtual void applyHalideScheduler(Ptr<BackendNode>& node,
+                                      const std::vector<Mat*> &inputs,
+                                      const std::vector<Mat> &outputs) const
+    {
+#ifdef  HAVE_HALIDE
+        Halide::Var x("x"), y("y"), c("c"), n("n"), tile("tile"), yi("yi"), yo("yo");
+        Halide::Func& top = node.dynamicCast<HalideBackendNode>()->funcs.back();
+
+        int outW, outH, outC, outN;
+        getCanonicalSize(outputs[0].size, &outW, &outH, &outC, &outN);
+
+        if (outW == 1 || outH <= 2)
+            return;
+
+        top.reorder(x, c, y)
+           .split(y, yo, yi, 2)
+           .fuse(yo, n, tile)
+           .parallel(tile)
+           .unroll(yi)
+           .vectorize(x, outW >= 16 ? 16 : outW);
+#endif  // HAVE_HALIDE
     }
 };
 

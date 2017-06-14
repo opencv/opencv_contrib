@@ -41,6 +41,8 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
+#include "op_halide.hpp"
+
 namespace cv
 {
 namespace dnn
@@ -79,6 +81,12 @@ public:
                 coeffs[i] = paramCoeff.get<int>(i);
             }
         }
+    }
+
+    virtual bool supportBackend(int backendId)
+    {
+        return backendId == DNN_BACKEND_DEFAULT ||
+               backendId == DNN_BACKEND_HALIDE && haveHalide();
     }
 
     bool getMemoryShapes(const std::vector<MatShape> &inputs,
@@ -142,6 +150,75 @@ public:
                 CV_Assert(0);
                 break;
         }
+    }
+
+    virtual Ptr<BackendNode> initHalide(const std::vector<Ptr<BackendWrapper> > &input)
+    {
+#ifdef HAVE_HALIDE
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        Halide::Func top = (name.empty() ? Halide::Func() : Halide::Func(name));
+        Halide::Expr topExpr;
+        std::vector<Halide::Buffer<> > inputBuffers = halideBuffers(input);
+        switch (op)
+        {
+            case SUM:
+                if (coeffs.empty())
+                {
+                    topExpr = inputBuffers[0](x, y, c, n) +
+                              inputBuffers[1](x, y, c, n);
+                    for (int i = 2; i < inputBuffers.size(); ++i)
+                        topExpr += inputBuffers[i](x, y, c, n);
+                }
+                else
+                {
+                  topExpr = coeffs[0] * inputBuffers[0](x, y, c, n) +
+                            coeffs[1] * inputBuffers[1](x, y, c, n);
+                  for (int i = 2; i < inputBuffers.size(); ++i)
+                      topExpr += coeffs[i] * inputBuffers[i](x, y, c, n);
+                }
+                break;
+            case PROD:
+                topExpr = inputBuffers[0](x, y, c, n) *
+                          inputBuffers[1](x, y, c, n);
+                for (int i = 2; i < inputBuffers.size(); ++i)
+                    topExpr *= inputBuffers[i](x, y, c, n);
+                break;
+            case MAX:
+                topExpr = max(inputBuffers[0](x, y, c, n),
+                              inputBuffers[1](x, y, c, n));
+                for (int i = 2; i < inputBuffers.size(); ++i)
+                    topExpr = max(topExpr, inputBuffers[i](x, y, c, n));
+                break;
+            default:
+                return Ptr<BackendNode>();
+        }
+        top(x, y, c, n) = topExpr;
+        return Ptr<BackendNode>(new HalideBackendNode(top));
+#endif  // HAVE_HALIDE
+        return Ptr<BackendNode>();
+    }
+
+    virtual void applyHalideScheduler(Ptr<BackendNode>& node,
+                                      const std::vector<Mat*> &inputs,
+                                      const std::vector<Mat> &outputs) const
+    {
+#ifdef HAVE_HALIDE
+        Halide::Var x("x"), y("y"), c("c"), n("n"), tile("tile"), yi("yi"), yo("yo");
+        Halide::Func& top = node.dynamicCast<HalideBackendNode>()->funcs.back();
+
+        int outW, outH, outC, outN;
+        getCanonicalSize(outputs[0].size, &outW, &outH, &outC, &outN);
+
+        if (outW == 1 || outH <= 2)
+            return;
+
+        top.reorder(x, c, y)
+           .split(y, yo, yi, 2)
+           .fuse(yo, n, tile)
+           .parallel(tile)
+           .unroll(yi)
+           .vectorize(x, outW >= 16 ? 16 : outW);
+#endif  // HAVE_HALIDE
     }
 
     virtual int64 getFLOPS(const std::vector<MatShape> &inputs,

@@ -40,6 +40,8 @@
 //M*/
 
 #include "precomp.hpp"
+#include "op_halide.hpp"
+#include "halide_scheduler.hpp"
 #include <set>
 #include <algorithm>
 #include <iostream>
@@ -177,6 +179,121 @@ struct LayerPin
     }
 };
 
+// Objects of this class manages wrappers. For every CPU memory pointer and shape
+// one and only wrapper. Now it support wrapping for single backend and target.
+class BackendWrapManager
+{
+public:
+    Ptr<BackendWrapper> wrap(const Mat& m, int backendId, int targetId = DNN_TARGET_CPU)
+    {
+        CV_Assert(backendId != DNN_BACKEND_DEFAULT);
+
+        std::map<void*, Ptr<BackendWrapper> >::iterator hostsIt;
+        // Check that the same CPU memory was previously wrapped.
+        hostsIt = hostWrappers.find(m.data);
+        if (hostsIt == hostWrappers.end())
+        {
+            // If not wrapped before.
+            return (hostWrappers[m.data] = wrapHost(m, backendId, targetId));
+        }
+        else
+        {
+            // Find if wrapper of this host and shape was created before.
+            std::map<std::pair<void*, MatSize>, Ptr<BackendWrapper> >::iterator it;
+            std::pair<void*, MatSize> key(m.data, m.size);
+            it = extraWrappers.find(key);
+            if (it == extraWrappers.end())
+            {
+                MatShape shape(m.dims);
+                for (int i = 0; i < m.dims; ++i)
+                    shape[i] = m.size.p[i];
+                return (extraWrappers[key] = wrapUser(hostsIt->second, shape));
+            }
+            else
+                return it->second;
+        }
+    }
+
+    std::vector<Ptr<BackendWrapper> > wrap(const std::vector<Mat*>& mats,
+                                           int backendId, int targetId = DNN_TARGET_CPU)
+    {
+        const int num = mats.size();
+        std::vector<Ptr<BackendWrapper> > dst(num);
+        for (int i = 0; i < num; ++i)
+        {
+            dst[i] = wrap(*mats[i], backendId, targetId);
+        }
+        return dst;
+    }
+
+    std::vector<Ptr<BackendWrapper> > wrap(const std::vector<Mat>& mats,
+                                           int backendId, int targetId = DNN_TARGET_CPU)
+    {
+        const int num = mats.size();
+        std::vector<Ptr<BackendWrapper> > dst(num);
+        for (int i = 0; i < num; ++i)
+        {
+            dst[i] = wrap(mats[i], backendId, targetId);
+        }
+        return dst;
+    }
+
+    void reset()
+    {
+        hostWrappers.clear();
+        extraWrappers.clear();
+    }
+
+private:
+    // Backend-specific wrapping function.
+    Ptr<BackendWrapper> wrapHost(const Mat& m, int backendId, int targetId)
+    {
+        if (backendId == DNN_BACKEND_DEFAULT)
+        {
+            return Ptr<BackendWrapper>();
+        }
+        else if (backendId == DNN_BACKEND_HALIDE)
+        {
+            CV_Assert(haveHalide());
+#ifdef HAVE_HALIDE
+            return Ptr<BackendWrapper>(new HalideBackendWrapper(targetId, m));
+#endif  // HAVE_HALIDE
+        }
+        else
+        {
+            CV_Error(Error::StsNotImplemented, "Unknown backend identifier");
+        }
+        return Ptr<BackendWrapper>();
+    }
+
+    // Backend-specific wrapping function.
+    Ptr<BackendWrapper> wrapUser(const Ptr<BackendWrapper>& host, const MatShape& shape)
+    {
+        int backendId = host->backendId;
+        if (backendId == DNN_BACKEND_DEFAULT)
+        {
+            return Ptr<BackendWrapper>();
+        }
+        else if (backendId == DNN_BACKEND_HALIDE)
+        {
+            CV_Assert(haveHalide());
+#ifdef HAVE_HALIDE
+            return Ptr<BackendWrapper>(new HalideBackendWrapper(host, shape));
+#endif  // HAVE_HALIDE
+        }
+        else
+        {
+            CV_Error(Error::StsNotImplemented, "Unknown backend identifier");
+        }
+        return Ptr<BackendWrapper>();
+    }
+
+    // Wrappers that initialized for memory hosts (first wrapping of CPU data).
+    std::map<void*, Ptr<BackendWrapper> > hostWrappers;
+    // The rest of wrappers. They initialized for non-host cv::Mat.
+    std::map<std::pair<void*, MatSize>, Ptr<BackendWrapper> > extraWrappers;
+};
+
 struct LayerData
 {
     LayerData() {}
@@ -201,6 +318,10 @@ struct LayerData
     std::vector<Mat> outputBlobs;
     std::vector<Mat*> inputBlobs;
     std::vector<Mat> internals;
+    // Computation nodes of implemented backends (except DEFAULT).
+    std::map<int, Ptr<BackendNode> > backendNodes;
+    // Flag for skip layer computation for specific backend.
+    std::map<int, bool> skipFlags;
 
     int flag;
 
@@ -439,7 +560,7 @@ public:
     }
 
 private:
-    // Registed allocated memory.
+    // Register allocated memory.
     void addHost(const LayerPin& lp, const Mat& mat)
     {
         CV_Assert(memHosts.find(lp) == memHosts.end());
@@ -472,6 +593,7 @@ struct Net::Impl
 
         lastLayerId = 1;
         netWasAllocated = false;
+        preferableBackend = DNN_BACKEND_DEFAULT;
     }
 
     Ptr<DataLayer> netInputLayer;
@@ -480,6 +602,9 @@ struct Net::Impl
     MapIdToLayerData layers;
     std::map<String, int> layerNameToId;
     BlobManager blobManager;
+    int preferableBackend;
+    // Backend-specific wrapping manager.
+    BackendWrapManager backendWrapper;
 
     int lastLayerId;
 
@@ -491,6 +616,7 @@ struct Net::Impl
         {
             allocateLayers();
             computeNetOutputLayers();
+            initBackend();
 
             netWasAllocated = true;
         }
@@ -646,6 +772,69 @@ struct Net::Impl
         #endif
     }
 
+    void initBackend()
+    {
+        backendWrapper.reset();
+        if (preferableBackend == DNN_BACKEND_DEFAULT)
+            return;
+
+        // Iterator to current layer.
+        MapIdToLayerData::iterator it = layers.begin();
+        // Iterator to base layer for fusion. In example, in case of conv+bn+relu
+        // it'll be a conv layer.
+        MapIdToLayerData::iterator baseIt = layers.begin();
+        for (; it != layers.end(); it++)
+        {
+            LayerData &ldTop = it->second;
+            Ptr<Layer> layerTop = ldTop.layerInstance;
+            if (!layerTop->supportBackend(preferableBackend))
+            {
+                // Move base iterator to layer that don't support preferable
+                // backend to prevent fusion over layer of different backend.
+                baseIt = it;
+                continue;
+            }
+            // Try to do layers fusion.
+            LayerData &ldBot = baseIt->second;
+            Ptr<Layer> layerBot = ldBot.layerInstance;
+            // 1. Check that bottom and top from the same backends.
+            if (it != layers.begin() && layerBot->supportBackend(preferableBackend))
+            {
+                // 2. Check that current layer works in-place.
+                bool inPlace = ldTop.inputBlobs.size() == 1 &&
+                               ldBot.outputBlobs.size() == 1 &&
+                               ldTop.inputBlobs[0]->data ==
+                               ldBot.outputBlobs[0].data;
+                if (inPlace)
+                {
+                    // 3. Try to attach node.
+                    CV_Assert(!ldBot.backendNodes[preferableBackend].empty());
+                    Ptr<BackendNode> fusedNode =
+                        layerTop->tryAttach(ldBot.backendNodes[preferableBackend]);
+                    if (!fusedNode.empty())
+                    {
+                        ldTop.skipFlags[preferableBackend] = true;
+                        ldBot.backendNodes[preferableBackend] = fusedNode;
+                        continue;
+                    }
+                }
+            }
+            // No layers fusion.
+            ldTop.skipFlags[preferableBackend] = false;
+            std::vector<Ptr<BackendWrapper> > inputs =
+                backendWrapper.wrap(ldTop.inputBlobs, preferableBackend);
+            if (preferableBackend == DNN_BACKEND_HALIDE)
+            {
+                ldTop.backendNodes[DNN_BACKEND_HALIDE] = layerTop->initHalide(inputs);
+                baseIt = it;
+            }
+            else
+            {
+                CV_Error(Error::StsNotImplemented, "Unknown backend identifier");
+            }
+        }
+    }
+
     #define CV_RETHROW_ERROR(err, newmsg)\
         cv::error(err.code, newmsg, err.func.c_str(), err.file.c_str(), err.line)
 
@@ -774,7 +963,26 @@ struct Net::Impl
         //forward itself
         //try
         {
-            ld.layerInstance->forward(ld.inputBlobs, ld.outputBlobs, ld.internals);
+            Ptr<Layer> layer = ld.layerInstance;
+            if (preferableBackend == DNN_BACKEND_DEFAULT ||
+                !layer->supportBackend(preferableBackend))
+            {
+                layer->forward(ld.inputBlobs, ld.outputBlobs, ld.internals);
+            }
+            else if (!ld.skipFlags[preferableBackend])
+            {
+                std::vector<Ptr<BackendWrapper> > outputs =
+                    backendWrapper.wrap(ld.outputBlobs, preferableBackend);
+                Ptr<BackendNode> node = ld.backendNodes[preferableBackend];
+                if (preferableBackend == DNN_BACKEND_HALIDE)
+                {
+                    forwardHalide(outputs, node);
+                }
+                else
+                {
+                    CV_Error(Error::StsNotImplemented, "Unknown backend identifier");
+                }
+            }
         }
         /*catch (const cv::Exception &err)
         {
@@ -905,12 +1113,54 @@ void Net::allocate()
 
 void Net::forward(LayerId toLayer)
 {
-    impl->setUpNet();
+    if (!impl->netWasAllocated)
+    {
+        impl->setUpNet();
+        // If user didn't call compileHalide() between
+        // setPreferableBackend(DNN_BACKEND_HALIDE) and forward().
+        if (impl->preferableBackend == DNN_BACKEND_HALIDE)
+            compileHalide();
+    }
 
     if (toLayer.isString() && toLayer.get<String>().empty())
         impl->forwardAll();
     else
         impl->forwardLayer(impl->getLayerData(toLayer));
+}
+
+void Net::compileHalide(const std::string& configFile)
+{
+    CV_Assert(impl->preferableBackend == DNN_BACKEND_HALIDE);
+    if (!impl->netWasAllocated)
+        impl->setUpNet();
+
+    HalideScheduler scheduler(configFile);
+    Impl::MapIdToLayerData::iterator it;
+    for (it = impl->layers.begin(); it != impl->layers.end(); ++it)
+    {
+        LayerData &ld = it->second;
+        Ptr<Layer> layer = ld.layerInstance;
+        if (layer->supportBackend(DNN_BACKEND_HALIDE) && !ld.skipFlags[DNN_BACKEND_HALIDE])
+        {
+            CV_Assert(!ld.backendNodes[DNN_BACKEND_HALIDE].empty());
+            bool scheduled = scheduler.process(ld.backendNodes[DNN_BACKEND_HALIDE]);
+            if (!scheduled)
+            {
+                // Use automatic scheduling provided by layer.
+                layer->applyHalideScheduler(ld.backendNodes[DNN_BACKEND_HALIDE],
+                                            ld.inputBlobs, ld.outputBlobs);
+            }
+            dnn::compileHalide(ld.outputBlobs, ld.backendNodes[DNN_BACKEND_HALIDE],
+                               DNN_TARGET_CPU);
+        }
+    }
+}
+
+void Net::setPreferableBackend(int backendId)
+{
+    impl->netWasAllocated = impl->netWasAllocated &&
+                            impl->preferableBackend == backendId;
+    impl->preferableBackend = backendId;
 }
 
 void Net::setNetInputs(const std::vector<String> &inputBlobNames)
@@ -1295,6 +1545,30 @@ int Layer::outputNameToIndex(String)
     return -1;
 }
 
+bool Layer::supportBackend(int backendId)
+{
+    return backendId == DNN_BACKEND_DEFAULT;
+}
+
+Ptr<BackendNode> Layer::initHalide(const std::vector<Ptr<BackendWrapper> > &)
+{
+    CV_Error(Error::StsNotImplemented, "Halide pipeline of " + type +
+                                       " layers is not defined.");
+    return Ptr<BackendNode>();
+}
+
+void Layer::applyHalideScheduler(Ptr<BackendNode>& node, const std::vector<Mat*> &inputs,
+                                 const std::vector<Mat> &outputs) const
+{
+    CV_Error(Error::StsNotImplemented, "Scheduling of " + type +
+                                       " layers is not implemented.");
+}
+
+Ptr<BackendNode> Layer::tryAttach(const Ptr<BackendNode>& node)
+{
+    return Ptr<BackendNode>();
+}
+
 template <typename T>
 static void vecToPVec(const std::vector<T> &v, std::vector<T*> &pv)
 {
@@ -1395,6 +1669,27 @@ Ptr<Layer> LayerFactory::createLayerInstance(const String &_type, LayerParams& p
         return Ptr<Layer>(); //NULL
     }
 }
+
+BackendNode::BackendNode(int backendId) : backendId(backendId) {}
+
+BackendNode::~BackendNode() {};
+
+BackendWrapper::BackendWrapper(int backendId, int targetId)
+    : backendId(backendId), targetId(targetId) {}
+
+BackendWrapper::BackendWrapper(int targetId, const cv::Mat& m)
+{
+    CV_Error(Error::StsNotImplemented,
+             "Constructor of backend wrapper must be implemented");
+}
+
+BackendWrapper::BackendWrapper(const Ptr<BackendWrapper>& base, const MatShape& shape)
+{
+    CV_Error(Error::StsNotImplemented,
+             "Constructor of backend wrapper must be implemented");
+}
+
+BackendWrapper::~BackendWrapper() {}
 
 }
 }

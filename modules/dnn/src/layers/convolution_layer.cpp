@@ -43,6 +43,7 @@
 #include "layers_common.hpp"
 #include "op_im2col.hpp"
 #include "op_blas.hpp"
+#include "op_halide.hpp"
 #include "opencv2/core/hal/intrin.hpp"
 #include <iostream>
 
@@ -64,6 +65,13 @@ public:
         }
 #endif
     }
+
+    virtual bool supportBackend(int backendId)
+    {
+        return backendId == DNN_BACKEND_DEFAULT ||
+               backendId == DNN_BACKEND_HALIDE && haveHalide();
+    }
+
     void finalize(const std::vector<Mat*> &inputs, std::vector<Mat> &outputs)
     {
         CV_Assert(inputs.size() > 0);
@@ -98,6 +106,40 @@ public:
         (dilation.height == 1 && dilation.width == 1);
     }
     bool setActivation(const Ptr<ActivationLayer>& ) { return false; }
+
+    virtual void applyHalideScheduler(Ptr<BackendNode>& node,
+                                      const std::vector<Mat*> &inputs,
+                                      const std::vector<Mat> &outputs) const
+    {
+#ifdef HAVE_HALIDE
+        Halide::Var x("x"), y("y"), c("c"), n("n"), tile("tile"), yi("yi"), yo("yo"), co("co"), ci("ci");
+        Halide::Func& top = node.dynamicCast<HalideBackendNode>()->funcs[1];
+        Halide::Func& padded_input = node.dynamicCast<HalideBackendNode>()->funcs[0];
+
+        int outW, outH, outC, outN;
+        getCanonicalSize(outputs[0].size, &outW, &outH, &outC, &outN);
+
+        if (outW == 1 || outH <= 2)
+            return;
+
+        if (is1x1() || outC <= 16)
+            top.reorder(x, c, y)
+               .split(y, yo, yi, 2)
+               .fuse(yo, n, tile)
+               .parallel(tile)
+               .unroll(yi)
+               .vectorize(x, outW >= 16 ? 16 : outW);
+        else
+            top.reorder(x, c, y)
+               .split(y, yo, yi, 2)
+               .split(c, co, ci, 16)
+               .fuse(yo, co, tile).fuse(n, tile, tile)
+               .parallel(tile)
+               .unroll(yi)
+               .vectorize(x, outW >= 16 ? 16 : outW);
+        padded_input.compute_at(top, yi);
+#endif  // HAVE_HALIDE
+    }
 };
 
 //TODO: simultaneously convolution and bias addition for cache optimization
@@ -154,6 +196,66 @@ public:
     }
 
     bool setActivation(const Ptr<ActivationLayer>& layer) { activ = layer; return true; }
+
+    virtual Ptr<BackendNode> initHalide(const std::vector<Ptr<BackendWrapper> > &inputs)
+    {
+#ifdef HAVE_HALIDE
+        Halide::Buffer<float> inputBuffer = halideBuffer(inputs[0]);
+
+        const int inpCn = inputBuffer.channels();
+        const int outCn = blobs[0].size[0];
+        const int inpGroupCn = blobs[0].size[1];
+        const int group = inpCn / inpGroupCn;
+        const int outGroupCn = outCn / group;
+
+        Halide::Buffer<float> weights = wrapToHalideBuffer(blobs[0]);
+
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        Halide::Func top = (name.empty() ? Halide::Func() : Halide::Func(name));
+        Halide::Func padded_input(name + "_constant_exterior");
+        if (pad.width || pad.height)
+        {
+            Halide::Func bounded =
+                Halide::BoundaryConditions::constant_exterior(inputBuffer, 0);
+            padded_input(x, y, c, n) = bounded(x, y, c, n);
+        }
+        else
+        {
+            padded_input(x, y, c, n) = inputBuffer(x, y, c, n);
+        }
+
+        Halide::RDom r(0, kernel.width, 0, kernel.height, 0, inpGroupCn);
+
+        Halide::Expr kc = r.z;
+        if (group > 1)
+        {
+            int outCnBound = outGroupCn;
+            int inpChBound = inpGroupCn;
+            Halide::Expr shift = select(c < outCnBound, 0, inpChBound);
+            for (int i = 2; i < group; ++i)
+            {
+                outCnBound += outGroupCn;
+                inpChBound += inpGroupCn;
+                shift = select(c < outCnBound, shift, inpChBound);
+            }
+            kc += shift;
+        }
+
+        Halide::Expr kx = x * stride.width - pad.width + r.x * dilation.width;
+        Halide::Expr ky = y * stride.height - pad.height + r.y * dilation.height;
+        Halide::Expr topExpr = sum(padded_input(kx, ky, kc, n) *
+                                   weights(r.x, r.y, r.z, c));
+        if (hasBias())
+        {
+            Halide::Buffer<float> bias = wrapToHalideBuffer(blobs[1], {outCn});
+            topExpr += bias(c);
+        }
+        top(x, y, c, n) = topExpr;
+        Ptr<BackendNode> pp(new HalideBackendNode({ padded_input, top }));
+        return Ptr<BackendNode>(new HalideBackendNode({ padded_input, top }));
+#endif  // HAVE_HALIDE
+        return Ptr<BackendNode>();
+    }
 
     class ParallelConv : public cv::ParallelLoopBody
     {
@@ -644,6 +746,53 @@ public:
                         dilation.height, dilation.width, dstImg.ptr<float>(), &ofsbuf[0]);
     }
 
+    virtual Ptr<BackendNode> initHalide(const std::vector<Ptr<BackendWrapper> > &inputs)
+    {
+#ifdef HAVE_HALIDE
+        Halide::Buffer<float> inputBuffer = halideBuffer(inputs[0]);
+
+        int inW, inH, inC, inN, outC = blobs[0].size[0];
+        getCanonicalSize(inputBuffer, &inW, &inH, &inC, &inN);
+
+        if (inC / blobs[0].size[1] != 1)
+            CV_Error(cv::Error::StsNotImplemented,
+                     "Halide backend for Deconvolution with group > 1 is not implemented");
+
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        Halide::Func top = (name.empty() ? Halide::Func() : Halide::Func(name));
+        Halide::Func padded_input(name + "_constant_exterior");
+        auto weights = wrapToHalideBuffer(blobs[0], {kernel.width,
+                                                     kernel.height, outC, inC});
+
+        Halide::Func dilated_input("dilated_input");
+        dilated_input(x, y, c, n) = 0.0f;
+        Halide::RDom r1(0, inW, 0, inH);
+        dilated_input(r1.x * stride.width, r1.y * stride.height, c, n) =
+              inputBuffer(r1.x, r1.y, c, n);
+        dilated_input.compute_root();
+
+        Halide::Func bounded =
+            Halide::BoundaryConditions::constant_exterior(dilated_input, 0,
+                                                          0, (inW - 1) * stride.width + 1,
+                                                          0, (inH - 1) * stride.height + 1,
+                                                          0, inC, 0, inN);
+        padded_input(x, y, c, n) = bounded(x, y, c, n);
+
+        Halide::RDom r(0, kernel.width, 0, kernel.height, 0, inC);
+        Halide::Expr topExpr = sum(
+            padded_input(x + pad.width - r.x, y + pad.height - r.y, r.z, n) *
+            weights(r.x, r.y, c, r.z));
+        if (hasBias())
+        {
+            auto bias = wrapToHalideBuffer(blobs[1], {outC});
+            topExpr += bias(c);
+        }
+        top(x, y, c, n) = topExpr;
+        return Ptr<BackendNode>(new HalideBackendNode({ padded_input, top }));
+#endif  // HAVE_HALIDE
+        return Ptr<BackendNode>();
+    }
+
     virtual int64 getFLOPS(const std::vector<MatShape> &inputs,
                            const std::vector<MatShape> &outputs) const
     {
@@ -680,6 +829,8 @@ static void initConvDeconvLayerFromCaffe(Ptr<BaseConvolutionLayer> l, const Laye
 
     CV_Assert(numOutput % ngroups == 0);
     CV_Assert((bias && l->blobs.size() == 2) || (!bias && l->blobs.size() == 1));
+    CV_Assert(l->adjustPad.width < l->stride.width &&
+              l->adjustPad.height < l->stride.height);
 }
 
 Ptr<BaseConvolutionLayer> ConvolutionLayer::create(const LayerParams &params)

@@ -10,6 +10,7 @@ Implementation of Batch Normalization layer.
 */
 
 #include "../precomp.hpp"
+#include "op_halide.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
@@ -37,6 +38,12 @@ public:
     {
         Layer::getMemoryShapes(inputs, requiredOutputs, outputs, internals);
         return true;
+    }
+
+    virtual bool supportBackend(int backendId)
+    {
+        return backendId == DNN_BACKEND_DEFAULT ||
+               backendId == DNN_BACKEND_HALIDE && haveHalide();
     }
 
     void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
@@ -87,6 +94,73 @@ public:
             }
         }
     }
+
+    virtual Ptr<BackendNode> tryAttach(const Ptr<BackendNode>& node)
+    {
+        switch (node->backendId)
+        {
+            case DNN_BACKEND_HALIDE:
+            {
+#ifdef HAVE_HALIDE
+                auto base = node.dynamicCast<HalideBackendNode>();
+                Halide::Func& input = base->funcs.back();
+                Halide::Var x("x"), y("y"), c("c"), n("n");
+                Halide::Func top = attachHalide(input(x, y, c, n));
+                return Ptr<BackendNode>(new HalideBackendNode(base, top));
+#endif  // HAVE_HALIDE
+                break;
+            }
+        }
+        return Ptr<BackendNode>();
+    }
+
+    virtual Ptr<BackendNode> initHalide(const std::vector<Ptr<BackendWrapper> > &inputs)
+    {
+#ifdef HAVE_HALIDE
+        Halide::Buffer<float> input = halideBuffer(inputs[0]);
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        Halide::Func top = attachHalide(input(x, y, c, n));
+        return Ptr<BackendNode>(new HalideBackendNode(top));
+#endif  // HAVE_HALIDE
+        return Ptr<BackendNode>();
+    }
+
+#ifdef HAVE_HALIDE
+    // attachHalide can work both with Halide::Buffer and Halide::Func. In the
+    // second case it will be a fusion.
+    Halide::Func attachHalide(const Halide::Expr& input)
+    {
+        Halide::Func top = (name.empty() ? Halide::Func() : Halide::Func(name));
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+
+        const int weightsBlobIndex = 2;
+        const int biasBlobIndex = weightsBlobIndex + hasWeights;
+        const int numChannels = blobs[0].total();
+        float* meanData = (float*)blobs[0].data;
+        float* stdData = (float*)blobs[1].data;
+        float* weightsData = (hasWeights ? (float*)blobs[weightsBlobIndex].data : NULL);
+        float* biasData = (hasBias ? (float*)blobs[biasBlobIndex].data : NULL);
+
+        float varMeanScale = 1.f;
+        if (!hasWeights && !hasBias) {
+            varMeanScale = *blobs[2].ptr<float>();
+            if (varMeanScale != 0)
+                varMeanScale = 1/varMeanScale;
+        }
+
+        Halide::Buffer<float> weights(numChannels);
+        Halide::Buffer<float> bias(numChannels);
+        for (int i = 0; i < numChannels; ++i)
+        {
+            weights(i) = (hasWeights ? weightsData[i] : 1.0f) /
+                         sqrt(stdData[i] * varMeanScale + epsilon);
+            bias(i) = (hasBias ? biasData[i] : 0.0f) -
+                      weights(i) * meanData[i] * varMeanScale;
+        }
+        top(x, y, c, n) = input * weights(c) + bias(c);
+        return top;
+    }
+#endif  // HAVE_HALIDE
 
     virtual int64 getFLOPS(const std::vector<MatShape> &inputs,
                            const std::vector<MatShape> &outputs) const

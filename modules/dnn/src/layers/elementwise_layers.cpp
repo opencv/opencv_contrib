@@ -1,4 +1,5 @@
 #include "../precomp.hpp"
+#include "op_halide.hpp"
 #include "opencv2/imgproc.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
 
@@ -63,6 +64,44 @@ public:
     };
 
     ElementWiseLayer(const Func &f=Func()) { func = f; }
+
+    virtual bool supportBackend(int backendId)
+    {
+        return backendId == DNN_BACKEND_DEFAULT ||
+               backendId == DNN_BACKEND_HALIDE && haveHalide();
+    }
+
+    virtual Ptr<BackendNode> tryAttach(const Ptr<BackendNode>& node)
+    {
+        switch (node->backendId)
+        {
+            case DNN_BACKEND_HALIDE:
+            {
+#ifdef HAVE_HALIDE
+                auto base = node.dynamicCast<HalideBackendNode>();
+                Halide::Func& input = base->funcs.back();
+                Halide::Var x("x"), y("y"), c("c"), n("n");
+                Halide::Func top = (this->name.empty() ? Halide::Func() : Halide::Func(this->name));
+                func.attachHalide(input(x, y, c, n), top);
+                return Ptr<BackendNode>(new HalideBackendNode(base, top));
+#endif  // HAVE_HALIDE
+                break;
+            }
+        }
+        return Ptr<BackendNode>();
+    }
+
+    virtual Ptr<BackendNode> initHalide(const std::vector<Ptr<BackendWrapper> > &inputs)
+    {
+#ifdef HAVE_HALIDE
+        Halide::Buffer<float> input = halideBuffer(inputs[0]);
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        Halide::Func top = (this->name.empty() ? Halide::Func() : Halide::Func(this->name));
+        func.attachHalide(input(x, y, c, n), top);
+        return Ptr<BackendNode>(new HalideBackendNode(top));
+#endif  // HAVE_HALIDE
+        return Ptr<BackendNode>();
+    }
 
     bool getMemoryShapes(const std::vector<MatShape> &inputs,
                          const int requiredOutputs,
@@ -147,6 +186,21 @@ struct ReLUFunctor
         }
     }
 
+#ifdef HAVE_HALIDE
+    void attachHalide(const Halide::Expr& input, Halide::Func& top)
+    {
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        if (slope)
+        {
+            top(x, y, c, n) = select(input >= 0.0f, input, slope);
+        }
+        else
+        {
+            top(x, y, c, n) = max(input, 0.0f);
+        }
+    }
+#endif  // HAVE_HALIDE
+
     int64 getFLOPSPerElement() const { return 1; }
 };
 
@@ -165,6 +219,14 @@ struct TanHFunctor
             }
         }
     }
+
+#ifdef HAVE_HALIDE
+    void attachHalide(const Halide::Expr& input, Halide::Func& top)
+    {
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        top(x, y, c, n) = tanh(input);
+    }
+#endif  // HAVE_HALIDE
 
     int64 getFLOPSPerElement() const { return 1; }
 };
@@ -185,6 +247,14 @@ struct SigmoidFunctor
         }
     }
 
+#ifdef HAVE_HALIDE
+    void attachHalide(const Halide::Expr& input, Halide::Func& top)
+    {
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        top(x, y, c, n) = 1.0f / (1.0f + exp(-input));
+    }
+#endif  // HAVE_HALIDE
+
     int64 getFLOPSPerElement() const { return 3; }
 };
 
@@ -204,6 +274,14 @@ struct AbsValFunctor
         }
     }
 
+#ifdef HAVE_HALIDE
+    void attachHalide(const Halide::Expr& input, Halide::Func& top)
+    {
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        top(x, y, c, n) = abs(input);
+    }
+#endif  // HAVE_HALIDE
+
     int64 getFLOPSPerElement() const { return 1; }
 };
 
@@ -222,6 +300,14 @@ struct BNLLFunctor
             }
         }
     }
+
+#ifdef HAVE_HALIDE
+    void attachHalide(const Halide::Expr& input, Halide::Func& top)
+    {
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        top(x, y, c, n) = log(1.0f + exp(-abs(input)));
+    }
+#endif  // HAVE_HALIDE
 
     int64 getFLOPSPerElement() const { return 5; }
 };
@@ -263,6 +349,23 @@ struct PowerFunctor
             }
         }
     }
+
+#ifdef HAVE_HALIDE
+    void attachHalide(const Halide::Expr& input, Halide::Func& top)
+    {
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        Halide::Expr topExpr = (scale == 1.0f ? input : input * scale);
+        if (shift)
+        {
+            topExpr += shift;
+        }
+        if (power != 1.0f)
+        {
+            topExpr = pow(topExpr, power);
+        }
+        top(x, y, c, n) = topExpr;
+    }
+#endif  // HAVE_HALIDE
 
     int64 getFLOPSPerElement() const { return power == 1 ? 2 : 10; }
 };
@@ -313,6 +416,15 @@ struct ChannelsPReLUFunctor
             }
         }
     }
+
+#ifdef HAVE_HALIDE
+    void attachHalide(const Halide::Expr& input, Halide::Func& top)
+    {
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        auto weights = wrapToHalideBuffer(scale, {(int)scale.total()});
+        top(x, y, c, n) = select(input > 0.0f, input, weights(c) * input);
+    }
+#endif  // HAVE_HALIDE
 
     int64 getFLOPSPerElement() const { return 1; }
 };
