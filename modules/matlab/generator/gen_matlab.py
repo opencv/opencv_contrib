@@ -129,7 +129,7 @@ class MatlabWrapperGenerator(object):
 
 if __name__ == "__main__":
     """
-    Usage: python gen_matlab.py --jinja2 /path/to/jinja2/engine
+    Usage: python gen_matlab.py
                                 --hdrparser /path/to/hdr_parser/dir
                                 --moduleroot [ /path/to/opencv/modules /path/to/opencv_contrib/modules etc ]
                                 --modules [core imgproc objdetect etc]
@@ -145,8 +145,6 @@ if __name__ == "__main__":
          definitions
 
     gen_matlab.py requires the following inputs:
-    --jinja2       the path to the Jinja2 templating engine
-                   e.g. ${CMAKE_SOURCE_DIR}/3rdparty
     --hdrparser    the path to the header parser directory
                    (opencv/modules/python/src2)
     --moduleroot   (optional) paths to the opencv directories containing the modules
@@ -165,7 +163,6 @@ if __name__ == "__main__":
     # parse the input options
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('--jinja2')
     parser.add_argument('--hdrparser')
     parser.add_argument('--moduleroot', nargs='*', default=[], required=False)
     parser.add_argument('--modules', nargs='*', default=[], required=False)
@@ -174,7 +171,6 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # add the hdr_parser module to the path
-    sys.path.append(args.jinja2)
     sys.path.append(args.hdrparser)
 
     # create the generator
