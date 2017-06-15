@@ -122,6 +122,7 @@ TEST(Torch_Importer, run_reshape)
 {
     runTorchNet("net_reshape");
     runTorchNet("net_reshape_batch");
+    runTorchNet("net_reshape_single_sample");
 }
 
 TEST(Torch_Importer, run_linear)

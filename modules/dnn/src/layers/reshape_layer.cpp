@@ -55,6 +55,7 @@ static void computeShapeByReshapeMask(const MatShape &srcShape,
 {
     int srcShapeSize = (int)srcShape.size();
     int maskShapeSize = (int)maskShape.size();
+    int maskTotal = abs(total(maskShape));  // Mask might have negative ones.
 
     if (srcRange == Range::all())
         srcRange = Range(0, srcShapeSize);
@@ -63,6 +64,19 @@ static void computeShapeByReshapeMask(const MatShape &srcShape,
         int sz = srcRange.size();
         srcRange.start = clamp(srcRange.start, srcShapeSize);
         srcRange.end = srcRange.end == INT_MAX ? srcShapeSize : srcRange.start + sz;
+    }
+
+    if (maskTotal != 0)
+    {
+        for (int i = srcRange.start + 1; i < srcRange.end; ++i)
+        {
+            if (total(srcShape, i, srcRange.end) != maskTotal)
+            {
+                srcRange.start = i - 1;
+                break;
+            }
+        }
+        CV_Assert(total(srcShape, srcRange.start, srcRange.end) == maskTotal);
     }
 
     CV_Assert(0 <= srcRange.start && srcRange.start <= srcRange.end && srcRange.end <= srcShapeSize);
