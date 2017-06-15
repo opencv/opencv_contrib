@@ -97,6 +97,7 @@ public:
         (stride.height == 1 && stride.width == 1) &&
         (dilation.height == 1 && dilation.width == 1);
     }
+    bool setActivation(const Ptr<ActivationLayer>& ) { return false; }
 };
 
 //TODO: simultaneously convolution and bias addition for cache optimization
@@ -105,6 +106,7 @@ class ConvolutionLayerImpl : public BaseConvolutionLayerImpl
 public:
     enum { VEC_ALIGN = 8 };
     Mat weightsMat;
+    Ptr<ActivationLayer> activ;
 
     MatShape computeColRowShape(const MatShape &inpShape, const MatShape &outShape) const
     {
@@ -151,6 +153,8 @@ public:
         return false;
     }
 
+    bool setActivation(const Ptr<ActivationLayer>& layer) { activ = layer; return true; }
+
     class ParallelConv : public cv::ParallelLoopBody
     {
     public:
@@ -164,6 +168,7 @@ public:
         int ngroups_, nstripes_;
         std::vector<int> ofstab_;
         std::vector<float> biasvec_;
+        const ActivationLayer* activ_;
         bool is1x1_;
         bool useAVX2;
 
@@ -172,7 +177,7 @@ public:
         static void run( const Mat& input, Mat& output,
                          const Mat& weights, const Mat& bias,
                          Size kernel, Size pad, Size stride, Size dilation,
-                         int ngroups, int nstripes )
+                         int ngroups, int nstripes, const ActivationLayer* activ )
         {
             CV_Assert( input.dims == 4 && output.dims == 4 &&
                        input.size[0] == output.size[0] &&
@@ -195,6 +200,7 @@ public:
             p.kernel_ = kernel; p.pad_ = pad; p.stride_ = stride; p.dilation_ = dilation;
             p.ngroups_ = ngroups;
             p.nstripes_ = nstripes;
+            p.activ_ = activ;
             int inpCnAll = input.size[1], width = input.size[3], height = input.size[2];
             int inpCn = inpCnAll / ngroups;
             int k, outCn = output.size[1];
@@ -295,8 +301,9 @@ public:
                 int stripeEnd = (int)std::min(stripeStart + stripeSize, outPlaneSize);
                 const float* data_inp0 = data_inp0_ + subsampleIdx*inpPlaneSize*inpCn;
                 float* data_out0 = data_out0_ + subsampleIdx*outPlaneSize*outCn;
-                const float* wptr_orig = wptr_orig_ + wstep*outCn*(subsampleIdx % ngroups);
-                const float* biasptr = biasvec + outCn*(subsampleIdx % ngroups);
+                int startOutCn = (subsampleIdx % ngroups)*outCn;
+                const float* wptr_orig = wptr_orig_ + wstep*startOutCn;
+                const float* biasptr = biasvec + startOutCn;
 
                 for( int cn0 = 0; cn0 < inpCn; cn0 += BLK_SIZE_CN )
                 {
@@ -470,6 +477,10 @@ public:
                         }
                     }
                 }
+
+                if( activ_ )
+                    activ_->forwardSlice(data_out0 + stripeStart, (int)(stripeEnd - stripeStart),
+                                         outPlaneSize, startOutCn, startOutCn + outCn);
             }
         }
     };
@@ -501,7 +512,7 @@ public:
 
         int nstripes = std::max(getNumThreads(), 1);
         ParallelConv::run(*inputs[0], outputs[0], weightsMat, biasesMat,
-                          kernel, pad, stride, dilation, ngroups, nstripes);
+                          kernel, pad, stride, dilation, ngroups, nstripes, activ.get());
     }
 
     virtual int64 getFLOPS(const std::vector<MatShape> &inputs,

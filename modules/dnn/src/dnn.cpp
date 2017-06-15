@@ -165,6 +165,7 @@ struct LayerData
         //add logging info
         params.name = name;
         params.type = type;
+        skip = false;
     }
 
     int id;
@@ -180,8 +181,10 @@ struct LayerData
     std::vector<Mat> outputBlobs;
     std::vector<Mat*> inputBlobs;
     std::vector<Mat> internals;
+    std::vector<LayerPin> consumers;
 
     int flag;
+    bool skip;
 
     Ptr<Layer> getLayerInstance()
     {
@@ -395,6 +398,7 @@ struct Net::Impl
 
         addLayerInput(ldInp, inNum, LayerPin(outLayerId, outNum));
         ldOut.requiredOutputs.insert(outNum);
+        ldOut.consumers.push_back(LayerPin(inLayerId, inNum));
     }
 
     void computeNetOutputLayers()
@@ -541,6 +545,27 @@ struct Net::Impl
             int lid = it->first;
             allocateLayer(lid, layersShapes);
         }
+
+        // scan through all the layers. If there is convolution layer followed by the activation layer,
+        // we try to embed this activation into the convolution and disable separate execution of the activation
+        for (it = layers.begin(); it != layers.end(); it++)
+        {
+            int lid = it->first;
+            LayerData& ld = layers[lid];
+            Ptr<ConvolutionLayer> convLayer = ld.layerInstance.dynamicCast<ConvolutionLayer>();
+            if( !convLayer.empty() && ld.consumers.size() == 1 )
+            {
+                LayerData& nextData = layers[ld.consumers[0].lid];
+                Ptr<ActivationLayer> nextActivLayer =
+                    nextData.layerInstance.dynamicCast<ActivationLayer>();
+
+                if( !nextActivLayer.empty() && convLayer->setActivation(nextActivLayer) )
+                {
+                    nextData.skip = true;
+                }
+            }
+            allocateLayer(lid, layersShapes);
+        }
     }
 
     void forwardLayer(LayerData &ld, bool clearFlags = true)
@@ -564,6 +589,7 @@ struct Net::Impl
 
         //forward itself
         //try
+        if( !ld.skip )
         {
             ld.layerInstance->forward(ld.inputBlobs, ld.outputBlobs, ld.internals);
         }
