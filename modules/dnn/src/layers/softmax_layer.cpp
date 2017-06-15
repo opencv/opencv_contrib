@@ -41,6 +41,7 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
+#include "op_halide.hpp"
 #include <algorithm>
 #include <stdlib.h>
 using std::max;
@@ -72,6 +73,12 @@ public:
         shape[cAxis] = 1;
         internals.assign(1, shape);
         return inplace;
+    }
+
+    virtual bool supportBackend(int backendId)
+    {
+        return backendId == DNN_BACKEND_DEFAULT ||
+               backendId == DNN_BACKEND_HALIDE && haveHalide() && axisRaw == 1;
     }
 
     void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
@@ -153,6 +160,58 @@ public:
                 }
             }
         }
+    }
+
+    virtual Ptr<BackendNode> initHalide(const std::vector<Ptr<BackendWrapper> > &inputs)
+    {
+#ifdef HAVE_HALIDE
+        Halide::Buffer<float> inputBuffer = halideBuffer(inputs[0]);
+        int inW, inH, inC, inN;
+        getCanonicalSize(inputBuffer, &inW, &inH, &inC, &inN);
+
+        if (inW != 1 || inH != 1)
+            CV_Error(cv::Error::StsNotImplemented,
+                     "Halide backend for SoftMax with spatial size "
+                     "more than 1x1 is not implemented");
+
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        Halide::Func top = (name.empty() ? Halide::Func() : Halide::Func(name));
+
+        Halide::Func expInput("expInput");
+        Halide::RDom r(0, inW, 0, inH, 0, inC);
+        expInput(x, y, c, n) = exp(inputBuffer(x, y, c, n));
+        Halide::Expr globalSum = sum(expInput(r.x, r.y, r.z, n));
+        top(x, y, c, n) = expInput(x, y, c, n) / globalSum;
+        return Ptr<BackendNode>(new HalideBackendNode(top));
+#endif  // HAVE_HALIDE
+        return Ptr<BackendNode>();
+    }
+
+    virtual void applyHalideScheduler(Ptr<BackendNode>& node,
+                                      const std::vector<Mat*> &inputs,
+                                      const std::vector<Mat> &outputs) const
+    {
+#ifdef HAVE_HALIDE
+        int outW, outH, outC, outN;
+        getCanonicalSize(outputs[0].size, &outW, &outH, &outC, &outN);
+
+        // Most common case when SoftMax is a layer after fully-connected.
+        // So we just schedule it in the same way.
+        Halide::Var x("x"), y("y"), c("c"), n("n"), co("co"), ci("ci"), tile("tile");
+        Halide::Func& top = node.dynamicCast<HalideBackendNode>()->funcs.back();
+
+        if (outC + outN == 1)
+            return;
+
+        if (outC > 8)
+          top.split(c, co, ci, 8)
+             .fuse(x, y, tile).fuse(co, tile, tile).fuse(n, tile, tile)
+             .parallel(tile)
+             .vectorize(ci, 8);
+        else
+          top.fuse(x, y, tile).fuse(c, tile, tile).fuse(n, tile, tile)
+             .parallel(tile);
+#endif  // HAVE_HALIDE
     }
 
     int64 getFLOPS(const std::vector<MatShape> &inputs,

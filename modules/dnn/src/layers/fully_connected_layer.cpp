@@ -42,6 +42,7 @@
 #include "../precomp.hpp"
 #include "layers_common.hpp"
 #include "op_blas.hpp"
+#include "op_halide.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
@@ -102,6 +103,12 @@ public:
 
         CV_Assert(!bias || (size_t)numOutput == blobs[1].total());
         return false;
+    }
+
+    virtual bool supportBackend(int backendId)
+    {
+        return backendId == DNN_BACKEND_DEFAULT ||
+               backendId == DNN_BACKEND_HALIDE && haveHalide() && axis == 1;
     }
 
     class FullConnected : public ParallelLoopBody
@@ -211,6 +218,55 @@ public:
             FullConnected fconn(srcMat, weightsMat, biasMat, dstMat, nstripes);
             parallel_for_(Range(0, nstripes), fconn, nstripes);
         }
+    }
+
+    virtual Ptr<BackendNode> initHalide(const std::vector<Ptr<BackendWrapper> > &inputs)
+    {
+#ifdef HAVE_HALIDE
+        int inW, inH, inC, inN, outC = blobs[0].size[0];
+        Halide::Buffer<float> inputBuffer = halideBuffer(inputs[0]);
+        getCanonicalSize(inputBuffer, &inW, &inH, &inC, &inN);
+        auto weights = wrapToHalideBuffer(blobs[0], {inW, inH, inC, outC});
+
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        Halide::Func top = (name.empty() ? Halide::Func() : Halide::Func(name));
+        Halide::RDom r(0, inW, 0, inH, 0, inC);
+        Halide::Expr topExpr = sum(inputBuffer(r.x, r.y, r.z, n) *
+                                   weights(r.x, r.y, r.z, c));
+        if (bias)
+        {
+            Halide::Buffer<float> bias = wrapToHalideBuffer(blobs[1], {outC});
+            topExpr += bias(c);
+        }
+        top(x, y, c, n) = topExpr;
+        return Ptr<BackendNode>(new HalideBackendNode(top));
+#endif  // HAVE_HALIDE
+        return Ptr<BackendNode>();
+    }
+
+    virtual void applyHalideScheduler(Ptr<BackendNode>& node,
+                                      const std::vector<Mat*> &inputs,
+                                      const std::vector<Mat> &outputs) const
+    {
+#ifdef HAVE_HALIDE
+        int outW, outH, outC, outN;
+        getCanonicalSize(outputs[0].size, &outW, &outH, &outC, &outN);
+
+        Halide::Var x("x"), y("y"), c("c"), n("n"), co("co"), ci("ci"), tile("tile");
+        Halide::Func& top = node.dynamicCast<HalideBackendNode>()->funcs.back();
+
+        if (outC + outN == 1)
+            return;
+
+        if (outC > 8)
+          top.split(c, co, ci, 8)
+             .fuse(x, y, tile).fuse(co, tile, tile).fuse(n, tile, tile)
+             .parallel(tile)
+             .vectorize(ci, 8);
+        else
+          top.fuse(x, y, tile).fuse(c, tile, tile).fuse(n, tile, tile)
+             .parallel(tile);
+#endif  // HAVE_HALIDE
     }
 
     virtual int64 getFLOPS(const std::vector<MatShape> &inputs,

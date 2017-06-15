@@ -55,6 +55,23 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
 
     typedef std::vector<int> MatShape;
 
+    /**
+     * @brief Enum of computation backends supported by layers.
+     */
+    enum Backend
+    {
+        DNN_BACKEND_DEFAULT,
+        DNN_BACKEND_HALIDE
+    };
+
+    /**
+     * @brief Enum of target devices for computations.
+     */
+    enum Target
+    {
+        DNN_TARGET_CPU
+    };
+
     /** @brief Initialize dnn module and built-in layers.
      *
      * This function automatically called on most of OpenCV builds,
@@ -75,6 +92,54 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
 
         String name; //!< Name of the layer instance (optional, can be used internal purposes).
         String type; //!< Type name which was used for creating layer by layer factory (optional).
+    };
+
+   /**
+    * @brief Derivatives of this class encapsulates functions of certain backends.
+    */
+    class BackendNode
+    {
+    public:
+        BackendNode(int backendId);
+
+        virtual ~BackendNode(); //!< Virtual destructor to make polymorphism.
+
+        int backendId; //!< Backend identifier.
+    };
+
+    /**
+     * @brief Derivatives of this class wraps cv::Mat for different backends and targets.
+     */
+    class BackendWrapper
+    {
+    public:
+        BackendWrapper(int backendId, int targetId);
+
+        /**
+         * @brief Wrap cv::Mat for specific backend and target.
+         * @param[in] targetId Target identifier.
+         * @param[in] m cv::Mat for wrapping.
+         *
+         * Make CPU->GPU data transfer if it's require for the target.
+         */
+        BackendWrapper(int targetId, const cv::Mat& m);
+
+        /**
+         * @brief Make wrapper for reused cv::Mat.
+         * @param[in] base Wrapper of cv::Mat that will be reused.
+         * @param[in] shape Specific shape.
+         *
+         * Initialize wrapper from another one. It'll wrap the same host CPU
+         * memory and mustn't allocate memory on device(i.e. GPU). It might
+         * has different shape. Use in case of CPU memory reusing for reuse
+         * associented memory on device too.
+         */
+        BackendWrapper(const Ptr<BackendWrapper>& base, const MatShape& shape);
+
+        virtual ~BackendWrapper(); //!< Virtual destructor to make polymorphism.
+
+        int backendId;  //!< Backend identifier.
+        int targetId;   //!< Target identifier.
     };
 
     /** @brief This interface class allows to build new Layers - are building blocks of networks.
@@ -130,6 +195,50 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          *  @see inputNameToIndex()
          */
         virtual int outputNameToIndex(String outputName);
+
+        /**
+         * @brief Ask layer if it support specific backend for doing computations.
+         * @param[in] backendId computation backend identifier.
+         * @see Backend
+         */
+        virtual bool supportBackend(int backendId);
+
+        /**
+         * @brief Returns Halide backend node.
+         * @param[in] inputs Input Halide buffers.
+         * @see BackendNode, BackendWrapper
+         *
+         * Input buffers should be exactly the same that will be used in forward invocations.
+         * Despite we can use Halide::ImageParam based on input shape only,
+         * it helps prevent some memory management issues (if something wrong,
+         * Halide tests will be failed).
+         */
+        virtual Ptr<BackendNode> initHalide(const std::vector<Ptr<BackendWrapper> > &inputs);
+
+       /**
+        * @brief Automatic Halide scheduling based on layer hyper-parameters.
+        * @param[in] node Backend node with Halide functions.
+        * @param[in] inputs Blobs that will be used in forward invocations.
+        * @param[in] outputs Blobs that will be used in forward invocations.
+        * @see BackendNode
+        *
+        * Layer don't use own Halide::Func members because we can have applied
+        * layers fusing. In this way the fused function should be scheduled.
+        */
+        virtual void applyHalideScheduler(Ptr<BackendNode>& node,
+                                          const std::vector<Mat*> &inputs,
+                                          const std::vector<Mat> &outputs) const;
+
+        /**
+         * @brief Implement layers fusing.
+         * @param[in] node Backend node of bottom layer.
+         * @see BackendNode
+         *
+         * Actual for graph-based backends. If layer attached successfully,
+         * returns non-empty cv::Ptr to node of the same backend.
+         * Fuse only over the last function.
+         */
+        virtual Ptr<BackendNode> tryAttach(const Ptr<BackendNode>& node);
 
         virtual bool getMemoryShapes(const std::vector<MatShape> &inputs,
                                      const int requiredOutputs,
@@ -250,6 +359,24 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
         void forwardOpt(LayerId toLayer);
         /** @overload */
         void forwardOpt(const std::vector<LayerId> &toLayers);
+
+        /**
+         * @brief Compile Halide layers.
+         * @param[in] scheduler Path to YAML file with scheduling directives.
+         * @see setPreferableBackend
+         *
+         * Schedule layers that support Halide backend. Then compile them for
+         * specific target. For layers that not represented in scheduling file
+         * or if no manual scheduling used at all, automatic scheduling will be applied.
+         */
+        void compileHalide(const std::string& scheduler = "");
+
+        /**
+         * @brief Ask network to use specific computation backend where it supported.
+         * @param[in] backendId backend identifier.
+         * @see Backend
+         */
+        void setPreferableBackend(int backendId);
 
         /** @brief Sets the new value for the layer output blob
          *  @param outputName descriptor of the updating layer output blob.

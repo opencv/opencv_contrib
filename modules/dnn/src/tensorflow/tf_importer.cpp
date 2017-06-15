@@ -574,7 +574,6 @@ void TFImporter::populateNet(Net dstNet)
         {
             CV_Assert(layer.input_size() == 2);
 
-            layerParams.set("axis", 0);
             layerParams.set("bias_term", false);
             layerParams.blobs.resize(1);
 
@@ -622,7 +621,6 @@ void TFImporter::populateNet(Net dstNet)
         }
         else if (type == "Softmax")
         {
-            layerParams.set("axis", -1);
             int id = dstNet.addLayer(name, "Softmax", layerParams);
             layer_id[name] = id;
 
