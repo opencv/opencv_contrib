@@ -313,7 +313,7 @@ struct ChannelsPReLUFunctor
             }
         }
     }
-    
+
     int64 getFLOPSPerElement() const { return 1; }
 };
 
