@@ -52,6 +52,8 @@ namespace dnn
 class FullyConnectedLayerImpl : public InnerProductLayer
 {
 public:
+    enum { VEC_ALIGN = 8 };
+
     FullyConnectedLayerImpl(const LayerParams& params)
     {
         setParamsFrom(params);
@@ -65,15 +67,29 @@ public:
         CV_Assert(blobs[0].dims >= 2 && (size_t)(innerSize * numOutput) == blobs[0].total());
         CV_Assert(!bias || (blobs.size() == 2 && (size_t)numOutput == blobs[1].total()));
 
-        blobs[0] = blobs[0].reshape(1, numOutput);
+        weightsMat = blobs[0] = blobs[0].reshape(1, numOutput);
+        int vecsize = weightsMat.cols;
+        if( vecsize % VEC_ALIGN != 0 )
+        {
+            int vecsize_aligned = (int)alignSize(vecsize, VEC_ALIGN);
+            Mat weightsBuf(weightsMat.rows, vecsize_aligned, weightsMat.type());
+            Mat wpadding = weightsBuf.colRange(vecsize, vecsize_aligned);
+            wpadding.setTo(Scalar::all(0.));
+            weightsMat = weightsBuf.colRange(0, vecsize);
+            blobs[0].copyTo(weightsMat);
+            blobs[0] = weightsMat;
+        }
+
         if (bias)
-            blobs[1] = blobs[1].reshape(1, 1);
+            biasMat = blobs[1] = blobs[1].reshape(1, 1);
+        else
+            biasMat = Mat::zeros(1, numOutput, weightsMat.type());
     }
 
     bool getMemoryShapes(const std::vector<MatShape> &inputs,
                          const int requiredOutputs,
                          std::vector<MatShape> &outputs,
-                         std::vector<MatShape> &internals) const
+                         std::vector<MatShape> &) const
     {
         CV_Assert(inputs.size() > 0);
         CV_Assert(1 <= blobs.size() && blobs.size() <= 2);
@@ -84,36 +100,116 @@ public:
         int numOutput = blobs[0].size[0];
         outputs.resize(inputs.size(), shape(outerSize, numOutput));
 
-        internals.push_back(shape(outerSize, 1));
-
         CV_Assert(!bias || (size_t)numOutput == blobs[1].total());
-
         return false;
     }
 
-    void forward(std::vector<Mat*> &input, std::vector<Mat> &output, std::vector<Mat> &internals)
+    class FullConnected : public ParallelLoopBody
     {
-        internals[0].setTo(1.);
-        const Mat &weight = blobs[0];
-        const Mat *biasMat = NULL, *biasOnesMat = NULL;
+    public:
+        FullConnected(const Mat& srcMat, const Mat& weights, const Mat& biasMat, Mat& dstMat, int nstripes)
+        {
+            CV_Assert( srcMat.dims == 2 && srcMat.cols == weights.cols &&
+                       dstMat.rows == srcMat.rows && dstMat.cols == weights.rows &&
+                       srcMat.type() == weights.type() && weights.type() == dstMat.type() &&
+                       srcMat.type() == CV_32F &&
+                       (biasMat.empty() || (biasMat.type() == srcMat.type() &&
+                        biasMat.isContinuous() && (int)biasMat.total() == dstMat.cols)) );
 
+            srcMat_ = &srcMat;
+            weights_ = &weights;
+            biasMat_ = &biasMat;
+            dstMat_ = &dstMat;
+            nstripes_ = nstripes;
+            useAVX2_ = checkHardwareSupport(CPU_AVX2);
+        }
+
+        void operator()(const Range& r) const
+        {
+            int nsamples = srcMat_->rows;
+            int nw0 = weights_->rows;
+            int vecsize = srcMat_->cols;
+            int nstripes = nstripes_;
+            size_t total = (size_t)nsamples*nw0;
+            size_t stripeSize = (total + nstripes - 1)/nstripes;
+            size_t stripeStart = r.start*stripeSize;
+            size_t stripeEnd = r.end == nstripes ? total : std::min(r.end*stripeSize, total);
+            size_t wstep = weights_->step1();
+
+            for( size_t ofs = stripeStart; ofs < stripeEnd; )
+            {
+                int sampleIdx = (int)(ofs / nw0);
+                int delta = (int)(ofs - (size_t)sampleIdx*nw0);
+                const float* sptr = srcMat_->ptr<float>(sampleIdx);
+                const float* wptr = weights_->ptr<float>(delta);
+                float* dptr = dstMat_->ptr<float>(sampleIdx) + delta;
+                const float* biasptr = biasMat_->ptr<float>() + delta;
+                int nw = std::min(nw0 - delta, (int)(stripeEnd - ofs));
+
+            #if CV_DNN_TRY_AVX2
+                if( useAVX2_ )
+                    fastGEMM1T_avx2( sptr, wptr, wstep, biasptr, dptr, nw, vecsize);
+                else
+            #endif
+                {
+                    int i = 0, k;
+
+            #if CV_SIMD128
+                    for( ; i <= nw - 4; i += 4, wptr += 4*wstep )
+                    {
+                        vfloat32x4 vs0 = v_setall_f32(0.f), vs1 = v_setall_f32(0.f);
+                        vfloat32x4 vs2 = v_setall_f32(0.f), vs3 = v_setall_f32(0.f);
+
+                        for( k = 0; k < vecsize; k += 4 )
+                        {
+                            vfloat32x4 v = v_load_aligned(sptr + k);
+                            vs0 += v*v_load_aligned(wptr + k);
+                            vs1 += v*v_load_aligned(wptr + wstep + k);
+                            vs2 += v*v_load_aligned(wptr + wstep*2 + k);
+                            vs3 += v*v_load_aligned(wptr + wstep*3 + k);
+                        }
+
+                        vfloat32x4 s = v_reduce_sum4(vs0, vs1, vs2, vs3);
+                        s += v_load(biasptr + i);
+                        v_store(dptr + i, s);
+                    }
+            #endif
+
+                    for( ; i < nw; i++, wptr += wstep )
+                    {
+                        float s0=biasptr[i];
+
+                        for( k = 0; k < vecsize; k++ )
+                        {
+                            float v = sptr[k];
+                            s0 += v*wptr[k];
+                        }
+                        dptr[i] = s0;
+                    }
+                }
+                ofs += nw;
+            }
+        }
+
+        const Mat *srcMat_, *weights_, *biasMat_;
+        Mat* dstMat_;
+        int nstripes_;
+        bool useAVX2_;
+    };
+
+    void forward(std::vector<Mat*> &input, std::vector<Mat> &output, std::vector<Mat> &)
+    {
         int axisCan = clamp(axis, input[0]->dims);
         int outerSize = input[0]->total(0, axisCan);
-
-        if (bias)
-        {
-            biasOnesMat = &internals[0];
-            biasMat = &blobs[1];
-        }
 
         for (size_t i = 0; i < input.size(); i++)
         {
             Mat srcMat = input[i]->reshape(1, outerSize);
             Mat dstMat = output[i].reshape(1, outerSize);
-            dnn::gemm(srcMat, weight, 1, dstMat, 0, GEMM_2_T);
 
-            if (bias)
-                dnn::gemm(*biasOnesMat, *biasMat, 1, dstMat, 1);
+            const int nstripes = getNumThreads();
+            FullConnected fconn(srcMat, weightsMat, biasMat, dstMat, nstripes);
+            parallel_for_(Range(0, nstripes), fconn, nstripes);
         }
     }
 
@@ -134,6 +230,7 @@ public:
     }
 
     bool bias;
+    Mat weightsMat, biasMat;
 };
 
 Ptr<InnerProductLayer> InnerProductLayer::create(const LayerParams& params)
