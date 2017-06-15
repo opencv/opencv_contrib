@@ -53,6 +53,12 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
 //! @addtogroup dnn
 //! @{
 
+    /*
+     * @brief Throws error with a generated GitHub issue link.
+     * @see submitError
+     */
+    #define CV_dnn_Error(code, msg) cv::dnn::submitError(code, msg, CV_Func, __FILE__, __LINE__)
+
     typedef std::vector<int> MatShape;
 
     /** @brief Initialize dnn module and built-in layers.
@@ -464,6 +470,22 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
 
     CV_EXPORTS Mat blobFromImage(const Mat& image, double scalefactor=1.0, bool swapRB=true);
     CV_EXPORTS Mat blobFromImages(const std::vector<Mat>& image, double scalefactor=1.0, bool swapRB=true);
+
+   /**
+    * @brief Throws cv::error with generated link to GitHub issue.
+    * @param[in] code cv::Error::Code value.
+    * @param[in] msg  Default error message that will be shown.
+    * @param[in] func Function name where exceprion have thrown.
+    * @param[in] file Path to file where exceprion have thrown.
+    * @param[in] line Line number where exceprion have thrown.
+    *
+    * This method appends link to submit an issue to OpenCV's GitHub.
+    * It involves body with OpenCV version, operation system and
+    * exception location. However it has only basic information and user should
+    * provide more ditailed description i.e. neural network configuration/source.
+    */
+    CV_EXPORTS void submitError(int code, std::string msg, const char* func,
+                                const char* file, int line);
 
 //! @}
 }

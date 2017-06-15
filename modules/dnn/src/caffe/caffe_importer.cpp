@@ -149,7 +149,7 @@ public:
             }
             break;
         default:
-            CV_Error(Error::StsError, "Unknown type \"" + String(field->type_name()) + "\" in prototxt");
+            CV_dnn_Error(Error::StsError, "Unknown type \"" + String(field->type_name()) + "\" in prototxt");
             break;
         }
     }
@@ -210,7 +210,7 @@ public:
                 shape.push_back((int)_shape.dim(i));
         }
         else
-            CV_Error(Error::StsError, "Unknown shape of input blob");
+            CV_dnn_Error(Error::StsError, "Unknown shape of input blob");
     }
 
     void blobFromProto(const caffe::BlobProto &pbBlob, cv::Mat &dstBlob)
@@ -324,7 +324,7 @@ public:
         {
             bool isInplace = layer.bottom_size() > outNum && layer.bottom(outNum) == name;
             if (!isInplace)
-                CV_Error(Error::StsBadArg, "Duplicate blobs produced by multiple sources");
+                CV_dnn_Error(Error::StsBadArg, "Duplicate blobs produced by multiple sources");
         }
 
         addedBlobs.push_back(BlobNote(name, layerId, outNum));
@@ -341,7 +341,7 @@ public:
 
         if (idx < 0)
         {
-            CV_Error(Error::StsObjectNotFound, "Can't find output blob \"" + name + "\"");
+            CV_dnn_Error(Error::StsObjectNotFound, "Can't find output blob \"" + name + "\"");
             return;
         }
 

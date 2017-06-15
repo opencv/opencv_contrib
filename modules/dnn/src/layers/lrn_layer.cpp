@@ -95,7 +95,7 @@ public:
                     spatialNormalization(src, dst);
                     break;
                 default:
-                    CV_Error(Error::StsNotImplemented, "Unimplemented mode of LRN layer");
+                    CV_dnn_Error(Error::StsNotImplemented, "Unimplemented mode of LRN layer");
                     break;
             }
         }

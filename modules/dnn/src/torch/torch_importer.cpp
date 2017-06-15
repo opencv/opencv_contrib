@@ -210,7 +210,7 @@ struct TorchImporter : public ::cv::dnn::Importer
            else if (typeStr == "Long") //Carefully! CV_64S type coded as CV_USRTYPE1
                return CV_USRTYPE1;
            else
-               CV_Error(Error::StsNotImplemented, "Unknown type \"" + typeStr + "\" of torch class \"" + str + "\"");
+               CV_dnn_Error(Error::StsNotImplemented, "Unknown type \"" + typeStr + "\" of torch class \"" + str + "\"");
         }
 
         return -1;
@@ -383,7 +383,7 @@ struct TorchImporter : public ::cv::dnn::Importer
         size_t requireElems = (size_t)offset + (size_t)steps[0] * (size_t)sizes[0];
         size_t storageElems = storages[indexStorage].total();
         if (requireElems > storageElems)
-            CV_Error(Error::StsBadSize, "Storage has insufficent number of elemements for requested Tensor");
+            CV_dnn_Error(Error::StsBadSize, "Storage has insufficent number of elemements for requested Tensor");
 
         //convert sizes
         AutoBuffer<int, 4> isizes(ndims);
@@ -754,12 +754,12 @@ struct TorchImporter : public ::cv::dnn::Importer
             }
             else
             {
-                CV_Error(Error::StsNotImplemented, "Unknown nn class \"" + className + "\"");
+                CV_dnn_Error(Error::StsNotImplemented, "Unknown nn class \"" + className + "\"");
             }
         }
         else
         {
-            CV_Error(Error::StsNotImplemented, "Unsupported Torch class \"" + className + "\"");
+            CV_dnn_Error(Error::StsNotImplemented, "Unsupported Torch class \"" + className + "\"");
         }
 
         readedIndexes.insert(index);
@@ -786,7 +786,11 @@ struct TorchImporter : public ::cv::dnn::Importer
         else if (typeidx == TYPE_TABLE)
             readTable();
         else
-            CV_Error(Error::StsNotImplemented, "Unsupported Lua type");
+        {
+            std::ostringstream type;
+            type << typeidx;
+            CV_dnn_Error(Error::StsNotImplemented, "Unsupported Lua type: " + type.str());
+        }
     }
 
     inline String generateLayerName(const String &label = String())
@@ -946,7 +950,7 @@ struct TorchImporter : public ::cv::dnn::Importer
             }
         }
 
-        CV_Error(Error::StsInternal, "Unexpected torch container: " + module->thName);
+        CV_dnn_Error(Error::StsInternal, "Unexpected torch container: " + module->thName);
         return -1;
     }
 

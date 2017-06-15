@@ -105,7 +105,7 @@ public:
                     avePooling(*inputs[ii], outputs[ii]);
                     break;
                 default:
-                    CV_Error(Error::StsNotImplemented, "Not implemented");
+                    CV_dnn_Error(Error::StsNotImplemented, "Not implemented");
                     break;
             }
         }

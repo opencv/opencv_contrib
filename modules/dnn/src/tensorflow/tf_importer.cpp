@@ -65,7 +65,7 @@ void blobShapeFromTensor(const tensorflow::TensorProto &tensor, MatShape& shape)
     }
     else
     {
-        CV_Error(Error::StsError, "Unknown shape of input tensor");
+        CV_dnn_Error(Error::StsError, "Unknown shape of input tensor");
     }
 }
 
@@ -126,8 +126,12 @@ void blobFromTensor(const tensorflow::TensorProto &tensor, Mat &dstBlob)
             parseTensor<double>(tensor, dstBlob);
             break;
         default:
-            CV_Error(Error::StsError, "Tensor's data type is not supported");
+        {
+            std::ostringstream ss;
+            ss << "Tensor's data type " << tensor.dtype() << " is not supported";
+            CV_dnn_Error(Error::StsError, ss.str());
             break;
+        }
     }
 }
 
@@ -178,8 +182,13 @@ void printTensor(const tensorflow::TensorProto &tensor)
             break;
         }
     default:
-        CV_Error(Error::StsError, "Tensor type is not supported");
-        break;
+        {
+            std::ostringstream ss;
+            ss << "Tensor type " << tensor.dtype() << " is not supported";
+            CV_dnn_Error(Error::StsError, ss.str());
+            break;
+
+        }
     }
 }
 
@@ -439,7 +448,7 @@ void TFImporter::connect(const std::map<String, int>& layers_name_id_map, Net& n
 {
     std::map<String, int>::const_iterator it = layers_name_id_map.find(outPin.name);
     if (it == layers_name_id_map.end())
-        CV_Error(Error::StsError, "Input layer not found: " + outPin.name);
+        CV_dnn_Error(Error::StsError, "Input layer not found: " + outPin.name);
     network.connect(it->second, outPin.blobIndex, input_layer_id, input_blob_id);
 }
 
@@ -457,7 +466,7 @@ const tensorflow::TensorProto& TFImporter::getConstBlob(const tensorflow::NodeDe
             Pin input = parsePin(layer.input(i));
             if (const_layers.find(input.name) != const_layers.end()) {
                 if (input_blob_index != -1)
-                    CV_Error(Error::StsError, "More than one input is Const op");
+                    CV_dnn_Error(Error::StsError, "More than one input is Const op");
 
                 input_blob_index = i;
             }
@@ -663,7 +672,7 @@ void TFImporter::populateNet(Net dstNet)
             {
                 Pin inp = parsePin(layer.input(ii));
                 if (layer_id.find(inp.name) == layer_id.end())
-                    CV_Error(Error::StsError, "Input layer not found: " + inp.name);
+                    CV_dnn_Error(Error::StsError, "Input layer not found: " + inp.name);
                 dstNet.connect(layer_id.at(inp.name), inp.blobIndex, id, ii - 1);
             }
         }
@@ -729,7 +738,9 @@ void TFImporter::populateNet(Net dstNet)
         else
         {
             printLayerAttr(layer);
-            CV_Error_(Error::StsError, ("Unknown layer type %s in op %s", type.c_str(), name.c_str()));
+            std::ostringstream ss;
+            ss << "Unknown layer type " << type.c_str() << " in op " << name.c_str();
+            CV_dnn_Error(cv::Error::StsNotImplemented, ss.str());
         }
     }
 }
