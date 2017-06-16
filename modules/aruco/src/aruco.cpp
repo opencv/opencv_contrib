@@ -1676,6 +1676,7 @@ void _drawPlanarBoardImpl(Board *_board, Size outSize, OutputArray _img, int mar
 
         // get marker
         Size dst_sz(outCorners[2] - outCorners[0]); // assuming CCW order
+        dst_sz.width = dst_sz.height = std::min(dst_sz.width, dst_sz.height); //marker should be square
         dictionary.drawMarker(_board->ids[m], dst_sz.width, marker, borderBits);
 
         if((outCorners[0].y == outCorners[1].y) && (outCorners[1].x == outCorners[2].x)) {
