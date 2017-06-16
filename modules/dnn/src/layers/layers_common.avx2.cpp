@@ -204,7 +204,7 @@ void fastGEMM1T_avx2( const float* vec, const float* weights,
 
         for( int k = 0; k < vecsize; k += 8, wptr += 8 )
         {
-            __m256 v = _mm256_load_ps(vec + k);
+            __m256 v = _mm256_loadu_ps(vec + k);
 
             vs0 = _mm256_fmadd_ps(_mm256_load_ps(wptr), v, vs0);
             vs1 = _mm256_fmadd_ps(_mm256_load_ps(wptr + wstep), v, vs1);
@@ -237,7 +237,7 @@ void fastGEMM1T_avx2( const float* vec, const float* weights,
 
         for( int k = 0; k < vecsize; k += 8, wptr += 8 )
         {
-            __m256 v = _mm256_load_ps(vec + k);
+            __m256 v = _mm256_loadu_ps(vec + k);
             vs0 = _mm256_fmadd_ps(_mm256_load_ps(wptr), v, vs0);
         }
 

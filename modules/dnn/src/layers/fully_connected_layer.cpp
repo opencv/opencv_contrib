@@ -169,7 +169,7 @@ public:
 
                         for( k = 0; k < vecsize; k += 4 )
                         {
-                            vfloat32x4 v = v_load_aligned(sptr + k);
+                            vfloat32x4 v = v_load(sptr + k);
                             vs0 += v*v_load_aligned(wptr + k);
                             vs1 += v*v_load_aligned(wptr + wstep + k);
                             vs2 += v*v_load_aligned(wptr + wstep*2 + k);
