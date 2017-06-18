@@ -46,7 +46,7 @@
 
 #include <opencv2/xphoto.hpp>
 
-#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
@@ -60,6 +60,19 @@ void obstructionFree(const std::vector <Mat> &srcImgs, Mat &dst, Mat &mask){
     dst.create( srcImgs[reference_number].size(), srcImgs[reference_number].type() );
     mask = Mat::zeros(dst.rows,dst.cols,CV_8UC1);
 
+
+        /////////construct image pyramids//////
+    int pyramid_level=3;
+    std::vector<Mat> video_coarseLeve;
+    for (int frame_i=0; frame_i<frameNumber; frame_i++){
+        Mat temp, temp_gray;
+        temp=srcImgs[frame_i].clone();
+        cvtColor(temp, temp_gray, COLOR_RGB2GRAY);
+        for (int i=0; i<pyramid_level; i++){
+            pyrDown( temp_gray, temp_gray );
+        }
+        video_coarseLeve.push_back(temp_gray.clone());
+    }
 }
 }
 }
