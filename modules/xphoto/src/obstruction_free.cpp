@@ -11,11 +11,8 @@
 //                For Open Source Computer Vision Library
 //
 // Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
-// Copyright (C) 2009, Willow Garage Inc., all rights reserved.
+// Copyright (C) 2009-2011, Willow Garage Inc., all rights reserved.
 // Third party copyrights are property of their respective owners.
-//
-// Redistribution and use in source and binary forms, with or without modification,
-// are permitted provided that the following conditions are met:
 //
 //   * Redistribution's of source code must retain the above copyright notice,
 //     this list of conditions and the following disclaimer.
@@ -24,7 +21,7 @@
 //     this list of conditions and the following disclaimer in the documentation
 //     and/or other materials provided with the distribution.
 //
-//   * The name of the copyright holders may not be used to endorse or promote products
+//   * The name of Intel Corporation may not be used to endorse or promote products
 //     derived from this software without specific prior written permission.
 //
 // This software is provided by the copyright holders and contributors "as is" and
@@ -40,15 +37,31 @@
 //
 //M*/
 
-#ifndef __OPENCV_XPHOTO_HPP__
-#define __OPENCV_XPHOTO_HPP__
+#ifndef __OPENCV_OBSTRUCTION_FREE_CPP__
+#define __OPENCV_OBSTRUCTION_FREE_CPP__
+#ifdef __cplusplus
 
-/** @defgroup xphoto Additional photo processing algorithms
-*/
+#include <vector>
+#include <iostream>
 
-#include "xphoto/inpainting.hpp"
-#include "xphoto/white_balance.hpp"
-#include "xphoto/dct_image_denoising.hpp"
-#include "xphoto/bm3d_image_denoising.hpp"
-#include "xphoto/obstruction_free.hpp"
-#endif
+#include <opencv2/xphoto.hpp>
+
+#include <opencv2/opencv.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
+
+namespace cv
+{
+namespace xphoto
+{
+void obstructionFree(const std::vector <Mat> &srcImgs, Mat &dst, Mat &mask){
+    int frameNumber = srcImgs.size();
+    int reference_number = (frameNumber-1)/2;;
+    dst.create( srcImgs[reference_number].size(), srcImgs[reference_number].type() );
+    mask = Mat::zeros(dst.rows,dst.cols,CV_8UC1);
+
+}
+}
+}
+#endif // __OPENCV_PCALIB_CPP__
+#endif // cplusplus

@@ -11,7 +11,7 @@
 //                For Open Source Computer Vision Library
 //
 // Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
-// Copyright (C) 2009, Willow Garage Inc., all rights reserved.
+// Copyright (C) 2009-2011, Willow Garage Inc., all rights reserved.
 // Third party copyrights are property of their respective owners.
 //
 // Redistribution and use in source and binary forms, with or without modification,
@@ -40,15 +40,38 @@
 //
 //M*/
 
-#ifndef __OPENCV_XPHOTO_HPP__
-#define __OPENCV_XPHOTO_HPP__
+#ifndef __OPENCV_OBSTRUCTION_FREE_HPP__
+#define __OPENCV_OBSTRUCTION_FREE_HPP__
 
-/** @defgroup xphoto Additional photo processing algorithms
+/** @file
+@date June 18, 2017
+@author Binbin Xu
 */
 
-#include "xphoto/inpainting.hpp"
-#include "xphoto/white_balance.hpp"
-#include "xphoto/dct_image_denoising.hpp"
-#include "xphoto/bm3d_image_denoising.hpp"
-#include "xphoto/obstruction_free.hpp"
-#endif
+#include <opencv2/core.hpp>
+
+namespace cv
+{
+namespace xphoto
+{
+
+//! @addtogroup xphoto
+//! @{
+
+
+    /** @brief The function implements a general obstruction free approach that can remove occlusions and reflections from input image sequences without manual masks.
+
+    See the original paper @cite Xue2015ObstructionFree for more details.
+
+    @param src source image sequences, involving translation motions.
+    @param dst Obstruction-removed destination image, corresponding to the reference image, with the same size and type. In general, the reference image is the center frame of the input image.
+    @param mask mask (CV_8UC1), where zero pixels indicate area to be estimated to be occlusions.
+    */
+    CV_EXPORTS void obstructionFree(const std::vector <Mat> &srcImgs, Mat &dst, Mat &mask);
+
+//! @}
+
+}
+}
+
+#endif // __OPENCV_INPAINTING_HPP__
