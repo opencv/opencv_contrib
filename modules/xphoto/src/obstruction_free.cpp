@@ -55,8 +55,8 @@ namespace cv
 namespace xphoto
 {
 void obstructionFree(const std::vector <Mat> &srcImgs, Mat &dst, Mat &mask){
-    int frameNumber = srcImgs.size();
-    int reference_number = (frameNumber-1)/2;;
+    size_t frameNumber = srcImgs.size();
+    size_t reference_number = (frameNumber-1)/2;;
     dst.create( srcImgs[reference_number].size(), srcImgs[reference_number].type() );
     mask = Mat::zeros(dst.rows,dst.cols,CV_8UC1);
 
@@ -64,7 +64,7 @@ void obstructionFree(const std::vector <Mat> &srcImgs, Mat &dst, Mat &mask){
         /////////construct image pyramids//////
     int pyramid_level=3;
     std::vector<Mat> video_coarseLeve;
-    for (int frame_i=0; frame_i<frameNumber; frame_i++){
+    for (size_t frame_i=0; frame_i<frameNumber; frame_i++){
         Mat temp, temp_gray;
         temp=srcImgs[frame_i].clone();
         cvtColor(temp, temp_gray, COLOR_RGB2GRAY);

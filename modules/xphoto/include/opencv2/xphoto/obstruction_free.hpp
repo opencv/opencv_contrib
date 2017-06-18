@@ -63,7 +63,7 @@ namespace xphoto
 
     See the original paper @cite Xue2015ObstructionFree for more details.
 
-    @param src source image sequences, involving translation motions.
+    @param srcImgs source image sequences, involving translation motions.
     @param dst Obstruction-removed destination image, corresponding to the reference image, with the same size and type. In general, the reference image is the center frame of the input image.
     @param mask mask (CV_8UC1), where zero pixels indicate area to be estimated to be occlusions.
     */
