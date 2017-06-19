@@ -55,7 +55,6 @@ static void computeShapeByReshapeMask(const MatShape &srcShape,
 {
     int srcShapeSize = (int)srcShape.size();
     int maskShapeSize = (int)maskShape.size();
-    int maskTotal = abs(total(maskShape));  // Mask might have negative ones.
 
     if (srcRange == Range::all())
         srcRange = Range(0, srcShapeSize);
@@ -66,8 +65,15 @@ static void computeShapeByReshapeMask(const MatShape &srcShape,
         srcRange.end = srcRange.end == INT_MAX ? srcShapeSize : srcRange.start + sz;
     }
 
-    if (maskTotal != 0)
+    bool explicitMask = !maskShape.empty();  // All mask values are positive.
+    for (int i = 0, n = maskShape.size(); i < n && explicitMask; ++i)
     {
+        explicitMask = maskShape[i] > 0;
+    }
+    // Working range of source shape is a range where area(src) == area(mask).
+    if (explicitMask)
+    {
+        int maskTotal = total(maskShape);
         for (int i = srcRange.start + 1; i < srcRange.end; ++i)
         {
             if (total(srcShape, i, srcRange.end) != maskTotal)
