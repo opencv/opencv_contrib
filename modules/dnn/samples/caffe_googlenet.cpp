@@ -114,8 +114,9 @@ int main(int argc, char **argv)
         exit(-1);
     }
 
-    resize(img, img, Size(224, 224));                   //GoogLeNet accepts only 224x224 RGB-images
-    Mat inputBlob = blobFromImage(img);   //Convert Mat to batch of images
+    //GoogLeNet accepts only 224x224 RGB-images
+    Mat inputBlob = blobFromImage(img, 1, Size(224, 224),
+                                  Scalar(104, 117, 123));   //Convert Mat to batch of images
     //! [Prepare blob]
 
     //! [Set input blob]
