@@ -40,7 +40,6 @@
 //M*/
 
 #include "../precomp.hpp"
-#include "op_blas.hpp"
 #include <iostream>
 #include <iterator>
 #include <cmath>
@@ -243,9 +242,9 @@ public:
             Range curRowRange(ts*numSamples, (ts + 1)*numSamples);
             Mat xCurr = xTs.rowRange(curRowRange);
 
-            dnn::gemm(xCurr, Wx, 1, gates, 0, GEMM_2_T);      // Wx * x_t
-            dnn::gemm(hInternal, Wh, 1, gates, 1, GEMM_2_T);  //+Wh * h_{t-1}
-            dnn::gemm(dummyOnes, bias, 1, gates, 1);          //+b
+            gemm(xCurr, Wx, 1, gates, 0, gates, GEMM_2_T);      // Wx * x_t
+            gemm(hInternal, Wh, 1, gates, 1, gates, GEMM_2_T);  //+Wh * h_{t-1}
+            gemm(dummyOnes, bias, 1, gates, 1, gates);          //+b
 
             Mat getesIFO = gates.colRange(0, 3*numOut);
             Mat gateI = gates.colRange(0*numOut, 1*numOut);
@@ -419,14 +418,14 @@ public:
             Range curRowRange = Range(ts * numSamples, (ts + 1) * numSamples);
             Mat xCurr = xTs.rowRange(curRowRange);
 
-            dnn::gemm(hPrev, Whh, 1, hCurr, 0, GEMM_2_T); // W_{hh} * h_{prev}
-            dnn::gemm(xCurr, Wxh, 1, hCurr, 1, GEMM_2_T); //+W_{xh} * x_{curr}
-            dnn::gemm(dummyBiasOnes, bh, 1, hCurr, 1);    //+bh
+            gemm(hPrev, Whh, 1, hCurr, 0, hCurr, GEMM_2_T); // W_{hh} * h_{prev}
+            gemm(xCurr, Wxh, 1, hCurr, 1, hCurr, GEMM_2_T); //+W_{xh} * x_{curr}
+            gemm(dummyBiasOnes, bh, 1, hCurr, 1, hCurr);    //+bh
             tanh(hCurr, hPrev);
 
             Mat oCurr = oTs.rowRange(curRowRange);
-            dnn::gemm(hPrev, Who, 1, oCurr, 0, GEMM_2_T); // W_{ho} * h_{prev}
-            dnn::gemm(dummyBiasOnes, bo, 1, oCurr, 1);    //+b_o
+            gemm(hPrev, Who, 1, oCurr, 0, oCurr, GEMM_2_T); // W_{ho} * h_{prev}
+            gemm(dummyBiasOnes, bo, 1, oCurr, 1, oCurr);    //+b_o
             tanh(oCurr, oCurr);
 
             if (produceH)

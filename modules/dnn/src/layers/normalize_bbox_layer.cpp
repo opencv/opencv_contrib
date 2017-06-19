@@ -41,7 +41,6 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include "op_blas.hpp"
 
 #include <float.h>
 #include <algorithm>
@@ -182,14 +181,14 @@ public:
                     Mat norm(channelSize, 1, buffer.type()); // 1 x channelSize
 
                     // (_channels x channelSize)T * _channels x 1 -> channelSize x 1
-                    gemmCPU(buffer, sumChannelMultiplier, 1, norm, 0, GEMM_1_T);
+                    gemm(buffer, sumChannelMultiplier, 1, norm, 0, norm, GEMM_1_T);
 
                     // compute norm
                     pow(norm, 0.5f, norm);
 
                     // scale the layer
                     // _channels x 1 * (channelSize x 1)T -> _channels x channelSize
-                    gemmCPU(sumChannelMultiplier, norm, 1, buffer, 0, GEMM_2_T);
+                    gemm(sumChannelMultiplier, norm, 1, buffer, 0, buffer, GEMM_2_T);
 
                     dst = src / buffer;
                 }
@@ -204,7 +203,7 @@ public:
                 {
                     // _scale: _channels x 1
                     // _channels x 1 * 1 x channelSize -> _channels x channelSize
-                    gemmCPU(scale, sumSpatialMultiplier, 1, buffer, 0);
+                    gemm(scale, sumSpatialMultiplier, 1, buffer, 0, buffer);
 
                     dst = dst.mul(buffer);
                 }

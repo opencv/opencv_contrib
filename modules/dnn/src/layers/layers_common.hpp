@@ -42,8 +42,6 @@
 #ifndef __OPENCV_DNN_LAYERS_LAYERS_COMMON_HPP__
 #define __OPENCV_DNN_LAYERS_LAYERS_COMMON_HPP__
 #include <opencv2/dnn.hpp>
-#include "op_blas.hpp"
-#include "op_im2col.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
