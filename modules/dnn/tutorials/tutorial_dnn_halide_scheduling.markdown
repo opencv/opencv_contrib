@@ -10,8 +10,10 @@ For better understanding of Halide scheduling you might want to read tutorials @
 If it's your first meeting with Halide in OpenCV, we recommend to start from @ref tutorial_dnn_halide.
 
 ## Configuration files
-When you call ```cv::dnn::Net::compileHalide```, you can pass a path to textual file
-contains scheduling directives for specific device.
+You can schedule computations of Halide pipeline by writing textual configuration files.
+It means that you can easily vectorize, parallelize and manage loops order of
+layers computation. Pass path to file with scheduling directives for specific
+device into ```cv::dnn::Net::setHalideScheduler``` before the first ```cv::dnn::Net::forward``` call.
 
 Scheduling configuration files represented as YAML files where each node is a
 scheduled function or a scheduling directive.
@@ -74,10 +76,7 @@ fc8:
 @endcode
 
 ## Automatic scheduling
-Based on manual scheduling experience, proposed way to schedule layers
-automatically. Just skip scheduling file path argument at ```cv::dnn::Net::compileHalide```
-for let DNN schedule your network. Sometimes it might be even better
-than manual scheduling.
-
-You can mix both manual and automatic scheduling ways. Write scheduling file
+You can let DNN to schedule layers automatically. Just skip call of ```cv::dnn::Net::setHalideScheduler```. Sometimes it might be even more efficient than manual scheduling.
+But if specific layers require be scheduled manually, you would be able to
+mix both manual and automatic scheduling ways. Write scheduling file
 and skip layers that you want to be scheduled automatically.

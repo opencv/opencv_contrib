@@ -24,14 +24,11 @@ static void test(LayerParams& params, Mat& input)
     int lid = net.addLayer(params.name, params.type, params);
     net.connect(0, 0, lid, 0);
 
-    net.setBlob("", input);
-    net.allocate();
-    net.forward();
-    Mat outputDefault = net.getBlob(params.name).clone();
+    net.setInput(input);
+    Mat outputDefault = net.forward(params.name).clone();
 
     net.setPreferableBackend(DNN_BACKEND_HALIDE);
-    net.forward();
-    Mat outputHalide = net.getBlob(params.name).clone();
+    Mat outputHalide = net.forward(params.name).clone();
     normAssert(outputDefault, outputHalide);
 }
 
@@ -346,14 +343,12 @@ TEST(MaxPoolUnpool_Halide, Accuracy)
 
     Mat input({1, 1, 4, 4}, CV_32F);
     randu(input, -1.0f, 1.0f);
-    net.setBlob("", input);
-    net.forward();
-    Mat outputDefault = net.getBlob("testUnpool").clone();
+    net.setInput(input);
+    Mat outputDefault = net.forward("testUnpool").clone();
 
     net.setPreferableBackend(DNN_BACKEND_HALIDE);
-    net.setBlob("", input);
-    net.forward();
-    Mat outputHalide = net.getBlob("testUnpool").clone();
+    net.setInput(input);
+    Mat outputHalide = net.forward("testUnpool").clone();
     normAssert(outputDefault, outputHalide);
 }
 
@@ -381,14 +376,12 @@ void testInPlaceActivation(LayerParams& lp)
 
     Mat input({1, kNumChannels, 10, 10}, CV_32F);
     randu(input, -1.0f, 1.0f);
-    net.setBlob("", input);
-    net.forward();
-    Mat outputDefault = net.getBlob(lp.name).clone();
+    net.setInput(input);
+    Mat outputDefault = net.forward(lp.name).clone();
 
-    net.setBlob("", input);
+    net.setInput(input);
     net.setPreferableBackend(DNN_BACKEND_HALIDE);
-    net.forward();
-    Mat outputHalide = net.getBlob(lp.name).clone();
+    Mat outputHalide = net.forward(lp.name).clone();
     normAssert(outputDefault, outputHalide);
 }
 
@@ -555,13 +548,11 @@ TEST_P(Concat, Accuracy)
     Mat input({1, inSize[0], inSize[1], inSize[2]}, CV_32F);
     randu(input, -1.0f, 1.0f);
 
-    net.setBlob("", input);
-    net.forward();
-    Mat outputDefault = net.getBlob(concatParam.name).clone();
+    net.setInput(input);
+    Mat outputDefault = net.forward(concatParam.name).clone();
 
     net.setPreferableBackend(DNN_BACKEND_HALIDE);
-    net.forward();
-    Mat outputHalide = net.getBlob(concatParam.name).clone();
+    Mat outputHalide = net.forward(concatParam.name).clone();
     normAssert(outputDefault, outputHalide);
 }
 
@@ -617,13 +608,11 @@ TEST_P(Eltwise, Accuracy)
     Mat input({1, inSize[0], inSize[1], inSize[2]}, CV_32F);
     randu(input, -1.0f, 1.0f);
 
-    net.setBlob("", input);
-    net.forward();
-    Mat outputDefault = net.getBlob(eltwiseParam.name).clone();
+    net.setInput(input);
+    Mat outputDefault = net.forward(eltwiseParam.name).clone();
 
     net.setPreferableBackend(DNN_BACKEND_HALIDE);
-    net.forward();
-    Mat outputHalide = net.getBlob(eltwiseParam.name).clone();
+    Mat outputHalide = net.forward(eltwiseParam.name).clone();
     normAssert(outputDefault, outputHalide);
 }
 
