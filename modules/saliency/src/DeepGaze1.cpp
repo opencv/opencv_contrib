@@ -4,7 +4,7 @@
  *  Created on: Jun 1, 2017
  *      Author: qsx
  */
-#include "DeepGaze1.hpp"
+#include "precomp.hpp"
 #include <vector>
 #include <cmath>
 #include <string>
@@ -12,6 +12,7 @@
 #include <cstdlib>
 #include <algorithm>
 #include <utility>
+#include <numeric>
 
 using namespace std;
 using namespace cv;
@@ -41,9 +42,10 @@ DeepGaze1::DeepGaze1(string net_proto, string net_caffemodel, vector<string> sel
 	}
 }
 
-void DeepGaze1::featureMapGenerator(string input_image, vector<Mat>& featureMaps)
+vector<Mat> DeepGaze1::featureMapGenerator(Mat img)
 {
-	Mat img = imread(input_image);
+	//Mat img = imread(input_image);
+	vector<Mat> featureMaps;
 	Mat me(227, 227, CV_64F, Scalar::all(0.0));//hard coded currently, change later
 	Mat std(227, 227, CV_64F, Scalar::all(0.0));
 	Mat temp(227, 227, CV_64F, Scalar::all(0.0));
@@ -78,37 +80,40 @@ void DeepGaze1::featureMapGenerator(string input_image, vector<Mat>& featureMaps
 		featureMaps[i] -= me;
 		divide(featureMaps[i], std, featureMaps[i]);
 	}
+	/*
+	for(unsigned i = 0;i < featureMaps.size();i++)
+	{
+		Scalar me, std;
+		meanStdDev(featureMaps[i], me, std);
+		featureMaps[i] -= me.val[0];
+		if(std.val[0] != 0) featureMaps[i] /= std.val[0];
+	}*/
 	Mat centerBias(227, 227, CV_64F, Scalar::all(0.0));
 	for(int i = 0;i < centerBias.rows;i++)
 	{
 		for(int j = 0;j < centerBias.cols;j++)
 		{
-			double ratio = ((i - centerBias.rows / 2.0) * (i - centerBias.rows / 2.0) + (j - centerBias.cols / 2.0) * (j - centerBias.cols / 2.0)) * 3.14 / centerBias.rows / centerBias.cols;
-		/*	if (ratio <= 0.11)
-			{
-				centerBias.at<double>(i, j) = 1 * exp(-2.32 * ratio);
-			}
-			else if (ratio <= 0.25)
-			{
-				centerBias.at<double>(i, j) = 8 / 9 * exp(-2.4 * (ratio - 0.11) );
-			}
-			else
-			{
-				centerBias.at<double>(i, j) = 5 / 9 * exp(-3 * (ratio - 0.25) );
-			}*/
-			centerBias.at<double>(i, j) = 1 * exp(-0.02 * ratio);
+			double temp = max(abs(i - 227/2), abs(i - 227/2)) * 1.414;
+			centerBias.at<double>(i, j) = 0.01 * exp(-0.0001 * temp * temp);
+			//double ratio = abs(i - centerBias.rows / 2.0) * 2 * abs(j - centerBias.cols / 2.0) * 2 / centerBias.rows / centerBias.cols;
+			//centerBias.at<double>(i, j) = 0.01 * exp(-1.2 * ratio);
 		}
 	}
 	featureMaps.push_back(centerBias);
+	return featureMaps;
 }
 
-Mat DeepGaze1::saliencyMapGenerator(string input_image)
+bool computeSaliencyImpl(InputArray image, OutputArray saleicnyMap)
+{
+	vector<Mat> featureMaps = featureMapGenerator(image);
+	saliencyMap = softmax(comb(featureMaps, weights));
+	return true;
+}
+
+Mat DeepGaze1::saliencyMapGenerator(Mat input_image)
 {
 //raw saliency map generate
-	vector<Mat> featureMaps;
-
-	featureMapGenerator(input_image, featureMaps);
-	training(featureMaps);
+	vector<Mat> featureMaps = featureMapGenerator(input_image);
 	return softmax(comb(featureMaps, weights));
 }
 
@@ -122,7 +127,8 @@ Mat DeepGaze1::comb(vector<Mat>& featureMaps, vector<double> wei)
 		temp *= wei[i];
 		res += temp;
 	}
-	filter2D(res, res, -1, getGaussianKernel(5, 1), Point(-1, -1), 0, BORDER_DEFAULT);
+	//filter2D(res, res, -1, getGaussianKernel(30, 1), Point(-1, -1), 0, BORDER_DEFAULT);
+	GaussianBlur(res, res, Size(51, 51), 0, 0);
 	return res;
 }
 
@@ -152,10 +158,10 @@ vector<unsigned> DeepGaze1::batchIndex(unsigned total, unsigned batchSize)
 
 
 
-vector<unsigned> DeepGaze1::fixationLoc()
+vector<unsigned> DeepGaze1::fixationLoc(Mat img)
 {
 	vector<unsigned> randIndex;
-	Mat img = imread("ALLFIXATIONMAPS/i05june05_static_street_boston_p1010764_fixMap.jpg", 0);
+	//Mat img = imread("ALLFIXATIONMAPS/i05june05_static_street_boston_p1010764_fixPts.jpg", 0);
 	resize(img, img, Size(227, 227), 0, 0, INTER_AREA);
 	vector<unsigned> fixation;
 	vector<pair<unsigned, unsigned> > match;
@@ -167,7 +173,7 @@ vector<unsigned> DeepGaze1::fixationLoc()
 	sort(match.begin(), match.end(), [](pair<unsigned, unsigned> a, pair<unsigned, unsigned> b) {
 		return b.first < a.first;
 	});
-	for(unsigned i = 0 ; i <= match.size() * 0.05 && match[i].first > 0 ; i++)
+	for(unsigned i = 0 ; i <= match.size() * 0.2 && match[i].first > 0 ; i++)
 	{
 		randIndex.push_back(match[i].second);
 	}
@@ -209,7 +215,6 @@ vector<double> DeepGaze1::evalGrad(vector<Mat>& featureMaps, vector<unsigned> ra
 	vector<double> grad(featureMaps.size(), 0);
 
 	Mat c = comb(featureMaps, weights);
-	//cout << c << endl;
 	Mat saliency_old = softmax(c.clone());
 	vector<double> tt_old = mapSampler(saliency_old, randIndex);
 	double loss_old = 0;
@@ -220,7 +225,8 @@ vector<double> DeepGaze1::evalGrad(vector<Mat>& featureMaps, vector<unsigned> ra
 		Mat temp(227, 227, CV_64F, Scalar::all(0.0));
 		temp += 0.0001 * featureMaps[i];
 		saliency_new += temp;
-		filter2D(saliency_new, saliency_new, -1, getGaussianKernel(5, 1), Point(-1, -1), 0, BORDER_DEFAULT);
+		//filter2D(saliency_new, saliency_new, -1, getGaussianKernel(30, 1), Point(-1, -1), 0, BORDER_DEFAULT);
+		GaussianBlur(saliency_new, saliency_new, Size(51, 51), 0, 0);
 		saliency_new = softmax(saliency_new);
 		vector<double> weights_new(weights);
 		weights_new[i] += 0.0001;
@@ -232,24 +238,29 @@ vector<double> DeepGaze1::evalGrad(vector<Mat>& featureMaps, vector<unsigned> ra
 	return grad;
 }
 
-void DeepGaze1::training(vector<Mat>& featureMaps)
+void DeepGaze1::training(vector<Mat>& images, vector<Mat>& fixMaps)
 {
-	vector<unsigned> randIndex = fixationLoc();
-	vector<double> grad;
-	vector<double> vel(weights.size(), 0);
-	for(unsigned i = 0;i < 40;i++)
-	{
-		grad = evalGrad(featureMaps, randIndex);
-		for(unsigned j = 0;j < grad.size();j++)
-		{
-			vel[j] = 0.9 * vel[j] + grad[j];
-			weights[j] -= 0.001 * vel[j] * exp(-0.1 * i);
-		}
-		cout << " " << grad[0];
-	}
-	//cout << endl;
-	//for(unsigned i = 0;i < weights.size();i++) cout << i << " " << weights[i] << endl;
+  vector<unsigned> randIndex = batchIndex(images.size(), images.size());
+  vector<vector<unsigned> > fixLoc_list;
+  vector<vector<Mat> > featureMaps_list;
+  vector<double> grad;
+  vector<double> vel(weights.size(), 0);
+
+
+  for(unsigned i : randIndex)
+  {
+    vector<Mat> featureMaps = featureMapGenerator(images[i]);
+    vector<unsigned> fixLoc = fixationLoc(fixMaps[i]);
+    grad = evalGrad(featureMaps, fixLoc);
+    for(unsigned j = 0; j < grad.size(); j++)
+    {
+    	vel[j] = 0.9 * vel[j] + grad[j];
+    	weights[j] -= 0.001 * vel[j] * exp(-0.001 * i);
+    }
+    double avgGrad = accumulate(grad.begin(), grad.end(), 0.0) / weights.size();
+    double avgWeight = accumulate(weights.begin(), weights.end(), 0.0) / weights.size();
+    if (abs(avgGrad) <= 0.01 || isnan(avgGrad)) break;
+    cout << i << " " << avgGrad << " " << avgWeight << endl;
+  }
+
 }
-
-
-

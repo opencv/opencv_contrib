@@ -176,21 +176,20 @@ public:
     if(image.empty())
       return false;
 
-    return computeSaliencyImpl(image, slaiencyMap);
+    return computeSaliencyImpl(image, saliencyMap);
   }
 
 protect:
-  bool computeSaliencyImpl(InputArray image, OutputArray saleicnyMap);
-	void featureMapGenerator(string, vector<Mat>&);
-	Mat comb(vector<Mat>&, vector<double>);
-	Mat softmax(Mat);
-	Mat saliencyMapGenerator(string);
-	void training(vector<Mat>&);
-	vector<double> evalGrad(vector<Mat>&, vector<unsigned>);
-	vector<unsigned> batchIndex(unsigned, unsigned);
-	double loss(vector<double>, vector<double>);
-	vector<double> mapSampler(Mat, vector<unsigned>);
-	vector<unsigned> fixationLoc();
+  bool computeSaliencyImpl(InputArray image, OutputArray saliencyMap);
+  vector<Mat> featureMapGenerator(Mat);
+  Mat comb(vector<Mat>&, vector<double>);
+  Mat softmax(Mat);
+  void training(vector<Mat>&, vector<Mat>&);
+  vector<double> evalGrad(vector<Mat>&, vector<unsigned>);
+  vector<unsigned> batchIndex(unsigned, unsigned);
+  double loss(vector<double>, vector<double>);
+  vector<double> mapSampler(Mat, vector<unsigned>);
+  vector<unsigned> fixationLoc(Mat);
 };
 
 
