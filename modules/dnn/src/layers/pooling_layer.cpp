@@ -41,6 +41,7 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
+#include "opencv2/core/hal/intrin.hpp"
 #include "op_halide.hpp"
 #include <float.h>
 #include <algorithm>
@@ -177,6 +178,9 @@ public:
             int kernel_w = kernel_.width, kernel_h = kernel_.height;
             int pad_w = pad_.width, pad_h = pad_.height;
             int stride_w = stride_.width, stride_h = stride_.height;
+            v_float32x4 idx00(0.f, (float)stride_w, (float)(stride_w*2), (float)(stride_w*3));
+            v_float32x4 ones = v_setall_f32(1.f);
+            v_float32x4 delta = v_setall_f32((float)(inp_width - kernel_w));
 
             for( ofs = stripeStart; ofs < stripeEnd; ofs++, dstData++, dstMaskData++ )
             {
@@ -189,20 +193,62 @@ public:
                 float max_val = -FLT_MAX;
                 int max_index = -1;
 
-                for (int y = ystart; y < yend; ++y)
-                    for (int x = xstart; x < xend; ++x)
-                    {
-                        const int index = y * inp_width + x;
-                        float val = srcData[index];
-                        if (val > max_val)
-                        {
-                            max_val = val;
-                            max_index = index;
-                        }
-                    }
+            #if CV_SIMD128
+                if( xstart > 0 && (x0 + 7) * stride_w - pad_w + kernel_w < inp_width )
+                {
+                    v_float32x4 max_val0 = v_setall_f32(max_val);
+                    v_float32x4 max_val1 = max_val0;
+                    v_float32x4 max_idx0 = v_setall_f32(-1.f);
+                    v_float32x4 max_idx1 = max_idx0;
+                    int index0 = ystart * inp_width + xstart;
+                    v_float32x4 idx0 = idx00 + v_setall_f32((float)index0);
+                    v_float32x4 idx1 = idx0 + v_setall_f32((float)(stride_w*4));
 
-                *dstData = max_val;
-                *dstMaskData = max_index;
+                    for (int y = ystart; y < yend; ++y)
+                    {
+                        for (int x = xstart; x < xend; ++x, idx0 += ones, idx1 += ones)
+                        {
+                            const int index = y * inp_width + x;
+                            v_float32x4 v0(srcData[index], srcData[index + stride_w],
+                                           srcData[index + stride_w*2], srcData[index + stride_w*3]);
+                            v_float32x4 v1(srcData[index + stride_w*4], srcData[index + stride_w*5],
+                                           srcData[index + stride_w*6], srcData[index + stride_w*7]);
+                            max_idx0 = v_select(v0 > max_val0, idx0, max_idx0);
+                            max_idx1 = v_select(v1 > max_val1, idx1, max_idx1);
+                            max_val0 = v_max(max_val0, v0);
+                            max_val1 = v_max(max_val1, v1);
+                        }
+                        idx0 += delta;
+                        idx1 += delta;
+                    }
+                    v_store(dstData, max_val0);
+                    v_store(dstData + 4, max_val1);
+                    v_store(dstMaskData, max_idx0);
+                    v_store(dstMaskData + 4, max_idx1);
+                    ofs += 7;
+                    dstData += 7;
+                    dstMaskData += 7;
+                    x0 += 7;
+                }
+                else
+            #endif
+                {
+                    for (int y = ystart; y < yend; ++y)
+                        for (int x = xstart; x < xend; ++x)
+                        {
+                            const int index = y * inp_width + x;
+                            float val = srcData[index];
+                            if (val > max_val)
+                            {
+                                max_val = val;
+                                max_index = index;
+                            }
+                        }
+
+                    *dstData = max_val;
+                    *dstMaskData = max_index;
+                }
+
                 if( ++x0 >= width )
                 {
                     x0 = 0;

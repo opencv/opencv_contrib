@@ -1042,7 +1042,7 @@ public:
 
         void operator()(const Range& range_) const
         {
-            int stripeSize = (b_->cols + nstripes_ - 1)/nstripes_;
+            int stripeSize = (int)alignSize((b_->cols + nstripes_ - 1)/nstripes_, 16);
             Range range(range_.start*stripeSize, std::min(range_.end*stripeSize, b_->cols));
             int mmax = a_->rows;
             int nmax = range.end - range.start;
@@ -1139,9 +1139,9 @@ public:
                     for( ; n < nmax; n++ )
                     {
                         float b0 = bptr0[n], b1 = bptr1[n];
-                        float b2 = bptr1[n], b3 = bptr2[n];
+                        float b2 = bptr2[n], b3 = bptr3[n];
                         float d0 = dst0[n] + alpha00*b0 + alpha10*b1 + alpha20*b2 + alpha30*b3;
-                        float d1 = dst0[n] + alpha01*b0 + alpha11*b1 + alpha21*b2 + alpha31*b3;
+                        float d1 = dst1[n] + alpha01*b0 + alpha11*b1 + alpha21*b2 + alpha31*b3;
                         dst0[n] = d0;
                         dst1[n] = d1;
                     }
