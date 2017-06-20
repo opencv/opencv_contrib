@@ -72,6 +72,9 @@ void fastConv_avx2(const float* weights, size_t wstep, const float* bias,
 void fastGEMM1T_avx2( const float* vec, const float* weights,
                      size_t wstep, const float* bias,
                      float* dst, int nvecs, int vecsize );
+void fastGEMM_avx2( const float* aptr, size_t astep, const float* bptr0,
+                   size_t bstep, float* cptr, size_t cstep,
+                   int ma, int na, int nb );
 
 #else
 #define CV_DNN_TRY_AVX2 0

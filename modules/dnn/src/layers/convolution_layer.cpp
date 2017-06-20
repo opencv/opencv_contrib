@@ -1028,6 +1028,133 @@ public:
         return false;
     }
 
+    class MatMulInvoker : public ParallelLoopBody
+    {
+    public:
+        MatMulInvoker(const Mat& a, const Mat& b, Mat& c, int nstripes)
+        {
+            a_ = &a;
+            b_ = &b;
+            c_ = &c;
+            nstripes_ = nstripes;
+            useAVX2 = checkHardwareSupport(CPU_AVX2);
+        }
+
+        void operator()(const Range& range_) const
+        {
+            int stripeSize = (b_->cols + nstripes_ - 1)/nstripes_;
+            Range range(range_.start*stripeSize, std::min(range_.end*stripeSize, b_->cols));
+            int mmax = a_->rows;
+            int nmax = range.end - range.start;
+            int kmax = a_->cols;
+            int m, n, k;
+            const float* aptr = a_->ptr<float>();
+            const float* bptr = b_->ptr<float>() + range.start;
+            float* cptr = c_->ptr<float>() + range.start;
+            size_t astep = a_->step1();
+            size_t bstep = b_->step1();
+            size_t cstep = c_->step1();
+
+        #if CV_DNN_TRY_AVX2
+            if( useAVX2 )
+                fastGEMM_avx2( aptr, astep, bptr, bstep, cptr, cstep, mmax, kmax, nmax );
+            else
+        #endif
+            for( m = 0; m < mmax; m += 2 )
+            {
+                float* dst0 = cptr + cstep*m;
+                float* dst1 = cptr + cstep*std::min(m+1, mmax-1);
+                const float* aptr0 = aptr + astep*m;
+                const float* aptr1 = aptr + astep*std::min(m+1, mmax-1);
+
+                for( n = 0; n < nmax; n++ )
+                {
+                    dst0[n] = 0.f;
+                    dst1[n] = 0.f;
+                }
+
+                for( k = 0; k < kmax; k += 4 )
+                {
+                    float alpha00 = aptr0[k];
+                    float alpha01 = aptr1[k];
+                    float alpha10 = 0.f, alpha11 = 0.f;
+                    float alpha20 = 0.f, alpha21 = 0.f;
+                    float alpha30 = 0.f, alpha31 = 0.f;
+                    const float* bptr0 = bptr + k*bstep;
+                    const float* bptr1 = bptr0;
+                    const float* bptr2 = bptr0;
+                    const float* bptr3 = bptr0;
+
+                    if( k+1 < kmax )
+                    {
+                        alpha10 = aptr0[k+1];
+                        alpha11 = aptr1[k+1];
+                        bptr1 = bptr0 + bstep;
+                        if( k+2 < kmax )
+                        {
+                            alpha20 = aptr0[k+2];
+                            alpha21 = aptr1[k+2];
+                            bptr2 = bptr1 + bstep;
+                            if( k+3 < kmax )
+                            {
+                                alpha30 = aptr0[k+3];
+                                alpha31 = aptr1[k+3];
+                                bptr3 = bptr2 + bstep;
+                            }
+                        }
+                    }
+                    n = 0;
+
+                #if CV_SIMD128
+                    v_float32x4 a00 = v_setall_f32(alpha00);
+                    v_float32x4 a01 = v_setall_f32(alpha01);
+                    v_float32x4 a10 = v_setall_f32(alpha10);
+                    v_float32x4 a11 = v_setall_f32(alpha11);
+                    v_float32x4 a20 = v_setall_f32(alpha20);
+                    v_float32x4 a21 = v_setall_f32(alpha21);
+                    v_float32x4 a30 = v_setall_f32(alpha30);
+                    v_float32x4 a31 = v_setall_f32(alpha31);
+
+                    for( ; n <= nmax - 4; n += 4 )
+                    {
+                        v_float32x4 b0 = v_load(bptr0 + n);
+                        v_float32x4 b1 = v_load(bptr1 + n);
+                        v_float32x4 b2 = v_load(bptr2 + n);
+                        v_float32x4 b3 = v_load(bptr3 + n);
+                        v_float32x4 d0 = v_load(dst0 + n);
+                        v_float32x4 d1 = v_load(dst1 + n);
+                        d0 += b0*a00;
+                        d1 += b0*a01;
+                        d0 += b1*a10;
+                        d1 += b1*a11;
+                        d0 += b2*a20;
+                        d1 += b2*a21;
+                        d0 += b3*a30;
+                        d1 += b3*a31;
+                        v_store(dst0 + n, d0);
+                        v_store(dst1 + n, d1);
+                    }
+                #endif
+
+                    for( ; n < nmax; n++ )
+                    {
+                        float b0 = bptr0[n], b1 = bptr1[n];
+                        float b2 = bptr1[n], b3 = bptr2[n];
+                        float d0 = dst0[n] + alpha00*b0 + alpha10*b1 + alpha20*b2 + alpha30*b3;
+                        float d1 = dst0[n] + alpha01*b0 + alpha11*b1 + alpha21*b2 + alpha31*b3;
+                        dst0[n] = d0;
+                        dst1[n] = d1;
+                    }
+                }
+            }
+        }
+
+        const Mat *a_, *b_;
+        Mat* c_;
+        int nstripes_;
+        bool useAVX2;
+    };
+
     class Col2ImInvoker : public cv::ParallelLoopBody
     {
     public:
@@ -1133,6 +1260,7 @@ public:
         int outCn = blobs[0].size[0];
         int inpCn = inputs[0]->size[1];
         bool is1x1flag = is1x1();
+        int nstripes = getNumThreads();
 
         if( weightsMat.empty() )
         {
@@ -1164,7 +1292,9 @@ public:
                     Mat wghtMat = weightsMat.colRange(_Range(g * inpGroupCn, inpGroupCn));
                     Mat curBiasMat = biasesMat.rowRange(_Range(g * outGroupCn, outGroupCn));
 
-                    gemm(wghtMat, convMat, 1, colMat, 0, colMat, 0);
+                    //gemm(wghtMat, convMat, 1, colMat, 0, colMat, 0);
+                    MatMulInvoker mminvoker(wghtMat, convMat, colMat, nstripes);
+                    parallel_for_(Range(0, nstripes), mminvoker, nstripes);
 
                     Col2ImInvoker::run(colMat.ptr<float>(), outGroupCn, outH, outW,
                                        kernel.height, kernel.width, pad.height, pad.width,

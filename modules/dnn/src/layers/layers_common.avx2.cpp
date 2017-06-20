@@ -250,6 +250,107 @@ void fastGEMM1T_avx2( const float* vec, const float* weights,
     _mm256_zeroupper();
 }
 
+void fastGEMM_avx2( const float* aptr, size_t astep, const float* bptr,
+                   size_t bstep, float* cptr, size_t cstep,
+                   int ma, int na, int nb )
+{
+    for( int m = 0; m < ma; m += 2 )
+    {
+        int n;
+        float* dst0 = cptr + cstep*m;
+        float* dst1 = cptr + cstep*std::min(m+1, ma-1);
+        const float* aptr0 = aptr + astep*m;
+        const float* aptr1 = aptr + astep*std::min(m+1, ma-1);
+        __m256 z = _mm256_setzero_ps();
+
+        for( n = 0; n <= nb - 8; n += 8 )
+        {
+            _mm256_storeu_ps(dst0 + n, z);
+            _mm256_storeu_ps(dst1 + n, z);
+        }
+
+        for( ; n < nb; n++ )
+        {
+            dst0[n] = 0.f;
+            dst1[n] = 0.f;
+        }
+
+        for( int k = 0; k < na; k += 4 )
+        {
+            float alpha00 = aptr0[k];
+            float alpha01 = aptr1[k];
+            float alpha10 = 0.f, alpha11 = 0.f;
+            float alpha20 = 0.f, alpha21 = 0.f;
+            float alpha30 = 0.f, alpha31 = 0.f;
+            const float* bptr0 = bptr + k*bstep;
+            const float* bptr1 = bptr0;
+            const float* bptr2 = bptr0;
+            const float* bptr3 = bptr0;
+
+            if( k+1 < na )
+            {
+                alpha10 = aptr0[k+1];
+                alpha11 = aptr1[k+1];
+                bptr1 = bptr0 + bstep;
+                if( k+2 < na )
+                {
+                    alpha20 = aptr0[k+2];
+                    alpha21 = aptr1[k+2];
+                    bptr2 = bptr1 + bstep;
+                    if( k+3 < na )
+                    {
+                        alpha30 = aptr0[k+3];
+                        alpha31 = aptr1[k+3];
+                        bptr3 = bptr2 + bstep;
+                    }
+                }
+            }
+
+            __m256 a00 = _mm256_set1_ps(alpha00);
+            __m256 a01 = _mm256_set1_ps(alpha01);
+            __m256 a10 = _mm256_set1_ps(alpha10);
+            __m256 a11 = _mm256_set1_ps(alpha11);
+            __m256 a20 = _mm256_set1_ps(alpha20);
+            __m256 a21 = _mm256_set1_ps(alpha21);
+            __m256 a30 = _mm256_set1_ps(alpha30);
+            __m256 a31 = _mm256_set1_ps(alpha31);
+            n = 0;
+
+            for( ; n <= nb - 8; n += 8 )
+            {
+                __m256 b0 = _mm256_loadu_ps(bptr0 + n);
+                __m256 b1 = _mm256_loadu_ps(bptr1 + n);
+                __m256 b2 = _mm256_loadu_ps(bptr2 + n);
+                __m256 b3 = _mm256_loadu_ps(bptr3 + n);
+                __m256 d0 = _mm256_loadu_ps(dst0 + n);
+                __m256 d1 = _mm256_loadu_ps(dst1 + n);
+                d0 = _mm256_fmadd_ps(b0, a00, d0);
+                d1 = _mm256_fmadd_ps(b0, a01, d1);
+                d0 = _mm256_fmadd_ps(b1, a10, d0);
+                d1 = _mm256_fmadd_ps(b1, a11, d1);
+                d0 = _mm256_fmadd_ps(b2, a20, d0);
+                d1 = _mm256_fmadd_ps(b2, a21, d1);
+                d0 = _mm256_fmadd_ps(b3, a30, d0);
+                d1 = _mm256_fmadd_ps(b3, a31, d1);
+                _mm256_storeu_ps(dst0 + n, d0);
+                _mm256_storeu_ps(dst1 + n, d1);
+            }
+
+            for( ; n < nb; n++ )
+            {
+                float b0 = bptr0[n], b1 = bptr1[n];
+                float b2 = bptr1[n], b3 = bptr2[n];
+                float d0 = dst0[n] + alpha00*b0 + alpha10*b1 + alpha20*b2 + alpha30*b3;
+                float d1 = dst0[n] + alpha01*b0 + alpha11*b1 + alpha21*b2 + alpha31*b3;
+                dst0[n] = d0;
+                dst1[n] = d1;
+            }
+        }
+    }
+    
+    _mm256_zeroupper();
+}
+
 }
 }
 
