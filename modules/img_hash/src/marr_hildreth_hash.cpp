@@ -1,53 +1,14 @@
-/*M///////////////////////////////////////////////////////////////////////////////////////
-//
-//  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
-//
-//  By downloading, copying, installing or using the software you agree to this license.
-//  If you do not agree to this license, do not download, install,
-//  copy or use the software.
-//
-//
-//                           License Agreement
-//                For Open Source Computer Vision Library
-//
-// Copyright (C) 2015, University of Ostrava, Institute for Research and Applications of Fuzzy Modeling,
-// Pavel Vlasanek, all rights reserved. Third party copyrights are property of their respective owners.
-//
-// Redistribution and use in source and binary forms, with or without modification,
-// are permitted provided that the following conditions are met:
-//
-//   * Redistribution's of source code must retain the above copyright notice,
-//     this list of conditions and the following disclaimer.
-//
-//   * Redistribution's in binary form must reproduce the above copyright notice,
-//     this list of conditions and the following disclaimer in the documentation
-//     and/or other materials provided with the distribution.
-//
-//   * The name of the copyright holders may not be used to endorse or promote products
-//     derived from this software without specific prior written permission.
-//
-// This software is provided by the copyright holders and contributors "as is" and
-// any express or implied warranties, including, but not limited to, the implied
-// warranties of merchantability and fitness for a particular purpose are disclaimed.
-// In no event shall the Intel Corporation or contributors be liable for any direct,
-// indirect, incidental, special, exemplary, or consequential damages
-// (including, but not limited to, procurement of substitute goods or services;
-// loss of use, data, or profits; or business interruption) however caused
-// and on any theory of liability, whether in contract, strict liability,
-// or tort (including negligence or otherwise) arising in any way out of
-// the use of this software, even if advised of the possibility of such damage.
-//
-//M*/
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 
 #include "precomp.hpp"
 
-#include <iostream>
+using namespace cv;
+using namespace cv::img_hash;
+using namespace std;
 
-namespace cv{
-
-namespace img_hash{
-
-namespace{
+namespace {
 
 void getMHKernel(float alpha, float level, cv::Mat &kernel)
 {
@@ -125,95 +86,127 @@ void createHash(cv::Mat const &blocks, cv::Mat &hash)
     }
 }
 
-}
-
-MarrHildrethHash::MarrHildrethHash(float alpha, float scale) :
-    alphaVal(alpha),
-    scaleVal(scale)
+class MarrHildrethHashImpl : public ImgHashImpl
 {
-    getMHKernel(alphaVal, scaleVal, mhKernel);
-    blocks.create(31,31, CV_32F);
-}
+public:
 
-MarrHildrethHash::~MarrHildrethHash()
-{
-
-}
-
-void MarrHildrethHash::compute(cv::InputArray inputArr,
-                               cv::OutputArray outputArr)
-{
-    cv::Mat const input = inputArr.getMat();
-    CV_Assert(input.type() == CV_8UC4 ||
-              input.type() == CV_8UC3 ||
-              input.type() == CV_8U);
-
-    if(input.type() == CV_8UC3)
+    MarrHildrethHashImpl(float alpha = 2.0f, float scale = 1.0f) : alphaVal(alpha), scaleVal(scale)
     {
-        cv::cvtColor(input, grayImg, CV_BGR2GRAY);
+        getMHKernel(alphaVal, scaleVal, mhKernel);
+        blocks.create(31,31, CV_32F);
     }
-    else if(input.type() == CV_8UC4)
+
+    ~MarrHildrethHashImpl() { }
+
+    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr)
     {
-        cv::cvtColor(input, grayImg, CV_BGRA2GRAY);
+        cv::Mat const input = inputArr.getMat();
+        CV_Assert(input.type() == CV_8UC4 ||
+                  input.type() == CV_8UC3 ||
+                  input.type() == CV_8U);
+
+        if(input.type() == CV_8UC3)
+        {
+            cv::cvtColor(input, grayImg, CV_BGR2GRAY);
+        }
+        else if(input.type() == CV_8UC4)
+        {
+            cv::cvtColor(input, grayImg, CV_BGRA2GRAY);
+        }
+        else
+        {
+            grayImg = input;
+        }
+        //pHash use Canny-deritch filter to blur the image
+        cv::GaussianBlur(grayImg, blurImg, cv::Size(7, 7), 0);
+        cv::resize(blurImg, resizeImg, cv::Size(512, 512), 0, 0, INTER_CUBIC);
+        cv::equalizeHist(resizeImg, equalizeImg);
+
+        //extract frequency info by mh kernel
+        cv::filter2D(equalizeImg, freImg, CV_32F, mhKernel);
+        fillBlocks(freImg, blocks);
+
+        outputArr.create(1, 72, CV_8U);
+        cv::Mat hash = outputArr.getMat();
+        createHash(blocks, hash);
     }
-    else
+
+    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const
     {
-        grayImg = input;
+        return norm(hashOne, hashTwo, NORM_HAMMING);
     }
-    //pHash use Canny-deritch filter to blur the image
-    cv::GaussianBlur(grayImg, blurImg, cv::Size(7, 7), 0);
-    cv::resize(blurImg, resizeImg, cv::Size(512, 512), 0, 0, INTER_CUBIC);
-    cv::equalizeHist(resizeImg, equalizeImg);
 
-    //extract frequency info by mh kernel
-    cv::filter2D(equalizeImg, freImg, CV_32F, mhKernel);
-    fillBlocks(freImg, blocks);
+    float getAlpha() const
+    {
+        return alphaVal;
+    }
 
-    outputArr.create(1, 72, CV_8U);
-    cv::Mat hash = outputArr.getMat();
-    createHash(blocks, hash);
-}
+    float getScale() const
+    {
+        return scaleVal;
+    }
 
-double MarrHildrethHash::compare(cv::InputArray hashOne,
-                                 cv::InputArray hashTwo) const
+    void setKernelParam(float alpha, float scale)
+    {
+        alphaVal = alpha;
+        scaleVal = scale;
+        getMHKernel(alphaVal, scaleVal, mhKernel);
+    }
+
+friend MarrHildrethHash;
+
+private:
+    float alphaVal;
+    cv::Mat blocks;
+    cv::Mat blurImg;
+    cv::Mat equalizeImg;
+    cv::Mat freImg; //frequency response image
+    cv::Mat grayImg;
+    cv::Mat mhKernel;
+    cv::Mat resizeImg;
+    float scaleVal;
+};
+
+inline MarrHildrethHashImpl *getLocalImpl(ImgHashImpl *ptr)
 {
-    return norm(hashOne, hashTwo, NORM_HAMMING);
+    MarrHildrethHashImpl * impl = dynamic_cast<MarrHildrethHashImpl*>(ptr);
+    CV_Assert(impl);
+    return impl;
 }
+
+}
+
+//==================================================================================================
+
+namespace cv { namespace img_hash {
 
 float MarrHildrethHash::getAlpha() const
 {
-    return alphaVal;
-}
-
-String MarrHildrethHash::getDefaultName() const
-{
-    return "MarrHildrethHash";
+    return getLocalImpl(pImpl)->getAlpha();
 }
 
 float MarrHildrethHash::getScale() const
 {
-    return scaleVal;
+    return getLocalImpl(pImpl)->getScale();
 }
 
 void MarrHildrethHash::setKernelParam(float alpha, float scale)
 {
-    alphaVal = alpha;
-    scaleVal = scale;
-    getMHKernel(alphaVal, scaleVal, mhKernel);
+    getLocalImpl(pImpl)->setKernelParam(alpha, scale);
 }
 
 Ptr<MarrHildrethHash> MarrHildrethHash::create(float alpha, float scale)
 {
-    return makePtr<MarrHildrethHash>(alpha, scale);
+    Ptr<MarrHildrethHash> res(new MarrHildrethHash);
+    res->pImpl = makePtr<MarrHildrethHashImpl>(alpha, scale);
+    return res;
 }
 
 void marrHildrethHash(cv::InputArray inputArr,
                       cv::OutputArray outputArr,
                       float alpha, float scale)
 {
-    MarrHildrethHash(alpha, scale).compute(inputArr, outputArr);
+    MarrHildrethHashImpl(alpha, scale).compute(inputArr, outputArr);
 }
 
-}
-
-}
+} } // cv::img_hash::

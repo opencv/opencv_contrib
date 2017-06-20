@@ -1,69 +1,13 @@
-/*M///////////////////////////////////////////////////////////////////////////////////////
-//
-//  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
-//
-//  By downloading, copying, installing or using the software you agree to this license.
-//  If you do not agree to this license, do not download, install,
-//  copy or use the software.
-//
-//
-//                        Intel License Agreement
-//                For Open Source Computer Vision Library
-//
-// Copyright (C) 2000, Intel Corporation, all rights reserved.
-// Third party copyrights are property of their respective owners.
-//
-// Redistribution and use in source and binary forms, with or without modification,
-// are permitted provided that the following conditions are met:
-//
-//   * Redistribution's of source code must retain the above copyright notice,
-//     this list of conditions and the following disclaimer.
-//
-//   * Redistribution's in binary form must reproduce the above copyright notice,
-//     this list of conditions and the following disclaimer in the documentation
-//     and/or other materials provided with the distribution.
-//
-//   * The name of Intel Corporation may not be used to endorse or promote products
-//     derived from this software without specific prior written permission.
-//
-// This software is provided by the copyright holders and contributors "as is" and
-// any express or implied warranties, including, but not limited to, the implied
-// warranties of merchantability and fitness for a particular purpose are disclaimed.
-// In no event shall the Intel Corporation or contributors be liable for any direct,
-// indirect, incidental, special, exemplary, or consequential damages
-// (including, but not limited to, procurement of substitute goods or services;
-// loss of use, data, or profits; or business interruption) however caused
-// and on any theory of liability, whether in contract, strict liability,
-// or tort (including negligence or otherwise) arising in any way out of
-// the use of this software, even if advised of the possibility of such damage.
-//
-//M*/
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 
 #include "test_precomp.hpp"
 
 #include <bitset>
 
 using namespace cv;
-
-
-namespace cv
-{
-
-namespace img_hash
-{
-
-class BlockMeanHashTester
-{
-public:
-    std::vector<double> const&
-    getMean(BlockMeanHash &input) const
-    {
-        return input.mean_;
-    }
-};
-
-}
-}
+using namespace cv::img_hash;
 
 /**
  *The expected results of this test case are come from the Phash library,
@@ -83,8 +27,7 @@ protected:
 
     cv::Mat input;
     cv::Mat hash;
-    cv::img_hash::BlockMeanHash bmh;
-    cv::img_hash::BlockMeanHashTester tester;
+    Ptr<cv::img_hash::BlockMeanHash> bmh;
 };
 
 CV_BlockMeanHashTest::CV_BlockMeanHashTest()
@@ -98,11 +41,12 @@ CV_BlockMeanHashTest::CV_BlockMeanHashTest()
             input.at<uchar>(row, col) = value++;
         }
     }
+    bmh = BlockMeanHash::create(BLOCK_MEAN_HASH_MODE_0);
 }
 
 void CV_BlockMeanHashTest::testMeanMode0()
 {
-    std::vector<double> const &features = tester.getMean(bmh);
+    std::vector<double> const &features = bmh->getMean();
     double const expectResult[] =
     {15,31,47,63,79,95,111,127,143,159,175,191,207,223,239,135,
      31,47,63,79,95,111,127,143,159,175,191,207,223,239,135,15,
@@ -128,7 +72,7 @@ void CV_BlockMeanHashTest::testMeanMode0()
 
 void CV_BlockMeanHashTest::testMeanMode1()
 {
-    std::vector<double> const &features = tester.getMean(bmh);
+    std::vector<double> const &features = bmh->getMean();
     double const expectResult[] =
     {15,23,31,39,47,55,63,71,79,87,95,103,111,119,127,135,143,151,159,167,175,183,191,199,207,215,223,231,239,219,135,
      23,31,39,47,55,63,71,79,87,95,103,111,119,127,135,143,151,159,167,175,183,191,199,207,215,223,231,239,219,135,43,
@@ -255,12 +199,12 @@ void CV_BlockMeanHashTest::testHashMode1()
 
 void CV_BlockMeanHashTest::run(int)
 {
-    bmh.compute(input, hash);
+    bmh->compute(input, hash);
     testMeanMode0();
     testHashMode0();
 
-    bmh.setMode(1);
-    bmh.compute(input, hash);
+    bmh->setMode(BLOCK_MEAN_HASH_MODE_1);
+    bmh->compute(input, hash);
     testMeanMode1();
     testHashMode1();
 }
