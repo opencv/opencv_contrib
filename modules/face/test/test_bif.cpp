@@ -40,27 +40,27 @@ the use of this software, even if advised of the possibility of such damage.
 
 TEST(CV_Face_BIF, can_create_default) {
     cv::Ptr<cv::face::BIF> bif;
-    EXPECT_NO_THROW(bif = cv::face::createBIF());
+    EXPECT_NO_THROW(bif = cv::face::BIF::create());
     EXPECT_FALSE(bif.empty());
 }
 
 TEST(CV_Face_BIF, fails_when_zero_bands) {
-    EXPECT_ANY_THROW(cv::face::createBIF(0));
+    EXPECT_ANY_THROW(cv::face::BIF::create(0));
 }
 
 TEST(CV_Face_BIF, fails_when_too_many_bands) {
-    EXPECT_ANY_THROW(cv::face::createBIF(9));
+    EXPECT_ANY_THROW(cv::face::BIF::create(9));
 }
 
 TEST(CV_Face_BIF, fails_when_zero_rotations) {
-    EXPECT_ANY_THROW(cv::face::createBIF(8, 0));
+    EXPECT_ANY_THROW(cv::face::BIF::create(8, 0));
 }
 
 TEST(CV_Face_BIF, can_compute) {
     cv::Mat image(60, 60, CV_32F);
     cv::theRNG().fill(image, cv::RNG::UNIFORM, -1, 1);
 
-    cv::Ptr<cv::face::BIF> bif = cv::face::createBIF();
+    cv::Ptr<cv::face::BIF> bif = cv::face::BIF::create();
     cv::Mat fea;
     EXPECT_NO_THROW(bif->compute(image, fea));
     EXPECT_EQ(cv::Size(1, 13188), fea.size());

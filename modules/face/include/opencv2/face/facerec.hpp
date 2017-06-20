@@ -21,82 +21,106 @@ class CV_EXPORTS_W BasicFaceRecognizer : public FaceRecognizer
 {
 public:
     /** @see setNumComponents */
-    CV_WRAP virtual int getNumComponents() const = 0;
+    CV_WRAP int getNumComponents() const;
     /** @copybrief getNumComponents @see getNumComponents */
-    CV_WRAP virtual void setNumComponents(int val) = 0;
+    CV_WRAP void setNumComponents(int val);
     /** @see setThreshold */
-    CV_WRAP virtual double getThreshold() const = 0;
+    CV_WRAP double getThreshold() const;
     /** @copybrief getThreshold @see getThreshold */
-    CV_WRAP virtual void setThreshold(double val) = 0;
-    CV_WRAP virtual std::vector<cv::Mat> getProjections() const = 0;
-    CV_WRAP virtual cv::Mat getLabels() const = 0;
-    CV_WRAP virtual cv::Mat getEigenValues() const = 0;
-    CV_WRAP virtual cv::Mat getEigenVectors() const = 0;
-    CV_WRAP virtual cv::Mat getMean() const = 0;
+    CV_WRAP void setThreshold(double val);
+    CV_WRAP std::vector<cv::Mat> getProjections() const;
+    CV_WRAP cv::Mat getLabels() const;
+    CV_WRAP cv::Mat getEigenValues() const;
+    CV_WRAP cv::Mat getEigenVectors() const;
+    CV_WRAP cv::Mat getMean() const;
+
+    virtual void read(const FileNode& fn);
+    virtual void write(FileStorage& fs) const;
+
+    using FaceRecognizer::read;
+    using FaceRecognizer::write;
+
+protected:
+    int _num_components;
+    double _threshold;
+    std::vector<Mat> _projections;
+    Mat _labels;
+    Mat _eigenvectors;
+    Mat _eigenvalues;
+    Mat _mean;
 };
 
-/**
-@param num_components The number of components (read: Eigenfaces) kept for this Principal
-Component Analysis. As a hint: There's no rule how many components (read: Eigenfaces) should be
-kept for good reconstruction capabilities. It is based on your input data, so experiment with the
-number. Keeping 80 components should almost always be sufficient.
-@param threshold The threshold applied in the prediction.
+class CV_EXPORTS_W EigenFaceRecognizer : public BasicFaceRecognizer
+{
+public:
+    /**
+    @param num_components The number of components (read: Eigenfaces) kept for this Principal
+    Component Analysis. As a hint: There's no rule how many components (read: Eigenfaces) should be
+    kept for good reconstruction capabilities. It is based on your input data, so experiment with the
+    number. Keeping 80 components should almost always be sufficient.
+    @param threshold The threshold applied in the prediction.
 
-### Notes:
+    ### Notes:
 
--   Training and prediction must be done on grayscale images, use cvtColor to convert between the
-    color spaces.
--   **THE EIGENFACES METHOD MAKES THE ASSUMPTION, THAT THE TRAINING AND TEST IMAGES ARE OF EQUAL
-    SIZE.** (caps-lock, because I got so many mails asking for this). You have to make sure your
-    input data has the correct shape, else a meaningful exception is thrown. Use resize to resize
-    the images.
--   This model does not support updating.
+    -   Training and prediction must be done on grayscale images, use cvtColor to convert between the
+        color spaces.
+    -   **THE EIGENFACES METHOD MAKES THE ASSUMPTION, THAT THE TRAINING AND TEST IMAGES ARE OF EQUAL
+        SIZE.** (caps-lock, because I got so many mails asking for this). You have to make sure your
+        input data has the correct shape, else a meaningful exception is thrown. Use resize to resize
+        the images.
+    -   This model does not support updating.
 
-### Model internal data:
+    ### Model internal data:
 
--   num_components see createEigenFaceRecognizer.
--   threshold see createEigenFaceRecognizer.
--   eigenvalues The eigenvalues for this Principal Component Analysis (ordered descending).
--   eigenvectors The eigenvectors for this Principal Component Analysis (ordered by their
-    eigenvalue).
--   mean The sample mean calculated from the training data.
--   projections The projections of the training data.
--   labels The threshold applied in the prediction. If the distance to the nearest neighbor is
-    larger than the threshold, this method returns -1.
- */
-CV_EXPORTS_W Ptr<BasicFaceRecognizer> createEigenFaceRecognizer(int num_components = 0, double threshold = DBL_MAX);
+    -   num_components see createEigenFaceRecognizer.
+    -   threshold see createEigenFaceRecognizer.
+    -   eigenvalues The eigenvalues for this Principal Component Analysis (ordered descending).
+    -   eigenvectors The eigenvectors for this Principal Component Analysis (ordered by their
+        eigenvalue).
+    -   mean The sample mean calculated from the training data.
+    -   projections The projections of the training data.
+    -   labels The threshold applied in the prediction. If the distance to the nearest neighbor is
+        larger than the threshold, this method returns -1.
+     */
+    CV_WRAP static Ptr<EigenFaceRecognizer> create(int num_components = 0, double threshold = DBL_MAX);
+};
 
-/**
-@param num_components The number of components (read: Fisherfaces) kept for this Linear
-Discriminant Analysis with the Fisherfaces criterion. It's useful to keep all components, that
-means the number of your classes c (read: subjects, persons you want to recognize). If you leave
-this at the default (0) or set it to a value less-equal 0 or greater (c-1), it will be set to the
-correct number (c-1) automatically.
-@param threshold The threshold applied in the prediction. If the distance to the nearest neighbor
-is larger than the threshold, this method returns -1.
+class CV_EXPORTS_W FisherFaceRecognizer : public BasicFaceRecognizer
+{
+public:
+    /**
+    @param num_components The number of components (read: Fisherfaces) kept for this Linear
+    Discriminant Analysis with the Fisherfaces criterion. It's useful to keep all components, that
+    means the number of your classes c (read: subjects, persons you want to recognize). If you leave
+    this at the default (0) or set it to a value less-equal 0 or greater (c-1), it will be set to the
+    correct number (c-1) automatically.
+    @param threshold The threshold applied in the prediction. If the distance to the nearest neighbor
+    is larger than the threshold, this method returns -1.
 
-### Notes:
+    ### Notes:
 
--   Training and prediction must be done on grayscale images, use cvtColor to convert between the
-    color spaces.
--   **THE FISHERFACES METHOD MAKES THE ASSUMPTION, THAT THE TRAINING AND TEST IMAGES ARE OF EQUAL
-    SIZE.** (caps-lock, because I got so many mails asking for this). You have to make sure your
-    input data has the correct shape, else a meaningful exception is thrown. Use resize to resize
-    the images.
--   This model does not support updating.
+    -   Training and prediction must be done on grayscale images, use cvtColor to convert between the
+        color spaces.
+    -   **THE FISHERFACES METHOD MAKES THE ASSUMPTION, THAT THE TRAINING AND TEST IMAGES ARE OF EQUAL
+        SIZE.** (caps-lock, because I got so many mails asking for this). You have to make sure your
+        input data has the correct shape, else a meaningful exception is thrown. Use resize to resize
+        the images.
+    -   This model does not support updating.
 
-### Model internal data:
+    ### Model internal data:
 
--   num_components see createFisherFaceRecognizer.
--   threshold see createFisherFaceRecognizer.
--   eigenvalues The eigenvalues for this Linear Discriminant Analysis (ordered descending).
--   eigenvectors The eigenvectors for this Linear Discriminant Analysis (ordered by their
-    eigenvalue).
--   mean The sample mean calculated from the training data.
--   projections The projections of the training data.
--   labels The labels corresponding to the projections.
- */
-CV_EXPORTS_W Ptr<BasicFaceRecognizer> createFisherFaceRecognizer(int num_components = 0, double threshold = DBL_MAX);
+    -   num_components see createFisherFaceRecognizer.
+    -   threshold see createFisherFaceRecognizer.
+    -   eigenvalues The eigenvalues for this Linear Discriminant Analysis (ordered descending).
+    -   eigenvectors The eigenvectors for this Linear Discriminant Analysis (ordered by their
+        eigenvalue).
+    -   mean The sample mean calculated from the training data.
+    -   projections The projections of the training data.
+    -   labels The labels corresponding to the projections.
+     */
+    CV_WRAP static Ptr<FisherFaceRecognizer> create(int num_components = 0, double threshold = DBL_MAX);
+};
+
 
 class CV_EXPORTS_W LBPHFaceRecognizer : public FaceRecognizer
 {
@@ -123,41 +147,41 @@ public:
     CV_WRAP virtual void setThreshold(double val) = 0;
     CV_WRAP virtual std::vector<cv::Mat> getHistograms() const = 0;
     CV_WRAP virtual cv::Mat getLabels() const = 0;
+
+    /**
+    @param radius The radius used for building the Circular Local Binary Pattern. The greater the
+    radius, the
+    @param neighbors The number of sample points to build a Circular Local Binary Pattern from. An
+    appropriate value is to use `8` sample points. Keep in mind: the more sample points you include,
+    the higher the computational cost.
+    @param grid_x The number of cells in the horizontal direction, 8 is a common value used in
+    publications. The more cells, the finer the grid, the higher the dimensionality of the resulting
+    feature vector.
+    @param grid_y The number of cells in the vertical direction, 8 is a common value used in
+    publications. The more cells, the finer the grid, the higher the dimensionality of the resulting
+    feature vector.
+    @param threshold The threshold applied in the prediction. If the distance to the nearest neighbor
+    is larger than the threshold, this method returns -1.
+
+    ### Notes:
+
+    -   The Circular Local Binary Patterns (used in training and prediction) expect the data given as
+        grayscale images, use cvtColor to convert between the color spaces.
+    -   This model supports updating.
+
+    ### Model internal data:
+
+    -   radius see createLBPHFaceRecognizer.
+    -   neighbors see createLBPHFaceRecognizer.
+    -   grid_x see createLBPHFaceRecognizer.
+    -   grid_y see createLBPHFaceRecognizer.
+    -   threshold see createLBPHFaceRecognizer.
+    -   histograms Local Binary Patterns Histograms calculated from the given training data (empty if
+        none was given).
+    -   labels Labels corresponding to the calculated Local Binary Patterns Histograms.
+     */
+    CV_WRAP static Ptr<LBPHFaceRecognizer> create(int radius=1, int neighbors=8, int grid_x=8, int grid_y=8, double threshold = DBL_MAX);
 };
-
-/**
-@param radius The radius used for building the Circular Local Binary Pattern. The greater the
-radius, the
-@param neighbors The number of sample points to build a Circular Local Binary Pattern from. An
-appropriate value is to use `8` sample points. Keep in mind: the more sample points you include,
-the higher the computational cost.
-@param grid_x The number of cells in the horizontal direction, 8 is a common value used in
-publications. The more cells, the finer the grid, the higher the dimensionality of the resulting
-feature vector.
-@param grid_y The number of cells in the vertical direction, 8 is a common value used in
-publications. The more cells, the finer the grid, the higher the dimensionality of the resulting
-feature vector.
-@param threshold The threshold applied in the prediction. If the distance to the nearest neighbor
-is larger than the threshold, this method returns -1.
-
-### Notes:
-
--   The Circular Local Binary Patterns (used in training and prediction) expect the data given as
-    grayscale images, use cvtColor to convert between the color spaces.
--   This model supports updating.
-
-### Model internal data:
-
--   radius see createLBPHFaceRecognizer.
--   neighbors see createLBPHFaceRecognizer.
--   grid_x see createLBPHFaceRecognizer.
--   grid_y see createLBPHFaceRecognizer.
--   threshold see createLBPHFaceRecognizer.
--   histograms Local Binary Patterns Histograms calculated from the given training data (empty if
-    none was given).
--   labels Labels corresponding to the calculated Local Binary Patterns Histograms.
- */
-CV_EXPORTS_W Ptr<LBPHFaceRecognizer> createLBPHFaceRecognizer(int radius=1, int neighbors=8, int grid_x=8, int grid_y=8, double threshold = DBL_MAX);
 
 //! @}
 

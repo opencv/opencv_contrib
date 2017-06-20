@@ -318,7 +318,7 @@ public:
     The suffix const means that prediction does not affect the internal model state, so the method can
     be safely called from within different threads.
      */
-    CV_WRAP virtual void save(const String& filename) const;
+    CV_WRAP virtual void write(const String& filename) const;
 
     /** @brief Loads a FaceRecognizer and its model state.
 
@@ -327,16 +327,16 @@ public:
     FaceRecognizer::load(FileStorage& fs) in turn gets called by
     FaceRecognizer::load(const String& filename), to ease saving a model.
      */
-    CV_WRAP virtual void load(const String& filename);
+    CV_WRAP virtual void read(const String& filename);
 
     /** @overload
     Saves this model to a given FileStorage.
     @param fs The FileStorage to store this FaceRecognizer to.
     */
-    virtual void save(FileStorage& fs) const = 0;
+    virtual void write(FileStorage& fs) const = 0;
 
     /** @overload */
-    virtual void load(const FileStorage& fs) = 0;
+    virtual void read(const FileNode& fn) = 0;
 
     /** @brief Sets string info for the specified model's label.
 
