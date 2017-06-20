@@ -22,7 +22,7 @@ enum
     colSize = imgWidth - blockWidth
 };
 
-class BlockMeanHashImpl : public ImgHashImpl
+class BlockMeanHashImpl : public ImgHashBase::ImgHashImpl
 {
 public:
     BlockMeanHashImpl(int mode)
@@ -133,9 +133,9 @@ private:
     cv::Mat resizeImg_;
 };
 
-inline BlockMeanHashImpl *getLocalImpl(ImgHashImpl *ptr)
+inline BlockMeanHashImpl *getLocalImpl(ImgHashBase::ImgHashImpl *ptr)
 {
-    BlockMeanHashImpl * impl = dynamic_cast<BlockMeanHashImpl*>(ptr);
+    BlockMeanHashImpl * impl = static_cast<BlockMeanHashImpl*>(ptr);
     CV_Assert(impl);
     return impl;
 }

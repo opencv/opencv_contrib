@@ -26,7 +26,7 @@ inline int createOffSet(int length)
     return static_cast<int>(std::floor(center + roundingFactor(center)));
 }
 
-class RadialVarianceHashImpl : public ImgHashImpl
+class RadialVarianceHashImpl : public ImgHashBase::ImgHashImpl
 {
     friend RadialVarianceHash;
 
@@ -291,9 +291,9 @@ private:
     }
 };
 
-inline RadialVarianceHashImpl *getLocalImpl(ImgHashImpl *ptr)
+inline RadialVarianceHashImpl *getLocalImpl(ImgHashBase::ImgHashImpl *ptr)
 {
-    RadialVarianceHashImpl * impl = dynamic_cast<RadialVarianceHashImpl*>(ptr);
+    RadialVarianceHashImpl * impl = static_cast<RadialVarianceHashImpl*>(ptr);
     CV_Assert(impl);
     return impl;
 }

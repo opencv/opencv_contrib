@@ -10,7 +10,7 @@ using namespace std;
 
 namespace {
 
-class PHashImpl : public ImgHashImpl
+class PHashImpl : public ImgHashBase::ImgHashImpl
 {
 public:
     virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr)

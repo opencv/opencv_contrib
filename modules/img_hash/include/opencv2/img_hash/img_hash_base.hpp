@@ -13,13 +13,19 @@ namespace img_hash {
 //! @addtogroup img_hash
 //! @{
 
-class ImgHashImpl;
-
 /** @brief The base class for image hash algorithms
  */
 class CV_EXPORTS_W ImgHashBase : public Algorithm
 {
 public:
+    class ImgHashImpl
+    {
+    public:
+        virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr) = 0;
+        virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const = 0;
+        virtual ~ImgHashImpl() {}
+    };
+
     ~ImgHashBase();
     /** @brief Computes hash of the input image
         @param inputArr input image want to compute hash value

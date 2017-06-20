@@ -10,7 +10,7 @@ using namespace img_hash;
 
 namespace {
 
-class AverageHashImpl : public ImgHashImpl
+class AverageHashImpl : public ImgHashBase::ImgHashImpl
 {
 private:
     cv::Mat bitsImg;

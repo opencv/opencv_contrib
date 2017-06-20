@@ -14,16 +14,4 @@
 #include <bitset>
 #include <iostream>
 
-namespace cv{ namespace img_hash {
-
-class ImgHashImpl
-{
-public:
-    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr) = 0;
-    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const = 0;
-    virtual ~ImgHashImpl() {}
-};
-
-}} // cv::img_hash::
-
 #endif // OPENCV_IMG_HASH_PRECOMP_H

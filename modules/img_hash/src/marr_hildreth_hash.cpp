@@ -86,7 +86,7 @@ void createHash(cv::Mat const &blocks, cv::Mat &hash)
     }
 }
 
-class MarrHildrethHashImpl : public ImgHashImpl
+class MarrHildrethHashImpl : public ImgHashBase::ImgHashImpl
 {
 public:
 
@@ -167,9 +167,9 @@ private:
     float scaleVal;
 };
 
-inline MarrHildrethHashImpl *getLocalImpl(ImgHashImpl *ptr)
+inline MarrHildrethHashImpl *getLocalImpl(ImgHashBase::ImgHashImpl *ptr)
 {
-    MarrHildrethHashImpl * impl = dynamic_cast<MarrHildrethHashImpl*>(ptr);
+    MarrHildrethHashImpl * impl = static_cast<MarrHildrethHashImpl*>(ptr);
     CV_Assert(impl);
     return impl;
 }
