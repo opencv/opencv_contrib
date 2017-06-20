@@ -18,13 +18,7 @@ namespace img_hash {
 class CV_EXPORTS_W ImgHashBase : public Algorithm
 {
 public:
-    class ImgHashImpl
-    {
-    public:
-        virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr) = 0;
-        virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const = 0;
-        virtual ~ImgHashImpl() {}
-    };
+    class ImgHashImpl;
 
     ~ImgHashBase();
     /** @brief Computes hash of the input image
