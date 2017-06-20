@@ -46,11 +46,6 @@
 #include "precomp.hpp"
 #include "opencv2/pcalib.hpp"
 
-#include <opencv2/core.hpp>
-
-#include <vector>
-#include <iostream>
-
 namespace cv{ namespace pcalib{
 
 using namespace std;
