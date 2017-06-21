@@ -62,17 +62,9 @@ namespace cv
                 Mat _plotData = plotData.getMat();
                 //if the matrix is not Nx1 or 1xN
                 if(_plotData.cols > 1 && _plotData.rows > 1)
-                {
-                    std::cout << "ERROR: Plot data must be a 1xN or Nx1 matrix." << std::endl;
-                    exit(0);
-                }
+                    CV_Error(Error::StsBadArg, "ERROR: Plot data must be a 1xN or Nx1 matrix.\n");
 
-                //if the matrix type is not CV_64F
-                if(_plotData.type() != CV_64F)
-                {
-                    std::cout << "ERROR: Plot data type must be double (CV_64F)." << std::endl;
-                    exit(0);
-                }
+                CV_Assert(_plotData.type() == CV_64F);
 
                 //in case we have a row matrix than needs to be transposed
                 if(_plotData.cols > _plotData.rows)
@@ -98,17 +90,9 @@ namespace cv
                 Mat _plotDataY = plotDataY_.getMat();
                 //f the matrix is not Nx1 or 1xN
                 if((_plotDataX.cols > 1 && _plotDataX.rows > 1) || (_plotDataY.cols > 1 && _plotDataY.rows > 1))
-                {
-                    std::cout << "ERROR: Plot data must be a 1xN or Nx1 matrix." << std::endl;
-                    exit(0);
-                }
+                    CV_Error(Error::StsBadArg, "ERROR: Plot data must be a 1xN or Nx1 matrix.\n");
 
-                //if the matrix type is not CV_64F
-                if(_plotDataX.type() != CV_64F || _plotDataY.type() != CV_64F)
-                {
-                    std::cout << "ERROR: Plot data type must be double (CV_64F)." << std::endl;
-                   exit(0);
-                }
+                CV_Assert(_plotDataX.type() == CV_64F && _plotDataY.type() == CV_64F);
 
                 //in case we have a row matrix than needs to be transposed
                 if(_plotDataX.cols > _plotDataX.rows)
