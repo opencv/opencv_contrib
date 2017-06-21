@@ -40,12 +40,12 @@ You can study more about image hashing from following paper and websites:
 
 ### Performance under different attacks
 
-![Performance chart](https://3.bp.blogspot.com/-Li-zoGXC6-I/V3Wnp5tbFwI/AAAAAAAAA1Y/iVQkZmI6wWQcpxynuzW4FngJYVdXw3AtgCLcB/s1600/overall_result.JPG)
+![Performance chart](img_hash/doc/attack_performance.JPG)
 
 ### Speed comparison with PHash library (100 images from ukbench)
 
-![Hash Computation chart](https://3.bp.blogspot.com/-XIs-olyuK9Q/V3NKRDRzUiI/AAAAAAAAAwU/k99xuDGlCBYwO3ZDZNHcLweuaAt_cpHtwCLcB/s1600/Capture.JPG)
-![Hash comparison chart](https://1.bp.blogspot.com/-anqfh2Awky4/V3NOOKvrQKI/AAAAAAAAAwo/pZjGDDnAPKooOZCCVnzGO4lJjKo7-KjlACLcB/s1600/Capture.JPG)
+![Hash Computation chart](img_hash/doc/hash_computation_chart.JPG)
+![Hash comparison chart](img_hash/doc/hash_comparison_chart.JPG)
 
 As you can see, hash computation speed of img_hash module outperform [PHash library](http://www.phash.org/) a lot.
 
