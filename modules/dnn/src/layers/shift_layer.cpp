@@ -10,7 +10,6 @@ Implementation of shift layer, which adds up const values to blob.
 */
 
 #include "../precomp.hpp"
-#include "op_blas.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
@@ -25,15 +24,6 @@ public:
     {
         setParamsFrom(params);
         CV_Assert(blobs.size() == 1);
-
-#ifdef HAVE_LAPACK
-        {
-            if (getBlasThreads() != cv::getThreadNum())
-            {
-                setBlasThreads(cv::getThreadNum());
-            }
-        }
-#endif
     }
 
     bool getMemoryShapes(const std::vector<MatShape> &inputs,
@@ -76,7 +66,7 @@ public:
                 {
                     Mat dstMat(inpBlob.size[1], inpBlob.size[2] * inpBlob.size[3],
                                outBlob.type(), outBlob.ptr(n));
-                    dnn::gemm(blobs[0], biasOnesMat, 1, dstMat, 1); //TODO: gemv
+                    gemm(blobs[0], biasOnesMat, 1, dstMat, 1, dstMat); //TODO: gemv
                 }
             }
         }

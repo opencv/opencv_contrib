@@ -41,7 +41,6 @@
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
-#include "op_blas.hpp"
 #include "op_halide.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
 
@@ -133,25 +132,34 @@ public:
 
         void operator()(const Range& r) const
         {
+            int valign = FullyConnectedLayerImpl::VEC_ALIGN;
             int nsamples = srcMat_->rows;
             int nw0 = weights_->rows;
-            int vecsize = srcMat_->cols;
+            int k, vecsize = srcMat_->cols;
+            int vecsize_aligned = (int)alignSize(vecsize, VEC_ALIGN);
             int nstripes = nstripes_;
             size_t total = (size_t)nsamples*nw0;
             size_t stripeSize = (total + nstripes - 1)/nstripes;
             size_t stripeStart = r.start*stripeSize;
             size_t stripeEnd = r.end == nstripes ? total : std::min(r.end*stripeSize, total);
             size_t wstep = weights_->step1();
+            AutoBuffer<float> srcbuf(vecsize_aligned + valign);
+            float* sptr = alignPtr((float*)srcbuf, (int)(valign*sizeof(float)));
+
+            for( k = vecsize; k < vecsize_aligned; k++ )
+                sptr[k] = 0.f;
 
             for( size_t ofs = stripeStart; ofs < stripeEnd; )
             {
                 int sampleIdx = (int)(ofs / nw0);
                 int delta = (int)(ofs - (size_t)sampleIdx*nw0);
-                const float* sptr = srcMat_->ptr<float>(sampleIdx);
+                const float* sptr_ = srcMat_->ptr<float>(sampleIdx);
                 const float* wptr = weights_->ptr<float>(delta);
                 float* dptr = dstMat_->ptr<float>(sampleIdx) + delta;
                 const float* biasptr = biasMat_->ptr<float>() + delta;
                 int nw = std::min(nw0 - delta, (int)(stripeEnd - ofs));
+
+                memcpy(sptr, sptr_, vecsize*sizeof(sptr[0]));
 
             #if CV_DNN_TRY_AVX2
                 if( useAVX2_ )
@@ -159,7 +167,7 @@ public:
                 else
             #endif
                 {
-                    int i = 0, k;
+                    int i = 0;
 
             #if CV_SIMD128
                     for( ; i <= nw - 4; i += 4, wptr += 4*wstep )
@@ -169,7 +177,7 @@ public:
 
                         for( k = 0; k < vecsize; k += 4 )
                         {
-                            vfloat32x4 v = v_load(sptr + k);
+                            vfloat32x4 v = v_load_aligned(sptr + k);
                             vs0 += v*v_load_aligned(wptr + k);
                             vs1 += v*v_load_aligned(wptr + wstep + k);
                             vs2 += v*v_load_aligned(wptr + wstep*2 + k);
