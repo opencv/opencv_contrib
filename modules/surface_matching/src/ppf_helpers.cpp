@@ -114,12 +114,8 @@ void writePLY(Mat PC, const char* FileName)
 {
   std::ofstream outFile( FileName );
 
-  if ( !outFile )
-  {
-    //cerr << "Error opening output file: " << FileName << "!" << endl;
-    printf("Error opening output file: %s!\n", FileName);
-    exit( 1 );
-  }
+  if ( !outFile.is_open() )
+    CV_Error(Error::StsError, String("Error opening output file: ") + String(FileName) + "\n");
 
   ////
   // Header
@@ -167,12 +163,8 @@ void writePLYVisibleNormals(Mat PC, const char* FileName)
 {
   std::ofstream outFile(FileName);
 
-  if (!outFile)
-  {
-    //cerr << "Error opening output file: " << FileName << "!" << endl;
-    printf("Error opening output file: %s!\n", FileName);
-    exit(1);
-  }
+  if (!outFile.is_open())
+    CV_Error(Error::StsError, String("Error opening output file: ") + String(FileName) + "\n");
 
   ////
   // Header
