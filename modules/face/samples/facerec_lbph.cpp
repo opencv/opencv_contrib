@@ -103,7 +103,7 @@ int main(int argc, const char *argv[]) {
     //
     //      cv::createLBPHFaceRecognizer(1,8,8,8,123.0)
     //
-    Ptr<LBPHFaceRecognizer> model = createLBPHFaceRecognizer();
+    Ptr<LBPHFaceRecognizer> model = LBPHFaceRecognizer::create();
     model->train(images, labels);
     // The following line predicts the label of a given
     // test image:
