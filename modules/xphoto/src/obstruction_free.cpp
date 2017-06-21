@@ -69,7 +69,7 @@ void obstructionFree(const std::vector <Mat> &srcImgs, Mat &dst, Mat &mask){
     std::vector<Mat> video_coarseLevel;
     for (size_t frame_i=0; frame_i<frameNumber; frame_i++){
         Mat temp, temp_gray;
-        temp=srcImg[sframe_i].clone();
+        temp=srcImgs[frame_i].clone();
         cvtColor(temp, temp_gray, COLOR_RGB2GRAY);
         for (int i=0; i<pyramid_level; i++){
             pyrDown( temp_gray, temp_gray );
