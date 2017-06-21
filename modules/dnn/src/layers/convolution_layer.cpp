@@ -185,11 +185,7 @@ public:
         return false;
     }
 
-#if 0
     bool setActivation(const Ptr<ActivationLayer>& layer) { activ = layer; return true; }
-#else
-    bool setActivation(const Ptr<ActivationLayer>&) { return false; }
-#endif
 
     virtual Ptr<BackendNode> initHalide(const std::vector<Ptr<BackendWrapper> > &inputs)
     {
