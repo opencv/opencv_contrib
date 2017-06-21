@@ -2,10 +2,10 @@
 // Created by 杨楠 on 17/6/14.
 //
 
-#include "opencv2/pcalib/Reader.hpp"
 #include "precomp.hpp"
+#include "opencv2/pcalib/Reader.hpp"
 
-namespace cv{ namespace pcalib{
+namespace cv { namespace pcalib{
 
 unsigned long Reader::getNumImages()
 {

@@ -39,10 +39,6 @@
  //
  //M*/
 
-#ifndef __OPENCV_PCALIB_CPP__
-#define __OPENCV_PCALIB_CPP__
-#ifdef __cplusplus
-
 #include "precomp.hpp"
 #include "opencv2/pcalib.hpp"
 
@@ -82,6 +78,3 @@ bool PhotometricCalibrator::validImgs(std::vector <Mat> &inputImgs, std::vector<
 }
 
 }} // namespace pcalib, cv
-
-#endif // __OPENCV_PCALIB_CPP__
-#endif // cplusplus

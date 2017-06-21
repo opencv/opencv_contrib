@@ -42,16 +42,15 @@
 #ifndef __OPENCV_PCALIB_HPP__
 #define __OPENCV_PCALIB_HPP__
 
-#include <opencv2/core.hpp>
-#include <opencv2/features2d.hpp>
-#include <opencv2/imgproc.hpp>
+#include "opencv2/core.hpp"
+#include "opencv2/imgproc.hpp"
 
 #include <vector>
 #include <string>
 #include <iostream>
 #include <fstream>
 
-namespace cv{ namespace pcalib{
+namespace cv { namespace pcalib{
 
 //! @addtogroup pcalib
 //! @{
