@@ -47,9 +47,9 @@ namespace cv
         void trainingImpl(String imageList, String groundTruth, const FacemarkAAM::Params &parameters);
         void trainingImpl(String imageList, String groundTruth);
 
-        Mat procrustes(std::vector<Point2f> P, std::vector<Point2f> Q, Mat & rot, Scalar & trans, float & scale);
-        void calcMeanShape(std::vector<std::vector<Point2f> > shapes,std::vector<Point2f> & mean);
-        void procrustesAnalysis(std::vector<std::vector<Point2f> > shapes, std::vector<std::vector<Point2f> > & normalized, std::vector<Point2f> & new_mean);
+        Mat procrustes(std::vector<Point2f> , std::vector<Point2f> , Mat & , Scalar & , float & );
+        void calcMeanShape(std::vector<std::vector<Point2f> > ,std::vector<Point2f> & );
+        void procrustesAnalysis(std::vector<std::vector<Point2f> > , std::vector<std::vector<Point2f> > & , std::vector<Point2f> & );
 
         FacemarkAAM::Params params;
 
@@ -189,7 +189,7 @@ namespace cv
         // calculate the recovered form
         Mat Qmat = Mat(Q).reshape(1);
 
-        return scale*Qmat*rot+trans;
+        return Mat(scale*Qmat*rot+trans).clone();
     }
 
     void FacemarkAAMImpl::procrustesAnalysis(std::vector<std::vector<Point2f> > shapes, std::vector<std::vector<Point2f> > & normalized, std::vector<Point2f> & new_mean){
@@ -200,16 +200,14 @@ namespace cv
         Point2f temp;
 
         // calculate the mean of every shape
-        for(unsigned i=0; i< shapes.size();i++){
+        for(size_t i=0; i< shapes.size();i++){
             mean_every_shape[i] = mean(shapes[i]);
-            // cout<<mean_every_shape[i]<<endl;
         }
 
         //normalize every shapes
         Mat tShape;
         normalized.clear();
-        for(unsigned i=0; i< shapes.size();i++){
-            // tShape = Mat(shapes[i]) - mean_every_shape[i];
+        for(size_t i=0; i< shapes.size();i++){
             normalized.push_back((Mat)(Mat(shapes[i]) - mean_every_shape[i]));
         }
 
@@ -237,8 +235,6 @@ namespace cv
             // update
             aligned.reshape(2).copyTo(mean_shape);
         }
-        // cout<<mean_shape<<endl;
-
     }
 
     void FacemarkAAMImpl::calcMeanShape(std::vector<std::vector<Point2f> > shapes,std::vector<Point2f> & mean){

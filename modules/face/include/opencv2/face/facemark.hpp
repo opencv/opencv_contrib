@@ -94,6 +94,32 @@ namespace cv
             void write(FileStorage& /*fs*/) const;
         };
 
+        struct CV_EXPORTS Model{
+            int npts;
+            int max_n;
+            std::vector<int>scales;
+
+            /*warping*/
+            std::vector<Vec3i> triangles;
+
+            struct Texture{
+                int max_m;
+                Rect resolution;
+                Mat A0,A,AA0,AA;
+                Mat featMapx, featMapy;
+                Mat featMapx2, featMapy2;
+                std::vector<std::vector<Point> > textureIdx;
+                std::vector<Point2f> base_shape;
+                Mat mask2;
+                Mat rec_y,map_erod2;
+            };
+            std::vector<Texture> textures;
+
+            /*shape*/
+            std::vector<Point2f> s0;
+            Mat S,Q;
+        };
+
         void training(String imageList, String groundTruth, const FacemarkAAM::Params &parameters);
         virtual void trainingImpl(String imageList, String groundTruth, const FacemarkAAM::Params &parameters)=0;
 
