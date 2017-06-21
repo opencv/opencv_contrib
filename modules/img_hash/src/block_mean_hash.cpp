@@ -92,7 +92,6 @@ public:
         mode_ = mode;
     }
 
-private:
     void createHash(cv::Mat &hash)
     {
         double const median = cv::mean(grayImg_)[0];
@@ -124,9 +123,6 @@ private:
         }
     }
 
-friend class BlockMeanHash;
-
-private:
     cv::Mat grayImg_;
     std::vector<double> mean_;
     int mode_;

@@ -28,9 +28,7 @@ inline int createOffSet(int length)
 
 class RadialVarianceHashImpl : public ImgHashBase::ImgHashImpl
 {
-    friend class RadialVarianceHash;
-
-private:
+public:
     cv::Mat blurImg_;
     std::vector<double> features_;
     cv::Mat grayImg_;
@@ -39,7 +37,6 @@ private:
     cv::Mat projections_;
     double sigma_;
 
-public:
     RadialVarianceHashImpl(double sigma, int numOfAngleLine)
         : numOfAngelLine_(numOfAngleLine), sigma_(sigma)
     {
@@ -134,7 +131,6 @@ public:
         sigma_ = value;
     }
 
-private:
     void afterHalfProjections(cv::Mat const &input, int D, int xOff, int yOff)
     {
         int *pplPtr = pixPerLine_.ptr<int>(0);
