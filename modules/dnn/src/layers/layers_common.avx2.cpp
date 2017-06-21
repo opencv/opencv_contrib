@@ -52,10 +52,13 @@ namespace dnn {
 
 void fastConv_avx2( const float* weights, size_t wstep, const float* bias,
                     const float* rowbuf, float* output, const int* outShape,
-                    int blockSize, int vecsize, int vecsize_aligned, bool initOutput )
+                    int blockSize, int vecsize, int vecsize_aligned,
+                    const float* relu, bool initOutput )
 {
     int outCn = outShape[1];
     size_t outPlaneSize = outShape[2]*outShape[3];
+    float r0 = 1.f, r1 = 1.f, r2 = 1.f;
+    __m256 vr0 = _mm256_set1_ps(1.f), vr1 = vr0, vr2 = vr0, z = _mm256_setzero_ps();
 
     // now compute dot product of the weights
     // and im2row-transformed part of the tensor
@@ -80,6 +83,16 @@ void fastConv_avx2( const float* weights, size_t wstep, const float* bias,
                 outptr2 = outptr1 = outptr0;
                 bias2 = bias1 = bias0;
             }
+        }
+
+        if( relu )
+        {
+            r0 = relu[i];
+            r1 = relu[i+1];
+            r2 = relu[i+2];
+            vr0 = _mm256_set1_ps(r0);
+            vr1 = _mm256_set1_ps(r1);
+            vr2 = _mm256_set1_ps(r2);
         }
 
         int j = 0;
@@ -148,6 +161,16 @@ void fastConv_avx2( const float* weights, size_t wstep, const float* bias,
             s1 = _mm256_add_ps(s1, t1);
             s2 = _mm256_add_ps(s2, t2);
 
+            if( relu )
+            {
+                __m256 m0 = _mm256_cmp_ps(s0, z, _CMP_GT_OS);
+                __m256 m1 = _mm256_cmp_ps(s1, z, _CMP_GT_OS);
+                __m256 m2 = _mm256_cmp_ps(s2, z, _CMP_GT_OS);
+                s0 = _mm256_xor_ps(s0, _mm256_andnot_ps(m0, _mm256_xor_ps(_mm256_mul_ps(s0, vr0), s0)));
+                s1 = _mm256_xor_ps(s1, _mm256_andnot_ps(m1, _mm256_xor_ps(_mm256_mul_ps(s1, vr1), s1)));
+                s2 = _mm256_xor_ps(s2, _mm256_andnot_ps(m2, _mm256_xor_ps(_mm256_mul_ps(s2, vr2), s2)));
+            }
+
             _mm_storeu_ps(outptr0 + j, _mm256_castps256_ps128(s0));
             _mm_storeu_ps(outptr1 + j, _mm256_castps256_ps128(s1));
             _mm_storeu_ps(outptr2 + j, _mm256_castps256_ps128(s2));
@@ -177,6 +200,13 @@ void fastConv_avx2( const float* weights, size_t wstep, const float* bias,
                 s00 += wptr0[k]*r0;
                 s10 += wptr1[k]*r0;
                 s20 += wptr2[k]*r0;
+            }
+
+            if( relu )
+            {
+                s00 = s00 > 0.f ? s00 : s00*r0;
+                s10 = s10 > 0.f ? s10 : s10*r1;
+                s20 = s20 > 0.f ? s20 : s20*r2;
             }
 
             outptr0[j] = s00;

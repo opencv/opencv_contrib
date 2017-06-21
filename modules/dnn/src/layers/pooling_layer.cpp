@@ -60,6 +60,7 @@ public:
     PoolingLayerImpl(const LayerParams& params)
     {
         type = PoolingLayer::MAX;
+        computeMaxIdx = true;
 
         if (params.has("pool"))
         {
@@ -138,8 +139,10 @@ public:
         Mat *dst_, *mask_;
         Size kernel_, stride_, pad_;
         int nstripes_;
+        bool computeMaxIdx_;
 
-        MaxPoolingInvoker(const Mat& src, Mat& dst, Mat& mask, Size kernel, Size stride, Size pad, int nstripes)
+        MaxPoolingInvoker(const Mat& src, Mat& dst, Mat& mask, Size kernel,
+                          Size stride, Size pad, int nstripes, bool computeMaxIdx)
         {
             src_ = &src;
             dst_ = &dst;
@@ -148,6 +151,7 @@ public:
             stride_ = stride;
             pad_ = pad;
             nstripes_ = nstripes;
+            computeMaxIdx_ = computeMaxIdx;
 
             CV_Assert(src.isContinuous() && dst.isContinuous() &&
                       src.type() == CV_32F && src.type() == dst.type() &&
@@ -178,13 +182,14 @@ public:
             int kernel_w = kernel_.width, kernel_h = kernel_.height;
             int pad_w = pad_.width, pad_h = pad_.height;
             int stride_w = stride_.width, stride_h = stride_.height;
+            bool computeMaxIdx = computeMaxIdx_;
         #if CV_SIMD128
             v_float32x4 idx00(0.f, (float)stride_w, (float)(stride_w*2), (float)(stride_w*3));
             v_float32x4 ones = v_setall_f32(1.f);
             v_float32x4 delta = v_setall_f32((float)(inp_width - kernel_w));
         #endif
 
-            for( ofs = stripeStart; ofs < stripeEnd; ofs++, dstData++, dstMaskData++ )
+            for( ofs = stripeStart; ofs < stripeEnd; ofs++ )
             {
                 int ystart = y0 * stride_h - pad_h;
                 int xstart = x0 * stride_w - pad_w;
@@ -198,57 +203,99 @@ public:
             #if CV_SIMD128
                 if( xstart > 0 && (x0 + 7) * stride_w - pad_w + kernel_w < inp_width )
                 {
-                    v_float32x4 max_val0 = v_setall_f32(max_val);
-                    v_float32x4 max_val1 = max_val0;
-                    v_float32x4 max_idx0 = v_setall_f32(-1.f);
-                    v_float32x4 max_idx1 = max_idx0;
-                    int index0 = ystart * inp_width + xstart;
-                    v_float32x4 idx0 = idx00 + v_setall_f32((float)index0);
-                    v_float32x4 idx1 = idx0 + v_setall_f32((float)(stride_w*4));
-
-                    for (int y = ystart; y < yend; ++y)
+                    if( computeMaxIdx )
                     {
-                        for (int x = xstart; x < xend; ++x, idx0 += ones, idx1 += ones)
+                        v_float32x4 max_val0 = v_setall_f32(max_val);
+                        v_float32x4 max_val1 = max_val0;
+                        v_float32x4 max_idx0 = v_setall_f32(-1.f);
+                        v_float32x4 max_idx1 = max_idx0;
+                        int index0 = ystart * inp_width + xstart;
+                        v_float32x4 idx0 = idx00 + v_setall_f32((float)index0);
+                        v_float32x4 idx1 = idx0 + v_setall_f32((float)(stride_w*4));
+
+                        for (int y = ystart; y < yend; ++y)
                         {
-                            const int index = y * inp_width + x;
-                            v_float32x4 v0(srcData[index], srcData[index + stride_w],
-                                           srcData[index + stride_w*2], srcData[index + stride_w*3]);
-                            v_float32x4 v1(srcData[index + stride_w*4], srcData[index + stride_w*5],
-                                           srcData[index + stride_w*6], srcData[index + stride_w*7]);
-                            max_idx0 = v_select(v0 > max_val0, idx0, max_idx0);
-                            max_idx1 = v_select(v1 > max_val1, idx1, max_idx1);
-                            max_val0 = v_max(max_val0, v0);
-                            max_val1 = v_max(max_val1, v1);
+                            for (int x = xstart; x < xend; ++x, idx0 += ones, idx1 += ones)
+                            {
+                                const int index = y * inp_width + x;
+                                v_float32x4 v0(srcData[index], srcData[index + stride_w],
+                                               srcData[index + stride_w*2], srcData[index + stride_w*3]);
+                                v_float32x4 v1(srcData[index + stride_w*4], srcData[index + stride_w*5],
+                                               srcData[index + stride_w*6], srcData[index + stride_w*7]);
+                                max_idx0 = v_select(v0 > max_val0, idx0, max_idx0);
+                                max_idx1 = v_select(v1 > max_val1, idx1, max_idx1);
+                                max_val0 = v_max(max_val0, v0);
+                                max_val1 = v_max(max_val1, v1);
+                            }
+                            idx0 += delta;
+                            idx1 += delta;
                         }
-                        idx0 += delta;
-                        idx1 += delta;
+                        v_store(dstData, max_val0);
+                        v_store(dstData + 4, max_val1);
+                        v_store(dstMaskData, max_idx0);
+                        v_store(dstMaskData + 4, max_idx1);
+                        ofs += 7;
+                        dstData += 8;
+                        dstMaskData += 8;
+                        x0 += 7;
                     }
-                    v_store(dstData, max_val0);
-                    v_store(dstData + 4, max_val1);
-                    v_store(dstMaskData, max_idx0);
-                    v_store(dstMaskData + 4, max_idx1);
-                    ofs += 7;
-                    dstData += 7;
-                    dstMaskData += 7;
-                    x0 += 7;
+                    else
+                    {
+                        v_float32x4 max_val0 = v_setall_f32(max_val);
+                        v_float32x4 max_val1 = max_val0;
+
+                        for (int y = ystart; y < yend; ++y)
+                        {
+                            for (int x = xstart; x < xend; ++x)
+                            {
+                                const int index = y * inp_width + x;
+                                v_float32x4 v0(srcData[index], srcData[index + stride_w],
+                                               srcData[index + stride_w*2], srcData[index + stride_w*3]);
+                                v_float32x4 v1(srcData[index + stride_w*4], srcData[index + stride_w*5],
+                                               srcData[index + stride_w*6], srcData[index + stride_w*7]);
+                                max_val0 = v_max(max_val0, v0);
+                                max_val1 = v_max(max_val1, v1);
+                            }
+                        }
+                        v_store(dstData, max_val0);
+                        v_store(dstData + 4, max_val1);
+                        ofs += 7;
+                        dstData += 8;
+                        x0 += 7;
+                    }
                 }
                 else
             #endif
                 {
-                    for (int y = ystart; y < yend; ++y)
-                        for (int x = xstart; x < xend; ++x)
-                        {
-                            const int index = y * inp_width + x;
-                            float val = srcData[index];
-                            if (val > max_val)
+                    if( computeMaxIdx )
+                    {
+                        for (int y = ystart; y < yend; ++y)
+                            for (int x = xstart; x < xend; ++x)
                             {
-                                max_val = val;
-                                max_index = index;
+                                const int index = y * inp_width + x;
+                                float val = srcData[index];
+                                if (val > max_val)
+                                {
+                                    max_val = val;
+                                    max_index = index;
+                                }
                             }
-                        }
 
-                    *dstData = max_val;
-                    *dstMaskData = max_index;
+                        *dstData++ = max_val;
+                        *dstMaskData++ = max_index;
+                    }
+                    else
+                    {
+                        for (int y = ystart; y < yend; ++y)
+                            for (int x = xstart; x < xend; ++x)
+                            {
+                                const int index = y * inp_width + x;
+                                float val = srcData[index];
+                                max_val = std::max(max_val, val);
+                            }
+
+                        *dstData++ = max_val;
+                    }
                 }
 
                 if( ++x0 >= width )
@@ -273,7 +320,7 @@ public:
     void maxPooling(Mat &src, Mat &dst, Mat &mask)
     {
         const int nstripes = getNumThreads();
-        MaxPoolingInvoker mp(src, dst, mask, kernel, stride, pad, nstripes);
+        MaxPoolingInvoker mp(src, dst, mask, kernel, stride, pad, nstripes, computeMaxIdx);
         parallel_for_(Range(0, nstripes), mp, nstripes);
     }
 
