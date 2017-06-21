@@ -28,8 +28,8 @@ namespace cv
         * \brief training the facemark model, input are the file names of image list and landmark annotation
         */
         void training(String imageList, String groundTruth);
-        virtual void saveTrainedModel(String filename)=0;
-        virtual void loadTrainedModel(String filename)=0;
+        virtual void saveModel(FileStorage& fs)=0;
+        virtual void loadModel(FileStorage& fs)=0;
 
         bool loadTrainingData(String filename , std::vector<String> & images, std::vector<std::vector<Point2f> > & facePoints, char delim = ' ');
         bool loadTrainingData(String imageList, String groundTruth, std::vector<String> & images, std::vector<std::vector<Point2f> > & facePoints);
