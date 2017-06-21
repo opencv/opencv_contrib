@@ -598,9 +598,37 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
      *  @warning This function has the same limitations as createTorchImporter().
      */
     CV_EXPORTS_W Mat readTorchBlob(const String &filename, bool isBinary = true);
-
-    CV_EXPORTS Mat blobFromImage(const Mat& image, double scalefactor=1.0, bool swapRB=true);
-    CV_EXPORTS Mat blobFromImages(const std::vector<Mat>& image, double scalefactor=1.0, bool swapRB=true);
+    /** @brief Creates 4-dimensional blob from image. Optionally resizes and crops @p image from center,
+     *  subtract @p mean values, scales values by @p scalefactor, swap Blue and Red channels.
+     *  @param image input image (with 1- or 3-channels).
+     *  @param size spatial size for output image
+     *  @param mean scalar with mean values which are subtracted from channels. Values are intended
+     *  to be in (mean-R, mean-G, mean-B) order if @p image has BGR ordering and @p swapRB is true.
+     *  @param scalefactor multiplier for @p image values.
+     *  @param swapRB flag which indicates that swap first and last channels
+     *  in 3-channel image is necessary.
+     *  @details input image is resized so one side after resize is equal to corresponing
+     *  dimension in @p size and another one is equal or larger. Then, crop from the center is performed.
+     *  @returns 4-dimansional Mat with NCHW dimensions order.
+     */
+    CV_EXPORTS_W Mat blobFromImage(const Mat& image, double scalefactor=1.0, const Size& size = Size(),
+                                   const Scalar& mean = Scalar(), bool swapRB=true);
+    /** @brief Creates 4-dimensional blob from series of images. Optionally resizes and
+     *  crops @p images from center, subtract @p mean values, scales values by @p scalefactor,
+     *  swap Blue and Red channels.
+     *  @param images input images (all with 1- or 3-channels).
+     *  @param size spatial size for output image
+     *  @param mean scalar with mean values which are subtracted from channels. Values are intended
+     *  to be in (mean-R, mean-G, mean-B) order if @p image has BGR ordering and @p swapRB is true.
+     *  @param scalefactor multiplier for @p images values.
+     *  @param swapRB flag which indicates that swap first and last channels
+     *  in 3-channel image is necessary.
+     *  @details input image is resized so one side after resize is equal to corresponing
+     *  dimension in @p size and another one is equal or larger. Then, crop from the center is performed.
+     *  @returns 4-dimansional Mat with NCHW dimensions order.
+     */
+    CV_EXPORTS_W Mat blobFromImages(const std::vector<Mat>& images, double scalefactor=1.0,
+                                    Size size = Size(), const Scalar& mean = Scalar(), bool swapRB=true);
 
 //! @}
 }

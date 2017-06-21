@@ -94,7 +94,7 @@ TEST(Reproducibility_AlexNet, Accuracy)
     if (sample.size() != inputSize)
         resize(sample, sample, inputSize);
 
-    net.setInput(blobFromImage(sample, 1.), "data");
+    net.setInput(blobFromImage(sample), "data");
     Mat out = net.forward("prob");
     Mat ref = blobFromNPY(_tf("caffe_alexnet_prob.npy"));
     normAssert(ref, out);
@@ -123,7 +123,7 @@ TEST(Reproducibility_FCN, Accuracy)
     std::vector<size_t> weights, blobs;
     net.getMemoryConsumption(shape(1,3,227,227), layerIds, weights, blobs);
 
-    net.setInput(blobFromImage(sample, 1.), "data");
+    net.setInput(blobFromImage(sample), "data");
     Mat out = net.forward("score");
     Mat ref = blobFromNPY(_tf("caffe_fcn8s_prob.npy"));
     normAssert(ref, out);

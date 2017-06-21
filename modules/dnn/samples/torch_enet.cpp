@@ -69,7 +69,7 @@ int main(int argc, char **argv)
     if (inputImgSize != origSize)
         resize(img, img, inputImgSize);       //Resize image to input size
 
-    Mat inputBlob = blobFromImage(img, 1./255, true);   //Convert Mat to image batch
+    Mat inputBlob = blobFromImage(img, 1./255);   //Convert Mat to image batch
     //! [Prepare blob]
 
     //! [Set input blob]

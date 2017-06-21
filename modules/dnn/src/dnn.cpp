@@ -48,6 +48,7 @@
 #include <sstream>
 #include <iterator>
 #include <opencv2/dnn/shape_utils.hpp>
+#include <opencv2/imgproc.hpp>
 
 using namespace cv;
 using namespace cv::dnn;
@@ -86,14 +87,42 @@ static String toString(const T &v)
     return ss.str();
 }
 
-Mat blobFromImage(const Mat& image_, double scalefactor, bool swapRB)
+Mat blobFromImage(const Mat& image, double scalefactor, const Size& size,
+                  const Scalar& mean, bool swapRB)
 {
-    std::vector<Mat> images(1, image_);
-    return blobFromImages(images, scalefactor, swapRB);
+    std::vector<Mat> images(1, image);
+    return blobFromImages(images, scalefactor, size, mean, swapRB);
 }
 
-Mat blobFromImages(const std::vector<Mat>& images, double scalefactor, bool swapRB)
+Mat blobFromImages(const std::vector<Mat>& images_, double scalefactor, Size size,
+                   const Scalar& mean_, bool swapRB)
 {
+    std::vector<Mat> images = images_;
+    for (int i = 0; i < images.size(); i++)
+    {
+        Size imgSize = images[i].size();
+        if (size == Size())
+            size = imgSize;
+        if (size != imgSize)
+        {
+            float resizeFactor = std::max(size.width / (float)imgSize.width,
+                                          size.height / (float)imgSize.height);
+            resize(images[i], images[i], Size(), resizeFactor, resizeFactor);
+            Rect crop(Point(0.5 * (images[i].cols - size.width),
+                            0.5 * (images[i].rows - size.height)),
+                      size);
+            images[i] = images[i](crop);
+        }
+        if(images[i].depth() == CV_8U)
+            images[i].convertTo(images[i], CV_32F);
+        Scalar mean = mean_;
+        if (swapRB)
+            std::swap(mean[0], mean[2]);
+
+        images[i] -= mean;
+        images[i] *= scalefactor;
+    }
+
     size_t i, nimages = images.size();
     if(nimages == 0)
         return Mat();
@@ -109,13 +138,7 @@ Mat blobFromImages(const std::vector<Mat>& images, double scalefactor, bool swap
 
         for( i = 0; i < nimages; i++ )
         {
-            Mat image_ = images[i];
-            if(image_.depth() == CV_8U)
-            {
-                image_.convertTo(image, CV_32F, scalefactor);
-            }
-            else
-                image = image_;
+            image = images[i];
             CV_Assert(image.depth() == CV_32F);
             nch = image.channels();
             CV_Assert(image.dims == 2 && (nch == 3 || nch == 4));
@@ -136,13 +159,7 @@ Mat blobFromImages(const std::vector<Mat>& images, double scalefactor, bool swap
 
        for( i = 0; i < nimages; i++ )
        {
-           Mat image_ = images[i];
-           if(image_.depth() == CV_8U)
-           {
-               image_.convertTo(image, CV_32F, scalefactor);
-           }
-           else
-               image = image_;
+           Mat image = images[i];
            CV_Assert(image.depth() == CV_32F);
            nch = image.channels();
            CV_Assert(image.dims == 2 && (nch == 1));
@@ -153,7 +170,6 @@ Mat blobFromImages(const std::vector<Mat>& images, double scalefactor, bool swap
     }
     return blob;
 }
-
 
 struct LayerPin
 {
