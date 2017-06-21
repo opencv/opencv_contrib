@@ -1,9 +1,9 @@
 #ifndef _OPENCV_READER_HPP
 #define _OPENCV_READER_HPP
 
-#include "opencv2/pcalib.hpp"
+#include "opencv2/photometric_calib.hpp"
 
-namespace cv { namespace pcalib{
+namespace cv { namespace photometric_calib{
 
 class Reader
 {
@@ -29,5 +29,5 @@ private:
     String path;
 };
 
-}} // namespace cv pcalib
+}} // namespace cv photometric_calib
 #endif //_OPENCV_READER_HPP

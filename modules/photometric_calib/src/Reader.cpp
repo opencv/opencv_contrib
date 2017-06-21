@@ -1,11 +1,11 @@
 //
-// Created by 杨楠 on 17/6/14.
+// Created by Nan Yang on 17/6/14.
 //
 
 #include "precomp.hpp"
-#include "opencv2/pcalib/Reader.hpp"
+#include "opencv2/photometric_calib/Reader.hpp"
 
-namespace cv { namespace pcalib{
+namespace cv { namespace photometric_calib{
 
 unsigned long Reader::getNumImages()
 {
@@ -78,4 +78,4 @@ float Reader::getExposureTime(unsigned long id)
     return exposureTimes[id];
 }
 
-}}
+}} // namespace photometric_calib, cv

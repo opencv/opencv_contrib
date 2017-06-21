@@ -39,42 +39,30 @@
  //
  //M*/
 
-#include "precomp.hpp"
-#include "opencv2/pcalib.hpp"
+#ifndef __OPENCV_PHOTOMETRIC_CALIB_HPP__
+#define __OPENCV_PHOTOMETRIC_CALIB_HPP__
 
-namespace cv{ namespace pcalib{
+#include "opencv2/core.hpp"
+#include "opencv2/imgproc.hpp"
 
-using namespace std;
+#include <vector>
+#include <string>
+#include <iostream>
+#include <fstream>
 
-bool PhotometricCalibrator::validImgs(std::vector <Mat> &inputImgs, std::vector<double> &exposureTime)
+namespace cv { namespace photometric_calib{
+
+//! @addtogroup photometric_calib
+//! @{
+
+class CV_EXPORTS PhotometricCalibrator : public Algorithm
 {
-    if(inputImgs.empty() || exposureTime.empty() || inputImgs.size() != exposureTime.size())
-        return false;
+public:
+	bool validImgs(std::vector <Mat> &inputImgs, std::vector<double> &exposureTime);
+};
 
-    int width = 0, height = 0;
-    for(size_t i = 0; i < inputImgs.size(); ++ i)
-    {
-        Mat img;
-        img = inputImgs[i];
-        if(img.type() != CV_8U)
-        {
-            cout<<"The type of the image should be CV_8U!"<<endl;
-            return false;
-        }
-        if((width!=0 && width != img.cols) || img.cols==0)
-        {
-            cout<<"Width mismatch!"<<endl;
-            return false;
-        };
-        if((height!=0 && height != img.rows) || img.rows==0)
-        {
-            cout<<"Height mismatch!"<<endl;
-            return false;
-        };
-        width = img.cols;
-        height = img.rows;
-    }
-    return true;
-}
+//! @}
 
-}} // namespace pcalib, cv
+}} // namespace photometric_calib, cv
+
+#endif
