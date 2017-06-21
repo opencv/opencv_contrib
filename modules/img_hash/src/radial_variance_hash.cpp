@@ -28,7 +28,7 @@ inline int createOffSet(int length)
 
 class RadialVarianceHashImpl : public ImgHashBase::ImgHashImpl
 {
-    friend RadialVarianceHash;
+    friend class RadialVarianceHash;
 
 private:
     cv::Mat blurImg_;

@@ -124,7 +124,7 @@ private:
         }
     }
 
-friend BlockMeanHash;
+friend class BlockMeanHash;
 
 private:
     cv::Mat grayImg_;

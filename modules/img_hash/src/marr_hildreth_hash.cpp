@@ -153,7 +153,7 @@ public:
         getMHKernel(alphaVal, scaleVal, mhKernel);
     }
 
-friend MarrHildrethHash;
+friend class MarrHildrethHash;
 
 private:
     float alphaVal;
