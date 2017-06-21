@@ -111,11 +111,8 @@ Put these files into working dir of this program example.
 -# Pass the blob to the network
 @snippet dnn/samples/squeezenet_halide.cpp Set input blob
 
--# Enable using Halide backend for layers where it is implemented
+-# Enable Halide backend for layers where it is implemented
 @snippet dnn/samples/squeezenet_halide.cpp Enable Halide backend
-
--# Compile Halide functions to execute on CPU
-@snippet dnn/samples/squeezenet_halide.cpp Compile Halide pipeline
 
 -# Make forward pass
 @snippet dnn/samples/squeezenet_halide.cpp Make forward pass
@@ -124,7 +121,7 @@ time that the next ones. It's because of runtime compilation of Halide pipelines
 at the first invocation.
 
 -# Determine the best class
-@snippet dnn/samples/squeezenet_halide.cpp Gather output
+@snippet dnn/samples/squeezenet_halide.cpp Determine the best class
 
 -# Print results
 @snippet dnn/samples/squeezenet_halide.cpp Print results

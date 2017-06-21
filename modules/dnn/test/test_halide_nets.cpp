@@ -43,80 +43,76 @@ static void test(const std::string& weights, const std::string& proto,
     loadNet(weights, proto, framework, &netDefault);
     loadNet(weights, proto, framework, &netHalide);
 
-    netDefault.setBlob("", blobFromImage(input.clone(), 1.0f, false));
-    netDefault.forward(netDefault.getLayerId(outputLayer));
-    outputDefault = netDefault.getBlob(outputLayer).clone();
+    netDefault.setInput(blobFromImage(input.clone(), 1.0f, false));
+    outputDefault = netDefault.forward(outputLayer).clone();
 
-    netHalide.setBlob("", blobFromImage(input.clone(), 1.0f, false));
+    netHalide.setInput(blobFromImage(input.clone(), 1.0f, false));
     netHalide.setPreferableBackend(DNN_BACKEND_HALIDE);
-    netHalide.compileHalide(scheduler);
-    netHalide.forward(netHalide.getLayerId(outputLayer));
-    outputHalide = netHalide.getBlob(outputLayer).clone();
+    netHalide.setHalideScheduler(scheduler);
+    outputHalide = netHalide.forward(outputLayer).clone();
 
     normAssert(outputDefault, outputHalide);
 
     // An extra test: change input.
     input *= 0.1f;
-    netDefault.setBlob("", blobFromImage(input.clone(), 1.0, false));
-    netHalide.setBlob("", blobFromImage(input.clone(), 1.0, false));
+    netDefault.setInput(blobFromImage(input.clone(), 1.0, false));
+    netHalide.setInput(blobFromImage(input.clone(), 1.0, false));
 
     normAssert(outputDefault, outputHalide);
 
     // Swap backends.
     netHalide.setPreferableBackend(DNN_BACKEND_DEFAULT);
-    netHalide.forward(netHalide.getLayerId(outputLayer));
+    outputDefault = netHalide.forward(outputLayer).clone();
 
     netDefault.setPreferableBackend(DNN_BACKEND_HALIDE);
-    netDefault.compileHalide(scheduler);
-    netDefault.forward(netDefault.getLayerId(outputLayer));
+    netDefault.setHalideScheduler(scheduler);
+    outputHalide = netDefault.forward(outputLayer).clone();
 
-    outputDefault = netHalide.getBlob(outputLayer).clone();
-    outputHalide = netDefault.getBlob(outputLayer).clone();
     normAssert(outputDefault, outputHalide);
 }
 
 TEST(Reproducibility_GoogLeNet_Halide, Accuracy)
 {
-    test(findDataFile("dnn/bvlc_googlenet.caffemodel"),
-         findDataFile("dnn/bvlc_googlenet.prototxt"),
+    test(findDataFile("dnn/bvlc_googlenet.caffemodel", false),
+         findDataFile("dnn/bvlc_googlenet.prototxt", false),
          "", 227, 227, "prob", "caffe", DNN_TARGET_CPU);
 };
 
 TEST(Reproducibility_AlexNet_Halide, Accuracy)
 {
-    test(getOpenCVExtraDir() + "/dnn/bvlc_alexnet.caffemodel",
-         getOpenCVExtraDir() + "/dnn/bvlc_alexnet.prototxt",
-         getOpenCVExtraDir() + "/dnn/halide_scheduler_alexnet.yml",
+    test(findDataFile("dnn/bvlc_alexnet.caffemodel", false),
+         findDataFile("dnn/bvlc_alexnet.prototxt", false),
+         findDataFile("dnn/halide_scheduler_alexnet.yml", false),
          227, 227, "prob", "caffe", DNN_TARGET_CPU);
 };
 
-// TEST(Reproducibility_ResNet_50_Halide, Accuracy)
-// {
-//     test(getOpenCVExtraDir() + "/dnn/ResNet-50-model.caffemodel",
-//          getOpenCVExtraDir() + "/dnn/ResNet-50-deploy.prototxt",
-//          getOpenCVExtraDir() + "/dnn/halide_scheduler_resnet_50.yml",
-//          224, 224, "prob", "caffe", DNN_TARGET_CPU);
-// };
+TEST(Reproducibility_ResNet_50_Halide, Accuracy)
+{
+    test(findDataFile("dnn/ResNet-50-model.caffemodel", false),
+         findDataFile("dnn/ResNet-50-deploy.prototxt", false),
+         findDataFile("dnn/halide_scheduler_resnet_50.yml", false),
+         224, 224, "prob", "caffe", DNN_TARGET_CPU);
+};
 
-// TEST(Reproducibility_SqueezeNet_v1_1_Halide, Accuracy)
-// {
-//     test(getOpenCVExtraDir() + "/dnn/squeezenet_v1_1.caffemodel",
-//          getOpenCVExtraDir() + "/dnn/squeezenet_v1_1.prototxt",
-//          getOpenCVExtraDir() + "/dnn/halide_scheduler_squeezenet_v1_1.yml",
-//          227, 227, "prob", "caffe", DNN_TARGET_CPU);
-// };
+TEST(Reproducibility_SqueezeNet_v1_1_Halide, Accuracy)
+{
+    test(findDataFile("dnn/squeezenet_v1_1.caffemodel", false),
+         findDataFile("dnn/squeezenet_v1_1.prototxt", false),
+         findDataFile("dnn/halide_scheduler_squeezenet_v1_1.yml", false),
+         227, 227, "prob", "caffe", DNN_TARGET_CPU);
+};
 
 TEST(Reproducibility_Inception_5h_Halide, Accuracy)
 {
-    test(getOpenCVExtraDir() + "/dnn/tensorflow_inception_graph.pb", "",
-         getOpenCVExtraDir() + "/dnn/halide_scheduler_inception_5h.yml",
+    test(findDataFile("dnn/tensorflow_inception_graph.pb", false), "",
+         findDataFile("dnn/halide_scheduler_inception_5h.yml", false),
          224, 224, "softmax2", "tensorflow", DNN_TARGET_CPU);
 };
 
 TEST(Reproducibility_ENet_Halide, Accuracy)
 {
-    test(getOpenCVExtraDir() + "/dnn/Enet-model-best.net", "",
-         getOpenCVExtraDir() + "/dnn/halide_scheduler_enet.yml",
+    test(findDataFile("dnn/Enet-model-best.net", false), "",
+         findDataFile("dnn/halide_scheduler_enet.yml", false),
          512, 512, "l367_Deconvolution", "torch", DNN_TARGET_CPU);
 };
 #endif  // HAVE_HALIDE
