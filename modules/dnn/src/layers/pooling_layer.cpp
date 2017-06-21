@@ -178,9 +178,11 @@ public:
             int kernel_w = kernel_.width, kernel_h = kernel_.height;
             int pad_w = pad_.width, pad_h = pad_.height;
             int stride_w = stride_.width, stride_h = stride_.height;
+        #if CV_SIMD128
             v_float32x4 idx00(0.f, (float)stride_w, (float)(stride_w*2), (float)(stride_w*3));
             v_float32x4 ones = v_setall_f32(1.f);
             v_float32x4 delta = v_setall_f32((float)(inp_width - kernel_w));
+        #endif
 
             for( ofs = stripeStart; ofs < stripeEnd; ofs++, dstData++, dstMaskData++ )
             {
