@@ -7,6 +7,10 @@
 
 #include "op_halide.hpp"
 
+#ifdef HAVE_HALIDE
+#include <HalideRuntimeOpenCL.h>
+#endif  // HAVE_HALIDE
+
 namespace cv
 {
 namespace dnn
@@ -72,7 +76,15 @@ HalideBackendWrapper::HalideBackendWrapper(int targetId, const cv::Mat& m)
     : BackendWrapper(DNN_BACKEND_HALIDE, targetId)
 {
     buffer = wrapToHalideBuffer(m);
-    if (targetId != DNN_TARGET_CPU)
+    if (targetId == DNN_TARGET_CPU)
+    {
+        return;
+    }
+    else if (targetId == DNN_TARGET_OPENCL)
+    {
+        buffer.copy_to_device(halide_opencl_device_interface());
+    }
+    else
         CV_Error(Error::StsNotImplemented, "Unknown target identifier");
 }
 
@@ -80,15 +92,32 @@ HalideBackendWrapper::HalideBackendWrapper(const Ptr<BackendWrapper>& base,
                                            const MatShape& shape)
     : BackendWrapper(DNN_BACKEND_HALIDE, base->targetId)
 {
-    if (base->targetId != DNN_TARGET_CPU)
-        CV_Error(Error::StsNotImplemented, "Unknown target identifier");
-
     int w, h, c, n;
     getCanonicalSize(shape, &w, &h, &c, &n);
     Halide::Buffer<float> baseBuffer = halideBuffer(base);
     buffer = Halide::Buffer<float>((float*)baseBuffer.raw_buffer()->host,
                                    {w, h, c, n});
-    buffer.set_host_dirty();  // Indicate that data is on CPU.
+    if (baseBuffer.has_device_allocation())
+    {
+        buffer.raw_buffer()->device = baseBuffer.raw_buffer()->device;
+        buffer.raw_buffer()->device_interface = baseBuffer.raw_buffer()->device_interface;
+        buffer.set_device_dirty();
+    }
+    else
+    {
+        buffer.set_host_dirty();  // Indicate that data is on CPU.
+        CV_Assert(targetId == DNN_TARGET_CPU);
+    }
+}
+
+void HalideBackendWrapper::copyToHost()
+{
+    CV_Assert(targetId == DNN_TARGET_CPU || buffer.device_dirty());
+    if (buffer.device_dirty())
+    {
+        buffer.device_sync();
+        buffer.copy_to_host();
+    }
 }
 #endif  // HAVE_HALIDE
 
@@ -144,6 +173,11 @@ void compileHalide(std::vector<Mat> &outputs, Ptr<BackendNode>& node, int target
 
     Halide::Target target = Halide::get_host_target();
     target.set_feature(Halide::Target::NoAsserts);
+    if (targetId == DNN_TARGET_OPENCL)
+    {
+        target.set_feature(Halide::Target::OpenCL);
+    }
+    CV_Assert(target.supported());
     top.compile_jit(target);
 #endif  // HAVE_HALIDE
 }

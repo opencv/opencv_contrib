@@ -272,9 +272,15 @@ public:
 
     virtual void applyHalideScheduler(Ptr<BackendNode>& node,
                                       const std::vector<Mat*> &inputs,
-                                      const std::vector<Mat> &outputs) const
+                                      const std::vector<Mat> &outputs,
+                                      int targetId) const
     {
 #ifdef  HAVE_HALIDE
+        if (targetId != DNN_TARGET_CPU)
+        {
+            Layer::applyHalideScheduler(node, inputs, outputs, targetId);
+            return;
+        }
         int outW, outH, outC, outN;
         getCanonicalSize(outputs[0].size, &outW, &outH, &outC, &outN);
 

@@ -41,114 +41,131 @@ static void loadNet(std::string weights, std::string proto, std::string schedule
 
     net->setInput(blobFromImage(input, 1.0, false));
     net->setPreferableBackend(DNN_BACKEND_HALIDE);
+    net->setPreferableTarget(targetId);
     net->setHalideScheduler(scheduler);
     net->forward(outputLayer);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// CPU target
+////////////////////////////////////////////////////////////////////////////////
 PERF_TEST(GoogLeNet, HalidePerfTest)
 {
-    try {
-        Net net;
-        loadNet("dnn/bvlc_googlenet.caffemodel", "dnn/bvlc_googlenet.prototxt",
-                "", 227, 227, "prob", "caffe", DNN_TARGET_CPU, &net);
-
-        TEST_CYCLE_N(10)
-        {
-            net.forward();
-        }
-        SANITY_CHECK_NOTHING();
-    } catch (SkipTestException& e) {
-        throw PerfSkipTestException();
-    }
+    Net net;
+    loadNet("dnn/bvlc_googlenet2.caffemodel", "dnn/bvlc_googlenet.prototxt",
+            "", 227, 227, "prob", "caffe", DNN_TARGET_CPU, &net);
+    TEST_CYCLE() net.forward();
+    SANITY_CHECK_NOTHING();
 }
 
 PERF_TEST(AlexNet, HalidePerfTest)
 {
-    try {
-        Net net;
-        loadNet("dnn/bvlc_alexnet.caffemodel", "dnn/bvlc_alexnet.prototxt",
-                "dnn/halide_scheduler_alexnet.yml", 227, 227, "prob", "caffe",
-                DNN_TARGET_CPU, &net);
-
-        TEST_CYCLE_N(10)
-        {
-            net.forward();
-        }
-        SANITY_CHECK_NOTHING();
-    } catch (SkipTestException& e) {
-        throw PerfSkipTestException();
-    }
+    Net net;
+    loadNet("dnn/bvlc_alexnet.caffemodel", "dnn/bvlc_alexnet.prototxt",
+            "dnn/halide_scheduler_alexnet.yml", 227, 227, "prob", "caffe",
+            DNN_TARGET_CPU, &net);
+    TEST_CYCLE() net.forward();
+    SANITY_CHECK_NOTHING();
 }
 
 PERF_TEST(ResNet50, HalidePerfTest)
 {
-    try {
-        Net net;
-        loadNet("dnn/ResNet-50-model.caffemodel", "dnn/ResNet-50-deploy.prototxt",
-                "dnn/halide_scheduler_resnet_50.yml", 224, 224, "prob", "caffe",
-                DNN_TARGET_CPU, &net);
-
-        TEST_CYCLE_N(10)
-        {
-            net.forward();
-        }
-        SANITY_CHECK_NOTHING();
-    } catch (SkipTestException& e) {
-        throw PerfSkipTestException();
-    }
+    Net net;
+    loadNet("dnn/ResNet-50-model.caffemodel", "dnn/ResNet-50-deploy.prototxt",
+            "dnn/halide_scheduler_resnet_50.yml", 224, 224, "prob", "caffe",
+            DNN_TARGET_CPU, &net);
+    TEST_CYCLE() net.forward();
+    SANITY_CHECK_NOTHING();
 }
 
 PERF_TEST(SqueezeNet_v1_1, HalidePerfTest)
 {
-    try {
-        Net net;
-        loadNet("dnn/squeezenet_v1_1.caffemodel", "dnn/squeezenet_v1_1.prototxt",
-                "dnn/halide_scheduler_squeezenet_v1_1.yml", 227, 227, "prob",
-                "caffe", DNN_TARGET_CPU, &net);
-
-        TEST_CYCLE_N(10)
-        {
-            net.forward();
-        }
-        SANITY_CHECK_NOTHING();
-    } catch (SkipTestException& e) {
-        throw PerfSkipTestException();
-    }
+    Net net;
+    loadNet("dnn/squeezenet_v1_1.caffemodel", "dnn/squeezenet_v1_1.prototxt",
+            "dnn/halide_scheduler_squeezenet_v1_1.yml", 227, 227, "prob",
+            "caffe", DNN_TARGET_CPU, &net);
+    TEST_CYCLE() net.forward();
+    SANITY_CHECK_NOTHING();
 }
 
 PERF_TEST(Inception_5h, HalidePerfTest)
 {
-    try {
-        Net net;
-        loadNet("dnn/tensorflow_inception_graph.pb", "",
-                "dnn/halide_scheduler_inception_5h.yml",
-                224, 224, "softmax2", "tensorflow", DNN_TARGET_CPU, &net);
-
-        TEST_CYCLE_N(10)
-        {
-            net.forward("softmax2");
-        }
-        SANITY_CHECK_NOTHING();
-    } catch (SkipTestException& e) {
-        throw PerfSkipTestException();
-    }
+    Net net;
+    loadNet("dnn/tensorflow_inception_graph.pb", "",
+            "dnn/halide_scheduler_inception_5h.yml",
+            224, 224, "softmax2", "tensorflow", DNN_TARGET_CPU, &net);
+    TEST_CYCLE() net.forward("softmax2");
+    SANITY_CHECK_NOTHING();
 }
 
 PERF_TEST(ENet, HalidePerfTest)
 {
-    try {
-        Net net;
-        loadNet("dnn/Enet-model-best.net", "", "dnn/halide_scheduler_enet.yml",
-                512, 256, "l367_Deconvolution", "torch", DNN_TARGET_CPU, &net);
+    Net net;
+    loadNet("dnn/Enet-model-best.net", "", "dnn/halide_scheduler_enet.yml",
+            512, 256, "l367_Deconvolution", "torch", DNN_TARGET_CPU, &net);
+    TEST_CYCLE() net.forward();
+    SANITY_CHECK_NOTHING();
+}
+////////////////////////////////////////////////////////////////////////////////
+// OpenCL target
+////////////////////////////////////////////////////////////////////////////////
+PERF_TEST(GoogLeNet_opencl, HalidePerfTest)
+{
+    Net net;
+    loadNet("dnn/bvlc_googlenet.caffemodel", "dnn/bvlc_googlenet.prototxt",
+            "", 227, 227, "prob", "caffe", DNN_TARGET_OPENCL, &net);
+    TEST_CYCLE() net.forward();
+    SANITY_CHECK_NOTHING();
+}
 
-        TEST_CYCLE_N(10)
-        {
-            net.forward("l367_Deconvolution");
-        }
-        SANITY_CHECK_NOTHING();
-    } catch (SkipTestException& e) {
-        throw PerfSkipTestException();
-    }
+PERF_TEST(AlexNet_opencl, HalidePerfTest)
+{
+    Net net;
+    loadNet("dnn/bvlc_alexnet.caffemodel", "dnn/bvlc_alexnet.prototxt",
+            "dnn/halide_scheduler_opencl_alexnet.yml", 227, 227, "prob", "caffe",
+            DNN_TARGET_OPENCL, &net);
+    TEST_CYCLE() net.forward();
+    SANITY_CHECK_NOTHING();
+}
+
+PERF_TEST(ResNet50_opencl, HalidePerfTest)
+{
+    Net net;
+    loadNet("dnn/ResNet-50-model.caffemodel", "dnn/ResNet-50-deploy.prototxt",
+            "dnn/halide_scheduler_opencl_resnet_50.yml", 224, 224, "prob", "caffe",
+            DNN_TARGET_OPENCL, &net);
+    TEST_CYCLE() net.forward();
+    SANITY_CHECK_NOTHING();
+}
+
+
+PERF_TEST(SqueezeNet_v1_1_opencl, HalidePerfTest)
+{
+    Net net;
+    loadNet("dnn/squeezenet_v1_1.caffemodel", "dnn/squeezenet_v1_1.prototxt",
+            "dnn/halide_scheduler_opencl_squeezenet_v1_1.yml", 227, 227, "prob",
+            "caffe", DNN_TARGET_OPENCL, &net);
+    TEST_CYCLE() net.forward();
+    SANITY_CHECK_NOTHING();
+}
+
+PERF_TEST(Inception_5h_opencl, HalidePerfTest)
+{
+    Net net;
+    loadNet("dnn/tensorflow_inception_graph.pb", "",
+            "dnn/halide_scheduler_opencl_inception_5h.yml",
+            224, 224, "softmax2", "tensorflow", DNN_TARGET_OPENCL, &net);
+    TEST_CYCLE() net.forward("softmax2");
+    SANITY_CHECK_NOTHING();
+}
+
+PERF_TEST(ENet_opencl, HalidePerfTest)
+{
+    Net net;
+    loadNet("dnn/Enet-model-best.net", "", "dnn/halide_scheduler_opencl_enet.yml",
+            512, 256, "l367_Deconvolution", "torch", DNN_TARGET_OPENCL, &net);
+    TEST_CYCLE() net.forward();
+    SANITY_CHECK_NOTHING();
 }
 #endif  // HAVE_HALIDE
 

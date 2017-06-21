@@ -10,6 +10,7 @@ Implementation of padding layer, which adds paddings to input blob.
 */
 
 #include "../precomp.hpp"
+#include "op_halide.hpp"
 #include <vector>
 
 namespace cv
@@ -52,6 +53,12 @@ public:
         return false;
     }
 
+    virtual bool supportBackend(int backendId)
+    {
+        return backendId == DNN_BACKEND_DEFAULT ||
+               backendId == DNN_BACKEND_HALIDE && haveHalide();
+    }
+
     void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         for(int i = 0; i < inputs.size(); i++)
@@ -92,6 +99,23 @@ public:
     int getPadDim(const MatShape& shape) const
     {
         return inputDims > 0 && (int)shape.size() > inputDims ? paddingDim + 1 : paddingDim;
+    }
+
+    virtual Ptr<BackendNode> initHalide(const std::vector<Ptr<BackendWrapper> > &inputs)
+    {
+#ifdef HAVE_HALIDE
+        int inW, inH, inC, inN;
+        Halide::Buffer<float> inputBuffer = halideBuffer(inputs[0]);
+        getCanonicalSize(inputBuffer, &inW, &inH, &inC, &inN);
+
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        Halide::Func top = (name.empty() ? Halide::Func() : Halide::Func(name));
+        Halide::Func padded =
+            Halide::BoundaryConditions::constant_exterior(inputBuffer, paddingValue);
+        top(x, y, c, n) = padded(x, y, c, n);
+        return Ptr<BackendNode>(new HalideBackendNode(top));
+#endif  // HAVE_HALIDE
+        return Ptr<BackendNode>();
     }
 
     int paddingDim, padding, inputDims, index;

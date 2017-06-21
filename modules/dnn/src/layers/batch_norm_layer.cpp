@@ -157,6 +157,8 @@ public:
             bias(i) = (hasBias ? biasData[i] : 0.0f) -
                       weights(i) * meanData[i] * varMeanScale;
         }
+        weights.set_host_dirty();
+        bias.set_host_dirty();
         top(x, y, c, n) = input * weights(c) + bias(c);
         return top;
     }

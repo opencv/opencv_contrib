@@ -99,9 +99,15 @@ public:
 
     virtual void applyHalideScheduler(Ptr<BackendNode>& node,
                                       const std::vector<Mat*> &inputs,
-                                      const std::vector<Mat> &outputs) const
+                                      const std::vector<Mat> &outputs,
+                                      int targetId) const
     {
 #ifdef HAVE_HALIDE
+        if (targetId != DNN_TARGET_CPU)
+        {
+            Layer::applyHalideScheduler(node, inputs, outputs, targetId);
+            return;
+        }
         Halide::Var x("x"), y("y"), c("c"), n("n"), tile("tile"), yi("yi"), yo("yo"), co("co"), ci("ci");
         Halide::Func& top = node.dynamicCast<HalideBackendNode>()->funcs[1];
         Halide::Func& padded_input = node.dynamicCast<HalideBackendNode>()->funcs[0];

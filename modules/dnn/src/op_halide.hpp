@@ -57,6 +57,8 @@ namespace dnn
 
         HalideBackendWrapper(const Ptr<BackendWrapper>& base, const MatShape& shape);
 
+        virtual void copyToHost();
+
         Halide::Buffer<float> buffer;
     };
 #endif  // HAVE_HALIDE
