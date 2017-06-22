@@ -95,8 +95,7 @@ static void launchGoogleNetTest()
         std::replace( filename.begin(), filename.end(), '/', '#');
         Mat ref = blobFromNPY(_tf("googlenet_" + filename + ".npy"));
 
-        // TODO: disabled the check for now, because it conflicts with the layer fusion
-        // normAssert(outs[i], ref, "", 1E-4, 1E-2);
+        normAssert(outs[i], ref, "", 1E-4, 1E-2);
     }
 }
 
