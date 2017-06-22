@@ -34,7 +34,7 @@ static void loadNet(const std::string& weights, const std::string& proto,
 static void test(const std::string& weights, const std::string& proto,
                  const std::string& scheduler, int inWidth, int inHeight,
                  const std::string& outputLayer, const std::string& framework,
-                 int targetId)
+                 int targetId, double l1 = 1e-5, double lInf = 1e-4)
 {
     Mat input(inHeight, inWidth, CV_32FC3), outputDefault, outputHalide;
     randu(input, 0.0f, 1.0f);
@@ -43,23 +43,23 @@ static void test(const std::string& weights, const std::string& proto,
     loadNet(weights, proto, framework, &netDefault);
     loadNet(weights, proto, framework, &netHalide);
 
-    netDefault.setInput(blobFromImage(input.clone(), 1.0f, false));
+    netDefault.setInput(blobFromImage(input.clone(), 1.0f, Size(), Scalar(), false));
     outputDefault = netDefault.forward(outputLayer).clone();
 
-    netHalide.setInput(blobFromImage(input.clone(), 1.0f, false));
+    netHalide.setInput(blobFromImage(input.clone(), 1.0f, Size(), Scalar(), false));
     netHalide.setPreferableBackend(DNN_BACKEND_HALIDE);
     netHalide.setPreferableTarget(targetId);
     netHalide.setHalideScheduler(scheduler);
     outputHalide = netHalide.forward(outputLayer).clone();
 
-    normAssert(outputDefault, outputHalide);
+    normAssert(outputDefault, outputHalide, "First run", l1, lInf);
 
     // An extra test: change input.
     input *= 0.1f;
-    netDefault.setInput(blobFromImage(input.clone(), 1.0, false));
-    netHalide.setInput(blobFromImage(input.clone(), 1.0, false));
+    netDefault.setInput(blobFromImage(input.clone(), 1.0, Size(), Scalar(), false));
+    netHalide.setInput(blobFromImage(input.clone(), 1.0, Size(), Scalar(), false));
 
-    normAssert(outputDefault, outputHalide);
+    normAssert(outputDefault, outputHalide, "Second run", l1, lInf);
 
     // Swap backends.
     netHalide.setPreferableBackend(DNN_BACKEND_DEFAULT);
@@ -71,7 +71,7 @@ static void test(const std::string& weights, const std::string& proto,
     netDefault.setHalideScheduler(scheduler);
     outputHalide = netDefault.forward(outputLayer).clone();
 
-    normAssert(outputDefault, outputHalide);
+    normAssert(outputDefault, outputHalide, "Swap backends", l1, lInf);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -119,7 +119,7 @@ TEST(Reproducibility_ENet_Halide, Accuracy)
 {
     test(findDataFile("dnn/Enet-model-best.net", false), "",
          findDataFile("dnn/halide_scheduler_enet.yml", false),
-         512, 512, "l367_Deconvolution", "torch", DNN_TARGET_CPU);
+         512, 512, "l367_Deconvolution", "torch", DNN_TARGET_CPU, 2e-5, 0.15);
 };
 ////////////////////////////////////////////////////////////////////////////////
 // OpenCL target
@@ -166,7 +166,7 @@ TEST(Reproducibility_ENet_Halide_opencl, Accuracy)
 {
     test(findDataFile("dnn/Enet-model-best.net", false), "",
          findDataFile("dnn/halide_scheduler_opencl_enet.yml", false),
-         512, 512, "l367_Deconvolution", "torch", DNN_TARGET_OPENCL);
+         512, 512, "l367_Deconvolution", "torch", DNN_TARGET_OPENCL, 2e-5, 0.14);
 };
 #endif  // HAVE_HALIDE
 

@@ -167,32 +167,9 @@ public:
         Halide::Func top = (name.empty() ? Halide::Func() : Halide::Func(name));
         Halide::Var x("x"), y("y"), c("c"), n("n");
 
-        const int weightsBlobIndex = 2;
-        const int biasBlobIndex = weightsBlobIndex + hasWeights;
-        const int numChannels = blobs[0].total();
-        float* meanData = (float*)blobs[0].data;
-        float* stdData = (float*)blobs[1].data;
-        float* weightsData = (hasWeights ? (float*)blobs[weightsBlobIndex].data : NULL);
-        float* biasData = (hasBias ? (float*)blobs[biasBlobIndex].data : NULL);
-
-        float varMeanScale = 1.f;
-        if (!hasWeights && !hasBias) {
-            varMeanScale = *blobs[2].ptr<float>();
-            if (varMeanScale != 0)
-                varMeanScale = 1/varMeanScale;
-        }
-
-        Halide::Buffer<float> weights(numChannels);
-        Halide::Buffer<float> bias(numChannels);
-        for (int i = 0; i < numChannels; ++i)
-        {
-            weights(i) = (hasWeights ? weightsData[i] : 1.0f) /
-                         sqrt(stdData[i] * varMeanScale + epsilon);
-            bias(i) = (hasBias ? biasData[i] : 0.0f) -
-                      weights(i) * meanData[i] * varMeanScale;
-        }
-        weights.set_host_dirty();
-        bias.set_host_dirty();
+        const int numChannels = weights_.total();
+        auto weights = wrapToHalideBuffer(weights_, {numChannels});
+        auto bias = wrapToHalideBuffer(bias_, {numChannels});
         top(x, y, c, n) = input * weights(c) + bias(c);
         return top;
     }
