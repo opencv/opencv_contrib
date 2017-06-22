@@ -164,13 +164,12 @@ class DeepGaze1 : public StaticSaliency
 private:
 	dnn::Net net;
 	vector<string> layers_names;
-	vector<Mat> training_images;
 	vector<double> weights;
 
 public:
 	DeepGaze1();
 	DeepGaze1(string, string, vector<string>, vector<Mat>);
-  virtual ~DeepGaze1();
+	virtual ~DeepGaze1();
   CV_SRAP bool computeSaliency(InputArray image, OutputArray saliencyMap)
   {
     if(image.empty())
@@ -179,17 +178,20 @@ public:
     return computeSaliencyImpl(image, saliencyMap);
   }
 
-protect:
-  bool computeSaliencyImpl(InputArray image, OutputArray saliencyMap);
-  vector<Mat> featureMapGenerator(Mat);
-  Mat comb(vector<Mat>&, vector<double>);
-  Mat softmax(Mat);
-  void training(vector<Mat>&, vector<Mat>&);
-  vector<double> evalGrad(vector<Mat>&, vector<unsigned>);
-  vector<unsigned> batchIndex(unsigned, unsigned);
-  double loss(vector<double>, vector<double>);
-  vector<double> mapSampler(Mat, vector<unsigned>);
-  vector<unsigned> fixationLoc(Mat);
+protected:
+    bool computeSaliencyImpl(InputArray image, OutputArray saliencyMap);
+    DeepGaze1();
+    DeepGaze1(string, string, vector<string>);
+    vector<Mat> featureMapGenerator(Mat);
+    static Mat comb(vector<Mat>&, vector<double>);
+    static Mat softmax(Mat);
+    Mat saliencyMapGenerator(Mat);
+    void training(vector<Mat>&, vector<Mat>&);
+    static vector<double> evalGrad(vector<Mat>&, vector<unsigned>&, vector<double>);
+    vector<unsigned> batchIndex(unsigned, unsigned);
+    static double loss(vector<double>, vector<double>);
+    static vector<double> mapSampler(Mat, vector<unsigned>);
+    vector<unsigned> fixationLoc(Mat);
 };
 
 
