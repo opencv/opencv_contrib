@@ -324,6 +324,7 @@ struct LayerData
         //add logging info
         params.name = name;
         params.type = type;
+        skip = false;
     }
 
     int id;
@@ -334,6 +335,7 @@ struct LayerData
     std::vector<LayerPin> inputBlobsId;
     std::set<int> inputLayersId;
     std::set<int> requiredOutputs;
+    std::vector<LayerPin> consumers;
 
     Ptr<Layer> layerInstance;
     std::vector<Mat> outputBlobs;
@@ -345,6 +347,7 @@ struct LayerData
     std::map<int, bool> skipFlags;
 
     int flag;
+    bool skip;
 
     Ptr<Layer> getLayerInstance()
     {
@@ -835,6 +838,7 @@ struct Net::Impl
 
         addLayerInput(ldInp, inNum, LayerPin(outLayerId, outNum));
         ldOut.requiredOutputs.insert(outNum);
+        ldOut.consumers.push_back(LayerPin(inLayerId, outNum));
     }
 
     void computeNetOutputLayers()
@@ -1034,15 +1038,79 @@ struct Net::Impl
             int lid = it->first;
             allocateLayer(lid, layersShapes);
         }
+
+        // scan through all the layers. If there is convolution layer followed by the activation layer,
+        // we try to embed this activation into the convolution and disable separate execution of the activation
+        std::vector<String> outnames;
+        for (it = layers.begin(); it != layers.end(); it++)
+        {
+            int lid = it->first;
+            LayerData& ld = layers[lid];
+            if( ld.skip )
+            {
+                //printf("skipping %s\n", ld.layerInstance->name.c_str());
+                continue;
+            }
+            //printf("analyzing %s\n", ld.layerInstance->name.c_str());
+            if( ld.consumers.size() == 0 )
+                outnames.push_back(ld.layerInstance->name);
+            Ptr<ConvolutionLayer> convLayer = ld.layerInstance.dynamicCast<ConvolutionLayer>();
+            if( !convLayer.empty() && ld.consumers.size() == 1 )
+            {
+                LayerData* nextData = &layers[ld.consumers[0].lid];
+                Ptr<BatchNormLayer> nextBNormLayer =
+                    nextData->layerInstance.dynamicCast<BatchNormLayer>();
+                if( !nextBNormLayer.empty() )
+                {
+                    LayerData* bnormData = nextData;
+                    nextData = 0;
+                    if( convLayer->setBatchNorm(nextBNormLayer) )
+                    {
+                        //printf("fused convolution (%s) and batch norm (%s)\n", convLayer->name.c_str(), nextBNormLayer->name.c_str());
+                        bnormData->skip = true;
+                        if( bnormData->consumers.size() == 1 )
+                            nextData = &layers[bnormData->consumers[0].lid];
+                    }
+                }
+
+                Ptr<ActivationLayer> nextActivLayer;
+                if( nextData )
+                    nextActivLayer = nextData->layerInstance.dynamicCast<ActivationLayer>();
+
+                if( !nextActivLayer.empty() && convLayer->setActivation(nextActivLayer) )
+                {
+                    //printf("fused convolution (%s) and activation (%s)\n", convLayer->name.c_str(), nextActivLayer->name.c_str());
+                    nextData->skip = true;
+                }
+            }
+            Ptr<PoolingLayer> poolingLayer = ld.layerInstance.dynamicCast<PoolingLayer>();
+            if( !poolingLayer.empty() && !ld.consumers.empty() )
+            {
+                size_t i = 0, nconsumers = ld.consumers.size();
+                for( ; i < nconsumers; i++ )
+                    if( ld.consumers[i].oid > 0 )
+                        break;
+                // if there is no layer that takes the second output pin of the pooling layer
+                // on input then we don't need to compute the indices
+                if( i >= nconsumers )
+                    poolingLayer->computeMaxIdx = false;
+            }
+        }
+        /*printf("outputs: ");
+        for( size_t j = 0; j < outnames.size(); j++ )
+            printf("%s ", outnames[j].c_str());
+        printf("\n");*/
     }
 
     void forwardLayer(LayerData &ld)
     {
         Ptr<Layer> layer = ld.layerInstance;
+
         if (preferableBackend == DNN_BACKEND_DEFAULT ||
             !layer->supportBackend(preferableBackend))
         {
-            layer->forward(ld.inputBlobs, ld.outputBlobs, ld.internals);
+            if( !ld.skip )
+                layer->forward(ld.inputBlobs, ld.outputBlobs, ld.internals);
         }
         else if (!ld.skipFlags[preferableBackend])
         {

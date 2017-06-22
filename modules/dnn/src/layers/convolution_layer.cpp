@@ -96,6 +96,7 @@ public:
         (dilation.height == 1 && dilation.width == 1);
     }
     bool setActivation(const Ptr<ActivationLayer>& ) { return false; }
+    bool setBatchNorm(const Ptr<BatchNormLayer>& ) { return false; }
 
     virtual void applyHalideScheduler(Ptr<BackendNode>& node,
                                       const std::vector<Mat*> &inputs,
@@ -144,7 +145,10 @@ class ConvolutionLayerImpl : public BaseConvolutionLayerImpl
 public:
     enum { VEC_ALIGN = 8, DFT_TYPE = CV_32F };
     Mat weightsMat;
+    std::vector<float> biasvec;
+    std::vector<float> reluslope;
     Ptr<ActivationLayer> activ;
+    Ptr<BatchNormLayer> bnorm;
 
     MatShape computeColRowShape(const MatShape &inpShape, const MatShape &outShape) const
     {
@@ -191,11 +195,15 @@ public:
         return false;
     }
 
-#if 0
     bool setActivation(const Ptr<ActivationLayer>& layer) { activ = layer; return true; }
-#else
-    bool setActivation(const Ptr<ActivationLayer>&) { return false; }
-#endif
+    bool setBatchNorm(const Ptr<BatchNormLayer>& layer )
+    {
+        bnorm = layer;
+        // we will need to re-compute the weights with the batch
+        // norm coefficients taken into account
+        weightsMat.release();
+        return true;
+    }
 
     virtual Ptr<BackendNode> initHalide(const std::vector<Ptr<BackendWrapper> > &inputs)
     {
@@ -269,15 +277,17 @@ public:
         Size kernel_, pad_, stride_, dilation_;
         int ngroups_, nstripes_;
         std::vector<int> ofstab_;
-        std::vector<float> biasvec_;
+        const std::vector<float>* biasvec_;
+        const std::vector<float>* reluslope_;
         const ActivationLayer* activ_;
         bool is1x1_;
         bool useAVX2;
 
         ParallelConv() {}
 
-        static void run( const Mat& input, Mat& output,
-                         const Mat& weights, const Mat& bias,
+        static void run( const Mat& input, Mat& output, const Mat& weights,
+                         const std::vector<float>& biasvec,
+                         const std::vector<float>& reluslope,
                          Size kernel, Size pad, Size stride, Size dilation,
                          int ngroups, int nstripes, const ActivationLayer* activ )
         {
@@ -290,8 +300,7 @@ public:
                        input.type() == CV_32F &&
                        input.isContinuous() &&
                        output.isContinuous() &&
-                       (bias.empty() || (bias.isContinuous() && bias.type() == CV_32F &&
-                                         bias.total() == (size_t)output.size[1])));
+                       biasvec.size() == (size_t)output.size[1]+2);
             ParallelConv p;
 
             p.input_ = &input;
@@ -302,10 +311,9 @@ public:
             p.kernel_ = kernel; p.pad_ = pad; p.stride_ = stride; p.dilation_ = dilation;
             p.ngroups_ = ngroups;
             p.nstripes_ = nstripes;
-            p.activ_ = activ;
+
             int inpCnAll = input.size[1], width = input.size[3], height = input.size[2];
             int inpCn = inpCnAll / ngroups;
-            int k, outCn = output.size[1];
             p.is1x1_ = kernel == Size(0,0) && pad == Size(0, 0);
             p.useAVX2 = checkHardwareSupport(CPU_AVX2);
 
@@ -313,25 +321,16 @@ public:
             p.ofstab_.resize(kernel.width*kernel.height*ncn);
             int* ofstab = &p.ofstab_[0];
 
-            for( k = 0; k < ncn; k++ )
+            for( int k = 0; k < ncn; k++ )
                 for( int k_r = 0; k_r < kernel.height; k_r++ )
                     for( int k_c = 0; k_c < kernel.width; k_c++ )
                         ofstab[(k*kernel.height + k_r)*kernel.width + k_c] =
                         (k*height + k_r*dilation.height)*width + k_c*dilation.width;
 
-            p.biasvec_.resize(outCn+2);
-            float* biasvec = &p.biasvec_[0];
-            if( bias.empty() )
-            {
-                for( k = 0; k < outCn; k++ )
-                    biasvec[k] = 0.f;
-            }
-            else
-            {
-                for( k = 0; k < outCn; k++ )
-                    biasvec[k] = bias.at<float>(k);
-            }
-            biasvec[outCn] = biasvec[outCn+1] = biasvec[outCn-1];
+            p.biasvec_ = &biasvec;
+            p.reluslope_ = &reluslope;
+            p.activ_ = p.reluslope_->empty() ? activ : 0;
+
             parallel_for_(Range(0, nstripes), p, nstripes);
         }
 
@@ -376,7 +375,8 @@ public:
             const int* ofstab = &ofstab_[0];
             const float* wptr_orig_ = weights_->ptr<float>();
             size_t wstep = weights_->step1();
-            const float* biasvec = &biasvec_[0];
+            const float* biasptr_ = &biasvec_->at(0);
+            const float* reluptr_ = reluslope_->empty() ? 0 : &reluslope_->at(0);
             float* data_out0_ = output_->ptr<float>();
             size_t rowbufsz = (size_t)karea*BLK_SIZE_CN*BLK_SIZE;
             AutoBuffer<float> rowbuf0_(rowbufsz + valign);
@@ -404,7 +404,7 @@ public:
                 float* data_out0 = data_out0_ + subsampleIdx*outPlaneSize*outCn;
                 int startOutCn = (subsampleIdx % ngroups)*outCn;
                 const float* wptr_orig = wptr_orig_ + wstep*startOutCn;
-                const float* biasptr = biasvec + startOutCn;
+                const float* biasptr = biasptr_ + startOutCn;
 
                 for( int cn0 = 0; cn0 < inpCn; cn0 += BLK_SIZE_CN )
                 {
@@ -412,6 +412,8 @@ public:
                     int ncn = cn1 - cn0, vsz = karea*ncn;
                     int vsz_a = (int)alignSize(vsz, valign);
                     const float* wptr = wptr_orig + cn0*karea;
+                    // we apply [Channels][P]ReLU (if any) during the final pass only.
+                    const float* relu = cn1 == inpCn && reluptr_ ? reluptr_ + startOutCn : 0;
 
                     for( int ofs0 = stripeStart; ofs0 < stripeEnd; ofs0 += BLK_SIZE )
                     {
@@ -486,7 +488,8 @@ public:
                         int bsz = ofs1 - ofs0;
                     #if CV_DNN_TRY_AVX2
                         if(useAVX2)
-                            fastConv_avx2(wptr, wstep, biasptr, rowbuf0, data_out0 + ofs0, outShape, bsz, vsz, vsz_a, cn0 == 0);
+                            fastConv_avx2(wptr, wstep, biasptr, rowbuf0, data_out0 + ofs0,
+                                          outShape, bsz, vsz, vsz_a, relu, cn0 == 0);
                         else
                     #endif
                         for( int i = 0; i < outCn; i += 2 )
@@ -496,6 +499,7 @@ public:
                             float* outptr0 = data_out0 + ofs0 + i*outPlaneSize;
                             float* outptr1 = outptr0 + outPlaneSize;
                             float bias0 = biasptr[i], bias1 = biasptr[i+1];
+                            float r0 = 1.f, r1 = 1.f;
 
                             if( i+1 >= outCn )
                             {
@@ -504,8 +508,16 @@ public:
                                 bias1 = bias0;
                             }
 
+                            if( relu )
+                            {
+                                r0 = relu[i];
+                                r1 = relu[i+1];
+                            }
+
                             int j = 0;
                         #if CV_SIMD128
+                            v_float32x4 vr0 = v_setall_f32(r0), vr1 = v_setall_f32(r1), z = v_setzero_f32();
+
                             for( ; j <= bsz - 4; j += 4 )
                             {
                                 const float* rptr = rowbuf0 + j*vsz_a;
@@ -544,6 +556,11 @@ public:
                                 }
                                 s0 += v_reduce_sum4(vs00, vs01, vs02, vs03);
                                 s1 += v_reduce_sum4(vs10, vs11, vs12, vs13);
+                                if( relu )
+                                {
+                                    s0 = v_select(s0 > z, s0, s0*vr0);
+                                    s1 = v_select(s1 > z, s1, s1*vr1);
+                                }
 
                                 v_store(outptr0 + j, s0);
                                 v_store(outptr1 + j, s1);
@@ -571,6 +588,11 @@ public:
                                     s00 += wptr0[k]*r0;
                                     s10 += wptr1[k]*r0;
                                 }
+                                if( relu )
+                                {
+                                    s00 = s00 > 0.f ? s00 : s00*r0;
+                                    s10 = s10 > 0.f ? s10 : s10*r1;
+                                }
 
                                 outptr0[j] = s00;
                                 outptr1[j] = s10;
@@ -587,343 +609,6 @@ public:
         }
     };
 
-    class ParallelDFTWeights : ParallelLoopBody
-    {
-    public:
-        const Mat* weights_;
-        Mat* wspectrums_;
-        int nstripes_;
-        Size kernel_, dftsz_;
-        int nouts_, ninps_;
-
-        static void run(const Mat& weights, Mat& wspectrums, Size kernel, Size dftsz, int nstripes)
-        {
-            CV_Assert(weights.type() == DFT_TYPE);
-
-            ParallelDFTWeights p;
-            p.weights_ = &weights;
-            p.wspectrums_ = &wspectrums;
-            p.nstripes_ = nstripes;
-            p.kernel_ = kernel;
-            p.dftsz_ = dftsz;
-            p.nouts_ = weights.rows;
-            p.ninps_ = weights.cols / (kernel.area());
-            int dft_total = dftsz.area();
-            int sz[] = { p.nouts_, p.ninps_, dft_total };
-            wspectrums.create(3, sz, DFT_TYPE);
-
-            parallel_for_(Range(0, nstripes), p, nstripes);
-        }
-
-        ParallelDFTWeights() {}
-
-        void operator()(const Range& r) const
-        {
-            int ninps = ninps_, nouts = nouts_;
-            int totalDFTs = nouts*ninps;
-            int stripeSize = (totalDFTs + nstripes_-1)/nstripes_;
-            int stripeStart = r.start*stripeSize;
-            int stripeEnd = std::min(r.end*stripeSize, totalDFTs);
-            int kernel_w = kernel_.width, kernel_h = kernel_.height;
-            int dft_w = dftsz_.width, dft_h = dftsz_.height;
-            float* wptr = (float*)weights_->ptr<float>();
-            size_t wstep = weights_->step1();
-            Ptr<hal::DFT2D> dft2d_fwd = hal::DFT2D::create(dft_w, dft_h, DFT_TYPE, 1, 1, 0, kernel_h);
-
-            for( int i = stripeStart; i < stripeEnd; i++ )
-            {
-                int out = i / ninps;
-                int inp = i % ninps;
-                float* srcptr = wptr + out*wstep + inp*kernel_w*kernel_h;
-                Mat src(kernel_h, kernel_w, DFT_TYPE, srcptr);
-                float* dstptr = wspectrums_->ptr<float>(out, inp);
-                Mat dst(dft_h, dft_w, DFT_TYPE, dstptr);
-                size_t dstep = dft_w*sizeof(dstptr[0]);
-                memset(dstptr, 0, dstep*dft_h);
-                for( int j = 0; j < kernel_h; j++ )
-                    memcpy(dstptr + dft_w*j, srcptr + kernel_w*j, kernel_w*sizeof(dstptr[0]));
-
-                dft2d_fwd->apply((uchar*)dstptr, dstep, (uchar*)dstptr, dstep);
-            }
-        }
-    };
-
-    /*class ParallelDFTConv : public ParallelLoopBody
-    {
-    public:
-        enum { BLK_SIZE = 32, BLK_SIZE_CN = 64 };
-
-        const Mat* input_;
-        const Mat* weights_;
-        Mat* output_;
-        Mat wspectrums_;
-        int outShape[4];
-        Size kernel_, pad_, blksz_, dftsz_;
-        int ngroups_, nstripes_;
-        std::vector<float> biasvec_;
-        const ActivationLayer* activ_;
-
-        static void run( const Mat& input, Mat& output,
-                         const Mat& weights, const Mat& bias,
-                         Size kernel, Size pad, int ngroups, int nstripes,
-                         const ActivationLayer* activ )
-        {
-            CV_Assert( input.dims == 4 && output.dims == 4 &&
-                       input.size[0] == output.size[0] &&
-                       weights.rows == output.size[1] &&
-                       weights.cols == (input.size[1]/ngroups)*kernel.width*kernel.height &&
-                       input.type() == output.type() &&
-                       input.type() == weights.type() &&
-                       input.type() == CV_32F &&
-                       input.isContinuous() &&
-                       output.isContinuous() &&
-                       (bias.empty() || (bias.isContinuous() && bias.type() == CV_32F &&
-                                         bias.total() == (size_t)output.size[1])));
-            ParallelDFTConv p;
-
-            p.input_ = &input;
-            p.weights_ = &weights;
-            p.output_ = &output;
-            for( int i = 0; i < 4; i++ ) p.outShape[i] = output.size[i];
-            p.outShape[1] /= ngroups;
-            p.kernel_ = kernel; p.pad_ = pad;
-            p.ngroups_ = ngroups;
-            p.nstripes_ = nstripes;
-            p.activ_ = activ;
-
-            const double blockScale = 4.5;
-            const int minBlockSize = 32;
-
-            Size resultsz(output.size[3], output.size[2]);
-            Size blksz, dftsz;
-
-            blksz.width = cvRound(kernel.width*blockScale);
-            blksz.width = std::max(blksz.width, minBlockSize - kernel.width + 1);
-            blksz.width = std::min(blksz.width, resultsz.width);
-            blksz.height = cvRound(kernel.height*blockScale);
-            blksz.height = std::max(blksz.height, minBlockSize - kernel.height + 1);
-            blksz.height = std::min(blksz.height, resultsz.height);
-
-            // compute DFT size along each dimension; make sure it's even, because we want
-            // real DFT & inverse DFT to be fast.
-            dftsz.width = blksz.width + kernel.width - 1;
-            for(;;)
-            {
-                dftsz.width = getOptimalDFTSize(dftsz.width);
-                if( dftsz.width <= 0 )
-                    CV_Error( CV_StsOutOfRange, "cannot compute the right DFT size" );
-                if(dftsz.width % 2 == 0)
-                    break;
-                dftsz.width++;
-            }
-            dftsz.height = blksz.height + kernel.height - 1;
-            for(;;)
-            {
-                dftsz.height = getOptimalDFTSize(dftsz.height);
-                if( dftsz.height <= 0 )
-                    CV_Error( CV_StsOutOfRange, "cannot compute the right DFT size" );
-                if(dftsz.height % 2 == 0)
-                    break;
-            }
-
-            // transform all the weights for the layer; we do it on each run because
-            // if we compute and store spectrums of all the weights for all the convolution
-            // layers, it may take a lot of memory
-            ParallelDFTWeights::run(weights, p.wspectrums_, kernel, dftsz, nstripes);
-
-            // recompute block size
-            blksz.width = dftsz.width - kernel.width + 1;
-            blksz.width = std::min(blksz.width, resultsz.width);
-            blksz.height = dftsz.height - kernel.height + 1;
-            blksz.height = std::min(blksz.height, resultsz.height);
-
-            printf("DFT conv: blk=(%d x %d), DFT=(%d x %d)\n", blksz.width, blksz.height, dftsz.width, dftsz.height);
-
-            p.dftsz_ = dftsz;
-            p.blksz_ = blksz;
-
-            int k, outCn = output.size[1];
-            p.biasvec_.resize(outCn+2);
-            float* biasvec = &p.biasvec_[0];
-            if( bias.empty() )
-            {
-                for( k = 0; k < outCn; k++ )
-                    biasvec[k] = 0.f;
-            }
-            else
-            {
-                for( k = 0; k < outCn; k++ )
-                    biasvec[k] = bias.at<float>(k);
-            }
-            biasvec[outCn] = biasvec[outCn+1] = biasvec[outCn-1];
-            parallel_for_(Range(0, nstripes), p, nstripes);
-        }
-
-        ParallelDFTConv() {}
-
-        void operator()(const Range& r0) const
-        {
-            int ngroups = ngroups_, batchSize = input_->size[0]*ngroups;
-            int out_w = output_->size[3], out_h = output_->size[2], outCn = output_->size[1]/ngroups;
-            int width = input_->size[3], height = input_->size[2], inpCn = input_->size[1]/ngroups;
-            int nstripes = nstripes_;
-            int kernel_w = kernel_.width, kernel_h = kernel_.height;
-            int pad_w = pad_.width, pad_h = pad_.height;
-            int blk_w = blksz_.width, blk_h = blksz_.height;
-            int dft_w = dftsz_.width, dft_h = dftsz_.height;
-            int dft_elems = dft_w*dft_h;
-            size_t dftstep = dft_w*sizeof(float);
-            int i, j;
-            size_t inpPlaneSize = width*height;
-            size_t outPlaneSize = out_w*out_h;
-            int ndfts_w = (out_w + blk_w - 1)/blk_w;
-            int ndfts_h = (out_h + blk_h - 1)/blk_h;
-            int ndfts_plane = ndfts_w*ndfts_h;
-
-            int stripesPerSample;
-            int ndfts_stripe;
-            Range r = r0;
-
-            if( nstripes >= batchSize*2 )
-            {
-                stripesPerSample = nstripes/batchSize;
-                ndfts_stripe = (ndfts_plane + stripesPerSample - 1)/stripesPerSample;
-            }
-            else
-            {
-                stripesPerSample = 1;
-                int samplesPerStripe = std::max((batchSize + nstripes - 1)/nstripes, 1);
-                r.start *= samplesPerStripe;
-                r.end *= samplesPerStripe;
-                nstripes *= samplesPerStripe;
-                ndfts_stripe = ndfts_plane;
-            }
-
-            Mat spectrums((inpCn+1)*dft_h, dft_w, DFT_TYPE);
-            Mat out_spectrum = spectrums.rowRange(dft_h*inpCn, dft_h*(inpCn+1));
-            const float* wptr0 = wspectrums_.ptr<float>();
-            const float* data_inp0_ = input_->ptr<float>();
-            const float* biasvec = &biasvec_[0];
-            float* data_out0_ = output_->ptr<float>();
-            float dft_scale = 1.f/(dft_w*dft_h);
-
-            Ptr<hal::DFT2D> dft2d_fwd = hal::DFT2D::create(dft_w, dft_h, DFT_TYPE, 1, 1,
-                                                           CV_HAL_DFT_IS_INPLACE, blk_h + kernel_h - 1);
-            Ptr<hal::DFT2D> dft2d_inv = hal::DFT2D::create(dft_w, dft_h, DFT_TYPE, 1, 1,
-                                        CV_HAL_DFT_INVERSE|CV_HAL_DFT_SCALE, blk_h);
-
-            for( int stripe = r.start; stripe < r.end; stripe++ )
-            {
-                int subsampleIdx = stripe/stripesPerSample;
-                if( subsampleIdx >= batchSize )
-                    break;
-                int startOutCn = (subsampleIdx % ngroups)*outCn;
-                const float* biasptr = biasvec + startOutCn;
-                int dft_idx0 = (stripe - subsampleIdx*stripesPerSample)*ndfts_stripe;
-                int dft_idx1 = std::min(dft_idx0 + ndfts_stripe, ndfts_plane);
-
-                for( int dft_idx = dft_idx0; dft_idx < dft_idx1; dft_idx++ )
-                {
-                    int dft_y = dft_idx / dft_w;
-                    int dft_x = dft_idx - dft_y*dft_w;
-                    dft_x *= blk_w;
-                    dft_y *= blk_h;
-                    int bw = std::min(blk_w, out_w - dft_x);
-                    int bh = std::min(blk_h, out_h - dft_y);
-                    int patch_w = bw + kernel_w - 1;
-                    int patch_h = bh + kernel_h - 1;
-                    int in_x = dft_x - pad_w;
-                    int in_y = dft_y - pad_h;
-                    int i0 = std::max(0, -in_y);
-                    int i1 = std::min(patch_h, height - in_y);
-                    int j0 = std::max(0, -in_x);
-                    int j1 = std::min(patch_w, width - in_x);
-
-                    const float* data_inp = data_inp0_ + subsampleIdx*inpPlaneSize*inpCn + in_y*width + in_x;
-                    float* sdata0 = spectrums.ptr<float>();
-                    float* data_out = data_out0_ + subsampleIdx*outPlaneSize*outCn + dft_y*out_w + dft_x;
-
-                    // phase 1. extract tiles from the input tensor channels and
-                    // compute their spectrums.
-                    float* sdata = sdata0;
-                    for( int cn = 0; cn < inpCn; cn++, data_inp += inpPlaneSize )
-                    {
-                        for( i = 0; i < dft_h; i++, sdata += dft_w )
-                        {
-                            if( i < i0 || i >= i1 )
-                                memset(sdata, 0, dft_w*sizeof(sdata[0]));
-                            else
-                            {
-                                for( j = 0; j < j0; j++ )
-                                    sdata[j] = 0.f;
-                                for( ; j < j1; j++ )
-                                    sdata[j] = data_inp[i*width + j];
-                                for( ; j < dft_w; j++ )
-                                    sdata[j] = 0.f;
-                            }
-                        }
-                        uchar* dftdata = (uchar*)(sdata - dft_elems);
-                        dft2d_fwd->apply(dftdata, dftstep, dftdata, dftstep);
-                    }
-
-                    // phase 2. iterate over output channels. For each output channel multiply
-                    // all the input channels by the corresponding weights and sum the results.
-                    // all this is done in the Fourier domain.
-                    // When the sum is computed, apply the inverse DFT, then add bias and save
-                    // the results.
-                    for( int ocn = 0; ocn < outCn; ocn++, data_out += outPlaneSize )
-                    {
-                        float* odata = out_spectrum.ptr<float>();
-                        memset(odata, 0, dft_elems*sizeof(odata[0]));
-
-                        for( int cn = 0; cn < inpCn; cn++ )
-                        {
-                            const float* wptr = wptr0 + ((ocn + startOutCn)*inpCn + cn)*dft_elems;
-                            const float* sdata = sdata0 + cn*dft_elems;
-
-                            odata[0] += sdata[0]*wptr[0];
-                            odata[dft_w-1] += sdata[dft_w-1]*wptr[dft_w-1];
-                            odata[dft_elems-dft_w] += sdata[dft_elems-dft_w]*wptr[dft_elems-dft_w];
-                            odata[dft_elems-1] += sdata[dft_elems-1]*wptr[dft_elems-1];
-
-                            for( i = 1; i < dft_h-1; i += 2 )
-                            {
-                                int re = i*dft_w, im = re + dft_w;
-                                odata[re] += sdata[re]*wptr[re] + sdata[im]*wptr[im];
-                                odata[im] += sdata[im]*wptr[re] - sdata[re]*wptr[im];
-                                re += dft_w-1; im += dft_w-1;
-                                odata[re] += sdata[re]*wptr[re] + sdata[im]*wptr[im];
-                                odata[im] += sdata[im]*wptr[re] - sdata[re]*wptr[im];
-                            }
-
-                            for( i = 0; i < dft_h; i++ )
-                            {
-                                for( j = 1; j < dft_w-1; j += 2 )
-                                {
-                                    int idx = i*dft_w + j;
-                                    float re = sdata[idx], im = sdata[idx+1];
-                                    float wre = wptr[idx], wim = wptr[idx+1];
-                                    float ore = odata[idx], oim = odata[idx+1];
-                                    odata[idx] = ore + re*wre + im*wim;
-                                    odata[idx+1] = oim + im*wre - re*wim;
-                                }
-                            }
-                        }
-                        dft2d_inv->apply((const uchar*)odata, dftstep, (uchar*)odata, dftstep);
-                        float bias = biasptr[ocn];
-                        for( i = 0; i < bh; i++ )
-                        {
-                            for( j = 0; j < bw; j++ )
-                            {
-                                data_out[i*out_w + j] = odata[i*dft_w + j] + bias;
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    };*/
-
     void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
         /*printf("conv %s: input (%d x %d x %d x %d), kernel (%d x %d), pad (%d x %d), stride (%d x %d), dilation (%d x %d)\n",
@@ -934,10 +619,12 @@ public:
         int ngroups = inputs[0]->size[1]/blobs[0].size[1];
         CV_Assert(outputs[0].size[1] % ngroups == 0);
 
-        int outCn = blobs[0].size[0];
+        int k, outCn = blobs[0].size[0];
 
         if( weightsMat.empty() )
         {
+            // prepare weightsMat where each row is aligned and has enough zero padding on the right to
+            // use vectorized (i.e. with intrinsics) loops without tail processing
             Mat wm = blobs[0].reshape(1, outCn);
             if( wm.step1() % VEC_ALIGN != 0 )
             {
@@ -950,22 +637,68 @@ public:
                 wm = wm_aligned;
             }
             weightsMat = wm;
+
+            Mat biasMat = hasBias() ? blobs[1].reshape(1, outCn) : Mat();
+            biasvec.resize(outCn+2);
+            if( biasMat.empty() )
+            {
+                for( k = 0; k < outCn; k++ )
+                    biasvec[k] = 0.f;
+            }
+            else
+            {
+                for( k = 0; k < outCn; k++ )
+                    biasvec[k] = biasMat.at<float>(k);
+            }
+
+            if( !bnorm.empty() )
+            {
+                Mat scale, shift;
+                bnorm->getScaleShift(scale, shift);
+
+                CV_Assert( scale.isContinuous() && shift.isContinuous() &&
+                           scale.type() == CV_32F && shift.type() == CV_32F &&
+                           scale.total() == (size_t)outCn &&
+                           shift.total() == (size_t)outCn );
+
+                for( int i = 0; i < outCn; i++ )
+                {
+                    float s = scale.at<float>(i);
+                    float delta = shift.at<float>(i);
+                    float* w_i = weightsMat.ptr<float>(i);
+                    int j, wcols = weightsMat.cols;
+
+                    for( j = 0; j < wcols; j++ )
+                        w_i[j] *= s;
+
+                    biasvec[i] = biasvec[i]*s + delta;
+                }
+            }
+            biasvec[outCn] = biasvec[outCn+1] = biasvec[outCn-1];
         }
-        Mat biasesMat = hasBias() ? blobs[1].reshape(1, outCn) : Mat();
+
+        if( activ )
+        {
+            Ptr<ReLULayer> activ_relu = activ.dynamicCast<ReLULayer>();
+            if( !activ_relu.empty() )
+                reluslope.assign(outCn+2, activ_relu->negativeSlope);
+
+            Ptr<ChannelsPReLULayer> activ_chprelu = activ.dynamicCast<ChannelsPReLULayer>();
+            if( !activ_chprelu.empty() )
+            {
+                const Mat& m = activ_chprelu->blobs[0];
+                CV_Assert(m.isContinuous() && m.type() == CV_32F && (int)m.total() == outCn);
+                const float* mdata = m.ptr<float>();
+                reluslope.resize(outCn+2);
+                std::copy(mdata, mdata + outCn, reluslope.begin());
+                reluslope[outCn] = reluslope[outCn+1] = reluslope[outCn-1];
+            }
+        }
 
         int nstripes = std::max(getNumThreads(), 1);
 
-        /*if( stride == Size(1, 1) && dilation == Size(1, 1) && kernel.width >= 3 && kernel.height >= 3 )
-        {
-
-            ParallelDFTConv::run(*inputs[0], outputs[0], weightsMat, biasesMat,
-                                 kernel, pad, ngroups, nstripes, activ.get());
-        }
-        else*/
-        {
-            ParallelConv::run(*inputs[0], outputs[0], weightsMat, biasesMat,
-                              kernel, pad, stride, dilation, ngroups, nstripes, activ.get());
-        }
+        ParallelConv::run(*inputs[0], outputs[0], weightsMat, biasvec, reluslope,
+                          kernel, pad, stride, dilation, ngroups, nstripes, activ.get());
     }
 
     virtual int64 getFLOPS(const std::vector<MatShape> &inputs,
@@ -1260,9 +993,6 @@ public:
 
     void forward(std::vector<Mat *> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
     {
-        if (hasBias())
-            internals[1].setTo(1);
-
         int outCn = blobs[0].size[0];
         int inpCn = inputs[0]->size[1];
         bool is1x1flag = is1x1();

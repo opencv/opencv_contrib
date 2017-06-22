@@ -202,11 +202,13 @@ namespace dnn
     };
 
     class CV_EXPORTS ActivationLayer;
+    class CV_EXPORTS BatchNormLayer;
 
     class CV_EXPORTS ConvolutionLayer : public BaseConvolutionLayer
     {
     public:
         virtual bool setActivation(const Ptr<ActivationLayer>& layer) = 0;
+        virtual bool setBatchNorm(const Ptr<BatchNormLayer>& layer) = 0;
 
         static Ptr<BaseConvolutionLayer> create(const LayerParams& params);
     };
@@ -247,6 +249,7 @@ namespace dnn
         int type;
         Size kernel, stride, pad;
         bool globalPooling;
+        bool computeMaxIdx;
         String padMode;
 
         static Ptr<PoolingLayer> create(const LayerParams& params);
@@ -414,6 +417,7 @@ namespace dnn
         bool hasWeights, hasBias;
         float epsilon;
 
+        virtual void getScaleShift(Mat& scale, Mat& shift) const = 0;
         static Ptr<BatchNormLayer> create(const LayerParams &params);
     };
 
