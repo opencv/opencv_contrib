@@ -205,7 +205,7 @@ struct LayerPin
 class BackendWrapManager
 {
 public:
-    Ptr<BackendWrapper> wrap(const Mat& m, int backendId, int targetId = DNN_TARGET_CPU)
+    Ptr<BackendWrapper> wrap(const Mat& m, int backendId, int targetId)
     {
         CV_Assert(backendId != DNN_BACKEND_DEFAULT);
 
@@ -236,7 +236,7 @@ public:
     }
 
     std::vector<Ptr<BackendWrapper> > wrap(const std::vector<Mat*>& mats,
-                                           int backendId, int targetId = DNN_TARGET_CPU)
+                                           int backendId, int targetId)
     {
         const int num = mats.size();
         std::vector<Ptr<BackendWrapper> > dst(num);
@@ -248,7 +248,7 @@ public:
     }
 
     std::vector<Ptr<BackendWrapper> > wrap(const std::vector<Mat>& mats,
-                                           int backendId, int targetId = DNN_TARGET_CPU)
+                                           int backendId, int targetId)
     {
         const int num = mats.size();
         std::vector<Ptr<BackendWrapper> > dst(num);
@@ -617,6 +617,7 @@ struct Net::Impl
         lastLayerId = 1;
         netWasAllocated = false;
         preferableBackend = DNN_BACKEND_DEFAULT;
+        preferableTarget = DNN_TARGET_CPU;
     }
 
     Ptr<DataLayer> netInputLayer;
@@ -626,6 +627,7 @@ struct Net::Impl
     std::map<String, int> layerNameToId;
     BlobManager blobManager;
     int preferableBackend;
+    int preferableTarget;
     String halideConfigFile;
     // Backend-specific wrapping manager.
     BackendWrapManager backendWrapper;
@@ -652,10 +654,11 @@ struct Net::Impl
                 {
                     // Use automatic scheduling provided by layer.
                     layer->applyHalideScheduler(ld.backendNodes[DNN_BACKEND_HALIDE],
-                                                ld.inputBlobs, ld.outputBlobs);
+                                                ld.inputBlobs, ld.outputBlobs,
+                                                preferableTarget);
                 }
                 dnn::compileHalide(ld.outputBlobs, ld.backendNodes[DNN_BACKEND_HALIDE],
-                                   DNN_TARGET_CPU);
+                                   preferableTarget);
             }
         }
     }
@@ -859,7 +862,10 @@ struct Net::Impl
     {
         backendWrapper.reset();
         if (preferableBackend == DNN_BACKEND_DEFAULT)
+        {
+            CV_Assert(preferableTarget == DNN_TARGET_CPU);
             return;
+        }
 
         // Iterator to current layer.
         MapIdToLayerData::iterator it = layers.begin();
@@ -905,7 +911,8 @@ struct Net::Impl
             // No layers fusion.
             ldTop.skipFlags[preferableBackend] = false;
             std::vector<Ptr<BackendWrapper> > inputs =
-                backendWrapper.wrap(ldTop.inputBlobs, preferableBackend);
+                backendWrapper.wrap(ldTop.inputBlobs, preferableBackend,
+                                    preferableTarget);
             if (preferableBackend == DNN_BACKEND_HALIDE)
             {
                 ldTop.backendNodes[DNN_BACKEND_HALIDE] = layerTop->initHalide(inputs);
@@ -1040,7 +1047,7 @@ struct Net::Impl
         else if (!ld.skipFlags[preferableBackend])
         {
             std::vector<Ptr<BackendWrapper> > outputs =
-                backendWrapper.wrap(ld.outputBlobs, preferableBackend);
+                backendWrapper.wrap(ld.outputBlobs, preferableBackend, preferableTarget);
             Ptr<BackendNode> node = ld.backendNodes[preferableBackend];
             if (preferableBackend == DNN_BACKEND_HALIDE)
             {
@@ -1153,6 +1160,16 @@ struct Net::Impl
         {
             CV_Error(Error::StsOutOfRange, "Layer \"" + ld.name + "\" produce only " + toString(ld.outputBlobs.size()) +
                                            " outputs, the #" + toString(pin.oid) + " was requsted");
+        }
+        if (preferableBackend != DNN_BACKEND_DEFAULT)
+        {
+            // Transfer data to CPU if it's require.
+            backendWrapper.wrap(ld.outputBlobs[pin.oid], preferableBackend,
+                                preferableTarget)->copyToHost();
+        }
+        else
+        {
+            CV_Assert(preferableTarget == DNN_TARGET_CPU);
         }
         return ld.outputBlobs[pin.oid];
     }
@@ -1312,6 +1329,13 @@ void Net::setPreferableBackend(int backendId)
     impl->netWasAllocated = impl->netWasAllocated &&
                             impl->preferableBackend == backendId;
     impl->preferableBackend = backendId;
+}
+
+void Net::setPreferableTarget(int targetId)
+{
+    impl->netWasAllocated = impl->netWasAllocated &&
+                            impl->preferableTarget == targetId;
+    impl->preferableTarget = targetId;
 }
 
 void Net::setInputsNames(const std::vector<String> &inputBlobNames)
@@ -1702,10 +1726,70 @@ Ptr<BackendNode> Layer::initHalide(const std::vector<Ptr<BackendWrapper> > &)
 }
 
 void Layer::applyHalideScheduler(Ptr<BackendNode>& node, const std::vector<Mat*> &inputs,
-                                 const std::vector<Mat> &outputs) const
+                                 const std::vector<Mat> &outputs, int targetId) const
 {
-    CV_Error(Error::StsNotImplemented, "Scheduling of " + type +
-                                       " layers is not implemented.");
+#ifdef  HAVE_HALIDE
+    Halide::Var x("x"), y("y"), c("c"), n("n"), co("co"), ci("ci"),
+                xo("xo"), xi("xi"), yo("yo"), yi("yi"), tile("tile");
+    Halide::Func& top = node.dynamicCast<HalideBackendNode>()->funcs.back();
+
+    int outW, outH, outC, outN;
+    getCanonicalSize(outputs[0].size, &outW, &outH, &outC, &outN);
+
+    if (targetId == DNN_TARGET_CPU)
+    {
+        if (outW == 1 && outH == 1)
+        {
+            if (outC + outN == 1)
+                return;
+
+            if (outC > 8)
+              top.split(c, co, ci, 8)
+                 .fuse(x, y, tile).fuse(co, tile, tile).fuse(n, tile, tile)
+                 .parallel(tile)
+                 .vectorize(ci, 8);
+            else
+              top.fuse(x, y, tile).fuse(c, tile, tile).fuse(n, tile, tile)
+                 .parallel(tile);
+        }
+        else
+        {
+            if (outH > 2)
+            {
+                top.reorder(x, c, y)
+                   .split(y, yo, yi, 2)
+                   .fuse(yo, n, tile)
+                   .parallel(tile)
+                   .unroll(yi)
+                   .vectorize(x, outW >= 16 ? 16 : outW);
+            }
+        }
+    }
+    else if (targetId == DNN_TARGET_OPENCL)
+    {
+        int c_split = outC > 8 ? (outC > 16 ? 8 : 4) : outC;
+        if (outW == 1 && outH == 1)
+        {
+            top.split(c, co, ci, c_split)
+               .fuse(x, y, tile).fuse(co, tile, tile).fuse(n, tile, tile)
+               .gpu_blocks(tile)
+               .gpu_threads(ci);
+        }
+        else
+        {
+            int x_split = outW > 8 ? (outW >= 32 ? 16 : 8) : outW;
+            int y_split = outH > 8 ? (outH >= 32 ? 16 : 8) : outH;
+            top.split(x, xo, xi, x_split).split(y, yo, yi, y_split)
+               .split(c, co, ci, c_split)
+               .gpu_blocks(xo, yo, co)
+               .gpu_threads(xi, yi)
+               .reorder(xi, yi, ci, xo, yo, co)
+               .vectorize(ci);
+        }
+    }
+    else
+        CV_Error(Error::StsNotImplemented, "Unknown target identifier");
+#endif  // HAVE_HALIDE
 }
 
 Ptr<BackendNode> Layer::tryAttach(const Ptr<BackendNode>& node)

@@ -252,31 +252,6 @@ public:
         return Ptr<BackendNode>();
     }
 
-    virtual void applyHalideScheduler(Ptr<BackendNode>& node,
-                                      const std::vector<Mat*> &inputs,
-                                      const std::vector<Mat> &outputs) const
-    {
-#ifdef HAVE_HALIDE
-        int outW, outH, outC, outN;
-        getCanonicalSize(outputs[0].size, &outW, &outH, &outC, &outN);
-
-        Halide::Var x("x"), y("y"), c("c"), n("n"), co("co"), ci("ci"), tile("tile");
-        Halide::Func& top = node.dynamicCast<HalideBackendNode>()->funcs.back();
-
-        if (outC + outN == 1)
-            return;
-
-        if (outC > 8)
-          top.split(c, co, ci, 8)
-             .fuse(x, y, tile).fuse(co, tile, tile).fuse(n, tile, tile)
-             .parallel(tile)
-             .vectorize(ci, 8);
-        else
-          top.fuse(x, y, tile).fuse(c, tile, tile).fuse(n, tile, tile)
-             .parallel(tile);
-#endif  // HAVE_HALIDE
-    }
-
     virtual int64 getFLOPS(const std::vector<MatShape> &inputs,
                            const std::vector<MatShape> &outputs) const
     {

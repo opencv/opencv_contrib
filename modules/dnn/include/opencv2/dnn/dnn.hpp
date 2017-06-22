@@ -69,7 +69,8 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
      */
     enum Target
     {
-        DNN_TARGET_CPU
+        DNN_TARGET_CPU,
+        DNN_TARGET_OPENCL
     };
 
     /** @brief Initialize dnn module and built-in layers.
@@ -137,6 +138,11 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
         BackendWrapper(const Ptr<BackendWrapper>& base, const MatShape& shape);
 
         virtual ~BackendWrapper(); //!< Virtual destructor to make polymorphism.
+
+        /**
+         * @brief Transfer data to CPU host memory.
+         */
+        virtual void copyToHost() = 0;
 
         int backendId;  //!< Backend identifier.
         int targetId;   //!< Target identifier.
@@ -220,14 +226,16 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
         * @param[in] node Backend node with Halide functions.
         * @param[in] inputs Blobs that will be used in forward invocations.
         * @param[in] outputs Blobs that will be used in forward invocations.
-        * @see BackendNode
+        * @param[in] targetId Target identifier
+        * @see BackendNode, Target
         *
         * Layer don't use own Halide::Func members because we can have applied
         * layers fusing. In this way the fused function should be scheduled.
         */
         virtual void applyHalideScheduler(Ptr<BackendNode>& node,
                                           const std::vector<Mat*> &inputs,
-                                          const std::vector<Mat> &outputs) const;
+                                          const std::vector<Mat> &outputs,
+                                          int targetId) const;
 
         /**
          * @brief Implement layers fusing.
@@ -393,6 +401,13 @@ namespace dnn //! This namespace is used for dnn module functionlaity.
          * @see Backend
          */
         void setPreferableBackend(int backendId);
+
+        /**
+         * @brief Ask network to make computations on specific target device.
+         * @param[in] targetId target identifier.
+         * @see Target
+         */
+        void setPreferableTarget(int targetId);
 
         /** @brief Sets the new value for the layer output blob
          *  @param name descriptor of the updating layer output blob.

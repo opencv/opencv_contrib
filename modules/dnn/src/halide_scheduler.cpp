@@ -143,6 +143,26 @@ static void applyComputeRoot(const FileNode& directive, Halide::Func& func)
         func.compute_root();
 }
 
+static void applyGpuBlocks(const FileNode& directive, Halide::Func& func)
+{
+    std::string varName;
+    for (int i = 0, n = directive.size(); i < n; ++i)
+    {
+        directive[i] >> varName;
+        func.gpu_blocks(Halide::Var(varName));
+    }
+}
+
+static void applyGpuThreads(const FileNode& directive, Halide::Func& func)
+{
+    std::string varName;
+    for (int i = 0, n = directive.size(); i < n; ++i)
+    {
+        directive[i] >> varName;
+        func.gpu_threads(Halide::Var(varName));
+    }
+}
+
 static void apply(const FileNode& directives, Halide::Func& func,
                   std::map<std::string, Halide::Func>& funcsMap,
                   const FileNode& params)
@@ -167,6 +187,10 @@ static void apply(const FileNode& directives, Halide::Func& func,
             applyComputeAt(directive, func, funcsMap);
         else if (directive.name() == "compute_root")
             applyComputeRoot(directive, func);
+        else if (directive.name() == "gpu_blocks")
+            applyGpuBlocks(directive, func);
+        else if (directive.name() == "gpu_threads")
+            applyGpuThreads(directive, func);
         else
             CV_Error(Error::StsNotImplemented, "Scheduling directive " +
                      directive.name() + " is not implemented.");

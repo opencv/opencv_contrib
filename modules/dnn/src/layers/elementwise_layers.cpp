@@ -422,7 +422,7 @@ struct ChannelsPReLUFunctor
     {
         Halide::Var x("x"), y("y"), c("c"), n("n");
         auto weights = wrapToHalideBuffer(scale, {(int)scale.total()});
-        top(x, y, c, n) = select(input > 0.0f, input, weights(c) * input);
+        top(x, y, c, n) = select(input >= 0.0f, input, weights(c) * input);
     }
 #endif  // HAVE_HALIDE
 

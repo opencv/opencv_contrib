@@ -48,6 +48,7 @@ static void test(const std::string& weights, const std::string& proto,
 
     netHalide.setInput(blobFromImage(input.clone(), 1.0f, false));
     netHalide.setPreferableBackend(DNN_BACKEND_HALIDE);
+    netHalide.setPreferableTarget(targetId);
     netHalide.setHalideScheduler(scheduler);
     outputHalide = netHalide.forward(outputLayer).clone();
 
@@ -62,15 +63,20 @@ static void test(const std::string& weights, const std::string& proto,
 
     // Swap backends.
     netHalide.setPreferableBackend(DNN_BACKEND_DEFAULT);
+    netHalide.setPreferableTarget(DNN_TARGET_CPU);
     outputDefault = netHalide.forward(outputLayer).clone();
 
     netDefault.setPreferableBackend(DNN_BACKEND_HALIDE);
+    netDefault.setPreferableTarget(targetId);
     netDefault.setHalideScheduler(scheduler);
     outputHalide = netDefault.forward(outputLayer).clone();
 
     normAssert(outputDefault, outputHalide);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// CPU target
+////////////////////////////////////////////////////////////////////////////////
 TEST(Reproducibility_GoogLeNet_Halide, Accuracy)
 {
     test(findDataFile("dnn/bvlc_googlenet.caffemodel", false),
@@ -114,6 +120,53 @@ TEST(Reproducibility_ENet_Halide, Accuracy)
     test(findDataFile("dnn/Enet-model-best.net", false), "",
          findDataFile("dnn/halide_scheduler_enet.yml", false),
          512, 512, "l367_Deconvolution", "torch", DNN_TARGET_CPU);
+};
+////////////////////////////////////////////////////////////////////////////////
+// OpenCL target
+////////////////////////////////////////////////////////////////////////////////
+TEST(Reproducibility_GoogLeNet_Halide_opencl, Accuracy)
+{
+    test(findDataFile("dnn/bvlc_googlenet.caffemodel", false),
+         findDataFile("dnn/bvlc_googlenet.prototxt", false),
+         "", 227, 227, "prob", "caffe", DNN_TARGET_OPENCL);
+};
+
+TEST(Reproducibility_AlexNet_Halide_opencl, Accuracy)
+{
+    test(findDataFile("dnn/bvlc_alexnet.caffemodel", false),
+         findDataFile("dnn/bvlc_alexnet.prototxt", false),
+         findDataFile("dnn/halide_scheduler_opencl_alexnet.yml", false),
+         227, 227, "prob", "caffe", DNN_TARGET_OPENCL);
+};
+
+TEST(Reproducibility_ResNet_50_Halide_opencl, Accuracy)
+{
+    test(findDataFile("dnn/ResNet-50-model.caffemodel", false),
+         findDataFile("dnn/ResNet-50-deploy.prototxt", false),
+         findDataFile("dnn/halide_scheduler_opencl_resnet_50.yml", false),
+         224, 224, "prob", "caffe", DNN_TARGET_OPENCL);
+};
+
+TEST(Reproducibility_SqueezeNet_v1_1_Halide_opencl, Accuracy)
+{
+    test(findDataFile("dnn/squeezenet_v1_1.caffemodel", false),
+         findDataFile("dnn/squeezenet_v1_1.prototxt", false),
+         findDataFile("dnn/halide_scheduler_opencl_squeezenet_v1_1.yml", false),
+         227, 227, "prob", "caffe", DNN_TARGET_OPENCL);
+};
+
+TEST(Reproducibility_Inception_5h_Halide_opencl, Accuracy)
+{
+    test(findDataFile("dnn/tensorflow_inception_graph.pb", false), "",
+         findDataFile("dnn/halide_scheduler_opencl_inception_5h.yml", false),
+         224, 224, "softmax2", "tensorflow", DNN_TARGET_OPENCL);
+};
+
+TEST(Reproducibility_ENet_Halide_opencl, Accuracy)
+{
+    test(findDataFile("dnn/Enet-model-best.net", false), "",
+         findDataFile("dnn/halide_scheduler_opencl_enet.yml", false),
+         512, 512, "l367_Deconvolution", "torch", DNN_TARGET_OPENCL);
 };
 #endif  // HAVE_HALIDE
 
