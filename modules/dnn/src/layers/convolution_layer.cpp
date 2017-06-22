@@ -369,8 +369,8 @@ public:
             const int* ofstab = &ofstab_[0];
             const float* wptr_orig_ = weights_->ptr<float>();
             size_t wstep = weights_->step1();
-            const float* biasvec = &biasvec_->at(0);
-            const float* reluvec = reluslope_->empty() ? 0 : &reluslope_->at(0);
+            const float* biasptr_ = &biasvec_->at(0);
+            const float* reluptr_ = reluslope_->empty() ? 0 : &reluslope_->at(0);
             float* data_out0_ = output_->ptr<float>();
             size_t rowbufsz = (size_t)karea*BLK_SIZE_CN*BLK_SIZE;
             AutoBuffer<float> rowbuf0_(rowbufsz + valign);
@@ -398,7 +398,7 @@ public:
                 float* data_out0 = data_out0_ + subsampleIdx*outPlaneSize*outCn;
                 int startOutCn = (subsampleIdx % ngroups)*outCn;
                 const float* wptr_orig = wptr_orig_ + wstep*startOutCn;
-                const float* biasptr = biasvec + startOutCn;
+                const float* biasptr = biasptr_ + startOutCn;
 
                 for( int cn0 = 0; cn0 < inpCn; cn0 += BLK_SIZE_CN )
                 {
@@ -407,7 +407,7 @@ public:
                     int vsz_a = (int)alignSize(vsz, valign);
                     const float* wptr = wptr_orig + cn0*karea;
                     // we apply [Channels][P]ReLU (if any) during the final pass only.
-                    const float* relu = cn1 == inpCn && reluvec ? reluvec + startOutCn : 0;
+                    const float* relu = cn1 == inpCn && reluptr_ ? reluptr_ + startOutCn : 0;
 
                     for( int ofs0 = stripeStart; ofs0 < stripeEnd; ofs0 += BLK_SIZE )
                     {

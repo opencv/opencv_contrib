@@ -182,7 +182,7 @@ public:
             int kernel_w = kernel_.width, kernel_h = kernel_.height;
             int pad_w = pad_.width, pad_h = pad_.height;
             int stride_w = stride_.width, stride_h = stride_.height;
-            bool computeMaxIdx = computeMaxIdx_;
+            bool compMaxIdx = computeMaxIdx_;
         #if CV_SIMD128
             v_float32x4 idx00(0.f, (float)stride_w, (float)(stride_w*2), (float)(stride_w*3));
             v_float32x4 ones = v_setall_f32(1.f);
@@ -203,7 +203,7 @@ public:
             #if CV_SIMD128
                 if( xstart > 0 && (x0 + 7) * stride_w - pad_w + kernel_w < inp_width )
                 {
-                    if( computeMaxIdx )
+                    if( compMaxIdx )
                     {
                         v_float32x4 max_val0 = v_setall_f32(max_val);
                         v_float32x4 max_val1 = max_val0;
@@ -267,7 +267,7 @@ public:
                 else
             #endif
                 {
-                    if( computeMaxIdx )
+                    if( compMaxIdx )
                     {
                         for (int y = ystart; y < yend; ++y)
                             for (int x = xstart; x < xend; ++x)
