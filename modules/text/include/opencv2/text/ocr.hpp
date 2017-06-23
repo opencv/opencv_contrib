@@ -633,6 +633,16 @@ public:
      */
     CV_WRAP void preprocess(InputArray input,OutputArray output,Size sz,int outputChannels);
 
+    /** @brief this method in provides public acces to set the mean of the input images
+     * mean can be a mat either of same size of the image or one value per color channel
+     * A preprocessor can be created without the mean( the pre processor will calculate mean for every image
+     * in that case
+     *
+
+     * @param mean which will be subtracted from the images
+     *
+     */
+
     CV_WRAP void set_mean(Mat mean);
 
     /** @brief Creates a functor that only resizes and changes the channels of the input
@@ -655,6 +665,10 @@ public:
      * @return shared pointer to generated preprocessor
      */
     CV_WRAP static Ptr<ImagePreprocessor> createImageMeanSubtractor(InputArray meanImg);
+    /** @brief
+     * create a functor with the parameters, parameters can be changes by corresponding set functions
+     * @return shared pointer to generated preprocessor
+     */
 
     CV_WRAP static Ptr<ImagePreprocessor>createImageCustomPreprocessor(double rawval=1.0,String channel_order="BGR");
 
