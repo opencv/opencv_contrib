@@ -324,7 +324,6 @@ struct LayerData
         //add logging info
         params.name = name;
         params.type = type;
-        skip = false;
     }
 
     int id;
@@ -347,7 +346,6 @@ struct LayerData
     std::map<int, bool> skipFlags;
 
     int flag;
-    bool skip;
 
     Ptr<Layer> getLayerInstance()
     {
@@ -666,18 +664,39 @@ struct Net::Impl
         }
     }
 
+    void clear()
+    {
+        MapIdToLayerData::iterator it;
+        for (it = layers.begin(); it != layers.end(); it++)
+        {
+            if (it->second.id != 0) {
+                it->second.outputBlobs.clear();
+                it->second.internals.clear();
+            }
+            it->second.skipFlags.clear();
+            it->second.consumers.clear();
+            Ptr<ConvolutionLayer> convLayer = it->second.layerInstance.dynamicCast<ConvolutionLayer>();
+
+            if( !convLayer.empty() )
+            {
+                convLayer->setActivation(Ptr<ActivationLayer>());
+                convLayer->setBatchNorm(Ptr<BatchNormLayer>());
+            }
+
+            Ptr<PoolingLayer> poolingLayer = it->second.layerInstance.dynamicCast<PoolingLayer>();
+            if( !poolingLayer.empty() )
+            {
+                poolingLayer->computeMaxIdx = true;
+            }
+        }
+    }
+
+
     void setUpNet(const std::vector<LayerPin>& blobsToKeep_ = std::vector<LayerPin>())
     {
         if (!netWasAllocated || this->blobsToKeep != blobsToKeep_)
         {
-            MapIdToLayerData::iterator it;
-            for (it = layers.begin(); it != layers.end(); it++)
-            {
-                if (it->second.id != 0) {
-                    it->second.outputBlobs.clear();
-                    it->second.internals.clear();
-                }
-            }
+            clear();
 
             allocateLayers(blobsToKeep_);
             computeNetOutputLayers();
@@ -1005,6 +1024,71 @@ struct Net::Impl
         ld.flag = 1;
     }
 
+    void fuseLayers(const std::vector<LayerPin>& blobsToKeep_)
+    {
+        // scan through all the layers. If there is convolution layer followed by the activation layer,
+        // we try to embed this activation into the convolution and disable separate execution of the activation
+        std::vector<String> outnames;
+        std::set<LayerPin> pinsToKeep(blobsToKeep_.begin(),
+                                      blobsToKeep_.end());
+        MapIdToLayerData::iterator it;
+        for (it = layers.begin(); it != layers.end(); it++)
+        {
+            int lid = it->first;
+            LayerData& ld = layers[lid];
+            if( ld.skipFlags[DNN_BACKEND_DEFAULT] )
+            {
+                continue;
+            }
+            if( ld.consumers.size() == 0 )
+                outnames.push_back(ld.layerInstance->name);
+            Ptr<ConvolutionLayer> convLayer = ld.layerInstance.dynamicCast<ConvolutionLayer>();
+            LayerPin lp(lid, 0);
+            if( !convLayer.empty() && ld.consumers.size() == 1 &&
+                pinsToKeep.count(lp) == 0 )
+            {
+                LayerData* nextData = &layers[ld.consumers[0].lid];
+                Ptr<BatchNormLayer> nextBNormLayer =
+                    nextData->layerInstance.dynamicCast<BatchNormLayer>();
+                LayerPin lpNext(ld.consumers[0].lid, 0);
+                if( !nextBNormLayer.empty() && pinsToKeep.count(lpNext) == 0 )
+                {
+                    LayerData* bnormData = nextData;
+                    nextData = 0;
+                    if( convLayer->setBatchNorm(nextBNormLayer) )
+                    {
+                        bnormData->skipFlags[DNN_BACKEND_DEFAULT] = true;
+                        ld.outputBlobs = layers[lpNext.lid].outputBlobs;
+                        if( bnormData->consumers.size() == 1 )
+                            nextData = &layers[bnormData->consumers[0].lid];
+                    }
+                }
+
+                Ptr<ActivationLayer> nextActivLayer;
+                if( nextData )
+                    nextActivLayer = nextData->layerInstance.dynamicCast<ActivationLayer>();
+
+                if( !nextActivLayer.empty() && convLayer->setActivation(nextActivLayer) )
+                {
+                    nextData->skipFlags[DNN_BACKEND_DEFAULT] = true;
+                    ld.outputBlobs = layers[lpNext.lid].outputBlobs;
+                }
+            }
+            Ptr<PoolingLayer> poolingLayer = ld.layerInstance.dynamicCast<PoolingLayer>();
+            if( !poolingLayer.empty() && !ld.consumers.empty() )
+            {
+                size_t i = 0, nconsumers = ld.consumers.size();
+                for( ; i < nconsumers; i++ )
+                    if( ld.consumers[i].oid > 0 )
+                        break;
+                // if there is no layer that takes the second output pin of the pooling layer
+                // on input then we don't need to compute the indices
+                if( i >= nconsumers )
+                    poolingLayer->computeMaxIdx = false;
+            }
+        }
+    }
+
     void allocateLayers(const std::vector<LayerPin>& blobsToKeep_)
     {
         MapIdToLayerData::iterator it;
@@ -1039,67 +1123,7 @@ struct Net::Impl
             allocateLayer(lid, layersShapes);
         }
 
-        // scan through all the layers. If there is convolution layer followed by the activation layer,
-        // we try to embed this activation into the convolution and disable separate execution of the activation
-        std::vector<String> outnames;
-        for (it = layers.begin(); it != layers.end(); it++)
-        {
-            int lid = it->first;
-            LayerData& ld = layers[lid];
-            if( ld.skip )
-            {
-                //printf("skipping %s\n", ld.layerInstance->name.c_str());
-                continue;
-            }
-            //printf("analyzing %s\n", ld.layerInstance->name.c_str());
-            if( ld.consumers.size() == 0 )
-                outnames.push_back(ld.layerInstance->name);
-            Ptr<ConvolutionLayer> convLayer = ld.layerInstance.dynamicCast<ConvolutionLayer>();
-            if( !convLayer.empty() && ld.consumers.size() == 1 )
-            {
-                LayerData* nextData = &layers[ld.consumers[0].lid];
-                Ptr<BatchNormLayer> nextBNormLayer =
-                    nextData->layerInstance.dynamicCast<BatchNormLayer>();
-                if( !nextBNormLayer.empty() )
-                {
-                    LayerData* bnormData = nextData;
-                    nextData = 0;
-                    if( convLayer->setBatchNorm(nextBNormLayer) )
-                    {
-                        //printf("fused convolution (%s) and batch norm (%s)\n", convLayer->name.c_str(), nextBNormLayer->name.c_str());
-                        bnormData->skip = true;
-                        if( bnormData->consumers.size() == 1 )
-                            nextData = &layers[bnormData->consumers[0].lid];
-                    }
-                }
-
-                Ptr<ActivationLayer> nextActivLayer;
-                if( nextData )
-                    nextActivLayer = nextData->layerInstance.dynamicCast<ActivationLayer>();
-
-                if( !nextActivLayer.empty() && convLayer->setActivation(nextActivLayer) )
-                {
-                    //printf("fused convolution (%s) and activation (%s)\n", convLayer->name.c_str(), nextActivLayer->name.c_str());
-                    nextData->skip = true;
-                }
-            }
-            Ptr<PoolingLayer> poolingLayer = ld.layerInstance.dynamicCast<PoolingLayer>();
-            if( !poolingLayer.empty() && !ld.consumers.empty() )
-            {
-                size_t i = 0, nconsumers = ld.consumers.size();
-                for( ; i < nconsumers; i++ )
-                    if( ld.consumers[i].oid > 0 )
-                        break;
-                // if there is no layer that takes the second output pin of the pooling layer
-                // on input then we don't need to compute the indices
-                if( i >= nconsumers )
-                    poolingLayer->computeMaxIdx = false;
-            }
-        }
-        /*printf("outputs: ");
-        for( size_t j = 0; j < outnames.size(); j++ )
-            printf("%s ", outnames[j].c_str());
-        printf("\n");*/
+        fuseLayers(blobsToKeep_);
     }
 
     void forwardLayer(LayerData &ld)
@@ -1109,7 +1133,7 @@ struct Net::Impl
         if (preferableBackend == DNN_BACKEND_DEFAULT ||
             !layer->supportBackend(preferableBackend))
         {
-            if( !ld.skip )
+            if( !ld.skipFlags[DNN_BACKEND_DEFAULT] )
                 layer->forward(ld.inputBlobs, ld.outputBlobs, ld.internals);
         }
         else if (!ld.skipFlags[preferableBackend])
@@ -1299,20 +1323,6 @@ void Net::connect(String _outPin, String _inPin)
 
     impl->connect(outPin.lid, outPin.oid, inpPin.lid, inpPin.oid);
 }
-
-//void Net::forward(LayerId toLayer)
-//{
-//    if (!impl->netWasAllocated)
-//    {
-//        impl->setUpNet();
-
-//    }
-
-//    if (toLayer.isString() && toLayer.get<String>().empty())
-//        impl->forwardAll();
-//    else
-//        impl->forwardLayer(impl->getLayerData(toLayer));
-//}
 
 Mat Net::forward(const String& outputName)
 {
