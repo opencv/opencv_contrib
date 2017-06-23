@@ -4,7 +4,11 @@
  *  Created on: Jun 1, 2017
  *      Author: qsx
  */
-#include "precomp.hpp"
+
+#include <opencv2/dnn.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/saliency/DeepGaze1.hpp>
 #include <vector>
 #include <cmath>
 #include <string>
@@ -13,6 +17,8 @@
 #include <algorithm>
 #include <utility>
 #include <numeric>
+#include <fstream>
+
 
 using namespace std;
 using namespace cv;
@@ -88,10 +94,10 @@ vector<Mat> DeepGaze1::featureMapGenerator(Mat img)
 	return featureMaps;
 }
 
-bool computeSaliencyImpl(InputArray image, OutputArray saliencyMap)
+bool DeepGaze1::computeSaliencyImpl(InputArray image, OutputArray saliencyMap)
 {
-	vector<Mat> featureMaps = featureMapGenerator(image);
-	saliencyMap = softmax(comb(featureMaps, weights));
+	vector<Mat> featureMaps = featureMapGenerator(image.getMat());
+	saliencyMap.assign(softmax(comb(featureMaps, weights)));
 	return true;
 }
 

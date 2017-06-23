@@ -8,7 +8,7 @@
 #include <opencv2/dnn.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
-#include <opencv2/saliency.hpp>
+#include <opencv2/saliency/DeepGaze1.hpp>
 #include <vector>
 #include <string>
 #include <dirent.h>
@@ -39,13 +39,27 @@ int main(int argc, char **argv)
 	while((dirp = readdir(dp)) != NULL)
 	{
 		if(dirp->d_type != 8) continue;
-		if((n++) >= 100) break;
+		if((n++) >= 400) break;
 		string f_name(dirp->d_name);
 		images.push_back(imread("ALLSTIMULI/" + f_name));
 		fixs.push_back(imread("ALLFIXATIONMAPS/" + f_name.substr(0, f_name.find_first_of('.')) + "_fixPts.jpg", 0));
 	}
 
 	g.training(images, fixs);
-	Mat res(g.saliencyMapGenerator(imread("ALLSTIMULI/i05june05_static_street_boston_p1010764.jpeg")));
+	ofstream file;
+	Mat res2;
+	g.computeSaliency(imread("ALLSTIMULI/i05june05_static_street_boston_p1010764.jpeg"), res2);
+	log(res2, res2);
+	resize(res2, res2, Size(1024, 768));
+	file.open("street.csv");
+	for (int i = 0;i < res2.rows;i++)
+	{
+		for (int j=0;j < res2.cols;j++)
+		{
+			file << res2.at<double>(i, j) << " ";
+		}
+		file << endl;
+	}
+	file.close();
     return 0;
 } //main
