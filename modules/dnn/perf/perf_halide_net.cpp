@@ -39,7 +39,7 @@ static void loadNet(std::string weights, std::string proto, std::string schedule
     else
         CV_Error(Error::StsNotImplemented, "Unknown framework " + framework);
 
-    net->setInput(blobFromImage(input, 1.0, false));
+    net->setInput(blobFromImage(input, 1.0, Size(), Scalar(), false));
     net->setPreferableBackend(DNN_BACKEND_HALIDE);
     net->setPreferableTarget(targetId);
     net->setHalideScheduler(scheduler);
@@ -52,7 +52,7 @@ static void loadNet(std::string weights, std::string proto, std::string schedule
 PERF_TEST(GoogLeNet, HalidePerfTest)
 {
     Net net;
-    loadNet("dnn/bvlc_googlenet2.caffemodel", "dnn/bvlc_googlenet.prototxt",
+    loadNet("dnn/bvlc_googlenet.caffemodel", "dnn/bvlc_googlenet.prototxt",
             "", 227, 227, "prob", "caffe", DNN_TARGET_CPU, &net);
     TEST_CYCLE() net.forward();
     SANITY_CHECK_NOTHING();
