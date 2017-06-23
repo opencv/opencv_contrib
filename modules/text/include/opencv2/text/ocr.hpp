@@ -722,6 +722,8 @@ public:
     /** @brief simple getter method returning the size of the oputput row-vector
      */
     CV_WRAP virtual int getOutputSize()=0;
+    /** @brief simple getter method returning the shape of the oputput from caffe
+     */
     CV_WRAP virtual Size getOutputGeometry()=0;
 
     /** @brief simple getter method returning the size of the minibatches for this classifier.
