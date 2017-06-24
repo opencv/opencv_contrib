@@ -36,6 +36,7 @@ public:
 
     virtual void read(const FileNode& fn);
     virtual void write(FileStorage& fs) const;
+    virtual bool empty() const;
 
     using FaceRecognizer::read;
     using FaceRecognizer::write;
@@ -72,8 +73,8 @@ public:
 
     ### Model internal data:
 
-    -   num_components see createEigenFaceRecognizer.
-    -   threshold see createEigenFaceRecognizer.
+    -   num_components see EigenFaceRecognizer::create.
+    -   threshold see EigenFaceRecognizer::create.
     -   eigenvalues The eigenvalues for this Principal Component Analysis (ordered descending).
     -   eigenvectors The eigenvectors for this Principal Component Analysis (ordered by their
         eigenvalue).
@@ -109,8 +110,8 @@ public:
 
     ### Model internal data:
 
-    -   num_components see createFisherFaceRecognizer.
-    -   threshold see createFisherFaceRecognizer.
+    -   num_components see FisherFaceRecognizer::create.
+    -   threshold see FisherFaceRecognizer::create.
     -   eigenvalues The eigenvalues for this Linear Discriminant Analysis (ordered descending).
     -   eigenvectors The eigenvectors for this Linear Discriminant Analysis (ordered by their
         eigenvalue).
@@ -171,11 +172,11 @@ public:
 
     ### Model internal data:
 
-    -   radius see createLBPHFaceRecognizer.
-    -   neighbors see createLBPHFaceRecognizer.
-    -   grid_x see createLBPHFaceRecognizer.
-    -   grid_y see createLBPHFaceRecognizer.
-    -   threshold see createLBPHFaceRecognizer.
+    -   radius see LBPHFaceRecognizer::create.
+    -   neighbors see LBPHFaceRecognizer::create.
+    -   grid_x see LLBPHFaceRecognizer::create.
+    -   grid_y see LBPHFaceRecognizer::create.
+    -   threshold see LBPHFaceRecognizer::create.
     -   histograms Local Binary Patterns Histograms calculated from the given training data (empty if
         none was given).
     -   labels Labels corresponding to the calculated Local Binary Patterns Histograms.

@@ -53,6 +53,7 @@ cv::Mat BasicFaceRecognizer::getMean() const
 void BasicFaceRecognizer::read(const FileNode& fs)
 {
     //read matrices
+    fs["threshold"] >> _threshold;
     fs["num_components"] >> _num_components;
     fs["mean"] >> _mean;
     fs["eigenvalues"] >> _eigenvalues;
@@ -76,6 +77,7 @@ void BasicFaceRecognizer::read(const FileNode& fs)
 void BasicFaceRecognizer::write(FileStorage& fs) const
 {
     // write matrices
+    fs << "threshold" << _threshold;
     fs << "num_components" << _num_components;
     fs << "mean" << _mean;
     fs << "eigenvalues" << _eigenvalues;
@@ -87,4 +89,9 @@ void BasicFaceRecognizer::write(FileStorage& fs) const
     for (std::map<int, String>::const_iterator it = _labelsInfo.begin(); it != _labelsInfo.end(); it++)
         fs << LabelInfo(it->first, it->second);
     fs << "]";
+}
+
+bool BasicFaceRecognizer::empty() const
+{
+    return (_labels.empty());
 }

@@ -97,11 +97,11 @@ int main(int argc, const char *argv[]) {
     // So if you want a LBPH FaceRecognizer using a radius of
     // 2 and 16 neighbors, call the factory method with:
     //
-    //      cv::createLBPHFaceRecognizer(2, 16);
+    //      cv::face::LBPHFaceRecognizer::create(2, 16);
     //
     // And if you want a threshold (e.g. 123.0) call it with its default values:
     //
-    //      cv::createLBPHFaceRecognizer(1,8,8,8,123.0)
+    //      cv::face::LBPHFaceRecognizer::create(1,8,8,8,123.0)
     //
     Ptr<LBPHFaceRecognizer> model = LBPHFaceRecognizer::create();
     model->train(images, labels);
