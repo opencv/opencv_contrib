@@ -159,7 +159,7 @@ private:
 This method use the convolution layers of the pretrained AlexNet, linear combination, center bias and softmax to generate saliency map
 */
 
-class DeepGaze1 : public StaticSaliency
+class CV_EXPORTS_W DeepGaze1 : public StaticSaliency
 {
 private:
 	dnn::Net net;
@@ -169,6 +169,10 @@ private:
 public:
 	DeepGaze1();
 	DeepGaze1(std::string, std::string, std::vector<std::string>);
+	CV_WRAP static Ptr<DeepGaze1> create()
+	{
+		return makePtr<DeepGaze1>();
+	}
 	bool computeSaliency(InputArray image, OutputArray saliencyMap)
 	{
 		if(image.empty())
@@ -176,12 +180,15 @@ public:
 		return computeSaliencyImpl(image, saliencyMap);
 	}
 	void training(std::vector<Mat>&, std::vector<Mat>&);
+	double computeAUC(InputArray _saliencyMap, InputArray _fixtionMap);
+	void saliencyMapVisualize(InputArray _saliencyMap);
 protected:
     bool computeSaliencyImpl(InputArray image, OutputArray saliencyMap);
     std::vector<Mat> featureMapGenerator(Mat);
     static Mat comb(std::vector<Mat>&, std::vector<double>);
     static Mat softmax(Mat);
     Mat saliencyMapGenerator(Mat);
+
     static std::vector<double> evalGrad(std::vector<Mat>&, std::vector<unsigned>&, std::vector<double>);
     std::vector<unsigned> batchIndex(unsigned, unsigned);
     static double loss(std::vector<double>, std::vector<double>);
