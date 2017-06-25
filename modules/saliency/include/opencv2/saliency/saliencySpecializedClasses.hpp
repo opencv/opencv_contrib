@@ -168,7 +168,7 @@ private:
 
 public:
 	DeepGaze1();
-	DeepGaze1(std::string, std::string, std::vector<std::string>);
+	DeepGaze1(std::string, std::string, std::vector<std::string>, unsigned);
 	CV_WRAP static Ptr<DeepGaze1> create()
 	{
 		return makePtr<DeepGaze1>();
@@ -179,16 +179,15 @@ public:
 			return false;
 		return computeSaliencyImpl(image, saliencyMap);
 	}
-	void training(std::vector<Mat>&, std::vector<Mat>&);
+	Mat saliencyMapGenerator(Mat, Size = Size(227, 227));
+	void training(std::vector<Mat>&, std::vector<Mat>&, Size = Size(227, 227));
 	double computeAUC(InputArray _saliencyMap, InputArray _fixtionMap);
 	void saliencyMapVisualize(InputArray _saliencyMap);
 protected:
     bool computeSaliencyImpl(InputArray image, OutputArray saliencyMap);
-    std::vector<Mat> featureMapGenerator(Mat);
+    std::vector<Mat> featureMapGenerator(Mat, Size);
     static Mat comb(std::vector<Mat>&, std::vector<double>);
     static Mat softmax(Mat);
-    Mat saliencyMapGenerator(Mat);
-
     static std::vector<double> evalGrad(std::vector<Mat>&, std::vector<unsigned>&, std::vector<double>);
     std::vector<unsigned> batchIndex(unsigned, unsigned);
     static double loss(std::vector<double>, std::vector<double>);
