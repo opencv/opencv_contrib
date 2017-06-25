@@ -31,8 +31,9 @@ namespace saliency
 DeepGaze1::DeepGaze1()
 {
 	net = dnn::readNetFromCaffe("deploy.prototxt", "bvlc_alexnet.caffemodel");
-	layers_names = vector<string>{"conv5"};
-	weights = {0.469576,0.475909,0.445926,0.476597,0.505775,0.457083,0.486233,0.460788,0.46106,0.471132,0.461589,0.383889,0.470089,0.461857,0.606081,0.469439,0.473654,0.438096,0.492859,0.483114,0.436092,0.466829,0.44598,0.467684,0.486227,0.476685,0.499284,0.548693,0.494316,0.460175,0.466815,0.456755,0.528414,0.448331,0.494126,0.486524,0.477335,0.44679,0.471165,0.453231,0.477976,0.511486,0.489458,0.433211,0.476518,0.49075,0.456346,0.479566,0.404909,0.517421,0.477067,0.498872,0.238922,0.504733,0.447699,0.435917,0.472379,0.450609,0.482663,0.462184,0.447799,0.464343,0.530619,0.753738,0.46916,0.482865,0.460146,0.489529,0.486235,0.457387,0.460575,0.472095,0.506805,0.469016,0.454105,0.458717,0.449325,0.456058,0.495336,0.471266,0.440256,0.467249,0.453049,0.488131,0.470352,0.487353,0.445176,0.460139,0.45247,0.469445,0.244583,0.169326,0.451571,0.44315,0.477018,0.44736,0.466333,0.547419,0.402816,0.448315,0.467074,0.4921,0.487628,0.479554,0.489416,0.476411,0.42611,0.437581,0.475609,0.484149,0.461617,0.507637,0.478952,0.447884,0.466818,0.437146,0.446821,0.491235,0.529646,0.499436,0.471622,0.451675,0.471276,0.452826,0.450762,0.484006,0.464328,0.585631,0.45568,0.452579,0.518405,0.467232,0.446822,0.39135,0.464697,0.493513,0.494239,0.609592,0.440514,0.550717,0.617017,0.47375,0.456314,0.405965,0.459913,0.410683,0.432651,0.528895,0.604878,0.502048,0.52597,0.461418,0.467602,0.451857,0.47494,0.482889,0.462033,0.466892,0.443192,0.47522,0.440551,0.49915,0.440109,0.46256,0.451269,0.459332,0.42362,0.454785,0.429994,0.486273,0.443259,0.487732,0.466453,0.436671,0.488789,0.428538,0.430395,0.650086,0.459794,0.485563,0.476398,0.448556,0.445961,0.477572,0.461427,0.490713,0.457607,0.475426,0.510739,0.492226,0.471198,0.468778,0.536845,0.463664,0.479667,0.460984,0.459756,0.449138,0.400535,0.481603,0.573033,0.379099,0.452276,0.508623,0.372783,0.474606,0.454702,0.582488,0.472624,0.38901,0.49034,0.471059,0.453068,0.45951,0.452311,0.516473,0.487529,0.52764,0.469588,0.514558,0.481468,0.469013,0.460126,0.504444,0.419805,0.426563,0.478199,0.472796,0.493762,0.493559,0.448286,0.446668,0.411609,0.475216,0.464951,0.486518,0.465692,0.373902,0.473649,0.46263,0.482328,0.483113,0.485923,0.448114,0.500998,0.483336,0.469564,0.489501,0.492358,0.489632,0.469056,0.393911,0.532511,0.469307,0.496896,0.48274,6.00684};
+	layers_names.push_back("conv5");
+	double tmp[] = {0.469576,0.475909,0.445926,0.476597,0.505775,0.457083,0.486233,0.460788,0.46106,0.471132,0.461589,0.383889,0.470089,0.461857,0.606081,0.469439,0.473654,0.438096,0.492859,0.483114,0.436092,0.466829,0.44598,0.467684,0.486227,0.476685,0.499284,0.548693,0.494316,0.460175,0.466815,0.456755,0.528414,0.448331,0.494126,0.486524,0.477335,0.44679,0.471165,0.453231,0.477976,0.511486,0.489458,0.433211,0.476518,0.49075,0.456346,0.479566,0.404909,0.517421,0.477067,0.498872,0.238922,0.504733,0.447699,0.435917,0.472379,0.450609,0.482663,0.462184,0.447799,0.464343,0.530619,0.753738,0.46916,0.482865,0.460146,0.489529,0.486235,0.457387,0.460575,0.472095,0.506805,0.469016,0.454105,0.458717,0.449325,0.456058,0.495336,0.471266,0.440256,0.467249,0.453049,0.488131,0.470352,0.487353,0.445176,0.460139,0.45247,0.469445,0.244583,0.169326,0.451571,0.44315,0.477018,0.44736,0.466333,0.547419,0.402816,0.448315,0.467074,0.4921,0.487628,0.479554,0.489416,0.476411,0.42611,0.437581,0.475609,0.484149,0.461617,0.507637,0.478952,0.447884,0.466818,0.437146,0.446821,0.491235,0.529646,0.499436,0.471622,0.451675,0.471276,0.452826,0.450762,0.484006,0.464328,0.585631,0.45568,0.452579,0.518405,0.467232,0.446822,0.39135,0.464697,0.493513,0.494239,0.609592,0.440514,0.550717,0.617017,0.47375,0.456314,0.405965,0.459913,0.410683,0.432651,0.528895,0.604878,0.502048,0.52597,0.461418,0.467602,0.451857,0.47494,0.482889,0.462033,0.466892,0.443192,0.47522,0.440551,0.49915,0.440109,0.46256,0.451269,0.459332,0.42362,0.454785,0.429994,0.486273,0.443259,0.487732,0.466453,0.436671,0.488789,0.428538,0.430395,0.650086,0.459794,0.485563,0.476398,0.448556,0.445961,0.477572,0.461427,0.490713,0.457607,0.475426,0.510739,0.492226,0.471198,0.468778,0.536845,0.463664,0.479667,0.460984,0.459756,0.449138,0.400535,0.481603,0.573033,0.379099,0.452276,0.508623,0.372783,0.474606,0.454702,0.582488,0.472624,0.38901,0.49034,0.471059,0.453068,0.45951,0.452311,0.516473,0.487529,0.52764,0.469588,0.514558,0.481468,0.469013,0.460126,0.504444,0.419805,0.426563,0.478199,0.472796,0.493762,0.493559,0.448286,0.446668,0.411609,0.475216,0.464951,0.486518,0.465692,0.373902,0.473649,0.46263,0.482328,0.483113,0.485923,0.448114,0.500998,0.483336,0.469564,0.489501,0.492358,0.489632,0.469056,0.393911,0.532511,0.469307,0.496896,0.48274,6.00684};
+	weights = vector<double>(tmp, tmp + 257);
 }
 
 DeepGaze1::DeepGaze1(string net_proto, string net_caffemodel, vector<string> selected_layers, unsigned n_weights)
@@ -40,9 +41,9 @@ DeepGaze1::DeepGaze1(string net_proto, string net_caffemodel, vector<string> sel
 	net = dnn::readNetFromCaffe(net_proto, net_caffemodel);
 	layers_names = selected_layers;
 	weights = vector<double>(n_weights, 0);
-	for(double& i : weights)
+	for(unsigned i = 0;i < weights.size();i++)
 	{
-		i = (double)(rand() % 10) / 10.0;
+		weights[i] = (double)(rand() % 10) / 10.0;
 	}
 }
 
@@ -95,7 +96,7 @@ bool DeepGaze1::computeSaliencyImpl(InputArray image, OutputArray saliencyMap)
 {
 	vector<Mat> featureMaps = featureMapGenerator(image.getMat(), Size(227, 227));
 	saliencyMap.assign(softmax(comb(featureMaps, weights)));
-	for(double i : weights) cout << i << ",";
+	for(unsigned i = 0;i < weights.size();i++) cout << weights[i] << ",";
 	cout << endl;
 	return true;
 }
@@ -157,11 +158,12 @@ vector<unsigned> DeepGaze1::fixationLoc(Mat img, Size input_size)
 	fixation.assign(img.datastart, img.dataend);
 	for(unsigned i = 0; i < fixation.size(); i++)
 	{
-		match.push_back({fixation[i], i});
+		match.push_back(pair<unsigned, unsigned>(fixation[i], i));
 	}
-	sort(match.begin(), match.end(), [](pair<unsigned, unsigned> a, pair<unsigned, unsigned> b) {
-		return b.first < a.first;
-	});
+	sort(match.begin(), match.end(), greater<pair<unsigned, unsigned> >());
+	//sort(match.begin(), match.end(), [](pair<unsigned, unsigned> a, pair<unsigned, unsigned> b) {
+	//	return b.first < a.first;
+	//});
 	for(unsigned i = 0 ; ((i < match.size()) && (match[i].first > 0)) ; i++)
 	{
 		randIndex.push_back(match[i].second);
@@ -174,13 +176,13 @@ double DeepGaze1::loss(vector<double> saliency_sample, vector<double> wei)
 {
 	double res = 0, l1 = 0, l2 = 0;
 
-	for(double i : wei)
+	for(unsigned i = 0;i < wei.size();i++)
 	{
-		l1 += abs(i);
+		l1 += abs(wei[i]);
 	}
-	for(double i : wei)
+	for(unsigned i = 0;i < wei.size();i++)
 	{
-		l2 += i * i;
+		l2 += wei[i] * wei[i];
 	}
 	for(unsigned i = 0; i < saliency_sample.size(); i++)
 	{
@@ -227,29 +229,29 @@ vector<double> DeepGaze1::evalGrad(vector<Mat>& featureMaps, vector<unsigned>& r
 	return grad;
 }
 
-void DeepGaze1::training(vector<Mat>& images, vector<Mat>& fixMaps, Size input_size, double momentum, double alpha, double decay)
+void DeepGaze1::training(vector<Mat>& images, vector<Mat>& fixMaps, unsigned batch_size, double momentum, double alpha, double decay, Size input_size)
 {
-  vector<unsigned> randIndex = batchIndex(images.size(), min(100, (int)images.size()));
+  vector<unsigned> randIndex = batchIndex(images.size(), min(batch_size, (unsigned)images.size()));
   vector<unsigned> fixLoc;
   vector<Mat> featureMaps;
   vector<double> grad;
   vector<double> vel(weights.size(), 0);
 
   unsigned n = 0;
-  for(unsigned i : randIndex)
+  for(unsigned i = 0;i < randIndex.size();i++)
   {
-    featureMaps = featureMapGenerator(images[i], input_size);
-    fixLoc = fixationLoc(fixMaps[i], input_size);
-    grad = evalGrad(featureMaps, fixLoc, weights, input_size);
-    for(unsigned j = 0; j < grad.size(); j++)
-    {
-    	vel[j] = momentum * vel[j] + grad[j];
-    	weights[j] -= alpha * vel[j] * exp(-decay * n);
-    }
-    n++;
-    double avgGrad = accumulate(grad.begin(), grad.end(), 0.0) / weights.size();
-    double avgWeight = accumulate(weights.begin(), weights.end(), 0.0) / weights.size();
-    cout << n << " " << avgGrad << " " << avgWeight << endl;
+	  featureMaps = featureMapGenerator(images[randIndex[i]], input_size);
+	  fixLoc = fixationLoc(fixMaps[randIndex[i]], input_size);
+	  grad = evalGrad(featureMaps, fixLoc, weights, input_size);
+	  for(unsigned j = 0; j < grad.size(); j++)
+	  {
+		  vel[j] = momentum * vel[j] + grad[j];
+		  weights[j] -= alpha * vel[j] * exp(-decay * n);
+	  }
+	  n++;
+	  double avgGrad = accumulate(grad.begin(), grad.end(), 0.0) / weights.size();
+	  double avgWeight = accumulate(weights.begin(), weights.end(), 0.0) / weights.size();
+	  cout << n << " " << avgGrad << " " << avgWeight << endl;
   }
 }
 
@@ -277,9 +279,7 @@ double DeepGaze1::computeAUC(InputArray _saliencyMap, InputArray _fixtionMap)
 			if(fixtion.at<uchar>(i, j) > 0) threshold_list.push_back(saliency.at<double>(i, j));
 		}
 	}
-	sort(threshold_list.begin(), threshold_list.end(), [](double a, double b) {
-		return b < a;
-	});
+	sort(threshold_list.begin(), threshold_list.end(), greater<double>());
 
 	vector<double> tp(1, 0), fp(1, 0);
 	for(unsigned i = 0;i < threshold_list.size();i++)

@@ -181,7 +181,7 @@ public:
 		return computeSaliencyImpl(image, saliencyMap);
 	}
 	Mat saliencyMapGenerator(Mat, Size = Size(227, 227));
-	void training(std::vector<Mat>&, std::vector<Mat>&, Size = Size(227, 227), double = 0.9, double = 0.01, double = 0.01);
+	void training(std::vector<Mat>&, std::vector<Mat>&, unsigned = 100, double = 0.9, double = 0.01, double = 0.01, Size = Size(227, 227));
 	double computeAUC(InputArray _saliencyMap, InputArray _fixtionMap);
 	void saliencyMapVisualize(InputArray _saliencyMap);
 protected:
