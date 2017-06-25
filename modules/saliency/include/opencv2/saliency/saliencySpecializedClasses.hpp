@@ -180,7 +180,7 @@ public:
 		return computeSaliencyImpl(image, saliencyMap);
 	}
 	Mat saliencyMapGenerator(Mat, Size = Size(227, 227));
-	void training(std::vector<Mat>&, std::vector<Mat>&, Size = Size(227, 227));
+	void training(std::vector<Mat>&, std::vector<Mat>&, Size = Size(227, 227), double = 0.9, double = 0.01, double = 0.01);
 	double computeAUC(InputArray _saliencyMap, InputArray _fixtionMap);
 	void saliencyMapVisualize(InputArray _saliencyMap);
 protected:
@@ -188,11 +188,11 @@ protected:
     std::vector<Mat> featureMapGenerator(Mat, Size);
     static Mat comb(std::vector<Mat>&, std::vector<double>);
     static Mat softmax(Mat);
-    static std::vector<double> evalGrad(std::vector<Mat>&, std::vector<unsigned>&, std::vector<double>);
+    static std::vector<double> evalGrad(std::vector<Mat>&, std::vector<unsigned>&, std::vector<double>, Size);
     std::vector<unsigned> batchIndex(unsigned, unsigned);
     static double loss(std::vector<double>, std::vector<double>);
     static std::vector<double> mapSampler(Mat, std::vector<unsigned>);
-    std::vector<unsigned> fixationLoc(Mat);
+    std::vector<unsigned> fixationLoc(Mat, Size);
 };
 
 

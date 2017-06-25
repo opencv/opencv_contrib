@@ -189,10 +189,10 @@ vector<unsigned> DeepGaze1::batchIndex(unsigned total, unsigned batchSize)
 
 
 
-vector<unsigned> DeepGaze1::fixationLoc(Mat img)
+vector<unsigned> DeepGaze1::fixationLoc(Mat img, Size input_size)
 {
 	vector<unsigned> randIndex;
-	resize(img, img, Size(227, 227), 0, 0, INTER_AREA);
+	resize(img, img, input_size, 0, 0, INTER_AREA);
 	vector<unsigned> fixation;
 	vector<pair<unsigned, unsigned> > match;
 	fixation.assign(img.datastart, img.dataend);
@@ -240,7 +240,7 @@ vector<double> DeepGaze1::mapSampler(Mat saliency, vector<unsigned> randIndex)
 	return saliency_sample;
 }
 
-vector<double> DeepGaze1::evalGrad(vector<Mat>& featureMaps, vector<unsigned>& randIndex, vector<double> wei)
+vector<double> DeepGaze1::evalGrad(vector<Mat>& featureMaps, vector<unsigned>& randIndex, vector<double> wei, Size input_size)
 {
 	vector<double> grad(featureMaps.size(), 0);
 
@@ -253,7 +253,7 @@ vector<double> DeepGaze1::evalGrad(vector<Mat>& featureMaps, vector<unsigned>& r
 	for(unsigned i = 0; i < wei.size(); i++)
 	{
 		Mat saliency_new = c.clone();
-		Mat temp(227, 227, CV_64F, Scalar::all(0.0));
+		Mat temp(input_size, CV_64F, Scalar::all(0.0));
 		temp += 0.0000000001 * featureMaps[i];
 		GaussianBlur(temp, temp, Size(35, 35), 0, 0, BORDER_CONSTANT);
 		saliency_new += temp;
@@ -268,7 +268,7 @@ vector<double> DeepGaze1::evalGrad(vector<Mat>& featureMaps, vector<unsigned>& r
 	return grad;
 }
 
-void DeepGaze1::training(vector<Mat>& images, vector<Mat>& fixMaps, Size input_size)
+void DeepGaze1::training(vector<Mat>& images, vector<Mat>& fixMaps, Size input_size, double momentum, double alpha, double decay)
 {
   vector<unsigned> randIndex = batchIndex(images.size(), min(100, (int)images.size()));
   vector<vector<unsigned> > fixLoc_list;
@@ -282,12 +282,12 @@ void DeepGaze1::training(vector<Mat>& images, vector<Mat>& fixMaps, Size input_s
   for(unsigned i : randIndex)
   {
     vector<Mat> featureMaps = featureMapGenerator(images[i], input_size);
-    vector<unsigned> fixLoc = fixationLoc(fixMaps[i]);
-    grad = evalGrad(featureMaps, fixLoc, weights);
+    vector<unsigned> fixLoc = fixationLoc(fixMaps[i], input_size);
+    grad = evalGrad(featureMaps, fixLoc, weights, input_size);
     for(unsigned j = 0; j < grad.size(); j++)
     {
-    	vel[j] = 0.9 * vel[j] + grad[j];
-    	weights[j] -= 0.01 * vel[j] * exp(-0.01 * n);
+    	vel[j] = momentum * vel[j] + grad[j];
+    	weights[j] -= alpha * vel[j] * exp(-decay * n);
     }
     n++;
     double avgGrad = accumulate(grad.begin(), grad.end(), 0.0) / weights.size();
