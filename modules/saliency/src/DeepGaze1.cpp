@@ -271,8 +271,6 @@ vector<double> DeepGaze1::evalGrad(vector<Mat>& featureMaps, vector<unsigned>& r
 void DeepGaze1::training(vector<Mat>& images, vector<Mat>& fixMaps, Size input_size, double momentum, double alpha, double decay)
 {
   vector<unsigned> randIndex = batchIndex(images.size(), min(100, (int)images.size()));
-  vector<vector<unsigned> > fixLoc_list;
-  vector<vector<Mat> > featureMaps_list;
   vector<unsigned> fixLoc;
   vector<Mat> featureMaps;
   vector<double> grad;
@@ -281,8 +279,8 @@ void DeepGaze1::training(vector<Mat>& images, vector<Mat>& fixMaps, Size input_s
   unsigned n = 0;
   for(unsigned i : randIndex)
   {
-    vector<Mat> featureMaps = featureMapGenerator(images[i], input_size);
-    vector<unsigned> fixLoc = fixationLoc(fixMaps[i], input_size);
+    featureMaps = featureMapGenerator(images[i], input_size);
+    fixLoc = fixationLoc(fixMaps[i], input_size);
     grad = evalGrad(featureMaps, fixLoc, weights, input_size);
     for(unsigned j = 0; j < grad.size(); j++)
     {
