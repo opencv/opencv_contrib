@@ -169,6 +169,7 @@ private:
 public:
 	DeepGaze1();
 	DeepGaze1(std::string, std::string, std::vector<std::string>, unsigned);
+	virtual ~DeepGaze1();
 	CV_WRAP static Ptr<DeepGaze1> create()
 	{
 		return makePtr<DeepGaze1>();

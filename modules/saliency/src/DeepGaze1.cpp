@@ -89,6 +89,8 @@ DeepGaze1::DeepGaze1(string net_proto, string net_caffemodel, vector<string> sel
 	}
 }
 
+DeepGaze1::~DeepGaze1(){}
+
 vector<Mat> DeepGaze1::featureMapGenerator(Mat img, Size input_size)
 {
 	vector<Mat> featureMaps;
