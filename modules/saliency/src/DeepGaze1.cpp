@@ -5,7 +5,7 @@
 #include <opencv2/dnn.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
-#include "precomp.hpp"
+#include <opencv2/saliency.hpp>
 #include <vector>
 #include <cmath>
 #include <string>
@@ -59,8 +59,10 @@ vector<Mat> DeepGaze1::featureMapGenerator(Mat img, Size input_size)
 
 	resize(img, img, input_size, 0, 0, INTER_AREA);//hard coded
 	Mat inputBlob = blobFromImage(img);   //Convert Mat to batch of images
-	net.setBlob(".data", inputBlob);        //set the network input
-	net.forward();                          //compute output
+	net.setInput(inputBlob, "data");
+	net.forward();
+	//net.setBlob(".data", inputBlob);        //set the network input
+	//net.forward();                          //compute output
 	for(unsigned i = 0; i < layers_names.size(); i++)
 	{
 		Mat blob_set = net.getBlob(layers_names[i]);
