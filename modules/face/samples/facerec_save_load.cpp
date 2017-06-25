@@ -115,17 +115,17 @@ int main(int argc, const char *argv[]) {
     // 10 principal components (read Eigenfaces), then call
     // the factory method like this:
     //
-    //      cv::createEigenFaceRecognizer(10);
+    //      cv::face::EigenFaceRecognizer::create(10);
     //
     // If you want to create a FaceRecognizer with a
     // confidence threshold (e.g. 123.0), call it with:
     //
-    //      cv::createEigenFaceRecognizer(10, 123.0);
+    //      cv::face::EigenFaceRecognizer::create(10, 123.0);
     //
     // If you want to use _all_ Eigenfaces and have a threshold,
     // then call the method like this:
     //
-    //      cv::createEigenFaceRecognizer(0, 123.0);
+    //      cv::face::EigenFaceRecognizer::create(0, 123.0);
     //
     Ptr<EigenFaceRecognizer> model0 = EigenFaceRecognizer::create();
     model0->train(images, labels);

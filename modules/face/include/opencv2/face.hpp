@@ -113,7 +113,7 @@ int num_components = 10;
 double threshold = 10.0;
 // Then if you want to have a cv::FaceRecognizer with a confidence threshold,
 // create the concrete implementation with the appropiate parameters:
-Ptr<FaceRecognizer> model = createEigenFaceRecognizer(num_components, threshold);
+Ptr<FaceRecognizer> model = EigenFaceRecognizer::create(num_components, threshold);
 @endcode
 
 Sometimes it's impossible to train the model, just to experiment with threshold values. Thanks to
@@ -148,7 +148,7 @@ FaceRecognizer:
 
 @code
 // Create a FaceRecognizer:
-Ptr<FaceRecognizer> model = createEigenFaceRecognizer();
+Ptr<FaceRecognizer> model = EigenFaceRecognizer::create();
 // And here's how to get its name:
 String name = model->name();
 @endcode
@@ -192,7 +192,7 @@ public:
     // Create a new Fisherfaces model and retain all available Fisherfaces,
     // this is the most common usage of this specific FaceRecognizer:
     //
-    Ptr<FaceRecognizer> model =  createFisherFaceRecognizer();
+    Ptr<FaceRecognizer> model =  FisherFaceRecognizer::create();
     @endcode
 
     And finally train it on the given dataset (the face images and labels):
@@ -223,7 +223,7 @@ public:
     // Create a new LBPH model (it can be updated) and use the default parameters,
     // this is the most common usage of this specific FaceRecognizer:
     //
-    Ptr<FaceRecognizer> model =  createLBPHFaceRecognizer();
+    Ptr<FaceRecognizer> model =  LBPHFaceRecognizer::create();
     // This is the common interface to train all of the available cv::FaceRecognizer
     // implementations:
     //
@@ -241,7 +241,7 @@ public:
     // with the new features extracted from newImages!
     @endcode
 
-    Calling update on an Eigenfaces model (see createEigenFaceRecognizer), which doesn't support
+    Calling update on an Eigenfaces model (see EigenFaceRecognizer::create), which doesn't support
     updating, will throw an error similar to:
 
     @code
@@ -337,6 +337,9 @@ public:
 
     /** @overload */
     virtual void read(const FileNode& fn) = 0;
+
+    /** @overload */
+    virtual bool empty() const = 0;
 
     /** @brief Sets string info for the specified model's label.
 

@@ -100,6 +100,10 @@ public:
     // See FaceRecognizer::save.
     void write(FileStorage& fs) const;
 
+    bool empty() const {
+        return (_labels.empty());
+    }
+
     CV_IMPL_PROPERTY(int, GridX, _grid_x)
     CV_IMPL_PROPERTY(int, GridY, _grid_y)
     CV_IMPL_PROPERTY(int, Radius, _radius)
@@ -111,6 +115,7 @@ public:
 
 
 void LBPH::read(const FileNode& fs) {
+    fs["threshold"] >> _threshold;
     fs["radius"] >> _radius;
     fs["neighbors"] >> _neighbors;
     fs["grid_x"] >> _grid_x;
@@ -133,6 +138,7 @@ void LBPH::read(const FileNode& fs) {
 
 // See FaceRecognizer::save.
 void LBPH::write(FileStorage& fs) const {
+    fs << "threshold" << _threshold;
     fs << "radius" << _radius;
     fs << "neighbors" << _neighbors;
     fs << "grid_x" << _grid_x;
