@@ -1,43 +1,47 @@
-//
-// Created by Nan Yang on 17/6/14.
-//
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 
 #include "precomp.hpp"
 #include "opencv2/photometric_calib/Reader.hpp"
 
 namespace cv { namespace photometric_calib{
 
-unsigned long Reader::getNumImages()
+unsigned long Reader::getNumImages() const
 {
     return (unsigned long)files.size();
 }
 
-void Reader::loadTimestamps(std::string timesFile)
+void Reader::loadTimestamps(const std::string &timesFile)
 {
-    std::ifstream timesStream;
-    timesStream.open(timesFile.c_str());
+    CV_Assert(timesFile.substr(timesFile.find_last_of(".") + 1) == "yaml" || timesFile.substr(timesFile.find_last_of(".") + 1) == "yml");
+
+    FileStorage timeFile;
+    timeFile.open(timesFile, FileStorage::READ);
     timeStamps.clear();
     exposureTimes.clear();
-    while (!timesStream.eof() && timesStream.good())
-    {
-        char buf[1000];
-        timesStream.getline(buf, 1000);
 
-        int id = 0;
-        double timeStamp = 0.0;
-        float exposureTime = 0.0;
+    CV_Assert(timeFile.isOpened());
 
-        CV_Assert(3 == scanf(buf, "%d %lf %f", &id, &timeStamp, &exposureTime));
+    FileNode timeStampNode = timeFile["times"];
+    FileNode exposureTimeNode = timeFile["exposures"];
 
-        timeStamps.push_back(timeStamp);
-        exposureTimes.push_back(exposureTime);
-    }
-    timesStream.close();
+    CV_Assert(timeStampNode.type() == FileNode::SEQ && exposureTimeNode.type() == FileNode::SEQ);
+
+    FileNodeIterator itTs = timeStampNode.begin(), itTsEnd = timeStampNode.end();
+    FileNodeIterator itEt = exposureTimeNode.begin(), itEtEnd = exposureTimeNode.end();
+
+    for (; itTs != itTsEnd; ++itTs)
+        timeStamps.push_back((double)*itTs);
+    for (; itEt != itEtEnd; ++itEt)
+        exposureTimes.push_back((float)*itEt);
+
+    timeFile.release();
 
     CV_Assert(timeStamps.size() == getNumImages() && exposureTimes.size() == getNumImages());
 }
 
-Reader::Reader(std::string folderPath, std::string timesPath)
+Reader::Reader(const std::string &folderPath, const std::string &timesPath)
 {
     String cvFolderPath(folderPath);
     glob(cvFolderPath, files);
@@ -48,11 +52,11 @@ Reader::Reader(std::string folderPath, std::string timesPath)
     width = 0;
     height = 0;
 
-    for(unsigned long i = 0; i < files.size(); ++i)
+    for(size_t i = 0; i < files.size(); ++i)
     {
         Mat img = imread(files[i]);
         CV_Assert(img.type() == CV_8U);
-        if(0 == i)
+        if(i == 0)
         {
             width = img.cols;
             height = img.rows;
@@ -62,17 +66,15 @@ Reader::Reader(std::string folderPath, std::string timesPath)
             CV_Assert(width == img.cols && height == img.rows);
         }
     }
-
-    std::cout<<getNumImages()<<" imgases from"<<folderPath<<" loaded successfully!"<<std::endl;
 }
 
-double Reader::getTimestamp(unsigned long id)
+double Reader::getTimestamp(unsigned long id) const
 {
     CV_Assert(id < timeStamps.size());
     return timeStamps[id];
 }
 
-float Reader::getExposureTime(unsigned long id)
+float Reader::getExposureTime(unsigned long id) const
 {
     CV_Assert(id < exposureTimes.size());
     return exposureTimes[id];
