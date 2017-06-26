@@ -37,7 +37,7 @@ list(APPEND DNN_OBJ_LIBRARIES "${GLOB_LIBRARIES}")
 
 set(TARGET train_obj_detect)
 set(SOURCE_FILES src/train_model.cpp)
-ocv_add_executable(${TARGET} {SOURCE_FILES})
+ocv_add_executable(${TARGET} ${SOURCE_FILES})
 ocv_target_link_libraries(${TARGET} ${DNN_OBJ_LIBRARIES})
 set_target_properties(${TARGET} PROPERTIES
                       ARCHIVE_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH}
