@@ -65,6 +65,26 @@ static void computeShapeByReshapeMask(const MatShape &srcShape,
         srcRange.end = srcRange.end == INT_MAX ? srcShapeSize : srcRange.start + sz;
     }
 
+    bool explicitMask = !maskShape.empty();  // All mask values are positive.
+    for (int i = 0, n = maskShape.size(); i < n && explicitMask; ++i)
+    {
+        explicitMask = maskShape[i] > 0;
+    }
+    // Working range of source shape is a range where area(src) == area(mask).
+    if (explicitMask)
+    {
+        int maskTotal = total(maskShape);
+        for (int i = srcRange.start + 1; i < srcRange.end; ++i)
+        {
+            if (total(srcShape, i, srcRange.end) != maskTotal)
+            {
+                srcRange.start = i - 1;
+                break;
+            }
+        }
+        CV_Assert(total(srcShape, srcRange.start, srcRange.end) == maskTotal);
+    }
+
     CV_Assert(0 <= srcRange.start && srcRange.start <= srcRange.end && srcRange.end <= srcShapeSize);
     int dstShapeSize = srcShapeSize - srcRange.size() + maskShapeSize;
     dstShape.resize(dstShapeSize);

@@ -87,17 +87,17 @@ static void runTorchNet(String prefix, String outLayerName = "",
     ASSERT_NO_THROW( inp = readTorchBlob(_tf(prefix + "_input" + suffix), isBinary) );
     ASSERT_NO_THROW( outRef = readTorchBlob(_tf(prefix + "_output" + suffix), isBinary) );
 
-    net.setBlob(".0", inp);
-    net.forward();
     if (outLayerName.empty())
         outLayerName = net.getLayerNames().back();
-    Mat out = net.getBlob(outLayerName);
 
-    normAssert(outRef, out);
+    net.setInput(inp, "0");
+    std::vector<Mat> outBlobs;
+    net.forward(outBlobs, outLayerName);
+    normAssert(outRef, outBlobs[0]);
 
     if (check2ndBlob)
     {
-        Mat out2 = net.getBlob(outLayerName + ".1");
+        Mat out2 = outBlobs[1];
         Mat ref2 = readTorchBlob(_tf(prefix + "_output_2" + suffix), isBinary);
         normAssert(out2, ref2);
     }
@@ -122,6 +122,7 @@ TEST(Torch_Importer, run_reshape)
 {
     runTorchNet("net_reshape");
     runTorchNet("net_reshape_batch");
+    runTorchNet("net_reshape_single_sample");
 }
 
 TEST(Torch_Importer, run_linear)
@@ -131,12 +132,12 @@ TEST(Torch_Importer, run_linear)
 
 TEST(Torch_Importer, run_paralel)
 {
-    runTorchNet("net_parallel", "l2_torchMerge");
+    runTorchNet("net_parallel", "l5_torchMerge");
 }
 
 TEST(Torch_Importer, run_concat)
 {
-    runTorchNet("net_concat", "l2_torchMerge");
+    runTorchNet("net_concat", "l5_torchMerge");
 }
 
 TEST(Torch_Importer, run_deconv)
@@ -184,14 +185,21 @@ TEST(Torch_Importer, ENet_accuracy)
     Mat sample = imread(_tf("street.png", false));
     Mat inputBlob = blobFromImage(sample, 1./255);
 
-    net.setBlob("", inputBlob);
-    net.forward();
-    Mat out = net.getBlob(net.getLayerNames().back());
+    net.setInput(inputBlob, "");
+    Mat out = net.forward();
     Mat ref = blobFromNPY(_tf("torch_enet_prob.npy", false));
     // Due to numerical instability in Pooling-Unpooling layers (indexes jittering)
     // thresholds for ENet must be changed. Accuracy of resuults was checked on
     // Cityscapes dataset and difference in mIOU with Torch is 10E-4%
     normAssert(ref, out, "", 0.00044, 0.44);
+
+    const int N = 3;
+    for (int i = 0; i < N; i++)
+    {
+        net.setInput(inputBlob, "");
+        Mat out = net.forward();
+        normAssert(ref, out, "", 0.00044, 0.44);
+    }
 }
 
 }

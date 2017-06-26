@@ -118,9 +118,8 @@ void testLayerUsingCaffeModels(String basename, bool useCaffeModel = false, bool
     Mat inp = blobFromNPY(inpfile);
     Mat ref = blobFromNPY(outfile);
 
-    net.setBlob(".input", inp);
-    net.forward();
-    Mat out = net.getBlob("output");
+    net.setInput(inp, "input");
+    Mat out = net.forward("output");
 
     normAssert(ref, out);
 }
@@ -170,14 +169,20 @@ TEST(Layer_Test_MVN, Accuracy)
      testLayerUsingCaffeModels("layer_mvn");
 }
 
-TEST(Layer_Test_Reshape, squeeze)
+void testReshape(const MatShape& inputShape, const MatShape& targetShape,
+                 int axis = 0, int num_axes = -1, bool reorder_dims = false,
+                 MatShape mask = MatShape())
 {
     LayerParams params;
-    params.set("axis", 2);
-    params.set("num_axes", 1);
+    params.set("axis", axis);
+    params.set("num_axes", num_axes);
+    params.set("reorder_dims", reorder_dims);
+    if (!mask.empty())
+    {
+        params.set("dim", DictValue::arrayInt<int*>(&mask[0], mask.size()));
+    }
 
-    int sz[] = {4, 3, 1, 2};
-    Mat inp(4, sz, CV_32F);
+    Mat inp(inputShape.size(), &inputShape[0], CV_32F);
     std::vector<Mat> inpVec(1, inp);
     std::vector<Mat> outVec, intVec;
 
@@ -186,9 +191,23 @@ TEST(Layer_Test_Reshape, squeeze)
 
     Mat& out = outVec[0];
     MatShape shape(out.size.p, out.size.p + out.dims);
-    int sh0[] = {4, 3, 2};
-    MatShape shape0(sh0, sh0+3);
-    EXPECT_EQ(shape, shape0);
+    EXPECT_EQ(shape, targetShape);
+}
+
+TEST(Layer_Test_Reshape, Accuracy)
+{
+    {
+        int inp[] = {4, 3, 1, 2};
+        int out[] = {4, 3, 2};
+        testReshape(MatShape(inp, inp + 4), MatShape(out, out + 3), 2, 1);
+    }
+    {
+        int inp[] = {1, 128, 4, 4};
+        int out[] = {1, 2048};
+        int mask[] = {-1, 2048};
+        testReshape(MatShape(inp, inp + 4), MatShape(out, out + 2), 0, -1, true,
+                    MatShape(mask, mask + 2));
+    }
 }
 
 TEST(Layer_Test_BatchNorm, Accuracy)
@@ -244,9 +263,8 @@ static void test_Reshape_Split_Slice_layers()
     RNG rng(0);
     rng.fill(input, RNG::UNIFORM, -1, 1);
 
-    net.setBlob(".input", input);
-    net.forward();
-    Mat output = net.getBlob("output");
+    net.setInput(input, "input");
+    Mat output = net.forward("output");
 
     normAssert(input, output);
 }

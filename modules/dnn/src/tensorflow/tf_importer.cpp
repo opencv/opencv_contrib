@@ -574,7 +574,6 @@ void TFImporter::populateNet(Net dstNet)
         {
             CV_Assert(layer.input_size() == 2);
 
-            layerParams.set("axis", 0);
             layerParams.set("bias_term", false);
             layerParams.blobs.resize(1);
 
@@ -622,7 +621,6 @@ void TFImporter::populateNet(Net dstNet)
         }
         else if (type == "Softmax")
         {
-            layerParams.set("axis", -1);
             int id = dstNet.addLayer(name, "Softmax", layerParams);
             layer_id[name] = id;
 
@@ -705,7 +703,7 @@ void TFImporter::populateNet(Net dstNet)
             std::vector<String> netInputs(1);
             netInputs[0] = name;
             layer_id[name] = 0;
-            dstNet.setNetInputs(netInputs);
+            dstNet.setInputsNames(netInputs);
         }
         else if (type == "Split") {
             // TODO: determing axis index remapping by input dimensions order of input blob

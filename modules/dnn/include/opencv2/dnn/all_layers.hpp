@@ -201,9 +201,15 @@ namespace dnn
         String padMode;
     };
 
+    class CV_EXPORTS ActivationLayer;
+    class CV_EXPORTS BatchNormLayer;
+
     class CV_EXPORTS ConvolutionLayer : public BaseConvolutionLayer
     {
     public:
+        virtual bool setActivation(const Ptr<ActivationLayer>& layer) = 0;
+        virtual bool setBatchNorm(const Ptr<BatchNormLayer>& layer) = 0;
+
         static Ptr<BaseConvolutionLayer> create(const LayerParams& params);
     };
 
@@ -243,6 +249,7 @@ namespace dnn
         int type;
         Size kernel, stride, pad;
         bool globalPooling;
+        bool computeMaxIdx;
         String padMode;
 
         static Ptr<PoolingLayer> create(const LayerParams& params);
@@ -327,8 +334,14 @@ namespace dnn
     };
 
     /* Activations */
+    class CV_EXPORTS ActivationLayer : public Layer
+    {
+    public:
+        virtual void forwardSlice(const float* src, float* dst, int len,
+                                  size_t outPlaneSize, int cn0, int cn1) const = 0;
+    };
 
-    class CV_EXPORTS ReLULayer : public Layer
+    class CV_EXPORTS ReLULayer : public ActivationLayer
     {
     public:
         float negativeSlope;
@@ -336,37 +349,37 @@ namespace dnn
         static Ptr<ReLULayer> create(const LayerParams &params);
     };
 
-    class CV_EXPORTS ChannelsPReLULayer : public Layer
+    class CV_EXPORTS ChannelsPReLULayer : public ActivationLayer
     {
     public:
         static Ptr<ChannelsPReLULayer> create(const LayerParams& params);
     };
 
-    class CV_EXPORTS TanHLayer : public Layer
+    class CV_EXPORTS TanHLayer : public ActivationLayer
     {
     public:
         static Ptr<TanHLayer> create(const LayerParams &params);
     };
 
-    class CV_EXPORTS SigmoidLayer : public Layer
+    class CV_EXPORTS SigmoidLayer : public ActivationLayer
     {
     public:
         static Ptr<SigmoidLayer> create(const LayerParams &params);
     };
 
-    class CV_EXPORTS BNLLLayer : public Layer
+    class CV_EXPORTS BNLLLayer : public ActivationLayer
     {
     public:
         static Ptr<BNLLLayer> create(const LayerParams &params);
     };
 
-    class CV_EXPORTS AbsLayer : public Layer
+    class CV_EXPORTS AbsLayer : public ActivationLayer
     {
     public:
         static Ptr<AbsLayer> create(const LayerParams &params);
     };
 
-    class CV_EXPORTS PowerLayer : public Layer
+    class CV_EXPORTS PowerLayer : public ActivationLayer
     {
     public:
         float power, scale, shift;
@@ -374,7 +387,7 @@ namespace dnn
         static Ptr<PowerLayer> create(const LayerParams &params);
     };
 
-    /* Layers using in semantic segmentation */
+    /* Layers used in semantic segmentation */
 
     class CV_EXPORTS CropLayer : public Layer
     {
@@ -404,6 +417,7 @@ namespace dnn
         bool hasWeights, hasBias;
         float epsilon;
 
+        virtual void getScaleShift(Mat& scale, Mat& shift) const = 0;
         static Ptr<BatchNormLayer> create(const LayerParams &params);
     };
 

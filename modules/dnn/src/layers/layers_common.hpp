@@ -42,8 +42,6 @@
 #ifndef __OPENCV_DNN_LAYERS_LAYERS_COMMON_HPP__
 #define __OPENCV_DNN_LAYERS_LAYERS_COMMON_HPP__
 #include <opencv2/dnn.hpp>
-#include "op_blas.hpp"
-#include "op_im2col.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
@@ -64,6 +62,25 @@ void getConvPoolOutParams(const Size& inp, const Size &kernel,
 void getConvPoolPaddings(const Size& inp, const Size& out,
                          const Size &kernel, const Size &stride,
                          const String &padMode, Size &pad);
+
+#if CV_SSE2
+#define CV_DNN_TRY_AVX2 1
+
+void fastConv_avx2(const float* weights, size_t wstep, const float* bias,
+                   const float* rowbuf, float* output, const int* outShape,
+                   int blockSize, int vecsize, int vecsize_aligned,
+                   const float* relu, bool initOutput);
+void fastGEMM1T_avx2( const float* vec, const float* weights,
+                     size_t wstep, const float* bias,
+                     float* dst, int nvecs, int vecsize );
+void fastGEMM_avx2( const float* aptr, size_t astep, const float* bptr0,
+                   size_t bstep, float* cptr, size_t cstep,
+                   int ma, int na, int nb );
+
+#else
+#define CV_DNN_TRY_AVX2 0
+#endif
+
 }
 }
 

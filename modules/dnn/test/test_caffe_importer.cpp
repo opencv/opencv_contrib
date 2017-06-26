@@ -94,10 +94,8 @@ TEST(Reproducibility_AlexNet, Accuracy)
     if (sample.size() != inputSize)
         resize(sample, sample, inputSize);
 
-    net.setBlob(".data", blobFromImage(sample, 1.));
-    net.forward();
-
-    Mat out = net.getBlob("prob");
+    net.setInput(blobFromImage(sample), "data");
+    Mat out = net.forward("prob");
     Mat ref = blobFromNPY(_tf("caffe_alexnet_prob.npy"));
     normAssert(ref, out);
 }
@@ -125,13 +123,38 @@ TEST(Reproducibility_FCN, Accuracy)
     std::vector<size_t> weights, blobs;
     net.getMemoryConsumption(shape(1,3,227,227), layerIds, weights, blobs);
 
-    net.setBlob(".data", blobFromImage(sample, 1.));
-    net.forward();
-
-    Mat out = net.getBlob("score");
+    net.setInput(blobFromImage(sample), "data");
+    Mat out = net.forward("score");
     Mat ref = blobFromNPY(_tf("caffe_fcn8s_prob.npy"));
     normAssert(ref, out);
 }
 #endif
 
+TEST(Reproducibility_SSD, Accuracy)
+{
+    Net net;
+    {
+        const string proto = findDataFile("dnn/ssd_vgg16.prototxt", false);
+        const string model = findDataFile("dnn/VGG_ILSVRC2016_SSD_300x300_iter_440000.caffemodel", false);
+        Ptr<Importer> importer = createCaffeImporter(proto, model);
+        ASSERT_TRUE(importer != NULL);
+        importer->populateNet(net);
+    }
+
+    Mat sample = imread(_tf("street.png"));
+    ASSERT_TRUE(!sample.empty());
+
+    if (sample.channels() == 4)
+        cvtColor(sample, sample, COLOR_BGRA2BGR);
+
+    sample.convertTo(sample, CV_32F);
+    resize(sample, sample, Size(300, 300));
+
+    Mat in_blob = blobFromImage(sample);
+    net.setInput(in_blob, "data");
+    Mat out = net.forward("detection_out");
+
+    Mat ref = blobFromNPY(_tf("ssd_out.npy"));
+    normAssert(ref, out);
+}
 }

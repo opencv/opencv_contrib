@@ -114,21 +114,20 @@ int main(int argc, char **argv)
         exit(-1);
     }
 
-    resize(img, img, Size(224, 224));                   //GoogLeNet accepts only 224x224 RGB-images
-    Mat inputBlob = blobFromImage(img);   //Convert Mat to batch of images
+    //GoogLeNet accepts only 224x224 RGB-images
+    Mat inputBlob = blobFromImage(img, 1, Size(224, 224),
+                                  Scalar(104, 117, 123));   //Convert Mat to batch of images
     //! [Prepare blob]
 
     //! [Set input blob]
-    net.setBlob(".data", inputBlob);        //set the network input
+    net.setInput(inputBlob, "data");        //set the network input
     //! [Set input blob]
 
     //! [Make forward pass]
-    net.forward();                          //compute output
+    Mat prob = net.forward("prob");                          //compute output
     //! [Make forward pass]
 
     //! [Gather output]
-    Mat prob = net.getBlob("prob");   //gather output of "prob" layer
-
     int classId;
     double classProb;
     getMaxClass(prob, &classId, &classProb);//find the best class

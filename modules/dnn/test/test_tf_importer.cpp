@@ -40,12 +40,11 @@ TEST(Test_TensorFlow, read_inception)
     resize(sample, input, Size(224, 224));
     input -= 128; // mean sub
 
-    Mat inputBlob = blobFromImage(input, 1.);
+    Mat inputBlob = blobFromImage(input);
 
-    net.setBlob("_input.input", inputBlob);
-    net.forward();
+    net.setInput(inputBlob, "input");
+    Mat out = net.forward("softmax2");
 
-    Mat out = net.getBlob("softmax2");
     std::cout << out.dims << std::endl;
 }
 
@@ -62,12 +61,11 @@ TEST(Test_TensorFlow, inception_accuracy)
     Mat sample = imread(_tf("grace_hopper_227.png"));
     ASSERT_TRUE(!sample.empty());
     resize(sample, sample, Size(224, 224));
-    Mat inputBlob = blobFromImage(sample, 1.);
+    Mat inputBlob = blobFromImage(sample);
 
-    net.setBlob(".input", inputBlob);
-    net.forward();
+    net.setInput(inputBlob, "input");
+    Mat out = net.forward("softmax2");
 
-    Mat out = net.getBlob("softmax2");
     Mat ref = blobFromNPY(_tf("tf_inception_prob.npy"));
 
     normAssert(ref, out);

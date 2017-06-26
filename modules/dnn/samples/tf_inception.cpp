@@ -26,7 +26,7 @@ const String keys =
                        "https://storage.googleapis.com/download.tensorflow.org/models/inception5h.zip }"
         "{model m   |tensorflow_inception_graph.pb| path to TensorFlow .pb model file }"
         "{image i   || path to image file }"
-        "{i_blob    | .input | input blob name) }"
+        "{i_blob    | input | input blob name) }"
         "{o_blob    | softmax2 | output blob name) }"
         "{c_names c | imagenet_comp_graph_label_strings.txt | path to file with classnames for class id }"
         "{result r  || path to save output blob (optional, binary format, NCHW order) }"
@@ -101,20 +101,17 @@ int main(int argc, char **argv)
     //! [Prepare blob]
     inputBlob -= 117.0;
     //! [Set input blob]
-    net.setBlob(inBlobName, inputBlob);        //set the network input
+    net.setInput(inputBlob, inBlobName);        //set the network input
     //! [Set input blob]
 
     cv::TickMeter tm;
     tm.start();
 
     //! [Make forward pass]
-    net.forward();                          //compute output
+    Mat result = net.forward(outBlobName);                          //compute output
     //! [Make forward pass]
 
     tm.stop();
-
-    //! [Gather output]
-    Mat result = net.getBlob(outBlobName);   //gather output of "prob" layer
 
     if (!resultFile.empty()) {
         CV_Assert(result.isContinuous());

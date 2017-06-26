@@ -72,7 +72,7 @@ public:
     {
         CV_Assert(inputs.size() == 1);
 
-        Layer::getMemoryShapes(inputs, outputsCount >= 0 ? outputsCount : requiredOutputs,
+        Layer::getMemoryShapes(inputs, max(1, outputsCount >= 0 ? outputsCount : requiredOutputs),
                                outputs, internals);
         return true;
     }
@@ -81,6 +81,7 @@ public:
     {
         for (size_t i = 0; i < outputs.size(); i++)
         {
+            CV_Assert(inputs[0]->total() == outputs[i].total());
             if (outputs[i].data != inputs[0]->data)
                 inputs[0]->copyTo(outputs[i]);
         }

@@ -11,6 +11,7 @@ Implementation of Scale layer.
 
 #include "../precomp.hpp"
 #include "layers_common.hpp"
+#include "op_halide.hpp"
 #include <opencv2/dnn/shape_utils.hpp>
 
 namespace cv
@@ -34,6 +35,12 @@ public:
     {
         Layer::getMemoryShapes(inputs, requiredOutputs, outputs, internals);
         return true;
+    }
+
+    virtual bool supportBackend(int backendId)
+    {
+        return backendId == DNN_BACKEND_DEFAULT ||
+               backendId == DNN_BACKEND_HALIDE && haveHalide();
     }
 
     void forward(std::vector<Mat*> &inputs, std::vector<Mat> &outputs, std::vector<Mat> &internals)
@@ -64,6 +71,58 @@ public:
             }
         }
     }
+
+    virtual Ptr<BackendNode> tryAttach(const Ptr<BackendNode>& node)
+    {
+        switch (node->backendId)
+        {
+            case DNN_BACKEND_HALIDE:
+            {
+#ifdef HAVE_HALIDE
+                auto base = node.dynamicCast<HalideBackendNode>();
+                Halide::Func& input = base->funcs.back();
+                Halide::Var x("x"), y("y"), c("c"), n("n");
+                Halide::Func top = attachHalide(input(x, y, c, n));
+                return Ptr<BackendNode>(new HalideBackendNode(base, top));
+#endif  // HAVE_HALIDE
+                break;
+            }
+        }
+        return Ptr<BackendNode>();
+    }
+
+    virtual Ptr<BackendNode> initHalide(const std::vector<Ptr<BackendWrapper> > &inputs)
+    {
+#ifdef HAVE_HALIDE
+        Halide::Buffer<float> input = halideBuffer(inputs[0]);
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+        Halide::Func top = attachHalide(input(x, y, c, n));
+        return Ptr<BackendNode>(new HalideBackendNode(top));
+#endif  // HAVE_HALIDE
+        return Ptr<BackendNode>();
+    }
+
+#ifdef HAVE_HALIDE
+    // attachHalide can work both with Halide::Buffer and Halide::Func. In the
+    // second case it will be a fusion.
+    Halide::Func attachHalide(const Halide::Expr& input)
+    {
+        Halide::Func top = (name.empty() ? Halide::Func() : Halide::Func(name));
+        Halide::Var x("x"), y("y"), c("c"), n("n");
+
+        const int numChannels = blobs[0].total();
+
+        auto weights = wrapToHalideBuffer(blobs[0], {numChannels});
+        Halide::Expr topExpr = input * weights(c);
+        if (hasBias)
+        {
+            auto bias = wrapToHalideBuffer(blobs[1], {numChannels});
+            topExpr += bias(c);
+        }
+        top(x, y, c, n) = topExpr;
+        return top;
+    }
+#endif  // HAVE_HALIDE
 
     virtual int64 getFLOPS(const std::vector<MatShape> &inputs,
                            const std::vector<MatShape> &outputs) const

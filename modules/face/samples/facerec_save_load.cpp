@@ -115,19 +115,19 @@ int main(int argc, const char *argv[]) {
     // 10 principal components (read Eigenfaces), then call
     // the factory method like this:
     //
-    //      cv::createEigenFaceRecognizer(10);
+    //      cv::face::EigenFaceRecognizer::create(10);
     //
     // If you want to create a FaceRecognizer with a
     // confidence threshold (e.g. 123.0), call it with:
     //
-    //      cv::createEigenFaceRecognizer(10, 123.0);
+    //      cv::face::EigenFaceRecognizer::create(10, 123.0);
     //
     // If you want to use _all_ Eigenfaces and have a threshold,
     // then call the method like this:
     //
-    //      cv::createEigenFaceRecognizer(0, 123.0);
+    //      cv::face::EigenFaceRecognizer::create(0, 123.0);
     //
-    Ptr<BasicFaceRecognizer> model0 = createEigenFaceRecognizer();
+    Ptr<EigenFaceRecognizer> model0 = EigenFaceRecognizer::create();
     model0->train(images, labels);
     // save the model to eigenfaces_at.yaml
     model0->save("eigenfaces_at.yml");
@@ -135,8 +135,7 @@ int main(int argc, const char *argv[]) {
     //
     // Now create a new Eigenfaces Recognizer
     //
-    Ptr<BasicFaceRecognizer> model1 = createEigenFaceRecognizer();
-    model1->load("eigenfaces_at.yml");
+    Ptr<EigenFaceRecognizer> model1 = Algorithm::load<EigenFaceRecognizer>("eigenfaces_at.yml");
     // The following line predicts the label of a given
     // test image:
     int predictedLabel = model1->predict(testSample);
