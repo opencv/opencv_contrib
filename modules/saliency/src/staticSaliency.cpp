@@ -53,7 +53,7 @@ namespace saliency
  * StaticSaliency
  */
 
-  
+
 bool StaticSaliency::computeBinaryMap( InputArray _saliencyMap, OutputArray _binaryMap )
 {
   Mat saliencyMap = _saliencyMap.getMat();
