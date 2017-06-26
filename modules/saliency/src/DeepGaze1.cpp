@@ -267,6 +267,7 @@ double DeepGaze1::computeAUC( InputArray _saliencyMap, InputArray _fixtionMap )
     if ( saliency.empty() || fixtion.empty() || saliency.dims > 2 || fixtion.dims > 2 )
     {
         cout << "saliency map and fixtion map must be 1 channel and have same size" << endl;
+        CV_
         return -1;
     }
 
