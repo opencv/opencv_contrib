@@ -233,7 +233,7 @@ vector<double> DeepGaze1::evalGrad( vector<Mat>& featureMaps, vector<unsigned>& 
     return grad;
 }
 
-void DeepGaze1::training( vector<Mat>& images, vector<Mat>& fixMaps, unsigned batch_size, double momentum, double alpha, double decay, Size input_size )
+void DeepGaze1::training( vector<Mat>& images, vector<Mat>& fixMaps, int iteration, unsigned batch_size, double momentum, double alpha, double decay, Size input_size )
 {
     vector<unsigned> randIndex = batchIndex( (unsigned)images.size(), min( batch_size, (unsigned)images.size() ) );
     vector<unsigned> fixLoc;
@@ -242,20 +242,24 @@ void DeepGaze1::training( vector<Mat>& images, vector<Mat>& fixMaps, unsigned ba
     vector<double> vel(weights.size(), 0);
 
     unsigned n = 0;
-    for ( unsigned i = 0; i < randIndex.size(); i++ )
+    while ( iteration > 0 )
     {
-        featureMaps = featureMapGenerator( images[randIndex[i]], input_size );
-        fixLoc = fixationLoc( fixMaps[randIndex[i]], input_size );
-        grad = evalGrad( featureMaps, fixLoc, weights, input_size );
-        for ( unsigned j = 0; j < grad.size(); j++ )
+        for ( unsigned i = 0; i < randIndex.size(); i++ )
         {
-            vel[j] = momentum * vel[j] + grad[j];
-            weights[j] -= alpha * vel[j] * exp(-decay * n);
+            featureMaps = featureMapGenerator( images[randIndex[i]], input_size );
+            fixLoc = fixationLoc( fixMaps[randIndex[i]], input_size );
+            grad = evalGrad( featureMaps, fixLoc, weights, input_size );
+            for ( unsigned j = 0; j < grad.size(); j++ )
+            {
+                vel[j] = momentum * vel[j] + grad[j];
+                weights[j] -= alpha * vel[j] * exp(-decay * n);
+            }
+            n++;
+            double avgGrad = accumulate( grad.begin(), grad.end(), 0.0 ) / weights.size();
+            double avgWeight = accumulate( weights.begin(), weights.end(), 0.0 ) / weights.size();
+            cout << n << " " << avgGrad << " " << avgWeight << endl;
         }
-        n++;
-        double avgGrad = accumulate( grad.begin(), grad.end(), 0.0 ) / weights.size();
-        double avgWeight = accumulate( weights.begin(), weights.end(), 0.0 ) / weights.size();
-        cout << n << " " << avgGrad << " " << avgWeight << endl;
+        iteration--;
     }
 }
 
