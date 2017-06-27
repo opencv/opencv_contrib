@@ -110,7 +110,7 @@ namespace cv
         std::string item;
         std::vector<Point2f> pts;
         std::vector<float> raw;
-
+        // TODO: throw error if file not exist
         std::ifstream infile(filename.c_str());
 
         /*clear the output containers*/
@@ -128,7 +128,7 @@ namespace cv
             /*load all numbers*/
             raw.clear();
             while (getline (ss, item, delim)){
-                raw.push_back(atof(item.c_str()));
+                raw.push_back((float)atof(item.c_str()));
             }
 
             /*convert to opencv points*/
@@ -200,7 +200,7 @@ namespace cv
 
             std::istringstream ss(line);
             ss>>x>>y;
-            pts.push_back(Point2f(atof(x.c_str()),atof(y.c_str())));
+            pts.push_back(Point2f((float)atof(x.c_str()),(float)atof(y.c_str())));
 
         }
 

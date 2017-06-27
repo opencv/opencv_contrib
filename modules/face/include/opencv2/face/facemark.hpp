@@ -120,8 +120,8 @@ namespace cv
             Mat S,Q;
         };
 
-        void training(String imageList, String groundTruth, const FacemarkAAM::Params &parameters);
-        virtual void trainingImpl(String imageList, String groundTruth, const FacemarkAAM::Params &parameters)=0;
+        //void training(String imageList, String groundTruth, const FacemarkAAM::Params &parameters);
+        //virtual void trainingImpl(String imageList, String groundTruth, const FacemarkAAM::Params &parameters)=0;
 
         /**
         * \brief this BOILERPLATE_CODE is equivalent to the following snippet

@@ -94,14 +94,14 @@ namespace cv
     }
 
 
-    void FacemarkAAM::training(String imageList, String groundTruth, const FacemarkAAM::Params &parameters){
-        trainingImpl(imageList, groundTruth, parameters);
-    }
+    // void FacemarkAAM::training(String imageList, String groundTruth, const FacemarkAAM::Params &parameters){
+    //     trainingImpl(imageList, groundTruth, parameters);
+    // }
 
-    void FacemarkAAMImpl::trainingImpl(String imageList, String groundTruth, const FacemarkAAM::Params &parameters){
-        params = parameters;
-        trainingImpl(imageList, groundTruth);
-    }
+    // void FacemarkAAMImpl::trainingImpl(String imageList, String groundTruth, const FacemarkAAM::Params &parameters){
+    //     params = parameters;
+    //     trainingImpl(imageList, groundTruth);
+    // }
 
     void FacemarkAAMImpl::trainingImpl(String imageList, String groundTruth){
 
