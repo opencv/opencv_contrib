@@ -667,7 +667,7 @@ namespace cv
 
             std::vector<Point> polygon;
             approxPolyDP(p,polygon, 1.0, true);
-            fillConvexPoly(mask, &polygon[0], (int)polygon.size(), i+1,8,0 );
+            fillConvexPoly(mask, &polygon[0], (int)polygon.size(), (double)i+1,8,0 );
 
             std::vector<Point> list;
             for(int y=0;y<res.height;y++){
