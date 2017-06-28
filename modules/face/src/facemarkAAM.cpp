@@ -1,6 +1,6 @@
 #include "opencv2/face.hpp"
-#include "opencv2/core.hpp"
 #include "opencv2/imgcodecs.hpp"
+#include "precomp.hpp"
 
 namespace cv
 {
@@ -156,7 +156,7 @@ namespace cv
 
             std::vector<Point2f> base_shape = Mat(Mat(s0_scaled)-Scalar(min_x-2.0,min_y-2.0)).reshape(2);
             AAM.textures[scale].base_shape = base_shape;
-            AAM.textures[scale].resolution = Rect(0,0,ceil(max_x-min_x+3),ceil(max_y-min_y+3));
+            AAM.textures[scale].resolution = Rect(0,0,(int)ceil(max_x-min_x+3),(int)ceil(max_y-min_y+3));
 
             Mat base_texture = createTextureBase(base_shape, AAM.triangles, AAM.textures[scale].resolution, AAM.textures[scale].textureIdx);
 
@@ -209,8 +209,9 @@ namespace cv
         if (landmarks.size()>0)
             landmarks.clear();
 
-        landmarks.push_back(Point2f(2.0,3.3));
-        landmarks.push_back(Point2f(1.5,2.2));
+        /*dummy function, will be updated soon*/
+        landmarks.push_back(Point2f((float)2.0,(float)3.3));
+        landmarks.push_back(Point2f((float)1.5,(float)2.2));
         Mat img = image.getMat();
         printf("detect::rows->%i landmarks-> %i\n",(int)img.rows,(int)landmarks.size());
         return true;
@@ -501,7 +502,7 @@ namespace cv
         Mo.convertTo(M,CV_32FC1);
 
         // TODO: float precission is only 1e-7, but MATLAB version use thresh=2.2204e-16
-        float thresh = 2.2204e-6;
+        float thresh = (float)2.2204e-6;
 
         Mat O = Mat::zeros(M.rows, M.cols, CV_32FC1);
 
@@ -592,7 +593,7 @@ namespace cv
     }
 
     inline Mat FacemarkAAMImpl::linearize(std::vector<Point2f> s){ // all x values and then all y values
-        return Mat(Mat(s).reshape(1).t()).reshape(1,2*s.size());
+        return Mat(Mat(s).reshape(1).t()).reshape(1,2*(int)s.size());
     }
 
     void FacemarkAAMImpl::delaunay(std::vector<Point2f> s, std::vector<Vec3i> & triangles){
@@ -648,7 +649,7 @@ namespace cv
         std::vector<Point> shape;
         Mat(base_shape).convertTo(shape, CV_32S);
         convexHull(shape,hull);
-        fillConvexPoly(mask, &hull[0], hull.size(), 255, 8 ,0);
+        fillConvexPoly(mask, &hull[0], (int)hull.size(), 255, 8 ,0);
         return mask.clone();
     }
 
@@ -666,7 +667,7 @@ namespace cv
 
             std::vector<Point> polygon;
             approxPolyDP(p,polygon, 1.0, true);
-            fillConvexPoly(mask, &polygon[0], polygon.size(), i+1,8,0 );
+            fillConvexPoly(mask, &polygon[0], (int)polygon.size(), i+1,8,0 );
 
             std::vector<Point> list;
             for(int y=0;y<res.height;y++){
@@ -712,7 +713,7 @@ namespace cv
             approxPolyDP(target,polygon, 1.0, true);
 
             Mat mask = Mat::zeros(warped.size(), CV_8U);
-            fillConvexPoly(mask, &polygon[0], polygon.size(), 255,8,0 );
+            fillConvexPoly(mask, &polygon[0], (int)polygon.size(), 255,8,0 );
 
             R=A.colRange(0,2);
             t=A.colRange(2,3);
@@ -721,7 +722,7 @@ namespace cv
 
             Mat pts_f;
             pts.convertTo(pts_f,CV_64FC1);
-            pts_f.push_back(Mat::ones(1,textureIdx[i].size(),CV_64FC1));
+            pts_f.push_back(Mat::ones(1,(int)textureIdx[i].size(),CV_64FC1));
 
             Mat trans = (A*pts_f).t();
             Mat map;
@@ -760,16 +761,16 @@ namespace cv
         for(int i=0;i<mask.rows;i++){
             for(int j=0;j<mask.cols;j++){
                 if(mask.at<uchar>(i,j)>0){
-                    x.push_back(j);
-                    y.push_back(i);
+                    x.push_back((float)j);
+                    y.push_back((float)i);
                     if(mask2.at<uchar>(i,j)>0){
-                        x2.push_back(0);
-                        y2.push_back(cnt);
+                        x2.push_back(0.0);
+                        y2.push_back((float)cnt);
 
-                        y_direct.push_back(idx);
+                        y_direct.push_back((float)idx);
                     }
 
-                    rec_y.at<float>(i,j) = cnt;
+                    rec_y.at<float>(i,j) = (float)cnt;
 
                     cnt +=1;
                 }
