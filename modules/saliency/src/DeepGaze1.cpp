@@ -98,6 +98,7 @@ vector<Mat> DeepGaze1::featureMapGenerator( Mat img, Size input_size )
 
 bool DeepGaze1::computeSaliencyImpl( InputArray image, OutputArray saliencyMap )
 {
+    CV_Assert( !(image.getMat().empty()) );
     vector<Mat> featureMaps = featureMapGenerator( image.getMat(), Size(227, 227) );
     saliencyMap.assign( softmax( comb( featureMaps, weights ) ) );
     for ( unsigned i = 0; i < weights.size(); i++ ) cout << weights[i] << ",";
@@ -108,6 +109,7 @@ bool DeepGaze1::computeSaliencyImpl( InputArray image, OutputArray saliencyMap )
 Mat DeepGaze1::saliencyMapGenerator( Mat input_image, Size input_size )
 {
 //raw saliency map generate
+    CV_Assert( !(input_image.empty()) );
     vector<Mat> featureMaps = featureMapGenerator( input_image, input_size );
     return softmax( comb( featureMaps, weights ) );
 }
@@ -155,6 +157,7 @@ vector<unsigned> DeepGaze1::batchIndex( unsigned total, unsigned batchSize )
 
 vector<unsigned> DeepGaze1::fixationLoc( Mat img, Size input_size )
 {
+    CV_Assert( !(img.empty()) );
     vector<unsigned> randIndex;
     resize( img, img, input_size, 0, 0, INTER_AREA );
     vector<unsigned> fixation;
@@ -271,7 +274,7 @@ double DeepGaze1::computeAUC( InputArray _saliencyMap, InputArray _fixtionMap )
     if ( saliency.empty() || fixtion.empty() || saliency.dims > 2 || fixtion.dims > 2 )
     {
         cout << "saliency map and fixtion map must be 1 channel and have same size" << endl;
-        CV_Assert( saliency.empty() || fixtion.empty() || saliency.dims > 2 || fixtion.dims > 2 );
+        CV_Assert( !( saliency.empty() || fixtion.empty() || saliency.dims > 2 || fixtion.dims > 2 ) );
         return -1;
     }
 
