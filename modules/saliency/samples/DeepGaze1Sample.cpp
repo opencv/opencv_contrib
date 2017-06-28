@@ -6,7 +6,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/saliency.hpp>
-#include <opencv2/datasets/saliency_mit1003.hpp>
+#include "opencv2/datasets/saliency_mit1003.hpp"
 #include <vector>
 #include <string>
 #include <iostream>
