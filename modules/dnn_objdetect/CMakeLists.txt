@@ -35,6 +35,10 @@ else(GLOG_FOUND)
 endif(GLOG_FOUND)
 list(APPEND DNN_OBJ_LIBRARIES "${GLOB_LIBRARIES}")
 
+if (NOT HAVE_CAFFE OR NOT HAVE_PROTOBUF)
+  return()
+endif()
+
 set(TARGET train_obj_detect)
 set(SOURCE_FILES src/train_model.cpp)
 ocv_add_executable(${TARGET} ${SOURCE_FILES})
