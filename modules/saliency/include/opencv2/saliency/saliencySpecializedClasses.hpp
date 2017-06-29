@@ -166,8 +166,9 @@ private:
     std::vector<double> weights;
 
 public:
-    DeepGaze1();
+    DeepGaze1( std::string = "deploy.prototxt", std::string = "bvlc_alexnet.caffemodel" );
     DeepGaze1( std::string, std::string, std::vector<std::string>, unsigned );
+    DeepGaze1( std::string, std::string, std::vector<std::string>, std::vector<double> );
     virtual ~DeepGaze1();
     CV_WRAP static Ptr<DeepGaze1> create()
     {
