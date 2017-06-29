@@ -19,7 +19,7 @@ void Reader::loadTimestamps(const std::string &timesFile)
     FileStorage timeFile;
     timeFile.open(timesFile, FileStorage::READ);
     timeStamps.clear();
-    exposureTimes.clear();
+    exposureDurations.clear();
 
     CV_Assert(timeFile.isOpened());
 
@@ -34,11 +34,11 @@ void Reader::loadTimestamps(const std::string &timesFile)
     for (; itTs != itTsEnd; ++itTs)
         timeStamps.push_back((double)*itTs);
     for (; itEt != itEtEnd; ++itEt)
-        exposureTimes.push_back((float)*itEt);
+        exposureDurations.push_back((float)*itEt);
 
     timeFile.release();
 
-    CV_Assert(timeStamps.size() == getNumImages() && exposureTimes.size() == getNumImages());
+    CV_Assert(timeStamps.size() == getNumImages() && exposureDurations.size() == getNumImages());
 }
 
 Reader::Reader(const std::string &folderPath, const std::string &timesPath)
@@ -74,10 +74,11 @@ double Reader::getTimestamp(unsigned long id) const
     return timeStamps[id];
 }
 
-float Reader::getExposureTime(unsigned long id) const
+float Reader::getExposureDuration(unsigned long id) const
 {
-    CV_Assert(id < exposureTimes.size());
-    return exposureTimes[id];
+    CV_Assert(id < exposureDurations.size());
+    return exposureDurations[id];
+}
 }
 
 }} // namespace photometric_calib, cv

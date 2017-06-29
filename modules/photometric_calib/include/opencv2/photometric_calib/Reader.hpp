@@ -21,7 +21,7 @@ public:
 
     double getTimestamp(unsigned long id) const;
 
-    float getExposureTime(unsigned long id) const;
+    float getExposureDuration(unsigned long id) const;
 
 
 private:
@@ -29,7 +29,7 @@ private:
 
     std::vector<String> files;
     std::vector<double> timeStamps;
-    std::vector<float> exposureTimes;
+    std::vector<float> exposureDurations;//All the exposure duration for images
 
     int width, height;
 
