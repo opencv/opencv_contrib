@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
         "{ img_path       |     | path to folder with img }"
         "{ fix_path       |     | path to folder with fixation img for compute AUC }"
         "{ model_path     |bvlc_alexnet.caffemodel   | path to your caffe model }"
-    	"{ proto_path     |deploy.prototxt   | path to your deep net caffe prototxt }"
+        "{ proto_path     |deploy.prototxt   | path to your deep net caffe prototxt }"
         "{ dataset_path d |./   | path to Dataset for training }";
 
     CommandLineParser parser(argc, argv, keys);
