@@ -7,6 +7,9 @@
 
 #include "opencv2/photometric_calib.hpp"
 
+#include <vector>
+#include <string>
+
 namespace cv { namespace photometric_calib{
 
 //! @addtogroup photometric_calib

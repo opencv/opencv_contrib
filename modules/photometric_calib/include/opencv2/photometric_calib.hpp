@@ -9,9 +9,6 @@
 #include "opencv2/imgproc.hpp"
 
 #include <vector>
-#include <string>
-#include <iostream>
-#include <fstream>
 
 /** @defgroup photometric_calib Photometric Calibration
 */

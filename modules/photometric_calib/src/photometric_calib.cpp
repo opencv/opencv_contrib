@@ -4,6 +4,7 @@
 
 #include "precomp.hpp"
 #include "opencv2/photometric_calib.hpp"
+#include <iostream>
 
 namespace cv{ namespace photometric_calib{
 
