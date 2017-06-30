@@ -78,7 +78,7 @@ public:
     //! incrementally computable features
     int area;
     int perimeter;
-    int euler;                 //!< euler number
+    int euler;                 //!< Euler's number
     Rect rect;
     double raw_moments[2];     //!< order 1 raw moments to derive the centroid
     double central_moments[3]; //!< order 2 central moments to construct the covariance matrix
@@ -105,7 +105,7 @@ public:
     ERStat* next;
     ERStat* prev;
 
-    //! wenever the regions is a local maxima of the probability
+    //! whenever the regions is a local maxima of the probability
     bool local_maxima;
     ERStat* max_probability_ancestor;
     ERStat* min_probability_ancestor;
@@ -317,7 +317,7 @@ enum erGrouping_Modes {
 
 @param channels Vector of single channel images CV_8UC1 from wich the regions were extracted.
 
-@param regions Vector of ER's retreived from the ERFilter algorithm from each channel.
+@param regions Vector of ER's retrieved from the ERFilter algorithm from each channel.
 
 @param groups The output of the algorithm is stored in this parameter as set of lists of indexes to
 provided regions.
@@ -353,7 +353,7 @@ CV_EXPORTS_W void erGrouping(InputArray image, InputArray channel,
 
 @param image Source image CV_8UC1 from which the MSERs where extracted.
 
-@param contours Intput vector with all the contours (vector\<Point\>).
+@param contours Input vector with all the contours (vector\<Point\>).
 
 @param regions Output where the ERStat regions are stored.
 

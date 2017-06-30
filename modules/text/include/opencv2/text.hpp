@@ -66,12 +66,12 @@ hierarchy by their inclusion relation:
 
 ![image](pics/component_tree.png)
 
-The component tree may conatain a huge number of regions even for a very simple image as shown in
+The component tree may contain a huge number of regions even for a very simple image as shown in
 the previous image. This number can easily reach the order of 1 x 10\^6 regions for an average 1
 Megapixel image. In order to efficiently select suitable regions among all the ERs the algorithm
 make use of a sequential classifier with two differentiated stages.
 
-In the first stage incrementally computable descriptors (area, perimeter, bounding box, and euler
+In the first stage incrementally computable descriptors (area, perimeter, bounding box, and Euler's
 number) are computed (in O(1)) for each region r and used as features for a classifier which
 estimates the class-conditional probability p(r|character). Only the ERs which correspond to local
 maximum of the probability p(r|character) are selected (if their probability is above a global limit

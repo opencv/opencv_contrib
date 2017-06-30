@@ -107,7 +107,7 @@ ERStat::ERStat(int init_level, int init_pixel, int init_x, int init_y) : pixel(i
 // derivative classes
 
 
-// the classe implementing the interface for the 1st and 2nd stages of Neumann and Matas algorithm
+// the classes implementing the interface for the 1st and 2nd stages of Neumann and Matas algorithm
 class CV_EXPORTS ERFilterNM : public ERFilter
 {
 public:
@@ -277,7 +277,7 @@ void ERFilterNM::er_tree_extract( InputArray image )
     // the component stack
     vector<ERStat*> er_stack;
 
-    // the quads for euler number calculation
+    // the quads for Euler's number calculation
     // quads[2][2] and quads[2][3] are never used.
     // The four lowest bits in each quads[i][j] correspond to the 2x2 binary patterns
     // Q_1, Q_2, Q_3 in the Neumann and Matas CVPR 2012 paper
@@ -336,7 +336,7 @@ void ERFilterNM::er_tree_extract( InputArray image )
                     default: if (y > 0) neighbour_pixel = current_pixel - width; break;
             }
 
-            // if neighbour is not accessible, mark it accessible and retreive its grey-level value
+            // if neighbour is not accessible, mark it accessible and retrieve its grey-level value
             if ( !accessible_pixel_mask[neighbour_pixel] && (neighbour_pixel != current_pixel) )
             {
 
@@ -377,14 +377,14 @@ void ERFilterNM::er_tree_extract( InputArray image )
                 }
             }
 
-        } // else neigbor was already accessible
+        } // else neighbour was already accessible
 
         if (push_new_component) continue;
 
 
         // once here we can add the current pixel to the component at the top of the stack
         // but first we find how many of its neighbours are part of the region boundary (needed for
-        // perimeter and crossings calc.) and the increment in quads counts for euler number calc.
+        // perimeter and crossings calc.) and the increment in quads counts for Euler's number calc.
         int non_boundary_neighbours = 0;
         int non_boundary_neighbours_horiz = 0;
 
@@ -801,7 +801,7 @@ ERStat* ERFilterNM::er_tree_filter ( InputArray image, ERStat * stat, ERStat *pa
     vector<Point> contour_poly;
     vector<Vec4i> hierarchy;
     findContours( region, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE, Point(0, 0) );
-    //TODO check epsilon parameter of approxPolyDP (set empirically) : we want more precission
+    //TODO check epsilon parameter of approxPolyDP (set empirically) : we want more precision
     //     if the region is very small because otherwise we'll loose all the convexities
     approxPolyDP( Mat(contours[0]), contour_poly, (float)min(rect.width,rect.height)/17, true );
 
@@ -1089,9 +1089,9 @@ double ERClassifierNM2::eval(const ERStat& stat)
                               default classifier can be implicitly load with function loadClassifierNM1()
                               from file in samples/cpp/trained_classifierNM1.xml
     \param  thresholdDelta    Threshold step in subsequent thresholds when extracting the component tree
-    \param  minArea           The minimum area (% of image size) allowed for retreived ER's
-    \param  minArea           The maximum area (% of image size) allowed for retreived ER's
-    \param  minProbability    The minimum probability P(er|character) allowed for retreived ER's
+    \param  minArea           The minimum area (% of image size) allowed for retrieved ER's
+    \param  minArea           The maximum area (% of image size) allowed for retrieved ER's
+    \param  minProbability    The minimum probability P(er|character) allowed for retrieved ER's
     \param  nonMaxSuppression Whenever non-maximum suppression is done over the branch probabilities
     \param  minProbability    The minimum probability difference between local maxima and local minima ERs
 */
@@ -1222,12 +1222,12 @@ void get_gradient_magnitude(Mat& _grey_img, Mat& _gradient_magnitude)
 
 
 /*!
-    Compute the diferent channels to be processed independently in the N&M algorithm
+    Compute the different channels to be processed independently in the N&M algorithm
     Neumann L., Matas J.: Real-Time Scene Text Localization and Recognition, CVPR 2012
 
     In N&M algorithm, the combination of intensity (I), hue (H), saturation (S), and gradient
-    magnitude channels (Grad) are used in order to obatin high localization recall.
-    This implementation also the alternative combination of red (R), grren (G), blue (B),
+    magnitude channels (Grad) are used in order to obtain high localization recall.
+    This implementation also the alternative combination of red (R), green (G), blue (B),
     lightness (L), and gradient magnitude (Grad).
 
     \param  _src           Source image. Must be RGB CV_8UC3.
@@ -1965,7 +1965,7 @@ public:
 static void generate_dendrogram(double * const Z, cluster_result & Z2, const int_fast32_t N)
 {
     // The array "nodes" is a union-find data structure for the cluster
-    // identites (only needed for unsorted cluster_result input).
+    // identities (only needed for unsorted cluster_result input).
     union_find nodes;
     stable_sort(Z2[0], Z2[N-1]);
     nodes.init(N);
@@ -2196,11 +2196,11 @@ struct HCluster{
     vector<int> elements;   // elements (contour ID)
     int nfa;                // the number of false alarms for this merge
     float dist;             // distance of the merge
-    float dist_ext;         // distamce where this merge will merge with another
+    float dist_ext;         // distance where this merge will merge with another
     long double volume;     // volume of the bounding sphere (or bounding box)
     long double volume_ext; // volume of the sphere(or box) + envolvent empty space
     vector<vector<float> > points; // nD points in this cluster
-    bool max_meaningful;    // is this merge max meaningul ?
+    bool max_meaningful;    // is this merge max meaningful ?
     vector<int> max_in_branch; // otherwise which merges are the max_meaningful in this branch
     int min_nfa_in_branch;  // min nfa detected within the chilhood
     int node1;
@@ -2285,7 +2285,7 @@ void MaxMeaningfulClustering::build_merge_info(double *Z, double *X, int N, int 
                                                vector< vector<int> > *meaningful_clusters)
 {
 
-    // walk the whole dendogram
+    // walk the whole dendrogram
     for (int i=0; i<(N-1)*4; i=i+4)
     {
         HCluster cluster;
@@ -2964,7 +2964,7 @@ static float extract_features(Mat &grey, Mat& channel, vector<ERStat> &regions, 
             f.convex_hull_ratio = (float)contourArea(hull)/contourArea(contours0[0]);
             vector<Vec4i> cx;
             vector<int> hull_idx;
-            //TODO check epsilon parameter of approxPolyDP (set empirically) : we want more precission
+            //TODO check epsilon parameter of approxPolyDP (set empirically) : we want more precision
             //     if the region is very small because otherwise we'll loose all the convexities
             approxPolyDP( Mat(contours0[0]), contours0[0], (float)min(rrect.size.width,rrect.size.height)/17, true );
             convexHull(contours0[0],hull_idx,false,false);
@@ -3007,7 +3007,7 @@ static float extract_features(Mat &grey, Mat& channel, vector<ERStat> &regions, 
 
     \param  _image         Original RGB image from wich the regions were extracted.
     \param  _src           Vector of sinle channel images CV_8UC1 from wich the regions were extracted.
-    \param  regions        Vector of ER's retreived from the ERFilter algorithm from each channel
+    \param  regions        Vector of ER's retrieved from the ERFilter algorithm from each channel
     \param  groups         The output of the algorithm are stored in this parameter as list of indexes to provided regions.
     \param  text_boxes     The output of the algorithm are stored in this parameter as list of rectangles.
     \param  filename       The XML or YAML file with the classifier model (e.g. trained_classifier_erGrouping.xml)
@@ -3158,7 +3158,7 @@ struct line_estimates
 };
 
 // distanceLinesEstimates
-// Calculates the distance between two line estimates deﬁned as the largest
+// Calculates the distance between two line estimates defined as the largest
 // normalized vertical difference of their top/bottom lines at their boundary points
 // out float distance
 float distanceLinesEstimates(line_estimates &a, line_estimates &b);
@@ -3328,7 +3328,7 @@ void fitLineOLS(Point p1, Point p2, Point p3, float &a0, float &a1)
     a1=(float)(3*sumxy-sumx*sumy) / (3*sumx2-sumx*sumx);
 }
 
-// Fit line from three points using (heutistic) Least-Median of Squares
+// Fit line from three points using (heuristic) Least-Median of Squares
 // out a0 is the intercept
 // out a1 is the slope
 // returns the error of the single point that doesn't fit the line
@@ -3339,7 +3339,7 @@ float fitLineLMS(Point p1, Point p2, Point p3, float &a0, float &a1)
     a1 = 0;
 
     //Least-Median of Squares does not make sense with only three points
-    //becuse any line passing by two of them has median_error = 0
+    //because any line passing by two of them has median_error = 0
     //So we'll take the one with smaller slope
     float l_a0, l_a1, best_slope=FLT_MAX, err=0;
 
@@ -3730,7 +3730,7 @@ bool sort_couples (Vec3i i,Vec3i j) { return (i[0]<j[0]); }
 
     \param  _img           Original RGB image from wich the regions were extracted.
     \param  _src           Vector of sinle channel images CV_8UC1 from wich the regions were extracted.
-    \param  regions        Vector of ER's retreived from the ERFilter algorithm from each channel
+    \param  regions        Vector of ER's retrieved from the ERFilter algorithm from each channel
     \param  out_groups     The output of the algorithm are stored in this parameter as list of indexes to provided regions.
     \param  out_boxes      The output of the algorithm are stored in this parameter as list of rectangles.
     \param  do_feedback    Whenever the grouping algorithm uses a feedback loop to recover missing regions in a line.
@@ -3823,7 +3823,7 @@ void erGroupingNM(InputArray _img, InputArrayOfArrays _src, vector< vector<ERSta
         {
             for (size_t j=i+1; j<valid_pairs.size(); j++)
             {
-                // check colinearity rules
+                // check collinearity rules
                 region_triplet valid_triplet(Vec2i(0,0),Vec2i(0,0),Vec2i(0,0));
                 if (isValidTriplet(regions, valid_pairs[i],valid_pairs[j], valid_triplet))
                 {
@@ -3891,7 +3891,7 @@ void erGroupingNM(InputArray _img, InputArrayOfArrays _src, vector< vector<ERSta
         if (do_feedback_loop)
         {
 
-            //Feedback loop of detected lines to region extraction ... tries to recover missmatches in the region decomposition step by extracting regions in the neighbourhood of a valid sequence and checking if they are consistent with its line estimates
+            //Feedback loop of detected lines to region extraction ... tries to recover mismatches in the region decomposition step by extracting regions in the neighbourhood of a valid sequence and checking if they are consistent with its line estimates
             Ptr<ERFilter> er_filter = createERFilterNM1(loadDummyClassifier(),1,0.005f,0.3f,0.f,false);
             for (int i=0; i<(int)valid_sequences.size(); i++)
             {
@@ -4172,7 +4172,7 @@ void MSERsToERStats(InputArray image, vector<vector<Point> > &contours, vector<v
   }
 }
 
-// Utility funtion for scripting
+// Utility function for scripting
 void detectRegions(InputArray image, const Ptr<ERFilter>& er_filter1, const Ptr<ERFilter>& er_filter2, CV_OUT vector< vector<Point> >& regions)
 {
     // assert correct image type
