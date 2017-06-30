@@ -153,7 +153,7 @@ public:
     @param language an ISO 639-3 code or NULL will default to "eng".
     @param char_whitelist specifies the list of characters used for recognition. NULL defaults to
     "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".
-    @param oem tesseract-ocr offers different OCR Engine Modes (OEM), by deffault
+    @param oem tesseract-ocr offers different OCR Engine Modes (OEM), by default
     tesseract::OEM_DEFAULT is used. See the tesseract-ocr API documentation for other possible
     values.
     @param psmode tesseract-ocr offers different Page Segmentation Modes (PSM) tesseract::PSM_AUTO
@@ -195,7 +195,7 @@ public:
     This way it hides the feature extractor and the classifier itself, so developers can write
     their own OCR code.
 
-    The default character classifier and feature extractor can be loaded using the utility funtion
+    The default character classifier and feature extractor can be loaded using the utility function
     loadOCRHMMClassifierNM and KNN model provided in
     <https://github.com/opencv/opencv_contrib/blob/master/modules/text/samples/OCRHMM_knn_model_data.xml.gz>.
      */
@@ -289,21 +289,21 @@ public:
     (<http://en.wikipedia.org/wiki/Viterbi_algorithm>).
      */
     static Ptr<OCRHMMDecoder> create(const Ptr<OCRHMMDecoder::ClassifierCallback> classifier,// The character classifier with built in feature extractor
-                                     const std::string& vocabulary,                    // The language vocabulary (chars when ascii english text)
+                                     const std::string& vocabulary,                    // The language vocabulary (chars when ASCII English text)
                                                                                        //     size() must be equal to the number of classes
                                      InputArray transition_probabilities_table,        // Table with transition probabilities between character pairs
-                                                                                       //     cols == rows == vocabulari.size()
+                                                                                       //     cols == rows == vocabulary.size()
                                      InputArray emission_probabilities_table,          // Table with observation emission probabilities
-                                                                                       //     cols == rows == vocabulari.size()
+                                                                                       //     cols == rows == vocabulary.size()
                                      decoder_mode mode = OCR_DECODER_VITERBI);         // HMM Decoding algorithm (only Viterbi for the moment)
 
     CV_WRAP static Ptr<OCRHMMDecoder> create(const Ptr<OCRHMMDecoder::ClassifierCallback> classifier,// The character classifier with built in feature extractor
-                                     const String& vocabulary,                    // The language vocabulary (chars when ascii english text)
+                                     const String& vocabulary,                    // The language vocabulary (chars when ASCII English text)
                                                                                        //     size() must be equal to the number of classes
                                      InputArray transition_probabilities_table,        // Table with transition probabilities between character pairs
-                                                                                       //     cols == rows == vocabulari.size()
+                                                                                       //     cols == rows == vocabulary.size()
                                      InputArray emission_probabilities_table,          // Table with observation emission probabilities
-                                                                                       //     cols == rows == vocabulari.size()
+                                                                                       //     cols == rows == vocabulary.size()
                                      int mode = OCR_DECODER_VITERBI);         // HMM Decoding algorithm (only Viterbi for the moment)
 
     /** @brief Creates an instance of the OCRHMMDecoder class. Loads and initializes HMMDecoder from the specified path
@@ -312,12 +312,12 @@ public:
      */
     CV_WRAP static Ptr<OCRHMMDecoder> create(const String& filename,
 
-                                     const String& vocabulary,                    // The language vocabulary (chars when ascii english text)
+                                     const String& vocabulary,                    // The language vocabulary (chars when ASCII English text)
                                                                                        //     size() must be equal to the number of classes
                                      InputArray transition_probabilities_table,        // Table with transition probabilities between character pairs
-                                                                                       //     cols == rows == vocabulari.size()
+                                                                                       //     cols == rows == vocabulary.size()
                                      InputArray emission_probabilities_table,          // Table with observation emission probabilities
-                                                                                       //     cols == rows == vocabulari.size()
+                                                                                       //     cols == rows == vocabulary.size()
                                      int mode = OCR_DECODER_VITERBI,                    // HMM Decoding algorithm (only Viterbi for the moment)
 
                                      int classifier = OCR_KNN_CLASSIFIER);              // The character classifier type
@@ -371,7 +371,7 @@ CV_EXPORTS_W Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifier(const S
 
 /** @brief Utility function to create a tailored language model transitions table from a given list of words (lexicon).
  *
- * @param vocabulary The language vocabulary (chars when ascii english text).
+ * @param vocabulary The language vocabulary (chars when ASCII English text).
  *
  * @param lexicon The list of words that are expected to be found in a particular image.
  *
@@ -466,7 +466,7 @@ public:
 
     @param classifier The character classifier with built in feature extractor.
 
-    @param vocabulary The language vocabulary (chars when ascii english text). vocabulary.size()
+    @param vocabulary The language vocabulary (chars when ASCII English text). vocabulary.size()
     must be equal to the number of classes of the classifier.
 
     @param transition_probabilities_table Table with transition probabilities between character
@@ -481,22 +481,22 @@ public:
     @param beam_size Size of the beam in Beam Search algorithm.
      */
     static Ptr<OCRBeamSearchDecoder> create(const Ptr<OCRBeamSearchDecoder::ClassifierCallback> classifier,// The character classifier with built in feature extractor
-                                     const std::string& vocabulary,                    // The language vocabulary (chars when ascii english text)
+                                     const std::string& vocabulary,                    // The language vocabulary (chars when ASCII English text)
                                                                                        //     size() must be equal to the number of classes
                                      InputArray transition_probabilities_table,        // Table with transition probabilities between character pairs
-                                                                                       //     cols == rows == vocabulari.size()
+                                                                                       //     cols == rows == vocabulary.size()
                                      InputArray emission_probabilities_table,          // Table with observation emission probabilities
-                                                                                       //     cols == rows == vocabulari.size()
+                                                                                       //     cols == rows == vocabulary.size()
                                      decoder_mode mode = OCR_DECODER_VITERBI,          // HMM Decoding algorithm (only Viterbi for the moment)
                                      int beam_size = 500);                              // Size of the beam in Beam Search algorithm
 
     CV_WRAP static Ptr<OCRBeamSearchDecoder> create(const Ptr<OCRBeamSearchDecoder::ClassifierCallback> classifier, // The character classifier with built in feature extractor
-                                     const String& vocabulary,                    // The language vocabulary (chars when ascii english text)
+                                     const String& vocabulary,                    // The language vocabulary (chars when ASCII English text)
                                                                                        //     size() must be equal to the number of classes
                                      InputArray transition_probabilities_table,        // Table with transition probabilities between character pairs
-                                                                                       //     cols == rows == vocabulari.size()
+                                                                                       //     cols == rows == vocabulary.size()
                                      InputArray emission_probabilities_table,          // Table with observation emission probabilities
-                                                                                       //     cols == rows == vocabulari.size()
+                                                                                       //     cols == rows == vocabulary.size()
                                      int mode = OCR_DECODER_VITERBI,          // HMM Decoding algorithm (only Viterbi for the moment)
                                      int beam_size = 500);                              // Size of the beam in Beam Search algorithm
 
@@ -506,12 +506,12 @@ public:
 
      */
     CV_WRAP static Ptr<OCRBeamSearchDecoder> create(const String& filename, // The character classifier file
-                                     const String& vocabulary,                    // The language vocabulary (chars when ascii english text)
+                                     const String& vocabulary,                    // The language vocabulary (chars when ASCII English text)
                                                                                        //     size() must be equal to the number of classes
                                      InputArray transition_probabilities_table,        // Table with transition probabilities between character pairs
-                                                                                       //     cols == rows == vocabulari.size()
+                                                                                       //     cols == rows == vocabulary.size()
                                      InputArray emission_probabilities_table,          // Table with observation emission probabilities
-                                                                                       //     cols == rows == vocabulari.size()
+                                                                                       //     cols == rows == vocabulary.size()
                                      int mode = OCR_DECODER_VITERBI,          // HMM Decoding algorithm (only Viterbi for the moment)
                                      int beam_size = 500);
 protected:
