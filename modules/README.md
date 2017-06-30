@@ -24,8 +24,6 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 
 - **datasets**: Datasets Reader -- Code for reading existing computer vision databases and samples of using the readers to train, test and run using that dataset's data.
 
-- **dnn**: Deep Neural Networks (DNNs) -- This module can read in image recogniton networks trained in the Caffe neural netowrk library and run them efficiently on CPU.
-
 - **dnns_easily_fooled**: Subvert DNNs -- This code can use the activations in a network to fool the networks into recognizing something else.
 
 - **dpm**: Deformable Part Model -- Felzenszwalb's Cascade with deformable parts object recognition code.
