@@ -26,17 +26,20 @@ public:
 
     float getExposureDuration(unsigned long id) const;
 
+    int getWidth() const;
+    int getHeight() const;
+    const std::string &getFolderPath() const;
 
 private:
     inline void loadTimestamps(const std::string &timesFile);
 
-    std::vector<String> files;
-    std::vector<double> timeStamps;
+    std::vector<String> images; //All the names/paths of images
+    std::vector<double> timeStamps; //All the Unix Time Stamps of images
     std::vector<float> exposureDurations;//All the exposure duration for images
 
-    int width, height;
+    int _width, _height;//The image width and height. All the images should be of the same size.
 
-    String path;
+    std::string _folderPath;
 };
 
 //! @}

@@ -9,11 +9,12 @@ namespace cv { namespace photometric_calib{
 
 unsigned long Reader::getNumImages() const
 {
-    return (unsigned long)files.size();
+    return (unsigned long)images.size();
 }
 
 void Reader::loadTimestamps(const std::string &timesFile)
 {
+    // check the extension of the time file.
     CV_Assert(timesFile.substr(timesFile.find_last_of(".") + 1) == "yaml" || timesFile.substr(timesFile.find_last_of(".") + 1) == "yml");
 
     FileStorage timeFile;
@@ -44,28 +45,31 @@ void Reader::loadTimestamps(const std::string &timesFile)
 Reader::Reader(const std::string &folderPath, const std::string &timesPath)
 {
     String cvFolderPath(folderPath);
-    glob(cvFolderPath, files);
-    CV_Assert(files.size() > 0);
-    std::sort(files.begin(), files.end());
+    glob(cvFolderPath, images);
+    CV_Assert(images.size() > 0);
+    std::sort(images.begin(), images.end());
     loadTimestamps(timesPath);
 
-    width = 0;
-    height = 0;
+    _width = 0;
+    _height = 0;
 
-    for(size_t i = 0; i < files.size(); ++i)
+    // images should be of CV_8U and same size
+    for(size_t i = 0; i < images.size(); ++i)
     {
-        Mat img = imread(files[i]);
+        Mat img = imread(images[i]);
         CV_Assert(img.type() == CV_8U);
         if(i == 0)
         {
-            width = img.cols;
-            height = img.rows;
+            _width = img.cols;
+            _height = img.rows;
         }
         else
         {
-            CV_Assert(width == img.cols && height == img.rows);
+            CV_Assert(_width == img.cols && _height == img.rows);
         }
     }
+
+    _folderPath = folderPath;
 }
 
 double Reader::getTimestamp(unsigned long id) const
@@ -79,6 +83,17 @@ float Reader::getExposureDuration(unsigned long id) const
     CV_Assert(id < exposureDurations.size());
     return exposureDurations[id];
 }
+
+int Reader::getWidth() const {
+    return _width;
+}
+
+int Reader::getHeight() const {
+    return _height;
+}
+
+const std::string &Reader::getFolderPath() const {
+    return _folderPath;
 }
 
 }} // namespace photometric_calib, cv
