@@ -25,7 +25,7 @@ namespace cv { namespace photometric_calib{
  * exposure duration is stored in std::vector<float> exposureTimes
  */
 
-class Reader
+class CV_EXPORTS Reader
 {
 public:
     /*!
