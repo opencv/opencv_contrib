@@ -39,7 +39,7 @@ endif()
 ### LIBMV LIGHT DEFINITIONS ###
 
 set(LIBMV_LIGHT_INCLUDES
-  src/libmv_light
+  "${CMAKE_CURRENT_LIST_DIR}/src/libmv_light"
   "${OpenCV_SOURCE_DIR}/include/opencv"
   "${GLOG_INCLUDE_DIRS}"
   "${GFLAGS_INCLUDE_DIRS}"
