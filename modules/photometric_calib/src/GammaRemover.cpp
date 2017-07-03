@@ -35,7 +35,7 @@ GammaRemover::GammaRemover(const std::string &gammaPath, int w_, int h_)
     }
     float min = GInv[0];
     float max = GInv[255];
-    for(int i=0;i<256;i++) GInv[i] = 255.0 * (GInv[i] - min) / (max-min);
+    for(int i=0;i<256;i++) GInv[i] = (float) (255.0 * (GInv[i] - min) / (max - min));
     for(int i=1;i<255;i++)
     {
         for(int s=1;s<255;s++)
