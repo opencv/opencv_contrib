@@ -57,13 +57,14 @@ Mat GammaRemover::getUnGammaImageMat(Mat inputIm)
 {
     CV_Assert(validGamma);
     uchar *inputImArr = inputIm.data;
-    float outImArr[w*h];
+    float *outImArr = new float[w*h];
     for (int i = 0; i < w * h; ++i)
     {
         outImArr[i] = GInv[inputImArr[i]];
     }
     Mat _outIm(h, w, CV_32F, outImArr);
     Mat outIm = _outIm * (1/255.0f);
+    delete[] outImArr;
     return outIm;
 }
 
