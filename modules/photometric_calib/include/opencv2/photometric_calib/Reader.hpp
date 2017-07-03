@@ -42,6 +42,14 @@ public:
 
 
     /*!
+     * @brief Given the id of the image and return the image. id is in fact just the index of the image in the
+     * vector contains all the images.
+     * @param id
+     * @return Mat of the id^th image.
+     */
+    Mat getImage(unsigned long id) const;
+
+    /*!
      * @brief Given the id of the image and return its timestamp value. id is in fact just the index of the image in the
      * vector contains all the images.
      * @param id

@@ -56,7 +56,7 @@ Reader::Reader(const std::string &folderPath, const std::string &timesPath)
     // images should be of CV_8U and same size
     for(size_t i = 0; i < images.size(); ++i)
     {
-        Mat img = imread(images[i]);
+        Mat img = imread(images[i], IMREAD_GRAYSCALE);
         CV_Assert(img.type() == CV_8U);
         if(i == 0)
         {
@@ -70,6 +70,12 @@ Reader::Reader(const std::string &folderPath, const std::string &timesPath)
     }
 
     _folderPath = folderPath;
+}
+
+Mat Reader::getImage(unsigned long id) const
+{
+    CV_Assert(id < images.size());
+    return imread(images[id], IMREAD_GRAYSCALE);
 }
 
 double Reader::getTimestamp(unsigned long id) const
