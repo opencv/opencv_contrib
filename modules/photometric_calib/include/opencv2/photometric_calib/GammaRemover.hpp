@@ -15,7 +15,7 @@ public:
     GammaRemover(const std::string &gammaPath, int w_, int h_);
 
     Mat getUnGammaImageMat(Mat inputIm);
-    void getUnGammaImageArr(Mat inputIm, std::vector<float> &outImVec);
+    void getUnGammaImageVec(Mat inputIm, std::vector<float> &outImVec);
 
     inline float* getG()
     {

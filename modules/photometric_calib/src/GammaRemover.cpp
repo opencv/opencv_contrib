@@ -68,7 +68,7 @@ Mat GammaRemover::getUnGammaImageMat(Mat inputIm)
     return outIm;
 }
 
-void GammaRemover::getUnGammaImageArr(Mat inputIm, std::vector<float> &outImVec)
+void GammaRemover::getUnGammaImageVec(Mat inputIm, std::vector<float> &outImVec)
 {
     CV_Assert(validGamma);
     uchar *inputImArr = inputIm.data;
