@@ -19,12 +19,12 @@ public:
 
     inline float* getG()
     {
-        if(!validGamma) return nullptr;
+        if(!validGamma) return 0;
         else return G;
     };
     inline float* getGInv()
     {
-        if(!validGamma) return nullptr;
+        if(!validGamma) return 0;
         else return GInv;
     };
 
