@@ -59,7 +59,7 @@ void FaceRecognizer::read(const String &filename)
     FileStorage fs(filename, FileStorage::READ);
     if (!fs.isOpened())
         CV_Error(Error::StsError, "File can't be opened for reading!");
-    this->read(fs.root());
+    this->read(fs.getFirstTopLevelNode());
     fs.release();
 }
 
@@ -68,7 +68,9 @@ void FaceRecognizer::write(const String &filename) const
     FileStorage fs(filename, FileStorage::WRITE);
     if (!fs.isOpened())
         CV_Error(Error::StsError, "File can't be opened for writing!");
+    fs << getDefaultName() << "{";
     this->write(fs);
+    fs << "}";
     fs.release();
 }
 
