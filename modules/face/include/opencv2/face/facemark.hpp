@@ -31,9 +31,10 @@ namespace cv
         virtual void saveModel(FileStorage& fs)=0;
         virtual void loadModel(FileStorage& fs)=0;
 
-        bool loadTrainingData(String filename , std::vector<String> & images, std::vector<std::vector<Point2f> > & facePoints, char delim = ' ');
-        bool loadTrainingData(String imageList, String groundTruth, std::vector<String> & images, std::vector<std::vector<Point2f> > & facePoints);
-        bool loadFacePoints(String filename, std::vector<Point2f> & pts);
+        bool loadTrainingData(String filename , std::vector<String> & images, std::vector<std::vector<Point2f> > & facePoints, char delim = ' ', float offset = 0.0);
+        bool loadTrainingData(String imageList, String groundTruth, std::vector<String> & images, std::vector<std::vector<Point2f> > & facePoints, float offset = 0.0);
+        bool loadFacePoints(String filename, std::vector<Point2f> & pts, float offset = 0.0);
+        void drawPoints(Mat & image, std::vector<Point2f> pts, Scalar color = Scalar(255,0,0));
 
         /**
         * \brief extract landmark points from a face
@@ -106,12 +107,9 @@ namespace cv
                 int max_m;
                 Rect resolution;
                 Mat A0,A,AA0,AA;
-                Mat featMapx, featMapy;
-                Mat featMapx2, featMapy2;
                 std::vector<std::vector<Point> > textureIdx;
                 std::vector<Point2f> base_shape;
-                Mat mask2;
-                Mat rec_y,map_erod2;
+                std::vector<int> ind1, ind2;
             };
             std::vector<Texture> textures;
 

@@ -105,7 +105,7 @@ namespace cv
         return true;
     }
 
-    bool Facemark::loadTrainingData(String filename, std::vector<String> & images, std::vector<std::vector<Point2f> > & facePoints, char delim){
+    bool Facemark::loadTrainingData(String filename, std::vector<String> & images, std::vector<std::vector<Point2f> > & facePoints, char delim, float offset){
         std::string line;
         std::string item;
         std::vector<Point2f> pts;
@@ -134,7 +134,7 @@ namespace cv
             /*convert to opencv points*/
             pts.clear();
             for(unsigned i = 0;i< raw.size();i+=2){
-                pts.push_back(Point2f(raw[i],raw[i+1]));
+                pts.push_back(Point2f(raw[i]+offset,raw[i+1]+offset));
             }
             facePoints.push_back(pts);
         } // main loading process
@@ -142,7 +142,7 @@ namespace cv
         return true;
     }
 
-    bool Facemark::loadTrainingData(String imageList, String groundTruth, std::vector<String> & images, std::vector<std::vector<Point2f> > & facePoints){
+    bool Facemark::loadTrainingData(String imageList, String groundTruth, std::vector<String> & images, std::vector<std::vector<Point2f> > & facePoints, float offset){
         std::string line;
         std::vector<Point2f> facePts;
 
@@ -160,14 +160,14 @@ namespace cv
         std::ifstream ss_gt(groundTruth.c_str());
         while (getline (ss_gt, line)){
             facePts.clear();
-            loadFacePoints(line, facePts);
+            loadFacePoints(line, facePts, offset);
             facePoints.push_back(facePts);
         }
 
         return true;
     }
 
-    bool Facemark::loadFacePoints(String filename, std::vector<Point2f> & pts){
+    bool Facemark::loadFacePoints(String filename, std::vector<Point2f> & pts, float offset){
         std::string line, item;
 
         std::ifstream infile(filename.c_str());
@@ -200,12 +200,18 @@ namespace cv
 
             std::istringstream ss(line);
             ss>>x>>y;
-            pts.push_back(Point2f((float)atof(x.c_str()),(float)atof(y.c_str())));
+            pts.push_back(Point2f((float)atof(x.c_str())+offset,(float)atof(y.c_str())+offset));
 
         }
 
         return true;
     }
+
+    void Facemark::drawPoints(Mat & image, std::vector<Point2f> pts, Scalar color){
+        for(size_t i=0;i<pts.size();i++){
+            circle(image, pts[i],3, color,-1);
+        }
+    } //drawPoints
 
 //  } /* namespace face */
 } /* namespace cv */

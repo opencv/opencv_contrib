@@ -49,16 +49,18 @@ namespace cv
         void calcMeanShape(std::vector<std::vector<Point2f> > ,std::vector<Point2f> & );
         void procrustesAnalysis(std::vector<std::vector<Point2f> > , std::vector<std::vector<Point2f> > & , std::vector<Point2f> & );
 
+        inline Mat linearize(Mat );
         inline Mat linearize(std::vector<Point2f> );
-        Mat getProjection(const Mat , int );
+        void getProjection(const Mat , Mat &, int );
         void calcSimilarityEig(std::vector<Point2f> ,Mat , Mat & , Mat & );
         Mat orthonormal(Mat );
         void delaunay(std::vector<Point2f> , std::vector<Vec3i> & );
         Mat createMask(std::vector<Point2f> , Rect );
         Mat createTextureBase(std::vector<Point2f> , std::vector<Vec3i> , Rect , std::vector<std::vector<Point> > & );
         Mat warpImage(Mat , std::vector<Point2f> , std::vector<Point2f> , std::vector<Vec3i> , Rect , std::vector<std::vector<Point> > );
-        Mat getFeature(const Mat , Mat , Mat ); // TODO: remove this function, use directly
-        void createMaskMapping(const Mat , const Mat ,Mat & , Mat & , Mat & , Mat & , Mat & , Mat & );
+        template <class T>
+        Mat getFeature(const Mat , std::vector<int> map);
+        void createMaskMapping(const Mat mask, const Mat mask2,  std::vector<int> & , std::vector<int> &, std::vector<int> &);
 
         FacemarkAAM::Params params;
         FacemarkAAM::Model AAM;
@@ -110,6 +112,10 @@ namespace cv
         Mat erode_kernel = getStructuringElement(MORPH_RECT, Size(3,3), Point(1,1));
         Mat image;
 
+        int param_max_m = 550;
+        int param_max_n = 136;
+        float offset = -0.0;
+
         /* initialize the values TODO: set them based on the params*/
         AAM.scales.push_back(1);
         AAM.scales.push_back(2);
@@ -119,7 +125,7 @@ namespace cv
         if(groundTruth==""){
             loadTrainingData(imageList, images, facePoints);
         }else{
-            loadTrainingData(imageList, groundTruth, images, facePoints);
+            loadTrainingData(imageList, groundTruth, images, facePoints, offset);
         }
         procrustesAnalysis(facePoints, normalized,AAM.s0);
 
@@ -132,7 +138,8 @@ namespace cv
         }
 
         /* get PCA Projection vectors */
-        Mat S = getProjection(M.t(),136);
+        Mat S;
+        getProjection(M.t(),S,param_max_n);
         /* Create similarity eig*/
         Mat shape_S,shape_Q;
         calcSimilarityEig(AAM.s0,S,AAM.Q,AAM.S);
@@ -160,48 +167,46 @@ namespace cv
 
             Mat base_texture = createTextureBase(base_shape, AAM.triangles, AAM.textures[scale].resolution, AAM.textures[scale].textureIdx);
 
-            Mat mask = base_texture>0;
+            Mat mask1 = base_texture>0;
             Mat mask2;
-            erode(mask, mask, erode_kernel);
-            erode(mask, mask2, erode_kernel);
+            erode(mask1, mask1, erode_kernel);
+            erode(mask1, mask2, erode_kernel);
 
             Mat warped;
-            createMaskMapping(mask,mask2,AAM.textures[scale].featMapx, AAM.textures[scale].featMapy,AAM.textures[scale].featMapx2, AAM.textures[scale].featMapy2,AAM.textures[scale].rec_y, AAM.textures[scale].map_erod2);
-            Mat feat = getFeature(warped, AAM.textures[scale].featMapx, AAM.textures[scale].featMapy);
+            std::vector<int> fe_map;
+            createMaskMapping(mask1,mask2, AAM.textures[scale].ind1, AAM.textures[scale].ind2,fe_map);//ok
 
-            AAM.textures[scale].mask2 = mask2.clone();
             /* ------------ Part D. Get textures -------------*/
-            Mat texture_feats;
+            Mat texture_feats, feat;
             for(size_t i=0; i<images.size();i++){
                 image = imread(images[i]);
                 warped = warpImage(image,base_shape, facePoints[i], AAM.triangles, AAM.textures[scale].resolution,AAM.textures[scale].textureIdx);
-                feat = getFeature(warped, AAM.textures[scale].featMapx, AAM.textures[scale].featMapy);
+                feat = getFeature<uchar>(warped, AAM.textures[scale].ind1);
                 texture_feats.push_back(feat.t());
             }
-            Mat textures= texture_feats.t();
+            Mat T= texture_feats.t();
 
             /* -------------- E. Create the texture model -----------------*/
-            Mat T;
-            textures.convertTo(T,CV_32F);
             reduce(T,AAM.textures[scale].A0,1, CV_REDUCE_AVG);
 
-            Mat A0_mtx = repeat(AAM.textures[scale].A0,1,textures.cols);
+            Mat A0_mtx = repeat(AAM.textures[scale].A0,1,T.cols);
             Mat textures_normalized = T - A0_mtx;
 
-            AAM.textures[scale].A = getProjection(textures_normalized,550);
+            getProjection(textures_normalized, AAM.textures[scale].A ,param_max_m);
+            AAM.textures[scale].AA0 = getFeature<float>(AAM.textures[scale].A0, fe_map);
 
-            remap(AAM.textures[scale].A0,AAM.textures[scale].AA0,AAM.textures[scale].featMapx2, AAM.textures[scale].featMapy2,INTER_NEAREST);
-
-            Mat U_data;
+            Mat U_data, ud;
             for(int i =0;i<AAM.textures[scale].A.cols;i++){
                 Mat c = AAM.textures[scale].A.col(i);
-                Mat ud;
-                remap(c,ud,AAM.textures[scale].featMapx2, AAM.textures[scale].featMapy2,INTER_NEAREST);
+                ud = getFeature<float>(c,fe_map);
                 U_data.push_back(ud.t());
             }
             Mat U = U_data.t();
             AAM.textures[scale].AA = orthonormal(U);
         } // scale
+
+        cv::FileStorage storage("AAM.yml", cv::FileStorage::WRITE);
+        saveModel(storage);
         printf("training is finished\n");
     }
 
@@ -238,18 +243,6 @@ namespace cv
             sprintf(x,"scale%i_base_shape",i);
             fs << x << AAM.textures[i].base_shape;
 
-            sprintf(x,"scale%i_featMapx",i);
-            fs << x << AAM.textures[i].featMapx;
-
-            sprintf(x,"scale%i_featMapy",i);
-            fs << x << AAM.textures[i].featMapy;
-
-            sprintf(x,"scale%i_featMapx2",i);
-            fs << x << AAM.textures[i].featMapx2;
-
-            sprintf(x,"scale%i_featMapy2",i);
-            fs << x << AAM.textures[i].featMapy2;
-
             sprintf(x,"scale%i_A",i);
             fs << x << AAM.textures[i].A;
 
@@ -262,14 +255,11 @@ namespace cv
             sprintf(x,"scale%i_AA0",i);
             fs << x << AAM.textures[i].AA0;
 
-            sprintf(x,"scale%i_mask2",i);
-            fs << x << AAM.textures[i].mask2;
+            sprintf(x,"scale%i_ind1",i);
+            fs << x << AAM.textures[i].ind1;
 
-            sprintf(x,"scale%i_rec_y",i);
-            fs << x << AAM.textures[i].rec_y;
-
-            sprintf(x,"scale%i_map_erod2",i);
-            fs << x << AAM.textures[i].map_erod2;
+            sprintf(x,"scale%i_ind2",i);
+            fs << x << AAM.textures[i].ind2;
 
         }
         fs.release();
@@ -299,18 +289,6 @@ namespace cv
             sprintf(x,"scale%i_base_shape",i);
             fs[x] >> AAM.textures[i].base_shape;
 
-            sprintf(x,"scale%i_featMapx",i);
-            fs[x] >> AAM.textures[i].featMapx;
-
-            sprintf(x,"scale%i_featMapy",i);
-            fs[x] >> AAM.textures[i].featMapy;
-
-            sprintf(x,"scale%i_featMapx2",i);
-            fs[x] >> AAM.textures[i].featMapx2;
-
-            sprintf(x,"scale%i_featMapy2",i);
-            fs[x] >> AAM.textures[i].featMapy2;
-
             sprintf(x,"scale%i_A",i);
             fs[x] >> AAM.textures[i].A;
 
@@ -323,14 +301,11 @@ namespace cv
             sprintf(x,"scale%i_AA0",i);
             fs[x] >> AAM.textures[i].AA0;
 
-            sprintf(x,"scale%i_mask2",i);
-            fs[x] >> AAM.textures[i].mask2;
+            sprintf(x,"scale%i_ind1",i);
+            fs[x] >> AAM.textures[i].ind1;
 
-            sprintf(x,"scale%i_rec_y",i);
-            fs[x] >> AAM.textures[i].rec_y;
-
-            sprintf(x,"scale%i_map_erod2",i);
-            fs[x] >> AAM.textures[i].map_erod2;
+            sprintf(x,"scale%i_ind2",i);
+            fs[x] >> AAM.textures[i].ind2;
         }
 
         fs.release();
@@ -459,27 +434,29 @@ namespace cv
         }
     }
 
-    Mat FacemarkAAMImpl::getProjection(Mat M, int n){
-        Mat U,S,Vt,S1,proj;
+    void FacemarkAAMImpl::getProjection(const Mat M, Mat & P,  int n){
+        Mat U,S,Vt,S1, Ut;
         int k;
         if(M.rows < M.cols){
-            SVD::compute(M*M.t(), S, U, Vt);
+            // SVD::compute(M*M.t(), S, U, Vt);
+            eigen(M*M.t(), S, Ut); U=Ut.t();
 
             // find the minimum between number of non-zero eigval,
             // compressed dim, row, and column
-            threshold(S,S1,0.00001,1,THRESH_BINARY);
-            k= countNonZero(S1);
+            // threshold(S,S1,0.00001,1,THRESH_BINARY);
+            k= S.rows; //countNonZero(S1);
             if(k>n)k=n;
             if(k>M.rows)k=M.rows;
             if(k>M.cols)k=M.cols;
 
             // cut the column of eigen vector
-            U.colRange(0,k).copyTo(proj);
+            U.colRange(0,k).copyTo(P);
         }else{
-            SVD::compute(M.t()*M, S, U, Vt);
+            // SVD::compute(M.t()*M, S, U, Vt);
+            eigen(M.t()*M, S, Ut);U=Ut.t();
 
-            threshold(S,S1,0.00001,1,THRESH_BINARY);
-            k= countNonZero(S1);
+            // threshold(S,S1,0.00001,1,THRESH_BINARY);
+            k= S.rows; //countNonZero(S1);
             if(k>n)k=n;
             if(k>M.rows)k=M.rows;
             if(k>M.cols)k=M.cols;
@@ -491,10 +468,9 @@ namespace cv
             s(Range(0,k), Range::all()).copyTo(diag);
 
             // cut the eigen vector to k-column,
-            proj = M*U.colRange(0,k)*D;
+            P = Mat(M*U.colRange(0,k)*D).clone();
 
         }
-        return  proj.clone();
     }
 
     Mat FacemarkAAMImpl::orthonormal(Mat Mo){
@@ -592,8 +568,11 @@ namespace cv
 
     }
 
+    inline Mat FacemarkAAMImpl::linearize(Mat s){ // all x values and then all y values
+        return Mat(s.reshape(1).t()).reshape(1,2*s.rows);
+    }
     inline Mat FacemarkAAMImpl::linearize(std::vector<Point2f> s){ // all x values and then all y values
-        return Mat(Mat(s).reshape(1).t()).reshape(1,2*(int)s.size());
+        return linearize(Mat(s));
     }
 
     void FacemarkAAMImpl::delaunay(std::vector<Point2f> s, std::vector<Vec3i> & triangles){
@@ -697,6 +676,7 @@ namespace cv
         }
 
         Mat A,R,t;
+        A = Mat::zeros(2,3,CV_64F);
         std::vector<Point2f> target(3),source(3);
         std::vector<Point> polygon;
         for(size_t i=0;i<triangles.size();i++){
@@ -708,69 +688,97 @@ namespace cv
             source[1] = curr_shape[triangles[i][1]];
             source[2] = curr_shape[triangles[i][2]];
 
-            A = getAffineTransform(target,source);
+            Mat target_mtx = Mat(target).reshape(1)-1.0;
+            Mat source_mtx = Mat(source).reshape(1)-1.0;
+            Mat U = target_mtx.col(0);
+            Mat V = target_mtx.col(1);
+            Mat X = source_mtx.col(0);
+            Mat Y = source_mtx.col(1);
 
-            approxPolyDP(target,polygon, 1.0, true);
+            double denominator = (target[1].x-target[0].x)*(target[2].y-target[0].y)-
+                                (target[1].y-target[0].y)*(target[2].x-target[0].x);
+            // denominator = 1.0/denominator;
 
-            Mat mask = Mat::zeros(warped.size(), CV_8U);
-            fillConvexPoly(mask, &polygon[0], (int)polygon.size(), 255,8,0 );
+            A.at<double>(0) = ((target[2].y-target[0].y)*(source[1].x-source[0].x)-
+                             (target[1].y-target[0].y)*(source[2].x-source[0].x))/denominator;
+            A.at<double>(1) = ((target[1].x-target[0].x)*(source[2].x-source[0].x)-
+                             (target[2].x-target[0].x)*(source[1].x-source[0].x))/denominator;
+            A.at<double>(2) =X.at<float>(0) + ((V.at<float>(0) * (U.at<float>(2) - U.at<float>(0)) - U.at<float>(0)*(V.at<float>(2) - V.at<float>(0))) * (X.at<float>(1) - X.at<float>(0)) + (U.at<float>(0) * (V.at<float>(1) - V.at<float>(0)) - V.at<float>(0)*(U.at<float>(1) - U.at<float>(0))) * (X.at<float>(2) - X.at<float>(0))) / denominator;
+            A.at<double>(3) =((V.at<float>(2) - V.at<float>(0)) * (Y.at<float>(1) - Y.at<float>(0)) - (V.at<float>(1) - V.at<float>(0)) * (Y.at<float>(2) - Y.at<float>(0))) / denominator;
+            A.at<double>(4) = ((U.at<float>(1) - U.at<float>(0)) * (Y.at<float>(2) - Y.at<float>(0)) - (U.at<float>(2) - U.at<float>(0)) * (Y.at<float>(1) - Y.at<float>(0))) / denominator;
+            A.at<double>(5) = Y.at<float>(0) + ((V.at<float>(0) * (U.at<float>(2) - U.at<float>(0)) - U.at<float>(0) * (V.at<float>(2) - V.at<float>(0))) * (Y.at<float>(1) - Y.at<float>(0)) + (U.at<float>(0) * (V.at<float>(1) - V.at<float>(0)) - V.at<float>(0)*(U.at<float>(1) - U.at<float>(0))) * (Y.at<float>(2) - Y.at<float>(0))) / denominator;
+
+            // A = getAffineTransform(target,source);
 
             R=A.colRange(0,2);
             t=A.colRange(2,3);
 
-            Mat pts = Mat(textureIdx[i]).reshape(1).t();
+            Mat pts_ori = Mat(textureIdx[i]).reshape(1);
+            Mat pts = pts_ori.t(); //matlab
+            Mat bx = pts_ori.col(0);
+            Mat by = pts_ori.col(1);
+
+            Mat base_ind = (by-1)*res.width+bx;
 
             Mat pts_f;
             pts.convertTo(pts_f,CV_64FC1);
             pts_f.push_back(Mat::ones(1,(int)textureIdx[i].size(),CV_64FC1));
 
             Mat trans = (A*pts_f).t();
-            Mat map;
-            trans.convertTo(map, CV_32F);
 
-            std::vector<Point2f> dest = trans.reshape(2);
-            Mat map_x=-1*Mat::ones(res.height, res.width,  CV_32F);
-            Mat map_y=-1*Mat::ones(res.height, res.width,  CV_32F);
+            Mat T; trans.convertTo(T, CV_32S); // this rounding make the result a little bit different to matlab
+            Mat mx = T.col(0);
+            Mat my = T.col(1);
 
-            for(size_t k =0;k<textureIdx[i].size();k++){
-                map_y.at<float>(textureIdx[i][k].y,textureIdx[i][k].x) = dest[k].y;
-                map_x.at<float>(textureIdx[i][k].y,textureIdx[i][k].x) = dest[k].x;
+            Mat ind = (my-1)*image.cols+mx;
+            int maxIdx = image.rows*image.cols;
+            int idx;
+
+            for(int k=0;k<ind.rows;k++){
+                idx=ind.at<int>(k);
+                if(idx<maxIdx){
+                    warped.at<uchar>(base_ind.at<int>(k)) = image.at<uchar>(idx);
+                }
+
             }
 
-            remap(image, warped, map_x, map_y, INTER_NEAREST );
-            warped.copyTo(warped2, mask);
+            warped.copyTo(warped2);
         }
 
         return warped2.clone();
     }
 
-    Mat FacemarkAAMImpl::getFeature(const Mat img, Mat map_x, Mat map_y){
-        Mat feat;
-        remap(img, feat, map_x, map_y, INTER_NEAREST );
-        return feat.clone();
+    template <class T>
+    Mat FacemarkAAMImpl::getFeature(const Mat m, std::vector<int> map){
+        std::vector<float> feat;
+        Mat M = m.t();//matlab
+        // #pragma omp parallel for
+        for(size_t i=0;i<map.size();i++){
+            feat.push_back((float)M.at<T>(map[i]));
+        }
+        return Mat(feat).clone();
     }
 
-    void FacemarkAAMImpl::createMaskMapping(const Mat mask, const Mat mask2, Mat & map_x, Mat & map_y,  Mat & map_x2, Mat & map_y2, Mat & rec_y, Mat & map_erod2){
-        std::vector<float> x,x2;
-        std::vector<float> y,y2;
-        std::vector<float> y_direct;
+    void FacemarkAAMImpl::createMaskMapping(const Mat m1, const Mat m2, std::vector<int> & ind1, std::vector<int> & ind2, std::vector<int> & ind3){
+
         int cnt = 0, idx=0;
 
-        rec_y = -1*Mat::ones(mask.rows, mask.cols,  CV_32F);
+        ind1.clear();
+        ind2.clear();
+        ind3.clear();
+
+        Mat mask = m1.t();//matlab
+        Mat mask2 = m2.t();//matlab
 
         for(int i=0;i<mask.rows;i++){
             for(int j=0;j<mask.cols;j++){
                 if(mask.at<uchar>(i,j)>0){
-                    x.push_back((float)j);
-                    y.push_back((float)i);
                     if(mask2.at<uchar>(i,j)>0){
-                        x2.push_back(0.0);
-                        y2.push_back((float)cnt);
-
-                        y_direct.push_back((float)idx);
+                        ind2.push_back(idx);
+                        ind3.push_back(cnt);
                     }
 
-                    rec_y.at<float>(i,j) = (float)cnt;
+                    ind1.push_back(idx);
 
                     cnt +=1;
                 }
@@ -778,11 +786,6 @@ namespace cv
             } // j
         } // i
 
-        map_x = Mat(x).clone();
-        map_y = Mat(y).clone();
-        map_x2 = Mat(x2).clone();
-        map_y2 = Mat(y2).clone();
-        map_erod2 = Mat(y_direct).clone();
     }
 
 //  } /* namespace face */
