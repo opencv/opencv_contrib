@@ -42,9 +42,17 @@ void Reader::loadTimestamps(const std::string &timesFile)
     CV_Assert(timeStamps.size() == getNumImages() && exposureDurations.size() == getNumImages());
 }
 
-Reader::Reader(const std::string &folderPath, const std::string &timesPath)
+Reader::Reader(const std::string &folderPath, const std::string &imageExt, const std::string &timesPath)
 {
     String cvFolderPath(folderPath);
+
+#if defined WIN32 || defined _WIN32 || defined WINCE
+    *cvFolderPath.end() == '\\' ? cvFolderPath = cvFolderPath : cvFolderPath += '\\';
+#else
+    *cvFolderPath.end() == '/' ? cvFolderPath = cvFolderPath : cvFolderPath += '/';
+#endif
+
+    cvFolderPath += ("*." + imageExt);
     glob(cvFolderPath, images);
     CV_Assert(images.size() > 0);
     std::sort(images.begin(), images.end());

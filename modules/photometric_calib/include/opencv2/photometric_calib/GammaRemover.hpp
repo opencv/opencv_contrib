@@ -35,7 +35,6 @@ private:
     bool validGamma;
 };
 
-
 }}
 
 #endif //_OPENCV__GAMMAREMOVER_HPP

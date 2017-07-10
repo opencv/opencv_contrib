@@ -31,9 +31,10 @@ public:
     /*!
      * @brief Constructor
      * @param folderPath the path of folder which contains the images
+     * @param imageExt the format of the input images, e.g., jpg or png.
      * @param timesPath the path of time file
      */
-    Reader(const std::string &folderPath, const std::string &timesPath);
+    Reader(const std::string &folderPath, const std::string &imageExt, const std::string &timesPath);
 
     /*!
      * @return the amount of images loaded
