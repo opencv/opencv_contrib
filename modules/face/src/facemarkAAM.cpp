@@ -234,9 +234,9 @@ namespace cv
         Mat Wx_dp, Wy_dp;
         createWarpJacobian(S, AAM.Q, AAM.triangles, AAM.textures[0],Wx_dp, Wy_dp, Tp);
 
-        float scale=1.15351185921632715114526490;
-        float tx = 217.2907;
-        float ty = 248.6952;
+        float scale= (float)1.15351185921632715114526490;
+        float tx = (float) 217.2907;
+        float ty = (float) 248.6952;
 
         // initial fitting
         std::vector<Point2f> base_shape = Mat(scale*(Mat(s0))+Scalar(tx,ty)).reshape(2);
@@ -250,7 +250,7 @@ namespace cv
             imgray = image;
         }
 
-        resize(imgray,img,Size(image.cols/scale,image.rows/scale));// matlab use bicubic interpolation, the result is float numbers
+        resize(imgray,img,Size(int(image.cols/scale),int(image.rows/scale)));// matlab use bicubic interpolation, the result is float numbers
 
         /*chop the textures model*/
         Mat A = Mat(AAM.textures[0].A,Range(0,AAM.textures[0].A.rows), Range(0,param_m)).clone();
@@ -277,7 +277,7 @@ namespace cv
             Irec_feat = (AAM.textures[0].A0+A*c);
             Irec = Mat::zeros(AAM.textures[0].resolution.width, AAM.textures[0].resolution.height, CV_32FC1);
 
-            for(size_t j=0;j<AAM.textures[0].ind1.size();j++){
+            for(int j=0;j<(int)AAM.textures[0].ind1.size();j++){
                 Irec.at<float>(AAM.textures[0].ind1[j]) = Irec_feat.at<float>(j);
             }
             Mat irec = Irec.t();
@@ -897,11 +897,11 @@ namespace cv
 
 
         Mat ds0 = S*dp + Q*dr;
-        Mat ds0_mat = Mat::zeros(s0.size(),2, CV_32FC1);
+        Mat ds0_mat = Mat::zeros((int)s0.size(),2, CV_32FC1);
         Mat c0 = ds0_mat.col(0);
         Mat c1 = ds0_mat.col(1);
-        Mat(ds0, Range(0,s0.size())).copyTo(c0);
-        Mat(ds0, Range(s0.size(),s0.size()*2)).copyTo(c1);
+        Mat(ds0, Range(0,(int)s0.size())).copyTo(c0);
+        Mat(ds0, Range((int)s0.size(),(int)s0.size()*2)).copyTo(c1);
 
         Mat s_new = computeWarpParts(shape,s0,ds0_mat, triangles, Tp);
 
@@ -968,7 +968,7 @@ namespace cv
         for(int i=0;i<M.rows;i++){
             for(int j=0;j<M.cols;j++){
                 if(j>0 && j<M.cols-1){
-                    gx.at<float>(i,j) = 0.5*(M.at<float>(i,j+1)-M.at<float>(i,j-1));
+                    gx.at<float>(i,j) = ((float)0.5)*(M.at<float>(i,j+1)-M.at<float>(i,j-1));
                 }else if (j==0){
                     gx.at<float>(i,j) = M.at<float>(i,j+1)-M.at<float>(i,j);
                 }else{
@@ -982,7 +982,7 @@ namespace cv
         for(int i=0;i<M.rows;i++){
             for(int j=0;j<M.cols;j++){
                 if(i>0 && i<M.rows-1){
-                    gy.at<float>(i,j) = 0.5*(M.at<float>(i+1,j)-M.at<float>(i-1,j));
+                    gy.at<float>(i,j) = ((float)0.5)*(M.at<float>(i+1,j)-M.at<float>(i-1,j));
                 }else if (i==0){
                     gy.at<float>(i,j) = M.at<float>(i+1,j)-M.at<float>(i,j);
                 }else{
@@ -1001,13 +1001,13 @@ namespace cv
 
         std::vector<std::vector<int> >triangles_on_a_point;
 
-        int npts = base_shape.size();
+        int npts = (int)base_shape.size();
 
         Mat dW_dxdyt ;
         /*get triangles for each point*/
         std::vector<int> trianglesIdx;
         triangles_on_a_point.resize(npts);
-        for(size_t i=0;i<triangles.size();i++){
+        for(int i=0;i<(int)triangles.size();i++){
             triangles_on_a_point[triangles[i][0]].push_back(i);
             triangles_on_a_point[triangles[i][1]].push_back(i);
             triangles_on_a_point[triangles[i][2]].push_back(i);
@@ -1056,7 +1056,7 @@ namespace cv
                 /*remap to image form*/
                 Mat dx = Mat::zeros(resolution.height, resolution.width, CV_32F);
                 for(int j=0;j<res.rows;j++){
-                    dx.at<float>(y.at<float>(j)-1.0, x.at<float>(j)-1.0) = res.at<float>(j); // matlab use offset
+                    dx.at<float>((int)(y.at<float>(j)-1.0), (int)(x.at<float>(j)-1.0)) = res.at<float>(j); // matlab use offset
                 };
 
                 acc = acc+dx;
