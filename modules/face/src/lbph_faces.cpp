@@ -103,6 +103,10 @@ public:
     bool empty() const {
         return (_labels.empty());
     }
+    String getDefaultName() const
+    {
+        return "opencv_lbphfaces";
+    }
 
     CV_IMPL_PROPERTY(int, GridX, _grid_x)
     CV_IMPL_PROPERTY(int, GridY, _grid_y)

@@ -42,6 +42,10 @@ public:
 
     // Send all predict results to caller side for custom result handling
     void predict(InputArray src, Ptr<PredictCollector> collector) const;
+    String getDefaultName() const
+    {
+        return "opencv_fisherfaces";
+    }
 };
 
 // Removes duplicate elements in a given vector.
