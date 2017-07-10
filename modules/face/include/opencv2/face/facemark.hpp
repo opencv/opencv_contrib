@@ -40,9 +40,9 @@ namespace cv
         * \brief extract landmark points from a face
         */
         // CV_WRAP bool detect( InputArray image, Rect2d& boundingBox );
-        bool detect( InputArray image, std::vector<Point2f> & landmarks );//!< from a face
-        bool detect( InputArray image, Rect face, std::vector<Point2f> & landmarks );//!< from an ROI
-        bool detect( InputArray image, std::vector<Rect> faces, std::vector<std::vector<Point2f> >& landmarks );//!< from many ROIs
+        bool fit( const Mat image, std::vector<Point2f> & landmarks );//!< from a face
+        bool fit( const Mat image, Rect face, std::vector<Point2f> & landmarks );//!< from an ROI
+        bool fit( const Mat image, std::vector<Rect> faces, std::vector<std::vector<Point2f> >& landmarks );//!< from many ROIs
 
         static Ptr<Facemark> create( const String& facemarkType );
 
@@ -52,16 +52,16 @@ namespace cv
         //!<  set the custom face detector
         bool setFaceDetector(bool(*f)(const Mat , std::vector<Rect> & ));
         //!<  get faces using the custom detector
-        bool getFaces( InputArray image , std::vector<Rect> & faces);
+        bool getFaces( const Mat image , std::vector<Rect> & faces);
 
         //!<  get faces and then extract landmarks for each of them
-        bool process(InputArray image,std::vector<Rect> & faces, std::vector<std::vector<Point2f> >& landmarks );
+        bool process(const Mat image,std::vector<Rect> & faces, std::vector<std::vector<Point2f> >& landmarks );
 
         //!<  using the default face detector (haarClassifier), xml of the model should be provided
-        bool process(InputArray image,std::vector<Rect> & faces, std::vector<std::vector<Point2f> >& landmarks, String haarModel );
+        bool process(const Mat image,std::vector<Rect> & faces, std::vector<std::vector<Point2f> >& landmarks, String haarModel );
 
     protected:
-        virtual bool detectImpl( InputArray image, std::vector<Point2f> & landmarks )=0;
+        virtual bool fitImpl( const Mat image, std::vector<Point2f> & landmarks )=0;
         virtual void trainingImpl(String imageList, String groundTruth)=0;
 
         /*circumventable face extractor function*/

@@ -41,7 +41,7 @@ namespace cv
 
     protected:
 
-        bool detectImpl( InputArray image, std::vector<Point2f> & landmarks );
+        bool fitImpl( const Mat, std::vector<Point2f> & landmarks );
         void trainingImpl(String imageList, String groundTruth, const FacemarkAAM::Params &parameters);
         void trainingImpl(String imageList, String groundTruth);
 
@@ -62,11 +62,17 @@ namespace cv
         Mat getFeature(const Mat , std::vector<int> map);
         void createMaskMapping(const Mat mask, const Mat mask2,  std::vector<int> & , std::vector<int> &, std::vector<int> &);
 
+        void warpUpdate(std::vector<Point2f> & shape, Mat delta, std::vector<Point2f> s0, Mat S, Mat Q, std::vector<Vec3i> triangles,std::vector<std::vector<int> > Tp);
+        Mat computeWarpParts(std::vector<Point2f> curr_shape,std::vector<Point2f> s0, Mat ds0, std::vector<Vec3i> triangles,std::vector<std::vector<int> > Tp);
+        void image_jacobian(const Mat gx, const Mat gy, const Mat Jx, const Mat Jy, Mat & G);
+        void gradient(const Mat M, Mat & gx, Mat & gy);
+        void createWarpJacobian(Mat S, Mat Q,  std::vector<Vec3i> , Model::Texture & T, Mat & Wx_dp, Mat & Wy_dp, std::vector<std::vector<int> > & Tp);
+
         FacemarkAAM::Params params;
         FacemarkAAM::Model AAM;
 
     private:
-        int test;
+        bool isModelTrained;
     };
 
     /*
@@ -84,7 +90,7 @@ namespace cv
         params( parameters )
     {
         isSetDetector =false;
-        test = 11;
+        isModelTrained = false;
     }
 
     void FacemarkAAMImpl::read( const cv::FileNode& fn ){
@@ -207,18 +213,99 @@ namespace cv
 
         cv::FileStorage storage("AAM.yml", cv::FileStorage::WRITE);
         saveModel(storage);
+        isModelTrained = true;
         printf("training is finished\n");
     }
 
-    bool FacemarkAAMImpl::detectImpl( InputArray image, std::vector<Point2f>& landmarks ){
+    bool FacemarkAAMImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks ){
         if (landmarks.size()>0)
             landmarks.clear();
 
-        /*dummy function, will be updated soon*/
-        landmarks.push_back(Point2f((float)2.0,(float)3.3));
-        landmarks.push_back(Point2f((float)1.5,(float)2.2));
-        Mat img = image.getMat();
-        printf("detect::rows->%i landmarks-> %i\n",(int)img.rows,(int)landmarks.size());
+        CV_Assert(isModelTrained);
+
+        int param_n = 10, param_m = 200;
+
+        /*variables*/
+        std::vector<Point2f> s0 = AAM.s0;
+
+        /*pre-computation*/
+        Mat S = Mat(AAM.S, Range::all(), Range(0,param_n)).clone(); // chop the shape data
+        std::vector<std::vector<int> > Tp;
+        Mat Wx_dp, Wy_dp;
+        createWarpJacobian(S, AAM.Q, AAM.triangles, AAM.textures[0],Wx_dp, Wy_dp, Tp);
+
+        float scale=1.15351185921632715114526490;
+        float tx = 217.2907;
+        float ty = 248.6952;
+
+        // initial fitting
+        std::vector<Point2f> base_shape = Mat(scale*(Mat(s0))+Scalar(tx,ty)).reshape(2);
+        std::vector<Point2f> curr_shape = Mat(1.0/scale*Mat(base_shape)).reshape(2);
+
+        Mat imgray;
+        Mat img;
+        if(image.channels()>1){
+            cvtColor(image,imgray,CV_BGR2GRAY);
+        }else{
+            imgray = image;
+        }
+
+        resize(imgray,img,Size(image.cols/scale,image.rows/scale));// matlab use bicubic interpolation, the result is float numbers
+
+        /*chop the textures model*/
+        Mat A = Mat(AAM.textures[0].A,Range(0,AAM.textures[0].A.rows), Range(0,param_m)).clone();
+        Mat AA = Mat(AAM.textures[0].AA,Range(0,AAM.textures[0].AA.rows), Range(0,param_m)).clone();
+
+        /*iteratively update the fitting*/
+        Mat I, II, warped, c, gx, gy, Irec, Irec_feat, dc;
+        Mat refI, refII, refWarped, ref_c, ref_gx, ref_gy, refIrec, refIrec_feat, ref_dc ;
+        for(int t=0;t<50;t++){
+            warped = warpImage(img,AAM.textures[0].base_shape, curr_shape,
+                               AAM.triangles,
+                               AAM.textures[0].resolution ,
+                               AAM.textures[0].textureIdx);
+
+            I = getFeature<uchar>(warped, AAM.textures[0].ind1);
+            II = getFeature<uchar>(warped, AAM.textures[0].ind2);
+
+            if(t==0){
+                c = A.t()*(I-AAM.textures[0].A0); //little bit different to matlab, probably due to datatype
+            }else{
+                c = c+dc;
+            }
+
+            Irec_feat = (AAM.textures[0].A0+A*c);
+            Irec = Mat::zeros(AAM.textures[0].resolution.width, AAM.textures[0].resolution.height, CV_32FC1);
+
+            for(size_t j=0;j<AAM.textures[0].ind1.size();j++){
+                Irec.at<float>(AAM.textures[0].ind1[j]) = Irec_feat.at<float>(j);
+            }
+            Mat irec = Irec.t();
+
+            gradient(irec, gx, gy);
+
+            Mat Jc;
+            image_jacobian(Mat(gx.t()).reshape(0,1).t(),Mat(gy.t()).reshape(0,1).t(),Wx_dp, Wy_dp,Jc);
+
+            Mat J;
+            std::vector<float> Irec_vec;
+            for(size_t j=0;j<AAM.textures[0].ind2.size();j++){
+                J.push_back(Jc.row(AAM.textures[0].ind2[j]));
+                Irec_vec.push_back(Irec.at<float>(AAM.textures[0].ind2[j]));
+            }
+
+            /*compute Jfsic and Hfsic*/
+            Mat Jfsic = J - AA*(AA.t()*J);
+            Mat Hfsic = Jfsic.t()*Jfsic;
+            Mat iHfsic;
+            invert(Hfsic, iHfsic);
+
+            /*compute dp dq and dc*/
+            Mat dqp = iHfsic*Jfsic.t()*(II-AAM.textures[0].AA0);
+            dc = AA.t()*(II-Mat(Irec_vec)-J*dqp);
+            warpUpdate(curr_shape, dqp, s0,S, AAM.Q, AAM.triangles,Tp);
+        }
+        landmarks = Mat(scale*Mat(curr_shape)).reshape(2);
         return true;
     }
 
@@ -309,7 +396,7 @@ namespace cv
         }
 
         fs.release();
-
+        isModelTrained = true;
         printf("the model has been loaded\n");
     }
 
@@ -787,6 +874,207 @@ namespace cv
         } // i
 
     }
+
+    void FacemarkAAMImpl::image_jacobian(const Mat gx, const Mat gy, const Mat Jx, const Mat Jy, Mat & G){
+
+        Mat Gx = repeat(gx,1,Jx.cols);
+        Mat Gy = repeat(gy,1,Jx.cols);
+
+        Mat G1,G2;
+        multiply(Gx,Jx,G1);
+        multiply(Gy,Jy,G2);
+
+        G=G1+G2;
+    }
+
+    void FacemarkAAMImpl::warpUpdate(std::vector<Point2f> & shape, Mat delta, std::vector<Point2f> s0, Mat S, Mat Q, std::vector<Vec3i> triangles,std::vector<std::vector<int> > Tp){
+        std::vector<Point2f> new_shape;
+        int nSimEig = 4;
+
+        /*get dr, dp and compute ds0*/
+        Mat dr = -Mat(delta, Range(0,nSimEig));
+        Mat dp = -Mat(delta, Range(nSimEig, delta.rows));
+
+
+        Mat ds0 = S*dp + Q*dr;
+        Mat ds0_mat = Mat::zeros(s0.size(),2, CV_32FC1);
+        Mat c0 = ds0_mat.col(0);
+        Mat c1 = ds0_mat.col(1);
+        Mat(ds0, Range(0,s0.size())).copyTo(c0);
+        Mat(ds0, Range(s0.size(),s0.size()*2)).copyTo(c1);
+
+        Mat s_new = computeWarpParts(shape,s0,ds0_mat, triangles, Tp);
+
+        Mat diff =linearize(Mat(s_new - Mat(s0).reshape(1)));
+
+        Mat r = Q.t()*diff;
+        Mat p = S.t()*diff;
+
+        Mat s = linearize(s0)  +S*p + Q*r;
+        Mat(Mat(s.t()).reshape(0,2).t()).reshape(2).copyTo(shape);
+    }
+
+    Mat FacemarkAAMImpl::computeWarpParts(std::vector<Point2f> curr_shape,std::vector<Point2f> s0, Mat ds0, std::vector<Vec3i> triangles,std::vector<std::vector<int> > Tp){
+
+        std::vector<Point2f> new_shape;
+        std::vector<Point2f> ds = ds0.reshape(2);
+
+        float mx,my;
+        Mat A;
+        std::vector<Point2f> target(3),source(3);
+        std::vector<double> p(3);
+        p[2] = 1;
+        for(size_t i=0;i<s0.size();i++){
+            p[0] = s0[i].x + ds[i].x;
+            p[1] = s0[i].y + ds[i].y;
+
+            std::vector<Point2f> v;
+            std::vector<float>vx, vy;
+            for(size_t j=0;j<Tp[i].size();j++){
+                int idx = Tp[i][j];
+                target[0] = s0[triangles[idx][0]];
+                target[1] = s0[triangles[idx][1]];
+                target[2] = s0[triangles[idx][2]];
+
+                source[0] = curr_shape[triangles[idx][0]];
+                source[1] = curr_shape[triangles[idx][1]];
+                source[2] = curr_shape[triangles[idx][2]];
+
+                A = getAffineTransform(target,source);
+
+                Mat(A*Mat(p)).reshape(2).copyTo(v);
+                vx.push_back(v[0].x);
+                vy.push_back(v[0].y);
+            }// j
+
+            /*find the median*/
+            size_t n = vx.size()/2;
+            nth_element(vx.begin(), vx.begin()+n, vx.end());
+            mx = vx[n];
+            nth_element(vy.begin(), vy.begin()+n, vy.end());
+            my = vy[n];
+
+            new_shape.push_back(Point2f(mx,my));
+        } // s0.size()
+
+        return Mat(new_shape).reshape(1).clone();
+    }
+
+    void FacemarkAAMImpl::gradient(const Mat M, Mat & gx, Mat & gy){
+        gx = Mat::zeros(M.size(),CV_32FC1);
+        gy = Mat::zeros(M.size(),CV_32FC1);
+
+        /*gx*/
+        for(int i=0;i<M.rows;i++){
+            for(int j=0;j<M.cols;j++){
+                if(j>0 && j<M.cols-1){
+                    gx.at<float>(i,j) = 0.5*(M.at<float>(i,j+1)-M.at<float>(i,j-1));
+                }else if (j==0){
+                    gx.at<float>(i,j) = M.at<float>(i,j+1)-M.at<float>(i,j);
+                }else{
+                    gx.at<float>(i,j) = M.at<float>(i,j)-M.at<float>(i,j-1);
+                }
+
+            }
+        }
+
+        /*gy*/
+        for(int i=0;i<M.rows;i++){
+            for(int j=0;j<M.cols;j++){
+                if(i>0 && i<M.rows-1){
+                    gy.at<float>(i,j) = 0.5*(M.at<float>(i+1,j)-M.at<float>(i-1,j));
+                }else if (i==0){
+                    gy.at<float>(i,j) = M.at<float>(i+1,j)-M.at<float>(i,j);
+                }else{
+                    gy.at<float>(i,j) = M.at<float>(i,j)-M.at<float>(i-1,j);
+                }
+
+            }
+        }
+
+    }
+
+    void FacemarkAAMImpl::createWarpJacobian(Mat S, Mat Q, std::vector<Vec3i> triangles, Model::Texture & T, Mat & Wx_dp, Mat & Wy_dp, std::vector<std::vector<int> > & Tp){
+
+        std::vector<Point2f> base_shape = T.base_shape;
+        Rect resolution = T.resolution;
+
+        std::vector<std::vector<int> >triangles_on_a_point;
+
+        int npts = base_shape.size();
+
+        Mat dW_dxdyt ;
+        /*get triangles for each point*/
+        std::vector<int> trianglesIdx;
+        triangles_on_a_point.resize(npts);
+        for(size_t i=0;i<triangles.size();i++){
+            triangles_on_a_point[triangles[i][0]].push_back(i);
+            triangles_on_a_point[triangles[i][1]].push_back(i);
+            triangles_on_a_point[triangles[i][2]].push_back(i);
+        }
+        Tp = triangles_on_a_point;
+
+        /*calculate dW_dxdy*/
+        float v0x,v0y,v1x,v1y,v2x,v2y, denominator;
+        for(int k=0;k<npts;k++){
+            Mat acc = Mat::zeros(resolution.height, resolution.width, CV_32F);
+
+            /*for each triangle on k-th point*/
+            for(size_t i=0;i<triangles_on_a_point[k].size();i++){
+                int tId = triangles_on_a_point[k][i];
+
+                Vec3i v;
+                if(triangles[tId][0]==k ){
+                    v=Vec3i(triangles[tId][0],triangles[tId][1],triangles[tId][2]);
+                }else if(triangles[tId][1]==k){
+                    v=Vec3i(triangles[tId][1],triangles[tId][0],triangles[tId][2]);
+                }else{
+                    v=Vec3i(triangles[tId][2],triangles[tId][0],triangles[tId][1]);
+                }
+
+                v0x = base_shape[v[0]].x;
+                v0y = base_shape[v[0]].y;
+                v1x = base_shape[v[1]].x;
+                v1y = base_shape[v[1]].y;
+                v2x = base_shape[v[2]].x;
+                v2y = base_shape[v[2]].y;
+
+                denominator = (v1x-v0x)*(v2y-v0y)-(v1y-v0y)*(v2x-v0x);
+
+                Mat pixels = Mat(T.textureIdx[tId]).reshape(1); // same, just different order
+                Mat p;
+
+                pixels.convertTo(p,CV_32F, 1.0,1.0); //matlab use offset
+                Mat x = p.col(0);
+                Mat y = p.col(1);
+
+                Mat alpha = (x-v0x)*(v2y-v0y)-(y-v0y)*(v2x-v0x);
+                Mat beta = (v1x-v0x)*(y-v0y)-(v1y-v0y)*(x-v0x);
+
+                Mat res = 1.0 - alpha/denominator - beta/denominator; // same just different order
+
+                /*remap to image form*/
+                Mat dx = Mat::zeros(resolution.height, resolution.width, CV_32F);
+                for(int j=0;j<res.rows;j++){
+                    dx.at<float>(y.at<float>(j)-1.0, x.at<float>(j)-1.0) = res.at<float>(j); // matlab use offset
+                };
+
+                acc = acc+dx;
+            }
+
+            Mat vectorized = Mat(acc.t()).reshape(0,1);
+            dW_dxdyt.push_back(vectorized.clone());
+
+        }// k
+
+        Mat dx_dp;
+        hconcat(Q, S, dx_dp);
+
+        Mat dW_dxdy = dW_dxdyt.t();
+        Wx_dp = dW_dxdy* Mat(dx_dp,Range(0,npts));
+        Wy_dp = dW_dxdy* Mat(dx_dp,Range(npts,2*npts));
+
+    } //createWarpJacobian
 
 //  } /* namespace face */
 } /* namespace cv */

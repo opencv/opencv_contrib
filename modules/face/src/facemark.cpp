@@ -24,24 +24,22 @@ namespace cv
         trainingImpl(imageList, groundTruth);
     }
 
-    bool Facemark::detect( InputArray image, std::vector<Point2f> & landmarks ){
+    bool Facemark::fit( const Mat image, std::vector<Point2f> & landmarks ){
         if( image.empty() )
         return false;
 
-        return detectImpl( image.getMat(), landmarks );
+        return fitImpl( image, landmarks );
     }
 
-    bool Facemark::detect( InputArray image, Rect face, std::vector<Point2f> & landmarks ){
-        Mat img = image.getMat();
-        return detect(img(face), landmarks);
+    bool Facemark::fit( const Mat image, Rect face, std::vector<Point2f> & landmarks ){
+        return fit(image(face), landmarks);
     }
 
-    bool Facemark::detect( InputArray image, std::vector<Rect> faces, std::vector<std::vector<Point2f> > & landmarks ){
-        Mat img = image.getMat();
+    bool Facemark::fit( const Mat image, std::vector<Rect> faces, std::vector<std::vector<Point2f> > & landmarks ){
         landmarks.resize(faces.size());
 
         for(unsigned i=0; i<faces.size();i++){
-            detect(img(faces[i]), landmarks[i]);
+            fit(image(faces[i]), landmarks[i]);
         }
 
         return true;
@@ -74,33 +72,33 @@ namespace cv
     }
 
 
-    bool Facemark::getFaces( InputArray image , std::vector<Rect> & faces){
+    bool Facemark::getFaces( const Mat  image , std::vector<Rect> & faces){
 
         if(!isSetDetector){
             return false;
         }
 
-        faceDetector(image.getMat(), faces);
+        faceDetector(image, faces);
         printf("getfces %i\n",(int)faces.size());
         return true;
     }
 
-    bool Facemark::process(InputArray image,std::vector<Rect> & faces, std::vector<std::vector<Point2f> >& landmarks ){
+    bool Facemark::process(const Mat image,std::vector<Rect> & faces, std::vector<std::vector<Point2f> >& landmarks ){
         if(!isSetDetector){
             return false;
         }
 
-        faceDetector(image.getMat(), faces);
+        faceDetector(image, faces);
         printf("process::face detected %i\n",(int)faces.size());
-        detect(image.getMat(), faces, landmarks);
+        fit(image, faces, landmarks);
         return true;
     }
 
-    bool Facemark::process(InputArray image,std::vector<Rect> & faces, std::vector<std::vector<Point2f> >& landmarks, String haarModel ){
+    bool Facemark::process(const Mat image,std::vector<Rect> & faces, std::vector<std::vector<Point2f> >& landmarks, String haarModel ){
 
-        getFacesHaar(image.getMat(), faces, haarModel);
+        getFacesHaar(image, faces, haarModel);
         printf("process::face detected %i\n",(int)faces.size());
-        detect(image.getMat(), faces, landmarks);
+        fit(image, faces, landmarks);
 
         return true;
     }
