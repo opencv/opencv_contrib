@@ -16,11 +16,11 @@ public:
     ResponseCalib(std::string folderPath, std::string timePath);
     ResponseCalib(std::string folderPath, std::string timePath, int leakPadding, int nIts, int skipFrames);
 
-    void plotE(const double* E, int w, int h, const std::string &saveTo="");
+    void plotE(const double* E, int w, int h, const std::string &saveTo);
 
     Vec2d rmse(const double* G, const double* E, const std::vector<double> &exposureVec, const std::vector<unsigned char*> &dataVec, int wh);
 
-    void plotG(const double* G, const std::string &saveTo="");
+    void plotG(const double* G, const std::string &saveTo);
 
     void calib();
 
@@ -36,9 +36,9 @@ public:
     }
 
 private:
-    int leakPadding;
-    int nIts;
-    int skipFrames;
+    int _leakPadding;
+    int _nIts;
+    int _skipFrames;
     Reader *imageReader;
 };
 

@@ -11,13 +11,13 @@
 
 namespace cv { namespace photometric_calib{
 
-ResponseCalib::ResponseCalib(std::string folderPath, std::string timePath) : leakPadding(2), nIts(10), skipFrames(1)
+ResponseCalib::ResponseCalib(std::string folderPath, std::string timePath) : _leakPadding(2), _nIts(10), _skipFrames(1)
 {
     imageReader = new Reader(folderPath, "png", timePath);
 }
 
 ResponseCalib::ResponseCalib(std::string folderPath, std::string timePath, int leakPadding, int nIts, int skipFrames) :
-        leakPadding(leakPadding), nIts(nIts), skipFrames(skipFrames)
+        _leakPadding(leakPadding), _nIts(nIts), _skipFrames(skipFrames)
 {
     imageReader = new Reader(folderPath, "png", timePath);
 }
@@ -31,7 +31,7 @@ Vec2d ResponseCalib::rmse(const double *G, const double *E, const std::vector<do
     unsigned long n = dataVec.size();
     for(size_t i = 0; i < n; i++)
     {
-        for(size_t k = 0; k < wh; k++)
+        for(int k = 0; k < wh; k++)
         {
             if(dataVec[i][k] == 255) continue;
             double r = G[dataVec[i][k]] - exposureVec[i] * E[k];
@@ -44,7 +44,7 @@ Vec2d ResponseCalib::rmse(const double *G, const double *E, const std::vector<do
     return Vec2d((double)(1e5 * sqrtl((e/num))), (double)num);
 }
 
-void ResponseCalib::plotE(const double* E, int w, int h, const std::string &saveTo="")
+void ResponseCalib::plotE(const double* E, int w, int h, const std::string &saveTo)
 {
 
     // try to find some good color scaling for plotting.
@@ -53,7 +53,7 @@ void ResponseCalib::plotE(const double* E, int w, int h, const std::string &save
 
     double Emin = 1e10, Emax = -1e10;
 
-    for(size_t i = 0; i < w * h; i++)
+    for(int i = 0; i < w * h; i++)
     {
         double le = log(E[i] + offset);
         if(le < min) min = le;
@@ -93,7 +93,7 @@ void ResponseCalib::plotE(const double* E, int w, int h, const std::string &save
     }
 }
 
-void ResponseCalib::plotG(const double* G, const std::string &saveTo="")
+void ResponseCalib::plotG(const double* G, const std::string &saveTo)
 {
     cv::Mat GImg = cv::Mat(256,256,CV_32FC1);
     GImg.setTo(0);
@@ -128,7 +128,7 @@ void ResponseCalib::calib()
     std::vector<double> exposureDurationVec;
     std::vector<uchar *> dataVec;
 
-    for(size_t i = 0 ; i < imageReader->getNumImages(); i += skipFrames)
+    for(size_t i = 0 ; i < imageReader->getNumImages(); i += _skipFrames)
     {
         cv::Mat img = imageReader->getImage(i);
         if(img.rows==0 || img.cols==0) continue;
@@ -142,7 +142,7 @@ void ResponseCalib::calib()
         exposureDurationVec.push_back((double)(imageReader->getExposureDuration(i)));
         unsigned char* data2 = new unsigned char[w*h];
 
-        for (int i = 0; i < leakPadding; ++i)
+        for (int j = 0; j < _leakPadding; ++j)
         {
             memcpy(data2, data, w*h);
             for (int y = 1; y < h - 1; ++y)
@@ -205,7 +205,7 @@ void ResponseCalib::calib()
     bool optE = true;
     bool optG = true;
 
-    for(int it=0;it<nIts;it++)
+    for(int it=0;it<_nIts;it++)
     {
         if(optG)
         {
