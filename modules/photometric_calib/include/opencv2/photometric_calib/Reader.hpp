@@ -68,6 +68,7 @@ public:
     int getWidth() const;
     int getHeight() const;
     const std::string &getFolderPath() const;
+    const std::string &getTimeFilePath() const;
 
 private:
     /*!
@@ -83,6 +84,7 @@ private:
     int _width, _height;//The image width and height. All the images should be of the same size.
 
     std::string _folderPath;
+    std::string _timeFilePath;
 };
 
 //! @}

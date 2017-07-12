@@ -40,6 +40,7 @@ void Reader::loadTimestamps(const std::string &timesFile)
     timeFile.release();
 
     CV_Assert(timeStamps.size() == getNumImages() && exposureDurations.size() == getNumImages());
+    _timeFilePath = timesFile;
 }
 
 Reader::Reader(const std::string &folderPath, const std::string &imageExt, const std::string &timesPath)
@@ -108,6 +109,10 @@ int Reader::getHeight() const {
 
 const std::string &Reader::getFolderPath() const {
     return _folderPath;
+}
+
+const std::string &Reader::getTimeFilePath() const {
+    return _timeFilePath;
 }
 
 }} // namespace photometric_calib, cv
