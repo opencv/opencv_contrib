@@ -5,9 +5,9 @@
 #include "precomp.hpp"
 #include "opencv2/photometric_calib/ResponseCalib.hpp"
 
-#include <sstream>
 #include <fstream>
 #include <iostream>
+#include <math.h>
 
 namespace cv { namespace photometric_calib{
 
