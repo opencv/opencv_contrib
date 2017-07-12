@@ -24,6 +24,14 @@ namespace cv
         trainingImpl(imageList, groundTruth);
     }
 
+
+    bool Facemark::fit( const Mat image, std::vector<Point2f>& landmarks, Mat R, Point2f T, float scale ){
+        if( image.empty() )
+        return false;
+
+        return fitImpl( image, landmarks, R, T, scale );
+    }
+
     bool Facemark::fit( const Mat image, std::vector<Point2f> & landmarks ){
         if( image.empty() )
         return false;

@@ -43,6 +43,7 @@ namespace cv
         bool fit( const Mat image, std::vector<Point2f> & landmarks );//!< from a face
         bool fit( const Mat image, Rect face, std::vector<Point2f> & landmarks );//!< from an ROI
         bool fit( const Mat image, std::vector<Rect> faces, std::vector<std::vector<Point2f> >& landmarks );//!< from many ROIs
+        bool fit( const Mat image, std::vector<Point2f>& landmarks, Mat R, Point2f T, float scale );
 
         static Ptr<Facemark> create( const String& facemarkType );
 
@@ -62,6 +63,7 @@ namespace cv
 
     protected:
         virtual bool fitImpl( const Mat image, std::vector<Point2f> & landmarks )=0;
+        virtual bool fitImpl( const Mat, std::vector<Point2f>& landmarks, Mat R, Point2f T, float scale )=0; //temporary
         virtual void trainingImpl(String imageList, String groundTruth)=0;
 
         /*circumventable face extractor function*/

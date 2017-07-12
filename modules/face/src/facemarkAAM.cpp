@@ -42,6 +42,7 @@ namespace cv
     protected:
 
         bool fitImpl( const Mat, std::vector<Point2f> & landmarks );
+        bool fitImpl( const Mat, std::vector<Point2f>& , Mat R, Point2f T, float scale );
         void trainingImpl(String imageList, String groundTruth, const FacemarkAAM::Params &parameters);
         void trainingImpl(String imageList, String groundTruth);
 
@@ -217,7 +218,16 @@ namespace cv
         printf("training is finished\n");
     }
 
-    bool FacemarkAAMImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks ){
+    bool FacemarkAAMImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks){
+        /*temporary values...will be updated*/
+        Mat R =  Mat::eye(2, 2, CV_32F);
+        Point2f t = Point2f(0,0);
+        float scale = 1.0;
+
+        return fitImpl(image, landmarks, R, t, scale);
+    }
+
+    bool FacemarkAAMImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks, Mat R, Point2f T, float scale ){
         if (landmarks.size()>0)
             landmarks.clear();
 
@@ -234,13 +244,13 @@ namespace cv
         Mat Wx_dp, Wy_dp;
         createWarpJacobian(S, AAM.Q, AAM.triangles, AAM.textures[0],Wx_dp, Wy_dp, Tp);
 
-        float scale= (float)1.15351185921632715114526490;
-        float tx = (float) 217.2907;
-        float ty = (float) 248.6952;
-
         // initial fitting
-        std::vector<Point2f> base_shape = Mat(scale*(Mat(s0))+Scalar(tx,ty)).reshape(2);
-        std::vector<Point2f> curr_shape = Mat(1.0/scale*Mat(base_shape)).reshape(2);
+        // Mat initial = Mat(scale*(Mat(s0))+Scalar(T.x,T.y)).reshape(1);
+        // Mat base_shape = Mat(R*initial.t()).t();
+        // std::vector<Point2f> curr_shape = Mat(1.0/scale*(base_shape)).reshape(2);
+        std::vector<Point2f> s0_init = Mat(Mat(R*scale*Mat(Mat(s0).reshape(1)).t()).t()).reshape(2);
+        std::vector<Point2f> s0_align =  Mat(Mat(s0_init)+Scalar(T.x,T.y));
+        std::vector<Point2f> curr_shape = Mat(1.0/scale*Mat(s0_align)).reshape(2);
 
         Mat imgray;
         Mat img;
