@@ -28,7 +28,7 @@ Vec2d ResponseCalib::rmse(const double *G, const double *E, const std::vector<do
     long double e = 0;		// yeah - these will be sums of a LOT of values, so we need super high precision.
     long double num = 0;
 
-    unsigned long n = dataVec.size();
+    size_t n = dataVec.size();
     for(size_t i = 0; i < n; i++)
     {
         for(int k = 0; k < wh; k++)
@@ -124,12 +124,13 @@ void ResponseCalib::plotG(const double* G, const std::string &saveTo)
 
 void ResponseCalib::calib()
 {
-    int w=0,h=0,n=0;
+    int w=0,h=0;
+    size_t n=0;
 
     std::vector<double> exposureDurationVec;
     std::vector<uchar *> dataVec;
 
-    for(size_t i = 0 ; i < imageReader->getNumImages(); i += _skipFrames)
+    for(unsigned long i = 0 ; i < imageReader->getNumImages(); i += _skipFrames)
     {
         cv::Mat img = imageReader->getImage(i);
         if(img.rows==0 || img.cols==0) continue;
@@ -181,7 +182,7 @@ void ResponseCalib::calib()
     memset(En,0,sizeof(double)*w*h);
     memset(G,0,sizeof(double)*256);
 
-    for(int i=0;i<n;i++)
+    for(size_t i=0;i<n;i++)
     {
         for(int k=0;k<w*h;k++)
         {
@@ -215,7 +216,7 @@ void ResponseCalib::calib()
             double* GNum = new double[256];
             memset(GSum,0,256*sizeof(double));
             memset(GNum,0,256*sizeof(double));
-            for(int i=0;i<n;i++)
+            for(size_t i=0;i<n;i++)
             {
                 for(int k=0;k<w*h;k++)
                 {
@@ -249,7 +250,7 @@ void ResponseCalib::calib()
             double* ENum = new double[w*h];
             memset(ESum,0,w*h*sizeof(double));
             memset(ENum,0,w*h*sizeof(double));
-            for(int i=0;i<n;i++)
+            for(size_t i=0;i<n;i++)
             {
                 for(int k=0;k<w*h;k++)
                 {
@@ -305,7 +306,7 @@ void ResponseCalib::calib()
     delete[] E;
     delete[] En;
     delete[] G;
-    for(int i=0;i<n;i++) delete[] dataVec[i];
+    for(size_t i=0;i<n;i++) delete[] dataVec[i];
 }
 
 }} // namespace photometric_calib, cv
