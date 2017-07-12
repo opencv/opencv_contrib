@@ -41,7 +41,8 @@ Vec2d ResponseCalib::rmse(const double *G, const double *E, const std::vector<do
         }
     }
 
-    return Vec2d((double)(1e5 * sqrtl((e/num))), (double)num);
+    //return Vec2d((double)(1e5 * sqrtl((e/num))), (double)num);
+    return Vec2d((double)(1e5 *sqrt((e/num))), (double)num);
 }
 
 void ResponseCalib::plotE(const double* E, int w, int h, const std::string &saveTo)
