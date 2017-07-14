@@ -97,7 +97,7 @@ Mat loadCSV(std::string filename){
        string single_value;
        while(getline(temp,single_value,',')){
             // convert the string element to a integer value
-            values.push_back(atof(single_value.c_str()));
+            values.push_back((float)atof(single_value.c_str()));
        }
        // add the row to the complete data vector
        all_data.push_back(values);
