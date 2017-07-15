@@ -315,6 +315,7 @@ private:
     unsigned windowSize;
     unsigned patchSize;
     unsigned temporalSize;
+    unsigned patchNumber;
 public:
     struct DT
     {
@@ -339,10 +340,11 @@ public:
         return computeSaliencyImpl( image, saliencyMap );
     }
     void dynamicTextureEstimator( const Mat, DT& );
+    void patchGenerator( const std::vector<Mat>& img_sq, unsigned index, unsigned r, unsigned c, Mat& center, Mat& surround, Mat& all );
+    std::vector<Mat> saliencyMapGenerator( const std::vector<Mat> );
 protected:
     bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap );
-    std::vector<Mat> saliencyMapGenerator( const std::vector<Mat> );
-    double KLdivDT( const Mat, const DT&, const DT& );
+    double KLdivDT( const DT&, const DT& );
 };
 
 /************************************ Specific Objectness Specialized Classes ************************************/
