@@ -51,7 +51,6 @@ namespace cv
 {
     namespace plot
     {
-        using namespace std;
 
         class Plot2dImpl : public Plot2d
         {
@@ -62,9 +61,15 @@ namespace cv
                 Mat _plotData = plotData.getMat();
                 //if the matrix is not Nx1 or 1xN
                 if(_plotData.cols > 1 && _plotData.rows > 1)
+                {
                     CV_Error(Error::StsBadArg, "ERROR: Plot data must be a 1xN or Nx1 matrix.\n");
+                }
 
-                CV_Assert(_plotData.type() == CV_64F);
+                //if the matrix type is not CV_64F
+                if(_plotData.type() != CV_64F)
+                {
+                    CV_Error(Error::StsBadArg, "ERROR: Plot data type must be double (CV_64F).\n");
+                }
 
                 //in case we have a row matrix than needs to be transposed
                 if(_plotData.cols > _plotData.rows)
@@ -90,9 +95,17 @@ namespace cv
                 Mat _plotDataY = plotDataY_.getMat();
                 //f the matrix is not Nx1 or 1xN
                 if((_plotDataX.cols > 1 && _plotDataX.rows > 1) || (_plotDataY.cols > 1 && _plotDataY.rows > 1))
-                    CV_Error(Error::StsBadArg, "ERROR: Plot data must be a 1xN or Nx1 matrix.\n");
+                {
+                    std::cout << "ERROR: Plot data must be a 1xN or Nx1 matrix." << std::endl;
+                    exit(0);
+                }
 
-                CV_Assert(_plotDataX.type() == CV_64F && _plotDataY.type() == CV_64F);
+                //if the matrix type is not CV_64F
+                if(_plotDataX.type() != CV_64F || _plotDataY.type() != CV_64F)
+                {
+                    std::cout << "ERROR: Plot data type must be double (CV_64F)." << std::endl;
+                    exit(0);
+                }
 
                 //in case we have a row matrix than needs to be transposed
                 if(_plotDataX.cols > _plotDataX.rows)
@@ -111,22 +124,18 @@ namespace cv
             void setMinX(double _plotMinX)
             {
                 plotMinX = _plotMinX;
-                plotMinX_plusZero = _plotMinX;
             }
             void setMaxX(double _plotMaxX)
             {
                 plotMaxX = _plotMaxX;
-                plotMaxX_plusZero = _plotMaxX;
             }
             void setMinY(double _plotMinY)
             {
                 plotMinY = _plotMinY;
-                plotMinY_plusZero = _plotMinY;
             }
             void setMaxY(double _plotMaxY)
             {
                 plotMaxY = _plotMaxY;
-                plotMaxY_plusZero = _plotMaxY;
             }
             void setPlotLineWidth(int _plotLineWidth)
             {
@@ -170,42 +179,43 @@ namespace cv
             }
 
             //render the plotResult to a Mat
-            void render(OutputArray _plotResult)
+            void render(InputOutputArray _plotResult)
             {
-                //create the plot result
-                _plotResult.create(plotSizeHeight, plotSizeWidth, CV_8UC3);
-                plotResult = _plotResult.getMat();
-                plotResult.setTo(plotBackgroundColor);
+                bool renderAxes = false;
+                if (_plotResult.empty())
+                {
+                    _plotResult.create(plotSizeHeight, plotSizeWidth, CV_8UC3);
+                    _plotResult.setTo(plotBackgroundColor);
+                    renderAxes = true; // only if this was a new image
+                }
 
-                int NumVecElements = plotDataX.rows;
+                plotResult = _plotResult.getMat();
+                plotSizeHeight = plotResult.rows;
+                plotSizeWidth  = plotResult.cols;
 
                 Mat InterpXdata = linearInterpolation(plotMinX, plotMaxX, 0, plotSizeWidth, plotDataX);
                 Mat InterpYdata = linearInterpolation(plotMinY, plotMaxY, 0, plotSizeHeight, plotDataY);
 
-                //Find the zeros in image coordinates
-                Mat InterpXdataFindZero = linearInterpolation(plotMinX_plusZero, plotMaxX_plusZero, 0, plotSizeWidth, plotDataX_plusZero);
-                Mat InterpYdataFindZero = linearInterpolation(plotMinY_plusZero, plotMaxY_plusZero, 0, plotSizeHeight, plotDataY_plusZero);
+                int ImageXzero = int(-(plotMinX) * (plotSizeWidth  / (plotMaxX-plotMinX)));;
+                int ImageYzero = int(-(plotMinY) * (plotSizeHeight / (plotMaxY-plotMinY)));;
 
-                int ImageXzero = (int)InterpXdataFindZero.at<double>(NumVecElements,0);
-                int ImageYzero = (int)InterpYdataFindZero.at<double>(NumVecElements,0);
+                if (renderAxes)
+                    drawAxes(ImageXzero, plotResult.rows - ImageYzero, plotAxisColor, plotGridColor);
 
-                double CurrentX = plotDataX.at<double>(NumVecElements-1,0);
-                double CurrentY = plotDataY.at<double>(NumVecElements-1,0);
-
-                drawAxis(ImageXzero,ImageYzero, CurrentX, CurrentY, plotAxisColor, plotGridColor);
-
-                if(needPlotLine)
+                if (needPlotLine)
                 {
                     //Draw the plot by connecting lines between the points
                     Point p1;
                     p1.x = (int)InterpXdata.at<double>(0,0);
                     p1.y = (int)InterpYdata.at<double>(0,0);
+                    p1.y = plotSizeHeight - p1.y;
 
                     for (int r=1; r<InterpXdata.rows; r++)
                     {
                         Point p2;
                         p2.x = (int)InterpXdata.at<double>(r,0);
                         p2.y = (int)InterpYdata.at<double>(r,0);
+                        p2.y = plotSizeHeight - p2.y;
 
                         line(plotResult, p1, p2, plotLineColor, plotLineWidth, 8, 0);
 
@@ -219,6 +229,7 @@ namespace cv
                         Point p;
                         p.x = (int)InterpXdata.at<double>(r,0);
                         p.y = (int)InterpYdata.at<double>(r,0);
+                        p.y = plotSizeHeight - p.y;
 
                         circle(plotResult, p, 1, plotLineColor, plotLineWidth, 8, 0);
                     }
@@ -229,8 +240,6 @@ namespace cv
 
             Mat plotDataX;
             Mat plotDataY;
-            Mat plotDataX_plusZero;
-            Mat plotDataY_plusZero;
             const char * plotName;
 
             //dimensions and limits of the plot
@@ -240,10 +249,6 @@ namespace cv
             double plotMaxX;
             double plotMinY;
             double plotMaxY;
-            double plotMinX_plusZero;
-            double plotMaxX_plusZero;
-            double plotMinY_plusZero;
-            double plotMaxY_plusZero;
             int plotLineWidth;
 
             //colors of each plot element
@@ -264,48 +269,12 @@ namespace cv
                 plotDataX=_plotDataX;
                 plotDataY=_plotDataY;
 
-                int NumVecElements = plotDataX.rows;
-
-                plotDataX_plusZero = Mat::zeros(NumVecElements+1,1,CV_64F);
-                plotDataY_plusZero = Mat::zeros(NumVecElements+1,1,CV_64F);
-
-                for(int i=0; i<NumVecElements; i++){
-                    plotDataX_plusZero.at<double>(i,0) = plotDataX.at<double>(i,0);
-                    plotDataY_plusZero.at<double>(i,0) = plotDataY.at<double>(i,0);
-                }
-
-                double MinX;
-                double MaxX;
-                double MinY;
-                double MaxY;
-                double MinX_plusZero;
-                double MaxX_plusZero;
-                double MinY_plusZero;
-                double MaxY_plusZero;
-
                 needPlotLine = true;
 
-                //Obtain the minimum and maximum values of Xdata
-                minMaxLoc(plotDataX,&MinX,&MaxX);
-
-                //Obtain the minimum and maximum values of Ydata
-                minMaxLoc(plotDataY,&MinY,&MaxY);
-
-                //Obtain the minimum and maximum values of Xdata plus zero
-                minMaxLoc(plotDataX_plusZero,&MinX_plusZero,&MaxX_plusZero);
-
-                //Obtain the minimum and maximum values of Ydata plus zero
-                minMaxLoc(plotDataY_plusZero,&MinY_plusZero,&MaxY_plusZero);
-
                 //setting the min and max values for each axis
-                plotMinX = MinX;
-                plotMaxX = MaxX;
-                plotMinY = MinY;
-                plotMaxY = MaxY;
-                plotMinX_plusZero = MinX_plusZero;
-                plotMaxX_plusZero = MaxX_plusZero;
-                plotMinY_plusZero = MinY_plusZero;
-                plotMaxY_plusZero = MaxY_plusZero;
+                // (from input data), can be overridden later by setMaxX(...) etc.
+                minMaxLoc(plotDataX, &plotMinX, &plotMaxX, 0, 0);
+                minMaxLoc(plotDataY, &plotMinY, &plotMaxY, 0, 0);
 
                 //setting the default size of a plot figure
                 setPlotSize(600, 400);
@@ -315,120 +284,114 @@ namespace cv
 
                 //setting default colors for the different elements of the plot
                 setPlotAxisColor(Scalar(0, 0, 255));
-                setPlotGridColor(Scalar(255, 255, 255));
+                setPlotGridColor(Scalar(105, 105, 105));
                 setPlotBackgroundColor(Scalar(0, 0, 0));
                 setPlotLineColor(Scalar(0, 255, 255));
                 setPlotTextColor(Scalar(255, 255, 255));
             }
 
-            void drawAxis(int ImageXzero, int ImageYzero, double CurrentX, double CurrentY, Scalar axisColor, Scalar gridColor)
+            void stipple(bool horz, int ImageXzero, int ImageYzero, int i, Scalar gridColor, int TraceSize = 5)
             {
-                drawValuesAsText(0, ImageXzero, ImageYzero, 10, 20);
-                drawValuesAsText(0, ImageXzero, ImageYzero, -20, 20);
-                drawValuesAsText(0, ImageXzero, ImageYzero, 10, -10);
-                drawValuesAsText(0, ImageXzero, ImageYzero, -20, -10);
-                drawValuesAsText("X = %g",CurrentX, 0, 0, 40, 20);
-                drawValuesAsText("Y = %g",CurrentY, 0, 20, 40, 20);
-
-                //Horizontal X axis and equispaced horizontal lines
-                int LineSpace = 50;
-                int TraceSize = 5;
-                drawLine(0, plotSizeWidth, ImageYzero, ImageYzero, axisColor);
-
-               for(int i=-plotSizeHeight; i<plotSizeHeight; i=i+LineSpace){
-
-                    if(i!=0){
-                        int Trace=0;
-                        while(Trace<plotSizeWidth){
-                            drawLine(Trace, Trace+TraceSize, ImageYzero+i, ImageYzero+i, gridColor);
-                            Trace = Trace+2*TraceSize;
-                        }
-                    }
-                }
-
-
-                //Vertical Y axis
-                drawLine(ImageXzero, ImageXzero, 0, plotSizeHeight, axisColor);
-
-                for(int i=-plotSizeWidth; i<plotSizeWidth; i=i+LineSpace){
-
-                    if(i!=0){
-                        int Trace=0;
-                        while(Trace<plotSizeHeight){
-                            drawLine(ImageXzero+i, ImageXzero+i, Trace, Trace+TraceSize, gridColor);
-                            Trace = Trace+2*TraceSize;
-                        }
-                    }
+                int mx = horz ? plotSizeWidth : plotSizeHeight;
+                int Trace=0;
+                while(Trace < mx)
+                {
+                    if (horz)
+                        drawLine(Trace, Trace+TraceSize, ImageYzero+i, ImageYzero+i, gridColor);
+                    else
+                        drawLine(ImageXzero+i, ImageXzero+i, Trace, Trace+TraceSize, gridColor);
+                    Trace = Trace + 2 * TraceSize;
                 }
             }
 
-            Mat linearInterpolation(double Xa, double Xb, double Ya, double Yb, Mat Xdata){
+            // draw a stippled line, and it's 0.5 resized (that's just an offset) downtoned version as well
+            void stipple2(bool horz, int ImageXzero, int ImageYzero, int i1, int i2, Scalar gridColor)
+            {
+                stipple(horz, ImageXzero, ImageYzero, i1, gridColor);
+                stipple(horz, ImageXzero, ImageYzero, i2, gridColor*0.5);
+            }
 
+            // find best grid size on pow 10 scale
+            int bestGrid(double w, double instance)
+            {
+                double tile = w / instance;
+                while(tile>w/5 ) { tile /= 10; }
+                while(tile<w/10) { tile *= 10; }
+                return (int)tile;
+            }
+
+            void drawAxes(int ImageXzero, int ImageYzero, Scalar axisColor, Scalar gridColor)
+            {
+                // if our actual zero value is "offside the grid", snap axis to border of the image
+                int ImageXaxis = min(max(1,ImageXzero),plotSizeWidth-2);
+                int ImageYaxis = min(max(1,ImageYzero),plotSizeHeight-2);
+                // be prepared, that all neg y values we will need to draw on bottom side of x axis
+                int dy = plotMaxY < 0 ? 25 : -5;
+                drawValuesAsText(plotMaxX, plotSizeWidth - 30, ImageYaxis + dy);
+                drawValuesAsText(plotMinX, 20, ImageYaxis + dy);
+                // and left to the y axis, if all x are negative
+                int dx = plotMaxX < 0 ? -25 : 5;
+                drawValuesAsText(plotMaxY, ImageXaxis + dx, 10);
+                drawValuesAsText(plotMinY, ImageXaxis + dx, plotSizeHeight - 20);
+
+                //Horizontal X axis and equispaced horizontal lines
+                drawLine(0, plotSizeWidth, ImageYaxis, ImageYaxis, axisColor);
+                int LineSpace = bestGrid(plotSizeHeight, abs(plotMaxY - plotMinY));
+                int maxIter = plotSizeHeight + abs(ImageYzero) + LineSpace;
+                for (int i=-LineSpace; i>-maxIter; i=i-LineSpace)
+                    stipple2(true, ImageXzero, ImageYzero, i, i+LineSpace/2, gridColor);
+                for (int i=LineSpace; i<maxIter; i=i+LineSpace)
+                    stipple2(true, ImageXzero, ImageYzero, i, i-LineSpace/2, gridColor);
+
+                //Vertical Y axis
+                drawLine(ImageXaxis, ImageXaxis, 0, plotSizeHeight, axisColor);
+                LineSpace = bestGrid(plotSizeWidth, abs(plotMaxX - plotMinX));
+                maxIter = plotSizeWidth + abs(ImageXzero) + LineSpace;
+                for (int i=-LineSpace; i>-maxIter; i=i-LineSpace)
+                    stipple2(false, ImageXzero, ImageYzero, i, i+LineSpace/2, gridColor);
+                for (int i=LineSpace; i<maxIter; i=i+LineSpace)
+                    stipple2(false, ImageXzero, ImageYzero, i, i-LineSpace/2, gridColor);
+            }
+
+            Mat linearInterpolation(double Xa, double Xb, double Ya, double Yb, const Mat &Xdata)
+            {
                 Mat Ydata = Xdata*0;
-
-                for (int i=0; i<Xdata.rows; i++){
-
+                for (int i=0; i<Xdata.rows; i++)
+                {
                     double X = Xdata.at<double>(i,0);
                     Ydata.at<double>(i,0) = int(Ya + (Yb-Ya)*(X-Xa)/(Xb-Xa));
 
                     if(Ydata.at<double>(i,0)<0)
                         Ydata.at<double>(i,0)=0;
-
                 }
-
                 return Ydata;
             }
 
-            void drawValuesAsText(double Value, int Xloc, int Yloc, int XMargin, int YMargin){
-
-                char AxisX_Min_Text[20];
-                double TextSize = 1;
-
-                sprintf(AxisX_Min_Text, "%g", Value);
-                Point AxisX_Min_Loc;
-                AxisX_Min_Loc.x = Xloc+XMargin;
-                AxisX_Min_Loc.y = Yloc+YMargin;
-
-                putText(plotResult,AxisX_Min_Text, AxisX_Min_Loc, FONT_HERSHEY_COMPLEX_SMALL, TextSize, plotTextColor, 1, 8);
+            void drawValuesAsText(double value, int Xloc, int Yloc)
+            {
+                double v = abs(value);
+                const char *f = "%.1f";
+                if (v>0 && v<0.5) f = "%.3f";
+                if (v>0 && v<0.005) f = "%.5f";
+                putText(plotResult, format(f,value), Point(Xloc,Yloc), FONT_HERSHEY_PLAIN, 0.85, plotTextColor, 1, 8);
             }
 
-            void drawValuesAsText(const char *Text, double Value, int Xloc, int Yloc, int XMargin, int YMargin){
-
-                char AxisX_Min_Text[20];
-                int TextSize = 1;
-
-                sprintf(AxisX_Min_Text, Text, Value);
-                Point AxisX_Min_Loc;
-                AxisX_Min_Loc.x = Xloc+XMargin;
-                AxisX_Min_Loc.y = Yloc+YMargin;
-
-                putText(plotResult,AxisX_Min_Text, AxisX_Min_Loc, FONT_HERSHEY_COMPLEX_SMALL, TextSize, plotTextColor, 1, 8);
+            void drawLine(int Xstart, int Xend, int Ystart, int Yend, Scalar lineColor)
+            {
+                line(plotResult, Point(Xstart,Ystart), Point(Xend,Yend), lineColor, plotLineWidth, 8, 0);
             }
 
-
-            void drawLine(int Xstart, int Xend, int Ystart, int Yend, Scalar lineColor){
-
-                Point Axis_start;
-                Point Axis_end;
-                Axis_start.x = Xstart;
-                Axis_start.y = Ystart;
-                Axis_end.x = Xend;
-                Axis_end.y = Yend;
-
-                line(plotResult, Axis_start, Axis_end, lineColor, plotLineWidth, 8, 0);
-            }
-
-        };
+        }; // cv::plot::Plot2dImpl
 
         Ptr<Plot2d> createPlot2d(InputArray _plotData)
         {
             return Ptr<Plot2dImpl> (new Plot2dImpl (_plotData));
-
         }
 
         Ptr<Plot2d> createPlot2d(InputArray _plotDataX, InputArray _plotDataY)
         {
             return Ptr<Plot2dImpl> (new Plot2dImpl (_plotDataX, _plotDataY));
         }
+
     }
 }
