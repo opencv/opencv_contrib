@@ -1,4 +1,5 @@
 from skimage import io, transform
+from multiprocessing.dummy import Pool as ThreadPool
 
 def rescale(root_new, root_old, img_path, ann_path, out_shape):
   try:

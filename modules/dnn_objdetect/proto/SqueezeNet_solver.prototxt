@@ -12,6 +12,6 @@ weight_decay: 0.0002
 snapshot: 1000
 snapshot_prefix: "/users/TeamVideoSummarization/gsoc/practice/snapshot/train"
 solver_mode: GPU
-net: "/users/TeamVideoSummarization/gsoc/opencv_contrib/modules/dnn_objdetect/proto/SqueezeNet_train.prototxt" 
+net: "/users/TeamVideoSummarization/gsoc/opencv_contrib/modules/dnn_objdetect/proto/SqueezeNet_train_test.prototxt" 
 random_seed: 42
 average_loss: 80
