@@ -52,10 +52,11 @@ namespace xphoto
      * @brief core function to remove occlusions
      * @param srcImgs source image sequences, involving translation motions.
      * @param dst Obstruction-removed destination image, corresponding to the reference image, with the same size and type. In general, the reference image is the center frame of the input image.
+     * @param foreground estimated reflection or opaque obstruction layer
      * @param mask estimated occlusion areas (CV_8UC1), where zero pixels indicate area to be estimated to be occlusions.
      * @param obstructionType: reflection (0) or opaque obstruction (1)
      */
-        void removeOcc(const std::vector <Mat> &srcImgs, Mat &dst, Mat &mask, const int obstructionType);
+    void removeOcc(const std::vector <Mat> &srcImgs, Mat &dst, Mat& foreground, Mat &mask, const int obstructionType);
 
     private:
     /*!
@@ -77,24 +78,59 @@ namespace xphoto
 
         std::vector <Mat> backFlowFields; //estimated optical flow fields in the background layer
         std::vector <Mat> foreFlowFields; //estimated optical flow fields in the foreground layer
-        std::vector <Mat> warpedToReference; //warped images from input images through the estimated background flow fields
+        //std::vector <Mat> warpedToReference; //warped images from input images through the estimated background flow fields
 
         //switch different methods. TODO
-        int interpolationType; //interpolation type: 0(reflection) or 1(opaque occlusion)
-        int edgeflowType; //edge flow type
+        //int interpolationType; //interpolation type: 0(reflection) or 1(opaque occlusion)
+        //int edgeflowType; //edge flow type
 
-        //private functions
-        //build pyramid by stacking all input image sequences
+        /** @brief private functions
+        */
+        /** @brief Build pyramid by stacking all input image sequences
+        */
         std::vector<Mat> buildPyramid( const std::vector <Mat>& srcImgs);
-        //extract certain level of image sequences from the stacked image pyramid
-        std::vector<Mat> extractLevelImgs(const std::vector<Mat>& pyramid, const int level);
-        //initialization: decompose the motion fields
-        void motionInitDirect(const std::vector<Mat>& video_input, std::vector<Mat>& back_Flowfields, std::vector<Mat>& fore_flowfields, std::vector<Mat>& warpedToReference);
-        //initialization: decompose the image components
-        Mat imgInitDecompose(const std::vector <Mat> &warpedImgs, const std::vector<Mat>& back_flowfields, const int obstructionType);
 
+        /** @brief Extract certain level of image sequences from the stacked image pyramid
+        */
+        std::vector<Mat> extractLevelImgs(const std::vector<Mat>& pyramid, const int level);
+
+        /** @brief Initialization: decompose the motion fields
+        */
+        void motionInitDirect(const std::vector<Mat>& video_input, std::vector<Mat>& back_Flowfields, std::vector<Mat>& fore_flowfields, std::vector<Mat>& warpedToReference);
+
+        /** @brief Initialization: decompose the image components in the case of reflection
+        */
+        Mat imgInitDecomRef(const std::vector <Mat> &warpedImgs);
+
+        /** @brief Initialization: decompose the image components in the case of opaque reflection
+        */
+        Mat imgInitDecomOpaq(const std::vector <Mat> &warpedImgs, Mat& foreground, Mat& alphaMap);
     };
 //! @}
+
+/** @brief Convert from sparse edge displacement to dense motion fields
+ */
+CV_EXPORTS Mat sparseToDense(Mat im1, Mat im2, Mat im1_edges, Mat sparseFlow);
+
+/** @brief Visualize the optical flow flow with the window named figName
+ */
+CV_EXPORTS void colorFlow(const Mat& flow, std::string figName);
+
+/** @brief Decompose motion between two images: target frame and source frame, using homography ransac
+ */
+CV_EXPORTS void initMotionDecompose(const Mat& im1 , const Mat& im2 , Mat& back_denseFlow, Mat& fore_denseFlow, int back_ransacThre, int fore_ransacThre);
+
+/** @brief Warp im1 to output through optical flow:
+*/
+CV_EXPORTS Mat imgWarpFlow(const Mat& im1, const Mat& flow);
+
+/** @brief Estimate homography matrix using edge flow fields
+*/
+CV_EXPORTS Mat flowHomography(const Mat& edges, const Mat& flow, const int ransacThre);
+
+/** @brief Convert from index to matrix
+*/
+CV_EXPORTS Mat indexToMask(const Mat& indexMat, const int rows, const int cols);
 
 }
 }

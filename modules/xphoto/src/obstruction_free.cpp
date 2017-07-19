@@ -63,7 +63,7 @@ std::vector<Mat> obstructionFree::buildPyramid(const std::vector <Mat>& srcImgs)
     }
 
     Mat thisLevel, nextLevel;
-    int thisLevelId;
+    size_t thisLevelId;
     for (int level_i=1; level_i<this->pyramidLevel; level_i++){
         for (size_t frame_i=0; frame_i<this->frameNumber; frame_i++){
             thisLevelId=(level_i-1)*this->frameNumber+frame_i;
@@ -87,16 +87,16 @@ std::vector<Mat> obstructionFree::extractLevelImgs(const std::vector<Mat>& pyram
     return levelPyramid;
 }
 
-    Mat indexToMask(Mat indexMat, int rows, int cols){
-        Mat maskMat=Mat::zeros(rows, cols, CV_8UC1);
-        for (int i = 0; i < indexMat.cols; i++ ) {
-            for (int j = 0; j < indexMat.rows; j++) {
-                Vec2i mask_loca = indexMat.at<Vec2i>(j, i);
-                if (mask_loca[0] !=0 && mask_loca[1] !=0) {
-                    maskMat.at<uchar>(Point(mask_loca)) = 255;}
-        }}
+Mat indexToMask(Mat indexMat, int rows, int cols){
+    Mat maskMat=Mat::zeros(rows, cols, CV_8UC1);
+    for (int i = 0; i < indexMat.cols; i++ ) {
+        for (int j = 0; j < indexMat.rows; j++) {
+            Vec2i mask_loca = indexMat.at<Vec2i>(j, i);
+            if (mask_loca[0] !=0 && mask_loca[1] !=0) {
+                maskMat.at<uchar>(Point(mask_loca)) = 255;}
+    }}
     return  maskMat;
-    }
+}
 
 //estimate homography matrix using edge flow fields
 Mat flowHomography(Mat edges, Mat flow, int ransacThre){
@@ -108,8 +108,8 @@ Mat flowHomography(Mat edges, Mat flow, int ransacThre){
     std::vector<Point> obj_edgeflow;
 
     for(size_t i = 0; i<edge_Locations.size();i++){
-        int src_x=edge_Locations[i].x;
-        int src_y=edge_Locations[i].y;
+        float src_x=edge_Locations[i].x;
+        float src_y=edge_Locations[i].y;
         Point2f f = flow.at<Point2f>(src_y, src_x);
         obj_edgeflow.push_back(Point2i(src_x + f.x, src_y + f.y));
     }
@@ -132,8 +132,8 @@ Mat sparseToDense(Mat im1, Mat im2, Mat im1_edges, Mat sparseFlow){
     std::vector<Point> edge_Location;
     findNonZero(im1_edges, edge_Location);
     for(size_t i = 0; i<edge_Location.size();i++){
-        float src_x=edge_Location[i].x;
-        float src_y=edge_Location[i].y;
+        int src_x=edge_Location[i].x;
+        int src_y=edge_Location[i].y;
         sparseFrom.push_back(Point2f(src_x, src_y));
         Point2f f = sparseFlow.at<Point2f>(src_y, src_x);
         sparseTo.push_back(Point2f(src_x + f.x, src_y + f.y));
@@ -275,36 +275,37 @@ void obstructionFree::motionInitDirect(const std::vector<Mat>& video_input, std:
         }
     }
 
-//initialization: decompose the image components
-Mat obstructionFree::imgInitDecompose(const std::vector <Mat> &warpedImgs, const std::vector<Mat>& back_flowfields, const int obstructionType){
+//initialization: decompose the image components in the case of reflection
+Mat obstructionFree::imgInitDecomRef(const std::vector <Mat> &warpedImgs){
     Mat background;
-    //if occlusion is reflection type
-    if (obstructionType==0){
-        background=warpedImgs[referenceNumber];
-        for (size_t frame_i=0; frame_i<frameNumber; frame_i++){
-            background=min(background,warpedImgs[frame_i]);
-        }
-        //imshow("reflection initial background", background);
+    background=warpedImgs[referenceNumber];
+    for (size_t frame_i=0; frame_i<frameNumber; frame_i++){
+        background=min(background,warpedImgs[frame_i]);
     }
-    else{//if occlusion is opaque
-        Mat sum=Mat::zeros(warpedImgs[referenceNumber].rows,warpedImgs[referenceNumber].cols,CV_32F);
-        Mat temp,background_temp;
-        for (size_t frame_i=0; frame_i<frameNumber; frame_i++){
-            warpedImgs[frame_i].convertTo(temp,CV_32F);
-            sum+=temp;
-        }
-        background_temp=sum/frameNumber;
-        background_temp.convertTo(background,CV_8UC1);
-        imshow("opaque initial background", background);
-
-        Mat difference, alpha_map, foreground;
-        difference=abs(background-warpedImgs[referenceNumber]);
-        threshold(difference, alpha_map,25.5,255,THRESH_BINARY_INV);
-        imshow("alpha map",alpha_map);
-
-        foreground=warpedImgs[referenceNumber]-background;
-        imshow("foreground",foreground);
+    imshow("reflection initial background", background);
+    return background;
     }
+
+//initialization: decompose the image components in the case of opaque reflection
+Mat obstructionFree::imgInitDecomOpaq(const std::vector <Mat> &warpedImgs, Mat& foreground, Mat& alphaMap){
+    Mat background;
+    Mat sum=Mat::zeros(warpedImgs[referenceNumber].rows,warpedImgs[referenceNumber].cols,CV_32F);
+    Mat temp,background_temp;
+    for (size_t frame_i=0; frame_i<frameNumber; frame_i++){
+        warpedImgs[frame_i].convertTo(temp,CV_32F);
+        sum+=temp;
+    }
+    background_temp=sum/double(frameNumber);
+    background_temp.convertTo(background,CV_8UC1);
+    imshow("opaque initial background", background);
+
+    Mat difference;
+    difference=abs(background-warpedImgs[referenceNumber]);
+    threshold(difference, alphaMap,25.5,255,THRESH_BINARY_INV);
+    imshow("alpha map",alphaMap);
+
+    foreground=warpedImgs[referenceNumber]-background;
+    imshow("foreground",foreground);
 
     return background;
 }
@@ -313,11 +314,16 @@ Mat obstructionFree::imgInitDecompose(const std::vector <Mat> &warpedImgs, const
 //core function
 void obstructionFree::removeOcc(const std::vector <Mat> &srcImgs, Mat &dst, Mat &mask, const int obstructionType){
     //initialization
+    std::vector<Mat> warpedToReference;
     std::vector<Mat> srcPyramid=buildPyramid(srcImgs);
     std::vector<Mat> coarseLevel = extractLevelImgs(srcPyramid,pyramidLevel-1);
     motionInitDirect(coarseLevel, backFlowFields, foreFlowFields, warpedToReference);
-    Mat initBack;
-    initBack=imgInitDecompose(warpedToReference,backFlowFields,1);
+
+    CV_Assert(obstructionType==0 || obstructionType==1);
+    if (obstructionType==0)
+        dst=imgInitDecomRef(warpedToReference);
+    else
+        dst=imgInitDecomOpaq(warpedToReference,foreground,mask);
 
     //alternative optimization:TODO
 
