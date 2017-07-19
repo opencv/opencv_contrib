@@ -11,7 +11,7 @@
 #include <iostream>
 
 #include <opencv2/xphoto.hpp>
-#include "obstructionFree.hpp"
+#include "obstruction_free.hpp"
 
 namespace cv
 {
