@@ -716,10 +716,6 @@ public:
     /** @brief produces a class confidence row-vector given an image
      */
     CV_WRAP virtual void classify(InputArray image, OutputArray classProbabilities) = 0;
-    /** @brief produces a list of bounding box given an image
-     */
-
-    CV_WRAP virtual void detect(InputArray image, OutputArray classProbabilities) = 0;
 
     /** @brief produces a matrix containing class confidence row-vectors given an collection of images
      */

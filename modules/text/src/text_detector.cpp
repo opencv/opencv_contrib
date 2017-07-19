@@ -23,6 +23,8 @@
 namespace cv { namespace text {
 
 
+
+
 class textDetectImpl: public textDetector{
 private:
     struct NetOutput{
@@ -60,9 +62,9 @@ private:
     };
 protected:
 
-    Ptr<TextImageClassifier> classifier_;
+    Ptr<TextRegionDetector> classifier_;
 public:
-    textDetectImpl(Ptr<TextImageClassifier> classifierPtr):classifier_(classifierPtr)
+    textDetectImpl(Ptr<TextRegionDetector> classifierPtr):classifier_(classifierPtr)
     {
 
     }
@@ -131,13 +133,13 @@ public:
 
 
 
-    Ptr<TextImageClassifier> getClassifier()
+    Ptr<TextRegionDetector> getClassifier()
     {
         return this->classifier_;
     }
 };
 
-Ptr<textDetector> textDetector::create(Ptr<TextImageClassifier> classifierPtr)
+Ptr<textDetector> textDetector::create(Ptr<TextRegionDetector> classifierPtr)
 {
     return Ptr<textDetector>(new textDetectImpl(classifierPtr));
 }
@@ -155,7 +157,7 @@ Ptr<textDetector> textDetector::create(String modelArchFilename, String modelWei
     textbox_mean.at<uchar>(0,2)=123;
     preprocessor->set_mean(textbox_mean);
 // create a pointer to text box detector(textDetector)
-    Ptr<TextImageClassifier> classifierPtr(DeepCNN::create(modelArchFilename,modelWeightsFilename,preprocessor,1));
+    Ptr<TextRegionDetector> classifierPtr(DeepCNNTextDetector::create(modelArchFilename,modelWeightsFilename,preprocessor,1));
     return Ptr<textDetector>(new textDetectImpl(classifierPtr));
 }
 
