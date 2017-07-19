@@ -1,2 +1,2 @@
 set(the_description "Addon to basic photo module")
-ocv_define_module(xphoto opencv_core opencv_imgproc WRAP python optflow opencv_ximgproc calib3d)
+ocv_define_module(xphoto opencv_core opencv_imgproc WRAP python opencv_optflow opencv_ximgproc opencv_calib3d)
