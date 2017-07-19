@@ -459,56 +459,6 @@ protected:
 #endif
     }
 
-//    void process_(Mat inputImage, Mat &outputMat)
-//    {
-//        // do forward pass and stores the output in outputMat
-//        //Process one image
-//        CV_Assert(this->minibatchSz_==1);
-//        //CV_Assert(outputMat.isContinuous());
-
-//#ifdef HAVE_CAFFE
-//        net_->input_blobs()[0]->Reshape(1, this->channelCount_,this->inputGeometry_.height,this->inputGeometry_.width);
-//        net_->Reshape();
-//        float* inputBuffer=net_->input_blobs()[0]->mutable_cpu_data();
-//        float* inputData=inputBuffer;
-
-//        std::vector<Mat> input_channels;
-//        Mat preprocessed;
-//        // if the image have multiple color channels the input layer should be populated accordingly
-//        for (int channel=0;channel < this->channelCount_;channel++){
-
-//            cv::Mat netInputWraped(this->inputGeometry_.height, this->inputGeometry_.width, CV_32FC1, inputData);
-//            input_channels.push_back(netInputWraped);
-//            //input_data += width * height;
-//            inputData+=(this->inputGeometry_.height*this->inputGeometry_.width);
-//        }
-//        this->preprocess(inputImage,preprocessed);
-//        split(preprocessed, input_channels);
-
-//        //preprocessed.copyTo(netInputWraped);
-
-
-//        this->net_->Forward();
-//        const float* outputNetData=net_->output_blobs()[0]->cpu_data();
-//        // const float* outputNetData1=net_->output_blobs()[1]->cpu_data();
-
-
-
-
-//        this->outputGeometry_ = Size(net_->output_blobs()[0]->width(),net_->output_blobs()[0]->height());
-//        int outputSz = this->outputSize_ * this->outputGeometry_.height * this->outputGeometry_.width;
-//        outputMat.create(this->outputGeometry_.height , this->outputGeometry_.width,CV_32FC1);
-//        float*outputMatData=(float*)(outputMat.data);
-
-//        memcpy(outputMatData,outputNetData,sizeof(float)*outputSz);
-
-
-
-//#endif
-//    }
-
-
-
 #ifdef HAVE_CAFFE
     Ptr<caffe::Net<float> > net_;
 #endif
@@ -587,15 +537,6 @@ public:
         inputImageList.push_back(image.getMat());
         classifyBatch(inputImageList,classProbabilities);
     }
-//    void detect(InputArray image, OutputArray Bbox_prob)
-//    {
-
-//        Bbox_prob.create(this->outputGeometry_,CV_32F); // dummy initialization is it needed
-//        Mat outputMat = Bbox_prob.getMat();
-//        process_(image.getMat(),outputMat);
-//        //copy back to outputArray
-//        outputMat.copyTo(Bbox_prob);
-//    }
 
     void classifyBatch(InputArrayOfArrays inputImageList, OutputArray classProbabilities)
     {

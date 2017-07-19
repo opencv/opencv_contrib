@@ -26,27 +26,6 @@ inline bool fileExists (String filename) {
     return f.good();
 }
 
-//************************************************************************************
-//******************   TextImageClassifier   *****************************************
-//************************************************************************************
-
-//void TextImageClassifier::preprocess(const Mat& input,Mat& output)
-//{
-//    this->preprocessor_->preprocess_(input,output,this->inputGeometry_,this->channelCount_);
-//}
-
-//void TextImageClassifier::setPreprocessor(Ptr<ImagePreprocessor> ptr)
-//{
-//    CV_Assert(!ptr.empty());
-//    preprocessor_=ptr;
-//}
-
-//Ptr<ImagePreprocessor> TextImageClassifier::getPreprocessor()
-//{
-//    return preprocessor_;
-//}
-
-
 class DeepCNNTextDetectorCaffeImpl: public DeepCNNTextDetector{
 protected:
 
@@ -54,9 +33,7 @@ protected:
     void process_(Mat inputImage, Mat &outputMat)
     {
         // do forward pass and stores the output in outputMat
-        //Process one image
-        // CV_Assert(this->outputGeometry_.batchSize==1);
-        //CV_Assert(outputMat.isContinuous());
+
 
 #ifdef HAVE_CAFFE
         net_->input_blobs()[0]->Reshape(1, this->inputChannelCount_,this->inputGeometry_.height,this->inputGeometry_.width);
@@ -191,12 +168,6 @@ public:
         outputMat.copyTo(Bbox_prob);
     }
 
-
-
-    //int getOutputSize()
-    //{
-    //  return this->outputSize_;
-    //}
     Size getOutputGeometry()
     {
         return this->outputGeometry_;
@@ -290,54 +261,7 @@ void DeepCNNTextDetector::preprocess(const Mat& input,Mat& output)
     this->preprocessor_->preprocess(input,output,inputHtWd,this->inputChannelCount_);
 }
 
-//namespace cnn_config{
-//namespace caffe_backend{
 
-//#ifdef HAVE_CAFFE
-
-//bool getCaffeGpuMode()
-//{
-//    return caffe::Caffe::mode()==caffe::Caffe::GPU;
-//}
-
-//void setCaffeGpuMode(bool useGpu)
-//{
-//    if(useGpu)
-//    {
-//        caffe::Caffe::set_mode(caffe::Caffe::GPU);
-//    }else
-//    {
-//        caffe::Caffe::set_mode(caffe::Caffe::CPU);
-//    }
-//}
-
-//bool getCaffeAvailable()
-//{
-//    return true;
-//}
-
-//#else
-
-//bool getCaffeGpuMode()
-//{
-//    CV_Error(Error::StsError,"Caffe not available during compilation!");
-//    return 0;
-//}
-
-//void setCaffeGpuMode(bool useGpu)
-//{
-//    CV_Error(Error::StsError,"Caffe not available during compilation!");
-//    CV_Assert(useGpu==1);//Compilation directives force
-//}
-
-//bool getCaffeAvailable(){
-//    return 0;
-//}
-
-//#endif
-
-//}//namespace caffe
-//}//namespace cnn_config
 
 }  } //namespace text namespace cv
 

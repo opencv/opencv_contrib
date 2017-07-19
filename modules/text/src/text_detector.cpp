@@ -74,7 +74,7 @@ public:
     void textDetectInImage(InputArray inputImage,CV_OUT std::vector<Rect>& Bbox,CV_OUT std::vector<float>& confidence)
     {
                 Mat netOutput;
-                // call the detect function of deepCNN class
+                // call the detect function of deepTextCNN class
                 this->classifier_->detect(inputImage,netOutput);
                // get the output geometry i.e height and width of output blob from caffe
                 Size OutputGeometry_ = this->classifier_->getOutputGeometry();
@@ -102,12 +102,11 @@ public:
              int component_level=0)
     {
         CV_Assert(component_level==OCR_LEVEL_WORD);//Componnents not applicable for word spotting
-        //double confidence;
-        //String transcription;
+
         std::vector<Rect> bbox;
         std::vector<float> score;
         textDetectInImage(image,bbox,score);
-        //output_text=transcription.c_str();
+
         if(component_rects!=NULL)
         {
             component_rects->resize(bbox.size());  // should be a user behavior
