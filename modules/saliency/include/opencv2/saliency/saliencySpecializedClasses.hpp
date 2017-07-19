@@ -327,7 +327,7 @@ public:
         Mat MU;
         double VAR;
     };
-    DiscriminantSaliency();
+//    DiscriminantSaliency();
     DiscriminantSaliency(unsigned = 1, Size = Size(127, 127), unsigned = 10, unsigned = 8, unsigned = 96, unsigned = 400, unsigned = 11);
     virtual ~DiscriminantSaliency();
     CV_WRAP static Ptr<DeepGaze1> create()
@@ -342,7 +342,7 @@ public:
     }
     void dynamicTextureEstimator( const Mat, DT& );
     void patchGenerator( const std::vector<Mat>& img_sq, unsigned index, unsigned r, unsigned c, Mat& center, Mat& surround, Mat& all );
-    std::vector<Mat> saliencyMapGenerator( const std::vector<Mat>& );
+    std::vector<Mat> saliencyMapGenerator( std::vector<Mat> );
     void saliencyMapVisualize( InputArray _saliencyMap );
 protected:
     bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap );

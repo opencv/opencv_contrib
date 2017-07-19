@@ -27,7 +27,7 @@ namespace cv
 {
 namespace saliency
 {
-DiscriminantSaliency::DiscriminantSaliency()
+/*DiscriminantSaliency::DiscriminantSaliency()
 {
     imgProcessingSize = Size(127, 127);
     hiddenSpaceDimension = 10;
@@ -37,7 +37,7 @@ DiscriminantSaliency::DiscriminantSaliency()
     temporalSize = 11;
     stride = 1;
     CV_Assert( hiddenSpaceDimension <= temporalSize && temporalSize <= (unsigned)imgProcessingSize.width * imgProcessingSize.height );
-}
+}*/
 
 DiscriminantSaliency::DiscriminantSaliency(unsigned _stride, Size _imgProcessingSize, unsigned _hidden, unsigned _center, unsigned _window, unsigned _patch, unsigned _temporal)
 {
@@ -63,9 +63,13 @@ bool DiscriminantSaliency::computeSaliencyImpl( InputArray image, OutputArray sa
     return true;
 }
 
-vector<Mat> DiscriminantSaliency::saliencyMapGenerator( const std::vector<Mat>& img_sq )
+vector<Mat> DiscriminantSaliency::saliencyMapGenerator( std::vector<Mat> img_sq )
 {
     CV_Assert( img_sq.size() >= temporalSize );
+    for ( unsigned i = 0; i < img_sq.size(); i++ )
+    {
+        resize(img_sq[i], img_sq[i], imgProcessingSize);
+    }
     vector<Mat> saliency_sq;
     for ( unsigned i = temporalSize - 1; i < img_sq.size(); i++ )
     {
