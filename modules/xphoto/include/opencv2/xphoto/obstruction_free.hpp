@@ -17,6 +17,8 @@
 #include <opencv2/ximgproc/sparse_match_interpolator.hpp>
 #include <opencv2/calib3d.hpp>
 
+#include <opencv2/highgui.hpp>
+
 namespace cv
 {
 namespace xphoto
@@ -37,9 +39,13 @@ namespace xphoto
     public:
     /*!
      * @brief Constructors
-     * @param srcImgs input image sequences
      */
         obstructionFree();
+
+     /*!
+     * @brief Constructors
+     * @param srcImgs input image sequences
+     */
         obstructionFree(const std::vector <Mat> &srcImgs);
 
     /*!

@@ -257,8 +257,6 @@ void obstructionFree::motionInitDirect(const std::vector<Mat>& video_input, std:
 
             //decompose motion fields into fore/background
             initMotionDecompose(im1, im2, back_denseFlow, fore_denseFlow, back_ransacThre, fore_ransacThre);
-
-            //cout<<back_denseFlow.type()<<endl;
             back_flowfields.push_back(back_denseFlow.clone());
             fore_flowfields.push_back(fore_denseFlow.clone());
             //colorFlow(back_denseFlow,"inter_back_denseflow");
