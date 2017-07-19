@@ -108,7 +108,7 @@ namespace xphoto
 
         /** @brief Convert from sparse edge displacement to dense motion fields
          */
-        Mat sparseToDense(Mat im1, Mat im2, Mat im1_edges, Mat sparseFlow);
+        Mat sparseToDense(const Mat& im1, const Mat& im2, const Mat& im1_edges, const Mat& sparseFlow);
 
         /** @brief Visualize the optical flow flow with the window named figName
          */
