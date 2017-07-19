@@ -315,7 +315,7 @@ private:
     unsigned windowSize;
     unsigned patchSize;
     unsigned temporalSize;
-    unsigned patchNumber;
+    unsigned stride;
 public:
     struct DT
     {
@@ -328,6 +328,7 @@ public:
         double VAR;
     };
     DiscriminantSaliency();
+    DiscriminantSaliency(unsigned = 1, Size = Size(127, 127), unsigned = 10, unsigned = 8, unsigned = 96, unsigned = 400, unsigned = 11);
     virtual ~DiscriminantSaliency();
     CV_WRAP static Ptr<DeepGaze1> create()
     {
