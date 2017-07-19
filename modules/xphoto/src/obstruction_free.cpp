@@ -79,7 +79,7 @@ std::vector<Mat> obstructionFree::buildPyramid(const std::vector <Mat>& srcImgs)
 //extract certain level of image sequences from the stacked image pyramid
 std::vector<Mat> obstructionFree::extractLevelImgs(const std::vector<Mat>& pyramid, const int level){
     std::vector<Mat> levelPyramid;
-    int imgId;
+    size_t imgId;
     for (size_t frame_i=0; frame_i<this->frameNumber; frame_i++){
         imgId=level*this->frameNumber+frame_i;
         levelPyramid.push_back(pyramid[imgId].clone());
@@ -87,7 +87,7 @@ std::vector<Mat> obstructionFree::extractLevelImgs(const std::vector<Mat>& pyram
     return levelPyramid;
 }
 
-Mat indexToMask(Mat indexMat, int rows, int cols){
+Mat obstructionFree::indexToMask(Mat indexMat, int rows, int cols){
     Mat maskMat=Mat::zeros(rows, cols, CV_8UC1);
     for (int i = 0; i < indexMat.cols; i++ ) {
         for (int j = 0; j < indexMat.rows; j++) {
@@ -99,7 +99,7 @@ Mat indexToMask(Mat indexMat, int rows, int cols){
 }
 
 //estimate homography matrix using edge flow fields
-Mat flowHomography(Mat edges, Mat flow, int ransacThre){
+Mat obstructionFree::flowHomography(Mat edges, Mat flow, int ransacThre){
     Mat inlierMask, inlier_edges, inilier_edgeLocations;
     std::vector<Point> edge_Locations;
 
@@ -108,8 +108,8 @@ Mat flowHomography(Mat edges, Mat flow, int ransacThre){
     std::vector<Point> obj_edgeflow;
 
     for(size_t i = 0; i<edge_Locations.size();i++){
-        float src_x=edge_Locations[i].x;
-        float src_y=edge_Locations[i].y;
+        int src_x=edge_Locations[i].x;
+        int src_y=edge_Locations[i].y;
         Point2f f = flow.at<Point2f>(src_y, src_x);
         obj_edgeflow.push_back(Point2i(src_x + f.x, src_y + f.y));
     }
@@ -124,7 +124,7 @@ Mat flowHomography(Mat edges, Mat flow, int ransacThre){
     return inlier_edges;
 }
 
-Mat sparseToDense(Mat im1, Mat im2, Mat im1_edges, Mat sparseFlow){
+Mat obstructionFree::sparseToDense(Mat im1, Mat im2, Mat im1_edges, Mat sparseFlow){
     Mat denseFlow;
     std::vector<Point2f> sparseFrom;
     std::vector<Point2f> sparseTo;
@@ -134,9 +134,9 @@ Mat sparseToDense(Mat im1, Mat im2, Mat im1_edges, Mat sparseFlow){
     for(size_t i = 0; i<edge_Location.size();i++){
         int src_x=edge_Location[i].x;
         int src_y=edge_Location[i].y;
-        sparseFrom.push_back(Point2f(src_x, src_y));
+        sparseFrom.push_back(Point2f(float(src_x), float(src_y)));
         Point2f f = sparseFlow.at<Point2f>(src_y, src_x);
-        sparseTo.push_back(Point2f(src_x + f.x, src_y + f.y));
+        sparseTo.push_back(Point2f(float(src_x + f.x), float(src_y + f.y)));
     }
 
     Ptr<cv::ximgproc::SparseMatchInterpolator> epicInterpolation=ximgproc::createEdgeAwareInterpolator();
@@ -145,7 +145,7 @@ Mat sparseToDense(Mat im1, Mat im2, Mat im1_edges, Mat sparseFlow){
 }
 
 //show motion fields using color
-void colorFlow(Mat flow, std::string figName="optical flow")
+void obstructionFree::colorFlow(Mat flow, std::string figName="optical flow")
 {
     //extraxt x and y channels
     Mat xy[2]; //X,Y
@@ -174,7 +174,7 @@ void colorFlow(Mat flow, std::string figName="optical flow")
 }
 
 //motion decomposition between two images: target frame and source frame
-void initMotionDecompose(Mat im1, Mat im2, Mat& back_denseFlow, Mat& fore_denseFlow, int back_ransacThre=1, int fore_ransacThre=1){
+void obstructionFree::initMotionDecompose(Mat im1, Mat im2, Mat& back_denseFlow, Mat& fore_denseFlow, int back_ransacThre=1, int fore_ransacThre=1){
     if (im1.channels()!= 1)
         cvtColor(im1, im1, COLOR_RGB2GRAY);
     if (im2.channels()!= 1)
@@ -225,7 +225,7 @@ void initMotionDecompose(Mat im1, Mat im2, Mat& back_denseFlow, Mat& fore_denseF
 
 //warping im1 to output through optical flow:
 //flow=flow->cal(im1,im2), so warp im2 to back
-Mat imgWarpFlow(Mat im1, Mat flow){
+Mat obstructionFree::imgWarpFlow(Mat im1, Mat flow){
     Mat flowmap_x(flow.size(), CV_32FC1);
     Mat flowmap_y(flow.size(), CV_32FC1);
     for (int j = 0; j < flowmap_x.rows; j++){

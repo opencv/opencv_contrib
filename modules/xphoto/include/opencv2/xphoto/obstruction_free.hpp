@@ -105,32 +105,33 @@ namespace xphoto
         /** @brief Initialization: decompose the image components in the case of opaque reflection
         */
         Mat imgInitDecomOpaq(const std::vector <Mat> &warpedImgs, Mat& foreground, Mat& alphaMap);
+
+        /** @brief Convert from sparse edge displacement to dense motion fields
+         */
+        Mat sparseToDense(Mat im1, Mat im2, Mat im1_edges, Mat sparseFlow);
+
+        /** @brief Visualize the optical flow flow with the window named figName
+         */
+        void colorFlow(const Mat& flow, std::string figName);
+
+        /** @brief Decompose motion between two images: target frame and source frame, using homography ransac
+         */
+        void initMotionDecompose(const Mat& im1 , const Mat& im2 , Mat& back_denseFlow, Mat& fore_denseFlow, int back_ransacThre, int fore_ransacThre);
+
+        /** @brief Warp im1 to output through optical flow:
+        */
+        Mat imgWarpFlow(const Mat& im1, const Mat& flow);
+
+        /** @brief Estimate homography matrix using edge flow fields
+        */
+        Mat flowHomography(const Mat& edges, const Mat& flow, const int ransacThre);
+
+        /** @brief Convert from index to matrix
+        */
+        Mat indexToMask(const Mat& indexMat, const int rows, const int cols);
     };
 //! @}
 
-/** @brief Convert from sparse edge displacement to dense motion fields
- */
-CV_EXPORTS Mat sparseToDense(Mat im1, Mat im2, Mat im1_edges, Mat sparseFlow);
-
-/** @brief Visualize the optical flow flow with the window named figName
- */
-CV_EXPORTS void colorFlow(const Mat& flow, std::string figName);
-
-/** @brief Decompose motion between two images: target frame and source frame, using homography ransac
- */
-CV_EXPORTS void initMotionDecompose(const Mat& im1 , const Mat& im2 , Mat& back_denseFlow, Mat& fore_denseFlow, int back_ransacThre, int fore_ransacThre);
-
-/** @brief Warp im1 to output through optical flow:
-*/
-CV_EXPORTS Mat imgWarpFlow(const Mat& im1, const Mat& flow);
-
-/** @brief Estimate homography matrix using edge flow fields
-*/
-CV_EXPORTS Mat flowHomography(const Mat& edges, const Mat& flow, const int ransacThre);
-
-/** @brief Convert from index to matrix
-*/
-CV_EXPORTS Mat indexToMask(const Mat& indexMat, const int rows, const int cols);
 
 }
 }
