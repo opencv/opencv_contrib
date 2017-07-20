@@ -327,7 +327,7 @@ protected:
 
         stringstream ss;
         ss << "Max distance between valid and computed descriptors " << curMaxDist;
-        if( curMaxDist < maxDist )
+        if( curMaxDist <= maxDist )
             ss << "." << endl;
         else
         {
@@ -1020,7 +1020,7 @@ TEST( Features2d_Detector_Harris_Laplace_Affine, regression )
  */
 TEST( Features2d_DescriptorExtractor_SIFT, regression )
 {
-    CV_DescriptorExtractorTest<L2<float> > test( "descriptor-sift", 0.03f,
+    CV_DescriptorExtractorTest<L1<float> > test( "descriptor-sift", 1.0f,
                                                 SIFT::create() );
     test.safe_run();
 }
