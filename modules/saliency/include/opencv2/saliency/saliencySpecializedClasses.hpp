@@ -342,7 +342,7 @@ public:
     }
     void dynamicTextureEstimator( const Mat, DT& );
     void patchGenerator( const std::vector<Mat>& img_sq, unsigned index, unsigned r, unsigned c, Mat& center, Mat& surround, Mat& all );
-    std::vector<Mat> saliencyMapGenerator( std::vector<Mat> );
+    std::vector<Mat> saliencyMapGenerator( std::vector<Mat>, std::vector<Mat>& );
     void saliencyMapVisualize( InputArray _saliencyMap );
 protected:
     bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap );

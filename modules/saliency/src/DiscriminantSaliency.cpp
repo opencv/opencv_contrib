@@ -48,35 +48,35 @@ DiscriminantSaliency::DiscriminantSaliency(unsigned _stride, Size _imgProcessing
     patchSize = _patch;
     temporalSize = _temporal;
     stride = _stride;
-    CV_Assert( hiddenSpaceDimension <= temporalSize && temporalSize <= (unsigned)imgProcessingSize.width * imgProcessingSize.height );
+    CV_Assert( hiddenSpaceDimension <= temporalSize && temporalSize <= (unsigned)imgProcessingSize.width * imgProcessingSize.height && stride <= (centerSize - 1) / 2 );
 }
 
 DiscriminantSaliency::~DiscriminantSaliency(){}
 
 bool DiscriminantSaliency::computeSaliencyImpl( InputArray image, OutputArray saliencyMap )
 {
-    vector<Mat> img_sq, saliency_sq;
+    vector<Mat> img_sq;
     image.getMatVector(img_sq);
-    saliencyMap.getMatVector(saliency_sq);
-    cout << saliency_sq.size() << endl;
+    vector<Mat>& saliency_sq = *( std::vector<Mat>* ) saliencyMap.getObj();
     CV_Assert( !(img_sq.empty()) || !(img_sq[0].empty()) );
+    saliencyMapGenerator(img_sq, saliency_sq);
     return true;
 }
 
-vector<Mat> DiscriminantSaliency::saliencyMapGenerator( std::vector<Mat> img_sq )
+vector<Mat> DiscriminantSaliency::saliencyMapGenerator( vector<Mat> img_sq, vector<Mat>& saliency_sq )
 {
     CV_Assert( img_sq.size() >= temporalSize );
     for ( unsigned i = 0; i < img_sq.size(); i++ )
     {
         resize(img_sq[i], img_sq[i], imgProcessingSize);
     }
-    vector<Mat> saliency_sq;
+    //vector<Mat> saliency_sq;
     for ( unsigned i = temporalSize - 1; i < img_sq.size(); i++ )
     {
         saliency_sq.push_back(Mat(imgProcessingSize, CV_64F, Scalar::all(0.0)));
-        for ( unsigned r = (centerSize - 1) / 2; r < imgProcessingSize.height - (centerSize - (centerSize - 1) / 2); r+= (2 * stride + 1) )
+        for ( unsigned r = (centerSize - 1) / 2; r < imgProcessingSize.height - (centerSize - (centerSize - 1) / 2 - 1); r+= (2 * stride + 1) )
         {
-            for ( unsigned c = (centerSize - 1) / 2; c < imgProcessingSize.width - (centerSize - (centerSize - 1) / 2); c+= (2 * stride + 1) )
+            for ( unsigned c = (centerSize - 1) / 2; c < imgProcessingSize.width - (centerSize - (centerSize - 1) / 2 - 1); c+= (2 * stride + 1) )
             {
                 Mat center, surround, all;
                 DT para_c0, para_c1, para_w;
@@ -103,7 +103,7 @@ vector<Mat> DiscriminantSaliency::saliencyMapGenerator( std::vector<Mat> img_sq 
 
 void DiscriminantSaliency::patchGenerator( const vector<Mat>& img_sq, unsigned index, unsigned r, unsigned c, Mat& center, Mat& surround, Mat& all )
 {
-    unsigned r1 = max(r - (windowSize - 1) / 2, (unsigned)0), c1 = max(c - (windowSize - 1) / 2, (unsigned)0);
+    unsigned r1 = max((int)r - ((int)windowSize - 1) / 2, 0), c1 = max((int)c - ((int)windowSize - 1) / 2, 0);
     unsigned r2 = min(r1 + windowSize, (unsigned)imgProcessingSize.height), c2 = min(c1 + windowSize, (unsigned)imgProcessingSize.width);
     all = Mat(patchSize, temporalSize, CV_64F, Scalar::all(0.0));
     surround = Mat(patchSize, temporalSize, CV_64F, Scalar::all(0.0));

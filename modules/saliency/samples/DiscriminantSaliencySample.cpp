@@ -53,7 +53,8 @@ int main(int argc, char* argv[])
         //resize(temp, temp, Size(127, 127));
         img_sq.push_back(temp);
     }
-    vector<Mat> saliency_sq = t.saliencyMapGenerator(img_sq);
+    vector<Mat> saliency_sq;
+    t.computeSaliency(img_sq, saliency_sq);
     for ( unsigned i = 0; i < saliency_sq.size(); i++ )
     {
        resize(saliency_sq[i], saliency_sq[i], Size(1024, 768));
