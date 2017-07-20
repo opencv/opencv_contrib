@@ -804,7 +804,7 @@ bool testDeltaTransformation(const Mat& deltaRt, double maxTranslation, double m
 }
 
 static
-bool RGBDICPOdometryImpl(Mat& Rt, const Mat& initRt,
+bool RGBDICPOdometryImpl(OutputArray _Rt, const Mat& initRt,
                          const Ptr<OdometryFrame>& srcFrame,
                          const Ptr<OdometryFrame>& dstFrame,
                          const Mat& cameraMatrix,
@@ -920,8 +920,9 @@ bool RGBDICPOdometryImpl(Mat& Rt, const Mat& initRt,
             isOk = true;
         }
     }
-
-    Rt = resultRt;
+    _Rt.create(resultRt.size(), resultRt.type());
+    Mat Rt = _Rt.getMat();
+    resultRt.copyTo(Rt);
 
     if(isOk)
     {
@@ -931,7 +932,7 @@ bool RGBDICPOdometryImpl(Mat& Rt, const Mat& initRt,
         else
             deltaRt = resultRt * initRt.inv(DECOMP_SVD);
 
-        isOk = testDeltaTransformation(deltaRt, maxTranslation, maxRotation);
+        isOk = testDeltaTransformation(deltaRt, maxTranslation, maxRotation);   
     }
 
     return isOk;
@@ -1041,7 +1042,7 @@ void OdometryFrame::releasePyramids()
 
 bool Odometry::compute(const Mat& srcImage, const Mat& srcDepth, const Mat& srcMask,
                        const Mat& dstImage, const Mat& dstDepth, const Mat& dstMask,
-                       Mat& Rt, const Mat& initRt) const
+                       OutputArray Rt, const Mat& initRt) const
 {
     Ptr<OdometryFrame> srcFrame(new OdometryFrame(srcImage, srcDepth, srcMask));
     Ptr<OdometryFrame> dstFrame(new OdometryFrame(dstImage, dstDepth, dstMask));
@@ -1049,7 +1050,7 @@ bool Odometry::compute(const Mat& srcImage, const Mat& srcDepth, const Mat& srcM
     return compute(srcFrame, dstFrame, Rt, initRt);
 }
 
-bool Odometry::compute(Ptr<OdometryFrame>& srcFrame, Ptr<OdometryFrame>& dstFrame, Mat& Rt, const Mat& initRt) const
+bool Odometry::compute(Ptr<OdometryFrame>& srcFrame, Ptr<OdometryFrame>& dstFrame, OutputArray Rt, const Mat& initRt) const
 {
     checkParams();
 
@@ -1177,7 +1178,7 @@ void RgbdOdometry::checkParams() const
     CV_Assert(minGradientMagnitudes.size() == iterCounts.size() || minGradientMagnitudes.size() == iterCounts.t().size());
 }
 
-bool RgbdOdometry::computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<OdometryFrame>& dstFrame, Mat& Rt, const Mat& initRt) const
+bool RgbdOdometry::computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<OdometryFrame>& dstFrame, OutputArray Rt, const Mat& initRt) const
 {
     return RGBDICPOdometryImpl(Rt, initRt, srcFrame, dstFrame, cameraMatrix, (float)maxDepthDiff, iterCounts, maxTranslation, maxRotation, RGBD_ODOMETRY, transformType);
 }
@@ -1276,7 +1277,7 @@ void ICPOdometry::checkParams() const
     CV_Assert(cameraMatrix.size() == Size(3,3) && (cameraMatrix.type() == CV_32FC1 || cameraMatrix.type() == CV_64FC1));
 }
 
-bool ICPOdometry::computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<OdometryFrame>& dstFrame, Mat& Rt, const Mat& initRt) const
+bool ICPOdometry::computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<OdometryFrame>& dstFrame, OutputArray Rt, const Mat& initRt) const
 {
     return RGBDICPOdometryImpl(Rt, initRt, srcFrame, dstFrame, cameraMatrix, (float)maxDepthDiff, iterCounts, maxTranslation, maxRotation, ICP_ODOMETRY, transformType);
 }
@@ -1397,7 +1398,7 @@ void RgbdICPOdometry::checkParams() const
     CV_Assert(minGradientMagnitudes.size() == iterCounts.size() || minGradientMagnitudes.size() == iterCounts.t().size());
 }
 
-bool RgbdICPOdometry::computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<OdometryFrame>& dstFrame, Mat& Rt, const Mat& initRt) const
+bool RgbdICPOdometry::computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<OdometryFrame>& dstFrame, OutputArray Rt, const Mat& initRt) const
 {
     return RGBDICPOdometryImpl(Rt, initRt, srcFrame, dstFrame, cameraMatrix, (float)maxDepthDiff, iterCounts,  maxTranslation, maxRotation, MERGED_ODOMETRY, transformType);
 }
