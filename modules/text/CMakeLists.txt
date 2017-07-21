@@ -31,7 +31,7 @@ else()
   message(STATUS "Glog:   NO")
 endif()
 
-ocv_define_module(text opencv_ml opencv_imgproc opencv_core opencv_features2d opencv_calib3d WRAP python java)
+ocv_define_module(text opencv_ml opencv_imgproc opencv_core opencv_features2d opencv_calib3d WRAP python)
 #ocv_define_module(text ${TEXT_DEPS} WRAP python)
 
 #set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
