@@ -19,6 +19,9 @@
 #ifdef HAVE_CAFFE
 #include "caffe/caffe.hpp"
 #endif
+
+#define CV_WARN(message) fprintf(stderr, "warning: %s (%s:%d)\n", message, __FILE__, __LINE__)
+
 namespace cv { namespace text {
 
 inline bool fileExists (String filename) {
@@ -33,6 +36,9 @@ protected:
     void process_(Mat inputImage, Mat &outputMat)
     {
         // do forward pass and stores the output in outputMat
+        CV_Assert(outputMat.isContinuous());
+        if (inputImage.channels() != this->inputChannelCount_)
+            CV_WARN("Number of input channel(s) in the model is not same as input");
 
 
 #ifdef HAVE_CAFFE
@@ -204,7 +210,7 @@ Ptr<DeepCNNTextDetector> DeepCNNTextDetector::create(String archFilename,String 
     if(preprocessor.empty())
     {
         // create a custom preprocessor with rawval
-        Ptr<ImagePreprocessor> preprocessor=ImagePreprocessor::createImageCustomPreprocessor(255);
+        preprocessor=ImagePreprocessor::createImageCustomPreprocessor(255);
         // set the mean for the preprocessor
 
         Mat textbox_mean(1,3,CV_8U);
@@ -264,4 +270,3 @@ void DeepCNNTextDetector::preprocess(const Mat& input,Mat& output)
 
 
 }  } //namespace text namespace cv
-

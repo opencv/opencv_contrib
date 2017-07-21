@@ -25,11 +25,10 @@ if (len(sys.argv) < 2):
 #        print"The text module was compiled without Caffe which is the only available DeepCNN backend.\nAborting!\n"
 #
 #        quit()
-# check model and architecture file existance        
+# check model and architecture file existance       
 if not os.path.isfile('textbox.caffemodel') or not os.path.isfile('textbox_deploy.prototxt'):
     print " Model files not found in current directory. Aborting"
     print " Model files should be downloaded from https://github.com/sghoshcvc/TextBox-Models"
-    
     quit()
        
 cv2.text.cnn_config.caffe_backend.setCaffeGpuMode(True);

@@ -66,7 +66,7 @@ Instalation of Caffe backend
 The caffe wrapping backend has the requirements caffe does.
 * Caffe can be built against OpenCV, if the caffe backend is enabled, a circular bependency arises.
 The simplest solution is to build caffe without support for OpenCV.
-* Only the OS supported by Caffe are supported by the backend. 
+* Only the OS supported by Caffe are supported by the backend.
 The scripts describing the module have been developed in ubuntu 16.04 and assume such a system.
 Other UNIX systems including OSX should be easy to adapt.
 
@@ -90,7 +90,7 @@ echo 'LIBRARY_DIRS += /usr/lib/x86_64-linux-gnu/hdf5/serial/' >> Makefile.config
 echo "--- /tmp/caffe/include/caffe/net.hpp	2017-05-28 04:55:47.929623902 +0200
 +++ caffe/distribute/include/caffe/net.hpp	2017-05-28 04:51:33.437090768 +0200
 @@ -234,6 +234,7 @@
- 
+
      template <typename T>
      friend class Net;
 +    virtual ~Callback(){}
@@ -138,7 +138,7 @@ Instalation of Caffe backend
 The caffe wrapping backend has the requirements caffe does.
 * Caffe can be built against OpenCV, if the caffe backend is enabled, a circular bependency arises.
 The simplest solution is to build caffe without support for OpenCV.
-* Only the OS supported by Caffe are supported by the backend. 
+* Only the OS supported by Caffe are supported by the backend.
 The scripts describing the module have been developed in ubuntu 16.04 and assume such a system.
 Other UNIX systems including OSX should be easy to adapt.
 
@@ -160,7 +160,7 @@ echo 'LIBRARY_DIRS += /usr/lib/x86_64-linux-gnu/hdf5/serial/' >> Makefile.config
 echo "--- /tmp/caffe/include/caffe/net.hpp	2017-05-28 04:55:47.929623902 +0200
 +++ caffe/distribute/include/caffe/net.hpp	2017-05-28 04:51:33.437090768 +0200
 @@ -234,6 +234,7 @@
- 
+
      template <typename T>
      friend class Net;
 +    virtual ~Callback(){}

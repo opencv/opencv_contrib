@@ -91,7 +91,7 @@ enum ocr_engine_mode
 };
 
 //base class BaseOCR declares a common API that would be used in a typical text recognition scenario
- 
+
 class CV_EXPORTS_W BaseOCR
 {
  public:
@@ -188,7 +188,7 @@ public:
 
 
     /** @brief Creates an instance of the OCRTesseract class. Initializes Tesseract.
-       
+
     @param datapath the name of the parent directory of tessdata ended with "/", or NULL to use the
     system's default directory.
     @param language an ISO 639-3 code or NULL will default to "eng".
@@ -277,8 +277,7 @@ class CV_EXPORTS_W OCRHMMDecoder : public BaseOCR {
     * for the individual text elements found (e.g. words).
 
     * @param component_texts If provided the method will output a list of text
-    * strings for the recognition of individual text elements found (e.g. words)
-    * .
+    * strings for the recognition of individual text elements found (e.g. words).
 
     * @param component_confidences If provided the method will output a list of
     * confidence values for the recognition of individual text elements found
@@ -314,8 +313,7 @@ class CV_EXPORTS_W OCRHMMDecoder : public BaseOCR {
     * for the individual text elements found (e.g. words).
 
     * @param component_texts If provided the method will output a list of text
-    * strings for the recognition of individual text elements found (e.g. words)
-    * .
+    * strings for the recognition of individual text elements found (e.g. words).
 
     * @param component_confidences If provided the method will output a list of
     * confidence values for the recognition of individual text elements found
@@ -596,34 +594,32 @@ public:
                                      int mode = OCR_DECODER_VITERBI,          // HMM Decoding algorithm (only Viterbi for the moment)
                                      int beam_size = 500);                              // Size of the beam in Beam Search algorithm
 
-    /** @brief This method allows to plug a classifier that is derivative of TextImageClassifier in to
-     * OCRBeamSearchDecoder as a ClassifierCallback.
 
-    @param classifier A pointer to a TextImageClassifier decendent
 
-    @param alphabet The language alphabet one char per symbol. alphabet.size() must be equal to the number of classes
-    of the classifier. In future editinons it should be replaced with a vector of strings.
+
+
+    /** @brief Creates an instance of the OCRBeamSearchDecoder class. Initializes HMMDecoder from the specified path.
+
+    @overload
+
+    @param filename path to a character classifier file
+
+    @param vocabulary The language vocabulary (chars when ASCII English text). vocabulary.size()
+    must be equal to the number of classes of the classifier..
 
     @param transition_probabilities_table Table with transition probabilities between character
-    pairs. cols == rows == alphabet.size().
+    pairs. cols == rows == vocabulary.size().
 
     @param emission_probabilities_table Table with observation emission probabilities. cols ==
-    rows == alphabet.size().
+    rows == vocabulary.size().
 
     @param windowWidth The width of the windows to which the sliding window will be iterated. The height will
     be the height of the image. The windows might be resized to fit the classifiers input by the classifiers
     preprocessor.
 
-    @param windowStep The step for the sliding window
-
     @param mode HMM Decoding algorithm (only Viterbi for the moment)
 
     @param beam_size Size of the beam in Beam Search algorithm
-     */
-
-    /** @brief Creates an instance of the OCRBeamSearchDecoder class. Initializes HMMDecoder from the specified path.
-
-    @overload
 
      */
     CV_WRAP static Ptr<OCRBeamSearchDecoder> create(const String& filename, // The character classifier file

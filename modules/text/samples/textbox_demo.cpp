@@ -61,7 +61,7 @@ int main(int argc, const char * argv[]){
         exit(1);
     }
     //set to true if you have a GPU with more than 3GB
-    cv::text::cnn_config::caffe_backend::setCaffeGpuMode(false);
+    cv::text::cnn_config::caffe_backend::setCaffeGpuMode(true);
 
     if (argc < 3){
         std::cout<<getHelpStr(argv[0]);
@@ -100,7 +100,7 @@ int main(int argc, const char * argv[]){
     std::vector<float> outProbabillities;
     textSpotter->textDetectInImage(image,bbox,outProbabillities);
    // textbox_draw(image, bbox,outProbabillities);
-    float thres =0.6;
+    float thres =0.6f;
     std::vector<cv::Mat> imageList;
     for(int imageIdx=0;imageIdx<(int)bbox.size();imageIdx++){
         if(outProbabillities[imageIdx]>thres){
