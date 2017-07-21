@@ -1,7 +1,13 @@
 #ifndef __OPENCV_TEXT_CONFIG_HPP__
 #define __OPENCV_TEXT_CONFIG_HPP__
 
+// HAVE QT5
+//#cmakedefine HAVE_QT5GUI
+
+// HAVE CAFFE
+//#cmakedefine HAVE_CAFFE
+
 // HAVE OCR Tesseract
-#cmakedefine HAVE_TESSERACT
+//#cmakedefine HAVE_TESSERACT
 
 #endif
