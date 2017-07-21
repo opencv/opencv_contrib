@@ -200,12 +200,12 @@ bool SinusoidalPatternProfilometry_Impl::generate( OutputArrayOfArrays pattern )
     if( params.horizontal )
     {
         period = params.height / params.nbrOfPeriods;
-        nbrOfMarkersOnOneRow = (int)floor((params.width - firstMarkerOffset) / m);
+        nbrOfMarkersOnOneRow = (int)floor(static_cast<float>((params.width - firstMarkerOffset) / m));
     }
     else
     {
         period = params.width / params.nbrOfPeriods;
-        nbrOfMarkersOnOneRow = (int)floor((params.height - firstMarkerOffset) / m);
+        nbrOfMarkersOnOneRow = (int)floor(static_cast<float>((params.height - firstMarkerOffset) / m));
     }
     frequency = (float) 1 / period;
 

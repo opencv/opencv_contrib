@@ -16,7 +16,8 @@
  *   See <http://www.opensource.org/licenses/bsd-license>
  */
 #include "precomp.hpp"
-#include "face_basic.hpp"
+#include <opencv2/face.hpp>
+#include "face_utils.hpp"
 
 namespace cv { namespace face {
 
@@ -24,13 +25,16 @@ namespace cv { namespace face {
 // faces: Recognition using class specific linear projection.". IEEE
 // Transactions on Pattern Analysis and Machine Intelligence 19, 7 (1997),
 // 711–720.
-class Fisherfaces: public BasicFaceRecognizerImpl
+class Fisherfaces: public FisherFaceRecognizer
 {
 public:
     // Initializes an empty Fisherfaces model.
     Fisherfaces(int num_components = 0, double threshold = DBL_MAX)
-        : BasicFaceRecognizerImpl(num_components, threshold)
-    { }
+        //: BasicFaceRecognizer(num_components, threshold)
+    {
+        _num_components = num_components;
+        _threshold = threshold;
+    }
 
     // Computes a Fisherfaces model with images in src and corresponding labels
     // in labels.
@@ -142,7 +146,7 @@ void Fisherfaces::predict(InputArray _src, Ptr<PredictCollector> collector) cons
     }
 }
 
-Ptr<BasicFaceRecognizer> createFisherFaceRecognizer(int num_components, double threshold)
+Ptr<FisherFaceRecognizer> FisherFaceRecognizer::create(int num_components, double threshold)
 {
     return makePtr<Fisherfaces>(num_components, threshold);
 }

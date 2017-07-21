@@ -4,55 +4,16 @@
 #include <opencv2/highgui.hpp>
 #include <iostream>
 #include <cstring>
+#include "samples_utility.hpp"
 
 using namespace std;
 using namespace cv;
 
-static Mat image;
-static Rect2d boundingBox;
-static bool paused;
-static bool selectObject = false;
-static bool startSelection = false;
-
 static const char* keys =
 { "{@tracker_algorithm | | Tracker algorithm }"
     "{@video_name      | | video name        }"
-    "{@start_frame     |0| Start frame       }" 
+    "{@start_frame     |0| Start frame       }"
     "{@bounding_frame  |0,0,0,0| Initial bounding frame}"};
-
-static void onMouse( int event, int x, int y, int, void* )
-{
-  if( !selectObject )
-  {
-    switch ( event )
-    {
-      case EVENT_LBUTTONDOWN:
-        //set origin of the bounding box
-        startSelection = true;
-        boundingBox.x = x;
-        boundingBox.y = y;
-        break;
-      case EVENT_LBUTTONUP:
-        //sei with and height of the bounding box
-        boundingBox.width = std::abs( x - boundingBox.x );
-        boundingBox.height = std::abs( y - boundingBox.y );
-        paused = false;
-        selectObject = true;
-        break;
-      case EVENT_MOUSEMOVE:
-
-        if( startSelection && !selectObject )
-        {
-          //draw the bounding box
-          Mat currentFrame;
-          image.copyTo( currentFrame );
-          rectangle( currentFrame, Point((int) boundingBox.x, (int)boundingBox.y ), Point( x, y ), Scalar( 255, 0, 0 ), 2, 1 );
-          imshow( "Tracking API", currentFrame );
-        }
-        break;
-    }
-  }
-}
 
 static void help()
 {
@@ -124,12 +85,14 @@ int main( int argc, char** argv ){
   }
 
   Mat frame;
-  paused = true;
   namedWindow( "Tracking API", 1 );
-  setMouseCallback( "Tracking API", onMouse, 0 );
+
+  Mat image;
+  Rect2d boundingBox;
+  bool paused = false;
 
   //instantiates the specific Tracker
-  Ptr<Tracker> tracker = Tracker::create( tracker_algorithm );
+  Ptr<Tracker> tracker = createTrackerByName(tracker_algorithm);
   if( tracker == NULL )
   {
     cout << "***Error in the instantiation of the tracker...***\n";
@@ -140,8 +103,6 @@ int main( int argc, char** argv ){
   cap >> frame;
   frame.copyTo( image );
   if(initBoxWasGivenInCommandLine){
-      selectObject=true;
-      paused=false;
       boundingBox.x = coords[0];
       boundingBox.y = coords[1];
       boundingBox.width = std::abs( coords[2] - coords[0] );
@@ -149,6 +110,9 @@ int main( int argc, char** argv ){
       printf("bounding box with vertices (%d,%d) and (%d,%d) was given in command line\n",coords[0],coords[1],coords[2],coords[3]);
       rectangle( image, boundingBox, Scalar( 255, 0, 0 ), 2, 1 );
   }
+  else
+    boundingBox = selectROI("Tracking API", image);
+
   imshow( "Tracking API", image );
 
   bool initialized = false;
@@ -166,7 +130,7 @@ int main( int argc, char** argv ){
           frame.copyTo( image );
       }
 
-      if( !initialized && selectObject )
+      if( !initialized )
       {
         //initializes the tracker
         if( !tracker->init( frame, boundingBox ) )
@@ -193,7 +157,6 @@ int main( int argc, char** argv ){
       break;
     if( c == 'p' )
       paused = !paused;
-
   }
 
   return 0;

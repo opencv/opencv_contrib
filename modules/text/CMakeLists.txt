@@ -1,4 +1,5 @@
 set(the_description "Text Detection and Recognition")
+
 # Using cmake scripts and modules
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -30,7 +31,7 @@ else()
   message(STATUS "Glog:   NO")
 endif()
 
-ocv_define_module(text opencv_ml opencv_imgproc opencv_core opencv_features2d opencv_calib3d WRAP python)
+ocv_define_module(text opencv_ml opencv_imgproc opencv_core opencv_features2d opencv_calib3d WRAP python java)
 #ocv_define_module(text ${TEXT_DEPS} WRAP python)
 
 #set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
@@ -43,9 +44,7 @@ if(${Tesseract_FOUND})
   add_definitions(-DHAVE_TESSERACT)
 else()
   message(STATUS "Tesseract:   NO")
-endif()
-
-
+  endif()
 
 
 if(HAVE_CAFFE AND HAVE_GLOG AND HAVE_PROTOBUF)

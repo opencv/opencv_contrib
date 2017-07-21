@@ -46,6 +46,7 @@
 #include "opencv2/imgcodecs.hpp"
 #include "precomp.hpp"
 #include "opencl_kernels_optflow.hpp"
+#include "opencv2/core/hal/intrin.hpp"
 
 /* Disable "from double to float" and "from size_t to int" warnings.
  * Fixing these would make the code look ugly by introducing explicit cast all around.
@@ -569,7 +570,7 @@ bool GPCTree::trainNode( size_t nodeId, SIter begin, SIter end, unsigned depth )
         localBestScore = score;
       else
       {
-        const double beta = simulatedAnnealingTemperatureCoef * std::sqrt( i ) / ( nSamples * ( scoreGainPos + scoreGainNeg ) );
+        const double beta = simulatedAnnealingTemperatureCoef * std::sqrt( static_cast<float>(i) ) / ( nSamples * ( scoreGainPos + scoreGainNeg ) );
         if ( rng.uniform( 0.0, 1.0 ) > std::exp( -beta * ( localBestScore - score) ) )
           coef[pos] = randomModification;
       }

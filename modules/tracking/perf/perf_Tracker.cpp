@@ -155,7 +155,7 @@ PERF_TEST_P(tracking, mil, testing::Combine(TESTSET_NAMES, SEGMENTS))
   bool initialized = false;
   vector<Rect> bbs;
 
-  Ptr<Tracker> tracker = Tracker::create( "MIL" );
+  Ptr<Tracker> tracker = TrackerMIL::create();
   string folder = TRACKING_DIR + "/" + video + "/" + FOLDER_IMG;
   int numSegments = ( sizeof ( SEGMENTS)/sizeof(int) );
   int endFrame = 0;
@@ -226,7 +226,7 @@ PERF_TEST_P(tracking, boosting, testing::Combine(TESTSET_NAMES, SEGMENTS))
   bool initialized = false;
   vector<Rect> bbs;
 
-  Ptr<Tracker> tracker = Tracker::create( "BOOSTING" );
+  Ptr<Tracker> tracker = TrackerBoosting::create();
   string folder = TRACKING_DIR + "/" + video + "/" + FOLDER_IMG;
   int numSegments = ( sizeof ( SEGMENTS)/sizeof(int) );
   int endFrame = 0;
@@ -296,7 +296,7 @@ PERF_TEST_P(tracking, tld, testing::Combine(TESTSET_NAMES, SEGMENTS))
   bool initialized = false;
   vector<Rect> bbs;
 
-  Ptr<Tracker> tracker = Tracker::create( "TLD" );
+  Ptr<Tracker> tracker = TrackerTLD::create();
   string folder = TRACKING_DIR + "/" + video + "/" + FOLDER_IMG;
   int numSegments = ( sizeof ( SEGMENTS)/sizeof(int) );
   int endFrame = 0;
@@ -366,7 +366,7 @@ PERF_TEST_P(tracking, GOTURN, testing::Combine(TESTSET_NAMES, SEGMENTS))
   bool initialized = false;
   vector<Rect> bbs;
 
-  Ptr<Tracker> tracker = Tracker::create("GOTURN");
+  Ptr<Tracker> tracker = TrackerGOTURN::create();
   string folder = TRACKING_DIR + "/" + video + "/" + FOLDER_IMG;
   int numSegments = (sizeof(SEGMENTS) / sizeof(int));
   int endFrame = 0;

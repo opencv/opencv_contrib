@@ -152,6 +152,7 @@ namespace sfm
     else
     {
       // TODO: implement me
+      CV_Error(Error::StsNotImplemented, "Affine reconstruction not yet implemented");
     }
 
   }
@@ -180,13 +181,14 @@ namespace sfm
     else
     {
       // TODO: implement me
+      CV_Error(Error::StsNotImplemented, "Affine reconstruction not yet implemented");
     }
 
   }
 
 
   void
-  reconstruct(const std::vector<std::string> images, OutputArray Ps, OutputArray points3d,
+  reconstruct(const std::vector<cv::String> images, OutputArray Ps, OutputArray points3d,
               InputOutputArray K, bool is_projective)
   {
     const int nviews = static_cast<int>(images.size());
@@ -223,13 +225,14 @@ namespace sfm
     else
     {
       // TODO: implement me
+      CV_Error(Error::StsNotImplemented, "Affine reconstruction not yet implemented");
     }
 
   }
 
 
   void
-  reconstruct(const std::vector<std::string> images, OutputArray Rs, OutputArray Ts,
+  reconstruct(const std::vector<cv::String> images, OutputArray Rs, OutputArray Ts,
               InputOutputArray K, OutputArray points3d, bool is_projective)
   {
     const int nviews = static_cast<int>(images.size());
@@ -239,7 +242,7 @@ namespace sfm
 
     if ( is_projective )
     {
-      reconstruct_(images, Rs, Ts, K, points3d, false);
+      reconstruct_(images, Rs, Ts, K, points3d);
     }
 
 
@@ -248,6 +251,7 @@ namespace sfm
     else
     {
       // TODO: implement me
+      CV_Error(Error::StsNotImplemented, "Affine reconstruction not yet implemented");
     }
 
   }

@@ -52,7 +52,7 @@ void TrackerGOTURN::Params::read(const cv::FileNode& /*fn*/){}
 void TrackerGOTURN::Params::write(cv::FileStorage& /*fs*/) const {}
 
 
-Ptr<TrackerGOTURN> TrackerGOTURN::createTracker(const TrackerGOTURN::Params &parameters)
+Ptr<TrackerGOTURN> TrackerGOTURN::create(const TrackerGOTURN::Params &parameters)
 {
 #ifdef HAVE_OPENCV_DNN
     return Ptr<gtr::TrackerGOTURNImpl>(new gtr::TrackerGOTURNImpl(parameters));
@@ -60,6 +60,10 @@ Ptr<TrackerGOTURN> TrackerGOTURN::createTracker(const TrackerGOTURN::Params &par
     (void)(parameters);
     CV_ErrorNoReturn(cv::Error::StsNotImplemented , "to use GOTURN, the tracking module needs to be built with opencv_dnn !");
 #endif
+}
+Ptr<TrackerGOTURN> TrackerGOTURN::create()
+{
+    return TrackerGOTURN::create(TrackerGOTURN::Params());
 }
 
 
@@ -168,11 +172,10 @@ bool TrackerGOTURNImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     Mat targetBlob = dnn::blobFromImage(targetPatch);
     Mat searchBlob = dnn::blobFromImage(searchPatch);
 
-    net.setBlob(".data1", targetBlob);
-    net.setBlob(".data2", searchBlob);
+    net.setInput(targetBlob, ".data1");
+    net.setInput(searchBlob, ".data2");
 
-    net.forward();
-    Mat resMat = net.getBlob("scale").reshape(1, 1);
+    Mat resMat = net.forward("scale").reshape(1, 1);
 
     curBB.x = targetPatchRect.x + (resMat.at<float>(0) * targetPatchRect.width / INPUT_SIZE) - targetPatchRect.width;
     curBB.y = targetPatchRect.y + (resMat.at<float>(1) * targetPatchRect.height / INPUT_SIZE) - targetPatchRect.height;

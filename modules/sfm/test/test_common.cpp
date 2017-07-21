@@ -86,11 +86,8 @@ parser_2D_tracks(const string &_filename, std::vector<Mat> &points2d )
   ifstream myfile(_filename.c_str());
 
   if (!myfile.is_open())
-  {
-    cout << "Unable to read file: " << _filename << endl;
-    exit(0);
-
-  } else {
+      CV_Error(cv::Error::StsError, string("Unable to read file: ") + _filename + "\n");
+  else {
 
     double x, y;
     string line_str;

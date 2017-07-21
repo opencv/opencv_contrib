@@ -144,7 +144,7 @@ struct beamSearch_node {
     double score;
     vector<int> segmentation;
     bool expanded;
-    // TODO calculating score of its childs would be much faster if we store the last column
+    // TODO calculating score of its child would be much faster if we store the last column
     //      of their "root" path.
 };
 
@@ -231,7 +231,7 @@ public:
 
         // TODO if input is a text line (not a word) we may need to split into words here!
 
-        // do sliding window classification along a croped word image
+        // do sliding window classification along a cropped word image
         classifier->eval(src, recognition_probabilities, oversegmentation);
 
         // if the number of oversegmentation points found is less than 2 we can not do nothing!!
@@ -499,7 +499,7 @@ Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create( Ptr<OCRBeamSearchDecoder
     return makePtr<OCRBeamSearchDecoderImpl>(_classifier, _vocabulary, transition_p, emission_p, _mode, _beam_size);
 }
 
-CV_EXPORTS_W Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(Ptr<OCRBeamSearchDecoder::ClassifierCallback> _classifier,
+Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(Ptr<OCRBeamSearchDecoder::ClassifierCallback> _classifier,
                                                         const String& _vocabulary,
                                                         InputArray transition_p,
                                                         InputArray emission_p,
@@ -509,8 +509,17 @@ CV_EXPORTS_W Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(Ptr<OCRBeamS
     return makePtr<OCRBeamSearchDecoderImpl>(_classifier, _vocabulary, transition_p, emission_p, (decoder_mode)_mode, _beam_size);
 }
 
+Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(const String& _filename,
+                                                        const String& _vocabulary,
+                                                        InputArray transition_p,
+                                                        InputArray emission_p,
+                                                        int _mode,
+                                                        int _beam_size)
+{
+    return makePtr<OCRBeamSearchDecoderImpl>(loadOCRBeamSearchClassifierCNN(_filename), _vocabulary, transition_p, emission_p, (decoder_mode)_mode, _beam_size);
+}
 
-class CV_EXPORTS OCRBeamSearchClassifierCNN : public OCRBeamSearchDecoder::ClassifierCallback
+class OCRBeamSearchClassifierCNN : public OCRBeamSearchDecoder::ClassifierCallback
 {
 public:
     //constructor

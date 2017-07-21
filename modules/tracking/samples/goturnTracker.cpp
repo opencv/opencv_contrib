@@ -140,7 +140,7 @@ int main(int argc, char *argv[])
     setMouseCallback("GOTURN Tracking", onMouse, 0);
 
     //Create GOTURN tracker
-    Ptr<Tracker> tracker = Tracker::create("GOTURN");
+    Ptr<Tracker> tracker = TrackerGOTURN::create();
 
     //Load and init full ALOV300++ dataset with a given datasetID, as alternative you can use loadAnnotatedOnly(..)
     //to load only frames with labled ground truth ~ every 5-th frame

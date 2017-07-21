@@ -53,73 +53,66 @@ namespace ft
     //! @addtogroup f0_math
     //! @{
 
-    /** @brief Computes components of the array using direct F0-transform.
+    /** @brief Computes components of the array using direct \f$F^0\f$-transform.
     @param matrix Input array.
-    @param kernel Kernel used for processing. Function **createKernel** can be used.
-    @param components Output 32-bit array for the components.
+    @param kernel Kernel used for processing. Function `ft::createKernel` can be used.
+    @param components Output 32-bit float array for the components.
     @param mask Mask can be used for unwanted area marking.
 
     The function computes components using predefined kernel and mask.
-
-    @note
-        F-transform technique is described in paper @cite Perf:FT.
      */
-    CV_EXPORTS_AS(FT02D_components1) void FT02D_components(InputArray matrix, InputArray kernel, OutputArray components, InputArray mask);
+    CV_EXPORTS_W void FT02D_components(InputArray matrix, InputArray kernel, OutputArray components, InputArray mask = noArray());
 
-    /** @brief Computes components of the array using direct F0-transform.
-    @param matrix Input array.
-    @param kernel Kernel used for processing. Function **createKernel** can be used.
-    @param components Output 32-bit array for the components.
-
-    The function computes components using predefined kernel.
-
-    @note
-        F-transform technique is described in paper @cite Perf:FT.
-     */
-    CV_EXPORTS_W void FT02D_components(InputArray matrix, InputArray kernel, OutputArray components);
-
-    /** @brief Computes inverse F0-transfrom.
-    @param components Input 32-bit single channel array for the components.
-    @param kernel Kernel used for processing. Function **createKernel** can be used.
-    @param output Output 32-bit array.
+    /** @brief Computes inverse \f$F^0\f$-transfrom.
+    @param components Input 32-bit float single channel array for the components.
+    @param kernel Kernel used for processing. Function `ft::createKernel` can be used.
+    @param output Output 32-bit float array.
     @param width Width of the output array.
     @param height Height of the output array.
 
-    @note
-        F-transform technique is described in paper @cite Perf:FT.
+    Computation of inverse F-transform.
      */
     CV_EXPORTS_W void FT02D_inverseFT(InputArray components, InputArray kernel, OutputArray output, int width, int height);
 
-    /** @brief Computes F0-transfrom and inverse F0-transfrom at once.
+    /** @brief Computes \f$F^0\f$-transfrom and inverse \f$F^0\f$-transfrom at once.
     @param matrix Input matrix.
-    @param kernel Kernel used for processing. Function **createKernel** can be used.
-    @param output Output 32-bit array.
+    @param kernel Kernel used for processing. Function `ft::createKernel` can be used.
+    @param output Output 32-bit float array.
     @param mask Mask used for unwanted area marking.
 
-    This function computes F-transfrom and inverse F-transfotm in one step. It is fully sufficient and optimized for **Mat**.
+    This function computes F-transfrom and inverse F-transfotm in one step. It is fully sufficient and optimized for `cv::Mat`.
     */
-    CV_EXPORTS_AS(FT02D_process1) void FT02D_process(InputArray matrix, InputArray kernel, OutputArray output, InputArray mask);
+    CV_EXPORTS_W void FT02D_process(InputArray matrix, InputArray kernel, OutputArray output, InputArray mask = noArray());
 
-    /** @brief Computes F0-transfrom and inverse F0-transfrom at once.
+    /** @brief Computes \f$F^0\f$-transfrom and inverse \f$F^0\f$-transfrom at once and return state.
     @param matrix Input matrix.
-    @param kernel Kernel used for processing. Function **createKernel** can be used.
-    @param output Output 32-bit array.
-
-    This function computes F-transfrom and inverse F-transfotm in one step. It is fully sufficient and optimized for **Mat**.
-    */
-    CV_EXPORTS_W void FT02D_process(InputArray matrix, InputArray kernel, OutputArray output);
-
-    /** @brief Computes F0-transfrom and inverse F0-transfrom at once and return state.
-    @param matrix Input matrix.
-    @param kernel Kernel used for processing. Function **createKernel** can be used.
-    @param output Output 32-bit array.
+    @param kernel Kernel used for processing. Function `ft::createKernel` can be used.
+    @param output Output 32-bit float array.
     @param mask Mask used for unwanted area marking.
     @param maskOutput Mask after one iteration.
-    @param firstStop If **true** function returns -1 when first problem appears. In case of **false**, the process is completed and summation of all problems returned.
+    @param firstStop If **true** function returns -1 when first problem appears. In case of `false` the process is completed and summation of all problems returned.
 
-    This function computes iteration of F-transfrom and inverse F-transfotm and handle image and mask change. The function is used in *inpaint* function.
+    This function computes iteration of F-transfrom and inverse F-transfotm and handle image and mask change. The function is used in `ft::inpaint` function.
     */
     CV_EXPORTS_W int FT02D_iteration(InputArray matrix, InputArray kernel, OutputArray output, InputArray mask, OutputArray maskOutput, bool firstStop);
+
+    /** @brief Sligtly less accurate version of \f$F^0\f$-transfrom computation optimized for higher speed. The methods counts with linear basic function.
+    @param matrix Input 3 channels matrix.
+    @param radius Radius of the `ft::LINEAR` basic function.
+    @param output Output array.
+
+    This function computes F-transfrom and inverse F-transfotm using linear basic function in one step. It is ~10 times faster than `ft::FT02D_process` method.
+    */
+    CV_EXPORTS_W void FT02D_FL_process(InputArray matrix, const int radius, OutputArray output);
+
+    /** @brief Sligtly less accurate version of \f$F^0\f$-transfrom computation optimized for higher speed. The methods counts with linear basic function.
+    @param matrix Input 3 channels matrix.
+    @param radius Radius of the `ft::LINEAR` basic function.
+    @param output Output array.
+
+    This function computes F-transfrom and inverse F-transfotm using linear basic function in one step. It is ~9 times faster then `ft::FT02D_process` method and more accurate than `ft::FT02D_FL_process` method.
+    */
+    CV_EXPORTS_W void FT02D_FL_process_float(InputArray matrix, const int radius, OutputArray output);
 
     //! @}
 }

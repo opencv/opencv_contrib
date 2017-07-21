@@ -24,7 +24,7 @@
 #include <iostream>
 #include <cstring>
 #include <ctime>
-#include "roiSelector.hpp"
+#include "samples_utility.hpp"
 
 #ifdef HAVE_OPENCV
 #include <opencv2/flann.hpp>
@@ -62,38 +62,46 @@ int main( int argc, char** argv ){
 
   // for showing the speed
   double fps;
-  std::string text;
+  String text;
   char buffer [50];
 
   // set the default tracking algorithm
-  std::string trackingAlg = "KCF";
+  String trackingAlg = "KCF";
 
   // set the tracking algorithm from parameter
   if(argc>2)
     trackingAlg = argv[2];
 
   // create the tracker
-  MultiTracker trackers(trackingAlg);
+  MultiTracker trackers;
 
   // container of the tracked objects
+  vector<Rect> ROIs;
   vector<Rect2d> objects;
 
   // set input video
-  std::string video = argv[1];
+  String video = argv[1];
   VideoCapture cap(video);
 
   Mat frame;
 
   // get bounding box
   cap >> frame;
-  selectROI("tracker",frame,objects);
+  selectROIs("tracker",frame,ROIs);
 
   //quit when the tracked object(s) is not provided
   if(objects.size()<1)
     return 0;
 
+  std::vector<Ptr<Tracker> > algorithms;
+  for (size_t i = 0; i < ROIs.size(); i++)
+  {
+      algorithms.push_back(createTrackerByName(trackingAlg));
+      objects.push_back(ROIs[i]);
+  }
+
   // initialize the tracker
-  trackers.add(frame,objects);
+  trackers.add(algorithms,frame,objects);
 
   // do the tracking
   printf(GREEN "Start the tracking process, press ESC to quit.\n" RESET);
@@ -128,8 +136,8 @@ int main( int argc, char** argv ){
 #endif
 
     // draw the tracked object
-    for(unsigned i=0;i<trackers.objects.size();i++)
-      rectangle( frame, trackers.objects[i], Scalar( 255, 0, 0 ), 2, 1 );
+    for(unsigned i=0;i<trackers.getObjects().size();i++)
+      rectangle( frame, trackers.getObjects()[i], Scalar( 255, 0, 0 ), 2, 1 );
 
     // draw the processing speed
     sprintf (buffer, "speed: %.0f fps", fps);

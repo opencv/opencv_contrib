@@ -79,10 +79,21 @@ enum ThinningTypes{
     THINNING_GUOHALL      = 1  // Thinning technique of Guo-Hall
 };
 
+/**
+* @brief Specifies the binarization method to use in cv::ximgproc::niBlackThreshold
+*/
+enum LocalBinarizationMethods{
+	BINARIZATION_NIBLACK = 0, //!< Classic Niblack binarization. See @cite Niblack1985 .
+	BINARIZATION_SAUVOLA = 1, //!< Sauvola's technique. See @cite Sauvola1997 .
+	BINARIZATION_WOLF = 2,    //!< Wolf's technique. See @cite Wolf2004 .
+	BINARIZATION_NICK = 3     //!< NICK technique. See @cite Khurshid2009 .
+};
+
 //! @addtogroup ximgproc
 //! @{
 
-/** @brief Applies Niblack thresholding to input image.
+/** @brief Performs thresholding on input images using Niblack's technique or some of the
+popular variations it inspired.
 
 The function transforms a grayscale image to a binary image according to the formulae:
 -   **THRESH_BINARY**
@@ -91,8 +102,9 @@ The function transforms a grayscale image to a binary image according to the for
     \f[dst(x,y) =  \fork{0}{if \(src(x,y) > T(x,y)\)}{\texttt{maxValue}}{otherwise}\f]
 where \f$T(x,y)\f$ is a threshold calculated individually for each pixel.
 
-The threshold value \f$T(x, y)\f$ is the mean minus \f$ delta \f$ times standard deviation
-of \f$\texttt{blockSize} \times\texttt{blockSize}\f$ neighborhood of \f$(x, y)\f$.
+The threshold value \f$T(x, y)\f$ is determined based on the binarization method chosen. For
+classic Niblack, it is the mean minus \f$ k \f$ times standard deviation of
+\f$\texttt{blockSize} \times\texttt{blockSize}\f$ neighborhood of \f$(x, y)\f$.
 
 The function can't process the image in-place.
 
@@ -103,14 +115,17 @@ used with the THRESH_BINARY and THRESH_BINARY_INV thresholding types.
 @param type Thresholding type, see cv::ThresholdTypes.
 @param blockSize Size of a pixel neighborhood that is used to calculate a threshold value
 for the pixel: 3, 5, 7, and so on.
-@param delta Constant multiplied with the standard deviation and subtracted from the mean.
-Normally, it is taken to be a real number between 0 and 1.
+@param k The user-adjustable parameter used by Niblack and inspired techniques. For Niblack, this is
+normally a value between 0 and 1 that is multiplied with the standard deviation and subtracted from
+the mean.
+@param binarizationMethod Binarization method to use. By default, Niblack's technique is used.
+Other techniques can be specified, see cv::ximgproc::LocalBinarizationMethods.
 
 @sa  threshold, adaptiveThreshold
  */
 CV_EXPORTS_W void niBlackThreshold( InputArray _src, OutputArray _dst,
                                     double maxValue, int type,
-                                    int blockSize, double delta );
+                                    int blockSize, double k, int binarizationMethod = BINARIZATION_NIBLACK );
 
 /** @brief Applies a binary blob thinning operation, to achieve a skeletization of the input image.
 
@@ -122,6 +137,27 @@ The function transforms a binary blob image into a skeletized form using the tec
  */
 CV_EXPORTS_W void thinning( InputArray src, OutputArray dst, int thinningType = THINNING_ZHANGSUEN);
 
+/** @brief Performs anisotropic diffusian on an image.
+
+ The function applies Perona-Malik anisotropic diffusion to an image. This is the solution to the partial differential equation:
+
+ \f[{\frac  {\partial I}{\partial t}}={\mathrm  {div}}\left(c(x,y,t)\nabla I\right)=\nabla c\cdot \nabla I+c(x,y,t)\Delta I\f]
+
+ Suggested functions for c(x,y,t) are:
+
+ \f[c\left(\|\nabla I\|\right)=e^{{-\left(\|\nabla I\|/K\right)^{2}}}\f]
+
+ or
+
+ \f[ c\left(\|\nabla I\|\right)={\frac {1}{1+\left({\frac  {\|\nabla I\|}{K}}\right)^{2}}} \f]
+
+ @param src Grayscale Source image.
+ @param dst Destination image of the same size and the same number of channels as src .
+ @param alpha The amount of time to step forward by on each iteration (normally, it's between 0 and 1).
+ @param K sensitivity to the edges
+ @param niters The number of iterations
+*/
+CV_EXPORTS_W void anisotropicDiffusion(InputArray src, OutputArray dst, float alpha, float K, int niters );
 
 //! @}
 

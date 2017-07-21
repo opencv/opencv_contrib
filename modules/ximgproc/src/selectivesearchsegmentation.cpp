@@ -142,7 +142,7 @@ namespace cv {
                 Mat regions = regions_.getMat();
                 sizes = sizes_.getMat();
 
-                if (image_id != -1 && last_image_id != image_id) {
+                if (image_id == -1 || last_image_id != image_id) {
 
                     std::vector<Mat> img_planes;
                     split(img, img_planes);
@@ -507,7 +507,7 @@ namespace cv {
                 Mat regions = regions_.getMat();
                 sizes = sizes_.getMat();
 
-                if (image_id != -1 && last_image_id != image_id) {
+                if (image_id == -1 || last_image_id != image_id) {
 
                     std::vector<Mat> img_planes;
                     split(img, img_planes);

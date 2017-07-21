@@ -52,15 +52,15 @@ namespace ft
 
     enum
     {
-        LINEAR = 1,
-        SINUS = 2
+        LINEAR = 1, //!< linear (triangular) shape
+        SINUS = 2 //!< sinusoidal shape
     };
 
     enum
     {
-        ONE_STEP = 1,
-        MULTI_STEP = 2,
-        ITERATIVE = 3
+        ONE_STEP = 1, //!< processing in one step
+        MULTI_STEP = 2, //!< processing in multiple step
+        ITERATIVE = 3 //!< processing in several iterations
     };
 
     //! @}

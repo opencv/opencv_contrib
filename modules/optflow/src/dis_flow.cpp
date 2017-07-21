@@ -40,7 +40,6 @@
 //
 //M*/
 
-#include "opencv2/core/hal/intrin.hpp"
 #include "precomp.hpp"
 #include "opencl_kernels_optflow.hpp"
 

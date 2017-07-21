@@ -4,7 +4,7 @@
 #include <opencv2/highgui.hpp>
 #include <iostream>
 #include <cstring>
-#include "roiSelector.hpp"
+#include "samples_utility.hpp"
 
 using namespace std;
 using namespace cv;
@@ -38,7 +38,7 @@ int main( int argc, char** argv ){
 
   // create a tracker object
   //! [create]
-  Ptr<TrackerKCF> tracker = TrackerKCF::createTracker(param);
+  Ptr<TrackerKCF> tracker = TrackerKCF::create(param);
   //! [create]
 
   //! [setextractor]

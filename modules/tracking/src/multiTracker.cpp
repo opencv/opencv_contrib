@@ -44,9 +44,9 @@
 namespace cv
 {
 	//Multitracker
-	bool MultiTracker_Alt::addTarget(const Mat& image, const Rect2d& boundingBox, String tracker_algorithm_name)
+    bool MultiTracker_Alt::addTarget(InputArray image, const Rect2d& boundingBox, Ptr<Tracker> tracker_algorithm)
 	{
-		Ptr<Tracker> tracker = Tracker::create(tracker_algorithm_name);
+        Ptr<Tracker> tracker = tracker_algorithm;
 		if (tracker == NULL)
 			return false;
 
@@ -73,7 +73,7 @@ namespace cv
 		return true;
 	}
 
-	bool MultiTracker_Alt::update(const Mat& image)
+    bool MultiTracker_Alt::update(InputArray image)
 	{
 		for (int i = 0; i < (int)trackers.size(); i++)
 			if (!trackers[i]->update(image, boundingBoxes[i]))
@@ -84,8 +84,9 @@ namespace cv
 
 	//Multitracker TLD
 	/*Optimized update method for TLD Multitracker */
-	bool MultiTrackerTLD::update_opt(const Mat& image)
+    bool MultiTrackerTLD::update_opt(InputArray _image)
 	{
+        Mat image = _image.getMat();
 		//Get parameters from first object
 		//TLD Tracker data extraction
 		Tracker* trackerPtr = trackers[0];
@@ -99,7 +100,7 @@ namespace cv
 		cvtColor(image, image_gray, COLOR_BGR2GRAY);
 
 		if (scale > 1.0)
-			resize(image_gray, imageForDetector, Size(cvRound(image.cols*scale), cvRound(image.rows*scale)), 0, 0, tld::DOWNSCALE_MODE);
+            resize(image_gray, imageForDetector, Size(cvRound(image_gray.cols*scale), cvRound(image_gray.rows*scale)), 0, 0, tld::DOWNSCALE_MODE);
 		else
 			imageForDetector = image_gray;
 		GaussianBlur(imageForDetector, image_blurred, tld::GaussBlurKernelSize, 0.0);

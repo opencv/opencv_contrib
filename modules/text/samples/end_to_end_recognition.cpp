@@ -20,7 +20,7 @@ using namespace std;
 using namespace cv;
 using namespace cv::text;
 
-//Calculate edit distance netween two words
+//Calculate edit distance between two words
 size_t edit_distance(const string& A, const string& B);
 size_t min(size_t x, size_t y, size_t z);
 bool   isRepetitive(const string& s);
@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
     cout << "TIME_OCR = " << ((double)getTickCount() - t_r)*1000/getTickFrequency() << endl;
 
 
-    /* Recognition evaluation with (approximate) hungarian matching and edit distances */
+    /* Recognition evaluation with (approximate) Hungarian matching and edit distances */
 
     if(argc>2)
     {
