@@ -129,6 +129,20 @@ namespace xphoto
         /** @brief Convert from index to matrix
         */
         Mat indexToMask(const Mat& indexMat, const int rows, const int cols);
+
+        /*!
+         * @brief Calculate the weights in the alternative motion decomposition step
+         * @param inputSequence Input sequences
+         * @param background Estimated background component in the last iteration
+         * @param foreground Estimated foreground/obstruction component in the last iteration
+         * @param alphaMap Estimated alpha map for obstruction layer
+         * @return omega_1 The weight omega_1 = \phi(||I^t - W_O^t\hat{I}_O - W_O^t\hat{A} \circ W_B^t\hat{I}_B||^2)^{-1}
+         * @return omega_2 The weight omega_2 = \phi(||D_x\hat{I}_B||^2+||D_y\hat{I}_B||^2)^{-1}
+         * @return omega_3 The weight omega_3 = \phi(||D_x\hat{I}_O||^2+||D_y\hat{I}_O||^2)^{-1}
+         */
+        void motDecomIrlsWeight(const std::vector<Mat>& inputSequence, const Mat& background, const Mat& foreground,
+                            Mat& alphaMap, std::vector<float>& omega_1, std::vector<float>& omega_2, std::vector<float>& omega_3);
+
     };
 //! @}
 

@@ -310,6 +310,74 @@ Mat obstructionFree::imgInitDecomOpaq(const std::vector <Mat> &warpedImgs, Mat& 
     return background;
 }
 
+//Calculate the weights in the alternative motion decomposition step
+void obstructionFree::motDecomIrlsWeight(const std::vector<Mat>& inputSequence, const Mat& background, const Mat& foreground,
+                        Mat& alphaMap, std::vector<float>& omega_1, std::vector<float>& omega_2, std::vector<float>& omega_3){
+
+    int width = background.cols;
+    int height = background.rows;
+    int npixels = width*height;
+
+
+    CV_Assert(omega_1.size() == 0 || omega_1.size() == inputSequence.size()*background.total());
+    CV_Assert(omega_2.size() == 0 || omega_2.size() == background.total());
+    CV_Assert(omega_3.size() == 0 || omega_3.size() == background.total());
+
+    float varepsilon = pow(0.001,2);
+    int deriv_ddepth = CV_32F;
+
+    Mat backgd_dx;
+    Mat backgd_dy;
+    Mat obstruc_dx;
+    Mat obstruc_dy;
+
+
+    //compute gradients of current background and occlusion components
+    Sobel(background, backgd_dx, deriv_ddepth, 1, 0);
+    Sobel(background, backgd_dy, deriv_ddepth, 0, 1);
+    Sobel(foreground, obstruc_dx, deriv_ddepth, 1, 0);
+    Sobel(foreground, obstruc_dy, deriv_ddepth, 0, 1);
+
+    //if weights have not been initialized
+    if (omega_1.size()==0 && omega_2.size() == 0 && omega_3.size() == 0){
+
+        //compute derivative denominators (weights)
+        for(size_t tt=0; tt<inputSequence.size(); tt++){
+                Mat img=inputSequence[tt];
+                Mat back_flow=this->backFlowFields[tt];
+                Mat obstruc_flow=this->foreFlowFields[tt];
+                Mat temp = img-imgWarpFlow(foreground,obstruc_flow)-imgWarpFlow(alphaMap,obstruc_flow).mul(imgWarpFlow(background,back_flow));
+                for(size_t i=0; i<npixels;i++){
+                    omega_1.push_back(1/sqrt(temp.at<float>(i)*temp.at<float>(i)+varepsilon));
+                }
+            }
+            for(size_t i=0;i<npixels;i++){
+                omega_2.push_back(1/sqrt(backgd_dx.at<float>(i)*backgd_dx.at<float>(i)+backgd_dy.at<float>(i)*backgd_dy.at<float>(i)+varepsilon)) ;
+                omega_3.push_back(1/sqrt(obstruc_dx.at<float>(i)*obstruc_dx.at<float>(i)+obstruc_dy.at<float>(i)*obstruc_dy.at<float>(i)+varepsilon));
+            }
+    }
+
+    //if weights have been calculated
+    else if (omega_1.size() == inputSequence.size()*background.total() && omega_2.size() == background.total() &&
+             omega_3.size() == background.total()){
+
+            //compute derivative denominators (weights)
+            for(size_t tt=0; tt<inputSequence.size(); tt++){
+                Mat img=inputSequence[tt];
+                Mat back_flow=this->backFlowFields[tt];
+                Mat obstruc_flow=this->foreFlowFields[tt];
+                Mat temp = img-imgWarpFlow(foreground,obstruc_flow)-imgWarpFlow(alphaMap,obstruc_flow).mul(imgWarpFlow(background,back_flow));
+                for(size_t i=0; i<npixels;i++){
+                    size_t offset = i + tt*npixels;
+                    omega_1[offset] = 1/sqrt(temp.at<float>(i)*temp.at<float>(i)+varepsilon);
+                }
+            }
+            for(size_t i=0;i<npixels;i++){
+                omega_2[i] = 1/sqrt(backgd_dx.at<float>(i)*backgd_dx.at<float>(i)+backgd_dy.at<float>(i)*backgd_dy.at<float>(i)+varepsilon);
+                omega_3[i] = 1/sqrt(obstruc_dx.at<float>(i)*obstruc_dx.at<float>(i)+obstruc_dy.at<float>(i)*obstruc_dy.at<float>(i)+varepsilon);
+            }
+    }
+}
 
 //core function
 void obstructionFree::removeOcc(const std::vector <Mat> &srcImgs, Mat &dst, Mat& foreground, Mat &mask, const int obstructionType){
