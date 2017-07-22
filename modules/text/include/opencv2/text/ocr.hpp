@@ -613,10 +613,6 @@ public:
     @param emission_probabilities_table Table with observation emission probabilities. cols ==
     rows == vocabulary.size().
 
-    @param windowWidth The width of the windows to which the sliding window will be iterated. The height will
-    be the height of the image. The windows might be resized to fit the classifiers input by the classifiers
-    preprocessor.
-
     @param mode HMM Decoding algorithm (only Viterbi for the moment)
 
     @param beam_size Size of the beam in Beam Search algorithm

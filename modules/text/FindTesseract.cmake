@@ -19,4 +19,4 @@ find_library(Lept_LIBRARY NAMES lept
 set(Tesseract_LIBS ${Tesseract_LIBRARY} ${Lept_LIBRARY})
 if(Tesseract_LIBS AND Tesseract_INCLUDE_DIR)
     set(Tesseract_FOUND 1)
-endif()      
+endif()

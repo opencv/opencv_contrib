@@ -17,6 +17,7 @@
 #include  <iomanip>
 #include  <fstream>
 
+void textbox_draw(cv::Mat &src, std::vector<cv::Rect>  &groups,std::vector<float> &probs,std::vector<cv::String> wordList,float thres=0.6);
 inline std::string getHelpStr(std::string progFname){
     std::stringstream out;
     out << "    Demo of text detection CNN for text detection." << std::endl;
@@ -140,7 +141,4 @@ int main(int argc, const char * argv[]){
     std::cout << "Press any key to exit." << std::endl << std::endl;
     if ((cv::waitKey()&0xff) == ' ')
         return 0;
-
-
 }
-
