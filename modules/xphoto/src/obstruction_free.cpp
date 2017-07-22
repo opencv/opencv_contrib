@@ -323,7 +323,7 @@ void obstructionFree::motDecomIrlsWeight(const std::vector<Mat>& inputSequence, 
     CV_Assert(omega_2.size() == 0 || omega_2.size() == background.total());
     CV_Assert(omega_3.size() == 0 || omega_3.size() == background.total());
 
-    float varepsilon = pow(0.001,2);
+    float varepsilon = 0.000001f;
     int deriv_ddepth = CV_32F;
 
     Mat backgd_dx;
@@ -347,11 +347,11 @@ void obstructionFree::motDecomIrlsWeight(const std::vector<Mat>& inputSequence, 
                 Mat back_flow=this->backFlowFields[tt];
                 Mat obstruc_flow=this->foreFlowFields[tt];
                 Mat temp = img-imgWarpFlow(foreground,obstruc_flow)-imgWarpFlow(alphaMap,obstruc_flow).mul(imgWarpFlow(background,back_flow));
-                for(size_t i=0; i<npixels;i++){
+                for(int i=0; i<npixels;i++){
                     omega_1.push_back(1/sqrt(temp.at<float>(i)*temp.at<float>(i)+varepsilon));
                 }
             }
-            for(size_t i=0;i<npixels;i++){
+            for(int i=0;i<npixels;i++){
                 omega_2.push_back(1/sqrt(backgd_dx.at<float>(i)*backgd_dx.at<float>(i)+backgd_dy.at<float>(i)*backgd_dy.at<float>(i)+varepsilon)) ;
                 omega_3.push_back(1/sqrt(obstruc_dx.at<float>(i)*obstruc_dx.at<float>(i)+obstruc_dy.at<float>(i)*obstruc_dy.at<float>(i)+varepsilon));
             }
@@ -367,14 +367,15 @@ void obstructionFree::motDecomIrlsWeight(const std::vector<Mat>& inputSequence, 
                 Mat back_flow=this->backFlowFields[tt];
                 Mat obstruc_flow=this->foreFlowFields[tt];
                 Mat temp = img-imgWarpFlow(foreground,obstruc_flow)-imgWarpFlow(alphaMap,obstruc_flow).mul(imgWarpFlow(background,back_flow));
-                for(size_t i=0; i<npixels;i++){
-                    size_t offset = i + tt*npixels;
+                for(int i=0; i<npixels;i++){
+                    size_t offset = static_cast<size_t>(i + tt*npixels);
                     omega_1[offset] = 1/sqrt(temp.at<float>(i)*temp.at<float>(i)+varepsilon);
                 }
             }
-            for(size_t i=0;i<npixels;i++){
-                omega_2[i] = 1/sqrt(backgd_dx.at<float>(i)*backgd_dx.at<float>(i)+backgd_dy.at<float>(i)*backgd_dy.at<float>(i)+varepsilon);
-                omega_3[i] = 1/sqrt(obstruc_dx.at<float>(i)*obstruc_dx.at<float>(i)+obstruc_dy.at<float>(i)*obstruc_dy.at<float>(i)+varepsilon);
+            for(int i=0;i<npixels;i++){
+                size_t offset = static_cast<size_t>(i);
+                omega_2[offset] = 1/sqrt(backgd_dx.at<float>(i)*backgd_dx.at<float>(i)+backgd_dy.at<float>(i)*backgd_dy.at<float>(i)+varepsilon);
+                omega_3[offset] = 1/sqrt(obstruc_dx.at<float>(i)*obstruc_dx.at<float>(i)+obstruc_dy.at<float>(i)*obstruc_dy.at<float>(i)+varepsilon);
             }
     }
 }
