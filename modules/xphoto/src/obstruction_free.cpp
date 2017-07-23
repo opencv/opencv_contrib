@@ -310,6 +310,68 @@ Mat obstructionFree::imgInitDecomOpaq(const std::vector <Mat> &warpedImgs, Mat& 
     return background;
 }
 
+//D_x^TD_x + D_y^TD_y
+Mat obstructionFree::Laplac(const Mat& input)
+    {
+        CV_Assert(input.type() == CV_8U ||input.type() == CV_32F);
+
+        Mat _input;
+        if (input.type() == CV_8U) input.convertTo(_input, CV_32F);
+        else _input=input.clone();
+
+        int width=input.cols;
+        int height=input.rows;
+
+        _input = _input.reshape(0,1);
+        Size s=_input.size();
+        Mat temp=Mat::zeros(s, CV_32FC1);
+        Mat _output=Mat::zeros(s, CV_32FC1);
+        Mat output =Mat::zeros(height, width, CV_32FC1);
+
+        // horizontal filtering
+        for(int i=0;i<height;i++)
+            for(int j=0;j<width-1;j++)
+            {
+                int offset=i*width+j;
+                temp.at<float>(offset)=_input.at<float>(offset+1) - _input.at<float>(offset);
+            }
+
+        for(int i=0;i<height;i++)
+            for(int j=0;j<width;j++)
+            {
+                int offset=i*width+j;
+                if(j<width-1)
+                    _output.at<float>(offset) -= temp.at<float>(offset);
+                if(j>0)
+                    _output.at<float>(offset) += temp.at<float>(offset-1);
+            }
+
+        temp.release();
+
+        temp=Mat::zeros(s, CV_32FC1);
+
+        // vertical filtering
+        for(int i=0;i<height-1;i++)
+            for(int j=0;j<width;j++)
+            {
+                int offset=i*width+j;
+                temp.at<float>(offset)=_input.at<float>(offset+width)- _input.at<float>(offset);
+            }
+        for(int i=0;i<height;i++)
+            for(int j=0;j<width;j++)
+            {
+                int offset=i*width+j;
+                if(i<height-1)
+                    _output.at<float>(offset) -= temp.at<float>(offset);
+                if(i>0)
+                    _output.at<float>(offset) += temp.at<float>(offset-width);
+            }
+
+            output = _output.reshape(0, input.rows);
+            //output.convertTo(output, input.type());
+            return output;
+    }
+
 //Calculate the weights in the alternative motion decomposition step
 void obstructionFree::motDecomIrlsWeight(const std::vector<Mat>& inputSequence, const Mat& background, const Mat& foreground,
                         Mat& alphaMap, std::vector<float>& omega_1, std::vector<float>& omega_2, std::vector<float>& omega_3){

@@ -130,6 +130,10 @@ namespace xphoto
         */
         Mat indexToMask(const Mat& indexMat, const int rows, const int cols);
 
+        /** @brief Calculate laplacian filters D_x^TD_x + D_y^TD_y
+        */
+        Mat Laplac(const Mat& input);
+
         /*!
          * @brief Calculate the weights in the alternative motion decomposition step
          * @param inputSequence Input sequences
