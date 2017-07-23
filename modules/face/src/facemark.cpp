@@ -117,8 +117,13 @@ namespace cv
         std::string item;
         std::vector<Point2f> pts;
         std::vector<float> raw;
-        // TODO: throw error if file not exist
-        std::ifstream infile(filename.c_str());
+
+        std::ifstream infile;
+        infile.open(filename.c_str(), std::ios::in);
+        if (!infile) {
+           std::string error_message = "No valid input file was given, please check the given filename.";
+           CV_Error(CV_StsBadArg, error_message);
+        }
 
         /*clear the output containers*/
         images.clear();
@@ -158,7 +163,13 @@ namespace cv
         facePoints.clear();
 
         /*load the images path*/
-        std::ifstream infile(imageList.c_str());
+        std::ifstream infile;
+        infile.open(imageList.c_str(), std::ios::in);
+        if (!infile) {
+           std::string error_message = "No valid input file was given, please check the given filename.";
+           CV_Error(CV_StsBadArg, error_message);
+        }
+
         while (getline (infile, line)){
             images.push_back(line);
         }
