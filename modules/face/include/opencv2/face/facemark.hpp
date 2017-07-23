@@ -133,6 +133,28 @@ namespace cv
         BOILERPLATE_CODE("AAM",FacemarkAAM);
     }; /* AAM */
 
+    class CV_EXPORTS_W FacemarkLBF : public Facemark
+        {
+        public:
+            struct CV_EXPORTS Params
+            {
+                /**
+                * \brief Constructor
+                */
+                Params();
+
+                /*read only parameters - just for example*/
+                double detect_thresh;         //!<  detection confidence threshold
+                double sigma;                 //!<  another parameter
+
+                void read(const FileNode& /*fn*/);
+                void write(FileStorage& /*fs*/) const;
+
+            };
+
+            BOILERPLATE_CODE("LBF",FacemarkLBF);
+        }; /* LBF */
+
 //  } /* namespace face */
 } /* namespace cv */
 

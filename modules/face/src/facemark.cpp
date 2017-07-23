@@ -55,6 +55,7 @@ namespace cv
 
     Ptr<Facemark> Facemark::create( const String& facemarkType ){
         BOILERPLATE_CODE("AAM",FacemarkAAM);
+        BOILERPLATE_CODE("LBF",FacemarkLBF);
         return Ptr<Facemark>();
     }
 
