@@ -230,7 +230,7 @@ Ptr<DeepCNNTextDetector> DeepCNNTextDetector::create(String archFilename,String 
         return Ptr<DeepCNNTextDetector>();
         break;
     }
-    return Ptr<DeepCNNTextDetector>();
+    //return Ptr<DeepCNNTextDetector>();
 
 }
 
@@ -257,7 +257,7 @@ Ptr<DeepCNNTextDetector> DeepCNNTextDetector::createTextBoxNet(String archFilena
         return Ptr<DeepCNNTextDetector>();
         break;
     }
-    return Ptr<DeepCNNTextDetector>();
+    //return Ptr<DeepCNNTextDetector>();
 
 }
 
