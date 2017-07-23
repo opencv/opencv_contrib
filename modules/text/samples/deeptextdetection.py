@@ -30,7 +30,6 @@ if not os.path.isfile('textbox.caffemodel') or not os.path.isfile('textbox_deplo
     print " Model files not found in current directory. Aborting"
     print " Model files should be downloaded from https://github.com/sghoshcvc/TextBox-Models"
     quit()
-     
 cv2.text.cnn_config.caffe_backend.setCaffeGpuMode(True);
 pathname = os.path.dirname(sys.argv[0])
 
