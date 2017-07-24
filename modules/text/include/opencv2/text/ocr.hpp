@@ -165,6 +165,7 @@ public:
 
     @param component_level OCR_LEVEL_WORD (by default), or OCR_LEVEL_TEXT_LINE.
      */
+    using BaseOCR::run;
     virtual void run (Mat& image, std::string& output_text,
                      std::vector<Rect>* component_rects=NULL,
                      std::vector<std::string>* component_texts=NULL,
@@ -285,6 +286,7 @@ class CV_EXPORTS_W OCRHMMDecoder : public BaseOCR {
 
     * @param component_level Only OCR_LEVEL_WORD is supported.
     */
+    using BaseOCR::run;
     virtual void run (Mat& image, std::string& output_text,
                       std::vector<Rect>* component_rects=NULL,
                       std::vector<std::string>* component_texts=NULL,
@@ -542,6 +544,7 @@ public:
 
     @param component_level Only OCR_LEVEL_WORD is supported.
      */
+    using BaseOCR::run;
     virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
                      std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
                      int component_level=0);
