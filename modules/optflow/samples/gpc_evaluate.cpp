@@ -114,6 +114,7 @@ int main( int argc, const char **argv )
   std::cout << "Found " << corr.size() << " matches." << std::endl;
   std::cout << "Time:  " << meter.getTimeSec() << " sec." << std::endl;
   double error = 0;
+  int totalCorrectFlowVectors = 0;
   Mat dispErr = Mat::zeros( from.size(), CV_32FC3 );
   dispErr = Scalar( 0, 0, 1 );
   Mat disp = Mat::zeros( from.size(), CV_32FC3 );
@@ -123,13 +124,22 @@ int main( int argc, const char **argv )
   {
     const Point2f a = corr[i].first;
     const Point2f b = corr[i].second;
-    const Point2f c = a + gt.at< Point2f >( corr[i].first.y, corr[i].first.x );
-    error += normL2( b - c );
+    const Point2f gtDisplacement = gt.at< Point2f >( corr[i].first.y, corr[i].first.x );
+
+    // Check that flow vector is correct
+    if (!cvIsNaN(gtDisplacement.x) && !cvIsNaN(gtDisplacement.y) && gtDisplacement.x < 1e9 && gtDisplacement.y < 1e9)
+    {
+      const Point2f c = a + gtDisplacement;
+      error += normL2( b - c );
+      circle( dispErr, a, 3, getFlowColor( b - c, false, 32 ), -1 );
+      ++totalCorrectFlowVectors;
+    }
+
     circle( disp, a, 3, getFlowColor( b - a ), -1 );
-    circle( dispErr, a, 3, getFlowColor( b - c, false, 32 ), -1 );
   }
 
-  error /= corr.size();
+  if (totalCorrectFlowVectors)
+    error /= totalCorrectFlowVectors;
 
   std::cout << "Average endpoint error: " << error << " px." << std::endl;
 
