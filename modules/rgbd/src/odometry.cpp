@@ -932,7 +932,7 @@ bool RGBDICPOdometryImpl(OutputArray _Rt, const Mat& initRt,
         else
             deltaRt = resultRt * initRt.inv(DECOMP_SVD);
 
-        isOk = testDeltaTransformation(deltaRt, maxTranslation, maxRotation);   
+        isOk = testDeltaTransformation(deltaRt, maxTranslation, maxRotation);
     }
 
     return isOk;
@@ -992,6 +992,14 @@ warpFrameImpl(const Mat& image, const Mat& depth, const Mat& mask,
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
+Ptr<RgbdNormals> RgbdNormals::create(int rows_in, int cols_in, int depth_in, InputArray K_in, int window_size_in, int method_in) {
+  return makePtr<RgbdNormals>(rows_in, cols_in, depth_in, K_in, window_size_in, method_in);
+}
+
+Ptr<DepthCleaner> DepthCleaner::create(int depth_in, int window_size_in, int method_in) {
+  return makePtr<DepthCleaner>(depth_in, window_size_in, method_in);
+}
+
 RgbdFrame::RgbdFrame() : ID(-1)
 {}
 
@@ -1001,6 +1009,10 @@ RgbdFrame::RgbdFrame(const Mat& image_in, const Mat& depth_in, const Mat& mask_i
 
 RgbdFrame::~RgbdFrame()
 {}
+
+Ptr<RgbdFrame> RgbdFrame::create(const Mat& image_in, const Mat& depth_in, const Mat& mask_in, const Mat& normals_in, int ID_in) {
+  return makePtr<RgbdFrame>(image_in, depth_in, mask_in, normals_in, ID_in);
+}
 
 void RgbdFrame::release()
 {
@@ -1017,6 +1029,10 @@ OdometryFrame::OdometryFrame() : RgbdFrame()
 OdometryFrame::OdometryFrame(const Mat& image_in, const Mat& depth_in, const Mat& mask_in, const Mat& normals_in, int ID_in)
     : RgbdFrame(image_in, depth_in, mask_in, normals_in, ID_in)
 {}
+
+Ptr<OdometryFrame> OdometryFrame::create(const Mat& image_in, const Mat& depth_in, const Mat& mask_in, const Mat& normals_in, int ID_in) {
+  return makePtr<OdometryFrame>(image_in, depth_in, mask_in, normals_in, ID_in);
+}
 
 void OdometryFrame::release()
 {
@@ -1117,6 +1133,13 @@ RgbdOdometry::RgbdOdometry(const Mat& _cameraMatrix,
     }
 }
 
+Ptr<RgbdOdometry> RgbdOdometry::create(const Mat& _cameraMatrix, float _minDepth, float _maxDepth,
+                 float _maxDepthDiff, const std::vector<int>& _iterCounts,
+                 const std::vector<float>& _minGradientMagnitudes, float _maxPointsPart,
+                 int _transformType) {
+  return makePtr<RgbdOdometry>(_cameraMatrix, _minDepth, _maxDepth, _maxDepthDiff, _iterCounts, _minGradientMagnitudes, _maxPointsPart, _transformType);
+}
+
 Size RgbdOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const
 {
     Odometry::prepareFrameCache(frame, cacheType);
@@ -1203,6 +1226,12 @@ ICPOdometry::ICPOdometry(const Mat& _cameraMatrix,
 {
     if(iterCounts.empty())
         setDefaultIterCounts(iterCounts);
+}
+
+Ptr<ICPOdometry> ICPOdometry::create(const Mat& _cameraMatrix, float _minDepth, float _maxDepth,
+                 float _maxDepthDiff, float _maxPointsPart, const std::vector<int>& _iterCounts,
+                 int _transformType) {
+  return makePtr<ICPOdometry>(_cameraMatrix, _minDepth, _maxDepth, _maxDepthDiff, _maxPointsPart, _iterCounts, _transformType);
 }
 
 Size ICPOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const
@@ -1308,6 +1337,13 @@ RgbdICPOdometry::RgbdICPOdometry(const Mat& _cameraMatrix,
         setDefaultIterCounts(iterCounts);
         setDefaultMinGradientMagnitudes(minGradientMagnitudes);
     }
+}
+
+Ptr<RgbdICPOdometry> RgbdICPOdometry::create(const Mat& _cameraMatrix, float _minDepth, float _maxDepth,
+                 float _maxDepthDiff, float _maxPointsPart, const std::vector<int>& _iterCounts,
+                 const std::vector<float>& _minGradientMagnitudes,
+                 int _transformType) {
+  return makePtr<RgbdICPOdometry>(_cameraMatrix, _minDepth, _maxDepth, _maxDepthDiff, _maxPointsPart, _iterCounts, _minGradientMagnitudes, _transformType);
 }
 
 Size RgbdICPOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const

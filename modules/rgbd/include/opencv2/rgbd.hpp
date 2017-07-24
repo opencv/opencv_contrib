@@ -114,7 +114,7 @@ namespace rgbd
       RGBD_NORMALS_METHOD_SRI = 2
     };
 
-    CV_WRAP RgbdNormals()
+    RgbdNormals()
         :
           rows_(0),
           cols_(0),
@@ -134,10 +134,13 @@ namespace rgbd
      * @param window_size the window size to compute the normals: can only be 1,3,5 or 7
      * @param method one of the methods to use: RGBD_NORMALS_METHOD_SRI, RGBD_NORMALS_METHOD_FALS
      */
-    CV_WRAP RgbdNormals(int rows, int cols, int depth, InputArray K, int window_size = 5, int method =
+    RgbdNormals(int rows, int cols, int depth, InputArray K, int window_size = 5, int method =
         RgbdNormals::RGBD_NORMALS_METHOD_FALS);
 
-    CV_WRAP ~RgbdNormals();
+    ~RgbdNormals();
+
+    CV_WRAP static Ptr<RgbdNormals> create(int rows, int cols, int depth, InputArray K, int window_size = 5, int method =
+        RgbdNormals::RGBD_NORMALS_METHOD_FALS);
 
     /** Given a set of 3d points in a depth image, compute the normals at each point.
      * @param points a rows x cols x 3 matrix of CV_32F/CV64F or a rows x cols x 1 CV_U16S
@@ -226,7 +229,7 @@ namespace rgbd
       DEPTH_CLEANER_NIL
     };
 
-    CV_WRAP DepthCleaner()
+    DepthCleaner()
         :
           depth_(0),
           window_size_(0),
@@ -240,9 +243,11 @@ namespace rgbd
      * @param window_size the window size to compute the normals: can only be 1,3,5 or 7
      * @param method one of the methods to use: RGBD_NORMALS_METHOD_SRI, RGBD_NORMALS_METHOD_FALS
      */
-    CV_WRAP DepthCleaner(int depth, int window_size = 5, int method = DepthCleaner::DEPTH_CLEANER_NIL);
+    DepthCleaner(int depth, int window_size = 5, int method = DepthCleaner::DEPTH_CLEANER_NIL);
 
     ~DepthCleaner();
+
+    CV_WRAP static Ptr<DepthCleaner> create(int depth, int window_size = 5, int method = DepthCleaner::DEPTH_CLEANER_NIL);
 
     /** Given a set of 3d points in a depth image, compute the normals at each point.
      * @param points a rows x cols x 3 matrix of CV_32F/CV64F or a rows x cols x 1 CV_U16S
@@ -362,7 +367,7 @@ namespace rgbd
       RGBD_PLANE_METHOD_DEFAULT
     };
 
-      CV_WRAP RgbdPlane(int method = RgbdPlane::RGBD_PLANE_METHOD_DEFAULT)
+      RgbdPlane(int method = RgbdPlane::RGBD_PLANE_METHOD_DEFAULT)
         :
           method_(method),
           block_size_(40),
@@ -469,9 +474,11 @@ namespace rgbd
    */
   struct CV_EXPORTS_W RgbdFrame
   {
-      CV_WRAP RgbdFrame();
-      CV_WRAP RgbdFrame(const Mat& image, const Mat& depth, const Mat& mask=Mat(), const Mat& normals=Mat(), int ID=-1);
-      CV_WRAP virtual ~RgbdFrame();
+      RgbdFrame();
+      RgbdFrame(const Mat& image, const Mat& depth, const Mat& mask=Mat(), const Mat& normals=Mat(), int ID=-1);
+      virtual ~RgbdFrame();
+
+      CV_WRAP static Ptr<RgbdFrame> create(const Mat& image=Mat(), const Mat& depth=Mat(), const Mat& mask=Mat(), const Mat& normals=Mat(), int ID=-1);
 
       CV_WRAP virtual void
       release();
@@ -501,8 +508,10 @@ namespace rgbd
       CACHE_SRC = 1, CACHE_DST = 2, CACHE_ALL = CACHE_SRC + CACHE_DST
     };
 
-    CV_WRAP OdometryFrame();
-    CV_WRAP OdometryFrame(const Mat& image, const Mat& depth, const Mat& mask=Mat(), const Mat& normals=Mat(), int ID=-1);
+    OdometryFrame();
+    OdometryFrame(const Mat& image, const Mat& depth, const Mat& mask=Mat(), const Mat& normals=Mat(), int ID=-1);
+
+    CV_WRAP static Ptr<OdometryFrame> create(const Mat& image=Mat(), const Mat& depth=Mat(), const Mat& mask=Mat(), const Mat& normals=Mat(), int ID=-1);
 
     CV_WRAP virtual void
     release();
@@ -629,7 +638,7 @@ namespace rgbd
   class CV_EXPORTS_W RgbdOdometry: public Odometry
   {
   public:
-    CV_WRAP RgbdOdometry();
+    RgbdOdometry();
     /** Constructor.
      * @param cameraMatrix Camera matrix
      * @param minDepth Pixels with depth less than minDepth will not be used (in meters)
@@ -642,7 +651,12 @@ namespace rgbd
      * @param maxPointsPart The method uses a random pixels subset of size frameWidth x frameHeight x pointsPart
      * @param transformType Class of transformation
      */
-    CV_WRAP RgbdOdometry(const Mat& cameraMatrix, float minDepth = Odometry::DEFAULT_MIN_DEPTH(), float maxDepth = Odometry::DEFAULT_MAX_DEPTH(),
+    RgbdOdometry(const Mat& cameraMatrix, float minDepth = Odometry::DEFAULT_MIN_DEPTH(), float maxDepth = Odometry::DEFAULT_MAX_DEPTH(),
+                 float maxDepthDiff = Odometry::DEFAULT_MAX_DEPTH_DIFF(), const std::vector<int>& iterCounts = std::vector<int>(),
+                 const std::vector<float>& minGradientMagnitudes = std::vector<float>(), float maxPointsPart = Odometry::DEFAULT_MAX_POINTS_PART(),
+                 int transformType = Odometry::RIGID_BODY_MOTION);
+
+    CV_WRAP static Ptr<RgbdOdometry> create(const Mat& cameraMatrix = Mat(), float minDepth = Odometry::DEFAULT_MIN_DEPTH(), float maxDepth = Odometry::DEFAULT_MAX_DEPTH(),
                  float maxDepthDiff = Odometry::DEFAULT_MAX_DEPTH_DIFF(), const std::vector<int>& iterCounts = std::vector<int>(),
                  const std::vector<float>& minGradientMagnitudes = std::vector<float>(), float maxPointsPart = Odometry::DEFAULT_MAX_POINTS_PART(),
                  int transformType = Odometry::RIGID_BODY_MOTION);
@@ -759,7 +773,7 @@ namespace rgbd
   class CV_EXPORTS_W ICPOdometry: public Odometry
   {
   public:
-    CV_WRAP ICPOdometry();
+    ICPOdometry();
     /** Constructor.
      * @param cameraMatrix Camera matrix
      * @param minDepth Pixels with depth less than minDepth will not be used
@@ -770,7 +784,11 @@ namespace rgbd
      * @param iterCounts Count of iterations on each pyramid level.
      * @param transformType Class of trasformation
      */
-    CV_WRAP ICPOdometry(const Mat& cameraMatrix, float minDepth = Odometry::DEFAULT_MIN_DEPTH(), float maxDepth = Odometry::DEFAULT_MAX_DEPTH(),
+    ICPOdometry(const Mat& cameraMatrix, float minDepth = Odometry::DEFAULT_MIN_DEPTH(), float maxDepth = Odometry::DEFAULT_MAX_DEPTH(),
+                float maxDepthDiff = Odometry::DEFAULT_MAX_DEPTH_DIFF(), float maxPointsPart = Odometry::DEFAULT_MAX_POINTS_PART(),
+                const std::vector<int>& iterCounts = std::vector<int>(), int transformType = Odometry::RIGID_BODY_MOTION);
+
+    CV_WRAP static Ptr<ICPOdometry> create(const Mat& cameraMatrix = Mat(), float minDepth = Odometry::DEFAULT_MIN_DEPTH(), float maxDepth = Odometry::DEFAULT_MAX_DEPTH(),
                 float maxDepthDiff = Odometry::DEFAULT_MAX_DEPTH_DIFF(), float maxPointsPart = Odometry::DEFAULT_MAX_POINTS_PART(),
                 const std::vector<int>& iterCounts = std::vector<int>(), int transformType = Odometry::RIGID_BODY_MOTION);
 
@@ -883,7 +901,7 @@ namespace rgbd
   class CV_EXPORTS_W RgbdICPOdometry: public Odometry
   {
   public:
-    CV_WRAP RgbdICPOdometry();
+    RgbdICPOdometry();
     /** Constructor.
      * @param cameraMatrix Camera matrix
      * @param minDepth Pixels with depth less than minDepth will not be used
@@ -896,7 +914,13 @@ namespace rgbd
      *                              if they have gradient magnitude less than minGradientMagnitudes[level].
      * @param transformType Class of trasformation
      */
-    CV_WRAP RgbdICPOdometry(const Mat& cameraMatrix, float minDepth = Odometry::DEFAULT_MIN_DEPTH(), float maxDepth = Odometry::DEFAULT_MAX_DEPTH(),
+    RgbdICPOdometry(const Mat& cameraMatrix, float minDepth = Odometry::DEFAULT_MIN_DEPTH(), float maxDepth = Odometry::DEFAULT_MAX_DEPTH(),
+                    float maxDepthDiff = Odometry::DEFAULT_MAX_DEPTH_DIFF(), float maxPointsPart = Odometry::DEFAULT_MAX_POINTS_PART(),
+                    const std::vector<int>& iterCounts = std::vector<int>(),
+                    const std::vector<float>& minGradientMagnitudes = std::vector<float>(),
+                    int transformType = Odometry::RIGID_BODY_MOTION);
+
+    CV_WRAP static Ptr<RgbdICPOdometry> create(const Mat& cameraMatrix = Mat(), float minDepth = Odometry::DEFAULT_MIN_DEPTH(), float maxDepth = Odometry::DEFAULT_MAX_DEPTH(),
                     float maxDepthDiff = Odometry::DEFAULT_MAX_DEPTH_DIFF(), float maxPointsPart = Odometry::DEFAULT_MAX_POINTS_PART(),
                     const std::vector<int>& iterCounts = std::vector<int>(),
                     const std::vector<float>& minGradientMagnitudes = std::vector<float>(),
