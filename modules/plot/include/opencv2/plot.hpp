@@ -84,7 +84,13 @@ namespace cv
             CV_WRAP virtual void setPlotGridColor(Scalar _plotGridColor) = 0;
             CV_WRAP virtual void setPlotTextColor(Scalar _plotTextColor) = 0;
             CV_WRAP virtual void setPlotSize(int _plotSizeWidth, int _plotSizeHeight) = 0;
-            CV_WRAP virtual void render(OutputArray _plotResult) = 0;
+            /**
+             * @brief Render plot to image
+             *
+             * @param _plotResult if empty, a new image will be allocated, and axes drawn.
+             *   for an existing drawing, only the (new) curve data will be overlayed.
+             */
+            CV_WRAP virtual void render(InputOutputArray _plotResult) = 0;
         };
 
         /**
