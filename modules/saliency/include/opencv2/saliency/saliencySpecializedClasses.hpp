@@ -302,6 +302,53 @@ private:
 
 };
 
+/** @brief the Deep Gaze 1 Saliency approach from
+
+This method use the convolution layers of the pretrained AlexNet, linear combination, center bias and softmax to generate saliency map
+*/
+class CV_EXPORTS_W DiscriminantSaliency : public MotionSaliency
+{
+private:
+    Size imgProcessingSize;
+    unsigned hiddenSpaceDimension;
+    unsigned centerSize;
+    unsigned windowSize;
+    unsigned patchSize;
+    unsigned temporalSize;
+    unsigned stride;
+public:
+    struct DT
+    {
+        Mat A;
+        Mat C;
+        Mat Q;
+        Mat R;
+        Mat S;
+        Mat MU;
+        double VAR;
+    };
+//    DiscriminantSaliency();
+    DiscriminantSaliency(unsigned = 1, Size = Size(127, 127), unsigned = 10, unsigned = 8, unsigned = 96, unsigned = 400, unsigned = 11);
+    virtual ~DiscriminantSaliency();
+    CV_WRAP static Ptr<DeepGaze1> create()
+    {
+        return makePtr<DeepGaze1>();
+    }
+    CV_WRAP bool computeSaliency( InputArray image, OutputArray saliencyMap )
+    {
+        if( image.empty() )
+            return false;
+        return computeSaliencyImpl( image, saliencyMap );
+    }
+    void dynamicTextureEstimator( const Mat, DT& );
+    void patchGenerator( const std::vector<Mat>& img_sq, unsigned index, unsigned r, unsigned c, Mat& center, Mat& surround, Mat& all );
+    std::vector<Mat> saliencyMapGenerator( std::vector<Mat>, std::vector<Mat>& );
+    void saliencyMapVisualize( InputArray _saliencyMap );
+protected:
+    bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap );
+    double KLdivDT( const DT&, const DT& );
+};
+
 /************************************ Specific Objectness Specialized Classes ************************************/
 
 /**
