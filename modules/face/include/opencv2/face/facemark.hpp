@@ -149,6 +149,8 @@ namespace cv
                 double shape_offset;
                 String cascade_face;
 
+                int n_landmarks;
+
                 void read(const FileNode& /*fn*/);
                 void write(FileStorage& /*fs*/) const;
 
