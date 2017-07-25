@@ -146,10 +146,31 @@ namespace cv
                 /*read only parameters - just for example*/
                 double detect_thresh;         //!<  detection confidence threshold
                 double sigma;                 //!<  another parameter
+                double shape_offset;
+                String cascade_face;
 
                 void read(const FileNode& /*fn*/);
                 void write(FileStorage& /*fs*/) const;
 
+            };
+
+            class BBox {
+            public:
+                BBox();
+                ~BBox();
+                //BBox(const BBox &other);
+                //BBox &operator=(const BBox &other);
+                BBox(double x, double y, double w, double h);
+
+            public:
+                cv::Mat project(const cv::Mat &shape) const;
+                cv::Mat reproject(const cv::Mat &shape) const;
+
+            public:
+                double x, y;
+                double x_center, y_center;
+                double x_scale, y_scale;
+                double width, height;
             };
 
             BOILERPLATE_CODE("LBF",FacemarkLBF);
