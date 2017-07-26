@@ -46,6 +46,7 @@ namespace cv
         Rect getBBox(Mat &img, const Mat_<double> shape, CascadeClassifier cc);
         void prepareTrainingData(std::vector<String> images, std::vector<std::vector<Point2f> > & facePoints, std::vector<Mat> & cropped, std::vector<Mat> & shapes, std::vector<BBox> &boxes, CascadeClassifier cc);
         void data_augmentation(std::vector<Mat> &imgs, std::vector<Mat> &gt_shapes, std::vector<BBox> &bboxes);
+        Mat getMeanShape(std::vector<Mat> &gt_shapes, std::vector<BBox> &bboxes);
         FacemarkLBF::Params params;
     private:
         bool isModelTrained;
@@ -96,6 +97,7 @@ namespace cv
         // flip the image and swap the landmark position
         data_augmentation(cropped, shapes, boxes);
 
+        Mat mean_shape = getMeanShape(shapes, boxes);
     }
 
     bool FacemarkLBFImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks){
@@ -307,5 +309,16 @@ namespace cv
             res(i, 1) = shape_(i, 1)*y_scale + y_center;
         }
         return res;
+    }
+
+    Mat FacemarkLBFImpl::getMeanShape(std::vector<Mat> &gt_shapes, std::vector<BBox> &bboxes) {
+
+        int N = gt_shapes.size();
+        Mat mean_shape = Mat::zeros(gt_shapes[0].rows, 2, CV_64FC1);
+        for (int i = 0; i < N; i++) {
+            mean_shape += bboxes[i].project(gt_shapes[i]);
+        }
+        mean_shape /= N;
+        return mean_shape;
     }
 } /* namespace cv */
