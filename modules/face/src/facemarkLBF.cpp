@@ -47,12 +47,22 @@ namespace cv
         void prepareTrainingData(std::vector<String> images, std::vector<std::vector<Point2f> > & facePoints, std::vector<Mat> & cropped, std::vector<Mat> & shapes, std::vector<BBox> &boxes, CascadeClassifier cc);
         void data_augmentation(std::vector<Mat> &imgs, std::vector<Mat> &gt_shapes, std::vector<BBox> &bboxes);
         Mat getMeanShape(std::vector<Mat> &gt_shapes, std::vector<BBox> &bboxes);
+
         FacemarkLBF::Params params;
     private:
         bool isModelTrained;
 
+        /*---------------LBF Class---------------------*/
+        class LBF {
+        public:
+            void calcSimilarityTransform(const Mat &shape1, const Mat &shape2, double &scale, Mat &rotate);
+            std::vector<Mat> getDeltaShapes(std::vector<Mat> &gt_shapes, std::vector<Mat> &current_shapes,
+                                       std::vector<BBox> &bboxes, Mat &mean_shape);
+
+        };
+
         /*---------------RandomTree Class---------------------*/
-        class RandomTree {
+        class RandomTree : public LBF {
         public:
             RandomTree(){};
             ~RandomTree(){};
@@ -69,7 +79,7 @@ namespace cv
             std::vector<double> params_radius_m;
         };
         /*---------------RandomForest Class---------------------*/
-        class RandomForest {
+        class RandomForest : public LBF {
         public:
             RandomForest(){};
             ~RandomForest(){};
@@ -84,13 +94,16 @@ namespace cv
             std::vector<int> feats_m;
             std::vector<double> radius_m;
         };
-        /*---------------LBF Class---------------------*/
-        class LBF {
+        /*---------------Regressor Class---------------------*/
+        class Regressor  : public LBF {
         public:
-            LBF(){};
-            ~LBF(){};
+            Regressor(){};
+            ~Regressor(){};
 
             void init(Params);
+            void training(std::vector<cv::Mat> &imgs, std::vector<cv::Mat> &gt_shapes, \
+                       std::vector<cv::Mat> &current_shapes, std::vector<BBox> &bboxes, \
+                       cv::Mat &mean_shape, int start_from = 0);
 
             int stages_n;
             int landmark_n;
@@ -183,8 +196,9 @@ namespace cv
         std::srand(std::time(0));
         std::random_shuffle(current_shapes.begin(), current_shapes.end());
 
-        LBF lbf;
+        Regressor lbf;
         lbf.init(params);
+        lbf.training(imgs, gt_shapes, current_shapes, bboxes, mean_shape, 0);
     }
 
     bool FacemarkLBFImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks){
@@ -261,8 +275,9 @@ namespace cv
             Mat img = imread(images[i].c_str(), 0);
             Rect box = getBBox(img, Mat(facePoints[i]).reshape(1), cc);
             if(box.x != -1){
-                Mat shape = Mat(facePoints[i]).reshape(1);
-                shape.convertTo(shape, CV_64FC1);
+                Mat _shape = Mat(facePoints[i]).reshape(1);
+                Mat shape;
+                _shape.convertTo(shape, CV_64FC1);
                 Mat sx = shape.col(0);
                 Mat sy = shape.col(1);
                 double min_x, max_x, min_y, max_y;
@@ -409,6 +424,60 @@ namespace cv
         return mean_shape;
     }
 
+    // Similarity Transform, project shape2 to shape1
+    // p1 ~= scale * rotate * p2, p1 and p2 are vector in math
+    void FacemarkLBFImpl::LBF::calcSimilarityTransform(const Mat &shape1, const Mat &shape2, double &scale, Mat &rotate) {
+        Mat_<double> rotate_(2, 2);
+        double x1_center, y1_center, x2_center, y2_center;
+        x1_center = cv::mean(shape1.col(0))[0];
+        y1_center = cv::mean(shape1.col(1))[0];
+        x2_center = cv::mean(shape2.col(0))[0];
+        y2_center = cv::mean(shape2.col(1))[0];
+
+        Mat temp1(shape1.rows, shape1.cols, CV_64FC1);
+        Mat temp2(shape2.rows, shape2.cols, CV_64FC1);
+        temp1.col(0) = shape1.col(0) - x1_center;
+        temp1.col(1) = shape1.col(1) - y1_center;
+        temp2.col(0) = shape2.col(0) - x2_center;
+        temp2.col(1) = shape2.col(1) - y2_center;
+
+        Mat_<double> covar1, covar2;
+        Mat_<double> mean1, mean2;
+        calcCovarMatrix(temp1, covar1, mean1, CV_COVAR_COLS);
+        calcCovarMatrix(temp2, covar2, mean2, CV_COVAR_COLS);
+
+        double s1 = sqrt(cv::norm(covar1));
+        double s2 = sqrt(cv::norm(covar2));
+        scale = s1 / s2;
+        temp1 /= s1;
+        temp2 /= s2;
+
+        double num = temp1.col(1).dot(temp2.col(0)) - temp1.col(0).dot(temp2.col(1));
+        double den = temp1.col(0).dot(temp2.col(0)) + temp1.col(1).dot(temp2.col(1));
+        double normed = sqrt(num*num + den*den);
+        double sin_theta = num / normed;
+        double cos_theta = den / normed;
+        rotate_(0, 0) = cos_theta; rotate_(0, 1) = -sin_theta;
+        rotate_(1, 0) = sin_theta; rotate_(1, 1) = cos_theta;
+        rotate = rotate_;
+    }
+
+    // Get relative delta_shapes for predicting target
+    std::vector<Mat> FacemarkLBFImpl::LBF::getDeltaShapes(std::vector<Mat> &gt_shapes, std::vector<Mat> &current_shapes,
+                               std::vector<BBox> &bboxes, Mat &mean_shape) {
+        std::vector<Mat> delta_shapes;
+        int N = gt_shapes.size();
+        delta_shapes.resize(N);
+        double scale;
+        Mat_<double> rotate;
+        for (int i = 0; i < N; i++) {
+            delta_shapes[i] = bboxes[i].project(gt_shapes[i]) - bboxes[i].project(current_shapes[i]);
+            calcSimilarityTransform(mean_shape, bboxes[i].project(current_shapes[i]), scale, rotate);
+            // delta_shapes[i] = scale * delta_shapes[i] * rotate.t();
+        }
+        return delta_shapes;
+    }
+
     /*---------------RandomTree Implementation---------------------*/
     void FacemarkLBFImpl::RandomTree::init(int _landmark_id, int _depth, std::vector<int> feats_m, std::vector<double> radius_m) {
         landmark_id = _landmark_id;
@@ -436,8 +505,8 @@ namespace cv
             for (int j = 0; j < trees_n; j++) random_trees[i][j].init(i, tree_depth, feats_m, radius_m);
         }
     }
-    /*---------------LBF Implementation---------------------*/
-    void FacemarkLBFImpl::LBF::init(Params params) {
+    /*---------------Regressor Implementation---------------------*/
+    void FacemarkLBFImpl::Regressor::init(Params params) {
         stages_n = params.stages_n;
         landmark_n = params.n_landmarks;
 
@@ -454,4 +523,18 @@ namespace cv
             gl_regression_weights[i].create(2 * params.n_landmarks, F, CV_64FC1);
         }
     }
+
+    void FacemarkLBFImpl::Regressor::training(std::vector<Mat> &imgs, std::vector<Mat> &gt_shapes, std::vector<Mat> &current_shapes,
+                            std::vector<BBox> &bboxes, Mat &mean_shape_, int start_from) {
+        assert(start_from >= 0 && start_from < stages_n);
+        mean_shape = mean_shape_;
+        int N = imgs.size();
+        int landmark_n = gt_shapes[0].rows;
+
+        for (int k = start_from; k < stages_n; k++) {
+            std::vector<Mat> delta_shapes = getDeltaShapes(gt_shapes, current_shapes, bboxes, mean_shape);
+
+        } // for int k
+    }//Regressor::training
+
 } /* namespace cv */
