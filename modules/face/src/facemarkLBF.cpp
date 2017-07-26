@@ -71,6 +71,12 @@ namespace cv
         params.cascade_face = "../data/haarcascade_frontalface_alt.xml";
         params.shape_offset = 0.0;
         params.n_landmarks = 68;
+        params.initShape_n = 10;
+        params.stages_n=5;
+        params.tree_n=6;
+        params.tree_depth=5;
+        params.bagging_overlap = 0.4;
+        params.saved_file_name = "ibug.model";
     }
 
     void FacemarkLBFImpl::trainingImpl(String imageList, String groundTruth){
@@ -98,6 +104,35 @@ namespace cv
         data_augmentation(cropped, shapes, boxes);
 
         Mat mean_shape = getMeanShape(shapes, boxes);
+
+        int N = cropped.size();
+        int L = N*params.initShape_n;
+        std::vector<Mat> imgs(L), gt_shapes(L), current_shapes(L);
+        std::vector<BBox> bboxes(L);
+        RNG rng(getTickCount());
+        for (int i = 0; i < N; i++) {
+            for (int j = 0; j < params.initShape_n; j++) {
+                int idx = i*params.initShape_n + j;
+                int k = 0;
+                do {
+                    k = rng.uniform(0, N);
+                } while (k == i);
+                imgs[idx] = cropped[i];
+                gt_shapes[idx] = shapes[i];
+                bboxes[idx] = boxes[i];
+                current_shapes[idx] = boxes[i].reproject(boxes[k].project(shapes[k]));
+            }
+        }
+
+        // random shuffle
+        std::srand(std::time(0));
+        std::random_shuffle(imgs.begin(), imgs.end());
+        std::srand(std::time(0));
+        std::random_shuffle(gt_shapes.begin(), gt_shapes.end());
+        std::srand(std::time(0));
+        std::random_shuffle(bboxes.begin(), bboxes.end());
+        std::srand(std::time(0));
+        std::random_shuffle(current_shapes.begin(), current_shapes.end());
     }
 
     bool FacemarkLBFImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks){

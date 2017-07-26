@@ -150,6 +150,17 @@ namespace cv
                 String cascade_face;
 
                 int n_landmarks;
+                int initShape_n;
+
+                int stages_n;
+                int tree_n;
+                int tree_depth;
+                double bagging_overlap;
+
+                std::string saved_file_name;
+                std::vector<int> feats_m;
+                std::vector<double> radius_m;
+                std::vector<int> pupils[2];
 
                 void read(const FileNode& /*fn*/);
                 void write(FileStorage& /*fs*/) const;
