@@ -43,7 +43,7 @@ namespace cv
         void trainingImpl(String imageList, String groundTruth, const FacemarkLBF::Params &parameters);
         void trainingImpl(String imageList, String groundTruth);
 
-        Rect getBBox(Mat &img, const Mat_<float> shape, CascadeClassifier cc);
+        Rect getBBox(Mat &img, const Mat_<double> shape, CascadeClassifier cc);
         void prepareTrainingData(std::vector<String> images, std::vector<std::vector<Point2f> > & facePoints, std::vector<Mat> & cropped, std::vector<Mat> & shapes, std::vector<BBox> &boxes, CascadeClassifier cc);
         void data_augmentation(std::vector<Mat> &imgs, std::vector<Mat> &gt_shapes, std::vector<BBox> &bboxes);
         FacemarkLBF::Params params;
@@ -127,11 +127,11 @@ namespace cv
 
     }
 
-    Rect FacemarkLBFImpl::getBBox(Mat &img, const Mat_<float> shape, CascadeClassifier cc) {
+    Rect FacemarkLBFImpl::getBBox(Mat &img, const Mat_<double> shape, CascadeClassifier cc) {
         std::vector<Rect> rects;
         cc.detectMultiScale(img, rects, 1.05, 2, CV_HAAR_SCALE_IMAGE, Size(30, 30));
         if (rects.size() == 0) return Rect(-1, -1, -1, -1);
-        float center_x=0, center_y=0, min_x, max_x, min_y, max_y;
+        double center_x=0, center_y=0, min_x, max_x, min_y, max_y;
 
         min_x = shape(0, 0);
         max_x = shape(0, 0);
@@ -166,13 +166,14 @@ namespace cv
         cropped.clear();
         shapes.clear();
 
-        int N = images.size();
+        int N = 10;//TODO: images.size();
         for(int i=0; i<N;i++){
             printf("image #%i/%i\n", i, N);
             Mat img = imread(images[i].c_str(), 0);
             Rect box = getBBox(img, Mat(facePoints[i]).reshape(1), cc);
             if(box.x != -1){
                 Mat shape = Mat(facePoints[i]).reshape(1);
+                shape.convertTo(shape, CV_64FC1);
                 Mat sx = shape.col(0);
                 Mat sy = shape.col(1);
                 double min_x, max_x, min_y, max_y;
@@ -205,13 +206,13 @@ namespace cv
         bboxes.reserve(2 * N);
         for (int i = 0; i < N; i++) {
             Mat img_flipped;
-            Mat_<float> gt_shape_flipped(gt_shapes[i].size());
+            Mat_<double> gt_shape_flipped(gt_shapes[i].size());
             flip(imgs[i], img_flipped, 1);
             int w = img_flipped.cols - 1;
             int h = img_flipped.rows - 1;
             for (int k = 0; k < gt_shapes[i].rows; k++) {
-                gt_shape_flipped(k, 0) = w - gt_shapes[i].at<float>(k, 0);
-                gt_shape_flipped(k, 1) = gt_shapes[i].at<float>(k, 1);
+                gt_shape_flipped(k, 0) = w - gt_shapes[i].at<double>(k, 0);
+                gt_shape_flipped(k, 1) = gt_shapes[i].at<double>(k, 1);
             }
             int x_b, y_b, w_b, h_b;
             x_b = w - bboxes[i].x - bboxes[i].width;
@@ -226,12 +227,12 @@ namespace cv
 
         }
     #define SWAP(shape, i, j) do { \
-            float tmp = shape.at<float>(i-1, 0); \
-            shape.at<float>(i-1, 0) = shape.at<float>(j-1, 0); \
-            shape.at<float>(j-1, 0) = tmp; \
-            tmp =  shape.at<float>(i-1, 1); \
-            shape.at<float>(i-1, 1) = shape.at<float>(j-1, 1); \
-            shape.at<float>(j-1, 1) = tmp; \
+            double tmp = shape.at<double>(i-1, 0); \
+            shape.at<double>(i-1, 0) = shape.at<double>(j-1, 0); \
+            shape.at<double>(j-1, 0) = tmp; \
+            tmp =  shape.at<double>(i-1, 1); \
+            shape.at<double>(i-1, 1) = shape.at<double>(j-1, 1); \
+            shape.at<double>(j-1, 1) = tmp; \
         } while(0)
 
         if (params.n_landmarks == 29) {
@@ -288,8 +289,8 @@ namespace cv
 
     // Project absolute shape to relative shape binding to this bbox
     Mat FacemarkLBFImpl::BBox::project(const Mat &shape) const {
-        Mat_<float> res(shape.rows, shape.cols);
-        const Mat_<float> &shape_ = (Mat_<float>)shape;
+        Mat_<double> res(shape.rows, shape.cols);
+        const Mat_<double> &shape_ = (Mat_<double>)shape;
         for (int i = 0; i < shape.rows; i++) {
             res(i, 0) = (shape_(i, 0) - x_center) / x_scale;
             res(i, 1) = (shape_(i, 1) - y_center) / y_scale;
@@ -299,8 +300,8 @@ namespace cv
 
     // Project relative shape to absolute shape binding to this bbox
     Mat FacemarkLBFImpl::BBox::reproject(const Mat &shape) const {
-        Mat_<float> res(shape.rows, shape.cols);
-        const Mat_<float> &shape_ = (Mat_<float>)shape;
+        Mat_<double> res(shape.rows, shape.cols);
+        const Mat_<double> &shape_ = (Mat_<double>)shape;
         for (int i = 0; i < shape.rows; i++) {
             res(i, 0) = shape_(i, 0)*x_scale + x_center;
             res(i, 1) = shape_(i, 1)*y_scale + y_center;
