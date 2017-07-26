@@ -94,6 +94,7 @@ namespace cv
                                        std::vector<BBox> &bboxes, Mat &mean_shape);
             double calcVariance(const Mat &vec);
             double calcVariance(const std::vector<double> &vec);
+            double calcMeanError(std::vector<Mat> &gt_shapes, std::vector<Mat> &current_shapes, int landmark_n , std::vector<int> &left, std::vector<int> &right );
 
         };
 
@@ -151,6 +152,7 @@ namespace cv
                        cv::Mat &mean_shape, int start_from, Params );
             void globalRegressionTrain(std::vector<Mat> &lbfs, std::vector<Mat> &delta_shapes, int stage, Params);
             Mat globalRegressionPredict(const Mat &lbf, int stage);
+
             void write(FILE *fd, Params params);
 
             int stages_n;
@@ -540,6 +542,38 @@ namespace cv
         return variance;
     }
 
+    double FacemarkLBFImpl::LBF::calcMeanError(std::vector<Mat> &gt_shapes, std::vector<Mat> &current_shapes, int landmark_n , std::vector<int> &left, std::vector<int> &right ) {
+        int N = gt_shapes.size();
+
+        double e = 0;
+        // every train data
+        for (int i = 0; i < N; i++) {
+            const Mat_<double> &gt_shape = (Mat_<double>)gt_shapes[i];
+            const Mat_<double> &current_shape = (Mat_<double>)current_shapes[i];
+            double x1, y1, x2, y2;
+            x1 = x2 = y1 = y2 = 0;
+            for (int j = 0; j < left.size(); j++) {
+                x1 += gt_shape(left[j], 0);
+                y1 += gt_shape(left[j], 1);
+            }
+            for (int j = 0; j < right.size(); j++) {
+                x2 += gt_shape(right[j], 0);
+                y2 += gt_shape(right[j], 1);
+            }
+            x1 /= left.size(); y1 /= left.size();
+            x2 /= right.size(); y2 /= right.size();
+            double pupils_distance = sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1));
+            // every landmark
+            double e_ = 0;
+            for (int i = 0; i < landmark_n; i++) {
+                e_ += norm(gt_shape.row(i) - current_shape.row(i));
+            }
+            e += e_ / pupils_distance;
+        }
+        e /= N*landmark_n;
+        return e;
+    }
+
     /*---------------RandomTree Implementation---------------------*/
     void FacemarkLBFImpl::RandomTree::init(int _landmark_id, int _depth, std::vector<int> feats_m, std::vector<double> radius_m) {
         landmark_id = _landmark_id;
@@ -834,6 +868,10 @@ namespace cv
                 calcSimilarityTransform(bboxes[i].project(current_shapes[i]), mean_shape, scale, rotate);
                 current_shapes[i] = bboxes[i].reproject(bboxes[i].project(current_shapes[i]) + scale * delta_shape * rotate.t());
             }
+
+            // calc mean error
+            double e = calcMeanError(gt_shapes, current_shapes, params.n_landmarks, params.pupils[0],params.pupils[1]);
+            printf("Train %dth stage Done with Error = %lf\n", k, e);
 
         } // for int k
     }//Regressor::training
