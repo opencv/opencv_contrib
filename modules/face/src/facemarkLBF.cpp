@@ -152,6 +152,7 @@ namespace cv
                        cv::Mat &mean_shape, int start_from, Params );
             void globalRegressionTrain(std::vector<Mat> &lbfs, std::vector<Mat> &delta_shapes, int stage, Params);
             Mat globalRegressionPredict(const Mat &lbf, int stage);
+            Mat predict(Mat &img, BBox &bbox);
 
             void write(FILE *fd, Params params);
 
@@ -970,6 +971,22 @@ namespace cv
         }
         return delta_shape;
     } // Regressor::globalRegressionPredict
+
+    Mat FacemarkLBFImpl::Regressor::predict(Mat &img, BBox &bbox) {
+        Mat current_shape = bbox.reproject(mean_shape);
+        double scale;
+        Mat rotate;
+        for (int k = 0; k < stages_n; k++) {
+            // generate lbf
+            Mat lbf = random_forests[k].generateLBF(img, current_shape, bbox, mean_shape);
+            // update current_shapes
+            Mat delta_shape = globalRegressionPredict(lbf, k);
+            delta_shape = delta_shape.reshape(0, landmark_n);
+            calcSimilarityTransform(bbox.project(current_shape), mean_shape, scale, rotate);
+            current_shape = bbox.reproject(bbox.project(current_shape) + scale * delta_shape * rotate.t());
+        }
+        return current_shape;
+    } // Regressor::predict
 
     void FacemarkLBFImpl::Regressor::write(FILE *fd, Params params) {
         // global parameters
