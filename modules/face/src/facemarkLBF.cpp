@@ -150,6 +150,7 @@ namespace cv
                        std::vector<cv::Mat> &current_shapes, std::vector<BBox> &bboxes, \
                        cv::Mat &mean_shape, int start_from, Params );
             void globalRegressionTrain(std::vector<Mat> &lbfs, std::vector<Mat> &delta_shapes, int stage, Params);
+            Mat globalRegressionPredict(const Mat &lbf, int stage);
             void write(FILE *fd, Params params);
 
             int stages_n;
@@ -825,6 +826,15 @@ namespace cv
                 printf("end of train global regression of %dth stage, costs %.4lf s\n", k, TIMER_NOW);
             TIMER_END
 
+            // update current_shapes
+            double scale;
+            Mat rotate;
+            for (int i = 0; i < N; i++) {
+                Mat delta_shape = globalRegressionPredict(lbfs[i], k);
+                calcSimilarityTransform(bboxes[i].project(current_shapes[i]), mean_shape, scale, rotate);
+                current_shapes[i] = bboxes[i].reproject(bboxes[i].project(current_shapes[i]) + scale * delta_shape * rotate.t());
+            }
+
         } // for int k
     }//Regressor::training
 
@@ -901,6 +911,27 @@ namespace cv
         free(X);
         free(Y);
     } // Regressor:globalRegressionTrain
+
+    Mat FacemarkLBFImpl::Regressor::globalRegressionPredict(const Mat &lbf, int stage) {
+        const Mat_<double> &weight = (Mat_<double>)gl_regression_weights[stage];
+        Mat_<double> delta_shape(weight.rows / 2, 2);
+        const double *w_ptr = NULL;
+        const int *lbf_ptr = lbf.ptr<int>(0);
+
+        //#pragma omp parallel for num_threads(2) private(w_ptr)
+        for (int i = 0; i < delta_shape.rows; i++) {
+            w_ptr = weight.ptr<double>(2 * i);
+            double y = 0;
+            for (int j = 0; j < lbf.cols; j++) y += w_ptr[lbf_ptr[j]];
+            delta_shape(i, 0) = y;
+
+            w_ptr = weight.ptr<double>(2 * i + 1);
+            y = 0;
+            for (int j = 0; j < lbf.cols; j++) y += w_ptr[lbf_ptr[j]];
+            delta_shape(i, 1) = y;
+        }
+        return delta_shape;
+    } // Regressor::globalRegressionPredict
 
     void FacemarkLBFImpl::Regressor::write(FILE *fd, Params params) {
         // global parameters
