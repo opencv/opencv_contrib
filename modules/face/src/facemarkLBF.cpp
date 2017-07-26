@@ -24,7 +24,7 @@ namespace cv
         shape_offset = 0.0;
         n_landmarks = 68;
         initShape_n = 10;
-        stages_n=2;//TODO: 5;
+        stages_n=5;
         tree_n=6;
         tree_depth=5;
         bagging_overlap = 0.4;
@@ -312,7 +312,7 @@ namespace cv
         cropped.clear();
         shapes.clear();
 
-        int N = 10;//TODO: images.size();
+        int N = images.size();
         for(int i=0; i<N;i++){
             printf("image #%i/%i\n", i, N);
             Mat img = imread(images[i].c_str(), 0);
