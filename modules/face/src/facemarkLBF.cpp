@@ -102,6 +102,7 @@ namespace cv
             void init(int landmark_n, int trees_n, int tree_depth, double ,  std::vector<int>, std::vector<double>);
             void train(std::vector<cv::Mat> &imgs, std::vector<cv::Mat> &gt_shapes, std::vector<cv::Mat> &current_shapes, \
                        std::vector<BBox> &bboxes, std::vector<cv::Mat> &delta_shapes, cv::Mat &mean_shape, int stage);
+            Mat generateLBF(Mat &img, Mat &current_shape, BBox &bbox, Mat &mean_shape);
 
             int landmark_n;
             int trees_n, tree_depth;
@@ -681,7 +682,9 @@ namespace cv
         int N = imgs.size();
         int Q = int(N / ((1. - overlap_ratio) * trees_n));
 
-        // #pragma omp parallel for
+        #ifdef _OPENMP
+        #pragma omp parallel for
+        #endif
         for (int i = 0; i < landmark_n; i++) {
         TIMER_BEGIN
             std::vector<int> root;
@@ -696,6 +699,52 @@ namespace cv
             printf("Train %2dth of %d landmark Done, it costs %.4lf s\n", i+1, landmark_n, TIMER_NOW);
         TIMER_END
         }
+    }
+
+    Mat FacemarkLBFImpl::RandomForest::generateLBF(Mat &img, Mat &current_shape, BBox &bbox, Mat &mean_shape) {
+        Mat_<int> lbf(1, landmark_n*trees_n);
+        double scale;
+        Mat_<double> rotate;
+        calcSimilarityTransform(bbox.project(current_shape), mean_shape, scale, rotate);
+
+        int base = 1 << (tree_depth - 1);
+
+        #ifdef _OPENMP
+        #pragma omp parallel for
+        #endif
+        for (int i = 0; i < landmark_n; i++) {
+            for (int j = 0; j < trees_n; j++) {
+                RandomTree &tree = random_trees[i][j];
+                int code = 0;
+                int idx = 1;
+                for (int k = 1; k < tree.depth; k++) {
+                    double x1 = tree.feats(idx, 0);
+                    double y1 = tree.feats(idx, 1);
+                    double x2 = tree.feats(idx, 2);
+                    double y2 = tree.feats(idx, 3);
+                    SIMILARITY_TRANSFORM(x1, y1, scale, rotate);
+                    SIMILARITY_TRANSFORM(x2, y2, scale, rotate);
+
+                    x1 = x1*bbox.x_scale + current_shape.at<double>(i, 0);
+                    y1 = y1*bbox.y_scale + current_shape.at<double>(i, 1);
+                    x2 = x2*bbox.x_scale + current_shape.at<double>(i, 0);
+                    y2 = y2*bbox.y_scale + current_shape.at<double>(i, 1);
+                    x1 = max(0., min(img.cols - 1., x1)); y1 = max(0., min(img.rows - 1., y1));
+                    x2 = max(0., min(img.cols - 1., x2)); y2 = max(0., min(img.rows - 1., y2));
+                    int density = img.at<uchar>(int(y1), int(x1)) - img.at<uchar>(int(y2), int(x2));
+                    code <<= 1;
+                    if (density < tree.thresholds[idx]) {
+                        idx = 2 * idx;
+                    }
+                    else {
+                        code += 1;
+                        idx = 2 * idx + 1;
+                    }
+                }
+                lbf(i*trees_n + j) = (i*trees_n + j)*base + code;
+            }
+        }
+        return lbf;
     }
 
     /*---------------Regressor Implementation---------------------*/
@@ -732,6 +781,13 @@ namespace cv
                 random_forests[k].train(imgs, gt_shapes, current_shapes, bboxes, delta_shapes, mean_shape, k);
                 printf("costs %.4lf s\n",  TIMER_NOW);
             TIMER_END
+
+            // generate lbf of every train data
+            std::vector<Mat> lbfs;
+            lbfs.resize(N);
+            for (int i = 0; i < N; i++) {
+                lbfs[i] = random_forests[k].generateLBF(imgs[i], current_shapes[i], bboxes[i], mean_shape);
+            }
 
         } // for int k
     }//Regressor::training
