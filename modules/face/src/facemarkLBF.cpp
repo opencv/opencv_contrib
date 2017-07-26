@@ -19,6 +19,29 @@ namespace cv
     FacemarkLBF::Params::Params(){
         detect_thresh = 0.5;
         sigma=0.2;
+
+        cascade_face = "../data/haarcascade_frontalface_alt.xml";
+        shape_offset = 0.0;
+        n_landmarks = 68;
+        initShape_n = 10;
+        stages_n=2;//TODO: 5;
+        tree_n=6;
+        tree_depth=5;
+        bagging_overlap = 0.4;
+        saved_file_name = "ibug.model";
+
+        int _pupils[][6] = { { 36, 37, 38, 39, 40, 41 }, { 42, 43, 44, 45, 46, 47 } };
+        for (int i = 0; i < 6; i++) {
+            pupils[0].push_back(_pupils[0][i]);
+            pupils[1].push_back(_pupils[1][i]);
+        }
+
+        int _feats_m[] = { 500, 500, 500, 300, 300, 300, 200, 200, 200, 100 };
+        double _radius_m[] = { 0.3, 0.2, 0.15, 0.12, 0.10, 0.10, 0.08, 0.06, 0.06, 0.05 };
+        for (int i = 0; i < 10; i++) {
+            feats_m.push_back(_feats_m[i]);
+            radius_m.push_back(_radius_m[i]);
+        }
     }
 
     void FacemarkLBF::Params::read( const cv::FileNode& fn ){
@@ -154,28 +177,6 @@ namespace cv
     {
         isSetDetector =false;
         isModelTrained = false;
-        params.cascade_face = "../data/haarcascade_frontalface_alt.xml";
-        params.shape_offset = 0.0;
-        params.n_landmarks = 68;
-        params.initShape_n = 10;
-        params.stages_n=2;//TODO: 5;
-        params.tree_n=6;
-        params.tree_depth=5;
-        params.bagging_overlap = 0.4;
-        params.saved_file_name = "ibug.model";
-
-        int pupils[][6] = { { 36, 37, 38, 39, 40, 41 }, { 42, 43, 44, 45, 46, 47 } };
-        for (int i = 0; i < 6; i++) {
-            params.pupils[0].push_back(pupils[0][i]);
-            params.pupils[1].push_back(pupils[1][i]);
-        }
-
-        int feats_m[] = { 500, 500, 500, 300, 300, 300, 200, 200, 200, 100 };
-        double radius_m[] = { 0.3, 0.2, 0.15, 0.12, 0.10, 0.10, 0.08, 0.06, 0.06, 0.05 };
-        for (int i = 0; i < 10; i++) {
-            params.feats_m.push_back(feats_m[i]);
-            params.radius_m.push_back(radius_m[i]);
-        }
     }
 
     void FacemarkLBFImpl::trainingImpl(String imageList, String groundTruth){
