@@ -1,6 +1,7 @@
 #include "opencv2/face.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "precomp.hpp"
+#include "liblinear.hpp"
 #include <fstream>
 
 namespace cv
@@ -70,6 +71,7 @@ namespace cv
                                        std::vector<BBox> &bboxes, Mat &mean_shape);
             double calcVariance(const Mat &vec);
             double calcVariance(const std::vector<double> &vec);
+
         };
 
         /*---------------RandomTree Class---------------------*/
@@ -121,7 +123,8 @@ namespace cv
             void init(Params);
             void training(std::vector<cv::Mat> &imgs, std::vector<cv::Mat> &gt_shapes, \
                        std::vector<cv::Mat> &current_shapes, std::vector<BBox> &bboxes, \
-                       cv::Mat &mean_shape, int start_from = 0);
+                       cv::Mat &mean_shape, int start_from, Params );
+            void globalRegressionTrain(std::vector<Mat> &lbfs, std::vector<Mat> &delta_shapes, int stage, Params);
 
             int stages_n;
             int landmark_n;
@@ -229,7 +232,7 @@ namespace cv
 
         Regressor lbf;
         lbf.init(params);
-        lbf.training(imgs, gt_shapes, current_shapes, bboxes, mean_shape, 0);
+        lbf.training(imgs, gt_shapes, current_shapes, bboxes, mean_shape, 0, params);
     }
 
     bool FacemarkLBFImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks){
@@ -767,7 +770,7 @@ namespace cv
     }
 
     void FacemarkLBFImpl::Regressor::training(std::vector<Mat> &imgs, std::vector<Mat> &gt_shapes, std::vector<Mat> &current_shapes,
-                            std::vector<BBox> &bboxes, Mat &mean_shape_, int start_from) {
+                            std::vector<BBox> &bboxes, Mat &mean_shape_, int start_from, Params params) {
         assert(start_from >= 0 && start_from < stages_n);
         mean_shape = mean_shape_;
         int N = imgs.size();
@@ -789,8 +792,89 @@ namespace cv
                 lbfs[i] = random_forests[k].generateLBF(imgs[i], current_shapes[i], bboxes[i], mean_shape);
             }
 
+            // global regression
+            printf("start train global regression of %dth stage\n", k);
+            TIMER_BEGIN
+                globalRegressionTrain(lbfs, delta_shapes, k, params);
+                printf("end of train global regression of %dth stage, costs %.4lf s\n", k, TIMER_NOW);
+            TIMER_END
+
         } // for int k
     }//Regressor::training
+
+    // Global Regression to predict delta shape with LBF
+    void FacemarkLBFImpl::Regressor::globalRegressionTrain(std::vector<Mat> &lbfs, std::vector<Mat> &delta_shapes, int stage, Params params) {
+        int N = lbfs.size();
+        int M = lbfs[0].cols;
+        int F = params.n_landmarks*params.tree_n*(1 << (params.tree_depth - 1));
+        int landmark_n = delta_shapes[0].rows;
+        // prepare linear regression params X and Y
+        struct liblinear::feature_node **X = (struct liblinear::feature_node **)malloc(N * sizeof(struct liblinear::feature_node *));
+        double **Y = (double **)malloc(landmark_n * 2 * sizeof(double *));
+        for (int i = 0; i < N; i++) {
+            X[i] = (struct liblinear::feature_node *)malloc((M + 1) * sizeof(struct liblinear::feature_node));
+            for (int j = 0; j < M; j++) {
+                X[i][j].index = lbfs[i].at<int>(0, j) + 1; // index starts from 1
+                X[i][j].value = 1;
+            }
+            X[i][M].index = X[i][M].value = -1;
+        }
+        for (int i = 0; i < landmark_n; i++) {
+            Y[2 * i] = (double *)malloc(N*sizeof(double));
+            Y[2 * i + 1] = (double *)malloc(N*sizeof(double));
+            for (int j = 0; j < N; j++) {
+                Y[2 * i][j] = delta_shapes[j].at<double>(i, 0);
+                Y[2 * i + 1][j] = delta_shapes[j].at<double>(i, 1);
+            }
+        }
+        // train every landmark
+        struct liblinear::problem prob;
+        struct liblinear::parameter param;
+        prob.l = N;
+        prob.n = F;
+        prob.x = X;
+        prob.bias = -1;
+        param.solver_type = liblinear::L2R_L2LOSS_SVR_DUAL;
+        param.C = 1. / N;
+        param.p = 0;
+        param.eps = 0.00001;
+
+        Mat_<double> weight(2 * landmark_n, F);
+
+        #pragma omp parallel for
+        for (int i = 0; i < landmark_n; i++) {
+
+        #define FREE_MODEL(model)   \
+        free(model->w);         \
+        free(model->label);     \
+        free(model)
+
+            printf("train %2dth landmark\n", i);
+            struct liblinear::problem prob_ = prob;
+            prob_.y = Y[2 * i];
+            liblinear::check_parameter(&prob_, &param);
+            struct liblinear::model *model = liblinear::train(&prob_, &param);
+            for (int j = 0; j < F; j++) weight(2 * i, j) = liblinear::get_decfun_coef(model, j + 1, 0);
+            FREE_MODEL(model);
+
+            prob_.y = Y[2 * i + 1];
+            liblinear::check_parameter(&prob_, &param);
+            model = liblinear::train(&prob_, &param);
+            for (int j = 0; j < F; j++) weight(2 * i + 1, j) = liblinear::get_decfun_coef(model, j + 1, 0);
+            FREE_MODEL(model);
+
+        #undef FREE_MODEL
+
+        }
+
+        gl_regression_weights[stage] = weight;
+
+        // free
+        for (int i = 0; i < N; i++) free(X[i]);
+        for (int i = 0; i < 2 * landmark_n; i++) free(Y[i]);
+        free(X);
+        free(Y);
+    } // Regressor:globalRegressionTrain
 
     #undef TIMER_BEGIN
     #undef TIMER_NOW
