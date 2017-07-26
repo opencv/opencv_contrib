@@ -50,6 +50,55 @@ namespace cv
         FacemarkLBF::Params params;
     private:
         bool isModelTrained;
+
+        /*---------------RandomTree Class---------------------*/
+        class RandomTree {
+        public:
+            RandomTree(){};
+            ~RandomTree(){};
+
+            void init(int landmark_id, int depth, std::vector<int>, std::vector<double>);
+
+            int depth;
+            int nodes_n;
+            int landmark_id;
+            cv::Mat_<double> feats;
+            std::vector<int> thresholds;
+
+            std::vector<int> params_feats_m;
+            std::vector<double> params_radius_m;
+        };
+        /*---------------RandomForest Class---------------------*/
+        class RandomForest {
+        public:
+            RandomForest(){};
+            ~RandomForest(){};
+
+            void init(int landmark_n, int trees_n, int tree_depth, double ,  std::vector<int>, std::vector<double>);
+
+            int landmark_n;
+            int trees_n, tree_depth;
+            double overlap_ratio;
+            std::vector<std::vector<RandomTree> > random_trees;
+
+            std::vector<int> feats_m;
+            std::vector<double> radius_m;
+        };
+        /*---------------LBF Class---------------------*/
+        class LBF {
+        public:
+            LBF(){};
+            ~LBF(){};
+
+            void init(Params);
+
+            int stages_n;
+            int landmark_n;
+            cv::Mat mean_shape;
+            std::vector<RandomForest> random_forests;
+            std::vector<cv::Mat> gl_regression_weights;
+        }; // LBF
+
     }; // class
 
     /*
@@ -133,6 +182,9 @@ namespace cv
         std::random_shuffle(bboxes.begin(), bboxes.end());
         std::srand(std::time(0));
         std::random_shuffle(current_shapes.begin(), current_shapes.end());
+
+        LBF lbf;
+        lbf.init(params);
     }
 
     bool FacemarkLBFImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks){
@@ -355,5 +407,51 @@ namespace cv
         }
         mean_shape /= N;
         return mean_shape;
+    }
+
+    /*---------------RandomTree Implementation---------------------*/
+    void FacemarkLBFImpl::RandomTree::init(int _landmark_id, int _depth, std::vector<int> feats_m, std::vector<double> radius_m) {
+        landmark_id = _landmark_id;
+        depth = _depth;
+        nodes_n = 1 << depth;
+        feats = Mat::zeros(nodes_n, 4, CV_64FC1);
+        thresholds.resize(nodes_n);
+
+        params_feats_m = feats_m;
+        params_radius_m = radius_m;
+    }
+    /*---------------RandomForest Implementation---------------------*/
+    void FacemarkLBFImpl::RandomForest::init(int _landmark_n, int _trees_n, int _tree_depth, double _overlap_ratio, std::vector<int>_feats_m, std::vector<double>_radius_m) {
+        trees_n = _trees_n;
+        landmark_n = _landmark_n;
+        tree_depth = _tree_depth;
+        overlap_ratio = _overlap_ratio;
+
+        feats_m = _feats_m;
+        radius_m = _radius_m;
+
+        random_trees.resize(landmark_n);
+        for (int i = 0; i < landmark_n; i++) {
+            random_trees[i].resize(trees_n);
+            for (int j = 0; j < trees_n; j++) random_trees[i][j].init(i, tree_depth, feats_m, radius_m);
+        }
+    }
+    /*---------------LBF Implementation---------------------*/
+    void FacemarkLBFImpl::LBF::init(Params params) {
+        stages_n = params.stages_n;
+        landmark_n = params.n_landmarks;
+
+        random_forests.resize(stages_n);
+        for (int i = 0; i < stages_n; i++)
+            random_forests[i].init(params.n_landmarks, params.tree_n, params.tree_depth, params.bagging_overlap, params.feats_m, params.radius_m);
+
+        mean_shape.create(params.n_landmarks, 2, CV_64FC1);
+
+        gl_regression_weights.resize(stages_n);
+        int F = params.n_landmarks * params.tree_n * (1 << (params.tree_depth - 1));
+
+        for (int i = 0; i < stages_n; i++) {
+            gl_regression_weights[i].create(2 * params.n_landmarks, F, CV_64FC1);
+        }
     }
 } /* namespace cv */
