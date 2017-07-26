@@ -85,6 +85,7 @@ namespace cv
                        std::vector<Mat> &delta_shapes, Mat &mean_shape, std::vector<int> &index, int stage);
             void splitNode(std::vector<cv::Mat> &imgs, std::vector<cv::Mat> &current_shapes, std::vector<BBox> &bboxes,
                           cv::Mat &delta_shapes, cv::Mat &mean_shape, std::vector<int> &root, int idx, int stage);
+            void write(FILE *fd);
 
             int depth;
             int nodes_n;
@@ -105,6 +106,7 @@ namespace cv
             void train(std::vector<cv::Mat> &imgs, std::vector<cv::Mat> &gt_shapes, std::vector<cv::Mat> &current_shapes, \
                        std::vector<BBox> &bboxes, std::vector<cv::Mat> &delta_shapes, cv::Mat &mean_shape, int stage);
             Mat generateLBF(Mat &img, Mat &current_shape, BBox &bbox, Mat &mean_shape);
+            void write(FILE *fd);
 
             int landmark_n;
             int trees_n, tree_depth;
@@ -125,6 +127,7 @@ namespace cv
                        std::vector<cv::Mat> &current_shapes, std::vector<BBox> &bboxes, \
                        cv::Mat &mean_shape, int start_from, Params );
             void globalRegressionTrain(std::vector<Mat> &lbfs, std::vector<Mat> &delta_shapes, int stage, Params);
+            void write(FILE *fd, Params params);
 
             int stages_n;
             int landmark_n;
@@ -233,6 +236,11 @@ namespace cv
         Regressor lbf;
         lbf.init(params);
         lbf.training(imgs, gt_shapes, current_shapes, bboxes, mean_shape, 0, params);
+
+        FILE *fd = fopen(params.saved_file_name.c_str(), "wb");
+        assert(fd);
+        lbf.write(fd, params);
+        fclose(fd);
     }
 
     bool FacemarkLBFImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks){
@@ -663,6 +671,14 @@ namespace cv
             splitNode(imgs, current_shapes, bboxes, delta_shapes, mean_shape, right, 2 * idx + 1, stage);
     }
 
+
+    void FacemarkLBFImpl::RandomTree::write(FILE *fd) {
+        for (int i = 1; i < nodes_n / 2; i++) {
+            fwrite(feats.ptr<double>(i), sizeof(double), 4, fd);
+            fwrite(&thresholds[i], sizeof(int), 1, fd);
+        }
+    }
+
     /*---------------RandomForest Implementation---------------------*/
     void FacemarkLBFImpl::RandomForest::init(int _landmark_n, int _trees_n, int _tree_depth, double _overlap_ratio, std::vector<int>_feats_m, std::vector<double>_radius_m) {
         trees_n = _trees_n;
@@ -748,6 +764,15 @@ namespace cv
             }
         }
         return lbf;
+    }
+
+
+    void FacemarkLBFImpl::RandomForest::write(FILE *fd) {
+        for (int i = 0; i < landmark_n; i++) {
+            for (int j = 0; j < trees_n; j++) {
+                random_trees[i][j].write(fd);
+            }
+        }
     }
 
     /*---------------Regressor Implementation---------------------*/
@@ -875,6 +900,29 @@ namespace cv
         free(X);
         free(Y);
     } // Regressor:globalRegressionTrain
+
+    void FacemarkLBFImpl::Regressor::write(FILE *fd, Params params) {
+        // global parameters
+        fwrite(&params.stages_n, sizeof(int), 1, fd);
+        fwrite(&params.tree_n, sizeof(int), 1, fd);
+        fwrite(&params.tree_depth, sizeof(int), 1, fd);
+        fwrite(&params.n_landmarks, sizeof(int), 1, fd);
+        // mean_shape
+        double *ptr = NULL;
+        for (int i = 0; i < mean_shape.rows; i++) {
+            ptr = mean_shape.ptr<double>(i);
+            fwrite(ptr, sizeof(double), mean_shape.cols, fd);
+        }
+        // every stages
+        for (int k = 0; k < params.stages_n; k++) {
+            printf("Write %dth stage\n", k);
+            random_forests[k].write(fd);
+            for (int i = 0; i < 2 * params.n_landmarks; i++) {
+                ptr = gl_regression_weights[k].ptr<double>(i);
+                fwrite(ptr, sizeof(double), gl_regression_weights[k].cols, fd);
+            }
+        }
+    }
 
     #undef TIMER_BEGIN
     #undef TIMER_NOW
