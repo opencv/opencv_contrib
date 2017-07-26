@@ -5,6 +5,16 @@
 
 namespace cv
 {
+    #define TIMER_BEGIN { double __time__ = getTickCount();
+    #define TIMER_NOW   ((getTickCount() - __time__) / getTickFrequency())
+    #define TIMER_END   }
+
+    #define SIMILARITY_TRANSFORM(x, y, scale, rotate) do {            \
+        double x_tmp = scale * (rotate(0, 0)*x + rotate(0, 1)*y); \
+        double y_tmp = scale * (rotate(1, 0)*x + rotate(1, 1)*y); \
+        x = x_tmp; y = y_tmp;                                     \
+    } while(0)
+
     FacemarkLBF::Params::Params(){
         detect_thresh = 0.5;
         sigma=0.2;
@@ -58,7 +68,8 @@ namespace cv
             void calcSimilarityTransform(const Mat &shape1, const Mat &shape2, double &scale, Mat &rotate);
             std::vector<Mat> getDeltaShapes(std::vector<Mat> &gt_shapes, std::vector<Mat> &current_shapes,
                                        std::vector<BBox> &bboxes, Mat &mean_shape);
-
+            double calcVariance(const Mat &vec);
+            double calcVariance(const std::vector<double> &vec);
         };
 
         /*---------------RandomTree Class---------------------*/
@@ -68,6 +79,10 @@ namespace cv
             ~RandomTree(){};
 
             void init(int landmark_id, int depth, std::vector<int>, std::vector<double>);
+            void train(std::vector<Mat> &imgs, std::vector<Mat> &current_shapes, std::vector<BBox> &bboxes,
+                       std::vector<Mat> &delta_shapes, Mat &mean_shape, std::vector<int> &index, int stage);
+            void splitNode(std::vector<cv::Mat> &imgs, std::vector<cv::Mat> &current_shapes, std::vector<BBox> &bboxes,
+                          cv::Mat &delta_shapes, cv::Mat &mean_shape, std::vector<int> &root, int idx, int stage);
 
             int depth;
             int nodes_n;
@@ -85,6 +100,8 @@ namespace cv
             ~RandomForest(){};
 
             void init(int landmark_n, int trees_n, int tree_depth, double ,  std::vector<int>, std::vector<double>);
+            void train(std::vector<cv::Mat> &imgs, std::vector<cv::Mat> &gt_shapes, std::vector<cv::Mat> &current_shapes, \
+                       std::vector<BBox> &bboxes, std::vector<cv::Mat> &delta_shapes, cv::Mat &mean_shape, int stage);
 
             int landmark_n;
             int trees_n, tree_depth;
@@ -134,11 +151,24 @@ namespace cv
         params.shape_offset = 0.0;
         params.n_landmarks = 68;
         params.initShape_n = 10;
-        params.stages_n=5;
+        params.stages_n=2;//TODO: 5;
         params.tree_n=6;
         params.tree_depth=5;
         params.bagging_overlap = 0.4;
         params.saved_file_name = "ibug.model";
+
+        int pupils[][6] = { { 36, 37, 38, 39, 40, 41 }, { 42, 43, 44, 45, 46, 47 } };
+        for (int i = 0; i < 6; i++) {
+            params.pupils[0].push_back(pupils[0][i]);
+            params.pupils[1].push_back(pupils[1][i]);
+        }
+
+        int feats_m[] = { 500, 500, 500, 300, 300, 300, 200, 200, 200, 100 };
+        double radius_m[] = { 0.3, 0.2, 0.15, 0.12, 0.10, 0.10, 0.08, 0.06, 0.06, 0.05 };
+        for (int i = 0; i < 10; i++) {
+            params.feats_m.push_back(feats_m[i]);
+            params.radius_m.push_back(radius_m[i]);
+        }
     }
 
     void FacemarkLBFImpl::trainingImpl(String imageList, String groundTruth){
@@ -252,7 +282,7 @@ namespace cv
         center_x /= shape.rows;
         center_y /= shape.rows;
 
-        for (int i = 0; i < rects.size(); i++) {
+        for (int i = 0; i < (int)rects.size(); i++) {
             Rect r = rects[i];
             if (max_x - min_x > r.width*1.5) continue;
             if (max_y - min_y > r.height*1.5) continue;
@@ -313,7 +343,7 @@ namespace cv
             Mat_<double> gt_shape_flipped(gt_shapes[i].size());
             flip(imgs[i], img_flipped, 1);
             int w = img_flipped.cols - 1;
-            int h = img_flipped.rows - 1;
+            // int h = img_flipped.rows - 1;
             for (int k = 0; k < gt_shapes[i].rows; k++) {
                 gt_shape_flipped(k, 0) = w - gt_shapes[i].at<double>(k, 0);
                 gt_shape_flipped(k, 1) = gt_shapes[i].at<double>(k, 1);
@@ -382,13 +412,15 @@ namespace cv
     FacemarkLBFImpl::BBox::BBox() {}
     FacemarkLBFImpl::BBox::~BBox() {}
 
-    FacemarkLBFImpl::BBox::BBox(double x, double y, double w, double h) {
-        this->x = x; this->y = y;
-        this->width = w; this->height = h;
-        this->x_center = x + w / 2.;
-        this->y_center = y + h / 2.;
-        this->x_scale = w / 2.;
-        this->y_scale = h / 2.;
+    FacemarkLBFImpl::BBox::BBox(double _x, double _y, double w, double h) {
+        x = _x;
+        y = _y;
+        width = w;
+        height = h;
+        x_center = x + w / 2.;
+        y_center = y + h / 2.;
+        x_scale = w / 2.;
+        y_scale = h / 2.;
     }
 
     // Project absolute shape to relative shape binding to this bbox
@@ -478,6 +510,22 @@ namespace cv
         return delta_shapes;
     }
 
+    double FacemarkLBFImpl::LBF::calcVariance(const Mat &vec) {
+        double m1 = cv::mean(vec)[0];
+        double m2 = cv::mean(vec.mul(vec))[0];
+        double variance = m2 - m1*m1;
+        return variance;
+    }
+
+    double FacemarkLBFImpl::LBF::calcVariance(const std::vector<double> &vec) {
+        if (vec.size() == 0) return 0.;
+        Mat_<double> vec_(vec);
+        double m1 = cv::mean(vec_)[0];
+        double m2 = cv::mean(vec_.mul(vec_))[0];
+        double variance = m2 - m1*m1;
+        return variance;
+    }
+
     /*---------------RandomTree Implementation---------------------*/
     void FacemarkLBFImpl::RandomTree::init(int _landmark_id, int _depth, std::vector<int> feats_m, std::vector<double> radius_m) {
         landmark_id = _landmark_id;
@@ -489,6 +537,128 @@ namespace cv
         params_feats_m = feats_m;
         params_radius_m = radius_m;
     }
+
+    void FacemarkLBFImpl::RandomTree::train(std::vector<Mat> &imgs, std::vector<Mat> &current_shapes, std::vector<BBox> &bboxes,
+                           std::vector<Mat> &delta_shapes, Mat &mean_shape, std::vector<int> &index, int stage) {
+        Mat_<double> delta_shapes_(delta_shapes.size(), 2);
+        for (int i = 0; i < (int)delta_shapes.size(); i++) {
+            delta_shapes_(i, 0) = delta_shapes[i].at<double>(landmark_id, 0);
+            delta_shapes_(i, 1) = delta_shapes[i].at<double>(landmark_id, 1);
+        }
+        splitNode(imgs, current_shapes, bboxes, delta_shapes_, mean_shape, index, 1, stage);
+    }
+
+    void FacemarkLBFImpl::RandomTree::splitNode(std::vector<Mat> &imgs, std::vector<Mat> &current_shapes, std::vector<BBox> &bboxes,
+                               Mat &delta_shapes, Mat &mean_shape, std::vector<int> &root, int idx, int stage) {
+
+        int N = root.size();
+        if (N == 0) {
+            thresholds[idx] = 0;
+            feats.row(idx).setTo(0);
+            std::vector<int> left, right;
+            // split left and right child in DFS
+            if (2 * idx < feats.rows / 2)
+                splitNode(imgs, current_shapes, bboxes, delta_shapes, mean_shape, left, 2 * idx, stage);
+            if (2 * idx + 1 < feats.rows / 2)
+                splitNode(imgs, current_shapes, bboxes, delta_shapes, mean_shape, right, 2 * idx + 1, stage);
+            return;
+        }
+
+        int feats_m = params_feats_m[stage];
+        double radius_m = params_radius_m[stage];
+        Mat_<double> candidate_feats(feats_m, 4);
+        RNG rng(getTickCount());
+        // generate feature pool
+        for (int i = 0; i < feats_m; i++) {
+            double x1, y1, x2, y2;
+            x1 = rng.uniform(-1., 1.); y1 = rng.uniform(-1., 1.);
+            x2 = rng.uniform(-1., 1.); y2 = rng.uniform(-1., 1.);
+            if (x1*x1 + y1*y1 > 1. || x2*x2 + y2*y2 > 1.) {
+                i--;
+                continue;
+            }
+            candidate_feats[i][0] = x1 * radius_m;
+            candidate_feats[i][1] = y1 * radius_m;
+            candidate_feats[i][2] = x2 * radius_m;
+            candidate_feats[i][3] = y2 * radius_m;
+        }
+        // calc features
+        Mat_<int> densities(feats_m, N);
+        for (int i = 0; i < N; i++) {
+            double scale;
+            Mat_<double> rotate;
+            const Mat_<double> &current_shape = (Mat_<double>)current_shapes[root[i]];
+            BBox &bbox = bboxes[root[i]];
+            Mat &img = imgs[root[i]];
+            calcSimilarityTransform(bbox.project(current_shape), mean_shape, scale, rotate);
+            for (int j = 0; j < feats_m; j++) {
+                double x1 = candidate_feats(j, 0);
+                double y1 = candidate_feats(j, 1);
+                double x2 = candidate_feats(j, 2);
+                double y2 = candidate_feats(j, 3);
+                SIMILARITY_TRANSFORM(x1, y1, scale, rotate);
+                SIMILARITY_TRANSFORM(x2, y2, scale, rotate);
+
+                x1 = x1*bbox.x_scale + current_shape(landmark_id, 0);
+                y1 = y1*bbox.y_scale + current_shape(landmark_id, 1);
+                x2 = x2*bbox.x_scale + current_shape(landmark_id, 0);
+                y2 = y2*bbox.y_scale + current_shape(landmark_id, 1);
+                x1 = max(0., min(img.cols - 1., x1)); y1 = max(0., min(img.rows - 1., y1));
+                x2 = max(0., min(img.cols - 1., x2)); y2 = max(0., min(img.rows - 1., y2));
+                densities(j, i) = (int)img.at<uchar>(int(y1), int(x1)) - (int)img.at<uchar>(int(y2), int(x2));
+            }
+        }
+        Mat_<int> densities_sorted;
+        cv::sort(densities, densities_sorted, SORT_EVERY_ROW + SORT_ASCENDING);
+        //select a feat which reduces maximum variance
+        double variance_all = (calcVariance(delta_shapes.col(0)) + calcVariance(delta_shapes.col(1)))*N;
+        double variance_reduce_max = 0;
+        int threshold = 0;
+        int feat_id = 0;
+        std::vector<double> left_x, left_y, right_x, right_y;
+        left_x.reserve(N); left_y.reserve(N);
+        right_x.reserve(N); right_y.reserve(N);
+        for (int j = 0; j < feats_m; j++) {
+            left_x.clear(); left_y.clear();
+            right_x.clear(); right_y.clear();
+            int threshold_ = densities_sorted(j, (int)(N*rng.uniform(0.05, 0.95)));
+            for (int i = 0; i < N; i++) {
+                if (densities(j, i) < threshold_) {
+                    left_x.push_back(delta_shapes.at<double>(root[i], 0));
+                    left_y.push_back(delta_shapes.at<double>(root[i], 1));
+                }
+                else {
+                    right_x.push_back(delta_shapes.at<double>(root[i], 0));
+                    right_y.push_back(delta_shapes.at<double>(root[i], 1));
+                }
+            }
+            double variance_ = (calcVariance(left_x) + calcVariance(left_y))*left_x.size() + \
+                (calcVariance(right_x) + calcVariance(right_y))*right_x.size();
+            double variance_reduce = variance_all - variance_;
+            if (variance_reduce > variance_reduce_max) {
+                variance_reduce_max = variance_reduce;
+                threshold = threshold_;
+                feat_id = j;
+            }
+        }
+        thresholds[idx] = threshold;
+        feats(idx, 0) = candidate_feats(feat_id, 0); feats(idx, 1) = candidate_feats(feat_id, 1);
+        feats(idx, 2) = candidate_feats(feat_id, 2); feats(idx, 3) = candidate_feats(feat_id, 3);
+        // generate left and right child
+        std::vector<int> left, right;
+        left.reserve(N);
+        right.reserve(N);
+        for (int i = 0; i < N; i++) {
+            if (densities(feat_id, i) < threshold) left.push_back(root[i]);
+            else right.push_back(root[i]);
+        }
+        // split left and right child in DFS
+        if (2 * idx < feats.rows / 2)
+            splitNode(imgs, current_shapes, bboxes, delta_shapes, mean_shape, left, 2 * idx, stage);
+        if (2 * idx + 1 < feats.rows / 2)
+            splitNode(imgs, current_shapes, bboxes, delta_shapes, mean_shape, right, 2 * idx + 1, stage);
+    }
+
     /*---------------RandomForest Implementation---------------------*/
     void FacemarkLBFImpl::RandomForest::init(int _landmark_n, int _trees_n, int _tree_depth, double _overlap_ratio, std::vector<int>_feats_m, std::vector<double>_radius_m) {
         trees_n = _trees_n;
@@ -505,6 +675,29 @@ namespace cv
             for (int j = 0; j < trees_n; j++) random_trees[i][j].init(i, tree_depth, feats_m, radius_m);
         }
     }
+
+    void FacemarkLBFImpl::RandomForest::train(std::vector<Mat> &imgs, std::vector<Mat> &gt_shapes, std::vector<Mat> &current_shapes, \
+                             std::vector<BBox> &bboxes, std::vector<Mat> &delta_shapes, Mat &mean_shape, int stage) {
+        int N = imgs.size();
+        int Q = int(N / ((1. - overlap_ratio) * trees_n));
+
+        // #pragma omp parallel for
+        for (int i = 0; i < landmark_n; i++) {
+        TIMER_BEGIN
+            std::vector<int> root;
+            for (int j = 0; j < trees_n; j++) {
+                int start = max(0, int(floor(j*Q - j*Q*overlap_ratio)));
+                int end = min(int(start + Q + 1), N);
+                int L = end - start;
+                root.resize(L);
+                for (int k = 0; k < L; k++) root[k] = start + k;
+                random_trees[i][j].train(imgs, current_shapes, bboxes, delta_shapes, mean_shape, root, stage);
+            }
+            printf("Train %2dth of %d landmark Done, it costs %.4lf s\n", i+1, landmark_n, TIMER_NOW);
+        TIMER_END
+        }
+    }
+
     /*---------------Regressor Implementation---------------------*/
     void FacemarkLBFImpl::Regressor::init(Params params) {
         stages_n = params.stages_n;
@@ -529,12 +722,22 @@ namespace cv
         assert(start_from >= 0 && start_from < stages_n);
         mean_shape = mean_shape_;
         int N = imgs.size();
-        int landmark_n = gt_shapes[0].rows;
 
         for (int k = start_from; k < stages_n; k++) {
             std::vector<Mat> delta_shapes = getDeltaShapes(gt_shapes, current_shapes, bboxes, mean_shape);
 
+            // train random forest
+            printf("training random forest %dth of %d stages, ",k+1, stages_n);
+            TIMER_BEGIN
+                random_forests[k].train(imgs, gt_shapes, current_shapes, bboxes, delta_shapes, mean_shape, k);
+                printf("costs %.4lf s\n",  TIMER_NOW);
+            TIMER_END
+
         } // for int k
     }//Regressor::training
 
+    #undef TIMER_BEGIN
+    #undef TIMER_NOW
+    #undef TIMER_END
+    #undef SIMILARITY_TRANSFORM
 } /* namespace cv */
