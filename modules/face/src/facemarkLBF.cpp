@@ -3,6 +3,11 @@
 #include "precomp.hpp"
 #include "liblinear.hpp"
 #include <fstream>
+#include <cmath>
+#include <ctime>
+#include <cstdio>
+#include <cassert>
+#include <cstdarg>
 
 namespace cv
 {
