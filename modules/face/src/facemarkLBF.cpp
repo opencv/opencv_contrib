@@ -127,7 +127,7 @@ namespace cv
             ~RandomForest(){};
 
             void init(int landmark_n, int trees_n, int tree_depth, double ,  std::vector<int>, std::vector<double>);
-            void train(std::vector<cv::Mat> &imgs, std::vector<cv::Mat> &gt_shapes, std::vector<cv::Mat> &current_shapes, \
+            void train(std::vector<cv::Mat> &imgs, std::vector<cv::Mat> &current_shapes, \
                        std::vector<BBox> &bboxes, std::vector<cv::Mat> &delta_shapes, cv::Mat &mean_shape, int stage);
             Mat generateLBF(Mat &img, Mat &current_shape, BBox &bbox, Mat &mean_shape);
             void write(FILE *fd);
@@ -163,6 +163,7 @@ namespace cv
             std::vector<cv::Mat> gl_regression_weights;
         }; // LBF
 
+        Regressor lbf;
     }; // class
 
     /*
@@ -238,7 +239,7 @@ namespace cv
         std::srand(std::time(0));
         std::random_shuffle(current_shapes.begin(), current_shapes.end());
 
-        Regressor lbf;
+
         lbf.init(params);
         lbf.training(imgs, gt_shapes, current_shapes, bboxes, mean_shape, 0, params);
 
@@ -553,11 +554,11 @@ namespace cv
             const Mat_<double> &current_shape = (Mat_<double>)current_shapes[i];
             double x1, y1, x2, y2;
             x1 = x2 = y1 = y2 = 0;
-            for (int j = 0; j < left.size(); j++) {
+            for (int j = 0; j < (int)left.size(); j++) {
                 x1 += gt_shape(left[j], 0);
                 y1 += gt_shape(left[j], 1);
             }
-            for (int j = 0; j < right.size(); j++) {
+            for (int j = 0; j < (int)right.size(); j++) {
                 x2 += gt_shape(right[j], 0);
                 y2 += gt_shape(right[j], 1);
             }
@@ -566,8 +567,8 @@ namespace cv
             double pupils_distance = sqrt((x2 - x1)*(x2 - x1) + (y2 - y1)*(y2 - y1));
             // every landmark
             double e_ = 0;
-            for (int i = 0; i < landmark_n; i++) {
-                e_ += norm(gt_shape.row(i) - current_shape.row(i));
+            for (int j = 0; j < landmark_n; j++) {
+                e_ += norm(gt_shape.row(j) - current_shape.row(j));
             }
             e += e_ / pupils_distance;
         }
@@ -733,7 +734,7 @@ namespace cv
         }
     }
 
-    void FacemarkLBFImpl::RandomForest::train(std::vector<Mat> &imgs, std::vector<Mat> &gt_shapes, std::vector<Mat> &current_shapes, \
+    void FacemarkLBFImpl::RandomForest::train(std::vector<Mat> &imgs, std::vector<Mat> &current_shapes, \
                              std::vector<BBox> &bboxes, std::vector<Mat> &delta_shapes, Mat &mean_shape, int stage) {
         int N = imgs.size();
         int Q = int(N / ((1. - overlap_ratio) * trees_n));
@@ -843,7 +844,7 @@ namespace cv
             // train random forest
             printf("training random forest %dth of %d stages, ",k+1, stages_n);
             TIMER_BEGIN
-                random_forests[k].train(imgs, gt_shapes, current_shapes, bboxes, delta_shapes, mean_shape, k);
+                random_forests[k].train(imgs, current_shapes, bboxes, delta_shapes, mean_shape, k);
                 printf("costs %.4lf s\n",  TIMER_NOW);
             TIMER_END
 
@@ -882,10 +883,10 @@ namespace cv
         int N = lbfs.size();
         int M = lbfs[0].cols;
         int F = params.n_landmarks*params.tree_n*(1 << (params.tree_depth - 1));
-        int landmark_n = delta_shapes[0].rows;
+        int landmark_n_ = delta_shapes[0].rows;
         // prepare linear regression params X and Y
         struct liblinear::feature_node **X = (struct liblinear::feature_node **)malloc(N * sizeof(struct liblinear::feature_node *));
-        double **Y = (double **)malloc(landmark_n * 2 * sizeof(double *));
+        double **Y = (double **)malloc(landmark_n_ * 2 * sizeof(double *));
         for (int i = 0; i < N; i++) {
             X[i] = (struct liblinear::feature_node *)malloc((M + 1) * sizeof(struct liblinear::feature_node));
             for (int j = 0; j < M; j++) {
@@ -894,7 +895,7 @@ namespace cv
             }
             X[i][M].index = X[i][M].value = -1;
         }
-        for (int i = 0; i < landmark_n; i++) {
+        for (int i = 0; i < landmark_n_; i++) {
             Y[2 * i] = (double *)malloc(N*sizeof(double));
             Y[2 * i + 1] = (double *)malloc(N*sizeof(double));
             for (int j = 0; j < N; j++) {
@@ -914,10 +915,10 @@ namespace cv
         param.p = 0;
         param.eps = 0.00001;
 
-        Mat_<double> weight(2 * landmark_n, F);
+        Mat_<double> weight(2 * landmark_n_, F);
 
         #pragma omp parallel for
-        for (int i = 0; i < landmark_n; i++) {
+        for (int i = 0; i < landmark_n_; i++) {
 
         #define FREE_MODEL(model)   \
         free(model->w);         \
@@ -946,7 +947,7 @@ namespace cv
 
         // free
         for (int i = 0; i < N; i++) free(X[i]);
-        for (int i = 0; i < 2 * landmark_n; i++) free(Y[i]);
+        for (int i = 0; i < 2 * landmark_n_; i++) free(Y[i]);
         free(X);
         free(Y);
     } // Regressor:globalRegressionTrain
