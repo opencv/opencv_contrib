@@ -83,6 +83,7 @@ namespace cv
         Mat getMeanShape(std::vector<Mat> &gt_shapes, std::vector<BBox> &bboxes);
 
         FacemarkLBF::Params params;
+        CascadeClassifier cc;
     private:
         bool isModelTrained;
 
@@ -182,6 +183,16 @@ namespace cv
     {
         isSetDetector =false;
         isModelTrained = false;
+
+        /*check the cascade classifier file*/
+        std::ifstream infile;
+        infile.open(params.cascade_face.c_str(), std::ios::in);
+        if (!infile) {
+           std::string error_message = "The cascade classifier model is not found.";
+           CV_Error(CV_StsBadArg, error_message);
+        }
+
+        cc = CascadeClassifier(params.cascade_face.c_str());
     }
 
     void FacemarkLBFImpl::trainingImpl(String imageList, String groundTruth){
@@ -194,15 +205,6 @@ namespace cv
         std::vector<BBox> boxes;
         std::vector<Mat> shapes;
 
-        /*check the cascade classifier file*/
-        std::ifstream infile;
-        infile.open(params.cascade_face.c_str(), std::ios::in);
-        if (!infile) {
-           std::string error_message = "The cascade classifier model is not found.";
-           CV_Error(CV_StsBadArg, error_message);
-        }
-
-        CascadeClassifier cc(params.cascade_face.c_str());
         prepareTrainingData(images, facePoints, cropped, shapes, boxes, cc);
 
         // flip the image and swap the landmark position
@@ -247,6 +249,8 @@ namespace cv
         assert(fd);
         lbf.write(fd, params);
         fclose(fd);
+
+        isModelTrained = true;
     }
 
     bool FacemarkLBFImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks){
@@ -258,8 +262,41 @@ namespace cv
     }
 
     bool FacemarkLBFImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks, Mat R, Point2f T, float scale ){
-        printf("fitting\n");
-        return 0;
+        if (landmarks.size()>0)
+            landmarks.clear();
+
+        CV_Assert(isModelTrained);
+
+        Mat img;
+        if(image.channels()>1){
+            cvtColor(image,img,CV_BGR2GRAY);
+        }else{
+            img = image;
+        }
+
+
+        Rect box;
+        std::vector<Rect> rects;
+        cc.detectMultiScale(img, rects, 1.05, 2, CV_HAAR_SCALE_IMAGE, Size(30, 30));
+        if (rects.size() == 0)  return 0; //failed to get face
+        box = rects[0];
+
+        double min_x, min_y, max_x, max_y;
+        min_x = std::max(0., (double)box.x - box.width / 2);
+        max_x = std::min(img.cols - 1., (double)box.x+box.width + box.width / 2);
+        min_y = std::max(0., (double)box.y - box.height / 2);
+        max_y = std::min(img.rows - 1., (double)box.y + box.height + box.height / 2);
+
+        double w = max_x - min_x;
+        double h = max_y - min_y;
+
+        BBox bbox(box.x - min_x, box.y - min_y, box.width, box.height);
+        Mat crop = img(Rect(min_x, min_y, w, h)).clone();
+        Mat shape = lbf.predict(crop, bbox);
+
+        landmarks = Mat(shape.reshape(2)+Scalar(min_x, min_y));
+
+        return 1;
     }
 
     void FacemarkLBFImpl::read( const cv::FileNode& fn ){
