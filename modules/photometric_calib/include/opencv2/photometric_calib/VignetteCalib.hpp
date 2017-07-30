@@ -7,6 +7,7 @@
 
 #include "opencv2/photometric_calib.hpp"
 #include "opencv2/photometric_calib/Reader.hpp"
+#include "opencv2/photometric_calib/GammaRemover.hpp"
 
 namespace cv { namespace photometric_calib {
 
@@ -14,9 +15,17 @@ namespace cv { namespace photometric_calib {
 class CV_EXPORTS VignetteCalib
 {
 public:
-    VignetteCalib(std::string folderPath, std::string timePath);
-    VignetteCalib(std::string folderPath, std::string timePath, int imageSkip, int maxIterations, int outlierTh,
+    VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile, std::string gammaFile);
+    VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile, std::string gammaFile, int imageSkip, int maxIterations, int outlierTh,
                   int gridWidth, int gridHeight, float facW, float facH, int maxAbsGrad);
+
+    virtual ~VignetteCalib();
+
+    //EIGEN_ALWAYS_INLINE float getInterpolatedElement(const float* const mat, const float x, const float y, const int width)
+    float getInterpolatedElement(const float* const mat, const float x, const float y, const int width);
+    void displayImage(float* I, int w, int h, std::string name);
+    void displayImageV(float* I, int w, int h, std::string name);
+    void calib();
 
 private:
     int _imageSkip;
@@ -34,7 +43,11 @@ private:
     // remove pixel with absolute gradient larger than this from the optimization.
     int _maxAbsGrad;
 
+    Matx33f _cameraMatrix;
+    Mat _distCoeffs;
+
     Reader *imageReader;
+    GammaRemover *gammaRemover;
 };
 
 }}
