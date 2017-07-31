@@ -13,7 +13,7 @@ Coalescence in 2 dimensions: experiments on thin copolymer films and numerical s
 */
 
 namespace cv {
-    namespace ximgproc {
+namespace ximgproc {
 
 
 void ContourFitting::setCtrSize(int n)

@@ -1,7 +1,3 @@
-// This file is part of OpenCV project.
-// It is subject to the license terms in the LICENSE file found in the top-level directory
-// of this distribution and at http://opencv.org/license.html.
-
 #include <opencv2/core.hpp>
 #include <opencv2/core/utility.hpp>
 #include <opencv2/highgui.hpp>
@@ -58,10 +54,10 @@ int main(void)
     double dist;
     vector<vector<Point> > c;
     Mat img;
-    cout << "******************** PRESS G TO MATCH CURVES *************\n";
+    cout << "******************** PRESS g TO MATCH CURVES *************\n";
     do
     {
-        code = waitKey(30)&0xFF;
+        code = waitKey(30);
         if (p.update)
         {
             Mat r = getRotationMatrix2D(Point(p.xg, p.yg), p.angle, 10.0/ p.scale10);
