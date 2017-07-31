@@ -128,7 +128,7 @@ public:
     recognition of individual text elements found (e.g. words or text lines).
     @param component_confidences If provided the method will output a list of confidence values
     for the recognition of individual text elements found (e.g. words or text lines).
-    @param component_level OCR_LEVEL_WORD (by default), or OCR_LEVEL_TEXT_LINE.
+    @param component_level OCR_LEVEL_WORD (by default), or OCR_LEVEL_TEXTLINE.
      */
     virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
                      std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
