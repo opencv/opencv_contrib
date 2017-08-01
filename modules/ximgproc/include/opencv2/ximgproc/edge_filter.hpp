@@ -375,6 +375,36 @@ void rollingGuidanceFilter(InputArray src, OutputArray dst, int d = -1, double s
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
+/** @brief Interface for implementations of The Fast Bilateral Solver.
+
+For more details about this solver see cite BarronPoole2016 .
+*/
+class CV_EXPORTS_W FastBilateralSolverFilter : public Algorithm
+{
+public:
+    /** @brief Apply smoothing operation to the source image.
+
+    @param src source image for filtering with unsigned 8-bit and up to 3 channels.
+
+    @param confidence confidence image.
+
+    @param dst destination image.
+    */
+    CV_WRAP virtual void filter(InputArray src, InputArray confidence, OutputArray dst) = 0;
+};
+
+/** @brief Factory method, create instance of FastGlobalSmootherFilter and execute the initialization routines.
+
+@param sigma_color parameter, that is similar to color space sigma in bilateralFilter.
+
+For more details about the Fast Bilateral Solver parameters, see the original paper cite BarronPoole2016.
+*/
+
+CV_EXPORTS_W Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma);
+
+CV_EXPORTS_W void fastBilateralSolverFilter(InputArray guide, InputArray src, InputArray confidence, OutputArray dst, double sigma_spatial, double sigma_luma, double sigma_chroma);
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
 /** @brief Interface for implementations of Fast Global Smoother filter.
 
