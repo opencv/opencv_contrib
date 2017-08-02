@@ -36,8 +36,8 @@ namespace cv
         void read( const FileNode& /*fn*/ );
         void write( FileStorage& /*fs*/ ) const;
 
-        void saveModel(FileStorage& fs);
-        void loadModel(FileStorage& fs);
+        void saveModel(String fs);
+        void loadModel(String fs);
 
     protected:
 
@@ -212,8 +212,7 @@ namespace cv
             AAM.textures[scale].AA = orthonormal(U);
         } // scale
 
-        cv::FileStorage storage("AAM.yml", cv::FileStorage::WRITE);
-        saveModel(storage);
+        saveModel("AAM.yml");
         isModelTrained = true;
         printf("training is finished\n");
     }
@@ -319,7 +318,8 @@ namespace cv
         return true;
     }
 
-    void FacemarkAAMImpl::saveModel(FileStorage& fs){
+    void FacemarkAAMImpl::saveModel(String s){
+        FileStorage fs(s.c_str(),FileStorage::WRITE);
         fs << "AAM_tri" << AAM.triangles;
         fs << "scales" << AAM.scales;
         fs << "s0" << AAM.s0;
@@ -363,7 +363,8 @@ namespace cv
         printf("The model is successfully saved! \n");
     }
 
-    void FacemarkAAMImpl::loadModel(FileStorage& fs){
+    void FacemarkAAMImpl::loadModel(String s){
+        FileStorage fs(s.c_str(),FileStorage::READ);
         char x[256];
         fs["AAM_tri"] >> AAM.triangles;
         fs["scales"] >> AAM.scales;
