@@ -29,7 +29,7 @@ namespace cv
         shape_offset = 0.0;
         n_landmarks = 68;
         initShape_n = 10;
-        stages_n=2;
+        stages_n=5;
         tree_n=6;
         tree_depth=5;
         bagging_overlap = 0.4;
@@ -240,13 +240,14 @@ namespace cv
         }
 
         // random shuffle
-        std::srand(std::time(0));
+        time_t seed = std::time(0);
+        std::srand(seed);
         std::random_shuffle(imgs.begin(), imgs.end());
-        std::srand(std::time(0));
+        std::srand(seed);
         std::random_shuffle(gt_shapes.begin(), gt_shapes.end());
-        std::srand(std::time(0));
+        std::srand(seed);
         std::random_shuffle(bboxes.begin(), bboxes.end());
-        std::srand(std::time(0));
+        std::srand(seed);
         std::random_shuffle(current_shapes.begin(), current_shapes.end());
 
 
@@ -398,6 +399,8 @@ namespace cv
 
                 double w = max_x - min_x;
                 double h = max_y - min_y;
+
+                shape = Mat(shape.reshape(2)-Scalar(min_x, min_y)).reshape(1);
 
                 facePts.push_back(facePoints[i]);
                 boxes.push_back(BBox(box.x - min_x, box.y - min_y, box.width, box.height));
@@ -1106,10 +1109,6 @@ namespace cv
         landmark_n = params.n_landmarks;
 
         init(params);
-        printf("stages_n %i\n", params.stages_n);
-        printf("n_landmarks %i\n", params.n_landmarks);
-        printf("tree_depth %i\n", params.tree_depth);
-        printf("tree_n %i\n", params.tree_n);
 
         // mean_shape
         double *ptr = NULL;
@@ -1129,9 +1128,6 @@ namespace cv
                 stat = fread(ptr, sizeof(double), gl_regression_weights[k].cols, fd);
             }
         }
-
-
-
 
     }
 

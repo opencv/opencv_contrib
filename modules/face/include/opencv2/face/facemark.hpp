@@ -27,23 +27,23 @@ namespace cv
         /**
         * \brief training the facemark model, input are the file names of image list and landmark annotation
         */
-        void training(String imageList, String groundTruth);
+        virtual void training(String imageList, String groundTruth);
         virtual void saveModel(String fs)=0;
         virtual void loadModel(String fs)=0;
 
-        bool loadTrainingData(String filename , std::vector<String> & images, std::vector<std::vector<Point2f> > & facePoints, char delim = ' ', float offset = 0.0);
-        bool loadTrainingData(String imageList, String groundTruth, std::vector<String> & images, std::vector<std::vector<Point2f> > & facePoints, float offset = 0.0);
-        bool loadFacePoints(String filename, std::vector<Point2f> & pts, float offset = 0.0);
+        virtual bool loadTrainingData(String filename , std::vector<String> & images, std::vector<std::vector<Point2f> > & facePoints, char delim = ' ', float offset = 0.0);
+        virtual bool loadTrainingData(String imageList, String groundTruth, std::vector<String> & images, std::vector<std::vector<Point2f> > & facePoints, float offset = 0.0);
+        virtual bool loadFacePoints(String filename, std::vector<Point2f> & pts, float offset = 0.0);
         void drawPoints(Mat & image, std::vector<Point2f> pts, Scalar color = Scalar(255,0,0));
 
         /**
         * \brief extract landmark points from a face
         */
         // CV_WRAP bool detect( InputArray image, Rect2d& boundingBox );
-        bool fit( const Mat image, std::vector<Point2f> & landmarks );//!< from a face
-        bool fit( const Mat image, Rect face, std::vector<Point2f> & landmarks );//!< from an ROI
-        bool fit( const Mat image, std::vector<Rect> faces, std::vector<std::vector<Point2f> >& landmarks );//!< from many ROIs
-        bool fit( const Mat image, std::vector<Point2f>& landmarks, Mat R, Point2f T, float scale );
+        virtual bool fit( const Mat image, std::vector<Point2f> & landmarks );//!< from a face
+        virtual bool fit( const Mat image, Rect face, std::vector<Point2f> & landmarks );//!< from an ROI
+        virtual bool fit( const Mat image, std::vector<Rect> faces, std::vector<std::vector<Point2f> >& landmarks );//!< from many ROIs
+        virtual bool fit( const Mat image, std::vector<Point2f>& landmarks, Mat R, Point2f T, float scale );
 
         static Ptr<Facemark> create( const String& facemarkType );
 
@@ -56,10 +56,10 @@ namespace cv
         bool getFaces( const Mat image , std::vector<Rect> & faces);
 
         //!<  get faces and then extract landmarks for each of them
-        bool process(const Mat image,std::vector<Rect> & faces, std::vector<std::vector<Point2f> >& landmarks );
+        virtual bool process(const Mat image,std::vector<Rect> & faces, std::vector<std::vector<Point2f> >& landmarks );
 
         //!<  using the default face detector (haarClassifier), xml of the model should be provided
-        bool process(const Mat image,std::vector<Rect> & faces, std::vector<std::vector<Point2f> >& landmarks, String haarModel );
+        virtual bool process(const Mat image,std::vector<Rect> & faces, std::vector<std::vector<Point2f> >& landmarks, String haarModel );
 
     protected:
         virtual bool fitImpl( const Mat image, std::vector<Point2f> & landmarks )=0;
