@@ -37,6 +37,9 @@ Examples
 @note binarization techniques like Canny edge detector are applicable to edges produced by both
 algorithms (Sobel and StructuredEdgeDetection::detectEdges).
 
+@note This demo requires a model as input. A pre-trained model can be found
+at https://github.com/opencv/opencv_extra/blob/master/testdata/cv/ximgproc/model.yml.bin
+
 Source Code
 -----------
 
@@ -64,8 +67,7 @@ Explanation
     @code{.cpp}
     cv::Mat edges(image.size(), image.type());
 
-    cv::Ptr<StructuredEdgeDetection> pDollar =
-        cv::createStructuredEdgeDetection(modelFilename);
+    Ptr<StructuredEdgeDetection> pDollar = StructuredEdgeDetection::create(modelFilename);
     pDollar->detectEdges(image, edges);
     @endcode
 

@@ -1,7 +1,7 @@
 /**************************************************************************************
-The structered edge demo requires you to provide a model.
+The structured edge demo requires you to provide a model.
 This model can be found at the opencv_extra repository on Github on the following link:
-https://github.com/opencv/opencv_extra/blob/master/testdata/cv/ximgproc/model.yml.gz
+https://github.com/opencv/opencv_extra/blob/master/testdata/cv/ximgproc/model.yml.bin
 ***************************************************************************************/
 
 #include <opencv2/ximgproc.hpp>
@@ -55,8 +55,7 @@ int main( int argc, const char** argv )
 
     Mat edges(image.size(), image.type());
 
-    Ptr<StructuredEdgeDetection> pDollar =
-        createStructuredEdgeDetection(modelFilename);
+    Ptr<StructuredEdgeDetection> pDollar = StructuredEdgeDetection::create(modelFilename);
     pDollar->detectEdges(image, edges);
 
     // computes orientation from edge map

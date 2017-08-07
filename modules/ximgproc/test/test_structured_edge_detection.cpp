@@ -9,10 +9,10 @@ TEST(ximpgroc_StructuredEdgeDetection, regression)
     cv::String dir = cvtest::TS::ptr()->get_data_path() + subfolder;
     int nTests = 12;
     float threshold = 0.01f;
-    
+
     cv::String modelName = dir + "model.yml.gz";
     cv::Ptr<cv::ximgproc::StructuredEdgeDetection> pDollar =
-        cv::ximgproc::createStructuredEdgeDetection(modelName);
+        cv::ximgproc::StructuredEdgeDetection::create(modelName);
 
     for (int i = 0; i < nTests; ++i)
     {

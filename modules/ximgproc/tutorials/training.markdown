@@ -10,7 +10,7 @@ implementation.
 Training pipeline
 -----------------
 
--#  Download "Piotr's Toolbox" from [link](http://vision.ucsd.edu/~pdollar/toolbox/doc/index.html)
+-#  Download "Piotr's Toolbox" from [link](https://pdollar.github.io/toolbox/)
     and put it into separate directory, e.g. PToolbox
 
 -#  Download BSDS500 dataset from
@@ -110,6 +110,6 @@ How to use your model
 
 Just use expanded constructor with above defined class NewRFFeatureGetter
 @code{.cpp}
-cv::StructuredEdgeDetection pDollar
-    = cv::createStructuredEdgeDetection( modelName, makePtr<NewRFFeatureGetter>() );
+cv::Ptr<cv::ximgproc::StructuredEdgeDetection> pDollar
+    = cv::ximgproc::StructuredEdgeDetection::create(modelName, makePtr<NewRFFeatureGetter>());
 @endcode
