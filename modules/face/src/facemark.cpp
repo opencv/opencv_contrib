@@ -87,8 +87,10 @@ namespace cv
             return false;
         }
 
+        faces.clear();
+        
         faceDetector(image, faces);
-        printf("getfces %i\n",(int)faces.size());
+
         return true;
     }
 

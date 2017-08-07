@@ -162,6 +162,8 @@ namespace cv
                 std::vector<double> radius_m;
                 std::vector<int> pupils[2];
 
+                Rect detectROI;
+
                 void read(const FileNode& /*fn*/);
                 void write(FileStorage& /*fs*/) const;
 
@@ -185,6 +187,9 @@ namespace cv
                 double x_scale, y_scale;
                 double width, height;
             };
+
+            Params params;
+            bool fit( const Mat image, std::vector<Rect> faces, std::vector<std::vector<Point2f> >& landmarks );//!< from many ROIs
 
             BOILERPLATE_CODE("LBF",FacemarkLBF);
         }; /* LBF */
