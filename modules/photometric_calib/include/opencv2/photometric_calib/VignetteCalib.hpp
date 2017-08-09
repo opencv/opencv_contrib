@@ -43,7 +43,7 @@ private:
     // remove pixel with absolute gradient larger than this from the optimization.
     int _maxAbsGrad;
 
-    Matx33f _cameraMatrix;
+    Mat _cameraMatrix;
     Mat _distCoeffs;
 
     Reader *imageReader;

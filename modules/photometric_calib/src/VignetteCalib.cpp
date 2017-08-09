@@ -67,35 +67,35 @@ void VignetteCalib::displayImage(float *I, int w, int h, std::string name)
         if(vmax < I[i]) vmax = I[i];
     }
 
-    cv::Mat img = cv::Mat(h,w,CV_8UC3);
+    Mat img = Mat(h,w,CV_8UC3);
 
     for(int i=0;i<w*h;i++)
     {
         //isnanf? isnan?
-        if(cvIsNaN(I[i]) == 1) img.at<cv::Vec3b>(i) = cv::Vec3b(0,0,255);
-        else img.at<cv::Vec3b>(i) = cv::Vec3b(255*(I[i]-vmin) / (vmax-vmin),255*(I[i]-vmin) / (vmax-vmin),255*(I[i]-vmin) / (vmax-vmin));
+        if(cvIsNaN(I[i]) == 1) img.at<Vec3b>(i) = Vec3b(0,0,255);
+        else img.at<Vec3b>(i) = Vec3b(255*(I[i]-vmin) / (vmax-vmin),255*(I[i]-vmin) / (vmax-vmin),255*(I[i]-vmin) / (vmax-vmin));
     }
 
     printf("plane image values %f - %f!\n", vmin, vmax);
-    cv::imshow(name, img);
-    cv::imwrite("vignetteCalibResult/plane.png", img);
+    imshow(name, img);
+    imwrite("vignetteCalibResult/plane.png", img);
 }
 
 void VignetteCalib::displayImageV(float *I, int w, int h, std::string name)
 {
-    cv::Mat img = cv::Mat(h,w,CV_8UC3);
+    Mat img = Mat(h,w,CV_8UC3);
     for(int i=0;i<w*h;i++)
     {
         if(cvIsNaN(I[i]) == 1)
-            img.at<cv::Vec3b>(i) = cv::Vec3b(0,0,255);
+            img.at<Vec3b>(i) = Vec3b(0,0,255);
         else
         {
             float c = 254*I[i];
-            img.at<cv::Vec3b>(i) = cv::Vec3b(c,c,c);
+            img.at<Vec3b>(i) = Vec3b(c,c,c);
         }
 
     }
-    cv::imshow(name, img);
+    imshow(name, img);
 }
 
 void VignetteCalib::calib()
@@ -104,8 +104,6 @@ void VignetteCalib::calib()
     if(-1 == system("mkdir vignetteCalibResult")) printf("could not delete old vignetteCalibResult folder!\n");
 
     // affine map from plane cordinates to grid coordinates.
-    Mat test2(3,3,CV_8U);
-    Matx33f test3(test2);
     Matx33f K_p2idx = Matx33f::eye();
     Mat1f test = Mat1f::eye(3,3);
     K_p2idx(0,0) = _gridWidth / _facW;
@@ -120,13 +118,19 @@ void VignetteCalib::calib()
     int wI = wO, hI = hO;
 
     Ptr<aruco::DetectorParameters> parameters = aruco::DetectorParameters::create();
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
 
     std::vector<float*> images;
     std::vector<float*> p2imgX;
     std::vector<float*> p2imgY;
 
     float meanExposure = 0.f;
+    for(size_t i=0;i<imageReader->getNumImages();i+=_imageSkip)
+        meanExposure+=imageReader->getExposureDuration(i);
+    meanExposure = meanExposure/imageReader->getNumImages();
+
+    if(meanExposure==0) meanExposure = 1;
+
     for(size_t i=0; i < imageReader->getNumImages(); ++i)
     {
         std::vector<int> markerIds;
@@ -205,9 +209,9 @@ void VignetteCalib::calib()
         images.push_back(image);
 
         // debug-plot.
-        cv::Mat dbgImg(hI, wI, CV_8UC3);
-        for(int i=0;i<wI*hI;i++)
-            dbgImg.at<cv::Vec3b>(i) = cv::Vec3b(imgRaw[i], imgRaw[i], imgRaw[i]);
+        Mat dbgImg(hI, wI, CV_8UC3);
+        for(int j=0;j<wI*hI;j++)
+            dbgImg.at<Vec3b>(j) = Vec3b(imgRaw[j], imgRaw[j], imgRaw[j]);
 
         for(int x=0; x<=_gridWidth;x+=200)
             for(int y=0; y<=_gridHeight;y+=10)
@@ -222,7 +226,8 @@ void VignetteCalib::calib()
                 int v_dT = plane2imgY[idxT]+0.5;
 
                 if(u_dS>=0 && v_dS >=0 && u_dS<wI && v_dS<hI && u_dT>=0 && v_dT >=0 && u_dT<wI && v_dT<hI)
-                    cv::line(dbgImg, cv::Point(u_dS, v_dS), cv::Point(u_dT, v_dT), cv::Scalar(0,0,255), 10, CV_AA);
+                    line(dbgImg, Point(u_dS, v_dS), Point(u_dT, v_dT), Scalar(0,0,255), 10, LINE_AA);
+                    //line(dbgImg, Point(u_dS, v_dS), Point(u_dT, v_dT), Scalar(0,0,255), 10, CV_AA);
             }
 
         for(int x=0; x<=_gridWidth;x+=10)
@@ -238,7 +243,7 @@ void VignetteCalib::calib()
                 int v_dT = plane2imgY[idxT]+0.5;
 
                 if(u_dS>=0 && v_dS >=0 && u_dS<wI && v_dS<hI && u_dT>=0 && v_dT >=0 && u_dT<wI && v_dT<hI)
-                    cv::line(dbgImg, cv::Point(u_dS, v_dS), cv::Point(u_dT, v_dT), cv::Scalar(0,0,255), 10, CV_AA);
+                    line(dbgImg, Point(u_dS, v_dS), Point(u_dT, v_dT), Scalar(0,0,255), 10, LINE_AA);
             }
 
         for(int x=0; x<_gridWidth;x++)
@@ -254,16 +259,16 @@ void VignetteCalib::calib()
                 }
             }
 
-        cv::imshow("inRaw",dbgImg);
+        imshow("inRaw",dbgImg);
 
         if(rand()%40==0)
         {
             char buf[1000];
-            snprintf(buf,1000,"vignetteCalibResult/img%d.png",i);
-            cv::imwrite(buf, dbgImg);
+            snprintf(buf,1000,"vignetteCalibResult/img%lu.png",i);
+            imwrite(buf, dbgImg);
         }
 
-        cv::waitKey(1);
+        waitKey(1);
 
         p2imgX.push_back(plane2imgX);
         p2imgY.push_back(plane2imgY);
@@ -460,19 +465,19 @@ void VignetteCalib::calib()
 
             {
                 displayImageV(vignetteFactorTT, wI, hI, "VignetteSmoothed");
-                cv::Mat wrap = cv::Mat(hI, wI, CV_32F, vignetteFactorTT)*254.9*254.9;
-                cv::Mat wrap16;
+                Mat wrap = Mat(hI, wI, CV_32F, vignetteFactorTT)*254.9*254.9;
+                Mat wrap16;
                 wrap.convertTo(wrap16, CV_16U,1,0);
-                cv::imwrite("vignetteCalibResult/vignetteSmoothed.png", wrap16);
-                cv::waitKey(50);
+                imwrite("vignetteCalibResult/vignetteSmoothed.png", wrap16);
+                waitKey(50);
             }
             {
                 displayImageV(vignetteFactor, wI, hI, "VignetteOrg");
-                cv::Mat wrap = cv::Mat(hI, wI, CV_32F, vignetteFactor)*254.9*254.9;
-                cv::Mat wrap16;
+                Mat wrap = Mat(hI, wI, CV_32F, vignetteFactor)*254.9*254.9;
+                Mat wrap16;
                 wrap.convertTo(wrap16, CV_16U,1,0);
-                cv::imwrite("vignetteCalibResult/vignette.png", wrap16);
-                cv::waitKey(50);
+                imwrite("vignetteCalibResult/vignette.png", wrap16);
+                waitKey(50);
             }
         }
     }
