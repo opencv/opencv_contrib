@@ -196,6 +196,40 @@ protected:
     std::vector<unsigned> fixationLoc( Mat, Size );
 };
 
+/** @brief the Deep Gaze 1 Saliency approach from
+
+This method use the convolution layers of the pretrained AlexNet, linear combination, center bias and softmax to generate saliency map
+*/
+class CV_EXPORTS_W BackgroundContrast : public StaticSaliency
+{
+//private:
+
+public:
+    BackgroundContrast();
+    virtual ~BackgroundContrast();
+    CV_WRAP static Ptr<BackgroundContrast> create()
+    {
+        return makePtr<BackgroundContrast>();
+    }
+    CV_WRAP bool computeSaliency( InputArray image, OutputArray saliencyMap )
+    {
+        if( image.empty() )
+            return false;
+        return computeSaliencyImpl( image, saliencyMap );
+    }
+    Mat saliencyMapGenerator( const Mat );
+    void saliencyMapVisualize( InputArray _saliencyMap );
+protected:
+    bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap );
+    void superpixelSplit( const Mat, Mat&, Mat& );
+    std::vector<unsigned> getBndPatchIds( const Mat, int = 8);
+    void getColorPosDis( const Mat, const Mat, Mat&, Mat&, int );
+    void boundaryConnectivity( const Mat, const Mat, Mat&, std::vector<unsigned>, double = 3.0, double = 7.0 );
+    void getWeightedContrast( const Mat, const Mat, const Mat, Mat& );
+};
+
+
+
 
 
 /************************************ Specific Motion Saliency Specialized Classes ************************************/
