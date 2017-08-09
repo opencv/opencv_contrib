@@ -7,7 +7,6 @@
 
 #include <fstream>
 #include <iostream>
-#include <algorithm>
 
 namespace cv { namespace photometric_calib{
 
@@ -73,10 +72,10 @@ void VignetteCalib::displayImage(float *I, int w, int h, std::string name)
     {
         //isnanf? isnan?
         if(cvIsNaN(I[i]) == 1) img.at<Vec3b>(i) = Vec3b(0,0,255);
-        else img.at<Vec3b>(i) = Vec3b(255*(I[i]-vmin) / (vmax-vmin),255*(I[i]-vmin) / (vmax-vmin),255*(I[i]-vmin) / (vmax-vmin));
+        else img.at<Vec3b>(i) = Vec3b((uchar)(255*(I[i]-vmin) / (vmax-vmin)),(uchar)(255*(I[i]-vmin) / (vmax-vmin)),(uchar)(255*(I[i]-vmin) / (vmax-vmin)));
     }
 
-    printf("plane image values %f - %f!\n", vmin, vmax);
+    std::cout<<"plane image values " << vmin << " - " << vmax << "!" <<std::endl;
     imshow(name, img);
     imwrite("vignetteCalibResult/plane.png", img);
 }
@@ -91,7 +90,7 @@ void VignetteCalib::displayImageV(float *I, int w, int h, std::string name)
         else
         {
             float c = 254*I[i];
-            img.at<Vec3b>(i) = Vec3b(c,c,c);
+            img.at<Vec3b>(i) = Vec3b((uchar)c,(uchar)c,(uchar)c);
         }
 
     }
@@ -100,16 +99,16 @@ void VignetteCalib::displayImageV(float *I, int w, int h, std::string name)
 
 void VignetteCalib::calib()
 {
-    if(-1 == system("rm -rf vignetteCalibResult")) printf("could not delete old vignetteCalibResult folder!\n");
-    if(-1 == system("mkdir vignetteCalibResult")) printf("could not delete old vignetteCalibResult folder!\n");
+    if(-1 == system("rm -rf vignetteCalibResult")) std::cout<< "could not delete old vignetteCalibResult folder!" << std::endl;
+    if(-1 == system("mkdir vignetteCalibResult")) std::cout<< "could not delete old vignetteCalibResult folder" << std::endl;
 
     // affine map from plane cordinates to grid coordinates.
     Matx33f K_p2idx = Matx33f::eye();
     Mat1f test = Mat1f::eye(3,3);
     K_p2idx(0,0) = _gridWidth / _facW;
     K_p2idx(1,1) = _gridHeight / _facH;
-    K_p2idx(0,2) = _gridWidth / 2;
-    K_p2idx(1,2) = _gridHeight / 2;
+    K_p2idx(0,2) = _gridWidth / 2.f;
+    K_p2idx(1,2) = _gridHeight / 2.f;
     Matx33f K_p2idx_inverse = K_p2idx.inv();
 
     int wO, hO;
@@ -125,13 +124,13 @@ void VignetteCalib::calib()
     std::vector<float*> p2imgY;
 
     float meanExposure = 0.f;
-    for(size_t i=0;i<imageReader->getNumImages();i+=_imageSkip)
+    for(unsigned long i=0;i<imageReader->getNumImages();i+=_imageSkip)
         meanExposure+=imageReader->getExposureDuration(i);
     meanExposure = meanExposure/imageReader->getNumImages();
 
     if(meanExposure==0) meanExposure = 1;
 
-    for(size_t i=0; i < imageReader->getNumImages(); ++i)
+    for(unsigned long i=0; i < imageReader->getNumImages(); ++i)
     {
         std::vector<int> markerIds;
         std::vector< std::vector<Point2f> > markerCorners, rejectedCandidates;
@@ -181,7 +180,7 @@ void VignetteCalib::calib()
             for(int x=0;x<_gridWidth;x++)
             {
                 //Eigen::Vector3f pp = HK*Eigen::Vector3f(x,y,1);
-                Vec3f pp = HK * Vec3f(x,y,1);
+                Vec3f pp = HK * Vec3f((float)x,(float)y,1);
                 plane2imgX[idx] = pp[0] / pp[2];
                 plane2imgY[idx] = pp[1] / pp[2];
                 idx++;
@@ -211,7 +210,7 @@ void VignetteCalib::calib()
         // debug-plot.
         Mat dbgImg(hI, wI, CV_8UC3);
         for(int j=0;j<wI*hI;j++)
-            dbgImg.at<Vec3b>(j) = Vec3b(imgRaw[j], imgRaw[j], imgRaw[j]);
+            dbgImg.at<Vec3b>(j) = Vec3b((uchar)imgRaw[j], (uchar)imgRaw[j], (uchar)imgRaw[j]);
 
         for(int x=0; x<=_gridWidth;x+=200)
             for(int y=0; y<=_gridHeight;y+=10)
@@ -219,11 +218,11 @@ void VignetteCalib::calib()
                 int idxS = (x<_gridWidth ? x : _gridWidth-1)+(y<_gridHeight ? y : _gridHeight-1)*_gridWidth;
                 int idxT = (x<_gridWidth ? x : _gridWidth-1)+((y+10)<_gridHeight ? (y+10) : _gridHeight-1)*_gridWidth;
 
-                int u_dS = plane2imgX[idxS]+0.5;
-                int v_dS = plane2imgY[idxS]+0.5;
+                int u_dS = (int)lround((plane2imgX[idxS]+0.5));
+                int v_dS = (int)lround((plane2imgY[idxS]+0.5));
 
-                int u_dT = plane2imgX[idxT]+0.5;
-                int v_dT = plane2imgY[idxT]+0.5;
+                int u_dT = (int)lround((plane2imgX[idxT]+0.5));
+                int v_dT = (int)lround((plane2imgY[idxT]+0.5));
 
                 if(u_dS>=0 && v_dS >=0 && u_dS<wI && v_dS<hI && u_dT>=0 && v_dT >=0 && u_dT<wI && v_dT<hI)
                     line(dbgImg, Point(u_dS, v_dS), Point(u_dT, v_dT), Scalar(0,0,255), 10, LINE_AA);
@@ -236,11 +235,11 @@ void VignetteCalib::calib()
                 int idxS = (x<_gridWidth ? x : _gridWidth-1)+(y<_gridHeight ? y : _gridHeight-1)*_gridWidth;
                 int idxT = ((x+10)<_gridWidth ? (x+10) : _gridWidth-1)+(y<_gridHeight ? y : _gridHeight-1)*_gridWidth;
 
-                int u_dS = plane2imgX[idxS]+0.5;
-                int v_dS = plane2imgY[idxS]+0.5;
+                int u_dS = (int)lround(plane2imgX[idxS]+0.5);
+                int v_dS = (int)lround(plane2imgY[idxS]+0.5);
 
-                int u_dT = plane2imgX[idxT]+0.5;
-                int v_dT = plane2imgY[idxT]+0.5;
+                int u_dT = (int)lround(plane2imgX[idxT]+0.5);
+                int v_dT = (int)lround(plane2imgY[idxT]+0.5);
 
                 if(u_dS>=0 && v_dS >=0 && u_dS<wI && v_dS<hI && u_dT>=0 && v_dT >=0 && u_dT<wI && v_dT<hI)
                     line(dbgImg, Point(u_dS, v_dS), Point(u_dT, v_dT), Scalar(0,0,255), 10, LINE_AA);
@@ -249,8 +248,8 @@ void VignetteCalib::calib()
         for(int x=0; x<_gridWidth;x++)
             for(int y=0; y<_gridHeight;y++)
             {
-                int u_d = plane2imgX[x+y*_gridWidth]+0.5;
-                int v_d = plane2imgY[x+y*_gridWidth]+0.5;
+                int u_d = (int)lround(plane2imgX[x+y*_gridWidth]+0.5);
+                int v_d = (int)lround(plane2imgY[x+y*_gridWidth]+0.5);
 
                 if(!(u_d>1 && v_d >1 && u_d<wI-2 && v_d<hI-2))
                 {
@@ -264,7 +263,7 @@ void VignetteCalib::calib()
         if(rand()%40==0)
         {
             char buf[1000];
-            snprintf(buf,1000,"vignetteCalibResult/img%lu.png",i);
+            snprintf(buf,1000,"vignetteCalibResult/img%u.png",(unsigned)i);
             imwrite(buf, dbgImg);
         }
 
@@ -279,7 +278,7 @@ void VignetteCalib::calib()
     logFile.open("vignetteCalibResult/log.txt", std::ios::trunc | std::ios::out);
     logFile.precision(15);
 
-    int n = imageReader->getNumImages();
+    unsigned long n = imageReader->getNumImages();
 
     float* planeColor = new float[_gridWidth*_gridHeight];
     float* planeColorFF = new float[_gridWidth*_gridHeight];
@@ -305,7 +304,7 @@ void VignetteCalib::calib()
         E=0;R=0;
 
         // for each plane pixel, it's optimum is at sum(CF)/sum(FF)
-        for(int img=0;img<n;img++)	// for all images
+        for(unsigned long img=0;img < n;img++)	// for all images
         {
             float* plane2imgX = p2imgX[img];
             float* plane2imgY = p2imgY[img];
@@ -313,14 +312,14 @@ void VignetteCalib::calib()
 
             for(int pi=0;pi<_gridWidth*_gridHeight;pi++)		// for all plane points
             {
-                if(cvIsNaN(plane2imgX[pi])) continue;
+                if(cvIsNaN(plane2imgX[pi]) == 1) continue;
 
                 // get vignetted color at that point, and add to build average.
                 float color = getInterpolatedElement(image, plane2imgX[pi], plane2imgY[pi], wI);
                 float fac = getInterpolatedElement(vignetteFactor, plane2imgX[pi], plane2imgY[pi], wI);
 
-                if(cvIsNaN(fac)) continue;
-                if(cvIsNaN(color)) continue;
+                if(cvIsNaN(fac) == 1) continue;
+                if(cvIsNaN(color) == 1) continue;
 
                 double residual = (double)((color - planeColor[pi]*fac)*(color - planeColor[pi]*fac));
                 if(abs(residual) > oth2)
@@ -334,7 +333,7 @@ void VignetteCalib::calib()
                 planeColorFF[pi] += fac*fac;
                 planeColorFC[pi] += color*fac;
 
-                if(cvIsNaN(planeColor[pi])) continue;
+                if(cvIsNaN(planeColor[pi]) == 1) continue;
                 E += residual;
                 R ++;
             }
@@ -349,14 +348,14 @@ void VignetteCalib::calib()
         }
         displayImage(planeColor, _gridWidth, _gridWidth, "Plane");
 
-        printf("%f residual terms => %f\n", R, sqrtf(E/R));
+        std::cout << R << " residual terms => " << sqrt(E/R) << std::endl;
 
         // ================================ optimize vignette =======================================
         memset(vignetteFactorTT,0,hI*wI*sizeof(float));
         memset(vignetteFactorCT,0,hI*wI*sizeof(float));
         E=0;R=0;
 
-        for(int img=0;img<n;img++)	// for all images
+        for(unsigned long img=0;img<n;img++)	// for all images
         {
             float* plane2imgX = p2imgX[img];
             float* plane2imgY = p2imgY[img];
@@ -364,7 +363,7 @@ void VignetteCalib::calib()
 
             for(int pi=0;pi<_gridWidth*_gridWidth;pi++)		// for all plane points
             {
-                if(cvIsNaN(plane2imgX[pi])) continue;
+                if(cvIsNaN(plane2imgX[pi]) == 1) continue;
                 float x = plane2imgX[pi];
                 float y = plane2imgY[pi];
 
@@ -372,8 +371,8 @@ void VignetteCalib::calib()
                 float fac = getInterpolatedElement(vignetteFactor, x, y, wI);
                 float colorPlane = planeColor[pi];
 
-                if(cvIsNaN(colorPlane)) continue;
-                if(cvIsNaN(colorImage)) continue;
+                if(cvIsNaN(colorPlane) == 1) continue;
+                if(cvIsNaN(colorImage) == 1) continue;
 
                 double residual = (double)((colorImage - colorPlane*fac)*(colorImage - colorPlane*fac));
                 if(abs(residual) > oth2)
@@ -400,7 +399,7 @@ void VignetteCalib::calib()
                 vignetteFactorCT[ix+iy*wI + wI] += (dy-dxdy) * 		colorImage*colorPlane;
                 vignetteFactorCT[ix+iy*wI + 1+wI] += dxdy * 		colorImage*colorPlane;
 
-                if(cvIsNaN(fac)) continue;
+                if(cvIsNaN(fac) == 1) continue;
                 E += residual;
                 R ++;
             }
@@ -418,7 +417,7 @@ void VignetteCalib::calib()
             }
         }
 
-        printf("%f residual terms => %f\n", R, sqrtf(E/R));
+        std::cout << R << " residual terms => " << sqrt(E/R) << std::endl;
 
         // normalize to vignette max. factor 1.
         for(int pi=0;pi<hI*wI;pi++)
@@ -426,7 +425,7 @@ void VignetteCalib::calib()
 
 
 
-        logFile << it << " " << n << " " << R << " " << sqrtf(E/R) << "\n";
+        logFile << it << " " << n << " " << R << " " << sqrt(E/R) << "\n";
 
 
 
@@ -446,17 +445,17 @@ void VignetteCalib::calib()
                         int idx = x+y*wI;
                         {
                             float sum=0, num=0;
-                            if(x<wI-1 && y<hI-1 && !cvIsNaN(vignetteFactorCT[idx+1+wI])) {sum += vignetteFactorCT[idx+1+wI]; num++;}
-                            if(x<wI-1 &&           !cvIsNaN(vignetteFactorCT[idx+1])) {sum += vignetteFactorCT[idx+1]; num++;}
-                            if(x<wI-1 && y>0 &&    !cvIsNaN(vignetteFactorCT[idx+1-wI])) {sum += vignetteFactorCT[idx+1-wI]; num++;}
+                            if(x<wI-1 && y<hI-1 && cvIsNaN(vignetteFactorCT[idx+1+wI]) != 1) {sum += vignetteFactorCT[idx+1+wI]; num++;}
+                            if(x<wI-1 &&           cvIsNaN(vignetteFactorCT[idx+1]) != 1) {sum += vignetteFactorCT[idx+1]; num++;}
+                            if(x<wI-1 && y>0 &&    cvIsNaN(vignetteFactorCT[idx+1-wI]) != 1) {sum += vignetteFactorCT[idx+1-wI]; num++;}
 
-                            if(y<hI-1 &&           !cvIsNaN(vignetteFactorCT[idx+wI])) {sum += vignetteFactorCT[idx+wI]; num++;}
-                            if(			           !cvIsNaN(vignetteFactorCT[idx])) {sum += vignetteFactorCT[idx]; num++;}
-                            if(y>0 &&              !cvIsNaN(vignetteFactorCT[idx-wI])) {sum += vignetteFactorCT[idx-wI]; num++;}
+                            if(y<hI-1 &&           cvIsNaN(vignetteFactorCT[idx+wI]) != 1) {sum += vignetteFactorCT[idx+wI]; num++;}
+                            if(			           cvIsNaN(vignetteFactorCT[idx]) != 1) {sum += vignetteFactorCT[idx]; num++;}
+                            if(y>0 &&              cvIsNaN(vignetteFactorCT[idx-wI]) != 1) {sum += vignetteFactorCT[idx-wI]; num++;}
 
-                            if(y<hI-1 && x>0 &&    !cvIsNaN(vignetteFactorCT[idx-1+wI])) {sum += vignetteFactorCT[idx-1+wI]; num++;}
-                            if(x>0 &&              !cvIsNaN(vignetteFactorCT[idx-1])) {sum += vignetteFactorCT[idx-1]; num++;}
-                            if(y>0 && x>0 &&       !cvIsNaN(vignetteFactorCT[idx-1-wI])) {sum += vignetteFactorCT[idx-1-wI]; num++;}
+                            if(y<hI-1 && x>0 &&    cvIsNaN(vignetteFactorCT[idx-1+wI]) != 1) {sum += vignetteFactorCT[idx-1+wI]; num++;}
+                            if(x>0 &&              cvIsNaN(vignetteFactorCT[idx-1]) != 1) {sum += vignetteFactorCT[idx-1]; num++;}
+                            if(y>0 && x>0 &&       cvIsNaN(vignetteFactorCT[idx-1-wI]) != 1) {sum += vignetteFactorCT[idx-1-wI]; num++;}
 
                             if(num>0) vignetteFactorTT[idx] = sum/num;
                         }
@@ -492,7 +491,7 @@ void VignetteCalib::calib()
     delete[] vignetteFactorTT;
     delete[] vignetteFactorCT;
 
-    for(int i=0;i<n;i++)
+    for(unsigned long i=0;i<n;i++)
     {
         delete[] images[i];
         delete[] p2imgX[i];
