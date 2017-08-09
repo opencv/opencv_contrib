@@ -56,13 +56,13 @@ namespace rgbd
    * a limit. For a float/double, we just check if it is a NaN
    * @param depth the depth to check for validity
    */
-  CV_EXPORTS_W
+  CV_EXPORTS
   inline bool
   isValidDepth(const float & depth)
   {
     return !cvIsNaN(depth);
   }
-  CV_EXPORTS_AS(isValidDepth2)
+  CV_EXPORTS
   inline bool
   isValidDepth(const double & depth)
   {
@@ -81,7 +81,7 @@ namespace rgbd
     return (depth != std::numeric_limits<unsigned short int>::min())
         && (depth != std::numeric_limits<unsigned short int>::max());
   }
-  CV_EXPORTS_AS(isValidDepth3)
+  CV_EXPORTS
   inline bool
   isValidDepth(const int & depth)
   {
