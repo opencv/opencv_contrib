@@ -53,7 +53,7 @@
 #include <iostream>
 #include <iterator>
 #include <algorithm>
-#include<boost/unordered_map.hpp>
+#include <boost/unordered_map.hpp>
 
 namespace cv
 {
@@ -66,7 +66,7 @@ namespace ximgproc
 
         static Ptr<FastBilateralSolverFilterImpl> create(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma)
         {
-            CV_Assert( guide.type() == CV_8UC3 );
+            CV_Assert(guide.type() == CV_8UC1 || guide.type() == CV_8UC3);
             FastBilateralSolverFilterImpl *fbs = new FastBilateralSolverFilterImpl();
             Mat gui = guide.getMat();
             fbs->init(gui,sigma_spatial,sigma_luma,sigma_chroma);
@@ -76,24 +76,53 @@ namespace ximgproc
         void filter(InputArray src, InputArray confidence, OutputArray dst)
         {
 
-            CV_Assert( src.type() == CV_8UC1 && confidence.type() == CV_8UC1 && src.size() == confidence.size() );
+            CV_Assert(!src.empty() && (src.depth() == CV_8U || src.depth() == CV_16S || src.depth() == CV_32F) && src.channels()<=4);
+            CV_Assert(!confidence.empty() && (confidence.depth() == CV_8U || confidence.depth() == CV_16S || confidence.depth() == CV_32F) && confidence.channels()==1);
             if (src.rows() != rows || src.cols() != cols)
             {
                 CV_Error(Error::StsBadSize, "Size of the filtered image must be equal to the size of the guide image");
                 return;
             }
+            if (confidence.rows() != rows || confidence.cols() != cols)
+            {
+                CV_Error(Error::StsBadSize, "Size of the confidence image must be equal to the size of the guide image");
+                return;
+            }
 
-            dst.create(src.size(), src.type());
-            Mat tar = src.getMat();
-            Mat con = confidence.getMat();
-            Mat out = dst.getMat();
+            std::vector<Mat> src_channels;
+            std::vector<Mat> dst_channels;
+            if(src.channels()==1)
+                src_channels.push_back(src.getMat());
+            else
+                split(src,src_channels);
 
-            solve(tar,con,out);
+            Mat conf = confidence.getMat();
+            if(conf.depth() != CV_8UC1)
+                conf.convertTo(conf, CV_8UC1);
+
+            for(int i=0;i<src.channels();i++)
+            {
+                Mat cur_res = src_channels[i].clone();
+                if(src.depth() != CV_8UC1)
+                    cur_res.convertTo(cur_res, CV_8UC1);
+
+                solve(cur_res,conf,cur_res);
+                dst_channels.push_back(cur_res);
+            }
+
+            dst.create(src.size(),src.type());
+            if(src.channels()==1)
+            {
+                Mat& dstMat = dst.getMatRef();
+                dstMat = dst_channels[0];
+            }
+            else
+            merge(dst_channels,dst);
         }
 
     // protected:
         void solve(cv::Mat& src, cv::Mat& confidence, cv::Mat& dst);
-        void init(cv::Mat& reference_bgr, double sigma_spatial, double sigma_luma, double sigma_chroma);
+        void init(cv::Mat& reference, double sigma_spatial, double sigma_luma, double sigma_chroma);
 
         void Splat(Eigen::VectorXf& input, Eigen::VectorXf& dst);
         void Blur(Eigen::VectorXf& input, Eigen::VectorXf& dst);
@@ -106,12 +135,11 @@ namespace ximgproc
         int dim;
         int cols;
         int rows;
-        std::vector<Eigen::SparseMatrix<float, Eigen::ColMajor> > blurs;
         std::vector<int> splat_idx;
         std::vector<std::pair<int, int> > blur_idx;
         Eigen::VectorXf m;
         Eigen::VectorXf n;
-        Eigen::SparseMatrix<float, Eigen::ColMajor> blurs_test;
+        Eigen::SparseMatrix<float, Eigen::ColMajor> blurs;
         Eigen::SparseMatrix<float, Eigen::ColMajor> S;
         Eigen::SparseMatrix<float, Eigen::ColMajor> Dn;
         Eigen::SparseMatrix<float, Eigen::ColMajor> Dm;
@@ -151,121 +179,239 @@ namespace ximgproc
 
 
 
-    void FastBilateralSolverFilterImpl::init(cv::Mat& reference_bgr, double sigma_spatial, double sigma_luma, double sigma_chroma)
+    void FastBilateralSolverFilterImpl::init(cv::Mat& reference, double sigma_spatial, double sigma_luma, double sigma_chroma)
     {
-        cv::Mat reference_yuv;
-        cv::cvtColor(reference_bgr, reference_yuv, COLOR_BGR2YCrCb);
-
-        cols = reference_yuv.cols;
-        rows = reference_yuv.rows;
-        npixels = cols*rows;
-        long long hash_vec[5];
-        for (int i = 0; i < 5; ++i)
-        hash_vec[i] = static_cast<long long>(std::pow(255, i));
-
-        boost::unordered_map<long long /* hash */, int /* vert id */> hashed_coords;
-        hashed_coords.reserve(cols*rows);
-
-        const unsigned char* pref = (const unsigned char*)reference_yuv.data;
-        int vert_idx = 0;
-        int pix_idx = 0;
-
-        // construct Splat(Slice) matrices
-        splat_idx.resize(npixels);
-        for (int y = 0; y < rows; ++y)
+        if(reference.channels()==1)
         {
-            for (int x = 0; x < cols; ++x)
+            // cv::Mat reference_yuv;
+            // cv::cvtColor(reference, reference_yuv, COLOR_BGR2YCrCb);
+            dim = 3;
+            cols = reference.cols;
+            rows = reference.rows;
+            npixels = cols*rows;
+            long long hash_vec[3];
+            for (int i = 0; i < 3; ++i)
+            hash_vec[i] = static_cast<long long>(std::pow(255, i));
+
+            boost::unordered_map<long long /* hash */, int /* vert id */> hashed_coords;
+            hashed_coords.reserve(cols*rows);
+
+            const unsigned char* pref = (const unsigned char*)reference.data;
+            int vert_idx = 0;
+            int pix_idx = 0;
+
+            // construct Splat(Slice) matrices
+            splat_idx.resize(npixels);
+            for (int y = 0; y < rows; ++y)
             {
-                long long coord[5];
-                coord[0] = int(x / sigma_spatial);
-                coord[1] = int(y / sigma_spatial);
-                coord[2] = int(pref[0] / sigma_luma);
-                coord[3] = int(pref[1] / sigma_chroma);
-                coord[4] = int(pref[2] / sigma_chroma);
-
-                // convert the coordinate to a hash value
-                long long hash_coord = 0;
-                for (int i = 0; i < 5; ++i)
-                    hash_coord += coord[i] * hash_vec[i];
-
-                // pixels whom are alike will have the same hash value.
-                // We only want to keep a unique list of hash values, therefore make sure we only insert
-                // unique hash values.
-                boost::unordered_map<long long,int>::iterator it = hashed_coords.find(hash_coord);
-                if (it == hashed_coords.end())
+                for (int x = 0; x < cols; ++x)
                 {
-                    hashed_coords.insert(std::pair<long long, int>(hash_coord, vert_idx));
-                    splat_idx[pix_idx] = vert_idx;
-                    ++vert_idx;
-                }
-                else
-                {
-                    splat_idx[pix_idx] = it->second;
-                }
+                    long long coord[3];
+                    coord[0] = int(x / sigma_spatial);
+                    coord[1] = int(y / sigma_spatial);
+                    coord[2] = int(pref[0] / sigma_luma);
+                    // coord[3] = int(pref[1] / sigma_chroma);
+                    // coord[4] = int(pref[2] / sigma_chroma);
 
-                pref += 3; // skip 3 bytes (y u v)
-                ++pix_idx;
-          }
-        }    
-        nvertices = hashed_coords.size();
+                    // convert the coordinate to a hash value
+                    long long hash_coord = 0;
+                    for (int i = 0; i < 3; ++i)
+                        hash_coord += coord[i] * hash_vec[i];
 
-        // construct Blur matrices
-        Eigen::VectorXf ones_nvertices = Eigen::VectorXf::Ones(nvertices);
-        Eigen::VectorXf ones_npixels = Eigen::VectorXf::Ones(npixels);
-        blurs_test = ones_nvertices.asDiagonal();
-        blurs_test *= 10;
-        for(int offset = -1; offset <= 1;++offset)
-        {
-            if(offset == 0) continue;
-            for (int i = 0; i < 5; ++i)
-            {
-                Eigen::SparseMatrix<float, Eigen::ColMajor> blur_temp(hashed_coords.size(), hashed_coords.size());
-                blur_temp.reserve(Eigen::VectorXi::Constant(nvertices,6));
-                long long offset_hash_coord = offset * hash_vec[i];
-                for (boost::unordered_map<long long,int>::iterator it = hashed_coords.begin(); it != hashed_coords.end(); ++it)
-                {
-                    long long neighb_coord = it->first + offset_hash_coord;
-                    boost::unordered_map<long long,int>::iterator it_neighb = hashed_coords.find(neighb_coord);
-                    if (it_neighb != hashed_coords.end())
+                    // pixels whom are alike will have the same hash value.
+                    // We only want to keep a unique list of hash values, therefore make sure we only insert
+                    // unique hash values.
+                    boost::unordered_map<long long,int>::iterator it = hashed_coords.find(hash_coord);
+                    if (it == hashed_coords.end())
                     {
-                        blur_temp.insert(it->second,it_neighb->second) = 1.0f;
-                        blur_idx.push_back(std::pair<int,int>(it->second, it_neighb->second));
+                        hashed_coords.insert(std::pair<long long, int>(hash_coord, vert_idx));
+                        splat_idx[pix_idx] = vert_idx;
+                        ++vert_idx;
                     }
+                    else
+                    {
+                        splat_idx[pix_idx] = it->second;
+                    }
+
+                    pref += 1; // skip 1 bytes (y)
+                    ++pix_idx;
                 }
-                blurs_test += blur_temp;
             }
-        }
-        blurs_test.finalize();
+            nvertices = hashed_coords.size();
 
-        //bistochastize
-        int maxiter = 10;
-        n = ones_nvertices;
-        m = Eigen::VectorXf::Zero(nvertices);
-        for (int i = 0; i < splat_idx.size(); i++) 
-        {
-            m(splat_idx[i]) += 1.0f;
-        }
+            // construct Blur matrices
+            Eigen::VectorXf ones_nvertices = Eigen::VectorXf::Ones(nvertices);
+            Eigen::VectorXf ones_npixels = Eigen::VectorXf::Ones(npixels);
+            blurs = ones_nvertices.asDiagonal();
+            blurs *= 10;
+            for(int offset = -1; offset <= 1;++offset)
+            {
+                if(offset == 0) continue;
+                for (int i = 0; i < dim; ++i)
+                {
+                    Eigen::SparseMatrix<float, Eigen::ColMajor> blur_temp(hashed_coords.size(), hashed_coords.size());
+                    blur_temp.reserve(Eigen::VectorXi::Constant(nvertices,6));
+                    long long offset_hash_coord = offset * hash_vec[i];
+                    for (boost::unordered_map<long long,int>::iterator it = hashed_coords.begin(); it != hashed_coords.end(); ++it)
+                    {
+                        long long neighb_coord = it->first + offset_hash_coord;
+                        boost::unordered_map<long long,int>::iterator it_neighb = hashed_coords.find(neighb_coord);
+                        if (it_neighb != hashed_coords.end())
+                        {
+                            blur_temp.insert(it->second,it_neighb->second) = 1.0f;
+                            blur_idx.push_back(std::pair<int,int>(it->second, it_neighb->second));
+                        }
+                    }
+                    blurs += blur_temp;
+                }
+            }
+            blurs.finalize();
 
-        Eigen::VectorXf bluredn(nvertices);
+            //bistochastize
+            int maxiter = 10;
+            n = ones_nvertices;
+            m = Eigen::VectorXf::Zero(nvertices);
+            for (int i = 0; i < splat_idx.size(); i++)
+            {
+                m(splat_idx[i]) += 1.0f;
+            }
 
-        for (int i = 0; i < maxiter; i++) 
-        {
+            Eigen::VectorXf bluredn(nvertices);
+
+            for (int i = 0; i < maxiter; i++)
+            {
+                Blur(n,bluredn);
+                n = ((n.array()*m.array()).array()/bluredn.array()).array().sqrt();
+            }
             Blur(n,bluredn);
-            n = ((n.array()*m.array()).array()/bluredn.array()).array().sqrt();
+
+            m = n.array() * (bluredn).array();
+            Dm = m.asDiagonal();
+            Dn = n.asDiagonal();
+
         }
-        Blur(n,bluredn);
+        else
+        {
+            dim = 5;
+            cv::Mat reference_yuv;
+            cv::cvtColor(reference, reference_yuv, COLOR_BGR2YCrCb);
 
-        m = n.array() * (bluredn).array();
-        Dm = m.asDiagonal();
-        Dn = n.asDiagonal();
+            cols = reference_yuv.cols;
+            rows = reference_yuv.rows;
+            npixels = cols*rows;
+            long long hash_vec[5];
+            for (int i = 0; i < 5; ++i)
+            hash_vec[i] = static_cast<long long>(std::pow(255, i));
 
-        int debugn = blurs_test.nonZeros(); //FIXME: if don't call nonZeros(), the result will be destroy
+            boost::unordered_map<long long /* hash */, int /* vert id */> hashed_coords;
+            hashed_coords.reserve(cols*rows);
+
+            const unsigned char* pref = (const unsigned char*)reference_yuv.data;
+            int vert_idx = 0;
+            int pix_idx = 0;
+
+            // construct Splat(Slice) matrices
+            splat_idx.resize(npixels);
+            for (int y = 0; y < rows; ++y)
+            {
+                for (int x = 0; x < cols; ++x)
+                {
+                    long long coord[5];
+                    coord[0] = int(x / sigma_spatial);
+                    coord[1] = int(y / sigma_spatial);
+                    coord[2] = int(pref[0] / sigma_luma);
+                    coord[3] = int(pref[1] / sigma_chroma);
+                    coord[4] = int(pref[2] / sigma_chroma);
+
+                    // convert the coordinate to a hash value
+                    long long hash_coord = 0;
+                    for (int i = 0; i < 5; ++i)
+                        hash_coord += coord[i] * hash_vec[i];
+
+                    // pixels whom are alike will have the same hash value.
+                    // We only want to keep a unique list of hash values, therefore make sure we only insert
+                    // unique hash values.
+                    boost::unordered_map<long long,int>::iterator it = hashed_coords.find(hash_coord);
+                    if (it == hashed_coords.end())
+                    {
+                        hashed_coords.insert(std::pair<long long, int>(hash_coord, vert_idx));
+                        splat_idx[pix_idx] = vert_idx;
+                        ++vert_idx;
+                    }
+                    else
+                    {
+                        splat_idx[pix_idx] = it->second;
+                    }
+
+                    pref += 3; // skip 3 bytes (y u v)
+                    ++pix_idx;
+                }
+            }
+            nvertices = hashed_coords.size();
+
+            // construct Blur matrices
+            Eigen::VectorXf ones_nvertices = Eigen::VectorXf::Ones(nvertices);
+            Eigen::VectorXf ones_npixels = Eigen::VectorXf::Ones(npixels);
+            blurs = ones_nvertices.asDiagonal();
+            blurs *= 10;
+            for(int offset = -1; offset <= 1;++offset)
+            {
+                if(offset == 0) continue;
+                for (int i = 0; i < dim; ++i)
+                {
+                    Eigen::SparseMatrix<float, Eigen::ColMajor> blur_temp(hashed_coords.size(), hashed_coords.size());
+                    blur_temp.reserve(Eigen::VectorXi::Constant(nvertices,6));
+                    long long offset_hash_coord = offset * hash_vec[i];
+                    for (boost::unordered_map<long long,int>::iterator it = hashed_coords.begin(); it != hashed_coords.end(); ++it)
+                    {
+                        long long neighb_coord = it->first + offset_hash_coord;
+                        boost::unordered_map<long long,int>::iterator it_neighb = hashed_coords.find(neighb_coord);
+                        if (it_neighb != hashed_coords.end())
+                        {
+                            blur_temp.insert(it->second,it_neighb->second) = 1.0f;
+                            blur_idx.push_back(std::pair<int,int>(it->second, it_neighb->second));
+                        }
+                    }
+                    blurs += blur_temp;
+                }
+            }
+            blurs.finalize();
+
+
+            //bistochastize
+            int maxiter = 10;
+            n = ones_nvertices;
+            m = Eigen::VectorXf::Zero(nvertices);
+            for (int i = 0; i < splat_idx.size(); i++)
+            {
+                m(splat_idx[i]) += 1.0f;
+            }
+
+            Eigen::VectorXf bluredn(nvertices);
+
+            for (int i = 0; i < maxiter; i++)
+            {
+                Blur(n,bluredn);
+                n = ((n.array()*m.array()).array()/bluredn.array()).array().sqrt();
+            }
+            Blur(n,bluredn);
+
+            m = n.array() * (bluredn).array();
+            Dm = m.asDiagonal();
+            Dn = n.asDiagonal();
+
+        }
+
+
+
+
+        int debugn = blurs.nonZeros(); //FIXME: if don't call nonZeros(), the result will be destroy
     }
 
     void FastBilateralSolverFilterImpl::Splat(Eigen::VectorXf& input, Eigen::VectorXf& output)
     {
         output.setZero();
-        for (int i = 0; i < splat_idx.size(); i++) 
+        for (int i = 0; i < splat_idx.size(); i++)
         {
             output(splat_idx[i]) += input(i);
         }
@@ -286,7 +432,7 @@ namespace ximgproc
     void FastBilateralSolverFilterImpl::Slice(Eigen::VectorXf& input, Eigen::VectorXf& output)
     {
         output.setZero();
-        for (int i = 0; i < splat_idx.size(); i++) 
+        for (int i = 0; i < splat_idx.size(); i++)
         {
             output(i) = input(splat_idx[i]);
         }
@@ -325,7 +471,7 @@ namespace ximgproc
         //construct A
         Splat(w,w_splat);
         A_data = (w_splat).asDiagonal();
-        A = bs_param.lam * (Dm - Dn * (blurs_test*Dn)) + A_data ;
+        A = bs_param.lam * (Dm - Dn * (blurs*Dn)) + A_data ;
 
         //construct b
         b.setZero();
