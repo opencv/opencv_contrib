@@ -393,15 +393,38 @@ public:
     CV_WRAP virtual void filter(InputArray src, InputArray confidence, OutputArray dst) = 0;
 };
 
-/** @brief Factory method, create instance of FastGlobalSmootherFilter and execute the initialization routines.
+/** @brief Factory method, create instance of FastBilateralSolverFilter and execute the initialization routines.
 
-@param sigma_color parameter, that is similar to color space sigma in bilateralFilter.
+@param guide image serving as guide for filtering. It should have 8-bit depth and 3 channels.
+
+@param sigma_spatial parameter, that is similar to spatial space sigma in bilateralFilter.
+
+@param sigma_luma parameter, that is similar to luma space sigma in bilateralFilter.
+
+@param sigma_chroma parameter, that is similar to chroma space sigma in bilateralFilter.
 
 For more details about the Fast Bilateral Solver parameters, see the original paper cite BarronPoole2016.
 */
-
 CV_EXPORTS_W Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma);
 
+
+/** @brief Simple one-line Fast Bilateral Solver filter call. If you have multiple images to filter with the same
+guide then use FastBilateralSolverFilter interface to avoid extra computations.
+
+@param guide image serving as guide for filtering. It should have 8-bit depth and 3 channels.
+
+@param src source image for filtering with unsigned 8-bit and 1 channels.
+
+@param confidence confidence image.
+
+@param dst destination image.
+
+@param sigma_spatial parameter, that is similar to spatial space sigma in bilateralFilter.
+
+@param sigma_luma parameter, that is similar to luma space sigma in bilateralFilter.
+
+@param sigma_chroma parameter, that is similar to chroma space sigma in bilateralFilter.
+*/
 CV_EXPORTS_W void fastBilateralSolverFilter(InputArray guide, InputArray src, InputArray confidence, OutputArray dst, double sigma_spatial, double sigma_luma, double sigma_chroma);
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
