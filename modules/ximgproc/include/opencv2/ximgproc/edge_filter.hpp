@@ -384,9 +384,9 @@ class CV_EXPORTS_W FastBilateralSolverFilter : public Algorithm
 public:
     /** @brief Apply smoothing operation to the source image.
 
-    @param src source image for filtering with unsigned 8-bit and up to 3 channels.
+    @param src source image for filtering with unsigned 8-bit or signed 16-bit or floating-point 32-bit depth and up to 4 channels.
 
-    @param confidence confidence image.
+    @param confidence confidence image with unsigned 8-bit or signed 16-bit or floating-point 32-bit confidence and 1 channel.
 
     @param dst destination image.
     */
@@ -395,7 +395,7 @@ public:
 
 /** @brief Factory method, create instance of FastBilateralSolverFilter and execute the initialization routines.
 
-@param guide image serving as guide for filtering. It should have 8-bit depth and 3 channels.
+@param guide image serving as guide for filtering. It should have 8-bit depth and either 1 or 3 channels.
 
 @param sigma_spatial parameter, that is similar to spatial space sigma in bilateralFilter.
 
@@ -411,11 +411,11 @@ CV_EXPORTS_W Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(Inpu
 /** @brief Simple one-line Fast Bilateral Solver filter call. If you have multiple images to filter with the same
 guide then use FastBilateralSolverFilter interface to avoid extra computations.
 
-@param guide image serving as guide for filtering. It should have 8-bit depth and 3 channels.
+@param guide image serving as guide for filtering. It should have 8-bit depth and either 1 or 3 channels.
 
-@param src source image for filtering with unsigned 8-bit and 1 channels.
+@param src source image for filtering with unsigned 8-bit or signed 16-bit or floating-point 32-bit depth and up to 4 channels.
 
-@param confidence confidence image.
+@param confidence confidence image with unsigned 8-bit or signed 16-bit or floating-point 32-bit confidence and 1 channel.
 
 @param dst destination image.
 
