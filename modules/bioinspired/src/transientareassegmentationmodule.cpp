@@ -462,7 +462,7 @@ void TransientAreasSegmentationModuleImpl::_run(const std::valarray<float> &inpu
     float*localMotionPTR=&_localMotion[0], *neighborhoodMotionPTR=&_neighborhoodMotion[0], *contextMotionPTR=&_contextMotionEnergy[0];
 
     // float meanEnergy=LPfilter2.sum()/(float)_LPfilter2.size();
-    register bool *segmentationPicturePTR= &_segmentedAreas[0];
+    bool *segmentationPicturePTR= &_segmentedAreas[0];
     for (unsigned int index=0; index<_filterOutput.getNBpixels() ; ++index, ++segmentationPicturePTR, ++localMotionPTR, ++neighborhoodMotionPTR, contextMotionPTR++)
     {
         float generalMotionContextDecision=*neighborhoodMotionPTR-*contextMotionPTR;
