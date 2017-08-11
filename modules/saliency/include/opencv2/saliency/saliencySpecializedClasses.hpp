@@ -218,7 +218,7 @@ public:
         return computeSaliencyImpl( image, saliencyMap );
     }
     Mat saliencyMapGenerator( const Mat );
-    void saliencyMapVisualize( InputArray _saliencyMap );
+    Mat saliencyMapVisualize( InputArray _saliencyMap, int = 0 );
 protected:
     bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap );
     void superpixelSplit( const Mat, Mat&, Mat& );
@@ -226,6 +226,8 @@ protected:
     void getColorPosDis( const Mat, const Mat, Mat&, Mat&, int );
     void boundaryConnectivity( const Mat, const Mat, Mat&, std::vector<unsigned>, double = 3.0, double = 7.0 );
     void getWeightedContrast( const Mat, const Mat, const Mat, Mat& );
+    void dist2WeightMatrix( Mat&, Mat&, double );
+    void rgb2lab( Mat&, Mat& );
 };
 
 
