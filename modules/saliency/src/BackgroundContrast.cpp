@@ -39,7 +39,7 @@ BackgroundContrast::BackgroundContrast()
 }
 BackgroundContrast::~BackgroundContrast(){};
 
-Mat BackgroundContrast::saliencyMapGenerator( const Mat img )
+Mat BackgroundContrast::saliencyMapGenerator( const Mat img, const Mat fgImg, int option )
 {
     Mat idxImg, adjcMatrix, colDistM, posDistM, bdProb, wCtr, saliency;
     superpixelSplit(img, idxImg, adjcMatrix);
@@ -54,7 +54,31 @@ Mat BackgroundContrast::saliencyMapGenerator( const Mat img )
     }
     getColorPosDis(img, idxImg, colDistM, posDistM, adjcMatrix.size[0]);
     boundaryConnectivity(adjcMatrix, colDistM, bdProb, bdIds);
-    getWeightedContrast(colDistM, posDistM, bdProb, wCtr);
+
+    if ( option == 0 )
+    {
+    	getWeightedContrast(colDistM, posDistM, bdProb, wCtr);
+
+    }
+    else
+    {
+    	Mat temp = fgImg.clone();
+    	resize(temp, temp, img.size());
+    	vector<int> szOfSP = vector<int>(adjcMatrix.size[0], 0);
+    	for ( int i = 0; i < img.size[0]; i++ )
+    	{
+    		for ( int j = 0; j < img.size[1]; j++ )
+    		{
+    			szOfSP[idxImg.at<unsigned>(i, j)]++;
+    			wCtr.at<double>(idxImg.at<unsigned>(i, j), 0) += temp.at<double>(i, j);
+    		}
+    	}
+    	for ( unsigned i = 0; i < szOfSP.size(); i++ )
+    	{
+    		wCtr.at<double>(i, 0) /= szOfSP[i];
+    	}
+    }
+    saliencyOptimize(adjcMatrix, colDistM, bdProb, wCtr, wCtr);
     saliency = Mat(img.size[0], img.size[1], CV_64F, Scalar::all(0.0));
     for (int i = 0; i < img.size[0]; i++)
     {
@@ -64,7 +88,59 @@ Mat BackgroundContrast::saliencyMapGenerator( const Mat img )
     	}
     }
     return saliency;
-    return img;
+}
+
+void BackgroundContrast::saliencyOptimize( const Mat adjcMatrix, const Mat colDistM, const Mat bgWeight, const Mat fgWeight, Mat& saliencyOptimized, double neiSigma, double bgLambda )
+{
+
+	Mat smoothWeight = colDistM.clone();
+	Mat smoothDeri = Mat(smoothWeight.size[0], smoothWeight.size[1], CV_64F, Scalar::all(0.0));
+	Mat bgWeightDig = Mat(smoothWeight.size[0], smoothWeight.size[1], CV_64F, Scalar::all(0.0));
+	Mat fgWeightDig = Mat(smoothWeight.size[0], smoothWeight.size[1], CV_64F, Scalar::all(0.0));
+	Mat temp;
+
+	double mi = 0, ma = 0;
+	minMaxLoc( fgWeight, &mi, &ma );
+	Mat fg = fgWeight.clone();
+	fg -= mi;
+	fg /= ( ma - mi + 0.000001 );
+	fg *= 255;
+	fg.convertTo(fg, CV_8U);
+	threshold(fg, fg, 0, 255, THRESH_TOZERO | THRESH_OTSU);
+	fg.convertTo(fg, CV_64F);
+	fg /= 255; // clean fore ground cue
+
+	minMaxLoc( smoothWeight, NULL, &ma );
+	for ( int i = 0; i < smoothWeight.size[0]; i++ )
+	{
+		for ( int j = 0; j < smoothWeight.size[1]; j++ )
+		{
+			if ( adjcMatrix.at<uchar>(i, j) == 0 )
+			{
+				smoothWeight.at<double>(i, j) = ma * adjcMatrix.size[0];
+			}
+		}
+	}
+
+	dist2WeightMatrix(smoothWeight, smoothWeight, neiSigma);
+	adjcMatrix.convertTo(temp, CV_64F);
+	smoothWeight += temp * 0.1;//add small coefficients for regularization term
+	reduce(smoothWeight, temp, 0, REDUCE_SUM);
+	for ( int i = 0; i < smoothDeri.size[0]; i++ )
+	{
+		smoothDeri.at<double>(i, i) = temp.at<double>(0, i);
+	}
+	for ( int i = 0; i < bgWeightDig.size[0]; i++ )
+	{
+		bgWeightDig.at<double>(i, i) = bgWeight.at<double>(i, 0) * bgLambda;
+	}
+	for ( int i = 0; i < fgWeightDig.size[0]; i++ )
+	{
+		fgWeightDig.at<double>(i, i) = fg.at<double>(i, 0);
+	}
+	//temp = (smoothDeri - smoothWeight + bgWeightDig + fgWeightDig);
+	//saliencyOptimized = temp.inv() * fgWeight;
+	solve((smoothDeri - smoothWeight + bgWeightDig + fgWeightDig), fg, saliencyOptimized, DECOMP_NORMAL);
 }
 
 bool BackgroundContrast::computeSaliencyImpl( InputArray image, OutputArray saliencyMap )
@@ -75,7 +151,7 @@ bool BackgroundContrast::computeSaliencyImpl( InputArray image, OutputArray sali
 void BackgroundContrast::superpixelSplit( const Mat img, Mat& idxImg, Mat& adjcMatrix)
 {
     Ptr<SuperpixelSEEDS> seeds;
-    seeds = createSuperpixelSEEDS( img.size().width, img.size().height, img.channels(), min(img.size().width  * img.size().height / 600, 3000), 4, 2, 5, false);
+    seeds = createSuperpixelSEEDS( img.size().width, img.size().height, img.channels(), min(img.size().width  * img.size().height / 600, 600), 4, 2, 5, false);
     seeds->iterate( img, 4 );
     Mat mask;
     adjcMatrix = Mat::eye( seeds->getNumberOfSuperpixels(), seeds->getNumberOfSuperpixels(), CV_8U );
@@ -194,7 +270,7 @@ void BackgroundContrast::boundaryConnectivity(const Mat adjcMatrix, const Mat co
 	    	}
 	    }
 	}
-	for ( int k = 0; k < adjcMatrix.size[0]; k++ )
+	for ( int k = 0; k < adjcMatrix.size[0]; k++ ) // floyd algorithm, you can replace it with johnson algorithm but it's too long
 	{
 	    for ( int i = 0; i < adjcMatrix.size[0]; i++ )
 	    {

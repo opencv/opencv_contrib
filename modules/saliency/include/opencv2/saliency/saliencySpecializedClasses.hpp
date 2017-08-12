@@ -217,7 +217,8 @@ public:
             return false;
         return computeSaliencyImpl( image, saliencyMap );
     }
-    Mat saliencyMapGenerator( const Mat );
+    Mat saliencyMapGenerator( const Mat, const Mat = Mat(), int = 0 );
+    void saliencyOptimize( const Mat, const Mat, const Mat, const Mat, Mat&, double = 14, double = 5 );
     Mat saliencyMapVisualize( InputArray _saliencyMap, int = 0 );
 protected:
     bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap );
