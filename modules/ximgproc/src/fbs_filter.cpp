@@ -135,6 +135,17 @@ namespace ximgproc
         void Blur(Eigen::VectorXf& input, Eigen::VectorXf& dst);
         void Slice(Eigen::VectorXf& input, Eigen::VectorXf& dst);
 
+        void diagonal(Eigen::VectorXf& v,Eigen::SparseMatrix<float>& m)
+        {
+            m = Eigen::SparseMatrix<float>(v.size(),v.size());
+            for (int i = 0; i < v.size(); i++)
+            {
+                m.insert(i,i) = v(i);
+            }
+        }
+
+
+
     private:
 
         int npixels;
@@ -252,7 +263,7 @@ namespace ximgproc
             // construct Blur matrices
             Eigen::VectorXf ones_nvertices = Eigen::VectorXf::Ones(nvertices);
             Eigen::VectorXf ones_npixels = Eigen::VectorXf::Ones(npixels);
-            blurs = ones_nvertices.asDiagonal();
+            diagonal(ones_nvertices,blurs);
             blurs *= 10;
             for(int offset = -1; offset <= 1;++offset)
             {
@@ -296,8 +307,8 @@ namespace ximgproc
             Blur(n,bluredn);
 
             m = n.array() * (bluredn).array();
-            Dm = m.asDiagonal();
-            Dn = n.asDiagonal();
+            diagonal(m,Dm);
+            diagonal(n,Dn);
 
         }
         else
@@ -365,7 +376,7 @@ namespace ximgproc
             // construct Blur matrices
             Eigen::VectorXf ones_nvertices = Eigen::VectorXf::Ones(nvertices);
             Eigen::VectorXf ones_npixels = Eigen::VectorXf::Ones(npixels);
-            blurs = ones_nvertices.asDiagonal();
+            diagonal(ones_nvertices,blurs);
             blurs *= 10;
             for(int offset = -1; offset <= 1;++offset)
             {
@@ -410,8 +421,8 @@ namespace ximgproc
             Blur(n,bluredn);
 
             m = n.array() * (bluredn).array();
-            Dm = m.asDiagonal();
-            Dn = n.asDiagonal();
+            diagonal(m,Dm);
+            diagonal(n,Dn);
 
         }
 
@@ -485,7 +496,7 @@ namespace ximgproc
 
         //construct A
         Splat(w,w_splat);
-        A_data = (w_splat).asDiagonal();
+        diagonal(w_splat,A_data);
         A = bs_param.lam * (Dm - Dn * (blurs*Dn)) + A_data ;
 
         //construct b
