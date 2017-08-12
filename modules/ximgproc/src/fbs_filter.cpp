@@ -34,14 +34,16 @@
  *  the use of this software, even if advised of the possibility of such damage.
  */
 
-#if defined(HAVE_EIGEN) && EIGEN_WORLD_VERSION == 3
+#ifdef HAVE_EIGEN
+#  if defined __GNUC__ && defined __APPLE__
+#    pragma GCC diagnostic ignored "-Wshadow"
+#  endif
+#  include <Eigen/Dense>
+#  include <Eigen/SparseCore>
+#  include <Eigen/SparseCholesky>
+#  include <Eigen/IterativeLinearSolvers>
+#  include <Eigen/Sparse>
 
-#include <Eigen/Core>
-#include <Eigen/Dense>
-#include <Eigen/SparseCore>
-#include <Eigen/SparseCholesky>
-#include <Eigen/IterativeLinearSolvers>
-#include <Eigen/Sparse>
 
 
 
@@ -57,11 +59,13 @@
 #include <algorithm>
 
 #if __cplusplus <= 199711L
-    #include <map>
-    typedef std::map<long long /* hash */, int /* vert id */>  mapId;
+    #include <boost/unordered_map.hpp>
+    typedef boost::unordered_map<long long /* hash */, int /* vert id */>  mapId;
+    // #include <map>
+    // typedef std::map<long long /* hash */, int /* vert id */>  mapId;
 #else
     #include <boost/unordered_map.hpp>
-    typedef mapId<long long /* hash */, int /* vert id */>  mapId;
+    typedef boost::unordered_map<long long /* hash */, int /* vert id */>  mapId;
 #endif
 
 namespace cv
@@ -215,6 +219,7 @@ namespace ximgproc
 
             mapId hashed_coords;
 #if __cplusplus <= 199711L
+            hashed_coords.reserve(cols*rows);
 #else
             hashed_coords.reserve(cols*rows);
 #endif
@@ -328,6 +333,7 @@ namespace ximgproc
 
             mapId hashed_coords;
 #if __cplusplus <= 199711L
+            hashed_coords.reserve(cols*rows);
 #else
             hashed_coords.reserve(cols*rows);
 #endif
@@ -431,8 +437,8 @@ namespace ximgproc
 
 
 
-        // int debugn = blurs.nonZeros(); //FIXME: if don't call nonZeros(), the result will be destroy
-        // debugn = 0;
+        int debugn = blurs.nonZeros(); //FIXME: if don't call nonZeros(), the result will be destroy
+        debugn = 0;
 
     }
 
@@ -511,10 +517,12 @@ namespace ximgproc
         }
 
         //construct guess for y
+        y0.setZero();
         for (int i = 0; i < int(splat_idx.size()); i++)
         {
             y0(splat_idx[i]) += x(i);
         }
+        y1.setZero();
         for (int i = 0; i < int(splat_idx.size()); i++)
         {
             y1(splat_idx[i]) += 1.0f;
@@ -530,9 +538,10 @@ namespace ximgproc
         cg.compute(A);
         cg.setMaxIterations(bs_param.cg_maxiter);
         cg.setTolerance(bs_param.cg_tol);
+        // y = cg.solve(b);
         y = cg.solveWithGuess(b,y0);
-        // std::cout << "#iterations:     " << cg.iterations() << std::endl;
-        // std::cout << "estimated error: " << cg.error()      << std::endl;
+        std::cout << "#iterations:     " << cg.iterations() << std::endl;
+        std::cout << "estimated error: " << cg.error()      << std::endl;
 
         //slice
         uchar *pftar = (uchar*)(output.data);
