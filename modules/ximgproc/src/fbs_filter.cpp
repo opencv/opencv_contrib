@@ -35,11 +35,12 @@
  */
 
 
-#include <eigen3/Eigen/Dense>
-#include <eigen3/Eigen/SparseCore>
-#include <eigen3/Eigen/SparseCholesky>
-#include <eigen3/Eigen/IterativeLinearSolvers>
-#include <eigen3/Eigen/Sparse>
+#include <Eigen/Core>
+#include <Eigen/Dense>
+#include <Eigen/SparseCore>
+#include <Eigen/SparseCholesky>
+#include <Eigen/IterativeLinearSolvers>
+#include <Eigen/Sparse>
 
 
 
