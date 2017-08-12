@@ -34,6 +34,7 @@
  *  the use of this software, even if advised of the possibility of such damage.
  */
 
+#if defined(HAVE_EIGEN) && EIGEN_WORLD_VERSION == 3
 
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -564,3 +565,5 @@ void fastBilateralSolverFilter(InputArray guide, InputArray src, InputArray conf
 }
 
 }
+
+#endif // HAVE_EIGEN
