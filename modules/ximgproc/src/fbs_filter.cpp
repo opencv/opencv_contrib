@@ -135,12 +135,12 @@ namespace ximgproc
         void Blur(Eigen::VectorXf& input, Eigen::VectorXf& dst);
         void Slice(Eigen::VectorXf& input, Eigen::VectorXf& dst);
 
-        void diagonal(Eigen::VectorXf& v,Eigen::SparseMatrix<float>& m)
+        void diagonal(Eigen::VectorXf& v,Eigen::SparseMatrix<float>& mat)
         {
-            m = Eigen::SparseMatrix<float>(v.size(),v.size());
-            for (int i = 0; i < v.size(); i++)
+            mat = Eigen::SparseMatrix<float>(v.size(),v.size());
+            for (int i = 0; i < int(v.size()); i++)
             {
-                m.insert(i,i) = v(i);
+                mat.insert(i,i) = v(i);
             }
         }
 
@@ -292,7 +292,7 @@ namespace ximgproc
             int maxiter = 10;
             n = ones_nvertices;
             m = Eigen::VectorXf::Zero(nvertices);
-            for (int i = 0; i < splat_idx.size(); i++)
+            for (int i = 0; i < int(splat_idx.size()); i++)
             {
                 m(splat_idx[i]) += 1.0f;
             }
@@ -406,7 +406,7 @@ namespace ximgproc
             int maxiter = 10;
             n = ones_nvertices;
             m = Eigen::VectorXf::Zero(nvertices);
-            for (int i = 0; i < splat_idx.size(); i++)
+            for (int i = 0; i < int(splat_idx.size()); i++)
             {
                 m(splat_idx[i]) += 1.0f;
             }
@@ -429,13 +429,15 @@ namespace ximgproc
 
 
 
-        int debugn = blurs.nonZeros(); //FIXME: if don't call nonZeros(), the result will be destroy
+        // int debugn = blurs.nonZeros(); //FIXME: if don't call nonZeros(), the result will be destroy
+        // debugn = 0;
+
     }
 
     void FastBilateralSolverFilterImpl::Splat(Eigen::VectorXf& input, Eigen::VectorXf& output)
     {
         output.setZero();
-        for (int i = 0; i < splat_idx.size(); i++)
+        for (int i = 0; i < int(splat_idx.size()); i++)
         {
             output(splat_idx[i]) += input(i);
         }
@@ -446,7 +448,7 @@ namespace ximgproc
     {
         output.setZero();
         output = input * 10;
-        for (int i = 0; i < blur_idx.size(); i++)
+        for (int i = 0; i < int(blur_idx.size()); i++)
         {
             output(blur_idx[i].first) += input(blur_idx[i].second);
         }
@@ -456,7 +458,7 @@ namespace ximgproc
     void FastBilateralSolverFilterImpl::Slice(Eigen::VectorXf& input, Eigen::VectorXf& output)
     {
         output.setZero();
-        for (int i = 0; i < splat_idx.size(); i++)
+        for (int i = 0; i < int(splat_idx.size()); i++)
         {
             output(i) = input(splat_idx[i]);
         }
@@ -501,17 +503,17 @@ namespace ximgproc
 
         //construct b
         b.setZero();
-        for (int i = 0; i < splat_idx.size(); i++)
+        for (int i = 0; i < int(splat_idx.size()); i++)
         {
             b(splat_idx[i]) += x(i) * w(i);
         }
 
         //construct guess for y
-        for (int i = 0; i < splat_idx.size(); i++)
+        for (int i = 0; i < int(splat_idx.size()); i++)
         {
             y0(splat_idx[i]) += x(i);
         }
-        for (int i = 0; i < splat_idx.size(); i++)
+        for (int i = 0; i < int(splat_idx.size()); i++)
         {
             y1(splat_idx[i]) += 1.0f;
         }
@@ -532,7 +534,7 @@ namespace ximgproc
 
         //slice
         uchar *pftar = (uchar*)(output.data);
-        for (int i = 0; i < splat_idx.size(); i++)
+        for (int i = 0; i < int(splat_idx.size()); i++)
         {
             pftar[i] = uchar(y(splat_idx[i]) * 255.0f);
         }
