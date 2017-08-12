@@ -53,7 +53,14 @@
 #include <iostream>
 #include <iterator>
 #include <algorithm>
-#include <boost/unordered_map.hpp>
+
+#if __cplusplus <= 199711L
+    #include <map>
+    typedef std::map<long long /* hash */, int /* vert id */>  mapId;
+#else
+    #include <boost/unordered_map.hpp>
+    typedef mapId<long long /* hash */, int /* vert id */>  mapId;
+#endif
 
 namespace cv
 {
@@ -193,8 +200,11 @@ namespace ximgproc
             for (int i = 0; i < 3; ++i)
             hash_vec[i] = static_cast<long long>(std::pow(255, i));
 
-            boost::unordered_map<long long /* hash */, int /* vert id */> hashed_coords;
+            mapId hashed_coords;
+#if __cplusplus <= 199711L
+#else
             hashed_coords.reserve(cols*rows);
+#endif
 
             const unsigned char* pref = (const unsigned char*)reference.data;
             int vert_idx = 0;
@@ -221,7 +231,7 @@ namespace ximgproc
                     // pixels whom are alike will have the same hash value.
                     // We only want to keep a unique list of hash values, therefore make sure we only insert
                     // unique hash values.
-                    boost::unordered_map<long long,int>::iterator it = hashed_coords.find(hash_coord);
+                    mapId::iterator it = hashed_coords.find(hash_coord);
                     if (it == hashed_coords.end())
                     {
                         hashed_coords.insert(std::pair<long long, int>(hash_coord, vert_idx));
@@ -252,10 +262,10 @@ namespace ximgproc
                     Eigen::SparseMatrix<float, Eigen::ColMajor> blur_temp(hashed_coords.size(), hashed_coords.size());
                     blur_temp.reserve(Eigen::VectorXi::Constant(nvertices,6));
                     long long offset_hash_coord = offset * hash_vec[i];
-                    for (boost::unordered_map<long long,int>::iterator it = hashed_coords.begin(); it != hashed_coords.end(); ++it)
+                    for (mapId::iterator it = hashed_coords.begin(); it != hashed_coords.end(); ++it)
                     {
                         long long neighb_coord = it->first + offset_hash_coord;
-                        boost::unordered_map<long long,int>::iterator it_neighb = hashed_coords.find(neighb_coord);
+                        mapId::iterator it_neighb = hashed_coords.find(neighb_coord);
                         if (it_neighb != hashed_coords.end())
                         {
                             blur_temp.insert(it->second,it_neighb->second) = 1.0f;
@@ -303,8 +313,11 @@ namespace ximgproc
             for (int i = 0; i < 5; ++i)
             hash_vec[i] = static_cast<long long>(std::pow(255, i));
 
-            boost::unordered_map<long long /* hash */, int /* vert id */> hashed_coords;
+            mapId hashed_coords;
+#if __cplusplus <= 199711L
+#else
             hashed_coords.reserve(cols*rows);
+#endif
 
             const unsigned char* pref = (const unsigned char*)reference_yuv.data;
             int vert_idx = 0;
@@ -331,7 +344,7 @@ namespace ximgproc
                     // pixels whom are alike will have the same hash value.
                     // We only want to keep a unique list of hash values, therefore make sure we only insert
                     // unique hash values.
-                    boost::unordered_map<long long,int>::iterator it = hashed_coords.find(hash_coord);
+                    mapId::iterator it = hashed_coords.find(hash_coord);
                     if (it == hashed_coords.end())
                     {
                         hashed_coords.insert(std::pair<long long, int>(hash_coord, vert_idx));
@@ -362,10 +375,10 @@ namespace ximgproc
                     Eigen::SparseMatrix<float, Eigen::ColMajor> blur_temp(hashed_coords.size(), hashed_coords.size());
                     blur_temp.reserve(Eigen::VectorXi::Constant(nvertices,6));
                     long long offset_hash_coord = offset * hash_vec[i];
-                    for (boost::unordered_map<long long,int>::iterator it = hashed_coords.begin(); it != hashed_coords.end(); ++it)
+                    for (mapId::iterator it = hashed_coords.begin(); it != hashed_coords.end(); ++it)
                     {
                         long long neighb_coord = it->first + offset_hash_coord;
-                        boost::unordered_map<long long,int>::iterator it_neighb = hashed_coords.find(neighb_coord);
+                        mapId::iterator it_neighb = hashed_coords.find(neighb_coord);
                         if (it_neighb != hashed_coords.end())
                         {
                             blur_temp.insert(it->second,it_neighb->second) = 1.0f;
@@ -463,6 +476,8 @@ namespace ximgproc
         Eigen::SparseMatrix<float, Eigen::ColMajor> A(nvertices,nvertices);
         Eigen::VectorXf b(nvertices);
         Eigen::VectorXf y(nvertices);
+        Eigen::VectorXf y0(nvertices);
+        Eigen::VectorXf y1(nvertices);
         Eigen::VectorXf w_splat(nvertices);
         Eigen::VectorXf xw(x.size());
 
@@ -475,16 +490,32 @@ namespace ximgproc
 
         //construct b
         b.setZero();
-        for (int i = 0; i < splat_idx.size(); i++) {
+        for (int i = 0; i < splat_idx.size(); i++)
+        {
             b(splat_idx[i]) += x(i) * w(i);
         }
+
+        //construct guess for y
+        for (int i = 0; i < splat_idx.size(); i++)
+        {
+            y0(splat_idx[i]) += x(i);
+        }
+        for (int i = 0; i < splat_idx.size(); i++)
+        {
+            y1(splat_idx[i]) += 1.0f;
+        }
+        for (int i = 0; i < nvertices; i++)
+        {
+            y0(i) = y0(i)/y1(i);
+        }
+
 
         // solve Ay = b
         Eigen::ConjugateGradient<Eigen::SparseMatrix<float>, Eigen::Lower|Eigen::Upper> cg;
         cg.compute(A);
         cg.setMaxIterations(bs_param.cg_maxiter);
         cg.setTolerance(bs_param.cg_tol);
-        y = cg.solve(b);
+        y = cg.solveWithGuess(b,y0);
         // std::cout << "#iterations:     " << cg.iterations() << std::endl;
         // std::cout << "estimated error: " << cg.error()      << std::endl;
 
@@ -492,7 +523,7 @@ namespace ximgproc
         uchar *pftar = (uchar*)(output.data);
         for (int i = 0; i < splat_idx.size(); i++)
         {
-            pftar[i] = y(splat_idx[i]) * 255;
+            pftar[i] = uchar(y(splat_idx[i]) * 255.0f);
         }
 
 
