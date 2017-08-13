@@ -44,6 +44,7 @@
 #  include <Eigen/IterativeLinearSolvers>
 #  include <Eigen/Sparse>
 
+#endif // HAVE_EIGEN
 
 
 
@@ -67,6 +68,8 @@ namespace cv
 {
 namespace ximgproc
 {
+
+#ifdef HAVE_EIGEN
 
     class FastBilateralSolverFilterImpl : public FastBilateralSolverFilter
     {
@@ -540,9 +543,12 @@ namespace ximgproc
 
     }
 
+#endif // HAVE_EIGEN
 
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
+
+#ifdef HAVE_EIGEN
 CV_EXPORTS_W
 Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma)
 {
@@ -556,6 +562,27 @@ void fastBilateralSolverFilter(InputArray guide, InputArray src, InputArray conf
     fbs->filter(src, confidence, dst);
 }
 
+}
+
+}
+
+#else
+CV_EXPORTS_W
+Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma)
+{
+    std::cout << "ERROR createFastBilateralSolverFilter : don't have eigen" << '\n';
+    exit(0);
+    // return Ptr<FastBilateralSolverFilter>(FastBilateralSolverFilterImpl::create(guide, sigma_spatial, sigma_luma, sigma_chroma));
+    // return NULL;
+}
+
+CV_EXPORTS_W
+void fastBilateralSolverFilter(InputArray guide, InputArray src, InputArray confidence, OutputArray dst, double sigma_spatial, double sigma_luma, double sigma_chroma)
+{
+    std::cout << "ERROR fastBilateralSolverFilter : don't have eigen" << '\n';
+    // Ptr<FastBilateralSolverFilter> fbs = createFastBilateralSolverFilter(guide, sigma_spatial, sigma_luma, sigma_chroma);
+    // fbs->filter(src, confidence, dst);
+}
 
 
 }
