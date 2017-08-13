@@ -571,10 +571,6 @@ void fastBilateralSolverFilter(InputArray guide, InputArray src, InputArray conf
     fbs->filter(src, confidence, dst);
 }
 
-}
-
-}
-
 #else
 CV_EXPORTS_W
 Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma)
@@ -593,9 +589,8 @@ void fastBilateralSolverFilter(InputArray guide, InputArray src, InputArray conf
     // fbs->filter(src, confidence, dst);
 }
 
-
-}
-
-}
-
 #endif // HAVE_EIGEN
+
+}
+
+}
