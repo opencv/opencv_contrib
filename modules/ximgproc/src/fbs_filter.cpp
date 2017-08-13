@@ -44,8 +44,6 @@
 #  include <Eigen/IterativeLinearSolvers>
 #  include <Eigen/Sparse>
 
-#endif // HAVE_EIGEN
-
 
 
 
@@ -71,8 +69,6 @@ namespace cv
 {
 namespace ximgproc
 {
-
-#ifdef HAVE_EIGEN
 
     class FastBilateralSolverFilterImpl : public FastBilateralSolverFilter
     {
@@ -552,12 +548,9 @@ namespace ximgproc
 
     }
 
-#endif // HAVE_EIGEN
 
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
-
-#ifdef HAVE_EIGEN
 CV_EXPORTS_W
 Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma)
 {
@@ -571,7 +564,17 @@ void fastBilateralSolverFilter(InputArray guide, InputArray src, InputArray conf
     fbs->filter(src, confidence, dst);
 }
 
+}
+
+}
+
 #else
+
+namespace cv
+{
+namespace ximgproc
+{
+  
 CV_EXPORTS_W
 Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma)
 {
@@ -589,8 +592,9 @@ void fastBilateralSolverFilter(InputArray guide, InputArray src, InputArray conf
     // fbs->filter(src, confidence, dst);
 }
 
+
+}
+
+}
+
 #endif // HAVE_EIGEN
-
-}
-
-}
