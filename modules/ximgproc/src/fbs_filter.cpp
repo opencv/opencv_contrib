@@ -59,10 +59,13 @@
 #include <iterator>
 #include <algorithm>
 
-#include <boost/unordered_map.hpp>
-typedef boost::unordered_map<long long /* hash */, int /* vert id */>  mapId;
-// #include <map>
-// typedef std::map<long long /* hash */, int /* vert id */>  mapId;
+#if __cplusplus <= 199711L
+    #include <map>
+    typedef std::map<long long /* hash */, int /* vert id */>  mapId;
+#else
+    #include <boost/unordered_map.hpp>
+    typedef mapId<long long /* hash */, int /* vert id */>  mapId;
+#endif
 
 namespace cv
 {
@@ -216,7 +219,10 @@ namespace ximgproc
             hash_vec[i] = static_cast<long long>(std::pow(255, i));
 
             mapId hashed_coords;
+#if __cplusplus <= 199711L
+#else
             hashed_coords.reserve(cols*rows);
+#endif
 
             const unsigned char* pref = (const unsigned char*)reference.data;
             int vert_idx = 0;
@@ -326,7 +332,10 @@ namespace ximgproc
             hash_vec[i] = static_cast<long long>(std::pow(255, i));
 
             mapId hashed_coords;
+#if __cplusplus <= 199711L
+#else
             hashed_coords.reserve(cols*rows);
+#endif
 
             const unsigned char* pref = (const unsigned char*)reference_yuv.data;
             int vert_idx = 0;
