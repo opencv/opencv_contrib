@@ -34,6 +34,17 @@
  *  the use of this software, even if advised of the possibility of such damage.
  */
 
+#include "precomp.hpp"
+
+#include <cmath>
+#include <vector>
+#include <memory>
+#include <stdlib.h>
+#include <iostream>
+#include <iterator>
+#include <algorithm>
+
+
 #ifdef HAVE_EIGEN
 #  if defined __GNUC__ && defined __APPLE__
 #    pragma GCC diagnostic ignored "-Wshadow"
@@ -46,16 +57,6 @@
 
 
 
-
-#include "precomp.hpp"
-
-#include <cmath>
-#include <vector>
-#include <memory>
-#include <stdlib.h>
-#include <iostream>
-#include <iterator>
-#include <algorithm>
 
 #if __cplusplus <= 199711L
     #include <map>
@@ -574,7 +575,7 @@ namespace cv
 {
 namespace ximgproc
 {
-  
+
 CV_EXPORTS_W
 Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma)
 {
