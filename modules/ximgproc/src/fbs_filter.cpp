@@ -118,10 +118,11 @@ namespace ximgproc
                     cur_res.convertTo(cur_res, CV_8UC1);
 
                 solve(cur_res,conf,cur_res);
+                cur_res.convertTo(cur_res, src.type());
                 dst_channels.push_back(cur_res);
             }
 
-            dst.create(src.size(),src.type());
+            dst.create(src.size(),src_channels[0].type());
             if(src.channels()==1)
             {
                 Mat& dstMat = dst.getMatRef();
@@ -129,6 +130,7 @@ namespace ximgproc
             }
             else
             merge(dst_channels,dst);
+            CV_Assert(src.type() == dst.type() && src.size() == dst.size());
         }
 
     // protected:
