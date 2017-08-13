@@ -157,6 +157,7 @@ elseif(MSVC)
     # this is fine
     add_definitions(-D _CRT_SECURE_NO_WARNINGS)
     add_definitions(-D _SCL_SECURE_NO_WARNINGS)
+    add_definitions(-D NO_STRICT)
     # prolly powerless with header-only project
     set(EXTRA_C_FLAGS "${EXTRA_C_FLAGS} /MP")
 endif()

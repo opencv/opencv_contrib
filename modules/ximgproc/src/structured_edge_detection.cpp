@@ -581,8 +581,8 @@ public:
       {
           int xysign = -((oxy[i] > 0) - (oxy[i] < 0));
           o[i] = (atan((oyy[i] * xysign / (oxx[i] + 1e-5))) > 0) ? (float) fmod(
-                  atan((oyy[i] * xysign / (oxx[i] + 1e-5))), M_PI) : (float) fmod(
-                  atan((oyy[i] * xysign / (oxx[i] + 1e-5))) + M_PI, M_PI);
+                  atan((oyy[i] * xysign / (oxx[i] + 1e-5))), CV_PI) : (float) fmod(
+                  atan((oyy[i] * xysign / (oxx[i] + 1e-5))) + CV_PI, CV_PI);
       }
     }
 
