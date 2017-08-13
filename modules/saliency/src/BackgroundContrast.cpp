@@ -33,7 +33,7 @@ namespace cv
 namespace saliency
 {
 
-BackgroundContrast::BackgroundContrast( int _limitOfSP, int _nOfLevel, int _usePrior, int _histBin ): limitOfSP(_limitOfSP), nOfLevel(_nOfLevel), usePrior(_usePrior), histBin(_histBin) {}
+BackgroundContrast::BackgroundContrast( double _bgWei, int _limitOfSP, int _nOfLevel, int _usePrior, int _histBin ): limitOfSP(_limitOfSP), nOfLevel(_nOfLevel), usePrior(_usePrior), histBin(_histBin), bgWei(_bgWei) {}
 BackgroundContrast::~BackgroundContrast(){}
 
 Mat BackgroundContrast::saliencyMapGenerator( const Mat img, const Mat fgImg, int option )
@@ -62,6 +62,7 @@ Mat BackgroundContrast::saliencyMapGenerator( const Mat img, const Mat fgImg, in
     else
     {
     	Mat temp = fgImg.clone();
+    	if (temp.channels() == 3) cvtColor(temp, temp, COLOR_BGR2GRAY); 
     	wCtr = Mat(adjcMatrix.size[0], 1, CV_64F, Scalar::all(0.0));
     	resize(temp, temp, img.size());
     	vector<int> szOfSP = vector<int>(adjcMatrix.size[0], 0);
@@ -78,7 +79,7 @@ Mat BackgroundContrast::saliencyMapGenerator( const Mat img, const Mat fgImg, in
     		wCtr.at<double>(i, 0) /= szOfSP[i];
     	}
     }
-    saliencyOptimize(adjcMatrix, colDistM, bdProb, wCtr, wCtr);
+    saliencyOptimize(adjcMatrix, colDistM, bdProb, wCtr, wCtr, bgWei);
     saliency = Mat(img.size[0], img.size[1], CV_64F, Scalar::all(0.0));
     for (int i = 0; i < img.size[0]; i++)
     {
@@ -90,7 +91,7 @@ Mat BackgroundContrast::saliencyMapGenerator( const Mat img, const Mat fgImg, in
     return saliency;
 }
 
-void BackgroundContrast::saliencyOptimize( const Mat adjcMatrix, const Mat colDistM, const Mat bgWeight, const Mat fgWeight, Mat& saliencyOptimized, double neiSigma, double bgLambda )
+void BackgroundContrast::saliencyOptimize( const Mat adjcMatrix, const Mat colDistM, const Mat bgWeight, const Mat fgWeight, Mat& saliencyOptimized, double bgLambda, double neiSigma )
 {
 
 	Mat smoothWeight = colDistM.clone();

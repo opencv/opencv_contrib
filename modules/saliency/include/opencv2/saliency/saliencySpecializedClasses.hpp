@@ -207,8 +207,9 @@ private:
 	int nOfLevel;
 	int usePrior;
 	int histBin;
+	double bgWei;
 public:
-    BackgroundContrast( int = 600, int = 4, int = 2, int = 5 );
+    BackgroundContrast(  double = 5, int = 600, int = 4, int = 2, int = 5 );
     virtual ~BackgroundContrast();
     CV_WRAP static Ptr<BackgroundContrast> create()
     {
@@ -221,7 +222,7 @@ public:
         return computeSaliencyImpl( image, saliencyMap );
     }
     Mat saliencyMapGenerator( const Mat, const Mat = Mat(), int = 0 );
-    void saliencyOptimize( const Mat, const Mat, const Mat, const Mat, Mat&, double = 14, double = 5 );
+    void saliencyOptimize( const Mat, const Mat, const Mat, const Mat, Mat&, double = 5, double = 14 );
     Mat saliencyMapVisualize( InputArray _saliencyMap, int = 0 );
 protected:
     bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap );
