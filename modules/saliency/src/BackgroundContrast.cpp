@@ -38,6 +38,8 @@ BackgroundContrast::~BackgroundContrast(){}
 
 Mat BackgroundContrast::saliencyMapGenerator( const Mat img, const Mat fgImg, int option )
 {
+	CV_Assert( !(img.empty()) );
+	CV_Assert( !(option == 1 && fgImg.empty()) );
     Mat idxImg, adjcMatrix, colDistM, posDistM, bdProb, wCtr, saliency;
     superpixelSplit(img, idxImg, adjcMatrix);
     vector<unsigned> bdIds = getBndPatchIds(idxImg);
@@ -151,7 +153,7 @@ bool BackgroundContrast::computeSaliencyImpl( InputArray image, OutputArray sali
 void BackgroundContrast::superpixelSplit( const Mat img, Mat& idxImg, Mat& adjcMatrix)
 {
     Ptr<SuperpixelSEEDS> seeds;
-    seeds = createSuperpixelSEEDS( img.size().width, img.size().height, img.channels(), min(img.size().width  * img.size().height / 600, limitOfSP), nOfLevel, usePrior, histBin, false);
+    seeds = createSuperpixelSEEDS( img.size().width, img.size().height, img.channels(), max(min(img.size().width  * img.size().height / 600, limitOfSP), 10), nOfLevel, usePrior, histBin, false);
     seeds->iterate( img, 4 );
     Mat mask;
     adjcMatrix = Mat::eye( seeds->getNumberOfSuperpixels(), seeds->getNumberOfSuperpixels(), CV_8U );

@@ -44,7 +44,9 @@ int main(int argc, char* argv[])
     }
     else
     {
-    	bc.saliencyMapVisualize(bc.saliencyMapGenerator(img), 0);
+    	Mat saliency;
+    	bc.computeSaliency(img, saliency);
+    	bc.saliencyMapVisualize(saliency, 0);
     }
     return 0;
 } //main
