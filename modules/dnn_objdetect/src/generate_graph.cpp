@@ -257,13 +257,15 @@ void generate_graph() {
   input << conv1
         << rect_conv1
         << pool1
+        // fire2
         << fire2_squeeze
         << rect_fire2_squeeze
         << fire2_expand_1x1
         << rect_fire2_expand_1x1
         << fire2_expand_3x3
         << rect_fire2_expand_3x3
-        << fire3
+        << fire2
+        // fire3
         << fire3_squeeze
         << rect_fire3_squeeze
         << fire3_expand_1x1
@@ -271,6 +273,7 @@ void generate_graph() {
         << fire3_expand_3x3
         << rect_fire3_expand_3x3
         << fire3
+        // fire4
         << fire4_squeeze
         << rect_fire4_squeeze
         << fire4_expand_1x1
@@ -278,7 +281,9 @@ void generate_graph() {
         << fire4_expand_3x3
         << rect_fire4_expand_3x3
         << fire4
+        // pool
         << pool4
+        // fire5
         << fire5_squeeze
         << rect_fire5_squeeze
         << fire5_expand_1x1
@@ -286,6 +291,7 @@ void generate_graph() {
         << fire5_expand_3x3
         << rect_fire5_expand_3x3
         << fire5
+        // fire6
         << fire6_squeeze
         << rect_fire6_squeeze
         << fire6_expand_1x1
@@ -293,6 +299,7 @@ void generate_graph() {
         << fire6_expand_3x3
         << rect_fire6_expand_3x3
         << fire6
+        // fire7
         << fire7_squeeze
         << rect_fire7_squeeze
         << fire7_expand_1x1
@@ -300,6 +307,7 @@ void generate_graph() {
         << fire7_expand_3x3
         << rect_fire7_expand_3x3
         << fire7
+        // fire8
         << fire8_squeeze
         << rect_fire8_squeeze
         << fire8_expand_1x1
@@ -307,7 +315,9 @@ void generate_graph() {
         << fire8_expand_3x3
         << rect_fire8_expand_3x3
         << fire8
+        // pool
         << pool8
+        // fire9
         << fire9_squeeze
         << rect_fire9_squeeze
         << fire9_expand_1x1
@@ -315,7 +325,9 @@ void generate_graph() {
         << fire9_expand_3x3
         << rect_fire9_expand_3x3
         << fire9
+        // conv
         << conv10
+        // fire10
         << fire10_squeeze
         << rect_fire10_squeeze
         << fire10_expand_1x1
@@ -323,6 +335,7 @@ void generate_graph() {
         << fire10_expand_3x3
         << rect_fire10_expand_3x3
         << fire10
+        // fire11
         << fire11_squeeze
         << rect_fire11_squeeze
         << fire11_expand_1x1
@@ -330,6 +343,7 @@ void generate_graph() {
         << fire11_expand_3x3
         << rect_fire11_expand_3x3
         << fire11
+        // conv
         << conv11;
 }
 
