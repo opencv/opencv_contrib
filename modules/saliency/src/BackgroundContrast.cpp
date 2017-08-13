@@ -33,11 +33,8 @@ namespace cv
 namespace saliency
 {
 
-BackgroundContrast::BackgroundContrast()
-{
-
-}
-BackgroundContrast::~BackgroundContrast(){};
+BackgroundContrast::BackgroundContrast( int _limitOfSP, int _nOfLevel, int _usePrior, int _histBin ): limitOfSP(_limitOfSP), nOfLevel(_nOfLevel), usePrior(_usePrior), histBin(_histBin) {}
+BackgroundContrast::~BackgroundContrast(){}
 
 Mat BackgroundContrast::saliencyMapGenerator( const Mat img, const Mat fgImg, int option )
 {
@@ -63,13 +60,14 @@ Mat BackgroundContrast::saliencyMapGenerator( const Mat img, const Mat fgImg, in
     else
     {
     	Mat temp = fgImg.clone();
+    	wCtr = Mat(adjcMatrix.size[0], 1, CV_64F, Scalar::all(0.0));
     	resize(temp, temp, img.size());
     	vector<int> szOfSP = vector<int>(adjcMatrix.size[0], 0);
     	for ( int i = 0; i < img.size[0]; i++ )
     	{
     		for ( int j = 0; j < img.size[1]; j++ )
     		{
-    			szOfSP[idxImg.at<unsigned>(i, j)]++;
+    			szOfSP[idxImg.at<unsigned>(i, j)] += 1;
     			wCtr.at<double>(idxImg.at<unsigned>(i, j), 0) += temp.at<double>(i, j);
     		}
     	}
@@ -145,13 +143,15 @@ void BackgroundContrast::saliencyOptimize( const Mat adjcMatrix, const Mat colDi
 
 bool BackgroundContrast::computeSaliencyImpl( InputArray image, OutputArray saliencyMap )
 {
+	CV_Assert( !(image.getMat().empty()) );
+	saliencyMap.assign(saliencyMapGenerator(image.getMat()));
     return true;
 }
 
 void BackgroundContrast::superpixelSplit( const Mat img, Mat& idxImg, Mat& adjcMatrix)
 {
     Ptr<SuperpixelSEEDS> seeds;
-    seeds = createSuperpixelSEEDS( img.size().width, img.size().height, img.channels(), min(img.size().width  * img.size().height / 600, 600), 4, 2, 5, false);
+    seeds = createSuperpixelSEEDS( img.size().width, img.size().height, img.channels(), min(img.size().width  * img.size().height / 600, limitOfSP), nOfLevel, usePrior, histBin, false);
     seeds->iterate( img, 4 );
     Mat mask;
     adjcMatrix = Mat::eye( seeds->getNumberOfSuperpixels(), seeds->getNumberOfSuperpixels(), CV_8U );

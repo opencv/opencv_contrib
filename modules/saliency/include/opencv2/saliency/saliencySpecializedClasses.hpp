@@ -202,10 +202,13 @@ This method use the convolution layers of the pretrained AlexNet, linear combina
 */
 class CV_EXPORTS_W BackgroundContrast : public StaticSaliency
 {
-//private:
-
+private:
+	int limitOfSP;
+	int nOfLevel;
+	int usePrior;
+	int histBin;
 public:
-    BackgroundContrast();
+    BackgroundContrast( int = 600, int = 4, int = 2, int = 5 );
     virtual ~BackgroundContrast();
     CV_WRAP static Ptr<BackgroundContrast> create()
     {
