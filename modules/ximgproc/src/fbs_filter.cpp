@@ -433,8 +433,8 @@ namespace ximgproc
 
 
 
-        int debugn = blurs.nonZeros(); //FIXME: if don't call nonZeros(), the result will be destroy
-        debugn = 0;
+        // int debugn = blurs.nonZeros(); //FIXME: if don't call nonZeros(), the result will be destroy
+        // debugn = 0;
 
     }
 
@@ -577,7 +577,7 @@ namespace ximgproc
 {
 
 CV_EXPORTS_W
-Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma)
+Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray, double, double, double)
 {
     std::cout << "ERROR createFastBilateralSolverFilter : don't have eigen" << '\n';
     exit(0);
@@ -586,7 +586,7 @@ Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide,
 }
 
 CV_EXPORTS_W
-void fastBilateralSolverFilter(InputArray guide, InputArray src, InputArray confidence, OutputArray dst, double sigma_spatial, double sigma_luma, double sigma_chroma)
+void fastBilateralSolverFilter(InputArray, InputArray, InputArray, OutputArray, double, double, double)
 {
     std::cout << "ERROR fastBilateralSolverFilter : don't have eigen" << '\n';
     // Ptr<FastBilateralSolverFilter> fbs = createFastBilateralSolverFilter(guide, sigma_spatial, sigma_luma, sigma_chroma);
