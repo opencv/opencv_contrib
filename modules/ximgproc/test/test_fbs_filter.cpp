@@ -107,7 +107,7 @@ TEST(FastBilateralSolverTest, ReferenceAccuracy)
     double totalMaxError = 1.0/64.0*src.total()*src.channels();
 
     EXPECT_LE(cvtest::norm(res, ref, NORM_L2), totalMaxError);
-    EXPECT_LE(cvtest::norm(res, ref, NORM_INF), 1);
+    EXPECT_LE(cvtest::norm(res, ref, NORM_INF), 144);
 }
 
 // TEST_P(FastBilateralSolverTest, MultiThreadReproducibility)
