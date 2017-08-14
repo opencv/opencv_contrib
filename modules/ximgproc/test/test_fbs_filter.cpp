@@ -86,7 +86,7 @@ TEST(FastBilateralSolverTest, SplatSurfaceAccuracy)
 
         // When filtering a constant image we should get the same image:
         double normL1 = cvtest::norm(src, res, NORM_L1)/src.total()/src.channels();
-        EXPECT_LE(normL1, 64.0);
+        EXPECT_LE(normL1, 1.0);
     }
 }
 
