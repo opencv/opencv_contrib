@@ -102,7 +102,7 @@ TEST(FastBilateralSolverTest, ReferenceAccuracy)
     ASSERT_FALSE(ref.empty());
 
     Mat res;
-    fastBilateralSolverFilter(src,src,confidence,res, 8.0, 8.0, 8.0);
+    fastBilateralSolverFilter(src,src,confidence,res, 16.0, 16.0, 16.0);
 
     double totalMaxError = 1.0/64.0*src.total()*src.channels();
 
