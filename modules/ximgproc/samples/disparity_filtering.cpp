@@ -285,9 +285,7 @@ int main(int argc, char** argv)
             ROI = Rect(ROI.x*2,ROI.y*2,ROI.width*2,ROI.height*2);
         }
 
-        std::cout << "left"<<left.size() << '\n';
-        std::cout << "left_disp"<<left_disp.size() << '\n';
-        std::cout << "conf_map"<<conf_map.size() << '\n';
+#ifdef HAVE_EIGEN
         solving_time = (double)getTickCount();
         // wls_filter->filter(left_disp,left,filtered_disp,right_disp);
         // fastBilateralSolverFilter(left, filtered_disp, conf_map, solved_disp, 16.0, 16.0, 16.0);
@@ -295,6 +293,7 @@ int main(int argc, char** argv)
         solving_time = ((double)getTickCount() - solving_time)/getTickFrequency();
 	      solved_disp.convertTo(solved_disp, CV_8UC1);
         cv::equalizeHist(solved_disp, solved_disp);
+#endif
     }
     else if(filter=="wls_no_conf")
     {
