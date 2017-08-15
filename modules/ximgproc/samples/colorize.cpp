@@ -1,5 +1,4 @@
 
-#ifdef HAVE_EIGEN
 
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
@@ -10,6 +9,9 @@
 #include <vector>
 #include <iostream>
 #include <opencv2/ximgproc.hpp>
+
+
+#ifdef HAVE_EIGEN
 
 using namespace cv;
 
