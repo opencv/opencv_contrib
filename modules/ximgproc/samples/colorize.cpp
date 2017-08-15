@@ -36,6 +36,7 @@ cv::Mat copyGlayForRGB(cv::Mat gray, cv::Mat color);
 
 const String keys =
     "{help h usage ?     |                | print this message                                                }"
+    "{@image             |                | imput image                                                       }"
     "{sigma_spatial      |8               | parameter of post-filtering                                       }"
     "{sigma_luma         |8               | parameter of post-filtering                                       }"
     "{sigma_chroma       |8               | parameter of post-filtering                                       }"
@@ -46,32 +47,35 @@ const String keys =
 int main(int argc, char* argv[])
 {
 
-#ifdef HAVE_EIGEN
-    // CommandLineParser parser(argc,argv,keys);
+    CommandLineParser parser(argc,argv,keys);
     // parser.about("Disparity Filtering Demo");
-    // if (parser.has("help"))
-    // {
-    //     parser.printMessage();
-    //     return 0;
-    // }
-    //
-    // String img = parser.get<String>(0);
-    // double sigma_spatial  = parser.get<double>("sigma_spatial");
-    // double sigma_luma  = parser.get<double>("sigma_luma");
-    // double sigma_chroma  = parser.get<double>("sigma_chroma");
+    if (parser.has("help"))
+    {
+        parser.printMessage();
+        return 0;
+    }
+
+#ifdef HAVE_EIGEN
+
+    String img = parser.get<String>(0);
+    double sigma_spatial  = parser.get<double>("sigma_spatial");
+    double sigma_luma  = parser.get<double>("sigma_luma");
+    double sigma_chroma  = parser.get<double>("sigma_chroma");
 
 
-    float filtering_time;
 
-    cv::Mat reference = cv::imread(argv[1],1);
-    cv::Mat input = cv::imread(argv[1],0);
+    // cv::Mat reference = cv::imread(argv[1],1);
+    // cv::Mat input = cv::imread(argv[1],0);
     // cv::Mat target = cv::imread(argv[2],1);
+    cv::Mat reference = cv::imread(img,1);
+    cv::Mat input = cv::imread(img,0);
     cv::Mat target;
 
-    float sigma_spatial = float(atof(argv[2]));
-    float sigma_luma = float(atof(argv[3]));
-    float sigma_chroma = float(atof(argv[4]));
+    // float sigma_spatial = float(atof(argv[2]));
+    // float sigma_luma = float(atof(argv[3]));
+    // float sigma_chroma = float(atof(argv[4]));
 
+    float filtering_time;
     std::cout << "reference:" << reference.cols<<"x"<< reference.rows<< std::endl;
 
 
@@ -121,7 +125,7 @@ int main(int argc, char* argv[])
                 cv::merge(dst_channels,target_temp);
                 cv::cvtColor(target_temp, target_temp, cv::COLOR_YCrCb2BGR);
                 filtering_time = ((double)getTickCount() - filtering_time)/getTickFrequency();
-                std::cout << "solver time: " << filtering_time << "ms" << std::endl;
+                std::cout << "solver time: " << filtering_time << "s" << std::endl;
 
                 cv::imshow("draw", target_temp);
             }
@@ -152,7 +156,7 @@ int main(int argc, char* argv[])
     cv::cvtColor(target, target, cv::COLOR_YCrCb2BGR);
 
     filtering_time = ((double)getTickCount() - filtering_time)/getTickFrequency();
-    std::cout << "solver time: " << filtering_time << "ms" << std::endl;
+    std::cout << "solver time: " << filtering_time << "s" << std::endl;
 
 
 
@@ -169,6 +173,7 @@ int main(int argc, char* argv[])
 }
 
 
+#ifdef HAVE_EIGEN
 static void mouseCallback(int event, int x, int y, int, void*)
 {
     switch (event)
@@ -257,3 +262,5 @@ cv::Mat copyGlayForRGB(cv::Mat gray, cv::Mat color)
     }
     return ret;
 }
+
+#endif
