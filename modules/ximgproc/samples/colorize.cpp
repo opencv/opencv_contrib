@@ -14,6 +14,8 @@
 
 using namespace cv;
 
+#ifdef HAVE_EIGEN
+
 #define MARK_RADIUS 15
 
 static int globalMouseX;
@@ -33,6 +35,7 @@ static void mouseCallback(int event, int x, int y, int flags, void* param);
 void drawTrajectoryByReference(cv::Mat* img);
 cv::Mat copyGlayForRGB(cv::Mat gray, cv::Mat color);
 
+#endif
 
 const String keys =
     "{help h usage ?     |                | print this message                                                }"
