@@ -11,115 +11,27 @@
 #include <opencv2/ximgproc.hpp>
 
 
-#ifdef HAVE_EIGEN
 
 using namespace cv;
 
 #define MARK_RADIUS 15
 
-static int glb_mouse_x;
-static int glb_mouse_y;
-static bool glb_mouse_click = false;
+static int globalMouseX;
+static int globalMouseY;
+static bool globalMouseClick = false;
 static bool glb_mouse_left = false;
 
-static bool mouse_click;
-static bool mouse_left;
-static int mouse_x;
-static int mouse_y;
+static bool mouseClick;
+static bool mouseLeft;
+static int mouseX;
+static int mouseY;
 cv::Mat mat_input_reference;
 cv::Mat mat_input_confidence;
 
 
-static void mouseCallback(int event, int x, int y, int flags, void* param)
-{
-    switch (event)
-    {
-        case cv::EVENT_MOUSEMOVE:
-            if (glb_mouse_click)
-            {
-                glb_mouse_x = x;
-                glb_mouse_y = y;
-            }
-            break;
-
-        case cv::EVENT_LBUTTONDOWN:
-            glb_mouse_click = true;
-            glb_mouse_x = x;
-            glb_mouse_y = y;
-            break;
-
-        case cv::EVENT_LBUTTONUP:
-            glb_mouse_left = true;
-            glb_mouse_click = false;
-            break;
-    }
-}
-
-void draw_Trajectory_Byreference(cv::Mat* img)
-{
-    int i, j;
-    uchar red, green, blue;
-    int y, x;
-    int r = MARK_RADIUS;
-    int r2 = r * r;
-    uchar* color_pix;
-
-    y = mouse_y - r;
-    for(i=-r; i<r+1 ; i++, y++)
-    {
-        x = mouse_x - r;
-        color_pix = mat_input_reference.ptr<uchar>(y, x);
-        for(j=-r; j<r+1; j++, x++)
-        {
-            if(i*i + j*j > r2)
-            {
-                color_pix += mat_input_reference.channels();
-                continue;
-            }
-
-            if(y<0 || y>=mat_input_reference.rows || x<0 || x>=mat_input_reference.cols)
-            {
-                break;
-            }
-
-            blue = *color_pix;
-            color_pix++;
-            green = *color_pix;
-            color_pix++;
-            red = *color_pix;
-            color_pix++;
-            cv::circle(*img, cv::Point2d(x, y), 0.1, cv::Scalar(blue, green, red), -1);
-            // mat_input_confidence.at<uchar>(x,y) = (blue + green + red)/3;
-            mat_input_confidence.at<uchar>(y,x) = 255;
-        }
-    }
-}
-
-cv::Mat copy_GlaychForRGBch(cv::Mat gray, cv::Mat color)
-{
-    int y, x, c;
-    uchar* gray_pix;
-    uchar* color_pix;
-    cv::Mat ret = color.clone();
-    gray_pix = gray.ptr<uchar>(0, 0);
-    color_pix = ret.ptr<uchar>(0, 0);
-
-    for(y=0; y<gray.rows; y++)
-    {
-        for(x=0; x<gray.cols; x++)
-        {
-            for(c=0; c<color.channels(); c++)
-            {
-                *color_pix = *gray_pix;
-                color_pix++;
-            }
-            gray_pix++;
-        }
-    }
-    return ret;
-}
-
-
+static void mouseCallback(int event, int x, int y, int flags, void* param);
+void drawTrajectoryByReference(cv::Mat* img);
+cv::Mat copyGlayForRGB(cv::Mat gray, cv::Mat color);
 
 
 const String keys =
@@ -131,8 +43,10 @@ const String keys =
 
 
 
-int main(int argc, char** argv)
+int main(int argc, char* argv[])
 {
+
+#ifdef HAVE_EIGEN
     // CommandLineParser parser(argc,argv,keys);
     // parser.about("Disparity Filtering Demo");
     // if (parser.has("help"))
@@ -163,7 +77,7 @@ int main(int argc, char** argv)
 
     cv::Mat mat_gray;
     cv::cvtColor(reference, mat_gray, cv::COLOR_BGR2GRAY);
-    target = copy_GlaychForRGBch(mat_gray, reference);
+    target = copyGlayForRGB(mat_gray, reference);
 
     cv::namedWindow("draw", cv::WINDOW_AUTOSIZE);
     cv::imshow("draw", target);
@@ -174,15 +88,15 @@ int main(int argc, char** argv)
     int show_count = 0;
     while (1)
     {
-            mouse_x = glb_mouse_x;
-            mouse_y = glb_mouse_y;
-            mouse_click = glb_mouse_click;
-            mouse_left = glb_mouse_left;
+            mouseX = globalMouseX;
+            mouseY = globalMouseY;
+            mouseClick = globalMouseClick;
+            mouseLeft = glb_mouse_left;
 
 
-        if (mouse_click)
+        if (mouseClick)
         {
-            draw_Trajectory_Byreference(&target);
+            drawTrajectoryByReference(&target);
 
             if(show_count%5==0)
             {
@@ -247,9 +161,99 @@ int main(int argc, char** argv)
     cv::imshow("output",target);
 
     cv::waitKey(0);
-
+#else
+    std::cout << "Do not find eigen, please build with eigen by set WITH_EIGEN=ON" << '\n';
+#endif
 
     return 0;
 }
 
-#endif
+
+static void mouseCallback(int event, int x, int y, int, void*)
+{
+    switch (event)
+    {
+        case cv::EVENT_MOUSEMOVE:
+            if (globalMouseClick)
+            {
+                globalMouseX = x;
+                globalMouseY = y;
+            }
+            break;
+
+        case cv::EVENT_LBUTTONDOWN:
+            globalMouseClick = true;
+            globalMouseX = x;
+            globalMouseY = y;
+            break;
+
+        case cv::EVENT_LBUTTONUP:
+            glb_mouse_left = true;
+            globalMouseClick = false;
+            break;
+    }
+}
+
+void drawTrajectoryByReference(cv::Mat* img)
+{
+    int i, j;
+    uchar red, green, blue;
+    int y, x;
+    int r = MARK_RADIUS;
+    int r2 = r * r;
+    uchar* colorPix;
+
+    y = mouseY - r;
+    for(i=-r; i<r+1 ; i++, y++)
+    {
+        x = mouseX - r;
+        colorPix = mat_input_reference.ptr<uchar>(y, x);
+        for(j=-r; j<r+1; j++, x++)
+        {
+            if(i*i + j*j > r2)
+            {
+                colorPix += mat_input_reference.channels();
+                continue;
+            }
+
+            if(y<0 || y>=mat_input_reference.rows || x<0 || x>=mat_input_reference.cols)
+            {
+                break;
+            }
+
+            blue = *colorPix;
+            colorPix++;
+            green = *colorPix;
+            colorPix++;
+            red = *colorPix;
+            colorPix++;
+            cv::circle(*img, cv::Point2d(x, y), 0.1, cv::Scalar(blue, green, red), -1);
+            // mat_input_confidence.at<uchar>(x,y) = (blue + green + red)/3;
+            mat_input_confidence.at<uchar>(y,x) = 255;
+        }
+    }
+}
+
+cv::Mat copyGlayForRGB(cv::Mat gray, cv::Mat color)
+{
+    int y, x, c;
+    uchar* gray_pix;
+    uchar* colorPix;
+    cv::Mat ret = color.clone();
+    gray_pix = gray.ptr<uchar>(0, 0);
+    colorPix = ret.ptr<uchar>(0, 0);
+
+    for(y=0; y<gray.rows; y++)
+    {
+        for(x=0; x<gray.cols; x++)
+        {
+            for(c=0; c<color.channels(); c++)
+            {
+                *colorPix = *gray_pix;
+                colorPix++;
+            }
+            gray_pix++;
+        }
+    }
+    return ret;
+}
