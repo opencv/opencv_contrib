@@ -211,13 +211,13 @@ int main(int argc, char** argv)
         {
             // downscale the views to speed-up the matching stage, as we will need to compute both left
             // and right disparity maps for confidence map computation
-            //! [downscale]
+            //! [downscale_wls]
             max_disp/=2;
             if(max_disp%16!=0)
                 max_disp += 16-(max_disp%16);
             resize(left ,left_for_matcher ,Size(),0.5,0.5);
             resize(right,right_for_matcher,Size(),0.5,0.5);
-            //! [downscale]
+            //! [downscale_wls]
         }
         else
         {
@@ -228,7 +228,7 @@ int main(int argc, char** argv)
 
         if(algo=="bm")
         {
-            //! [matching]
+            //! [matching_wls]
             Ptr<StereoBM> left_matcher = StereoBM::create(max_disp,wsize);
             wls_filter = createDisparityWLSFilter(left_matcher);
             Ptr<StereoMatcher> right_matcher = createRightMatcher(left_matcher);
@@ -240,7 +240,7 @@ int main(int argc, char** argv)
             left_matcher-> compute(left_for_matcher, right_for_matcher,left_disp);
             right_matcher->compute(right_for_matcher,left_for_matcher, right_disp);
             matching_time = ((double)getTickCount() - matching_time)/getTickFrequency();
-            //! [matching]
+            //! [matching_wls]
         }
         else if(algo=="sgbm")
         {
@@ -263,13 +263,14 @@ int main(int argc, char** argv)
             return -1;
         }
 
-        //! [filtering]
+        //! [filtering_wls]
         wls_filter->setLambda(lambda);
         wls_filter->setSigmaColor(sigma);
         filtering_time = (double)getTickCount();
         wls_filter->filter(left_disp,left,filtered_disp,right_disp);
         filtering_time = ((double)getTickCount() - filtering_time)/getTickFrequency();
-        //! [filtering]
+        //! [filtering_wls]
+
         conf_map = wls_filter->getConfidenceMap();
 
         Mat left_disp_resized;
@@ -286,6 +287,7 @@ int main(int argc, char** argv)
         }
 
 #ifdef HAVE_EIGEN
+        //! [filtering_fbs]
         solving_time = (double)getTickCount();
         // wls_filter->filter(left_disp,left,filtered_disp,right_disp);
         // fastBilateralSolverFilter(left, filtered_disp, conf_map, solved_disp, 16.0, 16.0, 16.0);
@@ -293,6 +295,7 @@ int main(int argc, char** argv)
         solving_time = ((double)getTickCount() - solving_time)/getTickFrequency();
 	      solved_disp.convertTo(solved_disp, CV_8UC1);
         cv::equalizeHist(solved_disp, solved_disp);
+        //! [filtering_fbs]
 #endif
     }
     else if(filter=="wls_no_conf")
