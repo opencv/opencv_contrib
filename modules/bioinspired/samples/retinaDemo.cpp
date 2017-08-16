@@ -101,16 +101,23 @@ int main(int argc, char* argv[])
         cv::UMat retinaOutput_magno;
 
 		// processing loop with stop condition
-		bool continueProcessing=true; // FIXME : not yet managed during process...
-		while(continueProcessing)
+        int64 totalTime = 0;
+        int64 totalFrames = 0;
+        while(true)
 		{
 			// if using video stream, then, grabbing a new frame, else, input remains the same
 			if (videoCapture.isOpened())
 				videoCapture>>inputFrame;
+            if(inputFrame.empty())
+                break;
 
 			// run retina filter
+            int64 frameTime = cv::getTickCount();
 			myRetina->run(inputFrame);
 			// Retrieve and display retina output
+            frameTime = cv::getTickCount() - frameTime;
+            totalTime += frameTime;
+            totalFrames++;
 			myRetina->getParvo(retinaOutput_parvo);
 			myRetina->getMagno(retinaOutput_magno);
 			cv::imshow("retina input", inputFrame);
@@ -121,13 +128,12 @@ int main(int argc, char* argv[])
             if(key == 'q')
                 break;
 		}
-	}catch(cv::Exception e)
+        std::cout << "\nMean frame processing time: " << (totalTime / cv::getTickFrequency()) / totalFrames << " s" << std::endl;
+        std::cout << "Retina demo end" << std::endl;
+    }
+    catch(const cv::Exception& e)
 	{
 		std::cerr<<"Error using Retina : "<<e.what()<<std::endl;
 	}
-
-	// Program end message
-	std::cout<<"Retina demo end"<<std::endl;
-
 	return 0;
 }
