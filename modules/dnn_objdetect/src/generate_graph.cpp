@@ -69,35 +69,35 @@ void make_fire(std::shared_ptr<conv> &fire_squeeze,
                std::shared_ptr<conv> &fire_expand_3x3,
                std::shared_ptr<relu> &rect_fire_expand_3x3,
                std::shared_ptr<concat> &fire,
-               size_t input_x, size_t squeeze_filters, size_t expand_filters) {
+               size_t input_x, size_t squeeze_filters, size_t expand_filters,
+               size_t input_filters) {
 
-  fire_squeeze         = std::make_shared<conv>(input_x, input_x, 1, 1, squeeze_filters,
-                                        padding::same, true, 1, 1);
+  fire_squeeze         = std::make_shared<conv>(input_x, input_x, 1, input_filters,
+                                    squeeze_filters, padding::valid, true, 1, 1);
   rect_fire_squeeze    = std::make_shared<relu>();
-  fire_expand_1x1      = std::make_shared<conv>(input_x, input_x, 1, 1, expand_filters,
-                                           padding::same, true, 1, 1);
+  fire_expand_1x1      = std::make_shared<conv>(input_x, input_x, 1, squeeze_filters,
+                                    expand_filters, padding::valid, true, 1, 1);
   rect_fire_expand_1x1 = std::make_shared<relu>();
-  fire_expand_3x3      = std::make_shared<conv>(input_x, input_x, 3, 3, expand_filters,
-                                           padding::same, true, 1, 1);
+  fire_expand_3x3      = std::make_shared<conv>(input_x, input_x, 3, squeeze_filters,
+                                    expand_filters, padding::same, true, 1, 1);
   rect_fire_expand_3x3 = std::make_shared<relu>();
   fire                 = std::make_shared<concat>(std::initializer_list<shape3d>
-                                      {{expand_filters, input_x, input_x},
-                                       {expand_filters, input_x, input_x}});
+                                      {{input_x, input_x, expand_filters},
+                                       {input_x, input_x, expand_filters}});
 }
 
 
 void generate_graph() {
 
   // declare the nodes
-  // TODO: What is the channel order in input layer?
   // TODO : Add negative slope in relu layer
   // TODO : In concat layer, what is the channel order
 
   auto input = std::make_shared<input_layer>(shape3d(3, 416, 416));
   auto conv1 = std::make_shared<conv>(416, 416, 7, 3, 96,
-                                      padding::same, true, 2, 2);
+                                      padding::valid, true, 2, 2);
   auto rect_conv1 = std::make_shared<relu>();
-  auto pool1 = std::make_shared<pool>(205, 205, 96, 3, 3, 2, 2, padding::same);
+  auto pool1 = std::make_shared<pool>(205, 205, 96, 3, 3, 2, 2, padding::valid);
 
   // fire2
   std::shared_ptr<conv> fire2_squeeze;
@@ -111,7 +111,7 @@ void generate_graph() {
             fire2_expand_1x1, rect_fire2_expand_1x1,
             fire2_expand_3x3, rect_fire2_expand_3x3,
             fire2,
-            102, 16, 64);
+            102, 16, 64, 96);
 
   // fire3
   std::shared_ptr<conv> fire3_squeeze;
@@ -125,7 +125,7 @@ void generate_graph() {
             fire3_expand_1x1, rect_fire3_expand_1x1,
             fire3_expand_3x3, rect_fire3_expand_3x3,
             fire3,
-            102, 16, 64);
+            102, 16, 64, 128);
 
   // fire4
   std::shared_ptr<conv> fire4_squeeze;
@@ -135,11 +135,11 @@ void generate_graph() {
   std::shared_ptr<conv> fire4_expand_3x3;
   std::shared_ptr<relu> rect_fire4_expand_3x3;
   std::shared_ptr<concat> fire4;
-  make_fire(fire4_squeeze, rect_fire2_squeeze,
-            fire4_expand_1x1, rect_fire2_expand_1x1,
-            fire4_expand_3x3, rect_fire2_expand_3x3,
+  make_fire(fire4_squeeze, rect_fire4_squeeze,
+            fire4_expand_1x1, rect_fire4_expand_1x1,
+            fire4_expand_3x3, rect_fire4_expand_3x3,
             fire4,
-            102, 32, 128);
+            102, 32, 128, 128);
 
   // 2nd pool layer
   auto pool4 = std::make_shared<pool>(102, 102, 256, 3, 3, 2, 2, padding::same);
@@ -152,11 +152,11 @@ void generate_graph() {
   std::shared_ptr<conv> fire5_expand_3x3;
   std::shared_ptr<relu> rect_fire5_expand_3x3;
   std::shared_ptr<concat> fire5;
-  make_fire(fire5_squeeze, rect_fire2_squeeze,
-            fire5_expand_1x1, rect_fire2_expand_1x1,
-            fire5_expand_3x3, rect_fire2_expand_3x3,
+  make_fire(fire5_squeeze, rect_fire5_squeeze,
+            fire5_expand_1x1, rect_fire5_expand_1x1,
+            fire5_expand_3x3, rect_fire5_expand_3x3,
             fire5,
-            51, 32, 128);
+            51, 32, 128, 256);
 
   // fire6
   std::shared_ptr<conv> fire6_squeeze;
@@ -166,11 +166,11 @@ void generate_graph() {
   std::shared_ptr<conv> fire6_expand_3x3;
   std::shared_ptr<relu> rect_fire6_expand_3x3;
   std::shared_ptr<concat> fire6;
-  make_fire(fire6_squeeze, rect_fire2_squeeze,
-            fire6_expand_1x1, rect_fire2_expand_1x1,
-            fire6_expand_3x3, rect_fire2_expand_3x3,
+  make_fire(fire6_squeeze, rect_fire6_squeeze,
+            fire6_expand_1x1, rect_fire6_expand_1x1,
+            fire6_expand_3x3, rect_fire6_expand_3x3,
             fire6,
-            51, 48, 192);
+            51, 48, 192, 256);
 
   // fire7
   std::shared_ptr<conv> fire7_squeeze;
@@ -180,11 +180,11 @@ void generate_graph() {
   std::shared_ptr<conv> fire7_expand_3x3;
   std::shared_ptr<relu> rect_fire7_expand_3x3;
   std::shared_ptr<concat> fire7;
-  make_fire(fire7_squeeze, rect_fire2_squeeze,
-            fire7_expand_1x1, rect_fire2_expand_1x1,
-            fire7_expand_3x3, rect_fire2_expand_3x3,
+  make_fire(fire7_squeeze, rect_fire7_squeeze,
+            fire7_expand_1x1, rect_fire7_expand_1x1,
+            fire7_expand_3x3, rect_fire7_expand_3x3,
             fire7,
-            51, 48, 192);
+            51, 48, 192, 384);
 
   // fire8
   std::shared_ptr<conv> fire8_squeeze;
@@ -194,14 +194,14 @@ void generate_graph() {
   std::shared_ptr<conv> fire8_expand_3x3;
   std::shared_ptr<relu> rect_fire8_expand_3x3;
   std::shared_ptr<concat> fire8;
-  make_fire(fire8_squeeze, rect_fire2_squeeze,
-            fire8_expand_1x1, rect_fire2_expand_1x1,
-            fire8_expand_3x3, rect_fire2_expand_3x3,
+  make_fire(fire8_squeeze, rect_fire8_squeeze,
+            fire8_expand_1x1, rect_fire8_expand_1x1,
+            fire8_expand_3x3, rect_fire8_expand_3x3,
             fire8,
-            51, 64, 256);
+            51, 64, 256, 384);
 
   // 3rd pool layer
-  auto pool8 = std::make_shared<pool>(51, 51, 512, 3, 3, 2, 2, padding::same);
+  auto pool8 = std::make_shared<pool>(51, 51, 512, 3, 3, 2, 2, padding::valid);
 
   // fire9
   std::shared_ptr<conv> fire9_squeeze;
@@ -211,11 +211,11 @@ void generate_graph() {
   std::shared_ptr<conv> fire9_expand_3x3;
   std::shared_ptr<relu> rect_fire9_expand_3x3;
   std::shared_ptr<concat> fire9;
-  make_fire(fire9_squeeze, rect_fire2_squeeze,
-            fire9_expand_1x1, rect_fire2_expand_1x1,
-            fire9_expand_3x3, rect_fire2_expand_3x3,
+  make_fire(fire9_squeeze, rect_fire9_squeeze,
+            fire9_expand_1x1, rect_fire9_expand_1x1,
+            fire9_expand_3x3, rect_fire9_expand_3x3,
             fire9,
-            25, 64, 256);
+            25, 64, 256, 512);
 
   auto conv10 = std::make_shared<conv>(25, 25, 1, 512, 1000,
                                       padding::same, true, 1, 1);
@@ -228,11 +228,11 @@ void generate_graph() {
   std::shared_ptr<conv> fire10_expand_3x3;
   std::shared_ptr<relu> rect_fire10_expand_3x3;
   std::shared_ptr<concat> fire10;
-  make_fire(fire10_squeeze, rect_fire2_squeeze,
-            fire10_expand_1x1, rect_fire2_expand_1x1,
-            fire10_expand_3x3, rect_fire2_expand_3x3,
+  make_fire(fire10_squeeze, rect_fire10_squeeze,
+            fire10_expand_1x1, rect_fire10_expand_1x1,
+            fire10_expand_3x3, rect_fire10_expand_3x3,
             fire10,
-            25, 96, 384);
+            25, 96, 384, 1000);
 
   // fire11
   std::shared_ptr<conv> fire11_squeeze;
@@ -242,11 +242,11 @@ void generate_graph() {
   std::shared_ptr<conv> fire11_expand_3x3;
   std::shared_ptr<relu> rect_fire11_expand_3x3;
   std::shared_ptr<concat> fire11;
-  make_fire(fire11_squeeze, rect_fire2_squeeze,
-            fire11_expand_1x1, rect_fire2_expand_1x1,
-            fire11_expand_3x3, rect_fire2_expand_3x3,
+  make_fire(fire11_squeeze, rect_fire11_squeeze,
+            fire11_expand_1x1, rect_fire11_expand_1x1,
+            fire11_expand_3x3, rect_fire11_expand_3x3,
             fire11,
-            25, 96, 384);
+            25, 96, 384, 768);
 
   auto conv11 = std::make_shared<conv>(25, 25, 3, 768, 225,
                                       padding::same, true, 1, 1);
@@ -256,95 +256,113 @@ void generate_graph() {
   // Construct the graph
   input << conv1
         << rect_conv1
-        << pool1
-        // fire2
-        << fire2_squeeze
-        << rect_fire2_squeeze
-        << fire2_expand_1x1
-        << rect_fire2_expand_1x1
-        << fire2_expand_3x3
-        << rect_fire2_expand_3x3
-        << fire2
-        // fire3
-        << fire3_squeeze
-        << rect_fire3_squeeze
-        << fire3_expand_1x1
-        << rect_fire3_expand_1x1
-        << fire3_expand_3x3
-        << rect_fire3_expand_3x3
-        << fire3
-        // fire4
-        << fire4_squeeze
-        << rect_fire4_squeeze
-        << fire4_expand_1x1
-        << rect_fire4_expand_1x1
-        << fire4_expand_3x3
-        << rect_fire4_expand_3x3
-        << fire4
-        // pool
-        << pool4
-        // fire5
-        << fire5_squeeze
-        << rect_fire5_squeeze
-        << fire5_expand_1x1
-        << rect_fire5_expand_1x1
-        << fire5_expand_3x3
-        << rect_fire5_expand_3x3
-        << fire5
-        // fire6
-        << fire6_squeeze
-        << rect_fire6_squeeze
-        << fire6_expand_1x1
-        << rect_fire6_expand_1x1
-        << fire6_expand_3x3
-        << rect_fire6_expand_3x3
-        << fire6
-        // fire7
-        << fire7_squeeze
-        << rect_fire7_squeeze
-        << fire7_expand_1x1
-        << rect_fire7_expand_1x1
-        << fire7_expand_3x3
-        << rect_fire7_expand_3x3
-        << fire7
-        // fire8
-        << fire8_squeeze
-        << rect_fire8_squeeze
-        << fire8_expand_1x1
-        << rect_fire8_expand_1x1
-        << fire8_expand_3x3
-        << rect_fire8_expand_3x3
-        << fire8
-        // pool
-        << pool8
-        // fire9
-        << fire9_squeeze
-        << rect_fire9_squeeze
-        << fire9_expand_1x1
-        << rect_fire9_expand_1x1
-        << fire9_expand_3x3
-        << rect_fire9_expand_3x3
-        << fire9
-        // conv
-        << conv10
-        // fire10
-        << fire10_squeeze
-        << rect_fire10_squeeze
-        << fire10_expand_1x1
-        << rect_fire10_expand_1x1
-        << fire10_expand_3x3
-        << rect_fire10_expand_3x3
-        << fire10
-        // fire11
-        << fire11_squeeze
-        << rect_fire11_squeeze
-        << fire11_expand_1x1
-        << rect_fire11_expand_1x1
-        << fire11_expand_3x3
-        << rect_fire11_expand_3x3
-        << fire11
-        // conv
-        << conv11;
+        << pool1;
+
+  // fire2
+  pool1 << fire2_squeeze
+        << rect_fire2_squeeze;
+  rect_fire2_squeeze << fire2_expand_1x1
+                     << rect_fire2_expand_1x1;
+  rect_fire2_squeeze << fire2_expand_3x3
+                     << rect_fire2_expand_3x3;
+  (rect_fire2_expand_1x1, rect_fire2_expand_3x3) << fire2;
+
+  // fire3
+  fire2 << fire3_squeeze
+        << rect_fire3_squeeze;
+  rect_fire3_squeeze << fire3_expand_1x1
+                     << rect_fire3_expand_1x1;
+  rect_fire3_squeeze << fire3_expand_3x3
+                     << rect_fire3_expand_3x3;
+  (rect_fire3_expand_1x1, rect_fire3_expand_3x3) << fire3;
+
+  // fire4
+  fire3 << fire4_squeeze
+        << rect_fire4_squeeze;
+  rect_fire4_squeeze << fire4_expand_1x1
+                     << rect_fire4_expand_1x1;
+  rect_fire4_squeeze << fire4_expand_3x3
+                     << rect_fire4_expand_3x3;
+  (rect_fire4_expand_1x1, rect_fire4_expand_3x3) << fire4;
+
+  // pool
+  fire4 << pool4;
+  
+  // fire5
+  pool4 << fire5_squeeze
+        << rect_fire5_squeeze;
+  rect_fire5_squeeze << fire5_expand_1x1
+                     << rect_fire5_expand_1x1;
+  rect_fire5_squeeze << fire5_expand_3x3
+                     << rect_fire5_expand_3x3;
+  (rect_fire5_expand_1x1, rect_fire5_expand_3x3) << fire5;
+
+  // fire6
+  fire5 << fire6_squeeze
+        << rect_fire6_squeeze;
+  rect_fire6_squeeze << fire6_expand_1x1
+                     << rect_fire6_expand_1x1;
+  rect_fire6_squeeze << fire6_expand_3x3
+                     << rect_fire6_expand_3x3;
+  (rect_fire6_expand_1x1, rect_fire6_expand_3x3) << fire6;
+
+  // fire7
+  fire6 << fire7_squeeze
+        << rect_fire7_squeeze;
+  rect_fire7_squeeze << fire7_expand_1x1
+                     << rect_fire7_expand_1x1;
+  rect_fire7_squeeze << fire7_expand_3x3
+                     << rect_fire7_expand_3x3;
+  (rect_fire7_expand_1x1, rect_fire7_expand_3x3) << fire7;
+
+  // fire8
+  fire7 << fire8_squeeze
+        << rect_fire8_squeeze;
+  rect_fire8_squeeze << fire8_expand_1x1
+                     << rect_fire8_expand_1x1;
+  rect_fire8_squeeze << fire8_expand_3x3
+                     << rect_fire8_expand_3x3;
+  (rect_fire8_expand_1x1, rect_fire8_expand_3x3) << fire8;
+
+  // pool
+  fire8 << pool8;
+  
+  // fire9
+  pool8 << fire9_squeeze
+        << rect_fire9_squeeze;
+  rect_fire9_squeeze << fire9_expand_1x1
+                     << rect_fire9_expand_1x1;
+  rect_fire9_squeeze << fire9_expand_3x3
+                     << rect_fire9_expand_3x3;
+  (rect_fire9_expand_1x1, rect_fire9_expand_3x3) << fire9;
+
+  // conv
+  fire9 << conv10;
+
+  // fire10
+  conv10 << fire10_squeeze
+         << rect_fire10_squeeze;
+  rect_fire10_squeeze << fire10_expand_1x1
+                      << rect_fire10_expand_1x1;
+  rect_fire10_squeeze << fire10_expand_3x3
+                      << rect_fire10_expand_3x3;
+  (rect_fire10_expand_1x1, rect_fire10_expand_3x3) << fire10;
+
+  // fire11
+  fire10 << fire11_squeeze
+         << rect_fire11_squeeze;
+  rect_fire11_squeeze << fire11_expand_1x1
+                      << rect_fire11_expand_1x1;
+  rect_fire11_squeeze << fire11_expand_3x3
+                      << rect_fire11_expand_3x3;
+  (rect_fire11_expand_1x1, rect_fire11_expand_3x3) << fire11;
+
+  // conv
+  fire11 << conv11;
+
+  network<graph> net;
+  construct_graph(net, {input}, {conv11});
+
 }
 
 int main() {
