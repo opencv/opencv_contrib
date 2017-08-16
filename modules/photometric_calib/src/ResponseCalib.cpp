@@ -41,7 +41,7 @@ Vec2d ResponseCalib::rmse(const double *G, const double *E, const std::vector<do
         }
     }
 
-    //return Vec2d((double)(1e5 * sqrtl((e/num))), (double)num);
+    //return Eigen::Vector2d(1e5*sqrtl((e/num)), (double)num);
     return Vec2d((double)(1e5 *sqrt((e/num))), (double)num);
 }
 
@@ -89,8 +89,10 @@ void ResponseCalib::plotE(const double* E, int w, int h, const std::string &save
 
     if(!saveTo.empty())
     {
-        cv::imwrite(saveTo + ".png", EImg);
-        cv::imwrite(saveTo + "16.png", EImg16);
+        imwrite(saveTo + ".png", EImg);
+        std::cout<<"Saved: "<<saveTo + ".png"<<std::endl;
+        imwrite(saveTo + "-16.png", EImg16);
+        std::cout<<"Saved: "<<saveTo + "-16.png"<<std::endl;
     }
 }
 
@@ -120,6 +122,7 @@ void ResponseCalib::plotG(const double* G, const std::string &saveTo)
     std::cout<<"Inv. Response "<<min<<" - "<<max<<std::endl;
     cv::imshow("G", GImg);
     if(!saveTo.empty()) cv::imwrite(saveTo, GImg*255);
+    std::cout<<"Saved: "<<saveTo<<std::endl;
 }
 
 void ResponseCalib::calib()
@@ -135,23 +138,33 @@ void ResponseCalib::calib()
         cv::Mat img = imageReader->getImage(i);
         if(img.rows==0 || img.cols==0) continue;
         CV_Assert(img.type() == CV_8U);
+
+        if((w!=0 && w != img.cols) || img.cols==0)
+        {
+            std::cout<<"Width mismatch!"<<std::endl;
+            exit(1);
+        }
+        if((h!=0 && h != img.rows) || img.rows==0)
+        {   std::cout<<"Height mismatch!"<<std::endl;
+            exit(1);
+        }
         w = img.cols;
         h = img.rows;
 
-        uchar *data = new uchar[w*h];
-        memcpy(data, img.data, w*h);
+        uchar *data = new uchar[w * h];
+        memcpy(data, img.data, w * h);
         dataVec.push_back(data);
         exposureDurationVec.push_back((double)(imageReader->getExposureDuration(i)));
-        unsigned char* data2 = new unsigned char[w*h];
 
+        unsigned char* data2 = new unsigned char[w * h];
         for (int j = 0; j < _leakPadding; ++j)
         {
-            memcpy(data2, data, w*h);
+            memcpy(data2, data, w * h);
             for (int y = 1; y < h - 1; ++y)
             {
                 for (int x = 1; x < w - 1; ++x)
                 {
-                    if(data[x+y*w] == 255)
+                    if(data[x + y * w] == 255)
                     {
                         data2[x+1 + w*(y+1)] = 255;
                         data2[x+1 + w*(y  )] = 255;
@@ -167,11 +180,13 @@ void ResponseCalib::calib()
                     }
                 }
             }
-            memcpy(data, data2, w*h);
+            memcpy(data, data2, w * h);
         }
         delete[] data2;
     }
     n = dataVec.size();
+    std::cout<<"Loaded "<<n<<" images!"<<std::endl;
+    std::cout<<"Response calibration begin!"<<std::endl;
 
     double* E = new double[w*h];		// scene irradiance
     double* En = new double[w*h];		// scene irradiance
@@ -194,14 +209,19 @@ void ResponseCalib::calib()
     for(int k=0;k<w*h;k++)
         E[k] = E[k]/En[k];
 
-    //CV_Assert(system("rm -rf photoCalibResult") != -1 && system("mkdir photoCalibResult") != -1);
+    // TODO: System independent folder creating
+    // Only on Linux for now.
+    if(-1 == system("rm -rf photoCalibResult"))
+        std::cout<<"could not delete old photoCalibResult folder!"<<std::endl;
+    if(-1 == system("mkdir photoCalibResult"))
+        std::cout<<"could not create photoCalibResult folder!"<<std::endl;
 
     std::ofstream logFile;
-    logFile.open("log.txt", std::ios::trunc | std::ios::out);
+    logFile.open("photoCalibResult/log.txt", std::ios::trunc | std::ios::out);
     logFile.precision(15);
 
-    std::cout<<"Initial RMSE = "<<rmse(G, E, exposureDurationVec, dataVec, w*h)[0]<<std::endl;
-    plotE(E,w,h, "E-0");
+    std::cout<<"Initial RMSE = "<<rmse(G, E, exposureDurationVec, dataVec, w*h)[0] << "!" <<std::endl;
+    plotE(E, w, h, "photoCalibResult/E-0");
     cv::waitKey(100);
 
     bool optE = true;
@@ -209,6 +229,7 @@ void ResponseCalib::calib()
 
     for(int it=0;it<_nIts;it++)
     {
+        std::cout<<"Iteration "<<it+1<<"..."<<std::endl;
         if(optG)
         {
             // optimize log inverse response function.
@@ -235,13 +256,9 @@ void ResponseCalib::calib()
             delete[] GNum;
             printf("optG RMSE = %f! \t", rmse(G, E, exposureDurationVec, dataVec, w*h )[0]);
 
-            char buf[1000]; snprintf(buf, 1000, "G-%d.png", it+1);
+            char buf[1000]; snprintf(buf, 1000, "photoCalibResult/G-%02d.png", it+1);
             plotG(G, buf);
         }
-
-
-
-
 
         if(optE)
         {
@@ -270,10 +287,9 @@ void ResponseCalib::calib()
             delete[] ESum;
             printf("OptE RMSE = %f!  \t", rmse(G, E, exposureDurationVec, dataVec, w*h )[0]);
 
-            char buf[1000]; snprintf(buf, 1000, "photoCalibResult/E-%d", it+1);
+            char buf[1000]; snprintf(buf, 1000, "photoCalibResult/E-%02d", it+1);
             plotE(E,w,h, buf);
         }
-
 
         // rescale such that maximum response is 255 (fairly arbitrary choice).
         double rescaleFactor=255.0 / G[255];
@@ -282,8 +298,9 @@ void ResponseCalib::calib()
             E[i] *= rescaleFactor;
             if(i<256) G[i] *= rescaleFactor;
         }
+        //Eigen::Vector2d err = rmse(G, E, exposureVec, dataVec, w*h );
         Vec2d err = rmse(G, E, exposureDurationVec, dataVec, w*h );
-        printf("resc RMSE = %f!  \trescale with %f!\n",  err[0], rescaleFactor);
+        printf("Rescaled RMSE = %f!  \trescale with %f!\n",  err[0], rescaleFactor);
 
         logFile << it << " " << n << " " << err[1] << " " << err[0] << "\n";
 
@@ -294,19 +311,26 @@ void ResponseCalib::calib()
     logFile.close();
 
     std::ofstream lg;
-    lg.open("photoCalibResult/pcalib.txt", std::ios::trunc | std::ios::out);
+    lg.open("photoCalibResult/pcalib.yaml", std::ios::trunc | std::ios::out);
+    lg << "%YAML:1.0\ngamma: [";
     lg.precision(15);
-    for(int i=0;i<256;i++)
-        lg << G[i] << " ";
+    for(int i=0;i<255;i++)
+        lg << G[i] << ", ";
+    lg << G[255] << ']';
     lg << "\n";
 
     lg.flush();
     lg.close();
 
+    std::cout<<"pcalib file has been saved to: photoCalibResult/pcalib.yaml"<<std::endl;
+
     delete[] E;
     delete[] En;
     delete[] G;
-    for(size_t i=0;i<n;i++) delete[] dataVec[i];
+    for(size_t i=0;i<n;i++)
+        delete[] dataVec[i];
+
+    std::cout<<"Camera response function calibration finished!"<<std::endl;
 }
 
 }} // namespace photometric_calib, cv
