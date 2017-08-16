@@ -9,19 +9,53 @@
 
 namespace cv { namespace photometric_calib {
 
+//! @addtogroup photometric_calib
+//! @{
+
+/*!
+ * @brief Class for removing the camera response function (mostly gamma function) when provided with pcalib file.
+ *
+ */
+
 class CV_EXPORTS GammaRemover
 {
 public:
+    /*!
+     * @brief Constructor
+     * @param gammaPath the path of pcalib file of which the format should be .yaml or .yml
+     * @param w_ the width of input image
+     * @param h_ the height of input image
+     */
     GammaRemover(const std::string &gammaPath, int w_, int h_);
 
+    /*!
+     * @brief get irradiance image in the form of cv::Mat. Convenient for display, etc.
+     * @param inputIm
+     * @return
+     */
     Mat getUnGammaImageMat(Mat inputIm);
+
+    /*!
+     * @brief get irradiance image in the form of std::vector<float>. Convenient for optimization or SLAM.
+     * @param inputIm
+     * @param outImVec
+     */
     void getUnGammaImageVec(Mat inputIm, std::vector<float> &outImVec);
 
+    /*!
+     * @brief get gamma function.
+     * @return
+     */
     inline float* getG()
     {
         if(!validGamma) return 0;
         else return G;
     };
+
+    /*!
+     * @brief get inverse gamma function
+     * @return
+     */
     inline float* getGInv()
     {
         if(!validGamma) return 0;

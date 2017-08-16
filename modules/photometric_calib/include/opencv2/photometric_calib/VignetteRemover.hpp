@@ -9,13 +9,38 @@
 
 namespace cv { namespace photometric_calib {
 
+//! @addtogroup photometric_calib
+//! @{
+
+/*!
+ * @brief Class for removing the vignetting artifact when provided with vignetting file.
+ *
+ */
+
 class CV_EXPORTS VignetteRemover
 {
 public:
+    /*!
+     * @brief Constructor
+     * @param vignettePath the path of vignetting file
+     * @param w_ the width of input image
+     * @param h_ the height of input image
+     */
     VignetteRemover(const std::string &vignettePath, int w_, int h_);
     ~VignetteRemover();
 
+    /*!
+     * @brief get vignetting-removed image in form of cv::Mat.
+     * @param unGammaImVec the irradiance image.
+     * @return
+     */
     Mat getUnVignetteImageMat(std::vector<float> &unGammaImVec);
+
+    /*!
+     * @brief get vignetting-removed image in form of std::vector<float>.
+     * @param unGammaImVec the irradiance image.
+     * @param outImVec the vignetting-removed image vector.
+     */
     void getUnVignetteImageVec(const std::vector<float> &unGammaImVec, std::vector<float> &outImVec);
 
 private:
