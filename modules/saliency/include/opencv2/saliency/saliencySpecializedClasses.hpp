@@ -209,7 +209,8 @@ private:
     int histBin;
     double bgWei;
 public:
-    BackgroundContrast(  double = 5, int = 600, int = 4, int = 2, int = 5 );
+    BackgroundContrast();
+    BackgroundContrast(  double, int, int, int, int );
     virtual ~BackgroundContrast();
     CV_WRAP static Ptr<BackgroundContrast> create()
     {

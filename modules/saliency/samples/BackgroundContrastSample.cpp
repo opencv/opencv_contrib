@@ -37,7 +37,7 @@ int main(int argc, char* argv[])
 
     Mat img = imread(img_path);
     Mat fgImg = imread(foregroundImg_path);
-    BackgroundContrast bc;
+    BackgroundContrast bc = BackgroundContrast();
     if ( parser.get<bool>( "optimization" ) )
     {
         bc.saliencyMapVisualize(bc.saliencyMapGenerator(img, fgImg, 1), 0);

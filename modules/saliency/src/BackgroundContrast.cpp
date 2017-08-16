@@ -33,6 +33,14 @@ namespace cv
 namespace saliency
 {
 
+BackgroundContrast::BackgroundContrast()
+{
+	bgWei = 5;
+	limitOfSP = 600;
+	nOfLevel = 4;
+	usePrior = 2;
+	histBin = 5;
+}
 BackgroundContrast::BackgroundContrast( double _bgWei, int _limitOfSP, int _nOfLevel, int _usePrior, int _histBin ): limitOfSP(_limitOfSP), nOfLevel(_nOfLevel), usePrior(_usePrior), histBin(_histBin), bgWei(_bgWei) {}
 BackgroundContrast::~BackgroundContrast(){}
 
