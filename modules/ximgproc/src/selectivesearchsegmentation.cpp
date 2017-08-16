@@ -169,7 +169,7 @@ namespace cv {
                         char* mask_data = (char*)mask.data;
 
                         for (unsigned int x = 0; x < regions.total(); x++) {
-                            mask_data[x] = regions_data[x] == r ? 255 : 0;
+                            mask_data[x] = (char)(regions_data[x] == r ? 255 : 0);
                         }
 
                         // Compute histogram for each channels
