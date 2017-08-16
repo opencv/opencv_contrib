@@ -5,27 +5,13 @@
 #ifndef __OPENCV_PHOTOMETRIC_CALIB_HPP__
 #define __OPENCV_PHOTOMETRIC_CALIB_HPP__
 
-#include "opencv2/core.hpp"
-#include "opencv2/imgproc.hpp"
-
-#include <vector>
-
-/** @defgroup photometric_calib Photometric Calibration
-*/
+#include "opencv2/photometric_calib/Reader.hpp"
+#include "opencv2/photometric_calib/GammaRemover.hpp"
+#include "opencv2/photometric_calib/VignetteRemover.hpp"
+#include "opencv2/photometric_calib/ResponseCalib.hpp"
+#include "opencv2/photometric_calib/VignetteCalib.hpp"
 
 namespace cv { namespace photometric_calib{
-
-//! @addtogroup photometric_calib
-//! @{
-
-class CV_EXPORTS PhotometricCalibrator : public Algorithm
-{
-public:
-    bool validImgs(const std::vector <Mat> &inputImgs, const std::vector<double> &exposureTime);
-};
-
-//! @}
-
 }} // namespace photometric_calib, cv
 
 #endif

@@ -5,7 +5,6 @@
 #ifndef _OPENCV_RESPONSECALIB_HPP
 #define _OPENCV_RESPONSECALIB_HPP
 
-#include "opencv2/photometric_calib.hpp"
 #include "opencv2/photometric_calib/Reader.hpp"
 
 namespace cv { namespace photometric_calib {

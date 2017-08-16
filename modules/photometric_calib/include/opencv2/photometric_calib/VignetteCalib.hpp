@@ -5,7 +5,7 @@
 #ifndef _OPENCV_VIGNETTECALIB_HPP
 #define _OPENCV_VIGNETTECALIB_HPP
 
-#include "opencv2/photometric_calib.hpp"
+#include "opencv2/core.hpp"
 #include "opencv2/photometric_calib/Reader.hpp"
 #include "opencv2/photometric_calib/GammaRemover.hpp"
 

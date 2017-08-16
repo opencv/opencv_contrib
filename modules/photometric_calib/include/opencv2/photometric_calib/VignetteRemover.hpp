@@ -5,7 +5,7 @@
 #ifndef _OPENCV_VIGNETTEREMOVER_HPP
 #define _OPENCV_VIGNETTEREMOVER_HPP
 
-#include "opencv2/photometric_calib.hpp"
+#include "opencv2/core.hpp"
 
 namespace cv { namespace photometric_calib {
 

@@ -5,7 +5,7 @@
 #ifndef _OPENCV_READER_HPP
 #define _OPENCV_READER_HPP
 
-#include "opencv2/photometric_calib.hpp"
+#include "opencv2/core.hpp"
 
 #include <vector>
 #include <string>
