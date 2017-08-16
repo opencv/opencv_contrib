@@ -11,7 +11,6 @@ set(OPENCV_MODULE_CHILDREN
   ccalib
   cvv
   datasets
-  dnn
   dpm
   face
   fuzzy

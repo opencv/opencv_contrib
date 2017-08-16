@@ -290,7 +290,7 @@ int main(int argc, char* argv[])
         {
 
             outputs[i].erase(remove(outputs[i].begin(), outputs[i].end(), '\n'), outputs[i].end());
-            //cout << "OCR output = \"" << outputs[i] << "\" lenght = " << outputs[i].size() << endl;
+            //cout << "OCR output = \"" << outputs[i] << "\" length = " << outputs[i].size() << endl;
             if (outputs[i].size() < 3)
                 continue;
 

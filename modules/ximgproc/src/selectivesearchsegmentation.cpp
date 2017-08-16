@@ -163,14 +163,8 @@ namespace cv {
                     for (int r = 0; r < nb_segs; r++) {
 
                         // Generate mask
-                        Mat mask = Mat(img.rows, img.cols, CV_8UC1);
+                        Mat mask = regions == r;
 
-                        int* regions_data = (int*)regions.data;
-                        char* mask_data = (char*)mask.data;
-
-                        for (unsigned int x = 0; x < regions.total(); x++) {
-                            mask_data[x] = (char)(regions_data[x] == r ? 255 : 0);
-                        }
 
                         // Compute histogram for each channels
                         float tt = 0;
