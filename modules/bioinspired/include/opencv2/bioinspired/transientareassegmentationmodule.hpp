@@ -187,13 +187,12 @@ public:
     /** @brief cleans all the buffers of the instance
     */
     CV_WRAP virtual void clearAllBuffers()=0;
-};
 
-/** @brief allocator
-@param inputSize : size of the images input to segment (output will be the same size)
-@relates bioinspired::TransientAreasSegmentationModule
- */
-CV_EXPORTS_W Ptr<TransientAreasSegmentationModule> createTransientAreasSegmentationModule(Size inputSize);
+    /** @brief allocator
+    @param inputSize : size of the images input to segment (output will be the same size)
+     */
+    CV_WRAP static Ptr<TransientAreasSegmentationModule> create(Size inputSize);
+};
 
 //! @}
 

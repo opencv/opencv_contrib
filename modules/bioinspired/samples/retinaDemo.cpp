@@ -84,10 +84,11 @@ int main(int argc, char* argv[])
 		// if the last parameter is 'log', then activate log sampling (favour foveal vision and subsamples peripheral vision)
 		if (useLogSampling)
 		{
-			myRetina = cv::bioinspired::createRetina(inputFrame.size(), true, cv::bioinspired::RETINA_COLOR_BAYER, true, 2.0, 10.0);
+            myRetina = cv::bioinspired::Retina::create(inputFrame.size(),
+                                                       true, cv::bioinspired::RETINA_COLOR_BAYER, true, 2.0, 10.0);
 		}
 		else// -> else allocate "classical" retina :
-			myRetina = cv::bioinspired::createRetina(inputFrame.size());
+            myRetina = cv::bioinspired::Retina::create(inputFrame.size());
 
 		// save default retina parameters file in order to let you see this and maybe modify it and reload using method "setup"
 		myRetina->write("RetinaDefaultParameters.xml");

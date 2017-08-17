@@ -247,7 +247,7 @@ private:
 * allocator
 * @param Size : size of the images input to segment (output will be the same size)
 */
-Ptr<TransientAreasSegmentationModule> createTransientAreasSegmentationModule(Size inputSize){
+Ptr<TransientAreasSegmentationModule> TransientAreasSegmentationModule::create(Size inputSize){
     return makePtr<TransientAreasSegmentationModuleImpl_>(inputSize);
 }
 
