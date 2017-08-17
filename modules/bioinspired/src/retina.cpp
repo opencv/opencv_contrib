@@ -335,7 +335,7 @@ RetinaImpl::RetinaImpl(const cv::Size inputSz, const bool colorMode, int colorSa
     _init(inputSz, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
 #ifdef HAVE_OPENCL
     _ocl_retina = 0;
-    if (inputSz.width % 4 == 0)
+    if (inputSz.width % 4 == 0 && !useRetinaLogSampling)
         _ocl_retina = new ocl::RetinaOCLImpl(inputSz, colorMode, colorSamplingMethod,
                                              useRetinaLogSampling, reductionFactor, samplingStrenght);
 #endif
