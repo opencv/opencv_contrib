@@ -171,20 +171,14 @@ double NCC(const Mat_<uchar>& patch1, const Mat_<uchar>& patch2)
     CV_Assert( patch1.cols == patch2.cols );
 
     int N = patch1.rows * patch1.cols;
-    int s1 = 0, s2 = 0, n1 = 0, n2 = 0, prod = 0;
-    for( int i = 0; i < patch1.rows; i++ )
-    {
-        for( int j = 0; j < patch1.cols; j++ )
-        {
-            int p1 = patch1(i, j), p2 = patch2(i, j);
-            s1 += p1; s2 += p2;
-            n1 += (p1 * p1); n2 += (p2 * p2);
-            prod += (p1 * p2);
-        }
-    }
-    double sq1 = sqrt(std::max(0.0, n1 - 1.0 * s1 * s1 / N)), sq2 = sqrt(std::max(0.0, n2 - 1.0 * s2 * s2 / N));
-    double ares = (sq2 == 0) ? sq1 / abs(sq1) : (prod - s1 * s2 / N) / sq1 / sq2;
-    return ares;
+    double s1 = sum(patch1)(0);
+    double s2 = sum(patch2)(0);
+    double n1 = norm(patch1, NORM_L2SQR);
+    double n2 = norm(patch2, NORM_L2SQR);
+    double prod=patch1.dot(patch2);
+    double sq1 = sqrt(std::max(0.0, n1 - 1.0 * s1 * s1 / N));
+    double sq2 = sqrt(std::max(0.0, n2 - 1.0 * s2 * s2 / N));
+    return (sq2 == 0) ? sq1 / abs(sq1) : (prod - s1 * s2 / N) / sq1 / sq2;
 }
 
 int getMedian(const std::vector<int>& values, int size)
