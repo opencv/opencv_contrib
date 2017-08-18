@@ -149,8 +149,10 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
 		if (i == 1)
 		{
 #ifdef HAVE_OPENCL
-			if (ocl::haveOpenCL())
+            if (ocl::useOpenCL())
+            {
 				DETECT_FLG = tldModel->detector->ocl_detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
+            }
 			else
 #endif
 				DETECT_FLG = tldModel->detector->detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
@@ -221,7 +223,7 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
         tldModel->integrateRelabeled(imageForDetector, image_blurred, detectorResults);
         pExpert.additionalExamples(examplesForModel, examplesForEnsemble);
 #ifdef HAVE_OPENCL
-        if (ocl::haveOpenCL())
+        if (ocl::useOpenCL())
             tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, true);
         else
 #endif
@@ -230,7 +232,7 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
         nExpert.additionalExamples(examplesForModel, examplesForEnsemble);
 
 #ifdef HAVE_OPENCL
-        if (ocl::haveOpenCL())
+        if (ocl::useOpenCL())
             tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, false);
         else
 #endif
