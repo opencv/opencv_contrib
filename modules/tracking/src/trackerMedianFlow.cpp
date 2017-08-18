@@ -338,7 +338,6 @@ Rect2d TrackerMedianFlowImpl::vote(const std::vector<Point2f>& oldPoints,const s
 
     return newRect;
 }
-
 #if 0
 void TrackerMedianFlowImpl::computeStatistics(std::vector<float>& data,int size){
     int binnum=10;
@@ -355,7 +354,6 @@ void TrackerMedianFlowImpl::computeStatistics(std::vector<float>& data,int size)
     }
 }
 #endif
-
 void TrackerMedianFlowImpl::check_FB(const std::vector<Mat>& oldImagePyr, const std::vector<Mat>& newImagePyr,
                                      const std::vector<Point2f>& oldPoints, const std::vector<Point2f>& newPoints, std::vector<bool>& status){
 
