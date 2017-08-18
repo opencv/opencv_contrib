@@ -5,7 +5,7 @@
 /*******************************************************************************\
 *                   Ridge Detection Filter                                     *
 * This code implements ridge detection based on the Hessian Matrix             *
-* Author: Venkatesh Vijaykumar GATech/ 2017                                    *
+* Author: Venkatesh Vijaykumar , Kushal Vyas, Sundeep Bhatia                   *
 ********************************************************************************/
 
 #include "precomp.hpp"
