@@ -1,18 +1,6 @@
 set(the_description "Object Detection using CNNs")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-# Caffe
-find_package(Caffe REQUIRED)
-if(CAFFE_FOUND)
-  set(HAVE_CAFFE 1)
-  message(STATUS "Caffe:   YES")
-else(CAFFE_FOUND)
-	message(STATUS "Caffe:   NO")
-	message(STATUS "Please set the variable `Caffe_DIR`")
-endif(CAFFE_FOUND)
-include_directories(${Caffe_INCLUDE_DIRS})
-list(APPEND DNN_OBJ_LIBRARIES "${Caffe_LIBRARIES}")
-
 # Protobuf
 find_package(Protobuf REQUIRED)
 if(PROTOBUF_FOUND)
