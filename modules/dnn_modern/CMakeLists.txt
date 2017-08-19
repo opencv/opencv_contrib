@@ -6,8 +6,6 @@ if(${CMAKE_VERSION} VERSION_LESS 3.2)
   return()
 endif()
 
-cmake_policy(SET CMP0028 OLD)
-
 # Using cmake scripts and modules
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
 
