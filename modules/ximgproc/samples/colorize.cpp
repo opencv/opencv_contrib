@@ -25,6 +25,7 @@ static int selected_g;
 static int selected_b;
 static bool globalMouseClick = false;
 static bool glb_mouse_left = false;
+static bool drawByReference = false;
 static bool mouseDraw = false;
 static bool mouseClick;
 static bool mouseLeft;
@@ -59,6 +60,7 @@ const String keys =
     "{sigma_chroma       |8               | parameter of post-filtering                                       }"
     "{dst_path           |None            | optional path to save the resulting colorized image               }"
     "{dst_raw_path       |None            | optional path to save drawed image before filtering               }"
+    "{draw_by_reference  |fasle           | optional flag to use color image as reference                     }"
     ;
 
 
@@ -82,6 +84,7 @@ int main(int argc, char* argv[])
     double sigma_chroma  = parser.get<double>("sigma_chroma");
     String dst_path = parser.get<String>("dst_path");
     String dst_raw_path = parser.get<String>("dst_raw_path");
+    drawByReference = parser.get<bool>("draw_by_reference");
 
     mat_input_reference = cv::imread(img,1);
     mat_input_gray = cv::imread(img,0);
@@ -104,10 +107,10 @@ int main(int argc, char* argv[])
     selected_r = 0;
 
     cv::Mat mat_show(target.rows,target.cols+PALLET_RADIUS*2,CV_8UC3);
-    cv::Mat mat_selected(target.rows-mat_pallet.rows,PALLET_RADIUS*2,CV_8UC3,cv::Scalar(selected_b, selected_g, selected_r));
+    cv::Mat color_select(target.rows-mat_pallet.rows,PALLET_RADIUS*2,CV_8UC3,cv::Scalar(selected_b, selected_g, selected_r));
     target.copyTo(Mat(mat_show,Rect(0,0,target.cols,target.rows)));
     mat_pallet.copyTo(Mat(mat_show,Rect(target.cols,0,mat_pallet.cols,mat_pallet.rows)));
-    mat_selected.copyTo(Mat(mat_show,Rect(target.cols,PALLET_RADIUS*2,mat_selected.cols,mat_selected.rows)));
+    color_select.copyTo(Mat(mat_show,Rect(target.cols,PALLET_RADIUS*2,color_select.cols,color_select.rows)));
 
     cv::imshow("draw", mat_show);
     cv::setMouseCallback("draw", mouseCallback, (void *)&mat_show);
@@ -158,10 +161,10 @@ int main(int argc, char* argv[])
                 filtering_time = ((double)getTickCount() - filtering_time)/getTickFrequency();
                 std::cout << "solver time: " << filtering_time << "s" << std::endl;
 
-                cv::Mat mat_selected(target_temp.rows-mat_pallet.rows,PALLET_RADIUS*2,CV_8UC3,cv::Scalar(selected_b, selected_g, selected_r));
+                cv::Mat color_selected(target_temp.rows-mat_pallet.rows,PALLET_RADIUS*2,CV_8UC3,cv::Scalar(selected_b, selected_g, selected_r));
                 target_temp.copyTo(Mat(mat_show,Rect(0,0,target_temp.cols,target_temp.rows)));
                 mat_pallet.copyTo(Mat(mat_show,Rect(target_temp.cols,0,mat_pallet.cols,mat_pallet.rows)));
-                mat_selected.copyTo(Mat(mat_show,Rect(target_temp.cols,PALLET_RADIUS*2,mat_selected.cols,mat_selected.rows)));
+                color_selected.copyTo(Mat(mat_show,Rect(target_temp.cols,PALLET_RADIUS*2,color_selected.cols,color_selected.rows)));
                 cv::imshow("draw", mat_show);
             }
             show_count++;
@@ -304,9 +307,15 @@ void drawTrajectoryByReference(cv::Mat& img)
                 int draw_b = int(float(selected_b)*(gray/draw_y));
                 int draw_g = int(float(selected_g)*(gray/draw_y));
                 int draw_r = int(float(selected_r)*(gray/draw_y));
-                // std::cout << "gray/draw_y: " << gray/draw_y<<"bgr_value" << draw_b<< " " << draw_g << " " << draw_r<< '\n';
-                cv::circle(img, cv::Point2d(x, y), 0.1, cv::Scalar(draw_b, draw_g, draw_r), -1);
-                // cv::circle(img, cv::Point2d(x, y), 0.1, cv::Scalar(blue, green, red), -1);
+
+                if(drawByReference)
+                {
+                    cv::circle(img, cv::Point2d(x, y), 0.1, cv::Scalar(blue, green, red), -1);
+                }
+                else
+                {
+                    cv::circle(img, cv::Point2d(x, y), 0.1, cv::Scalar(draw_b, draw_g, draw_r), -1);
+                }
             }
         }
     }
