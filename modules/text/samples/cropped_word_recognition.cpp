@@ -36,7 +36,7 @@ int main(int argc, char* argv[])
         return(0);
     }
 
-    string vocabulary = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; // must have the same order as the clasifier output classes
+    string vocabulary = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"; // must have the same order as the classifier output classes
     vector<string> lexicon;  // a list of words expected to be found on the input image
     lexicon.push_back(string("abb"));
     lexicon.push_back(string("riser"));
@@ -53,7 +53,7 @@ int main(int argc, char* argv[])
     createOCRHMMTransitionsTable(vocabulary,lexicon,transition_p);
 
     // An alternative would be to load the default generic language model
-    //    (created from ispell 42869 english words list)
+    //    (created from ispell 42869 English words list)
     /*Mat transition_p;
     string filename = "OCRHMM_transitions_table.xml";
     FileStorage fs(filename, FileStorage::READ);

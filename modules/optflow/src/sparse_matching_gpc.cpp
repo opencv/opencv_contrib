@@ -729,6 +729,9 @@ Ptr< GPCTrainingSamples > GPCTrainingSamples::create( InputArrayOfArrays imagesF
 
 void GPCDetails::dropOutliers( std::vector< std::pair< Point2i, Point2i > > &corr )
 {
+  if ( corr.size() == 0 )
+      return;
+
   std::vector< float > mag( corr.size() );
 
   for ( size_t i = 0; i < corr.size(); ++i )

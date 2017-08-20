@@ -54,7 +54,7 @@ int main(int argc, char* argv[]) {
     else
       image.copyTo(mask);
 
-    // be sure the mask is a binry image
+    // be sure the mask is a binary image
     cvtColor(mask, mask, COLOR_BGR2GRAY);
     threshold(mask, mask, 128., 255, THRESH_BINARY);
 
