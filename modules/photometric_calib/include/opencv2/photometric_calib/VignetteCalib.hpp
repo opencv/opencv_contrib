@@ -15,17 +15,20 @@ namespace cv { namespace photometric_calib {
 class CV_EXPORTS VignetteCalib
 {
 public:
-    VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile, std::string gammaFile, std::string imageFormat);
-    VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile, std::string gammaFile, int imageSkip, int maxIterations, int outlierTh,
-                  int gridWidth, int gridHeight, float facW, float facH, int maxAbsGrad, std::string imageFormat);
+    VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile, std::string gammaFile, std::string imageFormat, bool silent);
+    VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile, std::string gammaFile, std::string imageFormat, bool silent, int imageSkip, int maxIterations, int outlierTh,
+                  int gridWidth, int gridHeight, float facW, float facH, int maxAbsGrad);
 
     virtual ~VignetteCalib();
 
     //EIGEN_ALWAYS_INLINE float getInterpolatedElement(const float* const mat, const float x, const float y, const int width)
     float getInterpolatedElement(const float* const mat, const float x, const float y, const int width);
+    float calMeanExposureTime();
     void displayImage(float* I, int w, int h, std::string name);
     void displayImageV(float* I, int w, int h, std::string name);
+    bool preCalib(unsigned long id, float*& image, float*& plane2imgX, float*& plane2imgY);
     void calib();
+    void calibFast();
 
 private:
     int _imageSkip;
@@ -45,9 +48,14 @@ private:
 
     Mat _cameraMatrix;
     Mat _distCoeffs;
+    Matx33f _K_p2idx;
+    Matx33f _K_p2idx_inverse;
 
     Reader *imageReader;
     GammaRemover *gammaRemover;
+
+    float _meanExposure;
+    bool _silent;
 };
 
 }}
