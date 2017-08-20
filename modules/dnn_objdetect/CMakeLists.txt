@@ -1,37 +1,16 @@
 set(the_description "Object Detection using CNNs")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-# Protobuf
-find_package(Protobuf REQUIRED)
-if(PROTOBUF_FOUND)
-	set(HAVE_PROTOBUF 1)
-	message(STATUS "Protobuf:   YES")
-else(PROTOBUF_FOUND)
-	message(STATUS "Protobuf:   NO")
-	message(STATUS "Please set the variable `Protobuf_DIR`")
-endif(PROTOBUF_FOUND)
-include_directories(${Protobuf_INCLUDE_DIRS})
-list(APPEND DNN_OBJ_LIBRARIES "${Protobuf_LIBRARIES}")
+ocv_define_module(dnn_objdetect opencv_imgcodecs opencv_core opencv_imgproc opencv_dnn)
 
-# Glog
-find_package(Glog REQUIRED)
-if(GLOG_FOUND)
-	message(STATUS "Glog:   YES")
-	set(HAVE_GLOG 1)
-else(GLOG_FOUND)
-	message(STATUS "Glog:   NO")
-endif(GLOG_FOUND)
-list(APPEND DNN_OBJ_LIBRARIES "${GLOB_LIBRARIES}")
+set(OPENCV_DNN_LIBRARIES opencv_core opencv_imgproc opencv_core opencv_imgcodecs opencv_dnn)
+ocv_check_dependencies(${OPENCV_DNN_LIBRARIES})
 
-if (NOT HAVE_CAFFE OR NOT HAVE_PROTOBUF)
-  return()
-endif()
-
-set(TARGET train_obj_detect)
-set(SOURCE_FILES src/train_model.cpp)
+set(TARGET test_detection)
+set(SOURCE_FILES test/obj_detect.cpp)
 ocv_add_executable(${TARGET} ${SOURCE_FILES})
-ocv_target_link_libraries(${TARGET} ${DNN_OBJ_LIBRARIES})
+ocv_target_link_libraries(${TARGET} ${OPENCV_DNN_LIBRARIES})
 set_target_properties(${TARGET} PROPERTIES
                       ARCHIVE_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH}
                       RUNTIME_OUTPUT_DIRECTORY ${EXECUTABLE_OUTPUT_PATH}
-                      OUTPUT_NAME "opencv_train_obj_detect")
+                      OUTPUT_NAME "opencv_dnn_obj_detect")

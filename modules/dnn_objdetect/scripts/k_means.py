@@ -20,7 +20,7 @@ def k_means(K, data, max_iter, n_jobs, image_file):
   xx, yy = np.meshgrid(np.arange(xmin, xmax, step_size), np.arange(ymin, ymax, step_size))
   preds = kmeans.predict(np.c_[xx.ravel(), yy.ravel()])
   preds = preds.reshape(xx.shape)
-  
+
   plt.figure()
   plt.clf()
   plt.imshow(preds, interpolation='nearest', extent=(xx.min(), xx.max(), yy.min(), yy.max()), cmap=plt.cm.Paired, aspect='auto', origin='lower')

@@ -119,13 +119,10 @@ namespace cv
     std::vector<object> InferBbox::filter() 
     {
       // Some containers
-      std::vector<std::vector<double> > transformed_bbox_preds;
-      std::vector<std::vector<double> > min_max_bboxes;
-      std::vector<std::vector<double> > final_probs;
+      std::vector<std::vector<double> > transformed_bbox_preds(anchors);
+      std::vector<std::vector<double> > min_max_bboxes(anchors);
+      std::vector<std::vector<double> > final_probs(anchors);
       
-      transformed_bbox_preds.resize(anchors);
-      final_probs.resize(anchors);
-      min_max_bboxes.resize(anchors);
       for (size_t i = 0; i < anchors; ++i) {
         transformed_bbox_preds[i].resize(4);
         final_probs[i].resize(num_classes);
@@ -149,6 +146,21 @@ namespace cv
 
       // Compute the final probability values
       final_probability_dist(&final_probs);
+
+      // Filter the classes of `n_top_detections`
+      std::vector<std::vector<double> > top_n_boxes(n_top_detections);
+      std::vector<size_t> top_n_idxs(n_top_detections);
+      std::vector<double> top_n_probs(n_top_detections);
+      for (size_t i = 0; i < n_top_detections; ++i)
+      {
+        top_n_boxes[i].resize(4);
+      }
+
+      filter_top_n(&final_probs, &min_max_bboxes, top_n_boxes,
+        top_n_idxs, top_n_probs);
+
+      // Apply Non-Maximal-Supression to the `n_top_detections`
+      nms_wrapper(top_n_boxes, top_n_idxs, top_n_probs);
 
     }  //  filter function
 
@@ -243,6 +255,174 @@ namespace cv
           static_cast<double>(0.0));
       }
     }  //  assert_predictions function
+
+    void InferBbox::filter_top_n(std::vector<std::vector<double> > 
+      *probs, std::vector<std::vector<double> > *boxes,
+      std::vector<std::vector<double> > &top_n_boxes,
+      std::vector<size_t> &top_n_idxs,
+      std::vector<double> &top_n_probs)
+    {
+      std::vector<double> max_class_probs((*probs).size());
+      std::vector<size_t> args((*probs).size());
+
+      std::iota(args.begin(), args.end(), 0);
+      for (size_t box = 0; box < (*boxes).size(); ++box)
+      {
+        const int _prob_idx = \
+            std::max_element((*probs)[box].begin(),
+            (*probs)[box].end()) - (*probs)[box].begin();
+        max_class_probs[box] = (*probs)[box][_prob_idx];
+      }
+
+      std::sort(args.begin(), args.end(), \
+        [&max_class_probs](size_t i1, size_t i2) \
+        {return max_class_probs[i1] > max_class_probs[i2];});
+
+      // Get `n_top_detections`
+      std::vector<size_t> top_n_order(args.begin(), \
+        args.begin()+n_top_detections);
+
+      // Have a separate copy of all the `n_top_detections`
+      for (size_t n = 0; n < n_top_detections; ++n)
+      {
+        top_n_probs[n] = max_class_probs[top_n_order[n]];
+        top_n_idxs[n]  = \
+            std::max_element((*probs)[top_n_order[n]].begin(), \
+            (*probs)[top_n_order[n]].end()) - \
+            (*probs)[top_n_order[n]].begin();
+        for (size_t i = 0; i < 4; ++i)
+        {
+          top_n_boxes[n][i] = (*boxes)[top_n_order[n]][i];
+        }
+      }
+    }  //  filter_top_n function
+
+    void InferBbox::nms_wrapper(std::vector<std::vector<double> >
+      &top_n_boxes, std::vector<size_t> &top_n_idxs,
+      &std::vector<double> &top_n_probs)
+    {
+      for (size_t c = 0; c < this->num_classes; ++c)
+      {
+        std::vector<size_t> idxs_per_class;
+        for (size_t n = 0; n < n_top_detections; ++n)
+        {
+          if (top_n_idxs[n] == c)
+          {
+            idxs_per_class.push_back(n);
+          }
+        }
+
+        // Just continue in case there are no objects of this class
+        if (idxs_per_class.size() == 0)
+        {
+          continue;
+        }
+
+        // Process per class detections
+        std::vector<std::vector<double> > boxes_per_class(idxs_per_class.size());
+        std::vector<double> probs_per_class(idxs_per_class.size());
+        std::vector<bool> keep_per_class;
+        for (std::vector<size_t>::iterator itr = idxs_per_class.begin();
+            itr != idxs_per_class.end(); ++itr)
+        {
+          const int idx = itr - idxs_per_class.begin();
+          probs_per_class[idx] = top_n_probs[*itr];
+          for (size_t b = 0; b < 4; ++b)
+          {
+            boxes_per_class[idx].push_back(top_n_boxes[*itr][b]);
+          }
+        }
+        keep_per_class = \
+            non_maximal_suppression(boxes_per_class, probs_per_class);
+        for (std::vector<bool>::iterator itr = keep_per_class.begin();
+            itr != keep_per_class.end(); ++itr)
+        {
+          const int idx = itr - keep_per_class.begin();
+          if (*itr)
+          {
+            object new_detection;
+
+            new_detection.class_idx = c;
+            new_detection.label_name = this->label_map[c];
+            new_detection.xmin = boxes_per_class[idx][0];
+            new_detection.ymin = boxes_per_class[idx][1];
+            new_detection.xmax = boxes_per_class[idx][2];
+            new_detection.ymax = boxes_per_class[idx][3];
+            new_detection.class_prob = probs_per_class[idx];
+
+            this->detections.push_back(new_detection);
+          }
+        }
+      }
+    }  // nms_wrapper function
+
+    std::vector<bool> InferBbox::non_maximal_supression(
+      std::vector<std::vector<double> > &boxes, std::vector<double>
+      &probs)
+    {
+      std::vector<bool> keep;
+      std::fill(keep.begin(), keep.end(), true);
+      std::vector<size_t> prob_args_sorted((*probs).size());
+      std::iota(prob_args_sorted.begin(), prob_args_sorted.end(), 0);
+      std::sort(prob_args_sorted.begin(), prob_args_sorted.end(), \
+        [probs](size_t i1, size_t i2) {return (*probs)[i1] > (*probs)[i2];});
+
+      for (std::vector<size_t>::iterator itr = prob_args_sorted.begin();
+          itr != prob_args_sorted.end()-1; ++itr)
+      {
+        const int idx = itr - prob_args_sorted.begin();
+        std::vector<float> iou_(prob_args_sorted.size()-idx-1);
+        std::vector<std::vector<double> > temp_boxes(iou_.size());
+        for (size_t bb = 0; bb < temp_boxes.size(); ++bb)
+        {
+          std::vector<double> temp_box(4);
+          for (size_t b = 0; b < 4; ++b)
+          {
+            temp_box[b] = (*boxes)[prob_args_sorted[idx+bb+1]][b];
+          }
+          temp_boxes[bb] = temp_box;
+        }
+        intersection_over_union(&temp_boxes, \
+            &(*boxes)[prob_args_sorted[idx]], &iou_);
+        for (std::vector<float>::iterator _itr = iou_.begin();
+            _itr != iou_.end(); ++_itr)
+        {
+          const int iou_idx = _itr - iou_.begin();
+          if (*_itr > intersection_thresh)
+          {
+            keep[prob_args_sorted[idx+iou_idx+1]] = false;
+          }
+        }
+      }
+      return keep;
+    }  // non_maximal_supression function
+
+    void InferBbox::intersection_over_union(std::vector<std::vector<double> >
+      *boxes, std::vector<double> *base_box, std::vector<float> *iou)
+    {
+      double g_xmin = (*base_box)[0];
+      double g_ymin = (*base_box)[1];
+      double g_xmax = (*base_box)[2];
+      double g_ymax = (*base_box)[3];
+      double base_box_w = g_xmax - g_xmin;
+      double base_box_h = g_ymax - g_ymin;
+      for (size_t b = 0; b < (*boxes).size(); ++b) {
+        double xmin = std::max((*boxes)[b][0], g_xmin);
+        double ymin = std::max((*boxes)[b][1], g_ymin);
+        double xmax = std::min((*boxes)[b][2], g_xmax);
+        double ymax = std::min((*boxes)[b][3], g_ymax);
+
+        // Intersection
+        double w = std::max(static_cast<double>(0.0), xmax - xmin);
+        double h = std::max(static_cast<double>(0.0), ymax - ymin);
+        // Union
+        double test_box_w = (*boxes)[b][2] - (*boxes)[b][0];
+        double test_box_h = (*boxes)[b][3] - (*boxes)[b][1];
+
+        float inter_ = w * h;
+        float union_ = test_box_h * test_box_w + base_box_h * base_box_w - inter_;
+        (*iou)[b] = inter_ / (union_ + epsilon);
+    }  // intersection_over_union function
 
   }  //  namespace cv
 

@@ -55,6 +55,8 @@ namespace cv {
       int xmin, xmax;
       int ymin, ymax;
       int class_idx;
+      std::string label_name;
+      double class_prob;
     } object;
 
     /** @brief This class takes in the network output and predicts the bbox(s)
@@ -65,12 +67,25 @@ namespace cv {
         InferBbox(Mat delta_bbox, Mat class_scores, Mat conf_scores,
                   size_t n_top_detections=64, double intersection_thresh=0.8);
         std::vector<object> filter();
+
+      protected:
         void transform_bboxes(std::vector<std::vector<double> > *bboxes);
         void final_probability_dist(std::vector<std::vector<double> > *final_probs);
         void transform_bboxes_inv(std::vector<std::vector<double> > *pre,
                                   std::vector<std::vector<double> > *post);
         void assert_predictions(std::vector<std::vector<double> > *min_max_boxes);
-        void non_maximal_supression();
+        void filter_top_n(std::vector<std::vector<double> > *probs,
+                          std::vector<std::vector<double> > *boxes,
+                          std::vector<std::vector<double> > &top_n_boxes,
+                          std::vector<size_t> &top_n_idxs,
+                          std::vector<double> &top_n_probs);
+        void nms_wrapper(std::vector<std::vector<double> > &top_n_boxes,
+                         std::vector<size_t> &top_n_idxs,
+                         std::vector<double> &top_n_probs);
+        std::vector<bool> non_maximal_supression(std::vector<std::vector<double> >
+                                         &boxes, std::vector<double> &probs);
+        void intersection_over_union(std::vector<std::vector<double> > *boxes,
+                          std::vector<double> *base_box, std::vector<float> *iou);
       private:
         Mat delta_bbox;
         Mat class_scores;
@@ -93,6 +108,9 @@ namespace cv {
         size_t anchors;
         double intersection_thresh;
         size_t n_top_detections;
+
+        // Final detections
+        std::vector<object> detections;
     };
 
   }  //  namespace dnn_objdetect
