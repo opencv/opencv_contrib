@@ -167,6 +167,7 @@ namespace ximgproc
         Eigen::SparseMatrix<float, Eigen::ColMajor> S;
         Eigen::SparseMatrix<float, Eigen::ColMajor> Dn;
         Eigen::SparseMatrix<float, Eigen::ColMajor> Dm;
+        cv::Mat guide;
 
         struct grid_params
         {
@@ -205,6 +206,7 @@ namespace ximgproc
 
     void FastBilateralSolverFilterImpl::init(cv::Mat& reference, double sigma_spatial, double sigma_luma, double sigma_chroma)
     {
+        guide = reference.clone();
         if(reference.channels()==1)
         {
             // cv::Mat reference_yuv;
@@ -476,20 +478,6 @@ namespace ximgproc
                cv::Mat& output)
     {
 
-        Eigen::VectorXf x(npixels);
-        Eigen::VectorXf w(npixels);
-
-        const uchar *pft = reinterpret_cast<const uchar*>(target.data);
-        for (int i = 0; i < npixels; i++)
-        {
-            x(i) = float(pft[i])/255.0f;
-        }
-        const uchar *pfc = reinterpret_cast<const uchar*>(confidence.data);
-        for (int i = 0; i < npixels; i++)
-        {
-            w(i) = float(pfc[i])/255.0f;
-        }
-
         Eigen::SparseMatrix<float, Eigen::ColMajor> M(nvertices,nvertices);
         Eigen::SparseMatrix<float, Eigen::ColMajor> A_data(nvertices,nvertices);
         Eigen::SparseMatrix<float, Eigen::ColMajor> A(nvertices,nvertices);
@@ -498,27 +486,46 @@ namespace ximgproc
         Eigen::VectorXf y0(nvertices);
         Eigen::VectorXf y1(nvertices);
         Eigen::VectorXf w_splat(nvertices);
-        Eigen::VectorXf xw(x.size());
 
+        cv::Mat x;
+        cv::Mat w;
+        cv::Mat xw;
+        cv::Mat filtered_xw;
+        cv::Mat filtered_w;
+        cv::Mat filtered_disp;
+        float fgs_colorSigma = 1.5;
+        float fgs_spatialSigma = 2000;
+	      target.convertTo(x, CV_32FC1, 1.0f/255.0f);
+	      confidence.convertTo(w, CV_32FC1);
+        xw = x.mul(w);
+        cv::ximgproc::fastGlobalSmootherFilter(guide, xw, filtered_xw, fgs_spatialSigma, fgs_colorSigma);
+        cv::ximgproc::fastGlobalSmootherFilter(guide, w, filtered_w, fgs_spatialSigma, fgs_colorSigma);
+        cv::divide(filtered_xw, filtered_w, filtered_disp, 1.0f, CV_32FC1);
 
 
         //construct A
-        Splat(w,w_splat);
+        w_splat.setZero();
+        const float *pfw = reinterpret_cast<const float*>(w.data);
+        for (int i = 0; i < int(splat_idx.size()); i++)
+        {
+            w_splat(splat_idx[i]) += pfw[i]/255.0f;
+        }
         diagonal(w_splat,A_data);
         A = bs_param.lam * (Dm - Dn * (blurs*Dn)) + A_data ;
 
         //construct b
         b.setZero();
+        const float *pfx = reinterpret_cast<const float*>(filtered_disp.data);
         for (int i = 0; i < int(splat_idx.size()); i++)
         {
-            b(splat_idx[i]) += x(i) * w(i);
+            b(splat_idx[i]) += pfx[i]*pfw[i]/255.0f;
         }
 
         //construct guess for y
         y0.setZero();
         for (int i = 0; i < int(splat_idx.size()); i++)
         {
-            y0(splat_idx[i]) += x(i);
+            y0(splat_idx[i]) += pfx[i];
         }
         y1.setZero();
         for (int i = 0; i < int(splat_idx.size()); i++)
@@ -583,16 +590,12 @@ Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray, doubl
 {
     std::cout << "ERROR createFastBilateralSolverFilter : don't have eigen" << '\n';
     exit(0);
-    // return Ptr<FastBilateralSolverFilter>(FastBilateralSolverFilterImpl::create(guide, sigma_spatial, sigma_luma, sigma_chroma));
-    // return NULL;
 }
 
 CV_EXPORTS_W
 void fastBilateralSolverFilter(InputArray, InputArray, InputArray, OutputArray, double, double, double)
 {
     std::cout << "ERROR fastBilateralSolverFilter : don't have eigen" << '\n';
-    // Ptr<FastBilateralSolverFilter> fbs = createFastBilateralSolverFilter(guide, sigma_spatial, sigma_luma, sigma_chroma);
-    // fbs->filter(src, confidence, dst);
 }
 
 
