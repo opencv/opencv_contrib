@@ -75,12 +75,12 @@ namespace ximgproc
     {
     public:
 
-        static Ptr<FastBilateralSolverFilterImpl> create(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma)
+        static Ptr<FastBilateralSolverFilterImpl> create(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma, int num_iter, double max_tol)
         {
             CV_Assert(guide.type() == CV_8UC1 || guide.type() == CV_8UC3);
             FastBilateralSolverFilterImpl *fbs = new FastBilateralSolverFilterImpl();
             Mat gui = guide.getMat();
-            fbs->init(gui,sigma_spatial,sigma_luma,sigma_chroma);
+            fbs->init(gui,sigma_spatial,sigma_luma,sigma_chroma,num_iter,max_tol);
             return Ptr<FastBilateralSolverFilterImpl>(fbs);
         }
 
@@ -135,7 +135,7 @@ namespace ximgproc
 
     // protected:
         void solve(cv::Mat& src, cv::Mat& confidence, cv::Mat& dst);
-        void init(cv::Mat& reference, double sigma_spatial, double sigma_luma, double sigma_chroma);
+        void init(cv::Mat& reference, double sigma_spatial, double sigma_luma, double sigma_chroma, int num_iter, double max_tol);
 
         void Splat(Eigen::VectorXf& input, Eigen::VectorXf& dst);
         void Blur(Eigen::VectorXf& input, Eigen::VectorXf& dst);
@@ -204,13 +204,15 @@ namespace ximgproc
 
 
 
-    void FastBilateralSolverFilterImpl::init(cv::Mat& reference, double sigma_spatial, double sigma_luma, double sigma_chroma)
+    void FastBilateralSolverFilterImpl::init(cv::Mat& reference, double sigma_spatial, double sigma_luma, double sigma_chroma, int num_iter, double max_tol)
     {
         guide = reference.clone();
+
+        bs_param.cg_maxiter = num_iter;
+        bs_param.cg_tol = max_tol;
+
         if(reference.channels()==1)
         {
-            // cv::Mat reference_yuv;
-            // cv::cvtColor(reference, reference_yuv, COLOR_BGR2YCrCb);
             dim = 3;
             cols = reference.cols;
             rows = reference.rows;
@@ -562,15 +564,15 @@ namespace ximgproc
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 CV_EXPORTS_W
-Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma)
+Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma, int num_iter, double max_tol)
 {
-    return Ptr<FastBilateralSolverFilter>(FastBilateralSolverFilterImpl::create(guide, sigma_spatial, sigma_luma, sigma_chroma));
+    return Ptr<FastBilateralSolverFilter>(FastBilateralSolverFilterImpl::create(guide, sigma_spatial, sigma_luma, sigma_chroma, num_iter, max_tol));
 }
 
 CV_EXPORTS_W
-void fastBilateralSolverFilter(InputArray guide, InputArray src, InputArray confidence, OutputArray dst, double sigma_spatial, double sigma_luma, double sigma_chroma)
+void fastBilateralSolverFilter(InputArray guide, InputArray src, InputArray confidence, OutputArray dst, double sigma_spatial, double sigma_luma, double sigma_chroma, int num_iter, double max_tol)
 {
-    Ptr<FastBilateralSolverFilter> fbs = createFastBilateralSolverFilter(guide, sigma_spatial, sigma_luma, sigma_chroma);
+    Ptr<FastBilateralSolverFilter> fbs = createFastBilateralSolverFilter(guide, sigma_spatial, sigma_luma, sigma_chroma, num_iter, max_tol);
     fbs->filter(src, confidence, dst);
 }
 
@@ -586,14 +588,14 @@ namespace ximgproc
 {
 
 CV_EXPORTS_W
-Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray, double, double, double)
+Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray, double, double, double, int, double)
 {
     std::cout << "ERROR createFastBilateralSolverFilter : don't have eigen" << '\n';
     exit(0);
 }
 
 CV_EXPORTS_W
-void fastBilateralSolverFilter(InputArray, InputArray, InputArray, OutputArray, double, double, double)
+void fastBilateralSolverFilter(InputArray, InputArray, InputArray, OutputArray, double, double, double, int, double)
 {
     std::cout << "ERROR fastBilateralSolverFilter : don't have eigen" << '\n';
 }

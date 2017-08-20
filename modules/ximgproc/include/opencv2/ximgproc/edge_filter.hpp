@@ -403,9 +403,13 @@ public:
 
 @param sigma_chroma parameter, that is similar to chroma space sigma in bilateralFilter.
 
+@param num_iter number of iterations used for solving, 25 is usually enough.
+
+@param max_tol solving tolerance used for solving, 25 is usually enough.
+
 For more details about the Fast Bilateral Solver parameters, see the original paper cite BarronPoole2016.
 */
-CV_EXPORTS_W Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma);
+CV_EXPORTS_W Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma, int num_iter = 25, double max_tol = 1e-5);
 
 
 /** @brief Simple one-line Fast Bilateral Solver filter call. If you have multiple images to filter with the same
@@ -424,8 +428,12 @@ guide then use FastBilateralSolverFilter interface to avoid extra computations.
 @param sigma_luma parameter, that is similar to luma space sigma in bilateralFilter.
 
 @param sigma_chroma parameter, that is similar to chroma space sigma in bilateralFilter.
+
+@param num_iter number of iterations used for solving, 25 is usually enough.
+
+@param max_tol solving tolerance used for solving, 25 is usually enough.
 */
-CV_EXPORTS_W void fastBilateralSolverFilter(InputArray guide, InputArray src, InputArray confidence, OutputArray dst, double sigma_spatial, double sigma_luma, double sigma_chroma);
+CV_EXPORTS_W void fastBilateralSolverFilter(InputArray guide, InputArray src, InputArray confidence, OutputArray dst, double sigma_spatial = 8, double sigma_luma = 8, double sigma_chroma = 8, int num_iter = 25, double max_tol = 1e-5);
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
