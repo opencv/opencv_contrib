@@ -168,7 +168,26 @@ namespace cv
                 else
                     plotSizeHeight = 300;
             }
-
+            void setShowGrid(bool _needShowGrid)
+            {
+                needShowGrid = _needShowGrid;
+            }
+            void setShowText(bool _needShowText)
+            {
+                needShowText = _needShowText;
+            }
+            void setGridLinesNumber(int _gridLinesNumber)
+            {
+                if(_gridLinesNumber <= 0)
+                    _gridLinesNumber = 1;
+                gridLinesNumber = _gridLinesNumber;
+            }
+            void setPointIdxToPrint(int _cursorPos)
+            {
+                if(_cursorPos >= plotDataX.rows || _cursorPos < 0)
+                    _cursorPos = plotDataX.rows - 1;
+                cursorPos = _cursorPos;
+            }
             //render the plotResult to a Mat
             void render(OutputArray _plotResult)
             {
@@ -189,8 +208,8 @@ namespace cv
                 int ImageXzero = (int)InterpXdataFindZero.at<double>(NumVecElements,0);
                 int ImageYzero = (int)InterpYdataFindZero.at<double>(NumVecElements,0);
 
-                double CurrentX = plotDataX.at<double>(NumVecElements-1,0);
-                double CurrentY = plotDataY.at<double>(NumVecElements-1,0);
+                double CurrentX = plotDataX.at<double>(cursorPos,0);
+                double CurrentY = plotDataY.at<double>(cursorPos,0);
 
                 drawAxis(ImageXzero,ImageYzero, CurrentX, CurrentY, plotAxisColor, plotGridColor);
 
@@ -245,6 +264,10 @@ namespace cv
             double plotMinY_plusZero;
             double plotMaxY_plusZero;
             int plotLineWidth;
+            bool needShowGrid;
+            bool needShowText;
+            int gridLinesNumber;
+            int cursorPos;
 
             //colors of each plot element
             Scalar plotLineColor;
@@ -319,22 +342,30 @@ namespace cv
                 setPlotBackgroundColor(Scalar(0, 0, 0));
                 setPlotLineColor(Scalar(0, 255, 255));
                 setPlotTextColor(Scalar(255, 255, 255));
+                setShowGrid(true);
+                setShowText(true);
+                setGridLinesNumber(10);
+                setPointIdxToPrint(-1);
             }
 
             void drawAxis(int ImageXzero, int ImageYzero, double CurrentX, double CurrentY, Scalar axisColor, Scalar gridColor)
             {
-                drawValuesAsText(0, ImageXzero, ImageYzero, 10, 20);
-                drawValuesAsText(0, ImageXzero, ImageYzero, -20, 20);
-                drawValuesAsText(0, ImageXzero, ImageYzero, 10, -10);
-                drawValuesAsText(0, ImageXzero, ImageYzero, -20, -10);
-                drawValuesAsText("X = %g",CurrentX, 0, 0, 40, 20);
-                drawValuesAsText("Y = %g",CurrentY, 0, 20, 40, 20);
+                if(needShowText)
+                {
+                    drawValuesAsText(0, ImageXzero, ImageYzero, 10, 20);
+                    drawValuesAsText(0, ImageXzero, ImageYzero, -20, 20);
+                    drawValuesAsText(0, ImageXzero, ImageYzero, 10, -10);
+                    drawValuesAsText(0, ImageXzero, ImageYzero, -20, -10);
+                    drawValuesAsText((format("X_%d = ", cursorPos) + "%g").c_str(), CurrentX, 0, 0, 40, 20);
+                    drawValuesAsText((format("Y_%d = ", cursorPos) + "%g").c_str(), CurrentY, 0, 20, 40, 20);
+                }
 
                 //Horizontal X axis and equispaced horizontal lines
-                int LineSpace = 50;
+                int LineSpace = cvRound(plotSizeHeight / (float)gridLinesNumber);
                 int TraceSize = 5;
                 drawLine(0, plotSizeWidth, ImageYzero, ImageYzero, axisColor);
 
+               if(needShowGrid)
                for(int i=-plotSizeHeight; i<plotSizeHeight; i=i+LineSpace){
 
                     if(i!=0){
@@ -349,7 +380,9 @@ namespace cv
 
                 //Vertical Y axis
                 drawLine(ImageXzero, ImageXzero, 0, plotSizeHeight, axisColor);
+                LineSpace = cvRound(LineSpace * (float)plotSizeWidth / plotSizeHeight );
 
+                if(needShowGrid)
                 for(int i=-plotSizeWidth; i<plotSizeWidth; i=i+LineSpace){
 
                     if(i!=0){
@@ -420,13 +453,13 @@ namespace cv
 
         };
 
-        Ptr<Plot2d> createPlot2d(InputArray _plotData)
+        Ptr<Plot2d> Plot2d::create(InputArray _plotData)
         {
             return Ptr<Plot2dImpl> (new Plot2dImpl (_plotData));
 
         }
 
-        Ptr<Plot2d> createPlot2d(InputArray _plotDataX, InputArray _plotDataY)
+        Ptr<Plot2d> Plot2d::create(InputArray _plotDataX, InputArray _plotDataY)
         {
             return Ptr<Plot2dImpl> (new Plot2dImpl (_plotDataX, _plotDataY));
         }

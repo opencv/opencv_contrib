@@ -144,7 +144,7 @@ struct beamSearch_node {
     double score;
     vector<int> segmentation;
     bool expanded;
-    // TODO calculating score of its childs would be much faster if we store the last column
+    // TODO calculating score of its child would be much faster if we store the last column
     //      of their "root" path.
 };
 
@@ -231,7 +231,7 @@ public:
 
         // TODO if input is a text line (not a word) we may need to split into words here!
 
-        // do sliding window classification along a croped word image
+        // do sliding window classification along a cropped word image
         classifier->eval(src, recognition_probabilities, oversegmentation);
 
         // if the number of oversegmentation points found is less than 2 we can not do nothing!!
