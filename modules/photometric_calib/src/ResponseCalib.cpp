@@ -11,15 +11,15 @@
 
 namespace cv { namespace photometric_calib{
 
-ResponseCalib::ResponseCalib(std::string folderPath, std::string timePath) : _leakPadding(2), _nIts(10), _skipFrames(1)
+ResponseCalib::ResponseCalib(std::string folderPath, std::string timePath, std::string imageFormat) : _leakPadding(2), _nIts(10), _skipFrames(1)
 {
-    imageReader = new Reader(folderPath, "png", timePath);
+    imageReader = new Reader(folderPath, imageFormat, timePath);
 }
 
-ResponseCalib::ResponseCalib(std::string folderPath, std::string timePath, int leakPadding, int nIts, int skipFrames) :
+ResponseCalib::ResponseCalib(std::string folderPath, std::string timePath, int leakPadding, int nIts, int skipFrames, std::string imageFormat) :
         _leakPadding(leakPadding), _nIts(nIts), _skipFrames(skipFrames)
 {
-    imageReader = new Reader(folderPath, "png", timePath);
+    imageReader = new Reader(folderPath, imageFormat, timePath);
 }
 
 Vec2d ResponseCalib::rmse(const double *G, const double *E, const std::vector<double> &exposureVec, const std::vector<uchar *> &dataVec,

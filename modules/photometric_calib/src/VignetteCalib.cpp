@@ -11,11 +11,11 @@
 namespace cv { namespace photometric_calib{
 
 
-VignetteCalib::VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile, std::string gammaFile) :
+VignetteCalib::VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile, std::string gammaFile, std::string imageFormat) :
         _imageSkip(1), _maxIterations(20), _outlierTh(15), _gridWidth(1000), _gridHeight(1000), _facW(5), _facH(5),
         _maxAbsGrad(255)
 {
-    imageReader = new Reader(folderPath, "png", timePath);
+    imageReader = new Reader(folderPath, imageFormat, timePath);
     // check the extension of the camera file.
     CV_Assert(cameraFile.substr(cameraFile.find_last_of(".") + 1) == "yaml" || cameraFile.substr(cameraFile.find_last_of(".") + 1) == "yml");
     FileStorage cameraStorage(cameraFile, FileStorage::READ);
@@ -25,11 +25,11 @@ VignetteCalib::VignetteCalib(std::string folderPath, std::string timePath, std::
 }
 
 VignetteCalib::VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile, std::string gammaFile, int imageSkip, int maxIterations,
-                             int outlierTh, int gridWidth, int gridHeight, float facW, float facH, int maxAbsGrad) :
+                             int outlierTh, int gridWidth, int gridHeight, float facW, float facH, int maxAbsGrad, std::string imageFormat) :
         _imageSkip(imageSkip), _maxIterations(maxIterations), _outlierTh(outlierTh), _gridWidth(gridWidth), _gridHeight(gridHeight),
         _facW(facW), _facH(facH), _maxAbsGrad(maxAbsGrad)
 {
-    imageReader = new Reader(folderPath, "png", timePath);
+    imageReader = new Reader(folderPath, imageFormat, timePath);
     // check the extension of the camera file.
     CV_Assert(cameraFile.substr(cameraFile.find_last_of(".") + 1) == "yaml" || cameraFile.substr(cameraFile.find_last_of(".") + 1) == "yml");
     FileStorage cameraStorage(cameraFile, FileStorage::READ);

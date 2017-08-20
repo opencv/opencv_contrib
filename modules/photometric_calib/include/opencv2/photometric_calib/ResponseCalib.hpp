@@ -12,8 +12,8 @@ namespace cv { namespace photometric_calib {
 class CV_EXPORTS ResponseCalib
 {
 public:
-    ResponseCalib(std::string folderPath, std::string timePath);
-    ResponseCalib(std::string folderPath, std::string timePath, int leakPadding, int nIts, int skipFrames);
+    ResponseCalib(std::string folderPath, std::string timePath, std::string imageFormat);
+    ResponseCalib(std::string folderPath, std::string timePath, int leakPadding, int nIts, int skipFrames, std::string imageFormat);
 
     void plotE(const double* E, int w, int h, const std::string &saveTo);
 

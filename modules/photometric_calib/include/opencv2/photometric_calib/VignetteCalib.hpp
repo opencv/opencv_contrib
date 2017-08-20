@@ -15,9 +15,9 @@ namespace cv { namespace photometric_calib {
 class CV_EXPORTS VignetteCalib
 {
 public:
-    VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile, std::string gammaFile);
+    VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile, std::string gammaFile, std::string imageFormat);
     VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile, std::string gammaFile, int imageSkip, int maxIterations, int outlierTh,
-                  int gridWidth, int gridHeight, float facW, float facH, int maxAbsGrad);
+                  int gridWidth, int gridHeight, float facW, float facH, int maxAbsGrad, std::string imageFormat);
 
     virtual ~VignetteCalib();
 
