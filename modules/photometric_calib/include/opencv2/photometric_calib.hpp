@@ -11,7 +11,9 @@
 #include "opencv2/photometric_calib/ResponseCalib.hpp"
 #include "opencv2/photometric_calib/VignetteCalib.hpp"
 
-namespace cv { namespace photometric_calib{
-}} // namespace photometric_calib, cv
+namespace cv {
+namespace photometric_calib {
+} // namespace photometric_calib
+} // namespace cv
 
 #endif

@@ -10,7 +10,8 @@
 #include <vector>
 #include <string>
 
-namespace cv { namespace photometric_calib{
+namespace cv {
+namespace photometric_calib {
 
 //! @addtogroup photometric_calib
 //! @{
@@ -66,8 +67,11 @@ public:
     float getExposureDuration(unsigned long id) const;
 
     int getWidth() const;
+
     int getHeight() const;
+
     const std::string &getFolderPath() const;
+
     const std::string &getTimeFilePath() const;
 
 private:
@@ -89,5 +93,7 @@ private:
 
 //! @}
 
-}} // namespace cv photometric_calib
+} // namespace photometric_calib
+} // namespace cv
+
 #endif //_OPENCV_READER_HPP

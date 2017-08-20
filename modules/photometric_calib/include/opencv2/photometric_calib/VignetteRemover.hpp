@@ -7,7 +7,8 @@
 
 #include "opencv2/core.hpp"
 
-namespace cv { namespace photometric_calib {
+namespace cv {
+namespace photometric_calib {
 
 //! @addtogroup photometric_calib
 //! @{
@@ -27,6 +28,7 @@ public:
      * @param h_ the height of input image
      */
     VignetteRemover(const std::string &vignettePath, int w_, int h_);
+
     ~VignetteRemover();
 
     /*!
@@ -44,13 +46,13 @@ public:
     void getUnVignetteImageVec(const std::vector<float> &unGammaImVec, std::vector<float> &outImVec);
 
 private:
-    float* vignetteMap;
-    float* vignetteMapInv;
-    int w,h;
+    float *vignetteMap;
+    float *vignetteMapInv;
+    int w, h;
     bool validVignette;
 };
 
-}}
-
+} // namespace photometric_calib
+} // namespace cv
 
 #endif //_OPENCV_VIGNETTEREMOVER_HPP

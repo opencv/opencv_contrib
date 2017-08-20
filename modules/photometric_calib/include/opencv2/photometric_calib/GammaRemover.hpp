@@ -7,7 +7,8 @@
 
 #include "opencv2/core.hpp"
 
-namespace cv { namespace photometric_calib {
+namespace cv {
+namespace photometric_calib {
 
 //! @addtogroup photometric_calib
 //! @{
@@ -46,29 +47,34 @@ public:
      * @brief get gamma function.
      * @return
      */
-    inline float* getG()
+    inline float *getG()
     {
-        if(!validGamma) return 0;
-        else return G;
+        if (!validGamma)
+        { return 0; }
+        else
+        { return G; }
     };
 
     /*!
      * @brief get inverse gamma function
      * @return
      */
-    inline float* getGInv()
+    inline float *getGInv()
     {
-        if(!validGamma) return 0;
-        else return GInv;
+        if (!validGamma)
+        { return 0; }
+        else
+        { return GInv; }
     };
 
 private:
     float G[256];
     float GInv[256];
-    int w,h;
+    int w, h;
     bool validGamma;
 };
 
-}}
+} // namespace photometric_calib
+} // namespace cv
 
 #endif //_OPENCV__GAMMAREMOVER_HPP

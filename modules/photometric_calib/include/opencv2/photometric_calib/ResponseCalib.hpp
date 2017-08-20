@@ -7,31 +7,36 @@
 
 #include "opencv2/photometric_calib/Reader.hpp"
 
-namespace cv { namespace photometric_calib {
+namespace cv {
+namespace photometric_calib {
 
 class CV_EXPORTS ResponseCalib
 {
 public:
     ResponseCalib(std::string folderPath, std::string timePath, std::string imageFormat);
-    ResponseCalib(std::string folderPath, std::string timePath, int leakPadding, int nIts, int skipFrames, std::string imageFormat);
 
-    void plotE(const double* E, int w, int h, const std::string &saveTo);
+    ResponseCalib(std::string folderPath, std::string timePath, int leakPadding, int nIts, int skipFrames,
+                  std::string imageFormat);
 
-    Vec2d rmse(const double* G, const double* E, const std::vector<double> &exposureVec, const std::vector<unsigned char*> &dataVec, int wh);
+    void plotE(const double *E, int w, int h, const std::string &saveTo);
 
-    void plotG(const double* G, const std::string &saveTo);
+    Vec2d rmse(const double *G, const double *E, const std::vector<double> &exposureVec,
+               const std::vector<unsigned char *> &dataVec, int wh);
+
+    void plotG(const double *G, const std::string &saveTo);
 
     void calib();
 
-    inline const std::string& getImageFolderPath () const
+    inline const std::string &getImageFolderPath() const
     {
         CV_Assert(imageReader);
-        return imageReader -> getFolderPath();
+        return imageReader->getFolderPath();
     }
-    inline const std::string& getTimeFilePath () const
+
+    inline const std::string &getTimeFilePath() const
     {
         CV_Assert(imageReader);
-        return imageReader -> getTimeFilePath();
+        return imageReader->getTimeFilePath();
     }
 
 private:
@@ -41,6 +46,7 @@ private:
     Reader *imageReader;
 };
 
-}}
+} // namespace photometric_calib
+} // namespace cv
 
 #endif //_OPENCV_RESPONSECALIB_HPP

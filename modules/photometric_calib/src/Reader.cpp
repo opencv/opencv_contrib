@@ -5,17 +5,19 @@
 #include "precomp.hpp"
 #include "opencv2/photometric_calib/Reader.hpp"
 
-namespace cv { namespace photometric_calib{
+namespace cv {
+namespace photometric_calib {
 
 unsigned long Reader::getNumImages() const
 {
-    return (unsigned long)images.size();
+    return (unsigned long) images.size();
 }
 
 void Reader::loadTimestamps(const std::string &timesFile)
 {
     // check the extension of the time file.
-    CV_Assert(timesFile.substr(timesFile.find_last_of(".") + 1) == "yaml" || timesFile.substr(timesFile.find_last_of(".") + 1) == "yml");
+    CV_Assert(timesFile.substr(timesFile.find_last_of(".") + 1) == "yaml" ||
+              timesFile.substr(timesFile.find_last_of(".") + 1) == "yml");
 
     FileStorage timeFile;
     timeFile.open(timesFile, FileStorage::READ);
@@ -33,9 +35,13 @@ void Reader::loadTimestamps(const std::string &timesFile)
     FileNodeIterator itEt = exposureTimeNode.begin(), itEtEnd = exposureTimeNode.end();
 
     for (; itTs != itTsEnd; ++itTs)
-        timeStamps.push_back((double)*itTs);
+    {
+        timeStamps.push_back((double) *itTs);
+    }
     for (; itEt != itEtEnd; ++itEt)
-        exposureDurations.push_back((float)*itEt);
+    {
+        exposureDurations.push_back((float) *itEt);
+    }
 
     timeFile.release();
 
@@ -63,11 +69,11 @@ Reader::Reader(const std::string &folderPath, const std::string &imageExt, const
     _height = 0;
 
     // images should be of CV_8U and same size
-    for(size_t i = 0; i < images.size(); ++i)
+    for (size_t i = 0; i < images.size(); ++i)
     {
         Mat img = imread(images[i], IMREAD_GRAYSCALE);
         CV_Assert(img.type() == CV_8U);
-        if(i == 0)
+        if (i == 0)
         {
             _width = img.cols;
             _height = img.rows;
@@ -99,20 +105,25 @@ float Reader::getExposureDuration(unsigned long id) const
     return exposureDurations[id];
 }
 
-int Reader::getWidth() const {
+int Reader::getWidth() const
+{
     return _width;
 }
 
-int Reader::getHeight() const {
+int Reader::getHeight() const
+{
     return _height;
 }
 
-const std::string &Reader::getFolderPath() const {
+const std::string &Reader::getFolderPath() const
+{
     return _folderPath;
 }
 
-const std::string &Reader::getTimeFilePath() const {
+const std::string &Reader::getTimeFilePath() const
+{
     return _timeFilePath;
 }
 
-}} // namespace photometric_calib, cv
+} // namespace photometric_calib
+} // namespace cv

@@ -9,25 +9,35 @@
 #include "opencv2/photometric_calib/Reader.hpp"
 #include "opencv2/photometric_calib/GammaRemover.hpp"
 
-namespace cv { namespace photometric_calib {
+namespace cv {
+namespace photometric_calib {
 
 
 class CV_EXPORTS VignetteCalib
 {
 public:
-    VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile, std::string gammaFile, std::string imageFormat, bool silent);
-    VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile, std::string gammaFile, std::string imageFormat, bool silent, int imageSkip, int maxIterations, int outlierTh,
+    VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile, std::string gammaFile,
+                  std::string imageFormat, bool silent);
+
+    VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile, std::string gammaFile,
+                  std::string imageFormat, bool silent, int imageSkip, int maxIterations, int outlierTh,
                   int gridWidth, int gridHeight, float facW, float facH, int maxAbsGrad);
 
     virtual ~VignetteCalib();
 
     //EIGEN_ALWAYS_INLINE float getInterpolatedElement(const float* const mat, const float x, const float y, const int width)
-    float getInterpolatedElement(const float* const mat, const float x, const float y, const int width);
+    float getInterpolatedElement(const float *const mat, const float x, const float y, const int width);
+
     float calMeanExposureTime();
-    void displayImage(float* I, int w, int h, std::string name);
-    void displayImageV(float* I, int w, int h, std::string name);
-    bool preCalib(unsigned long id, float*& image, float*& plane2imgX, float*& plane2imgY);
+
+    void displayImage(float *I, int w, int h, std::string name);
+
+    void displayImageV(float *I, int w, int h, std::string name);
+
+    bool preCalib(unsigned long id, float *&image, float *&plane2imgX, float *&plane2imgY);
+
     void calib();
+
     void calibFast();
 
 private:
@@ -58,7 +68,7 @@ private:
     bool _silent;
 };
 
-}}
-
+} // namespace photometric_calib
+} // namespace cv
 
 #endif //_OPENCV_VIGNETTECALIB_HPP

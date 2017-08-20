@@ -4,5 +4,7 @@
 
 #include "precomp.hpp"
 
-namespace cv{ namespace photometric_calib{
-}} // namespace photometric_calib, cv
+namespace cv {
+namespace photometric_calib {
+}
+} // namespace photometric_calib, cv
