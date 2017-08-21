@@ -48,10 +48,13 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
 
-namespace cv {
-  namespace dnn_objdetect {
+namespace cv
+{
+  namespace dnn_objdetect
+  {
 
-    typedef struct {
+    typedef struct
+    {
       int xmin, xmax;
       int ymin, ymax;
       int class_idx;
@@ -62,11 +65,14 @@ namespace cv {
     /** @brief This class takes in the network output and predicts the bbox(s)
      *
      */
-    class CV_EXPORTS InferBbox {
+    class CV_EXPORTS InferBbox
+    {
       public:
-        InferBbox(Mat delta_bbox, Mat class_scores, Mat conf_scores,
-                  size_t n_top_detections=64, double intersection_thresh=0.8);
-        std::vector<object> filter();
+        InferBbox(Mat _delta_bbox, Mat _class_scores, Mat _conf_scores);
+        void filter();
+        
+        // Final detections
+        std::vector<object> detections;
 
       protected:
         void transform_bboxes(std::vector<std::vector<double> > *bboxes);
@@ -82,11 +88,19 @@ namespace cv {
         void nms_wrapper(std::vector<std::vector<double> > &top_n_boxes,
                          std::vector<size_t> &top_n_idxs,
                          std::vector<double> &top_n_probs);
-        std::vector<bool> non_maximal_supression(std::vector<std::vector<double> >
-                                         &boxes, std::vector<double> &probs);
+        std::vector<bool> non_maximal_suppression(std::vector<std::vector<double> >
+                                         *boxes, std::vector<double> *probs);
         void intersection_over_union(std::vector<std::vector<double> > *boxes,
                           std::vector<double> *base_box, std::vector<float> *iou);
+
+        static inline bool comparator (std::pair<double, size_t> l1,
+            std::pair<double, size_t> l2)
+        {
+          return l1.first > l2.first;
+        }
+
       private:
+
         Mat delta_bbox;
         Mat class_scores;
         Mat conf_scores;
@@ -101,16 +115,14 @@ namespace cv {
         std::vector<std::pair<double, double> > anchor_center;
         std::vector<std::pair<double, double> > anchor_shapes;
 
-        std::map<int, std::string> label_map;
+        std::vector<std::string> label_map;
 
         size_t num_classes;
         size_t anchors_per_grid;
         size_t anchors;
         double intersection_thresh;
         size_t n_top_detections;
-
-        // Final detections
-        std::vector<object> detections;
+        double epsilon;
     };
 
   }  //  namespace dnn_objdetect

@@ -39,25 +39,27 @@
 //
 //M*/
 
-#include "precomp.hpp"
+// #include "precomp.hpp"
 
 #include <vector>
 #include <memory>
 #include <string>
+#include <map>
+#include <numeric>
+#include <algorithm>
 
-#include "core_detect.hpp"
+#include "opencv2/core_detect.hpp"
 
 
 namespace cv
 {
   namespace dnn_objdetect
   {
-    InferBbox::InferBbox(Mat delta_bbox, Mat class_scores, Mat conf_scores,
-      size_t n_top_detections = 64, double intersection_thresh = 0.8)
+    InferBbox::InferBbox(Mat _delta_bbox, Mat _class_scores, Mat _conf_scores)
     {
-      this->delta_bbox = bbox_delta;
-      this->class_scores = class_scores;
-      this->conf_scores = conf_scores;
+      this->delta_bbox = _delta_bbox;
+      this->class_scores = _class_scores;
+      this->conf_scores = _conf_scores;
 
       this->n_top_detections = n_top_detections;
       this->intersection_thresh = intersection_thresh;
@@ -70,15 +72,19 @@ namespace cv
       num_classes = 20;
       anchors_per_grid = 9;
       anchors = W * H * anchors_per_grid;
+      
+      intersection_thresh = 0.9;
+      n_top_detections = 64;
+      epsilon = 1e-7;
 
       anchors_values.resize(anchors);
-      for (size_t i = 0; i < anchors; ++anchor)
+      for (size_t i = 0; i < anchors; ++i)
       {
         anchors_values[i].resize(4);
       }
 
       // Anchor shapes predicted from kmeans clustering
-      double arr[9][2] = {{377, 371}, {64, 118}, {129, 326}
+      double arr[9][2] = {{377, 371}, {64, 118}, {129, 326},
                           {172, 126}, {34, 46}, {353, 204},
                           {89, 214}, {249, 361}, {209, 239}};
       for (size_t i = 0; i < anchors_per_grid; ++i)
@@ -95,35 +101,44 @@ namespace cv
       }
 
       // Generate the final anchor values
-      for (size_t i = 0, anchor = 0, j = 0; anchor < anchors; ++anchor) {
+      for (size_t i = 0, anchor = 0, j = 0; anchor < anchors; ++anchor)
+      {
         anchors_values[anchor][0] = anchor_center.at(i).first;
         anchors_values[anchor][1] = anchor_center.at(i).second;
         anchors_values[anchor][2] = anchor_shapes.at(j).first;
         anchors_values[anchor][3] = anchor_shapes.at(j).second;
-        if ((anchor+1) % anchors_per_grid == 0) {
+        if ((anchor+1) % anchors_per_grid == 0)
+        {
           i += 1;
           j = 0;
-        } else {
+        }
+        else
+        {
           ++j;
         }
       }
 
       // Map the class index to the corresponding labels
-      label_map = {0: "aeroplane", 1: "bicycle", 2: "bird", 3: "boat", 
-                   4: "bottle", 5: "bus", 6: "car", 7: "cat", 8: "chair",
-                   9: "cow", 10: "diningtable", 11: "dog", 12: "horse",
-                   13: "motorbike", 14: "person", 15: "pottedplant", 
-                   16: "sheep", 17: "sofa", 18: "train", 19: "tvmonitor"};
+      std::string arrs[20] = {"aeroplane", "bicycle", "bird", "boat", 
+                           "bottle", "bus", "car", "cat", "chair",
+                           "cow", "diningtable", "dog", "horse",
+                           "motorbike", "person", "pottedplant", 
+                           "sheep", "sofa", "train", "tvmonitor"};
+      for (size_t idx = 0; idx < num_classes; ++idx)
+      {
+        label_map.push_back(arrs[idx]);
+      }
     }  //  default constructer
 
-    std::vector<object> InferBbox::filter() 
+    void InferBbox::filter() 
     {
       // Some containers
-      std::vector<std::vector<double> > transformed_bbox_preds(anchors);
-      std::vector<std::vector<double> > min_max_bboxes(anchors);
-      std::vector<std::vector<double> > final_probs(anchors);
+      std::vector<std::vector<double> > transformed_bbox_preds(this->anchors);
+      std::vector<std::vector<double> > min_max_bboxes(this->anchors);
+      std::vector<std::vector<double> > final_probs(this->anchors);
       
-      for (size_t i = 0; i < anchors; ++i) {
+      for (size_t i = 0; i < this->anchors; ++i)
+      {
         transformed_bbox_preds[i].resize(4);
         final_probs[i].resize(num_classes);
         min_max_bboxes[i].resize(4);
@@ -265,7 +280,6 @@ namespace cv
       std::vector<double> max_class_probs((*probs).size());
       std::vector<size_t> args((*probs).size());
 
-      std::iota(args.begin(), args.end(), 0);
       for (size_t box = 0; box < (*boxes).size(); ++box)
       {
         const int _prob_idx = \
@@ -274,9 +288,18 @@ namespace cv
         max_class_probs[box] = (*probs)[box][_prob_idx];
       }
 
-      std::sort(args.begin(), args.end(), \
-        [&max_class_probs](size_t i1, size_t i2) \
-        {return max_class_probs[i1] > max_class_probs[i2];});
+      std::vector<std::pair<double, size_t> > temp_sort(max_class_probs.size());
+      for (size_t tidx = 0; tidx < max_class_probs.size(); ++tidx)
+      {
+        temp_sort[tidx] = std::make_pair(max_class_probs[tidx],\
+          static_cast<size_t>(tidx));
+      }
+      std::sort(temp_sort.begin(), temp_sort.end(), InferBbox::comparator);
+
+      for (size_t idx = 0; idx < temp_sort.size(); ++idx)
+      {
+        args[idx] = temp_sort[idx].second;
+      }
 
       // Get `n_top_detections`
       std::vector<size_t> top_n_order(args.begin(), \
@@ -299,7 +322,7 @@ namespace cv
 
     void InferBbox::nms_wrapper(std::vector<std::vector<double> >
       &top_n_boxes, std::vector<size_t> &top_n_idxs,
-      &std::vector<double> &top_n_probs)
+      std::vector<double> &top_n_probs)
     {
       for (size_t c = 0; c < this->num_classes; ++c)
       {
@@ -333,14 +356,14 @@ namespace cv
           }
         }
         keep_per_class = \
-            non_maximal_suppression(boxes_per_class, probs_per_class);
+            non_maximal_suppression(&boxes_per_class, &probs_per_class);
         for (std::vector<bool>::iterator itr = keep_per_class.begin();
             itr != keep_per_class.end(); ++itr)
         {
           const int idx = itr - keep_per_class.begin();
           if (*itr)
           {
-            object new_detection;
+            dnn_objdetect::object new_detection;
 
             new_detection.class_idx = c;
             new_detection.label_name = this->label_map[c];
@@ -356,16 +379,26 @@ namespace cv
       }
     }  // nms_wrapper function
 
-    std::vector<bool> InferBbox::non_maximal_supression(
-      std::vector<std::vector<double> > &boxes, std::vector<double>
-      &probs)
+    std::vector<bool> InferBbox::non_maximal_suppression(
+      std::vector<std::vector<double> > *boxes, std::vector<double>
+      *probs)
     {
       std::vector<bool> keep;
       std::fill(keep.begin(), keep.end(), true);
       std::vector<size_t> prob_args_sorted((*probs).size());
-      std::iota(prob_args_sorted.begin(), prob_args_sorted.end(), 0);
-      std::sort(prob_args_sorted.begin(), prob_args_sorted.end(), \
-        [probs](size_t i1, size_t i2) {return (*probs)[i1] > (*probs)[i2];});
+
+      std::vector<std::pair<double, size_t> > temp_sort((*probs).size());
+      for (size_t tidx = 0; tidx < (*probs).size(); ++tidx)
+      {
+        temp_sort[tidx] = std::make_pair((*probs)[tidx],\
+          static_cast<size_t>(tidx));
+      }
+      std::sort(temp_sort.begin(), temp_sort.end(), InferBbox::comparator);
+
+      for (size_t idx = 0; idx < temp_sort.size(); ++idx)
+      {
+        prob_args_sorted[idx] = temp_sort[idx].second;
+      }
 
       for (std::vector<size_t>::iterator itr = prob_args_sorted.begin();
           itr != prob_args_sorted.end()-1; ++itr)
@@ -406,7 +439,8 @@ namespace cv
       double g_ymax = (*base_box)[3];
       double base_box_w = g_xmax - g_xmin;
       double base_box_h = g_ymax - g_ymin;
-      for (size_t b = 0; b < (*boxes).size(); ++b) {
+      for (size_t b = 0; b < (*boxes).size(); ++b)
+      {
         double xmin = std::max((*boxes)[b][0], g_xmin);
         double ymin = std::max((*boxes)[b][1], g_ymin);
         double xmax = std::min((*boxes)[b][2], g_xmax);
@@ -422,6 +456,7 @@ namespace cv
         float inter_ = w * h;
         float union_ = test_box_h * test_box_w + base_box_h * base_box_w - inter_;
         (*iou)[b] = inter_ / (union_ + epsilon);
+      }
     }  // intersection_over_union function
 
   }  //  namespace cv

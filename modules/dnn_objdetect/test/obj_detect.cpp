@@ -42,6 +42,8 @@ the use of this software, even if advised of the possibility of such damage.
 #include <iostream>
 #include <cstdlib>
 
+// #include "opencv2/core_detect.hpp"
+
 using namespace cv;
 using namespace std;
 using namespace cv::dnn;
@@ -62,7 +64,7 @@ int main(int argc, char **argv) {
       std::cout << "Done loading the network !\n\n";
     }
 
-    Mat img = cv::imread(test_input_image, CV_LOAD_IMAGE_COLOR);
+    Mat img = cv::imread(test_input_image);
     if (img.empty()) {
         std::cerr << "Couldn't load image: " << test_input_image << "\n";
         return -2;
