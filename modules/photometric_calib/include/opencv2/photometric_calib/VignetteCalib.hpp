@@ -17,10 +17,10 @@ class CV_EXPORTS VignetteCalib
 {
 public:
     VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile, std::string gammaFile,
-                  std::string imageFormat, bool silent);
+                  std::string imageFormat);
 
     VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile, std::string gammaFile,
-                  std::string imageFormat, bool silent, int imageSkip, int maxIterations, int outlierTh,
+                  std::string imageFormat, int imageSkip, int maxIterations, int outlierTh,
                   int gridWidth, int gridHeight, float facW, float facH, int maxAbsGrad);
 
     virtual ~VignetteCalib();
@@ -34,11 +34,11 @@ public:
 
     void displayImageV(float *I, int w, int h, std::string name);
 
-    bool preCalib(unsigned long id, float *&image, float *&plane2imgX, float *&plane2imgY);
+    bool preCalib(unsigned long id, float *&image, float *&plane2imgX, float *&plane2imgY, bool debug);
 
-    void calib();
+    void calib(bool debug);
 
-    void calibFast();
+    void calibFast(bool debug);
 
 private:
     int _imageSkip;
@@ -65,7 +65,6 @@ private:
     GammaRemover *gammaRemover;
 
     float _meanExposure;
-    bool _silent;
 };
 
 } // namespace photometric_calib

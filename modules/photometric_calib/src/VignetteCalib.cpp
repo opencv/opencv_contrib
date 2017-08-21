@@ -13,7 +13,7 @@ namespace photometric_calib {
 
 
 VignetteCalib::VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile,
-                             std::string gammaFile, std::string imageFormat, bool silent) :
+                             std::string gammaFile, std::string imageFormat) :
         _imageSkip(1), _maxIterations(20), _outlierTh(15), _gridWidth(1000), _gridHeight(1000), _facW(5), _facH(5),
         _maxAbsGrad(255)
 {
@@ -35,12 +35,10 @@ VignetteCalib::VignetteCalib(std::string folderPath, std::string timePath, std::
     _K_p2idx_inverse = _K_p2idx.inv();
 
     _meanExposure = calMeanExposureTime();
-
-    _silent = silent;
 }
 
 VignetteCalib::VignetteCalib(std::string folderPath, std::string timePath, std::string cameraFile,
-                             std::string gammaFile, std::string imageFormat, bool silent, int imageSkip,
+                             std::string gammaFile, std::string imageFormat, int imageSkip,
                              int maxIterations,
                              int outlierTh, int gridWidth, int gridHeight, float facW, float facH, int maxAbsGrad) :
         _imageSkip(imageSkip), _maxIterations(maxIterations), _outlierTh(outlierTh), _gridWidth(gridWidth),
@@ -65,8 +63,6 @@ VignetteCalib::VignetteCalib(std::string folderPath, std::string timePath, std::
     _K_p2idx_inverse = _K_p2idx.inv();
 
     _meanExposure = calMeanExposureTime();
-
-    _silent = silent;
 }
 
 float VignetteCalib::getInterpolatedElement(const float *const mat, const float x, const float y, const int width)
@@ -149,7 +145,7 @@ float VignetteCalib::calMeanExposureTime()
     return meanExposure;
 }
 
-bool VignetteCalib::preCalib(unsigned long id, float *&image, float *&plane2imgX, float *&plane2imgY)
+bool VignetteCalib::preCalib(unsigned long id, float *&image, float *&plane2imgX, float *&plane2imgY, bool debug)
 {
     int wI = imageReader->getWidth();
     int hI = imageReader->getHeight();
@@ -232,21 +228,7 @@ bool VignetteCalib::preCalib(unsigned long id, float *&image, float *&plane2imgX
         }
     }
 
-    for (int x = 0; x < _gridWidth; x++)
-    {
-        for (int y = 0; y < _gridHeight; y++)
-        {
-            int u_d = (int) lround(plane2imgX[x + y * _gridWidth] + 0.5);
-            int v_d = (int) lround(plane2imgY[x + y * _gridWidth] + 0.5);
-            if (!(u_d > 1 && v_d > 1 && u_d < wI - 2 && v_d < hI - 2))
-            {
-                plane2imgX[x + y * _gridWidth] = NAN;
-                plane2imgY[x + y * _gridWidth] = NAN;
-            }
-        }
-    }
-
-    if (!_silent)
+    if (debug)
     {
         // debug-plot.
         Mat dbgImg(hI, wI, CV_8UC3);
@@ -299,6 +281,20 @@ bool VignetteCalib::preCalib(unsigned long id, float *&image, float *&plane2imgX
             }
         }
 
+        for (int x = 0; x < _gridWidth; x++)
+        {
+            for (int y = 0; y < _gridHeight; y++)
+            {
+                int u_d = (int) lround(plane2imgX[x + y * _gridWidth] + 0.5);
+                int v_d = (int) lround(plane2imgY[x + y * _gridWidth] + 0.5);
+                if (!(u_d > 1 && v_d > 1 && u_d < wI - 2 && v_d < hI - 2))
+                {
+                    plane2imgX[x + y * _gridWidth] = NAN;
+                    plane2imgY[x + y * _gridWidth] = NAN;
+                }
+            }
+        }
+
         imshow("inRaw", dbgImg);
         waitKey(1);
 
@@ -310,10 +306,27 @@ bool VignetteCalib::preCalib(unsigned long id, float *&image, float *&plane2imgX
         }
     }
 
+    else
+    {
+        for (int x = 0; x < _gridWidth; x++)
+        {
+            for (int y = 0; y < _gridHeight; y++)
+            {
+                int u_d = (int) lround(plane2imgX[x + y * _gridWidth] + 0.5);
+                int v_d = (int) lround(plane2imgY[x + y * _gridWidth] + 0.5);
+                if (!(u_d > 1 && v_d > 1 && u_d < wI - 2 && v_d < hI - 2))
+                {
+                    plane2imgX[x + y * _gridWidth] = NAN;
+                    plane2imgY[x + y * _gridWidth] = NAN;
+                }
+            }
+        }
+    }
+
     return true;
 }
 
-void VignetteCalib::calib()
+void VignetteCalib::calib(bool debug)
 {
     // Create folder for vignette calibration
     if (-1 == system("rm -rf vignetteCalibResult"))
@@ -372,7 +385,7 @@ void VignetteCalib::calib()
             float *plane2imgX = NULL;
             float *plane2imgY = NULL;
             float *image = NULL;
-            if (!preCalib(img, image, plane2imgX, plane2imgY))
+            if (!preCalib(img, image, plane2imgX, plane2imgY, debug))
             {
                 continue;
             }
@@ -413,7 +426,7 @@ void VignetteCalib::calib()
                 planeColor[pi] = planeColorFC[pi] / planeColorFF[pi];
             }
         }
-        if (!_silent)
+        if (debug)
         {
             displayImage(planeColor, _gridWidth, _gridWidth, "Plane");
         }
@@ -430,7 +443,7 @@ void VignetteCalib::calib()
             float *plane2imgX = NULL;
             float *plane2imgY = NULL;
             float *image = NULL;
-            if (!preCalib(img, image, plane2imgX, plane2imgY))
+            if (!preCalib(img, image, plane2imgX, plane2imgY, debug))
             {
                 continue;
             }
@@ -562,7 +575,7 @@ void VignetteCalib::calib()
         }
 
         // ================================ Store Vignette Image =======================================
-        if (!_silent)
+        if (debug)
         {
             displayImageV(vignetteFactorTT, wI, hI, "VignetteSmoothed");
         }
@@ -572,7 +585,7 @@ void VignetteCalib::calib()
         imwrite("vignetteCalibResult/vignetteSmoothed.png", wrapSmoothed16);
         waitKey(50);
 
-        if (!_silent)
+        if (debug)
         {
             displayImageV(vignetteFactor, wI, hI, "VignetteOrg");
         }
@@ -594,8 +607,10 @@ void VignetteCalib::calib()
     delete[] vignetteFactorCT;
 }
 
-void VignetteCalib::calibFast()
+void VignetteCalib::calibFast(bool debug)
 {
+    std::cout<<"Fast mode! This requires large memory (10GB+)!"<<std::endl;
+
     if (-1 == system("rm -rf vignetteCalibResult"))
     {
         std::cout << "could not delete old vignetteCalibResult folder!" << std::endl;
@@ -694,22 +709,7 @@ void VignetteCalib::calibFast()
 
         images.push_back(image);
 
-        for (int x = 0; x < _gridWidth; x++)
-        {
-            for (int y = 0; y < _gridHeight; y++)
-            {
-                int u_d = (int) lround(plane2imgX[x + y * _gridWidth] + 0.5);
-                int v_d = (int) lround(plane2imgY[x + y * _gridWidth] + 0.5);
-
-                if (!(u_d > 1 && v_d > 1 && u_d < wI - 2 && v_d < hI - 2))
-                {
-                    plane2imgX[x + y * _gridWidth] = NAN;
-                    plane2imgY[x + y * _gridWidth] = NAN;
-                }
-            }
-        }
-
-        if (!_silent)
+        if (debug)
         {
             // debug-plot.
             Mat dbgImg(hI, wI, CV_8UC3);
@@ -764,6 +764,21 @@ void VignetteCalib::calibFast()
                 }
             }
 
+            for (int x = 0; x < _gridWidth; x++)
+            {
+                for (int y = 0; y < _gridHeight; y++)
+                {
+                    int u_d = (int) lround(plane2imgX[x + y * _gridWidth] + 0.5);
+                    int v_d = (int) lround(plane2imgY[x + y * _gridWidth] + 0.5);
+
+                    if (!(u_d > 1 && v_d > 1 && u_d < wI - 2 && v_d < hI - 2))
+                    {
+                        plane2imgX[x + y * _gridWidth] = NAN;
+                        plane2imgY[x + y * _gridWidth] = NAN;
+                    }
+                }
+            }
+
             imshow("inRaw", dbgImg);
 
             if (rand() % 40 == 0)
@@ -774,6 +789,24 @@ void VignetteCalib::calibFast()
             }
 
             waitKey(1);
+        }
+
+        else
+        {
+            for (int x = 0; x < _gridWidth; x++)
+            {
+                for (int y = 0; y < _gridHeight; y++)
+                {
+                    int u_d = (int) lround(plane2imgX[x + y * _gridWidth] + 0.5);
+                    int v_d = (int) lround(plane2imgY[x + y * _gridWidth] + 0.5);
+
+                    if (!(u_d > 1 && v_d > 1 && u_d < wI - 2 && v_d < hI - 2))
+                    {
+                        plane2imgX[x + y * _gridWidth] = NAN;
+                        plane2imgY[x + y * _gridWidth] = NAN;
+                    }
+                }
+            }
         }
 
         p2imgX.push_back(plane2imgX);
@@ -858,7 +891,7 @@ void VignetteCalib::calibFast()
                 planeColor[pi] = planeColorFC[pi] / planeColorFF[pi];
             }
         }
-        if (!_silent)
+        if (debug)
         {
             displayImage(planeColor, _gridWidth, _gridWidth, "Plane");
         }
@@ -1013,7 +1046,7 @@ void VignetteCalib::calibFast()
         }
 
         // ================================ Store Vignette Image =======================================
-        if (!_silent)
+        if (debug)
         {
             displayImageV(vignetteFactorTT, wI, hI, "VignetteSmoothed");
         }
@@ -1023,7 +1056,7 @@ void VignetteCalib::calibFast()
         imwrite("vignetteCalibResult/vignetteSmoothed.png", wrapSmoothed16);
         waitKey(50);
 
-        if (!_silent)
+        if (debug)
         {
             displayImageV(vignetteFactor, wI, hI, "VignetteOrg");
         }
