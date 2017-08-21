@@ -626,12 +626,13 @@ void VignetteCalib::calibFast(bool debug)
     int wI = wO, hI = hO;
 
     Ptr<aruco::DetectorParameters> parameters = aruco::DetectorParameters::create();
-    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
+    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_ARUCO_ORIGINAL);
 
     std::vector<float *> images;
     std::vector<float *> p2imgX;
     std::vector<float *> p2imgY;
 
+    std::cout<<"Preprocessing images..."<<std::endl;
     for (unsigned long i = 0; i < imageReader->getNumImages(); ++i)
     {
         std::vector<int> markerIds;
