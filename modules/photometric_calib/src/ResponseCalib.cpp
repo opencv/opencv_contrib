@@ -121,7 +121,7 @@ void ResponseCalib::plotG(const double *G, const std::string &saveTo)
         {
             if (val < k)
             {
-                GImg.at<float>(k, i) = (float) (k - val);
+                GImg.at<float>(255 - k, i) = (float) (k - val);
             }
         }
     }
@@ -132,7 +132,7 @@ void ResponseCalib::plotG(const double *G, const std::string &saveTo)
     std::cout << "Saved: " << saveTo << std::endl;
 }
 
-void ResponseCalib::calib()
+void ResponseCalib::calib(bool debug)
 {
     int w = 0, h = 0;
     size_t n = 0;
@@ -140,6 +140,7 @@ void ResponseCalib::calib()
     std::vector<double> exposureDurationVec;
     std::vector<uchar *> dataVec;
 
+    std::cout << "Preprocessing for response calibration... " << std::endl;
     for (unsigned long i = 0; i < imageReader->getNumImages(); i += _skipFrames)
     {
         cv::Mat img = imageReader->getImage(i);
@@ -235,8 +236,11 @@ void ResponseCalib::calib()
     logFile.precision(15);
 
     std::cout << "Initial RMSE = " << rmse(G, E, exposureDurationVec, dataVec, w * h)[0] << "!" << std::endl;
-    plotE(E, w, h, "photoCalibResult/E-0");
-    cv::waitKey(100);
+    if (debug)
+    {
+        plotE(E, w, h, "photoCalibResult/E-0");
+        cv::waitKey(100);
+    }
 
     bool optE = true;
     bool optG = true;
@@ -270,9 +274,12 @@ void ResponseCalib::calib()
             delete[] GNum;
             printf("optG RMSE = %f! \t", rmse(G, E, exposureDurationVec, dataVec, w * h)[0]);
 
-            char buf[1000];
-            snprintf(buf, 1000, "photoCalibResult/G-%02d.png", it + 1);
-            plotG(G, buf);
+            if (debug)
+            {
+                char buf[1000];
+                snprintf(buf, 1000, "photoCalibResult/G-%02d.png", it + 1);
+                plotG(G, buf);
+            }
         }
 
         if (optE)
@@ -302,9 +309,12 @@ void ResponseCalib::calib()
             delete[] ESum;
             printf("OptE RMSE = %f!  \t", rmse(G, E, exposureDurationVec, dataVec, w * h)[0]);
 
-            char buf[1000];
-            snprintf(buf, 1000, "photoCalibResult/E-%02d", it + 1);
-            plotE(E, w, h, buf);
+            if (debug)
+            {
+                char buf[1000];
+                snprintf(buf, 1000, "photoCalibResult/E-%02d", it + 1);
+                plotE(E, w, h, buf);
+            }
         }
 
         // rescale such that maximum response is 255 (fairly arbitrary choice).
@@ -314,9 +324,9 @@ void ResponseCalib::calib()
             E[i] *= rescaleFactor;
             if (i < 256) G[i] *= rescaleFactor;
         }
-        //Eigen::Vector2d err = rmse(G, E, exposureVec, dataVec, w*h );
+
         Vec2d err = rmse(G, E, exposureDurationVec, dataVec, w * h);
-        printf("Rescaled RMSE = %f!  \trescale with %f!\n", err[0], rescaleFactor);
+        printf("Rescaled RMSE = %f!  \trescale with %f!\n\n", err[0], rescaleFactor);
 
         logFile << it << " " << n << " " << err[1] << " " << err[0] << "\n";
 

@@ -25,7 +25,7 @@ public:
 
     void plotG(const double *G, const std::string &saveTo);
 
-    void calib();
+    void calib(bool debug);
 
     inline const std::string &getImageFolderPath() const
     {
