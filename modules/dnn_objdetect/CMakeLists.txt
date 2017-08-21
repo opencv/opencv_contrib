@@ -3,7 +3,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 ocv_define_module(dnn_objdetect opencv_imgcodecs opencv_core opencv_imgproc opencv_dnn)
 
-set(OPENCV_DNN_LIBRARIES opencv_core opencv_imgproc opencv_core opencv_imgcodecs opencv_dnn)
+set(OPENCV_DNN_LIBRARIES opencv_core opencv_imgproc opencv_imgcodecs)
+list(APPEND OPENCV_DNN_LIBRARIES opencv_dnn opencv_dnn_objdetect)
 ocv_check_dependencies(${OPENCV_DNN_LIBRARIES})
 
 set(TARGET test_detection)

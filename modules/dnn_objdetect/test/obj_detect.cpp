@@ -42,17 +42,47 @@ the use of this software, even if advised of the possibility of such damage.
 #include <iostream>
 #include <cstdlib>
 
-// #include "opencv2/core_detect.hpp"
+#include <opencv2/core_detect.hpp>
 
 using namespace cv;
 using namespace std;
 using namespace cv::dnn;
+using namespace cv::dnn_objdetect;
 
+
+Mat getMean(const size_t& h, const size_t& w)
+{
+    Mat mean;
+
+    const int mean_values[3] = {104, 117, 123};
+    vector<Mat> mean_channels;
+    for(size_t i = 0; i < 3; i++)
+    {
+        Mat channel(h, w, CV_32F, Scalar(mean_values[i]));
+        mean_channels.push_back(channel);
+    }
+    cv::merge(mean_channels, mean);
+    return mean;
+}
+
+Mat preprocess(const Mat& image)
+{
+    Mat preprocessed;
+    int width = 416;
+    int height = 416;
+    image.convertTo(preprocessed, CV_32FC3);
+    resize(preprocessed, preprocessed, Size(width, height));
+
+    Mat mean = getMean(width, height);
+    cv::subtract(preprocessed, mean, preprocessed);
+
+    return preprocessed;
+}
 
 int main(int argc, char **argv) {
-    std::string base_dir = "/home/kv/gsoc/practice/";
+    std::string base_dir = "/home/kv/gsoc/practice/snapshot/";
     std::string model_prototxt = "/home/kv/gsoc/opencv_contrib/modules/dnn_objdetect/proto/SqueezeDet_deploy.prototxt";
-    std::string model_binary = base_dir + "snapshot_iter_160000.caffemodel";
+    std::string model_binary = base_dir + "snapshot_iter_260000.caffemodel";
     std::string test_input_image = (argc > 1) ? argv[1] : "space_shuttle.jpg";
 
     std::cout << "Loading the network...\n";
@@ -70,8 +100,8 @@ int main(int argc, char **argv) {
         return -2;
     }
 
-    resize(img, img, Size(416, 416));
-    Mat inputBlob = blobFromImage(img, 1.0, Size(), Scalar(), false);
+    Mat final_img = preprocess(img);
+    Mat inputBlob = blobFromImage(final_img, 1.0, Size(), Scalar(), false);
     net.setInput(inputBlob);
 
     std::cout << "Getting the output of all the three blobs...\n";
@@ -112,6 +142,20 @@ int main(int argc, char **argv) {
 
     int conf_scores_size[3] = {23, 23, 9};
     Mat conf_scores(3, conf_scores_size, CV_32F, outblobs[2].ptr<float>());
+
+    InferBbox inf(delta_bbox, class_scores, conf_scores);
+    inf.filter();
+
+    std::cout << "Total objects detected: " << inf.detections.size() << "\n";
+    for (size_t i = 0; i < inf.detections.size(); ++i)
+    {
+        std::cout << i << ": " << inf.detections[i].label_name << " "
+                               << inf.detections[i].class_prob << " ["
+                               << inf.detections[i].xmin << " "
+                               << inf.detections[i].ymin << " "
+                               << inf.detections[i].xmax << " "
+                               << inf.detections[i].ymax << "]\n";
+    }
 
     return 0;
 }
