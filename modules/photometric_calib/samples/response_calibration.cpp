@@ -40,15 +40,18 @@ int main(int argc, char **argv)
     // Since we are using debug mode, we can visualize the response function:
     Mat invRes = imread("./photoCalibResult/G-10.png", CV_LOAD_IMAGE_UNCHANGED);
     // As shown as Fig.3 in the paper from J.Engel, et al. in the paper A Photometrically Calibrated Benchmark For Monocular Visual Odometry
+    namedWindow( "Inverse Response Function", WINDOW_AUTOSIZE );
     imshow("Inverse Response Function", invRes);
-    waitKey(0);
 
     // To see the response-calibrated image, we can use GammaRemover
     Mat oriImg = imread(imageFolderPath + "/00480.jpg", CV_LOAD_IMAGE_UNCHANGED);
     photometric_calib::GammaRemover gammaRemover("./photoCalibResult/pcalib.yaml", oriImg.cols, oriImg.rows);
     Mat caliImg = gammaRemover.getUnGammaImageMat(oriImg);
+
+    // Visualization
+    namedWindow( "Original Image", WINDOW_AUTOSIZE );
     imshow("Original Image", oriImg);
-    waitKey(0);
+    namedWindow( "Gamma Removed Image", WINDOW_AUTOSIZE );
     imshow("Gamma Removed Image", caliImg);
     waitKey(0);
 
