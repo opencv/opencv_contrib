@@ -27,7 +27,7 @@ public:
      * @param w_ the width of input image
      * @param h_ the height of input image
      */
-    VignetteRemover(const std::string &vignettePath, int w_, int h_);
+    VignetteRemover(const std::string &vignettePath, const std::string &pcalibPath, int w_, int h_);
 
     ~VignetteRemover();
 
@@ -36,18 +36,19 @@ public:
      * @param unGammaImVec the irradiance image.
      * @return
      */
-    Mat getUnVignetteImageMat(std::vector<float> &unGammaImVec);
+    Mat getUnVignetteImageMat(Mat oriImMat);
 
     /*!
      * @brief get vignetting-removed image in form of std::vector<float>.
      * @param unGammaImVec the irradiance image.
      * @param outImVec the vignetting-removed image vector.
      */
-    void getUnVignetteImageVec(const std::vector<float> &unGammaImVec, std::vector<float> &outImVec);
+    void getUnVignetteImageVec(Mat oriImMat, std::vector<float> &outImVec);
 
 private:
     float *vignetteMap;
     float *vignetteMapInv;
+    std::string _pcalibPath;
     int w, h;
     bool validVignette;
 };

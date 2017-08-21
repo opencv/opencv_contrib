@@ -4,13 +4,15 @@
 
 #include "precomp.hpp"
 #include "opencv2/photometric_calib/VignetteRemover.hpp"
+#include "opencv2/photometric_calib/GammaRemover.hpp"
 
 namespace cv {
 namespace photometric_calib {
 
-VignetteRemover::VignetteRemover(const std::string &vignettePath, int w_, int h_)
+VignetteRemover::VignetteRemover(const std::string &vignettePath, const std::string &pcalibPath, int w_, int h_)
 {
     CV_Assert(vignettePath != "");
+    CV_Assert(pcalibPath != "");
 
     validVignette = false;
     vignetteMap = 0;
@@ -59,24 +61,28 @@ VignetteRemover::VignetteRemover(const std::string &vignettePath, int w_, int h_
         vignetteMapInv[i] = 1.0f / vignetteMap[i];
     }
 
+    _pcalibPath = pcalibPath;
     validVignette = true;
 
 }
 
-Mat VignetteRemover::getUnVignetteImageMat(std::vector<float> &unGammaImVec)
+Mat VignetteRemover::getUnVignetteImageMat(Mat oriImMat)
 {
     std::vector<float> _outImVec(w * h);
-    getUnVignetteImageVec(unGammaImVec, _outImVec);
+    getUnVignetteImageVec(oriImMat, _outImVec);
 
     Mat _outIm(h, w, CV_32F, &_outImVec[0]);
     Mat outIm = _outIm * (1 / 255.0f);
     return outIm;
 }
 
-void VignetteRemover::getUnVignetteImageVec(const std::vector<float> &unGammaImVec, std::vector<float> &outImVec)
+void VignetteRemover::getUnVignetteImageVec(Mat oriImMat, std::vector<float> &outImVec)
 {
     CV_Assert(validVignette);
     CV_Assert(outImVec.size() == (unsigned long) w * h);
+    photometric_calib::GammaRemover gammaRemover(_pcalibPath, w, h);
+    std::vector<float> unGammaImVec(w * h);
+    gammaRemover.getUnGammaImageVec(oriImMat, unGammaImVec);
     for (int i = 0; i < w * h; ++i)
     {
         outImVec[i] = unGammaImVec[i] * vignetteMapInv[i];
