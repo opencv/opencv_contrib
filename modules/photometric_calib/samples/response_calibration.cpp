@@ -1,18 +1,11 @@
-#include <string>
-#include <iostream>
-#include <iomanip>
-#include <vector>
-
-#include "opencv2/opencv.hpp"
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/photometric_calib.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
 
 using namespace std;
 using namespace cv;
 
-int main(int argc, char **argv)
+int main()
 {
     // Please down load the sample dataset from:
     // https://www.dropbox.com/s/5x48uhc7k2bgjcj/GSoC2017_PhotometricCalib_Sample_Data.zip?dl=0
@@ -38,13 +31,13 @@ int main(int argc, char **argv)
     // The result and some intermediate data are stored in the folder ./photoCalibResult in which
     // pcalib.yaml is the camera response function file
     // Since we are using debug mode, we can visualize the response function:
-    Mat invRes = imread("./photoCalibResult/G-10.png", CV_LOAD_IMAGE_UNCHANGED);
+    Mat invRes = imread("./photoCalibResult/G-10.png", IMREAD_UNCHANGED);
     // As shown as Fig.3 in the paper from J.Engel, et al. in the paper A Photometrically Calibrated Benchmark For Monocular Visual Odometry
     namedWindow( "Inverse Response Function", WINDOW_AUTOSIZE );
     imshow("Inverse Response Function", invRes);
 
     // To see the response-calibrated image, we can use GammaRemover
-    Mat oriImg = imread(imageFolderPath + "/00480.jpg", CV_LOAD_IMAGE_UNCHANGED);
+    Mat oriImg = imread(imageFolderPath + "/00480.jpg", IMREAD_UNCHANGED);
     photometric_calib::GammaRemover gammaRemover("./photoCalibResult/pcalib.yaml", oriImg.cols, oriImg.rows);
     Mat caliImg = gammaRemover.getUnGammaImageMat(oriImg);
 

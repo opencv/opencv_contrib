@@ -1,18 +1,11 @@
-#include <string>
-#include <iostream>
-#include <iomanip>
-#include <vector>
-
-#include "opencv2/opencv.hpp"
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/photometric_calib.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
 
 using namespace std;
 using namespace cv;
 
-int main(int argc, char** argv)
+int main()
 {
     // Please down load the sample dataset from:
     // https://www.dropbox.com/s/5x48uhc7k2bgjcj/GSoC2017_PhotometricCalib_Sample_Data.zip?dl=0
@@ -48,13 +41,13 @@ int main(int argc, char** argv)
     // The result and some intermediate data are stored in the folder ./vignetteCalibResult in which
     // vignette.png and vignetteSmoothed.png are the vignette images.
     // In practice, vignetteSomoothed.png is used, since it doesn't have the black boarders.
-    Mat vigSmoothed = imread("./vignetteCalibResult/vignetteSmoothed.png", CV_LOAD_IMAGE_UNCHANGED);
+    Mat vigSmoothed = imread("./vignetteCalibResult/vignetteSmoothed.png", IMREAD_UNCHANGED);
     // As shown as Fig.4 in the paper from J.Engel, et al. in the paper A Photometrically Calibrated Benchmark For Monocular Visual Odometry
     namedWindow( "Vignette Smoothed", WINDOW_AUTOSIZE );
     imshow("Vignette Smoothed", vigSmoothed);
 
     // To see the vignette-calibrated image, we can use VignetteRemover
-    Mat oriImg = imread(imageFolderPath + "/00480.jpg", CV_LOAD_IMAGE_UNCHANGED);
+    Mat oriImg = imread(imageFolderPath + "/00480.jpg", IMREAD_UNCHANGED);
     photometric_calib::GammaRemover gammaRemover(gammaPath, oriImg.cols, oriImg.rows);
     photometric_calib::VignetteRemover vignetteRemover("./vignetteCalibResult/vignetteSmoothed.png", gammaPath, oriImg.cols, oriImg.rows);
     Mat resCaliImg = gammaRemover.getUnGammaImageMat(oriImg);
