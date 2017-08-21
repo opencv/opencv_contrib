@@ -24,6 +24,7 @@ public:
     /*!
      * @brief Constructor
      * @param vignettePath the path of vignetting file
+     * @param pcalibPath the path of pcalib file
      * @param w_ the width of input image
      * @param h_ the height of input image
      */
@@ -33,14 +34,13 @@ public:
 
     /*!
      * @brief get vignetting-removed image in form of cv::Mat.
-     * @param unGammaImVec the irradiance image.
-     * @return
+     * @param oriImMat the image to be calibrated.
      */
     Mat getUnVignetteImageMat(Mat oriImMat);
 
     /*!
      * @brief get vignetting-removed image in form of std::vector<float>.
-     * @param unGammaImVec the irradiance image.
+     * @param oriImMat the image to be calibrated.
      * @param outImVec the vignetting-removed image vector.
      */
     void getUnVignetteImageVec(Mat oriImMat, std::vector<float> &outImVec);
