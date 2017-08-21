@@ -459,7 +459,7 @@ TEST_P(DistanceAndOverlap, KCF)
   test.run();
 }
 
-TEST_P(DistanceAndOverlap, DISABLED_TLD)
+TEST_P(DistanceAndOverlap, TLD)
 {
   TrackerTest test( TrackerTLD::create(), dataset, 60, .4f, NoTransform);
   test.run();
@@ -490,7 +490,7 @@ TEST_P(DistanceAndOverlap, Shifted_Data_KCF)
   test.run();
 }
 
-TEST_P(DistanceAndOverlap, DISABLED_Shifted_Data_TLD)
+TEST_P(DistanceAndOverlap, Shifted_Data_TLD)
 {
   TrackerTest test( TrackerTLD::create(), dataset, 120, .2f, CenterShiftLeft);
   test.run();
@@ -521,7 +521,7 @@ TEST_P(DistanceAndOverlap, Scaled_Data_KCF)
   test.run();
 }
 
-TEST_P(DistanceAndOverlap, DISABLED_Scaled_Data_TLD)
+TEST_P(DistanceAndOverlap, Scaled_Data_TLD)
 {
   TrackerTest test( TrackerTLD::create(), dataset, 120, .45f, Scale_1_1);
   test.run();
