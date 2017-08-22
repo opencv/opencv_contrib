@@ -113,7 +113,7 @@ if(NOT CMAKE_VERSION VERSION_LESS 2.8.11) # See ocv_target_include_directories()
   endif()
 endif()
 include_directories(${OCV_TARGET_INCLUDE_DIRS_${the_module}})
-add_subdirectory(src/libmv_light)
+add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/src/libmv_light)
 
 ocv_target_link_libraries(${the_module} ${LIBMV_LIGHT_LIBS})
 
