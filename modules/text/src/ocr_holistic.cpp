@@ -21,6 +21,13 @@
 #include "caffe/caffe.hpp"
 #endif
 
+#ifdef HAVE_DNN
+#include "opencv2/dnn.hpp"
+#endif
+
+using namespace cv;
+using namespace cv::dnn;
+using namespace std;
 namespace cv { namespace text {
 
 //Maybe OpenCV has a routine better suited
@@ -45,6 +52,7 @@ void ImagePreprocessor::set_mean(Mat mean){
     this->set_mean_(mean);
 
 }
+
 
 
 class ResizerPreprocessor: public ImagePreprocessor{
@@ -579,6 +587,183 @@ public:
     }
 };
 
+class DeepCNNOpenCvDNNImpl: public DeepCNN{
+protected:
+
+    void classifyMiniBatch(std::vector<Mat> inputImageList, Mat outputMat)
+    {
+        //Classifies a list of images containing at most minibatchSz_ images
+        CV_Assert(int(inputImageList.size())<=this->minibatchSz_);
+        CV_Assert(outputMat.isContinuous());
+
+#ifdef HAVE_DNN
+
+        std::vector<Mat> preProcessedImList; // to store preprocessed images, should it be handled inside preprocessing class?
+
+        Mat preprocessed;
+        // preprocesses each image in the inputImageList and push to preprocessedImList
+        for(size_t imgNum=0;imgNum<inputImageList.size();imgNum++)
+        {
+            this->preprocess(inputImageList[imgNum],preprocessed);
+            preProcessedImList.push_back(preprocessed);
+        }
+        // set input data blob in dnn::net
+        net_->setInput(blobFromImages(preProcessedImList,1, Size(100, 32)), "data");
+
+        float*outputMatData=(float*)(outputMat.data);
+       //Mat outputNet(inputImageList.size(),this->outputSize_,CV_32FC1,outputMatData) ;
+       Mat outputNet = this->net_->forward();
+       outputNet = outputNet.reshape(1, 1);
+
+       float*outputNetData=(float*)(outputNet.data);
+
+       memcpy(outputMatData,outputNetData,sizeof(float)*this->outputSize_*inputImageList.size());
+
+#endif
+    }
+
+#ifdef HAVE_DNN
+    Ptr<Net> net_;
+#endif
+    //Size inputGeometry_;
+    int minibatchSz_;//The existence of the assignment operator mandates this to be nonconst
+    int outputSize_;
+public:
+    DeepCNNOpenCvDNNImpl(const DeepCNNOpenCvDNNImpl& dn):
+        minibatchSz_(dn.minibatchSz_),outputSize_(dn.outputSize_){
+        channelCount_=dn.channelCount_;
+        inputGeometry_=dn.inputGeometry_;
+        //Implemented to supress Visual Studio warning "assignment operator could not be generated"
+#ifdef HAVE_DNN
+        this->net_=dn.net_;
+#endif
+    }
+    DeepCNNOpenCvDNNImpl& operator=(const DeepCNNOpenCvDNNImpl &dn)
+    {
+#ifdef HAVE_DNN
+        this->net_=dn.net_;
+#endif
+        this->setPreprocessor(dn.preprocessor_);
+        this->inputGeometry_=dn.inputGeometry_;
+        this->channelCount_=dn.channelCount_;
+        this->minibatchSz_=dn.minibatchSz_;
+        this->outputSize_=dn.outputSize_;
+        this->preprocessor_=dn.preprocessor_;
+        this->outputGeometry_=dn.outputGeometry_;
+        return *this;
+        //Implemented to supress Visual Studio warning "assignment operator could not be generated"
+    }
+
+    DeepCNNOpenCvDNNImpl(String modelArchFilename, String modelWeightsFilename,Ptr<ImagePreprocessor> preprocessor, int maxMinibatchSz)
+        :minibatchSz_(maxMinibatchSz)
+    {
+
+        CV_Assert(this->minibatchSz_>0);
+        CV_Assert(fileExists(modelArchFilename));
+        CV_Assert(fileExists(modelWeightsFilename));
+        CV_Assert(!preprocessor.empty());
+        this->setPreprocessor(preprocessor);
+#ifdef HAVE_DNN
+
+        this->net_ = makePtr<Net>(readNetFromCaffe(modelArchFilename,modelWeightsFilename));
+
+
+
+        if (this->net_.empty())
+        {
+            std::cerr << "Can't load network by using the following files: " << std::endl;
+            std::cerr << "prototxt:   " << modelArchFilename << std::endl;
+            std::cerr << "caffemodel: " << modelWeightsFilename << std::endl;
+            //std::cerr << "bvlc_googlenet.caffemodel can be downloaded here:" << std::endl;
+            //std::cerr << "http://dl.caffe.berkeleyvision.org/bvlc_googlenet.caffemodel" << std::endl;
+            exit(-1);
+        }
+// find a wa to check the followings in cv::dnn ???
+//        CV_Assert(net_->num_inputs()==1);
+//        CV_Assert(net_->num_outputs()==1);
+//        CV_Assert(this->net_->input_blobs()[0]->channels()==1
+//                ||this->net_->input_blobs()[0]->channels()==3);
+//        this->channelCount_=this->net_->input_blobs()[0]->channels();
+
+
+
+        //this->net_->CopyTrainedLayersFrom(modelWeightsFilename);
+
+        //caffe::Blob<float>* inputLayer = this->net_->input_blobs()[0];
+        //inputLayerId = net_->getLayerId('data');
+
+      //  inputLayerShape = net_->getLayerShapes(const MatShape& netInputShape,
+       //                                     inputLayerId,
+      //                                      std::vector<MatShape>* inLayerShapes,
+      //  std::vector<MatShape>* outLayerShapes) const;
+        // should not be hard coded ideally
+
+        this->inputGeometry_=Size(100,32);// Size(inputLayer->width(), inputLayer->height());
+        this->channelCount_ = 1;//inputLayer->channels();
+
+        //inputLayer->Reshape(this->minibatchSz_,this->channelCount_,this->inputGeometry_.height, this->inputGeometry_.width);
+        //net_->Reshape();
+        this->outputSize_=88172 ;//net_->output_blobs()[0]->channels();
+        this->outputGeometry_ = Size(1,1);//Size(net_->output_blobs()[0]->width(),net_->output_blobs()[0]->height());
+
+
+
+
+
+
+#else
+        CV_Error(Error::StsError,"DNN module not available during compilation!");
+#endif
+    }
+
+    void classify(InputArray image, OutputArray classProbabilities)
+    {
+        std::vector<Mat> inputImageList;
+        inputImageList.push_back(image.getMat());
+        classifyBatch(inputImageList,classProbabilities);
+    }
+
+    void classifyBatch(InputArrayOfArrays inputImageList, OutputArray classProbabilities)
+    {
+        std::vector<Mat> allImageVector;
+        inputImageList.getMatVector(allImageVector);
+        size_t outputSize=size_t(this->outputSize_);//temporary variable to avoid int to size_t arithmentic
+
+        size_t minibatchSize=size_t(this->minibatchSz_);//temporary variable to avoid int to size_t arithmentic
+        classProbabilities.create(Size(int(outputSize),int(allImageVector.size())),CV_32F);
+        Mat outputMat = classProbabilities.getMat();
+        printf("ekhane");
+        for(size_t imgNum=0;imgNum<allImageVector.size();imgNum+=minibatchSize)
+        {
+            size_t rangeEnd=imgNum+std::min<size_t>(allImageVector.size()-imgNum,minibatchSize);
+            std::vector<Mat>::const_iterator from=std::vector<Mat>::const_iterator(allImageVector.begin()+imgNum);
+            std::vector<Mat>::const_iterator to=std::vector<Mat>::const_iterator(allImageVector.begin()+rangeEnd);
+            std::vector<Mat> minibatchInput(from,to);
+            classifyMiniBatch(minibatchInput,outputMat.rowRange(int(imgNum),int(rangeEnd)));
+
+        }
+
+    }
+
+    int getOutputSize()
+    {
+        return this->outputSize_;
+    }
+    Size getOutputGeometry()
+    {
+        return this->outputGeometry_;
+    }
+
+    int getMinibatchSize()
+    {
+        return this->minibatchSz_;
+    }
+
+    int getBackend()
+    {
+        return OCR_HOLISTIC_BACKEND_DNN;
+    }
+};
 
 Ptr<DeepCNN> DeepCNN::create(String archFilename,String weightsFilename,Ptr<ImagePreprocessor> preprocessor,int minibatchSz,int backEnd)
 {
@@ -587,8 +772,24 @@ Ptr<DeepCNN> DeepCNN::create(String archFilename,String weightsFilename,Ptr<Imag
         preprocessor=ImagePreprocessor::createResizer();
     }
     switch(backEnd){
+    case OCR_HOLISTIC_BACKEND_DEFAULT:
+
+#ifdef HAVE_CAFFE
+        return Ptr<DeepCNN>(new DeepCNNCaffeImpl(archFilename, weightsFilename,preprocessor, minibatchSz));
+
+#elif defined(HAVE_DNN)
+        return Ptr<DeepCNN>(new DeepCNNOpenCvDNNImpl(archFilename, weightsFilename,preprocessor, minibatchSz));
+#else
+        CV_Error(Error::StsError,"DeepCNN::create backend not implemented");
+        return Ptr<DeepCNN>();
+#endif
+        break;
+
     case OCR_HOLISTIC_BACKEND_CAFFE:
         return Ptr<DeepCNN>(new DeepCNNCaffeImpl(archFilename, weightsFilename,preprocessor, minibatchSz));
+        break;
+  case OCR_HOLISTIC_BACKEND_DNN:
+        return Ptr<DeepCNN>(new DeepCNNOpenCvDNNImpl(archFilename, weightsFilename,preprocessor, minibatchSz));
         break;
     case OCR_HOLISTIC_BACKEND_NONE:
     default:
@@ -603,8 +804,24 @@ Ptr<DeepCNN> DeepCNN::createDictNet(String archFilename,String weightsFilename,i
 {
     Ptr<ImagePreprocessor> preprocessor=ImagePreprocessor::createImageStandarizer(113);
     switch(backEnd){
+    case OCR_HOLISTIC_BACKEND_DEFAULT:
+
+#ifdef HAVE_CAFFE
+        return Ptr<DeepCNN>(new DeepCNNCaffeImpl(archFilename, weightsFilename,preprocessor, 100));
+
+#elif defined(HAVE_DNN)
+        return Ptr<DeepCNN>(new DeepCNNOpenCvDNNImpl(archFilename, weightsFilename,preprocessor, 100));
+#else
+        CV_Error(Error::StsError,"DeepCNN::create backend not implemented");
+        return Ptr<DeepCNN>();
+#endif
+        break;
+
     case OCR_HOLISTIC_BACKEND_CAFFE:
         return Ptr<DeepCNN>(new DeepCNNCaffeImpl(archFilename, weightsFilename,preprocessor, 100));
+        break;
+   case OCR_HOLISTIC_BACKEND_DNN:
+        return Ptr<DeepCNN>(new DeepCNNOpenCvDNNImpl(archFilename, weightsFilename,preprocessor, 100));
         break;
     case OCR_HOLISTIC_BACKEND_NONE:
     default:
@@ -639,6 +856,27 @@ bool getCaffeAvailable()
 {
     return true;
 }
+#elif defined(HAVE_DNN)
+
+bool getCaffeGpuMode()
+{
+    CV_Error(Error::StsError,"Caffe not available during compilation!");
+    return 0;
+}
+
+void setCaffeGpuMode(bool useGpu)
+{
+    CV_Error(Error::StsError,"Caffe not available during compilation!");
+    CV_Assert(useGpu==1);//Compilation directives force
+}
+
+bool getCaffeAvailable(){
+    return 0;
+}
+bool getDNNAvailable(){
+    return true;
+}
+
 
 #else
 

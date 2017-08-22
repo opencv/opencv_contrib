@@ -160,7 +160,7 @@ public:
      * @param backEnd integer parameter selecting the coputation framework. For now OCR_HOLISTIC_BACKEND_CAFFE is
      * the only option
      */
-    CV_WRAP static Ptr<DeepCNNTextDetector> create(String archFilename,String weightsFilename,Ptr<ImagePreprocessor> preprocessor,int minibatchSz=100,int backEnd=OCR_HOLISTIC_BACKEND_CAFFE);
+    CV_WRAP static Ptr<DeepCNNTextDetector> create(String archFilename,String weightsFilename,Ptr<ImagePreprocessor> preprocessor,int minibatchSz=100,int backEnd=OCR_HOLISTIC_BACKEND_DEFAULT);
 
     /** @brief Constructs a DeepCNNTextDetector intended to be used for text area detection.
      *
@@ -177,7 +177,7 @@ public:
      * @param backEnd integer parameter selecting the coputation framework. For now OCR_HOLISTIC_BACKEND_CAFFE is
      * the only option
      */
-    CV_WRAP static Ptr<DeepCNNTextDetector> createTextBoxNet(String archFilename,String weightsFilename,int backEnd=OCR_HOLISTIC_BACKEND_CAFFE);
+    CV_WRAP static Ptr<DeepCNNTextDetector> createTextBoxNet(String archFilename,String weightsFilename,int backEnd=OCR_HOLISTIC_BACKEND_DEFAULT);
     friend class ImagePreprocessor;
 
 };

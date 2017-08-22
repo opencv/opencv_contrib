@@ -658,9 +658,12 @@ CV_EXPORTS_W Ptr<OCRBeamSearchDecoder::ClassifierCallback> loadOCRBeamSearchClas
 
 //Classifiers should provide diferent backends
 //For the moment only caffe is implemeted
+
 enum{
-    OCR_HOLISTIC_BACKEND_NONE,
-    OCR_HOLISTIC_BACKEND_CAFFE
+    OCR_HOLISTIC_BACKEND_NONE, //No back end
+    OCR_HOLISTIC_BACKEND_DNN, // dnn backend opencv_dnn
+    OCR_HOLISTIC_BACKEND_CAFFE, // caffe based backend
+    OCR_HOLISTIC_BACKEND_DEFAULT // to store default value based on environment
 };
 
 class TextImageClassifier;
@@ -831,7 +834,7 @@ public:
      * @param backEnd integer parameter selecting the coputation framework. For now OCR_HOLISTIC_BACKEND_CAFFE is
      * the only option
      */
-    CV_WRAP static Ptr<DeepCNN> create(String archFilename,String weightsFilename,Ptr<ImagePreprocessor> preprocessor,int minibatchSz=100,int backEnd=OCR_HOLISTIC_BACKEND_CAFFE);
+    CV_WRAP static Ptr<DeepCNN> create(String archFilename,String weightsFilename,Ptr<ImagePreprocessor> preprocessor,int minibatchSz=100,int backEnd=OCR_HOLISTIC_BACKEND_DEFAULT);
 
     /** @brief Constructs a DeepCNN intended to be used for word spotting.
      *
@@ -853,7 +856,7 @@ public:
      * @param backEnd integer parameter selecting the coputation framework. For now OCR_HOLISTIC_BACKEND_CAFFE is
      * the only option
      */
-    CV_WRAP static Ptr<DeepCNN> createDictNet(String archFilename,String weightsFilename,int backEnd=OCR_HOLISTIC_BACKEND_CAFFE);
+    CV_WRAP static Ptr<DeepCNN> createDictNet(String archFilename,String weightsFilename,int backEnd=OCR_HOLISTIC_BACKEND_DEFAULT);
 
 };
 
