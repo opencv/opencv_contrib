@@ -730,9 +730,10 @@ protected:
             }
             // lookup tables for mapping linear index to offset pairs
 
-        const cv::Range range(0, height);
         #ifdef CV_CXX11
-        parallel_for_(range, [&](const cv::Range& range)
+        parallel_for_(cv::Range(0, height), [&](const cv::Range& range)
+        #else
+        const cv::Range range(0, height);
         #endif
         {
             for(int i = range.start; i < range.end; ++i) {
@@ -788,7 +789,7 @@ protected:
 
         float step = 2.0f * CV_SQR(stride) / CV_SQR(ipSize) / nTreesEval;
         #ifdef CV_CXX11
-        parallel_for_(range, [&](const cv::Range& range)
+        parallel_for_(cv::Range(0, height), [&](const cv::Range& range)
         #endif
         {
             for(int i = range.start; i < range.end; ++i)
