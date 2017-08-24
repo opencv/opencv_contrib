@@ -81,6 +81,12 @@ add_definitions(-DCNN_NO_SERIALIZATION -DCNN_USE_CAFFE_CONVERTER)
 #       this is not needed anymore.
 find_package(Protobuf QUIET)
 
+if(NOT ${Protobuf_FOUND})
+  message(STATUS "Module opencv_dnn_modern disabled because Protobuf is not found")
+  ocv_module_disable(dnn_modern)
+  return()
+endif()
+
 if(DEFINED PROTOBUF_PROTOC_EXECUTABLE AND EXISTS ${PROTOBUF_PROTOC_EXECUTABLE})
   execute_process(COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} caffe.proto --cpp_out=./
                   WORKING_DIRECTORY ${TINYDNN_INCLUDE_DIRS}/tiny_dnn/io/caffe)
