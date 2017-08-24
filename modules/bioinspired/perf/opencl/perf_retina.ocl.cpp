@@ -29,7 +29,7 @@ OCL_PERF_TEST_P(RetinaFixture, Retina,
     UMat ocl_parvo, ocl_magno;
 
     {
-        Ptr<cv::bioinspired::Retina> retina = cv::bioinspired::createRetina(
+        Ptr<cv::bioinspired::Retina> retina = cv::bioinspired::Retina::create(
             input.size(), colorMode, colorSamplingMethod, useLogSampling,
             reductionFactor, samplingStrength);
 
