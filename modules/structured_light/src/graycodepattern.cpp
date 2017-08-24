@@ -56,7 +56,7 @@ class CV_EXPORTS_W GrayCodePattern_Impl : public GrayCodePattern
   bool generate( OutputArrayOfArrays patternImages );
 
   // Decodes the gray code pattern, computing the disparity map
-  bool decode( InputArrayOfArrays patternImages, OutputArray disparityMap, InputArrayOfArrays blackImages = noArray(),
+  bool decode( const std::vector< std::vector<Mat> >& patternImages, OutputArray disparityMap, InputArrayOfArrays blackImages = noArray(),
                InputArrayOfArrays whiteImages = noArray(), int flags = DECODE_3D_UNDERWORLD ) const;
 
   // Returns the number of pattern images for the graycode pattern
@@ -209,10 +209,10 @@ bool GrayCodePattern_Impl::generate( OutputArrayOfArrays pattern )
   return true;
 }
 
-bool GrayCodePattern_Impl::decode( InputArrayOfArrays patternImages, OutputArray disparityMap,
+bool GrayCodePattern_Impl::decode( const std::vector< std::vector<Mat> >& patternImages, OutputArray disparityMap,
                                    InputArrayOfArrays blackImages, InputArrayOfArrays whitheImages, int flags ) const
 {
-  std::vector<std::vector<Mat> >& acquired_pattern = *( std::vector<std::vector<Mat> >* ) patternImages.getObj();
+  const std::vector<std::vector<Mat> >& acquired_pattern = patternImages;
 
   if( flags == DECODE_3D_UNDERWORLD )
   {
