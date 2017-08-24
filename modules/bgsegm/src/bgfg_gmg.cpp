@@ -194,7 +194,7 @@ private:
     String name_;
 
     Mat_<int> nfeatures_;
-    Mat_<unsigned int> colors_;
+    Mat_<int> colors_;
     Mat_<float> weights_;
 
     Mat buf_;
@@ -223,7 +223,7 @@ void BackgroundSubtractorGMGImpl::initialize(Size frameSize, double minVal, doub
     nfeatures_.setTo(Scalar::all(0));
 }
 
-static float findFeature(unsigned int color, const unsigned int* colors, const float* weights, int nfeatures)
+static float findFeature(int color, const int* colors, const float* weights, int nfeatures)
 {
     for (int i = 0; i < nfeatures; ++i)
     {
@@ -248,7 +248,7 @@ static void normalizeHistogram(float* weights, int nfeatures)
     }
 }
 
-static bool insertFeature(unsigned int color, float weight, unsigned int* colors, float* weights, int& nfeatures, int maxFeatures)
+static bool insertFeature(int color, float weight, int* colors, float* weights, int& nfeatures, int maxFeatures)
 {
     int idx = -1;
     for (int i = 0; i < nfeatures; ++i)
@@ -266,7 +266,7 @@ static bool insertFeature(unsigned int color, float weight, unsigned int* colors
     {
         // move feature to beginning of list
 
-        ::memmove(colors + 1, colors, idx * sizeof(unsigned int));
+        ::memmove(colors + 1, colors, idx * sizeof(int));
         ::memmove(weights + 1, weights, idx * sizeof(float));
 
         colors[0] = color;
@@ -276,7 +276,7 @@ static bool insertFeature(unsigned int color, float weight, unsigned int* colors
     {
         // discard oldest feature
 
-        ::memmove(colors + 1, colors, (nfeatures - 1) * sizeof(unsigned int));
+        ::memmove(colors + 1, colors, (nfeatures - 1) * sizeof(int));
         ::memmove(weights + 1, weights, (nfeatures - 1) * sizeof(float));
 
         colors[0] = color;
@@ -297,7 +297,7 @@ static bool insertFeature(unsigned int color, float weight, unsigned int* colors
 
 template <typename T> struct Quantization
 {
-    static unsigned int apply(const void* src_, int x, int cn, double minVal, double maxVal, int quantizationLevels)
+    static int apply(const void* src_, int x, int cn, double minVal, double maxVal, int quantizationLevels)
     {
         const T* src = static_cast<const T*>(src_);
         src += x * cn;
@@ -313,7 +313,7 @@ template <typename T> struct Quantization
 class GMG_LoopBody : public ParallelLoopBody
 {
 public:
-    GMG_LoopBody(const Mat& frame, const Mat& fgmask, const Mat_<int>& nfeatures, const Mat_<unsigned int>& colors, const Mat_<float>& weights,
+    GMG_LoopBody(const Mat& frame, const Mat& fgmask, const Mat_<int>& nfeatures, const Mat_<int>& colors, const Mat_<float>& weights,
                  int maxFeatures, double learningRate, int numInitializationFrames, int quantizationLevels, double backgroundPrior, double decisionThreshold,
                  double maxVal, double minVal, int frameNum, bool updateBackgroundModel) :
         frame_(frame), fgmask_(fgmask), nfeatures_(nfeatures), colors_(colors), weights_(weights),
@@ -331,7 +331,7 @@ private:
     mutable Mat_<uchar> fgmask_;
 
     mutable Mat_<int> nfeatures_;
-    mutable Mat_<unsigned int> colors_;
+    mutable Mat_<int> colors_;
     mutable Mat_<float> weights_;
 
     int     maxFeatures_;
@@ -349,7 +349,7 @@ private:
 
 void GMG_LoopBody::operator() (const Range& range) const
 {
-    typedef unsigned int (*func_t)(const void* src_, int x, int cn, double minVal, double maxVal, int quantizationLevels);
+    typedef int (*func_t)(const void* src_, int x, int cn, double minVal, double maxVal, int quantizationLevels);
     static const func_t funcs[] =
     {
         Quantization<uchar>::apply,
@@ -375,10 +375,10 @@ void GMG_LoopBody::operator() (const Range& range) const
         for (int x = 0; x < frame_.cols; ++x, ++featureIdx)
         {
             int nfeatures = nfeatures_row[x];
-            unsigned int* colors = colors_[featureIdx];
+            int* colors = colors_[featureIdx];
             float* weights = weights_[featureIdx];
 
-            unsigned int newFeatureColor = func(frame_row, x, cn, minVal_, maxVal_, quantizationLevels_);
+            int newFeatureColor = func(frame_row, x, cn, minVal_, maxVal_, quantizationLevels_);
 
             bool isForeground = false;
 
