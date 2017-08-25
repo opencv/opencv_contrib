@@ -185,6 +185,9 @@ public:
     /** @brief This is the constructor works with your own DNN caffe implementation.
      * You can put the prototxt file and caffemodel file in the project default path or pass the path of required files into the constructor.
      * The weights of the selected layers are randomly initialized. Need to call training method to tune them.
+     * To download the caffemodel of Alexnet: http://dl.caffe.berkeleyvision.org/bvlc_alexnet.caffemodel
+     * The prototxt we use is slightly different from the one in the bvlc github: https://github.com/BVLC/caffe/blob/master/models/bvlc_alexnet/deploy.prototxt
+     * To find the modified "deploy.prototxt" specific for DeepGaze1 module: https://github.com/opencv/opencv_contrib/tree/master/modules/cnn_3dobj/testdata/cv/deploy.prototxt
      * @param net_proto The path of DNN prototxt file. The default is "deploy.prototxt"
      * @param net_caffemodel The path of DNN caffemodel file. The default is "bvlc_alexnet.caffemodel"
      * @param selected_layers The name of the layers you selected
