@@ -26,7 +26,7 @@ int main(int argc, char* argv[])
         "{ help h usage ? |     | show this message }"
         "{ train          |0    | set training on }"
         "{ default        |1    | use default deep net(AlexNet) and default weights }"
-    	"{ AUC            |0    | calculate AUC with input fixation map }"
+        "{ AUC            |0    | calculate AUC with input fixation map }"
         "{ img_path       |     | path to folder with img }"
         "{ fix_path       |     | path to folder with fixation img for compute AUC }"
         "{ model_path     |bvlc_alexnet.caffemodel   | path to your caffe model }"

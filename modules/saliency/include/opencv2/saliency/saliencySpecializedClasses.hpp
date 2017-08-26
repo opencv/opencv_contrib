@@ -162,12 +162,12 @@ You can passes your own DNN layers into the DeepGaze1 object and retrain it with
 class CV_EXPORTS_W DeepGaze1 : public StaticSaliency
 {
 private:
-	/** @brief This is the field to store the input DNN
-	 * @sa dnn::Net
-	 */
+    /** @brief This is the field to store the input DNN
+     * @sa dnn::Net
+     */
     dnn::Net net;
-	/** @brief This is the field to store the name of selected layer
-	 */
+    /** @brief This is the field to store the name of selected layer
+     */
     std::vector<std::string> layers_names;
     /** @brief This is the field to store the weight of selected layer
     */
@@ -297,11 +297,11 @@ This method also provides an optimization framework may help foreground based sa
 class CV_EXPORTS_W BackgroundContrast : public StaticSaliency
 {
 private:
-	/** @brief
-	 * limitOfSp is the maximum number of superpixel
-	 * nOfLevel, usePrior, histBin is same as the seed superpixel method
-	 * bgWei determine the weight of background when optimized with foreground method
-	*/
+    /** @brief
+     * limitOfSp is the maximum number of superpixel
+     * nOfLevel, usePrior, histBin is same as the seed superpixel method
+     * bgWei determine the weight of background when optimized with foreground method
+    */
     int limitOfSP;
     int nOfLevel;
     int usePrior;
