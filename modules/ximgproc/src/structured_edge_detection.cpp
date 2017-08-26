@@ -729,65 +729,73 @@ protected:
                 offsetY[n] = x2*features.cols*nchannels + y2*nchannels + z;
             }
             // lookup tables for mapping linear index to offset pairs
-        #ifdef _OPENMP
-        #pragma omp parallel for
+
+        #ifdef CV_CXX11
+        parallel_for_(cv::Range(0, height), [&](const cv::Range& range)
+        #else
+        const cv::Range range(0, height);
         #endif
-        for (int i = 0; i < height; ++i)
         {
-            float *regFeaturesPtr = regFeatures.ptr<float>(i*stride/shrink);
-            float  *ssFeaturesPtr = ssFeatures.ptr<float>(i*stride/shrink);
+            for(int i = range.start; i < range.end; ++i) {
+                float *regFeaturesPtr = regFeatures.ptr<float>(i*stride/shrink);
+                float  *ssFeaturesPtr = ssFeatures.ptr<float>(i*stride/shrink);
 
-            int *indexPtr = indexes.ptr<int>(i);
+                int *indexPtr = indexes.ptr<int>(i);
 
-            for (int j = 0, k = 0; j < width; ++k, j += !(k %= nTreesEval))
-                // for j,k in [0;width)x[0;nTreesEval)
-            {
-                int baseNode = ( ((i + j)%(2*nTreesEval) + k)%nTrees )*nTreesNodes;
-                int currentNode = baseNode;
-                // select root node of the tree to evaluate
-
-                int offset = (j*stride/shrink)*nchannels;
-                while ( __rf.childs[currentNode] != 0 )
+                for (int j = 0, k = 0; j < width; ++k, j += !(k %= nTreesEval))
+                    // for j,k in [0;width)x[0;nTreesEval)
                 {
-                    int currentId = __rf.featureIds[currentNode];
-                    float currentFeature;
+                    int baseNode = ( ((i + j)%(2*nTreesEval) + k)%nTrees )*nTreesNodes;
+                    int currentNode = baseNode;
+                    // select root node of the tree to evaluate
 
-                    if (currentId >= nFeatures)
+                    int offset = (j*stride/shrink)*nchannels;
+                    while ( __rf.childs[currentNode] != 0 )
                     {
-                        int xIndex = offsetX[currentId - nFeatures];
-                        float A = ssFeaturesPtr[offset + xIndex];
+                        int currentId = __rf.featureIds[currentNode];
+                        float currentFeature;
 
-                        int yIndex = offsetY[currentId - nFeatures];
-                        float B = ssFeaturesPtr[offset + yIndex];
+                        if (currentId >= nFeatures)
+                        {
+                            int xIndex = offsetX[currentId - nFeatures];
+                            float A = ssFeaturesPtr[offset + xIndex];
 
-                        currentFeature = A - B;
+                            int yIndex = offsetY[currentId - nFeatures];
+                            float B = ssFeaturesPtr[offset + yIndex];
+
+                            currentFeature = A - B;
+                        }
+                        else
+                            currentFeature = regFeaturesPtr[offset + offsetI[currentId]];
+
+                        // compare feature to threshold and move left or right accordingly
+                        if (currentFeature < __rf.thresholds[currentNode])
+                            currentNode = baseNode + __rf.childs[currentNode] - 1;
+                        else
+                            currentNode = baseNode + __rf.childs[currentNode];
                     }
-                    else
-                        currentFeature = regFeaturesPtr[offset + offsetI[currentId]];
 
-                    // compare feature to threshold and move left or right accordingly
-                    if (currentFeature < __rf.thresholds[currentNode])
-                        currentNode = baseNode + __rf.childs[currentNode] - 1;
-                    else
-                        currentNode = baseNode + __rf.childs[currentNode];
+                    indexPtr[j*nTreesEval + k] = currentNode;
                 }
-
-                indexPtr[j*nTreesEval + k] = currentNode;
             }
         }
+        #ifdef CV_CXX11
+        );
+        #endif
 
         NChannelsMat dstM(dst.size(),
             CV_MAKETYPE(DataType<float>::type, outNum));
         dstM.setTo(0);
 
         float step = 2.0f * CV_SQR(stride) / CV_SQR(ipSize) / nTreesEval;
-        #ifdef _OPENMP
-        #pragma omp parallel for
+        #ifdef CV_CXX11
+        parallel_for_(cv::Range(0, height), [&](const cv::Range& range)
         #endif
-        for (int i = 0; i < height; ++i)
         {
-            int *pIndex = indexes.ptr<int>(i);
-            float *pDst = dstM.ptr<float>(i*stride);
+            for(int i = range.start; i < range.end; ++i)
+            {
+                int *pIndex = indexes.ptr<int>(i);
+                float *pDst = dstM.ptr<float>(i*stride);
 
                 for (int j = 0, k = 0; j < width; ++k, j += !(k %= nTreesEval))
                 {// for j,k in [0;width)x[0;nTreesEval)
@@ -804,7 +812,11 @@ protected:
                     for (int p = start; p < finish; ++p)
                         pDst[offset + offsetE[__rf.edgeBins[p]]] += step;
                 }
+            }
         }
+        #ifdef CV_CXX11
+        );
+        #endif
 
         cv::reduce( dstM.reshape(1, int( dstM.total() ) ), dstM, 2, CV_REDUCE_SUM);
         imsmooth( dstM.reshape(1, dst.rows), 1 ).copyTo(dst);

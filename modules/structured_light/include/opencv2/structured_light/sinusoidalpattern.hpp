@@ -79,17 +79,17 @@ public:
      * @param setMarkers Allow to set markers on the patterns.
      * @param markersLocation vector used to store markers location on the patterns.
      */
-    struct CV_EXPORTS Params
+    struct CV_EXPORTS_W Params
     {
-        Params();
-        int width;
-        int height;
-        int nbrOfPeriods;
-        float shiftValue;
-        int methodId;
-        int nbrOfPixelsBetweenMarkers;
-        bool horizontal;
-        bool setMarkers;
+        CV_WRAP Params();
+        CV_PROP_RW int width;
+        CV_PROP_RW int height;
+        CV_PROP_RW int nbrOfPeriods;
+        CV_PROP_RW float shiftValue;
+        CV_PROP_RW int methodId;
+        CV_PROP_RW int nbrOfPixelsBetweenMarkers;
+        CV_PROP_RW bool horizontal;
+        CV_PROP_RW bool setMarkers;
         std::vector<Point2f> markersLocation;
     };
     /**
@@ -97,8 +97,8 @@ public:
      * @param parameters SinusoidalPattern parameters SinusoidalPattern::Params: width, height of the projector and patterns parameters.
      *
      */
-    static Ptr<SinusoidalPattern> create( const SinusoidalPattern::Params &parameters =
-                                          SinusoidalPattern::Params() );
+    CV_WRAP static Ptr<SinusoidalPattern> create( Ptr<SinusoidalPattern::Params> parameters =
+                                          makePtr<SinusoidalPattern::Params>() );
     /**
      * @brief Compute a wrapped phase map from sinusoidal patterns.
      * @param patternImages Input data to compute the wrapped phase map.

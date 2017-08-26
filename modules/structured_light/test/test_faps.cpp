@@ -54,10 +54,13 @@ TEST( SinusoidalPattern, unwrapPhaseMap )
 {
     string folder = cvtest::TS::ptr()->get_data_path() + "/" + STRUCTURED_LIGHT_DIR + "/" + FOLDER_DATA + "/";
 
-    structured_light::SinusoidalPattern::Params paramsPsp, paramsFtp, paramsFaps;
-    paramsFtp.methodId = 0;
-    paramsPsp.methodId = 1;
-    paramsFaps.methodId = 2;
+    Ptr<structured_light::SinusoidalPattern::Params> paramsPsp, paramsFtp, paramsFaps;
+    paramsPsp = makePtr<structured_light::SinusoidalPattern::Params>();
+    paramsFtp = makePtr<structured_light::SinusoidalPattern::Params>();
+    paramsFaps = makePtr<structured_light::SinusoidalPattern::Params>();
+    paramsFtp->methodId = 0;
+    paramsPsp->methodId = 1;
+    paramsFaps->methodId = 2;
 
     Ptr<structured_light::SinusoidalPattern> sinusPsp = structured_light::SinusoidalPattern::create(paramsPsp);
     Ptr<structured_light::SinusoidalPattern> sinusFtp = structured_light::SinusoidalPattern::create(paramsFtp);
