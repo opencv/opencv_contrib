@@ -605,7 +605,7 @@ public:
     * @brief Weights (multiplicative constants) that linearly stretch individual axes of the feature space
     *       (x,y = position; L,a,b = color in CIE Lab space; c = contrast. e = entropy)
     */
-    CV_WRAP virtual float getWeightConstrast() const = 0;
+    CV_WRAP virtual float getWeightContrast() const = 0;
     /**
     * @brief Weights (multiplicative constants) that linearly stretch individual axes of the feature space
     *       (x,y = position; L,a,b = color in CIE Lab space; c = contrast. e = entropy)
