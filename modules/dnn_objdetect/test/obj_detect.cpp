@@ -49,91 +49,86 @@ using namespace std;
 using namespace cv::dnn;
 using namespace cv::dnn_objdetect;
 
-
-Mat getMean(const size_t& h, const size_t& w)
+int main(int argc, char **argv)
 {
-    Mat mean;
-
-    const int mean_values[3] = {104, 117, 123};
-    vector<Mat> mean_channels;
-    for(size_t i = 0; i < 3; i++)
+    if (argc < 4)
     {
-        Mat channel(h, w, CV_32F, Scalar(mean_values[i]));
-        mean_channels.push_back(channel);
+        std::cerr << "Usage " << argv[0] << ": "
+                  << "<model-definition-file> " << " "
+                  << "<model-weights-file> " << " "
+                  << "<test-image>\n";
+        return -1;
     }
-    cv::merge(mean_channels, mean);
-    return mean;
-}
 
-Mat preprocess(const Mat& image)
-{
-    Mat preprocessed;
-    int width = 416;
-    int height = 416;
-    image.convertTo(preprocessed, CV_32FC3);
-    resize(preprocessed, preprocessed, Size(width, height));
+    std::string model_prototxt = argv[1];
+    std::string model_binary = argv[2];
+    std::string test_input_image = argv[3];
 
-    Mat mean = getMean(width, height);
-    cv::subtract(preprocessed, mean, preprocessed);
-
-    return preprocessed;
-}
-
-int main(int argc, char **argv) {
-    std::string base_dir = "/home/kv/gsoc/practice/snapshot/";
-    std::string model_prototxt = "/home/kv/gsoc/opencv_contrib/modules/dnn_objdetect/proto/SqueezeDet_deploy.prototxt";
-    std::string model_binary = base_dir + "snapshot_iter_260000.caffemodel";
-    std::string test_input_image = (argc > 1) ? argv[1] : "space_shuttle.jpg";
-
+    // Load the network
     std::cout << "Loading the network...\n";
     Net net = dnn::readNetFromCaffe(model_prototxt, model_binary);
-    if (net.empty()) {
+    if (net.empty())
+    {
        std::cerr << "Couldn't load the model !\n";
-       return -1;
-    } else {
+       return -2;
+    }
+    else
+    {
       std::cout << "Done loading the network !\n\n";
     }
 
+    // Load the test image
     Mat img = cv::imread(test_input_image);
-    if (img.empty()) {
+    Mat img_copy(img);
+    if (img.empty())
+    {
         std::cerr << "Couldn't load image: " << test_input_image << "\n";
-        return -2;
+        return -3;
     }
 
-    Mat final_img = preprocess(img);
-    Mat inputBlob = blobFromImage(final_img, 1.0, Size(), Scalar(), false);
+    cv::namedWindow("Initial Image", WINDOW_AUTOSIZE);
+    cv::imshow("Initial Image", img);
+    cv::waitKey(0);
+
+    img.convertTo(img, CV_32FC3);
+    cv::resize(img, img, cv::Size(416, 416));
+    Mat inputBlob = blobFromImage(img, 1.0, Size(), cv::Scalar(104, 117, 123), false);
+
+    // Set the input blob
     net.setInput(inputBlob);
 
+    // Set the output layers
     std::cout << "Getting the output of all the three blobs...\n";
     std::vector<Mat> outblobs;
     std::vector<cv::String> out_layers;
     out_layers.push_back("slice");
     out_layers.push_back("softmax");
     out_layers.push_back("sigmoid");
-    std::vector<cv::String> out_blobs;
-    out_blobs.push_back("delta_bbox");
-    out_blobs.push_back("class_scores");
-    out_blobs.push_back("conf_scores");
 
-    // Make this more efficient, couldn't find an alternate to this
-    for (size_t layer = 0; layer < out_layers.size(); ++layer) {
+    // Feed forward through the network
+    for (size_t layer = 0; layer < out_layers.size(); ++layer)
+    {
         std::vector<Mat> temp_blob;
         net.forward(temp_blob, out_layers[layer]);
-        if (layer == 0) {
+        if (layer == 0)
+        {
             outblobs.push_back(temp_blob[2]);
-        } else {
+        }
+        else
+        {
             outblobs.push_back(temp_blob[0]);
         }
     }
-    std::cout << "Done !\n";
 
     // Check that the blobs are valid
-    for (size_t i = 0; i < outblobs.size(); ++i) {
-        if (outblobs[i].empty()) {
+    for (size_t i = 0; i < outblobs.size(); ++i)
+    {
+        if (outblobs[i].empty())
+        {
             std::cerr << "Blob: " << i << " is empty !\n";
         }
     }
-    
+
     int delta_bbox_size[3] = {23, 23, 36};
     Mat delta_bbox(3, delta_bbox_size, CV_32F, outblobs[0].ptr<float>());
 
@@ -144,17 +139,39 @@ int main(int argc, char **argv) {
     Mat conf_scores(3, conf_scores_size, CV_32F, outblobs[2].ptr<float>());
 
     InferBbox inf(delta_bbox, class_scores, conf_scores);
-    inf.filter();
+    inf.filter(0.5);
+
 
     std::cout << "Total objects detected: " << inf.detections.size() << "\n";
     for (size_t i = 0; i < inf.detections.size(); ++i)
     {
-        std::cout << i << ": " << inf.detections[i].label_name << " "
-                               << inf.detections[i].class_prob << " ["
-                               << inf.detections[i].xmin << " "
-                               << inf.detections[i].ymin << " "
-                               << inf.detections[i].xmax << " "
-                               << inf.detections[i].ymax << "]\n";
+
+      double xmin = inf.detections[i].xmin;
+      double ymin = inf.detections[i].ymin;
+      double xmax = inf.detections[i].xmax;
+      double ymax = inf.detections[i].ymax;
+      std::cout << i << ": " << inf.detections[i].label_name << " "
+                             << inf.detections[i].class_prob << " ["
+                             << inf.detections[i].xmin << " "
+                             << inf.detections[i].ymin << " "
+                             << inf.detections[i].xmax << " "
+                             << inf.detections[i].ymax << "]\n";
+      // Draw the corresponding bounding box(s)
+      cv::rectangle(img_copy, cv::Point(xmin, ymin), cv::Point(xmax, ymax),
+          cv::Scalar(255, 0, 0), 2);
+
+    }
+
+    try
+    {
+      cv::namedWindow("Final Detections", WINDOW_AUTOSIZE);
+      cv::imshow("Final Detections", img_copy);
+      cv::waitKey(0);
+    }
+    catch (const char* msg)
+    {
+      std::cerr << msg << "\n";
+      return -4;
     }
 
     return 0;

@@ -72,7 +72,7 @@ namespace cv
       num_classes = 20;
       anchors_per_grid = 9;
       anchors = W * H * anchors_per_grid;
-      
+
       intersection_thresh = 0.9;
       n_top_detections = 64;
       epsilon = 1e-7;
@@ -119,10 +119,10 @@ namespace cv
       }
 
       // Map the class index to the corresponding labels
-      std::string arrs[20] = {"aeroplane", "bicycle", "bird", "boat", 
+      std::string arrs[20] = {"aeroplane", "bicycle", "bird", "boat",
                            "bottle", "bus", "car", "cat", "chair",
                            "cow", "diningtable", "dog", "horse",
-                           "motorbike", "person", "pottedplant", 
+                           "motorbike", "person", "pottedplant",
                            "sheep", "sofa", "train", "tvmonitor"};
       for (size_t idx = 0; idx < num_classes; ++idx)
       {
@@ -130,20 +130,21 @@ namespace cv
       }
     }  //  default constructer
 
-    void InferBbox::filter() 
+    void InferBbox::filter(double thresh)
     {
+      this->intersection_thresh = thresh;
       // Some containers
       std::vector<std::vector<double> > transformed_bbox_preds(this->anchors);
       std::vector<std::vector<double> > min_max_bboxes(this->anchors);
       std::vector<std::vector<double> > final_probs(this->anchors);
-      
+
       for (size_t i = 0; i < this->anchors; ++i)
       {
         transformed_bbox_preds[i].resize(4);
         final_probs[i].resize(num_classes);
         min_max_bboxes[i].resize(4);
       }
-      
+
       // Transform relative coordinates from ConvDet to bounding box coordinates
       // @f$ [x_{i}^{p}, y_{j}^{p}, h_{k}^{p}, w_{k}^{p}] @f$
       transform_bboxes(&transformed_bbox_preds);
@@ -175,7 +176,7 @@ namespace cv
         top_n_idxs, top_n_probs);
 
       // Apply Non-Maximal-Supression to the `n_top_detections`
-      nms_wrapper(top_n_boxes, top_n_idxs, top_n_probs);
+      // nms_wrapper(top_n_boxes, top_n_idxs, top_n_probs);
 
     }  //  filter function
 
@@ -188,10 +189,10 @@ namespace cv
           for (size_t anchor = 0; anchor < anchors_per_grid; ++anchor)
           {
             const int anchor_idx = (h * W + w) * anchors_per_grid + anchor;
-            double delta_x = this->delta_bbox.at<double>(h, w, anchor * 4 + 0);
-            double delta_y = this->delta_bbox.at<double>(h, w, anchor * 4 + 1);
-            double delta_h = this->delta_bbox.at<double>(h, w, anchor * 4 + 2);
-            double delta_w = this->delta_bbox.at<double>(h, w, anchor * 4 + 3);
+            double delta_x = this->delta_bbox.at<float>(h, w, anchor * 4 + 0);
+            double delta_y = this->delta_bbox.at<float>(h, w, anchor * 4 + 1);
+            double delta_h = this->delta_bbox.at<float>(h, w, anchor * 4 + 2);
+            double delta_w = this->delta_bbox.at<float>(h, w, anchor * 4 + 3);
 
             (*bboxes)[anchor_idx][0] = this->anchors_values[anchor_idx][0] + \
                           this->anchors_values[anchor_idx][3] * delta_x;
@@ -218,9 +219,9 @@ namespace cv
             const int anchor_idx = \
               (h * W + w) * anchors_per_grid + ch / num_classes;
             double pr_object = \
-              conf_scores.at<double>(h, w, ch / num_classes);
+              conf_scores.at<float>(h, w, ch / num_classes);
             double pr_class_idx = \
-              class_scores.at<double>(anchor_idx, ch % num_classes);
+              class_scores.at<float>(anchor_idx, ch % num_classes);
             (*final_probs)[anchor_idx][ch % num_classes] = \
               pr_object * pr_class_idx;
           }
@@ -271,7 +272,7 @@ namespace cv
       }
     }  //  assert_predictions function
 
-    void InferBbox::filter_top_n(std::vector<std::vector<double> > 
+    void InferBbox::filter_top_n(std::vector<std::vector<double> >
       *probs, std::vector<std::vector<double> > *boxes,
       std::vector<std::vector<double> > &top_n_boxes,
       std::vector<size_t> &top_n_idxs,
@@ -316,6 +317,21 @@ namespace cv
         for (size_t i = 0; i < 4; ++i)
         {
           top_n_boxes[n][i] = (*boxes)[top_n_order[n]][i];
+        }
+
+        dnn_objdetect::object new_detection;
+
+        new_detection.class_idx = top_n_idxs[n];
+        new_detection.label_name = this->label_map[top_n_idxs[n]];
+        new_detection.xmin = top_n_boxes[n][0];
+        new_detection.ymin = top_n_boxes[n][1];
+        new_detection.xmax = top_n_boxes[n][2];
+        new_detection.ymax = top_n_boxes[n][3];
+        new_detection.class_prob = top_n_probs[n];
+
+        if (top_n_probs[n] > this->intersection_thresh)
+        {
+          this->detections.push_back(new_detection);
         }
       }
     }  //  filter_top_n function

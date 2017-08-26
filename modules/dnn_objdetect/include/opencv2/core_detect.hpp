@@ -69,8 +69,8 @@ namespace cv
     {
       public:
         InferBbox(Mat _delta_bbox, Mat _class_scores, Mat _conf_scores);
-        void filter();
-        
+        void filter(double thresh =  0.8);
+
         // Final detections
         std::vector<object> detections;
 
