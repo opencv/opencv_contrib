@@ -1,50 +1,57 @@
 #include "opencv2/face.hpp"
-#include "opencv2/imgcodecs.hpp"
 #include "precomp.hpp"
 
-namespace cv
-{
-    //namespace face {
+namespace cv {
+namespace face {
 
     /*
     * Parameters
     */
     FacemarkAAM::Params::Params(){
-        detect_thresh = 0.5;
-        sigma=0.2;
+        model_filename = "AAM.yml";
+        m = 200;
+        n = 10;
+        n_iter = 50;
+        verbose = true;
     }
 
-    void FacemarkAAM::Params::read( const cv::FileNode& fn ){
-        *this = FacemarkAAM::Params();
-
-        if (!fn["detect_thresh"].empty())
-            fn["detect_thresh"] >> detect_thresh;
-
-        if (!fn["sigma"].empty())
-            fn["sigma"] >> sigma;
-
-    }
-
-    void FacemarkAAM::Params::write( cv::FileStorage& fs ) const{
-        fs << "detect_thresh" << detect_thresh;
-        fs << "sigma" << sigma;
-    }
+    // void FacemarkAAM::Params::read( const cv::FileNode& fn ){
+    //     *this = FacemarkAAM::Params();
+    //
+    //     if (!fn["detect_thresh"].empty())
+    //         fn["detect_thresh"] >> detect_thresh;
+    //
+    //     if (!fn["sigma"].empty())
+    //         fn["sigma"] >> sigma;
+    //
+    // }
+    //
+    // void FacemarkAAM::Params::write( cv::FileStorage& fs ) const{
+    //     fs << "detect_thresh" << detect_thresh;
+    //     fs << "sigma" << sigma;
+    // }
 
     class FacemarkAAMImpl : public FacemarkAAM {
     public:
         FacemarkAAMImpl( const FacemarkAAM::Params &parameters = FacemarkAAM::Params() );
-        void read( const FileNode& /*fn*/ );
-        void write( FileStorage& /*fs*/ ) const;
+        // void read( const FileNode& /*fn*/ );
+        // void write( FileStorage& /*fs*/ ) const;
 
         void saveModel(String fs);
         void loadModel(String fs);
 
+        bool setFaceDetector(bool(*f)(InputArray , OutputArray ));
+        bool getFaces( InputArray image ,OutputArray faces);
+        void getParams(Model & params);
+
     protected:
 
-        bool fitImpl( const Mat, std::vector<Point2f> & landmarks );
-        bool fitImpl( const Mat, std::vector<Point2f>& , Mat R, Point2f T, float scale );
-        void trainingImpl(String imageList, String groundTruth, const FacemarkAAM::Params &parameters);
-        void trainingImpl(String imageList, String groundTruth);
+        bool fit( InputArray image, InputArray faces, InputOutputArray landmarks );//!< from many ROIs
+        bool fitSingle( InputArray image, OutputArray landmarks, Mat R, Point2f T, float scale );
+        bool fitImpl( const Mat image, std::vector<Point2f>& landmarks,const  Mat R,const  Point2f T,const  float scale );
+
+        bool addTrainingSample(InputArray image, InputArray landmarks);
+        void training();
 
         Mat procrustes(std::vector<Point2f> , std::vector<Point2f> , Mat & , Scalar & , float & );
         void calcMeanShape(std::vector<std::vector<Point2f> > ,std::vector<Point2f> & );
@@ -58,7 +65,8 @@ namespace cv
         void delaunay(std::vector<Point2f> , std::vector<Vec3i> & );
         Mat createMask(std::vector<Point2f> , Rect );
         Mat createTextureBase(std::vector<Point2f> , std::vector<Vec3i> , Rect , std::vector<std::vector<Point> > & );
-        Mat warpImage(Mat , std::vector<Point2f> , std::vector<Point2f> , std::vector<Vec3i> , Rect , std::vector<std::vector<Point> > );
+        Mat warpImage(const Mat ,const  std::vector<Point2f> ,const  std::vector<Point2f> ,
+                      const std::vector<Vec3i> , const Rect , const  std::vector<std::vector<Point> > );
         template <class T>
         Mat getFeature(const Mat , std::vector<int> map);
         void createMaskMapping(const Mat mask, const Mat mask2,  std::vector<int> & , std::vector<int> &, std::vector<int> &);
@@ -69,8 +77,12 @@ namespace cv
         void gradient(const Mat M, Mat & gx, Mat & gy);
         void createWarpJacobian(Mat S, Mat Q,  std::vector<Vec3i> , Model::Texture & T, Mat & Wx_dp, Mat & Wy_dp, std::vector<std::vector<int> > & Tp);
 
+        std::vector<Mat> images;
+        std::vector<std::vector<Point2f> > facePoints;
         FacemarkAAM::Params params;
         FacemarkAAM::Model AAM;
+        bool(*faceDetector)(InputArray , OutputArray);
+        bool isSetDetector;
 
     private:
         bool isModelTrained;
@@ -83,10 +95,6 @@ namespace cv
         return Ptr<FacemarkAAMImpl>(new FacemarkAAMImpl(parameters));
     }
 
-    Ptr<FacemarkAAM> FacemarkAAM::create(){
-        return Ptr<FacemarkAAMImpl>(new FacemarkAAMImpl());
-    }
-
     FacemarkAAMImpl::FacemarkAAMImpl( const FacemarkAAM::Params &parameters ) :
         params( parameters )
     {
@@ -94,12 +102,37 @@ namespace cv
         isModelTrained = false;
     }
 
-    void FacemarkAAMImpl::read( const cv::FileNode& fn ){
-        params.read( fn );
+    // void FacemarkAAMImpl::read( const cv::FileNode& fn ){
+    //     params.read( fn );
+    // }
+    //
+    // void FacemarkAAMImpl::write( cv::FileStorage& fs ) const {
+    //     params.write( fs );
+    // }
+
+    void FacemarkAAMImpl::getParams(Model & config){
+        config = AAM;
     }
 
-    void FacemarkAAMImpl::write( cv::FileStorage& fs ) const {
-        params.write( fs );
+    bool FacemarkAAMImpl::setFaceDetector(bool(*f)(InputArray , OutputArray )){
+        faceDetector = f;
+        isSetDetector = true;
+        return true;
+    }
+
+
+    bool FacemarkAAMImpl::getFaces( InputArray image , OutputArray roi){
+
+        if(!isSetDetector){
+            return false;
+        }
+
+        std::vector<Rect> faces;
+        faces.clear();
+
+        faceDetector(image.getMat(), faces);
+        Mat(faces).copyTo(roi);
+        return true;
     }
 
 
@@ -112,16 +145,29 @@ namespace cv
     //     trainingImpl(imageList, groundTruth);
     // }
 
-    void FacemarkAAMImpl::trainingImpl(String imageList, String groundTruth){
+    bool FacemarkAAMImpl::addTrainingSample(InputArray image, InputArray landmarks){
+        std::vector<Point2f> & _landmarks = *(std::vector<Point2f>*)landmarks.getObj();
 
-        std::vector<String> images;
-        std::vector<std::vector<Point2f> > facePoints, normalized;
+        images.push_back(image.getMat());
+        facePoints.push_back(_landmarks);
+
+        return true;
+    }
+
+    void FacemarkAAMImpl::training(){
+        if (images.size()<1) {
+           std::string error_message =
+            "Training data is not provided. Consider to add using addTrainingSample() function!";
+           CV_Error(CV_StsBadArg, error_message);
+        }
+
+        std::vector<std::vector<Point2f> > normalized;
         Mat erode_kernel = getStructuringElement(MORPH_RECT, Size(3,3), Point(1,1));
         Mat image;
 
         int param_max_m = 550;
         int param_max_n = 136;
-        float offset = -0.0;
+        // float offset = -0.0;
 
         /* initialize the values TODO: set them based on the params*/
         AAM.scales.push_back(1);
@@ -129,11 +175,6 @@ namespace cv
         AAM.textures.resize(AAM.scales.size());
 
         /*-------------- A. Load the training data---------*/
-        if(groundTruth==""){
-            loadTrainingData(imageList, images, facePoints);
-        }else{
-            loadTrainingData(imageList, groundTruth, images, facePoints, offset);
-        }
         procrustesAnalysis(facePoints, normalized,AAM.s0);
 
         /*-------------- B. Create the shape model---------*/
@@ -156,7 +197,7 @@ namespace cv
 
         for(size_t scale=0; scale<AAM.scales.size();scale++){
             AAM.textures[scale].max_m = 145;
-            printf("Training for scale %i ...\n", AAM.scales[scale]);
+            if(params.verbose) printf("Training for scale %i ...\n", AAM.scales[scale]);
             Mat s0_scaled_m = Mat(AAM.s0)/AAM.scales[scale]; // scale the shape
             std::vector<Point2f> s0_scaled = s0_scaled_m.reshape(2); //convert to points
 
@@ -185,9 +226,10 @@ namespace cv
 
             /* ------------ Part D. Get textures -------------*/
             Mat texture_feats, feat;
+            if(params.verbose) printf("(1/4) Feature extraction ...\n");
             for(size_t i=0; i<images.size();i++){
-                image = imread(images[i]);
-                warped = warpImage(image,base_shape, facePoints[i], AAM.triangles, AAM.textures[scale].resolution,AAM.textures[scale].textureIdx);
+                if(params.verbose) printf("extract features from image #%i/%i\n", (int)(i+1), (int)images.size());
+                warped = warpImage(images[i],base_shape, facePoints[i], AAM.triangles, AAM.textures[scale].resolution,AAM.textures[scale].textureIdx);
                 feat = getFeature<uchar>(warped, AAM.textures[scale].ind1);
                 texture_feats.push_back(feat.t());
             }
@@ -196,12 +238,15 @@ namespace cv
             /* -------------- E. Create the texture model -----------------*/
             reduce(T,AAM.textures[scale].A0,1, CV_REDUCE_AVG);
 
+            if(params.verbose) printf("(2/4) Compute the feature average ...\n");
             Mat A0_mtx = repeat(AAM.textures[scale].A0,1,T.cols);
             Mat textures_normalized = T - A0_mtx;
 
+            if(params.verbose) printf("(3/4) Projecting the features ...\n");
             getProjection(textures_normalized, AAM.textures[scale].A ,param_max_m);
             AAM.textures[scale].AA0 = getFeature<float>(AAM.textures[scale].A0, fe_map);
 
+            if(params.verbose) printf("(4/4) Extraction of the eroded face features ...\n");
             Mat U_data, ud;
             for(int i =0;i<AAM.textures[scale].A.cols;i++){
                 Mat c = AAM.textures[scale].A.col(i);
@@ -212,27 +257,51 @@ namespace cv
             AAM.textures[scale].AA = orthonormal(U);
         } // scale
 
-        saveModel("AAM.yml");
+        images.clear();
+        if(params.verbose) printf("Saving the model\n");
+        saveModel(params.model_filename);
         isModelTrained = true;
-        printf("training is finished\n");
+        if(params.verbose) printf("Training is completed\n");
     }
 
-    bool FacemarkAAMImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks){
-        /*temporary values...will be updated*/
+    bool FacemarkAAMImpl::fit( InputArray image, InputArray roi, InputOutputArray _landmarks )
+    {
+        std::vector<Rect> faces = roi.getMat();
+        std::vector<std::vector<Point2f> > & landmarks =
+            *(std::vector<std::vector<Point2f> >*) _landmarks.getObj();
+        landmarks.resize(faces.size());
+
         Mat R =  Mat::eye(2, 2, CV_32F);
         Point2f t = Point2f(0,0);
         float scale = 1.0;
+        for(unsigned i=0; i<faces.size();i++){
+            fitImpl(image.getMat(), landmarks[i], R, t, scale);
+        }
 
-        return fitImpl(image, landmarks, R, t, scale);
+        return true;
     }
 
-    bool FacemarkAAMImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks, Mat R, Point2f T, float scale ){
+    // bool FacemarkAAMImpl::fit( const Mat image, std::vector<Point2f>& landmarks){
+    //     /*temporary values...will be updated*/
+    //     Mat R =  Mat::eye(2, 2, CV_32F);
+    //     Point2f t = Point2f(0,0);
+    //     float scale = 1.0;
+    //
+    //     return fit(image, landmarks, R, t, scale);
+    // }
+    //
+    bool FacemarkAAMImpl::fitSingle( InputArray image, OutputArray landmarks, Mat R, Point2f T, float scale ){
+        std::vector<Point2f>& _landmarks =*(std::vector<Point2f>*)landmarks.getObj();
+        return fitImpl(image.getMat(), _landmarks, R, T, scale);
+    }
+
+    bool FacemarkAAMImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks, const Mat R, const Point2f T, const  float scale ){
         if (landmarks.size()>0)
             landmarks.clear();
 
         CV_Assert(isModelTrained);
 
-        int param_n = 10, param_m = 200;
+        int param_n = params.n, param_m = params.m;
 
         /*variables*/
         std::vector<Point2f> s0 = AAM.s0;
@@ -246,10 +315,12 @@ namespace cv
         // initial fitting
         // Mat initial = Mat(scale*(Mat(s0))+Scalar(T.x,T.y)).reshape(1);
         // Mat base_shape = Mat(R*initial.t()).t();
-        // std::vector<Point2f> curr_shape = Mat(1.0/scale*(base_shape)).reshape(2);
+        // // std::vector<Point2f> curr_shape = Mat(1.0/scale*(base_shape)).reshape(2);
         std::vector<Point2f> s0_init = Mat(Mat(R*scale*Mat(Mat(s0).reshape(1)).t()).t()).reshape(2);
-        std::vector<Point2f> s0_align =  Mat(Mat(s0_init)+Scalar(T.x,T.y));
-        std::vector<Point2f> curr_shape = Mat(1.0/scale*Mat(s0_align)).reshape(2);
+        std::vector<Point2f> curr_shape =  Mat(Mat(s0_init)+Scalar(T.x,T.y));
+// std::vector<Point2f> curr_shape = s0_align;
+        // std::vector<Point2f> curr_shape = Mat(1.0/scale*Mat(s0_align)).reshape(2);
+        // std::vector<Point2f> curr_shape = landmarks;
 
         Mat imgray;
         Mat img;
@@ -268,7 +339,10 @@ namespace cv
         /*iteratively update the fitting*/
         Mat I, II, warped, c, gx, gy, Irec, Irec_feat, dc;
         Mat refI, refII, refWarped, ref_c, ref_gx, ref_gy, refIrec, refIrec_feat, ref_dc ;
-        for(int t=0;t<50;t++){
+        for(int t=0;t<params.n_iter;t++){
+            // Mat canvas = image.clone();
+            // drawFacemarks(canvas, curr_shape);
+            // imshow("inside", canvas);waitKey(1);
             warped = warpImage(img,AAM.textures[0].base_shape, curr_shape,
                                AAM.triangles,
                                AAM.textures[0].resolution ,
@@ -314,7 +388,8 @@ namespace cv
             dc = AA.t()*(II-Mat(Irec_vec)-J*dqp);
             warpUpdate(curr_shape, dqp, s0,S, AAM.Q, AAM.triangles,Tp);
         }
-        landmarks = Mat(scale*Mat(curr_shape)).reshape(2);
+        // landmarks = Mat(scale*Mat(curr_shape)).reshape(2);
+        landmarks = curr_shape;
         return true;
     }
 
@@ -360,7 +435,7 @@ namespace cv
 
         }
         fs.release();
-        printf("The model is successfully saved! \n");
+        if(params.verbose) printf("The model is successfully saved! \n");
     }
 
     void FacemarkAAMImpl::loadModel(String s){
@@ -408,7 +483,7 @@ namespace cv
 
         fs.release();
         isModelTrained = true;
-        printf("the model has been loaded\n");
+        if(params.verbose) printf("the model has been loaded\n");
     }
 
     Mat FacemarkAAMImpl::procrustes(std::vector<Point2f> P, std::vector<Point2f> Q, Mat & rot, Scalar & trans, float & scale){
@@ -761,7 +836,11 @@ namespace cv
         return mask.clone();
     }
 
-    Mat FacemarkAAMImpl::warpImage(Mat img, std::vector<Point2f> target_shape, std::vector<Point2f> curr_shape, std::vector<Vec3i> triangles, Rect res, std::vector<std::vector<Point> > textureIdx){
+    Mat FacemarkAAMImpl::warpImage(
+        const Mat img, const std::vector<Point2f> target_shape,
+        const std::vector<Point2f> curr_shape, const std::vector<Vec3i> triangles,
+        const Rect res, const std::vector<std::vector<Point> > textureIdx)
+    {
         // TODO: this part can be optimized, collect tranformation pair form all triangles first, then do one time remapping
         Mat warped = Mat::zeros(res.height, res.width, CV_8U);
         Mat warped2 = Mat::zeros(res.height, res.width, CV_8U);
@@ -834,12 +913,11 @@ namespace cv
 
             for(int k=0;k<ind.rows;k++){
                 idx=ind.at<int>(k);
-                if(idx<maxIdx){
-                    warped.at<uchar>(base_ind.at<int>(k)) = image.at<uchar>(idx);
+                if(idx>=0 && idx<maxIdx){
+                    warped.at<uchar>(base_ind.at<int>(k)) = (uchar)(image.at<uchar>(idx));
                 }
 
             }
-
             warped.copyTo(warped2);
         }
 
@@ -1087,5 +1165,5 @@ namespace cv
 
     } //createWarpJacobian
 
-//  } /* namespace face */
+} /* namespace face */
 } /* namespace cv */

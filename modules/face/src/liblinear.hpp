@@ -554,6 +554,7 @@ int daxpy_(int *n, double *sa, double *sx, int *incx, double *sy,
 // extern "C" {
 // #endif
 
+double ddot_(int *n, double *sx, int *incx, double *sy, int *incy);
 double ddot_(int *n, double *sx, int *incx, double *sy, int *incy)
 {
   long int i, m, nn, iincx, iincy;
@@ -611,6 +612,7 @@ double ddot_(int *n, double *sx, int *incx, double *sy, int *incy)
 extern "C" {
 #endif
 
+double dnrm2_(int *n, double *x, int *incx);
 double dnrm2_(int *n, double *x, int *incx)
 {
   long int ix, nn, iincx;
@@ -1071,7 +1073,7 @@ void free_model_content(struct model *model_ptr);
 void free_and_destroy_model(struct model **model_ptr_ptr);
 void destroy_param(struct parameter *param);
 
-const char *check_parameter(const struct problem *prob, const struct parameter *param);
+const char *check_parameter(const struct parameter *param);
 int check_probability_model(const struct model *model);
 int check_regression_model(const struct model *model);
 void set_print_string_function(void (*print_func) (const char*));
@@ -1140,7 +1142,7 @@ private:
 	const problem *prob;
 };
 
-l2r_lr_fun::l2r_lr_fun(const problem *_prob, double *_C)
+l2r_lr_fun::l2r_lr_fun(const problem *_prob, double *c)
 {
 	int l=_prob->l;
 
@@ -1148,7 +1150,7 @@ l2r_lr_fun::l2r_lr_fun(const problem *_prob, double *_C)
 
 	z = new double[l];
 	D = new double[l];
-	this->C = _C;
+	this->C = c;
 }
 
 l2r_lr_fun::~l2r_lr_fun()
@@ -1224,7 +1226,7 @@ void l2r_lr_fun::Hv(double *s, double *Hs)
 	delete[] wa;
 }
 
-void l2r_lr_fun::Xv(double *v, double *Xv)
+void l2r_lr_fun::Xv(double *v, double *_Xv)
 {
 	int i;
 	int l=prob->l;
@@ -1233,16 +1235,16 @@ void l2r_lr_fun::Xv(double *v, double *Xv)
 	for(i=0;i<l;i++)
 	{
 		feature_node *s=x[i];
-		Xv[i]=0;
+		_Xv[i]=0;
 		while(s->index!=-1)
 		{
-			Xv[i]+=v[s->index-1]*s->value;
+			_Xv[i]+=v[s->index-1]*s->value;
 			s++;
 		}
 	}
 }
 
-void l2r_lr_fun::XTv(double *v, double *XTv)
+void l2r_lr_fun::XTv(double *v, double *_XTv)
 {
 	int i;
 	int l=prob->l;
@@ -1250,13 +1252,13 @@ void l2r_lr_fun::XTv(double *v, double *XTv)
 	feature_node **x=prob->x;
 
 	for(i=0;i<w_size;i++)
-		XTv[i]=0;
+		_XTv[i]=0;
 	for(i=0;i<l;i++)
 	{
 		feature_node *s=x[i];
 		while(s->index!=-1)
 		{
-			XTv[s->index-1]+=v[i]*s->value;
+			_XTv[s->index-1]+=v[i]*s->value;
 			s++;
 		}
 	}
@@ -1287,7 +1289,7 @@ protected:
 	const problem *prob;
 };
 
-l2r_l2_svc_fun::l2r_l2_svc_fun(const problem *_prob, double *_C)
+l2r_l2_svc_fun::l2r_l2_svc_fun(const problem *_prob, double *c)
 {
 	int l=_prob->l;
 
@@ -1296,7 +1298,7 @@ l2r_l2_svc_fun::l2r_l2_svc_fun(const problem *_prob, double *_C)
 	z = new double[l];
 	D = new double[l];
 	I = new int[l];
-	this->C = _C;
+	C = c;
 }
 
 l2r_l2_svc_fun::~l2r_l2_svc_fun()
@@ -1372,7 +1374,7 @@ void l2r_l2_svc_fun::Hv(double *s, double *Hs)
 	delete[] wa;
 }
 
-void l2r_l2_svc_fun::Xv(double *v, double *Xv)
+void l2r_l2_svc_fun::Xv(double *v, double *_Xv)
 {
 	int i;
 	int l=prob->l;
@@ -1381,16 +1383,16 @@ void l2r_l2_svc_fun::Xv(double *v, double *Xv)
 	for(i=0;i<l;i++)
 	{
 		feature_node *s=x[i];
-		Xv[i]=0;
+		_Xv[i]=0;
 		while(s->index!=-1)
 		{
-			Xv[i]+=v[s->index-1]*s->value;
+			_Xv[i]+=v[s->index-1]*s->value;
 			s++;
 		}
 	}
 }
 
-void l2r_l2_svc_fun::subXv(double *v, double *Xv)
+void l2r_l2_svc_fun::subXv(double *v, double *_Xv)
 {
 	int i;
 	feature_node **x=prob->x;
@@ -1398,10 +1400,10 @@ void l2r_l2_svc_fun::subXv(double *v, double *Xv)
 	for(i=0;i<sizeI;i++)
 	{
 		feature_node *s=x[I[i]];
-		Xv[i]=0;
+		_Xv[i]=0;
 		while(s->index!=-1)
 		{
-			Xv[i]+=v[s->index-1]*s->value;
+			_Xv[i]+=v[s->index-1]*s->value;
 			s++;
 		}
 	}
@@ -1438,10 +1440,10 @@ private:
 	double p;
 };
 
-l2r_l2_svr_fun::l2r_l2_svr_fun(const problem *_prob, double *_C, double _p):
-	l2r_l2_svc_fun(_prob, _C)
+l2r_l2_svr_fun::l2r_l2_svr_fun(const problem *_prob, double *C_, double p_):
+	l2r_l2_svc_fun(_prob, C_)
 {
-	this->p = _p;
+	this->p = p_;
 }
 
 double l2r_l2_svr_fun::fun(double *w)
@@ -1563,6 +1565,7 @@ Solver_MCSVM_CS::~Solver_MCSVM_CS()
 	delete[] G;
 }
 
+int compare_double(const void *a, const void *b);
 int compare_double(const void *a, const void *b)
 {
 	if(*(double *)a > *(double *)b)
@@ -2293,7 +2296,7 @@ static void solve_l2r_l1l2_svr(
 #undef GETI
 #define GETI(i) (y[i]+1)
 // To support weights for instances, use GETI(i) (i)
-
+void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, double Cn);
 void solve_l2r_lr_dual(const problem *prob, double *w, double eps, double Cp, double Cn)
 {
 	int l = prob->l;
@@ -2485,7 +2488,7 @@ static void solve_l1r_l2_svc(
 	double Gmax_new, Gnorm1_new;
 	double Gnorm1_init = -1.0; // Gnorm1_init is initialized at the first iteration
 	double d_old, d_diff;
-	double loss_old, loss_new;
+	double loss_old(0), loss_new;
 	double appxcond, cond;
 
 	int *index = new int[w_size];
@@ -3708,13 +3711,14 @@ int save_model(const char *model_file_name, const struct model *model_)
 
 struct model *load_model(const char *model_file_name)
 {
+    int status;
 	FILE *fp = fopen(model_file_name,"r");
 	if(fp==NULL) return NULL;
 
 	// int i;
 	int nr_feature;
 	int n;
-	int nr_class;
+	int nr_class=0;
 	double bias;
 	model *model_ = Malloc(model,1);
 	parameter& param = model_->param;
@@ -3727,10 +3731,10 @@ struct model *load_model(const char *model_file_name)
 	char cmd[81];
 	while(1)
 	{
-		fscanf(fp,"%80s",cmd);
+		status = fscanf(fp,"%80s",cmd);
 		if(strcmp(cmd,"solver_type")==0)
 		{
-			fscanf(fp,"%80s",cmd);
+			status = fscanf(fp,"%80s",cmd);
 			int i;
 			for(i=0;solver_type_table[i];i++)
 			{
@@ -3753,17 +3757,17 @@ struct model *load_model(const char *model_file_name)
 		}
 		else if(strcmp(cmd,"nr_class")==0)
 		{
-			fscanf(fp,"%d",&nr_class);
+			status = fscanf(fp,"%d",&nr_class);
 			model_->nr_class=nr_class;
 		}
 		else if(strcmp(cmd,"nr_feature")==0)
 		{
-			fscanf(fp,"%d",&nr_feature);
+			status = fscanf(fp,"%d",&nr_feature);
 			model_->nr_feature=nr_feature;
 		}
 		else if(strcmp(cmd,"bias")==0)
 		{
-			fscanf(fp,"%lf",&bias);
+			status = fscanf(fp,"%lf",&bias);
 			model_->bias=bias;
 		}
 		else if(strcmp(cmd,"w")==0)
@@ -3775,7 +3779,7 @@ struct model *load_model(const char *model_file_name)
 			int _nr_class = model_->nr_class;
 			model_->label = Malloc(int,_nr_class);
 			for(int i=0;i<_nr_class;i++)
-				fscanf(fp,"%d",&model_->label[i]);
+				status = fscanf(fp,"%d",&model_->label[i]);
 		}
 		else
 		{
@@ -3805,9 +3809,10 @@ struct model *load_model(const char *model_file_name)
 	{
 		int j;
 		for(j=0; j<nr_w; j++)
-			fscanf(fp, "%lf ", &model_->w[i*nr_w+j]);
-		fscanf(fp, "\n");
+			status = fscanf(fp, "%lf ", &model_->w[i*nr_w+j]);
+		status = fscanf(fp, "\n");
 	}
+    status = status | status;
 
 	setlocale(LC_ALL, old_locale);
 	free(old_locale);
@@ -3907,7 +3912,7 @@ void destroy_param(parameter* param)
 		free(param->weight);
 }
 
-const char *check_parameter(const problem *prob, const parameter *param)
+const char *check_parameter(const parameter *param)
 {
 	if(param->eps <= 0)
 		return "eps <= 0";

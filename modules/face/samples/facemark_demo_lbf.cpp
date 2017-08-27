@@ -1,7 +1,40 @@
+/*
+By downloading, copying, installing or using the software you agree to this
+license. If you do not agree to this license, do not download, install,
+copy or use the software.
+                          License Agreement
+               For Open Source Computer Vision Library
+                       (3-clause BSD License)
+Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+Third party copyrights are property of their respective owners.
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+  * Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+  * Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+  * Neither the names of the copyright holders nor the names of the contributors
+    may be used to endorse or promote products derived from this software
+    without specific prior written permission.
+This software is provided by the copyright holders and contributors "as is" and
+any express or implied warranties, including, but not limited to, the implied
+warranties of merchantability and fitness for a particular purpose are
+disclaimed. In no event shall copyright holders or contributors be liable for
+any direct, indirect, incidental, special, exemplary, or consequential damages
+(including, but not limited to, procurement of substitute goods or services;
+loss of use, data, or profits; or business interruption) however caused
+and on any theory of liability, whether in contract, strict liability,
+or tort (including negligence or otherwise) arising in any way out of
+the use of this software, even if advised of the possibility of such damage.
+*/
+
 /*----------------------------------------------
  * Usage:
- * facemark_demo_lbf
+ * facemark_demo_lbf <face_cascade_model> <saved_model_filename> <training_images> <annotation_files> [test_files]
  *
+ * Example:
+ * facemark_demo_lbf ../face_cascade.xml ../LBF.model ../images_train.txt ../points_train.txt ../test.txt
  *
  * Notes:
  * the user should provides the list of training images_train
@@ -26,41 +59,146 @@
  *--------------------------------------------------*/
 
  #include <stdio.h>
- #include <opencv2/opencv.hpp>
- #include <opencv2/face.hpp>
+ #include <fstream>
+ #include <sstream>
+ #include <iostream>
+ #include "opencv2/core.hpp"
+ #include "opencv2/highgui.hpp"
+ #include "opencv2/imgproc.hpp"
+ #include "opencv2/face.hpp"
 
  using namespace std;
  using namespace cv;
+ using namespace cv::face;
 
- int main(int argc, char** argv )
- {
-     /*create the facemark instance*/
-     FacemarkLBF::Params params;
-     params.saved_file_name = "ibug68.model";
-     params.cascade_face = "../data/haarcascade_frontalface_alt.xml";
-     Ptr<Facemark> facemark = FacemarkLBF::create(params);
+  CascadeClassifier face_cascade;
+  bool myDetector( InputArray image, OutputArray roi );
+  bool parseArguments(int argc, char** argv, CommandLineParser & , String & cascade,
+      String & model, String & images, String & annotations, String & testImages
+  );
 
-     /*train the Algorithm*/
-     String imageFiles = "../data/images_train.txt";
-     String ptsFiles = "../data/points_train.txt";
-     facemark->training(imageFiles, ptsFiles);
+  int main(int argc, char** argv)
+  {
+      CommandLineParser parser(argc, argv,"");
+      String cascade_path,model_path,images_path, annotations_path, test_images_path;
+      if(!parseArguments(argc, argv, parser,cascade_path,model_path,images_path, annotations_path, test_images_path))
+         return -1;
 
-     String testFiles = "../data/images_test.txt";
-     String testPts = "../data/points_test.txt";
-     std::vector<String> images;
-     std::vector<std::vector<Point2f> > facePoints;
-     facemark->loadTrainingData(testFiles, testPts, images, facePoints, 0.0);
+      /*create the facemark instance*/
+      FacemarkLBF::Params params;
+      params.model_filename = model_path;
+      params.cascade_face = cascade_path;
+      Ptr<Facemark> facemark = FacemarkLBF::create(params);
 
-     std::vector<Rect> rects;
-     CascadeClassifier cc(params.cascade_face.c_str());
-     for(int i=0;i<images.size();i++){
-         Mat img = imread(images[i]);
+      face_cascade.load(params.cascade_face.c_str());
+      facemark->setFaceDetector(myDetector);
 
-         std::vector<Point2f> landmarks;
-         facemark->fit(img, landmarks);
-         facemark->drawPoints(img, landmarks, Scalar(0,0,255));
-         imshow("result", img);
-         waitKey(0);
+      /*Loads the dataset*/
+      std::vector<String> images_train;
+      std::vector<String> landmarks_train;
+      loadDatasetList(images_path,annotations_path,images_train,landmarks_train);
+
+      Mat image;
+      std::vector<Point2f> facial_points;
+      for(size_t i=0;i<images_train.size();i++){
+          image = imread(images_train[i].c_str());
+          loadFacePoints(landmarks_train[i],facial_points);
+          facemark->addTrainingSample(image, facial_points);
+      }
+
+      /*train the Algorithm*/
+      facemark->training();
+
+      /*test using some images*/
+      String testFiles(images_path), testPts(annotations_path);
+      if(!test_images_path.empty()){
+          testFiles = test_images_path;
+          testPts = test_images_path; //unused
+      }
+      std::vector<String> images;
+      std::vector<String> facePoints;
+      loadDatasetList(testFiles, testPts, images, facePoints);
+
+      std::vector<Rect> rects;
+      CascadeClassifier cc(params.cascade_face.c_str());
+      for(size_t i=0;i<images.size();i++){
+          std::vector<std::vector<Point2f> > landmarks;
+          cout<<images[i];
+          Mat img = imread(images[i]);
+          facemark->getFaces(img, rects);
+          facemark->fit(img, rects, landmarks);
+
+          for(size_t j=0;j<rects.size();j++){
+              drawFacemarks(img, landmarks[j], Scalar(0,0,255));
+              rectangle(img, rects[j], Scalar(255,0,255));
+          }
+
+          if(rects.size()>0){
+              cout<<endl;
+              imshow("result", img);
+              waitKey(0);
+          }else{
+              cout<<"face not found"<<endl;
+          }
+      }
+
+  }
+
+  bool myDetector( InputArray image, OutputArray roi ){
+      Mat gray;
+      std::vector<Rect> & faces = *(std::vector<Rect>*) roi.getObj();
+      faces.clear();
+
+      if(image.channels()>1){
+          cvtColor(image,gray,CV_BGR2GRAY);
+      }else{
+          gray = image.getMat().clone();
+      }
+      equalizeHist( gray, gray );
+
+      face_cascade.detectMultiScale( gray, faces, 1.4, 2, CV_HAAR_SCALE_IMAGE, Size(30, 30) );
+
+      return true;
+  }
+
+  bool parseArguments(int argc, char** argv, CommandLineParser & parser,
+      String & cascade,
+      String & model,
+      String & images,
+      String & annotations,
+      String & test_images
+  ){
+     const String keys =
+         "{ @c cascade         |      | (required) path to the face cascade xml file fo the face detector }"
+         "{ @i images          |      | (required) path of a text file contains the list of paths to all training images}"
+         "{ @a annotations     |      | (required) Path of a text file contains the list of paths to all annotations files}"
+         "{ @m model           |      | (required) path to save the trained model }"
+         "{ t test-images      |      | Path of a text file contains the list of paths to the test images}"
+         "{ help h usage ?     |      | facemark_demo_lbf -cascade -model -images -annotations [-t] }"
+     ;
+     parser = CommandLineParser(argc, argv,keys);
+     parser.about("hello");
+
+     if (parser.has("help")){
+         parser.printMessage();
+         return false;
      }
 
- }
+     cascade = String(parser.get<String>("cascade"));
+     model = String(parser.get<string>("model"));
+     images = String(parser.get<string>("images"));
+     annotations = String(parser.get<string>("annotations"));
+     test_images = String(parser.get<string>("t"));
+
+     if(cascade.empty() || model.empty() || images.empty() || annotations.empty()){
+         std::cerr << "one or more required arguments are not found" << '\n';
+         cout<<"cascade : "<<cascade.c_str()<<endl;
+         cout<<"model : "<<model.c_str()<<endl;
+         cout<<"images : "<<images.c_str()<<endl;
+         cout<<"annotations : "<<annotations.c_str()<<endl;
+         parser.printMessage();
+         return false;
+     }
+
+     return true;
+  }

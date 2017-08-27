@@ -157,7 +157,5 @@ Explanation
 -  **Compiling the code**
 
     Clear the build folder and then rebuild the entire library.
-    
     Note that you can deactivate the compilation of other contrib modules by adding "-D BUILD_opencv_<MODULE_NAME>=OFF" flag to the cmake.
-
-    After that you can execute make command in <build_folder>/modules/face to speed up the compiling process.
+    After that you can execute make command in "<build_folder>/modules/face" to speed up the compiling process.
