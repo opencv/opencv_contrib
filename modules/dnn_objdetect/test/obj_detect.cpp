@@ -92,10 +92,10 @@ int main(int argc, char **argv)
 
     img.convertTo(img, CV_32FC3);
     cv::resize(img, img, cv::Size(416, 416));
-    Mat inputBlob = blobFromImage(img, 1.0, Size(), cv::Scalar(104, 117, 123), false);
+    Mat input_blob = blobFromImage(img, 1.0, Size(), cv::Scalar(104, 117, 123), false);
 
     // Set the input blob
-    net.setInput(inputBlob);
+    net.setInput(input_blob);
 
     // Set the output layers
     std::cout << "Getting the output of all the three blobs...\n";
