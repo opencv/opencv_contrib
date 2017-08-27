@@ -36,8 +36,10 @@ For details pertaining to the usage of the model, have a look at [this repositor
 You can infact train your own object detection models with the loss function which is implemented.
 
 #### Without Caffe, using `opencv's dnn module`
-`test/core_detect.cpp` gives an example of how to use the model to predict the bounding boxes.
-`test/image_classification.cpp` gives an example of how to use the model to classify an image.
+`sample/core_detect.cpp` gives an example of how to use the model to predict the bounding boxes.
+`sample/image_classification.cpp` gives an example of how to use the model to classify an image.
+
+Here's the brief summary of examples. For detailed usage and testing, refer `sample` directory.
 
 ## Examples:
 1. Image Classification
