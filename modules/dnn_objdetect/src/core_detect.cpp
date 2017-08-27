@@ -41,6 +41,7 @@
 
 // #include "precomp.hpp"
 
+#include <iostream>
 #include <vector>
 #include <memory>
 #include <string>
@@ -61,9 +62,6 @@ namespace cv
       this->class_scores = _class_scores;
       this->conf_scores = _conf_scores;
 
-      this->n_top_detections = n_top_detections;
-      this->intersection_thresh = intersection_thresh;
-
       image_width = 416;
       image_height = 416;
 
@@ -73,7 +71,8 @@ namespace cv
       anchors_per_grid = 9;
       anchors = W * H * anchors_per_grid;
 
-      intersection_thresh = 0.9;
+      intersection_thresh = 0.65;
+      nms_intersection_thresh = 0.3;
       n_top_detections = 64;
       epsilon = 1e-7;
 
@@ -176,7 +175,7 @@ namespace cv
         top_n_idxs, top_n_probs);
 
       // Apply Non-Maximal-Supression to the `n_top_detections`
-      // nms_wrapper(top_n_boxes, top_n_idxs, top_n_probs);
+      nms_wrapper(top_n_boxes, top_n_idxs, top_n_probs);
 
     }  //  filter function
 
@@ -304,7 +303,7 @@ namespace cv
 
       // Get `n_top_detections`
       std::vector<size_t> top_n_order(args.begin(), \
-        args.begin()+n_top_detections);
+        args.begin() + n_top_detections);
 
       // Have a separate copy of all the `n_top_detections`
       for (size_t n = 0; n < n_top_detections; ++n)
@@ -317,21 +316,6 @@ namespace cv
         for (size_t i = 0; i < 4; ++i)
         {
           top_n_boxes[n][i] = (*boxes)[top_n_order[n]][i];
-        }
-
-        dnn_objdetect::object new_detection;
-
-        new_detection.class_idx = top_n_idxs[n];
-        new_detection.label_name = this->label_map[top_n_idxs[n]];
-        new_detection.xmin = top_n_boxes[n][0];
-        new_detection.ymin = top_n_boxes[n][1];
-        new_detection.xmax = top_n_boxes[n][2];
-        new_detection.ymax = top_n_boxes[n][3];
-        new_detection.class_prob = top_n_probs[n];
-
-        if (top_n_probs[n] > this->intersection_thresh)
-        {
-          this->detections.push_back(new_detection);
         }
       }
     }  //  filter_top_n function
@@ -377,7 +361,7 @@ namespace cv
             itr != keep_per_class.end(); ++itr)
         {
           const int idx = itr - keep_per_class.begin();
-          if (*itr)
+          if (*itr && probs_per_class[idx] > this->intersection_thresh)
           {
             dnn_objdetect::object new_detection;
 
@@ -399,7 +383,7 @@ namespace cv
       std::vector<std::vector<double> > *boxes, std::vector<double>
       *probs)
     {
-      std::vector<bool> keep;
+      std::vector<bool> keep(((*probs).size()));
       std::fill(keep.begin(), keep.end(), true);
       std::vector<size_t> prob_args_sorted((*probs).size());
 
@@ -420,14 +404,14 @@ namespace cv
           itr != prob_args_sorted.end()-1; ++itr)
       {
         const int idx = itr - prob_args_sorted.begin();
-        std::vector<float> iou_(prob_args_sorted.size()-idx-1);
+        std::vector<float> iou_(prob_args_sorted.size() - idx - 1);
         std::vector<std::vector<double> > temp_boxes(iou_.size());
         for (size_t bb = 0; bb < temp_boxes.size(); ++bb)
         {
           std::vector<double> temp_box(4);
           for (size_t b = 0; b < 4; ++b)
           {
-            temp_box[b] = (*boxes)[prob_args_sorted[idx+bb+1]][b];
+            temp_box[b] = (*boxes)[prob_args_sorted[idx + bb + 1]][b];
           }
           temp_boxes[bb] = temp_box;
         }
@@ -437,7 +421,7 @@ namespace cv
             _itr != iou_.end(); ++_itr)
         {
           const int iou_idx = _itr - iou_.begin();
-          if (*_itr > intersection_thresh)
+          if (*_itr > nms_intersection_thresh)
           {
             keep[prob_args_sorted[idx+iou_idx+1]] = false;
           }

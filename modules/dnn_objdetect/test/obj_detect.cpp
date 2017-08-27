@@ -79,7 +79,6 @@ int main(int argc, char **argv)
 
     // Load the test image
     Mat img = cv::imread(test_input_image);
-    Mat img_copy(img);
     if (img.empty())
     {
         std::cerr << "Couldn't load image: " << test_input_image << "\n";
@@ -90,42 +89,41 @@ int main(int argc, char **argv)
     cv::imshow("Initial Image", img);
     cv::waitKey(0);
 
-    img.convertTo(img, CV_32FC3);
     cv::resize(img, img, cv::Size(416, 416));
+    Mat img_copy(img);
+    img.convertTo(img, CV_32FC3);
     Mat input_blob = blobFromImage(img, 1.0, Size(), cv::Scalar(104, 117, 123), false);
 
     // Set the input blob
-    net.setInput(input_blob);
 
     // Set the output layers
     std::cout << "Getting the output of all the three blobs...\n";
-    std::vector<Mat> outblobs;
+    std::vector<Mat> outblobs(3);
     std::vector<cv::String> out_layers;
     out_layers.push_back("slice");
     out_layers.push_back("softmax");
     out_layers.push_back("sigmoid");
 
-    // Feed forward through the network
-    for (size_t layer = 0; layer < out_layers.size(); ++layer)
-    {
-        std::vector<Mat> temp_blob;
-        net.forward(temp_blob, out_layers[layer]);
-        if (layer == 0)
-        {
-            outblobs.push_back(temp_blob[2]);
-        }
-        else
-        {
-            outblobs.push_back(temp_blob[0]);
-        }
-    }
+    // Bbox delta blob
+    std::vector<Mat> temp_blob;
+    net.setInput(input_blob);
+    net.forward(temp_blob, out_layers[0]);
+    outblobs[0] = temp_blob[2];
+
+    // class_scores blob
+    net.setInput(input_blob);
+    outblobs[1] = net.forward(out_layers[1]);
+
+    // conf_scores blob
+    net.setInput(input_blob);
+    outblobs[2] = net.forward(out_layers[2]);
 
     // Check that the blobs are valid
     for (size_t i = 0; i < outblobs.size(); ++i)
     {
         if (outblobs[i].empty())
         {
-            std::cerr << "Blob: " << i << " is empty !\n";
+          std::cerr << "Blob: " << i << " is empty !\n";
         }
     }
 
@@ -139,10 +137,11 @@ int main(int argc, char **argv)
     Mat conf_scores(3, conf_scores_size, CV_32F, outblobs[2].ptr<float>());
 
     InferBbox inf(delta_bbox, class_scores, conf_scores);
-    inf.filter(0.5);
+    inf.filter(0.7);
 
 
-    std::cout << "Total objects detected: " << inf.detections.size() << "\n";
+    std::cout << "\nTotal objects detected: " << inf.detections.size() << "\n";
+    std::cout << "------\n";
     for (size_t i = 0; i < inf.detections.size(); ++i)
     {
 
@@ -150,16 +149,19 @@ int main(int argc, char **argv)
       double ymin = inf.detections[i].ymin;
       double xmax = inf.detections[i].xmax;
       double ymax = inf.detections[i].ymax;
-      std::cout << i << ": " << inf.detections[i].label_name << " "
-                             << inf.detections[i].class_prob << " ["
-                             << inf.detections[i].xmin << " "
-                             << inf.detections[i].ymin << " "
-                             << inf.detections[i].xmax << " "
-                             << inf.detections[i].ymax << "]\n";
+      cv::String class_name = inf.detections[i].label_name;
+      std::cout << "Class: " << class_name << "\n"
+                << "Probability: " << inf.detections[i].class_prob << "\n"
+                << "Co-ordinates: " << inf.detections[i].xmin << " "
+                << inf.detections[i].ymin << " "
+                << inf.detections[i].xmax << " "
+                << inf.detections[i].ymax << "\n";
+      std::cout << "------\n";
       // Draw the corresponding bounding box(s)
       cv::rectangle(img_copy, cv::Point(xmin, ymin), cv::Point(xmax, ymax),
-          cv::Scalar(255, 0, 0), 2);
-
+          cv::Scalar(255, 0, 0), 1);
+      cv::putText(img_copy, class_name, cv::Point(xmin, ymin),
+        cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 0, 0), 1);
     }
 
     try

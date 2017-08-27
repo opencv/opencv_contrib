@@ -121,6 +121,7 @@ namespace cv
         size_t anchors_per_grid;
         size_t anchors;
         double intersection_thresh;
+        double nms_intersection_thresh;
         size_t n_top_detections;
         double epsilon;
     };

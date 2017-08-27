@@ -15,12 +15,3 @@ set_target_properties(${TARGET} PROPERTIES
                       ARCHIVE_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH}
                       RUNTIME_OUTPUT_DIRECTORY ${EXECUTABLE_OUTPUT_PATH}
                       OUTPUT_NAME "opencv_dnn_obj_detect")
-
-set(TARGET test_classification)
-set(SOURCE_FILES test/image_classification.cpp)
-ocv_add_executable(${TARGET} ${SOURCE_FILES})
-ocv_target_link_libraries(${TARGET} ${OPENCV_DNN_LIBRARIES})
-set_target_properties(${TARGET} PROPERTIES
-                      ARCHIVE_OUTPUT_DIRECTORY ${LIBRARY_OUTPUT_PATH}
-                      RUNTIME_OUTPUT_DIRECTORY ${EXECUTABLE_OUTPUT_PATH}
-                    OUTPUT_NAME "opencv_dnn_img_classification")
