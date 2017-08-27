@@ -377,7 +377,7 @@ void rollingGuidanceFilter(InputArray src, OutputArray dst, int d = -1, double s
 
 /** @brief Interface for implementations of The Fast Bilateral Solver.
 
-For more details about this solver see cite BarronPoole2016 .
+For more details about this solver see @cite BarronPoole2016 .
 */
 class CV_EXPORTS_W FastBilateralSolverFilter : public Algorithm
 {
@@ -407,7 +407,7 @@ public:
 
 @param max_tol solving tolerance used for solving, 25 is usually enough.
 
-For more details about the Fast Bilateral Solver parameters, see the original paper cite BarronPoole2016.
+For more details about the Fast Bilateral Solver parameters, see the original paper @cite BarronPoole2016.
 */
 CV_EXPORTS_W Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma, int num_iter = 25, double max_tol = 1e-5);
 

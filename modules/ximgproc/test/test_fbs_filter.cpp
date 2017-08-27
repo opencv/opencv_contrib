@@ -107,51 +107,9 @@ TEST(FastBilateralSolverTest, ReferenceAccuracy)
     double totalMaxError = 1.0/64.0*src.total()*src.channels();
 
     EXPECT_LE(cvtest::norm(res, ref, NORM_L2), totalMaxError);
-    EXPECT_LE(cvtest::norm(res, ref, NORM_INF), 144);
+    EXPECT_LE(cvtest::norm(res, ref, NORM_INF), 1);
 }
 
-// TEST_P(FastBilateralSolverTest, MultiThreadReproducibility)
-// {
-//     if (cv::getNumberOfCPUs() == 1)
-//         return;
-//
-//     double MAX_DIF = 1.0;
-//     double MAX_MEAN_DIF = 1.0 / 64.0;
-//     int loopsCount = 2;
-//     RNG rng(0);
-//
-//     FBSParams params = GetParam();
-//     Size size     = get<0>(params);
-//     int srcType   = get<1>(params);
-//     int guideType = get<2>(params);
-//
-//     Mat guide(size, guideType);
-//     randu(guide, 0, 255);
-//     Mat src(size,srcType);
-//     if(src.depth()==CV_8U)
-//         randu(src, 0, 255);
-//     else if(src.depth()==CV_16S)
-//         randu(src, -32767, 32767);
-//     else
-//         randu(src, -100000.0f, 100000.0f);
-//
-//     for (int iter = 0; iter <= loopsCount; iter++)
-//     {
-//         double lambda = rng.uniform(100.0, 10000.0);
-//         double sigma  = rng.uniform(1.0, 100.0);
-//
-//         cv::setNumThreads(cv::getNumberOfCPUs());
-//         Mat resMultiThread;
-//         fastBilateralSolverFilter(guide, src, resMultiThread, lambda, sigma);
-//
-//         cv::setNumThreads(1);
-//         Mat resSingleThread;
-//         fastBilateralSolverFilter(guide, src, resSingleThread, lambda, sigma);
-//
-//         EXPECT_LE(cv::norm(resSingleThread, resMultiThread, NORM_INF), MAX_DIF);
-//         EXPECT_LE(cv::norm(resSingleThread, resMultiThread, NORM_L1), MAX_MEAN_DIF*src.total()*src.channels());
-//     }
-// }
 INSTANTIATE_TEST_CASE_P(FullSet, FastBilateralSolverTest,Combine(Values(szODD, szQVGA), SrcTypes::all(), GuideTypes::all()));
 
 }
