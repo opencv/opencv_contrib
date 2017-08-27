@@ -8,6 +8,9 @@ list(APPEND OPENCV_DNN_LIBRARIES opencv_dnn opencv_dnn_objdetect)
 ocv_check_dependencies(${OPENCV_DNN_LIBRARIES})
 
 set(TARGET test_detection)
+ocv_target_include_directories(${TARGET} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}" "${OpenCV_SOURCE_DIR}/include/opencv")
+ocv_target_include_modules_recurse(${TARGET} ${OPENCV_DNN_LIBRARIES})
+
 set(SOURCE_FILES test/obj_detect.cpp)
 ocv_add_executable(${TARGET} ${SOURCE_FILES})
 ocv_target_link_libraries(${TARGET} ${OPENCV_DNN_LIBRARIES})
