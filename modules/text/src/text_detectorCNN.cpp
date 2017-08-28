@@ -225,74 +225,24 @@ protected:
 
 #ifdef HAVE_DNN
 
-        //std::vector<Mat> preProcessedImList; // to store preprocessed images, should it be handled inside preprocessing class?
-
         Mat preprocessed;
         this->preprocess(inputImage,preprocessed);
-        printf("After preprocess");
-        // preprocesses each image in the inputImageList and push to preprocessedImList
-//        for(size_t imgNum=0;imgNum<inputImageList.size();imgNum++)
-//        {
-//            this->preprocess(inputImageList[imgNum],preprocessed);
-//            preProcessedImList.push_back(preprocessed);
-//        }
-        // set input data blob in dnn::net
-        //Mat temp =blobFromImage(preprocessed,1, Size(700, 700));
-        //printf("%d %d %d ",temp.size[1],temp.size[2],temp.size[3]);
-        net_->setInput(blobFromImage(preprocessed,1, Size(700, 700)), "data");
-        printf("Input layer");
 
+        net_->setInput(blobFromImage(preprocessed,1,  this->inputGeometry_), "data");
 
-       //Mat outputNet(inputImageList.size(),this->outputSize_,CV_32FC1,outputMatData) ;
-       Mat outputNet = this->net_->forward( );//"mbox_priorbox");
-       printf("After forward");
-       //outputNet = outputNet.reshape(1, 1);
+       Mat outputNet = this->net_->forward( );
+
        this->outputGeometry_.height = outputNet.size[2];
        this->outputGeometry_.width = outputNet.size[3];
        this->outputChannelCount_ = outputNet.size[1];
-       printf("%d %d %d ",outputNet.size[1],outputNet.size[2],outputNet.size[3]);
+
        outputMat.create(this->outputGeometry_.height , this->outputGeometry_.width,CV_32FC1);
         float*outputMatData=(float*)(outputMat.data);
        float*outputNetData=(float*)(outputNet.data);
        int outputSz = this->outputChannelCount_ * this->outputGeometry_.height * this->outputGeometry_.width;
 
        memcpy(outputMatData,outputNetData,sizeof(float)*outputSz);
-//        net_->input_blobs()[0]->Reshape(1, this->inputChannelCount_,this->inputGeometry_.height,this->inputGeometry_.width);
-//        net_->Reshape();
-//        float* inputBuffer=net_->input_blobs()[0]->mutable_cpu_data();
-//        float* inputData=inputBuffer;
 
-//        std::vector<Mat> input_channels;
-//        Mat preprocessed;
-//        // if the image have multiple color channels the input layer should be populated accordingly
-//        for (int channel=0;channel < this->inputChannelCount_;channel++){
-
-//            cv::Mat netInputWraped(this->inputGeometry_.height, this->inputGeometry_.width, CV_32FC1, inputData);
-//            input_channels.push_back(netInputWraped);
-//            //input_data += width * height;
-//            inputData+=(this->inputGeometry_.height*this->inputGeometry_.width);
-//        }
-//        this->preprocess(inputImage,preprocessed);
-//        split(preprocessed, input_channels);
-
-//        //preprocessed.copyTo(netInputWraped);
-
-
-//        this->net_->Forward();
-//        const float* outputNetData=net_->output_blobs()[0]->cpu_data();
-//        // const float* outputNetData1=net_->output_blobs()[1]->cpu_data();
-
-
-
-
-//        this->outputGeometry_.height = net_->output_blobs()[0]->height();
-//        this->outputGeometry_.width = net_->output_blobs()[0]->width();
-//        this->outputChannelCount_ = net_->output_blobs()[0]->channels();
-//        int outputSz = this->outputChannelCount_ * this->outputGeometry_.height * this->outputGeometry_.width;
-//        outputMat.create(this->outputGeometry_.height , this->outputGeometry_.width,CV_32FC1);
-//        float*outputMatData=(float*)(outputMat.data);
-
-//        memcpy(outputMatData,outputNetData,sizeof(float)*outputSz);
 
 
 
@@ -307,6 +257,9 @@ protected:
     //Size inputGeometry_;
     int minibatchSz_;//The existence of the assignment operator mandates this to be nonconst
     //int outputSize_;
+    const int _inputHeight =700;
+    const int _inputWidth =700;
+    const int _inputChannel =3;
 public:
     DeepCNNTextDetectorDNNImpl(const DeepCNNTextDetectorDNNImpl& dn):
         minibatchSz_(dn.minibatchSz_){
@@ -355,28 +308,10 @@ public:
             //std::cerr << "http://dl.caffe.berkeleyvision.org/bvlc_googlenet.caffemodel" << std::endl;
             exit(-1);
         }
-//        this->net_.reset(new caffe::Net<float>(modelArchFilename, caffe::TEST));
-//        CV_Assert(net_->num_inputs()==1);
-//        CV_Assert(net_->num_outputs()==1);
-//        CV_Assert(this->net_->input_blobs()[0]->channels()==1
-//                ||this->net_->input_blobs()[0]->channels()==3);
-//        //        this->channelCount_=this->net_->input_blobs()[0]->channels();
 
-
-//        this->inputGeometry_.height = inputLayer->height();
-//        this->inputGeometry_.width = inputLayer->width();
-//        this->inputChannelCount_ = inputLayer->channels();
-//        //this->inputGeometry_.batchSize =1;
-
-//        inputLayer->Reshape(this->minibatchSz_,this->inputChannelCount_,this->inputGeometry_.height, this->inputGeometry_.width);
-//        net_->Reshape();
-//        this->outputChannelCount_ = net_->output_blobs()[0]->channels();
-//        //this->outputGeometry_.batchSize =1;
-//        this->outputGeometry_.height =net_->output_blobs()[0]->height();
-//        this->outputGeometry_.width = net_->output_blobs()[0]->width();
-        this->inputGeometry_.height =700;
-        this->inputGeometry_.width = 700 ;//inputLayer->width();
-        this->inputChannelCount_ = 3 ;//inputLayer->channels();
+        this->inputGeometry_.height =_inputHeight;
+        this->inputGeometry_.width = _inputWidth ;//inputLayer->width();
+        this->inputChannelCount_ = _inputChannel ;//inputLayer->channels();
 
 #else
         CV_Error(Error::StsError,"DNN module not available during compilation!");
@@ -389,7 +324,7 @@ public:
         Size outSize = Size(this->outputGeometry_.height,outputGeometry_.width);
         Bbox_prob.create(outSize,CV_32F); // dummy initialization is it needed
         Mat outputMat = Bbox_prob.getMat();
-        printf("calling");
+
         process_(image.getMat(),outputMat);
         //copy back to outputArray
         outputMat.copyTo(Bbox_prob);
@@ -487,20 +422,20 @@ Ptr<DeepCNNTextDetector> DeepCNNTextDetector::createTextBoxNet(String archFilena
     case OCR_HOLISTIC_BACKEND_DEFAULT:
 
 #ifdef HAVE_CAFFE
-        return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorCaffeImpl(archFilename, weightsFilename,preprocessor, 100));
+        return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorCaffeImpl(archFilename, weightsFilename,preprocessor, 1));
 
 #elif defined(HAVE_DNN)
-        return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorDNNImpl(archFilename, weightsFilename,preprocessor, 100));
+        return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorDNNImpl(archFilename, weightsFilename,preprocessor, 1));
 #else
         CV_Error(Error::StsError,"DeepCNNTextDetector::create backend not implemented");
         return Ptr<DeepCNNTextDetector>();
 #endif
         break;
     case OCR_HOLISTIC_BACKEND_CAFFE:
-        return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorCaffeImpl(archFilename, weightsFilename,preprocessor, 100));
+        return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorCaffeImpl(archFilename, weightsFilename,preprocessor, 1));
         break;
     case OCR_HOLISTIC_BACKEND_DNN:
-         return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorDNNImpl(archFilename, weightsFilename,preprocessor, 100));
+         return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorDNNImpl(archFilename, weightsFilename,preprocessor, 1));
          break;
     case OCR_HOLISTIC_BACKEND_NONE:
     default:

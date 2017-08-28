@@ -16,9 +16,9 @@
 #include <vector>
 
 
-#ifdef HAVE_CAFFE
-#include "caffe/caffe.hpp"
-#endif
+//#ifdef HAVE_CAFFE
+//#include "caffe/caffe.hpp"
+//#endif
 
 namespace cv { namespace text {
 

@@ -61,6 +61,12 @@ int main(int argc, const char * argv[]){
         std::cout<<"The text module was compiled without Caffe which is the only available DeepCNN backend.\nAborting!\n";
         //exit(1);
     }
+    std::vector<std::string> backends=cv::text::cnn_config::getAvailableBackends();
+    std::cout << "The Following backends are available" << "\n";
+    for (int i=0;i<backends.size();i++)
+       std::cout << backends[i] << "\n";
+
+   // printf("%s",x);
     //set to true if you have a GPU with more than 3GB
      if(cv::text::cnn_config::caffe_backend::getCaffeAvailable())
     cv::text::cnn_config::caffe_backend::setCaffeGpuMode(true);
@@ -112,7 +118,7 @@ int main(int argc, const char * argv[]){
     }
     // call dict net here for all detected parts
     cv::Ptr<cv::text::DeepCNN> cnn=cv::text::DeepCNN::createDictNet(
-                "dictnet_vgg_deploy.prototxt","dictnet_vgg.caffemodel");
+                "dictnet_vgg_deploy.prototxt","dictnet_vgg.caffemodel",cv::text::OCR_HOLISTIC_BACKEND_DNN);
 
     cv::Ptr<cv::text::OCRHolisticWordRecognizer> wordSpotter=
             cv::text::OCRHolisticWordRecognizer::create(cnn,"dictnet_vgg_labels.txt");
@@ -130,7 +136,7 @@ int main(int argc, const char * argv[]){
         cv::Point tl_ = bbox.at(i).tl();
         cv::Point br_ = bbox.at(i).br();
 
-        out<<argv[2]<<","<<tl_.x<<","<<tl_.y<<","<<tl_.y<<","<<tl_.y<<","<<br_.x<<","<<br_.y<<","<<wordList[i]<<std::endl;
+        out<<argv[2]<<","<<tl_.x<<","<<tl_.y<<","<<","<<br_.x<<","<<br_.y<<","<<wordList[i]<<std::endl;
 
     }
     out.close();

@@ -122,6 +122,7 @@ protected:
     //void set_mean_(Mat M){}
 
     void preprocess_(const Mat& input,Mat& output,Size outputSize,int outputChannels){
+
         //TODO put all the logic of channel and depth conversions in ImageProcessor class
         CV_Assert(outputChannels==1 || outputChannels==3);
         CV_Assert(input.channels()==1 || input.channels()==3);
@@ -433,6 +434,7 @@ protected:
         CV_Assert(int(inputImageList.size())<=this->minibatchSz_);
         CV_Assert(outputMat.isContinuous());
 
+
 #ifdef HAVE_CAFFE
         net_->input_blobs()[0]->Reshape(inputImageList.size(), this->channelCount_,this->inputGeometry_.height,this->inputGeometry_.width);
         net_->Reshape();
@@ -450,15 +452,18 @@ protected:
                 input_channels.push_back(netInputWraped);
                 //input_data += width * height;
                 inputData+=(this->inputGeometry_.height*this->inputGeometry_.width);
+
             }
             this->preprocess(inputImageList[imgNum],preprocessed);
             split(preprocessed, input_channels);
+
 
         }
         this->net_->ForwardPrefilled();
         const float* outputNetData=net_->output_blobs()[0]->cpu_data();
         this->outputGeometry_ = Size(net_->output_blobs()[0]->width(),net_->output_blobs()[0]->height());
         int outputSz = this->outputSize_ * this->outputGeometry_.height * this->outputGeometry_.width;
+
 
         //outputMat.resize(this->outputGeometry_.height * this->outputGeometry_.width);
         float*outputMatData=(float*)(outputMat.data);
@@ -470,9 +475,10 @@ protected:
 #ifdef HAVE_CAFFE
     Ptr<caffe::Net<float> > net_;
 #endif
-    //Size inputGeometry_;
+    //Size inputGeometry_;//=Size(100,32);
     int minibatchSz_;//The existence of the assignment operator mandates this to be nonconst
     int outputSize_;
+    //Size outputGeometry_;
 public:
     DeepCNNCaffeImpl(const DeepCNNCaffeImpl& dn):
         minibatchSz_(dn.minibatchSz_),outputSize_(dn.outputSize_){
@@ -608,7 +614,7 @@ protected:
             preProcessedImList.push_back(preprocessed);
         }
         // set input data blob in dnn::net
-        net_->setInput(blobFromImages(preProcessedImList,1, Size(100, 32)), "data");
+        net_->setInput(blobFromImages(preProcessedImList,1, this->inputGeometry_), "data");
 
         float*outputMatData=(float*)(outputMat.data);
        //Mat outputNet(inputImageList.size(),this->outputSize_,CV_32FC1,outputMatData) ;
@@ -625,9 +631,16 @@ protected:
 #ifdef HAVE_DNN
     Ptr<Net> net_;
 #endif
-    //Size inputGeometry_;
+    // hard coding input image size. anything in DNN library to get that from prototxt??
+   // Size inputGeometry_;//=Size(100,32);
     int minibatchSz_;//The existence of the assignment operator mandates this to be nonconst
     int outputSize_;
+    //Size outputGeometry_;//= Size(1,1);
+    //int channelCount_;
+   // int inputChannel_ ;//=1;
+    const int _inputHeight =32;
+    const int _inputWidth =100;
+    const int _inputChannel =1;
 public:
     DeepCNNOpenCvDNNImpl(const DeepCNNOpenCvDNNImpl& dn):
         minibatchSz_(dn.minibatchSz_),outputSize_(dn.outputSize_){
@@ -678,33 +691,17 @@ public:
             //std::cerr << "http://dl.caffe.berkeleyvision.org/bvlc_googlenet.caffemodel" << std::endl;
             exit(-1);
         }
-// find a wa to check the followings in cv::dnn ???
-//        CV_Assert(net_->num_inputs()==1);
-//        CV_Assert(net_->num_outputs()==1);
-//        CV_Assert(this->net_->input_blobs()[0]->channels()==1
-//                ||this->net_->input_blobs()[0]->channels()==3);
-//        this->channelCount_=this->net_->input_blobs()[0]->channels();
 
 
-
-        //this->net_->CopyTrainedLayersFrom(modelWeightsFilename);
-
-        //caffe::Blob<float>* inputLayer = this->net_->input_blobs()[0];
-        //inputLayerId = net_->getLayerId('data');
-
-      //  inputLayerShape = net_->getLayerShapes(const MatShape& netInputShape,
-       //                                     inputLayerId,
-      //                                      std::vector<MatShape>* inLayerShapes,
-      //  std::vector<MatShape>* outLayerShapes) const;
-        // should not be hard coded ideally
-
-        this->inputGeometry_=Size(100,32);// Size(inputLayer->width(), inputLayer->height());
-        this->channelCount_ = 1;//inputLayer->channels();
+        this->inputGeometry_=Size(_inputWidth,_inputHeight);// Size(inputLayer->width(), inputLayer->height());
+        this->channelCount_ = _inputChannel;//inputLayer->channels();
 
         //inputLayer->Reshape(this->minibatchSz_,this->channelCount_,this->inputGeometry_.height, this->inputGeometry_.width);
-        //net_->Reshape();
-        this->outputSize_=88172 ;//net_->output_blobs()[0]->channels();
-        this->outputGeometry_ = Size(1,1);//Size(net_->output_blobs()[0]->width(),net_->output_blobs()[0]->height());
+        Ptr< Layer > outLayer=	net_->getLayer (net_->getLayerId (net_->getLayerNames()[net_->getLayerNames().size()-2]));
+        //std::vector<Mat> blobs = outLayer->blobs;
+
+        this->outputSize_=(outLayer->blobs)[1].size[0] ;//net_->output_blobs()[0]->channels();
+        //this->outputGeometry_ = Size(1,1);//Size(net_->output_blobs()[0]->width(),net_->output_blobs()[0]->height());
 
 
 
@@ -732,7 +729,7 @@ public:
         size_t minibatchSize=size_t(this->minibatchSz_);//temporary variable to avoid int to size_t arithmentic
         classProbabilities.create(Size(int(outputSize),int(allImageVector.size())),CV_32F);
         Mat outputMat = classProbabilities.getMat();
-        printf("ekhane");
+
         for(size_t imgNum=0;imgNum<allImageVector.size();imgNum+=minibatchSize)
         {
             size_t rangeEnd=imgNum+std::min<size_t>(allImageVector.size()-imgNum,minibatchSize);
@@ -832,6 +829,22 @@ Ptr<DeepCNN> DeepCNN::createDictNet(String archFilename,String weightsFilename,i
 }
 
 namespace cnn_config{
+std::vector<std::string> getAvailableBackends()
+{
+    std::vector<std::string> backends;
+
+#ifdef HAVE_CAFFE
+    backends.push_back("CAFFE, OCR_HOLISTIC_BACKEND_CAFFE"); // dnn backend opencv_dnn
+
+#endif
+#ifdef HAVE_DNN
+    backends.push_back("DNN, OCR_HOLISTIC_BACKEND_DNN");// opencv_dnn based backend"
+#endif
+    return backends;
+
+
+}
+
 namespace caffe_backend{
 
 #ifdef HAVE_CAFFE
@@ -856,28 +869,6 @@ bool getCaffeAvailable()
 {
     return true;
 }
-#elif defined(HAVE_DNN)
-
-bool getCaffeGpuMode()
-{
-    CV_Error(Error::StsError,"Caffe not available during compilation!");
-    return 0;
-}
-
-void setCaffeGpuMode(bool useGpu)
-{
-    CV_Error(Error::StsError,"Caffe not available during compilation!");
-    CV_Assert(useGpu==1);//Compilation directives force
-}
-
-bool getCaffeAvailable(){
-    return 0;
-}
-bool getDNNAvailable(){
-    return true;
-}
-
-
 #else
 
 bool getCaffeGpuMode()
@@ -899,6 +890,19 @@ bool getCaffeAvailable(){
 #endif
 
 }//namespace caffe
+namespace dnn_backend{
+#ifdef  HAVE_DNN
+
+
+bool getDNNAvailable(){
+    return true;
+}
+#else
+bool getDNNAvailable(){
+    return 0;
+}
+#endif
+}//namspace dnn_backend
 }//namespace cnn_config
 
 class OCRHolisticWordRecognizerImpl: public OCRHolisticWordRecognizer{
@@ -931,6 +935,7 @@ private:
             getOutputs(buffer,nbOutputs,tmp);
             classNum=tmp[0].wordIdx;
             confidence=tmp[0].probabillity;
+
         }
     };
 protected:
@@ -972,6 +977,7 @@ public:
     {
         Mat netOutput;
         this->classifier_->classifyBatch(inputImageList,netOutput);
+
         for(int k=0;k<netOutput.rows;k++)
         {
             int classNum;

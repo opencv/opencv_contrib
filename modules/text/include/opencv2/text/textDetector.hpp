@@ -56,7 +56,7 @@ namespace cv
 namespace text
 {
 
-//! @addtogroup text_recognize
+//! @addtogroup text_detect
 //! @{
 
 
@@ -263,7 +263,7 @@ public:
 
 };
 
-
+//! @}
 }//namespace text
 }//namespace cv
 

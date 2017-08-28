@@ -861,6 +861,15 @@ public:
 };
 
 namespace cnn_config{
+
+/** @brief runtime backend information
+ *
+ * this function finds the status of backends compiled with this module
+ *
+ * @return a list of backends (caffe,opencv-dnn etc.)
+ * */
+CV_EXPORTS_W std::vector<std::string> getAvailableBackends();
+
 namespace caffe_backend{
 
 /** @brief Prompts Caffe on the computation device beeing used
@@ -897,6 +906,21 @@ CV_EXPORTS_W void setCaffeGpuMode(bool useGpu);
 CV_EXPORTS_W bool getCaffeAvailable();
 
 }//caffe
+namespace dnn_backend {
+
+/** @brief Provides runtime information on whether DNN module was compiled in.
+ *
+ * The text module API is the same regardless of whether DNN module was available or not
+ * During compilation. When methods that require backend are invocked while no backend support
+ * is compiled, exceptions are thrown. This method allows to test whether the
+ * text module was built with dnn_backend during runtime.
+ *
+ * @return true if opencv_dnn support for the the text module was provided during compilation,
+ * false if opencv_dnn was unavailable.
+ */
+CV_EXPORTS_W bool getDNNAvailable();
+
+}//dnn_backend
 }//cnn_config
 
 /** @brief OCRHolisticWordRecognizer class provides the functionallity of segmented wordspotting.
