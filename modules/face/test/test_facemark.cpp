@@ -38,12 +38,6 @@ using namespace std;
 using namespace cv;
 using namespace cv::face;
 
-TEST(CV_Face_Facemark, can_load_annotation) {
-    string annotation_file = cvtest::findDataFile("face/therock.pts", true);
-
-
-}
-
 TEST(CV_Face_Facemark, test_utilities) {
     string image_file = cvtest::findDataFile("face/therock.jpg", true);
     string annotation_file = cvtest::findDataFile("face/therock.pts", true);
@@ -57,5 +51,5 @@ TEST(CV_Face_Facemark, test_utilities) {
     EXPECT_NO_THROW(drawFacemarks(img, facial_points, Scalar(0,0,255)));
 
     std::vector<Rect> faces;
-    EXPECT_TRUE(getFacesHaar(img, faces, cascade_filename));
+    EXPECT_TRUE(getFaces(img, faces, cascade_filename));
 }

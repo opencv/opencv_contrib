@@ -72,7 +72,7 @@ the use of this software, even if advised of the possibility of such damage.
  using namespace cv::face;
 
   CascadeClassifier face_cascade;
-  bool myDetector( InputArray image, OutputArray roi );
+  bool myDetector( InputArray image, OutputArray roi, void * config=0 );
   bool parseArguments(int argc, char** argv, CommandLineParser & , String & cascade,
       String & model, String & images, String & annotations, String & testImages
   );
@@ -144,10 +144,14 @@ the use of this software, even if advised of the possibility of such damage.
 
   }
 
-  bool myDetector( InputArray image, OutputArray roi ){
+  bool myDetector( InputArray image, OutputArray roi, void * config ){
       Mat gray;
       std::vector<Rect> & faces = *(std::vector<Rect>*) roi.getObj();
       faces.clear();
+
+      if(config!=0){
+          //do nothing
+      }
 
       if(image.channels()>1){
           cvtColor(image,gray,CV_BGR2GRAY);

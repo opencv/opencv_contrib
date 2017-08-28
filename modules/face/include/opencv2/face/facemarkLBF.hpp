@@ -49,8 +49,8 @@ namespace face {
 
             Rect detectROI;
 
-            // void read(const FileNode& /*fn*/);
-            // void write(FileStorage& /*fs*/) const;
+            void read(const FileNode& /*fn*/);
+            void write(FileStorage& /*fs*/) const;
 
         };
 

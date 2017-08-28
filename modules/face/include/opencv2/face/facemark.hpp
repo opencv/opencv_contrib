@@ -26,21 +26,31 @@ namespace face {
     @param image The input image to be processed.
     @param faces Output of the function which represent region of interest of the detected faces.
     Each face is stored in cv::Rect container.
-    @param face_cascade_model The filename of a cascade model for face detection.
+    @param face_cascade_path The path to a cascade model for face detection.
+    @param scaleFactor Parameter specifying how much the image size is reduced at each image scale.
+    @param minNeighbors Parameter Parameter specifying how many neighbors each candidate rectangle should have to retain it.
+    @param minSize Minimum possible object size.
+    @param maxSize Maximum possible object size.
 
     <B>Example of usage</B>
     @code
     std::vector<cv::Rect> roi;
-    cv::face::getFacesHaar(frame, roi, "haarcascade_frontalface_alt.xml");
+    cv::CascadeClassifier face_cascade("haarcascade_frontalface_alt.xml");
+    cv::face::getFacesHaar(frame, roi, face_cascade);
     for(int j=0;j<rects.size();j++){
         cv::rectangle(frame, rects[j], cv::Scalar(255,0,255));
     }
+    cv::imshow("detection", frame);
     @endcode
     */
-    CV_EXPORTS_W bool getFacesHaar( InputArray image,
-                                    OutputArray faces,
-                                    String face_cascade_model );
-
+    CV_EXPORTS_W bool getFaces( InputArray image,
+                                OutputArray faces,
+                                String face_cascade_path,
+                                double scaleFactor=1.1,
+                                int minNeighbors=3,
+                                Size minSize=Size(30, 30),
+                                Size maxSize=Size()
+                            );
 
     /** @brief A utility to load list of paths to training image and annotation file.
     @param imageList The specified file contains paths to the training images.
@@ -217,8 +227,8 @@ namespace face {
     {
     public:
 
-        // virtual void read( const FileNode& fn )=0;
-        // virtual void write( FileStorage& fs ) const=0;
+        virtual void read( const FileNode& fn )=0;
+        virtual void write( FileStorage& fs ) const=0;
 
         /** @brief Add one training sample to the trainer.
 
@@ -301,6 +311,7 @@ namespace face {
         @param faces Output of the function which represent region of interest of the detected faces.
         Each face is stored in cv::Rect container.
         @param landmarks The detected landmark points for each faces.
+        @param config Algorithm specific on the fly parameters.
 
         <B>Example of usage</B>
         @code
@@ -310,7 +321,10 @@ namespace face {
         facemark->fit(image, faces, landmarks);
         @endcode
         */
-        virtual bool fit( InputArray image, InputArray faces, InputOutputArray landmarks )=0;
+        virtual bool fit( InputArray image,
+                          InputArray faces,
+                          InputOutputArray landmarks,
+                          void * config = 0)=0;
 
         /** @brief Set a user defined face detector for the Facemark algorithm.
 
@@ -331,7 +345,7 @@ namespace face {
         }
         @endcode
         */
-        virtual bool setFaceDetector(bool(*f)(InputArray , OutputArray ))=0;
+        virtual bool setFaceDetector(bool(*f)(InputArray , OutputArray, void * ))=0;
 
         /** @brief Detect faces from a given image using default or user defined face detector.
         Some Algorithm might not provide a default face detector.
@@ -339,6 +353,7 @@ namespace face {
         @param image Input image.
         @param faces Output of the function which represent region of interest of the detected faces.
         Each face is stored in cv::Rect container.
+        @param extra_params Optional extra-parameters for the face detector function.
 
         <B>Example of usage</B>
         @code
@@ -349,7 +364,7 @@ namespace face {
         }
         @endcode
         */
-        virtual bool getFaces( InputArray image , OutputArray faces)=0;
+        virtual bool getFaces( InputArray image , OutputArray faces, void * extra_params=0)=0;
 
     }; /* Facemark*/
 

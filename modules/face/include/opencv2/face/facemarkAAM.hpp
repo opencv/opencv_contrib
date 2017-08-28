@@ -18,15 +18,15 @@ namespace face {
             */
             Params();
 
-            // /**
-            // * \brief Read parameters from file, currently unused
-            // */
-            // // void read(const FileNode& /*fn*/);
-            //
-            // /**
-            // * \brief Read parameters from file, currently unused
-            // */
-            // // void write(FileStorage& /*fs*/) const;
+            /**
+            * \brief Read parameters from file, currently unused
+            */
+            void read(const FileNode& /*fn*/);
+
+            /**
+            * \brief Read parameters from file, currently unused
+            */
+            void write(FileStorage& /*fs*/) const;
 
             std::string model_filename;
             int m;
@@ -35,10 +35,24 @@ namespace face {
             bool verbose;
         };
 
+        struct CV_EXPORTS Config
+        {
+            Config( Mat rot = Mat::eye(2,2,CV_32F),
+                    Point2f trans = Point2f(0.0,0.0),
+                    float scaling = 1.0
+            );
+
+            Mat R;
+            Point2f t;
+            float scale;
+
+        };
+
         /**
         * \brief The model of AAM Algorithm
         */
-        struct CV_EXPORTS Model{
+        struct CV_EXPORTS Model
+        {
             int npts; //!<  unused delete
             int max_n; //!<  unused delete
             std::vector<int>scales;

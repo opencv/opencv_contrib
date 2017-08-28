@@ -130,20 +130,33 @@ the use of this software, even if advised of the possibility of such damage.
      CascadeClassifier face_cascade(cascade_path);
      CascadeClassifier eyes_cascade(eyes_cascade_path);
      for(int i=0;i<(int)images.size();i++){
+         printf("image #%i ", i);
          image = imread(images[i]);
          myDetector(image, faces, face_cascade);
+         if(faces.size()>0){
+             std::vector<FacemarkAAM::Config> conf;
+             std::vector<Rect> faces_eyes;
+             for(unsigned j=0;j<faces.size();j++){
+                 if(getInitialFitting(image,faces[j],s0,eyes_cascade, R,T,scale)){
+                     conf.push_back(FacemarkAAM::Config(R,T,scale));
+                     faces_eyes.push_back(faces[j]);
+                 }
+             }
+             if(conf.size()>0){
 
-         for(size_t j=0;j<faces.size();j++){
-             if(getInitialFitting(image,faces[j],s0,eyes_cascade, R,T,scale)){
-                 std::vector<Point2f> landmarks;
-                 landmarks = Mat(Mat(Mat(R*scale*Mat(Mat(s0).reshape(1)).t()).t()).reshape(2)+Scalar(T.x,T.y));
-                 facemark->fitSingle(image, landmarks, R,T, scale);
-                 drawFacemarks(image, landmarks);
-                 imshow("fitting", image);
-                 waitKey(0);
-             } // if
+                 printf(" - face with eyes found %i", (int)conf.size());
+                 std::vector<std::vector<Point2f> > landmarks;
+
+                 facemark->fit(image, faces_eyes, landmarks, (void*)&conf);
+                //  cout<<Mat(landmarks[0])<<endl;
+                 for(unsigned j=0;j<landmarks.size();j++){
+                     drawFacemarks(image, landmarks[j]);
+                 }
+             }
          }
-
+         printf("\n");
+         imshow("fitting", image);
+         waitKey(0);
      } //for
  }
 

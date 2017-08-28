@@ -50,40 +50,36 @@ namespace face {
         detectROI = Rect(-1,-1,-1,-1);
     }
 
-    // void FacemarkLBF::Params::read( const cv::FileNode& fn ){
-    //     *this = FacemarkLBF::Params();
-    //
-    //     if (!fn["detect_thresh"].empty())
-    //         fn["detect_thresh"] >> detect_thresh;
-    //
-    //     if (!fn["sigma"].empty())
-    //         fn["sigma"] >> sigma;
-    //
-    // }
-    //
-    // void FacemarkLBF::Params::write( cv::FileStorage& fs ) const{
-    //     fs << "detect_thresh" << detect_thresh;
-    //     fs << "sigma" << sigma;
-    // }
+    void FacemarkLBF::Params::read( const cv::FileNode& fn ){
+        *this = FacemarkLBF::Params();
+
+        if (!fn["verbose"].empty())
+            fn["verbose"] >> verbose;
+
+    }
+
+    void FacemarkLBF::Params::write( cv::FileStorage& fs ) const{
+        fs << "verbose" << verbose;
+    }
 
     class FacemarkLBFImpl : public FacemarkLBF {
     public:
         FacemarkLBFImpl( const FacemarkLBF::Params &parameters = FacemarkLBF::Params() );
 
-        // void read( const FileNode& /*fn*/ );
-        // void write( FileStorage& /*fs*/ ) const;
+        void read( const FileNode& /*fn*/ );
+        void write( FileStorage& /*fs*/ ) const;
 
         // void saveModel(String fs);
         void loadModel(String fs);
 
-        bool setFaceDetector(bool(*f)(InputArray , OutputArray ));
-        bool getFaces( InputArray image , OutputArray faces);
+        bool setFaceDetector(bool(*f)(InputArray , OutputArray, void * extra_params ));
+        bool getFaces( InputArray image , OutputArray faces, void * extra_params);
 
         Params params;
 
     protected:
 
-        bool fit( InputArray image, InputArray faces, InputOutputArray landmarks );//!< from many ROIs
+        bool fit( InputArray image, InputArray faces, InputOutputArray landmarks, void * runtime_params );//!< from many ROIs
         bool fitImpl( const Mat image, std::vector<Point2f> & landmarks );//!< from a face
 
         bool addTrainingSample(InputArray image, InputArray landmarks);
@@ -99,7 +95,7 @@ namespace face {
         bool defaultFaceDetector(const Mat image, std::vector<Rect> & faces);
 
         CascadeClassifier face_cascade;
-        bool(*faceDetector)(InputArray , OutputArray);
+        bool(*faceDetector)(InputArray , OutputArray, void * );
         bool isSetDetector;
 
         /*training data*/
@@ -209,23 +205,27 @@ namespace face {
         params = parameters;
     }
 
-    bool FacemarkLBFImpl::setFaceDetector(bool(*f)(InputArray , OutputArray )){
+    bool FacemarkLBFImpl::setFaceDetector(bool(*f)(InputArray , OutputArray, void * extra_params )){
         faceDetector = f;
         isSetDetector = true;
         return true;
     }
 
 
-    bool FacemarkLBFImpl::getFaces( InputArray image , OutputArray roi){
+    bool FacemarkLBFImpl::getFaces( InputArray image , OutputArray roi, void * extra_params){
 
         if(!isSetDetector){
             return false;
         }
 
+        if(extra_params!=0){
+            //do nothing
+        }
+
         std::vector<Rect> & faces = *(std::vector<Rect>*)roi.getObj();
         faces.clear();
 
-        faceDetector(image.getMat(), faces);
+        faceDetector(image.getMat(), faces, extra_params);
 
         return true;
     }
@@ -325,9 +325,15 @@ namespace face {
         isModelTrained = true;
     }
 
-    bool FacemarkLBFImpl::fit( InputArray image, InputArray roi, InputOutputArray  _landmarks )
+    bool FacemarkLBFImpl::fit( InputArray image, InputArray roi, InputOutputArray  _landmarks, void * runtime_params )
     {
-        std::vector<Rect> & faces = *(std::vector<Rect>*)roi.getObj();
+        if(runtime_params!=0){
+            // do nothing
+        }
+
+        std::vector<Rect> & faces = *(std::vector<Rect> *)roi.getObj();
+        if(faces.size()<1) return false;
+
         std::vector<std::vector<Point2f> > & landmarks =
             *(std::vector<std::vector<Point2f> >*) _landmarks.getObj();
 
@@ -366,7 +372,7 @@ namespace face {
             if(!isSetDetector){
                 defaultFaceDetector(img, rects);
             }else{
-                faceDetector(img, rects);
+                faceDetector(img, rects,0);
             }
 
             if (rects.size() == 0)  return 0; //failed to get face
@@ -396,13 +402,13 @@ namespace face {
         return 1;
     }
 
-    // void FacemarkLBFImpl::read( const cv::FileNode& fn ){
-    //     params.read( fn );
-    // }
-    //
-    // void FacemarkLBFImpl::write( cv::FileStorage& fs ) const {
-    //     params.write( fs );
-    // }
+    void FacemarkLBFImpl::read( const cv::FileNode& fn ){
+        params.read( fn );
+    }
+
+    void FacemarkLBFImpl::write( cv::FileStorage& fs ) const {
+        params.write( fs );
+    }
 
     // void FacemarkLBFImpl::saveModel(String s){
     //
@@ -430,7 +436,7 @@ namespace face {
         if(!isSetDetector){
             defaultFaceDetector(img, rects);
         }else{
-            faceDetector(img, rects);
+            faceDetector(img, rects,0);
         }
 
         if (rects.size() == 0) return Rect(-1, -1, -1, -1);

@@ -46,10 +46,14 @@ using namespace cv;
 using namespace cv::face;
 
 CascadeClassifier face_detector;
-bool customDetector( InputArray image, OutputArray ROIs ){
+bool customDetector( InputArray image, OutputArray ROIs, void * config = 0 ){
     Mat gray;
     std::vector<Rect> & faces = *(std::vector<Rect>*) ROIs.getObj();
     faces.clear();
+
+    if(config!=0){
+        //do nothing
+    }
 
     if(image.channels()>1){
         cvtColor(image.getMat(),gray,CV_BGR2GRAY);

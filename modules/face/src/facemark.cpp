@@ -8,25 +8,21 @@
 #include <string>
 #include <stdlib.h>     /* atoi */
 
-#undef BOILERPLATE_CODE
-#define BOILERPLATE_CODE(name,classname)\
-    if(facemarkType==name){\
-        return classname::create();\
-}
-
 namespace cv {
 namespace face {
 
-    bool getFacesHaar( InputArray image, OutputArray faces, String face_cascade_name ){
+    bool getFaces(InputArray image, OutputArray faces, String face_cascade_path,
+        double scale, int minNeighbors, Size minSz, Size maxSz
+    ){
         Mat gray;
         std::vector<Rect> roi;
 
-        CascadeClassifier face_cascade;
-        if( !face_cascade.load( face_cascade_name ) ){ printf("--(!)Error loading face_cascade\n"); return false; };
-
         cvtColor( image.getMat(), gray, CV_BGR2GRAY );
         equalizeHist( gray, gray );
-        face_cascade.detectMultiScale( gray, roi, 1.1, 2, 0|CV_HAAR_SCALE_IMAGE, Size(30, 30) );
+
+        CascadeClassifier face_cascade;
+        if( !face_cascade.load( face_cascade_path ) ){ printf("--(!)Error loading face_cascade\n"); return false; };
+        face_cascade.detectMultiScale( gray, roi, scale, minNeighbors, 0|CV_HAAR_SCALE_IMAGE, minSz, maxSz);
 
         Mat(roi).copyTo(faces);
         return true;
@@ -184,7 +180,7 @@ namespace face {
 
     void drawFacemarks(InputOutputArray image, InputArray points, Scalar color){
         Mat img = image.getMat();
-        std::vector<Point2f> pts = points.getMat();
+        std::vector<Point2f> pts = *(std::vector<Point2f>*)points.getObj();
         for(size_t i=0;i<pts.size();i++){
             circle(img, pts[i],3, color,-1);
         }

@@ -1,18 +1,17 @@
 /*----------------------------------------------
  * Usage:
- * facemark_lbf_fitting <video_name>
+ * facemark_lbf_fitting <face_cascade_model> <lbf_model> <video_name>
  *
  * example:
- * facemark_lbf_fitting myvideo.mp4
+ * facemark_lbf_fitting ../face_cascade.xml ../LBF.model ../video.mp4
  *
  * note: do not forget to provide the LBF_MODEL and DETECTOR_MODEL
  * the model are available at opencv_contrib/modules/face/data/
  *--------------------------------------------------*/
- #define LBF_MODEL "../data/LBF.model"
- #define DETECTOR_MODEL "../data/haarcascade_frontalface_alt.xml"
 
 #include <stdio.h>
 #include <ctime>
+ #include <iostream>
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
@@ -22,24 +21,28 @@ using namespace std;
 using namespace cv;
 using namespace cv::face;
 
-bool myDetector( InputArray image, OutputArray ROIs );
+CascadeClassifier face_cascade;
+bool myDetector( InputArray image, OutputArray ROIs, void * config = 0);
+bool parseArguments(int argc, char** argv, CommandLineParser & parser,
+    String & cascade, String & model,String & video);
 
 int main(int argc, char** argv ){
-    if(argc <2){
-        printf("video file is not provided\n" );
-        return 0;
-    }
+    CommandLineParser parser(argc, argv,"");
+    String cascade_path,model_path,images_path, video_path;
+    if(!parseArguments(argc, argv, parser,cascade_path,model_path,video_path))
+       return -1;
+
+    face_cascade.load(cascade_path);
 
     FacemarkLBF::Params params;
-    params.model_filename = LBF_MODEL;
-    params.cascade_face = DETECTOR_MODEL;
+    params.model_filename = model_path;
+    params.cascade_face = cascade_path;
 
     Ptr<Facemark> facemark = FacemarkLBF::create(params);
     facemark->setFaceDetector(myDetector);
     facemark->loadModel(params.model_filename.c_str());
 
-    string filename = argv[1];
-    VideoCapture capture(filename);
+    VideoCapture capture(video_path);
     Mat frame;
 
     if( !capture.isOpened() ){
@@ -105,11 +108,14 @@ int main(int argc, char** argv ){
     waitKey(0); // key press to close window
 }
 
-CascadeClassifier face_cascade(DETECTOR_MODEL);
-bool myDetector( InputArray image, OutputArray ROIs ){
+bool myDetector( InputArray image, OutputArray ROIs, void * config ){
     Mat gray;
     std::vector<Rect> & faces = *(std::vector<Rect>*) ROIs.getObj();
     faces.clear();
+
+    if(config!=0){
+        //do nothing
+    }
 
     if(image.channels()>1){
         cvtColor(image.getMat(),gray,CV_BGR2GRAY);
@@ -120,4 +126,41 @@ bool myDetector( InputArray image, OutputArray ROIs ){
 
     face_cascade.detectMultiScale( gray, faces, 1.4, 2, CV_HAAR_SCALE_IMAGE, Size(30, 30) );
     return true;
+}
+
+bool parseArguments(int argc, char** argv, CommandLineParser & parser,
+    String & cascade,
+    String & model,
+    String & video
+){
+   const String keys =
+       "{ @c cascade         |      | (required) path to the cascade model file for the face detector }"
+       "{ @m model           |      | (required) path to the cascade model file for the eyes detector }"
+       "{ @v video           |      | (required) path of a text file contains the list of paths to all training images}"
+       "{ help h usage ?     |      | facemark_demo_aam -cascade -model -video [-t]\n"
+            " example: facemark_lbf_fitting ../face_cascade.xml ../LBF.model ../video.mp4}"
+   ;
+   parser = CommandLineParser(argc, argv,keys);
+   parser.about("hello");
+
+   if (parser.has("help")){
+       parser.printMessage();
+       return false;
+   }
+
+   cascade = String(parser.get<String>("cascade"));
+   model = String(parser.get<string>("model"));
+   video = String(parser.get<string>("video"));
+
+
+   if(cascade.empty() || model.empty() || video.empty() ){
+       std::cerr << "one or more required arguments are not found" << '\n';
+       cout<<"cascade : "<<cascade.c_str()<<endl;
+       cout<<"model : "<<model.c_str()<<endl;
+       cout<<"video : "<<video.c_str()<<endl;
+       parser.printMessage();
+       return false;
+   }
+
+   return true;
 }
