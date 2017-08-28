@@ -66,6 +66,20 @@ Co-ordinates: 34 0 381 282
 
 ![Train_Dets](https://github.com/kvmanohar22/opencv_contrib/blob/GSoC17_dnn_objdetect/modules/dnn_objdetect/tutorials/images/cat_det.png?raw=true)
 
+```bash
+./detect SqueezeDet_deploy.prototxt  SqueezeDet.caffemodel  ../tutorials/images/persons_mutli.png
+
+Total objects detected: 2 in 0.169152 seconds
+------
+Class: person
+Probability: 0.737349
+Co-ordinates: 160 67 313 363
+------
+Class: person
+Probability: 0.720328
+Co-ordinates: 187 198 222 323
+------
+```
 
 ![Train_Dets](https://github.com/kvmanohar22/opencv_contrib/blob/GSoC17_dnn_objdetect/modules/dnn_objdetect/tutorials/images/person_multi_det.png?raw=true)
 
@@ -74,7 +88,7 @@ Go ahead and run the model with other images !
 
 ## Changing threshold
 
-By default this model thresholds the detections at confidence of `0.65`. While filtering there are number of bounding boxes which are predicted, you can manually control what gets thresholded by setting the value of thresh while calling the function `filter`
+By default this model thresholds the detections at confidence of `0.65`. While filtering there are number of bounding boxes which are predicted, you can manually control what gets thresholded by setting the value of `thresh` in `samples/obj_detect.cpp` while calling the function `filter`
 
 ```cpp
 double threshold = 0.5;

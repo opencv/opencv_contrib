@@ -154,10 +154,10 @@ int main(int argc, char **argv)
     for (size_t i = 0; i < inf.detections.size(); ++i)
     {
 
-      double xmin = inf.detections[i].xmin;
-      double ymin = inf.detections[i].ymin;
-      double xmax = inf.detections[i].xmax;
-      double ymax = inf.detections[i].ymax;
+      int xmin = inf.detections[i].xmin;
+      int ymin = inf.detections[i].ymin;
+      int xmax = inf.detections[i].xmax;
+      int ymax = inf.detections[i].ymax;
       cv::String class_name = inf.detections[i].label_name;
       std::cout << "Class: " << class_name << "\n"
                 << "Probability: " << inf.detections[i].class_prob << "\n"

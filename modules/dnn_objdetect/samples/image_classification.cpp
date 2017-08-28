@@ -85,8 +85,8 @@ int main(int argc, char **argv)
     cv::Mat prob_data(3, prob_size, CV_32F, prob.ptr<float>(0));
 
     double max_prob = -1.0;
-    size_t class_idx = -1;
-    for (size_t idx = 0; idx < prob.size[1]; ++idx)
+    int class_idx = -1;
+    for (int idx = 0; idx < prob.size[1]; ++idx)
     {
         double current_prob = prob_data.at<float>(idx, 0, 0);
         if (current_prob > max_prob)
