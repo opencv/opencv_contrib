@@ -74,8 +74,12 @@ int main(int argc, char **argv)
       img, 1.0, cv::Size(416, 416), cv::Scalar(104, 117, 123), false);
 
     cv::Mat prob;
+    cv::TickMeter t;
+
     net.setInput(input_blob);
+    t.start();
     prob = net.forward("predictions");
+    t.stop();
 
     int prob_size[3] = {1000, 1, 1};
     cv::Mat prob_data(3, prob_size, CV_32F, prob.ptr<float>(0));
@@ -92,6 +96,7 @@ int main(int argc, char **argv)
         }
     }
     std::cout << "Best class Index: " << class_idx << "\n";
+    std::cout << "Time taken: " << t.getTimeSec() << "\n";
     std::cout << "Probability: " << max_prob * 100.0<< "\n";
 
     return 0;

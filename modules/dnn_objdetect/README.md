@@ -91,14 +91,4 @@ For further details on post-processing refer this detailed [blog-post](https://k
 
 ## Results from Object Detection
 
-### Detections from Training Dataset
-![Train_Dets](https://github.com/kvmanohar22/opencv_contrib/blob/GSoC17_dnn_objdetect/modules/dnn_objdetect/tutorials/train_set_detections.jpg?raw=true)
-**Fig 1**: One on the left predicted with a probability of **0.84518** as **aeroplane**. The one on the right predicted with a probability of **0.769963** as **person**.
-
-### Detections from Test Dataset
-![Test_Dets_1](https://github.com/kvmanohar22/opencv_contrib/blob/GSoC17_dnn_objdetect/modules/dnn_objdetect/tutorials/test_set_detections.jpg?raw=true)
-**Fig 2**: One on the left predicted with a probability of **0.70183** as **bus**. The one on the right predicted with a probability of **0.637606** as **person**. Well, ain't that accurate prediction !
-
-### Random Example
-![Test_Dets_2](https://github.com/kvmanohar22/opencv_contrib/blob/GSoC17_dnn_objdetect/modules/dnn_objdetect/tutorials/random_test.png?raw=true)
-**Fig 3**: Image with multiple objects. Persons detected with probability of **0.737349** and **0.726948**
+Refer `sample` directory for examples.

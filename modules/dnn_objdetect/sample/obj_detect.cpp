@@ -87,7 +87,6 @@ int main(int argc, char **argv)
 
     cv::namedWindow("Initial Image", WINDOW_AUTOSIZE);
     cv::imshow("Initial Image", img);
-    cv::waitKey(0);
 
     cv::resize(img, img, cv::Size(416, 416));
     Mat img_copy(img);
@@ -107,16 +106,24 @@ int main(int argc, char **argv)
     // Bbox delta blob
     std::vector<Mat> temp_blob;
     net.setInput(input_blob);
+    cv::TickMeter t;
+
+    t.start();
     net.forward(temp_blob, out_layers[0]);
+    t.stop();
     outblobs[0] = temp_blob[2];
 
     // class_scores blob
     net.setInput(input_blob);
+    t.start();
     outblobs[1] = net.forward(out_layers[1]);
+    t.stop();
 
     // conf_scores blob
     net.setInput(input_blob);
+    t.start();
     outblobs[2] = net.forward(out_layers[2]);
+    t.stop();
 
     // Check that the blobs are valid
     for (size_t i = 0; i < outblobs.size(); ++i)
@@ -140,7 +147,9 @@ int main(int argc, char **argv)
     inf.filter(0.7);
 
 
-    std::cout << "\nTotal objects detected: " << inf.detections.size() << "\n";
+    double average_time = t.getTimeSec() / t.getCounter();
+    std::cout << "\nTotal objects detected: " << inf.detections.size()
+              << " in " << average_time << " seconds\n";
     std::cout << "------\n";
     for (size_t i = 0; i < inf.detections.size(); ++i)
     {
