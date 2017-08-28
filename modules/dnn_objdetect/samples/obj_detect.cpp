@@ -145,7 +145,7 @@ int main(int argc, char **argv)
     Mat conf_scores(3, conf_scores_size, CV_32F, outblobs[2].ptr<float>());
 
     InferBbox inf(delta_bbox, class_scores, conf_scores);
-    inf.filter(0.7);
+    inf.filter(0.53);
 
 
     double average_time = t.getTimeSec() / t.getCounter();
@@ -171,9 +171,9 @@ int main(int argc, char **argv)
       std::cout << "------\n";
       // Draw the corresponding bounding box(s)
       cv::rectangle(original_img, cv::Point((int)(xmin * x_ratio), (int)(ymin * y_ratio)),
-          cv::Point((int)(xmax * x_ratio), (int)(ymax * y_ratio)), cv::Scalar(255, 0, 0), 1);
-      cv::putText(original_img, class_name, cv::Point((int)(xmin * x_ratio), (int)(ymax * y_ratio)),
-        cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 0, 0), 1);
+          cv::Point((int)(xmax * x_ratio), (int)(ymax * y_ratio)), cv::Scalar(255, 0, 0), 2);
+      cv::putText(original_img, class_name, cv::Point((int)(xmin * x_ratio), (int)(ymin * y_ratio)),
+        cv::FONT_HERSHEY_SIMPLEX, 0.7, cv::Scalar(255, 0, 0), 1);
     }
 
     try

@@ -71,7 +71,7 @@ namespace cv
       anchors = W * H * anchors_per_grid;
 
       intersection_thresh = 0.65;
-      nms_intersection_thresh = 0.15;
+      nms_intersection_thresh = 0.1;
       n_top_detections = 64;
       epsilon = 1e-7;
 
