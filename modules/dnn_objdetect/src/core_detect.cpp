@@ -175,11 +175,11 @@ namespace cv
 
     void InferBbox::transform_bboxes(std::vector<std::vector<double> > *bboxes)
     {
-      for (int h = 0; h < H; ++h)
+      for (unsigned int h = 0; h < H; ++h)
       {
-        for (int w = 0; w < W; ++w)
+        for (unsigned int w = 0; w < W; ++w)
         {
-          for (int anchor = 0; anchor < anchors_per_grid; ++anchor)
+          for (unsigned int anchor = 0; anchor < anchors_per_grid; ++anchor)
           {
             const int anchor_idx = (h * W + w) * anchors_per_grid + anchor;
             double delta_x = this->delta_bbox.at<float>(h, w, anchor * 4 + 0);
@@ -203,11 +203,11 @@ namespace cv
     void InferBbox::final_probability_dist(
         std::vector<std::vector<double> > *final_probs)
     {
-      for (int h = 0; h < H; ++h)
+      for (unsigned int h = 0; h < H; ++h)
       {
-        for (int w = 0; w < W; ++w)
+        for (unsigned int w = 0; w < W; ++w)
         {
-          for (int ch = 0; ch < anchors_per_grid * num_classes; ++ch)
+          for (unsigned int ch = 0; ch < anchors_per_grid * num_classes; ++ch)
           {
             const int anchor_idx =
               (h * W + w) * anchors_per_grid + ch / num_classes;
@@ -274,7 +274,7 @@ namespace cv
       std::vector<double> max_class_probs((*probs).size());
       std::vector<size_t> args((*probs).size());
 
-      for (int box = 0; box < (*boxes).size(); ++box)
+      for (unsigned int box = 0; box < (*boxes).size(); ++box)
       {
         size_t _prob_idx =
             std::max_element((*probs)[box].begin(),

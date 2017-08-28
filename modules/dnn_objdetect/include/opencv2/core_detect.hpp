@@ -153,10 +153,10 @@ namespace dnn_objdetect
         Mat class_scores;
         Mat conf_scores;
 
-        size_t image_width;
-        size_t image_height;
+        unsigned int image_width;
+        unsigned int image_height;
 
-        size_t W, H;
+        unsigned int W, H;
         std::vector<std::vector<double> > anchors_values;
         std::vector<std::pair<double, double> > anchor_center;
         std::vector<std::pair<double, double> > anchor_shapes;
