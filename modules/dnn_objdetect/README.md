@@ -36,13 +36,15 @@ For details pertaining to the usage of the model, have a look at [this repositor
 You can infact train your own object detection models with the loss function which is implemented.
 
 #### Without Caffe, using `opencv's dnn module`
-`sample/core_detect.cpp` gives an example of how to use the model to predict the bounding boxes.
-`sample/image_classification.cpp` gives an example of how to use the model to classify an image.
+`tutorials/core_detect.cpp` gives an example of how to use the model to predict the bounding boxes.
+`tutorials/image_classification.cpp` gives an example of how to use the model to classify an image.
 
-Here's the brief summary of examples. For detailed usage and testing, refer `sample` directory.
+Here's the brief summary of examples. For detailed usage and testing, refer `tutorials` directory.
 
 ## Examples:
-1. Image Classification
+
+- Image Classification
+
 ```c++
 // Read the net along with it's trained weights
 cv::dnn::net = cv::dnn::readNetFromCaffe(model_defn, model_weights);
@@ -59,7 +61,8 @@ cv::Mat probs = net.forward("predictions");
 ```
 `probs` is a 4-d tensor of shape `[1, 1000, 1, 1]` which is obtained after the application of `softmax` activation.
 
-2. Object Detection
+- Object Detection
+
 ```c++
 // Reading the network and weights, converting image to blob is same as Image Classification example.
 
@@ -91,4 +94,4 @@ For further details on post-processing refer this detailed [blog-post](https://k
 
 ## Results from Object Detection
 
-Refer `sample` directory for examples.
+Refer `tutorials` directory for results.
