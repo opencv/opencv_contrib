@@ -79,6 +79,7 @@ int main(int argc, char **argv)
 
     // Load the test image
     Mat img = cv::imread(test_input_image);
+    Mat original_img(img);
     if (img.empty())
     {
         std::cerr << "Couldn't load image: " << test_input_image << "\n";
@@ -151,6 +152,8 @@ int main(int argc, char **argv)
     std::cout << "\nTotal objects detected: " << inf.detections.size()
               << " in " << average_time << " seconds\n";
     std::cout << "------\n";
+    float x_ratio = (float)original_img.cols / img_copy.cols;
+    float y_ratio = (float)original_img.rows / img_copy.rows;
     for (size_t i = 0; i < inf.detections.size(); ++i)
     {
 
@@ -167,16 +170,16 @@ int main(int argc, char **argv)
                 << inf.detections[i].ymax << "\n";
       std::cout << "------\n";
       // Draw the corresponding bounding box(s)
-      cv::rectangle(img_copy, cv::Point(xmin, ymin), cv::Point(xmax, ymax),
-          cv::Scalar(255, 0, 0), 1);
-      cv::putText(img_copy, class_name, cv::Point(xmin, ymin),
+      cv::rectangle(original_img, cv::Point((int)(xmin * x_ratio), (int)(ymin * y_ratio)),
+          cv::Point((int)(xmax * x_ratio), (int)(ymax * y_ratio)), cv::Scalar(255, 0, 0), 1);
+      cv::putText(original_img, class_name, cv::Point((int)(xmin * x_ratio), (int)(ymax * y_ratio)),
         cv::FONT_HERSHEY_SIMPLEX, 0.4, cv::Scalar(255, 0, 0), 1);
     }
 
     try
     {
       cv::namedWindow("Final Detections", WINDOW_AUTOSIZE);
-      cv::imshow("Final Detections", img_copy);
+      cv::imshow("Final Detections", original_img);
       cv::waitKey(0);
     }
     catch (const char* msg)
