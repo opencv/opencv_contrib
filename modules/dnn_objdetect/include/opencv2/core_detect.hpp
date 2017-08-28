@@ -57,7 +57,7 @@ namespace dnn_objdetect
     {
       int xmin, xmax;
       int ymin, ymax;
-      int class_idx;
+      size_t class_idx;
       std::string label_name;
       double class_prob;
     } object;
@@ -140,7 +140,7 @@ namespace dnn_objdetect
        @param iou Vector to store IOU values
         */
         void intersection_over_union(std::vector<std::vector<double> > *boxes,
-                          std::vector<double> *base_box, std::vector<float> *iou);
+                          std::vector<double> *base_box, std::vector<double> *iou);
 
         static inline bool comparator (std::pair<double, size_t> l1,
             std::pair<double, size_t> l2)
@@ -163,8 +163,8 @@ namespace dnn_objdetect
 
         std::vector<std::string> label_map;
 
-        size_t num_classes;
-        size_t anchors_per_grid;
+        unsigned int num_classes;
+        unsigned int anchors_per_grid;
         size_t anchors;
         double intersection_thresh;
         double nms_intersection_thresh;
