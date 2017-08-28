@@ -11,6 +11,15 @@
 #include "opencv2/photometric_calib/ResponseCalib.hpp"
 #include "opencv2/photometric_calib/VignetteCalib.hpp"
 
+/**
+ * @defgroup photometric_calib Photometric Calibration
+ * The photometric_calib contains photomeric calibration algorithm proposed by Jakob Engel. \n
+ * The implementation is totally based on the paper \cite engel2016monodataset. \n
+ * Photometric calibration aimed at removing the camera response function and vitnetting artefact,
+ * by which the tracking and image alignment algorithms based on direct methods can be improved significantly. \n
+ * For details please refer to \cite engel2016monodataset.
+ */
+
 namespace cv {
 namespace photometric_calib {
 } // namespace photometric_calib
