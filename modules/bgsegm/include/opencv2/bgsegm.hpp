@@ -189,6 +189,8 @@ CV_EXPORTS_W Ptr<BackgroundSubtractorGMG> createBackgroundSubtractorGMG(int init
 
   About as fast as MOG2 on a high end system.
   More than twice faster than MOG2 on cheap hardware (benchmarked on Raspberry Pi3).
+
+  %Algorithm by Sagi Zeevi ( https://github.com/sagi-z/BackgroundSubtractorCNT )
 */
 class CV_EXPORTS_W BackgroundSubtractorCNT  : public BackgroundSubtractor
 {
