@@ -1,0 +1,6 @@
+set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} "--ftz=true;--prec-div=false;--prec-sqrt=false")
+add_module_library(kfusion)
+if(OPENNI_FOUND)
+    target_compile_definitions(kfusion PRIVATE OPENNI_FOUND=1)
+endif()
+target_link_libraries(kfusion ${CUDA_LIBRARIES} ${CUDA_CUDA_LIBRARY} ${OpenCV_LIBS} ${OPENNI_LIBRARY} ${CERES_LIBRARIES})
