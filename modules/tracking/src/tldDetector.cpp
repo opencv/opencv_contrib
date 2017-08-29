@@ -40,6 +40,7 @@
 //M*/
 
 #include "tldDetector.hpp"
+#include "tracking_utils.hpp"
 
 #include <opencv2/core/utility.hpp>
 
@@ -72,12 +73,12 @@ namespace cv
 			for (int i = 0; i < *posNum; i++)
 			{
 				modelSample.data = &(posExp->data[i * 225]);
-				splus = std::max(splus, 0.5 * (NCC(modelSample, patch) + 1.0));
+                splus = std::max(splus, 0.5 * (tracking_internal::computeNCC(modelSample, patch) + 1.0));
 			}
 			for (int i = 0; i < *negNum; i++)
 			{
 				modelSample.data = &(negExp->data[i * 225]);
-				sminus = std::max(sminus, 0.5 * (NCC(modelSample, patch) + 1.0));
+                sminus = std::max(sminus, 0.5 * (tracking_internal::computeNCC(modelSample, patch) + 1.0));
 			}
 
 			if (splus + sminus == 0.0)
@@ -167,7 +168,7 @@ namespace cv
 			for (int id = 0; id < numOfPatches; id++)
 			{
 				double spr = 0.0, smr = 0.0, spc = 0.0, smc = 0;
-				int med = getMedian((*timeStampsPositive));
+                int med = tracking_internal::getMedian((*timeStampsPositive));
 				for (int i = 0; i < *posNum; i++)
 				{
 					spr = std::max(spr, 0.5 * (posNCC.at<float>(id * 500 + i) + 1.0));
@@ -195,19 +196,19 @@ namespace cv
 		{
 			double splus = 0.0, sminus = 0.0;
 			Mat_<uchar> modelSample(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
-			int med = getMedian((*timeStampsPositive));
+            int med = tracking_internal::getMedian((*timeStampsPositive));
 			for (int i = 0; i < *posNum; i++)
 			{
 				if ((int)(*timeStampsPositive)[i] <= med)
 				{
 					modelSample.data = &(posExp->data[i * 225]);
-					splus = std::max(splus, 0.5 * (NCC(modelSample, patch) + 1.0));
+                    splus = std::max(splus, 0.5 * (tracking_internal::computeNCC(modelSample, patch) + 1.0));
 				}
 			}
 			for (int i = 0; i < *negNum; i++)
 			{
 				modelSample.data = &(negExp->data[i * 225]);
-				sminus = std::max(sminus, 0.5 * (NCC(modelSample, patch) + 1.0));
+                sminus = std::max(sminus, 0.5 * (tracking_internal::computeNCC(modelSample, patch) + 1.0));
 			}
 
 			if (splus + sminus == 0.0)
@@ -249,7 +250,7 @@ namespace cv
 
 			Mat resNCC = devNCC.getMat(ACCESS_READ);
 
-			int med = getMedian((*timeStampsPositive));
+            int med = tracking_internal::getMedian((*timeStampsPositive));
 			for (int i = 0; i < *posNum; i++)
 				if ((int)(*timeStampsPositive)[i] <= med)
 					splus = std::max(splus, 0.5 * (resNCC.at<float>(i) +1.0));

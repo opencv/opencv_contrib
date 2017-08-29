@@ -164,35 +164,6 @@ double variance(const Mat& img)
     return p2 - p * p;
 }
 
-//Normalized Correlation Coefficient
-double NCC(const Mat_<uchar>& patch1, const Mat_<uchar>& patch2)
-{
-    CV_Assert( patch1.rows == patch2.rows );
-    CV_Assert( patch1.cols == patch2.cols );
-
-    int N = patch1.rows * patch1.cols;
-    double s1 = sum(patch1)(0);
-    double s2 = sum(patch2)(0);
-    double n1 = norm(patch1, NORM_L2SQR);
-    double n2 = norm(patch2, NORM_L2SQR);
-    double prod=patch1.dot(patch2);
-    double sq1 = sqrt(std::max(0.0, n1 - 1.0 * s1 * s1 / N));
-    double sq2 = sqrt(std::max(0.0, n2 - 1.0 * s2 * s2 / N));
-    return (sq2 == 0) ? sq1 / abs(sq1) : (prod - s1 * s2 / N) / sq1 / sq2;
-}
-
-int getMedian(const std::vector<int>& values, int size)
-{
-    if( size == -1 )
-        size = (int)values.size();
-    std::vector<int> copy(values.begin(), values.begin() + size);
-    std::sort(copy.begin(), copy.end());
-    if( size % 2 == 0 )
-        return (copy[size / 2 - 1] + copy[size / 2]) / 2;
-    else
-        return copy[(size - 1) / 2];
-}
-
 //Overlap between two BB
 double overlap(const Rect2d& r1, const Rect2d& r2)
 {
