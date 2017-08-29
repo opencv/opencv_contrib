@@ -48,11 +48,19 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
+/** @defgroup dnn_objdetect DNN used for object detection
+*/
+
 namespace cv
 {
 namespace dnn_objdetect
 {
 
+    //! @addtogroup dnn_objdetect
+    //! @{
+
+    /** @brief Structure to hold the details pertaining to a single bounding box
+     */
     typedef struct
     {
       int xmin, xmax;
@@ -61,6 +69,7 @@ namespace dnn_objdetect
       std::string label_name;
       double class_prob;
     } object;
+
 
     /** @brief A class to post process model predictions
      */
@@ -172,8 +181,7 @@ namespace dnn_objdetect
         double epsilon;
     };
 
-}  //  namespace dnn_objdetect
-
-}  //  namespace cv
-
+    //! @}
+} // namespace dnn_objdetect
+} // namespace cv
 #endif
