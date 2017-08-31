@@ -408,7 +408,7 @@ namespace cv
 				////To fix: Check the paper, probably this cause wrong learning
 				//
 				labPatch.isObject = srValue > tld::THETA_NN;
-				labPatch.shouldBeIntegrated = abs(srValue - tld::THETA_NN) < 0.1;
+                labPatch.shouldBeIntegrated = abs(srValue - tld::THETA_NN) < tld::CLASSIFIER_MARGIN;
 				patches[k].push_back(labPatch);
 				//
 

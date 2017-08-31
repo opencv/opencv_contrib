@@ -151,16 +151,11 @@ void getClosestN(std::vector<Rect2d>& scanGrid, Rect2d bBox, int n, std::vector<
 double variance(const Mat& img)
 {
     double p = 0, p2 = 0;
-    for( int i = 0; i < img.rows; i++ )
-    {
-        for( int j = 0; j < img.cols; j++ )
-        {
-            p += img.at<uchar>(i, j);
-            p2 += img.at<uchar>(i, j) * img.at<uchar>(i, j);
-        }
-    }
+    p = sum(img)(0);
+    p2 = norm(img, NORM_L2SQR);
     p /= (img.cols * img.rows);
     p2 /= (img.cols * img.rows);
+
     return p2 - p * p;
 }
 

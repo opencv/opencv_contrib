@@ -262,9 +262,9 @@ int TrackerTLDImpl::Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examp
     TLDDetector::generateScanGrid(img_.rows, img_.cols, initSize_, scanGrid);
     getClosestN(scanGrid, Rect2d(resultBox_.x / scale, resultBox_.y / scale, resultBox_.width / scale, resultBox_.height / scale), 10, closest);
 
-    for( int i = 0; i < (int)closest.size(); i++ )
+    for( size_t i = 0; i < closest.size(); i++ )
     {
-        for( int j = 0; j < 10; j++ )
+        for( size_t j = 0; j < 10; j++ )
         {
             Point2f center;
             Size2f size;

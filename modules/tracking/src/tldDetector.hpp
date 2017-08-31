@@ -57,8 +57,9 @@ namespace cv
 		const int MEASURES_PER_CLASSIFIER = 13;
 		const int GRIDSIZE = 15;
 		const int DOWNSCALE_MODE = cv::INTER_LINEAR;
-		const double THETA_NN = 0.50;
+        const double THETA_NN = 0.5;
 		const double CORE_THRESHOLD = 0.5;
+        const double CLASSIFIER_MARGIN = 0.1;
 		const double SCALE_STEP = 1.2;
 		const double ENSEMBLE_THRESHOLD = 0.5;
 		const double VARIANCE_THRESHOLD = 0.5;

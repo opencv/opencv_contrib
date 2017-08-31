@@ -420,7 +420,7 @@ namespace cv
 				////To fix: Check the paper, probably this cause wrong learning
 				//
 				labPatch.isObject = srValue > THETA_NN;
-				labPatch.shouldBeIntegrated = abs(srValue - THETA_NN) < 0.1;
+                labPatch.shouldBeIntegrated = abs(srValue - THETA_NN) < CLASSIFIER_MARGIN;
 				patches.push_back(labPatch);
 				//
 
@@ -539,7 +539,7 @@ namespace cv
 				////To fix: Check the paper, probably this cause wrong learning
 				//
 				labPatch.isObject = srValue > THETA_NN;
-				labPatch.shouldBeIntegrated = abs(srValue - THETA_NN) < 0.1;
+                labPatch.shouldBeIntegrated = abs(srValue - THETA_NN) < CLASSIFIER_MARGIN;
 				patches.push_back(labPatch);
 				//
 
