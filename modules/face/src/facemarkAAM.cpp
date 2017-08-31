@@ -1,3 +1,39 @@
+/*
+By downloading, copying, installing or using the software you agree to this
+license. If you do not agree to this license, do not download, install,
+copy or use the software.
+                          License Agreement
+               For Open Source Computer Vision Library
+                       (3-clause BSD License)
+Copyright (C) 2013, OpenCV Foundation, all rights reserved.
+Third party copyrights are property of their respective owners.
+Redistribution and use in source and binary forms, with or without modification,
+are permitted provided that the following conditions are met:
+  * Redistributions of source code must retain the above copyright notice,
+    this list of conditions and the following disclaimer.
+  * Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+  * Neither the names of the copyright holders nor the names of the contributors
+    may be used to endorse or promote products derived from this software
+    without specific prior written permission.
+This software is provided by the copyright holders and contributors "as is" and
+any express or implied warranties, including, but not limited to, the implied
+warranties of merchantability and fitness for a particular purpose are
+disclaimed. In no event shall copyright holders or contributors be liable for
+any direct, indirect, incidental, special, exemplary, or consequential damages
+(including, but not limited to, procurement of substitute goods or services;
+loss of use, data, or profits; or business interruption) however caused
+and on any theory of liability, whether in contract, strict liability,
+or tort (including negligence or otherwise) arising in any way out of
+the use of this software, even if advised of the possibility of such damage.
+
+This file was part of GSoC Project: Facemark API for OpenCV
+Final report: https://gist.github.com/kurnianggoro/74de9121e122ad0bd825176751d47ecc
+Student: Laksono Kurnianggoro
+Mentor: Delia Passalacqua
+*/
+
 #include "opencv2/face.hpp"
 #include "precomp.hpp"
 #include <iostream>
@@ -148,16 +184,6 @@ namespace face {
         return true;
     }
 
-
-    // void FacemarkAAM::training(String imageList, String groundTruth, const FacemarkAAM::Params &parameters){
-    //     trainingImpl(imageList, groundTruth, parameters);
-    // }
-
-    // void FacemarkAAMImpl::trainingImpl(String imageList, String groundTruth, const FacemarkAAM::Params &parameters){
-    //     params = parameters;
-    //     trainingImpl(imageList, groundTruth);
-    // }
-
     bool FacemarkAAMImpl::addTrainingSample(InputArray image, InputArray landmarks){
         std::vector<Point2f> & _landmarks = *(std::vector<Point2f>*)landmarks.getObj();
 
@@ -180,7 +206,6 @@ namespace face {
 
         int param_max_m = 550;
         int param_max_n = 136;
-        // float offset = -0.0;
 
         /* initialize the values TODO: set them based on the params*/
         AAM.scales.push_back(1);
@@ -306,15 +331,6 @@ namespace face {
         return true;
     }
 
-    // bool FacemarkAAMImpl::fit( const Mat image, std::vector<Point2f>& landmarks){
-    //     /*temporary values...will be updated*/
-    //     Mat R =  Mat::eye(2, 2, CV_32F);
-    //     Point2f t = Point2f(0,0);
-    //     float scale = 1.0;
-    //
-    //     return fit(image, landmarks, R, t, scale);
-    // }
-    //
     bool FacemarkAAMImpl::fitSingle( InputArray image, OutputArray landmarks, Mat R, Point2f T, float scale ){
         std::vector<Point2f>& _landmarks =*(std::vector<Point2f>*)landmarks.getObj();
         return fitImpl(image.getMat(), _landmarks, R, T, scale);
@@ -337,15 +353,8 @@ namespace face {
         Mat Wx_dp, Wy_dp;
         createWarpJacobian(S, AAM.Q, AAM.triangles, AAM.textures[0],Wx_dp, Wy_dp, Tp);
 
-        // initial fitting
-        // Mat initial = Mat(scale*(Mat(s0))+Scalar(T.x,T.y)).reshape(1);
-        // Mat base_shape = Mat(R*initial.t()).t();
-        // // std::vector<Point2f> curr_shape = Mat(1.0/scale*(base_shape)).reshape(2);
         std::vector<Point2f> s0_init = Mat(Mat(R*scale*Mat(Mat(s0).reshape(1)).t()).t()).reshape(2);
         std::vector<Point2f> curr_shape =  Mat(Mat(s0_init)+Scalar(T.x,T.y));
-// std::vector<Point2f> curr_shape = s0_align;
-        // std::vector<Point2f> curr_shape = Mat(1.0/scale*Mat(s0_align)).reshape(2);
-        // std::vector<Point2f> curr_shape = landmarks;
 
         Mat imgray;
         Mat img;
@@ -367,9 +376,6 @@ namespace face {
         Mat I, II, warped, c, gx, gy, Irec, Irec_feat, dc;
         Mat refI, refII, refWarped, ref_c, ref_gx, ref_gy, refIrec, refIrec_feat, ref_dc ;
         for(int t=0;t<params.n_iter;t++){
-            // Mat canvas = image.clone();
-            // drawFacemarks(canvas, curr_shape);
-            // imshow("inside", canvas);waitKey(1);
             warped = warpImage(img,AAM.textures[0].base_shape, curr_shape,
                                AAM.triangles,
                                AAM.textures[0].resolution ,
@@ -712,7 +718,6 @@ namespace face {
     }
 
     void FacemarkAAMImpl::calcSimilarityEig(std::vector<Point2f> s0,Mat S, Mat & Q_orth, Mat & S_orth){
-        // cout<<"similarity eig"<<endl;
         int npts = (int)s0.size();
 
         Mat Q = Mat::zeros(2*npts,4,CV_32FC1);
@@ -752,17 +757,13 @@ namespace face {
         Mat c31 = c3_mat.row(1);
         ones.copyTo(c31);
         Mat(c3_mat.reshape(1,2*npts)).copyTo(c3);
-        // cout<<Q<<endl;
 
         Mat Qo = orthonormal(Q);
-        // cout<<Qo<<endl;
-        // matInfo(Qo);
 
         Mat all = Qo.t();
         all.push_back(S.t());
 
         Mat allOrth = orthonormal(all.t());
-        // cout<<allOrth.colRange(0,8)<<endl;
         Q_orth =  allOrth.colRange(0,4).clone();
         S_orth =  allOrth.colRange(4,allOrth.cols).clone();
 
@@ -955,7 +956,6 @@ namespace face {
     Mat FacemarkAAMImpl::getFeature(const Mat m, std::vector<int> map){
         std::vector<float> feat;
         Mat M = m.t();//matlab
-        // #pragma omp parallel for
         for(size_t i=0;i<map.size();i++){
             feat.push_back((float)M.at<T>(map[i]));
         }

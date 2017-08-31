@@ -27,6 +27,11 @@ loss of use, data, or profits; or business interruption) however caused
 and on any theory of liability, whether in contract, strict liability,
 or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
+
+This file was part of GSoC Project: Facemark API for OpenCV
+Final report: https://gist.github.com/kurnianggoro/74de9121e122ad0bd825176751d47ecc
+Student: Laksono Kurnianggoro
+Mentor: Delia Passalacqua
 */
 
 /*----------------------------------------------
