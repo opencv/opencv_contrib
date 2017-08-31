@@ -88,11 +88,10 @@ Go ahead and run the model with other images !
 
 ## Changing threshold
 
-By default this model thresholds the detections at confidence of `0.65`. While filtering there are number of bounding boxes which are predicted, you can manually control what gets thresholded by setting the value of `thresh` in `samples/obj_detect.cpp` while calling the function `filter`
+By default this model thresholds the detections at confidence of `0.53`. While filtering there are number of bounding boxes which are predicted, you can manually control what gets thresholded by passing the value of optional arguement `threshold` like:
 
-```cpp
-double threshold = 0.5;
-inf.filter(thresh = threshold);
+```bash
+./detect <model-definition-file>  <model-weights-file>  <test-image> <threshold>
 ```
 
 Changing the threshold to say `0.0`, produces the following:

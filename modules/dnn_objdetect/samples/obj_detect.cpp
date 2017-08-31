@@ -54,15 +54,27 @@ int main(int argc, char **argv)
     if (argc < 4)
     {
         std::cerr << "Usage " << argv[0] << ": "
-                  << "<model-definition-file> " << " "
-                  << "<model-weights-file> " << " "
-                  << "<test-image>\n";
+                  << "<model-definition-file> "
+                  << "<model-weights-file> "
+                  << "<test-image> "
+                  << "<threshold>(optional)\n";
         return -1;
     }
 
     std::string model_prototxt = argv[1];
     std::string model_binary = argv[2];
     std::string test_input_image = argv[3];
+    double threshold = 0.53;
+
+    if (argc == 5)
+    {
+      threshold = atof(argv[4]);
+      if (threshold > 1.0 || threshold < 0.0)
+      {
+        std::cerr << "Threshold should belong to [0, 1]\n";
+        return -1;
+      }
+    }
 
     // Load the network
     std::cout << "Loading the network...\n";
@@ -145,7 +157,7 @@ int main(int argc, char **argv)
     Mat conf_scores(3, conf_scores_size, CV_32F, outblobs[2].ptr<float>());
 
     InferBbox inf(delta_bbox, class_scores, conf_scores);
-    inf.filter(0.53);
+    inf.filter(threshold);
 
 
     double average_time = t.getTimeSec() / t.getCounter();
@@ -180,6 +192,7 @@ int main(int argc, char **argv)
     {
       cv::namedWindow("Final Detections", WINDOW_AUTOSIZE);
       cv::imshow("Final Detections", original_img);
+      cv::imwrite("image.png", original_img);
       cv::waitKey(0);
     }
     catch (const char* msg)
