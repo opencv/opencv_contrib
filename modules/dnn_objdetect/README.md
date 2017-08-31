@@ -21,12 +21,12 @@ There are two models which are trained.
 - Size of Model: 4.9MB
 - Top-1 Accuracy on ImageNet 2012 DataSet: 56.10%
 - Top-5 Accuracy on ImageNet 2012 DataSet: 79.54%
-- Link to trained weights: [here]()
+- Link to trained weights: [here](https://github.com/kvmanohar22/caffe/blob/obj_detect_loss/proto/SqueezeNet.caffemodel)
 
 #### SqueezeDet model trained for Object Detection
 - This model was trained for 180000 iterations with a batch size of 16
-- Size of the Model: 14.9MB
-- Link to the trained weights: [here]()
+- Size of the Model: 14.2MB
+- Link to the trained weights: [here](https://github.com/kvmanohar22/caffe/blob/obj_detect_loss/proto/SqueezeDet.caffemodel)
 
 ## Usage
 
