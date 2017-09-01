@@ -8,7 +8,7 @@ set_target_properties(dynamicfusion PROPERTIES
     DEBUG_POSTFIX "d"
     ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib"
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
-
+target_compile_options(dynamicfusion PRIVATE "-Wall")
 
 if(OPENNI_FOUND)
     add_executable(dynamicfusion_kinect dynamicfusion_kinect.cpp)

@@ -1,12 +1,10 @@
 #include <iostream>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
-#include <opencv2/viz/vizcore.hpp>
 #include <kfusion/kinfu.hpp>
 #include <kfusion/cuda/tsdf_volume.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/range/iterator_range.hpp>
-
+#include <opencv2/highgui/highgui_c.h>
+#include <opencv2/highgui.hpp>
 using namespace kfusion;
 
 struct DynamicFusionApp
@@ -41,7 +39,7 @@ struct DynamicFusionApp
     {
         cv::Mat display;
         depth.convertTo(display, CV_8U, 255.0/4000);
-        cv::imshow("Depth", display);
+        cv::viz::imshow("Depth", display);
     }
 
     void show_raycasted(KinFu& kinfu)
@@ -54,7 +52,7 @@ struct DynamicFusionApp
 
         view_host_.create(view_device_.rows(), view_device_.cols(), CV_8UC4);
         view_device_.download(view_host_.ptr<void>(), view_host_.step);
-        cv::imshow("Scene", view_host_);
+        cv::viz::imshow("Scene", view_host_);
     }
 
     void show_warp(KinFu &kinfu)
@@ -95,7 +93,7 @@ struct DynamicFusionApp
                 show_raycasted(dfusion);
 
             show_depth(depth);
-            cv::imshow("Image", image);
+            cv::viz::imshow("Image", image);
 
             if (!interactive_mode_) {
                 viz.setViewerPose(dfusion.getCameraPose());

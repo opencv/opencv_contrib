@@ -5,7 +5,6 @@
 #include <kfusion/cuda/tsdf_volume.hpp>
 #include <kfusion/cuda/imgproc.hpp>
 #include <kfusion/cuda/projective_icp.hpp>
-//#include <opencv2/calib3d/calib3d.hpp>
 #include "internal.hpp"
 #include <iostream>
 #include "vector_functions.h"

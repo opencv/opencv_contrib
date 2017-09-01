@@ -216,9 +216,9 @@ namespace kfusion{
             {
                 // should never happen unless the Quaternion<T> wasn't initialized
                 // correctly.
-                assert( !((w_ == 0) && (x_ == 0) && (y_ == 0) && (z_ == 0)));
+//                CV_Assert( !((w_ == 0) && (x_ == 0) && (y_ == 0) && (z_ == 0)));
                 T theNorm = norm();
-                assert(theNorm > 0);
+//                CV_Assert(theNorm > 0);
                 (*this) = (1.0/theNorm) * (*this);
             }
 

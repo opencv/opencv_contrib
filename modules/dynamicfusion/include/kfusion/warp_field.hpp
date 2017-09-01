@@ -5,10 +5,10 @@
  * \brief
  * \details
  */
-#include <dual_quaternion.hpp>
+#include <utils/dual_quaternion.hpp>
 #include <kfusion/types.hpp>
 #include <nanoflann/nanoflann.hpp>
-#include <knn_point_cloud.hpp>
+#include <utils/knn_point_cloud.hpp>
 #include <kfusion/cuda/tsdf_volume.hpp>
 #define KNN_NEIGHBOURS 8
 

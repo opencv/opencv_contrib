@@ -41,8 +41,8 @@ struct KinFuApp
     static void show_depth(const cv::Mat& depth)
     {
         cv::Mat display;
-        //cv::normalize(depth, display, 0, 255, cv::NORM_MINMAX, CV_8U);
-        depth.convertTo(display, CV_8U, 255.0/4000);
+        //cv::normalize(depth, display, 0, 255, cv::NORM_MINMAX, cv::CV_8U);
+        depth.convertTo(display, cv::CV_8U, 255.0/4000);
         cv::imshow("Depth", display);
     }
 
@@ -54,7 +54,7 @@ struct KinFuApp
         else
             kinfu.renderImage(view_device_, mode);
 
-        view_host_.create(view_device_.rows(), view_device_.cols(), CV_8UC4);
+        view_host_.create(view_device_.rows(), view_device_.cols(), cv::CV_8UC4);
         view_device_.download(view_host_.ptr<void>(), view_host_.step);
         cv::imshow("Scene", view_host_);
     }

@@ -118,7 +118,7 @@ bool kfusion::cuda::ProjectiveICP::estimateTransform(Affine3f& /*affine*/, const
 //         return estimateTransform(affine, intr, curr.points_pyr, curr.normals_pyr, prev.points_pyr, prev.normals_pyr);
 //    else
 //        CV_Assert(!"Wrong parameters passed to estimateTransform");
-    CV_Assert(!"Not implemented");
+//    CV_Assert(!"Not implemented");
     return false;
 }
 

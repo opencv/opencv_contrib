@@ -1,14 +1,12 @@
 #include "precomp.hpp"
 #include "internal.hpp"
 #include <tgmath.h>
-#include <dual_quaternion.hpp>
-#include <nanoflann.hpp>
-#include <quaternion.hpp>
-#include <knn_point_cloud.hpp>
+#include "utils/dual_quaternion.hpp"
+#include "nanoflann/nanoflann.hpp"
+#include "utils/quaternion.hpp"
+#include <utils/knn_point_cloud.hpp>
 #include <kfusion/warp_field.hpp>
 #include <kfusion/cuda/tsdf_volume.hpp>
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
 #include <opencv2/viz/vizcore.hpp>
 
 using namespace std;
@@ -105,7 +103,7 @@ kfusion::KinFuParams kfusion::KinFuParams::default_params()
  */
 kfusion::KinFu::KinFu(const KinFuParams& params) : frame_counter_(0), params_(params)
 {
-    CV_Assert(params.volume_dims[0] % 32 == 0);
+//    cv::CV_Assert(params.volume_dims[0] % 32 == 0);
 
     volume_ = cv::Ptr<cuda::TsdfVolume>(new cuda::TsdfVolume(params_.volume_dims));
     warp_ = cv::Ptr<WarpField>(new WarpField());
@@ -403,7 +401,7 @@ void kfusion::KinFu::dynamicfusion(cuda::Depth& depth, cuda::Cloud current_frame
     depth.download(depth_cloud.ptr<void>(), depth_cloud.step);
     cv::Mat display;
     depth_cloud.convertTo(display, CV_8U, 255.0/4000);
-    cv::imshow("Depth diff", display);
+    cv::viz::imshow("Depth diff", display);
     volume_->compute_points();
     volume_->compute_normals();
 }

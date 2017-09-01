@@ -3,8 +3,8 @@
 #include <kfusion/types.hpp>
 #include <vector>
 #include <string>
-#include <dual_quaternion.hpp>
-#include <quaternion.hpp>
+#include "utils/dual_quaternion.hpp"
+#include "utils/quaternion.hpp"
 #include <kfusion/cuda/projective_icp.hpp>
 #include <kfusion/cuda/tsdf_volume.hpp>
 #include <kfusion/warp_field.hpp>

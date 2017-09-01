@@ -1,7 +1,6 @@
 #pragma once
 
 #include <kfusion/kinfu.hpp>
-#include <opencv2/core/core.hpp>
 #include <string>
 
 namespace kfusion

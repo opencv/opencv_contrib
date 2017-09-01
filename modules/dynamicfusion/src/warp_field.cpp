@@ -1,11 +1,10 @@
-#include <dual_quaternion.hpp>
-#include <knn_point_cloud.hpp>
+#include <utils/dual_quaternion.hpp>
+#include <utils/knn_point_cloud.hpp>
 #include <kfusion/types.hpp>
-#include <nanoflann.hpp>
+#include <nanoflann/nanoflann.hpp>
 #include "kfusion/warp_field.hpp"
 #include "internal.hpp"
 #include "precomp.hpp"
-#include <opencv2/core/affine.hpp>
 #include <kfusion/optimisation.hpp>
 
 using namespace kfusion;
@@ -38,8 +37,8 @@ WarpField::~WarpField()
  */
 void WarpField::init(const cv::Mat& first_frame, const cv::Mat& normals)
 {
-    assert(first_frame.rows == normals.rows);
-    assert(first_frame.cols == normals.cols);
+//    CV_Assert(first_frame.rows == normals.rows);
+//    CV_Assert(first_frame.cols == normals.cols);
     nodes->resize(first_frame.cols * first_frame.rows);
     auto voxel_size = kfusion::KinFuParams::default_params_dynamicfusion().volume_size[0] /
                       kfusion::KinFuParams::default_params_dynamicfusion().volume_dims[0];
@@ -106,8 +105,8 @@ void WarpField::energy(const cuda::Cloud &frame,
                        const std::vector<std::pair<utils::DualQuaternion<float>, utils::DualQuaternion<float>>> &edges
 )
 {
-    assert(normals.cols()==frame.cols());
-    assert(normals.rows()==frame.rows());
+//CV_Assert(normals.cols()==frame.cols());
+//CV_Assert(normals.rows()==frame.rows());
 }
 
 /**

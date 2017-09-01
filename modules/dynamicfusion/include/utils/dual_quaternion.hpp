@@ -1,7 +1,7 @@
 #ifndef DYNAMIC_FUSION_DUAL_QUATERNION_HPP
 #define DYNAMIC_FUSION_DUAL_QUATERNION_HPP
 #include<iostream>
-#include<quaternion.hpp>
+#include"quaternion.hpp"
 
 //Adapted from https://github.com/Poofjunior/QPose
 /**

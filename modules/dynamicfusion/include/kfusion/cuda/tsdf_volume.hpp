@@ -1,7 +1,7 @@
 #pragma once
 
 #include <kfusion/types.hpp>
-#include <dual_quaternion.hpp>
+#include <utils/dual_quaternion.hpp>
 
 namespace kfusion
 {

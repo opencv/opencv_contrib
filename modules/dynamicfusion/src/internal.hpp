@@ -2,7 +2,6 @@
 
 #include <kfusion/cuda/device_array.hpp>
 #include "safe_call.hpp"
-#include <opencv2/core/core.hpp>
 //#define USE_DEPTH
 
 namespace kfusion
