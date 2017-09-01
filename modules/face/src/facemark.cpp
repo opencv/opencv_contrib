@@ -46,22 +46,33 @@ Mentor: Delia Passalacqua
 
 namespace cv {
 namespace face {
+    CParams::CParams(String s, double sf, int minN, Size minSz, Size maxSz){
+        cascade = s;
+        scaleFactor = sf;
+        minNeighbors = minN;
+        minSize = minSz;
+        maxSize = maxSz;
+    }
 
-    bool getFaces(InputArray image, OutputArray faces, String face_cascade_path,
-        double scale, int minNeighbors, Size minSz, Size maxSz
-    ){
+    bool getFaces(InputArray image, OutputArray faces, void * parameters){
         Mat gray;
         std::vector<Rect> roi;
 
-        cvtColor( image.getMat(), gray, CV_BGR2GRAY );
-        equalizeHist( gray, gray );
+        if(parameters!=0){
+            CParams * params = (CParams *)parameters;
+            cvtColor( image.getMat(), gray, CV_BGR2GRAY );
+            equalizeHist( gray, gray );
 
-        CascadeClassifier face_cascade;
-        if( !face_cascade.load( face_cascade_path ) ){ printf("--(!)Error loading face_cascade\n"); return false; };
-        face_cascade.detectMultiScale( gray, roi, scale, minNeighbors, 0|CV_HAAR_SCALE_IMAGE, minSz, maxSz);
+            CascadeClassifier face_cascade;
+            if( !face_cascade.load( params->cascade ) ){ printf("--(!)Error loading face_cascade\n"); return false; };
+            face_cascade.detectMultiScale( gray, roi, params->scaleFactor, params->minNeighbors, 0|CV_HAAR_SCALE_IMAGE, params->minSize, params->maxSize);
 
-        Mat(roi).copyTo(faces);
-        return true;
+            Mat(roi).copyTo(faces);
+            return true;
+        }else{
+            return false;
+        }
+
     }
 
     bool loadDatasetList(String imageList, String groundTruth, std::vector<String> & images, std::vector<String> & landmarks){

@@ -171,8 +171,8 @@ bool parseArguments(int argc, char** argv, CommandLineParser & parser,
 ){
    const String keys =
        "{ @c cascade         |      | (required) path to the cascade model file for the face detector }"
-       "{ @m model           |      | (required) path to the cascade model file for the eyes detector }"
-       "{ @v video           |      | (required) path of a text file contains the list of paths to all training images}"
+       "{ @m model           |      | (required) path to the trained model }"
+       "{ @v video           |      | (required) path input video}"
        "{ help h usage ?     |      | facemark_demo_aam -cascade -model -video [-t]\n"
             " example: facemark_lbf_fitting ../face_cascade.xml ../LBF.model ../video.mp4}"
    ;

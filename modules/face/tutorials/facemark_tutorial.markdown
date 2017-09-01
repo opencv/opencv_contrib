@@ -1,4 +1,4 @@
-Facial Landmark Detector API {#tutorial_table_of_content_facemark}
+Tutorial on Facial Landmark Detector API {#tutorial_table_of_content_facemark}
 ==========================================================
 
 The facial landmark detector API is useful to detect facial landmarks from an input image.

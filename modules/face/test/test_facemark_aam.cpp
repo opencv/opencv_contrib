@@ -162,3 +162,16 @@ TEST(CV_Face_FacemarkAAM, can_detect_landmarks) {
     EXPECT_TRUE(facemark->fit(image, rects, landmarks));
     EXPECT_TRUE(landmarks[0].size()>0);
 }
+
+TEST(CV_Face_FacemarkAAM, get_data) {
+    FacemarkAAM::Params params;
+    params.verbose = false;
+    Ptr<Facemark> facemark = FacemarkAAM::create(params);
+
+    string model_filename = "AAM.yml";
+    EXPECT_NO_THROW(facemark->loadModel(model_filename.c_str()));
+
+    FacemarkAAM::Data data;
+    EXPECT_TRUE(facemark->getData(&data));
+    EXPECT_TRUE(data.s0.size()>0);
+}

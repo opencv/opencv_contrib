@@ -109,6 +109,7 @@ namespace face {
 
         bool setFaceDetector(bool(*f)(InputArray , OutputArray, void * extra_params ));
         bool getFaces( InputArray image , OutputArray faces, void * extra_params);
+        bool getData(void * items);
 
         Params params;
 
@@ -118,7 +119,7 @@ namespace face {
         bool fitImpl( const Mat image, std::vector<Point2f> & landmarks );//!< from a face
 
         bool addTrainingSample(InputArray image, InputArray landmarks);
-        void training();
+        void training(void* parameters);
 
         Rect getBBox(Mat &img, const Mat_<double> shape);
         void prepareTrainingData(Mat img, std::vector<Point2f> facePoints,
@@ -299,6 +300,13 @@ namespace face {
         return true;
     }
 
+    bool FacemarkLBFImpl::getData(void * items){
+        if(items!=0){
+            // do nothing
+        }
+        return true;
+    }
+
     bool FacemarkLBFImpl::addTrainingSample(InputArray image, InputArray landmarks){
         std::vector<Point2f> & _landmarks = *(std::vector<Point2f>*)landmarks.getObj();
         configFaceDetector();
@@ -306,7 +314,8 @@ namespace face {
         return true;
     }
 
-    void FacemarkLBFImpl::training(){
+    void FacemarkLBFImpl::training(void* parameters){
+        if(parameters!=0){/*do nothing*/}
         if (data_faces.size()<1) {
            std::string error_message =
             "Training data is not provided. Consider to add using addTrainingSample() function!";

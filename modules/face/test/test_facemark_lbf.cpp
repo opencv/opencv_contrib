@@ -161,3 +161,8 @@ TEST(CV_Face_FacemarkLBF, can_detect_landmarks) {
     EXPECT_TRUE(facemark->fit(image, rects, landmarks));
     EXPECT_TRUE(landmarks[0].size()>0);
 }
+
+TEST(CV_Face_FacemarkLBF, get_data) {
+    Ptr<Facemark> facemark = FacemarkLBF::create();
+    EXPECT_TRUE(facemark->getData());
+}

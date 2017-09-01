@@ -89,6 +89,8 @@ namespace face {
         bool getFaces( InputArray image ,OutputArray faces, void * extra_params);
         void getParams(Model & params);
 
+        bool getData(void * items);
+
     protected:
 
         bool fit( InputArray image, InputArray faces, InputOutputArray landmarks, void * runtime_params);//!< from many ROIs
@@ -96,7 +98,7 @@ namespace face {
         bool fitImpl( const Mat image, std::vector<Point2f>& landmarks,const  Mat R,const  Point2f T,const  float scale );
 
         bool addTrainingSample(InputArray image, InputArray landmarks);
-        void training();
+        void training(void* parameters);
 
         Mat procrustes(std::vector<Point2f> , std::vector<Point2f> , Mat & , Scalar & , float & );
         void calcMeanShape(std::vector<std::vector<Point2f> > ,std::vector<Point2f> & );
@@ -184,6 +186,16 @@ namespace face {
         return true;
     }
 
+    bool FacemarkAAMImpl::getData(void * items){
+        if(items==0){
+            return true;
+        }else{
+            Data * data = (Data*)items;
+            data->s0 = AAM.s0;
+            return true;
+        }
+    }
+
     bool FacemarkAAMImpl::addTrainingSample(InputArray image, InputArray landmarks){
         std::vector<Point2f> & _landmarks = *(std::vector<Point2f>*)landmarks.getObj();
 
@@ -193,7 +205,8 @@ namespace face {
         return true;
     }
 
-    void FacemarkAAMImpl::training(){
+    void FacemarkAAMImpl::training(void* parameters){
+        if(parameters!=0){/*do nothing*/}
         if (images.size()<1) {
            std::string error_message =
             "Training data is not provided. Consider to add using addTrainingSample() function!";

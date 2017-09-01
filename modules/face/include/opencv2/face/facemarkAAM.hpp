@@ -71,6 +71,9 @@ namespace face {
             bool verbose;
         };
 
+        /**
+        * \brief Optional parameter for fitting process.
+        */
         struct CV_EXPORTS Config
         {
             Config( Mat rot = Mat::eye(2,2,CV_32F),
@@ -82,6 +85,14 @@ namespace face {
             Point2f t;
             float scale;
 
+        };
+
+        /**
+        * \brief Data container for the facemark::getData function
+        */
+        struct CV_EXPORTS Data
+        {
+            std::vector<Point2f> s0;
         };
 
         /**

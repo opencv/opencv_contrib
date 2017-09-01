@@ -126,9 +126,9 @@ Mentor: Delia Passalacqua
      Point2f T;
      Mat R;
 
-     FacemarkAAM::Model config;
-     facemark->getParams(config);
-     std::vector<Point2f> s0 = config.s0;
+     FacemarkAAM::Data data;
+     facemark->getData(&data);
+     std::vector<Point2f> s0 = data.s0;
 
      /*fitting process*/
      std::vector<Rect> faces;

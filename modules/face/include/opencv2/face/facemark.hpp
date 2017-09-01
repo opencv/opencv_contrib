@@ -38,8 +38,9 @@ Mentor: Delia Passalacqua
 #define __OPENCV_FACELANDMARK_HPP__
 
 /**
-@defgroup face Face Recognition
+@defgroup face Face Analysis
 - @ref tutorial_table_of_content_facemark
+- The Facemark API
 */
 
 #include "opencv2/face.hpp"
@@ -52,7 +53,21 @@ namespace face {
 
 //! @addtogroup face
 //! @{
+    struct CV_EXPORTS_W CParams{
+        String cascade; //!<  the face detector
+        double scaleFactor; //!< Parameter specifying how much the image size is reduced at each image scale.
+        int minNeighbors; //!< Parameter specifying how many neighbors each candidate rectangle should have to retain it.
+        Size minSize; //!< Minimum possible object size.
+        Size maxSize; //!< Maximum possible object size.
 
+        CParams(
+            String cascade_model,
+            double sf = 1.1,
+            int minN = 3,
+            Size minSz = Size(30, 30),
+            Size maxSz = Size()
+        );
+    };
     /** @brief Default face detector
     This function is mainly utilized by the implementation of a Facemark Algorithm.
     End users are advised to use function Facemark::getFaces which can be manually defined
@@ -61,12 +76,7 @@ namespace face {
     @param image The input image to be processed.
     @param faces Output of the function which represent region of interest of the detected faces.
     Each face is stored in cv::Rect container.
-    @param face_cascade_path The path to a cascade model for face detection.
-    @param scaleFactor Parameter specifying how much the image size is reduced at each image scale.
-    @param minNeighbors Parameter Parameter specifying how many neighbors each candidate rectangle should have to retain it.
-    @param minSize Minimum possible object size.
-    @param maxSize Maximum possible object size.
-
+    @param extra_params extra parameters
     <B>Example of usage</B>
     @code
     std::vector<cv::Rect> roi;
@@ -78,13 +88,10 @@ namespace face {
     cv::imshow("detection", frame);
     @endcode
     */
-    CV_EXPORTS_W bool getFaces( InputArray image,
+    /*other option: move this function inside Facemark as default face detector*/
+    CV_EXPORTS bool getFaces( InputArray image,
                                 OutputArray faces,
-                                String face_cascade_path,
-                                double scaleFactor=1.1,
-                                int minNeighbors=3,
-                                Size minSize=Size(30, 30),
-                                Size maxSize=Size()
+                                void * extra_params
                             );
 
     /** @brief A utility to load list of paths to training image and annotation file.
@@ -314,6 +321,8 @@ namespace face {
         Before the training process, training samples should be added to the trainer
         using face::addTrainingSample function.
 
+        @param parameters Optional extra parameters (algorithm dependent).
+
         <B>Example of usage</B>
         @code
         FacemarkLBF::Params params;
@@ -326,7 +335,7 @@ namespace face {
         @endcode
         */
 
-        virtual void training()=0;
+        virtual void training(void* parameters=0)=0;
 
         /** @brief A function to load the trained model before the fitting process.
 
@@ -401,6 +410,23 @@ namespace face {
         */
         virtual bool getFaces( InputArray image , OutputArray faces, void * extra_params=0)=0;
 
+        /** @brief Get data from an algorithm
+
+        @param items The obtained data, algorithm dependent.
+
+        <B>Example of usage</B>
+        @code
+        Ptr<FacemarkAAM> facemark = FacemarkAAM::create();
+        facemark->loadModel("AAM.yml");
+
+        FacemarkAAM::Data data;
+        facemark->getData(&data);
+        std::vector<Point2f> s0 = data.s0;
+
+        cout<<s0<<endl;
+        @endcode
+        */
+        virtual bool getData(void * items=0)=0;
     }; /* Facemark*/
 
 //! @}
