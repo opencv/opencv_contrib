@@ -164,6 +164,7 @@ public:
     (e.g. words or text lines).
 
     @param component_level OCR_LEVEL_WORD (by default), or OCR_LEVEL_TEXT_LINE.
+
      */
     using BaseOCR::run;
     virtual void run (Mat& image, std::string& output_text,

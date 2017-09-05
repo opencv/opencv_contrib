@@ -36,12 +36,12 @@ ocv_define_module(cnn_3dobj opencv_core opencv_imgproc ${Caffe_LIBS} ${Glog_LIBS
 ocv_add_testdata(testdata/cv contrib/cnn_3dobj)
 
 if(TARGET opencv_test_cnn_3dobj)
-  target_link_libraries(opencv_test_cnn_3dobj boost_system)
+  target_link_libraries(opencv_test_cnn_3dobj PUBLIC boost_system)
 endif()
 
 foreach(exe_TGT  classify video sphereview_data model_analysis)
     if(TARGET example_cnn_3dobj_${exe_TGT})
-      target_link_libraries(example_cnn_3dobj_${exe_TGT} boost_system)
+      target_link_libraries(example_cnn_3dobj_${exe_TGT} PUBLIC boost_system)
     endif()
 endforeach()
 endif()

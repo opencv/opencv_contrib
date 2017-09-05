@@ -1,8 +1,8 @@
 #include <iostream>
+#include "opencv2/opencv_modules.hpp"
 
 #ifdef HAVE_OPENCV_ML
 
-#include "opencv2/opencv_modules.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"

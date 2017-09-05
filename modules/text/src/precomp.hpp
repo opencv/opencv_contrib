@@ -46,6 +46,9 @@
 #include "opencv2/text.hpp"
 
 #ifdef HAVE_TESSERACT
+#if !defined(USE_STD_NAMESPACE)
+#define USE_STD_NAMESPACE
+#endif
 #include <tesseract/baseapi.h>
 #include <tesseract/resultiterator.h>
 #endif

@@ -911,9 +911,9 @@ void SinusoidalPatternProfilometry_Impl::convertToAbsolutePhaseMap( InputArrayOf
     computeCorrespondEpilines(params.markersLocation, 2, fundamental, epilines);
 
 }
-Ptr<SinusoidalPattern> SinusoidalPattern::create( const SinusoidalPattern::Params &params )
+Ptr<SinusoidalPattern> SinusoidalPattern::create( Ptr<SinusoidalPattern::Params> params )
 {
-    return makePtr<SinusoidalPatternProfilometry_Impl>(params);
+    return makePtr<SinusoidalPatternProfilometry_Impl>(*params);
 }
 }
 }

@@ -738,7 +738,7 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
 
     CV_Assert(_markerIds.total() > 0 && _markerIds.total() == _markerCorners.total());
 
-    const float minRepDistanceRate = 0.12f;
+    const float minRepDistanceRate = 1.302455f;
 
     // create Charuco board layout for diamond (3x3 layout)
     Ptr<Dictionary> dict = getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME(0));
@@ -771,7 +771,7 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
           perimeterSq += edge.x*edge.x + edge.y*edge.y;
         }
         // maximum reprojection error relative to perimeter
-        float minRepDistance = perimeterSq * minRepDistanceRate * minRepDistanceRate;
+        float minRepDistance = sqrt(perimeterSq) * minRepDistanceRate;
 
         int currentId = _markerIds.getMat().at< int >(i);
 

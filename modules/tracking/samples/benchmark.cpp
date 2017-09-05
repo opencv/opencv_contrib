@@ -165,7 +165,7 @@ struct AlgoWrap
 
     void plotLTRC(Mat &img) const
     {
-        Ptr<plot::Plot2d> p_ = plot::createPlot2d(getLTRC());
+        Ptr<plot::Plot2d> p_ = plot::Plot2d::create(getLTRC());
         p_->render(img);
     }
 

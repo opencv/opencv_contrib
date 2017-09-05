@@ -309,7 +309,7 @@ void _runRGBToneMapping(const std::valarray<float> &RGBimageInput, std::valarray
 
 };
 
-CV_EXPORTS Ptr<RetinaFastToneMapping> createRetinaFastToneMapping(Size inputSize)
+Ptr<RetinaFastToneMapping> RetinaFastToneMapping::create(Size inputSize)
 {
     return makePtr<RetinaFastToneMappingImpl>(inputSize);
 }
