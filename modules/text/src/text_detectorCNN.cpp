@@ -91,7 +91,6 @@ protected:
     }
 
 
-
 #ifdef HAVE_CAFFE
     Ptr<caffe::Net<float> > net_;
 #endif
@@ -159,10 +158,6 @@ public:
         //this->outputGeometry_.batchSize =1;
         this->outputGeometry_.height =net_->output_blobs()[0]->height();
         this->outputGeometry_.width = net_->output_blobs()[0]->width();
-
-
-
-
 
 #else
         CV_Error(Error::StsError,"Caffe not available during compilation!");

@@ -45,8 +45,6 @@
 
 #include "opencv2/text.hpp"
 
-//#include "text_config.hpp"
-
 #ifdef HAVE_TESSERACT
 #include <tesseract/baseapi.h>
 #include <tesseract/resultiterator.h>

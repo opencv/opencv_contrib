@@ -657,7 +657,6 @@ CV_EXPORTS_W Ptr<OCRBeamSearchDecoder::ClassifierCallback> loadOCRBeamSearchClas
 
 
 //Classifiers should provide diferent backends
-//For the moment only caffe is implemeted
 
 enum{
     OCR_HOLISTIC_BACKEND_NONE, //No back end
