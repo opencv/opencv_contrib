@@ -140,37 +140,35 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     std::vector<Rect2d> candidates;
     std::vector<double> candidatesRes;
     bool trackerNeedsReInit = false;
-	bool DETECT_FLG = false;
-    for( int i = 0; i < 2; i++ )
-    {
-        Rect2d tmpCandid = boundingBox;
+    bool DETECT_FLG = false;
 
-		if (i == 1)
-		{
-#ifdef HAVE_OPENCL
-            if (false)//ocl::useOpenCL())
-            {
-                DETECT_FLG = tldModel->detector->ocl_detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
-            }
-			else
-#endif
-                DETECT_FLG = tldModel->detector->detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
-        }
-        if( ( (i == 0) && !data->failedLastTime && trackerProxy->update(image, tmpCandid) ) || ( DETECT_FLG))
-        {
-            candidates.push_back(tmpCandid);
-            if( i == 0 )
-                resample(image_gray, tmpCandid, standardPatch);
-            else
-                resample(imageForDetector, tmpCandid, standardPatch);
-            candidatesRes.push_back(tldModel->detector->Sc(standardPatch));
-        }
-        else
-        {
-            if( i == 0 )
-                trackerNeedsReInit = true;
-        }
+    //run tracker
+    Rect2d tmpCandid = boundingBox;
+    if(!data->failedLastTime && trackerProxy->update(image, tmpCandid))
+    {
+        candidates.push_back(tmpCandid);
+        resample(image_gray, tmpCandid, standardPatch);
+        candidatesRes.push_back(tldModel->detector->Sc(standardPatch));
     }
+    else
+        trackerNeedsReInit = true;
+
+    //run detector
+    tmpCandid = boundingBox;
+#ifdef HAVE_OPENCL
+    if (false)//ocl::useOpenCL())
+        DETECT_FLG = tldModel->detector->ocl_detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
+    else
+#endif
+        DETECT_FLG = tldModel->detector->detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
+
+    if(DETECT_FLG)
+    {
+        candidates.push_back(tmpCandid);
+        resample(imageForDetector, tmpCandid, standardPatch);
+        candidatesRes.push_back(tldModel->detector->Sc(standardPatch));
+    }
+
     std::vector<double>::iterator it = std::max_element(candidatesRes.begin(), candidatesRes.end());
 
     if( it == candidatesRes.end() ) //candidates are empty
