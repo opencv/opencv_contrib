@@ -168,7 +168,7 @@ Mat getChessMat1px(Size sz, double whiteIntensity = 255)
 {
     typedef typename DataType<SrcVec>::channel_type SrcType;
 
-    Mat dst(sz, DataType<SrcVec>::type);
+    Mat dst(sz, traits::Type<SrcVec>::value);
 
     SrcVec black = SrcVec::all(0);
     SrcVec white = SrcVec::all((SrcType)whiteIntensity);
