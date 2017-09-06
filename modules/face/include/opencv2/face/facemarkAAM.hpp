@@ -69,6 +69,8 @@ namespace face {
             int n;
             int n_iter;
             bool verbose;
+            int max_m, max_n, texture_max_m;
+            std::vector<float>scales;
         };
 
         /**
@@ -78,12 +80,14 @@ namespace face {
         {
             Config( Mat rot = Mat::eye(2,2,CV_32F),
                     Point2f trans = Point2f(0.0,0.0),
-                    float scaling = 1.0
+                    float scaling = 1.0,
+                    int scale_id=0
             );
 
             Mat R;
             Point2f t;
             float scale;
+            int model_scale_idx;
 
         };
 
@@ -102,7 +106,7 @@ namespace face {
         {
             int npts; //!<  unused delete
             int max_n; //!<  unused delete
-            std::vector<int>scales;
+            std::vector<float>scales;
             //!<  defines the scales considered to build the model
 
             /*warping*/
@@ -142,28 +146,6 @@ namespace face {
 
         };
 
-        /** @brief A custom fitting function designed for AAM algorithm.
-        AAM fitting relies on basic shape as initializer. Therefore,
-        transformation paramters are needed to adjust the initial points in the fitting.
-
-        @param image Input image.
-        @param landmarks The fitted facial landmarks.
-        @param R Rotation matrix.
-        @param T Translation vector.
-        @param scale scaling factor.
-
-        <B>Example of usage</B>
-        @code
-        Mat R =  Mat::eye(2, 2, CV_32F);
-        Point2f t = Point2f(0,0);
-        float scale = 1.0;
-        std::vector<Point2f> landmarks;
-        facemark->fitSingle(image, landmarks, R,T, scale);
-        @endcode
-
-        */
-        virtual bool fitSingle( InputArray image, OutputArray landmarks, Mat R, Point2f T, float scale )=0;
-        virtual void getParams(Model & params) = 0;
         //!<  initializer
         static Ptr<FacemarkAAM> create(const FacemarkAAM::Params &parameters = FacemarkAAM::Params() );
         virtual ~FacemarkAAM() {}

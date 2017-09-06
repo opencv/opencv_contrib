@@ -36,7 +36,6 @@ Mentor: Delia Passalacqua
 
 #include "opencv2/face.hpp"
 #include "precomp.hpp"
-#include <iostream>
 namespace cv {
 namespace face {
 
@@ -49,12 +48,17 @@ namespace face {
         n = 10;
         n_iter = 50;
         verbose = true;
+        scales.push_back(1.0);
+        max_m = 550;
+        max_n = 136;
+        texture_max_m = 145;
     }
 
-    FacemarkAAM::Config::Config(Mat rot, Point2f trans, float scaling){
+    FacemarkAAM::Config::Config(Mat rot, Point2f trans, float scaling,int scale_id){
         R = rot.clone();
         t = trans;
         scale = scaling;
+        model_scale_idx = scale_id;
     }
 
     void FacemarkAAM::Params::read( const cv::FileNode& fn ){
@@ -66,6 +70,10 @@ namespace face {
         if (!fn["n"].empty()) fn["n"] >> m;
         if (!fn["n_iter"].empty()) fn["n_iter"] >> m;
         if (!fn["verbose"].empty()) fn["verbose"] >> m;
+        if (!fn["max_m"].empty()) fn["max_m"] >> m;
+        if (!fn["max_n"].empty()) fn["max_n"] >> m;
+        if (!fn["texture_max_m"].empty()) fn["texture_max_m"] >> m;
+        if (!fn["scales"].empty()) fn["scales"] >> m;
     }
 
     void FacemarkAAM::Params::write( cv::FileStorage& fs ) const{
@@ -74,6 +82,10 @@ namespace face {
         fs << "n" << n;
         fs << "n_iter" << n_iter;
         fs << "verbose" << verbose;
+        fs << "max_m" << verbose;
+        fs << "max_n" << verbose;
+        fs << "texture_max_m" << verbose;
+        fs << "scales" << verbose;
     }
 
     class FacemarkAAMImpl : public FacemarkAAM {
@@ -87,15 +99,13 @@ namespace face {
 
         bool setFaceDetector(bool(*f)(InputArray , OutputArray, void * ));
         bool getFaces( InputArray image ,OutputArray faces, void * extra_params);
-        void getParams(Model & params);
 
         bool getData(void * items);
 
     protected:
 
         bool fit( InputArray image, InputArray faces, InputOutputArray landmarks, void * runtime_params);//!< from many ROIs
-        bool fitSingle( InputArray image, OutputArray landmarks, Mat R, Point2f T, float scale );
-        bool fitImpl( const Mat image, std::vector<Point2f>& landmarks,const  Mat R,const  Point2f T,const  float scale );
+        bool fitImpl( const Mat image, std::vector<Point2f>& landmarks,const  Mat R,const  Point2f T,const  float scale, const int sclIdx=0 );
 
         bool addTrainingSample(InputArray image, InputArray landmarks);
         void training(void* parameters);
@@ -157,10 +167,6 @@ namespace face {
         params.write( fs );
     }
 
-    void FacemarkAAMImpl::getParams(Model & config){
-        config = AAM;
-    }
-
     bool FacemarkAAMImpl::setFaceDetector(bool(*f)(InputArray , OutputArray, void *)){
         faceDetector = f;
         isSetDetector = true;
@@ -217,12 +223,10 @@ namespace face {
         Mat erode_kernel = getStructuringElement(MORPH_RECT, Size(3,3), Point(1,1));
         Mat image;
 
-        int param_max_m = 550;
-        int param_max_n = 136;
+        int param_max_m = params.max_m;//550;
+        int param_max_n = params.max_n;//136;
 
-        /* initialize the values TODO: set them based on the params*/
-        AAM.scales.push_back(1);
-        AAM.scales.push_back(2);
+        AAM.scales = params.scales;
         AAM.textures.resize(AAM.scales.size());
 
         /*-------------- A. Load the training data---------*/
@@ -247,8 +251,8 @@ namespace face {
         delaunay(AAM.s0,AAM.triangles);
 
         for(size_t scale=0; scale<AAM.scales.size();scale++){
-            AAM.textures[scale].max_m = 145;
-            if(params.verbose) printf("Training for scale %i ...\n", AAM.scales[scale]);
+            AAM.textures[scale].max_m = params.texture_max_m;//145;
+            if(params.verbose) printf("Training for scale %f ...\n", AAM.scales[scale]);
             Mat s0_scaled_m = Mat(AAM.s0)/AAM.scales[scale]; // scale the shape
             std::vector<Point2f> s0_scaled = s0_scaled_m.reshape(2); //convert to points
 
@@ -328,8 +332,13 @@ namespace face {
         if(runtime_params!=0){
 
             std::vector<Config> conf = *(std::vector<Config>*)runtime_params;
+            if (conf.size()!=faces.size()) {
+               std::string error_message =
+                "Number of faces and extra_parameters are different!";
+               CV_Error(CV_StsBadArg, error_message);
+            }
             for(size_t i=0; i<conf.size();i++){
-                fitImpl(img, landmarks[i], conf[i].R,conf[i].t, conf[i].scale);
+                fitImpl(img, landmarks[i], conf[i].R,conf[i].t, conf[i].scale, conf[i].model_scale_idx);
             }
         }else{
             Mat R =  Mat::eye(2, 2, CV_32F);
@@ -344,30 +353,27 @@ namespace face {
         return true;
     }
 
-    bool FacemarkAAMImpl::fitSingle( InputArray image, OutputArray landmarks, Mat R, Point2f T, float scale ){
-        std::vector<Point2f>& _landmarks =*(std::vector<Point2f>*)landmarks.getObj();
-        return fitImpl(image.getMat(), _landmarks, R, T, scale);
-    }
-
-    bool FacemarkAAMImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks, const Mat R, const Point2f T, const  float scale ){
+    bool FacemarkAAMImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks, const Mat R, const Point2f T, const  float scale, int _scl){
         if (landmarks.size()>0)
             landmarks.clear();
 
         CV_Assert(isModelTrained);
 
         int param_n = params.n, param_m = params.m;
+        int scl = _scl<(int)AAM.scales.size()?_scl:(int)AAM.scales.size();
 
         /*variables*/
-        std::vector<Point2f> s0 = AAM.s0;
+        std::vector<Point2f> s0 = Mat(Mat(AAM.s0)/AAM.scales[scl]).reshape(2);
 
         /*pre-computation*/
-        Mat S = Mat(AAM.S, Range::all(), Range(0,param_n>AAM.S.cols?param_n:AAM.S.cols)).clone(); // chop the shape data
+        Mat S = Mat(AAM.S, Range::all(), Range(0,param_n>AAM.S.cols?AAM.S.cols:param_n)).clone(); // chop the shape data
         std::vector<std::vector<int> > Tp;
         Mat Wx_dp, Wy_dp;
-        createWarpJacobian(S, AAM.Q, AAM.triangles, AAM.textures[0],Wx_dp, Wy_dp, Tp);
+        createWarpJacobian(S, AAM.Q, AAM.triangles, AAM.textures[scl],Wx_dp, Wy_dp, Tp);
 
-        std::vector<Point2f> s0_init = Mat(Mat(R*scale*Mat(Mat(s0).reshape(1)).t()).t()).reshape(2);
+        std::vector<Point2f> s0_init = Mat(Mat(R*scale*AAM.scales[scl]*Mat(Mat(s0).reshape(1)).t()).t()).reshape(2);
         std::vector<Point2f> curr_shape =  Mat(Mat(s0_init)+Scalar(T.x,T.y));
+        curr_shape = Mat(1.0/scale*Mat(curr_shape)).reshape(2);
 
         Mat imgray;
         Mat img;
@@ -381,33 +387,33 @@ namespace face {
 
         /*chop the textures model*/
         int maxCol = param_m;
-        if(AAM.textures[0].A.cols<param_m)maxCol = AAM.textures[0].A.cols;
-        Mat A = Mat(AAM.textures[0].A,Range(0,AAM.textures[0].A.rows), Range(0,maxCol)).clone();
-        Mat AA = Mat(AAM.textures[0].AA,Range(0,AAM.textures[0].AA.rows), Range(0,maxCol)).clone();
+        if(AAM.textures[scl].A.cols<param_m)maxCol = AAM.textures[scl].A.cols;
+        Mat A = Mat(AAM.textures[scl].A,Range(0,AAM.textures[scl].A.rows), Range(0,maxCol)).clone();
+        Mat AA = Mat(AAM.textures[scl].AA,Range(0,AAM.textures[scl].AA.rows), Range(0,maxCol)).clone();
 
         /*iteratively update the fitting*/
         Mat I, II, warped, c, gx, gy, Irec, Irec_feat, dc;
         Mat refI, refII, refWarped, ref_c, ref_gx, ref_gy, refIrec, refIrec_feat, ref_dc ;
         for(int t=0;t<params.n_iter;t++){
-            warped = warpImage(img,AAM.textures[0].base_shape, curr_shape,
+            warped = warpImage(img,AAM.textures[scl].base_shape, curr_shape,
                                AAM.triangles,
-                               AAM.textures[0].resolution ,
-                               AAM.textures[0].textureIdx);
+                               AAM.textures[scl].resolution ,
+                               AAM.textures[scl].textureIdx);
 
-            I = getFeature<uchar>(warped, AAM.textures[0].ind1);
-            II = getFeature<uchar>(warped, AAM.textures[0].ind2);
+            I = getFeature<uchar>(warped, AAM.textures[scl].ind1);
+            II = getFeature<uchar>(warped, AAM.textures[scl].ind2);
 
             if(t==0){
-                c = A.t()*(I-AAM.textures[0].A0); //little bit different to matlab, probably due to datatype
+                c = A.t()*(I-AAM.textures[scl].A0); //little bit different to matlab, probably due to datatype
             }else{
                 c = c+dc;
             }
 
-            Irec_feat = (AAM.textures[0].A0+A*c);
-            Irec = Mat::zeros(AAM.textures[0].resolution.width, AAM.textures[0].resolution.height, CV_32FC1);
+            Irec_feat = (AAM.textures[scl].A0+A*c);
+            Irec = Mat::zeros(AAM.textures[scl].resolution.width, AAM.textures[scl].resolution.height, CV_32FC1);
 
-            for(int j=0;j<(int)AAM.textures[0].ind1.size();j++){
-                Irec.at<float>(AAM.textures[0].ind1[j]) = Irec_feat.at<float>(j);
+            for(int j=0;j<(int)AAM.textures[scl].ind1.size();j++){
+                Irec.at<float>(AAM.textures[scl].ind1[j]) = Irec_feat.at<float>(j);
             }
             Mat irec = Irec.t();
 
@@ -418,9 +424,9 @@ namespace face {
 
             Mat J;
             std::vector<float> Irec_vec;
-            for(size_t j=0;j<AAM.textures[0].ind2.size();j++){
-                J.push_back(Jc.row(AAM.textures[0].ind2[j]));
-                Irec_vec.push_back(Irec.at<float>(AAM.textures[0].ind2[j]));
+            for(size_t j=0;j<AAM.textures[scl].ind2.size();j++){
+                J.push_back(Jc.row(AAM.textures[scl].ind2[j]));
+                Irec_vec.push_back(Irec.at<float>(AAM.textures[scl].ind2[j]));
             }
 
             /*compute Jfsic and Hfsic*/
@@ -430,12 +436,11 @@ namespace face {
             invert(Hfsic, iHfsic);
 
             /*compute dp dq and dc*/
-            Mat dqp = iHfsic*Jfsic.t()*(II-AAM.textures[0].AA0);
+            Mat dqp = iHfsic*Jfsic.t()*(II-AAM.textures[scl].AA0);
             dc = AA.t()*(II-Mat(Irec_vec)-J*dqp);
             warpUpdate(curr_shape, dqp, s0,S, AAM.Q, AAM.triangles,Tp);
         }
-        // landmarks = Mat(scale*Mat(curr_shape)).reshape(2);
-        landmarks = curr_shape;
+        landmarks = Mat(scale*Mat(curr_shape)).reshape(2);
         return true;
     }
 
@@ -546,8 +551,6 @@ namespace face {
         Mat Xs, Ys;
         multiply(X0,X0,Xs);
         multiply(Y0,Y0,Ys);
-
-        // cout<<Xs<<endl;
 
         // calculate the sum
         Mat sumXs, sumYs;

@@ -60,7 +60,7 @@ Mentor: Delia Passalacqua
  *  120.208690 270.389841
  *  ...
  *  }
- * example of the dataset is available at http://www.ifp.illinois.edu/~vuongle2/helen/
+ * example of the dataset is available at https://ibug.doc.ic.ac.uk/download/annotations/lfpw.zip
  *--------------------------------------------------*/
 
  #include <stdio.h>
@@ -72,8 +72,8 @@ Mentor: Delia Passalacqua
  #include "opencv2/face.hpp"
 
  #include <iostream>
- #include <fstream>
  #include <string>
+ #include <ctime>
 
  using namespace std;
  using namespace cv;
@@ -93,14 +93,22 @@ Mentor: Delia Passalacqua
      if(!parseArguments(argc, argv, parser,cascade_path,eyes_cascade_path,images_path, annotations_path, test_images_path))
         return -1;
 
+     //! [instance_creation]
      /*create the facemark instance*/
-     Ptr<FacemarkAAM> facemark = FacemarkAAM::create();
+     FacemarkAAM::Params params;
+     params.scales.push_back(2.0);
+     params.scales.push_back(4.0);
+     Ptr<FacemarkAAM> facemark = FacemarkAAM::create(params);
+     //! [instance_creation]
 
+     //! [load_dataset]
      /*Loads the dataset*/
      std::vector<String> images_train;
      std::vector<String> landmarks_train;
      loadDatasetList(images_path,annotations_path,images_train,landmarks_train);
+     //! [load_dataset]
 
+     //! [add_samples]
      Mat image;
      std::vector<Point2f> facial_points;
      for(size_t i=0;i<images_train.size();i++){
@@ -108,10 +116,14 @@ Mentor: Delia Passalacqua
          loadFacePoints(landmarks_train[i],facial_points);
          facemark->addTrainingSample(image, facial_points);
      }
+     //! [add_samples]
 
+     //! [training]
      /* trained model will be saved to AAM.yml */
      facemark->training();
+     //! [training]
 
+     //! [load_test_images]
      /*test using some images*/
      String testFiles(images_path), testPts(annotations_path);
      if(!test_images_path.empty()){
@@ -121,47 +133,66 @@ Mentor: Delia Passalacqua
      std::vector<String> images;
      std::vector<String> facePoints;
      loadDatasetList(testFiles, testPts, images, facePoints);
+     //! [load_test_images]
 
+     //! [trainsformation_variables]
      float scale ;
      Point2f T;
      Mat R;
+     //! [trainsformation_variables]
 
+     //! [base_shape]
      FacemarkAAM::Data data;
      facemark->getData(&data);
      std::vector<Point2f> s0 = data.s0;
+     //! [base_shape]
 
+     //! [fitting]
      /*fitting process*/
      std::vector<Rect> faces;
+     //! [load_cascade_models]
      CascadeClassifier face_cascade(cascade_path);
      CascadeClassifier eyes_cascade(eyes_cascade_path);
+     //! [load_cascade_models]
      for(int i=0;i<(int)images.size();i++){
          printf("image #%i ", i);
+         //! [detect_face]
          image = imread(images[i]);
          myDetector(image, faces, face_cascade);
+         //! [detect_face]
          if(faces.size()>0){
+             //! [get_initialization]
              std::vector<FacemarkAAM::Config> conf;
              std::vector<Rect> faces_eyes;
              for(unsigned j=0;j<faces.size();j++){
                  if(getInitialFitting(image,faces[j],s0,eyes_cascade, R,T,scale)){
-                     conf.push_back(FacemarkAAM::Config(R,T,scale));
+                     conf.push_back(FacemarkAAM::Config(R,T,scale,(int)params.scales.size()-1));
                      faces_eyes.push_back(faces[j]);
                  }
              }
+             //! [get_initialization]
+
+             //! [fitting_process]
              if(conf.size()>0){
-
-                 printf(" - face with eyes found %i", (int)conf.size());
+                 printf(" - face with eyes found %i ", (int)conf.size());
                  std::vector<std::vector<Point2f> > landmarks;
-
+                 double newtime = (double)getTickCount();
                  facemark->fit(image, faces_eyes, landmarks, (void*)&conf);
+                 double fittime = ((getTickCount() - newtime)/getTickFrequency());
                  for(unsigned j=0;j<landmarks.size();j++){
-                     drawFacemarks(image, landmarks[j]);
+                     drawFacemarks(image, landmarks[j],Scalar(0,255,0));
                  }
+                 printf("%f ms\n",fittime*1000);
+                 imshow("fitting", image);
+                 waitKey(0);
+             }else{
+                 printf("initialization cannot be computed - skipping\n");
              }
+             //! [fitting_process]
          }
-         printf("\n");
-         imshow("fitting", image);
-         waitKey(0);
+
      } //for
+     //! [fitting]
  }
 
  bool myDetector( InputArray image, OutputArray ROIs, CascadeClassifier face_cascade){
@@ -255,7 +286,7 @@ Mentor: Delia Passalacqua
         "{ @e eyes-cascade    |      | (required) path to the cascade model file for the eyes detector }"
         "{ @i images          |      | (required) path of a text file contains the list of paths to all training images}"
         "{ @a annotations     |      | (required) Path of a text file contains the list of paths to all annotations files}"
-        "{ t test-images      |      | Path of a text file contains the list of paths to the test images}"
+        "{ @t test-images      |      | Path of a text file contains the list of paths to the test images}"
         "{ help h usage ?     |      | facemark_demo_aam -face-cascade -eyes-cascade -images -annotations [-t]\n"
              " example: facemark_demo_aam ../face_cascade.xml ../eyes_cascade.xml ../images_train.txt ../points_train.txt ../test.txt}"
     ;
@@ -271,7 +302,7 @@ Mentor: Delia Passalacqua
     model = String(parser.get<string>("eyes-cascade"));
     images = String(parser.get<string>("images"));
     annotations = String(parser.get<string>("annotations"));
-    test_images = String(parser.get<string>("t"));
+    test_images = String(parser.get<string>("test-images"));
 
     if(cascade.empty() || model.empty() || images.empty() || annotations.empty()){
         std::cerr << "one or more required arguments are not found" << '\n';

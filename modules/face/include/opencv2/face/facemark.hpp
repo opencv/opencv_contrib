@@ -355,7 +355,7 @@ namespace face {
         @param faces Output of the function which represent region of interest of the detected faces.
         Each face is stored in cv::Rect container.
         @param landmarks The detected landmark points for each faces.
-        @param config Algorithm specific on the fly parameters.
+        @param config Algorithm specific for running time parameters.
 
         <B>Example of usage</B>
         @code
@@ -365,9 +365,9 @@ namespace face {
         facemark->fit(image, faces, landmarks);
         @endcode
         */
-        virtual bool fit( InputArray image,
-                          InputArray faces,
-                          InputOutputArray landmarks,
+        virtual bool fit( InputArray image,\
+                          InputArray faces,\
+                          InputOutputArray landmarks,\
                           void * config = 0)=0;
 
         /** @brief Set a user defined face detector for the Facemark algorithm.

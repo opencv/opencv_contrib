@@ -19,3 +19,11 @@ The facial landmark detector API is useful to detect facial landmarks from an in
     *Author:* Laksono Kurnianggoro
 
     Tutorial on how to use the API.
+
+-   @subpage tutorial_facemark_aam
+
+    *Compatibility:* \> OpenCV 3.0
+
+    *Author:* Laksono Kurnianggoro
+
+    Tutorial on how to use the FacemarkAAM algorithm.
