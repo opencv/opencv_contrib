@@ -1,13 +1,14 @@
-#include <utils/dual_quaternion.hpp>
-#include <utils/knn_point_cloud.hpp>
-#include <kfusion/types.hpp>
+#include <opencv2/utils/dual_quaternion.hpp>
+#include <opencv2/utils/knn_point_cloud.hpp>
+#include <opencv2/kfusion/types.hpp>
 #include <nanoflann/nanoflann.hpp>
-#include "kfusion/warp_field.hpp"
+#include <opencv2/kfusion/warp_field.hpp>
 #include "internal.hpp"
 #include "precomp.hpp"
-#include <kfusion/optimisation.hpp>
+#include <opencv2/kfusion/optimisation.hpp>
 
-using namespace kfusion;
+using namespace cv::kfusion;
+using namespace cv;
 std::vector<utils::DualQuaternion<float>> neighbours; //THIS SHOULD BE SOMEWHERE ELSE BUT TOO SLOW TO REINITIALISE
 utils::PointCloud cloud;
 

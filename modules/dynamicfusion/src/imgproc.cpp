@@ -1,5 +1,6 @@
 #include "precomp.hpp"
-#include <kfusion/types.hpp>
+#include <opencv2/kfusion/types.hpp>
+using namespace cv;
 /**
  *
  * \param in

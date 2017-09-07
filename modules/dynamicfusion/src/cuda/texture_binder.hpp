@@ -1,6 +1,6 @@
 #pragma once
 
-#include <kfusion/cuda/device_array.hpp>
+#include <opencv2/kfusion/cuda/device_array.hpp>
 #include <safe_call.hpp>
 
 namespace kfusion

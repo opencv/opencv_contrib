@@ -1,9 +1,9 @@
-#include <kfusion/cuda/device_memory.hpp>
+#include <opencv2/kfusion/cuda/device_memory.hpp>
 #include "safe_call.hpp"
 #include <cassert>
 #include <iostream>
 #include <cstdlib>
-
+using namespace cv;
 void kfusion::cuda::error(const char *error_string, const char *file, const int line, const char *func)
 {
     std::cout << "KinFu2 error: " << error_string << "\t" << file << ":" << line << std::endl;

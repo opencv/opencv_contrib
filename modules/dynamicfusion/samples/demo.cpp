@@ -1,19 +1,16 @@
 #include <iostream>
-#include <kfusion/kinfu.hpp>
-#include <kfusion/cuda/tsdf_volume.hpp>
-#include <boost/filesystem.hpp>
-#include <boost/range/iterator_range.hpp>
 #include <opencv2/highgui/highgui_c.h>
 #include <opencv2/highgui.hpp>
-using namespace kfusion;
+#include <opencv2/dynamicfusion.hpp>
 
+using namespace cv;
 struct DynamicFusionApp
 {
-    static void KeyboardCallback(const cv::viz::KeyboardEvent& event, void* pthis)
+    static void KeyboardCallback(const viz::KeyboardEvent& event, void* pthis)
     {
         DynamicFusionApp& kinfu = *static_cast<DynamicFusionApp*>(pthis);
 
-        if(event.action != cv::viz::KeyboardEvent::KEY_DOWN)
+        if(event.action != viz::KeyboardEvent::KEY_DOWN)
             return;
 
         if(event.code == 't' || event.code == 'T')
@@ -25,24 +22,24 @@ struct DynamicFusionApp
 
     DynamicFusionApp(std::string dir) : exit_ (false), interactive_mode_(false), pause_(false), directory(true), dir_name(dir)
     {
-        KinFuParams params = KinFuParams::default_params_dynamicfusion();
-        kinfu_ = KinFu::Ptr( new KinFu(params) );
+        kfusion::KinFuParams params = kfusion::KinFuParams::default_params_dynamicfusion();
+        kinfu_ = kfusion::KinFu::Ptr( new kfusion::KinFu(params) );
 
 
-        cv::viz::WCube cube(cv::Vec3d::all(0), cv::Vec3d(params.volume_size), true, cv::viz::Color::apricot());
+        viz::WCube cube(Vec3d::all(0), Vec3d(params.volume_size), true, viz::Color::apricot());
         viz.showWidget("cube", cube, params.volume_pose);
-        viz.showWidget("coor", cv::viz::WCoordinateSystem(0.1));
+        viz.showWidget("coor", viz::WCoordinateSystem(0.1));
         viz.registerKeyboardCallback(KeyboardCallback, this);
 
     }
-    static void show_depth(const cv::Mat& depth)
+    static void show_depth(const Mat& depth)
     {
-        cv::Mat display;
+        Mat display;
         depth.convertTo(display, CV_8U, 255.0/4000);
-        cv::viz::imshow("Depth", display);
+        viz::imshow("Depth", display);
     }
 
-    void show_raycasted(KinFu& kinfu)
+    void show_raycasted(kfusion::KinFu& kinfu)
     {
         const int mode = 3;
         if (interactive_mode_)
@@ -52,39 +49,36 @@ struct DynamicFusionApp
 
         view_host_.create(view_device_.rows(), view_device_.cols(), CV_8UC4);
         view_device_.download(view_host_.ptr<void>(), view_host_.step);
-        cv::viz::imshow("Scene", view_host_);
+        viz::imshow("Scene", view_host_);
     }
 
-    void show_warp(KinFu &kinfu)
+    void show_warp(kfusion::KinFu &kinfu)
     {
-        cv::Mat warp_host =  kinfu.getWarp().getNodesAsMat();
-        viz1.showWidget("warp_field", cv::viz::WCloud(warp_host));
+        Mat warp_host =  kinfu.getWarp().getNodesAsMat();
+        viz1.showWidget("warp_field", viz::WCloud(warp_host));
     }
 
     bool execute()
     {
-        KinFu& dfusion = *kinfu_;
-        cv::Mat depth, image;
+        kfusion::KinFu& dfusion = *kinfu_;
+        Mat depth, image;
         double time_ms = 0;
         bool has_image = false;
-        std::vector<boost::filesystem::path> depths;             // store paths,
-        std::vector<boost::filesystem::path> images;             // store paths,
-
-        copy(boost::filesystem::directory_iterator(dir_name + "/depth"), boost::filesystem::directory_iterator(),
-             back_inserter(depths));
-        copy(boost::filesystem::directory_iterator(dir_name + "/color"), boost::filesystem::directory_iterator(),
-             back_inserter(images));
+        std::vector<String> depths;             // store paths,
+        std::vector<String> images;             // store paths,
+        glob(dir_name + "/depth", depths);
+        glob(dir_name + "/color", images);
 
         std::sort(depths.begin(), depths.end());
         std::sort(images.begin(), images.end());
 
         for (int i = 0; i < depths.size() && !exit_ && !viz.wasStopped(); i++) {
-            image = cv::imread(images[i].string(), CV_LOAD_IMAGE_COLOR);
-            depth = cv::imread(depths[i].string(), CV_LOAD_IMAGE_ANYDEPTH);
+            image = imread(images[i], CV_LOAD_IMAGE_COLOR);
+            depth = imread(depths[i], CV_LOAD_IMAGE_ANYDEPTH);
             depth_device_.upload(depth.data, depth.step, depth.rows, depth.cols);
 
             {
-                SampledScopeTime fps(time_ms);
+                kfusion::SampledScopeTime fps(time_ms);
                 (void) fps;
                 has_image = dfusion(depth_device_);
             }
@@ -93,14 +87,14 @@ struct DynamicFusionApp
                 show_raycasted(dfusion);
 
             show_depth(depth);
-            cv::viz::imshow("Image", image);
+            viz::imshow("Image", image);
 
             if (!interactive_mode_) {
                 viz.setViewerPose(dfusion.getCameraPose());
                 viz1.setViewerPose(dfusion.getCameraPose());
             }
 
-            int key = cv::waitKey(pause_ ? 0 : 3);
+            int key = waitKey(pause_ ? 0 : 3);
             show_warp(dfusion);
             switch (key) {
                 case 't':
@@ -129,13 +123,13 @@ struct DynamicFusionApp
     bool pause_ /*= false*/;
     bool exit_, interactive_mode_, directory;
     std::string dir_name;
-    KinFu::Ptr kinfu_;
-    cv::viz::Viz3d viz;
-    cv::viz::Viz3d viz1;
+    kfusion::KinFu::Ptr kinfu_;
+    viz::Viz3d viz;
+    viz::Viz3d viz1;
 
-    cv::Mat view_host_;
-    cuda::Image view_device_;
-    cuda::Depth depth_device_;
+    Mat view_host_;
+    kfusion::cuda::Image view_device_;
+    kfusion::cuda::Depth depth_device_;
 
 
 };
@@ -146,15 +140,14 @@ struct DynamicFusionApp
 int main (int argc, char* argv[])
 {
     int device = 0;
-    cuda::setDevice (device);
-    cuda::printShortCudaDeviceInfo (device);
+    kfusion::cuda::setDevice (device);
+    kfusion::cuda::printShortCudaDeviceInfo(device);
 
-    if(cuda::checkIfPreFermiGPU(device))
+    if(kfusion::cuda::checkIfPreFermiGPU(device))
         return std::cout << std::endl << "Kinfu is not supported for pre-Fermi GPU architectures, and not built for them by default. Exiting..." << std::endl, -1;
 
     DynamicFusionApp *app;
-    if(boost::filesystem::is_directory(argv[1]))
-        app = new DynamicFusionApp(argv[1]);
+    app = new DynamicFusionApp(argv[1]);
 
     // executing
     try { app->execute (); }

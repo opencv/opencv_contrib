@@ -1,34 +1,6 @@
 set(the_description "Non-rigid 3D reconstruction")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11 -DFORCE_INLINERS -D_MWAITXINTRIN_H_INCLUDED")
 
-
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile)
-  find_package(Doxygen)
-  if(DOXYGEN_FOUND)
-
-    set(DOXYGEN_INPUT ${SOURCE_FILES})
-    set(DOXYGEN_OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile)
-
-    add_custom_command(
-            OUTPUT ${DOXYGEN_OUTPUT}
-            COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
-            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_INPUT}
-            COMMAND ${CMAKE_COMMAND} -E echo "Done."
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            DEPENDS ${DOXYGEN_INPUT}
-    )
-
-    add_custom_target(apidoc ALL DEPENDS ${DOXYGEN_OUTPUT})
-
-    add_custom_target(apidoc_forced
-            COMMAND ${CMAKE_COMMAND} -E echo_append "Building API Documentation..."
-            COMMAND ${DOXYGEN_EXECUTABLE} ${DOXYGEN_INPUT}
-            COMMAND ${CMAKE_COMMAND} -E echo "Done."
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            )
-
-  endif(DOXYGEN_FOUND)
-endif()
 #
 ## ---[ Solution name
 #
@@ -79,6 +51,15 @@ include_directories(${CERES_INCLUDE_DIRS} ${Boost_INCLUDE_DIR} ${CUDA_INCLUDE_DI
 #    add_subdirectory(tests)
 #  endif()
 #endif()
-
+find_package(Boost REQUIRED COMPONENTS system filesystem program_options)
 ocv_define_module(dynamicfusion opencv_core opencv_calib3d opencv_viz opencv_highgui)
-target_compile_options(opencv_dynamicfusion PRIVATE "-Wall")
+
+ocv_warnings_disable(CMAKE_CXX_FLAGS
+        -Wundef
+        -Wshadow
+        -Wsign-compare
+        -Wmissing-declarations
+        -Wunused-but-set-variable
+        -Wunused-parameter
+        -Wunused-function
+        )

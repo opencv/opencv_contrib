@@ -6,7 +6,7 @@
 
 using namespace std;
 using namespace xn;
-
+using namespace cv;
 //const std::string XMLConfig =
 //"<OpenNI>"
 //        "<Licenses>"

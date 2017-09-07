@@ -1,10 +1,10 @@
 #include "precomp.hpp"
 
 
-using namespace kfusion;
+using namespace cv::kfusion;
 using namespace std;
-using namespace kfusion::cuda;
-
+using namespace cv::kfusion::cuda;
+using namespace cv;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// ComputeIcpHelper
 

@@ -1,25 +1,23 @@
 #include "precomp.hpp"
 #include "internal.hpp"
 #include <tgmath.h>
-#include "utils/dual_quaternion.hpp"
-#include "nanoflann/nanoflann.hpp"
-#include "utils/quaternion.hpp"
-#include <utils/knn_point_cloud.hpp>
-#include <kfusion/warp_field.hpp>
-#include <kfusion/cuda/tsdf_volume.hpp>
+#include <opencv2/utils/dual_quaternion.hpp>
+#include <nanoflann/nanoflann.hpp>
+#include <opencv2/utils/quaternion.hpp>
+#include <opencv2/utils/knn_point_cloud.hpp>
+#include <opencv2/kfusion/warp_field.hpp>
+#include <opencv2/kfusion/cuda/tsdf_volume.hpp>
 #include <opencv2/viz/vizcore.hpp>
 
 using namespace std;
-using namespace kfusion;
-using namespace kfusion::cuda;
-
+using namespace cv;
 static inline float deg2rad (float alpha) { return alpha * 0.017453293f; }
 
 /**
  * \brief
  * \return
  */
-kfusion::KinFuParams kfusion::KinFuParams::default_params_dynamicfusion()
+cv::kfusion::KinFuParams cv::kfusion::KinFuParams::default_params_dynamicfusion()
 {
     const int iters[] = {10, 5, 4, 0};
     const int levels = sizeof(iters)/sizeof(iters[0]);
@@ -60,7 +58,7 @@ kfusion::KinFuParams kfusion::KinFuParams::default_params_dynamicfusion()
  * \brief
  * \return
  */
-kfusion::KinFuParams kfusion::KinFuParams::default_params()
+cv::kfusion::KinFuParams cv::kfusion::KinFuParams::default_params()
 {
     const int iters[] = {10, 5, 4, 0};
     const int levels = sizeof(iters)/sizeof(iters[0]);
@@ -101,11 +99,11 @@ kfusion::KinFuParams kfusion::KinFuParams::default_params()
  * \brief
  * \param params
  */
-kfusion::KinFu::KinFu(const KinFuParams& params) : frame_counter_(0), params_(params)
+cv::kfusion::KinFu::KinFu(const KinFuParams& params) : frame_counter_(0), params_(params)
 {
 //    cv::CV_Assert(params.volume_dims[0] % 32 == 0);
 
-    volume_ = cv::Ptr<cuda::TsdfVolume>(new cuda::TsdfVolume(params_.volume_dims));
+    volume_ = cv::Ptr<cv::kfusion::cuda::TsdfVolume>(new cv::kfusion::cuda::TsdfVolume(params_.volume_dims));
     warp_ = cv::Ptr<WarpField>(new WarpField());
 
     volume_->setTruncDist(params_.tsdf_trunc_dist);
@@ -115,7 +113,7 @@ kfusion::KinFu::KinFu(const KinFuParams& params) : frame_counter_(0), params_(pa
     volume_->setRaycastStepFactor(params_.raycast_step_factor);
     volume_->setGradientDeltaFactor(params_.gradient_delta_factor);
 
-    icp_ = cv::Ptr<cuda::ProjectiveICP>(new cuda::ProjectiveICP());
+    icp_ = cv::Ptr<cv::kfusion::cuda::ProjectiveICP>(new cv::kfusion::cuda::ProjectiveICP());
     icp_->setDistThreshold(params_.icp_dist_thres);
     icp_->setAngleThreshold(params_.icp_angle_thres);
     icp_->setIterationsNum(params_.icp_iter_num);
@@ -124,33 +122,33 @@ kfusion::KinFu::KinFu(const KinFuParams& params) : frame_counter_(0), params_(pa
     reset();
 }
 
-const kfusion::KinFuParams& kfusion::KinFu::params() const
+const cv::kfusion::KinFuParams& cv::kfusion::KinFu::params() const
 { return params_; }
 
-kfusion::KinFuParams& kfusion::KinFu::params()
+cv::kfusion::KinFuParams& cv::kfusion::KinFu::params()
 { return params_; }
 
-const kfusion::cuda::TsdfVolume& kfusion::KinFu::tsdf() const
+const cv::kfusion::cuda::TsdfVolume& cv::kfusion::KinFu::tsdf() const
 { return *volume_; }
 
-kfusion::cuda::TsdfVolume& kfusion::KinFu::tsdf()
+cv::kfusion::cuda::TsdfVolume& cv::kfusion::KinFu::tsdf()
 { return *volume_; }
 
-const kfusion::cuda::ProjectiveICP& kfusion::KinFu::icp() const
+const cv::kfusion::cuda::ProjectiveICP& cv::kfusion::KinFu::icp() const
 { return *icp_; }
 
-kfusion::cuda::ProjectiveICP& kfusion::KinFu::icp()
+cv::kfusion::cuda::ProjectiveICP& cv::kfusion::KinFu::icp()
 { return *icp_; }
 
-const kfusion::WarpField& kfusion::KinFu::getWarp() const
+const cv::kfusion::WarpField& cv::kfusion::KinFu::getWarp() const
 { return *warp_; }
 
-kfusion::WarpField& kfusion::KinFu::getWarp()
+cv::kfusion::WarpField& cv::kfusion::KinFu::getWarp()
 { return *warp_; }
 
-void kfusion::KinFu::allocate_buffers()
+void cv::kfusion::KinFu::allocate_buffers()
 {
-    const int LEVELS = cuda::ProjectiveICP::MAX_PYRAMID_LEVELS;
+    const int LEVELS = cv::kfusion::cuda::ProjectiveICP::MAX_PYRAMID_LEVELS;
 
     int cols = params_.cols;
     int rows = params_.rows;
@@ -193,7 +191,7 @@ void kfusion::KinFu::allocate_buffers()
     points_.create(params_.rows, params_.cols);
 }
 
-void kfusion::KinFu::reset()
+void cv::kfusion::KinFu::reset()
 {
     if (frame_counter_)
         cout << "Reset" << endl;
@@ -211,35 +209,35 @@ void kfusion::KinFu::reset()
  * \param time
  * \return
  */
-kfusion::Affine3f kfusion::KinFu::getCameraPose (int time) const
+cv::kfusion::Affine3f cv::kfusion::KinFu::getCameraPose (int time) const
 {
     if (time > (int)poses_.size () || time < 0)
         time = (int)poses_.size () - 1;
     return poses_[time];
 }
 
-bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion::cuda::Image& /*image*/)
+bool cv::kfusion::KinFu::operator()(const cv::kfusion::cuda::Depth& depth, const cv::kfusion::cuda::Image& /*image*/)
 {
     const KinFuParams& p = params_;
     const int LEVELS = icp_->getUsedLevelsNum();
 
-    cuda::computeDists(depth, dists_, p.intr);
-    cuda::depthBilateralFilter(depth, curr_.depth_pyr[0], p.bilateral_kernel_size, p.bilateral_sigma_spatial, p.bilateral_sigma_depth);
+    cv::kfusion::cuda::computeDists(depth, dists_, p.intr);
+    cv::kfusion::cuda::depthBilateralFilter(depth, curr_.depth_pyr[0], p.bilateral_kernel_size, p.bilateral_sigma_spatial, p.bilateral_sigma_depth);
 
     if (p.icp_truncate_depth_dist > 0)
-        kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
+        cv::kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
 
     for (int i = 1; i < LEVELS; ++i)
-        cuda::depthBuildPyramid(curr_.depth_pyr[i-1], curr_.depth_pyr[i], p.bilateral_sigma_depth);
+        cv::kfusion::cuda::depthBuildPyramid(curr_.depth_pyr[i-1], curr_.depth_pyr[i], p.bilateral_sigma_depth);
 
     for (int i = 0; i < LEVELS; ++i)
 #if defined USE_DEPTH
-        cuda::computeNormalsAndMaskDepth(p.intr(i), curr_.depth_pyr[i], curr_.normals_pyr[i]);
+        cv::kfusion::cuda::computeNormalsAndMaskDepth(p.intr(i), curr_.depth_pyr[i], curr_.normals_pyr[i]);
 #else
-        cuda::computePointNormals(p.intr(i), curr_.depth_pyr[i], curr_.points_pyr[i], curr_.normals_pyr[i]);
+        cv::kfusion::cuda::computePointNormals(p.intr(i), curr_.depth_pyr[i], curr_.points_pyr[i], curr_.normals_pyr[i]);
 #endif
 
-    cuda::waitAllDefaultStream();
+    cv::kfusion::cuda::waitAllDefaultStream();
 
     //can't perform more on first frame
     if (frame_counter_ == 0)
@@ -298,7 +296,7 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
         for (int i = 1; i < LEVELS; ++i)
             resizePointsNormals(prev_.points_pyr[i-1], prev_.normals_pyr[i-1], prev_.points_pyr[i], prev_.normals_pyr[i]);
 #endif
-        cuda::waitAllDefaultStream();
+        cv::kfusion::cuda::waitAllDefaultStream();
     }
 
     return ++frame_counter_, true;
@@ -309,7 +307,7 @@ bool kfusion::KinFu::operator()(const kfusion::cuda::Depth& depth, const kfusion
  * \param image
  * \param flag
  */
-void kfusion::KinFu::renderImage(cuda::Image& image, int flag)
+void cv::kfusion::KinFu::renderImage(cv::kfusion::cuda::Image& image, int flag)
 {
     const KinFuParams& p = params_;
     image.create(p.rows, flag != 3 ? p.cols : p.cols * 2);
@@ -321,16 +319,16 @@ void kfusion::KinFu::renderImage(cuda::Image& image, int flag)
 #endif
 
     if (flag < 1 || flag > 3)
-        cuda::renderImage(PASS1[0], prev_.normals_pyr[0], params_.intr, params_.light_pose, image);
+        cv::kfusion::cuda::renderImage(PASS1[0], prev_.normals_pyr[0], params_.intr, params_.light_pose, image);
     else if (flag == 2)
-        cuda::renderTangentColors(prev_.normals_pyr[0], image);
+        cv::kfusion::cuda::renderTangentColors(prev_.normals_pyr[0], image);
     else /* if (flag == 3) */
     {
-        DeviceArray2D<RGB> i1(p.rows, p.cols, image.ptr(), image.step());
-        DeviceArray2D<RGB> i2(p.rows, p.cols, image.ptr() + p.cols, image.step());
+        cv::kfusion::cuda::DeviceArray2D<RGB> i1(p.rows, p.cols, image.ptr(), image.step());
+        cv::kfusion::cuda::DeviceArray2D<RGB> i2(p.rows, p.cols, image.ptr() + p.cols, image.step());
 
-        cuda::renderImage(PASS1[0], prev_.normals_pyr[0], params_.intr, params_.light_pose, i1);
-        cuda::renderTangentColors(prev_.normals_pyr[0], i2);
+        cv::kfusion::cuda::renderImage(PASS1[0], prev_.normals_pyr[0], params_.intr, params_.light_pose, i1);
+        cv::kfusion::cuda::renderTangentColors(prev_.normals_pyr[0], i2);
 
     }
 #undef PASS1
@@ -341,10 +339,10 @@ void kfusion::KinFu::renderImage(cuda::Image& image, int flag)
  * \param image
  * \param flag
  */
-void kfusion::KinFu::dynamicfusion(cuda::Depth& depth, cuda::Cloud current_frame, cuda::Normals current_normals)
+void cv::kfusion::KinFu::dynamicfusion(cv::kfusion::cuda::Depth& depth, cv::kfusion::cuda::Cloud current_frame, cv::kfusion::cuda::Normals current_normals)
 {
-    cuda::Cloud cloud;
-    cuda::Normals normals;
+    cv::kfusion::cuda::Cloud cloud;
+    cv::kfusion::cuda::Normals normals;
     cloud.create(depth.rows(), depth.cols());
     normals.create(depth.rows(), depth.cols());
     auto camera_pose = poses_.back();
@@ -412,7 +410,7 @@ void kfusion::KinFu::dynamicfusion(cuda::Depth& depth, cuda::Cloud current_frame
  * \param pose
  * \param flag
  */
-void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int flag) {
+void cv::kfusion::KinFu::renderImage(cv::kfusion::cuda::Image& image, const Affine3f& pose, int flag) {
     const KinFuParams &p = params_;
     image.create(p.rows, flag != 3 ? p.cols : p.cols * 2);
     depths_.create(p.rows, p.cols);
@@ -428,16 +426,16 @@ void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int f
     volume_->raycast(pose, p.intr, PASS1, normals_);
 
     if (flag < 1 || flag > 3)
-        cuda::renderImage(PASS1, normals_, params_.intr, params_.light_pose, image);
+        cv::kfusion::cuda::renderImage(PASS1, normals_, params_.intr, params_.light_pose, image);
     else if (flag == 2)
-        cuda::renderTangentColors(normals_, image);
+        cv::kfusion::cuda::renderTangentColors(normals_, image);
     else /* if (flag == 3) */
     {
-        DeviceArray2D<RGB> i1(p.rows, p.cols, image.ptr(), image.step());
-        DeviceArray2D<RGB> i2(p.rows, p.cols, image.ptr() + p.cols, image.step());
+        cv::kfusion::cuda::DeviceArray2D<RGB> i1(p.rows, p.cols, image.ptr(), image.step());
+        cv::kfusion::cuda::DeviceArray2D<RGB> i2(p.rows, p.cols, image.ptr() + p.cols, image.step());
 
-        cuda::renderImage(PASS1, normals_, params_.intr, params_.light_pose, i1);
-        cuda::renderTangentColors(normals_, i2);
+        cv::kfusion::cuda::renderImage(PASS1, normals_, params_.intr, params_.light_pose, i1);
+        cv::kfusion::cuda::renderTangentColors(normals_, i2);
     }
 #undef PASS1
 }

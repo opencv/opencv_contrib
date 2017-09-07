@@ -1,15 +1,15 @@
-#include "precomp.hpp"
-#include "utils/dual_quaternion.hpp"
-#include <algorithm>
-#include <kfusion/warp_field.hpp>
-#include <utils/knn_point_cloud.hpp>
-#include <numeric>
+#include <opencv2/utils/dual_quaternion.hpp>
+#include <opencv2/kfusion/warp_field.hpp>
+#include <opencv2/utils/knn_point_cloud.hpp>
 #include <opencv2/viz/vizcore.hpp>
-using namespace kfusion;
-using namespace kfusion::cuda;
+#include <numeric>
+#include "precomp.hpp"
+#include <algorithm>
+using namespace cv::kfusion;
+using namespace cv::kfusion::cuda;
+using namespace cv;
 
-
-kfusion::cuda::TsdfVolume::TsdfVolume(const Vec3i& dims) : data_(),
+cv::kfusion::cuda::TsdfVolume::TsdfVolume(const Vec3i& dims) : data_(),
                                                            trunc_dist_(0.03f),
                                                            max_weight_(128),
                                                            dims_(dims),
@@ -21,7 +21,7 @@ kfusion::cuda::TsdfVolume::TsdfVolume(const Vec3i& dims) : data_(),
     create(dims_);
 }
 
-kfusion::cuda::TsdfVolume::~TsdfVolume()
+cv::kfusion::cuda::TsdfVolume::~TsdfVolume()
 {
     delete cloud_host;
     delete cloud_buffer;
@@ -34,7 +34,7 @@ kfusion::cuda::TsdfVolume::~TsdfVolume()
  * \brief
  * \param dims
  */
-void kfusion::cuda::TsdfVolume::create(const Vec3i& dims)
+void cv::kfusion::cuda::TsdfVolume::create(const Vec3i& dims)
 {
     dims_ = dims;
     int voxels_number = dims_[0] * dims_[1] * dims_[2];
@@ -47,7 +47,7 @@ void kfusion::cuda::TsdfVolume::create(const Vec3i& dims)
  * \brief
  * \return
  */
-Vec3i kfusion::cuda::TsdfVolume::getDims() const
+Vec3i cv::kfusion::cuda::TsdfVolume::getDims() const
 {
     return dims_;
 }
@@ -56,42 +56,42 @@ Vec3i kfusion::cuda::TsdfVolume::getDims() const
  * \brief
  * \return
  */
-Vec3f kfusion::cuda::TsdfVolume::getVoxelSize() const
+Vec3f cv::kfusion::cuda::TsdfVolume::getVoxelSize() const
 {
     return Vec3f(size_[0] / dims_[0], size_[1] / dims_[1], size_[2] / dims_[2]);
 }
 
-const CudaData kfusion::cuda::TsdfVolume::data() const { return data_; }
-CudaData kfusion::cuda::TsdfVolume::data() {  return data_; }
-Vec3f kfusion::cuda::TsdfVolume::getSize() const { return size_; }
+const CudaData cv::kfusion::cuda::TsdfVolume::data() const { return data_; }
+CudaData cv::kfusion::cuda::TsdfVolume::data() {  return data_; }
+Vec3f cv::kfusion::cuda::TsdfVolume::getSize() const { return size_; }
 
-void kfusion::cuda::TsdfVolume::setSize(const Vec3f& size)
+void cv::kfusion::cuda::TsdfVolume::setSize(const Vec3f& size)
 { size_ = size; setTruncDist(trunc_dist_); }
 
-float kfusion::cuda::TsdfVolume::getTruncDist() const { return trunc_dist_; }
+float cv::kfusion::cuda::TsdfVolume::getTruncDist() const { return trunc_dist_; }
 
-void kfusion::cuda::TsdfVolume::setTruncDist(float distance)
+void cv::kfusion::cuda::TsdfVolume::setTruncDist(float distance)
 {
     Vec3f vsz = getVoxelSize();
     float max_coeff = std::max<float>(std::max<float>(vsz[0], vsz[1]), vsz[2]);
     trunc_dist_ = std::max (distance, 2.1f * max_coeff);
 }
-cv::Mat kfusion::cuda::TsdfVolume::get_cloud_host() const {return *cloud_host;};
-cv::Mat kfusion::cuda::TsdfVolume::get_normal_host() const {return *normal_host;};
-cv::Mat* kfusion::cuda::TsdfVolume::get_cloud_host_ptr() const {return cloud_host;};
-cv::Mat* kfusion::cuda::TsdfVolume::get_normal_host_ptr() const {return normal_host;};
+cv::Mat cv::kfusion::cuda::TsdfVolume::get_cloud_host() const {return *cloud_host;};
+cv::Mat cv::kfusion::cuda::TsdfVolume::get_normal_host() const {return *normal_host;};
+cv::Mat* cv::kfusion::cuda::TsdfVolume::get_cloud_host_ptr() const {return cloud_host;};
+cv::Mat* cv::kfusion::cuda::TsdfVolume::get_normal_host_ptr() const {return normal_host;};
 
-int kfusion::cuda::TsdfVolume::getMaxWeight() const { return max_weight_; }
-void kfusion::cuda::TsdfVolume::setMaxWeight(int weight) { max_weight_ = weight; }
-Affine3f kfusion::cuda::TsdfVolume::getPose() const  { return pose_; }
-void kfusion::cuda::TsdfVolume::setPose(const Affine3f& pose) { pose_ = pose; }
-float kfusion::cuda::TsdfVolume::getRaycastStepFactor() const { return raycast_step_factor_; }
-void kfusion::cuda::TsdfVolume::setRaycastStepFactor(float factor) { raycast_step_factor_ = factor; }
-float kfusion::cuda::TsdfVolume::getGradientDeltaFactor() const { return gradient_delta_factor_; }
-void kfusion::cuda::TsdfVolume::setGradientDeltaFactor(float factor) { gradient_delta_factor_ = factor; }
-void kfusion::cuda::TsdfVolume::swap(CudaData& data) { data_.swap(data); }
-void kfusion::cuda::TsdfVolume::applyAffine(const Affine3f& affine) { pose_ = affine * pose_; }
-void kfusion::cuda::TsdfVolume::clear()
+int cv::kfusion::cuda::TsdfVolume::getMaxWeight() const { return max_weight_; }
+void cv::kfusion::cuda::TsdfVolume::setMaxWeight(int weight) { max_weight_ = weight; }
+Affine3f cv::kfusion::cuda::TsdfVolume::getPose() const  { return pose_; }
+void cv::kfusion::cuda::TsdfVolume::setPose(const Affine3f& pose) { pose_ = pose; }
+float cv::kfusion::cuda::TsdfVolume::getRaycastStepFactor() const { return raycast_step_factor_; }
+void cv::kfusion::cuda::TsdfVolume::setRaycastStepFactor(float factor) { raycast_step_factor_ = factor; }
+float cv::kfusion::cuda::TsdfVolume::getGradientDeltaFactor() const { return gradient_delta_factor_; }
+void cv::kfusion::cuda::TsdfVolume::setGradientDeltaFactor(float factor) { gradient_delta_factor_ = factor; }
+void cv::kfusion::cuda::TsdfVolume::swap(CudaData& data) { data_.swap(data); }
+void cv::kfusion::cuda::TsdfVolume::applyAffine(const Affine3f& affine) { pose_ = affine * pose_; }
+void cv::kfusion::cuda::TsdfVolume::clear()
 {
     cloud_buffer = new cuda::DeviceArray<Point>();
     cloud = new cuda::DeviceArray<Point>();
@@ -112,7 +112,7 @@ void kfusion::cuda::TsdfVolume::clear()
  * \param camera_pose
  * \param intr
  */
-void kfusion::cuda::TsdfVolume::integrate(const Dists& dists, const Affine3f& camera_pose, const Intr& intr)
+void cv::kfusion::cuda::TsdfVolume::integrate(const Dists& dists, const Affine3f& camera_pose, const Intr& intr)
 {
     Affine3f vol2cam = camera_pose.inv() * pose_;
 
@@ -133,7 +133,7 @@ void kfusion::cuda::TsdfVolume::integrate(const Dists& dists, const Affine3f& ca
  * \param depth
  * \param normals
  */
-void kfusion::cuda::TsdfVolume::raycast(const Affine3f& camera_pose, const Intr& intr, Depth& depth, Normals& normals)
+void cv::kfusion::cuda::TsdfVolume::raycast(const Affine3f& camera_pose, const Intr& intr, Depth& depth, Normals& normals)
 {
     DeviceArray2D<device::Normal>& n = (DeviceArray2D<device::Normal>&)normals;
 
@@ -159,7 +159,7 @@ void kfusion::cuda::TsdfVolume::raycast(const Affine3f& camera_pose, const Intr&
  * \param points
  * \param normals
  */
-void kfusion::cuda::TsdfVolume::raycast(const Affine3f& camera_pose, const Intr& intr, Cloud& points, Normals& normals)
+void cv::kfusion::cuda::TsdfVolume::raycast(const Affine3f& camera_pose, const Intr& intr, Cloud& points, Normals& normals)
 {
     device::Normals& n = (device::Normals&)normals;
     device::Points& p = (device::Points&)points;
@@ -183,7 +183,7 @@ void kfusion::cuda::TsdfVolume::raycast(const Affine3f& camera_pose, const Intr&
  * \param cloud_buffer
  * \return
  */
-DeviceArray<Point> kfusion::cuda::TsdfVolume::fetchCloud(DeviceArray<Point>& cloud_buffer) const
+DeviceArray<cv::kfusion::Point> cv::kfusion::cuda::TsdfVolume::fetchCloud(DeviceArray<Point>& cloud_buffer) const
 {
     //    enum { DEFAULT_CLOUD_BUFFER_SIZE = 10 * 1000 * 1000 };
     enum { DEFAULT_CLOUD_BUFFER_SIZE = 256 * 256 * 256 };
@@ -208,7 +208,7 @@ DeviceArray<Point> kfusion::cuda::TsdfVolume::fetchCloud(DeviceArray<Point>& clo
  * @param cloud
  * @param normals
  */
-void kfusion::cuda::TsdfVolume::fetchNormals(const DeviceArray<Point>& cloud, DeviceArray<Normal>& normals) const
+void cv::kfusion::cuda::TsdfVolume::fetchNormals(const DeviceArray<Point>& cloud, DeviceArray<Normal>& normals) const
 {
     normals.create(cloud.size());
     DeviceArray<device::Point>& c = (DeviceArray<device::Point>&)cloud;
@@ -231,7 +231,7 @@ void kfusion::cuda::TsdfVolume::fetchNormals(const DeviceArray<Point>& cloud, De
  * \param camera_pose
  * \param intr
  */
-void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
+void cv::kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
                                                std::vector<Vec3f> warped,
                                                std::vector<Vec3f> canonical,
                                                cuda::Depth& depth,
@@ -269,7 +269,7 @@ void kfusion::cuda::TsdfVolume::surface_fusion(const WarpField& warp_field,
  * \param voxel_center
  *
  */
-std::vector<float> kfusion::cuda::TsdfVolume::psdf(const std::vector<Vec3f>& warped,
+std::vector<float> cv::kfusion::cuda::TsdfVolume::psdf(const std::vector<Vec3f>& warped,
                                                    Dists& dists,
                                                    const Intr& intr)
 {
@@ -303,7 +303,7 @@ std::vector<float> kfusion::cuda::TsdfVolume::psdf(const std::vector<Vec3f>& war
  * \param k
  * \return
  */
-float kfusion::cuda::TsdfVolume::weighting(const std::vector<float>& dist_sqr, int k) const
+float cv::kfusion::cuda::TsdfVolume::weighting(const std::vector<float>& dist_sqr, int k) const
 {
     float distances = 0;
     for(auto distance : dist_sqr)
@@ -316,14 +316,14 @@ float kfusion::cuda::TsdfVolume::weighting(const std::vector<float>& dist_sqr, i
  * \param k
  * \return
  */
-void kfusion::cuda::TsdfVolume::compute_points()
+void cv::kfusion::cuda::TsdfVolume::compute_points()
 {
     *cloud = fetchCloud(*cloud_buffer);
     *cloud_host = cv::Mat(1, (int)cloud->size(), CV_32FC4);
     cloud->download(cloud_host->ptr<Point>());
 }
 
-void kfusion::cuda::TsdfVolume::compute_normals()
+void cv::kfusion::cuda::TsdfVolume::compute_normals()
 {
     fetchNormals(*cloud, *normal_buffer);
     *normal_host = cv::Mat(1, (int)cloud->size(), CV_32FC4);
