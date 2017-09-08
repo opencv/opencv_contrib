@@ -63,7 +63,7 @@
     typedef std::map<long long /* hash */, int /* vert id */>  mapId;
 #else
     #include <boost/unordered_map.hpp>
-    typedef mapId<long long /* hash */, int /* vert id */>  mapId;
+    typedef boost::unordered_map<long long /* hash */, int /* vert id */>  mapId;
 #endif
 
 namespace cv

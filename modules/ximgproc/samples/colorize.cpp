@@ -263,13 +263,15 @@ void drawTrajectoryByReference(cv::Mat& img)
 
     if(mouseY < PALLET_RADIUS*2 && img.cols <= mouseX && mouseX < img.cols+PALLET_RADIUS*2)
     {
-        colorPix = mat_pallet.ptr<uchar>(mouseY, mouseX);
+        colorPix = mat_pallet.ptr<uchar>(mouseY, mouseX - img.cols);
+        // colorPix = mat_pallet.ptr<uchar>(mouseY, mouseX);
         selected_b = *colorPix;
         colorPix++;
         selected_g = *colorPix;
         colorPix++;
         selected_r = *colorPix;
         colorPix++;
+        std::cout << "x y:("<<mouseX<<"," <<mouseY<< " rgb_select:("<< selected_r<<","<<selected_g<<","<<selected_b<<")" << '\n';
     }
     else
     {
