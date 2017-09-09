@@ -15,8 +15,10 @@ using namespace cv;
 
 #ifdef HAVE_EIGEN
 
-#define MARK_RADIUS 10
+#define MARK_RADIUS 5
 #define PALLET_RADIUS 100
+int max_width = 1280;
+int max_height = 720;
 
 static int globalMouseX;
 static int globalMouseY;
@@ -88,6 +90,21 @@ int main(int argc, char* argv[])
 
     mat_input_reference = cv::imread(img,1);
     mat_input_gray = cv::imread(img,0);
+
+    if(mat_input_gray.cols > max_width)
+    {
+        double scale = float(max_width) / float(mat_input_gray.cols);
+        cv::resize(mat_input_reference, mat_input_reference, cv::Size(), scale, scale);
+        cv::resize(mat_input_gray, mat_input_gray, cv::Size(), scale, scale);
+    }
+
+    if(mat_input_gray.rows > max_height)
+    {
+        double scale = float(max_height) / float(mat_input_gray.rows);
+        cv::resize(mat_input_reference, mat_input_reference, cv::Size(), scale, scale);
+        cv::resize(mat_input_gray, mat_input_gray, cv::Size(), scale, scale);
+    }
+
     cv::Mat target;
 
     float filtering_time;
