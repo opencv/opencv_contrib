@@ -1,5 +1,5 @@
-#include "precomp.hpp"
-#include "internal.hpp"
+#include <opencv2/dynamicfusion/cuda/precomp.hpp>
+#include <opencv2/dynamicfusion/cuda/internal.hpp>
 using namespace cv;
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 /// Kinfu/types implementation

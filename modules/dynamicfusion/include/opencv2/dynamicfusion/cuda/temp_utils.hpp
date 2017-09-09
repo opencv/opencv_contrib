@@ -1,7 +1,7 @@
 #pragma once
 
 #include "cuda.h"
-#include <opencv2/kfusion/cuda/kernel_containers.hpp>
+#include "kernel_containers.hpp"
 
 namespace kfusion
 {

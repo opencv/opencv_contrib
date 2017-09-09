@@ -1,5 +1,5 @@
-#include "device.hpp"
-#include "texture_binder.hpp"
+#include <opencv2/dynamicfusion/cuda/device.hpp>
+#include <opencv2/dynamicfusion/cuda/texture_binder.hpp>
 
 
 namespace kfusion

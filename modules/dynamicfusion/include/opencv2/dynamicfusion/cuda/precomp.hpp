@@ -1,10 +1,10 @@
 #pragma once
 
-#include <opencv2/kfusion/types.hpp>
-#include <opencv2/kfusion/kinfu.hpp>
-#include <opencv2/kfusion/cuda/tsdf_volume.hpp>
-#include <opencv2/kfusion/cuda/imgproc.hpp>
-#include <opencv2/kfusion/cuda/projective_icp.hpp>
+#include <opencv2/dynamicfusion/types.hpp>
+#include <opencv2/dynamicfusion/kinfu.hpp>
+#include "tsdf_volume.hpp"
+#include "imgproc.hpp"
+#include "projective_icp.hpp"
 #include "internal.hpp"
 #include <iostream>
 #include "vector_functions.h"

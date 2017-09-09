@@ -1,6 +1,6 @@
 #pragma once
 
-#include <opencv2/kfusion/cuda/device_array.hpp>
+#include "device_array.hpp"
 #include "safe_call.hpp"
 //#define USE_DEPTH
 namespace cv {

@@ -1,5 +1,5 @@
-#include <opencv2/kfusion/kinfu.hpp>
-#include "safe_call.hpp"
+#include <opencv2/dynamicfusion/kinfu.hpp>
+#include <opencv2/dynamicfusion/cuda/safe_call.hpp>
 
 #include <cuda.h>
 #include <cstdio>

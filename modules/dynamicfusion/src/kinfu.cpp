@@ -1,16 +1,13 @@
-#include "precomp.hpp"
-#include "internal.hpp"
+#include <opencv2/dynamicfusion/cuda/precomp.hpp>
+#include <opencv2/dynamicfusion/cuda/internal.hpp>
 #include <tgmath.h>
-#include <opencv2/utils/dual_quaternion.hpp>
+#include <opencv2/dynamicfusion/utils/dual_quaternion.hpp>
 #include <nanoflann/nanoflann.hpp>
-#include <opencv2/utils/quaternion.hpp>
-#include <opencv2/utils/knn_point_cloud.hpp>
-#include <opencv2/kfusion/warp_field.hpp>
-#include <opencv2/kfusion/cuda/tsdf_volume.hpp>
-#include <opencv2/viz/vizcore.hpp>
-
-using namespace std;
-using namespace cv;
+#include <opencv2/dynamicfusion/utils/quaternion.hpp>
+#include <opencv2/dynamicfusion/utils/knn_point_cloud.hpp>
+#include <opencv2/dynamicfusion/warp_field.hpp>
+#include <opencv2/dynamicfusion/cuda/tsdf_volume.hpp>
+#include <opencv2/dynamicfusion/kinfu.hpp>
 static inline float deg2rad (float alpha) { return alpha * 0.017453293f; }
 
 /**
@@ -194,7 +191,7 @@ void cv::kfusion::KinFu::allocate_buffers()
 void cv::kfusion::KinFu::reset()
 {
     if (frame_counter_)
-        cout << "Reset" << endl;
+        std::cout << "Reset" << std::endl;
 
     frame_counter_ = 0;
     poses_.clear();
@@ -393,13 +390,8 @@ void cv::kfusion::KinFu::dynamicfusion(cv::kfusion::cuda::Depth& depth, cv::kfus
 
 //    getWarp().warp(warped, warped_normals);
 //    //ScopeTime time("fusion");
-    tsdf().surface_fusion(getWarp(), warped, canonical_visible, depth, camera_pose, params_.intr);
+    tsdf().surface_fusion(*warp_, warped, canonical_visible, depth, camera_pose, params_.intr);
 
-    cv::Mat depth_cloud(depth.rows(),depth.cols(), CV_16U);
-    depth.download(depth_cloud.ptr<void>(), depth_cloud.step);
-    cv::Mat display;
-    depth_cloud.convertTo(display, CV_8U, 255.0/4000);
-    cv::viz::imshow("Depth diff", display);
     volume_->compute_points();
     volume_->compute_normals();
 }

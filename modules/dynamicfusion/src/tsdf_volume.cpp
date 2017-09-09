@@ -1,9 +1,9 @@
-#include <opencv2/utils/dual_quaternion.hpp>
-#include <opencv2/kfusion/warp_field.hpp>
-#include <opencv2/utils/knn_point_cloud.hpp>
+#include <opencv2/dynamicfusion/utils/dual_quaternion.hpp>
+#include <opencv2/dynamicfusion/warp_field.hpp>
+#include <opencv2/dynamicfusion/utils/knn_point_cloud.hpp>
 #include <opencv2/viz/vizcore.hpp>
 #include <numeric>
-#include "precomp.hpp"
+#include <opencv2/dynamicfusion/cuda/precomp.hpp>
 #include <algorithm>
 using namespace cv::kfusion;
 using namespace cv::kfusion::cuda;

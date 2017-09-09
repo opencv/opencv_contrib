@@ -1,7 +1,7 @@
 #ifndef KFUSION_KNN_POINfloat_CLOUD_HPP
 #define KFUSION_KNN_POINfloat_CLOUD_HPP
 
-#include <opencv2/kfusion/types.hpp>
+#include <opencv2/dynamicfusion/types.hpp>
 namespace cv
 {
     namespace kfusion

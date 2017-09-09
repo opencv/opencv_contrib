@@ -13,7 +13,8 @@
 //__kf_device__
 //kfusion::device::TsdfVolume::TsdfVolume(const TsdfVolume& other)
 //  : data(other.data), dims(other.dims), voxel_size(other.voxel_size), trunc_dist(other.trunc_dist), max_weight(other.max_weight) {}
-
+namespace cv
+{
 __kf_device__ kfusion::device::TsdfVolume::elem_type* kfusion::device::TsdfVolume::operator()(int x, int y, int z)
 { return data + x + y*dims.x + z*dims.y*dims.x; }
 
@@ -120,8 +121,4 @@ namespace kfusion
     template<> __kf_device__ void kfusion::device::gmem::StCs(const ushort2& val, ushort2* ptr) { *ptr = val; }
 #endif
 
-
-
-
-
-
+}
