@@ -1,5 +1,5 @@
-#include "precomp.hpp"
-#include <opencv2/kfusion/types.hpp>
+#include <opencv2/dynamicfusion/cuda/precomp.hpp>
+#include <opencv2/dynamicfusion/types.hpp>
 using namespace cv;
 /**
  *

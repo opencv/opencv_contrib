@@ -5,11 +5,11 @@
  * \brief
  * \details
  */
-#include <opencv2/utils/dual_quaternion.hpp>
-#include <opencv2/kfusion/types.hpp>
+#include <opencv2/dynamicfusion/utils/dual_quaternion.hpp>
+#include <opencv2/dynamicfusion/types.hpp>
 #include <nanoflann/nanoflann.hpp>
-#include <opencv2/utils/knn_point_cloud.hpp>
-#include <opencv2/kfusion/cuda/tsdf_volume.hpp>
+#include <opencv2/dynamicfusion/utils/knn_point_cloud.hpp>
+#include <opencv2/dynamicfusion/cuda/tsdf_volume.hpp>
 #define KNN_NEIGHBOURS 8
 
 namespace cv

@@ -2,7 +2,7 @@
 #include <opencv2/highgui/highgui_c.h>
 #include <opencv2/highgui.hpp>
 #include <opencv2/dynamicfusion.hpp>
-
+#include <opencv2/dynamicfusion/cuda/device_array.hpp>
 using namespace cv;
 struct DynamicFusionApp
 {

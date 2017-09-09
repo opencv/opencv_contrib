@@ -2,7 +2,7 @@
 #define DYNAMIC_FUSION_QUATERNION_HPP
 #pragma once
 #include <iostream>
-#include <opencv2/kfusion/types.hpp>
+#include <opencv2/dynamicfusion/types.hpp>
 //Adapted from https://github.com/Poofjunior/QPose
 namespace cv
 {

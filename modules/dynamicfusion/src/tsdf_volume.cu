@@ -1,7 +1,7 @@
 #include <vector_functions.h>
-#include "device.hpp"
-#include "texture_binder.hpp"
-#include "../internal.hpp"
+#include <opencv2/dynamicfusion/cuda/device.hpp>
+#include <opencv2/dynamicfusion/cuda/texture_binder.hpp>
+#include <opencv2/dynamicfusion/cuda/internal.hpp>
 #include "math_constants.h"
 using namespace kfusion::device;
 

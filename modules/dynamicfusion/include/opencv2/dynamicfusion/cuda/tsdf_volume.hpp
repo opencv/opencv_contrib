@@ -1,7 +1,7 @@
 #pragma once
 
-#include <opencv2/kfusion/types.hpp>
-#include <opencv2/utils/dual_quaternion.hpp>
+#include <opencv2/dynamicfusion/types.hpp>
+#include <opencv2/dynamicfusion/utils/dual_quaternion.hpp>
 
 namespace cv
 {
@@ -10,7 +10,7 @@ namespace cv
         class WarpField;
         namespace cuda
         {
-            class KF_EXPORTS TsdfVolume
+            class TsdfVolume
             {
                 public:
                 TsdfVolume(const cv::Vec3i& dims);

@@ -1,11 +1,11 @@
-#include <opencv2/utils/dual_quaternion.hpp>
-#include <opencv2/utils/knn_point_cloud.hpp>
-#include <opencv2/kfusion/types.hpp>
 #include <nanoflann/nanoflann.hpp>
-#include <opencv2/kfusion/warp_field.hpp>
-#include "internal.hpp"
-#include "precomp.hpp"
-#include <opencv2/kfusion/optimisation.hpp>
+#include <opencv2/dynamicfusion/utils/dual_quaternion.hpp>
+#include <opencv2/dynamicfusion/utils/knn_point_cloud.hpp>
+#include <opencv2/dynamicfusion/types.hpp>
+#include <opencv2/dynamicfusion/warp_field.hpp>
+#include <opencv2/dynamicfusion/cuda/internal.hpp>
+#include <opencv2/dynamicfusion/cuda/precomp.hpp>
+#include <opencv2/dynamicfusion/optimisation.hpp>
 
 using namespace cv::kfusion;
 using namespace cv;

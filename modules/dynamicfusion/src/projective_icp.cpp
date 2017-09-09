@@ -1,4 +1,4 @@
-#include "precomp.hpp"
+#include <opencv2/dynamicfusion/cuda/precomp.hpp>
 
 
 using namespace cv::kfusion;

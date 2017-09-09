@@ -2,7 +2,7 @@
 #define KFUSION_OPTIMISATION_H
 #include "ceres/ceres.h"
 #include "ceres/rotation.h"
-#include <opencv2/kfusion/warp_field.hpp>
+#include <opencv2/dynamicfusion/warp_field.hpp>
 
 namespace cv
 {

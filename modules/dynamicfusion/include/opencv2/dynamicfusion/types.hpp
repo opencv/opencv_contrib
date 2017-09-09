@@ -1,6 +1,6 @@
 #pragma once
 
-#include <opencv2/kfusion/cuda/device_array.hpp>
+#include <opencv2/dynamicfusion/cuda/device_array.hpp>
 #include <opencv2/viz/vizcore.hpp>
 #include <iosfwd>
 
@@ -17,7 +17,7 @@ namespace cv
         typedef cv::Vec3i Vec3i;
         typedef cv::Affine3f Affine3f;
 
-        struct KF_EXPORTS Intr
+        struct  Intr
                 {
                         float fx, fy, cx, cy;
 
@@ -26,7 +26,7 @@ namespace cv
                 Intr operator()(int level_index) const;
                 };
 
-        KF_EXPORTS std::ostream& operator << (std::ostream& os, const Intr& intr);
+         std::ostream& operator << (std::ostream& os, const Intr& intr);
 
         struct Point
         {
@@ -74,7 +74,7 @@ namespace cv
 
         inline float deg2rad (float alpha) { return alpha * 0.017453293f; }
 
-        struct KF_EXPORTS ScopeTime
+        struct  ScopeTime
                 {
                         const char* name;
                         double start;
@@ -82,7 +82,7 @@ namespace cv
                         ~ScopeTime();
                 };
 
-        struct KF_EXPORTS SampledScopeTime
+        struct  SampledScopeTime
                 {
                         public:
                         enum { EACH = 33 };

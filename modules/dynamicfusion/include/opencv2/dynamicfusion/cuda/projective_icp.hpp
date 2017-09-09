@@ -1,6 +1,6 @@
 #pragma once
 
-#include <opencv2/kfusion/types.hpp>
+#include <opencv2/dynamicfusion/types.hpp>
 
 namespace cv
 {

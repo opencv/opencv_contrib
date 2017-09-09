@@ -1,7 +1,7 @@
 #pragma once
 
-#include <opencv2/kfusion/exports.hpp>
-#include <opencv2/kfusion/cuda/kernel_containers.hpp>
+
+#include "kernel_containers.hpp"
 
 namespace cv
 {
@@ -10,7 +10,7 @@ namespace cv
         namespace cuda
         {
             /** \brief Error handler. All GPU functions from this subsystem call the function to report an error. For internal use only */
-            KF_EXPORTS void error(const char *error_string, const char *file, const int line, const char *func = "");
+             void error(const char *error_string, const char *file, const int line, const char *func = "");
 
             //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
             /** \brief @b DeviceMemory class
@@ -20,7 +20,7 @@ namespace cv
               * \author Anatoly Baksheev
               */
 
-            class KF_EXPORTS DeviceMemory
+            class  DeviceMemory
                     {
                             public:
                             /** \brief Empty constructor. */
@@ -108,7 +108,7 @@ namespace cv
               * \author Anatoly Baksheev
               */
 
-            class KF_EXPORTS DeviceMemory2D
+            class  DeviceMemory2D
                     {
                             public:
                             /** \brief Empty constructor. */
@@ -224,37 +224,54 @@ namespace cv
     }
 }
 /////////////////////  Inline implementations of DeviceMemory ////////////////////////////////////////////
-
-template<class T> inline       T* cv::kfusion::cuda::DeviceMemory::ptr()       { return (      T*)data_; }
-template<class T> inline const T* cv::kfusion::cuda::DeviceMemory::ptr() const { return (const T*)data_; }
-
-template <class U> inline cv::kfusion::cuda::DeviceMemory::operator cv::kfusion::cuda::PtrSz<U>() const
+namespace cv
 {
-    PtrSz<U> result;
-    result.data = (U*)ptr<U>();
-    result.size = sizeBytes_/sizeof(U);
-    return result;
-}
+    namespace kfusion
+    {
+        namespace cuda
+        {
+
+            template<class T>
+            inline T *DeviceMemory::ptr() { return (T *) data_; }
+
+            template<class T>
+            inline const T *DeviceMemory::ptr() const { return (const T *) data_; }
+
+            template<class U>
+            inline DeviceMemory::operator PtrSz<U>() const {
+                PtrSz <U> result;
+                result.data = (U *) ptr<U>();
+                result.size = sizeBytes_ / sizeof(U);
+                return result;
+            }
 
 /////////////////////  Inline implementations of DeviceMemory2D ////////////////////////////////////////////
 
-template<class T>        T* cv::kfusion::cuda::DeviceMemory2D::ptr(int y_arg)       { return (      T*)((      char*)data_ + y_arg * step_); }
-template<class T>  const T* cv::kfusion::cuda::DeviceMemory2D::ptr(int y_arg) const { return (const T*)((const char*)data_ + y_arg * step_); }
+            template<class T>
+            T *DeviceMemory2D::ptr(int y_arg) { return (T *) ((char *) data_ + y_arg * step_); }
 
-template <class U> cv::kfusion::cuda::DeviceMemory2D::operator cv::kfusion::cuda::PtrStep<U>() const
-{
-    PtrStep<U> result;
-    result.data = (U*)ptr<U>();
-    result.step = step_;
-    return result;
-}
+            template<class T>
+            const T *DeviceMemory2D::ptr(int y_arg) const {
+                return (const T *) ((const char *) data_ + y_arg * step_);
+            }
 
-template <class U> cv::kfusion::cuda::DeviceMemory2D::operator cv::kfusion::cuda::PtrStepSz<U>() const
-{
-    PtrStepSz<U> result;
-    result.data = (U*)ptr<U>();
-    result.step = step_;
-    result.cols = colsBytes_/sizeof(U);
-    result.rows = rows_;
-    return result;
+            template<class U>
+            DeviceMemory2D::operator PtrStep<U>() const {
+                PtrStep <U> result;
+                result.data = (U *) ptr<U>();
+                result.step = step_;
+                return result;
+            }
+
+            template<class U>
+            DeviceMemory2D::operator PtrStepSz<U>() const {
+                PtrStepSz <U> result;
+                result.data = (U *) ptr<U>();
+                result.step = step_;
+                result.cols = colsBytes_ / sizeof(U);
+                result.rows = rows_;
+                return result;
+            }
+        }
+    }
 }

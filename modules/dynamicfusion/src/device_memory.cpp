@@ -1,5 +1,5 @@
-#include <opencv2/kfusion/cuda/device_memory.hpp>
-#include "safe_call.hpp"
+#include <opencv2/dynamicfusion/cuda/device_memory.hpp>
+#include <opencv2/dynamicfusion/cuda/safe_call.hpp>
 #include <cassert>
 #include <iostream>
 #include <cstdlib>
