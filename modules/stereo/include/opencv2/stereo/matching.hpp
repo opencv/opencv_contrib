@@ -44,11 +44,11 @@
 *   The interface contains the main methods for computing the matching between the left and right images	      *
 *                                                                                                                 *
 \******************************************************************************************************************/
-#include <stdint.h>
-
 #ifndef _OPENCV_MATCHING_HPP_
 #define _OPENCV_MATCHING_HPP_
-#ifdef __cplusplus
+
+#include <stdint.h>
+#include "opencv2/core.hpp"
 
 namespace cv
 {
@@ -423,7 +423,6 @@ namespace cv
             //preprocessing the cost volume in order to get it ready for aggregation
             void costGathering(const Mat &hammingDistanceCost, Mat &cost)
             {
-                CV_Assert(hammingDistanceCost.rows == hammingDistanceCost.rows);
                 CV_Assert(hammingDistanceCost.type() == CV_16S);
                 CV_Assert(cost.type() == CV_16S);
                 int maxDisp = maxDisparity;
@@ -619,6 +618,5 @@ namespace cv
         };
     }
 }
-#endif
 #endif
 /*End of file*/
