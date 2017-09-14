@@ -459,7 +459,7 @@ void CV_DescriptorBaseTest::run(int )
     }
 }
 
-TEST(census_transform_testing, accuracy) { CV_CensusTransformTest test; test.safe_run(); }
-TEST(symetric_census_testing, accuracy) { CV_SymetricCensusTest test; test.safe_run(); }
-TEST(modified_census_testing, accuracy) { CV_ModifiedCensusTransformTest test; test.safe_run(); }
-TEST(star_kernel_testing, accuracy) { CV_StarKernelCensusTest test; test.safe_run(); }
+TEST(DISABLED_census_transform_testing, accuracy) { CV_CensusTransformTest test; test.safe_run(); }
+TEST(DISABLED_symetric_census_testing, accuracy) { CV_SymetricCensusTest test; test.safe_run(); }
+TEST(DISABLED_Dmodified_census_testing, accuracy) { CV_ModifiedCensusTransformTest test; test.safe_run(); }
+TEST(DISABLED_Dstar_kernel_testing, accuracy) { CV_StarKernelCensusTest test; test.safe_run(); }
