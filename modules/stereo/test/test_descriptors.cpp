@@ -115,12 +115,8 @@ CV_DescriptorBaseTest::~CV_DescriptorBaseTest()
 CV_DescriptorBaseTest::CV_DescriptorBaseTest()
 {
     //read 2 images from file
-    //some test images can be found in the test data folder
-    //in order for the tests to build succesfully please replace
-    //ts->get_data_path() + "testdata/imL2l.bmp with the path from your disk
-    //for example if your images are on D:\\ , please write D:\\testdata\\imL2l.bmp
-    left = imread(ts->get_data_path() + "testdata/imL2l.bmp", CV_8UC1);
-    right = imread(ts->get_data_path() + "testdata/imL2.bmp", CV_8UC1);
+    left = imread(ts->get_data_path() + "stereomatching/datasets/tsukuba/im2.png", IMREAD_GRAYSCALE);
+    right = imread(ts->get_data_path() + "stereomatching/datasets/tsukuba/im6.png", IMREAD_GRAYSCALE);
 
     if(left.empty() || right.empty())
     {
