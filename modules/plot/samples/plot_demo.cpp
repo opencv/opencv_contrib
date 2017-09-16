@@ -4,7 +4,7 @@
 
 using namespace cv;
 
-int main(int argc, char** argv)
+int main()
 {
     Mat data_x(1, 50, CV_64F);
     Mat data_y(1, 50, CV_64F);
