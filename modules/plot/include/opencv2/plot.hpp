@@ -99,6 +99,7 @@ namespace cv
              * @brief Creates Plot2d object
              *
              * @param data \f$1xN\f$ or \f$Nx1\f$ matrix containing \f$Y\f$ values of points to plot. \f$X\f$ values
+             * @param _invertOrientation
              * will be equal to indexes of correspondind elements in data matrix.
              */
             CV_WRAP static Ptr<Plot2d> create(InputArray data, bool _invertOrientation=false);
@@ -108,6 +109,7 @@ namespace cv
              *
              * @param dataX \f$1xN\f$ or \f$Nx1\f$ matrix \f$X\f$ values of points to plot.
              * @param dataY \f$1xN\f$ or \f$Nx1\f$ matrix containing \f$Y\f$ values of points to plot.
+             * @param invertOrientation
              */
             CV_WRAP static Ptr<Plot2d> create(InputArray dataX, InputArray dataY, bool _invertOrientation=false);
         };
