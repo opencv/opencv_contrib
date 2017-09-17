@@ -376,7 +376,7 @@ Ptr<DeepCNNTextDetector> DeepCNNTextDetector::create(String archFilename,String 
         return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorCaffeImpl(archFilename, weightsFilename,preprocessor, minibatchSz));
 
 #elif defined(HAVE_DNN)
-        return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorDNNImpl(archFilename, weightsFilename,preprocessor, minibatchSz));
+        return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorDNNImpl(archFilename, weightsFilename,preprocessor, minibatchSz,700,700,3));
 #else
         CV_Error(Error::StsError,"DeepCNNTextDetector::create backend not implemented");
         return Ptr<DeepCNNTextDetector>();
@@ -387,7 +387,7 @@ Ptr<DeepCNNTextDetector> DeepCNNTextDetector::create(String archFilename,String 
         break;
 
     case OCR_HOLISTIC_BACKEND_DNN:
-        return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorDNNImpl(archFilename, weightsFilename,preprocessor, minibatchSz));
+        return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorDNNImpl(archFilename, weightsFilename,preprocessor, minibatchSz,700,700,3));
         break;
 
     case OCR_HOLISTIC_BACKEND_NONE:
@@ -420,7 +420,7 @@ Ptr<DeepCNNTextDetector> DeepCNNTextDetector::createTextBoxNet(String archFilena
         return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorCaffeImpl(archFilename, weightsFilename,preprocessor, 1));
 
 #elif defined(HAVE_DNN)
-        return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorDNNImpl(archFilename, weightsFilename,preprocessor, 1));
+        return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorDNNImpl(archFilename, weightsFilename,preprocessor, 1,700,700,3));
 #else
         CV_Error(Error::StsError,"DeepCNNTextDetector::create backend not implemented");
         return Ptr<DeepCNNTextDetector>();
@@ -430,7 +430,7 @@ Ptr<DeepCNNTextDetector> DeepCNNTextDetector::createTextBoxNet(String archFilena
         return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorCaffeImpl(archFilename, weightsFilename,preprocessor, 1));
         break;
     case OCR_HOLISTIC_BACKEND_DNN:
-         return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorDNNImpl(archFilename, weightsFilename,preprocessor, 1));
+         return Ptr<DeepCNNTextDetector>(new DeepCNNTextDetectorDNNImpl(archFilename, weightsFilename,preprocessor, 1,700,700,3));
          break;
     case OCR_HOLISTIC_BACKEND_NONE:
     default:

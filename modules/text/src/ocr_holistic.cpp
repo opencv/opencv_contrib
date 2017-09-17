@@ -271,9 +271,9 @@ protected:
     //Size outputGeometry_;//= Size(1,1);
     //int channelCount_;
    // int inputChannel_ ;//=1;
-    int _inputHeight;
-    int _inputWidth ;
-    int _inputChannel ;
+  //  int _inputHeight;
+    //int _inputWidth ;
+    //int _inputChannel ;
 public:
     DeepCNNOpenCvDNNImpl(const DeepCNNOpenCvDNNImpl& dn):
         minibatchSz_(dn.minibatchSz_),outputSize_(dn.outputSize_){
@@ -300,8 +300,8 @@ public:
         //Implemented to supress Visual Studio warning "assignment operator could not be generated"
     }
 
-    DeepCNNOpenCvDNNImpl(String modelArchFilename, String modelWeightsFilename,Ptr<ImagePreprocessor> preprocessor, int maxMinibatchSz,int inputWidth =100,int inputHeight = 32,int inputChannel =1)
-        :minibatchSz_(maxMinibatchSz),_inputWidth(inputWidth),_inputHeight(inputHeight),_inputChannel(inputChannel)
+    DeepCNNOpenCvDNNImpl(String modelArchFilename, String modelWeightsFilename,Ptr<ImagePreprocessor> preprocessor, int maxMinibatchSz,int inputWidth ,int inputHeight ,int inputChannel )
+        :minibatchSz_(maxMinibatchSz)
     {
 
         CV_Assert(this->minibatchSz_>0);
@@ -326,8 +326,8 @@ public:
         }
 
 
-        this->inputGeometry_=Size(_inputWidth,_inputHeight);// Size(inputLayer->width(), inputLayer->height());
-        this->channelCount_ = _inputChannel;//inputLayer->channels();
+        this->inputGeometry_=Size(inputWidth,inputHeight);// Size(inputLayer->width(), inputLayer->height());
+        this->channelCount_ = inputChannel;//inputLayer->channels();
 
         //inputLayer->Reshape(this->minibatchSz_,this->channelCount_,this->inputGeometry_.height, this->inputGeometry_.width);
         Ptr< Layer > outLayer=	net_->getLayer (net_->getLayerId (net_->getLayerNames()[net_->getLayerNames().size()-2]));
@@ -408,7 +408,7 @@ Ptr<DeepCNN> DeepCNN::create(String archFilename,String weightsFilename,Ptr<Imag
         return Ptr<DeepCNN>(new DeepCNNCaffeImpl(archFilename, weightsFilename,preprocessor, minibatchSz));
 
 #elif defined(HAVE_DNN)
-        return Ptr<DeepCNN>(new DeepCNNOpenCvDNNImpl(archFilename, weightsFilename,preprocessor, minibatchSz));
+        return Ptr<DeepCNN>(new DeepCNNOpenCvDNNImpl(archFilename, weightsFilename,preprocessor, minibatchSz,100,32,1));
 #else
         CV_Error(Error::StsError,"DeepCNN::create backend not implemented");
         return Ptr<DeepCNN>();
@@ -419,7 +419,7 @@ Ptr<DeepCNN> DeepCNN::create(String archFilename,String weightsFilename,Ptr<Imag
         return Ptr<DeepCNN>(new DeepCNNCaffeImpl(archFilename, weightsFilename,preprocessor, minibatchSz));
         break;
   case OCR_HOLISTIC_BACKEND_DNN:
-        return Ptr<DeepCNN>(new DeepCNNOpenCvDNNImpl(archFilename, weightsFilename,preprocessor, minibatchSz));
+        return Ptr<DeepCNN>(new DeepCNNOpenCvDNNImpl(archFilename, weightsFilename,preprocessor, minibatchSz,100,32,1));
         break;
     case OCR_HOLISTIC_BACKEND_NONE:
     default:
@@ -440,7 +440,7 @@ Ptr<DeepCNN> DeepCNN::createDictNet(String archFilename,String weightsFilename,i
         return Ptr<DeepCNN>(new DeepCNNCaffeImpl(archFilename, weightsFilename,preprocessor, 100));
 
 #elif defined(HAVE_DNN)
-        return Ptr<DeepCNN>(new DeepCNNOpenCvDNNImpl(archFilename, weightsFilename,preprocessor, 100));
+        return Ptr<DeepCNN>(new DeepCNNOpenCvDNNImpl(archFilename, weightsFilename,preprocessor, 100,100,32,1));
 #else
         CV_Error(Error::StsError,"DeepCNN::create backend not implemented");
         return Ptr<DeepCNN>();
@@ -451,7 +451,7 @@ Ptr<DeepCNN> DeepCNN::createDictNet(String archFilename,String weightsFilename,i
         return Ptr<DeepCNN>(new DeepCNNCaffeImpl(archFilename, weightsFilename,preprocessor, 100));
         break;
    case OCR_HOLISTIC_BACKEND_DNN:
-        return Ptr<DeepCNN>(new DeepCNNOpenCvDNNImpl(archFilename, weightsFilename,preprocessor, 100));
+        return Ptr<DeepCNN>(new DeepCNNOpenCvDNNImpl(archFilename, weightsFilename,preprocessor, 100,100,32,1));
         break;
     case OCR_HOLISTIC_BACKEND_NONE:
     default:
