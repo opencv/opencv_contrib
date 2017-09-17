@@ -220,10 +220,10 @@ int main(int argc, char* argv[])
 		 */
 		if (useLogSampling)
 		{
-			retina = cv::bioinspired::createRetina(inputImage.size(),true, cv::bioinspired::RETINA_COLOR_BAYER, true, 2.0, 10.0);
+            retina = cv::bioinspired::Retina::create(inputImage.size(),true, cv::bioinspired::RETINA_COLOR_BAYER, true, 2.0, 10.0);
 		}
 		else// -> else allocate "classical" retina :
-			retina = cv::bioinspired::createRetina(inputImage.size());
+            retina = cv::bioinspired::Retina::create(inputImage.size());
 
 		// create a fast retina tone mapper (Meyla&al algorithm)
 		std::cout<<"Allocating fast tone mapper..."<<std::endl;

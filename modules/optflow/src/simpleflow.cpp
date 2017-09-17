@@ -131,7 +131,7 @@ public:
             flag(flag_),
             spaceWeights(spaceWeights_),
             expLut(expLut_) {
-      CV_DbgAssert(joint.type() == JointVec::type && confidence.type() == CV_32F && src.type() == dst.type() && src.type() == SrcVec::type);
+      CV_DbgAssert(joint.type() == traits::Type<JointVec>::value && confidence.type() == CV_32F && src.type() == dst.type() && src.type() == traits::Type<SrcVec>::value);
       CV_DbgAssert(joint.rows == src.rows && confidence.rows == src.rows && src.rows == dst.rows + 2 * radius);
       CV_DbgAssert(joint.cols == src.cols && confidence.cols == src.cols && src.cols == dst.cols + 2 * radius);
     }

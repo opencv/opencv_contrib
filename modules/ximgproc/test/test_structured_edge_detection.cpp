@@ -22,9 +22,9 @@ TEST(ximpgroc_StructuredEdgeDetection, regression)
 
         cv::String previousResultName = dir + cv::format( "results/%02d.png", i + 1 );
         cv::Mat previousResult = cv::imread( previousResultName, 0 );
-        previousResult.convertTo( previousResult, cv::DataType<float>::type, 1/255.0 );
+        previousResult.convertTo( previousResult, CV_32F, 1/255.0 );
 
-        src.convertTo( src, cv::DataType<float>::type, 1/255.0 );
+        src.convertTo( src, CV_32F, 1/255.0 );
 
         cv::Mat currentResult( src.size(), src.type() );
         pDollar->detectEdges( src, currentResult );

@@ -76,7 +76,7 @@ OCL_TEST_P(Retina_OCL, Accuracy)
     Mat input = imread(cvtest::TS::ptr()->get_data_path() + "shared/lena.png", colorMode);
     CV_Assert(!input.empty());
 
-    Ptr<bioinspired::Retina> retina = bioinspired::createRetina(
+    Ptr<bioinspired::Retina> retina = bioinspired::Retina::create(
         input.size(),
         colorMode,
         colorSamplingMethod,

@@ -56,7 +56,7 @@ public:
     // Generate sinusoidal patterns
     bool generate( OutputArrayOfArrays patternImages );
 
-    bool decode( InputArrayOfArrays patternImages, OutputArray disparityMap,
+    bool decode( const std::vector< std::vector<Mat> >& patternImages, OutputArray disparityMap,
                 InputArrayOfArrays blackImages = noArray(), InputArrayOfArrays whiteImages =
                 noArray(), int flags = 0 ) const;
 
@@ -258,7 +258,7 @@ bool SinusoidalPatternProfilometry_Impl::generate( OutputArrayOfArrays pattern )
     return true;
 }
 
-bool SinusoidalPatternProfilometry_Impl::decode( InputArrayOfArrays patternImages,
+bool SinusoidalPatternProfilometry_Impl::decode(const std::vector< std::vector<Mat> >& patternImages,
                                                 OutputArray disparityMap,
                                                 InputArrayOfArrays blackImages,
                                                 InputArrayOfArrays whiteImages, int flags ) const
@@ -911,9 +911,9 @@ void SinusoidalPatternProfilometry_Impl::convertToAbsolutePhaseMap( InputArrayOf
     computeCorrespondEpilines(params.markersLocation, 2, fundamental, epilines);
 
 }
-Ptr<SinusoidalPattern> SinusoidalPattern::create( const SinusoidalPattern::Params &params )
+Ptr<SinusoidalPattern> SinusoidalPattern::create( Ptr<SinusoidalPattern::Params> params )
 {
-    return makePtr<SinusoidalPatternProfilometry_Impl>(params);
+    return makePtr<SinusoidalPatternProfilometry_Impl>(*params);
 }
 }
 }

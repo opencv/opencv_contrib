@@ -152,6 +152,7 @@ public:
 
     @param output_text Output text of the tesseract-ocr.
 
+
     @param component_rects If provided the method will output a list of Rects
     for the individual text elements found (e.g. words or text lines).
 
@@ -164,6 +165,8 @@ public:
     (e.g. words or text lines).
 
     @param component_level OCR_LEVEL_WORD (by default), or OCR_LEVEL_TEXT_LINE.
+
+    
      */
     using BaseOCR::run;
     virtual void run (Mat& image, std::string& output_text,

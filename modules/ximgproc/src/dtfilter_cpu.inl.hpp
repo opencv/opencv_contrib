@@ -69,7 +69,7 @@ DTFilterCPU* DTFilterCPU::create_p_(const Mat& guide, double sigmaSpatial, doubl
 template<typename GuideVec>
 void DTFilterCPU::init_(Mat& guide, double sigmaSpatial_, double sigmaColor_, int mode_, int numIters_)
 {
-    CV_Assert(guide.type() == cv::DataType<GuideVec>::type);
+    CV_Assert(guide.type() == traits::Type<GuideVec>::value);
 
     this->release();
 
@@ -123,7 +123,7 @@ template <typename SrcVec>
 void DTFilterCPU::filter_(const Mat& src, Mat& dst, int dDepth)
 {
     typedef typename DataType<Vec<WorkType, SrcVec::channels> >::vec_type WorkVec;
-    CV_Assert( src.type() == SrcVec::type );
+    CV_Assert( src.type() == traits::Type<SrcVec>::value );
     if ( src.cols != w || src.rows != h )
     {
         CV_Error(Error::StsBadSize, "Size of filtering image must be equal to size of guide image");
@@ -139,17 +139,17 @@ void DTFilterCPU::filter_(const Mat& src, Mat& dst, int dDepth)
     if (dDepth == -1) dDepth = src.depth();
     
     //small optimization to avoid extra copying of data
-    bool useDstAsRes = (dDepth == WorkVec::depth && (mode == DTF_NC || mode == DTF_RF));
+    bool useDstAsRes = (dDepth == traits::Depth<WorkVec>::value && (mode == DTF_NC || mode == DTF_RF));
     if (useDstAsRes)
     {
-        dst.create(h, w, WorkVec::type);
+        dst.create(h, w, traits::Type<WorkVec>::value);
         res = dst;
     }
 
     if (mode == DTF_NC)
     {
-        Mat resT(src.cols, src.rows, WorkVec::type);
-        src.convertTo(res, WorkVec::type);
+        Mat resT(src.cols, src.rows, traits::Type<WorkVec>::value);
+        src.convertTo(res, traits::Type<WorkVec>::value);
 
         FilterNC_horPass<WorkVec> horParBody(res, idistHor, resT);
         FilterNC_horPass<WorkVec> vertParBody(resT, idistVert, res);
@@ -180,7 +180,7 @@ void DTFilterCPU::filter_(const Mat& src, Mat& dst, int dDepth)
     }
     else if (mode == DTF_RF)
     {
-        src.convertTo(res, WorkVec::type);
+        src.convertTo(res, traits::Type<WorkVec>::value);
 
         for (int iter = 1; iter <= numIters; iter++)
         {
@@ -237,13 +237,13 @@ void DTFilterCPU::integrateSparseRow(const SrcVec *src, const float *dist, SrcWo
 template<typename WorkVec>
 void DTFilterCPU::prepareSrcImg_IC(const Mat& src, Mat& dst, Mat& dstT)
 {
-    Mat dstOut(src.rows, src.cols + 2, WorkVec::type);
-    Mat dstOutT(src.cols, src.rows + 2, WorkVec::type);
+    Mat dstOut(src.rows, src.cols + 2, traits::Type<WorkVec>::value);
+    Mat dstOutT(src.cols, src.rows + 2, traits::Type<WorkVec>::value);
 
     dst = dstOut(Range::all(), Range(1, src.cols+1));
     dstT = dstOutT(Range::all(), Range(1, src.rows+1));
 
-    src.convertTo(dst, WorkVec::type);
+    src.convertTo(dst, traits::Type<WorkVec>::value);
 
     WorkVec *line;
     int ri = dstOut.cols - 1;
@@ -270,7 +270,7 @@ template <typename WorkVec>
 DTFilterCPU::FilterNC_horPass<WorkVec>::FilterNC_horPass(Mat& src_, Mat& idist_, Mat& dst_)
 : src(src_), idist(idist_), dst(dst_), radius(1.0f)
 {
-    CV_DbgAssert(src.type() == WorkVec::type && dst.type() == WorkVec::type && dst.rows == src.cols && dst.cols == src.rows);
+    CV_DbgAssert(src.type() == traits::Type<WorkVec>::value && dst.type() == traits::Type<WorkVec>::value && dst.rows == src.cols && dst.cols == src.rows);
 }
 
 template <typename WorkVec>
@@ -324,12 +324,12 @@ template <typename WorkVec>
 DTFilterCPU::FilterIC_horPass<WorkVec>::FilterIC_horPass(Mat& src_, Mat& idist_, Mat& dist_, Mat& dst_)
 : src(src_), idist(idist_), dist(dist_), dst(dst_), radius(1.0f)
 {
-    CV_DbgAssert(src.type() == WorkVec::type && dst.type() == WorkVec::type && dst.rows == src.cols && dst.cols == src.rows);
+    CV_DbgAssert(src.type() == traits::Type<WorkVec>::value && dst.type() == traits::Type<WorkVec>::value && dst.rows == src.cols && dst.cols == src.rows);
 
     #ifdef CV_GET_NUM_THREAD_WORKS_PROPERLY
-    isrcBuf.create(cv::getNumThreads(), src.cols + 1, WorkVec::type);
+    isrcBuf.create(cv::getNumThreads(), src.cols + 1, traits::Type<WorkVec>::value);
     #else
-    isrcBuf.create(src.rows, src.cols + 1, WorkVec::type);
+    isrcBuf.create(src.rows, src.cols + 1, traits::Type<WorkVec>::value);
     #endif
 }
 
@@ -384,8 +384,8 @@ template <typename WorkVec>
 DTFilterCPU::FilterRF_horPass<WorkVec>::FilterRF_horPass(Mat& res_, Mat& alphaD_, int iteration_)
 : res(res_), alphaD(alphaD_), iteration(iteration_)
 {
-    CV_DbgAssert(res.type() == WorkVec::type);
-    CV_DbgAssert(res.type() == WorkVec::type && res.size() == res.size());
+    CV_DbgAssert(res.type() == traits::Type<WorkVec>::value);
+    CV_DbgAssert(res.type() == traits::Type<WorkVec>::value && res.size() == res.size());
 }
 
 
@@ -421,8 +421,8 @@ template <typename WorkVec>
 DTFilterCPU::FilterRF_vertPass<WorkVec>::FilterRF_vertPass(Mat& res_, Mat& alphaD_, int iteration_)
 : res(res_), alphaD(alphaD_), iteration(iteration_)
 {
-    CV_DbgAssert(res.type() == WorkVec::type);
-    CV_DbgAssert(res.type() == WorkVec::type && res.size() == res.size());
+    CV_DbgAssert(res.type() == traits::Type<WorkVec>::value);
+    CV_DbgAssert(res.type() == traits::Type<WorkVec>::value && res.size() == res.size());
 }
 
 
@@ -470,7 +470,7 @@ template <typename GuideVec>
 DTFilterCPU::ComputeIDTHor_ParBody<GuideVec>::ComputeIDTHor_ParBody(DTFilterCPU& dtf_, Mat& guide_, Mat& dst_)
 : dtf(dtf_), guide(guide_), dst(dst_)
 {
-    dst.create(guide.rows, guide.cols + 1, IDistVec::type);
+    dst.create(guide.rows, guide.cols + 1, traits::Type<IDistVec>::value);
 }
 
 template <typename GuideVec>
@@ -497,8 +497,8 @@ template <typename GuideVec>
 DTFilterCPU::ComputeDTandIDTHor_ParBody<GuideVec>::ComputeDTandIDTHor_ParBody(DTFilterCPU& dtf_, Mat& guide_, Mat& dist_, Mat& idist_)
 : dtf(dtf_), guide(guide_), dist(dist_), idist(idist_)
 {
-    dist = getWExtendedMat(guide.rows, guide.cols, IDistVec::type, 1, 1);
-    idist = getWExtendedMat(guide.rows, guide.cols + 1, IDistVec::type);
+    dist = getWExtendedMat(guide.rows, guide.cols, traits::Type<IDistVec>::value, 1, 1);
+    idist = getWExtendedMat(guide.rows, guide.cols + 1, traits::Type<IDistVec>::value);
     maxRadius = dtf.getIterRadius(1);
 }
 
@@ -535,7 +535,7 @@ template <typename GuideVec>
 DTFilterCPU::ComputeA0DTHor_ParBody<GuideVec>::ComputeA0DTHor_ParBody(DTFilterCPU& dtf_, Mat& guide_)
 : dtf(dtf_), guide(guide_)
 {
-    dtf.a0distHor.create(guide.rows, guide.cols - 1, DistVec::type);
+    dtf.a0distHor.create(guide.rows, guide.cols - 1, traits::Type<DistVec>::value);
     lna = std::log(dtf.getIterAlpha(1));
 }
 
@@ -565,7 +565,7 @@ template <typename GuideVec>
 DTFilterCPU::ComputeA0DTVert_ParBody<GuideVec>::ComputeA0DTVert_ParBody(DTFilterCPU& dtf_, Mat& guide_)
 : dtf(dtf_), guide(guide_)
 {
-    dtf.a0distVert.create(guide.rows - 1, guide.cols, DistVec::type);
+    dtf.a0distVert.create(guide.rows - 1, guide.cols, traits::Type<DistVec>::value);
     lna = std::log(dtf.getIterAlpha(1));
 }
 

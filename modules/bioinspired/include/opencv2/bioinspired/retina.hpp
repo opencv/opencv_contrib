@@ -422,32 +422,30 @@ public:
     Retina::getParvo methods
      */
     CV_WRAP virtual void activateContoursProcessing(const bool activate)=0;
+
+    /** @overload */
+    CV_WRAP static Ptr<Retina> create(Size inputSize);
+    /** @brief Constructors from standardized interfaces : retreive a smart pointer to a Retina instance
+
+    @param inputSize the input frame size
+    @param colorMode the chosen processing mode : with or without color processing
+    @param colorSamplingMethod specifies which kind of color sampling will be used :
+    -   cv::bioinspired::RETINA_COLOR_RANDOM: each pixel position is either R, G or B in a random choice
+    -   cv::bioinspired::RETINA_COLOR_DIAGONAL: color sampling is RGBRGBRGB..., line 2 BRGBRGBRG..., line 3, GBRGBRGBR...
+    -   cv::bioinspired::RETINA_COLOR_BAYER: standard bayer sampling
+    @param useRetinaLogSampling activate retina log sampling, if true, the 2 following parameters can
+    be used
+    @param reductionFactor only usefull if param useRetinaLogSampling=true, specifies the reduction
+    factor of the output frame (as the center (fovea) is high resolution and corners can be
+    underscaled, then a reduction of the output is allowed without precision leak
+    @param samplingStrenght only usefull if param useRetinaLogSampling=true, specifies the strenght of
+    the log scale that is applied
+     */
+    CV_WRAP static Ptr<Retina> create(Size inputSize, const bool colorMode,
+                                           int colorSamplingMethod=RETINA_COLOR_BAYER,
+                                           const bool useRetinaLogSampling=false,
+                                           const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
 };
-
-//! @relates bioinspired::Retina
-//! @{
-
-/** @overload */
-CV_EXPORTS_W Ptr<Retina> createRetina(Size inputSize);
-/** @brief Constructors from standardized interfaces : retreive a smart pointer to a Retina instance
-
-@param inputSize the input frame size
-@param colorMode the chosen processing mode : with or without color processing
-@param colorSamplingMethod specifies which kind of color sampling will be used :
--   cv::bioinspired::RETINA_COLOR_RANDOM: each pixel position is either R, G or B in a random choice
--   cv::bioinspired::RETINA_COLOR_DIAGONAL: color sampling is RGBRGBRGB..., line 2 BRGBRGBRG..., line 3, GBRGBRGBR...
--   cv::bioinspired::RETINA_COLOR_BAYER: standard bayer sampling
-@param useRetinaLogSampling activate retina log sampling, if true, the 2 following parameters can
-be used
-@param reductionFactor only usefull if param useRetinaLogSampling=true, specifies the reduction
-factor of the output frame (as the center (fovea) is high resolution and corners can be
-underscaled, then a reduction of the output is allowed without precision leak
-@param samplingStrenght only usefull if param useRetinaLogSampling=true, specifies the strenght of
-the log scale that is applied
- */
-CV_EXPORTS_W Ptr<Retina> createRetina(Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
-
-//! @}
 
 //! @}
 

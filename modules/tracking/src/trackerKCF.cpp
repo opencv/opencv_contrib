@@ -47,7 +47,7 @@
 |---------------------------*/
 namespace cv{
    /**
-  * \brief Implementation of TrackerModel for MIL algorithm
+  * \brief Implementation of TrackerModel for KCF algorithm
   */
   class TrackerKCFModel : public TrackerModel{
   public:
@@ -223,8 +223,8 @@ namespace cv{
 
     // create gaussian response
     y=Mat::zeros((int)roi.height,(int)roi.width,CV_64F);
-    for(unsigned i=0;i<roi.height;i++){
-      for(unsigned j=0;j<roi.width;j++){
+    for(unsigned i=0;i<(unsigned)roi.height;i++){
+      for(unsigned j=0;j<(unsigned)roi.width;j++){
         y.at<double>(i,j)=(i-roi.height/2+1)*(i-roi.height/2+1)+(j-roi.width/2+1)*(j-roi.width/2+1);
       }
     }
@@ -827,7 +827,7 @@ namespace cv{
   TrackerKCF::Params::Params(){
       detect_thresh = 0.5;
       sigma=0.2;
-      lambda=0.01;
+      lambda=0.0001;
       interp_factor=0.075;
       output_sigma_factor=1.0/16.0;
       resize=true;

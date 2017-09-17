@@ -148,16 +148,16 @@ void FastGlobalSmootherFilterImpl::init(InputArray guide,double _lambda,double _
     num_iter = _num_iter;
     num_stripes = getNumThreads();
     int num_levels = 3*256*256;
-    weights_LUT.create(1,num_levels,WorkVec::type);
+    weights_LUT.create(1,num_levels,traits::Type<WorkVec>::value);
 
     WorkType* LUT = (WorkType*)weights_LUT.ptr(0);
     parallel_for_(Range(0,num_stripes),ComputeLUT_ParBody(*this,LUT,num_stripes,num_levels));
 
     w = guide.cols();
     h = guide.rows();
-    Chor.  create(h,w,WorkVec::type);
-    Cvert. create(h,w,WorkVec::type);
-    interD.create(h,w,WorkVec::type);
+    Chor.  create(h,w,traits::Type<WorkVec>::value);
+    Cvert. create(h,w,traits::Type<WorkVec>::value);
+    interD.create(h,w,traits::Type<WorkVec>::value);
     Mat guideMat = guide.getMat();
 
     if(guide.channels() == 1)
@@ -201,8 +201,8 @@ void FastGlobalSmootherFilterImpl::filter(InputArray src, OutputArray dst)
     {
         lambda = lambda_ref;
         Mat cur_res = src_channels[i].clone();
-        if(src.depth()!=WorkVec::type)
-            cur_res.convertTo(cur_res,WorkVec::type);
+        if(src.depth()!=traits::Type<WorkVec>::value)
+            cur_res.convertTo(cur_res,traits::Type<WorkVec>::value);
 
         for(int n=0;n<num_iter;n++)
         {
@@ -212,7 +212,7 @@ void FastGlobalSmootherFilterImpl::filter(InputArray src, OutputArray dst)
         }
 
         Mat dstMat;
-        if(src.depth()!=WorkVec::type)
+        if(src.depth()!=traits::Type<WorkVec>::value)
             cur_res.convertTo(dstMat,src.depth());
         else
             dstMat = cur_res;

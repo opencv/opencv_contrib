@@ -2,6 +2,7 @@
  * shape_context.cpp -- Shape context demo for shape matching
  */
 #include <iostream>
+#include "opencv2/opencv_modules.hpp"
 
 #ifdef HAVE_OPENCV_SHAPE
 
@@ -11,7 +12,7 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/features2d.hpp"
 #include "opencv2/xfeatures2d.hpp"
-#include <opencv2/core/utility.hpp>
+#include "opencv2/core/utility.hpp"
 #include <string>
 
 using namespace std;
