@@ -271,9 +271,9 @@ protected:
     //Size outputGeometry_;//= Size(1,1);
     //int channelCount_;
    // int inputChannel_ ;//=1;
-    //const int _inputHeight =32;
-    //const int _inputWidth =100;
-    //const int _inputChannel =1;
+    int _inputHeight;
+    int _inputWidth ;
+    int _inputChannel ;
 public:
     DeepCNNOpenCvDNNImpl(const DeepCNNOpenCvDNNImpl& dn):
         minibatchSz_(dn.minibatchSz_),outputSize_(dn.outputSize_){
@@ -300,8 +300,8 @@ public:
         //Implemented to supress Visual Studio warning "assignment operator could not be generated"
     }
 
-    DeepCNNOpenCvDNNImpl(String modelArchFilename, String modelWeightsFilename,Ptr<ImagePreprocessor> preprocessor, int maxMinibatchSz,int inputWidth =100,int inputHeight = 32)
-        :minibatchSz_(maxMinibatchSz),_inputWidth(inputWidth),_inputHeight(inputHeight)
+    DeepCNNOpenCvDNNImpl(String modelArchFilename, String modelWeightsFilename,Ptr<ImagePreprocessor> preprocessor, int maxMinibatchSz,int inputWidth =100,int inputHeight = 32,int inputChannel =1)
+        :minibatchSz_(maxMinibatchSz),_inputWidth(inputWidth),_inputHeight(inputHeight),_inputChannel(inputChannel)
     {
 
         CV_Assert(this->minibatchSz_>0);
@@ -612,13 +612,13 @@ public:
         this->classifier_->classifyBatch(inputImageList,netOutput);
 
         for(int k=0;k<netOutput.rows;k++)
-        {https://www.google.es/?gfe_rd=cr&dcr=0&ei=4fq7We8Bk9jyB8zPp5AL
+        {
             int classNum;
             double confidence;
             NetOutput::getClassification((float*)(netOutput.row(k).data),this->classifier_->getOutputSize(),classNum,confidence);
             transcriptionVec.push_back(this->labels_[classNum]);
             confidenceVec.push_back(confidence);
-        }https://www.google.es/?gfe_rd=cr&dcr=0&ei=4fq7We8Bk9jyB8zPp5AL
+        }
     }
 
 
