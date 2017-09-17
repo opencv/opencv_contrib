@@ -1,5 +1,9 @@
 set(the_description "Text Detection and Recognition")
 
+if(POLICY CMP0023)
+  message(STATUS "Explicitly setting policy CMP0023 to OLD")
+  cmake_policy(SET CMP0023 OLD)
+endif(POLICY CMP0023)
 # Using cmake scripts and modules
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
 
