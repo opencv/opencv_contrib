@@ -252,9 +252,9 @@ protected:
     //Size inputGeometry_;
     int minibatchSz_;//The existence of the assignment operator mandates this to be nonconst
     //int outputSize_;
-    int inputHeight_;
-    int inputWidth_;
-    int inputChannel_;
+    //int inputHeight_;
+    //int inputWidth_;
+    //int inputChannel_;
 public:
     DeepCNNTextDetectorDNNImpl(const DeepCNNTextDetectorDNNImpl& dn):
         minibatchSz_(dn.minibatchSz_){
@@ -283,7 +283,7 @@ public:
     }
 
     DeepCNNTextDetectorDNNImpl(String modelArchFilename, String modelWeightsFilename,Ptr<ImagePreprocessor> preprocessor, int maxMinibatchSz,int inputHeight=700,int inputWidth =700,int inputChannel =3)
-        :minibatchSz_(maxMinibatchSz),inputHeight_(inputHeight),inputWidth_(inputWidth),inputChannel_(inputChannel)
+        :minibatchSz_(maxMinibatchSz)
     {
 
         CV_Assert(this->minibatchSz_>0);
@@ -304,9 +304,9 @@ public:
             exit(-1);
         }
 
-        this->inputGeometry_.height =inputHeight_;
-        this->inputGeometry_.width = inputWidth_ ;//inputLayer->width();
-        this->inputChannelCount_ = inputChannel_ ;//inputLayer->channels();
+        this->inputGeometry_.height =inputHeight;
+        this->inputGeometry_.width = inputWidth ;//inputLayer->width();
+        this->inputChannelCount_ = inputChannel ;//inputLayer->channels();
 
 #else
         CV_Error(Error::StsError,"DNN module not available during compilation!");
