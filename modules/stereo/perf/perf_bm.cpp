@@ -53,8 +53,8 @@ typedef perf::TestBaseWithParam<s_bm_test_t> s_bm;
 PERF_TEST_P( s_bm, sgm_perf,
             testing::Combine(
             testing::Values( cv::Size(512, 283),  cv::Size(320, 240)),
-            testing::Values( CV_8UC1,CV_8U ),
-            testing::Values( CV_8UC1,CV_8U,CV_16S )
+            testing::Values( CV_8U ),
+            testing::Values( CV_8U,CV_16S )
             )
             )
 {
@@ -80,8 +80,8 @@ PERF_TEST_P( s_bm, sgm_perf,
 PERF_TEST_P( s_bm, bm_perf,
             testing::Combine(
             testing::Values( cv::Size(512, 383),  cv::Size(320, 240) ),
-            testing::Values( CV_8UC1,CV_8U ),
-            testing::Values( CV_8UC1,CV_8U )
+            testing::Values( CV_8U ),
+            testing::Values( CV_8U )
             )
             )
 {
