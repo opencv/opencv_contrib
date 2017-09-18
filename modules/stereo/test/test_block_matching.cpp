@@ -83,13 +83,9 @@ static double errorLevel(const Mat &ideal, Mat &actual)
 void CV_BlockMatchingTest::run(int )
 {
     Mat image1, image2, gt;
-    //some test images can be found in the test data folder
-    //in order for the tests to build succesfully please replace
-    //ts->get_data_path() + "testdata/imL2l.bmp with the path from your disk
-    //for example if your images are on D:\\ , please write D:\\testdata\\imL2l.bmp
-    image1 = imread(ts->get_data_path() + "testdata/imL2l.bmp", CV_8UC1);
-    image2 = imread(ts->get_data_path() + "testdata/imL2.bmp", CV_8UC1);
-    gt = imread(ts->get_data_path() + "testdata/groundtruth.bmp", CV_8UC1);
+    image1 = imread(ts->get_data_path() + "stereomatching/datasets/tsukuba/im2.png", IMREAD_GRAYSCALE);
+    image2 = imread(ts->get_data_path() + "stereomatching/datasets/tsukuba/im6.png", IMREAD_GRAYSCALE);
+    gt = imread(ts->get_data_path() + "stereomatching/datasets/tsukuba/disp2.png", IMREAD_GRAYSCALE);
 
     if(image1.empty() || image2.empty() || gt.empty())
     {
@@ -169,10 +165,9 @@ CV_SGBlockMatchingTest::~CV_SGBlockMatchingTest(){}
 void CV_SGBlockMatchingTest::run(int )
 {
     Mat image1, image2, gt;
-   //some test images can be found in the test data folder
-    image1 = imread(ts->get_data_path() + "testdata/imL2l.bmp", CV_8UC1);
-    image2 = imread(ts->get_data_path() + "testdata/imL2.bmp", CV_8UC1);
-    gt = imread(ts->get_data_path() + "testdata/groundtruth.bmp", CV_8UC1);
+    image1 = imread(ts->get_data_path() + "stereomatching/datasets/tsukuba/im2.png", IMREAD_GRAYSCALE);
+    image2 = imread(ts->get_data_path() + "stereomatching/datasets/tsukuba/im6.png", IMREAD_GRAYSCALE);
+    gt = imread(ts->get_data_path() + "stereomatching/datasets/tsukuba/disp2.png", IMREAD_GRAYSCALE);
 
 
     if(image1.empty() || image2.empty() || gt.empty())
