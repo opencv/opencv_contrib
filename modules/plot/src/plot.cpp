@@ -57,8 +57,9 @@ namespace cv
         {
             public:
 
-            Plot2dImpl(InputArray plotData)
+            Plot2dImpl(InputArray plotData, bool _invertOrientation)
             {
+                invertOrientation = _invertOrientation;
                 Mat _plotData = plotData.getMat();
                 //if the matrix is not Nx1 or 1xN
                 if(_plotData.cols > 1 && _plotData.rows > 1)
@@ -84,8 +85,9 @@ namespace cv
 
             }
 
-            Plot2dImpl(InputArray plotDataX_, InputArray plotDataY_)
+            Plot2dImpl(InputArray plotDataX_, InputArray plotDataY_, bool _invertOrientation)
             {
+                invertOrientation = _invertOrientation;
                 Mat _plotDataX = plotDataX_.getMat();
                 Mat _plotDataY = plotDataY_.getMat();
                 //f the matrix is not Nx1 or 1xN
@@ -199,11 +201,15 @@ namespace cv
                 int NumVecElements = plotDataX.rows;
 
                 Mat InterpXdata = linearInterpolation(plotMinX, plotMaxX, 0, plotSizeWidth, plotDataX);
-                Mat InterpYdata = linearInterpolation(plotMinY, plotMaxY, 0, plotSizeHeight, plotDataY);
+                Mat InterpYdata = invertOrientation ?
+                                  linearInterpolation(plotMaxY, plotMinY, 0, plotSizeHeight, plotDataY) :
+                                  linearInterpolation(plotMinY, plotMaxY, 0, plotSizeHeight, plotDataY);
 
                 //Find the zeros in image coordinates
                 Mat InterpXdataFindZero = linearInterpolation(plotMinX_plusZero, plotMaxX_plusZero, 0, plotSizeWidth, plotDataX_plusZero);
-                Mat InterpYdataFindZero = linearInterpolation(plotMinY_plusZero, plotMaxY_plusZero, 0, plotSizeHeight, plotDataY_plusZero);
+                Mat InterpYdataFindZero = invertOrientation ?
+                                          linearInterpolation(plotMaxY_plusZero, plotMinY_plusZero, 0, plotSizeHeight, plotDataY_plusZero) :
+                                          linearInterpolation(plotMinY_plusZero, plotMaxY_plusZero, 0, plotSizeHeight, plotDataY_plusZero);
 
                 int ImageXzero = (int)InterpXdataFindZero.at<double>(NumVecElements,0);
                 int ImageYzero = (int)InterpYdataFindZero.at<double>(NumVecElements,0);
@@ -264,6 +270,7 @@ namespace cv
             double plotMinY_plusZero;
             double plotMaxY_plusZero;
             int plotLineWidth;
+			bool invertOrientation;
             bool needShowGrid;
             bool needShowText;
             int gridLinesNumber;
@@ -453,15 +460,15 @@ namespace cv
 
         };
 
-        Ptr<Plot2d> Plot2d::create(InputArray _plotData)
+        Ptr<Plot2d> Plot2d::create(InputArray _plotData, bool _invertOrientation)
         {
-            return Ptr<Plot2dImpl> (new Plot2dImpl (_plotData));
+            return Ptr<Plot2dImpl> (new Plot2dImpl (_plotData, _invertOrientation));
 
         }
 
-        Ptr<Plot2d> Plot2d::create(InputArray _plotDataX, InputArray _plotDataY)
+        Ptr<Plot2d> Plot2d::create(InputArray _plotDataX, InputArray _plotDataY, bool _invertOrientation)
         {
-            return Ptr<Plot2dImpl> (new Plot2dImpl (_plotDataX, _plotDataY));
+            return Ptr<Plot2dImpl> (new Plot2dImpl (_plotDataX, _plotDataY, _invertOrientation));
         }
     }
 }
