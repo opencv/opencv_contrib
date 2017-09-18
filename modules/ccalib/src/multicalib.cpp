@@ -749,12 +749,12 @@ void MultiCameraCalibration::writeParameters(const std::string& filename)
 
     for (int camIdx = 0; camIdx < _nCamera; ++camIdx)
     {
-        char num[10];
-        sprintf(num, "%d", camIdx);
-        std::string cameraMatrix = "camera_matrix_" + std::string(num);
-        std::string cameraPose = "camera_pose_" + std::string(num);
-        std::string cameraDistortion = "camera_distortion_" + std::string(num);
-        std::string cameraXi = "xi_" + std::string(num);
+        std::stringstream tmpStr;
+        tmpStr << camIdx;
+        std::string cameraMatrix = "camera_matrix_" + tmpStr.str();
+        std::string cameraPose = "camera_pose_" + tmpStr.str();
+        std::string cameraDistortion = "camera_distortion_" + tmpStr.str();
+        std::string cameraXi = "xi_" + tmpStr.str();
 
         fs << cameraMatrix << _cameraMatrix[camIdx];
         fs << cameraDistortion << _distortCoeffs[camIdx];
@@ -770,9 +770,9 @@ void MultiCameraCalibration::writeParameters(const std::string& filename)
 
     for (int photoIdx = _nCamera; photoIdx < (int)_vertexList.size(); ++photoIdx)
     {
-        char timestamp[100];
-        sprintf(timestamp, "%d", _vertexList[photoIdx].timestamp);
-        std::string photoTimestamp = "pose_timestamp_" + std::string(timestamp);
+        std::stringstream tmpStr;
+        tmpStr << _vertexList[photoIdx].timestamp;
+        std::string photoTimestamp = "pose_timestamp_" + tmpStr.str();
 
         fs << photoTimestamp << _vertexList[photoIdx].pose;
     }

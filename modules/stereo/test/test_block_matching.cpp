@@ -97,7 +97,7 @@ void CV_BlockMatchingTest::run(int )
         ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);
         return;
     }
-    if(image1.rows != image2.rows || image1.cols != image2.cols || gt.cols != gt.cols || gt.rows != gt.rows)
+    if(image1.rows != image2.rows || image1.cols != image2.cols || gt.cols != image1.cols || gt.rows != image1.rows)
     {
         ts->printf(cvtest::TS::LOG, "Wrong input / output dimension \n");
         ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);
@@ -181,7 +181,7 @@ void CV_SGBlockMatchingTest::run(int )
         ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);
         return;
     }
-    if(image1.rows != image2.rows || image1.cols != image2.cols || gt.cols != gt.cols || gt.rows != gt.rows)
+    if(image1.rows != image2.rows || image1.cols != image2.cols || gt.cols != image1.cols || gt.rows != image1.rows)
     {
         ts->printf(cvtest::TS::LOG, "Wrong input / output dimension \n");
         ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);
