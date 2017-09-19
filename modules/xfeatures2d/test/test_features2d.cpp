@@ -1027,10 +1027,34 @@ TEST( Features2d_DescriptorExtractor_SIFT, regression )
 
 TEST( Features2d_DescriptorExtractor_SURF, regression )
 {
+#ifdef HAVE_OPENCL
+    bool useOCL = ocl::useOpenCL();
+    ocl::setUseOpenCL(false);
+#endif
+
     CV_DescriptorExtractorTest<L2<float> > test( "descriptor-surf",  0.05f,
                                                 SURF::create() );
     test.safe_run();
+
+#ifdef HAVE_OPENCL
+    ocl::setUseOpenCL(useOCL);
+#endif
 }
+
+#ifdef HAVE_OPENCL
+TEST( Features2d_DescriptorExtractor_SURF_OCL, regression )
+{
+    bool useOCL = ocl::useOpenCL();
+    ocl::setUseOpenCL(true);
+    if(ocl::useOpenCL())
+    {
+        CV_DescriptorExtractorTest<L2<float> > test( "descriptor-surf_ocl",  0.05f,
+                                                    SURF::create() );
+        test.safe_run();
+    }
+    ocl::setUseOpenCL(useOCL);
+}
+#endif
 
 TEST( Features2d_DescriptorExtractor_DAISY, regression )
 {
