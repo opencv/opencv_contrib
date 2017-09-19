@@ -950,7 +950,7 @@ TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_LBGM, regression)
     DescriptorScaleInvarianceTest test(SURF::create(),
                                        BoostDesc::create(BoostDesc::LBGM, true, 6.25f),
                                        NORM_L1,
-                                       0.98f);
+                                       0.95f);
     test.safe_run();
 }
 
