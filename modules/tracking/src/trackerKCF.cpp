@@ -42,6 +42,7 @@
 #include "precomp.hpp"
 #include "opencl_kernels_tracking.hpp"
 #include <complex>
+#include <cmath>
 
 /*---------------------------
 |  TrackerKCFModel
@@ -204,8 +205,8 @@ namespace cv{
     roi = boundingBox;
 
     //calclulate output sigma
-    output_sigma=sqrt(roi.width*roi.height)*params.output_sigma_factor;
-    output_sigma=-0.5/(output_sigma*output_sigma);
+    output_sigma=std::sqrt(static_cast<float>(roi.width*roi.height))*params.output_sigma_factor;
+    output_sigma=-0.5f/(output_sigma*output_sigma);
 
     //resize the ROI whenever needed
     if(params.resize && roi.width*roi.height>params.max_patch_size){
@@ -233,7 +234,8 @@ namespace cv{
     y=Mat::zeros((int)roi.height,(int)roi.width,CV_32F);
     for(int i=0;i<roi.height;i++){
       for(int j=0;j<roi.width;j++){
-        y.at<float>(i,j)=(i-roi.height/2+1)*(i-roi.height/2+1)+(j-roi.width/2+1)*(j-roi.width/2+1);
+        y.at<float>(i,j) =
+                static_cast<float>((i-roi.height/2+1)*(i-roi.height/2+1)+(j-roi.width/2+1)*(j-roi.width/2+1));
       }
     }
 
@@ -444,7 +446,7 @@ namespace cv{
     }else{
       for(int i=0;i<yf.rows;i++){
         for(int j=0;j<yf.cols;j++){
-          den = 1.0/(kf_lambda.at<Vec2f>(i,j)[0]*kf_lambda.at<Vec2f>(i,j)[0]+kf_lambda.at<Vec2f>(i,j)[1]*kf_lambda.at<Vec2f>(i,j)[1]);
+          den = 1.0f/(kf_lambda.at<Vec2f>(i,j)[0]*kf_lambda.at<Vec2f>(i,j)[0]+kf_lambda.at<Vec2f>(i,j)[1]*kf_lambda.at<Vec2f>(i,j)[1]);
 
           new_alphaf.at<Vec2f>(i,j)[0]=
           (yf.at<Vec2f>(i,j)[0]*kf_lambda.at<Vec2f>(i,j)[0]+yf.at<Vec2f>(i,j)[1]*kf_lambda.at<Vec2f>(i,j)[1])*den;
@@ -486,21 +488,22 @@ namespace cv{
       AutoBuffer<float> _wc(cols);
       float * const wc = (float *)_wc;
 
-      float coeff0 = 2.0 * CV_PI / (float)(cols - 1), coeff1 = 2.0f * CV_PI / (float)(rows - 1);
+      const float coeff0 = 2.0f * (float)CV_PI / (cols - 1);
+      const float coeff1 = 2.0f * (float)CV_PI / (rows - 1);
       for(int j = 0; j < cols; j++)
-        wc[j] = 0.5 * (1.0 - cos(coeff0 * j));
+        wc[j] = 0.5f * (1.0f - cos(coeff0 * j));
 
       if(dst.depth() == CV_32F){
         for(int i = 0; i < rows; i++){
           float* dstData = dst.ptr<float>(i);
-          float wr = 0.5 * (1.0 - cos(coeff1 * i));
+          float wr = 0.5f * (1.0f - cos(coeff1 * i));
           for(int j = 0; j < cols; j++)
             dstData[j] = (float)(wr * wc[j]);
         }
       }else{
         for(int i = 0; i < rows; i++){
           double* dstData = dst.ptr<double>(i);
-          double wr = 0.5 * (1.0 - cos(coeff1 * i));
+          double wr = 0.5f * (1.0f - cos(coeff1 * i));
           for(int j = 0; j < cols; j++)
             dstData[j] = wr * wc[j];
         }
@@ -557,8 +560,9 @@ namespace cv{
     // And if one line is less than 512KB, CPU will likely be faster.
     if (transpose_mm_ker.empty() ||
         src.rows % 4 != 0 ||
-        (src.rows * 10) < (512 * 1024 / 4))
+        (src.rows * 10) < (1024 * 1024 / 4))
       return false;
+
     Size s(src.rows, src.cols);
     const Mat tmp = src.t();
     const UMat uSrc = tmp.getUMat(ACCESS_READ);
@@ -568,7 +572,7 @@ namespace cv{
         (int)uSrc.cols,
         alpha,
         ocl::KernelArg::PtrWriteOnly(dst));
-    size_t globSize[2] = {src.cols * 64, src.cols};
+    size_t globSize[2] = {static_cast<size_t>(src.cols * 64), static_cast<size_t>(src.cols)};
     size_t localSize[2] = {64, 1};
     if (!transpose_mm_ker.run(2, globSize, localSize, true))
       return false;
@@ -599,8 +603,8 @@ namespace cv{
     Size s(pca_data.cols, pca_data.cols);
     UMat result(s, pca_data.type());
     if (oclTransposeMM(pca_data, 1.0/(float)(src.rows*src.cols-1), result)) {
-      if(old_cov.rows==0) old_cov=result.getMat(ACCESS_RW).clone();
-      SVD::compute((1.0-pca_rate)*old_cov + pca_rate * result.getMat(ACCESS_RW), w, u, vt);
+      if(old_cov.rows==0) old_cov=result.getMat(ACCESS_READ).clone();
+      SVD::compute((1.0-pca_rate)*old_cov + pca_rate * result.getMat(ACCESS_READ), w, u, vt);
       oclSucceed = true;
     }
 #define TMM_VERIFICATION 0
@@ -787,7 +791,7 @@ namespace cv{
       }
     }
 
-    float sig=-1.0/(sigma*sigma);
+    float sig=-1.0f/(sigma*sigma);
     xy=sig*xy;
     exp(xy,k_data);
 
@@ -864,7 +868,7 @@ namespace cv{
     float den;
     for(int i=0;i<kf_data.rows;i++){
       for(int j=0;j<kf_data.cols;j++){
-        den=1.0/(_alphaf_den.at<Vec2f>(i,j)[0]*_alphaf_den.at<Vec2f>(i,j)[0]+_alphaf_den.at<Vec2f>(i,j)[1]*_alphaf_den.at<Vec2f>(i,j)[1]);
+        den=1.0f/(_alphaf_den.at<Vec2f>(i,j)[0]*_alphaf_den.at<Vec2f>(i,j)[0]+_alphaf_den.at<Vec2f>(i,j)[1]*_alphaf_den.at<Vec2f>(i,j)[1]);
         spec2_data.at<Vec2f>(i,j)[0]=
           (spec_data.at<Vec2f>(i,j)[0]*_alphaf_den.at<Vec2f>(i,j)[0]+spec_data.at<Vec2f>(i,j)[1]*_alphaf_den.at<Vec2f>(i,j)[1])*den;
         spec2_data.at<Vec2f>(i,j)[1]=
@@ -890,11 +894,11 @@ namespace cv{
  * Parameters
  */
   TrackerKCF::Params::Params(){
-      detect_thresh = 0.5;
-      sigma=0.2;
-      lambda=0.0001;
-      interp_factor=0.075;
-      output_sigma_factor=1.0/16.0;
+      detect_thresh = 0.5f;
+      sigma=0.2f;
+      lambda=0.0001f;
+      interp_factor=0.075f;
+      output_sigma_factor=1.0f / 16.0f;
       resize=true;
       max_patch_size=80*80;
       split_coeff=true;
@@ -905,7 +909,7 @@ namespace cv{
       //feature compression
       compress_feature=true;
       compressed_size=2;
-      pca_learning_rate=0.15;
+      pca_learning_rate=0.15f;
   }
 
   void TrackerKCF::Params::read( const cv::FileNode& fn ){
