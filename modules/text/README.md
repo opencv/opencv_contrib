@@ -47,3 +47,145 @@ Notes
 2. Tesseract configure script may fail to detect leptonica, so you may have to edit the configure script - comment off some if's around this message and retain only "then" branch.
 
 3. You are encouraged to search the Net for some better pre-trained classifiers, as well as classifiers for other languages.
+
+
+Word spotting CNN
+=================
+
+Intro
+-----
+
+A word spotting CNN is a CNN that takes an image assumed to contain a single word and provides a probabillity over a given vocabulary.
+Although other backends will be supported, for the moment only the Caffe backend is supported.
+
+
+
+
+Instalation of Caffe backend
+----------------------------
+The caffe wrapping backend has the requirements caffe does.
+* Caffe can be built against OpenCV, if the caffe backend is enabled, a circular bependency arises.
+The simplest solution is to build caffe without support for OpenCV.
+* Only the OS supported by Caffe are supported by the backend.
+The scripts describing the module have been developed in ubuntu 16.04 and assume such a system.
+Other UNIX systems including OSX should be easy to adapt.
+
+Sample script for building Caffe
+
+```bash
+#!/bin/bash
+SRCROOT="${HOME}/caffe_inst/"
+mkdir -p "$SRCROOT"
+cd "$SRCROOT"
+git clone https://github.com/BVLC/caffe.git
+cd caffe
+git checkout 91b09280f5233cafc62954c98ce8bc4c204e7475
+git branch 91b09280f5233cafc62954c98ce8bc4c204e7475
+cat Makefile.config.example  > Makefile.config
+echo 'USE_OPENCV := 0' >> Makefile.config
+echo 'INCLUDE_DIRS += /usr/include/hdf5/serial/' >> Makefile.config
+echo 'LIBRARY_DIRS += /usr/lib/x86_64-linux-gnu/hdf5/serial/' >> Makefile.config
+
+
+echo "--- /tmp/caffe/include/caffe/net.hpp	2017-05-28 04:55:47.929623902 +0200
++++ caffe/distribute/include/caffe/net.hpp	2017-05-28 04:51:33.437090768 +0200
+@@ -234,6 +234,7 @@
+
+     template <typename T>
+     friend class Net;
++    virtual ~Callback(){}
+   };
+   const vector<Callback*>& before_forward() const { return before_forward_; }
+   void add_before_forward(Callback* value) {
+">/tmp/cleanup_caffe.diff
+
+patch < /tmp/cleanup_caffe.diff
+
+
+make -j 6
+
+make pycaffe
+
+make distribute
+```
+
+
+```bash
+#!/bin/bash
+cd $OPENCV_BUILD_DIR #You must set this
+CAFFEROOT="${HOME}/caffe_inst/" #If you used the previous code to compile Caffe in ubuntu 16.04
+
+cmake  -DCaffe_LIBS:FILEPATH="$CAFFEROOT/caffe/distribute/lib/libcaffe.so" -DBUILD_opencv_ts:BOOL="0" -DBUILD_opencv_dnn:BOOL="0" -DBUILD_opencv_dnn_modern:BOOL="0" -DCaffe_INCLUDE_DIR:PATH="$CAFFEROOT/caffe/distribute/include" -DWITH_MATLAB:BOOL="0" -DBUILD_opencv_cudabgsegm:BOOL="0"  -DWITH_QT:BOOL="1" -DBUILD_opencv_cudaoptflow:BOOL="0" -DBUILD_opencv_cudastereo:BOOL="0" -DBUILD_opencv_cudafilters:BOOL="0" -DBUILD_opencv_cudev:BOOL="1" -DOPENCV_EXTRA_MODULES_PATH:PATH="/home/anguelos/work/projects/opencv_gsoc/opencv_contrib/modules"   ./
+
+
+```
+
+Text Detection CNN
+=================
+
+Intro
+-----
+
+A text detection CNN is a CNN that takes an image which may contain multiple words. This outputs a list of Rects with bounding boxes and probability of text there.
+Although other backends will be supported, for the moment only the Caffe backend is supported.
+
+
+
+
+Instalation of Caffe backend
+----------------------------
+* Please note a custom caffe based on SSD branch is required, the link of the custom caffe is provided below
+The caffe wrapping backend has the requirements caffe does.
+* Caffe can be built against OpenCV, if the caffe backend is enabled, a circular bependency arises.
+The simplest solution is to build caffe without support for OpenCV.
+* Only the OS supported by Caffe are supported by the backend.
+The scripts describing the module have been developed in ubuntu 16.04 and assume such a system.
+Other UNIX systems including OSX should be easy to adapt.
+
+Sample script for building Caffe
+
+```bash
+#!/bin/bash
+SRCROOT="${HOME}/caffe_inst/"
+mkdir -p "$SRCROOT"
+cd "$SRCROOT"
+git clone https://github.com/sghoshcvc/TextBoxes.git
+cd TextBoxes
+cat Makefile.config.example  > Makefile.config
+echo 'USE_OPENCV := 0' >> Makefile.config
+echo 'INCLUDE_DIRS += /usr/include/hdf5/serial/' >> Makefile.config
+echo 'LIBRARY_DIRS += /usr/lib/x86_64-linux-gnu/hdf5/serial/' >> Makefile.config
+
+
+echo "--- /tmp/caffe/include/caffe/net.hpp	2017-05-28 04:55:47.929623902 +0200
++++ caffe/distribute/include/caffe/net.hpp	2017-05-28 04:51:33.437090768 +0200
+@@ -234,6 +234,7 @@
+
+     template <typename T>
+     friend class Net;
++    virtual ~Callback(){}
+   };
+   const vector<Callback*>& before_forward() const { return before_forward_; }
+   void add_before_forward(Callback* value) {
+">/tmp/cleanup_caffe.diff
+
+patch < /tmp/cleanup_caffe.diff
+
+
+make -j 6
+
+make pycaffe
+
+make distribute
+```
+
+
+```bash
+#!/bin/bash
+cd $OPENCV_BUILD_DIR #You must set this
+CAFFEROOT="${HOME}/caffe_inst/" #If you used the previous code to compile Caffe in ubuntu 16.04
+
+cmake  -DCaffe_LIBS:FILEPATH="$CAFFEROOT/caffe/distribute/lib/libcaffe.so" -DBUILD_opencv_ts:BOOL="0" -DBUILD_opencv_dnn:BOOL="0" -DBUILD_opencv_dnn_modern:BOOL="0" -DCaffe_INCLUDE_DIR:PATH="$CAFFEROOT/caffe/distribute/include" -DWITH_MATLAB:BOOL="0" -DBUILD_opencv_cudabgsegm:BOOL="0"  -DWITH_QT:BOOL="1" -DBUILD_opencv_cudaoptflow:BOOL="0" -DBUILD_opencv_cudastereo:BOOL="0" -DBUILD_opencv_cudafilters:BOOL="0" -DBUILD_opencv_cudev:BOOL="1" -DOPENCV_EXTRA_MODULES_PATH:PATH="/home/anguelos/work/projects/opencv_gsoc/opencv_contrib/modules"   ./
+
+
+```
