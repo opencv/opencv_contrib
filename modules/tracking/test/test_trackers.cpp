@@ -532,7 +532,7 @@ TEST_P(DistanceAndOverlap, DISABLED_Scaled_Data_TLD)
 
 TEST_P(DistanceAndOverlap, DISABLED_GOTURN)
 {
-  TrackerTest test(TrackerGOTURN::create(), dataset, 0, 100, NoTransform);
+  TrackerTest test(TrackerGOTURN::create(), dataset, 18, .5f, NoTransform);
   test.run();
 }
 
