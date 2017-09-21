@@ -183,6 +183,16 @@ namespace cv{
     use_custom_extractor_pca = false;
     use_custom_extractor_npca = false;
 
+#ifdef HAVE_OPENCL
+    // For update proj matrix's multiplication
+    if(ocl::useOpenCL())
+    {
+        cv::String err;
+        ocl::ProgramSource tmmSrc = ocl::tracking::tmm_oclsrc;
+        ocl::Program tmmProg(tmmSrc, String(), err);
+        transpose_mm_ker.create("tmm", tmmProg);
+    }
+#endif
   }
 
   void TrackerKCFImpl::read( const cv::FileNode& fn ){
@@ -268,14 +278,6 @@ namespace cv{
       || use_custom_extractor_pca
       || use_custom_extractor_npca
     );
-
-#ifdef HAVE_OPENCL
-      // For update proj matrix's multiplication
-    cv::String err;
-    ocl::ProgramSource tmmSrc = ocl::tracking::tmm_oclsrc;
-    ocl::Program tmmProg(tmmSrc, String(), err);
-    transpose_mm_ker.create("tmm", tmmProg);
-#endif
 
   //return true only if roi has intersection with the image
   if((roi & Rect2d(0,0, resizeImage ? image.cols / 2 : image.cols,
