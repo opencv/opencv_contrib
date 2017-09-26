@@ -119,7 +119,14 @@ bool TrackerTLDImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
 bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
 {
     Mat image_gray, image_blurred, imageForDetector;
-    cvtColor( image, image_gray, COLOR_BGR2GRAY );
+    if(image.channels() > 1)
+    {
+        cvtColor( image, image_gray, COLOR_BGR2GRAY );
+    }
+    else
+    {
+        image_gray = image.clone();
+    }
     double scale = data->getScale();
     if( scale > 1.0 )
         resize(image_gray, imageForDetector, Size(cvRound(image.cols*scale), cvRound(image.rows*scale)), 0, 0, DOWNSCALE_MODE);
