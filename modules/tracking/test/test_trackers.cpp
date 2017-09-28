@@ -47,8 +47,6 @@ using namespace cv;
 using namespace testing;
 using namespace std;
 
-#define PARAM_TEST_CASE(name, ...) struct name : testing::TestWithParam< std::tr1::tuple< __VA_ARGS__ > >
-#define GET_PARAM(k) std::tr1::get< k >(GetParam())
 #define TESTSET_NAMES testing::Values("david","dudek","faceocc2")
 
 const string TRACKING_DIR = "tracking";
