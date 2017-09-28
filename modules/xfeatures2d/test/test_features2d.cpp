@@ -408,7 +408,18 @@ protected:
 
             Mat calcDescriptors;
             double t = (double)getTickCount();
-            dextractor->compute( img, keypoints, calcDescriptors );
+#ifdef HAVE_OPENCL
+            if(ocl::useOpenCL())
+            {
+                cv::UMat uimg;
+                img.copyTo(uimg);
+                dextractor->compute(uimg, keypoints, calcDescriptors);
+            }
+            else
+#endif
+            {
+                dextractor->compute(img, keypoints, calcDescriptors);
+            }
             t = getTickCount() - t;
             ts->printf(cvtest::TS::LOG, "\nAverage time of computing one descriptor = %g ms.\n", t/((double)getTickFrequency()*1000.)/calcDescriptors.rows );
 
@@ -1277,8 +1288,20 @@ protected:
         }
         vector<KeyPoint> kpt1, kpt2;
         Mat d1, d2;
-        f2d->detectAndCompute(img1, Mat(), kpt1, d1);
-        f2d->detectAndCompute(img1, Mat(), kpt2, d2);
+#ifdef HAVE_OPENCL
+        if(ocl::useOpenCL())
+        {
+            cv::UMat uimg1;
+            img1.copyTo(uimg1);
+            f2d->detectAndCompute(uimg1, Mat(), kpt1, d1);
+            f2d->detectAndCompute(uimg1, Mat(), kpt2, d2);
+        }
+        else
+#endif
+        {
+            f2d->detectAndCompute(img1, Mat(), kpt1, d1);
+            f2d->detectAndCompute(img1, Mat(), kpt2, d2);
+        }
         for( size_t i = 0; i < kpt1.size(); i++ )
             CV_Assert(kpt1[i].response > 0 );
         for( size_t i = 0; i < kpt2.size(); i++ )

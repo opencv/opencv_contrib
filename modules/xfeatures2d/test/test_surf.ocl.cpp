@@ -144,18 +144,18 @@ PARAM_TEST_CASE(SURF, HessianThreshold, Octaves, OctaveLayers, Extended, Upright
 
 TEST_P(SURF, Detector)
 {
-	cv::UMat image;
-	cv::ocl::setUseOpenCL(true);
-	cv::imread(string(cvtest::TS::ptr()->get_data_path()) + "shared/fruits.png", cv::IMREAD_GRAYSCALE).copyTo(image);
+    cv::UMat image;
+    cv::ocl::setUseOpenCL(true);
+    cv::imread(string(cvtest::TS::ptr()->get_data_path()) + "shared/fruits.png", cv::IMREAD_GRAYSCALE).copyTo(image);
     ASSERT_FALSE(image.empty());
 
     cv::Ptr<cv::xfeatures2d::SURF> surf = cv::xfeatures2d::SURF::create(hessianThreshold, nOctaves, nOctaveLayers, extended, upright);
     std::vector<cv::KeyPoint> keypoints;
     surf->detect(image, keypoints, cv::noArray());
 
-	cv::ocl::setUseOpenCL(false);
+    cv::ocl::setUseOpenCL(false);
     std::vector<cv::KeyPoint> keypoints_gold;
-	surf->detect(image, keypoints_gold, cv::noArray());
+    surf->detect(image, keypoints_gold, cv::noArray());
 
     ASSERT_EQ(keypoints_gold.size(), keypoints.size());
     int matchedCount = getMatchedPointsCount(keypoints_gold, keypoints);
@@ -166,23 +166,23 @@ TEST_P(SURF, Detector)
 
 TEST_P(SURF, Descriptor)
 {
-	cv::UMat image;
-	cv::ocl::setUseOpenCL(true);
-	cv::imread(string(cvtest::TS::ptr()->get_data_path()) + "shared/fruits.png", cv::IMREAD_GRAYSCALE).copyTo(image);
+    cv::UMat image;
+    cv::ocl::setUseOpenCL(true);
+    cv::imread(string(cvtest::TS::ptr()->get_data_path()) + "shared/fruits.png", cv::IMREAD_GRAYSCALE).copyTo(image);
     ASSERT_FALSE(image.empty());
 
-	cv::Ptr<cv::xfeatures2d::SURF> surf = cv::xfeatures2d::SURF::create(hessianThreshold, nOctaves, nOctaveLayers, extended, upright);
+    cv::Ptr<cv::xfeatures2d::SURF> surf = cv::xfeatures2d::SURF::create(hessianThreshold, nOctaves, nOctaveLayers, extended, upright);
 
     std::vector<cv::KeyPoint> keypoints;
-	surf->detect(image, keypoints, cv::noArray());
+    surf->detect(image, keypoints, cv::noArray());
 
     cv::UMat descriptors;
 
     surf->detectAndCompute(image, cv::noArray(), keypoints, descriptors, true);
 
-	cv::ocl::setUseOpenCL(false);
+    cv::ocl::setUseOpenCL(false);
     cv::Mat descriptors_gold;
-	surf->detectAndCompute(image, cv::noArray(), keypoints, descriptors_gold, true);
+    surf->detectAndCompute(image, cv::noArray(), keypoints, descriptors_gold, true);
 
     cv::BFMatcher matcher(surf->defaultNorm());
     std::vector<cv::DMatch> matches;
