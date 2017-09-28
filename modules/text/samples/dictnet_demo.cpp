@@ -12,79 +12,50 @@
 #include  "opencv2/imgproc.hpp"
 
 #include  <sstream>
-#include  <vector>
 #include  <iostream>
-#include  <iomanip>
-#include  <fstream>
 
-inline std::string getHelpStr(std::string progFname){
-    std::stringstream out;
-    out << "    Demo of wordspotting CNN for text recognition." << std::endl;
-    out << "    Max Jaderberg et al.: Reading Text in the Wild with Convolutional Neural Networks, IJCV 2015"<<std::endl<<std::endl;
+using namespace std;
+using namespace cv;
+using namespace cv::text;
 
-    out << "    Usage: " << progFname << " <output_file> <input_image1> <input_image2> ... <input_imageN>" << std::endl;
-    out << "    Caffe Model files  (dictnet_vgg.caffemodel, dictnet_vgg_deploy.prototxt, dictnet_vgg_labels.txt)"<<std::endl;
-    out << "      must be in the current directory." << std::endl << std::endl;
+inline void printHelp()
+{
+    cout << "    Demo of wordspotting CNN for text recognition." << endl;
+    cout << "    Max Jaderberg et al.: Reading Text in the Wild with Convolutional Neural Networks, IJCV 2015"<<std::endl<<std::endl;
 
-    out << "    Obtaining Caffe Model files in linux shell:"<<std::endl;
-    out << "    wget http://nicolaou.homouniversalis.org/assets/vgg_text/dictnet_vgg.caffemodel"<<std::endl;
-    out << "    wget http://nicolaou.homouniversalis.org/assets/vgg_text/dictnet_vgg_deploy.prototxt"<<std::endl;
-    out << "    wget http://nicolaou.homouniversalis.org/assets/vgg_text/dictnet_vgg_labels.txt"<<std::endl<<std::endl;
-    return out.str();
+    cout << "    Usage: program <input_image>" << endl;
+    cout << "    Caffe Model files  (dictnet_vgg.caffemodel, dictnet_vgg_deploy.prototxt, dictnet_vgg_labels.txt)"<<endl;
+    cout << "      must be in the current directory." << endl << endl;
+
+    cout << "    Obtaining Caffe Model files in linux shell:"<<endl;
+    cout << "    wget http://nicolaou.homouniversalis.org/assets/vgg_text/dictnet_vgg.caffemodel"<<endl;
+    cout << "    wget http://nicolaou.homouniversalis.org/assets/vgg_text/dictnet_vgg_deploy.prototxt"<<endl;
+    cout << "    wget http://nicolaou.homouniversalis.org/assets/vgg_text/dictnet_vgg_labels.txt"<<endl<<endl;
 }
 
-inline bool fileExists (std::string filename) {
-    std::ifstream f(filename.c_str());
-    return f.good();
-}
-
-
-int main(int argc, const char * argv[]){
-    const int USE_GPU=0;
-
-    if (argc < 3){
-        std::cout<<getHelpStr(argv[0]);
-        std::cout<<"Insufiecient parameters. Aborting!"<<std::endl;
+int main(int argc, const char * argv[])
+{
+    if (argc != 2)
+    {
+        printHelp();
         exit(1);
     }
 
-    if (!fileExists("dictnet_vgg.caffemodel") ||
-            !fileExists("dictnet_vgg_deploy.prototxt") ||
-            !fileExists("dictnet_vgg_labels.txt")){
-        std::cout<<getHelpStr(argv[0]);
-        std::cout<<"Model files not found in the current directory. Aborting!"<<std::endl;
+    Mat image = imread(argv[1], IMREAD_GRAYSCALE);
+
+    cout << "Read image (" << argv[1] << "): " << image.size << ", channels: " << image.channels() << ", depth: " << image.depth() << endl;
+
+    if (image.empty())
+    {
+        printHelp();
         exit(1);
     }
 
-    if (fileExists(argv[1])){
-        std::cout<<getHelpStr(argv[0]);
-        std::cout<<"Output file must not exist. Aborting!"<<std::endl;
-        exit(1);
-    }
+    Ptr<OCRHolisticWordRecognizer> wordSpotter = OCRHolisticWordRecognizer::create("dictnet_vgg_deploy.prototxt", "dictnet_vgg.caffemodel", "dictnet_vgg_labels.txt");
 
-    std::vector<cv::Mat> imageList;
-    for(int imageIdx=2;imageIdx<argc;imageIdx++){
-        if (fileExists(argv[imageIdx])){
-            imageList.push_back(cv::imread(cv::String(argv[imageIdx])));
-        }else{
-            std::cout<<getHelpStr(argv[0]);
-            std::cout<<argv[imageIdx]<<" doesn't exist. Aborting";
-        }
-    }
-    cv::Ptr<cv::text::DictNet> cnn=cv::text::DictNet::create(
-                "dictnet_vgg_deploy.prototxt","dictnet_vgg.caffemodel",100,USE_GPU);
+    std::string word;
+    vector<float> confs;
+    wordSpotter->run(image, word, 0, 0, &confs);
 
-    cv::Ptr<cv::text::OCRHolisticWordRecognizer> wordSpotter=
-            cv::text::OCRHolisticWordRecognizer::create(cnn,"dictnet_vgg_labels.txt");
-
-    std::vector<cv::String> wordList;
-    std::vector<double> outProbabillities;
-    wordSpotter->recogniseImageBatch(imageList,wordList,outProbabillities);
-
-    std::ofstream out;
-    out.open(argv[1]);
-    for(int imgIdx=0;imgIdx<int(imageList.size());imgIdx++){
-        out<<argv[imgIdx+2]<<","<<wordList[imgIdx]<<","<<outProbabillities[imgIdx]<<std::endl;
-    }
-    out.close();
+    cout << "Detected word: '" << word << "', confidence: " << confs[0] << endl;
 }
