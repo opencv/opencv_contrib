@@ -357,9 +357,9 @@ protected:
         }
 
         if(imgLoadMode == IMREAD_GRAYSCALE)
-            image.create( 50, 50, CV_8UC1 );
+            image.create( 256, 256, CV_8UC1 );
         else
-            image.create( 50, 50, CV_8UC3 );
+            image.create( 256, 256, CV_8UC3 );
         try
         {
             dextractor->compute( image, keypoints, descriptors );
@@ -1027,10 +1027,34 @@ TEST( Features2d_DescriptorExtractor_SIFT, regression )
 
 TEST( Features2d_DescriptorExtractor_SURF, regression )
 {
+#ifdef HAVE_OPENCL
+    bool useOCL = ocl::useOpenCL();
+    ocl::setUseOpenCL(false);
+#endif
+
     CV_DescriptorExtractorTest<L2<float> > test( "descriptor-surf",  0.05f,
                                                 SURF::create() );
     test.safe_run();
+
+#ifdef HAVE_OPENCL
+    ocl::setUseOpenCL(useOCL);
+#endif
 }
+
+#ifdef HAVE_OPENCL
+TEST( Features2d_DescriptorExtractor_SURF_OCL, regression )
+{
+    bool useOCL = ocl::useOpenCL();
+    ocl::setUseOpenCL(true);
+    if(ocl::useOpenCL())
+    {
+        CV_DescriptorExtractorTest<L2<float> > test( "descriptor-surf_ocl",  0.05f,
+                                                    SURF::create() );
+        test.safe_run();
+    }
+    ocl::setUseOpenCL(useOCL);
+}
+#endif
 
 TEST( Features2d_DescriptorExtractor_DAISY, regression )
 {
@@ -1187,7 +1211,7 @@ TEST(Features2d_BruteForceDescriptorMatcher_knnMatch, regression)
     Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce");
     ASSERT_TRUE(matcher != NULL);
 
-    Mat imgT(sz, sz, CV_8U, Scalar(255));
+    Mat imgT(256, 256, CV_8U, Scalar(255));
     line(imgT, Point(20, sz/2), Point(sz-21, sz/2), Scalar(100), 2);
     line(imgT, Point(sz/2, 20), Point(sz/2, sz-21), Scalar(100), 2);
     vector<KeyPoint> kpT;
@@ -1196,7 +1220,7 @@ TEST(Features2d_BruteForceDescriptorMatcher_knnMatch, regression)
     Mat descT;
     ext->compute(imgT, kpT, descT);
 
-    Mat imgQ(sz, sz, CV_8U, Scalar(255));
+    Mat imgQ(256, 256, CV_8U, Scalar(255));
     line(imgQ, Point(30, sz/2), Point(sz-31, sz/2), Scalar(100), 3);
     line(imgQ, Point(sz/2, 30), Point(sz/2, sz-31), Scalar(100), 3);
     vector<KeyPoint> kpQ;

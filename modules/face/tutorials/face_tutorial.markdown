@@ -60,7 +60,7 @@ the euclidean distance between feature vectors of a probe and reference image. S
 robust against changes in illumination by its nature, but has a huge drawback: the accurate
 registration of the marker points is complicated, even with state of the art algorithms. Some of the
 latest work on geometric face recognition was carried out in @cite Bru92 . A 22-dimensional feature
-vector was used and experiments on large datasets have shown, that geometrical features alone my not
+vector was used and experiments on large datasets have shown, that geometrical features alone may not
 carry enough information for face recognition.
 
 The Eigenfaces method described in @cite TP91 took a holistic approach to face recognition: A facial

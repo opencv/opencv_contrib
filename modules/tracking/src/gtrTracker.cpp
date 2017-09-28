@@ -110,23 +110,7 @@ bool TrackerGOTURNImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
     //Load GOTURN architecture from *.prototxt and pretrained weights from *.caffemodel
     String modelTxt = "goturn.prototxt";
     String modelBin = "goturn.caffemodel";
-    Ptr<dnn::Importer> importer;
-    try                                     //Import GOTURN model
-    {
-        importer = dnn::createCaffeImporter(modelTxt, modelBin);
-    }
-    catch (const cv::Exception &err)        //Importer can throw errors, we will catch them
-    {
-        std::cerr << err.msg << std::endl;
-    }
-    if (!importer)
-    {
-        cvError(CV_StsError, "cv::gtr::InitImpl", "GOTURN network loading error...", "gtrTracker.cpp", 117);
-    }
-
-    importer->populateNet(net);
-    importer.release();                     //We don't need importer anymore
-
+    net = dnn::readNetFromCaffe(modelTxt, modelBin);
     return true;
 }
 
@@ -169,11 +153,11 @@ bool TrackerGOTURNImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     searchPatch = searchPatch - 128;
 
     //Convert to Float type
-    Mat targetBlob = dnn::blobFromImage(targetPatch);
-    Mat searchBlob = dnn::blobFromImage(searchPatch);
+    Mat targetBlob = dnn::blobFromImage(targetPatch, 1.0f, Size(), Scalar(), false);
+    Mat searchBlob = dnn::blobFromImage(searchPatch, 1.0f, Size(), Scalar(), false);
 
-    net.setInput(targetBlob, ".data1");
-    net.setInput(searchBlob, ".data2");
+    net.setInput(targetBlob, "data1");
+    net.setInput(searchBlob, "data2");
 
     Mat resMat = net.forward("scale").reshape(1, 1);
 

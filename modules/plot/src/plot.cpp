@@ -132,6 +132,10 @@ namespace cv
             {
                 plotLineWidth = _plotLineWidth;
             }
+            void setInvertOrientation(bool _invertOrientation)
+            {
+                invertOrientation = _invertOrientation;
+            }
             void setNeedPlotLine(bool _needPlotLine)
             {
                 needPlotLine = _needPlotLine;
@@ -199,11 +203,15 @@ namespace cv
                 int NumVecElements = plotDataX.rows;
 
                 Mat InterpXdata = linearInterpolation(plotMinX, plotMaxX, 0, plotSizeWidth, plotDataX);
-                Mat InterpYdata = linearInterpolation(plotMinY, plotMaxY, 0, plotSizeHeight, plotDataY);
+                Mat InterpYdata = invertOrientation ?
+                                  linearInterpolation(plotMaxY, plotMinY, 0, plotSizeHeight, plotDataY) :
+                                  linearInterpolation(plotMinY, plotMaxY, 0, plotSizeHeight, plotDataY);
 
                 //Find the zeros in image coordinates
                 Mat InterpXdataFindZero = linearInterpolation(plotMinX_plusZero, plotMaxX_plusZero, 0, plotSizeWidth, plotDataX_plusZero);
-                Mat InterpYdataFindZero = linearInterpolation(plotMinY_plusZero, plotMaxY_plusZero, 0, plotSizeHeight, plotDataY_plusZero);
+                Mat InterpYdataFindZero = invertOrientation ?
+                                          linearInterpolation(plotMaxY_plusZero, plotMinY_plusZero, 0, plotSizeHeight, plotDataY_plusZero) :
+                                          linearInterpolation(plotMinY_plusZero, plotMaxY_plusZero, 0, plotSizeHeight, plotDataY_plusZero);
 
                 int ImageXzero = (int)InterpXdataFindZero.at<double>(NumVecElements,0);
                 int ImageYzero = (int)InterpYdataFindZero.at<double>(NumVecElements,0);
@@ -264,6 +272,7 @@ namespace cv
             double plotMinY_plusZero;
             double plotMaxY_plusZero;
             int plotLineWidth;
+            bool invertOrientation;
             bool needShowGrid;
             bool needShowText;
             int gridLinesNumber;
@@ -307,6 +316,7 @@ namespace cv
                 double MaxY_plusZero;
 
                 needPlotLine = true;
+                invertOrientation = false;
 
                 //Obtain the minimum and maximum values of Xdata
                 minMaxLoc(plotDataX,&MinX,&MaxX);
@@ -377,7 +387,6 @@ namespace cv
                     }
                 }
 
-
                 //Vertical Y axis
                 drawLine(ImageXzero, ImageXzero, 0, plotSizeHeight, axisColor);
                 LineSpace = cvRound(LineSpace * (float)plotSizeWidth / plotSizeHeight );
@@ -406,7 +415,6 @@ namespace cv
 
                     if(Ydata.at<double>(i,0)<0)
                         Ydata.at<double>(i,0)=0;
-
                 }
 
                 return Ydata;
@@ -450,13 +458,11 @@ namespace cv
 
                 line(plotResult, Axis_start, Axis_end, lineColor, plotLineWidth, 8, 0);
             }
-
         };
 
         Ptr<Plot2d> Plot2d::create(InputArray _plotData)
         {
             return Ptr<Plot2dImpl> (new Plot2dImpl (_plotData));
-
         }
 
         Ptr<Plot2d> Plot2d::create(InputArray _plotDataX, InputArray _plotDataY)
