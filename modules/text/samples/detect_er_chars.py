@@ -5,7 +5,6 @@ import os
 
 import cv2
 import numpy as np
-from matplotlib import pyplot as plt
 
 print('\ndetect_er_chars.py')
 print('       A simple demo script using the Extremal Region Filter algorithm described in:')
@@ -32,8 +31,8 @@ regions = cv2.text.detectRegions(gray,er1,er2)
 #Visualization
 rects = [cv2.boundingRect(p.reshape(-1, 1, 2)) for p in regions]
 for rect in rects:
-  cv2.rectangle(img, rect[0:2], (rect[0]+rect[2],rect[1]+rect[3]), (0, 0, 255), 2)
-img = img[:,:,::-1] #flip the colors dimension from BGR to RGB
-plt.imshow(img)
-plt.xticks([]), plt.yticks([])  # to hide tick values on X and Y axis
-plt.show()
+  cv2.rectangle(img, rect[0:2], (rect[0]+rect[2],rect[1]+rect[3]), (0, 0, 0), 2)
+for rect in rects:
+  cv2.rectangle(img, rect[0:2], (rect[0]+rect[2],rect[1]+rect[3]), (255, 255, 255), 1)
+cv2.imshow("Text detection result", img)
+cv2.waitKey(0)

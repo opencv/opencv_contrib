@@ -53,7 +53,6 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/imgproc/types_c.h>
 
 #include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
 
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/imgcodecs/imgcodecs_c.h>

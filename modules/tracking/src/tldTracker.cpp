@@ -52,9 +52,13 @@ namespace cv
 	void TrackerTLD::Params::write(cv::FileStorage& /*fs*/) const {}
 
 
-Ptr<TrackerTLD> TrackerTLD::createTracker(const TrackerTLD::Params &parameters)
+Ptr<TrackerTLD> TrackerTLD::create(const TrackerTLD::Params &parameters)
 {
     return Ptr<tld::TrackerTLDImpl>(new tld::TrackerTLDImpl(parameters));
+}
+Ptr<TrackerTLD> TrackerTLD::create()
+{
+    return Ptr<tld::TrackerTLDImpl>(new tld::TrackerTLDImpl());
 }
 
 namespace tld
@@ -82,7 +86,15 @@ bool TrackerTLDImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
 {
     Mat image_gray;
     trackerProxy->init(image, boundingBox);
-    cvtColor( image, image_gray, COLOR_BGR2GRAY );
+    if(image.channels() > 1)
+    {
+        cvtColor( image, image_gray, COLOR_BGR2GRAY );
+    }
+    else
+    {
+        image_gray = image.clone();
+    }
+
     data = Ptr<Data>(new Data(boundingBox));
     double scale = data->getScale();
     Rect2d myBoundingBox = boundingBox;
@@ -107,7 +119,14 @@ bool TrackerTLDImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
 bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
 {
     Mat image_gray, image_blurred, imageForDetector;
-    cvtColor( image, image_gray, COLOR_BGR2GRAY );
+    if(image.channels() > 1)
+    {
+        cvtColor( image, image_gray, COLOR_BGR2GRAY );
+    }
+    else
+    {
+        image_gray = image.clone();
+    }
     double scale = data->getScale();
     if( scale > 1.0 )
         resize(image_gray, imageForDetector, Size(cvRound(image.cols*scale), cvRound(image.rows*scale)), 0, 0, DOWNSCALE_MODE);

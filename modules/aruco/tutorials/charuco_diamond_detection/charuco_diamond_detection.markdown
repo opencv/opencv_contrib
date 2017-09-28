@@ -46,7 +46,7 @@ For instance:
 
 ``` c++
     cv::Mat diamondImage;
-    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
     cv::aruco::drawCharucoDiamond(dictionary, cv::Vec4i(45,68,28,74), 200, 120, markerImage);
 ```
 
@@ -78,14 +78,14 @@ After detecting markers, diamond are detected using the ```detectCharucoDiamond(
     ...
 
 
-    std::vector< int > markerIds;
-    std::vector< std::vector< cv::Point2f > > markerCorners;
+    std::vector<int> markerIds;
+    std::vector<std::vector< cv::Point2f>> markerCorners;
 
     // detect ArUco markers
     cv::aruco::detectMarkers(inputImage, dictionary, markerCorners, markerIds);
 
-    std::vector< cv::Vec4i > diamondIds;
-    std::vector< std::vector< cv::Point2f > > diamondCorners;
+    std::vector<cv::Vec4i> diamondIds;
+    std::vector<std::vector<cv::Point2f>> diamondCorners;
 
     // detect diamon diamonds
     cv::aruco::detectCharucoDiamond(inputImage, markerCorners, markerIds, squareLength / markerLength, diamondCorners, diamondIds);
@@ -107,8 +107,8 @@ corners and ids:
 
 ``` c++
     ...
-    std::vector< cv::Vec4i > diamondIds;
-    std::vector< std::vector< cv::Point2f > > diamondCorners;
+    std::vector<cv::Vec4i> diamondIds;
+    std::vector<std::vector<cv::Point2f>> diamondCorners;
     cv::aruco::detectCharucoDiamond(inputImage, markerCorners, markerIds, squareLength / markerLength, diamondCorners, diamondIds);
 
     cv::aruco::drawDetectedDiamonds(inputImage, diamondCorners, diamondIds);
@@ -134,8 +134,8 @@ i.e. using the ```estimatePoseSingleMarkers()``` function. For instance:
 ``` c++
     ...
 
-    std::vector< cv::Vec4i > diamondIds;
-    std::vector< std::vector< cv::Point2f > > diamondCorners;
+    std::vector<cv::Vec4i> diamondIds;
+    std::vector<std::vector<cv::Point2f>> diamondCorners;
 
     // detect diamon diamonds
     cv::aruco::detectCharucoDiamond(inputImage, markerCorners, markerIds, squareLength / markerLength, diamondCorners, diamondIds);

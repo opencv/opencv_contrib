@@ -51,7 +51,7 @@ namespace saliency
 class CmShow
 {
  public:
-  static cv::Mat HistBins( CMat& color3f, CMat& val, CStr& title, bool descendShow = false, CMat &with = cv::Mat() );
+  static cv::Mat HistBins( CMat& color3f, CMat& val, bool descendShow = false, CMat &with = cv::Mat() );
   static void showTinyMat( CStr &title, CMat &m );
   static inline void SaveShow( CMat& img, CStr& title );
 };

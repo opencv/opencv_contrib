@@ -63,12 +63,12 @@ namespace ximgproc
 */
 enum WMFWeightType
 {
-    WMF_EXP, //!< \f$exp(-|I1-I2|^2/(2*sigma^2))\f$
-    WMF_IV1, //!< \f$(|I1-I2|+sigma)^-1\f$
-    WMF_IV2, //!< \f$(|I1-I2|^2+sigma^2)^-1\f$
-    WMF_COS, //!< \f$dot(I1,I2)/(|I1|*|I2|)\f$
-    WMF_JAC, //!< \f$(min(r1,r2)+min(g1,g2)+min(b1,b2))/(max(r1,r2)+max(g1,g2)+max(b1,b2))\f$
-    WMF_OFF //!< unweighted
+    WMF_EXP = 1     , //!< \f$exp(-|I1-I2|^2/(2*sigma^2))\f$
+    WMF_IV1 = 1 << 1, //!< \f$(|I1-I2|+sigma)^-1\f$
+    WMF_IV2 = 1 << 2, //!< \f$(|I1-I2|^2+sigma^2)^-1\f$
+    WMF_COS = 1 << 3, //!< \f$dot(I1,I2)/(|I1|*|I2|)\f$
+    WMF_JAC = 1 << 4, //!< \f$(min(r1,r2)+min(g1,g2)+min(b1,b2))/(max(r1,r2)+max(g1,g2)+max(b1,b2))\f$
+    WMF_OFF = 1 << 5  //!< unweighted
 };
 
 /**
@@ -87,7 +87,8 @@ enum WMFWeightType
 *
 * @sa medianBlur, jointBilateralFilter
 */
-CV_EXPORTS void weightedMedianFilter(InputArray joint, InputArray src, OutputArray dst, int r, double sigma=25.5, WMFWeightType weightType=WMF_EXP, Mat mask=Mat());
+CV_EXPORTS_W void weightedMedianFilter(InputArray joint, InputArray src, OutputArray dst,
+                                       int r, double sigma = 25.5, int weightType = WMF_EXP, InputArray mask = noArray());
 }
 }
 

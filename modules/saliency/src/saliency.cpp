@@ -55,6 +55,8 @@ Ptr<Saliency> Saliency::create( const String& saliencyType )
 {
     if (saliencyType == "SPECTRAL_RESIDUAL")
         return makePtr<StaticSaliencySpectralResidual>();
+    else if (saliencyType == "FINE_GRAINED")
+        return makePtr<StaticSaliencyFineGrained>();
     else if (saliencyType == "BING")
         return makePtr<ObjectnessBING>();
     else if (saliencyType == "BinWangApr2014")

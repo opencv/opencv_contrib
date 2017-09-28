@@ -83,11 +83,15 @@ static inline void TCross(const double a[], const double b[], double c[])
   c[2] = (a[0])*(b[1])-(a[1])*(b[0]);
 }
 
-static inline double TAngle3(const double a[3], const double b[3])
+static inline double TAngle3Normalized(const double a[3], const double b[3])
 {
-  double c[3];
-  TCross(a,b,c);
-  return (atan2(TNorm3(c), TDot3(a, b)));
+  /*
+   angle = atan2(a dot b, |a x b|) # Bertram (accidental mistake)
+   angle = atan2(|a x b|, a dot b) # Tolga Birdal (correction)
+   angle = acos(a dot b)           # Hamdi Sahloul (simplification, a & b are normalized)
+  */
+
+  return acos(TDot3(a, b));
 }
 
 static inline void matrixProduct33(double *A, double *B, double *R)

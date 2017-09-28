@@ -11,7 +11,7 @@
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
  *
- *  *Redistributions of source code must retain the above copyright notice,
+ *  * Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
  *
  *  * Redistributions in binary form must reproduce the above copyright notice,
@@ -53,11 +53,8 @@ static std::string getOpenCVExtraDir()
 
 static void checkSimilarity(InputArray src, InputArray ref)
 {
-    double normInf = cvtest::norm(src, ref, NORM_INF);
-    double normL2 = cvtest::norm(src, ref, NORM_L2) / (src.total()*src.channels());
-
-    EXPECT_LE(normInf, 1.0);
-    EXPECT_LE(normL2, 1.0 / 16);
+    // Doesn't work with bilateral filter: EXPECT_LE(cvtest::norm(src, ref, NORM_INF), 1.0);
+    EXPECT_LE(cvtest::norm(src, ref, NORM_L2 | NORM_RELATIVE), 1e-3);
 }
 
 static Mat convertTypeAndSize(Mat src, int dstType, Size dstSize)

@@ -70,7 +70,7 @@ Dictionary::Dictionary(const Mat &_bytesList, int _markerSize, int _maxcorr) {
 /**
  */
 Ptr<Dictionary> Dictionary::create(int nMarkers, int markerSize) {
-    Ptr<Dictionary> baseDictionary = makePtr<Dictionary>();
+    const Ptr<Dictionary> baseDictionary = makePtr<Dictionary>();
     return create(nMarkers, markerSize, baseDictionary);
 }
 
@@ -78,7 +78,7 @@ Ptr<Dictionary> Dictionary::create(int nMarkers, int markerSize) {
 /**
  */
 Ptr<Dictionary> Dictionary::create(int nMarkers, int markerSize,
-                                   Ptr<Dictionary> &baseDictionary) {
+                                   const Ptr<Dictionary> &baseDictionary) {
     return generateCustomDictionary(nMarkers, markerSize, baseDictionary);
 }
 
@@ -163,7 +163,7 @@ int Dictionary::getDistanceToId(InputArray bits, int id, bool allRotations) cons
  */
 void Dictionary::drawMarker(int id, int sidePixels, OutputArray _img, int borderBits) const {
 
-    CV_Assert(sidePixels > markerSize);
+    CV_Assert(sidePixels >= (markerSize + 2*borderBits));
     CV_Assert(id < bytesList.rows);
     CV_Assert(borderBits > 0);
 
@@ -377,7 +377,7 @@ static int _getSelfDistance(const Mat &marker) {
 /**
  */
 Ptr<Dictionary> generateCustomDictionary(int nMarkers, int markerSize,
-                                         Ptr<Dictionary> &baseDictionary) {
+                                         const Ptr<Dictionary> &baseDictionary) {
 
     Ptr<Dictionary> out = makePtr<Dictionary>();
     out->markerSize = markerSize;

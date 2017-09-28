@@ -98,7 +98,7 @@ class CV_EXPORTS_W CharucoBoard : public Board {
      * and the size of the markers and chessboard squares.
      */
     CV_WRAP static Ptr<CharucoBoard> create(int squaresX, int squaresY, float squareLength,
-                                            float markerLength, Ptr<Dictionary> &dictionary);
+                                            float markerLength, const Ptr<Dictionary> &dictionary);
 
     /**
       *
@@ -146,6 +146,7 @@ class CV_EXPORTS_W CharucoBoard : public Board {
  * \f$A = \vecthreethree{f_x}{0}{c_x}{0}{f_y}{c_y}{0}{0}{1}\f$
  * @param distCoeffs optional vector of distortion coefficients
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
+ * @param minMarkers number of adjacent markers that must be detected to return a charuco corner
  *
  * This function receives the detected markers and returns the 2D position of the chessboard corners
  * from a ChArUco board using the detected Aruco markers. If camera parameters are provided,
@@ -155,10 +156,10 @@ class CV_EXPORTS_W CharucoBoard : public Board {
  * The function returns the number of interpolated corners.
  */
 CV_EXPORTS_W int interpolateCornersCharuco(InputArrayOfArrays markerCorners, InputArray markerIds,
-                                           InputArray image, Ptr<CharucoBoard> &board,
+                                           InputArray image, const Ptr<CharucoBoard> &board,
                                            OutputArray charucoCorners, OutputArray charucoIds,
                                            InputArray cameraMatrix = noArray(),
-                                           InputArray distCoeffs = noArray());
+                                           InputArray distCoeffs = noArray(), int minMarkers = 2);
 
 
 
@@ -173,16 +174,18 @@ CV_EXPORTS_W int interpolateCornersCharuco(InputArrayOfArrays markerCorners, Inp
  * @param distCoeffs vector of distortion coefficients
  * \f$(k_1, k_2, p_1, p_2[, k_3[, k_4, k_5, k_6],[s_1, s_2, s_3, s_4]])\f$ of 4, 5, 8 or 12 elements
  * @param rvec Output vector (e.g. cv::Mat) corresponding to the rotation vector of the board
- * (@sa Rodrigues).
+ * (see cv::Rodrigues).
  * @param tvec Output vector (e.g. cv::Mat) corresponding to the translation vector of the board.
+ * @param useExtrinsicGuess defines whether initial guess for \b rvec and \b tvec will be used or not.
  *
  * This function estimates a Charuco board pose from some detected corners.
  * The function checks if the input corners are enough and valid to perform pose estimation.
  * If pose estimation is valid, returns true, else returns false.
  */
 CV_EXPORTS_W bool estimatePoseCharucoBoard(InputArray charucoCorners, InputArray charucoIds,
-                                           Ptr<CharucoBoard> &board, InputArray cameraMatrix,
-                                           InputArray distCoeffs, OutputArray rvec, OutputArray tvec);
+                                           const Ptr<CharucoBoard> &board, InputArray cameraMatrix,
+                                           InputArray distCoeffs, OutputArray rvec, OutputArray tvec,
+                                           bool useExtrinsicGuess = false);
 
 
 
@@ -223,19 +226,36 @@ CV_EXPORTS_W void drawDetectedCornersCharuco(InputOutputArray image, InputArray 
  * from the model coordinate space (in which object points are specified) to the world coordinate
  * space, that is, a real position of the board pattern in the k-th pattern view (k=0.. *M* -1).
  * @param tvecs Output vector of translation vectors estimated for each pattern view.
- * @param flags flags Different flags  for the calibration process (@sa calibrateCamera)
+ * @param stdDeviationsIntrinsics Output vector of standard deviations estimated for intrinsic parameters.
+ * Order of deviations values:
+ * \f$(f_x, f_y, c_x, c_y, k_1, k_2, p_1, p_2, k_3, k_4, k_5, k_6 , s_1, s_2, s_3,
+ * s_4, \tau_x, \tau_y)\f$ If one of parameters is not estimated, it's deviation is equals to zero.
+ * @param stdDeviationsExtrinsics Output vector of standard deviations estimated for extrinsic parameters.
+ * Order of deviations values: \f$(R_1, T_1, \dotsc , R_M, T_M)\f$ where M is number of pattern views,
+ * \f$R_i, T_i\f$ are concatenated 1x3 vectors.
+ * @param perViewErrors Output vector of average re-projection errors estimated for each pattern view.
+ * @param flags flags Different flags  for the calibration process (see #calibrateCamera for details).
  * @param criteria Termination criteria for the iterative optimization algorithm.
  *
  * This function calibrates a camera using a set of corners of a  Charuco Board. The function
  * receives a list of detected corners and its identifiers from several views of the Board.
  * The function returns the final re-projection error.
  */
-CV_EXPORTS_W double calibrateCameraCharuco(
-    InputArrayOfArrays charucoCorners, InputArrayOfArrays charucoIds, Ptr<CharucoBoard> &board,
+CV_EXPORTS_AS(calibrateCameraCharucoExtended) double calibrateCameraCharuco(
+    InputArrayOfArrays charucoCorners, InputArrayOfArrays charucoIds, const Ptr<CharucoBoard> &board,
     Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
-    OutputArrayOfArrays rvecs = noArray(), OutputArrayOfArrays tvecs = noArray(), int flags = 0,
+    OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs,
+    OutputArray stdDeviationsIntrinsics, OutputArray stdDeviationsExtrinsics,
+    OutputArray perViewErrors, int flags = 0,
     TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
 
+/** @brief It's the same function as #calibrateCameraCharuco but without calibration error estimation.
+*/
+CV_EXPORTS_W double calibrateCameraCharuco(
+  InputArrayOfArrays charucoCorners, InputArrayOfArrays charucoIds, const Ptr<CharucoBoard> &board,
+  Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
+  OutputArrayOfArrays rvecs = noArray(), OutputArrayOfArrays tvecs = noArray(), int flags = 0,
+  TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
 
 
 
@@ -309,7 +329,7 @@ CV_EXPORTS_W void drawDetectedDiamonds(InputOutputArray image, InputArrayOfArray
  * This function return the image of a ChArUco marker, ready to be printed.
  */
 // TODO cannot be exported yet; conversion from/to Vec4i is not wrapped in core
-CV_EXPORTS void drawCharucoDiamond(Ptr<Dictionary> &dictionary, Vec4i ids, int squareLength,
+CV_EXPORTS void drawCharucoDiamond(const Ptr<Dictionary> &dictionary, Vec4i ids, int squareLength,
                                    int markerLength, OutputArray img, int marginSize = 0,
                                    int borderBits = 1);
 

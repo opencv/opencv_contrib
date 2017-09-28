@@ -144,7 +144,7 @@ struct beamSearch_node {
     double score;
     vector<int> segmentation;
     bool expanded;
-    // TODO calculating score of its childs would be much faster if we store the last column
+    // TODO calculating score of its child would be much faster if we store the last column
     //      of their "root" path.
 };
 
@@ -231,7 +231,7 @@ public:
 
         // TODO if input is a text line (not a word) we may need to split into words here!
 
-        // do sliding window classification along a croped word image
+        // do sliding window classification along a cropped word image
         classifier->eval(src, recognition_probabilities, oversegmentation);
 
         // if the number of oversegmentation points found is less than 2 we can not do nothing!!
@@ -499,7 +499,7 @@ Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create( Ptr<OCRBeamSearchDecoder
     return makePtr<OCRBeamSearchDecoderImpl>(_classifier, _vocabulary, transition_p, emission_p, _mode, _beam_size);
 }
 
-CV_EXPORTS_W Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(Ptr<OCRBeamSearchDecoder::ClassifierCallback> _classifier,
+Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(Ptr<OCRBeamSearchDecoder::ClassifierCallback> _classifier,
                                                         const String& _vocabulary,
                                                         InputArray transition_p,
                                                         InputArray emission_p,
@@ -509,8 +509,17 @@ CV_EXPORTS_W Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(Ptr<OCRBeamS
     return makePtr<OCRBeamSearchDecoderImpl>(_classifier, _vocabulary, transition_p, emission_p, (decoder_mode)_mode, _beam_size);
 }
 
+Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(const String& _filename,
+                                                        const String& _vocabulary,
+                                                        InputArray transition_p,
+                                                        InputArray emission_p,
+                                                        int _mode,
+                                                        int _beam_size)
+{
+    return makePtr<OCRBeamSearchDecoderImpl>(loadOCRBeamSearchClassifierCNN(_filename), _vocabulary, transition_p, emission_p, (decoder_mode)_mode, _beam_size);
+}
 
-class CV_EXPORTS OCRBeamSearchClassifierCNN : public OCRBeamSearchDecoder::ClassifierCallback
+class OCRBeamSearchClassifierCNN : public OCRBeamSearchDecoder::ClassifierCallback
 {
 public:
     //constructor
@@ -566,7 +575,7 @@ OCRBeamSearchClassifierCNN::OCRBeamSearchClassifierCNN (const string& filename)
 
     nr_feature = weights.rows;
     nr_class   = weights.cols;
-    patch_size  = (int)sqrt((float)kernels.cols);
+    patch_size  = cvRound(sqrt((float)kernels.cols));
     window_size = 4*patch_size;
     step_size   = 4;
     quad_size   = 12;
@@ -602,8 +611,12 @@ void OCRBeamSearchClassifierCNN::eval( InputArray _src, vector< vector<double> >
     Mat tmp;
     Mat img;
 
+    int sz = src.cols - window_size;
+    int sz_window_quad = window_size - quad_size;
+    int sz_half_quad = (int)(quad_size/2-1);
+    int sz_quad_patch = quad_size - patch_size;
     // begin sliding window loop foreach detection window
-    for (int x_c=0; x_c<=src.cols-window_size; x_c=x_c+step_size)
+    for (int x_c = 0; x_c <= sz; x_c += step_size)
     {
 
         img = src(Rect(Point(x_c,0),Size(window_size,window_size)));
@@ -613,21 +626,21 @@ void OCRBeamSearchClassifierCNN::eval( InputArray _src, vector< vector<double> >
 
 
         int quad_id = 1;
-        for (int q_x=0; q_x<=window_size-quad_size; q_x=q_x+(quad_size/2-1))
+
+        for (int q_x = 0; q_x <= sz_window_quad; q_x += sz_half_quad)
         {
-            for (int q_y=0; q_y<=window_size-quad_size; q_y=q_y+(quad_size/2-1))
+            for (int q_y = 0; q_y <= sz_window_quad; q_y += sz_half_quad)
             {
                 Rect quad_rect = Rect(q_x,q_y,quad_size,quad_size);
                 quad = img(quad_rect);
 
                 //start sliding window (8x8) in each tile and store the patch as row in data_pool
-                for (int w_x=0; w_x<=quad_size-patch_size; w_x++)
+                for (int w_x = 0; w_x <= sz_quad_patch; w_x++)
                 {
-                    for (int w_y=0; w_y<=quad_size-patch_size; w_y++)
+                    for (int w_y = 0; w_y <= sz_quad_patch; w_y++)
                     {
-                        quad(Rect(w_x,w_y,patch_size,patch_size)).copyTo(tmp);
+                        quad(Rect(w_x,w_y,patch_size,patch_size)).convertTo(tmp, CV_64F);
                         tmp = tmp.reshape(0,1);
-                        tmp.convertTo(tmp, CV_64F);
                         normalizeAndZCA(tmp);
                         vector<double> patch;
                         tmp.copyTo(patch);
@@ -656,6 +669,7 @@ void OCRBeamSearchClassifierCNN::eval( InputArray _src, vector< vector<double> >
                 quad_id++;
             }
         }
+
 
         //do dot product of each normalized and whitened patch
         //each pool is averaged and this yields a representation of 9xD

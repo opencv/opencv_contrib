@@ -48,12 +48,9 @@
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/private.hpp"
 #include "opencv2/core/ocl.hpp"
+#include "opencv2/core/opencl/ocl_defs.hpp"
 
 #include <valarray>
-
-#ifdef HAVE_OPENCV_OCL
-    #include "opencv2/ocl/private/util.hpp"
-#endif
 
 namespace cv
 {

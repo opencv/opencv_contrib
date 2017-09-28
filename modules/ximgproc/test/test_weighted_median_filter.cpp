@@ -11,7 +11,7 @@
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
  *
- *  *Redistributions of source code must retain the above copyright notice,
+ *  * Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
  *
  *  * Redistributions in binary form must reproduce the above copyright notice,
@@ -100,6 +100,16 @@ TEST(WeightedMedianFilterTest, ReferenceAccuracy)
     double totalMaxError = 1.0/32.0*src.total()*src.channels();
 
     EXPECT_LE(cvtest::norm(res, ref, NORM_L2), totalMaxError);
+}
+
+TEST(WeightedMedianFilterTest, mask_zeros_no_crash)
+{
+    Mat img = imread(getDataDir() + "cv/ximgproc/sources/01.png");
+    Mat mask = Mat::zeros(img.size(), CV_8U);
+    Mat filtered;
+    weightedMedianFilter(img, img, filtered, 3, 20, WMF_EXP, mask);
+
+    EXPECT_EQ(cv::norm(img, filtered, NORM_INF), 0.0);
 }
 
 INSTANTIATE_TEST_CASE_P(TypicalSET, WeightedMedianFilterTest, Combine(Values(szODD, szQVGA),  Values(WMF_EXP, WMF_IV2, WMF_OFF)));

@@ -90,7 +90,7 @@ static bool readDetectorParameters(string filename, Ptr<aruco::DetectorParameter
     fs["minCornerDistanceRate"] >> params->minCornerDistanceRate;
     fs["minDistanceToBorder"] >> params->minDistanceToBorder;
     fs["minMarkerDistanceRate"] >> params->minMarkerDistanceRate;
-    fs["doCornerRefinement"] >> params->doCornerRefinement;
+    fs["cornerRefinementMethod"] >> params->cornerRefinementMethod;
     fs["cornerRefinementWinSize"] >> params->cornerRefinementWinSize;
     fs["cornerRefinementMaxIterations"] >> params->cornerRefinementMaxIterations;
     fs["cornerRefinementMinAccuracy"] >> params->cornerRefinementMinAccuracy;
@@ -158,7 +158,7 @@ int main(int argc, char *argv[]) {
     }
 
     int markersX = parser.get<int>("w");
-    int markersY = parser.get<int>("w");
+    int markersY = parser.get<int>("h");
     float markerLength = parser.get<float>("l");
     float markerSeparation = parser.get<float>("s");
     int dictionaryId = parser.get<int>("d");

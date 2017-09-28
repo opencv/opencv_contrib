@@ -768,22 +768,25 @@ inline void SuperpixelLSCImpl::PostEnforceLabelConnectivity( int threshold )
 
       double W = W1 + W2;
 
-      for ( int b = 0; b < m_nr_channels; b++ )
+      if ( (Label1 > 0) && (Label2 > 0) )
       {
-        centerC1[b][Label2] = float((W2*centerC1[b][Label2] + W1*centerC1[b][Label1]) / W);
-        centerC2[b][Label2] = float((W2*centerC2[b][Label2] + W1*centerC2[b][Label1]) / W);
-      }
-      centerX1[Label2] = float((W2*centerX1[Label2] + W1*centerX1[Label1]) / W);
-      centerX2[Label2] = float((W2*centerX2[Label2] + W1*centerX2[Label1]) / W);
-      centerY1[Label2] = float((W2*centerY1[Label2] + W1*centerY1[Label1]) / W);
-      centerY2[Label2] = float((W2*centerY2[Label2] + W1*centerY2[Label1]) / W);
+        for ( int b = 0; b < m_nr_channels; b++ )
+        {
+          centerC1[b][Label2] = float((W2*centerC1[b][Label2] + W1*centerC1[b][Label1]) / W);
+          centerC2[b][Label2] = float((W2*centerC2[b][Label2] + W1*centerC2[b][Label1]) / W);
+        }
+        centerX1[Label2] = float((W2*centerX1[Label2] + W1*centerX1[Label1]) / W);
+        centerX2[Label2] = float((W2*centerX2[Label2] + W1*centerX2[Label1]) / W);
+        centerY1[Label2] = float((W2*centerY1[Label2] + W1*centerY1[Label1]) / W);
+        centerY2[Label2] = float((W2*centerY2[Label2] + W1*centerY2[Label1]) / W);
 
-      centerW[Label2] = (float)W;
-      for( size_t i = 0; i < (*S).xLoc.size(); i++ )
-      {
-        int x = (*S).xLoc[i];
-        int y = (*S).yLoc[i];
-        m_klabels.at<int>(y,x) = Label2;
+        centerW[Label2] = (float)W;
+        for( size_t i = 0; i < (*S).xLoc.size(); i++ )
+        {
+          int x = (*S).xLoc[i];
+          int y = (*S).yLoc[i];
+          m_klabels.at<int>(y,x) = Label2;
+        }
       }
 
       vector<Superpixel>::iterator Stmp;
@@ -793,8 +796,23 @@ inline void SuperpixelLSCImpl::PostEnforceLabelConnectivity( int threshold )
         Size[Label2] = Size[Label1] + Size[Label2];
         if( Size[Label2] >= threshold )
         {
-          Sarray.erase( S );
-          Sarray.erase( Stmp );
+          if( S == Stmp )
+          {
+            // erasing only one should be sufficient when the iterators are the same
+            // (maybe the case S == Stmp is not even possible?)
+            Sarray.erase( S );
+          }
+          else if( S < Stmp )
+          {
+            // erase the latter element first, so the other iterator is not invalidated
+            Sarray.erase( Stmp );
+            Sarray.erase( S );
+          }
+          else
+          {
+            Sarray.erase( S );
+            Sarray.erase( Stmp );
+          }
         }
         else
         {
@@ -1165,7 +1183,7 @@ inline void SuperpixelLSCImpl::GetFeatureSpace()
     }
 
     // compute m_W normalization array
-    m_W = Mat( m_height, m_width, CV_32F );
+    m_W = Mat( m_height, m_width, CV_32F, 0.0f );
     parallel_for_( Range(0, m_width), FeatureSpaceWeights( m_chvec, &m_W,
                    sigmaX1, sigmaX2, sigmaY1, sigmaY2, sigmaC1, sigmaC2,
                    m_nr_channels, m_chvec_max, m_dist_coeff, m_color_coeff,
@@ -1742,10 +1760,6 @@ inline void SuperpixelLSCImpl::PerformLSC( const int&  itrnum )
                    &centerC1, &centerC2, m_nr_channels, m_chvec_max,
                    m_dist_coeff, m_color_coeff, m_stepx, m_stepy ) );
 
-    // parallel reduce structure
-    FeatureCenterDists fcd( m_chvec, m_W, m_klabels, m_nr_channels, m_chvec_max,
-                            m_dist_coeff, m_color_coeff, m_stepx, m_stepy, m_numlabels );
-
     // K-Means
     for( int itr = 0; itr < itrnum; itr++ )
     {
@@ -1758,6 +1772,10 @@ inline void SuperpixelLSCImpl::PerformLSC( const int&  itrnum )
                      centerX1, centerX2, centerY1, centerY2, centerC1, centerC2,
                      m_nr_channels, m_chvec_max, m_dist_coeff, m_color_coeff,
                      m_stepx, m_stepy ) );
+
+      // parallel reduce structure
+      FeatureCenterDists fcd( m_chvec, m_W, m_klabels, m_nr_channels, m_chvec_max,
+                              m_dist_coeff, m_color_coeff, m_stepx, m_stepy, m_numlabels );
 
       // accumulate center distances
       parallel_reduce( BlockedRange(0, m_width), fcd );

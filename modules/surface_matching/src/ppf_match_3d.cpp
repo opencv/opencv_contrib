@@ -41,7 +41,7 @@
 #include "precomp.hpp"
 #include "hash_murmur.hpp"
 
-namespace cv 
+namespace cv
 {
 namespace ppf_match_3d
 {
@@ -129,6 +129,9 @@ PPF3DDetector::PPF3DDetector()
   angle_step = angle_step_radians;
   trained = false;
 
+  hash_table = NULL;
+  hash_nodes = NULL;
+
   setSearchParams();
 }
 
@@ -141,6 +144,9 @@ PPF3DDetector::PPF3DDetector(const double RelativeSamplingStep, const double Rel
   //SceneSampleStep = 1.0/RelativeSceneSampleStep;
   angle_step = angle_step_radians;
   trained = false;
+
+  hash_table = NULL;
+  hash_nodes = NULL;
 
   setSearchParams();
 }
@@ -191,20 +197,9 @@ void PPF3DDetector::computePPFFeatures(const double p1[4], const double n1[4],
     return ;
   }
 
-  /*
-  Tolga Birdal's note:
-  Issues of numerical stability is of concern here.
-  Bertram's suggestion: atan2(a dot b, |axb|)
-  My correction :
-  I guess it should be: angle = atan2(norm(cross(a,b)), dot(a,b))
-  The macro is implemented accordingly.
-  TAngle3 actually outputs in range [0, pi] as
-  Bertram suggests
-  */
-
-  f[0] = TAngle3(n1, d);
-  f[1] = TAngle3(n2, d);
-  f[2] = TAngle3(n1, n2);
+  f[0] = TAngle3Normalized(n1, d);
+  f[1] = TAngle3Normalized(n2, d);
+  f[2] = TAngle3Normalized(n1, n2);
 }
 
 void PPF3DDetector::clearTrainingModels()
@@ -252,8 +247,6 @@ void PPF3DDetector::trainModel(const Mat &PC)
 
   int numPPF = sampled.rows*sampled.rows;
   ppf = Mat(numPPF, PPF_LENGTH, CV_32FC1);
-  int ppfStep = (int)ppf.step;
-  int sampledStep = (int)sampled.step;
 
   // TODO: Maybe I could sample 1/5th of them here. Check the performance later.
   int numRefPoints = sampled.rows;
@@ -268,7 +261,7 @@ void PPF3DDetector::trainModel(const Mat &PC)
   // since this is just a training part.
   for (int i=0; i<numRefPoints; i++)
   {
-    float* f1 = (float*)(&sampled.data[i * sampledStep]);
+    float* f1 = sampled.ptr<float>(i);
     const double p1[4] = {f1[0], f1[1], f1[2], 0};
     const double n1[4] = {f1[3], f1[4], f1[5], 0};
 
@@ -278,7 +271,7 @@ void PPF3DDetector::trainModel(const Mat &PC)
       // cannnot compute the ppf with myself
       if (i!=j)
       {
-        float* f2 = (float*)(&sampled.data[j * sampledStep]);
+        float* f2 = sampled.ptr<float>(j);
         const double p2[4] = {f2[0], f2[1], f2[2], 0};
         const double n2[4] = {f2[3], f2[4], f2[5], 0};
 
@@ -286,8 +279,7 @@ void PPF3DDetector::trainModel(const Mat &PC)
         computePPFFeatures(p1, n1, p2, n2, f);
         KeyType hashValue = hashPPF(f, angle_step_radians, distanceStep);
         double alpha = computeAlpha(p1, n1, p2);
-        unsigned int corrInd = i*numRefPoints+j;
-        unsigned int ppfInd = corrInd*ppfStep;
+        unsigned int ppfInd = i*numRefPoints+j;
 
         THash* hashNode = &hash_nodes[i*numRefPoints+j];
         hashNode->id = hashValue;
@@ -296,7 +288,7 @@ void PPF3DDetector::trainModel(const Mat &PC)
 
         hashtableInsertHashed(hashTable, hashValue, (void*)hashNode);
 
-        float* ppfRow = (float*)(&(ppf.data[ ppfInd ]));
+        float* ppfRow = ppf.ptr<float>(ppfInd);
         ppfRow[0] = (float)f[0];
         ppfRow[1] = (float)f[1];
         ppfRow[2] = (float)f[2];
@@ -309,7 +301,6 @@ void PPF3DDetector::trainModel(const Mat &PC)
   angle_step = angle_step_radians;
   distance_step = distanceStep;
   hash_table = hashTable;
-  ppf_step = ppfStep;
   num_ref_points = numRefPoints;
   sampled_pc = sampled;
   trained = true;
@@ -331,7 +322,7 @@ bool PPF3DDetector::matchPose(const Pose3D& sourcePose, const Pose3D& targetPose
   return (phi<this->rotation_threshold && dNorm < this->position_threshold);
 }
 
-void PPF3DDetector::clusterPoses(std::vector<Pose3DPtr> poseList, int numPoses, std::vector<Pose3DPtr> &finalPoses)
+void PPF3DDetector::clusterPoses(std::vector<Pose3DPtr>& poseList, int numPoses, std::vector<Pose3DPtr> &finalPoses)
 {
   std::vector<PoseCluster3DPtr> poseClusters;
 
@@ -513,7 +504,7 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
     unsigned int refIndMax = 0, alphaIndMax = 0;
     unsigned int maxVotes = 0;
 
-    float* f1 = (float*)(&sampled.data[i * sampled.step]);
+    float* f1 = sampled.ptr<float>(i);
     const double p1[4] = {f1[0], f1[1], f1[2], 0};
     const double n1[4] = {f1[3], f1[4], f1[5], 0};
     double *row2, *row3, tsg[3]={0}, Rsg[9]={0}, RInv[9]={0};
@@ -532,7 +523,7 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
     {
       if (i!=j)
       {
-        float* f2 = (float*)(&sampled.data[j * sampled.step]);
+        float* f2 = sampled.ptr<float>(j);
         const double p2[4] = {f2[0], f2[1], f2[2], 0};
         const double n2[4] = {f2[3], f2[4], f2[5], 0};
         double p2t[4], alpha_scene;
@@ -565,7 +556,7 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
           THash* tData = (THash*) node->data;
           int corrI = (int)tData->i;
           int ppfInd = (int)tData->ppfInd;
-          float* ppfCorrScene = (float*)(&ppf.data[ppfInd]);
+          float* ppfCorrScene = ppf.ptr<float>(ppfInd);
           double alpha_model = (double)ppfCorrScene[PPF_LENGTH-1];
           double alpha = alpha_model - alpha_scene;
 
@@ -620,7 +611,7 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
                         };
 
     // TODO : Compute pose
-    const float* fMax = (float*)(&sampled_pc.data[refIndMax * sampled_pc.step]);
+    const float* fMax = sampled_pc.ptr<float>(refIndMax);
     const double pMax[4] = {fMax[0], fMax[1], fMax[2], 1};
     const double nMax[4] = {fMax[3], fMax[4], fMax[5], 1};
 
@@ -649,7 +640,12 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
 
     Pose3DPtr pose(new Pose3D(alpha, refIndMax, maxVotes));
     pose->updatePose(rawPose);
-    poseList.push_back(pose);
+    #if defined (_OPENMP)
+    #pragma omp critical
+    #endif
+    {
+      poseList.push_back(pose);
+    }
 
 #if defined (_OPENMP)
     free(accumulator);

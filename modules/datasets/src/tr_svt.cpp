@@ -42,7 +42,7 @@
 #include "opencv2/datasets/tr_svt.hpp"
 #include "opencv2/datasets/util.hpp"
 
-#include <opencv2/datasets/tinyxml2/tinyxml2.h>
+#include "tinyxml2/tinyxml2.h"
 
 namespace cv
 {

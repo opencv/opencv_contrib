@@ -75,8 +75,8 @@ namespace cv
 			~TLDDetector(){}
 			double ensembleClassifierNum(const uchar* data);
 			void prepareClassifiers(int rowstep);
-			double Sr(const Mat_<uchar>& patch);
-			double Sc(const Mat_<uchar>& patch);
+			double Sr(const Mat_<uchar>& patch) const;
+			double Sc(const Mat_<uchar>& patch) const;
 #ifdef HAVE_OPENCL
 			double ocl_Sr(const Mat_<uchar>& patch);
 			double ocl_Sc(const Mat_<uchar>& patch);
@@ -89,6 +89,12 @@ namespace cv
 			std::vector<Mat_<uchar> > *positiveExamples, *negativeExamples;
 			std::vector<int> *timeStampsPositive, *timeStampsNegative;
 			double *originalVariancePtr;
+			std::vector<double> scValues, srValues;
+			std::vector<Mat_<uchar> > standardPatches;
+
+			std::vector <Mat> resized_imgs, blurred_imgs;
+			std::vector <Point> varBuffer, ensBuffer;
+			std::vector <int> varScaleIDs, ensScaleIDs;
 
 			static void generateScanGrid(int rows, int cols, Size initBox, std::vector<Rect2d>& res, bool withScaling = false);
 			struct LabeledPatch

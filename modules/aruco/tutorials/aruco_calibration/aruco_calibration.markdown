@@ -33,18 +33,18 @@ visible in all the viewpoints.
 The function to calibrate is ```calibrateCameraCharuco()```. Example:
 
 ``` c++
-    aruco::CharucoBoard board = ... // create charuco board
+    cv::Ptr<aruco::CharucoBoard> board = ... // create charuco board
     cv::Size imgSize = ... // camera image size
 
-    std::vector< std::vector<cv::Point2f> > allCharucoCorners;
-    std::vector< std::vector<int> > allCharucoIds;
+    std::vector<std::vector<cv::Point2f>> allCharucoCorners;
+    std::vector<std::vector<int>> allCharucoIds;
     // Detect charuco board from several viewpoints and fill allCharucoCorners and allCharucoIds
     ...
     ...
 
     // After capturing in several viewpoints, start calibration
     cv::Mat cameraMatrix, distCoeffs;
-    std::vector< Mat > rvecs, tvecs;
+    std::vector<cv::Mat> rvecs, tvecs;
     int calibrationFlags = ... // Set calibration flags (same than in calibrateCamera() function)
 
     double repError = cv::aruco::calibrateCameraCharuco(allCharucoCorners, allCharucoIds, board, imgSize, cameraMatrix, distCoeffs, rvecs, tvecs, calibrationFlags);
@@ -81,19 +81,19 @@ requires the detections of an ArUco board from different viewpoints.
 Example of ```calibrateCameraAruco()``` use:
 
 ``` c++
-    aruco::Board board = ... // create aruco board
+    cv::Ptr<aruco::Board> board = ... // create aruco board
     cv::Size imgSize = ... // camera image size
 
-    std::vector< std::vector< cv::Point2f > > allCornersConcatenated;
-    std::vector< int > allIdsConcatenated;
-    std::vector< int > markerCounterPerFrame;
+    std::vector<std::vector<cv::Point2f>> allCornersConcatenated;
+    std::vector<int> allIdsConcatenated;
+    std::vector<int> markerCounterPerFrame;
     // Detect aruco board from several viewpoints and fill allCornersConcatenated, allIdsConcatenated and markerCounterPerFrame
     ...
     ...
 
     // After capturing in several viewpoints, start calibration
     cv::Mat cameraMatrix, distCoeffs;
-    std::vector< Mat > rvecs, tvecs;
+    std::vector<cv::Mat> rvecs, tvecs;
     int calibrationFlags = ... // Set calibration flags (same than in calibrateCamera() function)
 
     double repError = cv::aruco::calibrateCameraAruco(allCornersConcatenated, allIdsConcatenated, markerCounterPerFrame, board, imgSize, cameraMatrix, distCoeffs, rvecs, tvecs, calibrationFlags);

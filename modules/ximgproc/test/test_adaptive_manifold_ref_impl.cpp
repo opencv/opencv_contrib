@@ -11,7 +11,7 @@
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
  *  
- *  *Redistributions of source code must retain the above copyright notice,
+ *  * Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
  *  
  *  * Redistributions in binary form must reproduce the above copyright notice,
@@ -253,7 +253,7 @@ namespace
         const double Lr = 1.0 - sigma_r;
         return max(2, static_cast<int>(ceil(Hs * Lr)));
     }
-
+/*
     void ensureSizeIsEnough(int rows, int cols, int type, Mat& m)
     {
         if (m.empty() || m.type() != type || m.data != m.datastart)
@@ -283,7 +283,7 @@ namespace
     {
         ensureSizeIsEnough(size.height, size.width, type, m);
     }
-
+*/
     template <typename T>
     inline void ensureSizeIsEnough(int rows, int cols, Mat_<T>& m)
     {

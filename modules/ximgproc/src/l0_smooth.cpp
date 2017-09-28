@@ -11,7 +11,7 @@
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
  *
- *  *Redistributions of source code must retain the above copyright notice,
+ *  * Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
  *
  *  * Redistributions in binary form must reproduce the above copyright notice,
@@ -210,14 +210,6 @@ namespace
         Mat D;
         merge(channels, D);
         D.copyTo(dst);
-    }
-
-    void addComplex(InputArray aSrc, int bSrc, OutputArray dst)
-    {
-        Mat panels[2];
-        split(aSrc.getMat(), panels);
-        panels[0] = panels[0] + bSrc;
-        merge(panels, 2, dst);
     }
 
     void divComplexByRealMultiChannel(vector<Mat> &numer,

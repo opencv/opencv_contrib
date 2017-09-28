@@ -38,9 +38,9 @@ int main(void)
     Mat I = imread("input.png");
 
     // Various masks
-    Mat mask1 = imread("mask1.png");
-    Mat mask2 = imread("mask2.png");
-    Mat mask3 = imread("mask3.png");
+    Mat mask1 = imread("mask1.png", IMREAD_GRAYSCALE);
+    Mat mask2 = imread("mask2.png", IMREAD_GRAYSCALE);
+    Mat mask3 = imread("mask3.png", IMREAD_GRAYSCALE);
 
     // Apply the damage
     Mat input1, input2, input3;

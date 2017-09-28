@@ -4,7 +4,7 @@ compiler:
   - clang
 before_script:
   - cd ../
-  - git clone https://github.com/Itseez/opencv.git
+  - git clone https://github.com/opencv/opencv.git
   - mkdir build-opencv
   - cd build-opencv
   - cmake -DOPENCV_EXTRA_MODULES_PATH=../opencv_contrib/modules ../opencv

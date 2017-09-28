@@ -57,21 +57,14 @@ namespace cv
         {
             public:
 
-            Plot2dImpl(Mat _plotData)
+            Plot2dImpl(InputArray plotData)
             {
+                Mat _plotData = plotData.getMat();
                 //if the matrix is not Nx1 or 1xN
                 if(_plotData.cols > 1 && _plotData.rows > 1)
-                {
-                    std::cout << "ERROR: Plot data must be a 1xN or Nx1 matrix." << std::endl;
-                    exit(0);
-                }
+                    CV_Error(Error::StsBadArg, "ERROR: Plot data must be a 1xN or Nx1 matrix.\n");
 
-                //if the matrix type is not CV_64F
-                if(_plotData.type() != CV_64F)
-                {
-                    std::cout << "ERROR: Plot data type must be double (CV_64F)." << std::endl;
-                    exit(0);
-                }
+                CV_Assert(_plotData.type() == CV_64F);
 
                 //in case we have a row matrix than needs to be transposed
                 if(_plotData.cols > _plotData.rows)
@@ -91,21 +84,15 @@ namespace cv
 
             }
 
-            Plot2dImpl(Mat _plotDataX, Mat _plotDataY)
+            Plot2dImpl(InputArray plotDataX_, InputArray plotDataY_)
             {
+                Mat _plotDataX = plotDataX_.getMat();
+                Mat _plotDataY = plotDataY_.getMat();
                 //f the matrix is not Nx1 or 1xN
                 if((_plotDataX.cols > 1 && _plotDataX.rows > 1) || (_plotDataY.cols > 1 && _plotDataY.rows > 1))
-                {
-                    std::cout << "ERROR: Plot data must be a 1xN or Nx1 matrix." << std::endl;
-                    exit(0);
-                }
+                    CV_Error(Error::StsBadArg, "ERROR: Plot data must be a 1xN or Nx1 matrix.\n");
 
-                //if the matrix type is not CV_64F
-                if(_plotDataX.type() != CV_64F || _plotDataY.type() != CV_64F)
-                {
-                    std::cout << "ERROR: Plot data type must be double (CV_64F)." << std::endl;
-                   exit(0);
-                }
+                CV_Assert(_plotDataX.type() == CV_64F && _plotDataY.type() == CV_64F);
 
                 //in case we have a row matrix than needs to be transposed
                 if(_plotDataX.cols > _plotDataX.rows)
@@ -143,7 +130,15 @@ namespace cv
             }
             void setPlotLineWidth(int _plotLineWidth)
             {
-                plotLineWidth=_plotLineWidth;
+                plotLineWidth = _plotLineWidth;
+            }
+            void setInvertOrientation(bool _invertOrientation)
+            {
+                invertOrientation = _invertOrientation;
+            }
+            void setNeedPlotLine(bool _needPlotLine)
+            {
+                needPlotLine = _needPlotLine;
             }
             void setPlotLineColor(Scalar _plotLineColor)
             {
@@ -177,48 +172,84 @@ namespace cv
                 else
                     plotSizeHeight = 300;
             }
-
+            void setShowGrid(bool _needShowGrid)
+            {
+                needShowGrid = _needShowGrid;
+            }
+            void setShowText(bool _needShowText)
+            {
+                needShowText = _needShowText;
+            }
+            void setGridLinesNumber(int _gridLinesNumber)
+            {
+                if(_gridLinesNumber <= 0)
+                    _gridLinesNumber = 1;
+                gridLinesNumber = _gridLinesNumber;
+            }
+            void setPointIdxToPrint(int _cursorPos)
+            {
+                if(_cursorPos >= plotDataX.rows || _cursorPos < 0)
+                    _cursorPos = plotDataX.rows - 1;
+                cursorPos = _cursorPos;
+            }
             //render the plotResult to a Mat
-            void render(Mat &_plotResult)
+            void render(OutputArray _plotResult)
             {
                 //create the plot result
-                plotResult = Mat(plotSizeHeight, plotSizeWidth, CV_8UC3, plotBackgroundColor);
+                _plotResult.create(plotSizeHeight, plotSizeWidth, CV_8UC3);
+                plotResult = _plotResult.getMat();
+                plotResult.setTo(plotBackgroundColor);
 
                 int NumVecElements = plotDataX.rows;
 
                 Mat InterpXdata = linearInterpolation(plotMinX, plotMaxX, 0, plotSizeWidth, plotDataX);
-                Mat InterpYdata = linearInterpolation(plotMinY, plotMaxY, 0, plotSizeHeight, plotDataY);
+                Mat InterpYdata = invertOrientation ?
+                                  linearInterpolation(plotMaxY, plotMinY, 0, plotSizeHeight, plotDataY) :
+                                  linearInterpolation(plotMinY, plotMaxY, 0, plotSizeHeight, plotDataY);
 
                 //Find the zeros in image coordinates
                 Mat InterpXdataFindZero = linearInterpolation(plotMinX_plusZero, plotMaxX_plusZero, 0, plotSizeWidth, plotDataX_plusZero);
-                Mat InterpYdataFindZero = linearInterpolation(plotMinY_plusZero, plotMaxY_plusZero, 0, plotSizeHeight, plotDataY_plusZero);
+                Mat InterpYdataFindZero = invertOrientation ?
+                                          linearInterpolation(plotMaxY_plusZero, plotMinY_plusZero, 0, plotSizeHeight, plotDataY_plusZero) :
+                                          linearInterpolation(plotMinY_plusZero, plotMaxY_plusZero, 0, plotSizeHeight, plotDataY_plusZero);
 
                 int ImageXzero = (int)InterpXdataFindZero.at<double>(NumVecElements,0);
                 int ImageYzero = (int)InterpYdataFindZero.at<double>(NumVecElements,0);
 
-                double CurrentX = plotDataX.at<double>(NumVecElements-1,0);
-                double CurrentY = plotDataY.at<double>(NumVecElements-1,0);
-
-                //Draw the plot by connecting lines between the points
-                Point p1;
-                p1.x = (int)InterpXdata.at<double>(0,0);
-                p1.y = (int)InterpYdata.at<double>(0,0);
+                double CurrentX = plotDataX.at<double>(cursorPos,0);
+                double CurrentY = plotDataY.at<double>(cursorPos,0);
 
                 drawAxis(ImageXzero,ImageYzero, CurrentX, CurrentY, plotAxisColor, plotGridColor);
 
-                for (int r=1; r<InterpXdata.rows; r++){
+                if(needPlotLine)
+                {
+                    //Draw the plot by connecting lines between the points
+                    Point p1;
+                    p1.x = (int)InterpXdata.at<double>(0,0);
+                    p1.y = (int)InterpYdata.at<double>(0,0);
 
-                    Point p2;
-                    p2.x = (int)InterpXdata.at<double>(r,0);
-                    p2.y = (int)InterpYdata.at<double>(r,0);
+                    for (int r=1; r<InterpXdata.rows; r++)
+                    {
+                        Point p2;
+                        p2.x = (int)InterpXdata.at<double>(r,0);
+                        p2.y = (int)InterpYdata.at<double>(r,0);
 
-                    line(plotResult, p1, p2, plotLineColor, plotLineWidth, 8, 0);
+                        line(plotResult, p1, p2, plotLineColor, plotLineWidth, 8, 0);
 
-                    p1 = p2;
-
+                        p1 = p2;
+                    }
                 }
+                else
+                {
+                    for (int r=0; r<InterpXdata.rows; r++)
+                    {
+                        Point p;
+                        p.x = (int)InterpXdata.at<double>(r,0);
+                        p.y = (int)InterpYdata.at<double>(r,0);
 
-                _plotResult = plotResult.clone();
+                        circle(plotResult, p, 1, plotLineColor, plotLineWidth, 8, 0);
+                    }
+                }
             }
 
             protected:
@@ -241,6 +272,11 @@ namespace cv
             double plotMinY_plusZero;
             double plotMaxY_plusZero;
             int plotLineWidth;
+            bool invertOrientation;
+            bool needShowGrid;
+            bool needShowText;
+            int gridLinesNumber;
+            int cursorPos;
 
             //colors of each plot element
             Scalar plotLineColor;
@@ -251,6 +287,9 @@ namespace cv
 
             //the final plot result
             Mat plotResult;
+
+            //flag which enables/disables connection of plotted points by lines
+            bool needPlotLine;
 
             void plotHelper(Mat _plotDataX, Mat _plotDataY)
             {
@@ -275,6 +314,9 @@ namespace cv
                 double MaxX_plusZero;
                 double MinY_plusZero;
                 double MaxY_plusZero;
+
+                needPlotLine = true;
+                invertOrientation = false;
 
                 //Obtain the minimum and maximum values of Xdata
                 minMaxLoc(plotDataX,&MinX,&MaxX);
@@ -310,22 +352,30 @@ namespace cv
                 setPlotBackgroundColor(Scalar(0, 0, 0));
                 setPlotLineColor(Scalar(0, 255, 255));
                 setPlotTextColor(Scalar(255, 255, 255));
+                setShowGrid(true);
+                setShowText(true);
+                setGridLinesNumber(10);
+                setPointIdxToPrint(-1);
             }
 
             void drawAxis(int ImageXzero, int ImageYzero, double CurrentX, double CurrentY, Scalar axisColor, Scalar gridColor)
             {
-                drawValuesAsText(0, ImageXzero, ImageYzero, 10, 20);
-                drawValuesAsText(0, ImageXzero, ImageYzero, -20, 20);
-                drawValuesAsText(0, ImageXzero, ImageYzero, 10, -10);
-                drawValuesAsText(0, ImageXzero, ImageYzero, -20, -10);
-                drawValuesAsText("X = %g",CurrentX, 0, 0, 40, 20);
-                drawValuesAsText("Y = %g",CurrentY, 0, 20, 40, 20);
+                if(needShowText)
+                {
+                    drawValuesAsText(0, ImageXzero, ImageYzero, 10, 20);
+                    drawValuesAsText(0, ImageXzero, ImageYzero, -20, 20);
+                    drawValuesAsText(0, ImageXzero, ImageYzero, 10, -10);
+                    drawValuesAsText(0, ImageXzero, ImageYzero, -20, -10);
+                    drawValuesAsText((format("X_%d = ", cursorPos) + "%g").c_str(), CurrentX, 0, 0, 40, 20);
+                    drawValuesAsText((format("Y_%d = ", cursorPos) + "%g").c_str(), CurrentY, 0, 20, 40, 20);
+                }
 
                 //Horizontal X axis and equispaced horizontal lines
-                int LineSpace = 50;
+                int LineSpace = cvRound(plotSizeHeight / (float)gridLinesNumber);
                 int TraceSize = 5;
                 drawLine(0, plotSizeWidth, ImageYzero, ImageYzero, axisColor);
 
+               if(needShowGrid)
                for(int i=-plotSizeHeight; i<plotSizeHeight; i=i+LineSpace){
 
                     if(i!=0){
@@ -337,10 +387,11 @@ namespace cv
                     }
                 }
 
-
                 //Vertical Y axis
                 drawLine(ImageXzero, ImageXzero, 0, plotSizeHeight, axisColor);
+                LineSpace = cvRound(LineSpace * (float)plotSizeWidth / plotSizeHeight );
 
+                if(needShowGrid)
                 for(int i=-plotSizeWidth; i<plotSizeWidth; i=i+LineSpace){
 
                     if(i!=0){
@@ -364,7 +415,6 @@ namespace cv
 
                     if(Ydata.at<double>(i,0)<0)
                         Ydata.at<double>(i,0)=0;
-
                 }
 
                 return Ydata;
@@ -408,16 +458,14 @@ namespace cv
 
                 line(plotResult, Axis_start, Axis_end, lineColor, plotLineWidth, 8, 0);
             }
-
         };
 
-        Ptr<Plot2d> createPlot2d(Mat _plotData)
+        Ptr<Plot2d> Plot2d::create(InputArray _plotData)
         {
             return Ptr<Plot2dImpl> (new Plot2dImpl (_plotData));
-
         }
 
-        Ptr<Plot2d> createPlot2d(Mat _plotDataX, Mat _plotDataY)
+        Ptr<Plot2d> Plot2d::create(InputArray _plotDataX, InputArray _plotDataY)
         {
             return Ptr<Plot2dImpl> (new Plot2dImpl (_plotDataX, _plotDataY));
         }

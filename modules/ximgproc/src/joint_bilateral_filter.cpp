@@ -11,7 +11,7 @@
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
  *  
- *  *Redistributions of source code must retain the above copyright notice,
+ *  * Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
  *  
  *  * Redistributions in binary form must reproduce the above copyright notice,
@@ -77,7 +77,7 @@ public:
         joint(joint_), src(src_), dst(dst_), radius(radius_), maxk(maxk_), 
         scaleIndex(scaleIndex_), spaceOfs(spaceOfs_), spaceWeights(spaceWeights_), expLUT(expLUT_)
     {
-        CV_DbgAssert(joint.type() == JointVec::type && src.type() == dst.type() && src.type() == SrcVec::type);
+        CV_DbgAssert(joint.type() == traits::Type<JointVec>::value && src.type() == dst.type() && src.type() == traits::Type<SrcVec>::value);
         CV_DbgAssert(joint.rows == src.rows && src.rows == dst.rows + 2*radius);
         CV_DbgAssert(joint.cols == src.cols && src.cols == dst.cols + 2*radius);
     }
@@ -223,7 +223,7 @@ public:
         joint(joint_), src(src_), dst(dst_), radius(radius_), maxk(maxk_),
         spaceOfs(spaceOfs_), spaceWeights(spaceWeights_), expLUT(expLUT_)
     {
-        CV_DbgAssert(joint.type() == JointVec::type && src.type() == dst.type() && src.type() == SrcVec::type);
+        CV_DbgAssert(joint.type() == traits::Type<JointVec>::value && src.type() == dst.type() && src.type() == traits::Type<SrcVec>::value);
         CV_DbgAssert(joint.rows == src.rows && src.rows == dst.rows + 2 * radius);
         CV_DbgAssert(joint.cols == src.cols && src.cols == dst.cols + 2 * radius);
     }

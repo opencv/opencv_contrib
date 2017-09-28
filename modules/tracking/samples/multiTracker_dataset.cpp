@@ -39,11 +39,16 @@
 //
 //M*/
 
+#include "opencv2/opencv_modules.hpp"
+#include "opencv2/core.hpp"
+#ifdef HAVE_OPENCV_DATASETS
+
 #include "opencv2/datasets/track_vot.hpp"
 #include <opencv2/core/utility.hpp>
 #include <opencv2/tracking.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
+#include "samples_utility.hpp"
 #include <iostream>
 
 using namespace std;
@@ -180,7 +185,7 @@ int main(int argc, char *argv[])
 				//Initialize the tracker and add targets
 				for (int i = 0; i < (int)boundingBoxes.size(); i++)
 				{
-					if (!mt.addTarget(frame, boundingBoxes[i], tracker_algorithm))
+                    if (!mt.addTarget(frame, boundingBoxes[i], createTrackerByName(tracker_algorithm)))
 					{
 						cout << "Trackers Init Error!!!";
 						return 0;
@@ -228,3 +233,11 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
+
+#else // ! HAVE_OPENCV_DATASETS
+#include <opencv2/core.hpp>
+int main() {
+	CV_Error(cv::Error::StsNotImplemented , "this sample needs to be built with opencv_datasets !");
+	return -1;
+}
+#endif // HAVE_OPENCV_DATASETS

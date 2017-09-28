@@ -183,7 +183,64 @@ public:
 @param decisionThreshold Threshold value, above which it is marked foreground, else background.
  */
 CV_EXPORTS_W Ptr<BackgroundSubtractorGMG> createBackgroundSubtractorGMG(int initializationFrames=120,
-                                                                        double decisionThreshold=0.8);                                  
+                                                                        double decisionThreshold=0.8);
+
+/** @brief Background subtraction based on counting.
+
+  About as fast as MOG2 on a high end system.
+  More than twice faster than MOG2 on cheap hardware (benchmarked on Raspberry Pi3).
+
+  %Algorithm by Sagi Zeevi ( https://github.com/sagi-z/BackgroundSubtractorCNT )
+*/
+class CV_EXPORTS_W BackgroundSubtractorCNT  : public BackgroundSubtractor
+{
+public:
+    // BackgroundSubtractor interface
+    CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1) = 0;
+    CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const = 0;
+
+    /** @brief Returns number of frames with same pixel color to consider stable.
+    */
+    CV_WRAP virtual int getMinPixelStability() const = 0;
+    /** @brief Sets the number of frames with same pixel color to consider stable.
+    */
+    CV_WRAP virtual void setMinPixelStability(int value) = 0;
+
+    /** @brief Returns maximum allowed credit for a pixel in history.
+    */
+    CV_WRAP virtual int getMaxPixelStability() const = 0;
+    /** @brief Sets the maximum allowed credit for a pixel in history.
+    */
+    CV_WRAP virtual void setMaxPixelStability(int value) = 0;
+
+    /** @brief Returns if we're giving a pixel credit for being stable for a long time.
+    */
+    CV_WRAP virtual bool getUseHistory() const = 0;
+    /** @brief Sets if we're giving a pixel credit for being stable for a long time.
+    */
+    CV_WRAP virtual void setUseHistory(bool value) = 0;
+
+    /** @brief Returns if we're parallelizing the algorithm.
+    */
+    CV_WRAP virtual bool getIsParallel() const = 0;
+    /** @brief Sets if we're parallelizing the algorithm.
+    */
+    CV_WRAP virtual void setIsParallel(bool value) = 0;
+};
+
+/** @brief Creates a CNT Background Subtractor
+
+@param minPixelStability number of frames with same pixel color to consider stable
+@param useHistory determines if we're giving a pixel credit for being stable for a long time
+@param maxPixelStability maximum allowed credit for a pixel in history
+@param isParallel determines if we're parallelizing the algorithm
+ */
+
+CV_EXPORTS_W Ptr<BackgroundSubtractorCNT>
+createBackgroundSubtractorCNT(int minPixelStability = 15,
+                              bool useHistory = true,
+                              int maxPixelStability = 15*60,
+                              bool isParallel = true);
 
 //! @}
 

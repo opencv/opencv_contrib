@@ -47,11 +47,11 @@ namespace reg {
 //! @addtogroup reg
 //! @{
 
-/** @brief Base class for modelling an algorithm for calculating a
+/** @brief Base class for modelling an algorithm for calculating a map
 
 The class is only used to define the common interface for any possible mapping algorithm.
  */
-class CV_EXPORTS Mapper
+class CV_EXPORTS_W Mapper
 {
 public:
     virtual ~Mapper(void) {}
@@ -60,16 +60,16 @@ public:
      * Calculate mapping between two images
      * \param[in] img1 Reference image
      * \param[in] img2 Warped image
-     * \param[in,out] res Map from img1 to img2, stored in a smart pointer. If present as input,
-     *       it is an initial rough estimation that the mapper will try to refine.
+     * \param[in] If present, it is an initial rough estimation that the mapper will try to refine.
+     * \return Map from img1 to img2, stored in a smart pointer.
      */
-    virtual void calculate(const cv::Mat& img1, const cv::Mat& img2, cv::Ptr<Map>& res) const = 0;
+    CV_WRAP virtual cv::Ptr<Map> calculate(InputArray img1, InputArray img2, cv::Ptr<Map> init = cv::Ptr<Map>()) const = 0;
 
     /*
      * Returns a map compatible with the Mapper class
      * \return Pointer to identity Map
      */
-    virtual cv::Ptr<Map> getMap(void) const = 0;
+    CV_WRAP virtual cv::Ptr<Map> getMap() const = 0;
 
 protected:
     /*
