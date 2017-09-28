@@ -168,9 +168,6 @@ void matchKeyPoints(const vector<KeyPoint>& keypoints0, const Mat& H,
         const float r0 =  0.5f * keypoints0[i0].size;
         for(size_t i1 = 0; i1 < keypoints1.size(); i1++)
         {
-            if(nearestPointIndex >= 0 && usedMask[i1])
-                continue;
-
             float r1 = 0.5f * keypoints1[i1].size;
             float intersectRatio = calcIntersectRatio(points0t.at<Point2f>(i0), r0,
                                                       keypoints1[i1].pt, r1);
@@ -619,7 +616,7 @@ protected:
 TEST(Features2d_RotationInvariance_Detector_SURF, regression)
 {
     DetectorRotationInvarianceTest test(SURF::create(),
-                                        0.44f,
+                                        0.65f,
                                         0.76f);
     test.safe_run();
 }
@@ -859,10 +856,21 @@ TEST(Features2d_RotationInvariance2_Detector_SURF, regression)
     vector<KeyPoint> keypoints;
     surf->detect(cross, keypoints);
 
+    // Expect 5 keypoints.  One keypoint has coordinates (50.0, 50.0).
+    // The other 4 keypoints should have the same response.
+    // The order of the keypoints is indeterminate.
     ASSERT_EQ(keypoints.size(), (vector<KeyPoint>::size_type) 5);
-    ASSERT_LT( fabs(keypoints[1].response - keypoints[2].response), 1e-6);
-    ASSERT_LT( fabs(keypoints[1].response - keypoints[3].response), 1e-6);
-    ASSERT_LT( fabs(keypoints[1].response - keypoints[4].response), 1e-6);
+
+    int i1 = -1;
+    for(int i = 0; i < 5; i++)
+    {
+        if(keypoints[i].pt.x == 50.0f)
+            ;
+        else if(i1 == -1)
+            i1 = i;
+        else
+            ASSERT_LT(fabs(keypoints[i1].response - keypoints[i].response) / keypoints[i1].response, 1e-6);
+    }
 }
 
 TEST(DISABLED_Features2d_ScaleInvariance_Descriptor_DAISY, regression)
@@ -942,7 +950,7 @@ TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_LBGM, regression)
     DescriptorScaleInvarianceTest test(SURF::create(),
                                        BoostDesc::create(BoostDesc::LBGM, true, 6.25f),
                                        NORM_L1,
-                                       0.98f);
+                                       0.95f);
     test.safe_run();
 }
 
