@@ -318,7 +318,7 @@ A basic full example for pose estimation from single markers:
         if (ids.size() > 0) {
             cv::aruco::drawDetectedMarkers(imageCopy, corners, ids);
 
-            std::vector<cv::Mat> rvecs, tvecs;
+            std::vector<cv::Vec3d> rvecs, tvecs;
             cv::aruco::estimatePoseSingleMarkers(corners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
             // draw axis for each marker
             for(int i=0; i<ids.size(); i++)
