@@ -1,4 +1,5 @@
-Object Detection using Boosted Features
-=======================================
+Extended 2D Object Detection
+============================
 
-Uses a Waldboost cascade and local binary patterns computed as integral features for 2D object detection.
+- Object Detection using Waldboost cascade and boosted features (local binary patterns computed as integral) for 2D object detection
+- Fine-grained search based on Gaussian process regression with latent variables for object detection

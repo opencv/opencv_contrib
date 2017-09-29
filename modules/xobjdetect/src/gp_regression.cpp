@@ -30,7 +30,7 @@
 
 #include <string>
 #include <cmath>
-#include "gp_regression.hpp"
+#include "opencv2/xobjdetect/gp_regression.hpp"
 #include "base_detector.hpp"
 
 typedef cv2::fgs_gp_box_reg BoxReg;
