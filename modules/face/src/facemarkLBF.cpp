@@ -610,7 +610,7 @@ namespace face {
             }
         }
         else {
-            printf("Wrong n_landmarks, it must be 29 or 68");
+            printf("Wrong n_landmarks, currently only 29 and 68 landmark points are supported");
         }
 
     #undef SWAP

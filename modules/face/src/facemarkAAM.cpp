@@ -388,6 +388,8 @@ namespace face {
         /*chop the textures model*/
         int maxCol = param_m;
         if(AAM.textures[scl].A.cols<param_m)maxCol = AAM.textures[scl].A.cols;
+        if(AAM.textures[scl].AA.cols<maxCol)maxCol = AAM.textures[scl].AA.cols;
+
         Mat A = Mat(AAM.textures[scl].A,Range(0,AAM.textures[scl].A.rows), Range(0,maxCol)).clone();
         Mat AA = Mat(AAM.textures[scl].AA,Range(0,AAM.textures[scl].AA.rows), Range(0,maxCol)).clone();
 

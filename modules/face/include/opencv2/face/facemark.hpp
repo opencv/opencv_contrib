@@ -77,13 +77,14 @@ namespace face {
     @param faces Output of the function which represent region of interest of the detected faces.
     Each face is stored in cv::Rect container.
     @param extra_params extra parameters
+
     <B>Example of usage</B>
     @code
-    std::vector<cv::Rect> roi;
-    cv::CascadeClassifier face_cascade("haarcascade_frontalface_alt.xml");
-    cv::face::getFacesHaar(frame, roi, face_cascade);
-    for(int j=0;j<rects.size();j++){
-        cv::rectangle(frame, rects[j], cv::Scalar(255,0,255));
+    std::vector<cv::Rect> faces;
+    CParams * params = new CParams("haarcascade_frontalface_alt.xml");
+    cv::face::getFaces(frame, faces, params);
+    for(int j=0;j<faces.size();j++){
+        cv::rectangle(frame, faces[j], cv::Scalar(255,0,255));
     }
     cv::imshow("detection", frame);
     @endcode
