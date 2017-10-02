@@ -621,7 +621,7 @@ bool MotionSaliencyBinWangApr2014::decisionThresholdAdaptation()
   return true;
 }
 
-bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, OutputArray saliencyMap )
+bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( InputArray image, OutputArray saliencyMap )
 {
   Mat highResBFMask, u_highResBFMask;
   Mat lowResBFMask, u_lowResBFMask;
@@ -646,24 +646,11 @@ bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( const InputArray image, 
     decisionThresholdAdaptation();
   }
 
-  //double t = (double) getTickCount();
-
   templateOrdering();
-
-  /*t = ( (double) getTickCount() - t ) / getTickFrequency();
-   std::cout << "T :" << t << std::endl;
-   */
   templateReplacement( saliencyMap.getMat(), image.getMat() );
-
-  //double t2 = (double) getTickCount();
-
   templateOrdering();
-
-  //t2 = ( (double) getTickCount() - t2 ) / getTickFrequency();
-  //std::cout << "T2 :" << t2 << std::endl;
 
   activityControlFlag = true;
-
   return true;
 }
 
