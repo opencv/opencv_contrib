@@ -47,7 +47,7 @@ TEST(CV_Face_Facemark, test_utilities) {
     string image_file = cvtest::findDataFile("face/therock.jpg", true);
     string annotation_file = cvtest::findDataFile("face/therock.pts", true);
     string cascade_filename =
-        cvtest::findDataFile("face/lbpcascade_frontalface.xml", true);
+        cvtest::findDataFile("cascadeandhog/cascades/lbpcascade_frontalface.xml", true);
 
     std::vector<Point2f> facial_points;
     EXPECT_NO_THROW(loadFacePoints(annotation_file,facial_points));

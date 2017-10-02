@@ -82,7 +82,7 @@ TEST(CV_Face_FacemarkLBF, can_create_default) {
 
 TEST(CV_Face_FacemarkLBF, can_set_custom_detector) {
     string cascade_filename =
-        cvtest::findDataFile("face/lbpcascade_frontalface.xml", true);
+        cvtest::findDataFile("cascadeandhog/cascades/lbpcascade_frontalface.xml", true);
 
     FacemarkLBF::Params params;
     params.cascade_face = cascade_filename;
@@ -109,7 +109,7 @@ TEST(CV_Face_FacemarkLBF, can_perform_training) {
     points_train.push_back(p2);
 
     string cascade_filename =
-        cvtest::findDataFile("face/lbpcascade_frontalface.xml", true);
+        cvtest::findDataFile("cascadeandhog/cascades/lbpcascade_frontalface.xml", true);
     FacemarkLBF::Params params;
     params.cascade_face = cascade_filename;
     params.verbose = false;
@@ -137,7 +137,7 @@ TEST(CV_Face_FacemarkLBF, can_load_model) {
 TEST(CV_Face_FacemarkLBF, can_detect_landmarks) {
     string model_filename = "LBF.model";
     string cascade_filename =
-        cvtest::findDataFile("face/lbpcascade_frontalface.xml", true);
+        cvtest::findDataFile("cascadeandhog/cascades/lbpcascade_frontalface.xml", true);
 
     FacemarkLBF::Params params;
     params.model_filename = model_filename;
