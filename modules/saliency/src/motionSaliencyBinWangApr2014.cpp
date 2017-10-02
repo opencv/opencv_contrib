@@ -623,6 +623,8 @@ bool MotionSaliencyBinWangApr2014::decisionThresholdAdaptation()
 
 bool MotionSaliencyBinWangApr2014::computeSaliencyImpl( InputArray image, OutputArray saliencyMap )
 {
+  CV_Assert(image.channels() == 1);
+
   Mat highResBFMask, u_highResBFMask;
   Mat lowResBFMask, u_lowResBFMask;
   Mat not_lowResBFMask;
