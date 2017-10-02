@@ -133,6 +133,12 @@ void er_draw(vector<Mat> &channels, vector<vector<ERStat> > &regions, vector<Vec
     }
 }
 
+// std::toupper is int->int
+static char char_toupper(char ch)
+{
+    return (char)std::toupper((int)ch);
+}
+
 int main(int argc, char *argv[])
 {
     const char *keys =
@@ -244,7 +250,7 @@ int main(int argc, char *argv[])
                     continue;
                 }
 
-                std::transform(words[j].begin(), words[j].end(), words[j].begin(), ::toupper);
+                std::transform(words[j].begin(), words[j].end(), words[j].begin(), char_toupper);
 
                 if (find(example->lex.begin(), example->lex.end(), words[j]) == example->lex.end())
                 {

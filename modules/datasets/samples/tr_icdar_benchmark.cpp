@@ -133,6 +133,12 @@ void er_draw(vector<Mat> &channels, vector<vector<ERStat> > &regions, vector<Vec
     }
 }
 
+// std::toupper is int->int
+static char char_toupper(char ch)
+{
+    return (char)std::toupper((int)ch);
+}
+
 int main(int argc, char *argv[])
 {
     const char *keys =
@@ -200,7 +206,7 @@ int main(int argc, char *argv[])
         for (size_t w=0; w<example->words.size(); w++)
         {
             string w_upper = example->words[w].value;
-            transform(w_upper.begin(), w_upper.end(), w_upper.begin(), ::toupper);
+            transform(w_upper.begin(), w_upper.end(), w_upper.begin(), char_toupper);
             if ((find (lex->begin(), lex->end(), w_upper) == lex->end()) &&
                 (is_word_spotting) && (selected_lex != 0))
                 example->words[w].value = "###";
@@ -297,7 +303,7 @@ int main(int argc, char *argv[])
                     continue;
                 }
 
-                std::transform(words[j].begin(), words[j].end(), words[j].begin(), ::toupper);
+                std::transform(words[j].begin(), words[j].end(), words[j].begin(), char_toupper);
 
                 /* Increase confidence of predicted words matching a word in the lexicon */
                 if (lex->size() > 0)
@@ -413,7 +419,7 @@ int main(int argc, char *argv[])
                     }
                 }
 
-                std::transform(t.value.begin(), t.value.end(), t.value.begin(), ::toupper);
+                std::transform(t.value.begin(), t.value.end(), t.value.begin(), char_toupper);
                 if (((t.value==final_words[j]) || (alnum_value==final_words[j])) &&
                     !(final_boxes[j].tl().x > t.x+t.width || final_boxes[j].br().x < t.x ||
                       final_boxes[j].tl().y > t.y+t.height || final_boxes[j].br().y < t.y))
@@ -430,7 +436,7 @@ int main(int argc, char *argv[])
             for (vector<word>::iterator it=example->words.begin(); it!=example->words.end(); ++it)
             {
                 word &t = (*it);
-                std::transform(t.value.begin(), t.value.end(), t.value.begin(), ::toupper);
+                std::transform(t.value.begin(), t.value.end(), t.value.begin(), char_toupper);
                 if ((t.value == "###") &&
                      !(final_boxes[j].tl().x > t.x+t.width || final_boxes[j].br().x < t.x ||
                       final_boxes[j].tl().y > t.y+t.height || final_boxes[j].br().y < t.y))
