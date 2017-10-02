@@ -55,7 +55,7 @@ TEST(CV_Face_Facemark, test_utilities) {
     Mat img = imread(image_file);
     EXPECT_NO_THROW(drawFacemarks(img, facial_points, Scalar(0,0,255)));
 
-    CParams * params = new CParams(cascade_filename);
+    CParams params(cascade_filename);
     std::vector<Rect> faces;
-    EXPECT_TRUE(getFaces(img, faces, params));
+    EXPECT_TRUE(getFaces(img, faces, &params));
 }

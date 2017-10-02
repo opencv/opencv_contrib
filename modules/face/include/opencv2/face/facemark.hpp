@@ -81,8 +81,8 @@ namespace face {
     <B>Example of usage</B>
     @code
     std::vector<cv::Rect> faces;
-    CParams * params = new CParams("haarcascade_frontalface_alt.xml");
-    cv::face::getFaces(frame, faces, params);
+    CParams params("haarcascade_frontalface_alt.xml");
+    cv::face::getFaces(frame, faces, &params);
     for(int j=0;j<faces.size();j++){
         cv::rectangle(frame, faces[j], cv::Scalar(255,0,255));
     }
