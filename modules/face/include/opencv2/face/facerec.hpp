@@ -151,7 +151,7 @@ public:
 
     /**
     @param radius The radius used for building the Circular Local Binary Pattern. The greater the
-    radius, the
+    radius, the smoother the image but more spatial information you can get.
     @param neighbors The number of sample points to build a Circular Local Binary Pattern from. An
     appropriate value is to use `8` sample points. Keep in mind: the more sample points you include,
     the higher the computational cost.
