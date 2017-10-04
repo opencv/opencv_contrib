@@ -54,9 +54,8 @@ void getRandQuat(double q[4]);
 void getRandomRotation(double R[9]);
 void meanCovLocalPC(const float* pc, const int ws, const int point_count, double CovMat[3][3], double Mean[4]);
 void meanCovLocalPCInd(const float* pc, const int* Indices, const int ws, const int point_count, double CovMat[3][3], double Mean[4]);
-std::vector<std::string> split(const std::string &text, char sep);
 
-std::vector<std::string> split(const std::string &text, char sep) {
+static std::vector<std::string> split(const std::string &text, char sep) {
   std::vector<std::string> tokens;
   std::size_t start = 0, end = 0;
   while ((end = text.find(sep, start)) != std::string::npos) {
@@ -69,72 +68,70 @@ std::vector<std::string> split(const std::string &text, char sep) {
 
 
 
-Mat loadPLYSimple(const char* fileName, int withNormals /* = 0 */)
+Mat loadPLYSimple(const char* fileName, int withNormals)
 {
   Mat cloud;
-  int numVertices=0;
-  int numCols=3;
-  bool with_color = false;
-  bool with_alpha = false; // alpha transparency
+  int numVertices = 0;
+  int numCols = 3;
+  int has_normals = 0;
 
   std::ifstream ifs(fileName);
 
   if (!ifs.is_open())
-  {
-    printf("Cannot open file...\n");
-    return Mat();
-  }
+    CV_Error(Error::StsError, String("Error opening input file: ") + String(fileName) + "\n");
 
   std::string str;
-  while (str.substr(0, 10) !="end_header")
+  while (str.substr(0, 10) != "end_header")
   {
     std::vector<std::string> tokens = split(str,' ');
-    if (tokens.size() == 3 && tokens[0] == "element" && tokens[1] == "vertex")
+    if (tokens.size() == 3)
     {
-      numVertices = atoi(tokens[2].c_str());
-    }
-    if (tokens.size() ==3 && tokens[0] == "property")
-    {
-      if(tokens[3]=="nx" || tokens[3]=="normal_x" )
+      if (tokens[0] == "element" && tokens[1] == "vertex")
       {
-        withNormals = true;
-        numCols+=3;
+        numVertices = atoi(tokens[2].c_str());
       }
-      else if(tokens[3]=="r" || tokens[3]=="red" )
+      else if (tokens[0] == "property")
       {
-        with_color = true;
-        numCols+=3;
-      }
-      else if(tokens[3]=="a" || tokens[3]=="alpha" )
-      {
-        with_alpha = true;
-        numCols+=1;
-      }
-    }
-    else if (tokens.size() > 1 && tokens[0] == "format")
-    {
-      if (tokens[1]!="ascii"){
-        printf("Cannot read file, only ascii ply format is currently supported...\n");
-        // uncomment below when CV_StsBadArg can be located
-        //OPENCV_ERROR (CV_StsBadArg, "loadPLYSimple", "Cannot read file, only ascii ply format is currently supported...");
-        return Mat();
+        if (tokens[2] == "nx" || tokens[2] == "normal_x")
+        {
+          has_normals = -1;
+          numCols += 3;
+        }
+        else if (tokens[2] == "r" || tokens[2] == "red")
+        {
+          //has_color = true;
+          numCols += 3;
+        }
+        else if (tokens[2] == "a" || tokens[2] == "alpha")
+        {
+          //has_alpha = true;
+          numCols += 1;
+        }
       }
     }
+    else if (tokens.size() > 1 && tokens[0] == "format" && tokens[1] != "ascii")
+      CV_Error(Error::StsBadArg, String("Cannot read file, only ascii ply format is currently supported..."));
     std::getline(ifs, str);
   }
+  withNormals &= has_normals;
 
-  cloud=Mat(numVertices, numCols, CV_32FC1);
+  cloud = Mat(numVertices, withNormals ? 6 : 3, CV_32FC1);
 
   for (int i = 0; i < numVertices; i++)
   {
     float* data = cloud.ptr<float>(i);
-    for (int col = 0; col < numCols; ++col)
+    int col = 0;
+    for (; col < withNormals ? 6 : 3; ++col)
     {
       ifs >> data[col];
     }
+    for (; col < numCols; ++col)
+    {
+      float tmp;
+      ifs >> tmp;
+    }
     if (withNormals)
     {
-
       // normalize to unit norm
       double norm = sqrt(data[3]*data[3] + data[4]*data[4] + data[5]*data[5]);
       if (norm>0.00001)
