@@ -65,7 +65,6 @@ component tree of the image. :
  */
 struct CV_EXPORTS ERStat
 {
-
 public:
     //! Constructor
     explicit ERStat(int level = 256, int pixel = 0, int x = 0, int y = 0);
