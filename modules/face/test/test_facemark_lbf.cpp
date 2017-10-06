@@ -84,16 +84,13 @@ TEST(CV_Face_FacemarkLBF, can_set_custom_detector) {
     string cascade_filename =
         cvtest::findDataFile("cascadeandhog/cascades/lbpcascade_frontalface.xml", true);
 
-    FacemarkLBF::Params params;
-    params.cascade_face = cascade_filename;
-
     EXPECT_TRUE(cascade_detector.load(cascade_filename));
 
-    Ptr<Facemark> facemark = FacemarkLBF::create(params);
+    Ptr<Facemark> facemark = FacemarkLBF::create();
     EXPECT_TRUE(facemark->setFaceDetector(myCustomDetector));
 }
 
-TEST(CV_Face_FacemarkLBF, can_perform_training) {
+TEST(CV_Face_FacemarkLBF, test_workflow) {
 
     string i1 = cvtest::findDataFile("face/therock.jpg", true);
     string p1 = cvtest::findDataFile("face/therock.pts", true);
@@ -113,6 +110,8 @@ TEST(CV_Face_FacemarkLBF, can_perform_training) {
     FacemarkLBF::Params params;
     params.cascade_face = cascade_filename;
     params.verbose = false;
+    params.save_model = false;
+
     Ptr<Facemark> facemark = FacemarkLBF::create(params);
 
     Mat image;
@@ -125,41 +124,22 @@ TEST(CV_Face_FacemarkLBF, can_perform_training) {
     }
 
     EXPECT_NO_THROW(facemark->training());
-}
 
-TEST(CV_Face_FacemarkLBF, can_load_model) {
-    string model_filename = "LBF.model";
-
-    Ptr<Facemark> facemark = FacemarkLBF::create();
-    EXPECT_NO_THROW(facemark->loadModel(model_filename.c_str()));
-}
-
-TEST(CV_Face_FacemarkLBF, can_detect_landmarks) {
-    string model_filename = "LBF.model";
-    string cascade_filename =
-        cvtest::findDataFile("cascadeandhog/cascades/lbpcascade_frontalface.xml", true);
-
-    FacemarkLBF::Params params;
-    params.model_filename = model_filename;
-    params.cascade_face = cascade_filename;
-
+    /*------------ Fitting Part ---------------*/
     cascade_detector.load(cascade_filename);
-
-    Ptr<Facemark> facemark = FacemarkLBF::create(params);
     facemark->setFaceDetector(myCustomDetector);
-    facemark->loadModel(params.model_filename.c_str());
 
     string image_filename = cvtest::findDataFile("face/therock.jpg", true);
-    Mat image = imread(image_filename.c_str());
+    image = imread(image_filename.c_str());
     EXPECT_TRUE(!image.empty());
 
     std::vector<Rect> rects;
-    std::vector<std::vector<Point2f> > landmarks;
+    std::vector<std::vector<Point2f> > facial_points;
 
     EXPECT_TRUE(facemark->getFaces(image, rects));
     EXPECT_TRUE(rects.size()>0);
-    EXPECT_TRUE(facemark->fit(image, rects, landmarks));
-    EXPECT_TRUE(landmarks[0].size()>0);
+    EXPECT_TRUE(facemark->fit(image, rects, facial_points));
+    EXPECT_TRUE(facial_points[0].size()>0);
 }
 
 TEST(CV_Face_FacemarkLBF, get_data) {

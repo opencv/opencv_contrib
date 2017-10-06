@@ -156,7 +156,7 @@ facemark->training();
 
 Use the trained model to detect the facial landmarks from a given image.
 -----
-- First of all, load the trained model. You can also download the pre-trained model in this link <https://raw.githubusercontent.com/kurnianggoro/GSOC2017/master/data/LBF.model>
+- First of all, load the trained model. You can also download the pre-trained model in this link <https://drive.google.com/file/d/0BxCn8qoSV5g2UDd0aHo3TmFqdTg/view?usp=sharing>
     @code
     facemark->loadModel(params.model_filename);
     @endcode

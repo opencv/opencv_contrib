@@ -77,7 +77,10 @@ namespace face {
             //!<  overlap ratio for training the LBF feature
 
             std::string model_filename;
-            //!<  number of refinement stages
+            //!<  filename where the trained model will be saved
+            bool save_model; //!< flag to save the trained model or not
+            unsigned int seed; //!< seed for shuffling the training data
+
             std::vector<int> feats_m;
             std::vector<double> radius_m;
             std::vector<int> pupils[2];

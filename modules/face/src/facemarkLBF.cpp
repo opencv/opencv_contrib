@@ -59,7 +59,7 @@ namespace face {
 
     FacemarkLBF::Params::Params(){
 
-        cascade_face = "../data/haarcascade_frontalface_alt.xml";
+        cascade_face = "";
         shape_offset = 0.0;
         n_landmarks = 68;
         initShape_n = 10;
@@ -67,8 +67,10 @@ namespace face {
         tree_n=6;
         tree_depth=5;
         bagging_overlap = 0.4;
-        model_filename = "LBF.model";
+        model_filename = "";
+        save_model = true;
         verbose = true;
+        seed = 0;
 
         int _pupils[][6] = { { 36, 37, 38, 39, 40, 41 }, { 42, 43, 44, 45, 46, 47 } };
         for (int i = 0; i < 6; i++) {
@@ -166,8 +168,9 @@ namespace face {
                        std::vector<Mat> &delta_shapes, Mat &mean_shape, std::vector<int> &index, int stage);
             void splitNode(std::vector<cv::Mat> &imgs, std::vector<cv::Mat> &current_shapes, std::vector<BBox> &bboxes,
                           cv::Mat &delta_shapes, cv::Mat &mean_shape, std::vector<int> &root, int idx, int stage);
-            void write(FILE *fd);
-            void read(FILE *fd);
+
+            void write(FileStorage fs, int forestId, int i, int j);
+            void read(FileStorage fs, int forestId, int i, int j);
 
             int depth;
             int nodes_n;
@@ -188,8 +191,9 @@ namespace face {
             void train(std::vector<cv::Mat> &imgs, std::vector<cv::Mat> &current_shapes, \
                        std::vector<BBox> &bboxes, std::vector<cv::Mat> &delta_shapes, cv::Mat &mean_shape, int stage);
             Mat generateLBF(Mat &img, Mat &current_shape, BBox &bbox, Mat &mean_shape);
-            void write(FILE *fd);
-            void read(FILE *fd);
+
+            void write(FileStorage fs, int forestId);
+            void read(FileStorage fs, int forestId);
 
             bool verbose;
             int landmark_n;
@@ -214,8 +218,8 @@ namespace face {
             Mat globalRegressionPredict(const Mat &lbf, int stage);
             Mat predict(Mat &img, BBox &bbox);
 
-            void write(FILE *fd, Params params);
-            void read(FILE *fd, Params & params);
+            void write(FileStorage fs, Params config);
+            void read(FileStorage fs, Params & config);
 
             int stages_n;
             int landmark_n;
@@ -246,7 +250,6 @@ namespace face {
         isSetDetector = true;
         return true;
     }
-
 
     bool FacemarkLBFImpl::getFaces( InputArray image , OutputArray roi, void * extra_params){
 
@@ -322,6 +325,13 @@ namespace face {
            CV_Error(CV_StsBadArg, error_message);
         }
 
+        if(strcmp(params.cascade_face.c_str(),"")==0
+        ||(strcmp(params.model_filename.c_str(),"")==0 && params.save_model)
+        ){
+            std::string error_message = "The parameter cascade_face and model_filename should be set!";
+            CV_Error(CV_StsBadArg, error_message);
+        }
+
         // flip the image and swap the landmark position
         data_augmentation(data_faces, data_shapes, data_boxes);
 
@@ -347,7 +357,7 @@ namespace face {
         }
 
         // random shuffle
-        unsigned int seed = (unsigned int)std::time(0);
+        unsigned int seed = params.seed;
         std::srand(seed);
         std::random_shuffle(imgs.begin(), imgs.end());
         std::srand(seed);
@@ -361,10 +371,10 @@ namespace face {
         regressor.initRegressor(params);
         regressor.trainRegressor(imgs, gt_shapes, current_shapes, bboxes, mean_shape, 0, params);
 
-        FILE *fd = fopen(params.model_filename.c_str(), "wb");
-        assert(fd);
-        regressor.write(fd, params);
-        fclose(fd);
+        if(params.save_model){
+            FileStorage fs(params.model_filename.c_str(),FileStorage::WRITE);
+            regressor.write(fs, params);
+        }
 
         isModelTrained = true;
     }
@@ -463,9 +473,8 @@ namespace face {
            CV_Error(CV_StsBadArg, error_message);
         }
 
-        FILE *fd = fopen(s.c_str(), "rb");
-        regressor.read(fd, params);
-        fclose(fd);
+        FileStorage fs(s.c_str(),FileStorage::READ);
+        regressor.read(fs, params);
 
         isModelTrained = true;
     }
@@ -899,24 +908,23 @@ namespace face {
             splitNode(imgs, current_shapes, bboxes, delta_shapes, mean_shape, right, 2 * idx + 1, stage);
     }
 
+    void FacemarkLBFImpl::RandomTree::write(FileStorage fs, int k, int i, int j) {
 
-    void FacemarkLBFImpl::RandomTree::write(FILE *fd) {
-        // int stat;
-        for (int i = 1; i < nodes_n / 2; i++) {
-            fwrite(feats.ptr<double>(i), sizeof(double), 4, fd);
-            fwrite(&thresholds[i], sizeof(int), 1, fd);
-        }
+        char x[256];
+        sprintf(x,"tree_%i_%i_%i",k,i,j);
+        fs << x << feats;
+        sprintf(x,"thresholds_%i_%i_%i",k,i,j);
+        fs << x << thresholds;
     }
 
-    void FacemarkLBFImpl::RandomTree::read(FILE *fd) {
-        size_t status;
-        // initialize
-        for (int i = 1; i < nodes_n / 2; i++) {
-            status = fread(feats.ptr<double>(i), sizeof(double), 4, fd);
-            status = fread(&thresholds[i], sizeof(int), 1, fd);
-        }
-        status = status | status;
+    void FacemarkLBFImpl::RandomTree::read(FileStorage fs, int k, int i, int j) {
+        char x[256];
+        sprintf(x,"tree_%i_%i_%i",k,i,j);
+        fs[x] >> feats;
+        sprintf(x,"thresholds_%i_%i_%i",k,i,j);
+        fs[x] >> thresholds;
     }
+
 
     /*---------------RandomForest Implementation---------------------*/
     void FacemarkLBFImpl::RandomForest::initForest(
@@ -1015,25 +1023,23 @@ namespace face {
         return lbf_feat;
     }
 
-
-    void FacemarkLBFImpl::RandomForest::write(FILE *fd) {
+    void FacemarkLBFImpl::RandomForest::write(FileStorage fs, int k) {
         for (int i = 0; i < landmark_n; i++) {
             for (int j = 0; j < trees_n; j++) {
-                random_trees[i][j].write(fd);
+                random_trees[i][j].write(fs,k,i,j);
             }
         }
     }
 
-    void FacemarkLBFImpl::RandomForest::read(FILE *fd)
+    void FacemarkLBFImpl::RandomForest::read(FileStorage fs,int k)
     {
         for (int i = 0; i < landmark_n; i++) {
             for (int j = 0; j < trees_n; j++) {
                 random_trees[i][j].initTree(i, tree_depth, feats_m, radius_m);
-                random_trees[i][j].read(fd);
+                random_trees[i][j].read(fs,k,i,j);
             }
         }
     }
-
 
     /*---------------Regressor Implementation---------------------*/
     void FacemarkLBFImpl::Regressor::initRegressor(Params config) {
@@ -1223,50 +1229,40 @@ namespace face {
         return current_shape;
     } // Regressor::predict
 
-    void FacemarkLBFImpl::Regressor::write(FILE *fd, Params config) {
+    void FacemarkLBFImpl::Regressor::write(FileStorage fs, Params config) {
 
-        // global parameters
-        fwrite(&config.stages_n, sizeof(int), 1, fd);
-        fwrite(&config.tree_n, sizeof(int), 1, fd);
-        fwrite(&config.tree_depth, sizeof(int), 1, fd);
-        fwrite(&config.n_landmarks, sizeof(int), 1, fd);
-        // mean_shape
-        double *ptr = NULL;
-        for (int i = 0; i < mean_shape.rows; i++) {
-            ptr = mean_shape.ptr<double>(i);
-            fwrite(ptr, sizeof(double), mean_shape.cols, fd);
-        }
+        fs << "stages_n" << config.stages_n;
+        fs << "tree_n" << config.tree_n;
+        fs << "tree_depth" << config.tree_depth;
+        fs << "n_landmarks" << config.n_landmarks;
+
+        fs << "regressor_meanshape" <<mean_shape;
+
         // every stages
+        char x[256];
         for (int k = 0; k < config.stages_n; k++) {
             if(config.verbose) printf("Write %dth stage\n", k);
-            random_forests[k].write(fd);
-            for (int i = 0; i < 2 * config.n_landmarks; i++) {
-                ptr = gl_regression_weights[k].ptr<double>(i);
-                fwrite(ptr, sizeof(double), gl_regression_weights[k].cols, fd);
-            }
+            random_forests[k].write(fs,k);
+            sprintf(x,"weights_%i",k);
+            fs << x << gl_regression_weights[k];
         }
     }
 
-    void FacemarkLBFImpl::Regressor::read(FILE *fd, Params & config){
+    void FacemarkLBFImpl::Regressor::read(FileStorage fs, Params & config){
+        fs["stages_n"] >>  config.stages_n;
+        fs["tree_n"] >>  config.tree_n;
+        fs["tree_depth"] >>  config.tree_depth;
+        fs["n_landmarks"] >>  config.n_landmarks;
 
-        size_t status = fread(&config.stages_n, sizeof(int), 1, fd);
-        status = fread(&config.tree_n, sizeof(int), 1, fd);
-        status = fread(&config.tree_depth, sizeof(int), 1, fd);
-        status = fread(&config.n_landmarks, sizeof(int), 1, fd);
         stages_n = config.stages_n;
         landmark_n = config.n_landmarks;
 
         initRegressor(config);
 
-        // mean_shape
-        double *ptr = NULL;
-
-        for (int i = 0; i < mean_shape.rows; i++) {
-            ptr = mean_shape.ptr<double>(i);
-            status = fread(ptr, sizeof(double), mean_shape.cols, fd);
-        }
+        fs["regressor_meanshape"] >>  mean_shape;
 
         // every stages
+        char x[256];
         for (int k = 0; k < stages_n; k++) {
             random_forests[k].initForest(
                 config.n_landmarks,
@@ -1277,13 +1273,11 @@ namespace face {
                 config.radius_m,
                 config.verbose
             );
-            random_forests[k].read(fd);
-            for (int i = 0; i < 2 * config.n_landmarks; i++) {
-                ptr = gl_regression_weights[k].ptr<double>(i);
-                status = fread(ptr, sizeof(double), gl_regression_weights[k].cols, fd);
-            }
+            random_forests[k].read(fs,k);
+
+            sprintf(x,"weights_%i",k);
+            fs[x] >> gl_regression_weights[k];
         }
-        status = status | status;
     }
 
     #undef TIMER_BEGIN

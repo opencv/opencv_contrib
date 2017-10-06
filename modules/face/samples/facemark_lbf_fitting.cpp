@@ -173,7 +173,7 @@ bool parseArguments(int argc, char** argv, CommandLineParser & parser,
        "{ @c cascade         |      | (required) path to the cascade model file for the face detector }"
        "{ @m model           |      | (required) path to the trained model }"
        "{ @v video           |      | (required) path input video}"
-       "{ help h usage ?     |      | facemark_demo_aam -cascade -model -video [-t]\n"
+       "{ help h usage ?     |      | facemark_lbf_fitting -cascade -model -video [-t]\n"
             " example: facemark_lbf_fitting ../face_cascade.xml ../LBF.model ../video.mp4}"
    ;
    parser = CommandLineParser(argc, argv,keys);

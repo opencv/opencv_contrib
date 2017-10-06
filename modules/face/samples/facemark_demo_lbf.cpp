@@ -183,7 +183,8 @@ Mentor: Delia Passalacqua
          "{ @a annotations     |      | (required) Path of a text file contains the list of paths to all annotations files}"
          "{ @m model           |      | (required) path to save the trained model }"
          "{ t test-images      |      | Path of a text file contains the list of paths to the test images}"
-         "{ help h usage ?     |      | facemark_demo_lbf -cascade -model -images -annotations [-t] }"
+         "{ help h usage ?     |      | facemark_demo_lbf -cascade -images -annotations -model [-t] \n"
+          " example: facemark_demo_lbf ../face_cascade.xml ../images_train.txt ../points_train.txt ../lbf.model}"
      ;
      parser = CommandLineParser(argc, argv,keys);
      parser.about("hello");
@@ -199,12 +200,14 @@ Mentor: Delia Passalacqua
      annotations = String(parser.get<string>("annotations"));
      test_images = String(parser.get<string>("t"));
 
+     cout<<"cascade : "<<cascade.c_str()<<endl;
+     cout<<"model : "<<model.c_str()<<endl;
+     cout<<"images : "<<images.c_str()<<endl;
+     cout<<"annotations : "<<annotations.c_str()<<endl;
+
      if(cascade.empty() || model.empty() || images.empty() || annotations.empty()){
          std::cerr << "one or more required arguments are not found" << '\n';
-         cout<<"cascade : "<<cascade.c_str()<<endl;
-         cout<<"model : "<<model.c_str()<<endl;
-         cout<<"images : "<<images.c_str()<<endl;
-         cout<<"annotations : "<<annotations.c_str()<<endl;
+
          parser.printMessage();
          return false;
      }

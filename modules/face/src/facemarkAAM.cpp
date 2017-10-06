@@ -560,8 +560,8 @@ namespace face {
         reduce(Ys,sumYs, 0, CV_REDUCE_SUM);
 
         //calculate the normrnd
-        double normX = sqrt(sumXs.at<float>(0)+sumXs.at<float>(1));
-        double normY = sqrt(sumYs.at<float>(0)+sumYs.at<float>(1));
+        double normX = sqrt(Mat(sumXs.reshape(1)).at<float>(0)+Mat(sumXs.reshape(1)).at<float>(1));
+        double normY = sqrt(Mat(sumYs.reshape(1)).at<float>(0)+Mat(sumYs.reshape(1)).at<float>(1));
 
         //normalization
         X0 = X0/normX;
