@@ -45,8 +45,6 @@
 
 #include "opencv2/text.hpp"
 
-#include "text_config.hpp"
-
 #ifdef HAVE_TESSERACT
 #if !defined(USE_STD_NAMESPACE)
 #define USE_STD_NAMESPACE
