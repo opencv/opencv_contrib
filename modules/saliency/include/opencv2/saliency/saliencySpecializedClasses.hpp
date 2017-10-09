@@ -234,15 +234,28 @@ private:
   bool templateOrdering();
   bool templateReplacement( const Mat& finalBFMask, const Mat& image );
 
+  // Decision threshold adaptation and Activity control function
+  bool activityControl(const Mat& current_noisePixelsMask);
+  bool decisionThresholdAdaptation();
+
   // changing structure
   std::vector<Ptr<Mat> > backgroundModel;// The vector represents the background template T0---TK of reference paper.
   // Matrices are two-channel matrix. In the first layer there are the B (background value)
   // for each pixel. In the second layer, there are the C (efficacy) value for each pixel
   Mat potentialBackground;// Two channel Matrix. For each pixel, in the first level there are the Ba value (potential background value)
                           // and in the secon level there are the Ca value, the counter for each potential value.
-  Mat epslonPixelsValue;  // epslon threshold
+  Mat epslonPixelsValue;// epslon threshold
+
+  Mat activityPixelsValue;// Activity level of each pixel
+
+  //vector<Mat> noisePixelMask; // We define a ‘noise-pixel’ as a pixel that has been classified as a foreground pixel during the full resolution
+  Mat noisePixelMask;// We define a ‘noise-pixel’ as a pixel that has been classified as a foreground pixel during the full resolution
+  //detection process,however, after the low resolution detection, it has become a
+  // background pixel. The matrix is  two-channel matrix. In the first layer there is the mask ( the identified noise-pixels are set to 1 while other pixels are 0)
+  // for each pixel. In the second layer, there is the value of activity level A for each pixel.
 
   //fixed parameter
+  bool activityControlFlag;
   bool neighborhoodCheck;
   int N_DS;// Number of template to be downsampled and used in lowResolutionDetection function
   CV_PROP_RW int imageWidth;// Width of input image
@@ -256,6 +269,13 @@ private:
   int gamma;// Parameter that controls the time that the newly updated long-term background value will remain in the
             // long-term template, regardless of any subsequent background changes. A relatively large (eg gamma=3) will
             //restrain the generation of ghosts.
+
+  uchar Ainc;// Activity Incrementation;
+  int Bmax;// Upper-bound value for pixel activity
+  int Bth;// Max activity threshold
+  int Binc, Bdec;// Threshold for pixel-level decision threshold (epslon) adaptation
+  float deltaINC, deltaDEC;// Increment-decrement value for epslon adaptation
+  int epslonMIN, epslonMAX;// Range values for epslon threshold
 
 };
 
@@ -417,7 +437,7 @@ private:
   int _Clr;//
   static const char* _clrName[3];
 
-  // Names and paths to read model and to store results
+// Names and paths to read model and to store results
   std::string _modelName, _bbResDir, _trainingPath, _resultsDir;
 
   std::vector<int> _svmSzIdxs;// Indexes of active size. It's equal to _svmFilters.size() and _svmReW1f.rows
@@ -425,12 +445,12 @@ private:
   FilterTIG _tigF;// TIG filter
   Mat _svmReW1f;// Re-weight parameters learned at stage II.
 
-  // List of the rectangles' objectness value, in the same order as
-  // the  vector<Vec4i> objectnessBoundingBox returned by the algorithm (in computeSaliencyImpl function)
+// List of the rectangles' objectness value, in the same order as
+// the  vector<Vec4i> objectnessBoundingBox returned by the algorithm (in computeSaliencyImpl function)
   std::vector<float> objectnessValues;
 
 private:
-  // functions
+// functions
 
   inline static float LoG( float x, float y, float delta )
   {
@@ -438,17 +458,17 @@ private:
     return -1.0f / ( (float) ( CV_PI ) * pow( delta, 4 ) ) * ( 1 + d ) * exp( d );
   }  // Laplacian of Gaussian
 
-  // Read matrix from binary file
+// Read matrix from binary file
   static bool matRead( const std::string& filename, Mat& M );
 
   void setColorSpace( int clr = MAXBGR );
 
-  // Load trained model.
+// Load trained model.
   int loadTrainedModel( std::string modelName = "" );// Return -1, 0, or 1 if partial, none, or all loaded
 
-  // Get potential bounding boxes, each of which is represented by a Vec4i for (minX, minY, maxX, maxY).
-  // The trained model should be prepared before calling this function: loadTrainedModel() or trainStageI() + trainStageII().
-  // Use numDet to control the final number of proposed bounding boxes, and number of per size (scale and aspect ratio)
+// Get potential bounding boxes, each of which is represented by a Vec4i for (minX, minY, maxX, maxY).
+// The trained model should be prepared before calling this function: loadTrainedModel() or trainStageI() + trainStageII().
+// Use numDet to control the final number of proposed bounding boxes, and number of per size (scale and aspect ratio)
   void getObjBndBoxes( Mat &img3u, ValStructVec<float, Vec4i> &valBoxes, int numDetPerSize = 120 );
   void getObjBndBoxesForSingleImage( Mat img, ValStructVec<float, Vec4i> &boxes, int numDetPerSize );
 
@@ -460,7 +480,7 @@ private:
   void predictBBoxSI( Mat &mag3u, ValStructVec<float, Vec4i> &valBoxes, std::vector<int> &sz, int NUM_WIN_PSZ = 100, bool fast = true );
   void predictBBoxSII( ValStructVec<float, Vec4i> &valBoxes, const std::vector<int> &sz );
 
-  // Calculate the image gradient: center option as in VLFeat
+// Calculate the image gradient: center option as in VLFeat
   void gradientMag( Mat &imgBGR3u, Mat &mag1u );
 
   static void gradientRGB( Mat &bgr3u, Mat &mag1u );
@@ -479,7 +499,7 @@ private:
     return abs( u[0] - v[0] ) + abs( u[1] - v[1] ) + abs( u[2] - v[2] );
   }
 
-  //Non-maximal suppress
+//Non-maximal suppress
   static void nonMaxSup( Mat &matchCost1f, ValStructVec<float, Point> &matchCost, int NSS = 1, int maxPoint = 50, bool fast = true );
 
 };
