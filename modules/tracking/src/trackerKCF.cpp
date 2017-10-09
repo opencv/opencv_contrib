@@ -47,7 +47,7 @@
 |---------------------------*/
 namespace cv{
    /**
-  * \brief Implementation of TrackerModel for MIL algorithm
+  * \brief Implementation of TrackerModel for KCF algorithm
   */
   class TrackerKCFModel : public TrackerModel{
   public:
@@ -827,7 +827,7 @@ namespace cv{
   TrackerKCF::Params::Params(){
       detect_thresh = 0.5;
       sigma=0.2;
-      lambda=0.01;
+      lambda=0.0001;
       interp_factor=0.075;
       output_sigma_factor=1.0/16.0;
       resize=true;

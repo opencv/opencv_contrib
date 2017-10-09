@@ -87,6 +87,7 @@ namespace cv
             CV_WRAP virtual void setShowGrid(bool needShowGrid) = 0;
             CV_WRAP virtual void setShowText(bool needShowText) = 0;
             CV_WRAP virtual void setGridLinesNumber(int gridLinesNumber) = 0;
+            CV_WRAP virtual void setInvertOrientation(bool _invertOrientation) = 0;
             /**
              * @brief Sets the index of a point which coordinates will be printed on the top left corner of the plot (if ShowText flag is true).
              *

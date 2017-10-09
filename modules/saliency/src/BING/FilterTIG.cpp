@@ -47,19 +47,22 @@ namespace cv
 namespace saliency
 {
 
+typedef int64_t TIG_TYPE;
+typedef double MAT_TIG_TYPE; // cv::Mat has no native support for int64/uint64
+
 struct TIGbits
 {
   TIGbits() : bc0(0), bc1(0) {}
-  inline void accumulate(int64_t tig, int64_t tigMask0, int64_t tigMask1, uchar shift)
+  inline void accumulate(TIG_TYPE tig, TIG_TYPE tigMask0, TIG_TYPE tigMask1, uchar shift)
   {
     bc0 += ((POPCNT64(tigMask0 & tig) << 1) - POPCNT64(tig)) << shift;
     bc1 += ((POPCNT64(tigMask1 & tig) << 1) - POPCNT64(tig)) << shift;
   }
-  int64_t bc0;
-  int64_t bc1;
+  TIG_TYPE bc0;
+  TIG_TYPE bc1;
 };
 
-float ObjectnessBING::FilterTIG::dot( int64_t tig1, int64_t tig2, int64_t tig4, int64_t tig8 )
+float ObjectnessBING::FilterTIG::dot( TIG_TYPE tig1, TIG_TYPE tig2, TIG_TYPE tig4, TIG_TYPE tig8 )
 {
   TIGbits x;
   x.accumulate(tig1, _bTIGs[0], _bTIGs[1], 0);
@@ -111,22 +114,22 @@ Mat ObjectnessBING::FilterTIG::matchTemplate( const Mat &mag1u )
 {
   const int H = mag1u.rows, W = mag1u.cols;
   const Size sz( W + 1, H + 1 );  // Expand original size to avoid dealing with boundary conditions
-  Mat_<int64_t> Tig1 = Mat_<int64_t>::zeros( sz ), Tig2 = Mat_<int64_t>::zeros( sz );
-  Mat_<int64_t> Tig4 = Mat_<int64_t>::zeros( sz ), Tig8 = Mat_<int64_t>::zeros( sz );
+  Mat_<MAT_TIG_TYPE> Tig1 = Mat_<MAT_TIG_TYPE>::zeros( sz ), Tig2 = Mat_<MAT_TIG_TYPE>::zeros( sz );
+  Mat_<MAT_TIG_TYPE> Tig4 = Mat_<MAT_TIG_TYPE>::zeros( sz ), Tig8 = Mat_<MAT_TIG_TYPE>::zeros( sz );
   Mat_<BYTE> Row1 = Mat_<BYTE>::zeros( sz ), Row2 = Mat_<BYTE>::zeros( sz );
   Mat_<BYTE> Row4 = Mat_<BYTE>::zeros( sz ), Row8 = Mat_<BYTE>::zeros( sz );
   Mat_<float> scores( sz );
   for ( int y = 1; y <= H; y++ )
   {
     const BYTE* G = mag1u.ptr<BYTE>( y - 1 );
-    int64_t* T1 = Tig1.ptr<int64_t>( y );  // Binary TIG of current row
-    int64_t* T2 = Tig2.ptr<int64_t>( y );
-    int64_t* T4 = Tig4.ptr<int64_t>( y );
-    int64_t* T8 = Tig8.ptr<int64_t>( y );
-    int64_t* Tu1 = Tig1.ptr<int64_t>( y - 1 );  // Binary TIG of upper row
-    int64_t* Tu2 = Tig2.ptr<int64_t>( y - 1 );
-    int64_t* Tu4 = Tig4.ptr<int64_t>( y - 1 );
-    int64_t* Tu8 = Tig8.ptr<int64_t>( y - 1 );
+    TIG_TYPE* T1 = Tig1.ptr<TIG_TYPE>( y );  // Binary TIG of current row
+    TIG_TYPE* T2 = Tig2.ptr<TIG_TYPE>( y );
+    TIG_TYPE* T4 = Tig4.ptr<TIG_TYPE>( y );
+    TIG_TYPE* T8 = Tig8.ptr<TIG_TYPE>( y );
+    TIG_TYPE* Tu1 = Tig1.ptr<TIG_TYPE>( y - 1 );  // Binary TIG of upper row
+    TIG_TYPE* Tu2 = Tig2.ptr<TIG_TYPE>( y - 1 );
+    TIG_TYPE* Tu4 = Tig4.ptr<TIG_TYPE>( y - 1 );
+    TIG_TYPE* Tu8 = Tig8.ptr<TIG_TYPE>( y - 1 );
     BYTE* R1 = Row1.ptr<BYTE>( y );
     BYTE* R2 = Row2.ptr<BYTE>( y );
     BYTE* R4 = Row4.ptr<BYTE>( y );

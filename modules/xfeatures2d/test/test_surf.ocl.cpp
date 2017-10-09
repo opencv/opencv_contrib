@@ -45,11 +45,13 @@
 
 #include "test_precomp.hpp"
 
-#ifdef HAVE_OPENCV_OCL
+#ifdef HAVE_OPENCL
+
+namespace cvtest {
+namespace ocl {
 
 using namespace std;
 using std::tr1::get;
-
 static bool keyPointsEquals(const cv::KeyPoint& p1, const cv::KeyPoint& p2)
 {
     const double maxPtDif = 0.1;
@@ -117,6 +119,7 @@ IMPLEMENT_PARAM_CLASS(Upright, bool)
 
 PARAM_TEST_CASE(SURF, HessianThreshold, Octaves, OctaveLayers, Extended, Upright)
 {
+    bool useOpenCL;
     double hessianThreshold;
     int nOctaves;
     int nOctaveLayers;
@@ -125,39 +128,34 @@ PARAM_TEST_CASE(SURF, HessianThreshold, Octaves, OctaveLayers, Extended, Upright
 
     virtual void SetUp()
     {
+        useOpenCL = cv::ocl::useOpenCL();
         hessianThreshold = get<0>(GetParam());
         nOctaves = get<1>(GetParam());
         nOctaveLayers = get<2>(GetParam());
         extended = get<3>(GetParam());
         upright = get<4>(GetParam());
     }
+
+    virtual void TearDown()
+    {
+        cv::ocl::setUseOpenCL(useOpenCL);
+    }
 };
 
-TEST_P(SURF, DISABLED_Detector)
+TEST_P(SURF, Detector)
 {
-    cv::Mat image  = cv::imread(string(cvtest::TS::ptr()->get_data_path()) + "shared/fruits.png", cv::IMREAD_GRAYSCALE);
+    cv::UMat image;
+    cv::ocl::setUseOpenCL(true);
+    cv::imread(string(cvtest::TS::ptr()->get_data_path()) + "shared/fruits.png", cv::IMREAD_GRAYSCALE).copyTo(image);
     ASSERT_FALSE(image.empty());
 
-    cv::ocl::SURF_OCL surf;
-    surf.hessianThreshold = static_cast<float>(hessianThreshold);
-    surf.nOctaves = nOctaves;
-    surf.nOctaveLayers = nOctaveLayers;
-    surf.extended = extended;
-    surf.upright = upright;
-    surf.keypointsRatio = 0.05f;
-
+    cv::Ptr<cv::xfeatures2d::SURF> surf = cv::xfeatures2d::SURF::create(hessianThreshold, nOctaves, nOctaveLayers, extended, upright);
     std::vector<cv::KeyPoint> keypoints;
-    surf(cv::ocl::oclMat(image), cv::ocl::oclMat(), keypoints);
+    surf->detect(image, keypoints, cv::noArray());
 
-    cv::SURF surf_gold;
-    surf_gold.hessianThreshold = hessianThreshold;
-    surf_gold.nOctaves = nOctaves;
-    surf_gold.nOctaveLayers = nOctaveLayers;
-    surf_gold.extended = extended;
-    surf_gold.upright = upright;
-
+    cv::ocl::setUseOpenCL(false);
     std::vector<cv::KeyPoint> keypoints_gold;
-    surf_gold(image, cv::noArray(), keypoints_gold);
+    surf->detect(image, keypoints_gold, cv::noArray());
 
     ASSERT_EQ(keypoints_gold.size(), keypoints.size());
     int matchedCount = getMatchedPointsCount(keypoints_gold, keypoints);
@@ -166,38 +164,29 @@ TEST_P(SURF, DISABLED_Detector)
     EXPECT_GT(matchedRatio, 0.99);
 }
 
-TEST_P(SURF, DISABLED_Descriptor)
+TEST_P(SURF, Descriptor)
 {
-    cv::Mat image  = cv::imread(string(cvtest::TS::ptr()->get_data_path()) + "shared/fruits.png", cv::IMREAD_GRAYSCALE);
+    cv::UMat image;
+    cv::ocl::setUseOpenCL(true);
+    cv::imread(string(cvtest::TS::ptr()->get_data_path()) + "shared/fruits.png", cv::IMREAD_GRAYSCALE).copyTo(image);
     ASSERT_FALSE(image.empty());
 
-    cv::ocl::SURF_OCL surf;
-    surf.hessianThreshold = static_cast<float>(hessianThreshold);
-    surf.nOctaves = nOctaves;
-    surf.nOctaveLayers = nOctaveLayers;
-    surf.extended = extended;
-    surf.upright = upright;
-    surf.keypointsRatio = 0.05f;
-
-    cv::SURF surf_gold;
-    surf_gold.hessianThreshold = hessianThreshold;
-    surf_gold.nOctaves = nOctaves;
-    surf_gold.nOctaveLayers = nOctaveLayers;
-    surf_gold.extended = extended;
-    surf_gold.upright = upright;
+    cv::Ptr<cv::xfeatures2d::SURF> surf = cv::xfeatures2d::SURF::create(hessianThreshold, nOctaves, nOctaveLayers, extended, upright);
 
     std::vector<cv::KeyPoint> keypoints;
-    surf_gold(image, cv::noArray(), keypoints);
+    surf->detect(image, keypoints, cv::noArray());
 
-    cv::ocl::oclMat descriptors;
-    surf(cv::ocl::oclMat(image), cv::ocl::oclMat(), keypoints, descriptors, true);
+    cv::UMat descriptors;
 
+    surf->detectAndCompute(image, cv::noArray(), keypoints, descriptors, true);
+
+    cv::ocl::setUseOpenCL(false);
     cv::Mat descriptors_gold;
-    surf_gold(image, cv::noArray(), keypoints, descriptors_gold, true);
+    surf->detectAndCompute(image, cv::noArray(), keypoints, descriptors_gold, true);
 
-    cv::BFMatcher matcher(surf.defaultNorm());
+    cv::BFMatcher matcher(surf->defaultNorm());
     std::vector<cv::DMatch> matches;
-    matcher.match(descriptors_gold, cv::Mat(descriptors), matches);
+    matcher.match(descriptors_gold, descriptors, matches);
 
     int matchedCount = getMatchedPointsCount(keypoints, keypoints, matches);
     double matchedRatio = static_cast<double>(matchedCount) / keypoints.size();
@@ -212,4 +201,6 @@ INSTANTIATE_TEST_CASE_P(OCL_Features2D, SURF, testing::Combine(
     testing::Values(Extended(false), Extended(true)),
     testing::Values(Upright(false), Upright(true))));
 
-#endif // HAVE_OPENCV_OCL
+} } // namespace cvtest::ocl
+
+#endif // HAVE_OPENCL

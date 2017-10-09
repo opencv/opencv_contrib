@@ -1200,7 +1200,7 @@ class CV_EXPORTS_W TrackerTLD : public Tracker
 
 /** @brief KCF is a novel tracking framework that utilizes properties of circulant matrix to enhance the processing speed.
  * This tracking method is an implementation of @cite KCF_ECCV which is extended to KFC with color-names features (@cite KCF_CN).
- * The original paper of KCF is available at <http://home.isr.uc.pt/~henriques/circulant/index.html>
+ * The original paper of KCF is available at <http://www.robots.ox.ac.uk/~joao/publications/henriques_tpami2015.pdf>
  * as well as the matlab implementation. For more information about KCF with color-names features, please refer to
  * <http://www.cvl.isy.liu.se/research/objrec/visualtracking/colvistrack/index.html>.
  */

@@ -113,7 +113,7 @@ template<typename JointVec, typename SrcVec>
 void jointBilateralFilterNaive_(InputArray joint_, InputArray src_, OutputArray dst_, int d, double sigmaColor, double sigmaSpace, int borderType)
 {
     CV_Assert(joint_.size() == src_.size());
-    CV_Assert(joint_.type() == JointVec::type && src_.type() == SrcVec::type);
+    CV_Assert(joint_.type() == traits::Type<JointVec>::value && src_.type() == traits::Type<SrcVec>::value);
     typedef Vec<float, SrcVec::channels> SrcVecf;
 
     if (sigmaColor <= 0)

@@ -62,13 +62,13 @@ int main( int argc, char** argv ){
   //! [selectmulti]
 
   //quit when the tracked object(s) is not provided
-  if(objects.size()<1)
+  if(ROIs.size()<1)
     return 0;
 
   // initialize the tracker
   //! [init]
   std::vector<Ptr<Tracker> > algorithms;
-  for (size_t i = 0; i < objects.size(); i++)
+  for (size_t i = 0; i < ROIs.size(); i++)
   {
       algorithms.push_back(createTrackerByName(trackingAlg));
       objects.push_back(ROIs[i]);
