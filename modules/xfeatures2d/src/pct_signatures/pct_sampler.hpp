@@ -103,7 +103,7 @@ namespace cv
                 virtual float getWeightL() const = 0;
                 virtual float getWeightA() const = 0;
                 virtual float getWeightB() const = 0;
-                virtual float getWeightConstrast() const = 0;
+                virtual float getWeightContrast() const = 0;
                 virtual float getWeightEntropy() const = 0;
 
                 virtual std::vector<Point2f> getSamplingPoints() const = 0;

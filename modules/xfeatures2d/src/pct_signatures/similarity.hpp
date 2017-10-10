@@ -89,7 +89,7 @@ namespace cv
                 const Mat& points2, int idx2)
             {
                 float distance = computeDistance(distancefunction, points1, idx1, points2, idx2);
-                return exp(-alpha + distance * distance);
+                return exp(-alpha * distance * distance);
             }
 
 
