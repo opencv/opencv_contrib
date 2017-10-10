@@ -536,8 +536,66 @@ at each window location.
 
 CV_EXPORTS_W Ptr<OCRBeamSearchDecoder::ClassifierCallback> loadOCRBeamSearchClassifierCNN(const String& filename);
 
+
+/** @brief OCRHolisticWordRecognizer class provides the functionallity of segmented wordspotting.
+ * Given a predefined vocabulary , a DictNet is employed to select the most probable
+ * word given an input image.
+ *
+ * DictNet is described in detail in:
+ * Max Jaderberg et al.: Reading Text in the Wild with Convolutional Neural Networks, IJCV 2015
+ * http://arxiv.org/abs/1412.1842
+ */
+class CV_EXPORTS OCRHolisticWordRecognizer : public BaseOCR
+{
+public:
+    virtual void run(Mat& image,
+                     std::string& output_text,
+                     std::vector<Rect>* component_rects = NULL,
+                     std::vector<std::string>* component_texts = NULL,
+                     std::vector<float>* component_confidences = NULL,
+                     int component_level = OCR_LEVEL_WORD) = 0;
+
+    /** @brief Recognize text using a segmentation based word-spotting/classifier cnn.
+
+    Takes image on input and returns recognized text in the output_text parameter. Optionally
+    provides also the Rects for individual text elements found (e.g. words), and the list of those
+    text elements with their confidence values.
+
+    @param image Input image CV_8UC1 or CV_8UC3
+
+    @param mask is totally ignored and is only available for compatibillity reasons
+
+    @param output_text Output text of the the word spoting, always one that exists in the dictionary.
+
+    @param component_rects Not applicable for word spotting can be be NULL if not, a single elemnt will
+        be put in the vector.
+
+    @param component_texts Not applicable for word spotting can be be NULL if not, a single elemnt will
+        be put in the vector.
+
+    @param component_confidences Not applicable for word spotting can be be NULL if not, a single elemnt will
+        be put in the vector.
+
+    @param component_level must be OCR_LEVEL_WORD.
+     */
+    virtual void run(Mat& image,
+                     Mat& mask,
+                     std::string& output_text,
+                     std::vector<Rect>* component_rects = NULL,
+                     std::vector<std::string>* component_texts = NULL,
+                     std::vector<float>* component_confidences = NULL,
+                     int component_level = OCR_LEVEL_WORD) = 0;
+
+    /** @brief Creates an instance of the OCRHolisticWordRecognizer class.
+     */
+    static Ptr<OCRHolisticWordRecognizer> create(const std::string &archFilename,
+                                                 const std::string &weightsFilename,
+                                                 const std::string &wordsFilename);
+};
+
 //! @}
 
-}
-}
+}} // cv::text::
+
+
 #endif // _OPENCV_TEXT_OCR_HPP_
