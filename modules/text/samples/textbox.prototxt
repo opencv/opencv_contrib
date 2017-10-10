@@ -885,6 +885,7 @@ layer {
     variance: 0.1
     variance: 0.2
     variance: 0.2
+    additional_y_offset: true
   }
 }
 layer {
@@ -1009,6 +1010,7 @@ layer {
     variance: 0.1
     variance: 0.2
     variance: 0.2
+    additional_y_offset: true
   }
 }
 layer {
@@ -1133,6 +1135,7 @@ layer {
     variance: 0.1
     variance: 0.2
     variance: 0.2
+    additional_y_offset: true
   }
 }
 layer {
@@ -1257,6 +1260,7 @@ layer {
     variance: 0.1
     variance: 0.2
     variance: 0.2
+    additional_y_offset: true
   }
 }
 layer {
@@ -1381,6 +1385,7 @@ layer {
     variance: 0.1
     variance: 0.2
     variance: 0.2
+    additional_y_offset: true
   }
 }
 layer {
@@ -1505,6 +1510,7 @@ layer {
     variance: 0.1
     variance: 0.2
     variance: 0.2
+    additional_y_offset: true
   }
 }
 layer {

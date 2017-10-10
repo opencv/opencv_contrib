@@ -27,12 +27,16 @@ public:
     @param Bbox a vector of Rect that will store the detected word bounding box
     @param confidence a vector of float that will be updated with the confidence the classifier has for the selected bounding box
     */
-    virtual void textDetectInImage(InputArray inputImage, CV_OUT std::vector<Rect>& Bbox, CV_OUT std::vector<float>& confidence) = 0;
+    CV_WRAP virtual void detect(InputArray inputImage, CV_OUT std::vector<Rect>& Bbox, CV_OUT std::vector<float>& confidence) = 0;
     virtual ~TextDetector() {}
 };
 
 /** @brief TextDetectorCNN class provides the functionallity of text bounding box detection.
- * A TextDetectorCNN is employed to find bounding boxes of text words given an input image.
+ This class is representing to find bounding boxes of text words given an input image.
+ This class uses OpenCV dnn module to load pre-trained model described in @cite LiaoSBWL17.
+ The original repository with the modified SSD Caffe version: https://github.com/MhLiao/TextBoxes.
+ Model can be downloaded from [DropBox](https://www.dropbox.com/s/g8pjzv2de9gty8g/TextBoxes_icdar13.caffemodel?dl=0).
+ Modified .prototxt file with the model description can be found in `opencv_contrib/modules/text/samples/textbox.prototxt`.
  */
 class CV_EXPORTS_W TextDetectorCNN : public TextDetector
 {
@@ -44,9 +48,9 @@ public:
     @param Bbox a vector of Rect that will store the detected word bounding box
     @param confidence a vector of float that will be updated with the confidence the classifier has for the selected bounding box
     */
-    CV_WRAP virtual void textDetectInImage(InputArray inputImage, CV_OUT std::vector<Rect>& Bbox, CV_OUT std::vector<float>& confidence) = 0;
+    CV_WRAP virtual void detect(InputArray inputImage, CV_OUT std::vector<Rect>& Bbox, CV_OUT std::vector<float>& confidence) = 0;
 
-    /** @brief Creates an instance of the textDetector class and implicitly also a DeepCNN classifier.
+    /** @brief Creates an instance of the TextDetectorCNN class using the provided parameters.
 
     @param modelArchFilename the relative or absolute path to the prototxt file describing the classifiers architecture.
     @param modelWeightsFilename the relative or absolute path to the file containing the pretrained weights of the model in caffe-binary form.

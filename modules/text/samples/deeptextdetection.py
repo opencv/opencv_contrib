@@ -14,14 +14,14 @@ def main():
         print(' (ERROR) You must call this script with an argument (path_to_image_to_be_processed)\n')
         quit()
 
-    if not os.path.isfile('textbox.caffemodel') or not os.path.isfile('textbox_deploy.prototxt'):
+    if not os.path.isfile('TextBoxes_icdar13.caffemodel') or not os.path.isfile('textbox.prototxt'):
         print " Model files not found in current directory. Aborting"
-        print " Model files should be downloaded from https://github.com/sghoshcvc/TextBox-Models"
+        print " See the documentation of text::TextDetectorCNN class to get download links."
         quit()
 
     img = cv2.imread(str(sys.argv[1]))
-    textSpotter = cv2.text.TextDetectorCNN_create("textbox_deploy.prototxt","textbox.caffemodel")
-    rects, outProbs = textSpotter.textDetectInImage(img);
+    textSpotter = cv2.text.TextDetectorCNN_create("textbox.prototxt", "TextBoxes_icdar13.caffemodel")
+    rects, outProbs = textSpotter.detect(img);
     vis = img.copy()
     thres = 0.6
 

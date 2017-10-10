@@ -10,15 +10,14 @@ using namespace cv;
 
 namespace
 {
-std::string getHelpStr(std::string progFname)
+std::string getHelpStr(const std::string& progFname)
 {
     std::stringstream out;
     out << "    Demo of text detection CNN for text detection." << std::endl
         << "    Max Jaderberg et al.: Reading Text in the Wild with Convolutional Neural Networks, IJCV 2015"<<std::endl<<std::endl
         << "    Usage: " << progFname << " <output_file> <input_image>" << std::endl
-        << "    Caffe Model files  (textbox.caffemodel, textbox_deploy.prototxt)"<<std::endl
-        << "      must be in the current directory." << std::endl
-        << "    These files can be downloaded from https://github.com/sghoshcvc/TextBox-Models.git" << std::endl;
+        << "    Caffe Model files  (textbox.prototxt, TextBoxes_icdar13.caffemodel)"<<std::endl
+        << "      must be in the current directory. See the documentation of text::TextDetectorCNN class to get download links." << std::endl;
     return out.str();
 }
 
@@ -58,8 +57,10 @@ int main(int argc, const char * argv[])
         exit(1);
     }
 
-    if (!fileExists("textbox.caffemodel") ||
-            !fileExists("textbox_deploy.prototxt"))
+    const std::string modelArch = "textbox.prototxt";
+    const std::string moddelWeights = "TextBoxes_icdar13.caffemodel";
+
+    if (!fileExists(modelArch) || !fileExists(moddelWeights))
     {
         std::cout<<getHelpStr(argv[0]);
         std::cout << "Model files not found in the current directory. Aborting!" << std::endl;
@@ -70,11 +71,11 @@ int main(int argc, const char * argv[])
 
     std::cout << "Starting Text Box Demo" << std::endl;
     Ptr<text::TextDetectorCNN> textSpotter =
-            text::TextDetectorCNN::create("textbox_deploy.prototxt","textbox.caffemodel", false);
+            text::TextDetectorCNN::create(modelArch, moddelWeights, false);
 
     std::vector<Rect> bbox;
     std::vector<float> outProbabillities;
-    textSpotter->textDetectInImage(image, bbox, outProbabillities);
+    textSpotter->detect(image, bbox, outProbabillities);
 
     textbox_draw(image, bbox, outProbabillities, 0.5f);
 
