@@ -604,7 +604,7 @@ namespace cv{
     bool oclSucceed = false;
     Size s(pca_data.cols, pca_data.cols);
     UMat result(s, pca_data.type());
-    if (oclTransposeMM(pca_data, 1.0/(float)(src.rows*src.cols-1), result)) {
+    if (oclTransposeMM(pca_data, 1.0f/(float)(src.rows*src.cols-1), result)) {
       if(old_cov.rows==0) old_cov=result.getMat(ACCESS_READ).clone();
       SVD::compute((1.0-pca_rate)*old_cov + pca_rate * result.getMat(ACCESS_READ), w, u, vt);
       oclSucceed = true;
