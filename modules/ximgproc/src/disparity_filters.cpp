@@ -122,6 +122,7 @@ protected:
 public:
     static Ptr<DisparityWLSFilterImpl> create(bool _use_confidence, int l_offs, int r_offs, int t_offs, int b_offs, int min_disp);
     void filter(InputArray disparity_map_left, InputArray left_view, OutputArray filtered_disparity_map, InputArray disparity_map_right, Rect ROI, InputArray);
+    void filter_(InputArray disparity_map_left, InputArray left_view, OutputArray filtered_disparity_map, InputArray disparity_map_right, Rect ROI);
 
     double getLambda() {return lambda;}
     void setLambda(double _lambda) {lambda = _lambda;}
@@ -218,8 +219,28 @@ Ptr<DisparityWLSFilterImpl> DisparityWLSFilterImpl::create(bool _use_confidence,
 
 void DisparityWLSFilterImpl::filter(InputArray disparity_map_left, InputArray left_view, OutputArray filtered_disparity_map, InputArray disparity_map_right, Rect ROI, InputArray)
 {
-    CV_Assert( !disparity_map_left.empty() && (disparity_map_left.depth() == CV_16S) && (disparity_map_left.channels() == 1) );
-    CV_Assert( !left_view.empty() && (left_view.depth() == CV_8U) && (left_view.channels() == 3 || left_view.channels() == 1) );
+    Mat left = disparity_map_left.getMat();
+    if (left.type() == CV_32F){
+        filter_(disparity_map_left, left_view, filtered_disparity_map, disparity_map_right, ROI);
+    } else {
+        Mat left_c, right_c, filt_disp;
+        left.convertTo(left_c, CV_32F);
+        if(!disparity_map_right.empty())
+            disparity_map_right.getMat().convertTo(right_c, CV_32F);
+        filter_(left_c, left_view, filt_disp, right_c, ROI);
+        filt_disp.convertTo(filtered_disparity_map, CV_32F);
+    }
+}
+
+void DisparityWLSFilterImpl::filter_(InputArray disparity_map_left, InputArray left_view, OutputArray filtered_disparity_map, InputArray disparity_map_right, Rect ROI)
+{
+    CV_Assert( !disparity_map_left.empty()
+               && ( disparity_map_left.depth() == CV_32F)
+               && (disparity_map_left.channels() == 1) );
+    CV_Assert( !left_view.empty()
+               && (left_view.depth() == CV_8U)
+               && (left_view.channels() == 3 || left_view.channels() == 1) );
+
     Mat disp,src,dst;
     if(disparity_map_left.size()!=left_view.size())
         resize_factor = disparity_map_left.cols()/(float)left_view.cols();
@@ -236,17 +257,17 @@ void DisparityWLSFilterImpl::filter(InputArray disparity_map_left, InputArray le
     {
         Mat disp_full_size = disparity_map_left.getMat();
         Mat src_full_size = left_view.getMat();
-        if(disp_full_size.size!=src_full_size.size)
-        {
+        if(disp_full_size.size!=src_full_size.size){
             float x_ratio = src_full_size.cols/(float)disp_full_size.cols;
             float y_ratio = src_full_size.rows/(float)disp_full_size.rows;
             resize(disp_full_size,disp_full_size,src_full_size.size());
             disp_full_size = disp_full_size*x_ratio;
             ROI = Rect((int)(valid_disp_ROI.x*x_ratio),    (int)(valid_disp_ROI.y*y_ratio),
                        (int)(valid_disp_ROI.width*x_ratio),(int)(valid_disp_ROI.height*y_ratio));
-        }
-        else
+        } else {
             ROI = valid_disp_ROI;
+        }
+
         disp = Mat(disp_full_size,ROI);
         src  = Mat(src_full_size ,ROI);
         filtered_disparity_map.create(disp_full_size.size(), disp_full_size.type());
@@ -259,14 +280,15 @@ void DisparityWLSFilterImpl::filter(InputArray disparity_map_left, InputArray le
     }
     else
     {
-        CV_Assert( !disparity_map_right.empty() && (disparity_map_right.depth() == CV_16S) && (disparity_map_right.channels() == 1) );
+        CV_Assert( !disparity_map_right.empty()
+                   && (disparity_map_right.depth() == CV_32F)
+                   && (disparity_map_right.channels() == 1) );
         CV_Assert( (disparity_map_left.cols() == disparity_map_right.cols()) );
         CV_Assert( (disparity_map_left.rows() == disparity_map_right.rows()) );
         computeConfidenceMap(disparity_map_left,disparity_map_right);
         Mat disp_full_size = disparity_map_left.getMat();
         Mat src_full_size = left_view.getMat();
-        if(disp_full_size.size!=src_full_size.size)
-        {
+        if(disp_full_size.size!=src_full_size.size){
             float x_ratio = src_full_size.cols/(float)disp_full_size.cols;
             float y_ratio = src_full_size.rows/(float)disp_full_size.rows;
             resize(disp_full_size,disp_full_size,src_full_size.size());
@@ -274,9 +296,9 @@ void DisparityWLSFilterImpl::filter(InputArray disparity_map_left, InputArray le
             resize(confidence_map,confidence_map,src_full_size.size());
             ROI = Rect((int)(valid_disp_ROI.x*x_ratio),    (int)(valid_disp_ROI.y*y_ratio),
                        (int)(valid_disp_ROI.width*x_ratio),(int)(valid_disp_ROI.height*y_ratio));
-        }
-        else
+        } else {
             ROI = valid_disp_ROI;
+        }
         disp = Mat(disp_full_size,ROI);
         src  = Mat(src_full_size ,ROI);
         filtered_disparity_map.create(disp_full_size.size(), disp_full_size.type());
@@ -286,14 +308,12 @@ void DisparityWLSFilterImpl::filter(InputArray disparity_map_left, InputArray le
         Mat conf(confidence_map,ROI);
 
         Mat disp_mul_conf;
-        disp.convertTo(disp_mul_conf,CV_32F);
-        disp_mul_conf = conf.mul(disp_mul_conf);
+        disp_mul_conf = conf.mul(disp);
         Mat conf_filtered;
         Ptr<FastGlobalSmootherFilter> wls = createFastGlobalSmootherFilter(src,lambda,sigma_color);
         wls->filter(disp_mul_conf,disp_mul_conf);
         wls->filter(conf,conf_filtered);
-        disp_mul_conf = disp_mul_conf.mul(1/(conf_filtered+EPS));
-        disp_mul_conf.convertTo(dst,CV_16S);
+        dst = disp_mul_conf.mul(1/(conf_filtered+EPS));
     }
 }
 
@@ -305,9 +325,9 @@ wls(&_wls),left_disp(&_left_disp),right_disp(&_right_disp),left_disc(&_left_disc
 
 void DisparityWLSFilterImpl::ComputeDiscontinuityAwareLRC_ParBody::operator() (const Range& range) const
 {
-    short* row_left;
+    float* row_left;
     float* row_left_conf;
-    short* row_right;
+    float* row_right;
     float* row_right_conf;
     float* row_dst;
     int right_idx;
@@ -318,9 +338,9 @@ void DisparityWLSFilterImpl::ComputeDiscontinuityAwareLRC_ParBody::operator() (c
     int thresh = (int)(wls->resize_factor*wls->LRC_thresh);
     for(int i=start;i<end;i++)
     {
-        row_left  = (short*)left_disp->ptr(i);
+        row_left  = (float*)left_disp->ptr(i);
         row_left_conf  = (float*)left_disc->ptr(i);
-        row_right = (short*)right_disp->ptr(i);
+        row_right = (float*)right_disp->ptr(i);
         row_right_conf  = (float*)right_disc->ptr(i);
         row_dst   = (float*)dst->ptr(i);
         int j_start = left_ROI.x;
@@ -328,7 +348,7 @@ void DisparityWLSFilterImpl::ComputeDiscontinuityAwareLRC_ParBody::operator() (c
         int right_end = right_ROI.x+right_ROI.width;
         for(int j=j_start;j<j_end;j++)
         {
-            right_idx = j-(row_left[j]>>4);
+                right_idx = j-((int)row_left[j]);
             if( right_idx>=right_ROI.x && right_idx<right_end)
             {
                 if(abs(row_left[j] + row_right[right_idx])< thresh)
@@ -496,8 +516,8 @@ int readGT(String src_path,OutputArray dst)
 
 double computeMSE(InputArray GT, InputArray src, Rect ROI)
 {
-    CV_Assert( !GT.empty()  && (GT.depth()  == CV_16S) && (GT.channels()  == 1) );
-    CV_Assert( !src.empty() && (src.depth() == CV_16S) && (src.channels() == 1) );
+    CV_Assert( !GT.empty()  && (GT.depth()  == CV_16S || GT.depth()  == CV_32F) && (GT.channels()  == 1) );
+    CV_Assert( !src.empty() && (src.depth() == CV_16S || src.depth()  == CV_32F) && (src.channels() == 1) );
     CV_Assert( src.rows() == GT.rows() && src.cols() == GT.cols() );
     double res = 0;
     Mat GT_ROI (GT.getMat(), ROI);
@@ -518,8 +538,8 @@ double computeMSE(InputArray GT, InputArray src, Rect ROI)
 
 double computeBadPixelPercent(InputArray GT, InputArray src, Rect ROI, int thresh)
 {
-    CV_Assert( !GT.empty()  && (GT.depth()  == CV_16S) && (GT.channels()  == 1) );
-    CV_Assert( !src.empty() && (src.depth() == CV_16S) && (src.channels() == 1) );
+    CV_Assert( !GT.empty()  && (GT.depth()  == CV_16S || GT.depth()  == CV_32F) && (GT.channels()  == 1) );
+    CV_Assert( !src.empty() && (src.depth() == CV_16S || src.depth()  == CV_32F) && (src.channels() == 1) );
     CV_Assert( src.rows() == GT.rows() && src.cols() == GT.cols() );
     int bad_pixel_num = 0;
     Mat GT_ROI (GT.getMat(), ROI);
@@ -540,7 +560,7 @@ double computeBadPixelPercent(InputArray GT, InputArray src, Rect ROI, int thres
 
 void getDisparityVis(InputArray src,OutputArray dst,double scale)
 {
-    CV_Assert( !src.empty() && (src.depth() == CV_16S) && (src.channels() == 1) );
+    CV_Assert( !src.empty() && (src.depth() == CV_16S || src.depth()  == CV_32F) && (src.channels() == 1) );
     Mat srcMat = src.getMat();
     dst.create(srcMat.rows,srcMat.cols,CV_8UC1);
     Mat& dstMat = dst.getMatRef();
