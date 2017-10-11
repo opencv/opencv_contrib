@@ -74,22 +74,20 @@ public:
     void detect(InputArray inputImage_, std::vector<Rect>& Bbox, std::vector<float>& confidence)
     {
         CV_Assert(inputImage_.channels() == inputChannelCount_);
-        Size inputSize = inputImage_.getMat().size();
+        Mat inputImage = inputImage_.getMat();
         Bbox.resize(0);
         confidence.resize(0);
 
         for(size_t i = 0; i < sizes_.size(); i++)
         {
             Size inputGeometry = sizes_[i];
-            Mat inputImage = inputImage_.getMat().clone();
-            resize(inputImage, inputImage, inputGeometry);
-            net_.setInput(blobFromImage(inputImage, 1, inputGeometry, Scalar(123, 117, 104)), "data");
+            net_.setInput(blobFromImage(inputImage, 1, inputGeometry, Scalar(123, 117, 104), false, false), "data");
             Mat outputNet = net_.forward();
             int nbrTextBoxes = outputNet.size[2];
             int nCol = outputNet.size[3];
             int outputChannelCount = outputNet.size[1];
             CV_Assert(outputChannelCount == 1);
-            getOutputs((float*)(outputNet.data), nbrTextBoxes, nCol, Bbox, confidence, inputSize);
+            getOutputs((float*)(outputNet.data), nbrTextBoxes, nCol, Bbox, confidence, inputImage.size());
         }
      }
 };
