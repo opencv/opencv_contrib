@@ -1,12 +1,3 @@
-/*
- * dictnet_demo.cpp
- *
- * Demonstrates simple use of the holistic word classifier in C++
- *
- * Created on: June 26, 2016
- *     Author: Anguelos Nicolaou <anguelos.nicolaou AT gmail.com>
- */
-
 #include  "opencv2/text.hpp"
 #include  "opencv2/highgui.hpp"
 #include  "opencv2/imgproc.hpp"

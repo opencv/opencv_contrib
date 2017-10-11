@@ -14,14 +14,14 @@ std::string getHelpStr(const std::string& progFname)
 {
     std::stringstream out;
     out << "    Demo of text detection CNN for text detection." << std::endl
-        << "    Max Jaderberg et al.: Reading Text in the Wild with Convolutional Neural Networks, IJCV 2015"<<std::endl<<std::endl
+        << "    Minghui Liao, Baoguang Shi, Xiang Bai, Xinggang Wang, Wenyu Liu: TextBoxes: A Fast Text Detector with a Single Deep Neural Network, AAAI2017\n\n"
         << "    Usage: " << progFname << " <output_file> <input_image>" << std::endl
         << "    Caffe Model files  (textbox.prototxt, TextBoxes_icdar13.caffemodel)"<<std::endl
         << "      must be in the current directory. See the documentation of text::TextDetectorCNN class to get download links." << std::endl;
     return out.str();
 }
 
-bool fileExists (std::string filename)
+bool fileExists (const std::string& filename)
 {
     std::ifstream f(filename.c_str());
     return f.good();
