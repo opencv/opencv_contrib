@@ -117,6 +117,7 @@ int main( int argc, char** argv ){
 
   bool initialized = false;
   int frameCounter = 0;
+  int64 timeTotal = 0;
 
   for ( ;; )
   {
@@ -142,11 +143,14 @@ int main( int argc, char** argv ){
       }
       else if( initialized )
       {
+        int64 frameTime = getTickCount();
         //updates the tracker
         if( tracker->update( frame, boundingBox ) )
         {
           rectangle( image, boundingBox, Scalar( 255, 0, 0 ), 2, 1 );
         }
+        frameTime = getTickCount() - frameTime;
+        timeTotal += frameTime;
       }
       imshow( "Tracking API", image );
       frameCounter++;
@@ -158,6 +162,9 @@ int main( int argc, char** argv ){
     if( c == 'p' )
       paused = !paused;
   }
+
+  double s = frameCounter / (timeTotal / getTickFrequency());
+  printf("FPS: %f\n", s);
 
   return 0;
 }

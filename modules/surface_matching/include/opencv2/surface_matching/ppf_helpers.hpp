@@ -61,7 +61,7 @@ namespace ppf_match_3d
  *  and whether it should be loaded or not
  *  @return Returns the matrix on successfull load
  */
-CV_EXPORTS Mat loadPLYSimple(const char* fileName, int withNormals);
+CV_EXPORTS Mat loadPLYSimple(const char* fileName, int withNormals = 0);
 
 /**
  *  @brief Write a point cloud to PLY file

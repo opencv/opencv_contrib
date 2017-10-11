@@ -55,54 +55,91 @@ void getRandomRotation(double R[9]);
 void meanCovLocalPC(const float* pc, const int ws, const int point_count, double CovMat[3][3], double Mean[4]);
 void meanCovLocalPCInd(const float* pc, const int* Indices, const int ws, const int point_count, double CovMat[3][3], double Mean[4]);
 
+static std::vector<std::string> split(const std::string &text, char sep) {
+  std::vector<std::string> tokens;
+  std::size_t start = 0, end = 0;
+  while ((end = text.find(sep, start)) != std::string::npos) {
+    tokens.push_back(text.substr(start, end - start));
+    start = end + 1;
+  }
+  tokens.push_back(text.substr(start));
+  return tokens;
+}
+
+
+
 Mat loadPLYSimple(const char* fileName, int withNormals)
 {
   Mat cloud;
-  int numVertices=0;
+  int numVertices = 0;
+  int numCols = 3;
+  int has_normals = 0;
 
   std::ifstream ifs(fileName);
 
   if (!ifs.is_open())
-  {
-    printf("Cannot open file...\n");
-    return Mat();
-  }
+    CV_Error(Error::StsError, String("Error opening input file: ") + String(fileName) + "\n");
 
   std::string str;
-  while (str.substr(0, 10) !="end_header")
+  while (str.substr(0, 10) != "end_header")
   {
-    std::string entry = str.substr(0, 14);
-    if (entry == "element vertex")
+    std::vector<std::string> tokens = split(str,' ');
+    if (tokens.size() == 3)
     {
-      numVertices = atoi(str.substr(15, str.size()-15).c_str());
+      if (tokens[0] == "element" && tokens[1] == "vertex")
+      {
+        numVertices = atoi(tokens[2].c_str());
+      }
+      else if (tokens[0] == "property")
+      {
+        if (tokens[2] == "nx" || tokens[2] == "normal_x")
+        {
+          has_normals = -1;
+          numCols += 3;
+        }
+        else if (tokens[2] == "r" || tokens[2] == "red")
+        {
+          //has_color = true;
+          numCols += 3;
+        }
+        else if (tokens[2] == "a" || tokens[2] == "alpha")
+        {
+          //has_alpha = true;
+          numCols += 1;
+        }
+      }
     }
+    else if (tokens.size() > 1 && tokens[0] == "format" && tokens[1] != "ascii")
+      CV_Error(Error::StsBadArg, String("Cannot read file, only ascii ply format is currently supported..."));
     std::getline(ifs, str);
   }
+  withNormals &= has_normals;
 
-  if (withNormals)
-    cloud=Mat(numVertices, 6, CV_32FC1);
-  else
-    cloud=Mat(numVertices, 3, CV_32FC1);
+  cloud = Mat(numVertices, withNormals ? 6 : 3, CV_32FC1);
 
   for (int i = 0; i < numVertices; i++)
   {
     float* data = cloud.ptr<float>(i);
+    int col = 0;
+    for (; col < withNormals ? 6 : 3; ++col)
+    {
+      ifs >> data[col];
+    }
+    for (; col < numCols; ++col)
+    {
+      float tmp;
+      ifs >> tmp;
+    }
     if (withNormals)
     {
-      ifs >> data[0] >> data[1] >> data[2] >> data[3] >> data[4] >> data[5];
-
       // normalize to unit norm
       double norm = sqrt(data[3]*data[3] + data[4]*data[4] + data[5]*data[5]);
       if (norm>0.00001)
       {
-        data[3]/=(float)norm;
-        data[4]/=(float)norm;
-        data[5]/=(float)norm;
+        data[3]/=static_cast<float>(norm);
+        data[4]/=static_cast<float>(norm);
+        data[5]/=static_cast<float>(norm);
       }
-    }
-    else
-    {
-      ifs >> data[0] >> data[1] >> data[2];
     }
   }
 

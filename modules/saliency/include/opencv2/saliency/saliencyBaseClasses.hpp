@@ -68,23 +68,12 @@ class CV_EXPORTS_W Saliency : public virtual Algorithm
   virtual ~Saliency();
 
   /**
-   * \brief Create Saliency by saliency type.
-   */
-  static Ptr<Saliency> create( const String& saliencyType );
-
-  /**
    * \brief Compute the saliency
    * \param image        The image.
    * \param saliencyMap      The computed saliency map.
    * \return true if the saliency map is computed, false otherwise
    */
   CV_WRAP bool computeSaliency( InputArray image, OutputArray saliencyMap );
-
-  /**
-   * \brief Get the name of the specific saliency type
-   * \return The name of the tracker initializer
-   */
-  CV_WRAP String getClassName() const;
 
  protected:
 
