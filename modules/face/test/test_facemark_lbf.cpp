@@ -51,7 +51,7 @@ using namespace cv;
 using namespace cv::face;
 
 CascadeClassifier cascade_detector;
-bool myCustomDetector( InputArray image, OutputArray ROIs, void * config = 0 ){
+static bool myCustomDetector( InputArray image, OutputArray ROIs, void * config = 0 ){
     Mat gray;
     std::vector<Rect> & faces = *(std::vector<Rect>*) ROIs.getObj();
     faces.clear();

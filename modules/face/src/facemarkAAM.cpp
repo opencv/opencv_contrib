@@ -43,11 +43,12 @@ namespace face {
     * Parameters
     */
     FacemarkAAM::Params::Params(){
-        model_filename = "AAM.yml";
+        model_filename = "";
         m = 200;
         n = 10;
         n_iter = 50;
         verbose = true;
+        save_model = true;
         scales.push_back(1.0);
         max_m = 550;
         max_n = 136;
@@ -219,6 +220,11 @@ namespace face {
            CV_Error(CV_StsBadArg, error_message);
         }
 
+        if(strcmp(params.model_filename.c_str(),"")==0 && params.save_model){
+            std::string error_message = "The model_filename parameter should be set!";
+            CV_Error(CV_StsBadArg, error_message);
+        }
+
         std::vector<std::vector<Point2f> > normalized;
         Mat erode_kernel = getStructuringElement(MORPH_RECT, Size(3,3), Point(1,1));
         Mat image;
@@ -313,8 +319,10 @@ namespace face {
         } // scale
 
         images.clear();
-        if(params.verbose) printf("Saving the model\n");
-        saveModel(params.model_filename);
+        if(params.save_model){
+            if(params.verbose) printf("Saving the model\n");
+            saveModel(params.model_filename);
+        }
         isModelTrained = true;
         if(params.verbose) printf("Training is completed\n");
     }
@@ -447,43 +455,43 @@ namespace face {
     }
 
     void FacemarkAAMImpl::saveModel(String s){
-        FileStorage fs(s.c_str(),FileStorage::WRITE);
+        FileStorage fs(s.c_str(),FileStorage::WRITE_BASE64);
         fs << "AAM_tri" << AAM.triangles;
         fs << "scales" << AAM.scales;
         fs << "s0" << AAM.s0;
         fs << "S" << AAM.S;
         fs << "Q" << AAM.Q;
 
-        char x[256];
+        String x;
         for(int i=0;i< (int)AAM.scales.size();i++){
-            sprintf(x,"scale%i_max_m",i);
+            x = cv::format("scale%i_max_m",i);
             fs << x << AAM.textures[i].max_m;
 
-            sprintf(x,"scale%i_resolution",i);
+            x = cv::format("scale%i_resolution",i);
             fs << x << AAM.textures[i].resolution;
 
-            sprintf(x,"scale%i_textureIdx",i);
+            x = cv::format("scale%i_textureIdx",i);
             fs << x << AAM.textures[i].textureIdx;
 
-            sprintf(x,"scale%i_base_shape",i);
+            x = cv::format("scale%i_base_shape",i);
             fs << x << AAM.textures[i].base_shape;
 
-            sprintf(x,"scale%i_A",i);
+            x = cv::format("scale%i_A",i);
             fs << x << AAM.textures[i].A;
 
-            sprintf(x,"scale%i_A0",i);
+            x = cv::format("scale%i_A0",i);
             fs << x << AAM.textures[i].A0;
 
-            sprintf(x,"scale%i_AA",i);
+            x = cv::format("scale%i_AA",i);
             fs << x << AAM.textures[i].AA;
 
-            sprintf(x,"scale%i_AA0",i);
+            x = cv::format("scale%i_AA0",i);
             fs << x << AAM.textures[i].AA0;
 
-            sprintf(x,"scale%i_ind1",i);
+            x = cv::format("scale%i_ind1",i);
             fs << x << AAM.textures[i].ind1;
 
-            sprintf(x,"scale%i_ind2",i);
+            x = cv::format("scale%i_ind2",i);
             fs << x << AAM.textures[i].ind2;
 
         }
@@ -493,7 +501,7 @@ namespace face {
 
     void FacemarkAAMImpl::loadModel(String s){
         FileStorage fs(s.c_str(),FileStorage::READ);
-        char x[256];
+        String x;
         fs["AAM_tri"] >> AAM.triangles;
         fs["scales"] >> AAM.scales;
         fs["s0"] >> AAM.s0;
@@ -503,34 +511,34 @@ namespace face {
 
         AAM.textures.resize(AAM.scales.size());
         for(int i=0;i< (int)AAM.scales.size();i++){
-            sprintf(x,"scale%i_max_m",i);
+            x = cv::format("scale%i_max_m",i);
             fs[x] >> AAM.textures[i].max_m;
 
-            sprintf(x,"scale%i_resolution",i);
+            x = cv::format("scale%i_resolution",i);
             fs[x] >> AAM.textures[i].resolution;
 
-            sprintf(x,"scale%i_textureIdx",i);
+            x = cv::format("scale%i_textureIdx",i);
             fs[x] >> AAM.textures[i].textureIdx;
 
-            sprintf(x,"scale%i_base_shape",i);
+            x = cv::format("scale%i_base_shape",i);
             fs[x] >> AAM.textures[i].base_shape;
 
-            sprintf(x,"scale%i_A",i);
+            x = cv::format("scale%i_A",i);
             fs[x] >> AAM.textures[i].A;
 
-            sprintf(x,"scale%i_A0",i);
+            x = cv::format("scale%i_A0",i);
             fs[x] >> AAM.textures[i].A0;
 
-            sprintf(x,"scale%i_AA",i);
+            x = cv::format("scale%i_AA",i);
             fs[x] >> AAM.textures[i].AA;
 
-            sprintf(x,"scale%i_AA0",i);
+            x = cv::format("scale%i_AA0",i);
             fs[x] >> AAM.textures[i].AA0;
 
-            sprintf(x,"scale%i_ind1",i);
+            x = cv::format("scale%i_ind1",i);
             fs[x] >> AAM.textures[i].ind1;
 
-            sprintf(x,"scale%i_ind2",i);
+            x = cv::format("scale%i_ind2",i);
             fs[x] >> AAM.textures[i].ind2;
         }
 

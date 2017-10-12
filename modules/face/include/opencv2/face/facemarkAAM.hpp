@@ -69,6 +69,7 @@ namespace face {
             int n;
             int n_iter;
             bool verbose;
+            bool save_model;
             int max_m, max_n, texture_max_m;
             std::vector<float>scales;
         };

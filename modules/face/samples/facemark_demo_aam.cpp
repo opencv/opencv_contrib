@@ -98,6 +98,7 @@ Mentor: Delia Passalacqua
      FacemarkAAM::Params params;
      params.scales.push_back(2.0);
      params.scales.push_back(4.0);
+     params.model_filename = "AAM.yaml";
      Ptr<FacemarkAAM> facemark = FacemarkAAM::create(params);
      //! [instance_creation]
 
