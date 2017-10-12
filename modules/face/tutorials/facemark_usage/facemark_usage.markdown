@@ -14,7 +14,7 @@ Preparation
 ---------
 
 Before you continue with this tutorial, you should download the dataset of facial landmarks detection.
-We suggest you to download the helen dataset which can be retrieved at <http://www.ifp.illinois.edu/~vuongle2/helen/>.
+We suggest you to download the helen dataset which can be retrieved at <http://www.ifp.illinois.edu/~vuongle2/helen/>  (Caution! The algorithm requires around 9GB of RAM to train on this dataset).
 
 Make sure that the annotation format is supported by the API, the contents in annotation file should look like the following snippet:
 @code
@@ -156,7 +156,7 @@ facemark->training();
 
 Use the trained model to detect the facial landmarks from a given image.
 -----
-- First of all, load the trained model. You can also download the pre-trained model in this link <https://drive.google.com/file/d/0BxCn8qoSV5g2UDd0aHo3TmFqdTg/view?usp=sharing>
+- First of all, load the trained model. You can also download the pre-trained model in this link <https://raw.githubusercontent.com/kurnianggoro/GSOC2017/master/data/lbfmodel.yaml>
     @code
     facemark->loadModel(params.model_filename);
     @endcode

@@ -36,7 +36,6 @@ Mentor: Delia Passalacqua
 
 #include "opencv2/face.hpp"
 #include "precomp.hpp"
-#include "liblinear.hpp"
 #include <fstream>
 #include <cmath>
 #include <ctime>
@@ -206,6 +205,11 @@ namespace face {
         };
         /*---------------Regressor Class---------------------*/
         class Regressor  : public LBF {
+        protected:
+            struct feature_node{
+                int index;
+                double value;
+            };
         public:
             Regressor(){};
             ~Regressor(){};
@@ -214,18 +218,27 @@ namespace face {
             void trainRegressor(std::vector<cv::Mat> &imgs, std::vector<cv::Mat> &gt_shapes, \
                        std::vector<cv::Mat> &current_shapes, std::vector<BBox> &bboxes, \
                        cv::Mat &mean_shape, int start_from, Params );
-            void globalRegressionTrain(std::vector<Mat> &lbfs, std::vector<Mat> &delta_shapes, int stage, Params);
             Mat globalRegressionPredict(const Mat &lbf, int stage);
             Mat predict(Mat &img, BBox &bbox);
 
             void write(FileStorage fs, Params config);
             void read(FileStorage fs, Params & config);
 
+            void globalRegressionTrain(
+                std::vector<Mat> &lbfs, std::vector<Mat> &delta_shapes,
+                int stage, Params config
+            );
+
+            Mat supportVectorRegression(
+                feature_node **x, double *y, int nsamples, int feat_size, bool verbose=0
+            );
+
             int stages_n;
             int landmark_n;
             cv::Mat mean_shape;
             std::vector<RandomForest> random_forests;
             std::vector<cv::Mat> gl_regression_weights;
+
         }; // LBF
 
         Regressor regressor;
@@ -372,7 +385,7 @@ namespace face {
         regressor.trainRegressor(imgs, gt_shapes, current_shapes, bboxes, mean_shape, 0, params);
 
         if(params.save_model){
-            FileStorage fs(params.model_filename.c_str(),FileStorage::WRITE);
+            FileStorage fs(params.model_filename.c_str(),FileStorage::WRITE_BASE64);
             regressor.write(fs, params);
         }
 
@@ -521,6 +534,10 @@ namespace face {
     void FacemarkLBFImpl::prepareTrainingData(Mat img, std::vector<Point2f> facePoints,
         std::vector<Mat> & cropped, std::vector<Mat> & shapes, std::vector<BBox> &boxes)
     {
+        if(img.channels()>1){
+            cvtColor(img,img,CV_BGR2GRAY);
+        }
+
         Mat shape;
         Mat _shape = Mat(facePoints).reshape(1);
         Rect box = getBBox(img, _shape);
@@ -532,10 +549,10 @@ namespace face {
             minMaxIdx(sx, &min_x, &max_x);
             minMaxIdx(sy, &min_y, &max_y);
 
-            min_x = std::max(0., min_x - box.width / 2);
-            max_x = std::min(img.cols - 1., max_x + box.width / 2);
-            min_y = std::max(0., min_y - box.height / 2);
-            max_y = std::min(img.rows - 1., max_y + box.height / 2);
+            min_x = std::max(0., min_x - (double)box.width / 2.);
+            max_x = std::min(img.cols - 1., max_x + (double)box.width / 2.);
+            min_y = std::max(0., min_y - (double)box.height / 2.);
+            max_y = std::min(img.rows - 1., max_y + (double)box.height / 2.);
 
             double w = max_x - min_x;
             double h = max_y - min_y;
@@ -546,9 +563,9 @@ namespace face {
             Mat crop = img(Rect((int)min_x, (int)min_y, (int)w, (int)h)).clone();
             cropped.push_back(crop);
             shapes.push_back(shape);
-        }
 
-    }
+        } // if box is valid
+    } // prepareTrainingData
 
     void FacemarkLBFImpl::data_augmentation(std::vector<Mat> &imgs, std::vector<Mat> &gt_shapes, std::vector<BBox> &bboxes) {
         int N = (int)imgs.size();
@@ -722,7 +739,7 @@ namespace face {
         for (int i = 0; i < N; i++) {
             delta_shapes[i] = bboxes[i].project(gt_shapes[i]) - bboxes[i].project(current_shapes[i]);
             calcSimilarityTransform(mean_shape, bboxes[i].project(current_shapes[i]), scale, rotate);
-            // delta_shapes[i] = scale * delta_shapes[i] * rotate.t();
+            // delta_shapes[i] = scale * delta_shapes[i] * rotate.t(); // the result is better without this part
         }
         return delta_shapes;
     }
@@ -910,18 +927,18 @@ namespace face {
 
     void FacemarkLBFImpl::RandomTree::write(FileStorage fs, int k, int i, int j) {
 
-        char x[256];
-        sprintf(x,"tree_%i_%i_%i",k,i,j);
+        String x;
+        x = cv::format("tree_%i_%i_%i",k,i,j);
         fs << x << feats;
-        sprintf(x,"thresholds_%i_%i_%i",k,i,j);
+        x = cv::format("thresholds_%i_%i_%i",k,i,j);
         fs << x << thresholds;
     }
 
     void FacemarkLBFImpl::RandomTree::read(FileStorage fs, int k, int i, int j) {
-        char x[256];
-        sprintf(x,"tree_%i_%i_%i",k,i,j);
+        String x;
+        x = cv::format("tree_%i_%i_%i",k,i,j);
         fs[x] >> feats;
-        sprintf(x,"thresholds_%i_%i_%i",k,i,j);
+        x = cv::format("thresholds_%i_%i_%i",k,i,j);
         fs[x] >> thresholds;
     }
 
@@ -1114,17 +1131,19 @@ namespace face {
         } // for int k
     }//Regressor::training
 
-    // Global Regression to predict delta shape with LBF
-    void FacemarkLBFImpl::Regressor::globalRegressionTrain(std::vector<Mat> &lbfs, std::vector<Mat> &delta_shapes, int stage, Params config) {
+    void FacemarkLBFImpl::Regressor::globalRegressionTrain(
+        std::vector<Mat> &lbfs, std::vector<Mat> &delta_shapes,
+        int stage, Params config
+    ) {
+
         int N = (int)lbfs.size();
         int M = lbfs[0].cols;
         int F = config.n_landmarks*config.tree_n*(1 << (config.tree_depth - 1));
         int landmark_n_ = delta_shapes[0].rows;
-        // prepare linear regression config X and Y
-        struct liblinear::feature_node **X = (struct liblinear::feature_node **)malloc(N * sizeof(struct liblinear::feature_node *));
+        feature_node **X = (feature_node **)malloc(N * sizeof(feature_node *));
         double **Y = (double **)malloc(landmark_n_ * 2 * sizeof(double *));
         for (int i = 0; i < N; i++) {
-            X[i] = (struct liblinear::feature_node *)malloc((M + 1) * sizeof(struct liblinear::feature_node));
+            X[i] = (feature_node *)malloc((M + 1) * sizeof(feature_node));
             for (int j = 0; j < M; j++) {
                 X[i][j].index = lbfs[i].at<int>(0, j) + 1; // index starts from 1
                 X[i][j].value = 1;
@@ -1140,49 +1159,20 @@ namespace face {
                 Y[2 * i + 1][j] = delta_shapes[j].at<double>(i, 1);
             }
         }
-        // train every landmark
-        struct liblinear::problem prob;
-        struct liblinear::parameter param;
-        prob.l = N;
-        prob.n = F;
-        prob.x = X;
-        prob.bias = -1;
-        param.solver_type = liblinear::L2R_L2LOSS_SVR_DUAL;
-        param.C = 1. / N;
-        param.p = 0;
-        param.eps = 0.00001;
 
-        Mat_<double> weight(2 * landmark_n_, F);
+        double *y;
+        Mat weights;
+        for(int i=0; i< landmark_n_; i++){
+            y =  Y[2 * i];
+            Mat wx = supportVectorRegression(X,y,N,F,config.verbose);
+            weights.push_back(wx);
 
-        #ifdef _OPENMP
-        #pragma omp parallel for
-        #endif
-        for (int i = 0; i < landmark_n_; i++) {
-
-        #define FREE_MODEL(model)   \
-        free(model->w);         \
-        free(model->label);     \
-        free(model)
-
-            if(config.verbose) printf("train %2dth landmark\n", i);
-            struct liblinear::problem prob_ = prob;
-            prob_.y = Y[2 * i];
-            liblinear::check_parameter(&param);
-            struct liblinear::model *model = liblinear::train(&prob_, &param);
-            for (int j = 0; j < F; j++) weight(2 * i, j) = liblinear::get_decfun_coef(model, j + 1, 0);
-            FREE_MODEL(model);
-
-            prob_.y = Y[2 * i + 1];
-            liblinear::check_parameter(&param);
-            model = liblinear::train(&prob_, &param);
-            for (int j = 0; j < F; j++) weight(2 * i + 1, j) = liblinear::get_decfun_coef(model, j + 1, 0);
-            FREE_MODEL(model);
-
-        #undef FREE_MODEL
-
+            y = Y[2 * i + 1];
+            Mat wy = supportVectorRegression(X,y,N,F,config.verbose);
+            weights.push_back(wy);
         }
 
-        gl_regression_weights[stage] = weight;
+        gl_regression_weights[stage] = weights;
 
         // free
         for (int i = 0; i < N; i++) free(X[i]);
@@ -1190,6 +1180,185 @@ namespace face {
         free(X);
         free(Y);
     } // Regressor:globalRegressionTrain
+
+    /*adapted from the liblinear library*/
+    /* TODO: change feature_node to MAT
+    * as the index in feature_node is only used for "counter"
+    */
+    Mat FacemarkLBFImpl::Regressor::supportVectorRegression(
+        feature_node **x, double *y, int nsamples, int feat_size, bool verbose
+    ){
+        #define GETI(i) ((int) y[i])
+
+        std::vector<double> w;
+        w.resize(feat_size);
+
+        int l = nsamples; // n-samples
+        double C = 1./(double)nsamples;
+        double p = 0;
+        int w_size = feat_size; //feat size
+        double eps =  0.00001;
+        int i, s, iter = 0;
+        int max_iter = 1000;
+        int active_size = l;
+        std::vector<int> index(l);
+
+        double d, G, H;
+        double Gmax_old = HUGE_VAL;
+        double Gmax_new, Gnorm1_new;
+        double Gnorm1_init = -1.0; // Gnorm1_init is initialized at the first iteration
+        std::vector<double> beta(l);
+        std::vector<double> QD(l);
+
+        double lambda[1], upper_bound[1];
+        lambda[0] = 0.5/C;
+        upper_bound[0] = HUGE_VAL;
+
+        // Initial beta can be set here. Note that
+        // -upper_bound <= beta[i] <= upper_bound
+        for(i=0; i<l; i++)
+            beta[i] = 0;
+
+        for(i=0; i<w_size; i++)
+            w[i] = 0;
+
+        for(i=0; i<l; i++){
+            QD[i] = 0;
+            feature_node *xi = x[i];
+            while(xi->index != -1){
+                double val = xi->value;
+                QD[i] += val*val;
+                w[xi->index-1] += beta[i]*val;
+                xi++;
+            }
+            index[i] = i;
+        }
+
+        while(iter < max_iter){
+            Gmax_new = 0;
+            Gnorm1_new = 0;
+
+            for(i=0; i<active_size; i++){
+                int j = i+rand()%(active_size-i);
+                swap(index[i], index[j]);
+            }
+
+            for(s=0; s<active_size; s++){
+                i = index[s];
+                G = -y[i] + lambda[GETI(i)]*beta[i];
+                H = QD[i] + lambda[GETI(i)];
+
+                feature_node *xi = x[i];
+                while(xi->index != -1){
+                    int ind = xi->index-1;
+                    double val = xi->value;
+                    G += val*w[ind];
+                    xi++;
+                }
+
+                double Gp = G+p;
+                double Gn = G-p;
+                double violation = 0;
+                if(beta[i] == 0){
+                    if(Gp < 0)
+                        violation = -Gp;
+                    else if(Gn > 0)
+                        violation = Gn;
+                    else if(Gp>Gmax_old && Gn<-Gmax_old){
+                        active_size--;
+                        swap(index[s], index[active_size]);
+                        s--;
+                        continue;
+                    }
+                }else if(beta[i] >= upper_bound[GETI(i)]){
+                    if(Gp > 0)
+                        violation = Gp;
+                    else if(Gp < -Gmax_old){
+                        active_size--;
+                        swap(index[s], index[active_size]);
+                        s--;
+                        continue;
+                    }
+                }else if(beta[i] <= -upper_bound[GETI(i)]){
+                    if(Gn < 0)
+                        violation = -Gn;
+                    else if(Gn > Gmax_old){
+                        active_size--;
+                        swap(index[s], index[active_size]);
+                        s--;
+                        continue;
+                    }
+                }else if(beta[i] > 0)
+                    violation = fabs(Gp);
+                else
+                    violation = fabs(Gn);
+
+                Gmax_new = max(Gmax_new, violation);
+                Gnorm1_new += violation;
+
+                // obtain Newton direction d
+                if(Gp < H*beta[i])
+                    d = -Gp/H;
+                else if(Gn > H*beta[i])
+                    d = -Gn/H;
+                else
+                    d = -beta[i];
+
+                if(fabs(d) < 1.0e-12)
+                    continue;
+
+                double beta_old = beta[i];
+                beta[i] = min(max(beta[i]+d, -upper_bound[GETI(i)]), upper_bound[GETI(i)]);
+                d = beta[i]-beta_old;
+
+                if(d != 0){
+                    xi = x[i];
+                    while(xi->index != -1){
+                        w[xi->index-1] += d*xi->value;
+                        xi++;
+                    }
+                }
+            }// for s<active_size
+
+            if(iter == 0)
+                Gnorm1_init = Gnorm1_new;
+            iter++;
+
+            if(Gnorm1_new <= eps*Gnorm1_init){
+                if(active_size == l)
+                    break;
+                else{
+                    active_size = l;
+                    Gmax_old = HUGE_VAL;
+                    continue;
+                }
+            }
+
+            Gmax_old = Gmax_new;
+        } //while <max_iter
+
+        if(verbose) printf("optimization finished, #iter = %d\n", iter);
+        if(iter >= max_iter && verbose)
+            printf("WARNING: reaching max number of iterations\n");
+
+        // calculate objective value
+        double v = 0;
+        int nSV = 0;
+        for(i=0; i<w_size; i++)
+            v += w[i]*w[i];
+        v = 0.5*v;
+        for(i=0; i<l; i++){
+            v += p*fabs(beta[i]) - y[i]*beta[i] + 0.5*lambda[GETI(i)]*beta[i]*beta[i];
+            if(beta[i] != 0)
+                nSV++;
+        }
+
+        if(verbose) printf("Objective value = %lf\n", v);
+        if(verbose) printf("nSV = %d\n",nSV);
+
+        return Mat(Mat(w).t()).clone();
+
+    }//end
 
     Mat FacemarkLBFImpl::Regressor::globalRegressionPredict(const Mat &lbf, int stage) {
         const Mat_<double> &weight = (Mat_<double>)gl_regression_weights[stage];
@@ -1239,11 +1408,11 @@ namespace face {
         fs << "regressor_meanshape" <<mean_shape;
 
         // every stages
-        char x[256];
+        String x;
         for (int k = 0; k < config.stages_n; k++) {
             if(config.verbose) printf("Write %dth stage\n", k);
             random_forests[k].write(fs,k);
-            sprintf(x,"weights_%i",k);
+            x = cv::format("weights_%i",k);
             fs << x << gl_regression_weights[k];
         }
     }
@@ -1262,7 +1431,7 @@ namespace face {
         fs["regressor_meanshape"] >>  mean_shape;
 
         // every stages
-        char x[256];
+        String x;
         for (int k = 0; k < stages_n; k++) {
             random_forests[k].initForest(
                 config.n_landmarks,
@@ -1275,7 +1444,7 @@ namespace face {
             );
             random_forests[k].read(fs,k);
 
-            sprintf(x,"weights_%i",k);
+            x = cv::format("weights_%i",k);
             fs[x] >> gl_regression_weights[k];
         }
     }

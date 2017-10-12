@@ -106,6 +106,7 @@ Mentor: Delia Passalacqua
       Mat image;
       std::vector<Point2f> facial_points;
       for(size_t i=0;i<images_train.size();i++){
+          printf("%i/%i :: %s\n", (int)(i+1), (int)images_train.size(),images_train[i].c_str());
           image = imread(images_train[i].c_str());
           loadFacePoints(landmarks_train[i],facial_points);
           facemark->addTrainingSample(image, facial_points);
