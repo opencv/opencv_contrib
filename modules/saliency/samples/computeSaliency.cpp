@@ -52,7 +52,7 @@ static const char* keys =
 { "{@saliency_algorithm | | Saliency algorithm <saliencyAlgorithmType.[saliencyAlgorithmTypeSubType]> }"
     "{@video_name      | | video name            }"
     "{@start_frame     |1| Start frame           }"
-    "{@training_path   |1| Path of the folder containing the trained files}" };
+    "{@training_path   |ObjectnessTrainedModel| Path of the folder containing the trained files}" };
 
 static void help()
 {
@@ -150,11 +150,28 @@ int main( int argc, char** argv )
       saliencyAlgorithm = ObjectnessBING::create();
       vector<Vec4i> saliencyMap;
       saliencyAlgorithm.dynamicCast<ObjectnessBING>()->setTrainingPath( training_path );
-      saliencyAlgorithm.dynamicCast<ObjectnessBING>()->setBBResDir( training_path + "/Results" );
+      saliencyAlgorithm.dynamicCast<ObjectnessBING>()->setBBResDir( "Results" );
 
       if( saliencyAlgorithm->computeSaliency( image, saliencyMap ) )
       {
-        std::cout << "Objectness done" << std::endl;
+        int ndet = int(saliencyMap.size());
+        std::cout << "Objectness done " << ndet << std::endl;
+        // The result are sorted by objectness. We only use the first maxd boxes here.
+        int maxd = 7, step = 255 / maxd, jitter=9; // jitter to seperate single rects
+        Mat draw = image.clone();
+        for (int i = 0; i < std::min(maxd, ndet); i++) {
+          Vec4i bb = saliencyMap[i];
+          Scalar col = Scalar(((i*step)%255), 50, 255-((i*step)%255));
+          Point off(theRNG().uniform(-jitter,jitter), theRNG().uniform(-jitter,jitter));
+          rectangle(draw, Point(bb[0]+off.x, bb[1]+off.y), Point(bb[2]+off.x, bb[3]+off.y), col, 2);
+          rectangle(draw, Rect(20, 20+i*10, 10,10), col, -1); // mini temperature scale
+        }
+        imshow("BING", draw);
+        waitKey();
+      }
+      else
+      {
+        std::cout << "No saliency found for " << video_name << std::endl;
       }
     }
 
