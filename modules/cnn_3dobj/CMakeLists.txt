@@ -1,3 +1,5 @@
+set(BUILD_opencv_cnn_3dobj_INIT OFF)  # Must be disabled by default - requires custom build of Caffe.
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR})
 
 find_package(Caffe)
@@ -8,7 +10,9 @@ else()
   message(STATUS "Caffe:   NO")
 endif()
 
-find_package(Protobuf)
+if(NOT BUILD_PROTOBUF)
+  find_package(Protobuf)
+endif()
 if(Protobuf_FOUND)
   message(STATUS "Protobuf:   YES")
   set(HAVE_PROTOBUF 1)
