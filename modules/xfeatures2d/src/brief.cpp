@@ -93,8 +93,10 @@ inline int smoothedSum(const Mat& sum, const KeyPoint& pt, int y, int x, bool us
     {
       int rx = (int)(((float)x)*R(1,0) - ((float)y)*R(0,0));
       int ry = (int)(((float)x)*R(0,0) + ((float)y)*R(1,0));
-      if (rx > 24) rx = 24; if (rx < -24) rx = -24;
-      if (ry > 24) ry = 24; if (ry < -24) ry = -24;
+      if (rx > 24) rx = 24;
+      if (rx < -24) rx = -24;
+      if (ry > 24) ry = 24;
+      if (ry < -24) ry = -24;
       x = rx; y = ry;
     }
     const int img_y = (int)(pt.pt.y + 0.5) + y;

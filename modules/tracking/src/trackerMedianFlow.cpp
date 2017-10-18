@@ -83,7 +83,9 @@ private:
     Rect2d vote(const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,const Rect2d& oldRect,Point2f& mD);
     float dist(Point2f p1,Point2f p2);
     std::string type2str(int type);
+#if 0
     void computeStatistics(std::vector<float>& data,int size=-1);
+#endif
     void check_FB(const std::vector<Mat>& oldImagePyr,const std::vector<Mat>& newImagePyr,
                   const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,std::vector<bool>& status);
     void check_NCC(const Mat& oldImage,const Mat& newImage,
@@ -337,6 +339,7 @@ Rect2d TrackerMedianFlowImpl::vote(const std::vector<Point2f>& oldPoints,const s
     return newRect;
 }
 
+#if 0
 void TrackerMedianFlowImpl::computeStatistics(std::vector<float>& data,int size){
     int binnum=10;
     if(size==-1){
@@ -351,6 +354,7 @@ void TrackerMedianFlowImpl::computeStatistics(std::vector<float>& data,int size)
         dprintf(("[%4f,%4f] -- %4d\n",mini+(maxi-mini)/binnum*i,mini+(maxi-mini)/binnum*(i+1),bins[i]));
     }
 }
+#endif
 
 void TrackerMedianFlowImpl::check_FB(const std::vector<Mat>& oldImagePyr, const std::vector<Mat>& newImagePyr,
                                      const std::vector<Point2f>& oldPoints, const std::vector<Point2f>& newPoints, std::vector<bool>& status){
