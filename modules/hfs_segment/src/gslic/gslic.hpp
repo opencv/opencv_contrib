@@ -170,7 +170,7 @@ namespace engines
     };
 } // end namespace engine
 
-__CV_CUDA_HOST_DEVICE__ inline void rgb2CIELab( const Vector4u& pix_in,
+__CV_CUDA_HOST_DEVICE__ void rgb2CIELab( const Vector4u& pix_in,
                                            Vector4f& pix_out )
 {
     float _b = (float)pix_in.x / 255;
@@ -212,7 +212,7 @@ __CV_CUDA_HOST_DEVICE__ inline void rgb2CIELab( const Vector4u& pix_in,
     pix_out.z = 200.0f*(fy - fz);
 }
 
-__CV_CUDA_HOST_DEVICE__ inline void initClusterCentersShared(
+__CV_CUDA_HOST_DEVICE__ void initClusterCentersShared(
     const Vector4f* inimg, Vector2i map_size, Vector2i img_size,
     int spixel_size, int x, int y, cv::hfs::gslic::SpixelInfo* out_spixel)
 {
@@ -231,7 +231,7 @@ __CV_CUDA_HOST_DEVICE__ inline void initClusterCentersShared(
     out_spixel[cluster_idx].num_pixels = 0;
 }
 
-__CV_CUDA_HOST_DEVICE__ inline float computeSlicDistance(
+__CV_CUDA_HOST_DEVICE__ float computeSlicDistance(
     const Vector4f& pix, int x, int y, 
     const cv::hfs::gslic::SpixelInfo& center_info, 
     float weight, float normalizer_xy, float normalizer_color)
@@ -251,7 +251,7 @@ __CV_CUDA_HOST_DEVICE__ inline float computeSlicDistance(
     return sqrtf(retval);
 }
 
-__CV_CUDA_HOST_DEVICE__ inline void findCenterAssociationShared(
+__CV_CUDA_HOST_DEVICE__ void findCenterAssociationShared(
     const Vector4f* inimg, 
     const cv::hfs::gslic::SpixelInfo* in_spixel_map, 
     Vector2i map_size, Vector2i img_size, 
@@ -291,7 +291,7 @@ __CV_CUDA_HOST_DEVICE__ inline void findCenterAssociationShared(
         out_idx_img[idx_img] = minidx;
 }
 
-__CV_CUDA_HOST_DEVICE__ inline void finalizeReductionResultShared(
+__CV_CUDA_HOST_DEVICE__ void finalizeReductionResultShared(
     const cv::hfs::gslic::SpixelInfo* accum_map, 
     Vector2i map_size, int num_blocks_per_spixel, int x, int y, 
     cv::hfs::gslic::SpixelInfo* spixel_list)
@@ -330,7 +330,7 @@ __CV_CUDA_HOST_DEVICE__ inline void finalizeReductionResultShared(
     }
 }
 
-__CV_CUDA_HOST_DEVICE__ inline void supressLocalLable(
+__CV_CUDA_HOST_DEVICE__ void supressLocalLable(
     const int* in_idx_img, Vector2i img_size, 
     int x, int y, int* out_idx_img)
 {
@@ -362,7 +362,7 @@ __CV_CUDA_HOST_DEVICE__ inline void supressLocalLable(
         out_idx_img[y*img_size.x + x] = clable;
 }
                                                                                  
-__CV_CUDA_HOST_DEVICE__ inline void supressLocalLable2(const int* in_idx_img,
+__CV_CUDA_HOST_DEVICE__ void supressLocalLable2(const int* in_idx_img,
     Vector2i img_size, int x, int y, int* out_idx_img)
 {
     int pixel_idx = y*img_size.x + x;
@@ -393,7 +393,7 @@ __CV_CUDA_HOST_DEVICE__ inline void supressLocalLable2(const int* in_idx_img,
         out_idx_img[pixel_idx] = clable;
 }
 
-__CV_CUDA_HOST_DEVICE__ inline dim3 getGridSize( Vector2i dataSz, dim3 blockSz )
+__CV_CUDA_HOST_DEVICE__ dim3 getGridSize( Vector2i dataSz, dim3 blockSz )
 {
     return dim3((dataSz.x + blockSz.x - 1) / blockSz.x, 
         (dataSz.y + blockSz.y - 1) / blockSz.y);
@@ -417,7 +417,7 @@ struct Float2_
     volatile float x, y;
 };
 
-__CV_CUDA_HOST_DEVICE__ inline Float4_ operator+= ( Float4_ &a, Float4_ b )
+__CV_CUDA_HOST_DEVICE__ Float4_ operator+= ( Float4_ &a, Float4_ b )
 {
     a.x += b.x;
     a.y += b.y;
@@ -426,8 +426,7 @@ __CV_CUDA_HOST_DEVICE__ inline Float4_ operator+= ( Float4_ &a, Float4_ b )
     return a;
 }
 
-__CV_CUDA_HOST_DEVICE__
-inline Float2_ operator+= ( Float2_ &a, Float2_ b )
+__CV_CUDA_HOST_DEVICE__ Float2_ operator+= ( Float2_ &a, Float2_ b )
 {
     a.x += b.x;
     a.y += b.y;
