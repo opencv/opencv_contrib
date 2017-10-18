@@ -480,10 +480,11 @@ static int _getBorderErrors(const Mat &bits, int markerSize, int borderSize) {
 /**
  * @brief Tries to identify one candidate given the dictionary
  */
-static bool _identifyOneCandidate(const Ptr<Dictionary> &dictionary, InputArray _image,
-                                  InputOutputArray _corners, int &idx, const Ptr<DetectorParameters> &params) {
-
-    CV_Assert(_corners.total() == 4);
+static bool _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArray _image,
+                                  vector<Point2f>& _corners, int& idx,
+                                  const Ptr<DetectorParameters>& params)
+{
+    CV_Assert(_corners.size() == 4);
     CV_Assert(_image.getMat().total() != 0);
     CV_Assert(params->markerBorderBits > 0);
 
@@ -510,16 +511,12 @@ static bool _identifyOneCandidate(const Ptr<Dictionary> &dictionary, InputArray 
     int rotation;
     if(!dictionary->identify(onlyBits, idx, rotation, params->errorCorrectionRate))
         return false;
-    else {
-        // shift corner positions to the correct rotation
-        if(rotation != 0) {
-            Mat copyPoints = _corners.getMat().clone();
-            for(int j = 0; j < 4; j++)
-                _corners.getMat().ptr< Point2f >(0)[j] =
-                    copyPoints.ptr< Point2f >(0)[(j + 4 - rotation) % 4];
-        }
-        return true;
+
+    // shift corner positions to the correct rotation
+    if(rotation != 0) {
+        std::rotate(_corners.begin(), _corners.begin() + 4 - rotation, _corners.end());
     }
+    return true;
 }
 
 
@@ -529,11 +526,11 @@ static bool _identifyOneCandidate(const Ptr<Dictionary> &dictionary, InputArray 
   */
 class IdentifyCandidatesParallel : public ParallelLoopBody {
     public:
-    IdentifyCandidatesParallel(const Mat& _grey, InputArrayOfArrays _candidates,
-                               InputArrayOfArrays _contours, const Ptr<Dictionary> &_dictionary,
+    IdentifyCandidatesParallel(const Mat& _grey, vector< vector< Point2f > >& _candidates,
+                               const Ptr<Dictionary> &_dictionary,
                                vector< int >& _idsTmp, vector< char >& _validCandidates,
                                const Ptr<DetectorParameters> &_params)
-        : grey(_grey), candidates(_candidates), contours(_contours), dictionary(_dictionary),
+        : grey(_grey), candidates(_candidates), dictionary(_dictionary),
           idsTmp(_idsTmp), validCandidates(_validCandidates), params(_params) {}
 
     void operator()(const Range &range) const {
@@ -542,8 +539,7 @@ class IdentifyCandidatesParallel : public ParallelLoopBody {
 
         for(int i = begin; i < end; i++) {
             int currId;
-            Mat currentCandidate = candidates.getMat(i);
-            if(_identifyOneCandidate(dictionary, grey, currentCandidate, currId, params)) {
+            if(_identifyOneCandidate(dictionary, grey, candidates[i], currId, params)) {
                 validCandidates[i] = 1;
                 idsTmp[i] = currId;
             }
@@ -554,7 +550,7 @@ class IdentifyCandidatesParallel : public ParallelLoopBody {
     IdentifyCandidatesParallel &operator=(const IdentifyCandidatesParallel &); // to quiet MSVC
 
     const Mat &grey;
-    InputArrayOfArrays candidates, contours;
+    vector< vector< Point2f > >& candidates;
     const Ptr<Dictionary> &dictionary;
     vector< int > &idsTmp;
     vector< char > &validCandidates;
@@ -634,7 +630,7 @@ static void _identifyCandidates(InputArray _image, vector< vector< Point2f > >& 
 
     // this is the parallel call for the previous commented loop (result is equivalent)
     parallel_for_(Range(0, ncandidates),
-                  IdentifyCandidatesParallel(grey, _candidates, _contours, _dictionary, idsTmp,
+                  IdentifyCandidatesParallel(grey, _candidates, _dictionary, idsTmp,
                                              validCandidates, params));
 
     for(int i = 0; i < ncandidates; i++) {
