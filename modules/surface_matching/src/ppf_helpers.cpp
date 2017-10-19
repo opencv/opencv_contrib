@@ -121,7 +121,7 @@ Mat loadPLYSimple(const char* fileName, int withNormals)
   {
     float* data = cloud.ptr<float>(i);
     int col = 0;
-    for (; col < withNormals ? 6 : 3; ++col)
+    for (; col < (withNormals ? 6 : 3); ++col)
     {
       ifs >> data[col];
     }
