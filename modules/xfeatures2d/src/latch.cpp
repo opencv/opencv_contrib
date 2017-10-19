@@ -500,20 +500,21 @@ namespace cv
             if ( keypoints.empty() )
                 return;
 
-
             Mat grayImage;
-            GaussianBlur(image, grayImage, cv::Size(3, 3), 2, 2);
-
-            if (image.type() != CV_8U) cvtColor(image, grayImage, COLOR_BGR2GRAY);
-
-
+            if (image.type() != CV_8U)
+            {
+                cvtColor(image, grayImage, COLOR_BGR2GRAY);
+            }
+            else
+            {
+                grayImage = image;
+            }
 
             //Remove keypoints very close to the border
             KeyPointsFilter::runByImageBorder(keypoints, image.size(), PATCH_SIZE / 2 + half_ssd_size_);
             
             bool _1d = false;
             Mat descriptors;
-
             _1d = _descriptors.kind() == _InputArray::STD_VECTOR && _descriptors.type() == CV_8U;
             if( _1d )
             {
