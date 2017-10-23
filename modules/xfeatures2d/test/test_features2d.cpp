@@ -1121,7 +1121,7 @@ TEST( Features2d_DescriptorExtractor_LUCID, regression )
 TEST( Features2d_DescriptorExtractor_LATCH, regression )
 {
     CV_DescriptorExtractorTest<Hamming> test( "descriptor-latch",  1,
-                                             LATCH::create() );
+                                             LATCH::create(32, true, 3, 0) );
     test.safe_run();
 }
 
