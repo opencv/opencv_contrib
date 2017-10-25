@@ -1,5 +1,4 @@
 set(the_description "datasets framework")
-#ocv_define_module(datasets opencv_core opencv_imgcodecs opencv_ml opencv_flann OPTIONAL opencv_text WRAP python)
 
 # find HDF5 library
 find_package(HDF5)
@@ -16,11 +15,11 @@ else()
     message(STATUS "datasets: HDF5:   NO")
 endif()
 
+ocv_define_module(datasets opencv_core opencv_imgcodecs opencv_ml opencv_flann OPTIONAL opencv_text WRAP python)
+
 ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4267) # flann, Win64
 
-ocv_add_module(datasets opencv_core opencv_imgcodecs opencv_ml opencv_flann OPTIONAL opencv_text)
-ocv_glob_module_sources()
-ocv_module_include_directories()
-ocv_create_module(${HDF5_LIBRARIES})
-
-ocv_add_samples(${HDF5_LIBRARY})
+ocv_target_link_libraries(opencv_datasets LINK_PRIVATE ${HDF5_LIBRARIES})
+if(BUILD_EXAMPLES)
+    ocv_target_link_libraries(example_datasets_fr_adience_toh5 LINK_PRIVATE ${HDF5_LIBRARIES})
+endif()

@@ -52,34 +52,6 @@ using namespace std;
 using namespace cv;
 using namespace cv::datasets;
 
-void printObjInfo(FR_adienceObj *example); // suppress warning
-void printObjInfo(FR_adienceObj *example)
-{
-    printf("user_id: %s\n", example->user_id.c_str());
-    printf("original_image: %s\n", example->original_image.c_str());
-    printf("face_id: %u\n", example->face_id);
-    printf("age: %s\n", example->age.c_str());
-    printf("gender: ");
-    if (example->gender == male)
-    {
-        printf("m\n");
-    } else
-    if (example->gender == female)
-    {
-        printf("f\n");
-    } else
-    {
-        printf("none\n");
-    }
-    printf("x: %u\n", example->x);
-    printf("y: %u\n", example->y);
-    printf("dx: %u\n", example->dx);
-    printf("dy: %u\n", example->dy);
-    printf("tilt_ang: %d\n", example->tilt_ang);
-    printf("fiducial_yaw_angle: %d\n", example->fiducial_yaw_angle);
-    printf("fiducial_score: %u\n", example->fiducial_score);
-}
-
 int main(int argc, char *argv[])
 {
     const char *keys =
@@ -105,21 +77,29 @@ int main(int argc, char *argv[])
 
     FR_adienceObj *example = static_cast<FR_adienceObj *>(dataset->getTrain().back().get());
     printf("last image:\n");
-    printObjInfo(example);
-
-
-    string h5FileName("./adience.h5");
-    printf("\nload hdf5: %s\n", h5FileName.c_str());
-    Ptr<FR_adience> datasetH5 = FR_adience::create();
-    datasetH5->load(h5FileName);
-
-    numSplits = datasetH5->getNumSplits();
-    printf("splits number: %u\n", numSplits);
-    printf("dataset size: %u\n", (unsigned int)datasetH5->getTrain().size());
-
-    example = static_cast<FR_adienceObj *>(datasetH5->getTrain().back().get());
-    printf("last image:\n");
-    printObjInfo(example);
+    printf("user_id: %s\n", example->user_id.c_str());
+    printf("original_image: %s\n", example->original_image.c_str());
+    printf("face_id: %u\n", example->face_id);
+    printf("age: %s\n", example->age.c_str());
+    printf("gender: ");
+    if (example->gender == male)
+    {
+        printf("m\n");
+    } else
+    if (example->gender == female)
+    {
+        printf("f\n");
+    } else
+    {
+        printf("none\n");
+    }
+    printf("x: %u\n", example->x);
+    printf("y: %u\n", example->y);
+    printf("dx: %u\n", example->dx);
+    printf("dy: %u\n", example->dy);
+    printf("tilt_ang: %d\n", example->tilt_ang);
+    printf("fiducial_yaw_angle: %d\n", example->fiducial_yaw_angle);
+    printf("fiducial_score: %u\n", example->fiducial_score);
 
     return 0;
 }

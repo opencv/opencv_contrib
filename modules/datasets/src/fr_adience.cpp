@@ -235,40 +235,6 @@ void FR_adienceImp::loadDataset(const string &path)
 #ifdef HAVE_HDF5
 struct objToWrite
 {
-    objToWrite() {}
-
-    void fill(FR_adienceObj *pObj)
-    {
-        pObj->face_id = face_id;
-        pObj->gender = (genderType)gender;
-        pObj->x = x;
-        pObj->y = y;
-        pObj->dx = dx;
-        pObj->dy = dy;
-        pObj->tilt_ang = tilt_ang;
-        pObj->fiducial_yaw_angle = fiducial_yaw_angle;
-        pObj->fiducial_score = fiducial_score;
-
-        //= ref;
-    }
-
-    static hid_t createH5Type()
-    {
-        hid_t tid = H5Tcreate(H5T_COMPOUND, sizeof(objToWrite));
-        H5Tinsert(tid, "ref", HOFFSET(objToWrite, ref), H5T_STD_REF_OBJ);
-        H5Tinsert(tid, "face_id", HOFFSET(objToWrite, face_id), H5T_NATIVE_INT);
-        H5Tinsert(tid, "gender", HOFFSET(objToWrite, gender), H5T_NATIVE_INT);
-        H5Tinsert(tid, "x", HOFFSET(objToWrite, x), H5T_NATIVE_INT);
-        H5Tinsert(tid, "y", HOFFSET(objToWrite, y), H5T_NATIVE_INT);
-        H5Tinsert(tid, "dx", HOFFSET(objToWrite, dx), H5T_NATIVE_INT);
-        H5Tinsert(tid, "dy", HOFFSET(objToWrite, dy), H5T_NATIVE_INT);
-        H5Tinsert(tid, "tilt_ang", HOFFSET(objToWrite, tilt_ang), H5T_NATIVE_INT);
-        H5Tinsert(tid, "fiducial_yaw_angle", HOFFSET(objToWrite, fiducial_yaw_angle), H5T_NATIVE_INT);
-        H5Tinsert(tid, "fiducial_score", HOFFSET(objToWrite, fiducial_score), H5T_NATIVE_INT);
-
-        return tid;
-    }
-
     hobj_ref_t ref;
     int face_id;
     //std::string age;
@@ -292,7 +258,17 @@ void FR_adienceImp::loadH5(const std::string &name)
 
     // read objects
     hid_t grp_obj = H5Gopen(file_id, "objects", H5P_DEFAULT);
-    hid_t tid = objToWrite::createH5Type();
+    hid_t tid = H5Tcreate(H5T_COMPOUND, sizeof(objToWrite));
+    H5Tinsert(tid, "ref", HOFFSET(objToWrite, ref), H5T_STD_REF_OBJ);
+    H5Tinsert(tid, "face_id", HOFFSET(objToWrite, face_id), H5T_NATIVE_INT);
+    H5Tinsert(tid, "gender", HOFFSET(objToWrite, gender), H5T_NATIVE_INT);
+    H5Tinsert(tid, "x", HOFFSET(objToWrite, x), H5T_NATIVE_INT);
+    H5Tinsert(tid, "y", HOFFSET(objToWrite, y), H5T_NATIVE_INT);
+    H5Tinsert(tid, "dx", HOFFSET(objToWrite, dx), H5T_NATIVE_INT);
+    H5Tinsert(tid, "dy", HOFFSET(objToWrite, dy), H5T_NATIVE_INT);
+    H5Tinsert(tid, "tilt_ang", HOFFSET(objToWrite, tilt_ang), H5T_NATIVE_INT);
+    H5Tinsert(tid, "fiducial_yaw_angle", HOFFSET(objToWrite, fiducial_yaw_angle), H5T_NATIVE_INT);
+    H5Tinsert(tid, "fiducial_score", HOFFSET(objToWrite, fiducial_score), H5T_NATIVE_INT);
     hid_t dobjs_id = H5Dopen(grp_obj, "objects", H5P_DEFAULT);
     hsize_t dobjs_size = H5Dget_storage_size(dobjs_id)/sizeof(tid);
     vector<objToWrite> objs;
@@ -337,7 +313,15 @@ void FR_adienceImp::loadH5(const std::string &name)
             {
                 objToWrite &currH5 = objs[objRefs[j]];
                 Ptr<FR_adienceObj> curr(new FR_adienceObj);
-                currH5.fill(curr.get());
+                curr->face_id = currH5.face_id;
+                curr->gender = (genderType)currH5.gender;
+                curr->x = currH5.x;
+                curr->y = currH5.y;
+                curr->dx = currH5.dx;
+                curr->dy = currH5.dy;
+                curr->tilt_ang = currH5.tilt_ang;
+                curr->fiducial_yaw_angle = currH5.fiducial_yaw_angle;
+                curr->fiducial_score = currH5.fiducial_score;
                 (*currSplit).push_back(curr);
             }
         }

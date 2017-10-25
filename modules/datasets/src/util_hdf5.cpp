@@ -52,9 +52,11 @@ using namespace std;
 
 void writeFileToH5(const string &imagePath, const string &name, hid_t grp_id)
 {
-    long size = getFileSize(imagePath);
-    char *buf = new char[size];
     FILE *f = fopen(imagePath.c_str(), "rb");
+    fseek(f, 0, SEEK_END);
+    long size = ftell(f);
+    fseek(f, 0, SEEK_SET);
+    char *buf = new char[size];
     size_t res = fread(buf, 1, size, f);
     if (size != (long)res) // suppress warning
     {

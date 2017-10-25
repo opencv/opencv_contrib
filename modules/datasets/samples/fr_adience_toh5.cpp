@@ -60,35 +60,6 @@ using namespace cv::datasets;
 
 struct objToWrite
 {
-    objToWrite() {}
-    objToWrite(FR_adienceObj *curr) :
-        face_id(curr->face_id),
-        gender(curr->gender),
-        x(curr->x),
-        y(curr->y),
-        dx(curr->dx),
-        dy(curr->dy),
-        tilt_ang(curr->tilt_ang),
-        fiducial_yaw_angle(curr->fiducial_yaw_angle),
-        fiducial_score(curr->fiducial_score) {}
-
-    static hid_t createH5Type()
-    {
-        hid_t tid = H5Tcreate(H5T_COMPOUND, sizeof(objToWrite));
-        H5Tinsert(tid, "ref", HOFFSET(objToWrite, ref), H5T_STD_REF_OBJ);
-        H5Tinsert(tid, "face_id", HOFFSET(objToWrite, face_id), H5T_NATIVE_INT);
-        H5Tinsert(tid, "gender", HOFFSET(objToWrite, gender), H5T_NATIVE_INT);
-        H5Tinsert(tid, "x", HOFFSET(objToWrite, x), H5T_NATIVE_INT);
-        H5Tinsert(tid, "y", HOFFSET(objToWrite, y), H5T_NATIVE_INT);
-        H5Tinsert(tid, "dx", HOFFSET(objToWrite, dx), H5T_NATIVE_INT);
-        H5Tinsert(tid, "dy", HOFFSET(objToWrite, dy), H5T_NATIVE_INT);
-        H5Tinsert(tid, "tilt_ang", HOFFSET(objToWrite, tilt_ang), H5T_NATIVE_INT);
-        H5Tinsert(tid, "fiducial_yaw_angle", HOFFSET(objToWrite, fiducial_yaw_angle), H5T_NATIVE_INT);
-        H5Tinsert(tid, "fiducial_score", HOFFSET(objToWrite, fiducial_score), H5T_NATIVE_INT);
-
-        return tid;
-    }
-
     hobj_ref_t ref;
     int face_id;
     //std::string age;
@@ -168,7 +139,16 @@ void save(const std::string &path, Ptr<FR_adience> &dataset, const std::string &
                 }
 
                 // prepare to write object
-                objToWrite obj(curr);
+                objToWrite obj;
+                obj.face_id = curr->face_id;
+                obj.gender = curr->gender;
+                obj.x = curr->x;
+                obj.y = curr->y;
+                obj.dx = curr->dx;
+                obj.dy = curr->dy;
+                obj.tilt_ang = curr->tilt_ang;
+                obj.fiducial_yaw_angle = curr->fiducial_yaw_angle;
+                obj.fiducial_score = curr->fiducial_score;
                 H5Rcreate(&obj.ref, file_id, ("data/"+curr->user_id+"/"+curr->original_image).c_str(), H5R_OBJECT, -1);
 
                 // prepare to write split
@@ -181,7 +161,13 @@ void save(const std::string &path, Ptr<FR_adience> &dataset, const std::string &
             if (objRefs.size() > 0)
             {
                 string numSplitStr;
-                numberToString(numSplits, numSplitStr);
+                char numberStr[9+1];
+                sprintf(numberStr, "%u", numSplits);
+                for (unsigned int j=0; j<9-strlen(numberStr); ++j)
+                {
+                    numSplitStr += "0";
+                }
+                numSplitStr += numberStr;
                 numSplits++;
                 write1DToH5(currSplitGroup, H5T_STD_U32LE, numSplitStr, &objRefs[0], objRefs.size());
             }
@@ -189,7 +175,17 @@ void save(const std::string &path, Ptr<FR_adience> &dataset, const std::string &
     }
 
     // write objects
-    hid_t tid = objToWrite::createH5Type();
+    hid_t tid = H5Tcreate(H5T_COMPOUND, sizeof(objToWrite));
+    H5Tinsert(tid, "ref", HOFFSET(objToWrite, ref), H5T_STD_REF_OBJ);
+    H5Tinsert(tid, "face_id", HOFFSET(objToWrite, face_id), H5T_NATIVE_INT);
+    H5Tinsert(tid, "gender", HOFFSET(objToWrite, gender), H5T_NATIVE_INT);
+    H5Tinsert(tid, "x", HOFFSET(objToWrite, x), H5T_NATIVE_INT);
+    H5Tinsert(tid, "y", HOFFSET(objToWrite, y), H5T_NATIVE_INT);
+    H5Tinsert(tid, "dx", HOFFSET(objToWrite, dx), H5T_NATIVE_INT);
+    H5Tinsert(tid, "dy", HOFFSET(objToWrite, dy), H5T_NATIVE_INT);
+    H5Tinsert(tid, "tilt_ang", HOFFSET(objToWrite, tilt_ang), H5T_NATIVE_INT);
+    H5Tinsert(tid, "fiducial_yaw_angle", HOFFSET(objToWrite, fiducial_yaw_angle), H5T_NATIVE_INT);
+    H5Tinsert(tid, "fiducial_score", HOFFSET(objToWrite, fiducial_score), H5T_NATIVE_INT);
     hid_t grp_obj = H5Gcreate(file_id, "objects", H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
     write1DToH5(grp_obj, tid, "objects", &objs[0], objs.size());
     H5Gclose(grp_obj);
