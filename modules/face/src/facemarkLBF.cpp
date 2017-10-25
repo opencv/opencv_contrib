@@ -354,7 +354,7 @@ namespace face {
         int L = N*params.initShape_n;
         std::vector<Mat> imgs(L), gt_shapes(L), current_shapes(L);
         std::vector<BBox> bboxes(L);
-        RNG rng(getTickCount());
+        RNG rng(params.seed);
         for (int i = 0; i < N; i++) {
             for (int j = 0; j < params.initShape_n; j++) {
                 int idx = i*params.initShape_n + j;
@@ -368,18 +368,6 @@ namespace face {
                 current_shapes[idx] = data_boxes[i].reproject(data_boxes[k].project(data_shapes[k]));
             }
         }
-
-        // random shuffle
-        unsigned int seed = params.seed;
-        std::srand(seed);
-        std::random_shuffle(imgs.begin(), imgs.end());
-        std::srand(seed);
-        std::random_shuffle(gt_shapes.begin(), gt_shapes.end());
-        std::srand(seed);
-        std::random_shuffle(bboxes.begin(), bboxes.end());
-        std::srand(seed);
-        std::random_shuffle(current_shapes.begin(), current_shapes.end());
-
 
         regressor.initRegressor(params);
         regressor.trainRegressor(imgs, gt_shapes, current_shapes, bboxes, mean_shape, 0, params);
@@ -1193,6 +1181,7 @@ namespace face {
         std::vector<double> w;
         w.resize(feat_size);
 
+        RNG rng(0);
         int l = nsamples; // n-samples
         double C = 1./(double)nsamples;
         double p = 0;
@@ -1239,7 +1228,7 @@ namespace face {
             Gnorm1_new = 0;
 
             for(i=0; i<active_size; i++){
-                int j = i+rand()%(active_size-i);
+                int j = i+rng.uniform(0,RAND_MAX)%(active_size-i);
                 swap(index[i], index[j]);
             }
 

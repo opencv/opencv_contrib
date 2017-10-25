@@ -44,8 +44,8 @@ using namespace cv;
 using namespace cv::face;
 
 TEST(CV_Face_Facemark, test_utilities) {
-    string image_file = cvtest::findDataFile("face/therock.jpg", true);
-    string annotation_file = cvtest::findDataFile("face/therock.pts", true);
+    string image_file = cvtest::findDataFile("face/david1.jpg", true);
+    string annotation_file = cvtest::findDataFile("face/david1.pts", true);
     string cascade_filename =
         cvtest::findDataFile("cascadeandhog/cascades/lbpcascade_frontalface.xml", true);
 

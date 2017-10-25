@@ -92,10 +92,10 @@ TEST(CV_Face_FacemarkLBF, can_set_custom_detector) {
 
 TEST(CV_Face_FacemarkLBF, test_workflow) {
 
-    string i1 = cvtest::findDataFile("face/therock.jpg", true);
-    string p1 = cvtest::findDataFile("face/therock.pts", true);
-    string i2 = cvtest::findDataFile("face/mark.jpg", true);
-    string p2 = cvtest::findDataFile("face/mark.pts", true);
+    string i1 = cvtest::findDataFile("face/david1.jpg", true);
+    string p1 = cvtest::findDataFile("face/david1.pts", true);
+    string i2 = cvtest::findDataFile("face/david2.jpg", true);
+    string p2 = cvtest::findDataFile("face/david2.pts", true);
 
     std::vector<string> images_train;
     images_train.push_back(i1);
@@ -129,7 +129,7 @@ TEST(CV_Face_FacemarkLBF, test_workflow) {
     cascade_detector.load(cascade_filename);
     facemark->setFaceDetector(myCustomDetector);
 
-    string image_filename = cvtest::findDataFile("face/therock.jpg", true);
+    string image_filename = cvtest::findDataFile("face/david1.jpg", true);
     image = imread(image_filename.c_str());
     EXPECT_TRUE(!image.empty());
 
