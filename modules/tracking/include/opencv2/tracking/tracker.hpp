@@ -1297,6 +1297,22 @@ public:
   virtual ~TrackerGOTURN() {}
 };
 
+/** @brief the MOSSE tracker
+note, that this tracker works with grayscale images, if passed bgr ones, they will get converted internally.
+@cite MOSSE Visual Object Tracking using Adaptive Correlation Filters
+*/
+
+class CV_EXPORTS_W TrackerMOSSE : public Tracker
+{
+ public:
+  /** @brief Constructor
+  */
+  CV_WRAP static Ptr<TrackerMOSSE> create();
+
+  virtual ~TrackerMOSSE() {}
+};
+
+
 /************************************ MultiTracker Class ---By Laksono Kurnianggoro---) ************************************/
 /** @brief This class is used to track multiple objects using the specified tracker algorithm.
 * The MultiTracker is naive implementation of multiple object tracking.
