@@ -375,6 +375,67 @@ void rollingGuidanceFilter(InputArray src, OutputArray dst, int d = -1, double s
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
+/** @brief Interface for implementations of The Fast Bilateral Solver.
+
+For more details about this solver see @cite BarronPoole2016 .
+*/
+class CV_EXPORTS_W FastBilateralSolverFilter : public Algorithm
+{
+public:
+    /** @brief Apply smoothing operation to the source image.
+
+    @param src source image for filtering with unsigned 8-bit or signed 16-bit or floating-point 32-bit depth and up to 4 channels.
+
+    @param confidence confidence image with unsigned 8-bit or signed 16-bit or floating-point 32-bit confidence and 1 channel.
+
+    @param dst destination image.
+    */
+    CV_WRAP virtual void filter(InputArray src, InputArray confidence, OutputArray dst) = 0;
+};
+
+/** @brief Factory method, create instance of FastBilateralSolverFilter and execute the initialization routines.
+
+@param guide image serving as guide for filtering. It should have 8-bit depth and either 1 or 3 channels.
+
+@param sigma_spatial parameter, that is similar to spatial space sigma in bilateralFilter.
+
+@param sigma_luma parameter, that is similar to luma space sigma in bilateralFilter.
+
+@param sigma_chroma parameter, that is similar to chroma space sigma in bilateralFilter.
+
+@param num_iter number of iterations used for solving, 25 is usually enough.
+
+@param max_tol solving tolerance used for solving, 25 is usually enough.
+
+For more details about the Fast Bilateral Solver parameters, see the original paper @cite BarronPoole2016.
+*/
+CV_EXPORTS_W Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma, int num_iter = 25, double max_tol = 1e-5);
+
+
+/** @brief Simple one-line Fast Bilateral Solver filter call. If you have multiple images to filter with the same
+guide then use FastBilateralSolverFilter interface to avoid extra computations.
+
+@param guide image serving as guide for filtering. It should have 8-bit depth and either 1 or 3 channels.
+
+@param src source image for filtering with unsigned 8-bit or signed 16-bit or floating-point 32-bit depth and up to 4 channels.
+
+@param confidence confidence image with unsigned 8-bit or signed 16-bit or floating-point 32-bit confidence and 1 channel.
+
+@param dst destination image.
+
+@param sigma_spatial parameter, that is similar to spatial space sigma in bilateralFilter.
+
+@param sigma_luma parameter, that is similar to luma space sigma in bilateralFilter.
+
+@param sigma_chroma parameter, that is similar to chroma space sigma in bilateralFilter.
+
+@param num_iter number of iterations used for solving, 25 is usually enough.
+
+@param max_tol solving tolerance used for solving, 25 is usually enough.
+*/
+CV_EXPORTS_W void fastBilateralSolverFilter(InputArray guide, InputArray src, InputArray confidence, OutputArray dst, double sigma_spatial = 8, double sigma_luma = 8, double sigma_chroma = 8, int num_iter = 25, double max_tol = 1e-5);
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
 
 /** @brief Interface for implementations of Fast Global Smoother filter.
 
