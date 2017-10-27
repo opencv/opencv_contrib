@@ -464,7 +464,7 @@ private:
   void setColorSpace( int clr = MAXBGR );
 
 // Load trained model.
-  int loadTrainedModel( std::string modelName = "" );// Return -1, 0, or 1 if partial, none, or all loaded
+  int loadTrainedModel();// Return -1, 0, or 1 if partial, none, or all loaded
 
 // Get potential bounding boxes, each of which is represented by a Vec4i for (minX, minY, maxX, maxY).
 // The trained model should be prepared before calling this function: loadTrainedModel() or trainStageI() + trainStageII().
