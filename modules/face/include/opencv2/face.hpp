@@ -40,7 +40,7 @@ the use of this software, even if advised of the possibility of such damage.
 #define __OPENCV_FACE_HPP__
 
 /**
-@defgroup face Face Recognition
+@defgroup face Face Analysis
 
 - @ref face_changelog
 - @ref tutorial_face_main
@@ -374,5 +374,7 @@ protected:
 }}
 
 #include "opencv2/face/facerec.hpp"
-
+#include "opencv2/face/facemark.hpp"
+#include "opencv2/face/facemarkLBF.hpp"
+#include "opencv2/face/facemarkAAM.hpp"
 #endif
