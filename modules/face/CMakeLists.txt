@@ -1,5 +1,11 @@
 set(the_description "Face recognition etc")
-ocv_define_module(face opencv_core opencv_imgproc opencv_objdetect opencv_photo opencv_video WRAP python)
+ocv_define_module(face opencv_core
+    opencv_imgproc
+    opencv_objdetect
+    opencv_tracking     # estimateRigidTransform()
+    opencv_photo        # samples
+    WRAP python
+)
 # NOTE: objdetect module is needed for one of the samples
 set(__commit_hash "f181bca3d2c1f351c6c0188ab2fe5544a1e04d11")
 set(__file_hash "7505c44ca4eb54b4ab1e4777cb96ac05")

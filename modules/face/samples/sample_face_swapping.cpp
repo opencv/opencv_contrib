@@ -1,8 +1,9 @@
 #include "opencv2/face.hpp"
+#include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui.hpp"
-#include "opencv2/photo.hpp"
 #include "opencv2/objdetect.hpp"
+#include "opencv2/photo.hpp" // seamlessClone()
 #include <iostream>
 using namespace cv;
 using namespace cv::face;
