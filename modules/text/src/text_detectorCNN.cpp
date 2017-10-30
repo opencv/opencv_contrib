@@ -23,8 +23,6 @@ protected:
     Net net_;
     std::vector<Size> sizes_;
     int inputChannelCount_;
-    bool detectMultiscale_;
-
 
     void getOutputs(const float* buffer,int nbrTextBoxes,int nCol,
                                std::vector<Rect>& Bbox, std::vector<float>& confidence, Size inputShape)
@@ -54,21 +52,12 @@ protected:
     }
 
 public:
-    TextDetectorCNNImpl(const String& modelArchFilename, const String& modelWeightsFilename, bool detectMultiscale) :
-        detectMultiscale_(detectMultiscale)
+    TextDetectorCNNImpl(const String& modelArchFilename, const String& modelWeightsFilename, std::vector<Size> detectionSizes) :
+        sizes_(detectionSizes)
     {
         net_ = readNetFromCaffe(modelArchFilename, modelWeightsFilename);
         CV_Assert(!net_.empty());
         inputChannelCount_ = 3;
-        sizes_.push_back(Size(700, 700));
-
-        if(detectMultiscale_)
-        {
-            sizes_.push_back(Size(300, 300));
-            sizes_.push_back(Size(700,500));
-            sizes_.push_back(Size(700,300));
-            sizes_.push_back(Size(1600,1600));
-        }
     }
 
     void detect(InputArray inputImage_, std::vector<Rect>& Bbox, std::vector<float>& confidence)
@@ -92,9 +81,14 @@ public:
      }
 };
 
-Ptr<TextDetectorCNN> TextDetectorCNN::create(const String &modelArchFilename, const String &modelWeightsFilename, bool detectMultiscale)
+Ptr<TextDetectorCNN> TextDetectorCNN::create(const String &modelArchFilename, const String &modelWeightsFilename, std::vector<Size> detectionSizes)
 {
-    return makePtr<TextDetectorCNNImpl>(modelArchFilename, modelWeightsFilename, detectMultiscale);
+    return makePtr<TextDetectorCNNImpl>(modelArchFilename, modelWeightsFilename, detectionSizes);
+}
+
+Ptr<TextDetectorCNN> TextDetectorCNN::create(const String &modelArchFilename, const String &modelWeightsFilename)
+{
+    return create(modelArchFilename, modelWeightsFilename, std::vector<Size>(1, Size(300, 300)));
 }
 } //namespace text
 } //namespace cv

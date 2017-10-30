@@ -54,9 +54,15 @@ public:
 
     @param modelArchFilename the relative or absolute path to the prototxt file describing the classifiers architecture.
     @param modelWeightsFilename the relative or absolute path to the file containing the pretrained weights of the model in caffe-binary form.
-    @param detectMultiscale if true, multiple scales of the input image will be used as network input
+    @param detectionSizes a list of sizes for multiscale detection. The values`[(300,300),(700,500),(700,300),(700,700),(1600,1600)]` are
+    recommended in @cite LiaoSBWL17 to achieve the best quality.
     */
-    CV_WRAP static Ptr<TextDetectorCNN> create(const String& modelArchFilename, const String& modelWeightsFilename, bool detectMultiscale = false);
+    static Ptr<TextDetectorCNN> create(const String& modelArchFilename, const String& modelWeightsFilename,
+                                               std::vector<Size> detectionSizes);
+    /**
+      @overload
+    */
+    CV_WRAP static Ptr<TextDetectorCNN> create(const String& modelArchFilename, const String& modelWeightsFilename);
 };
 
 //! @}

@@ -1,6 +1,7 @@
 #include <opencv2/text.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/dnn.hpp>
 
 #include  <iostream>
 #include  <fstream>
@@ -29,22 +30,27 @@ bool fileExists (const string& filename)
     return f.good();
 }
 
-void textbox_draw(Mat src, vector<Rect>& groups, vector<float>& probs, float thres)
+void textbox_draw(Mat src, std::vector<Rect>& groups, std::vector<float>& probs, std::vector<int>& indexes)
 {
-    for (size_t i = 0; i < groups.size(); i++)
+    for (size_t i = 0; i < indexes.size(); i++)
     {
-        if(probs[i] > thres)
+        if (src.type() == CV_8UC3)
         {
-            if (src.type() == CV_8UC3)
-            {
-                rectangle(src, groups[i], Scalar( 0, 255, 255 ), 2, LINE_AA);
-                String label = format("%.2f", probs[i]);
-                cout << "text box: " << groups[i] << " confidence: " << probs[i] << "\n";
-                putText(src, label, groups.at(i).tl(), FONT_HERSHEY_PLAIN, 1, Scalar( 0,0,255 ), 1, LINE_AA);
-            }
-            else
-                rectangle(src, groups[i], Scalar( 255 ), 3, 8 );
+            Rect currrentBox = groups[indexes[i]];
+            rectangle(src, currrentBox, Scalar( 0, 255, 255 ), 2, LINE_AA);
+            String label = format("%.2f", probs[indexes[i]]);
+            std::cout << "text box: " << currrentBox << " confidence: " << probs[indexes[i]] << "\n";
+
+            int baseLine = 0;
+            Size labelSize = getTextSize(label, FONT_HERSHEY_PLAIN, 1, 1, &baseLine);
+            int yLeftBottom = std::max(currrentBox.y, labelSize.height);
+            rectangle(src, Point(currrentBox.x, yLeftBottom - labelSize.height),
+                      Point(currrentBox.x + labelSize.width, yLeftBottom + baseLine), Scalar( 255, 255, 255 ), FILLED);
+
+            putText(src, label, Point(currrentBox.x, yLeftBottom), FONT_HERSHEY_PLAIN, 1, Scalar( 0,0,0 ), 1, LINE_AA);
         }
+        else
+            rectangle(src, groups[i], Scalar( 255 ), 3, 8 );
     }
 }
 
@@ -73,33 +79,41 @@ int main(int argc, const char * argv[])
 
     cout << "Starting Text Box Demo" << endl;
     Ptr<text::TextDetectorCNN> textSpotter =
-            text::TextDetectorCNN::create(modelArch, moddelWeights, false);
+            text::TextDetectorCNN::create(modelArch, moddelWeights);
 
     vector<Rect> bbox;
     vector<float> outProbabillities;
     textSpotter->detect(image, bbox, outProbabillities);
+    std::vector<int> indexes;
+    cv::dnn::NMSBoxes(bbox, outProbabillities, 0.4f, 0.5f, indexes);
 
-    float prob_threshold = 0.6f;
     Mat image_copy = image.clone();
-    textbox_draw(image_copy, bbox, outProbabillities, prob_threshold);
+    textbox_draw(image_copy, bbox, outProbabillities, indexes);
     imshow("Text detection", image_copy);
     image_copy = image.clone();
 
     Ptr<text::OCRHolisticWordRecognizer> wordSpotter =
             text::OCRHolisticWordRecognizer::create("dictnet_vgg_deploy.prototxt", "dictnet_vgg.caffemodel", "dictnet_vgg_labels.txt");
 
-    for(size_t i = 0; i < bbox.size(); i++)
+    for(size_t i = 0; i < indexes.size(); i++)
     {
-        if(outProbabillities[i] > prob_threshold)
-        {
-            Mat wordImg;
-            cvtColor(image(bbox[i]), wordImg, COLOR_BGR2GRAY);
-            string word;
-            vector<float> confs;
-            wordSpotter->run(wordImg, word, NULL, NULL, &confs);
-            rectangle(image_copy, bbox[i], Scalar(0, 255, 255), 1, LINE_AA);
-            putText(image_copy, word, bbox[i].tl(), FONT_HERSHEY_PLAIN, 1, Scalar(0, 0, 255), 1, LINE_AA);
-        }
+        Mat wordImg;
+        cvtColor(image(bbox[indexes[i]]), wordImg, COLOR_BGR2GRAY);
+        string word;
+        vector<float> confs;
+        wordSpotter->run(wordImg, word, NULL, NULL, &confs);
+
+        Rect currrentBox = bbox[indexes[i]];
+        rectangle(image_copy, currrentBox, Scalar( 0, 255, 255 ), 2, LINE_AA);
+
+        int baseLine = 0;
+        Size labelSize = getTextSize(word, FONT_HERSHEY_PLAIN, 1, 1, &baseLine);
+        int yLeftBottom = std::max(currrentBox.y, labelSize.height);
+        rectangle(image_copy, Point(currrentBox.x, yLeftBottom - labelSize.height),
+                  Point(currrentBox.x + labelSize.width, yLeftBottom + baseLine), Scalar( 255, 255, 255 ), FILLED);
+
+        putText(image_copy, word, Point(currrentBox.x, yLeftBottom), FONT_HERSHEY_PLAIN, 1, Scalar( 0,0,0 ), 1, LINE_AA);
+
     }
     imshow("Text recognition", image_copy);
     cout << "Recognition finished. Press any key to exit.\n";
