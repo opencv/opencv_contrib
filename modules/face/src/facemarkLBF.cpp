@@ -1,46 +1,20 @@
-/*
-By downloading, copying, installing or using the software you agree to this
-license. If you do not agree to this license, do not download, install,
-copy or use the software.
-                          License Agreement
-               For Open Source Computer Vision Library
-                       (3-clause BSD License)
-Copyright (C) 2013, OpenCV Foundation, all rights reserved.
-Third party copyrights are property of their respective owners.
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-  * Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-  * Neither the names of the copyright holders nor the names of the contributors
-    may be used to endorse or promote products derived from this software
-    without specific prior written permission.
-This software is provided by the copyright holders and contributors "as is" and
-any express or implied warranties, including, but not limited to, the implied
-warranties of merchantability and fitness for a particular purpose are
-disclaimed. In no event shall copyright holders or contributors be liable for
-any direct, indirect, incidental, special, exemplary, or consequential damages
-(including, but not limited to, procurement of substitute goods or services;
-loss of use, data, or profits; or business interruption) however caused
-and on any theory of liability, whether in contract, strict liability,
-or tort (including negligence or otherwise) arising in any way out of
-the use of this software, even if advised of the possibility of such damage.
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 
-This file was part of GSoC Project: Facemark API for OpenCV
+/*
+This file contains results of GSoC Project: Facemark API for OpenCV
 Final report: https://gist.github.com/kurnianggoro/74de9121e122ad0bd825176751d47ecc
 Student: Laksono Kurnianggoro
 Mentor: Delia Passalacqua
 */
 
-#include "opencv2/face.hpp"
 #include "precomp.hpp"
+#include "opencv2/face.hpp"
 #include <fstream>
 #include <cmath>
 #include <ctime>
 #include <cstdio>
-#include <cassert>
 #include <cstdarg>
 
 namespace cv {
@@ -108,8 +82,8 @@ public:
 
     void loadModel(String fs);
 
-    bool setFaceDetector(bool(*f)(InputArray , OutputArray, void * extra_params ));
-    bool getFaces( InputArray image , OutputArray faces, void * extra_params);
+    bool setFaceDetector(bool(*f)(InputArray , OutputArray, void * extra_params ), void* userData);
+    bool getFaces(InputArray image, OutputArray faces);
     bool getData(void * items);
 
     Params params;
@@ -128,12 +102,11 @@ protected:
     void data_augmentation(std::vector<Mat> &imgs, std::vector<Mat> &gt_shapes, std::vector<BBox> &bboxes);
     Mat getMeanShape(std::vector<Mat> &gt_shapes, std::vector<BBox> &bboxes);
 
-    bool configFaceDetector();
-    bool defaultFaceDetector(const Mat image, std::vector<Rect> & faces);
+    bool defaultFaceDetector(const Mat& image, std::vector<Rect>& faces);
 
     CascadeClassifier face_cascade;
-    bool(*faceDetector)(InputArray , OutputArray, void * );
-    bool isSetDetector;
+    FN_FaceDetector faceDetector;
+    void* faceDetectorData;
 
     /*training data*/
     std::vector<std::vector<Point2f> > data_facemarks; //original position
@@ -251,98 +224,85 @@ Ptr<FacemarkLBF> FacemarkLBF::create(const FacemarkLBF::Params &parameters){
     return Ptr<FacemarkLBFImpl>(new FacemarkLBFImpl(parameters));
 }
 
-FacemarkLBFImpl::FacemarkLBFImpl( const FacemarkLBF::Params &parameters )
+FacemarkLBFImpl::FacemarkLBFImpl( const FacemarkLBF::Params &parameters ) :
+    faceDetector(NULL), faceDetectorData(NULL)
 {
-    isSetDetector =false;
     isModelTrained = false;
     params = parameters;
 }
 
-bool FacemarkLBFImpl::setFaceDetector(bool(*f)(InputArray , OutputArray, void * extra_params )){
+bool FacemarkLBFImpl::setFaceDetector(bool(*f)(InputArray , OutputArray, void * extra_params ), void* userData){
     faceDetector = f;
-    isSetDetector = true;
+    faceDetectorData = userData;
     return true;
 }
 
-bool FacemarkLBFImpl::getFaces( InputArray image , OutputArray roi, void * extra_params){
-
-    if(!isSetDetector){
-        return false;
+bool FacemarkLBFImpl::getFaces(InputArray image, OutputArray faces_)
+{
+    if (!faceDetector)
+    {
+        std::vector<Rect> faces;
+        defaultFaceDetector(image.getMat(), faces);
+        Mat(faces).copyTo(faces_);
+        return true;
     }
-
-    if(extra_params!=0){
-        //do nothing
-    }
-
-    std::vector<Rect> & faces = *(std::vector<Rect>*)roi.getObj();
-    faces.clear();
-
-    faceDetector(image.getMat(), faces, extra_params);
-
-    return true;
+    return faceDetector(image, faces_, faceDetectorData);
 }
 
-bool FacemarkLBFImpl::configFaceDetector(){
-    if(!isSetDetector){
-        /*check the cascade classifier file*/
-        std::ifstream infile;
-        infile.open(params.cascade_face.c_str(), std::ios::in);
-        if (!infile) {
-           std::string error_message = "The cascade classifier model is not found.";
-           CV_Error(CV_StsBadArg, error_message);
-
-           return false;
-        }
-
-        face_cascade.load(params.cascade_face.c_str());
-    }
-    return true;
-}
-
-bool FacemarkLBFImpl::defaultFaceDetector(const Mat image, std::vector<Rect> & faces){
+bool FacemarkLBFImpl::defaultFaceDetector(const Mat& image, std::vector<Rect>& faces){
     Mat gray;
 
     faces.clear();
 
-    if(image.channels()>1){
-        cvtColor(image,gray,CV_BGR2GRAY);
-    }else{
+    if (image.channels() > 1)
+    {
+        cvtColor(image, gray, COLOR_BGR2GRAY);
+    }
+    else
+    {
         gray = image;
     }
 
-    equalizeHist( gray, gray );
-    face_cascade.detectMultiScale( gray, faces, 1.05, 2, 0|CV_HAAR_SCALE_IMAGE, Size(30, 30) );
+    equalizeHist(gray, gray);
 
+    if (face_cascade.empty())
+    {
+        { /* check the cascade classifier file */
+            std::ifstream infile;
+            infile.open(params.cascade_face.c_str(), std::ios::in);
+            if (!infile)
+                CV_Error_(Error::StsBadArg, ("The cascade classifier model is not found: %s", params.cascade_face.c_str()));
+        }
+        face_cascade.load(params.cascade_face.c_str());
+        CV_Assert(!face_cascade.empty());
+    }
+    face_cascade.detectMultiScale(gray, faces, 1.05, 2, CASCADE_SCALE_IMAGE, Size(30, 30) );
     return true;
 }
 
 bool FacemarkLBFImpl::getData(void * items){
-    if(items!=0){
-        // do nothing
-    }
-    return true;
+    CV_UNUSED(items);
+    return false;
 }
 
 bool FacemarkLBFImpl::addTrainingSample(InputArray image, InputArray landmarks){
+    // FIXIT
     std::vector<Point2f> & _landmarks = *(std::vector<Point2f>*)landmarks.getObj();
-    configFaceDetector();
     prepareTrainingData(image.getMat(), _landmarks, data_faces, data_shapes, data_boxes);
     return true;
 }
 
 void FacemarkLBFImpl::training(void* parameters){
-    if(parameters!=0){/*do nothing*/}
-    if (data_faces.size()<1) {
-       std::string error_message =
-        "Training data is not provided. Consider to add using addTrainingSample() function!";
-       CV_Error(CV_StsBadArg, error_message);
+    CV_UNUSED(parameters);
+
+    if (data_faces.empty())
+    {
+        CV_Error(Error::StsBadArg, "Training data is not provided. Consider to add using addTrainingSample() function!");
     }
 
-    if(strcmp(params.cascade_face.c_str(),"")==0
-    ||(strcmp(params.model_filename.c_str(),"")==0 && params.save_model)
-    ){
-        std::string error_message = "The parameter cascade_face and model_filename should be set!";
-        CV_Error(CV_StsBadArg, error_message);
+    if (params.cascade_face.empty() || (params.model_filename.empty() && params.save_model))
+    {
+        CV_Error(Error::StsBadArg, "The parameter cascade_face and model_filename should be set!");
     }
 
     // flip the image and swap the landmark position
@@ -358,10 +318,8 @@ void FacemarkLBFImpl::training(void* parameters){
     for (int i = 0; i < N; i++) {
         for (int j = 0; j < params.initShape_n; j++) {
             int idx = i*params.initShape_n + j;
-            int k = 0;
-            do {
-                k = rng.uniform(0, N);
-            } while (k == i);
+            int k = rng.uniform(0, N - 1);
+            k = (k >= i) ? k + 1 : k; // require k != i
             imgs[idx] = data_faces[i];
             gt_shapes[idx] = data_shapes[i];
             bboxes[idx] = data_boxes[i];
@@ -382,12 +340,11 @@ void FacemarkLBFImpl::training(void* parameters){
 
 bool FacemarkLBFImpl::fit( InputArray image, InputArray roi, InputOutputArray  _landmarks, void * runtime_params )
 {
-    if(runtime_params!=0){
-        // do nothing
-    }
+    CV_UNUSED(runtime_params);
 
+    // FIXIT
     std::vector<Rect> & faces = *(std::vector<Rect> *)roi.getObj();
-    if(faces.size()<1) return false;
+    if (faces.empty()) return false;
 
     std::vector<std::vector<Point2f> > & landmarks =
         *(std::vector<std::vector<Point2f> >*) _landmarks.getObj();
@@ -407,13 +364,12 @@ bool FacemarkLBFImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks)
         landmarks.clear();
 
     if (!isModelTrained) {
-       std::string error_message = "The LBF model is not trained yet. Please provide a trained model.";
-       CV_Error(CV_StsBadArg, error_message);
+        CV_Error(Error::StsBadArg, "The LBF model is not trained yet. Please provide a trained model.");
     }
 
     Mat img;
     if(image.channels()>1){
-        cvtColor(image,img,CV_BGR2GRAY);
+        cvtColor(image,img,COLOR_BGR2GRAY);
     }else{
         img = image;
     }
@@ -424,13 +380,8 @@ bool FacemarkLBFImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks)
     }else{
         std::vector<Rect> rects;
 
-        if(!isSetDetector){
-            defaultFaceDetector(img, rects);
-        }else{
-            faceDetector(img, rects,0);
-        }
-
-        if (rects.size() == 0)  return 0; //failed to get face
+        if (!getFaces(img, rects)) return 0;
+        if (rects.empty())  return 0; //failed to get face
         box = rects[0];
     }
 
@@ -470,8 +421,7 @@ void FacemarkLBFImpl::loadModel(String s){
     std::ifstream infile;
     infile.open(s.c_str(), std::ios::in);
     if (!infile) {
-       std::string error_message = "No valid input file was given, please check the given filename.";
-       CV_Error(CV_StsBadArg, error_message);
+        CV_Error(Error::StsBadArg, "No valid input file was given, please check the given filename.");
     }
 
     FileStorage fs(s.c_str(),FileStorage::READ);
@@ -483,7 +433,7 @@ void FacemarkLBFImpl::loadModel(String s){
 Rect FacemarkLBFImpl::getBBox(Mat &img, const Mat_<double> shape) {
     std::vector<Rect> rects;
 
-    if(!isSetDetector){
+    if(!faceDetector){
         defaultFaceDetector(img, rects);
     }else{
         faceDetector(img, rects,0);
@@ -523,7 +473,7 @@ void FacemarkLBFImpl::prepareTrainingData(Mat img, std::vector<Point2f> facePoin
     std::vector<Mat> & cropped, std::vector<Mat> & shapes, std::vector<BBox> &boxes)
 {
     if(img.channels()>1){
-        cvtColor(img,img,CV_BGR2GRAY);
+        cvtColor(img,img,COLOR_BGR2GRAY);
     }
 
     Mat shape;
@@ -697,8 +647,8 @@ void FacemarkLBFImpl::LBF::calcSimilarityTransform(const Mat &shape1, const Mat 
 
     Mat_<double> covar1, covar2;
     Mat_<double> mean1, mean2;
-    calcCovarMatrix(temp1, covar1, mean1, CV_COVAR_COLS);
-    calcCovarMatrix(temp2, covar2, mean2, CV_COVAR_COLS);
+    calcCovarMatrix(temp1, covar1, mean1, COVAR_COLS);
+    calcCovarMatrix(temp2, covar2, mean2, COVAR_COLS);
 
     double s1 = sqrt(cv::norm(covar1));
     double s2 = sqrt(cv::norm(covar2));
@@ -1075,7 +1025,7 @@ void FacemarkLBFImpl::Regressor::initRegressor(Params config) {
 
 void FacemarkLBFImpl::Regressor::trainRegressor(std::vector<Mat> &imgs, std::vector<Mat> &gt_shapes, std::vector<Mat> &current_shapes,
                         std::vector<BBox> &bboxes, Mat &mean_shape_, int start_from, Params config) {
-    assert(start_from >= 0 && start_from < stages_n);
+    CV_Assert(start_from >= 0 && start_from < stages_n);
     mean_shape = mean_shape_;
     int N = (int)imgs.size();
 

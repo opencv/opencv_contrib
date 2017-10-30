@@ -1,5 +1,5 @@
 /*
-This file was part of GSoC Project: Facemark API for OpenCV
+This file contains results of GSoC Project: Facemark API for OpenCV
 Final report: https://gist.github.com/kurnianggoro/74de9121e122ad0bd825176751d47ecc
 Student: Laksono Kurnianggoro
 Mentor: Delia Passalacqua
@@ -28,9 +28,8 @@ using namespace std;
 using namespace cv;
 using namespace cv::face;
 
-CascadeClassifier face_cascade;
-bool myDetector( InputArray image, OutputArray ROIs, void * config = 0);
-bool parseArguments(int argc, char** argv, CommandLineParser & parser,
+static bool myDetector(InputArray image, OutputArray ROIs, CascadeClassifier *face_cascade);
+static bool parseArguments(int argc, char** argv, CommandLineParser & parser,
     String & cascade, String & model,String & video);
 
 int main(int argc, char** argv ){
@@ -39,6 +38,7 @@ int main(int argc, char** argv ){
     if(!parseArguments(argc, argv, parser,cascade_path,model_path,video_path))
        return -1;
 
+    CascadeClassifier face_cascade;
     face_cascade.load(cascade_path);
 
     FacemarkLBF::Params params;
@@ -46,7 +46,7 @@ int main(int argc, char** argv ){
     params.cascade_face = cascade_path;
 
     Ptr<Facemark> facemark = FacemarkLBF::create(params);
-    facemark->setFaceDetector(myDetector);
+    facemark->setFaceDetector((FN_FaceDetector)myDetector, &face_cascade);
     facemark->loadModel(params.model_filename.c_str());
 
     VideoCapture capture(video_path);
@@ -115,23 +115,20 @@ int main(int argc, char** argv ){
     waitKey(0); // key press to close window
 }
 
-bool myDetector( InputArray image, OutputArray ROIs, void * config ){
+bool myDetector(InputArray image, OutputArray faces, CascadeClassifier *face_cascade)
+{
     Mat gray;
-    std::vector<Rect> & faces = *(std::vector<Rect>*) ROIs.getObj();
-    faces.clear();
 
-    if(config!=0){
-        //do nothing
-    }
-
-    if(image.channels()>1){
-        cvtColor(image.getMat(),gray,CV_BGR2GRAY);
-    }else{
+    if (image.channels() > 1)
+        cvtColor(image, gray, COLOR_BGR2GRAY);
+    else
         gray = image.getMat().clone();
-    }
-    equalizeHist( gray, gray );
 
-    face_cascade.detectMultiScale( gray, faces, 1.4, 2, CV_HAAR_SCALE_IMAGE, Size(30, 30) );
+    equalizeHist(gray, gray);
+
+    std::vector<Rect> faces_;
+    face_cascade->detectMultiScale(gray, faces_, 1.4, 2, CASCADE_SCALE_IMAGE, Size(30, 30));
+    Mat(faces_).copyTo(faces);
     return true;
 }
 

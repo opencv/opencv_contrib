@@ -47,10 +47,9 @@ using namespace std;
 using namespace cv;
 using namespace cv::face;
 
-CascadeClassifier face_cascade;
-bool myDetector( InputArray image, OutputArray roi, void * config=0 );
-bool parseArguments(int argc, char** argv, CommandLineParser & , String & cascade,
-    String & model, String & images, String & annotations, String & testImages
+static bool myDetector( InputArray image, OutputArray roi, CascadeClassifier *face_detector);
+static bool parseArguments(int argc, char** argv, CommandLineParser & , String & cascade,
+   String & model, String & images, String & annotations, String & testImages
 );
 
 int main(int argc, char** argv)
@@ -66,8 +65,9 @@ int main(int argc, char** argv)
     params.cascade_face = cascade_path;
     Ptr<Facemark> facemark = FacemarkLBF::create(params);
 
+    CascadeClassifier face_cascade;
     face_cascade.load(params.cascade_face.c_str());
-    facemark->setFaceDetector(myDetector);
+    facemark->setFaceDetector((FN_FaceDetector)myDetector, &face_cascade);
 
     /*Loads the dataset*/
     std::vector<String> images_train;
@@ -118,27 +118,22 @@ int main(int argc, char** argv)
             cout<<"face not found"<<endl;
         }
     }
-
 }
 
-bool myDetector( InputArray image, OutputArray roi, void * config ){
+bool myDetector(InputArray image, OutputArray faces, CascadeClassifier *face_cascade)
+{
     Mat gray;
-    std::vector<Rect> & faces = *(std::vector<Rect>*) roi.getObj();
-    faces.clear();
 
-    if(config!=0){
-        //do nothing
-    }
-
-    if(image.channels()>1){
-        cvtColor(image,gray,CV_BGR2GRAY);
-    }else{
+    if (image.channels() > 1)
+        cvtColor(image, gray, COLOR_BGR2GRAY);
+    else
         gray = image.getMat().clone();
-    }
-    equalizeHist( gray, gray );
 
-    face_cascade.detectMultiScale( gray, faces, 1.4, 2, CV_HAAR_SCALE_IMAGE, Size(30, 30) );
+    equalizeHist(gray, gray);
 
+    std::vector<Rect> faces_;
+    face_cascade->detectMultiScale(gray, faces_, 1.4, 2, CASCADE_SCALE_IMAGE, Size(30, 30));
+    Mat(faces_).copyTo(faces);
     return true;
 }
 

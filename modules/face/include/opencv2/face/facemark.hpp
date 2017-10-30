@@ -1,34 +1,9 @@
-/*
-By downloading, copying, installing or using the software you agree to this
-license. If you do not agree to this license, do not download, install,
-copy or use the software.
-                          License Agreement
-               For Open Source Computer Vision Library
-                       (3-clause BSD License)
-Copyright (C) 2013, OpenCV Foundation, all rights reserved.
-Third party copyrights are property of their respective owners.
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-  * Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-  * Neither the names of the copyright holders nor the names of the contributors
-    may be used to endorse or promote products derived from this software
-    without specific prior written permission.
-This software is provided by the copyright holders and contributors "as is" and
-any express or implied warranties, including, but not limited to, the implied
-warranties of merchantability and fitness for a particular purpose are
-disclaimed. In no event shall copyright holders or contributors be liable for
-any direct, indirect, incidental, special, exemplary, or consequential damages
-(including, but not limited to, procurement of substitute goods or services;
-loss of use, data, or profits; or business interruption) however caused
-and on any theory of liability, whether in contract, strict liability,
-or tort (including negligence or otherwise) arising in any way out of
-the use of this software, even if advised of the possibility of such damage.
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 
-This file was part of GSoC Project: Facemark API for OpenCV
+/*
+This file contains results of GSoC Project: Facemark API for OpenCV
 Final report: https://gist.github.com/kurnianggoro/74de9121e122ad0bd825176751d47ecc
 Student: Laksono Kurnianggoro
 Mentor: Delia Passalacqua
@@ -45,29 +20,36 @@ Mentor: Delia Passalacqua
 
 #include "opencv2/face.hpp"
 #include "opencv2/objdetect.hpp"
-#include "opencv2/objdetect/objdetect_c.h"
-#include "opencv2/imgproc/types_c.h"
+#include <vector>
+#include <string>
+
 
 namespace cv {
 namespace face {
 
 //! @addtogroup face
 //! @{
-struct CV_EXPORTS_W CParams{
+
+typedef bool(*FN_FaceDetector)(InputArray, OutputArray, void* userData);
+
+struct CParams{
     String cascade; //!<  the face detector
     double scaleFactor; //!< Parameter specifying how much the image size is reduced at each image scale.
     int minNeighbors; //!< Parameter specifying how many neighbors each candidate rectangle should have to retain it.
     Size minSize; //!< Minimum possible object size.
     Size maxSize; //!< Maximum possible object size.
 
-    CParams(
+    CV_EXPORTS CParams(
         String cascade_model,
         double sf = 1.1,
         int minN = 3,
         Size minSz = Size(30, 30),
         Size maxSz = Size()
     );
+
+    CascadeClassifier face_cascade;
 };
+
 /** @brief Default face detector
 This function is mainly utilized by the implementation of a Facemark Algorithm.
 End users are advised to use function Facemark::getFaces which can be manually defined
@@ -76,7 +58,7 @@ and circumvented to the algorithm by Facemark::setFaceDetector.
 @param image The input image to be processed.
 @param faces Output of the function which represent region of interest of the detected faces.
 Each face is stored in cv::Rect container.
-@param extra_params extra parameters
+@param params detector parameters
 
 <B>Example of usage</B>
 @code
@@ -89,11 +71,7 @@ for(int j=0;j<faces.size();j++){
 cv::imshow("detection", frame);
 @endcode
 */
-/*other option: move this function inside Facemark as default face detector*/
-CV_EXPORTS bool getFaces( InputArray image,
-                            OutputArray faces,
-                            void * extra_params
-                        );
+CV_EXPORTS bool getFaces(InputArray image, OutputArray faces, CParams* params);
 
 /** @brief A utility to load list of paths to training image and annotation file.
 @param imageList The specified file contains paths to the training images.
@@ -109,7 +87,6 @@ std::vector<String> images_train;
 std::vector<String> landmarks_train;
 loadDatasetList(imageFiles,ptsFiles,images_train,landmarks_train);
 @endcode
-
 */
 CV_EXPORTS_W bool loadDatasetList(String imageList,
                                   String annotationList,
@@ -138,13 +115,12 @@ cv::String imageFiles = "../data/images_train.txt";
 cv::String ptsFiles = "../data/points_train.txt";
 std::vector<String> images;
 std::vector<std::vector<Point2f> > facePoints;
-loadTrainingData(imageFiles, ptsFiles, images, facePoints, 0.0);
+loadTrainingData(imageFiles, ptsFiles, images, facePoints, 0.0f);
 @endcode
 */
-
 CV_EXPORTS_W bool loadTrainingData( String filename , std::vector<String> & images,
                                     OutputArray facePoints,
-                                    char delim = ' ', float offset = 0.0);
+                                    char delim = ' ', float offset = 0.0f);
 
 /** @brief A utility to load facial landmark information from the dataset.
 
@@ -163,7 +139,7 @@ cv::String imageFiles = "../data/images_train.txt";
 cv::String ptsFiles = "../data/points_train.txt";
 std::vector<String> images;
 std::vector<std::vector<Point2f> > facePoints;
-loadTrainingData(imageFiles, ptsFiles, images, facePoints, 0.0);
+loadTrainingData(imageFiles, ptsFiles, images, facePoints, 0.0f);
 @endcode
 
 example of content in the images_train.txt
@@ -182,11 +158,10 @@ example of content in the points_train.txt
 /home/user/ibug/image_006.pts
 @endcode
 */
-
 CV_EXPORTS_W bool loadTrainingData( String imageList, String groundTruth,
                                     std::vector<String> & images,
                                     OutputArray facePoints,
-                                    float offset = 0.0);
+                                    float offset = 0.0f);
 
 /** @brief A utility to load facial landmark information from a given file.
 
@@ -197,7 +172,7 @@ CV_EXPORTS_W bool loadTrainingData( String imageList, String groundTruth,
 <B>Example of usage</B>
 @code
 std::vector<Point2f> points;
-face::loadFacePoints("filename.txt", points, 0.0);
+face::loadFacePoints("filename.txt", points, 0.0f);
 @endcode
 
 The annotation file should follow the default format which is
@@ -213,9 +188,8 @@ n_points:  68
 where n_points is the number of points considered
 and each point is represented as its position in x and y.
 */
-
 CV_EXPORTS_W bool loadFacePoints( String filename, OutputArray points,
-                                  float offset = 0.0);
+                                  float offset = 0.0f);
 
 /** @brief Utility to draw the detected facial landmark points
 
@@ -365,40 +339,42 @@ public:
     std::vector<std::vector<Point2f> > landmarks;
     facemark->fit(image, faces, landmarks);
     @endcode
+
+    TODO remove "config" from here
     */
-    virtual bool fit( InputArray image,\
-                      InputArray faces,\
-                      InputOutputArray landmarks,\
+    virtual bool fit( InputArray image,
+                      InputArray faces,
+                      InputOutputArray landmarks,
                       void * config = 0)=0;
 
     /** @brief Set a user defined face detector for the Facemark algorithm.
-    @param f The user defined face detector function
+    @param detector The user defined face detector function
+    @param userData Detector parameters
+
     <B>Example of usage</B>
     @code
-    facemark->setFaceDetector(myDetector);
+    MyDetectorParameters detectorParameters(...);
+    facemark->setFaceDetector(myDetector, &detectorParameters);
     @endcode
 
     Example of a user defined face detector
     @code
-    bool myDetector( InputArray image, OutputArray ROIs ){
-        std::vector<Rect> & faces = *(std::vector<Rect>*) ROIs.getObj();
-        faces.clear();
-
-        Mat img = image.getMat();
-
+    bool myDetector( InputArray image, OutputArray faces, void* userData)
+    {
+        MyDetectorParameters* params = (MyDetectorParameters*)userData;
         // -------- do something --------
     }
     @endcode
+
+    TODO Lifetime of detector parameters is uncontrolled. Rework interface design to "Ptr<FaceDetector>".
     */
-    virtual bool setFaceDetector(bool(*f)(InputArray , OutputArray, void * ))=0;
+    virtual bool setFaceDetector(FN_FaceDetector detector, void* userData = 0)=0;
 
     /** @brief Detect faces from a given image using default or user defined face detector.
     Some Algorithm might not provide a default face detector.
 
     @param image Input image.
-    @param faces Output of the function which represent region of interest of the detected faces.
-    Each face is stored in cv::Rect container.
-    @param extra_params Optional extra-parameters for the face detector function.
+    @param faces Output of the function which represent region of interest of the detected faces. Each face is stored in cv::Rect container.
 
     <B>Example of usage</B>
     @code
@@ -409,7 +385,7 @@ public:
     }
     @endcode
     */
-    virtual bool getFaces( InputArray image , OutputArray faces, void * extra_params=0)=0;
+    virtual bool getFaces(InputArray image, OutputArray faces)=0;
 
     /** @brief Get data from an algorithm
 
@@ -427,13 +403,10 @@ public:
     cout<<s0<<endl;
     @endcode
     */
-    virtual bool getData(void * items=0)=0;
+    virtual bool getData(void * items=0)=0; // FIXIT
 }; /* Facemark*/
 
 //! @}
-
 } /* namespace face */
 } /* namespace cv */
-
-
 #endif //__OPENCV_FACELANDMARK_HPP__

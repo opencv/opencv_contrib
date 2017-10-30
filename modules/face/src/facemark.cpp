@@ -1,42 +1,18 @@
-/*
-By downloading, copying, installing or using the software you agree to this
-license. If you do not agree to this license, do not download, install,
-copy or use the software.
-                          License Agreement
-               For Open Source Computer Vision Library
-                       (3-clause BSD License)
-Copyright (C) 2013, OpenCV Foundation, all rights reserved.
-Third party copyrights are property of their respective owners.
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-  * Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-  * Neither the names of the copyright holders nor the names of the contributors
-    may be used to endorse or promote products derived from this software
-    without specific prior written permission.
-This software is provided by the copyright holders and contributors "as is" and
-any express or implied warranties, including, but not limited to, the implied
-warranties of merchantability and fitness for a particular purpose are
-disclaimed. In no event shall copyright holders or contributors be liable for
-any direct, indirect, incidental, special, exemplary, or consequential damages
-(including, but not limited to, procurement of substitute goods or services;
-loss of use, data, or profits; or business interruption) however caused
-and on any theory of liability, whether in contract, strict liability,
-or tort (including negligence or otherwise) arising in any way out of
-the use of this software, even if advised of the possibility of such damage.
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 
-This file was part of GSoC Project: Facemark API for OpenCV
+/*
+This file contains results of GSoC Project: Facemark API for OpenCV
 Final report: https://gist.github.com/kurnianggoro/74de9121e122ad0bd825176751d47ecc
 Student: Laksono Kurnianggoro
 Mentor: Delia Passalacqua
 */
 
+#include "precomp.hpp"
+
 #include "opencv2/face.hpp"
 #include "opencv2/core.hpp"
-#include "precomp.hpp"
 
 /*dataset parser*/
 #include <fstream>
@@ -46,33 +22,35 @@ Mentor: Delia Passalacqua
 
 namespace cv {
 namespace face {
+
+using namespace std;
+
 CParams::CParams(String s, double sf, int minN, Size minSz, Size maxSz){
     cascade = s;
     scaleFactor = sf;
     minNeighbors = minN;
     minSize = minSz;
     maxSize = maxSz;
+
+    if (!face_cascade.load(cascade))
+    {
+        CV_Error_(Error::StsBadArg, ("Error loading face_cascade: %s", cascade.c_str()));
+    }
 }
 
-bool getFaces(InputArray image, OutputArray faces, void * parameters){
+bool getFaces(InputArray image, OutputArray faces, CParams* params)
+{
+    CV_Assert(params);
     Mat gray;
     std::vector<Rect> roi;
 
-    if(parameters!=0){
-        CParams * params = (CParams *)parameters;
-        cvtColor( image.getMat(), gray, CV_BGR2GRAY );
-        equalizeHist( gray, gray );
+    cvtColor(image.getMat(), gray, COLOR_BGR2GRAY);
+    equalizeHist(gray, gray);
 
-        CascadeClassifier face_cascade;
-        if( !face_cascade.load( params->cascade ) ){ printf("--(!)Error loading face_cascade\n"); return false; };
-        face_cascade.detectMultiScale( gray, roi, params->scaleFactor, params->minNeighbors, 0|CV_HAAR_SCALE_IMAGE, params->minSize, params->maxSize);
+    params->face_cascade.detectMultiScale( gray, roi, params->scaleFactor, params->minNeighbors, CASCADE_SCALE_IMAGE, params->minSize, params->maxSize);
 
-        Mat(roi).copyTo(faces);
-        return true;
-    }else{
-        return false;
-    }
-
+    Mat(roi).copyTo(faces);
+    return true;
 }
 
 bool loadDatasetList(String imageList, String groundTruth, std::vector<String> & images, std::vector<String> & landmarks){
@@ -111,14 +89,14 @@ bool loadTrainingData(String filename, std::vector<String> & images, OutputArray
     std::vector<Point2f> pts;
     std::vector<float> raw;
 
+    // FIXIT
     std::vector<std::vector<Point2f> > & facePoints =
         *(std::vector<std::vector<Point2f> >*) _facePoints.getObj();
 
     std::ifstream infile;
     infile.open(filename.c_str(), std::ios::in);
     if (!infile) {
-       std::string error_message = "No valid input file was given, please check the given filename.";
-       CV_Error(CV_StsBadArg, error_message);
+        CV_Error_(Error::StsBadArg, ("No valid input file was given, please check the given filename: %s", filename.c_str()));
     }
 
     /*clear the output containers*/
@@ -154,6 +132,7 @@ bool loadTrainingData(String imageList, String groundTruth, std::vector<String> 
     std::string line;
     std::vector<Point2f> facePts;
 
+    // FIXIT
     std::vector<std::vector<Point2f> > & facePoints =
             *(std::vector<std::vector<Point2f> >*) _facePoints.getObj();
 
@@ -165,8 +144,7 @@ bool loadTrainingData(String imageList, String groundTruth, std::vector<String> 
     std::ifstream infile;
     infile.open(imageList.c_str(), std::ios::in);
     if (!infile) {
-       std::string error_message = "No valid input file was given, please check the given filename.";
-       CV_Error(CV_StsBadArg, error_message);
+       CV_Error_(Error::StsBadArg, ("No valid input file was given, please check the given filename: %s", imageList.c_str()));
     }
 
     while (getline (infile, line)){
@@ -185,7 +163,7 @@ bool loadTrainingData(String imageList, String groundTruth, std::vector<String> 
 }
 
 bool loadFacePoints(String filename, OutputArray points, float offset){
-    std::vector<Point2f> & pts = *(std::vector<Point2f> *)points.getObj();
+    vector<Point2f> pts;
 
     std::string line, item;
     std::ifstream infile(filename.c_str());
@@ -222,16 +200,16 @@ bool loadFacePoints(String filename, OutputArray points, float offset){
 
     }
 
+    Mat(pts).copyTo(points);
     return true;
 }
 
 void drawFacemarks(InputOutputArray image, InputArray points, Scalar color){
     Mat img = image.getMat();
-    std::vector<Point2f> pts = *(std::vector<Point2f>*)points.getObj();
+    vector<Point2f> pts = points.getMat();
     for(size_t i=0;i<pts.size();i++){
         circle(img, pts[i],3, color,-1);
     }
-} //drawPoints
-
+}
 } /* namespace face */
 } /* namespace cv */

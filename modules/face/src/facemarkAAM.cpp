@@ -1,41 +1,16 @@
-/*
-By downloading, copying, installing or using the software you agree to this
-license. If you do not agree to this license, do not download, install,
-copy or use the software.
-                          License Agreement
-               For Open Source Computer Vision Library
-                       (3-clause BSD License)
-Copyright (C) 2013, OpenCV Foundation, all rights reserved.
-Third party copyrights are property of their respective owners.
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-  * Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-  * Neither the names of the copyright holders nor the names of the contributors
-    may be used to endorse or promote products derived from this software
-    without specific prior written permission.
-This software is provided by the copyright holders and contributors "as is" and
-any express or implied warranties, including, but not limited to, the implied
-warranties of merchantability and fitness for a particular purpose are
-disclaimed. In no event shall copyright holders or contributors be liable for
-any direct, indirect, incidental, special, exemplary, or consequential damages
-(including, but not limited to, procurement of substitute goods or services;
-loss of use, data, or profits; or business interruption) however caused
-and on any theory of liability, whether in contract, strict liability,
-or tort (including negligence or otherwise) arising in any way out of
-the use of this software, even if advised of the possibility of such damage.
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 
-This file was part of GSoC Project: Facemark API for OpenCV
+/*
+This file contains results of GSoC Project: Facemark API for OpenCV
 Final report: https://gist.github.com/kurnianggoro/74de9121e122ad0bd825176751d47ecc
 Student: Laksono Kurnianggoro
 Mentor: Delia Passalacqua
 */
 
-#include "opencv2/face.hpp"
 #include "precomp.hpp"
+#include "opencv2/face.hpp"
 namespace cv {
 namespace face {
 
@@ -98,8 +73,8 @@ public:
     void saveModel(String fs);
     void loadModel(String fs);
 
-    bool setFaceDetector(bool(*f)(InputArray , OutputArray, void * ));
-    bool getFaces( InputArray image ,OutputArray faces, void * extra_params);
+    bool setFaceDetector(bool(*f)(InputArray , OutputArray, void * ), void* userData);
+    bool getFaces(InputArray image, OutputArray faces);
 
     bool getData(void * items);
 
@@ -139,8 +114,8 @@ protected:
     std::vector<std::vector<Point2f> > facePoints;
     FacemarkAAM::Params params;
     FacemarkAAM::Model AAM;
-    bool(*faceDetector)(InputArray , OutputArray, void *);
-    bool isSetDetector;
+    FN_FaceDetector faceDetector;
+    void* faceDetectorData;
 
 private:
     bool isModelTrained;
@@ -154,9 +129,9 @@ Ptr<FacemarkAAM> FacemarkAAM::create(const FacemarkAAM::Params &parameters){
 }
 
 FacemarkAAMImpl::FacemarkAAMImpl( const FacemarkAAM::Params &parameters ) :
-    params( parameters )
+    params( parameters ),
+    faceDetector(NULL), faceDetectorData(NULL)
 {
-    isSetDetector =false;
     isModelTrained = false;
 }
 
@@ -168,42 +143,30 @@ void FacemarkAAMImpl::write( cv::FileStorage& fs ) const {
     params.write( fs );
 }
 
-bool FacemarkAAMImpl::setFaceDetector(bool(*f)(InputArray , OutputArray, void *)){
+bool FacemarkAAMImpl::setFaceDetector(bool(*f)(InputArray , OutputArray, void *), void* userData){
     faceDetector = f;
-    isSetDetector = true;
+    faceDetectorData = userData;
     return true;
 }
 
 
-bool FacemarkAAMImpl::getFaces( InputArray image , OutputArray roi, void * extra_params){
-
-    if(!isSetDetector){
+bool FacemarkAAMImpl::getFaces(InputArray image, OutputArray faces)
+{
+    if (!faceDetector)
         return false;
-    }
-
-    if(extra_params!=0){
-        //do nothing
-    }
-
-    std::vector<Rect> faces;
-    faces.clear();
-
-    faceDetector(image.getMat(), faces, extra_params);
-    Mat(faces).copyTo(roi);
-    return true;
+    return faceDetector(image, faces, faceDetectorData);
 }
 
 bool FacemarkAAMImpl::getData(void * items){
-    if(items==0){
-        return true;
-    }else{
-        Data * data = (Data*)items;
-        data->s0 = AAM.s0;
-        return true;
-    }
+    CV_Assert(items);
+
+    Data* data = (Data*)items;
+    data->s0 = AAM.s0;
+    return true;
 }
 
 bool FacemarkAAMImpl::addTrainingSample(InputArray image, InputArray landmarks){
+    // FIXIT
     std::vector<Point2f> & _landmarks = *(std::vector<Point2f>*)landmarks.getObj();
 
     images.push_back(image.getMat());
@@ -215,14 +178,11 @@ bool FacemarkAAMImpl::addTrainingSample(InputArray image, InputArray landmarks){
 void FacemarkAAMImpl::training(void* parameters){
     if(parameters!=0){/*do nothing*/}
     if (images.size()<1) {
-       std::string error_message =
-        "Training data is not provided. Consider to add using addTrainingSample() function!";
-       CV_Error(CV_StsBadArg, error_message);
+        CV_Error(Error::StsBadArg, "Training data is not provided. Consider to add using addTrainingSample() function!");
     }
 
     if(strcmp(params.model_filename.c_str(),"")==0 && params.save_model){
-        std::string error_message = "The model_filename parameter should be set!";
-        CV_Error(CV_StsBadArg, error_message);
+        CV_Error(Error::StsBadArg, "The model_filename parameter should be set!");
     }
 
     std::vector<std::vector<Point2f> > normalized;
@@ -297,7 +257,7 @@ void FacemarkAAMImpl::training(void* parameters){
         Mat T= texture_feats.t();
 
         /* -------------- E. Create the texture model -----------------*/
-        reduce(T,AAM.textures[scale].A0,1, CV_REDUCE_AVG);
+        reduce(T,AAM.textures[scale].A0,1, REDUCE_AVG);
 
         if(params.verbose) printf("(2/4) Compute the feature average ...\n");
         Mat A0_mtx = repeat(AAM.textures[scale].A0,1,T.cols);
@@ -341,9 +301,7 @@ bool FacemarkAAMImpl::fit( InputArray image, InputArray roi, InputOutputArray _l
 
         std::vector<Config> conf = *(std::vector<Config>*)runtime_params;
         if (conf.size()!=faces.size()) {
-           std::string error_message =
-            "Number of faces and extra_parameters are different!";
-           CV_Error(CV_StsBadArg, error_message);
+            CV_Error(Error::StsBadArg, "Number of faces and extra_parameters are different!");
         }
         for(size_t i=0; i<conf.size();i++){
             fitImpl(img, landmarks[i], conf[i].R,conf[i].t, conf[i].scale, conf[i].model_scale_idx);
@@ -386,7 +344,7 @@ bool FacemarkAAMImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks,
     Mat imgray;
     Mat img;
     if(image.channels()>1){
-        cvtColor(image,imgray,CV_BGR2GRAY);
+        cvtColor(image,imgray,COLOR_BGR2GRAY);
     }else{
         imgray = image;
     }
@@ -564,8 +522,8 @@ Mat FacemarkAAMImpl::procrustes(std::vector<Point2f> P, std::vector<Point2f> Q, 
 
     // calculate the sum
     Mat sumXs, sumYs;
-    reduce(Xs,sumXs, 0, CV_REDUCE_SUM);
-    reduce(Ys,sumYs, 0, CV_REDUCE_SUM);
+    reduce(Xs,sumXs, 0, REDUCE_SUM);
+    reduce(Ys,sumYs, 0, REDUCE_SUM);
 
     //calculate the normrnd
     double normX = sqrt(Mat(sumXs.reshape(1)).at<float>(0)+Mat(sumXs.reshape(1)).at<float>(1));
@@ -901,7 +859,7 @@ Mat FacemarkAAMImpl::warpImage(
     Mat image,part, warped_part;
 
     if(img.channels()>1){
-        cvtColor(img,image,CV_BGR2GRAY);
+        cvtColor(img,image,COLOR_BGR2GRAY);
     }else{
         image = img;
     }

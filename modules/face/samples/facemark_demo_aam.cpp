@@ -50,7 +50,7 @@ using namespace std;
 using namespace cv;
 using namespace cv::face;
 
-bool myDetector( InputArray image, OutputArray ROIs, CascadeClassifier face_cascade);
+bool myDetector( InputArray image, OutputArray ROIs, CascadeClassifier *face_cascade);
 bool getInitialFitting(Mat image, Rect face, std::vector<Point2f> s0,
     CascadeClassifier eyes_cascade, Mat & R, Point2f & Trans, float & scale);
 bool parseArguments(int argc, char** argv, CommandLineParser & , String & cascade,
@@ -130,7 +130,7 @@ int main(int argc, char** argv )
         printf("image #%i ", i);
         //! [detect_face]
         image = imread(images[i]);
-        myDetector(image, faces, face_cascade);
+        myDetector(image, faces, &face_cascade);
         //! [detect_face]
         if(faces.size()>0){
             //! [get_initialization]
@@ -167,19 +167,20 @@ int main(int argc, char** argv )
     //! [fitting]
 }
 
-bool myDetector( InputArray image, OutputArray ROIs, CascadeClassifier face_cascade){
+bool myDetector(InputArray image, OutputArray faces, CascadeClassifier *face_cascade)
+{
     Mat gray;
-    std::vector<Rect> & faces = *(std::vector<Rect>*) ROIs.getObj();
-    faces.clear();
 
-    if(image.channels()>1){
-        cvtColor(image.getMat(),gray,CV_BGR2GRAY);
-    }else{
+    if (image.channels() > 1)
+        cvtColor(image, gray, COLOR_BGR2GRAY);
+    else
         gray = image.getMat().clone();
-    }
-    equalizeHist( gray, gray );
 
-    face_cascade.detectMultiScale( gray, faces, 1.2, 2, CV_HAAR_SCALE_IMAGE, Size(30, 30) );
+    equalizeHist(gray, gray);
+
+    std::vector<Rect> faces_;
+    face_cascade->detectMultiScale(gray, faces_, 1.4, 2, CASCADE_SCALE_IMAGE, Size(30, 30));
+    Mat(faces_).copyTo(faces);
     return true;
 }
 
@@ -201,7 +202,7 @@ bool getInitialFitting(Mat image, Rect face, std::vector<Point2f> s0 ,CascadeCla
     std::vector<Rect> eyes;
 
     //-- In each face, detect eyes
-    eyes_cascade.detectMultiScale( faceROI, eyes, 1.1, 2, 0 |CV_HAAR_SCALE_IMAGE, Size(20, 20) );
+    eyes_cascade.detectMultiScale( faceROI, eyes, 1.1, 2, CASCADE_SCALE_IMAGE, Size(20, 20) );
     if(eyes.size()==2){
         found = true;
         int j=0;

@@ -69,31 +69,25 @@ struct Conf {
     Conf(cv::String s, double d){
         model_path = s;
         scaleFactor = d;
+        face_detector.load(model_path);
     };
+
+    CascadeClassifier face_detector;
 };
-bool myDetector( InputArray image, OutputArray roi, void * config ){
+bool myDetector(InputArray image, OutputArray faces, Conf *conf){
     Mat gray;
-    std::vector<Rect> & faces = *(std::vector<Rect>*) roi.getObj();
-    faces.clear();
 
-    if(config!=0){
-        Conf*  conf = (Conf*)config;
+    if (image.channels() > 1)
+        cvtColor(image, gray, COLOR_BGR2GRAY);
+    else
+        gray = image.getMat().clone();
 
-        if(image.channels()>1){
-            cvtColor(image,gray,CV_BGR2GRAY);
-        }else{
-            gray = image.getMat().clone();
-        }
-        equalizeHist( gray, gray );
+    equalizeHist(gray, gray);
 
-        CascadeClassifier face_cascade(conf->model_path);
-        face_cascade.detectMultiScale( gray, faces, conf->scaleFactor, 2, CV_HAAR_SCALE_IMAGE, Size(30, 30) );
-
-        return true;
-    }else{
-        return false;
-    }
-
+    std::vector<Rect> faces_;
+    conf->face_cascade.detectMultiScale(gray, faces_, conf->scaleFactor, 2, CASCADE_SCALE_IMAGE, Size(30, 30) );
+    Mat(faces_).copyTo(faces);
+    return true;
 }
 @endcode
 
@@ -101,8 +95,8 @@ bool myDetector( InputArray image, OutputArray roi, void * config ){
 The following snippet demonstrates how to set the custom detector to the facemark object and use it to detect the faces. Keep in mind that some facemark object might use the face detector during the training process.
 
 @code
-Conf* config = new Conf("../data/lbpcascade_frontalface.xml",1.4);
-facemark->setFaceDetector(myDetector);
+Conf config("../data/lbpcascade_frontalface.xml", 1.4);
+facemark->setFaceDetector(myDetector, &config); // we must guarantee proper lifetime of "config" object
 @endcode
 
 Here is the snippet for detecting face using the user defined face detector function.
