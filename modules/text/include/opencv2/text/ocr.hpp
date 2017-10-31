@@ -44,6 +44,8 @@
 #ifndef __OPENCV_TEXT_OCR_HPP__
 #define __OPENCV_TEXT_OCR_HPP__
 
+#include <opencv2/core.hpp>
+
 #include <vector>
 #include <string>
 

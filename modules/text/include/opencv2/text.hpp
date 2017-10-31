@@ -41,6 +41,7 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "opencv2/text/erfilter.hpp"
 #include "opencv2/text/ocr.hpp"
+#include "opencv2/text/textDetector.hpp"
 
 /** @defgroup text Scene Text Detection and Recognition
 
