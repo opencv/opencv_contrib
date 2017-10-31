@@ -119,7 +119,10 @@ public:
 
 
 void LBPH::read(const FileNode& fs) {
-    fs["threshold"] >> _threshold;
+    double _t = 0;
+    fs["threshold"] >> _t; // older versions might not have "threshold"
+    if (_t !=0)
+        _threshold = _t;    // be careful, not to overwrite DBL_MAX with 0 !
     fs["radius"] >> _radius;
     fs["neighbors"] >> _neighbors;
     fs["grid_x"] >> _grid_x;
