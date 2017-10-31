@@ -40,6 +40,7 @@
 //M*/
 
 #include "tldDetector.hpp"
+#include "tracking_utils.hpp"
 
 #include <opencv2/core/utility.hpp>
 
@@ -64,26 +65,57 @@ namespace cv
 			return p;
 		}
 
+        double TLDDetector::computeSminus(const Mat_<uchar>& patch) const
+        {
+            double sminus = 0.0;
+            Mat_<uchar> modelSample(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
+            for (int i = 0; i < *negNum; i++)
+            {
+                modelSample.data = &(negExp->data[i * 225]);
+                sminus = std::max(sminus, 0.5 * (tracking_internal::computeNCC(modelSample, patch) + 1.0));
+            }
+            return sminus;
+        }
+
 		// Calculate Relative similarity of the patch (NN-Model)
 		double TLDDetector::Sr(const Mat_<uchar>& patch) const
 		{
 			double splus = 0.0, sminus = 0.0;
-			Mat_<uchar> modelSample(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
+            Mat_<uchar> modelSample(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
 			for (int i = 0; i < *posNum; i++)
 			{
 				modelSample.data = &(posExp->data[i * 225]);
-				splus = std::max(splus, 0.5 * (NCC(modelSample, patch) + 1.0));
+                splus = std::max(splus, 0.5 * (tracking_internal::computeNCC(modelSample, patch) + 1.0));
 			}
-			for (int i = 0; i < *negNum; i++)
-			{
-				modelSample.data = &(negExp->data[i * 225]);
-				sminus = std::max(sminus, 0.5 * (NCC(modelSample, patch) + 1.0));
-			}
+            sminus = computeSminus(patch);
 
 			if (splus + sminus == 0.0)
 				return 0.0;
 			return splus / (sminus + splus);
 		}
+
+        std::pair<double, double> TLDDetector::SrAndSc(const Mat_<uchar>& patch) const
+        {
+            double splusC = 0.0, sminus = 0.0, splus = 0.0;
+            Mat_<uchar> modelSample(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
+            int med = tracking_internal::getMedian((*timeStampsPositive));
+            for (int i = 0; i < *posNum; i++)
+            {
+                modelSample.data = &(posExp->data[i * 225]);
+                double s = 0.5 * (tracking_internal::computeNCC(modelSample, patch) + 1.0);
+
+                if ((int)(*timeStampsPositive)[i] <= med)
+                    splusC = std::max(splusC, s);
+
+                splus = std::max(splus, s);
+            }
+            sminus = computeSminus(patch);
+
+            double sr = (splus + sminus == 0.0) ? 0. : splus / (sminus + splus);
+            double sc = (splusC + sminus == 0.0) ? 0. : splusC / (sminus + splusC);
+
+            return std::pair<double, double>(sr, sc);
+        }
 
 #ifdef HAVE_OPENCL
 		double TLDDetector::ocl_Sr(const Mat_<uchar>& patch)
@@ -167,7 +199,7 @@ namespace cv
 			for (int id = 0; id < numOfPatches; id++)
 			{
 				double spr = 0.0, smr = 0.0, spc = 0.0, smc = 0;
-				int med = getMedian((*timeStampsPositive));
+                int med = tracking_internal::getMedian((*timeStampsPositive));
 				for (int i = 0; i < *posNum; i++)
 				{
 					spr = std::max(spr, 0.5 * (posNCC.at<float>(id * 500 + i) + 1.0));
@@ -195,20 +227,16 @@ namespace cv
 		{
 			double splus = 0.0, sminus = 0.0;
 			Mat_<uchar> modelSample(STANDARD_PATCH_SIZE, STANDARD_PATCH_SIZE);
-			int med = getMedian((*timeStampsPositive));
+            int med = tracking_internal::getMedian((*timeStampsPositive));
 			for (int i = 0; i < *posNum; i++)
 			{
 				if ((int)(*timeStampsPositive)[i] <= med)
 				{
 					modelSample.data = &(posExp->data[i * 225]);
-					splus = std::max(splus, 0.5 * (NCC(modelSample, patch) + 1.0));
+                    splus = std::max(splus, 0.5 * (tracking_internal::computeNCC(modelSample, patch) + 1.0));
 				}
 			}
-			for (int i = 0; i < *negNum; i++)
-			{
-				modelSample.data = &(negExp->data[i * 225]);
-				sminus = std::max(sminus, 0.5 * (NCC(modelSample, patch) + 1.0));
-			}
+            sminus = computeSminus(patch);
 
 			if (splus + sminus == 0.0)
 				return 0.0;
@@ -249,7 +277,7 @@ namespace cv
 
 			Mat resNCC = devNCC.getMat(ACCESS_READ);
 
-			int med = getMedian((*timeStampsPositive));
+            int med = tracking_internal::getMedian((*timeStampsPositive));
 			for (int i = 0; i < *posNum; i++)
 				if ((int)(*timeStampsPositive)[i] <= med)
 					splus = std::max(splus, 0.5 * (resNCC.at<float>(i) +1.0));
@@ -316,9 +344,9 @@ namespace cv
 					resample(detectorF->resized_imgs[detectorF->ensScaleIDs[ind]],
 						Rect2d(detectorF->ensBuffer[ind], initSizeF),
 						detectorF->standardPatches[ind]);
-
-					detectorF->scValues[ind] = detectorF->Sc (detectorF->standardPatches[ind]);
-					detectorF->srValues[ind] = detectorF->Sr (detectorF->standardPatches[ind]);
+                    std::pair<double, double> values = detectorF->SrAndSc(detectorF->standardPatches[ind]);
+                    detectorF->scValues[ind] = values.second;
+                    detectorF->srValues[ind] = values.first;
 				}
 			}
 
@@ -412,15 +440,17 @@ namespace cv
 				LabeledPatch labPatch;
 				double curScale = pow(SCALE_STEP, ensScaleIDs[i]);
 				labPatch.rect = Rect2d(ensBuffer[i].x*curScale, ensBuffer[i].y*curScale, initSize.width * curScale, initSize.height * curScale);
+                labPatch.Sc = scValues[i];
+                //printf("max sc %f\n", labPatch.Sc);
 
 				const double srValue = srValues[i];
 				const double scValue = scValues[i];
 
 				////To fix: Check the paper, probably this cause wrong learning
 				//
-				labPatch.isObject = srValue > THETA_NN;
-				labPatch.shouldBeIntegrated = abs(srValue - THETA_NN) < 0.1;
-				patches.push_back(labPatch);
+                labPatch.isObject = srValue > THETA_NN;
+                labPatch.shouldBeIntegrated = abs(srValue - THETA_NN) < CLASSIFIER_MARGIN;
+                patches.push_back(labPatch);
 				//
 
 				if (!labPatch.isObject)
@@ -440,7 +470,7 @@ namespace cv
 				}
 			}
 
-			if (maxSc < 0)
+            if (maxSc < 0)
 				return false;
 			else
 			{
@@ -538,7 +568,7 @@ namespace cv
 				////To fix: Check the paper, probably this cause wrong learning
 				//
 				labPatch.isObject = srValue > THETA_NN;
-				labPatch.shouldBeIntegrated = abs(srValue - THETA_NN) < 0.1;
+                labPatch.shouldBeIntegrated = abs(srValue - THETA_NN) < CLASSIFIER_MARGIN;
 				patches.push_back(labPatch);
 				//
 

@@ -112,7 +112,7 @@ private:
 };
 
 
-#define BLUR_AS_VADIM
+#undef BLUR_AS_VADIM
 #undef CLOSED_LOOP
 
 class TrackerTLDImpl : public TrackerTLD
