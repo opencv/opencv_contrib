@@ -1,34 +1,5 @@
 /*
-By downloading, copying, installing or using the software you agree to this
-license. If you do not agree to this license, do not download, install,
-copy or use the software.
-                          License Agreement
-               For Open Source Computer Vision Library
-                       (3-clause BSD License)
-Copyright (C) 2013, OpenCV Foundation, all rights reserved.
-Third party copyrights are property of their respective owners.
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-  * Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-  * Neither the names of the copyright holders nor the names of the contributors
-    may be used to endorse or promote products derived from this software
-    without specific prior written permission.
-This software is provided by the copyright holders and contributors "as is" and
-any express or implied warranties, including, but not limited to, the implied
-warranties of merchantability and fitness for a particular purpose are
-disclaimed. In no event shall copyright holders or contributors be liable for
-any direct, indirect, incidental, special, exemplary, or consequential damages
-(including, but not limited to, procurement of substitute goods or services;
-loss of use, data, or profits; or business interruption) however caused
-and on any theory of liability, whether in contract, strict liability,
-or tort (including negligence or otherwise) arising in any way out of
-the use of this software, even if advised of the possibility of such damage.
-
-This file was part of GSoC Project: Facemark API for OpenCV
+This file contains results of GSoC Project: Facemark API for OpenCV
 Final report: https://gist.github.com/kurnianggoro/74de9121e122ad0bd825176751d47ecc
 Student: Laksono Kurnianggoro
 Mentor: Delia Passalacqua
@@ -47,7 +18,7 @@ Mentor: Delia Passalacqua
 
 #include <stdio.h>
 #include <ctime>
- #include <iostream>
+#include <iostream>
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
@@ -57,9 +28,8 @@ using namespace std;
 using namespace cv;
 using namespace cv::face;
 
-CascadeClassifier face_cascade;
-bool myDetector( InputArray image, OutputArray ROIs, void * config = 0);
-bool parseArguments(int argc, char** argv, CommandLineParser & parser,
+static bool myDetector(InputArray image, OutputArray ROIs, CascadeClassifier *face_cascade);
+static bool parseArguments(int argc, char** argv, CommandLineParser & parser,
     String & cascade, String & model,String & video);
 
 int main(int argc, char** argv ){
@@ -68,6 +38,7 @@ int main(int argc, char** argv ){
     if(!parseArguments(argc, argv, parser,cascade_path,model_path,video_path))
        return -1;
 
+    CascadeClassifier face_cascade;
     face_cascade.load(cascade_path);
 
     FacemarkLBF::Params params;
@@ -75,7 +46,7 @@ int main(int argc, char** argv ){
     params.cascade_face = cascade_path;
 
     Ptr<Facemark> facemark = FacemarkLBF::create(params);
-    facemark->setFaceDetector(myDetector);
+    facemark->setFaceDetector((FN_FaceDetector)myDetector, &face_cascade);
     facemark->loadModel(params.model_filename.c_str());
 
     VideoCapture capture(video_path);
@@ -144,23 +115,20 @@ int main(int argc, char** argv ){
     waitKey(0); // key press to close window
 }
 
-bool myDetector( InputArray image, OutputArray ROIs, void * config ){
+bool myDetector(InputArray image, OutputArray faces, CascadeClassifier *face_cascade)
+{
     Mat gray;
-    std::vector<Rect> & faces = *(std::vector<Rect>*) ROIs.getObj();
-    faces.clear();
 
-    if(config!=0){
-        //do nothing
-    }
-
-    if(image.channels()>1){
-        cvtColor(image.getMat(),gray,CV_BGR2GRAY);
-    }else{
+    if (image.channels() > 1)
+        cvtColor(image, gray, COLOR_BGR2GRAY);
+    else
         gray = image.getMat().clone();
-    }
-    equalizeHist( gray, gray );
 
-    face_cascade.detectMultiScale( gray, faces, 1.4, 2, CV_HAAR_SCALE_IMAGE, Size(30, 30) );
+    equalizeHist(gray, gray);
+
+    std::vector<Rect> faces_;
+    face_cascade->detectMultiScale(gray, faces_, 1.4, 2, CASCADE_SCALE_IMAGE, Size(30, 30));
+    Mat(faces_).copyTo(faces);
     return true;
 }
 
@@ -169,34 +137,34 @@ bool parseArguments(int argc, char** argv, CommandLineParser & parser,
     String & model,
     String & video
 ){
-   const String keys =
-       "{ @c cascade         |      | (required) path to the cascade model file for the face detector }"
-       "{ @m model           |      | (required) path to the trained model }"
-       "{ @v video           |      | (required) path input video}"
-       "{ help h usage ?     |      | facemark_lbf_fitting -cascade -model -video [-t]\n"
-            " example: facemark_lbf_fitting ../face_cascade.xml ../LBF.model ../video.mp4}"
-   ;
-   parser = CommandLineParser(argc, argv,keys);
-   parser.about("hello");
+    const String keys =
+        "{ @c cascade         |      | (required) path to the cascade model file for the face detector }"
+        "{ @m model           |      | (required) path to the trained model }"
+        "{ @v video           |      | (required) path input video}"
+        "{ help h usage ?     |      | facemark_lbf_fitting -cascade -model -video [-t]\n"
+             " example: facemark_lbf_fitting ../face_cascade.xml ../LBF.model ../video.mp4}"
+    ;
+    parser = CommandLineParser(argc, argv,keys);
+    parser.about("hello");
 
-   if (parser.has("help")){
-       parser.printMessage();
-       return false;
-   }
+    if (parser.has("help")){
+        parser.printMessage();
+        return false;
+    }
 
-   cascade = String(parser.get<String>("cascade"));
-   model = String(parser.get<string>("model"));
-   video = String(parser.get<string>("video"));
+    cascade = String(parser.get<String>("cascade"));
+    model = String(parser.get<string>("model"));
+    video = String(parser.get<string>("video"));
 
 
-   if(cascade.empty() || model.empty() || video.empty() ){
-       std::cerr << "one or more required arguments are not found" << '\n';
-       cout<<"cascade : "<<cascade.c_str()<<endl;
-       cout<<"model : "<<model.c_str()<<endl;
-       cout<<"video : "<<video.c_str()<<endl;
-       parser.printMessage();
-       return false;
-   }
+    if(cascade.empty() || model.empty() || video.empty() ){
+        std::cerr << "one or more required arguments are not found" << '\n';
+        cout<<"cascade : "<<cascade.c_str()<<endl;
+        cout<<"model : "<<model.c_str()<<endl;
+        cout<<"video : "<<video.c_str()<<endl;
+        parser.printMessage();
+        return false;
+    }
 
-   return true;
+    return true;
 }
