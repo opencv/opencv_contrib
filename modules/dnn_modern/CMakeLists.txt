@@ -79,7 +79,9 @@ add_definitions(-DCNN_NO_SERIALIZATION -DCNN_USE_CAFFE_CONVERTER)
 
 # NOTE: In case that proto files already exist,
 #       this is not needed anymore.
-find_package(Protobuf QUIET)
+if(NOT BUILD_PROTOBUF)
+  find_package(Protobuf QUIET)
+endif()
 
 if(NOT ${Protobuf_FOUND})
   message(STATUS "Module opencv_dnn_modern disabled because Protobuf is not found")

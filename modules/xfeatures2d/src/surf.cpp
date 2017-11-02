@@ -893,7 +893,7 @@ void SURF_Impl::detectAndCompute(InputArray _img, InputArray _mask,
     CV_Assert(_descriptors.needed() || !useProvidedKeypoints);
 
 #ifdef HAVE_OPENCL
-    if( ocl::useOpenCL() )
+    if( ocl::useOpenCL() && _img.isUMat())
     {
         SURF_OCL ocl_surf;
         UMat gpu_kpt;

@@ -1,5 +1,5 @@
 set(the_description "Text Detection and Recognition")
-ocv_define_module(text opencv_ml opencv_imgproc opencv_core opencv_features2d OPTIONAL opencv_highgui WRAP python java)
+ocv_define_module(text opencv_ml opencv_imgproc opencv_core opencv_features2d opencv_dnn OPTIONAL opencv_highgui WRAP python java)
 
 if(NOT CMAKE_CROSSCOMPILING OR OPENCV_FIND_TESSERACT)
   set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)

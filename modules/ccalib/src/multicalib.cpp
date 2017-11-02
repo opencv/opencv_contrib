@@ -141,7 +141,7 @@ void MultiCameraCalibration::loadImages()
     for (int i = 1; i < (int)file_list.size(); ++i)
     {
         int cameraVertex, timestamp;
-        std::string filename = file_list[i].substr(0, file_list[i].find('.'));
+        std::string filename = file_list[i].substr(0, file_list[i].rfind('.'));
         size_t spritPosition1 = filename.rfind('/');
         size_t spritPosition2 = filename.rfind('\\');
         if (spritPosition1!=std::string::npos)

@@ -57,8 +57,9 @@ namespace cv
 		const int MEASURES_PER_CLASSIFIER = 13;
 		const int GRIDSIZE = 15;
 		const int DOWNSCALE_MODE = cv::INTER_LINEAR;
-		const double THETA_NN = 0.50;
+        const double THETA_NN = 0.5;
 		const double CORE_THRESHOLD = 0.5;
+        const double CLASSIFIER_MARGIN = 0.1;
 		const double SCALE_STEP = 1.2;
 		const double ENSEMBLE_THRESHOLD = 0.5;
 		const double VARIANCE_THRESHOLD = 0.5;
@@ -77,6 +78,7 @@ namespace cv
 			void prepareClassifiers(int rowstep);
 			double Sr(const Mat_<uchar>& patch) const;
 			double Sc(const Mat_<uchar>& patch) const;
+            std::pair<double, double> SrAndSc(const Mat_<uchar>& patch) const;
 #ifdef HAVE_OPENCL
 			double ocl_Sr(const Mat_<uchar>& patch);
 			double ocl_Sc(const Mat_<uchar>& patch);
@@ -101,6 +103,7 @@ namespace cv
 			{
 				Rect2d rect;
 				bool isObject, shouldBeIntegrated;
+                double Sc;
 			};
 			bool detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches, Size initSize);
 			bool ocl_detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches,  Size initSize);
@@ -108,6 +111,9 @@ namespace cv
 			friend class MyMouseCallbackDEBUG;
 			static void computeIntegralImages(const Mat& img, Mat_<double>& intImgP, Mat_<double>& intImgP2){ integral(img, intImgP, intImgP2, CV_64F); }
 			static inline bool patchVariance(Mat_<double>& intImgP, Mat_<double>& intImgP2, double *originalVariance, Point pt, Size size);
+
+        protected:
+            double computeSminus(const Mat_<uchar>& patch) const;
 		};
 
 

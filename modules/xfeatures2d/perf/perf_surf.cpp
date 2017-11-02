@@ -40,7 +40,7 @@ PERF_TEST_P(surf, extract, testing::Values(SURF_IMAGES))
 
     Ptr<SURF> detector = SURF::create();
     vector<KeyPoint> points;
-    vector<float> descriptors;
+    Mat descriptors;
     detector->detect(frame, points, mask);
 
     TEST_CYCLE() detector->compute(frame, points, descriptors);
@@ -58,7 +58,7 @@ PERF_TEST_P(surf, full, testing::Values(SURF_IMAGES))
     declare.in(frame).time(90);
     Ptr<SURF> detector = SURF::create();
     vector<KeyPoint> points;
-    vector<float> descriptors;
+    Mat descriptors;
 
     TEST_CYCLE() detector->detectAndCompute(frame, mask, points, descriptors, false);
 

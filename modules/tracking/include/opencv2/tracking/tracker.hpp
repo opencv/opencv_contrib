@@ -1236,12 +1236,12 @@ public:
     */
     void write(FileStorage& /*fs*/) const;
 
-    double detect_thresh;         //!<  detection confidence threshold
-    double sigma;                 //!<  gaussian kernel bandwidth
-    double lambda;                //!<  regularization
-    double interp_factor;         //!<  linear interpolation factor for adaptation
-    double output_sigma_factor;   //!<  spatial bandwidth (proportional to target)
-    double pca_learning_rate;     //!<  compression learning rate
+    float detect_thresh;         //!<  detection confidence threshold
+    float sigma;                 //!<  gaussian kernel bandwidth
+    float lambda;                //!<  regularization
+    float interp_factor;         //!<  linear interpolation factor for adaptation
+    float output_sigma_factor;   //!<  spatial bandwidth (proportional to target)
+    float pca_learning_rate;     //!<  compression learning rate
     bool resize;                  //!<  activate the resize feature to improve the processing speed
     bool split_coeff;             //!<  split the training coefficients into two matrices
     bool wrap_kernel;             //!<  wrap around the kernel values
@@ -1296,6 +1296,22 @@ public:
 
   virtual ~TrackerGOTURN() {}
 };
+
+/** @brief the MOSSE tracker
+note, that this tracker works with grayscale images, if passed bgr ones, they will get converted internally.
+@cite MOSSE Visual Object Tracking using Adaptive Correlation Filters
+*/
+
+class CV_EXPORTS_W TrackerMOSSE : public Tracker
+{
+ public:
+  /** @brief Constructor
+  */
+  CV_WRAP static Ptr<TrackerMOSSE> create();
+
+  virtual ~TrackerMOSSE() {}
+};
+
 
 /************************************ MultiTracker Class ---By Laksono Kurnianggoro---) ************************************/
 /** @brief This class is used to track multiple objects using the specified tracker algorithm.

@@ -64,7 +64,7 @@ size_t hash( unsigned int a)
 hashtable_int *hashtableCreate(size_t size, size_t (*hashfunc)(unsigned int))
 {
     hashtable_int *hashtbl;
-    
+
     if (size < 16)
     {
         size = 16;
@@ -73,25 +73,25 @@ hashtable_int *hashtableCreate(size_t size, size_t (*hashfunc)(unsigned int))
     {
         size = (size_t)next_power_of_two((unsigned int)size);
     }
-    
-	hashtbl=(hashtable_int*)malloc(sizeof(hashtable_int));
+
+    hashtbl=(hashtable_int*)malloc(sizeof(hashtable_int));
     if (!hashtbl)
         return NULL;
-        
-	hashtbl->nodes=(hashnode_i**)calloc(size, sizeof(struct hashnode_i*));
+
+    hashtbl->nodes=(hashnode_i**)calloc(size, sizeof(struct hashnode_i*));
     if (!hashtbl->nodes)
     {
         free(hashtbl);
         return NULL;
     }
-    
+
     hashtbl->size=size;
-    
+
     if (hashfunc)
         hashtbl->hashfunc=hashfunc;
     else
         hashtbl->hashfunc=hash;
-        
+
     return hashtbl;
 }
 
@@ -100,7 +100,7 @@ void hashtableDestroy(hashtable_int *hashtbl)
 {
     size_t n;
     struct hashnode_i *node, *oldnode;
-    
+
     for (n=0; n<hashtbl->size; ++n)
     {
         node=hashtbl->nodes[n];
@@ -120,10 +120,10 @@ int hashtableInsert(hashtable_int *hashtbl, KeyType key, void *data)
 {
     struct hashnode_i *node;
     size_t hash=hashtbl->hashfunc(key)%hashtbl->size;
-    
-    
+
+
     /* fpruintf(stderr, "hashtbl_insert() key=%s, hash=%d, data=%s\n", key, hash, (char*)data);*/
-    
+
     node=hashtbl->nodes[hash];
     while (node)
     {
@@ -134,18 +134,18 @@ int hashtableInsert(hashtable_int *hashtbl, KeyType key, void *data)
         }
         node=node->next;
     }
-    
-    
-	node=(hashnode_i*)malloc(sizeof(struct hashnode_i));
+
+
+    node=(hashnode_i*)malloc(sizeof(struct hashnode_i));
     if (!node)
         return -1;
     node->key=key;
-    
+
     node->data=data;
     node->next=hashtbl->nodes[hash];
     hashtbl->nodes[hash]=node;
-    
-    
+
+
     return 0;
 }
 
@@ -153,10 +153,10 @@ int hashtableInsertHashed(hashtable_int *hashtbl, KeyType key, void *data)
 {
     struct hashnode_i *node;
     size_t hash = key % hashtbl->size;
-    
-    
+
+
     /* fpruintf(stderr, "hashtbl_insert() key=%s, hash=%d, data=%s\n", key, hash, (char*)data);*/
-    
+
     node=hashtbl->nodes[hash];
     while (node)
     {
@@ -167,18 +167,18 @@ int hashtableInsertHashed(hashtable_int *hashtbl, KeyType key, void *data)
         }
         node=node->next;
     }
-    
-	node=(hashnode_i*)malloc(sizeof(struct hashnode_i));
+
+    node=(hashnode_i*)malloc(sizeof(struct hashnode_i));
     if (!node)
         return -1;
-		
+
     node->key=key;
-    
+
     node->data=data;
     node->next=hashtbl->nodes[hash];
     hashtbl->nodes[hash]=node;
-    
-    
+
+
     return 0;
 }
 
@@ -187,7 +187,7 @@ int hashtableRemove(hashtable_int *hashtbl, KeyType key)
 {
     struct hashnode_i *node, *prevnode=NULL;
     size_t hash=hashtbl->hashfunc(key)%hashtbl->size;
-    
+
     node=hashtbl->nodes[hash];
     while (node)
     {
@@ -203,7 +203,7 @@ int hashtableRemove(hashtable_int *hashtbl, KeyType key)
         prevnode=node;
         node=node->next;
     }
-    
+
     return -1;
 }
 
@@ -212,9 +212,9 @@ void *hashtableGet(hashtable_int *hashtbl, KeyType key)
 {
     struct hashnode_i *node;
     size_t hash=hashtbl->hashfunc(key)%hashtbl->size;
-    
+
     /* fprintf(stderr, "hashtbl_get() key=%s, hash=%d\n", key, hash);*/
-    
+
     node=hashtbl->nodes[hash];
     while (node)
     {
@@ -222,14 +222,14 @@ void *hashtableGet(hashtable_int *hashtbl, KeyType key)
             return node->data;
         node=node->next;
     }
-    
+
     return NULL;
 }
 
 hashnode_i* hashtableGetBucketHashed(hashtable_int *hashtbl, KeyType key)
 {
     size_t hash = key % hashtbl->size;
-    
+
     return hashtbl->nodes[hash];
 }
 
@@ -238,14 +238,14 @@ int hashtableResize(hashtable_int *hashtbl, size_t size)
     hashtable_int newtbl;
     size_t n;
     struct hashnode_i *node,*next;
-    
+
     newtbl.size=size;
     newtbl.hashfunc=hashtbl->hashfunc;
-    
-	newtbl.nodes=(hashnode_i**)calloc(size, sizeof(struct hashnode_i*));
+
+    newtbl.nodes=(hashnode_i**)calloc(size, sizeof(struct hashnode_i*));
     if (!newtbl.nodes)
         return -1;
-        
+
     for (n=0; n<hashtbl->size; ++n)
     {
         for (node=hashtbl->nodes[n]; node; node=next)
@@ -253,14 +253,14 @@ int hashtableResize(hashtable_int *hashtbl, size_t size)
             next = node->next;
             hashtableInsert(&newtbl, node->key, node->data);
             hashtableRemove(hashtbl, node->key);
-            
+
         }
     }
-    
+
     free(hashtbl->nodes);
     hashtbl->size=newtbl.size;
     hashtbl->nodes=newtbl.nodes;
-    
+
     return 0;
 }
 
@@ -270,24 +270,24 @@ int hashtableWrite(const hashtable_int * hashtbl, const size_t dataSize, FILE* f
     size_t hashMagic=T_HASH_MAGIC;
     size_t n=hashtbl->size;
     size_t i;
-    
+
     fwrite(&hashMagic, sizeof(size_t),1, f);
     fwrite(&n, sizeof(size_t),1, f);
     fwrite(&dataSize, sizeof(size_t),1, f);
-    
+
     for (i=0; i<hashtbl->size; i++)
     {
         struct hashnode_i* node=hashtbl->nodes[i];
         size_t noEl=0;
-        
+
         while (node)
         {
             noEl++;
             node=node->next;
         }
-        
+
         fwrite(&noEl, sizeof(size_t),1, f);
-        
+
         node=hashtbl->nodes[i];
         while (node)
         {
@@ -296,7 +296,7 @@ int hashtableWrite(const hashtable_int * hashtbl, const size_t dataSize, FILE* f
             node=node->next;
         }
     }
-    
+
     return 1;
 }
 
@@ -305,13 +305,13 @@ void hashtablePrint(hashtable_int *hashtbl)
 {
     size_t n;
     struct hashnode_i *node,*next;
-    
+
     for (n=0; n<hashtbl->size; ++n)
     {
         for (node=hashtbl->nodes[n]; node; node=next)
         {
             next = node->next;
-			std::cout<<"Key : "<<node->key<<", Data : "<<node->data<<std::endl;
+            std::cout<<"Key : "<<node->key<<", Data : "<<node->data<<std::endl;
         }
     }
 }
@@ -321,7 +321,7 @@ hashtable_int *hashtableRead(FILE* f)
     size_t hashMagic = 0;
     size_t n = 0, status;
     hashtable_int *hashtbl = 0;
-    
+
     status = fread(&hashMagic, sizeof(size_t),1, f);
     if (status && hashMagic==T_HASH_MAGIC)
     {
@@ -329,20 +329,20 @@ hashtable_int *hashtableRead(FILE* f)
         size_t dataSize;
         status = fread(&n, sizeof(size_t),1, f);
         status = fread(&dataSize, sizeof(size_t),1, f);
-        
+
         hashtbl=hashtableCreate(n, hash);
-        
+
         for (i=0; i<hashtbl->size; i++)
         {
             size_t j=0;
             status = fread(&n, sizeof(size_t),1, f);
-            
+
             for (j=0; j<n; j++)
             {
                 int key=0;
                 void* data=0;
                 status = fread(&key, sizeof(KeyType), 1, f);
-                
+
                 if (dataSize>sizeof(void*))
                 {
                     data=malloc(dataSize);
@@ -355,7 +355,7 @@ hashtable_int *hashtableRead(FILE* f)
                 }
                 else
                     status = fread(&data, dataSize, 1, f);
-                    
+
                 hashtableInsert(hashtbl, key, data);
                 //free(key);
             }
@@ -363,7 +363,7 @@ hashtable_int *hashtableRead(FILE* f)
     }
     else
         return 0;
-        
+
     return hashtbl;
 }
 

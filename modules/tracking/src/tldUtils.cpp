@@ -151,52 +151,12 @@ void getClosestN(std::vector<Rect2d>& scanGrid, Rect2d bBox, int n, std::vector<
 double variance(const Mat& img)
 {
     double p = 0, p2 = 0;
-    for( int i = 0; i < img.rows; i++ )
-    {
-        for( int j = 0; j < img.cols; j++ )
-        {
-            p += img.at<uchar>(i, j);
-            p2 += img.at<uchar>(i, j) * img.at<uchar>(i, j);
-        }
-    }
+    p = sum(img)(0);
+    p2 = norm(img, NORM_L2SQR);
     p /= (img.cols * img.rows);
     p2 /= (img.cols * img.rows);
+
     return p2 - p * p;
-}
-
-//Normalized Correlation Coefficient
-double NCC(const Mat_<uchar>& patch1, const Mat_<uchar>& patch2)
-{
-    CV_Assert( patch1.rows == patch2.rows );
-    CV_Assert( patch1.cols == patch2.cols );
-
-    int N = patch1.rows * patch1.cols;
-    int s1 = 0, s2 = 0, n1 = 0, n2 = 0, prod = 0;
-    for( int i = 0; i < patch1.rows; i++ )
-    {
-        for( int j = 0; j < patch1.cols; j++ )
-        {
-            int p1 = patch1(i, j), p2 = patch2(i, j);
-            s1 += p1; s2 += p2;
-            n1 += (p1 * p1); n2 += (p2 * p2);
-            prod += (p1 * p2);
-        }
-    }
-    double sq1 = sqrt(std::max(0.0, n1 - 1.0 * s1 * s1 / N)), sq2 = sqrt(std::max(0.0, n2 - 1.0 * s2 * s2 / N));
-    double ares = (sq2 == 0) ? sq1 / abs(sq1) : (prod - s1 * s2 / N) / sq1 / sq2;
-    return ares;
-}
-
-int getMedian(const std::vector<int>& values, int size)
-{
-    if( size == -1 )
-        size = (int)values.size();
-    std::vector<int> copy(values.begin(), values.begin() + size);
-    std::sort(copy.begin(), copy.end());
-    if( size % 2 == 0 )
-        return (copy[size / 2 - 1] + copy[size / 2]) / 2;
-    else
-        return copy[(size - 1) / 2];
 }
 
 //Overlap between two BB

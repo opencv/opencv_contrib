@@ -69,29 +69,29 @@ struct training_sample{
 class FacemarkKazemiImpl : public FacemarkKazemi{
 
 public:
-    FacemarkKazemiImpl( const FacemarkKazemi::Params &parameters = FacemarkKazemi::Params() );
+    FacemarkKazemiImpl(const FacemarkKazemi::Params& parameters);
     void loadModel(String fs);
-    bool setFaceDetector(bool(*f)(InputArray , OutputArray ));
-    bool getFaces( InputArray image , OutputArray faces);
-    bool fit( InputArray image, InputArray faces, InputOutputArray landmarks );
+    bool setFaceDetector(FN_FaceDetector f, void* userdata);
+    bool getFaces(InputArray image, OutputArray faces);
+    bool fit(InputArray image, InputArray faces, InputOutputArray landmarks );
     void training(String imageList, String groundTruth);
     bool training(vector<Mat>& images, vector< vector<Point2f> >& landmarks,string filename,Size scale,string modelFilename);
     // Destructor for the class.
     virtual ~FacemarkKazemiImpl();
 
 protected:
-    FacemarkKazemi :: Params params;
+    FacemarkKazemi::Params params;
     float minmeanx;
     float maxmeanx;
     float minmeany;
     float maxmeany;
-    bool isSetDetector;
     bool isModelLoaded;
     /* meanshape This is a vector which stores the mean shape of all the images used in training*/
     std::vector<Point2f> meanshape;
     std::vector< std::vector<regtree> > loaded_forests;
     std::vector< std::vector<Point2f> > loaded_pixel_coordinates;
-    bool (*faceDetector)(InputArray , OutputArray);
+    FN_FaceDetector faceDetector;
+    void* faceDetectorData;
     bool findNearestLandmarks(std::vector< std::vector<int> >& nearest);
     /*Extract left node of the current node in the regression tree*/
     unsigned long left(unsigned long index);

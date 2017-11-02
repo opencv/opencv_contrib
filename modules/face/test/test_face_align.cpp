@@ -11,9 +11,9 @@
 using namespace std;
 using namespace cv;
 using namespace cv::face;
-CascadeClassifier face_cascade;
-bool myDetector( InputArray image, OutputArray ROIs );
-bool myDetector( InputArray image, OutputArray ROIs ){
+
+static bool myDetector( InputArray image, OutputArray ROIs, CascadeClassifier* face_cascade)
+{
     Mat gray;
     std::vector<Rect> faces;
     if(image.channels()>1){
@@ -23,7 +23,7 @@ bool myDetector( InputArray image, OutputArray ROIs ){
         gray = image.getMat().clone();
     }
     equalizeHist( gray, gray );
-    face_cascade.detectMultiScale( gray, faces, 1.1, 3,0, Size(30, 30) );
+    face_cascade->detectMultiScale( gray, faces, 1.1, 3, 0, Size(30, 30) );
     Mat(faces).copyTo(ROIs);
     return true;
 }
@@ -31,24 +31,26 @@ bool myDetector( InputArray image, OutputArray ROIs ){
 TEST(CV_Face_FacemarkKazemi, can_create_default) {
     string cascade_name = cvtest::findDataFile("face/lbpcascade_frontalface_improved.xml", true);
     string configfile_name = cvtest::findDataFile("face/config.xml", true);
+    CascadeClassifier face_cascade;
     EXPECT_TRUE(face_cascade.load(cascade_name));
     FacemarkKazemi::Params params;
     params.configfile = configfile_name;
-    Ptr<Facemark> facemark;
+    Ptr<FacemarkKazemi> facemark;
     EXPECT_NO_THROW(facemark = FacemarkKazemi::create(params));
-    EXPECT_TRUE(facemark->setFaceDetector(myDetector));
+    EXPECT_TRUE(facemark->setFaceDetector((cv::face::FN_FaceDetector)myDetector, &face_cascade));
     EXPECT_FALSE(facemark.empty());
 }
 
 TEST(CV_Face_FacemarkKazemi, can_loadTrainingData) {
     string filename = cvtest::findDataFile("face/lbpcascade_frontalface_improved.xml", true);
     string configfile_name = cvtest::findDataFile("face/config.xml", true);
+    CascadeClassifier face_cascade;
     EXPECT_TRUE(face_cascade.load(filename));
     FacemarkKazemi::Params params;
     params.configfile = configfile_name;
-    Ptr<Facemark> facemark;
+    Ptr<FacemarkKazemi> facemark;
     EXPECT_NO_THROW(facemark = FacemarkKazemi::create(params));
-    EXPECT_TRUE(facemark->setFaceDetector(myDetector));
+    EXPECT_TRUE(facemark->setFaceDetector((cv::face::FN_FaceDetector)myDetector, &face_cascade));
     vector<String> filenames;
     filename = cvtest::findDataFile("face/1.txt", true);
     filenames.push_back(filename);
@@ -73,11 +75,12 @@ TEST(CV_Face_FacemarkKazemi, can_loadTrainingData) {
 }
 TEST(CV_Face_FacemarkKazemi, can_detect_landmarks) {
     string cascade_name = cvtest::findDataFile("face/lbpcascade_frontalface_improved.xml", true);
+    CascadeClassifier face_cascade;
     face_cascade.load(cascade_name);
     FacemarkKazemi::Params params;
-    Ptr<Facemark> facemark;
+    Ptr<FacemarkKazemi> facemark;
     EXPECT_NO_THROW(facemark = FacemarkKazemi::create(params));
-    EXPECT_TRUE(facemark->setFaceDetector(myDetector));
+    EXPECT_TRUE(facemark->setFaceDetector((cv::face::FN_FaceDetector)myDetector, &face_cascade));
     string imgname = cvtest::findDataFile("face/detect.jpg");
     string modelfilename = cvtest::findDataFile("face/face_landmark_model.dat",true);
     Mat img = imread(imgname);

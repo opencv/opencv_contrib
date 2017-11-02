@@ -23,7 +23,6 @@ protected:
         std::vector<Mat> layers;
         Octave(std::vector<Mat> layers);
         virtual ~Octave();
-        std::vector<Mat> getLayers();
         Mat getLayerAt(int i);
     };
 
@@ -277,14 +276,6 @@ void Pyramid::Params::clear()
  * Create an Octave with layers
  */
 Pyramid::Octave::Octave(std::vector<Mat> _layers) : layers(_layers) {}
-
-/**
- * Return layers of the Octave
- */
-std::vector<Mat> Pyramid::Octave::getLayers()
-{
-    return layers;
-}
 
 /**
  * Return the Octave's layer at index i

@@ -21,8 +21,8 @@
 #include "opencv2/opencv_modules.hpp"
 #include "cvconfig.h"
 
-#ifdef HAVE_OPENCV_OCL
-#  include "opencv2/ocl.hpp"
+#ifdef HAVE_OPENCL
+#  include "opencv2/core/ocl.hpp"
 #endif
 
 #ifdef HAVE_CUDA

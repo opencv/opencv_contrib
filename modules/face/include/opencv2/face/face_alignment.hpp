@@ -8,7 +8,7 @@
 
 namespace cv{
 namespace face{
-class CV_EXPORTS_W FacemarkKazemi : public Facemark
+class CV_EXPORTS_W FacemarkKazemi : public Algorithm
 {
 public:
     struct CV_EXPORTS Params
@@ -38,7 +38,34 @@ public:
     };
     static Ptr<FacemarkKazemi> create(const FacemarkKazemi::Params &parameters = FacemarkKazemi::Params());
     virtual ~FacemarkKazemi();
+
+    /// @brief training the facemark model, input are the file names of image list and landmark annotation
+    virtual void training(String imageList, String groundTruth)=0;
+    /** @brief This function is used to train the model using gradient boosting to get a cascade of regressors
+    *which can then be used to predict shape.
+    *@param images A vector of type cv::Mat which stores the images which are used in training samples.
+    *@param landmarks A vector of vectors of type cv::Point2f which stores the landmarks detected in a particular image.
+    *@param scale A size of type cv::Size to which all images and landmarks have to be scaled to.
+    *@param configfile A variable of type std::string which stores the name of the file storing parameters for training the model.
+    *@param modelFilename A variable of type std::string which stores the name of the trained model file that has to be saved.
+    *@returns A boolean value. The function returns true if the model is trained properly or false if it is not trained.
+    */
+    virtual bool training(std::vector<Mat>& images, std::vector< std::vector<Point2f> >& landmarks,std::string configfile,Size scale,std::string modelFilename = "face_landmarks.dat")=0;
+    /** @brief This function is used to load the trained model..
+    *@param filename A variable of type cv::String which stores the name of the file in which trained model is stored.
+    */
+    virtual void loadModel(String filename)=0;
+    /** @brief This functions retrieves a centered and scaled face shape, according to the bounding rectangle.
+    *@param image A variable of type cv::InputArray which stores the image whose landmarks have to be found
+    *@param faces A variable of type cv::InputArray which stores the bounding boxes of faces found in a given image.
+    *@param landmarks A variable of type cv::InputOutputArray which stores the landmarks of all the faces found in the image
+    */
+    virtual bool fit( InputArray image, InputArray faces, InputOutputArray landmarks )=0;//!< from many ROIs
+    /// set the custom face detector
+    virtual bool setFaceDetector(bool(*f)(InputArray , OutputArray, void*), void* userData)=0;
+    /// get faces using the custom detector
+    virtual bool getFaces(InputArray image, OutputArray faces)=0;
 };
-}//cv
-}//face
+
+}} // namespace
 #endif

@@ -28,9 +28,9 @@ The aruco module provides the ```cv::aruco::CharucoBoard``` class that represent
 
 This class, as the rest of ChArUco functionalities, are defined in:
 
-``` c++
+@code{.cpp}
     #include <opencv2/aruco/charuco.hpp>
-```
+@endcode
 
 To define a ```CharucoBoard```, it is necesary:
 
@@ -44,9 +44,9 @@ To define a ```CharucoBoard```, it is necesary:
 As for the ```GridBoard``` objects, the aruco module provides a function to create ```CharucoBoard```s easily. This function
 is the static function ```cv::aruco::CharucoBoard::create()``` :
 
-``` c++
+@code{.cpp}
     cv::aruco::CharucoBoard board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
-```
+@endcode
 
 - The first and second parameters are the number of squares in X and Y direction respectively.
 - The third and fourth parameters are the length of the squares and the markers respectively. They can be provided
@@ -57,13 +57,13 @@ The ids of each of the markers are assigned by default in ascending order and st
 This can be easily customized by accessing to the ids vector through ```board.ids```, like in the ```Board``` parent class.
 
 Once we have our ```CharucoBoard``` object, we can create an image to print it. This can be done with the
-```CharucoBoard::draw()``` method:
+<code>CharucoBoard::draw()</code> method:
 
-``` c++
+@code{.cpp}
     cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
     cv::Mat boardImage;
     board->draw( cv::Size(600, 500), boardImage, 10, 1 );
-```
+@endcode
 
 - The first parameter is the size of the output image in pixels. In this case 600x500 pixels. If this is not proportional
 to the board dimensions, it will be centered on the image.
@@ -79,9 +79,9 @@ The output image will be something like this:
 A full working example is included in the ```create_board_charuco.cpp``` inside the module samples folder.
 
 Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
-``` c++
+@code{.cpp}
     "_ output path_/chboard.png" -w=5 -h=7 -sl=200 -ml=120 -d=10
-```
+@endcode
 
 
 ChArUco Board Detection
@@ -102,7 +102,7 @@ ChArUco corners are interpolated from markers.
 
 The function that detect the ChArUco corners is ```cv::aruco::interpolateCornersCharuco()``` . This example shows the whole process. First, markers are detected, and then the ChArUco corners are interpolated from these markers.
 
-``` c++
+@code{.cpp}
     cv::Mat inputImage;
     cv::Mat cameraMatrix, distCoeffs;
     // camera parameters are read from somewhere
@@ -120,7 +120,7 @@ The function that detect the ChArUco corners is ```cv::aruco::interpolateCorners
         std::vector<int> charucoIds;
         cv::aruco::interpolateCornersCharuco(markerCorners, markerIds, inputImage, board, charucoCorners, charucoIds, cameraMatrix, distCoeffs);
     }
-```
+@endcode
 
 The parameters of the ```interpolateCornersCharuco()``` function are:
 - ```markerCorners``` and ```markerIds```: the detected markers from ```detectMarkers()``` function.
@@ -134,7 +134,7 @@ in the ChArUco corners.
 In this case, we have call ```interpolateCornersCharuco()``` providing the camera calibration parameters. However these parameters
 are optional. A similar example without these parameters would be:
 
-``` c++
+@code{.cpp}
     cv::Mat inputImage;
     cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
     cv::Ptr<cv::aruco::CharucoBoard> board = cv::aruco::CharucoBoard::create(5, 7, 0.04, 0.02, dictionary);
@@ -151,7 +151,7 @@ are optional. A similar example without these parameters would be:
         std::vector<int> charucoIds;
         cv::aruco::interpolateCornersCharuco(markerCorners, markerIds, inputImage, board, charucoCorners, charucoIds);
     }
-```
+@endcode
 
 If calibration parameters are provided, the ChArUco corners are interpolated by, first, estimating a rough pose from the ArUco markers
 and, then, reprojecting the ChArUco corners back to the image.
@@ -176,9 +176,9 @@ After the ChArUco corners have been interpolated, a subpixel refinement is perfo
 Once we have interpolated the ChArUco corners, we would probably want to draw them to see if their detections are correct.
 This can be easily done using the ```drawDetectedCornersCharuco()``` function:
 
-``` c++
+@code{.cpp}
     cv::aruco::drawDetectedCornersCharuco(image, charucoCorners, charucoIds, color);
-```
+@endcode
 
 - ```image``` is the image where the corners will be drawn (it will normally be the same image where the corners were detected).
 - The ```outputImage``` will be a clone of ```inputImage``` with the corners drawn.
@@ -199,7 +199,7 @@ In the presence of occlusion. like in the following image, although some corners
 
 Finally, this is a full example of ChArUco detection (without using calibration parameters):
 
-``` c++
+@code{.cpp}
     cv::VideoCapture inputVideo;
     inputVideo.open(0);
 
@@ -235,7 +235,7 @@ Finally, this is a full example of ChArUco detection (without using calibration 
         if (key == 27)
             break;
     }
-```
+@endcode
 
 Sample video:
 
@@ -246,9 +246,9 @@ Sample video:
 A full working example is included in the ```detect_board_charuco.cpp``` inside the module samples folder.
 
 Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
-``` c++
+@code{.cpp}
     -c="_path_/calib.txt" -dp="_path_/detector_params.yml" -w=5 -h=7 -sl=0.04 -ml=0.02 -d=10
-```
+@endcode
 
 ChArUco Pose Estimation
 ------
@@ -260,9 +260,9 @@ of the ```CharucoBoard``` is placed in the board plane with the Z axis pointing 
 
 The function for pose estimation is ```estimatePoseCharucoBoard()```:
 
-``` c++
+@code{.cpp}
     cv::aruco::estimatePoseCharucoBoard(charucoCorners, charucoIds, board, cameraMatrix, distCoeffs, rvec, tvec);
-```
+@endcode
 
 - The ```charucoCorners``` and ```charucoIds``` parameters are the detected charuco corners from the ```interpolateCornersCharuco()```
 function.
@@ -278,7 +278,7 @@ The axis can be drawn using ```drawAxis()``` to check the pose is correctly esti
 
 A full example of ChArUco detection with pose estimation:
 
-``` c++
+@code{.cpp}
     cv::VideoCapture inputVideo;
     inputVideo.open(0);
 
@@ -319,11 +319,11 @@ A full example of ChArUco detection with pose estimation:
         if (key == 27)
             break;
     }
-```
+@endcode
 
 A full working example is included in the ```detect_board_charuco.cpp``` inside the module samples folder.
 
 Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
-``` c++
+@code{.cpp}
     "_path_/calib.txt" -dp="_path_/detector_params.yml" -w=5 -h=7 -sl=0.04 -ml=0.02 -d=10
-```
+@endcode

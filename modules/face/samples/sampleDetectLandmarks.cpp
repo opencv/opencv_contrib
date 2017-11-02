@@ -11,22 +11,20 @@ using namespace std;
 using namespace cv;
 using namespace cv::face;
 
-CascadeClassifier face_cascade;
-bool myDetector( InputArray image, OutputArray ROIs );
-
-bool myDetector( InputArray image, OutputArray ROIs ){
+static bool myDetector(InputArray image, OutputArray faces, CascadeClassifier *face_cascade)
+{
     Mat gray;
-    std::vector<Rect> faces;
 
-    if(image.channels()>1){
-        cvtColor(image.getMat(),gray,COLOR_BGR2GRAY);
-    }else{
+    if (image.channels() > 1)
+        cvtColor(image, gray, COLOR_BGR2GRAY);
+    else
         gray = image.getMat().clone();
-    }
-    equalizeHist( gray, gray );
 
-    face_cascade.detectMultiScale( gray, faces, 1.05, 3,0, Size(30, 30) );
-    Mat(faces).copyTo(ROIs);
+    equalizeHist(gray, gray);
+
+    std::vector<Rect> faces_;
+    face_cascade->detectMultiScale(gray, faces_, 1.4, 2, CASCADE_SCALE_IMAGE, Size(30, 30));
+    Mat(faces_).copyTo(faces);
     return true;
 }
 
@@ -63,12 +61,14 @@ int main(int argc,char** argv){
         return -1;
     }
 
-    //pass the face cascade xml file which you want to pass as a detector
     Mat img = imread(image);
+
+    //pass the face cascade xml file which you want to pass as a detector
+    CascadeClassifier face_cascade;
     face_cascade.load(cascade_name);
     FacemarkKazemi::Params params;
-    Ptr<Facemark> facemark = FacemarkKazemi::create(params);
-    facemark->setFaceDetector(myDetector);
+    Ptr<FacemarkKazemi> facemark = FacemarkKazemi::create(params);
+    facemark->setFaceDetector((FN_FaceDetector)myDetector, &face_cascade);
     facemark->loadModel(filename);
     cout<<"Loaded model"<<endl;
     vector<Rect> faces;

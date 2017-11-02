@@ -19,33 +19,29 @@ unsigned long FacemarkKazemiImpl::left(unsigned long index){
 unsigned long FacemarkKazemiImpl::right(unsigned long index){
     return 2*index+2;
 }
-bool FacemarkKazemiImpl::setFaceDetector(bool(*f)(InputArray , OutputArray )){
+bool FacemarkKazemiImpl::setFaceDetector(FN_FaceDetector f, void* userData){
     faceDetector = f;
-    isSetDetector = true;
-    printf("face detector is configured\n");
+    faceDetectorData = userData;
+    //printf("face detector is configured\n");
     return true;
 }
-bool FacemarkKazemiImpl::getFaces( InputArray image , OutputArray roi){
-    if(!isSetDetector){
-        return false;
-    }
-    std::vector<Rect> faces;
-    faces.clear();
-    faceDetector(image.getMat(), faces);
-    Mat(faces).copyTo(roi);
-    return true;
+bool FacemarkKazemiImpl::getFaces(InputArray image, OutputArray faces)
+{
+    CV_Assert(faceDetector);
+    return faceDetector(image, faces, faceDetectorData);
 }
-FacemarkKazemiImpl::FacemarkKazemiImpl( const FacemarkKazemi::Params &parameters )
+FacemarkKazemiImpl::FacemarkKazemiImpl(const FacemarkKazemi::Params& parameters) :
+    faceDetector(NULL),
+    faceDetectorData(NULL)
 {
     minmeanx=8000.0;
     maxmeanx=0.0;
     minmeany=8000.0;
     maxmeany=0.0;
-    isSetDetector =false;
     isModelLoaded =false;
     params = parameters;
 }
-FacemarkKazemi :: Params :: Params(){
+FacemarkKazemi::Params::Params(){
     //These variables are used for training data
     //These are initialised as described in the research paper
     //referenced above
@@ -58,7 +54,7 @@ FacemarkKazemi :: Params :: Params(){
     lambda = float(0.1);
     num_test_splits = 20;
 }
-bool FacemarkKazemiImpl :: convertToActual(Rect r,Mat &warp){
+bool FacemarkKazemiImpl::convertToActual(Rect r,Mat &warp){
     Point2f srcTri[3],dstTri[3];
     srcTri[0]=Point2f(0,0);
     srcTri[1]=Point2f(1,0);
@@ -69,7 +65,7 @@ bool FacemarkKazemiImpl :: convertToActual(Rect r,Mat &warp){
     warp=getAffineTransform(srcTri,dstTri);
     return true;
 }
-bool FacemarkKazemiImpl :: convertToUnit(Rect r,Mat &warp){
+bool FacemarkKazemiImpl::convertToUnit(Rect r,Mat &warp){
     Point2f srcTri[3],dstTri[3];
     dstTri[0]=Point2f(0,0);
     dstTri[1]=Point2f(1,0);
@@ -80,7 +76,7 @@ bool FacemarkKazemiImpl :: convertToUnit(Rect r,Mat &warp){
     warp=getAffineTransform(srcTri,dstTri);
     return true;
 }
-bool FacemarkKazemiImpl :: setMeanExtreme(){
+bool FacemarkKazemiImpl::setMeanExtreme(){
     if(meanshape.empty()){
         String error_message = "Model not loaded properly.No mean shape found.Aborting...";
         CV_ErrorNoReturn(Error::StsBadArg, error_message);
@@ -98,13 +94,11 @@ bool FacemarkKazemiImpl :: setMeanExtreme(){
     }
     return true;
 }
-bool FacemarkKazemiImpl :: calcMeanShape (vector< vector<Point2f> >& trainlandmarks,vector<Mat>& trainimages,std::vector<Rect>& faces){
+bool FacemarkKazemiImpl::calcMeanShape (vector< vector<Point2f> >& trainlandmarks,vector<Mat>& trainimages,std::vector<Rect>& faces){
     //clear the loaded meanshape
     if(trainimages.empty()||trainlandmarks.size()!=trainimages.size()) {
         // throw error if no data (or simply return -1?)
-        String error_message = "Number of images is not equal to corresponding landmarks. Aborting...";
-        CV_ErrorNoReturn(Error::StsBadArg, error_message);
-        return false;
+        CV_ErrorNoReturn(Error::StsBadArg, "Number of images is not equal to corresponding landmarks. Aborting...");
     }
     meanshape.clear();
     vector<Mat> finalimages;
@@ -166,14 +160,12 @@ bool FacemarkKazemiImpl :: calcMeanShape (vector< vector<Point2f> >& trainlandma
     finallandmarks.clear();
     return true;
 }
-bool FacemarkKazemiImpl :: scaleData( vector< vector<Point2f> > & trainlandmarks,
+bool FacemarkKazemiImpl::scaleData( vector< vector<Point2f> > & trainlandmarks,
                                 vector<Mat> & trainimages ,Size s)
 {
     if(trainimages.empty()||trainimages.size()!=trainlandmarks.size()){
         // throw error if no data (or simply return -1?)
-        String error_message = "The data is not loaded properly by train function. Aborting...";
-        CV_ErrorNoReturn(Error::StsBadArg, error_message);
-        return false;
+        CV_ErrorNoReturn(Error::StsBadArg, "The data is not loaded properly by train function. Aborting...");
     }
     float scalex,scaley;
     //scale all images and their landmarks according  to input size

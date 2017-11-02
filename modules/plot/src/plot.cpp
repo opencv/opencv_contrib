@@ -57,9 +57,8 @@ namespace cv
         {
             public:
 
-            Plot2dImpl(InputArray plotData, bool _invertOrientation)
+            Plot2dImpl(InputArray plotData)
             {
-                invertOrientation = _invertOrientation;
                 Mat _plotData = plotData.getMat();
                 //if the matrix is not Nx1 or 1xN
                 if(_plotData.cols > 1 && _plotData.rows > 1)
@@ -85,9 +84,8 @@ namespace cv
 
             }
 
-            Plot2dImpl(InputArray plotDataX_, InputArray plotDataY_, bool _invertOrientation)
+            Plot2dImpl(InputArray plotDataX_, InputArray plotDataY_)
             {
-                invertOrientation = _invertOrientation;
                 Mat _plotDataX = plotDataX_.getMat();
                 Mat _plotDataY = plotDataY_.getMat();
                 //f the matrix is not Nx1 or 1xN
@@ -133,6 +131,10 @@ namespace cv
             void setPlotLineWidth(int _plotLineWidth)
             {
                 plotLineWidth = _plotLineWidth;
+            }
+            void setInvertOrientation(bool _invertOrientation)
+            {
+                invertOrientation = _invertOrientation;
             }
             void setNeedPlotLine(bool _needPlotLine)
             {
@@ -270,7 +272,7 @@ namespace cv
             double plotMinY_plusZero;
             double plotMaxY_plusZero;
             int plotLineWidth;
-			bool invertOrientation;
+            bool invertOrientation;
             bool needShowGrid;
             bool needShowText;
             int gridLinesNumber;
@@ -314,6 +316,7 @@ namespace cv
                 double MaxY_plusZero;
 
                 needPlotLine = true;
+                invertOrientation = false;
 
                 //Obtain the minimum and maximum values of Xdata
                 minMaxLoc(plotDataX,&MinX,&MaxX);
@@ -384,7 +387,6 @@ namespace cv
                     }
                 }
 
-
                 //Vertical Y axis
                 drawLine(ImageXzero, ImageXzero, 0, plotSizeHeight, axisColor);
                 LineSpace = cvRound(LineSpace * (float)plotSizeWidth / plotSizeHeight );
@@ -413,7 +415,6 @@ namespace cv
 
                     if(Ydata.at<double>(i,0)<0)
                         Ydata.at<double>(i,0)=0;
-
                 }
 
                 return Ydata;
@@ -457,18 +458,16 @@ namespace cv
 
                 line(plotResult, Axis_start, Axis_end, lineColor, plotLineWidth, 8, 0);
             }
-
         };
 
-        Ptr<Plot2d> Plot2d::create(InputArray _plotData, bool _invertOrientation)
+        Ptr<Plot2d> Plot2d::create(InputArray _plotData)
         {
-            return Ptr<Plot2dImpl> (new Plot2dImpl (_plotData, _invertOrientation));
-
+            return Ptr<Plot2dImpl> (new Plot2dImpl (_plotData));
         }
 
-        Ptr<Plot2d> Plot2d::create(InputArray _plotDataX, InputArray _plotDataY, bool _invertOrientation)
+        Ptr<Plot2d> Plot2d::create(InputArray _plotDataX, InputArray _plotDataY)
         {
-            return Ptr<Plot2dImpl> (new Plot2dImpl (_plotDataX, _plotDataY, _invertOrientation));
+            return Ptr<Plot2dImpl> (new Plot2dImpl (_plotDataX, _plotDataY));
         }
     }
 }

@@ -87,9 +87,9 @@ namespace cv
 			//Generate initial positive samples and put them to the model
 			positiveExamples.reserve(200);
 
-			for (int i = 0; i < (int)closest.size(); i++)
+            for (size_t i = 0; i < closest.size(); i++)
 			{
-				for (int j = 0; j < 20; j++)
+                for (size_t j = 0; j < 20; j++)
 				{
 					Point2f center;
 					Size2f size;
@@ -102,13 +102,15 @@ namespace cv
 
 					resample(scaledImg, RotatedRect(center, size, angle), standardPatch);
 
-					for (int y = 0; y < standardPatch.rows; y++)
-					{
-						for (int x = 0; x < standardPatch.cols; x++)
-						{
-							standardPatch(x, y) += (uchar)rng.gaussian(5.0);
-						}
-					}
+                    for( int y = 0; y < standardPatch.rows; y++ )
+                    {
+                        uchar* patchRow = standardPatch.ptr(y);
+                        for( int x = 0; x < standardPatch.cols; x++ )
+                        {
+                            int newValue = patchRow[x] + cvRound(rng.gaussian(5.0));
+                            patchRow[x] = saturate_cast<uchar>(newValue);
+                        }
+                    }
 
 #ifdef BLUR_AS_VADIM
 					GaussianBlur(standardPatch, blurredPatch, GaussBlurKernelSize, 0.0);

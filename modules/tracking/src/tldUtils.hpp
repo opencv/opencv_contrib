@@ -46,13 +46,8 @@ namespace cv
 		void resample(const Mat& img, const Rect2d& r2, Mat_<uchar>& samples);
 		/** Computes the variance of single given image.*/
 		double variance(const Mat& img);
-		/** Computes normalized corellation coefficient between the two patches (they should be
-		* of the same size).*/
-		double NCC(const Mat_<uchar>& patch1, const Mat_<uchar>& patch2);
 		void getClosestN(std::vector<Rect2d>& scanGrid, Rect2d bBox, int n, std::vector<Rect2d>& res);
 		double scaleAndBlur(const Mat& originalImg, int scale, Mat& scaledImg, Mat& blurredImg, Size GaussBlurKernelSize, double scaleStep);
-		int getMedian(const std::vector<int>& values, int size = -1);
-
 	}
 }
 

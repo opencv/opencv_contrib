@@ -47,3 +47,12 @@ Notes
 2. Tesseract configure script may fail to detect leptonica, so you may have to edit the configure script - comment off some if's around this message and retain only "then" branch.
 
 3. You are encouraged to search the Net for some better pre-trained classifiers, as well as classifiers for other languages.
+
+
+Text Detection CNN
+=================
+
+Intro
+-----
+
+The text module now have a text detection and recognition using deep CNN. The text detector deep CNN that takes an image which may contain multiple words. This outputs a list of Rects with bounding boxes and probability of text there. The text recognizer provides a probabillity over a given vocabulary for each of these rects.

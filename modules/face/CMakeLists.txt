@@ -7,7 +7,8 @@ ocv_define_module(face opencv_core
     WRAP python
 )
 # NOTE: objdetect module is needed for one of the samples
-set(__commit_hash "f181bca3d2c1f351c6c0188ab2fe5544a1e04d11")
+
+set(__commit_hash "8afa57abc8229d611c4937165d20e2a2d9fc5a12")
 set(__file_hash "7505c44ca4eb54b4ab1e4777cb96ac05")
 ocv_download(
     FILENAME face_landmark_model.dat
@@ -22,5 +23,5 @@ ocv_download(
     STATUS res
 )
 if(NOT res)
-  message(WARNING "Face: Can't get model file for face alignment. You can get it here: ...")
+  message(WARNING "Face: Can't get model file for face alignment.")
 endif()
