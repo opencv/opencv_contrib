@@ -54,6 +54,7 @@
 #include "ximgproc/deriche_filter.hpp"
 #include "ximgproc/peilin.hpp"
 #include "ximgproc/fourier_descriptors.hpp"
+#include "ximgproc/ridgefilter.hpp"
 
 
 /** @defgroup ximgproc Extended Image Processing

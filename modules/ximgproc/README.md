@@ -14,3 +14,4 @@ Extended Image Processing
 - Fast Line Detector
 - Deriche Filter
 - Pei&Lin Normalization
+- Ridge Detection Filter
