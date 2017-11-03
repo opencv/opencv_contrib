@@ -119,11 +119,20 @@ Mat getPatch(Mat image, Size patch_size, Point2f patch_center)
 
 class TrackerMedianFlowModel : public TrackerModel{
 public:
-    TrackerMedianFlowModel(TrackerMedianFlow::Params /*params*/){}
+    TrackerMedianFlowModel(TrackerMedianFlow::Params /*params*/, const Mat& image, const Rect2d boundingBox)
+    {
+        boundingBox_=boundingBox;
+        image.copyTo(image_);
+    }
+    ~TrackerMedianFlowModel(){image_.release();}
     Rect2d getBoundingBox(){return boundingBox_;}
     void setBoudingBox(Rect2d boundingBox){boundingBox_=boundingBox;}
     Mat getImage(){return image_;}
-    void setImage(const Mat& image){image.copyTo(image_);}
+    void setImage(const Mat& image)
+    {
+        image_.release();
+        image.copyTo(image_);
+    }
 protected:
     Rect2d boundingBox_;
     Mat image_;
@@ -142,9 +151,7 @@ void TrackerMedianFlowImpl::write( cv::FileStorage& fs ) const
 }
 
 bool TrackerMedianFlowImpl::initImpl( const Mat& image, const Rect2d& boundingBox ){
-    model=Ptr<TrackerMedianFlowModel>(new TrackerMedianFlowModel(params));
-    ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setImage(image);
-    ((TrackerMedianFlowModel*)static_cast<TrackerModel*>(model))->setBoudingBox(boundingBox);
+    model=Ptr<TrackerMedianFlowModel>(new TrackerMedianFlowModel(params, image, boundingBox));
     return true;
 }
 
