@@ -3,7 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 
 /*
-This file contains results of GSoC Project: Facemark API for OpenCV
+This file was part of GSoC Project: Facemark API for OpenCV
 Final report: https://gist.github.com/kurnianggoro/74de9121e122ad0bd825176751d47ecc
 Student: Laksono Kurnianggoro
 Mentor: Delia Passalacqua
@@ -72,6 +72,8 @@ cv::imshow("detection", frame);
 @endcode
 */
 CV_EXPORTS bool getFaces(InputArray image, OutputArray faces, CParams* params);
+
+CV_EXPORTS_W bool getFacesHAAR(InputArray image, OutputArray faces, const String& face_cascade_name);
 
 /** @brief A utility to load list of paths to training image and annotation file.
 @param imageList The specified file contains paths to the training images.
@@ -162,6 +164,25 @@ CV_EXPORTS_W bool loadTrainingData( String imageList, String groundTruth,
                                     std::vector<String> & images,
                                     OutputArray facePoints,
                                     float offset = 0.0f);
+
+/** @brief This function extracts the data for training from .txt files which contains the corresponding image name and landmarks.
+*The first file in each file should give the path of the image whose
+*landmarks are being described in the file. Then in the subsequent
+*lines there should be coordinates of the landmarks in the image
+*i.e each line should be of the form x,y
+*where x represents the x coordinate of the landmark and y represents
+*the y coordinate of the landmark.
+*
+*For reference you can see the files as provided in the
+*<a href="http://www.ifp.illinois.edu/~vuongle2/helen/">HELEN dataset</a>
+*
+* @param filename A vector of type cv::String containing name of the .txt files.
+* @param trainlandmarks A vector of type cv::Point2f that would store shape or landmarks of all images.
+* @param trainimages A vector of type cv::String which stores the name of images whose landmarks are tracked
+* @returns A boolean value. It returns true when it reads the data successfully and false otherwise
+*/
+CV_EXPORTS_W bool loadTrainingData(std::vector<String> filename,std::vector< std::vector<Point2f> >
+                          &trainlandmarks,std::vector<String> & trainimages);
 
 /** @brief A utility to load facial landmark information from a given file.
 

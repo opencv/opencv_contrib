@@ -3,16 +3,14 @@
 // of this distribution and at http://opencv.org/license.html.
 
 /*
-This file contains results of GSoC Project: Facemark API for OpenCV
+This file was part of GSoC Project: Facemark API for OpenCV
 Final report: https://gist.github.com/kurnianggoro/74de9121e122ad0bd825176751d47ecc
 Student: Laksono Kurnianggoro
 Mentor: Delia Passalacqua
 */
 
 #include "precomp.hpp"
-
 #include "opencv2/face.hpp"
-#include "opencv2/core.hpp"
 
 /*dataset parser*/
 #include <fstream>
@@ -201,6 +199,59 @@ bool loadFacePoints(String filename, OutputArray points, float offset){
     }
 
     Mat(pts).copyTo(points);
+    return true;
+}
+
+bool getFacesHAAR(InputArray image, OutputArray faces, const String& face_cascade_name)
+{
+    Mat gray;
+    vector<Rect> roi;
+    CascadeClassifier face_cascade;
+    CV_Assert(face_cascade.load(face_cascade_name) && "Can't loading face_cascade");
+    cvtColor(image.getMat(), gray, COLOR_BGR2GRAY);
+    equalizeHist(gray, gray);
+    face_cascade.detectMultiScale(gray, roi, 1.1, 2, 0|CASCADE_SCALE_IMAGE, Size(30, 30));
+    Mat(roi).copyTo(faces);
+    return true;
+}
+
+bool loadTrainingData(vector<String> filename,vector< vector<Point2f> >
+                          & trainlandmarks,vector<String> & trainimages)
+{
+    string img;
+    vector<Point2f> temp;
+    string s;
+    string tok;
+    vector<string> coordinates;
+    ifstream f1;
+    for(unsigned long j=0;j<filename.size();j++){
+        f1.open(filename[j].c_str(),ios::in);
+        if(!f1.is_open()){
+            cout<<filename[j]<<endl;
+            CV_ErrorNoReturn(Error::StsError, "File can't be opened for reading!");
+            return false;
+        }
+        //get the path of the image whose landmarks have to be detected
+        getline(f1,img);
+        //push the image paths in the vector
+        trainimages.push_back(img);
+        img.clear();
+        while(getline(f1,s)){
+            Point2f pt;
+            stringstream ss(s); // Turn the string into a stream.
+            while(getline(ss, tok,',')) {
+                coordinates.push_back(tok);
+                tok.clear();
+            }
+            pt.x = (float)atof(coordinates[0].c_str());
+            pt.y = (float)atof(coordinates[1].c_str());
+            coordinates.clear();
+            temp.push_back(pt);
+        }
+        trainlandmarks.push_back(temp);
+        temp.clear();
+        f1.close();
+    }
     return true;
 }
 

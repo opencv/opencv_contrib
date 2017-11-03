@@ -377,4 +377,6 @@ protected:
 #include "opencv2/face/facemark.hpp"
 #include "opencv2/face/facemarkLBF.hpp"
 #include "opencv2/face/facemarkAAM.hpp"
-#endif
+#include "opencv2/face/face_alignment.hpp"
+
+#endif // __OPENCV_FACE_HPP__
