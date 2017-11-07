@@ -40,6 +40,8 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 
 - **optflow**: Optical Flow -- Algorithms for running and evaluating deepflow, simpleflow, sparsetodenseflow and motion templates (silhouette flow).
 
+- **ovis**: OGRE 3D Visualiser -- allows you to render 3D data using the OGRE 3D engine.
+
 - **plot**: Plotting -- The plot module allows you to easily plot data in 1D or 2D.
 
 - **reg**: Image Registration -- Pixels based image registration for precise alignment. Follows the paper "Image Alignment and Stitching: A Tutorial", by Richard Szeliski.
