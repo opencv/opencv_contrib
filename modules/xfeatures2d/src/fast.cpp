@@ -331,8 +331,6 @@ namespace {
         int i, k, pixel[25];
         makeOffsets(pixel, (int)img.step, patternSize);
 
-        keypoints.clear();
-
         threshold = std::min(std::max(threshold, 0), 255);
 
         uchar threshold_tab[512];
