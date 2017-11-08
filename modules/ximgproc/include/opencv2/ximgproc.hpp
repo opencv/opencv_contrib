@@ -41,7 +41,6 @@
 #include "ximgproc/disparity_filter.hpp"
 #include "ximgproc/sparse_match_interpolator.hpp"
 #include "ximgproc/structured_edge_detection.hpp"
-#include "ximgproc/edgeboxes.hpp"
 #include "ximgproc/seeds.hpp"
 #include "ximgproc/segmentation.hpp"
 #include "ximgproc/fast_hough_transform.hpp"
@@ -53,9 +52,7 @@
 #include "ximgproc/fast_line_detector.hpp"
 #include "ximgproc/deriche_filter.hpp"
 #include "ximgproc/peilin.hpp"
-#include "ximgproc/fourier_descriptors.hpp"
-#include "ximgproc/ridgefilter.hpp"
-
+#include "ximgproc/brightedges.hpp"
 
 /** @defgroup ximgproc Extended Image Processing
   @{
@@ -64,8 +61,6 @@
 This module contains implementations of modern structured edge detection algorithms,
 i.e. algorithms which somehow takes into account pixel affinities in natural images.
 
-    @defgroup ximgproc_edgeboxes EdgeBoxes
-
     @defgroup ximgproc_filters Filters
 
     @defgroup ximgproc_superpixel Superpixels
@@ -73,9 +68,7 @@ i.e. algorithms which somehow takes into account pixel affinities in natural ima
     @defgroup ximgproc_segmentation Image segmentation
 
     @defgroup ximgproc_fast_line_detector Fast line detector
-
-    @defgroup ximgproc_fourier Fourier descriptors
-    @}
+  @}
 */
 
 namespace cv
