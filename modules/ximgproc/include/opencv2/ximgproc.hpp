@@ -41,6 +41,7 @@
 #include "ximgproc/disparity_filter.hpp"
 #include "ximgproc/sparse_match_interpolator.hpp"
 #include "ximgproc/structured_edge_detection.hpp"
+#include "ximgproc/edgeboxes.hpp"
 #include "ximgproc/seeds.hpp"
 #include "ximgproc/segmentation.hpp"
 #include "ximgproc/fast_hough_transform.hpp"
@@ -52,7 +53,8 @@
 #include "ximgproc/fast_line_detector.hpp"
 #include "ximgproc/deriche_filter.hpp"
 #include "ximgproc/peilin.hpp"
-#include "ximgproc/brightedges.hpp"
+#include "ximgproc/fourier_descriptors.hpp"
+#include "ximgproc/ridgefilter.hpp"
 
 /** @defgroup ximgproc Extended Image Processing
   @{
