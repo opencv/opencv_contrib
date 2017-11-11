@@ -247,10 +247,13 @@ namespace cv
 
 		equalizeHist(gray, cedge);
 
-		edge = Mat(cedge.size(), cedge.type());
-
+		
 		if (contrast > 0) {
+			edge = Mat(cedge.size(), cedge.type());
 			contrastEdges(cedge, edge, contrast);
+		}
+		else {
+			edge = cedge;
 		}
 
 	}
