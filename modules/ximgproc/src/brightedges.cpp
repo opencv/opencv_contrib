@@ -260,7 +260,7 @@ namespace cv
 
 		absdiff(gblur, bblur, diff);
 
-		cvtColor(diff, gray, CV_BGR2GRAY);
+		cvtColor(diff, gray, COLOR_BGR2GRAY);
 
 		equalizeHist(gray, cedge);
 
