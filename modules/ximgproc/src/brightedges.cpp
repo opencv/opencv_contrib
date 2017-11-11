@@ -41,44 +41,52 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 //M*/
-
-#include "precomp.hpp"
+#include "brightedges.hpp"
+#include "opencv2/opencv.hpp"
 #include <iostream>
 #include <signal.h>
-#include <opencv2/ximgproc.hpp>
 namespace cv
 {
-	namespace ximgproc
-	{
+
 	bool isPixelMinimum(Mat &edge, int row, int col, int contrast) {
 		int count = 0;
 		unsigned char *input = (unsigned char*)(edge.data);
-		int pixel = input[edge.cols * row + col] + contrast;
+		int pixel = input[edge.cols * row + col] + contrast - 1;
 		int m2 = input[edge.cols * (row - 2) + (col - 2)];
 		int m1 = input[edge.cols * (row - 1) + (col - 1)];
 		int p1 = input[edge.cols * (row + 1) + (col + 1)];
 		int p2 = input[edge.cols * (row + 2) + (col + 2)];
-		if ((pixel < (m1 + m2) / 2) && (pixel < (p1 + p2) / 2)) count++; // Local minimum diagonal
+		if ((pixel <= m1) && (pixel <= p1) && (pixel < (m1 + m2) / 2) && (pixel < (p1 + p2) / 2)) count++; // Local minimum diagonal
 		m2 = input[edge.cols * (row - 2) + (col)];
 		m1 = input[edge.cols * (row - 1) + (col)];
 		p1 = input[edge.cols * (row + 1) + (col)];
 		p2 = input[edge.cols * (row + 2) + (col)];
-		if ((pixel < (m1 + m2) / 2) && (pixel < (p1 + p2) / 2)) count++; // Local minimum diagonal
+		if ((pixel <= m1) && (pixel <= p1) && (pixel < (m1 + m2) / 2) && (pixel < (p1 + p2) / 2)) count++; // Local minimum vertical
 		m2 = input[edge.cols * (row - 2) + (col + 2)];
 		m1 = input[edge.cols * (row - 1) + (col + 1)];
 		p1 = input[edge.cols * (row + 1) + (col - 1)];
 		p2 = input[edge.cols * (row + 2) + (col - 2)];
-		if ((pixel < (m1 + m2) / 2) && (pixel < (p1 + p2) / 2)) count++; // Local minimum diagonal
+		if ((pixel <= m1) && (pixel <= p1) && (pixel < (m1 + m2) / 2) && (pixel < (p1 + p2) / 2)) count++; // Local minimum other diagonal
 		m2 = input[edge.cols * (row)+(col + 2)];
 		m1 = input[edge.cols * (row)+(col + 1)];
 		p1 = input[edge.cols * (row)+(col - 1)];
 		p2 = input[edge.cols * (row)+(col - 2)];
-		if ((pixel < (m1 + m2) / 2) && (pixel < (p1 + p2) / 2)) count++; // Local minimum diagonal
-		if (count > 1 ) return true; // Avoid corners of black zones
+
+		if ((pixel <= m1) && (pixel <= p1) && (pixel < (m1 + m2) / 2) && (pixel < (p1 + p2) / 2)) count++; // Local minimum horizontal
+
+		if (count > 1) return true; // Avoid corners of black zones
 		return false;
 	}
 	int correctPixel(Mat &iedge, int row, int col) {
 		unsigned char *input = (unsigned char*)(iedge.data);
+
+		int pixel =
+			input[iedge.cols * (row - 1) + (col - 1)] + input[iedge.cols * (row - 1) + col] +
+			input[iedge.cols * (row - 1) + (col + 1)] + input[iedge.cols * (row)+(col - 1)] +
+			input[iedge.cols * (row)+(col + 1)] + input[iedge.cols * (row + 1) + (col - 1)] +
+			input[iedge.cols * (row + 1) + (col)] + input[iedge.cols * (row + 1) + (col + 1)]
+			;
+
 
 		// now check in there is a line around pixel to fill gaps
 		// Around Diagonal top left to bottom right
@@ -177,16 +185,16 @@ namespace cv
 
 
 	}
-	
+
 	int contrastEdges(Mat &minput, Mat &mouput, int contrast) {
 
 		unsigned char *input = (unsigned char*)(mouput.data);
 
 		Mat mwork = minput.clone();
-		mwork.setTo(Scalar(255));
 
-		mouput.setTo(Scalar(255));
 		unsigned char *workdata = (unsigned char*)(mwork.data);
+
+		// Now find if other pixels inside are minimum
 		for (int row = 2; row < minput.rows - 2; row++) {
 			for (int col = 2; col < minput.cols - 2; col++) {
 				if (isPixelMinimum(minput, row, col, contrast)) {
@@ -197,20 +205,53 @@ namespace cv
 				}
 			}
 		}
-
+		// Set border of work matrix to white		
+		for (int col = 0; col < minput.cols; col++) {
+			for (int row = 0; row < 2; row++) {
+				workdata[mwork.cols * row + col] = 255;
+			}
+			for (int row = minput.rows - 2; row < minput.rows; row++) {
+				workdata[mwork.cols * row + col] = 255;
+			}
+		}
+		for (int row = 0; row < minput.rows; row++) {
+			for (int col = 0; col < 2; col++) {
+				workdata[mwork.cols * row + col] = 255;
+			}
+			for (int col = minput.cols - 2; col < minput.cols; col++) {
+				workdata[mwork.cols * row + col] = 255;
+			}
+		}
 		// correct pixels
 
 		for (int row = 2; row < mwork.rows - 2; row++) {
 			for (int col = 2; col < mwork.cols - 2; col++) {
-				input[mouput.cols * row + col] = (unsigned char)correctPixel(mwork, row, col);
+				input[mouput.cols * row + col] = correctPixel(mwork, row, col);
 			}
 		}
+		// Set border of output matrix to white	
 
+		for (int col = 0; col < mouput.cols; col++) {
+			for (int row = 0; row < 2; row++) {
+				input[mouput.cols * row + col] = 255;
+			}
+			for (int row = mouput.rows - 2; row < mouput.rows; row++) {
+				input[mouput.cols * row + col] = 255;
+			}
+		}
+		for (int row = 0; row < mouput.rows; row++) {
+			for (int col = 0; col < 2; col++) {
+				input[mouput.cols * row + col] = 255;
+			}
+			for (int col = mouput.cols - 2; col < mouput.cols; col++) {
+				input[mouput.cols * row + col] = 255;
+			}
+		}
 		return 0;
 	}
 	CV_EXPORTS_W  void BrightEdges(Mat &image, Mat &edge, int contrast, int shortrange, int longrange)
 	{
-		
+
 		Mat gray, gblur, bblur, diff, cedge;
 
 		GaussianBlur(image, gblur, Size(shortrange, shortrange), 0);
@@ -219,7 +260,7 @@ namespace cv
 
 		absdiff(gblur, bblur, diff);
 
-		cvtColor(diff, gray, COLOR_BGR2GRAY);
+		cvtColor(diff, gray, CV_BGR2GRAY);
 
 		equalizeHist(gray, cedge);
 
@@ -229,5 +270,5 @@ namespace cv
 			contrastEdges(cedge, edge, contrast);
 		}
 
-	}}
+	}
 }

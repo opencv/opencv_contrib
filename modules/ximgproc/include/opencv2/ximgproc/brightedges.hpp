@@ -41,14 +41,9 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 //M*/
-
-
 #include "opencv2/core.hpp"
-
 namespace cv
 {
-	namespace ximgproc
-	{
-		// CV_EXPORTS_W void  BrightEdges(Mat &_original, Mat &_edgeview, int contrast = 10, int shortrange = 3, int longrange = 9);
-	}
+	CV_EXPORTS_W void  BrightEdges(Mat &_original, Mat &_edgeview, int contrast = 1, int shortrange = 3, int longrange = 9);
+	
 }
