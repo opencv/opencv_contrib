@@ -41,8 +41,7 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 //M*/
-#include "brightedges.hpp"
-#include "opencv2/opencv.hpp"
+#include "precomp.hpp"
 #include <iostream>
 #include <signal.h>
 namespace cv
@@ -190,7 +189,7 @@ namespace cv
 
 		unsigned char *input = (unsigned char*)(mouput.data);
 
-		Mat mwork = minput.clone();
+		Mat mwork(minput.size(), minput.type(), Scalar(255));
 
 		unsigned char *workdata = (unsigned char*)(mwork.data);
 
@@ -205,23 +204,7 @@ namespace cv
 				}
 			}
 		}
-		// Set border of work matrix to white		
-		for (int col = 0; col < minput.cols; col++) {
-			for (int row = 0; row < 2; row++) {
-				workdata[mwork.cols * row + col] = 255;
-			}
-			for (int row = minput.rows - 2; row < minput.rows; row++) {
-				workdata[mwork.cols * row + col] = 255;
-			}
-		}
-		for (int row = 0; row < minput.rows; row++) {
-			for (int col = 0; col < 2; col++) {
-				workdata[mwork.cols * row + col] = 255;
-			}
-			for (int col = minput.cols - 2; col < minput.cols; col++) {
-				workdata[mwork.cols * row + col] = 255;
-			}
-		}
+		
 		// correct pixels
 
 		for (int row = 2; row < mwork.rows - 2; row++) {
