@@ -4,7 +4,7 @@ ocv_define_module(face opencv_core
     opencv_objdetect
     opencv_tracking     # estimateRigidTransform()
     opencv_photo        # samples
-    WRAP python
+    WRAP python java
 )
 # NOTE: objdetect module is needed for one of the samples
 
