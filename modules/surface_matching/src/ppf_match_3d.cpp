@@ -62,50 +62,47 @@ static int sortPoseClusters(const PoseCluster3DPtr& a, const PoseCluster3DPtr& b
 }
 
 // simple hashing
-/*static int hashPPFSimple(const double f[4], const double AngleStep, const double DistanceStep)
+/*static int hashPPFSimple(const Vec4d& f, const double AngleStep, const double DistanceStep)
 {
-  const unsigned char d1 = (unsigned char) (floor ((double)f[0] / (double)AngleStep));
-  const unsigned char d2 = (unsigned char) (floor ((double)f[1] / (double)AngleStep));
-  const unsigned char d3 = (unsigned char) (floor ((double)f[2] / (double)AngleStep));
-  const unsigned char d4 = (unsigned char) (floor ((double)f[3] / (double)DistanceStep));
+  Vec4i key(
+      (int)(f[0] / AngleStep),
+      (int)(f[1] / AngleStep),
+      (int)(f[2] / AngleStep),
+      (int)(f[3] / DistanceStep));
 
-  int hashKey = (d1 | (d2<<8) | (d3<<16) | (d4<<24));
+  int hashKey = d.val[0] | (d.val[1] << 8) | (d.val[2] << 16) | (d.val[3] << 24);
   return hashKey;
 }*/
 
 // quantize ppf and hash it for proper indexing
-static KeyType hashPPF(const double f[4], const double AngleStep, const double DistanceStep)
+static KeyType hashPPF(const Vec4d& f, const double AngleStep, const double DistanceStep)
 {
-  const int d1 = (int) (floor ((double)f[0] / (double)AngleStep));
-  const int d2 = (int) (floor ((double)f[1] / (double)AngleStep));
-  const int d3 = (int) (floor ((double)f[2] / (double)AngleStep));
-  const int d4 = (int) (floor ((double)f[3] / (double)DistanceStep));
-  int key[4]={d1,d2,d3,d4};
-  KeyType hashKey=0;
+  Vec4i key(
+      (int)(f[0] / AngleStep),
+      (int)(f[1] / AngleStep),
+      (int)(f[2] / AngleStep),
+      (int)(f[3] / DistanceStep));
+  KeyType hashKey = 0;
 
-  murmurHash(key, 4*sizeof(int), 42, &hashKey);
-
+  murmurHash(key.val, 4*sizeof(int), 42, &hashKey);
   return hashKey;
 }
 
-/*static size_t hashMurmur(unsigned int key)
+/*static size_t hashMurmur(uint key)
 {
   size_t hashKey=0;
   hashMurmurx86((void*)&key, 4, 42, &hashKey);
   return hashKey;
 }*/
 
-static double computeAlpha(const double p1[4], const double n1[4], const double p2[4])
+static double computeAlpha(const Vec3d& p1, const Vec3d& n1, const Vec3d& p2)
 {
-  double Tmg[3], mpt[3], row2[3], row3[3], alpha;
+  Vec3d Tmg, mpt;
+  Matx33d R;
+  double alpha;
 
-  computeTransformRTyz(p1, n1, row2, row3, Tmg);
-
-  // checked row2, row3: They are correct
-
-  mpt[1] = Tmg[1] + row2[0] * p2[0] + row2[1] * p2[1] + row2[2] * p2[2];
-  mpt[2] = Tmg[2] + row3[0] * p2[0] + row3[1] * p2[1] + row3[2] * p2[2];
-
+  computeTransformRT(p1, n1, R, Tmg);
+  mpt = Tmg + R * p2;
   alpha=atan2(-mpt[2], mpt[1]);
 
   if ( alpha != alpha)
@@ -167,35 +164,15 @@ void PPF3DDetector::setSearchParams(const double positionThreshold, const double
 }
 
 // compute per point PPF as in paper
-void PPF3DDetector::computePPFFeatures(const double p1[4], const double n1[4],
-                                       const double p2[4], const double n2[4],
-                                       double f[4])
+void PPF3DDetector::computePPFFeatures(const Vec3d& p1, const Vec3d& n1,
+                                       const Vec3d& p2, const Vec3d& n2,
+                                       Vec4d& f)
 {
-  /*
-  Vectors will be defined as of length 4 instead of 3, because of:
-  - Further SIMD vectorization
-  - Cache alignment
-  */
-
-  double d[4] = {p2[0] - p1[0], p2[1] - p1[1], p2[2] - p1[2], 0};
-
-  double norm = TNorm3(d);
-  f[3] = norm;
-
-  if (norm)
-  {
-    d[0] /= f[3];
-    d[1] /= f[3];
-    d[2] /= f[3];
-  }
-  else
-  {
-    // TODO: Handle this
-    f[0] = 0;
-    f[1] = 0;
-    f[2] = 0;
-    return ;
-  }
+  Vec3d d(p2 - p1);
+  f[3] = cv::norm(d);
+  if (f[3] <= EPS)
+    return;
+  d *= 1.0 / f[3];
 
   f[0] = TAngle3Normalized(n1, d);
   f[1] = TAngle3Normalized(n2, d);
@@ -228,7 +205,7 @@ void PPF3DDetector::trainModel(const Mat &PC)
   CV_Assert(PC.type() == CV_32F || PC.type() == CV_32FC1);
 
   // compute bbox
-  float xRange[2], yRange[2], zRange[2];
+  Vec2f xRange, yRange, zRange;
   computeBboxStd(PC, xRange, yRange, zRange);
 
   // compute sampling step from diameter of bbox
@@ -261,9 +238,8 @@ void PPF3DDetector::trainModel(const Mat &PC)
   // since this is just a training part.
   for (int i=0; i<numRefPoints; i++)
   {
-    float* f1 = sampled.ptr<float>(i);
-    const double p1[4] = {f1[0], f1[1], f1[2], 0};
-    const double n1[4] = {f1[3], f1[4], f1[5], 0};
+    const Vec3f p1(sampled.ptr<float>(i));
+    const Vec3f n1(sampled.ptr<float>(i) + 3);
 
     //printf("///////////////////// NEW REFERENCE ////////////////////////\n");
     for (int j=0; j<numRefPoints; j++)
@@ -271,15 +247,14 @@ void PPF3DDetector::trainModel(const Mat &PC)
       // cannnot compute the ppf with myself
       if (i!=j)
       {
-        float* f2 = sampled.ptr<float>(j);
-        const double p2[4] = {f2[0], f2[1], f2[2], 0};
-        const double n2[4] = {f2[3], f2[4], f2[5], 0};
+        const Vec3f p2(sampled.ptr<float>(j));
+        const Vec3f n2(sampled.ptr<float>(j) + 3);
 
-        double f[4]={0};
+        Vec4d f = Vec4d::all(0);
         computePPFFeatures(p1, n1, p2, n2, f);
         KeyType hashValue = hashPPF(f, angle_step_radians, distanceStep);
         double alpha = computeAlpha(p1, n1, p2);
-        unsigned int ppfInd = i*numRefPoints+j;
+        uint ppfInd = i*numRefPoints+j;
 
         THash* hashNode = &hash_nodes[i*numRefPoints+j];
         hashNode->id = hashValue;
@@ -288,12 +263,8 @@ void PPF3DDetector::trainModel(const Mat &PC)
 
         hashtableInsertHashed(hashTable, hashValue, (void*)hashNode);
 
-        float* ppfRow = ppf.ptr<float>(ppfInd);
-        ppfRow[0] = (float)f[0];
-        ppfRow[1] = (float)f[1];
-        ppfRow[2] = (float)f[2];
-        ppfRow[3] = (float)f[3];
-        ppfRow[4] = (float)alpha;
+        Mat(f).reshape(1, 1).convertTo(ppf.row(ppfInd).colRange(0, 4), CV_32F);
+        ppf.ptr<float>(ppfInd)[4] = (float)alpha;
       }
     }
   }
@@ -314,8 +285,8 @@ void PPF3DDetector::trainModel(const Mat &PC)
 bool PPF3DDetector::matchPose(const Pose3D& sourcePose, const Pose3D& targetPose)
 {
   // translational difference
-  double dv[3] = {targetPose.t[0]-sourcePose.t[0], targetPose.t[1]-sourcePose.t[1], targetPose.t[2]-sourcePose.t[2]};
-  double dNorm = sqrt(dv[0]*dv[0]+dv[1]*dv[1]+dv[2]*dv[2]);
+  Vec3d dv = targetPose.t - sourcePose.t;
+  double dNorm = cv::norm(dv);
 
   const double phi = fabs ( sourcePose.angle - targetPose.angle );
 
@@ -369,13 +340,14 @@ void PPF3DDetector::clusterPoses(std::vector<Pose3DPtr>& poseList, int numPoses,
     for (int i=0; i<static_cast<int>(poseClusters.size()); i++)
     {
       // We could only average the quaternions. So I will make use of them here
-      double qAvg[4]={0}, tAvg[3]={0};
+      Vec4d qAvg = Vec4d::all(0);
+      Vec3d tAvg = Vec3d::all(0);
 
       // Perform the final averaging
       PoseCluster3DPtr curCluster = poseClusters[i];
       std::vector<Pose3DPtr> curPoses = curCluster->poseList;
       int curSize = (int)curPoses.size();
-      int numTotalVotes = 0;
+      size_t numTotalVotes = 0;
 
       for (int j=0; j<curSize; j++)
         numTotalVotes += curPoses[j]->numVotes;
@@ -386,25 +358,13 @@ void PPF3DDetector::clusterPoses(std::vector<Pose3DPtr>& poseList, int numPoses,
       {
         const double w = (double)curPoses[j]->numVotes / (double)numTotalVotes;
 
-        qAvg[0]+= w*curPoses[j]->q[0];
-        qAvg[1]+= w*curPoses[j]->q[1];
-        qAvg[2]+= w*curPoses[j]->q[2];
-        qAvg[3]+= w*curPoses[j]->q[3];
-
-        tAvg[0]+= w*curPoses[j]->t[0];
-        tAvg[1]+= w*curPoses[j]->t[1];
-        tAvg[2]+= w*curPoses[j]->t[2];
-        wSum+=w;
+        qAvg += w * curPoses[j]->q;
+        tAvg += w * curPoses[j]->t;
+        wSum += w;
       }
 
-      tAvg[0]/=wSum;
-      tAvg[1]/=wSum;
-      tAvg[2]/=wSum;
-
-      qAvg[0]/=wSum;
-      qAvg[1]/=wSum;
-      qAvg[2]/=wSum;
-      qAvg[3]/=wSum;
+      tAvg *= 1.0 / wSum;
+      qAvg *= 1.0 / wSum;
 
       curPoses[0]->updatePoseQuat(qAvg, tAvg);
       curPoses[0]->numVotes=curCluster->numVotes;
@@ -420,7 +380,8 @@ void PPF3DDetector::clusterPoses(std::vector<Pose3DPtr>& poseList, int numPoses,
     for (int i=0; i<static_cast<int>(poseClusters.size()); i++)
     {
       // We could only average the quaternions. So I will make use of them here
-      double qAvg[4]={0}, tAvg[3]={0};
+      Vec4d qAvg = Vec4d::all(0);
+      Vec3d tAvg = Vec3d::all(0);
 
       // Perform the final averaging
       PoseCluster3DPtr curCluster = poseClusters[i];
@@ -429,24 +390,12 @@ void PPF3DDetector::clusterPoses(std::vector<Pose3DPtr>& poseList, int numPoses,
 
       for (int j=0; j<curSize; j++)
       {
-        qAvg[0]+= curPoses[j]->q[0];
-        qAvg[1]+= curPoses[j]->q[1];
-        qAvg[2]+= curPoses[j]->q[2];
-        qAvg[3]+= curPoses[j]->q[3];
-
-        tAvg[0]+= curPoses[j]->t[0];
-        tAvg[1]+= curPoses[j]->t[1];
-        tAvg[2]+= curPoses[j]->t[2];
+        qAvg += curPoses[j]->q;
+        tAvg += curPoses[j]->t;
       }
 
-      tAvg[0]/=(double)curSize;
-      tAvg[1]/=(double)curSize;
-      tAvg[2]/=(double)curSize;
-
-      qAvg[0]/=(double)curSize;
-      qAvg[1]/=(double)curSize;
-      qAvg[2]/=(double)curSize;
-      qAvg[3]/=(double)curSize;
+      tAvg *= 1.0 / curSize;
+      qAvg *= 1.0 / curSize;
 
       curPoses[0]->updatePoseQuat(qAvg, tAvg);
       curPoses[0]->numVotes=curCluster->numVotes;
@@ -473,12 +422,12 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
   //int numNeighbors = 10;
   int numAngles = (int) (floor (2 * M_PI / angle_step));
   float distanceStep = (float)distance_step;
-  unsigned int n = num_ref_points;
+  uint n = num_ref_points;
   std::vector<Pose3DPtr> poseList;
   int sceneSamplingStep = scene_sample_step;
 
   // compute bbox
-  float xRange[2], yRange[2], zRange[2];
+  Vec2f xRange, yRange, zRange;
   computeBboxStd(pc, xRange, yRange, zRange);
 
   // sample the point cloud
@@ -491,7 +440,7 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
 
   // allocate the accumulator : Moved this to the inside of the loop
   /*#if !defined (_OPENMP)
-     unsigned int* accumulator = (unsigned int*)calloc(numAngles*n, sizeof(unsigned int));
+     uint* accumulator = (uint*)calloc(numAngles*n, sizeof(uint));
   #endif*/
 
   poseList.reserve((sampled.rows/sceneSamplingStep)+4);
@@ -501,18 +450,16 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
 #endif
   for (int i = 0; i < sampled.rows; i += sceneSamplingStep)
   {
-    unsigned int refIndMax = 0, alphaIndMax = 0;
-    unsigned int maxVotes = 0;
+    uint refIndMax = 0, alphaIndMax = 0;
+    uint maxVotes = 0;
 
-    float* f1 = sampled.ptr<float>(i);
-    const double p1[4] = {f1[0], f1[1], f1[2], 0};
-    const double n1[4] = {f1[3], f1[4], f1[5], 0};
-    double *row2, *row3, tsg[3]={0}, Rsg[9]={0}, RInv[9]={0};
+    const Vec3f p1(sampled.ptr<float>(i));
+    const Vec3f n1(sampled.ptr<float>(i) + 3);
+    Vec3d tsg = Vec3d::all(0);
+    Matx33d Rsg = Matx33d::all(0), RInv = Matx33d::all(0);
 
-    unsigned int* accumulator = (unsigned int*)calloc(numAngles*n, sizeof(unsigned int));
+    uint* accumulator = (uint*)calloc(numAngles*n, sizeof(uint));
     computeTransformRT(p1, n1, Rsg, tsg);
-    row2=&Rsg[3];
-    row3=&Rsg[6];
 
     // Tolga Birdal's notice:
     // As a later update, we might want to look into a local neighborhood only
@@ -523,19 +470,16 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
     {
       if (i!=j)
       {
-        float* f2 = sampled.ptr<float>(j);
-        const double p2[4] = {f2[0], f2[1], f2[2], 0};
-        const double n2[4] = {f2[3], f2[4], f2[5], 0};
-        double p2t[4], alpha_scene;
+        const Vec3f p2(sampled.ptr<float>(j));
+        const Vec3f n2(sampled.ptr<float>(j) + 3);
+        Vec3d p2t;
+        double alpha_scene;
 
-        double f[4]={0};
+        Vec4d f = Vec4d::all(0);
         computePPFFeatures(p1, n1, p2, n2, f);
         KeyType hashValue = hashPPF(f, angle_step, distanceStep);
 
-        // we don't need to call this here, as we already estimate the tsg from scene reference point
-        // double alpha = computeAlpha(p1, n1, p2);
-        p2t[1] = tsg[1] + row2[0] * p2[0] + row2[1] * p2[1] + row2[2] * p2[2];
-        p2t[2] = tsg[2] + row3[0] * p2[0] + row3[1] * p2[1] + row3[2] * p2[2];
+        p2t = tsg + Rsg * Vec3d(p2);
 
         alpha_scene=atan2(-p2t[2], p2t[1]);
 
@@ -570,7 +514,7 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
           //printf("%f\n", alpha);
           int alpha_index = (int)(numAngles*(alpha + 2*M_PI) / (4*M_PI));
 
-          unsigned int accIndex = corrI * numAngles + alpha_index;
+          uint accIndex = corrI * numAngles + alpha_index;
 
           accumulator[accIndex]++;
           node = node->next;
@@ -579,12 +523,12 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
     }
 
     // Maximize the accumulator
-    for (unsigned int k = 0; k < n; k++)
+    for (uint k = 0; k < n; k++)
     {
       for (int j = 0; j < numAngles; j++)
       {
-        const unsigned int accInd = k*numAngles + j;
-        const unsigned int accVal = accumulator[ accInd ];
+        const uint accInd = k*numAngles + j;
+        const uint accVal = accumulator[ accInd ];
         if (accVal > maxVotes)
         {
           maxVotes = accVal;
@@ -600,43 +544,35 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
 
     // invert Tsg : Luckily rotation is orthogonal: Inverse = Transpose.
     // We are not required to invert.
-    double tInv[3], tmg[3], Rmg[9];
-    matrixTranspose33(Rsg, RInv);
-    matrixProduct331(RInv, tsg, tInv);
+    Vec3d tInv, tmg;
+    Matx33d Rmg;
+    RInv = Rsg.t();
+    tInv = -RInv * tsg;
 
-    double TsgInv[16] = { RInv[0], RInv[1], RInv[2], -tInv[0],
-                          RInv[3], RInv[4], RInv[5], -tInv[1],
-                          RInv[6], RInv[7], RInv[8], -tInv[2],
-                          0, 0, 0, 1
-                        };
+    Matx44d TsgInv;
+    rtToPose(RInv, tInv, TsgInv);
 
     // TODO : Compute pose
-    const float* fMax = sampled_pc.ptr<float>(refIndMax);
-    const double pMax[4] = {fMax[0], fMax[1], fMax[2], 1};
-    const double nMax[4] = {fMax[3], fMax[4], fMax[5], 1};
+    const Vec3f pMax(sampled_pc.ptr<float>(refIndMax));
+    const Vec3f nMax(sampled_pc.ptr<float>(refIndMax) + 3);
 
     computeTransformRT(pMax, nMax, Rmg, tmg);
-    row2=&Rsg[3];
-    row3=&Rsg[6];
 
-    double Tmg[16] = { Rmg[0], Rmg[1], Rmg[2], tmg[0],
-                       Rmg[3], Rmg[4], Rmg[5], tmg[1],
-                       Rmg[6], Rmg[7], Rmg[8], tmg[2],
-                       0, 0, 0, 1
-                     };
+    Matx44d Tmg;
+    rtToPose(Rmg, tmg, Tmg);
 
     // convert alpha_index to alpha
     int alpha_index = alphaIndMax;
     double alpha = (alpha_index*(4*M_PI))/numAngles-2*M_PI;
 
     // Equation 2:
-    double Talpha[16]={0};
-    getUnitXRotation_44(alpha, Talpha);
+    Matx44d Talpha;
+    Matx33d R;
+    Vec3d t = Vec3d::all(0);
+    getUnitXRotation(alpha, R);
+    rtToPose(R, t, Talpha);
 
-    double Temp[16]={0};
-    double rawPose[16]={0};
-    matrixProduct44(Talpha, Tmg, Temp);
-    matrixProduct44(TsgInv, Temp, rawPose);
+    Matx44d rawPose = TsgInv * (Talpha * Tmg);
 
     Pose3DPtr pose(new Pose3D(alpha, refIndMax, maxVotes));
     pose->updatePose(rawPose);

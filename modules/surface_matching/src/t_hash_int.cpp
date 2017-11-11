@@ -47,10 +47,10 @@ namespace ppf_match_3d
 // This magic value is just
 #define T_HASH_MAGIC 427462442
 
-size_t hash( unsigned int a);
+size_t hash( uint a);
 
 // default hash function
-size_t hash( unsigned int a)
+size_t hash( uint a)
 {
     a = (a+0x7ed55d16) + (a<<12);
     a = (a^0xc761c23c) ^ (a>>19);
@@ -61,7 +61,7 @@ size_t hash( unsigned int a)
     return a;
 }
 
-hashtable_int *hashtableCreate(size_t size, size_t (*hashfunc)(unsigned int))
+hashtable_int *hashtableCreate(size_t size, size_t (*hashfunc)(uint))
 {
     hashtable_int *hashtbl;
 
@@ -71,7 +71,7 @@ hashtable_int *hashtableCreate(size_t size, size_t (*hashfunc)(unsigned int))
     }
     else
     {
-        size = (size_t)next_power_of_two((unsigned int)size);
+        size = (size_t)next_power_of_two((uint)size);
     }
 
     hashtbl=(hashtable_int*)malloc(sizeof(hashtable_int));

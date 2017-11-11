@@ -14,9 +14,13 @@
 /* We can't use the name 'uint32_t' here because it will conflict with
 * any version provided by the system headers or application. */
 
+#if !defined(ulong)
+#define ulong unsigned long
+#endif
+
 /* First look for special cases */
 #if defined(_MSC_VER)
-#define MH_UINT32 unsigned long
+#define MH_UINT32 ulong
 #endif
 
 /* If the compiler says it's C99 then take its word for it */
@@ -30,25 +34,25 @@
 #if !defined(MH_UINT32)
 #include  <limits.h>
 #if   (USHRT_MAX == 0xffffffffUL)
-#define MH_UINT32 unsigned short
+#define MH_UINT32 ushort
 #elif (UINT_MAX == 0xffffffffUL)
-#define MH_UINT32 unsigned int
+#define MH_UINT32 uint
 #elif (ULONG_MAX == 0xffffffffUL)
-#define MH_UINT32 unsigned long
+#define MH_UINT32 ulong
 #endif
 #endif
 
 #if !defined(MH_UINT32)
-#error Unable to determine type name for unsigned 32-bit int
+#error Unable to determine type name for u32-bit int
 #endif
 
-/* I'm yet to work on a platform where 'unsigned char' is not 8 bits */
-#define MH_UINT8  unsigned char
+/* I'm yet to work on a platform where 'uchar' is not 8 bits */
+#define MH_UINT8  uchar
 
 void PMurHash32_Process(MH_UINT32 *ph1, MH_UINT32 *pcarry, const void *key, int len);
 MH_UINT32 PMurHash32_Result(MH_UINT32 h1, MH_UINT32 carry, MH_UINT32 total_length);
 MH_UINT32 PMurHash32(MH_UINT32 seed, const void *key, int len);
-void hashMurmurx86 ( const void * key, const int len, const unsigned int seed, void * out );
+void hashMurmurx86 ( const void * key, const int len, const uint seed, void * out );
 
 /* I used ugly type names in the header to avoid potential conflicts with
 * application or system typedefs & defines. Since I'm not including any more
@@ -69,7 +73,7 @@ void hashMurmurx86 ( const void * key, const int len, const unsigned int seed, v
 * The following 3 macros are defined in this section. The other macros defined
 * are only needed to help derive these 3.
 *
-* READ_UINT32(x)   Read a little endian unsigned 32-bit int
+* READ_UINT32(x)   Read a little endian u32-bit int
 * UNALIGNED_SAFE   Defined if READ_UINT32 works on non-word boundaries
 * ROTL32(x,r)      Rotate x left by r bits
 */
@@ -169,23 +173,23 @@ void PMurHash32_Process(uint32_t *ph1, uint32_t *pcarry, const void *key, int le
 {
     uint32_t h1 = *ph1;
     uint32_t c = *pcarry;
-    
+
     const uint8_t *ptr = (uint8_t*)                         key;
     const uint8_t *end;
-    
+
     /* Extract carry count from low 2 bits of c value */
     int n = c & 3;
-    
+
 #if defined(UNALIGNED_SAFE)
     /* This CPU handles unaligned word access */
-    
+
     /* Consume any carry bytes */
     int i = (4-n) & 3;
     if (i && i <= len)
     {
         DOBYTES(i, h1, c, n, ptr, len);
     }
-    
+
     /* Process 32-bit chunks */
     end = ptr + len/4*4;
     for ( ; ptr < end ; ptr+=4)
@@ -193,17 +197,17 @@ void PMurHash32_Process(uint32_t *ph1, uint32_t *pcarry, const void *key, int le
         uint32_t k1 = READ_UINT32(ptr);
         DOBLOCK(h1, k1);
     }
-    
+
 #else /*UNALIGNED_SAFE*/
     /* This CPU does not handle unaligned word access */
-    
+
     /* Consume enough so that the next data byte is word aligned */
     int i = -(long)ptr & 3;
     if (i && i <= len)
     {
         DOBYTES(i, h1, c, n, ptr, len);
     }
-    
+
     /* We're now aligned. Process in aligned blocks. Specialise for each possible carry count */
     end = ptr + len/4*4;
     switch (n)
@@ -244,13 +248,13 @@ void PMurHash32_Process(uint32_t *ph1, uint32_t *pcarry, const void *key, int le
             }
     }
 #endif /*UNALIGNED_SAFE*/
-    
+
     /* Advance over whole 32-bit chunks, possibly leaving 1..3 bytes */
     len -= len/4*4;
-    
+
     /* Append any remaining bytes into carry */
     DOBYTES(len, h1, c, n, ptr, len);
-    
+
     /* Copy out new running hash and carry */
     *ph1 = h1;
     *pcarry = (c & ~0xff) | n;
@@ -272,14 +276,14 @@ uint32_t PMurHash32_Result(uint32_t h, uint32_t carry, uint32_t total_length)
         h ^= k1;
     }
     h ^= total_length;
-    
+
     /* fmix */
     h ^= h >> 16;
     h *= 0x85ebca6b;
     h ^= h >> 13;
     h *= 0xc2b2ae35;
     h ^= h >> 16;
-    
+
     return h;
 }
 
@@ -293,8 +297,8 @@ uint32_t PMurHash32(uint32_t seed, const void *key, int len)
     return PMurHash32_Result(h1, carry, len);
 }
 
-void hashMurmurx86 ( const void * key, const int len, const unsigned int seed, void * out )
+void hashMurmurx86 ( const void * key, const int len, const uint seed, void * out )
 {
-    *(unsigned int*)out = PMurHash32 (seed, key, len);
+    *(uint*)out = PMurHash32 (seed, key, len);
 }
 
