@@ -56,15 +56,12 @@
 #include "ximgproc/fourier_descriptors.hpp"
 #include "ximgproc/ridgefilter.hpp"
 
-
 /** @defgroup ximgproc Extended Image Processing
   @{
     @defgroup ximgproc_edge Structured forests for fast edge detection
 
 This module contains implementations of modern structured edge detection algorithms,
 i.e. algorithms which somehow takes into account pixel affinities in natural images.
-
-    @defgroup ximgproc_edgeboxes EdgeBoxes
 
     @defgroup ximgproc_filters Filters
 
@@ -73,9 +70,7 @@ i.e. algorithms which somehow takes into account pixel affinities in natural ima
     @defgroup ximgproc_segmentation Image segmentation
 
     @defgroup ximgproc_fast_line_detector Fast line detector
-
-    @defgroup ximgproc_fourier Fourier descriptors
-    @}
+  @}
 */
 
 namespace cv
