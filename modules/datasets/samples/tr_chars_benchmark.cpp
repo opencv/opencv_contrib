@@ -39,10 +39,13 @@
 //
 //M*/
 
+#include <iostream>
+#include <opencv2/opencv_modules.hpp>
+
+#ifdef HAVE_OPENCV_TEXT
+
 #include "opencv2/datasets/tr_chars.hpp"
-
 #include <opencv2/core.hpp>
-
 #include "opencv2/text.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
@@ -127,3 +130,13 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
+#else
+
+int main()
+{
+    std::cerr << "OpenCV was built without text module" << std::endl;
+    return 0;
+}
+
+#endif // HAVE_OPENCV_TEXT
