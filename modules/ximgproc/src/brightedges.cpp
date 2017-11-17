@@ -113,7 +113,7 @@ namespace cv
 			iedge.ptr(row + 2)[col + 1] +
 			iedge.ptr(row + 2)[col + 2];
 		if (line < weight) lines += 1;
-		// Near vertical 
+		// Near vertical
 		line =
 			iedge.ptr(row - 2)[col] +
 			iedge.ptr(row - 1)[col] +
@@ -124,7 +124,7 @@ namespace cv
 			iedge.ptr(row + 2)[col + 1] +
 			iedge.ptr(row + 2)[col - 1];
 		if (line < weight) lines += 1;
-		// Near diagonal top right to bottom left 
+		// Near diagonal top right to bottom left
 		line =
 			iedge.ptr(row - 2)[col + 2] +
 			iedge.ptr(row - 1)[col + 1] +
@@ -135,7 +135,7 @@ namespace cv
 			iedge.ptr(row + 2)[col - 1] +
 			iedge.ptr(row + 1)[col - 2];
 		if (line < weight) lines += 1;
-		// Near horizontal 
+		// Near horizontal
 		line =
 			iedge.ptr(row)[(col - 2)] +
 			iedge.ptr(row)[(col - 1)] +
@@ -159,7 +159,7 @@ namespace cv
 		if (surround == 0) return 255;
 		return iedge.ptr(row)[col];
 	}
-	int contrastEdges(Mat &minput, Mat &mouput, int contrast) {	
+	int contrastEdges(Mat &minput, Mat &mouput, int contrast) {
 		Mat mwork(minput.size(), minput.type(), Scalar(255));
 		// Now find if other pixels inside are minimum
 		for (int row = 2; row < minput.rows - 2; row++) {
@@ -178,7 +178,7 @@ namespace cv
 				mouput.ptr( row)[col] = correctPixel(mwork, row, col);
 			}
 		}
-		// Set border of output matrix to white	
+		// Set border of output matrix to white
 		for (int col = 0; col < mouput.cols; col++) {
 			for (int row = 0; row < 2; row++) {
 				mouput.ptr(row)[col] = 255;

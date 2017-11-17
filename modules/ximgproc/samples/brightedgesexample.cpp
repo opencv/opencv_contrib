@@ -86,27 +86,27 @@ int main(int argc, const char** argv)
 	// //  " original ";
 	namedWindow("Original");
 	imshow("Original", image);
-	//  " absdiff ";	
+	//  " absdiff ";
 	BrightEdges(image, edge, 0); // No contrast
 	namedWindow("Absolute Difference");
-	imshow("Absolute Difference", edge);	
+	imshow("Absolute Difference", edge);
 	// " default contrast 1 ";
 	BrightEdges(image, edge);
 	namedWindow("Default contrast");
 	imshow("Default contrast", edge); // Default contrast 1
 	// Wait for a key stroke; the same function arranges events processing
 	// " Contrast 5  \n";
-	BrightEdges(image, edge, 5);	
+	BrightEdges(image, edge, 5);
 	namedWindow("Contrast 5");
 	imshow("Contrast 5", edge);
 	// " Contrast 10  \n";
 	BrightEdges(image, edge, 10);
 	namedWindow("Contrast 10");
-	imshow("Contrast 10", edge);	
+	imshow("Contrast 10", edge);
 	//  "wait key ";
 	waitKey(0);
 	// //  "Destroy ";
-	destroyAllWindows(); 
+	destroyAllWindows();
 	//  "end  ";
 	return 0;
 }
