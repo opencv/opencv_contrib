@@ -175,7 +175,7 @@ namespace cv
 		// correct pixels
 		for (int row = 2; row < mwork.rows - 2; row++) {
 			for (int col = 2; col < mwork.cols - 2; col++) {
-				mouput.ptr( row)[col] = correctPixel(mwork, row, col);
+				mouput.ptr( row)[col] = (uchar)correctPixel(mwork, row, col);
 			}
 		}
 		// Set border of output matrix to white
