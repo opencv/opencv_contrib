@@ -64,7 +64,7 @@ inline int within(int a, int b, int c) {
     return (((a) <= (b)) && ((b) <= (c))) ? 1 : 0;
 }
 
-void bilinearInterp(uint8_t* dest, double x, double y, unsigned bpp, const uint8_t** values) {
+void bilinearInterp(uchar* dest, double x, double y, unsigned bpp, const uchar** values) {
     x = std::fmod(x, 1.0);
     y = std::fmod(y, 1.0);
 
@@ -76,13 +76,13 @@ void bilinearInterp(uint8_t* dest, double x, double y, unsigned bpp, const uint8
     for (unsigned i = 0; i < bpp; i++) {
         double m0 = (1.0 - x) * values[0][i] + x * values[1][i];
         double m1 = (1.0 - x) * values[2][i] + x * values[3][i];
-        dest[i] = (uint8_t) ((1.0 - y) * m0 + y * m1);
+        dest[i] = (uchar) ((1.0 - y) * m0 + y * m1);
     }
 }
 
 // Static background is a way too easy test. We will add distortion to it.
-void waveDistortion(const uint8_t* src, uint8_t* dst, int width, int height, int bypp, double amplitude, double wavelength, double phase) {
-    const uint8_t zeroes[4] = {0, 0, 0, 0};
+void waveDistortion(const uchar* src, uchar* dst, int width, int height, int bypp, double amplitude, double wavelength, double phase) {
+    const uchar zeroes[4] = {0, 0, 0, 0};
     const long rowsiz = width * bypp;
     const double xhsiz = (double) width / 2.0;
     const double yhsiz = (double) height / 2.0;
@@ -104,7 +104,7 @@ void waveDistortion(const uint8_t* src, uint8_t* dst, int width, int height, int
     wavelength *= 2;
 
     for (int y = 0; y < height; y++) {
-        uint8_t* dest = dst;
+        uchar* dest = dst;
 
         for (int x = 0; x < width; x++) {
             const double dx = x * xscale;
@@ -116,13 +116,13 @@ void waveDistortion(const uint8_t* src, uint8_t* dst, int width, int height, int
             const int xi = clamp(int(needx), 0, width - 2);
             const int yi = clamp(int(needy), 0, height - 2);
 
-            const uint8_t* p = src + rowsiz * yi + xi * bypp;
+            const uchar* p = src + rowsiz * yi + xi * bypp;
 
             const int x1_in = within(0, xi, width - 1);
             const int y1_in = within(0, yi, height - 1);
             const int x2_in = within(0, xi + 1, width - 1);
             const int y2_in = within(0, yi + 1, height - 1);
-            const uint8_t* values[4];
+            const uchar* values[4];
 
             if (x1_in && y1_in)
                 values[0] = p;

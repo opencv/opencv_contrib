@@ -52,6 +52,7 @@
 #include "precomp.hpp"
 #include <opencv2/calib3d.hpp>
 #include <iostream>
+#include "opencv2/core/cvdef.h"
 
 namespace cv
 {
@@ -66,8 +67,7 @@ const float LSBPtau = 0.05f;
 #include <intrin.h>
 #pragma intrinsic(__popcnt)
 #endif
-
-inline uint32_t LSBPDist32(uint32_t n) {
+inline int LSBPDist32(unsigned n) {
 #if defined(__GNUC__) || defined(__clang__)
     return __builtin_popcount(n);
 #elif defined(_MSC_VER)
@@ -138,7 +138,7 @@ inline float localSVD(float a11, float a12, float a13, float a21, float a22, flo
     return std::sqrt(e2 / e1) + std::sqrt(e3 / e1);
 }
 
-void removeNoise(Mat& fgMask, const Mat& compMask, const size_t threshold, const uint8_t filler) {
+void removeNoise(Mat& fgMask, const Mat& compMask, const size_t threshold, const uchar filler) {
     const Size sz = fgMask.size();
     Mat labels;
     const int nComponents = connectedComponents(compMask, labels, 8, CV_32S);
@@ -151,7 +151,7 @@ void removeNoise(Mat& fgMask, const Mat& compMask, const size_t threshold, const
     for (int i = 0; i < sz.height; ++i)
         for (int j = 0; j < sz.width; ++j)
             if (compArea[labels.at<int>(i, j)] < threshold)
-                fgMask.at<uint8_t>(i, j) = filler;
+                fgMask.at<uchar>(i, j) = filler;
 }
 
 void FindSparseCorrLK(const Mat& src, const Mat& dst, std::vector<Point2f>& srcPoints, std::vector<Point2f>& dstPoints) {
@@ -191,20 +191,20 @@ void FindSparseCorrLK(const Mat& src, const Mat& dst, std::vector<Point2f>& srcP
 class BackgroundSampleGSOC {
 public:
     Point3f color;
-    uint32_t desc;
-    uint64_t time;
-    uint64_t hits;
+    int desc;
+    uint64 time;
+    uint64 hits;
 
-    BackgroundSampleGSOC(Point3f c = Point3f(), uint32_t d = 0, uint64_t t = 0, uint64_t h = 0) : color(c), desc(d), time(t), hits(h) {}
+    BackgroundSampleGSOC(Point3f c = Point3f(), int d = 0, uint64 t = 0, uint64 h = 0) : color(c), desc(d), time(t), hits(h) {}
 };
 
 class BackgroundSampleLSBP {
 public:
     Point3f color;
-    uint32_t desc;
+    int desc;
     float minDecisionDist;
 
-    BackgroundSampleLSBP(Point3f c = Point3f(), uint32_t d = 0, float mdd = 1e9f) : color(c), desc(d), minDecisionDist(mdd) {}
+    BackgroundSampleLSBP(Point3f c = Point3f(), int d = 0, float mdd = 1e9f) : color(c), desc(d), minDecisionDist(mdd) {}
 };
 
 template<typename BackgroundSampleType>
@@ -291,7 +291,7 @@ public:
         samples[minInd] = sample;
     }
 
-    Point3f getMean(int i, int j, uint64_t threshold) const {
+    Point3f getMean(int i, int j, uint64 threshold) const {
         const int end = i * stride + (j + 1) * nSamples;
         Point3f acc(0, 0, 0);
         int cnt = 0;
@@ -317,13 +317,13 @@ class BackgroundModelLSBP : public BackgroundModel<BackgroundSampleLSBP> {
 public:
     BackgroundModelLSBP(Size sz, int S) : BackgroundModel(sz, S) {};
 
-    int countMatches(int i, int j, const Point3f& color, uint32_t desc, float threshold, uint32_t descThreshold, float& minDist) const {
+    int countMatches(int i, int j, const Point3f& color, int desc, float threshold, int descThreshold, float& minDist) const {
         const int end = i * stride + (j + 1) * nSamples;
         int count = 0;
         minDist = 1e9;
         for (int k = i * stride + j * nSamples; k < end; ++k) {
             const float dist = L1dist(color - samples[k].color);
-            if (dist < threshold && LSBPDist32(desc ^ samples[k].desc) < descThreshold)
+            if (dist < threshold && LSBPDist32(static_cast<unsigned>(desc ^ samples[k].desc)) < descThreshold)
                 ++count;
             if (dist < minDist)
                 minDist = dist;
@@ -390,7 +390,7 @@ public:
     void operator()(const Range &range) const {
         for (int index = range.start; index < range.end; ++index) {
             const int i = index / sz.width, j = index % sz.width;
-            uint32_t& descVal = desc.at<uint32_t>(i, j);
+            int& descVal = desc.at<int>(i, j);
             descVal = 0;
             const float centerVal = localSVDValues.at<float>(i, j);
 
@@ -398,7 +398,7 @@ public:
                 const int ri = i + LSBPSamplePoints[n].y;
                 const int rj = j + LSBPSamplePoints[n].x;
                 if (ri >= 0 && rj >= 0 && ri < sz.height && rj < sz.width && std::abs(localSVDValues.at<float>(ri, rj) - centerVal) > LSBPtau)
-                    descVal |= uint32_t(1U) << n;
+                    descVal |= int(1U) << n;
             }
         }
     }
@@ -459,12 +459,12 @@ class BackgroundSubtractorGSOCImpl : public BackgroundSubtractorGSOC {
 private:
     Ptr<BackgroundModelGSOC> backgroundModel;
     Ptr<BackgroundModelGSOC> backgroundModelPrev;
-    uint64_t currentTime;
+    uint64 currentTime;
     const int motionCompensation;
     const int nSamples;
     const float replaceRate;
     const float propagationRate;
-    const uint64_t hitsThreshold;
+    const uint64 hitsThreshold;
     const float alpha;
     const float beta;
     const float blinkingSupressionDecay;
@@ -577,7 +577,7 @@ public:
             BackgroundSampleGSOC& sample = (* backgroundModel)(k);
 
             if (minDist > threshold) {
-                fgMask.at<uint8_t>(i, j) = 255;
+                fgMask.at<uchar>(i, j) = 255;
 
                 if (bgs->rng.uniform(0.0f, 1.0f) < bgs->replaceRate)
                     backgroundModel->replaceOldest(i, j, BackgroundSampleGSOC(frame.at<Point3f>(i, j), 0, bgs->currentTime));
@@ -600,7 +600,7 @@ public:
                         backgroundModel->replaceOldest(i, j - 1, sample);
                 }
 
-                fgMask.at<uint8_t>(i, j) = 0;
+                fgMask.at<uchar>(i, j) = 0;
             }
         }
     }
@@ -637,25 +637,25 @@ public:
             else
                 R.at<float>(i, j) *= 1 + bgs->Rincdec;
 
-            if (backgroundModel->countMatches(i, j, frame.at<Point3f>(i, j), LSBPDesc.at<uint32_t>(i, j), R.at<float>(i, j), bgs->LSBPthreshold, minDist) < bgs->minCount) {
-                fgMask.at<uint8_t>(i, j) = 255;
+            if (backgroundModel->countMatches(i, j, frame.at<Point3f>(i, j), LSBPDesc.at<int>(i, j), R.at<float>(i, j), bgs->LSBPthreshold, minDist) < bgs->minCount) {
+                fgMask.at<uchar>(i, j) = 255;
 
                 T.at<float>(i, j) += bgs->Tinc / DMean;
             }
             else {
-                fgMask.at<uint8_t>(i, j) = 0;
+                fgMask.at<uchar>(i, j) = 0;
 
                 T.at<float>(i, j) -= bgs->Tdec / DMean;
 
                 if (bgs->rng.uniform(0.0f, 1.0f) < 1 / T.at<float>(i, j))
-                    (* backgroundModel)(i, j, bgs->rng.uniform(0, bgs->nSamples)) = BackgroundSampleLSBP(frame.at<Point3f>(i, j), LSBPDesc.at<uint32_t>(i, j), minDist);
+                    (* backgroundModel)(i, j, bgs->rng.uniform(0, bgs->nSamples)) = BackgroundSampleLSBP(frame.at<Point3f>(i, j), LSBPDesc.at<int>(i, j), minDist);
 
                 if (bgs->rng.uniform(0.0f, 1.0f) < 1 / T.at<float>(i, j)) {
                     const int oi = i + bgs->rng.uniform(-1, 2);
                     const int oj = j + bgs->rng.uniform(-1, 2);
 
                     if (oi >= 0 && oi < sz.height && oj >= 0 && oj < sz.width)
-                        (* backgroundModel)(oi, oj, bgs->rng.uniform(0, bgs->nSamples)) = BackgroundSampleLSBP(frame.at<Point3f>(oi, oj), LSBPDesc.at<uint32_t>(oi, oj), minDist);
+                        (* backgroundModel)(oi, oj, bgs->rng.uniform(0, bgs->nSamples)) = BackgroundSampleLSBP(frame.at<Point3f>(oi, oj), LSBPDesc.at<int>(oi, oj), minDist);
                 }
             }
 
@@ -729,9 +729,9 @@ void BackgroundSubtractorGSOCImpl::apply(InputArray _image, OutputArray _fgmask,
     if (backgroundModel.empty()) {
         backgroundModel = makePtr<BackgroundModelGSOC>(sz, nSamples);
         backgroundModelPrev = makePtr<BackgroundModelGSOC>(sz, nSamples);
-        distMovingAvg = Mat(sz, CV_32F, 0.005f);
-        prevFgMask = Mat(sz, CV_8U);
-        blinkingSupression = Mat(sz, CV_32F, 0.0f);
+        distMovingAvg = Mat(sz, CV_32F, Scalar::all(0.005f));
+        prevFgMask = Mat(sz, CV_8U, Scalar::all(0));
+        blinkingSupression = Mat(sz, CV_32F, Scalar::all(0.0f));
 
         for (int i = 0; i < sz.height; ++i)
             for (int j = 0; j < sz.width; ++j) {
@@ -799,7 +799,7 @@ void BackgroundSubtractorGSOCImpl::getBackgroundImage(OutputArray _backgroundIma
     Mat backgroundImage = _backgroundImage.getMat();
     for (int i = 0; i < sz.height; ++i)
         for (int j = 0; j < sz.width; ++j)
-            backgroundImage.at< Point3_<uint8_t> >(i, j) = backgroundModel->getMean(i, j, hitsThreshold) * 255;
+            backgroundImage.at< Point3_<uchar> >(i, j) = backgroundModel->getMean(i, j, hitsThreshold) * 255;
 }
 
 BackgroundSubtractorLSBPImpl::BackgroundSubtractorLSBPImpl(int _mc,
@@ -864,14 +864,11 @@ void BackgroundSubtractorLSBPImpl::apply(InputArray _image, OutputArray _fgmask,
         cvtColor(frame, frame, COLOR_GRAY2BGR);
 
     if (frame.depth() != CV_32F) {
-        frame.convertTo(frame, CV_32F);
-        frame /= 255;
+        frame.convertTo(frame, CV_32F, 1.0/255);
     }
 
-    Mat LSBPDesc(sz, CV_32S);
-    LSBPDesc = 0;
-
     CV_Assert(frame.channels() == 3);
+    Mat LSBPDesc(sz, CV_32S, Scalar::all(0));
 
     BackgroundSubtractorLSBPDesc::compute(LSBPDesc, frame, LSBPSamplePoints);
 
@@ -885,7 +882,7 @@ void BackgroundSubtractorLSBPImpl::apply(InputArray _image, OutputArray _fgmask,
 
         for (int i = 0; i < sz.height; ++i)
             for (int j = 0; j < sz.width; ++j) {
-                BackgroundSampleLSBP sample(frame.at<Point3f>(i, j), LSBPDesc.at<uint32_t>(i, j));
+                BackgroundSampleLSBP sample(frame.at<Point3f>(i, j), LSBPDesc.at<int>(i, j));
                 for (int k = 0; k < nSamples; ++k) {
                     (* backgroundModel)(i, j, k) = sample;
                     (* backgroundModelPrev)(i, j, k) = sample;
@@ -937,7 +934,7 @@ void BackgroundSubtractorLSBPImpl::getBackgroundImage(OutputArray _backgroundIma
     Mat backgroundImage = _backgroundImage.getMat();
     for (int i = 0; i < sz.height; ++i)
         for (int j = 0; j < sz.width; ++j)
-            backgroundImage.at< Point3_<uint8_t> >(i, j) = backgroundModel->getMean(i, j) * 255;
+            backgroundImage.at< Point3_<uchar> >(i, j) = backgroundModel->getMean(i, j) * 255;
 }
 
 Ptr<BackgroundSubtractorGSOC> createBackgroundSubtractorGSOC(int mc,

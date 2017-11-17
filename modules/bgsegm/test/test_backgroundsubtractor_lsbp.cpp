@@ -72,16 +72,16 @@ TEST(BackgroundSubtractor_LSBP, Discrimination)
     Mat desc;
     bgsegm::BackgroundSubtractorLSBPDesc::computeFromLocalSVDValues(desc, lsv, LSBPSamplePoints);
     Size sz = desc.size();
-    std::set<uint32_t> distinctive_elements;
+    std::set<int> distinctive_elements;
 
     for (int i = 0; i < sz.height; ++i)
         for (int j = 0; j < sz.width; ++j)
-            distinctive_elements.insert(desc.at<uint32_t>(i, j));
+            distinctive_elements.insert(desc.at<int>(i, j));
 
     EXPECT_GE(distinctive_elements.size(), 35000U);
 }
 
-static double scoreBitwiseReduce(const Mat& mask, const Mat& gtMask, uint8_t v1, uint8_t v2) {
+static double scoreBitwiseReduce(const Mat& mask, const Mat& gtMask, uchar v1, uchar v2) {
     Mat result;
     cv::bitwise_and(mask == v1, gtMask == v2, result);
     return cv::countNonZero(result);
