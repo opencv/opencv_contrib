@@ -53,11 +53,13 @@ int main(int argc, char* argv[])
     bool useOCL = parser.has("ocl");
     cv::ocl::setUseOpenCL(useOCL);
     if(useOCL && !cv::ocl::useOpenCL())
+    {
         std::cout << "Failed to enable OpenCL\n";
+    }
 
-	// declare the retina input buffer... that will be fed differently in regard of the input media
-	cv::Mat inputFrame;
-	cv::VideoCapture videoCapture; // in case a video media is used, its manager is declared here
+    // declare the retina input buffer... that will be fed differently in regard of the input media
+    cv::Mat inputFrame;
+    cv::VideoCapture videoCapture; // in case a video media is used, its manager is declared here
 
     if(parser.has("video"))
         videoCapture.open(parser.get<cv::String>("video"));

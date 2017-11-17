@@ -59,8 +59,8 @@ static void checkSimilarity(InputArray res, InputArray ref, double maxNormInf = 
     double normInf = cvtest::norm(res, ref, NORM_INF);
     double normL2 = cvtest::norm(res, ref, NORM_L2) / res.total();
 
-    if (maxNormInf >= 0) EXPECT_LE(normInf, maxNormInf);
-    if (maxNormL2 >= 0) EXPECT_LE(normL2, maxNormL2);
+    if (maxNormInf >= 0) { EXPECT_LE(normInf, maxNormInf); }
+    if (maxNormL2 >= 0) { EXPECT_LE(normL2, maxNormL2); }
 }
 
 TEST(AdaptiveManifoldTest, SplatSurfaceAccuracy)
