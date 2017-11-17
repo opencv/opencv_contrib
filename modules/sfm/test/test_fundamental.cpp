@@ -35,6 +35,7 @@
 
 #include "test_precomp.hpp"
 
+
 using namespace cv;
 using namespace cv::sfm;
 using namespace cvtest;
