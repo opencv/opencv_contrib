@@ -85,29 +85,29 @@ int main(int argc, const char** argv)
 	// Create a window
 	// //  " original ";
 	
-	namedWindow("Original", cv::WindowFlags::WINDOW_AUTOSIZE);
+	namedWindow("Original");
 	imshow("Original", image);
 	
 	//  " absdiff ";	
 	BrightEdges(image, edge, 0); // No contrast
-	namedWindow("Absolute Difference", cv::WindowFlags::WINDOW_AUTOSIZE);
+	namedWindow("Absolute Difference");
 	imshow("Absolute Difference", edge);
 	
 	// " default contrast 1 ";
 	BrightEdges(image, edge);
-	namedWindow("Default contrast", cv::WindowFlags::WINDOW_AUTOSIZE);
+	namedWindow("Default contrast");
 	imshow("Default contrast", edge); // Default contrast 1
 	// Wait for a key stroke; the same function arranges events processing
 
 	// " Contrast 5  \n";
 	BrightEdges(image, edge, 5);
 	
-	namedWindow("Contrast 5", cv::WindowFlags::WINDOW_AUTOSIZE);
+	namedWindow("Contrast 5");
 	imshow("Contrast 5", edge);
 	// " Contrast 10  \n";
 	BrightEdges(image, edge, 10);
 
-	namedWindow("Contrast 10", cv::WindowFlags::WINDOW_AUTOSIZE);
+	namedWindow("Contrast 10");
 
 	imshow("Contrast 10", edge);
 	
