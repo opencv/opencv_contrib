@@ -80,16 +80,6 @@ namespace cv
 		return false;
 	}
 	int correctPixel(Mat &iedge, int row, int col) {
-		unsigned char *input = (unsigned char*)(iedge.data);
-
-		int pixel =
-			iedge.ptr(row - 1)[col - 1] + iedge.ptr(row - 1)[col] +
-			iedge.ptr(row - 1)[col + 1] + iedge.ptr(row)[col - 1] +
-			iedge.ptr(row)[col + 1] + iedge.ptr(row + 1)[col - 1] +
-			iedge.ptr(row + 1)[col] + iedge.ptr(row + 1)[col + 1]
-			;
-
-
 		// now check in there is a line around pixel to fill gaps
 		// Around Diagonal top left to bottom right
 		int weight = 4 * 255;
