@@ -47,13 +47,10 @@
 #include <signal.h>
 namespace cv
 {
-
 	bool isPixelMinimum(Mat &edge, int row, int col, int contrast) {
 		int count = 0;
-
-
 		int pixel = edge.ptr(row)[col] + contrast - 1; // minus 1 is needed for chessboard like images with contrast = 1
-													   // to get the vertical borders 
+													   // to get the vertical borders
 		int m2 = edge.ptr(row - 2)[col - 2];
 		int m1 = edge.ptr(row - 1)[col - 1];
 		int p1 = edge.ptr(row + 1)[col + 1];
@@ -73,9 +70,7 @@ namespace cv
 		m1 = edge.ptr(row)[col + 1];
 		p1 = edge.ptr(row)[col - 1];
 		p2 = edge.ptr(row)[col - 2];
-
 		if ((pixel <= m1) && (pixel <= p1) && (pixel < (m1 + m2) / 2) && (pixel < (p1 + p2) / 2)) count++; // Local minimum horizontal
-
 		if (count > 1) return true; // Avoid corners of black zones
 		return false;
 	}
@@ -89,7 +84,6 @@ namespace cv
 			iedge.ptr(row - 1)[col - 1] +
 			iedge.ptr(row)[col + 1] +
 			iedge.ptr(row)[col + 2];
-
 		if (line == 0) lines += 1;
 		line =
 			iedge.ptr(row)[col - 2] +
@@ -97,21 +91,18 @@ namespace cv
 			iedge.ptr(row + 1)[col + 1] +
 			iedge.ptr(row + 1)[col + 2];
 		if (line == 0) lines += 1;
-
 		line =
 			iedge.ptr(row - 2)[col] +
 			iedge.ptr(row - 1)[col] +
 			iedge.ptr(row + 1)[col + 1] +
 			iedge.ptr(row + 2)[col + 1];
 		if (line == 0) lines += 1;
-
 		line =
 			iedge.ptr(row - 2)[col - 1] +
 			iedge.ptr(row - 1)[col - 1] +
 			iedge.ptr(row + 1)[col] +
 			iedge.ptr(row + 2)[col];
 		if (line == 0) lines += 1;
-
 		line =
 			iedge.ptr(row - 2)[col - 2] +
 			iedge.ptr(row - 1)[col - 2] +
@@ -122,7 +113,6 @@ namespace cv
 			iedge.ptr(row + 2)[col + 1] +
 			iedge.ptr(row + 2)[col + 2];
 		if (line < weight) lines += 1;
-
 		// Near vertical 
 		line =
 			iedge.ptr(row - 2)[col] +
@@ -135,7 +125,6 @@ namespace cv
 			iedge.ptr(row + 2)[col - 1];
 		if (line < weight) lines += 1;
 		// Near diagonal top right to bottom left 
-
 		line =
 			iedge.ptr(row - 2)[col + 2] +
 			iedge.ptr(row - 1)[col + 1] +
@@ -146,7 +135,6 @@ namespace cv
 			iedge.ptr(row + 2)[col - 1] +
 			iedge.ptr(row + 1)[col - 2];
 		if (line < weight) lines += 1;
-
 		// Near horizontal 
 		line =
 			iedge.ptr(row)[(col - 2)] +
@@ -158,9 +146,7 @@ namespace cv
 			iedge.ptr(row + 1)[col + 2] +
 			iedge.ptr(row - 1)[col + 2];
 		if (line < weight) lines += 1;
-
 		if (line == 1) return 0;
-
 		int surround = iedge.ptr(row - 1)[col - 1] +
 			iedge.ptr(row - 1)[col] +
 			iedge.ptr(row - 1)[col + 1] +
@@ -169,20 +155,12 @@ namespace cv
 			iedge.ptr(row + 1)[col - 1] +
 			iedge.ptr(row + 1)[col] +
 			iedge.ptr(row - 1)[col + 1];
-
 		if (surround == 8 * 255) return 255;
 		if (surround == 0) return 255;
-
 		return iedge.ptr(row)[col];
-
-
 	}
-
-	int contrastEdges(Mat &minput, Mat &mouput, int contrast) {
-
-	
+	int contrastEdges(Mat &minput, Mat &mouput, int contrast) {	
 		Mat mwork(minput.size(), minput.type(), Scalar(255));
-
 		// Now find if other pixels inside are minimum
 		for (int row = 2; row < minput.rows - 2; row++) {
 			for (int col = 2; col < minput.cols - 2; col++) {
@@ -194,16 +172,13 @@ namespace cv
 				}
 			}
 		}
-
 		// correct pixels
-
 		for (int row = 2; row < mwork.rows - 2; row++) {
 			for (int col = 2; col < mwork.cols - 2; col++) {
 				mouput.ptr( row)[col] = correctPixel(mwork, row, col);
 			}
 		}
 		// Set border of output matrix to white	
-
 		for (int col = 0; col < mouput.cols; col++) {
 			for (int row = 0; row < 2; row++) {
 				mouput.ptr(row)[col] = 255;
@@ -224,19 +199,12 @@ namespace cv
 	}
 	CV_EXPORTS_W  void BrightEdges(Mat &image, Mat &edge, int contrast, int shortrange, int longrange)
 	{
-
 		Mat gray, gblur, bblur, diff, cedge;
-
 		GaussianBlur(image, gblur, Size(shortrange, shortrange), 0);
-
 		blur(image, bblur, Size(longrange, longrange));
-
 		absdiff(gblur, bblur, diff);
-
 		cvtColor(diff, gray, COLOR_BGR2GRAY);
-
 		equalizeHist(gray, cedge);
-
 		if (contrast > 0) {
 			edge = Mat(cedge.size(), cedge.type());
 			contrastEdges(cedge, edge, contrast);
@@ -244,6 +212,5 @@ namespace cv
 		else {
 			edge = cedge;
 		}
-
 	}
 }
