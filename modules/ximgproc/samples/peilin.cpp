@@ -48,8 +48,8 @@ int main(int argc, char** argv)
         std::cout << "Couldn't open image " << filename2 << std::endl;
         return 0;
     }
-    cv::Mat N = I & cv::PeiLinNormalization ( I );
-    cv::Mat D = cv::PeiLinNormalization ( J ) & I;
+    cv::Mat N = I & cv::ximgproc::PeiLinNormalization ( I );
+    cv::Mat D = cv::ximgproc::PeiLinNormalization ( J ) & I;
     cv::imshow ( "I", I );
     cv::imshow ( "N", N );
     cv::imshow ( "J", J );
