@@ -90,7 +90,7 @@ int main( int argc, char** argv ){
   selectROIs("tracker",frame,ROIs);
 
   //quit when the tracked object(s) is not provided
-  if(objects.size()<1)
+  if(ROIs.size()<1)
     return 0;
 
   std::vector<Ptr<Tracker> > algorithms;
