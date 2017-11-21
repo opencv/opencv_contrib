@@ -48,12 +48,7 @@
 namespace cv
 {
 	namespace ximgproc {
-
-	int correctPixel(Mat &iedge, int row, int col);
-	int contrastEdges(Mat &minput, Mat &mouput, int contrast);
-	bool isPixelMinimum(Mat &edge, int row, int col, int contrast);
-
-	bool isPixelMinimum(Mat &edge, int row, int col, int contrast) {
+	static bool isPixelMinimum(Mat &edge, int row, int col, int contrast) {
 		int count = 0;
 		int pixel = edge.ptr(row)[col] + contrast - 1; // minus 1 is needed for chessboard like images with contrast = 1
 													   // to get the vertical borders
@@ -80,7 +75,7 @@ namespace cv
 		if (count > 1) return true; // Avoid corners of black zones
 		return false;
 	}
-	int correctPixel(Mat &iedge, int row, int col) {
+	static int correctPixel(Mat &iedge, int row, int col) {
 		// now check in there is a line around pixel to fill gaps
 		// Around Diagonal top left to bottom right
 		int weight = 4 * 255;
@@ -166,7 +161,7 @@ namespace cv
 		if (surround == 0) return 255;
 		return iedge.ptr(row)[col];
 	}
-	int contrastEdges(Mat &minput, Mat &mouput, int contrast) {
+	static int contrastEdges(Mat &minput, Mat &mouput, int contrast) {
 		Mat mwork(minput.size(), minput.type(), Scalar(255));
 		// Now find if other pixels inside are minimum
 		for (int row = 2; row < minput.rows - 2; row++) {
