@@ -49,6 +49,7 @@
 #include <iostream>
 #include "opencv2/ximgproc.hpp"
 using namespace cv;
+using namespace ximgproc;
 using namespace std;
 int edgeThresh = 1;
 Mat image, gray, gblur, bblur, edge, cedge,diff;
