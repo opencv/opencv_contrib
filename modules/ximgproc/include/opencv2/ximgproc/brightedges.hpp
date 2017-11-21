@@ -45,7 +45,4 @@
 namespace cv
 {
 	CV_EXPORTS_W void  BrightEdges(Mat &_original, Mat &_edgeview, int contrast = 1, int shortrange = 3, int longrange = 9);
-	int correctPixel(Mat &iedge, int row, int col);
-	int contrastEdges(Mat &minput, Mat &mouput, int contrast);
-	bool isPixelMinimum(Mat &edge, int row, int col, int contrast);
 }
