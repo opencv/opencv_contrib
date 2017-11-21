@@ -105,8 +105,6 @@ int main(int argc, const char** argv)
 	imshow("Contrast 10", edge);
 	//  "wait key ";
 	waitKey(0);
-	// //  "Destroy ";
-	destroyAllWindows();
 	//  "end  ";
 	return 0;
 }
