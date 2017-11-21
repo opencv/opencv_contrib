@@ -79,8 +79,6 @@ int main(int argc, const char** argv)
 		help();
 		return -1;
 	}
-	Mat gray;
-	cvtColor(image, gray, COLOR_BGR2GRAY);
 	// Create a window
 	// //  " original ";
 	namedWindow("Original");
