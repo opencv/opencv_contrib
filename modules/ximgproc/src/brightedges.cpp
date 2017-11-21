@@ -154,7 +154,7 @@ namespace cv
 			iedge.ptr(row)[col + 1] +
 			iedge.ptr(row + 1)[col - 1] +
 			iedge.ptr(row + 1)[col] +
-			iedge.ptr(row - 1)[col + 1];
+			iedge.ptr(row + 1)[col + 1];
 		if (surround == 8 * 255) return 255;
 		if (surround == 0) return 255;
 		return iedge.ptr(row)[col];
