@@ -44,5 +44,7 @@
 #include "opencv2/core.hpp"
 namespace cv
 {
-	CV_EXPORTS_W void  BrightEdges(Mat &_original, Mat &_edgeview, int contrast = 1, int shortrange = 3, int longrange = 9);
+	namespace ximgproc {
+		CV_EXPORTS_W void  BrightEdges(Mat &_original, Mat &_edgeview, int contrast = 1, int shortrange = 3, int longrange = 9);
+	}
 }

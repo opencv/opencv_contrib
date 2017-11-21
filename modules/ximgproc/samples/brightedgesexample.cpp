@@ -47,7 +47,7 @@
 #include "opencv2/highgui.hpp"
 #include <stdio.h>
 #include <iostream>
-#include "opencv2/ximgproc/brightedges.hpp"
+#include "opencv2/ximgproc.hpp"
 using namespace cv;
 using namespace std;
 int edgeThresh = 1;
@@ -73,14 +73,13 @@ int main(int argc, const char** argv)
 		return 0;
 	}
 	string filename = parser.get<string>(0);
-	image = imread(filename, 1);
+	image = imread(filename, IMREAD_COLOR);
 	if (image.empty())
 	{
 		printf("Cannot read image file: %s\n", filename.c_str());
 		help();
 		return -1;
 	}
-	cedge.create(image.size(), image.type());
 	cvtColor(image, gray, COLOR_BGR2GRAY);
 	// Create a window
 	// //  " original ";

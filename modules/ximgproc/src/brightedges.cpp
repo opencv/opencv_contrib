@@ -41,12 +41,18 @@
 // the use of this software, even if advised of the possibility of such damage.
 //
 //M*/
-#include "opencv2/ximgproc/brightedges.hpp"
+#include "opencv2/ximgproc.hpp"
 #include "precomp.hpp"
 #include <iostream>
 #include <signal.h>
 namespace cv
 {
+	namespace ximgproc {
+
+	int correctPixel(Mat &iedge, int row, int col);
+	int contrastEdges(Mat &minput, Mat &mouput, int contrast);
+	bool isPixelMinimum(Mat &edge, int row, int col, int contrast);
+
 	bool isPixelMinimum(Mat &edge, int row, int col, int contrast) {
 		int count = 0;
 		int pixel = edge.ptr(row)[col] + contrast - 1; // minus 1 is needed for chessboard like images with contrast = 1
@@ -214,4 +220,5 @@ namespace cv
 			edge = cedge;
 		}
 	}
+}
 }
