@@ -51,58 +51,57 @@
 using namespace cv;
 using namespace ximgproc;
 using namespace std;
-int edgeThresh = 1;
 // define a trackbar callback
 static void help()
 {
-	printf("\nThis sample demonstrates BrightEdge detection\n"
-		"Call:\n"
-		"    /.edge [image_name -- Default is ../data/ml.png]\n\n");
+    printf("\nThis sample demonstrates BrightEdge detection\n"
+        "Call:\n"
+        "    /.edge [image_name -- Default is ../data/ml.png]\n\n");
 }
 const char* keys =
 {
-	"{help h||}{@image |../data/ml.png|input image name}"
+    "{help h||}{@image |../data/ml.png|input image name}"
 };
 int main(int argc, const char** argv)
 {
-	CommandLineParser parser(argc, argv, keys);
-	if (parser.has("help"))
-	{
-		help();
-		return 0;
-	}
-	string filename = parser.get<string>(0);
-	Mat image = imread(filename, IMREAD_COLOR);
-	if (image.empty())
-	{
-		printf("Cannot read image file: %s\n", filename.c_str());
-		help();
-		return -1;
-	}
-	// Create a window
-	// //  " original ";
-	namedWindow("Original");
-	imshow("Original", image);
-	//  " absdiff ";
-	Mat edge;
-	BrightEdges(image, edge, 0); //  No contrast
-	namedWindow("Absolute Difference");
-	imshow("Absolute Difference", edge);
-	// " default contrast 1 ";
-	BrightEdges(image, edge);
-	namedWindow("Default contrast");
-	imshow("Default contrast", edge); // Default contrast 1
-	// Wait for a key stroke; the same function arranges events processing
-	// " Contrast 5  \n";
-	BrightEdges(image, edge, 5);
-	namedWindow("Contrast 5");
-	imshow("Contrast 5", edge);
-	// " Contrast 10  \n";
-	BrightEdges(image, edge, 10);
-	namedWindow("Contrast 10");
-	imshow("Contrast 10", edge);
-	//  "wait key ";
-	waitKey(0);
-	//  "end  ";
-	return 0;
+    CommandLineParser parser(argc, argv, keys);
+    if (parser.has("help"))
+    {
+        help();
+        return 0;
+    }
+    string filename = parser.get<string>(0);
+    Mat image = imread(filename, IMREAD_COLOR);
+    if (image.empty())
+    {
+        printf("Cannot read image file: %s\n", filename.c_str());
+        help();
+        return -1;
+    }
+    // Create a window
+    // //  " original ";
+    namedWindow("Original");
+    imshow("Original", image);
+    //  " absdiff ";
+    Mat edge;
+    BrightEdges(image, edge, 0); //  No contrast
+    namedWindow("Absolute Difference");
+    imshow("Absolute Difference", edge);
+    // " default contrast 1 ";
+    BrightEdges(image, edge);
+    namedWindow("Default contrast");
+    imshow("Default contrast", edge); // Default contrast 1
+    // Wait for a key stroke; the same function arranges events processing
+    // " Contrast 5  \n";
+    BrightEdges(image, edge, 5);
+    namedWindow("Contrast 5");
+    imshow("Contrast 5", edge);
+    // " Contrast 10  \n";
+    BrightEdges(image, edge, 10);
+    namedWindow("Contrast 10");
+    imshow("Contrast 10", edge);
+    //  "wait key ";
+    waitKey(0);
+    //  "end  ";
+    return 0;
 }
