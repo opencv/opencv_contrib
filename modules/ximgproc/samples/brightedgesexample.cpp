@@ -52,9 +52,7 @@ using namespace cv;
 using namespace ximgproc;
 using namespace std;
 int edgeThresh = 1;
-Mat image, gray, gblur, bblur, edge, cedge,diff;
 // define a trackbar callback
-
 static void help()
 {
 	printf("\nThis sample demonstrates BrightEdge detection\n"
@@ -74,20 +72,22 @@ int main(int argc, const char** argv)
 		return 0;
 	}
 	string filename = parser.get<string>(0);
-	image = imread(filename, IMREAD_COLOR);
+	Mat image = imread(filename, IMREAD_COLOR);
 	if (image.empty())
 	{
 		printf("Cannot read image file: %s\n", filename.c_str());
 		help();
 		return -1;
 	}
+	Mat gray;
 	cvtColor(image, gray, COLOR_BGR2GRAY);
 	// Create a window
 	// //  " original ";
 	namedWindow("Original");
 	imshow("Original", image);
 	//  " absdiff ";
-	BrightEdges(image, edge, 0); // No contrast
+	Mat edge;
+	BrightEdges(image, edge, 0); //  No contrast
 	namedWindow("Absolute Difference");
 	imshow("Absolute Difference", edge);
 	// " default contrast 1 ";
