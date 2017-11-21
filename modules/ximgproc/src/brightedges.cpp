@@ -147,6 +147,7 @@ namespace cv
 			iedge.ptr(row - 1)[col + 2];
 		if (line < weight) lines += 1;
 		if (line == 1) return 0;
+		// Compute surrounding pixels for dark zone
 		int surround = iedge.ptr(row - 1)[col - 1] +
 			iedge.ptr(row - 1)[col] +
 			iedge.ptr(row - 1)[col + 1] +
