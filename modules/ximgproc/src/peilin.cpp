@@ -4,8 +4,7 @@
 
 #include "precomp.hpp"
 
-namespace cv
-{
+namespace cv { namespace ximgproc {
 
     static inline Moments operator& ( const Moments & lhs, const Matx22d & rhs )
     {
@@ -54,4 +53,4 @@ namespace cv
         T.assign ( Mat ( PeiLinNormalization ( I ) ) );
     }
 
-}
+}} // namespace

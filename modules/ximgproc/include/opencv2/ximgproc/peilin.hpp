@@ -7,8 +7,8 @@
 
 #include <opencv2/core.hpp>
 
-namespace cv
-{
+namespace cv { namespace ximgproc {
+
     //! @addtogroup ximgproc
     //! @{
 
@@ -26,6 +26,7 @@ namespace cv
     CV_EXPORTS Matx23d PeiLinNormalization ( InputArray I );
     /** @overload */
     CV_EXPORTS_W void PeiLinNormalization ( InputArray I, OutputArray T );
-}
+
+}} // namespace
 
 #endif
