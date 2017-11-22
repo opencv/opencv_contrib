@@ -319,9 +319,6 @@ void transformFD(InputArray _src, InputArray _t,OutputArray _dst,  bool fdContou
     Z.at<Vec2d>(0, 0) += Vec2d(t.at<double>(0, 3), t.at<double>(0, 4));
     std::vector<Point2d> z;
     dft(Z, z, DFT_INVERSE);
-    std::vector<Point> c;
-    for (int j = 0; j<static_cast<int>(z.size()); j++)
-        c.push_back(Point2d(z[j].x, z[j].y));
     Mat(z).copyTo(_dst);
 }
 
