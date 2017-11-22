@@ -62,7 +62,7 @@ int main(void)
         {
             Mat r = getRotationMatrix2D(Point(p.xg, p.yg), p.angle, 10.0/ p.scale10);
             ctrNoisy= NoisyPolygon(ctrRef,static_cast<double>(p.levelNoise));
-            transform(ctrNoisy, ctrNoisyRotate,r);
+            cv::transform(ctrNoisy, ctrNoisyRotate, r);
             ctrNoisyRotateShift.clear();
             for (int i=0;i<static_cast<int>(ctrNoisy.size());i++)
                 ctrNoisyRotateShift.push_back(ctrNoisyRotate[(i+(p.origin*ctrNoisy.size())/100)% ctrNoisy.size()]);
@@ -112,7 +112,7 @@ int main(void)
             cout << "Angle = " << t.at<double>(0, 1) * 180 / M_PI << " expected " << p.angle  <<"\n";
             cout << "Scale = " << t.at<double>(0, 2) << " expected " << p.scale10 / 10.0 << "\n";
             Mat dst;
-            ximgproc::transform(ctrRot2d, t, dst, false);
+            ximgproc::transformFD(ctrRot2d, t, dst, false);
             c.push_back(dst);
             drawContours(img, c, 2, Scalar(0,255,255));
             circle(img, c[2][0], 5, Scalar(0, 255, 255));

@@ -281,7 +281,7 @@ void contourSampling(InputArray _src, OutputArray _out, int nbElt)
     r.copyTo(_out);
 }
 
-void transform(InputArray _src, InputArray _t,OutputArray _dst,  bool fdContour)
+void transformFD(InputArray _src, InputArray _t,OutputArray _dst,  bool fdContour)
 {
     if (!fdContour)
         CV_Assert(_src.kind() == _InputArray::STD_VECTOR);
@@ -325,7 +325,7 @@ void transform(InputArray _src, InputArray _t,OutputArray _dst,  bool fdContour)
     Mat(z).copyTo(_dst);
 }
 
-cv::Ptr<ContourFitting> create(int ctr, int fd)
+cv::Ptr<ContourFitting> createContourFitting(int ctr, int fd)
 {
     return makePtr<ContourFitting>(ctr, fd);
 }
