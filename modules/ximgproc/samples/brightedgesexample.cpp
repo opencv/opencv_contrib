@@ -51,7 +51,7 @@
 using namespace cv;
 using namespace ximgproc;
 using namespace std;
-// define a trackbar callback
+
 static void help()
 {
     printf("\nThis sample demonstrates BrightEdge detection\n"
@@ -91,7 +91,6 @@ int main(int argc, const char** argv)
     BrightEdges(image, edge);
     namedWindow("Default contrast");
     imshow("Default contrast", edge); // Default contrast 1
-    // Wait for a key stroke; the same function arranges events processing
     // " Contrast 5  \n";
     BrightEdges(image, edge, 5);
     namedWindow("Contrast 5");
