@@ -90,7 +90,7 @@ int main(int argc, const char** argv)
     // " default contrast 1 ";
     BrightEdges(image, edge);
     namedWindow("Default contrast");
-    imshow("Default contrast", edge); // Default contrast 1
+    imshow("Default contrast", edge);// Default contrast 1
     // " Contrast 5  \n";
     BrightEdges(image, edge, 5);
     namedWindow("Contrast 5");
