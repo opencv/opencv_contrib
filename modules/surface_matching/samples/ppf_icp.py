@@ -20,8 +20,8 @@ noise = np.random.normal(0.0, 0.1, height * width * 3).reshape((-1, 3))
 noise2 = np.random.normal(0.0, 1.0, height * width)
 
 x, y = np.meshgrid(
-    range(-width/2, width/2),
-    range(-height/2, height/2),
+    range(-width//2, width//2),
+    range(-height//2, height//2),
     sparse=False, indexing='xy'
 )
 z = np.zeros((height, width))
@@ -42,7 +42,7 @@ Rt = np.vstack((
     np.array([0, 0, 0, 1])
 )).astype(np.float32)
 
-icp = cv2.ppf_match_3d.ICP(100)
+icp = cv2.ppf_match_3d_ICP(100)
 
 I = np.eye(4)
 print("Unaligned error:\t%.6f" % np.linalg.norm(I - Rt))
