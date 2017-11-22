@@ -55,6 +55,7 @@
 #include "ximgproc/peilin.hpp"
 #include "ximgproc/fourier_descriptors.hpp"
 #include "ximgproc/ridgefilter.hpp"
+#include "ximgproc/brightedges.hpp"
 
 
 /** @defgroup ximgproc Extended Image Processing
