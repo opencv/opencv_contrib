@@ -94,7 +94,7 @@ namespace ximgproc {
     * @param   fdContour true src are Fourier Descriptors. fdContour false src is a contour
     *
     */
-    CV_EXPORTS_W void transform(InputArray src, InputArray t,OutputArray dst, bool fdContour=true);
+    CV_EXPORTS_W void transformFD(InputArray src, InputArray t,OutputArray dst, bool fdContour=true);
     /**
     * @brief   Contour sampling .
     *
@@ -106,12 +106,12 @@ namespace ximgproc {
     CV_EXPORTS_W void contourSampling(InputArray src, OutputArray out, int nbElt);
 
     /**
-    * @brief create
-
+    * @brief create ContourFitting algorithm object
+    *
     * @param ctr number of Fourier descriptors equal to number of contour points after resampling.
     * @param fd Contour defining second shape (Target).
     */
-    CV_EXPORTS_W Ptr<ContourFitting> create(int ctr = 1024, int fd = 16);
+    CV_EXPORTS_W Ptr<ContourFitting> createContourFitting(int ctr = 1024, int fd = 16);
 
     //! @} ximgproc_fourier
 }
