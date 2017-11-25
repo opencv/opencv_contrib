@@ -65,7 +65,7 @@
 #define cvLIB(name) "opencv_" name CV_VERSION_ID
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 /* windows stuff */
 #else
 typedef unsigned long DWORD;
