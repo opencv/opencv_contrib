@@ -885,7 +885,10 @@ layer {
     variance: 0.1
     variance: 0.2
     variance: 0.2
-    additional_y_offset: true
+    offset_h: 0.5
+    offset_w: 0.5
+    offset_h: 1.0
+    offset_w: 0.5
   }
 }
 layer {
@@ -1010,7 +1013,10 @@ layer {
     variance: 0.1
     variance: 0.2
     variance: 0.2
-    additional_y_offset: true
+    offset_h: 0.5
+    offset_w: 0.5
+    offset_h: 1.0
+    offset_w: 0.5
   }
 }
 layer {
@@ -1135,7 +1141,10 @@ layer {
     variance: 0.1
     variance: 0.2
     variance: 0.2
-    additional_y_offset: true
+    offset_h: 0.5
+    offset_w: 0.5
+    offset_h: 1.0
+    offset_w: 0.5
   }
 }
 layer {
@@ -1260,7 +1269,10 @@ layer {
     variance: 0.1
     variance: 0.2
     variance: 0.2
-    additional_y_offset: true
+    offset_h: 0.5
+    offset_w: 0.5
+    offset_h: 1.0
+    offset_w: 0.5
   }
 }
 layer {
@@ -1385,7 +1397,10 @@ layer {
     variance: 0.1
     variance: 0.2
     variance: 0.2
-    additional_y_offset: true
+    offset_h: 0.5
+    offset_w: 0.5
+    offset_h: 1.0
+    offset_w: 0.5
   }
 }
 layer {
@@ -1510,7 +1525,10 @@ layer {
     variance: 0.1
     variance: 0.2
     variance: 0.2
-    additional_y_offset: true
+    offset_h: 0.5
+    offset_w: 0.5
+    offset_h: 1.0
+    offset_w: 0.5
   }
 }
 layer {
