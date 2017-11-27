@@ -269,7 +269,7 @@ private:
     std::valarray<float> _inputBuffer; //!< buffer used to convert input cv::Mat to internal retina buffers format (valarrays)
 
     // pointer to retina model
-    RetinaFilter* _retinaFilter; //!< the pointer to the retina module, allocated with instance construction
+    cv::Ptr<RetinaFilter> _retinaFilter; //!< the pointer to the retina module, allocated with instance construction
 
     //! private method called by constructors, gathers their parameters and use them in a unified way
     void _init(const Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
@@ -295,7 +295,7 @@ private:
 
     bool _wasOCLRunCalled;
 #ifdef HAVE_OPENCL
-    ocl::RetinaOCLImpl* _ocl_retina;
+    cv::Ptr<ocl::RetinaOCLImpl> _ocl_retina;
 
     bool ocl_run(InputArray inputImage);
     bool ocl_getParvo(OutputArray retinaOutput_parvo);
@@ -320,36 +320,26 @@ Ptr<Retina> Retina::create(Size inputSize, const bool colorMode, int colorSampli
 // RetinaImpl code
 RetinaImpl::RetinaImpl(const cv::Size inputSz)
 {
-    _retinaFilter = 0;
     _init(inputSz, true, RETINA_COLOR_BAYER, false);
 #ifdef HAVE_OPENCL
-    _ocl_retina = 0;
-    if (inputSz.width % 4 == 0)
-        _ocl_retina = new ocl::RetinaOCLImpl(inputSz);
+    if (inputSz.width % 4 == 0 && cv::ocl::useOpenCL())
+        _ocl_retina.reset(new ocl::RetinaOCLImpl(inputSz));
 #endif
 }
 
 RetinaImpl::RetinaImpl(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const float reductionFactor, const float samplingStrenght)
 {
-    _retinaFilter = 0;
     _init(inputSz, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
 #ifdef HAVE_OPENCL
-    _ocl_retina = 0;
-    if (inputSz.width % 4 == 0 && !useRetinaLogSampling)
-        _ocl_retina = new ocl::RetinaOCLImpl(inputSz, colorMode, colorSamplingMethod,
-                                             useRetinaLogSampling, reductionFactor, samplingStrenght);
+    if (inputSz.width % 4 == 0 && !useRetinaLogSampling && cv::ocl::useOpenCL())
+        _ocl_retina.reset(new ocl::RetinaOCLImpl(inputSz, colorMode, colorSamplingMethod,
+                                                 useRetinaLogSampling, reductionFactor, samplingStrenght));
 #endif
 }
 
 RetinaImpl::~RetinaImpl()
 {
-    if (_retinaFilter)
-        delete _retinaFilter;
-
-#ifdef HAVE_OPENCL
-    if (_ocl_retina)
-        delete _ocl_retina;
-#endif
+    // nothing
 }
 
 /**
@@ -572,14 +562,14 @@ bool RetinaImpl::ocl_run(InputArray inputMatToConvert)
 
 void RetinaImpl::run(InputArray inputMatToConvert)
 {
-    CV_OCL_RUN((_ocl_retina != 0), ocl_run(inputMatToConvert));
+    CV_OCL_RUN((_ocl_retina != 0 && inputMatToConvert.isUMat()), ocl_run(inputMatToConvert));
 
     _wasOCLRunCalled = false;
     // first convert input image to the compatible format : std::valarray<float>
     const bool colorMode = _convertCvMat2ValarrayBuffer(inputMatToConvert.getMat(), _inputBuffer);
     // process the retina
     if (!_retinaFilter->runFilter(_inputBuffer, colorMode, false, _retinaParameters.OPLandIplParvo.colorMode && colorMode, false))
-        throw cv::Exception(-1, "RetinaImpl cannot be applied, wrong input buffer size", "RetinaImpl::run", "RetinaImpl.h", 0);
+        CV_Error(Error::StsBadArg, "RetinaImpl cannot be applied, wrong input buffer size");
 }
 
 void RetinaImpl::applyFastToneMapping(InputArray inputImage, OutputArray outputToneMappedImage)
@@ -614,8 +604,11 @@ bool RetinaImpl::ocl_getParvo(OutputArray retinaOutput_parvo)
 
 void RetinaImpl::getParvo(OutputArray retinaOutput_parvo)
 {
-    CV_OCL_RUN((_ocl_retina != 0) && retinaOutput_parvo.isUMat(), ocl_getParvo(retinaOutput_parvo));
-    CV_Assert(!_wasOCLRunCalled);
+    if (_wasOCLRunCalled)
+    {
+        CV_OCL_RUN(true, ocl_getParvo(retinaOutput_parvo));
+        CV_Error(Error::StsInternal, "");
+    }
 
     if (_retinaFilter->getColorMode())
     {
@@ -640,8 +633,11 @@ bool RetinaImpl::ocl_getMagno(OutputArray retinaOutput_magno)
 
 void RetinaImpl::getMagno(OutputArray retinaOutput_magno)
 {
-    CV_OCL_RUN((_ocl_retina != 0) && retinaOutput_magno.isUMat(), ocl_getMagno(retinaOutput_magno));
-    CV_Assert(!_wasOCLRunCalled);
+    if (_wasOCLRunCalled)
+    {
+        CV_OCL_RUN(true, ocl_getMagno(retinaOutput_magno));
+        CV_Error(Error::StsInternal, "");
+    }
 
     // reallocate output buffer (if necessary)
     _convertValarrayBuffer2cvMat(_retinaFilter->getMovingContours(), _retinaFilter->getOutputNBrows(), _retinaFilter->getOutputNBcolumns(), false, retinaOutput_magno);
@@ -658,10 +654,14 @@ bool RetinaImpl::ocl_getMagnoRAW(OutputArray magnoOutputBufferCopy)
 #endif
 
 // original API level data accessors : copy buffers if size matches, reallocate if required
-void RetinaImpl::getMagnoRAW(OutputArray magnoOutputBufferCopy){
+void RetinaImpl::getMagnoRAW(OutputArray magnoOutputBufferCopy)
+{
+    if (_wasOCLRunCalled)
+    {
+        CV_OCL_RUN(true, ocl_getMagnoRAW(magnoOutputBufferCopy));
+        CV_Error(Error::StsInternal, "");
+    }
 
-    CV_OCL_RUN((_ocl_retina != 0) && magnoOutputBufferCopy.isUMat(), ocl_getMagnoRAW(magnoOutputBufferCopy));
-    CV_Assert(!_wasOCLRunCalled);
     // get magno channel header
     const cv::Mat magnoChannel=cv::Mat(getMagnoRAW());
     // copy data
@@ -677,10 +677,14 @@ bool RetinaImpl::ocl_getParvoRAW(OutputArray parvoOutputBufferCopy)
 }
 #endif
 
-void RetinaImpl::getParvoRAW(OutputArray parvoOutputBufferCopy){
+void RetinaImpl::getParvoRAW(OutputArray parvoOutputBufferCopy)
+{
+    if (_wasOCLRunCalled)
+    {
+        CV_OCL_RUN(true, ocl_getParvoRAW(parvoOutputBufferCopy));
+        CV_Error(Error::StsInternal, "");
+    }
 
-    CV_OCL_RUN((_ocl_retina != 0) && parvoOutputBufferCopy.isUMat(), ocl_getParvoRAW(parvoOutputBufferCopy));
-    CV_Assert(!_wasOCLRunCalled);
     // get parvo channel header
     const cv::Mat parvoChannel=cv::Mat(getParvoRAW());
     // copy data
@@ -713,16 +717,14 @@ void RetinaImpl::_init(const cv::Size inputSz, const bool colorMode, int colorSa
     _wasOCLRunCalled = false;
     // basic error check
     if (inputSz.height*inputSz.width <= 0)
-        throw cv::Exception(-1, "Bad retina size setup : size height and with must be superior to zero", "RetinaImpl::setup", "Retina.cpp", 0);
+        CV_Error(Error::StsBadArg, "Bad retina size setup : size height and with must be superior to zero");
 
     unsigned int nbPixels=inputSz.height*inputSz.width;
     // resize buffers if size does not match
     _inputBuffer.resize(nbPixels*3); // buffer supports gray images but also 3 channels color buffers... (larger is better...)
 
     // allocate the retina model
-        if (_retinaFilter)
-           delete _retinaFilter;
-    _retinaFilter = new RetinaFilter(inputSz.height, inputSz.width, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
+    _retinaFilter.reset(new RetinaFilter(inputSz.height, inputSz.width, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght));
 
     _retinaParameters.OPLandIplParvo.colorMode = colorMode;
     // prepare the default parameter XML file with default setup
@@ -776,7 +778,7 @@ bool RetinaImpl::_convertCvMat2ValarrayBuffer(InputArray inputMat, std::valarray
     const Mat inputMatToConvert=inputMat.getMat();
     // first check input consistency
     if (inputMatToConvert.empty())
-        throw cv::Exception(-1, "RetinaImpl cannot be applied, input buffer is empty", "RetinaImpl::run", "RetinaImpl.h", 0);
+        CV_Error(Error::StsBadArg, "RetinaImpl cannot be applied, input buffer is empty");
 
     // retreive color mode from image input
     int imageNumberOfChannels = inputMatToConvert.channels();

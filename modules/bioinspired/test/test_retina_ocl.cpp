@@ -25,7 +25,7 @@
 //
 //   * Redistribution's in binary form must reproduce the above copyright notice,
 //     this list of conditions and the following disclaimer in the documentation
-//     and/or other oclMaterials provided with the distribution.
+//     and/or other materials provided with the distribution.
 //
 //   * The name of the copyright holders may not be used to endorse or promote products
 //     derived from this software without specific prior written permission.
@@ -45,8 +45,6 @@
 
 #include "test_precomp.hpp"
 #include "opencv2/ts/ocl_test.hpp"
-
-#ifdef HAVE_OPENCL
 
 #define RETINA_ITERATIONS 5
 
@@ -116,5 +114,3 @@ OCL_INSTANTIATE_TEST_CASE_P(Contrib, Retina_OCL, testing::Combine(
                             testing::Values(10.0, 5.0)));
 
 } } // namespace cvtest::ocl
-
-#endif // HAVE_OPENCL
