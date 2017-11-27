@@ -78,7 +78,10 @@ typedef void *HANDLE;
 #ifndef _MSC_VER
 typedef unsigned char BYTE;
 #else
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#undef min
+#undef max
 #endif
 
 typedef std::vector<int> vecI;
