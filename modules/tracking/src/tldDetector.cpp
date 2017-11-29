@@ -440,8 +440,6 @@ namespace cv
 				LabeledPatch labPatch;
 				double curScale = pow(SCALE_STEP, ensScaleIDs[i]);
 				labPatch.rect = Rect2d(ensBuffer[i].x*curScale, ensBuffer[i].y*curScale, initSize.width * curScale, initSize.height * curScale);
-                labPatch.Sc = scValues[i];
-                //printf("max sc %f\n", labPatch.Sc);
 
 				const double srValue = srValues[i];
 				const double scValue = scValues[i];

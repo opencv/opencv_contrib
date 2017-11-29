@@ -103,7 +103,6 @@ namespace cv
 			{
 				Rect2d rect;
 				bool isObject, shouldBeIntegrated;
-                double Sc;
 			};
 			bool detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches, Size initSize);
 			bool ocl_detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches,  Size initSize);

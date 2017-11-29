@@ -91,7 +91,7 @@ namespace cv
         string TRACK_votImpl::numberToString(int number)
         {
             string out;
-            char numberStr[9];
+            char numberStr[20];
             sprintf(numberStr, "%u", number);
             for (unsigned int i = 0; i < 8 - strlen(numberStr); ++i)
             {

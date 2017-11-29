@@ -53,9 +53,15 @@ TEST(Sfm_projection, homogeneousToEuclidean)
     EXPECT_EQ((int) X.rows-1,(int) XEuclidean.rows );
 
     for(int y=0;y<X.rows-1;++y)
+    {
         for(int x=0;x<X.cols;++x)
+        {
             if (X(X.rows-1,x)!=0)
+            {
                 EXPECT_LE( std::abs(X(y,x)/X(X.rows-1, x) - XEuclidean(y,x)), 1e-4 );
+            }
+        }
+    }
 }
 
 TEST(Sfm_projection, euclideanToHomogeneous)

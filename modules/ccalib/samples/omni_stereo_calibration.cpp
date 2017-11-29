@@ -83,10 +83,10 @@ static bool detecChessboardCorners(const vector<string>& list1, vector<string>& 
     }
     if (!img_l.empty())
         imageSize1 = img_l.size();
-	if (!img_r.empty())
-	{
-		imageSize2 = img_r.size();
-	}
+    if (!img_r.empty())
+    {
+        imageSize2 = img_r.size();
+    }
 
     if (image_points_1.size() < 3)
         return false;
