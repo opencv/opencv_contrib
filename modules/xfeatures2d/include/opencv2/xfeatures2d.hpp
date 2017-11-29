@@ -160,6 +160,7 @@ LATCH is a binary descriptor based on learned comparisons of triplets of image p
 * rotationInvariance - whether or not the descriptor should compansate for orientation changes.
 * half_ssd_size - the size of half of the mini-patches size. For example, if we would like to compare triplets of patches of size 7x7x
     then the half_ssd_size should be (7-1)/2 = 3.
+* sigma - sigma value for GaussianBlur smoothing of the source image. Source image will be used without smoothing in case sigma value is 0.
 
 Note: the descriptor can be coupled with any keypoint extractor. The only demand is that if you use set rotationInvariance = True then
     you will have to use an extractor which estimates the patch orientation (in degrees). Examples for such extractors are ORB and SIFT.
@@ -170,7 +171,7 @@ Note: a complete example can be found under /samples/cpp/tutorial_code/xfeatures
 class CV_EXPORTS_W LATCH : public Feature2D
 {
 public:
-    CV_WRAP static Ptr<LATCH> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size=3);
+    CV_WRAP static Ptr<LATCH> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size = 3, double sigma = 2.0);
 };
 
 /** @brief Class implementing DAISY descriptor, described in @cite Tola10
