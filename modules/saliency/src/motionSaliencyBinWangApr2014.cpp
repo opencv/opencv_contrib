@@ -515,8 +515,8 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
               /* Check if the value of current pixel BA in potentialBackground model is already contained in at least one of its neighbors'
                * background model
                */
-              resize( replicateCurrentBAMat, replicateCurrentBAMat, Size( backgroundModelROI.cols, backgroundModelROI.rows ), 0, 0, INTER_LINEAR );
-              resize( diffResult, diffResult, Size( backgroundModelROI.cols, backgroundModelROI.rows ), 0, 0, INTER_LINEAR );
+              resize( replicateCurrentBAMat, replicateCurrentBAMat, Size( backgroundModelROI.cols, backgroundModelROI.rows ), 0, 0, INTER_LINEAR_EXACT );
+              resize( diffResult, diffResult, Size( backgroundModelROI.cols, backgroundModelROI.rows ), 0, 0, INTER_LINEAR_EXACT );
 
               backgroundModelROI.convertTo( backgroundModelROI, CV_8U );
 

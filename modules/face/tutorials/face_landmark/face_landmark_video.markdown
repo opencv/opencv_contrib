@@ -74,7 +74,7 @@ while(1){
 	faces.clear();
 	shapes.clear();
 	cap>>img;
-	resize(img,img,Size(600,600));
+	resize(img,img,Size(600,600),0,0,INTER_LINEAR_EXACT);
 	facemark->getFaces(img,faces);
 	if(faces.size()==0){
 	    cout<<"No faces found in this frame"<<endl;

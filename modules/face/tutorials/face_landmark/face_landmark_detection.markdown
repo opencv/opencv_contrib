@@ -63,7 +63,7 @@ in which landmarks have to be detected.
 facemark->loadModel(filename);
 cout<<"Loaded model"<<endl;
 vector<Rect> faces;
-resize(img,img,Size(460,460));
+resize(img,img,Size(460,460),0,0,INTER_LINEAR_EXACT);
 facemark->getFaces(img,faces);
 vector< vector<Point2f> > shapes;
 

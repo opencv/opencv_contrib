@@ -83,7 +83,7 @@ int main(int argc,char** argv){
         shapes.clear();
         cap>>img;
         //Detect faces in the current image
-        resize(img,img,Size(600,600));
+        resize(img,img,Size(600,600), 0, 0, INTER_LINEAR_EXACT);
         facemark->getFaces(img,faces);
         if(faces.size()==0){
             cout<<"No faces found in this frame"<<endl;

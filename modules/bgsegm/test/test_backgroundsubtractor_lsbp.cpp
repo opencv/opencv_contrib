@@ -91,7 +91,7 @@ template<typename T>
 static double evaluateBGSAlgorithm(Ptr<T> bgs) {
     Mat background = imread(getDataDir() + "shared/fruits.png");
     Mat object = imread(getDataDir() + "shared/baboon.png");
-    cv::resize(object, object, Size(100, 100));
+    cv::resize(object, object, Size(100, 100), 0, 0, INTER_LINEAR_EXACT);
     Ptr<bgsegm::SyntheticSequenceGenerator> generator = bgsegm::createSyntheticSequenceGenerator(background, object);
 
     double f1_mean = 0;

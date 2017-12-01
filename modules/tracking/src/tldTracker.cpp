@@ -287,7 +287,7 @@ int TrackerTLDImpl::Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examp
 
 #if defined BLUR_AS_VADIM
             GaussianBlur(standardPatch, blurredPatch, GaussBlurKernelSize, 0.0);
-            resize(blurredPatch, blurredPatch, initSize_);
+            resize(blurredPatch, blurredPatch, initSize_, 0, 0, INTER_LINEAR_EXACT);
 #else
             resample(blurredImg, RotatedRect(center, size, angle), blurredPatch);
 #endif

@@ -124,8 +124,8 @@ TEST_P(DisparityWLSFilterTest, MultiThreadReproducibility)
 
     if(use_downscale)
     {
-        resize(left_disp,left_disp,Size(),0.5,0.5);
-        resize(right_disp,right_disp,Size(),0.5,0.5);
+        resize(left_disp,left_disp,Size(),0.5,0.5, INTER_LINEAR_EXACT);
+        resize(right_disp,right_disp,Size(),0.5,0.5, INTER_LINEAR_EXACT);
         ROI = Rect(ROI.x/2,ROI.y/2,ROI.width/2,ROI.height/2);
     }
 

@@ -88,8 +88,8 @@ void MakeArtificialExample(Mat &dst_frame1, Mat &dst_frame2)
 
     Mat tmp(Size(dst_frame1.cols / (1 << src_scale), dst_frame1.rows / (1 << src_scale)), CV_8U);
     randu(tmp, 0, 255);
-    resize(tmp, dst_frame1, dst_frame1.size(), 0.0, 0.0, INTER_LINEAR);
-    resize(tmp, dst_frame2, dst_frame2.size(), 0.0, 0.0, INTER_LINEAR);
+    resize(tmp, dst_frame1, dst_frame1.size(), 0.0, 0.0, INTER_LINEAR_EXACT);
+    resize(tmp, dst_frame2, dst_frame2.size(), 0.0, 0.0, INTER_LINEAR_EXACT);
 
     Mat displacement_field(Size(dst_frame1.cols / (1 << OF_scale), dst_frame1.rows / (1 << OF_scale)),
                            CV_32FC2);

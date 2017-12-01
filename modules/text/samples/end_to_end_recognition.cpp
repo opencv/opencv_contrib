@@ -263,10 +263,10 @@ int main(int argc, char* argv[])
 
 
 
-    //resize(out_img_detection,out_img_detection,Size(image.cols*scale_img,image.rows*scale_img));
+    //resize(out_img_detection,out_img_detection,Size(image.cols*scale_img,image.rows*scale_img),0,0,INTER_LINEAR_EXACT);
     //imshow("detection", out_img_detection);
     //imwrite("detection.jpg", out_img_detection);
-    //resize(out_img,out_img,Size(image.cols*scale_img,image.rows*scale_img));
+    //resize(out_img,out_img,Size(image.cols*scale_img,image.rows*scale_img),0,0,INTER_LINEAR_EXACT);
     namedWindow("recognition",WINDOW_NORMAL);
     imshow("recognition", out_img);
     waitKey(0);

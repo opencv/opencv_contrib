@@ -306,7 +306,7 @@ namespace cv{
     CV_Assert(img.channels() == 1 || img.channels() == 3);
 
     // resize the image whenever needed
-    if(resizeImage)resize(img,img,Size(img.cols/2,img.rows/2));
+    if(resizeImage)resize(img,img,Size(img.cols/2,img.rows/2),0,0,INTER_LINEAR_EXACT);
 
     // detection part
     if(frame>0){

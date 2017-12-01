@@ -818,7 +818,7 @@ namespace
         resize(buf.mul, buf.numerator, Size(), 1.0 / df, 1.0 / df);
 
         ensureSizeIsEnough(nsz, buf.denominator);
-        resize(buf.theta_masked, buf.denominator, Size(), 1.0 / df, 1.0 / df);        
+        resize(buf.theta_masked, buf.denominator, Size(), 1.0 / df, 1.0 / df);
         h_filter(buf.numerator, buf.numerator_filtered, sigma_s / df);
         h_filter(buf.denominator, buf.denominator_filtered, sigma_s / df);
 

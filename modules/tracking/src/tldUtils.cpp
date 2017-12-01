@@ -103,7 +103,7 @@ double scaleAndBlur(const Mat& originalImg, int scale, Mat& scaledImg, Mat& blur
     for( int i = 0; i < scale; i++, dScale *= scaleStep );
     Size2d size = originalImg.size();
     size.height /= dScale; size.width /= dScale;
-    resize(originalImg, scaledImg, size);
+    resize(originalImg, scaledImg, size, 0, 0, INTER_LINEAR_EXACT);
     GaussianBlur(scaledImg, blurredImg, GaussBlurKernelSize, 0.0);
     return dScale;
 }

@@ -193,7 +193,7 @@ int main(int argc, char* argv[])
         double t_all = (double)getTickCount();
 
         if (downsize)
-            resize(frame,frame,Size(320,240));
+            resize(frame,frame,Size(320,240),0,0,INTER_LINEAR_EXACT);
 
         /*Text Detection*/
         cvtColor(frame,gray,COLOR_BGR2GRAY);
