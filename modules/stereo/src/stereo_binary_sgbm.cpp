@@ -248,7 +248,7 @@ namespace cv
                             CostType* hsumAdd = hsumBuf + (std::min(k, height-1) % hsumBufNRows)*costBufSize;
                             if( k < height )
                             {
-                                for(int ii = 0; ii <= ww; ii++)
+                                for(int ii = 0; ii < ww; ii++)
                                 {
                                     for(int dd = 0; dd <= params.numDisparities; dd++)
                                     {
