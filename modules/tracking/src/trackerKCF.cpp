@@ -212,7 +212,10 @@ namespace cv{
    */
   bool TrackerKCFImpl::initImpl( const Mat& image, const Rect2d& boundingBox ){
     frame=0;
-    roi = boundingBox;
+    roi.x = cvRound(boundingBox.x);
+    roi.y = cvRound(boundingBox.y);
+    roi.width = cvRound(boundingBox.width);
+    roi.height = cvRound(boundingBox.height);
 
     //calclulate output sigma
     output_sigma=std::sqrt(static_cast<float>(roi.width*roi.height))*params.output_sigma_factor;
@@ -242,8 +245,8 @@ namespace cv{
 
     // create gaussian response
     y=Mat::zeros((int)roi.height,(int)roi.width,CV_32F);
-    for(int i=0;i<roi.height;i++){
-      for(int j=0;j<roi.width;j++){
+    for(int i=0;i<int(roi.height);i++){
+      for(int j=0;j<int(roi.width);j++){
         y.at<float>(i,j) =
                 static_cast<float>((i-roi.height/2+1)*(i-roi.height/2+1)+(j-roi.width/2+1)*(j-roi.width/2+1));
       }
@@ -255,6 +258,10 @@ namespace cv{
     // perform fourier transfor to the gaussian response
     fft2(y,yf);
 
+    if (image.channels() == 1) { // disable CN for grayscale images
+      params.desc_pca &= ~(CN);
+      params.desc_npca &= ~(CN);
+    }
     model=Ptr<TrackerKCFModel>(new TrackerKCFModel(params));
 
     // record the non-compressed descriptors
