@@ -692,12 +692,11 @@ namespace cv
                 {
                     int width = left.cols;
                     int height = left.rows;
-                    if(previous_size != width * height)
+                    if (puss.total() != (size_t)width * height)
                     {
-                        previous_size = width * height;
-                        speckleX.create(height,width,CV_32SC4);
-                        speckleY.create(height,width,CV_32SC4);
-                        puss.create(height,width,CV_32SC4);
+                        speckleX.create(height, width);
+                        speckleY.create(height, width);
+                        puss.create(height, width);
                     }
                     Mat aux;
                     aux.create(height,width,CV_16S);

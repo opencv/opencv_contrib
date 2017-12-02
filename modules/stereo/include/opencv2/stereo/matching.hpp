@@ -366,13 +366,12 @@ namespace cv
             };
         protected:
             //arrays used in the region removal
-            Mat speckleY;
-            Mat speckleX;
-            Mat puss;
+            Mat_<int> speckleY;
+            Mat_<int> speckleX;
+            Mat_<int> puss;
             //int *specklePointX;
             //int *specklePointY;
             //long long *pus;
-            int previous_size;
             //!method for setting the maximum disparity
             void setMaxDisparity(int val)
             {
@@ -480,10 +479,10 @@ namespace cv
                 CV_Assert(currentMap.cols == out.cols);
                 CV_Assert(currentMap.rows == out.rows);
                 CV_Assert(t >= 0);
-                int *pus = (int *)puss.data;
+                CV_Assert(!puss.empty());
                 int *specklePointX = (int *)speckleX.data;
                 int *specklePointY = (int *)speckleY.data;
-                memset(pus, 0, previous_size * sizeof(pus[0]));
+                puss.setTo(Scalar::all(0));
                 T *map = (T *)currentMap.data;
                 T *outputMap = (T *)out.data;
                 int height = currentMap.rows;
@@ -511,7 +510,7 @@ namespace cv
                             speckle_size = dr;
                             specklePointX[dr] = i;
                             specklePointY[dr] = j;
-                            pus[i * width + j] = 1;
+                            puss(i, j) = 1;
                             dr++;
                             map[iw + j] = k;
                             while (st < dr)
@@ -522,7 +521,7 @@ namespace cv
                                 for (int d = 0; d < 8; d++)
                                 {//if insisde
                                     if (ii + di[d] >= 0 && ii + di[d] < height && jj + dj[d] >= 0 && jj + dj[d] < width &&
-                                        pus[(ii + di[d]) * width + jj + dj[d]] == 0)
+                                        puss(ii + di[d], jj + dj[d]) == 0)
                                     {
                                         T val = map[(ii + di[d]) * width + jj + dj[d]];
                                         if (val == 0)
@@ -531,7 +530,7 @@ namespace cv
                                             specklePointX[dr] = (ii + di[d]);
                                             specklePointY[dr] = (jj + dj[d]);
                                             dr++;
-                                            pus[(ii + di[d]) * width + jj + dj[d]] = 1;
+                                            puss(ii + di[d], jj + dj[d]) = 1;
                                         }//this means that my point is a good point to be used in computing the final filling value
                                         else if (val >= 1 && val < 250)
                                         {
