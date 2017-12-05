@@ -1171,7 +1171,7 @@ class CV_EXPORTS_W TrackerMedianFlow : public Tracker
 tracking, learning and detection.
 
 The tracker follows the object from frame to frame. The detector localizes all appearances that
-have been observed so far and corrects the tracker if necessary. The learning estimates detector’s
+have been observed so far and corrects the tracker if necessary. The learning estimates detector's
 errors and updates it to avoid these errors in the future. The implementation is based on @cite TLD .
 
 The Median Flow algorithm (see cv::TrackerMedianFlow) was chosen as a tracking component in this
@@ -1435,7 +1435,7 @@ public:
 the long-term tracking task into tracking, learning and detection.
 
 The tracker follows the object from frame to frame. The detector localizes all appearances that
-have been observed so far and corrects the tracker if necessary. The learning estimates detector’s
+have been observed so far and corrects the tracker if necessary. The learning estimates detector's
 errors and updates it to avoid these errors in the future. The implementation is based on @cite TLD .
 
 The Median Flow algorithm (see cv::TrackerMedianFlow) was chosen as a tracking component in this

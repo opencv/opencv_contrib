@@ -77,7 +77,7 @@ void FindCandidateMatches(const FeatureSet &left,
 // method.
 // I.E:  A match is considered as strong if the following test is true :
 // I.E distance[0] < fRatio * distances[1].
-// From David Lowe “Distinctive Image Features from Scale-Invariant Keypoints”.
+// From David Lowe "Distinctive Image Features from Scale-Invariant Keypoints".
 // You can use David Lowe's magic ratio (0.6 or 0.8).
 // 0.8 allow to remove 90% of the false matches while discarding less than 5%
 // of the correct matches.

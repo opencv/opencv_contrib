@@ -485,7 +485,7 @@ Implements loading dataset:
 
 "VOT 2015 dataset comprises 60 short sequences showing various objects in challenging backgrounds.
 The sequences were chosen from a large pool of sequences including the ALOV dataset, OTB2 dataset,
-non-tracking datasets, Computer Vision Online, Professor Bob Fisher’s Image Database, Videezy,
+non-tracking datasets, Computer Vision Online, Professor Bob Fisher's Image Database, Videezy,
 Center for Research in Computer Vision, University of Central Florida, USA, NYU Center for Genomics
 and Systems Biology, Data Wrangling, Open Access Directory and Learning and Recognition in Vision
 Group, INRIA, France. The VOT sequence selection protocol was applied to obtain a representative
