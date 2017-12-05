@@ -70,7 +70,7 @@ which is available since the 2.4 release. I suggest you take a look at its descr
 
 Algorithm provides the following features for all derived classes:
 
--   So called “virtual constructor”. That is, each Algorithm derivative is registered at program
+-   So called "virtual constructor". That is, each Algorithm derivative is registered at program
     start and you can get the list of registered algorithms and create instance of a particular
     algorithm by its name (see Algorithm::create). If you plan to add your own algorithms, it is
     good practice to add a unique prefix to your algorithms to distinguish them from other

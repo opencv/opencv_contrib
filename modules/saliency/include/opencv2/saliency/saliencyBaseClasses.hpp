@@ -93,7 +93,7 @@ class CV_EXPORTS_W StaticSaliency : public virtual Saliency
     targets, a segmentation by clustering is performed, using *K-means algorithm*. Then, to gain a
     binary representation of clustered saliency map, since values of the map can vary according to
     the characteristics of frame under analysis, it is not convenient to use a fixed threshold. So,
-    *Otsu’s algorithm* is used, which assumes that the image to be thresholded contains two classes
+    *Otsu's algorithm* is used, which assumes that the image to be thresholded contains two classes
     of pixels or bi-modal histograms (e.g. foreground and back-ground pixels); later on, the
     algorithm calculates the optimal threshold separating those two classes, so that their
     intra-class variance is minimal.

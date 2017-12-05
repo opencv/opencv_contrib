@@ -5,7 +5,7 @@
 #ifndef __OPENCV_TEXT_TEXTDETECTOR_HPP__
 #define __OPENCV_TEXT_TEXTDETECTOR_HPP__
 
-#include"ocr.hpp"
+#include "ocr.hpp"
 
 namespace cv
 {

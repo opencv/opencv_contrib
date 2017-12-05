@@ -137,7 +137,7 @@ class CV_EXPORTS_W GrayCodePattern : public StructuredLightPattern
    *  @param patternImages The pattern images acquired by the camera, stored in a grayscale vector < Mat >.
    *  @param x x coordinate of the image pixel.
    *  @param y y coordinate of the image pixel.
-   *  @param projPix Projector's pixel corresponding to the camera's pixel: projPix.x and projPix.y are the image coordinates of the projector’s pixel corresponding to the pixel being decoded in a camera.
+   *  @param projPix Projector's pixel corresponding to the camera's pixel: projPix.x and projPix.y are the image coordinates of the projector's pixel corresponding to the pixel being decoded in a camera.
    */
   CV_WRAP
   virtual bool getProjPixel( InputArrayOfArrays patternImages, int x, int y, Point &projPix ) const = 0;
