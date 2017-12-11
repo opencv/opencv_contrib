@@ -7,7 +7,7 @@ Usage:
   edgeboxes_demo.py [<model>] [<input_image>]
 '''
 
-import cv2
+import cv2 as cv
 import numpy as np
 import sys
 
@@ -15,24 +15,24 @@ if __name__ == '__main__':
     print(__doc__)
 
     model = sys.argv[1]
-    im = cv2.imread(sys.argv[2])
+    im = cv.imread(sys.argv[2])
 
-    edge_detection = cv2.ximgproc.createStructuredEdgeDetection(model)
-    rgb_im = cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
+    edge_detection = cv.ximgproc.createStructuredEdgeDetection(model)
+    rgb_im = cv.cvtColor(im, cv.COLOR_BGR2RGB)
     edges = edge_detection.detectEdges(np.float32(rgb_im) / 255.0)
 
     orimap = edge_detection.computeOrientation(edges)
     edges = edge_detection.edgesNms(edges, orimap)
 
-    edge_boxes = cv2.ximgproc.createEdgeBoxes()
+    edge_boxes = cv.ximgproc.createEdgeBoxes()
     edge_boxes.setMaxBoxes(30)
     boxes = edge_boxes.getBoundingBoxes(edges, orimap)
 
     for b in boxes:
         x, y, w, h = b
-        cv2.rectangle(im, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
+        cv.rectangle(im, (x, y), (x+w, y+h), (0, 255, 0), 1, cv.LINE_AA)
 
-    cv2.imshow("edges", edges)
-    cv2.imshow("edgeboxes", im)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows()
+    cv.imshow("edges", edges)
+    cv.imshow("edgeboxes", im)
+    cv.waitKey(0)
+    cv.destroyAllWindows()

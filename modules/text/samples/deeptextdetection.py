@@ -2,7 +2,7 @@
 #!/usr/bin/python
 import sys
 import os
-import cv2
+import cv2 as cv
 import numpy as np
 
 def main():
@@ -19,8 +19,8 @@ def main():
         print " See the documentation of text::TextDetectorCNN class to get download links."
         quit()
 
-    img = cv2.imread(str(sys.argv[1]))
-    textSpotter = cv2.text.TextDetectorCNN_create("textbox.prototxt", "TextBoxes_icdar13.caffemodel")
+    img = cv.imread(str(sys.argv[1]))
+    textSpotter = cv.text.TextDetectorCNN_create("textbox.prototxt", "TextBoxes_icdar13.caffemodel")
     rects, outProbs = textSpotter.detect(img);
     vis = img.copy()
     thres = 0.6
@@ -28,10 +28,10 @@ def main():
     for r in range(np.shape(rects)[0]):
         if outProbs[r] > thres:
             rect = rects[r]
-            cv2.rectangle(vis, (rect[0],rect[1]), (rect[0] + rect[2], rect[1] + rect[3]), (255, 0, 0), 2)
+            cv.rectangle(vis, (rect[0],rect[1]), (rect[0] + rect[2], rect[1] + rect[3]), (255, 0, 0), 2)
 
-    cv2.imshow("Text detection result", vis)
-    cv2.waitKey()
+    cv.imshow("Text detection result", vis)
+    cv.waitKey()
 
 if __name__ == "__main__":
     main()

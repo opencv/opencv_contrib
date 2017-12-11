@@ -4,7 +4,7 @@ import os, sys, argparse
 import numpy as np
 import scipy.io
 from sklearn.tree import DecisionTreeRegressor
-import cv2
+import cv2 as cv
 import random
 
 
@@ -96,7 +96,7 @@ def generate_code(model, input_params, use_YML, out_file):
             thresh_vals += local_thresh_vals
             leaf_vals += local_leaf_vals
     if use_YML:
-        fs = cv2.FileStorage(out_file, 1)
+        fs = cv.FileStorage(out_file, 1)
         fs.write("num_trees", len(model))
         fs.write("num_tree_nodes", 2**depth)
         fs.write("feature_idx", np.array(feature_idx).astype(np.uint8))
@@ -246,14 +246,14 @@ if __name__ == '__main__':
     i=0
     sz = len(img_files)
     random.seed(1234)
-    inst = cv2.xphoto.createLearningBasedWB()
+    inst = cv.xphoto.createLearningBasedWB()
     inst.setRangeMaxVal(255)
     inst.setSaturationThreshold(0.98)
     inst.setHistBinNum(hist_bin_num)
     for file in img_files:
         if (i>=img_range[0] and i<img_range[1]) or (img_range[0]==img_range[1]==0):
             cur_path = os.path.join(args.input_folder,file)
-            im = cv2.imread(cur_path, -1).astype(np.float32)
+            im = cv.imread(cur_path, -1).astype(np.float32)
             im -= black_levels[i]
             im_8bit = convert_to_8bit(im)
             cur_img_features = inst.extractSimpleFeatures(im_8bit, None)

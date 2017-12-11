@@ -1,4 +1,4 @@
-import cv2
+import cv2 as cv
 import numpy as np
 
 def rotation(theta):
@@ -42,7 +42,7 @@ Rt = np.vstack((
     np.array([0, 0, 0, 1])
 )).astype(np.float32)
 
-icp = cv2.ppf_match_3d_ICP(100)
+icp = cv.ppf_match_3d_ICP(100)
 
 I = np.eye(4)
 print("Unaligned error:\t%.6f" % np.linalg.norm(I - Rt))
