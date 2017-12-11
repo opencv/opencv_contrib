@@ -48,23 +48,22 @@ using namespace std;
 
 int aa = 100, ww = 10;
 
-Ptr<Mat> img;
 const char* window_name = "Gradient Modulus";
 
 static void DisplayImage(Mat x,string s)
 {
-	vector<Mat> sx;
-	split(x, sx);
-	vector<double> minVal(3), maxVal(3);
-	for (int i = 0; i < static_cast<int>(sx.size()); i++)
-	{
-		minMaxLoc(sx[i], &minVal[i], &maxVal[i]);
-	}
-	maxVal[0] = *max_element(maxVal.begin(), maxVal.end());
-	minVal[0] = *min_element(minVal.begin(), minVal.end());
-	Mat uc;
-	x.convertTo(uc, CV_8U,255/(maxVal[0]-minVal[0]),-255*minVal[0]/(maxVal[0]-minVal[0]));
-	imshow(s, uc);
+    vector<Mat> sx;
+    split(x, sx);
+    vector<double> minVal(3), maxVal(3);
+    for (int i = 0; i < static_cast<int>(sx.size()); i++)
+    {
+        minMaxLoc(sx[i], &minVal[i], &maxVal[i]);
+    }
+    maxVal[0] = *max_element(maxVal.begin(), maxVal.end());
+    minVal[0] = *min_element(minVal.begin(), minVal.end());
+    Mat uc;
+    x.convertTo(uc, CV_8U,255/(maxVal[0]-minVal[0]),-255*minVal[0]/(maxVal[0]-minVal[0]));
+    imshow(s, uc);
 }
 
 
@@ -72,38 +71,42 @@ static void DisplayImage(Mat x,string s)
  * @function paillouFilter
  * @brief Trackbar callback
  */
-static void PaillouFilter(int, void*)
+static void PaillouFilter(int, void*pm)
 {
+    Mat img = *((Mat*)pm);
     Mat dst;
-    double a=aa/100.0,w=ww/100.0;
+    double a=aa/100.0, w=ww/100.0;
     Mat rx,ry;
-    GradientPaillouX(*img.get(),rx,a,w);
-    GradientPaillouY(*img.get(),ry,a,w);
+    GradientPaillouX(img, rx, a, w);
+    GradientPaillouY(img, ry, a, w);
     DisplayImage(rx, "Gx");
     DisplayImage(ry, "Gy");
-    add(rx.mul(rx),ry.mul(ry),dst);
-    sqrt(dst,dst);
+    add(rx.mul(rx), ry.mul(ry), dst);
+    sqrt(dst, dst);
     DisplayImage(dst, window_name );
 }
 
 
 int main(int argc, char* argv[])
 {
-	Mat *m=new Mat;
-	if (argc == 2)
-		*m = imread(argv[1]);
-	if (m->empty())
+    if (argc < 2)
+    {
+        cout << "usage: paillou_demo [image]" << endl;
+        return 1;
+    }
+    Mat img = imread(argv[1]);
+    if (img.empty())
     {
         cout << "File not found or empty image\n";
+        return 1;
     }
-	img = Ptr<Mat>(m);
-	imshow("Original",*img.get());
+    imshow("Original",img);
     namedWindow( window_name, WINDOW_AUTOSIZE );
 
     /// Create a Trackbar for user to enter threshold
-    createTrackbar( "a:",window_name, &aa, 400, PaillouFilter );
-    createTrackbar( "w:", window_name, &ww, 400, PaillouFilter );
-    PaillouFilter(0,NULL);
+    createTrackbar( "a:",window_name, &aa, 400, PaillouFilter, &img );
+    createTrackbar( "w:", window_name, &ww, 400, PaillouFilter, &img );
+    PaillouFilter(0, &img);
     waitKey();
     return 0;
 }
