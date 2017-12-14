@@ -87,7 +87,7 @@ void Feature::computeFeaturePyramid(const Mat &imageM, vector< Mat > &pyramid)
     {
         const double scale = (double)(1.0f/pow(params.sfactor, i));
         Mat imScaled;
-        resize(imageM, imScaled, imSize * scale);
+        resize(imageM, imScaled, imSize * scale, 0, 0, INTER_LINEAR_EXACT);
         // First octave at twice the image resolution
         computeHOG32D(imScaled, pyramid[i], params.binSize/2,
                 params.padx + 1, params.pady + 1);
@@ -106,7 +106,7 @@ void Feature::computeFeaturePyramid(const Mat &imageM, vector< Mat > &pyramid)
         {
             Mat imScaled2;
             Size_<double> imScaledSize = imScaled.size();
-            resize(imScaled, imScaled2, imScaledSize*0.5);
+            resize(imScaled, imScaled2, imScaledSize*0.5, 0, 0, INTER_LINEAR_EXACT);
             imScaled = imScaled2;
             computeHOG32D(imScaled2, pyramid[j+params.interval],
                     params.binSize, params.padx + 1, params.pady + 1);

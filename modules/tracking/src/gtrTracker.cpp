@@ -145,8 +145,8 @@ bool TrackerGOTURNImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
 
     //Preprocess
     //Resize
-    resize(targetPatch, targetPatch, Size(INPUT_SIZE, INPUT_SIZE));
-    resize(searchPatch, searchPatch, Size(INPUT_SIZE, INPUT_SIZE));
+    resize(targetPatch, targetPatch, Size(INPUT_SIZE, INPUT_SIZE), 0, 0, INTER_LINEAR_EXACT);
+    resize(searchPatch, searchPatch, Size(INPUT_SIZE, INPUT_SIZE), 0, 0, INTER_LINEAR_EXACT);
 
     //Mean Subtract
     targetPatch = targetPatch - 128;

@@ -75,9 +75,9 @@ PERF_TEST_P( DisparityWLSFilterPerfTest, perf, Combine(GuideTypes::all(), SrcTyp
     MakeArtificialExample(rng,guide,disp_left,disp_right,ROI);
     if(use_downscale)
     {
-        resize(disp_left,disp_left,Size(),0.5,0.5);
+        resize(disp_left,disp_left,Size(),0.5,0.5, INTER_LINEAR_EXACT);
         disp_left/=2;
-        resize(disp_right,disp_right,Size(),0.5,0.5);
+        resize(disp_right,disp_right,Size(),0.5,0.5, INTER_LINEAR_EXACT);
         disp_right/=2;
         ROI = Rect(ROI.x/2,ROI.y/2,ROI.width/2,ROI.height/2);
     }

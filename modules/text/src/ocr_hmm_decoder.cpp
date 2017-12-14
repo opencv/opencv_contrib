@@ -779,14 +779,14 @@ void OCRHMMClassifierKNN::eval( InputArray _mask, vector<int>& out_class, vector
     {
         int height = image_width*tmp.rows/tmp.cols;
         if(height == 0) height = 1;
-        resize(tmp,tmp,Size(image_width,height));
+        resize(tmp,tmp,Size(image_width,height),0,0,INTER_LINEAR_EXACT);
         tmp.copyTo(mask(Rect(0,(image_height-height)/2,image_width,height)));
     }
     else
     {
         int width = image_height*tmp.cols/tmp.rows;
         if(width == 0) width = 1;
-        resize(tmp,tmp,Size(width,image_height));
+        resize(tmp,tmp,Size(width,image_height),0,0,INTER_LINEAR_EXACT);
         tmp.copyTo(mask(Rect((image_width-width)/2,0,width,image_height)));
     }
 
@@ -837,7 +837,7 @@ void OCRHMMClassifierKNN::eval( InputArray _mask, vector<int>& out_class, vector
         copyMakeBorder(maps[i],maps[i],7,7,7,7,BORDER_CONSTANT,Scalar(0));
         GaussianBlur(maps[i], maps[i], Size(7,7), 2, 2);
         normalize(maps[i],maps[i],0,255,NORM_MINMAX);
-        resize(maps[i],maps[i],Size(image_width,image_height));
+        resize(maps[i],maps[i],Size(image_width,image_height),0,0,INTER_LINEAR_EXACT);
     }
 
     //Generate features for each bitmap
@@ -1032,7 +1032,7 @@ void OCRHMMClassifierCNN::eval( InputArray _src, vector<int>& out_class, vector<
     }
 
     // shall we resize the input image or make a copy ?
-    resize(img,img,Size(window_size,window_size));
+    resize(img,img,Size(window_size,window_size),0,0,INTER_LINEAR_EXACT);
 
     Mat quad;
     Mat tmp;

@@ -603,7 +603,7 @@ void OCRBeamSearchClassifierCNN::eval( InputArray _src, vector< vector<double> >
         cvtColor(src,src,COLOR_RGB2GRAY);
     }
 
-    resize(src,src,Size(window_size*src.cols/src.rows,window_size));
+    resize(src,src,Size(window_size*src.cols/src.rows,window_size),0,0,INTER_LINEAR_EXACT);
 
     int seg_points = 0;
 

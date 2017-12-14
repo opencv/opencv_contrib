@@ -139,8 +139,8 @@ int main( int argc, char** argv)
     //Detect faces in the current image
     float ratio1 = (float)img1.cols/(float)img1.rows;
     float ratio2 = (float)img2.cols/(float)img2.rows;
-    resize(img1,img1,Size((int)(640*ratio1),(int)(640*ratio1)));
-    resize(img2,img2,Size((int)(640*ratio2),(int)(640*ratio2)));
+    resize(img1,img1,Size((int)(640*ratio1),(int)(640*ratio1)), 0, 0, INTER_LINEAR_EXACT);
+    resize(img2,img2,Size((int)(640*ratio2),(int)(640*ratio2)), 0, 0, INTER_LINEAR_EXACT);
     Mat img1Warped = img2.clone();
     facemark->getFaces(img1,faces1);
     facemark->getFaces(img2,faces2);

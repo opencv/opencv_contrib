@@ -723,7 +723,7 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
     numOfFinalLine += edLineVec_[octaveCount]->lines_.numOfLines;
 
     /* resize image for next level of pyramid */
-    cv::resize( blur, image, cv::Size(), ( 1.f / factor ), ( 1.f / factor ) );
+    cv::resize( blur, image, cv::Size(), ( 1.f / factor ), ( 1.f / factor ), INTER_LINEAR_EXACT );
 
     /* update sigma values */
     preSigma2 = curSigma2;

@@ -85,7 +85,7 @@ protected:
     {
         CV_Assert(image.channels() == 1 && image.depth() == CV_8U);
         Mat resized;
-        resize(image, resized, getPerceptiveField());
+        resize(image, resized, getPerceptiveField(), 0, 0, INTER_LINEAR_EXACT);
         Mat blob = dnn::blobFromImage(resized);
         net.setInput(blob, "data");
         Mat prob = net.forward("prob");

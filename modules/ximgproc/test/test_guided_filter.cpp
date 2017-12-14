@@ -99,7 +99,7 @@ static Mat convertTypeAndSize(Mat src, int dstType, Size dstSize)
     }
 
     dst.convertTo(dst, dstType);
-    resize(dst, dst, dstSize);
+    resize(dst, dst, dstSize, 0, 0, INTER_LINEAR_EXACT);
 
     return dst;
 }

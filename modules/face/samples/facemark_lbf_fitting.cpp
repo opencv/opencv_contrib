@@ -104,7 +104,7 @@ int main(int argc, char** argv ){
         double __time__ = (double)getTickCount();
 
         float scale = (float)(400.0/frame.cols);
-        resize(frame, img, Size((int)(frame.cols*scale), (int)(frame.rows*scale)));
+        resize(frame, img, Size((int)(frame.cols*scale), (int)(frame.rows*scale)), 0, 0, INTER_LINEAR_EXACT);
 
         facemark->getFaces(img, rects);
         rects_scaled.clear();

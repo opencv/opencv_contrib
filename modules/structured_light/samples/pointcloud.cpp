@@ -262,7 +262,7 @@ int main( int argc, char** argv )
     applyColorMap( scaledDisparityMap, cm_disp, COLORMAP_JET );
 
     // Show the result
-    resize( cm_disp, cm_disp, Size( 640, 480 ) );
+    resize( cm_disp, cm_disp, Size( 640, 480 ), 0, 0, INTER_LINEAR_EXACT );
     imshow( "cm disparity m", cm_disp );
 
     // Compute the point cloud
@@ -273,7 +273,7 @@ int main( int argc, char** argv )
     // Compute a mask to remove background
     Mat dst, thresholded_disp;
     threshold( scaledDisparityMap, thresholded_disp, 0, 255, THRESH_OTSU + THRESH_BINARY );
-    resize( thresholded_disp, dst, Size( 640, 480 ) );
+    resize( thresholded_disp, dst, Size( 640, 480 ), 0, 0, INTER_LINEAR_EXACT );
     imshow( "threshold disp otsu", dst );
 
 #ifdef HAVE_OPENCV_VIZ

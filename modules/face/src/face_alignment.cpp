@@ -173,7 +173,7 @@ bool FacemarkKazemiImpl::scaleData( vector< vector<Point2f> > & trainlandmarks,
         //calculating scale for x and y axis
         scalex=float(s.width)/float(trainimages[i].cols);
         scaley=float(s.height)/float(trainimages[i].rows);
-        resize(trainimages[i],trainimages[i],s);
+        resize(trainimages[i],trainimages[i],s,0,0,INTER_LINEAR_EXACT);
         for (vector<Point2f>::iterator it = trainlandmarks[i].begin(); it != trainlandmarks[i].end(); it++) {
             Point2f pt = (*it);
             pt.x = pt.x*scalex;

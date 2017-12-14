@@ -374,7 +374,7 @@ bool FacemarkAAMImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks,
         imgray = image;
     }
 
-    resize(imgray,img,Size(int(image.cols/scale),int(image.rows/scale)));// matlab use bicubic interpolation, the result is float numbers
+    resize(imgray,img,Size(int(image.cols/scale),int(image.rows/scale)), 0, 0, INTER_LINEAR_EXACT);// matlab use bicubic interpolation, the result is float numbers
 
     /*chop the textures model*/
     int maxCol = param_m;

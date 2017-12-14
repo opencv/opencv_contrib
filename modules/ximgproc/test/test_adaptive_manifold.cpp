@@ -185,8 +185,8 @@ TEST_P(AdaptiveManifoldRefImplTest, RefImplAccuracy)
     //inconsistent downsample/upsample operations in reference implementation
     Size dstSize((guide.cols + 15) & ~15, (guide.rows + 15) & ~15);
 
-    resize(guide, guide, dstSize);
-    resize(src, src, dstSize);
+    resize(guide, guide, dstSize, 0, 0, INTER_LINEAR_EXACT);
+    resize(src, src, dstSize, 0, 0, INTER_LINEAR_EXACT);
 
     for (int iter = 0; iter < 4; iter++)
     {

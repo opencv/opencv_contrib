@@ -39,7 +39,7 @@ public:
                   input.type() == CV_8UC3 ||
                   input.type() == CV_8U);
 
-        cv::resize(input, resizeImg_, cv::Size(imgWidth,imgHeight));
+        cv::resize(input, resizeImg_, cv::Size(imgWidth,imgHeight), 0, 0, INTER_LINEAR_EXACT);
         if(input.type() == CV_8UC3)
         {
             cv::cvtColor(resizeImg_, grayImg_, CV_BGR2GRAY);

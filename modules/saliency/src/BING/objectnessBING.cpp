@@ -138,7 +138,7 @@ void ObjectnessBING::predictBBoxSI( Mat &img3u, ValStructVec<float, Vec4i> &valB
 
     height = min( height, imgH ), width = min( width, imgW );
     Mat im3u, matchCost1f, mag1u;
-    resize( img3u, im3u, Size( cvRound( _W * imgW * 1.0 / width ), cvRound( _W * imgH * 1.0 / height ) ) );
+    resize( img3u, im3u, Size( cvRound( _W * imgW * 1.0 / width ), cvRound( _W * imgH * 1.0 / height ) ), 0, 0, INTER_LINEAR_EXACT );
     gradientMag( im3u, mag1u );
 
     matchCost1f = _tigF.matchTemplate( mag1u );

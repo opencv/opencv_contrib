@@ -135,8 +135,8 @@ int main(int argc, char** argv)
             max_disp/=2;
             if(max_disp%16!=0)
                 max_disp += 16-(max_disp%16);
-            resize(left ,left_for_matcher ,Size(),0.5,0.5);
-            resize(right,right_for_matcher,Size(),0.5,0.5);
+            resize(left ,left_for_matcher ,Size(),0.5,0.5, INTER_LINEAR_EXACT);
+            resize(right,right_for_matcher,Size(),0.5,0.5, INTER_LINEAR_EXACT);
             //! [downscale]
         }
         else
@@ -196,7 +196,7 @@ int main(int argc, char** argv)
         if(!no_downscale)
         {
             // upscale raw disparity and ROI back for a proper comparison:
-            resize(left_disp,left_disp,Size(),2.0,2.0);
+            resize(left_disp,left_disp,Size(),2.0,2.0,INTER_LINEAR_EXACT);
             left_disp = left_disp*2.0;
             ROI = Rect(ROI.x*2,ROI.y*2,ROI.width*2,ROI.height*2);
         }

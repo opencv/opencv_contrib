@@ -114,7 +114,7 @@ namespace cv
 
 #ifdef BLUR_AS_VADIM
 					GaussianBlur(standardPatch, blurredPatch, GaussBlurKernelSize, 0.0);
-					resize(blurredPatch, blurredPatch, minSize);
+					resize(blurredPatch, blurredPatch, minSize, 0, 0, INTER_LINEAR_EXACT);
 #else
 					resample(blurredImg, RotatedRect(center, size, angle), blurredPatch);
 #endif
