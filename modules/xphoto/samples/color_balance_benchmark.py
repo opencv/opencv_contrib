@@ -3,7 +3,7 @@ from __future__ import print_function
 import os, sys, argparse, json
 import numpy as np
 import scipy.io
-import cv2
+import cv2 as cv
 import timeit
 from learn_color_balance import load_ground_truth
 
@@ -44,7 +44,7 @@ def evaluate(im, algo, gt_illuminant, i, range_thresh, bin_num, dst_folder, mode
     new_im = None
     start_time = timeit.default_timer()
     if algo=="grayworld":
-        inst = cv2.xphoto.createGrayworldWB()
+        inst = cv.xphoto.createGrayworldWB()
         inst.setSaturationThreshold(0.95)
         new_im = inst.balanceWhite(im)
     elif algo=="nothing":
@@ -53,7 +53,7 @@ def evaluate(im, algo, gt_illuminant, i, range_thresh, bin_num, dst_folder, mode
         model_path = ""
         if len(algo.split(":"))>1:
             model_path = os.path.join(model_folder, algo.split(":")[1])
-        inst = cv2.xphoto.createLearningBasedWB(model_path)
+        inst = cv.xphoto.createLearningBasedWB(model_path)
         inst.setRangeMaxVal(range_thresh)
         inst.setSaturationThreshold(0.98)
         inst.setHistBinNum(bin_num)
@@ -63,14 +63,14 @@ def evaluate(im, algo, gt_illuminant, i, range_thresh, bin_num, dst_folder, mode
         g1 = float(1.0 / gains[2])
         g2 = float(1.0 / gains[1])
         g3 = float(1.0 / gains[0])
-        new_im = cv2.xphoto.applyChannelGains(im, g1, g2, g3)
+        new_im = cv.xphoto.applyChannelGains(im, g1, g2, g3)
     time = 1000*(timeit.default_timer() - start_time) #time in ms
 
     if len(dst_folder)>0:
         if not os.path.exists(dst_folder):
             os.makedirs(dst_folder)
         im_name = ("%04d_" % i) + algo.replace(":","_") + ".jpg"
-        cv2.imwrite(os.path.join(dst_folder, im_name), stretch_to_8bit(new_im))
+        cv.imwrite(os.path.join(dst_folder, im_name), stretch_to_8bit(new_im))
 
     #recover the illuminant from the color balancing result, assuming the standard model:
     estimated_illuminant = [0, 0, 0]
@@ -248,7 +248,7 @@ if __name__ == '__main__':
             if file not in state[algorithm].keys() and\
              ((i>=img_range[0] and i<img_range[1]) or img_range[0]==img_range[1]==0):
                 cur_path = os.path.join(args.input_folder, file)
-                im = cv2.imread(cur_path, -1).astype(np.float32)
+                im = cv.imread(cur_path, -1).astype(np.float32)
                 im -= black_levels[i]
                 range_thresh = 255
                 if len(args.input_bit_depth)>0:

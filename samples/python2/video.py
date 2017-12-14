@@ -32,7 +32,7 @@ Keys:
 import numpy as np
 from numpy import pi, sin, cos
 
-import cv2
+import cv2 as cv
 
 # built-in modules
 from time import clock
@@ -45,14 +45,14 @@ class VideoSynthBase(object):
         self.bg = None
         self.frame_size = (640, 480)
         if bg is not None:
-            self.bg = cv2.imread(bg, 1)
+            self.bg = cv.imread(bg, 1)
             h, w = self.bg.shape[:2]
             self.frame_size = (w, h)
 
         if size is not None:
             w, h = map(int, size.split('x'))
             self.frame_size = (w, h)
-            self.bg = cv2.resize(self.bg, self.frame_size)
+            self.bg = cv.resize(self.bg, self.frame_size)
 
         self.noise = float(noise)
 
@@ -71,8 +71,8 @@ class VideoSynthBase(object):
 
         if self.noise > 0.0:
             noise = np.zeros((h, w, 3), np.int8)
-            cv2.randn(noise, np.zeros(3), np.ones(3)*255*self.noise)
-            buf = cv2.add(buf, noise, dtype=cv2.CV_8UC3)
+            cv.randn(noise, np.zeros(3), np.ones(3)*255*self.noise)
+            buf = cv.add(buf, noise, dtype=cv.CV_8UC3)
         return True, buf
 
     def isOpened(self):
@@ -102,10 +102,10 @@ class Chess(VideoSynthBase):
         self.t = 0
 
     def draw_quads(self, img, quads, color = (0, 255, 0)):
-        img_quads = cv2.projectPoints(quads.reshape(-1, 3), self.rvec, self.tvec, self.K, self.dist_coef) [0]
+        img_quads = cv.projectPoints(quads.reshape(-1, 3), self.rvec, self.tvec, self.K, self.dist_coef) [0]
         img_quads.shape = quads.shape[:2] + (2,)
         for q in img_quads:
-            cv2.fillConvexPoly(img, np.int32(q*4), color, cv2.LINE_AA, shift=2)
+            cv.fillConvexPoly(img, np.int32(q*4), color, cv.LINE_AA, shift=2)
 
     def render(self, dst):
         t = self.t
@@ -156,11 +156,11 @@ def create_capture(source = 0, fallback = presets['chess']):
         try: cap = Class(**params)
         except: pass
     else:
-        cap = cv2.VideoCapture(source)
+        cap = cv.VideoCapture(source)
         if 'size' in params:
             w, h = map(int, params['size'].split('x'))
-            cap.set(cv2.CAP_PROP_FRAME_WIDTH, w)
-            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, h)
+            cap.set(cv.CAP_PROP_FRAME_WIDTH, w)
+            cap.set(cv.CAP_PROP_FRAME_HEIGHT, h)
     if cap is None or not cap.isOpened():
         print 'Warning: unable to open video source: ', source
         if fallback is not None:
@@ -186,14 +186,14 @@ if __name__ == '__main__':
         for i, cap in enumerate(caps):
             ret, img = cap.read()
             imgs.append(img)
-            cv2.imshow('capture %d' % i, img)
-        ch = 0xFF & cv2.waitKey(1)
+            cv.imshow('capture %d' % i, img)
+        ch = 0xFF & cv.waitKey(1)
         if ch == 27:
             break
         if ch == ord(' '):
             for i, img in enumerate(imgs):
                 fn = '%s/shot_%d_%03d.bmp' % (shotdir, i, shot_idx)
-                cv2.imwrite(fn, img)
+                cv.imwrite(fn, img)
                 print fn, 'saved'
             shot_idx += 1
-    cv2.destroyAllWindows()
+    cv.destroyAllWindows()

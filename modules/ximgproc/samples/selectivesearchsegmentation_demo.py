@@ -10,16 +10,16 @@ Usage:
 Use "a" to display less rects, 'd' to display more rects, "q" to quit.
 '''
 
-import cv2
+import cv2 as cv
 import sys
 
 if __name__ == '__main__':
-    img = cv2.imread(sys.argv[1])
+    img = cv.imread(sys.argv[1])
 
-    cv2.setUseOptimized(True)
-    cv2.setNumThreads(8)
+    cv.setUseOptimized(True)
+    cv.setNumThreads(8)
 
-    gs = cv2.ximgproc.segmentation.createSelectiveSearchSegmentation()
+    gs = cv.ximgproc.segmentation.createSelectiveSearchSegmentation()
     gs.setBaseImage(img)
 
     if (sys.argv[2][0] == 's'):
@@ -43,10 +43,10 @@ if __name__ == '__main__':
         for i in range(len(rects)):
             if (i < nb_rects):
                 x, y, w, h = rects[i]
-                cv2.rectangle(wimg, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
+                cv.rectangle(wimg, (x, y), (x+w, y+h), (0, 255, 0), 1, cv.LINE_AA)
 
-        cv2.imshow("Output", wimg);
-        c = cv2.waitKey()
+        cv.imshow("Output", wimg);
+        c = cv.waitKey()
 
         if (c == 100):
             nb_rects += 10
@@ -57,4 +57,4 @@ if __name__ == '__main__':
         elif (c == 113):
             break
 
-    cv2.destroyAllWindows()
+    cv.destroyAllWindows()
