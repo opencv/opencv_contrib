@@ -69,7 +69,6 @@ const char* keys =
 };
 int main(int argc, const char** argv)
 {
-    bool video = false;
     CommandLineParser parser(argc, argv, keys);
     if (parser.has("help"))
     {
