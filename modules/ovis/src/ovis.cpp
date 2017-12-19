@@ -138,6 +138,7 @@ static SceneNode* _getSceneNode(SceneManager* sceneMgr, const String& name)
 
 struct Application : public OgreBites::ApplicationContext
 {
+    Ptr<LogManager> logMgr;
     Ogre::SceneManager* sceneMgr;
     Ogre::String title;
     uint32_t w;
@@ -147,6 +148,9 @@ struct Application : public OgreBites::ApplicationContext
         : OgreBites::ApplicationContext("ovis", false), sceneMgr(NULL), title(_title), w(sz.width),
           h(sz.height)
     {
+        logMgr.reset(new LogManager());
+        logMgr->createLog("ovis.log", true, true, true);
+        logMgr->setLogDetail(LL_LOW);
     }
 
     void setupInput(bool /*grab*/)
