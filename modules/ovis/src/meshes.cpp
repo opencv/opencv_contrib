@@ -44,6 +44,7 @@ void createPointCloudMesh(const String& name, InputArray vertices, InputArray co
     MaterialPtr mat = MaterialManager::getSingleton().create(name, RESOURCEGROUP_NAME);
     Pass* rpass = mat->getTechniques()[0]->getPasses()[0];
     rpass->setEmissive(ColourValue::White);
+    rpass->setPointSpritesEnabled(true);
 
     // mesh
     MeshPtr mesh = MeshManager::getSingleton().createManual(name, RESOURCEGROUP_NAME);
