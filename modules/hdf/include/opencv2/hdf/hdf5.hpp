@@ -36,7 +36,7 @@
 #define __OPENCV_HDF5_HPP__
 
 #include <vector>
-
+#include <opencv2/core.hpp>
 
 namespace cv
 {
@@ -50,7 +50,7 @@ using namespace std;
 
 /** @brief Hierarchical Data Format version 5 interface.
 
-Notice that module is compiled only when hdf5 is correctly installed.
+Notice that this module is compiled only when hdf5 is correctly installed.
 
  */
 class CV_EXPORTS_W HDF5
@@ -59,7 +59,11 @@ public:
 
     CV_WRAP enum
     {
-      H5_UNLIMITED = -1, H5_NONE = -1, H5_GETDIMS = 100, H5_GETMAXDIMS = 101, H5_GETCHUNKDIMS = 102,
+       H5_UNLIMITED = -1,     //!< The dimension size is unlimited, @sa dscreate()
+       H5_NONE = -1,          //!< No compression, @sa dscreate()
+       H5_GETDIMS = 100,      //!< Get the dimension information of a dataset. @sa dsgetsize()
+       H5_GETMAXDIMS = 101,   //!< Get the maximum dimension information of a dataset. @sa dsgetsize()
+       H5_GETCHUNKDIMS = 102, //!< Get the chunk sizes of a dataset. @sa dsgetsize()
     };
 
     virtual ~HDF5() {}
@@ -71,63 +75,57 @@ public:
     /** @brief Create a group.
     @param grlabel specify the hdf5 group label.
 
-    Create a hdf5 group.
+    Create a hdf5 group with default properties. The group is closed automatically after creation.
 
-    @note Groups are useful for better organise multiple datasets. It is possible to create subgroups within any group.
-    Existence of a particular group can be checked using hlexists(). In case of subgroups label would be e.g: 'Group1/SubGroup1'
-    where SubGroup1 is within the root group Group1.
+    @note Groups are useful for better organising multiple datasets. It is possible to create subgroups within any group.
+    Existence of a particular group can be checked using hlexists(). In case of subgroups, a label would be e.g: 'Group1/SubGroup1'
+    where SubGroup1 is within the root group Group1. Before creating a subgroup, its parent group MUST be created.
 
-    - In this example Group1 will have one subgrup labeled SubGroup1:
-    @code{.cpp}
-      // open / autocreate hdf5 file
-      cv::Ptr<cv::hdf::HDF5> h5io = cv::hdf::open( "mytest.h5" );
-      // create Group1 if does not exists
-      if ( ! h5io->hlexists( "Group1" ) )
-        h5io->grcreate( "Group1" );
-      else
-        printf("Group1 already created, skipping\n" );
-      // create SubGroup1 if does not exists
-      if ( ! h5io->hlexists( "Group1/SubGroup1" ) )
-        h5io->grcreate( "Group1/SubGroup1" );
-      else
-        printf("SubGroup1 already created, skipping\n" );
-      // release
-      h5io->close();
-    @endcode
+    - In this example, Group1 will have one subgroup called SubGroup1:
 
-    @note When a dataset is created with dscreate() or kpcreate() it can be created right within a group by specifying
-    full path within the label, in our example would be: 'Group1/SubGroup1/MyDataSet'. It is not thread safe.
+     @snippet samples/create_groups.cpp create_group
+
+     The corresponding result visualized using the HDFView tool is
+
+     ![Visualization of groups using the HDFView tool](pics/create_groups.png)
+
+    @note When a dataset is created with dscreate() or kpcreate(), it can be created within a group by specifying the
+    full path within the label. In our example, it would be: 'Group1/SubGroup1/MyDataSet'. It is not thread safe.
      */
-    CV_WRAP virtual void grcreate( String grlabel ) = 0;
+    CV_WRAP virtual void grcreate( const String& grlabel ) = 0;
 
     /** @brief Check if label exists or not.
     @param label specify the hdf5 dataset label.
 
-    Returns **true** if dataset exists, and **false** if does not.
+    Returns **true** if dataset exists, and **false** otherwise.
 
     @note Checks if dataset, group or other object type (hdf5 link) exists under the label name. It is thread safe.
      */
-    CV_WRAP virtual bool hlexists( String label ) const = 0;
+    CV_WRAP virtual bool hlexists( const String& label ) const = 0;
 
     /* @overload */
     CV_WRAP virtual void dscreate( const int rows, const int cols, const int type,
-                 String dslabel ) const = 0;
+                 const String& dslabel ) const = 0;
     /* @overload */
     CV_WRAP virtual void dscreate( const int rows, const int cols, const int type,
-                 String dslabel, const int compresslevel ) const = 0;
+                 const String& dslabel, const int compresslevel ) const = 0;
     /* @overload */
     CV_WRAP virtual void dscreate( const int rows, const int cols, const int type,
-                 String dslabel, const int compresslevel, const vector<int>& dims_chunks ) const = 0;
+                 const String& dslabel, const int compresslevel, const vector<int>& dims_chunks ) const = 0;
     /** @brief Create and allocate storage for two dimensional single or multi channel dataset.
     @param rows declare amount of rows
-    @param cols declare amount of cols
-    @param type type to be used
-    @param dslabel specify the hdf5 dataset label, any existing dataset with the same label will be overwritten.
-    @param compresslevel specify the compression level 0-9 to be used, H5_NONE is default and means no compression.
-    @param dims_chunks each array member specify chunking sizes to be used for block i/o,
+    @param cols declare amount of columns
+    @param type type to be used, e.g, CV_8UC3, CV_32FC1 and etc.
+    @param dslabel specify the hdf5 dataset label. Existing dataset label will cause an error.
+    @param compresslevel specify the compression level 0-9 to be used, H5_NONE is the default value and means no compression.
+                         The value 0 also means no compression.
+                         A value 9 indicating the best compression ration. Note
+                         that a higher compression level indicates a higher computational cost. It relies
+                         on GNU gzip for compression.
+    @param dims_chunks each array member specifies the chunking size to be used for block I/O,
            by default NULL means none at all.
 
-    @note If the dataset already exists an exception will be thrown.
+    @note If the dataset already exists, an exception will be thrown (CV_Error() is called).
 
     - Existence of the dataset can be checked using hlexists(), see in this example:
     @code{.cpp}
@@ -143,9 +141,9 @@ public:
     @endcode
 
     @note Activating compression requires internal chunking. Chunking can significantly improve access
-    speed booth at read or write time especially for windowed access logic that shifts offset inside dataset.
-    If no custom chunking is specified default one will be invoked by the size of **whole** dataset
-    as single big chunk of data.
+    speed both at read and write time, especially for windowed access logic that shifts offset inside dataset.
+    If no custom chunking is specified, the default one will be invoked by the size of the **whole** dataset
+    as a single big chunk of data.
 
     - See example of level 9 compression using internal default chunking:
     @code{.cpp}
@@ -160,11 +158,11 @@ public:
       h5io->close();
     @endcode
 
-    @note A value of H5_UNLIMITED for **rows** or **cols** or booth means **unlimited** data on the specified dimension,
-    thus is possible to expand anytime such dataset on row, col or booth directions. Presence of H5_UNLIMITED on any
-    dimension **require** to define custom chunking. No default chunking will be defined in unlimited scenario since
-    default size on that dimension will be zero, and will grow once dataset is written. Writing into dataset that have
-    H5_UNLIMITED on some of its dimension requires dsinsert() that allow growth on unlimited dimension instead of dswrite()
+    @note A value of H5_UNLIMITED for **rows** or **cols** or both means **unlimited** data on the specified dimension,
+    thus, it is possible to expand anytime such a dataset on row, col or on both directions. Presence of H5_UNLIMITED on any
+    dimension **requires** to define custom chunking. No default chunking will be defined in the unlimited scenario since
+    default size on that dimension will be zero, and will grow once dataset is written. Writing into a dataset that has
+    H5_UNLIMITED on some of its dimensions requires dsinsert() that allows growth on unlimited dimensions, instead of dswrite()
     that allows to write only in predefined data space.
 
     - Example below shows no compression but unlimited dimension on cols using 100x100 internal chunking:
@@ -178,31 +176,35 @@ public:
       h5io->close();
     @endcode
 
-    @note It is **not** thread safe, it must be called only once at dataset creation otherwise exception will occur.
-    Multiple datasets inside single hdf5 file is allowed.
+    @note It is **not** thread safe, it must be called only once at dataset creation, otherwise an exception will occur.
+    Multiple datasets inside a single hdf5 file are allowed.
      */
     CV_WRAP virtual void dscreate( const int rows, const int cols, const int type,
-                 String dslabel, const int compresslevel, const int* dims_chunks ) const = 0;
+                 const String& dslabel, const int compresslevel, const int* dims_chunks ) const = 0;
 
     /* @overload */
     CV_WRAP virtual void dscreate( const int n_dims, const int* sizes, const int type,
-                 String dslabel ) const = 0;
+                 const String& dslabel ) const = 0;
     /* @overload */
     CV_WRAP virtual void dscreate( const int n_dims, const int* sizes, const int type,
-                 String dslabel, const int compresslevel ) const = 0;
+                 const String& dslabel, const int compresslevel ) const = 0;
     /* @overload */
     CV_WRAP virtual void dscreate( const vector<int>& sizes, const int type,
-                 String dslabel, const int compresslevel = HDF5::H5_NONE,
+                 const String& dslabel, const int compresslevel = HDF5::H5_NONE,
                  const vector<int>& dims_chunks = vector<int>() ) const = 0;
-    /** @brief Create and allocate storage for n-dimensional dataset, single or mutichannel type.
+    /** @brief Create and allocate storage for n-dimensional dataset, single or multichannel type.
     @param n_dims declare number of dimensions
     @param sizes array containing sizes for each dimensions
-    @param type type to be used
-    @param dslabel specify the hdf5 dataset label, any existing dataset with the same label will be overwritten.
-    @param compresslevel specify the compression level 0-9 to be used, H5_NONE is default and means no compression.
-    @param dims_chunks each array member specify chunking sizes to be used for block i/o,
+    @param type type to be used, e.g., CV_8UC3, CV_32FC1, etc.
+    @param dslabel specify the hdf5 dataset label. Existing dataset label will cause an error.
+    @param compresslevel specify the compression level 0-9 to be used, H5_NONE is the default value and means no compression.
+                         The value 0 also means no compression.
+                         A value 9 indicating the best compression ration. Note
+                         that a higher compression level indicates a higher computational cost. It relies
+                         on GNU gzip for compression.
+    @param dims_chunks each array member specifies chunking sizes to be used for block I/O,
            by default NULL means none at all.
-    @note If the dataset already exists an exception will be thrown. Existence of the dataset can be checked
+    @note If the dataset already exists, an exception will be thrown. Existence of the dataset can be checked
     using hlexists().
 
     - See example below that creates a 6 dimensional storage space:
@@ -221,12 +223,12 @@ public:
     @endcode
 
     @note Activating compression requires internal chunking. Chunking can significantly improve access
-    speed booth at read or write time especially for windowed access logic that shifts offset inside dataset.
-    If no custom chunking is specified default one will be invoked by the size of **whole** dataset
+    speed both at read and write time, especially for windowed access logic that shifts offset inside dataset.
+    If no custom chunking is specified, the default one will be invoked by the size of **whole** dataset
     as single big chunk of data.
 
-    - See example of level 0 compression (shallow) using chunking against first
-    dimension, thus storage will consists by 100 chunks of data:
+    - See example of level 0 compression (shallow) using chunking against the first
+    dimension, thus storage will consists of 100 chunks of data:
     @code{.cpp}
       // open / autocreate hdf5 file
       cv::Ptr<cv::hdf::HDF5> h5io = cv::hdf::open( "mytest.h5" );
@@ -242,11 +244,11 @@ public:
       h5io->close();
     @endcode
 
-    @note A value of H5_UNLIMITED inside the **sizes** array means **unlimited** data on that dimension, thus is
+    @note A value of H5_UNLIMITED inside the **sizes** array means **unlimited** data on that dimension, thus it is
     possible to expand anytime such dataset on those unlimited directions. Presence of H5_UNLIMITED on any dimension
-    **require** to define custom chunking. No default chunking will be defined in unlimited scenario since default size
-    on that dimension will be zero, and will grow once dataset is written. Writing into dataset that have H5_UNLIMITED on
-    some of its dimension requires dsinsert() instead of dswrite() that allow growth on unlimited dimension instead of
+    **requires** to define custom chunking. No default chunking will be defined in unlimited scenario since the default size
+    on that dimension will be zero, and will grow once dataset is written. Writing into dataset that has H5_UNLIMITED on
+    some of its dimension requires dsinsert() instead of dswrite() that allows growth on unlimited dimension instead of
     dswrite() that allows to write only in predefined data space.
 
     - Example below shows a 3 dimensional dataset using no compression with all unlimited sizes and one unit chunking:
@@ -262,11 +264,12 @@ public:
     @endcode
      */
     CV_WRAP virtual void dscreate( const int n_dims, const int* sizes, const int type,
-                 String dslabel, const int compresslevel, const int* dims_chunks ) const = 0;
+                 const String& dslabel, const int compresslevel, const int* dims_chunks ) const = 0;
 
     /** @brief Fetch dataset sizes
     @param dslabel specify the hdf5 dataset label to be measured.
-    @param dims_flag will fetch dataset dimensions on H5_GETDIMS, and dataset maximum dimensions on H5_GETMAXDIMS.
+    @param dims_flag will fetch dataset dimensions on H5_GETDIMS, dataset maximum dimensions on H5_GETMAXDIMS,
+                     and chunk sizes on H5_GETCHUNKDIMS.
 
     Returns vector object containing sizes of dataset on each dimensions.
 
@@ -278,7 +281,7 @@ public:
     return the dimension of chunk if dataset was created with chunking options otherwise returned vector size
     will be zero.
      */
-    CV_WRAP virtual vector<int> dsgetsize( String dslabel, int dims_flag = HDF5::H5_GETDIMS ) const = 0;
+    CV_WRAP virtual vector<int> dsgetsize( const String& dslabel, int dims_flag = HDF5::H5_GETDIMS ) const = 0;
 
     /** @brief Fetch dataset type
     @param dslabel specify the hdf5 dataset label to be checked.
@@ -289,15 +292,15 @@ public:
     @note Result can be parsed with CV_MAT_CN() to obtain amount of channels and CV_MAT_DEPTH() to obtain native cvdata type.
     It is thread safe.
      */
-    CV_WRAP virtual int dsgettype( String dslabel ) const = 0;
+    CV_WRAP virtual int dsgettype( const String& dslabel ) const = 0;
 
     /* @overload */
-    CV_WRAP virtual void dswrite( InputArray Array, String dslabel ) const = 0;
+    CV_WRAP virtual void dswrite( InputArray Array, const String& dslabel ) const = 0;
     /* @overload */
-    CV_WRAP virtual void dswrite( InputArray Array, String dslabel,
+    CV_WRAP virtual void dswrite( InputArray Array, const String& dslabel,
                  const int* dims_offset ) const = 0;
     /* @overload */
-    CV_WRAP virtual void dswrite( InputArray Array, String dslabel,
+    CV_WRAP virtual void dswrite( InputArray Array, const String& dslabel,
                  const vector<int>& dims_offset,
                  const vector<int>& dims_counts = vector<int>() ) const = 0;
     /** @brief Write or overwrite a Mat object into specified dataset of hdf5 file.
@@ -305,16 +308,16 @@ public:
     @param dslabel specify the target hdf5 dataset label.
     @param dims_offset each array member specify the offset location
            over dataset's each dimensions from where InputArray will be (over)written into dataset.
-    @param dims_counts each array member specify the amount of data over dataset's
+    @param dims_counts each array member specifies the amount of data over dataset's
            each dimensions from InputArray that will be written into dataset.
 
     Writes Mat object into targeted dataset.
 
     @note If dataset is not created and does not exist it will be created **automatically**. Only Mat is supported and
-    it must to be **continuous**. It is thread safe but it is recommended that writes to happen over separate non overlapping
-    regions. Multiple datasets can be written inside single hdf5 file.
+    it must be **continuous**. It is thread safe but it is recommended that writes to happen over separate non-overlapping
+    regions. Multiple datasets can be written inside a single hdf5 file.
 
-    - Example below writes a 100x100 CV_64FC2 matrix into a dataset. No dataset precreation required. If routine
+    - Example below writes a 100x100 CV_64FC2 matrix into a dataset. No dataset pre-creation required. If routine
     is called multiple times dataset will be just overwritten:
     @code{.cpp}
       // dual channel hilbert matrix
@@ -362,19 +365,19 @@ public:
       h5io->close();
     @endcode
      */
-    CV_WRAP virtual void dswrite( InputArray Array, String dslabel,
+    CV_WRAP virtual void dswrite( InputArray Array, const String& dslabel,
                  const int* dims_offset, const int* dims_counts ) const = 0;
 
     /* @overload */
-    CV_WRAP virtual void dsinsert( InputArray Array, String dslabel ) const = 0;
+    CV_WRAP virtual void dsinsert( InputArray Array, const String& dslabel ) const = 0;
     /* @overload */
     CV_WRAP virtual void dsinsert( InputArray Array,
-                 String dslabel, const int* dims_offset ) const = 0;
+                 const String& dslabel, const int* dims_offset ) const = 0;
     /* @overload */
     CV_WRAP virtual void dsinsert( InputArray Array,
-                 String dslabel, const vector<int>& dims_offset,
+                 const String& dslabel, const vector<int>& dims_offset,
                  const vector<int>& dims_counts = vector<int>() ) const = 0;
-    /** @brief Insert or overwrite a Mat object into specified dataset and autoexpand dataset size if **unlimited** property allows.
+    /** @brief Insert or overwrite a Mat object into specified dataset and auto expand dataset size if **unlimited** property allows.
     @param Array specify Mat data array to be written.
     @param dslabel specify the target hdf5 dataset label.
     @param dims_offset each array member specify the offset location
@@ -384,13 +387,13 @@ public:
 
     Writes Mat object into targeted dataset and **autoexpand** dataset dimension if allowed.
 
-    @note Unlike dswrite(), datasets are **not** created **automatically**. Only Mat is supported and it must to be **continuous**.
-    If dsinsert() happen over outer regions of dataset dimensions and on that dimension of dataset is in **unlimited** mode then
+    @note Unlike dswrite(), datasets are **not** created **automatically**. Only Mat is supported and it must be **continuous**.
+    If dsinsert() happens over outer regions of dataset dimensions and on that dimension of dataset is in **unlimited** mode then
     dataset is expanded, otherwise exception is thrown. To create datasets with **unlimited** property on specific or more
     dimensions see dscreate() and the optional H5_UNLIMITED flag at creation time. It is not thread safe over same dataset
-    but multiple datasets can be merged inside single hdf5 file.
+    but multiple datasets can be merged inside a single hdf5 file.
 
-    - Example below creates **unlimited** rows x 100 cols and expand rows 5 times with dsinsert() using single 100x100 CV_64FC2
+    - Example below creates **unlimited** rows x 100 cols and expands rows 5 times with dsinsert() using single 100x100 CV_64FC2
     over the dataset. Final size will have 5x100 rows and 100 cols, reflecting H matrix five times over row's span. Chunks size is
     100x100 just optimized against the H matrix size having compression disabled. If routine is called multiple times dataset will be
     just overwritten:
@@ -421,17 +424,17 @@ public:
       h5io->close();
     @endcode
      */
-    CV_WRAP virtual void dsinsert( InputArray Array, String dslabel,
+    CV_WRAP virtual void dsinsert( InputArray Array, const String& dslabel,
                  const int* dims_offset, const int* dims_counts ) const = 0;
 
 
     /* @overload */
-    CV_WRAP virtual void dsread( OutputArray Array, String dslabel ) const = 0;
+    CV_WRAP virtual void dsread( OutputArray Array, const String& dslabel ) const = 0;
     /* @overload */
     CV_WRAP virtual void dsread( OutputArray Array,
-                 String dslabel, const int* dims_offset ) const = 0;
+                 const String& dslabel, const int* dims_offset ) const = 0;
     /* @overload */
-    CV_WRAP virtual void dsread( OutputArray Array, String dslabel,
+    CV_WRAP virtual void dsread( OutputArray Array, const String& dslabel,
                  const vector<int>& dims_offset,
                  const vector<int>& dims_counts = vector<int>() ) const = 0;
     /** @brief Read specific dataset from hdf5 file into Mat object.
@@ -473,7 +476,7 @@ public:
       h5io->close();
     @endcode
      */
-    CV_WRAP virtual void dsread( OutputArray Array, String dslabel,
+    CV_WRAP virtual void dsread( OutputArray Array, const String& dslabel,
                  const int* dims_offset, const int* dims_counts ) const = 0;
 
     /** @brief Fetch keypoint dataset size
@@ -489,13 +492,13 @@ public:
     exception. The H5_GETCHUNKDIMS will return the dimension of chunk if dataset was created with chunking options otherwise
     returned vector size will be zero.
      */
-    CV_WRAP virtual int kpgetsize( String kplabel, int dims_flag = HDF5::H5_GETDIMS ) const = 0;
+    CV_WRAP virtual int kpgetsize( const String& kplabel, int dims_flag = HDF5::H5_GETDIMS ) const = 0;
 
     /** @brief Create and allocate special storage for cv::KeyPoint dataset.
     @param size declare fixed number of KeyPoints
     @param kplabel specify the hdf5 dataset label, any existing dataset with the same label will be overwritten.
     @param compresslevel specify the compression level 0-9 to be used, H5_NONE is default and means no compression.
-    @param chunks each array member specify chunking sizes to be used for block i/o,
+    @param chunks each array member specifies chunking sizes to be used for block I/O,
            H5_NONE is default and means no compression.
     @note If the dataset already exists an exception will be thrown. Existence of the dataset can be checked
     using hlexists().
@@ -526,7 +529,7 @@ public:
         printf("DS already created, skipping\n" );
     @endcode
      */
-    virtual void kpcreate( const int size, String kplabel,
+    virtual void kpcreate( const int size, const String& kplabel,
              const int compresslevel = H5_NONE, const int chunks = H5_NONE ) const = 0;
 
     /** @brief Write or overwrite list of KeyPoint into specified dataset of hdf5 file.
@@ -579,7 +582,7 @@ public:
       h5io->close();
     @endcode
      */
-    virtual void kpwrite( const vector<KeyPoint> keypoints, String kplabel,
+    virtual void kpwrite( const vector<KeyPoint> keypoints, const String& kplabel,
              const int offset = H5_NONE, const int counts = H5_NONE ) const = 0;
 
     /** @brief Insert or overwrite list of KeyPoint into specified dataset and autoexpand dataset size if **unlimited** property allows.
@@ -614,7 +617,7 @@ public:
       h5io->close();
     @endcode
      */
-    virtual void kpinsert( const vector<KeyPoint> keypoints, String kplabel,
+    virtual void kpinsert( const vector<KeyPoint> keypoints, const String& kplabel,
              const int offset = H5_NONE, const int counts = H5_NONE ) const = 0;
 
     /** @brief Read specific keypoint dataset from hdf5 file into vector<KeyPoint> object.
@@ -652,7 +655,7 @@ public:
       h5io->close();
     @endcode
      */
-    virtual void kpread( vector<KeyPoint>& keypoints, String kplabel,
+    virtual void kpread( vector<KeyPoint>& keypoints, const String& kplabel,
              const int offset = H5_NONE, const int counts = H5_NONE ) const = 0;
 
 };
@@ -660,18 +663,20 @@ public:
   /** @brief Open or create hdf5 file
   @param HDF5Filename specify the HDF5 filename.
 
-  Returns pointer to the hdf5 object class
+  Returns a pointer to the hdf5 object class
 
-  @note If hdf5 file does not exist it will be created. Any operations except dscreate() functions on object
-  will be thread safe. Multiple datasets can be created inside single hdf5 file, and can be accessed
-  from same hdf5 object from multiple instances as long read or write operations are done over
+  @note If the specified file does not exist, it will be created using default properties.
+  Otherwise, it is opened in read and write mode with default access properties.
+  Any operations except dscreate() functions on object
+  will be thread safe. Multiple datasets can be created inside a single hdf5 file, and can be accessed
+  from the same hdf5 object from multiple instances as long read or write operations are done over
   non-overlapping regions of dataset. Single hdf5 file also can be opened by multiple instances,
-  reads and writes can be instantiated at the same time as long non-overlapping regions are involved. Object
+  reads and writes can be instantiated at the same time as long as non-overlapping regions are involved. Object
   is released using close().
 
-  - Example below open and then release the file.
+  - Example below opens and then releases the file.
   @code{.cpp}
-    // open / autocreate hdf5 file
+    // open / auto create hdf5 file
     cv::Ptr<cv::hdf::HDF5> h5io = cv::hdf::open( "mytest.h5" );
     // ...
     // release
@@ -698,7 +703,7 @@ public:
   }
   @endcode
    */
-  CV_EXPORTS_W Ptr<HDF5> open( String HDF5Filename );
+  CV_EXPORTS_W Ptr<HDF5> open( const String& HDF5Filename );
 
 //! @}
 
