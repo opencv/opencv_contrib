@@ -371,7 +371,7 @@ void RandomPatternGenerator::generatePattern()
 
         Mat r = Mat(n, m, CV_32F);
         cv::randn(r, Scalar::all(0), Scalar::all(1));
-        cv::resize(r, r, Size(_imageWidth ,_imageHeight), 0, 0, INTER_LINEAR_EXACT);
+        cv::resize(r, r, Size(_imageWidth ,_imageHeight));
         double min_r, max_r;
         minMaxLoc(r, &min_r, &max_r);
 
