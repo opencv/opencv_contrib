@@ -1,0 +1,13 @@
+{
+    "type_dict": {
+        "BackgroundSubtractor": {
+            "j_type": "BackgroundSubtractor",
+            "jn_type": "long",
+            "jni_type": "jlong",
+            "jni_var": "Ptr<BackgroundSubtractor> %(n)s",
+            "suffix": "J",
+            "v_type": "BackgroundSubtractor",
+            "j_import": "org.opencv.video.BackgroundSubtractor"
+        }
+    }
+}
