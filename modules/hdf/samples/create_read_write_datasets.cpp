@@ -1,9 +1,5 @@
-// This file is part of OpenCV project.
-// It is subject to the license terms in the LICENSE file found in the top-level directory
-// of this distribution and at http://opencv.org/license.html.
-
 /**
- * @file create_read_write.cpp
+ * @file create_read_write_datasets.cpp
  * @author Fangjun Kuang <csukuangfj dot at gmail dot com>
  * @date December 2017
  *
@@ -13,14 +9,6 @@
  *
  */
 
-#ifdef __GNUC__
-#  pragma GCC diagnostic ignored "-Wmissing-declarations"
-#  if defined __clang__ || defined __APPLE__
-#    pragma GCC diagnostic ignored "-Wmissing-prototypes"
-#    pragma GCC diagnostic ignored "-Wextra"
-#  endif
-#endif
-
 //! [tutorial]
 #include <iostream>
 
@@ -29,7 +17,7 @@
 
 using namespace cv;
 
-void write_root_group_single_channel()
+static void write_root_group_single_channel()
 {
     String filename = "root_group_single_channel.h5";
     String dataset_name = "/single"; // Note that it is a child of the root group /
@@ -61,7 +49,7 @@ void write_root_group_single_channel()
     h5io->close();
 }
 
-void write_single_channel()
+static void write_single_channel()
 {
     String filename = "single_channel.h5";
     String parent_name = "/data";
@@ -98,7 +86,7 @@ void write_single_channel()
  * creating, reading and writing multiple-channel matrices
  * are the same with single channel matrices
  */
-void write_multiple_channels()
+static void write_multiple_channels()
 {
     String filename = "two_channels.h5";
     String parent_name = "/data";

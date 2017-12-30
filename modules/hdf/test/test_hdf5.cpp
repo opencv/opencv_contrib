@@ -61,6 +61,9 @@ TEST_F(HDF5_Test, create_a_single_group)
     EXPECT_EQ(m_hdf_io->hlexists(group_name), true);
     EXPECT_EQ(m_hdf_io->hlexists("child"), false);
 
+    // It should fail since it creates a group with an existing name
+    EXPECT_ANY_THROW(m_hdf_io->grcreate(group_name));
+
     m_hdf_io->close();
 }
 
@@ -207,6 +210,149 @@ TEST_F(HDF5_Test, write_read_dataset_2)
     EXPECT_EQ(dual.type(), m_two_channels.type());
     EXPECT_EQ(dual.size(), m_two_channels.size());
     EXPECT_NEAR(norm(dual-m_two_channels), 0, 1e-10);
+
+    m_hdf_io->close();
+}
+
+TEST_F(HDF5_Test, test_attribute)
+{
+    reset();
+
+    String attr_name = "test attribute name";
+    int attr_value = 0x12345678;
+
+    m_hdf_io = hdf::open(m_filename);
+    EXPECT_EQ(m_hdf_io->atexists(attr_name), false);
+
+    m_hdf_io->atwrite(attr_value, attr_name);
+    EXPECT_ANY_THROW(m_hdf_io->atwrite(attr_value, attr_name)); // error! it already exists
+
+    EXPECT_EQ(m_hdf_io->atexists(attr_name), true);
+
+    int expected_attr_value;
+    m_hdf_io->atread(&expected_attr_value, attr_name);
+    EXPECT_EQ(attr_value, expected_attr_value);
+
+    m_hdf_io->atdelete(attr_name);
+    EXPECT_ANY_THROW(m_hdf_io->atdelete(attr_name)); // error! Delete non-existed attribute
+
+    EXPECT_EQ(m_hdf_io->atexists(attr_name), false);
+
+    m_hdf_io->close();
+}
+
+TEST_F(HDF5_Test, test_attribute_int)
+{
+    reset();
+
+    String attr_name = "test int";
+    int attr_value = 0x12345678;
+
+    m_hdf_io = hdf::open(m_filename);
+
+    m_hdf_io->atwrite(attr_value, attr_name);
+
+    int expected_attr_value;
+    m_hdf_io->atread(&expected_attr_value, attr_name);
+    EXPECT_EQ(attr_value, expected_attr_value);
+
+    m_hdf_io->close();
+}
+
+TEST_F(HDF5_Test, test_attribute_double)
+{
+    reset();
+
+    String attr_name = "test double";
+    double attr_value = 123.456789;
+
+    m_hdf_io = hdf::open(m_filename);
+
+    m_hdf_io->atwrite(attr_value, attr_name);
+
+    double expected_attr_value;
+    m_hdf_io->atread(&expected_attr_value, attr_name);
+    EXPECT_NEAR(attr_value, expected_attr_value, 1e-9);
+
+    m_hdf_io->close();
+}
+
+TEST_F(HDF5_Test, test_attribute_String)
+{
+    reset();
+
+    String attr_name = "test-String";
+    String attr_value = "----_______----Hello HDF5----_______----\n";
+
+    m_hdf_io = hdf::open(m_filename);
+
+    m_hdf_io->atwrite(attr_value, attr_name);
+
+    String expected_attr_value;
+    m_hdf_io->atread(&expected_attr_value, attr_name);
+    EXPECT_EQ(attr_value.compare(expected_attr_value), 0);
+
+    m_hdf_io->close();
+}
+
+TEST_F(HDF5_Test, test_attribute_InutArray_OutputArray_2d)
+{
+    reset();
+
+    String attr_name = "test-InputArray-OutputArray-2d";
+    cv::Mat attr_value;
+
+    std::vector<int> depth_vec;
+    depth_vec.push_back(CV_8U); depth_vec.push_back(CV_8S);
+    depth_vec.push_back(CV_16U); depth_vec.push_back(CV_16S);
+    depth_vec.push_back(CV_32S); depth_vec.push_back(CV_32F);
+    depth_vec.push_back(CV_64F);
+
+    std::vector<int> channel_vec;
+    channel_vec.push_back(1); channel_vec.push_back(2);
+    channel_vec.push_back(3); channel_vec.push_back(4);
+    channel_vec.push_back(5); channel_vec.push_back(6);
+    channel_vec.push_back(7); channel_vec.push_back(8);
+    channel_vec.push_back(9); channel_vec.push_back(10);
+
+    std::vector<std::vector<int> > dim_vec;
+    std::vector<int> dim_2d;
+    dim_2d.push_back(2); dim_2d.push_back(3);
+    dim_vec.push_back(dim_2d);
+
+    std::vector<int> dim_3d;
+    dim_3d.push_back(2);
+    dim_3d.push_back(3);
+    dim_3d.push_back(4);
+    dim_vec.push_back(dim_3d);
+
+    std::vector<int> dim_4d;
+    dim_4d.push_back(2); dim_4d.push_back(3);
+    dim_4d.push_back(4); dim_4d.push_back(5);
+    dim_vec.push_back(dim_4d);
+
+    Mat expected_attr_value;
+
+    m_hdf_io = hdf::open(m_filename);
+    for (size_t i = 0; i < depth_vec.size(); i++)
+    for (size_t j = 0; j < channel_vec.size(); j++)
+    for (size_t k = 0; k < dim_vec.size(); k++)
+    {
+        if (m_hdf_io->atexists(attr_name))
+            m_hdf_io->atdelete(attr_name);
+
+        attr_value.create(dim_vec[k], CV_MAKETYPE(depth_vec[i], channel_vec[j]));
+        randu(attr_value, 0, 255);
+
+        m_hdf_io->atwrite(attr_value, attr_name);
+        m_hdf_io->atread(expected_attr_value, attr_name);
+
+        double diff = norm(attr_value - expected_attr_value);
+        EXPECT_NEAR(diff, 0, 1e-6);
+
+        EXPECT_EQ(attr_value.size(), expected_attr_value.size());
+        EXPECT_EQ(attr_value.type(), expected_attr_value.type());
+    }
 
     m_hdf_io->close();
 }
