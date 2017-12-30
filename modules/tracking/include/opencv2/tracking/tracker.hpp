@@ -1108,12 +1108,12 @@ class CV_EXPORTS_W TrackerBoosting : public Tracker
     int iterationInit;  //!<the initial iterations
     int featureSetNumFeatures;  //!< # features
     /**
-     * \brief Read parameters from file
+     * \brief Read parameters from a file
      */
     void read( const FileNode& fn );
 
     /**
-     * \brief Write parameters in a file
+     * \brief Write parameters to a file
      */
     void write( FileStorage& fs ) const;
   };
@@ -1227,12 +1227,12 @@ public:
     Params();
 
     /**
-    * \brief Read parameters from file
+    * \brief Read parameters from a file
     */
     void read(const FileNode& /*fn*/);
 
     /**
-    * \brief Write parameters in a file
+    * \brief Write parameters to a file
     */
     void write(FileStorage& /*fs*/) const;
 
