@@ -469,7 +469,7 @@ int HfsCore::processImageGpu(const Mat &img3u, Mat &seg)
         hfsSettings.egbThresholdII, hfsSettings.minRegionSizeII, seg, num_css);
     return num_css;
 #else
-    exit(EXIT_FAILURE);
+    return processImageCpu(img3u, seg);
 #endif
 }
 

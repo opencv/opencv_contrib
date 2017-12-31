@@ -3,5 +3,4 @@ if(HAVE_CUDA)
 endif()
 
 set(the_description "Hierarchical Feature Selection for Efficient Image Segmentation")
-set(CMAKE_CXX_FLAGS "-Wunused-parameter")
 ocv_define_module(hfs opencv_core opencv_imgproc WRAP python)
