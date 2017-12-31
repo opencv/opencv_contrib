@@ -1,5 +1,5 @@
-if(NOT HAVE_CUDA)
-  ocv_module_disable(hfs)
+if(HAVE_CUDA)
+  add_definitions(-D_HFS_CUDA_ON_)
 endif()
 
 set(the_description "Hierarchical Feature Selection for Efficient Image Segmentation")
