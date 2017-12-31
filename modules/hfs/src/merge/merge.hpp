@@ -26,7 +26,7 @@ public:
     float w;
     int a, b;
 
-    bool operator<(const Edge &other)
+    bool operator<(const Edge &other) const
     {
         return this->w < other.w;
     }
