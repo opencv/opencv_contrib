@@ -9,6 +9,8 @@
 #include "opencv2/core/cuda/common.hpp"
 #endif
 
+#include "stddef.h"
+
 namespace cv { namespace hfs { namespace orutils {
 
 template <typename T>

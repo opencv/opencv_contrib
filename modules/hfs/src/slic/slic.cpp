@@ -35,10 +35,10 @@ void cSLIC::init_data(Mat image_) {
 
             img_x = img_x >= lab.cols ? (x * spixel_size + lab.cols) / 2 : img_x;
             img_y = img_y >= lab.rows ? (y * spixel_size + lab.rows) / 2 : img_y;
-            
+
             spixel_list[cluster_idx].id = cluster_idx;
             spixel_list[cluster_idx].center = Vec2f((float)img_x, (float) img_y);
-            
+
             spixel_list[cluster_idx].color_info = lab.at<Vec3f>(img_y, img_x);
             spixel_list[cluster_idx].num_pixels = 0;
         }
@@ -46,14 +46,14 @@ void cSLIC::init_data(Mat image_) {
 }
 
 Mat cSLIC::cvt_img_space() {
- 	float epsilon = 0.008856f;	//actual CIE standard
-	float kappa = 903.3f;		//actual CIE standard
+    float epsilon = 0.008856f;	//actual CIE standard
+    float kappa = 903.3f;		//actual CIE standard
 
-	float Xr = 0.950456f;	//reference white
+    float Xr = 0.950456f;	//reference white
 	float Yr = 1.0f;		//reference white
 	float Zr = 1.088754f;	//reference white
 
-    Mat lab = Mat(image.size(), CV_32FC3);
+    Mat lab_ = Mat(image.size(), CV_32FC3);
 
     for(int i = 0; i < image.rows; ++i) {
         for(int j = 0; j < image.cols; ++j){
@@ -86,13 +86,13 @@ Mat cSLIC::cvt_img_space() {
 	        if (zr > epsilon)	fz = pow(zr, 1.0f / 3.0f);
 	        else				fz = (kappa*zr + 16.0f) / 116.0f;
 
-	        lab.at<Vec3f>(i, j)[0] = 116.0f*fy - 16.0f;
-	        lab.at<Vec3f>(i, j)[1]  = 500.0f*(fx - fy);
-	        lab.at<Vec3f>(i, j)[2]  = 200.0f*(fy - fz);
+	        lab_.at<Vec3f>(i, j)[0] = 116.0f*fy - 16.0f;
+	        lab_.at<Vec3f>(i, j)[1]  = 500.0f*(fx - fy);
+	        lab_.at<Vec3f>(i, j)[2]  = 200.0f*(fy - fz);
         }
     }
 
-    return lab;
+    return lab_;
 }
 
 float cSLIC::compute_dist(Point pix, cSpixelInfo center_info) {
@@ -111,11 +111,11 @@ float cSLIC::compute_dist(Point pix, cSpixelInfo center_info) {
     return sqrtf(retval);
 }
 
-vector<int> cSLIC::generate_superpixels(Mat image, int spixel_size_, float spatial_weight_) {
+vector<int> cSLIC::generate_superpixels(Mat image_, int spixel_size_, float spatial_weight_) {
     spixel_size = spixel_size_;
     spatial_weight = spatial_weight_;
 
-    init_data(image);
+    init_data(image_);
     find_association();
     for (int iter = 0; iter < 5; ++iter) {
         update_cluster_center();
@@ -136,7 +136,7 @@ void cSLIC::find_association() {
             int ctr_y = y / spixel_size;
 
             int idx = y * lab.cols + x;
-            
+
             int minidx = -1;
             float dist = FLT_MAX;
 
@@ -163,13 +163,13 @@ void cSLIC::find_association() {
 }
 
 void cSLIC::update_cluster_center() {
-    
+
     for (int i = 0; i < map_size[0] * map_size[1]; ++i) {
         spixel_list[i].center = Vec2f(0.0f, 0.0f);
         spixel_list[i].color_info = Vec3f(0.0f, 0.0f, 0.0f);
         spixel_list[i].num_pixels = 0;
     }
-    
+
     for (int i = 0; i < lab.rows; ++i) {
         for (int j = 0; j < lab.cols; ++j) {
             int idx = i * lab.cols + j;
@@ -178,7 +178,7 @@ void cSLIC::update_cluster_center() {
             spixel_list[idx_img[idx]].num_pixels += 1;
         }
     }
-    
+
     for (int i = 0; i < map_size[0] * map_size[1]; ++i) {
         if (spixel_list[i].num_pixels != 0) {
             spixel_list[i].center /= spixel_list[i].num_pixels;

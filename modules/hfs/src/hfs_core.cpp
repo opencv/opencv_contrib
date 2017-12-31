@@ -106,7 +106,7 @@ Mat HfsCore::getSLICIdxCpu(const Mat& img3u, int &num_css)
     slic::cSLIC cslic;
     vector<int> idx_img = cslic.generate_superpixels(img3u,
         hfsSettings.slicSettings.spixel_size, hfsSettings.slicSettings.coh_weight);
-    
+
     num_css = 0;
     int _max =
         (int)ceil((float)_w / 8.0f)*(int)ceil((float)_h / 8.0f);
@@ -442,7 +442,7 @@ int HfsCore::processImageCpu(const Mat &img3u, Mat &seg)
 
     idx_mat = getSLICIdxCpu(img3u, num_css);
     cv::cvtColor(img3u, lab3u, COLOR_BGR2Lab);
-    
+
     mag_engine->processImgCpu(img3u, mag1u);
 
     getSegmentationI( lab3u, mag1u, idx_mat,
