@@ -43,13 +43,20 @@ public:
 
     __CV_CUDA_HOST_DEVICE__ friend Vector2<T> &operator /= (Vector2<T> &lhs, T d)
     {
-        if (d == 0) return lhs; lhs.x /= d; lhs.y /= d; return lhs;
+        if (d == 0) {
+            return lhs;
+        }
+        lhs.x /= d;
+        lhs.y /= d;
+        return lhs;
     }
 
     __CV_CUDA_HOST_DEVICE__ friend Vector2<T>&
         operator += (Vector2<T> &lhs, const Vector2<T> &rhs)
     {
-        lhs.x += rhs.x; lhs.y += rhs.y;    return lhs;
+        lhs.x += rhs.x;
+        lhs.y += rhs.y;
+        return lhs;
     }
 };
 
