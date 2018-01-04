@@ -95,7 +95,27 @@ class LearningBasedWBImpl : public LearningBasedWB
         palette_size = 300;
         palette_bandwidth = 0.1f;
         prediction_thresh = 0.025f;
-        if (path_to_model.empty())
+        /* try to load model from file */
+        FileStorage fs;
+        if (!path_to_model.empty() && fs.open(path_to_model, FileStorage::READ))
+        {
+            if (fs["num_trees"].isReal()) { //workaround for #10506
+                double nt = fs["num_trees"];
+                num_trees = int(nt);
+                double ntn = fs["num_tree_nodes"];
+                num_tree_nodes = int(ntn);
+            } else {
+                num_trees = fs["num_trees"];
+                num_tree_nodes = fs["num_tree_nodes"];
+            }
+            fs["feature_idx"] >> feature_idx_Mat;
+            fs["thresh_vals"] >> thresh_vals_Mat;
+            fs["leaf_vals"] >> leaf_vals_Mat;
+            feature_idx = feature_idx_Mat.ptr<uchar>();
+            thresh_vals = thresh_vals_Mat.ptr<float>();
+            leaf_vals = leaf_vals_Mat.ptr<float>();
+        }
+        else
         {
             /* use the default model */
             num_trees = _num_trees;
@@ -103,19 +123,6 @@ class LearningBasedWBImpl : public LearningBasedWB
             feature_idx = _feature_idx;
             thresh_vals = _thresh_vals;
             leaf_vals = _leaf_vals;
-        }
-        else
-        {
-            /* load model from file */
-            FileStorage fs(path_to_model, 0);
-            num_trees = fs["num_trees"];
-            num_tree_nodes = fs["num_tree_nodes"];
-            fs["feature_idx"] >> feature_idx_Mat;
-            fs["thresh_vals"] >> thresh_vals_Mat;
-            fs["leaf_vals"] >> leaf_vals_Mat;
-            feature_idx = feature_idx_Mat.ptr<uchar>();
-            thresh_vals = thresh_vals_Mat.ptr<float>();
-            leaf_vals = leaf_vals_Mat.ptr<float>();
         }
     }
 
