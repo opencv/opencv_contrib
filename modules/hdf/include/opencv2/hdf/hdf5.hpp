@@ -103,13 +103,109 @@ public:
      */
     CV_WRAP virtual bool hlexists( const String& label ) const = 0;
 
-    /* @overload */
+    /**
+     * Check whether a given attribute exits or not in the root group.
+     *
+     * @param atlabel the attribute name to be checked.
+     * @return true if the attribute exists, false otherwise.
+     *
+     * @sa atdelete, atwrite, atread
+     */
+    CV_WRAP virtual bool atexists(const String& atlabel) const = 0;
+
+    /**
+     * Delete an attribute from the root group.
+     *
+     * @param atlabel the attribute to be deleted.
+     *
+     * @note CV_Error() is called if the given attribute does not exist. Use atexists()
+     * to check whether it exists or not beforehand.
+     *
+     * @sa atexists, atwrite, atread
+     */
+    CV_WRAP virtual void atdelete(const String& atlabel) = 0;
+
+    /**
+     * Write an attribute inside the root group.
+     *
+     * @param value attribute value.
+     * @param atlabel attribute name.
+     *
+     * The following example demonstrates how to write an attribute of type cv::String:
+     *
+     *  @snippet samples/read_write_attributes.cpp snippets_write_str
+     *
+     * @note CV_Error() is called if the given attribute already exists. Use atexists()
+     * to check whether it exists or not beforehand. And use atdelete() to delete
+     * it if it already exists.
+     *
+     * @sa atexists, atdelete, atread
+     */
+    CV_WRAP virtual void atwrite(const int value, const String& atlabel) = 0;
+
+    /**
+     * Read an attribute from the root group.
+     *
+     * @param value address where the attribute is read into
+     * @param atlabel attribute name
+     *
+     * The following example demonstrates how to read an attribute of type cv::String:
+     *
+     *  @snippet samples/read_write_attributes.cpp snippets_read_str
+     *
+     * @note The attribute MUST exist, otherwise CV_Error() is called. Use atexists()
+     * to check if it exists beforehand.
+     *
+     * @sa atexists, atdelete, atwrite
+     */
+    CV_WRAP virtual void atread(int* value, const String& atlabel) = 0;
+
+    /** @overload */
+    CV_WRAP virtual void atwrite(const double value, const String& atlabel) = 0;
+
+    /** @overload */
+    CV_WRAP virtual void atread(double* value, const String& atlabel) = 0;
+
+    /** @overload */
+    CV_WRAP virtual void atwrite(const String& value, const String& atlabel) = 0;
+
+    /** @overload */
+    CV_WRAP virtual void atread(String* value, const String& atlabel) = 0;
+
+    /**
+     * Write an attribute into the root group.
+     *
+     * @param value attribute value. Currently, only n-d continuous multi-channel arrays are supported.
+     * @param atlabel attribute name.
+     *
+     * @note CV_Error() is called if the given attribute already exists. Use atexists()
+     * to check whether it exists or not beforehand. And use atdelete() to delete
+     * it if it already exists.
+     *
+     * @sa atexists, atdelete, atread.
+     */
+    CV_WRAP virtual void atwrite(InputArray value, const String& atlabel) = 0;
+
+    /**
+     * Read an attribute from the root group.
+     *
+     * @param value attribute value. Currently, only n-d continuous multi-channel arrays are supported.
+     * @param atlabel attribute name.
+     *
+     * @note The attribute MUST exist, otherwise CV_Error() is called. Use atexists()
+     * to check if it exists beforehand.
+     *
+     * @sa atexists, atdelete, atwrite
+     */
+    CV_WRAP virtual void atread(OutputArray value, const String& atlabel) = 0;
+
+    /** @overload */
     CV_WRAP virtual void dscreate( const int rows, const int cols, const int type,
                  const String& dslabel ) const = 0;
-    /* @overload */
+    /** @overload */
     CV_WRAP virtual void dscreate( const int rows, const int cols, const int type,
                  const String& dslabel, const int compresslevel ) const = 0;
-    /* @overload */
+    /** @overload */
     CV_WRAP virtual void dscreate( const int rows, const int cols, const int type,
                  const String& dslabel, const int compresslevel, const vector<int>& dims_chunks ) const = 0;
     /** @brief Create and allocate storage for two dimensional single or multi channel dataset.

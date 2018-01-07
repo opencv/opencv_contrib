@@ -3,12 +3,13 @@ Creating, Writing and Reading Datasets {#tutorial_hdf_create_read_write_datasets
 
 Goal
 ----
+
 This tutorial shows you:
  - How to create a dataset?
  - How to write a `cv::Mat` to a dataset?
  - How to read a `cv::Mat` from a dataset?
 
-@note Currently, it supports only reading and writing `cv::Mat` and the matrix should be continuous
+@note Currently, it supports only reading and writing cv::Mat and the matrix should be continuous
 in memory. Supports for other data types have not been implemented yet.
 
 Source Code
@@ -36,7 +37,7 @@ the dataset name is `/single`, which is inside the root group, we can use
 @snippet samples/create_read_write_datasets.cpp tutorial_write_root_single_channel
 
 to write the data directly to the dataset without the need of creating
-it beforehand. Because it is created inside `HDF5::dswrite()`
+it beforehand. Because it is created inside cv::hdf::HDF5::dswrite()
 automatically.
 
 @warning This applies only to datasets that reside inside the root group.
@@ -59,7 +60,7 @@ Results
 ----
 
 Figure 1 shows the result visualized using the tool HDFView for the file
-`root_group_sinle_channel`. The results
+`root_group_single_channel`. The results
 of matrices for datasets that are not the direct children of the root group
 are given in Figure 2 and Figure 3, respectively.
 

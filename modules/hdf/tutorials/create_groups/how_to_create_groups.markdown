@@ -3,12 +3,12 @@ Creating Groups {#tutorial_hdf_create_groups}
 
 Goal
 ----
+
 This tutorial will show you:
  - How to create a HDF5 file?
  - How to create a group?
  - How to check whether a given group exists or not?
  - How to create a subgroup?
-
 
 Source Code
 ----
@@ -35,7 +35,7 @@ Next, we create the group `Group1`
 @snippet samples/create_groups.cpp tutorial_create_group
 
 Note that we have to check whether `/Group1` exists or not using
-the function `hlexists` before creating it. You can not create
+the function cv::hdf::HDF5::hlexists() before creating it. You can not create
 a group with an existing name. Otherwise, an error will occur.
 
 Then, we create the subgroup named `Subgroup1`. In order to

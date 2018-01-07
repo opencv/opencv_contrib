@@ -61,6 +61,21 @@ public:
     // check if object / link exists
     virtual bool hlexists( const String& label ) const;
 
+    virtual bool atexists(const String& atlabel) const;
+    virtual void atdelete(const String& atlabel);
+
+    virtual void atwrite(const int value, const String& atlabel);
+    virtual void atread(int* value, const String& atlabel);
+
+    virtual void atwrite(const double value, const String& atlabel);
+    virtual void atread(double* value, const String& atlabel);
+
+    virtual void atwrite(const String& value, const String& atlabel);
+    virtual void atread(String* value, const String& atlabel);
+
+    virtual void atwrite(InputArray value, const String& atlabel);
+    virtual void atread(OutputArray value, const String& atlabel);
+
     /*
      * h5 group
      */
@@ -218,7 +233,7 @@ inline hid_t HDF5Impl::GetH5type( int cvType ) const
         h5Type = H5T_NATIVE_INT;
         break;
       default:
-        CV_Error( Error::StsInternal, "Unknown cvType." );
+        CV_Error_(Error::StsInternal, ("Unknown cvType: %d.", cvType));
     }
     return h5Type;
 }
@@ -242,7 +257,7 @@ inline int HDF5Impl::GetCVtype( hid_t h5Type ) const
     else if ( H5Tequal( h5Type, H5T_NATIVE_INT    ) )
       cvType = CV_32S;
     else
-      CV_Error( Error::StsInternal, "Unknown H5Type." );
+      CV_Error_(Error::StsInternal, ("Unknown H5Type: %d.", h5Type));
 
     return cvType;
 }
@@ -302,15 +317,229 @@ bool HDF5Impl::hlexists( const String& label ) const
     return exists;
 }
 
+bool HDF5Impl::atexists(const String& atlabel) const
+{
+    bool res = false;
+
+    // save old error handler
+    void *errdata;
+    H5E_auto2_t errfunc;
+    hid_t stackid = H5E_DEFAULT;
+    H5Eget_auto(stackid, &errfunc, &errdata);
+
+    // turn off error handling
+    H5Eset_auto(stackid, NULL, NULL);
+
+    hid_t attr = H5Aopen_name(m_h5_file_id, atlabel.c_str());
+    if (attr >= 0)
+    {
+        res = true;
+        H5Aclose(attr);
+    }
+
+    // restore previous error handler
+    H5Eset_auto(stackid, errfunc, errdata);
+
+    return res;
+}
+
+void HDF5Impl::atdelete(const String& atlabel)
+{
+    if (!atexists(atlabel))
+        CV_Error_(Error::StsInternal,("The attribute '%s' does not exist!", atlabel.c_str()));
+
+    H5Adelete(m_h5_file_id, atlabel.c_str());
+}
+
+void HDF5Impl::atwrite(const int value, const String& atlabel)
+{
+    if (atexists(atlabel))
+        CV_Error_(Error::StsInternal,("The attribute '%s' already exists!", atlabel.c_str()));
+
+    hid_t aid = H5Screate(H5S_SCALAR);;
+    hid_t attr = H5Acreate2(m_h5_file_id, atlabel.c_str(), H5T_NATIVE_INT, aid,
+                            H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(attr, H5T_NATIVE_INT, &value);
+
+    H5Sclose(aid);
+    H5Aclose(attr);
+}
+
+void HDF5Impl::atread(int* value, const String& atlabel)
+{
+    if (!value)
+        CV_Error(Error::StsBadArg, "NULL pointer");
+
+    if (!atexists(atlabel))
+        CV_Error_(Error::StsInternal, ("Attribute '%s' does not exist!", atlabel.c_str()));
+
+    hid_t attr = H5Aopen(m_h5_file_id, atlabel.c_str(), H5P_DEFAULT);
+    H5Aread(attr, H5T_NATIVE_INT, value);
+    H5Aclose(attr);
+}
+
+void HDF5Impl::atwrite(const double value, const String& atlabel)
+{
+    if (atexists(atlabel))
+        CV_Error_(Error::StsInternal,("The attribute '%s' already exists!", atlabel.c_str()));
+
+    hid_t aid = H5Screate(H5S_SCALAR);;
+    hid_t attr = H5Acreate2(m_h5_file_id, atlabel.c_str(), H5T_NATIVE_DOUBLE, aid,
+                            H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(attr, H5T_NATIVE_DOUBLE, &value);
+
+    H5Sclose(aid);
+    H5Aclose(attr);
+}
+
+void HDF5Impl::atread(double* value, const String& atlabel)
+{
+    if (!value)
+        CV_Error(Error::StsBadArg, "NULL pointer");
+
+    if (!atexists(atlabel))
+        CV_Error_(Error::StsInternal, ("Attribute '%s' does not exist!", atlabel.c_str()));
+
+    hid_t attr = H5Aopen(m_h5_file_id, atlabel.c_str(), H5P_DEFAULT);
+    H5Aread(attr, H5T_NATIVE_DOUBLE, value);
+    H5Aclose(attr);
+}
+
+void HDF5Impl::atwrite(const String& value, const String& atlabel)
+{
+    if (atexists(atlabel))
+        CV_Error_(Error::StsInternal,("The attribute '%s' already exists!", atlabel.c_str()));
+
+    hid_t aid = H5Screate(H5S_SCALAR);
+    hid_t atype = H5Tcopy(H5T_C_S1);
+    H5Tset_size(atype, value.size()+1);
+    H5Tset_strpad(atype, H5T_STR_NULLTERM);
+
+    hid_t attr = H5Acreate2(m_h5_file_id, atlabel.c_str(), atype, aid, H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(attr, atype, value.c_str());
+
+    H5Sclose(aid);
+    H5Tclose(atype);
+    H5Aclose(attr);
+}
+
+void HDF5Impl::atread(String* value, const String& atlabel)
+{
+    if (!value)
+        CV_Error(Error::StsBadArg, "NULL pointer");
+
+    if (!atexists(atlabel))
+        CV_Error_(Error::StsInternal, ("Attribute '%s' does not exist!", atlabel.c_str()));
+
+    hid_t attr = H5Aopen(m_h5_file_id, atlabel.c_str(), H5P_DEFAULT);
+    hid_t atype = H5Aget_type(attr);
+    H5T_class_t type_class = H5Tget_class(atype);
+    if (type_class != H5T_STRING)
+    {
+        H5Tclose(atype);
+        H5Aclose(attr);
+        CV_Error_(Error::StsInternal, ("Attribute '%s' is not of string type!", atlabel.c_str()));
+    }
+    size_t size = H5Tget_size(atype);
+    *value = String(size, 0); // allocate space
+
+    hid_t atype_mem = H5Tget_native_type(atype, H5T_DIR_ASCEND);
+    H5Aread(attr, atype_mem, const_cast<char*>(value->c_str()));
+
+    H5Tclose(atype_mem);
+    H5Tclose(atype);
+    H5Aclose(attr);
+}
+
+void HDF5Impl::atwrite(InputArray value, const String& atlabel)
+{
+    if (atexists(atlabel))
+        CV_Error_(Error::StsInternal,("The attribute '%s' already exists!", atlabel.c_str()));
+
+    Mat value_ = value.getMat();
+
+    if (!value_.isContinuous())
+        CV_Error(Error::StsInternal, "Only continuous array are implemented. Current array is not continuous!");
+
+    int ndims = value_.dims;
+
+    vector<hsize_t> dim_vec(ndims);
+    for (int i = 0; i < ndims; i++)
+        dim_vec[i] = value_.size[i];
+
+    hid_t dtype = GetH5type(value_.type());
+    if (value_.channels() > 1)
+    {
+        hsize_t dims[1] = { (hsize_t)value_.channels()};
+        dtype = H5Tarray_create(dtype, 1, dims);
+    }
+
+    hid_t aid = H5Screate(H5S_SIMPLE);
+    H5Sset_extent_simple(aid, ndims, dim_vec.data(), NULL);
+
+    hid_t attr = H5Acreate2(m_h5_file_id, atlabel.c_str(), dtype,
+                            aid, H5P_DEFAULT, H5P_DEFAULT);
+
+    H5Awrite(attr, dtype, value_.data);
+
+    if (value_.channels() > 1)
+        H5Tclose(dtype);
+
+    H5Sclose(aid);
+    H5Aclose(attr);
+}
+
+void HDF5Impl::atread(OutputArray value, const String& atlabel)
+{
+    if (!atexists(atlabel))
+        CV_Error_(Error::StsInternal, ("Attribute '%s' does not exist!", atlabel.c_str()));
+
+    hid_t attr = H5Aopen(m_h5_file_id, atlabel.c_str(), H5P_DEFAULT);
+    hid_t atype  = H5Aget_type(attr);
+    hid_t aspace = H5Aget_space(attr);
+    int rank = H5Sget_simple_extent_ndims(aspace);
+
+    vector<hsize_t> dim_vec_(rank);
+    H5Sget_simple_extent_dims(aspace, dim_vec_.data(), NULL);
+    vector<int> dim_vec(dim_vec_.begin(), dim_vec_.end());
+
+    int nchannels = 1;
+    hid_t h5type;
+    if (H5Tget_class(atype) == H5T_ARRAY)
+    {
+        hsize_t dims;
+        H5Tget_array_dims(atype, &dims);
+        nchannels = (int) dims;
+
+        hid_t super_type = H5Tget_super(atype);
+        h5type = H5Tget_native_type(super_type, H5T_DIR_ASCEND);
+        H5Tclose(super_type);
+    }
+    else
+        h5type = H5Tget_native_type(atype, H5T_DIR_ASCEND);
+
+    int dtype = GetCVtype(h5type);
+
+    value.create(rank, dim_vec.data(), CV_MAKETYPE(dtype, nchannels));
+    H5Aread(attr, atype, value.getMat().data);
+
+    H5Sclose(aspace);
+    H5Tclose(atype);
+    H5Aclose(attr);
+}
+
 /*
  * h5 group
  */
 
 void HDF5Impl::grcreate( const String& grlabel )
 {
-  hid_t gid = H5Gcreate( m_h5_file_id, grlabel.c_str(),
-                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Gclose( gid );
+    if (hlexists(grlabel))
+        CV_Error_(Error::StsInternal, ("Requested group '%s' already exists.", grlabel.c_str()));
+
+    hid_t gid = H5Gcreate(m_h5_file_id, grlabel.c_str(),
+                          H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    H5Gclose(gid);
 }
 
 /*
@@ -358,7 +587,7 @@ vector<int> HDF5Impl::dsgetsize( const String& dslabel, int dims_flag ) const
         SizeVect.resize( n_dims );
     }
     else
-      CV_Error( Error::StsInternal, "Unknown dimension flag." );
+      CV_Error_(Error::StsInternal, ("Unknown dimension flag: %d", dims_flag));
 
     // fill with size data
     for ( size_t d = 0; d < SizeVect.size(); d++ )
@@ -479,7 +708,7 @@ void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
     CV_Assert( compresslevel >= H5_NONE && compresslevel <= 9 );
 
     if ( hlexists( dslabel ) == true )
-      CV_Error( Error::StsInternal, "Requested dataset already exists." );
+      CV_Error_(Error::StsInternal, ("Requested dataset '%s' already exists.", dslabel.c_str()));
 
     int channs = CV_MAT_CN( type );
 
@@ -802,7 +1031,7 @@ void HDF5Impl::dsinsert( InputArray Array, const String& dslabel,
 
     // check dataset exists
     if ( hlexists( dslabel ) == false )
-      CV_Error( Error::StsInternal, "Dataset does not exist." );
+      CV_Error_(Error::StsInternal, ("Dataset '%s' does not exist.", dslabel.c_str()));
 
     Mat matrix = Array.getMat();
 
@@ -935,7 +1164,7 @@ void HDF5Impl::kpcreate( const int size, const String& kplabel,
     CV_Assert( compresslevel >= H5_NONE && compresslevel <= 9 );
 
     if ( hlexists( kplabel ) == true )
-      CV_Error( Error::StsInternal, "Requested dataset already exists." );
+      CV_Error_(Error::StsInternal, ("Requested dataset '%s' already exists.", kplabel.c_str()));
 
     hsize_t dchunk[1];
     hsize_t dsdims[1];
@@ -1058,7 +1287,7 @@ void HDF5Impl::kpinsert( const vector<KeyPoint> keypoints, const String& kplabel
 
     // check dataset exists
     if ( hlexists( kplabel ) == false )
-      CV_Error( Error::StsInternal, "Dataset does not exist." );
+      CV_Error_(Error::StsInternal, ("Dataset '%s' does not exist.", kplabel.c_str()));
 
     hsize_t dsddims[1];
     hsize_t doffset[1];
