@@ -134,9 +134,9 @@ namespace cv
                         printf("Error to open groundtruth.txt!!!");
 
                     //Make a list of datasets lengths
-                    int currFrameID = 1;
+                    int currFrameID = 0;
                     if (currDatasetID == 0)
-                        printf("VOT 2015 Dataset Initialization...\n");
+                        printf("VOT Dataset Initialization...\n");
                     bool trFLG = true;
                     do
                     {
@@ -174,7 +174,7 @@ namespace cv
             }
             else
             {
-                printf("Couldn't find a *list.txt* in VOT 2015 folder!!!");
+                printf("Couldn't find a *list.txt* in VOT Dataset folder!!!");
             }
 
             namesList.close();
@@ -202,11 +202,12 @@ namespace cv
             if (id > 0 && id <= (int)data.size())
             {
                 activeDatasetID = id;
+                frameCounter = 0;
                 return true;
             }
             else
             {
-				printf("Dataset ID is out of range...\nAllowed IDs are: 1~%d\n", (int)data.size());
+                printf("Dataset ID is out of range...\nAllowed IDs are: 1~%d\n", (int)data.size());
                 return false;
             }
         }
