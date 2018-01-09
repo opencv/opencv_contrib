@@ -527,9 +527,9 @@ class CV_EXPORTS_W Tracker : public virtual Algorithm
 
   virtual ~Tracker();
 
-  /** @brief Initialize the tracker with a know bounding box that surrounding the target
+  /** @brief Initialize the tracker with a known bounding box that surrounded the target
     @param image The initial frame
-    @param boundingBox The initial boundig box
+    @param boundingBox The initial bounding box
 
     @return True if initialization went succesfully, false otherwise
      */
@@ -537,7 +537,7 @@ class CV_EXPORTS_W Tracker : public virtual Algorithm
 
   /** @brief Update the tracker, find the new most likely bounding box for the target
     @param image The current frame
-    @param boundingBox The boundig box that represent the new target location, if true was returned, not
+    @param boundingBox The bounding box that represent the new target location, if true was returned, not
     modified otherwise
 
     @return True means that target was located and false means that tracker cannot locate target in
@@ -1108,12 +1108,12 @@ class CV_EXPORTS_W TrackerBoosting : public Tracker
     int iterationInit;  //!<the initial iterations
     int featureSetNumFeatures;  //!< # features
     /**
-     * \brief Read parameters from file
+     * \brief Read parameters from a file
      */
     void read( const FileNode& fn );
 
     /**
-     * \brief Write parameters in a file
+     * \brief Write parameters to a file
      */
     void write( FileStorage& fs ) const;
   };
@@ -1199,7 +1199,7 @@ class CV_EXPORTS_W TrackerTLD : public Tracker
 };
 
 /** @brief KCF is a novel tracking framework that utilizes properties of circulant matrix to enhance the processing speed.
- * This tracking method is an implementation of @cite KCF_ECCV which is extended to KFC with color-names features (@cite KCF_CN).
+ * This tracking method is an implementation of @cite KCF_ECCV which is extended to KCF with color-names features (@cite KCF_CN).
  * The original paper of KCF is available at <http://www.robots.ox.ac.uk/~joao/publications/henriques_tpami2015.pdf>
  * as well as the matlab implementation. For more information about KCF with color-names features, please refer to
  * <http://www.cvl.isy.liu.se/research/objrec/visualtracking/colvistrack/index.html>.
@@ -1227,12 +1227,12 @@ public:
     Params();
 
     /**
-    * \brief Read parameters from file, currently unused
+    * \brief Read parameters from a file
     */
     void read(const FileNode& /*fn*/);
 
     /**
-    * \brief Read parameters from file, currently unused
+    * \brief Write parameters to a file
     */
     void write(FileStorage& /*fs*/) const;
 
@@ -1397,9 +1397,9 @@ public:
     targetNum = 0;
   }
 
-  /** @brief Add a new target to a tracking-list and initialize the tracker with a know bounding box that surrounding the target
+  /** @brief Add a new target to a tracking-list and initialize the tracker with a known bounding box that surrounded the target
   @param image The initial frame
-  @param boundingBox The initial boundig box of target
+  @param boundingBox The initial bounding box of target
   @param tracker_algorithm Multi-tracker algorithm
 
   @return True if new target initialization went succesfully, false otherwise
