@@ -350,7 +350,7 @@ TEST_F(HDF5_Test, test_attribute_InutArray_OutputArray_2d)
         double diff = norm(attr_value - expected_attr_value);
         EXPECT_NEAR(diff, 0, 1e-6);
 
-        EXPECT_EQ(attr_value.size(), expected_attr_value.size());
+        EXPECT_EQ(attr_value.size, expected_attr_value.size);
         EXPECT_EQ(attr_value.type(), expected_attr_value.type());
     }
 
