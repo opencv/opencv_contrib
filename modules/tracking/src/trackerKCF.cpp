@@ -137,7 +137,6 @@ namespace cv{
     Mat data_temp, compress_data;
     std::vector<Mat> layers_pca_data;
     std::vector<Scalar> average_data;
-    Mat img_Patch;
 
     // storage for the extracted features, KRLS model, KRLS compressed model
     Mat X[2],Z[2],Zc[2];
@@ -314,7 +313,7 @@ namespace cv{
       // extract and pre-process the patch
       // get non compressed descriptors
       for(unsigned i=0;i<descriptors_npca.size()-extractor_npca.size();i++){
-        if(!getSubWindow(img,roi, features_npca[i], img_Patch, descriptors_npca[i]))return false;
+        if(!getSubWindow(img,roi, features_npca[i],  descriptors_npca[i]))return false;
       }
       //get non-compressed custom descriptors
       for(unsigned i=0,j=(unsigned)(descriptors_npca.size()-extractor_npca.size());i<extractor_npca.size();i++,j++){
@@ -324,7 +323,7 @@ namespace cv{
 
       // get compressed descriptors
       for(unsigned i=0;i<descriptors_pca.size()-extractor_pca.size();i++){
-        if(!getSubWindow(img,roi, features_pca[i], img_Patch, descriptors_pca[i]))return false;
+        if(!getSubWindow(img,roi, features_pca[i],  descriptors_pca[i]))return false;
       }
       //get compressed custom descriptors
       for(unsigned i=0,j=(unsigned)(descriptors_pca.size()-extractor_pca.size());i<extractor_pca.size();i++,j++){
@@ -385,7 +384,7 @@ namespace cv{
     // extract the patch for learning purpose
     // get non compressed descriptors
     for(unsigned i=0;i<descriptors_npca.size()-extractor_npca.size();i++){
-      if(!getSubWindow(img,roi, features_npca[i], img_Patch, descriptors_npca[i]))return false;
+      if(!getSubWindow(img,roi, features_npca[i], descriptors_npca[i]))return false;
     }
     //get non-compressed custom descriptors
     for(unsigned i=0,j=(unsigned)(descriptors_npca.size()-extractor_npca.size());i<extractor_npca.size();i++,j++){
@@ -395,7 +394,7 @@ namespace cv{
 
     // get compressed descriptors
     for(unsigned i=0;i<descriptors_pca.size()-extractor_pca.size();i++){
-      if(!getSubWindow(img,roi, features_pca[i], img_Patch, descriptors_pca[i]))return false;
+      if(!getSubWindow(img,roi, features_pca[i], descriptors_pca[i]))return false;
     }
     //get compressed custom descriptors
     for(unsigned i=0,j=(unsigned)(descriptors_pca.size()-extractor_pca.size());i<extractor_pca.size();i++,j++){
@@ -659,7 +658,7 @@ namespace cv{
   /*
    * obtain the patch and apply hann window filter to it
    */
-  bool TrackerKCFImpl::getSubWindow(const Mat img, const Rect _roi, Mat& feat, Mat& patch, TrackerKCF::MODE desc) const {
+  bool TrackerKCFImpl::getSubWindow(const Mat img, const Rect _roi, Mat& feat,  TrackerKCF::MODE desc) const {
 
     Rect region=_roi;
 
