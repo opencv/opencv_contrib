@@ -39,12 +39,21 @@
 //
 //M*/
 
+
+//
+//  !!! this sample requires the opencv_datasets module !!!
+//
+
+#include "opencv2/opencv_modules.hpp"
+#ifdef HAVE_OPENCV_DATASETS
+
 #include "opencv2/datasets/track_vot.hpp"
 #include <opencv2/core/utility.hpp>
 #include <opencv2/tracking.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include "samples_utility.hpp"
 
 #include <iostream>
 
@@ -135,7 +144,7 @@ int main(int argc, char *argv[])
 	setMouseCallback("Tracking API", onMouse, 0);
 
 	//Create Tracker
-	Ptr<Tracker> tracker = Tracker::create(tracker_algorithm);
+    Ptr<Tracker> tracker = createTrackerByName(tracker_algorithm);
 	if (tracker == NULL)
 	{
 		cout << "***Error in the instantiation of the tracker...***\n";
@@ -222,3 +231,13 @@ int main(int argc, char *argv[])
 
 	return 0;
 }
+
+
+
+#else // ! HAVE_OPENCV_DATASETS
+#include <opencv2/core.hpp>
+int main() {
+	CV_Error(cv::Error::StsNotImplemented , "this sample needs to be built with opencv_datasets !");
+	return -1;
+}
+#endif // HAVE_OPENCV_DATASETS

@@ -51,7 +51,7 @@ namespace cv
 TrackerModel::TrackerModel()
 {
   stateEstimator = Ptr<TrackerStateEstimator>();
-  maxCMLength = 1;
+  maxCMLength = 10;
 }
 
 TrackerModel::~TrackerModel()

@@ -11,7 +11,7 @@
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
  *  
- *  *Redistributions of source code must retain the above copyright notice,
+ *  * Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
  *  
  *  * Redistributions in binary form must reproduce the above copyright notice,
@@ -422,6 +422,13 @@ void GuidedFilterImpl::ComputeCovGuideInv_ParBody::operator()(const Range& range
                     mul(det, a, ac, gf.w);
                 else
                     add_mul(det, a, ac, gf.w);
+            }
+
+            if (gf.eps < 1e-2)
+            {
+                for (int j = 0; j < gf.w; j++)
+                    if (abs(det[j]) < 1e-6f)
+                        det[j] = 1.f;
             }
 
             for (int k = 0; k < gf.covarsInv.total(); k += 1)

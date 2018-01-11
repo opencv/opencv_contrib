@@ -1,10 +1,17 @@
 Extended Image Processing
 =========================
 
-1. Structured Forests 
-2. Domain Transform Filter
-3. Guided Filter
-4. Adaptive Manifold Filter
-5. Joint Bilateral Filter
-6. Superpixels
-7. Graph segmentation
+- Structured Forests
+- Edge Boxes
+- Domain Transform Filter
+- Guided Filter
+- Adaptive Manifold Filter
+- Joint Bilateral Filter
+- Superpixels
+- Graph segmentation
+- Selective search from segmentation
+- Paillou Filter
+- Fast Line Detector
+- Deriche Filter
+- Pei&Lin Normalization
+- Ridge Detection Filter

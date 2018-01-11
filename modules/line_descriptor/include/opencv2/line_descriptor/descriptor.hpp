@@ -56,10 +56,7 @@
 #include <iostream>
 
 #include "opencv2/core/utility.hpp"
-//#include "opencv2/core/private.hpp"
 #include <opencv2/imgproc.hpp>
-#include <opencv2/features2d.hpp>
-#include <opencv2/highgui.hpp>
 #include "opencv2/core.hpp"
 
 /* define data types */
@@ -404,6 +401,12 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
     unsigned int octaveCount;
     //the decriptor of line
     std::vector<float> descriptor;
+
+    OctaveSingleLine() : startPointX(0), startPointY(0), endPointX(0), endPointY(0),
+        sPointInOctaveX(0), sPointInOctaveY(0), ePointInOctaveX(0), ePointInOctaveY(0),
+        direction(0), salience(0), lineLength(0), numOfPixels(0), octaveCount(0),
+        descriptor(std::vector<float>())
+    {}
   };
 
   struct Pixel
@@ -750,10 +753,7 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
 
       /* check parameters */
       if( n < 0 || k < 0 || k > n || p <= 0.0 || p >= 1.0 )
-      {
-        std::cout << "nfa: wrong n, k or p values." << std::endl;
-        exit( 0 );
-      }
+        CV_Error(Error::StsBadArg, "nfa: wrong n, k or p values.\n");
       /* trivial cases */
       if( n == 0 || k == 0 )
         return -logNT;
@@ -1095,7 +1095,7 @@ class BucketGroup
 
 public:
 /** constructor */
-BucketGroup();
+BucketGroup(bool needAllocateGroup = true);
 
 /** destructor */
 ~BucketGroup();
@@ -1126,7 +1126,7 @@ private:
 static const int MAX_B;
 
 /** Bins (each bin is an Array object for duplicates of the same key) */
-BucketGroup *table;
+std::vector<BucketGroup> table;
 
 public:
 
@@ -1172,12 +1172,15 @@ length = 0;
 /** constructor setting sequence's length */
 bitarray( UINT64 _bits )
 {
+arr = NULL;
 init( _bits );
 }
 
 /** initializer of private fields */
 void init( UINT64 _bits )
 {
+if( arr )
+delete[] arr;
 length = (UINT32) ceil( _bits / 32.00 );
 arr = new UINT32[length];
 erase();
@@ -1248,13 +1251,13 @@ UINT64 N;
 cv::Mat codes;
 
 /** Counter for eliminating duplicate results (it is not thread safe) */
-bitarray *counter;
+Ptr<bitarray> counter;
 
 /** Array of m hashtables */
-SparseHashtable *H;
+std::vector<SparseHashtable> H;
 
 /** Volume of a b-bit Hamming ball with radius s (for s = 0 to d) */
-UINT32 *xornum;
+std::vector<UINT32> xornum;
 
 /** Used within generation of binary codes at a certain Hamming distance */
 int power[100];
@@ -1293,7 +1296,7 @@ Mat descriptorsMat;
 std::map<int, int> indexesMap;
 
 /** internal MiHaser representing dataset */
-Mihasher* dataset;
+Ptr<Mihasher> dataset;
 
 /** index from which next added descriptors' bunch must begin */
 int nextAddedIndex;

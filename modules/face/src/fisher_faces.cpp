@@ -16,7 +16,8 @@
  *   See <http://www.opensource.org/licenses/bsd-license>
  */
 #include "precomp.hpp"
-#include "face_basic.hpp"
+#include <opencv2/face.hpp>
+#include "face_utils.hpp"
 
 namespace cv { namespace face {
 
@@ -24,23 +25,27 @@ namespace cv { namespace face {
 // faces: Recognition using class specific linear projection.". IEEE
 // Transactions on Pattern Analysis and Machine Intelligence 19, 7 (1997),
 // 711–720.
-class Fisherfaces: public BasicFaceRecognizerImpl
+class Fisherfaces: public FisherFaceRecognizer
 {
 public:
     // Initializes an empty Fisherfaces model.
     Fisherfaces(int num_components = 0, double threshold = DBL_MAX)
-        : BasicFaceRecognizerImpl(num_components, threshold)
-    { }
+        //: BasicFaceRecognizer(num_components, threshold)
+    {
+        _num_components = num_components;
+        _threshold = threshold;
+    }
 
     // Computes a Fisherfaces model with images in src and corresponding labels
     // in labels.
     void train(InputArrayOfArrays src, InputArray labels);
 
-    // Predicts the label of a query image in src.
-    int predict(InputArray src) const;
-
-    // Predicts the label and confidence for a given sample.
-    void predict(InputArray _src, int &label, double &dist) const;
+    // Send all predict results to caller side for custom result handling
+    void predict(InputArray src, Ptr<PredictCollector> collector) const;
+    String getDefaultName() const
+    {
+        return "opencv_fisherfaces";
+    }
 };
 
 // Removes duplicate elements in a given vector.
@@ -123,7 +128,7 @@ void Fisherfaces::train(InputArrayOfArrays src, InputArray _lbls) {
     }
 }
 
-void Fisherfaces::predict(InputArray _src, int &minClass, double &minDist) const {
+void Fisherfaces::predict(InputArray _src, Ptr<PredictCollector> collector) const {
     Mat src = _src.getMat();
     // check data alignment just for clearer exception messages
     if(_projections.empty()) {
@@ -137,25 +142,15 @@ void Fisherfaces::predict(InputArray _src, int &minClass, double &minDist) const
     // project into LDA subspace
     Mat q = LDA::subspaceProject(_eigenvectors, _mean, src.reshape(1,1));
     // find 1-nearest neighbor
-    minDist = DBL_MAX;
-    minClass = -1;
-    for(size_t sampleIdx = 0; sampleIdx < _projections.size(); sampleIdx++) {
+    collector->init((int)_projections.size());
+    for (size_t sampleIdx = 0; sampleIdx < _projections.size(); sampleIdx++) {
         double dist = norm(_projections[sampleIdx], q, NORM_L2);
-        if((dist < minDist) && (dist < _threshold)) {
-            minDist = dist;
-            minClass = _labels.at<int>((int)sampleIdx);
-        }
+        int label = _labels.at<int>((int)sampleIdx);
+        if (!collector->collect(label, dist))return;
     }
 }
 
-int Fisherfaces::predict(InputArray _src) const {
-    int label;
-    double dummy;
-    predict(_src, label, dummy);
-    return label;
-}
-
-Ptr<BasicFaceRecognizer> createFisherFaceRecognizer(int num_components, double threshold)
+Ptr<FisherFaceRecognizer> FisherFaceRecognizer::create(int num_components, double threshold)
 {
     return makePtr<Fisherfaces>(num_components, threshold);
 }

@@ -42,14 +42,14 @@
 #ifndef OPENCV_TLD_DATASET
 #define OPENCV_TLD_DATASET
 
-#include "opencv2/highgui.hpp"
+#include "opencv2/core.hpp"
 
 namespace cv
 {
 	namespace tld
 	{
 		CV_EXPORTS cv::Rect2d tld_InitDataset(int videoInd, const char* rootPath = "TLD_dataset", int datasetInd = 0);
-		CV_EXPORTS cv::Mat tld_getNextDatasetFrame();
+		CV_EXPORTS cv::String tld_getNextDatasetFrame();
 	}
 }
 

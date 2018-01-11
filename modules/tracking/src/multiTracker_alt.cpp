@@ -44,29 +44,15 @@
 namespace cv {
 
   // constructor
-  MultiTracker::MultiTracker(const String& trackerType):defaultAlgorithm(trackerType){};
+  MultiTracker::MultiTracker(){};
 
   // destructor
   MultiTracker::~MultiTracker(){};
 
-  // add an object to be tracked, defaultAlgorithm is used
-  bool MultiTracker::add(const Mat& image, const Rect2d& boundingBox){
-    // quit if defaultAlgorithm has not been configured
-    if(defaultAlgorithm==""){
-      printf("Default algorithm was not defined!\n");
-      return false;
-    }
-
-    // add a new tracked object
-    return add(defaultAlgorithm.c_str(), image, boundingBox);
-  };
-
   // add a new tracked object
-  bool MultiTracker::add( const String& trackerType, const Mat& image, const Rect2d& boundingBox ){
-    // declare a new tracker
-    Ptr<Tracker> newTracker = Tracker::create( trackerType );
-
-    // add the created tracker algorithm to the trackers list
+  bool MultiTracker::add( Ptr<Tracker> newTracker, InputArray image, const Rect2d& boundingBox )
+  {
+    // add the tracker algorithm to the trackers list
     trackerList.push_back(newTracker);
 
     // add the ROI to the bounding box list
@@ -77,13 +63,13 @@ namespace cv {
   };
 
   // add a set of objects to be tracked
-  bool MultiTracker::add(const String& trackerType, const Mat& image, std::vector<Rect2d> boundingBox){
+  bool MultiTracker::add(std::vector<Ptr<Tracker> > newTrackers, InputArray image, std::vector<Rect2d> boundingBox){
     // status of the tracker addition
     bool stat=false;
 
     // add tracker for all input objects
     for(unsigned i =0;i<boundingBox.size();i++){
-      stat=add(trackerType,image,boundingBox[i]);
+      stat=add(newTrackers[i],image,boundingBox[i]);
       if(!stat)break;
     }
 
@@ -91,30 +77,32 @@ namespace cv {
     return stat;
   };
 
-  // add a set of object to be tracked, defaultAlgorithm is used.
-  bool MultiTracker::add(const Mat& image, std::vector<Rect2d> boundingBox){
-    // quit if defaultAlgorithm has not been configured
-    if(defaultAlgorithm==""){
-      printf("Default algorithm was not defined!\n");
-      return false;
-    }
-
-    return add(defaultAlgorithm.c_str(), image, boundingBox);
-  };
-
   // update position of the tracked objects, the result is stored in internal storage
-  bool MultiTracker::update( const Mat& image){
+  bool MultiTracker::update(InputArray image)
+  {
+    bool status = true;
     for(unsigned i=0;i< trackerList.size(); i++){
-      trackerList[i]->update(image, objects[i]);
+      status &= trackerList[i]->update(image, objects[i]);
     }
-    return true;
+    return status;
   };
 
   // update position of the tracked objects, the result is copied to external variable
-  bool MultiTracker::update( const Mat& image, std::vector<Rect2d> & boundingBox ){
-    update(image);
+  bool MultiTracker::update(InputArray image, std::vector<Rect2d> & boundingBox )
+  {
+    bool status = update(image);
     boundingBox=objects;
-    return true;
+    return status;
   };
+
+  const std::vector<Rect2d>& MultiTracker::getObjects() const
+  {
+      return objects;
+  }
+
+  Ptr<MultiTracker> MultiTracker::create()
+  {
+      return makePtr<MultiTracker>();
+  }
 
 } /* namespace cv */

@@ -17,7 +17,7 @@
  */
 #include "precomp.hpp"
 #include "opencv2/face.hpp"
-#include "face_basic.hpp"
+#include "face_utils.hpp"
 
 namespace cv { namespace face {
 
@@ -46,8 +46,8 @@ private:
 
 
 public:
-    using FaceRecognizer::save;
-    using FaceRecognizer::load;
+    using FaceRecognizer::read;
+    using FaceRecognizer::write;
 
     // Initializes this LBPH Model. The current implementation is rather fixed
     // as it uses the Extended Local Binary Patterns per default.
@@ -91,17 +91,22 @@ public:
     // corresponding labels in labels.
     void update(InputArrayOfArrays src, InputArray labels);
 
-    // Predicts the label of a query image in src.
-    int predict(InputArray src) const;
+    // Send all predict results to caller side for custom result handling
+    void predict(InputArray src, Ptr<PredictCollector> collector) const;
 
-    // Predicts the label and confidence for a given sample.
-    void predict(InputArray _src, int &label, double &dist) const;
-
-    // See FaceRecognizer::load.
-    void load(const FileStorage& fs);
+    // See FaceRecognizer::write.
+    void read(const FileNode& fn);
 
     // See FaceRecognizer::save.
-    void save(FileStorage& fs) const;
+    void write(FileStorage& fs) const;
+
+    bool empty() const {
+        return (_labels.empty());
+    }
+    String getDefaultName() const
+    {
+        return "opencv_lbphfaces";
+    }
 
     CV_IMPL_PROPERTY(int, GridX, _grid_x)
     CV_IMPL_PROPERTY(int, GridY, _grid_y)
@@ -113,7 +118,11 @@ public:
 };
 
 
-void LBPH::load(const FileStorage& fs) {
+void LBPH::read(const FileNode& fs) {
+    double _t = 0;
+    fs["threshold"] >> _t; // older versions might not have "threshold"
+    if (_t !=0)
+        _threshold = _t;    // be careful, not to overwrite DBL_MAX with 0 !
     fs["radius"] >> _radius;
     fs["neighbors"] >> _neighbors;
     fs["grid_x"] >> _grid_x;
@@ -135,7 +144,8 @@ void LBPH::load(const FileStorage& fs) {
 }
 
 // See FaceRecognizer::save.
-void LBPH::save(FileStorage& fs) const {
+void LBPH::write(FileStorage& fs) const {
+    fs << "threshold" << _threshold;
     fs << "radius" << _radius;
     fs << "neighbors" << _neighbors;
     fs << "grid_x" << _grid_x;
@@ -386,7 +396,7 @@ void LBPH::train(InputArrayOfArrays _in_src, InputArray _in_labels, bool preserv
     }
 }
 
-void LBPH::predict(InputArray _src, int &minClass, double &minDist) const {
+void LBPH::predict(InputArray _src, Ptr<PredictCollector> collector) const {
     if(_histograms.empty()) {
         // throw error if no data (or simply return -1?)
         String error_message = "This LBPH model is not computed yet. Did you call the train method?";
@@ -402,29 +412,18 @@ void LBPH::predict(InputArray _src, int &minClass, double &minDist) const {
             _grid_y, /* grid size y */
             true /* normed histograms */);
     // find 1-nearest neighbor
-    minDist = DBL_MAX;
-    minClass = -1;
-    for(size_t sampleIdx = 0; sampleIdx < _histograms.size(); sampleIdx++) {
+    collector->init((int)_histograms.size());
+    for (size_t sampleIdx = 0; sampleIdx < _histograms.size(); sampleIdx++) {
         double dist = compareHist(_histograms[sampleIdx], query, HISTCMP_CHISQR_ALT);
-        if((dist < minDist) && (dist < _threshold)) {
-            minDist = dist;
-            minClass = _labels.at<int>((int) sampleIdx);
-        }
+        int label = _labels.at<int>((int)sampleIdx);
+        if (!collector->collect(label, dist))return;
     }
 }
 
-int LBPH::predict(InputArray _src) const {
-    int label;
-    double dummy;
-    predict(_src, label, dummy);
-    return label;
-}
-
-Ptr<LBPHFaceRecognizer> createLBPHFaceRecognizer(int radius, int neighbors,
+Ptr<LBPHFaceRecognizer> LBPHFaceRecognizer::create(int radius, int neighbors,
                                              int grid_x, int grid_y, double threshold)
 {
     return makePtr<LBPH>(radius, neighbors, grid_x, grid_y, threshold);
 }
-
 
 }}

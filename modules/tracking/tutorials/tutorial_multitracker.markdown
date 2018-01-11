@@ -28,9 +28,8 @@ Explanation
 
     @snippet tracking/samples/tutorial_multitracker.cpp selectmulti
 
-    You can use @ref cv::selectROI to select multiple objects with
+    You can use selectROI to select multiple objects with
     the result stored in a vector of @ref cv::Rect2d as shown in the code.
-    You can also use another kind of selection scheme, please refer to @ref cv::selectROI for detailed information.
 
 -#  **Adding the tracked object to MultiTracker**
 

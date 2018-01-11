@@ -1,55 +1,71 @@
-An overview of the contrib modules and a small explanation
-----------------------------------------------------------
+An overview of the opencv_contrib modules
+-----------------------------------------
 
 This list gives an overview of all modules available inside the contrib repository.
-These are also the correct names for disabling the building of a specific module by adding
+To turn off building one of these module repositories, set the names in bold below to <reponame>
 
 ```
-$ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_reponame=OFF <opencv_source_directory>
+$ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<reponame>=OFF <opencv_source_directory>
 ```
 
-1. **opencv_adas**: Advanced Driver Assistance Systems module with Forward Collision Warning.
+- **aruco**: ArUco and ChArUco Markers -- Augmented reality ArUco marker and "ChARUco" markers where ArUco markers embedded inside the white areas of the checker board.
 
-2. **opencv_bgsegm**: Improved Adaptive Background Mixture Model for Real-time Tracking / Visual Tracking of Human Visitors under Variable-Lighting Conditions.
+- **bgsegm**: Background segmentation algorithm combining statistical background image estimation and per-pixel Bayesian segmentation.
 
-3. **opencv_bioinspired**: Biologically inspired vision models and derivated tools.
+- **bioinspired**: Biological Vision -- Biologically inspired vision model: minimize noise and luminance variance, transient event segmentation, high dynamic range tone mapping methods.
 
-4. **opencv_ ccalib**: Custom Calibration Pattern for 3D reconstruction.
+- **ccalib**: Custom Calibration -- Patterns for 3D reconstruction, omnidirectional camera calibration, random pattern calibration and multi-camera calibration.
 
-5. **opencv_cvv**: GUI for Interactive Visual Debugging of Computer Vision Programs.
+- **cnn_3dobj**: Deep Object Recognition and Pose -- Uses Caffe Deep Neural Net library to build, train and test a CNN model of visual object recognition and pose.
 
-6. **opencv_datasets**: Interface for interfacing with existing computer vision databases.
+- **cvv**: Computer Vision Debugger -- Simple code that you can add to your program that pops up a GUI allowing you to interactively and visually debug computer vision programs.
 
-7. **opencv_datasettools**: Tools for working with different datasets.
+- **datasets**: Datasets Reader -- Code for reading existing computer vision databases and samples of using the readers to train, test and run using that dataset's data.
 
-8. **opencv_face**: Recently added face recognition software which is not yet stabalized.
+- **dnns_easily_fooled**: Subvert DNNs -- This code can use the activations in a network to fool the networks into recognizing something else.
 
-9. **opencv_latentsvm**: Implementation of the LatentSVM detector algorithm.
+- **dpm**: Deformable Part Model -- Felzenszwalb's Cascade with deformable parts object recognition code.
 
-10. **opencv_line_descriptor**: Binary descriptors for lines extracted from an image.
+- **face**: Face Recognition -- Face recognition techniques: Eigen, Fisher and Local Binary Pattern Histograms LBPH methods.
 
-11. **opencv_matlab**: OpenCV Matlab Code Generator.
+- **fuzzy**: Fuzzy Logic in Vision -- Fuzzy logic image transform and inverse; Fuzzy image processing.
 
-12. **opencv_optflow**: Optical Flow Algorithms for tracking points.
+- **freetype**: Drawing text using freetype and harfbuzz.
 
-13. **opencv_reg**: Image Registration module.
+- **hdf**: Hierarchical Data Storage -- This module contains I/O routines for Hierarchical Data Format: https://en.m.wikipedia.org/wiki/Hierarchical_Data_Format meant to store large amounts of data.
 
-14. **opencv_rgbd**: RGB-Depth Processing module.
+- **line_descriptor**: Line Segment Extract and Match -- Methods of extracting, describing and latching line segments using binary descriptors.
 
-15. **opencv_saliency**: Saliency API, understanding where humans focus given a scene.
+- **matlab**: Matlab Interface -- OpenCV Matlab Mex wrapper code generator for certain opencv core modules.
 
-16. **opencv_surface_matching**: Surface Matching Algorithm Through 3D Features.
+- **optflow**: Optical Flow -- Algorithms for running and evaluating deepflow, simpleflow, sparsetodenseflow and motion templates (silhouette flow).
 
-17. **opencv_text**: Scene Text Detection and Recognition in Natural Scene Images.
+- **ovis**: OGRE 3D Visualiser -- allows you to render 3D data using the OGRE 3D engine.
 
-18. **opencv_tracking**: Long-term optical tracking API.
+- **plot**: Plotting -- The plot module allows you to easily plot data in 1D or 2D.
 
-19. **opencv_xfeatures2d**: Extra 2D Features Framework containing experimental and non-free 2D feature algorithms.
+- **reg**: Image Registration -- Pixels based image registration for precise alignment. Follows the paper "Image Alignment and Stitching: A Tutorial", by Richard Szeliski.
 
-20. **opencv_ximgproc**: Extended Image Processing: Structured Forests / Domain Transform Filter / Guided Filter / Adaptive Manifold Filter / Joint Bilateral Filter / Superpixels.
+- **rgbd**: RGB-Depth Processing module -- Linemod 3D object recognition; Fast surface normals and 3D plane finding. 3D visual odometry
 
-21. **opencv_xobjdetect**: Integral Channel Features Detector Framework.
+- **saliency**: Saliency API -- Where humans would look in a scene. Has routines for static, motion and "objectness" saliency.
 
-22. **opencv_xphoto**: Additional photo processing algorithms: Color balance / Denoising / Inpainting.
+- **sfm**: Structure from Motion -- This module contains algorithms to perform 3d reconstruction from 2d images. The core of the module is a light version of Libmv.
 
-23. **opencv_stereo**: Stereo Correspondence done with different descriptors: Census / CS-Census / MCT / BRIEF / MV.
+- **stereo**: Stereo Correspondence -- Stereo matching done with different descriptors: Census / CS-Census / MCT / BRIEF / MV.
+
+- **structured_light**: Structured Light Use -- How to generate and project gray code patterns and use them to find dense depth in a scene.
+
+- **surface_matching**: Point Pair Features -- Implements 3d object detection and localization using multimodal point pair features.
+
+- **text**: Visual Text Matching -- In a visual scene, detect text, segment words and recognise the text.
+
+- **tracking**: Vision Based Object Tracking -- Use and/or evaluate one of 5 different visual object tracking techniques.
+
+- **xfeatures2d**: Features2D extra -- Extra 2D Features Framework containing experimental and non-free 2D feature detector/descriptor algorithms. SURF, SIFT, BRIEF, Censure, Freak, LUCID, Daisy, Self-similar.
+
+- **ximgproc**: Extended Image Processing -- Structured Forests / Domain Transform Filter / Guided Filter / Adaptive Manifold Filter / Joint Bilateral Filter / Superpixels / Ridge Detection Filter.
+
+- **xobjdetect**: Boosted 2D Object Detection -- Uses a Waldboost cascade and local binary patterns computed as integral features for 2D object detection.
+
+- **xphoto**: Extra Computational Photography -- Additional photo processing algorithms: Color balance / Denoising / Inpainting.

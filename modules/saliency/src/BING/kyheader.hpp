@@ -65,7 +65,7 @@
 #define cvLIB(name) "opencv_" name CV_VERSION_ID
 #endif
 
-#ifdef WIN32
+#ifdef _WIN32
 /* windows stuff */
 #else
 typedef unsigned long DWORD;
@@ -78,7 +78,10 @@ typedef void *HANDLE;
 #ifndef _MSC_VER
 typedef unsigned char BYTE;
 #else
+#define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#undef min
+#undef max
 #endif
 
 typedef std::vector<int> vecI;

@@ -168,7 +168,7 @@ namespace omnidir
     @param idx Indices of images that pass initialization, which are really used in calibration. So the size of rvecs is the
     same as idx.total().
     */
-    CV_EXPORTS_W double calibrate(InputArray objectPoints, InputArray imagePoints, Size size,
+    CV_EXPORTS_W double calibrate(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints, Size size,
         InputOutputArray K, InputOutputArray xi, InputOutputArray D, OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs,
         int flags, TermCriteria criteria, OutputArray idx=noArray());
 
@@ -277,8 +277,6 @@ namespace internal
 
     double computeMeanReproErrStereo(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints1, InputArrayOfArrays imagePoints2, InputArray K1, InputArray K2,
         InputArray D1, InputArray D2, double xi1, double xi2, InputArray om, InputArray T, InputArrayOfArrays omL, InputArrayOfArrays TL);
-
-    void checkFixed(Mat &G, int flags, int n);
 
     void subMatrix(const Mat& src, Mat& dst, const std::vector<int>& cols, const std::vector<int>& rows);
 

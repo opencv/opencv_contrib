@@ -11,7 +11,7 @@
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
  *
- *  *Redistributions of source code must retain the above copyright notice,
+ *  * Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
  *
  *  * Redistributions in binary form must reproduce the above copyright notice,
@@ -316,6 +316,62 @@ proportional to sigmaSpace .
 CV_EXPORTS_W
 void jointBilateralFilter(InputArray joint, InputArray src, OutputArray dst, int d, double sigmaColor, double sigmaSpace, int borderType = BORDER_DEFAULT);
 
+/** @brief Applies the bilateral texture filter to an image. It performs structure-preserving texture filter.
+For more details about this filter see @cite Cho2014.
+
+@param src Source image whose depth is 8-bit UINT or 32-bit FLOAT
+
+@param dst Destination image of the same size and type as src.
+
+@param fr Radius of kernel to be used for filtering. It should be positive integer
+
+@param numIter Number of iterations of algorithm, It should be positive integer
+
+@param sigmaAlpha Controls the sharpness of the weight transition from edges to smooth/texture regions, where
+a bigger value means sharper transition. When the value is negative, it is automatically calculated.
+
+@param sigmaAvg Range blur parameter for texture blurring. Larger value makes result to be more blurred. When the
+value is negative, it is automatically calculated as described in the paper.
+
+@sa rollingGuidanceFilter, bilateralFilter
+*/
+CV_EXPORTS_W
+void bilateralTextureFilter(InputArray src, OutputArray dst, int fr = 3, int numIter = 1, double sigmaAlpha = -1., double sigmaAvg = -1.);
+
+//////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////
+
+/** @brief Applies the rolling guidance filter to an image.
+
+For more details, please see @cite zhang2014rolling
+
+@param src Source 8-bit or floating-point, 1-channel or 3-channel image.
+
+@param dst Destination image of the same size and type as src.
+
+@param d Diameter of each pixel neighborhood that is used during filtering. If it is non-positive,
+it is computed from sigmaSpace .
+
+@param sigmaColor Filter sigma in the color space. A larger value of the parameter means that
+farther colors within the pixel neighborhood (see sigmaSpace ) will be mixed together, resulting in
+larger areas of semi-equal color.
+
+@param sigmaSpace Filter sigma in the coordinate space. A larger value of the parameter means that
+farther pixels will influence each other as long as their colors are close enough (see sigmaColor ).
+When d\>0 , it specifies the neighborhood size regardless of sigmaSpace . Otherwise, d is
+proportional to sigmaSpace .
+
+@param numOfIter Number of iterations of joint edge-preserving filtering applied on the source image.
+
+@param borderType
+
+@note  rollingGuidanceFilter uses jointBilateralFilter as the edge-preserving filter.
+
+@sa jointBilateralFilter, bilateralFilter, amFilter
+*/
+CV_EXPORTS_W
+void rollingGuidanceFilter(InputArray src, OutputArray dst, int d = -1, double sigmaColor = 25, double sigmaSpace = 3, int numOfIter = 4, int borderType = BORDER_DEFAULT);
+
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
@@ -378,6 +434,19 @@ it should be 0.25. Setting it to 1.0 may lead to streaking artifacts.
 */
 CV_EXPORTS_W void fastGlobalSmootherFilter(InputArray guide, InputArray src, OutputArray dst, double lambda, double sigma_color, double lambda_attenuation=0.25, int num_iter=3);
 
+/** @brief Global image smoothing via L0 gradient minimization.
+
+@param src source image for filtering with unsigned 8-bit or signed 16-bit or floating-point depth.
+
+@param dst destination image.
+
+@param lambda parameter defining the smooth term weight.
+
+@param kappa parameter defining the increasing factor of the weight of the gradient data term.
+
+For more details about L0 Smoother, see the original paper @cite xu2011image.
+*/
+CV_EXPORTS_W void l0Smooth(InputArray src, OutputArray dst, double lambda = 0.02, double kappa = 2.0);
 //! @}
 }
 }

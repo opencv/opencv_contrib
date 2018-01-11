@@ -333,9 +333,13 @@ void FREAK_Impl::compute( InputArray _image, std::vector<KeyPoint>& keypoints, O
     ((FREAK_Impl*)this)->buildPattern();
 
     // Convert to gray if not already
-    Mat grayImage = image;
-//    if( image.channels() > 1 )
-//        cvtColor( image, grayImage, COLOR_BGR2GRAY );
+    Mat grayImage;
+    if( image.channels() == 3 || image.channels() == 4 )
+        cvtColor(image, grayImage, COLOR_BGR2GRAY);
+    else {
+        CV_Assert(image.channels() == 1);
+        grayImage = image;
+    }
 
     // Use 32-bit integers if we won't overflow in the integral image
     if ((image.depth() == CV_8U || image.depth() == CV_8S) &&
@@ -538,7 +542,12 @@ void FREAK_Impl::computeDescriptors( InputArray _image, std::vector<KeyPoint>& k
                 }
 
                 keypoints[k].angle = static_cast<float>(atan2((float)direction1,(float)direction0)*(180.0/CV_PI));//estimate orientation
-                thetaIdx = int(FREAK_NB_ORIENTATION*keypoints[k].angle*(1/360.0)+0.5);
+
+                if(keypoints[k].angle < 0.f)
+                    thetaIdx = int(FREAK_NB_ORIENTATION*keypoints[k].angle*(1/360.0)-0.5);
+                else
+                    thetaIdx = int(FREAK_NB_ORIENTATION*keypoints[k].angle*(1/360.0)+0.5);
+
                 if( thetaIdx < 0 )
                     thetaIdx += FREAK_NB_ORIENTATION;
 
@@ -590,7 +599,11 @@ void FREAK_Impl::computeDescriptors( InputArray _image, std::vector<KeyPoint>& k
                 }
 
                 keypoints[k].angle = static_cast<float>(atan2((float)direction1,(float)direction0)*(180.0/CV_PI)); //estimate orientation
-                thetaIdx = int(FREAK_NB_ORIENTATION*keypoints[k].angle*(1/360.0)+0.5);
+
+                if(keypoints[k].angle < 0.f)
+                    thetaIdx = int(FREAK_NB_ORIENTATION*keypoints[k].angle*(1/360.0)-0.5);
+                else
+                    thetaIdx = int(FREAK_NB_ORIENTATION*keypoints[k].angle*(1/360.0)+0.5);
 
                 if( thetaIdx < 0 )
                     thetaIdx += FREAK_NB_ORIENTATION;
@@ -672,7 +685,8 @@ imgType FREAK_Impl::meanIntensity( InputArray _image, InputArray _integral,
     ret_val -= integral.at<iiType>(y_bottom,x_left);
     ret_val += integral.at<iiType>(y_top,x_left);
     ret_val -= integral.at<iiType>(y_top,x_right);
-    ret_val = ret_val/( (x_right-x_left)* (y_bottom-y_top) );
+    const int area = (x_right - x_left) * (y_bottom - y_top);
+    ret_val = (ret_val + area/2) / area;
     //~ std::cout<<integral.step[1]<<std::endl;
     return static_cast<imgType>(ret_val);
 }

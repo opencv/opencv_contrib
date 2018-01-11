@@ -19,7 +19,7 @@ namespace view
 
 DefaultFilterView::DefaultFilterView(const std::vector<cv::Mat> &images,
 				     QWidget *parent)
-    : FilterView{ parent }
+    : FilterView( parent )
 {
 
 	auto layout = util::make_unique<QHBoxLayout>();

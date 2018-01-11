@@ -39,7 +39,7 @@
  //
  //M*/
 
-#include "precomp.hpp"
+#include "../precomp.hpp"
 #include "CmShow.hpp"
 
 namespace cv
@@ -47,24 +47,29 @@ namespace cv
 namespace saliency
 {
 
-float ObjectnessBING::FilterTIG::dot( const int64_t tig1, const int64_t tig2, const int64_t tig4, const int64_t tig8 )
+typedef int64_t TIG_TYPE;
+typedef double MAT_TIG_TYPE; // cv::Mat has no native support for int64/uint64
+
+struct TIGbits
 {
-  int64_t bcT1 = (int64_t) POPCNT64( tig1 );
-  int64_t bcT2 = (int64_t) POPCNT64( tig2 );
-  int64_t bcT4 = (int64_t) POPCNT64( tig4 );
-  int64_t bcT8 = (int64_t) POPCNT64( tig8 );
+  TIGbits() : bc0(0), bc1(0) {}
+  inline void accumulate(TIG_TYPE tig, TIG_TYPE tigMask0, TIG_TYPE tigMask1, uchar shift)
+  {
+    bc0 += ((POPCNT64(tigMask0 & tig) << 1) - POPCNT64(tig)) << shift;
+    bc1 += ((POPCNT64(tigMask1 & tig) << 1) - POPCNT64(tig)) << shift;
+  }
+  TIG_TYPE bc0;
+  TIG_TYPE bc1;
+};
 
-  int64_t bc01 = (int64_t) ( POPCNT64(_bTIGs[0] & tig1) << 1 ) - bcT1;
-  int64_t bc02 = (int64_t) ( ( POPCNT64(_bTIGs[0] & tig2) << 1 ) - bcT2 ) << 1;
-  int64_t bc04 = (int64_t) ( ( POPCNT64(_bTIGs[0] & tig4) << 1 ) - bcT4 ) << 2;
-  int64_t bc08 = (int64_t) ( ( POPCNT64(_bTIGs[0] & tig8) << 1 ) - bcT8 ) << 3;
-
-  int64_t bc11 = (int64_t) ( POPCNT64(_bTIGs[1] & tig1) << 1 ) - bcT1;
-  int64_t bc12 = (int64_t) ( ( POPCNT64(_bTIGs[1] & tig2) << 1 ) - bcT2 ) << 1;
-  int64_t bc14 = (int64_t) ( ( POPCNT64(_bTIGs[1] & tig4) << 1 ) - bcT4 ) << 2;
-  int64_t bc18 = (int64_t) ( ( POPCNT64(_bTIGs[1] & tig8) << 1 ) - bcT8 ) << 3;
-
-  return _coeffs1[0] * ( bc01 + bc02 + bc04 + bc08 ) + _coeffs1[1] * ( bc11 + bc12 + bc14 + bc18 );
+float ObjectnessBING::FilterTIG::dot( TIG_TYPE tig1, TIG_TYPE tig2, TIG_TYPE tig4, TIG_TYPE tig8 )
+{
+  TIGbits x;
+  x.accumulate(tig1, _bTIGs[0], _bTIGs[1], 0);
+  x.accumulate(tig2, _bTIGs[0], _bTIGs[1], 1);
+  x.accumulate(tig4, _bTIGs[0], _bTIGs[1], 2);
+  x.accumulate(tig8, _bTIGs[0], _bTIGs[1], 3);
+  return _coeffs1[0] * x.bc0 + _coeffs1[1] * x.bc1;
 }
 
 void ObjectnessBING::FilterTIG::update( Mat &w1f )
@@ -109,22 +114,22 @@ Mat ObjectnessBING::FilterTIG::matchTemplate( const Mat &mag1u )
 {
   const int H = mag1u.rows, W = mag1u.cols;
   const Size sz( W + 1, H + 1 );  // Expand original size to avoid dealing with boundary conditions
-  Mat_<int64_t> Tig1 = Mat_<int64_t>::zeros( sz ), Tig2 = Mat_<int64_t>::zeros( sz );
-  Mat_<int64_t> Tig4 = Mat_<int64_t>::zeros( sz ), Tig8 = Mat_<int64_t>::zeros( sz );
+  Mat_<MAT_TIG_TYPE> Tig1 = Mat_<MAT_TIG_TYPE>::zeros( sz ), Tig2 = Mat_<MAT_TIG_TYPE>::zeros( sz );
+  Mat_<MAT_TIG_TYPE> Tig4 = Mat_<MAT_TIG_TYPE>::zeros( sz ), Tig8 = Mat_<MAT_TIG_TYPE>::zeros( sz );
   Mat_<BYTE> Row1 = Mat_<BYTE>::zeros( sz ), Row2 = Mat_<BYTE>::zeros( sz );
   Mat_<BYTE> Row4 = Mat_<BYTE>::zeros( sz ), Row8 = Mat_<BYTE>::zeros( sz );
   Mat_<float> scores( sz );
   for ( int y = 1; y <= H; y++ )
   {
     const BYTE* G = mag1u.ptr<BYTE>( y - 1 );
-    int64_t* T1 = Tig1.ptr<int64_t>( y );  // Binary TIG of current row
-    int64_t* T2 = Tig2.ptr<int64_t>( y );
-    int64_t* T4 = Tig4.ptr<int64_t>( y );
-    int64_t* T8 = Tig8.ptr<int64_t>( y );
-    int64_t* Tu1 = Tig1.ptr<int64_t>( y - 1 );  // Binary TIG of upper row
-    int64_t* Tu2 = Tig2.ptr<int64_t>( y - 1 );
-    int64_t* Tu4 = Tig4.ptr<int64_t>( y - 1 );
-    int64_t* Tu8 = Tig8.ptr<int64_t>( y - 1 );
+    TIG_TYPE* T1 = Tig1.ptr<TIG_TYPE>( y );  // Binary TIG of current row
+    TIG_TYPE* T2 = Tig2.ptr<TIG_TYPE>( y );
+    TIG_TYPE* T4 = Tig4.ptr<TIG_TYPE>( y );
+    TIG_TYPE* T8 = Tig8.ptr<TIG_TYPE>( y );
+    TIG_TYPE* Tu1 = Tig1.ptr<TIG_TYPE>( y - 1 );  // Binary TIG of upper row
+    TIG_TYPE* Tu2 = Tig2.ptr<TIG_TYPE>( y - 1 );
+    TIG_TYPE* Tu4 = Tig4.ptr<TIG_TYPE>( y - 1 );
+    TIG_TYPE* Tu8 = Tig8.ptr<TIG_TYPE>( y - 1 );
     BYTE* R1 = Row1.ptr<BYTE>( y );
     BYTE* R2 = Row2.ptr<BYTE>( y );
     BYTE* R4 = Row4.ptr<BYTE>( y );

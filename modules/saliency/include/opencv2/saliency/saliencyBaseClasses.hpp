@@ -59,7 +59,7 @@ namespace saliency
 
 /************************************ Saliency Base Class ************************************/
 
-class CV_EXPORTS Saliency : public virtual Algorithm
+class CV_EXPORTS_W Saliency : public virtual Algorithm
 {
  public:
   /**
@@ -68,23 +68,12 @@ class CV_EXPORTS Saliency : public virtual Algorithm
   virtual ~Saliency();
 
   /**
-   * \brief Create Saliency by saliency type.
-   */
-  static Ptr<Saliency> create( const String& saliencyType );
-
-  /**
    * \brief Compute the saliency
    * \param image        The image.
    * \param saliencyMap      The computed saliency map.
    * \return true if the saliency map is computed, false otherwise
    */
-  bool computeSaliency( InputArray image, OutputArray saliencyMap );
-
-  /**
-   * \brief Get the name of the specific saliency type
-   * \return The name of the tracker initializer
-   */
-  String getClassName() const;
+  CV_WRAP bool computeSaliency( InputArray image, OutputArray saliencyMap );
 
  protected:
 
@@ -93,7 +82,7 @@ class CV_EXPORTS Saliency : public virtual Algorithm
 };
 
 /************************************ Static Saliency Base Class ************************************/
-class CV_EXPORTS StaticSaliency : public virtual Saliency
+class CV_EXPORTS_W StaticSaliency : public virtual Saliency
 {
  public:
 
@@ -104,22 +93,22 @@ class CV_EXPORTS StaticSaliency : public virtual Saliency
     targets, a segmentation by clustering is performed, using *K-means algorithm*. Then, to gain a
     binary representation of clustered saliency map, since values of the map can vary according to
     the characteristics of frame under analysis, it is not convenient to use a fixed threshold. So,
-    *Otsu’s algorithm* is used, which assumes that the image to be thresholded contains two classes
+    *Otsu's algorithm* is used, which assumes that the image to be thresholded contains two classes
     of pixels or bi-modal histograms (e.g. foreground and back-ground pixels); later on, the
     algorithm calculates the optimal threshold separating those two classes, so that their
     intra-class variance is minimal.
 
-    @param saliencyMap the saliency map obtained through one of the specialized algorithms
-    @param binaryMap the binary map
+    @param _saliencyMap the saliency map obtained through one of the specialized algorithms
+    @param _binaryMap the binary map
      */
-  bool computeBinaryMap( const Mat& saliencyMap, Mat& binaryMap );
+  CV_WRAP bool computeBinaryMap( InputArray _saliencyMap, OutputArray _binaryMap );
  protected:
   virtual bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap )=0;
 
 };
 
 /************************************ Motion Saliency Base Class ************************************/
-class CV_EXPORTS MotionSaliency : public virtual Saliency
+class CV_EXPORTS_W MotionSaliency : public virtual Saliency
 {
 
  protected:
@@ -128,7 +117,7 @@ class CV_EXPORTS MotionSaliency : public virtual Saliency
 };
 
 /************************************ Objectness Base Class ************************************/
-class CV_EXPORTS Objectness : public virtual Saliency
+class CV_EXPORTS_W Objectness : public virtual Saliency
 {
 
  protected:

@@ -52,7 +52,7 @@ typedef perf::TestBaseWithParam<descript_params_t> descript_params;
 PERF_TEST_P( descript_params, census_sparse_descriptor,
             testing::Combine(
             testing::Values(  TYPICAL_MAT_SIZES ),
-            testing::Values( CV_8UC1,CV_8U ),
+            testing::Values( CV_8U ),
             testing::Values( CV_32SC4,CV_32S )
             )
             )
@@ -74,7 +74,7 @@ PERF_TEST_P( descript_params, census_sparse_descriptor,
 PERF_TEST_P( descript_params, star_census_transform,
             testing::Combine(
             testing::Values( TYPICAL_MAT_SIZES ),
-            testing::Values( CV_8UC1,CV_8U ),
+            testing::Values( CV_8U ),
             testing::Values( CV_32SC4,CV_32S )
             )
             )
@@ -96,7 +96,7 @@ PERF_TEST_P( descript_params, star_census_transform,
 PERF_TEST_P( descript_params, modified_census_transform,
             testing::Combine(
             testing::Values( TYPICAL_MAT_SIZES ),
-            testing::Values( CV_8UC1,CV_8U ),
+            testing::Values( CV_8U ),
             testing::Values( CV_32SC4,CV_32S )
             )
             )
@@ -120,7 +120,7 @@ PERF_TEST_P( descript_params, modified_census_transform,
 PERF_TEST_P( descript_params, center_symetric_census,
             testing::Combine(
             testing::Values( TYPICAL_MAT_SIZES ),
-            testing::Values( CV_8UC1,CV_8U ),
+            testing::Values( CV_8U ),
             testing::Values( CV_32SC4,CV_32S )
             )
             )

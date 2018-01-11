@@ -298,8 +298,8 @@ public:
     typedef typename Distance::ResultType DistanceType;
 
     CV_DescriptorExtractorTest( const string _name, DistanceType _maxDist, const Ptr<DescriptorExtractor>& _dextractor,
-                                Distance d = Distance() ):
-            name(_name), maxDist(_maxDist), dextractor(_dextractor), distance(d) {}
+                                int imgMode = IMREAD_COLOR, Distance d = Distance()):
+            name(_name), maxDist(_maxDist), dextractor(_dextractor), imgLoadMode(imgMode), distance(d) {}
 protected:
     virtual void createDescriptorExtractor() {}
 
@@ -327,7 +327,7 @@ protected:
 
         stringstream ss;
         ss << "Max distance between valid and computed descriptors " << curMaxDist;
-        if( curMaxDist < maxDist )
+        if( curMaxDist <= maxDist )
             ss << "." << endl;
         else
         {
@@ -356,7 +356,10 @@ protected:
             ts->set_failed_test_info( cvtest::TS::FAIL_INVALID_TEST_DATA );
         }
 
-        image.create( 50, 50, CV_8UC3 );
+        if(imgLoadMode == IMREAD_GRAYSCALE)
+            image.create( 256, 256, CV_8UC1 );
+        else
+            image.create( 256, 256, CV_8UC3 );
         try
         {
             dextractor->compute( image, keypoints, descriptors );
@@ -389,7 +392,7 @@ protected:
         // Read the test image.
         string imgFilename =  string(ts->get_data_path()) + FEATURES2D_DIR + "/" + IMAGE_FILENAME;
 
-        Mat img = imread( imgFilename );
+        Mat img = imread( imgFilename, imgLoadMode );
         if( img.empty() )
         {
             ts->printf( cvtest::TS::LOG, "Image %s can not be read.\n", imgFilename.c_str() );
@@ -405,7 +408,18 @@ protected:
 
             Mat calcDescriptors;
             double t = (double)getTickCount();
-            dextractor->compute( img, keypoints, calcDescriptors );
+#ifdef HAVE_OPENCL
+            if(ocl::useOpenCL())
+            {
+                cv::UMat uimg;
+                img.copyTo(uimg);
+                dextractor->compute(uimg, keypoints, calcDescriptors);
+            }
+            else
+#endif
+            {
+                dextractor->compute(img, keypoints, calcDescriptors);
+            }
             t = getTickCount() - t;
             ts->printf(cvtest::TS::LOG, "\nAverage time of computing one descriptor = %g ms.\n", t/((double)getTickFrequency()*1000.)/calcDescriptors.rows );
 
@@ -493,6 +507,7 @@ protected:
     string name;
     const DistanceType maxDist;
     Ptr<DescriptorExtractor> dextractor;
+    int imgLoadMode;
     Distance distance;
 
 private:
@@ -993,22 +1008,64 @@ TEST( Features2d_Detector_STAR, regression )
     test.safe_run();
 }
 
+TEST( Features2d_Detector_Harris_Laplace, regression )
+{
+    CV_FeatureDetectorTest test( "detector-harris-laplace", HarrisLaplaceFeatureDetector::create() );
+    test.safe_run();
+}
+
+TEST( Features2d_Detector_Harris_Laplace_Affine_Keypoint_Invariance, regression )
+{
+    CV_FeatureDetectorTest test( "detector-harris-laplace", AffineFeature2D::create(HarrisLaplaceFeatureDetector::create()));
+    test.safe_run();
+}
+
+TEST( Features2d_Detector_Harris_Laplace_Affine, regression )
+{
+    CV_FeatureDetectorTest test( "detector-harris-laplace-affine", AffineFeature2D::create(HarrisLaplaceFeatureDetector::create()));
+    test.safe_run();
+}
+
 /*
  * Descriptors
  */
 TEST( Features2d_DescriptorExtractor_SIFT, regression )
 {
-    CV_DescriptorExtractorTest<L2<float> > test( "descriptor-sift", 0.03f,
+    CV_DescriptorExtractorTest<L1<float> > test( "descriptor-sift", 1.0f,
                                                 SIFT::create() );
     test.safe_run();
 }
 
 TEST( Features2d_DescriptorExtractor_SURF, regression )
 {
+#ifdef HAVE_OPENCL
+    bool useOCL = ocl::useOpenCL();
+    ocl::setUseOpenCL(false);
+#endif
+
     CV_DescriptorExtractorTest<L2<float> > test( "descriptor-surf",  0.05f,
                                                 SURF::create() );
     test.safe_run();
+
+#ifdef HAVE_OPENCL
+    ocl::setUseOpenCL(useOCL);
+#endif
 }
+
+#ifdef HAVE_OPENCL
+TEST( Features2d_DescriptorExtractor_SURF_OCL, regression )
+{
+    bool useOCL = ocl::useOpenCL();
+    ocl::setUseOpenCL(true);
+    if(ocl::useOpenCL())
+    {
+        CV_DescriptorExtractorTest<L2<float> > test( "descriptor-surf_ocl",  0.05f,
+                                                    SURF::create() );
+        test.safe_run();
+    }
+    ocl::setUseOpenCL(useOCL);
+}
+#endif
 
 TEST( Features2d_DescriptorExtractor_DAISY, regression )
 {
@@ -1021,7 +1078,7 @@ TEST( Features2d_DescriptorExtractor_FREAK, regression )
 {
     // TODO adjust the parameters below
     CV_DescriptorExtractorTest<Hamming> test( "descriptor-freak",  (CV_DescriptorExtractorTest<Hamming>::DistanceType)12.f,
-                                             FREAK::create() );
+                                             FREAK::create(), IMREAD_GRAYSCALE );
     test.safe_run();
 }
 
@@ -1032,20 +1089,104 @@ TEST( Features2d_DescriptorExtractor_BRIEF, regression )
     test.safe_run();
 }
 
+template <int threshold = 0>
+struct LUCIDEqualityDistance
+{
+    typedef unsigned char ValueType;
+    typedef int ResultType;
+
+    ResultType operator()( const unsigned char* a, const unsigned char* b, int size ) const
+    {
+        int res = 0;
+        for (int i = 0; i < size; i++)
+        {
+            if (threshold == 0)
+                res += (a[i] != b[i]) ? 1 : 0;
+            else
+                res += abs(a[i] - b[i]) > threshold ? 1 : 0;
+        }
+        return res;
+    }
+};
+
 TEST( Features2d_DescriptorExtractor_LUCID, regression )
 {
-    CV_DescriptorExtractorTest<Hamming> test( "descriptor-lucid",  1,
-                                             LUCID::create(1, 2) );
+    CV_DescriptorExtractorTest< LUCIDEqualityDistance<1/*used blur is not bit-exact*/> > test(
+            "descriptor-lucid", 2,
+            LUCID::create(1, 2)
+    );
     test.safe_run();
 }
 
 TEST( Features2d_DescriptorExtractor_LATCH, regression )
 {
     CV_DescriptorExtractorTest<Hamming> test( "descriptor-latch",  1,
-                                             LATCH::create() );
+                                             LATCH::create(32, true, 3, 0) );
     test.safe_run();
 }
 
+TEST( Features2d_DescriptorExtractor_VGG, regression )
+{
+    CV_DescriptorExtractorTest<L2<float> > test( "descriptor-vgg",  0.03f,
+                                             VGG::create() );
+    test.safe_run();
+}
+
+TEST( Features2d_DescriptorExtractor_BGM, regression )
+{
+    CV_DescriptorExtractorTest<Hamming> test( "descriptor-boostdesc-bgm",
+                                            (CV_DescriptorExtractorTest<Hamming>::DistanceType)12.f,
+                                            BoostDesc::create(BoostDesc::BGM) );
+    test.safe_run();
+}
+
+TEST( Features2d_DescriptorExtractor_BGM_HARD, regression )
+{
+    CV_DescriptorExtractorTest<Hamming> test( "descriptor-boostdesc-bgm_hard",
+                                            (CV_DescriptorExtractorTest<Hamming>::DistanceType)12.f,
+                                            BoostDesc::create(BoostDesc::BGM_HARD) );
+    test.safe_run();
+}
+
+TEST( Features2d_DescriptorExtractor_BGM_BILINEAR, regression )
+{
+    CV_DescriptorExtractorTest<Hamming> test( "descriptor-boostdesc-bgm_bilinear",
+                                            (CV_DescriptorExtractorTest<Hamming>::DistanceType)15.f,
+                                            BoostDesc::create(BoostDesc::BGM_BILINEAR) );
+    test.safe_run();
+}
+
+TEST( Features2d_DescriptorExtractor_LBGM, regression )
+{
+    CV_DescriptorExtractorTest<L2<float> > test( "descriptor-boostdesc-lbgm",
+                                           1.0f,
+                                           BoostDesc::create(BoostDesc::LBGM) );
+    test.safe_run();
+}
+
+TEST( Features2d_DescriptorExtractor_BINBOOST_64, regression )
+{
+    CV_DescriptorExtractorTest<Hamming> test( "descriptor-boostdesc-binboost_64",
+                                            (CV_DescriptorExtractorTest<Hamming>::DistanceType)12.f,
+                                            BoostDesc::create(BoostDesc::BINBOOST_64) );
+    test.safe_run();
+}
+
+TEST( Features2d_DescriptorExtractor_BINBOOST_128, regression )
+{
+    CV_DescriptorExtractorTest<Hamming> test( "descriptor-boostdesc-binboost_128",
+                                            (CV_DescriptorExtractorTest<Hamming>::DistanceType)12.f,
+                                            BoostDesc::create(BoostDesc::BINBOOST_128) );
+    test.safe_run();
+}
+
+TEST( Features2d_DescriptorExtractor_BINBOOST_256, regression )
+{
+    CV_DescriptorExtractorTest<Hamming> test( "descriptor-boostdesc-binboost_256",
+                                            (CV_DescriptorExtractorTest<Hamming>::DistanceType)12.f,
+                                            BoostDesc::create(BoostDesc::BINBOOST_256) );
+    test.safe_run();
+}
 
 
 /*#if CV_SSE2
@@ -1081,7 +1222,7 @@ TEST(Features2d_BruteForceDescriptorMatcher_knnMatch, regression)
     Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce");
     ASSERT_TRUE(matcher != NULL);
 
-    Mat imgT(sz, sz, CV_8U, Scalar(255));
+    Mat imgT(256, 256, CV_8U, Scalar(255));
     line(imgT, Point(20, sz/2), Point(sz-21, sz/2), Scalar(100), 2);
     line(imgT, Point(sz/2, 20), Point(sz/2, sz-21), Scalar(100), 2);
     vector<KeyPoint> kpT;
@@ -1090,7 +1231,7 @@ TEST(Features2d_BruteForceDescriptorMatcher_knnMatch, regression)
     Mat descT;
     ext->compute(imgT, kpT, descT);
 
-    Mat imgQ(sz, sz, CV_8U, Scalar(255));
+    Mat imgQ(256, 256, CV_8U, Scalar(255));
     line(imgQ, Point(30, sz/2), Point(sz-31, sz/2), Scalar(100), 3);
     line(imgQ, Point(sz/2, 30), Point(sz/2, sz-31), Scalar(100), 3);
     vector<KeyPoint> kpQ;
@@ -1147,8 +1288,20 @@ protected:
         }
         vector<KeyPoint> kpt1, kpt2;
         Mat d1, d2;
-        f2d->detectAndCompute(img1, Mat(), kpt1, d1);
-        f2d->detectAndCompute(img1, Mat(), kpt2, d2);
+#ifdef HAVE_OPENCL
+        if(ocl::useOpenCL())
+        {
+            cv::UMat uimg1;
+            img1.copyTo(uimg1);
+            f2d->detectAndCompute(uimg1, Mat(), kpt1, d1);
+            f2d->detectAndCompute(uimg1, Mat(), kpt2, d2);
+        }
+        else
+#endif
+        {
+            f2d->detectAndCompute(img1, Mat(), kpt1, d1);
+            f2d->detectAndCompute(img1, Mat(), kpt2, d2);
+        }
         for( size_t i = 0; i < kpt1.size(); i++ )
             CV_Assert(kpt1[i].response > 0 );
         for( size_t i = 0; i < kpt2.size(); i++ )

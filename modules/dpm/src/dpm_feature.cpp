@@ -47,6 +47,7 @@ namespace cv
 {
 namespace dpm
 {
+
 Feature::Feature()
 {
 }
@@ -196,8 +197,8 @@ void Feature::computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const
     // image size
     const Size imageSize = imageM.size();
     // block size
-    int bW = (int)round((double)imageSize.width/(double)sbin);
-    int bH = (int)round((double)imageSize.height/(double)sbin);
+    int bW = cvRound((double)imageSize.width/(double)sbin);
+    int bH = cvRound((double)imageSize.height/(double)sbin);
     const Size blockSize(bW, bH);
     // size of HOG features
     int oW = max(blockSize.width-2, 0) + 2*pad_x;

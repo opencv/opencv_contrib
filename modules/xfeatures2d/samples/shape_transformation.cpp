@@ -1,6 +1,10 @@
 /*
  * shape_context.cpp -- Shape context demo for shape matching
  */
+#include <iostream>
+#include "opencv2/opencv_modules.hpp"
+
+#ifdef HAVE_OPENCV_SHAPE
 
 #include "opencv2/shape.hpp"
 #include "opencv2/imgcodecs.hpp"
@@ -8,8 +12,7 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/features2d.hpp"
 #include "opencv2/xfeatures2d.hpp"
-#include <opencv2/core/utility.hpp>
-#include <iostream>
+#include "opencv2/core/utility.hpp"
 #include <string>
 
 using namespace std;
@@ -26,9 +29,14 @@ static void help()
 int main(int argc, char** argv)
 {
     help();
+    if (argc < 3)
+    {
+      printf("Not enough parameters\n");
+      return -1;
+    }
     Mat img1 = imread(argv[1], IMREAD_GRAYSCALE);
     Mat img2 = imread(argv[2], IMREAD_GRAYSCALE);
-    if(img1.empty() || img2.empty() || argc<2)
+    if(img1.empty() || img2.empty())
     {
         printf("Can't read one of the images\n");
         return -1;
@@ -69,3 +77,13 @@ int main(int argc, char** argv)
 
     return 0;
 }
+
+#else
+
+int main()
+{
+    std::cerr << "OpenCV was built without shape module" << std::endl;
+    return 0;
+}
+
+#endif // HAVE_OPENCV_SHAPE

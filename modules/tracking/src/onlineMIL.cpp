@@ -42,6 +42,8 @@
 #include "precomp.hpp"
 #include "opencv2/tracking/onlineMIL.hpp"
 
+#define  sign(s)  ((s > 0 ) ? 1 : ((s<0) ? -1 : 0))
+
 template<class T> class SortableElementRev
 {
  public:

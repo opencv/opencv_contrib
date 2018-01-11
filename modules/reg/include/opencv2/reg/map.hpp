@@ -121,13 +121,13 @@ namespace reg {
 
 The class is only used to define the common interface for any possible map.
  */
-class CV_EXPORTS Map
+class CV_EXPORTS_W Map
 {
 public:
     /*!
      * Virtual destructor
      */
-    virtual ~Map(void);
+    virtual ~Map();
 
     /*!
      * Warps image to a new coordinate frame. The calculation is img2(x)=img1(T^{-1}(x)), as we
@@ -136,7 +136,7 @@ public:
      * \param[in] img1 Original image
      * \param[out] img2 Warped image
      */
-    virtual void warp(const cv::Mat& img1, cv::Mat& img2) const;
+    CV_WRAP virtual void warp(InputArray img1, OutputArray img2) const;
 
     /*!
      * Warps image to a new coordinate frame. The calculation is img2(x)=img1(T(x)), so in fact
@@ -145,27 +145,27 @@ public:
      * \param[in] img1 Original image
      * \param[out] img2 Warped image
      */
-    virtual void inverseWarp(const cv::Mat& img1, cv::Mat& img2) const = 0;
+    CV_WRAP virtual void inverseWarp(InputArray img1, OutputArray img2) const = 0;
 
     /*!
      * Calculates the inverse map
      * \return Inverse map
      */
-    virtual cv::Ptr<Map> inverseMap(void) const = 0;
+    CV_WRAP virtual cv::Ptr<Map> inverseMap() const = 0;
 
     /*!
      * Changes the map composing the current transformation with the one provided in the call.
      * The order is first the current transformation, then the input argument.
      * \param[in] map Transformation to compose with.
      */
-    virtual void compose(const Map& map) = 0;
+    CV_WRAP virtual void compose(cv::Ptr<Map> map) = 0;
 
     /*!
      * Scales the map by a given factor as if the coordinates system is expanded/compressed
      * by that factor.
      * \param[in] factor Expansion if bigger than one, compression if smaller than one
      */
-    virtual void scale(double factor) = 0;
+    CV_WRAP virtual void scale(double factor) = 0;
 };
 
 //! @}

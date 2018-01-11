@@ -11,7 +11,7 @@
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
  *
- *  *Redistributions of source code must retain the above copyright notice,
+ *  * Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
  *
  *  * Redistributions in binary form must reproduce the above copyright notice,
@@ -59,8 +59,8 @@ static void checkSimilarity(InputArray res, InputArray ref, double maxNormInf = 
     double normInf = cvtest::norm(res, ref, NORM_INF);
     double normL2 = cvtest::norm(res, ref, NORM_L2) / res.total();
 
-    if (maxNormInf >= 0) EXPECT_LE(normInf, maxNormInf);
-    if (maxNormL2 >= 0) EXPECT_LE(normL2, maxNormL2);
+    if (maxNormInf >= 0) { EXPECT_LE(normInf, maxNormInf); }
+    if (maxNormL2 >= 0) { EXPECT_LE(normL2, maxNormL2); }
 }
 
 TEST(AdaptiveManifoldTest, SplatSurfaceAccuracy)
@@ -185,8 +185,8 @@ TEST_P(AdaptiveManifoldRefImplTest, RefImplAccuracy)
     //inconsistent downsample/upsample operations in reference implementation
     Size dstSize((guide.cols + 15) & ~15, (guide.rows + 15) & ~15);
 
-    resize(guide, guide, dstSize);
-    resize(src, src, dstSize);
+    resize(guide, guide, dstSize, 0, 0, INTER_LINEAR_EXACT);
+    resize(src, src, dstSize, 0, 0, INTER_LINEAR_EXACT);
 
     for (int iter = 0; iter < 4; iter++)
     {

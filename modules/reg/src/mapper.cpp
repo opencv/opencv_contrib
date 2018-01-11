@@ -59,27 +59,44 @@ void Mapper::gradient(const Mat& img1, const Mat& img2, Mat& Ix, Mat& Iy, Mat& I
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void Mapper::grid(const Mat& img, Mat& grid_r, Mat& grid_c) const
+
+template<typename _Tp>
+void fillGridMatrices(const Mat img, Mat grid_r, Mat grid_c)
 {
-    // Matrices with reference frame coordinates
-    grid_r.create(img.size(), img.type());
-    grid_c.create(img.size(), img.type());
     if(img.channels() == 1) {
         for(int r_i = 0; r_i < img.rows; ++r_i) {
             for(int c_i = 0; c_i < img.cols; ++c_i) {
-                grid_r.at<double>(r_i, c_i) = r_i;
-                grid_c.at<double>(r_i, c_i) = c_i;
+                grid_r.at<_Tp>(r_i, c_i) = (_Tp)r_i;
+                grid_c.at<_Tp>(r_i, c_i) = (_Tp)c_i;
             }
         }
     } else {
-        Vec3d ones(1., 1., 1.);
+        Vec<_Tp, 3> ones((_Tp)1, (_Tp)1, (_Tp)1);
         for(int r_i = 0; r_i < img.rows; ++r_i) {
             for(int c_i = 0; c_i < img.cols; ++c_i) {
-                grid_r.at<Vec3d>(r_i, c_i) = r_i*ones;
-                grid_c.at<Vec3d>(r_i, c_i) = c_i*ones;
+                grid_r.at< Vec<_Tp, 3> >(r_i, c_i) = (_Tp)r_i*ones;
+                grid_c.at< Vec<_Tp, 3> >(r_i, c_i) = (_Tp)c_i*ones;
             }
         }
     }
+}
+
+void Mapper::grid(const Mat& img, Mat& grid_r, Mat& grid_c) const
+{
+    CV_DbgAssert(img.channels() == 1 || img.channels() == 3);
+
+    // Matrices with reference frame coordinates
+    grid_r.create(img.size(), img.type());
+    grid_c.create(img.size(), img.type());
+
+    if(img.depth() == CV_8U)
+        fillGridMatrices<uchar>(img, grid_r, grid_c);
+    if(img.depth() == CV_16U)
+        fillGridMatrices<ushort>(img, grid_r, grid_c);
+    else if(img.depth() == CV_32F)
+        fillGridMatrices<float>(img, grid_r, grid_c);
+    else if(img.depth() == CV_64F)
+        fillGridMatrices<double>(img, grid_r, grid_c);
 }
 
 

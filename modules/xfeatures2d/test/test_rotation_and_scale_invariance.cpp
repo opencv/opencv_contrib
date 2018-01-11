@@ -168,9 +168,6 @@ void matchKeyPoints(const vector<KeyPoint>& keypoints0, const Mat& H,
         const float r0 =  0.5f * keypoints0[i0].size;
         for(size_t i1 = 0; i1 < keypoints1.size(); i1++)
         {
-            if(nearestPointIndex >= 0 && usedMask[i1])
-                continue;
-
             float r1 = 0.5f * keypoints1[i1].size;
             float intersectRatio = calcIntersectRatio(points0t.at<Point2f>(i0), r0,
                                                       keypoints1[i1].pt, r1);
@@ -318,11 +315,12 @@ public:
     DescriptorRotationInvarianceTest(const Ptr<FeatureDetector>& _featureDetector,
                                      const Ptr<DescriptorExtractor>& _descriptorExtractor,
                                      int _normType,
-                                     float _minDescInliersRatio) :
+                                     float _minDescInliersRatio, int imgLoad = IMREAD_COLOR) :
         featureDetector(_featureDetector),
         descriptorExtractor(_descriptorExtractor),
         normType(_normType),
-        minDescInliersRatio(_minDescInliersRatio)
+        minDescInliersRatio(_minDescInliersRatio),
+        imgLoadMode(imgLoad)
     {
         CV_Assert(featureDetector);
         CV_Assert(descriptorExtractor);
@@ -335,7 +333,7 @@ protected:
         const string imageFilename = string(ts->get_data_path()) + IMAGE_TSUKUBA;
 
         // Read test data
-        Mat image0 = imread(imageFilename), image1, mask1;
+        Mat image0 = imread(imageFilename, imgLoadMode), image1, mask1;
         if(image0.empty())
         {
             ts->printf(cvtest::TS::LOG, "Image %s can not be read.\n", imageFilename.c_str());
@@ -398,6 +396,7 @@ protected:
     Ptr<DescriptorExtractor> descriptorExtractor;
     int normType;
     float minDescInliersRatio;
+    int imgLoadMode;
 };
 
 
@@ -439,7 +438,7 @@ protected:
         {
             float scale = 1.f + scaleIdx * 0.5f;
             Mat image1;
-            resize(image0, image1, Size(), 1./scale, 1./scale);
+            resize(image0, image1, Size(), 1./scale, 1./scale, INTER_LINEAR_EXACT);
 
             vector<KeyPoint> keypoints1, osiKeypoints1; // osi - original size image
             featureDetector->detect(image1, keypoints1);
@@ -564,7 +563,7 @@ protected:
             float scale = 1.f + scaleIdx * 0.5f;
 
             Mat image1;
-            resize(image0, image1, Size(), 1./scale, 1./scale);
+            resize(image0, image1, Size(), 1./scale, 1./scale, INTER_LINEAR_EXACT);
 
             vector<KeyPoint> keypoints1;
             scaleKeyPoints(keypoints0, keypoints1, 1.0f/scale);
@@ -617,7 +616,7 @@ protected:
 TEST(Features2d_RotationInvariance_Detector_SURF, regression)
 {
     DetectorRotationInvarianceTest test(SURF::create(),
-                                        0.44f,
+                                        0.65f,
                                         0.76f);
     test.safe_run();
 }
@@ -669,6 +668,42 @@ TEST(DISABLED_Features2d_RotationInvariance_Descriptor_DAISY, regression)
     test.safe_run();
 }
 
+TEST(Features2d_RotationInvariance_Descriptor_VGG120, regression)
+{
+    DescriptorRotationInvarianceTest test(KAZE::create(),
+                                          VGG::create(VGG::VGG_120, 1.4f, true, true, 48.0f, false),
+                                          NORM_L1,
+                                          1.00f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_VGG80, regression)
+{
+    DescriptorRotationInvarianceTest test(KAZE::create(),
+                                          VGG::create(VGG::VGG_80, 1.4f, true, true, 48.0f, false),
+                                          NORM_L1,
+                                          1.00f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_VGG64, regression)
+{
+    DescriptorRotationInvarianceTest test(KAZE::create(),
+                                          VGG::create(VGG::VGG_64, 1.4f, true, true, 48.0f, false),
+                                          NORM_L1,
+                                          1.00f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_VGG48, regression)
+{
+    DescriptorRotationInvarianceTest test(KAZE::create(),
+                                          VGG::create(VGG::VGG_48, 1.4f, true, true, 48.0f, false),
+                                          NORM_L1,
+                                          1.00f);
+    test.safe_run();
+}
+
 TEST(Features2d_RotationInvariance_Descriptor_BRIEF_64, regression)
 {
     DescriptorRotationInvarianceTest test(SURF::create(),
@@ -693,6 +728,79 @@ TEST(Features2d_RotationInvariance_Descriptor_BRIEF_16, regression)
                                           BriefDescriptorExtractor::create(16,true),
                                           NORM_L1,
                                           0.85f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_FREAK, regression)
+{
+    Ptr<Feature2D> f2d = FREAK::create();
+    DescriptorRotationInvarianceTest test(SURF::create(),
+                                          f2d,
+                                          f2d->defaultNorm(),
+                                          0.9f, IMREAD_GRAYSCALE);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_BGM, regression)
+{
+    DescriptorRotationInvarianceTest test(SURF::create(),
+                                          BoostDesc::create(BoostDesc::BGM,true,6.25f),
+                                          NORM_HAMMING,
+                                          0.999f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_BGM_HARD, regression)
+{
+    DescriptorRotationInvarianceTest test(SURF::create(),
+                                          BoostDesc::create(BoostDesc::BGM_HARD,true,6.25f),
+                                          NORM_HAMMING,
+                                          0.98f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_BGM_BILINEAR, regression)
+{
+    DescriptorRotationInvarianceTest test(SURF::create(),
+                                          BoostDesc::create(BoostDesc::BGM_BILINEAR,true,6.25f),
+                                          NORM_HAMMING,
+                                          0.98f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_LBGM, regression)
+{
+    DescriptorRotationInvarianceTest test(SURF::create(),
+                                          BoostDesc::create(BoostDesc::LBGM,true,6.25f),
+                                          NORM_L1,
+                                          0.999f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_BINBOOST_64, regression)
+{
+    DescriptorRotationInvarianceTest test(SURF::create(),
+                                          BoostDesc::create(BoostDesc::BINBOOST_64,true,6.25f),
+                                          NORM_HAMMING,
+                                          0.98f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_BINBOOST_128, regression)
+{
+    DescriptorRotationInvarianceTest test(SURF::create(),
+                                          BoostDesc::create(BoostDesc::BINBOOST_128,true,6.25f),
+                                          NORM_HAMMING,
+                                          0.98f);
+    test.safe_run();
+}
+
+TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_BINBOOST_256, regression)
+{
+    DescriptorRotationInvarianceTest test(SURF::create(),
+                                          BoostDesc::create(BoostDesc::BINBOOST_256,true,6.25f),
+                                          NORM_HAMMING,
+                                          0.999f);
     test.safe_run();
 }
 
@@ -748,10 +856,21 @@ TEST(Features2d_RotationInvariance2_Detector_SURF, regression)
     vector<KeyPoint> keypoints;
     surf->detect(cross, keypoints);
 
+    // Expect 5 keypoints.  One keypoint has coordinates (50.0, 50.0).
+    // The other 4 keypoints should have the same response.
+    // The order of the keypoints is indeterminate.
     ASSERT_EQ(keypoints.size(), (vector<KeyPoint>::size_type) 5);
-    ASSERT_LT( fabs(keypoints[1].response - keypoints[2].response), 1e-6);
-    ASSERT_LT( fabs(keypoints[1].response - keypoints[3].response), 1e-6);
-    ASSERT_LT( fabs(keypoints[1].response - keypoints[4].response), 1e-6);
+
+    int i1 = -1;
+    for(int i = 0; i < 5; i++)
+    {
+        if(keypoints[i].pt.x == 50.0f)
+            ;
+        else if(i1 == -1)
+            i1 = i;
+        else
+            ASSERT_LT(fabs(keypoints[i1].response - keypoints[i].response) / keypoints[i1].response, 1e-6);
+    }
 }
 
 TEST(DISABLED_Features2d_ScaleInvariance_Descriptor_DAISY, regression)
@@ -760,5 +879,104 @@ TEST(DISABLED_Features2d_ScaleInvariance_Descriptor_DAISY, regression)
                                        DAISY::create(15, 3, 8, 8, DAISY::NRM_NONE, noArray(), true, true),
                                        NORM_L1,
                                        0.075f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_VGG120, regression)
+{
+    DescriptorScaleInvarianceTest test(KAZE::create(),
+                                       VGG::create(VGG::VGG_120, 1.4f, true, true, 48.0f, false),
+                                       NORM_L1,
+                                       0.99f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_VGG80, regression)
+{
+    DescriptorScaleInvarianceTest test(KAZE::create(),
+                                       VGG::create(VGG::VGG_80, 1.4f, true, true, 48.0f, false),
+                                       NORM_L1,
+                                       0.98f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_VGG64, regression)
+{
+    DescriptorScaleInvarianceTest test(KAZE::create(),
+                                       VGG::create(VGG::VGG_64, 1.4f, true, true, 48.0f, false),
+                                       NORM_L1,
+                                       0.97f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_VGG48, regression)
+{
+    DescriptorScaleInvarianceTest test(KAZE::create(),
+                                       VGG::create(VGG::VGG_48, 1.4f, true, true, 48.0f, false),
+                                       NORM_L1,
+                                       0.93f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BGM, regression)
+{
+    DescriptorScaleInvarianceTest test(SURF::create(),
+                                       BoostDesc::create(BoostDesc::BGM, true, 6.25f),
+                                       NORM_HAMMING,
+                                       0.98f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BGM_HARD, regression)
+{
+    DescriptorScaleInvarianceTest test(SURF::create(),
+                                       BoostDesc::create(BoostDesc::BGM_HARD, true, 6.25f),
+                                       NORM_HAMMING,
+                                       0.75f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BGM_BILINEAR, regression)
+{
+    DescriptorScaleInvarianceTest test(SURF::create(),
+                                       BoostDesc::create(BoostDesc::BGM_BILINEAR, true, 6.25f),
+                                       NORM_HAMMING,
+                                       0.95f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_LBGM, regression)
+{
+    DescriptorScaleInvarianceTest test(SURF::create(),
+                                       BoostDesc::create(BoostDesc::LBGM, true, 6.25f),
+                                       NORM_L1,
+                                       0.95f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BINBOOST_64, regression)
+{
+    DescriptorScaleInvarianceTest test(SURF::create(),
+                                       BoostDesc::create(BoostDesc::BINBOOST_64, true, 6.25f),
+                                       NORM_HAMMING,
+                                       0.75f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BINBOOST_128, regression)
+{
+    DescriptorScaleInvarianceTest test(SURF::create(),
+                                       BoostDesc::create(BoostDesc::BINBOOST_128, true, 6.25f),
+                                       NORM_HAMMING,
+                                       0.95f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BINBOOST_256, regression)
+{
+    DescriptorScaleInvarianceTest test(SURF::create(),
+                                       BoostDesc::create(BoostDesc::BINBOOST_256, true, 6.25f),
+                                       NORM_HAMMING,
+                                       0.98f);
     test.safe_run();
 }

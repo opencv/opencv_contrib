@@ -232,14 +232,8 @@ namespace rgbd
         depth.type() == CV_64FC1 || depth.type() == CV_32FC1 || depth.type() == CV_16UC1 || depth.type() == CV_16SC1);
     CV_Assert(mask.empty() || mask.channels() == 1);
 
-    // TODO figure out what to do when types are different: convert or reject ?
     cv::Mat K_new;
-    if ((depth.depth() == CV_32F || depth.depth() == CV_64F) && depth.depth() != K.depth())
-    {
-      K.convertTo(K_new, depth.depth());
-    }
-    else
-      K_new = K;
+    K.convertTo(K_new, depth.depth() == CV_64F ? CV_64F : CV_32F); // issue #1021
 
     // Create 3D points in one go.
     if (!mask.empty())

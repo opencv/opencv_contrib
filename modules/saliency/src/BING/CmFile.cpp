@@ -39,7 +39,7 @@
  //
  //M*/
 
-#include "precomp.hpp"
+#include "../precomp.hpp"
 #include "CmFile.hpp"
 
 namespace cv
@@ -76,7 +76,7 @@ bool CmFile::MkDir( std::string &_path )
       buffer[i] = '/';
     }
   }
-  mkdir( _path.c_str(), 0 );
+  mkdir( _path.c_str(), S_IRWXU | S_IRWXG | S_IROTH | S_IXOTH );
   return true;
 #endif
 }

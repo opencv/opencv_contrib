@@ -11,7 +11,7 @@
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
  *
- *  *Redistributions of source code must retain the above copyright notice,
+ *  * Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
  *
  *  * Redistributions in binary form must reproduce the above copyright notice,
@@ -124,8 +124,8 @@ TEST_P(DisparityWLSFilterTest, MultiThreadReproducibility)
 
     if(use_downscale)
     {
-        resize(left_disp,left_disp,Size(),0.5,0.5);
-        resize(right_disp,right_disp,Size(),0.5,0.5);
+        resize(left_disp,left_disp,Size(),0.5,0.5, INTER_LINEAR_EXACT);
+        resize(right_disp,right_disp,Size(),0.5,0.5, INTER_LINEAR_EXACT);
         ROI = Rect(ROI.x/2,ROI.y/2,ROI.width/2,ROI.height/2);
     }
 

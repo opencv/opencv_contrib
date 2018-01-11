@@ -28,8 +28,8 @@ Explanation
     as shown in help. In the help, it means that the image files are numbered with 4 digits
     (e.g. the file naming will be 0001.jpg, 0002.jpg, and so on).
 
-    You can find video samples in Itseez/opencv_extra/testdata/cv/tracking
-    <https://github.com/Itseez/opencv_extra/tree/master/testdata/cv/tracking>
+    You can find video samples in opencv_extra/testdata/cv/tracking
+    <https://github.com/opencv/opencv_extra/tree/master/testdata/cv/tracking>
 
 -#  **Declares the required variables**
 
@@ -44,12 +44,14 @@ Explanation
 
     @snippet tracking/samples/tutorial_introduction_to_tracker.cpp create
 
-    There are at least 5 types of tracker algorithms that can be used:
+    There are at least 7 types of tracker algorithms that can be used:
     + MIL
     + BOOSTING
     + MEDIANFLOW
     + TLD
     + KCF
+    + GOTURN
+    + MOSSE
 
     Each tracker algorithm has their own advantages and disadvantages, please refer the documentation of @ref cv::Tracker for more detailed information.
 
@@ -59,14 +61,13 @@ Explanation
 
     Using this function, you can select the bounding box of the tracked object using a GUI.
     With default parameters, the selection is started from the center of the box and a middle cross will be shown.
-    See @ref cv::selectROI for more detailed information.
 
 -#  **Initializing the tracker object**
 
     @snippet tracking/samples/tutorial_introduction_to_tracker.cpp init
 
-    Tracker algorithm should be initialized with the provided image data as well as the bounding box of the tracked object.
-    Make sure that the bounding box is not valid (size more than zero) to avoid the initialization process failed.
+    Any tracker algorithm should be initialized with the provided image data, and an initial bounding box of the tracked object.
+    Make sure that the bounding box is valid (size more than zero) to avoid failure of the initialization process.
 
 -#  **Update**
 

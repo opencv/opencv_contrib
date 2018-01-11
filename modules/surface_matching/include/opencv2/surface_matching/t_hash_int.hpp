@@ -55,7 +55,7 @@ namespace ppf_match_3d
 //! @addtogroup surface_matching
 //! @{
 
-typedef unsigned int KeyType;
+typedef uint KeyType;
 
 typedef struct hashnode_i
 {
@@ -68,7 +68,7 @@ typedef struct HSHTBL_i
 {
   size_t size;
   struct hashnode_i **nodes;
-  size_t (*hashfunc)(unsigned int);
+  size_t (*hashfunc)(uint);
 } hashtable_int;
 
 
@@ -76,7 +76,7 @@ typedef struct HSHTBL_i
 
 from http://www-graphics.stanford.edu/~seander/bithacks.html
 */
-inline static unsigned int next_power_of_two(unsigned int value)
+inline static uint next_power_of_two(uint value)
 {
 
   --value;
@@ -90,7 +90,7 @@ inline static unsigned int next_power_of_two(unsigned int value)
   return value;
 }
 
-hashtable_int *hashtableCreate(size_t size, size_t (*hashfunc)(unsigned int));
+hashtable_int *hashtableCreate(size_t size, size_t (*hashfunc)(uint));
 void hashtableDestroy(hashtable_int *hashtbl);
 int hashtableInsert(hashtable_int *hashtbl, KeyType key, void *data);
 int hashtableInsertHashed(hashtable_int *hashtbl, KeyType key, void *data);

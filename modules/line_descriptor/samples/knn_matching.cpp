@@ -39,14 +39,17 @@
  //
  //M*/
 
-#include <opencv2/line_descriptor.hpp>
+#include <iostream>
+#include <opencv2/opencv_modules.hpp>
 
-#include "opencv2/core/utility.hpp"
+#ifdef HAVE_OPENCV_FEATURES2D
+
+#include <opencv2/line_descriptor.hpp>
+#include <opencv2/core/utility.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/highgui.hpp>
 
-#include <iostream>
 #include <vector>
 #include <time.h>
 
@@ -111,7 +114,7 @@ uchar invertSingleBits( uchar dividend_char, int numBits )
   /* reconvert to decimal */
   uchar result = 0;
   for ( int i = (int) bin_vector.size() - 1; i >= 0; i-- )
-    result += (uchar) ( bin_vector[i] * pow( 2, i ) );
+    result += (uchar) ( bin_vector[i] * (1 << i) );
 
   return result;
 }
@@ -194,4 +197,12 @@ int main( int argc, char** argv )
 
 }
 
+#else
 
+int main()
+{
+    std::cerr << "OpenCV was built without features2d module" << std::endl;
+    return 0;
+}
+
+#endif // HAVE_OPENCV_FEATURES2D

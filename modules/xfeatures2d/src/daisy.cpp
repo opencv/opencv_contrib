@@ -576,11 +576,11 @@ static void ni_get_histogram( float* histogram, const int y, const int x, const 
 {
 
     if ( ! Point( x, y ).inside(
-           Rect( 0, 0, hcube->size[2]-1, hcube->size[1]-1 ) )
+           Rect( 0, 0, hcube->size[1]-1, hcube->size[0]-1 ) )
        ) return;
 
-    int _hist_th_q_no = hcube->size[0];
-    const float* hptr = hcube->ptr<float>(0,y*_hist_th_q_no,x*_hist_th_q_no);
+    int _hist_th_q_no = hcube->size[2];
+    const float* hptr = hcube->ptr<float>(y,x,0);
     for( int h=0; h<_hist_th_q_no; h++ )
     {
       int hi = h+shift;
@@ -593,8 +593,8 @@ static void bi_get_histogram( float* histogram, const double y, const double x, 
 {
     int mnx = int( x );
     int mny = int( y );
-    int _hist_th_q_no = hcube->size[0];
-    if( mnx >= hcube->size[2]-2  || mny >= hcube->size[1]-2 )
+    int _hist_th_q_no = hcube->size[2];
+    if( mnx >= hcube->size[1]-2  || mny >= hcube->size[0]-2 )
     {
       memset(histogram, 0, sizeof(float)*_hist_th_q_no);
       return;
@@ -602,10 +602,10 @@ static void bi_get_histogram( float* histogram, const double y, const double x, 
 
     // A C --> pixel positions
     // B D
-    const float* A = hcube->ptr<float>(0,  mny   ,  mnx   );
-    const float* B = hcube->ptr<float>(0, (mny+1),  mnx   );
-    const float* C = hcube->ptr<float>(0,  mny   , (mnx+1));
-    const float* D = hcube->ptr<float>(0, (mny+1), (mnx+1));
+    const float* A = hcube->ptr<float>( mny   ,  mnx   , 0);
+    const float* B = hcube->ptr<float>((mny+1),  mnx   , 0);
+    const float* C = hcube->ptr<float>( mny   , (mnx+1), 0);
+    const float* D = hcube->ptr<float>((mny+1), (mnx+1), 0);
 
     double alpha = mnx+1-x;
     double beta  = mny+1-y;
@@ -643,7 +643,7 @@ static void ti_get_histogram( float* histogram, const double y, const double x, 
     float thist[MAX_CUBE_NO];
     bi_get_histogram( thist, y, x, ishift, hcube );
 
-    int _hist_th_q_no = hcube->size[0];
+    int _hist_th_q_no = hcube->size[2];
     for( int h=0; h<_hist_th_q_no-1; h++ )
       histogram[h] = (float) ((1-layer_alpha)*thist[h]+layer_alpha*thist[h+1]);
     histogram[_hist_th_q_no-1] = (float) ((1-layer_alpha)*thist[_hist_th_q_no-1]+layer_alpha*thist[0]);
@@ -661,15 +661,15 @@ static void i_get_histogram( float* histogram, const double y, const double x, c
 static void ni_get_descriptor( const double y, const double x, const int orientation, float* descriptor, const std::vector<Mat>* layers,
                                const Mat* _oriented_grid_points, const double* _orientation_shift_table, const int _th_q_no )
 {
-    CV_Assert( y >= 0 && y < layers->at(0).size[1] );
-    CV_Assert( x >= 0 && x < layers->at(0).size[2] );
+    CV_Assert( y >= 0 && y < layers->at(0).size[0] );
+    CV_Assert( x >= 0 && x < layers->at(0).size[1] );
     CV_Assert( orientation >= 0 && orientation < 360 );
     CV_Assert( !layers->empty() );
     CV_Assert( !_oriented_grid_points->empty() );
     CV_Assert( descriptor != NULL );
 
-    int _rad_q_no = (int) layers->size() - 1;
-    int _hist_th_q_no = layers->at(0).size[0];
+    int _rad_q_no = (int) layers->size();
+    int _hist_th_q_no = layers->at(0).size[2];
     double shift = _orientation_shift_table[orientation];
     int ishift = (int)shift;
     if( shift - ishift > 0.5  ) ishift++;
@@ -696,7 +696,7 @@ static void ni_get_descriptor( const double y, const double x, const int orienta
          ix = (int)xx; if( xx - ix > 0.5 ) ix++;
 
          if ( ! Point2f( (float)xx, (float)yy ).inside(
-                Rect( 0, 0, layers->at(0).size[2]-1, layers->at(0).size[1]-1 ) )
+                Rect( 0, 0, layers->at(0).size[1]-1, layers->at(0).size[0]-1 ) )
             ) continue;
 
          histogram = descriptor + region*_hist_th_q_no;
@@ -708,15 +708,15 @@ static void ni_get_descriptor( const double y, const double x, const int orienta
 static void i_get_descriptor( const double y, const double x, const int orientation, float* descriptor, const std::vector<Mat>* layers,
                               const Mat* _oriented_grid_points, const double *_orientation_shift_table, const int _th_q_no )
 {
-    CV_Assert( y >= 0 && y < layers->at(0).size[1] );
-    CV_Assert( x >= 0 && x < layers->at(0).size[2] );
+    CV_Assert( y >= 0 && y < layers->at(0).size[0] );
+    CV_Assert( x >= 0 && x < layers->at(0).size[1] );
     CV_Assert( orientation >= 0 && orientation < 360 );
     CV_Assert( !layers->empty() );
     CV_Assert( !_oriented_grid_points->empty() );
     CV_Assert( descriptor != NULL );
 
-    int _rad_q_no = (int) layers->size() - 1;
-    int _hist_th_q_no = layers->at(0).size[0];
+    int _rad_q_no = (int) layers->size();
+    int _hist_th_q_no = layers->at(0).size[2];
     double shift = _orientation_shift_table[orientation];
 
     i_get_histogram( descriptor, y, x, shift, &layers->at(g_selected_cubes[0]) );
@@ -737,7 +737,7 @@ static void i_get_descriptor( const double y, const double x, const int orientat
          xx = x + grid.at<double>(2*region + 1);
 
          if ( ! Point2f( (float)xx, (float)yy ).inside(
-                Rect( 0, 0, layers->at(0).size[2]-1, layers->at(0).size[1]-1 ) )
+                Rect( 0, 0, layers->at(0).size[1]-1, layers->at(0).size[0]-1 ) )
             ) continue;
 
          histogram = descriptor + region*_hist_th_q_no;
@@ -760,11 +760,11 @@ static bool ni_get_descriptor_h( const double y, const double x, const int orien
     pt_H(H, x, y, hx, hy );
 
     if ( ! Point2f( (float)hx, (float)hy ).inside(
-                Rect( 0, 0, layers->at(0).size[2]-1, layers->at(0).size[1]-1 ) )
+                Rect( 0, 0, layers->at(0).size[1]-1, layers->at(0).size[0]-1 ) )
        ) return false;
 
-    int _rad_q_no = (int) layers->size() - 1;
-    int _hist_th_q_no = layers->at(0).size[0];
+    int _rad_q_no = (int) layers->size();
+    int _hist_th_q_no = layers->at(0).size[2];
     double shift = _orientation_shift_table[orientation];
     int  ishift = (int)shift; if( shift - ishift > 0.5  ) ishift++;
 
@@ -803,7 +803,7 @@ static bool ni_get_descriptor_h( const double y, const double x, const int orien
          ihy = (int)hy; if( hy - ihy > 0.5 ) ihy++;
 
          if ( ! Point( ihx, ihy ).inside(
-                Rect( 0, 0, layers->at(0).size[2]-1, layers->at(0).size[1]-1 ) )
+                Rect( 0, 0, layers->at(0).size[1]-1, layers->at(0).size[0]-1 ) )
             ) continue;
 
          histogram = descriptor + region*_hist_th_q_no;
@@ -826,10 +826,10 @@ static bool i_get_descriptor_h( const double y, const double x, const int orient
     pt_H( H, x, y, hx, hy );
 
     if ( ! Point2f( (float)hx, (float)hy ).inside(
-                Rect( 0, 0, layers->at(0).size[2]-1, layers->at(0).size[1]-1 ) )
+                Rect( 0, 0, layers->at(0).size[1]-1, layers->at(0).size[0]-1 ) )
        ) return false;
 
-    int _rad_q_no = (int) layers->size() - 1;
+    int _rad_q_no = (int) layers->size();
     int _hist_th_q_no = layers->at(0).size[0];
     pt_H( H, x+_cube_sigmas.at<double>(g_selected_cubes[0]), y, rx, ry);
     double d0 = rx - hx; double d1 = ry - hy;
@@ -862,7 +862,7 @@ static bool i_get_descriptor_h( const double y, const double x, const int orient
          }
 
          if ( ! Point2f( (float)hx, (float)hy ).inside(
-                Rect( 0, 0, layers->at(0).size[2]-1, layers->at(0).size[1]-1 ) )
+                Rect( 0, 0, layers->at(0).size[1]-1, layers->at(0).size[0]-1 ) )
             ) continue;
 
          histogram = descriptor + region*_hist_th_q_no;
@@ -1096,8 +1096,8 @@ inline void DAISY_Impl::initialize()
     CV_Assert(m_image.rows != 0);
     CV_Assert(m_image.cols != 0);
 
-    // (m_rad_q_no + 1) matrices
-    // 3 dims matrix (idhist, img_y, img_x);
+    // (m_rad_q_no + 1) cubes
+    // 3 dims tensor (idhist, img_y, img_x);
     m_smoothed_gradient_layers.resize( m_rad_q_no + 1 );
 
     int dims[3] = { m_hist_th_q_no, m_image.rows, m_image.cols };
@@ -1143,23 +1143,20 @@ struct ComputeHistogramsInvoker : ParallelLoopBody
     {
       r = _r;
       layers = _layers;
-      _hist_th_q_no = layers->at(r).size[0];
+      _hist_th_q_no = layers->at(r).size[2];
     }
 
     void operator ()(const cv::Range& range) const
     {
       for (int y = range.start; y < range.end; ++y)
       {
-        for( int x = 0; x < layers->at(r).size[2]; x++ )
+        for( int x = 0; x < layers->at(r).size[1]; x++ )
         {
-          if ( ! Point( x, y ).inside(
-               Rect( 0, 0, layers->at(r).size[2]-1, layers->at(r).size[1]-1 ) )
-             ) continue;
-
-          float* hist = layers->at(r).ptr<float>(0,y,x);
-
+          float* hist = layers->at(r).ptr<float>(y,x,0);
           for( int h = 0; h < _hist_th_q_no; h++ )
+          {
             hist[h] = layers->at(r+1).at<float>(h,y,x);
+          }
         }
       }
     }
@@ -1172,8 +1169,25 @@ inline void DAISY_Impl::compute_histograms()
 {
     for( int r=0; r<m_rad_q_no; r++ )
     {
+      // remap cubes from Mat(h,y,x) -> Mat(y,x,h)
+      // final sampling is speeded up by aligned h dim
+      int m_h = m_smoothed_gradient_layers.at(r).size[0];
+      int m_y = m_smoothed_gradient_layers.at(r).size[1];
+      int m_x = m_smoothed_gradient_layers.at(r).size[2];
+
+      // empty targeted cube
+      m_smoothed_gradient_layers.at(r).release();
+
+      // recreate cube space
+      int dims[3] = { m_y, m_x, m_h };
+      m_smoothed_gradient_layers.at(r) = Mat( 3, dims, CV_32F );
+
+      // copy backward all cubes and realign structure
       parallel_for_( Range(0, m_image.rows), ComputeHistogramsInvoker( &m_smoothed_gradient_layers, r ) );
     }
+    // trim unused region from collection of cubes
+    m_smoothed_gradient_layers[m_rad_q_no].release();
+    m_smoothed_gradient_layers.pop_back();
 }
 
 inline void DAISY_Impl::compute_smoothed_gradient_layers()

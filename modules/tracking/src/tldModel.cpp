@@ -41,6 +41,8 @@
 
 #include "tldModel.hpp"
 
+#include <opencv2/core/utility.hpp>
+
 namespace cv
 {
 	namespace tld
@@ -85,9 +87,9 @@ namespace cv
 			//Generate initial positive samples and put them to the model
 			positiveExamples.reserve(200);
 
-			for (int i = 0; i < (int)closest.size(); i++)
+            for (size_t i = 0; i < closest.size(); i++)
 			{
-				for (int j = 0; j < 20; j++)
+                for (size_t j = 0; j < 20; j++)
 				{
 					Point2f center;
 					Size2f size;
@@ -100,17 +102,19 @@ namespace cv
 
 					resample(scaledImg, RotatedRect(center, size, angle), standardPatch);
 
-					for (int y = 0; y < standardPatch.rows; y++)
-					{
-						for (int x = 0; x < standardPatch.cols; x++)
-						{
-							standardPatch(x, y) += (uchar)rng.gaussian(5.0);
-						}
-					}
+                    for( int y = 0; y < standardPatch.rows; y++ )
+                    {
+                        uchar* patchRow = standardPatch.ptr(y);
+                        for( int x = 0; x < standardPatch.cols; x++ )
+                        {
+                            int newValue = patchRow[x] + cvRound(rng.gaussian(5.0));
+                            patchRow[x] = saturate_cast<uchar>(newValue);
+                        }
+                    }
 
 #ifdef BLUR_AS_VADIM
 					GaussianBlur(standardPatch, blurredPatch, GaussBlurKernelSize, 0.0);
-					resize(blurredPatch, blurredPatch, minSize);
+					resize(blurredPatch, blurredPatch, minSize, 0, 0, INTER_LINEAR_EXACT);
 #else
 					resample(blurredImg, RotatedRect(center, size, angle), blurredPatch);
 #endif
@@ -182,14 +186,41 @@ namespace cv
 
 		}
 
+		class CalcSrParallelLoopBody: public cv::ParallelLoopBody
+		{
+		public:
+			explicit CalcSrParallelLoopBody (TrackerTLDModel * model, const std::vector<Mat_<uchar> >& eForModel):
+				modelF (model),
+				eForModelF (eForModel)
+			{
+			}
+
+			virtual void operator () (const cv::Range & r) const
+			{
+				for (int ind = r.start; ind < r.end; ++ind)
+				{
+					modelF->srValues[ind] = modelF->detector->Sr (eForModelF[ind]);
+				}
+			}
+
+			TrackerTLDModel * modelF;
+			const std::vector<Mat_<uchar> >& eForModelF;
+		private:
+			CalcSrParallelLoopBody (const CalcSrParallelLoopBody&);
+			CalcSrParallelLoopBody& operator= (const CalcSrParallelLoopBody&);
+		};
+
 		void TrackerTLDModel::integrateAdditional(const std::vector<Mat_<uchar> >& eForModel, const std::vector<Mat_<uchar> >& eForEnsemble, bool isPositive)
 		{
 			int positiveIntoModel = 0, negativeIntoModel = 0, positiveIntoEnsemble = 0, negativeIntoEnsemble = 0;
 			if ((int)eForModel.size() == 0) return;
 
+			srValues.resize (eForModel.size ());
+			cv::parallel_for_ (cv::Range (0, (int)eForModel.size ()), CalcSrParallelLoopBody (this, eForModel));
+
 			for (int k = 0; k < (int)eForModel.size(); k++)
 			{
-				double sr = detector->Sr(eForModel[k]);
+				const double sr = srValues[k];
 				if ((sr > THETA_NN) != isPositive)
 				{
 					if (isPositive)

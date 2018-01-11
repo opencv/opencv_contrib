@@ -43,7 +43,6 @@ the use of this software, even if advised of the possibility of such damage.
 #define __OPENCV_XOBJDETECT_DETECTOR_HPP__
 
 #include <opencv2/core.hpp>
-#include <opencv2/highgui.hpp>
 #include <vector>
 #include <string>
 #include "precomp.hpp"

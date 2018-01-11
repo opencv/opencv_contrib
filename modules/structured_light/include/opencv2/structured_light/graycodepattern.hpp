@@ -43,6 +43,7 @@
 #define __OPENCV_GRAY_CODE_PATTERN_HPP__
 
 #include "opencv2/core.hpp"
+#include "opencv2/structured_light/structured_light.hpp"
 
 namespace cv {
 namespace structured_light {
@@ -72,21 +73,21 @@ class CV_EXPORTS_W GrayCodePattern : public StructuredLightPattern
    *  @param width Projector's width. Default value is 1024.
    *  @param height Projector's height. Default value is 768.
    */
-  struct CV_EXPORTS_W_SIMPLE Params
+  struct CV_EXPORTS Params
   {
-    CV_WRAP
     Params();
-    CV_PROP_RW
     int width;
-    CV_PROP_RW
     int height;
   };
 
   /** @brief Constructor
    @param parameters GrayCodePattern parameters GrayCodePattern::Params: the width and the height of the projector.
    */
-  CV_WRAP
   static Ptr<GrayCodePattern> create( const GrayCodePattern::Params &parameters = GrayCodePattern::Params() );
+
+  // alias for scripting
+  CV_WRAP
+  static Ptr<GrayCodePattern> create( int width, int height );
 
   /** @brief Get the number of pattern images needed for the graycode pattern.
    *
@@ -136,7 +137,7 @@ class CV_EXPORTS_W GrayCodePattern : public StructuredLightPattern
    *  @param patternImages The pattern images acquired by the camera, stored in a grayscale vector < Mat >.
    *  @param x x coordinate of the image pixel.
    *  @param y y coordinate of the image pixel.
-   *  @param projPix Projector's pixel corresponding to the camera's pixel: projPix.x and projPix.y are the image coordinates of the projector’s pixel corresponding to the pixel being decoded in a camera.
+   *  @param projPix Projector's pixel corresponding to the camera's pixel: projPix.x and projPix.y are the image coordinates of the projector's pixel corresponding to the pixel being decoded in a camera.
    */
   CV_WRAP
   virtual bool getProjPixel( InputArrayOfArrays patternImages, int x, int y, Point &projPix ) const = 0;

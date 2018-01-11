@@ -135,3 +135,10 @@ TEST(Features2d_Detector_Keypoints_Star, validation)
     CV_FeatureDetectorKeypointsTest test(xfeatures2d::StarDetector::create());
     test.safe_run();
 }
+
+
+TEST(Features2d_Detector_Keypoints_MSDDetector, validation)
+{
+    CV_FeatureDetectorKeypointsTest test(xfeatures2d::MSDDetector::create());
+    test.safe_run();
+}

@@ -102,11 +102,31 @@ public:
 
     The algorithm underlies this function is much more robust to texture presence, than common
     approaches, e.g. Sobel
-    @param src source image (RGB, float, in [0;1]) to detect edges
-    @param dst destination image (grayscale, float, in [0;1]) where edges are drawn
+    @param _src source image (RGB, float, in [0;1]) to detect edges
+    @param _dst destination image (grayscale, float, in [0;1]) where edges are drawn
     @sa Sobel, Canny
      */
-    CV_WRAP virtual void detectEdges(const Mat &src, CV_OUT Mat &dst) const = 0;
+    CV_WRAP virtual void detectEdges(cv::InputArray _src, cv::OutputArray _dst) const = 0;
+
+    /** @brief The function computes orientation from edge image.
+
+    @param _src edge image.
+    @param _dst orientation image.
+     */
+    CV_WRAP virtual void computeOrientation(cv::InputArray _src, cv::OutputArray _dst) const = 0;
+
+
+    /** @brief The function edgenms in edge image and suppress edges where edge is stronger in orthogonal direction.
+
+    @param edge_image edge image from detectEdges function.
+    @param orientation_image orientation image from computeOrientation function.
+    @param _dst suppressed image (grayscale, float, in [0;1])
+    @param r radius for NMS suppression.
+    @param s radius for boundary suppression.
+    @param m multiplier for conservative suppression.
+    @param isParallel enables/disables parallel computing.
+     */
+    CV_WRAP virtual void edgesNms(cv::InputArray edge_image, cv::InputArray orientation_image, cv::OutputArray _dst, int r = 2, int s = 0, float m = 1, bool isParallel = true) const = 0;
 };
 
 /*!

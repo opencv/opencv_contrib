@@ -71,7 +71,7 @@ public:
 
 	bool isInitialized();
 
-	void getPatternPoints(OutputArray original_points);
+	void getPatternPoints(std::vector<KeyPoint>& original_points);
     /**<
 		Returns a vector<Point> of the original points.
 	*/
