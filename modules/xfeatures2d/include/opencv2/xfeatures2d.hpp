@@ -831,14 +831,14 @@ public:
 /**
 * @brief Elliptic region around an interest point.
 */
-class CV_EXPORTS Elliptic_KeyPoint : public KeyPoint
+class CV_EXPORTS_W_SIMPLE Elliptic_KeyPoint : public KeyPoint
 {
 public:
-    Size_<float> axes; //!< the lengths of the major and minor ellipse axes
-    float si;  //!< the integration scale at which the parameters were estimated
+    CV_PROP_RW Size_<float> axes; //!< the lengths of the major and minor ellipse axes
+    CV_PROP_RW float si;  //!< the integration scale at which the parameters were estimated
     Matx23f transf; //!< the transformation between image space and local patch space
-    Elliptic_KeyPoint();
-    Elliptic_KeyPoint(Point2f pt, float angle, Size axes, float size, float si);
+    CV_WRAP Elliptic_KeyPoint();
+    CV_WRAP Elliptic_KeyPoint(Point2f pt, float angle, Size axes, float size, float si);
     virtual ~Elliptic_KeyPoint();
 };
 
@@ -875,14 +875,14 @@ public:
  * The interface is equivalent to @ref Feature2D, adding operations for
  * @ref Elliptic_KeyPoint "Elliptic_KeyPoints" instead of @ref KeyPoint "KeyPoints".
  */
-class CV_EXPORTS AffineFeature2D : public Feature2D
+class CV_EXPORTS_W AffineFeature2D : public Feature2D
 {
 public:
     /**
      * @brief Creates an instance wrapping the given keypoint detector and
      * descriptor extractor.
      */
-    static Ptr<AffineFeature2D> create(
+    CV_WRAP static Ptr<AffineFeature2D> create(
         Ptr<FeatureDetector> keypoint_detector,
         Ptr<DescriptorExtractor> descriptor_extractor);
 
@@ -890,7 +890,7 @@ public:
      * @brief Creates an instance where keypoint detector and descriptor
      * extractor are identical.
      */
-    static Ptr<AffineFeature2D> create(
+    CV_WRAP static Ptr<AffineFeature2D> create(
         Ptr<FeatureDetector> keypoint_detector)
     {
         return create(keypoint_detector, keypoint_detector);
@@ -901,7 +901,7 @@ public:
      * @brief Detects keypoints in the image using the wrapped detector and
      * performs affine adaptation to augment them with their elliptic regions.
      */
-    virtual void detect(
+    CV_WRAP virtual void detect(
         InputArray image,
         CV_OUT std::vector<Elliptic_KeyPoint>& keypoints,
         InputArray mask=noArray() ) = 0;
@@ -911,7 +911,7 @@ public:
      * @brief Detects keypoints and computes descriptors for their surrounding
      * regions, after warping them into circles.
      */
-    virtual void detectAndCompute(
+    CV_WRAP virtual void detectAndCompute(
         InputArray image,
         InputArray mask,
         CV_OUT std::vector<Elliptic_KeyPoint>& keypoints,
@@ -942,6 +942,36 @@ CV_EXPORTS void FASTForPointSet( InputArray image, CV_IN_OUT std::vector<KeyPoin
 //! @}
 
 }
+
+#ifdef OPENCV_TRAITS_ENABLE_DEPRECATED
+template<> class DataType<Elliptic_KeyPoint>
+{
+public:
+    typedef Elliptic_KeyPoint      value_type;
+    typedef float                  work_type;
+    typedef float                  channel_type;
+
+    enum {
+        generic_type = 0,
+        depth = DataType<channel_type>::depth,
+        channels = (int)(sizeof(value_type) / sizeof(channel_type)), // 7
+        fmt = DataType<channel_type>::fmt + ((channels - 1) << 8),
+        type = CV_MAKETYPE(depth, channels)
+    };
+
+    typedef Vec<channel_type, channels> vec_type;
+};
+#endif
+
+namespace traits {
+    using cv::xfeatures2d::Elliptic_KeyPoint;
+
+    template<>
+    struct Depth< Elliptic_KeyPoint > { enum { value = Depth<float>::value }; };
+    template<>
+    struct Type< Elliptic_KeyPoint > { enum { value = CV_MAKETYPE(Depth<float>::value, (int)sizeof(Elliptic_KeyPoint) / sizeof(float)) }; };
+} // namespace
+
 }
 
 #endif
