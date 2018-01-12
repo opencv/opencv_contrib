@@ -73,7 +73,13 @@ public:
  * _DOG: if true, a DOG pyramid is build
  */
 Pyramid::Pyramid(const Mat & img, int octavesN_, int layersN_, float sigma0_, int omin_, bool _DOG) :
-    params(octavesN_, layersN_, sigma0_, omin_)
+    params(
+        //Need to set the octavesN parameter globally. See issue #1513
+        MIN(octavesN_, int(floor(log((double)MIN(img.size().width, img.size().height)) / log(2.0f)))),
+        layersN_,
+        sigma0_,
+        omin_
+    )
 {
     build(img, _DOG);
 }
@@ -89,9 +95,6 @@ void Pyramid::build(const Mat& img, bool DOG)
     Size ksize(0, 0);
     int gsize;
 
-    Size imgSize = img.size();
-    int minSize = MIN(imgSize.width, imgSize.height);
-    int octavesN = MIN(params.octavesN, int(floor(log((double) minSize)/log((float)2))));
     float sigma0 = params.sigma0;
     float sigma = sigma0;
     int layersN = params.layersN + 3;
@@ -165,7 +168,7 @@ void Pyramid::build(const Mat& img, bool DOG)
     /*for every octave build layers*/
     sigma_prev = sigma;
 
-    for (octave = 0; octave < octavesN; octave++)
+    for (octave = 0; octave < params.octavesN; octave++)
     {
         for (layer = 1; layer < layersN; layer++)
         {
@@ -411,7 +414,8 @@ void HarrisLaplaceFeatureDetector_Impl::detect(InputArray img, std::vector<KeyPo
     keypoints = std::vector<KeyPoint> (0);
 
     /*Find Harris corners on each layer*/
-    for (int octave = 0; octave <= numOctaves; octave++)
+    //Use pyr.params.octavesN instead of numOctaves. See issue #1513
+    for (int octave = 0; octave <= pyr.params.octavesN; octave++)
     {
         for (int layer = 1; layer <= num_layers; layer++)
         {
