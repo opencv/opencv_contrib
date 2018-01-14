@@ -61,9 +61,9 @@ namespace aruco {
 class CV_EXPORTS_W Dictionary {
 
     public:
-    CV_PROP_RW Mat bytesList;      // marker code information
-    CV_PROP int markerSize;        // number of bits per dimension
-    CV_PROP int maxCorrectionBits; // maximum number of bits that can be corrected
+    CV_PROP_RW Mat bytesList;         // marker code information
+    CV_PROP_RW int markerSize;        // number of bits per dimension
+    CV_PROP_RW int maxCorrectionBits; // maximum number of bits that can be corrected
 
 
     /**
