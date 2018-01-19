@@ -312,6 +312,21 @@ public:
     CV_WRAP static Ptr<VGG> create( int desc = VGG::VGG_120, float isigma = 1.4f,
                                     bool img_normalize = true, bool use_scale_orientation = true,
                                     float scale_factor = 6.25f, bool dsc_normalize = false );
+
+    CV_WRAP virtual void setSigma(const float isigma) = 0;
+    CV_WRAP virtual float getSigma() const = 0;
+
+    CV_WRAP virtual void setUseNormalizeImage(const bool img_normalize) = 0;
+    CV_WRAP virtual bool getUseNormalizeImage() const = 0;
+
+    CV_WRAP virtual void setUseScaleOrientation(const bool use_scale_orientation) = 0;
+    CV_WRAP virtual bool getUseScaleOrientation() const = 0;
+
+    CV_WRAP virtual void setScaleFactor(const float scale_factor) = 0;
+    CV_WRAP virtual float getScaleFactor() const = 0;
+
+    CV_WRAP virtual void setUseNormalizeDescriptor(const bool dsc_normalize) = 0;
+    CV_WRAP virtual bool getUseNormalizeDescriptor() const = 0;
 };
 
 /** @brief Class implementing BoostDesc (Learning Image Descriptors with Boosting), described in
@@ -353,6 +368,12 @@ public:
 
     CV_WRAP static Ptr<BoostDesc> create( int desc = BoostDesc::BINBOOST_256,
                     bool use_scale_orientation = true, float scale_factor = 6.25f );
+
+    CV_WRAP virtual void setUseScaleOrientation(const bool use_scale_orientation) = 0;
+    CV_WRAP virtual bool getUseScaleOrientation() const = 0;
+
+    CV_WRAP virtual void setScaleFactor(const float scale_factor) = 0;
+    CV_WRAP virtual float getScaleFactor() const = 0;
 };
 
 

@@ -93,6 +93,13 @@ public:
     // compute descriptors given keypoints
     virtual void compute( InputArray image, vector<KeyPoint>& keypoints, OutputArray descriptors );
 
+    // getter / setter
+    virtual void setUseScaleOrientation(const bool use_scale_orientation) { m_use_scale_orientation = use_scale_orientation; }
+    virtual bool getUseScaleOrientation() const { return m_use_scale_orientation; }
+
+    virtual void setScaleFactor(const float scale_factor) { m_scale_factor = scale_factor; }
+    virtual float getScaleFactor() const { return m_scale_factor; }
+
 protected:
 
     /*
