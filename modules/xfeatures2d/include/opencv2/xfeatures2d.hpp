@@ -53,6 +53,10 @@ This section describes experimental algorithms for 2d feature detection.
 This section describes two popular algorithms for 2d feature detection, SIFT and SURF, that are
 known to be patented. Use them at your own risk.
 
+    @defgroup xfeatures2d_match Experimental 2D Features Matching Algorithm
+
+This section describes the GMS (Grid-based Motion Statistics) matching strategy.
+
 @}
 */
 
@@ -959,6 +963,32 @@ Detects corners using the FAST algorithm by @cite Rosten06 .
 CV_EXPORTS void FASTForPointSet( InputArray image, CV_IN_OUT std::vector<KeyPoint>& keypoints,
                       int threshold, bool nonmaxSuppression=true, int type=FastFeatureDetector::TYPE_9_16);
 
+
+//! @}
+
+
+//! @addtogroup xfeatures2d_match
+//! @{
+
+/** @brief GMS  (Grid-based Motion Statistics) feature matching strategy by @cite Bian2017gms .
+    @param size1 Input size of image1.
+    @param size2 Input size of image2.
+    @param keypoints1 Input keypoints of image1.
+    @param keypoints2 Input keypoints of image2.
+    @param matches1to2 Input 1-nearest neighbor matches.
+    @param matchesGMS Matches returned by the GMS matching strategy.
+    @param withRotation Take rotation transformation into account.
+    @param withScale Take scale transformation into account.
+    @param thresholdFactor The higher, the less matches.
+    @note
+        Since GMS works well when the number of features is large, we recommend to use the ORB feature and set FastThreshold to 0 to get as many as possible features quickly.
+        If matching results are not satisfying, please add more features. (We use 10000 for images with 640 X 480).
+        If your images have big rotation and scale changes, please set withRotation or withScale to true.
+ */
+
+CV_EXPORTS void matchGMS( const Size& size1, const Size& size2, const std::vector<KeyPoint>& keypoints1, const std::vector<KeyPoint>& keypoints2,
+                          const std::vector<DMatch>& matches1to2, std::vector<DMatch>& matchesGMS, const bool withRotation = false,
+                          const bool withScale = false, const double thresholdFactor = 6.0 );
 
 //! @}
 
