@@ -2,26 +2,26 @@
  *  By downloading, copying, installing or using the software you agree to this license.
  *  If you do not agree to this license, do not download, install,
  *  copy or use the software.
- *  
- *  
+ *
+ *
  *  License Agreement
  *  For Open Source Computer Vision Library
  *  (3 - clause BSD License)
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
- *  
+ *
  *  * Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and / or other materials provided with the distribution.
- *  
+ *
  *  * Neither the names of the copyright holders nor the names of the contributors
  *  may be used to endorse or promote products derived from this software
  *  without specific prior written permission.
- *  
+ *
  *  This software is provided by the copyright holders and contributors "as is" and
  *  any express or implied warranties, including, but not limited to, the implied
  *  warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -106,10 +106,10 @@ static void splitFirstNChannels(InputArrayOfArrays src, vector<XMat>& dst, int m
     {
         Size sz;
         int depth, totalCnNum;
-        
+
         checkSameSizeAndDepth(src, sz, depth);
         totalCnNum = std::min(maxDstCn, getTotalNumberOfChannels(src));
-        
+
         dst.resize(totalCnNum);
         vector<int> fromTo(2*totalCnNum);
         for (int i = 0; i < totalCnNum; i++)
@@ -127,7 +127,7 @@ static void splitFirstNChannels(InputArrayOfArrays src, vector<XMat>& dst, int m
 class GuidedFilterImpl : public GuidedFilter
 {
 public:
-    
+
     static Ptr<GuidedFilterImpl> create(InputArray guide, int radius, double eps);
 
     void filter(InputArray src, OutputArray dst, int dDepth = -1);
@@ -148,7 +148,7 @@ protected:
 protected:
 
     GuidedFilterImpl() {}
-    
+
     void init(InputArray guide, int radius, double eps);
 
     void computeCovGuide(SymArray2D<Mat>& covars);
@@ -168,7 +168,7 @@ protected:
     }
 
 private: /*Routines to parallelize boxFilter and convertTo*/
-    
+
     typedef void (GuidedFilterImpl::*TransformFunc)(Mat& src, Mat& dst);
 
     struct GFTransform_ParBody : public ParallelLoopBody
@@ -357,7 +357,7 @@ void GuidedFilterImpl::ComputeCovGuideFromChannelsMul_ParBody::operator()(const 
     }
 }
 
-GuidedFilterImpl::ComputeCovGuideInv_ParBody::ComputeCovGuideInv_ParBody(GuidedFilterImpl& gf_, SymArray2D<Mat>& covars_) 
+GuidedFilterImpl::ComputeCovGuideInv_ParBody::ComputeCovGuideInv_ParBody(GuidedFilterImpl& gf_, SymArray2D<Mat>& covars_)
     : gf(gf_), covars(covars_)
 {
     gf.covarsInv.create(gf.gCnNum);
@@ -415,8 +415,8 @@ void GuidedFilterImpl::ComputeCovGuideInv_ParBody::operator()(const Range& range
 
             for (int k = 0; k < 3; k++)
             {
-                register float *a = covars(k, 0).ptr<float>(i);
-                register float *ac = gf.covarsInv(k, 0).ptr<float>(i);
+                float *a = covars(k, 0).ptr<float>(i);
+                float *ac = gf.covarsInv(k, 0).ptr<float>(i);
 
                 if (k == 0)
                     mul(det, a, ac, gf.w);
@@ -503,7 +503,7 @@ void GuidedFilterImpl::ComputeCovFromSrcChannelsMul_ParBody::operator()(const Ra
             int start   = (si % 2) ? 0 : gf.gCnNum - 1;
             int end     = (si % 2) ? gf.gCnNum : -1;
 
-            register float *srcMeanLine = srcCnMean[si].ptr<float>(i);
+            float *srcMeanLine = srcCnMean[si].ptr<float>(i);
 
             for (int gi = start; gi != end; gi += step)
             {
@@ -658,7 +658,7 @@ void GuidedFilterImpl::getWalkPattern(int eid, int &cn1, int &cn2)
         0,  0,  1, -1, -1, -1,
         0,  1,  1, -1, -1, -1,
 
-        0,  0,  0,  2,  1,  1, 
+        0,  0,  0,  2,  1,  1,
         0,  1,  2,  2,  2,  1,
     };
 
@@ -689,7 +689,7 @@ void GuidedFilterImpl::init(InputArray guide, int radius_, double eps_)
     guideCnMean.resize(gCnNum);
     parConvertToWorkType(guideCn, guideCn);
     parMeanFilter(guideCn, guideCnMean);
-    
+
     SymArray2D<Mat> covars;
     computeCovGuide(covars);
     runParBody(ComputeCovGuideInv_ParBody(*this, covars));
