@@ -64,7 +64,7 @@ int main(int argc, char **argv)
     std::string model_prototxt = argv[1];
     std::string model_binary = argv[2];
     std::string test_input_image = argv[3];
-    double threshold = 0.53;
+    double threshold = 0.7;
 
     if (argc == 5)
     {
