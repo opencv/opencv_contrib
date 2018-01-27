@@ -39,14 +39,7 @@
 //
 //M*/
 
-
-#include <iostream>
-#include <vector>
-#include <memory>
-#include <string>
-#include <map>
-#include <numeric>
-#include <algorithm>
+#include "precomp.hpp"
 
 #include "opencv2/core_detect.hpp"
 

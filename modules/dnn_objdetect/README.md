@@ -7,6 +7,7 @@ This module uses Convolutional Neural Networks for detecting objects in an image
 - Google Protobuf
 
 ## Building this module
+
 Run the following command to build this module:
 
 ```make
@@ -16,21 +17,25 @@ cmake -DOPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -Dopencv_dnn_objdetec
 ## Models
 
 There are two models which are trained.
+
 #### SqueezeNet model trained for Image Classification.
+
 - This model was trained for 1500000 iterations with a batch size of 16
 - Size of Model: 4.9MB
 - Top-1 Accuracy on ImageNet 2012 DataSet: 56.10%
 - Top-5 Accuracy on ImageNet 2012 DataSet: 79.54%
-- Link to trained weights: [here](https://github.com/kvmanohar22/caffe/blob/obj_detect_loss/proto/SqueezeNet.caffemodel)
+- Link to trained weights: [here](https://github.com/kvmanohar22/caffe/blob/obj_detect_loss/proto/SqueezeNet.caffemodel) ([copy](https://github.com/opencv/opencv_3rdparty/tree/dnn_objdetect_20170827))
 
 #### SqueezeDet model trained for Object Detection
+
 - This model was trained for 180000 iterations with a batch size of 16
 - Size of the Model: 14.2MB
-- Link to the trained weights: [here](https://github.com/kvmanohar22/caffe/blob/obj_detect_loss/proto/SqueezeDet.caffemodel)
+- Link to the trained weights: [here](https://github.com/kvmanohar22/caffe/blob/obj_detect_loss/proto/SqueezeDet.caffemodel) ([copy](https://github.com/opencv/opencv_3rdparty/tree/dnn_objdetect_20170827))
 
 ## Usage
 
 #### With Caffe
+
 For details pertaining to the usage of the model, have a look at [this repository](https://github.com/kvmanohar22/caffe)
 
 You can infact train your own object detection models with the loss function which is implemented.
@@ -43,7 +48,7 @@ Here's the brief summary of examples. For detailed usage and testing, refer `tut
 
 ## Examples:
 
-- Image Classification
+### Image Classification
 
 ```c++
 // Read the net along with it's trained weights
@@ -61,7 +66,7 @@ cv::Mat probs = net.forward("predictions");
 ```
 `probs` is a 4-d tensor of shape `[1, 1000, 1, 1]` which is obtained after the application of `softmax` activation.
 
-- Object Detection
+### Object Detection
 
 ```c++
 // Reading the network and weights, converting image to blob is same as Image Classification example.
