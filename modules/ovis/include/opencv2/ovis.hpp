@@ -49,6 +49,9 @@ public:
      */
     CV_WRAP virtual void setBackground(InputArray image) = 0;
 
+    /// @overload
+    CV_WRAP_AS(setBackgroundColor) virtual void setBackground(const Scalar& color) = 0;
+
     /**
      * place an entity of an mesh in the scene
      *

@@ -300,6 +300,12 @@ public:
         rpass->getTextureUnitStates()[0]->setTextureName(name);
     }
 
+    void setBackground(const Scalar& color)
+    {
+        Mat img(1, 1, CV_8UC3, color);
+        setBackground(img);
+    }
+
     void createEntity(const String& name, const String& meshname, InputArray tvec, InputArray rot)
     {
         Entity* ent = sceneMgr->createEntity(name, meshname, RESOURCEGROUP_NAME);
