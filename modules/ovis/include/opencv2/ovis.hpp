@@ -51,9 +51,13 @@ public:
 
     /**
      * place an entity of an mesh in the scene
+     *
+     * the mesh needs to be created beforehand. Either programmatically
+     * by e.g. @ref createPointCloudMesh or by placing an Ogre .mesh file in a resource location.
+     * @see addResourceLocation
      * @param name entity name
      * @param meshname mesh name
-     * @param rot Rodrigues vector or 3x3 rotation matrix
+     * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param tvec translation
      */
     CV_WRAP virtual void createEntity(const String& name, const String& meshname,
@@ -67,7 +71,7 @@ public:
      * @param K intrinsic matrix
      * @param imsize image size
      * @param zFar far plane in camera coordinates
-     * @param rot Rodrigues vector or 3x3 rotation matrix
+     * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param tvec translation
      * @return the extents of the Frustum at far plane, where the top left corner denotes the principal
      * point offset
@@ -79,7 +83,7 @@ public:
     /**
      * creates a point light in the scene
      * @param name entity name
-     * @param rot Rodrigues vector or 3x3 rotation matrix
+     * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param tvec translation
      * @param diffuseColor
      * @param specularColor
@@ -92,7 +96,7 @@ public:
     /**
      * update entity pose by transformation in the parent coordinate space. (pre-rotation)
      * @param name entity name
-     * @param rot Rodrigues vector or 3x3 rotation matrix
+     * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param tvec translation
      */
     CV_WRAP virtual void updateEntityPose(const String& name, InputArray tvec = noArray(),
@@ -101,7 +105,7 @@ public:
     /**
      * set entity pose in the world coordinate space.
      * @param name enitity name
-     * @param rot Rodrigues vector or 3x3 rotation matrix
+     * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param tvec translation
      * @param invert use the inverse of the given pose
      */
@@ -124,7 +128,7 @@ public:
 
     /**
      * Sets the current camera pose
-     * @param rot Rodrigues vector or 3x3 rotation matrix
+     * @param rot @ref Rodrigues vector or 3x3 rotation matrix
      * @param tvec translation
      * @param invert use the inverse of the given pose
      */
@@ -168,7 +172,7 @@ CV_EXPORTS_W void addResourceLocation(const String& path);
  * create a new rendering window/ viewport
  * @param title window title
  * @param size size of the window
- * @param flags @see SceneSettings
+ * @param flags a combination of @ref SceneSettings
  */
 CV_EXPORTS_W Ptr<WindowScene> createWindow(const String& title, const Size& size,
                                            int flags = SCENE_INTERACTIVE);
@@ -182,7 +186,7 @@ CV_EXPORTS_W bool renderOneFrame();
 /**
  * set the property of a material to the given value
  * @param name material name
- * @param prop property @ref MaterialProperty
+ * @param prop @ref MaterialProperty
  * @param value the value
  */
 CV_EXPORTS_W void setMaterialProperty(const String& name, int prop, const Scalar& value);
