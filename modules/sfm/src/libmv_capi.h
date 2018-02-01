@@ -85,7 +85,7 @@ struct libmv_Reconstruction {
 // Based on 'libmv_capi' (blender API)
 /////////////////////////////////////
 
-void libmv_initLogging(const char* argv0) {
+static void libmv_initLogging(const char* argv0) {
   // Make it so FATAL messages are always print into console.
   char severity_fatal[32];
   static int initLog=0;
@@ -101,14 +101,14 @@ void libmv_initLogging(const char* argv0) {
   SetCommandLineOption("minloglevel", severity_fatal);
 }
 
-void libmv_startDebugLogging(void) {
+static void libmv_startDebugLogging(void) {
   SetCommandLineOption("logtostderr", "1");
   SetCommandLineOption("v", "2");
   SetCommandLineOption("stderrthreshold", "1");
   SetCommandLineOption("minloglevel", "0");
 }
 
-void libmv_setLoggingVerbosity(int verbosity) {
+static void libmv_setLoggingVerbosity(int verbosity) {
   char val[10];
   snprintf(val, sizeof(val), "%d", verbosity);
   SetCommandLineOption("v", val);
@@ -122,7 +122,7 @@ void libmv_setLoggingVerbosity(int verbosity) {
 /* Select the two keyframes that give a lower reprojection error
  */
 
-bool selectTwoKeyframesBasedOnGRICAndVariance(
+static bool selectTwoKeyframesBasedOnGRICAndVariance(
     Tracks& tracks,
     Tracks& normalized_tracks,
     CameraIntrinsics& camera_intrinsics,
@@ -252,7 +252,7 @@ static void libmv_cameraIntrinsicsFillFromOptions(
  * options values.
  */
 
-CameraIntrinsics* libmv_cameraIntrinsicsCreateFromOptions(
+static CameraIntrinsics* libmv_cameraIntrinsicsCreateFromOptions(
     const libmv_CameraIntrinsicsOptions* camera_intrinsics_options) {
   CameraIntrinsics *camera_intrinsics = NULL;
   switch (camera_intrinsics_options->distortion_model) {
@@ -278,7 +278,7 @@ CameraIntrinsics* libmv_cameraIntrinsicsCreateFromOptions(
 /* Normalizes the tracks given the camera intrinsics parameters
  */
 
-void
+static void
 libmv_getNormalizedTracks(const libmv::Tracks &tracks,
                           const libmv::CameraIntrinsics &camera_intrinsics,
                           libmv::Tracks *normalized_tracks) {
@@ -302,7 +302,7 @@ libmv_getNormalizedTracks(const libmv::Tracks &tracks,
 /* Refine the final solution using Bundle Adjustment
  */
 
-void libmv_solveRefineIntrinsics(
+static void libmv_solveRefineIntrinsics(
     const Tracks &tracks,
     const int refine_intrinsics,
     const int bundle_constraints,
@@ -339,7 +339,7 @@ void libmv_solveRefineIntrinsics(
 /* Finish the reconstrunction and computes the final reprojection error
  */
 
-void finishReconstruction(
+static void finishReconstruction(
     const Tracks &tracks,
     const CameraIntrinsics &camera_intrinsics,
     libmv_Reconstruction *libmv_reconstruction) {
@@ -361,7 +361,7 @@ void finishReconstruction(
 /* Perform the complete reconstruction process
  */
 
-libmv_Reconstruction *libmv_solveReconstruction(
+static libmv_Reconstruction *libmv_solveReconstruction(
     const Tracks &libmv_tracks,
     const libmv_CameraIntrinsicsOptions* libmv_camera_intrinsics_options,
     libmv_ReconstructionOptions* libmv_reconstruction_options) {

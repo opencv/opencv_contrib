@@ -75,7 +75,7 @@ homogeneousToEuclidean(const Mat & _X, Mat & _x)
 }
 
 void
-homogeneousToEuclidean(const InputArray _X, OutputArray _x)
+homogeneousToEuclidean(InputArray _X, OutputArray _x)
 {
   // src
   const Mat X = _X.getMat();
@@ -96,7 +96,7 @@ homogeneousToEuclidean(const InputArray _X, OutputArray _x)
 }
 
 void
-euclideanToHomogeneous(const InputArray _x, OutputArray _X)
+euclideanToHomogeneous(InputArray _x, OutputArray _X)
 {
   const Mat x = _x.getMat();
   const Mat last_row = Mat::ones(1, x.cols, x.type());

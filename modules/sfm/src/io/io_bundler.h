@@ -47,7 +47,7 @@
 // towards the top of the image. Thus, (-w/2, -h/2) is the lower-left corner of
 // the image, and (w/2, h/2) is the top-right corner (where w and h are the
 // width and height of the image).
-bool readBundlerFile(const std::string &file,
+static bool readBundlerFile(const std::string &file,
                      std::vector<cv::Matx33d> &Rs,
                      std::vector<cv::Vec3d> &Ts,
                      std::vector<cv::Matx33d> &Ks,

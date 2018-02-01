@@ -52,7 +52,7 @@ namespace sfm
 /* Parses a given array of 2d points into the libmv tracks structure
  */
 
-void
+static void
 parser_2D_tracks( const std::vector<Mat> &points2d, libmv::Tracks &tracks )
 {
   const int nframes = static_cast<int>(points2d.size());
@@ -71,7 +71,7 @@ parser_2D_tracks( const std::vector<Mat> &points2d, libmv::Tracks &tracks )
 /* Parses a given set of matches into the libmv tracks structure
  */
 
-void
+static void
 parser_2D_tracks( const libmv::Matches &matches, libmv::Tracks &tracks )
 {
   std::set<Matches::ImageID>::const_iterator iter_image =
@@ -115,7 +115,7 @@ parser_2D_tracks( const libmv::Matches &matches, libmv::Tracks &tracks )
  * reconstruction pipeline.
  */
 
-libmv_Reconstruction *libmv_solveReconstructionImpl(
+static libmv_Reconstruction *libmv_solveReconstructionImpl(
   const std::vector<String> &images,
   const libmv_CameraIntrinsicsOptions* libmv_camera_intrinsics_options,
   libmv_ReconstructionOptions* libmv_reconstruction_options)

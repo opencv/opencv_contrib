@@ -163,7 +163,7 @@ inline cv::Rect Vec4i2Rect( cv::Vec4i &v )
 # define POPCNT64(x) __builtin_popcountll(x)
 #endif
 
-inline int popcnt64( register uint64_t u )
+inline int popcnt64( uint64_t u )
 {
   u = ( u & 0x5555555555555555 ) + ( ( u >> 1 ) & 0x5555555555555555 );
   u = ( u & 0x3333333333333333 ) + ( ( u >> 2 ) & 0x3333333333333333 );
@@ -174,7 +174,7 @@ inline int popcnt64( register uint64_t u )
   return (int)u;
 }
 
-inline int popcnt( register uint32_t u )
+inline int popcnt( uint32_t u )
 {
   u = ( u & 0x55555555 ) + ( ( u >> 1 ) & 0x55555555 );
   u = ( u & 0x33333333 ) + ( ( u >> 2 ) & 0x33333333 );
@@ -184,7 +184,7 @@ inline int popcnt( register uint32_t u )
   return (int)u;
 }
 
-inline int popcnt64_nibble( register uint64_t u )
+inline int popcnt64_nibble( uint64_t u )
 {
   static const uint8_t Table[] =
   { 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4 };
@@ -198,7 +198,7 @@ inline int popcnt64_nibble( register uint64_t u )
   return (int)c;
 }
 
-inline int popcnt_nibble( register uint32_t u )
+inline int popcnt_nibble( uint32_t u )
 {
   static const uint8_t Table[] =
   { 0, 1, 1, 2, 1, 2, 2, 3, 1, 2, 2, 3, 2, 3, 3, 4 };
@@ -212,7 +212,7 @@ inline int popcnt_nibble( register uint32_t u )
   return (int)c;
 }
 
-inline int popcnt64_byte( register uint64_t u )
+inline int popcnt64_byte( uint64_t u )
 {
 #define B2(k) k, k+1, k+1, k+2
 #define B4(k) B2(k), B2(k+1), B2(k+1), B2(k+2)
@@ -232,7 +232,7 @@ inline int popcnt64_byte( register uint64_t u )
   return (int)c;
 }
 
-inline int popcnt_byte( register uint32_t u )
+inline int popcnt_byte( uint32_t u )
 {
 #define B2(k) k, k+1, k+1, k+2
 #define B4(k) B2(k), B2(k+1), B2(k+1), B2(k+2)
