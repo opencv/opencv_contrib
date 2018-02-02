@@ -13,6 +13,7 @@ K = cv.getDefaultNewCameraMatrix(np.diag([800, 800, 1]), imsize, True)
 cv.ovis.addResourceLocation("packs/Sinbad.zip") # shipped with Ogre
 
 win = cv.ovis.createWindow("arucoAR", imsize, flags=0)
+win.setCameraIntrinsics(K, imsize)
 win.createEntity("figure", "Sinbad.mesh", (0, 0, -5), (-1.57, 0, 0))
 win.createLightEntity("sun", (0, 0, -100))
 
@@ -21,7 +22,7 @@ cap = cv.VideoCapture(0)
 cap.set(cv.CAP_PROP_FRAME_WIDTH, imsize[0])
 cap.set(cv.CAP_PROP_FRAME_HEIGHT, imsize[1])
 
-while cv.ovis.renderOneFrame():
+while cv.ovis.waitKey(1) != 27:
     img = cap.read()[1]
     win.setBackground(img)
     corners, ids = cv.aruco.detectMarkers(img, adict)[:2]
