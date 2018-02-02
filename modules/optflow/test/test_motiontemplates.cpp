@@ -41,8 +41,7 @@
 
 #include "test_precomp.hpp"
 
-using namespace cv;
-using namespace std;
+namespace opencv_test { namespace {
 
 ///////////////////// base MHI class ///////////////////////
 class CV_MHIBaseTest : public cvtest::ArrayTest
@@ -498,3 +497,5 @@ int CV_MHIGlobalOrientTest::validate_test_results( int test_case_idx )
 TEST(Video_MHIUpdate, accuracy) { CV_UpdateMHITest test; test.safe_run(); }
 TEST(Video_MHIGradient, accuracy) { CV_MHIGradientTest test; test.safe_run(); }
 TEST(Video_MHIGlobalOrient, accuracy) { CV_MHIGlobalOrientTest test; test.safe_run(); }
+
+}} // namespace

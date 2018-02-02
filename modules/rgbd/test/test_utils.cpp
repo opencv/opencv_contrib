@@ -1,11 +1,9 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 
-#include <opencv2/calib3d.hpp>
-
-namespace cv
-{
-namespace rgbd
-{
+namespace opencv_test { namespace {
 
 class CV_RgbdDepthTo3dTest: public cvtest::BaseTest
 {
@@ -47,7 +45,7 @@ protected:
       float avg_diff = 0;
       for (int y = 0; y < rows; ++y)
         for (int x = 0; x < cols; ++x)
-          avg_diff += (float)norm(image_points.at<Vec2f>(y,x) - Vec2f((float)x,(float)y));
+          avg_diff += (float)cv::norm(image_points.at<Vec2f>(y,x) - Vec2f((float)x,(float)y));
 
       // Verify the function works
       ASSERT_LE(avg_diff/rows/cols, 1e-4) << "Average error for ground truth is: " << (avg_diff / rows / cols);
@@ -59,11 +57,12 @@ protected:
   }
 };
 
-}
-}
 
 TEST(Rgbd_DepthTo3d, compute)
 {
-  cv::rgbd::CV_RgbdDepthTo3dTest test;
+  CV_RgbdDepthTo3dTest test;
   test.safe_run();
 }
+
+
+}} // namespace

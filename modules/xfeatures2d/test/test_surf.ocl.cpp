@@ -47,11 +47,8 @@
 
 #ifdef HAVE_OPENCL
 
-namespace cvtest {
-namespace ocl {
+namespace opencv_test { namespace {
 
-using namespace std;
-using std::tr1::get;
 static bool keyPointsEquals(const cv::KeyPoint& p1, const cv::KeyPoint& p2)
 {
     const double maxPtDif = 0.1;
@@ -201,6 +198,6 @@ INSTANTIATE_TEST_CASE_P(OCL_Features2D, SURF, testing::Combine(
     testing::Values(Extended(false), Extended(true)),
     testing::Values(Upright(false), Upright(true))));
 
-} } // namespace cvtest::ocl
+}} // namespace
 
 #endif // HAVE_OPENCL

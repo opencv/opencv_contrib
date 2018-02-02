@@ -40,13 +40,8 @@
  //M*/
 
 #include "test_precomp.hpp"
-#include <opencv2/core.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/calib3d.hpp>
-#include <opencv2/imgproc.hpp>
 
-using namespace std;
-using namespace cv;
+namespace opencv_test { namespace {
 
 const string STRUCTURED_LIGHT_DIR = "structured_light";
 const string FOLDER_DATA = "data";
@@ -283,10 +278,10 @@ void CV_PlaneTest::run( int )
   // Loading and rectifying pattern images
   for( size_t i = 0; i < numberOfPatternImages; i++ )
   {
-    ostringstream name1;
+    std::ostringstream name1;
     name1 << "pattern_cam1_im" << i + 1 << ".jpg";
     captured_pattern[0][i] = imread( folder + name1.str(), 0 );
-    ostringstream name2;
+    std::ostringstream name2;
     name2 << "pattern_cam2_im" << i + 1 << ".jpg";
     captured_pattern[1][i] = imread( folder + name2.str(), 0 );
 
@@ -359,3 +354,5 @@ TEST( GrayCodePattern, plane_reconstruction )
   CV_PlaneTest test;
   test.safe_run();
 }
+
+}} // namespace

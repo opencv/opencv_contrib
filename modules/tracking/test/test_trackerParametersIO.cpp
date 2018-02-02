@@ -3,9 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include "test_precomp.hpp"
-#include "opencv2/tracking.hpp"
 
-using namespace cv;
+namespace opencv_test { namespace {
 
 TEST(MEDIAN_FLOW_Parameters, IO)
 {
@@ -125,3 +124,5 @@ TEST(KCF_Parameters, Default_Value_If_Absent)
     ASSERT_EQ(defaultParameters.compressed_size, readParameters.compressed_size);
     ASSERT_DOUBLE_EQ(defaultParameters.pca_learning_rate, readParameters.pca_learning_rate);
 }
+
+}} // namespace

@@ -48,8 +48,7 @@
 
 #define RETINA_ITERATIONS 5
 
-namespace cvtest {
-namespace ocl {
+namespace opencv_test { namespace {
 
 PARAM_TEST_CASE(Retina_OCL, bool, int, bool, double, double)
 {
@@ -113,4 +112,4 @@ OCL_INSTANTIATE_TEST_CASE_P(Contrib, Retina_OCL, testing::Combine(
                             testing::Values(1.0, 0.5),
                             testing::Values(10.0, 5.0)));
 
-} } // namespace cvtest::ocl
+}} // namespace

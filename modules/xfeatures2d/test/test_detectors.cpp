@@ -42,17 +42,7 @@
 
 #include "test_precomp.hpp"
 
-#include <string>
-#include <iostream>
-#include <iterator>
-#include <fstream>
-#include <numeric>
-#include <algorithm>
-#include <iterator>
-
-using namespace cv;
-using namespace cv::xfeatures2d;
-using namespace std;
+namespace opencv_test { namespace {
 
 class CV_DetectorsTest : public cvtest::BaseTest
 {
@@ -107,9 +97,10 @@ void getBrightness(const Mat& img, Mat& aff, Mat& out)
     data[0] = 1; data[1] = 0; data[2] = 0;
     data[3] = 0; data[4] = 1; data[5] = 0;
 
-    add(img, Mat(img.size(), img.type(), Scalar(15)), out);
+    cv::add(img, Mat(img.size(), img.type(), Scalar(15)), out);
 }
 
+#if 0
 void showOrig(const Mat& img, const vector<KeyPoint>& orig_pts)
 {
 
@@ -136,6 +127,7 @@ void show(const string& name, const Mat& new_img, const vector<KeyPoint>& new_pt
 
     namedWindow(name + "_T"); imshow(name + "_T", new_img_color);
 }
+#endif
 
 struct WrapPoint
 {
@@ -151,7 +143,7 @@ struct WrapPoint
     }
 };
 
-struct sortByR { bool operator()(const KeyPoint& kp1, const KeyPoint& kp2) { return norm(kp1.pt) < norm(kp2.pt); } };
+struct sortByR { bool operator()(const KeyPoint& kp1, const KeyPoint& kp2) { return cv::norm(kp1.pt) < cv::norm(kp2.pt); } };
 
 bool CV_DetectorsTest::testDetector(const Mat& img, Ptr<Feature2D> detector, vector<KeyPoint>& exp)
 {
@@ -193,7 +185,7 @@ bool CV_DetectorsTest::testDetector(const Mat& img, Ptr<Feature2D> detector, vec
             size_t k = 0;
 
             for(; k < new_kpts[j].size(); ++k)
-                if (norm(new_kpts[j][k].pt - tkp.pt) < nthres && fabs(new_kpts[j][k].size - tkp.size) < thres)
+                if (cv::norm(new_kpts[j][k].pt - tkp.pt) < nthres && fabs(new_kpts[j][k].size - tkp.size) < thres)
                     break;
 
             if (k != new_kpts[j].size())
@@ -221,7 +213,7 @@ bool CV_DetectorsTest::testDetector(const Mat& img, Ptr<Feature2D> detector, vec
         for(; j < result.size(); ++j)
         {
             const KeyPoint& r = result[i];
-            if (norm(r.pt-e.pt) < nthres && fabs(r.size - e.size) < thres)
+            if (cv::norm(r.pt-e.pt) < nthres && fabs(r.size - e.size) < thres)
                 break;
         }
         if (j != result.size())
@@ -236,7 +228,7 @@ bool CV_DetectorsTest::testDetector(const Mat& img, Ptr<Feature2D> detector, vec
         for(; j < exp.size(); ++j)
         {
             const KeyPoint& e = exp[i];
-            if (norm(r.pt-e.pt) < nthres && fabs(r.size - e.size) < thres)
+            if (cv::norm(r.pt-e.pt) < nthres && fabs(r.size - e.size) < thres)
                 break;
         }
         if (j != exp.size())
@@ -305,3 +297,5 @@ void CV_DetectorsTest::run( int /*start_from*/ )
 
 
 TEST(Features2d_Detectors, regression) { CV_DetectorsTest test; test.safe_run(); }
+
+}} // namespace

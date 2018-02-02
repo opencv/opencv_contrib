@@ -42,12 +42,9 @@
 
 #include "perf_precomp.hpp"
 
-using namespace std;
-using namespace cv;
-using namespace cv::stereo;
-using namespace perf;
+namespace opencv_test { namespace {
 
-typedef std::tr1::tuple<Size, MatType, MatDepth> s_bm_test_t;
+typedef tuple<Size, MatType, MatDepth> s_bm_test_t;
 typedef perf::TestBaseWithParam<s_bm_test_t> s_bm;
 
 PERF_TEST_P( s_bm, sgm_perf,
@@ -58,9 +55,9 @@ PERF_TEST_P( s_bm, sgm_perf,
             )
             )
 {
-    Size sz = std::tr1::get<0>(GetParam());
-    int matType = std::tr1::get<1>(GetParam());
-    int sdepth = std::tr1::get<2>(GetParam());
+    Size sz = get<0>(GetParam());
+    int matType = get<1>(GetParam());
+    int sdepth = get<2>(GetParam());
 
     Mat left(sz, matType);
     Mat right(sz, matType);
@@ -85,9 +82,9 @@ PERF_TEST_P( s_bm, bm_perf,
             )
             )
 {
-    Size sz = std::tr1::get<0>(GetParam());
-    int matType = std::tr1::get<1>(GetParam());
-    int sdepth = std::tr1::get<2>(GetParam());
+    Size sz = get<0>(GetParam());
+    int matType = get<1>(GetParam());
+    int sdepth = get<2>(GetParam());
 
     Mat left(sz, matType);
     Mat right(sz, matType);
@@ -116,3 +113,6 @@ PERF_TEST_P( s_bm, bm_perf,
     }
     SANITY_CHECK(out1);
 }
+
+
+}} // namespace

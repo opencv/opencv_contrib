@@ -41,12 +41,9 @@
 //M*/
 #include "perf_precomp.hpp"
 
-using namespace std;
-using namespace cv;
-using namespace cv::stereo;
-using namespace perf;
+namespace opencv_test { namespace {
 
-typedef std::tr1::tuple<Size, MatType, MatDepth> descript_params_t;
+typedef tuple<Size, MatType, MatDepth> descript_params_t;
 typedef perf::TestBaseWithParam<descript_params_t> descript_params;
 
 PERF_TEST_P( descript_params, census_sparse_descriptor,
@@ -57,9 +54,9 @@ PERF_TEST_P( descript_params, census_sparse_descriptor,
             )
             )
 {
-    Size sz = std::tr1::get<0>(GetParam());
-    int matType = std::tr1::get<1>(GetParam());
-    int sdepth = std::tr1::get<2>(GetParam());
+    Size sz = get<0>(GetParam());
+    int matType = get<1>(GetParam());
+    int sdepth = get<2>(GetParam());
     Mat left(sz, matType);
     Mat out1(sz, sdepth);
     declare.in(left, WARMUP_RNG)
@@ -79,9 +76,9 @@ PERF_TEST_P( descript_params, star_census_transform,
             )
             )
 {
-    Size sz = std::tr1::get<0>(GetParam());
-    int matType = std::tr1::get<1>(GetParam());
-    int sdepth = std::tr1::get<2>(GetParam());
+    Size sz = get<0>(GetParam());
+    int matType = get<1>(GetParam());
+    int sdepth = get<2>(GetParam());
     Mat left(sz, matType);
     Mat out1(sz, sdepth);
     declare.in(left, WARMUP_RNG)
@@ -101,9 +98,9 @@ PERF_TEST_P( descript_params, modified_census_transform,
             )
             )
 {
-    Size sz = std::tr1::get<0>(GetParam());
-    int matType = std::tr1::get<1>(GetParam());
-    int sdepth = std::tr1::get<2>(GetParam());
+    Size sz = get<0>(GetParam());
+    int matType = get<1>(GetParam());
+    int sdepth = get<2>(GetParam());
 
     Mat left(sz, matType);
     Mat out1(sz, sdepth);
@@ -125,9 +122,9 @@ PERF_TEST_P( descript_params, center_symetric_census,
             )
             )
 {
-    Size sz = std::tr1::get<0>(GetParam());
-    int matType = std::tr1::get<1>(GetParam());
-    int sdepth = std::tr1::get<2>(GetParam());
+    Size sz = get<0>(GetParam());
+    int matType = get<1>(GetParam());
+    int sdepth = get<2>(GetParam());
 
     Mat left(sz, matType);
     Mat out1(sz, sdepth);
@@ -141,3 +138,6 @@ PERF_TEST_P( descript_params, center_symetric_census,
     }
     SANITY_CHECK(out1);
 }
+
+
+}} // namespace

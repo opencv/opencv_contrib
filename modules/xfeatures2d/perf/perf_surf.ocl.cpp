@@ -47,9 +47,7 @@
 
 #ifdef HAVE_OPENCV_OCL
 
-using namespace cv;
-using namespace cv::ocl;
-using namespace std;
+namespace opencv_test { namespace {
 
 typedef perf::TestBaseWithParam<std::string> OCL_SURF;
 
@@ -106,4 +104,5 @@ PERF_TEST_P(OCL_SURF, DISABLED_without_data_transfer, testing::Values(SURF_IMAGE
     SANITY_CHECK_NOTHING();
 }
 
+}} // namespace
 #endif // HAVE_OPENCV_OCL

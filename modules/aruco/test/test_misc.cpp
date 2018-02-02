@@ -3,7 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include "test_precomp.hpp"
-#include <opencv2/aruco/charuco.hpp>
+
+namespace opencv_test { namespace {
 
 TEST(CV_ArucoDrawMarker, regression_1226)
 {
@@ -22,3 +23,5 @@ TEST(CV_ArucoDrawMarker, regression_1226)
         board->draw(sz, mat, 0, 1);
     });
 }
+
+}} // namespace

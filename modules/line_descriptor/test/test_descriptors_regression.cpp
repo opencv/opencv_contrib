@@ -41,8 +41,7 @@
 
 #include "test_precomp.hpp"
 
-using namespace cv;
-using namespace cv::line_descriptor;
+namespace opencv_test { namespace {
 
 /****************************************************************************************\
 *            Regression tests for line detector comparing keylines.                 *
@@ -387,3 +386,5 @@ TEST( BinaryDescriptor, no_lines_found )
   binDescriptor->detect(Image, keyLines);
   ASSERT_EQ(keyLines.size(), 0u);
 }
+
+}} // namespace

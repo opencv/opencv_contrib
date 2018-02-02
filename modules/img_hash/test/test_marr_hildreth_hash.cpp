@@ -4,7 +4,7 @@
 
 #include "test_precomp.hpp"
 
-using namespace cv;
+namespace opencv_test { namespace {
 
 class CV_MarrHildrethTest : public cvtest::BaseTest
 {
@@ -58,3 +58,5 @@ void CV_MarrHildrethTest::run(int )
 }
 
 TEST(marr_hildreth_test, accuracy) { CV_MarrHildrethTest test; test.safe_run(); }
+
+}} // namespace

@@ -41,10 +41,7 @@
 
 #include "test_precomp.hpp"
 
-#include <string>
-
-using namespace std;
-using namespace cv;
+namespace opencv_test { namespace {
 
 TEST(fuzzy_f1, elements)
 {
@@ -397,3 +394,5 @@ TEST(fuzzy_f1, inversion)
 
     EXPECT_DOUBLE_EQ(n1, 0);
 }
+
+}} // namespace

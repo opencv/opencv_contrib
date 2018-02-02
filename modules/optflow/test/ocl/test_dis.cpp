@@ -44,11 +44,7 @@
 
 #ifdef HAVE_OPENCL
 
-using namespace cv;
-using namespace optflow;
-
-namespace cvtest {
-namespace ocl {
+namespace opencv_test { namespace {
 
 PARAM_TEST_CASE(OCL_DenseOpticalFlow_DIS, int)
 {
@@ -75,7 +71,7 @@ OCL_TEST_P(OCL_DenseOpticalFlow_DIS, Mat)
     Ptr<DenseOpticalFlow> algo;
 
     // iterate over presets:
-    for (int i = 0; i < test_loop_times; i++)
+    for (int i = 0; i < cvtest::ocl::test_loop_times; i++)
     {
         Mat flow;
         UMat ocl_flow;
@@ -95,6 +91,6 @@ OCL_INSTANTIATE_TEST_CASE_P(Contrib, OCL_DenseOpticalFlow_DIS,
                                    DISOpticalFlow::PRESET_FAST,
                                    DISOpticalFlow::PRESET_MEDIUM));
 
-} } // namespace cvtest::ocl
+}} // namespace
 
 #endif // HAVE_OPENCL

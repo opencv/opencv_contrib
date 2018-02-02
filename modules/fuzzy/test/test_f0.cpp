@@ -41,10 +41,7 @@
 
 #include "test_precomp.hpp"
 
-#include <string>
-
-using namespace std;
-using namespace cv;
+namespace opencv_test { namespace {
 
 TEST(fuzzy_f0, components)
 {
@@ -232,3 +229,5 @@ TEST(fuzzy_f0, FL_process_float)
 
     EXPECT_LE(n1, 1);
 }
+
+}} // namespace

@@ -35,13 +35,8 @@ Mentor: Delia Passalacqua
 */
 
 #include "test_precomp.hpp"
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/face.hpp"
-#include <vector>
-#include <string>
-using namespace std;
-using namespace cv;
-using namespace cv::face;
+
+namespace opencv_test { namespace {
 
 TEST(CV_Face_Facemark, test_utilities) {
     string image_file = cvtest::findDataFile("face/david1.jpg", true);
@@ -59,3 +54,5 @@ TEST(CV_Face_Facemark, test_utilities) {
     std::vector<Rect> faces;
     EXPECT_TRUE(getFaces(img, faces, &params));
 }
+
+}} // namespace

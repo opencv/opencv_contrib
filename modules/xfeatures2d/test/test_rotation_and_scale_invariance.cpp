@@ -40,11 +40,8 @@
 //M*/
 
 #include "test_precomp.hpp"
-#include "opencv2/highgui.hpp"
 
-using namespace std;
-using namespace cv;
-using namespace cv::xfeatures2d;
+namespace opencv_test { namespace {
 
 const string IMAGE_TSUKUBA = "/features2d/tsukuba.png";
 const string IMAGE_BIKES = "/detectors_descriptors_evaluation/images_datasets/bikes/img1.png";
@@ -115,7 +112,7 @@ void scaleKeyPoints(const vector<KeyPoint>& src, vector<KeyPoint>& dst, float sc
 static
 float calcCirclesIntersectArea(const Point2f& p0, float r0, const Point2f& p1, float r1)
 {
-    float c = static_cast<float>(norm(p0 - p1)), sqr_c = c * c;
+    float c = static_cast<float>(cv::norm(p0 - p1)), sqr_c = c * c;
 
     float sqr_r0 = r0 * r0;
     float sqr_r1 = r1 * r1;
@@ -980,3 +977,5 @@ TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BINBOOST_256, regression)
                                        0.98f);
     test.safe_run();
 }
+
+}} // namespace

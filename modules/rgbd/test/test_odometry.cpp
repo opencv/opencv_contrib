@@ -35,14 +35,7 @@
 
 #include "test_precomp.hpp"
 
-#include <opencv2/calib3d.hpp>
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgproc.hpp>
-
-namespace cv
-{
-namespace rgbd
-{
+namespace opencv_test { namespace {
 
 #define SHOW_DEBUG_LOG     0
 #define SHOW_DEBUG_IMAGES  0
@@ -254,7 +247,7 @@ void CV_OdometryTest::run(int)
         ts->printf(cvtest::TS::LOG, "Can not find Rt between the same frame");
         ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_OUTPUT);
     }
-    double diff = norm(calcRt, Mat::eye(4,4,CV_64FC1));
+    double diff = cv::norm(calcRt, Mat::eye(4,4,CV_64FC1));
     if(diff > DBL_EPSILON)
     {
         ts->printf(cvtest::TS::LOG, "Incorrect transformation between the same frame (not the identity matrix), diff = %f", diff);
@@ -298,10 +291,10 @@ void CV_OdometryTest::run(int)
 
 
         // compare rotation
-        double rdiffnorm = norm(rvec - calcRvec),
-               rnorm = norm(rvec);
-        double tdiffnorm = norm(tvec - calcTvec), 
-               tnorm = norm(tvec);
+        double rdiffnorm = cv::norm(rvec - calcRvec),
+               rnorm = cv::norm(rvec);
+        double tdiffnorm = cv::norm(tvec - calcTvec),
+               tnorm = cv::norm(tvec);
         if(rdiffnorm < rnorm &&  tdiffnorm < tnorm)
             better_1time_count++;
         if(5. * rdiffnorm < rnorm && 5 * tdiffnorm < tnorm)
@@ -333,23 +326,24 @@ void CV_OdometryTest::run(int)
 /****************************************************************************************\
 *                                Tests registrations                                     *
 \****************************************************************************************/
-}
-}
 
 TEST(RGBD_Odometry_Rgbd, algorithmic)
 {
-    cv::rgbd::CV_OdometryTest test(cv::rgbd::Odometry::create("RgbdOdometry"), 0.99, 0.94);
+    CV_OdometryTest test(cv::rgbd::Odometry::create("RgbdOdometry"), 0.99, 0.94);
     test.safe_run();
 }
 
 TEST(DISABLED_RGBD_Odometry_ICP, algorithmic)
 {
-    cv::rgbd::CV_OdometryTest test(cv::rgbd::Odometry::create("ICPOdometry"), 0.99, 0.99);
+    CV_OdometryTest test(cv::rgbd::Odometry::create("ICPOdometry"), 0.99, 0.99);
     test.safe_run();
 }
 
 TEST(DISABLED_RGBD_Odometry_RgbdICP, algorithmic)
 {
-    cv::rgbd::CV_OdometryTest test(cv::rgbd::Odometry::create("RgbdICPOdometry"), 0.99, 0.99);
+    CV_OdometryTest test(cv::rgbd::Odometry::create("RgbdICPOdometry"), 0.99, 0.99);
     test.safe_run();
 }
+
+
+}} // namespace

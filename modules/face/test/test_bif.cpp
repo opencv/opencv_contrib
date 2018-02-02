@@ -38,6 +38,8 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "test_precomp.hpp"
 
+namespace opencv_test { namespace {
+
 TEST(CV_Face_BIF, can_create_default) {
     cv::Ptr<cv::face::BIF> bif;
     EXPECT_NO_THROW(bif = cv::face::BIF::create());
@@ -65,3 +67,5 @@ TEST(CV_Face_BIF, can_compute) {
     EXPECT_NO_THROW(bif->compute(image, fea));
     EXPECT_EQ(cv::Size(1, 13188), fea.size());
 }
+
+}} // namespace

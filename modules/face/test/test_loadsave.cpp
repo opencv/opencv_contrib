@@ -38,6 +38,8 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "test_precomp.hpp"
 
+namespace opencv_test { namespace {
+
 // regression for #1267
 // let's make sure, that both Algorithm::save(String) and
 // FaceRecognizer::write(String) lead to the same result
@@ -78,3 +80,5 @@ TEST(CV_Face_SAVELOAD, use_write) {
     EXPECT_EQ(model2->empty(), false);
     EXPECT_EQ(p1, model2->predict(images[2]));
 }
+
+}} // namespace

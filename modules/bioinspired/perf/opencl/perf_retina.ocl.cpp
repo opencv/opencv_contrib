@@ -1,12 +1,10 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 #include "../perf_precomp.hpp"
 #include "opencv2/ts/ocl_perf.hpp"
 
-using namespace std::tr1;
-using namespace cv;
-using namespace perf;
-
-namespace cvtest {
-namespace ocl {
+namespace opencv_test { namespace {
 
 ///////////////////////// Retina ////////////////////////
 
@@ -44,4 +42,4 @@ OCL_PERF_TEST_P(RetinaFixture, Retina,
     SANITY_CHECK_NOTHING();
 }
 
-} } // namespace cvtest::ocl
+}} // namespace

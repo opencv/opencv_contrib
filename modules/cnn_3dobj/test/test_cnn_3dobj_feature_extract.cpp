@@ -1,11 +1,11 @@
-/*
- *  Created on: Aug 14, 2015
- *      Author: Yida Wang
- */
-
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+//
+// Author: Yida Wang
 #include "test_precomp.hpp"
 
-using namespace cv;
+namespace opencv_test { namespace {
 using namespace cv::cnn_3dobj;
 
 class CV_CNN_Feature_Test : public cvtest::BaseTest
@@ -62,3 +62,5 @@ void CV_CNN_Feature_Test::run(int)
 }
 
 TEST(CNN_FEATURE, accuracy) { CV_CNN_Feature_Test test; test.safe_run(); }
+
+}} // namespace

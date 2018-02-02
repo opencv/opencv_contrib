@@ -42,22 +42,8 @@
 //M*/
 
 #include "test_precomp.hpp"
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/core.hpp>
 
-#include "opencv2/reg/mapaffine.hpp"
-#include "opencv2/reg/mapshift.hpp"
-#include "opencv2/reg/mapprojec.hpp"
-#include "opencv2/reg/mappergradshift.hpp"
-#include "opencv2/reg/mappergradeuclid.hpp"
-#include "opencv2/reg/mappergradsimilar.hpp"
-#include "opencv2/reg/mappergradaffine.hpp"
-#include "opencv2/reg/mappergradproj.hpp"
-#include "opencv2/reg/mapperpyramid.hpp"
-
-using namespace std;
-using namespace cv;
-using namespace cv::reg;
+namespace opencv_test { namespace {
 
 #define REG_DEBUG_OUTPUT 0
 
@@ -100,7 +86,7 @@ void RegTest::testShift()
     // Check accuracy
     Ptr<Map> mapInv(mapShift->inverseMap());
     mapTest.compose(mapInv);
-    double shNorm = norm(mapTest.getShift());
+    double shNorm = cv::norm(mapTest.getShift());
     EXPECT_LE(shNorm, 0.1);
 }
 
@@ -134,9 +120,9 @@ void RegTest::testEuclidean()
     // Check accuracy
     Ptr<Map> mapInv(mapAff->inverseMap());
     mapTest.compose(mapInv);
-    double shNorm = norm(mapTest.getShift());
+    double shNorm = cv::norm(mapTest.getShift());
     EXPECT_LE(shNorm, 0.1);
-    double linTrNorm = norm(mapTest.getLinTr());
+    double linTrNorm = cv::norm(mapTest.getLinTr());
     EXPECT_LE(linTrNorm, sqrt(2.) + 0.01);
     EXPECT_GE(linTrNorm, sqrt(2.) - 0.01);
 }
@@ -173,9 +159,9 @@ void RegTest::testSimilarity()
     // Check accuracy
     Ptr<Map> mapInv(mapAff->inverseMap());
     mapTest.compose(mapInv);
-    double shNorm = norm(mapTest.getShift());
+    double shNorm = cv::norm(mapTest.getShift());
     EXPECT_LE(shNorm, 0.1);
-    double linTrNorm = norm(mapTest.getLinTr());
+    double linTrNorm = cv::norm(mapTest.getLinTr());
     EXPECT_LE(linTrNorm, sqrt(2.) + 0.01);
     EXPECT_GE(linTrNorm, sqrt(2.) - 0.01);
 }
@@ -208,9 +194,9 @@ void RegTest::testAffine()
     // Check accuracy
     Ptr<Map> mapInv(mapAff->inverseMap());
     mapTest.compose(mapInv);
-    double shNorm = norm(mapTest.getShift());
+    double shNorm = cv::norm(mapTest.getShift());
     EXPECT_LE(shNorm, 0.1);
-    double linTrNorm = norm(mapTest.getLinTr());
+    double linTrNorm = cv::norm(mapTest.getLinTr());
     EXPECT_LE(linTrNorm, sqrt(2.) + 0.01);
     EXPECT_GE(linTrNorm, sqrt(2.) - 0.01);
 }
@@ -242,7 +228,7 @@ void RegTest::testProjective()
     // Check accuracy
     Ptr<Map> mapInv(mapProj->inverseMap());
     mapTest.compose(mapInv);
-    double projNorm = norm(mapTest.getProjTr());
+    double projNorm = cv::norm(mapTest.getProjTr());
     EXPECT_LE(projNorm, sqrt(3.) + 0.01);
     EXPECT_GE(projNorm, sqrt(3.) - 0.01);
 }
@@ -298,3 +284,5 @@ TEST_F(RegTest, projective_dt64fc1)
     loadImage(CV_64FC1);
     testProjective();
 }
+
+}} // namespace

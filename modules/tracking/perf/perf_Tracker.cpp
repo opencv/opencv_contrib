@@ -40,13 +40,8 @@
  //M*/
 
 #include "perf_precomp.hpp"
-#include <fstream>
 
-using namespace std;
-using namespace cv;
-using namespace perf;
-using std::tr1::make_tuple;
-using std::tr1::get;
+namespace opencv_test { namespace {
 
 //write sanity: ./bin/opencv_perf_tracking --perf_write_sanity=true --perf_min_samples=1
 //verify sanity: ./bin/opencv_perf_tracking --perf_min_samples=1
@@ -58,7 +53,7 @@ using std::tr1::get;
 const string TRACKING_DIR = "cv/tracking";
 const string FOLDER_IMG = "data";
 
-typedef perf::TestBaseWithParam<tr1::tuple<string, int> > tracking;
+typedef perf::TestBaseWithParam<tuple<string, int> > tracking;
 
 std::vector<std::string> splitString( std::string s, std::string delimiter )
 {
@@ -86,7 +81,7 @@ void checkData( const string& datasetMeta, int& startFrame, string& prefix, stri
 
 bool getGroundTruth( const string& gtFile, vector<Rect>& gtBBs )
 {
-  ifstream gt;
+  std::ifstream gt;
   //open the ground truth
   gt.open( gtFile.c_str() );
   if( !gt.is_open() )
@@ -413,3 +408,5 @@ PERF_TEST_P(tracking, GOTURN, testing::Combine(TESTSET_NAMES, SEGMENTS))
   SANITY_CHECK(bbs_mat, 15, ERROR_RELATIVE);
 
 }
+
+}} // namespace

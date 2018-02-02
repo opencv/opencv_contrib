@@ -40,10 +40,8 @@
 //M*/
 
 #include "test_precomp.hpp"
-#include "opencv2/highgui.hpp"
 
-using namespace std;
-using namespace cv;
+namespace opencv_test { namespace {
 
 const string FEATURES2D_DIR = "features2d";
 const string IMAGE_FILENAME = "tsukuba.png";
@@ -142,3 +140,5 @@ TEST(Features2d_Detector_Keypoints_MSDDetector, validation)
     CV_FeatureDetectorKeypointsTest test(xfeatures2d::MSDDetector::create());
     test.safe_run();
 }
+
+}} // namespace

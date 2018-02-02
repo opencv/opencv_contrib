@@ -44,7 +44,7 @@
 
 #ifdef HAVE_CUDA
 
-using namespace cvtest;
+namespace opencv_test { namespace {
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
 // SURF
@@ -180,4 +180,5 @@ INSTANTIATE_TEST_CASE_P(CUDA_Features2D, SURF, testing::Combine(
 
 #endif // HAVE_OPENCV_CUDAARITHM
 
+}} // namespace
 #endif // HAVE_CUDA

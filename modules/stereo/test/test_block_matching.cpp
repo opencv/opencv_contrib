@@ -40,11 +40,8 @@
 //M*/
 
 #include "test_precomp.hpp"
-#include <limits.h>
 
-using namespace cv;
-using namespace cv::stereo;
-using namespace std;
+namespace opencv_test { namespace {
 
 class CV_BlockMatchingTest : public cvtest::BaseTest
 {
@@ -234,3 +231,6 @@ void CV_SGBlockMatchingTest::run(int )
 }
 TEST(block_matching_simple_test, accuracy) { CV_BlockMatchingTest test; test.safe_run(); }
 TEST(SG_block_matching_simple_test, accuracy) { CV_SGBlockMatchingTest test; test.safe_run(); }
+
+
+}} // namespace
