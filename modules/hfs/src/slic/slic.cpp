@@ -1,5 +1,5 @@
-#include "slic.hpp"
 #include "../precomp.hpp"
+#include "slic.hpp"
 using namespace std;
 
 #define vec2db vector<vector<bool> >
@@ -192,6 +192,7 @@ void cSLIC::update_cluster_center() {
 }
 
 void cSLIC::enforce_connect(int padding, int diff_threshold) {
+    vector<int> idx_img_cpy = idx_img;
     for (int r = 0; r < lab.rows; ++r) {
         for (int c = 0; c < lab.cols; ++c) {
             if (r < padding || r >= lab.rows - padding || c < padding || c >= lab.cols - padding) {
@@ -203,9 +204,9 @@ void cSLIC::enforce_connect(int padding, int diff_threshold) {
             for (int i = -padding; i <= padding; ++i) {
                 for (int j = -padding; j <= padding; ++j) {
                     int idx_t = (r + i)*lab.cols + (c + j);
-                    if (idx_img[idx] != idx_img[idx_t]) {
+                    if (idx_img_cpy[idx] != idx_img_cpy[idx_t]) {
                         ++num_diff;
-                        diff_label = idx_img[idx_t];
+                        diff_label = idx_img_cpy[idx_t];
                     }
                 }
             }

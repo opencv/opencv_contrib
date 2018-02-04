@@ -2,7 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
-#ifdef _HFS_CUDA_ON_
+// #ifdef _HFS_CUDA_ON_
 
 #include "../precomp.hpp"
 #include "../slic/slic.hpp"
@@ -322,5 +322,4 @@ __global__ void enforceConnectivityDevice1_2(const int* in_idx_img,
 
 }}}}
 
-#endif
-
+// #endif

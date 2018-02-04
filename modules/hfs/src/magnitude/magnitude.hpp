@@ -4,7 +4,6 @@
 
 #ifndef _OPENCV_MAGNITUDE_HPP_
 #define _OPENCV_MAGNITUDE_HPP_
-#include "../precomp.hpp"
 #include "../or_utils/or_types.hpp"
 #include "opencv2/core.hpp"
 

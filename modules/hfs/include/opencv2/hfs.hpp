@@ -40,11 +40,10 @@ Hierarchical Feature Selection for Efficient Image Segmentation, ECCV 2016
 
 */
 
-class CV_EXPORTS_W HfsSegment : public Algorithm {
-public:
-
 //! @addtogroup hfs
 //! @{
+class CV_EXPORTS_W HfsSegment : public Algorithm {
+public:
 
 /** @brief: set and get the parameter segEgbThresholdI.
 * This parameter is used in the second stage mentioned above.

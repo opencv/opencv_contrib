@@ -2,9 +2,9 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+#include "../precomp.hpp"
 #ifdef _HFS_CUDA_ON_
 
-#include "../precomp.hpp"
 #include "slic.hpp"
 
 namespace cv { namespace hfs { namespace slic { namespace engines {

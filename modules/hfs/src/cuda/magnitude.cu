@@ -3,7 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 
 
-#if defined _HFS_CUDA_ON_
+// #if defined _HFS_CUDA_ON_
 
 #include "../precomp.hpp"
 #include "../magnitude/magnitude.hpp"
@@ -233,4 +233,4 @@ void Magnitude::processImgGpu(const Mat& bgr3u, Mat& mag1u)
 
 }}
 
-#endif
+// #endif
