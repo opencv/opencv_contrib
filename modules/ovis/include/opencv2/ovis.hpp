@@ -23,7 +23,9 @@ enum SceneSettings
     /// allow the user to control the camera.
     SCENE_INTERACTIVE = 2,
     /// draw coordinate system crosses for debugging
-    SCENE_SHOW_CS_CROSS = 4
+    SCENE_SHOW_CS_CROSS = 4,
+    /// @ref WindowScene::getScreenshot returns images as CV_32FC4 instead of CV_8UC3
+    SCENE_RENDER_FLOAT = 8,
 };
 
 enum MaterialProperty

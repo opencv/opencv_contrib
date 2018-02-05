@@ -233,6 +233,8 @@ class WindowSceneImpl : public WindowScene
     Ptr<OgreBites::CameraMan> camman;
     Ptr<Rectangle2D> bgplane;
 
+    Ogre::RenderTarget* frameSrc;
+
 public:
     WindowSceneImpl(Ptr<Application> app, const String& _title, const Size& sz, int flags)
         : title(_title), root(app->getRoot())
@@ -289,6 +291,18 @@ public:
         }
 
         rWin->addViewport(cam);
+        frameSrc = rWin;
+
+        if (flags & SCENE_RENDER_FLOAT)
+        {
+            // also render into an offscreen texture
+            // currently this draws everything twice, but we spare the float->byte conversion for display
+            TexturePtr tex = TextureManager::getSingleton().createManual(
+                title + "_rt", RESOURCEGROUP_NAME, TEX_TYPE_2D, sz.width, sz.height, 0, PF_FLOAT32_RGBA,
+                TU_RENDERTARGET);
+            frameSrc = tex->getBuffer()->getRenderTarget();
+            frameSrc->addViewport(cam);
+        }
     }
 
     void setBackground(InputArray image)
@@ -421,11 +435,17 @@ public:
 
     void getScreenshot(OutputArray frame)
     {
-        frame.create(rWin->getHeight(), rWin->getWidth(), CV_8UC3);
+        PixelFormat src_type = frameSrc->suggestPixelFormat();
+        int dst_type = src_type == PF_BYTE_RGB ? CV_8UC3 : CV_32FC4;
+
+        frame.create(frameSrc->getHeight(), frameSrc->getWidth(), dst_type);
 
         Mat out = frame.getMat();
-        PixelBox pb(rWin->getWidth(), rWin->getHeight(), 1, PF_BYTE_BGR, out.ptr());
-        rWin->copyContentsToMemory(pb, pb);
+        PixelBox pb(frameSrc->getWidth(), frameSrc->getHeight(), 1, src_type, out.ptr());
+        frameSrc->copyContentsToMemory(pb, pb);
+
+        // convert to OpenCV channel order
+        cvtColor(out, out, dst_type == CV_8UC3 ? COLOR_RGB2BGR : COLOR_RGBA2BGRA);
     }
 
     void fixCameraYawAxis(bool useFixed, InputArray _up)
