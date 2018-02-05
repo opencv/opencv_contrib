@@ -63,6 +63,15 @@ else()
   message(STATUS "CERES support is disabled. Ceres Solver for reconstruction API is required.")
 endif()
 
+### COMPILE WITH C++11 IF CERES WAS COMPILED WITH C++11
+
+if(Ceres_FOUND)
+  list (FIND CERES_COMPILED_COMPONENTS "C++11" _index)
+  if (${_index} GREATER -1)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+  endif()
+endif()
+
 ### DEFINE OPENCV SFM MODULE DEPENDENCIES ###
 
 ### CREATE OPENCV SFM MODULE ###
