@@ -23,6 +23,6 @@ iwin.createEntity("figure", "Sinbad.mesh", (0, -5, 0))
 iwin.createLightEntity("sun", (0, 0, -100))
 iwin.setCameraIntrinsics(K, imsize)
 
-while cv.ovis.renderOneFrame():
+while cv.ovis.waitKey(1) != 27:
     R, t = iwin.getCameraPose()
     owin.setEntityPose("cam", t, R)

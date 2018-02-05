@@ -136,17 +136,18 @@ static SceneNode* _getSceneNode(SceneManager* sceneMgr, const String& name)
     return mo->getParentSceneNode();
 }
 
-struct Application : public OgreBites::ApplicationContext
+struct Application : public OgreBites::ApplicationContext, public OgreBites::InputListener
 {
     Ptr<LogManager> logMgr;
     Ogre::SceneManager* sceneMgr;
     Ogre::String title;
     uint32_t w;
     uint32_t h;
+    int key_pressed;
 
     Application(const Ogre::String& _title, const Size& sz)
         : OgreBites::ApplicationContext("ovis", false), sceneMgr(NULL), title(_title), w(sz.width),
-          h(sz.height)
+          h(sz.height), key_pressed(-1)
     {
         logMgr.reset(new LogManager());
         logMgr->createLog("ovis.log", true, true, true);
@@ -156,6 +157,12 @@ struct Application : public OgreBites::ApplicationContext
     void setupInput(bool /*grab*/)
     {
         // empty impl to show cursor
+    }
+
+    bool keyPressed(const OgreBites::KeyboardEvent& evt)
+    {
+        key_pressed = evt.keysym.sym;
+        return true;
     }
 
     bool oneTimeConfig()
@@ -179,7 +186,11 @@ struct Application : public OgreBites::ApplicationContext
         miscParams["FSAA"] = "4";
         miscParams["vsync"] = "true";
 
-        return OgreBites::ApplicationContext::createWindow(_name, _w, _h, miscParams);
+        OgreBites::NativeWindowPair ret =
+            OgreBites::ApplicationContext::createWindow(_name, _w, _h, miscParams);
+        addInputListener(ret.native, this); // handle input for all windows
+
+        return ret;
     }
 
     void locateResources()
@@ -212,7 +223,7 @@ struct Application : public OgreBites::ApplicationContext
     }
 };
 
-class WindowSceneImpl : public WindowScene, public OgreBites::InputListener
+class WindowSceneImpl : public WindowScene
 {
     String title;
     Root* root;
@@ -266,8 +277,6 @@ public:
         {
             app->sceneMgr = sceneMgr;
             rWin = app->getRenderWindow();
-            app->addInputListener(this);
-
             if (camman)
                 app->addInputListener(camman.get());
         }
@@ -277,8 +286,6 @@ public:
             rWin = nwin.render;
             if (camman)
                 app->addInputListener(nwin.native, camman.get());
-
-            app->addInputListener(nwin.native, this);
         }
 
         rWin->addViewport(cam);
@@ -298,6 +305,12 @@ public:
 
         Pass* rpass = bgplane->getMaterial()->getBestTechnique()->getPasses()[0];
         rpass->getTextureUnitStates()[0]->setTextureName(name);
+    }
+
+    void setBackground(const Scalar& color)
+    {
+        Mat img(1, 1, CV_8UC3, color);
+        setBackground(img);
     }
 
     void createEntity(const String& name, const String& meshname, InputArray tvec, InputArray rot)
@@ -415,14 +428,6 @@ public:
         rWin->copyContentsToMemory(pb, pb);
     }
 
-    bool keyPressed(const OgreBites::KeyboardEvent& evt)
-    {
-        if (evt.keysym.sym == SDLK_ESCAPE)
-            root->queueEndRendering();
-
-        return true;
-    }
-
     void fixCameraYawAxis(bool useFixed, InputArray _up)
     {
         Vector3 up = Vector3::UNIT_Y;
@@ -521,12 +526,18 @@ Ptr<WindowScene> createWindow(const String& title, const Size& size, int flags)
     return makePtr<WindowSceneImpl>(_app, title, size, flags);
 }
 
-CV_EXPORTS_W bool renderOneFrame()
+CV_EXPORTS_W int waitKey(int delay)
 {
     CV_Assert(_app);
 
+    _app->key_pressed = -1;
     _app->getRoot()->renderOneFrame();
-    return not _app->getRoot()->endRenderingQueued();
+
+    // wait for keypress, using vsync instead of sleep
+    while(!delay && _app->key_pressed == -1)
+        _app->getRoot()->renderOneFrame();
+
+    return (_app->key_pressed != -1) ? (_app->key_pressed & 0xff) : -1;
 }
 
 void setMaterialProperty(const String& name, int prop, const Scalar& val)
