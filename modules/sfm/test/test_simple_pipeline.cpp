@@ -39,10 +39,7 @@
 
 #include <opencv2/sfm/simple_pipeline.hpp>
 
-using namespace cv;
-using namespace cv::sfm;
-using namespace cvtest;
-using namespace std;
+namespace opencv_test { namespace {
 
 const string SFM_DIR = "sfm";
 const string TRACK_FILENAME = "backyard_tracks.txt";
@@ -86,4 +83,5 @@ TEST(Sfm_simple_pipeline, backyard)
                               // UPDATE:  1.38894
 }
 
+}} // namespace
 #endif /* CERES_FOUND */

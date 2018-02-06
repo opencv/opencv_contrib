@@ -1,16 +1,11 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 
-#include <fstream>
-#include <cstdlib>
+namespace opencv_test {
 
-using namespace cv;
-using namespace cv::sfm;
-using namespace std;
-
-namespace cvtest
-{
-
-void generateTwoViewRandomScene( cvtest::TwoViewDataSet &data )
+void generateTwoViewRandomScene( TwoViewDataSet &data )
 {
     vector<Mat_<double> > points2d;
     vector<cv::Matx33d> Rs;
@@ -83,7 +78,7 @@ expectFundamentalProperties( const cv::Matx33d &F,
 void
 parser_2D_tracks(const string &_filename, std::vector<Mat> &points2d )
 {
-  ifstream myfile(_filename.c_str());
+  std::ifstream myfile(_filename.c_str());
 
   if (!myfile.is_open())
       CV_Error(cv::Error::StsError, string("Unable to read file: ") + _filename + "\n");
@@ -96,7 +91,7 @@ parser_2D_tracks(const string &_filename, std::vector<Mat> &points2d )
 
     while ( getline(myfile, line_str) )
     {
-      istringstream line(line_str);
+      std::istringstream line(line_str);
 
       if ( track > n_tracks )
       {
@@ -126,4 +121,4 @@ parser_2D_tracks(const string &_filename, std::vector<Mat> &points2d )
 
 }
 
-} // namespace cvtest
+} // namespace

@@ -4,10 +4,7 @@
 
 #include "test_precomp.hpp"
 
-using namespace cv;
-using namespace cv::ximgproc;
-
-namespace {
+namespace opencv_test { namespace {
 
 static int createTestImage(Mat& src)
 {
@@ -51,4 +48,5 @@ TEST(ximpgroc_Thinning, simple_GUOHALL)
 #endif
 }
 
-}
+
+}} // namespace

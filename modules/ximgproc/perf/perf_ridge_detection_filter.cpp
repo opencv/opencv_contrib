@@ -3,12 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 #include "perf_precomp.hpp"
 
-namespace cvtest {
-
-using namespace perf;
-using namespace testing;
-using namespace cv;
-using namespace cv::ximgproc;
+namespace opencv_test { namespace {
 
 typedef tuple<MatDepth, int, Size> RDFParams;
 typedef TestBaseWithParam<RDFParams> RidgeDetectionFilterPerfTest;
@@ -36,4 +31,4 @@ PERF_TEST_P(RidgeDetectionFilterPerfTest, perf, Combine(
     SANITY_CHECK_NOTHING();
 }
 
-} // namespace
+}} // namespace

@@ -1,15 +1,9 @@
 // This file is part of OpenCV project.
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
-
 #include "test_precomp.hpp"
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/face.hpp"
-#include "opencv2/objdetect.hpp"
-#include <vector>
-#include <string>
-using namespace std;
-using namespace cv;
+
+namespace opencv_test { namespace {
 using namespace cv::face;
 
 static bool myDetector( InputArray image, OutputArray ROIs, CascadeClassifier* face_cascade)
@@ -95,3 +89,5 @@ TEST(CV_Face_FacemarkKazemi, can_detect_landmarks) {
     EXPECT_NO_THROW(facemark->fit(img,faces,shapes));
     shapes.clear();
 }
+
+}} // namespace

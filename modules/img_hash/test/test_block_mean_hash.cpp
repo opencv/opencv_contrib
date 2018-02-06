@@ -6,7 +6,7 @@
 
 #include <bitset>
 
-using namespace cv;
+namespace opencv_test { namespace {
 using namespace cv::img_hash;
 
 /**
@@ -210,3 +210,5 @@ void CV_BlockMeanHashTest::run(int)
 }
 
 TEST(block_mean_hash_test, accuracy) { CV_BlockMeanHashTest test; test.safe_run(); }
+
+}} // namespace

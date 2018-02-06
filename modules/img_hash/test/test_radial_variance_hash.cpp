@@ -4,7 +4,7 @@
 
 #include "test_precomp.hpp"
 
-using namespace cv;
+namespace opencv_test { namespace {
 using namespace cv::img_hash;
 
 
@@ -24,7 +24,7 @@ protected:
     //the function "ph_feature_vector" to avoid NaN value
     void testComputeHash();
     void testFeatures();
-    void testHash();
+    //void testHash();  // TODO unused
     void testPixPerLine();
     void testProjection();
 
@@ -76,6 +76,7 @@ void CV_RadialVarianceHashTest::testFeatures()
     }
 }
 
+#if 0 // unused
 void CV_RadialVarianceHashTest::testHash()
 {
     cv::Mat const hash = rvh->getHash();
@@ -95,6 +96,7 @@ void CV_RadialVarianceHashTest::testHash()
         EXPECT_EQ(hash.at<uchar>(0, i), expectResult[i]);
     }
 }
+#endif
 
 void CV_RadialVarianceHashTest::testPixPerLine()
 {
@@ -148,3 +150,5 @@ void CV_RadialVarianceHashTest::run(int)
 }
 
 TEST(radial_variance_hash_test, accuracy) { CV_RadialVarianceHashTest test; test.safe_run(); }
+
+}} // namespace

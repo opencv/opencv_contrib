@@ -1,38 +1,6 @@
-/*
- *  By downloading, copying, installing or using the software you agree to this license.
- *  If you do not agree to this license, do not download, install,
- *  copy or use the software.
- *  
- *  
- *  License Agreement
- *  For Open Source Computer Vision Library
- *  (3 - clause BSD License)
- *  
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met :
- *  
- *  * Redistributions of source code must retain the above copyright notice,
- *  this list of conditions and the following disclaimer.
- *  
- *  * Redistributions in binary form must reproduce the above copyright notice,
- *  this list of conditions and the following disclaimer in the documentation
- *  and / or other materials provided with the distribution.
- *  
- *  * Neither the names of the copyright holders nor the names of the contributors
- *  may be used to endorse or promote products derived from this software
- *  without specific prior written permission.
- *  
- *  This software is provided by the copyright holders and contributors "as is" and
- *  any express or implied warranties, including, but not limited to, the implied
- *  warranties of merchantability and fitness for a particular purpose are disclaimed.
- *  In no event shall copyright holders or contributors be liable for any direct,
- *  indirect, incidental, special, exemplary, or consequential damages
- *  (including, but not limited to, procurement of substitute goods or services;
- *  loss of use, data, or profits; or business interruption) however caused
- *  and on any theory of liability, whether in contract, strict liability,
- *  or tort(including negligence or otherwise) arising in any way out of
- *  the use of this software, even if advised of the possibility of such damage.
- */
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 
 /*
  * The MIT License(MIT)
@@ -59,14 +27,10 @@
 
 #include "test_precomp.hpp"
 #include <opencv2/core/private.hpp>
-#include <cmath>
 
-namespace
-{
+namespace opencv_test { namespace {
 
-    using std::numeric_limits;
-    using namespace cv;
-    using namespace cv::ximgproc;
+using namespace cv::ximgproc;
 
     struct Buf
     {
@@ -478,7 +442,7 @@ namespace
             times(buf_.diff, buf_.alpha, buf_.diff);
 
             ensureSizeIsEnough(srcSize, buf_.dst);
-            add(src_f_, buf_.diff, buf_.dst);
+            cv::add(src_f_, buf_.diff, buf_.dst);  // TODO cvtest
 
             buf_.dst.convertTo(_dst, CV_8U, 255.0);
         }
@@ -800,8 +764,8 @@ namespace
             }
         }
 
-        double n = norm(dst);
-        divide(dst, n, dst);
+        double n = cvtest::norm(dst, NORM_L2);
+        cv::divide(dst, n, dst);  // TODO cvtest
     }
 
     void calcEta(const Mat_<Point3f>& src_joint_f, const Mat_<float>& theta, const Mat_<uchar>& cluster, Mat_<Point3f>& dst, float sigma_s, float df, Buf& buf)
@@ -860,7 +824,7 @@ namespace
         // Project pixel colors onto the manifold -- Eq. (3), Eq. (5)
 
         ensureSizeIsEnough(buf_.X.size(), buf_.X_squared);
-        multiply(buf_.X, buf_.X, buf_.X_squared);
+        cv::multiply(buf_.X, buf_.X, buf_.X_squared);  // TODO cvtest
 
         channelsSum(buf_.X_squared, buf_.pixel_dist_to_manifold_squared);
 
@@ -897,12 +861,12 @@ namespace
         ensureSizeIsEnough(src_f_.size(), buf_.w_ki_Psi_blur_resized);
         resize(buf_.w_ki_Psi_blur, buf_.w_ki_Psi_blur_resized, src_f_.size());
         times(buf_.w_ki_Psi_blur_resized, w_ki, buf_.w_ki_Psi_blur_resized);
-        add(sum_w_ki_Psi_blur_, buf_.w_ki_Psi_blur_resized, sum_w_ki_Psi_blur_);
+        cv::add(sum_w_ki_Psi_blur_, buf_.w_ki_Psi_blur_resized, sum_w_ki_Psi_blur_);  // TODO cvtest
 
         ensureSizeIsEnough(src_f_.size(), buf_.w_ki_Psi_blur_0_resized);
         resize(buf_.w_ki_Psi_blur_0, buf_.w_ki_Psi_blur_0_resized, src_f_.size());
         times(buf_.w_ki_Psi_blur_0_resized, w_ki, buf_.w_ki_Psi_blur_0_resized);
-        add(sum_w_ki_Psi_blur_0_, buf_.w_ki_Psi_blur_0_resized, sum_w_ki_Psi_blur_0_);
+        cv::add(sum_w_ki_Psi_blur_0_, buf_.w_ki_Psi_blur_0_resized, sum_w_ki_Psi_blur_0_);  // TODO cvtest
 
         // Compute two new manifolds eta_minus and eta_plus
 
@@ -933,13 +897,13 @@ namespace
 
             Mat_<uchar>& cluster_minus = buf_.cluster_minus[current_tree_level];
             ensureSizeIsEnough(dot.size(), cluster_minus);
-            compare(dot, 0, cluster_minus, CMP_LT);
+            cvtest::compare(dot, 0, cluster_minus, CMP_LT);
             bitwise_and(cluster_minus, cluster_k, cluster_minus);
 
             Mat_<uchar>& cluster_plus = buf_.cluster_plus[current_tree_level];
             ensureSizeIsEnough(dot.size(), cluster_plus);
             //compare(dot, 0, cluster_plus, CMP_GT);
-            compare(dot, 0, cluster_plus, CMP_GE);
+            cvtest::compare(dot, 0, cluster_plus, CMP_GE);
             bitwise_and(cluster_plus, cluster_k, cluster_plus);
 
             // Algorithm 1, Step 4: Compute new manifolds by weighted low-pass filtering -- Eq. (7-8)
@@ -960,12 +924,8 @@ namespace
             buildManifoldsAndPerformFiltering(eta_plus, cluster_plus, current_tree_level + 1);
         }
     }
-}
 
-namespace cvtest
-{
-
-using namespace cv::ximgproc;
+} // namespace
 
 Ptr<AdaptiveManifoldFilter> createAMFilterRefImpl(double sigma_s, double sigma_r, bool adjust_outliers)
 {
@@ -978,4 +938,4 @@ Ptr<AdaptiveManifoldFilter> createAMFilterRefImpl(double sigma_s, double sigma_r
     return amf;
 }
 
-}
+} // namespace

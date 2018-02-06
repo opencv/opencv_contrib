@@ -41,10 +41,7 @@
 
 #include "test_precomp.hpp"
 
-#include <string>
-
-using namespace std;
-using namespace cv;
+namespace opencv_test { namespace {
 
 TEST(fuzzy_image, inpainting)
 {
@@ -112,3 +109,5 @@ TEST(fuzzy_image, kernel)
 
     EXPECT_DOUBLE_EQ(diff, 0);
 }
+
+}} // namespace

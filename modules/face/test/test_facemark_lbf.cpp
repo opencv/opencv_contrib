@@ -42,13 +42,8 @@ Mentor: Delia Passalacqua
 */
 
 #include "test_precomp.hpp"
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/face.hpp"
-#include <vector>
-#include <string>
-using namespace std;
-using namespace cv;
-using namespace cv::face;
+
+namespace opencv_test { namespace {
 
 CascadeClassifier cascade_detector;
 static bool myCustomDetector( InputArray image, OutputArray ROIs, void * config = 0 ){
@@ -141,3 +136,5 @@ TEST(CV_Face_FacemarkLBF, test_workflow) {
     EXPECT_TRUE(facemark->fit(image, rects, facial_points));
     EXPECT_TRUE(facial_points[0].size()>0);
 }
+
+}} // namespace

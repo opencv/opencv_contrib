@@ -4,9 +4,7 @@
 
 #include "test_precomp.hpp"
 
-using namespace std;
-using namespace cv;
-using namespace cv::xfeatures2d;
+namespace opencv_test { namespace {
 
 class CV_GMSMatcherTest : public cvtest::BaseTest
 {
@@ -99,7 +97,7 @@ void CV_GMSMatcherTest::run( int )
                 Point2f ptTrans( (float) (matTrans.at<double>(0,0)/matTrans.at<double>(2,0)),
                                  (float) (matTrans.at<double>(1,0)/matTrans.at<double>(2,0)));
 
-                if (norm(ptTrans-ptCur) < correctMatchDistThreshold)
+                if (cv::norm(ptTrans-ptCur) < correctMatchDistThreshold)
                     nbCorrectMatches++;
             }
 
@@ -117,3 +115,5 @@ void CV_GMSMatcherTest::run( int )
 }
 
 TEST(XFeatures2d_GMSMatcher, gms_matcher_regression) { CV_GMSMatcherTest test; test.safe_run(); }
+
+}} // namespace

@@ -40,15 +40,8 @@
 //M*/
 
 #include "test_precomp.hpp"
-#include <fstream>
 
-using namespace std;
-using namespace std::tr1;
-using namespace cv;
-using namespace cvtest;
-using namespace perf;
-using namespace testing;
-using namespace optflow;
+namespace opencv_test { namespace {
 
 typedef tuple<Size> OFParams;
 typedef TestWithParam<OFParams> DenseOpticalFlow_DIS;
@@ -157,3 +150,5 @@ TEST_P(DenseOpticalFlow_VariationalRefinement, MultithreadReproducibility)
 }
 
 INSTANTIATE_TEST_CASE_P(FullSet, DenseOpticalFlow_VariationalRefinement, Values(szODD, szQVGA));
+
+}} // namespace

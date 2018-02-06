@@ -1,14 +1,11 @@
-/*
- * BackgroundSubtractorGBH_test.cpp
- *
- *  Created on: Jun 14, 2012
- *      Author: andrewgodbehere
- */
-
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+//
+// Author: andrewgodbehere
 #include "test_precomp.hpp"
 
-using namespace cv;
-using namespace cv::bgsegm;
+namespace opencv_test { namespace {
 
 class CV_BackgroundSubtractorTest : public cvtest::BaseTest
 {
@@ -136,3 +133,5 @@ void CV_BackgroundSubtractorTest::run(int)
 }
 
 TEST(VIDEO_BGSUBGMG, accuracy) { CV_BackgroundSubtractorTest test; test.safe_run(); }
+
+}} // namespace

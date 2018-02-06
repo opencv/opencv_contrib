@@ -37,65 +37,25 @@
 #include <opencv2/rgbd.hpp>
 #include <opencv2/calib3d.hpp>
 
-namespace cv
-{
-namespace rgbd
-{
+namespace opencv_test { namespace {
 
-class TickMeter
-{
-public:
-    TickMeter();
-    void start();
-    void stop();
-
-    int64 getTimeTicks() const;
-    double getTimeMicro() const;
-    double getTimeMilli() const;
-    double getTimeSec()   const;
-    int64 getCounter() const;
-
-    void reset();
-private:
-    int64 counter;
-    int64 sumTime;
-    int64 startTime;
-};
-
-TickMeter::TickMeter() { reset(); }
-int64 TickMeter::getTimeTicks() const { return sumTime; }
-double TickMeter::getTimeSec()   const { return (double)getTimeTicks()/getTickFrequency(); }
-double TickMeter::getTimeMilli() const { return getTimeSec()*1e3; }
-double TickMeter::getTimeMicro() const { return getTimeMilli()*1e3; }
-int64 TickMeter::getCounter() const { return counter; }
-void  TickMeter::reset() {startTime = 0; sumTime = 0; counter = 0; }
-
-void TickMeter::start(){ startTime = getTickCount(); }
-void TickMeter::stop()
-{
-    int64 time = getTickCount();
-    if ( startTime == 0 )
-        return;
-
-    ++counter;
-
-    sumTime += ( time - startTime );
-    startTime = 0;
-}
-
+#if 0
 Point3f
-rayPlaneIntersection(Point2f uv, const Mat& centroid, const Mat& normal, const Mat_<float>& Kinv);
+rayPlaneIntersection(Point2f uv, const Mat& centroid, const Mat& normal, const Mat_<float>& Kinv)
+{
+  Matx33d dKinv(Kinv);
+  Vec3d dNormal(normal);
+  return rayPlaneIntersection(Vec3d(uv.x, uv.y, 1), centroid.dot(normal), dNormal, dKinv);
+}
+#endif
 
-Vec3f
-rayPlaneIntersection(const Vec3d& uv1, double centroid_dot_normal, const Vec3d& normal,
-                     const Matx33d& Kinv);
 Vec3f
 rayPlaneIntersection(const Vec3d& uv1, double centroid_dot_normal, const Vec3d& normal, const Matx33d& Kinv)
 {
 
   Matx31d L = Kinv * uv1; //a ray passing through camera optical center
   //and uv.
-  L = L * (1.0 / norm(L));
+  L = L * (1.0 / cv::norm(L));
   double LdotNormal = L.dot(normal);
   double d;
   if (std::fabs(LdotNormal) > 1e-9)
@@ -111,18 +71,9 @@ rayPlaneIntersection(const Vec3d& uv1, double centroid_dot_normal, const Vec3d& 
   Vec3f xyz((float)(d * L(0)), (float)(d * L(1)), (float)(d * L(2)));
   return xyz;
 }
-
-Point3f
-rayPlaneIntersection(Point2f uv, const Mat& centroid, const Mat& normal, const Mat_<float>& Kinv)
-{
-  Matx33d dKinv(Kinv);
-  Vec3d dNormal(normal);
-  return rayPlaneIntersection(Vec3d(uv.x, uv.y, 1), centroid.dot(normal), dNormal, dKinv);
-}
-
 const int W = 640;
 const int H = 480;
-int window_size = 5;
+//int window_size = 5;
 float focal_length = 525;
 float cx = W / 2.f + 0.5f;
 float cy = H / 2.f + 0.5f;
@@ -170,7 +121,7 @@ struct Plane
     n[0] = rng.uniform(-0.5, 0.5);
     n[1] = rng.uniform(-0.5, 0.5);
     n[2] = -0.3; //rng.uniform(-1.f, 0.5f);
-    n = n / norm(n);
+    n = n / cv::norm(n);
     set_d((float)rng.uniform(-2.0, 0.6));
   }
 
@@ -188,9 +139,6 @@ struct Plane
   }
 };
 
-void
-gen_points_3d(std::vector<Plane>& planes_out, Mat_<unsigned char> &plane_mask, Mat& points3d, Mat& normals,
-              int n_planes);
 void
 gen_points_3d(std::vector<Plane>& planes_out, Mat_<unsigned char> &plane_mask, Mat& points3d, Mat& normals,
               int n_planes)
@@ -391,8 +339,8 @@ protected:
       for (int x = 0; x < normals.cols; ++x)
       {
         Vec3f vec1 = normals(y, x), vec2 = ground_normals(y, x);
-        vec1 = vec1 / norm(vec1);
-        vec2 = vec2 / norm(vec2);
+        vec1 = vec1 / cv::norm(vec1);
+        vec2 = vec2 / cv::norm(vec2);
 
         float dot = vec1.dot(vec2);
         // Just for rounding errors
@@ -508,19 +456,18 @@ protected:
   }
 };
 
-}
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TEST(Rgbd_Normals, compute)
 {
-  cv::rgbd::CV_RgbdNormalsTest test;
+  CV_RgbdNormalsTest test;
   test.safe_run();
 }
 
 TEST(Rgbd_Plane, compute)
 {
-  cv::rgbd::CV_RgbdPlaneTest test;
+  CV_RgbdPlaneTest test;
   test.safe_run();
 }
+
+}} // namespace

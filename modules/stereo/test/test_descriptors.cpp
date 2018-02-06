@@ -40,11 +40,8 @@
 //M*/
 
 #include "test_precomp.hpp"
-#include <limits.h>
 
-using namespace cv;
-using namespace cv::stereo;
-using namespace std;
+namespace opencv_test { namespace {
 
 class CV_DescriptorBaseTest : public cvtest::BaseTest
 {
@@ -443,8 +440,8 @@ void CV_DescriptorBaseTest::run(int )
             }
         }
     }
-    int min = numeric_limits<int>::min();
-    int max = numeric_limits<int>::max();
+    int min = std::numeric_limits<int>::min();
+    int max = std::numeric_limits<int>::max();
     //check if all values are between int min and int max and not NAN
     if (0 != cvtest::check(censusImage[0], min, max, 0))
     {
@@ -463,3 +460,6 @@ TEST(DISABLED_census_transform_testing, accuracy) { CV_CensusTransformTest test;
 TEST(DISABLED_symetric_census_testing, accuracy) { CV_SymetricCensusTest test; test.safe_run(); }
 TEST(DISABLED_Dmodified_census_testing, accuracy) { CV_ModifiedCensusTransformTest test; test.safe_run(); }
 TEST(DISABLED_Dstar_kernel_testing, accuracy) { CV_StarKernelCensusTest test; test.safe_run(); }
+
+
+}} // namespace

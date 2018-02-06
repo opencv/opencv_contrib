@@ -1,7 +1,6 @@
-#ifdef __GNUC__
-#  pragma GCC diagnostic ignored "-Wmissing-declarations"
-#endif
-
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 #ifndef __OPENCV_TEST_PRECOMP_HPP__
 #define __OPENCV_TEST_PRECOMP_HPP__
 
@@ -20,8 +19,9 @@
         return;\
     }
 
-namespace cvtest
+namespace opencv_test
 {
+  using namespace cv::sfm;
 
   template<typename T>
   inline void
@@ -64,7 +64,7 @@ namespace cvtest
   cosinusBetweenMatrices(const T &a, const T &b)
   {
     double s = cv::sum( a.mul(b) )[0];
-    return ( s / norm(a) / norm(b) );
+    return ( s / cv::norm(a) / cv::norm(b) );
   }
 
   // Check that sin(angle(a, b)) < tolerance
@@ -135,6 +135,6 @@ namespace cvtest
   void
   parser_2D_tracks(const std::string &_filename, std::vector<cv::Mat> &points2d );
 
-} // namespace cvtest
+} // namespace
 
 #endif

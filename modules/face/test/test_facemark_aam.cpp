@@ -42,13 +42,8 @@ Mentor: Delia Passalacqua
 */
 
 #include "test_precomp.hpp"
-#include "opencv2/imgcodecs.hpp"
-#include "opencv2/face.hpp"
-#include <vector>
-#include <string>
-using namespace std;
-using namespace cv;
-using namespace cv::face;
+
+namespace opencv_test { namespace {
 
 static bool customDetector( InputArray image, OutputArray ROIs, CascadeClassifier *face_detector){
     Mat gray;
@@ -142,3 +137,5 @@ TEST(CV_Face_FacemarkAAM, test_workflow) {
     EXPECT_TRUE(facemark->getData(&data));
     EXPECT_TRUE(data.s0.size()>0);
 }
+
+}} // namespace

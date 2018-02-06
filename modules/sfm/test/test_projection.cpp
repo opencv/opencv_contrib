@@ -36,10 +36,7 @@
 #include "test_precomp.hpp"
 #include <opencv2/sfm/projection.hpp>
 
-using namespace cv;
-using namespace cv::sfm;
-using namespace cvtest;
-using namespace std;
+namespace opencv_test { namespace {
 
 TEST(Sfm_projection, homogeneousToEuclidean)
 {
@@ -117,3 +114,6 @@ TEST(Sfm_projection, P_From_KRt)
   // TODO: Change the code to ensure det(R) == 1, which is not currently
   // the case. Also add a test for that here.
 }
+
+
+}} // namespace

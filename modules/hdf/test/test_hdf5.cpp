@@ -6,14 +6,10 @@
  * @file test_hdf5.cpp
  * @author Fangjun Kuang <csukuangfj dot at gmail dot com>
  * @date December 2017
- *
  */
-#include<stdio.h> // for remove()
-
 #include "test_precomp.hpp"
-#include <vector>
 
-using namespace cv;
+namespace opencv_test { namespace {
 
 struct HDF5_Test : public testing::Test
 {
@@ -150,14 +146,14 @@ TEST_F(HDF5_Test, write_read_dataset_1)
     m_hdf_io->dsread(single, dataset_single_channel);
     EXPECT_EQ(single.type(), m_single_channel.type());
     EXPECT_EQ(single.size(), m_single_channel.size());
-    EXPECT_NEAR(norm(single-m_single_channel), 0, 1e-10);
+    EXPECT_LE(cvtest::norm(single, m_single_channel, NORM_L2), 1e-10);
 
     // read dual channel matrix
     Mat dual;
     m_hdf_io->dsread(dual, dataset_two_channels);
     EXPECT_EQ(dual.type(), m_two_channels.type());
     EXPECT_EQ(dual.size(), m_two_channels.size());
-    EXPECT_NEAR(norm(dual-m_two_channels), 0, 1e-10);
+    EXPECT_LE(cvtest::norm(dual, m_two_channels, NORM_L2), 1e-10);
 
     m_hdf_io->close();
 }
@@ -202,14 +198,14 @@ TEST_F(HDF5_Test, write_read_dataset_2)
     m_hdf_io->dsread(single, dataset_single_channel);
     EXPECT_EQ(single.type(), m_single_channel.type());
     EXPECT_EQ(single.size(), m_single_channel.size());
-    EXPECT_NEAR(norm(single-m_single_channel), 0, 1e-10);
+    EXPECT_LE(cvtest::norm(single, m_single_channel, NORM_L2), 1e-10);
 
     // read dual channel matrix
     Mat dual;
     m_hdf_io->dsread(dual, dataset_two_channels);
     EXPECT_EQ(dual.type(), m_two_channels.type());
     EXPECT_EQ(dual.size(), m_two_channels.size());
-    EXPECT_NEAR(norm(dual-m_two_channels), 0, 1e-10);
+    EXPECT_LE(cvtest::norm(dual, m_two_channels, NORM_L2), 1e-10);
 
     m_hdf_io->close();
 }
@@ -347,8 +343,8 @@ TEST_F(HDF5_Test, test_attribute_InutArray_OutputArray_2d)
         m_hdf_io->atwrite(attr_value, attr_name);
         m_hdf_io->atread(expected_attr_value, attr_name);
 
-        double diff = norm(attr_value - expected_attr_value);
-        EXPECT_NEAR(diff, 0, 1e-6);
+        double diff = cvtest::norm(attr_value, expected_attr_value, NORM_L2);
+        EXPECT_LE(diff, 1e-6);
 
         EXPECT_EQ(attr_value.size, expected_attr_value.size);
         EXPECT_EQ(attr_value.type(), expected_attr_value.type());
@@ -356,3 +352,5 @@ TEST_F(HDF5_Test, test_attribute_InutArray_OutputArray_2d)
 
     m_hdf_io->close();
 }
+
+}} // namespace

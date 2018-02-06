@@ -44,11 +44,7 @@
 
 #include "test_precomp.hpp"
 
-
-namespace cv
-{
-namespace rgbd
-{
+namespace opencv_test { namespace {
 
 class CV_RgbdDepthRegistrationTest: public cvtest::BaseTest
 {
@@ -149,12 +145,11 @@ private:
 
 };
 
-
-}
-}
-
 TEST(Rgbd_DepthRegistration, compute)
 {
-  cv::rgbd::CV_RgbdDepthRegistrationTest test;
+  CV_RgbdDepthRegistrationTest test;
   test.safe_run();
 }
+
+
+}} // namespace

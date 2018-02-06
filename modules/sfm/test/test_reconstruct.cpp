@@ -35,9 +35,7 @@
 
 #include "test_precomp.hpp"
 
-using namespace cv;
-using namespace cv::sfm;
-using namespace std;
+namespace opencv_test { namespace {
 
 /* Check projection errors */
 static void
@@ -94,3 +92,5 @@ TEST(Sfm_reconstruct, twoViewProjectiveOutliers)
 }
 
 #endif /* CERES_FOUND */
+
+}} // namespace

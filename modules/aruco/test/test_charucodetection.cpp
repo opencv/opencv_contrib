@@ -38,12 +38,8 @@ the use of this software, even if advised of the possibility of such damage.
 
 
 #include "test_precomp.hpp"
-#include <opencv2/aruco/charuco.hpp>
-#include <string>
 
-using namespace std;
-using namespace cv;
-
+namespace opencv_test { namespace {
 
 static double deg2rad(double deg) { return deg * CV_PI / 180.; }
 
@@ -289,7 +285,7 @@ void CV_CharucoDetection::run(int) {
                         return;
                     }
 
-                    double repError = norm(charucoCorners[i] - projectedCharucoCorners[currentId]);
+                    double repError = cv::norm(charucoCorners[i] - projectedCharucoCorners[currentId]);  // TODO cvtest
 
 
                     if(repError > 5.) {
@@ -394,7 +390,7 @@ void CV_CharucoPoseEstimation::run(int) {
                         return;
                     }
 
-                    double repError = norm(charucoCorners[i] - projectedCharucoCorners[currentId]);
+                    double repError = cv::norm(charucoCorners[i] - projectedCharucoCorners[currentId]);  // TODO cvtest
 
 
                     if(repError > 5.) {
@@ -504,8 +500,7 @@ void CV_CharucoDiamondDetection::run(int) {
 
                 for(unsigned int i = 0; i < 4; i++) {
 
-                    double repError =
-                        norm(diamondCorners[0][i] - projectedDiamondCornersReorder[i]);
+                    double repError = cv::norm(diamondCorners[0][i] - projectedDiamondCornersReorder[i]);  // TODO cvtest
 
                     if(repError > 5.) {
                         ts->printf(cvtest::TS::LOG, "Diamond corner reprojection error too high");
@@ -530,8 +525,7 @@ void CV_CharucoDiamondDetection::run(int) {
                               distCoeffs, projectedDiamondCornersPose);
 
                 for(unsigned int i = 0; i < 4; i++) {
-                    double repError =
-                        norm(projectedDiamondCornersReorder[i] - projectedDiamondCornersPose[i]);
+                    double repError = cv::norm(projectedDiamondCornersReorder[i] - projectedDiamondCornersPose[i]);  // TODO cvtest
 
                     if(repError > 5.) {
                         ts->printf(cvtest::TS::LOG, "Charuco pose error too high");
@@ -562,3 +556,5 @@ TEST(CV_CharucoDiamondDetection, accuracy) {
     CV_CharucoDiamondDetection test;
     test.safe_run();
 }
+
+}} // namespace

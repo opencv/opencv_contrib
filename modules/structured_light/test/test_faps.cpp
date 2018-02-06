@@ -38,14 +38,12 @@
  // the use of this software, even if advised of the possibility of such damage.
  //
  //M*/
+#include "test_precomp.hpp"
 
 #include <opencv2/structured_light/graycodepattern.hpp>
 #include <opencv2/structured_light/sinusoidalpattern.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include "test_precomp.hpp"
 
-using namespace std;
-using namespace cv;
+namespace opencv_test { namespace {
 
 const string STRUCTURED_LIGHT_DIR = "structured_light";
 const string FOLDER_DATA = "data";
@@ -147,3 +145,5 @@ TEST( SinusoidalPattern, unwrapPhaseMap )
 
     EXPECT_LE( ratio, 0.003 );
 }
+
+}} // namespace

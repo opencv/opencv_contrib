@@ -4,10 +4,7 @@
 
 #include "test_precomp.hpp"
 
-namespace cvtest {
-
-using namespace cv;
-using namespace cv::ximgproc;
+namespace opencv_test { namespace {
 
 TEST(ximgproc_ridgedetectionfilter, ReferenceAccuracy)
 {
@@ -29,4 +26,4 @@ TEST(ximgproc_ridgedetectionfilter, ReferenceAccuracy)
     EXPECT_EQ(zeros, 0);
 }
 
-} // namespace
+}} // namespace

@@ -6,7 +6,7 @@
 
 #include <bitset>
 
-using namespace cv;
+namespace opencv_test { namespace {
 
 class CV_AverageHashTest : public cvtest::BaseTest
 {
@@ -56,3 +56,5 @@ void CV_AverageHashTest::run(int )
 }
 
 TEST(average_hash_test, accuracy) { CV_AverageHashTest test; test.safe_run(); }
+
+}} // namespace
