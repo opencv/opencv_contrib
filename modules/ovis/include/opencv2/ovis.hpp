@@ -26,6 +26,8 @@ enum SceneSettings
     SCENE_SHOW_CS_CROSS = 4,
     /// @ref WindowScene::getScreenshot returns images as CV_32FC4 instead of CV_8UC3
     SCENE_RENDER_FLOAT = 8,
+    /// Apply anti-aliasing. The first window determines the setting for all windows.
+    SCENE_AA = 16
 };
 
 enum MaterialProperty
@@ -180,7 +182,7 @@ CV_EXPORTS_W void addResourceLocation(const String& path);
  * @param flags a combination of @ref SceneSettings
  */
 CV_EXPORTS_W Ptr<WindowScene> createWindow(const String& title, const Size& size,
-                                           int flags = SCENE_INTERACTIVE);
+                                           int flags = SCENE_INTERACTIVE | SCENE_AA);
 
 /**
  * update all windows and wait for keyboard event

@@ -144,10 +144,11 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
     uint32_t w;
     uint32_t h;
     int key_pressed;
+    int flags;
 
-    Application(const Ogre::String& _title, const Size& sz)
+    Application(const Ogre::String& _title, const Size& sz, int _flags)
         : OgreBites::ApplicationContext("ovis", false), sceneMgr(NULL), title(_title), w(sz.width),
-          h(sz.height), key_pressed(-1)
+          h(sz.height), key_pressed(-1), flags(_flags)
     {
         logMgr.reset(new LogManager());
         logMgr->createLog("ovis.log", true, true, true);
@@ -183,7 +184,10 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
             _h = h;
             _name = title;
         }
-        miscParams["FSAA"] = "4";
+
+        if (flags & SCENE_AA)
+            miscParams["FSAA"] = "4";
+
         miscParams["vsync"] = "true";
 
         OgreBites::NativeWindowPair ret =
@@ -539,7 +543,7 @@ Ptr<WindowScene> createWindow(const String& title, const Size& size, int flags)
 {
     if (!_app)
     {
-        _app = makePtr<Application>(title.c_str(), size);
+        _app = makePtr<Application>(title.c_str(), size, flags);
         _app->initApp();
     }
 
