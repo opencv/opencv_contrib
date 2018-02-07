@@ -615,5 +615,60 @@ void setMaterialProperty(const String& name, int prop, const String& value)
 
     rpass->getTextureUnitStates()[0]->setTextureName(value);
 }
+
+static bool setShaderProperty(const GpuProgramParametersSharedPtr& params, const String& prop,
+                              const Scalar& value)
+{
+    const GpuConstantDefinition* def = params->_findNamedConstantDefinition(prop, false);
+
+    if(!def)
+        return false;
+
+    Vec4f valf = value;
+
+    switch(def->constType)
+    {
+    case GCT_FLOAT1:
+        params->setNamedConstant(prop, valf[0]);
+        return true;
+    case GCT_FLOAT2:
+        params->setNamedConstant(prop, Vector2(valf.val));
+        return true;
+    case GCT_FLOAT3:
+        params->setNamedConstant(prop, Vector3(valf.val));
+        return true;
+    case GCT_FLOAT4:
+        params->setNamedConstant(prop, Vector4(valf.val));
+        return true;
+    default:
+        CV_Error(Error::StsBadArg, "currently only float[1-4] uniforms are supported");
+        return false;
+    }
+}
+
+void setMaterialProperty(const String& name, const String& prop, const Scalar& value)
+{
+    CV_Assert(_app);
+
+    MaterialPtr mat = MaterialManager::getSingleton().getByName(name, RESOURCEGROUP_NAME);
+    CV_Assert(mat);
+
+    Pass* rpass = mat->getTechniques()[0]->getPasses()[0];
+    bool set = false;
+    if(rpass->hasGpuProgram(GPT_VERTEX_PROGRAM))
+    {
+        GpuProgramParametersSharedPtr params = rpass->getVertexProgramParameters();
+        set = setShaderProperty(params, prop, value);
+    }
+
+    if(rpass->hasGpuProgram(GPT_FRAGMENT_PROGRAM))
+    {
+        GpuProgramParametersSharedPtr params = rpass->getFragmentProgramParameters();
+        set = set || setShaderProperty(params, prop, value);
+    }
+
+    if(!set)
+        CV_Error_(Error::StsBadArg, ("shader parameter named '%s' not found", prop.c_str()));
+}
 }
 }

@@ -205,6 +205,14 @@ CV_EXPORTS_W void setMaterialProperty(const String& name, int prop, const Scalar
 CV_EXPORTS_W void setMaterialProperty(const String& name, int prop, const String& value);
 
 /**
+ * set the shader property of a material to the given value
+ * @param name material name
+ * @param prop property name
+ * @param value the value
+ */
+CV_EXPORTS_W void setMaterialProperty(const String& name, const String& prop, const Scalar& value);
+
+/**
  * create a 2D plane, X right, Y down, Z up
  *
  * creates a material and a texture with the same name
