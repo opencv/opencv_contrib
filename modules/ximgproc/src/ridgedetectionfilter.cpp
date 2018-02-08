@@ -57,7 +57,7 @@ void RidgeDetectionFilterImpl::getRidgeFilteredImage(InputArray _img, OutputArra
     multiply(sbxx, sbyy, sbxxyy);
 
     Mat rootex;
-    rootex = (sb2xx +  (sb2xy + sb2xy + sb2xy + sb2xy)  - (sbxxyy + sbxxyy) + sb2xy );
+    rootex = (sb2xx +  (sb2xy + sb2xy + sb2xy + sb2xy)  - (sbxxyy + sbxxyy) + sb2yy );
     Mat root;
     sqrt(rootex, root);
     Mat ridgexp;
