@@ -864,7 +864,12 @@ void VocData::calcPrecRecall_impl(const vector<char>& ground_truth, const vector
     {
         recall_norm = recall_normalization;
     } else {
+#ifdef CV_CXX11
+        recall_norm = (int)std::count_if(ground_truth.begin(),ground_truth.end(),
+                [](const char a) { return a == (char)1; });
+#else
         recall_norm = (int)std::count_if(ground_truth.begin(),ground_truth.end(),std::bind2nd(std::equal_to<char>(),(char)1));
+#endif
     }
 
     ap = 0;
@@ -994,7 +999,12 @@ void VocData::calcClassifierConfMatRow(const string& obj_class, const vector<Obd
         /* in order to calculate the total number of relevant images for normalization of recall
             it's necessary to extract the ground truth for the images under consideration */
         getClassifierGroundTruth(obj_class, images, ground_truth);
+#ifdef CV_CXX11
+        total_relevant = (int)std::count_if(ground_truth.begin(),ground_truth.end(),
+                [](const char a) { return a == (char)1; });
+#else
         total_relevant = (int)std::count_if(ground_truth.begin(),ground_truth.end(),std::bind2nd(std::equal_to<char>(),(char)1));
+#endif
     }
 
     /* iterate through images */
