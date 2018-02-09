@@ -739,8 +739,8 @@ void SuperpixelSEEDSImpl::updatePixels()
         for (int y = 1; y < height - 2; y++)
         {
 
-            labelA = labels[(y) * width + (x)];
             labelB = labels[(y + 1) * width + (x)];
+            labelA = labels[(y) * width + (x)];
             if( labelA != labelB )
             {
                 int a22 = labelA;
@@ -959,13 +959,7 @@ bool SuperpixelSEEDSImpl::probability(int image_idx, int label1, int label2,
             p = 1.f;
         switch( seeds_prior )
         {
-        case 5: p *= p;
-            //no break
-        case 4: p *= p;
-            //no break
-        case 3: p *= p;
-            //no break
-        case 2:
+        case_2:        case 2:
             p *= p;
             P_label1 *= T[seeds_top_level][label2];
             P_label2 *= T[seeds_top_level][label1];
@@ -973,6 +967,14 @@ bool SuperpixelSEEDSImpl::probability(int image_idx, int label1, int label2,
         case 1:
             P_label1 *= p;
             break;
+
+        case 5: p *= p;
+            //no break
+        case 4: p *= p;
+            //no break
+        case 3: p *= p;
+            //no break
+	  goto case_2;
         }
     }
 
@@ -1072,14 +1074,14 @@ int SuperpixelSEEDSImpl::fourbythree(int x, int y, int label)
     count += (labels[(y - 1) * width + x] == label);
     count += (labels[(y - 1) * width + x + 1] == label);
 
-    count += (labels[y * width + x - 1] == label);
+    count += (labels[(y + 2) * width + x] == label);
     count += (labels[y * width + x + 2] == label);
 
     count += (labels[(y + 1) * width + x - 1] == label);
     count += (labels[(y + 1) * width + x + 2] == label);
 
     count += (labels[(y + 2) * width + x - 1] == label);
-    count += (labels[(y + 2) * width + x] == label);
+    count += (labels[y * width + x - 1] == label);
     count += (labels[(y + 2) * width + x + 1] == label);
 
     return count;
