@@ -43,81 +43,6 @@
 
 namespace cv {
 
-Mat readcsv(std::string filename)
-{
-    std::ifstream inputfile(filename);
-    std::string current_line;
-    std::vector< std::vector<float> > all_data;
-    while(getline(inputfile, current_line)){
-        std::vector<float> values;
-        std::stringstream temp(current_line);
-        std::string single_value;
-        while(getline(temp,single_value,',')){
-            values.push_back(atof(single_value.c_str()));
-        }
-        all_data.push_back(values);
-    }
-    inputfile.close();
-    Mat vect = Mat::zeros((int)all_data.size(), (float)all_data[0].size(), CV_32FC1);
-    for(int rows = 0; rows < (int)all_data.size(); rows++){
-        for(int cols= 0; cols< (int)all_data[0].size(); cols++){
-            vect.at<float>(rows,cols) = all_data[rows][cols];
-        }
-    }
-    return vect;
-}
-
-void save_matrix(std::string filename, cv::Mat m)
-{
-    const char *path = "/home/amuhic/Desktop/mat/";
-    std::ofstream myfile;
-	char buffer[500];
-	if (m.type() == CV_32FC3 || m.channels() == 3) {
-        std::vector<cv::Mat> channels;
-		cv::split(m, channels);
-
-		sprintf(buffer, "%s%s_0", path, filename.c_str());
-		myfile.open(buffer);
-		myfile << cv::format(channels[0], cv::Formatter::FMT_CSV);
-		myfile.close();
-
-		sprintf(buffer, "%s%s_1", path, filename.c_str());
-		myfile.open(buffer);
-		myfile << cv::format(channels[1], cv::Formatter::FMT_CSV);
-		myfile.close();
-
-		sprintf(buffer, "%s%s_2", path, filename.c_str());
-		myfile.open(buffer);
-		myfile << cv::format(channels[2], cv::Formatter::FMT_CSV);
-		myfile.close();
-        std::cout << "Color Matrix saved: " << filename << std::endl;
-	} else if (m.type() == CV_32FC2) { //split the matrix
-        std::vector<cv::Mat> channels;
-		cv::split(m, channels);
-		sprintf(buffer, "%s%s", path, filename.c_str());
-		myfile.open(buffer);
-		for (int j = 0; j < m.rows; ++j) {
-			for (int i = 0; i < m.cols; ++i) {
-				myfile << channels[0].at<float>(j, i);
-				double num = channels[1].at<float>(j, i);
-				myfile << (num <= -0.0 ? "-" : "+") << abs(num)<<"i";
-				if (i < m.cols - 1)
-					myfile << ",";
-			}
-			if (j < m.rows - 1)
-				myfile << "\n";
-		}
-		myfile.close();
-        std::cout << "Complex matrix saved: " << filename << std::endl;
-	} else {
-		sprintf(buffer, "%s%s", path, filename.c_str());
-		myfile.open(buffer);
-		myfile << cv::format(m, cv::Formatter::FMT_CSV);
-		myfile.close();
-        std::cout << "Matrix saved: " << filename << std::endl;
-	}
-}
-
 Mat circshift(Mat matrix, int dx, int dy)
 {
     Mat matrix_out = matrix.clone();
@@ -272,7 +197,7 @@ inline float chebpoly(const int n, const float x)
     return res;
 }
 
-Mat chebwin(int N, const float atten)
+static Mat chebwin(int N, const float atten)
 {
     Mat out(N , 1, CV_32FC1);
     int nn, i;
@@ -306,7 +231,10 @@ double modified_bessel(int order, double x)
     const double eps = 1e-13;
     double result = 0;
     double m = 0;
-    double term = pow(x,order) / (pow(2,order) * std::tgamma(order+1));
+    double gamma = 1.0;
+    for(int i = 2; i <= order; ++i)
+        gamma *= i;
+    double term = pow(x,order) / (pow(2,order) * gamma);
 
     while(term  > eps * result) {
         result += term;
@@ -368,7 +296,7 @@ Mat get_chebyshev_win(Size sz, double attenuation)
     return cheb_rows * cheb_cols;
 }
 
-void computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const int pad_x, const int pad_y)
+static void computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const int pad_x, const int pad_y)
 {
     const int dimHOG = 32;
     CV_Assert(pad_x >= 0);
@@ -583,11 +511,7 @@ void computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const int pad_
     }// for y
 }
 
-std::vector<Mat> get_features_hog(
-        const Mat &im,
-        const int bin_size,
-        const int n_orients,
-        const float clip)
+std::vector<Mat> get_features_hog( const Mat &im, const int bin_size)
 {
     Mat hogmatrix;
     Mat im_;

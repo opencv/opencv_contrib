@@ -230,8 +230,7 @@ std::vector<Mat> TrackerCSRTImpl::get_features(const Mat &patch, const Size2i &f
 {
     std::vector<Mat> features;
     if (params.use_hog) {
-        std::vector<Mat> hog = get_features_hog(patch, cell_size,
-                params.hog_orientations, params.hog_clip);
+        std::vector<Mat> hog = get_features_hog(patch, cell_size);
         features.insert(features.end(), hog.begin(),
                 hog.begin()+params.num_hog_channels_used);
     }

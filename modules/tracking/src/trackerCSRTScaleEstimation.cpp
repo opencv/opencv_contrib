@@ -79,7 +79,7 @@ public:
             img_patch.convertTo(img_patch, CV_32FC3);
             resize(img_patch, img_patch, Size(scale_model_sz.width, scale_model_sz.height),0,0,INTER_LINEAR);
             std::vector<Mat> hog;
-            hog = get_features_hog(img_patch, 4, 9, 0.2);
+            hog = get_features_hog(img_patch, 4);
             for (size_t i = 0; i < hog.size(); ++i) {
                 hog[i] = hog[i].t();
                 hog[i] = scale_window.at<float>(0,s) * hog[i].reshape(0, col_len);
@@ -192,7 +192,7 @@ Mat DSST::get_scale_features(
     img_patch.convertTo(img_patch, CV_32FC3);
     resize(img_patch, img_patch, Size(scale_model_sz.width, scale_model_sz.height),0,0,INTER_LINEAR);
     std::vector<Mat> hog;
-    hog = get_features_hog(img_patch, 4, 9, 0.2);
+    hog = get_features_hog(img_patch, 4);
     result = Mat(Size(scale_factors.size(), hog[0].cols * hog[0].rows * (int)hog.size()), CV_32F);
     col_len = hog[0].cols * hog[0].rows;
     for (size_t i = 0; i < hog.size(); ++i) {
