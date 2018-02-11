@@ -144,10 +144,11 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
     uint32_t w;
     uint32_t h;
     int key_pressed;
+    int flags;
 
-    Application(const Ogre::String& _title, const Size& sz)
+    Application(const Ogre::String& _title, const Size& sz, int _flags)
         : OgreBites::ApplicationContext("ovis", false), sceneMgr(NULL), title(_title), w(sz.width),
-          h(sz.height), key_pressed(-1)
+          h(sz.height), key_pressed(-1), flags(_flags)
     {
         logMgr.reset(new LogManager());
         logMgr->createLog("ovis.log", true, true, true);
@@ -183,7 +184,10 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
             _h = h;
             _name = title;
         }
-        miscParams["FSAA"] = "4";
+
+        if (flags & SCENE_AA)
+            miscParams["FSAA"] = "4";
+
         miscParams["vsync"] = "true";
 
         OgreBites::NativeWindowPair ret =
@@ -232,6 +236,8 @@ class WindowSceneImpl : public WindowScene
     RenderWindow* rWin;
     Ptr<OgreBites::CameraMan> camman;
     Ptr<Rectangle2D> bgplane;
+
+    Ogre::RenderTarget* frameSrc;
 
 public:
     WindowSceneImpl(Ptr<Application> app, const String& _title, const Size& sz, int flags)
@@ -289,6 +295,18 @@ public:
         }
 
         rWin->addViewport(cam);
+        frameSrc = rWin;
+
+        if (flags & SCENE_RENDER_FLOAT)
+        {
+            // also render into an offscreen texture
+            // currently this draws everything twice, but we spare the float->byte conversion for display
+            TexturePtr tex = TextureManager::getSingleton().createManual(
+                title + "_rt", RESOURCEGROUP_NAME, TEX_TYPE_2D, sz.width, sz.height, 0, PF_FLOAT32_RGBA,
+                TU_RENDERTARGET);
+            frameSrc = tex->getBuffer()->getRenderTarget();
+            frameSrc->addViewport(cam);
+        }
     }
 
     void setBackground(InputArray image)
@@ -421,11 +439,17 @@ public:
 
     void getScreenshot(OutputArray frame)
     {
-        frame.create(rWin->getHeight(), rWin->getWidth(), CV_8UC3);
+        PixelFormat src_type = frameSrc->suggestPixelFormat();
+        int dst_type = src_type == PF_BYTE_RGB ? CV_8UC3 : CV_32FC4;
+
+        frame.create(frameSrc->getHeight(), frameSrc->getWidth(), dst_type);
 
         Mat out = frame.getMat();
-        PixelBox pb(rWin->getWidth(), rWin->getHeight(), 1, PF_BYTE_BGR, out.ptr());
-        rWin->copyContentsToMemory(pb, pb);
+        PixelBox pb(frameSrc->getWidth(), frameSrc->getHeight(), 1, src_type, out.ptr());
+        frameSrc->copyContentsToMemory(pb, pb);
+
+        // convert to OpenCV channel order
+        cvtColor(out, out, dst_type == CV_8UC3 ? COLOR_RGB2BGR : COLOR_RGBA2BGRA);
     }
 
     void fixCameraYawAxis(bool useFixed, InputArray _up)
@@ -519,7 +543,7 @@ Ptr<WindowScene> createWindow(const String& title, const Size& size, int flags)
 {
     if (!_app)
     {
-        _app = makePtr<Application>(title.c_str(), size);
+        _app = makePtr<Application>(title.c_str(), size, flags);
         _app->initApp();
     }
 
@@ -590,6 +614,61 @@ void setMaterialProperty(const String& name, int prop, const String& value)
     }
 
     rpass->getTextureUnitStates()[0]->setTextureName(value);
+}
+
+static bool setShaderProperty(const GpuProgramParametersSharedPtr& params, const String& prop,
+                              const Scalar& value)
+{
+    const GpuConstantDefinition* def = params->_findNamedConstantDefinition(prop, false);
+
+    if(!def)
+        return false;
+
+    Vec4f valf = value;
+
+    switch(def->constType)
+    {
+    case GCT_FLOAT1:
+        params->setNamedConstant(prop, valf[0]);
+        return true;
+    case GCT_FLOAT2:
+        params->setNamedConstant(prop, Vector2(valf.val));
+        return true;
+    case GCT_FLOAT3:
+        params->setNamedConstant(prop, Vector3(valf.val));
+        return true;
+    case GCT_FLOAT4:
+        params->setNamedConstant(prop, Vector4(valf.val));
+        return true;
+    default:
+        CV_Error(Error::StsBadArg, "currently only float[1-4] uniforms are supported");
+        return false;
+    }
+}
+
+void setMaterialProperty(const String& name, const String& prop, const Scalar& value)
+{
+    CV_Assert(_app);
+
+    MaterialPtr mat = MaterialManager::getSingleton().getByName(name, RESOURCEGROUP_NAME);
+    CV_Assert(mat);
+
+    Pass* rpass = mat->getTechniques()[0]->getPasses()[0];
+    bool set = false;
+    if(rpass->hasGpuProgram(GPT_VERTEX_PROGRAM))
+    {
+        GpuProgramParametersSharedPtr params = rpass->getVertexProgramParameters();
+        set = setShaderProperty(params, prop, value);
+    }
+
+    if(rpass->hasGpuProgram(GPT_FRAGMENT_PROGRAM))
+    {
+        GpuProgramParametersSharedPtr params = rpass->getFragmentProgramParameters();
+        set = set || setShaderProperty(params, prop, value);
+    }
+
+    if(!set)
+        CV_Error_(Error::StsBadArg, ("shader parameter named '%s' not found", prop.c_str()));
 }
 }
 }
