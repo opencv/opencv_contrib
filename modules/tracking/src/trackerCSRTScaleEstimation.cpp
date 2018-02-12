@@ -99,10 +99,10 @@ DSST::DSST(const Mat &image,
     ys = Mat(1, scales_count, CV_32FC1);
     float ss, sf;
     for(int i = 0; i < ys.cols; ++i) {
-        ss = (float)(i+1) - ceil((float)scales_count/2.0);
+        ss = (float)(i+1) - cvCeil((float)scales_count/2.0);
         ys.at<float>(0,i) = exp(-0.5 * pow(ss,2) / pow(scale_sigma,2));
         sf = i + 1;
-        scale_factors.push_back(pow(scale_step, ceil((float)scales_count/2.0) - sf));
+        scale_factors.push_back(pow(scale_step, cvCeil((float)scales_count/2.0) - sf));
     }
 
     scale_window = get_hann_win(Size(scales_count, 1));

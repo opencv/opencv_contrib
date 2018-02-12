@@ -226,13 +226,11 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors(
 }
 
 std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(
-    std::vector<cv::Mat> &imgChannels,
-    int x1, int y1, int x2, int y2, double p_b,
-    cv::Mat weights, cv::Mat fgPrior, cv::Mat bgPrior,
-    Histogram hist_target, Histogram hist_background)
+    std::vector<cv::Mat> &imgChannels, int x1, int y1, int x2, int y2, double p_b,
+    cv::Mat fgPrior, cv::Mat bgPrior, Histogram hist_target, Histogram hist_background)
 {
     //preprocess and normalize all data
-    assert(imgChannels.size() > 0);
+    CV_Assert(imgChannels.size() > 0);
 
     //fit target to the image
     x1 = std::min(std::max(x1, 0), imgChannels[0].cols-1);
@@ -282,7 +280,8 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(
     prob_o = p_o*foregroundLikelihood / (p_o*foregroundLikelihood + p_b*backgroundLikelihood);
     cv::Mat prob_b = 1.0 - prob_o;
 
-    std::pair<cv::Mat, cv::Mat> sizedProbs = getRegularizedSegmentation(prob_o, prob_b, fgPriorScaled, bgPriorScaled);
+    std::pair<cv::Mat, cv::Mat> sizedProbs = getRegularizedSegmentation(prob_o, prob_b,
+            fgPriorScaled, bgPriorScaled);
     //std::pair<cv::Mat, cv::Mat> sizedProbs = std::pair<cv::Mat, cv::Mat>(prob_o, prob_b);
 
     //resize probs to original size
@@ -294,11 +293,10 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(
 }
 
 std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(std::vector<cv::Mat> &imgChannels,
-        cv::Mat fgPrior, cv::Mat bgPrior, Histogram hist_target,
-        Histogram hist_background, int numBinsPerChannel)
+        cv::Mat fgPrior, cv::Mat bgPrior, Histogram hist_target, Histogram hist_background)
 {
     //preprocess and normalize all data
-    assert(imgChannels.size() > 0);
+    CV_Assert(imgChannels.size() > 0);
 
     //fit target to the image
     int x1 = 0;

@@ -41,11 +41,10 @@ public:
             int x1, int y1, int x2, int y2, cv::Mat weights, cv::Mat fgPrior,
             cv::Mat bgPrior, const Histogram &fgHistPrior, int numBinsPerChannel = 16);
     static std::pair<cv::Mat, cv::Mat> computePosteriors2(std::vector<cv::Mat> & imgChannels,
-            int x1, int y1, int x2, int y2, double p_b, cv::Mat weights, cv::Mat
-            fgPrior, cv::Mat bgPrior, Histogram hist_target, Histogram hist_background);
+            int x1, int y1, int x2, int y2, double p_b, cv::Mat fgPrior,
+            cv::Mat bgPrior, Histogram hist_target, Histogram hist_background);
     static std::pair<cv::Mat, cv::Mat> computePosteriors2(std::vector<cv::Mat> &imgChannels,
-            cv::Mat fgPrior, cv::Mat bgPrior,
-            Histogram hist_target, Histogram hist_background, int numBinsPerChannel);
+            cv::Mat fgPrior, cv::Mat bgPrior, Histogram hist_target, Histogram hist_background);
 
 private:
     static std::pair<cv::Mat, cv::Mat> getRegularizedSegmentation(cv::Mat & prob_o,
@@ -54,10 +53,6 @@ private:
     inline static double gaussian(double x2, double y2, double std2){
         return exp(-(x2 + y2)/(2*std2))/(2*CV_PI*std2);
     }
-
-    double p_b;
-    double p_o;
-
 };
 
 }//cv namespace

@@ -349,7 +349,7 @@ Mat TrackerCSRTImpl::segment_region(
     std::vector<Mat> img_channels;
     split(patch, img_channels);
     std::pair<Mat, Mat> probs = Segment::computePosteriors2(img_channels, 0, 0, patch.cols, patch.rows,
-                    p_b, Mat(), fg_prior, 1.0-fg_prior, hist_foreground, hist_background);
+                    p_b, fg_prior, 1.0-fg_prior, hist_foreground, hist_background);
 
     Mat mask = Mat::zeros(probs.first.size(), probs.first.type());
     probs.first(valid_pixels).copyTo(mask(valid_pixels));
