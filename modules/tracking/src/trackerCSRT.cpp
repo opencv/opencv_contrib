@@ -1,53 +1,12 @@
-/*///////////////////////////////////////////////////////////////////////////////////////
- //
- //  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
- //
- //  By downloading, copying, installing or using the software you agree to this license.
- //  If you do not agree to this license, do not download, install,
- //  copy or use the software.
- //
- //
- //                           License Agreement
- //                For Open Source Computer Vision Library
- //
- // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
- // Third party copyrights are property of their respective owners.
- //
- // Redistribution and use in source and binary forms, with or without modification,
- // are permitted provided that the following conditions are met:
- //
- //   * Redistribution's of source code must retain the above copyright notice,
- //     this list of conditions and the following disclaimer.
- //
- //   * Redistribution's in binary form must reproduce the above copyright notice,
- //     this list of conditions and the following disclaimer in the documentation
- //     and/or other materials provided with the distribution.
- //
- //   * The name of the copyright holders may not be used to endorse or promote products
- //     derived from this software without specific prior written permission.
- //
- // This software is provided by the copyright holders and contributors "as is" and
- // any express or implied warranties, including, but not limited to, the implied
- // warranties of merchantability and fitness for a particular purpose are disclaimed.
- // In no event shall the Intel Corporation or contributors be liable for any direct,
- // indirect, incidental, special, exemplary, or consequential damages
- // (including, but not limited to, procurement of substitute goods or services;
- // loss of use, data, or profits; or business interruption) however caused
- // and on any theory of liability, whether in contract, strict liability,
- // or tort (including negligence or otherwise) arising in any way out of
- // the use of this software, even if advised of the possibility of such damage.
- //
- //M*/
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 
 #include "precomp.hpp"
 
 #include "trackerCSRTSegmentation.hpp"
 #include "trackerCSRTUtils.hpp"
 #include "trackerCSRTScaleEstimation.hpp"
-
-#include <math.h>
-
-#include "opencv2/highgui.hpp"
 
 namespace cv
 {
@@ -60,7 +19,7 @@ public:
     TrackerCSRTModel(TrackerCSRT::Params /*params*/){}
     ~TrackerCSRTModel(){}
 protected:
-    void modelEstimationImpl( const std::vector<Mat>& /*responses*/ ){}
+    void modelEstimationImpl(const std::vector<Mat>& /*responses*/){}
     void modelUpdateImpl(){}
 };
 
@@ -69,8 +28,8 @@ class TrackerCSRTImpl : public TrackerCSRT
 {
 public:
     TrackerCSRTImpl(const TrackerCSRT::Params &parameters = TrackerCSRT::Params());
-    void read( const FileNode& fn );
-    void write( FileStorage& fs ) const;
+    void read(const FileNode& fn);
+    void write(FileStorage& fs) const;
 
 protected:
     TrackerCSRT::Params params;
@@ -124,18 +83,18 @@ Ptr<TrackerCSRT> TrackerCSRT::create()
 {
     return Ptr<TrackerCSRTImpl>(new TrackerCSRTImpl());
 }
-TrackerCSRTImpl::TrackerCSRTImpl(const TrackerCSRT::Params &parameters ) :
-    params( parameters )
+TrackerCSRTImpl::TrackerCSRTImpl(const TrackerCSRT::Params &parameters) :
+    params(parameters)
 {
     isInit = false;
 }
 
-void TrackerCSRTImpl::read(const cv::FileNode& fn )
+void TrackerCSRTImpl::read(const cv::FileNode& fn)
 {
     params.read(fn);
 }
 
-void TrackerCSRTImpl::write(cv::FileStorage& fs ) const
+void TrackerCSRTImpl::write(cv::FileStorage& fs) const
 {
     params.write(fs);
 }
@@ -149,7 +108,7 @@ bool TrackerCSRTImpl::check_mask_area(const Mat &mat, const double obj_area)
 {
     double threshold = 0.05;
     double mask_area= sum(mat)[0];
-    if( mask_area < threshold*obj_area) {
+    if(mask_area < threshold*obj_area) {
         return false;
     }
     return true;
@@ -157,8 +116,8 @@ bool TrackerCSRTImpl::check_mask_area(const Mat &mat, const double obj_area)
 
 Mat TrackerCSRTImpl::calculate_response(const Mat &image, const std::vector<Mat> filter)
 {
-    Mat patch = get_subwindow(image, object_center, floor(current_scale_factor * template_size.width),
-        floor(current_scale_factor * template_size.height));
+    Mat patch = get_subwindow(image, object_center, cvFloor(current_scale_factor * template_size.width),
+        cvFloor(current_scale_factor * template_size.height));
     resize(patch, patch, rescaled_template_size, 0, 0, INTER_CUBIC);
 
     std::vector<Mat> ftrs = get_features(patch, yf.size());
@@ -180,20 +139,20 @@ Mat TrackerCSRTImpl::calculate_response(const Mat &image, const std::vector<Mat>
             mulSpectrums(Ffeatures[i], filter[i], resp_ch, 0 , true);
             res = res + resp_ch;
         }
-        idft(res, res, DFT_SCALE | DFT_REAL_OUTPUT );
+        idft(res, res, DFT_SCALE | DFT_REAL_OUTPUT);
     }
     return res;
 }
 
 void TrackerCSRTImpl::update_csr_filter(const Mat &image, const Mat &mask)
 {
-    Mat patch = get_subwindow(image, object_center, floor(current_scale_factor * template_size.width),
-        floor(current_scale_factor * template_size.height));
+    Mat patch = get_subwindow(image, object_center, cvFloor(current_scale_factor * template_size.width),
+        cvFloor(current_scale_factor * template_size.height));
     resize(patch, patch, rescaled_template_size, 0, 0, INTER_CUBIC);
 
     std::vector<Mat> ftrs = get_features(patch, yf.size());
     std::vector<Mat> Fftrs = fourier_transform_features(ftrs);
-    std::vector<Mat> new_csr_filter = create_csr_filter( Fftrs, yf, mask);
+    std::vector<Mat> new_csr_filter = create_csr_filter(Fftrs, yf, mask);
     //calculate per channel weights
     if(params.use_channel_weights) {
         Mat current_resp;
@@ -295,7 +254,7 @@ public:
             Mat G;
             for(int iteration = 0; iteration < admm_iterations; ++iteration) {
                 G = divide_complex_matrices((Sxy + (mu * H) - L) , (Sxx + mu));
-                idft( (mu * G) + L, H, DFT_SCALE | DFT_REAL_OUTPUT);
+                idft((mu * G) + L, H, DFT_SCALE | DFT_REAL_OUTPUT);
                 float lm = 1.0 / (lambda+mu);
                 H = H.mul(P*lm);
                 dft(H, H, DFT_COMPLEX_OUTPUT);
@@ -340,21 +299,21 @@ Mat TrackerCSRTImpl::get_location_prior(
         const Size2f target_size,
         const Size img_sz)
 {
-    int x1 = round( max( min( roi.x-1, img_sz.width-1) , 0));
-    int y1 = round( max( min( roi.y-1, img_sz.height-1) , 0));
+    int x1 = cvRound(max(min(roi.x-1, img_sz.width-1) , 0));
+    int y1 = cvRound(max(min(roi.y-1, img_sz.height-1) , 0));
 
-    int x2 = round( min( max( roi.width-1, 0) , img_sz.width-1));
-    int y2 = round( min( max( roi.height-1, 0) , img_sz.height-1));
+    int x2 = cvRound(min(max(roi.width-1, 0) , img_sz.width-1));
+    int y2 = cvRound(min(max(roi.height-1, 0) , img_sz.height-1));
 
     Size target_sz;
     target_sz.width = target_sz.height = min(target_size.width, target_size.height);
 
     double cx = x1 + (x2-x1)/2.;
     double cy = y1 + (y2-y1)/2.;
-    double kernel_size_width = 1.0/(0.5*static_cast<double>(target_sz.width)*1.4142+1);  //sqrt(2)
+    double kernel_size_width = 1.0/(0.5*static_cast<double>(target_sz.width)*1.4142+1);
     double kernel_size_height = 1.0/(0.5*static_cast<double>(target_sz.height)*1.4142+1);
 
-    cv::Mat kernel_weight = Mat::zeros(1+ floor(y2 - y1) , 1+floor(-(x1-cx) + (x2-cx)), CV_64FC1);
+    cv::Mat kernel_weight = Mat::zeros(1 + cvFloor(y2 - y1) , 1+cvFloor(-(x1-cx) + (x2-cx)), CV_64FC1);
     for (int y = y1; y < y2+1; ++y){
         double * weightPtr = kernel_weight.ptr<double>(y);
         double tmp_y = std::pow((cy-y)*kernel_size_height, 2);
@@ -364,7 +323,7 @@ Mat TrackerCSRTImpl::get_location_prior(
     }
 
     double max_val;
-    cv::minMaxLoc(kernel_weight, NULL, &max_val, NULL, NULL );
+    cv::minMaxLoc(kernel_weight, NULL, &max_val, NULL, NULL);
     Mat fg_prior = kernel_weight / max_val;
     fg_prior.setTo(0.5, fg_prior < 0.5);
     fg_prior.setTo(0.9, fg_prior > 0.9);
@@ -379,8 +338,8 @@ Mat TrackerCSRTImpl::segment_region(
         float scale_factor)
 {
     Rect valid_pixels;
-    Mat patch = get_subwindow(image, object_center, floor(scale_factor * template_size.width),
-        floor(scale_factor * template_size.height), &valid_pixels);
+    Mat patch = get_subwindow(image, object_center, cvFloor(scale_factor * template_size.width),
+        cvFloor(scale_factor * template_size.height), &valid_pixels);
     Size2f scaled_target = Size2f(target_size.width * scale_factor,
             target_size.height * scale_factor);
     Mat fg_prior = get_location_prior(
@@ -418,8 +377,8 @@ void TrackerCSRTImpl::extract_histograms(const Mat &image, cv::Rect region, Hist
     int outer_x2 = std::min(image.cols, (int)(x2+offsetX+1));
 
     // calculate probability for the background
-    p_b = 1.0 - ( (x2-x1+1) * (y2-y1+1) ) /
-        ( (double) (outer_x2-outer_x1+1) * (outer_y2-outer_y1+1) );
+    p_b = 1.0 - ((x2-x1+1) * (y2-y1+1)) /
+        ((double) (outer_x2-outer_x1+1) * (outer_y2-outer_y1+1));
 
     // split multi-channel image into the std::vector of matrices
     std::vector<Mat> img_channels(image.channels());
@@ -499,7 +458,7 @@ Point2f TrackerCSRTImpl::estimate_new_position(const Mat &image)
 // *********************************************************************
 // *                        Update API function                        *
 // *********************************************************************
-bool TrackerCSRTImpl::updateImpl( const Mat& image, Rect2d& boundingBox )
+bool TrackerCSRTImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
 {
     //treat gray image as color image
     if(image.channels() == 1) {
@@ -555,12 +514,12 @@ bool TrackerCSRTImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
     image_size = image.size();
     bounding_box = boundingBox;
     cell_size = std::min(4.0, std::max(1.0,
-                ceil((bounding_box.width * bounding_box.height)/400.0)));
+                (double)cvCeil((bounding_box.width * bounding_box.height)/400.0)));
     original_target_size = Size(bounding_box.size());
 
-    template_size.width = floor(original_target_size.width + params.padding *
+    template_size.width = cvFloor(original_target_size.width + params.padding *
             sqrt(original_target_size.width * original_target_size.height));
-    template_size.height = floor(original_target_size.height + params.padding *
+    template_size.height = cvFloor(original_target_size.height + params.padding *
             sqrt(original_target_size.width * original_target_size.height));
     template_size.width = template_size.height =
         (template_size.width + template_size.height) / 2.0;
@@ -606,8 +565,8 @@ bool TrackerCSRTImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
         //update calculated mask with preset mask
         if(preset_mask.data){
             Mat preset_mask_padded = Mat::zeros(filter_mask.size(), filter_mask.type());
-            int sx = std::max((int)floor( preset_mask_padded.cols / 2.0f - preset_mask.cols / 2.0f ) - 1, 0);
-            int sy = std::max((int)floor( preset_mask_padded.rows / 2.0f - preset_mask.rows / 2.0f ) - 1, 0);
+            int sx = std::max((int)cvFloor(preset_mask_padded.cols / 2.0f - preset_mask.cols / 2.0f) - 1, 0);
+            int sy = std::max((int)cvFloor(preset_mask_padded.rows / 2.0f - preset_mask.rows / 2.0f) - 1, 0);
             preset_mask.copyTo(preset_mask_padded(
                         Rect(sx, sy, preset_mask.cols, preset_mask.rows)));
             filter_mask = filter_mask.mul(preset_mask_padded);
@@ -625,8 +584,8 @@ bool TrackerCSRTImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
     }
 
     //initialize filter
-    Mat patch = get_subwindow(image, object_center, floor(current_scale_factor * template_size.width),
-        floor(current_scale_factor * template_size.height));
+    Mat patch = get_subwindow(image, object_center, cvFloor(current_scale_factor * template_size.width),
+        cvFloor(current_scale_factor * template_size.height));
     resize(patch, patch, rescaled_template_size, 0, 0, INTER_CUBIC);
     std::vector<Mat> patch_ftrs = get_features(patch, yf.size());
     std::vector<Mat> Fftrs = fourier_transform_features(patch_ftrs);
@@ -688,65 +647,65 @@ TrackerCSRT::Params::Params()
     histogram_lr = 0.04;
 }
 
-void TrackerCSRT::Params::read( const FileNode& fn )
+void TrackerCSRT::Params::read(const FileNode& fn)
 {
     *this = TrackerCSRT::Params();
-    if( !fn["padding"].empty())
+    if(!fn["padding"].empty())
         fn["padding"] >> padding;
-    if( !fn["template_size"].empty())
+    if(!fn["template_size"].empty())
         fn["template_size"] >> template_size;
-    if( !fn["gsl_sigma"].empty())
+    if(!fn["gsl_sigma"].empty())
         fn["gsl_sigma"] >> gsl_sigma;
-    if( !fn["hog_orientations"].empty())
+    if(!fn["hog_orientations"].empty())
         fn["hog_orientations"] >> hog_orientations;
-    if( !fn["num_hog_channels_used"].empty())
+    if(!fn["num_hog_channels_used"].empty())
         fn["num_hog_channels_used"] >> num_hog_channels_used;
-    if( !fn["hog_clip"].empty())
+    if(!fn["hog_clip"].empty())
         fn["hog_clip"] >> hog_clip;
-    if( !fn["use_hog"].empty())
+    if(!fn["use_hog"].empty())
         fn["use_hog"] >> use_hog;
-    if( !fn["use_color_names"].empty())
+    if(!fn["use_color_names"].empty())
         fn["use_color_names"] >> use_color_names;
-    if( !fn["use_gray"].empty())
+    if(!fn["use_gray"].empty())
         fn["use_gray"] >> use_gray;
-    if( !fn["use_rgb"].empty())
+    if(!fn["use_rgb"].empty())
         fn["use_rgb"] >> use_rgb;
-    if( !fn["window_function"].empty())
+    if(!fn["window_function"].empty())
         fn["window_function"] >> window_function;
-    if( !fn["kaiser_alpha"].empty())
+    if(!fn["kaiser_alpha"].empty())
         fn["kaiser_alpha"] >> kaiser_alpha;
-    if( !fn["cheb_attenuation"].empty())
+    if(!fn["cheb_attenuation"].empty())
         fn["cheb_attenuation"] >> cheb_attenuation;
-    if( !fn["filter_lr"].empty())
+    if(!fn["filter_lr"].empty())
         fn["filter_lr"] >> filter_lr;
-    if( !fn["admm_iterations"].empty())
+    if(!fn["admm_iterations"].empty())
         fn["admm_iterations"] >> admm_iterations;
-    if( !fn["number_of_scales"].empty())
+    if(!fn["number_of_scales"].empty())
         fn["number_of_scales"] >> number_of_scales;
-    if( !fn["scale_sigma_factor"].empty())
+    if(!fn["scale_sigma_factor"].empty())
         fn["scale_sigma_factor"] >> scale_sigma_factor;
-    if( !fn["scale_model_max_area"].empty())
+    if(!fn["scale_model_max_area"].empty())
         fn["scale_model_max_area"] >> scale_model_max_area;
-    if( !fn["scale_lr"].empty())
+    if(!fn["scale_lr"].empty())
         fn["scale_lr"] >> scale_lr;
-    if( !fn["scale_step"].empty())
+    if(!fn["scale_step"].empty())
         fn["scale_step"] >> scale_step;
-    if( !fn["use_channel_weights"].empty())
+    if(!fn["use_channel_weights"].empty())
         fn["use_channel_weights"] >> use_channel_weights;
-    if( !fn["weights_lr"].empty())
+    if(!fn["weights_lr"].empty())
         fn["weights_lr"] >> weights_lr;
-    if( !fn["use_segmentation"].empty())
+    if(!fn["use_segmentation"].empty())
         fn["use_segmentation"] >> use_segmentation;
-    if( !fn["histogram_bins"].empty())
+    if(!fn["histogram_bins"].empty())
         fn["histogram_bins"] >> histogram_bins;
-    if( !fn["background_ratio"].empty())
+    if(!fn["background_ratio"].empty())
         fn["background_ratio"] >> background_ratio;
-    if( !fn["histogram_lr"].empty())
+    if(!fn["histogram_lr"].empty())
         fn["histogram_lr"] >> histogram_lr;
     CV_Assert(number_of_scales % 2 == 1);
     CV_Assert(use_gray || use_color_names || use_hog || use_rgb);
 }
-void TrackerCSRT::Params::write( FileStorage& fs ) const
+void TrackerCSRT::Params::write(FileStorage& fs) const
 {
     fs << "padding" << padding;
     fs << "template_size" << template_size;

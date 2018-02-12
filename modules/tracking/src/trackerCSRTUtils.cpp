@@ -1,43 +1,8 @@
-/*///////////////////////////////////////////////////////////////////////////////////////
- //
- //  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
- //
- //  By downloading, copying, installing or using the software you agree to this license.
- //  If you do not agree to this license, do not download, install,
- //  copy or use the software.
- //
- //
- //                           License Agreement
- //                For Open Source Computer Vision Library
- //
- // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
- // Third party copyrights are property of their respective owners.
- //
- // Redistribution and use in source and binary forms, with or without modification,
- // are permitted provided that the following conditions are met:
- //
- //   * Redistribution's of source code must retain the above copyright notice,
- //     this list of conditions and the following disclaimer.
- //
- //   * Redistribution's in binary form must reproduce the above copyright notice,
- //     this list of conditions and the following disclaimer in the documentation
- //     and/or other materials provided with the distribution.
- //
- //   * The name of the copyright holders may not be used to endorse or promote products
- //     derived from this software without specific prior written permission.
- //
- // This software is provided by the copyright holders and contributors "as is" and
- // any express or implied warranties, including, but not limited to, the implied
- // warranties of merchantability and fitness for a particular purpose are disclaimed.
- // In no event shall the Intel Corporation or contributors be liable for any direct,
- // indirect, incidental, special, exemplary, or consequential damages
- // (including, but not limited to, procurement of substitute goods or services;
- // loss of use, data, or profits; or business interruption) however caused
- // and on any theory of liability, whether in contract, strict liability,
- // or tort (including negligence or otherwise) arising in any way out of
- // the use of this software, even if advised of the possibility of such damage.
- //
- //M*/
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+
+#include "precomp.hpp"
 
 #include "trackerCSRTUtils.hpp"
 
@@ -62,8 +27,8 @@ Mat gaussian_shaped_labels(const float sigma, const int w, const int h)
 {
     // create 2D Gaussian peak, convert to Fourier space and stores it into the yf
     Mat _yf = Mat::zeros(h, w, CV_32F);
-    float w2 = floor(w / 2);
-    float h2 = floor(h / 2);
+    float w2 = cvFloor(w / 2);
+    float h2 = cvFloor(h / 2);
 
     // calculate for each pixel separatelly
     for(int i=0; i<_yf.rows; i++) {
@@ -72,7 +37,7 @@ Mat gaussian_shaped_labels(const float sigma, const int w, const int h)
         }
     }
     // wrap-arround with the circulat shifting
-    _yf = circshift(_yf, -floor(_yf.cols / 2), -floor(_yf.rows / 2));
+    _yf = circshift(_yf, -cvFloor(_yf.cols / 2), -cvFloor(_yf.rows / 2));
     Mat yf;
     dft(_yf, _yf, DFT_COMPLEX_OUTPUT);
     return _yf;
@@ -123,8 +88,8 @@ Mat get_subwindow(
         const int h,
         Rect *valid_pixels)
 {
-    int startx = floor( center.x ) + 1 - ( floor(w/2));
-    int starty = floor( center.y ) + 1 - ( floor(h/2));
+    int startx = cvFloor(center.x) + 1 - (cvFloor(w/2));
+    int starty = cvFloor(center.y) + 1 - (cvFloor(h/2));
     Rect roi(startx, starty, w, h);
     int padding_left = 0, padding_right = 0, padding_top = 0, padding_bottom = 0;
     if(roi.x < 0) {
@@ -137,11 +102,11 @@ Mat get_subwindow(
     }
     roi.width -= padding_left;
     roi.height-= padding_top;
-    if(roi.x + roi.width >= image.cols ) {
+    if(roi.x + roi.width >= image.cols) {
         padding_right = roi.x + roi.width - image.cols;
         roi.width = image.cols - roi.x;
     }
-    if(roi.y + roi.height >= image.rows ) {
+    if(roi.y + roi.height >= image.rows) {
         padding_bottom = roi.y + roi.height - image.rows;
         roi.height = image.rows - roi.y;
     }
@@ -225,7 +190,7 @@ static Mat chebwin(int N, const float atten)
 }
 
 
-double modified_bessel(int order, double x)
+static double modified_bessel(int order, double x)
 {
     //  sum m=0:inf 1/(m! * Gamma(m + order + 1)) * (x/2)^(2m + order)
     const double eps = 1e-13;
@@ -252,13 +217,13 @@ Mat get_hann_win(Size sz)
     int NN = sz.height - 1;
     if(NN != 0) {
         for (int i = 0; i < hann_rows.rows; ++i) {
-            hann_rows.at<float>(i,0) = (float)(1.0/2.0 * ( 1.0 - cos(2*CV_PI*i/NN)));
+            hann_rows.at<float>(i,0) = (float)(1.0/2.0 * (1.0 - cos(2*CV_PI*i/NN)));
         }
     }
     NN = sz.width - 1;
     if(NN != 0) {
         for (int i = 0; i < hann_cols.cols; ++i) {
-            hann_cols.at<float>(0,i) = (float)(1.0/2.0 * ( 1.0 - cos(2*CV_PI*i/NN)));
+            hann_cols.at<float>(0,i) = (float)(1.0/2.0 * (1.0 - cos(2*CV_PI*i/NN)));
         }
     }
     return hann_rows * hann_cols;
@@ -271,18 +236,18 @@ Mat get_kaiser_win(Size sz, double alpha)
 
     int N = sz.height - 1;
     double shape = alpha;
-    double den = 1.0 / modified_bessel(0, shape );
+    double den = 1.0 / modified_bessel(0, shape);
 
-    for(int n = 0; n <= N; ++n ) {
+    for(int n = 0; n <= N; ++n) {
         double K = (2.0 * n * 1.0/N) - 1.0;
-        double x = sqrt( 1.0 - (K * K) );
+        double x = sqrt(1.0 - (K * K));
         kaiser_rows.at<float>(n,0) = (float)modified_bessel(0, shape * x) * den;
     }
 
     N = sz.width - 1;
-    for(int n = 0; n <= N; ++n ) {
+    for(int n = 0; n <= N; ++n) {
         double K = (2.0 * n * 1.0/N) - 1.0;
-        double x = sqrt( 1.0 - (K * K) );
+        double x = sqrt(1.0 - (K * K));
         kaiser_cols.at<float>(0,n) = (float)modified_bessel(0, shape * x) * den;
     }
 
@@ -317,8 +282,8 @@ static void computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const i
     // block size
     // int bW = cvRound((double)imageSize.width/(double)sbin);
     // int bH = cvRound((double)imageSize.height/(double)sbin);
-    int bW = floor((double)imageSize.width/(double)sbin);
-    int bH = floor((double)imageSize.height/(double)sbin);
+    int bW = cvFloor((double)imageSize.width/(double)sbin);
+    int bH = cvFloor((double)imageSize.height/(double)sbin);
     const Size blockSize(bW, bH);
     // size of HOG features
     int oW = max(blockSize.width-2, 0) + 2*pad_x;
@@ -393,8 +358,8 @@ static void computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const i
             // add to 4 historgrams around pixel using bilinear interpolation
             double yp =  ((double)y+0.5)/(double)sbin - 0.5;
             double xp =  ((double)x+0.5)/(double)sbin - 0.5;
-            int iyp = (int)floor(yp);
-            int ixp = (int)floor(xp);
+            int iyp = (int)cvFloor(yp);
+            int ixp = (int)cvFloor(xp);
             double vy0 = yp - iyp;
             double vx0 = xp - ixp;
             double vy1 = 1.0 - vy0;
@@ -511,7 +476,7 @@ static void computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const i
     }// for y
 }
 
-std::vector<Mat> get_features_hog( const Mat &im, const int bin_size)
+std::vector<Mat> get_features_hog(const Mat &im, const int bin_size)
 {
     Mat hogmatrix;
     Mat im_;
@@ -537,7 +502,7 @@ std::vector<Mat> get_features_cn(const Mat &ppatch_data, const Size &output_size
     for(int i=0;i<patch_data.rows;i++){
         for(int j=0;j<patch_data.cols;j++){
             pixel=patch_data.at<Vec3b>(i,j);
-            index=(unsigned)(floor((float)pixel[2]/8)+32*floor((float)pixel[1]/8)+32*32*floor((float)pixel[0]/8));
+            index=(unsigned)(cvFloor((float)pixel[2]/8)+32*cvFloor((float)pixel[1]/8)+32*32*cvFloor((float)pixel[0]/8));
 
             //copy the values
             for(int _k=0;_k<10;_k++){
@@ -584,11 +549,11 @@ double get_min(const Mat &m)
 Mat bgr2hsv(const Mat &img)
 {
     Mat hsv_img;
-	cvtColor(img, hsv_img, CV_BGR2HSV);
+    cvtColor(img, hsv_img, CV_BGR2HSV);
     std::vector<Mat> hsv_img_channels;
-	split(hsv_img, hsv_img_channels);
-	hsv_img_channels.at(0).convertTo(hsv_img_channels.at(0), CV_8UC1, 255.0 / 180.0);
-	merge(hsv_img_channels, hsv_img);
+    split(hsv_img, hsv_img_channels);
+    hsv_img_channels.at(0).convertTo(hsv_img_channels.at(0), CV_8UC1, 255.0 / 180.0);
+    merge(hsv_img_channels, hsv_img);
     return hsv_img;
 }
 

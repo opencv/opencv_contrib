@@ -1,44 +1,3 @@
-/*M///////////////////////////////////////////////////////////////////////////////////////
-//
-//  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
-//
-//  By downloading, copying, installing or using the software you agree to this license.
-//  If you do not agree to this license, do not download, install,
-//  copy or use the software.
-//
-//
-//                           License Agreement
-//                For Open Source Computer Vision Library
-//
-// Copyright (C) 2013, OpenCV Foundation, all rights reserved.
-// Third party copyrights are property of their respective owners.
-//
-// Redistribution and use in source and binary forms, with or without modification,
-// are permitted provided that the following conditions are met:
-//
-//   * Redistribution's of source code must retain the above copyright notice,
-//     this list of conditions and the following disclaimer.
-//
-//   * Redistribution's in binary form must reproduce the above copyright notice,
-//     this list of conditions and the following disclaimer in the documentation
-//     and/or other materials provided with the distribution.
-//
-//   * The name of the copyright holders may not be used to endorse or promote products
-//     derived from this software without specific prior written permission.
-//
-// This software is provided by the copyright holders and contributors "as is" and
-// any express or implied warranties, including, but not limited to, the implied
-// warranties of merchantability and fitness for a particular purpose are disclaimed.
-// In no event shall the Intel Corporation or contributors be liable for any direct,
-// indirect, incidental, special, exemplary, or consequential damages
-// (including, but not limited to, procurement of substitute goods or services;
-// loss of use, data, or profits; or business interruption) however caused
-// and on any theory of liability, whether in contract, strict liability,
-// or tort (including negligence or otherwise) arising in any way out of
-// the use of this software, even if advised of the possibility of such damage.
-//
-//M*/
-
 #include <opencv2/core/utility.hpp>
 #include <opencv2/tracking.hpp>
 #include <opencv2/videoio.hpp>
@@ -51,9 +10,9 @@
 using namespace std;
 using namespace cv;
 
-#include <chrono>
 
-int main( int argc, char** argv ){
+int main( int argc, char** argv )
+{
   // show help
   if(argc<2){
     cout<<
@@ -65,9 +24,6 @@ int main( int argc, char** argv ){
       << endl;
     return 0;
   }
-
-  // declare variables to measure time
-  std::chrono::time_point<std::chrono::system_clock> t1,t2,t4,t5,time_;
 
   // create the tracker
   Ptr<TrackerCSRT> tracker = TrackerCSRT::create();
@@ -90,7 +46,7 @@ int main( int argc, char** argv ){
   if(argc > 2) {
     // read first line of ground-truth file
     std::string groundtruthPath = argv[2];
-    std::ifstream gtIfstream(groundtruthPath);
+    std::ifstream gtIfstream(groundtruthPath.c_str());
     std::string gtLine;
     getline(gtIfstream, gtLine);
     gtIfstream.close();
@@ -101,7 +57,7 @@ int main( int argc, char** argv ){
     std::vector<float> elements;
     while(std::getline(gtStream, element, ','))
     {
-      elements.push_back(round(std::stof(element)));
+      elements.push_back(round(std::atof(element.c_str())));
     }
 
     if(elements.size() == 4) {
@@ -109,10 +65,10 @@ int main( int argc, char** argv ){
       roi = cv::Rect(elements[0], elements[1], elements[2], elements[3]);
     } else if(elements.size() == 8) {
       // ground-truth is polygon
-      float xMin = std::round(std::min(elements[0], std::min(elements[2], std::min(elements[4], elements[6]))));
-      float yMin = std::round(std::min(elements[1], std::min(elements[3], std::min(elements[5], elements[7]))));
-      float xMax = std::round(std::max(elements[0], std::max(elements[2], std::max(elements[4], elements[6]))));
-      float yMax = std::round(std::max(elements[1], std::max(elements[3], std::max(elements[5], elements[7]))));
+      float xMin = round(min(elements[0], min(elements[2], min(elements[4], elements[6]))));
+      float yMin = round(min(elements[1], min(elements[3], min(elements[5], elements[7]))));
+      float xMax = round(max(elements[0], max(elements[2], max(elements[4], elements[6]))));
+      float yMax = round(max(elements[1], max(elements[3], max(elements[5], elements[7]))));
       roi = cv::Rect(xMin, yMin, xMax-xMin, yMax-yMin);
 
       // create mask from polygon and set it to the tracker
@@ -127,7 +83,7 @@ int main( int argc, char** argv ){
       for (int i = 0; i < n; ++i) {
         poly_points[i] = Point( elements[2*i] - sx, elements[2*i+1] - sy );
       }
-      cv::fillConvexPoly(mask, poly_points, Scalar(1.0), CV_AA);
+      cv::fillConvexPoly(mask, poly_points, Scalar(1.0), 8);
       mask.convertTo(mask, CV_32FC1);
       tracker->setInitialMask(mask);
     } else {
@@ -144,10 +100,10 @@ int main( int argc, char** argv ){
     return 0;
 
   // initialize the tracker
-  t1 = std::chrono::system_clock::now();
+  double t1 = cv::getTickCount();
   tracker->init(frame,roi);
-  t2 = std::chrono::system_clock::now();
-  std::chrono::duration<double> time_acc = t2-t1;
+  double t2 = cv::getTickCount();
+  double tick_counter = t2-t1;
 
   // do the tracking
   printf("Start the tracking process, press ESC to quit.\n");
@@ -161,11 +117,10 @@ int main( int argc, char** argv ){
       break;
 
     // update the tracking result
-    t4 = std::chrono::system_clock::now();
+    t1 = cv::getTickCount();
     bool isfound = tracker->update(frame,roi);
-    t5 = std::chrono::system_clock::now();
-    std::chrono::duration<double> elapsed_seconds = t5-t4;
-    time_acc += elapsed_seconds;
+    t2 = cv::getTickCount();
+    tick_counter += t2-t1;
     frame_idx++;
 
     if(!isfound) {
@@ -182,6 +137,6 @@ int main( int argc, char** argv ){
     if(waitKey(1)==27)break;
   }
 
-  cout<< "Elapsed sec: " << time_acc.count() << endl;
-  cout<< "fps: " << ((double)(frame_idx)) / time_acc.count() << endl;
+  cout<< "Elapsed sec: " << tick_counter / cv::getTickFrequency() << endl;
+  cout<< "FPS: " << ((double)(frame_idx)) / (tick_counter / cv::getTickFrequency()) << endl;
 }

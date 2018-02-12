@@ -1,43 +1,8 @@
-/*///////////////////////////////////////////////////////////////////////////////////////
- //
- //  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
- //
- //  By downloading, copying, installing or using the software you agree to this license.
- //  If you do not agree to this license, do not download, install,
- //  copy or use the software.
- //
- //
- //                           License Agreement
- //                For Open Source Computer Vision Library
- //
- // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
- // Third party copyrights are property of their respective owners.
- //
- // Redistribution and use in source and binary forms, with or without modification,
- // are permitted provided that the following conditions are met:
- //
- //   * Redistribution's of source code must retain the above copyright notice,
- //     this list of conditions and the following disclaimer.
- //
- //   * Redistribution's in binary form must reproduce the above copyright notice,
- //     this list of conditions and the following disclaimer in the documentation
- //     and/or other materials provided with the distribution.
- //
- //   * The name of the copyright holders may not be used to endorse or promote products
- //     derived from this software without specific prior written permission.
- //
- // This software is provided by the copyright holders and contributors "as is" and
- // any express or implied warranties, including, but not limited to, the implied
- // warranties of merchantability and fitness for a particular purpose are disclaimed.
- // In no event shall the Intel Corporation or contributors be liable for any direct,
- // indirect, incidental, special, exemplary, or consequential damages
- // (including, but not limited to, procurement of substitute goods or services;
- // loss of use, data, or profits; or business interruption) however caused
- // and on any theory of liability, whether in contract, strict liability,
- // or tort (including negligence or otherwise) arising in any way out of
- // the use of this software, even if advised of the possibility of such damage.
- //
- //M*/
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+
+#include "precomp.hpp"
 
 #include "trackerCSRTScaleEstimation.hpp"
 #include "trackerCSRTUtils.hpp"
@@ -105,15 +70,14 @@ private:
 };
 
 
-DSST::DSST( const Mat &image,
+DSST::DSST(const Mat &image,
         Rect2f bounding_box,
         Size2f template_size,
         int numberOfScales,
         float scaleStep,
         float maxModelArea,
         float sigmaFactor,
-        float scaleLearnRate
-        ):
+        float scaleLearnRate):
     scales_count(numberOfScales), scale_step(scaleStep), max_model_area(maxModelArea),
     sigma_factor(sigmaFactor), learn_rate(scaleLearnRate)
 {
@@ -127,10 +91,10 @@ DSST::DSST( const Mat &image,
 
     scale_sigma = sqrt(scales_count) * sigma_factor;
 
-    min_scale_factor = pow( scale_step,
-            ceil(log(max(5.0 / template_size.width, 5.0 / template_size.height)) / log(scale_step)));
+    min_scale_factor = pow(scale_step,
+            cvCeil(log(max(5.0 / template_size.width, 5.0 / template_size.height)) / log(scale_step)));
     max_scale_factor = powf(scale_step,
-            floor(log(min((float)image.rows / (float)bounding_box.width,
+            cvFloor(log(min((float)image.rows / (float)bounding_box.width,
             (float)image.cols / (float)bounding_box.height)) / log(scale_step)));
     ys = Mat(1, scales_count, CV_32FC1);
     float ss, sf;
@@ -138,7 +102,7 @@ DSST::DSST( const Mat &image,
         ss = (float)(i+1) - ceil((float)scales_count/2.0);
         ys.at<float>(0,i) = exp(-0.5 * pow(ss,2) / pow(scale_sigma,2));
         sf = i + 1;
-        scale_factors.push_back(pow(scale_step, ceil((float)scales_count/2.0) - sf ));
+        scale_factors.push_back(pow(scale_step, ceil((float)scales_count/2.0) - sf));
     }
 
     scale_window = get_hann_win(Size(scales_count, 1));
@@ -146,11 +110,11 @@ DSST::DSST( const Mat &image,
     float scale_model_factor = 1.0;
     if(template_size.width * template_size.height * pow(scale_model_factor, 2) > max_model_area)
     {
-        scale_model_factor = sqrt( max_model_area /
+        scale_model_factor = sqrt(max_model_area /
                 (template_size.width * template_size.height));
     }
-    scale_model_sz = Size(floor(template_size.width * scale_model_factor),
-			floor(template_size.height * scale_model_factor));
+    scale_model_sz = Size(cvFloor(template_size.width * scale_model_factor),
+            cvFloor(template_size.height * scale_model_factor));
 
     Mat scale_resp = get_scale_features(image, object_center, original_targ_sz,
             current_scale_factor, scale_factors, scale_window, scale_model_sz);

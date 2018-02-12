@@ -1,43 +1,8 @@
-/*///////////////////////////////////////////////////////////////////////////////////////
- //
- //  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
- //
- //  By downloading, copying, installing or using the software you agree to this license.
- //  If you do not agree to this license, do not download, install,
- //  copy or use the software.
- //
- //
- //                           License Agreement
- //                For Open Source Computer Vision Library
- //
- // Copyright (C) 2013, OpenCV Foundation, all rights reserved.
- // Third party copyrights are property of their respective owners.
- //
- // Redistribution and use in source and binary forms, with or without modification,
- // are permitted provided that the following conditions are met:
- //
- //   * Redistribution's of source code must retain the above copyright notice,
- //     this list of conditions and the following disclaimer.
- //
- //   * Redistribution's in binary form must reproduce the above copyright notice,
- //     this list of conditions and the following disclaimer in the documentation
- //     and/or other materials provided with the distribution.
- //
- //   * The name of the copyright holders may not be used to endorse or promote products
- //     derived from this software without specific prior written permission.
- //
- // This software is provided by the copyright holders and contributors "as is" and
- // any express or implied warranties, including, but not limited to, the implied
- // warranties of merchantability and fitness for a particular purpose are disclaimed.
- // In no event shall the Intel Corporation or contributors be liable for any direct,
- // indirect, incidental, special, exemplary, or consequential damages
- // (including, but not limited to, procurement of substitute goods or services;
- // loss of use, data, or profits; or business interruption) however caused
- // and on any theory of liability, whether in contract, strict liability,
- // or tort (including negligence or otherwise) arising in any way out of
- // the use of this software, even if advised of the possibility of such damage.
- //
- //M*/
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+
+#include "precomp.hpp"
 
 #include "trackerCSRTSegmentation.hpp"
 
@@ -46,12 +11,7 @@
 #include <vector>
 #include <iostream>
 
-#include <opencv2/highgui.hpp>
-// #include <algorithm> // for copy
-// #include <iterator> // for ostream_iterator
-// #include <vector>
 //-------------------- HISTOGRAM CLASS --------------------
-
 namespace cv
 {
 
@@ -91,7 +51,7 @@ void Histogram::extractForegroundHistogram(std::vector<cv::Mat> & imgChannels,
         weights = kernelWeight;
     }
     //extract pixel values and compute histogram
-    double rangePerBinInverse = static_cast<double>(m_numBinsPerDim)/256.0;  // 1 / ( imgRange/numBinsPerDim )
+    double rangePerBinInverse = static_cast<double>(m_numBinsPerDim)/256.0;  // 1 / (imgRange/numBinsPerDim)
     double sum = 0;
     for (int y = y1; y < y2+1; ++y){
         std::vector<const uchar *> dataPtr(m_numDim);
@@ -102,7 +62,7 @@ void Histogram::extractForegroundHistogram(std::vector<cv::Mat> & imgChannels,
         for (int x = x1; x < x2+1; ++x){
             int id = 0;
             for (int dim = 0; dim < m_numDim; ++dim){
-                id += p_dimIdCoef[dim]*std::floor(rangePerBinInverse*dataPtr[dim][x]);
+                id += p_dimIdCoef[dim]*cvFloor(rangePerBinInverse*dataPtr[dim][x]);
             }
             p_bins[id] += weightPtr[x];
             sum += weightPtr[x];
@@ -120,7 +80,7 @@ void Histogram::extractBackGroundHistogram(
         int outer_x1, int outer_y1, int outer_x2, int outer_y2)
 {
     //extract pixel values and compute histogram
-    double rangePerBinInverse = static_cast<double>(m_numBinsPerDim)/256.0;  // 1 / ( imgRange/numBinsPerDim )
+    double rangePerBinInverse = static_cast<double>(m_numBinsPerDim)/256.0;  // 1 / (imgRange/numBinsPerDim)
     double sum = 0;
     for (int y = outer_y1; y < outer_y2; ++y){
 
@@ -134,7 +94,7 @@ void Histogram::extractBackGroundHistogram(
 
             int id = 0;
             for (int dim = 0; dim < m_numDim; ++dim){
-                id += p_dimIdCoef[dim]*std::floor(rangePerBinInverse*dataPtr[dim][x]);
+                id += p_dimIdCoef[dim]*cvFloor(rangePerBinInverse*dataPtr[dim][x]);
             }
             p_bins[id] += 1.0;
             sum += 1.0;
@@ -152,7 +112,7 @@ cv::Mat Histogram::backProject(std::vector<cv::Mat> & imgChannels)
     cv::Mat & img = imgChannels[0];
 
     cv::Mat backProject(img.rows, img.cols, CV_64FC1);
-    double rangePerBinInverse = static_cast<double>(m_numBinsPerDim)/256.0;  // 1 / ( imgRange/numBinsPerDim )
+    double rangePerBinInverse = static_cast<double>(m_numBinsPerDim)/256.0;  // 1 / (imgRange/numBinsPerDim)
 
     for (int y = 0; y < img.rows; ++y){
         double * backProjectPtr = backProject.ptr<double>(y);
@@ -163,7 +123,7 @@ cv::Mat Histogram::backProject(std::vector<cv::Mat> & imgChannels)
         for (int x = 0; x < img.cols; ++x){
             int id = 0;
             for (int dim = 0; dim < m_numDim; ++dim){
-                id += p_dimIdCoef[dim]*std::floor(rangePerBinInverse*dataPtr[dim][x]);
+                id += p_dimIdCoef[dim]*cvFloor(rangePerBinInverse*dataPtr[dim][x]);
             }
             backProjectPtr[x] = p_bins[id];
         }
@@ -190,7 +150,7 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors(
         const Histogram &fgHistPrior, int numBinsPerChannel)
 {
     //preprocess and normalize all data
-    assert(imgChannels.size() > 0);
+    CV_Assert(imgChannels.size() > 0);
 
     //fit target to the image
     x1 = std::min(std::max(x1, 0), imgChannels[0].cols-1);
@@ -246,7 +206,7 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors(
     cv::Mat foregroundLikelihood = hist_target.backProject(imgChannelsROI_inner).mul(fgPriorScaled);
     cv::Mat backgroundLikelihood = hist_background.backProject(imgChannelsROI_inner).mul(bgPriorScaled);
 
-    double p_b = std::sqrt( (std::pow(outer_x2-outer_x1, 2) + std::pow(outer_y2-outer_y1, 2)) /
+    double p_b = std::sqrt((std::pow(outer_x2-outer_x1, 2) + std::pow(outer_y2-outer_y1, 2)) /
             (std::pow(x2-x1, 2) + std::pow(y2-y1, 2))) ;
     double p_o = 1./(p_b + 1);
 
@@ -333,8 +293,9 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(
     return probs;
 }
 
-std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(std::vector<cv::Mat> &imgChannels, cv::Mat fgPrior, cv::Mat bgPrior,
-        Histogram hist_target, Histogram hist_background, int numBinsPerChannel)
+std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(std::vector<cv::Mat> &imgChannels,
+        cv::Mat fgPrior, cv::Mat bgPrior, Histogram hist_target,
+        Histogram hist_background, int numBinsPerChannel)
 {
     //preprocess and normalize all data
     assert(imgChannels.size() > 0);
@@ -377,7 +338,7 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(std::vector<cv::Mat> &im
 
     //prior for posterior, relative to the number of pixels in bg and fg
     double p_b = 5./3.;
-	double p_o = 1./(p_b + 1);
+    double p_o = 1./(p_b + 1);
 
     //convert likelihoods to posterior prob. (Bayes rule)
     cv::Mat prob_o(newSize, foregroundLikelihood.type());
@@ -397,7 +358,7 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(std::vector<cv::Mat> &im
 std::pair<cv::Mat, cv::Mat> Segment::getRegularizedSegmentation(
         cv::Mat &prob_o, cv::Mat &prob_b, cv::Mat & prior_o, cv::Mat & prior_b)
 {
-    int hsize = std::max(1., std::floor(static_cast<double>(prob_b.cols)*3./50. + 0.5));
+    int hsize = std::max(1.0, (double)cvFloor(static_cast<double>(prob_b.cols)*3./50. + 0.5));
     int lambdaSize = hsize*2+1;
 
     //compute gaussian kernel
