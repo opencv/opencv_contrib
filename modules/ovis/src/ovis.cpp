@@ -342,6 +342,13 @@ public:
         node->attachObject(ent);
     }
 
+    void removeEntity(const String& name) {
+        SceneNode* node = _getSceneNode(sceneMgr, name);
+        node->getAttachedObject(name)->detachFromParent();
+        sceneMgr->destroyEntity(name);
+        sceneMgr->destroySceneNode(node);
+    }
+
     Rect2d createCameraEntity(const String& name, InputArray K, const Size& imsize, float zFar,
                               InputArray tvec, InputArray rot)
     {
