@@ -6,6 +6,9 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace cvtest;
+
 class CV_GMSMatcherTest : public cvtest::BaseTest
 {
 public:

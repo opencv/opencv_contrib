@@ -6,6 +6,9 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace cvtest;
+
 void MakeArtificialExample(RNG rng, Mat& dst_left_view, Mat& dst_left_disparity_map, Mat& dst_right_disparity_map, Rect& dst_ROI);
 
 CV_ENUM(GuideTypes, CV_8UC3);

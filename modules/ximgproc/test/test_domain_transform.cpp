@@ -5,6 +5,10 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace cvtest;
+using namespace testing;
+
 static string getOpenCVExtraDir()
 {
     return cvtest::TS::ptr()->get_data_path();

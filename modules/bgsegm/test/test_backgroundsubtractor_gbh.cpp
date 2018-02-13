@@ -5,6 +5,8 @@
 // Author: andrewgodbehere
 #include "test_precomp.hpp"
 
+using namespace cv;
+
 namespace opencv_test { namespace {
 
 class CV_BackgroundSubtractorTest : public cvtest::BaseTest

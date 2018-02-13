@@ -5,6 +5,9 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace cvtest;
+
 typedef tuple<Size, MatType, int> L0SmoothTestParam;
 typedef TestBaseWithParam<L0SmoothTestParam> L0SmoothTest;
 

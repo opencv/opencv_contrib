@@ -5,6 +5,9 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace cvtest;
+
 typedef perf::TestBaseWithParam<std::string> surf;
 
 #define SURF_IMAGES \

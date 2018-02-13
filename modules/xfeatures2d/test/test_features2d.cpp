@@ -43,6 +43,10 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace cvtest;
+using namespace std;
+
 const string FEATURES2D_DIR = "features2d";
 const string DETECTOR_DIR = FEATURES2D_DIR + "/feature_detectors";
 const string DESCRIPTOR_DIR = FEATURES2D_DIR + "/descriptor_extractors";

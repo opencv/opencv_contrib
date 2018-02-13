@@ -41,6 +41,8 @@
 
 #include "test_precomp.hpp"
 
+using namespace cv;
+
 namespace opencv_test { namespace {
 
 /****************************************************************************************\

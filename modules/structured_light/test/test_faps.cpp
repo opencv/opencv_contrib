@@ -45,6 +45,10 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace cvtest;
+using namespace std;
+
 const string STRUCTURED_LIGHT_DIR = "structured_light";
 const string FOLDER_DATA = "data";
 

@@ -43,6 +43,9 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace cvtest;
+
 const string IMAGE_TSUKUBA = "/features2d/tsukuba.png";
 const string IMAGE_BIKES = "/detectors_descriptors_evaluation/images_datasets/bikes/img1.png";
 

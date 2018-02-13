@@ -5,6 +5,8 @@
 #include "test_precomp.hpp"
 #include "opencv2/imgcodecs.hpp"
 
+using namespace cv;
+
 namespace opencv_test { namespace {
 
 // Just skip test in case of missed testdata

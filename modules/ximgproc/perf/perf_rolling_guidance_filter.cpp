@@ -5,6 +5,9 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace cvtest;
+
 typedef tuple<double, Size, MatType, int> RGFTestParam;
 typedef TestBaseWithParam<RGFTestParam> RollingGuidanceFilterTest;
 

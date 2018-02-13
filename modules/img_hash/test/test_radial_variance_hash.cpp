@@ -3,8 +3,9 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include "test_precomp.hpp"
-
 namespace opencv_test { namespace {
+
+using namespace cv;
 using namespace cv::img_hash;
 
 

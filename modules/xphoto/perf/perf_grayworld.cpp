@@ -3,6 +3,9 @@
 // of this distribution and at http://opencv.org/license.html.
 #include "perf_precomp.hpp"
 
+using namespace cv;
+using namespace cvtest;
+
 namespace opencv_test { namespace {
 
 typedef tuple<Size, float> Size_WBThresh_t;

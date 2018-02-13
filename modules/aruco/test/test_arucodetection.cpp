@@ -39,6 +39,9 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include "test_precomp.hpp"
 
+using namespace cv;
+using namespace cvtest;
+
 namespace opencv_test { namespace {
 
 /**

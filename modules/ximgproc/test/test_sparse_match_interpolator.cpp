@@ -4,6 +4,10 @@
 #include "test_precomp.hpp"
 #include "opencv2/ximgproc/sparse_match_interpolator.hpp"
 
+using namespace cv;
+using namespace cvtest;
+using namespace testing;
+
 namespace opencv_test { namespace {
 
 static string getDataDir()

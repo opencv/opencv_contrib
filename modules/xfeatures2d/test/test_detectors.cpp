@@ -44,6 +44,9 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace cvtest;
+
 class CV_DetectorsTest : public cvtest::BaseTest
 {
 public:

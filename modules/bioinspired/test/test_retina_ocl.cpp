@@ -46,6 +46,8 @@
 #include "test_precomp.hpp"
 #include "opencv2/ts/ocl_test.hpp"
 
+using namespace cv;
+
 #define RETINA_ITERATIONS 5
 
 namespace opencv_test { namespace {

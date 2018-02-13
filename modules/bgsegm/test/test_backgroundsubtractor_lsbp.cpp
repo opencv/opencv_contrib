@@ -4,6 +4,9 @@
 #include "test_precomp.hpp"
 #include <set>
 
+using namespace cv;
+using namespace cvtest;
+
 namespace opencv_test { namespace {
 
 static string getDataDir() { return TS::ptr()->get_data_path(); }

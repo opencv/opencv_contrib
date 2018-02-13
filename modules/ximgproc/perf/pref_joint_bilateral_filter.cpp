@@ -6,6 +6,9 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace cvtest;
+
 typedef tuple<double, Size, MatType, int, int> JBFTestParam;
 typedef TestBaseWithParam<JBFTestParam> JointBilateralFilterTest;
 

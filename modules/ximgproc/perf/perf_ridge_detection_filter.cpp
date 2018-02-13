@@ -5,6 +5,9 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace cvtest;
+
 typedef tuple<MatDepth, int, Size> RDFParams;
 typedef TestBaseWithParam<RDFParams> RidgeDetectionFilterPerfTest;
 

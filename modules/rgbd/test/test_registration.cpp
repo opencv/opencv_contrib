@@ -44,6 +44,8 @@
 
 #include "test_precomp.hpp"
 
+using namespace cv;
+
 namespace opencv_test { namespace {
 
 class CV_RgbdDepthRegistrationTest: public cvtest::BaseTest

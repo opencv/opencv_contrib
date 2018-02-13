@@ -36,6 +36,9 @@ Mentor: Delia Passalacqua
 
 #include "test_precomp.hpp"
 
+using namespace cv;
+using namespace cvtest;
+
 namespace opencv_test { namespace {
 
 TEST(CV_Face_Facemark, test_utilities) {

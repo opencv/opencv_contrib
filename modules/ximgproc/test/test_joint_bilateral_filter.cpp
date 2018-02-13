@@ -3,6 +3,10 @@
 // of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 
+using namespace cv;
+using namespace cvtest;
+using namespace testing;
+
 namespace opencv_test { namespace {
 
 static std::string getOpenCVExtraDir()

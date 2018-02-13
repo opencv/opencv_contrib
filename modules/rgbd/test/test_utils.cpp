@@ -3,6 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 
+using namespace cv;
+
 namespace opencv_test { namespace {
 
 class CV_RgbdDepthTo3dTest: public cvtest::BaseTest

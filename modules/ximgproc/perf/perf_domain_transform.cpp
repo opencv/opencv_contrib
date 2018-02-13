@@ -5,6 +5,9 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace cvtest;
+
 CV_ENUM(GuideMatType, CV_8UC1, CV_8UC3, CV_32FC1, CV_32FC3) //reduced set
 CV_ENUM(SourceMatType, CV_8UC1, CV_8UC3, CV_8UC4, CV_32FC1, CV_32FC3) //reduced set
 CV_ENUM(DTFMode, DTF_NC, DTF_IC, DTF_RF)
