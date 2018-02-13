@@ -323,12 +323,21 @@ public:
 
         Pass* rpass = bgplane->getMaterial()->getBestTechnique()->getPasses()[0];
         rpass->getTextureUnitStates()[0]->setTextureName(name);
+
+        // ensure bgplane is visible
+        bgplane->setVisible(true);
     }
 
     void setBackground(const Scalar& color)
     {
-        Mat img(1, 1, CV_8UC3, color);
-        setBackground(img);
+        // hide background plane
+        bgplane->setVisible(false);
+
+        // BGRA as uchar
+        ColourValue _color = ColourValue(color[2], color[1], color[0], color[3]) / 255;
+        rWin->getViewport(0)->setBackgroundColour(_color);
+        if(frameSrc != rWin)
+            frameSrc->getViewport(0)->setBackgroundColour(_color);
     }
 
     void createEntity(const String& name, const String& meshname, InputArray tvec, InputArray rot)
