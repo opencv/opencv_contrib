@@ -41,7 +41,12 @@
 
 #include "test_precomp.hpp"
 
+
 namespace opencv_test { namespace {
+
+using namespace cv;
+using namespace cvtest;
+using namespace std;
 
 #define TESTSET_NAMES testing::Values("david","dudek","faceocc2")
 

@@ -40,6 +40,8 @@
 //M*/
 
 #include "test_precomp.hpp"
+using namespace cv;
+using namespace cvtest;
 
 namespace opencv_test { namespace {
 

@@ -43,6 +43,9 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace std;
+
 //write sanity: ./bin/opencv_perf_tracking --perf_write_sanity=true --perf_min_samples=1
 //verify sanity: ./bin/opencv_perf_tracking --perf_min_samples=1
 

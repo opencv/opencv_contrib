@@ -3,6 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 
+using namespace cv;
+using namespace std;
 namespace opencv_test { namespace {
 
 TEST(xphoto_simplefeatures, regression)

@@ -43,6 +43,9 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace cvtest;
+
 const string FEATURES2D_DIR = "features2d";
 const string IMAGE_FILENAME = "tsukuba.png";
 

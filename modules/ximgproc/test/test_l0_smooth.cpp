@@ -3,6 +3,10 @@
 // of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 
+using namespace cv;
+using namespace cvtest;
+using namespace testing;
+
 namespace opencv_test { namespace {
 
 CV_ENUM(SrcTypes, CV_8UC1, CV_8UC3, CV_16UC1, CV_16UC3);

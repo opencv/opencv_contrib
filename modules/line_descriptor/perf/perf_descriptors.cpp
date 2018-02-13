@@ -41,6 +41,8 @@
 
 #include "perf_precomp.hpp"
 
+using namespace cv;
+
 namespace opencv_test { namespace {
 
 typedef perf::TestBaseWithParam<std::string> file_str;

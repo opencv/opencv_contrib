@@ -49,6 +49,9 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace cvtest;
+
 static bool keyPointsEquals(const cv::KeyPoint& p1, const cv::KeyPoint& p2)
 {
     const double maxPtDif = 0.1;

@@ -43,6 +43,11 @@
 
 #include "test_precomp.hpp"
 
+using namespace cv;
+using namespace cvtest;
+using namespace std;
+using namespace testing;
+
 namespace opencv_test { namespace {
 
 //----------------------utils---------------------------------------------------

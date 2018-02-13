@@ -43,6 +43,9 @@
 
 #include "perf_precomp.hpp"
 
+using namespace cv;
+using namespace cvtest;
+
 namespace opencv_test { namespace {
 
 using namespace perf;

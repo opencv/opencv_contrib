@@ -5,6 +5,10 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace cvtest;
+using namespace testing;
+
 typedef tuple<int, double, double, MatType, int> BTFParams;
 typedef TestWithParam<BTFParams> BilateralTextureFilterTest;
 

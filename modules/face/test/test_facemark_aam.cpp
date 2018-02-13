@@ -43,6 +43,9 @@ Mentor: Delia Passalacqua
 
 #include "test_precomp.hpp"
 
+using namespace cv;
+using namespace cvtest;
+
 namespace opencv_test { namespace {
 
 static bool customDetector( InputArray image, OutputArray ROIs, CascadeClassifier *face_detector){

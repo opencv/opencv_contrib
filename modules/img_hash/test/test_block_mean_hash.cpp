@@ -5,6 +5,8 @@
 #include "test_precomp.hpp"
 
 #include <bitset>
+using namespace cv;
+using namespace cvtest;
 
 namespace opencv_test { namespace {
 using namespace cv::img_hash;

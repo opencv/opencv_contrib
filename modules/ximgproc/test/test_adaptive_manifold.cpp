@@ -3,6 +3,11 @@
 // of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 
+using namespace cv;
+using namespace cvtest;
+using namespace std;
+using namespace testing;
+
 namespace opencv_test {
 Ptr<AdaptiveManifoldFilter> createAMFilterRefImpl(double sigma_s, double sigma_r, bool adjust_outliers = false);
 namespace {

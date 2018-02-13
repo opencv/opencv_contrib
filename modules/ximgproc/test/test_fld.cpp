@@ -3,6 +3,9 @@
 // of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 
+using namespace cv;
+using namespace cvtest;
+
 namespace opencv_test { namespace {
 
 const Size img_size(640, 480);

@@ -5,6 +5,9 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace cvtest;
+
 typedef tuple<bool, Size, int, int, MatType> AMPerfTestParam;
 typedef TestBaseWithParam<AMPerfTestParam> AdaptiveManifoldPerfTest;
 

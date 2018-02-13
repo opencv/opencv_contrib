@@ -42,6 +42,8 @@
 #include "test_precomp.hpp"
 #include "opencv2/tracking/kalman_filters.hpp"
 
+using namespace cv;
+
 namespace opencv_test { namespace {
 using namespace cv::tracking;
 

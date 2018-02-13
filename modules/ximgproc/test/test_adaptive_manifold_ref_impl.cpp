@@ -30,6 +30,10 @@
 
 namespace opencv_test { namespace {
 
+using namespace cv;
+using namespace cvtest;
+using namespace std;
+
 using namespace cv::ximgproc;
 
     struct Buf

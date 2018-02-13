@@ -37,6 +37,8 @@
 #include <opencv2/rgbd.hpp>
 #include <opencv2/calib3d.hpp>
 
+using namespace cv;
+
 namespace opencv_test { namespace {
 
 #if 0

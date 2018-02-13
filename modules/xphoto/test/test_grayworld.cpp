@@ -3,6 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 
+using namespace cv;
+
 namespace opencv_test { namespace {
 
     void ref_autowbGrayworld(InputArray _src, OutputArray _dst, float thresh)
