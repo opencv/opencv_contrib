@@ -107,13 +107,13 @@ static void _setCameraIntrinsics(Camera* cam, InputArray _K, const Size& imsize)
     cam->setFrustumOffset(toOGRE_SS * Vector2(pp_offset.val));
 }
 
-static SceneNode* _getSceneNode(SceneManager* sceneMgr, const String& name)
+static SceneNode& _getSceneNode(SceneManager* sceneMgr, const String& name)
 {
     MovableObject* mo = NULL;
 
     try
     {
-        mo = sceneMgr->getCamera(name);
+        mo = sceneMgr->getMovableObject(name, "Camera");
     }
     catch (ItemIdentityException&)
     {
@@ -123,7 +123,7 @@ static SceneNode* _getSceneNode(SceneManager* sceneMgr, const String& name)
     try
     {
         if (!mo)
-            mo = sceneMgr->getLight(name);
+            mo = sceneMgr->getMovableObject(name, "Light");
     }
     catch (ItemIdentityException&)
     {
@@ -131,9 +131,9 @@ static SceneNode* _getSceneNode(SceneManager* sceneMgr, const String& name)
     }
 
     if (!mo)
-        mo = sceneMgr->getEntity(name);
+        mo = sceneMgr->getMovableObject(name, "Entity"); // throws if not found
 
-    return mo->getParentSceneNode();
+    return *mo->getParentSceneNode();
 }
 
 struct Application : public OgreBites::ApplicationContext, public OgreBites::InputListener
@@ -352,10 +352,10 @@ public:
     }
 
     void removeEntity(const String& name) {
-        SceneNode* node = _getSceneNode(sceneMgr, name);
-        node->getAttachedObject(name)->detachFromParent();
+        SceneNode& node = _getSceneNode(sceneMgr, name);
+        node.getAttachedObject(name)->detachFromParent();
         sceneMgr->destroyEntity(name);
-        sceneMgr->destroySceneNode(node);
+        sceneMgr->destroySceneNode(&node);
     }
 
     Rect2d createCameraEntity(const String& name, InputArray K, const Size& imsize, float zFar,
@@ -407,22 +407,22 @@ public:
 
     void updateEntityPose(const String& name, InputArray tvec, InputArray rot)
     {
-        SceneNode* node = _getSceneNode(sceneMgr, name);
+        SceneNode& node = _getSceneNode(sceneMgr, name);
         Quaternion q;
         Vector3 t;
         _convertRT(rot, tvec, q, t);
-        node->rotate(q, Ogre::Node::TS_LOCAL);
-        node->translate(t, Ogre::Node::TS_LOCAL);
+        node.rotate(q, Ogre::Node::TS_LOCAL);
+        node.translate(t, Ogre::Node::TS_LOCAL);
     }
 
     void setEntityPose(const String& name, InputArray tvec, InputArray rot, bool invert)
     {
-        SceneNode* node = _getSceneNode(sceneMgr, name);
+        SceneNode& node = _getSceneNode(sceneMgr, name);
         Quaternion q;
         Vector3 t;
         _convertRT(rot, tvec, q, t, invert);
-        node->setOrientation(q);
-        node->setPosition(t);
+        node.setOrientation(q);
+        node.setPosition(t);
     }
 
     void _createBackground()
