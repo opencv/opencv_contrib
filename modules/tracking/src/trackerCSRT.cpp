@@ -61,7 +61,7 @@ private:
     Size2i image_size;
     Size2f template_size;
     Size2i rescaled_template_size;
-    double rescale_ratio;
+    float rescale_ratio;
     Point2f object_center;
     DSST dsst;
     Histogram hist_foreground;
@@ -156,19 +156,20 @@ void TrackerCSRTImpl::update_csr_filter(const Mat &image, const Mat &mask)
     //calculate per channel weights
     if(params.use_channel_weights) {
         Mat current_resp;
-        double max_val, sum_weights = 0;
-        std::vector<double> new_filter_weights = std::vector<double>(new_csr_filter.size());
+        double max_val;
+        float sum_weights = 0;
+        std::vector<float> new_filter_weights = std::vector<float>(new_csr_filter.size());
         for(size_t i = 0; i < new_csr_filter.size(); ++i) {
             mulSpectrums(Fftrs[i], new_csr_filter[i], current_resp, 0, true);
             idft(current_resp, current_resp, DFT_SCALE | DFT_REAL_OUTPUT);
             minMaxLoc(current_resp, NULL, &max_val, NULL, NULL);
-            sum_weights += max_val;
-            new_filter_weights[i] = max_val;
+            sum_weights += static_cast<float>(max_val);
+            new_filter_weights[i] = static_cast<float>(max_val);
         }
         //update filter weights with new values
-        double updated_sum = 0;
+        float updated_sum = 0;
         for(size_t i = 0; i < filter_weights.size(); ++i) {
-            filter_weights[i] = filter_weights[i]*(1-params.weights_lr) +
+            filter_weights[i] = filter_weights[i]*(1.0f - params.weights_lr) +
                 params.weights_lr * (new_filter_weights[i] / sum_weights);
             updated_sum += filter_weights[i];
         }
@@ -178,7 +179,7 @@ void TrackerCSRTImpl::update_csr_filter(const Mat &image, const Mat &mask)
         }
     }
     for(size_t i = 0; i < csr_filter.size(); ++i) {
-        csr_filter[i] = (1 - params.filter_lr)*csr_filter[i] + params.filter_lr * new_csr_filter[i];
+        csr_filter[i] = (1.0f - params.filter_lr)*csr_filter[i] + params.filter_lr * new_csr_filter[i];
     }
     std::vector<Mat>().swap(ftrs);
     std::vector<Mat>().swap(Fftrs);
@@ -234,10 +235,10 @@ public:
     virtual void operator ()(const Range& range) const
     {
         for (int i = range.start; i < range.end; i++) {
-            float mu = 5.0;
-            float beta = 3.0;
-            float mu_max = 20.0;
-            float lambda = mu / 100.0;
+            float mu = 5.0f;
+            float beta = 3.0f;
+            float mu_max = 20.0f;
+            float lambda = mu / 100.0f;
 
             Mat F = img_features[i];
 
@@ -255,7 +256,7 @@ public:
             for(int iteration = 0; iteration < admm_iterations; ++iteration) {
                 G = divide_complex_matrices((Sxy + (mu * H) - L) , (Sxx + mu));
                 idft((mu * G) + L, H, DFT_SCALE | DFT_REAL_OUTPUT);
-                float lm = 1.0 / (lambda+mu);
+                float lm = 1.0f / (lambda+mu);
                 H = H.mul(P*lm);
                 dft(H, H, DFT_COMPLEX_OUTPUT);
 
@@ -289,7 +290,7 @@ std::vector<Mat> TrackerCSRTImpl::create_csr_filter(
     result_filter.resize(img_features.size());
     ParallelCreateCSRFilter parallelCreateCSRFilter(img_features, Y, P,
             params.admm_iterations, result_filter);
-    parallel_for_(Range(0, result_filter.size()), parallelCreateCSRFilter);
+    parallel_for_(Range(0, static_cast<int>(result_filter.size())), parallelCreateCSRFilter);
 
     return result_filter;
 }
@@ -306,7 +307,7 @@ Mat TrackerCSRTImpl::get_location_prior(
     int y2 = cvRound(min(max(roi.height-1, 0) , img_sz.height-1));
 
     Size target_sz;
-    target_sz.width = target_sz.height = min(target_size.width, target_size.height);
+    target_sz.width = target_sz.height = cvFloor(min(target_size.width, target_size.height));
 
     double cx = x1 + (x2-x1)/2.;
     double cy = y1 + (y2-y1)/2.;
@@ -396,13 +397,13 @@ void TrackerCSRTImpl::extract_histograms(const Mat &image, cv::Rect region, Hist
 void TrackerCSRTImpl::update_histograms(const Mat &image, const Rect &region)
 {
     // create temporary histograms
-    Histogram _hf(image.channels(), params.histogram_bins);
-    Histogram _hb(image.channels(), params.histogram_bins);
-    extract_histograms(image, region, _hf, _hb);
+    Histogram hf(image.channels(), params.histogram_bins);
+    Histogram hb(image.channels(), params.histogram_bins);
+    extract_histograms(image, region, hf, hb);
 
     // get histogram vectors from temporary histograms
-    std::vector<double> hf_vect_new = _hf.getHistogramVector();
-    std::vector<double> hb_vect_new = _hb.getHistogramVector();
+    std::vector<double> hf_vect_new = hf.getHistogramVector();
+    std::vector<double> hb_vect_new = hb.getHistogramVector();
     // get histogram vectors from learned histograms
     std::vector<double> hf_vect = hist_foreground.getHistogramVector();
     std::vector<double> hb_vect = hist_background.getHistogramVector();
@@ -433,24 +434,24 @@ Point2f TrackerCSRTImpl::estimate_new_position(const Mat &image)
     // take into account also subpixel accuracy
     float col = ((float) max_loc.x) + subpixel_peak(resp, "horizontal", max_loc);
     float row = ((float) max_loc.y) + subpixel_peak(resp, "vertical", max_loc);
-    if(row + 1 > (float)resp.rows / 2.0) {
+    if(row + 1 > (float)resp.rows / 2.0f) {
         row = row - resp.rows;
     }
-    if(col + 1 > (float)resp.cols / 2.0) {
+    if(col + 1 > (float)resp.cols / 2.0f) {
         col = col - resp.cols;
     }
     // calculate x and y displacements
-    Point2f new_center = object_center + Point2f(current_scale_factor * (1/rescale_ratio) *cell_size*(col),
-            current_scale_factor * (1/rescale_ratio) *cell_size*(row));
+    Point2f new_center = object_center + Point2f(current_scale_factor * (1.0f / rescale_ratio) *cell_size*(col),
+            current_scale_factor * (1.0f / rescale_ratio) *cell_size*(row));
     //sanity checks
     if(new_center.x < 0)
         new_center.x = 0;
     if(new_center.x >= image_size.width)
-        new_center.x = image_size.width - 1;
+        new_center.x = static_cast<float>(image_size.width - 1);
     if(new_center.y < 0)
         new_center.y = 0;
     if(new_center.y >= image_size.height)
-        new_center.y = image_size.height - 1;
+        new_center.y = static_cast<float>(image_size.height - 1);
 
     return new_center;
 }
@@ -458,21 +459,24 @@ Point2f TrackerCSRTImpl::estimate_new_position(const Mat &image)
 // *********************************************************************
 // *                        Update API function                        *
 // *********************************************************************
-bool TrackerCSRTImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
+bool TrackerCSRTImpl::updateImpl(const Mat& image_, Rect2d& boundingBox)
 {
     //treat gray image as color image
-    if(image.channels() == 1) {
+    Mat image;
+    if(image_.channels() == 1) {
         std::vector<Mat> channels(3);
-        channels[0] = channels[1] = channels[2] = image;
+        channels[0] = channels[1] = channels[2] = image_;
         merge(channels, image);
+    } else {
+        image = image_;
     }
 
     object_center = estimate_new_position(image);
 
     current_scale_factor = dsst.getScale(image, object_center);
     //update bouding_box according to new scale and location
-    bounding_box.x = object_center.x - current_scale_factor * original_target_size.width / 2.0;
-    bounding_box.y = object_center.y - current_scale_factor * original_target_size.height / 2.0;
+    bounding_box.x = object_center.x - current_scale_factor * original_target_size.width / 2.0f;
+    bounding_box.y = object_center.y - current_scale_factor * original_target_size.height / 2.0f;
     bounding_box.width = current_scale_factor * original_target_size.width;
     bounding_box.height = current_scale_factor * original_target_size.height;
 
@@ -500,37 +504,41 @@ bool TrackerCSRTImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
 // *********************************************************************
 // *                        Init API function                          *
 // *********************************************************************
-bool TrackerCSRTImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
+bool TrackerCSRTImpl::initImpl(const Mat& image_, const Rect2d& boundingBox)
 {
     cv::setNumThreads(getNumThreads());
 
     //treat gray image as color image
-    if(image.channels() == 1) {
+    Mat image;
+    if(image_.channels() == 1) {
         std::vector<Mat> channels(3);
-        channels[0] = channels[1] = channels[2] = image;
+        channels[0] = channels[1] = channels[2] = image_;
         merge(channels, image);
+    } else {
+        image = image_;
     }
+
     current_scale_factor = 1.0;
     image_size = image.size();
     bounding_box = boundingBox;
-    cell_size = std::min(4.0, std::max(1.0,
-                (double)cvCeil((bounding_box.width * bounding_box.height)/400.0)));
+    cell_size = cvFloor(std::min(4.0, std::max(1.0, static_cast<double>(
+        cvCeil((bounding_box.width * bounding_box.height)/400.0)))));
     original_target_size = Size(bounding_box.size());
 
-    template_size.width = cvFloor(original_target_size.width + params.padding *
-            sqrt(original_target_size.width * original_target_size.height));
-    template_size.height = cvFloor(original_target_size.height + params.padding *
-            sqrt(original_target_size.width * original_target_size.height));
+    template_size.width = static_cast<float>(cvFloor(original_target_size.width + params.padding *
+            sqrt(original_target_size.width * original_target_size.height)));
+    template_size.height = static_cast<float>(cvFloor(original_target_size.height + params.padding *
+            sqrt(original_target_size.width * original_target_size.height)));
     template_size.width = template_size.height =
-        (template_size.width + template_size.height) / 2.0;
+        (template_size.width + template_size.height) / 2.0f;
     rescale_ratio = sqrt(pow(params.template_size,2) / (template_size.width * template_size.height));
     if(rescale_ratio > 1)  {
         rescale_ratio = 1;
     }
-    rescaled_template_size = Size2i(template_size.width * rescale_ratio,
-            template_size.height * rescale_ratio);
-    object_center = Point2f(boundingBox.x + original_target_size.width / 2,
-            boundingBox.y + original_target_size.height / 2);
+    rescaled_template_size = Size2i(cvFloor(template_size.width * rescale_ratio),
+            cvFloor(template_size.height * rescale_ratio));
+    object_center = Point2f(static_cast<float>(boundingBox.x) + original_target_size.width / 2.0f,
+            static_cast<float>(boundingBox.y) + original_target_size.height / 2.0f);
 
     yf = gaussian_shaped_labels(params.gsl_sigma,
             rescaled_template_size.width / cell_size, rescaled_template_size.height / cell_size);
@@ -545,14 +553,14 @@ bool TrackerCSRTImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
         return false;
     }
 
-    Size2i scaled_obj_size = Size2i(original_target_size.width * rescale_ratio / cell_size ,
-            original_target_size.height * rescale_ratio / cell_size);
+    Size2i scaled_obj_size = Size2i(cvFloor(original_target_size.width * rescale_ratio / cell_size),
+            cvFloor(original_target_size.height * rescale_ratio / cell_size));
     //set dummy mask and area;
     int x0 = std::max((yf.size().width - scaled_obj_size.width)/2 - 1, 0);
     int y0 = std::max((yf.size().height - scaled_obj_size.height)/2 - 1, 0);
     default_mask = Mat::zeros(yf.size(), CV_32FC1);
     default_mask(Rect(x0,y0,scaled_obj_size.width, scaled_obj_size.height)) = 1.0f;
-    default_mask_area = sum(default_mask)[0];
+    default_mask_area = static_cast<float>(sum(default_mask)[0]);
 
     //initalize segmentation
     if(params.use_segmentation) {
@@ -594,14 +602,14 @@ bool TrackerCSRTImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
     if(params.use_channel_weights) {
         Mat current_resp;
         filter_weights = std::vector<float>(csr_filter.size());
-        double chw_sum = 0;
+        float chw_sum = 0;
         for (size_t i = 0; i < csr_filter.size(); ++i) {
             mulSpectrums(Fftrs[i], csr_filter[i], current_resp, 0, true);
             idft(current_resp, current_resp, DFT_SCALE | DFT_REAL_OUTPUT);
             double max_val;
             minMaxLoc(current_resp, NULL, &max_val, NULL , NULL);
-            chw_sum += max_val;
-            filter_weights[i] = max_val;
+            chw_sum += static_cast<float>(max_val);
+            filter_weights[i] = static_cast<float>(max_val);
         }
         for (size_t i = 0; i < filter_weights.size(); ++i) {
             filter_weights[i] /= chw_sum;
@@ -626,25 +634,25 @@ TrackerCSRT::Params::Params()
     use_gray = true;
     use_rgb = false;
     window_function = "hann";
-    kaiser_alpha = 3.75;
+    kaiser_alpha = 3.75f;
     cheb_attenuation = 45;
-    padding = 3;
+    padding = 3.0f;
     template_size = 200;
-    gsl_sigma = 1.0;
+    gsl_sigma = 1.0f;
     hog_orientations = 9;
-    hog_clip = 0.2;
+    hog_clip = 0.2f;
     num_hog_channels_used = 18;
-    filter_lr = 0.02;
-    weights_lr = 0.02;
+    filter_lr = 0.02f;
+    weights_lr = 0.02f;
     admm_iterations = 4;
     number_of_scales = 33;
-    scale_sigma_factor = 0.250;
-    scale_model_max_area = 512.0;
-    scale_lr = 0.025;
-    scale_step = 1.020;
+    scale_sigma_factor = 0.250f;
+    scale_model_max_area = 512.0f;
+    scale_lr = 0.025f;
+    scale_step = 1.020f;
     histogram_bins = 16;
     background_ratio = 2;
-    histogram_lr = 0.04;
+    histogram_lr = 0.04f;
 }
 
 void TrackerCSRT::Params::read(const FileNode& fn)

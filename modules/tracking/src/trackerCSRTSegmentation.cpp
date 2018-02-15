@@ -19,11 +19,11 @@ Histogram::Histogram(int numDimensions, int numBinsPerDimension)
 {
     m_numBinsPerDim = numBinsPerDimension;
     m_numDim = numDimensions;
-    p_size = std::pow(m_numBinsPerDim, m_numDim);
+    p_size = cvFloor(std::pow(m_numBinsPerDim, m_numDim));
     p_bins.resize(p_size, 0);
     p_dimIdCoef.resize(m_numDim, 1);
     for (int i = 0; i < m_numDim-1; ++i)
-        p_dimIdCoef[i] = std::pow(numBinsPerDimension, m_numDim - 1 - i);
+        p_dimIdCoef[i] = static_cast<int>(std::pow(numBinsPerDimension, m_numDim - 1 - i));
 
 }
 
@@ -169,8 +169,8 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors(
     //extract histogram from original data -> more pixels better representation of distr. by histograms
     Histogram hist_target =
         (fgHistPrior.m_numBinsPerDim == numBinsPerChannel && (size_t)fgHistPrior.m_numDim == imgChannels.size())
-        ? fgHistPrior : Histogram(imgChannels.size(), numBinsPerChannel);
-    Histogram hist_background(imgChannels.size(), numBinsPerChannel);
+        ? fgHistPrior : Histogram(static_cast<int>(imgChannels.size()), numBinsPerChannel);
+    Histogram hist_background(static_cast<int>(imgChannels.size()), numBinsPerChannel);
     if (weights.cols == 0)
         hist_target.extractForegroundHistogram(imgChannels, cv::Mat(), false, x1, y1, x2, y2);
     else
@@ -182,7 +182,7 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors(
     double factor = sqrt(1000.0/((x2-x1)*(y2-y1)));
     if (factor > 1)
         factor = 1.0;
-    cv::Size newSize((x2-x1)*factor, (y2-y1)*factor);
+    cv::Size newSize(cvFloor((x2-x1)*factor), cvFloor((y2-y1)*factor));
 
     //rescale input data
     cv::Rect roiRect_inner = cv::Rect(x1, y1, x2-x1, y2-y1);
@@ -251,7 +251,7 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(
     double factor = sqrt(1000.0/(w*h));
     if (factor > 1)
         factor = 1.0;
-    cv::Size newSize(w*factor, h*factor);
+    cv::Size newSize(cvFloor(w*factor), cvFloor(h*factor));
 
     //rescale input data
     cv::Rect roiRect_inner = cv::Rect(x1, y1, w, h);
@@ -309,7 +309,7 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(std::vector<cv::Mat> &im
     //double factor = 1;
     if (factor > 1)
         factor = 1.0;
-    cv::Size newSize((x2-x1)*factor, (y2-y1)*factor);
+    cv::Size newSize(cvFloor((x2-x1)*factor), cvFloor((y2-y1)*factor));
 
     //rescale input data
     cv::Rect roiRect_inner = cv::Rect(x1, y1, x2-x1+1, y2-y1+1);
@@ -356,7 +356,7 @@ std::pair<cv::Mat, cv::Mat> Segment::computePosteriors2(std::vector<cv::Mat> &im
 std::pair<cv::Mat, cv::Mat> Segment::getRegularizedSegmentation(
         cv::Mat &prob_o, cv::Mat &prob_b, cv::Mat & prior_o, cv::Mat & prior_b)
 {
-    int hsize = std::max(1.0, (double)cvFloor(static_cast<double>(prob_b.cols)*3./50. + 0.5));
+    int hsize = cvFloor(std::max(1.0, (double)cvFloor(static_cast<double>(prob_b.cols)*3./50. + 0.5)));
     int lambdaSize = hsize*2+1;
 
     //compute gaussian kernel

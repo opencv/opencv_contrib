@@ -29,7 +29,7 @@ inline double kernel_epan(double x)
 Mat circshift(Mat matrix, int dx, int dy);
 Mat gaussian_shaped_labels(const float sigma, const int w, const int h);
 std::vector<Mat> fourier_transform_features(const std::vector<Mat> &M);
-Mat divide_complex_matrices(const Mat &_A, const Mat &_B);
+Mat divide_complex_matrices(const Mat &A, const Mat &B);
 Mat get_subwindow(const Mat &image, const Point2f center,
         const int w, const int h,Rect *valid_pixels = NULL);
 
@@ -38,8 +38,8 @@ double get_max(const Mat &m);
 double get_min(const Mat &m);
 
 Mat get_hann_win(Size sz);
-Mat get_kaiser_win(Size sz, double alpha);
-Mat get_chebyshev_win(Size sz, double attenuation);
+Mat get_kaiser_win(Size sz, float alpha);
+Mat get_chebyshev_win(Size sz, float attenuation);
 
 std::vector<Mat> get_features_rgb(const Mat &patch, const Size &output_size);
 std::vector<Mat> get_features_hog(const Mat &im, const int bin_size);

@@ -38,14 +38,14 @@ public:
     virtual void operator ()(const Range& range) const
     {
         for (int s = range.start; s < range.end; s++) {
-            Size patch_sz = Size(current_scale * scale_factors[s] * base_target_sz.width
-                    ,current_scale * scale_factors[s] * base_target_sz.height);
+            Size patch_sz = Size(static_cast<int>(current_scale * scale_factors[s] * base_target_sz.width),
+                    static_cast<int>(current_scale * scale_factors[s] * base_target_sz.height));
             Mat img_patch = get_subwindow(img, pos, patch_sz.width, patch_sz.height);
             img_patch.convertTo(img_patch, CV_32FC3);
             resize(img_patch, img_patch, Size(scale_model_sz.width, scale_model_sz.height),0,0,INTER_LINEAR);
             std::vector<Mat> hog;
             hog = get_features_hog(img_patch, 4);
-            for (size_t i = 0; i < hog.size(); ++i) {
+            for (int i = 0; i < static_cast<int>(hog.size()); ++i) {
                 hog[i] = hog[i].t();
                 hog[i] = scale_window.at<float>(0,s) * hog[i].reshape(0, col_len);
                 hog[i].copyTo(result(Rect(Point(s, i*col_len), hog[i].size())));
@@ -89,20 +89,20 @@ DSST::DSST(const Mat &image,
     if(scales_count % 2 == 0)
         scales_count++;
 
-    scale_sigma = sqrt(scales_count) * sigma_factor;
+    scale_sigma = static_cast<float>(sqrt(scales_count) * sigma_factor);
 
     min_scale_factor = pow(scale_step,
             cvCeil(log(max(5.0 / template_size.width, 5.0 / template_size.height)) / log(scale_step)));
     max_scale_factor = powf(scale_step,
-            cvFloor(log(min((float)image.rows / (float)bounding_box.width,
-            (float)image.cols / (float)bounding_box.height)) / log(scale_step)));
+            static_cast<float>(cvFloor(log(min((float)image.rows / (float)bounding_box.width,
+            (float)image.cols / (float)bounding_box.height)) / log(scale_step))));
     ys = Mat(1, scales_count, CV_32FC1);
     float ss, sf;
     for(int i = 0; i < ys.cols; ++i) {
-        ss = (float)(i+1) - cvCeil((float)scales_count/2.0);
-        ys.at<float>(0,i) = exp(-0.5 * pow(ss,2) / pow(scale_sigma,2));
-        sf = i + 1;
-        scale_factors.push_back(pow(scale_step, cvCeil((float)scales_count/2.0) - sf));
+        ss = (float)(i+1) - cvCeil((float)scales_count / 2.0f);
+        ys.at<float>(0,i) = static_cast<float>(exp(-0.5 * pow(ss,2) / pow(scale_sigma,2)));
+        sf = static_cast<float>(i + 1);
+        scale_factors.push_back(pow(scale_step, cvCeil((float)scales_count / 2.0f) - sf));
     }
 
     scale_window = get_hann_win(Size(scales_count, 1));
@@ -119,11 +119,6 @@ DSST::DSST(const Mat &image,
     Mat scale_resp = get_scale_features(image, object_center, original_targ_sz,
             current_scale_factor, scale_factors, scale_window, scale_model_sz);
 
-    Mat tmp[2];
-    Mat zeros = Mat::zeros(ys.size(), CV_32FC1);
-    tmp[0] = ys;
-    tmp[1] = zeros;
-    merge(tmp, 2, ys);
     Mat ysf_row = Mat(ys.size(), CV_32FC2);
     dft(ys, ysf_row, DFT_ROWS | DFT_COMPLEX_OUTPUT, 0);
     ysf = repeat(ysf_row, scale_resp.rows, 1);
@@ -150,16 +145,16 @@ Mat DSST::get_scale_features(
 {
     Mat result;
     int col_len = 0;
-    Size patch_sz = Size(current_scale * scale_factors[0] * base_target_sz.width,
-            current_scale * scale_factors[0] * base_target_sz.height);
+    Size patch_sz = Size(cvFloor(current_scale * scale_factors[0] * base_target_sz.width),
+            cvFloor(current_scale * scale_factors[0] * base_target_sz.height));
     Mat img_patch = get_subwindow(img, pos, patch_sz.width, patch_sz.height);
     img_patch.convertTo(img_patch, CV_32FC3);
     resize(img_patch, img_patch, Size(scale_model_sz.width, scale_model_sz.height),0,0,INTER_LINEAR);
     std::vector<Mat> hog;
     hog = get_features_hog(img_patch, 4);
-    result = Mat(Size(scale_factors.size(), hog[0].cols * hog[0].rows * (int)hog.size()), CV_32F);
+    result = Mat(Size((int)scale_factors.size(), hog[0].cols * hog[0].rows * (int)hog.size()), CV_32F);
     col_len = hog[0].cols * hog[0].rows;
-    for (size_t i = 0; i < hog.size(); ++i) {
+    for (int i = 0; i < static_cast<int>(hog.size()); ++i) {
         hog[i] = hog[i].t();
         hog[i] = scale_window.at<float>(0,0) * hog[i].reshape(0, col_len);
         hog[i].copyTo(result(Rect(Point(0, i*col_len), hog[i].size())));
@@ -167,7 +162,7 @@ Mat DSST::get_scale_features(
 
     ParallelGetScaleFeatures parallelGetScaleFeatures(img, pos, base_target_sz,
             current_scale, scale_factors, scale_window, scale_model_sz, col_len, result);
-    parallel_for_(Range(1, scale_factors.size()), parallelGetScaleFeatures);
+    parallel_for_(Range(1, static_cast<int>(scale_factors.size())), parallelGetScaleFeatures);
     return result;
 }
 

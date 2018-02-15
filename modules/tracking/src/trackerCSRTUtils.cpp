@@ -26,21 +26,21 @@ Mat circshift(Mat matrix, int dx, int dy)
 Mat gaussian_shaped_labels(const float sigma, const int w, const int h)
 {
     // create 2D Gaussian peak, convert to Fourier space and stores it into the yf
-    Mat _yf = Mat::zeros(h, w, CV_32F);
-    float w2 = cvFloor(w / 2);
-    float h2 = cvFloor(h / 2);
+    Mat y = Mat::zeros(h, w, CV_32F);
+    float w2 = static_cast<float>(cvFloor(w / 2));
+    float h2 = static_cast<float>(cvFloor(h / 2));
 
     // calculate for each pixel separatelly
-    for(int i=0; i<_yf.rows; i++) {
-        for(int j=0; j<_yf.cols; j++) {
-            _yf.at<float>(i,j) = (float)exp((-0.5 / pow(sigma, 2)) * (pow((i+1-h2), 2) + pow((j+1-w2), 2)));
+    for(int i=0; i<y.rows; i++) {
+        for(int j=0; j<y.cols; j++) {
+            y.at<float>(i,j) = (float)exp((-0.5 / pow(sigma, 2)) * (pow((i+1-h2), 2) + pow((j+1-w2), 2)));
         }
     }
     // wrap-arround with the circulat shifting
-    _yf = circshift(_yf, -cvFloor(_yf.cols / 2), -cvFloor(_yf.rows / 2));
+    y = circshift(y, -cvFloor(y.cols / 2), -cvFloor(y.rows / 2));
     Mat yf;
-    dft(_yf, _yf, DFT_COMPLEX_OUTPUT);
-    return _yf;
+    dft(y, yf, DFT_COMPLEX_OUTPUT);
+    return yf;
 }
 
 std::vector<Mat> fourier_transform_features(const std::vector<Mat> &M)
@@ -56,16 +56,16 @@ std::vector<Mat> fourier_transform_features(const std::vector<Mat> &M)
     return out;
 }
 
-Mat divide_complex_matrices(const Mat &_A, const Mat &_B)
+Mat divide_complex_matrices(const Mat &A, const Mat &B)
 {
-    std::vector<Mat> A,B;
-    split(_A, A);
-    split(_B, B);
+    std::vector<Mat> va,vb;
+    split(A, va);
+    split(B, vb);
 
-    Mat a = A.at(0);
-    Mat b = A.at(1);
-    Mat c = B.at(0);
-    Mat d = B.at(1);
+    Mat a = va.at(0);
+    Mat b = va.at(1);
+    Mat c = vb.at(0);
+    Mat d = vb.at(1);
 
     Mat div = c.mul(c) + d.mul(d);
     Mat real_part = (a.mul(c) + b.mul(d));
@@ -126,25 +126,27 @@ float subpixel_peak(const Mat &response, const std::string &s, const Point2f &p)
 
     if(s.compare("vertical") == 0) {
         // neighbouring rows
-        i_p0 = p.y;
-        i_p_l = modul(p.y - 1, response.rows);
-        i_p_r = modul(p.y + 1, response.rows);
-        p0 = response.at<float>(i_p0, p.x);
-        p_l = response.at<float>(i_p_l, p.x);
-        p_r = response.at<float>(i_p_r, p.x);
+        i_p0 = cvRound(p.y);
+        i_p_l = modul(cvRound(p.y) - 1, response.rows);
+        i_p_r = modul(cvRound(p.y) + 1, response.rows);
+        int px = static_cast<int>(p.x);
+        p0 = response.at<float>(i_p0, px);
+        p_l = response.at<float>(i_p_l, px);
+        p_r = response.at<float>(i_p_r, px);
     } else if(s.compare("horizontal") == 0) {
         // neighbouring cols
-        i_p0 = p.x;
-        i_p_l = modul(p.x - 1, response.cols);
-        i_p_r = modul(p.x + 1, response.cols);
-        p0 = response.at<float>(p.y, i_p0);
-        p_l = response.at<float>(p.y, i_p_l);
-        p_r = response.at<float>(p.y, i_p_r);
+        i_p0 = cvRound(p.x);
+        i_p_l = modul(cvRound(p.x) - 1, response.cols);
+        i_p_r = modul(cvRound(p.x) + 1, response.cols);
+        int py = static_cast<int>(p.y);
+        p0 = response.at<float>(py, i_p0);
+        p_l = response.at<float>(py, i_p_l);
+        p_r = response.at<float>(py, i_p_r);
     } else {
         std::cout << "Warning: unknown subpixel peak direction!" << std::endl;
         return 0;
     }
-    float delta = 0.5 * (p_r - p_l) / (2*p0 - p_r - p_l);
+    float delta = 0.5f * (p_r - p_l) / (2*p0 - p_r - p_l);
     if(!std::isfinite(delta)) {
         delta = 0;
     }
@@ -167,16 +169,17 @@ static Mat chebwin(int N, const float atten)
     Mat out(N , 1, CV_32FC1);
     int nn, i;
     float M, n, sum = 0, max=0;
-    float tg = pow(10,atten/20.0);  /* 1/r term [2], 10^gamma [2] */
-    float x0 = cosh((1.0/(N-1))*acosh(tg));
-    M = (N-1)/2;
+    float tg = static_cast<float>(pow(10,atten/20.0f));  /* 1/r term [2], 10^gamma [2] */
+    float x0 = cosh((1.0f/(N-1))*acosh(tg));
+    M = (N-1)/2.0f;
     if(N%2==0)
-        M = M + 0.5; /* handle even length windows */
+        M = M + 0.5f; /* handle even length windows */
     for(nn=0; nn<(N/2+1); nn++) {
         n = nn-M;
         sum = 0;
         for(i=1; i<=M; i++){
-            sum += chebpoly(N-1,x0*cos(CV_PI*i/N))*cos(2.0*n*CV_PI*i/N);
+            sum += chebpoly(N-1,x0*static_cast<float>(cos(CV_PI*i/N))) *
+                static_cast<float>(cos(2.0f*n*CV_PI*i/N));
         }
         out.at<float>(nn,0) = tg + 2*sum;
         out.at<float>(N-nn-1,0) = out.at<float>(nn,0) ;
@@ -184,7 +187,7 @@ static Mat chebwin(int N, const float atten)
             max = out.at<float>(nn,0);
     }
     for(nn=0; nn<N; nn++)
-        out.at<float>(nn,0) /= max; /* normalise everything */
+        out.at<float>(nn,0) /= max; /* normalize everything */
 
     return out;
 }
@@ -229,7 +232,7 @@ Mat get_hann_win(Size sz)
     return hann_rows * hann_cols;
 }
 
-Mat get_kaiser_win(Size sz, double alpha)
+Mat get_kaiser_win(Size sz, float alpha)
 {
     Mat kaiser_rows = Mat::ones(sz.height, 1, CV_32F);
     Mat kaiser_cols = Mat::ones(1, sz.width, CV_32F);
@@ -241,20 +244,20 @@ Mat get_kaiser_win(Size sz, double alpha)
     for(int n = 0; n <= N; ++n) {
         double K = (2.0 * n * 1.0/N) - 1.0;
         double x = sqrt(1.0 - (K * K));
-        kaiser_rows.at<float>(n,0) = (float)modified_bessel(0, shape * x) * den;
+        kaiser_rows.at<float>(n,0) = static_cast<float>(modified_bessel(0, shape * x) * den);
     }
 
     N = sz.width - 1;
     for(int n = 0; n <= N; ++n) {
         double K = (2.0 * n * 1.0/N) - 1.0;
         double x = sqrt(1.0 - (K * K));
-        kaiser_cols.at<float>(0,n) = (float)modified_bessel(0, shape * x) * den;
+        kaiser_cols.at<float>(0,n) = static_cast<float>(modified_bessel(0, shape * x) * den);
     }
 
     return kaiser_rows * kaiser_cols;
 }
 
-Mat get_chebyshev_win(Size sz, double attenuation)
+Mat get_chebyshev_win(Size sz, float attenuation)
 {
     Mat cheb_rows = chebwin(sz.height, attenuation);
     Mat cheb_cols = chebwin(sz.width, attenuation).t();
@@ -505,8 +508,8 @@ std::vector<Mat> get_features_cn(const Mat &ppatch_data, const Size &output_size
             index=(unsigned)(cvFloor((float)pixel[2]/8)+32*cvFloor((float)pixel[1]/8)+32*32*cvFloor((float)pixel[0]/8));
 
             //copy the values
-            for(int _k=0;_k<10;_k++){
-                cnFeatures.at<Vec<float,10> >(i,j)[_k]=(float)ColorNames[index][_k];
+            for(int k=0;k<10;k++){
+                cnFeatures.at<Vec<float,10> >(i,j)[k]=(float)ColorNames[index][k];
             }
         }
     }
