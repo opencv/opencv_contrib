@@ -107,13 +107,13 @@ static void _setCameraIntrinsics(Camera* cam, InputArray _K, const Size& imsize)
     cam->setFrustumOffset(toOGRE_SS * Vector2(pp_offset.val));
 }
 
-static SceneNode* _getSceneNode(SceneManager* sceneMgr, const String& name)
+static SceneNode& _getSceneNode(SceneManager* sceneMgr, const String& name)
 {
     MovableObject* mo = NULL;
 
     try
     {
-        mo = sceneMgr->getCamera(name);
+        mo = sceneMgr->getMovableObject(name, "Camera");
     }
     catch (ItemIdentityException&)
     {
@@ -123,7 +123,7 @@ static SceneNode* _getSceneNode(SceneManager* sceneMgr, const String& name)
     try
     {
         if (!mo)
-            mo = sceneMgr->getLight(name);
+            mo = sceneMgr->getMovableObject(name, "Light");
     }
     catch (ItemIdentityException&)
     {
@@ -131,9 +131,9 @@ static SceneNode* _getSceneNode(SceneManager* sceneMgr, const String& name)
     }
 
     if (!mo)
-        mo = sceneMgr->getEntity(name);
+        mo = sceneMgr->getMovableObject(name, "Entity"); // throws if not found
 
-    return mo->getParentSceneNode();
+    return *mo->getParentSceneNode();
 }
 
 struct Application : public OgreBites::ApplicationContext, public OgreBites::InputListener
@@ -323,12 +323,21 @@ public:
 
         Pass* rpass = bgplane->getMaterial()->getBestTechnique()->getPasses()[0];
         rpass->getTextureUnitStates()[0]->setTextureName(name);
+
+        // ensure bgplane is visible
+        bgplane->setVisible(true);
     }
 
     void setBackground(const Scalar& color)
     {
-        Mat img(1, 1, CV_8UC3, color);
-        setBackground(img);
+        // hide background plane
+        bgplane->setVisible(false);
+
+        // BGRA as uchar
+        ColourValue _color = ColourValue(color[2], color[1], color[0], color[3]) / 255;
+        rWin->getViewport(0)->setBackgroundColour(_color);
+        if(frameSrc != rWin)
+            frameSrc->getViewport(0)->setBackgroundColour(_color);
     }
 
     void createEntity(const String& name, const String& meshname, InputArray tvec, InputArray rot)
@@ -340,6 +349,13 @@ public:
         _convertRT(rot, tvec, q, t);
         SceneNode* node = sceneMgr->getRootSceneNode()->createChildSceneNode(t, q);
         node->attachObject(ent);
+    }
+
+    void removeEntity(const String& name) {
+        SceneNode& node = _getSceneNode(sceneMgr, name);
+        node.getAttachedObject(name)->detachFromParent();
+        sceneMgr->destroyEntity(name);
+        sceneMgr->destroySceneNode(&node);
     }
 
     Rect2d createCameraEntity(const String& name, InputArray K, const Size& imsize, float zFar,
@@ -391,22 +407,22 @@ public:
 
     void updateEntityPose(const String& name, InputArray tvec, InputArray rot)
     {
-        SceneNode* node = _getSceneNode(sceneMgr, name);
+        SceneNode& node = _getSceneNode(sceneMgr, name);
         Quaternion q;
         Vector3 t;
         _convertRT(rot, tvec, q, t);
-        node->rotate(q, Ogre::Node::TS_LOCAL);
-        node->translate(t, Ogre::Node::TS_LOCAL);
+        node.rotate(q, Ogre::Node::TS_LOCAL);
+        node.translate(t, Ogre::Node::TS_LOCAL);
     }
 
     void setEntityPose(const String& name, InputArray tvec, InputArray rot, bool invert)
     {
-        SceneNode* node = _getSceneNode(sceneMgr, name);
+        SceneNode& node = _getSceneNode(sceneMgr, name);
         Quaternion q;
         Vector3 t;
         _convertRT(rot, tvec, q, t, invert);
-        node->setOrientation(q);
-        node->setPosition(t);
+        node.setOrientation(q);
+        node.setPosition(t);
     }
 
     void _createBackground()

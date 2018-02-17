@@ -71,6 +71,12 @@ public:
                                       InputArray tvec = noArray(), InputArray rot = noArray()) = 0;
 
     /**
+     * remove an entity from the scene
+     * @param name entity name
+     */
+    CV_WRAP virtual void removeEntity(const String& name) = 0;
+
+    /**
      * convenience method to visualize a camera position
      *
      * the entity uses a material with the same name that can be used to change the line color.
