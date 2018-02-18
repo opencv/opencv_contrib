@@ -50,8 +50,7 @@ static void help() {
  *  values will be (-1,-1).
  */
 
-void
-parser_2D_tracks(const String &_filename, std::vector<Mat> &points2d )
+static void parser_2D_tracks(const String &_filename, std::vector<Mat> &points2d )
 {
   ifstream myfile(_filename.c_str());
 
@@ -109,7 +108,7 @@ parser_2D_tracks(const String &_filename, std::vector<Mat> &points2d )
 
 bool camera_pov = false;
 
-void keyboard_callback(const viz::KeyboardEvent &event, void* cookie)
+static void keyboard_callback(const viz::KeyboardEvent &event, void* cookie)
 {
   if ( event.action == 0 &&!event.symbol.compare("s") )
     camera_pov = !camera_pov;

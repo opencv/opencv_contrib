@@ -28,7 +28,7 @@ static void help() {
 }
 
 
-int getdir(const string _filename, vector<String> &files)
+static int getdir(const string _filename, vector<String> &files)
 {
   ifstream myfile(_filename.c_str());
   if (!myfile.is_open()) {
