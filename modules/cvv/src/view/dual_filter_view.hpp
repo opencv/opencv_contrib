@@ -2,6 +2,7 @@
 #define CVVISUAL_DUAL_FILTER_VIEW_HPP
 
 // STD
+#include <array>
 #include <string>
 #include <unordered_map>
 // OpenCV
