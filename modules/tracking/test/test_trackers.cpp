@@ -467,6 +467,12 @@ TEST_P(DistanceAndOverlap, MOSSE)
   test.run();
 }
 
+TEST_P(DistanceAndOverlap, CSRT)
+{
+  TrackerTest test( TrackerCSRT::create(), dataset, 22, .7f, NoTransform);
+  test.run();
+}
+
 /***************************************************************************************/
 //Tests with shifted initial window
 TEST_P(DistanceAndOverlap, Shifted_Data_MedianFlow)
@@ -502,6 +508,12 @@ TEST_P(DistanceAndOverlap, Shifted_Data_TLD)
 TEST_P(DistanceAndOverlap, Shifted_Data_MOSSE)
 {
   TrackerTest test( TrackerMOSSE::create(), dataset, 13, .69f, CenterShiftLeft);
+  test.run();
+}
+
+TEST_P(DistanceAndOverlap, Shifted_Data_CSRT)
+{
+  TrackerTest test( TrackerCSRT::create(), dataset, 13, .69f, CenterShiftLeft);
   test.run();
 }
 /***************************************************************************************/
@@ -546,6 +558,12 @@ TEST_P(DistanceAndOverlap, DISABLED_GOTURN)
 TEST_P(DistanceAndOverlap, Scaled_Data_MOSSE)
 {
   TrackerTest test( TrackerMOSSE::create(), dataset, 22, 0.69f, Scale_1_1, 1);
+  test.run();
+}
+
+TEST_P(DistanceAndOverlap, Scaled_Data_CSRT)
+{
+  TrackerTest test( TrackerCSRT::create(), dataset, 22, 0.69f, Scale_1_1, 1);
   test.run();
 }
 

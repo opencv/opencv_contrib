@@ -1462,6 +1462,71 @@ public:
 
 //! @}
 
+/*********************************** CSRT ************************************/
+/** @brief Discriminative Correlation Filter Tracker with Channel and Spatial Reliability
+*/
+class CV_EXPORTS_W TrackerCSRT : public Tracker
+{
+public:
+  struct CV_EXPORTS Params
+  {
+    /**
+    * \brief Constructor
+    */
+    Params();
+
+    /**
+    * \brief Read parameters from file
+    */
+    void read(const FileNode& /*fn*/);
+
+    /**
+    * \brief Write parameters from file
+    */
+    void write(cv::FileStorage& fs) const;
+
+    bool use_hog;
+    bool use_color_names;
+    bool use_gray;
+    bool use_rgb;
+    bool use_channel_weights;
+    bool use_segmentation;
+
+    std::string window_function; //!<  Window function: "hann", "cheb", "kaiser"
+    float kaiser_alpha;
+    float cheb_attenuation;
+
+    float template_size;
+    float gsl_sigma;
+    float hog_orientations;
+    float hog_clip;
+    float padding;
+    float filter_lr;
+    float weights_lr;
+    int num_hog_channels_used;
+    int admm_iterations;
+    int histogram_bins;
+    float histogram_lr;
+    int background_ratio;
+    int number_of_scales;
+    float scale_sigma_factor;
+    float scale_model_max_area;
+    float scale_lr;
+    float scale_step;
+  };
+
+  /** @brief Constructor
+  @param parameters CSRT parameters TrackerCSRT::Params
+  */
+  static Ptr<TrackerCSRT> create(const TrackerCSRT::Params &parameters);
+
+  CV_WRAP static Ptr<TrackerCSRT> create();
+
+  virtual void setInitialMask(const Mat mask) = 0;
+
+  virtual ~TrackerCSRT() {}
+};
+
 } /* namespace cv */
 
 #endif
