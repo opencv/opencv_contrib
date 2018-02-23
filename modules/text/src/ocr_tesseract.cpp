@@ -200,7 +200,8 @@ public:
         char *outText;
         outText = tess.GetUTF8Text();
         output = string(outText);
-        delete [] outText;
+        if (outText != NULL)
+            delete [] outText;
 
         if ( (component_rects != NULL) || (component_texts != NULL) || (component_confidences != NULL) )
         {
@@ -227,8 +228,8 @@ public:
 
                     delete[] word;
                 } while (ri->Next(level));
+                delete ri;
             }
-            delete ri;
         }
 
         tess.Clear();
