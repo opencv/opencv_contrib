@@ -84,23 +84,34 @@ namespace cv
             CV_WRAP virtual void setPlotGridColor(Scalar _plotGridColor) = 0;
             CV_WRAP virtual void setPlotTextColor(Scalar _plotTextColor) = 0;
             CV_WRAP virtual void setPlotSize(int _plotSizeWidth, int _plotSizeHeight) = 0;
+            CV_WRAP virtual void setShowGrid(bool needShowGrid) = 0;
+            CV_WRAP virtual void setShowText(bool needShowText) = 0;
+            CV_WRAP virtual void setGridLinesNumber(int gridLinesNumber) = 0;
+            CV_WRAP virtual void setInvertOrientation(bool _invertOrientation) = 0;
+            /**
+             * @brief Sets the index of a point which coordinates will be printed on the top left corner of the plot (if ShowText flag is true).
+             *
+             * @param pointIdx index of the required point in data array.
+             */
+            CV_WRAP virtual void setPointIdxToPrint(int pointIdx) = 0;
             CV_WRAP virtual void render(OutputArray _plotResult) = 0;
-        };
 
-        /**
-         * @brief Creates Plot2d object
-         *
-         * @param data \f$1xN\f$ or \f$Nx1\f$ matrix containing \f$Y\f$ values of points to plot. \f$X\f$ values
-         * will be equal to indexes of correspondind elements in data matrix.
-         */
-        CV_EXPORTS_W Ptr<Plot2d> createPlot2d(InputArray data);
-        /**
-         * @brief Creates Plot2d object
-         *
-         * @param dataX \f$1xN\f$ or \f$Nx1\f$ matrix \f$X\f$ values of points to plot.
-         * @param dataY \f$1xN\f$ or \f$Nx1\f$ matrix containing \f$Y\f$ values of points to plot.
-         */
-        CV_EXPORTS_W Ptr<Plot2d> createPlot2d(InputArray dataX, InputArray dataY);
+            /**
+             * @brief Creates Plot2d object
+             *
+             * @param data \f$1xN\f$ or \f$Nx1\f$ matrix containing \f$Y\f$ values of points to plot. \f$X\f$ values
+             * will be equal to indexes of correspondind elements in data matrix.
+             */
+            CV_WRAP static Ptr<Plot2d> create(InputArray data);
+
+            /**
+             * @brief Creates Plot2d object
+             *
+             * @param dataX \f$1xN\f$ or \f$Nx1\f$ matrix \f$X\f$ values of points to plot.
+             * @param dataY \f$1xN\f$ or \f$Nx1\f$ matrix containing \f$Y\f$ values of points to plot.
+             */
+            CV_WRAP static Ptr<Plot2d> create(InputArray dataX, InputArray dataY);
+        };
     //! @}
     }
 }

@@ -25,7 +25,7 @@ def substitute(build, output_dir):
 
 if __name__ == "__main__":
     """
-    Usage: python build_info.py --jinja2 /path/to/jinja2/engine
+    Usage: python build_info.py
                                 --os os_version_string
                                 --arch [bitness processor]
                                 --compiler [id version]
@@ -50,7 +50,6 @@ if __name__ == "__main__":
     import sys, re, os, time
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('--jinja2')
     parser.add_argument('--os')
     parser.add_argument('--arch', nargs=2)
     parser.add_argument('--compiler', nargs='+')
@@ -64,9 +63,6 @@ if __name__ == "__main__":
     parser.add_argument('--configuration')
     parser.add_argument('--outdir')
     build = parser.parse_args()
-
-    # add jinja to the path
-    sys.path.append(build.jinja2)
 
     from filters import *
     from jinja2 import Environment, FileSystemLoader

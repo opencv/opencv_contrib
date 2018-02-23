@@ -44,13 +44,13 @@ namespace cv
 {
 namespace ppf_match_3d
 {
-static void subtractColumns(Mat srcPC, double mean[3])
+static void subtractColumns(Mat srcPC, Vec3d& mean)
 {
   int height = srcPC.rows;
 
   for (int i=0; i<height; i++)
   {
-    float *row = (float*)(&srcPC.data[i*srcPC.step]);
+    float *row = srcPC.ptr<float>(i);
     {
       row[0]-=(float)mean[0];
       row[1]-=(float)mean[1];
@@ -60,7 +60,7 @@ static void subtractColumns(Mat srcPC, double mean[3])
 }
 
 // as in PCA
-static void computeMeanCols(Mat srcPC, double mean[3])
+static void computeMeanCols(Mat srcPC, Vec3d& mean)
 {
   int height = srcPC.rows;
 
@@ -68,7 +68,7 @@ static void computeMeanCols(Mat srcPC, double mean[3])
 
   for (int i=0; i<height; i++)
   {
-    const float *row = (float*)(&srcPC.data[i*srcPC.step]);
+    const float *row = srcPC.ptr<float>(i);
     {
       mean1 += (double)row[0];
       mean2 += (double)row[1];
@@ -86,7 +86,7 @@ static void computeMeanCols(Mat srcPC, double mean[3])
 }
 
 // as in PCA
-/*static void subtractMeanFromColumns(Mat srcPC, double mean[3])
+/*static void subtractMeanFromColumns(Mat srcPC, Vec3d& mean)
 {
     computeMeanCols(srcPC, mean);
     subtractColumns(srcPC, mean);
@@ -100,7 +100,7 @@ static double computeDistToOrigin(Mat srcPC)
 
   for (int i=0; i<height; i++)
   {
-    const float *row = (float*)(&srcPC.data[i*srcPC.step]);
+    const float *row = srcPC.ptr<float>(i);
     dist += sqrt(row[0]*row[0]+row[1]*row[1]+row[2]*row[2]);
   }
 
@@ -192,88 +192,38 @@ static float getRejectionThreshold(float* r, int m, float outlierScale)
 }
 
 // Kok Lim Low's linearization
-static void minimizePointToPlaneMetric(Mat Src, Mat Dst, Mat& X)
+static void minimizePointToPlaneMetric(Mat Src, Mat Dst, Vec3d& rpy, Vec3d& t)
 {
   //Mat sub = Dst - Src;
   Mat A = Mat(Src.rows, 6, CV_64F);
   Mat b = Mat(Src.rows, 1, CV_64F);
+  Mat rpy_t;
 
 #if defined _OPENMP
 #pragma omp parallel for
 #endif
   for (int i=0; i<Src.rows; i++)
   {
-    const double *srcPt = (double*)&Src.data[i*Src.step];
-    const double *dstPt = (double*)&Dst.data[i*Dst.step];
-    const double *normals = &dstPt[3];
-    double *bVal = (double*)&b.data[i*b.step];
-    double *aRow = (double*)&A.data[i*A.step];
+    const Vec3d srcPt(Src.ptr<double>(i));
+    const Vec3d dstPt(Dst.ptr<double>(i));
+    const Vec3d normals(Dst.ptr<double>(i) + 3);
+    const Vec3d sub = dstPt - srcPt;
+    const Vec3d axis = srcPt.cross(normals);
 
-    const double sub[3]={dstPt[0]-srcPt[0], dstPt[1]-srcPt[1], dstPt[2]-srcPt[2]};
-
-    *bVal = TDot3(sub, normals);
-    TCross(srcPt, normals, aRow);
-
-    aRow[3] = normals[0];
-    aRow[4] = normals[1];
-    aRow[5] = normals[2];
+    *b.ptr<double>(i) = sub.dot(normals);
+    hconcat(axis.reshape<1, 3>(), normals.reshape<1, 3>(), A.row(i));
   }
 
-  cv::solve(A, b, X, DECOMP_SVD);
+  cv::solve(A, b, rpy_t, DECOMP_SVD);
+  rpy_t.rowRange(0, 3).copyTo(rpy);
+  rpy_t.rowRange(3, 6).copyTo(t);
 }
 
-
-static void getTransformMat(Mat X, double Pose[16])
+static void getTransformMat(Vec3d& euler, Vec3d& t, Matx44d& Pose)
 {
-  Mat DCM;
-  double *r1, *r2, *r3;
-  double* x = (double*)X.data;
-
-  const double sx = sin(x[0]);
-  const double cx = cos(x[0]);
-  const double sy = sin(x[1]);
-  const double cy = cos(x[1]);
-  const double sz = sin(x[2]);
-  const double cz = cos(x[2]);
-
-  Mat R1 = Mat::eye(3,3, CV_64F);
-  Mat R2 = Mat::eye(3,3, CV_64F);
-  Mat R3 = Mat::eye(3,3, CV_64F);
-
-  r1= (double*)R1.data;
-  r2= (double*)R2.data;
-  r3= (double*)R3.data;
-
-  r1[4]= cx;
-  r1[5]= -sx;
-  r1[7]= sx;
-  r1[8]= cx;
-
-  r2[0]= cy;
-  r2[2]= sy;
-  r2[6]= -sy;
-  r2[8]= cy;
-
-  r3[0]= cz;
-  r3[1]= -sz;
-  r3[3]= sz;
-  r3[4]= cz;
-
-  DCM = R1*(R2*R3);
-
-  Pose[0] = DCM.at<double>(0,0);
-  Pose[1] = DCM.at<double>(0,1);
-  Pose[2] = DCM.at<double>(0,2);
-  Pose[4] = DCM.at<double>(1,0);
-  Pose[5] = DCM.at<double>(1,1);
-  Pose[6] = DCM.at<double>(1,2);
-  Pose[8] = DCM.at<double>(2,0);
-  Pose[9] = DCM.at<double>(2,1);
-  Pose[10] = DCM.at<double>(2,2);
-  Pose[3]=x[3];
-  Pose[7]=x[4];
-  Pose[11]=x[5];
-  Pose[15]=1;
+  Matx33d R;
+  eulerToDCM(euler, R);
+  rtToPose(R, t, Pose);
 }
 
 /* Fast way to look up the duplicates
@@ -293,7 +243,7 @@ static hashtable_int* getHashtable(int* data, size_t length, int numMaxElement)
 }
 
 // source point clouds are assumed to contain their normals
-int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residual, double pose[16])
+int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residual, Matx44d& pose)
 {
   int n = srcPC.rows;
 
@@ -301,10 +251,10 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
 
   Mat srcTemp = srcPC.clone();
   Mat dstTemp = dstPC.clone();
-  double meanSrc[3], meanDst[3];
+  Vec3d meanSrc, meanDst;
   computeMeanCols(srcTemp, meanSrc);
   computeMeanCols(dstTemp, meanDst);
-  double meanAvg[3]={0.5*(meanSrc[0]+meanDst[0]), 0.5*(meanSrc[1]+meanDst[1]), 0.5*(meanSrc[2]+meanDst[2])};
+  Vec3d meanAvg = 0.5 * (meanSrc + meanDst);
   subtractColumns(srcTemp, meanAvg);
   subtractColumns(dstTemp, meanAvg);
 
@@ -320,9 +270,8 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
   Mat dstPC0 = dstTemp;
 
   // initialize pose
-  matrixIdentity(4, pose);
+  pose = Matx44d::eye();
 
-  void* flann = indexPCFlann(dstPC0);
   Mat M = Mat::eye(4,4,CV_64F);
 
   double tempResidual = 0;
@@ -342,18 +291,14 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
     Mat srcPCT = transformPCPose(srcPC0, pose);
 
     const int sampleStep = cvRound((double)n/(double)numSamples);
-    std::vector<int> srcSampleInd;
 
+    srcPCT = samplePCUniform(srcPCT, sampleStep);
     /*
-    Note by Tolga Birdal
-    Downsample the model point clouds. If more optimization is required,
-    one could also downsample the scene points, but I think this might
-    decrease the accuracy. That's why I won't be implementing it at this
-    moment.
-
-    Also note that you have to compute a KD-tree for each level.
+    Tolga Birdal thinks that downsampling the scene points might decrease the accuracy.
+    Hamdi Sahloul, however, noticed that accuracy increased (pose residual decreased slightly).
     */
-    srcPCT = samplePCUniformInd(srcPCT, sampleStep, srcSampleInd);
+    Mat dstPCS = samplePCUniform(dstPC0, sampleStep);
+    void* flann = indexPCFlann(dstPCS);
 
     double fval_old=9999999999;
     double fval_perc=0;
@@ -377,18 +322,17 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
     int* newI = new int[numElSrc];
     int* newJ = new int[numElSrc];
 
-    double PoseX[16]={0};
-    matrixIdentity(4, PoseX);
+    Matx44d PoseX = Matx44d::eye();
 
     while ( (!(fval_perc<(1+TolP) && fval_perc>(1-TolP))) && i<MaxIterationsPyr)
     {
-      size_t di=0, selInd = 0;
+      uint di=0, selInd = 0;
 
       queryPCFlann(flann, Src_Moved, Indices, Distances);
 
       for (di=0; di<numElSrc; di++)
       {
-        newI[di] = (int)di;
+        newI[di] = di;
         newJ[di] = indices[di];
       }
 
@@ -416,7 +360,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
       // is assigned to the same model point m_j, then select p_i that corresponds
       // to the minimum distance
 
-      hashtable_int* duplicateTable = getHashtable(newJ, numElSrc, dstPC0.rows);
+      hashtable_int* duplicateTable = getHashtable(newJ, numElSrc, dstPCS.rows);
 
       for (di=0; di<duplicateTable->size; di++)
       {
@@ -452,20 +396,20 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
 
       hashtableDestroy(duplicateTable);
 
-      if (selInd)
+      if (selInd >= 6)
       {
 
-        Mat Src_Match = Mat((int)selInd, srcPCT.cols, CV_64F);
-        Mat Dst_Match = Mat((int)selInd, srcPCT.cols, CV_64F);
+        Mat Src_Match = Mat(selInd, srcPCT.cols, CV_64F);
+        Mat Dst_Match = Mat(selInd, srcPCT.cols, CV_64F);
 
         for (di=0; di<selInd; di++)
         {
           const int indModel = indicesModel[di];
           const int indScene = indicesScene[di];
-          const float *srcPt = (float*)&srcPCT.data[indModel*srcPCT.step];
-          const float *dstPt = (float*)&dstPC0.data[indScene*dstPC0.step];
-          double *srcMatchPt = (double*)&Src_Match.data[di*Src_Match.step];
-          double *dstMatchPt = (double*)&Dst_Match.data[di*Dst_Match.step];
+          const float *srcPt = srcPCT.ptr<float>(indModel);
+          const float *dstPt = dstPCS.ptr<float>(indScene);
+          double *srcMatchPt = Src_Match.ptr<double>(di);
+          double *dstMatchPt = Dst_Match.ptr<double>(di);
           int ci=0;
 
           for (ci=0; ci<srcPCT.cols; ci++)
@@ -475,10 +419,11 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
           }
         }
 
-        Mat X;
-        minimizePointToPlaneMetric(Src_Match, Dst_Match, X);
-
-        getTransformMat(X, PoseX);
+        Vec3d rpy, t;
+        minimizePointToPlaneMetric(Src_Match, Dst_Match, rpy, t);
+        if (cvIsNaN(cv::trace(rpy)) || cvIsNaN(cv::norm(t)))
+          break;
+        getTransformMat(rpy, t, PoseX);
         Src_Moved = transformPCPose(srcPCT, PoseX);
 
         double fval = cv::norm(Src_Match, Dst_Match)/(double)(Src_Moved.rows);
@@ -499,13 +444,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
 
     }
 
-    double TempPose[16];
-    matrixProduct44(PoseX, pose, TempPose);
-
-    // no need to copy the last 4 rows
-    for (int c=0; c<12; c++)
-      pose[c] = TempPose[c];
-
+    pose = PoseX * pose;
     residual = tempResidual;
 
     delete[] newI;
@@ -516,33 +455,29 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
     delete[] indices;
 
     tempResidual = fval_min;
+    destroyFlann(flann);
   }
 
-  // Pose(1:3, 4) = Pose(1:3, 4)./scale;
-  pose[3] = pose[3]/scale + meanAvg[0];
-  pose[7] = pose[7]/scale + meanAvg[1];
-  pose[11] = pose[11]/scale + meanAvg[2];
-
-  // In MATLAB this would be : Pose(1:3, 4) = Pose(1:3, 4)./scale + meanAvg' - Pose(1:3, 1:3)*meanAvg';
-  double Rpose[9], Cpose[3];
-  poseToR(pose, Rpose);
-  matrixProduct331(Rpose, meanAvg, Cpose);
-  pose[3] -= Cpose[0];
-  pose[7] -= Cpose[1];
-  pose[11] -= Cpose[2];
+  Matx33d Rpose;
+  Vec3d Cpose;
+  poseToRT(pose, Rpose, Cpose);
+  Cpose = Cpose / scale + meanAvg - Rpose * meanAvg;
+  rtToPose(Rpose, Cpose, pose);
 
   residual = tempResidual;
 
-  destroyFlann(flann);
   return 0;
 }
 
 // source point clouds are assumed to contain their normals
 int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, std::vector<Pose3DPtr>& poses)
 {
-  for (size_t i=0; i<poses.size(); i++)
+  #if defined _OPENMP
+  #pragma omp parallel for
+  #endif
+  for (int i=0; i<(int)poses.size(); i++)
   {
-    double poseICP[16]={0};
+    Matx44d poseICP = Matx44d::eye();
     Mat srcTemp = transformPCPose(srcPC, poses[i]->pose);
     registerModelToScene(srcTemp, dstPC, poses[i]->residual, poseICP);
     poses[i]->appendPose(poseICP);

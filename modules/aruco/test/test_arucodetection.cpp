@@ -38,12 +38,8 @@ the use of this software, even if advised of the possibility of such damage.
 
 
 #include "test_precomp.hpp"
-#include <opencv2/aruco.hpp>
-#include <string>
 
-using namespace std;
-using namespace cv;
-
+namespace opencv_test { namespace {
 
 /**
  * @brief Draw 2D synthetic markers and detect them
@@ -118,7 +114,7 @@ void CV_ArucoDetectionSimple::run(int) {
             }
 
             for(int c = 0; c < 4; c++) {
-                double dist = norm(groundTruthCorners[m][c] - corners[idx][c]);
+                double dist = cv::norm(groundTruthCorners[m][c] - corners[idx][c]);  // TODO cvtest
                 if(dist > 0.001) {
                     ts->printf(cvtest::TS::LOG, "Incorrect marker corners position");
                     ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
@@ -290,7 +286,7 @@ void CV_ArucoDetectionPerspective::run(int) {
                     return;
                 }
                 for(int c = 0; c < 4; c++) {
-                    double dist = norm(groundTruthCorners[c] - corners[0][c]);
+                    double dist = cv::norm(groundTruthCorners[c] - corners[0][c]);  // TODO cvtest
                     if(dist > 5) {
                         ts->printf(cvtest::TS::LOG, "Incorrect marker corners position");
                         ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
@@ -507,3 +503,5 @@ TEST(CV_ArucoBitCorrection, algorithmic) {
     CV_ArucoBitCorrection test;
     test.safe_run();
 }
+
+}} // namespace

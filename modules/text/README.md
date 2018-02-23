@@ -12,7 +12,7 @@ Here are instructions on how to install Tesseract on your machine (Linux or Mac;
 Tesseract installation instruction (Linux, Mac)
 -----------------------------------------------
 
-0. Linux users may try to install tesseract-3.03-rc1 (or later) and leptonica-1.70 (or later) with the corresponding developement packages using their package manager. Mac users may try brew. The instructions below are for those who wants to build tesseract from source.
+0. Linux users may try to install tesseract-3.03-rc1 (or later) and leptonica-1.70 (or later) with the corresponding development packages using their package manager. Mac users may try brew. The instructions below are for those who wants to build tesseract from source.
 
 1. download leptonica 1.70 tarball (helper image processing library, used by tesseract. Later versions might work too):
 http://www.leptonica.com/download.html
@@ -33,9 +33,9 @@ mkdir build && cd build
 ../configure --with-extra-includes=/usr/local --with-extra-libraries=/usr/local
 make && sudo make install
 
-tessract will be installed to /usr/local.
+Tesseract will be installed to /usr/local.
 
-3. download the pre-trained classifier data for english language:
+3. download the pre-trained classifier data for English language:
 https://code.google.com/p/tesseract-ocr/downloads/detail?name=eng.traineddata.gz
 
 unzip it (gzip -d eng.traineddata.gz) and copy to /usr/local/share/tessdata.
@@ -47,3 +47,12 @@ Notes
 2. Tesseract configure script may fail to detect leptonica, so you may have to edit the configure script - comment off some if's around this message and retain only "then" branch.
 
 3. You are encouraged to search the Net for some better pre-trained classifiers, as well as classifiers for other languages.
+
+
+Text Detection CNN
+=================
+
+Intro
+-----
+
+The text module now have a text detection and recognition using deep CNN. The text detector deep CNN that takes an image which may contain multiple words. This outputs a list of Rects with bounding boxes and probability of text there. The text recognizer provides a probabillity over a given vocabulary for each of these rects.

@@ -40,15 +40,8 @@
 //M*/
 
 #include "test_precomp.hpp"
-#include <fstream>
 
-using namespace std;
-using namespace std::tr1;
-using namespace cv;
-using namespace cvtest;
-using namespace perf;
-using namespace testing;
-using namespace optflow;
+namespace opencv_test { namespace {
 
 typedef tuple<Size> OFParams;
 typedef TestWithParam<OFParams> DenseOpticalFlow_DIS;
@@ -100,8 +93,8 @@ TEST_P(DenseOpticalFlow_DIS, MultithreadReproducibility)
         // resulting flow should be within the frame bounds:
         double min_val, max_val;
         minMaxLoc(resMultiThread, &min_val, &max_val);
-        EXPECT_LE(abs(min_val), sqrt(size.height * size.height + size.width * size.width));
-        EXPECT_LE(abs(max_val), sqrt(size.height * size.height + size.width * size.width));
+        EXPECT_LE(abs(min_val), sqrt( static_cast<double>(size.height * size.height + size.width * size.width)) );
+        EXPECT_LE(abs(max_val), sqrt( static_cast<double>(size.height * size.height + size.width * size.width)) );
     }
 }
 
@@ -151,9 +144,11 @@ TEST_P(DenseOpticalFlow_VariationalRefinement, MultithreadReproducibility)
         // resulting flow should be within the frame bounds:
         double min_val, max_val;
         minMaxLoc(resMultiThread, &min_val, &max_val);
-        EXPECT_LE(abs(min_val), sqrt(size.height * size.height + size.width * size.width));
-        EXPECT_LE(abs(max_val), sqrt(size.height * size.height + size.width * size.width));
+        EXPECT_LE(abs(min_val), sqrt( static_cast<double>(size.height * size.height + size.width * size.width)) );
+        EXPECT_LE(abs(max_val), sqrt( static_cast<double>(size.height * size.height + size.width * size.width)) );
     }
 }
 
 INSTANTIATE_TEST_CASE_P(FullSet, DenseOpticalFlow_VariationalRefinement, Values(szODD, szQVGA));
+
+}} // namespace

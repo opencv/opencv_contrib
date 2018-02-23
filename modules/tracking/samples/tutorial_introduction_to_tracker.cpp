@@ -30,7 +30,7 @@ int main( int argc, char** argv ){
 
   // create a tracker object
   //! [create]
-  Ptr<Tracker> tracker = Tracker::create( "KCF" );
+  Ptr<Tracker> tracker = TrackerKCF::create();
   //! [create]
 
   // set input video

@@ -99,10 +99,9 @@ static void testShift(const Mat& img1)
     showDifference(img1, img2, DIFF_IM);
 
     // Register
-    MapperGradShift mapper;
+    Ptr<MapperGradShift> mapper = makePtr<MapperGradShift>();
     MapperPyramid mappPyr(mapper);
-    Ptr<Map> mapPtr;
-    mappPyr.calculate(img1, img2, mapPtr);
+    Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
     MapShift* mapShift = dynamic_cast<MapShift*>(mapPtr.get());
@@ -135,10 +134,9 @@ static void testEuclidean(const Mat& img1)
     showDifference(img1, img2, DIFF_IM);
 
     // Register
-    MapperGradEuclid mapper;
+    Ptr<MapperGradEuclid> mapper = makePtr<MapperGradEuclid>();
     MapperPyramid mappPyr(mapper);
-    Ptr<Map> mapPtr;
-    mappPyr.calculate(img1, img2, mapPtr);
+    Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
     MapAffine* mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
@@ -174,10 +172,9 @@ static void testSimilarity(const Mat& img1)
     showDifference(img1, img2, DIFF_IM);
 
     // Register
-    MapperGradSimilar mapper;
+    Ptr<MapperGradSimilar> mapper = makePtr<MapperGradSimilar>();
     MapperPyramid mappPyr(mapper);
-    Ptr<Map> mapPtr;
-    mappPyr.calculate(img1, img2, mapPtr);
+    Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
     MapAffine* mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
@@ -209,10 +206,9 @@ static void testAffine(const Mat& img1)
     showDifference(img1, img2, DIFF_IM);
 
     // Register
-    MapperGradAffine mapper;
+    Ptr<MapperGradAffine> mapper = makePtr<MapperGradAffine>();
     MapperPyramid mappPyr(mapper);
-    Ptr<Map> mapPtr;
-    mappPyr.calculate(img1, img2, mapPtr);
+    Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
     MapAffine* mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
@@ -243,10 +239,9 @@ static void testProjective(const Mat& img1)
     showDifference(img1, img2, DIFF_IM);
 
     // Register
-    MapperGradProj mapper;
+    Ptr<MapperGradProj> mapper = makePtr<MapperGradProj>();
     MapperPyramid mappPyr(mapper);
-    Ptr<Map> mapPtr;
-    mappPyr.calculate(img1, img2, mapPtr);
+    Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
     MapProjec* mapProj = dynamic_cast<MapProjec*>(mapPtr.get());
@@ -347,7 +342,7 @@ static void calcHomographyFeature(const Mat& image1, const Mat& image2)
     warpPerspective(image2, result, Hinv, image1.size());
 
     cout << "--- Feature method\n" << H << endl;
-    
+
     Mat imf1, resf;
     image1.convertTo(imf1, CV_64FC3);
     result.convertTo(resf, CV_64FC3);
@@ -359,10 +354,9 @@ static void calcHomographyPixel(const Mat& img1, const Mat& img2)
     static const char* diffpixel = "Difference pixel registered";
 
     // Register using pixel differences
-    MapperGradProj mapper;
+    Ptr<MapperGradProj> mapper = makePtr<MapperGradProj>();
     MapperPyramid mappPyr(mapper);
-    Ptr<Map> mapPtr;
-    mappPyr.calculate(img1, img2, mapPtr);
+    Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
     MapProjec* mapProj = dynamic_cast<MapProjec*>(mapPtr.get());
@@ -398,7 +392,7 @@ static void comparePixelVsFeature(const Mat& img1_8b, const Mat& img2_8b)
 
 int main(void)
 {
-    Mat img1;    
+    Mat img1;
     img1 = imread("home.png", CV_LOAD_IMAGE_UNCHANGED);
     if(!img1.data) {
         cout <<  "Could not open or find file" << endl;

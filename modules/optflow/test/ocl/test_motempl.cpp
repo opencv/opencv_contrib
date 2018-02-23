@@ -10,8 +10,7 @@
 
 #ifdef HAVE_OPENCL
 
-namespace cvtest {
-namespace ocl {
+namespace opencv_test { namespace {
 
 PARAM_TEST_CASE(UpdateMotionHistory, bool)
 {
@@ -47,7 +46,7 @@ PARAM_TEST_CASE(UpdateMotionHistory, bool)
 
 OCL_TEST_P(UpdateMotionHistory, Mat)
 {
-    for (int j = 0; j < test_loop_times; j++)
+    for (int j = 0; j < cvtest::ocl::test_loop_times; j++)
     {
         generateTestData();
 
@@ -62,6 +61,6 @@ OCL_TEST_P(UpdateMotionHistory, Mat)
 
 OCL_INSTANTIATE_TEST_CASE_P(Video, UpdateMotionHistory, Values(false, true));
 
-} } // namespace cvtest::ocl
+}} // namespace
 
 #endif // HAVE_OPENCL

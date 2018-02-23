@@ -137,7 +137,7 @@ namespace cv
                 float getWeightL() const                        { return mSampler->getWeightL(); }
                 float getWeightA() const                        { return mSampler->getWeightA(); }
                 float getWeightB() const                        { return mSampler->getWeightB(); }
-                float getWeightConstrast() const                { return mSampler->getWeightConstrast(); }
+                float getWeightContrast() const                 { return mSampler->getWeightContrast(); }
                 float getWeightEntropy() const                  { return mSampler->getWeightEntropy(); }
 
                 std::vector<Point2f> getSamplingPoints() const  { return mSampler->getSamplingPoints(); }
@@ -397,7 +397,7 @@ namespace cv
                 break;
             case REGULAR:
             {
-                int gridSize = (int)ceil(sqrt(count));
+                int gridSize = (int)ceil(sqrt((float)count));
                 const float step = 1.0f / gridSize;
                 const float halfStep = step / 2;
                 float x = halfStep;

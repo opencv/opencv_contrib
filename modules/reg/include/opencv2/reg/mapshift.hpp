@@ -50,32 +50,33 @@ namespace reg {
 /*!
  * Defines an transformation that consists on a simple displacement
  */
-class CV_EXPORTS MapShift : public Map
+class CV_EXPORTS_W MapShift : public Map
 {
 public:
     /*!
      * Default constructor builds an identity map
      */
-    MapShift(void);
+    CV_WRAP MapShift();
 
     /*!
      * Constructor providing explicit values
      * \param[in] shift Displacement
      */
-    MapShift(const cv::Vec<double, 2>& shift);
+
+    CV_WRAP MapShift(InputArray shift);
 
     /*!
      * Destructor
      */
-    ~MapShift(void);
+    ~MapShift();
 
-    void inverseWarp(const cv::Mat& img1, cv::Mat& img2) const;
+    CV_WRAP void inverseWarp(InputArray img1, OutputArray img2) const;
 
-    cv::Ptr<Map> inverseMap(void) const;
+    CV_WRAP cv::Ptr<Map> inverseMap() const;
 
-    void compose(const Map& map);
+    CV_WRAP void compose(cv::Ptr<Map> map);
 
-    void scale(double factor);
+    CV_WRAP void scale(double factor);
 
     /*!
      * Return displacement
@@ -83,6 +84,10 @@ public:
      */
     const cv::Vec<double, 2>& getShift() const {
         return shift_;
+    }
+
+    CV_WRAP void getShift(OutputArray shift) const {
+        Mat(shift_).copyTo(shift);
     }
 
 private:

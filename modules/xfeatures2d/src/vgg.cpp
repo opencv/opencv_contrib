@@ -83,7 +83,7 @@ public:
     virtual ~VGG_Impl();
 
     // returns the descriptor length in bytes
-    virtual int descriptorSize() const { return m_descriptor_size; };
+    virtual int descriptorSize() const { return m_descriptor_size; }
 
     // returns the descriptor type
     virtual int descriptorType() const { return CV_32F; }
@@ -93,6 +93,22 @@ public:
 
     // compute descriptors given keypoints
     virtual void compute( InputArray image, vector<KeyPoint>& keypoints, OutputArray descriptors );
+
+    // getter / setter
+    virtual void setSigma(const float isigma) { m_isigma = isigma; }
+    virtual float getSigma() const { return m_isigma; }
+
+    virtual void setUseNormalizeImage(const bool img_normalize) { m_img_normalize = img_normalize; }
+    virtual bool getUseNormalizeImage() const { return m_img_normalize; }
+
+    virtual void setUseScaleOrientation(const bool use_scale_orientation) { m_use_scale_orientation = use_scale_orientation; }
+    virtual bool getUseScaleOrientation() const { return m_use_scale_orientation; }
+
+    virtual void setScaleFactor(const float scale_factor) { m_scale_factor = scale_factor; }
+    virtual float getScaleFactor() const { return m_scale_factor; }
+
+    virtual void setUseNormalizeDescriptor(const bool dsc_normalize) { m_dsc_normalize = dsc_normalize; }
+    virtual bool getUseNormalizeDescriptor() const { return m_dsc_normalize; }
 
 protected:
 

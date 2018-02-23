@@ -39,18 +39,19 @@
 //
 //M*/
 
+#include <iostream>
+#include <opencv2/opencv_modules.hpp>
+
+#ifdef HAVE_OPENCV_TEXT
+
 #include "opencv2/datasets/tr_svt.hpp"
-
 #include <opencv2/core.hpp>
-
 #include "opencv2/text.hpp"
 #include "opencv2/imgproc.hpp"
 #include "opencv2/imgcodecs.hpp"
 
 #include <cstdio>
 #include <cstdlib> // atoi
-
-#include <iostream>
 
 #include <string>
 #include <vector>
@@ -131,6 +132,12 @@ void er_draw(vector<Mat> &channels, vector<vector<ERStat> > &regions, vector<Vec
                       Scalar(255),0,Scalar(er.level),Scalar(0),flags);
         }
     }
+}
+
+// std::toupper is int->int
+static char char_toupper(char ch)
+{
+    return (char)std::toupper((int)ch);
 }
 
 int main(int argc, char *argv[])
@@ -244,7 +251,7 @@ int main(int argc, char *argv[])
                     continue;
                 }
 
-                std::transform(words[j].begin(), words[j].end(), words[j].begin(), ::toupper);
+                std::transform(words[j].begin(), words[j].end(), words[j].begin(), char_toupper);
 
                 if (find(example->lex.begin(), example->lex.end(), words[j]) == example->lex.end())
                 {
@@ -303,3 +310,13 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+
+#else
+
+int main()
+{
+    std::cerr << "OpenCV was built without text module" << std::endl;
+    return 0;
+}
+
+#endif // HAVE_OPENCV_TEXT

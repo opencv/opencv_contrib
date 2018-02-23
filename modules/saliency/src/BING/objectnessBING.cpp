@@ -95,16 +95,14 @@ void ObjectnessBING::setBBResDir(const String &resultsDir )
   _resultsDir = resultsDir;
 }
 
-int ObjectnessBING::loadTrainedModel( std::string modelName )  // Return -1, 0, or 1 if partial, none, or all loaded
+int ObjectnessBING::loadTrainedModel()  // Return -1, 0, or 1 if partial, none, or all loaded
 {
-  if( modelName.size() == 0 )
-    modelName = _modelName;
-  CStr s1 = modelName + ".wS1", s2 = modelName + ".wS2", sI = modelName + ".idx";
+  CStr s1 = _modelName + ".wS1", s2 = _modelName + ".wS2", sI = _modelName + ".idx";
   Mat filters1f, reW1f, idx1i, show3u;
 
   if( !matRead( s1, filters1f ) || !matRead( sI, idx1i ) )
   {
-    printf( "Can't load model: %s or %s\n", s1.c_str(), sI.c_str() );
+    printf( "Can't load model: %s or %s\r\n", s1.c_str(), sI.c_str() );
     return 0;
   }
 
@@ -140,7 +138,7 @@ void ObjectnessBING::predictBBoxSI( Mat &img3u, ValStructVec<float, Vec4i> &valB
 
     height = min( height, imgH ), width = min( width, imgW );
     Mat im3u, matchCost1f, mag1u;
-    resize( img3u, im3u, Size( cvRound( _W * imgW * 1.0 / width ), cvRound( _W * imgH * 1.0 / height ) ) );
+    resize( img3u, im3u, Size( cvRound( _W * imgW * 1.0 / width ), cvRound( _W * imgH * 1.0 / height ) ), 0, 0, INTER_LINEAR_EXACT );
     gradientMag( im3u, mag1u );
 
     matchCost1f = _tigF.matchTemplate( mag1u );
@@ -384,7 +382,9 @@ void ObjectnessBING::getObjBndBoxesForSingleImage( Mat img, ValStructVec<float, 
   for ( int clr = MAXBGR; clr <= G; clr++ )
   {
     setColorSpace( clr );
-    loadTrainedModel();
+    if (!loadTrainedModel())
+      continue;
+
     CmTimer tm( "Predict" );
     tm.Start();
 
@@ -439,6 +439,9 @@ bool ObjectnessBING::matRead( const std::string& filename, Mat& _M )
   String filenamePlusExt( filename.c_str() );
   filenamePlusExt += ".yml.gz";
   FileStorage fs2( filenamePlusExt, FileStorage::READ );
+  if (! fs2.isOpened()) // wrong trainingPath
+    return false;
+
   Mat M;
   fs2[String( removeExtension( basename( filename ) ).c_str() )] >> M;
 

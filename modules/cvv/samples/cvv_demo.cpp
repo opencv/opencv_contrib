@@ -1,5 +1,4 @@
 // system includes
-#include <getopt.h>
 #include <iostream>
 
 // library includes
@@ -16,6 +15,7 @@
 #include <opencv2/cvv/dmatch.hpp>
 #include <opencv2/cvv/final_show.hpp>
 
+using namespace std;
 using namespace cv;
 
 template<class T> std::string toString(const T& p_arg)
@@ -42,28 +42,22 @@ main(int argc, char** argv)
 {
   cv::Size* resolution = nullptr;
 
-  // parse options
-  const char* optstring = "hr:";
-  int opt;
-  while ((opt = getopt(argc, argv, optstring)) != -1) {
-    switch (opt) {
-    case 'h':
-      usage();
-      return 0;
-      break;
-    case 'r':
-      {
-        char dummych;
-        resolution = new cv::Size();
-        if (sscanf(optarg, "%d%c%d", &resolution->width, &dummych, &resolution->height) != 3) {
-          printf("%s not a valid resolution\n", optarg);
-          return 1;
-        }
-      }
-      break;
-    default: /* '?' */
-      usage();
-      return 2;
+  // parser keys
+  const char *keys =
+      "{ help h usage ? |    | show this message }"
+      "{ resolution r   |0x0| resolution to width and height in the format WxH }";
+  CommandLineParser parser(argc, argv, keys);
+  string res(parser.get<string>("resolution"));
+  if (parser.has("help")) {
+    usage();
+    return 0;
+  }
+  if (res != "0x0") {
+    char dummych;
+    resolution = new cv::Size();
+    if (sscanf(res.c_str(), "%d%c%d", &resolution->width, &dummych, &resolution->height) != 3) {
+      cout << res << " not a valid resolution" << endl;
+      return 1;
     }
   }
 
@@ -78,6 +72,7 @@ main(int argc, char** argv)
     printf("Setting resolution to %dx%d\n", resolution->width, resolution->height);
     capture.set(CV_CAP_PROP_FRAME_WIDTH, resolution->width);
     capture.set(CV_CAP_PROP_FRAME_HEIGHT, resolution->height);
+    delete resolution;
   }
 
 

@@ -1,4 +1,7 @@
 set(the_description "FreeType module. It enables to draw strings with outlines and mono-bitmaps/gray-bitmaps.")
+if(APPLE_FRAMEWORK)
+  ocv_module_disable(freetype)
+endif()
 
 if(PKG_CONFIG_FOUND)
   pkg_search_module(FREETYPE freetype2)

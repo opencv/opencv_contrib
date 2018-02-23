@@ -40,12 +40,8 @@
 //M*/
 
 #include "test_precomp.hpp"
-#include <fstream>
 
-using namespace std;
-using namespace cv;
-using namespace cvtest;
-using namespace optflow;
+namespace opencv_test { namespace {
 
 static string getDataDir() { return TS::ptr()->get_data_path(); }
 
@@ -283,3 +279,6 @@ TEST(DenseOpticalFlow_GlobalPatchColliderWHT, ReferenceAccuracy)
     ASSERT_LE(7000U, corr.size());
     ASSERT_LE(calcAvgEPE(corr, GT), 0.5f);
 }
+
+
+}} // namespace

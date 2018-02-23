@@ -40,11 +40,8 @@
 //M*/
 
 #include "test_precomp.hpp"
-#include "opencv2/highgui.hpp"
 
-using namespace std;
-using namespace cv;
-using namespace cv::xfeatures2d;
+namespace opencv_test { namespace {
 
 const string IMAGE_TSUKUBA = "/features2d/tsukuba.png";
 const string IMAGE_BIKES = "/detectors_descriptors_evaluation/images_datasets/bikes/img1.png";
@@ -115,7 +112,7 @@ void scaleKeyPoints(const vector<KeyPoint>& src, vector<KeyPoint>& dst, float sc
 static
 float calcCirclesIntersectArea(const Point2f& p0, float r0, const Point2f& p1, float r1)
 {
-    float c = static_cast<float>(norm(p0 - p1)), sqr_c = c * c;
+    float c = static_cast<float>(cv::norm(p0 - p1)), sqr_c = c * c;
 
     float sqr_r0 = r0 * r0;
     float sqr_r1 = r1 * r1;
@@ -168,9 +165,6 @@ void matchKeyPoints(const vector<KeyPoint>& keypoints0, const Mat& H,
         const float r0 =  0.5f * keypoints0[i0].size;
         for(size_t i1 = 0; i1 < keypoints1.size(); i1++)
         {
-            if(nearestPointIndex >= 0 && usedMask[i1])
-                continue;
-
             float r1 = 0.5f * keypoints1[i1].size;
             float intersectRatio = calcIntersectRatio(points0t.at<Point2f>(i0), r0,
                                                       keypoints1[i1].pt, r1);
@@ -441,7 +435,7 @@ protected:
         {
             float scale = 1.f + scaleIdx * 0.5f;
             Mat image1;
-            resize(image0, image1, Size(), 1./scale, 1./scale);
+            resize(image0, image1, Size(), 1./scale, 1./scale, INTER_LINEAR_EXACT);
 
             vector<KeyPoint> keypoints1, osiKeypoints1; // osi - original size image
             featureDetector->detect(image1, keypoints1);
@@ -566,7 +560,7 @@ protected:
             float scale = 1.f + scaleIdx * 0.5f;
 
             Mat image1;
-            resize(image0, image1, Size(), 1./scale, 1./scale);
+            resize(image0, image1, Size(), 1./scale, 1./scale, INTER_LINEAR_EXACT);
 
             vector<KeyPoint> keypoints1;
             scaleKeyPoints(keypoints0, keypoints1, 1.0f/scale);
@@ -619,7 +613,7 @@ protected:
 TEST(Features2d_RotationInvariance_Detector_SURF, regression)
 {
     DetectorRotationInvarianceTest test(SURF::create(),
-                                        0.44f,
+                                        0.65f,
                                         0.76f);
     test.safe_run();
 }
@@ -859,10 +853,21 @@ TEST(Features2d_RotationInvariance2_Detector_SURF, regression)
     vector<KeyPoint> keypoints;
     surf->detect(cross, keypoints);
 
+    // Expect 5 keypoints.  One keypoint has coordinates (50.0, 50.0).
+    // The other 4 keypoints should have the same response.
+    // The order of the keypoints is indeterminate.
     ASSERT_EQ(keypoints.size(), (vector<KeyPoint>::size_type) 5);
-    ASSERT_LT( fabs(keypoints[1].response - keypoints[2].response), 1e-6);
-    ASSERT_LT( fabs(keypoints[1].response - keypoints[3].response), 1e-6);
-    ASSERT_LT( fabs(keypoints[1].response - keypoints[4].response), 1e-6);
+
+    int i1 = -1;
+    for(int i = 0; i < 5; i++)
+    {
+        if(keypoints[i].pt.x == 50.0f)
+            ;
+        else if(i1 == -1)
+            i1 = i;
+        else
+            ASSERT_LT(fabs(keypoints[i1].response - keypoints[i].response) / keypoints[i1].response, 1e-6);
+    }
 }
 
 TEST(DISABLED_Features2d_ScaleInvariance_Descriptor_DAISY, regression)
@@ -942,7 +947,7 @@ TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_LBGM, regression)
     DescriptorScaleInvarianceTest test(SURF::create(),
                                        BoostDesc::create(BoostDesc::LBGM, true, 6.25f),
                                        NORM_L1,
-                                       0.98f);
+                                       0.95f);
     test.safe_run();
 }
 
@@ -972,3 +977,5 @@ TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BINBOOST_256, regression)
                                        0.98f);
     test.safe_run();
 }
+
+}} // namespace

@@ -90,7 +90,7 @@ void OCRHMMDecoder::run(Mat& image, Mat& mask, string& output_text, vector<Rect>
         component_confidences->clear();
 }
 
-CV_WRAP String OCRHMMDecoder::run(InputArray image, int min_confidence, int component_level)
+String OCRHMMDecoder::run(InputArray image, int min_confidence, int component_level)
 {
     std::string output1;
     std::string output2;
@@ -109,7 +109,7 @@ CV_WRAP String OCRHMMDecoder::run(InputArray image, int min_confidence, int comp
     return String(output2);
 }
 
-CV_WRAP cv::String OCRHMMDecoder::run(InputArray image, InputArray mask, int min_confidence, int component_level)
+cv::String OCRHMMDecoder::run(InputArray image, InputArray mask, int min_confidence, int component_level)
 {
     std::string output1;
     std::string output2;
@@ -684,8 +684,17 @@ Ptr<OCRHMMDecoder> OCRHMMDecoder::create( Ptr<OCRHMMDecoder::ClassifierCallback>
     return makePtr<OCRHMMDecoderImpl>(_classifier, _vocabulary, transition_p, emission_p, (decoder_mode)_mode);
 }
 
+Ptr<OCRHMMDecoder> OCRHMMDecoder::create( const String& _filename,
+                                          const String& _vocabulary,
+                                          InputArray transition_p,
+                                          InputArray emission_p,
+                                          int _mode,
+                                          int _classifier)
+{
+    return makePtr<OCRHMMDecoderImpl>(loadOCRHMMClassifier(_filename, _classifier), _vocabulary, transition_p, emission_p, (decoder_mode)_mode);
+}
 
-class CV_EXPORTS OCRHMMClassifierKNN : public OCRHMMDecoder::ClassifierCallback
+class OCRHMMClassifierKNN : public OCRHMMDecoder::ClassifierCallback
 {
 public:
     //constructor
@@ -770,14 +779,14 @@ void OCRHMMClassifierKNN::eval( InputArray _mask, vector<int>& out_class, vector
     {
         int height = image_width*tmp.rows/tmp.cols;
         if(height == 0) height = 1;
-        resize(tmp,tmp,Size(image_width,height));
+        resize(tmp,tmp,Size(image_width,height),0,0,INTER_LINEAR_EXACT);
         tmp.copyTo(mask(Rect(0,(image_height-height)/2,image_width,height)));
     }
     else
     {
         int width = image_height*tmp.cols/tmp.rows;
         if(width == 0) width = 1;
-        resize(tmp,tmp,Size(width,image_height));
+        resize(tmp,tmp,Size(width,image_height),0,0,INTER_LINEAR_EXACT);
         tmp.copyTo(mask(Rect((image_width-width)/2,0,width,image_height)));
     }
 
@@ -828,7 +837,7 @@ void OCRHMMClassifierKNN::eval( InputArray _mask, vector<int>& out_class, vector
         copyMakeBorder(maps[i],maps[i],7,7,7,7,BORDER_CONSTANT,Scalar(0));
         GaussianBlur(maps[i], maps[i], Size(7,7), 2, 2);
         normalize(maps[i],maps[i],0,255,NORM_MINMAX);
-        resize(maps[i],maps[i],Size(image_width,image_height));
+        resize(maps[i],maps[i],Size(image_width,image_height),0,0,INTER_LINEAR_EXACT);
     }
 
     //Generate features for each bitmap
@@ -916,6 +925,22 @@ void OCRHMMClassifierKNN::eval( InputArray _mask, vector<int>& out_class, vector
 
 }
 
+Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifier(const String& _filename, int _classifier)
+
+{
+    Ptr<OCRHMMDecoder::ClassifierCallback> pt;
+    switch(_classifier) {
+        case OCR_KNN_CLASSIFIER:
+            pt = loadOCRHMMClassifierNM(_filename);
+            break;
+        case OCR_CNN_CLASSIFIER:
+            pt = loadOCRHMMClassifierCNN(_filename);
+        default:
+            CV_Error(Error::StsBadArg, "Specified HMM classifier is not supported!");
+            break;
+    }
+    return pt;
+}
 
 Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierNM(const String& filename)
 
@@ -923,7 +948,7 @@ Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifierNM(const String& file
     return makePtr<OCRHMMClassifierKNN>(std::string(filename));
 }
 
-class CV_EXPORTS OCRHMMClassifierCNN : public OCRHMMDecoder::ClassifierCallback
+class OCRHMMClassifierCNN : public OCRHMMDecoder::ClassifierCallback
 {
 public:
     //constructor
@@ -982,7 +1007,7 @@ OCRHMMClassifierCNN::OCRHMMClassifierCNN (const string& filename)
 
     nr_feature  = weights.rows;
     nr_class    = weights.cols;
-    patch_size  = (int)round(sqrt((float)kernels.cols));
+    patch_size  = cvRound(sqrt((float)kernels.cols));
     // algorithm internal parameters
     window_size = 32;
     num_quads   = 25;
@@ -1007,7 +1032,7 @@ void OCRHMMClassifierCNN::eval( InputArray _src, vector<int>& out_class, vector<
     }
 
     // shall we resize the input image or make a copy ?
-    resize(img,img,Size(window_size,window_size));
+    resize(img,img,Size(window_size,window_size),0,0,INTER_LINEAR_EXACT);
 
     Mat quad;
     Mat tmp;

@@ -98,7 +98,7 @@ public:
 	TrackerProxyImpl(Tparams params = Tparams()) :params_(params){}
 	bool init(const Mat& image, const Rect2d& boundingBox)
 	{
-		trackerPtr = T::createTracker();
+        trackerPtr = T::create();
 		return trackerPtr->init(image, boundingBox);
 	}
 	bool update(const Mat& image, Rect2d& boundingBox)
@@ -112,7 +112,7 @@ private:
 };
 
 
-#define BLUR_AS_VADIM
+#undef BLUR_AS_VADIM
 #undef CLOSED_LOOP
 
 class TrackerTLDImpl : public TrackerTLD
@@ -121,6 +121,11 @@ public:
 	TrackerTLDImpl(const TrackerTLD::Params &parameters = TrackerTLD::Params());
 	void read(const FileNode& fn);
 	void write(FileStorage& fs) const;
+
+    Ptr<TrackerModel> getModel()
+    {
+      return model;
+    }
 
 	class Pexpert
 	{

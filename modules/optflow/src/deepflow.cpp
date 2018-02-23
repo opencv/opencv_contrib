@@ -41,7 +41,6 @@
  //M*/
 
 #include "precomp.hpp"
-#include <opencv2/highgui.hpp>
 
 namespace cv
 {
@@ -98,8 +97,7 @@ std::vector<Mat> OpticalFlowDeepFlow::buildPyramid( const Mat& src )
     std::vector<Mat> pyramid;
     pyramid.push_back(src);
     Mat prev = pyramid[0];
-    int i = 0;
-    while ( i < this->maxLayers )
+    for( int i = 0; i < this->maxLayers; ++i)
     {
         Mat next; //TODO: filtering at each level?
         Size nextSize((int) (prev.cols * downscaleFactor + 0.5f),

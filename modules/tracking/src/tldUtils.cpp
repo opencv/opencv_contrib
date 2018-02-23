@@ -49,34 +49,6 @@ namespace tld
 
 //Debug functions and variables
 Rect2d etalon(14.0, 110.0, 20.0, 20.0);
-void drawWithRects(const Mat& img, std::vector<Rect2d>& blackOnes, Rect2d whiteOne)
-{
-    Mat image;
-    img.copyTo(image);
-    if( whiteOne.width >= 0 )
-        rectangle( image, whiteOne, 255, 1, 1 );
-    for( int i = 0; i < (int)blackOnes.size(); i++ )
-        rectangle( image, blackOnes[i], 0, 1, 1 );
-    imshow("img", image);
-}
-void drawWithRects(const Mat& img, std::vector<Rect2d>& blackOnes, std::vector<Rect2d>& whiteOnes, String filename)
-{
-    Mat image;
-    static int frameCounter = 1;
-    img.copyTo(image);
-    for( int i = 0; i < (int)whiteOnes.size(); i++ )
-        rectangle( image, whiteOnes[i], 255, 1, 1 );
-    for( int i = 0; i < (int)blackOnes.size(); i++ )
-        rectangle( image, blackOnes[i], 0, 1, 1 );
-    imshow("img", image);
-    if( filename.length() > 0 )
-    {
-        char inbuf[100];
-        sprintf(inbuf, "%s%d.jpg", filename.c_str(), frameCounter);
-        imwrite(inbuf, image);
-        frameCounter++;
-    }
-}
 void myassert(const Mat& img)
 {
     int count = 0;
@@ -131,7 +103,7 @@ double scaleAndBlur(const Mat& originalImg, int scale, Mat& scaledImg, Mat& blur
     for( int i = 0; i < scale; i++, dScale *= scaleStep );
     Size2d size = originalImg.size();
     size.height /= dScale; size.width /= dScale;
-    resize(originalImg, scaledImg, size);
+    resize(originalImg, scaledImg, size, 0, 0, INTER_LINEAR_EXACT);
     GaussianBlur(scaledImg, blurredImg, GaussBlurKernelSize, 0.0);
     return dScale;
 }
@@ -179,52 +151,12 @@ void getClosestN(std::vector<Rect2d>& scanGrid, Rect2d bBox, int n, std::vector<
 double variance(const Mat& img)
 {
     double p = 0, p2 = 0;
-    for( int i = 0; i < img.rows; i++ )
-    {
-        for( int j = 0; j < img.cols; j++ )
-        {
-            p += img.at<uchar>(i, j);
-            p2 += img.at<uchar>(i, j) * img.at<uchar>(i, j);
-        }
-    }
+    p = sum(img)(0);
+    p2 = norm(img, NORM_L2SQR);
     p /= (img.cols * img.rows);
     p2 /= (img.cols * img.rows);
+
     return p2 - p * p;
-}
-
-//Normalized Correlation Coefficient
-double NCC(const Mat_<uchar>& patch1, const Mat_<uchar>& patch2)
-{
-    CV_Assert( patch1.rows == patch2.rows );
-    CV_Assert( patch1.cols == patch2.cols );
-
-    int N = patch1.rows * patch1.cols;
-    int s1 = 0, s2 = 0, n1 = 0, n2 = 0, prod = 0;
-    for( int i = 0; i < patch1.rows; i++ )
-    {
-        for( int j = 0; j < patch1.cols; j++ )
-        {
-            int p1 = patch1(i, j), p2 = patch2(i, j);
-            s1 += p1; s2 += p2;
-            n1 += (p1 * p1); n2 += (p2 * p2);
-            prod += (p1 * p2);
-        }
-    }
-    double sq1 = sqrt(std::max(0.0, n1 - 1.0 * s1 * s1 / N)), sq2 = sqrt(std::max(0.0, n2 - 1.0 * s2 * s2 / N));
-    double ares = (sq2 == 0) ? sq1 / abs(sq1) : (prod - s1 * s2 / N) / sq1 / sq2;
-    return ares;
-}
-
-int getMedian(const std::vector<int>& values, int size)
-{
-    if( size == -1 )
-        size = (int)values.size();
-    std::vector<int> copy(values.begin(), values.begin() + size);
-    std::sort(copy.begin(), copy.end());
-    if( size % 2 == 0 )
-        return (copy[size / 2 - 1] + copy[size / 2]) / 2;
-    else
-        return copy[(size - 1) / 2];
 }
 
 //Overlap between two BB

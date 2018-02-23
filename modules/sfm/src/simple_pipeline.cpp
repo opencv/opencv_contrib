@@ -52,7 +52,7 @@ namespace sfm
 /* Parses a given array of 2d points into the libmv tracks structure
  */
 
-void
+static void
 parser_2D_tracks( const std::vector<Mat> &points2d, libmv::Tracks &tracks )
 {
   const int nframes = static_cast<int>(points2d.size());
@@ -71,7 +71,7 @@ parser_2D_tracks( const std::vector<Mat> &points2d, libmv::Tracks &tracks )
 /* Parses a given set of matches into the libmv tracks structure
  */
 
-void
+static void
 parser_2D_tracks( const libmv::Matches &matches, libmv::Tracks &tracks )
 {
   std::set<Matches::ImageID>::const_iterator iter_image =
@@ -115,20 +115,22 @@ parser_2D_tracks( const libmv::Matches &matches, libmv::Tracks &tracks )
  * reconstruction pipeline.
  */
 
-libmv_Reconstruction *libmv_solveReconstructionImpl(
-  const std::vector<std::string> &images,
+static libmv_Reconstruction *libmv_solveReconstructionImpl(
+  const std::vector<String> &images,
   const libmv_CameraIntrinsicsOptions* libmv_camera_intrinsics_options,
   libmv_ReconstructionOptions* libmv_reconstruction_options)
 {
   Ptr<Feature2D> edetector = ORB::create(10000);
   Ptr<Feature2D> edescriber = xfeatures2d::DAISY::create();
   //Ptr<Feature2D> edescriber = xfeatures2d::LATCH::create(64, true, 4);
-
+  std::vector<std::string> sImages;
+  for (int i=0;i<images.size();i++)
+      sImages.push_back(images[i].c_str());
   cout << "Initialize nViewMatcher ... ";
   libmv::correspondence::nRobustViewMatching nViewMatcher(edetector, edescriber);
 
   cout << "OK" << endl << "Performing Cross Matching ... ";
-  nViewMatcher.computeCrossMatch(images); cout << "OK" << endl;
+  nViewMatcher.computeCrossMatch(sImages); cout << "OK" << endl;
 
   // Building tracks
   libmv::Tracks tracks;
@@ -196,7 +198,7 @@ public:
   /* Run the pipeline given a set of images
    */
 
-  virtual void run(const std::vector <std::string> &images)
+  virtual void run(const std::vector <String> &images)
   {
     // Set libmv logs level
     libmv_initLogging("");
@@ -217,7 +219,7 @@ public:
   }
 
 
-  virtual void run(const std::vector <string> &images, InputOutputArray K, OutputArray Rs,
+  virtual void run(const std::vector <String> &images, InputOutputArray K, OutputArray Rs,
                    OutputArray Ts, OutputArray points3d)
   {
     // Run the pipeline

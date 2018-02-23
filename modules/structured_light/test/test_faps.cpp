@@ -38,14 +38,12 @@
  // the use of this software, even if advised of the possibility of such damage.
  //
  //M*/
+#include "test_precomp.hpp"
 
 #include <opencv2/structured_light/graycodepattern.hpp>
 #include <opencv2/structured_light/sinusoidalpattern.hpp>
-#include <opencv2/imgcodecs.hpp>
-#include "test_precomp.hpp"
 
-using namespace std;
-using namespace cv;
+namespace opencv_test { namespace {
 
 const string STRUCTURED_LIGHT_DIR = "structured_light";
 const string FOLDER_DATA = "data";
@@ -54,10 +52,13 @@ TEST( SinusoidalPattern, unwrapPhaseMap )
 {
     string folder = cvtest::TS::ptr()->get_data_path() + "/" + STRUCTURED_LIGHT_DIR + "/" + FOLDER_DATA + "/";
 
-    structured_light::SinusoidalPattern::Params paramsPsp, paramsFtp, paramsFaps;
-    paramsFtp.methodId = 0;
-    paramsPsp.methodId = 1;
-    paramsFaps.methodId = 2;
+    Ptr<structured_light::SinusoidalPattern::Params> paramsPsp, paramsFtp, paramsFaps;
+    paramsPsp = makePtr<structured_light::SinusoidalPattern::Params>();
+    paramsFtp = makePtr<structured_light::SinusoidalPattern::Params>();
+    paramsFaps = makePtr<structured_light::SinusoidalPattern::Params>();
+    paramsFtp->methodId = 0;
+    paramsPsp->methodId = 1;
+    paramsFaps->methodId = 2;
 
     Ptr<structured_light::SinusoidalPattern> sinusPsp = structured_light::SinusoidalPattern::create(paramsPsp);
     Ptr<structured_light::SinusoidalPattern> sinusFtp = structured_light::SinusoidalPattern::create(paramsFtp);
@@ -144,3 +145,5 @@ TEST( SinusoidalPattern, unwrapPhaseMap )
 
     EXPECT_LE( ratio, 0.003 );
 }
+
+}} // namespace

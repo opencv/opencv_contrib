@@ -480,10 +480,11 @@ static int _getBorderErrors(const Mat &bits, int markerSize, int borderSize) {
 /**
  * @brief Tries to identify one candidate given the dictionary
  */
-static bool _identifyOneCandidate(const Ptr<Dictionary> &dictionary, InputArray _image,
-                                  InputOutputArray _corners, int &idx, const Ptr<DetectorParameters> &params) {
-
-    CV_Assert(_corners.total() == 4);
+static bool _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArray _image,
+                                  vector<Point2f>& _corners, int& idx,
+                                  const Ptr<DetectorParameters>& params)
+{
+    CV_Assert(_corners.size() == 4);
     CV_Assert(_image.getMat().total() != 0);
     CV_Assert(params->markerBorderBits > 0);
 
@@ -510,16 +511,12 @@ static bool _identifyOneCandidate(const Ptr<Dictionary> &dictionary, InputArray 
     int rotation;
     if(!dictionary->identify(onlyBits, idx, rotation, params->errorCorrectionRate))
         return false;
-    else {
-        // shift corner positions to the correct rotation
-        if(rotation != 0) {
-            Mat copyPoints = _corners.getMat().clone();
-            for(int j = 0; j < 4; j++)
-                _corners.getMat().ptr< Point2f >(0)[j] =
-                    copyPoints.ptr< Point2f >(0)[(j + 4 - rotation) % 4];
-        }
-        return true;
+
+    // shift corner positions to the correct rotation
+    if(rotation != 0) {
+        std::rotate(_corners.begin(), _corners.begin() + 4 - rotation, _corners.end());
     }
+    return true;
 }
 
 
@@ -529,11 +526,11 @@ static bool _identifyOneCandidate(const Ptr<Dictionary> &dictionary, InputArray 
   */
 class IdentifyCandidatesParallel : public ParallelLoopBody {
     public:
-    IdentifyCandidatesParallel(const Mat& _grey, InputArrayOfArrays _candidates,
-                               InputArrayOfArrays _contours, const Ptr<Dictionary> &_dictionary,
+    IdentifyCandidatesParallel(const Mat& _grey, vector< vector< Point2f > >& _candidates,
+                               const Ptr<Dictionary> &_dictionary,
                                vector< int >& _idsTmp, vector< char >& _validCandidates,
                                const Ptr<DetectorParameters> &_params)
-        : grey(_grey), candidates(_candidates), contours(_contours), dictionary(_dictionary),
+        : grey(_grey), candidates(_candidates), dictionary(_dictionary),
           idsTmp(_idsTmp), validCandidates(_validCandidates), params(_params) {}
 
     void operator()(const Range &range) const {
@@ -542,8 +539,7 @@ class IdentifyCandidatesParallel : public ParallelLoopBody {
 
         for(int i = begin; i < end; i++) {
             int currId;
-            Mat currentCandidate = candidates.getMat(i);
-            if(_identifyOneCandidate(dictionary, grey, currentCandidate, currId, params)) {
+            if(_identifyOneCandidate(dictionary, grey, candidates[i], currId, params)) {
                 validCandidates[i] = 1;
                 idsTmp[i] = currId;
             }
@@ -554,7 +550,7 @@ class IdentifyCandidatesParallel : public ParallelLoopBody {
     IdentifyCandidatesParallel &operator=(const IdentifyCandidatesParallel &); // to quiet MSVC
 
     const Mat &grey;
-    InputArrayOfArrays candidates, contours;
+    vector< vector< Point2f > >& candidates;
     const Ptr<Dictionary> &dictionary;
     vector< int > &idsTmp;
     vector< char > &validCandidates;
@@ -634,7 +630,7 @@ static void _identifyCandidates(InputArray _image, vector< vector< Point2f > >& 
 
     // this is the parallel call for the previous commented loop (result is equivalent)
     parallel_for_(Range(0, ncandidates),
-                  IdentifyCandidatesParallel(grey, _candidates, _contours, _dictionary, idsTmp,
+                  IdentifyCandidatesParallel(grey, _candidates, _dictionary, idsTmp,
                                              validCandidates, params));
 
     for(int i = 0; i < ncandidates; i++) {
@@ -1086,18 +1082,13 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
 
 
 
-/**
-  * @brief Given a board configuration and a set of detected markers, returns the corresponding
-  * image points and object points to call solvePnP
-  */
-static void _getBoardObjectAndImagePoints(const Ptr<Board> &_board, InputArray _detectedIds,
-                                          InputArrayOfArrays _detectedCorners,
-                                          OutputArray _imgPoints, OutputArray _objPoints) {
+void getBoardObjectAndImagePoints(const Ptr<Board> &board, InputArrayOfArrays detectedCorners,
+    InputArray detectedIds, OutputArray objPoints, OutputArray imgPoints) {
 
-    CV_Assert(_board->ids.size() == _board->objPoints.size());
-    CV_Assert(_detectedIds.total() == _detectedCorners.total());
+    CV_Assert(board->ids.size() == board->objPoints.size());
+    CV_Assert(detectedIds.total() == detectedCorners.total());
 
-    size_t nDetectedMarkers = _detectedIds.total();
+    size_t nDetectedMarkers = detectedIds.total();
 
     vector< Point3f > objPnts;
     objPnts.reserve(nDetectedMarkers);
@@ -1107,20 +1098,20 @@ static void _getBoardObjectAndImagePoints(const Ptr<Board> &_board, InputArray _
 
     // look for detected markers that belong to the board and get their information
     for(unsigned int i = 0; i < nDetectedMarkers; i++) {
-        int currentId = _detectedIds.getMat().ptr< int >(0)[i];
-        for(unsigned int j = 0; j < _board->ids.size(); j++) {
-            if(currentId == _board->ids[j]) {
+        int currentId = detectedIds.getMat().ptr< int >(0)[i];
+        for(unsigned int j = 0; j < board->ids.size(); j++) {
+            if(currentId == board->ids[j]) {
                 for(int p = 0; p < 4; p++) {
-                    objPnts.push_back(_board->objPoints[j][p]);
-                    imgPnts.push_back(_detectedCorners.getMat(i).ptr< Point2f >(0)[p]);
+                    objPnts.push_back(board->objPoints[j][p]);
+                    imgPnts.push_back(detectedCorners.getMat(i).ptr< Point2f >(0)[p]);
                 }
             }
         }
     }
 
     // create output
-    Mat(objPnts).copyTo(_objPoints);
-    Mat(imgPnts).copyTo(_imgPoints);
+    Mat(objPnts).copyTo(objPoints);
+    Mat(imgPnts).copyTo(imgPoints);
 }
 
 
@@ -1442,7 +1433,7 @@ int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Ptr<Bo
 
     // get object and image points for the solvePnP function
     Mat objPoints, imgPoints;
-    _getBoardObjectAndImagePoints(board, _ids, _corners, imgPoints, objPoints);
+    getBoardObjectAndImagePoints(board, _corners, _ids, objPoints, imgPoints);
 
     CV_Assert(imgPoints.total() == objPoints.total());
 
@@ -1681,6 +1672,7 @@ void _drawPlanarBoardImpl(Board *_board, Size outSize, OutputArray _img, int mar
 
         // get marker
         Size dst_sz(outCorners[2] - outCorners[0]); // assuming CCW order
+        dst_sz.width = dst_sz.height = std::min(dst_sz.width, dst_sz.height); //marker should be square
         dictionary.drawMarker(_board->ids[m], dst_sz.width, marker, borderBits);
 
         if((outCorners[0].y == outCorners[1].y) && (outCorners[1].x == outCorners[2].x)) {
@@ -1743,8 +1735,8 @@ double calibrateCameraAruco(InputArrayOfArrays _corners, InputArray _ids, InputA
         }
         markerCounter += nMarkersInThisFrame;
         Mat currentImgPoints, currentObjPoints;
-        _getBoardObjectAndImagePoints(board, thisFrameIds, thisFrameCorners, currentImgPoints,
-                                      currentObjPoints);
+        getBoardObjectAndImagePoints(board, thisFrameCorners, thisFrameIds, currentObjPoints,
+            currentImgPoints);
         if(currentImgPoints.total() > 0 && currentObjPoints.total() > 0) {
             processedImagePoints.push_back(currentImgPoints);
             processedObjectPoints.push_back(currentObjPoints);

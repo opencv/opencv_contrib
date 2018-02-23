@@ -1,4 +1,9 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
+
+namespace opencv_test { namespace {
 
 /**
  * Tests whether the `CVVISUAL_LOCATION` macro (from /include/opencv2/call_meta_data.hpp)
@@ -12,7 +17,7 @@ TEST(LocationTest, FileLineFunction)
 	auto locationMacroResult = CVVISUAL_LOCATION;
 	size_t line = __LINE__ - 1;
 	auto file = __FILE__;
-	auto fun = CVVISUAL_FUNCTION_NAME_MACRO;
+	auto fun = CV_Func;
 	EXPECT_EQ(locationMacroResult.isKnown, true);
 	EXPECT_EQ(locationMacroResult.file, file);
 	EXPECT_EQ(locationMacroResult.line, line);
@@ -24,3 +29,5 @@ TEST(LocationTest, EmptyLocation)
 	cvv::impl::CallMetaData loc{};
 	EXPECT_EQ(loc.isKnown, false);
 }
+
+}} // namespace

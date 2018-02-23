@@ -119,7 +119,7 @@ void er_show(vector<Mat> &channels, vector<vector<ERStat> > &regions)
                           Scalar(255),0,Scalar(er.level),Scalar(0),flags);
             }
         }
-        char buff[10]; char *buff_ptr = buff;
+        char buff[20]; char *buff_ptr = buff;
         sprintf(buff, "channel %d", c);
         imshow(buff_ptr, dst);
     }

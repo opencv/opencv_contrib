@@ -63,7 +63,7 @@ namespace cv
         public:
             enum { PATCH_SIZE = 48 };
 
-            LATCHDescriptorExtractorImpl(int bytes = 32, bool rotationInvariance = true, int half_ssd_size = 3);
+            LATCHDescriptorExtractorImpl(int bytes = 32, bool rotationInvariance = true, int half_ssd_size = 3, double sigma = 2.0);
 
             virtual void read( const FileNode& );
             virtual void write( FileStorage& ) const;
@@ -81,14 +81,15 @@ namespace cv
             PixelTestFn test_fn_;
             bool rotationInvariance_;
             int half_ssd_size_;
+            double sigma_;
 
 
             std::vector<int> sampling_points_ ;
         };
 
-        Ptr<LATCH> LATCH::create(int bytes, bool rotationInvariance, int half_ssd_size)
+        Ptr<LATCH> LATCH::create(int bytes, bool rotationInvariance, int half_ssd_size, double sigma)
         {
-            return makePtr<LATCHDescriptorExtractorImpl>(bytes, rotationInvariance, half_ssd_size);
+            return makePtr<LATCHDescriptorExtractorImpl>(bytes, rotationInvariance, half_ssd_size, sigma);
         }
         void CalcuateSums(int count, const std::vector<int> &points, bool rotationInvariance, const Mat &grayImage, const KeyPoint &pt, int &suma, int &sumc, float cos_theta, float sin_theta, int half_ssd_size);
 
@@ -403,8 +404,8 @@ namespace cv
 
 
 
-        LATCHDescriptorExtractorImpl::LATCHDescriptorExtractorImpl(int bytes, bool rotationInvariance, int half_ssd_size) :
-            bytes_(bytes), test_fn_(NULL), rotationInvariance_(rotationInvariance), half_ssd_size_(half_ssd_size)
+        LATCHDescriptorExtractorImpl::LATCHDescriptorExtractorImpl(int bytes, bool rotationInvariance, int half_ssd_size, double sigma) :
+            bytes_(bytes), test_fn_(NULL), rotationInvariance_(rotationInvariance), half_ssd_size_(half_ssd_size), sigma_(sigma)
         {
             switch (bytes)
             {
@@ -502,15 +503,27 @@ namespace cv
 
 
             Mat grayImage;
-            GaussianBlur(image, grayImage, cv::Size(3, 3), 2, 2);
+            switch (image.type())
+            {
+            case CV_8UC1:
+                grayImage = image;
+                break;
+            case CV_8UC3:
+                cvtColor(image, grayImage, COLOR_BGR2GRAY);
+                break;
+            case CV_8UC4:
+                cvtColor(image, grayImage, COLOR_BGRA2GRAY);
+                break;
+            default:
+                CV_Error(Error::StsBadArg, "Image should be 8UC1, 8UC3 or 8UC4");
+            }
 
-            if (image.type() != CV_8U) cvtColor(image, grayImage, COLOR_BGR2GRAY);
-
-
+            if (sigma_ != 0.)
+                GaussianBlur(grayImage, grayImage, cv::Size(3, 3), sigma_, sigma_);
 
             //Remove keypoints very close to the border
             KeyPointsFilter::runByImageBorder(keypoints, image.size(), PATCH_SIZE / 2 + half_ssd_size_);
-            
+
             bool _1d = false;
             Mat descriptors;
 

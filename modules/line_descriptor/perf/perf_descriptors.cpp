@@ -41,12 +41,7 @@
 
 #include "perf_precomp.hpp"
 
-using namespace cv;
-using namespace cv::line_descriptor;
-using namespace std;
-using namespace perf;
-using std::tr1::make_tuple;
-using std::tr1::get;
+namespace opencv_test { namespace {
 
 typedef perf::TestBaseWithParam<std::string> file_str;
 
@@ -75,3 +70,5 @@ PERF_TEST_P(file_str, descriptors, testing::Values(IMAGES))
   SANITY_CHECK_NOTHING();
 
 }
+
+}} // namespace

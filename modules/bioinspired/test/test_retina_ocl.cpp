@@ -25,7 +25,7 @@
 //
 //   * Redistribution's in binary form must reproduce the above copyright notice,
 //     this list of conditions and the following disclaimer in the documentation
-//     and/or other oclMaterials provided with the distribution.
+//     and/or other materials provided with the distribution.
 //
 //   * The name of the copyright holders may not be used to endorse or promote products
 //     derived from this software without specific prior written permission.
@@ -46,12 +46,9 @@
 #include "test_precomp.hpp"
 #include "opencv2/ts/ocl_test.hpp"
 
-#ifdef HAVE_OPENCL
-
 #define RETINA_ITERATIONS 5
 
-namespace cvtest {
-namespace ocl {
+namespace opencv_test { namespace {
 
 PARAM_TEST_CASE(Retina_OCL, bool, int, bool, double, double)
 {
@@ -76,7 +73,7 @@ OCL_TEST_P(Retina_OCL, Accuracy)
     Mat input = imread(cvtest::TS::ptr()->get_data_path() + "shared/lena.png", colorMode);
     CV_Assert(!input.empty());
 
-    Ptr<bioinspired::Retina> retina = bioinspired::createRetina(
+    Ptr<bioinspired::Retina> retina = bioinspired::Retina::create(
         input.size(),
         colorMode,
         colorSamplingMethod,
@@ -115,6 +112,4 @@ OCL_INSTANTIATE_TEST_CASE_P(Contrib, Retina_OCL, testing::Combine(
                             testing::Values(1.0, 0.5),
                             testing::Values(10.0, 5.0)));
 
-} } // namespace cvtest::ocl
-
-#endif // HAVE_OPENCL
+}} // namespace

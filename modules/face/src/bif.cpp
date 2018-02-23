@@ -216,6 +216,6 @@ void BIFImpl::computeUnit(int unit_idx, const cv::Mat &img,
 
 }  // namespace
 
-cv::Ptr<cv::face::BIF> cv::face::createBIF(int num_bands, int num_rotations) {
+cv::Ptr<cv::face::BIF> cv::face::BIF::create(int num_bands, int num_rotations) {
     return cv::Ptr<cv::face::BIF>(new BIFImpl(num_bands, num_rotations));
 }

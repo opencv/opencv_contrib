@@ -170,6 +170,10 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
             //Differentation scale selection
             selDifferentiationScale(warpedImg, Lxm2smooth, Lxmysmooth, Lym2smooth, si,
                     Point(cx, cy));
+            if (Lym2smooth.empty()) {
+                divergence = true;
+                continue;
+            }
 
             //Spatial Localization
             cxPr = cx; //Previous iteration point in normalized window
@@ -428,7 +432,8 @@ float selDifferentiationScale(const Mat & img, Mat & Lxm2smooth, Mat & Lxmysmoot
         eigen(M, eval);
         double eval1 = std::abs(eval.at<float> (0, 0));
         double eval2 = std::abs(eval.at<float> (1, 0));
-        double q = min(eval1, eval2) / max(eval1, eval2);
+        double m = max(eval1, eval2);
+        double q = (m == 0) ? -1 : min(eval1, eval2) / m;
 
         if (q >= qMax)
         {

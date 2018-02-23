@@ -47,7 +47,7 @@ class HDF5Impl : public HDF5
 {
 public:
 
-    HDF5Impl( String HDF5Filename );
+    HDF5Impl( const String& HDF5Filename );
 
     virtual ~HDF5Impl() { close(); };
 
@@ -59,96 +59,111 @@ public:
      */
 
     // check if object / link exists
-    virtual bool hlexists( String label ) const;
+    virtual bool hlexists( const String& label ) const;
+
+    virtual bool atexists(const String& atlabel) const;
+    virtual void atdelete(const String& atlabel);
+
+    virtual void atwrite(const int value, const String& atlabel);
+    virtual void atread(int* value, const String& atlabel);
+
+    virtual void atwrite(const double value, const String& atlabel);
+    virtual void atread(double* value, const String& atlabel);
+
+    virtual void atwrite(const String& value, const String& atlabel);
+    virtual void atread(String* value, const String& atlabel);
+
+    virtual void atwrite(InputArray value, const String& atlabel);
+    virtual void atread(OutputArray value, const String& atlabel);
 
     /*
      * h5 group
      */
 
     // create a group
-    virtual void grcreate( String grlabel );
+    virtual void grcreate( const String& grlabel );
 
     /*
      *  cv::Mat
      */
 
     // get sizes of dataset
-    virtual vector<int> dsgetsize( String dslabel, int dims_flag = H5_GETDIMS ) const;
+    virtual vector<int> dsgetsize( const String& dslabel, int dims_flag = H5_GETDIMS ) const;
 
     /* get data type of dataset */
-    virtual int dsgettype( String dslabel ) const;
+    virtual int dsgettype( const String& dslabel ) const;
 
     // overload dscreate() #1
-    virtual void dscreate( const int rows, const int cols, const int type, String dslabel ) const;
+    virtual void dscreate( const int rows, const int cols, const int type, const String& dslabel ) const;
 
     // overload dscreate() #2
-    virtual void dscreate( const int rows, const int cols, const int type, String dslabel,
+    virtual void dscreate( const int rows, const int cols, const int type, const String& dslabel,
              const int compresslevel ) const;
 
     // overload dscreate() #3
-    virtual void dscreate( const int rows, const int cols, const int type, String dslabel,
+    virtual void dscreate( const int rows, const int cols, const int type, const String& dslabel,
              const int compresslevel, const vector<int>& dims_chunks ) const;
 
     /* create two dimensional single or mutichannel dataset */
-    virtual void dscreate( const int rows, const int cols, const int type, String dslabel,
+    virtual void dscreate( const int rows, const int cols, const int type, const String& dslabel,
              const int compresslevel, const int* dims_chunks ) const;
 
     // overload dscreate() #1
     virtual void dscreate( const int n_dims, const int* sizes, const int type,
-             String dslabel ) const;
+             const String& dslabel ) const;
 
     // overload dscreate() #2
     virtual void dscreate( const int n_dims, const int* sizes, const int type,
-             String dslabel, const int compresslevel ) const;
+             const String& dslabel, const int compresslevel ) const;
 
     // overload dscreate() #3
-    virtual void dscreate( const vector<int>& sizes, const int type, String dslabel,
+    virtual void dscreate( const vector<int>& sizes, const int type, const String& dslabel,
              const int compresslevel = H5_NONE, const vector<int>& dims_chunks = vector<int>() ) const;
 
     /* create n-dimensional single or mutichannel dataset */
     virtual void dscreate( const int n_dims, const int* sizes, const int type,
-             String dslabel, const int compresslevel, const int* dims_chunks ) const;
+             const String& dslabel, const int compresslevel, const int* dims_chunks ) const;
 
     // overload dswrite() #1
-    virtual void dswrite( InputArray Array, String dslabel ) const;
+    virtual void dswrite( InputArray Array, const String& dslabel ) const;
 
     // overload dswrite() #2
-    virtual void dswrite( InputArray Array, String dslabel, const int* dims_offset ) const;
+    virtual void dswrite( InputArray Array, const String& dslabel, const int* dims_offset ) const;
 
     // overload dswrite() #3
-    virtual void dswrite( InputArray Array, String dslabel, const vector<int>& dims_offset,
+    virtual void dswrite( InputArray Array, const String& dslabel, const vector<int>& dims_offset,
              const vector<int>& dims_counts = vector<int>() ) const;
 
     /* write into dataset */
-    virtual void dswrite( InputArray Array, String dslabel,
+    virtual void dswrite( InputArray Array, const String& dslabel,
              const int* dims_offset, const int* dims_counts ) const;
 
     // overload dsinsert() #1
-    virtual void dsinsert( InputArray Array, String dslabel ) const;
+    virtual void dsinsert( InputArray Array, const String& dslabel ) const;
 
     // overload dsinsert() #2
-    virtual void dsinsert( InputArray Array, String dslabel, const int* dims_offset ) const;
+    virtual void dsinsert( InputArray Array, const String& dslabel, const int* dims_offset ) const;
 
     // overload dsinsert() #3
-    virtual void dsinsert( InputArray Array, String dslabel,
+    virtual void dsinsert( InputArray Array, const String& dslabel,
              const vector<int>& dims_offset, const vector<int>& dims_counts = vector<int>() ) const;
 
     /* append / merge into dataset */
-    virtual void dsinsert( InputArray Array, String dslabel,
+    virtual void dsinsert( InputArray Array, const String& dslabel,
              const int* dims_offset = NULL, const int* dims_counts = NULL ) const;
 
     // overload dsread() #1
-    virtual void dsread( OutputArray Array, String dslabel ) const;
+    virtual void dsread( OutputArray Array, const String& dslabel ) const;
 
     // overload dsread() #2
-    virtual void dsread( OutputArray Array, String dslabel, const int* dims_offset ) const;
+    virtual void dsread( OutputArray Array, const String& dslabel, const int* dims_offset ) const;
 
     // overload dsread() #3
-    virtual void dsread( OutputArray Array, String dslabel,
+    virtual void dsread( OutputArray Array, const String& dslabel,
              const vector<int>& dims_offset, const vector<int>& dims_counts = vector<int>() ) const;
 
     // read from dataset
-    virtual void dsread( OutputArray Array, String dslabel,
+    virtual void dsread( OutputArray Array, const String& dslabel,
              const int* dims_offset, const int* dims_counts ) const;
 
     /*
@@ -156,36 +171,36 @@ public:
      */
 
     // get size of keypoints dataset
-    virtual int kpgetsize( String kplabel, int dims_flag = H5_GETDIMS ) const;
+    virtual int kpgetsize( const String& kplabel, int dims_flag = H5_GETDIMS ) const;
 
     // create KeyPoint structure
-    virtual void kpcreate( const int size, String kplabel,
+    virtual void kpcreate( const int size, const String& kplabel,
              const int compresslevel = H5_NONE, const int chunks = H5_NONE ) const;
 
     // write KeyPoint structures
-    virtual void kpwrite( const vector<KeyPoint> keypoints, String kplabel,
+    virtual void kpwrite( const vector<KeyPoint> keypoints, const String& kplabel,
              const int offset = H5_NONE, const int counts = H5_NONE ) const;
 
     // append / merge KeyPoint structures
-    virtual void kpinsert( const vector<KeyPoint> keypoints, String kplabel,
+    virtual void kpinsert( const vector<KeyPoint> keypoints, const String& kplabel,
              const int offset = H5_NONE, const int counts = H5_NONE ) const;
 
     // read KeyPoint structure
-    virtual void kpread( vector<KeyPoint>& keypoints, String kplabel,
+    virtual void kpread( vector<KeyPoint>& keypoints, const String& kplabel,
              const int offset = H5_NONE, const int counts = H5_NONE ) const;
 
 private:
 
-    // store filename
+    //! store filename
     String m_hdf5_filename;
 
-    // hdf5 file handler
+    //! hdf5 file handler
     hid_t m_h5_file_id;
 
-    // translate cvType -> h5Type
+    //! translate cvType -> h5Type
     inline hid_t GetH5type( int cvType ) const;
 
-    // translate h5Type -> cvType
+    //! translate h5Type -> cvType
     inline int GetCVtype( hid_t h5Type ) const;
 
 };
@@ -218,7 +233,7 @@ inline hid_t HDF5Impl::GetH5type( int cvType ) const
         h5Type = H5T_NATIVE_INT;
         break;
       default:
-        CV_Error( Error::StsInternal, "Unknown cvType." );
+        CV_Error_(Error::StsInternal, ("Unknown cvType: %d.", cvType));
     }
     return h5Type;
 }
@@ -242,12 +257,12 @@ inline int HDF5Impl::GetCVtype( hid_t h5Type ) const
     else if ( H5Tequal( h5Type, H5T_NATIVE_INT    ) )
       cvType = CV_32S;
     else
-      CV_Error( Error::StsInternal, "Unknown H5Type." );
+      CV_Error_(Error::StsInternal, ("Unknown H5Type: %d.", h5Type));
 
     return cvType;
 }
 
-HDF5Impl::HDF5Impl( String _hdf5_filename )
+HDF5Impl::HDF5Impl( const String& _hdf5_filename )
                   : m_hdf5_filename( _hdf5_filename )
 {
     // save old
@@ -260,7 +275,7 @@ HDF5Impl::HDF5Impl( String _hdf5_filename )
     // turn off error handling
     H5Eset_auto( stackid, NULL, NULL );
 
-    // check HDF5 file presence (err supressed)
+    // check HDF5 file presence (err suppressed)
     htri_t check = H5Fis_hdf5( m_hdf5_filename.c_str() );
 
     // restore previous error handler
@@ -290,7 +305,7 @@ void HDF5Impl::close()
  * h5 generic
  */
 
-bool HDF5Impl::hlexists( String label ) const
+bool HDF5Impl::hlexists( const String& label ) const
 {
     bool exists = false;
 
@@ -302,22 +317,236 @@ bool HDF5Impl::hlexists( String label ) const
     return exists;
 }
 
+bool HDF5Impl::atexists(const String& atlabel) const
+{
+    bool res = false;
+
+    // save old error handler
+    void *errdata;
+    H5E_auto2_t errfunc;
+    hid_t stackid = H5E_DEFAULT;
+    H5Eget_auto(stackid, &errfunc, &errdata);
+
+    // turn off error handling
+    H5Eset_auto(stackid, NULL, NULL);
+
+    hid_t attr = H5Aopen_name(m_h5_file_id, atlabel.c_str());
+    if (attr >= 0)
+    {
+        res = true;
+        H5Aclose(attr);
+    }
+
+    // restore previous error handler
+    H5Eset_auto(stackid, errfunc, errdata);
+
+    return res;
+}
+
+void HDF5Impl::atdelete(const String& atlabel)
+{
+    if (!atexists(atlabel))
+        CV_Error_(Error::StsInternal,("The attribute '%s' does not exist!", atlabel.c_str()));
+
+    H5Adelete(m_h5_file_id, atlabel.c_str());
+}
+
+void HDF5Impl::atwrite(const int value, const String& atlabel)
+{
+    if (atexists(atlabel))
+        CV_Error_(Error::StsInternal,("The attribute '%s' already exists!", atlabel.c_str()));
+
+    hid_t aid = H5Screate(H5S_SCALAR);;
+    hid_t attr = H5Acreate2(m_h5_file_id, atlabel.c_str(), H5T_NATIVE_INT, aid,
+                            H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(attr, H5T_NATIVE_INT, &value);
+
+    H5Sclose(aid);
+    H5Aclose(attr);
+}
+
+void HDF5Impl::atread(int* value, const String& atlabel)
+{
+    if (!value)
+        CV_Error(Error::StsBadArg, "NULL pointer");
+
+    if (!atexists(atlabel))
+        CV_Error_(Error::StsInternal, ("Attribute '%s' does not exist!", atlabel.c_str()));
+
+    hid_t attr = H5Aopen(m_h5_file_id, atlabel.c_str(), H5P_DEFAULT);
+    H5Aread(attr, H5T_NATIVE_INT, value);
+    H5Aclose(attr);
+}
+
+void HDF5Impl::atwrite(const double value, const String& atlabel)
+{
+    if (atexists(atlabel))
+        CV_Error_(Error::StsInternal,("The attribute '%s' already exists!", atlabel.c_str()));
+
+    hid_t aid = H5Screate(H5S_SCALAR);;
+    hid_t attr = H5Acreate2(m_h5_file_id, atlabel.c_str(), H5T_NATIVE_DOUBLE, aid,
+                            H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(attr, H5T_NATIVE_DOUBLE, &value);
+
+    H5Sclose(aid);
+    H5Aclose(attr);
+}
+
+void HDF5Impl::atread(double* value, const String& atlabel)
+{
+    if (!value)
+        CV_Error(Error::StsBadArg, "NULL pointer");
+
+    if (!atexists(atlabel))
+        CV_Error_(Error::StsInternal, ("Attribute '%s' does not exist!", atlabel.c_str()));
+
+    hid_t attr = H5Aopen(m_h5_file_id, atlabel.c_str(), H5P_DEFAULT);
+    H5Aread(attr, H5T_NATIVE_DOUBLE, value);
+    H5Aclose(attr);
+}
+
+void HDF5Impl::atwrite(const String& value, const String& atlabel)
+{
+    if (atexists(atlabel))
+        CV_Error_(Error::StsInternal,("The attribute '%s' already exists!", atlabel.c_str()));
+
+    hid_t aid = H5Screate(H5S_SCALAR);
+    hid_t atype = H5Tcopy(H5T_C_S1);
+    H5Tset_size(atype, value.size()+1);
+    H5Tset_strpad(atype, H5T_STR_NULLTERM);
+
+    hid_t attr = H5Acreate2(m_h5_file_id, atlabel.c_str(), atype, aid, H5P_DEFAULT, H5P_DEFAULT);
+    H5Awrite(attr, atype, value.c_str());
+
+    H5Sclose(aid);
+    H5Tclose(atype);
+    H5Aclose(attr);
+}
+
+void HDF5Impl::atread(String* value, const String& atlabel)
+{
+    if (!value)
+        CV_Error(Error::StsBadArg, "NULL pointer");
+
+    if (!atexists(atlabel))
+        CV_Error_(Error::StsInternal, ("Attribute '%s' does not exist!", atlabel.c_str()));
+
+    hid_t attr = H5Aopen(m_h5_file_id, atlabel.c_str(), H5P_DEFAULT);
+    hid_t atype = H5Aget_type(attr);
+    H5T_class_t type_class = H5Tget_class(atype);
+    if (type_class != H5T_STRING)
+    {
+        H5Tclose(atype);
+        H5Aclose(attr);
+        CV_Error_(Error::StsInternal, ("Attribute '%s' is not of string type!", atlabel.c_str()));
+    }
+    size_t size = H5Tget_size(atype);
+    *value = String(size, 0); // allocate space
+
+    hid_t atype_mem = H5Tget_native_type(atype, H5T_DIR_ASCEND);
+    H5Aread(attr, atype_mem, const_cast<char*>(value->c_str()));
+
+    H5Tclose(atype_mem);
+    H5Tclose(atype);
+    H5Aclose(attr);
+}
+
+void HDF5Impl::atwrite(InputArray value, const String& atlabel)
+{
+    if (atexists(atlabel))
+        CV_Error_(Error::StsInternal,("The attribute '%s' already exists!", atlabel.c_str()));
+
+    Mat value_ = value.getMat();
+
+    if (!value_.isContinuous())
+        CV_Error(Error::StsInternal, "Only continuous array are implemented. Current array is not continuous!");
+
+    int ndims = value_.dims;
+
+    vector<hsize_t> dim_vec(ndims);
+    for (int i = 0; i < ndims; i++)
+        dim_vec[i] = value_.size[i];
+
+    hid_t dtype = GetH5type(value_.type());
+    if (value_.channels() > 1)
+    {
+        hsize_t dims[1] = { (hsize_t)value_.channels()};
+        dtype = H5Tarray_create(dtype, 1, dims);
+    }
+
+    hid_t aid = H5Screate(H5S_SIMPLE);
+    H5Sset_extent_simple(aid, ndims, dim_vec.data(), NULL);
+
+    hid_t attr = H5Acreate2(m_h5_file_id, atlabel.c_str(), dtype,
+                            aid, H5P_DEFAULT, H5P_DEFAULT);
+
+    H5Awrite(attr, dtype, value_.data);
+
+    if (value_.channels() > 1)
+        H5Tclose(dtype);
+
+    H5Sclose(aid);
+    H5Aclose(attr);
+}
+
+void HDF5Impl::atread(OutputArray value, const String& atlabel)
+{
+    if (!atexists(atlabel))
+        CV_Error_(Error::StsInternal, ("Attribute '%s' does not exist!", atlabel.c_str()));
+
+    hid_t attr = H5Aopen(m_h5_file_id, atlabel.c_str(), H5P_DEFAULT);
+    hid_t atype  = H5Aget_type(attr);
+    hid_t aspace = H5Aget_space(attr);
+    int rank = H5Sget_simple_extent_ndims(aspace);
+
+    vector<hsize_t> dim_vec_(rank);
+    H5Sget_simple_extent_dims(aspace, dim_vec_.data(), NULL);
+    vector<int> dim_vec(dim_vec_.begin(), dim_vec_.end());
+
+    int nchannels = 1;
+    hid_t h5type;
+    if (H5Tget_class(atype) == H5T_ARRAY)
+    {
+        hsize_t dims;
+        H5Tget_array_dims(atype, &dims);
+        nchannels = (int) dims;
+
+        hid_t super_type = H5Tget_super(atype);
+        h5type = H5Tget_native_type(super_type, H5T_DIR_ASCEND);
+        H5Tclose(super_type);
+    }
+    else
+        h5type = H5Tget_native_type(atype, H5T_DIR_ASCEND);
+
+    int dtype = GetCVtype(h5type);
+
+    value.create(rank, dim_vec.data(), CV_MAKETYPE(dtype, nchannels));
+    H5Aread(attr, atype, value.getMat().data);
+
+    H5Sclose(aspace);
+    H5Tclose(atype);
+    H5Aclose(attr);
+}
+
 /*
  * h5 group
  */
 
-void HDF5Impl::grcreate( String grlabel )
+void HDF5Impl::grcreate( const String& grlabel )
 {
-  hid_t gid = H5Gcreate( m_h5_file_id, grlabel.c_str(),
-                H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
-  H5Gclose( gid );
+    if (hlexists(grlabel))
+        CV_Error_(Error::StsInternal, ("Requested group '%s' already exists.", grlabel.c_str()));
+
+    hid_t gid = H5Gcreate(m_h5_file_id, grlabel.c_str(),
+                          H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT);
+    H5Gclose(gid);
 }
 
 /*
  * cv:Mat
  */
 
-vector<int> HDF5Impl::dsgetsize( String dslabel, int dims_flag ) const
+vector<int> HDF5Impl::dsgetsize( const String& dslabel, int dims_flag ) const
 {
     // open dataset
     hid_t dsdata = H5Dopen( m_h5_file_id, dslabel.c_str(), H5P_DEFAULT );
@@ -358,7 +587,7 @@ vector<int> HDF5Impl::dsgetsize( String dslabel, int dims_flag ) const
         SizeVect.resize( n_dims );
     }
     else
-      CV_Error( Error::StsInternal, "Unknown dimension flag." );
+      CV_Error_(Error::StsInternal, ("Unknown dimension flag: %d", dims_flag));
 
     // fill with size data
     for ( size_t d = 0; d < SizeVect.size(); d++ )
@@ -372,7 +601,7 @@ vector<int> HDF5Impl::dsgetsize( String dslabel, int dims_flag ) const
     return SizeVect;
 }
 
-int HDF5Impl::dsgettype( String dslabel ) const
+int HDF5Impl::dsgettype( const String& dslabel ) const
 {
     hid_t h5type;
 
@@ -408,7 +637,7 @@ int HDF5Impl::dsgettype( String dslabel ) const
 
 // overload
 void HDF5Impl::dscreate( const int rows, const int cols, const int type,
-                         String dslabel ) const
+                         const String& dslabel ) const
 {
     // dataset dims
     int dsizes[2] = { rows, cols };
@@ -419,7 +648,7 @@ void HDF5Impl::dscreate( const int rows, const int cols, const int type,
 
 // overload
 void HDF5Impl::dscreate( const int rows, const int cols, const int type,
-                         String dslabel, const int compresslevel ) const
+                         const String& dslabel, const int compresslevel ) const
 {
     // dataset dims
     int dsizes[2] = { rows, cols };
@@ -430,7 +659,7 @@ void HDF5Impl::dscreate( const int rows, const int cols, const int type,
 
 // overload
 void HDF5Impl::dscreate( const int rows, const int cols, const int type,
-                 String dslabel, const int compresslevel,
+                 const String& dslabel, const int compresslevel,
                  const vector<int>& dims_chunks ) const
 {
     CV_Assert( dims_chunks.empty() || dims_chunks.size() == 2 );
@@ -438,7 +667,7 @@ void HDF5Impl::dscreate( const int rows, const int cols, const int type,
 }
 
 void HDF5Impl::dscreate( const int rows, const int cols, const int type,
-                 String dslabel, const int compresslevel, const int* dims_chunks ) const
+                 const String& dslabel, const int compresslevel, const int* dims_chunks ) const
 {
     // dataset dims
     int dsizes[2] = { rows, cols };
@@ -449,21 +678,21 @@ void HDF5Impl::dscreate( const int rows, const int cols, const int type,
 
 // overload
 void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
-                 String dslabel ) const
+                 const String& dslabel ) const
 {
     dscreate( n_dims, sizes, type, dslabel, H5_NONE, NULL );
 }
 
 // overload
 void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
-                 String dslabel, const int compresslevel ) const
+                 const String& dslabel, const int compresslevel ) const
 {
     dscreate( n_dims, sizes, type, dslabel, compresslevel, NULL );
 }
 
 // overload
 void HDF5Impl::dscreate( const vector<int>& sizes, const int type,
-                 String dslabel, const int compresslevel,
+                 const String& dslabel, const int compresslevel,
                  const vector<int>& dims_chunks ) const
 {
     CV_Assert( dims_chunks.empty() || dims_chunks.size() == sizes.size() );
@@ -473,13 +702,13 @@ void HDF5Impl::dscreate( const vector<int>& sizes, const int type,
 }
 
 void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
-                 String dslabel, const int compresslevel, const int* dims_chunks ) const
+                 const String& dslabel, const int compresslevel, const int* dims_chunks ) const
 {
     // compress valid H5_NONE, 0-9
     CV_Assert( compresslevel >= H5_NONE && compresslevel <= 9 );
 
     if ( hlexists( dslabel ) == true )
-      CV_Error( Error::StsInternal, "Requested dataset already exists." );
+      CV_Error_(Error::StsInternal, ("Requested dataset '%s' already exists.", dslabel.c_str()));
 
     int channs = CV_MAT_CN( type );
 
@@ -552,27 +781,27 @@ void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
 }
 
 // overload
-void HDF5Impl::dsread( OutputArray Array, String dslabel ) const
+void HDF5Impl::dsread( OutputArray Array, const String& dslabel ) const
 {
     dsread( Array, dslabel, NULL, NULL );
 }
 
 // overload
-void HDF5Impl::dsread( OutputArray Array, String dslabel,
+void HDF5Impl::dsread( OutputArray Array, const String& dslabel,
              const int* dims_offset ) const
 {
     dsread( Array, dslabel, dims_offset, NULL );
 }
 
 // overload
-void HDF5Impl::dsread( OutputArray Array, String dslabel,
+void HDF5Impl::dsread( OutputArray Array, const String& dslabel,
              const vector<int>& dims_offset,
              const vector<int>& dims_counts ) const
 {
     dsread( Array, dslabel, &dims_offset[0], &dims_counts[0] );
 }
 
-void HDF5Impl::dsread( OutputArray Array, String dslabel,
+void HDF5Impl::dsread( OutputArray Array, const String& dslabel,
              const int* dims_offset, const int* dims_counts ) const
 {
     // only Mat support
@@ -672,25 +901,25 @@ void HDF5Impl::dsread( OutputArray Array, String dslabel,
 }
 
 // overload
-void HDF5Impl::dswrite( InputArray Array, String dslabel ) const
+void HDF5Impl::dswrite( InputArray Array, const String& dslabel ) const
 {
     dswrite( Array, dslabel, NULL, NULL );
 }
 // overload
-void HDF5Impl::dswrite( InputArray Array, String dslabel,
+void HDF5Impl::dswrite( InputArray Array, const String& dslabel,
              const int* dims_offset ) const
 {
     dswrite( Array, dslabel, dims_offset, NULL );
 }
 // overload
-void HDF5Impl::dswrite( InputArray Array, String dslabel,
+void HDF5Impl::dswrite( InputArray Array, const String& dslabel,
              const vector<int>& dims_offset,
              const vector<int>& dims_counts ) const
 {
     dswrite( Array, dslabel, &dims_offset[0], &dims_counts[0] );
 }
 
-void HDF5Impl::dswrite( InputArray Array, String dslabel,
+void HDF5Impl::dswrite( InputArray Array, const String& dslabel,
              const int* dims_offset, const int* dims_counts ) const
 {
     // only Mat support
@@ -715,6 +944,9 @@ void HDF5Impl::dswrite( InputArray Array, String dslabel,
       dsdims[d] = matrix.size[d];
     }
 
+    // FixMe: If one of the groups the dataset belongs to does not exist,
+    // FixMe: dscreate() will fail!
+    // FixMe: It should be an error if the specified dataset has not been created instead of trying to create it
     // pre-create dataset if needed
     if ( hlexists( dslabel ) == false )
       dscreate( n_dims, dsizes, matrix.type(), dslabel );
@@ -771,27 +1003,27 @@ void HDF5Impl::dswrite( InputArray Array, String dslabel,
 }
 
 // overload
-void HDF5Impl::dsinsert( InputArray Array, String dslabel ) const
+void HDF5Impl::dsinsert( InputArray Array, const String& dslabel ) const
 {
     dsinsert( Array, dslabel, NULL, NULL );
 }
 
 // overload
-void HDF5Impl::dsinsert( InputArray Array, String dslabel,
+void HDF5Impl::dsinsert( InputArray Array, const String& dslabel,
              const int* dims_offset ) const
 {
     dsinsert( Array, dslabel, dims_offset, NULL );
 }
 
 // overload
-void HDF5Impl::dsinsert( InputArray Array, String dslabel,
+void HDF5Impl::dsinsert( InputArray Array, const String& dslabel,
              const vector<int>& dims_offset,
              const vector<int>& dims_counts ) const
 {
     dsinsert( Array, dslabel, &dims_offset[0], &dims_counts[0] );
 }
 
-void HDF5Impl::dsinsert( InputArray Array, String dslabel,
+void HDF5Impl::dsinsert( InputArray Array, const String& dslabel,
              const int* dims_offset, const int* dims_counts ) const
 {
     // only Mat support
@@ -799,7 +1031,7 @@ void HDF5Impl::dsinsert( InputArray Array, String dslabel,
 
     // check dataset exists
     if ( hlexists( dslabel ) == false )
-      CV_Error( Error::StsInternal, "Dataset does not exist." );
+      CV_Error_(Error::StsInternal, ("Dataset '%s' does not exist.", dslabel.c_str()));
 
     Mat matrix = Array.getMat();
 
@@ -859,7 +1091,7 @@ void HDF5Impl::dsinsert( InputArray Array, String dslabel,
       // add offset
       if ( dims_offset != NULL )
         nwdims[d] += dims_offset[d];
-      // add counts or matrixsize
+      // add counts or matrix size
       if ( dims_counts != NULL )
         nwdims[d] += dims_counts[d];
       else
@@ -910,7 +1142,7 @@ void HDF5Impl::dsinsert( InputArray Array, String dslabel,
  *  std::vector<cv::KeyPoint>
  */
 
-int HDF5Impl::kpgetsize( String kplabel, int dims_flag ) const
+int HDF5Impl::kpgetsize( const String& kplabel, int dims_flag ) const
 {
     vector<int> sizes = dsgetsize( kplabel, dims_flag );
 
@@ -919,7 +1151,7 @@ int HDF5Impl::kpgetsize( String kplabel, int dims_flag ) const
     return sizes[0];
 }
 
-void HDF5Impl::kpcreate( const int size, String kplabel,
+void HDF5Impl::kpcreate( const int size, const String& kplabel,
              const int compresslevel, const int chunks ) const
 {
     // size valid
@@ -932,7 +1164,7 @@ void HDF5Impl::kpcreate( const int size, String kplabel,
     CV_Assert( compresslevel >= H5_NONE && compresslevel <= 9 );
 
     if ( hlexists( kplabel ) == true )
-      CV_Error( Error::StsInternal, "Requested dataset already exists." );
+      CV_Error_(Error::StsInternal, ("Requested dataset '%s' already exists.", kplabel.c_str()));
 
     hsize_t dchunk[1];
     hsize_t dsdims[1];
@@ -992,7 +1224,7 @@ void HDF5Impl::kpcreate( const int size, String kplabel,
     H5Sclose( dspace );
 }
 
-void HDF5Impl::kpwrite( const vector<KeyPoint> keypoints, String kplabel,
+void HDF5Impl::kpwrite( const vector<KeyPoint> keypoints, const String& kplabel,
              const int offset, const int counts ) const
 {
     CV_Assert( keypoints.size() > 0 );
@@ -1048,14 +1280,14 @@ void HDF5Impl::kpwrite( const vector<KeyPoint> keypoints, String kplabel,
     H5Dclose( dsdata );
 }
 
-void HDF5Impl::kpinsert( const vector<KeyPoint> keypoints, String kplabel,
+void HDF5Impl::kpinsert( const vector<KeyPoint> keypoints, const String& kplabel,
              const int offset, const int counts ) const
 {
     CV_Assert( keypoints.size() > 0 );
 
     // check dataset exists
     if ( hlexists( kplabel ) == false )
-      CV_Error( Error::StsInternal, "Dataset does not exist." );
+      CV_Error_(Error::StsInternal, ("Dataset '%s' does not exist.", kplabel.c_str()));
 
     hsize_t dsddims[1];
     hsize_t doffset[1];
@@ -1132,7 +1364,7 @@ void HDF5Impl::kpinsert( const vector<KeyPoint> keypoints, String kplabel,
     H5Dclose( dsdata );
 }
 
-void HDF5Impl::kpread( vector<KeyPoint>& keypoints, String kplabel,
+void HDF5Impl::kpread( vector<KeyPoint>& keypoints, const String& kplabel,
              const int offset, const int counts ) const
 {
     CV_Assert( keypoints.size() == 0 );
@@ -1193,7 +1425,7 @@ void HDF5Impl::kpread( vector<KeyPoint>& keypoints, String kplabel,
     H5Dclose( dsdata );
 }
 
-CV_EXPORTS Ptr<HDF5> open( String HDF5Filename )
+CV_EXPORTS Ptr<HDF5> open( const String& HDF5Filename )
 {
     return makePtr<HDF5Impl>( HDF5Filename );
 }

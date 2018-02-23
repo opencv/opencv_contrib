@@ -2,6 +2,8 @@
 
 #include "../src/util/util.hpp"
 
+namespace opencv_test { namespace {
+
 /**
  * Makes sure that
  * - creating, reassigning and comparing `cvv::util::Reference<int>`s (from /src/util/util.hpp) works, 
@@ -103,3 +105,5 @@ TEST(ReferenceTest, castTo)
 	// should result in a compiler-error:
 	// EXPECT_THROW(baseRef.castTo<std::vector<int>>(), std::bad_cast);
 }
+
+}} // namespace

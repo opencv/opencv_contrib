@@ -44,31 +44,32 @@ namespace reg {
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MapperGradShift::MapperGradShift(void)
+MapperGradShift::MapperGradShift()
 {
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-MapperGradShift::~MapperGradShift(void)
+MapperGradShift::~MapperGradShift()
 {
 }
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-void MapperGradShift::calculate(
-    const cv::Mat& img1, const cv::Mat& image2, cv::Ptr<Map>& res) const
+cv::Ptr<Map> MapperGradShift::calculate(
+    InputArray _img1, InputArray image2, cv::Ptr<Map> init) const
 {
+    Mat img1 = _img1.getMat();
     Mat gradx, grady, imgDiff;
     Mat img2;
 
     CV_DbgAssert(img1.size() == image2.size());
 
-    if(!res.empty()) {
+    if(!init.empty()) {
         // We have initial values for the registration: we move img2 to that initial reference
-        res->inverseWarp(image2, img2);
+        init->inverseWarp(image2, img2);
     } else {
-        img2 = image2;
+        img2 = image2.getMat();
     }
 
     // Get gradient in all channels
@@ -92,16 +93,19 @@ void MapperGradShift::calculate(
     // Calculate shift. We use Cholesky decomposition, as A is symmetric.
     Vec<double, 2> shift = A.inv(DECOMP_CHOLESKY)*b;
 
-    if(res.empty()) {
-        res = Ptr<Map>(new MapShift(shift));
+    if(init.empty()) {
+        return Ptr<Map>(new MapShift(shift));
     } else {
-        MapShift newTr(shift);
-        res->compose(newTr);
+        Ptr<MapShift> newTr(new MapShift(shift));
+        MapShift* initPtr = dynamic_cast<MapShift*>(init.get());
+        Ptr<MapShift> oldTr(new MapShift(initPtr->getShift()));
+        oldTr->compose(newTr);
+        return oldTr;
    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
-cv::Ptr<Map> MapperGradShift::getMap(void) const
+cv::Ptr<Map> MapperGradShift::getMap() const
 {
     return cv::Ptr<Map>(new MapShift());
 }

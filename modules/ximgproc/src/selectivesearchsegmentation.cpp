@@ -39,7 +39,6 @@ the use of this software, even if advised of the possibility of such damage.
 ********************************************************************************/
 
 #include "precomp.hpp"
-#include "opencv2/highgui.hpp"
 #include "opencv2/ximgproc/segmentation.hpp"
 
 #include <iostream>
@@ -143,7 +142,7 @@ namespace cv {
                 Mat regions = regions_.getMat();
                 sizes = sizes_.getMat();
 
-                if (image_id != -1 && last_image_id != image_id) {
+                if (image_id == -1 || last_image_id != image_id) {
 
                     std::vector<Mat> img_planes;
                     split(img, img_planes);
@@ -164,14 +163,7 @@ namespace cv {
                     for (int r = 0; r < nb_segs; r++) {
 
                         // Generate mask
-                        Mat mask = Mat(img.rows, img.cols, CV_8UC1);
-
-                        int* regions_data = (int*)regions.data;
-                        char* mask_data = (char*)mask.data;
-
-                        for (unsigned int x = 0; x < regions.total(); x++) {
-                            mask_data[x] = regions_data[x] == r ? 255 : 0;
-                        }
+                        Mat mask = regions == r;
 
                         // Compute histogram for each channels
                         float tt = 0;
@@ -508,7 +500,7 @@ namespace cv {
                 Mat regions = regions_.getMat();
                 sizes = sizes_.getMat();
 
-                if (image_id != -1 && last_image_id != image_id) {
+                if (image_id == -1 || last_image_id != image_id) {
 
                     std::vector<Mat> img_planes;
                     split(img, img_planes);

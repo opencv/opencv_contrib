@@ -52,7 +52,6 @@ the use of this software, even if advised of the possibility of such damage.
 #define __OPENCV_OPTFLOW_SPARSE_MATCHING_GPC_HPP__
 
 #include "opencv2/core.hpp"
-#include "opencv2/core/hal/intrin.hpp"
 #include "opencv2/imgproc.hpp"
 
 namespace cv
@@ -196,7 +195,7 @@ public:
   int getDescriptorType() const { return params.descriptorType; }
 };
 
-template < int T > class CV_EXPORTS_W GPCForest : public Algorithm
+template < int T > class GPCForest : public Algorithm
 {
 private:
   struct Trail

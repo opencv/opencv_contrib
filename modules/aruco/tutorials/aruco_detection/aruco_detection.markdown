@@ -19,9 +19,9 @@ a popular library for detection of square fiducial markers developed by Rafael M
 > Pattern Recogn. 47, 6 (June 2014), 2280-2292. DOI=10.1016/j.patcog.2014.01.005
 
 The aruco functionalities are included in:
-``` c++
-    \#include <opencv2/aruco.hpp>
-```
+@code{.cpp}
+    #include <opencv2/aruco.hpp>
+@endcode
 
 
 Markers and Dictionaries
@@ -69,11 +69,11 @@ Marker images can be generated using the ```drawMarker()``` function.
 
 For example, lets analyze the following call:
 
-``` c++
+@code{.cpp}
     cv::Mat markerImage;
-    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
     cv::aruco::drawMarker(dictionary, 23, 200, markerImage, 1);
-```
+@endcode
 
 First, the ```Dictionary``` object is created by choosing one of the predefined dictionaries in the aruco module.
 Concretely, this dictionary is composed by 250 markers and a marker size of 6x6 bits (```DICT_6X6_250```).
@@ -104,9 +104,9 @@ The generated image is:
 A full working example is included in the ```create_marker.cpp``` inside the module samples folder.
 
 Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
-``` c++
+@code{.cpp}
     "/Users/Sarthak/Dropbox/OpenCV_GSoC/marker.png" -d=10 -id=1
-```
+@endcode
 
 Marker Detection
 ------
@@ -153,15 +153,15 @@ previous detected markers returned by ```detectMarkers()```.
 
 An example of marker detection:
 
-``` c++
+@code{.cpp}
     cv::Mat inputImage;
     ...
-    vector< int > markerIds;
-    vector< vector<Point2f> > markerCorners, rejectedCandidates;
-    cv::aruco::DetectorParameters parameters;
-    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    std::vector<int> markerIds;
+    std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
+    cv::Ptr<cv::aruco::DetectorParameters> parameters;
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
     cv::aruco::detectMarkers(inputImage, dictionary, markerCorners, markerIds, parameters, rejectedCandidates);
-```
+@endcode
 
 The parameters of ```detectMarkers``` are:
 
@@ -185,10 +185,10 @@ The next thing you probably want to do after ```detectMarkers()``` is checking t
 been correctly detected. Fortunately, the aruco module provides a function to draw the detected
 markers in the input image, this function is ```drawDetectedMarkers()```. For example:
 
-``` c++
+@code{.cpp}
     cv::Mat outputImage
     cv::aruco::drawDetectedMarkers(image, markerCorners, markerIds);
-```
+@endcode
 
 - ```image``` is the input/output image where the markers will be drawn (it will normally be the same image where the markers were detected).
 - ```markerCorners``` and ```markerIds``` are the structures of the detected markers in the same format
@@ -201,10 +201,10 @@ Note that this function is only provided for visualization and its use can be pe
 With these two functions we can create a basic marker detection loop to detect markers from our
 camera:
 
-``` c++
+@code{.cpp}
     cv::VideoCapture inputVideo;
     inputVideo.open(0);
-    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
         inputVideo.retrieve(image);
@@ -223,7 +223,7 @@ camera:
         if (key == 27)
             break;
     }
-```
+@endcode
 
 Note that some of the optional parameters have been omitted, like the detection parameter object or the
 output vector of rejected candidates.
@@ -231,9 +231,9 @@ output vector of rejected candidates.
 A full working example is included in the ```detect_markers.cpp``` inside the module samples folder.
 
 Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
-``` c++
+@code{.cpp}
     -c="_path_/calib.txt" -d=10
-```
+@endcode
 
 
 
@@ -262,12 +262,12 @@ information).
 
 The aruco module provides a function to estimate the poses of all the detected markers:
 
-``` c++
-    Mat cameraMatrix, distCoeffs;
+@code{.cpp}
+    cv::Mat cameraMatrix, distCoeffs;
     ...
-    vector< Vec3d > rvecs, tvecs;
+    std::vector<cv::Vec3d> rvecs, tvecs;
     cv::aruco::estimatePoseSingleMarkers(corners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
-```
+@endcode
 
 - The ```corners``` parameter is the vector of marker corners returned by the ```detectMarkers()``` function.
 - The second parameter is the size of the marker side in meters or in any other unit. Note that the
@@ -284,9 +284,9 @@ with the Z axis pointing out, as in the following image. Axis-color corresponden
 The aruco module provides a function to draw the axis as in the image above, so pose estimation can be
 checked:
 
-``` c++
+@code{.cpp}
     cv::aruco::drawAxis(image, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
-```
+@endcode
 
 - ```image``` is the input/output image where the axis will be drawn (it will normally be the same image where the markers were detected).
 - ```cameraMatrix``` and ```distCoeffs``` are the camera calibration parameters.
@@ -295,7 +295,7 @@ checked:
 
 A basic full example for pose estimation from single markers:
 
-``` c++
+@code{.cpp}
     cv::VideoCapture inputVideo;
     inputVideo.open(0);
 
@@ -303,7 +303,7 @@ A basic full example for pose estimation from single markers:
     // camera parameters are read from somewhere
     readCameraParameters(cameraMatrix, distCoeffs);
 
-    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
 
     while (inputVideo.grab()) {
         cv::Mat image, imageCopy;
@@ -311,14 +311,14 @@ A basic full example for pose estimation from single markers:
         image.copyTo(imageCopy);
 
         std::vector<int> ids;
-        std::vector<std::vector<cv::Point2f> > corners;
+        std::vector<std::vector<cv::Point2f>> corners;
         cv::aruco::detectMarkers(image, dictionary, corners, ids);
 
         // if at least one marker detected
         if (ids.size() > 0) {
             cv::aruco::drawDetectedMarkers(imageCopy, corners, ids);
 
-            vector< Mat > rvecs, tvecs;
+            std::vector<cv::Vec3d> rvecs, tvecs;
             cv::aruco::estimatePoseSingleMarkers(corners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
             // draw axis for each marker
             for(int i=0; i<ids.size(); i++)
@@ -330,7 +330,7 @@ A basic full example for pose estimation from single markers:
         if (key == 27)
             break;
     }
-```
+@endcode
 
 Sample video:
 
@@ -341,9 +341,9 @@ Sample video:
 A full working example is included in the ```detect_markers.cpp``` inside the module samples folder.
 
 Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
-``` c++
+@code{.cpp}
     -c="_path_/calib.txt" -d=10
-```
+@endcode
 
 
 
@@ -373,9 +373,9 @@ you can increase your system robustness:
 This is the easiest way to select a dictionary. The aruco module includes a set of predefined dictionaries
  of a variety of marker sizes and number of markers. For instance:
 
-``` c++
-    cv::aruco::Dictionary dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-```
+@code{.cpp}
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+@endcode
 
 DICT_6X6_250 is an example of predefined dictionary of markers with 6x6 bits and a total of 250
 markers.
@@ -389,9 +389,9 @@ The smaller the dictionary, the higher the inter-marker distance.
 The dictionary can be generated automatically to adjust to the desired number of markers and bits, so that
 the inter-marker distance is optimized:
 
-``` c++
-    cv::aruco::Dictionary dictionary = cv::aruco::generateCustomDictionary(36, 5);
-```
+@code{.cpp}
+    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::generateCustomDictionary(36, 5);
+@endcode
 
 This will generate a customized dictionary composed by 36 markers of 5x5 bits. The process can take several
 seconds, depending on the parameters (it is slower for larger dictionaries and higher number of bits).
@@ -405,7 +405,7 @@ the ```Dictionary``` object parameters need to be assigned manually. It must be 
 The ```Dictionary``` parameters are:
 
 
-``` c++
+@code{.cpp}
     class Dictionary {
         public:
 
@@ -416,10 +416,9 @@ The ```Dictionary``` parameters are:
         ...
 
     }
+@endcode
 
-```
-
-```bytesList``` is the array that contains all the information about the marker codes. ```markerSize``` is the size
+<code>bytesList</code> is the array that contains all the information about the marker codes. ```markerSize``` is the size
  of each marker dimension (for instance, 5 for markers with 5x5 bits). Finally, ```maxCorrectionBits``` is
 the maximum number of erroneous bits that can be corrected during the marker detection. If this value is too
 high, it can lead to a high amount of false positives.
@@ -431,8 +430,8 @@ Fortunately, a marker can be easily transformed to this form using the static me
 
 For example:
 
-``` c++
-    Dictionary dictionary;
+@code{.cpp}
+    cv::aruco::Dictionary dictionary;
     // markers of 6x6 bits
     dictionary.markerSize = 6;
     // maximum number of bit corrections
@@ -440,15 +439,15 @@ For example:
 
     // lets create a dictionary of 100 markers
     for(int i=0; i<100; i++)
+    {
         // assume generateMarkerBits() generate a new marker in binary format, so that
         // markerBits is a 6x6 matrix of CV_8UC1 type, only containing 0s and 1s
         cv::Mat markerBits = generateMarkerBits();
-        cv::Mat markerCompressed = getByteListFromBits(markerBits);
+        cv::Mat markerCompressed = cv::aruco::Dictionary::getByteListFromBits(markerBits);
         // add the marker as a new row
         dictionary.bytesList.push_back(markerCompressed);
     }
-
-```
+@endcode
 
 
 
@@ -701,23 +700,23 @@ Default value: 0.6
 #### Corner Refinement
 
 After markers have been detected and identified, the last step is performing subpixel refinement
-in the corner positions (see OpenCV ```cornerSubPix()```)
+in the corner positions (see OpenCV ```cornerSubPix()``` and ```cv::aruco::CornerRefineMethod```)
 
 Note that this step is optional and it only makes sense if the position of the marker corners have to
 be accurate, for instance for pose estimation. It is usually a time consuming step and it is disabled by default.
 
-- ```bool doCornerRefinement```
+- ```int cornerRefinementMethod```
 
 This parameter determines if the corner subpixel process is performed or not. It can be disabled
 if accurate corners are not necessary.
 
-Default value: false.
+Default value: ```CORNER_REFINE_NONE```.
 
  - ```int cornerRefinementWinSize```
 
 This parameter determines the window size of the subpixel refinement process.
 
-High values can produce that close image corners are included in the window region, so that the
+High values can produce the effect that close image corners are included in the window region, so that the
 marker corner moves to a different and wrong location during the process. Furthermore
 it can affect to performance.
 

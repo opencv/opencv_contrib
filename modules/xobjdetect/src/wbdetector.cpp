@@ -179,7 +179,7 @@ void WBDetectorImpl::train(
                 win_count = min(win_count, stage_neg - bootstrap_count);
                 Mat window;
                 for (int k = 0; k < win_count; ++k) {
-                    resize(img(bboxes[indices(k, 0)]), window, Size(24, 24));
+                    resize(img(bboxes[indices(k, 0)]), window, Size(24, 24), 0, 0, INTER_LINEAR_EXACT);
                     neg_imgs.push_back(window.clone());
                     bootstrap_count += 1;
                 }

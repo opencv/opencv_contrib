@@ -20,7 +20,7 @@ using namespace std;
 using namespace cv;
 using namespace cv::text;
 
-//Calculate edit distance netween two words
+//Calculate edit distance between two words
 size_t edit_distance(const string& A, const string& B);
 size_t min(size_t x, size_t y, size_t z);
 bool   isRepetitive(const string& s);
@@ -136,7 +136,7 @@ int main(int argc, char* argv[])
         ocr->run(group_img, output, &boxes, &words, &confidences, OCR_LEVEL_WORD);
 
         output.erase(remove(output.begin(), output.end(), '\n'), output.end());
-        //cout << "OCR output = \"" << output << "\" lenght = " << output.size() << endl;
+        //cout << "OCR output = \"" << output << "\" length = " << output.size() << endl;
         if (output.size() < 3)
             continue;
 
@@ -164,7 +164,7 @@ int main(int argc, char* argv[])
     cout << "TIME_OCR = " << ((double)getTickCount() - t_r)*1000/getTickFrequency() << endl;
 
 
-    /* Recognition evaluation with (approximate) hungarian matching and edit distances */
+    /* Recognition evaluation with (approximate) Hungarian matching and edit distances */
 
     if(argc>2)
     {
@@ -263,10 +263,10 @@ int main(int argc, char* argv[])
 
 
 
-    //resize(out_img_detection,out_img_detection,Size(image.cols*scale_img,image.rows*scale_img));
+    //resize(out_img_detection,out_img_detection,Size(image.cols*scale_img,image.rows*scale_img),0,0,INTER_LINEAR_EXACT);
     //imshow("detection", out_img_detection);
     //imwrite("detection.jpg", out_img_detection);
-    //resize(out_img,out_img,Size(image.cols*scale_img,image.rows*scale_img));
+    //resize(out_img,out_img,Size(image.cols*scale_img,image.rows*scale_img),0,0,INTER_LINEAR_EXACT);
     namedWindow("recognition",WINDOW_NORMAL);
     imshow("recognition", out_img);
     waitKey(0);

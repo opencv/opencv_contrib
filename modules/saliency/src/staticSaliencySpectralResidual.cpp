@@ -92,11 +92,11 @@ bool StaticSaliencySpectralResidual::computeSaliencyImpl( InputArray image, Outp
   if( image.channels() == 3 )
   {
     cvtColor( image, imageGR, COLOR_BGR2GRAY );
-    resize( imageGR, grayDown, resizedImageSize, 0, 0, INTER_LINEAR );
+    resize( imageGR, grayDown, resizedImageSize, 0, 0, INTER_LINEAR_EXACT );
   }
   else
   {
-    resize( image, grayDown, resizedImageSize, 0, 0, INTER_LINEAR );
+    resize( image, grayDown, resizedImageSize, 0, 0, INTER_LINEAR_EXACT );
   }
 
   grayDown.convertTo( realImage, CV_64F );
@@ -130,7 +130,7 @@ bool StaticSaliencySpectralResidual::computeSaliencyImpl( InputArray image, Outp
   magnitude = magnitude / maxVal;
   magnitude.convertTo( magnitude, CV_32F );
 
-  resize( magnitude, saliencyMap, image.size(), 0, 0, INTER_LINEAR );
+  resize( magnitude, saliencyMap, image.size(), 0, 0, INTER_LINEAR_EXACT );
 
 #ifdef SALIENCY_DEBUG
   // visualize saliency map

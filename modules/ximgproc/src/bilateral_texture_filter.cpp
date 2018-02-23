@@ -63,7 +63,7 @@ namespace ximgproc
     if (sigmaAlpha < 0)
       sigmaAlpha = 5. * fr;
     if (sigmaAvg < 0)
-      sigmaAvg = 0.05 * sqrt(src.channels());
+      sigmaAvg = 0.05 * sqrt(static_cast<float>(src.channels()));
 
     Mat I;
     src.copyTo(I);

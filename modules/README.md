@@ -10,7 +10,7 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 
 - **aruco**: ArUco and ChArUco Markers -- Augmented reality ArUco marker and "ChARUco" markers where ArUco markers embedded inside the white areas of the checker board.
 
-- **bgsegm**: Background Segmentation -- Improved Adaptive Background Mixture Model and use for real time human tracking under Variable-Lighting Conditions.
+- **bgsegm**: Background segmentation algorithm combining statistical background image estimation and per-pixel Bayesian segmentation.
 
 - **bioinspired**: Biological Vision -- Biologically inspired vision model: minimize noise and luminance variance, transient event segmentation, high dynamic range tone mapping methods.
 
@@ -18,13 +18,11 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 
 - **cnn_3dobj**: Deep Object Recognition and Pose -- Uses Caffe Deep Neural Net library to build, train and test a CNN model of visual object recognition and pose.
 
-- **contrib_world**: opencv_contrib holder -- contrib_world is the module that when built, contains all other opencv_contrib modules. It may be used for the more convenient redistribution of opencv binaries.
-
 - **cvv**: Computer Vision Debugger -- Simple code that you can add to your program that pops up a GUI allowing you to interactively and visually debug computer vision programs.
 
 - **datasets**: Datasets Reader -- Code for reading existing computer vision databases and samples of using the readers to train, test and run using that dataset's data.
 
-- **dnn**: Deep Neural Networks (DNNs) -- This module can read in image recogniton networks trained in the Caffe neural netowrk library and run them efficiently on CPU.
+- **dnn_objdetect**: Object Detection using CNNs -- Implements compact CNN Model for object detection. Trained using Caffe but uses opencv_dnn modeule.
 
 - **dnns_easily_fooled**: Subvert DNNs -- This code can use the activations in a network to fool the networks into recognizing something else.
 
@@ -43,6 +41,8 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 - **matlab**: Matlab Interface -- OpenCV Matlab Mex wrapper code generator for certain opencv core modules.
 
 - **optflow**: Optical Flow -- Algorithms for running and evaluating deepflow, simpleflow, sparsetodenseflow and motion templates (silhouette flow).
+
+- **ovis**: OGRE 3D Visualiser -- allows you to render 3D data using the OGRE 3D engine.
 
 - **plot**: Plotting -- The plot module allows you to easily plot data in 1D or 2D.
 
@@ -66,7 +66,7 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 
 - **xfeatures2d**: Features2D extra -- Extra 2D Features Framework containing experimental and non-free 2D feature detector/descriptor algorithms. SURF, SIFT, BRIEF, Censure, Freak, LUCID, Daisy, Self-similar.
 
-- **ximgproc**: Extended Image Processing -- Structured Forests / Domain Transform Filter / Guided Filter / Adaptive Manifold Filter / Joint Bilateral Filter / Superpixels.
+- **ximgproc**: Extended Image Processing -- Structured Forests / Domain Transform Filter / Guided Filter / Adaptive Manifold Filter / Joint Bilateral Filter / Superpixels / Ridge Detection Filter.
 
 - **xobjdetect**: Boosted 2D Object Detection -- Uses a Waldboost cascade and local binary patterns computed as integral features for 2D object detection.
 

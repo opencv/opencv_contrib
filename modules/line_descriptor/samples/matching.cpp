@@ -39,14 +39,16 @@
  //
  //M*/
 
-#include <opencv2/line_descriptor.hpp>
+#include <iostream>
+#include <opencv2/opencv_modules.hpp>
 
-#include "opencv2/core/utility.hpp"
+#ifdef HAVE_OPENCV_FEATURES2D
+
+#include <opencv2/line_descriptor.hpp>
+#include <opencv2/core/utility.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/highgui.hpp>
-
-#include <iostream>
 
 #define MATCHES_DIST_THRESHOLD 25
 
@@ -195,8 +197,8 @@ int main( int argc, char** argv )
 
   /* plot matches */
   cv::Mat lsd_outImg;
-  resize( imageMat1, imageMat1, Size( imageMat1.cols / 2, imageMat1.rows / 2 ) );
-  resize( imageMat2, imageMat2, Size( imageMat2.cols / 2, imageMat2.rows / 2 ) );
+  resize( imageMat1, imageMat1, Size( imageMat1.cols / 2, imageMat1.rows / 2 ), 0, 0, INTER_LINEAR_EXACT );
+  resize( imageMat2, imageMat2, Size( imageMat2.cols / 2, imageMat2.rows / 2 ), 0, 0, INTER_LINEAR_EXACT );
   std::vector<char> lsd_mask( matches.size(), 1 );
   drawLineMatches( imageMat1, octave0_1, imageMat2, octave0_2, good_matches, lsd_outImg, Scalar::all( -1 ), Scalar::all( -1 ), lsd_mask,
                    DrawLinesMatchesFlags::DEFAULT );
@@ -207,3 +209,12 @@ int main( int argc, char** argv )
 
 }
 
+#else
+
+int main()
+{
+    std::cerr << "OpenCV was built without features2d module" << std::endl;
+    return 0;
+}
+
+#endif // HAVE_OPENCV_FEATURES2D

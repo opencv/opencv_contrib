@@ -167,10 +167,10 @@ int main( int argc, char** argv )
       moveWindow( "cam2", 640 + 75, 0 );
 
       // Resizing images to avoid issues for high resolution images, visualizing them as grayscale
-      resize( frame1, tmp, Size( 640, 480 ) );
+      resize( frame1, tmp, Size( 640, 480 ), 0, 0, INTER_LINEAR_EXACT);
       cvtColor( tmp, tmp, COLOR_RGB2GRAY );
       imshow( "cam1", tmp );
-      resize( frame2, tmp, Size( 640, 480 ) );
+      resize( frame2, tmp, Size( 640, 480 ), 0, 0, INTER_LINEAR_EXACT);
       cvtColor( tmp, tmp, COLOR_RGB2GRAY );
       imshow( "cam2", tmp );
 

@@ -128,7 +128,7 @@ namespace cv
                 float getWeightL() const               { return mWeights[L_IDX]; }
                 float getWeightA() const               { return mWeights[A_IDX]; }
                 float getWeightB() const               { return mWeights[B_IDX]; }
-                float getWeightConstrast() const       { return mWeights[CONTRAST_IDX]; }
+                float getWeightContrast() const        { return mWeights[CONTRAST_IDX]; }
                 float getWeightEntropy() const         { return mWeights[ENTROPY_IDX]; }
 
                 std::vector<Point2f> getSamplingPoints() const

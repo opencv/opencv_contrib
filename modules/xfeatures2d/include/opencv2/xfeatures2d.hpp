@@ -53,6 +53,10 @@ This section describes experimental algorithms for 2d feature detection.
 This section describes two popular algorithms for 2d feature detection, SIFT and SURF, that are
 known to be patented. Use them at your own risk.
 
+    @defgroup xfeatures2d_match Experimental 2D Features Matching Algorithm
+
+This section describes the GMS (Grid-based Motion Statistics) matching strategy.
+
 @}
 */
 
@@ -160,6 +164,7 @@ LATCH is a binary descriptor based on learned comparisons of triplets of image p
 * rotationInvariance - whether or not the descriptor should compansate for orientation changes.
 * half_ssd_size - the size of half of the mini-patches size. For example, if we would like to compare triplets of patches of size 7x7x
     then the half_ssd_size should be (7-1)/2 = 3.
+* sigma - sigma value for GaussianBlur smoothing of the source image. Source image will be used without smoothing in case sigma value is 0.
 
 Note: the descriptor can be coupled with any keypoint extractor. The only demand is that if you use set rotationInvariance = True then
     you will have to use an extractor which estimates the patch orientation (in degrees). Examples for such extractors are ORB and SIFT.
@@ -170,7 +175,7 @@ Note: a complete example can be found under /samples/cpp/tutorial_code/xfeatures
 class CV_EXPORTS_W LATCH : public Feature2D
 {
 public:
-    CV_WRAP static Ptr<LATCH> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size=3);
+    CV_WRAP static Ptr<LATCH> create(int bytes = 32, bool rotationInvariance = true, int half_ssd_size = 3, double sigma = 2.0);
 };
 
 /** @brief Class implementing DAISY descriptor, described in @cite Tola10
@@ -311,13 +316,21 @@ public:
     CV_WRAP static Ptr<VGG> create( int desc = VGG::VGG_120, float isigma = 1.4f,
                                     bool img_normalize = true, bool use_scale_orientation = true,
                                     float scale_factor = 6.25f, bool dsc_normalize = false );
-    /**
-     * @param image image to extract descriptors
-     * @param keypoints of interest within image
-     * @param descriptors resulted descriptors array
-     */
-    CV_WRAP virtual void compute( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors ) = 0;
 
+    CV_WRAP virtual void setSigma(const float isigma) = 0;
+    CV_WRAP virtual float getSigma() const = 0;
+
+    CV_WRAP virtual void setUseNormalizeImage(const bool img_normalize) = 0;
+    CV_WRAP virtual bool getUseNormalizeImage() const = 0;
+
+    CV_WRAP virtual void setUseScaleOrientation(const bool use_scale_orientation) = 0;
+    CV_WRAP virtual bool getUseScaleOrientation() const = 0;
+
+    CV_WRAP virtual void setScaleFactor(const float scale_factor) = 0;
+    CV_WRAP virtual float getScaleFactor() const = 0;
+
+    CV_WRAP virtual void setUseNormalizeDescriptor(const bool dsc_normalize) = 0;
+    CV_WRAP virtual bool getUseNormalizeDescriptor() const = 0;
 };
 
 /** @brief Class implementing BoostDesc (Learning Image Descriptors with Boosting), described in
@@ -359,6 +372,12 @@ public:
 
     CV_WRAP static Ptr<BoostDesc> create( int desc = BoostDesc::BINBOOST_256,
                     bool use_scale_orientation = true, float scale_factor = 6.25f );
+
+    CV_WRAP virtual void setUseScaleOrientation(const bool use_scale_orientation) = 0;
+    CV_WRAP virtual bool getUseScaleOrientation() const = 0;
+
+    CV_WRAP virtual void setScaleFactor(const float scale_factor) = 0;
+    CV_WRAP virtual float getScaleFactor() const = 0;
 };
 
 
@@ -605,7 +624,7 @@ public:
     * @brief Weights (multiplicative constants) that linearly stretch individual axes of the feature space
     *       (x,y = position; L,a,b = color in CIE Lab space; c = contrast. e = entropy)
     */
-    CV_WRAP virtual float getWeightConstrast() const = 0;
+    CV_WRAP virtual float getWeightContrast() const = 0;
     /**
     * @brief Weights (multiplicative constants) that linearly stretch individual axes of the feature space
     *       (x,y = position; L,a,b = color in CIE Lab space; c = contrast. e = entropy)
@@ -924,6 +943,52 @@ public:
         OutputArray descriptors,
         bool useProvidedKeypoints=false ) = 0;
 };
+
+
+/** @brief Estimates cornerness for prespecified KeyPoints using the FAST algorithm
+
+@param image grayscale image where keypoints (corners) are detected.
+@param keypoints keypoints which should be tested to fit the FAST criteria. Keypoints not beeing
+detected as corners are removed.
+@param threshold threshold on difference between intensity of the central pixel and pixels of a
+circle around this pixel.
+@param nonmaxSuppression if true, non-maximum suppression is applied to detected corners
+(keypoints).
+@param type one of the three neighborhoods as defined in the paper:
+FastFeatureDetector::TYPE_9_16, FastFeatureDetector::TYPE_7_12,
+FastFeatureDetector::TYPE_5_8
+
+Detects corners using the FAST algorithm by @cite Rosten06 .
+ */
+CV_EXPORTS void FASTForPointSet( InputArray image, CV_IN_OUT std::vector<KeyPoint>& keypoints,
+                      int threshold, bool nonmaxSuppression=true, int type=FastFeatureDetector::TYPE_9_16);
+
+
+//! @}
+
+
+//! @addtogroup xfeatures2d_match
+//! @{
+
+/** @brief GMS  (Grid-based Motion Statistics) feature matching strategy by @cite Bian2017gms .
+    @param size1 Input size of image1.
+    @param size2 Input size of image2.
+    @param keypoints1 Input keypoints of image1.
+    @param keypoints2 Input keypoints of image2.
+    @param matches1to2 Input 1-nearest neighbor matches.
+    @param matchesGMS Matches returned by the GMS matching strategy.
+    @param withRotation Take rotation transformation into account.
+    @param withScale Take scale transformation into account.
+    @param thresholdFactor The higher, the less matches.
+    @note
+        Since GMS works well when the number of features is large, we recommend to use the ORB feature and set FastThreshold to 0 to get as many as possible features quickly.
+        If matching results are not satisfying, please add more features. (We use 10000 for images with 640 X 480).
+        If your images have big rotation and scale changes, please set withRotation or withScale to true.
+ */
+
+CV_EXPORTS_W void matchGMS( const Size& size1, const Size& size2, const std::vector<KeyPoint>& keypoints1, const std::vector<KeyPoint>& keypoints2,
+                          const std::vector<DMatch>& matches1to2, CV_OUT std::vector<DMatch>& matchesGMS, const bool withRotation = false,
+                          const bool withScale = false, const double thresholdFactor = 6.0 );
 
 //! @}
 

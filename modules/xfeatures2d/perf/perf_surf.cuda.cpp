@@ -46,9 +46,7 @@
 
 #include "opencv2/ts/cuda_perf.hpp"
 
-using namespace std;
-using namespace testing;
-using namespace perf;
+namespace opencv_test { namespace {
 
 //////////////////////////////////////////////////////////////////////
 // SURF
@@ -100,4 +98,5 @@ PERF_TEST_P(Image, CUDA_SURF,
 
 #endif // HAVE_OPENCV_CUDAARITHM
 
+}} // namespace
 #endif // HAVE_CUDA

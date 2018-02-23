@@ -333,8 +333,13 @@ void FREAK_Impl::compute( InputArray _image, std::vector<KeyPoint>& keypoints, O
     ((FREAK_Impl*)this)->buildPattern();
 
     // Convert to gray if not already
-    Mat grayImage = image;
-    CV_Assert(grayImage.channels() == 1);
+    Mat grayImage;
+    if( image.channels() == 3 || image.channels() == 4 )
+        cvtColor(image, grayImage, COLOR_BGR2GRAY);
+    else {
+        CV_Assert(image.channels() == 1);
+        grayImage = image;
+    }
 
     // Use 32-bit integers if we won't overflow in the integral image
     if ((image.depth() == CV_8U || image.depth() == CV_8S) &&

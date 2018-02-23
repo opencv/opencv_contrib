@@ -67,14 +67,14 @@ void changedPixelImage(const cv::Mat& mat0, const cv::Mat& mat1, cv::Mat& out)
 template<int Depth, int Channels>
 void changedPixelImage(const cv::Mat& mat0, const cv::Mat& mat1, cv::Mat& out)
 {
-	using PixelInType=const cvv::qtutil::PixelType<Depth,Channels>;
+	using PixelInType=cvv::qtutil::PixelType<Depth,Channels>;
 	using PixelOutType=cvv::qtutil::DepthType<CV_8U>;
 
 
 	cv::Mat result=cv::Mat::zeros(mat0.rows, mat0.cols,CV_8U);
 	bool same;
-	PixelInType* in0;
-	PixelInType* in1;
+	const PixelInType* in0;
+	const PixelInType* in1;
 	for(int i=0;i<result.rows;i++)
 	{
 		for(int j=0;j<result.cols;j++)

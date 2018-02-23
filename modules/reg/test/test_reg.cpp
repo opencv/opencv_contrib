@@ -42,28 +42,16 @@
 //M*/
 
 #include "test_precomp.hpp"
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/core.hpp>
 
-#include "opencv2/reg/mapaffine.hpp"
-#include "opencv2/reg/mapshift.hpp"
-#include "opencv2/reg/mapprojec.hpp"
-#include "opencv2/reg/mappergradshift.hpp"
-#include "opencv2/reg/mappergradeuclid.hpp"
-#include "opencv2/reg/mappergradsimilar.hpp"
-#include "opencv2/reg/mappergradaffine.hpp"
-#include "opencv2/reg/mappergradproj.hpp"
-#include "opencv2/reg/mapperpyramid.hpp"
+namespace opencv_test { namespace {
 
-using namespace std;
-using namespace cv;
-using namespace cv::reg;
+#define REG_DEBUG_OUTPUT 0
 
 
 class RegTest : public testing::Test
 {
 public:
-    void loadImage();
+    void loadImage(int dstDataType = CV_32FC3);
 
     void testShift();
     void testEuclidean();
@@ -84,21 +72,21 @@ void RegTest::testShift()
     mapTest.warp(img1, img2);
 
     // Register
-    MapperGradShift mapper;
+    Ptr<Mapper> mapper = makePtr<MapperGradShift>();
     MapperPyramid mappPyr(mapper);
-    Ptr<Map> mapPtr;
-    mappPyr.calculate(img1, img2, mapPtr);
+    Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
-    MapShift* mapShift = dynamic_cast<MapShift*>(mapPtr.get());
+    Ptr<MapShift> mapShift = MapTypeCaster::toShift(mapPtr);
+#if REG_DEBUG_OUTPUT
     cout << endl << "--- Testing shift mapper ---" << endl;
     cout << Mat(shift) << endl;
     cout << Mat(mapShift->getShift()) << endl;
-
+#endif
     // Check accuracy
     Ptr<Map> mapInv(mapShift->inverseMap());
-    mapTest.compose(*mapInv.get());
-    double shNorm = norm(mapTest.getShift());
+    mapTest.compose(mapInv);
+    double shNorm = cv::norm(mapTest.getShift());
     EXPECT_LE(shNorm, 0.1);
 }
 
@@ -116,25 +104,25 @@ void RegTest::testEuclidean()
     mapTest.warp(img1, img2);
 
     // Register
-    MapperGradEuclid mapper;
+    Ptr<Mapper> mapper = makePtr<MapperGradEuclid>();
     MapperPyramid mappPyr(mapper);
-    Ptr<Map> mapPtr;
-    mappPyr.calculate(img1, img2, mapPtr);
+    Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
-    MapAffine* mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
+    Ptr<MapAffine> mapAff = MapTypeCaster::toAffine(mapPtr);
+#if REG_DEBUG_OUTPUT
     cout << endl << "--- Testing Euclidean mapper ---" << endl;
     cout << Mat(linTr) << endl;
     cout << Mat(shift) << endl;
     cout << Mat(mapAff->getLinTr()) << endl;
     cout << Mat(mapAff->getShift()) << endl;
-
+#endif
     // Check accuracy
     Ptr<Map> mapInv(mapAff->inverseMap());
-    mapTest.compose(*mapInv.get());
-    double shNorm = norm(mapTest.getShift());
+    mapTest.compose(mapInv);
+    double shNorm = cv::norm(mapTest.getShift());
     EXPECT_LE(shNorm, 0.1);
-    double linTrNorm = norm(mapTest.getLinTr());
+    double linTrNorm = cv::norm(mapTest.getLinTr());
     EXPECT_LE(linTrNorm, sqrt(2.) + 0.01);
     EXPECT_GE(linTrNorm, sqrt(2.) - 0.01);
 }
@@ -154,25 +142,26 @@ void RegTest::testSimilarity()
     mapTest.warp(img1, img2);
 
     // Register
-    MapperGradSimilar mapper;
+    Ptr<Mapper> mapper = makePtr<MapperGradSimilar>();
     MapperPyramid mappPyr(mapper);
-    Ptr<Map> mapPtr;
-    mappPyr.calculate(img1, img2, mapPtr);
+    Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
-    MapAffine* mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
+    Ptr<MapAffine> mapAff = MapTypeCaster::toAffine(mapPtr);
+#if REG_DEBUG_OUTPUT
     cout << endl << "--- Testing similarity mapper ---" << endl;
     cout << Mat(linTr) << endl;
     cout << Mat(shift) << endl;
     cout << Mat(mapAff->getLinTr()) << endl;
     cout << Mat(mapAff->getShift()) << endl;
+#endif
 
     // Check accuracy
     Ptr<Map> mapInv(mapAff->inverseMap());
-    mapTest.compose(*mapInv.get());
-    double shNorm = norm(mapTest.getShift());
+    mapTest.compose(mapInv);
+    double shNorm = cv::norm(mapTest.getShift());
     EXPECT_LE(shNorm, 0.1);
-    double linTrNorm = norm(mapTest.getLinTr());
+    double linTrNorm = cv::norm(mapTest.getLinTr());
     EXPECT_LE(linTrNorm, sqrt(2.) + 0.01);
     EXPECT_GE(linTrNorm, sqrt(2.) - 0.01);
 }
@@ -188,25 +177,26 @@ void RegTest::testAffine()
     mapTest.warp(img1, img2);
 
     // Register
-    MapperGradAffine mapper;
+    Ptr<Mapper> mapper = makePtr<MapperGradAffine>();
     MapperPyramid mappPyr(mapper);
-    Ptr<Map> mapPtr;
-    mappPyr.calculate(img1, img2, mapPtr);
+    Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
-    MapAffine* mapAff = dynamic_cast<MapAffine*>(mapPtr.get());
+    Ptr<MapAffine> mapAff = MapTypeCaster::toAffine(mapPtr);
+#if REG_DEBUG_OUTPUT
     cout << endl << "--- Testing affine mapper ---" << endl;
     cout << Mat(linTr) << endl;
     cout << Mat(shift) << endl;
     cout << Mat(mapAff->getLinTr()) << endl;
     cout << Mat(mapAff->getShift()) << endl;
+#endif
 
     // Check accuracy
     Ptr<Map> mapInv(mapAff->inverseMap());
-    mapTest.compose(*mapInv.get());
-    double shNorm = norm(mapTest.getShift());
+    mapTest.compose(mapInv);
+    double shNorm = cv::norm(mapTest.getShift());
     EXPECT_LE(shNorm, 0.1);
-    double linTrNorm = norm(mapTest.getLinTr());
+    double linTrNorm = cv::norm(mapTest.getLinTr());
     EXPECT_LE(linTrNorm, sqrt(2.) + 0.01);
     EXPECT_GE(linTrNorm, sqrt(2.) - 0.01);
 }
@@ -222,34 +212,34 @@ void RegTest::testProjective()
     mapTest.warp(img1, img2);
 
     // Register
-    MapperGradProj mapper;
+    Ptr<Mapper> mapper = makePtr<MapperGradProj>();
     MapperPyramid mappPyr(mapper);
-    Ptr<Map> mapPtr;
-    mappPyr.calculate(img1, img2, mapPtr);
+    Ptr<Map> mapPtr = mappPyr.calculate(img1, img2);
 
     // Print result
-    MapProjec* mapProj = dynamic_cast<MapProjec*>(mapPtr.get());
+    Ptr<MapProjec> mapProj = MapTypeCaster::toProjec(mapPtr);
     mapProj->normalize();
+#if REG_DEBUG_OUTPUT
     cout << endl << "--- Testing projective transformation mapper ---" << endl;
     cout << Mat(projTr) << endl;
     cout << Mat(mapProj->getProjTr()) << endl;
+#endif
 
     // Check accuracy
     Ptr<Map> mapInv(mapProj->inverseMap());
-    mapTest.compose(*mapInv.get());
-    double projNorm = norm(mapTest.getProjTr());
+    mapTest.compose(mapInv);
+    double projNorm = cv::norm(mapTest.getProjTr());
     EXPECT_LE(projNorm, sqrt(3.) + 0.01);
     EXPECT_GE(projNorm, sqrt(3.) - 0.01);
 }
 
-void RegTest::loadImage()
+void RegTest::loadImage(int dstDataType)
 {
     const string imageName = cvtest::TS::ptr()->get_data_path() + "reg/home.png";
 
     img1 = imread(imageName, -1);
-    ASSERT_TRUE(img1.data != 0);
-    // Convert to double, 3 channels
-    img1.convertTo(img1, CV_64FC3);
+    ASSERT_TRUE(!img1.empty());
+    img1.convertTo(img1, dstDataType);
 }
 
 
@@ -282,3 +272,17 @@ TEST_F(RegTest, projective)
     loadImage();
     testProjective();
 }
+
+TEST_F(RegTest, projective_dt64fc3)
+{
+    loadImage(CV_64FC3);
+    testProjective();
+}
+
+TEST_F(RegTest, projective_dt64fc1)
+{
+    loadImage(CV_64FC1);
+    testProjective();
+}
+
+}} // namespace

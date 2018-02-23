@@ -56,7 +56,7 @@ class CV_EXPORTS_W GrayCodePattern_Impl : public GrayCodePattern
   bool generate( OutputArrayOfArrays patternImages );
 
   // Decodes the gray code pattern, computing the disparity map
-  bool decode( InputArrayOfArrays patternImages, OutputArray disparityMap, InputArrayOfArrays blackImages = noArray(),
+  bool decode( const std::vector< std::vector<Mat> >& patternImages, OutputArray disparityMap, InputArrayOfArrays blackImages = noArray(),
                InputArrayOfArrays whiteImages = noArray(), int flags = DECODE_3D_UNDERWORLD ) const;
 
   // Returns the number of pattern images for the graycode pattern
@@ -209,10 +209,10 @@ bool GrayCodePattern_Impl::generate( OutputArrayOfArrays pattern )
   return true;
 }
 
-bool GrayCodePattern_Impl::decode( InputArrayOfArrays patternImages, OutputArray disparityMap,
+bool GrayCodePattern_Impl::decode( const std::vector< std::vector<Mat> >& patternImages, OutputArray disparityMap,
                                    InputArrayOfArrays blackImages, InputArrayOfArrays whitheImages, int flags ) const
 {
-  std::vector<std::vector<Mat> >& acquired_pattern = *( std::vector<std::vector<Mat> >* ) patternImages.getObj();
+  const std::vector<std::vector<Mat> >& acquired_pattern = patternImages;
 
   if( flags == DECODE_3D_UNDERWORLD )
   {
@@ -367,8 +367,8 @@ void GrayCodePattern_Impl::getImagesForShadowMasks( InputOutputArray blackImage,
   Mat& blackImage_ = *( Mat* ) blackImage.getObj();
   Mat& whiteImage_ = *( Mat* ) whiteImage.getObj();
 
-  blackImage_ = Mat( params.height, params.width, CV_8UC3, Scalar( 0, 0, 0 ) );
-  whiteImage_ = Mat( params.height, params.width, CV_8UC3, Scalar( 255, 255, 255 ) );
+  blackImage_ = Mat( params.height, params.width, CV_8U, Scalar( 0 ) );
+  whiteImage_ = Mat( params.height, params.width, CV_8U, Scalar( 255 ) );
 }
 
 // For a (x,y) pixel of the camera returns the corresponding projector's pixel

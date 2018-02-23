@@ -4,7 +4,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <string>
 
 using namespace std;
 using namespace cv;
@@ -51,8 +50,7 @@ static void help() {
  *  values will be (-1,-1).
  */
 
-void
-parser_2D_tracks(const string &_filename, std::vector<Mat> &points2d )
+static void parser_2D_tracks(const String &_filename, std::vector<Mat> &points2d )
 {
   ifstream myfile(_filename.c_str());
 
@@ -110,7 +108,7 @@ parser_2D_tracks(const string &_filename, std::vector<Mat> &points2d )
 
 bool camera_pov = false;
 
-void keyboard_callback(const viz::KeyboardEvent &event, void* cookie)
+static void keyboard_callback(const viz::KeyboardEvent &event, void* cookie)
 {
   if ( event.action == 0 &&!event.symbol.compare("s") )
     camera_pov = !camera_pov;
@@ -213,7 +211,7 @@ int main(int argc, char** argv)
 
         viz::WCube cube_widget(Point3f(0.1,0.1,0.0), Point3f(0.0,0.0,-0.1), true, viz::Color::blue());
                    cube_widget.setRenderingProperty(viz::LINE_WIDTH, 2.0);
-        window_est.showWidget("Cube"+string(buffer), cube_widget, point_pose);
+        window_est.showWidget("Cube"+String(buffer), cube_widget, point_pose);
       }
 
       Affine3d cam_pose = path_est[idx];

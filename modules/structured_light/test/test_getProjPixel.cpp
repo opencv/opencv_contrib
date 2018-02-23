@@ -41,8 +41,7 @@
 
 #include "test_precomp.hpp"
 
-using namespace std;
-using namespace cv;
+namespace opencv_test { namespace {
 
 /****************************************************************************************\
 *                              GetProjPixel test                                         *
@@ -98,3 +97,5 @@ TEST( GrayCodePattern, getProjPixel )
   CV_GetProjPixelTest test;
   test.safe_run();
 }
+
+}} // namespace

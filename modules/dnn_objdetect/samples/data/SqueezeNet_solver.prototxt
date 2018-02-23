@@ -1,0 +1,17 @@
+# Solver for SqueezeNet Model
+test_iter: 1000
+test_interval: 1000
+base_lr: 0.03
+display: 1
+max_iter: 1500000
+lr_policy: "step"
+gamma: 0.5
+stepsize: 100000
+momentum: 0.9
+weight_decay: 0.0002
+snapshot: 1000
+snapshot_prefix: "snapshot"
+solver_mode: GPU
+net: "SqueezeNet_train_test.prototxt"
+random_seed: 42
+average_loss: 80
