@@ -106,7 +106,7 @@ enum CornerRefineMethod{
  *   similar, so that the smaller one is removed. The rate is relative to the smaller perimeter
  *   of the two markers (default 0.05).
  * - cornerRefinementMethod: corner refinement method. (CORNER_REFINE_NONE, no refinement.
- *   CORNER_REFINE_SUBPIX, do subpixel refinement. CORNER_REFINE_CONTOUR use contour-Points, 
+ *   CORNER_REFINE_SUBPIX, do subpixel refinement. CORNER_REFINE_CONTOUR use contour-Points,
  *   CORNER_REFINE_APRILTAG  use the AprilTag2 approach)
  * - cornerRefinementWinSize: window size for the corner refinement process (in pixels) (default 5).
  * - cornerRefinementMaxIterations: maximum number of iterations for stop criteria of the corner
