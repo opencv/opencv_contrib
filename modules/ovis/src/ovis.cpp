@@ -49,12 +49,14 @@ void _createTexture(const String& name, Mat image)
 }
 
 static void _convertRT(InputArray rot, InputArray tvec, Quaternion& q, Vector3& t,
-                       bool invert = false)
+                       bool invert = false, bool init = false)
 {
     CV_Assert(rot.empty() || rot.rows() == 3 || rot.size() == Size(3, 3),
               tvec.empty() || tvec.rows() == 3);
 
-    q = Quaternion::IDENTITY;
+    // make sure the entity is oriented by the OpenCV coordinate conventions
+    // when initialised
+    q = init ? Quaternion(toOGRE) : Quaternion::IDENTITY;
     t = Vector3::ZERO;
 
     if (!rot.empty())
@@ -346,7 +348,7 @@ public:
 
         Quaternion q;
         Vector3 t;
-        _convertRT(rot, tvec, q, t);
+        _convertRT(rot, tvec, q, t, false, true);
         SceneNode* node = sceneMgr->getRootSceneNode()->createChildSceneNode(t, q);
         node->attachObject(ent);
     }
@@ -377,7 +379,7 @@ public:
 
         Quaternion q;
         Vector3 t;
-        _convertRT(rot, tvec, q, t);
+        _convertRT(rot, tvec, q, t, false, true);
         SceneNode* node = sceneMgr->getRootSceneNode()->createChildSceneNode(t, q);
         node->attachObject(cam);
 
@@ -400,7 +402,7 @@ public:
 
         Quaternion q;
         Vector3 t;
-        _convertRT(rot, tvec, q, t);
+        _convertRT(rot, tvec, q, t, false, true);
         SceneNode* node = sceneMgr->getRootSceneNode()->createChildSceneNode(t, q);
         node->attachObject(light);
     }
@@ -420,7 +422,7 @@ public:
         SceneNode& node = _getSceneNode(sceneMgr, name);
         Quaternion q;
         Vector3 t;
-        _convertRT(rot, tvec, q, t, invert);
+        _convertRT(rot, tvec, q, t, invert, true);
         node.setOrientation(q);
         node.setPosition(t);
     }
@@ -488,7 +490,7 @@ public:
         SceneNode* node = cam->getParentSceneNode();
         Quaternion q;
         Vector3 t;
-        _convertRT(rot, tvec, q, t, invert);
+        _convertRT(rot, tvec, q, t, invert, true);
 
         if (!rot.empty())
             node->setOrientation(q);
