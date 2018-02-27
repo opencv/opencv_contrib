@@ -106,7 +106,7 @@ static inline void ptsort(struct pt *pts, int sz){
     if (stacksz > 1024)
         stacksz = 0;
 
-    struct pt _tmp_stack[stacksz];
+    struct pt *_tmp_stack = new struct pt[stacksz];
     struct pt *tmp = _tmp_stack;
 
     if (stacksz == 0) {
@@ -150,6 +150,7 @@ static inline void ptsort(struct pt *pts, int sz){
         free(tmp);
 
 #undef MERGE
+    delete[]_tmp_stack;
 }
 
 /**
@@ -327,7 +328,7 @@ int quad_segment_maxima(const Ptr<DetectorParameters> &td, int sz, struct line_f
 
     //    printf("sz %5d, ksz %3d\n", sz, ksz);
 
-    double errs[sz];
+    double * errs= new double[sz];
 
     for (int i = 0; i < sz; i++) {
         fit_line(lfps, sz, (i + sz - ksz) % sz, (i + ksz) % sz, NULL, &errs[i], NULL);
@@ -335,7 +336,7 @@ int quad_segment_maxima(const Ptr<DetectorParameters> &td, int sz, struct line_f
 
     // apply a low-pass filter to errs
     if (1) {
-        double y[sz];
+        double * y= new double[sz];
 
         // how much filter to apply?
 
@@ -373,10 +374,13 @@ int quad_segment_maxima(const Ptr<DetectorParameters> &td, int sz, struct line_f
             y[iy] = acc;
         }
         memcpy(errs, y, sizeof(y));
+        delete[]y;
     }
 
-    int maxima[sz];
-    double maxima_errs[sz];
+    //int maxima[sz];
+    int * maxima= new int[sz];
+    //double maxima_errs[sz];
+    double * maxima_errs= new double[sz];
     int nmaxima = 0;
 
     for (int i = 0; i < sz; i++) {
@@ -386,7 +390,7 @@ int quad_segment_maxima(const Ptr<DetectorParameters> &td, int sz, struct line_f
             nmaxima++;
         }
     }
-
+    delete[]errs;
     // if we didn't get at least 4 maxima, we can't fit a quad.
     if (nmaxima < 4)
         return 0;
@@ -466,6 +470,8 @@ int quad_segment_maxima(const Ptr<DetectorParameters> &td, int sz, struct line_f
             }
         }
     }
+    delete[]maxima;
+    delete[]maxima_errs;
 
     if (best_error == HUGE_VALF)
         return 0;
