@@ -1,6 +1,8 @@
 //TODO: paset actual license
 
-#include "opencv2/kinect_fusion/kinect_fusion.hpp"
+//TODO: organize includes properly
+#include "opencv2/kinect_fusion/utils.hpp"
+#include "opencv2/kinect_fusion/kinfu.hpp"
 
 /** @defgroup kinect_fusion Kinect Fusion
 
