@@ -131,6 +131,13 @@ public:
     CV_WRAP virtual void getScreenshot(OutputArray frame) = 0;
 
     /**
+     * get the depth for the current frame.
+     *
+     * return the per pixel distance to the camera in world units
+     */
+    CV_WRAP virtual void getDepth(OutputArray depth) = 0;
+
+    /**
      * convenience method to force the "up" axis to stay fixed
      *
      * works with both programmatic changes and SCENE_INTERACTIVE
