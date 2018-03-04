@@ -7,22 +7,37 @@
 
 class TSDFVolume
 {
+    typedef Points::value_type p3type;
+
 public:
     // dimension in voxels, size in meters
-    TSDFVolume(int _dims, float _size);
+    TSDFVolume(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+               float _raycastStepFactor, float _gradientDeltaFactor);
 
-    void integrate(Distance distance, cv::Affine3f pose, Intr intrinsics);
-    //TODO: inside should be like this:
-    //    volume_->raycast(poses_.back(), p.intr, prev_.points_pyr[0], prev_.normals_pyr[0]);
-    //    for (int i = 1; i < LEVELS; ++i)
-    //        resizePointsNormals(prev_.points_pyr[i-1], prev_.normals_pyr[i-1], prev_.points_pyr[i], prev_.normals_pyr[i]);
-    void raycast(cv::Affine3f pose, Intr intrinsics,
-                 std::vector<Points>& pointsPyr, std::vector<Normals>& normalsPyr);
+    void integrate(Depth depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics);
+    void raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points, Normals normals);
 
-    Points fetchCloud();
+    kftype fetch(cv::Point3f p);
+    kftype fetchi(cv::Point3i p);
+    kftype interpolate(cv::Point3f p);
+    p3type getNormal(cv::Point3f p);
 
-private:
+    Points fetchCloud() const;
 
+    void reset();
+
+    // edgeResolution^3 array
+    // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
+    Volume volume;
+    float edgeSize;
+    int edgeResolution;
+    float voxelSize;
+    float voxelSizeInv;
+    float truncDist;
+    float raycastStepFactor;
+    float gradientDeltaFactor;
+    int maxWeight;
+    cv::Affine3f pose;
 };
 
 #endif

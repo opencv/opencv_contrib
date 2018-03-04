@@ -5,19 +5,20 @@
 
 #include "opencv2/kinect_fusion/utils.hpp"
 
-Distance depthToDistance(Depth depth, Intr intr, float depthFactor);
-void computePointsNormals(Intr intr, const Depth &depth, Points &points, Normals &normals, float depthFactor);
-
 struct Frame
 {
 public:
-    Frame(int levels, cv::Size frameSize);
-    void computePointsNormals(const std::vector<Depth> &pyramid, Intr intrinsics, float depthFactor);
+    Frame();
+    Frame(const Depth, const Intr, int levels, float depthFactor, float sigmaDepth, float sigmaSpatial, int kernelSize);
+    Frame(const Points, const Normals, int levels);
 
-    cv::Affine3f pose;
     std::vector<Points> points;
     std::vector<Normals> normals;
 };
+
+void computePointsNormals(const Intr, float depthFactor, const Depth, Points, Normals );
+Depth pyrDownBilateral(const Depth depth, float sigma);
+void pyrDownPointsNormals(const Points p, const Normals n, Points& pdown, Normals& ndown);
 
 #endif
 

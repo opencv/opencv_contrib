@@ -87,17 +87,18 @@ int main(int argc, char **argv)
         if(!kf(frame))
             throw std::runtime_error("Failed to process a frame");
 
-        Mat frameCloud = kf.fetchCloud();
-
-        viz::WCloud cloudWidget(frameCloud);
-        window.showWidget("cloud", cloudWidget);
-
-        window.spinOnce(1, true);
-
-        //TODO: send to KinFu frame-by-frame
-        //TODO: do not forget about pre-multiplication of 5000
-
         //TODO: display result
+        //TODO: enable this
+//        Mat frameCloud = kf.fetchCloud();
+
+//        viz::WCloud cloudWidget(frameCloud);
+//        window.showWidget("cloud", cloudWidget);
+
+//        window.spinOnce(1, true);
+
+
+
+
     }
 
     return 0;

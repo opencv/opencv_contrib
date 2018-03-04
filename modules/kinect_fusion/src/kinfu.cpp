@@ -2,13 +2,18 @@
 
 #include "precomp.hpp"
 
+//DEBUG!
+#include <iostream>
+#include "opencv2/viz.hpp"
+
 namespace cv {
 namespace kinfu {
 
-class KinFuImpl
+class KinFu::KinFuImpl
 {
 public:    
     KinFuImpl(const KinFu::KinFuParams& _params);
+    virtual ~KinFuImpl();
 
     const KinFu::KinFuParams& getParams() const;
     KinFu::KinFuParams& getParams();
@@ -34,11 +39,12 @@ public:
 private:
     KinFu::KinFuParams params;
 
-    TSDFVolume volume;
-    ICP icp;
-
     int frameCounter;
+    Affine3f pose;
     Frame frame;
+
+    ICP icp;
+    TSDFVolume volume;
 };
 
 KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
@@ -57,21 +63,31 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
     // 1 for the 32-bit float images in the ROS bag files
     p.depthFactor = 5000;
 
+    // sigma_depth is scaled by depthFactor when calling bilateral filter
     p.bilateral_sigma_depth = 0.04f;  //meter
     p.bilateral_sigma_spatial = 4.5; //pixels
     p.bilateral_kernel_size = 7;     //pixels
 
     p.pyramidLevels = 4;
 
-    p.volumeDims = 512;  //number of voxels
+    p.tsdf_min_camera_movement = 0.f; //meters, disabled
+
+    //DEBUG!
+    //p.volumeDims = 512;  //number of voxels
+    p.volumeDims = 128;
+
     p.volumeSize = 3.f;  //meters
 
-    p.tsdf_min_camera_movement = 0.f; //meters, disabled
+    // default pose of volume cube
+    p.volumePose = Affine3f().translate(Vec3f(-p.volumeSize/2, -p.volumeSize/2, 0.5f));
+    p.tsdf_trunc_dist = 0.04f; //meters;
+    p.tsdf_max_weight = 64;   //frames
+
+    p.raycast_step_factor = 0.75f;  //in voxel sizes
+    p.gradient_delta_factor = 0.5f; //in voxel sizes
 
     //TODO: enable when (if) needed
     /*
-
-    p.volume_pose = Affine3f().translate(Vec3f(-p.volume_size[0]/2, -p.volume_size[1]/2, 0.5f));
 
     p.icp_truncate_depth_dist = 0.f;        //meters, disabled
     p.icp_dist_thres = 0.1f;                //meters
@@ -79,11 +95,7 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
     p.icp_iter_num.assign(iters, iters + levels);
 
 
-    p.tsdf_trunc_dist = 0.04f; //meters;
-    p.tsdf_max_weight = 64;   //frames
 
-    p.raycast_step_factor = 0.75f;  //in voxel sizes
-    p.gradient_delta_factor = 0.5f; //in voxel sizes
 
     //p.light_pose = p.volume_pose.translation()/4; //meters
     p.light_pose = Vec3f::all(0.f); //meters
@@ -92,24 +104,25 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
     return p;
 }
 
-KinFuImpl::KinFuImpl(const KinFu::KinFuParams &_params) :
-    params(_params)
+KinFu::KinFuImpl::KinFuImpl(const KinFu::KinFuParams &_params) :
+    params(_params),
+    frame(),
+    icp(_params.pyramidLevels),
+    volume(_params.volumeDims, _params.volumeSize, _params.volumePose,
+           _params.tsdf_trunc_dist, _params.tsdf_max_weight,
+           _params.raycast_step_factor, _params.gradient_delta_factor)
 {
     reset();
 }
 
-void KinFuImpl::reset()
+void KinFu::KinFuImpl::reset()
 {
     frameCounter = 0;
-    //TODO: maybe better clear volume and frame instead of re-creating
-    volume = TSDFVolume(params.volumeDims);
-    frame = Frame(params.pyramidLevels, params.frameSize);
-    icp = ICP(params.pyramidLevels);
+    pose = Affine3f::Identity();
+    volume.reset();
 
     //TODO: enable if (when) needed
     /*
-    CV_Assert(params.volume_dims[0] % 32 == 0);
-
     volume_ = cv::Ptr<cuda::TsdfVolume>(new cuda::TsdfVolume(params_.volume_dims));
 
     volume_->setTruncDist(params_.tsdf_trunc_dist);
@@ -127,43 +140,37 @@ void KinFuImpl::reset()
     */
 }
 
-const KinFu::KinFuParams& KinFuImpl::getParams() const
+KinFu::KinFuImpl::~KinFuImpl()
+{
+
+}
+
+const KinFu::KinFuParams& KinFu::KinFuImpl::getParams() const
 { return params; }
 
-KinFu::KinFuParams& KinFuImpl::getParams()
+KinFu::KinFuParams& KinFu::KinFuImpl::getParams()
 { return params; }
 
-bool KinFuImpl::operator()(InputArray _depth)
+bool KinFu::KinFuImpl::operator()(InputArray _depth)
 {
     CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
     // CV_Assert(_depth.type() == CV_16S);
 
     // this should convert CV_16S to CV_32F
-    Depth depth = Depth(_depth);
+    // TODO: make it better
+    Depth depth = toDepth(_depth);
 
-    Distance distance = depthToDistance(depth, params.intr, params.depthFactor);
-
-    // looks like OpenCV's bilateral filter works the same as KinFu's
-    Depth smooth;
-    bilateralFilter(depth, smooth, params.bilateral_kernel_size, params.bilateral_sigma_depth, params.bilateral_sigma_spatial);
-
-    //TODO: enable it when/if needed
-    /*
-    if (p.icp_truncate_depth_dist > 0)
-        kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
-    */
-
-    //TODO: check KinFu's implementation of pyramid build with bilateral_sigma_depth
-    std::vector<Depth> pyramid;
-    buildPyramid(smooth, pyramid, params.pyramidLevels);
-
-    Frame newFrame(params.pyramidLevels, params.frameSize);
-
-    newFrame.computePointsNormals(pyramid, params.intr, params.depthFactor);
+    Frame newFrame(depth, params.intr, params.pyramidLevels,
+                   params.depthFactor,
+                   params.bilateral_sigma_depth,
+                   params.bilateral_sigma_spatial,
+                   params.bilateral_kernel_size);
 
     if(frameCounter == 0)
     {
-        volume.integrate(distance, Affine3f::Identity(), params.intr);
+        // use depth instead of distance
+        //volume.integrate(newFrame.distance, pose, params.intr);
+        volume.integrate(depth, params.depthFactor, pose, params.intr);
 
         frame = newFrame;
     }
@@ -177,17 +184,61 @@ bool KinFuImpl::operator()(InputArray _depth)
             return false;
         }
 
-        frame.pose = frame.pose * affine;
+        pose = pose * affine;
 
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
         // We do not integrate volume if camera does not move
         if((rnorm + tnorm)/2 >= params.tsdf_min_camera_movement)
         {
-            volume.integrate(distance, frame.pose, params.intr);
+            // use depth instead of distance
+            //volume.integrate(newFrame.distance, pose, params.intr);
+            volume.integrate(depth, params.depthFactor, pose, params.intr);
+
         }
 
-        volume.raycast(pose, params.intr, frame.points, frame.normals);
+        // points and normals are allocated for this raycast call
+        Points p(params.frameSize);
+        Normals n(params.frameSize);
+        volume.raycast(pose, params.intr, p, n);
+        // build a pyramid of points and normals
+        frame = Frame(p, n, params.pyramidLevels);
+
+
+        //DEBUG!
+        viz::Viz3d window("tsdf");
+        window.showWidget("xyz", viz::WCoordinateSystem());
+        std::vector<Point3f> points;
+        std::vector<uint8_t> colors;
+        float voxelSize = (params.volumeSize/params.volumeDims);
+        for(int x = 0; x < params.volumeDims; x++)
+        {
+            for(int y = 0; y < params.volumeDims; y++)
+            {
+                for(int z = 0; z < params.volumeDims; z++)
+                {
+                    Voxel& v = *(volume.volume + x*params.volumeDims*params.volumeDims + y*params.volumeDims + z);
+                    Point3f p = params.volumePose * Point3f(x*voxelSize, y*voxelSize, z*voxelSize);
+                    //if(v.v != 1 && v.weight != 0)
+                    if(v.weight != 0)
+                    {
+                        points.push_back(p);
+                        colors.push_back(255*(1-abs(v.v)));
+                    }
+                }
+            }
+        }
+        viz::WCloud func(points, colors);
+        //window.showWidget("tsdf", func);
+        int npyr = 0;
+        viz::WCloud pts(frame.points[npyr], viz::Color::green());
+        window.showWidget("pts", pts);
+        viz::WCloudNormals normals(frame.points[npyr],
+                                   frame.normals[npyr],
+                                   1, 0.03, viz::Color::gold());
+        window.showWidget("normals", normals);
+        window.spin();
+        window.close();
     }
 
     frameCounter++;
@@ -195,7 +246,7 @@ bool KinFuImpl::operator()(InputArray _depth)
 }
 
 
-Points KinFuImpl::fetchCloud() const
+Points KinFu::KinFuImpl::fetchCloud() const
 {
     return volume.fetchCloud();
 }
@@ -264,10 +315,10 @@ Points KinFuImpl::fetchCloud() const
 
 KinFu::KinFu(const KinFuParams& _params)
 {
-    impl = makePtr<KinFuImpl>(_params);
+    impl = makePtr<KinFu::KinFuImpl>(_params);
 }
 
-virtual KinFu::~KinFu() { }
+KinFu::~KinFu() { }
 
 const KinFu::KinFuParams& KinFu::getParams() const
 {

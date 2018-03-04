@@ -51,22 +51,30 @@ public:
         // meters, integrate only if exceedes
         float tsdf_min_camera_movement;
 
+        // initial volume pose in meters
+        Affine3f volumePose;
+
+        // distance to truncate in meters
+        float tsdf_trunc_dist;
+
+        // max # of frames per voxel
+        int tsdf_max_weight;
+
+        // how much voxel sizes we skip
+        float raycast_step_factor;
+
+        // gradient delta in voxel sizes
+        float gradient_delta_factor;
+
         //TODO: find out what we need of that
 
         /*
-        Affine3f volume_pose; //meters, inital pose
+
 
         float icp_truncate_depth_dist; //meters
         float icp_dist_thres;          //meters
         float icp_angle_thres;         //radians
         std::vector<int> icp_iter_num; //iterations for level index 0,1,..,3
-
-
-        float tsdf_trunc_dist;             //meters;
-        int tsdf_max_weight;               //frames
-
-        float raycast_step_factor;   // in voxel sizes
-        float gradient_delta_factor; // in voxel sizes
 
         Vec3f light_pose; //meters
 

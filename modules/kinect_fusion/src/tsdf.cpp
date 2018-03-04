@@ -1,31 +1,264 @@
 //TODO: add license
 
-#include "tsdf.hpp"
+#include "precomp.hpp"
 
+using namespace cv;
 using namespace cv::kinfu;
 
 // dimension in voxels, size in meters
-TSDFVolume::TSDFVolume(int _dims, float _size)
+TSDFVolume::TSDFVolume(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+                       float _raycastStepFactor, float _gradientDeltaFactor)
 {
-    //TODO: allocate memory, etc
+    CV_Assert(_res % 32 == 0);
+    edgeResolution = _res;
+    edgeSize = _size;
+    voxelSize = edgeSize/edgeResolution;
+    voxelSizeInv = edgeResolution/edgeSize;
+    volume = Volume(_res * _res * _res);
+    pose = _pose;
+    truncDist = _truncDist;
+    raycastStepFactor = _raycastStepFactor;
+    gradientDeltaFactor = _gradientDeltaFactor;
+    maxWeight = _maxWeight;
+    reset();
 }
 
-void TSDFVolume::integrate(Distance distance, cv::Affine3f pose, Intr intrinsics)
+// zero volume, leave rest params the same
+void TSDFVolume::reset()
 {
-    //TODO: really integrate somehow
+    for(size_t i = 0; i < volume.size(); i++)
+    {
+        volume[i].v = 0;
+        volume[i].weight = 0;
+    }
 }
 
-void TSDFVolume::raycast(cv::Affine3f pose, Intr intrinsics,
-                         std::vector<Points>& pointsPyr, std::vector<Normals>& normalsPyr)
+inline kftype bilinear(Depth depth, Point2f pt)
 {
-    //TODO: make it like this:
-    //    volume_->raycast(poses_.back(), p.intr, prev_.points_pyr[0], prev_.normals_pyr[0]);
-    //    for (int i = 1; i < LEVELS; ++i)
-    //        resizePointsNormals(prev_.points_pyr[i-1], prev_.normals_pyr[i-1], prev_.points_pyr[i], prev_.normals_pyr[i]);
+    if(pt.x < 0 || pt.x > depth.cols-1 ||
+       pt.y < 0 || pt.y > depth.rows-1)
+        return std::numeric_limits<kftype>::quiet_NaN();
 
+    int xi = cvFloor(pt.x), yi = cvFloor(pt.y);
+    float tx = pt.x - xi, ty = pt.y - yi;
+    kftype v00 = depth(Point(xi, yi));
+    // for cases where pt.x == depth.cols-1 or pt.y == depth.rows-1
+    kftype v01 = (tx > 0.f) ? depth(Point(xi+1,   yi)) : v00;
+    kftype v10 = (ty > 0.f) ? depth(Point(xi,   yi+1)) : v00;
+    kftype v11 = (tx > 0.f &&
+                  ty > 0.f) ? depth(Point(xi+1, yi+1)) : v00;
+
+    return v00*(1.f-tx)*(1.f-ty) + v01*tx*(1.f-ty) + v10*(1.f-tx)*ty + v11*tx*ty;
 }
 
-Points TSDFVolume::fetchCloud()
+
+// use depth instead of distance (optimization)
+void TSDFVolume::integrate(Depth depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics)
+{
+    Intr::Projector proj = intrinsics.makeProjector();
+
+    cv::Affine3f vol2cam = cameraPose.inv() * pose;
+    float truncDistInv = 1./truncDist;
+    float dfac = 1.f/depthFactor;
+
+    // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
+    for(int x = 0; x < edgeResolution; x++)
+    {
+        for(int y = 0; y < edgeResolution; y++)
+        {
+            //TODO: optimize it as it's done in original code (vc += zstep)
+            for(int z = 0; z < edgeResolution; z++)
+            {
+                Point3f volPt(x*voxelSize, y*voxelSize, z*voxelSize);
+                Point3f camSpacePt = vol2cam * volPt;
+
+                if(camSpacePt.z <= 0)
+                    continue;
+
+                Point2f projected = proj(camSpacePt);
+
+                kftype v = bilinear(depth, projected);
+                if(std::isnan(v) || v == 0)
+                    continue;
+
+                kftype sdf = norm(camSpacePt)*(v*dfac/camSpacePt.z - 1);
+
+                if(sdf >= -truncDist)
+                {
+                    kftype tsdf = fmin(1.f, sdf * truncDistInv);
+                    // update TSDF
+
+                    Voxel* voxel = (volume + x*edgeResolution*edgeResolution + y*edgeResolution + z);
+
+                    int& weight = voxel->weight;
+                    kftype& value = voxel->v;
+
+                    value = (value*weight+tsdf) / (weight + 1);
+                    weight = min(weight + 1, maxWeight);
+                }
+            }
+        }
+    }
+}
+
+inline kftype TSDFVolume::fetch(Point3f p)
+{
+    p *= voxelSizeInv;
+    return (volume +
+            cvRound(p.x)*edgeResolution*edgeResolution +
+            cvRound(p.y)*edgeResolution +
+            cvRound(p.z))->v;
+}
+
+inline kftype TSDFVolume::fetchi(Point3i p)
+{
+    return (volume +
+            p.x*edgeResolution*edgeResolution +
+            p.y*edgeResolution +
+            p.z)->v;
+}
+
+inline kftype TSDFVolume::interpolate(Point3f p)
+{
+    p *= voxelSizeInv;
+
+    if(p.x < 0 || p.x >= edgeResolution-1 ||
+       p.y < 0 || p.y >= edgeResolution-1 ||
+       p.z < 0 || p.z >= edgeResolution-1)
+        return std::numeric_limits<kftype>::quiet_NaN();
+
+    int xi = cvFloor(p.x), yi = cvFloor(p.y), zi = cvFloor(p.z);
+    float tx = p.x - xi, ty = p.y - yi, tz = p.z - zi;
+
+    kftype v = 0.f;
+
+    v += fetchi(Point3i(xi+0, yi+0, zi+0))*(1.f-tx)*(1.f-ty)*(1.f-tz);
+    v += fetchi(Point3i(xi+0, yi+0, zi+1))*(1.f-tx)*(1.f-ty)*(    tz);
+    v += fetchi(Point3i(xi+0, yi+1, zi+0))*(1.f-tx)*(    ty)*(1.f-tz);
+    v += fetchi(Point3i(xi+0, yi+1, zi+1))*(1.f-tx)*(    ty)*(    tz);
+    v += fetchi(Point3i(xi+1, yi+0, zi+0))*(    tx)*(1.f-ty)*(1.f-tz);
+    v += fetchi(Point3i(xi+1, yi+0, zi+1))*(    tx)*(1.f-ty)*(    tz);
+    v += fetchi(Point3i(xi+1, yi+1, zi+0))*(    tx)*(    ty)*(1.f-tz);
+    v += fetchi(Point3i(xi+1, yi+1, zi+1))*(    tx)*(    ty)*(    tz);
+
+    return v;
+}
+
+inline TSDFVolume::p3type TSDFVolume::getNormal(Point3f p)
+{
+    p3type n;
+    kftype fx1 = interpolate(Point3f(p.x + gradientDeltaFactor, p.y, p.z));
+    kftype fx0 = interpolate(Point3f(p.x - gradientDeltaFactor, p.y, p.z));
+    // no need to divide, will be normalized after
+    // n.x = (fx1-fx0)/gradientDeltaFactor;
+    n.x = fx1 - fx0;
+
+    kftype fy1 = interpolate(Point3f(p.x, p.y + gradientDeltaFactor, p.z));
+    kftype fy0 = interpolate(Point3f(p.x, p.y - gradientDeltaFactor, p.z));
+    n.y = fy1 - fy0;
+
+    kftype fz1 = interpolate(Point3f(p.x, p.y, p.z + gradientDeltaFactor));
+    kftype fz0 = interpolate(Point3f(p.x, p.y, p.z - gradientDeltaFactor));
+    n.z = fz1 - fz0;
+
+    return normalize(Vec<kftype, 3>(n));
+}
+
+
+void TSDFVolume::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points, Normals normals)
+{
+    CV_Assert(!points.empty() && !normals.empty());
+    CV_Assert(points.size() == normals.size());
+
+    const kftype qnan = std::numeric_limits<kftype>::quiet_NaN ();
+    p3type nan3(qnan, qnan, qnan);
+    float tstep = truncDist * raycastStepFactor;
+
+    // We do subtract voxel size to minimize checks after
+    // Note: origin of volume coordinate is placed
+    // in the center of voxel (0,0,0), not in the corner of the voxel!
+    Point3f boxMax(edgeSize-voxelSize, edgeSize-voxelSize, edgeSize-voxelSize);
+    Point3f boxMin;
+
+    Affine3f cam2vol = pose.inv() * cameraPose;
+    Affine3f vol2cam = cameraPose.inv() * pose;
+    Intr::Reprojector reproj = intrinsics.makeReprojector();
+
+    for(int y = 0; y < points.rows; y++)
+    {
+        p3type* ptsRow = points[y];
+        p3type* nrmRow = normals[y];
+
+        for(int x = 0; x < points.cols; x++)
+        {
+            p3type point = nan3, normal = nan3;
+
+            Point3f orig = cam2vol.translation();
+            Point3f dir = normalize(Vec<kftype, 3>(cam2vol.rotation() * reproj(p3type(x, y, 1.f))));
+
+            // compute intersection of ray with all six bbox planes
+            Vec<kftype, 3> rayinv(1.f/dir.x, 1.f/dir.y, 1.f/dir.z);
+            Point3f tbottom = rayinv.mul(boxMin - orig);
+            Point3f ttop    = rayinv.mul(boxMax - orig);
+
+            // re-order intersections to find smallest and largest on each axis
+            Point3f minAx(min(ttop.x, tbottom.x), min(ttop.y, tbottom.y), min(ttop.z, tbottom.z));
+            Point3f maxAx(max(ttop.x, tbottom.x), max(ttop.y, tbottom.y), max(ttop.z, tbottom.z));
+
+            // near clipping plane
+            const float clip = 0.f;
+            float tmin = max(max(max(minAx.x, minAx.y), max(minAx.x, minAx.z)), clip);
+            float tmax =     min(min(maxAx.x, maxAx.y), min(maxAx.x, maxAx.z));
+
+            if(tmin < tmax)
+            {
+                tmax -= tstep;
+                Point3f rayStep = dir * tstep;
+                Point3f next = orig + dir * tmin;
+                kftype fnext = fetch(next);
+
+                //raymarch
+                for(float t = tmin; t < tmax; t += tstep)
+                {
+                    float f = fnext;
+                    Point3f tp = next;
+                    next += rayStep;
+                    fnext = fetch(next);
+
+                    // when ray comes from inside of a surface
+                    if(f < 0.f && fnext > 0.f)
+                        break;
+
+                    // if ray penetrates a surface from outside
+                    // linear interpolate t between two f values
+                    if(f > 0.f && fnext < 0.f)
+                    {
+                        float ft   = interpolate(tp);
+                        float ftdt = interpolate(next);
+                        float ts = t - tstep*ft/(ftdt - ft);
+
+                        Point3f pv = orig + dir*ts;
+                        Point3f nv = getNormal(pv);
+
+                        if(!(cvIsNaN(nv.x) || cvIsNaN(nv.y) || cvIsNaN(nv.z)))
+                        {
+                            //convert pv and nv to camera space
+                            normal = vol2cam.rotation() * nv;
+                            point = vol2cam * pv;
+                        }
+                        break;
+                    }
+                }
+            }
+
+            ptsRow[x] = point;
+            nrmRow[x] = normal;
+        }
+    }
+}
+
+Points TSDFVolume::fetchCloud() const
 {
     //TODO: implement this
+    return Points();
 }
