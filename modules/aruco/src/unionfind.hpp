@@ -32,7 +32,6 @@ either expressed or implied, of the Regents of The University of Michigan.
 
 #ifndef _OPENCV_UNIONFIND_HPP_
 #define _OPENCV_UNIONFIND_HPP_
-#ifdef __cplusplus
 
 #include <stdint.h>
 #include <stdlib.h>
@@ -150,5 +149,4 @@ static inline uint32_t unionfind_connect(unionfind_t *uf, uint32_t aid, uint32_t
     }
 }
 }}
-#endif
 #endif

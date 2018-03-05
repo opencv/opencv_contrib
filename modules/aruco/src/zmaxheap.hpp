@@ -32,12 +32,10 @@ either expressed or implied, of the Regents of The University of Michigan.
 
 #ifndef _OPENCV_ZMAXHEAP_HPP_
 #define _OPENCV_ZMAXHEAP_HPP_
-#ifdef __cplusplus
 
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-#include <assert.h>
 
 namespace cv {
 namespace aruco {
@@ -60,5 +58,4 @@ void zmaxheap_add(zmaxheap_t *heap, void *p, float v);
 int zmaxheap_remove_max(zmaxheap_t *heap, void *p, float *v);
 
 }}
-#endif
 #endif

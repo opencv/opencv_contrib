@@ -32,9 +32,7 @@ either expressed or implied, of the Regents of The University of Michigan.
 
 #ifndef _OPENCV_ZARRAY_HPP_
 #define _OPENCV_ZARRAY_HPP_
-#ifdef __cplusplus
 
-#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -168,5 +166,4 @@ static inline void _zarray_set(zarray_t *za, int idx, const void *p, void *outp)
 
 }
 }
-#endif
 #endif

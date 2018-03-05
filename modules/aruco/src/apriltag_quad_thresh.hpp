@@ -36,9 +36,7 @@ either expressed or implied, of the Regents of The University of Michigan.
 
 #ifndef _OPENCV_APRIL_QUAD_THRESH_HPP_
 #define _OPENCV_APRIL_QUAD_THRESH_HPP_
-#ifdef __cplusplus
 
-#include "precomp.hpp"
 #include "opencv2/aruco.hpp"
 #include "unionfind.hpp"
 #include "zmaxheap.hpp"
@@ -87,8 +85,6 @@ struct line_fit_pt{
     double W; // total weight
 };
 
-static inline void ptsort(struct pt *pts, int sz);
-
 /**
  * lfps contains *cumulative* moments for N points, with
  * index j reflecting points [0,j] (inclusive).
@@ -129,19 +125,6 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
 
 /**
  *
- * @param nCidx0
- * @param nCidx1
- * @param nClusters
- * @param nW
- * @param nH
- * @param nquads
- * @param td
- * @param im
- */
-static void do_quad(int nCidx0, int nCidx1, zarray_t &nClusters, int nW, int nH, zarray_t *nquads, const Ptr<DetectorParameters> &td, const Mat im);
-
-/**
- *
  * @param mIm
  * @param parameters
  * @param mThresh
@@ -158,5 +141,4 @@ void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mT
 zarray_t *apriltag_quad_thresh(const Ptr<DetectorParameters> &parameters, const Mat & mImg, std::vector< std::vector< Point > > &contours);
 
 }}
-#endif
 #endif

@@ -129,8 +129,6 @@ static void _zmaxheap_ensure_capacity(zmaxheap_t *heap, int capacity)
 
 void zmaxheap_add(zmaxheap_t *heap, void *p, float v)
 {
-
-    assert (isfinite(v) && "zmaxheap_add: Trying to add non-finite number to heap.  NaN's prohibited, could allow INF with testing");
     _zmaxheap_ensure_capacity(heap, heap->size + 1);
 
     int idx = heap->size;
@@ -157,7 +155,7 @@ void zmaxheap_add(zmaxheap_t *heap, void *p, float v)
 // Removes the item in the heap at the given index.  Returns 1 if the
 // item existed. 0 Indicates an invalid idx (heap is smaller than
 // idx). This is mostly intended to be used by zmaxheap_remove_max.
-int zmaxheap_remove_index(zmaxheap_t *heap, int idx, void *p, float *v)
+static int zmaxheap_remove_index(zmaxheap_t *heap, int idx, void *p, float *v)
 {
     if (idx >= heap->size)
         return 0;

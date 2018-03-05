@@ -34,7 +34,7 @@ either expressed or implied, of the Regents of The University of Michigan.
 // because we use a fixed-point 16 bit integer representation with one
 // fractional bit.
 
-
+#include "precomp.hpp"
 #include "apriltag_quad_thresh.hpp"
 
 //#define APRIL_DEBUG
@@ -106,7 +106,8 @@ static inline void ptsort(struct pt *pts, int sz){
     if (stacksz > 1024)
         stacksz = 0;
 
-    struct pt *_tmp_stack = new struct pt[stacksz];
+    //struct pt *_tmp_stack = new struct pt[stacksz];
+    cv::AutoBuffer<struct pt> _tmp_stack(sz);
     struct pt *tmp = _tmp_stack;
 
     if (stacksz == 0) {
@@ -150,7 +151,6 @@ static inline void ptsort(struct pt *pts, int sz){
         free(tmp);
 
 #undef MERGE
-    delete[]_tmp_stack;
 }
 
 /**
@@ -336,7 +336,7 @@ int quad_segment_maxima(const Ptr<DetectorParameters> &td, int sz, struct line_f
 
     // apply a low-pass filter to errs
     if (1) {
-        double * y= new double[sz];
+        double y[sz];
 
         // how much filter to apply?
 
@@ -374,13 +374,12 @@ int quad_segment_maxima(const Ptr<DetectorParameters> &td, int sz, struct line_f
             y[iy] = acc;
         }
         memcpy(errs, y, sizeof(y));
-        delete[]y;
     }
 
-    //int maxima[sz];
-    int * maxima= new int[sz];
-    //double maxima_errs[sz];
-    double * maxima_errs= new double[sz];
+    //DELETE int maxima[sz];
+    cv::AutoBuffer<int> maxima(sz);
+    //DELETE double maxima_errs[sz];
+    cv::AutoBuffer<double> maxima_errs(sz);
     int nmaxima = 0;
 
     for (int i = 0; i < sz; i++) {
@@ -470,8 +469,6 @@ int quad_segment_maxima(const Ptr<DetectorParameters> &td, int sz, struct line_f
             }
         }
     }
-    delete[]maxima;
-    delete[]maxima_errs;
 
     if (best_error == HUGE_VALF)
         return 0;
@@ -518,6 +515,8 @@ int quad_segment_agg(int sz, struct line_fit_pt *lfps, int indices[4]){
 
         fit_line(lfps, sz, rv->left, rv->right, NULL, NULL, &rv->err);
 
+        //TODO is finite CV_Assert():
+        CV_DbgAssert (isfinite(-rv->err) && "zmaxheap_add: Trying to add non-finite number to heap.  NaN's prohibited, could allow INF with testing");
         zmaxheap_add(heap, &rv, -rv->err);
 
         segs[i].left = rv->left;
@@ -562,6 +561,8 @@ int quad_segment_agg(int sz, struct line_fit_pt *lfps, int indices[4]){
 
             fit_line(lfps, sz, child->left, child->right, NULL, NULL, &child->err);
 
+            //TODO is finite CV_Assert():
+            CV_DbgAssert (isfinite(-child->err) && "zmaxheap_add: Trying to add non-finite number to heap.  NaN's prohibited, could allow INF with testing");
             zmaxheap_add(heap, &child, -child->err);
         }
 
@@ -574,6 +575,8 @@ int quad_segment_agg(int sz, struct line_fit_pt *lfps, int indices[4]){
 
             fit_line(lfps, sz, child->left, child->right, NULL, NULL, &child->err);
 
+            //TODO is finite CV_Assert():
+            CV_DbgAssert (isfinite( -child->err) && "zmaxheap_add: Trying to add non-finite number to heap.  NaN's prohibited, could allow INF with testing");
             zmaxheap_add(heap, &child, -child->err);
         }
 
@@ -597,7 +600,7 @@ int quad_segment_agg(int sz, struct line_fit_pt *lfps, int indices[4]){
 }
 
 #define DO_UNIONFIND(dx, dy) if (im.data[y*s + dy*s + x + dx] == v) unionfind_connect(uf, y*w + x, y*w + dy*w + x + dx);
-static void do_unionfind_line(unionfind_t *uf, Mat &im, int h, int w, int s, int y){
+static void do_unionfind_line(unionfind_t *uf, Mat &im, int w, int s, int y){
     CV_Assert(y+1 < im.rows);
     CV_Assert(!im.empty());
 
@@ -749,9 +752,9 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
             int bucket = (nbuckets - 1) * (p->theta + CV_PI) / (2*CV_PI);
             CV_Assert(bucket >= 0 && bucket < nbuckets);
 
-            for (int i = 0; i < ASSOC; i++) {
-                if (v[bucket][i].theta == 0) {
-                    v[bucket][i] = *p;
+            for (int j = 0; j < ASSOC; j++) {
+                if (v[bucket][j].theta == 0) {
+                    v[bucket][j] = *p;
                     break;
                 }
             }
@@ -1108,7 +1111,7 @@ static void do_quad(int nCidx0, int nCidx1, zarray_t &nClusters, int nW, int nH,
  * @param mThresh
  */
 void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mThresh){
-    int w = mIm.cols, h = mIm.rows, s = mIm.step;
+    unsigned int w = mIm.cols, h = mIm.rows, s = mIm.step;
     CV_Assert(w < 32768);
     CV_Assert(h < 32768);
 
@@ -1252,7 +1255,7 @@ void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mT
     }
 
     // we skipped over the non-full-sized tiles above. Fix those now.
-    for (int y = 0; y < h; y++) {
+    for (unsigned int y = 0; y < h; y++) {
 
         // what is the first x coordinate we need to process in this row?
 
@@ -1269,7 +1272,7 @@ void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mT
         if (ty >= th)
             ty = th - 1;
 
-        for (int x = x0; x < w; x++) {
+        for (unsigned int x = x0; x < w; x++) {
             int tx = x / tilesz;
             if (tx >= tw)
                 tx = tw - 1;
@@ -1294,8 +1297,8 @@ void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mT
     // anything as far as I can tell.
     if (parameters->aprilTagDeglitch) {
         Mat tmp(h,w, mIm.type());
-        for (int y = 1; y + 1 < h; y++) {
-            for (int x = 1; x + 1 < w; x++) {
+        for (unsigned int y = 1; y + 1 < h; y++) {
+            for (unsigned int x = 1; x + 1 < w; x++) {
                 uint8_t max = 0;
                 for (int dy = -1; dy <= 1; dy++) {
                     for (int dx = -1; dx <= 1; dx++) {
@@ -1309,8 +1312,8 @@ void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mT
             }
         }
 
-        for (int y = 1; y + 1 < h; y++) {
-            for (int x = 1; x + 1 < w; x++) {
+        for (unsigned int y = 1; y + 1 < h; y++) {
+            for (unsigned int x = 1; x + 1 < w; x++) {
                 uint8_t min = 255;
                 for (int dy = -1; dy <= 1; dy++) {
                     for (int dx = -1; dx <= 1; dx++) {
@@ -1366,7 +1369,7 @@ zarray_t *apriltag_quad_thresh(const Ptr<DetectorParameters> &parameters, const 
 
     // TODO PARALLELIZE
     for (int y = 0; y < h - 1; y++) {
-        do_unionfind_line(uf, thold, h, w, ts, y);
+        do_unionfind_line(uf, thold, w, ts, y);
     }
 
     // XXX sizing??
