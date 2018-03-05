@@ -240,10 +240,10 @@ class WindowSceneImpl : public WindowScene
     Ptr<Rectangle2D> bgplane;
 
     Ogre::RenderTarget* frameSrc;
-
+    Ogre::RenderTarget* depthRTT;
 public:
     WindowSceneImpl(Ptr<Application> app, const String& _title, const Size& sz, int flags)
-        : title(_title), root(app->getRoot())
+        : title(_title), root(app->getRoot()), depthRTT(NULL)
     {
         if (!app->sceneMgr)
         {
@@ -468,6 +468,38 @@ public:
 
         // convert to OpenCV channel order
         cvtColor(out, out, dst_type == CV_8UC3 ? COLOR_RGB2BGR : COLOR_RGBA2BGRA);
+    }
+
+    void getDepth(OutputArray depth)
+    {
+        Camera* cam = sceneMgr->getCamera(title);
+        if (!depthRTT)
+        {
+            // render into an offscreen texture
+            // currently this draws everything twice as OGRE lacks depth texture attachments
+            TexturePtr tex = TextureManager::getSingleton().createManual(
+                title + "_Depth", RESOURCEGROUP_NAME, TEX_TYPE_2D, frameSrc->getWidth(),
+                frameSrc->getHeight(), 0, PF_DEPTH, TU_RENDERTARGET);
+            depthRTT = tex->getBuffer()->getRenderTarget();
+            depthRTT->addViewport(cam);
+            depthRTT->setAutoUpdated(false); // only update when requested
+        }
+
+        Mat tmp(depthRTT->getHeight(), depthRTT->getWidth(), CV_16U);
+        PixelBox pb(depthRTT->getWidth(), depthRTT->getHeight(), 1, PF_DEPTH, tmp.ptr());
+        depthRTT->update(false);
+        depthRTT->copyContentsToMemory(pb, pb);
+
+        // convert to NDC
+        double alpha = 2.0/std::numeric_limits<uint16>::max();
+        tmp.convertTo(depth, CV_64F, alpha, -1);
+
+        // convert to linear
+        float n = cam->getNearClipDistance();
+        float f = cam->getFarClipDistance();
+        Mat ndc = depth.getMat();
+        ndc = -ndc * (f - n) + (f + n);
+        ndc = (2 * f * n) / ndc;
     }
 
     void fixCameraYawAxis(bool useFixed, InputArray _up)
