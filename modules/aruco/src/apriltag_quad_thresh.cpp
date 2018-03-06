@@ -1106,7 +1106,7 @@ void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mT
     CV_Assert(w < 32768);
     CV_Assert(h < 32768);
 
-    CV_Assert(mThresh.step == s);
+    CV_Assert(mThresh.step == (unsigned)s);
 
     // The idea is to find the maximum and minimum values in a
     // window around each pixel. If it's a contrast-free region
@@ -1246,13 +1246,13 @@ void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mT
     }
 
     // we skipped over the non-full-sized tiles above. Fix those now.
-    for (unsigned int y = 0; y < h; y++) {
+    for (int y = 0; y < h; y++) {
 
         // what is the first x coordinate we need to process in this row?
 
         int x0;
 
-        if (y >= (unsigned)th*tilesz) {
+        if (y >= th*tilesz) {
             x0 = 0; // we're at the bottom; do the whole row.
         } else {
             x0 = tw*tilesz; // we only need to do the right most part.
@@ -1263,7 +1263,7 @@ void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mT
         if (ty >= th)
             ty = th - 1;
 
-        for (unsigned int x = x0; x < w; x++) {
+        for (int x = x0; x < w; x++) {
             int tx = x / tilesz;
             if (tx >= tw)
                 tx = tw - 1;
@@ -1288,8 +1288,8 @@ void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mT
     // anything as far as I can tell.
     if (parameters->aprilTagDeglitch) {
         Mat tmp(h,w, mIm.type());
-        for (unsigned int y = 1; y + 1 < h; y++) {
-            for (unsigned int x = 1; x + 1 < w; x++) {
+        for (int y = 1; y + 1 < h; y++) {
+            for (int x = 1; x + 1 < w; x++) {
                 uint8_t max = 0;
                 for (int dy = -1; dy <= 1; dy++) {
                     for (int dx = -1; dx <= 1; dx++) {
@@ -1302,8 +1302,8 @@ void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mT
             }
         }
 
-        for (unsigned int y = 1; y + 1 < h; y++) {
-            for (unsigned int x = 1; x + 1 < w; x++) {
+        for (int y = 1; y + 1 < h; y++) {
+            for (int x = 1; x + 1 < w; x++) {
                 uint8_t min = 255;
                 for (int dy = -1; dy <= 1; dy++) {
                     for (int dx = -1; dx <= 1; dx++) {
