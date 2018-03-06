@@ -498,9 +498,6 @@ TEST(CV_AprilTagDetectionSimple, algorithmic) {
 TEST(CV_ArucoDetectionSimple, algorithmic) {
     CV_ArucoDetectionSimple test;
     test.safe_run();
-
-    int aprilWithDecimate = 1;
-    test.safe_run(aprilWithDecimate);
 }
 
 TEST(CV_ArucoDetectionPerspective, algorithmic) {
