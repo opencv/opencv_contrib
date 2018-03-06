@@ -1102,7 +1102,7 @@ static void do_quad(int nCidx0, int nCidx1, zarray_t &nClusters, int nW, int nH,
  * @param mThresh
  */
 void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mThresh){
-    unsigned int w = mIm.cols, h = mIm.rows, s = mIm.step;
+    int w = mIm.cols, h = mIm.rows, s = mIm.step;
     CV_Assert(w < 32768);
     CV_Assert(h < 32768);
 
@@ -1252,7 +1252,7 @@ void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mT
 
         int x0;
 
-        if (y >= th*tilesz) {
+        if (y >= (unsigned)th*tilesz) {
             x0 = 0; // we're at the bottom; do the whole row.
         } else {
             x0 = tw*tilesz; // we only need to do the right most part.
@@ -1294,7 +1294,6 @@ void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mT
                 for (int dy = -1; dy <= 1; dy++) {
                     for (int dx = -1; dx <= 1; dx++) {
                         uint8_t v = mThresh.data[(y+dy)*s + x + dx];
-                        mThresh.data[(y+dy)*s + x + dx];
                         if (v > max)
                             max = v;
                     }

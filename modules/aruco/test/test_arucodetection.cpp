@@ -487,8 +487,13 @@ void CV_ArucoBitCorrection::run(int) {
     }
 }
 
+typedef CV_ArucoDetectionSimple CV_AprilTagDetectionSimple;
 
-
+TEST(CV_AprilTagDetectionSimple, algorithmic) {
+    CV_AprilTagDetectionSimple test;
+    int aprilWithDecimate = 1;
+    test.safe_run(aprilWithDecimate);
+}
 
 TEST(CV_ArucoDetectionSimple, algorithmic) {
     CV_ArucoDetectionSimple test;
