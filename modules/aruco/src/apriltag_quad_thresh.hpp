@@ -45,7 +45,7 @@ either expressed or implied, of the Regents of The University of Michigan.
 namespace cv {
 namespace aruco {
 
-static inline uint64_t u64hash_2(uint64_t x) {
+static inline int64_t u64hash_2(uint64_t x) {
     return (2654435761 * x) >> 32;
 }
 

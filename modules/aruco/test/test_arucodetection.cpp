@@ -99,7 +99,6 @@ void CV_ArucoDetectionSimple::run(int aprilDecimate) {
 
         if(aprilDecimate == 1){
             params->cornerRefinementMethod = aruco::CORNER_REFINE_APRILTAG;
-            params->aprilTagQuadDecimate   = aprilDecimate;
         }
 
         aruco::detectMarkers(img, dictionary, corners, ids, params);
@@ -491,8 +490,7 @@ typedef CV_ArucoDetectionSimple CV_AprilTagDetectionSimple;
 
 TEST(CV_AprilTagDetectionSimple, algorithmic) {
     CV_AprilTagDetectionSimple test;
-    int aprilWithDecimate = 1;
-    test.safe_run(aprilWithDecimate);
+    test.safe_run(1);
 }
 
 TEST(CV_ArucoDetectionSimple, algorithmic) {
