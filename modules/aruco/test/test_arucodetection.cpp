@@ -493,6 +493,9 @@ void CV_ArucoBitCorrection::run(int) {
 TEST(CV_ArucoDetectionSimple, algorithmic) {
     CV_ArucoDetectionSimple test;
     test.safe_run();
+
+    int aprilWithDecimate = 1;
+    test.safe_run(aprilWithDecimate);
 }
 
 TEST(CV_ArucoDetectionPerspective, algorithmic) {
@@ -508,11 +511,6 @@ TEST(CV_ArucoDetectionMarkerSize, algorithmic) {
 TEST(CV_ArucoBitCorrection, algorithmic) {
     CV_ArucoBitCorrection test;
     test.safe_run();
-}
-
-TEST(CV_ArucoDetectionSimple, algorithmic) {
-    CV_ArucoDetectionSimple test;
-    test.safe_run(1);
 }
 
 }} // namespace
