@@ -148,13 +148,9 @@ bool TrackerGOTURNImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     resize(targetPatch, targetPatch, Size(INPUT_SIZE, INPUT_SIZE), 0, 0, INTER_LINEAR_EXACT);
     resize(searchPatch, searchPatch, Size(INPUT_SIZE, INPUT_SIZE), 0, 0, INTER_LINEAR_EXACT);
 
-    //Mean Subtract
-    targetPatch = targetPatch - 128;
-    searchPatch = searchPatch - 128;
-
-    //Convert to Float type
-    Mat targetBlob = dnn::blobFromImage(targetPatch, 1.0f, Size(), Scalar(), false);
-    Mat searchBlob = dnn::blobFromImage(searchPatch, 1.0f, Size(), Scalar(), false);
+    //Convert to Float type and subtract mean
+    Mat targetBlob = dnn::blobFromImage(targetPatch, 1.0f, Size(), Scalar::all(128), false);
+    Mat searchBlob = dnn::blobFromImage(searchPatch, 1.0f, Size(), Scalar::all(128), false);
 
     net.setInput(targetBlob, "data1");
     net.setInput(searchBlob, "data2");
