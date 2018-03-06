@@ -18,7 +18,7 @@ TSDFVolume::TSDFVolume(int _res, float _size, cv::Affine3f _pose, float _truncDi
     pose = _pose;
     truncDist = _truncDist;
     raycastStepFactor = _raycastStepFactor;
-    gradientDeltaFactor = _gradientDeltaFactor;
+    gradientDeltaFactor = _gradientDeltaFactor*voxelSize;
     maxWeight = _maxWeight;
     reset();
 }
@@ -101,7 +101,7 @@ void TSDFVolume::integrate(Depth depth, float depthFactor, cv::Affine3f cameraPo
     }
 }
 
-inline kftype TSDFVolume::fetch(Point3f p)
+inline kftype TSDFVolume::fetchVoxel(Point3f p)
 {
     p *= voxelSizeInv;
     return (volume +
@@ -144,7 +144,7 @@ inline kftype TSDFVolume::interpolate(Point3f p)
     return v;
 }
 
-inline TSDFVolume::p3type TSDFVolume::getNormal(Point3f p)
+inline TSDFVolume::p3type TSDFVolume::getNormalVoxel(Point3f p)
 {
     p3type n;
     kftype fx1 = interpolate(Point3f(p.x + gradientDeltaFactor, p.y, p.z));
@@ -215,7 +215,7 @@ void TSDFVolume::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points
                 tmax -= tstep;
                 Point3f rayStep = dir * tstep;
                 Point3f next = orig + dir * tmin;
-                kftype fnext = fetch(next);
+                kftype fnext = fetchVoxel(next);
 
                 //raymarch
                 for(float t = tmin; t < tmax; t += tstep)
@@ -223,7 +223,7 @@ void TSDFVolume::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points
                     float f = fnext;
                     Point3f tp = next;
                     next += rayStep;
-                    fnext = fetch(next);
+                    fnext = fetchVoxel(next);
 
                     // when ray comes from inside of a surface
                     if(f < 0.f && fnext > 0.f)
@@ -238,7 +238,7 @@ void TSDFVolume::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points
                         float ts = t - tstep*ft/(ftdt - ft);
 
                         Point3f pv = orig + dir*ts;
-                        Point3f nv = getNormal(pv);
+                        Point3f nv = getNormalVoxel(pv);
 
                         if(!(cvIsNaN(nv.x) || cvIsNaN(nv.y) || cvIsNaN(nv.z)))
                         {

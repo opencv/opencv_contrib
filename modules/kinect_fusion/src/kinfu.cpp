@@ -194,7 +194,6 @@ bool KinFu::KinFuImpl::operator()(InputArray _depth)
             // use depth instead of distance
             //volume.integrate(newFrame.distance, pose, params.intr);
             volume.integrate(depth, params.depthFactor, pose, params.intr);
-
         }
 
         // points and normals are allocated for this raycast call

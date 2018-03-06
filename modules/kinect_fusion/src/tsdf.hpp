@@ -17,10 +17,10 @@ public:
     void integrate(Depth depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics);
     void raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points, Normals normals);
 
-    kftype fetch(cv::Point3f p);
+    kftype fetchVoxel(cv::Point3f p);
     kftype fetchi(cv::Point3i p);
     kftype interpolate(cv::Point3f p);
-    p3type getNormal(cv::Point3f p);
+    p3type getNormalVoxel(cv::Point3f p);
 
     Points fetchCloud() const;
 
