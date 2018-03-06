@@ -56,7 +56,7 @@ class CV_ArucoDetectionSimple : public cvtest::BaseTest {
 CV_ArucoDetectionSimple::CV_ArucoDetectionSimple() {}
 
 
-void CV_ArucoDetectionSimple::run(int) {
+void CV_ArucoDetectionSimple::run(int aprilDecimate) {
 
     Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
 
@@ -96,6 +96,12 @@ void CV_ArucoDetectionSimple::run(int) {
         vector< vector< Point2f > > corners;
         vector< int > ids;
         Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
+
+        if(aprilDecimate == 1){
+            params->cornerRefinementMethod = aruco::CORNER_REFINE_APRILTAG;
+            params->aprilTagQuadDecimate   = aprilDecimate;
+        }
+
         aruco::detectMarkers(img, dictionary, corners, ids, params);
 
         // check detection results
@@ -502,6 +508,11 @@ TEST(CV_ArucoDetectionMarkerSize, algorithmic) {
 TEST(CV_ArucoBitCorrection, algorithmic) {
     CV_ArucoBitCorrection test;
     test.safe_run();
+}
+
+TEST(CV_ArucoDetectionSimple, algorithmic) {
+    CV_ArucoDetectionSimple test;
+    test.safe_run(1);
 }
 
 }} // namespace

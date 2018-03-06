@@ -103,11 +103,7 @@ static inline void ptsort(struct pt *pts, int sz){
 
     // Use stack storage if it's not too big.
     int stacksz = sz;
-    if (stacksz > 1024)
-        stacksz = 0;
-
-    //struct pt *_tmp_stack = new struct pt[stacksz];
-    cv::AutoBuffer<struct pt> _tmp_stack(sz);
+    cv::AutoBuffer<struct pt, 1024> _tmp_stack(sz);
     struct pt *tmp = _tmp_stack;
 
     if (stacksz == 0) {
@@ -328,7 +324,7 @@ int quad_segment_maxima(const Ptr<DetectorParameters> &td, int sz, struct line_f
 
     //    printf("sz %5d, ksz %3d\n", sz, ksz);
 
-    double * errs= new double[sz];
+    std::vector<double> errs(sz);
 
     for (int i = 0; i < sz; i++) {
         fit_line(lfps, sz, (i + sz - ksz) % sz, (i + ksz) % sz, NULL, &errs[i], NULL);
@@ -336,7 +332,7 @@ int quad_segment_maxima(const Ptr<DetectorParameters> &td, int sz, struct line_f
 
     // apply a low-pass filter to errs
     if (1) {
-        double y[sz];
+        std::vector<double> y(sz);
 
         // how much filter to apply?
 
@@ -358,7 +354,7 @@ int quad_segment_maxima(const Ptr<DetectorParameters> &td, int sz, struct line_f
 
         // For default values of cutoff = 0.05, sigma = 3,
         // we have fsz = 17.
-        float f[fsz];
+        std::vector<float> f(fsz);
 
         for (int i = 0; i < fsz; i++) {
             int j = i - fsz / 2;
@@ -373,13 +369,11 @@ int quad_segment_maxima(const Ptr<DetectorParameters> &td, int sz, struct line_f
             }
             y[iy] = acc;
         }
-        memcpy(errs, y, sizeof(y));
+        copy(y.begin(), y.end(), errs.begin());
     }
 
-    //DELETE int maxima[sz];
-    cv::AutoBuffer<int> maxima(sz);
-    //DELETE double maxima_errs[sz];
-    cv::AutoBuffer<double> maxima_errs(sz);
+    std::vector<int> maxima(sz);
+    std::vector<double> maxima_errs(sz);
     int nmaxima = 0;
 
     for (int i = 0; i < sz; i++) {
@@ -389,7 +383,6 @@ int quad_segment_maxima(const Ptr<DetectorParameters> &td, int sz, struct line_f
             nmaxima++;
         }
     }
-    delete[]errs;
     // if we didn't get at least 4 maxima, we can't fit a quad.
     if (nmaxima < 4)
         return 0;
@@ -398,11 +391,10 @@ int quad_segment_maxima(const Ptr<DetectorParameters> &td, int sz, struct line_f
     int max_nmaxima = td->aprilTagMaxNmaxima;
 
     if (nmaxima > max_nmaxima) {
-        double maxima_errs_copy[nmaxima];
-        memcpy(maxima_errs_copy, maxima_errs, sizeof(maxima_errs_copy));
+        std::vector<double> maxima_errs_copy(maxima_errs.begin(), maxima_errs.begin()+nmaxima);
 
         // throw out all but the best handful of maxima. Sorts descending.
-        qsort(maxima_errs_copy, nmaxima, sizeof(double), err_compare_descending);
+        qsort(maxima_errs_copy.data(), nmaxima, sizeof(double), err_compare_descending);
 
         double maxima_thresh = maxima_errs_copy[max_nmaxima];
         int out = 0;
@@ -739,8 +731,7 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
         int nbuckets = 4*sz;
 
 #define ASSOC 2
-        struct pt v[nbuckets][ASSOC];
-        memset(v, 0, sizeof(v));
+        std::vector<std::vector<struct pt> > v(nbuckets, std::vector<struct pt>(ASSOC));
 
         // put each point into a bucket.
         for (int i = 0; i < sz; i++) {
