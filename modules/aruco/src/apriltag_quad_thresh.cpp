@@ -1103,7 +1103,7 @@ static void do_quad(int nCidx0, int nCidx1, zarray_t &nClusters, int nW, int nH,
  */
 void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mThresh){
     int w = mIm.cols, h = mIm.rows;
-    unsigned int s = mIm.step;
+    int s = (unsigned) mIm.step;
     CV_Assert(w < 32768);
     CV_Assert(h < 32768);
 
