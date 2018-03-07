@@ -3,13 +3,9 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include "test_precomp.hpp"
-
 #include <fstream>
 
-using namespace cv;
-using namespace cv::face;
-using namespace testing;
-using namespace std;
+namespace opencv_test { namespace {
 
 //
 // train on one person, and test against the other
@@ -140,3 +136,5 @@ TEST_P(MACE_, salted)
 
 
 INSTANTIATE_TEST_CASE_P(Face, MACE_, TESTSET_NAMES);
+
+}} // namespace
