@@ -38,6 +38,12 @@ enum MaterialProperty
     MATERIAL_TEXTURE
 };
 
+enum EntityProperty
+{
+    ENTITY_MATERIAL,
+    ENTITY_SCALE,
+};
+
 /**
  * A 3D viewport and the associated scene
  */
@@ -75,6 +81,17 @@ public:
      * @param name entity name
      */
     CV_WRAP virtual void removeEntity(const String& name) = 0;
+
+    /**
+     * set the property of an entity to the given value
+     * @param name entity name
+     * @param prop @ref EntityProperty
+     * @param value the value
+     */
+    CV_WRAP virtual void setEntityProperty(const String& name, int prop, const Scalar& value) = 0;
+
+    /// @overload
+    CV_WRAP virtual void setEntityProperty(const String& name, int prop, const String& value) = 0;
 
     /**
      * convenience method to visualize a camera position
