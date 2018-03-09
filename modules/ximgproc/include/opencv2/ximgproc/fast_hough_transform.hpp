@@ -153,10 +153,10 @@ CV_EXPORTS_W void FastHoughTransform( InputArray  src,
 * The function calculates coordinates of line segment corresponded by point in Hough space.
 */
 CV_EXPORTS_W Vec4i HoughPoint2Line(const Point &houghPoint,
-                                 InputArray  srcImgInfo,
-                                 int         angleRange = ARO_315_135,
-                                 int         makeSkew = HDO_DESKEW,
-                                 int         rules = RO_IGNORE_BORDERS );
+                                   InputArray  srcImgInfo,
+                                   int         angleRange = ARO_315_135,
+                                   int         makeSkew = HDO_DESKEW,
+                                   int         rules = RO_IGNORE_BORDERS );
 
 } }// namespace cv::ximgproc
 
