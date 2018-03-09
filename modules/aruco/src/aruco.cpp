@@ -83,7 +83,7 @@ DetectorParameters::DetectorParameters()
       aprilTagQuadSigma(0.0),
       aprilTagMinClusterPixels(5),
       aprilTagMaxNmaxima(10),
-      aprilTagCriticalRad(10* CV_PI_F /180),
+      aprilTagCriticalRad( (float)(10* CV_PI /180) ),
       aprilTagMaxLineFitMse(10.0),
       aprilTagMinWhiteBlackDiff(5),
       aprilTagDeglitch(0){}
