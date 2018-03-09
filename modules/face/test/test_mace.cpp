@@ -56,7 +56,7 @@ MaceTest::MaceTest(string _video, bool use_salt)
 
 vector<Rect> MaceTest::boxes(const string &fn)
 {
-    ifstream in(fn.c_str());
+    std::ifstream in(fn.c_str());
     int x,y,w,h;
     char sep;
     vector<Rect> _boxes;
