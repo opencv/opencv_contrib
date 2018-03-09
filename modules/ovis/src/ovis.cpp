@@ -427,6 +427,33 @@ public:
         node.setPosition(t);
     }
 
+    void setEntityProperty(const String& name, int prop, const String& value)
+    {
+        CV_Assert(prop == ENTITY_MATERIAL);
+        SceneNode& node = _getSceneNode(sceneMgr, name);
+
+        MaterialPtr mat = MaterialManager::getSingleton().getByName(value, RESOURCEGROUP_NAME);
+        CV_Assert(mat && "material not found");
+
+        Camera* cam = dynamic_cast<Camera*>(node.getAttachedObject(name));
+        if(cam)
+        {
+            cam->setMaterial(mat);
+            return;
+        }
+
+        Entity* ent = dynamic_cast<Entity*>(node.getAttachedObject(name));
+        CV_Assert(ent && "invalid entity");
+        ent->setMaterial(mat);
+    }
+
+    void setEntityProperty(const String& name, int prop, const Scalar& value)
+    {
+        CV_Assert(prop == ENTITY_SCALE);
+        SceneNode& node = _getSceneNode(sceneMgr, name);
+        node.setScale(value[0], value[1], value[2]);
+    }
+
     void _createBackground()
     {
         String name = "_" + sceneMgr->getName() + "_DefaultBackground";
