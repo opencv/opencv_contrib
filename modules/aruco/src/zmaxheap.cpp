@@ -1,4 +1,14 @@
-/* Copyright (C) 2013-2016, The Regents of The University of Michigan.
+/*
+By downloading, copying, installing or using the software you agree to this
+license. If you do not agree to this license, do not download, install,
+copy or use the software.
+
+                          License Agreement
+               For Open Source Computer Vision Library
+                       (3-clause BSD License)
+
+
+Copyright (C) 2013-2016, The Regents of The University of Michigan.
 All rights reserved.
 
 This software was developed in the APRIL Robotics Lab under the
@@ -13,6 +23,9 @@ modification, are permitted provided that the following conditions are met:
 2. Redistributions in binary form must reproduce the above copyright notice,
    this list of conditions and the following disclaimer in the documentation
    and/or other materials provided with the distribution.
+3. Neither the names of the copyright holders nor the names of the contributors
+   may be used to endorse or promote products derived from this software
+   without specific
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
