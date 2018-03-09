@@ -56,7 +56,7 @@ class CV_ArucoDetectionSimple : public cvtest::BaseTest {
 CV_ArucoDetectionSimple::CV_ArucoDetectionSimple() {}
 
 
-void CV_ArucoDetectionSimple::run(int aprilDecimate) {
+void CV_ArucoDetectionSimple::run(int) {
 
     Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
 
@@ -96,10 +96,6 @@ void CV_ArucoDetectionSimple::run(int aprilDecimate) {
         vector< vector< Point2f > > corners;
         vector< int > ids;
         Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
-
-        if(aprilDecimate == 1){
-            params->cornerRefinementMethod = aruco::CORNER_REFINE_APRILTAG;
-        }
 
         aruco::detectMarkers(img, dictionary, corners, ids, params);
 
@@ -250,7 +246,7 @@ class CV_ArucoDetectionPerspective : public cvtest::BaseTest {
 CV_ArucoDetectionPerspective::CV_ArucoDetectionPerspective() {}
 
 
-void CV_ArucoDetectionPerspective::run(int) {
+void CV_ArucoDetectionPerspective::run(int aprilDecimate) {
 
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
@@ -279,6 +275,11 @@ void CV_ArucoDetectionPerspective::run(int) {
                 Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
                 params->minDistanceToBorder = 1;
                 params->markerBorderBits = markerBorder;
+
+                if(aprilDecimate == 1){
+                        params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_APRILTAG;
+                }
+
                 aruco::detectMarkers(img, dictionary, corners, ids, params);
 
                 // check results
@@ -486,10 +487,10 @@ void CV_ArucoBitCorrection::run(int) {
     }
 }
 
-typedef CV_ArucoDetectionSimple CV_AprilTagDetectionSimple;
+typedef CV_ArucoDetectionPerspective CV_AprilTagDetectionPerspective;
 
-TEST(CV_AprilTagDetectionSimple, algorithmic) {
-    CV_AprilTagDetectionSimple test;
+TEST(CV_AprilTagDetectionPerspective, algorithmic) {
+    CV_AprilTagDetectionPerspective test;
     test.safe_run(1);
 }
 

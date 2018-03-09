@@ -79,7 +79,7 @@ DetectorParameters::DetectorParameters()
       maxErroneousBitsInBorderRate(0.35),
       minOtsuStdDev(5.0),
       errorCorrectionRate(0.6),
-      aprilTagQuadDecimate(0),
+      aprilTagQuadDecimate(0.0),
       aprilTagQuadSigma(0.0),
       aprilTagMinClusterPixels(5),
       aprilTagMaxNmaxima(10),

@@ -1058,7 +1058,6 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
 static void do_quad(int nCidx0, int nCidx1, zarray_t &nClusters, int nW, int nH, zarray_t *nquads, const Ptr<DetectorParameters> &td, const Mat im){
 
     CV_Assert(nquads != NULL);
-    CV_Assert(&nClusters != NULL);
 
     //struct quad_task *task = (struct quad_task*) p;
 
