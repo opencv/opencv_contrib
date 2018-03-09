@@ -46,7 +46,7 @@ namespace cv {
 namespace aruco {
 
 static inline uint32_t u64hash_2(uint64_t x) {
-    return uint32_t((2654435761 * x) >> 32);
+    return uint32_t((2654435761UL * x) >> 32);
 }
 
 struct uint64_zarray_entry{
