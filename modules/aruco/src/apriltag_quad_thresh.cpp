@@ -115,22 +115,14 @@ static inline void ptsort(struct pt *pts, int sz){
     // a merge sort with temp storage.
 
     // Use stack storage if it's not too big.
-    int stacksz = sz;
     cv::AutoBuffer<struct pt, 1024> _tmp_stack(sz);
-    struct pt *tmp = _tmp_stack;
-
-    if (stacksz == 0) {
-        // it was too big, malloc it instead.
-        tmp = (struct pt*)malloc(sizeof(struct pt) * sz);
-    }
-
-    memcpy(tmp, pts, sizeof(struct pt) * sz);
+    memcpy(_tmp_stack, pts, sizeof(struct pt) * sz);
 
     int asz = sz/2;
     int bsz = sz - asz;
 
-    struct pt *as = &tmp[0];
-    struct pt *bs = &tmp[asz];
+    struct pt *as = &_tmp_stack[0];
+    struct pt *bs = &_tmp_stack[asz];
 
     ptsort(as, asz);
     ptsort(bs, bsz);
@@ -155,9 +147,6 @@ static inline void ptsort(struct pt *pts, int sz){
         memcpy(&pts[outpos], &as[apos], (asz-apos)*sizeof(struct pt));
     if (bpos < bsz)
         memcpy(&pts[outpos], &bs[bpos], (bsz-bpos)*sizeof(struct pt));
-
-    if (stacksz == 0)
-        free(tmp);
 
 #undef MERGE
 }
@@ -961,7 +950,7 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
                 double W10 = -A10 / det, W11 = A00 / det;
                 double L1 = W10*B0 + W11*B1;
 
-                double x = lines[(i+1)&3][0] - L1*A10;
+                double x = lines[(i+1)&3][0] - L1*A01;
                 double y = lines[(i+1)&3][1] - L1*A11;
                 CV_Assert(fabs(x - quad->p[i][0]) < 0.001 &&
                         fabs(y - quad->p[i][1]) < 0.001);
