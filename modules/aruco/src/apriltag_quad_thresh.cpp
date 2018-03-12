@@ -686,7 +686,6 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
         p->theta = cv::fastAtan2((float)dy, (float)dx) * (float)(CV_PI/180);
 
         dot += dx*p->gx + dy*p->gy;
-        //        p->theta = terrible_atan2(dy, dx);
     }
 
     // Ensure that the black border is inside the white border.
@@ -932,19 +931,21 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
             // We want the unit vector, so we need the perpendiculars. Thus, below
             // we have swapped the x and y components and flipped the y components.
 
-            double A00 =  lines[i][3],  A01 = -lines[(i+1)&3][3];
-            double A10 =  -lines[i][2],  A11 = lines[(i+1)&3][2];
-            double B0 = -lines[i][0] + lines[(i+1)&3][0];
-            double B1 = -lines[i][1] + lines[(i+1)&3][1];
+            const int i1 = (i + 1) & 3;
+            double A00 =  lines[i][3],  A01 = -lines[i1][3];
+            double A10 =  -lines[i][2],  A11 = lines[i1][2];
+            double B0 = -lines[i][0] + lines[i1][0];
+            double B1 = -lines[i][1] + lines[i1][1];
 
             double det = A00 * A11 - A10 * A01;
-
-            // inverse.
-            double W00 = A11 / det, W01 = -A01 / det;
             if (fabs(det) < 0.001) {
                 res = 0;
                 goto finish;
             }
+
+            // inverse.
+            double det_inv = 1.0 / det;
+            double W00 = A11 * det_inv, W01 = -A01 * det_inv;
 
             // solve
             double L0 = W00*B0 + W01*B1;
@@ -953,17 +954,20 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
             quad->p[i][0] = (float)(lines[i][0] + L0*A00);
             quad->p[i][1] = (float)(lines[i][1] + L0*A10);
 
-            if (0) {
+#if !defined(NDEBUG)
+            {
                 // we should get the same intersection starting
                 // from point p1 and moving L1*u1.
-                double W10 = -A10 / det, W11 = A00 / det;
+                double W10 = -A10 * det_inv, W11 = A00 * det_inv;
                 double L1 = W10*B0 + W11*B1;
 
-                double x = lines[(i+1)&3][0] - L1*A01;
-                double y = lines[(i+1)&3][1] - L1*A11;
-                CV_Assert(fabs(x - quad->p[i][0]) < 0.001 &&
+                double x = lines[i1][0] - L1*A01;
+                double y = lines[i1][1] - L1*A11;
+
+                CV_Assert(fabs(x - quad->p[i][0]) < 0.001,
                         fabs(y - quad->p[i][1]) < 0.001);
             }
+#endif // NDEBUG
 
             res = 1;
         }
@@ -1243,14 +1247,7 @@ void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mT
                     int x = tx*tilesz + dx;
 
                     uint8_t v = mIm.data[y*s+x];
-                    if (v > thresh){
-                        //threshim->buf[y*s+x] = 255;
-                        mThresh.data[y*s+x] = 255;
-                    }
-                    else{
-                        //threshim->buf[y*s+x] = 0;
-                        mThresh.data[y*s+x] = 0;
-                    }
+                    mThresh.data[y*s+x] = (v > thresh) ? 255 : 0;
                 }
             }
         }
