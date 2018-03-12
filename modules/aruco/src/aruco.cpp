@@ -1007,9 +1007,8 @@ static void _apriltag(Mat im_orig, const Ptr<DetectorParameters> & _params, std:
 
         float sigma = fabsf((float) _params->aprilTagQuadSigma);
 
-        int ksz = 4 * sigma; // 2 std devs in each direction
-        if ((ksz & 1) == 0)
-            ksz++;
+        int ksz = cvFloor(4 * sigma); // 2 std devs in each direction
+        ksz |= 1; // make odd number
 
         if (ksz > 1) {
             if (_params->aprilTagQuadSigma > 0)

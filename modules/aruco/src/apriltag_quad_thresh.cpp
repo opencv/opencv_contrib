@@ -59,7 +59,11 @@ either expressed or implied, of the Regents of The University of Michigan.
 namespace cv {
 namespace aruco {
 
-static inline void ptsort(struct pt *pts, int sz){
+static void ptsort_(struct pt *pts, int sz); // forward delaration
+
+static inline
+void ptsort(struct pt *pts, int sz)
+{
 #define MAYBE_SWAP(arr,apos,bpos)                                   \
         if (arr[apos].theta > arr[bpos].theta) {                        \
             tmp = arr[apos]; arr[apos] = arr[bpos]; arr[bpos] = tmp;    \
@@ -112,6 +116,11 @@ static inline void ptsort(struct pt *pts, int sz){
 
 #undef MAYBE_SWAP
 
+    ptsort_(pts, sz);
+}
+
+void ptsort_(struct pt *pts, int sz)
+{
     // a merge sort with temp storage.
 
     // Use stack storage if it's not too big.
@@ -128,9 +137,9 @@ static inline void ptsort(struct pt *pts, int sz){
     ptsort(bs, bsz);
 
 #define MERGE(apos,bpos)                        \
-        if (as[apos].theta < bs[bpos].theta)        \
+    if (as[apos].theta < bs[bpos].theta)        \
         pts[outpos++] = as[apos++];             \
-        else                                        \
+    else                                        \
         pts[outpos++] = bs[bpos++];
 
     int apos = 0, bpos = 0, outpos = 0;
@@ -220,7 +229,7 @@ void fit_line(struct line_fit_pt *lfps, int sz, int i0, int i1, double *lineparm
         //
         // XXX this was using the double-precision atan2. Was there a case where
         // we needed that precision? Seems doubtful.
-        double normal_theta = .5 * atan2f(-2*Cxy, (Cyy - Cxx));
+        float normal_theta = float(.5f * (CV_PI / 180)) * cv::fastAtan2((float)(-2*Cxy), (float)(Cyy - Cxx));
         nx = cosf(normal_theta);
         ny = sinf(normal_theta);
     } else {
@@ -233,7 +242,7 @@ void fit_line(struct line_fit_pt *lfps, int sz, int i0, int i1, double *lineparm
             nx = 1;
             ny = 0;
         } else {
-            double norm = sqrtf(ty*ty + tx*tx);
+            float norm = sqrtf((float)(ty*ty + tx*tx));
             tx /= norm;
 
             // ty is now sin(2theta)
@@ -248,8 +257,8 @@ void fit_line(struct line_fit_pt *lfps, int sz, int i0, int i1, double *lineparm
                 nx = 0;
             } else {
                 // half angle formula
-                ny = sqrtf((1 - tx)/2);
-                nx = sqrtf((1 + tx)/2);
+                ny = sqrtf((1.0f - (float)tx)*0.5f);
+                nx = sqrtf((1.0f + (float)tx)*0.5f);
 
                 // pick a consistent branch cut
                 if (ty < 0)
@@ -351,7 +360,7 @@ int quad_segment_maxima(const Ptr<DetectorParameters> &td, int sz, struct line_f
 
         // XXX Tunable (though not super useful to change)
         double cutoff = 0.05;
-        int fsz = sqrt(-log(cutoff)*2*sigma*sigma) + 1;
+        int fsz = cvFloor(sqrt(-log(cutoff)*2*sigma*sigma)) + 1;
         fsz = 2*fsz + 1;
 
         // For default values of cutoff = 0.05, sigma = 3,
@@ -360,7 +369,7 @@ int quad_segment_maxima(const Ptr<DetectorParameters> &td, int sz, struct line_f
 
         for (int i = 0; i < fsz; i++) {
             int j = i - fsz / 2;
-            f[i] = exp(-j*j/(2*sigma*sigma));
+            f[i] = (float)exp(-j*j/(2*sigma*sigma));
         }
 
         for (int iy = 0; iy < sz; iy++) {
@@ -511,7 +520,7 @@ int quad_segment_agg(int sz, struct line_fit_pt *lfps, int indices[4]){
 
         //TODO is finite CV_Assert():
         CV_DbgAssert (isfinite(-rv->err) && "zmaxheap_add: Trying to add non-finite number to heap.  NaN's prohibited, could allow INF with testing");
-        zmaxheap_add(heap, &rv, -rv->err);
+        zmaxheap_add(heap, &rv, (float)-rv->err);
 
         segs[i].left = rv->left;
         segs[i].right = rv->right;
@@ -557,7 +566,7 @@ int quad_segment_agg(int sz, struct line_fit_pt *lfps, int indices[4]){
 
             //TODO is finite CV_Assert():
             CV_DbgAssert (isfinite(-child->err) && "zmaxheap_add: Trying to add non-finite number to heap.  NaN's prohibited, could allow INF with testing");
-            zmaxheap_add(heap, &child, -child->err);
+            zmaxheap_add(heap, &child, (float)-child->err);
         }
 
         // create the join to the right
@@ -571,7 +580,7 @@ int quad_segment_agg(int sz, struct line_fit_pt *lfps, int indices[4]){
 
             //TODO is finite CV_Assert():
             CV_DbgAssert (isfinite( -child->err) && "zmaxheap_add: Trying to add non-finite number to heap.  NaN's prohibited, could allow INF with testing");
-            zmaxheap_add(heap, &child, -child->err);
+            zmaxheap_add(heap, &child, (float)-child->err);
         }
 
         // we now have one less vertex
@@ -674,7 +683,7 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
         double dx = p->x - cx;
         double dy = p->y - cy;
 
-        p->theta = atan2f(dy, dx);
+        p->theta = cv::fastAtan2((float)dy, (float)dx) * (float)(CV_PI/180);
 
         dot += dx*p->gx + dy*p->gy;
         //        p->theta = terrible_atan2(dy, dx);
@@ -742,7 +751,7 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
 
             CV_Assert(p->theta >= -CV_PI && p->theta <= CV_PI);
 
-            int bucket = (nbuckets - 1) * (p->theta + CV_PI) / (2*CV_PI);
+            int bucket = cvFloor((nbuckets - 1) * (p->theta + CV_PI) / (2*CV_PI));
             CV_Assert(bucket >= 0 && bucket < nbuckets);
 
             for (int j = 0; j < ASSOC; j++) {
@@ -793,13 +802,13 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
             double W;
 
             for (int dy = -1; dy <= 1; dy++) {
-                int iy = y + dy;
+                int iy = cvFloor(y + dy);
 
                 if (iy < 0 || iy + 1 >= im.rows)
                     continue;
 
                 for (int dx = -1; dx <= 1; dx++) {
-                    int ix = x + dx;
+                    int ix = cvFloor(x + dx);
 
                     if (ix < 0 || ix + 1 >= im.cols)
                         continue;
@@ -810,7 +819,7 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
                     int grad_y = im.data[(iy+1) * im.cols + ix] -
                             im.data[(iy-1) * im.cols + ix];
 
-                    W = sqrtf(grad_x*grad_x + grad_y*grad_y) + 1;
+                    W = sqrtf(float(grad_x*grad_x + grad_y*grad_y)) + 1;
 
                     //                    double fx = x + dx, fy = y + dy;
                     double fx = ix + .5, fy = iy + .5;
@@ -827,7 +836,7 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
             double delta = 0.5; // adjust for pixel center bias
             double x = p->x * .5 + delta;
             double y = p->y * .5 + delta;
-            int ix = x, iy = y;
+            int ix = cvFloor(x), iy = cvFloor(y);
             double W = 1;
 
             if (ix > 0 && ix+1 < im.cols && iy > 0 && iy+1 < im.rows) {
@@ -872,8 +881,8 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
             struct pt *p;
             _zarray_get_volatile(cluster, indices[i], &p);
 
-            quad->p[i][0] = .5*p->x; // undo fixed-point arith.
-            quad->p[i][1] = .5*p->y;
+            quad->p[i][0] = (float)(.5*p->x); // undo fixed-point arith.
+            quad->p[i][1] = (float)(.5*p->y);
         }
 
         res = 1;
@@ -941,8 +950,8 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
             double L0 = W00*B0 + W01*B1;
 
             // compute intersection
-            quad->p[i][0] = lines[i][0] + L0*A00;
-            quad->p[i][1] = lines[i][1] + L0*A10;
+            quad->p[i][0] = (float)(lines[i][0] + L0*A00);
+            quad->p[i][1] = (float)(lines[i][1] + L0*A10);
 
             if (0) {
                 // we should get the same intersection starting
@@ -972,11 +981,11 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
             //length[i] = sqrt(
             //                 sq(quad->p[idxb][0] - quad->p[idxa][0])
             //               + sq(quad->p[idxb][1] - quad->p[idxa][1]));
-            int sq1 =quad->p[idxb][0] - quad->p[idxa][0];
-            sq1 = sq1*sq1;
-            int sq2 =quad->p[idxb][1] - quad->p[idxa][1];
-            sq2 = sq2*sq2;
-            length[i] = sqrt(sq1+sq2);
+            double sq1 = quad->p[idxb][0] - quad->p[idxa][0];
+            sq1 = sq1 * sq1;
+            double sq2 = quad->p[idxb][1] - quad->p[idxa][1];
+            sq2 = sq2 * sq2;
+            length[i] = sqrt(sq1 + sq2);
         }
         p = (length[0] + length[1] + length[2]) / 2;
 
@@ -990,11 +999,11 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
             //length[i] = sqrt(
             //                  sq(quad->p[idxb][0] - quad->p[idxa][0])
             //                + sq(quad->p[idxb][1] - quad->p[idxa][1]));
-            int sq1 = quad->p[idxb][0] - quad->p[idxa][0];
-            sq1 = sq1*sq1;
-            int sq2 = quad->p[idxb][1] - quad->p[idxa][1];
-            sq2 = sq2*sq2;
-            length[i] = sqrt(sq1+sq2);
+            double sq1 = quad->p[idxb][0] - quad->p[idxa][0];
+            sq1 = sq1 * sq1;
+            double sq2 = quad->p[idxb][1] - quad->p[idxa][1];
+            sq2 = sq2 * sq2;
+            length[i] = sqrt(sq1 + sq2);
         }
         p = (length[0] + length[1] + length[2]) / 2;
 
@@ -1203,11 +1212,11 @@ void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mT
     for (int ty = 0; ty < th; ty++) {
         for (int tx = 0; tx < tw; tx++) {
 
-            int min = im_min[ty*tw + tx];
-            int max = im_max[ty*tw + tx];
+            int min_ = im_min[ty*tw + tx];
+            int max_ = im_max[ty*tw + tx];
 
             // low contrast region? (no edges)
-            if (max - min < parameters->aprilTagMinWhiteBlackDiff) {
+            if (max_ - min_ < parameters->aprilTagMinWhiteBlackDiff) {
                 for (int dy = 0; dy < tilesz; dy++) {
                     int y = ty*tilesz + dy;
 
@@ -1225,7 +1234,7 @@ void threshold(const Mat mIm, const Ptr<DetectorParameters> &parameters, Mat& mT
 
             // argument for biasing towards dark; specular highlights
             // can be substantially brighter than white tag parts
-            uint8_t thresh = min + (max - min) / 2;
+            uint8_t thresh = saturate_cast<uint8_t>((max_ + min_) / 2);
 
             for (int dy = 0; dy < tilesz; dy++) {
                 int y = ty*tilesz + dy;
@@ -1427,12 +1436,12 @@ zarray_t *apriltag_quad_thresh(const Ptr<DetectorParameters> &parameters, const 
         }                                                   \
         \
         struct pt p;                                        \
-        p.x = 2*x + dx;                                     \
-        p.y = 2*y + dy;                                     \
-        p.gx = dx*((int) v1-v0);                            \
-        p.gy = dy*((int) v1-v0);                            \
+        p.x = saturate_cast<uint16_t>(2*x + dx);            \
+        p.y = saturate_cast<uint16_t>(2*y + dy);            \
+        p.gx = saturate_cast<uint16_t>(dx*((int) v1-v0));   \
+        p.gy = saturate_cast<uint16_t>(dy*((int) v1-v0));   \
         _zarray_add(entry->cluster, &p);                    \
-        }                                                       \
+        }                                                   \
     }
 
     // do 4 connectivity. NB: Arguments must be [-1, 1] or we'll overflow .gx, .gy
