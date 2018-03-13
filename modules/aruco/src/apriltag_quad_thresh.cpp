@@ -500,9 +500,12 @@ int quad_segment_agg(int sz, struct line_fit_pt *lfps, int indices[4]){
 
     int rvalloc_pos = 0;
     int rvalloc_size = 3*sz;
-    struct remove_vertex *rvalloc = (struct remove_vertex*)calloc(rvalloc_size, sizeof(struct remove_vertex));
-
-    struct segment *segs = (struct segment*)calloc(sz, sizeof(struct segment));
+    cv::AutoBuffer<struct remove_vertex, 0> rvalloc_(std::max(1, rvalloc_size));
+    memset(rvalloc_, 0, sizeof(rvalloc_[0]) * rvalloc_.size()); // TODO Add AutoBuffer zero fill
+    struct remove_vertex *rvalloc = rvalloc_;
+    cv::AutoBuffer<struct segment, 0> segs_(std::max(1, sz)); // TODO Add AutoBuffer zero fill
+    memset(segs_, 0, sizeof(segs_[0]) * segs_.size());
+    struct segment *segs = segs_;
 
     // populate with initial entries
     for (int i = 0; i < sz; i++) {
@@ -587,7 +590,6 @@ int quad_segment_agg(int sz, struct line_fit_pt *lfps, int indices[4]){
         nvertices--;
     }
 
-    free(rvalloc);
     zmaxheap_destroy(heap);
 
     int idx = 0;
@@ -596,8 +598,6 @@ int quad_segment_agg(int sz, struct line_fit_pt *lfps, int indices[4]){
             indices[idx++] = i;
         }
     }
-
-    free(segs);
 
     return 1;
 }
@@ -783,7 +783,9 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
     // Step 2. Precompute statistics that allow line fit queries to be
     // efficiently computed for any contiguous range of indices.
 
-    struct line_fit_pt *lfps = (struct line_fit_pt*)calloc(sz, sizeof(struct line_fit_pt));
+    cv::AutoBuffer<struct line_fit_pt, 64> lfps_(sz);
+    memset(lfps_, 0, sizeof(lfps_[0]) * lfps_.size()); // TODO Add AutoBuffer zero fill
+    struct line_fit_pt *lfps = lfps_;
 
     for (int i = 0; i < sz; i++) {
         struct pt *p;
@@ -1053,8 +1055,6 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
     }
 
     finish:
-
-    free(lfps);
 
     return res;
 }
