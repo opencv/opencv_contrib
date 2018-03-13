@@ -519,7 +519,7 @@ int quad_segment_agg(int sz, struct line_fit_pt *lfps, int indices[4]){
         fit_line(lfps, sz, rv->left, rv->right, NULL, NULL, &rv->err);
 
         //TODO is finite CV_Assert():
-        CV_DbgAssert (isfinite(-rv->err) && "zmaxheap_add: Trying to add non-finite number to heap.  NaN's prohibited, could allow INF with testing");
+        CV_DbgAssert (!cvIsNaN(-rv->err) && "zmaxheap_add: Trying to add non-finite number to heap.  NaN's prohibited, could allow INF with testing");
         zmaxheap_add(heap, &rv, (float)-rv->err);
 
         segs[i].left = rv->left;
@@ -565,7 +565,7 @@ int quad_segment_agg(int sz, struct line_fit_pt *lfps, int indices[4]){
             fit_line(lfps, sz, child->left, child->right, NULL, NULL, &child->err);
 
             //TODO is finite CV_Assert():
-            CV_DbgAssert (isfinite(-child->err) && "zmaxheap_add: Trying to add non-finite number to heap.  NaN's prohibited, could allow INF with testing");
+            CV_DbgAssert (!cvIsNaN(-child->err) && "zmaxheap_add: Trying to add non-finite number to heap.  NaN's prohibited, could allow INF with testing");
             zmaxheap_add(heap, &child, (float)-child->err);
         }
 
@@ -579,7 +579,7 @@ int quad_segment_agg(int sz, struct line_fit_pt *lfps, int indices[4]){
             fit_line(lfps, sz, child->left, child->right, NULL, NULL, &child->err);
 
             //TODO is finite CV_Assert():
-            CV_DbgAssert (isfinite( -child->err) && "zmaxheap_add: Trying to add non-finite number to heap.  NaN's prohibited, could allow INF with testing");
+            CV_DbgAssert (!cvIsNaN(-child->err) && "zmaxheap_add: Trying to add non-finite number to heap.  NaN's prohibited, could allow INF with testing");
             zmaxheap_add(heap, &child, (float)-child->err);
         }
 
