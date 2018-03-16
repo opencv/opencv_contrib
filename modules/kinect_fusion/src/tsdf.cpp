@@ -167,7 +167,8 @@ inline kftype TSDFVolume::interpolate(Point3f p) const
 {
     p *= voxelSizeInv;
 
-    if(p.x < 0 || p.x >= edgeResolution-1 ||
+    if(isNaN(p)||
+       p.x < 0 || p.x >= edgeResolution-1 ||
        p.y < 0 || p.y >= edgeResolution-1 ||
        p.z < 0 || p.z >= edgeResolution-1)
         return std::numeric_limits<kftype>::quiet_NaN();
@@ -239,6 +240,7 @@ void TSDFVolume::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points
             p3type point = nan3, normal = nan3;
 
             Point3f orig = cam2vol.translation();
+            // direction through pixel in volume space
             Point3f dir = normalize(Vec<kftype, 3>(cam2vol.rotation() * reproj(p3type(x, y, 1.f))));
 
             // compute intersection of ray with all six bbox planes
@@ -260,7 +262,7 @@ void TSDFVolume::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points
                 tmax -= tstep;
                 Point3f rayStep = dir * tstep;
                 Point3f next = orig + dir * tmin;
-                kftype fnext = fetchVoxel(next);
+                kftype fnext = interpolate(next);
 
                 //raymarch
                 for(float t = tmin; t < tmax; t += tstep)
@@ -268,7 +270,10 @@ void TSDFVolume::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points
                     float f = fnext;
                     Point3f tp = next;
                     next += rayStep;
+                    //trying to optimize
                     fnext = fetchVoxel(next);
+                    if(fnext != f)
+                        fnext = interpolate(next);
 
                     // when ray comes from inside of a surface
                     if(f < 0.f && fnext > 0.f)
@@ -285,7 +290,7 @@ void TSDFVolume::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points
                         Point3f pv = orig + dir*ts;
                         Point3f nv = getNormalVoxel(pv);
 
-                        if(!(cvIsNaN(nv.x) || cvIsNaN(nv.y) || cvIsNaN(nv.z)))
+                        if(!isNaN(nv))
                         {
                             //convert pv and nv to camera space
                             normal = vol2cam.rotation() * nv;
