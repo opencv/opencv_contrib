@@ -2,10 +2,6 @@
 
 #include "precomp.hpp"
 
-//DEBUG!
-#include <iostream>
-#include "opencv2/viz.hpp"
-
 namespace cv {
 namespace kinfu {
 
@@ -82,7 +78,7 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
 
     p.tsdf_min_camera_movement = 0.f; //meters, disabled
 
-    //DEBUG!
+    // default value
     //p.volumeDims = 512;  //number of voxels
     p.volumeDims = 128;
 
@@ -101,17 +97,7 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
 
     //TODO: enable when (if) needed
     /*
-
     p.icp_truncate_depth_dist = 0.f;        //meters, disabled
-    p.icp_dist_thres = 0.1f;                //meters
-    p.icp_angle_thres = deg2rad(30.f); //radians
-    p.icp_iter_num.assign(iters, iters + levels);
-
-
-
-
-    //p.light_pose = p.volume_pose.translation()/4; //meters
-    p.light_pose = Vec3f::all(0.f); //meters
     */
 
     return p;
@@ -214,42 +200,6 @@ bool KinFu::KinFuImpl::operator()(InputArray _depth)
         volume.raycast(pose, params.intr, p, n);
         // build a pyramid of points and normals
         frame = Frame(p, n, params.pyramidLevels);
-
-
-        //DEBUG!
-        viz::Viz3d window("tsdf");
-        window.showWidget("xyz", viz::WCoordinateSystem());
-        std::vector<Point3f> points;
-        std::vector<uint8_t> colors;
-        float voxelSize = (params.volumeSize/params.volumeDims);
-        for(int x = 0; x < params.volumeDims; x++)
-        {
-            for(int y = 0; y < params.volumeDims; y++)
-            {
-                for(int z = 0; z < params.volumeDims; z++)
-                {
-                    Voxel& v = *(volume.volume + x*params.volumeDims*params.volumeDims + y*params.volumeDims + z);
-                    Point3f p = params.volumePose * Point3f(x*voxelSize, y*voxelSize, z*voxelSize);
-                    //if(v.v != 1 && v.weight != 0)
-                    if(v.weight != 0)
-                    {
-                        points.push_back(p);
-                        colors.push_back(255*(1-abs(v.v)));
-                    }
-                }
-            }
-        }
-        viz::WCloud func(points, colors);
-        //window.showWidget("tsdf", func);
-        int npyr = 0;
-        viz::WCloud pts(frame.points[npyr], viz::Color::green());
-        window.showWidget("pts", pts);
-        viz::WCloudNormals normals(frame.points[npyr],
-                                   frame.normals[npyr],
-                                   1, 0.03, viz::Color::gold());
-        window.showWidget("normals", normals);
-        window.spin();
-        window.close();
     }
 
     frameCounter++;
