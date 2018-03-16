@@ -35,7 +35,8 @@ bool ICP::estimateTransform(cv::Affine3f& transform,
                 return false;
 
             Vec6f x;
-            //TODO: other methods of solving?
+            // theoretically, any method of solving is applicable
+            // since it's usual least square matrices
             solve(A, b, x, DECOMP_SVD);
             Affine3f tinc(Vec3f(x.val), Vec3f(x.val+3));
             transform = tinc * transform;

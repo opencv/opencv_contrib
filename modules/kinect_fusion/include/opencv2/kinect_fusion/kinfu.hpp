@@ -76,10 +76,9 @@ public:
         // number of ICP iterations for each pyramid level
         std::vector<int> icpIterations;
 
-        //TODO: find out what we need of that
-        /*
-        float icp_truncate_depth_dist; //meters
-        */
+        // depth truncation is not used by default
+        // float icp_truncate_depth_dist; //meters
+
     };
 
     KinFu(const KinFuParams& _params);
@@ -101,7 +100,6 @@ public:
 
     void reset();
 
-    void renderImage(cuda::Image& image, int flags = 0);
     void renderImage(cuda::Image& image, const Affine3f& pose, int flags = 0);
 
     Affine3f getCameraPose (int time = -1) const;

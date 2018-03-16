@@ -95,10 +95,8 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
     //p.lightPose = p.volume_pose.translation()/4; //meters
     p.lightPose = Vec3f::all(0.f); //meters
 
-    //TODO: enable when (if) needed
-    /*
-    p.icp_truncate_depth_dist = 0.f;        //meters, disabled
-    */
+    // depth truncation is not used by default
+    //p.icp_truncate_depth_dist = 0.f;        //meters, disabled
 
     return p;
 }

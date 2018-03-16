@@ -14,11 +14,8 @@ Frame::Frame(const Depth depth, const Intr intr, int levels, float depthFactor,
     Depth smooth;
     bilateralFilter(depth, smooth, kernelSize, sigmaDepth*depthFactor, sigmaSpatial);
 
-    //TODO: enable it when/if needed
-    /*
-    if (p.icp_truncate_depth_dist > 0)
-        kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
-    */
+    // depth truncation is not used by default
+    //if (p.icp_truncate_depth_dist > 0) kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
 
     // we don't need depth pyramid outside this method
     // if we do, the code is to be refactored
