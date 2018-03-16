@@ -68,7 +68,17 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
     p.bilateral_sigma_spatial = 4.5; //pixels
     p.bilateral_kernel_size = 7;     //pixels
 
-    p.pyramidLevels = 4;
+    p.icpAngleThresh = 30.f * CV_PI / 180.f; // radians
+    p.icpDistThresh = 0.1f; // meters
+    // default value
+    //const int iters[] = {10, 5, 4, 0};
+    const int iters[] = {10, 5, 4, 1};
+    p.icpIterations.assign(iters, iters + sizeof(iters)/sizeof(int));
+
+    for(size_t i = 0; i < p.icpIterations.size(); i++)
+    {
+        if(p.icpIterations[i]) p.pyramidLevels = i+1;
+    }
 
     p.tsdf_min_camera_movement = 0.f; //meters, disabled
 
@@ -110,10 +120,10 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
 KinFu::KinFuImpl::KinFuImpl(const KinFu::KinFuParams &_params) :
     params(_params),
     frame(),
-    icp(_params.pyramidLevels),
-    volume(_params.volumeDims, _params.volumeSize, _params.volumePose,
-           _params.tsdf_trunc_dist, _params.tsdf_max_weight,
-           _params.raycast_step_factor, _params.gradient_delta_factor)
+    icp(params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh),
+    volume(params.volumeDims, params.volumeSize, params.volumePose,
+           params.tsdf_trunc_dist, params.tsdf_max_weight,
+           params.raycast_step_factor, params.gradient_delta_factor)
 {
     reset();
 }

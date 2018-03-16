@@ -8,14 +8,19 @@
 class ICP
 {
 public:
-    ICP(int nLevels);
+    ICP(const Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold);
 
     bool estimateTransform(cv::Affine3f& transform,
                            const std::vector<Points>& oldPoints, const std::vector<Normals>& oldNormals,
                            const std::vector<Points>& newPoints, const std::vector<Normals>& newNormals);
 private:
-    int levels;
+    void getAb(const Points oldPts, const Normals oldNrm, const Points newPts, const Normals newNrm,
+               cv::Affine3f pose, int level, cv::Matx66f& A, cv::Vec6f& b);
 
+    std::vector<int> iterations;
+    float angleThreshold;
+    float distanceThreshold;
+    Intr intrinsics;
 };
 
 #endif

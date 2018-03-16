@@ -69,14 +69,16 @@ public:
         // light pose for rendering in meters
         Vec3f lightPose;
 
+        // distance theshold for ICP in meters
+        float icpDistThresh;
+        // angle threshold for ICP in radians
+        float icpAngleThresh;
+        // number of ICP iterations for each pyramid level
+        std::vector<int> icpIterations;
 
         //TODO: find out what we need of that
         /*
         float icp_truncate_depth_dist; //meters
-        float icp_dist_thres;          //meters
-        float icp_angle_thres;         //radians
-        std::vector<int> icp_iter_num; //iterations for level index 0,1,..,3
-
         */
     };
 
