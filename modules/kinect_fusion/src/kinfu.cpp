@@ -18,6 +18,7 @@ public:
     const KinFu::KinFuParams& getParams() const;
     KinFu::KinFuParams& getParams();
 
+    Image render() const;
     void fetchCloud(Points&, Normals&) const;
 
     void reset();
@@ -28,7 +29,6 @@ public:
     const TSDFVolume& tsdf() const;
     TSDFVolume& tsdf();
 
-    void renderImage(cuda::Image& image, int flags = 0);
     void renderImage(cuda::Image& image, const Affine3f& pose, int flags = 0);
 
     Affine3f getCameraPose (int time = -1) const;
@@ -85,6 +85,9 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
 
     p.raycast_step_factor = 0.75f;  //in voxel sizes
     p.gradient_delta_factor = 0.5f; //in voxel sizes
+
+    //p.lightPose = p.volume_pose.translation()/4; //meters
+    p.lightPose = Vec3f::all(0.f); //meters
 
     //TODO: enable when (if) needed
     /*
@@ -192,7 +195,6 @@ bool KinFu::KinFuImpl::operator()(InputArray _depth)
         if((rnorm + tnorm)/2 >= params.tsdf_min_camera_movement)
         {
             // use depth instead of distance
-            //volume.integrate(newFrame.distance, pose, params.intr);
             volume.integrate(depth, params.depthFactor, pose, params.intr);
         }
 
@@ -245,72 +247,17 @@ bool KinFu::KinFuImpl::operator()(InputArray _depth)
 }
 
 
+Image KinFu::KinFuImpl::render() const
+{
+    return frame.render(0, params.lightPose);
+}
+
+
 void KinFu::KinFuImpl::fetchCloud(Points& p, Normals& n) const
 {
     return volume.fetchCloud(p, n);
 }
 
-// FYI: USE_DEPTH not defined
-
-//TODO: enable when (if) needed
-
-//void kfusion::KinFu::renderImage(cuda::Image& image, int flag)
-//{
-//    const KinFuParams& p = params_;
-//    image.create(p.rows, flag != 3 ? p.cols : p.cols * 2);
-
-//#if defined USE_DEPTH
-//    #define PASS1 prev_.depth_pyr
-//#else
-//    #define PASS1 prev_.points_pyr
-//#endif
-
-//    if (flag < 1 || flag > 3)
-//        cuda::renderImage(PASS1[0], prev_.normals_pyr[0], params_.intr, params_.light_pose, image);
-//    else if (flag == 2)
-//        cuda::renderTangentColors(prev_.normals_pyr[0], image);
-//    else /* if (flag == 3) */
-//    {
-//        DeviceArray2D<RGB> i1(p.rows, p.cols, image.ptr(), image.step());
-//        DeviceArray2D<RGB> i2(p.rows, p.cols, image.ptr() + p.cols, image.step());
-
-//        cuda::renderImage(PASS1[0], prev_.normals_pyr[0], params_.intr, params_.light_pose, i1);
-//        cuda::renderTangentColors(prev_.normals_pyr[0], i2);
-//    }
-//#undef PASS1
-//}
-
-
-//void kfusion::KinFu::renderImage(cuda::Image& image, const Affine3f& pose, int flag)
-//{
-//    const KinFuParams& p = params_;
-//    image.create(p.rows, flag != 3 ? p.cols : p.cols * 2);
-//    depths_.create(p.rows, p.cols);
-//    normals_.create(p.rows, p.cols);
-//    points_.create(p.rows, p.cols);
-
-//#if defined USE_DEPTH
-//    #define PASS1 depths_
-//#else
-//    #define PASS1 points_
-//#endif
-
-//    volume_->raycast(pose, p.intr, PASS1, normals_);
-
-//    if (flag < 1 || flag > 3)
-//        cuda::renderImage(PASS1, normals_, params_.intr, params_.light_pose, image);
-//    else if (flag == 2)
-//        cuda::renderTangentColors(normals_, image);
-//    else /* if (flag == 3) */
-//    {
-//        DeviceArray2D<RGB> i1(p.rows, p.cols, image.ptr(), image.step());
-//        DeviceArray2D<RGB> i2(p.rows, p.cols, image.ptr() + p.cols, image.step());
-
-//        cuda::renderImage(PASS1, normals_, params_.intr, params_.light_pose, i1);
-//        cuda::renderTangentColors(normals_, i2);
-//    }
-//#undef PASS1
-//}
 
 KinFu::KinFu(const KinFuParams& _params)
 {
@@ -337,6 +284,11 @@ void KinFu::fetchCloud(Points & p, Normals & n) const
 bool KinFu::operator()(InputArray depth)
 {
     return impl->operator()(depth);
+}
+
+Image KinFu::render() const
+{
+    return impl->render();
 }
 
 }

@@ -109,7 +109,9 @@ int main(int argc, char **argv)
 
         }
 
+        imshow("render", kf.render());
 
+        waitKey(10);
     }
 
     return 0;

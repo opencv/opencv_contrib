@@ -56,6 +56,58 @@ Frame::Frame(const Points _points, const Normals _normals, int levels)
     }
 }
 
+Image Frame::render(int level, Affine3f lightPose) const
+{
+    typedef Points::value_type p3type;
+    typedef Image::value_type i3type;
+    typedef i3type::value_type pixtype;
+
+    Size sz = points[level].size();
+    Image image(sz);
+
+    for(int y = 0; y < sz.height; y++)
+    {
+        i3type* imgRow = image[y];
+        const p3type* ptsRow = points[level][y];
+        const p3type* nrmRow = normals[level][y];
+
+        for(int x = 0; x < sz.width; x++)
+        {
+            p3type p = ptsRow[x];
+            p3type n = nrmRow[x];
+
+            i3type color;
+
+            if(isNaN(p))
+            {
+                color = i3type(0.f, 32.f/255.f, 0.f);
+            }
+            else
+            {
+                const float Ka = 0.3f;  //ambient coeff
+                const float Kd = 0.5f;  //diffuse coeff
+                const float Ks = 0.2f;  //specular coeff
+                const float sp = 20.f;  //specular power
+
+                const float Ax = 1.f;   //ambient color,  can be RGB
+                const float Dx = 1.f;   //diffuse color,  can be RGB
+                const float Sx = 1.f;   //specular color, can be RGB
+                const float Lx = 1.f;   //light color
+
+                Point3f l = normalize(lightPose.translation() - Vec<kftype, 3>(p));
+                Point3f v = normalize(-Vec<kftype, 3>(p));
+                Point3f r = normalize(Vec<kftype, 3>(2.f*n*n.dot(l) - l));
+
+                pixtype ix = Ax*Ka*Dx + Lx*Kd*Dx*max(0.f, n.dot(l)) + Lx*Ks*Sx*pow(max(0.f, r.dot(v)), sp);
+                color = i3type(ix, ix, ix);
+            }
+
+            imgRow[x] = color;
+        }
+    }
+    return image;
+}
+
 
 void pyrDownPointsNormals(const Points p, const Normals n, Points &pdown, Normals &ndown)
 {
@@ -81,10 +133,7 @@ void pyrDownPointsNormals(const Points p, const Normals n, Points &pdown, Normal
             p3type d10 = pUpRow1[2*x];
             p3type d11 = pUpRow1[2*x+1];
 
-            if(!(cvIsNaN(d00.x) || cvIsNaN(d00.y) || cvIsNaN(d00.z) ||
-                 cvIsNaN(d01.x) || cvIsNaN(d01.y) || cvIsNaN(d01.z) ||
-                 cvIsNaN(d10.x) || cvIsNaN(d10.y) || cvIsNaN(d10.z) ||
-                 cvIsNaN(d11.x) || cvIsNaN(d11.y) || cvIsNaN(d11.z)))
+            if(!(isNaN(d00) || isNaN(d01) || isNaN(d10) || isNaN(d11)))
             {
                 point = (d00 + d01 + d10 + d11)*0.25f;
 

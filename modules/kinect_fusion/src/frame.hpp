@@ -12,6 +12,8 @@ public:
     Frame(const Depth, const Intr, int levels, float depthFactor, float sigmaDepth, float sigmaSpatial, int kernelSize);
     Frame(const Points, const Normals, int levels);
 
+    Image render(int level, cv::Affine3f lightPose) const;
+
     std::vector<Points> points;
     std::vector<Normals> normals;
 };

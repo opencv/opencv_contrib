@@ -66,17 +66,16 @@ public:
         // gradient delta in voxel sizes
         float gradient_delta_factor;
 
+        // light pose for rendering in meters
+        Vec3f lightPose;
+
+
         //TODO: find out what we need of that
-
         /*
-
-
         float icp_truncate_depth_dist; //meters
         float icp_dist_thres;          //meters
         float icp_angle_thres;         //radians
         std::vector<int> icp_iter_num; //iterations for level index 0,1,..,3
-
-        Vec3f light_pose; //meters
 
         */
     };
@@ -87,7 +86,8 @@ public:
     const KinFuParams& getParams() const;
     KinFuParams& getParams();
 
-    //TODO: implement
+    Image render() const;
+
     void fetchCloud(Points&, Normals&) const;
 
     //TODO: enable this when (if) features are ready

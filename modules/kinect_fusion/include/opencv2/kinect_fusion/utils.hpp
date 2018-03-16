@@ -33,6 +33,8 @@ typedef cv::Mat_< kftype > Depth;
 typedef cv::Mat_< kftype > Distance;
 typedef cv::Mat_< cv::Point3_<kftype> > Points;
 typedef Points Normals;
+// x, y, z for b, g, r
+typedef cv::Mat_< cv::Point3_<kftype> > Image;
 
 struct Voxel
 {
