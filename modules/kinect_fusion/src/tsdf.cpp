@@ -16,7 +16,7 @@ TSDFVolume::TSDFVolume(int _res, float _size, cv::Affine3f _pose, float _truncDi
     voxelSizeInv = edgeResolution/edgeSize;
     volume = Volume(_res * _res * _res);
     pose = _pose;
-    truncDist = _truncDist;
+    truncDist = std::max (_truncDist, 2.1f * voxelSize);
     raycastStepFactor = _raycastStepFactor;
     gradientDeltaFactor = _gradientDeltaFactor*voxelSize;
     maxWeight = _maxWeight;
@@ -100,33 +100,43 @@ void TSDFVolume::integrate(Depth depth, float depthFactor, cv::Affine3f cameraPo
     {
         for(int y = 0; y < edgeResolution; y++)
         {
-            //TODO: optimize it as it's done in original code (vc += zstep)
+            // optimization of camSpace transformation (vector addition instead of matmul at each z)
+            Point3f basePt = vol2cam*Point3f(x*voxelSize, y*voxelSize, 0);
+            Point3f camSpacePt = basePt;
+            // zStep == vol2cam*(Point3f(x, y, 1)*voxelSize) - basePt;
+            Point3f zStep = Point3f(vol2cam.matrix(0, 2), vol2cam.matrix(1, 2), vol2cam.matrix(2, 2))*voxelSize;
             for(int z = 0; z < edgeResolution; z++)
             {
-                Point3f volPt(x*voxelSize, y*voxelSize, z*voxelSize);
-                Point3f camSpacePt = vol2cam * volPt;
+                // optimization of the following:
+                //Point3f volPt = Point3f(x, y, z)*voxelSize;
+                //Point3f camSpacePt = vol2cam * volPt;
+                camSpacePt += zStep;
 
+                // can be optimized later
                 if(camSpacePt.z <= 0)
                     continue;
 
-                Point2f projected = proj(camSpacePt);
+                Point3f camPixVec;
+                Point2f projected = proj(camSpacePt, camPixVec);
 
                 kftype v = bilinear(depth, projected);
                 if(std::isnan(v) || v == 0)
                     continue;
 
-                kftype sdf = norm(camSpacePt)*(v*dfac/camSpacePt.z - 1);
+                // difference between distances of point and of surface to camera
+                kftype sdf = norm(camPixVec)*(v*dfac - camSpacePt.z);
+                // possible alternative is:
+                // kftype sdf = norm(camSpacePt)*(v*dfac/camSpacePt.z - 1);
 
                 if(sdf >= -truncDist)
                 {
                     kftype tsdf = fmin(1.f, sdf * truncDistInv);
-                    // update TSDF
 
                     Voxel* voxel = (volume + x*edgeResolution*edgeResolution + y*edgeResolution + z);
-
                     int& weight = voxel->weight;
                     kftype& value = voxel->v;
 
+                    // update TSDF
                     value = (value*weight+tsdf) / (weight + 1);
                     weight = min(weight + 1, maxWeight);
                 }
