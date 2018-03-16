@@ -145,7 +145,8 @@ void TSDFVolume::integrate(Depth depth, float depthFactor, cv::Affine3f cameraPo
     }
 }
 
-inline kftype TSDFVolume::fetchVoxel(Point3f p)
+
+inline kftype TSDFVolume::fetchVoxel(Point3f p) const
 {
     p *= voxelSizeInv;
     return (volume +
@@ -154,7 +155,7 @@ inline kftype TSDFVolume::fetchVoxel(Point3f p)
             cvRound(p.z))->v;
 }
 
-inline kftype TSDFVolume::fetchi(Point3i p)
+inline kftype TSDFVolume::fetchi(Point3i p) const
 {
     return (volume +
             p.x*edgeResolution*edgeResolution +
@@ -162,7 +163,7 @@ inline kftype TSDFVolume::fetchi(Point3i p)
             p.z)->v;
 }
 
-inline kftype TSDFVolume::interpolate(Point3f p)
+inline kftype TSDFVolume::interpolate(Point3f p) const
 {
     p *= voxelSizeInv;
 
@@ -188,7 +189,7 @@ inline kftype TSDFVolume::interpolate(Point3f p)
     return v;
 }
 
-inline TSDFVolume::p3type TSDFVolume::getNormalVoxel(Point3f p)
+inline TSDFVolume::p3type TSDFVolume::getNormalVoxel(Point3f p) const
 {
     p3type n;
     kftype fx1 = interpolate(Point3f(p.x + gradientDeltaFactor, p.y, p.z));
@@ -209,7 +210,7 @@ inline TSDFVolume::p3type TSDFVolume::getNormalVoxel(Point3f p)
 }
 
 
-void TSDFVolume::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points, Normals normals)
+void TSDFVolume::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points, Normals normals) const
 {
     CV_Assert(!points.empty() && !normals.empty());
     CV_Assert(points.size() == normals.size());

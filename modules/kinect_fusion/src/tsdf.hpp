@@ -15,12 +15,12 @@ public:
                float _raycastStepFactor, float _gradientDeltaFactor);
 
     void integrate(Depth depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics);
-    void raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points, Normals normals);
+    void raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points, Normals normals) const;
 
-    kftype fetchVoxel(cv::Point3f p);
-    kftype fetchi(cv::Point3i p);
-    kftype interpolate(cv::Point3f p);
-    p3type getNormalVoxel(cv::Point3f p);
+    kftype fetchVoxel(cv::Point3f p) const;
+    kftype fetchi(cv::Point3i p) const;
+    kftype interpolate(cv::Point3f p) const;
+    p3type getNormalVoxel(cv::Point3f p) const;
 
     Points fetchCloud() const;
 
