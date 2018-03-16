@@ -35,19 +35,53 @@ void TSDFVolume::reset()
 
 inline kftype bilinear(Depth depth, Point2f pt)
 {
-    if(pt.x < 0 || pt.x > depth.cols-1 ||
-       pt.y < 0 || pt.y > depth.rows-1)
+    if(pt.x < 0 || pt.x >= depth.cols-1 ||
+       pt.y < 0 || pt.y >= depth.rows-1)
         return std::numeric_limits<kftype>::quiet_NaN();
 
     int xi = cvFloor(pt.x), yi = cvFloor(pt.y);
     float tx = pt.x - xi, ty = pt.y - yi;
-    kftype v00 = depth(Point(xi, yi));
-    // for cases where pt.x == depth.cols-1 or pt.y == depth.rows-1
-    kftype v01 = (tx > 0.f) ? depth(Point(xi+1,   yi)) : v00;
-    kftype v10 = (ty > 0.f) ? depth(Point(xi,   yi+1)) : v00;
-    kftype v11 = (tx > 0.f &&
-                  ty > 0.f) ? depth(Point(xi+1, yi+1)) : v00;
-
+    kftype v00 = depth(Point(xi+0, yi+0));
+    kftype v01 = depth(Point(xi+1, yi+0));
+    kftype v10 = depth(Point(xi+0, yi+1));
+    kftype v11 = depth(Point(xi+1, yi+1));
+    //fix missing data, assume correct depth is positive
+    int nz = (v00 > 0) + (v01 > 0) + (v10 > 0) + (v11 > 0);
+    if(nz == 0)
+    {
+        return 0;
+    }
+    if(nz == 1)
+    {
+        kftype val = max(max(v00, v01), max(v10, v11));
+        return val;
+    }
+    else if(nz == 2)
+    {
+        if(v00 > 0 && v10 > 0)
+            v01 = v00, v11 = v10;
+        if(v01 > 0 && v11 > 0)
+            v00 = v01, v10 = v11;
+        if(v00 > 0 && v01 > 0)
+            v10 = v00, v11 = v01;
+        if(v10 > 0 && v11 > 0)
+            v00 = v10, v01 = v11;
+        if(v00 > 0 && v11 > 0)
+            v01 = v10 = (v00 + v11)*0.5f;
+        if(v01 > 0 && v10 > 0)
+            v00 = v11 = (v01 + v10)*0.5f;
+    }
+    else if(nz == 3)
+    {
+        if(v00 <= 0)
+            v00 = v10 + v01 - v11;
+        if(v01 <= 0)
+            v01 = v00 + v11 - v10;
+        if(v10 <= 0)
+            v10 = v00 + v11 - v01;
+        if(v11 <= 0)
+            v11 = v01 + v10 - v00;
+    }
     return v00*(1.f-tx)*(1.f-ty) + v01*tx*(1.f-ty) + v10*(1.f-tx)*ty + v11*tx*ty;
 }
 
