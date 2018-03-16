@@ -18,7 +18,7 @@ public:
     const KinFu::KinFuParams& getParams() const;
     KinFu::KinFuParams& getParams();
 
-    Points fetchCloud() const;
+    void fetchCloud(Points&, Normals&) const;
 
     void reset();
 
@@ -245,9 +245,9 @@ bool KinFu::KinFuImpl::operator()(InputArray _depth)
 }
 
 
-Points KinFu::KinFuImpl::fetchCloud() const
+void KinFu::KinFuImpl::fetchCloud(Points& p, Normals& n) const
 {
-    return volume.fetchCloud();
+    return volume.fetchCloud(p, n);
 }
 
 // FYI: USE_DEPTH not defined
@@ -329,9 +329,9 @@ KinFu::KinFuParams& KinFu::getParams()
     return impl->getParams();
 }
 
-Points KinFu::fetchCloud() const
+void KinFu::fetchCloud(Points & p, Normals & n) const
 {
-    return impl->fetchCloud();
+    return impl->fetchCloud(p, n);
 }
 
 bool KinFu::operator()(InputArray depth)

@@ -22,7 +22,7 @@ public:
     kftype interpolate(cv::Point3f p) const;
     p3type getNormalVoxel(cv::Point3f p) const;
 
-    Points fetchCloud() const;
+    void fetchCloud(Points& points, Normals& normals) const;
 
     void reset();
 

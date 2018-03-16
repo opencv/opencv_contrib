@@ -85,7 +85,17 @@ int main(int argc, char **argv)
             throw std::runtime_error("Matrix is empty");
 
         if(!kf(frame))
-            throw std::runtime_error("Failed to process a frame");
+            std::cout << "reset" << std::endl;
+        else
+        {
+            Points points;
+            Normals normals;
+            kf.fetchCloud(points, normals);
+            viz::WCloud cloudWidget(points, viz::Color::white());
+            viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
+            window.showWidget("cloud", cloudWidget);
+            window.showWidget("normals", cloudNormals);
+            window.spinOnce(1, true);
 
         //TODO: display result
         //TODO: enable this
@@ -97,6 +107,7 @@ int main(int argc, char **argv)
 //        window.spinOnce(1, true);
 
 
+        }
 
 
     }

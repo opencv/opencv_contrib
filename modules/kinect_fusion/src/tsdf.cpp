@@ -307,8 +307,95 @@ void TSDFVolume::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points
     }
 }
 
-Points TSDFVolume::fetchCloud() const
+
+void TSDFVolume::fetchCloud(Points& points, Normals& normals) const
 {
-    //TODO: implement this
-    return Points();
+    points  = Points();
+    normals = Normals();
+
+    // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
+    for(int x = 0; x < edgeResolution; x++)
+    {
+        for(int y = 0; y < edgeResolution; y++)
+        {
+            Point3f V((x + 0.5f)*voxelSize, (y + 0.5f)*voxelSize, 0);
+            for(int z = 0; z < edgeResolution; z++)
+            {
+                const Voxel& voxel0 = *(volume + x*edgeResolution*edgeResolution + y*edgeResolution + z);
+                kftype v0 = voxel0.v;
+
+                if(voxel0.weight != 0 && v0 != 1.f)
+                {
+                    V.z = (z + 0.5f)*voxelSize;
+
+                    //X
+                    if(x + 1 < edgeResolution)
+                    {
+                        const Voxel& voxeld = *(volume + (x+1)*edgeResolution*edgeResolution + y*edgeResolution + z);
+                        kftype vd = voxeld.v;
+
+                        if(voxeld.weight != 0 && vd != 1.f)
+                        {
+                            if((v0 > 0 && vd < 0) || (v0 < 0 && vd > 0))
+                            {
+                                //linearly interpolate coordinate
+                                float Vn = V.x + voxelSize;
+                                float dinv = 1.f/(abs(v0)+abs(vd));
+                                float inter = (V.x*abs(vd) + Vn*abs(v0))*dinv;
+
+                                Point3f p(inter, V.y, V.z);
+                                points.push_back(pose * p);
+                                normals.push_back(pose.rotation() * getNormalVoxel(p));
+                            }
+                        }
+                    }
+
+                    //Y
+                    if(y + 1 < edgeResolution)
+                    {
+                        const Voxel& voxeld = *(volume + x*edgeResolution*edgeResolution + (y+1)*edgeResolution + z);
+                        kftype vd = voxeld.v;
+
+                        if(voxeld.weight != 0 && vd != 1.f)
+                        {
+                            if((v0 > 0 && vd < 0) || (v0 < 0 && vd > 0))
+                            {
+                                //linearly interpolate coordinate
+                                float Vn = V.y + voxelSize;
+                                float dinv = 1.f/(abs(v0)+abs(vd));
+                                float inter = (V.y*abs(vd) + Vn*abs(v0))*dinv;
+
+                                Point3f p(V.x, inter, V.z);
+                                points.push_back(pose * p);
+                                normals.push_back(pose.rotation() * getNormalVoxel(p));
+                            }
+                        }
+                    }
+
+                    //Z
+                    if(z + 1 < edgeResolution)
+                    {
+                        const Voxel& voxeld = *(volume + x*edgeResolution*edgeResolution + y*edgeResolution + (z+1));
+                        kftype vd = voxeld.v;
+
+                        if(voxeld.weight != 0 && vd != 1.f)
+                        {
+                            if((v0 > 0 && vd < 0) || (v0 < 0 && vd > 0))
+                            {
+                                //linearly interpolate coordinate
+                                float Vn = V.z + voxelSize;
+                                float dinv = 1.f/(abs(v0)+abs(vd));
+                                float inter = (V.z*abs(vd) + Vn*abs(v0))*dinv;
+
+                                Point3f p(V.x, V.y, inter);
+                                points.push_back(pose * p);
+                                normals.push_back(pose.rotation() * getNormalVoxel(p));
+                            }
+                        }
+                    }
+                } // if voxel is not empty
+            } // z loop
+        } // y loop
+    } // x loop
 }
+

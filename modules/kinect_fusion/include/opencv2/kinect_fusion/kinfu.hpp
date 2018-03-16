@@ -88,7 +88,7 @@ public:
     KinFuParams& getParams();
 
     //TODO: implement
-    Points fetchCloud() const;
+    void fetchCloud(Points&, Normals&) const;
 
     //TODO: enable this when (if) features are ready
 
