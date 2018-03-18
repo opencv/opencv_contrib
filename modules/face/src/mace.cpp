@@ -208,8 +208,8 @@ struct MACEImpl : MACE {
         re -= m1;
         double value=0;
         double num=0;
-        int rad1=int(floor((double)(45.0/64.0)*(double)IMGSIZE));
-        int rad2=int(floor((double)(27.0/64.0)*(double)IMGSIZE));
+        int rad_1=int(floor((double)(45.0/64.0)*(double)IMGSIZE));
+        int rad_2=int(floor((double)(27.0/64.0)*(double)IMGSIZE));
         // cache a few pow's and sqrts
         std::vector<double> r2(IMGSIZE_2X);
         Mat_<double> radtab(IMGSIZE_2X,IMGSIZE_2X);
@@ -226,8 +226,8 @@ struct MACEImpl : MACE {
         for (int l=0; l<IMGSIZE_2X; l++) {
             for (int m=0; m<IMGSIZE_2X; m++) {
                 double rad = radtab(l,m);
-                if (rad < rad1) {
-                    if (rad > rad2) {
+                if (rad < rad_1) {
+                    if (rad > rad_2) {
                         value += re(l,m);
                         num++;
                     }
@@ -240,8 +240,8 @@ struct MACEImpl : MACE {
         for (int l=0; l<IMGSIZE_2X; l++) {
             for (int m=0; m<IMGSIZE_2X; m++) {
                 double rad = radtab(l,m);
-                if (rad < rad1) {
-                    if (rad > rad2) {
+                if (rad < rad_1) {
+                    if (rad > rad_2) {
                         double d = (value - re(l,m));
                         std2 += d * d;
                     }
