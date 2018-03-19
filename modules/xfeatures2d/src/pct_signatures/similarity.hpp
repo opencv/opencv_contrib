@@ -62,8 +62,6 @@ References:
 
 #ifdef __cplusplus
 
-#include "precomp.hpp"
-
 #include "distance.hpp"
 
 namespace cv

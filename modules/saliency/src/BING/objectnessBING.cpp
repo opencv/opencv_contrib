@@ -41,7 +41,7 @@
 
 #include "../precomp.hpp"
 
-#include "BING/kyheader.hpp"
+#include "kyheader.hpp"
 #include "CmTimer.hpp"
 #include "CmFile.hpp"
 

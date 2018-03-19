@@ -62,8 +62,6 @@ References:
 #define _OPENCV_XFEATURES_2D_PCT_SIGNATURES_DISTANCE_HPP_
 
 #ifdef __cplusplus
-#include "precomp.hpp"
-
 #include "constants.hpp"
 
 namespace cv
