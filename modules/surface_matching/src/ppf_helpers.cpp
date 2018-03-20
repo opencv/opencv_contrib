@@ -444,9 +444,9 @@ Mat samplePCByQuantization(Mat pc, Vec2f& xrange, Vec2f& yrange, Vec2f& zrange, 
       }
       else
       {
-        pcData[3]=nx;
-        pcData[4]=ny;
-        pcData[5]=nz;
+        pcData[3]=(float)nx;
+        pcData[4]=(float)ny;
+        pcData[5]=(float)nz;
       }
       //#pragma omp atomic
       c++;
