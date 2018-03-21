@@ -156,7 +156,7 @@ namespace cv
             public :
                 hammingDistance(const Mat &leftImage, const Mat &rightImage, short *cost, int maxDisp, int kerSize, int *hammingLUT):
                     left((int *)leftImage.data), right((int *)rightImage.data), c(cost), v(maxDisp),kernelSize(kerSize),width(leftImage.cols), MASK(65535), hammLut(hammingLUT){}
-                void operator()(const cv::Range &r) const {
+                void operator()(const cv::Range &r) const CV_OVERRIDE {
                     for (int i = r.start; i <= r.end ; i++)
                     {
                         int iw = i * width;
@@ -202,7 +202,7 @@ namespace cv
                     height = cost.rows - 1;
                     parSum = (short *)partialSums.data;
                 }
-                void operator()(const cv::Range &r) const {
+                void operator()(const cv::Range &r) const CV_OVERRIDE {
                     for (int i = r.start; i <= r.end; i++)
                     {
                         int iwi = (i - 1) * width;
@@ -243,7 +243,7 @@ namespace cv
                     scallingFact = scale;
                     confCheck = confidence;
                 }
-                void operator()(const cv::Range &r) const {
+                void operator()(const cv::Range &r) const CV_OVERRIDE {
                     for (int i = r.start; i <= r.end ; i++)
                     {
                         int lr;
@@ -300,7 +300,7 @@ namespace cv
                     height = originalImage.rows;
                     width = originalImage.cols;
                 }
-                void operator()(const cv::Range &r) const{
+                void operator()(const cv::Range &r) const CV_OVERRIDE {
                     for (int m = r.start; m <= r.end; m++)
                     {
                         for (int n = 4; n < width - 4; ++n)
@@ -340,7 +340,7 @@ namespace cv
                     height = originalImage.rows;
                     width = originalImage.cols;
                 }
-                void operator()(const Range &r) const{
+                void operator()(const Range &r) const CV_OVERRIDE {
                     for (int n = r.start; n <= r.end; ++n)
                     {
                         for (int m = 4; m < height - 4; ++m)
