@@ -282,7 +282,7 @@ class CharucoSubpixelParallel : public ParallelLoopBody {
         : grey(_grey), filteredChessboardImgPoints(_filteredChessboardImgPoints),
           filteredWinSizes(_filteredWinSizes), params(_params) {}
 
-    void operator()(const Range &range) const {
+    void operator()(const Range &range) const CV_OVERRIDE {
         const int begin = range.start;
         const int end = range.end;
 
