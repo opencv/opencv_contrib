@@ -52,8 +52,8 @@ class OpticalFlowDeepFlow: public DenseOpticalFlow
 public:
     OpticalFlowDeepFlow();
 
-    void calc( InputArray I0, InputArray I1, InputOutputArray flow );
-    void collectGarbage();
+    void calc( InputArray I0, InputArray I1, InputOutputArray flow ) CV_OVERRIDE;
+    void collectGarbage() CV_OVERRIDE;
 
 protected:
     float sigma; // Gaussian smoothing parameter

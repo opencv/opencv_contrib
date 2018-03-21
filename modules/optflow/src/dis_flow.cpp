@@ -52,13 +52,13 @@ namespace cv
 namespace optflow
 {
 
-class DISOpticalFlowImpl : public DISOpticalFlow
+class DISOpticalFlowImpl CV_FINAL : public DISOpticalFlow
 {
   public:
     DISOpticalFlowImpl();
 
-    void calc(InputArray I0, InputArray I1, InputOutputArray flow);
-    void collectGarbage();
+    void calc(InputArray I0, InputArray I1, InputOutputArray flow) CV_OVERRIDE;
+    void collectGarbage() CV_OVERRIDE;
 
   protected: //!< algorithm parameters
     int finest_scale, coarsest_scale;
@@ -78,27 +78,27 @@ class DISOpticalFlowImpl : public DISOpticalFlow
     int ws, hs; //!< sparse flow buffer width and height on the current scale
 
   public:
-    int getFinestScale() const { return finest_scale; }
-    void setFinestScale(int val) { finest_scale = val; }
-    int getPatchSize() const { return patch_size; }
-    void setPatchSize(int val) { patch_size = val; }
-    int getPatchStride() const { return patch_stride; }
-    void setPatchStride(int val) { patch_stride = val; }
-    int getGradientDescentIterations() const { return grad_descent_iter; }
-    void setGradientDescentIterations(int val) { grad_descent_iter = val; }
-    int getVariationalRefinementIterations() const { return variational_refinement_iter; }
-    void setVariationalRefinementIterations(int val) { variational_refinement_iter = val; }
-    float getVariationalRefinementAlpha() const { return variational_refinement_alpha; }
-    void setVariationalRefinementAlpha(float val) { variational_refinement_alpha = val; }
-    float getVariationalRefinementDelta() const { return variational_refinement_delta; }
-    void setVariationalRefinementDelta(float val) { variational_refinement_delta = val; }
-    float getVariationalRefinementGamma() const { return variational_refinement_gamma; }
-    void setVariationalRefinementGamma(float val) { variational_refinement_gamma = val; }
+    int getFinestScale() const CV_OVERRIDE { return finest_scale; }
+    void setFinestScale(int val) CV_OVERRIDE { finest_scale = val; }
+    int getPatchSize() const CV_OVERRIDE { return patch_size; }
+    void setPatchSize(int val) CV_OVERRIDE { patch_size = val; }
+    int getPatchStride() const CV_OVERRIDE { return patch_stride; }
+    void setPatchStride(int val) CV_OVERRIDE { patch_stride = val; }
+    int getGradientDescentIterations() const CV_OVERRIDE { return grad_descent_iter; }
+    void setGradientDescentIterations(int val) CV_OVERRIDE { grad_descent_iter = val; }
+    int getVariationalRefinementIterations() const CV_OVERRIDE { return variational_refinement_iter; }
+    void setVariationalRefinementIterations(int val) CV_OVERRIDE { variational_refinement_iter = val; }
+    float getVariationalRefinementAlpha() const CV_OVERRIDE { return variational_refinement_alpha; }
+    void setVariationalRefinementAlpha(float val) CV_OVERRIDE { variational_refinement_alpha = val; }
+    float getVariationalRefinementDelta() const CV_OVERRIDE { return variational_refinement_delta; }
+    void setVariationalRefinementDelta(float val) CV_OVERRIDE { variational_refinement_delta = val; }
+    float getVariationalRefinementGamma() const CV_OVERRIDE { return variational_refinement_gamma; }
+    void setVariationalRefinementGamma(float val) CV_OVERRIDE { variational_refinement_gamma = val; }
 
-    bool getUseMeanNormalization() const { return use_mean_normalization; }
-    void setUseMeanNormalization(bool val) { use_mean_normalization = val; }
-    bool getUseSpatialPropagation() const { return use_spatial_propagation; }
-    void setUseSpatialPropagation(bool val) { use_spatial_propagation = val; }
+    bool getUseMeanNormalization() const CV_OVERRIDE { return use_mean_normalization; }
+    void setUseMeanNormalization(bool val) CV_OVERRIDE { use_mean_normalization = val; }
+    bool getUseSpatialPropagation() const CV_OVERRIDE { return use_spatial_propagation; }
+    void setUseSpatialPropagation(bool val) CV_OVERRIDE { use_spatial_propagation = val; }
 
   protected:                      //!< internal buffers
     vector<Mat_<uchar> > I0s;     //!< Gaussian pyramid for the current frame
@@ -153,7 +153,7 @@ class DISOpticalFlowImpl : public DISOpticalFlow
         PatchInverseSearch_ParBody(DISOpticalFlowImpl &_dis, int _nstripes, int _hs, Mat &dst_Sx, Mat &dst_Sy,
                                    Mat &src_Ux, Mat &src_Uy, Mat &_I0, Mat &_I1, Mat &_I0x, Mat &_I0y, int _num_iter,
                                    int _pyr_level);
-        void operator()(const Range &range) const;
+        void operator()(const Range &range) const CV_OVERRIDE;
     };
 
     struct Densification_ParBody : public ParallelLoopBody
@@ -165,7 +165,7 @@ class DISOpticalFlowImpl : public DISOpticalFlow
 
         Densification_ParBody(DISOpticalFlowImpl &_dis, int _nstripes, int _h, Mat &dst_Ux, Mat &dst_Uy, Mat &src_Sx,
                               Mat &src_Sy, Mat &_I0, Mat &_I1);
-        void operator()(const Range &range) const;
+        void operator()(const Range &range) const CV_OVERRIDE;
     };
 
 #ifdef HAVE_OPENCL

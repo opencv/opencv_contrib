@@ -182,9 +182,9 @@ private:
 public:
   void train( GPCTrainingSamples &samples, const GPCTrainingParams params = GPCTrainingParams() );
 
-  void write( FileStorage &fs ) const;
+  void write( FileStorage &fs ) const CV_OVERRIDE;
 
-  void read( const FileNode &fn );
+  void read( const FileNode &fn ) CV_OVERRIDE;
 
   unsigned findLeafForPatch( const GPCPatchDescriptor &descr ) const;
 

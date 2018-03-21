@@ -117,8 +117,8 @@ public:
                       float _sparseRate = 0.024, float _retainedCornersFraction = 0.2,
                       float _occlusionsThreshold = 0.0003, float _dampingFactor = 0.00002, float _claheClip = 14 );
 
-  void calc( InputArray I0, InputArray I1, InputOutputArray flow );
-  void collectGarbage();
+  void calc( InputArray I0, InputArray I1, InputOutputArray flow ) CV_OVERRIDE;
+  void collectGarbage() CV_OVERRIDE;
 
 private:
   void findSparseFeatures( UMat &from, UMat &to, std::vector<Point2f> &features,
