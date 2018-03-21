@@ -78,7 +78,7 @@ namespace cv
 
                 }
 
-                void operator()(const Range& range) const
+                void operator()(const Range& range) const CV_OVERRIDE
                 {
                     for (int lvl = range.start; lvl < range.end; lvl++)
                     {
@@ -152,7 +152,7 @@ namespace cv
                     remains = w - chunkSize*split;
                 }
 
-                void operator()(const Range& range) const
+                void operator()(const Range& range) const CV_OVERRIDE
                 {
                     for (int i = range.start; i < range.end; i++)
                     {
@@ -199,7 +199,7 @@ namespace cv
             {
             }
 
-            void detect(InputArray _image, std::vector<KeyPoint>& keypoints, InputArray _mask)
+            void detect(InputArray _image, std::vector<KeyPoint>& keypoints, InputArray _mask) CV_OVERRIDE
             {
                 m_mask = _mask.getMat();
 

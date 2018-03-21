@@ -49,7 +49,7 @@ Contributed by Gregor Kovalcik <gregor dot kovalcik at gmail dot com>
 References:
     Martin Krulis, Jakub Lokoc, Tomas Skopal.
     Efficient Extraction of Clustering-Based Feature Signatures Using GPU Architectures.
-    Multimedia tools and applications, 75(13), pp.: 8071–8103, Springer, ISSN: 1380-7501, 2016
+    Multimedia tools and applications, 75(13), pp.: 8071ï¿½8103, Springer, ISSN: 1380-7501, 2016
 
     Christian Beecks, Merih Seran Uysal, Thomas Seidl.
     Signature quadratic form distance.
@@ -84,12 +84,12 @@ namespace cv
 
                 float computeQuadraticFormDistance(
                     InputArray _signature0,
-                    InputArray _signature1) const;
+                    InputArray _signature1) const CV_OVERRIDE;
 
                 void computeQuadraticFormDistances(
                     const Mat& sourceSignature,
                     const std::vector<Mat>& imageSignatures,
-                    std::vector<float>& distances) const;
+                    std::vector<float>& distances) const CV_OVERRIDE;
 
 
             private:
@@ -129,7 +129,7 @@ namespace cv
                     mDistances->resize(imageSignatures->size());
                 }
 
-                void operator()(const Range& range) const
+                void operator()(const Range& range) const CV_OVERRIDE
                 {
                     if (mSourceSignature->empty())
                     {

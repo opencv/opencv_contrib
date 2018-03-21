@@ -49,7 +49,7 @@ Contributed by Gregor Kovalcik <gregor dot kovalcik at gmail dot com>
 References:
     Martin Krulis, Jakub Lokoc, Tomas Skopal.
     Efficient Extraction of Clustering-Based Feature Signatures Using GPU Architectures.
-    Multimedia tools and applications, 75(13), pp.: 8071–8103, Springer, ISSN: 1380-7501, 2016
+    Multimedia tools and applications, 75(13), pp.: 8071ï¿½8103, Springer, ISSN: 1380-7501, 2016
 
     Christian Beecks, Merih Seran Uysal, Thomas Seidl.
     Signature quadratic form distance.
@@ -67,7 +67,7 @@ namespace cv
     {
         namespace pct_signatures
         {
-            class PCTSampler_Impl : public PCTSampler
+            class PCTSampler_Impl CV_FINAL : public PCTSampler
             {
             private:
                 /**
@@ -119,40 +119,40 @@ namespace cv
 
                 /**** Acessors ****/
 
-                int getSampleCount() const      { return (int)mInitSamplingPoints.size(); }
-                int getGrayscaleBits() const    { return mGrayscaleBits; }
-                int getWindowRadius() const     { return mWindowRadius; }
+                int getSampleCount() const CV_OVERRIDE      { return (int)mInitSamplingPoints.size(); }
+                int getGrayscaleBits() const CV_OVERRIDE    { return mGrayscaleBits; }
+                int getWindowRadius() const CV_OVERRIDE     { return mWindowRadius; }
 
-                float getWeightX() const               { return mWeights[X_IDX]; }
-                float getWeightY() const               { return mWeights[Y_IDX]; }
-                float getWeightL() const               { return mWeights[L_IDX]; }
-                float getWeightA() const               { return mWeights[A_IDX]; }
-                float getWeightB() const               { return mWeights[B_IDX]; }
-                float getWeightContrast() const        { return mWeights[CONTRAST_IDX]; }
-                float getWeightEntropy() const         { return mWeights[ENTROPY_IDX]; }
+                float getWeightX() const CV_OVERRIDE               { return mWeights[X_IDX]; }
+                float getWeightY() const CV_OVERRIDE               { return mWeights[Y_IDX]; }
+                float getWeightL() const CV_OVERRIDE               { return mWeights[L_IDX]; }
+                float getWeightA() const CV_OVERRIDE               { return mWeights[A_IDX]; }
+                float getWeightB() const CV_OVERRIDE               { return mWeights[B_IDX]; }
+                float getWeightContrast() const CV_OVERRIDE        { return mWeights[CONTRAST_IDX]; }
+                float getWeightEntropy() const CV_OVERRIDE         { return mWeights[ENTROPY_IDX]; }
 
-                std::vector<Point2f> getSamplingPoints() const
+                std::vector<Point2f> getSamplingPoints() const CV_OVERRIDE
                                                         { return mInitSamplingPoints; }
 
 
-                void setGrayscaleBits(int grayscaleBits)    { mGrayscaleBits = grayscaleBits; }
-                void setWindowRadius(int windowRadius)      { mWindowRadius = windowRadius; }
+                void setGrayscaleBits(int grayscaleBits) CV_OVERRIDE    { mGrayscaleBits = grayscaleBits; }
+                void setWindowRadius(int windowRadius) CV_OVERRIDE      { mWindowRadius = windowRadius; }
 
-                void setWeightX(float weight)          { mWeights[X_IDX] = weight; }
-                void setWeightY(float weight)          { mWeights[Y_IDX] = weight; }
-                void setWeightL(float weight)          { mWeights[L_IDX] = weight; }
-                void setWeightA(float weight)          { mWeights[A_IDX] = weight; }
-                void setWeightB(float weight)          { mWeights[B_IDX] = weight; }
-                void setWeightContrast(float weight)   { mWeights[CONTRAST_IDX] = weight; }
-                void setWeightEntropy(float weight)    { mWeights[ENTROPY_IDX] = weight; }
+                void setWeightX(float weight) CV_OVERRIDE          { mWeights[X_IDX] = weight; }
+                void setWeightY(float weight) CV_OVERRIDE          { mWeights[Y_IDX] = weight; }
+                void setWeightL(float weight) CV_OVERRIDE          { mWeights[L_IDX] = weight; }
+                void setWeightA(float weight) CV_OVERRIDE          { mWeights[A_IDX] = weight; }
+                void setWeightB(float weight) CV_OVERRIDE          { mWeights[B_IDX] = weight; }
+                void setWeightContrast(float weight) CV_OVERRIDE   { mWeights[CONTRAST_IDX] = weight; }
+                void setWeightEntropy(float weight) CV_OVERRIDE    { mWeights[ENTROPY_IDX] = weight; }
 
 
-                void setWeight(int idx, float value)
+                void setWeight(int idx, float value) CV_OVERRIDE
                 {
                     mWeights[idx] = value;
                 }
 
-                void setWeights(const std::vector<float>& weights)
+                void setWeights(const std::vector<float>& weights) CV_OVERRIDE
                 {
                     if (weights.size() != mWeights.size())
                     {
@@ -168,12 +168,12 @@ namespace cv
                     }
                 }
 
-                void setTranslation(int idx, float value)
+                void setTranslation(int idx, float value) CV_OVERRIDE
                 {
                     mTranslations[idx] = value;
                 }
 
-                void setTranslations(const std::vector<float>& translations)
+                void setTranslations(const std::vector<float>& translations) CV_OVERRIDE
                 {
                     if (translations.size() != mTranslations.size())
                     {
@@ -189,10 +189,10 @@ namespace cv
                     }
                 }
 
-                void setSamplingPoints(std::vector<Point2f> samplingPoints) { mInitSamplingPoints = samplingPoints; }
+                void setSamplingPoints(std::vector<Point2f> samplingPoints) CV_OVERRIDE { mInitSamplingPoints = samplingPoints; }
 
 
-                void sample(InputArray _image, OutputArray _samples) const
+                void sample(InputArray _image, OutputArray _samples) const CV_OVERRIDE
                 {
                     // prepare matrices
                     Mat image = _image.getMat();

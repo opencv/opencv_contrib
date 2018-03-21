@@ -58,21 +58,21 @@ namespace cv
         /*
         * LATCH Descriptor
         */
-        class LATCHDescriptorExtractorImpl : public LATCH
+        class LATCHDescriptorExtractorImpl CV_FINAL : public LATCH
         {
         public:
             enum { PATCH_SIZE = 48 };
 
             LATCHDescriptorExtractorImpl(int bytes = 32, bool rotationInvariance = true, int half_ssd_size = 3, double sigma = 2.0);
 
-            virtual void read( const FileNode& );
-            virtual void write( FileStorage& ) const;
+            virtual void read( const FileNode& ) CV_OVERRIDE;
+            virtual void write( FileStorage& ) const CV_OVERRIDE;
 
-            virtual int descriptorSize() const;
-            virtual int descriptorType() const;
-            virtual int defaultNorm() const;
+            virtual int descriptorSize() const CV_OVERRIDE;
+            virtual int descriptorType() const CV_OVERRIDE;
+            virtual int defaultNorm() const CV_OVERRIDE;
 
-            virtual void compute(InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors);
+            virtual void compute(InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors) CV_OVERRIDE;
 
         protected:
             typedef void(*PixelTestFn)(const Mat& input_image, const std::vector<KeyPoint>& keypoints, OutputArray, const std::vector<int> &points, bool rotationInvariance, int half_ssd_size);

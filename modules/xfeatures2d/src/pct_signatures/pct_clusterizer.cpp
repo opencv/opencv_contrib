@@ -49,7 +49,7 @@ Contributed by Gregor Kovalcik <gregor dot kovalcik at gmail dot com>
 References:
     Martin Krulis, Jakub Lokoc, Tomas Skopal.
     Efficient Extraction of Clustering-Based Feature Signatures Using GPU Architectures.
-    Multimedia tools and applications, 75(13), pp.: 8071–8103, Springer, ISSN: 1380-7501, 2016
+    Multimedia tools and applications, 75(13), pp.: 8071ï¿½8103, Springer, ISSN: 1380-7501, 2016
 
     Christian Beecks, Merih Seran Uysal, Thomas Seidl.
     Signature quadratic form distance.
@@ -68,7 +68,7 @@ namespace cv
     {
         namespace pct_signatures
         {
-            class PCTClusterizer_Impl : public PCTClusterizer
+            class PCTClusterizer_Impl CV_FINAL : public PCTClusterizer
             {
             public:
 
@@ -95,21 +95,21 @@ namespace cv
                 }
 
 
-                int getIterationCount() const                       { return mIterationCount; }
-                std::vector<int> getInitSeedIndexes() const         { return mInitSeedIndexes; }
-                int getMaxClustersCount() const                     { return mMaxClustersCount; }
-                int getClusterMinSize() const                       { return mClusterMinSize; }
-                float getJoiningDistance() const                    { return mJoiningDistance; }
-                float getDropThreshold() const                      { return mDropThreshold; }
-                int getDistanceFunction() const                     { return mDistanceFunction; }
+                int getIterationCount() const CV_OVERRIDE                       { return mIterationCount; }
+                std::vector<int> getInitSeedIndexes() const CV_OVERRIDE         { return mInitSeedIndexes; }
+                int getMaxClustersCount() const CV_OVERRIDE                     { return mMaxClustersCount; }
+                int getClusterMinSize() const CV_OVERRIDE                       { return mClusterMinSize; }
+                float getJoiningDistance() const CV_OVERRIDE                    { return mJoiningDistance; }
+                float getDropThreshold() const CV_OVERRIDE                      { return mDropThreshold; }
+                int getDistanceFunction() const CV_OVERRIDE                     { return mDistanceFunction; }
 
-                void setIterationCount(int iterationCount)                  { mIterationCount = iterationCount; }
-                void setInitSeedIndexes(std::vector<int> initSeedIndexes)   { mInitSeedIndexes = initSeedIndexes; }
-                void setMaxClustersCount(int maxClustersCount)              { mMaxClustersCount = maxClustersCount; }
-                void setClusterMinSize(int clusterMinSize)                  { mClusterMinSize = clusterMinSize; }
-                void setJoiningDistance(float joiningDistance)              { mJoiningDistance = joiningDistance; }
-                void setDropThreshold(float dropThreshold)                  { mDropThreshold = dropThreshold; }
-                void setDistanceFunction(int distanceFunction)              { mDistanceFunction = distanceFunction; }
+                void setIterationCount(int iterationCount) CV_OVERRIDE                  { mIterationCount = iterationCount; }
+                void setInitSeedIndexes(std::vector<int> initSeedIndexes) CV_OVERRIDE   { mInitSeedIndexes = initSeedIndexes; }
+                void setMaxClustersCount(int maxClustersCount) CV_OVERRIDE              { mMaxClustersCount = maxClustersCount; }
+                void setClusterMinSize(int clusterMinSize) CV_OVERRIDE                  { mClusterMinSize = clusterMinSize; }
+                void setJoiningDistance(float joiningDistance) CV_OVERRIDE              { mJoiningDistance = joiningDistance; }
+                void setDropThreshold(float dropThreshold) CV_OVERRIDE                  { mDropThreshold = dropThreshold; }
+                void setDistanceFunction(int distanceFunction) CV_OVERRIDE              { mDistanceFunction = distanceFunction; }
 
 
                 /**
@@ -117,7 +117,7 @@ namespace cv
                 * @param samples List of sampled points.
                 * @param signature Output list of computed centroids - the signature of the image.
                 */
-                void clusterize(InputArray _samples, OutputArray _signature)
+                void clusterize(InputArray _samples, OutputArray _signature) CV_OVERRIDE
                 {
                     CV_Assert(!_samples.empty());
 
