@@ -69,17 +69,18 @@ Dictionary::Dictionary(const Mat &_bytesList, int _markerSize, int _maxcorr) {
 
 /**
  */
-Ptr<Dictionary> Dictionary::create(int nMarkers, int markerSize) {
+Ptr<Dictionary> Dictionary::create(int nMarkers, int markerSize, int randomSeed) {
     const Ptr<Dictionary> baseDictionary = makePtr<Dictionary>();
-    return create(nMarkers, markerSize, baseDictionary);
+    return create(nMarkers, markerSize, baseDictionary, randomSeed);
 }
 
 
 /**
  */
 Ptr<Dictionary> Dictionary::create(int nMarkers, int markerSize,
-                                   const Ptr<Dictionary> &baseDictionary) {
-    return generateCustomDictionary(nMarkers, markerSize, baseDictionary);
+                                   const Ptr<Dictionary> &baseDictionary, int randomSeed) {
+
+    return generateCustomDictionary(nMarkers, markerSize, baseDictionary, randomSeed);
 }
 
 
@@ -346,11 +347,11 @@ Ptr<Dictionary> getPredefinedDictionary(int dict) {
 /**
  * @brief Generates a random marker Mat of size markerSize x markerSize
  */
-static Mat _generateRandomMarker(int markerSize) {
+static Mat _generateRandomMarker(int markerSize, RNG &rng) {
     Mat marker(markerSize, markerSize, CV_8UC1, Scalar::all(0));
     for(int i = 0; i < markerSize; i++) {
         for(int j = 0; j < markerSize; j++) {
-            unsigned char bit = (unsigned char) (rand() % 2);
+            unsigned char bit = (unsigned char) (rng.uniform(0,2));
             marker.at< unsigned char >(i, j) = bit;
         }
     }
@@ -377,7 +378,8 @@ static int _getSelfDistance(const Mat &marker) {
 /**
  */
 Ptr<Dictionary> generateCustomDictionary(int nMarkers, int markerSize,
-                                         const Ptr<Dictionary> &baseDictionary) {
+                                         const Ptr<Dictionary> &baseDictionary, int randomSeed) {
+    RNG rng((uint64)(randomSeed));
 
     Ptr<Dictionary> out = makePtr<Dictionary>();
     out->markerSize = markerSize;
@@ -415,7 +417,7 @@ Ptr<Dictionary> generateCustomDictionary(int nMarkers, int markerSize,
     int unproductiveIterations = 0;
 
     while(out->bytesList.rows < nMarkers) {
-        Mat currentMarker = _generateRandomMarker(markerSize);
+        Mat currentMarker = _generateRandomMarker(markerSize, rng);
 
         int selfDistance = _getSelfDistance(currentMarker);
         int minDistance = selfDistance;
@@ -467,9 +469,9 @@ Ptr<Dictionary> generateCustomDictionary(int nMarkers, int markerSize,
 
 /**
  */
-Ptr<Dictionary> generateCustomDictionary(int nMarkers, int markerSize) {
+Ptr<Dictionary> generateCustomDictionary(int nMarkers, int markerSize, int randomSeed) {
     Ptr<Dictionary> baseDictionary = makePtr<Dictionary>();
-    return generateCustomDictionary(nMarkers, markerSize, baseDictionary);
+    return generateCustomDictionary(nMarkers, markerSize, baseDictionary, randomSeed);
 }
 
 
