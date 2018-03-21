@@ -218,10 +218,10 @@ public:
    */
   ColorGradient(float weak_threshold, size_t num_features, float strong_threshold);
 
-  virtual String name() const;
+  virtual String name() const CV_OVERRIDE;
 
-  virtual void read(const FileNode& fn);
-  virtual void write(FileStorage& fs) const;
+  virtual void read(const FileNode& fn) CV_OVERRIDE;
+  virtual void write(FileStorage& fs) const CV_OVERRIDE;
 
   float weak_threshold;
   size_t num_features;
@@ -229,7 +229,7 @@ public:
 
 protected:
   virtual Ptr<QuantizedPyramid> processImpl(const Mat& src,
-                        const Mat& mask) const;
+                        const Mat& mask) const CV_OVERRIDE;
 };
 
 /**
@@ -256,10 +256,10 @@ public:
   DepthNormal(int distance_threshold, int difference_threshold, size_t num_features,
               int extract_threshold);
 
-  virtual String name() const;
+  virtual String name() const CV_OVERRIDE;
 
-  virtual void read(const FileNode& fn);
-  virtual void write(FileStorage& fs) const;
+  virtual void read(const FileNode& fn) CV_OVERRIDE;
+  virtual void write(FileStorage& fs) const CV_OVERRIDE;
 
   int distance_threshold;
   int difference_threshold;
@@ -268,7 +268,7 @@ public:
 
 protected:
   virtual Ptr<QuantizedPyramid> processImpl(const Mat& src,
-                        const Mat& mask) const;
+                        const Mat& mask) const CV_OVERRIDE;
 };
 
 /**
