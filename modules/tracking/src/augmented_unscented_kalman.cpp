@@ -140,16 +140,16 @@ class AugmentedUnscentedKalmanFilterImpl: public UnscentedKalmanFilter
 public:
 
     AugmentedUnscentedKalmanFilterImpl(const AugmentedUnscentedKalmanFilterParams& params);
-    ~AugmentedUnscentedKalmanFilterImpl();
+    ~AugmentedUnscentedKalmanFilterImpl() CV_OVERRIDE;
 
-    Mat predict(InputArray control);
-    Mat correct(InputArray measurement);
+    Mat predict(InputArray control) CV_OVERRIDE;
+    Mat correct(InputArray measurement) CV_OVERRIDE;
 
-    Mat getProcessNoiseCov() const;
-    Mat getMeasurementNoiseCov() const;
-    Mat getErrorCov() const;
+    Mat getProcessNoiseCov() const CV_OVERRIDE;
+    Mat getMeasurementNoiseCov() const CV_OVERRIDE;
+    Mat getErrorCov() const CV_OVERRIDE;
 
-    Mat getState() const;
+    Mat getState() const CV_OVERRIDE;
 
 };
 

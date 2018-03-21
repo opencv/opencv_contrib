@@ -87,8 +87,8 @@ class TrackerMILModel : public TrackerModel
   void responseToConfidenceMap( const std::vector<Mat>& responses, ConfidenceMap& confidenceMap );
 
  protected:
-  void modelEstimationImpl( const std::vector<Mat>& responses );
-  void modelUpdateImpl();
+  void modelEstimationImpl( const std::vector<Mat>& responses ) CV_OVERRIDE;
+  void modelUpdateImpl() CV_OVERRIDE;
 
  private:
   int mode;

@@ -75,11 +75,11 @@ using namespace cv;
 class TrackerMedianFlowImpl : public TrackerMedianFlow{
 public:
     TrackerMedianFlowImpl(TrackerMedianFlow::Params paramsIn = TrackerMedianFlow::Params()) {params=paramsIn;isInit=false;}
-    void read( const FileNode& fn );
-    void write( FileStorage& fs ) const;
+    void read( const FileNode& fn ) CV_OVERRIDE;
+    void write( FileStorage& fs ) const CV_OVERRIDE;
 private:
-    bool initImpl( const Mat& image, const Rect2d& boundingBox );
-    bool updateImpl( const Mat& image, Rect2d& boundingBox );
+    bool initImpl( const Mat& image, const Rect2d& boundingBox ) CV_OVERRIDE;
+    bool updateImpl( const Mat& image, Rect2d& boundingBox ) CV_OVERRIDE;
     bool medianFlowImpl(Mat oldImage,Mat newImage,Rect2d& oldBox);
     Rect2d vote(const std::vector<Point2f>& oldPoints,const std::vector<Point2f>& newPoints,const Rect2d& oldRect,Point2f& mD);
     float dist(Point2f p1,Point2f p2);
@@ -127,8 +127,8 @@ public:
 protected:
     Rect2d boundingBox_;
     Mat image_;
-    void modelEstimationImpl( const std::vector<Mat>& /*responses*/ ){}
-    void modelUpdateImpl(){}
+    void modelEstimationImpl( const std::vector<Mat>& /*responses*/ ) CV_OVERRIDE {}
+    void modelUpdateImpl() CV_OVERRIDE {}
 };
 
 void TrackerMedianFlowImpl::read( const cv::FileNode& fn )

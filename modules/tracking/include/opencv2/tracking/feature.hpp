@@ -145,8 +145,8 @@ class CvFeatureParams : public CvParams
   };
   CvFeatureParams();
   virtual void init( const CvFeatureParams& fp );
-  virtual void write( FileStorage &fs ) const;
-  virtual bool read( const FileNode &node );
+  virtual void write( FileStorage &fs ) const CV_OVERRIDE;
+  virtual bool read( const FileNode &node ) CV_OVERRIDE;
   static Ptr<CvFeatureParams> create( int featureType );
   int maxCatCount;  // 0 in case of numerical features
   int featSize;  // 1 in case of simple features (HAAR, LBP) and N_BINS(9)*N_CELLS(4) in case of Dalal's HOG features
@@ -201,13 +201,13 @@ class CvHaarFeatureParams : public CvFeatureParams
 
   CvHaarFeatureParams();
 
-  virtual void init( const CvFeatureParams& fp );
-  virtual void write( FileStorage &fs ) const;
-  virtual bool read( const FileNode &node );
+  virtual void init( const CvFeatureParams& fp ) CV_OVERRIDE;
+  virtual void write( FileStorage &fs ) const CV_OVERRIDE;
+  virtual bool read( const FileNode &node ) CV_OVERRIDE;
 
-  virtual void printDefaults() const;
-  virtual void printAttrs() const;
-  virtual bool scanAttr( const std::string prm, const std::string val );
+  virtual void printDefaults() const CV_OVERRIDE;
+  virtual void printAttrs() const CV_OVERRIDE;
+  virtual bool scanAttr( const std::string prm, const std::string val ) CV_OVERRIDE;
 
   bool isIntegral;
 };
@@ -251,10 +251,10 @@ class CvHaarEvaluator : public CvFeatureEvaluator
 
   };
 
-  virtual void init( const CvFeatureParams *_featureParams, int _maxSampleCount, Size _winSize );
-  virtual void setImage( const Mat& img, uchar clsLabel = 0, int idx = 1 );
-  virtual float operator()( int featureIdx, int sampleIdx );
-  virtual void writeFeatures( FileStorage &fs, const Mat& featureMap ) const;
+  virtual void init( const CvFeatureParams *_featureParams, int _maxSampleCount, Size _winSize ) CV_OVERRIDE;
+  virtual void setImage( const Mat& img, uchar clsLabel = 0, int idx = 1 ) CV_OVERRIDE;
+  virtual float operator()( int featureIdx, int sampleIdx ) CV_OVERRIDE;
+  virtual void writeFeatures( FileStorage &fs, const Mat& featureMap ) const CV_OVERRIDE;
   void writeFeature( FileStorage &fs ) const;  // for old file format
   const std::vector<CvHaarEvaluator::FeatureHaar>& getFeatures() const;
   inline CvHaarEvaluator::FeatureHaar& getFeatures( int idx )
@@ -263,7 +263,7 @@ class CvHaarEvaluator : public CvFeatureEvaluator
   }
   void setWinSize( Size patchSize );
   Size setWinSize() const;
-  virtual void generateFeatures();
+  virtual void generateFeatures() CV_OVERRIDE;
 
   /**
    * TODO new method
@@ -300,12 +300,12 @@ class CvHOGEvaluator : public CvFeatureEvaluator
   virtual ~CvHOGEvaluator()
   {
   }
-  virtual void init( const CvFeatureParams *_featureParams, int _maxSampleCount, Size _winSize );
-  virtual void setImage( const Mat& img, uchar clsLabel, int idx );
-  virtual float operator()( int varIdx, int sampleIdx );
-  virtual void writeFeatures( FileStorage &fs, const Mat& featureMap ) const;
+  virtual void init( const CvFeatureParams *_featureParams, int _maxSampleCount, Size _winSize ) CV_OVERRIDE;
+  virtual void setImage( const Mat& img, uchar clsLabel, int idx ) CV_OVERRIDE;
+  virtual float operator()( int varIdx, int sampleIdx ) CV_OVERRIDE;
+  virtual void writeFeatures( FileStorage &fs, const Mat& featureMap ) const CV_OVERRIDE;
  protected:
-  virtual void generateFeatures();
+  virtual void generateFeatures() CV_OVERRIDE;
   virtual void integralHistogram( const Mat &img, std::vector<Mat> &histogram, Mat &norm, int nbins ) const;
   class Feature
   {
@@ -364,18 +364,18 @@ struct CvLBPFeatureParams : CvFeatureParams
 class CvLBPEvaluator : public CvFeatureEvaluator
 {
  public:
-  virtual ~CvLBPEvaluator()
+  virtual ~CvLBPEvaluator() CV_OVERRIDE
   {
   }
-  virtual void init( const CvFeatureParams *_featureParams, int _maxSampleCount, Size _winSize );
-  virtual void setImage( const Mat& img, uchar clsLabel, int idx );
-  virtual float operator()( int featureIdx, int sampleIdx )
+  virtual void init( const CvFeatureParams *_featureParams, int _maxSampleCount, Size _winSize ) CV_OVERRIDE;
+  virtual void setImage( const Mat& img, uchar clsLabel, int idx ) CV_OVERRIDE;
+  virtual float operator()( int featureIdx, int sampleIdx ) CV_OVERRIDE
   {
     return (float) features[featureIdx].calc( sum, sampleIdx );
   }
-  virtual void writeFeatures( FileStorage &fs, const Mat& featureMap ) const;
+  virtual void writeFeatures( FileStorage &fs, const Mat& featureMap ) const CV_OVERRIDE;
  protected:
-  virtual void generateFeatures();
+  virtual void generateFeatures() CV_OVERRIDE;
 
   class Feature
   {

@@ -337,7 +337,7 @@ namespace cv
 			{
 			}
 
-			virtual void operator () (const cv::Range & r) const
+			virtual void operator () (const cv::Range & r) const CV_OVERRIDE
 			{
 				for (int ind = r.start; ind < r.end; ++ind)
 				{

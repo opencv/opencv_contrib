@@ -81,8 +81,8 @@ public:
 protected:
     Rect2d boundingBox_;
     Mat image_;
-    void modelEstimationImpl(const std::vector<Mat>&){}
-    void modelUpdateImpl(){}
+    void modelEstimationImpl(const std::vector<Mat>&) CV_OVERRIDE {}
+    void modelUpdateImpl() CV_OVERRIDE {}
 };
 
 TrackerGOTURNImpl::TrackerGOTURNImpl(const TrackerGOTURN::Params &parameters) :

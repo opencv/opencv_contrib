@@ -93,8 +93,8 @@ class TrackerBoostingModel : public TrackerModel
   std::vector<int> getSelectedWeakClassifier();
 
  protected:
-  void modelEstimationImpl( const std::vector<Mat>& responses );
-  void modelUpdateImpl();
+  void modelEstimationImpl( const std::vector<Mat>& responses ) CV_OVERRIDE;
+  void modelUpdateImpl() CV_OVERRIDE;
 
  private:
 

@@ -19,8 +19,8 @@ public:
     TrackerCSRTModel(TrackerCSRT::Params /*params*/){}
     ~TrackerCSRTModel(){}
 protected:
-    void modelEstimationImpl(const std::vector<Mat>& /*responses*/){}
-    void modelUpdateImpl(){}
+    void modelEstimationImpl(const std::vector<Mat>& /*responses*/) CV_OVERRIDE {}
+    void modelUpdateImpl() CV_OVERRIDE {}
 };
 
 
@@ -28,15 +28,15 @@ class TrackerCSRTImpl : public TrackerCSRT
 {
 public:
     TrackerCSRTImpl(const TrackerCSRT::Params &parameters = TrackerCSRT::Params());
-    void read(const FileNode& fn);
-    void write(FileStorage& fs) const;
+    void read(const FileNode& fn) CV_OVERRIDE;
+    void write(FileStorage& fs) const CV_OVERRIDE;
 
 protected:
     TrackerCSRT::Params params;
 
-    bool initImpl(const Mat& image, const Rect2d& boundingBox);
-    virtual void setInitialMask(const Mat mask);
-    bool updateImpl(const Mat& image, Rect2d& boundingBox);
+    bool initImpl(const Mat& image, const Rect2d& boundingBox) CV_OVERRIDE;
+    virtual void setInitialMask(const Mat mask) CV_OVERRIDE;
+    bool updateImpl(const Mat& image, Rect2d& boundingBox) CV_OVERRIDE;
     void update_csr_filter(const Mat &image, const Mat &my_mask);
     void update_histograms(const Mat &image, const Rect &region);
     void extract_histograms(const Mat &image, cv::Rect region, Histogram &hf, Histogram &hb);
@@ -232,7 +232,7 @@ public:
         this->P = P;
         this->admm_iterations = admm_iterations;
     }
-    virtual void operator ()(const Range& range) const
+    virtual void operator ()(const Range& range) const CV_OVERRIDE
     {
         for (int i = range.start; i < range.end; i++) {
             float mu = 5.0f;

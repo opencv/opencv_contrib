@@ -49,13 +49,13 @@ class TrackerBoostingImpl : public TrackerBoosting
 {
  public:
   TrackerBoostingImpl( const TrackerBoosting::Params &parameters = TrackerBoosting::Params() );
-  void read( const FileNode& fn );
-  void write( FileStorage& fs ) const;
+  void read( const FileNode& fn ) CV_OVERRIDE;
+  void write( FileStorage& fs ) const CV_OVERRIDE;
 
  protected:
 
-  bool initImpl( const Mat& image, const Rect2d& boundingBox );
-  bool updateImpl( const Mat& image, Rect2d& boundingBox );
+  bool initImpl( const Mat& image, const Rect2d& boundingBox ) CV_OVERRIDE;
+  bool updateImpl( const Mat& image, Rect2d& boundingBox ) CV_OVERRIDE;
 
   TrackerBoosting::Params params;
 };
