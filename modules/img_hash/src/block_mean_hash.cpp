@@ -22,7 +22,7 @@ enum
     colSize = imgWidth - blockWidth
 };
 
-class BlockMeanHashImpl : public ImgHashBase::ImgHashImpl
+class BlockMeanHashImpl CV_FINAL : public ImgHashBase::ImgHashImpl
 {
 public:
     BlockMeanHashImpl(int mode)
@@ -30,9 +30,9 @@ public:
         setMode(mode);
     }
 
-    ~BlockMeanHashImpl() {}
+    ~BlockMeanHashImpl() CV_OVERRIDE {}
 
-    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr)
+    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr) CV_OVERRIDE
     {
         cv::Mat const input = inputArr.getMat();
         CV_Assert(input.type() == CV_8UC4 ||
@@ -81,7 +81,7 @@ public:
         createHash(hash);
     }
 
-    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const
+    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const CV_OVERRIDE
     {
         return norm(hashOne, hashTwo, NORM_HAMMING);
     }

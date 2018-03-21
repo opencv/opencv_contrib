@@ -10,12 +10,12 @@ using namespace std;
 
 namespace {
 
-class ColorMomentHashImpl : public ImgHashBase::ImgHashImpl
+class ColorMomentHashImpl CV_FINAL : public ImgHashBase::ImgHashImpl
 {
 public:
-    ~ColorMomentHashImpl() {}
+    ~ColorMomentHashImpl() CV_OVERRIDE {}
 
-    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr)
+    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr) CV_OVERRIDE
     {
       cv::Mat const input = inputArr.getMat();
       CV_Assert(input.type() == CV_8UC4 ||
@@ -51,7 +51,7 @@ public:
       computeMoments(hash.ptr<double>(0) + 21);
     }
 
-    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const
+    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const CV_OVERRIDE
     {
       return norm(hashOne, hashTwo, NORM_L2) * 10000;
     }

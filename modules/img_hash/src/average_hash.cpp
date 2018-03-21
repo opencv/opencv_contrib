@@ -10,7 +10,7 @@ using namespace img_hash;
 
 namespace {
 
-class AverageHashImpl : public ImgHashBase::ImgHashImpl
+class AverageHashImpl CV_FINAL : public ImgHashBase::ImgHashImpl
 {
 private:
     cv::Mat bitsImg;
@@ -19,7 +19,7 @@ private:
 
 public:
 
-    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr)
+    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr) CV_OVERRIDE
     {
         cv::Mat const input = inputArr.getMat();
         CV_Assert(input.type() == CV_8UC4 ||
@@ -59,7 +59,7 @@ public:
         }
     }
 
-    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const
+    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const CV_OVERRIDE
     {
         return norm(hashOne, hashTwo, NORM_HAMMING);
     }
