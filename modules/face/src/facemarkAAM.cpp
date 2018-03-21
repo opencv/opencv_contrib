@@ -92,24 +92,24 @@ void FacemarkAAM::Params::write( cv::FileStorage& fs ) const{
 class FacemarkAAMImpl : public FacemarkAAM {
 public:
     FacemarkAAMImpl( const FacemarkAAM::Params &parameters = FacemarkAAM::Params() );
-    void read( const FileNode& /*fn*/ );
-    void write( FileStorage& /*fs*/ ) const;
+    void read( const FileNode& /*fn*/ ) CV_OVERRIDE;
+    void write( FileStorage& /*fs*/ ) const CV_OVERRIDE;
 
     void saveModel(String fs);
-    void loadModel(String fs);
+    void loadModel(String fs) CV_OVERRIDE;
 
-    bool setFaceDetector(bool(*f)(InputArray , OutputArray, void * ), void* userData);
-    bool getFaces(InputArray image, OutputArray faces);
+    bool setFaceDetector(bool(*f)(InputArray , OutputArray, void * ), void* userData) CV_OVERRIDE;
+    bool getFaces(InputArray image, OutputArray faces) CV_OVERRIDE;
 
-    bool getData(void * items);
+    bool getData(void * items) CV_OVERRIDE;
 
 protected:
 
-    bool fit( InputArray image, InputArray faces, InputOutputArray landmarks, void * runtime_params);//!< from many ROIs
+    bool fit( InputArray image, InputArray faces, InputOutputArray landmarks, void * runtime_params) CV_OVERRIDE;//!< from many ROIs
     bool fitImpl( const Mat image, std::vector<Point2f>& landmarks,const  Mat R,const  Point2f T,const  float scale, const int sclIdx=0 );
 
-    bool addTrainingSample(InputArray image, InputArray landmarks);
-    void training(void* parameters);
+    bool addTrainingSample(InputArray image, InputArray landmarks) CV_OVERRIDE;
+    void training(void* parameters) CV_OVERRIDE;
 
     Mat procrustes(std::vector<Point2f> , std::vector<Point2f> , Mat & , Scalar & , float & );
     void calcMeanShape(std::vector<std::vector<Point2f> > ,std::vector<Point2f> & );

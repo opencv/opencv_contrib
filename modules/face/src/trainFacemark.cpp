@@ -18,7 +18,7 @@ class getDiffShape : public ParallelLoopBody
         samples(samples_)
         {
         }
-        virtual void operator()( const cv::Range& range) const
+        virtual void operator()( const cv::Range& range) const CV_OVERRIDE
         {
             for(size_t j = (size_t)range.start; j < (size_t)range.end; ++j){
                 (*samples)[j].shapeResiduals.resize((*samples)[j].current_shape.size());
@@ -37,7 +37,7 @@ class getRelPixels : public ParallelLoopBody
         object(object_)
         {
         }
-        virtual void operator()( const cv::Range& range) const
+        virtual void operator()( const cv::Range& range) const CV_OVERRIDE
         {
             for (size_t j = (size_t)range.start; j < (size_t)range.end; ++j){
                 object.getRelativePixels(((*samples)[j]).current_shape,((*samples)[j]).pixel_coordinates);

@@ -18,7 +18,7 @@ class doSum : public ParallelLoopBody
         sum(sum_)
         {
         }
-        virtual void operator()( const Range& range) const
+        virtual void operator()( const Range& range) const CV_OVERRIDE
         {
             for (int j = range.start; j < range.end; ++j){
                 for(unsigned long k=0;k<(*samples)[j].shapeResiduals.size();k++){
@@ -38,7 +38,7 @@ class modifySamples : public ParallelLoopBody
         temp(temp_)
         {
         }
-        virtual void operator()( const Range& range) const
+        virtual void operator()( const Range& range) const CV_OVERRIDE
         {
             for (int j = range.start; j < range.end; ++j){
                 for(unsigned long k=0;k<(*samples)[j].shapeResiduals.size();k++){
@@ -62,7 +62,7 @@ class splitSamples : public ParallelLoopBody
         feats(feats_)
         {
         }
-        virtual void operator()( const Range& range) const
+        virtual void operator()( const Range& range) const CV_OVERRIDE
         {
             for (int i = range.start; i < range.end; ++i){
                 for(unsigned long j=0;j<*(num_test_splits);j++){

@@ -81,40 +81,45 @@ public:
         train(src, labels);
     }
 
-    ~LBPH() { }
+    ~LBPH() CV_OVERRIDE { }
 
     // Computes a LBPH model with images in src and
     // corresponding labels in labels.
-    void train(InputArrayOfArrays src, InputArray labels);
+    void train(InputArrayOfArrays src, InputArray labels) CV_OVERRIDE;
 
     // Updates this LBPH model with images in src and
     // corresponding labels in labels.
-    void update(InputArrayOfArrays src, InputArray labels);
+    void update(InputArrayOfArrays src, InputArray labels) CV_OVERRIDE;
 
     // Send all predict results to caller side for custom result handling
-    void predict(InputArray src, Ptr<PredictCollector> collector) const;
+    void predict(InputArray src, Ptr<PredictCollector> collector) const CV_OVERRIDE;
 
     // See FaceRecognizer::write.
-    void read(const FileNode& fn);
+    void read(const FileNode& fn) CV_OVERRIDE;
 
     // See FaceRecognizer::save.
-    void write(FileStorage& fs) const;
+    void write(FileStorage& fs) const CV_OVERRIDE;
 
-    bool empty() const {
+    bool empty() const CV_OVERRIDE {
         return (_labels.empty());
     }
-    String getDefaultName() const
+    String getDefaultName() const CV_OVERRIDE
     {
         return "opencv_lbphfaces";
     }
 
-    CV_IMPL_PROPERTY(int, GridX, _grid_x)
-    CV_IMPL_PROPERTY(int, GridY, _grid_y)
-    CV_IMPL_PROPERTY(int, Radius, _radius)
-    CV_IMPL_PROPERTY(int, Neighbors, _neighbors)
-    CV_IMPL_PROPERTY(double, Threshold, _threshold)
-    CV_IMPL_PROPERTY_RO(std::vector<cv::Mat>, Histograms, _histograms)
-    CV_IMPL_PROPERTY_RO(cv::Mat, Labels, _labels)
+    inline int getGridX() const CV_OVERRIDE { return _grid_x; }
+    inline void setGridX(int val) CV_OVERRIDE { _grid_x = val; }
+    inline int getGridY() const CV_OVERRIDE { return _grid_y; }
+    inline void setGridY(int val) CV_OVERRIDE { _grid_y = val; }
+    inline int getRadius() const CV_OVERRIDE { return _radius; }
+    inline void setRadius(int val) CV_OVERRIDE { _radius = val; }
+    inline int getNeighbors() const CV_OVERRIDE { return _neighbors; }
+    inline void setNeighbors(int val) CV_OVERRIDE { _neighbors = val; }
+    inline double getThreshold() const CV_OVERRIDE { return _threshold; }
+    inline void setThreshold(double val) CV_OVERRIDE { _threshold = val; }
+    inline std::vector<cv::Mat> getHistograms() const CV_OVERRIDE { return _histograms; }
+    inline cv::Mat getLabels() const CV_OVERRIDE { return _labels; }
 };
 
 
