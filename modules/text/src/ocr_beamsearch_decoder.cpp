@@ -155,7 +155,7 @@ bool beam_sort_function ( beamSearch_node a, beamSearch_node b )
 }
 
 
-class OCRBeamSearchDecoderImpl : public OCRBeamSearchDecoder
+class OCRBeamSearchDecoderImpl CV_FINAL : public OCRBeamSearchDecoder
 {
 public:
     //Default constructor
@@ -186,7 +186,7 @@ public:
         }
     }
 
-    ~OCRBeamSearchDecoderImpl()
+    ~OCRBeamSearchDecoderImpl() CV_OVERRIDE
     {
     }
 
@@ -196,7 +196,7 @@ public:
               vector<Rect>* component_rects,
               vector<string>* component_texts,
               vector<float>* component_confidences,
-              int component_level)
+              int component_level) CV_OVERRIDE
     {
         CV_Assert(mask.type() == CV_8UC1);
         //nothing to do with a mask here
@@ -209,7 +209,7 @@ public:
               vector<Rect>* component_rects,
               vector<string>* component_texts,
               vector<float>* component_confidences,
-              int component_level)
+              int component_level) CV_OVERRIDE
     {
 
         CV_Assert( (src.type() == CV_8UC1) || (src.type() == CV_8UC3) );
@@ -519,15 +519,15 @@ Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(const String& _filename,
     return makePtr<OCRBeamSearchDecoderImpl>(loadOCRBeamSearchClassifierCNN(_filename), _vocabulary, transition_p, emission_p, (decoder_mode)_mode, _beam_size);
 }
 
-class OCRBeamSearchClassifierCNN : public OCRBeamSearchDecoder::ClassifierCallback
+class OCRBeamSearchClassifierCNN CV_FINAL : public OCRBeamSearchDecoder::ClassifierCallback
 {
 public:
     //constructor
     OCRBeamSearchClassifierCNN(const std::string& filename);
     // Destructor
-    ~OCRBeamSearchClassifierCNN() {}
+    ~OCRBeamSearchClassifierCNN() CV_OVERRIDE {}
 
-    void eval( InputArray src, vector< vector<double> >& recognition_probabilities, vector<int>& oversegmentation );
+    void eval( InputArray src, vector< vector<double> >& recognition_probabilities, vector<int>& oversegmentation ) CV_OVERRIDE;
 
     int getWindowSize() {return window_size;}
     int getStepSize() {return step_size;}

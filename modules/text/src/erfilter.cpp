@@ -114,7 +114,7 @@ public:
     //Constructor
     ERFilterNM();
     //Destructor
-    ~ERFilterNM() {}
+    ~ERFilterNM() CV_OVERRIDE {}
 
     float minProbability;
     bool  nonMaxSuppression;
@@ -122,7 +122,7 @@ public:
 
     // the key method. Takes image on input, vector of ERStat is output for the first stage,
     // input/output - for the second one.
-    void run( InputArray image, vector<ERStat>& regions );
+    void run( InputArray image, vector<ERStat>& regions ) CV_OVERRIDE;
 
 protected:
     int thresholdDelta;
@@ -138,14 +138,14 @@ protected:
 public:
 
     // set/get methods to set the algorithm properties,
-    void setCallback(const Ptr<ERFilter::Callback>& cb);
-    void setThresholdDelta(int thresholdDelta);
-    void setMinArea(float minArea);
-    void setMaxArea(float maxArea);
-    void setMinProbability(float minProbability);
-    void setMinProbabilityDiff(float minProbabilityDiff);
-    void setNonMaxSuppression(bool nonMaxSuppression);
-    int  getNumRejected();
+    void setCallback(const Ptr<ERFilter::Callback>& cb) CV_OVERRIDE;
+    void setThresholdDelta(int thresholdDelta) CV_OVERRIDE;
+    void setMinArea(float minArea) CV_OVERRIDE;
+    void setMaxArea(float maxArea) CV_OVERRIDE;
+    void setMinProbability(float minProbability) CV_OVERRIDE;
+    void setMinProbabilityDiff(float minProbabilityDiff) CV_OVERRIDE;
+    void setNonMaxSuppression(bool nonMaxSuppression) CV_OVERRIDE;
+    int  getNumRejected() CV_OVERRIDE;
 
 private:
     // pointer to the input/output regions vector
@@ -171,32 +171,32 @@ private:
 
 
 // default 1st stage classifier
-class CV_EXPORTS ERClassifierNM1 : public ERFilter::Callback
+class CV_EXPORTS ERClassifierNM1 CV_FINAL : public ERFilter::Callback
 {
 public:
     //Constructor
     ERClassifierNM1(const string& filename);
     // Destructor
-    ~ERClassifierNM1() {}
+    ~ERClassifierNM1() CV_OVERRIDE {}
 
     // The classifier must return probability measure for the region.
-    double eval(const ERStat& stat);
+    double eval(const ERStat& stat) CV_OVERRIDE;
 
 private:
     Ptr<Boost> boost;
 };
 
 // default 2nd stage classifier
-class CV_EXPORTS ERClassifierNM2 : public ERFilter::Callback
+class CV_EXPORTS ERClassifierNM2 CV_FINAL : public ERFilter::Callback
 {
 public:
     //constructor
     ERClassifierNM2(const string& filename);
     // Destructor
-    ~ERClassifierNM2() {}
+    ~ERClassifierNM2() CV_OVERRIDE {}
 
     // The classifier must return probability measure for the region.
-    double eval(const ERStat& stat);
+    double eval(const ERStat& stat) CV_OVERRIDE;
 
 private:
     Ptr<Boost> boost;
@@ -1178,16 +1178,16 @@ Ptr<ERFilter::Callback> loadClassifierNM2(const String& filename)
 }
 
 // dummy classifier
-class ERDummyClassifier : public ERFilter::Callback
+class ERDummyClassifier CV_FINAL : public ERFilter::Callback
 {
 public:
     //Constructor
     ERDummyClassifier() {}
     // Destructor
-    ~ERDummyClassifier() {}
+    ~ERDummyClassifier() CV_OVERRIDE {}
 
     // The classifier must return probability measure for the region.
-    double eval(const ERStat& s) {if (s.area ==0) return (double)0.0; return (double)1.0;}
+    double eval(const ERStat& s) CV_OVERRIDE {if (s.area ==0) return (double)0.0; return (double)1.0;}
 };
 
 /* Create a dummy classifier that accepts all regions */

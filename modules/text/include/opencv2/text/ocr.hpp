@@ -134,11 +134,11 @@ public:
      */
     virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
                      std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
-                     int component_level=0);
+                     int component_level=0) CV_OVERRIDE;
 
     virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
                      std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
-                     int component_level=0);
+                     int component_level=0) CV_OVERRIDE;
 
     // aliases for scripting
     CV_WRAP String run(InputArray image, int min_confidence, int component_level=0);
@@ -240,7 +240,7 @@ public:
      */
     virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
                      std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
-                     int component_level=0);
+                     int component_level=0) CV_OVERRIDE;
 
     /** @brief Recognize text using HMM.
 
@@ -267,7 +267,7 @@ public:
      */
     virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
                      std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
-                     int component_level=0);
+                     int component_level=0) CV_OVERRIDE;
 
     // aliases for scripting
     CV_WRAP String run(InputArray image, int min_confidence, int component_level=0);
@@ -453,11 +453,11 @@ public:
      */
     virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
                      std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
-                     int component_level=0);
+                     int component_level=0) CV_OVERRIDE;
 
     virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
                      std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
-                     int component_level=0);
+                     int component_level=0) CV_OVERRIDE;
 
     // aliases for scripting
     CV_WRAP String run(InputArray image, int min_confidence, int component_level=0);
@@ -555,7 +555,7 @@ public:
                      std::vector<Rect>* component_rects = NULL,
                      std::vector<std::string>* component_texts = NULL,
                      std::vector<float>* component_confidences = NULL,
-                     int component_level = OCR_LEVEL_WORD) = 0;
+                     int component_level = OCR_LEVEL_WORD) CV_OVERRIDE = 0;
 
     /** @brief Recognize text using a segmentation based word-spotting/classifier cnn.
 
@@ -586,7 +586,7 @@ public:
                      std::vector<Rect>* component_rects = NULL,
                      std::vector<std::string>* component_texts = NULL,
                      std::vector<float>* component_confidences = NULL,
-                     int component_level = OCR_LEVEL_WORD) = 0;
+                     int component_level = OCR_LEVEL_WORD) CV_OVERRIDE = 0;
 
     /** @brief Creates an instance of the OCRHolisticWordRecognizer class.
      */
