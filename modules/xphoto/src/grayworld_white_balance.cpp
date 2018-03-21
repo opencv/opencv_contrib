@@ -49,16 +49,16 @@ namespace xphoto
 void calculateChannelSums(uint &sumB, uint &sumG, uint &sumR, uchar *src_data, int src_len, float thresh);
 void calculateChannelSums(uint64 &sumB, uint64 &sumG, uint64 &sumR, ushort *src_data, int src_len, float thresh);
 
-class GrayworldWBImpl : public GrayworldWB
+class GrayworldWBImpl CV_FINAL : public GrayworldWB
 {
   private:
     float thresh;
 
   public:
     GrayworldWBImpl() { thresh = 0.9f; }
-    float getSaturationThreshold() const { return thresh; }
-    void setSaturationThreshold(float val) { thresh = val; }
-    void balanceWhite(InputArray _src, OutputArray _dst)
+    float getSaturationThreshold() const CV_OVERRIDE { return thresh; }
+    void setSaturationThreshold(float val) CV_OVERRIDE { thresh = val; }
+    void balanceWhite(InputArray _src, OutputArray _dst) CV_OVERRIDE
     {
         CV_Assert(!_src.empty());
         CV_Assert(_src.isContinuous());
