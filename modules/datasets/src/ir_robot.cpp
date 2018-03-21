@@ -49,14 +49,14 @@ namespace datasets
 
 using namespace std;
 
-class IR_robotImp : public IR_robot
+class IR_robotImp CV_FINAL : public IR_robot
 {
 public:
     IR_robotImp() {}
     //IR_robotImp(const string &path);
     virtual ~IR_robotImp() {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

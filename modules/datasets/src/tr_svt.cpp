@@ -42,7 +42,14 @@
 #include "opencv2/datasets/tr_svt.hpp"
 #include "opencv2/datasets/util.hpp"
 
+#if defined(__GNUC__) && __GNUC__ >= 5
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-override"
+#endif
 #include "tinyxml2/tinyxml2.h"
+#if defined(__GNUC__) && __GNUC__ >= 5
+#pragma GCC diagnostic pop
+#endif
 
 namespace cv
 {
@@ -52,14 +59,14 @@ namespace datasets
 using namespace std;
 using namespace tinyxml2;
 
-class TR_svtImp : public TR_svt
+class TR_svtImp CV_FINAL : public TR_svt
 {
 public:
     TR_svtImp() {}
     //TR_svtImp(const string &path);
-    virtual ~TR_svtImp() {}
+    virtual ~TR_svtImp() CV_OVERRIDE {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

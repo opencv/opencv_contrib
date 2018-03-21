@@ -76,7 +76,7 @@ struct PD_caltechObj : public Object
 class CV_EXPORTS PD_caltech : public Dataset
 {
 public:
-    virtual void load(const std::string &path) = 0;
+    virtual void load(const std::string &path) CV_OVERRIDE = 0;
 
     static Ptr<PD_caltech> create();
 };

@@ -49,14 +49,14 @@ namespace datasets
 
 using namespace std;
 
-class OR_mnistImp : public OR_mnist
+class OR_mnistImp CV_FINAL : public OR_mnist
 {
 public:
     OR_mnistImp() {}
     //OR_mnistImp(const string &path);
     virtual ~OR_mnistImp() {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

@@ -49,14 +49,14 @@ namespace datasets
 
 using namespace std;
 
-class IS_weizmannImp : public IS_weizmann
+class IS_weizmannImp CV_FINAL : public IS_weizmann
 {
 public:
     IS_weizmannImp() {}
     //IS_weizmannImp(const string &path);
     virtual ~IS_weizmannImp() {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

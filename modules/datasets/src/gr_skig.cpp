@@ -51,14 +51,14 @@ namespace datasets
 
 using namespace std;
 
-class GR_skigImp : public GR_skig
+class GR_skigImp CV_FINAL : public GR_skig
 {
 public:
     GR_skigImp() {}
     //GR_skigImp(const string &path);
     virtual ~GR_skigImp() {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

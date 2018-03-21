@@ -77,7 +77,7 @@ enum datasetType
 class CV_EXPORTS HPE_humaneva : public Dataset
 {
 public:
-    virtual void load(const std::string &path) = 0;
+    virtual void load(const std::string &path) CV_OVERRIDE = 0;
 
     static Ptr<HPE_humaneva> create(int num=humaneva_1);
 };

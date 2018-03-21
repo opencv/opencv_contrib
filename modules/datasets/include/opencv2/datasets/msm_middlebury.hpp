@@ -68,7 +68,7 @@ struct MSM_middleburyObj : public Object
 class CV_EXPORTS MSM_middlebury : public Dataset
 {
 public:
-    virtual void load(const std::string &path) = 0;
+    virtual void load(const std::string &path) CV_OVERRIDE = 0;
 
     static Ptr<MSM_middlebury> create();
 };

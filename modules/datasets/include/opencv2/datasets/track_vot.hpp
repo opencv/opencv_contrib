@@ -70,7 +70,7 @@ class CV_EXPORTS TRACK_vot : public Dataset
 public:
     static Ptr<TRACK_vot> create();
 
-    virtual void load(const std::string &path) = 0;
+    virtual void load(const std::string &path) CV_OVERRIDE = 0;
 
     virtual int getDatasetsNum() = 0;
 
