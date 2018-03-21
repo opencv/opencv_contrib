@@ -69,7 +69,7 @@ static const double defaultVarThreshold = 2.5*2.5;
 static const double defaultNoiseSigma = 30*0.5;
 static const double defaultInitialWeight = 0.05;
 
-class BackgroundSubtractorMOGImpl : public BackgroundSubtractorMOG
+class BackgroundSubtractorMOGImpl CV_FINAL : public BackgroundSubtractorMOG
 {
 public:
     //! the default constructor
@@ -102,7 +102,7 @@ public:
     }
 
     //! the update operator
-    virtual void apply(InputArray image, OutputArray fgmask, double learningRate=0);
+    virtual void apply(InputArray image, OutputArray fgmask, double learningRate=0) CV_OVERRIDE;
 
     //! re-initiaization method
     virtual void initialize(Size _frameSize, int _frameType)
@@ -122,24 +122,24 @@ public:
         bgmodel = Scalar::all(0);
     }
 
-    virtual void getBackgroundImage(OutputArray) const
+    virtual void getBackgroundImage(OutputArray) const CV_OVERRIDE
     {
         CV_Error( Error::StsNotImplemented, "" );
     }
 
-    virtual int getHistory() const { return history; }
-    virtual void setHistory(int _nframes) { history = _nframes; }
+    virtual int getHistory() const CV_OVERRIDE { return history; }
+    virtual void setHistory(int _nframes) CV_OVERRIDE { history = _nframes; }
 
-    virtual int getNMixtures() const { return nmixtures; }
-    virtual void setNMixtures(int nmix) { nmixtures = nmix; }
+    virtual int getNMixtures() const CV_OVERRIDE { return nmixtures; }
+    virtual void setNMixtures(int nmix) CV_OVERRIDE { nmixtures = nmix; }
 
-    virtual double getBackgroundRatio() const { return backgroundRatio; }
-    virtual void setBackgroundRatio(double _backgroundRatio) { backgroundRatio = _backgroundRatio; }
+    virtual double getBackgroundRatio() const CV_OVERRIDE { return backgroundRatio; }
+    virtual void setBackgroundRatio(double _backgroundRatio) CV_OVERRIDE { backgroundRatio = _backgroundRatio; }
 
-    virtual double getNoiseSigma() const { return noiseSigma; }
-    virtual void setNoiseSigma(double _noiseSigma) { noiseSigma = _noiseSigma; }
+    virtual double getNoiseSigma() const CV_OVERRIDE { return noiseSigma; }
+    virtual void setNoiseSigma(double _noiseSigma) CV_OVERRIDE { noiseSigma = _noiseSigma; }
 
-    virtual void write(FileStorage& fs) const
+    virtual void write(FileStorage& fs) const CV_OVERRIDE
     {
         fs << "name" << name_
            << "history" << history
@@ -148,7 +148,7 @@ public:
            << "noiseSigma" << noiseSigma;
     }
 
-    virtual void read(const FileNode& fn)
+    virtual void read(const FileNode& fn) CV_OVERRIDE
     {
         CV_Assert( (String)fn["name"] == name_ );
         history = (int)fn["history"];

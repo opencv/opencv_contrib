@@ -57,7 +57,7 @@ namespace cv
 namespace bgsegm
 {
 
-class BackgroundSubtractorGMGImpl : public BackgroundSubtractorGMG
+class BackgroundSubtractorGMGImpl CV_FINAL : public BackgroundSubtractorGMG
 {
 public:
     BackgroundSubtractorGMGImpl()
@@ -96,49 +96,49 @@ public:
      * @param image Input image
      * @param fgmask Output mask image representing foreground and background pixels
      */
-    virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1.0);
+    virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1.0) CV_OVERRIDE;
 
     /**
      * Releases all inner buffers.
      */
     void release();
 
-    virtual int getMaxFeatures() const { return maxFeatures; }
-    virtual void setMaxFeatures(int _maxFeatures) { maxFeatures = _maxFeatures; }
+    virtual int getMaxFeatures() const CV_OVERRIDE { return maxFeatures; }
+    virtual void setMaxFeatures(int _maxFeatures) CV_OVERRIDE { maxFeatures = _maxFeatures; }
 
-    virtual double getDefaultLearningRate() const { return learningRate; }
-    virtual void setDefaultLearningRate(double lr) { learningRate = lr; }
+    virtual double getDefaultLearningRate() const CV_OVERRIDE { return learningRate; }
+    virtual void setDefaultLearningRate(double lr) CV_OVERRIDE { learningRate = lr; }
 
-    virtual int getNumFrames() const { return numInitializationFrames; }
-    virtual void setNumFrames(int nframes) { numInitializationFrames = nframes; }
+    virtual int getNumFrames() const CV_OVERRIDE { return numInitializationFrames; }
+    virtual void setNumFrames(int nframes) CV_OVERRIDE { numInitializationFrames = nframes; }
 
-    virtual int getQuantizationLevels() const { return quantizationLevels; }
-    virtual void setQuantizationLevels(int nlevels) { quantizationLevels = nlevels; }
+    virtual int getQuantizationLevels() const CV_OVERRIDE { return quantizationLevels; }
+    virtual void setQuantizationLevels(int nlevels) CV_OVERRIDE { quantizationLevels = nlevels; }
 
-    virtual double getBackgroundPrior() const { return backgroundPrior; }
-    virtual void setBackgroundPrior(double bgprior) { backgroundPrior = bgprior; }
+    virtual double getBackgroundPrior() const CV_OVERRIDE { return backgroundPrior; }
+    virtual void setBackgroundPrior(double bgprior) CV_OVERRIDE { backgroundPrior = bgprior; }
 
-    virtual int getSmoothingRadius() const { return smoothingRadius; }
-    virtual void setSmoothingRadius(int radius) { smoothingRadius = radius; }
+    virtual int getSmoothingRadius() const CV_OVERRIDE { return smoothingRadius; }
+    virtual void setSmoothingRadius(int radius) CV_OVERRIDE { smoothingRadius = radius; }
 
-    virtual double getDecisionThreshold() const { return decisionThreshold; }
-    virtual void setDecisionThreshold(double thresh) { decisionThreshold = thresh; }
+    virtual double getDecisionThreshold() const CV_OVERRIDE { return decisionThreshold; }
+    virtual void setDecisionThreshold(double thresh) CV_OVERRIDE { decisionThreshold = thresh; }
 
-    virtual bool getUpdateBackgroundModel() const { return updateBackgroundModel; }
-    virtual void setUpdateBackgroundModel(bool update) { updateBackgroundModel = update; }
+    virtual bool getUpdateBackgroundModel() const CV_OVERRIDE { return updateBackgroundModel; }
+    virtual void setUpdateBackgroundModel(bool update) CV_OVERRIDE { updateBackgroundModel = update; }
 
-    virtual double getMinVal() const { return minVal_; }
-    virtual void setMinVal(double val) { minVal_ = val; }
+    virtual double getMinVal() const CV_OVERRIDE { return minVal_; }
+    virtual void setMinVal(double val) CV_OVERRIDE { minVal_ = val; }
 
-    virtual double getMaxVal() const  { return maxVal_; }
-    virtual void setMaxVal(double val)  { maxVal_ = val; }
+    virtual double getMaxVal() const CV_OVERRIDE { return maxVal_; }
+    virtual void setMaxVal(double val) CV_OVERRIDE { maxVal_ = val; }
 
-    virtual void getBackgroundImage(OutputArray backgroundImage) const
+    virtual void getBackgroundImage(OutputArray backgroundImage) const CV_OVERRIDE
     {
         backgroundImage.release();
     }
 
-    virtual void write(FileStorage& fs) const
+    virtual void write(FileStorage& fs) const CV_OVERRIDE
     {
         fs << "name" << name_
         << "maxFeatures" << maxFeatures
@@ -152,7 +152,7 @@ public:
         // we do not save minVal_ & maxVal_, since they depend on the image type.
     }
 
-    virtual void read(const FileNode& fn)
+    virtual void read(const FileNode& fn) CV_OVERRIDE
     {
         CV_Assert( (String)fn["name"] == name_ );
         maxFeatures = (int)fn["maxFeatures"];
@@ -323,7 +323,7 @@ public:
     {
     }
 
-    void operator() (const Range& range) const;
+    void operator() (const Range& range) const CV_OVERRIDE;
 
 private:
     Mat frame_;

@@ -196,8 +196,8 @@ class CV_EXPORTS_W BackgroundSubtractorCNT  : public BackgroundSubtractor
 {
 public:
     // BackgroundSubtractor interface
-    CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1) = 0;
-    CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const = 0;
+    CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1) CV_OVERRIDE = 0;
+    CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const CV_OVERRIDE = 0;
 
     /** @brief Returns number of frames with same pixel color to consider stable.
     */
@@ -255,9 +255,9 @@ class CV_EXPORTS_W BackgroundSubtractorGSOC : public BackgroundSubtractor
 {
 public:
     // BackgroundSubtractor interface
-    CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1) = 0;
+    CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1) CV_OVERRIDE = 0;
 
-    CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const = 0;
+    CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const CV_OVERRIDE = 0;
 };
 
 /** @brief Background Subtraction using Local SVD Binary Pattern. More details about the algorithm can be found at @cite LGuo2016
@@ -266,9 +266,9 @@ class CV_EXPORTS_W BackgroundSubtractorLSBP : public BackgroundSubtractor
 {
 public:
     // BackgroundSubtractor interface
-    CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1) = 0;
+    CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate=-1) CV_OVERRIDE = 0;
 
-    CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const = 0;
+    CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const CV_OVERRIDE = 0;
 };
 
 /** @brief This is for calculation of the LSBP descriptors.
