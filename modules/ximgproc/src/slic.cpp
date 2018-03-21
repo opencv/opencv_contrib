@@ -72,22 +72,22 @@ public:
 
     SuperpixelSLICImpl( InputArray image, int algorithm, int region_size, float ruler );
 
-    virtual ~SuperpixelSLICImpl();
+    virtual ~SuperpixelSLICImpl() CV_OVERRIDE;
 
     // perform amount of iteration
-    virtual void iterate( int num_iterations = 10 );
+    virtual void iterate( int num_iterations = 10 ) CV_OVERRIDE;
 
     // get amount of superpixels
-    virtual int getNumberOfSuperpixels() const;
+    virtual int getNumberOfSuperpixels() const CV_OVERRIDE;
 
     // get image with labels
-    virtual void getLabels( OutputArray labels_out ) const;
+    virtual void getLabels( OutputArray labels_out ) const CV_OVERRIDE;
 
     // get mask image with contour
-    virtual void getLabelContourMask( OutputArray image, bool thick_line = true ) const;
+    virtual void getLabelContourMask( OutputArray image, bool thick_line = true ) const CV_OVERRIDE;
 
     // enforce connectivity over labels
-    virtual void enforceLabelConnectivity( int min_element_size = 25 );
+    virtual void enforceLabelConnectivity( int min_element_size = 25 ) CV_OVERRIDE;
 
 
 protected:
@@ -840,7 +840,7 @@ struct SeedNormInvoker : ParallelLoopBody
       clustersize = _clustersize;
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       for (int k = range.start; k < range.end; ++k)
       {
@@ -1009,7 +1009,7 @@ struct SLICOGrowInvoker : ParallelLoopBody
       nr_channels = _nr_channels;
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       int cols = klabels->cols;
       int rows = klabels->rows;
@@ -1221,7 +1221,7 @@ struct SLICGrowInvoker : ParallelLoopBody
       nr_channels = _nr_channels;
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       for (int y = range.start; y < range.end; ++y)
       {

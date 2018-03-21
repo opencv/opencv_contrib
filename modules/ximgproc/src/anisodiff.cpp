@@ -92,7 +92,7 @@ public:
         alpha_ = alpha;
     }
 
-    void operator()(const Range& range) const
+    void operator()(const Range& range) const CV_OVERRIDE
     {
         const int cn = 3;
         int cols = src->cols;

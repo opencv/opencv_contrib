@@ -113,16 +113,16 @@ namespace cv {
              * Stragegy / Color
              ***************************************/
 
-            class SelectiveSearchSegmentationStrategyColorImpl : public SelectiveSearchSegmentationStrategyColor {
+            class SelectiveSearchSegmentationStrategyColorImpl CV_FINAL : public SelectiveSearchSegmentationStrategyColor {
                 public:
                     SelectiveSearchSegmentationStrategyColorImpl() {
                         name_ = "SelectiveSearchSegmentationStrategyColor";
                         last_image_id = -1;
                     }
 
-                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1);
-                    virtual float get(int r1, int r2);
-                    virtual void merge(int r1, int r2);
+                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1) CV_OVERRIDE;
+                    virtual float get(int r1, int r2) CV_OVERRIDE;
+                    virtual void merge(int r1, int r2) CV_OVERRIDE;
 
                 private:
                     String name_;
@@ -242,19 +242,19 @@ namespace cv {
              * Stragegy / Multiple
              ***************************************/
 
-            class SelectiveSearchSegmentationStrategyMultipleImpl : public SelectiveSearchSegmentationStrategyMultiple {
+            class SelectiveSearchSegmentationStrategyMultipleImpl CV_FINAL : public SelectiveSearchSegmentationStrategyMultiple {
                 public:
                     SelectiveSearchSegmentationStrategyMultipleImpl() {
                         name_ = "SelectiveSearchSegmentationStrategyMultiple";
                         weights_total = 0;
                     }
 
-                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1);
-                    virtual float get(int r1, int r2);
-                    virtual void merge(int r1, int r2);
+                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1) CV_OVERRIDE;
+                    virtual float get(int r1, int r2) CV_OVERRIDE;
+                    virtual void merge(int r1, int r2) CV_OVERRIDE;
 
-                    virtual void addStrategy(Ptr<SelectiveSearchSegmentationStrategy> g, float weight);
-                    virtual void clearStrategies();
+                    virtual void addStrategy(Ptr<SelectiveSearchSegmentationStrategy> g, float weight) CV_OVERRIDE;
+                    virtual void clearStrategies() CV_OVERRIDE;
 
                 private:
                     String name_;
@@ -346,15 +346,15 @@ namespace cv {
              * Stragegy / Size
              ***************************************/
 
-            class SelectiveSearchSegmentationStrategySizeImpl : public SelectiveSearchSegmentationStrategySize {
+            class SelectiveSearchSegmentationStrategySizeImpl CV_FINAL : public SelectiveSearchSegmentationStrategySize {
                 public:
                     SelectiveSearchSegmentationStrategySizeImpl() {
                         name_ = "SelectiveSearchSegmentationStrategySize";
                     }
 
-                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1);
-                    virtual float get(int r1, int r2);
-                    virtual void merge(int r1, int r2);
+                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1) CV_OVERRIDE;
+                    virtual float get(int r1, int r2) CV_OVERRIDE;
+                    virtual void merge(int r1, int r2) CV_OVERRIDE;
 
                 private:
                     String name_;
@@ -393,15 +393,15 @@ namespace cv {
              * Stragegy / Fill
              ***************************************/
 
-            class SelectiveSearchSegmentationStrategyFillImpl : public SelectiveSearchSegmentationStrategyFill {
+            class SelectiveSearchSegmentationStrategyFillImpl CV_FINAL : public SelectiveSearchSegmentationStrategyFill {
                 public:
                     SelectiveSearchSegmentationStrategyFillImpl() {
                         name_ = "SelectiveSearchSegmentationStrategyFill";
                     }
 
-                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1);
-                    virtual float get(int r1, int r2);
-                    virtual void merge(int r1, int r2);
+                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1) CV_OVERRIDE;
+                    virtual float get(int r1, int r2) CV_OVERRIDE;
+                    virtual void merge(int r1, int r2) CV_OVERRIDE;
 
                 private:
                     String name_;
@@ -471,16 +471,16 @@ namespace cv {
              * Stragegy / Texture
              ***************************************/
 
-            class SelectiveSearchSegmentationStrategyTextureImpl : public SelectiveSearchSegmentationStrategyTexture {
+            class SelectiveSearchSegmentationStrategyTextureImpl CV_FINAL : public SelectiveSearchSegmentationStrategyTexture {
                 public:
                     SelectiveSearchSegmentationStrategyTextureImpl() {
                         name_ = "SelectiveSearchSegmentationStrategyTexture";
                         last_image_id = -1;
                     }
 
-                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1);
-                    virtual float get(int r1, int r2);
-                    virtual void merge(int r1, int r2);
+                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1) CV_OVERRIDE;
+                    virtual float get(int r1, int r2) CV_OVERRIDE;
+                    virtual void merge(int r1, int r2) CV_OVERRIDE;
 
                 private:
                     String name_;
@@ -678,39 +678,39 @@ namespace cv {
 
             // Core
 
-            class SelectiveSearchSegmentationImpl : public SelectiveSearchSegmentation {
+            class SelectiveSearchSegmentationImpl CV_FINAL : public SelectiveSearchSegmentation {
                 public:
                     SelectiveSearchSegmentationImpl() {
                         name_ = "SelectiveSearchSegmentation";
                     }
 
-                    ~SelectiveSearchSegmentationImpl() {
+                    ~SelectiveSearchSegmentationImpl() CV_OVERRIDE {
                     };
 
-                    virtual void write(FileStorage& fs) const {
+                    virtual void write(FileStorage& fs) const CV_OVERRIDE {
                         fs << "name" << name_;
                     }
 
-                    virtual void read(const FileNode& fn) {
+                    virtual void read(const FileNode& fn) CV_OVERRIDE {
                         CV_Assert( (String)fn["name"] == name_);
                     }
 
-                    virtual void setBaseImage(InputArray img);
+                    virtual void setBaseImage(InputArray img) CV_OVERRIDE;
 
-                    virtual void switchToSingleStrategy(int k = 200, float sigma = 0.8);
-                    virtual void switchToSelectiveSearchFast(int base_k = 150, int inc_k = 150, float sigma = 0.8);
-                    virtual void switchToSelectiveSearchQuality(int base_k = 150, int inc_k = 150, float sigma = 0.8);
+                    virtual void switchToSingleStrategy(int k = 200, float sigma = 0.8) CV_OVERRIDE;
+                    virtual void switchToSelectiveSearchFast(int base_k = 150, int inc_k = 150, float sigma = 0.8) CV_OVERRIDE;
+                    virtual void switchToSelectiveSearchQuality(int base_k = 150, int inc_k = 150, float sigma = 0.8) CV_OVERRIDE;
 
-                    virtual void addImage(InputArray img);
-                    virtual void clearImages();
+                    virtual void addImage(InputArray img) CV_OVERRIDE;
+                    virtual void clearImages() CV_OVERRIDE;
 
-                    virtual void addGraphSegmentation(Ptr<GraphSegmentation> g);
-                    virtual void clearGraphSegmentations();
+                    virtual void addGraphSegmentation(Ptr<GraphSegmentation> g) CV_OVERRIDE;
+                    virtual void clearGraphSegmentations() CV_OVERRIDE;
 
-                    virtual void addStrategy(Ptr<SelectiveSearchSegmentationStrategy> s);
-                    virtual void clearStrategies();
+                    virtual void addStrategy(Ptr<SelectiveSearchSegmentationStrategy> s) CV_OVERRIDE;
+                    virtual void clearStrategies() CV_OVERRIDE;
 
-                    virtual void process(std::vector<Rect>& rects);
+                    virtual void process(std::vector<Rect>& rects) CV_OVERRIDE;
 
 
                 private:

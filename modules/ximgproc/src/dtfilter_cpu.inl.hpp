@@ -2,26 +2,26 @@
  *  By downloading, copying, installing or using the software you agree to this license.
  *  If you do not agree to this license, do not download, install,
  *  copy or use the software.
- *  
- *  
+ *
+ *
  *  License Agreement
  *  For Open Source Computer Vision Library
  *  (3 - clause BSD License)
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
- *  
+ *
  *  * Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and / or other materials provided with the distribution.
- *  
+ *
  *  * Neither the names of the copyright holders nor the names of the contributors
  *  may be used to endorse or promote products derived from this software
  *  without specific prior written permission.
- *  
+ *
  *  This software is provided by the copyright holders and contributors "as is" and
  *  any express or implied warranties, including, but not limited to, the implied
  *  warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -137,7 +137,7 @@ void DTFilterCPU::filter_(const Mat& src, Mat& dst, int dDepth)
 
     Mat res;
     if (dDepth == -1) dDepth = src.depth();
-    
+
     //small optimization to avoid extra copying of data
     bool useDstAsRes = (dDepth == traits::Depth<WorkVec>::value && (mode == DTF_NC || mode == DTF_RF));
     if (useDstAsRes)
@@ -193,7 +193,7 @@ void DTFilterCPU::filter_(const Mat& src, Mat& dst, int dDepth)
             bool useA0DT = (singleFilterCall || iter == 1);
             Mat& a0dHor  = (useA0DT) ? a0distHor : adistHor;
             Mat& a0dVert = (useA0DT) ? a0distVert : adistVert;
-            
+
             FilterRF_horPass<WorkVec> horParBody(res, a0dHor, iter);
             FilterRF_vertPass<WorkVec> vertParBody(res, a0dVert, iter);
             parallel_for_(horParBody.getRange(), horParBody);
@@ -261,7 +261,7 @@ void DTFilterCPU::prepareSrcImg_IC(const Mat& src, Mat& dst, Mat& dstT)
     {
         line        = dstOutT.ptr<WorkVec>(i);
         line[0]     = topLine[i];
-        line[ri]    = bottomLine[i]; 
+        line[ri]    = bottomLine[i];
     }
 }
 
@@ -514,7 +514,7 @@ void DTFilterCPU::ComputeDTandIDTHor_ParBody<GuideVec>::operator()(const Range& 
         DistType  curDist;
         IDistType curIDist = (IDistType)0;
         int j;
-                
+
         distLine[-1] = maxRadius;
         //idistLine[-1] = curIDist - maxRadius;
         idistLine[0] = curIDist;

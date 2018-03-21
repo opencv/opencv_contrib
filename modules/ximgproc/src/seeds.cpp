@@ -79,13 +79,13 @@ public:
 
     virtual ~SuperpixelSEEDSImpl();
 
-    virtual int getNumberOfSuperpixels() { return nrLabels(seeds_top_level); }
+    virtual int getNumberOfSuperpixels() CV_OVERRIDE { return nrLabels(seeds_top_level); }
 
-    virtual void iterate(InputArray img, int num_iterations = 4);
+    virtual void iterate(InputArray img, int num_iterations = 4) CV_OVERRIDE;
 
 
-    virtual void getLabels(OutputArray labels_out);
-    virtual void getLabelContourMask(OutputArray image, bool thick_line = false);
+    virtual void getLabels(OutputArray labels_out) CV_OVERRIDE;
+    virtual void getLabelContourMask(OutputArray image, bool thick_line = false) CV_OVERRIDE;
 
 private:
     /* initialization */
