@@ -43,36 +43,36 @@
 
 namespace cv {
 namespace structured_light {
-class CV_EXPORTS_W GrayCodePattern_Impl : public GrayCodePattern
+class CV_EXPORTS_W GrayCodePattern_Impl CV_FINAL : public GrayCodePattern
 {
  public:
   // Constructor
   explicit GrayCodePattern_Impl( const GrayCodePattern::Params &parameters = GrayCodePattern::Params() );
 
   // Destructor
-  virtual ~GrayCodePattern_Impl(){};
+  virtual ~GrayCodePattern_Impl() CV_OVERRIDE {};
 
   // Generates the gray code pattern as a std::vector<Mat>
-  bool generate( OutputArrayOfArrays patternImages );
+  bool generate( OutputArrayOfArrays patternImages ) CV_OVERRIDE;
 
   // Decodes the gray code pattern, computing the disparity map
   bool decode( const std::vector< std::vector<Mat> >& patternImages, OutputArray disparityMap, InputArrayOfArrays blackImages = noArray(),
-               InputArrayOfArrays whiteImages = noArray(), int flags = DECODE_3D_UNDERWORLD ) const;
+               InputArrayOfArrays whiteImages = noArray(), int flags = DECODE_3D_UNDERWORLD ) const CV_OVERRIDE;
 
   // Returns the number of pattern images for the graycode pattern
-  size_t getNumberOfPatternImages() const;
+  size_t getNumberOfPatternImages() const CV_OVERRIDE;
 
   // Sets the value for black threshold
-  void setBlackThreshold( size_t val );
+  void setBlackThreshold( size_t val ) CV_OVERRIDE;
 
   // Sets the value for set the value for white threshold
-  void setWhiteThreshold( size_t val );
+  void setWhiteThreshold( size_t val ) CV_OVERRIDE;
 
   // Generates the images needed for shadowMasks computation
-  void getImagesForShadowMasks( InputOutputArray blackImage, InputOutputArray whiteImage ) const;
+  void getImagesForShadowMasks( InputOutputArray blackImage, InputOutputArray whiteImage ) const CV_OVERRIDE;
 
   // For a (x,y) pixel of the camera returns the corresponding projector pixel
-  bool getProjPixel(InputArrayOfArrays patternImages, int x, int y, Point &projPix) const;
+  bool getProjPixel(InputArrayOfArrays patternImages, int x, int y, Point &projPix) const CV_OVERRIDE;
 
  private:
   // Parameters
