@@ -103,7 +103,7 @@ class CV_EXPORTS_W StaticSaliency : public virtual Saliency
      */
   CV_WRAP bool computeBinaryMap( InputArray _saliencyMap, OutputArray _binaryMap );
  protected:
-  virtual bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap )=0;
+  virtual bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap ) CV_OVERRIDE = 0;
 
 };
 
@@ -112,7 +112,7 @@ class CV_EXPORTS_W MotionSaliency : public virtual Saliency
 {
 
  protected:
-  virtual bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap )=0;
+  virtual bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap ) CV_OVERRIDE = 0;
 
 };
 
@@ -121,7 +121,7 @@ class CV_EXPORTS_W Objectness : public virtual Saliency
 {
 
  protected:
-  virtual bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap )=0;
+  virtual bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap ) CV_OVERRIDE = 0;
 
 };
 
