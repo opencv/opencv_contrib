@@ -9,73 +9,73 @@
 
 namespace cv{ namespace hfs{
 
-class HfsSegmentImpl : public cv::hfs::HfsSegment{
+class HfsSegmentImpl CV_FINAL : public cv::hfs::HfsSegment{
 public:
 
-    void setSegEgbThresholdI(float c)
+    void setSegEgbThresholdI(float c) CV_OVERRIDE
     {
         core->hfsSettings.egbThresholdI = c;
     }
-    float getSegEgbThresholdI() {
+    float getSegEgbThresholdI() CV_OVERRIDE {
         return core->hfsSettings.egbThresholdI;
     }
 
 
-    void setMinRegionSizeI(int n)
+    void setMinRegionSizeI(int n) CV_OVERRIDE
     {
         core->hfsSettings.minRegionSizeI = n;
     }
-    int getMinRegionSizeI()
+    int getMinRegionSizeI() CV_OVERRIDE
     {
         return core->hfsSettings.minRegionSizeI;
     }
 
-    void setSegEgbThresholdII(float c)
+    void setSegEgbThresholdII(float c) CV_OVERRIDE
     {
         core->hfsSettings.egbThresholdII = c;
     }
-    float getSegEgbThresholdII() {
+    float getSegEgbThresholdII() CV_OVERRIDE {
         return core->hfsSettings.egbThresholdII;
     }
 
 
-    void setMinRegionSizeII(int n)
+    void setMinRegionSizeII(int n) CV_OVERRIDE
     {
         core->hfsSettings.minRegionSizeII = n;
     }
-    int getMinRegionSizeII()
+    int getMinRegionSizeII() CV_OVERRIDE
     {
         return core->hfsSettings.minRegionSizeII;
     }
 
-    void setSpatialWeight(float w)
+    void setSpatialWeight(float w) CV_OVERRIDE
     {
         core->hfsSettings.slicSettings.coh_weight = w;
         core->reconstructEngine();
     }
-    float getSpatialWeight()
+    float getSpatialWeight() CV_OVERRIDE
     {
         return core->hfsSettings.slicSettings.coh_weight;
     }
 
 
-    void setSlicSpixelSize(int n)
+    void setSlicSpixelSize(int n) CV_OVERRIDE
     {
         core->hfsSettings.slicSettings.spixel_size = n;
         core->reconstructEngine();
     }
-    int getSlicSpixelSize()
+    int getSlicSpixelSize() CV_OVERRIDE
     {
         return core->hfsSettings.slicSettings.spixel_size;
     }
 
 
-    void setNumSlicIter(int n)
+    void setNumSlicIter(int n) CV_OVERRIDE
     {
         core->hfsSettings.slicSettings.num_iters = n;
         core->reconstructEngine();
     }
-    int getNumSlicIter()
+    int getNumSlicIter() CV_OVERRIDE
     {
         return core->hfsSettings.slicSettings.num_iters;
     }
@@ -90,8 +90,8 @@ public:
             spatialWeight, spixelSize, numIter));
     }
 
-    Mat performSegmentGpu(InputArray src, bool ifDraw = true);
-    Mat performSegmentCpu(InputArray src, bool ifDraw = true);
+    Mat performSegmentGpu(InputArray src, bool ifDraw = true) CV_OVERRIDE;
+    Mat performSegmentCpu(InputArray src, bool ifDraw = true) CV_OVERRIDE;
 private:
     Ptr<HfsCore> core;
 };
