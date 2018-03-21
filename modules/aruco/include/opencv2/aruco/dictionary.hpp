@@ -84,14 +84,14 @@ class CV_EXPORTS_W Dictionary {
     /**
      * @see generateCustomDictionary
      */
-    CV_WRAP_AS(create) static Ptr<Dictionary> create(int nMarkers, int markerSize);
+    CV_WRAP_AS(create) static Ptr<Dictionary> create(int nMarkers, int markerSize, int randomSeed=0);
 
 
     /**
      * @see generateCustomDictionary
      */
     CV_WRAP_AS(create_from) static Ptr<Dictionary> create(int nMarkers, int markerSize,
-            const Ptr<Dictionary> &baseDictionary);
+            const Ptr<Dictionary> &baseDictionary, int randomSeed=0);
 
     /**
      * @see getPredefinedDictionary
@@ -176,7 +176,8 @@ CV_EXPORTS_W Ptr<Dictionary> getPredefinedDictionary(int dict);
   */
 CV_EXPORTS_AS(custom_dictionary) Ptr<Dictionary> generateCustomDictionary(
         int nMarkers,
-        int markerSize);
+        int markerSize,
+        int randomSeed=0);
 
 
 /**
@@ -185,6 +186,7 @@ CV_EXPORTS_AS(custom_dictionary) Ptr<Dictionary> generateCustomDictionary(
   * @param nMarkers number of markers in the dictionary
   * @param markerSize number of bits per dimension of each markers
   * @param baseDictionary Include the markers in this dictionary at the beginning (optional)
+  * @param randomSeed a user supplied seed for theRNG()
   *
   * This function creates a new dictionary composed by nMarkers markers and each markers composed
   * by markerSize x markerSize bits. If baseDictionary is provided, its markers are directly
@@ -194,7 +196,8 @@ CV_EXPORTS_AS(custom_dictionary) Ptr<Dictionary> generateCustomDictionary(
 CV_EXPORTS_AS(custom_dictionary_from) Ptr<Dictionary> generateCustomDictionary(
         int nMarkers,
         int markerSize,
-        const Ptr<Dictionary> &baseDictionary);
+        const Ptr<Dictionary> &baseDictionary,
+        int randomSeed=0);
 
 
 
