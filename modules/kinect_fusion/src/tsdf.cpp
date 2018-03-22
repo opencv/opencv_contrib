@@ -257,93 +257,104 @@ void TSDFVolume::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points
 }
 
 
+struct PushPoints
+{
+    PushPoints(const TSDFVolume& _vol, Mat_<Point3f>& _pts, Mutex& _mtx) :
+        vol(_vol), points(_pts), mtx(_mtx) { }
+
+    inline void coord(int x, int y, int z, Point3f V, float v0, int axis) const
+    {
+        // 0 for x, 1 for y, 2 for z
+        const int edgeResolution = vol.edgeResolution;
+        bool limits;
+        Point3i shift;
+        float Vc;
+        if(axis == 0)
+        {
+            shift = Point3i(1, 0, 0);
+            limits = (x + 1 < edgeResolution);
+            Vc = V.x;
+        }
+        if(axis == 1)
+        {
+            shift = Point3i(0, 1, 0);
+            limits = (y + 1 < edgeResolution);
+            Vc = V.y;
+        }
+        if(axis == 2)
+        {
+            shift = Point3i(0, 0, 1);
+            limits = (z + 1 < edgeResolution);
+            Vc = V.z;
+        }
+
+        if(limits)
+        {
+            const Voxel& voxeld = vol.volume((x+shift.x)*edgeResolution*edgeResolution +
+                                             (y+shift.y)*edgeResolution +
+                                             (z+shift.z));
+            kftype vd = voxeld.v;
+
+            if(voxeld.weight != 0 && vd != 1.f)
+            {
+                if((v0 > 0 && vd < 0) || (v0 < 0 && vd > 0))
+                {
+                    //linearly interpolate coordinate
+                    float Vn = Vc + vol.voxelSize;
+                    float dinv = 1.f/(abs(v0)+abs(vd));
+                    float inter = (Vc*abs(vd) + Vn*abs(v0))*dinv;
+
+                    Point3f p(shift.x ? inter : V.x,
+                              shift.y ? inter : V.y,
+                              shift.z ? inter : V.z);
+                    {
+                        AutoLock al(mtx);
+                        points.push_back(vol.pose * p);
+                    }
+                }
+            }
+        }
+    }
+
+    void operator ()(const Voxel &voxel0, const int position[2]) const
+    {
+        kftype v0 = voxel0.v;
+        if(voxel0.weight != 0 && v0 != 1.f)
+        {
+            //TODO: check if it's pos[0], not pos[1]
+            int pi = position[1];
+
+            // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
+            int x, y, z;
+            z = pi % vol.edgeResolution;
+            pi = (pi - z)/vol.edgeResolution;
+            y = pi % vol.edgeResolution;
+            pi = (pi - y)/vol.edgeResolution;
+            x = pi % vol.edgeResolution;
+
+            Point3f V = (Point3f(x, y, z) + Point3f(0.5f, 0.5f, 0.5f))*vol.voxelSize;
+
+            coord(x, y, z, V, v0, 0);
+            coord(x, y, z, V, v0, 1);
+            coord(x, y, z, V, v0, 2);
+
+        } // if voxel is not empty
+    }
+
+    const TSDFVolume& vol;
+    Mat_<Point3f>& points;
+    Mutex& mtx;
+};
+
 void TSDFVolume::fetchPoints(OutputArray _points) const
 {
     if(_points.needed())
     {
         Mat_<Point3f> points;
 
-        // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
-        for(int x = 0; x < edgeResolution; x++)
-        {
-            for(int y = 0; y < edgeResolution; y++)
-            {
-                Point3f V((x + 0.5f)*voxelSize, (y + 0.5f)*voxelSize, 0);
-                for(int z = 0; z < edgeResolution; z++)
-                {
-                    const Voxel& voxel0 = volume(x*edgeResolution*edgeResolution + y*edgeResolution + z);
-                    kftype v0 = voxel0.v;
-
-                    if(voxel0.weight != 0 && v0 != 1.f)
-                    {
-                        V.z = (z + 0.5f)*voxelSize;
-
-                        //X
-                        if(x + 1 < edgeResolution)
-                        {
-                            const Voxel& voxeld = volume((x+1)*edgeResolution*edgeResolution + y*edgeResolution + z);
-                            kftype vd = voxeld.v;
-
-                            if(voxeld.weight != 0 && vd != 1.f)
-                            {
-                                if((v0 > 0 && vd < 0) || (v0 < 0 && vd > 0))
-                                {
-                                    //linearly interpolate coordinate
-                                    float Vn = V.x + voxelSize;
-                                    float dinv = 1.f/(abs(v0)+abs(vd));
-                                    float inter = (V.x*abs(vd) + Vn*abs(v0))*dinv;
-
-                                    Point3f p(inter, V.y, V.z);
-                                    points.push_back(pose * p);
-                                }
-                            }
-                        }
-
-                        //Y
-                        if(y + 1 < edgeResolution)
-                        {
-                            const Voxel& voxeld = volume(x*edgeResolution*edgeResolution + (y+1)*edgeResolution + z);
-                            kftype vd = voxeld.v;
-
-                            if(voxeld.weight != 0 && vd != 1.f)
-                            {
-                                if((v0 > 0 && vd < 0) || (v0 < 0 && vd > 0))
-                                {
-                                    //linearly interpolate coordinate
-                                    float Vn = V.y + voxelSize;
-                                    float dinv = 1.f/(abs(v0)+abs(vd));
-                                    float inter = (V.y*abs(vd) + Vn*abs(v0))*dinv;
-
-                                    Point3f p(V.x, inter, V.z);
-                                    points.push_back(pose * p);
-                                }
-                            }
-                        }
-
-                        //Z
-                        if(z + 1 < edgeResolution)
-                        {
-                            const Voxel& voxeld = volume(x*edgeResolution*edgeResolution + y*edgeResolution + (z+1));
-                            kftype vd = voxeld.v;
-
-                            if(voxeld.weight != 0 && vd != 1.f)
-                            {
-                                if((v0 > 0 && vd < 0) || (v0 < 0 && vd > 0))
-                                {
-                                    //linearly interpolate coordinate
-                                    float Vn = V.z + voxelSize;
-                                    float dinv = 1.f/(abs(v0)+abs(vd));
-                                    float inter = (V.z*abs(vd) + Vn*abs(v0))*dinv;
-
-                                    Point3f p(V.x, V.y, inter);
-                                    points.push_back(pose * p);
-                                }
-                            }
-                        }
-                    } // if voxel is not empty
-                } // z loop
-            } // y loop
-        } // x loop
+        //TODO: use parallel_for instead
+        Mutex mutex;
+        volume.forEach(PushPoints(*this, points, mutex));
 
         //TODO: try to use pre-allocated memory if possible
         points.copyTo(_points);
@@ -353,14 +364,16 @@ void TSDFVolume::fetchPoints(OutputArray _points) const
 
 struct PushNormals
 {
-    PushNormals(const TSDFVolume& _vol, std::vector<Point3f>& _nrm) :
-        vol(_vol), normals(_nrm) { }
+    PushNormals(const TSDFVolume& _vol, Mat_<Point3f>& _nrm, Mutex& _mtx) :
+        vol(_vol), normals(_nrm), mtx(_mtx) { }
     void operator ()(const Point3f &p, const int * /*position*/) const
     {
+        AutoLock al(mtx);
         normals.push_back(vol.pose.rotation() * vol.getNormalVoxel(p));
     }
     const TSDFVolume& vol;
-    std::vector<Point3f>& normals;
+    Mat_<Point3f>& normals;
+    Mutex& mtx;
 };
 
 void TSDFVolume::fetchNormals(InputArray _points, OutputArray _normals) const
@@ -373,12 +386,8 @@ void TSDFVolume::fetchNormals(InputArray _points, OutputArray _normals) const
         Mat_<Point3f> normals;
         normals.reserve(points.total());
 
-        //DEBUG
-        //points.forEach(PushNormals(*this, normals));
-        for(Points::iterator it = points.begin(); it != points.end(); it++)
-        {
-            normals.push_back(pose.rotation() * getNormalVoxel(*it));
-        }
+        Mutex mutex;
+        points.forEach(PushNormals(*this, normals, mutex));
 
         //TODO: try to use pre-allocated memory if possible
         normals.copyTo(_normals);
