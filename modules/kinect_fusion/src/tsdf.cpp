@@ -69,40 +69,6 @@ public:
     cv::Affine3f pose;
 };
 
-class TSDFVolumeGPU : public TSDFVolume
-{
-    typedef Points::value_type p3type;
-
-public:
-    // dimension in voxels, size in meters
-    TSDFVolumeGPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-                  float _raycastStepFactor, float _gradientDeltaFactor);
-
-    virtual void integrate(Depth depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics);
-    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, Points points, Normals normals) const;
-
-    virtual void fetchPoints(cv::OutputArray points) const;
-    virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const;
-
-    virtual void reset();
-};
-
-cv::Ptr<TSDFVolume> makeTSDFVolume(cv::kinfu::KinFu::KinFuParams::PlatformType t,
-                                   int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-                                   float _raycastStepFactor, float _gradientDeltaFactor)
-{
-    switch (t)
-    {
-    case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_CPU:
-        return cv::makePtr<TSDFVolumeCPU>(_res, _size, _pose, _truncDist, _maxWeight,
-                                          _raycastStepFactor, _gradientDeltaFactor);
-    case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_GPU:
-        return cv::makePtr<TSDFVolumeGPU>(_res, _size, _pose, _truncDist, _maxWeight,
-                                          _raycastStepFactor, _gradientDeltaFactor);
-    default:
-        return cv::Ptr<TSDFVolume>();
-    }
-}
 
 TSDFVolume::TSDFVolume(int /*_res*/, float /*_size*/, Affine3f /*_pose*/, float /*_truncDist*/, int /*_maxWeight*/,
                        float /*_raycastStepFactor*/, float /*_gradientDeltaFactor*/)
@@ -501,6 +467,26 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
     }
 }
 
+///////// GPU implementation /////////
+
+class TSDFVolumeGPU : public TSDFVolume
+{
+    typedef Points::value_type p3type;
+
+public:
+    // dimension in voxels, size in meters
+    TSDFVolumeGPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+                  float _raycastStepFactor, float _gradientDeltaFactor);
+
+    virtual void integrate(Depth depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics);
+    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, Points points, Normals normals) const;
+
+    virtual void fetchPoints(cv::OutputArray points) const;
+    virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const;
+
+    virtual void reset();
+};
+
 
 TSDFVolumeGPU::TSDFVolumeGPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
               float _raycastStepFactor, float _gradientDeltaFactor) :
@@ -538,3 +524,21 @@ void TSDFVolumeGPU::fetchNormals(InputArray /*_points*/, OutputArray /*_normals*
 {
     throw std::runtime_error("Not implemented");
 }
+
+cv::Ptr<TSDFVolume> makeTSDFVolume(cv::kinfu::KinFu::KinFuParams::PlatformType t,
+                                   int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+                                   float _raycastStepFactor, float _gradientDeltaFactor)
+{
+    switch (t)
+    {
+    case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_CPU:
+        return cv::makePtr<TSDFVolumeCPU>(_res, _size, _pose, _truncDist, _maxWeight,
+                                          _raycastStepFactor, _gradientDeltaFactor);
+    case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_GPU:
+        return cv::makePtr<TSDFVolumeGPU>(_res, _size, _pose, _truncDist, _maxWeight,
+                                          _raycastStepFactor, _gradientDeltaFactor);
+    default:
+        return cv::Ptr<TSDFVolume>();
+    }
+}
+

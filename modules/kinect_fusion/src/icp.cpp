@@ -7,6 +7,13 @@ using namespace cv;
 using namespace cv::kinfu;
 using namespace std;
 
+ICP::ICP(const Intr _intrinsics, const std::vector<int>& _iterations, float _angleThreshold, float _distanceThreshold) :
+    iterations(_iterations), angleThreshold(_angleThreshold), distanceThreshold(_distanceThreshold),
+    intrinsics(_intrinsics)
+{ }
+
+///////// GPU implementation /////////
+
 class ICPCPU : public ICP
 {
 public:
@@ -21,41 +28,8 @@ private:
                cv::Affine3f pose, int level, cv::Matx66f& A, cv::Vec6f& b) const;
 };
 
-class ICPGPU : public ICP
-{
-public:
-    ICPGPU(const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold);
-
-    virtual bool estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> oldFrame, cv::Ptr<Frame> newFrame) const;
-
-    virtual ~ICPGPU() { }
-};
-
-cv::Ptr<ICP> makeICP(cv::kinfu::KinFu::KinFuParams::PlatformType t,
-                     const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations,
-                     float _angleThreshold, float _distanceThreshold)
-{
-    switch (t)
-    {
-    case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_CPU:
-        return cv::makePtr<ICPCPU>(_intrinsics, _iterations, _angleThreshold, _distanceThreshold);
-    case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_GPU:
-        return cv::makePtr<ICPGPU>(_intrinsics, _iterations, _angleThreshold, _distanceThreshold);
-    default:
-        return cv::Ptr<ICP>();
-    }
-}
-
-ICP::ICP(const Intr _intrinsics, const std::vector<int>& _iterations, float _angleThreshold, float _distanceThreshold) :
-    iterations(_iterations), angleThreshold(_angleThreshold), distanceThreshold(_distanceThreshold),
-    intrinsics(_intrinsics)
-{ }
 
 ICPCPU::ICPCPU(const Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold) :
-    ICP(_intrinsics, _iterations, _angleThreshold, _distanceThreshold)
-{ }
-
-ICPGPU::ICPGPU(const Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold) :
     ICP(_intrinsics, _iterations, _angleThreshold, _distanceThreshold)
 { }
 
@@ -99,10 +73,6 @@ bool ICPCPU::estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> _oldFrame
     return true;
 }
 
-bool ICPGPU::estimateTransform(cv::Affine3f& /*transform*/, cv::Ptr<Frame> /*_oldFrame*/, cv::Ptr<Frame> /*newFrame*/) const
-{
-    throw std::runtime_error("Not implemented");
-}
 
 void ICPCPU::getAb(const Points oldPts, const Normals oldNrm, const Points newPts, const Normals newNrm,
                    Affine3f pose, int level, Matx66f &A, Vec6f &b) const
@@ -197,5 +167,42 @@ void ICPCPU::getAb(const Points oldPts, const Normals oldNrm, const Points newPt
         }
 
         b(i) = sumAB(i, 6);
+    }
+}
+
+///////// GPU implementation /////////
+
+class ICPGPU : public ICP
+{
+public:
+    ICPGPU(const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold);
+
+    virtual bool estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> oldFrame, cv::Ptr<Frame> newFrame) const;
+
+    virtual ~ICPGPU() { }
+};
+
+ICPGPU::ICPGPU(const Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold) :
+    ICP(_intrinsics, _iterations, _angleThreshold, _distanceThreshold)
+{ }
+
+
+bool ICPGPU::estimateTransform(cv::Affine3f& /*transform*/, cv::Ptr<Frame> /*_oldFrame*/, cv::Ptr<Frame> /*newFrame*/) const
+{
+    throw std::runtime_error("Not implemented");
+}
+
+cv::Ptr<ICP> makeICP(cv::kinfu::KinFu::KinFuParams::PlatformType t,
+                     const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations,
+                     float _angleThreshold, float _distanceThreshold)
+{
+    switch (t)
+    {
+    case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_CPU:
+        return cv::makePtr<ICPCPU>(_intrinsics, _iterations, _angleThreshold, _distanceThreshold);
+    case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_GPU:
+        return cv::makePtr<ICPGPU>(_intrinsics, _iterations, _angleThreshold, _distanceThreshold);
+    default:
+        return cv::Ptr<ICP>();
     }
 }

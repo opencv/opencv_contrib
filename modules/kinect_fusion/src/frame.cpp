@@ -15,28 +15,6 @@ public:
     virtual ~FrameGeneratorCPU() {}
 };
 
-struct FrameGeneratorGPU : FrameGenerator
-{
-public:
-    virtual cv::Ptr<Frame> operator() (const Depth, const cv::kinfu::Intr, int levels, float depthFactor,
-                                       float sigmaDepth, float sigmaSpatial, int kernelSize) const;
-    virtual cv::Ptr<Frame> operator() (const Points, const Normals, int levels) const;
-    virtual ~FrameGeneratorGPU() {}
-};
-
-cv::Ptr<FrameGenerator> makeFrameGenerator(cv::kinfu::KinFu::KinFuParams::PlatformType t)
-{
-    switch (t)
-    {
-    case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_CPU:
-        return cv::makePtr<FrameGeneratorCPU>();
-    case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_GPU:
-        return cv::makePtr<FrameGeneratorGPU>();
-    default:
-        return cv::Ptr<FrameGenerator>();
-    }
-}
-
 void computePointsNormals(const cv::kinfu::Intr, float depthFactor, const Depth, Points, Normals );
 Depth pyrDownBilateral(const Depth depth, float sigma);
 void pyrDownPointsNormals(const Points p, const Normals n, Points& pdown, Normals& ndown);
@@ -101,16 +79,6 @@ cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const Points _points, const Normal
     return frame;
 }
 
-cv::Ptr<Frame> FrameGeneratorGPU::operator ()(const Depth /*depth*/, const Intr /*intr*/, int /*levels*/, float /*depthFactor*/,
-                                              float /*sigmaDepth*/, float /*sigmaSpatial*/, int /*kernelSize*/) const
-{
-    throw std::runtime_error("Not implemented");
-}
-
-cv::Ptr<Frame> FrameGeneratorGPU::operator ()(const Points /*_points*/, const Normals /*_normals*/, int /*levels*/) const
-{
-    throw std::runtime_error("Not implemented");
-}
 
 void FrameCPU::render(OutputArray image, int level, Affine3f lightPose) const
 {
@@ -163,11 +131,6 @@ void FrameCPU::render(OutputArray image, int level, Affine3f lightPose) const
             imgRow[x] = color;
         }
     }
-}
-
-void FrameGPU::render(OutputArray /* image */, int /*level*/, Affine3f /*lightPose*/) const
-{
-    throw std::runtime_error("Not implemented");
 }
 
 
@@ -314,6 +277,46 @@ void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
             ptsRow[x] = p;
             normRow[x] = n;
         }
+    }
+}
+
+///////// GPU implementation /////////
+
+struct FrameGeneratorGPU : FrameGenerator
+{
+public:
+    virtual cv::Ptr<Frame> operator() (const Depth, const cv::kinfu::Intr, int levels, float depthFactor,
+                                       float sigmaDepth, float sigmaSpatial, int kernelSize) const;
+    virtual cv::Ptr<Frame> operator() (const Points, const Normals, int levels) const;
+    virtual ~FrameGeneratorGPU() {}
+};
+
+cv::Ptr<Frame> FrameGeneratorGPU::operator ()(const Depth /*depth*/, const Intr /*intr*/, int /*levels*/, float /*depthFactor*/,
+                                              float /*sigmaDepth*/, float /*sigmaSpatial*/, int /*kernelSize*/) const
+{
+    throw std::runtime_error("Not implemented");
+}
+
+cv::Ptr<Frame> FrameGeneratorGPU::operator ()(const Points /*_points*/, const Normals /*_normals*/, int /*levels*/) const
+{
+    throw std::runtime_error("Not implemented");
+}
+
+void FrameGPU::render(OutputArray /* image */, int /*level*/, Affine3f /*lightPose*/) const
+{
+    throw std::runtime_error("Not implemented");
+}
+
+cv::Ptr<FrameGenerator> makeFrameGenerator(cv::kinfu::KinFu::KinFuParams::PlatformType t)
+{
+    switch (t)
+    {
+    case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_CPU:
+        return cv::makePtr<FrameGeneratorCPU>();
+    case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_GPU:
+        return cv::makePtr<FrameGeneratorGPU>();
+    default:
+        return cv::Ptr<FrameGenerator>();
     }
 }
 
