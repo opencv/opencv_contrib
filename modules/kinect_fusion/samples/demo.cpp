@@ -170,6 +170,12 @@ int main(int argc, char **argv)
     cv::viz::Viz3d window("debug");
     window.setViewerPose(Affine3f::Identity());
 
+    Mat rendered;
+
+    // TODO: can we use UMats for that?
+    Mat points;
+    Mat normals;
+
     for(size_t nFrame = 0; nFrame < depthFileList.size(); nFrame++)
     {
         Mat frame = cv::imread(depthFileList[nFrame], IMREAD_ANYDEPTH);
@@ -184,8 +190,6 @@ int main(int argc, char **argv)
             std::cout << "reset" << std::endl;
         else
         {
-            Points points;
-            Normals normals;
             kf.fetchCloud(points, normals);
             viz::WCloud cloudWidget(points, viz::Color::white());
             viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
@@ -250,7 +254,9 @@ int main(int argc, char **argv)
 
         }
 
-        imshow("render", kf.render());
+        // TODO: can we use UMats?
+        kf.render(rendered);
+        imshow("render", rendered);
 
         waitKey(10);
     }

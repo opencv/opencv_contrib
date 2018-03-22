@@ -1,6 +1,7 @@
 //TODO: add license
 
 #include "precomp.hpp"
+#include "tsdf.hpp"
 
 using namespace cv;
 using namespace cv::kinfu;
@@ -14,7 +15,7 @@ TSDFVolume::TSDFVolume(int _res, float _size, cv::Affine3f _pose, float _truncDi
     edgeSize = _size;
     voxelSize = edgeSize/edgeResolution;
     voxelSizeInv = edgeResolution/edgeSize;
-    volume = Volume(_res * _res * _res);
+    volume = Volume(1, _res * _res * _res);
     pose = _pose;
     truncDist = std::max (_truncDist, 2.1f * voxelSize);
     raycastStepFactor = _raycastStepFactor;
@@ -26,63 +27,11 @@ TSDFVolume::TSDFVolume(int _res, float _size, cv::Affine3f _pose, float _truncDi
 // zero volume, leave rest params the same
 void TSDFVolume::reset()
 {
-    for(size_t i = 0; i < volume.size(); i++)
+    for(size_t i = 0; i < volume.total(); i++)
     {
-        volume[i].v = 0;
-        volume[i].weight = 0;
+        volume(i).v = 0;
+        volume(i).weight = 0;
     }
-}
-
-inline kftype bilinear(Depth depth, Point2f pt)
-{
-    if(pt.x < 0 || pt.x >= depth.cols-1 ||
-       pt.y < 0 || pt.y >= depth.rows-1)
-        return std::numeric_limits<kftype>::quiet_NaN();
-
-    int xi = cvFloor(pt.x), yi = cvFloor(pt.y);
-    float tx = pt.x - xi, ty = pt.y - yi;
-    kftype v00 = depth(Point(xi+0, yi+0));
-    kftype v01 = depth(Point(xi+1, yi+0));
-    kftype v10 = depth(Point(xi+0, yi+1));
-    kftype v11 = depth(Point(xi+1, yi+1));
-    //fix missing data, assume correct depth is positive
-    int nz = (v00 > 0) + (v01 > 0) + (v10 > 0) + (v11 > 0);
-    if(nz == 0)
-    {
-        return 0;
-    }
-    if(nz == 1)
-    {
-        kftype val = max(max(v00, v01), max(v10, v11));
-        return val;
-    }
-    else if(nz == 2)
-    {
-        if(v00 > 0 && v10 > 0)
-            v01 = v00, v11 = v10;
-        if(v01 > 0 && v11 > 0)
-            v00 = v01, v10 = v11;
-        if(v00 > 0 && v01 > 0)
-            v10 = v00, v11 = v01;
-        if(v10 > 0 && v11 > 0)
-            v00 = v10, v01 = v11;
-        if(v00 > 0 && v11 > 0)
-            v01 = v10 = (v00 + v11)*0.5f;
-        if(v01 > 0 && v10 > 0)
-            v00 = v11 = (v01 + v10)*0.5f;
-    }
-    else if(nz == 3)
-    {
-        if(v00 <= 0)
-            v00 = v10 + v01 - v11;
-        if(v01 <= 0)
-            v01 = v00 + v11 - v10;
-        if(v10 <= 0)
-            v10 = v00 + v11 - v01;
-        if(v11 <= 0)
-            v11 = v01 + v10 - v00;
-    }
-    return v00*(1.f-tx)*(1.f-ty) + v01*tx*(1.f-ty) + v10*(1.f-tx)*ty + v11*tx*ty;
 }
 
 
@@ -119,8 +68,8 @@ void TSDFVolume::integrate(Depth depth, float depthFactor, cv::Affine3f cameraPo
                 Point3f camPixVec;
                 Point2f projected = proj(camSpacePt, camPixVec);
 
-                kftype v = bilinear(depth, projected);
-                if(std::isnan(v) || v == 0)
+                kftype v = bilinear<kftype, Depth>(depth, projected);
+                if(v == 0)
                     continue;
 
                 // difference between distances of point and of surface to camera
@@ -132,9 +81,9 @@ void TSDFVolume::integrate(Depth depth, float depthFactor, cv::Affine3f cameraPo
                 {
                     kftype tsdf = fmin(1.f, sdf * truncDistInv);
 
-                    Voxel* voxel = (volume + x*edgeResolution*edgeResolution + y*edgeResolution + z);
-                    int& weight = voxel->weight;
-                    kftype& value = voxel->v;
+                    Voxel& voxel = volume(x*edgeResolution*edgeResolution + y*edgeResolution + z);
+                    int& weight = voxel.weight;
+                    kftype& value = voxel.v;
 
                     // update TSDF
                     value = (value*weight+tsdf) / (weight + 1);
@@ -145,25 +94,25 @@ void TSDFVolume::integrate(Depth depth, float depthFactor, cv::Affine3f cameraPo
     }
 }
 
+const float qnan = std::numeric_limits<float>::quiet_NaN ();
+const Point3f nan3(qnan, qnan, qnan);
 
 inline kftype TSDFVolume::fetchVoxel(Point3f p) const
 {
     p *= voxelSizeInv;
-    return (volume +
-            cvRound(p.x)*edgeResolution*edgeResolution +
-            cvRound(p.y)*edgeResolution +
-            cvRound(p.z))->v;
+    return volume(cvRound(p.x)*edgeResolution*edgeResolution +
+                  cvRound(p.y)*edgeResolution +
+                  cvRound(p.z)).v;
 }
 
-inline kftype TSDFVolume::fetchi(Point3i p) const
+inline float TSDFVolume::fetchi(Point3i p) const
 {
-    return (volume +
-            p.x*edgeResolution*edgeResolution +
-            p.y*edgeResolution +
-            p.z)->v;
+    return volume(p.x*edgeResolution*edgeResolution +
+                  p.y*edgeResolution +
+                  p.z).v;
 }
 
-inline kftype TSDFVolume::interpolate(Point3f p) const
+inline float TSDFVolume::interpolate(Point3f p) const
 {
     p *= voxelSizeInv;
 
@@ -171,7 +120,7 @@ inline kftype TSDFVolume::interpolate(Point3f p) const
        p.x < 0 || p.x >= edgeResolution-1 ||
        p.y < 0 || p.y >= edgeResolution-1 ||
        p.z < 0 || p.z >= edgeResolution-1)
-        return std::numeric_limits<kftype>::quiet_NaN();
+        return qnan;
 
     int xi = cvFloor(p.x), yi = cvFloor(p.y), zi = cvFloor(p.z);
     float tx = p.x - xi, ty = p.y - yi, tz = p.z - zi;
@@ -192,7 +141,7 @@ inline kftype TSDFVolume::interpolate(Point3f p) const
 
 inline TSDFVolume::p3type TSDFVolume::getNormalVoxel(Point3f p) const
 {
-    p3type n;
+    Point3f n;
     kftype fx1 = interpolate(Point3f(p.x + gradientDeltaFactor, p.y, p.z));
     kftype fx0 = interpolate(Point3f(p.x - gradientDeltaFactor, p.y, p.z));
     // no need to divide, will be normalized after
@@ -215,9 +164,9 @@ void TSDFVolume::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points
 {
     CV_Assert(!points.empty() && !normals.empty());
     CV_Assert(points.size() == normals.size());
+    CV_Assert(points.type() == CV_32FC3);
+    CV_Assert(normals.type() == CV_32FC3);
 
-    const kftype qnan = std::numeric_limits<kftype>::quiet_NaN ();
-    p3type nan3(qnan, qnan, qnan);
     float tstep = truncDist * raycastStepFactor;
 
     // We do subtract voxel size to minimize checks after
@@ -232,8 +181,8 @@ void TSDFVolume::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points
 
     for(int y = 0; y < points.rows; y++)
     {
-        p3type* ptsRow = points[y];
-        p3type* nrmRow = normals[y];
+        Point3f* ptsRow = points[y];
+        Point3f* nrmRow = normals[y];
 
         for(int x = 0; x < points.cols; x++)
         {
@@ -308,94 +257,131 @@ void TSDFVolume::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points
 }
 
 
-void TSDFVolume::fetchCloud(Points& points, Normals& normals) const
+void TSDFVolume::fetchPoints(OutputArray _points) const
 {
-    points  = Points();
-    normals = Normals();
-
-    // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
-    for(int x = 0; x < edgeResolution; x++)
+    if(_points.needed())
     {
-        for(int y = 0; y < edgeResolution; y++)
+        Mat_<Point3f> points;
+
+        // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
+        for(int x = 0; x < edgeResolution; x++)
         {
-            Point3f V((x + 0.5f)*voxelSize, (y + 0.5f)*voxelSize, 0);
-            for(int z = 0; z < edgeResolution; z++)
+            for(int y = 0; y < edgeResolution; y++)
             {
-                const Voxel& voxel0 = *(volume + x*edgeResolution*edgeResolution + y*edgeResolution + z);
-                kftype v0 = voxel0.v;
-
-                if(voxel0.weight != 0 && v0 != 1.f)
+                Point3f V((x + 0.5f)*voxelSize, (y + 0.5f)*voxelSize, 0);
+                for(int z = 0; z < edgeResolution; z++)
                 {
-                    V.z = (z + 0.5f)*voxelSize;
+                    const Voxel& voxel0 = volume(x*edgeResolution*edgeResolution + y*edgeResolution + z);
+                    kftype v0 = voxel0.v;
 
-                    //X
-                    if(x + 1 < edgeResolution)
+                    if(voxel0.weight != 0 && v0 != 1.f)
                     {
-                        const Voxel& voxeld = *(volume + (x+1)*edgeResolution*edgeResolution + y*edgeResolution + z);
-                        kftype vd = voxeld.v;
+                        V.z = (z + 0.5f)*voxelSize;
 
-                        if(voxeld.weight != 0 && vd != 1.f)
+                        //X
+                        if(x + 1 < edgeResolution)
                         {
-                            if((v0 > 0 && vd < 0) || (v0 < 0 && vd > 0))
-                            {
-                                //linearly interpolate coordinate
-                                float Vn = V.x + voxelSize;
-                                float dinv = 1.f/(abs(v0)+abs(vd));
-                                float inter = (V.x*abs(vd) + Vn*abs(v0))*dinv;
+                            const Voxel& voxeld = volume((x+1)*edgeResolution*edgeResolution + y*edgeResolution + z);
+                            kftype vd = voxeld.v;
 
-                                Point3f p(inter, V.y, V.z);
-                                points.push_back(pose * p);
-                                normals.push_back(pose.rotation() * getNormalVoxel(p));
+                            if(voxeld.weight != 0 && vd != 1.f)
+                            {
+                                if((v0 > 0 && vd < 0) || (v0 < 0 && vd > 0))
+                                {
+                                    //linearly interpolate coordinate
+                                    float Vn = V.x + voxelSize;
+                                    float dinv = 1.f/(abs(v0)+abs(vd));
+                                    float inter = (V.x*abs(vd) + Vn*abs(v0))*dinv;
+
+                                    Point3f p(inter, V.y, V.z);
+                                    points.push_back(pose * p);
+                                }
                             }
                         }
-                    }
 
-                    //Y
-                    if(y + 1 < edgeResolution)
-                    {
-                        const Voxel& voxeld = *(volume + x*edgeResolution*edgeResolution + (y+1)*edgeResolution + z);
-                        kftype vd = voxeld.v;
-
-                        if(voxeld.weight != 0 && vd != 1.f)
+                        //Y
+                        if(y + 1 < edgeResolution)
                         {
-                            if((v0 > 0 && vd < 0) || (v0 < 0 && vd > 0))
-                            {
-                                //linearly interpolate coordinate
-                                float Vn = V.y + voxelSize;
-                                float dinv = 1.f/(abs(v0)+abs(vd));
-                                float inter = (V.y*abs(vd) + Vn*abs(v0))*dinv;
+                            const Voxel& voxeld = volume(x*edgeResolution*edgeResolution + (y+1)*edgeResolution + z);
+                            kftype vd = voxeld.v;
 
-                                Point3f p(V.x, inter, V.z);
-                                points.push_back(pose * p);
-                                normals.push_back(pose.rotation() * getNormalVoxel(p));
+                            if(voxeld.weight != 0 && vd != 1.f)
+                            {
+                                if((v0 > 0 && vd < 0) || (v0 < 0 && vd > 0))
+                                {
+                                    //linearly interpolate coordinate
+                                    float Vn = V.y + voxelSize;
+                                    float dinv = 1.f/(abs(v0)+abs(vd));
+                                    float inter = (V.y*abs(vd) + Vn*abs(v0))*dinv;
+
+                                    Point3f p(V.x, inter, V.z);
+                                    points.push_back(pose * p);
+                                }
                             }
                         }
-                    }
 
-                    //Z
-                    if(z + 1 < edgeResolution)
-                    {
-                        const Voxel& voxeld = *(volume + x*edgeResolution*edgeResolution + y*edgeResolution + (z+1));
-                        kftype vd = voxeld.v;
-
-                        if(voxeld.weight != 0 && vd != 1.f)
+                        //Z
+                        if(z + 1 < edgeResolution)
                         {
-                            if((v0 > 0 && vd < 0) || (v0 < 0 && vd > 0))
-                            {
-                                //linearly interpolate coordinate
-                                float Vn = V.z + voxelSize;
-                                float dinv = 1.f/(abs(v0)+abs(vd));
-                                float inter = (V.z*abs(vd) + Vn*abs(v0))*dinv;
+                            const Voxel& voxeld = volume(x*edgeResolution*edgeResolution + y*edgeResolution + (z+1));
+                            kftype vd = voxeld.v;
 
-                                Point3f p(V.x, V.y, inter);
-                                points.push_back(pose * p);
-                                normals.push_back(pose.rotation() * getNormalVoxel(p));
+                            if(voxeld.weight != 0 && vd != 1.f)
+                            {
+                                if((v0 > 0 && vd < 0) || (v0 < 0 && vd > 0))
+                                {
+                                    //linearly interpolate coordinate
+                                    float Vn = V.z + voxelSize;
+                                    float dinv = 1.f/(abs(v0)+abs(vd));
+                                    float inter = (V.z*abs(vd) + Vn*abs(v0))*dinv;
+
+                                    Point3f p(V.x, V.y, inter);
+                                    points.push_back(pose * p);
+                                }
                             }
                         }
-                    }
-                } // if voxel is not empty
-            } // z loop
-        } // y loop
-    } // x loop
+                    } // if voxel is not empty
+                } // z loop
+            } // y loop
+        } // x loop
+
+        //TODO: try to use pre-allocated memory if possible
+        points.copyTo(_points);
+    }
+}
+
+
+struct PushNormals
+{
+    PushNormals(const TSDFVolume& _vol, std::vector<Point3f>& _nrm) :
+        vol(_vol), normals(_nrm) { }
+    void operator ()(const Point3f &p, const int * /*position*/) const
+    {
+        normals.push_back(vol.pose.rotation() * vol.getNormalVoxel(p));
+    }
+    const TSDFVolume& vol;
+    std::vector<Point3f>& normals;
+};
+
+void TSDFVolume::fetchNormals(InputArray _points, OutputArray _normals) const
+{
+    if(_normals.needed())
+    {
+        Points points = _points.getMat();
+        CV_Assert(points.type() == CV_32FC3);
+
+        Mat_<Point3f> normals;
+        normals.reserve(points.total());
+
+        //DEBUG
+        //points.forEach(PushNormals(*this, normals));
+        for(Points::iterator it = points.begin(); it != points.end(); it++)
+        {
+            normals.push_back(pose.rotation() * getNormalVoxel(*it));
+        }
+
+        //TODO: try to use pre-allocated memory if possible
+        normals.copyTo(_normals);
+    }
 }
 

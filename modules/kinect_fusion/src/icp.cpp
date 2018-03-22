@@ -1,6 +1,7 @@
 //TODO: add license
 
 #include "precomp.hpp"
+#include "icp.hpp"
 
 using namespace cv;
 using namespace cv::kinfu;
@@ -46,64 +47,15 @@ bool ICP::estimateTransform(cv::Affine3f& transform,
     return true;
 }
 
-typedef Points::value_type p3type;
-const float qnan = std::numeric_limits<kftype>::quiet_NaN();
-const p3type qnan3(qnan, qnan, qnan);
-
-inline p3type bilinear3(const Points& points, Point2f pt)
-{
-    if(pt.x < 0 || pt.x >= points.cols-1 ||
-       pt.y < 0 || pt.y >= points.rows-1)
-        return qnan3;
-
-    int xi = cvFloor(pt.x), yi = cvFloor(pt.y);
-    float tx = pt.x - xi, ty = pt.y - yi;
-
-    p3type v00 = points(Point(xi+0, yi+0));
-    p3type v01 = points(Point(xi+1, yi+0));
-    p3type v10 = points(Point(xi+0, yi+1));
-    p3type v11 = points(Point(xi+1, yi+1));
-
-    bool b00 = !isNaN(v00);
-    bool b01 = !isNaN(v01);
-    bool b10 = !isNaN(v10);
-    bool b11 = !isNaN(v11);
-
-    //fix missing data
-    int nz = b00 + b01 + b10 + b11;
-    if(nz == 0)
-    {
-        return qnan3;
-    }
-    if(nz == 1)
-    {
-        if(b00) return v00;
-        if(b01) return v01;
-        if(b10) return v10;
-        if(b11) return v11;
-    }
-    else if(nz == 2)
-    {
-        if(b00 && b10) v01 = v00, v11 = v10;
-        if(b01 && b11) v00 = v01, v10 = v11;
-        if(b00 && b01) v10 = v00, v11 = v01;
-        if(b10 && b11) v00 = v10, v01 = v11;
-        if(b00 && b11) v01 = v10 = (v00 + v11)*0.5f;
-        if(b01 && b10) v00 = v11 = (v01 + v10)*0.5f;
-    }
-    else if(nz == 3)
-    {
-        if(!b00) v00 = v10 + v01 - v11;
-        if(!b01) v01 = v00 + v11 - v10;
-        if(!b10) v10 = v00 + v11 - v01;
-        if(!b11) v11 = v01 + v10 - v00;
-    }
-    return v00*(1.f-tx)*(1.f-ty) + v01*tx*(1.f-ty) + v10*(1.f-tx)*ty + v11*tx*ty;
-}
 
 void ICP::getAb(const Points oldPts, const Normals oldNrm, const Points newPts, const Normals newNrm,
                 Affine3f pose, int level, Matx66f &A, Vec6f &b)
 {
+    typedef Points::value_type p3type;
+    Cv32suf s; s.u = 0x7fc00000;
+    const float vnan = s.f;
+    const p3type qnan3(vnan, vnan, vnan);
+
     CV_Assert(oldPts.size() == oldNrm.size());
     CV_Assert(newPts.size() == newNrm.size());
 
@@ -136,8 +88,8 @@ void ICP::getAb(const Points oldPts, const Normals oldNrm, const Points newPts, 
 
                 //find correspondence
                 Point2f oldCoords = proj(newP);
-                oldP = bilinear3(oldPts, oldCoords);
-                oldN = bilinear3(oldNrm, oldCoords);
+                oldP = bilinear<p3type, Points >(oldPts, oldCoords);
+                oldN = bilinear<p3type, Normals>(oldNrm, oldCoords);
             }
             else
             {

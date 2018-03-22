@@ -1,6 +1,9 @@
 //TODO: add license
 
 #include "precomp.hpp"
+#include "icp.hpp"
+#include "tsdf.hpp"
+#include "frame.hpp"
 
 namespace cv {
 namespace kinfu {
@@ -14,21 +17,15 @@ public:
     const KinFu::KinFuParams& getParams() const;
     KinFu::KinFuParams& getParams();
 
-    Image render() const;
-    void fetchCloud(Points&, Normals&) const;
+    void render(OutputArray image, const Affine3f cameraPose = Affine3f::Identity()) const;
+
+    void fetchCloud(OutputArray points, OutputArray normals) const;
+    void fetchPoints(OutputArray points) const;
+    void fetchNormals(InputArray points, OutputArray normals) const;
 
     void reset();
 
-    //TODO: enable this when (if) features are ready
-
-    /*
-    const TSDFVolume& tsdf() const;
-    TSDFVolume& tsdf();
-
-    void renderImage(cuda::Image& image, const Affine3f& pose, int flags = 0);
-
-    Affine3f getCameraPose (int time = -1) const;
-    */
+    const Affine3f getPose() const;
 
     bool operator()(InputArray depth);
 
@@ -117,24 +114,6 @@ void KinFu::KinFuImpl::reset()
     frameCounter = 0;
     pose = Affine3f::Identity();
     volume.reset();
-
-    //TODO: enable if (when) needed
-    /*
-    volume_ = cv::Ptr<cuda::TsdfVolume>(new cuda::TsdfVolume(params_.volume_dims));
-
-    volume_->setTruncDist(params_.tsdf_trunc_dist);
-    volume_->setMaxWeight(params_.tsdf_max_weight);
-    volume_->setSize(params_.volume_size);
-    volume_->setPose(params_.volume_pose);
-    volume_->setRaycastStepFactor(params_.raycast_step_factor);
-    volume_->setGradientDeltaFactor(params_.gradient_delta_factor);
-
-    icp_ = cv::Ptr<cuda::ProjectiveICP>(new cuda::ProjectiveICP());
-    icp_->setDistThreshold(params_.icp_dist_thres);
-    icp_->setAngleThreshold(params_.icp_angle_thres);
-    icp_->setIterationsNum(params_.icp_iter_num);
-
-    */
 }
 
 KinFu::KinFuImpl::~KinFuImpl()
@@ -143,10 +122,19 @@ KinFu::KinFuImpl::~KinFuImpl()
 }
 
 const KinFu::KinFuParams& KinFu::KinFuImpl::getParams() const
-{ return params; }
+{
+    return params;
+}
 
 KinFu::KinFuParams& KinFu::KinFuImpl::getParams()
-{ return params; }
+{
+    return params;
+}
+
+const Affine3f KinFu::KinFuImpl::getPose() const
+{
+    return pose;
+}
 
 bool KinFu::KinFuImpl::operator()(InputArray _depth)
 {
@@ -166,7 +154,6 @@ bool KinFu::KinFuImpl::operator()(InputArray _depth)
     if(frameCounter == 0)
     {
         // use depth instead of distance
-        //volume.integrate(newFrame.distance, pose, params.intr);
         volume.integrate(depth, params.depthFactor, pose, params.intr);
 
         frame = newFrame;
@@ -205,17 +192,46 @@ bool KinFu::KinFuImpl::operator()(InputArray _depth)
 }
 
 
-Image KinFu::KinFuImpl::render() const
+void KinFu::KinFuImpl::render(OutputArray image, const Affine3f cameraPose) const
 {
-    return frame.render(0, params.lightPose);
+    const Affine3f id = Affine3f::Identity();
+    if((cameraPose.rotation() == pose.rotation() && cameraPose.translation() == pose.translation()) ||
+       (cameraPose.rotation() == id.rotation()   && cameraPose.translation() == id.translation()))
+    {
+        frame.render(image, 0, params.lightPose);
+    }
+    else
+    {
+        Points p(params.frameSize);
+        Normals n(params.frameSize);
+        volume.raycast(cameraPose, params.intr, p, n);
+        // build a pyramid of points and normals
+        Frame f(p, n, params.pyramidLevels);
+        f.render(image, 0, params.lightPose);
+    }
 }
 
 
-void KinFu::KinFuImpl::fetchCloud(Points& p, Normals& n) const
+void KinFu::KinFuImpl::fetchCloud(OutputArray p, OutputArray n) const
 {
-    return volume.fetchCloud(p, n);
+    if(p.needed())
+    {
+        volume.fetchPoints(p);
+        volume.fetchNormals(p, n);
+    }
 }
 
+void KinFu::KinFuImpl::fetchPoints(OutputArray points) const
+{
+    volume.fetchPoints(points);
+}
+
+void KinFu::KinFuImpl::fetchNormals(InputArray points, OutputArray normals) const
+{
+    volume.fetchNormals(points, normals);
+}
+
+// importing class
 
 KinFu::KinFu(const KinFuParams& _params)
 {
@@ -234,9 +250,29 @@ KinFu::KinFuParams& KinFu::getParams()
     return impl->getParams();
 }
 
-void KinFu::fetchCloud(Points & p, Normals & n) const
+const Affine3f KinFu::getPose() const
 {
-    return impl->fetchCloud(p, n);
+    return impl->getPose();
+}
+
+void KinFu::reset()
+{
+    impl->reset();
+}
+
+void KinFu::fetchCloud(cv::OutputArray points, cv::OutputArray normals) const
+{
+    impl->fetchCloud(points, normals);
+}
+
+void KinFu::fetchPoints(OutputArray points) const
+{
+    impl->fetchPoints(points);
+}
+
+void KinFu::fetchNormals(InputArray points, OutputArray normals) const
+{
+    impl->fetchNormals(points, normals);
 }
 
 bool KinFu::operator()(InputArray depth)
@@ -244,9 +280,9 @@ bool KinFu::operator()(InputArray depth)
     return impl->operator()(depth);
 }
 
-Image KinFu::render() const
+void KinFu::render(cv::OutputArray image, const Affine3f cameraPose) const
 {
-    return impl->render();
+    impl->render(image, cameraPose);
 }
 
 }

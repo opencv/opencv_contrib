@@ -3,7 +3,35 @@
 #ifndef __OPENCV_KINFU_TSDF_H__
 #define __OPENCV_KINFU_TSDF_H__
 
-#include "opencv2/kinect_fusion/utils.hpp"
+#include "precomp.hpp"
+
+struct Voxel
+{
+    kftype v;
+    int weight;
+};
+
+namespace cv
+{
+
+template<> class DataType<Voxel>
+{
+public:
+    typedef Voxel       value_type;
+    typedef value_type  work_type;
+    typedef value_type  channel_type;
+    typedef value_type  vec_type;
+    enum { generic_type = 0,
+           depth        = CV_64F,
+           channels     = 1,
+           fmt          = (int)'v',
+           type         = CV_MAKETYPE(depth, channels)
+         };
+};
+
+}
+
+typedef cv::Mat_<Voxel> Volume;
 
 class TSDFVolume
 {
@@ -14,15 +42,16 @@ public:
     TSDFVolume(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                float _raycastStepFactor, float _gradientDeltaFactor);
 
-    void integrate(Depth depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics);
-    void raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points, Normals normals) const;
+    void integrate(Depth depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics);
+    void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, Points points, Normals normals) const;
 
     kftype fetchVoxel(cv::Point3f p) const;
     kftype fetchi(cv::Point3i p) const;
     kftype interpolate(cv::Point3f p) const;
     p3type getNormalVoxel(cv::Point3f p) const;
 
-    void fetchCloud(Points& points, Normals& normals) const;
+    void fetchPoints(cv::OutputArray points) const;
+    void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const;
 
     void reset();
 

@@ -1,6 +1,7 @@
 //TODO: add license
 
 #include "precomp.hpp"
+#include "frame.hpp"
 
 using namespace cv;
 using namespace cv::kinfu;
@@ -39,6 +40,9 @@ Frame::Frame(const Depth depth, const Intr intr, int levels, float depthFactor,
 
 Frame::Frame(const Points _points, const Normals _normals, int levels)
 {
+    CV_Assert(_points.type() == CV_32FC3);
+    CV_Assert(_normals.type() == CV_32FC3);
+
     points = std::vector<Points>(levels);
     normals = std::vector<Normals>(levels);
     points[0]  = _points;
@@ -53,18 +57,17 @@ Frame::Frame(const Points _points, const Normals _normals, int levels)
     }
 }
 
-Image Frame::render(int level, Affine3f lightPose) const
+void Frame::render(OutputArray image, int level, Affine3f lightPose) const
 {
     typedef Points::value_type p3type;
-    typedef Image::value_type i3type;
-    typedef i3type::value_type pixtype;
 
     Size sz = points[level].size();
-    Image image(sz);
+    image.create(sz, CV_8UC3);
+    Mat_<Vec3b> img = image.getMat();
 
     for(int y = 0; y < sz.height; y++)
     {
-        i3type* imgRow = image[y];
+        Vec3b* imgRow = img[y];
         const p3type* ptsRow = points[level][y];
         const p3type* nrmRow = normals[level][y];
 
@@ -73,11 +76,11 @@ Image Frame::render(int level, Affine3f lightPose) const
             p3type p = ptsRow[x];
             p3type n = nrmRow[x];
 
-            i3type color;
+            Vec3b color;
 
             if(isNaN(p))
             {
-                color = i3type(0.f, 32.f/255.f, 0.f);
+                color = Vec3b(0, 32, 0);
             }
             else
             {
@@ -95,14 +98,13 @@ Image Frame::render(int level, Affine3f lightPose) const
                 Point3f v = normalize(-Vec<kftype, 3>(p));
                 Point3f r = normalize(Vec<kftype, 3>(2.f*n*n.dot(l) - l));
 
-                pixtype ix = Ax*Ka*Dx + Lx*Kd*Dx*max(0.f, n.dot(l)) + Lx*Ks*Sx*pow(max(0.f, r.dot(v)), sp);
-                color = i3type(ix, ix, ix);
+                uchar ix = (Ax*Ka*Dx + Lx*Kd*Dx*max(0.f, n.dot(l)) + Lx*Ks*Sx*pow(max(0.f, r.dot(v)), sp))*255;
+                color = Vec3b(ix, ix, ix);
             }
 
             imgRow[x] = color;
         }
     }
-    return image;
 }
 
 
