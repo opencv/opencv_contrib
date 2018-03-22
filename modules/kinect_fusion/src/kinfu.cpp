@@ -34,15 +34,19 @@ private:
 
     int frameCounter;
     Affine3f pose;
-    Frame frame;
+    cv::Ptr<Frame> frame;
 
-    ICP icp;
-    TSDFVolume volume;
+    cv::Ptr<FrameGenerator> frameGenerator;
+    cv::Ptr<ICP> icp;
+    //TODO: the same for the rest
+    cv::Ptr<TSDFVolume> volume;
 };
 
 KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
 {
     KinFuParams p;
+
+    p.platform = PLATFORM_CPU;
 
     p.frameSize = Size(640, 480);
 
@@ -101,10 +105,11 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
 KinFu::KinFuImpl::KinFuImpl(const KinFu::KinFuParams &_params) :
     params(_params),
     frame(),
-    icp(params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh),
-    volume(params.volumeDims, params.volumeSize, params.volumePose,
-           params.tsdf_trunc_dist, params.tsdf_max_weight,
-           params.raycast_step_factor, params.gradient_delta_factor)
+    frameGenerator(makeFrameGenerator(params.platform)),
+    icp(makeICP(params.platform, params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
+    volume(makeTSDFVolume(params.platform, params.volumeDims, params.volumeSize, params.volumePose,
+                          params.tsdf_trunc_dist, params.tsdf_max_weight,
+                          params.raycast_step_factor, params.gradient_delta_factor))
 {
     reset();
 }
@@ -113,7 +118,7 @@ void KinFu::KinFuImpl::reset()
 {
     frameCounter = 0;
     pose = Affine3f::Identity();
-    volume.reset();
+    volume->reset();
 }
 
 KinFu::KinFuImpl::~KinFuImpl()
@@ -145,23 +150,23 @@ bool KinFu::KinFuImpl::operator()(InputArray _depth)
     // TODO: make it better
     Depth depth = toDepth(_depth);
 
-    Frame newFrame(depth, params.intr, params.pyramidLevels,
-                   params.depthFactor,
-                   params.bilateral_sigma_depth,
-                   params.bilateral_sigma_spatial,
-                   params.bilateral_kernel_size);
+    cv::Ptr<Frame> newFrame = (*frameGenerator)(depth, params.intr, params.pyramidLevels,
+                                                params.depthFactor,
+                                                params.bilateral_sigma_depth,
+                                                params.bilateral_sigma_spatial,
+                                                params.bilateral_kernel_size);
 
     if(frameCounter == 0)
     {
         // use depth instead of distance
-        volume.integrate(depth, params.depthFactor, pose, params.intr);
+        volume->integrate(depth, params.depthFactor, pose, params.intr);
 
         frame = newFrame;
     }
     else
     {
         Affine3f affine;
-        bool success = icp.estimateTransform(affine, frame.points, frame.normals, newFrame.points, newFrame.normals);
+        bool success = icp->estimateTransform(affine, frame, newFrame);
         if(!success)
         {
             reset();
@@ -176,15 +181,15 @@ bool KinFu::KinFuImpl::operator()(InputArray _depth)
         if((rnorm + tnorm)/2 >= params.tsdf_min_camera_movement)
         {
             // use depth instead of distance
-            volume.integrate(depth, params.depthFactor, pose, params.intr);
+            volume->integrate(depth, params.depthFactor, pose, params.intr);
         }
 
         // points and normals are allocated for this raycast call
         Points p(params.frameSize);
         Normals n(params.frameSize);
-        volume.raycast(pose, params.intr, p, n);
+        volume->raycast(pose, params.intr, p, n);
         // build a pyramid of points and normals
-        frame = Frame(p, n, params.pyramidLevels);
+        frame = (*frameGenerator)(p, n, params.pyramidLevels);
     }
 
     frameCounter++;
@@ -198,16 +203,16 @@ void KinFu::KinFuImpl::render(OutputArray image, const Affine3f cameraPose) cons
     if((cameraPose.rotation() == pose.rotation() && cameraPose.translation() == pose.translation()) ||
        (cameraPose.rotation() == id.rotation()   && cameraPose.translation() == id.translation()))
     {
-        frame.render(image, 0, params.lightPose);
+        frame->render(image, 0, params.lightPose);
     }
     else
     {
         Points p(params.frameSize);
         Normals n(params.frameSize);
-        volume.raycast(cameraPose, params.intr, p, n);
+        volume->raycast(cameraPose, params.intr, p, n);
         // build a pyramid of points and normals
-        Frame f(p, n, params.pyramidLevels);
-        f.render(image, 0, params.lightPose);
+        cv::Ptr<Frame> f = (*frameGenerator)(p, n, params.pyramidLevels);
+        f->render(image, 0, params.lightPose);
     }
 }
 
@@ -216,19 +221,19 @@ void KinFu::KinFuImpl::fetchCloud(OutputArray p, OutputArray n) const
 {
     if(p.needed())
     {
-        volume.fetchPoints(p);
-        volume.fetchNormals(p, n);
+        volume->fetchPoints(p);
+        volume->fetchNormals(p, n);
     }
 }
 
 void KinFu::KinFuImpl::fetchPoints(OutputArray points) const
 {
-    volume.fetchPoints(points);
+    volume->fetchPoints(points);
 }
 
 void KinFu::KinFuImpl::fetchNormals(InputArray points, OutputArray normals) const
 {
-    volume.fetchNormals(points, normals);
+    volume->fetchNormals(points, normals);
 }
 
 // importing class

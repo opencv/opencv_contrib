@@ -77,6 +77,13 @@ public:
     {
         static KinFuParams defaultParams();
 
+        enum PlatformType
+        {
+            PLATFORM_CPU, PLATFORM_GPU
+        };
+
+        PlatformType platform;
+
         // frame size in pixels
         Size frameSize;
 

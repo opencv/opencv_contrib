@@ -6,9 +6,112 @@
 using namespace cv;
 using namespace cv::kinfu;
 
+struct Voxel
+{
+    kftype v;
+    int weight;
+};
+
+namespace cv
+{
+
+template<> class DataType<Voxel>
+{
+public:
+    typedef Voxel       value_type;
+    typedef value_type  work_type;
+    typedef value_type  channel_type;
+    typedef value_type  vec_type;
+    enum { generic_type = 0,
+           depth        = CV_64F,
+           channels     = 1,
+           fmt          = (int)'v',
+           type         = CV_MAKETYPE(depth, channels)
+         };
+};
+
+}
+
+class TSDFVolumeCPU : public TSDFVolume
+{
+    typedef cv::Mat_<Voxel> Volume;
+    typedef Points::value_type p3type;
+
+public:
+    // dimension in voxels, size in meters
+    TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+                  float _raycastStepFactor, float _gradientDeltaFactor);
+
+    virtual void integrate(Depth depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics);
+    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, Points points, Normals normals) const;
+
+    virtual void fetchPoints(cv::OutputArray points) const;
+    virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const;
+
+    virtual void reset();
+
+    kftype fetchVoxel(cv::Point3f p) const;
+    kftype fetchi(cv::Point3i p) const;
+    kftype interpolate(cv::Point3f p) const;
+    p3type getNormalVoxel(cv::Point3f p) const;
+
+    // edgeResolution^3 array
+    // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
+    Volume volume;
+    float edgeSize;
+    int edgeResolution;
+    float voxelSize;
+    float voxelSizeInv;
+    float truncDist;
+    float raycastStepFactor;
+    float gradientDeltaFactor;
+    int maxWeight;
+    cv::Affine3f pose;
+};
+
+class TSDFVolumeGPU : public TSDFVolume
+{
+    typedef Points::value_type p3type;
+
+public:
+    // dimension in voxels, size in meters
+    TSDFVolumeGPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+                  float _raycastStepFactor, float _gradientDeltaFactor);
+
+    virtual void integrate(Depth depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics);
+    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, Points points, Normals normals) const;
+
+    virtual void fetchPoints(cv::OutputArray points) const;
+    virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const;
+
+    virtual void reset();
+};
+
+cv::Ptr<TSDFVolume> makeTSDFVolume(cv::kinfu::KinFu::KinFuParams::PlatformType t,
+                                   int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+                                   float _raycastStepFactor, float _gradientDeltaFactor)
+{
+    switch (t)
+    {
+    case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_CPU:
+        return cv::makePtr<TSDFVolumeCPU>(_res, _size, _pose, _truncDist, _maxWeight,
+                                          _raycastStepFactor, _gradientDeltaFactor);
+    case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_GPU:
+        return cv::makePtr<TSDFVolumeGPU>(_res, _size, _pose, _truncDist, _maxWeight,
+                                          _raycastStepFactor, _gradientDeltaFactor);
+    default:
+        return cv::Ptr<TSDFVolume>();
+    }
+}
+
+TSDFVolume::TSDFVolume(int /*_res*/, float /*_size*/, Affine3f /*_pose*/, float /*_truncDist*/, int /*_maxWeight*/,
+                       float /*_raycastStepFactor*/, float /*_gradientDeltaFactor*/)
+{ }
+
 // dimension in voxels, size in meters
-TSDFVolume::TSDFVolume(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-                       float _raycastStepFactor, float _gradientDeltaFactor)
+TSDFVolumeCPU::TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+                             float _raycastStepFactor, float _gradientDeltaFactor) :
+    TSDFVolume(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor, _gradientDeltaFactor)
 {
     CV_Assert(_res % 32 == 0);
     edgeResolution = _res;
@@ -24,19 +127,23 @@ TSDFVolume::TSDFVolume(int _res, float _size, cv::Affine3f _pose, float _truncDi
     reset();
 }
 
-// zero volume, leave rest params the same
-void TSDFVolume::reset()
+struct FillZero
 {
-    for(size_t i = 0; i < volume.total(); i++)
+    void operator ()(Voxel &v, const int* /*position*/) const
     {
-        volume(i).v = 0;
-        volume(i).weight = 0;
+        v.v = 0; v.weight = 0;
     }
+};
+
+// zero volume, leave rest params the same
+void TSDFVolumeCPU::reset()
+{
+    volume.forEach(FillZero());
 }
 
 
 // use depth instead of distance (optimization)
-void TSDFVolume::integrate(Depth depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics)
+void TSDFVolumeCPU::integrate(Depth depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics)
 {
     Intr::Projector proj = intrinsics.makeProjector();
 
@@ -97,7 +204,7 @@ void TSDFVolume::integrate(Depth depth, float depthFactor, cv::Affine3f cameraPo
 const float qnan = std::numeric_limits<float>::quiet_NaN ();
 const Point3f nan3(qnan, qnan, qnan);
 
-inline kftype TSDFVolume::fetchVoxel(Point3f p) const
+inline kftype TSDFVolumeCPU::fetchVoxel(Point3f p) const
 {
     p *= voxelSizeInv;
     return volume(cvRound(p.x)*edgeResolution*edgeResolution +
@@ -105,14 +212,14 @@ inline kftype TSDFVolume::fetchVoxel(Point3f p) const
                   cvRound(p.z)).v;
 }
 
-inline float TSDFVolume::fetchi(Point3i p) const
+inline float TSDFVolumeCPU::fetchi(Point3i p) const
 {
     return volume(p.x*edgeResolution*edgeResolution +
                   p.y*edgeResolution +
                   p.z).v;
 }
 
-inline float TSDFVolume::interpolate(Point3f p) const
+inline float TSDFVolumeCPU::interpolate(Point3f p) const
 {
     p *= voxelSizeInv;
 
@@ -139,7 +246,7 @@ inline float TSDFVolume::interpolate(Point3f p) const
     return v;
 }
 
-inline TSDFVolume::p3type TSDFVolume::getNormalVoxel(Point3f p) const
+inline TSDFVolumeCPU::p3type TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 {
     Point3f n;
     kftype fx1 = interpolate(Point3f(p.x + gradientDeltaFactor, p.y, p.z));
@@ -160,7 +267,7 @@ inline TSDFVolume::p3type TSDFVolume::getNormalVoxel(Point3f p) const
 }
 
 
-void TSDFVolume::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points, Normals normals) const
+void TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points, Normals normals) const
 {
     CV_Assert(!points.empty() && !normals.empty());
     CV_Assert(points.size() == normals.size());
@@ -259,7 +366,7 @@ void TSDFVolume::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points
 
 struct PushPoints
 {
-    PushPoints(const TSDFVolume& _vol, Mat_<Point3f>& _pts, Mutex& _mtx) :
+    PushPoints(const TSDFVolumeCPU& _vol, Mat_<Point3f>& _pts, Mutex& _mtx) :
         vol(_vol), points(_pts), mtx(_mtx) { }
 
     inline void coord(int x, int y, int z, Point3f V, float v0, int axis) const
@@ -341,12 +448,12 @@ struct PushPoints
         } // if voxel is not empty
     }
 
-    const TSDFVolume& vol;
+    const TSDFVolumeCPU& vol;
     Mat_<Point3f>& points;
     Mutex& mtx;
 };
 
-void TSDFVolume::fetchPoints(OutputArray _points) const
+void TSDFVolumeCPU::fetchPoints(OutputArray _points) const
 {
     if(_points.needed())
     {
@@ -364,19 +471,19 @@ void TSDFVolume::fetchPoints(OutputArray _points) const
 
 struct PushNormals
 {
-    PushNormals(const TSDFVolume& _vol, Mat_<Point3f>& _nrm, Mutex& _mtx) :
+    PushNormals(const TSDFVolumeCPU& _vol, Mat_<Point3f>& _nrm, Mutex& _mtx) :
         vol(_vol), normals(_nrm), mtx(_mtx) { }
     void operator ()(const Point3f &p, const int * /*position*/) const
     {
         AutoLock al(mtx);
         normals.push_back(vol.pose.rotation() * vol.getNormalVoxel(p));
     }
-    const TSDFVolume& vol;
+    const TSDFVolumeCPU& vol;
     Mat_<Point3f>& normals;
     Mutex& mtx;
 };
 
-void TSDFVolume::fetchNormals(InputArray _points, OutputArray _normals) const
+void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
 {
     if(_normals.needed())
     {
@@ -394,3 +501,40 @@ void TSDFVolume::fetchNormals(InputArray _points, OutputArray _normals) const
     }
 }
 
+
+TSDFVolumeGPU::TSDFVolumeGPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+              float _raycastStepFactor, float _gradientDeltaFactor) :
+    TSDFVolume(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor, _gradientDeltaFactor)
+{ }
+
+
+// zero volume, leave rest params the same
+void TSDFVolumeGPU::reset()
+{
+    throw std::runtime_error("Not implemented");
+}
+
+
+// use depth instead of distance (optimization)
+void TSDFVolumeGPU::integrate(Depth /*depth*/, float /*depthFactor*/, cv::Affine3f /*cameraPose*/, Intr /*intrinsics*/)
+{
+    throw std::runtime_error("Not implemented");
+}
+
+
+void TSDFVolumeGPU::raycast(cv::Affine3f /*cameraPose*/, Intr /*intrinsics*/, Points /*points*/, Normals /*normals*/) const
+{
+    throw std::runtime_error("Not implemented");
+}
+
+
+void TSDFVolumeGPU::fetchPoints(OutputArray /*_points*/) const
+{
+    throw std::runtime_error("Not implemented");
+}
+
+
+void TSDFVolumeGPU::fetchNormals(InputArray /*_points*/, OutputArray /*_normals*/) const
+{
+    throw std::runtime_error("Not implemented");
+}

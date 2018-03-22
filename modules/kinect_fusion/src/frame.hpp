@@ -8,20 +8,42 @@
 struct Frame
 {
 public:
-    Frame();
-    Frame(const Depth, const cv::kinfu::Intr, int levels, float depthFactor, float sigmaDepth, float sigmaSpatial, int kernelSize);
-    Frame(const Points, const Normals, int levels);
+    virtual void render(cv::OutputArray image, int level, cv::Affine3f lightPose) const = 0;
+    virtual ~Frame() { }
+};
 
-    void render(cv::OutputArray image, int level, cv::Affine3f lightPose) const;
+struct FrameCPU : Frame
+{
+public:
+    FrameCPU() : points(), normals() { }
+    virtual ~FrameCPU() { }
+
+    virtual void render(cv::OutputArray image, int level, cv::Affine3f lightPose) const;
 
     std::vector<Points> points;
     std::vector<Normals> normals;
 };
 
-void computePointsNormals(const cv::kinfu::Intr, float depthFactor, const Depth, Points, Normals );
-Depth pyrDownBilateral(const Depth depth, float sigma);
-void pyrDownPointsNormals(const Points p, const Normals n, Points& pdown, Normals& ndown);
+struct FrameGPU : Frame
+{
+public:
+    virtual void render(cv::OutputArray image, int level, cv::Affine3f lightPose) const;
+    virtual ~FrameGPU() { }
+};
 
+//TODO: replace Depth, Points and Normals by InputArrays (getMat/getUMat inside)
+//TODO: add conversion to Depth (from CV_16S to CV_32F)
+
+struct FrameGenerator
+{
+public:
+    virtual cv::Ptr<Frame> operator() (const Depth, const cv::kinfu::Intr, int levels, float depthFactor,
+                                       float sigmaDepth, float sigmaSpatial, int kernelSize) const = 0;
+    virtual cv::Ptr<Frame> operator() (const Points, const Normals, int levels) const = 0;
+    virtual ~FrameGenerator() {}
+};
+
+cv::Ptr<FrameGenerator> makeFrameGenerator(cv::kinfu::KinFu::KinFuParams::PlatformType t);
 
 #endif
 

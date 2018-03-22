@@ -4,23 +4,27 @@
 #define __OPENCV_KINFU_ICP_H__
 
 #include "precomp.hpp"
+#include "frame.hpp"
 
 class ICP
 {
 public:
     ICP(const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold);
 
-    bool estimateTransform(cv::Affine3f& transform,
-                           const std::vector<Points>& oldPoints, const std::vector<Normals>& oldNormals,
-                           const std::vector<Points>& newPoints, const std::vector<Normals>& newNormals);
-private:
-    void getAb(const Points oldPts, const Normals oldNrm, const Points newPts, const Normals newNrm,
-               cv::Affine3f pose, int level, cv::Matx66f& A, cv::Vec6f& b);
+    virtual bool estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> oldFrame, cv::Ptr<Frame> newFrame) const = 0;
+
+    virtual ~ICP() { }
+
+protected:
 
     std::vector<int> iterations;
     float angleThreshold;
     float distanceThreshold;
     cv::kinfu::Intr intrinsics;
 };
+
+cv::Ptr<ICP> makeICP(cv::kinfu::KinFu::KinFuParams::PlatformType t,
+                     const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations,
+                     float _angleThreshold, float _distanceThreshold);
 
 #endif

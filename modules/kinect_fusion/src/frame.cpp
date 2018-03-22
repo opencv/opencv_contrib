@@ -6,11 +6,46 @@
 using namespace cv;
 using namespace cv::kinfu;
 
-Frame::Frame() : points(), normals() { }
-
-Frame::Frame(const Depth depth, const Intr intr, int levels, float depthFactor,
-             float sigmaDepth, float sigmaSpatial, int kernelSize)
+struct FrameGeneratorCPU : FrameGenerator
 {
+public:
+    virtual cv::Ptr<Frame> operator() (const Depth, const cv::kinfu::Intr, int levels, float depthFactor,
+                                       float sigmaDepth, float sigmaSpatial, int kernelSize) const;
+    virtual cv::Ptr<Frame> operator() (const Points, const Normals, int levels) const;
+    virtual ~FrameGeneratorCPU() {}
+};
+
+struct FrameGeneratorGPU : FrameGenerator
+{
+public:
+    virtual cv::Ptr<Frame> operator() (const Depth, const cv::kinfu::Intr, int levels, float depthFactor,
+                                       float sigmaDepth, float sigmaSpatial, int kernelSize) const;
+    virtual cv::Ptr<Frame> operator() (const Points, const Normals, int levels) const;
+    virtual ~FrameGeneratorGPU() {}
+};
+
+cv::Ptr<FrameGenerator> makeFrameGenerator(cv::kinfu::KinFu::KinFuParams::PlatformType t)
+{
+    switch (t)
+    {
+    case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_CPU:
+        return cv::makePtr<FrameGeneratorCPU>();
+    case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_GPU:
+        return cv::makePtr<FrameGeneratorGPU>();
+    default:
+        return cv::Ptr<FrameGenerator>();
+    }
+}
+
+void computePointsNormals(const cv::kinfu::Intr, float depthFactor, const Depth, Points, Normals );
+Depth pyrDownBilateral(const Depth depth, float sigma);
+void pyrDownPointsNormals(const Points p, const Normals n, Points& pdown, Normals& ndown);
+
+cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const Depth depth, const Intr intr, int levels, float depthFactor,
+                                              float sigmaDepth, float sigmaSpatial, int kernelSize) const
+{
+    cv::Ptr<FrameCPU> frame = makePtr<FrameCPU>();
+
     // looks like OpenCV's bilateral filter works the same as KinFu's
     Depth smooth;
     bilateralFilter(depth, smooth, kernelSize, sigmaDepth*depthFactor, sigmaSpatial);
@@ -28,23 +63,27 @@ Frame::Frame(const Depth depth, const Intr intr, int levels, float depthFactor,
         Points p(sz); Normals n(sz);
         computePointsNormals(intr.scale(i), depthFactor, scaled, p, n);
 
-        points.push_back(p);
-        normals.push_back(n);
+        frame->points.push_back(p);
+        frame->normals.push_back(n);
         if(i < levels - 1)
         {
             sz.width /= 2; sz.height /= 2;
             scaled = pyrDownBilateral(scaled, sigmaDepth*depthFactor);
         }
     }
+
+    return frame;
 }
 
-Frame::Frame(const Points _points, const Normals _normals, int levels)
+cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const Points _points, const Normals _normals, int levels) const
 {
+    cv::Ptr<FrameCPU> frame = makePtr<FrameCPU>();
+
     CV_Assert(_points.type() == CV_32FC3);
     CV_Assert(_normals.type() == CV_32FC3);
 
-    points = std::vector<Points>(levels);
-    normals = std::vector<Normals>(levels);
+    std::vector<Points>  points  = std::vector<Points>(levels);
+    std::vector<Normals> normals = std::vector<Normals>(levels);
     points[0]  = _points;
     normals[0] = _normals;
     Size sz = _points.size();
@@ -55,11 +94,30 @@ Frame::Frame(const Points _points, const Normals _normals, int levels)
         normals[i] = Normals(sz);
         pyrDownPointsNormals(points[i-1], normals[i-1], points[i], normals[i]);
     }
+
+    frame->points = points;
+    frame->normals = normals;
+
+    return frame;
 }
 
-void Frame::render(OutputArray image, int level, Affine3f lightPose) const
+cv::Ptr<Frame> FrameGeneratorGPU::operator ()(const Depth /*depth*/, const Intr /*intr*/, int /*levels*/, float /*depthFactor*/,
+                                              float /*sigmaDepth*/, float /*sigmaSpatial*/, int /*kernelSize*/) const
+{
+    throw std::runtime_error("Not implemented");
+}
+
+cv::Ptr<Frame> FrameGeneratorGPU::operator ()(const Points /*_points*/, const Normals /*_normals*/, int /*levels*/) const
+{
+    throw std::runtime_error("Not implemented");
+}
+
+void FrameCPU::render(OutputArray image, int level, Affine3f lightPose) const
 {
     typedef Points::value_type p3type;
+
+    CV_Assert(level < (int)points.size());
+    CV_Assert(level < (int)normals.size());
 
     Size sz = points[level].size();
     image.create(sz, CV_8UC3);
@@ -105,6 +163,11 @@ void Frame::render(OutputArray image, int level, Affine3f lightPose) const
             imgRow[x] = color;
         }
     }
+}
+
+void FrameGPU::render(OutputArray /* image */, int /*level*/, Affine3f /*lightPose*/) const
+{
+    throw std::runtime_error("Not implemented");
 }
 
 

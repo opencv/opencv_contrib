@@ -7,16 +7,68 @@ using namespace cv;
 using namespace cv::kinfu;
 using namespace std;
 
+class ICPCPU : public ICP
+{
+public:
+    ICPCPU(const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold);
+
+    virtual bool estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> oldFrame, cv::Ptr<Frame> newFrame) const;
+
+    virtual ~ICPCPU() { }
+
+private:
+    void getAb(const Points oldPts, const Normals oldNrm, const Points newPts, const Normals newNrm,
+               cv::Affine3f pose, int level, cv::Matx66f& A, cv::Vec6f& b) const;
+};
+
+class ICPGPU : public ICP
+{
+public:
+    ICPGPU(const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold);
+
+    virtual bool estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> oldFrame, cv::Ptr<Frame> newFrame) const;
+
+    virtual ~ICPGPU() { }
+};
+
+cv::Ptr<ICP> makeICP(cv::kinfu::KinFu::KinFuParams::PlatformType t,
+                     const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations,
+                     float _angleThreshold, float _distanceThreshold)
+{
+    switch (t)
+    {
+    case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_CPU:
+        return cv::makePtr<ICPCPU>(_intrinsics, _iterations, _angleThreshold, _distanceThreshold);
+    case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_GPU:
+        return cv::makePtr<ICPGPU>(_intrinsics, _iterations, _angleThreshold, _distanceThreshold);
+    default:
+        return cv::Ptr<ICP>();
+    }
+}
+
 ICP::ICP(const Intr _intrinsics, const std::vector<int>& _iterations, float _angleThreshold, float _distanceThreshold) :
     iterations(_iterations), angleThreshold(_angleThreshold), distanceThreshold(_distanceThreshold),
     intrinsics(_intrinsics)
 { }
 
+ICPCPU::ICPCPU(const Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold) :
+    ICP(_intrinsics, _iterations, _angleThreshold, _distanceThreshold)
+{ }
 
-bool ICP::estimateTransform(cv::Affine3f& transform,
-                            const std::vector<Points>& oldPoints, const std::vector<Normals>& oldNormals,
-                            const std::vector<Points>& newPoints, const std::vector<Normals>& newNormals)
+ICPGPU::ICPGPU(const Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold) :
+    ICP(_intrinsics, _iterations, _angleThreshold, _distanceThreshold)
+{ }
+
+bool ICPCPU::estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> _oldFrame, cv::Ptr<Frame> _newFrame) const
 {
+    cv::Ptr<FrameCPU> oldFrame = _oldFrame.dynamicCast<FrameCPU>();
+    cv::Ptr<FrameCPU> newFrame = _newFrame.dynamicCast<FrameCPU>();
+
+    const std::vector<Points>& oldPoints   = oldFrame->points;
+    const std::vector<Normals>& oldNormals = oldFrame->normals;
+    const std::vector<Points>& newPoints  = newFrame->points;
+    const std::vector<Normals>& newNormals = newFrame->normals;
+
     transform = Affine3f::Identity();
     for(int level = iterations.size() - 1; level >= 0; level--)
     {
@@ -37,7 +89,7 @@ bool ICP::estimateTransform(cv::Affine3f& transform,
 
             Vec6f x;
             // theoretically, any method of solving is applicable
-            // since it's usual least square matrices
+            // since there are usual least square matrices
             solve(A, b, x, DECOMP_SVD);
             Affine3f tinc(Vec3f(x.val), Vec3f(x.val+3));
             transform = tinc * transform;
@@ -47,9 +99,13 @@ bool ICP::estimateTransform(cv::Affine3f& transform,
     return true;
 }
 
+bool ICPGPU::estimateTransform(cv::Affine3f& /*transform*/, cv::Ptr<Frame> /*_oldFrame*/, cv::Ptr<Frame> /*newFrame*/) const
+{
+    throw std::runtime_error("Not implemented");
+}
 
-void ICP::getAb(const Points oldPts, const Normals oldNrm, const Points newPts, const Normals newNrm,
-                Affine3f pose, int level, Matx66f &A, Vec6f &b)
+void ICPCPU::getAb(const Points oldPts, const Normals oldNrm, const Points newPts, const Normals newNrm,
+                   Affine3f pose, int level, Matx66f &A, Vec6f &b) const
 {
     typedef Points::value_type p3type;
     Cv32suf s; s.u = 0x7fc00000;
