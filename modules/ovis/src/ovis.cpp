@@ -102,11 +102,19 @@ static void _setCameraIntrinsics(Camera* cam, InputArray _K, const Size& imsize)
 
     Matx33f K = _K.getMat();
 
+    float near = cam->getNearClipDistance();
+    float top = near * K(1, 2) / K(1, 1);
+    float left = -near * K(0, 2) / K(0, 0);
+    float right = near * (imsize.width - K(0, 2)) / K(0, 0);
+    float bottom = -near * (imsize.height - K(1, 2)) / K(1, 1);
+
+    // use frustum extents instead of setFrustumOffset as the latter
+    // assumes centered FOV, which is not the case
+    cam->setFrustumExtents(left, right, top, bottom);
+
+    // top and bottom parts of the FOV
     float fovy = atan2(K(1, 2), K(1, 1)) + atan2(imsize.height - K(1, 2), K(1, 1));
     cam->setFOVy(Radian(fovy));
-
-    Vec2f pp_offset = Vec2f(0.5, 0.5) - Vec2f(K(0, 2) / imsize.width, K(1, 2) / imsize.height);
-    cam->setFrustumOffset(toOGRE_SS * Vector2(pp_offset.val));
 }
 
 static SceneNode& _getSceneNode(SceneManager* sceneMgr, const String& name)
