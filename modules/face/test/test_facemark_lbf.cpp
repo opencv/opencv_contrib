@@ -70,7 +70,7 @@ TEST(CV_Face_FacemarkLBF, can_create_default) {
     FacemarkLBF::Params params;
     params.n_landmarks = 68;
 
-    Ptr<Facemark> facemark;
+    Ptr<FacemarkLBF> facemark;
     EXPECT_NO_THROW(facemark = FacemarkLBF::create(params));
     EXPECT_FALSE(facemark.empty());
 }
@@ -81,7 +81,7 @@ TEST(CV_Face_FacemarkLBF, can_set_custom_detector) {
 
     EXPECT_TRUE(cascade_detector.load(cascade_filename));
 
-    Ptr<Facemark> facemark = FacemarkLBF::create();
+    Ptr<FacemarkLBF> facemark = FacemarkLBF::create();
     EXPECT_TRUE(facemark->setFaceDetector(myCustomDetector));
 }
 
@@ -107,7 +107,7 @@ TEST(CV_Face_FacemarkLBF, test_workflow) {
     params.verbose = false;
     params.save_model = false;
 
-    Ptr<Facemark> facemark = FacemarkLBF::create(params);
+    Ptr<FacemarkLBF> facemark = FacemarkLBF::create(params);
 
     Mat image;
     std::vector<Point2f> landmarks;

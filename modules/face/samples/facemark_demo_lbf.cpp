@@ -63,7 +63,7 @@ int main(int argc, char** argv)
     FacemarkLBF::Params params;
     params.model_filename = model_path;
     params.cascade_face = cascade_path;
-    Ptr<Facemark> facemark = FacemarkLBF::create(params);
+    Ptr<FacemarkLBF> facemark = FacemarkLBF::create(params);
 
     CascadeClassifier face_cascade;
     face_cascade.load(params.cascade_face.c_str());

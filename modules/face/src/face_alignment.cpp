@@ -186,5 +186,10 @@ bool FacemarkKazemiImpl::scaleData( vector< vector<Point2f> > & trainlandmarks,
 Ptr<FacemarkKazemi> FacemarkKazemi::create(const FacemarkKazemi::Params &parameters){
     return Ptr<FacemarkKazemiImpl>(new FacemarkKazemiImpl(parameters));
 }
+
+Ptr<Facemark> createFacemarkKazemi() {
+    FacemarkKazemi::Params parameters;
+    return Ptr<FacemarkKazemiImpl>(new FacemarkKazemiImpl(parameters));
+}
 }//cv
 }//face

@@ -163,7 +163,7 @@ void FacemarkKazemiImpl :: loadModel(String filename){
     f.close();
     isModelLoaded = true;
 }
-bool FacemarkKazemiImpl::fit(InputArray img, InputArray roi, InputOutputArray landmarks){
+bool FacemarkKazemiImpl::fit(InputArray img, InputArray roi, OutputArrayOfArrays landmarks){
     if(!isModelLoaded){
         String error_message = "No model loaded. Aborting....";
         CV_Error(Error::StsBadArg, error_message);
