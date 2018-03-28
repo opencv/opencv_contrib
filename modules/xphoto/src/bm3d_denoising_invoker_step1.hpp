@@ -67,7 +67,7 @@ public:
         const float &beta);
 
     virtual ~Bm3dDenoisingInvokerStep1();
-    void operator() (const Range& range) const;
+    void operator() (const Range& range) const CV_OVERRIDE;
 
 private:
     // Unimplemented operator in order to satisfy compiler warning.

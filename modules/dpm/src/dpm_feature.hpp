@@ -153,7 +153,7 @@ class ParalComputePyramid : public ParallelLoopBody
         void initialize();
 
         // parallel loop body
-        void operator() (const Range &range) const;
+        void operator() (const Range &range) const CV_OVERRIDE;
 
     private:
         // image to compute feature pyramid

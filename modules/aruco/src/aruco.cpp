@@ -293,7 +293,7 @@ class DetectInitialCandidatesParallel : public ParallelLoopBody {
         : grey(_grey), candidatesArrays(_candidatesArrays), contoursArrays(_contoursArrays),
           params(_params) {}
 
-    void operator()(const Range &range) const {
+    void operator()(const Range &range) const CV_OVERRIDE {
         const int begin = range.start;
         const int end = range.end;
 
@@ -547,7 +547,7 @@ class IdentifyCandidatesParallel : public ParallelLoopBody {
         : grey(_grey), candidates(_candidates), dictionary(_dictionary),
           idsTmp(_idsTmp), validCandidates(_validCandidates), params(_params) {}
 
-    void operator()(const Range &range) const {
+    void operator()(const Range &range) const CV_OVERRIDE {
         const int begin = range.start;
         const int end = range.end;
 
@@ -773,7 +773,7 @@ class MarkerSubpixelParallel : public ParallelLoopBody {
                            const Ptr<DetectorParameters> &_params)
         : grey(_grey), corners(_corners), params(_params) {}
 
-    void operator()(const Range &range) const {
+    void operator()(const Range &range) const CV_OVERRIDE {
         const int begin = range.start;
         const int end = range.end;
 
@@ -946,7 +946,7 @@ class MarkerContourParallel : public ParallelLoopBody {
     MarkerContourParallel( vector< vector< Point > >& _contours, vector< vector< Point2f > >& _candidates,  const Mat& _camMatrix, const Mat& _distCoeff)
         : contours(_contours), candidates(_candidates), camMatrix(_camMatrix), distCoeff(_distCoeff){}
 
-    void operator()(const Range &range) const {
+    void operator()(const Range &range) const CV_OVERRIDE {
 
         for(int i = range.start; i < range.end; i++) {
             _refineCandidateLines(contours[i], candidates[i], camMatrix, distCoeff);
@@ -1179,7 +1179,7 @@ class SinglePoseEstimationParallel : public ParallelLoopBody {
         : markerObjPoints(_markerObjPoints), corners(_corners), cameraMatrix(_cameraMatrix),
           distCoeffs(_distCoeffs), rvecs(_rvecs), tvecs(_tvecs) {}
 
-    void operator()(const Range &range) const {
+    void operator()(const Range &range) const CV_OVERRIDE {
         const int begin = range.start;
         const int end = range.end;
 

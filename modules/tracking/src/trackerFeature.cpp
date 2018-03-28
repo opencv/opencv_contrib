@@ -248,7 +248,7 @@ class Parallel_compute : public cv::ParallelLoopBody
     //features = featureEvaluator->getFeatures();
   }
 
-  virtual void operator()( const cv::Range &r ) const
+  virtual void operator()( const cv::Range &r ) const CV_OVERRIDE
   {
     for ( int jf = r.start; jf != r.end; ++jf )
     {

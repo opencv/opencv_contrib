@@ -56,8 +56,8 @@ namespace cv{
     TrackerKCFModel(TrackerKCF::Params /*params*/){}
     ~TrackerKCFModel(){}
   protected:
-    void modelEstimationImpl( const std::vector<Mat>& /*responses*/ ){}
-    void modelUpdateImpl(){}
+    void modelEstimationImpl( const std::vector<Mat>& /*responses*/ ) CV_OVERRIDE {}
+    void modelUpdateImpl() CV_OVERRIDE {}
   };
 } /* namespace cv */
 
@@ -73,16 +73,16 @@ namespace cv{
   class TrackerKCFImpl : public TrackerKCF {
   public:
     TrackerKCFImpl( const TrackerKCF::Params &parameters = TrackerKCF::Params() );
-    void read( const FileNode& /*fn*/ );
-    void write( FileStorage& /*fs*/ ) const;
-    void setFeatureExtractor(void (*f)(const Mat, const Rect, Mat&), bool pca_func = false);
+    void read( const FileNode& /*fn*/ ) CV_OVERRIDE;
+    void write( FileStorage& /*fs*/ ) const CV_OVERRIDE;
+    void setFeatureExtractor(void (*f)(const Mat, const Rect, Mat&), bool pca_func = false) CV_OVERRIDE;
 
   protected:
      /*
     * basic functions and vars
     */
-    bool initImpl( const Mat& /*image*/, const Rect2d& boundingBox );
-    bool updateImpl( const Mat& image, Rect2d& boundingBox );
+    bool initImpl( const Mat& /*image*/, const Rect2d& boundingBox ) CV_OVERRIDE;
+    bool updateImpl( const Mat& image, Rect2d& boundingBox ) CV_OVERRIDE;
 
     TrackerKCF::Params params;
 

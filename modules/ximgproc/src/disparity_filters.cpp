@@ -76,7 +76,7 @@ protected:
         int nstripes, stripe_sz;
 
         ComputeDiscontinuityAwareLRC_ParBody(DisparityWLSFilterImpl& _wls, Mat& _left_disp, Mat& _right_disp, Mat& _left_disc, Mat& _right_disc, Mat& _dst, Rect _left_ROI, Rect _right_ROI, int _nstripes);
-        void operator () (const Range& range) const;
+        void operator () (const Range& range) const CV_OVERRIDE;
     };
 
     struct ComputeDepthDisc_ParBody : public ParallelLoopBody
@@ -86,7 +86,7 @@ protected:
         int nstripes, stripe_sz;
 
         ComputeDepthDisc_ParBody(DisparityWLSFilterImpl& _wls, Mat& _disp, Mat& _disp_squares, Mat& _dst, int _nstripes);
-        void operator () (const Range& range) const;
+        void operator () (const Range& range) const CV_OVERRIDE;
     };
 
     typedef void (DisparityWLSFilterImpl::*MatOp)(Mat& src, Mat& dst);
@@ -99,7 +99,7 @@ protected:
         vector<Mat*> dst;
 
         ParallelMatOp_ParBody(DisparityWLSFilterImpl& _wls, vector<MatOp> _ops, vector<Mat*>& _src, vector<Mat*>& _dst);
-        void operator () (const Range& range) const;
+        void operator () (const Range& range) const CV_OVERRIDE;
     };
 
     void boxFilterOp(Mat& src,Mat& dst)
@@ -121,23 +121,23 @@ protected:
 
 public:
     static Ptr<DisparityWLSFilterImpl> create(bool _use_confidence, int l_offs, int r_offs, int t_offs, int b_offs, int min_disp);
-    void filter(InputArray disparity_map_left, InputArray left_view, OutputArray filtered_disparity_map, InputArray disparity_map_right, Rect ROI, InputArray);
+    void filter(InputArray disparity_map_left, InputArray left_view, OutputArray filtered_disparity_map, InputArray disparity_map_right, Rect ROI, InputArray) CV_OVERRIDE;
     void filter_(InputArray disparity_map_left, InputArray left_view, OutputArray filtered_disparity_map, InputArray disparity_map_right, Rect ROI);
 
-    double getLambda() {return lambda;}
-    void setLambda(double _lambda) {lambda = _lambda;}
+    double getLambda() CV_OVERRIDE { return lambda; }
+    void setLambda(double _lambda) CV_OVERRIDE { lambda = _lambda; }
 
-    double getSigmaColor() {return sigma_color;}
-    void setSigmaColor(double _sigma_color) {sigma_color = _sigma_color;}
+    double getSigmaColor() CV_OVERRIDE { return sigma_color; }
+    void setSigmaColor(double _sigma_color) CV_OVERRIDE { sigma_color = _sigma_color; }
 
-    int getLRCthresh() {return LRC_thresh;}
-    void setLRCthresh(int _LRC_thresh) {LRC_thresh = _LRC_thresh;}
+    int getLRCthresh() CV_OVERRIDE { return LRC_thresh; }
+    void setLRCthresh(int _LRC_thresh) CV_OVERRIDE { LRC_thresh = _LRC_thresh; }
 
-    int getDepthDiscontinuityRadius() {return depth_discontinuity_radius;}
-    void setDepthDiscontinuityRadius(int _disc_radius) {depth_discontinuity_radius = _disc_radius;}
+    int getDepthDiscontinuityRadius() CV_OVERRIDE { return depth_discontinuity_radius; }
+    void setDepthDiscontinuityRadius(int _disc_radius) CV_OVERRIDE { depth_discontinuity_radius = _disc_radius; }
 
-    Mat getConfidenceMap() {return confidence_map;}
-    Rect getROI() {return valid_disp_ROI;}
+    Mat getConfidenceMap() CV_OVERRIDE { return confidence_map; }
+    Rect getROI() CV_OVERRIDE { return valid_disp_ROI; }
 };
 
 void DisparityWLSFilterImpl::init(double _lambda, double _sigma_color, bool _use_confidence,  int l_offs, int r_offs, int t_offs, int b_offs, int _min_disp)

@@ -83,7 +83,7 @@ void DAISY::compute( InputArrayOfArrays images,
 /*
  !DAISY implementation
  */
-class DAISY_Impl : public DAISY
+class DAISY_Impl CV_FINAL : public DAISY
 {
 
 public:
@@ -101,39 +101,39 @@ public:
                         int norm = DAISY::NRM_NONE, InputArray H = noArray(),
                         bool interpolation = true, bool use_orientation = false);
 
-    virtual ~DAISY_Impl();
+    virtual ~DAISY_Impl() CV_OVERRIDE;
 
     /** returns the descriptor length in bytes */
-    virtual int descriptorSize() const {
+    virtual int descriptorSize() const CV_OVERRIDE {
         // +1 is for center pixel
         return ( (m_rad_q_no * m_th_q_no + 1) * m_hist_th_q_no );
     };
 
     /** returns the descriptor type */
-    virtual int descriptorType() const { return CV_32F; }
+    virtual int descriptorType() const CV_OVERRIDE { return CV_32F; }
 
     /** returns the default norm type */
-    virtual int defaultNorm() const { return NORM_L2; }
+    virtual int defaultNorm() const CV_OVERRIDE { return NORM_L2; }
 
     /**
      * @param image image to extract descriptors
      * @param keypoints of interest within image
      * @param descriptors resulted descriptors array
      */
-    virtual void compute( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors );
+    virtual void compute( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors ) CV_OVERRIDE;
 
     /** @overload
      * @param image image to extract descriptors
      * @param roi region of interest within image
      * @param descriptors resulted descriptors array
      */
-    virtual void compute( InputArray image, Rect roi, OutputArray descriptors );
+    virtual void compute( InputArray image, Rect roi, OutputArray descriptors ) CV_OVERRIDE;
 
     /** @overload
      * @param image image to extract descriptors
      * @param descriptors resulted descriptors array
      */
-    virtual void compute( InputArray image, OutputArray descriptors );
+    virtual void compute( InputArray image, OutputArray descriptors ) CV_OVERRIDE;
 
     /**
      * @param y position y on image
@@ -141,24 +141,7 @@ public:
      * @param orientation orientation on image (0->360)
      * @param descriptor supplied array for descriptor storage
      */
-    virtual void GetDescriptor( double y, double x, int orientation, float* descriptor ) const;
-
-    /**
-     * @param y position y on image
-     * @param x position x on image
-     * @param orientation orientation on image (0->360)
-     * @param descriptor supplied array for descriptor storage
-     * @param H homography matrix for warped grid
-     */
-    virtual bool GetDescriptor( double y, double x, int orientation, float* descriptor, double* H ) const;
-
-    /**
-     * @param y position y on image
-     * @param x position x on image
-     * @param orientation orientation on image (0->360)
-     * @param descriptor supplied array for descriptor storage
-     */
-    virtual void GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor ) const;
+    virtual void GetDescriptor( double y, double x, int orientation, float* descriptor ) const CV_OVERRIDE;
 
     /**
      * @param y position y on image
@@ -167,7 +150,24 @@ public:
      * @param descriptor supplied array for descriptor storage
      * @param H homography matrix for warped grid
      */
-    virtual bool GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor, double* H ) const;
+    virtual bool GetDescriptor( double y, double x, int orientation, float* descriptor, double* H ) const CV_OVERRIDE;
+
+    /**
+     * @param y position y on image
+     * @param x position x on image
+     * @param orientation orientation on image (0->360)
+     * @param descriptor supplied array for descriptor storage
+     */
+    virtual void GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor ) const CV_OVERRIDE;
+
+    /**
+     * @param y position y on image
+     * @param x position x on image
+     * @param orientation orientation on image (0->360)
+     * @param descriptor supplied array for descriptor storage
+     * @param H homography matrix for warped grid
+     */
+    virtual bool GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor, double* H ) const CV_OVERRIDE;
 
 protected:
 
@@ -410,7 +410,7 @@ struct LayeredGradientInvoker : ParallelLoopBody
       layer_no = layers->size[0];
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       for (int l = range.start; l < range.end; ++l)
       {
@@ -450,7 +450,7 @@ struct SmoothLayersInvoker : ParallelLoopBody
       ks = filter_size( sigma, 5.0f );
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       for (int l = range.start; l < range.end; ++l)
       {
@@ -1003,7 +1003,7 @@ struct ComputeDescriptorsInvoker : ParallelLoopBody
       orientation_shift_table = _orientation_shift_table;
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       int index, orientation;
       for (int y = range.start; y < range.end; ++y)
@@ -1064,7 +1064,7 @@ struct NormalizeDescriptorsInvoker : ParallelLoopBody
       descriptor_size = _descriptor_size;
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       for (int d = range.start; d < range.end; ++d)
       {
@@ -1146,7 +1146,7 @@ struct ComputeHistogramsInvoker : ParallelLoopBody
       _hist_th_q_no = layers->at(r).size[2];
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       for (int y = range.start; y < range.end; ++y)
       {
@@ -1251,7 +1251,7 @@ struct MaxDoGInvoker : ParallelLoopBody
       scale_map = _scale_map;
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       for (int c = range.start; c < range.end; ++c)
       {
@@ -1277,7 +1277,7 @@ struct RoundingInvoker : ParallelLoopBody
       scale_map = _scale_map;
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       for (int c = range.start; c < range.end; ++c)
       {

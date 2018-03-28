@@ -49,14 +49,14 @@ namespace datasets
 
 using namespace std;
 
-class GR_chalearnImp : public GR_chalearn
+class GR_chalearnImp CV_FINAL : public GR_chalearn
 {
 public:
     GR_chalearnImp() {}
     //GR_chalearnImp(const string &path);
     virtual ~GR_chalearnImp() {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

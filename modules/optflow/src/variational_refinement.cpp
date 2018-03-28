@@ -49,14 +49,14 @@ namespace cv
 namespace optflow
 {
 
-class VariationalRefinementImpl : public VariationalRefinement
+class VariationalRefinementImpl CV_FINAL : public VariationalRefinement
 {
   public:
     VariationalRefinementImpl();
 
-    void calc(InputArray I0, InputArray I1, InputOutputArray flow);
-    void calcUV(InputArray I0, InputArray I1, InputOutputArray flow_u, InputOutputArray flow_v);
-    void collectGarbage();
+    void calc(InputArray I0, InputArray I1, InputOutputArray flow) CV_OVERRIDE;
+    void calcUV(InputArray I0, InputArray I1, InputOutputArray flow_u, InputOutputArray flow_v) CV_OVERRIDE;
+    void collectGarbage() CV_OVERRIDE;
 
   protected: //!< algorithm parameters
     int fixedPointIterations, sorIterations;
@@ -65,18 +65,18 @@ class VariationalRefinementImpl : public VariationalRefinement
     float zeta, epsilon;
 
   public:
-    int getFixedPointIterations() const { return fixedPointIterations; }
-    void setFixedPointIterations(int val) { fixedPointIterations = val; }
-    int getSorIterations() const { return sorIterations; }
-    void setSorIterations(int val) { sorIterations = val; }
-    float getOmega() const { return omega; }
-    void setOmega(float val) { omega = val; }
-    float getAlpha() const { return alpha; }
-    void setAlpha(float val) { alpha = val; }
-    float getDelta() const { return delta; }
-    void setDelta(float val) { delta = val; }
-    float getGamma() const { return gamma; }
-    void setGamma(float val) { gamma = val; }
+    int getFixedPointIterations() const CV_OVERRIDE { return fixedPointIterations; }
+    void setFixedPointIterations(int val) CV_OVERRIDE { fixedPointIterations = val; }
+    int getSorIterations() const CV_OVERRIDE { return sorIterations; }
+    void setSorIterations(int val) CV_OVERRIDE { sorIterations = val; }
+    float getOmega() const CV_OVERRIDE { return omega; }
+    void setOmega(float val) CV_OVERRIDE { omega = val; }
+    float getAlpha() const CV_OVERRIDE { return alpha; }
+    void setAlpha(float val) CV_OVERRIDE { alpha = val; }
+    float getDelta() const CV_OVERRIDE { return delta; }
+    void setDelta(float val) CV_OVERRIDE { delta = val; }
+    float getGamma() const CV_OVERRIDE { return gamma; }
+    void setGamma(float val) CV_OVERRIDE { gamma = val; }
 
   protected: //!< internal buffers
     /* This struct defines a special data layout for Mat_<float>. Original buffer is split into two: one for "red"
@@ -129,7 +129,7 @@ class VariationalRefinementImpl : public VariationalRefinement
 
         ParallelOp_ParBody(VariationalRefinementImpl &_var, vector<Op> _ops, vector<void *> &_op1s,
                            vector<void *> &_op2s, vector<void *> &_op3s);
-        void operator()(const Range &range) const;
+        void operator()(const Range &range) const CV_OVERRIDE;
     };
     void gradHorizAndSplitOp(void *src, void *dst, void *dst_split)
     {
@@ -160,7 +160,7 @@ class VariationalRefinementImpl : public VariationalRefinement
 
         ComputeDataTerm_ParBody(VariationalRefinementImpl &_var, int _nstripes, int _h, RedBlackBuffer &_dW_u,
                                 RedBlackBuffer &_dW_v, bool _red_pass);
-        void operator()(const Range &range) const;
+        void operator()(const Range &range) const CV_OVERRIDE;
     };
 
     struct ComputeSmoothnessTermHorPass_ParBody : public ParallelLoopBody
@@ -174,7 +174,7 @@ class VariationalRefinementImpl : public VariationalRefinement
         ComputeSmoothnessTermHorPass_ParBody(VariationalRefinementImpl &_var, int _nstripes, int _h,
                                              RedBlackBuffer &_W_u, RedBlackBuffer &_W_v, RedBlackBuffer &_tempW_u,
                                              RedBlackBuffer &_tempW_v, bool _red_pass);
-        void operator()(const Range &range) const;
+        void operator()(const Range &range) const CV_OVERRIDE;
     };
 
     struct ComputeSmoothnessTermVertPass_ParBody : public ParallelLoopBody
@@ -187,7 +187,7 @@ class VariationalRefinementImpl : public VariationalRefinement
 
         ComputeSmoothnessTermVertPass_ParBody(VariationalRefinementImpl &_var, int _nstripes, int _h,
                                               RedBlackBuffer &W_u, RedBlackBuffer &_W_v, bool _red_pass);
-        void operator()(const Range &range) const;
+        void operator()(const Range &range) const CV_OVERRIDE;
     };
 
     struct RedBlackSOR_ParBody : public ParallelLoopBody
@@ -200,7 +200,7 @@ class VariationalRefinementImpl : public VariationalRefinement
 
         RedBlackSOR_ParBody(VariationalRefinementImpl &_var, int _nstripes, int _h, RedBlackBuffer &_dW_u,
                             RedBlackBuffer &_dW_v, bool _red_pass);
-        void operator()(const Range &range) const;
+        void operator()(const Range &range) const CV_OVERRIDE;
     };
 };
 

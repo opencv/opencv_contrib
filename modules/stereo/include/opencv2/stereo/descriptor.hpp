@@ -215,7 +215,7 @@ namespace cv
                 kernel_ = kernel;
                 n2_stop = k2Stop;
             }
-            void operator()(const cv::Range &r) const {
+            void operator()(const cv::Range &r) const CV_OVERRIDE {
                 for (int i = r.start; i <= r.end ; i++)
                 {
                     int rWidth = i * stride_;
@@ -256,7 +256,7 @@ namespace cv
         public:
             MeanKernelIntegralImage(const cv::Mat &image, int window,float scale, int *cost):
                 img((int *)image.data),windowSize(window) ,width(image.cols) ,scalling(scale) , c(cost){};
-            void operator()(const cv::Range &r) const{
+            void operator()(const cv::Range &r) const CV_OVERRIDE {
                 for (int i = r.start; i <= r.end; i++)
                 {
                     int iw = i * width;
@@ -290,7 +290,7 @@ namespace cv
                 im_num = num_images;
                 stride_ = (int)img[0].step;
             }
-            void operator()(const cv::Range &r) const {
+            void operator()(const cv::Range &r) const CV_OVERRIDE {
                 for (int i = r.start; i <= r.end ; i++)
                 {
                     int rWidth = i * stride_;
@@ -382,7 +382,7 @@ namespace cv
                 im_num = num_images;
                 stride_ = (int)img[0].step;
             }
-            void operator()(const cv::Range &r) const {
+            void operator()(const cv::Range &r) const CV_OVERRIDE {
                 for (int i = r.start; i <= r.end ; i++)
                 {
                     int distV = i*stride_;

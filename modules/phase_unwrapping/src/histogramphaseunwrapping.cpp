@@ -51,13 +51,13 @@ public:
     explicit HistogramPhaseUnwrapping_Impl( const HistogramPhaseUnwrapping::Params &parameters =
                                             HistogramPhaseUnwrapping::Params() );
     // Destructor
-    virtual ~HistogramPhaseUnwrapping_Impl(){};
+    virtual ~HistogramPhaseUnwrapping_Impl() CV_OVERRIDE {};
 
     // Unwrap phase map
     void unwrapPhaseMap( InputArray wrappedPhaseMap, OutputArray unwrappedPhaseMap,
-                         InputArray shadowMask = noArray() );
+                         InputArray shadowMask = noArray() ) CV_OVERRIDE;
     // Get reliability map computed from the wrapped phase map
-    void getInverseReliabilityMap( OutputArray reliabilityMap );
+    void getInverseReliabilityMap( OutputArray reliabilityMap ) CV_OVERRIDE;
 
 private:
     // Class describing a pixel

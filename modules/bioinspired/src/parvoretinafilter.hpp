@@ -234,7 +234,7 @@ private:
         Parallel_OPL_OnOffWaysComputing(float *photoreceptorsOutput_PTR, float *horizontalCellsOutput_PTR, float *bipolarCellsON_PTR, float *bipolarCellsOFF_PTR, float *parvocellularOutputON_PTR, float *parvocellularOutputOFF_PTR)
         :photoreceptorsOutput(photoreceptorsOutput_PTR), horizontalCellsOutput(horizontalCellsOutput_PTR), bipolarCellsON(bipolarCellsON_PTR), bipolarCellsOFF(bipolarCellsOFF_PTR), parvocellularOutputON(parvocellularOutputON_PTR), parvocellularOutputOFF(parvocellularOutputOFF_PTR) {}
 
-        virtual void operator()( const Range& r ) const {
+        virtual void operator()( const Range& r ) const CV_OVERRIDE {
         // compute bipolar cells response equal to photoreceptors minus horizontal cells response
         // and copy the result on parvo cellular outputs... keeping time before their local contrast adaptation for final result
         float *photoreceptorsOutput_PTR= photoreceptorsOutput+r.start;

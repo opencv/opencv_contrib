@@ -230,7 +230,7 @@ namespace rgbd
     /** Compute cached data
      */
     virtual void
-    cache()
+    cache() CV_OVERRIDE
     {
       // Compute theta and phi according to equation 3
       Mat cos_theta, sin_theta, cos_phi, sin_phi;
@@ -360,7 +360,7 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
     /** Compute cached data
      */
     virtual void
-    cache()
+    cache() CV_OVERRIDE
     {
     }
 
@@ -516,7 +516,7 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
     /** Compute cached data
      */
     virtual void
-    cache()
+    cache() CV_OVERRIDE
     {
       Mat_<T> cos_theta, sin_theta, cos_phi, sin_phi;
       computeThetaPhi<T>(rows_, cols_, K_, cos_theta, sin_theta, cos_phi, sin_phi);

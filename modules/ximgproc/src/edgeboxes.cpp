@@ -79,10 +79,10 @@ public:
                   float gamma,
                   float kappa);
 
-    virtual void getBoundingBoxes(InputArray edge_map, InputArray orientation_map, std::vector<Rect> &boxes);
+    virtual void getBoundingBoxes(InputArray edge_map, InputArray orientation_map, std::vector<Rect> &boxes) CV_OVERRIDE;
 
-    float getAlpha() const { return _alpha; }
-    void setAlpha(float value)
+    float getAlpha() const CV_OVERRIDE { return _alpha; }
+    void setAlpha(float value) CV_OVERRIDE
     {
       _alpha = value;
       _sxStep = sqrt(1 / _alpha);
@@ -90,38 +90,38 @@ public:
       _xyStepRatio = (1 - _alpha) / (1 + _alpha);
     }
 
-    float getBeta() const { return _beta; }
-    void setBeta(float value) { _beta = value; }
+    float getBeta() const CV_OVERRIDE { return _beta; }
+    void setBeta(float value) CV_OVERRIDE { _beta = value; }
 
-    float getEta() const { return _eta; }
-    void setEta(float value) { _eta = value; }
+    float getEta() const CV_OVERRIDE { return _eta; }
+    void setEta(float value) CV_OVERRIDE { _eta = value; }
 
-    float getMinScore() const { return _minScore; }
-    void setMinScore(float value) { _minScore = value; }
+    float getMinScore() const CV_OVERRIDE { return _minScore; }
+    void setMinScore(float value) CV_OVERRIDE { _minScore = value; }
 
-    int getMaxBoxes() const { return _maxBoxes; }
-    void setMaxBoxes(int value) { _maxBoxes = value; }
+    int getMaxBoxes() const CV_OVERRIDE { return _maxBoxes; }
+    void setMaxBoxes(int value) CV_OVERRIDE { _maxBoxes = value; }
 
-    float getEdgeMinMag() const { return _edgeMinMag; }
-    void setEdgeMinMag(float value) { _edgeMinMag = value; }
+    float getEdgeMinMag() const CV_OVERRIDE { return _edgeMinMag; }
+    void setEdgeMinMag(float value) CV_OVERRIDE { _edgeMinMag = value; }
 
-    float getEdgeMergeThr() const { return _edgeMergeThr; }
-    void setEdgeMergeThr(float value) { _edgeMergeThr = value; }
+    float getEdgeMergeThr() const CV_OVERRIDE { return _edgeMergeThr; }
+    void setEdgeMergeThr(float value) CV_OVERRIDE { _edgeMergeThr = value; }
 
-    float getClusterMinMag() const { return _clusterMinMag; }
-    void setClusterMinMag(float value) { _clusterMinMag = value; }
+    float getClusterMinMag() const CV_OVERRIDE { return _clusterMinMag; }
+    void setClusterMinMag(float value) CV_OVERRIDE { _clusterMinMag = value; }
 
-    float getMaxAspectRatio() const { return _maxAspectRatio; }
-    void setMaxAspectRatio(float value) { _maxAspectRatio = value; }
+    float getMaxAspectRatio() const CV_OVERRIDE { return _maxAspectRatio; }
+    void setMaxAspectRatio(float value) CV_OVERRIDE { _maxAspectRatio = value; }
 
-    float getMinBoxArea() const { return _minBoxArea; }
-    void setMinBoxArea(float value) { _minBoxArea = value; }
+    float getMinBoxArea() const CV_OVERRIDE { return _minBoxArea; }
+    void setMinBoxArea(float value) CV_OVERRIDE { _minBoxArea = value; }
 
-    float getGamma() const { return _gamma; }
-    void setGamma(float value) { _gamma = value; }
+    float getGamma() const CV_OVERRIDE { return _gamma; }
+    void setGamma(float value) CV_OVERRIDE { _gamma = value; }
 
-    float getKappa() const { return _kappa; }
-    void setKappa(float value)
+    float getKappa() const CV_OVERRIDE { return _kappa; }
+    void setKappa(float value) CV_OVERRIDE
     {
       _kappa = value;
       _scaleNorm.resize(10000);

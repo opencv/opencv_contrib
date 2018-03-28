@@ -274,7 +274,7 @@ struct SURFBuildInvoker : ParallelLoopBody
         traces = &_traces;
     }
 
-    void operator()(const Range& range) const
+    void operator()(const Range& range) const CV_OVERRIDE
     {
         for( int i=range.start; i<range.end; i++ )
             calcLayerDetAndTrace( *sum, (*sizes)[i], (*sampleSteps)[i], (*dets)[i], (*traces)[i] );
@@ -313,7 +313,7 @@ struct SURFFindInvoker : ParallelLoopBody
                    const std::vector<int>& sizes, std::vector<KeyPoint>& keypoints,
                    int octave, int layer, float hessianThreshold, int sampleStep );
 
-    void operator()(const Range& range) const
+    void operator()(const Range& range) const CV_OVERRIDE
     {
         for( int i=range.start; i<range.end; i++ )
         {
@@ -563,7 +563,7 @@ struct SURFInvoker : ParallelLoopBody
         }
     }
 
-    void operator()(const Range& range) const
+    void operator()(const Range& range) const CV_OVERRIDE
     {
         /* X and Y gradient wavelet data */
         const int NX=2, NY=2;
@@ -1004,7 +1004,7 @@ Ptr<SURF> SURF::create(double _threshold, int _nOctaves, int _nOctaveLayers, boo
 {
     return makePtr<SURF_Impl>(_threshold, _nOctaves, _nOctaveLayers, _extended, _upright);
 }
-    
+
 }
 }
 

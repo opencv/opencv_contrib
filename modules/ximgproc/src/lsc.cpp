@@ -59,22 +59,22 @@ public:
 
     SuperpixelLSCImpl( InputArray image, int region_size, float ratio );
 
-    virtual ~SuperpixelLSCImpl();
+    virtual ~SuperpixelLSCImpl() CV_OVERRIDE;
 
     // perform amount of iteration
-    virtual void iterate( int num_iterations = 10 );
+    virtual void iterate( int num_iterations = 10 ) CV_OVERRIDE;
 
     // get amount of superpixels
-    virtual int getNumberOfSuperpixels() const;
+    virtual int getNumberOfSuperpixels() const CV_OVERRIDE;
 
     // get image with labels
-    virtual void getLabels( OutputArray labels_out ) const;
+    virtual void getLabels( OutputArray labels_out ) const CV_OVERRIDE;
 
     // get mask image with contour
-    virtual void getLabelContourMask( OutputArray image, bool thick_line = true ) const;
+    virtual void getLabelContourMask( OutputArray image, bool thick_line = true ) const CV_OVERRIDE;
 
     // enforce connectivity over labels
-    virtual void enforceLabelConnectivity( int min_element_size );
+    virtual void enforceLabelConnectivity( int min_element_size ) CV_OVERRIDE;
 
 
 protected:
@@ -1075,7 +1075,7 @@ struct FeatureSpaceWeights : ParallelLoopBody
       sigmaC1 = _sigmaC1; sigmaC2 = _sigmaC2;
     }
 
-    void operator()( const Range& range ) const
+    void operator()( const Range& range ) const CV_OVERRIDE
     {
       for( int x = range.start; x < range.end; x++ )
       {
@@ -1222,7 +1222,7 @@ struct FeatureSpaceCenters : ParallelLoopBody
       centerC1 = _centerC1; centerC2 = _centerC2;
     }
 
-    void operator()( const Range& range ) const
+    void operator()( const Range& range ) const CV_OVERRIDE
     {
       for( int i = range.start; i < range.end; i++ )
       {
@@ -1364,7 +1364,7 @@ struct FeatureSpaceKmeans : ParallelLoopBody
       centerC1 = _centerC1; centerC2 = _centerC2;
     }
 
-    void operator()( const Range& range ) const
+    void operator()( const Range& range ) const CV_OVERRIDE
     {
       for( int i = range.start; i < range.end; i++ )
       {
@@ -1693,7 +1693,7 @@ struct FeatureNormals : ParallelLoopBody
       centerC1 = _centerC1; centerC2 = _centerC2;
     }
 
-    void operator()( const Range& range ) const
+    void operator()( const Range& range ) const CV_OVERRIDE
     {
       for( int i = range.start; i < range.end; i++ )
       {

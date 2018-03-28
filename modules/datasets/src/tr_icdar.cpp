@@ -53,14 +53,14 @@ namespace datasets
 
 using namespace std;
 
-class TR_icdarImp : public TR_icdar
+class TR_icdarImp CV_FINAL : public TR_icdar
 {
 public:
     TR_icdarImp() {}
     //TR_icdarImp(const string &path);
-    virtual ~TR_icdarImp() {}
+    virtual ~TR_icdarImp() CV_OVERRIDE {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

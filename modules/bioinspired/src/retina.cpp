@@ -80,7 +80,7 @@ namespace cv
 namespace bioinspired
 {
 
-class RetinaImpl : public Retina
+class RetinaImpl CV_FINAL : public Retina
 {
 public:
     /**
@@ -100,16 +100,16 @@ public:
      */
     RetinaImpl(const Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
 
-    virtual ~RetinaImpl();
+    virtual ~RetinaImpl() CV_OVERRIDE;
     /**
      * retreive retina input buffer size
      */
-    Size getInputSize();
+    Size getInputSize() CV_OVERRIDE;
 
     /**
      * retreive retina output buffer size
      */
-    Size getOutputSize();
+    Size getOutputSize() CV_OVERRIDE;
 
     /**
      * try to open an XML retina parameters file to adjust current retina instance setup
@@ -118,7 +118,7 @@ public:
      * @param retinaParameterFile : the parameters filename
      * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
-    void setup(String retinaParameterFile="", const bool applyDefaultSetupOnFailure=true);
+    void setup(String retinaParameterFile="", const bool applyDefaultSetupOnFailure=true) CV_OVERRIDE;
 
 
     /**
@@ -128,7 +128,7 @@ public:
      * @param fs : the open Filestorage which contains retina parameters
      * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
-    void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure=true);
+    void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure=true) CV_OVERRIDE;
 
     /**
      * try to open an XML retina parameters file to adjust current retina instance setup
@@ -137,31 +137,31 @@ public:
      * @param newParameters : a parameters structures updated with the new target configuration
      * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
-    void setup(RetinaParameters newParameters);
+    void setup(RetinaParameters newParameters) CV_OVERRIDE;
 
     /**
     * @return the current parameters setup
     */
-    struct RetinaParameters getParameters();
+    struct RetinaParameters getParameters() CV_OVERRIDE;
 
     /**
      * parameters setup display method
      * @return a string which contains formatted parameters information
      */
-    const String printSetup();
+    const String printSetup() CV_OVERRIDE;
 
     /**
      * write xml/yml formated parameters information
      * @rparam fs : the filename of the xml file that will be open and writen with formatted parameters information
      */
-    virtual void write( String fs ) const;
+    virtual void write( String fs ) const CV_OVERRIDE;
 
 
     /**
      * write xml/yml formated parameters information
      * @param fs : a cv::Filestorage object ready to be filled
          */
-    virtual void write( FileStorage& fs ) const;
+    virtual void write( FileStorage& fs ) const CV_OVERRIDE;
 
     /**
      * setup the OPL and IPL parvo channels (see biologocal model)
@@ -178,7 +178,7 @@ public:
      * @param HcellsSpatialConstant: the spatial constant of the first order low pass filter of the horizontal cells, use it to cut low spatial frequencies (local luminance), unit is pixels, typical value is 5 pixel, this value is also used for local contrast computing when computing the local contrast adaptation at the ganglion cells level (Inner Plexiform Layer parvocellular channel model)
      * @param ganglionCellsSensitivity: the compression strengh of the ganglion cells local adaptation output, set a value between 160 and 250 for best results, a high value increases more the low value sensitivity... and the output saturates faster, recommended value: 230
      */
-    void setupOPLandIPLParvoChannel(const bool colorMode=true, const bool normaliseOutput = true, const float photoreceptorsLocalAdaptationSensitivity=0.7f, const float photoreceptorsTemporalConstant=0.5f, const float photoreceptorsSpatialConstant=0.53f, const float horizontalCellsGain=0.f, const float HcellsTemporalConstant=1.f, const float HcellsSpatialConstant=7.f, const float ganglionCellsSensitivity=0.7f);
+    void setupOPLandIPLParvoChannel(const bool colorMode=true, const bool normaliseOutput = true, const float photoreceptorsLocalAdaptationSensitivity=0.7f, const float photoreceptorsTemporalConstant=0.5f, const float photoreceptorsSpatialConstant=0.53f, const float horizontalCellsGain=0.f, const float HcellsTemporalConstant=1.f, const float HcellsSpatialConstant=7.f, const float ganglionCellsSensitivity=0.7f) CV_OVERRIDE;
 
     /**
      * set parameters values for the Inner Plexiform Layer (IPL) magnocellular channel
@@ -192,13 +192,13 @@ public:
      * @param localAdaptintegration_tau: specifies the temporal constant of the low pas filter involved in the computation of the local "motion mean" for the local adaptation computation
      * @param localAdaptintegration_k: specifies the spatial constant of the low pas filter involved in the computation of the local "motion mean" for the local adaptation computation
      */
-    void setupIPLMagnoChannel(const bool normaliseOutput = true, const float parasolCells_beta=0.f, const float parasolCells_tau=0.f, const float parasolCells_k=7.f, const float amacrinCellsTemporalCutFrequency=1.2f, const float V0CompressionParameter=0.95f, const float localAdaptintegration_tau=0.f, const float localAdaptintegration_k=7.f);
+    void setupIPLMagnoChannel(const bool normaliseOutput = true, const float parasolCells_beta=0.f, const float parasolCells_tau=0.f, const float parasolCells_k=7.f, const float amacrinCellsTemporalCutFrequency=1.2f, const float V0CompressionParameter=0.95f, const float localAdaptintegration_tau=0.f, const float localAdaptintegration_k=7.f) CV_OVERRIDE;
 
     /**
      * method which allows retina to be applied on an input image, after run, encapsulated retina module is ready to deliver its outputs using dedicated acccessors, see getParvo and getMagno methods
      * @param inputImage : the input cv::Mat image to be processed, can be gray level or BGR coded in any format (from 8bit to 16bits)
      */
-    void run(InputArray inputImage);
+    void run(InputArray inputImage) CV_OVERRIDE;
 
     /**
      * method that applies a luminance correction (initially High Dynamic Range (HDR) tone mapping) using only the 2 local adaptation stages of the retina parvo channel : photoreceptors level and ganlion cells level. Spatio temporal filtering is applied but limited to temporal smoothing and eventually high frequencies attenuation. This is a lighter method than the one available using the regular run method. It is then faster but it does not include complete temporal filtering nor retina spectral whitening. This is an adptation of the original still image HDR tone mapping algorithm of David Alleyson, Sabine Susstruck and Laurence Meylan's work, please cite:
@@ -206,35 +206,35 @@ public:
      @param inputImage the input image to process RGB or gray levels
      @param outputToneMappedImage the output tone mapped image
      */
-    void applyFastToneMapping(InputArray inputImage, OutputArray outputToneMappedImage);
+    void applyFastToneMapping(InputArray inputImage, OutputArray outputToneMappedImage) CV_OVERRIDE;
 
     /**
      * accessor of the details channel of the retina (models foveal vision)
      * @param retinaOutput_parvo : the output buffer (reallocated if necessary), this output is rescaled for standard 8bits image processing use in OpenCV
      */
-    void getParvo(OutputArray retinaOutput_parvo);
+    void getParvo(OutputArray retinaOutput_parvo) CV_OVERRIDE;
 
     /**
      * accessor of the details channel of the retina (models foveal vision)
      * @param retinaOutput_parvo : a cv::Mat header filled with the internal parvo buffer of the retina module. This output is the original retina filter model output, without any quantification or rescaling
      */
-    void getParvoRAW(OutputArray retinaOutput_parvo);
+    void getParvoRAW(OutputArray retinaOutput_parvo) CV_OVERRIDE;
 
     /**
      * accessor of the motion channel of the retina (models peripheral vision)
      * @param retinaOutput_magno : the output buffer (reallocated if necessary), this output is rescaled for standard 8bits image processing use in OpenCV
      */
-    void getMagno(OutputArray retinaOutput_magno);
+    void getMagno(OutputArray retinaOutput_magno) CV_OVERRIDE;
 
     /**
      * accessor of the motion channel of the retina (models peripheral vision)
      * @param retinaOutput_magno : a cv::Mat header filled with the internal retina magno buffer of the retina module. This output is the original retina filter model output, without any quantification or rescaling
      */
-    void getMagnoRAW(OutputArray retinaOutput_magno);
+    void getMagnoRAW(OutputArray retinaOutput_magno) CV_OVERRIDE;
 
     // original API level data accessors : get buffers addresses from a Mat header, similar to getParvoRAW and getMagnoRAW...
-    const Mat getMagnoRAW() const;
-    const Mat getParvoRAW() const;
+    const Mat getMagnoRAW() const CV_OVERRIDE;
+    const Mat getParvoRAW() const CV_OVERRIDE;
 
     /**
      * activate color saturation as the final step of the color demultiplexing process
@@ -242,24 +242,24 @@ public:
      * @param saturateColors: boolean that activates color saturation (if true) or desactivate (if false)
      * @param colorSaturationValue: the saturation factor
      */
-    void setColorSaturation(const bool saturateColors=true, const float colorSaturationValue=4.0f);
+    void setColorSaturation(const bool saturateColors=true, const float colorSaturationValue=4.0f) CV_OVERRIDE;
 
     /**
      * clear all retina buffers (equivalent to opening the eyes after a long period of eye close ;o)
      */
-    void clearBuffers();
+    void clearBuffers() CV_OVERRIDE;
 
     /**
      * Activate/desactivate the Magnocellular pathway processing (motion information extraction), by default, it is activated
      * @param activate: true if Magnocellular output should be activated, false if not
      */
-    void activateMovingContoursProcessing(const bool activate);
+    void activateMovingContoursProcessing(const bool activate) CV_OVERRIDE;
 
     /**
      * Activate/desactivate the Parvocellular pathway processing (contours information extraction), by default, it is activated
      * @param activate: true if Parvocellular (contours information extraction) output should be activated, false if not
      */
-    void activateContoursProcessing(const bool activate);
+    void activateContoursProcessing(const bool activate) CV_OVERRIDE;
 private:
 
     // Parameteres setup members

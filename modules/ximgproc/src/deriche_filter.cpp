@@ -162,7 +162,7 @@ public:
         verbose(false)
     {}
     void Verbose(bool b) { verbose = b; }
-    virtual void operator()(const Range& range) const
+    virtual void operator()(const Range& range) const CV_OVERRIDE
     {
         CV_Assert(img.depth()==CV_8UC1  || img.depth()==CV_8SC1  || img.depth()==CV_16SC1 || img.depth()==CV_16UC1);
         CV_Assert(dst.depth()==CV_32FC1);
@@ -209,7 +209,7 @@ public:
         verbose(false)
     {}
     void Verbose(bool b) { verbose = b; }
-    virtual void operator()(const Range& range) const
+    virtual void operator()(const Range& range) const CV_OVERRIDE
     {
         CV_Assert(img.depth()==CV_32FC1);
         CV_Assert(dst.depth()==CV_32FC1);
@@ -282,7 +282,7 @@ public:
         verbose(false)
     {}
     void Verbose(bool b) { verbose = b; }
-    virtual void operator()(const Range& range) const
+    virtual void operator()(const Range& range) const CV_OVERRIDE
     {
         CV_Assert(img.depth()==CV_32FC1);
         CV_Assert(dst.depth()==CV_32FC1);
@@ -357,7 +357,7 @@ public:
         verbose(false)
     {}
     void Verbose(bool b) { verbose = b; }
-    virtual void operator()(const Range& range) const
+    virtual void operator()(const Range& range) const CV_OVERRIDE
     {
         CV_Assert(img.depth()==CV_8UC1 || img.depth()==CV_8SC1 || img.depth()==CV_16SC1 || img.depth()==CV_16UC1);
         CV_Assert(dst.depth()==CV_32FC1);

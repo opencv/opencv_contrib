@@ -253,13 +253,13 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
 
     @param fn source FileNode file
      */
-  virtual void read( const cv::FileNode& fn );
+  virtual void read( const cv::FileNode& fn ) CV_OVERRIDE;
 
   /** @brief Store parameters to a FileStorage object
 
     @param fs output FileStorage file
      */
-  virtual void write( cv::FileStorage& fs ) const;
+  virtual void write( cv::FileStorage& fs ) const CV_OVERRIDE;
 
   /** @brief Requires line detection
 
@@ -1076,7 +1076,7 @@ static Ptr<BinaryDescriptorMatcher> createBinaryDescriptorMatcher();
 
 /** @brief Clear dataset and internal data
  */
-void clear();
+void clear() CV_OVERRIDE;
 
 /** @brief Constructor.
 

@@ -91,18 +91,18 @@ const double kGaborWavelens[kNumBandsMax][2] = {
     {11.5, 12.7}, {14.1, 15.4}, {16.8, 18.2}, {19.7, 21.2}
 };
 
-class BIFImpl : public cv::face::BIF {
+class BIFImpl CV_FINAL : public cv::face::BIF {
 public:
     BIFImpl(int num_bands, int num_rotations) {
         initUnits(num_bands, num_rotations);
     }
 
-    virtual int getNumBands() const { return num_bands_; }
+    virtual int getNumBands() const CV_OVERRIDE { return num_bands_; }
 
-    virtual int getNumRotations() const { return num_rotations_; }
+    virtual int getNumRotations() const CV_OVERRIDE { return num_rotations_; }
 
     virtual void compute(cv::InputArray image,
-                         cv::OutputArray features) const;
+                         cv::OutputArray features) const CV_OVERRIDE;
 
 private:
     struct UnitParams {

@@ -428,11 +428,11 @@ public:
                        float weak_threshold, size_t num_features,
                        float strong_threshold);
 
-  virtual void quantize(Mat& dst) const;
+  virtual void quantize(Mat& dst) const CV_OVERRIDE;
 
-  virtual bool extractTemplate(Template& templ) const;
+  virtual bool extractTemplate(Template& templ) const CV_OVERRIDE;
 
-  virtual void pyrDown();
+  virtual void pyrDown() CV_OVERRIDE;
 
 protected:
   /// Recalculate angle and magnitude images
@@ -728,11 +728,11 @@ public:
                      int distance_threshold, int difference_threshold, size_t num_features,
                      int extract_threshold);
 
-  virtual void quantize(Mat& dst) const;
+  virtual void quantize(Mat& dst) const CV_OVERRIDE;
 
-  virtual bool extractTemplate(Template& templ) const;
+  virtual bool extractTemplate(Template& templ) const CV_OVERRIDE;
 
-  virtual void pyrDown();
+  virtual void pyrDown() CV_OVERRIDE;
 
 protected:
   Mat mask;

@@ -136,7 +136,7 @@ void balanceWhiteSimple(std::vector<Mat_<T> > &src, Mat &dst, const float inputM
     cv::merge(src, dst);
 }
 
-class SimpleWBImpl : public SimpleWB
+class SimpleWBImpl CV_FINAL : public SimpleWB
 {
   private:
     float inputMin, inputMax, outputMin, outputMax, p;
@@ -151,22 +151,22 @@ class SimpleWBImpl : public SimpleWB
         p = 2.0f;
     }
 
-    float getInputMin() const { return inputMin; }
-    void setInputMin(float val) { inputMin = val; }
+    float getInputMin() const CV_OVERRIDE { return inputMin; }
+    void setInputMin(float val) CV_OVERRIDE { inputMin = val; }
 
-    float getInputMax() const { return inputMax; }
-    void setInputMax(float val) { inputMax = val; }
+    float getInputMax() const CV_OVERRIDE { return inputMax; }
+    void setInputMax(float val) CV_OVERRIDE { inputMax = val; }
 
-    float getOutputMin() const { return outputMin; }
-    void setOutputMin(float val) { outputMin = val; }
+    float getOutputMin() const CV_OVERRIDE { return outputMin; }
+    void setOutputMin(float val) CV_OVERRIDE { outputMin = val; }
 
-    float getOutputMax() const { return outputMax; }
-    void setOutputMax(float val) { outputMax = val; }
+    float getOutputMax() const CV_OVERRIDE { return outputMax; }
+    void setOutputMax(float val) CV_OVERRIDE { outputMax = val; }
 
-    float getP() const { return p; }
-    void setP(float val) { p = val; }
+    float getP() const CV_OVERRIDE { return p; }
+    void setP(float val) CV_OVERRIDE { p = val; }
 
-    void balanceWhite(InputArray _src, OutputArray _dst)
+    void balanceWhite(InputArray _src, OutputArray _dst) CV_OVERRIDE
     {
         CV_Assert(!_src.empty());
         CV_Assert(_src.depth() == CV_8U || _src.depth() == CV_16S || _src.depth() == CV_32S || _src.depth() == CV_32F);

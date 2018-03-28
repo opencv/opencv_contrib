@@ -57,7 +57,7 @@ namespace datasets
 //! @addtogroup datasets_pd
 //! @{
 
-enum sampleType 
+enum sampleType
 {
     POS = 0,
     NEG = 1
@@ -67,7 +67,7 @@ struct PD_inriaObj : public Object
 {
     // image file name
     std::string filename;
-    
+
     // positive or negative
     sampleType sType;
 
@@ -83,7 +83,7 @@ struct PD_inriaObj : public Object
 class CV_EXPORTS PD_inria : public Dataset
 {
 public:
-    virtual void load(const std::string &path) = 0;
+    virtual void load(const std::string &path) CV_OVERRIDE = 0;
 
     static Ptr<PD_inria> create();
 };

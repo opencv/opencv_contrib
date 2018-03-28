@@ -2,26 +2,26 @@
  *  By downloading, copying, installing or using the software you agree to this license.
  *  If you do not agree to this license, do not download, install,
  *  copy or use the software.
- *  
- *  
+ *
+ *
  *  License Agreement
  *  For Open Source Computer Vision Library
  *  (3 - clause BSD License)
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
- *  
+ *
  *  * Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and / or other materials provided with the distribution.
- *  
+ *
  *  * Neither the names of the copyright holders nor the names of the contributors
  *  may be used to endorse or promote products derived from this software
  *  without specific prior written permission.
- *  
+ *
  *  This software is provided by the copyright holders and contributors "as is" and
  *  any express or implied warranties, including, but not limited to, the implied
  *  warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -59,7 +59,7 @@ public: /*Non-template methods*/
 
     static Ptr<DTFilterCPU> createRF(InputArray adistHor, InputArray adistVert, double sigmaSpatial, double sigmaColor, int numIters = 3);
 
-    void filter(InputArray src, OutputArray dst, int dDepth = -1);
+    void filter(InputArray src, OutputArray dst, int dDepth = -1) CV_OVERRIDE;
 
     void setSingleFilterCall(bool value);
 
@@ -141,7 +141,7 @@ protected: /*Wrappers for parallelization*/
         float radius;
 
         FilterNC_horPass(Mat& src_, Mat& idist_, Mat& dst_);
-        void operator() (const Range& range) const;
+        void operator() (const Range& range) const CV_OVERRIDE;
     };
 
     template <typename WorkVec>
@@ -151,7 +151,7 @@ protected: /*Wrappers for parallelization*/
         float radius;
 
         FilterIC_horPass(Mat& src_, Mat& idist_, Mat& dist_, Mat& dst_);
-        void operator() (const Range& range) const;
+        void operator() (const Range& range) const CV_OVERRIDE;
     };
 
     template <typename WorkVec>
@@ -161,7 +161,7 @@ protected: /*Wrappers for parallelization*/
         int iteration;
 
         FilterRF_horPass(Mat& res_, Mat& alphaD_, int iteration_);
-        void operator() (const Range& range) const;
+        void operator() (const Range& range) const CV_OVERRIDE;
         Range getRange() const { return Range(0, res.rows); }
     };
 
@@ -172,7 +172,7 @@ protected: /*Wrappers for parallelization*/
         int iteration;
 
         FilterRF_vertPass(Mat& res_, Mat& alphaD_, int iteration_);
-        void operator() (const Range& range) const;
+        void operator() (const Range& range) const CV_OVERRIDE;
         #ifdef CV_GET_NUM_THREAD_WORKS_PROPERLY
         Range getRange() const { return Range(0, cv::getNumThreads()); }
         #else
@@ -187,7 +187,7 @@ protected: /*Wrappers for parallelization*/
         Mat &guide, &dst;
 
         ComputeIDTHor_ParBody(DTFilterCPU& dtf_, Mat& guide_, Mat& dst_);
-        void operator() (const Range& range) const;
+        void operator() (const Range& range) const CV_OVERRIDE;
         Range getRange() { return Range(0, guide.rows); }
     };
 
@@ -199,7 +199,7 @@ protected: /*Wrappers for parallelization*/
         IDistType maxRadius;
 
         ComputeDTandIDTHor_ParBody(DTFilterCPU& dtf_, Mat& guide_, Mat& dist_, Mat& idist_);
-        void operator() (const Range& range) const;
+        void operator() (const Range& range) const CV_OVERRIDE;
         Range getRange() { return Range(0, guide.rows); }
     };
 
@@ -211,7 +211,7 @@ protected: /*Wrappers for parallelization*/
         float lna;
 
         ComputeA0DTHor_ParBody(DTFilterCPU& dtf_, Mat& guide_);
-        void operator() (const Range& range) const;
+        void operator() (const Range& range) const CV_OVERRIDE;
         Range getRange() { return Range(0, guide.rows); }
         ~ComputeA0DTHor_ParBody();
     };
@@ -224,7 +224,7 @@ protected: /*Wrappers for parallelization*/
         float lna;
 
         ComputeA0DTVert_ParBody(DTFilterCPU& dtf_, Mat& guide_);
-        void operator() (const Range& range) const;
+        void operator() (const Range& range) const CV_OVERRIDE;
         Range getRange() const { return Range(0, guide.rows - 1); }
         ~ComputeA0DTVert_ParBody();
     };

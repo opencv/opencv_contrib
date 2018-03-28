@@ -24,13 +24,13 @@ public:
                                bool extended = true, bool upright = false);
 
     //! returns the descriptor size in float's (64 or 128)
-    CV_WRAP int descriptorSize() const;
+    CV_WRAP int descriptorSize() const CV_OVERRIDE;
 
     //! returns the descriptor type
-    CV_WRAP int descriptorType() const;
+    CV_WRAP int descriptorType() const CV_OVERRIDE;
 
     //! returns the descriptor type
-    CV_WRAP int defaultNorm() const;
+    CV_WRAP int defaultNorm() const CV_OVERRIDE;
 
     void set(int, double);
     double get(int) const;
@@ -40,22 +40,22 @@ public:
     void detectAndCompute(InputArray img, InputArray mask,
                           CV_OUT std::vector<KeyPoint>& keypoints,
                           OutputArray descriptors,
-                          bool useProvidedKeypoints = false);
+                          bool useProvidedKeypoints = false) CV_OVERRIDE;
 
-    void setHessianThreshold(double hessianThreshold_) { hessianThreshold = hessianThreshold_; }
-    double getHessianThreshold() const { return hessianThreshold; }
+    void setHessianThreshold(double hessianThreshold_) CV_OVERRIDE { hessianThreshold = hessianThreshold_; }
+    double getHessianThreshold() const CV_OVERRIDE { return hessianThreshold; }
 
-    void setNOctaves(int nOctaves_) { nOctaves = nOctaves_; }
-    int getNOctaves() const { return nOctaves; }
+    void setNOctaves(int nOctaves_) CV_OVERRIDE { nOctaves = nOctaves_; }
+    int getNOctaves() const CV_OVERRIDE { return nOctaves; }
 
-    void setNOctaveLayers(int nOctaveLayers_) { nOctaveLayers = nOctaveLayers_; }
-    int getNOctaveLayers() const { return nOctaveLayers; }
+    void setNOctaveLayers(int nOctaveLayers_) CV_OVERRIDE { nOctaveLayers = nOctaveLayers_; }
+    int getNOctaveLayers() const CV_OVERRIDE { return nOctaveLayers; }
 
-    void setExtended(bool extended_) { extended = extended_; }
-    bool getExtended() const { return extended; }
+    void setExtended(bool extended_) CV_OVERRIDE { extended = extended_; }
+    bool getExtended() const CV_OVERRIDE { return extended; }
 
-    void setUpright(bool upright_) { upright = upright_; }
-    bool getUpright() const { return upright; }
+    void setUpright(bool upright_) CV_OVERRIDE { upright = upright_; }
+    bool getUpright() const CV_OVERRIDE { return upright; }
 
     double hessianThreshold;
     int nOctaves;

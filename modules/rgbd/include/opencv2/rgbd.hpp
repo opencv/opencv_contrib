@@ -514,7 +514,7 @@ namespace rgbd
     CV_WRAP static Ptr<OdometryFrame> create(const Mat& image=Mat(), const Mat& depth=Mat(), const Mat& mask=Mat(), const Mat& normals=Mat(), int ID=-1);
 
     CV_WRAP virtual void
-    release();
+    release() CV_OVERRIDE;
 
     CV_WRAP void
     releasePyramids();
@@ -661,13 +661,13 @@ namespace rgbd
                  const std::vector<float>& minGradientMagnitudes = std::vector<float>(), float maxPointsPart = Odometry::DEFAULT_MAX_POINTS_PART(),
                  int transformType = Odometry::RIGID_BODY_MOTION);
 
-    CV_WRAP virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
+    CV_WRAP virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const CV_OVERRIDE;
 
-    CV_WRAP cv::Mat getCameraMatrix() const
+    CV_WRAP cv::Mat getCameraMatrix() const CV_OVERRIDE
     {
         return cameraMatrix;
     }
-    CV_WRAP void setCameraMatrix(const cv::Mat &val)
+    CV_WRAP void setCameraMatrix(const cv::Mat &val) CV_OVERRIDE
     {
         cameraMatrix = val;
     }
@@ -719,11 +719,11 @@ namespace rgbd
     {
         maxPointsPart = val;
     }
-    CV_WRAP int getTransformType() const
+    CV_WRAP int getTransformType() const CV_OVERRIDE
     {
         return transformType;
     }
-    CV_WRAP void setTransformType(int val)
+    CV_WRAP void setTransformType(int val) CV_OVERRIDE
     {
         transformType = val;
     }
@@ -746,11 +746,11 @@ namespace rgbd
 
   protected:
     virtual void
-    checkParams() const;
+    checkParams() const CV_OVERRIDE;
 
     virtual bool
     computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<OdometryFrame>& dstFrame, OutputArray Rt,
-                const Mat& initRt) const;
+                const Mat& initRt) const CV_OVERRIDE;
 
     // Some params have commented desired type. It's due to AlgorithmInfo::addParams does not support it now.
     /*float*/
@@ -792,13 +792,13 @@ namespace rgbd
                 float maxDepthDiff = Odometry::DEFAULT_MAX_DEPTH_DIFF(), float maxPointsPart = Odometry::DEFAULT_MAX_POINTS_PART(),
                 const std::vector<int>& iterCounts = std::vector<int>(), int transformType = Odometry::RIGID_BODY_MOTION);
 
-    CV_WRAP virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
+    CV_WRAP virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const CV_OVERRIDE;
 
-    CV_WRAP cv::Mat getCameraMatrix() const
+    CV_WRAP cv::Mat getCameraMatrix() const CV_OVERRIDE
     {
         return cameraMatrix;
     }
-    CV_WRAP void setCameraMatrix(const cv::Mat &val)
+    CV_WRAP void setCameraMatrix(const cv::Mat &val) CV_OVERRIDE
     {
         cameraMatrix = val;
     }
@@ -842,11 +842,11 @@ namespace rgbd
     {
         maxPointsPart = val;
     }
-    CV_WRAP int getTransformType() const
+    CV_WRAP int getTransformType() const CV_OVERRIDE
     {
         return transformType;
     }
-    CV_WRAP void setTransformType(int val)
+    CV_WRAP void setTransformType(int val) CV_OVERRIDE
     {
         transformType = val;
     }
@@ -873,11 +873,11 @@ namespace rgbd
 
   protected:
     virtual void
-    checkParams() const;
+    checkParams() const CV_OVERRIDE;
 
     virtual bool
     computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<OdometryFrame>& dstFrame, OutputArray Rt,
-                const Mat& initRt) const;
+                const Mat& initRt) const CV_OVERRIDE;
 
     // Some params have commented desired type. It's due to AlgorithmInfo::addParams does not support it now.
     /*float*/
@@ -926,13 +926,13 @@ namespace rgbd
                     const std::vector<float>& minGradientMagnitudes = std::vector<float>(),
                     int transformType = Odometry::RIGID_BODY_MOTION);
 
-    CV_WRAP virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const;
+    CV_WRAP virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const CV_OVERRIDE;
 
-    CV_WRAP cv::Mat getCameraMatrix() const
+    CV_WRAP cv::Mat getCameraMatrix() const CV_OVERRIDE
     {
         return cameraMatrix;
     }
-    CV_WRAP void setCameraMatrix(const cv::Mat &val)
+    CV_WRAP void setCameraMatrix(const cv::Mat &val) CV_OVERRIDE
     {
         cameraMatrix = val;
     }
@@ -984,11 +984,11 @@ namespace rgbd
     {
         minGradientMagnitudes = val;
     }
-    CV_WRAP int getTransformType() const
+    CV_WRAP int getTransformType() const CV_OVERRIDE
     {
         return transformType;
     }
-    CV_WRAP void setTransformType(int val)
+    CV_WRAP void setTransformType(int val) CV_OVERRIDE
     {
         transformType = val;
     }
@@ -1015,11 +1015,11 @@ namespace rgbd
 
   protected:
     virtual void
-    checkParams() const;
+    checkParams() const CV_OVERRIDE;
 
     virtual bool
     computeImpl(const Ptr<OdometryFrame>& srcFrame, const Ptr<OdometryFrame>& dstFrame, OutputArray Rt,
-                const Mat& initRt) const;
+                const Mat& initRt) const CV_OVERRIDE;
 
     // Some params have commented desired type. It's due to AlgorithmInfo::addParams does not support it now.
     /*float*/

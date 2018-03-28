@@ -60,7 +60,7 @@ public:
         inputChannelCount_ = 3;
     }
 
-    void detect(InputArray inputImage_, std::vector<Rect>& Bbox, std::vector<float>& confidence)
+    void detect(InputArray inputImage_, std::vector<Rect>& Bbox, std::vector<float>& confidence) CV_OVERRIDE
     {
         CV_Assert(inputImage_.channels() == inputChannelCount_);
         Mat inputImage = inputImage_.getMat();

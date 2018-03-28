@@ -210,11 +210,11 @@ public:
      * @param keypoints of interest within image
      * @param descriptors resulted descriptors array
      */
-    virtual void compute( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors ) = 0;
+    virtual void compute( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors ) CV_OVERRIDE = 0;
 
     virtual void compute( InputArrayOfArrays images,
                           std::vector<std::vector<KeyPoint> >& keypoints,
-                          OutputArrayOfArrays descriptors );
+                          OutputArrayOfArrays descriptors ) CV_OVERRIDE;
 
     /** @overload
      * @param image image to extract descriptors

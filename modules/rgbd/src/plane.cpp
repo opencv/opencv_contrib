@@ -182,7 +182,7 @@ public:
    * @return
    */
   float
-  distance(const Vec3f& p_j) const
+  distance(const Vec3f& p_j) const CV_OVERRIDE
   {
     return std::abs(float(p_j.dot(n_) + d_));
   }
@@ -206,7 +206,7 @@ public:
   /** The distance is now computed by taking the sensor error into account */
   inline
   float
-  distance(const Vec3f& p_j) const
+  distance(const Vec3f& p_j) const CV_OVERRIDE
   {
     float cst = p_j.dot(n_) + d_;
     float err = sensor_error_a_ * p_j[2] * p_j[2] + sensor_error_b_ * p_j[2] + sensor_error_c_;
@@ -524,7 +524,7 @@ private:
   unsigned char plane_index_;
   /** THe block size as defined in the main algorithm */
   int block_size_;
-  
+
   const InlierFinder & operator = (const InlierFinder &);
 };
 

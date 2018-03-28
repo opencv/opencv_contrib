@@ -43,151 +43,151 @@ namespace cv
 namespace hdf
 {
 
-class HDF5Impl : public HDF5
+class HDF5Impl CV_FINAL : public HDF5
 {
 public:
 
     HDF5Impl( const String& HDF5Filename );
 
-    virtual ~HDF5Impl() { close(); };
+    virtual ~HDF5Impl() CV_OVERRIDE { close(); };
 
     // close and release
-    virtual void close( );
+    virtual void close( ) CV_OVERRIDE;
 
     /*
      * h5 generic
      */
 
     // check if object / link exists
-    virtual bool hlexists( const String& label ) const;
+    virtual bool hlexists( const String& label ) const CV_OVERRIDE;
 
-    virtual bool atexists(const String& atlabel) const;
-    virtual void atdelete(const String& atlabel);
+    virtual bool atexists(const String& atlabel) const CV_OVERRIDE;
+    virtual void atdelete(const String& atlabel) CV_OVERRIDE;
 
-    virtual void atwrite(const int value, const String& atlabel);
-    virtual void atread(int* value, const String& atlabel);
+    virtual void atwrite(const int value, const String& atlabel) CV_OVERRIDE;
+    virtual void atread(int* value, const String& atlabel) CV_OVERRIDE;
 
-    virtual void atwrite(const double value, const String& atlabel);
-    virtual void atread(double* value, const String& atlabel);
+    virtual void atwrite(const double value, const String& atlabel) CV_OVERRIDE;
+    virtual void atread(double* value, const String& atlabel) CV_OVERRIDE;
 
-    virtual void atwrite(const String& value, const String& atlabel);
-    virtual void atread(String* value, const String& atlabel);
+    virtual void atwrite(const String& value, const String& atlabel) CV_OVERRIDE;
+    virtual void atread(String* value, const String& atlabel) CV_OVERRIDE;
 
-    virtual void atwrite(InputArray value, const String& atlabel);
-    virtual void atread(OutputArray value, const String& atlabel);
+    virtual void atwrite(InputArray value, const String& atlabel) CV_OVERRIDE;
+    virtual void atread(OutputArray value, const String& atlabel) CV_OVERRIDE;
 
     /*
      * h5 group
      */
 
     // create a group
-    virtual void grcreate( const String& grlabel );
+    virtual void grcreate( const String& grlabel ) CV_OVERRIDE;
 
     /*
      *  cv::Mat
      */
 
     // get sizes of dataset
-    virtual vector<int> dsgetsize( const String& dslabel, int dims_flag = H5_GETDIMS ) const;
+    virtual vector<int> dsgetsize( const String& dslabel, int dims_flag = H5_GETDIMS ) const CV_OVERRIDE;
 
     /* get data type of dataset */
-    virtual int dsgettype( const String& dslabel ) const;
+    virtual int dsgettype( const String& dslabel ) const CV_OVERRIDE;
 
     // overload dscreate() #1
-    virtual void dscreate( const int rows, const int cols, const int type, const String& dslabel ) const;
+    virtual void dscreate( const int rows, const int cols, const int type, const String& dslabel ) const CV_OVERRIDE;
 
     // overload dscreate() #2
     virtual void dscreate( const int rows, const int cols, const int type, const String& dslabel,
-             const int compresslevel ) const;
+             const int compresslevel ) const CV_OVERRIDE;
 
     // overload dscreate() #3
     virtual void dscreate( const int rows, const int cols, const int type, const String& dslabel,
-             const int compresslevel, const vector<int>& dims_chunks ) const;
+             const int compresslevel, const vector<int>& dims_chunks ) const CV_OVERRIDE;
 
     /* create two dimensional single or mutichannel dataset */
     virtual void dscreate( const int rows, const int cols, const int type, const String& dslabel,
-             const int compresslevel, const int* dims_chunks ) const;
+             const int compresslevel, const int* dims_chunks ) const CV_OVERRIDE;
 
     // overload dscreate() #1
     virtual void dscreate( const int n_dims, const int* sizes, const int type,
-             const String& dslabel ) const;
+             const String& dslabel ) const CV_OVERRIDE;
 
     // overload dscreate() #2
     virtual void dscreate( const int n_dims, const int* sizes, const int type,
-             const String& dslabel, const int compresslevel ) const;
+             const String& dslabel, const int compresslevel ) const CV_OVERRIDE;
 
     // overload dscreate() #3
     virtual void dscreate( const vector<int>& sizes, const int type, const String& dslabel,
-             const int compresslevel = H5_NONE, const vector<int>& dims_chunks = vector<int>() ) const;
+             const int compresslevel = H5_NONE, const vector<int>& dims_chunks = vector<int>() ) const CV_OVERRIDE;
 
     /* create n-dimensional single or mutichannel dataset */
     virtual void dscreate( const int n_dims, const int* sizes, const int type,
-             const String& dslabel, const int compresslevel, const int* dims_chunks ) const;
+             const String& dslabel, const int compresslevel, const int* dims_chunks ) const CV_OVERRIDE;
 
     // overload dswrite() #1
-    virtual void dswrite( InputArray Array, const String& dslabel ) const;
+    virtual void dswrite( InputArray Array, const String& dslabel ) const CV_OVERRIDE;
 
     // overload dswrite() #2
-    virtual void dswrite( InputArray Array, const String& dslabel, const int* dims_offset ) const;
+    virtual void dswrite( InputArray Array, const String& dslabel, const int* dims_offset ) const CV_OVERRIDE;
 
     // overload dswrite() #3
     virtual void dswrite( InputArray Array, const String& dslabel, const vector<int>& dims_offset,
-             const vector<int>& dims_counts = vector<int>() ) const;
+             const vector<int>& dims_counts = vector<int>() ) const CV_OVERRIDE;
 
     /* write into dataset */
     virtual void dswrite( InputArray Array, const String& dslabel,
-             const int* dims_offset, const int* dims_counts ) const;
+             const int* dims_offset, const int* dims_counts ) const CV_OVERRIDE;
 
     // overload dsinsert() #1
-    virtual void dsinsert( InputArray Array, const String& dslabel ) const;
+    virtual void dsinsert( InputArray Array, const String& dslabel ) const CV_OVERRIDE;
 
     // overload dsinsert() #2
-    virtual void dsinsert( InputArray Array, const String& dslabel, const int* dims_offset ) const;
+    virtual void dsinsert( InputArray Array, const String& dslabel, const int* dims_offset ) const CV_OVERRIDE;
 
     // overload dsinsert() #3
     virtual void dsinsert( InputArray Array, const String& dslabel,
-             const vector<int>& dims_offset, const vector<int>& dims_counts = vector<int>() ) const;
+             const vector<int>& dims_offset, const vector<int>& dims_counts = vector<int>() ) const CV_OVERRIDE;
 
     /* append / merge into dataset */
     virtual void dsinsert( InputArray Array, const String& dslabel,
-             const int* dims_offset = NULL, const int* dims_counts = NULL ) const;
+             const int* dims_offset = NULL, const int* dims_counts = NULL ) const CV_OVERRIDE;
 
     // overload dsread() #1
-    virtual void dsread( OutputArray Array, const String& dslabel ) const;
+    virtual void dsread( OutputArray Array, const String& dslabel ) const CV_OVERRIDE;
 
     // overload dsread() #2
-    virtual void dsread( OutputArray Array, const String& dslabel, const int* dims_offset ) const;
+    virtual void dsread( OutputArray Array, const String& dslabel, const int* dims_offset ) const CV_OVERRIDE;
 
     // overload dsread() #3
     virtual void dsread( OutputArray Array, const String& dslabel,
-             const vector<int>& dims_offset, const vector<int>& dims_counts = vector<int>() ) const;
+             const vector<int>& dims_offset, const vector<int>& dims_counts = vector<int>() ) const CV_OVERRIDE;
 
     // read from dataset
     virtual void dsread( OutputArray Array, const String& dslabel,
-             const int* dims_offset, const int* dims_counts ) const;
+             const int* dims_offset, const int* dims_counts ) const CV_OVERRIDE;
 
     /*
      *  std::vector<cv::KeyPoint>
      */
 
     // get size of keypoints dataset
-    virtual int kpgetsize( const String& kplabel, int dims_flag = H5_GETDIMS ) const;
+    virtual int kpgetsize( const String& kplabel, int dims_flag = H5_GETDIMS ) const CV_OVERRIDE;
 
     // create KeyPoint structure
     virtual void kpcreate( const int size, const String& kplabel,
-             const int compresslevel = H5_NONE, const int chunks = H5_NONE ) const;
+             const int compresslevel = H5_NONE, const int chunks = H5_NONE ) const CV_OVERRIDE;
 
     // write KeyPoint structures
     virtual void kpwrite( const vector<KeyPoint> keypoints, const String& kplabel,
-             const int offset = H5_NONE, const int counts = H5_NONE ) const;
+             const int offset = H5_NONE, const int counts = H5_NONE ) const CV_OVERRIDE;
 
     // append / merge KeyPoint structures
     virtual void kpinsert( const vector<KeyPoint> keypoints, const String& kplabel,
-             const int offset = H5_NONE, const int counts = H5_NONE ) const;
+             const int offset = H5_NONE, const int counts = H5_NONE ) const CV_OVERRIDE;
 
     // read KeyPoint structure
     virtual void kpread( vector<KeyPoint>& keypoints, const String& kplabel,
-             const int offset = H5_NONE, const int counts = H5_NONE ) const;
+             const int offset = H5_NONE, const int counts = H5_NONE ) const CV_OVERRIDE;
 
 private:
 

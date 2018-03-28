@@ -20,8 +20,8 @@ namespace tracking {
 
 struct DummyModel : TrackerModel
 {
-     virtual void modelUpdateImpl(){}
-     virtual void modelEstimationImpl( const std::vector<Mat>& ){}
+     virtual void modelUpdateImpl() CV_OVERRIDE {}
+     virtual void modelEstimationImpl( const std::vector<Mat>& ) CV_OVERRIDE {}
 };
 
 
@@ -30,7 +30,7 @@ const double rate=0.2;         // learning rate
 const double psrThreshold=5.7; // no detection, if PSR is smaller than this
 
 
-struct MosseImpl : TrackerMOSSE
+struct MosseImpl CV_FINAL : TrackerMOSSE
 {
 protected:
 
@@ -130,7 +130,7 @@ protected:
     }
 
 
-    virtual bool initImpl( const Mat& image, const Rect2d& boundingBox )
+    virtual bool initImpl( const Mat& image, const Rect2d& boundingBox ) CV_OVERRIDE
     {
         model = makePtr<DummyModel>();
 
@@ -183,7 +183,7 @@ protected:
         return true;
     }
 
-    virtual bool updateImpl( const Mat& image, Rect2d& boundingBox )
+    virtual bool updateImpl( const Mat& image, Rect2d& boundingBox ) CV_OVERRIDE
     {
         if (H.empty()) // not initialized
             return false;
@@ -232,8 +232,8 @@ public:
     MosseImpl() { isInit = 0; }
 
     // dummy implementation.
-    virtual void read( const FileNode& ){}
-    virtual void write( FileStorage& ) const{}
+    virtual void read( const FileNode& ) CV_OVERRIDE {}
+    virtual void write( FileStorage& ) const CV_OVERRIDE {}
 
 }; // MosseImpl
 

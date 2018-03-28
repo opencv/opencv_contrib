@@ -196,7 +196,7 @@ public:
       - Tracks must be as precise as possible. It does not handle outliers and is very sensible to them.
   */
   CV_WRAP
-  virtual void run(InputArrayOfArrays points2d) = 0;
+  virtual void run(InputArrayOfArrays points2d) CV_OVERRIDE = 0;
 
   /** @brief Calls the pipeline in order to perform Eclidean reconstruction.
     @param points2d Input vector of vectors of 2d points (the inner vector is per image).
@@ -210,7 +210,7 @@ public:
   */
   CV_WRAP
   virtual void run(InputArrayOfArrays points2d, InputOutputArray K, OutputArray Rs,
-                   OutputArray Ts, OutputArray points3d) = 0;
+                   OutputArray Ts, OutputArray points3d) CV_OVERRIDE = 0;
 
   /** @brief Calls the pipeline in order to perform Eclidean reconstruction.
     @param images a vector of string with the images paths.
@@ -219,7 +219,7 @@ public:
       - The images must be ordered as they were an image sequence. Additionally, each frame should be as close as posible to the previous and posterior.
       - For now DAISY features are used in order to compute the 2d points tracks and it only works for 3-4 images.
   */
-  virtual void run(const std::vector<String> &images) = 0;
+  virtual void run(const std::vector<String> &images) CV_OVERRIDE = 0;
 
   /** @brief Calls the pipeline in order to perform Eclidean reconstruction.
     @param images a vector of string with the images paths.
@@ -233,30 +233,30 @@ public:
       - For now DAISY features are used in order to compute the 2d points tracks and it only works for 3-4 images.
   */
   virtual void run(const std::vector<String> &images, InputOutputArray K, OutputArray Rs,
-                   OutputArray Ts, OutputArray points3d) = 0;
+                   OutputArray Ts, OutputArray points3d) CV_OVERRIDE = 0;
 
   /** @brief Returns the computed reprojection error.
   */
   CV_WRAP
-  virtual double getError() const = 0;
+  virtual double getError() const CV_OVERRIDE = 0;
 
   /** @brief Returns the estimated 3d points.
     @param points3d Output array with estimated 3d points.
   */
   CV_WRAP
-  virtual void getPoints(OutputArray points3d) = 0;
+  virtual void getPoints(OutputArray points3d) CV_OVERRIDE = 0;
 
   /** @brief Returns the refined camera calibration matrix.
   */
   CV_WRAP
-  virtual cv::Mat getIntrinsics() const = 0;
+  virtual cv::Mat getIntrinsics() const CV_OVERRIDE = 0;
 
   /** @brief Returns the estimated camera extrinsic parameters.
     @param Rs Output vector of 3x3 rotations of the camera.
     @param Ts Output vector of 3x1 translations of the camera.
   */
   CV_WRAP
-  virtual void getCameras(OutputArray Rs, OutputArray Ts) = 0;
+  virtual void getCameras(OutputArray Rs, OutputArray Ts) CV_OVERRIDE = 0;
 
   /** @brief Setter method for reconstruction options.
     @param libmv_reconstruction_options struct with reconstruction options such as initial keyframes,
@@ -264,7 +264,7 @@ public:
   */
   CV_WRAP
   virtual void
-  setReconstructionOptions(const libmv_ReconstructionOptions &libmv_reconstruction_options) = 0;
+  setReconstructionOptions(const libmv_ReconstructionOptions &libmv_reconstruction_options) CV_OVERRIDE = 0;
 
   /** @brief Setter method for camera intrinsic options.
     @param libmv_camera_intrinsics_options struct with camera intrinsic options such as camera model and
@@ -272,7 +272,7 @@ public:
   */
   CV_WRAP
   virtual void
-  setCameraIntrinsicOptions(const libmv_CameraIntrinsicsOptions &libmv_camera_intrinsics_options) = 0;
+  setCameraIntrinsicOptions(const libmv_CameraIntrinsicsOptions &libmv_camera_intrinsics_options) CV_OVERRIDE = 0;
 
   /** @brief Creates an instance of the SFMLibmvEuclideanReconstruction class. Initializes Libmv. */
   static Ptr<SFMLibmvEuclideanReconstruction>

@@ -158,7 +158,7 @@ public:
         mode = _mode;
     }
 
-    ~OCRHMMDecoderImpl()
+    ~OCRHMMDecoderImpl() CV_OVERRIDE
     {
     }
 
@@ -167,7 +167,7 @@ public:
               vector<Rect>* component_rects,
               vector<string>* component_texts,
               vector<float>* component_confidences,
-              int component_level)
+              int component_level) CV_OVERRIDE
     {
 
         CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
@@ -413,7 +413,7 @@ public:
               vector<Rect>* component_rects,
               vector<string>* component_texts,
               vector<float>* component_confidences,
-              int component_level)
+              int component_level) CV_OVERRIDE
     {
 
         CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
@@ -694,15 +694,15 @@ Ptr<OCRHMMDecoder> OCRHMMDecoder::create( const String& _filename,
     return makePtr<OCRHMMDecoderImpl>(loadOCRHMMClassifier(_filename, _classifier), _vocabulary, transition_p, emission_p, (decoder_mode)_mode);
 }
 
-class OCRHMMClassifierKNN : public OCRHMMDecoder::ClassifierCallback
+class OCRHMMClassifierKNN CV_FINAL : public OCRHMMDecoder::ClassifierCallback
 {
 public:
     //constructor
     OCRHMMClassifierKNN(const std::string& filename);
     // Destructor
-    ~OCRHMMClassifierKNN() {}
+    ~OCRHMMClassifierKNN() CV_OVERRIDE {}
 
-    void eval( InputArray mask, vector<int>& out_class, vector<double>& out_confidence );
+    void eval( InputArray mask, vector<int>& out_class, vector<double>& out_confidence ) CV_OVERRIDE;
 private:
     Ptr<KNearest> knn;
 };
@@ -956,7 +956,7 @@ public:
     // Destructor
     ~OCRHMMClassifierCNN() {}
 
-    void eval( InputArray image, vector<int>& out_class, vector<double>& out_confidence );
+    void eval( InputArray image, vector<int>& out_class, vector<double>& out_confidence ) CV_OVERRIDE;
 
 protected:
     void normalizeAndZCA(Mat& patches);

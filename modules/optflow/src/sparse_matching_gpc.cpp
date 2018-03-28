@@ -249,7 +249,7 @@ public:
   ParallelDCTFiller( const Size &_sz, const Mat *_imgCh, std::vector< GPCPatchDescriptor > *_descr )
       : sz( _sz ), imgCh( _imgCh ), descr( _descr ){};
 
-  void operator()( const Range &range ) const
+  void operator()( const Range &range ) const CV_OVERRIDE
   {
     for ( int i = range.start; i < range.end; ++i )
     {
@@ -312,7 +312,7 @@ public:
   ParallelWHTFiller( const Size &_sz, const Mat *_imgChInt, std::vector< GPCPatchDescriptor > *_descr )
       : sz( _sz ), imgChInt( _imgChInt ), descr( _descr ){};
 
-  void operator()( const Range &range ) const
+  void operator()( const Range &range ) const CV_OVERRIDE
   {
     for ( int i = range.start; i < range.end; ++i )
     {

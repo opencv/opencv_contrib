@@ -618,7 +618,7 @@ namespace cv
                 }
             }
         }
-        class StereoBinarySGBMImpl : public StereoBinarySGBM, public Matching
+        class StereoBinarySGBMImpl CV_FINAL : public StereoBinarySGBM, public Matching
         {
         public:
             StereoBinarySGBMImpl():Matching()
@@ -635,7 +635,7 @@ namespace cv
                     _uniquenessRatio, _speckleWindowSize, _speckleRange,
                     _mode );
             }
-            void compute( InputArray leftarr, InputArray rightarr, OutputArray disparr )
+            void compute( InputArray leftarr, InputArray rightarr, OutputArray disparr ) CV_OVERRIDE
             {
                 Mat left = leftarr.getMat(), right = rightarr.getMat();
                 CV_Assert( left.size() == right.size() && left.type() == right.type() &&
@@ -717,49 +717,49 @@ namespace cv
                         StereoMatcher::DISP_SCALE * params.speckleRange, buffer);
                 }
             }
-            int getSubPixelInterpolationMethod() const { return params.subpixelInterpolationMethod;}
-            void setSubPixelInterpolationMethod(int value = CV_QUADRATIC_INTERPOLATION) { CV_Assert(value < 2); params.subpixelInterpolationMethod = value;}
+            int getSubPixelInterpolationMethod() const CV_OVERRIDE { return params.subpixelInterpolationMethod;}
+            void setSubPixelInterpolationMethod(int value = CV_QUADRATIC_INTERPOLATION) CV_OVERRIDE { CV_Assert(value < 2); params.subpixelInterpolationMethod = value;}
 
-            int getBinaryKernelType() const { return params.kernelType;}
-            void setBinaryKernelType(int value = CV_MODIFIED_CENSUS_TRANSFORM) { CV_Assert(value < 7); params.kernelType = value; }
+            int getBinaryKernelType() const CV_OVERRIDE { return params.kernelType;}
+            void setBinaryKernelType(int value = CV_MODIFIED_CENSUS_TRANSFORM) CV_OVERRIDE { CV_Assert(value < 7); params.kernelType = value; }
 
-            int getSpekleRemovalTechnique() const { return params.regionRemoval;}
-            void setSpekleRemovalTechnique(int factor = CV_SPECKLE_REMOVAL_AVG_ALGORITHM) { CV_Assert(factor < 2); params.regionRemoval = factor; }
+            int getSpekleRemovalTechnique() const CV_OVERRIDE { return params.regionRemoval;}
+            void setSpekleRemovalTechnique(int factor = CV_SPECKLE_REMOVAL_AVG_ALGORITHM) CV_OVERRIDE { CV_Assert(factor < 2); params.regionRemoval = factor; }
 
-            int getMinDisparity() const { return params.minDisparity; }
-            void setMinDisparity(int minDisparity) {CV_Assert(minDisparity >= 0); params.minDisparity = minDisparity; }
+            int getMinDisparity() const CV_OVERRIDE { return params.minDisparity; }
+            void setMinDisparity(int minDisparity) CV_OVERRIDE {CV_Assert(minDisparity >= 0); params.minDisparity = minDisparity; }
 
-            int getNumDisparities() const { return params.numDisparities; }
-            void setNumDisparities(int numDisparities) { CV_Assert(numDisparities > 0); params.numDisparities = numDisparities; }
+            int getNumDisparities() const CV_OVERRIDE { return params.numDisparities; }
+            void setNumDisparities(int numDisparities) CV_OVERRIDE { CV_Assert(numDisparities > 0); params.numDisparities = numDisparities; }
 
-            int getBlockSize() const { return params.kernelSize; }
-            void setBlockSize(int blockSize) {CV_Assert(blockSize % 2 != 0); params.kernelSize = blockSize; }
+            int getBlockSize() const CV_OVERRIDE { return params.kernelSize; }
+            void setBlockSize(int blockSize) CV_OVERRIDE {CV_Assert(blockSize % 2 != 0); params.kernelSize = blockSize; }
 
-            int getSpeckleWindowSize() const { return params.speckleWindowSize; }
-            void setSpeckleWindowSize(int speckleWindowSize) {CV_Assert(speckleWindowSize >= 0); params.speckleWindowSize = speckleWindowSize; }
+            int getSpeckleWindowSize() const CV_OVERRIDE { return params.speckleWindowSize; }
+            void setSpeckleWindowSize(int speckleWindowSize) CV_OVERRIDE {CV_Assert(speckleWindowSize >= 0); params.speckleWindowSize = speckleWindowSize; }
 
-            int getSpeckleRange() const { return params.speckleRange; }
-            void setSpeckleRange(int speckleRange) { CV_Assert(speckleRange >= 0); params.speckleRange = speckleRange; }
+            int getSpeckleRange() const CV_OVERRIDE { return params.speckleRange; }
+            void setSpeckleRange(int speckleRange) CV_OVERRIDE { CV_Assert(speckleRange >= 0); params.speckleRange = speckleRange; }
 
-            int getDisp12MaxDiff() const { return params.disp12MaxDiff; }
-            void setDisp12MaxDiff(int disp12MaxDiff) {CV_Assert(disp12MaxDiff > 0); params.disp12MaxDiff = disp12MaxDiff; }
+            int getDisp12MaxDiff() const CV_OVERRIDE { return params.disp12MaxDiff; }
+            void setDisp12MaxDiff(int disp12MaxDiff) CV_OVERRIDE {CV_Assert(disp12MaxDiff > 0); params.disp12MaxDiff = disp12MaxDiff; }
 
-            int getPreFilterCap() const { return params.preFilterCap; }
-            void setPreFilterCap(int preFilterCap) { CV_Assert(preFilterCap > 0); params.preFilterCap = preFilterCap; }
+            int getPreFilterCap() const CV_OVERRIDE { return params.preFilterCap; }
+            void setPreFilterCap(int preFilterCap) CV_OVERRIDE { CV_Assert(preFilterCap > 0); params.preFilterCap = preFilterCap; }
 
-            int getUniquenessRatio() const { return params.uniquenessRatio; }
-            void setUniquenessRatio(int uniquenessRatio) { CV_Assert(uniquenessRatio >= 0); params.uniquenessRatio = uniquenessRatio; }
+            int getUniquenessRatio() const CV_OVERRIDE { return params.uniquenessRatio; }
+            void setUniquenessRatio(int uniquenessRatio) CV_OVERRIDE { CV_Assert(uniquenessRatio >= 0); params.uniquenessRatio = uniquenessRatio; }
 
-            int getP1() const { return params.P1; }
-            void setP1(int P1) { CV_Assert(P1 > 0); params.P1 = P1; }
+            int getP1() const CV_OVERRIDE { return params.P1; }
+            void setP1(int P1) CV_OVERRIDE { CV_Assert(P1 > 0); params.P1 = P1; }
 
-            int getP2() const { return params.P2; }
-            void setP2(int P2) {CV_Assert(P2 > 0); CV_Assert(P2 >= 2 * params.P1); params.P2 = P2; }
+            int getP2() const CV_OVERRIDE { return params.P2; }
+            void setP2(int P2) CV_OVERRIDE {CV_Assert(P2 > 0); CV_Assert(P2 >= 2 * params.P1); params.P2 = P2; }
 
-            int getMode() const { return params.mode; }
-            void setMode(int mode) { params.mode = mode; }
+            int getMode() const CV_OVERRIDE { return params.mode; }
+            void setMode(int mode) CV_OVERRIDE { params.mode = mode; }
 
-            void write(FileStorage& fs) const
+            void write(FileStorage& fs) const CV_OVERRIDE
             {
                 fs << "name" << name_
                     << "minDisparity" << params.minDisparity
@@ -775,7 +775,7 @@ namespace cv
                     << "mode" << params.mode;
             }
 
-            void read(const FileNode& fn)
+            void read(const FileNode& fn) CV_OVERRIDE
             {
                 FileNode n = fn["name"];
                 CV_Assert( n.isString() && String(n) == name_ );

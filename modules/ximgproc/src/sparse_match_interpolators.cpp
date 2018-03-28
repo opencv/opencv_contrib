@@ -69,11 +69,11 @@ struct node
     node(short l,float d): dist(d), label(l) {}
 };
 
-class EdgeAwareInterpolatorImpl : public EdgeAwareInterpolator
+class EdgeAwareInterpolatorImpl CV_FINAL : public EdgeAwareInterpolator
 {
 public:
     static Ptr<EdgeAwareInterpolatorImpl> create();
-    void interpolate(InputArray from_image, InputArray from_points, InputArray to_image, InputArray to_points, OutputArray dense_flow);
+    void interpolate(InputArray from_image, InputArray from_points, InputArray to_image, InputArray to_points, OutputArray dense_flow) CV_OVERRIDE;
 
 protected:
     int w,h;
@@ -115,7 +115,7 @@ protected:
         int stripe_sz;
 
         GetKNNMatches_ParBody(EdgeAwareInterpolatorImpl& _inst, int _num_stripes);
-        void operator () (const Range& range) const;
+        void operator () (const Range& range) const CV_OVERRIDE;
     };
 
     struct RansacInterpolation_ParBody : public ParallelLoopBody
@@ -130,22 +130,22 @@ protected:
         int inc;
 
         RansacInterpolation_ParBody(EdgeAwareInterpolatorImpl& _inst, Mat* _transforms, float* _weighted_inlier_nums, float* _eps, SparseMatch* _matches, int _num_stripes, int _inc);
-        void operator () (const Range& range) const;
+        void operator () (const Range& range) const CV_OVERRIDE;
     };
 
 public:
-    void  setK(int _k) {k=_k;}
-    int   getK() {return k;}
-    void  setSigma(float _sigma) {sigma=_sigma;}
-    float getSigma() {return sigma;}
-    void  setLambda(float _lambda) {lambda=_lambda;}
-    float getLambda() {return lambda;}
-    void  setUsePostProcessing(bool _use_post_proc) {use_post_proc=_use_post_proc;}
-    bool  getUsePostProcessing() {return use_post_proc;}
-    void  setFGSLambda(float _lambda) {fgs_lambda=_lambda;}
-    float getFGSLambda() {return fgs_lambda;}
-    void  setFGSSigma(float _sigma) {fgs_sigma = _sigma;}
-    float getFGSSigma() {return fgs_sigma;}
+    void  setK(int _k) CV_OVERRIDE {k=_k;}
+    int   getK() CV_OVERRIDE {return k;}
+    void  setSigma(float _sigma) CV_OVERRIDE {sigma=_sigma;}
+    float getSigma() CV_OVERRIDE {return sigma;}
+    void  setLambda(float _lambda) CV_OVERRIDE {lambda=_lambda;}
+    float getLambda() CV_OVERRIDE {return lambda;}
+    void  setUsePostProcessing(bool _use_post_proc) CV_OVERRIDE {use_post_proc=_use_post_proc;}
+    bool  getUsePostProcessing() CV_OVERRIDE {return use_post_proc;}
+    void  setFGSLambda(float _lambda) CV_OVERRIDE {fgs_lambda=_lambda;}
+    float getFGSLambda() CV_OVERRIDE {return fgs_lambda;}
+    void  setFGSSigma(float _sigma) CV_OVERRIDE {fgs_sigma = _sigma;}
+    float getFGSSigma() CV_OVERRIDE {return fgs_sigma;}
 };
 
 void EdgeAwareInterpolatorImpl::init()

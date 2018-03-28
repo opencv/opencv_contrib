@@ -49,14 +49,14 @@ namespace datasets
 
 using namespace std;
 
-class PD_inriaImp : public PD_inria
+class PD_inriaImp CV_FINAL : public PD_inria
 {
 public:
     PD_inriaImp() {}
-    
-    virtual ~PD_inriaImp() {}
 
-    virtual void load(const string &path);
+    virtual ~PD_inriaImp() CV_OVERRIDE {}
+
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path, const string nameImageSet, vector< Ptr<Object> > &imageSet);
@@ -69,7 +69,7 @@ void PD_inriaImp::load(const string &path)
     // Training set
     train.push_back(vector< Ptr<Object> >());
     loadDataset(path, "Train", train.back());
-    
+
     // Testing set
     test.push_back(vector< Ptr<Object> >());
     loadDataset(path, "Test", test.back());
@@ -106,16 +106,16 @@ void PD_inriaImp::parseAnnotation(const string filename, Ptr< PD_inriaObj > &obj
         error_message = format("Unable to open file: \n%s\n", filename.c_str());
         CV_Error(Error::StsBadArg, error_message);
     }
-    
+
     string imageSizeHeader = "Image size (X x Y x C) : ";
     string imageSizeFmt = imageSizeHeader + "%d x %d x %d";
     string objWithGTHeader = "Objects with ground truth : ";
     string objWithGTFmt = objWithGTHeader + "%d { \"PASperson\" }";
     string boundBoxHeader = "Bounding box for object ";
     string boundBoxFmt = boundBoxHeader + "%*d \"PASperson\" (Xmin, Ymin) - (Xmax, Ymax) : (%d, %d) - (%d, %d)";
-    
+
     string line = "";
-    
+
     int width = 0;
     int height = 0;
     int depth = 0;
@@ -138,7 +138,7 @@ void PD_inriaImp::parseAnnotation(const string filename, Ptr< PD_inriaObj > &obj
         else if (strstr(line.c_str(), objWithGTHeader.c_str()))
         {
             sscanf(line.c_str(), objWithGTFmt.c_str(), &numObjects);
-            
+
             if (numObjects <= 0)
                 break;
         }
@@ -162,16 +162,16 @@ void PD_inriaImp::loadDataset(const string &path, const string nameImageSet, vec
     string listAnn = path + nameImageSet + "/annotations.lst";
     string listPos = path + nameImageSet + "/pos.lst";
     string listNeg = path + nameImageSet + "/neg.lst";
-    
+
     vector< string > fsAnn;
     vector< string > fsPos;
     vector< string > fsNeg;
-   
+
     // read file names
     readTextLines(listAnn, fsAnn);
     readTextLines(listPos, fsPos);
     readTextLines(listNeg, fsNeg);
-   
+
     CV_Assert(fsAnn.size() == fsPos.size());
 
     for (unsigned int i = 0; i < fsPos.size(); i++)
@@ -180,16 +180,16 @@ void PD_inriaImp::loadDataset(const string &path, const string nameImageSet, vec
         parseAnnotation(path + fsAnn[i], curr);
         curr->filename = path + fsPos[i];
         curr->sType = POS;
-        
+
         imageSet.push_back(curr);
     }
-    
+
     for (unsigned int i = 0; i < fsNeg.size(); i++)
     {
         Ptr<PD_inriaObj> curr(new PD_inriaObj);
-        curr->filename = path + fsNeg[i]; 
+        curr->filename = path + fsNeg[i];
         curr->sType = NEG;
-        
+
         imageSet.push_back(curr);
     }
 }

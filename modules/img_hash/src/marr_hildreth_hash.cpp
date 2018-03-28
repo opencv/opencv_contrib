@@ -86,7 +86,7 @@ void createHash(cv::Mat const &blocks, cv::Mat &hash)
     }
 }
 
-class MarrHildrethHashImpl : public ImgHashBase::ImgHashImpl
+class MarrHildrethHashImpl CV_FINAL : public ImgHashBase::ImgHashImpl
 {
 public:
 
@@ -96,9 +96,9 @@ public:
         blocks.create(31,31, CV_32F);
     }
 
-    ~MarrHildrethHashImpl() { }
+    ~MarrHildrethHashImpl() CV_OVERRIDE { }
 
-    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr)
+    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr) CV_OVERRIDE
     {
         cv::Mat const input = inputArr.getMat();
         CV_Assert(input.type() == CV_8UC4 ||
@@ -131,7 +131,7 @@ public:
         createHash(blocks, hash);
     }
 
-    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const
+    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const CV_OVERRIDE
     {
         return norm(hashOne, hashTwo, NORM_HAMMING);
     }

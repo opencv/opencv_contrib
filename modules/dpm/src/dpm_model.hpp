@@ -130,11 +130,11 @@ class CascadeModel : public Model
         std::vector< Mat > partPCAFilters;
     public:
         CascadeModel() {}
-        ~CascadeModel() {}
+        ~CascadeModel() CV_OVERRIDE {}
 
-        void initModel();
-        bool serialize(const std::string &filename) const;
-        bool deserialize(const std::string &filename);
+        void initModel() CV_OVERRIDE;
+        bool serialize(const std::string &filename) const CV_OVERRIDE;
+        bool deserialize(const std::string &filename) CV_OVERRIDE;
 };
 
 } // namespace lsvm

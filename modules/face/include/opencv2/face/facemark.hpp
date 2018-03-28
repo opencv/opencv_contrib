@@ -265,8 +265,8 @@ class CV_EXPORTS_W Facemark : public virtual Algorithm
 {
 public:
 
-    virtual void read( const FileNode& fn )=0;
-    virtual void write( FileStorage& fs ) const=0;
+    virtual void read( const FileNode& fn ) CV_OVERRIDE = 0;
+    virtual void write( FileStorage& fs ) const CV_OVERRIDE = 0;
 
     /** @brief Add one training sample to the trainer.
 

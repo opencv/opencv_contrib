@@ -49,7 +49,7 @@ Contributed by Gregor Kovalcik <gregor dot kovalcik at gmail dot com>
 References:
     Martin Krulis, Jakub Lokoc, Tomas Skopal.
     Efficient Extraction of Clustering-Based Feature Signatures Using GPU Architectures.
-    Multimedia tools and applications, 75(13), pp.: 8071–8103, Springer, ISSN: 1380-7501, 2016
+    Multimedia tools and applications, 75(13), pp.: 8071ï¿½8103, Springer, ISSN: 1380-7501, 2016
 
     Christian Beecks, Merih Seran Uysal, Thomas Seidl.
     Signature quadratic form distance.
@@ -121,66 +121,66 @@ namespace cv
                     mClusterizer = PCTClusterizer::create(initClusterSeedIndexes);
                 }
 
-                void computeSignature(InputArray image, OutputArray signature) const;
+                void computeSignature(InputArray image, OutputArray signature) const CV_OVERRIDE;
 
-                void computeSignatures(const std::vector<Mat>& images, std::vector<Mat>& signatures) const;
+                void computeSignatures(const std::vector<Mat>& images, std::vector<Mat>& signatures) const CV_OVERRIDE;
 
                 void getGrayscaleBitmap(OutputArray _grayscaleBitmap, bool normalize) const;
 
                 /**** sampler ****/
 
-                int getSampleCount() const                      { return mSampler->getGrayscaleBits(); }
-                int getGrayscaleBits() const                    { return mSampler->getGrayscaleBits(); }
-                int getWindowRadius() const                     { return mSampler->getWindowRadius(); }
-                float getWeightX() const                        { return mSampler->getWeightX(); }
-                float getWeightY() const                        { return mSampler->getWeightY(); }
-                float getWeightL() const                        { return mSampler->getWeightL(); }
-                float getWeightA() const                        { return mSampler->getWeightA(); }
-                float getWeightB() const                        { return mSampler->getWeightB(); }
-                float getWeightContrast() const                 { return mSampler->getWeightContrast(); }
-                float getWeightEntropy() const                  { return mSampler->getWeightEntropy(); }
+                int getSampleCount() const CV_OVERRIDE                      { return mSampler->getGrayscaleBits(); }
+                int getGrayscaleBits() const CV_OVERRIDE                    { return mSampler->getGrayscaleBits(); }
+                int getWindowRadius() const CV_OVERRIDE                     { return mSampler->getWindowRadius(); }
+                float getWeightX() const CV_OVERRIDE                        { return mSampler->getWeightX(); }
+                float getWeightY() const CV_OVERRIDE                        { return mSampler->getWeightY(); }
+                float getWeightL() const CV_OVERRIDE                        { return mSampler->getWeightL(); }
+                float getWeightA() const CV_OVERRIDE                        { return mSampler->getWeightA(); }
+                float getWeightB() const CV_OVERRIDE                        { return mSampler->getWeightB(); }
+                float getWeightContrast() const CV_OVERRIDE                 { return mSampler->getWeightContrast(); }
+                float getWeightEntropy() const CV_OVERRIDE                  { return mSampler->getWeightEntropy(); }
 
-                std::vector<Point2f> getSamplingPoints() const  { return mSampler->getSamplingPoints(); }
+                std::vector<Point2f> getSamplingPoints() const CV_OVERRIDE  { return mSampler->getSamplingPoints(); }
 
 
-                void setGrayscaleBits(int grayscaleBits)        { mSampler->setGrayscaleBits(grayscaleBits); }
-                void setWindowRadius(int windowRadius)          { mSampler->setWindowRadius(windowRadius); }
-                void setWeightX(float weight)                   { mSampler->setWeightX(weight); }
-                void setWeightY(float weight)                   { mSampler->setWeightY(weight); }
-                void setWeightL(float weight)                   { mSampler->setWeightL(weight); }
-                void setWeightA(float weight)                   { mSampler->setWeightA(weight); }
-                void setWeightB(float weight)                   { mSampler->setWeightB(weight); }
-                void setWeightContrast(float weight)            { mSampler->setWeightContrast(weight); }
-                void setWeightEntropy(float weight)             { mSampler->setWeightEntropy(weight); }
+                void setGrayscaleBits(int grayscaleBits) CV_OVERRIDE        { mSampler->setGrayscaleBits(grayscaleBits); }
+                void setWindowRadius(int windowRadius) CV_OVERRIDE          { mSampler->setWindowRadius(windowRadius); }
+                void setWeightX(float weight) CV_OVERRIDE                   { mSampler->setWeightX(weight); }
+                void setWeightY(float weight) CV_OVERRIDE                   { mSampler->setWeightY(weight); }
+                void setWeightL(float weight) CV_OVERRIDE                   { mSampler->setWeightL(weight); }
+                void setWeightA(float weight) CV_OVERRIDE                   { mSampler->setWeightA(weight); }
+                void setWeightB(float weight) CV_OVERRIDE                   { mSampler->setWeightB(weight); }
+                void setWeightContrast(float weight) CV_OVERRIDE            { mSampler->setWeightContrast(weight); }
+                void setWeightEntropy(float weight) CV_OVERRIDE             { mSampler->setWeightEntropy(weight); }
 
-                void setWeight(int idx, float value)                           { mSampler->setWeight(idx, value); }
-                void setWeights(const std::vector<float>& weights)             { mSampler->setWeights(weights); }
-                void setTranslation(int idx, float value)                      { mSampler->setTranslation(idx, value); }
-                void setTranslations(const std::vector<float>& translations)   { mSampler->setTranslations(translations); }
+                void setWeight(int idx, float value) CV_OVERRIDE                           { mSampler->setWeight(idx, value); }
+                void setWeights(const std::vector<float>& weights) CV_OVERRIDE             { mSampler->setWeights(weights); }
+                void setTranslation(int idx, float value) CV_OVERRIDE                      { mSampler->setTranslation(idx, value); }
+                void setTranslations(const std::vector<float>& translations) CV_OVERRIDE   { mSampler->setTranslations(translations); }
 
-                void setSamplingPoints(std::vector<Point2f> samplingPoints)    { mSampler->setSamplingPoints(samplingPoints); }
+                void setSamplingPoints(std::vector<Point2f> samplingPoints) CV_OVERRIDE    { mSampler->setSamplingPoints(samplingPoints); }
 
 
                 /**** clusterizer ****/
 
-                int getIterationCount() const                       { return mClusterizer->getIterationCount(); }
-                std::vector<int> getInitSeedIndexes() const         { return mClusterizer->getInitSeedIndexes(); }
-                int getInitSeedCount() const                        { return (int)mClusterizer->getInitSeedIndexes().size(); }
-                int getMaxClustersCount() const                     { return mClusterizer->getMaxClustersCount(); }
-                int getClusterMinSize() const                       { return mClusterizer->getClusterMinSize(); }
-                float getJoiningDistance() const                    { return mClusterizer->getJoiningDistance(); }
-                float getDropThreshold() const                      { return mClusterizer->getDropThreshold(); }
-                int getDistanceFunction() const
+                int getIterationCount() const CV_OVERRIDE                       { return mClusterizer->getIterationCount(); }
+                std::vector<int> getInitSeedIndexes() const CV_OVERRIDE         { return mClusterizer->getInitSeedIndexes(); }
+                int getInitSeedCount() const CV_OVERRIDE                        { return (int)mClusterizer->getInitSeedIndexes().size(); }
+                int getMaxClustersCount() const CV_OVERRIDE                     { return mClusterizer->getMaxClustersCount(); }
+                int getClusterMinSize() const CV_OVERRIDE                       { return mClusterizer->getClusterMinSize(); }
+                float getJoiningDistance() const CV_OVERRIDE                    { return mClusterizer->getJoiningDistance(); }
+                float getDropThreshold() const CV_OVERRIDE                      { return mClusterizer->getDropThreshold(); }
+                int getDistanceFunction() const CV_OVERRIDE
                                                                     { return mClusterizer->getDistanceFunction(); }
 
-                void setIterationCount(int iterations)              { mClusterizer->setIterationCount(iterations); }
-                void setInitSeedIndexes(std::vector<int> initSeedIndexes)
+                void setIterationCount(int iterations) CV_OVERRIDE              { mClusterizer->setIterationCount(iterations); }
+                void setInitSeedIndexes(std::vector<int> initSeedIndexes) CV_OVERRIDE
                                                                     { mClusterizer->setInitSeedIndexes(initSeedIndexes); }
-                void setMaxClustersCount(int maxClusters)           { mClusterizer->setMaxClustersCount(maxClusters); }
-                void setClusterMinSize(int clusterMinSize)          { mClusterizer->setClusterMinSize(clusterMinSize); }
-                void setJoiningDistance(float joiningDistance)      { mClusterizer->setJoiningDistance(joiningDistance); }
-                void setDropThreshold(float dropThreshold)          { mClusterizer->setDropThreshold(dropThreshold); }
-                void setDistanceFunction(int distanceFunction)
+                void setMaxClustersCount(int maxClusters) CV_OVERRIDE           { mClusterizer->setMaxClustersCount(maxClusters); }
+                void setClusterMinSize(int clusterMinSize) CV_OVERRIDE          { mClusterizer->setClusterMinSize(clusterMinSize); }
+                void setJoiningDistance(float joiningDistance) CV_OVERRIDE      { mClusterizer->setJoiningDistance(joiningDistance); }
+                void setDropThreshold(float dropThreshold) CV_OVERRIDE          { mClusterizer->setDropThreshold(dropThreshold); }
+                void setDistanceFunction(int distanceFunction) CV_OVERRIDE
                                                                     { mClusterizer->setDistanceFunction(distanceFunction); }
 
             private:
@@ -236,7 +236,7 @@ namespace cv
                     mSignatures->resize(images->size());
                 }
 
-                void operator()(const Range& range) const
+                void operator()(const Range& range) const CV_OVERRIDE
                 {
                     for (int i = range.start; i < range.end; i++)
                     {

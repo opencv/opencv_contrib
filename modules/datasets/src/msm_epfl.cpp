@@ -49,14 +49,14 @@ namespace datasets
 
 using namespace std;
 
-class MSM_epflImp : public MSM_epfl
+class MSM_epflImp CV_FINAL : public MSM_epfl
 {
 public:
     MSM_epflImp() {}
     //MSM_epflImp(const string &path);
-    virtual ~MSM_epflImp() {}
+    virtual ~MSM_epflImp() CV_OVERRIDE {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

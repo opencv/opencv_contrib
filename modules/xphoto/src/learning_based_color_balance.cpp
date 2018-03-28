@@ -126,16 +126,16 @@ class LearningBasedWBImpl : public LearningBasedWB
         }
     }
 
-    int getRangeMaxVal() const { return range_max_val; }
-    void setRangeMaxVal(int val) { range_max_val = val; }
+    int getRangeMaxVal() const CV_OVERRIDE { return range_max_val; }
+    void setRangeMaxVal(int val) CV_OVERRIDE { range_max_val = val; }
 
-    float getSaturationThreshold() const { return saturation_thresh; }
-    void setSaturationThreshold(float val) { saturation_thresh = val; }
+    float getSaturationThreshold() const CV_OVERRIDE { return saturation_thresh; }
+    void setSaturationThreshold(float val) CV_OVERRIDE { saturation_thresh = val; }
 
-    int getHistBinNum() const { return hist_bin_num; }
-    void setHistBinNum(int val) { hist_bin_num = val; }
+    int getHistBinNum() const CV_OVERRIDE { return hist_bin_num; }
+    void setHistBinNum(int val) CV_OVERRIDE { hist_bin_num = val; }
 
-    void extractSimpleFeatures(InputArray _src, OutputArray _dst)
+    void extractSimpleFeatures(InputArray _src, OutputArray _dst) CV_OVERRIDE
     {
         CV_Assert(!_src.empty());
         CV_Assert(_src.isContinuous());
@@ -149,7 +149,7 @@ class LearningBasedWBImpl : public LearningBasedWB
         Mat(dst).convertTo(_dst, CV_32F);
     }
 
-    void balanceWhite(InputArray _src, OutputArray _dst)
+    void balanceWhite(InputArray _src, OutputArray _dst) CV_OVERRIDE
     {
         CV_Assert(!_src.empty());
         CV_Assert(_src.isContinuous());

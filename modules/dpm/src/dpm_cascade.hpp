@@ -141,7 +141,7 @@ class ParalComputeRootPCAScores : public ParallelLoopBody
                 int dim, std::vector< Mat > &scores);
 
         // parallel loop body
-        void operator() (const Range &range) const;
+        void operator() (const Range &range) const CV_OVERRIDE;
 
         ParalComputeRootPCAScores(const ParalComputeRootPCAScores &pComp);
 

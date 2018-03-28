@@ -94,7 +94,7 @@ public:
     Parallel_clipBufferValues(type* bufferToProcess, const type min, const type max)
         : bufferToClip(bufferToProcess), minValue(min), maxValue(max) { }
 
-    virtual void operator()( const cv::Range &r ) const {
+    virtual void operator()( const cv::Range &r ) const CV_OVERRIDE {
         type *inputOutputBufferPTR=bufferToClip+r.start;
         for (int jf = r.start; jf != r.end; ++jf, ++inputOutputBufferPTR)
         {

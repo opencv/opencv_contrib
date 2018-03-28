@@ -102,24 +102,24 @@ class FacemarkLBFImpl : public FacemarkLBF {
 public:
     FacemarkLBFImpl( const FacemarkLBF::Params &parameters = FacemarkLBF::Params() );
 
-    void read( const FileNode& /*fn*/ );
-    void write( FileStorage& /*fs*/ ) const;
+    void read( const FileNode& /*fn*/ ) CV_OVERRIDE;
+    void write( FileStorage& /*fs*/ ) const CV_OVERRIDE;
 
-    void loadModel(String fs);
+    void loadModel(String fs) CV_OVERRIDE;
 
-    bool setFaceDetector(bool(*f)(InputArray , OutputArray, void * extra_params ), void* userData);
-    bool getFaces(InputArray image, OutputArray faces);
-    bool getData(void * items);
+    bool setFaceDetector(bool(*f)(InputArray , OutputArray, void * extra_params ), void* userData) CV_OVERRIDE;
+    bool getFaces(InputArray image, OutputArray faces) CV_OVERRIDE;
+    bool getData(void * items) CV_OVERRIDE;
 
     Params params;
 
 protected:
 
-    bool fit( InputArray image, InputArray faces, InputOutputArray landmarks, void * runtime_params );//!< from many ROIs
+    bool fit( InputArray image, InputArray faces, InputOutputArray landmarks, void * runtime_params ) CV_OVERRIDE;//!< from many ROIs
     bool fitImpl( const Mat image, std::vector<Point2f> & landmarks );//!< from a face
 
-    bool addTrainingSample(InputArray image, InputArray landmarks);
-    void training(void* parameters);
+    bool addTrainingSample(InputArray image, InputArray landmarks) CV_OVERRIDE;
+    void training(void* parameters) CV_OVERRIDE;
 
     Rect getBBox(Mat &img, const Mat_<double> shape);
     void prepareTrainingData(Mat img, std::vector<Point2f> facePoints,

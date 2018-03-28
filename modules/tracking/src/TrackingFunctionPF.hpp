@@ -9,9 +9,9 @@ namespace cv{
         public:
             TrackingFunctionPF(const Mat& chosenRect);
             void update(const Mat& image);
-            int getDims() const { return 4; }
-            double calc(const double* x) const;
-            void correctParams(double* pt)const;
+            int getDims() const CV_OVERRIDE { return 4; }
+            double calc(const double* x) const CV_OVERRIDE;
+            void correctParams(double* pt)const CV_OVERRIDE;
         private:
             Mat _image;
             static inline Rect rectFromRow(const double* row);

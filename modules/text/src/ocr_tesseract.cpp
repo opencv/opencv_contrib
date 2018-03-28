@@ -127,7 +127,7 @@ CV_WRAP String OCRTesseract::run(InputArray image, InputArray mask, int min_conf
 }
 
 
-class OCRTesseractImpl : public OCRTesseract
+class OCRTesseractImpl CV_FINAL : public OCRTesseract
 {
 private:
 #ifdef HAVE_TESSERACT
@@ -172,7 +172,7 @@ public:
 #endif
     }
 
-    ~OCRTesseractImpl()
+    ~OCRTesseractImpl() CV_OVERRIDE
     {
 #ifdef HAVE_TESSERACT
         tess.End();
@@ -181,7 +181,7 @@ public:
 
     void run(Mat& image, string& output, vector<Rect>* component_rects=NULL,
              vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL,
-             int component_level=0)
+             int component_level=0) CV_OVERRIDE
     {
 
         CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
@@ -249,7 +249,7 @@ public:
 
     void run(Mat& image, Mat& mask, string& output, vector<Rect>* component_rects=NULL,
              vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL,
-             int component_level=0)
+             int component_level=0) CV_OVERRIDE
     {
         CV_Assert( mask.type() == CV_8UC1 );
         CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
@@ -257,7 +257,7 @@ public:
         run( mask, output, component_rects, component_texts, component_confidences, component_level);
     }
 
-    void setWhiteList(const String& char_whitelist)
+    void setWhiteList(const String& char_whitelist) CV_OVERRIDE
     {
   #ifdef HAVE_TESSERACT
         tess.SetVariable("tessedit_char_whitelist", char_whitelist.c_str());

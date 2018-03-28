@@ -364,7 +364,7 @@ private:
 public:
     ParallelLocalSVDValues(const Size& _sz, Mat& _localSVDValues, const Mat& _frameGray) : sz(_sz), localSVDValues(_localSVDValues), frameGray(_frameGray) {};
 
-    void operator()(const Range &range) const {
+    void operator()(const Range &range) const CV_OVERRIDE {
         for (int i = range.start; i < range.end; ++i)
             for (int j = 1; j < sz.width - 1; ++j) {
                 localSVDValues.at<float>(i, j) = localSVD(
@@ -387,7 +387,7 @@ private:
 public:
     ParallelFromLocalSVDValues(const Size& _sz, Mat& _desc, const Mat& _localSVDValues, const Point2i* _LSBPSamplePoints) : sz(_sz), desc(_desc), localSVDValues(_localSVDValues), LSBPSamplePoints(_LSBPSamplePoints) {};
 
-    void operator()(const Range &range) const {
+    void operator()(const Range &range) const CV_OVERRIDE {
         for (int index = range.start; index < range.end; ++index) {
             const int i = index / sz.width, j = index % sz.width;
             int& descVal = desc.at<int>(i, j);
@@ -455,7 +455,7 @@ void BackgroundSubtractorLSBPDesc::compute(OutputArray desc, const Mat& frame, c
     computeFromLocalSVDValues(desc, localSVDValues, LSBPSamplePoints);
 }
 
-class BackgroundSubtractorGSOCImpl : public BackgroundSubtractorGSOC {
+class BackgroundSubtractorGSOCImpl CV_FINAL : public BackgroundSubtractorGSOC {
 private:
     Ptr<BackgroundModelGSOC> backgroundModel;
     Ptr<BackgroundModelGSOC> backgroundModelPrev;
@@ -492,14 +492,14 @@ public:
                                  float noiseRemovalThresholdFacBG,
                                  float noiseRemovalThresholdFacFG);
 
-    CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate = -1);
+    CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate = -1) CV_OVERRIDE;
 
-    CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const;
+    CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const CV_OVERRIDE;
 
     friend class ParallelGSOC;
 };
 
-class BackgroundSubtractorLSBPImpl : public BackgroundSubtractorLSBP {
+class BackgroundSubtractorLSBPImpl CV_FINAL : public BackgroundSubtractorLSBP {
 private:
     Ptr<BackgroundModelLSBP> backgroundModel;
     Ptr<BackgroundModelLSBP> backgroundModelPrev;
@@ -540,9 +540,9 @@ public:
                                  int minCount
                                 );
 
-    CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate = -1);
+    CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate = -1) CV_OVERRIDE;
 
-    CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const;
+    CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage) const CV_OVERRIDE;
 
     friend class ParallelLSBP;
 };
@@ -561,7 +561,7 @@ public:
     ParallelGSOC(const Size& _sz, BackgroundSubtractorGSOCImpl* _bgs, const Mat& _frame, double _learningRate, Mat& _fgMask)
     : sz(_sz), bgs(_bgs), frame(_frame), learningRate(_learningRate), fgMask(_fgMask) {};
 
-    void operator()(const Range &range) const {
+    void operator()(const Range &range) const CV_OVERRIDE {
         BackgroundModelGSOC* backgroundModel = bgs->backgroundModel.get();
         Mat& distMovingAvg = bgs->distMovingAvg;
 
@@ -621,7 +621,7 @@ public:
     ParallelLSBP(const Size& _sz, BackgroundSubtractorLSBPImpl* _bgs, const Mat& _frame, double _learningRate, const Mat& _LSBPDesc, Mat& _fgMask)
     : sz(_sz), bgs(_bgs), frame(_frame), learningRate(_learningRate), LSBPDesc(_LSBPDesc), fgMask(_fgMask) {};
 
-    void operator()(const Range &range) const {
+    void operator()(const Range &range) const CV_OVERRIDE {
         BackgroundModelLSBP* backgroundModel = bgs->backgroundModel.get();
         Mat& T = bgs->T;
         Mat& R = bgs->R;

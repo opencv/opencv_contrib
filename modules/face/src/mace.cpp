@@ -72,7 +72,7 @@ static uint64 crc64( const uchar* data, size_t size, uint64 crc0=0 )
     return ~crc;
 }
 
-struct MACEImpl : MACE {
+struct MACEImpl CV_FINAL : MACE {
     Mat_<Vec2d> maceFilter; // filled from compute()
     Mat convFilter;         // optional random convolution (cancellable)
     int IMGSIZE;            // images will get resized to this
@@ -81,7 +81,7 @@ struct MACEImpl : MACE {
 
     MACEImpl(int siz) : IMGSIZE(siz), threshold(DBL_MAX) {}
 
-    void salt(const String &passphrase) {
+    void salt(const String &passphrase) CV_OVERRIDE {
         theRNG().state = ((int64)crc64((uchar*)passphrase.c_str(), passphrase.size()));
         convFilter.create(IMGSIZE, IMGSIZE, CV_64F);
         randn(convFilter, 0, 1.0/(IMGSIZE*IMGSIZE));
@@ -257,7 +257,7 @@ struct MACEImpl : MACE {
     }
 
     // MACE interface
-    void train(InputArrayOfArrays input) {
+    void train(InputArrayOfArrays input) CV_OVERRIDE {
         std::vector<Mat> images, dftImg;
         input.getMatVector(images);
         for (size_t i=0; i<images.size(); i++) { // cache dft images
@@ -266,27 +266,27 @@ struct MACEImpl : MACE {
         compute(dftImg, true);
         threshold = computeThreshold(dftImg, true);
     }
-    bool same(InputArray img) const {
+    bool same(InputArray img) const CV_OVERRIDE {
         return correlate(img.getMat()) >= threshold;
     }
 
     // cv::Algorithm:
-    bool empty() const {
+    bool empty() const CV_OVERRIDE {
         return maceFilter.empty() || IMGSIZE == 0;
     }
-    String  getDefaultName () const {
+    String  getDefaultName () const CV_OVERRIDE {
         return String("MACE");
     }
-    void clear() {
+    void clear() CV_OVERRIDE {
         maceFilter.release();
         convFilter.release();
     }
-    void write(cv::FileStorage &fs) const {
+    void write(cv::FileStorage &fs) const CV_OVERRIDE {
         fs << "mace" << maceFilter;
         fs << "conv" << convFilter;
         fs << "threshold" << threshold;
     }
-    void read(const cv::FileNode &fn) {
+    void read(const cv::FileNode &fn) CV_OVERRIDE {
         fn["mace"] >> maceFilter;
         fn["conv"] >> convFilter;
         fn["threshold"] >> threshold;

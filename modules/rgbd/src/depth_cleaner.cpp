@@ -93,7 +93,7 @@ namespace rgbd
     /** Compute cached data
      */
     virtual void
-    cache()
+    cache() CV_OVERRIDE
     {
     }
 
