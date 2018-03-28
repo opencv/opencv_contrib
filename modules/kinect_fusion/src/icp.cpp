@@ -35,6 +35,8 @@ ICPCPU::ICPCPU(const Intr _intrinsics, const std::vector<int> &_iterations, floa
 
 bool ICPCPU::estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> _oldFrame, cv::Ptr<Frame> _newFrame) const
 {
+    ScopeTime st("icp");
+
     cv::Ptr<FrameCPU> oldFrame = _oldFrame.dynamicCast<FrameCPU>();
     cv::Ptr<FrameCPU> newFrame = _newFrame.dynamicCast<FrameCPU>();
 
@@ -77,6 +79,8 @@ bool ICPCPU::estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> _oldFrame
 void ICPCPU::getAb(const Points oldPts, const Normals oldNrm, const Points newPts, const Normals newNrm,
                    Affine3f pose, int level, Matx66f &A, Vec6f &b) const
 {
+    ScopeTime st("icp: get ab");
+
     Cv32suf s; s.u = 0x7fc00000;
     const float vnan = s.f;
     const p3type qnan3(vnan, vnan, vnan);

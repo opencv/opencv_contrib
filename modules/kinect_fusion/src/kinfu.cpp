@@ -142,6 +142,8 @@ const Affine3f KinFu::KinFuImpl::getPose() const
 
 bool KinFu::KinFuImpl::operator()(InputArray _depth)
 {
+    ScopeTime st("kinfu");
+
     CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
 
     cv::Ptr<Frame> newFrame = (*frameGenerator)(_depth, params.intr, params.pyramidLevels,
@@ -190,6 +192,8 @@ bool KinFu::KinFuImpl::operator()(InputArray _depth)
 
 void KinFu::KinFuImpl::render(OutputArray image, const Affine3f cameraPose) const
 {
+    ScopeTime st("kinfu render");
+
     const Affine3f id = Affine3f::Identity();
     if((cameraPose.rotation() == pose.rotation() && cameraPose.translation() == pose.translation()) ||
        (cameraPose.rotation() == id.rotation()   && cameraPose.translation() == id.translation()))
@@ -208,6 +212,8 @@ void KinFu::KinFuImpl::render(OutputArray image, const Affine3f cameraPose) cons
 
 void KinFu::KinFuImpl::fetchCloud(OutputArray p, OutputArray n) const
 {
+    ScopeTime st("kinfu fetch cloud");
+
     if(p.needed())
     {
         volume->fetchPoints(p);

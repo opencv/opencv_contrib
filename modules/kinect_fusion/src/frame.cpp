@@ -3,6 +3,11 @@
 #include "precomp.hpp"
 #include "frame.hpp"
 
+//DEBUG
+//TODO: remove it
+
+int ScopeTime::nested  = 0;
+
 using namespace cv;
 using namespace cv::kinfu;
 
@@ -22,6 +27,8 @@ void pyrDownPointsNormals(const Points p, const Normals n, Points& pdown, Normal
 cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const InputArray depth, const Intr intr, int levels, float depthFactor,
                                               float sigmaDepth, float sigmaSpatial, int kernelSize) const
 {
+    ScopeTime st("frameGenerator: from depth");
+
     cv::Ptr<FrameCPU> frame = makePtr<FrameCPU>();
 
     //CV_Assert(depth.type() == CV_16S);
@@ -59,6 +66,8 @@ cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const InputArray depth, const Intr
 
 cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const InputArray _points, const InputArray _normals, int levels) const
 {
+    ScopeTime st("frameGenerator: pyrDown p, n");
+
     cv::Ptr<FrameCPU> frame = makePtr<FrameCPU>();
 
     CV_Assert(_points.type() == CV_32FC3);
@@ -87,6 +96,8 @@ cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const InputArray _points, const In
 
 void FrameCPU::render(OutputArray image, int level, Affine3f lightPose) const
 {
+    ScopeTime st("frame render");
+
     CV_Assert(level < (int)points.size());
     CV_Assert(level < (int)normals.size());
 

@@ -104,6 +104,8 @@ struct FillZero
 // zero volume, leave rest params the same
 void TSDFVolumeCPU::reset()
 {
+    ScopeTime st("tsdf: reset");
+
     volume.forEach(FillZero());
 }
 
@@ -111,6 +113,8 @@ void TSDFVolumeCPU::reset()
 // use depth instead of distance (optimization)
 void TSDFVolumeCPU::integrate(cv::Ptr<Frame> _depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics)
 {
+    ScopeTime st("tsdf: integrate");
+
     Depth depth;
     _depth->getDepth(depth);
 
@@ -239,6 +243,8 @@ inline p3type TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 cv::Ptr<Frame> TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frameSize,
                                       int pyramidLevels, cv::Ptr<FrameGenerator> frameGenerator) const
 {
+    ScopeTime st("tsdf: raycast");
+
     Points points(frameSize);
     Normals normals(frameSize);
 
@@ -427,6 +433,8 @@ struct PushPoints
 
 void TSDFVolumeCPU::fetchPoints(OutputArray _points) const
 {
+    ScopeTime st("tsdf: fetch points");
+
     if(_points.needed())
     {
         Mat_<Point3f> points;
@@ -457,6 +465,8 @@ struct PushNormals
 
 void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
 {
+    ScopeTime st("tsdf: fetch normals");
+
     if(_normals.needed())
     {
         Points points = _points.getMat();
