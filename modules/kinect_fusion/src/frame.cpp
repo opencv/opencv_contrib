@@ -9,9 +9,9 @@ using namespace cv::kinfu;
 struct FrameGeneratorCPU : FrameGenerator
 {
 public:
-    virtual cv::Ptr<Frame> operator() (const Depth, const cv::kinfu::Intr, int levels, float depthFactor,
+    virtual cv::Ptr<Frame> operator() (const InputArray depth, const cv::kinfu::Intr, int levels, float depthFactor,
                                        float sigmaDepth, float sigmaSpatial, int kernelSize) const;
-    virtual cv::Ptr<Frame> operator() (const Points, const Normals, int levels) const;
+    virtual cv::Ptr<Frame> operator() (const InputArray points, const InputArray normals, int levels) const;
     virtual ~FrameGeneratorCPU() {}
 };
 
@@ -19,14 +19,18 @@ void computePointsNormals(const cv::kinfu::Intr, float depthFactor, const Depth,
 Depth pyrDownBilateral(const Depth depth, float sigma);
 void pyrDownPointsNormals(const Points p, const Normals n, Points& pdown, Normals& ndown);
 
-cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const Depth depth, const Intr intr, int levels, float depthFactor,
+cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const InputArray depth, const Intr intr, int levels, float depthFactor,
                                               float sigmaDepth, float sigmaSpatial, int kernelSize) const
 {
     cv::Ptr<FrameCPU> frame = makePtr<FrameCPU>();
 
+    //CV_Assert(depth.type() == CV_16S);
+    // this should convert CV_16S to CV_32F
+    frame->depthData = Depth(depth.getMat());
+
     // looks like OpenCV's bilateral filter works the same as KinFu's
     Depth smooth;
-    bilateralFilter(depth, smooth, kernelSize, sigmaDepth*depthFactor, sigmaSpatial);
+    bilateralFilter(frame->depthData, smooth, kernelSize, sigmaDepth*depthFactor, sigmaSpatial);
 
     // depth truncation is not used by default
     //if (p.icp_truncate_depth_dist > 0) kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
@@ -53,7 +57,7 @@ cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const Depth depth, const Intr intr
     return frame;
 }
 
-cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const Points _points, const Normals _normals, int levels) const
+cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const InputArray _points, const InputArray _normals, int levels) const
 {
     cv::Ptr<FrameCPU> frame = makePtr<FrameCPU>();
 
@@ -62,8 +66,8 @@ cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const Points _points, const Normal
 
     std::vector<Points>  points  = std::vector<Points>(levels);
     std::vector<Normals> normals = std::vector<Normals>(levels);
-    points[0]  = _points;
-    normals[0] = _normals;
+    points[0]  = _points.getMat();
+    normals[0] = _normals.getMat();
     Size sz = _points.size();
     for(int i = 1; i < levels; i++)
     {
@@ -75,6 +79,7 @@ cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const Points _points, const Normal
 
     frame->points = points;
     frame->normals = normals;
+    frame->depthData = Depth();
 
     return frame;
 }
@@ -131,6 +136,13 @@ void FrameCPU::render(OutputArray image, int level, Affine3f lightPose) const
             imgRow[x] = color;
         }
     }
+}
+
+
+void FrameCPU::getDepth(OutputArray _depth) const
+{
+    CV_Assert(!depthData.empty());
+    _depth.assign(depthData);
 }
 
 
@@ -285,24 +297,29 @@ void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
 struct FrameGeneratorGPU : FrameGenerator
 {
 public:
-    virtual cv::Ptr<Frame> operator() (const Depth, const cv::kinfu::Intr, int levels, float depthFactor,
+    virtual cv::Ptr<Frame> operator() (const InputArray depth, const cv::kinfu::Intr, int levels, float depthFactor,
                                        float sigmaDepth, float sigmaSpatial, int kernelSize) const;
-    virtual cv::Ptr<Frame> operator() (const Points, const Normals, int levels) const;
+    virtual cv::Ptr<Frame> operator() (const InputArray points, const InputArray normals, int levels) const;
     virtual ~FrameGeneratorGPU() {}
 };
 
-cv::Ptr<Frame> FrameGeneratorGPU::operator ()(const Depth /*depth*/, const Intr /*intr*/, int /*levels*/, float /*depthFactor*/,
+cv::Ptr<Frame> FrameGeneratorGPU::operator ()(const InputArray /*depth*/, const Intr /*intr*/, int /*levels*/, float /*depthFactor*/,
                                               float /*sigmaDepth*/, float /*sigmaSpatial*/, int /*kernelSize*/) const
 {
     throw std::runtime_error("Not implemented");
 }
 
-cv::Ptr<Frame> FrameGeneratorGPU::operator ()(const Points /*_points*/, const Normals /*_normals*/, int /*levels*/) const
+cv::Ptr<Frame> FrameGeneratorGPU::operator ()(const InputArray /*_points*/, const InputArray /*_normals*/, int /*levels*/) const
 {
     throw std::runtime_error("Not implemented");
 }
 
 void FrameGPU::render(OutputArray /* image */, int /*level*/, Affine3f /*lightPose*/) const
+{
+    throw std::runtime_error("Not implemented");
+}
+
+void FrameGPU::getDepth(OutputArray /* depth */) const
 {
     throw std::runtime_error("Not implemented");
 }

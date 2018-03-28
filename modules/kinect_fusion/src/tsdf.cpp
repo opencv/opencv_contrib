@@ -42,8 +42,9 @@ public:
     TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                   float _raycastStepFactor, float _gradientDeltaFactor);
 
-    virtual void integrate(Depth depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics);
-    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, Points points, Normals normals) const;
+    virtual void integrate(cv::Ptr<Frame> depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics);
+    virtual cv::Ptr<Frame> raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize, int pyramidLevels,
+                                   cv::Ptr<FrameGenerator> frameGenerator) const;
 
     virtual void fetchPoints(cv::OutputArray points) const;
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const;
@@ -109,8 +110,11 @@ void TSDFVolumeCPU::reset()
 
 
 // use depth instead of distance (optimization)
-void TSDFVolumeCPU::integrate(Depth depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics)
+void TSDFVolumeCPU::integrate(cv::Ptr<Frame> _depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics)
 {
+    Depth depth;
+    _depth->getDepth(depth);
+
     Intr::Projector proj = intrinsics.makeProjector();
 
     cv::Affine3f vol2cam = cameraPose.inv() * pose;
@@ -233,12 +237,13 @@ inline TSDFVolumeCPU::p3type TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 }
 
 
-void TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points points, Normals normals) const
+cv::Ptr<Frame> TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frameSize,
+                                      int pyramidLevels, cv::Ptr<FrameGenerator> frameGenerator) const
 {
-    CV_Assert(!points.empty() && !normals.empty());
-    CV_Assert(points.size() == normals.size());
-    CV_Assert(points.type() == CV_32FC3);
-    CV_Assert(normals.type() == CV_32FC3);
+    Points points(frameSize);
+    Normals normals(frameSize);
+
+    CV_Assert(frameSize.area() > 0);
 
     float tstep = truncDist * raycastStepFactor;
 
@@ -327,6 +332,9 @@ void TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Points poi
             nrmRow[x] = normal;
         }
     }
+
+    // build a pyramid of points and normals
+    return (*frameGenerator)(points, normals, pyramidLevels);
 }
 
 
@@ -478,8 +486,9 @@ public:
     TSDFVolumeGPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                   float _raycastStepFactor, float _gradientDeltaFactor);
 
-    virtual void integrate(Depth depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics);
-    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, Points points, Normals normals) const;
+    virtual void integrate(cv::Ptr<Frame> depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics);
+    virtual cv::Ptr<Frame> raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize, int pyramidLevels,
+                                   cv::Ptr<FrameGenerator> frameGenerator) const;
 
     virtual void fetchPoints(cv::OutputArray points) const;
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const;
@@ -502,13 +511,14 @@ void TSDFVolumeGPU::reset()
 
 
 // use depth instead of distance (optimization)
-void TSDFVolumeGPU::integrate(Depth /*depth*/, float /*depthFactor*/, cv::Affine3f /*cameraPose*/, Intr /*intrinsics*/)
+void TSDFVolumeGPU::integrate(cv::Ptr<Frame> /*depth*/, float /*depthFactor*/, cv::Affine3f /*cameraPose*/, Intr /*intrinsics*/)
 {
     throw std::runtime_error("Not implemented");
 }
 
 
-void TSDFVolumeGPU::raycast(cv::Affine3f /*cameraPose*/, Intr /*intrinsics*/, Points /*points*/, Normals /*normals*/) const
+cv::Ptr<Frame> TSDFVolumeGPU::raycast(cv::Affine3f /*cameraPose*/, Intr /*intrinsics*/, Size /*frameSize*/, int /*pyramidLevels*/,
+                                      Ptr<FrameGenerator> /* frameGenerator */) const
 {
     throw std::runtime_error("Not implemented");
 }

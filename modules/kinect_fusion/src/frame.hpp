@@ -9,6 +9,7 @@ struct Frame
 {
 public:
     virtual void render(cv::OutputArray image, int level, cv::Affine3f lightPose) const = 0;
+    virtual void getDepth(cv::OutputArray depth) const = 0;
     virtual ~Frame() { }
 };
 
@@ -19,27 +20,29 @@ public:
     virtual ~FrameCPU() { }
 
     virtual void render(cv::OutputArray image, int level, cv::Affine3f lightPose) const;
+    virtual void getDepth(cv::OutputArray depth) const;
 
     std::vector<Points> points;
     std::vector<Normals> normals;
+    Depth depthData;
 };
 
 struct FrameGPU : Frame
 {
 public:
     virtual void render(cv::OutputArray image, int level, cv::Affine3f lightPose) const;
+    virtual void getDepth(cv::OutputArray depth) const;
     virtual ~FrameGPU() { }
 };
 
-//TODO: replace Depth, Points and Normals by InputArrays (getMat/getUMat inside)
-//TODO: add conversion to Depth (from CV_16S to CV_32F)
+//TODO: change interface to avoid extra memory allocations
 
 struct FrameGenerator
 {
 public:
-    virtual cv::Ptr<Frame> operator() (const Depth, const cv::kinfu::Intr, int levels, float depthFactor,
+    virtual cv::Ptr<Frame> operator() (const cv::InputArray depth, const cv::kinfu::Intr, int levels, float depthFactor,
                                        float sigmaDepth, float sigmaSpatial, int kernelSize) const = 0;
-    virtual cv::Ptr<Frame> operator() (const Points, const Normals, int levels) const = 0;
+    virtual cv::Ptr<Frame> operator() (const cv::InputArray points, const cv::InputArray normals, int levels) const = 0;
     virtual ~FrameGenerator() {}
 };
 
