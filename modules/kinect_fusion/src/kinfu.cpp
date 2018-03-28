@@ -67,14 +67,20 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
     p.icpAngleThresh = 30.f * CV_PI / 180.f; // radians
     p.icpDistThresh = 0.1f; // meters
     // default value
+    // first non-zero numbers are accepted
     //const int iters[] = {10, 5, 4, 0};
     const int iters[] = {10, 5, 4, 1};
-    p.icpIterations.assign(iters, iters + sizeof(iters)/sizeof(int));
 
-    for(size_t i = 0; i < p.icpIterations.size(); i++)
+    for(size_t i = 0; i < sizeof(iters)/sizeof(int); i++)
     {
-        if(p.icpIterations[i]) p.pyramidLevels = i+1;
+        if(iters[i])
+        {
+            p.icpIterations.push_back(iters[i]);
+        }
+        else
+            break;
     }
+    p.pyramidLevels = p.icpIterations.size();
 
     p.tsdf_min_camera_movement = 0.f; //meters, disabled
 
