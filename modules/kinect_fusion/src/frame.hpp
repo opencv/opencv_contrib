@@ -5,6 +5,34 @@
 
 #include "precomp.hpp"
 
+namespace cv {
+
+template<> class DataType<cv::Point3f>
+{
+public:
+    typedef float       value_type;
+    typedef value_type  work_type;
+    typedef value_type  channel_type;
+    typedef value_type  vec_type;
+    enum { generic_type = 0,
+           depth        = CV_32F,
+           channels     = 3,
+           fmt          = (int)'f',
+           type         = CV_MAKETYPE(depth, channels)
+         };
+};
+
+}
+
+typedef cv::Mat_< cv::Point3_<kftype> > Points;
+typedef Points Normals;
+
+typedef Points::value_type p3type;
+
+typedef cv::Mat_< kftype > Depth;
+
+typedef Depth::value_type depthType;
+
 struct Frame
 {
 public:

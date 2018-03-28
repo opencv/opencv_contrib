@@ -87,8 +87,6 @@ cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const InputArray _points, const In
 
 void FrameCPU::render(OutputArray image, int level, Affine3f lightPose) const
 {
-    typedef Points::value_type p3type;
-
     CV_Assert(level < (int)points.size());
     CV_Assert(level < (int)normals.size());
 
@@ -125,9 +123,9 @@ void FrameCPU::render(OutputArray image, int level, Affine3f lightPose) const
                 const float Sx = 1.f;   //specular color, can be RGB
                 const float Lx = 1.f;   //light color
 
-                Point3f l = normalize(lightPose.translation() - Vec<kftype, 3>(p));
-                Point3f v = normalize(-Vec<kftype, 3>(p));
-                Point3f r = normalize(Vec<kftype, 3>(2.f*n*n.dot(l) - l));
+                Point3f l = normalize(lightPose.translation() - Vec3f(p));
+                Point3f v = normalize(-Vec3f(p));
+                Point3f r = normalize(Vec3f(2.f*n*n.dot(l) - l));
 
                 uchar ix = (Ax*Ka*Dx + Lx*Kd*Dx*max(0.f, n.dot(l)) + Lx*Ks*Sx*pow(max(0.f, r.dot(v)), sp))*255;
                 color = Vec3b(ix, ix, ix);
@@ -148,8 +146,6 @@ void FrameCPU::getDepth(OutputArray _depth) const
 
 void pyrDownPointsNormals(const Points p, const Normals n, Points &pdown, Normals &ndown)
 {
-    typedef Points::value_type p3type;
-
     const kftype qnan = std::numeric_limits<kftype>::quiet_NaN();
     p3type nan3(qnan, qnan, qnan);
 
@@ -236,9 +232,6 @@ void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
     CV_Assert(!points.empty() && !normals.empty());;
     CV_Assert(depth.size() == points.size());
     CV_Assert(depth.size() == normals.size());
-
-    typedef Points::value_type p3type;
-    typedef Depth::value_type depthType;
 
     const kftype qnan = std::numeric_limits<kftype>::quiet_NaN ();
     p3type nan3(qnan, qnan, qnan);

@@ -170,9 +170,8 @@ int main(int argc, char **argv)
     cv::viz::Viz3d window("debug");
     window.setViewerPose(Affine3f::Identity());
 
-    Mat rendered;
-
     // TODO: can we use UMats for that?
+    Mat rendered;
     Mat points;
     Mat normals;
 
@@ -254,7 +253,6 @@ int main(int argc, char **argv)
 
         }
 
-        // TODO: can we use UMats?
         kf.render(rendered);
         imshow("render", rendered);
 

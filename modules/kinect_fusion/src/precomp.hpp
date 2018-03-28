@@ -8,25 +8,6 @@
 
 typedef float kftype;
 
-namespace cv {
-
-template<> class DataType<cv::Point3f>
-{
-public:
-    typedef float       value_type;
-    typedef value_type  work_type;
-    typedef value_type  channel_type;
-    typedef value_type  vec_type;
-    enum { generic_type = 0,
-           depth        = CV_32F,
-           channels     = 3,
-           fmt          = (int)'f',
-           type         = CV_MAKETYPE(depth, channels)
-         };
-};
-
-}
-
 inline bool isNaN(cv::Point3_<kftype> p)
 {
     return (cvIsNaN(p.x) || cvIsNaN(p.y) || cvIsNaN(p.z));
@@ -35,17 +16,6 @@ inline bool isNaN(cv::Point3_<kftype> p)
 inline bool isNaN(kftype p)
 {
     return cvIsNaN(p);
-}
-
-typedef cv::Mat_< cv::Point3_<kftype> > Points;
-typedef Points Normals;
-
-typedef cv::Mat_< kftype > Depth;
-
-//TODO: make it better
-inline Depth toDepth(cv::InputArray a)
-{
-    return Depth(a.getMat());
 }
 
 template<typename Tv>

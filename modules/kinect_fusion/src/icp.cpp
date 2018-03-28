@@ -77,7 +77,6 @@ bool ICPCPU::estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> _oldFrame
 void ICPCPU::getAb(const Points oldPts, const Normals oldNrm, const Points newPts, const Normals newNrm,
                    Affine3f pose, int level, Matx66f &A, Vec6f &b) const
 {
-    typedef Points::value_type p3type;
     Cv32suf s; s.u = 0x7fc00000;
     const float vnan = s.f;
     const p3type qnan3(vnan, vnan, vnan);

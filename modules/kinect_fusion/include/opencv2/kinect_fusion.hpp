@@ -1,4 +1,4 @@
-//TODO: paset actual license
+//TODO: paste actual license
 
 #include "opencv2/kinect_fusion/kinfu.hpp"
 

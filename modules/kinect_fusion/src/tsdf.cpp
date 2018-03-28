@@ -35,7 +35,6 @@ public:
 class TSDFVolumeCPU : public TSDFVolume
 {
     typedef cv::Mat_<Voxel> Volume;
-    typedef Points::value_type p3type;
 
 public:
     // dimension in voxels, size in meters
@@ -216,7 +215,7 @@ inline float TSDFVolumeCPU::interpolate(Point3f p) const
     return v;
 }
 
-inline TSDFVolumeCPU::p3type TSDFVolumeCPU::getNormalVoxel(Point3f p) const
+inline p3type TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 {
     Point3f n;
     kftype fx1 = interpolate(Point3f(p.x + gradientDeltaFactor, p.y, p.z));
@@ -402,7 +401,6 @@ struct PushPoints
         kftype v0 = voxel0.v;
         if(voxel0.weight != 0 && v0 != 1.f)
         {
-            //TODO: check if it's pos[0], not pos[1]
             int pi = position[1];
 
             // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
@@ -464,14 +462,14 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
         Points points = _points.getMat();
         CV_Assert(points.type() == CV_32FC3);
 
+        //TODO: try to use pre-allocated memory if possible
         Mat_<Point3f> normals;
         normals.reserve(points.total());
 
         Mutex mutex;
         points.forEach(PushNormals(*this, normals, mutex));
 
-        //TODO: try to use pre-allocated memory if possible
-        normals.copyTo(_normals);
+        _normals.assign(normals);
     }
 }
 
@@ -479,8 +477,6 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
 
 class TSDFVolumeGPU : public TSDFVolume
 {
-    typedef Points::value_type p3type;
-
 public:
     // dimension in voxels, size in meters
     TSDFVolumeGPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
