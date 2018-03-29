@@ -14,8 +14,8 @@ cv.ovis.addResourceLocation("packs/Sinbad.zip") # shipped with Ogre
 
 win = cv.ovis.createWindow("arucoAR", imsize, flags=0)
 win.setCameraIntrinsics(K, imsize)
-win.createEntity("figure", "Sinbad.mesh", (0, 0, -5), (-1.57, 0, 0))
-win.createLightEntity("sun", (0, 0, -100))
+win.createEntity("figure", "Sinbad.mesh", (0, 0, 5), (1.57, 0, 0))
+win.createLightEntity("sun", (0, 0, 100))
 
 # video capture
 cap = cv.VideoCapture(0)
