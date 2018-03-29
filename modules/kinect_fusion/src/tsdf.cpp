@@ -315,104 +315,132 @@ inline p3type TSDFVolumeCPU::getNormalVoxel(Point3f p) const
     return normalize(Vec<kftype, 3>(n));
 }
 
+struct RaycastInvoker : ParallelLoopBody
+{
+    RaycastInvoker(Points _points, Normals _normals, Affine3f cameraPose,
+                   Intr intrinsics, const TSDFVolumeCPU& _volume) :
+        ParallelLoopBody(),
+        points(_points),
+        normals(_normals),
+        volume(_volume),
+        tstep(volume.truncDist * volume.raycastStepFactor),
+        // We do subtract voxel size to minimize checks after
+        // Note: origin of volume coordinate is placed
+        // in the center of voxel (0,0,0), not in the corner of the voxel!
+        boxMax(volume.edgeSize - volume.voxelSize,
+               volume.edgeSize - volume.voxelSize,
+               volume.edgeSize - volume.voxelSize),
+        boxMin(),
+        cam2vol(volume.pose.inv() * cameraPose),
+        vol2cam(cameraPose.inv() * volume.pose),
+        reproj(intrinsics.makeReprojector())
+    {  }
+
+    virtual void operator() (const Range& range) const
+    {
+        for(int y = range.start; y < range.end; y++)
+        {
+            Point3f* ptsRow = points[y];
+            Point3f* nrmRow = normals[y];
+
+            for(int x = 0; x < points.cols; x++)
+            {
+                p3type point = nan3, normal = nan3;
+
+                Point3f orig = cam2vol.translation();
+                // direction through pixel in volume space
+                Point3f dir = normalize(Vec3f(cam2vol.rotation() * reproj(p3type(x, y, 1.f))));
+
+                // compute intersection of ray with all six bbox planes
+                Vec3f rayinv(1.f/dir.x, 1.f/dir.y, 1.f/dir.z);
+                Point3f tbottom = rayinv.mul(boxMin - orig);
+                Point3f ttop    = rayinv.mul(boxMax - orig);
+
+                // re-order intersections to find smallest and largest on each axis
+                Point3f minAx(min(ttop.x, tbottom.x), min(ttop.y, tbottom.y), min(ttop.z, tbottom.z));
+                Point3f maxAx(max(ttop.x, tbottom.x), max(ttop.y, tbottom.y), max(ttop.z, tbottom.z));
+
+                // near clipping plane
+                const float clip = 0.f;
+                float tmin = max(max(max(minAx.x, minAx.y), max(minAx.x, minAx.z)), clip);
+                float tmax =     min(min(maxAx.x, maxAx.y), min(maxAx.x, maxAx.z));
+
+                if(tmin < tmax)
+                {
+                    tmax -= tstep;
+                    Point3f rayStep = dir * tstep;
+                    Point3f next = orig + dir * tmin;
+                    kftype fnext = volume.interpolate(next);
+
+                    //raymarch
+                    for(float t = tmin; t < tmax; t += tstep)
+                    {
+                        float f = fnext;
+                        Point3f tp = next;
+                        next += rayStep;
+                        //trying to optimize
+                        fnext = volume.fetchVoxel(next);
+                        if(fnext != f)
+                            fnext = volume.interpolate(next);
+
+                        // when ray comes from inside of a surface
+                        if(f < 0.f && fnext > 0.f)
+                            break;
+
+                        // if ray penetrates a surface from outside
+                        // linear interpolate t between two f values
+                        if(f > 0.f && fnext < 0.f)
+                        {
+                            float ft   = volume.interpolate(tp);
+                            float ftdt = volume.interpolate(next);
+                            float ts = t - tstep*ft/(ftdt - ft);
+
+                            Point3f pv = orig + dir*ts;
+                            Point3f nv = volume.getNormalVoxel(pv);
+
+                            if(!isNaN(nv))
+                            {
+                                //convert pv and nv to camera space
+                                normal = vol2cam.rotation() * nv;
+                                point = vol2cam * pv;
+                            }
+                            break;
+                        }
+                    }
+                }
+
+                ptsRow[x] = point;
+                nrmRow[x] = normal;
+            }
+        }
+    }
+
+    Points& points;
+    Normals& normals;
+    const TSDFVolumeCPU& volume;
+
+    const float tstep;
+
+    const Point3f boxMax;
+    const Point3f boxMin;
+
+    const Affine3f cam2vol;
+    const Affine3f vol2cam;
+    const Intr::Reprojector reproj;
+};
+
 
 cv::Ptr<Frame> TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frameSize,
                                       int pyramidLevels, cv::Ptr<FrameGenerator> frameGenerator) const
 {
     ScopeTime st("tsdf: raycast");
 
+    CV_Assert(frameSize.area() > 0);
+
     Points points(frameSize);
     Normals normals(frameSize);
 
-    CV_Assert(frameSize.area() > 0);
-
-    float tstep = truncDist * raycastStepFactor;
-
-    // We do subtract voxel size to minimize checks after
-    // Note: origin of volume coordinate is placed
-    // in the center of voxel (0,0,0), not in the corner of the voxel!
-    Point3f boxMax(edgeSize-voxelSize, edgeSize-voxelSize, edgeSize-voxelSize);
-    Point3f boxMin;
-
-    Affine3f cam2vol = pose.inv() * cameraPose;
-    Affine3f vol2cam = cameraPose.inv() * pose;
-    Intr::Reprojector reproj = intrinsics.makeReprojector();
-
-    for(int y = 0; y < points.rows; y++)
-    {
-        Point3f* ptsRow = points[y];
-        Point3f* nrmRow = normals[y];
-
-        for(int x = 0; x < points.cols; x++)
-        {
-            p3type point = nan3, normal = nan3;
-
-            Point3f orig = cam2vol.translation();
-            // direction through pixel in volume space
-            Point3f dir = normalize(Vec<kftype, 3>(cam2vol.rotation() * reproj(p3type(x, y, 1.f))));
-
-            // compute intersection of ray with all six bbox planes
-            Vec<kftype, 3> rayinv(1.f/dir.x, 1.f/dir.y, 1.f/dir.z);
-            Point3f tbottom = rayinv.mul(boxMin - orig);
-            Point3f ttop    = rayinv.mul(boxMax - orig);
-
-            // re-order intersections to find smallest and largest on each axis
-            Point3f minAx(min(ttop.x, tbottom.x), min(ttop.y, tbottom.y), min(ttop.z, tbottom.z));
-            Point3f maxAx(max(ttop.x, tbottom.x), max(ttop.y, tbottom.y), max(ttop.z, tbottom.z));
-
-            // near clipping plane
-            const float clip = 0.f;
-            float tmin = max(max(max(minAx.x, minAx.y), max(minAx.x, minAx.z)), clip);
-            float tmax =     min(min(maxAx.x, maxAx.y), min(maxAx.x, maxAx.z));
-
-            if(tmin < tmax)
-            {
-                tmax -= tstep;
-                Point3f rayStep = dir * tstep;
-                Point3f next = orig + dir * tmin;
-                kftype fnext = interpolate(next);
-
-                //raymarch
-                for(float t = tmin; t < tmax; t += tstep)
-                {
-                    float f = fnext;
-                    Point3f tp = next;
-                    next += rayStep;
-                    //trying to optimize
-                    fnext = fetchVoxel(next);
-                    if(fnext != f)
-                        fnext = interpolate(next);
-
-                    // when ray comes from inside of a surface
-                    if(f < 0.f && fnext > 0.f)
-                        break;
-
-                    // if ray penetrates a surface from outside
-                    // linear interpolate t between two f values
-                    if(f > 0.f && fnext < 0.f)
-                    {
-                        float ft   = interpolate(tp);
-                        float ftdt = interpolate(next);
-                        float ts = t - tstep*ft/(ftdt - ft);
-
-                        Point3f pv = orig + dir*ts;
-                        Point3f nv = getNormalVoxel(pv);
-
-                        if(!isNaN(nv))
-                        {
-                            //convert pv and nv to camera space
-                            normal = vol2cam.rotation() * nv;
-                            point = vol2cam * pv;
-                        }
-                        break;
-                    }
-                }
-            }
-
-            ptsRow[x] = point;
-            nrmRow[x] = normal;
-        }
-    }
+    parallel_for_(Range(0, points.rows), RaycastInvoker(points, normals, cameraPose, intrinsics, *this));
 
     // build a pyramid of points and normals
     return (*frameGenerator)(points, normals, pyramidLevels);
