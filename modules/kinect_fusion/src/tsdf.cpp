@@ -193,64 +193,13 @@ void TSDFVolumeCPU::integrate(cv::Ptr<Frame> _depth, float depthFactor, cv::Affi
     Depth depth;
     _depth->getDepth(depth);
 
-    //TODO: find out why it's slower than w/o parallel code
-    //parallel_for_(Range(0, edgeResolution), IntegrateInvoker(*this, depth, intrinsics, cameraPose, depthFactor));
-
-    Intr::Projector proj = intrinsics.makeProjector();
-
-    cv::Affine3f vol2cam = cameraPose.inv() * pose;
-    float truncDistInv = 1./truncDist;
-    float dfac = 1.f/depthFactor;
-
-    // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
-    for(int x = 0; x < edgeResolution; x++)
-    {
-        for(int y = 0; y < edgeResolution; y++)
-        {
-            // optimization of camSpace transformation (vector addition instead of matmul at each z)
-            Point3f basePt = vol2cam*Point3f(x*voxelSize, y*voxelSize, 0);
-            Point3f camSpacePt = basePt;
-            // zStep == vol2cam*(Point3f(x, y, 1)*voxelSize) - basePt;
-            Point3f zStep = Point3f(vol2cam.matrix(0, 2), vol2cam.matrix(1, 2), vol2cam.matrix(2, 2))*voxelSize;
-            for(int z = 0; z < edgeResolution; z++)
-            {
-                // optimization of the following:
-                //Point3f volPt = Point3f(x, y, z)*voxelSize;
-                //Point3f camSpacePt = vol2cam * volPt;
-                camSpacePt += zStep;
-
-                // can be optimized later
-                if(camSpacePt.z <= 0)
-                    continue;
-
-                Point3f camPixVec;
-                Point2f projected = proj(camSpacePt, camPixVec);
-
-                depthType v = bilinear<depthType, Depth>(depth, projected);
-                if(v == 0)
-                    continue;
-
-                // difference between distances of point and of surface to camera
-                volumeType sdf = norm(camPixVec)*(v*dfac - camSpacePt.z);
-                // possible alternative is:
-                // kftype sdf = norm(camSpacePt)*(v*dfac/camSpacePt.z - 1);
-
-                if(sdf >= -truncDist)
-                {
-                    volumeType tsdf = fmin(1.f, sdf * truncDistInv);
-
-                    Voxel& voxel = volume(x*edgeResolution*edgeResolution + y*edgeResolution + z);
-                    int& weight = voxel.weight;
-                    volumeType& value = voxel.v;
-
-                    // update TSDF
-                    value = (value*weight+tsdf) / (weight + 1);
-                    weight = min(weight + 1, maxWeight);
-                }
-            }
-        }
-    }
+    //TODO: parallel_for is slow, find out how to make parallelization overhead smaller
+    IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor);
+    Range range(0, edgeResolution);
+    //parallel_for_(range, ii);
+    ii(range);
 }
+
 
 inline volumeType TSDFVolumeCPU::fetchVoxel(Point3f p) const
 {
