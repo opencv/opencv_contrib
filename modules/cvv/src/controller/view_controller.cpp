@@ -64,21 +64,21 @@ void ViewController::addCallType(const QString typeName, TabFactory constr)
 	ViewController::callTabType[typeName] = constr;
 }
 
-std::unique_ptr<cvv::gui::FilterCallTab>
+static std::unique_ptr<cvv::gui::FilterCallTab>
 makeFilterCallTab(cvv::util::Reference<cvv::impl::Call> call)
 {
 	return cvv::util::make_unique<cvv::gui::FilterCallTab>(
 	    *call.castTo<cvv::impl::FilterCall>());
 }
 
-std::unique_ptr<cvv::gui::MatchCallTab>
+static std::unique_ptr<cvv::gui::MatchCallTab>
 makeMatchCallTab(cvv::util::Reference<cvv::impl::Call> call)
 {
 	return cvv::util::make_unique<cvv::gui::MatchCallTab>(
 	    *call.castTo<cvv::impl::MatchCall>());
 }
 
-std::unique_ptr<cvv::gui::ImageCallTab>
+static std::unique_ptr<cvv::gui::ImageCallTab>
 makeImageCallTab(cvv::util::Reference<cvv::impl::Call> call)
 {
 	return cvv::util::make_unique<cvv::gui::ImageCallTab>(

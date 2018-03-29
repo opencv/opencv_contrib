@@ -335,7 +335,7 @@ bool checkValueRange(const cv::Mat &mat, DepthType<depth> min,
  * @param res The error code.
  * @return The result.
  */
-std::pair<ImageConversionResult, QImage> errorResult(ImageConversionResult res,
+static std::pair<ImageConversionResult, QImage> errorResult(ImageConversionResult res,
 						     const cv::Mat &mat)
 {
 	switch (res)

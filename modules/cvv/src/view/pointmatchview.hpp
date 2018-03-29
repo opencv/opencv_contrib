@@ -58,7 +58,7 @@ class PointMatchView : public MatchView
 
 public slots:
 
-	virtual void setMatchSelection(std::vector<cv::DMatch> selection)
+    virtual void setMatchSelection(std::vector<cv::DMatch> selection) CV_OVERRIDE
 	{
 		matchManagment_->setSelection(selection);
 	}

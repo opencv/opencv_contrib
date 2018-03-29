@@ -44,7 +44,7 @@ class MatchSceneGraphicsView : public QGraphicsView
 		emit signalResized();
 	}
 
-	virtual void contextMenuEvent(QContextMenuEvent *event)
+    virtual void contextMenuEvent(QContextMenuEvent *event) CV_OVERRIDE
 	{
 		emit signalContextMenu(event->globalPos());
 		//event->ignore();
