@@ -110,6 +110,79 @@ void TSDFVolumeCPU::reset()
 }
 
 
+struct IntegrateInvoker : ParallelLoopBody
+{
+    IntegrateInvoker(TSDFVolumeCPU& _volume, const Depth& _depth, Intr intrinsics, cv::Affine3f cameraPose,
+                     float depthFactor) :
+        ParallelLoopBody(),
+        volume(_volume),
+        depth(_depth),
+        proj(intrinsics.makeProjector()),
+        vol2cam(cameraPose.inv() * volume.pose),
+        truncDistInv(1./volume.truncDist),
+        dfac(1.f/depthFactor)
+    { }
+
+    virtual void operator() (const Range& range) const
+    {
+        // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
+        for(int x = range.start; x < range.end; x++)
+        {
+            for(int y = 0; y < volume.edgeResolution; y++)
+            {
+                // optimization of camSpace transformation (vector addition instead of matmul at each z)
+                Point3f basePt = vol2cam*Point3f(x*volume.voxelSize, y*volume.voxelSize, 0);
+                Point3f camSpacePt = basePt;
+                // zStep == vol2cam*(Point3f(x, y, 1)*voxelSize) - basePt;
+                Point3f zStep = Point3f(vol2cam.matrix(0, 2), vol2cam.matrix(1, 2), vol2cam.matrix(2, 2))*volume.voxelSize;
+                for(int z = 0; z < volume.edgeResolution; z++)
+                {
+                    // optimization of the following:
+                    //Point3f volPt = Point3f(x, y, z)*voxelSize;
+                    //Point3f camSpacePt = vol2cam * volPt;
+                    camSpacePt += zStep;
+
+                    // can be optimized later
+                    if(camSpacePt.z <= 0)
+                        continue;
+
+                    Point3f camPixVec;
+                    Point2f projected = proj(camSpacePt, camPixVec);
+
+                    kftype v = bilinear<kftype, Depth>(depth, projected);
+                    if(v == 0)
+                        continue;
+
+                    // difference between distances of point and of surface to camera
+                    kftype sdf = norm(camPixVec)*(v*dfac - camSpacePt.z);
+                    // possible alternative is:
+                    // kftype sdf = norm(camSpacePt)*(v*dfac/camSpacePt.z - 1);
+
+                    if(sdf >= -volume.truncDist)
+                    {
+                        kftype tsdf = fmin(1.f, sdf * truncDistInv);
+
+                        Voxel& voxel = volume.volume(x*volume.edgeResolution*volume.edgeResolution + y*volume.edgeResolution + z);
+                        int& weight = voxel.weight;
+                        kftype& value = voxel.v;
+
+                        // update TSDF
+                        value = (value*weight+tsdf) / (weight + 1);
+                        weight = min(weight + 1, volume.maxWeight);
+                    }
+                }
+            }
+        }
+    }
+
+    TSDFVolumeCPU& volume;
+    const Depth& depth;
+    const Intr::Projector proj;
+    const cv::Affine3f vol2cam;
+    const float truncDistInv;
+    const float dfac;
+};
+
 // use depth instead of distance (optimization)
 void TSDFVolumeCPU::integrate(cv::Ptr<Frame> _depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics)
 {
@@ -117,6 +190,9 @@ void TSDFVolumeCPU::integrate(cv::Ptr<Frame> _depth, float depthFactor, cv::Affi
 
     Depth depth;
     _depth->getDepth(depth);
+
+    //TODO: find out why it's slower than w/o parallel code
+    //parallel_for_(Range(0, edgeResolution), IntegrateInvoker(*this, depth, intrinsics, cameraPose, depthFactor));
 
     Intr::Projector proj = intrinsics.makeProjector();
 
