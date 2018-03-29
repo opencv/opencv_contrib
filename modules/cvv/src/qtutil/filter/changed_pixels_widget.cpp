@@ -14,7 +14,7 @@ void changedPixelImage(const cv::Mat& mat0, const cv::Mat& mat1, cv::Mat& out);
 template<int Depth, int Channels>
 void changedPixelImage(const cv::Mat& mat0, const cv::Mat& mat1, cv::Mat& out);
 
-void changedPixelImage(const cv::Mat& mat0, const cv::Mat& mat1, cv::Mat& out)
+static void changedPixelImage(const cv::Mat& mat0, const cv::Mat& mat1, cv::Mat& out)
 {
 	// need same size
 	if (mat0.size() != mat1.size())
