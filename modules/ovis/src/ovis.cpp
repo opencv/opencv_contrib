@@ -119,6 +119,10 @@ static SceneNode& _getSceneNode(SceneManager* sceneMgr, const String& name)
     try
     {
         mo = sceneMgr->getMovableObject(name, "Camera");
+
+        // with cameras we have an extra CS flip node
+        if(mo)
+            return *mo->getParentSceneNode()->getParentSceneNode();
     }
     catch (ItemIdentityException&)
     {
@@ -385,6 +389,8 @@ public:
         Vector3 t;
         _convertRT(rot, tvec, q, t);
         SceneNode* node = sceneMgr->getRootSceneNode()->createChildSceneNode(t, q);
+        node = node->createChildSceneNode();
+        node->setOrientation(toOGRE); // camera mesh is oriented by OGRE conventions by default
         node->attachObject(cam);
 
         RealRect ext = cam->getFrustumExtents();
