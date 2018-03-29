@@ -287,6 +287,7 @@ public:
         {
             camman.reset(new OgreBites::CameraMan(camNode));
             camman->setStyle(OgreBites::CS_ORBIT);
+            camNode->setFixedYawAxis(true, Vector3::NEGATIVE_UNIT_Y);
         }
 
         if (!app->sceneMgr)
@@ -541,11 +542,10 @@ public:
 
     void fixCameraYawAxis(bool useFixed, InputArray _up)
     {
-        Vector3 up = Vector3::UNIT_Y;
+        Vector3 up = Vector3::NEGATIVE_UNIT_Y;
         if (!_up.empty())
         {
             _up.copyTo(Mat_<Real>(3, 1, up.ptr()));
-            up = toOGRE * up;
         }
 
         camNode->setFixedYawAxis(useFixed, up);
