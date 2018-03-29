@@ -24,14 +24,10 @@ public:
 
 }
 
-typedef cv::Mat_< cv::Point3_<kftype> > Points;
+typedef cv::Mat_< cv::Point3f > Points;
 typedef Points Normals;
 
-typedef Points::value_type p3type;
-
-typedef cv::Mat_< kftype > Depth;
-
-typedef Depth::value_type depthType;
+typedef cv::Mat_< depthType > Depth;
 
 struct Frame
 {

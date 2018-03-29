@@ -10,14 +10,17 @@
 //TODO: remove it
 #include <iostream>
 
-typedef float kftype;
+typedef float depthType;
 
-inline bool isNaN(cv::Point3_<kftype> p)
+const float qnan = std::numeric_limits<float>::quiet_NaN();
+const cv::Vec3f nan3(qnan, qnan, qnan);
+
+inline bool isNaN(cv::Point3f p)
 {
     return (cvIsNaN(p.x) || cvIsNaN(p.y) || cvIsNaN(p.z));
 }
 
-inline bool isNaN(kftype p)
+inline bool isNaN(float p)
 {
     return cvIsNaN(p);
 }

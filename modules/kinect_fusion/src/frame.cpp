@@ -108,13 +108,13 @@ void FrameCPU::render(OutputArray image, int level, Affine3f lightPose) const
     for(int y = 0; y < sz.height; y++)
     {
         Vec3b* imgRow = img[y];
-        const p3type* ptsRow = points[level][y];
-        const p3type* nrmRow = normals[level][y];
+        const Point3f* ptsRow = points[level][y];
+        const Point3f* nrmRow = normals[level][y];
 
         for(int x = 0; x < sz.width; x++)
         {
-            p3type p = ptsRow[x];
-            p3type n = nrmRow[x];
+            Point3f p = ptsRow[x];
+            Point3f n = nrmRow[x];
 
             Vec3b color;
 
@@ -157,34 +157,31 @@ void FrameCPU::getDepth(OutputArray _depth) const
 
 void pyrDownPointsNormals(const Points p, const Normals n, Points &pdown, Normals &ndown)
 {
-    const kftype qnan = std::numeric_limits<kftype>::quiet_NaN();
-    p3type nan3(qnan, qnan, qnan);
-
     for(int y = 0; y < pdown.rows; y++)
     {
-        p3type* ptsRow = pdown[y];
-        p3type* nrmRow = ndown[y];
-        const p3type* pUpRow0 = p[2*y];
-        const p3type* pUpRow1 = p[2*y+1];
-        const p3type* nUpRow0 = n[2*y];
-        const p3type* nUpRow1 = n[2*y+1];
+        Point3f* ptsRow = pdown[y];
+        Point3f* nrmRow = ndown[y];
+        const Point3f* pUpRow0 = p[2*y];
+        const Point3f* pUpRow1 = p[2*y+1];
+        const Point3f* nUpRow0 = n[2*y];
+        const Point3f* nUpRow1 = n[2*y+1];
         for(int x = 0; x < pdown.cols; x++)
         {
-            p3type point = nan3, normal = nan3;
+            Point3f point = nan3, normal = nan3;
 
-            p3type d00 = pUpRow0[2*x];
-            p3type d01 = pUpRow0[2*x+1];
-            p3type d10 = pUpRow1[2*x];
-            p3type d11 = pUpRow1[2*x+1];
+            Point3f d00 = pUpRow0[2*x];
+            Point3f d01 = pUpRow0[2*x+1];
+            Point3f d10 = pUpRow1[2*x];
+            Point3f d11 = pUpRow1[2*x+1];
 
             if(!(isNaN(d00) || isNaN(d01) || isNaN(d10) || isNaN(d11)))
             {
                 point = (d00 + d01 + d10 + d11)*0.25f;
 
-                p3type n00 = nUpRow0[2*x];
-                p3type n01 = nUpRow0[2*x+1];
-                p3type n10 = nUpRow1[2*x];
-                p3type n11 = nUpRow1[2*x+1];
+                Point3f n00 = nUpRow0[2*x];
+                Point3f n01 = nUpRow0[2*x+1];
+                Point3f n10 = nUpRow1[2*x];
+                Point3f n11 = nUpRow1[2*x+1];
 
                 normal = (n00 + n01 + n10 + n11)*0.25f;
             }
@@ -205,25 +202,25 @@ Depth pyrDownBilateral(const Depth depth, float sigma)
 
     for(int y = 0; y < depthDown.rows; y++)
     {
-        kftype* downRow = depthDown[y];
-        const kftype* srcCenterRow = depth[2*y];
+        depthType* downRow = depthDown[y];
+        const depthType* srcCenterRow = depth[2*y];
 
         for(int x = 0; x < depthDown.cols; x++)
         {
-            kftype center = srcCenterRow[2*x];
+            depthType center = srcCenterRow[2*x];
 
             int sx = max(0, 2*x - D/2), ex = min(2*x - D/2 + D, depth.cols-1);
             int sy = max(0, 2*y - D/2), ey = min(2*y - D/2 + D, depth.rows-1);
 
-            kftype sum = 0;
+            depthType sum = 0;
             int count = 0;
 
             for(int iy = sy; iy < ey; iy++)
             {
-                const kftype* srcRow = depth[iy];
+                const depthType* srcRow = depth[iy];
                 for(int ix = sx; ix < ex; ix++)
                 {
-                    kftype val = srcRow[ix];
+                    depthType val = srcRow[ix];
                     if(abs(val - center) < sigma3)
                     {
                         sum += val; count ++;
@@ -244,9 +241,6 @@ void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
     CV_Assert(depth.size() == points.size());
     CV_Assert(depth.size() == normals.size());
 
-    const kftype qnan = std::numeric_limits<kftype>::quiet_NaN ();
-    p3type nan3(qnan, qnan, qnan);
-
     // conversion to meters
     // before it was:
     //float dfac = 0.001f/depthFactor;
@@ -258,16 +252,16 @@ void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
     {
         const depthType* depthRow0 = depth[y];
         const depthType* depthRow1 = (y < depth.rows - 1) ? depth[y + 1] : 0;
-        p3type    *ptsRow = points[y];
-        p3type   *normRow = normals[y];
+        Point3f    *ptsRow = points[y];
+        Point3f   *normRow = normals[y];
 
         for(int x = 0; x < depth.cols; x++)
         {
             depthType d00 = depthRow0[x];
             depthType z00 = d00*dfac;
-            p3type v00 = reproj(p3type(x, y, z00));
+            Point3f v00 = reproj(Point3f(x, y, z00));
 
-            p3type p = nan3, n = nan3;
+            Point3f p = nan3, n = nan3;
 
             if(x < depth.cols - 1 && y < depth.rows - 1)
             {
@@ -281,10 +275,10 @@ void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
                 //if(z00*z01*z10 != 0)
                 if(z00 != 0 && z01 != 0 && z10 != 0)
                 {
-                    p3type v01 = reproj(p3type(x+1, y, z01));
-                    p3type v10 = reproj(p3type(x, y+1, z10));
+                    Point3f v01 = reproj(Point3f(x+1, y, z01));
+                    Point3f v10 = reproj(Point3f(x, y+1, z10));
 
-                    cv::Vec<kftype, 3> vec = (v01-v00).cross(v10-v00);
+                    cv::Vec3f vec = (v01-v00).cross(v10-v00);
                     n = -normalize(vec);
                     p = v00;
                 }

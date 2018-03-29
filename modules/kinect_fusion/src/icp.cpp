@@ -83,7 +83,7 @@ void ICPCPU::getAb(const Points oldPts, const Normals oldNrm, const Points newPt
 
     Cv32suf s; s.u = 0x7fc00000;
     const float vnan = s.f;
-    const p3type qnan3(vnan, vnan, vnan);
+    const Point3f qnan3(vnan, vnan, vnan);
 
     CV_Assert(oldPts.size() == oldNrm.size());
     CV_Assert(newPts.size() == newNrm.size());
@@ -99,15 +99,15 @@ void ICPCPU::getAb(const Points oldPts, const Normals oldNrm, const Points newPt
 
     for(int y = 0; y < newPts.rows; y++)
     {
-        const p3type* newPtsRow = newPts[y];
-        const p3type* newNrmRow = newNrm[y];
+        const Point3f* newPtsRow = newPts[y];
+        const Point3f* newNrmRow = newNrm[y];
 
         for(int x = 0; x < newPts.cols; x++)
         {
-            p3type newP = newPtsRow[x];
-            p3type newN = newNrmRow[x];
+            Point3f newP = newPtsRow[x];
+            Point3f newN = newNrmRow[x];
 
-            p3type oldP(qnan3), oldN(qnan3);
+            Point3f oldP(qnan3), oldN(qnan3);
 
             if(!(isNaN(newP) || isNaN(newN)))
             {
@@ -117,8 +117,8 @@ void ICPCPU::getAb(const Points oldPts, const Normals oldNrm, const Points newPt
 
                 //find correspondence
                 Point2f oldCoords = proj(newP);
-                oldP = bilinear<p3type, Points >(oldPts, oldCoords);
-                oldN = bilinear<p3type, Normals>(oldNrm, oldCoords);
+                oldP = bilinear<Point3f, Points >(oldPts, oldCoords);
+                oldN = bilinear<Point3f, Normals>(oldNrm, oldCoords);
             }
             else
             {

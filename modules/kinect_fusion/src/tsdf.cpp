@@ -6,9 +6,11 @@
 using namespace cv;
 using namespace cv::kinfu;
 
+
+typedef float volumeType; // can be float16
 struct Voxel
 {
-    kftype v;
+    volumeType v;
     int weight;
 };
 
@@ -50,10 +52,10 @@ public:
 
     virtual void reset();
 
-    kftype fetchVoxel(cv::Point3f p) const;
-    kftype fetchi(cv::Point3i p) const;
-    kftype interpolate(cv::Point3f p) const;
-    p3type getNormalVoxel(cv::Point3f p) const;
+    volumeType fetchVoxel(cv::Point3f p) const;
+    volumeType fetchi(cv::Point3i p) const;
+    volumeType interpolate(cv::Point3f p) const;
+    Point3f getNormalVoxel(cv::Point3f p) const;
 
     // edgeResolution^3 array
     // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
@@ -149,22 +151,22 @@ struct IntegrateInvoker : ParallelLoopBody
                     Point3f camPixVec;
                     Point2f projected = proj(camSpacePt, camPixVec);
 
-                    kftype v = bilinear<kftype, Depth>(depth, projected);
+                    depthType v = bilinear<depthType, Depth>(depth, projected);
                     if(v == 0)
                         continue;
 
                     // difference between distances of point and of surface to camera
-                    kftype sdf = norm(camPixVec)*(v*dfac - camSpacePt.z);
+                    volumeType sdf = norm(camPixVec)*(v*dfac - camSpacePt.z);
                     // possible alternative is:
                     // kftype sdf = norm(camSpacePt)*(v*dfac/camSpacePt.z - 1);
 
                     if(sdf >= -volume.truncDist)
                     {
-                        kftype tsdf = fmin(1.f, sdf * truncDistInv);
+                        volumeType tsdf = fmin(1.f, sdf * truncDistInv);
 
                         Voxel& voxel = volume.volume(x*volume.edgeResolution*volume.edgeResolution + y*volume.edgeResolution + z);
                         int& weight = voxel.weight;
-                        kftype& value = voxel.v;
+                        volumeType& value = voxel.v;
 
                         // update TSDF
                         value = (value*weight+tsdf) / (weight + 1);
@@ -224,22 +226,22 @@ void TSDFVolumeCPU::integrate(cv::Ptr<Frame> _depth, float depthFactor, cv::Affi
                 Point3f camPixVec;
                 Point2f projected = proj(camSpacePt, camPixVec);
 
-                kftype v = bilinear<kftype, Depth>(depth, projected);
+                depthType v = bilinear<depthType, Depth>(depth, projected);
                 if(v == 0)
                     continue;
 
                 // difference between distances of point and of surface to camera
-                kftype sdf = norm(camPixVec)*(v*dfac - camSpacePt.z);
+                volumeType sdf = norm(camPixVec)*(v*dfac - camSpacePt.z);
                 // possible alternative is:
                 // kftype sdf = norm(camSpacePt)*(v*dfac/camSpacePt.z - 1);
 
                 if(sdf >= -truncDist)
                 {
-                    kftype tsdf = fmin(1.f, sdf * truncDistInv);
+                    volumeType tsdf = fmin(1.f, sdf * truncDistInv);
 
                     Voxel& voxel = volume(x*edgeResolution*edgeResolution + y*edgeResolution + z);
                     int& weight = voxel.weight;
-                    kftype& value = voxel.v;
+                    volumeType& value = voxel.v;
 
                     // update TSDF
                     value = (value*weight+tsdf) / (weight + 1);
@@ -250,10 +252,7 @@ void TSDFVolumeCPU::integrate(cv::Ptr<Frame> _depth, float depthFactor, cv::Affi
     }
 }
 
-const float qnan = std::numeric_limits<float>::quiet_NaN ();
-const Point3f nan3(qnan, qnan, qnan);
-
-inline kftype TSDFVolumeCPU::fetchVoxel(Point3f p) const
+inline volumeType TSDFVolumeCPU::fetchVoxel(Point3f p) const
 {
     p *= voxelSizeInv;
     return volume(cvRound(p.x)*edgeResolution*edgeResolution +
@@ -261,14 +260,14 @@ inline kftype TSDFVolumeCPU::fetchVoxel(Point3f p) const
                   cvRound(p.z)).v;
 }
 
-inline float TSDFVolumeCPU::fetchi(Point3i p) const
+inline volumeType TSDFVolumeCPU::fetchi(Point3i p) const
 {
     return volume(p.x*edgeResolution*edgeResolution +
                   p.y*edgeResolution +
                   p.z).v;
 }
 
-inline float TSDFVolumeCPU::interpolate(Point3f p) const
+inline volumeType TSDFVolumeCPU::interpolate(Point3f p) const
 {
     p *= voxelSizeInv;
 
@@ -281,7 +280,7 @@ inline float TSDFVolumeCPU::interpolate(Point3f p) const
     int xi = cvFloor(p.x), yi = cvFloor(p.y), zi = cvFloor(p.z);
     float tx = p.x - xi, ty = p.y - yi, tz = p.z - zi;
 
-    kftype v = 0.f;
+    volumeType v = 0.f;
 
     v += fetchi(Point3i(xi+0, yi+0, zi+0))*(1.f-tx)*(1.f-ty)*(1.f-tz);
     v += fetchi(Point3i(xi+0, yi+0, zi+1))*(1.f-tx)*(1.f-ty)*(    tz);
@@ -295,24 +294,24 @@ inline float TSDFVolumeCPU::interpolate(Point3f p) const
     return v;
 }
 
-inline p3type TSDFVolumeCPU::getNormalVoxel(Point3f p) const
+inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 {
     Point3f n;
-    kftype fx1 = interpolate(Point3f(p.x + gradientDeltaFactor, p.y, p.z));
-    kftype fx0 = interpolate(Point3f(p.x - gradientDeltaFactor, p.y, p.z));
+    volumeType fx1 = interpolate(Point3f(p.x + gradientDeltaFactor, p.y, p.z));
+    volumeType fx0 = interpolate(Point3f(p.x - gradientDeltaFactor, p.y, p.z));
     // no need to divide, will be normalized after
     // n.x = (fx1-fx0)/gradientDeltaFactor;
     n.x = fx1 - fx0;
 
-    kftype fy1 = interpolate(Point3f(p.x, p.y + gradientDeltaFactor, p.z));
-    kftype fy0 = interpolate(Point3f(p.x, p.y - gradientDeltaFactor, p.z));
+    volumeType fy1 = interpolate(Point3f(p.x, p.y + gradientDeltaFactor, p.z));
+    volumeType fy0 = interpolate(Point3f(p.x, p.y - gradientDeltaFactor, p.z));
     n.y = fy1 - fy0;
 
-    kftype fz1 = interpolate(Point3f(p.x, p.y, p.z + gradientDeltaFactor));
-    kftype fz0 = interpolate(Point3f(p.x, p.y, p.z - gradientDeltaFactor));
+    volumeType fz1 = interpolate(Point3f(p.x, p.y, p.z + gradientDeltaFactor));
+    volumeType fz0 = interpolate(Point3f(p.x, p.y, p.z - gradientDeltaFactor));
     n.z = fz1 - fz0;
 
-    return normalize(Vec<kftype, 3>(n));
+    return normalize(Vec3f(n));
 }
 
 struct RaycastInvoker : ParallelLoopBody
@@ -345,11 +344,11 @@ struct RaycastInvoker : ParallelLoopBody
 
             for(int x = 0; x < points.cols; x++)
             {
-                p3type point = nan3, normal = nan3;
+                Point3f point = nan3, normal = nan3;
 
                 Point3f orig = cam2vol.translation();
                 // direction through pixel in volume space
-                Point3f dir = normalize(Vec3f(cam2vol.rotation() * reproj(p3type(x, y, 1.f))));
+                Point3f dir = normalize(Vec3f(cam2vol.rotation() * reproj(Point3f(x, y, 1.f))));
 
                 // compute intersection of ray with all six bbox planes
                 Vec3f rayinv(1.f/dir.x, 1.f/dir.y, 1.f/dir.z);
@@ -370,12 +369,12 @@ struct RaycastInvoker : ParallelLoopBody
                     tmax -= tstep;
                     Point3f rayStep = dir * tstep;
                     Point3f next = orig + dir * tmin;
-                    kftype fnext = volume.interpolate(next);
+                    volumeType fnext = volume.interpolate(next);
 
                     //raymarch
                     for(float t = tmin; t < tmax; t += tstep)
                     {
-                        float f = fnext;
+                        volumeType f = fnext;
                         Point3f tp = next;
                         next += rayStep;
                         //trying to optimize
@@ -391,8 +390,8 @@ struct RaycastInvoker : ParallelLoopBody
                         // linear interpolate t between two f values
                         if(f > 0.f && fnext < 0.f)
                         {
-                            float ft   = volume.interpolate(tp);
-                            float ftdt = volume.interpolate(next);
+                            volumeType ft   = volume.interpolate(tp);
+                            volumeType ftdt = volume.interpolate(next);
                             float ts = t - tstep*ft/(ftdt - ft);
 
                             Point3f pv = orig + dir*ts;
@@ -483,7 +482,7 @@ struct PushPoints
             const Voxel& voxeld = vol.volume((x+shift.x)*edgeResolution*edgeResolution +
                                              (y+shift.y)*edgeResolution +
                                              (z+shift.z));
-            kftype vd = voxeld.v;
+            volumeType vd = voxeld.v;
 
             if(voxeld.weight != 0 && vd != 1.f)
             {
@@ -508,7 +507,7 @@ struct PushPoints
 
     void operator ()(const Voxel &voxel0, const int position[2]) const
     {
-        kftype v0 = voxel0.v;
+        volumeType v0 = voxel0.v;
         if(voxel0.weight != 0 && v0 != 1.f)
         {
             int pi = position[1];
