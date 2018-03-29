@@ -542,7 +542,6 @@ void TSDFVolumeCPU::fetchPoints(OutputArray _points) const
     {
         Mat_<Point3f> points;
 
-        //TODO: use parallel_for instead
         Mutex mutex;
         volume.forEach(PushPoints(*this, points, mutex));
 
@@ -554,17 +553,18 @@ void TSDFVolumeCPU::fetchPoints(OutputArray _points) const
 
 struct PushNormals
 {
-    PushNormals(const TSDFVolumeCPU& _vol, Mat_<Point3f>& _nrm, Mutex& _mtx) :
-        vol(_vol), normals(_nrm), mtx(_mtx) { }
-    void operator ()(const Point3f &p, const int * /*position*/) const
+    PushNormals(const TSDFVolumeCPU& _vol, Mat_<Point3f>& _nrm) :
+        vol(_vol), normals(_nrm) { }
+    void operator ()(const Point3f &p, const int * position) const
     {
-        AutoLock al(mtx);
-        normals.push_back(vol.pose.rotation() * vol.getNormalVoxel(p));
+        //TODO: avoid vol.pose.inv() using
+        Point3f n = vol.pose.rotation() * vol.getNormalVoxel(vol.pose.inv() * p);
+        normals(position[0], position[1]) = n;
     }
     const TSDFVolumeCPU& vol;
     Mat_<Point3f>& normals;
-    Mutex& mtx;
 };
+
 
 void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
 {
@@ -576,13 +576,10 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
         CV_Assert(points.type() == CV_32FC3);
 
         //TODO: try to use pre-allocated memory if possible
-        Mat_<Point3f> normals;
-        normals.reserve(points.total());
+        _normals.createSameSize(_points, _points.type());
+        Mat_<Point3f> normals = _normals.getMat();
 
-        Mutex mutex;
-        points.forEach(PushNormals(*this, normals, mutex));
-
-        _normals.assign(normals);
+        points.forEach(PushNormals(*this, normals));
     }
 }
 
