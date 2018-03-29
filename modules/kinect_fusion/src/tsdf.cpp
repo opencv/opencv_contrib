@@ -52,9 +52,8 @@ public:
 
     virtual void reset();
 
-    volumeType fetchVoxel(cv::Point3f p) const;
+    volumeType fetchVoxel(cv::Point3f p, bool interpolate = false) const;
     volumeType fetchi(cv::Point3i p) const;
-    volumeType interpolate(cv::Point3f p) const;
     Point3f getNormalVoxel(cv::Point3f p) const;
 
     // edgeResolution^3 array
@@ -201,14 +200,6 @@ void TSDFVolumeCPU::integrate(cv::Ptr<Frame> _depth, float depthFactor, cv::Affi
 }
 
 
-inline volumeType TSDFVolumeCPU::fetchVoxel(Point3f p) const
-{
-    p *= voxelSizeInv;
-    return volume(cvRound(p.x)*edgeResolution*edgeResolution +
-                  cvRound(p.y)*edgeResolution +
-                  cvRound(p.z)).v;
-}
-
 inline volumeType TSDFVolumeCPU::fetchi(Point3i p) const
 {
     return volume(p.x*edgeResolution*edgeResolution +
@@ -216,29 +207,37 @@ inline volumeType TSDFVolumeCPU::fetchi(Point3i p) const
                   p.z).v;
 }
 
-inline volumeType TSDFVolumeCPU::interpolate(Point3f p) const
+inline volumeType TSDFVolumeCPU::fetchVoxel(Point3f p, bool interpolate) const
 {
     p *= voxelSizeInv;
 
-    if(isNaN(p)||
-       p.x < 0 || p.x >= edgeResolution-1 ||
+    if(p.x < 0 || p.x >= edgeResolution-1 ||
        p.y < 0 || p.y >= edgeResolution-1 ||
        p.z < 0 || p.z >= edgeResolution-1)
         return qnan;
 
-    int xi = cvFloor(p.x), yi = cvFloor(p.y), zi = cvFloor(p.z);
-    float tx = p.x - xi, ty = p.y - yi, tz = p.z - zi;
+    int xi, yi, zi;
 
     volumeType v = 0.f;
+    if(interpolate)
+    {
+        xi = cvFloor(p.x), yi = cvFloor(p.y), zi = cvFloor(p.z);
+        float tx = p.x - xi, ty = p.y - yi, tz = p.z - zi;
 
-    v += fetchi(Point3i(xi+0, yi+0, zi+0))*(1.f-tx)*(1.f-ty)*(1.f-tz);
-    v += fetchi(Point3i(xi+0, yi+0, zi+1))*(1.f-tx)*(1.f-ty)*(    tz);
-    v += fetchi(Point3i(xi+0, yi+1, zi+0))*(1.f-tx)*(    ty)*(1.f-tz);
-    v += fetchi(Point3i(xi+0, yi+1, zi+1))*(1.f-tx)*(    ty)*(    tz);
-    v += fetchi(Point3i(xi+1, yi+0, zi+0))*(    tx)*(1.f-ty)*(1.f-tz);
-    v += fetchi(Point3i(xi+1, yi+0, zi+1))*(    tx)*(1.f-ty)*(    tz);
-    v += fetchi(Point3i(xi+1, yi+1, zi+0))*(    tx)*(    ty)*(1.f-tz);
-    v += fetchi(Point3i(xi+1, yi+1, zi+1))*(    tx)*(    ty)*(    tz);
+        v += fetchi(Point3i(xi+0, yi+0, zi+0))*(1.f-tx)*(1.f-ty)*(1.f-tz);
+        v += fetchi(Point3i(xi+0, yi+0, zi+1))*(1.f-tx)*(1.f-ty)*(    tz);
+        v += fetchi(Point3i(xi+0, yi+1, zi+0))*(1.f-tx)*(    ty)*(1.f-tz);
+        v += fetchi(Point3i(xi+0, yi+1, zi+1))*(1.f-tx)*(    ty)*(    tz);
+        v += fetchi(Point3i(xi+1, yi+0, zi+0))*(    tx)*(1.f-ty)*(1.f-tz);
+        v += fetchi(Point3i(xi+1, yi+0, zi+1))*(    tx)*(1.f-ty)*(    tz);
+        v += fetchi(Point3i(xi+1, yi+1, zi+0))*(    tx)*(    ty)*(1.f-tz);
+        v += fetchi(Point3i(xi+1, yi+1, zi+1))*(    tx)*(    ty)*(    tz);
+    }
+    else
+    {
+        xi = cvRound(p.x), yi = cvRound(p.y), zi = cvRound(p.z);
+        v = fetchi(Point3i(xi, yi, zi));
+    }
 
     return v;
 }
@@ -246,18 +245,18 @@ inline volumeType TSDFVolumeCPU::interpolate(Point3f p) const
 inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 {
     Point3f n;
-    volumeType fx1 = interpolate(Point3f(p.x + gradientDeltaFactor, p.y, p.z));
-    volumeType fx0 = interpolate(Point3f(p.x - gradientDeltaFactor, p.y, p.z));
+    volumeType fx1 = fetchVoxel(Point3f(p.x + gradientDeltaFactor, p.y, p.z), true);
+    volumeType fx0 = fetchVoxel(Point3f(p.x - gradientDeltaFactor, p.y, p.z), true);
     // no need to divide, will be normalized after
     // n.x = (fx1-fx0)/gradientDeltaFactor;
     n.x = fx1 - fx0;
 
-    volumeType fy1 = interpolate(Point3f(p.x, p.y + gradientDeltaFactor, p.z));
-    volumeType fy0 = interpolate(Point3f(p.x, p.y - gradientDeltaFactor, p.z));
+    volumeType fy1 = fetchVoxel(Point3f(p.x, p.y + gradientDeltaFactor, p.z), true);
+    volumeType fy0 = fetchVoxel(Point3f(p.x, p.y - gradientDeltaFactor, p.z), true);
     n.y = fy1 - fy0;
 
-    volumeType fz1 = interpolate(Point3f(p.x, p.y, p.z + gradientDeltaFactor));
-    volumeType fz0 = interpolate(Point3f(p.x, p.y, p.z - gradientDeltaFactor));
+    volumeType fz1 = fetchVoxel(Point3f(p.x, p.y, p.z + gradientDeltaFactor), true);
+    volumeType fz0 = fetchVoxel(Point3f(p.x, p.y, p.z - gradientDeltaFactor), true);
     n.z = fz1 - fz0;
 
     return normalize(Vec3f(n));
@@ -318,7 +317,7 @@ struct RaycastInvoker : ParallelLoopBody
                     tmax -= tstep;
                     Point3f rayStep = dir * tstep;
                     Point3f next = orig + dir * tmin;
-                    volumeType fnext = volume.interpolate(next);
+                    volumeType fnext = volume.fetchVoxel(next, true);
 
                     //raymarch
                     for(float t = tmin; t < tmax; t += tstep)
@@ -327,9 +326,9 @@ struct RaycastInvoker : ParallelLoopBody
                         Point3f tp = next;
                         next += rayStep;
                         //trying to optimize
-                        fnext = volume.fetchVoxel(next);
+                        fnext = volume.fetchVoxel(next, false);
                         if(fnext != f)
-                            fnext = volume.interpolate(next);
+                            fnext = volume.fetchVoxel(next, true);
 
                         // when ray comes from inside of a surface
                         if(f < 0.f && fnext > 0.f)
@@ -339,18 +338,22 @@ struct RaycastInvoker : ParallelLoopBody
                         // linear interpolate t between two f values
                         if(f > 0.f && fnext < 0.f)
                         {
-                            volumeType ft   = volume.interpolate(tp);
-                            volumeType ftdt = volume.interpolate(next);
+                            volumeType ft   = volume.fetchVoxel(tp, true);
+                            volumeType ftdt = volume.fetchVoxel(next, true);
                             float ts = t - tstep*ft/(ftdt - ft);
 
-                            Point3f pv = orig + dir*ts;
-                            Point3f nv = volume.getNormalVoxel(pv);
-
-                            if(!isNaN(nv))
+                            // avoid division by zero
+                            if(!cvIsNaN(ts) && !cvIsInf(ts))
                             {
-                                //convert pv and nv to camera space
-                                normal = vol2cam.rotation() * nv;
-                                point = vol2cam * pv;
+                                Point3f pv = orig + dir*ts;
+                                Point3f nv = volume.getNormalVoxel(pv);
+
+                                if(!isNaN(nv))
+                                {
+                                    //convert pv and nv to camera space
+                                    normal = vol2cam.rotation() * nv;
+                                    point = vol2cam * pv;
+                                }
                             }
                             break;
                         }
@@ -507,7 +510,11 @@ struct PushNormals
     void operator ()(const Point3f &p, const int * position) const
     {
         //TODO: avoid vol.pose.inv() using
-        Point3f n = vol.pose.rotation() * vol.getNormalVoxel(vol.pose.inv() * p);
+        Point3f n = nan3;
+        if(!isNaN(p))
+        {
+            n = vol.pose.rotation() * vol.getNormalVoxel(vol.pose.inv() * p);
+        }
         normals(position[0], position[1]) = n;
     }
     const TSDFVolumeCPU& vol;
