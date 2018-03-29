@@ -28,9 +28,9 @@ void createPlaneMesh(const String& name, const Size2f& size, InputArray image)
     }
 
     // plane
-    MovablePlane plane(Vector3::UNIT_Z, 0);
+    MovablePlane plane(-Vector3::UNIT_Z, 0);
     MeshPtr mesh = MeshManager::getSingleton().createPlane(
-        name, RESOURCEGROUP_NAME, plane, size.width, size.height, 1, 1, true, 1, 1, 1, Vector3::UNIT_Y);
+        name, RESOURCEGROUP_NAME, plane, size.width, size.height, 1, 1, true, 1, 1, 1, -Vector3::UNIT_Y);
     mesh->getSubMesh(0)->setMaterialName(name);
 }
 
