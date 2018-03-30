@@ -24,7 +24,7 @@ public:
     virtual ~ICPCPU() { }
 
 private:
-    void getAb(const Points oldPts, const Normals oldNrm, const Points newPts, const Normals newNrm,
+    void getAb(const Points &oldPts, const Normals &oldNrm, const Points &newPts, const Normals &newNrm,
                cv::Affine3f pose, int level, cv::Matx66f& A, cv::Vec6f& b) const;
 };
 
@@ -75,15 +75,47 @@ bool ICPCPU::estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> _oldFrame
     return true;
 }
 
+static inline bool fastCheck(const Point3f& p)
+{
+    // 1 coord to check is enough since we know the generation
+    return !cvIsNaN(p.x);
+}
 
-void ICPCPU::getAb(const Points oldPts, const Normals oldNrm, const Points newPts, const Normals newNrm,
+static inline Point3f bilinear(const Points& m, cv::Point2f pt)
+{
+    if(pt.x < 0 || pt.x >= m.cols-1 ||
+       pt.y < 0 || pt.y >= m.rows-1)
+        return nan3;
+
+    int xi = cvFloor(pt.x), yi = cvFloor(pt.y);
+
+    const Point3f* row0 = m[yi+0];
+    const Point3f* row1 = m[yi+1];
+
+    Point3f v00 = row0[xi+0];
+    Point3f v01 = row0[xi+1];
+    Point3f v10 = row1[xi+0];
+    Point3f v11 = row1[xi+1];
+
+    //do not fix missing data
+    if(fastCheck(v00) && fastCheck(v01) &&
+       fastCheck(v10) && fastCheck(v11))
+    {
+        float tx  = pt.x - xi, ty = pt.y - yi;
+        float tx1 = 1.f-tx, ty1 = 1.f-ty;
+        return v00*tx1*ty1 + v01*tx*ty1 + v10*tx1*ty + v11*tx*ty;
+    }
+    else
+    {
+        return nan3;
+    }
+}
+
+
+void ICPCPU::getAb(const Points& oldPts, const Normals& oldNrm, const Points& newPts, const Normals& newNrm,
                    Affine3f pose, int level, Matx66f &A, Vec6f &b) const
 {
     ScopeTime st("icp: get ab");
-
-    Cv32suf s; s.u = 0x7fc00000;
-    const float vnan = s.f;
-    const Point3f qnan3(vnan, vnan, vnan);
 
     CV_Assert(oldPts.size() == oldNrm.size());
     CV_Assert(newPts.size() == newNrm.size());
@@ -107,9 +139,10 @@ void ICPCPU::getAb(const Points oldPts, const Normals oldNrm, const Points newPt
             Point3f newP = newPtsRow[x];
             Point3f newN = newNrmRow[x];
 
-            Point3f oldP(qnan3), oldN(qnan3);
+            Point3f oldP(nan3), oldN(nan3);
 
-            if(!(isNaN(newP) || isNaN(newN)))
+            //if(!(isNaN(newP) || isNaN(newN)))
+            if(fastCheck(newP) && fastCheck(newN))
             {
                 //transform to old coord system
                 newP = pose * newP;
@@ -117,15 +150,15 @@ void ICPCPU::getAb(const Points oldPts, const Normals oldNrm, const Points newPt
 
                 //find correspondence
                 Point2f oldCoords = proj(newP);
-                oldP = bilinear<Point3f, Points >(oldPts, oldCoords);
-                oldN = bilinear<Point3f, Normals>(oldNrm, oldCoords);
+                oldP = bilinear(oldPts, oldCoords);
+                oldN = bilinear(oldNrm, oldCoords);
             }
             else
             {
                 continue;
             }
 
-            if(!(isNaN(oldP) || isNaN(oldN)))
+            if(fastCheck(oldP) && fastCheck(oldN))
             {
                 //filter by distance
                 if((newP - oldP).dot(newP - oldP) > sqDistanceThresh)
@@ -140,8 +173,10 @@ void ICPCPU::getAb(const Points oldPts, const Normals oldNrm, const Points newPt
                 }
 
                 // build point-wise vector ab = [ A | b ]
+
+                //try to optimize
                 Point3f VxN = newP.cross(oldN);
-                Vec<float, 7> ab(VxN.x, VxN.y, VxN.z, oldN.x, oldN.y, oldN.z, oldN.dot(oldP - newP));
+                float ab[7] = {VxN.x, VxN.y, VxN.z, oldN.x, oldN.y, oldN.z, oldN.dot(oldP - newP)};
 
                 // build point-wise upper-triangle matrix [ab^T * ab] w/o last row
                 // which is [A^T*A | A^T*b]
@@ -151,7 +186,7 @@ void ICPCPU::getAb(const Points oldPts, const Normals oldNrm, const Points newPt
                 {
                     for(int j = i; j < 7; j++)
                     {
-                        aab(i, j) = ab(i)*ab(j);
+                        aab(i, j) = ab[i]*ab[j];
                     }
                 }
                 //TODO: optimize it to use only 27 elems

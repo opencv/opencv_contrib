@@ -5,7 +5,6 @@
 
 //DEBUG
 //TODO: remove it
-
 int ScopeTime::nested  = 0;
 
 using namespace cv;
