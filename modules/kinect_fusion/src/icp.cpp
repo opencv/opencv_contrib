@@ -221,7 +221,7 @@ struct GetAbInvoker : ParallelLoopBody
 void ICPCPU::getAb(const Points& oldPts, const Normals& oldNrm, const Points& newPts, const Normals& newNrm,
                    Affine3f pose, int level, Matx66f &A, Vec6f &b) const
 {
-    ScopeTime st("icp: get ab");
+    ScopeTime st("icp: get ab", false);
 
     CV_Assert(oldPts.size() == oldNrm.size());
     CV_Assert(newPts.size() == newNrm.size());

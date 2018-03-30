@@ -25,9 +25,8 @@ inline bool isNaN(cv::Point3f p)
 
 struct ScopeTime
 {
-    enum { ENABLE_PRINT = true };
     static int nested;
-    ScopeTime(std::string name_) : name(name_)
+    ScopeTime(std::string name_, bool _enablePrint = true) : name(name_), enablePrint(_enablePrint)
     {
         start = (double)cv::getTickCount();
         nested++;
@@ -36,7 +35,7 @@ struct ScopeTime
     ~ScopeTime()
     {
         double time_ms =  ((double)cv::getTickCount() - start)*1000.0/cv::getTickFrequency();
-        if(ENABLE_PRINT)
+        if(enablePrint)
         {
             std::string spaces(nested, '-');
             std::cout << spaces << "Time(" << name << ") = " << time_ms << "ms" << std::endl;
@@ -45,6 +44,7 @@ struct ScopeTime
     }
 
     const std::string name;
+    const bool enablePrint;
     double start;
 };
 
