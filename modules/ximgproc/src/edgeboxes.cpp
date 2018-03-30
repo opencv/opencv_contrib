@@ -566,10 +566,9 @@ void EdgeBoxesImpl::prepDataStructs(Mat &edgeMap)
     // initialize scoreBox() data structures
     int n = _segCnt + 1;
     _sWts = Mat::zeros(n, 1, DataType<float>::type);
-    _sDone = Mat::zeros(n, 1, DataType<int>::type);
+    _sDone = Mat(n, 1, DataType<int>::type,Scalar(-1));
     _sMap = Mat::zeros(n, 1, DataType<int>::type);
     _sIds = Mat::zeros(n, 1, DataType<int>::type);
-    for (i = 0; i < n; i++) _sDone.at<int>(0, i) = -1;
     _sId = 0;
 }
 

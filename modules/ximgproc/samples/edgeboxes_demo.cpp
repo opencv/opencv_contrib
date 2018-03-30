@@ -87,7 +87,9 @@ int main(int argc, char **argv)
       rectangle(im, p1, p2, color, 1);
   }
 
-  imshow("im", im);
+  imshow("Edge", edge_im);
+  imshow("Nms", edge_nms);
+  imshow("Image & boxes", im);
   waitKey(0);
 
   return 0;
