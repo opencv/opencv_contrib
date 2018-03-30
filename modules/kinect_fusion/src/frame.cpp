@@ -92,6 +92,32 @@ cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const InputArray _points, const In
     return frame;
 }
 
+template<int p>
+inline float specPow(float x)
+{
+    if(p % 2 == 0)
+    {
+        float v = specPow<p/2>(x);
+        return v*v;
+    }
+    else
+    {
+        float v = specPow<(p-1)/2>(x);
+        return v*v*x;
+    }
+}
+
+template<>
+inline float specPow<0>(float /*x*/)
+{
+    return 1;
+}
+
+template<>
+inline float specPow<1>(float x)
+{
+    return x;
+}
 
 void FrameCPU::render(OutputArray image, int level, Affine3f lightPose) const
 {
@@ -126,7 +152,7 @@ void FrameCPU::render(OutputArray image, int level, Affine3f lightPose) const
                 const float Ka = 0.3f;  //ambient coeff
                 const float Kd = 0.5f;  //diffuse coeff
                 const float Ks = 0.2f;  //specular coeff
-                const float sp = 20.f;  //specular power
+                const int   sp = 20;  //specular power
 
                 const float Ax = 1.f;   //ambient color,  can be RGB
                 const float Dx = 1.f;   //diffuse color,  can be RGB
@@ -137,7 +163,7 @@ void FrameCPU::render(OutputArray image, int level, Affine3f lightPose) const
                 Point3f v = normalize(-Vec3f(p));
                 Point3f r = normalize(Vec3f(2.f*n*n.dot(l) - l));
 
-                uchar ix = (Ax*Ka*Dx + Lx*Kd*Dx*max(0.f, n.dot(l)) + Lx*Ks*Sx*pow(max(0.f, r.dot(v)), sp))*255;
+                uchar ix = (Ax*Ka*Dx + Lx*Kd*Dx*max(0.f, n.dot(l)) + Lx*Ks*Sx*specPow<sp>(max(0.f, r.dot(v))))*255;
                 color = Vec3b(ix, ix, ix);
             }
 
