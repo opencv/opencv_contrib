@@ -110,6 +110,63 @@ void TSDFVolumeCPU::reset()
     volume.forEach(FillZero());
 }
 
+static inline depthType bilinear(const Depth& m, cv::Point2f pt)
+{
+    const depthType defaultValue = qnan;
+    if(pt.x < 0 || pt.x >= m.cols-1 ||
+       pt.y < 0 || pt.y >= m.rows-1)
+        return defaultValue;
+
+    int xi = cvFloor(pt.x), yi = cvFloor(pt.y);
+
+    const depthType* row0 = m[yi+0];
+    const depthType* row1 = m[yi+1];
+
+    depthType v00 = row0[xi+0];
+    depthType v01 = row0[xi+1];
+    depthType v10 = row1[xi+0];
+    depthType v11 = row1[xi+1];
+
+    bool b00 = v00 > 0;
+    bool b01 = v01 > 0;
+    bool b10 = v10 > 0;
+    bool b11 = v11 > 0;
+
+    //fix missing data, assume correct depth is positive
+    int nz = b00 + b01 + b10 + b11;
+    if(nz == 0)
+    {
+        return defaultValue;
+    }
+    if(nz == 1)
+    {
+        if(b00) return v00;
+        if(b01) return v01;
+        if(b10) return v10;
+        if(b11) return v11;
+    }
+    else if(nz == 2)
+    {
+        if(b00 && b10) v01 = v00, v11 = v10;
+        if(b01 && b11) v00 = v01, v10 = v11;
+        if(b00 && b01) v10 = v00, v11 = v01;
+        if(b10 && b11) v00 = v10, v01 = v11;
+        if(b00 && b11) v01 = v10 = (v00 + v11)*0.5f;
+        if(b01 && b10) v00 = v11 = (v01 + v10)*0.5f;
+    }
+    else if(nz == 3)
+    {
+        if(!b00) v00 = v10 + v01 - v11;
+        if(!b01) v01 = v00 + v11 - v10;
+        if(!b10) v10 = v00 + v11 - v01;
+        if(!b11) v11 = v01 + v10 - v00;
+    }
+
+    float tx = pt.x - xi, ty = pt.y - yi;
+    float tx1 = 1.f-tx, ty1 = 1.f-ty;
+
+    return v00*tx1*ty1 + v01*tx*ty1 + v10*tx1*ty + v11*tx*ty;
+}
 
 struct IntegrateInvoker : ParallelLoopBody
 {
@@ -150,7 +207,7 @@ struct IntegrateInvoker : ParallelLoopBody
                     Point3f camPixVec;
                     Point2f projected = proj(camSpacePt, camPixVec);
 
-                    depthType v = bilinear<depthType, Depth>(depth, projected);
+                    depthType v = bilinear(depth, projected);
                     if(v == 0)
                         continue;
 
