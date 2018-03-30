@@ -81,42 +81,6 @@ static inline bool fastCheck(const Point3f& p)
     return !cvIsNaN(p.x);
 }
 
-static inline Point3f bilinear(const Points& m, cv::Point2f pt)
-{
-    if(pt.x < 0 || pt.x >= m.cols-1 ||
-       pt.y < 0 || pt.y >= m.rows-1)
-        return nan3;
-
-    int xi = cvFloor(pt.x), yi = cvFloor(pt.y);
-
-    const Point3f* row0 = m[yi+0];
-    const Point3f* row1 = m[yi+1];
-
-    Point3f v00 = row0[xi+0];
-    Point3f v01 = row0[xi+1];
-    Point3f v10 = row1[xi+0];
-    Point3f v11 = row1[xi+1];
-
-    //do not fix missing data
-    if(fastCheck(v00) && fastCheck(v01) &&
-       fastCheck(v10) && fastCheck(v11))
-    {
-        float tx  = pt.x - xi, ty = pt.y - yi;
-
-        //TODO: check speed
-//        float tx1 = 1.f-tx, ty1 = 1.f-ty;
-//        return v00*tx1*ty1 + v01*tx*ty1 + v10*tx1*ty + v11*tx*ty;
-
-        float txty = tx*ty;
-        Point3f d001 = v00 - v01;
-        return v00 + tx*d001 + ty*(v10-v00) + txty*(d001 - v10 + v11);
-    }
-    else
-    {
-        return nan3;
-    }
-}
-
 //TODO: optimize it to use only 27 elems
 typedef Matx<float, 6, 7> ABtype;
 
@@ -147,100 +111,87 @@ struct GetAbInvoker : ParallelLoopBody
 
                 Point3f oldP(nan3), oldN(nan3);
 
-                if(fastCheck(newP) && fastCheck(newN))
-                {
-                    //transform to old coord system
-                    newP = pose * newP;
-                    newN = pose.rotation() * newN;
+                if(!(fastCheck(newP) && fastCheck(newN)))
+                    continue;
 
-                    //find correspondence
-                    Point2f oldCoords = proj(newP);
-                    if(oldCoords.x >= 0 && oldCoords.x < oldPts.cols - 1 &&
-                       oldCoords.y >= 0 && oldCoords.y < oldPts.rows - 1)
-                    {
-                        int xi = cvFloor(oldCoords.x), yi = cvFloor(oldCoords.y);
-                        float tx  = oldCoords.x - xi, ty = oldCoords.y - yi;
-                        float tx1 = 1.f-tx, ty1 = 1.f-ty;
-                        float t00 = tx1*ty1, t01 = tx*ty1, t10 = tx1*ty, t11 = tx*ty;
+                //transform to old coord system
+                newP = pose * newP;
+                newN = pose.rotation() * newN;
 
-                        const Point3f* prow0 = oldPts[yi+0];
-                        const Point3f* prow1 = oldPts[yi+1];
+                //find correspondence
+                Point2f oldCoords = proj(newP);
+                if(!(oldCoords.x >= 0 && oldCoords.x < oldPts.cols - 1 &&
+                     oldCoords.y >= 0 && oldCoords.y < oldPts.rows - 1))
+                    continue;
 
-                        Point3f p00 = prow0[xi+0];
-                        Point3f p01 = prow0[xi+1];
-                        Point3f p10 = prow1[xi+0];
-                        Point3f p11 = prow1[xi+1];
+                // bilinearly interpolate oldPts and oldNrm under oldCoords point
+                int xi = cvFloor(oldCoords.x), yi = cvFloor(oldCoords.y);
+                float tx  = oldCoords.x - xi, ty = oldCoords.y - yi;
+                float tx1 = 1.f-tx, ty1 = 1.f-ty;
+                float t00 = tx1*ty1, t01 = tx*ty1, t10 = tx1*ty, t11 = tx*ty;
 
-                        //do not fix missing data
-                        if(fastCheck(p00) && fastCheck(p01) &&
-                           fastCheck(p10) && fastCheck(p11))
-                        {
-                            const Point3f* nrow0 = oldNrm[yi+0];
-                            const Point3f* nrow1 = oldNrm[yi+1];
+                const Point3f* prow0 = oldPts[yi+0];
+                const Point3f* prow1 = oldPts[yi+1];
 
-                            Point3f n00 = nrow0[xi+0];
-                            Point3f n01 = nrow0[xi+1];
-                            Point3f n10 = nrow1[xi+0];
-                            Point3f n11 = nrow1[xi+1];
+                Point3f p00 = prow0[xi+0];
+                Point3f p01 = prow0[xi+1];
+                Point3f p10 = prow1[xi+0];
+                Point3f p11 = prow1[xi+1];
 
-                            if(fastCheck(n00) && fastCheck(n01) &&
-                               fastCheck(n10) && fastCheck(n11))
-                            {
-                                oldP = p00*t00 + p01*t01 + p10*t10 + p11*t11;
-                                oldN = n00*t00 + n01*t01 + n10*t10 + n11*t11;
-                            }
-                            else
-                            {
-                                oldP = oldN = nan3;
-                            }
-                        }
-                        else
-                        {
-                            oldP = oldN = nan3;
-                        }
-                    }
-                    else
-                        oldP = oldN = nan3;
-                }
-                else
+                //do not fix missing data
+                if(!(fastCheck(p00) && fastCheck(p01) &&
+                     fastCheck(p10) && fastCheck(p11)))
+                    continue;
+
+                const Point3f* nrow0 = oldNrm[yi+0];
+                const Point3f* nrow1 = oldNrm[yi+1];
+
+                Point3f n00 = nrow0[xi+0];
+                Point3f n01 = nrow0[xi+1];
+                Point3f n10 = nrow1[xi+0];
+                Point3f n11 = nrow1[xi+1];
+
+                if(!(fastCheck(n00) && fastCheck(n01) &&
+                     fastCheck(n10) && fastCheck(n11)))
+                    continue;
+
+                oldP = p00*t00 + p01*t01 + p10*t10 + p11*t11;
+                oldN = n00*t00 + n01*t01 + n10*t10 + n11*t11;
+
+                if(!(fastCheck(oldP) && fastCheck(oldN)))
+                    continue;
+
+                //filter by distance
+                if((newP - oldP).dot(newP - oldP) > sqDistanceThresh)
                 {
                     continue;
                 }
 
-                if(fastCheck(oldP) && fastCheck(oldN))
+                //filter by angle
+                if(abs(newN.dot(oldN)) < minCos)
                 {
-                    //filter by distance
-                    if((newP - oldP).dot(newP - oldP) > sqDistanceThresh)
-                    {
-                        continue;
-                    }
-
-                    //filter by angle
-                    if(abs(newN.dot(oldN)) < minCos)
-                    {
-                        continue;
-                    }
-
-                    // build point-wise vector ab = [ A | b ]
-
-                    //try to optimize
-                    Point3f VxN = newP.cross(oldN);
-                    float ab[7] = {VxN.x, VxN.y, VxN.z, oldN.x, oldN.y, oldN.z, oldN.dot(oldP - newP)};
-
-                    // build point-wise upper-triangle matrix [ab^T * ab] w/o last row
-                    // which is [A^T*A | A^T*b]
-                    //TODO: optimize it to use only 27 elems
-                    ABtype aab = ABtype::zeros();
-                    for(int i = 0; i < 6; i++)
-                    {
-                        for(int j = i; j < 7; j++)
-                        {
-                            aab(i, j) = ab[i]*ab[j];
-                        }
-                    }
-                    //TODO: optimize it to use only 27 elems
-                    sumAB += aab;
+                    continue;
                 }
+
+                // build point-wise vector ab = [ A | b ]
+
+                //try to optimize
+                Point3f VxN = newP.cross(oldN);
+                float ab[7] = {VxN.x, VxN.y, VxN.z, oldN.x, oldN.y, oldN.z, oldN.dot(oldP - newP)};
+
+                // build point-wise upper-triangle matrix [ab^T * ab] w/o last row
+                // which is [A^T*A | A^T*b]
+                //TODO: optimize it to use only 27 elems
+                ABtype aab = ABtype::zeros();
+                for(int i = 0; i < 6; i++)
+                {
+                    for(int j = i; j < 7; j++)
+                    {
+                        aab(i, j) = ab[i]*ab[j];
+                    }
+                }
+                //TODO: optimize it to use only 27 elems
+                sumAB += aab;
             }
         }
 
