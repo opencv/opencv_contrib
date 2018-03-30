@@ -147,7 +147,6 @@ struct GetAbInvoker : ParallelLoopBody
 
                 Point3f oldP(nan3), oldN(nan3);
 
-                //if(!(isNaN(newP) || isNaN(newN)))
                 if(fastCheck(newP) && fastCheck(newN))
                 {
                     //transform to old coord system
@@ -156,8 +155,52 @@ struct GetAbInvoker : ParallelLoopBody
 
                     //find correspondence
                     Point2f oldCoords = proj(newP);
-                    oldP = bilinear(oldPts, oldCoords);
-                    oldN = bilinear(oldNrm, oldCoords);
+                    if(oldCoords.x >= 0 && oldCoords.x < oldPts.cols - 1 &&
+                       oldCoords.y >= 0 && oldCoords.y < oldPts.rows - 1)
+                    {
+                        int xi = cvFloor(oldCoords.x), yi = cvFloor(oldCoords.y);
+                        float tx  = oldCoords.x - xi, ty = oldCoords.y - yi;
+                        float tx1 = 1.f-tx, ty1 = 1.f-ty;
+                        float t00 = tx1*ty1, t01 = tx*ty1, t10 = tx1*ty, t11 = tx*ty;
+
+                        const Point3f* prow0 = oldPts[yi+0];
+                        const Point3f* prow1 = oldPts[yi+1];
+
+                        Point3f p00 = prow0[xi+0];
+                        Point3f p01 = prow0[xi+1];
+                        Point3f p10 = prow1[xi+0];
+                        Point3f p11 = prow1[xi+1];
+
+                        //do not fix missing data
+                        if(fastCheck(p00) && fastCheck(p01) &&
+                           fastCheck(p10) && fastCheck(p11))
+                        {
+                            const Point3f* nrow0 = oldNrm[yi+0];
+                            const Point3f* nrow1 = oldNrm[yi+1];
+
+                            Point3f n00 = nrow0[xi+0];
+                            Point3f n01 = nrow0[xi+1];
+                            Point3f n10 = nrow1[xi+0];
+                            Point3f n11 = nrow1[xi+1];
+
+                            if(fastCheck(n00) && fastCheck(n01) &&
+                               fastCheck(n10) && fastCheck(n11))
+                            {
+                                oldP = p00*t00 + p01*t01 + p10*t10 + p11*t11;
+                                oldN = n00*t00 + n01*t01 + n10*t10 + n11*t11;
+                            }
+                            else
+                            {
+                                oldP = oldN = nan3;
+                            }
+                        }
+                        else
+                        {
+                            oldP = oldN = nan3;
+                        }
+                    }
+                    else
+                        oldP = oldN = nan3;
                 }
                 else
                 {
