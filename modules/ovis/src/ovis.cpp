@@ -23,8 +23,7 @@ static const char* RENDERSYSTEM_NAME = "OpenGL 3+ Rendering Subsystem";
 static std::vector<String> _extraResourceLocations;
 
 // convert from OpenCV to Ogre coordinates:
-// rotation by 180° around x axis
-static Matrix3 toOGRE = Matrix3(1, 0, 0, 0, -1, 0, 0, 0, -1);
+static Quaternion toOGRE(Degree(180), Vector3::UNIT_X);
 static Vector2 toOGRE_SS = Vector2(1, -1);
 
 WindowScene::~WindowScene() {}
@@ -48,15 +47,12 @@ void _createTexture(const String& name, Mat image)
     texMgr.loadImage(name, RESOURCEGROUP_NAME, im);
 }
 
-static void _convertRT(InputArray rot, InputArray tvec, Quaternion& q, Vector3& t,
-                       bool invert = false, bool init = false)
+static void _convertRT(InputArray rot, InputArray tvec, Quaternion& q, Vector3& t, bool invert = false)
 {
     CV_Assert(rot.empty() || rot.rows() == 3 || rot.size() == Size(3, 3),
               tvec.empty() || tvec.rows() == 3);
 
-    // make sure the entity is oriented by the OpenCV coordinate conventions
-    // when initialised
-    q = init ? Quaternion(toOGRE) : Quaternion::IDENTITY;
+    q = Quaternion::IDENTITY;
     t = Vector3::ZERO;
 
     if (!rot.empty())
@@ -74,7 +70,7 @@ static void _convertRT(InputArray rot, InputArray tvec, Quaternion& q, Vector3& 
 
         Matrix3 R;
         _R.copyTo(Mat_<Real>(3, 3, R[0]));
-        q = Quaternion(toOGRE * R);
+        q = Quaternion(R);
 
         if (invert)
         {
@@ -85,7 +81,6 @@ static void _convertRT(InputArray rot, InputArray tvec, Quaternion& q, Vector3& 
     if (!tvec.empty())
     {
         tvec.copyTo(Mat_<Real>(3, 1, t.ptr()));
-        t = toOGRE * t;
 
         if(invert)
         {
@@ -124,6 +119,10 @@ static SceneNode& _getSceneNode(SceneManager* sceneMgr, const String& name)
     try
     {
         mo = sceneMgr->getMovableObject(name, "Camera");
+
+        // with cameras we have an extra CS flip node
+        if(mo)
+            return *mo->getParentSceneNode()->getParentSceneNode();
     }
     catch (ItemIdentityException&)
     {
@@ -281,12 +280,14 @@ public:
         cam->setNearClipDistance(0.5);
         cam->setAutoAspectRatio(true);
         camNode = sceneMgr->getRootSceneNode()->createChildSceneNode();
+        camNode->setOrientation(toOGRE);
         camNode->attachObject(cam);
 
         if (flags & SCENE_INTERACTIVE)
         {
             camman.reset(new OgreBites::CameraMan(camNode));
             camman->setStyle(OgreBites::CS_ORBIT);
+            camNode->setFixedYawAxis(true, Vector3::NEGATIVE_UNIT_Y);
         }
 
         if (!app->sceneMgr)
@@ -356,7 +357,7 @@ public:
 
         Quaternion q;
         Vector3 t;
-        _convertRT(rot, tvec, q, t, false, true);
+        _convertRT(rot, tvec, q, t);
         SceneNode* node = sceneMgr->getRootSceneNode()->createChildSceneNode(t, q);
         node->attachObject(ent);
     }
@@ -387,8 +388,10 @@ public:
 
         Quaternion q;
         Vector3 t;
-        _convertRT(rot, tvec, q, t, false, true);
+        _convertRT(rot, tvec, q, t);
         SceneNode* node = sceneMgr->getRootSceneNode()->createChildSceneNode(t, q);
+        node = node->createChildSceneNode();
+        node->setOrientation(toOGRE); // camera mesh is oriented by OGRE conventions by default
         node->attachObject(cam);
 
         RealRect ext = cam->getFrustumExtents();
@@ -410,7 +413,7 @@ public:
 
         Quaternion q;
         Vector3 t;
-        _convertRT(rot, tvec, q, t, false, true);
+        _convertRT(rot, tvec, q, t);
         SceneNode* node = sceneMgr->getRootSceneNode()->createChildSceneNode(t, q);
         node->attachObject(light);
     }
@@ -430,7 +433,7 @@ public:
         SceneNode& node = _getSceneNode(sceneMgr, name);
         Quaternion q;
         Vector3 t;
-        _convertRT(rot, tvec, q, t, invert, true);
+        _convertRT(rot, tvec, q, t, invert);
         node.setOrientation(q);
         node.setPosition(t);
     }
@@ -539,40 +542,33 @@ public:
 
     void fixCameraYawAxis(bool useFixed, InputArray _up)
     {
-        Vector3 up = Vector3::UNIT_Y;
+        Vector3 up = Vector3::NEGATIVE_UNIT_Y;
         if (!_up.empty())
         {
             _up.copyTo(Mat_<Real>(3, 1, up.ptr()));
-            up = toOGRE * up;
         }
 
-        Camera* cam = sceneMgr->getCamera(title);
-        cam->getParentSceneNode()->setFixedYawAxis(useFixed, up);
+        camNode->setFixedYawAxis(useFixed, up);
     }
 
     void setCameraPose(InputArray tvec, InputArray rot, bool invert)
     {
-        Camera* cam = sceneMgr->getCamera(title);
-
-        SceneNode* node = cam->getParentSceneNode();
         Quaternion q;
         Vector3 t;
-        _convertRT(rot, tvec, q, t, invert, true);
+        _convertRT(rot, tvec, q, t, invert);
 
         if (!rot.empty())
-            node->setOrientation(q);
+            camNode->setOrientation(q*toOGRE);
 
         if (!tvec.empty())
-            node->setPosition(t);
+            camNode->setPosition(t);
     }
 
     void getCameraPose(OutputArray R, OutputArray tvec, bool invert)
     {
-        Camera* cam = sceneMgr->getCamera(title);
-        SceneNode* node = cam->getParentSceneNode();
-
         Matrix3 _R;
-        node->getOrientation().ToRotationMatrix(_R);
+        // toOGRE.Inverse() == toOGRE
+        (camNode->getOrientation()*toOGRE).ToRotationMatrix(_R);
 
         if (invert)
         {
@@ -581,20 +577,18 @@ public:
 
         if (tvec.needed())
         {
-            Vector3 _tvec = node->getPosition();
+            Vector3 _tvec = camNode->getPosition();
 
             if (invert)
             {
                 _tvec = _R * -_tvec;
             }
 
-            _tvec = toOGRE.Transpose() * _tvec;
             Mat_<Real>(3, 1, _tvec.ptr()).copyTo(tvec);
         }
 
         if (R.needed())
         {
-            _R = toOGRE.Transpose() * _R;
             Mat_<Real>(3, 3, _R[0]).copyTo(R);
         }
     }
@@ -607,7 +601,6 @@ public:
 
     void setCameraLookAt(const String& target, InputArray offset)
     {
-        SceneNode* cam = sceneMgr->getCamera(title)->getParentSceneNode();
         SceneNode* tgt = sceneMgr->getEntity(target)->getParentSceneNode();
 
         Vector3 _offset = Vector3::ZERO;
@@ -615,10 +608,9 @@ public:
         if (!offset.empty())
         {
             offset.copyTo(Mat_<Real>(3, 1, _offset.ptr()));
-            _offset = toOGRE * _offset;
         }
 
-        cam->lookAt(tgt->_getDerivedPosition() + _offset, Ogre::Node::TS_WORLD);
+        camNode->lookAt(tgt->_getDerivedPosition() + _offset, Ogre::Node::TS_WORLD);
     }
 };
 
