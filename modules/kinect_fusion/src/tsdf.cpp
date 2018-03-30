@@ -52,8 +52,8 @@ public:
 
     virtual void reset();
 
-    volumeType fetchVoxel(cv::Point3f p, bool interpolate = false) const;
-    volumeType fetchi(cv::Point3i p) const;
+    volumeType fetchVoxel(cv::Point3f p) const;
+    volumeType interpolateVoxel(cv::Point3f p) const;
     Point3f getNormalVoxel(cv::Point3f p) const;
 
     // edgeResolution^3 array
@@ -110,7 +110,7 @@ void TSDFVolumeCPU::reset()
     volume.forEach(FillZero());
 }
 
-static inline depthType bilinear(const Depth& m, cv::Point2f pt)
+static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
 {
     const depthType defaultValue = qnan;
     if(pt.x < 0 || pt.x >= m.cols-1 ||
@@ -163,9 +163,14 @@ static inline depthType bilinear(const Depth& m, cv::Point2f pt)
     }
 
     float tx = pt.x - xi, ty = pt.y - yi;
-    float tx1 = 1.f-tx, ty1 = 1.f-ty;
 
+    float tx1 = 1.f-tx, ty1 = 1.f-ty;
     return v00*tx1*ty1 + v01*tx*ty1 + v10*tx1*ty + v11*tx*ty;
+
+    // speed is the same
+//    float txty = tx*ty;
+//    depthType d001 = v00 - v01;
+//    return v00 + tx*d001 + ty*(v10-v00) + txty*(d001 - v10 + v11);
 }
 
 struct IntegrateInvoker : ParallelLoopBody
@@ -207,7 +212,7 @@ struct IntegrateInvoker : ParallelLoopBody
                     Point3f camPixVec;
                     Point2f projected = proj(camSpacePt, camPixVec);
 
-                    depthType v = bilinear(depth, projected);
+                    depthType v = bilinearDepth(depth, projected);
                     if(v == 0)
                         continue;
 
@@ -257,42 +262,54 @@ void TSDFVolumeCPU::integrate(cv::Ptr<Frame> _depth, float depthFactor, cv::Affi
 }
 
 
-inline volumeType TSDFVolumeCPU::fetchi(Point3i p) const
-{
-    return volume(p.x*edgeResolution*edgeResolution +
-                  p.y*edgeResolution +
-                  p.z).v;
-}
-
-inline volumeType TSDFVolumeCPU::fetchVoxel(Point3f p, bool interpolate) const
+inline volumeType TSDFVolumeCPU::fetchVoxel(Point3f p) const
 {
     if(p.x < 0 || p.x >= edgeResolution-1 ||
        p.y < 0 || p.y >= edgeResolution-1 ||
        p.z < 0 || p.z >= edgeResolution-1)
         return qnan;
 
+    int xdim = edgeResolution*edgeResolution, ydim = edgeResolution;
+
     int xi, yi, zi;
 
     volumeType v = 0.f;
-    if(interpolate)
-    {
-        xi = cvFloor(p.x), yi = cvFloor(p.y), zi = cvFloor(p.z);
-        float tx = p.x - xi, ty = p.y - yi, tz = p.z - zi;
+    xi = cvRound(p.x), yi = cvRound(p.y), zi = cvRound(p.z);
+    v = volume(xi*xdim + yi*ydim + zi).v;
 
-        v += fetchi(Point3i(xi+0, yi+0, zi+0))*(1.f-tx)*(1.f-ty)*(1.f-tz);
-        v += fetchi(Point3i(xi+0, yi+0, zi+1))*(1.f-tx)*(1.f-ty)*(    tz);
-        v += fetchi(Point3i(xi+0, yi+1, zi+0))*(1.f-tx)*(    ty)*(1.f-tz);
-        v += fetchi(Point3i(xi+0, yi+1, zi+1))*(1.f-tx)*(    ty)*(    tz);
-        v += fetchi(Point3i(xi+1, yi+0, zi+0))*(    tx)*(1.f-ty)*(1.f-tz);
-        v += fetchi(Point3i(xi+1, yi+0, zi+1))*(    tx)*(1.f-ty)*(    tz);
-        v += fetchi(Point3i(xi+1, yi+1, zi+0))*(    tx)*(    ty)*(1.f-tz);
-        v += fetchi(Point3i(xi+1, yi+1, zi+1))*(    tx)*(    ty)*(    tz);
-    }
-    else
-    {
-        xi = cvRound(p.x), yi = cvRound(p.y), zi = cvRound(p.z);
-        v = fetchi(Point3i(xi, yi, zi));
-    }
+    return v;
+}
+
+inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
+{
+    if(p.x < 0 || p.x >= edgeResolution-1 ||
+       p.y < 0 || p.y >= edgeResolution-1 ||
+       p.z < 0 || p.z >= edgeResolution-1)
+        return qnan;
+
+    int xdim = edgeResolution*edgeResolution, ydim = edgeResolution;
+
+    int xi, yi, zi;
+
+    volumeType v = 0.f;
+
+    xi = cvFloor(p.x), yi = cvFloor(p.y), zi = cvFloor(p.z);
+    float tx = p.x - xi, ty = p.y - yi, tz = p.z - zi;
+    float tx1 = 1.f - tx, ty1 = 1.f - ty, tz1 = 1.f - tz;
+
+    const Voxel* vol00 = &volume.at<Voxel>((xi+0)*xdim + (yi+0)*ydim + zi);
+    const Voxel* vol01 = &volume.at<Voxel>((xi+0)*xdim + (yi+1)*ydim + zi);
+    const Voxel* vol10 = &volume.at<Voxel>((xi+1)*xdim + (yi+0)*ydim + zi);
+    const Voxel* vol11 = &volume.at<Voxel>((xi+1)*xdim + (yi+1)*ydim + zi);
+
+    v += vol00[0].v*tx1*ty1*tz1;
+    v += vol00[1].v*tx1*ty1*tz ;
+    v += vol01[0].v*tx1*ty *tz1;
+    v += vol01[1].v*tx1*ty *tz ;
+    v += vol10[0].v*tx *ty1*tz1;
+    v += vol10[1].v*tx *ty1*tz ;
+    v += vol11[0].v*tx *ty *tz1;
+    v += vol11[1].v*tx *ty *tz ;
 
     return v;
 }
@@ -300,18 +317,18 @@ inline volumeType TSDFVolumeCPU::fetchVoxel(Point3f p, bool interpolate) const
 inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 {
     Point3f n;
-    volumeType fx1 = fetchVoxel(Point3f(p.x + gradientDeltaFactor, p.y, p.z), true);
-    volumeType fx0 = fetchVoxel(Point3f(p.x - gradientDeltaFactor, p.y, p.z), true);
+    volumeType fx1 = interpolateVoxel(Point3f(p.x + gradientDeltaFactor, p.y, p.z));
+    volumeType fx0 = interpolateVoxel(Point3f(p.x - gradientDeltaFactor, p.y, p.z));
     // no need to divide, will be normalized after
     // n.x = (fx1-fx0)/gradientDeltaFactor;
     n.x = fx1 - fx0;
 
-    volumeType fy1 = fetchVoxel(Point3f(p.x, p.y + gradientDeltaFactor, p.z), true);
-    volumeType fy0 = fetchVoxel(Point3f(p.x, p.y - gradientDeltaFactor, p.z), true);
+    volumeType fy1 = interpolateVoxel(Point3f(p.x, p.y + gradientDeltaFactor, p.z));
+    volumeType fy0 = interpolateVoxel(Point3f(p.x, p.y - gradientDeltaFactor, p.z));
     n.y = fy1 - fy0;
 
-    volumeType fz1 = fetchVoxel(Point3f(p.x, p.y, p.z + gradientDeltaFactor), true);
-    volumeType fz0 = fetchVoxel(Point3f(p.x, p.y, p.z - gradientDeltaFactor), true);
+    volumeType fz1 = interpolateVoxel(Point3f(p.x, p.y, p.z + gradientDeltaFactor));
+    volumeType fz0 = interpolateVoxel(Point3f(p.x, p.y, p.z - gradientDeltaFactor));
     n.z = fz1 - fz0;
 
     return normalize(Vec3f(n));
@@ -377,7 +394,7 @@ struct RaycastInvoker : ParallelLoopBody
 
                     Point3f rayStep = dir * tstep;
                     Point3f next = (orig + dir * tmin);
-                    volumeType fnext = volume.fetchVoxel(next, true);
+                    volumeType fnext = volume.interpolateVoxel(next);
 
                     //raymarch
                     for(float t = tmin; t < tmax; t += tstep)
@@ -386,9 +403,9 @@ struct RaycastInvoker : ParallelLoopBody
                         Point3f tp = next;
                         next += rayStep;
                         //trying to optimize
-                        fnext = volume.fetchVoxel(next, false);
+                        fnext = volume.fetchVoxel(next);
                         if(fnext != f)
-                            fnext = volume.fetchVoxel(next, true);
+                            fnext = volume.interpolateVoxel(next);
 
                         // when ray comes from inside of a surface
                         if(f < 0.f && fnext > 0.f)
@@ -398,8 +415,8 @@ struct RaycastInvoker : ParallelLoopBody
                         // linear interpolate t between two f values
                         if(f > 0.f && fnext < 0.f)
                         {
-                            volumeType ft   = volume.fetchVoxel(tp, true);
-                            volumeType ftdt = volume.fetchVoxel(next, true);
+                            volumeType ft   = volume.interpolateVoxel(tp);
+                            volumeType ftdt = volume.interpolateVoxel(next);
                             float ts = t - tstep*ft/(ftdt - ft);
 
                             // avoid division by zero
