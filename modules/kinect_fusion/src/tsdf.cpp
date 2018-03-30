@@ -89,7 +89,7 @@ TSDFVolumeCPU::TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _t
     pose = _pose;
     truncDist = std::max (_truncDist, 2.1f * voxelSize);
     raycastStepFactor = _raycastStepFactor;
-    gradientDeltaFactor = _gradientDeltaFactor*voxelSize;
+    gradientDeltaFactor = _gradientDeltaFactor;
     maxWeight = _maxWeight;
     reset();
 }
@@ -266,8 +266,6 @@ inline volumeType TSDFVolumeCPU::fetchi(Point3i p) const
 
 inline volumeType TSDFVolumeCPU::fetchVoxel(Point3f p, bool interpolate) const
 {
-    p *= voxelSizeInv;
-
     if(p.x < 0 || p.x >= edgeResolution-1 ||
        p.y < 0 || p.y >= edgeResolution-1 ||
        p.z < 0 || p.z >= edgeResolution-1)
@@ -372,8 +370,13 @@ struct RaycastInvoker : ParallelLoopBody
                 if(tmin < tmax)
                 {
                     tmax -= tstep;
+
+                    // interpolation optimized a little
+                    orig *= volume.voxelSizeInv;
+                    dir *= volume.voxelSizeInv;
+
                     Point3f rayStep = dir * tstep;
-                    Point3f next = orig + dir * tmin;
+                    Point3f next = (orig + dir * tmin);
                     volumeType fnext = volume.fetchVoxel(next, true);
 
                     //raymarch
@@ -402,14 +405,15 @@ struct RaycastInvoker : ParallelLoopBody
                             // avoid division by zero
                             if(!cvIsNaN(ts) && !cvIsInf(ts))
                             {
-                                Point3f pv = orig + dir*ts;
+                                Point3f pv = (orig + dir*ts);
                                 Point3f nv = volume.getNormalVoxel(pv);
 
                                 if(!isNaN(nv))
                                 {
                                     //convert pv and nv to camera space
                                     normal = vol2cam.rotation() * nv;
-                                    point = vol2cam * pv;
+                                    // interpolation optimized a little
+                                    point = vol2cam * (pv * volume.voxelSize);
                                 }
                             }
                             break;
@@ -563,19 +567,22 @@ void TSDFVolumeCPU::fetchPoints(OutputArray _points) const
 struct PushNormals
 {
     PushNormals(const TSDFVolumeCPU& _vol, Mat_<Point3f>& _nrm) :
-        vol(_vol), normals(_nrm) { }
+        vol(_vol), normals(_nrm), invPose(vol.pose.inv())
+    { }
     void operator ()(const Point3f &p, const int * position) const
     {
         //TODO: avoid vol.pose.inv() using
         Point3f n = nan3;
         if(!isNaN(p))
         {
-            n = vol.pose.rotation() * vol.getNormalVoxel(vol.pose.inv() * p);
+            n = vol.pose.rotation() * vol.getNormalVoxel(invPose * p * vol.voxelSizeInv);
         }
         normals(position[0], position[1]) = n;
     }
     const TSDFVolumeCPU& vol;
     Mat_<Point3f>& normals;
+
+    Affine3f invPose;
 };
 
 
@@ -588,7 +595,6 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
         Points points = _points.getMat();
         CV_Assert(points.type() == CV_32FC3);
 
-        //TODO: try to use pre-allocated memory if possible
         _normals.createSameSize(_points, _points.type());
         Mat_<Point3f> normals = _normals.getMat();
 
