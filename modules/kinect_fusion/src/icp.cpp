@@ -12,7 +12,7 @@ ICP::ICP(const Intr _intrinsics, const std::vector<int>& _iterations, float _ang
     intrinsics(_intrinsics)
 { }
 
-///////// GPU implementation /////////
+///////// CPU implementation /////////
 
 class ICPCPU : public ICP
 {
@@ -81,11 +81,15 @@ static inline bool fastCheck(const Point3f& p)
     return !cvIsNaN(p.x);
 }
 
-//TODO: optimize it to use only 27 elems
 typedef Matx<float, 6, 7> ABtype;
 
 struct GetAbInvoker : ParallelLoopBody
 {
+    enum
+    {
+        UTSIZE = 27
+    };
+
     GetAbInvoker(ABtype& _globalAb, Mutex& _mtx,
                  const Points& _oldPts, const Normals& _oldNrm, const Points& _newPts, const Normals& _newNrm,
                  Affine3f _pose, Intr::Projector _proj, float _sqDistanceThresh, float _minCos) :
@@ -97,7 +101,9 @@ struct GetAbInvoker : ParallelLoopBody
 
     virtual void operator ()(const Range& range) const
     {
-        ABtype sumAB = ABtype::zeros();
+        float upperTriangle[UTSIZE];
+        for(int i = 0; i < UTSIZE; i++)
+            upperTriangle[i] = 0;
 
         for(int y = range.start; y < range.end; y++)
         {
@@ -181,17 +187,28 @@ struct GetAbInvoker : ParallelLoopBody
 
                 // build point-wise upper-triangle matrix [ab^T * ab] w/o last row
                 // which is [A^T*A | A^T*b]
-                //TODO: optimize it to use only 27 elems
-                ABtype aab = ABtype::zeros();
+                float ut[UTSIZE];
+                int pos = 0;
                 for(int i = 0; i < 6; i++)
                 {
                     for(int j = i; j < 7; j++)
                     {
-                        aab(i, j) = ab[i]*ab[j];
+                        ut[pos++] = ab[i]*ab[j];
                     }
                 }
-                //TODO: optimize it to use only 27 elems
-                sumAB += aab;
+                // gather sum
+                for(int i = 0; i < UTSIZE; i++)
+                    upperTriangle[i] += ut[i];
+            }
+        }
+
+        ABtype sumAB = ABtype::zeros();
+        int pos = 0;
+        for(int i = 0; i < 6; i++)
+        {
+            for(int j = i; j < 7; j++)
+            {
+                sumAB(i, j) = upperTriangle[pos++];
             }
         }
 
@@ -220,7 +237,6 @@ void ICPCPU::getAb(const Points& oldPts, const Normals& oldNrm, const Points& ne
     CV_Assert(oldPts.size() == oldNrm.size());
     CV_Assert(newPts.size() == newNrm.size());
 
-    //TODO: optimize it to use only 27 elems
     ABtype sumAB = ABtype::zeros();
 
     Mutex mutex;
