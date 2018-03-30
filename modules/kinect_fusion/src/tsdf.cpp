@@ -254,11 +254,9 @@ void TSDFVolumeCPU::integrate(cv::Ptr<Frame> _depth, float depthFactor, cv::Affi
     Depth depth;
     _depth->getDepth(depth);
 
-    //TODO: parallel_for is slow, find out how to make parallelization overhead smaller
     IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor);
     Range range(0, edgeResolution);
-    //parallel_for_(range, ii);
-    ii(range);
+    parallel_for_(range, ii);
 }
 
 
