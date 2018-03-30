@@ -168,7 +168,8 @@ struct GetAbInvoker : ParallelLoopBody
                     continue;
 
                 //filter by distance
-                if((newP - oldP).dot(newP - oldP) > sqDistanceThresh)
+                Point3f diff = newP - oldP;
+                if(diff.dot(diff) > sqDistanceThresh)
                 {
                     continue;
                 }
@@ -183,22 +184,19 @@ struct GetAbInvoker : ParallelLoopBody
 
                 //try to optimize
                 Point3f VxN = newP.cross(oldN);
-                float ab[7] = {VxN.x, VxN.y, VxN.z, oldN.x, oldN.y, oldN.z, oldN.dot(oldP - newP)};
+                float ab[7] = {VxN.x, VxN.y, VxN.z, oldN.x, oldN.y, oldN.z, oldN.dot(-diff)};
 
                 // build point-wise upper-triangle matrix [ab^T * ab] w/o last row
                 // which is [A^T*A | A^T*b]
-                float ut[UTSIZE];
+                // and gather sum
                 int pos = 0;
                 for(int i = 0; i < 6; i++)
                 {
                     for(int j = i; j < 7; j++)
                     {
-                        ut[pos++] = ab[i]*ab[j];
+                        upperTriangle[pos++] += ab[i]*ab[j];
                     }
                 }
-                // gather sum
-                for(int i = 0; i < UTSIZE; i++)
-                    upperTriangle[i] += ut[i];
             }
         }
 
