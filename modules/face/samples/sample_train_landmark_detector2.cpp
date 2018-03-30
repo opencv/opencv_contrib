@@ -1,5 +1,5 @@
 /*----------------------------------------------
- * the user should provides the list of training images_train
+ * the user should provide the list of training images_train,
  * accompanied by their corresponding landmarks location in separated files.
  * example of contents for images.txt:
  * ../trainset/image_0001.png

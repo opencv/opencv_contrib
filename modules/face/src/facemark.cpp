@@ -10,7 +10,7 @@ Mentor: Delia Passalacqua
 */
 
 #include "precomp.hpp"
-#include "opencv2/face.hpp"
+#include "opencv2/face/facemark_train.hpp"
 
 /*dataset parser*/
 #include <fstream>

@@ -74,7 +74,7 @@ int main(int argc, char** argv ){
     params.model_filename = model_path;
     params.cascade_face = cascade_path;
 
-    Ptr<Facemark> facemark = FacemarkLBF::create(params);
+    Ptr<FacemarkLBF> facemark = FacemarkLBF::create(params);
     facemark->setFaceDetector((FN_FaceDetector)myDetector, &face_cascade);
     facemark->loadModel(params.model_filename.c_str());
 

@@ -149,7 +149,7 @@ int main(int argc, char** argv )
                 printf(" - face with eyes found %i ", (int)conf.size());
                 std::vector<std::vector<Point2f> > landmarks;
                 double newtime = (double)getTickCount();
-                facemark->fit(image, faces_eyes, landmarks, (void*)&conf);
+                facemark->fitConfig(image, faces_eyes, landmarks, conf);
                 double fittime = ((getTickCount() - newtime)/getTickFrequency());
                 for(unsigned j=0;j<landmarks.size();j++){
                     drawFacemarks(image, landmarks[j],Scalar(0,255,0));

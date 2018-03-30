@@ -37,7 +37,7 @@ Mentor: Delia Passalacqua
 #ifndef __OPENCV_FACEMARK_LBF_HPP__
 #define __OPENCV_FACEMARK_LBF_HPP__
 
-#include "opencv2/face/facemark.hpp"
+#include "opencv2/face/facemark_train.hpp"
 
 namespace cv {
 namespace face {
@@ -45,7 +45,7 @@ namespace face {
 //! @addtogroup face
 //! @{
 
-class CV_EXPORTS_W FacemarkLBF : public Facemark
+class CV_EXPORTS_W FacemarkLBF : public FacemarkTrain
 {
 public:
     struct CV_EXPORTS Params
@@ -99,8 +99,8 @@ public:
         ~BBox();
         BBox(double x, double y, double w, double h);
 
-        cv::Mat project(const cv::Mat &shape) const;
-        cv::Mat reproject(const cv::Mat &shape) const;
+        Mat project(const Mat &shape) const;
+        Mat reproject(const Mat &shape) const;
 
         double x, y;
         double x_center, y_center;
