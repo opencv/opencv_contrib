@@ -115,7 +115,7 @@ public:
 
 protected:
 
-    bool fit( InputArray image, InputArray faces, OutputArrayOfArrays landmarks );//!< from many ROIs
+    bool fit( InputArray image, InputArray faces, OutputArrayOfArrays landmarks ) CV_OVERRIDE;//!< from many ROIs
     bool fitImpl( const Mat image, std::vector<Point2f> & landmarks );//!< from a face
 
     bool addTrainingSample(InputArray image, InputArray landmarks) CV_OVERRIDE;
