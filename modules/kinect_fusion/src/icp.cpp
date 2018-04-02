@@ -107,13 +107,13 @@ struct GetAbInvoker : ParallelLoopBody
 
         for(int y = range.start; y < range.end; y++)
         {
-            const Point3f* newPtsRow = newPts[y];
-            const Point3f* newNrmRow = newNrm[y];
+            const ptype* newPtsRow = newPts[y];
+            const ptype* newNrmRow = newNrm[y];
 
             for(int x = 0; x < newPts.cols; x++)
             {
-                Point3f newP = newPtsRow[x];
-                Point3f newN = newNrmRow[x];
+                Point3f newP = fromPtype(newPtsRow[x]);
+                Point3f newN = fromPtype(newNrmRow[x]);
 
                 Point3f oldP(nan3), oldN(nan3);
 
@@ -136,26 +136,26 @@ struct GetAbInvoker : ParallelLoopBody
                 float tx1 = 1.f-tx, ty1 = 1.f-ty;
                 float t00 = tx1*ty1, t01 = tx*ty1, t10 = tx1*ty, t11 = tx*ty;
 
-                const Point3f* prow0 = oldPts[yi+0];
-                const Point3f* prow1 = oldPts[yi+1];
+                const ptype* prow0 = oldPts[yi+0];
+                const ptype* prow1 = oldPts[yi+1];
 
-                Point3f p00 = prow0[xi+0];
-                Point3f p01 = prow0[xi+1];
-                Point3f p10 = prow1[xi+0];
-                Point3f p11 = prow1[xi+1];
+                Point3f p00 = fromPtype(prow0[xi+0]);
+                Point3f p01 = fromPtype(prow0[xi+1]);
+                Point3f p10 = fromPtype(prow1[xi+0]);
+                Point3f p11 = fromPtype(prow1[xi+1]);
 
                 //do not fix missing data
                 if(!(fastCheck(p00) && fastCheck(p01) &&
                      fastCheck(p10) && fastCheck(p11)))
                     continue;
 
-                const Point3f* nrow0 = oldNrm[yi+0];
-                const Point3f* nrow1 = oldNrm[yi+1];
+                const ptype* nrow0 = oldNrm[yi+0];
+                const ptype* nrow1 = oldNrm[yi+1];
 
-                Point3f n00 = nrow0[xi+0];
-                Point3f n01 = nrow0[xi+1];
-                Point3f n10 = nrow1[xi+0];
-                Point3f n11 = nrow1[xi+1];
+                Point3f n00 = fromPtype(nrow0[xi+0]);
+                Point3f n01 = fromPtype(nrow0[xi+1]);
+                Point3f n10 = fromPtype(nrow1[xi+0]);
+                Point3f n11 = fromPtype(nrow1[xi+1]);
 
                 if(!(fastCheck(n00) && fastCheck(n01) &&
                      fastCheck(n10) && fastCheck(n11)))

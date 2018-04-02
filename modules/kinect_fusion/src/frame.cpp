@@ -69,8 +69,8 @@ cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const InputArray _points, const In
 
     cv::Ptr<FrameCPU> frame = makePtr<FrameCPU>();
 
-    CV_Assert(_points.type() == CV_32FC3);
-    CV_Assert(_normals.type() == CV_32FC3);
+    CV_Assert( _points.type() == DataType<Points::value_type>::type);
+    CV_Assert(_normals.type() == DataType<Points::value_type>::type);
 
     std::vector<Points>  points  = std::vector<Points>(levels);
     std::vector<Normals> normals = std::vector<Normals>(levels);
@@ -133,13 +133,13 @@ void FrameCPU::render(OutputArray image, int level, Affine3f lightPose) const
     for(int y = 0; y < sz.height; y++)
     {
         Vec3b* imgRow = img[y];
-        const Point3f* ptsRow = points[level][y];
-        const Point3f* nrmRow = normals[level][y];
+        const ptype* ptsRow = points[level][y];
+        const ptype* nrmRow = normals[level][y];
 
         for(int x = 0; x < sz.width; x++)
         {
-            Point3f p = ptsRow[x];
-            Point3f n = nrmRow[x];
+            Point3f p = fromPtype(ptsRow[x]);
+            Point3f n = fromPtype(nrmRow[x]);
 
             Vec3b color;
 
@@ -184,35 +184,35 @@ void pyrDownPointsNormals(const Points p, const Normals n, Points &pdown, Normal
 {
     for(int y = 0; y < pdown.rows; y++)
     {
-        Point3f* ptsRow = pdown[y];
-        Point3f* nrmRow = ndown[y];
-        const Point3f* pUpRow0 = p[2*y];
-        const Point3f* pUpRow1 = p[2*y+1];
-        const Point3f* nUpRow0 = n[2*y];
-        const Point3f* nUpRow1 = n[2*y+1];
+        ptype* ptsRow = pdown[y];
+        ptype* nrmRow = ndown[y];
+        const ptype* pUpRow0 = p[2*y];
+        const ptype* pUpRow1 = p[2*y+1];
+        const ptype* nUpRow0 = n[2*y];
+        const ptype* nUpRow1 = n[2*y+1];
         for(int x = 0; x < pdown.cols; x++)
         {
             Point3f point = nan3, normal = nan3;
 
-            Point3f d00 = pUpRow0[2*x];
-            Point3f d01 = pUpRow0[2*x+1];
-            Point3f d10 = pUpRow1[2*x];
-            Point3f d11 = pUpRow1[2*x+1];
+            Point3f d00 = fromPtype(pUpRow0[2*x]);
+            Point3f d01 = fromPtype(pUpRow0[2*x+1]);
+            Point3f d10 = fromPtype(pUpRow1[2*x]);
+            Point3f d11 = fromPtype(pUpRow1[2*x+1]);
 
             if(!(isNaN(d00) || isNaN(d01) || isNaN(d10) || isNaN(d11)))
             {
                 point = (d00 + d01 + d10 + d11)*0.25f;
 
-                Point3f n00 = nUpRow0[2*x];
-                Point3f n01 = nUpRow0[2*x+1];
-                Point3f n10 = nUpRow1[2*x];
-                Point3f n11 = nUpRow1[2*x+1];
+                Point3f n00 = fromPtype(nUpRow0[2*x]);
+                Point3f n01 = fromPtype(nUpRow0[2*x+1]);
+                Point3f n10 = fromPtype(nUpRow1[2*x]);
+                Point3f n11 = fromPtype(nUpRow1[2*x+1]);
 
                 normal = (n00 + n01 + n10 + n11)*0.25f;
             }
 
-            ptsRow[x] = point;
-            nrmRow[x] = normal;
+            ptsRow[x] = toPtype(point);
+            nrmRow[x] = toPtype(normal);
         }
     }
 }
@@ -262,7 +262,7 @@ Depth pyrDownBilateral(const Depth depth, float sigma)
 void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
                           Points points, Normals normals)
 {
-    CV_Assert(!points.empty() && !normals.empty());;
+    CV_Assert(!points.empty() && !normals.empty());
     CV_Assert(depth.size() == points.size());
     CV_Assert(depth.size() == normals.size());
 
@@ -277,8 +277,8 @@ void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
     {
         const depthType* depthRow0 = depth[y];
         const depthType* depthRow1 = (y < depth.rows - 1) ? depth[y + 1] : 0;
-        Point3f    *ptsRow = points[y];
-        Point3f   *normRow = normals[y];
+        ptype    *ptsRow = points[y];
+        ptype   *normRow = normals[y];
 
         for(int x = 0; x < depth.cols; x++)
         {
@@ -309,8 +309,8 @@ void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
                 }
             }
 
-            ptsRow[x] = p;
-            normRow[x] = n;
+            ptsRow[x] = toPtype(p);
+            normRow[x] = toPtype(n);
         }
     }
 }

@@ -357,8 +357,8 @@ struct RaycastInvoker : ParallelLoopBody
     {
         for(int y = range.start; y < range.end; y++)
         {
-            Point3f* ptsRow = points[y];
-            Point3f* nrmRow = normals[y];
+            ptype* ptsRow = points[y];
+            ptype* nrmRow = normals[y];
 
             for(int x = 0; x < points.cols; x++)
             {
@@ -436,8 +436,8 @@ struct RaycastInvoker : ParallelLoopBody
                     }
                 }
 
-                ptsRow[x] = point;
-                nrmRow[x] = normal;
+                ptsRow[x] = toPtype(point);
+                nrmRow[x] = toPtype(normal);
             }
         }
     }
@@ -476,7 +476,7 @@ cv::Ptr<Frame> TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, 
 
 struct PushPoints
 {
-    PushPoints(const TSDFVolumeCPU& _vol, Mat_<Point3f>& _pts, Mutex& _mtx) :
+    PushPoints(const TSDFVolumeCPU& _vol, Mat_<ptype>& _pts, Mutex& _mtx) :
         vol(_vol), points(_pts), mtx(_mtx) { }
 
     inline void coord(int x, int y, int z, Point3f V, float v0, int axis) const
@@ -526,7 +526,7 @@ struct PushPoints
                               shift.z ? inter : V.z);
                     {
                         AutoLock al(mtx);
-                        points.push_back(vol.pose * p);
+                        points.push_back(toPtype(vol.pose * p));
                     }
                 }
             }
@@ -558,7 +558,7 @@ struct PushPoints
     }
 
     const TSDFVolumeCPU& vol;
-    Mat_<Point3f>& points;
+    Mat_<ptype>& points;
     Mutex& mtx;
 };
 
@@ -568,7 +568,7 @@ void TSDFVolumeCPU::fetchPoints(OutputArray _points) const
 
     if(_points.needed())
     {
-        Mat_<Point3f> points;
+        Mat_<ptype> points;
 
         Mutex mutex;
         volume.forEach(PushPoints(*this, points, mutex));
@@ -581,21 +581,21 @@ void TSDFVolumeCPU::fetchPoints(OutputArray _points) const
 
 struct PushNormals
 {
-    PushNormals(const TSDFVolumeCPU& _vol, Mat_<Point3f>& _nrm) :
+    PushNormals(const TSDFVolumeCPU& _vol, Mat_<ptype>& _nrm) :
         vol(_vol), normals(_nrm), invPose(vol.pose.inv())
     { }
-    void operator ()(const Point3f &p, const int * position) const
+    void operator ()(const ptype &pp, const int * position) const
     {
-        //TODO: avoid vol.pose.inv() using
+        Point3f p = fromPtype(pp);
         Point3f n = nan3;
         if(!isNaN(p))
         {
             n = vol.pose.rotation() * vol.getNormalVoxel(invPose * p * vol.voxelSizeInv);
         }
-        normals(position[0], position[1]) = n;
+        normals(position[0], position[1]) = toPtype(n);
     }
     const TSDFVolumeCPU& vol;
-    Mat_<Point3f>& normals;
+    Mat_<ptype>& normals;
 
     Affine3f invPose;
 };
@@ -608,10 +608,10 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
     if(_normals.needed())
     {
         Points points = _points.getMat();
-        CV_Assert(points.type() == CV_32FC3);
+        CV_Assert(points.type() == DataType<ptype>::type);
 
         _normals.createSameSize(_points, _points.type());
-        Mat_<Point3f> normals = _normals.getMat();
+        Mat_<ptype> normals = _normals.getMat();
 
         points.forEach(PushNormals(*this, normals));
     }

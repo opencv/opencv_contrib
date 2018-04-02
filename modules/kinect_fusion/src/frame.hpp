@@ -22,9 +22,50 @@ public:
          };
 };
 
+template<> class DataType<cv::Vec3f>
+{
+public:
+    typedef float       value_type;
+    typedef value_type  work_type;
+    typedef value_type  channel_type;
+    typedef value_type  vec_type;
+    enum { generic_type = 0,
+           depth        = CV_32F,
+           channels     = 3,
+           fmt          = (int)'f',
+           type         = CV_MAKETYPE(depth, channels)
+         };
+};
+
+template<> class DataType<cv::Vec4f>
+{
+public:
+    typedef float       value_type;
+    typedef value_type  work_type;
+    typedef value_type  channel_type;
+    typedef value_type  vec_type;
+    enum { generic_type = 0,
+           depth        = CV_32F,
+           channels     = 4,
+           fmt          = (int)'f',
+           type         = CV_MAKETYPE(depth, channels)
+         };
+};
+
 }
 
-typedef cv::Mat_< cv::Point3f > Points;
+typedef cv::Vec4f ptype;
+inline cv::Vec3f fromPtype(const ptype& x)
+{
+    return cv::Vec3f(x[0], x[1], x[2]);
+}
+
+inline ptype toPtype(const cv::Vec3f& x)
+{
+    return ptype(x[0], x[1], x[2], 0);
+}
+
+typedef cv::Mat_< ptype > Points;
 typedef Points Normals;
 
 typedef cv::Mat_< depthType > Depth;
