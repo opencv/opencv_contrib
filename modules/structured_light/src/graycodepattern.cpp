@@ -72,7 +72,7 @@ class CV_EXPORTS_W GrayCodePattern_Impl CV_FINAL : public GrayCodePattern
   void getImagesForShadowMasks( InputOutputArray blackImage, InputOutputArray whiteImage ) const CV_OVERRIDE;
 
   // For a (x,y) pixel of the camera returns the corresponding projector pixel
-  bool getProjPixel(InputArrayOfArrays patternImages, int x, int y, Point &projPix) const CV_OVERRIDE;
+  bool getProjPixel(InputArrayOfArrays patternImages, int x, int y, CV_OUT Point &projPix) const CV_OVERRIDE;
 
  private:
   // Parameters
