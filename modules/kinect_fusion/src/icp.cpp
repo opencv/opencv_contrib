@@ -77,10 +77,23 @@ bool ICPCPU::estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> _oldFrame
     return true;
 }
 
+// 1 any coord to check is enough since we know the generation
 static inline bool fastCheck(const Point3f& p)
 {
-    // 1 coord to check is enough since we know the generation
     return !cvIsNaN(p.x);
+}
+
+static inline bool fastCheck(const v_float32x4& p0, const v_float32x4& p1, const v_float32x4& p2, const v_float32x4& p3)
+{
+    v_float32x4 a0 = v_combine_low(p0, p1);
+    v_float32x4 a1 = v_combine_low(p2, p3);
+    return !(v_check_any(a0 != a0) || v_check_any(a1 != a1));
+}
+
+static inline bool fastCheck(const v_float32x4& p0, const v_float32x4& p1)
+{
+    v_float32x4 a = v_combine_low(p0, p1);
+    return !v_check_any(a != a);
 }
 
 static inline bool isNaN(const v_float32x4& p)
@@ -154,6 +167,9 @@ struct GetAbInvoker : ParallelLoopBody
         v_float32x4 vfxy(proj.fx, proj.fy, 0, 0), vcxy(proj.cx, proj.cy, 0, 0);
         v_float32x4 vframe(oldPts.cols - 1, oldPts.rows - 1, 1, 1);
 
+        float sqThresh = sqDistanceThresh;
+        float cosThresh = minCos;
+
         for(int y = range.start; y < range.end; y++)
         {
             const CV_DECL_ALIGNED(16) float* newPtsRow = (const float*)newPts[y];
@@ -164,8 +180,7 @@ struct GetAbInvoker : ParallelLoopBody
                 v_float32x4 newP = v_load_aligned(newPtsRow + x*4);
                 v_float32x4 newN = v_load_aligned(newNrmRow + x*4);
 
-                //TODO: take number(s) from each vector to check
-                if(isNaN(newP) || isNaN(newN))
+                if(!fastCheck(newP, newN))
                     continue;
 
                 //transform to old coord system
@@ -192,12 +207,12 @@ struct GetAbInvoker : ParallelLoopBody
                     oldCoords.x = oldCoordsv.get0();
                     oldCoords.y = v_reinterpret_as_f32(v_extract<1>(v_reinterpret_as_u32(oldCoordsv), v_setzero_u32())).get0();
 
-                    //TODO: avoid int->float and back conversions
                     v_int32x4 ixy = v_floor(oldCoordsv);
                     v_float32x4 txy = oldCoordsv - v_cvt_f32(ixy);
                     int xi = ixy.get0();
                     int yi = v_rotate_right<1>(ixy).get0();
-                    txy = v_combine_low(txy, txy); //tx, ty, tx, ty
+                    // tx, ty, tx, ty
+                    txy = v_combine_low(txy, txy);
                     v_float32x4 txy1 = v_setall_f32(1.f) - txy;
                     v_float32x4 mask = v_reinterpret_as_f32(v_uint32x4(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0));
                     // tx1, ty1, tx1, ty
@@ -216,8 +231,7 @@ struct GetAbInvoker : ParallelLoopBody
                     v_float32x4 p11 = v_load_aligned(prow1 + (xi+1)*4);
 
                     //do not fix missing data
-                    //TODO: take number(s) from each vector to check
-                    if(isNaN(p00) || isNaN(p01) || isNaN(p10) || isNaN(p11))
+                    if(!fastCheck(p00, p01, p10, p11))
                         continue;
 
                     const float* nrow0 = (const float*)oldNrm[yi+0];
@@ -228,25 +242,23 @@ struct GetAbInvoker : ParallelLoopBody
                     v_float32x4 n10 = v_load_aligned(nrow1 + (xi+0)*4);
                     v_float32x4 n11 = v_load_aligned(nrow1 + (xi+1)*4);
 
-                    //TODO: take number(s) from each vector to check
-                    if(isNaN(n00) || isNaN(n01) || isNaN(n10) || isNaN(n11))
+                    if(!fastCheck(n00, n01, n10, n11))
                         continue;
 
                     oldP = v_matmul(tv, p00, p01, p10, p11);
                     oldN = v_matmul(tv, n00, n01, n10, n11);
                 }
 
-                //TODO: take number(s) from each vector to check
-                if(isNaN(oldP) || isNaN(oldN))
+                if(!fastCheck(oldP, oldN))
                     continue;
 
                 //filter by distance
-                v_float32x4 diffv = newP - oldP;
-                if(v_reduce_sum(diffv*diffv) > sqDistanceThresh)
+                v_float32x4 diff = newP - oldP;
+                if(v_reduce_sum(diff*diff) > sqThresh)
                     continue;
 
                 //filter by angle
-                if(abs(v_reduce_sum(newN*oldN)) < minCos)
+                if(abs(v_reduce_sum(newN*oldN)) < cosThresh)
                     continue;
 
                 // build point-wise vector ab = [ A | b ]
@@ -257,13 +269,12 @@ struct GetAbInvoker : ParallelLoopBody
                 VxN.y = v_reinterpret_as_f32(v_extract<1>(v_reinterpret_as_u32(VxNv), v_setzero_u32())).get0();
                 VxN.z = v_reinterpret_as_f32(v_extract<2>(v_reinterpret_as_u32(VxNv), v_setzero_u32())).get0();
 
-                float dotp = -v_reduce_sum(oldN*diffv);
+                float dotp = -v_reduce_sum(oldN*diff);
 
                 // build point-wise upper-triangle matrix [ab^T * ab] w/o last row
                 // which is [A^T*A | A^T*b]
                 // and gather sum
 
-                //TODO: fix it, now it's too slow
                 v_float32x4 vd = VxNv | v_float32x4(0, 0, 0, dotp);
                 v_float32x4 n = oldN;
                 v_float32x4 nyzx;
