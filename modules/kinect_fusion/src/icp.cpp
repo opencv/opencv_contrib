@@ -188,27 +188,21 @@ struct GetAbInvoker : ParallelLoopBody
                 newN = v_matmuladd(newN, poseRot0, poseRot1, poseRot2, v_setzero_f32());
 
                 //find correspondence by projecting the point
-                v_float32x4 oldCoordsv;
-                {
-                    float z = 1.f/(v_reinterpret_as_f32(v_extract<2>(v_reinterpret_as_u32(newP), v_setzero_u32())).get0());
-                    // x, y, 0, 0
-                    oldCoordsv = vfxy*newP*v_setall_f32(z) + vcxy;
-                }
+                v_float32x4 oldCoords;
+                float pz = 1.f/(v_reinterpret_as_f32(v_rotate_right<2>(v_reinterpret_as_u32(newP))).get0());
+                // x, y, 0, 0
+                oldCoords = v_muladd(newP*v_setall_f32(pz), vfxy, vcxy);
 
-                if(!(v_check_all(oldCoordsv >= v_setzero_f32()) &&
-                     v_check_all(oldCoordsv < vframe)))
+                if(!(v_check_all(oldCoords >= v_setzero_f32()) &&
+                     v_check_all(oldCoords < vframe)))
                     continue;
 
                 // bilinearly interpolate oldPts and oldNrm under oldCoords point
                 v_float32x4 oldP;
                 v_float32x4 oldN;
                 {
-                    Point2f oldCoords;
-                    oldCoords.x = oldCoordsv.get0();
-                    oldCoords.y = v_reinterpret_as_f32(v_extract<1>(v_reinterpret_as_u32(oldCoordsv), v_setzero_u32())).get0();
-
-                    v_int32x4 ixy = v_floor(oldCoordsv);
-                    v_float32x4 txy = oldCoordsv - v_cvt_f32(ixy);
+                    v_int32x4 ixy = v_floor(oldCoords);
+                    v_float32x4 txy = oldCoords - v_cvt_f32(ixy);
                     int xi = ixy.get0();
                     int yi = v_rotate_right<1>(ixy).get0();
                     // tx, ty, tx, ty
