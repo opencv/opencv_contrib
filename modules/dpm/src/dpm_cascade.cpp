@@ -220,36 +220,12 @@ void DPMCascade::computeRootPCAScores(vector< vector< Mat > > &rootScores)
     for (int comp = 0; comp < model.numComponents; comp++)
     {
         rootScores[comp].resize(nlevels);
-#ifdef HAVE_TBB // parallel computing
         ParalComputeRootPCAScores paralTask(pcaPyramid, model.rootPCAFilters[comp],
                 model.pcaDim, rootScores[comp]);
         parallel_for_(Range(interval, nlevels), paralTask);
-#else
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-        for (int level = interval; level < nlevels; level++)
-        {
-            Mat feat = pcaPyramid[level];
-            Mat filter = model.rootPCAFilters[comp];
-
-            // compute size of output
-            int height = feat.rows - filter.rows + 1;
-            int width = (feat.cols - filter.cols) / model.pcaDim + 1;
-
-            if (height < 1 || width < 1)
-                CV_Error(CV_StsBadArg,
-                        "Invalid input, filter size should be smaller than feature size.");
-
-            Mat result = Mat::zeros(Size(width, height), CV_64F);
-            convolutionEngine.convolve(feat, filter, model.pcaDim, result);
-            rootScores[comp][level] = result;
-        }
-#endif
     }
 }
 
-#ifdef HAVE_TBB
 ParalComputeRootPCAScores::ParalComputeRootPCAScores(
         const vector< Mat > &pcaPyrad,
         const Mat &f,
@@ -279,7 +255,6 @@ void ParalComputeRootPCAScores::operator() (const Range &range) const
         scores[level] = result;
     }
 }
-#endif
 
 void DPMCascade::process( vector< vector<double> > &dets)
 {
