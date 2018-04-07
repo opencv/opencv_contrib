@@ -54,12 +54,11 @@ public:
 
     volumeType fetchVoxel(cv::Point3f p) const;
     volumeType interpolateVoxel(cv::Point3f p) const;
-#if CV_SIMD128
-    volumeType interpolateVoxel(const v_float32x4& p) const;
-#endif
-
     Point3f getNormalVoxel(cv::Point3f p) const;
+
 #if CV_SIMD128
+    volumeType fetchVoxel(const v_float32x4& p) const;
+    volumeType interpolateVoxel(const v_float32x4& p) const;
     v_float32x4 getNormalVoxel(const v_float32x4& p) const;
 #endif
 
@@ -289,9 +288,14 @@ void TSDFVolumeCPU::integrate(cv::Ptr<Frame> _depth, float depthFactor, cv::Affi
 // all coordinate checks should be done in inclosing cycle
 inline volumeType TSDFVolumeCPU::fetchVoxel(Point3f _p) const
 {
+    v_float32x4 p(_p.x, _p.y, _p.z, 0.f);
+    return fetchVoxel(p);
+}
+
+inline volumeType TSDFVolumeCPU::fetchVoxel(const v_float32x4& p) const
+{
     const v_int32x4 mulDim = v_load(dimStep);
 
-    v_float32x4 p(_p.x, _p.y, _p.z, 0.f);
     v_int32x4 ip = v_round(p);
     int coord = v_reduce_sum(ip*mulDim);
 
@@ -403,7 +407,7 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
 //gradientDeltaFactor is fixed at 1.0 of voxel size
 inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f _p) const
 {
-    v_float32x4 p(_p.x, _p.y, _p.z, 1.f);
+    v_float32x4 p(_p.x, _p.y, _p.z, 0.f);
     v_float32x4 result = getNormalVoxel(p);
     float CV_DECL_ALIGNED(16) ares[4];
     v_store_aligned(ares, result);
@@ -414,7 +418,7 @@ inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
 {
     const v_int32x4 mulDim = v_load(dimStep);
 
-    if(v_check_any((p < v_setall_f32(1.f)) +
+    if(v_check_any((p < v_float32x4(1.f, 1.f, 1.f, 0.f)) +
                    (p >= v_setall_f32(edgeResolution-2))))
         return nanv;
 
@@ -547,6 +551,140 @@ struct RaycastInvoker : ParallelLoopBody
         reproj(intrinsics.makeReprojector())
     {  }
 
+#if CV_SIMD128
+    virtual void operator() (const Range& range) const
+    {
+        const v_float32x4 vfxy(reproj.fxinv, reproj.fyinv, 0, 0);
+        const v_float32x4 vcxy(reproj.cx, reproj.cy, 0, 0);
+
+        const float (&cm)[16] = cam2vol.matrix.val;
+        const v_float32x4 camRot0(cm[0], cm[4], cm[ 8], 0);
+        const v_float32x4 camRot1(cm[1], cm[5], cm[ 9], 0);
+        const v_float32x4 camRot2(cm[2], cm[6], cm[10], 0);
+        const v_float32x4 camTrans(cm[3], cm[7], cm[11], 0);
+
+        const v_float32x4 boxDown(boxMin.x, boxMin.y, boxMin.z, 0.f);
+        const v_float32x4 boxUp(boxMax.x, boxMax.y, boxMax.z, 0.f);
+
+        const v_float32x4 invVoxelSize = v_setall_f32(volume.voxelSizeInv);
+
+        const float (&vm)[16] = vol2cam.matrix.val;
+        const v_float32x4 volRot0(vm[0], vm[4], vm[ 8], 0);
+        const v_float32x4 volRot1(vm[1], vm[5], vm[ 9], 0);
+        const v_float32x4 volRot2(vm[2], vm[6], vm[10], 0);
+        const v_float32x4 volTrans(vm[3], vm[7], vm[11], 0);
+
+        for(int y = range.start; y < range.end; y++)
+        {
+            ptype* CV_DECL_ALIGNED(16) ptsRow = points[y];
+            ptype* CV_DECL_ALIGNED(16) nrmRow = normals[y];
+
+            for(int x = 0; x < points.cols; x++)
+            {
+                v_float32x4 point = nanv, normal = nanv;
+
+                v_float32x4 orig = camTrans;
+
+                // get direction through pixel in volume space:
+
+                // 1. reproject (x, y) on projecting plane where z = 1.f
+                v_float32x4 planed = (v_float32x4(x, y, 0.f, 0.f) - vcxy)*vfxy;
+                planed = v_combine_low(planed, v_float32x4(1.f, 0.f, 0.f, 0.f));
+
+                // 2. rotate to volume space
+                planed = v_matmuladd(planed, camRot0, camRot1, camRot2, v_setzero_f32());
+
+                // 3. normalize
+                v_float32x4 invNorm = v_invsqrt(v_setall_f32(v_reduce_sum(planed*planed)));
+                v_float32x4 dir = planed*invNorm;
+
+                // compute intersection of ray with all six bbox planes
+                v_float32x4 rayinv = v_setall_f32(1.f)/dir;
+                // div by zero should be eliminated by these products
+                v_float32x4 tbottom = rayinv*(boxDown - orig);
+                v_float32x4 ttop    = rayinv*(boxUp   - orig);
+
+                // re-order intersections to find smallest and largest on each axis
+                v_float32x4 minAx = v_min(ttop, tbottom);
+                v_float32x4 maxAx = v_max(ttop, tbottom);
+
+
+                // near clipping plane
+                const float clip = 0.f;
+                float tmin = max(v_reduce_max(minAx), clip);
+                float tmax =     v_reduce_min(maxAx);
+
+                if(tmin < tmax)
+                {
+                    // precautions against getting coordinates out of bounds
+                    tmin = tmin + tstep;
+                    tmax = tmax - tstep - tstep;
+
+                    // interpolation optimized a little
+                    orig *= invVoxelSize;
+                    dir  *= invVoxelSize;
+
+                    v_float32x4 rayStep = dir * v_setall_f32(tstep);
+                    v_float32x4 next = (orig + dir * v_setall_f32(tmin));
+                    volumeType fnext = volume.interpolateVoxel(next);
+
+                    //raymarch
+                    volumeType f;
+                    float t;
+                    v_float32x4 tp;
+                    bool surfaceReached = false;
+                    for(t = tmin; t < tmax; t += tstep)
+                    {
+                        f = fnext;
+                        tp = next;
+                        next += rayStep;
+                        // trying to optimize
+                        fnext = volume.fetchVoxel(next);
+                        if(fnext != f)
+                            fnext = volume.interpolateVoxel(next);
+
+                        // when ray comes from inside of a surface
+                        if(f < 0.f && fnext > 0.f)
+                            break;
+
+                        // if ray penetrates a surface from outside
+                        // linear interpolate t between two f values
+                        if(f > 0.f && fnext < 0.f)
+                        {
+                            surfaceReached = true;
+                            break;
+                        }
+                    }
+
+                    if(surfaceReached)
+                    {
+                        volumeType ft   = volume.interpolateVoxel(tp);
+                        volumeType ftdt = volume.interpolateVoxel(next);
+                        float ts = t - tstep*ft/(ftdt - ft);
+
+                        // avoid division by zero
+                        if(!cvIsNaN(ts) && !cvIsInf(ts))
+                        {
+                            v_float32x4 pv = (orig + dir*v_setall_f32(ts));
+                            v_float32x4 nv = volume.getNormalVoxel(pv);
+
+                            if(!isNaN(nv))
+                            {
+                                //convert pv and nv to camera space
+                                normal = v_matmuladd(nv, volRot0, volRot1, volRot2, v_setzero_f32());
+                                // interpolation optimized a little
+                                point = v_matmuladd(pv*v_setall_f32(volume.voxelSize), volRot0, volRot1, volRot2, volTrans);
+                            }
+                        }
+                    }
+                }
+
+                v_store_aligned((float*)(&ptsRow[x]), point);
+                v_store_aligned((float*)(&nrmRow[x]), normal);
+            }
+        }
+    }
+#else
     virtual void operator() (const Range& range) const
     {
         const Point3f camTrans = cam2vol.translation();
@@ -650,6 +788,7 @@ struct RaycastInvoker : ParallelLoopBody
             }
         }
     }
+#endif
 
     Points& points;
     Normals& normals;
