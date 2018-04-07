@@ -386,20 +386,66 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
 }
 #endif
 
+#if CV_SIMD128
 //gradientDeltaFactor is fixed at 1.0 of voxel size
+inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f _p) const
+{
+    const v_int32x4 mulDim = v_load(dimStep);
+
+    v_float32x4 p(_p.x, _p.y, _p.z, 1.f);
+    if(v_check_any((p < v_setall_f32(1.f)) +
+                   (p >= v_setall_f32(edgeResolution-2))))
+        return nan3;
+
+    v_int32x4 ip = v_floor(p);
+    v_float32x4 t = p - v_cvt_f32(ip);
+    v_float32x4 t1 = v_setall_f32(1.f) - t;
+
+    float CV_DECL_ALIGNED(16) ttmp[8];
+    v_store_aligned(ttmp + 0, t);
+    v_store_aligned(ttmp + 4, t1);
+    float tx = ttmp[0], ty = ttmp[1], tz = ttmp[2];
+    float tx1 = ttmp[4], ty1 = ttmp[5], tz1 = ttmp[6];
+
+    v_float32x4 tmul = v_float32x4(ty1, ty1, ty, ty)*v_float32x4(tz1, tz, tz1, tz);
+    v_float32x4 tv0 = v_setall_f32(tx1)*tmul;
+    v_float32x4 tv1 = v_setall_f32(tx )*tmul;
+
+    int coordBase = v_reduce_sum(ip*mulDim);
+
+    Vec3f an;
+    for(int c = 0; c < 3; c++)
+    {
+        const int dim = dimStep[c];
+        float& nv = an[c];
+
+        volumeType CV_DECL_ALIGNED(16) avp[8], avn[8];
+        for(int i = 0; i < 8; i++)
+        {
+            avp[i] = volume.at<Voxel>(neighbourCoords[i] + 1*dim + coordBase).v;
+            avn[i] = volume.at<Voxel>(neighbourCoords[i] - 1*dim + coordBase).v;
+        }
+
+        v_float32x4 vp0 = v_load_aligned(avp);
+        v_float32x4 vp1 = v_load_aligned(avp + 4);
+        v_float32x4 vn0 = v_load_aligned(avn);
+        v_float32x4 vn1 = v_load_aligned(avn + 4);
+
+        v_float32x4 v0 = vp0 - vn0;
+        v_float32x4 v1 = vp1 - vn1;
+
+        v_float32x4 mulN0 = tv0*v0;
+        v_float32x4 mulN1 = tv1*v1;
+
+        nv = v_reduce_sum(mulN0 + mulN1);
+    }
+
+    return normalize(an);
+}
+#else
 inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 {
-    const int xdim = edgeResolution*edgeResolution, ydim = edgeResolution;
-    const size_t coords[8] = {
-        xdim*0 + ydim*0 + 1*0,
-        xdim*0 + ydim*0 + 1*1,
-        xdim*0 + ydim*1 + 1*0,
-        xdim*0 + ydim*1 + 1*1,
-        xdim*1 + ydim*0 + 1*0,
-        xdim*1 + ydim*0 + 1*1,
-        xdim*1 + ydim*1 + 1*0,
-        xdim*1 + ydim*1 + 1*1
-    };
+    const int xdim = dimStep[0], ydim = dimStep[1];
 
     if(p.x < 1 || p.x >= edgeResolution -2 ||
        p.y < 1 || p.y >= edgeResolution -2 ||
