@@ -55,6 +55,9 @@ public:
     volumeType fetchVoxel(cv::Point3f p) const;
     volumeType interpolateVoxel(cv::Point3f p) const;
     Point3f getNormalVoxel(cv::Point3f p) const;
+#if CV_SIMD128
+    v_float32x4 getNormalVoxel(const v_float32x4& p) const;
+#endif
 
     // edgeResolution^3 array
     // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
@@ -386,16 +389,25 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
 }
 #endif
 
+
 #if CV_SIMD128
 //gradientDeltaFactor is fixed at 1.0 of voxel size
 inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f _p) const
 {
+    v_float32x4 p(_p.x, _p.y, _p.z, 1.f);
+    v_float32x4 result = getNormalVoxel(p);
+    float CV_DECL_ALIGNED(16) ares[4];
+    v_store_aligned(ares, result);
+    return Point3f(ares[0], ares[1], ares[2]);
+}
+
+inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
+{
     const v_int32x4 mulDim = v_load(dimStep);
 
-    v_float32x4 p(_p.x, _p.y, _p.z, 1.f);
     if(v_check_any((p < v_setall_f32(1.f)) +
                    (p >= v_setall_f32(edgeResolution-2))))
-        return nan3;
+        return nanv;
 
     v_int32x4 ip = v_floor(p);
     v_float32x4 t = p - v_cvt_f32(ip);
@@ -413,7 +425,8 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f _p) const
 
     int coordBase = v_reduce_sum(ip*mulDim);
 
-    Vec3f an;
+    float CV_DECL_ALIGNED(16) an[4];
+    an[0] = an[1] = an[2] = an[3] = 0.f;
     for(int c = 0; c < 3; c++)
     {
         const int dim = dimStep[c];
@@ -440,7 +453,9 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f _p) const
         nv = v_reduce_sum(mulN0 + mulN1);
     }
 
-    return normalize(an);
+    v_float32x4 n = v_load_aligned(an);
+    v_float32x4 invNorm = v_invsqrt(v_setall_f32(v_reduce_sum(n*n)));
+    return n*invNorm;
 }
 #else
 inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
@@ -473,15 +488,13 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 
     int coordBase = ix*xdim + iy*ydim + iz;
 
-    Point3f n;
-
-    volumeType vp[8], vn[8], v[8], mulN[8];
-
-    // build n.x
+    Vec3f an;
+    for(int c = 0; c < 3; c++)
     {
-        const int dim = xdim;
-        float& nv = n.x;
+        const int dim = dimStep[c];
+        float& nv = an[c];
 
+        volumeType vp[8], vn[8], v[8], mulN[8];
         for(int i = 0; i < 8; i++)
         {
             vp[i] = volume.at<Voxel>(neighbourCoords[i] + 1*dim + coordBase).v;
@@ -494,54 +507,14 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
         for(int i = 0; i < 8; i++)
             mulN[i] = tv[i]*v[i];
 
+        nv = 0;
         for(int i = 0; i < 8; i++)
             nv += mulN[i];
     }
 
-    // build n.y
-    {
-        const int dim = ydim;
-        float& nv = n.y;
-
-        for(int i = 0; i < 8; i++)
-        {
-            vp[i] = volume.at<Voxel>(neighbourCoords[i] + 1*dim + coordBase).v;
-            vn[i] = volume.at<Voxel>(neighbourCoords[i] - 1*dim + coordBase).v;
-        }
-
-        for(int i = 0; i < 8; i++)
-            v[i] = (vp[i] - vn[i]);
-
-        for(int i = 0; i < 8; i++)
-            mulN[i] = tv[i]*v[i];
-
-        for(int i = 0; i < 8; i++)
-            nv += mulN[i];
-    }
-
-    // build n.z
-    {
-        const int dim = 1;
-        float& nv = n.z;
-
-        for(int i = 0; i < 8; i++)
-        {
-            vp[i] = volume.at<Voxel>(neighbourCoords[i] + 1*dim + coordBase).v;
-            vn[i] = volume.at<Voxel>(neighbourCoords[i] - 1*dim + coordBase).v;
-        }
-
-        for(int i = 0; i < 8; i++)
-            v[i] = (vp[i] - vn[i]);
-
-        for(int i = 0; i < 8; i++)
-            mulN[i] = tv[i]*v[i];
-
-        for(int i = 0; i < 8; i++)
-            nv += mulN[i];
-    }
-
-    return normalize(Vec3f(n));
+    return normalize(an);
 }
+#endif
 
 
 struct RaycastInvoker : ParallelLoopBody
