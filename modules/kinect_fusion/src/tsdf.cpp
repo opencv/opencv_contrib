@@ -54,6 +54,10 @@ public:
 
     volumeType fetchVoxel(cv::Point3f p) const;
     volumeType interpolateVoxel(cv::Point3f p) const;
+#if CV_SIMD128
+    volumeType interpolateVoxel(const v_float32x4& p) const;
+#endif
+
     Point3f getNormalVoxel(cv::Point3f p) const;
 #if CV_SIMD128
     v_float32x4 getNormalVoxel(const v_float32x4& p) const;
@@ -314,9 +318,14 @@ inline volumeType TSDFVolumeCPU::fetchVoxel(Point3f p) const
 // all coordinate checks should be done in inclosing cycle
 inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f _p) const
 {
+    v_float32x4 p(_p.x, _p.y, _p.z, 0);
+    return interpolateVoxel(p);
+}
+
+inline volumeType TSDFVolumeCPU::interpolateVoxel(const v_float32x4& p) const
+{
     const v_int32x4 mulDim = v_load(dimStep);
 
-    v_float32x4 p(_p.x, _p.y, _p.z, 0);
     v_int32x4 ip = v_floor(p);
     v_float32x4 t = p - v_cvt_f32(ip);
     v_float32x4 t1 = v_setall_f32(1.f) - t;
