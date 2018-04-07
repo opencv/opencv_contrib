@@ -326,28 +326,114 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
     return sum;
 }
 
-
-
-
-    Point3f n;
-
-
+//gradientDeltaFactor is fixed at 1.0 of voxel size
 inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 {
+    if(p.x < 1 || p.x >= edgeResolution -2 ||
+       p.y < 1 || p.y >= edgeResolution -2 ||
+       p.z < 1 || p.z >= edgeResolution -2)
+        return nan3;
+
+    int xdim = edgeResolution*edgeResolution, ydim = edgeResolution;
+
+    int ix = cvFloor(p.x);
+    int iy = cvFloor(p.y);
+    int iz = cvFloor(p.z);
+
+    float tx = p.x - ix;
+    float ty = p.y - iy;
+    float tz = p.z - iz;
+    float tx1 = 1.f - tx;
+    float ty1 = 1.f - ty;
+    float tz1 = 1.f - tz;
+    float tv[8] = { tx1 * ty1 * tz1,
+                    tx1 * ty1 * tz,
+                    tx1 * ty  * tz1,
+                    tx1 * ty  * tz,
+                    tx  * ty1 * tz1,
+                    tx  * ty1 * tz,
+                    tx  * ty  * tz1,
+                    tx  * ty  * tz  };
+
+    size_t coords[8] = {
+        (ix+0)*xdim + (iy+0)*ydim + (iz+0),
+        (ix+0)*xdim + (iy+0)*ydim + (iz+1),
+        (ix+0)*xdim + (iy+1)*ydim + (iz+0),
+        (ix+0)*xdim + (iy+1)*ydim + (iz+1),
+        (ix+1)*xdim + (iy+0)*ydim + (iz+0),
+        (ix+1)*xdim + (iy+0)*ydim + (iz+1),
+        (ix+1)*xdim + (iy+1)*ydim + (iz+0),
+        (ix+1)*xdim + (iy+1)*ydim + (iz+1)
+    };
+
     Point3f n;
-    volumeType fx1 = interpolateVoxel(Point3f(p.x + gradientDeltaFactor, p.y, p.z));
-    volumeType fx0 = interpolateVoxel(Point3f(p.x - gradientDeltaFactor, p.y, p.z));
-    // no need to divide, will be normalized after
-    // n.x = (fx1-fx0)/gradientDeltaFactor;
-    n.x = fx1 - fx0;
 
-    volumeType fy1 = interpolateVoxel(Point3f(p.x, p.y + gradientDeltaFactor, p.z));
-    volumeType fy0 = interpolateVoxel(Point3f(p.x, p.y - gradientDeltaFactor, p.z));
-    n.y = fy1 - fy0;
+    volumeType vp[8], vn[8];
+    volumeType v[8];
+    volumeType mulN[8];
 
-    volumeType fz1 = interpolateVoxel(Point3f(p.x, p.y, p.z + gradientDeltaFactor));
-    volumeType fz0 = interpolateVoxel(Point3f(p.x, p.y, p.z - gradientDeltaFactor));
-    n.z = fz1 - fz0;
+    // build n.x
+    {
+        const int dim = xdim;
+        float& nv = n.x;
+
+        for(int i = 0; i < 8; i++)
+        {
+            vp[i] = volume.at<Voxel>(coords[i] + 1*dim).v;
+            vn[i] = volume.at<Voxel>(coords[i] - 1*dim).v;
+        }
+
+        for(int i = 0; i < 8; i++)
+            v[i] = (vp[i] - vn[i]);
+
+        for(int i = 0; i < 8; i++)
+            mulN[i] = tv[i]*v[i];
+
+        for(int i = 0; i < 8; i++)
+            nv += mulN[i];
+    }
+
+    // build n.y
+    {
+        const int dim = ydim;
+        float& nv = n.y;
+
+        for(int i = 0; i < 8; i++)
+        {
+            vp[i] = volume.at<Voxel>(coords[i] + 1*dim).v;
+            vn[i] = volume.at<Voxel>(coords[i] - 1*dim).v;
+        }
+
+        for(int i = 0; i < 8; i++)
+            v[i] = (vp[i] - vn[i]);
+
+        for(int i = 0; i < 8; i++)
+            mulN[i] = tv[i]*v[i];
+
+        for(int i = 0; i < 8; i++)
+            nv += mulN[i];
+    }
+
+    // build n.z
+    {
+        const int dim = 1;
+        float& nv = n.z;
+
+        for(int i = 0; i < 8; i++)
+        {
+            vp[i] = volume.at<Voxel>(coords[i] + 1*dim).v;
+            vn[i] = volume.at<Voxel>(coords[i] - 1*dim).v;
+        }
+
+        for(int i = 0; i < 8; i++)
+            v[i] = (vp[i] - vn[i]);
+
+        for(int i = 0; i < 8; i++)
+            mulN[i] = tv[i]*v[i];
+
+        for(int i = 0; i < 8; i++)
+            nv += mulN[i];
+    }
 
     return normalize(Vec3f(n));
 }
