@@ -281,30 +281,56 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
 
     int xdim = edgeResolution*edgeResolution, ydim = edgeResolution;
 
-    int xi, yi, zi;
+    int ix = cvFloor(p.x);
+    int iy = cvFloor(p.y);
+    int iz = cvFloor(p.z);
 
-    volumeType v = 0.f;
+    float tx = p.x - ix;
+    float ty = p.y - iy;
+    float tz = p.z - iz;
+    float tx1 = 1.f - tx;
+    float ty1 = 1.f - ty;
+    float tz1 = 1.f - tz;
+    float tv[8] = { tx1 * ty1 * tz1,
+                    tx1 * ty1 * tz,
+                    tx1 * ty  * tz1,
+                    tx1 * ty  * tz,
+                    tx  * ty1 * tz1,
+                    tx  * ty1 * tz,
+                    tx  * ty  * tz1,
+                    tx  * ty  * tz  };
 
-    xi = cvFloor(p.x), yi = cvFloor(p.y), zi = cvFloor(p.z);
-    float tx = p.x - xi, ty = p.y - yi, tz = p.z - zi;
-    float tx1 = 1.f - tx, ty1 = 1.f - ty, tz1 = 1.f - tz;
+    size_t coords[8] = {
+        (ix+0)*xdim + (iy+0)*ydim + (iz+0),
+        (ix+0)*xdim + (iy+0)*ydim + (iz+1),
+        (ix+0)*xdim + (iy+1)*ydim + (iz+0),
+        (ix+0)*xdim + (iy+1)*ydim + (iz+1),
+        (ix+1)*xdim + (iy+0)*ydim + (iz+0),
+        (ix+1)*xdim + (iy+0)*ydim + (iz+1),
+        (ix+1)*xdim + (iy+1)*ydim + (iz+0),
+        (ix+1)*xdim + (iy+1)*ydim + (iz+1)
+    };
 
-    const Voxel* vol00 = &volume.at<Voxel>((xi+0)*xdim + (yi+0)*ydim + zi);
-    const Voxel* vol01 = &volume.at<Voxel>((xi+0)*xdim + (yi+1)*ydim + zi);
-    const Voxel* vol10 = &volume.at<Voxel>((xi+1)*xdim + (yi+0)*ydim + zi);
-    const Voxel* vol11 = &volume.at<Voxel>((xi+1)*xdim + (yi+1)*ydim + zi);
+    volumeType v[8];
+    for(int i = 0; i < 8; i++)
+        v[i] = volume.at<Voxel>(coords[i]).v;
 
-    v += vol00[0].v*tx1*ty1*tz1;
-    v += vol00[1].v*tx1*ty1*tz ;
-    v += vol01[0].v*tx1*ty *tz1;
-    v += vol01[1].v*tx1*ty *tz ;
-    v += vol10[0].v*tx *ty1*tz1;
-    v += vol10[1].v*tx *ty1*tz ;
-    v += vol11[0].v*tx *ty *tz1;
-    v += vol11[1].v*tx *ty *tz ;
+    volumeType mulN[8];
+    for(int i = 0; i < 8; i++)
+        mulN[i] = tv[i]*v[i];
 
-    return v;
+    volumeType sum = 0;
+    for(int i = 0; i < 8; i++)
+        sum += mulN[i];
+
+    return sum;
 }
+
+
+
+
+    Point3f n;
+
 
 inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 {
