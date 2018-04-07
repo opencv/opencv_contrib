@@ -61,6 +61,8 @@ public:
     Volume volume;
     float edgeSize;
     int edgeResolution;
+    int neighbourCoords[8];
+    int dimStep[4];
     float voxelSize;
     float voxelSizeInv;
     float truncDist;
@@ -82,6 +84,23 @@ TSDFVolumeCPU::TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _t
 {
     CV_Assert(_res % 32 == 0);
     edgeResolution = _res;
+    int xdim = edgeResolution*edgeResolution;
+    int ydim = edgeResolution;
+    int steps[4] = { xdim, ydim, 1, 0 };
+    int coords[8] = {
+        xdim*0 + ydim*0 + 1*0,
+        xdim*0 + ydim*0 + 1*1,
+        xdim*0 + ydim*1 + 1*0,
+        xdim*0 + ydim*1 + 1*1,
+        xdim*1 + ydim*0 + 1*0,
+        xdim*1 + ydim*0 + 1*1,
+        xdim*1 + ydim*1 + 1*0,
+        xdim*1 + ydim*1 + 1*1
+    };
+    for(int i = 0; i < 8; i++)
+        neighbourCoords[i] = coords[i];
+    for(int i = 0; i < 4; i++)
+        dimStep[i] = steps[i];
     edgeSize = _size;
     voxelSize = edgeSize/edgeResolution;
     voxelSizeInv = edgeResolution/edgeSize;
@@ -259,12 +278,24 @@ void TSDFVolumeCPU::integrate(cv::Ptr<Frame> _depth, float depthFactor, cv::Affi
     parallel_for_(range, ii);
 }
 
+#if CV_SIMD128
+// all coordinate checks should be done in inclosing cycle
+inline volumeType TSDFVolumeCPU::fetchVoxel(Point3f _p) const
+{
+    const v_int32x4 mulDim = v_load(dimStep);
 
+    v_float32x4 p(_p.x, _p.y, _p.z, 0.f);
+    v_int32x4 ip = v_round(p);
+    int coord = v_reduce_sum(ip*mulDim);
+
+    volumeType v = volume(coord).v;
+
+    return v;
+}
+#else
 inline volumeType TSDFVolumeCPU::fetchVoxel(Point3f p) const
 {
-    // all coordinate checks should be done in inclosing cycle
-
-    int xdim = edgeResolution*edgeResolution, ydim = edgeResolution;
+    int xdim = dimStep[0], ydim = dimStep[1];
 
     int ix = cvRound(p.x);
     int iy = cvRound(p.y);
@@ -274,12 +305,49 @@ inline volumeType TSDFVolumeCPU::fetchVoxel(Point3f p) const
 
     return v;
 }
+#endif
 
+#if CV_SIMD128
+// all coordinate checks should be done in inclosing cycle
+inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f _p) const
+{
+    const v_int32x4 mulDim = v_load(dimStep);
+
+    v_float32x4 p(_p.x, _p.y, _p.z, 0);
+    v_int32x4 ip = v_floor(p);
+    v_float32x4 t = p - v_cvt_f32(ip);
+    v_float32x4 t1 = v_setall_f32(1.f) - t;
+
+    float CV_DECL_ALIGNED(16) ttmp[8];
+    v_store_aligned(ttmp + 0, t);
+    v_store_aligned(ttmp + 4, t1);
+    float tx = ttmp[0], ty = ttmp[1], tz = ttmp[2];
+    float tx1 = ttmp[4], ty1 = ttmp[5], tz1 = ttmp[6];
+
+    v_float32x4 tmul = v_float32x4(ty1, ty1, ty, ty)*v_float32x4(tz1, tz, tz1, tz);
+    v_float32x4 tv0 = v_setall_f32(tx1)*tmul;
+    v_float32x4 tv1 = v_setall_f32(tx )*tmul;
+
+    int coordBase = v_reduce_sum(ip*mulDim);
+
+    volumeType CV_DECL_ALIGNED(16) av[8];
+    for(int i = 0; i < 8; i++)
+        av[i] = volume.at<Voxel>(neighbourCoords[i] + coordBase).v;
+
+    v_float32x4 v0 = v_load_aligned(av);
+    v_float32x4 v1 = v_load_aligned(av + 4);
+
+    v_float32x4 mulN0 = tv0 * v0;
+    v_float32x4 mulN1 = tv1 * v1;
+
+    volumeType sum = v_reduce_sum(mulN0 + mulN1);
+
+    return sum;
+}
+#else
 inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
 {
-    // all coordinate checks should be done in inclosing cycle
-
-    int xdim = edgeResolution*edgeResolution, ydim = edgeResolution;
+    int xdim = dimStep[0], ydim = dimStep[1];
 
     int ix = cvFloor(p.x);
     int iy = cvFloor(p.y);
@@ -300,20 +368,11 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
                     tx  * ty  * tz1,
                     tx  * ty  * tz  };
 
-    size_t coords[8] = {
-        (ix+0)*xdim + (iy+0)*ydim + (iz+0),
-        (ix+0)*xdim + (iy+0)*ydim + (iz+1),
-        (ix+0)*xdim + (iy+1)*ydim + (iz+0),
-        (ix+0)*xdim + (iy+1)*ydim + (iz+1),
-        (ix+1)*xdim + (iy+0)*ydim + (iz+0),
-        (ix+1)*xdim + (iy+0)*ydim + (iz+1),
-        (ix+1)*xdim + (iy+1)*ydim + (iz+0),
-        (ix+1)*xdim + (iy+1)*ydim + (iz+1)
-    };
+    int coordBase = ix*xdim + iy*ydim + iz;
 
     volumeType v[8];
     for(int i = 0; i < 8; i++)
-        v[i] = volume.at<Voxel>(coords[i]).v;
+        v[i] = volume.at<Voxel>(neighbourCoords[i] + coordBase).v;
 
     volumeType mulN[8];
     for(int i = 0; i < 8; i++)
@@ -325,16 +384,27 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
 
     return sum;
 }
+#endif
 
 //gradientDeltaFactor is fixed at 1.0 of voxel size
 inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 {
+    const int xdim = edgeResolution*edgeResolution, ydim = edgeResolution;
+    const size_t coords[8] = {
+        xdim*0 + ydim*0 + 1*0,
+        xdim*0 + ydim*0 + 1*1,
+        xdim*0 + ydim*1 + 1*0,
+        xdim*0 + ydim*1 + 1*1,
+        xdim*1 + ydim*0 + 1*0,
+        xdim*1 + ydim*0 + 1*1,
+        xdim*1 + ydim*1 + 1*0,
+        xdim*1 + ydim*1 + 1*1
+    };
+
     if(p.x < 1 || p.x >= edgeResolution -2 ||
        p.y < 1 || p.y >= edgeResolution -2 ||
        p.z < 1 || p.z >= edgeResolution -2)
         return nan3;
-
-    int xdim = edgeResolution*edgeResolution, ydim = edgeResolution;
 
     int ix = cvFloor(p.x);
     int iy = cvFloor(p.y);
@@ -355,22 +425,11 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
                     tx  * ty  * tz1,
                     tx  * ty  * tz  };
 
-    size_t coords[8] = {
-        (ix+0)*xdim + (iy+0)*ydim + (iz+0),
-        (ix+0)*xdim + (iy+0)*ydim + (iz+1),
-        (ix+0)*xdim + (iy+1)*ydim + (iz+0),
-        (ix+0)*xdim + (iy+1)*ydim + (iz+1),
-        (ix+1)*xdim + (iy+0)*ydim + (iz+0),
-        (ix+1)*xdim + (iy+0)*ydim + (iz+1),
-        (ix+1)*xdim + (iy+1)*ydim + (iz+0),
-        (ix+1)*xdim + (iy+1)*ydim + (iz+1)
-    };
+    int coordBase = ix*xdim + iy*ydim + iz;
 
     Point3f n;
 
-    volumeType vp[8], vn[8];
-    volumeType v[8];
-    volumeType mulN[8];
+    volumeType vp[8], vn[8], v[8], mulN[8];
 
     // build n.x
     {
@@ -379,8 +438,8 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 
         for(int i = 0; i < 8; i++)
         {
-            vp[i] = volume.at<Voxel>(coords[i] + 1*dim).v;
-            vn[i] = volume.at<Voxel>(coords[i] - 1*dim).v;
+            vp[i] = volume.at<Voxel>(neighbourCoords[i] + 1*dim + coordBase).v;
+            vn[i] = volume.at<Voxel>(neighbourCoords[i] - 1*dim + coordBase).v;
         }
 
         for(int i = 0; i < 8; i++)
@@ -400,8 +459,8 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 
         for(int i = 0; i < 8; i++)
         {
-            vp[i] = volume.at<Voxel>(coords[i] + 1*dim).v;
-            vn[i] = volume.at<Voxel>(coords[i] - 1*dim).v;
+            vp[i] = volume.at<Voxel>(neighbourCoords[i] + 1*dim + coordBase).v;
+            vn[i] = volume.at<Voxel>(neighbourCoords[i] - 1*dim + coordBase).v;
         }
 
         for(int i = 0; i < 8; i++)
@@ -421,8 +480,8 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 
         for(int i = 0; i < 8; i++)
         {
-            vp[i] = volume.at<Voxel>(coords[i] + 1*dim).v;
-            vn[i] = volume.at<Voxel>(coords[i] - 1*dim).v;
+            vp[i] = volume.at<Voxel>(neighbourCoords[i] + 1*dim + coordBase).v;
+            vn[i] = volume.at<Voxel>(neighbourCoords[i] - 1*dim + coordBase).v;
         }
 
         for(int i = 0; i < 8; i++)
@@ -508,10 +567,14 @@ struct RaycastInvoker : ParallelLoopBody
                     volumeType fnext = volume.interpolateVoxel(next);
 
                     //raymarch
-                    for(float t = tmin; t < tmax; t += tstep)
+                    volumeType f;
+                    float t;
+                    Point3f tp;
+                    bool surfaceReached = false;
+                    for(t = tmin; t < tmax; t += tstep)
                     {
-                        volumeType f = fnext;
-                        Point3f tp = next;
+                        f = fnext;
+                        tp = next;
                         next += rayStep;
                         // trying to optimize
                         fnext = volume.fetchVoxel(next);
@@ -526,25 +589,30 @@ struct RaycastInvoker : ParallelLoopBody
                         // linear interpolate t between two f values
                         if(f > 0.f && fnext < 0.f)
                         {
-                            volumeType ft   = volume.interpolateVoxel(tp);
-                            volumeType ftdt = volume.interpolateVoxel(next);
-                            float ts = t - tstep*ft/(ftdt - ft);
-
-                            // avoid division by zero
-                            if(!cvIsNaN(ts) && !cvIsInf(ts))
-                            {
-                                Point3f pv = (orig + dir*ts);
-                                Point3f nv = volume.getNormalVoxel(pv);
-
-                                if(!isNaN(nv))
-                                {
-                                    //convert pv and nv to camera space
-                                    normal = volRot * nv;
-                                    // interpolation optimized a little
-                                    point = vol2cam * (pv * volume.voxelSize);
-                                }
-                            }
+                            surfaceReached = true;
                             break;
+                        }
+                    }
+
+                    if(surfaceReached)
+                    {
+                        volumeType ft   = volume.interpolateVoxel(tp);
+                        volumeType ftdt = volume.interpolateVoxel(next);
+                        float ts = t - tstep*ft/(ftdt - ft);
+
+                        // avoid division by zero
+                        if(!cvIsNaN(ts) && !cvIsInf(ts))
+                        {
+                            Point3f pv = (orig + dir*ts);
+                            Point3f nv = volume.getNormalVoxel(pv);
+
+                            if(!isNaN(nv))
+                            {
+                                //convert pv and nv to camera space
+                                normal = volRot * nv;
+                                // interpolation optimized a little
+                                point = vol2cam * (pv * volume.voxelSize);
+                            }
                         }
                     }
                 }
