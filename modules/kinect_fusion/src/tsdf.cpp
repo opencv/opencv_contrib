@@ -266,11 +266,11 @@ inline volumeType TSDFVolumeCPU::fetchVoxel(Point3f p) const
 
     int xdim = edgeResolution*edgeResolution, ydim = edgeResolution;
 
-    int xi, yi, zi;
+    int ix = cvRound(p.x);
+    int iy = cvRound(p.y);
+    int iz = cvRound(p.z);
 
-    volumeType v = 0.f;
-    xi = cvRound(p.x), yi = cvRound(p.y), zi = cvRound(p.z);
-    v = volume(xi*xdim + yi*ydim + zi).v;
+    volumeType v = volume(ix*xdim + iy*ydim + iz).v;
 
     return v;
 }
