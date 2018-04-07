@@ -3,7 +3,6 @@
 //TODO: organize includes properly
 #include "precomp.hpp"
 #include "icp.hpp"
-#include "opencv2/core/hal/intrin.hpp"
 
 using namespace cv;
 using namespace cv::kinfu;

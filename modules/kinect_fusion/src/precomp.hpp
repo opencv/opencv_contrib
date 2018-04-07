@@ -5,6 +5,7 @@
 
 #include "opencv2/imgproc.hpp"
 #include "opencv2/kinect_fusion/kinfu.hpp"
+#include "opencv2/core/hal/intrin.hpp"
 
 //DEBUG
 //TODO: remove it
