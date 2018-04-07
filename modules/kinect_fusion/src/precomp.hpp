@@ -38,7 +38,7 @@ struct ScopeTime
         if(enablePrint)
         {
             std::string spaces(nested, '-');
-            std::cout << spaces << "Time(" << name << ") = " << time_ms << "ms" << std::endl;
+            std::cout << spaces << "Time(" << name << ") = " << time_ms << " ms" << std::endl;
         }
         nested--;
     }
