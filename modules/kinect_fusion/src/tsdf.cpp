@@ -350,6 +350,10 @@ struct RaycastInvoker : ParallelLoopBody
 
     virtual void operator() (const Range& range) const
     {
+        const Point3f camTrans = cam2vol.translation();
+        const Matx33f  camRot  = cam2vol.rotation();
+        const Matx33f  volRot  = vol2cam.rotation();
+
         for(int y = range.start; y < range.end; y++)
         {
             ptype* ptsRow = points[y];
@@ -359,9 +363,9 @@ struct RaycastInvoker : ParallelLoopBody
             {
                 Point3f point = nan3, normal = nan3;
 
-                Point3f orig = cam2vol.translation();
+                Point3f orig = camTrans;
                 // direction through pixel in volume space
-                Point3f dir = normalize(Vec3f(cam2vol.rotation() * reproj(Point3f(x, y, 1.f))));
+                Point3f dir = normalize(Vec3f(camRot * reproj(Point3f(x, y, 1.f))));
 
                 // compute intersection of ray with all six bbox planes
                 Vec3f rayinv(1.f/dir.x, 1.f/dir.y, 1.f/dir.z);
@@ -423,7 +427,7 @@ struct RaycastInvoker : ParallelLoopBody
                                 if(!isNaN(nv))
                                 {
                                     //convert pv and nv to camera space
-                                    normal = vol2cam.rotation() * nv;
+                                    normal = volRot * nv;
                                     // interpolation optimized a little
                                     point = vol2cam * (pv * volume.voxelSize);
                                 }
