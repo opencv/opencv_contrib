@@ -262,10 +262,7 @@ void TSDFVolumeCPU::integrate(cv::Ptr<Frame> _depth, float depthFactor, cv::Affi
 
 inline volumeType TSDFVolumeCPU::fetchVoxel(Point3f p) const
 {
-    if(p.x < 0 || p.x >= edgeResolution-1 ||
-       p.y < 0 || p.y >= edgeResolution-1 ||
-       p.z < 0 || p.z >= edgeResolution-1)
-        return qnan;
+    // all coordinate checks should be done in inclosing cycle
 
     int xdim = edgeResolution*edgeResolution, ydim = edgeResolution;
 
@@ -280,10 +277,7 @@ inline volumeType TSDFVolumeCPU::fetchVoxel(Point3f p) const
 
 inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
 {
-    if(p.x < 0 || p.x >= edgeResolution-1 ||
-       p.y < 0 || p.y >= edgeResolution-1 ||
-       p.z < 0 || p.z >= edgeResolution-1)
-        return qnan;
+    // all coordinate checks should be done in inclosing cycle
 
     int xdim = edgeResolution*edgeResolution, ydim = edgeResolution;
 
@@ -331,6 +325,7 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 
     return normalize(Vec3f(n));
 }
+
 
 struct RaycastInvoker : ParallelLoopBody
 {
@@ -384,7 +379,9 @@ struct RaycastInvoker : ParallelLoopBody
 
                 if(tmin < tmax)
                 {
-                    tmax -= tstep;
+                    // precautions against getting coordinates out of bounds
+                    tmin = tmin + tstep;
+                    tmax = tmax - tstep - tstep;
 
                     // interpolation optimized a little
                     orig *= volume.voxelSizeInv;
@@ -400,7 +397,7 @@ struct RaycastInvoker : ParallelLoopBody
                         volumeType f = fnext;
                         Point3f tp = next;
                         next += rayStep;
-                        //trying to optimize
+                        // trying to optimize
                         fnext = volume.fetchVoxel(next);
                         if(fnext != f)
                             fnext = volume.interpolateVoxel(next);
