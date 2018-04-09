@@ -137,7 +137,6 @@ class Feature
 
 };
 
-#ifdef HAVE_TBB
 /** @brief This class computes feature pyramid in parallel
  * using Intel Threading Building Blocks (TBB)
  */
@@ -165,7 +164,6 @@ class ParalComputePyramid : public ParallelLoopBody
         // pyramid parameters
         PyramidParameter &params;
 };
-#endif
 
 } // namespace dpm
 } // namespace cv

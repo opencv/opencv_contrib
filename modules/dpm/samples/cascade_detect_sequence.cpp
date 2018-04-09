@@ -113,16 +113,6 @@ int main( int argc, char** argv )
     if ( !readImageLists(image_list, imgFileList) )
         return -1;
 
-#ifdef HAVE_TBB
-    cout << "Running with TBB" << endl;
-#else
-#ifdef _OPENMP
-    cout << "Running with OpenMP" << endl;
-#else
-    cout << "Running without OpenMP and without TBB" << endl;
-#endif
-#endif
-
     cv::Ptr<DPMDetector> detector = \
     DPMDetector::create(vector<string>(1, model_path));
 

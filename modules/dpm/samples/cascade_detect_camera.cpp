@@ -97,16 +97,6 @@ int main( int argc, char** argv )
         return -1;
     }
 
-#ifdef HAVE_TBB
-    cout << "Running with TBB" << endl;
-#else
-#ifdef _OPENMP
-    cout << "Running with OpenMP" << endl;
-#else
-    cout << "Running without OpenMP and without TBB" << endl;
-#endif
-#endif
-
     Mat frame;
     namedWindow("DPM Cascade Detection", 1);
     // the color of the rectangle
