@@ -96,11 +96,6 @@ static inline bool fastCheck(const v_float32x4& p0, const v_float32x4& p1)
     return !v_check_any(a != a);
 }
 
-static inline bool isNaN(const v_float32x4& p)
-{
-    return v_check_any(p != p);
-}
-
 static inline void getCrossPerm(const v_float32x4& a, v_float32x4& yzx, v_float32x4& zxy)
 {
     v_uint32x4 aa = v_reinterpret_as_u32(a);

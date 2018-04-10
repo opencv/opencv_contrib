@@ -15,11 +15,21 @@ typedef float depthType;
 
 const float qnan = std::numeric_limits<float>::quiet_NaN();
 const cv::Vec3f nan3(qnan, qnan, qnan);
+#if CV_SIMD128
+const cv::v_float32x4 nanv(qnan, qnan, qnan, qnan);
+#endif
 
 inline bool isNaN(cv::Point3f p)
 {
     return (cvIsNaN(p.x) || cvIsNaN(p.y) || cvIsNaN(p.z));
 }
+
+#if CV_SIMD128
+static inline bool isNaN(const cv::v_float32x4& p)
+{
+    return cv::v_check_any(p != p);
+}
+#endif
 
 //TODO: remove it
 //debugging code
