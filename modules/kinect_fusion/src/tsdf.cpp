@@ -93,6 +93,8 @@ TSDFVolumeCPU::TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _t
     int xdim = edgeResolution*edgeResolution;
     int ydim = edgeResolution;
     int steps[4] = { xdim, ydim, 1, 0 };
+    for(int i = 0; i < 4; i++)
+        dimStep[i] = steps[i];
     int coords[8] = {
         xdim*0 + ydim*0 + 1*0,
         xdim*0 + ydim*0 + 1*1,
@@ -105,8 +107,6 @@ TSDFVolumeCPU::TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _t
     };
     for(int i = 0; i < 8; i++)
         neighbourCoords[i] = coords[i];
-    for(int i = 0; i < 4; i++)
-        dimStep[i] = steps[i];
     edgeSize = _size;
     voxelSize = edgeSize/edgeResolution;
     voxelSizeInv = edgeResolution/edgeSize;
@@ -135,6 +135,8 @@ void TSDFVolumeCPU::reset()
     volume.forEach(FillZero());
 }
 
+static const bool fixMissingData = false;
+
 static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
 {
     const depthType defaultValue = qnan;
@@ -152,50 +154,64 @@ static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
     depthType v10 = row1[xi+0];
     depthType v11 = row1[xi+1];
 
+    // assume correct depth is positive
     bool b00 = v00 > 0;
     bool b01 = v01 > 0;
     bool b10 = v10 > 0;
     bool b11 = v11 > 0;
 
-    //fix missing data, assume correct depth is positive
-    int nz = b00 + b01 + b10 + b11;
-    if(nz == 0)
+    if(!fixMissingData)
     {
-        return defaultValue;
+        if(!(b00 && b01 && b10 && b11))
+            return defaultValue;
+        else
+        {
+            float tx = pt.x - xi, ty = pt.y - yi;
+            float tx1 = 1.f-tx, ty1 = 1.f-ty;
+            return v00*tx1*ty1 + v01*tx*ty1 + v10*tx1*ty + v11*tx*ty;
+        }
     }
-    if(nz == 1)
+    else
     {
-        if(b00) return v00;
-        if(b01) return v01;
-        if(b10) return v10;
-        if(b11) return v11;
-    }
-    else if(nz == 2)
-    {
-        if(b00 && b10) v01 = v00, v11 = v10;
-        if(b01 && b11) v00 = v01, v10 = v11;
-        if(b00 && b01) v10 = v00, v11 = v01;
-        if(b10 && b11) v00 = v10, v01 = v11;
-        if(b00 && b11) v01 = v10 = (v00 + v11)*0.5f;
-        if(b01 && b10) v00 = v11 = (v01 + v10)*0.5f;
-    }
-    else if(nz == 3)
-    {
-        if(!b00) v00 = v10 + v01 - v11;
-        if(!b01) v01 = v00 + v11 - v10;
-        if(!b10) v10 = v00 + v11 - v01;
-        if(!b11) v11 = v01 + v10 - v00;
-    }
+        int nz = b00 + b01 + b10 + b11;
+        if(nz == 0)
+        {
+            return defaultValue;
+        }
+        if(nz == 1)
+        {
+            if(b00) return v00;
+            if(b01) return v01;
+            if(b10) return v10;
+            if(b11) return v11;
+        }
+        else if(nz == 2)
+        {
+            if(b00 && b10) v01 = v00, v11 = v10;
+            if(b01 && b11) v00 = v01, v10 = v11;
+            if(b00 && b01) v10 = v00, v11 = v01;
+            if(b10 && b11) v00 = v10, v01 = v11;
+            if(b00 && b11) v01 = v10 = (v00 + v11)*0.5f;
+            if(b01 && b10) v00 = v11 = (v01 + v10)*0.5f;
+        }
+        else if(nz == 3)
+        {
+            if(!b00) v00 = v10 + v01 - v11;
+            if(!b01) v01 = v00 + v11 - v10;
+            if(!b10) v10 = v00 + v11 - v01;
+            if(!b11) v11 = v01 + v10 - v00;
+        }
 
-    float tx = pt.x - xi, ty = pt.y - yi;
+        float tx = pt.x - xi, ty = pt.y - yi;
 
-    float tx1 = 1.f-tx, ty1 = 1.f-ty;
-    return v00*tx1*ty1 + v01*tx*ty1 + v10*tx1*ty + v11*tx*ty;
+        float tx1 = 1.f-tx, ty1 = 1.f-ty;
+        return v00*tx1*ty1 + v01*tx*ty1 + v10*tx1*ty + v11*tx*ty;
 
-    // speed is the same
-//    float txty = tx*ty;
-//    depthType d001 = v00 - v01;
-//    return v00 + tx*d001 + ty*(v10-v00) + txty*(d001 - v10 + v11);
+        // speed is the same
+    //    float txty = tx*ty;
+    //    depthType d001 = v00 - v01;
+    //    return v00 + tx*d001 + ty*(v10-v00) + txty*(d001 - v10 + v11);
+    }
 }
 
 struct IntegrateInvoker : ParallelLoopBody
@@ -223,14 +239,15 @@ struct IntegrateInvoker : ParallelLoopBody
                 Point3f camSpacePt = basePt;
                 // zStep == vol2cam*(Point3f(x, y, 1)*voxelSize) - basePt;
                 Point3f zStep = Point3f(vol2cam.matrix(0, 2), vol2cam.matrix(1, 2), vol2cam.matrix(2, 2))*volume.voxelSize;
-                for(int z = 0; z < volume.edgeResolution; z++)
+                int baseZ = -basePt.z / zStep.z;
+                baseZ = max(0, min(volume.edgeResolution, baseZ));
+                for(int z = baseZ; z < volume.edgeResolution; z++)
                 {
                     // optimization of the following:
                     //Point3f volPt = Point3f(x, y, z)*voxelSize;
                     //Point3f camSpacePt = vol2cam * volPt;
                     camSpacePt += zStep;
 
-                    // can be optimized later
                     if(camSpacePt.z <= 0)
                         continue;
 
@@ -250,7 +267,7 @@ struct IntegrateInvoker : ParallelLoopBody
                     {
                         volumeType tsdf = fmin(1.f, sdf * truncDistInv);
 
-                        Voxel& voxel = volume.volume(x*volume.edgeResolution*volume.edgeResolution + y*volume.edgeResolution + z);
+                        Voxel& voxel = volume.volume(x*volume.dimStep[0] + y*volume.dimStep[1] + z);
                         int& weight = voxel.weight;
                         volumeType& value = voxel.v;
 
@@ -346,17 +363,17 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(const v_float32x4& p) const
 
     int coordBase = v_reduce_sum(ip*mulDim);
 
+    const Voxel* volData = volume[0];
     volumeType CV_DECL_ALIGNED(16) av[8];
     for(int i = 0; i < 8; i++)
-        av[i] = volume.at<Voxel>(neighbourCoords[i] + coordBase).v;
+        av[i] = volData[neighbourCoords[i] + coordBase].v;
 
     v_float32x4 v0 = v_load_aligned(av);
     v_float32x4 v1 = v_load_aligned(av + 4);
 
-    v_float32x4 mulN0 = tv0 * v0;
-    v_float32x4 mulN1 = tv1 * v1;
+    v_float32x4 mulN = tv0 * v0 + tv1 * v1;
 
-    volumeType sum = v_reduce_sum(mulN0 + mulN1);
+    volumeType sum = v_reduce_sum(mulN);
 
     return sum;
 }
@@ -436,6 +453,7 @@ inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
     v_float32x4 tv0 = v_setall_f32(tx1)*tmul;
     v_float32x4 tv1 = v_setall_f32(tx )*tmul;
 
+    const Voxel* volData = volume[0];
     int coordBase = v_reduce_sum(ip*mulDim);
 
     float CV_DECL_ALIGNED(16) an[4];
@@ -448,8 +466,8 @@ inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
         volumeType CV_DECL_ALIGNED(16) avp[8], avn[8];
         for(int i = 0; i < 8; i++)
         {
-            avp[i] = volume.at<Voxel>(neighbourCoords[i] + 1*dim + coordBase).v;
-            avn[i] = volume.at<Voxel>(neighbourCoords[i] - 1*dim + coordBase).v;
+            avp[i] = volData[neighbourCoords[i] + 1*dim + coordBase].v;
+            avn[i] = volData[neighbourCoords[i] - 1*dim + coordBase].v;
         }
 
         v_float32x4 vp0 = v_load_aligned(avp);
@@ -460,10 +478,9 @@ inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
         v_float32x4 v0 = vp0 - vn0;
         v_float32x4 v1 = vp1 - vn1;
 
-        v_float32x4 mulN0 = tv0*v0;
-        v_float32x4 mulN1 = tv1*v1;
+        v_float32x4 mulN = tv0*v0 + tv1*v1;
 
-        nv = v_reduce_sum(mulN0 + mulN1);
+        nv = v_reduce_sum(mulN);
     }
 
     v_float32x4 n = v_load_aligned(an);
@@ -607,7 +624,6 @@ struct RaycastInvoker : ParallelLoopBody
                 // re-order intersections to find smallest and largest on each axis
                 v_float32x4 minAx = v_min(ttop, tbottom);
                 v_float32x4 maxAx = v_max(ttop, tbottom);
-
 
                 // near clipping plane
                 const float clip = 0.f;
