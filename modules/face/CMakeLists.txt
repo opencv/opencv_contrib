@@ -2,8 +2,8 @@ set(the_description "Face recognition etc")
 ocv_define_module(face opencv_core
     opencv_imgproc
     opencv_objdetect
-    opencv_tracking     # estimateRigidTransform()
-    opencv_photo        # samples
+    opencv_video     # estimateRigidTransform() (trainFacemark)
+    opencv_photo     # seamlessClone() (face_swap sample)
     WRAP python java
 )
 # NOTE: objdetect module is needed for one of the samples
