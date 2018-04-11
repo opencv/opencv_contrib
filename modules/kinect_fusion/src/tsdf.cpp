@@ -47,8 +47,8 @@ public:
     virtual cv::Ptr<Frame> raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize, int pyramidLevels,
                                    cv::Ptr<FrameGenerator> frameGenerator) const;
 
-    virtual void fetchPoints(cv::OutputArray points) const;
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const;
+    virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const;
 
     virtual void reset();
 
@@ -66,7 +66,7 @@ public:
     float edgeSize;
     int edgeResolution;
     int neighbourCoords[8];
-    int dimStep[4];
+    int dims[4];
     float voxelSize;
     float voxelSizeInv;
     float truncDist;
@@ -92,7 +92,7 @@ TSDFVolumeCPU::TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _t
     int ydim = edgeResolution;
     int steps[4] = { xdim, ydim, 1, 0 };
     for(int i = 0; i < 4; i++)
-        dimStep[i] = steps[i];
+        dims[i] = steps[i];
     int coords[8] = {
         xdim*0 + ydim*0 + 1*0,
         xdim*0 + ydim*0 + 1*1,
@@ -265,7 +265,7 @@ struct IntegrateInvoker : ParallelLoopBody
                     {
                         volumeType tsdf = fmin(1.f, sdf * truncDistInv);
 
-                        Voxel& voxel = volume.volume(x*volume.dimStep[0] + y*volume.dimStep[1] + z);
+                        Voxel& voxel = volume.volume(x*volume.dims[0] + y*volume.dims[1] + z);
                         int& weight = voxel.weight;
                         volumeType& value = voxel.v;
 
@@ -309,7 +309,7 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f _p) const
 
 inline volumeType TSDFVolumeCPU::interpolateVoxel(const v_float32x4& p) const
 {
-    const v_int32x4 mulDim = v_load(dimStep);
+    const v_int32x4 mulDim = v_load(dims);
 
     v_int32x4 ip = v_floor(p);
     v_float32x4 t = p - v_cvt_f32(ip);
@@ -344,7 +344,7 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(const v_float32x4& p) const
 #else
 inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
 {
-    int xdim = dimStep[0], ydim = dimStep[1];
+    int xdim = dims[0], ydim = dims[1];
 
     int ix = cvFloor(p.x);
     int iy = cvFloor(p.y);
@@ -397,7 +397,7 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f _p) const
 
 inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
 {
-    const v_int32x4 mulDim = v_load(dimStep);
+    const v_int32x4 mulDim = v_load(dims);
 
     if(v_check_any((p < v_float32x4(1.f, 1.f, 1.f, 0.f)) +
                    (p >= v_setall_f32(edgeResolution-2))))
@@ -424,7 +424,7 @@ inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
     an[0] = an[1] = an[2] = an[3] = 0.f;
     for(int c = 0; c < 3; c++)
     {
-        const int dim = dimStep[c];
+        const int dim = dims[c];
         float& nv = an[c];
 
         volumeType CV_DECL_ALIGNED(16) avp[8], avn[8];
@@ -454,7 +454,7 @@ inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
 #else
 inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 {
-    const int xdim = dimStep[0], ydim = dimStep[1];
+    const int xdim = dims[0], ydim = dims[1];
 
     if(p.x < 1 || p.x >= edgeResolution -2 ||
        p.y < 1 || p.y >= edgeResolution -2 ||
@@ -485,7 +485,7 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
     Vec3f an;
     for(int c = 0; c < 3; c++)
     {
-        const int dim = dimStep[c];
+        const int dim = dims[c];
         float& nv = an[c];
 
         volumeType vp[8], vn[8], v[8], mulN[8];
@@ -604,7 +604,7 @@ struct RaycastInvoker : ParallelLoopBody
                     orig *= invVoxelSize;
                     dir  *= invVoxelSize;
 
-                    int xdim = volume.dimStep[0], ydim = volume.dimStep[1];
+                    int xdim = volume.dims[0], ydim = volume.dims[1];
                     v_float32x4 rayStep = dir * v_setall_f32(tstep);
                     v_float32x4 next = (orig + dir * v_setall_f32(tmin));
                     volumeType f = volume.interpolateVoxel(next), fnext = f;
@@ -809,12 +809,21 @@ cv::Ptr<Frame> TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, 
 }
 
 
-struct PushPoints
+struct FetchPointsNormalsInvoker : ParallelLoopBody
 {
-    PushPoints(const TSDFVolumeCPU& _vol, Mat_<ptype>& _pts, Mutex& _mtx) :
-        vol(_vol), points(_pts), mtx(_mtx) { }
+    FetchPointsNormalsInvoker(const TSDFVolumeCPU& _volume,
+                              std::vector< std::vector<ptype> >& _pVecs,
+                              std::vector< std::vector<ptype> >& _nVecs,
+                              bool _needNormals) :
+        ParallelLoopBody(),
+        vol(_volume),
+        pVecs(_pVecs),
+        nVecs(_nVecs),
+        needNormals(_needNormals)
+    { }
 
-    inline void coord(int x, int y, int z, Point3f V, float v0, int axis) const
+    inline void coord(std::vector<ptype>& points, std::vector<ptype>& normals,
+                      int x, int y, int z, Point3f V, float v0, int axis) const
     {
         // 0 for x, 1 for y, 2 for z
         const int edgeResolution = vol.edgeResolution;
@@ -842,8 +851,8 @@ struct PushPoints
 
         if(limits)
         {
-            const Voxel& voxeld = vol.volume((x+shift.x)*edgeResolution*edgeResolution +
-                                             (y+shift.y)*edgeResolution +
+            const Voxel& voxeld = vol.volume((x+shift.x)*vol.dims[0] +
+                                             (y+shift.y)*vol.dims[1] +
                                              (z+shift.z));
             volumeType vd = voxeld.v;
 
@@ -860,56 +869,78 @@ struct PushPoints
                               shift.y ? inter : V.y,
                               shift.z ? inter : V.z);
                     {
-                        AutoLock al(mtx);
                         points.push_back(toPtype(vol.pose * p));
+                        if(needNormals)
+                            normals.push_back(toPtype(vol.pose.rotation() * vol.getNormalVoxel(p * vol.voxelSizeInv)));
                     }
                 }
             }
         }
     }
 
-    void operator ()(const Voxel &voxel0, const int position[2]) const
+    virtual void operator() (const Range& range) const
     {
-        volumeType v0 = voxel0.v;
-        if(voxel0.weight != 0 && v0 != 1.f)
+        std::vector<ptype> points, normals;
+        for(int x = range.start; x < range.end; x++)
         {
-            int pi = position[1];
+            for(int y = 0; y < vol.edgeResolution; y++)
+            {
+                for(int z = 0; z < vol.edgeResolution; z++)
+                {
+                    // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
+                    const Voxel& voxel0 = vol.volume(x*vol.dims[0] + y*vol.dims[1] + z);
+                    volumeType v0 = voxel0.v;
+                    if(voxel0.weight != 0 && v0 != 1.f)
+                    {
+                        Point3f V = (Point3f(x, y, z) + Point3f(0.5f, 0.5f, 0.5f))*vol.voxelSize;
 
-            // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
-            int x, y, z;
-            z = pi % vol.edgeResolution;
-            pi = (pi - z)/vol.edgeResolution;
-            y = pi % vol.edgeResolution;
-            pi = (pi - y)/vol.edgeResolution;
-            x = pi % vol.edgeResolution;
+                        coord(points, normals, x, y, z, V, v0, 0);
+                        coord(points, normals, x, y, z, V, v0, 1);
+                        coord(points, normals, x, y, z, V, v0, 2);
 
-            Point3f V = (Point3f(x, y, z) + Point3f(0.5f, 0.5f, 0.5f))*vol.voxelSize;
+                    } // if voxel is not empty
+                }
+            }
+        }
 
-            coord(x, y, z, V, v0, 0);
-            coord(x, y, z, V, v0, 1);
-            coord(x, y, z, V, v0, 2);
-
-        } // if voxel is not empty
+        AutoLock al(mutex);
+        pVecs.push_back(points);
+        nVecs.push_back(normals);
     }
 
     const TSDFVolumeCPU& vol;
-    Mat_<ptype>& points;
-    Mutex& mtx;
+    std::vector< std::vector<ptype> >& pVecs;
+    std::vector< std::vector<ptype> >& nVecs;
+    bool needNormals;
+    mutable Mutex mutex;
 };
 
-void TSDFVolumeCPU::fetchPoints(OutputArray _points) const
+void TSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _normals) const
 {
-    ScopeTime st("tsdf: fetch points");
+    ScopeTime st("tsdf: fetch points+normals");
 
     if(_points.needed())
     {
-        Mat_<ptype> points;
+        std::vector< std::vector<ptype> > pVecs, nVecs;
+        FetchPointsNormalsInvoker fi(*this, pVecs, nVecs, _normals.needed());
+        Range range(0, edgeResolution);
+        const int nstripes = -1;
+        parallel_for_(range, fi, nstripes);
+        std::vector<ptype> points, normals;
+        for(size_t i = 0; i < pVecs.size(); i++)
+        {
+            points.insert(points.end(), pVecs[i].begin(), pVecs[i].end());
+            normals.insert(normals.end(), nVecs[i].begin(), nVecs[i].end());
+        }
 
-        Mutex mutex;
-        volume.forEach(PushPoints(*this, points, mutex));
+        _points.create(points.size(), 1, DataType<ptype>::type);
+        Mat(points.size(), 1, DataType<ptype>::type, &points[0]).copyTo(_points.getMat());
 
-        //TODO: try to use pre-allocated memory if possible
-        points.copyTo(_points);
+        if(_normals.needed())
+        {
+            _normals.create(normals.size(), 1, DataType<ptype>::type);
+            Mat(normals.size(), 1, DataType<ptype>::type, &normals[0]).copyTo(_normals.getMat());
+        }
     }
 }
 
@@ -965,7 +996,7 @@ public:
     virtual cv::Ptr<Frame> raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize, int pyramidLevels,
                                    cv::Ptr<FrameGenerator> frameGenerator) const;
 
-    virtual void fetchPoints(cv::OutputArray points) const;
+    virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const;
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const;
 
     virtual void reset();
@@ -999,13 +1030,12 @@ cv::Ptr<Frame> TSDFVolumeGPU::raycast(cv::Affine3f /*cameraPose*/, Intr /*intrin
 }
 
 
-void TSDFVolumeGPU::fetchPoints(OutputArray /*_points*/) const
+void TSDFVolumeGPU::fetchNormals(InputArray /*_points*/, OutputArray /*_normals*/) const
 {
     throw std::runtime_error("Not implemented");
 }
 
-
-void TSDFVolumeGPU::fetchNormals(InputArray /*_points*/, OutputArray /*_normals*/) const
+void TSDFVolumeGPU::fetchPointsNormals(OutputArray /*points*/, OutputArray /*normals*/) const
 {
     throw std::runtime_error("Not implemented");
 }

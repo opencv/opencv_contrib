@@ -218,18 +218,12 @@ void KinFu::KinFuImpl::render(OutputArray image, const Affine3f cameraPose) cons
 
 void KinFu::KinFuImpl::fetchCloud(OutputArray p, OutputArray n) const
 {
-    ScopeTime st("kinfu fetch cloud");
-
-    if(p.needed())
-    {
-        volume->fetchPoints(p);
-        volume->fetchNormals(p, n);
-    }
+    volume->fetchPointsNormals(p, n);
 }
 
 void KinFu::KinFuImpl::fetchPoints(OutputArray points) const
 {
-    volume->fetchPoints(points);
+    volume->fetchPointsNormals(points, noArray());
 }
 
 void KinFu::KinFuImpl::fetchNormals(InputArray points, OutputArray normals) const
