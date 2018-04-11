@@ -87,7 +87,8 @@ static inline bool fastCheck(const v_float32x4& p0, const v_float32x4& p1, const
 {
     v_float32x4 a0 = v_combine_low(p0, p1);
     v_float32x4 a1 = v_combine_low(p2, p3);
-    return !(v_check_any(a0 != a0) || v_check_any(a1 != a1));
+    v_float32x4 a = a0 + a1; // NaN should propagate
+    return !v_check_any(a != a);
 }
 
 static inline bool fastCheck(const v_float32x4& p0, const v_float32x4& p1)
@@ -202,16 +203,9 @@ struct GetAbInvoker : ParallelLoopBody
                     v_float32x4 txy = oldCoords - v_cvt_f32(ixy);
                     int xi = ixy.get0();
                     int yi = v_rotate_right<1>(ixy).get0();
-                    // tx, ty, tx, ty
-                    txy = v_combine_low(txy, txy);
-                    v_float32x4 txy1 = v_setall_f32(1.f) - txy;
-                    v_float32x4 mask = v_reinterpret_as_f32(v_uint32x4(0xFFFFFFFF, 0xFFFFFFFF, 0xFFFFFFFF, 0));
-                    // tx1, ty1, tx1, ty
-                    v_float32x4 tmul0 = v_select(mask, txy1, txy);
-                    // ty1,  tx,  ty, tx
-                    v_float32x4 tmul1 = v_reinterpret_as_f32(v_extract<3>(v_reinterpret_as_u32(txy1),
-                                                                          v_reinterpret_as_u32(txy)));
-                    v_float32x4 tv = tmul0*tmul1;
+                    v_float32x4 tx = v_setall_f32(txy.get0());
+                    txy = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(txy)));
+                    v_float32x4 ty = v_setall_f32(txy.get0());
 
                     const float* prow0 = (const float*)oldPts[yi+0];
                     const float* prow1 = (const float*)oldPts[yi+1];
@@ -236,8 +230,13 @@ struct GetAbInvoker : ParallelLoopBody
                     if(!fastCheck(n00, n01, n10, n11))
                         continue;
 
-                    oldP = v_matmul(tv, p00, p01, p10, p11);
-                    oldN = v_matmul(tv, n00, n01, n10, n11);
+                    v_float32x4 p0 = p00 + tx*(p10 - p00);
+                    v_float32x4 p1 = p01 + tx*(p11 - p01);
+                    oldP = p0 + ty*(p1 - p0);
+
+                    v_float32x4 n0 = n00 + tx*(n10 - n00);
+                    v_float32x4 n1 = n01 + tx*(n11 - n01);
+                    oldN = n0 + ty*(n1 - n0);
                 }
 
                 if(!fastCheck(oldP, oldN))
