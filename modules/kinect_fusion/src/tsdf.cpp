@@ -381,28 +381,26 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f _p) const
 
 inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
 {
-    const v_int32x4 mulDim = v_load(dims);
-
     if(v_check_any((p < v_float32x4(1.f, 1.f, 1.f, 0.f)) +
                    (p >= v_setall_f32(edgeResolution-2))))
         return nanv;
 
     v_int32x4 ip = v_floor(p);
     v_float32x4 t = p - v_cvt_f32(ip);
-    v_float32x4 t1 = v_setall_f32(1.f) - t;
+    float tx = t.get0();
+    t = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(t)));
+    float ty = t.get0();
+    t = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(t)));
+    float tz = t.get0();
 
-    float CV_DECL_ALIGNED(16) ttmp[8];
-    v_store_aligned(ttmp + 0, t);
-    v_store_aligned(ttmp + 4, t1);
-    float tx = ttmp[0], ty = ttmp[1], tz = ttmp[2];
-    float tx1 = ttmp[4], ty1 = ttmp[5], tz1 = ttmp[6];
-
-    v_float32x4 tmul = v_float32x4(ty1, ty1, ty, ty)*v_float32x4(tz1, tz, tz1, tz);
-    v_float32x4 tv0 = v_setall_f32(tx1)*tmul;
-    v_float32x4 tv1 = v_setall_f32(tx )*tmul;
-
+    int xdim = dims[0], ydim = dims[1];
     const Voxel* volData = volume[0];
-    int coordBase = v_reduce_sum(ip*mulDim);
+
+    int ix = ip.get0(); ip = v_rotate_right<1>(ip);
+    int iy = ip.get0(); ip = v_rotate_right<1>(ip);
+    int iz = ip.get0();
+
+    int coordBase = ix*xdim + iy*ydim + iz;
 
     float CV_DECL_ALIGNED(16) an[4];
     an[0] = an[1] = an[2] = an[3] = 0.f;
@@ -411,24 +409,20 @@ inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
         const int dim = dims[c];
         float& nv = an[c];
 
-        volumeType CV_DECL_ALIGNED(16) avp[8], avn[8];
+        volumeType vx[8];
         for(int i = 0; i < 8; i++)
-        {
-            avp[i] = volData[neighbourCoords[i] + 1*dim + coordBase].v;
-            avn[i] = volData[neighbourCoords[i] - 1*dim + coordBase].v;
-        }
+            vx[i] = volData[neighbourCoords[i] + coordBase + 1*dim].v -
+                    volData[neighbourCoords[i] + coordBase - 1*dim].v;
 
-        v_float32x4 vp0 = v_load_aligned(avp);
-        v_float32x4 vp1 = v_load_aligned(avp + 4);
-        v_float32x4 vn0 = v_load_aligned(avn);
-        v_float32x4 vn1 = v_load_aligned(avn + 4);
+        volumeType v00 = vx[0] + tz*(vx[1] - vx[0]);
+        volumeType v01 = vx[2] + tz*(vx[3] - vx[2]);
+        volumeType v10 = vx[4] + tz*(vx[5] - vx[4]);
+        volumeType v11 = vx[6] + tz*(vx[7] - vx[6]);
 
-        v_float32x4 v0 = vp0 - vn0;
-        v_float32x4 v1 = vp1 - vn1;
+        volumeType v0 = v00 + ty*(v01 - v00);
+        volumeType v1 = v10 + ty*(v11 - v10);
 
-        v_float32x4 mulN = tv0*v0 + tv1*v1;
-
-        nv = v_reduce_sum(mulN);
+        nv = v0 + tx*(v1 - v0);
     }
 
     v_float32x4 n = v_load_aligned(an);
@@ -439,6 +433,7 @@ inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
 inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 {
     const int xdim = dims[0], ydim = dims[1];
+    const Voxel* volData = volume[0];
 
     if(p.x < 1 || p.x >= edgeResolution -2 ||
        p.y < 1 || p.y >= edgeResolution -2 ||
@@ -452,17 +447,6 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
     float tx = p.x - ix;
     float ty = p.y - iy;
     float tz = p.z - iz;
-    float tx1 = 1.f - tx;
-    float ty1 = 1.f - ty;
-    float tz1 = 1.f - tz;
-    float tv[8] = { tx1 * ty1 * tz1,
-                    tx1 * ty1 * tz,
-                    tx1 * ty  * tz1,
-                    tx1 * ty  * tz,
-                    tx  * ty1 * tz1,
-                    tx  * ty1 * tz,
-                    tx  * ty  * tz1,
-                    tx  * ty  * tz  };
 
     int coordBase = ix*xdim + iy*ydim + iz;
 
@@ -472,22 +456,20 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
         const int dim = dims[c];
         float& nv = an[c];
 
-        volumeType vp[8], vn[8], v[8], mulN[8];
+        volumeType vx[8];
         for(int i = 0; i < 8; i++)
-        {
-            vp[i] = volume.at<Voxel>(neighbourCoords[i] + 1*dim + coordBase).v;
-            vn[i] = volume.at<Voxel>(neighbourCoords[i] - 1*dim + coordBase).v;
-        }
+            vx[i] = volData[neighbourCoords[i] + coordBase + 1*dim].v -
+                    volData[neighbourCoords[i] + coordBase - 1*dim].v;
 
-        for(int i = 0; i < 8; i++)
-            v[i] = (vp[i] - vn[i]);
+        volumeType v00 = vx[0] + tz*(vx[1] - vx[0]);
+        volumeType v01 = vx[2] + tz*(vx[3] - vx[2]);
+        volumeType v10 = vx[4] + tz*(vx[5] - vx[4]);
+        volumeType v11 = vx[6] + tz*(vx[7] - vx[6]);
 
-        for(int i = 0; i < 8; i++)
-            mulN[i] = tv[i]*v[i];
+        volumeType v0 = v00 + ty*(v01 - v00);
+        volumeType v1 = v10 + ty*(v11 - v10);
 
-        nv = 0;
-        for(int i = 0; i < 8; i++)
-            nv += mulN[i];
+        nv = v0 + tx*(v1 - v0);
     }
 
     return normalize(an);
@@ -600,12 +582,10 @@ struct RaycastInvoker : ParallelLoopBody
                     {
                         next += rayStep;
                         v_int32x4 ip = v_round(next);
-
-                        // it's a bit faster than v_reduce_sum
-                        // int coord = v_reduce_sum(ip*mulDim);
-                        int CV_DECL_ALIGNED(16) aip[4];
-                        v_store_aligned(aip, ip);
-                        int coord = aip[0]*xdim + aip[1]*ydim + aip[2];
+                        int ix = ip.get0(); ip = v_rotate_right<1>(ip);
+                        int iy = ip.get0(); ip = v_rotate_right<1>(ip);
+                        int iz = ip.get0();
+                        int coord = ix*xdim + iy*ydim + iz;
 
                         fnext = volume.volume(coord).v;
                         if(fnext != f)
