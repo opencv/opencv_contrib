@@ -165,8 +165,9 @@ static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
         else
         {
             float tx = pt.x - xi, ty = pt.y - yi;
-            float tx1 = 1.f-tx, ty1 = 1.f-ty;
-            return v00*tx1*ty1 + v01*tx*ty1 + v10*tx1*ty + v11*tx*ty;
+            depthType v0 = v00 + tx*(v10 - v00);
+            depthType v1 = v01 + tx*(v11 - v01);
+            return v0 + ty*(v1 - v0);
         }
     }
     else
@@ -204,11 +205,6 @@ static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
 
         float tx1 = 1.f-tx, ty1 = 1.f-ty;
         return v00*tx1*ty1 + v01*tx*ty1 + v10*tx1*ty + v11*tx*ty;
-
-        // speed is the same
-    //    float txty = tx*ty;
-    //    depthType d001 = v00 - v01;
-    //    return v00 + tx*d001 + ty*(v10-v00) + txty*(d001 - v10 + v11);
     }
 }
 
