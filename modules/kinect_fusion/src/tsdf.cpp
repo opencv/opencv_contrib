@@ -322,20 +322,14 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(const v_float32x4& p) const
 
     int coordBase = ix*xdim + iy*ydim + iz;
 
-    volumeType v000 = volData[neighbourCoords[0] + coordBase].v;
-    volumeType v001 = volData[neighbourCoords[1] + coordBase].v;
-    volumeType v010 = volData[neighbourCoords[2] + coordBase].v;
-    volumeType v011 = volData[neighbourCoords[3] + coordBase].v;
+    volumeType vx[8];
+    for(int i = 0; i < 8; i++)
+        vx[i] = volData[neighbourCoords[i] + coordBase].v;
 
-    volumeType v100 = volData[neighbourCoords[4] + coordBase].v;
-    volumeType v101 = volData[neighbourCoords[5] + coordBase].v;
-    volumeType v110 = volData[neighbourCoords[6] + coordBase].v;
-    volumeType v111 = volData[neighbourCoords[7] + coordBase].v;
-
-    volumeType v00 = v000 + tz*(v001 - v000);
-    volumeType v01 = v010 + tz*(v011 - v010);
-    volumeType v10 = v100 + tz*(v101 - v100);
-    volumeType v11 = v110 + tz*(v111 - v110);
+    volumeType v00 = vx[0] + tz*(vx[1] - vx[0]);
+    volumeType v01 = vx[2] + tz*(vx[3] - vx[2]);
+    volumeType v10 = vx[4] + tz*(vx[5] - vx[4]);
+    volumeType v11 = vx[6] + tz*(vx[7] - vx[6]);
 
     volumeType v0 = v00 + ty*(v01 - v00);
     volumeType v1 = v10 + ty*(v11 - v10);
@@ -357,20 +351,14 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
 
     int coordBase = ix*xdim + iy*ydim + iz;
 
-    volumeType v000 = volData[neighbourCoords[0] + coordBase].v;
-    volumeType v001 = volData[neighbourCoords[1] + coordBase].v;
-    volumeType v010 = volData[neighbourCoords[2] + coordBase].v;
-    volumeType v011 = volData[neighbourCoords[3] + coordBase].v;
+    volumeType vx[8];
+    for(int i = 0; i < 8; i++)
+        vx[i] = volData[neighbourCoords[i] + coordBase].v;
 
-    volumeType v100 = volData[neighbourCoords[4] + coordBase].v;
-    volumeType v101 = volData[neighbourCoords[5] + coordBase].v;
-    volumeType v110 = volData[neighbourCoords[6] + coordBase].v;
-    volumeType v111 = volData[neighbourCoords[7] + coordBase].v;
-
-    volumeType v00 = v000 + tz*(v001 - v000);
-    volumeType v01 = v010 + tz*(v011 - v010);
-    volumeType v10 = v100 + tz*(v101 - v100);
-    volumeType v11 = v110 + tz*(v111 - v110);
+    volumeType v00 = vx[0] + tz*(vx[1] - vx[0]);
+    volumeType v01 = vx[2] + tz*(vx[3] - vx[2]);
+    volumeType v10 = vx[4] + tz*(vx[5] - vx[4]);
+    volumeType v11 = vx[6] + tz*(vx[7] - vx[6]);
 
     volumeType v0 = v00 + ty*(v01 - v00);
     volumeType v1 = v10 + ty*(v11 - v10);
