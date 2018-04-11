@@ -464,7 +464,8 @@ void ICPCPU::getAb(const Points& oldPts, const Normals& oldNrm, const Points& ne
                          intrinsics.scale(level).makeProjector(),
                          distanceThreshold*distanceThreshold, cos(angleThreshold));
     Range range(0, newPts.rows);
-    parallel_for_(range, invoker);
+    const int nstripes = -1;
+    parallel_for_(range, invoker, nstripes);
 
     // splitting AB matrix to A and b
     for(int i = 0; i < 6; i++)

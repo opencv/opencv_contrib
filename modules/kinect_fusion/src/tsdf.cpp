@@ -52,12 +52,10 @@ public:
 
     virtual void reset();
 
-    volumeType fetchVoxel(cv::Point3f p) const;
     volumeType interpolateVoxel(cv::Point3f p) const;
     Point3f getNormalVoxel(cv::Point3f p) const;
 
 #if CV_SIMD128
-    volumeType fetchVoxel(const v_float32x4& p) const;
     volumeType interpolateVoxel(const v_float32x4& p) const;
     v_float32x4 getNormalVoxel(const v_float32x4& p) const;
 #endif
@@ -300,40 +298,6 @@ void TSDFVolumeCPU::integrate(cv::Ptr<Frame> _depth, float depthFactor, cv::Affi
     Range range(0, edgeResolution);
     parallel_for_(range, ii);
 }
-
-#if CV_SIMD128
-// all coordinate checks should be done in inclosing cycle
-inline volumeType TSDFVolumeCPU::fetchVoxel(Point3f _p) const
-{
-    v_float32x4 p(_p.x, _p.y, _p.z, 0.f);
-    return fetchVoxel(p);
-}
-
-inline volumeType TSDFVolumeCPU::fetchVoxel(const v_float32x4& p) const
-{
-    const v_int32x4 mulDim = v_load(dimStep);
-
-    v_int32x4 ip = v_round(p);
-    int coord = v_reduce_sum(ip*mulDim);
-
-    volumeType v = volume(coord).v;
-
-    return v;
-}
-#else
-inline volumeType TSDFVolumeCPU::fetchVoxel(Point3f p) const
-{
-    int xdim = dimStep[0], ydim = dimStep[1];
-
-    int ix = cvRound(p.x);
-    int iy = cvRound(p.y);
-    int iz = cvRound(p.z);
-
-    volumeType v = volume(ix*xdim + iy*ydim + iz).v;
-
-    return v;
-}
-#endif
 
 #if CV_SIMD128
 // all coordinate checks should be done in inclosing cycle
@@ -593,8 +557,8 @@ struct RaycastInvoker : ParallelLoopBody
 
         for(int y = range.start; y < range.end; y++)
         {
-            ptype* CV_DECL_ALIGNED(16) ptsRow = points[y];
-            ptype* CV_DECL_ALIGNED(16) nrmRow = normals[y];
+            ptype* ptsRow = points[y];
+            ptype* nrmRow = normals[y];
 
             for(int x = 0; x < points.cols; x++)
             {
@@ -640,43 +604,48 @@ struct RaycastInvoker : ParallelLoopBody
                     orig *= invVoxelSize;
                     dir  *= invVoxelSize;
 
+                    int xdim = volume.dimStep[0], ydim = volume.dimStep[1];
                     v_float32x4 rayStep = dir * v_setall_f32(tstep);
                     v_float32x4 next = (orig + dir * v_setall_f32(tmin));
-                    volumeType fnext = volume.interpolateVoxel(next);
+                    volumeType f = volume.interpolateVoxel(next), fnext = f;
 
                     //raymarch
-                    volumeType f;
-                    float t;
-                    v_float32x4 tp;
-                    bool surfaceReached = false;
-                    for(t = tmin; t < tmax; t += tstep)
+                    int steps = 0;
+                    int nSteps = floor((tmax - tmin)/tstep);
+                    for(; steps < nSteps; steps++)
                     {
-                        f = fnext;
-                        tp = next;
                         next += rayStep;
-                        // trying to optimize
-                        fnext = volume.fetchVoxel(next);
+                        v_int32x4 ip = v_round(next);
+
+                        // it's a bit faster than v_reduce_sum
+                        // int coord = v_reduce_sum(ip*mulDim);
+                        int CV_DECL_ALIGNED(16) aip[4];
+                        v_store_aligned(aip, ip);
+                        int coord = aip[0]*xdim + aip[1]*ydim + aip[2];
+
+                        fnext = volume.volume(coord).v;
                         if(fnext != f)
+                        {
                             fnext = volume.interpolateVoxel(next);
 
-                        // when ray comes from inside of a surface
-                        if(f < 0.f && fnext > 0.f)
-                            break;
+                            // when ray crosses a surface
+                            if(f * fnext < 0.f)
+                                break;
 
-                        // if ray penetrates a surface from outside
-                        // linear interpolate t between two f values
-                        if(f > 0.f && fnext < 0.f)
-                        {
-                            surfaceReached = true;
-                            break;
+                            f = fnext;
                         }
                     }
 
-                    if(surfaceReached)
+                    // if ray penetrates a surface from outside
+                    // linearly interpolate t between two f values
+                    if(f > 0.f && fnext < 0.f)
                     {
+                        v_float32x4 tp = next - rayStep;
                         volumeType ft   = volume.interpolateVoxel(tp);
                         volumeType ftdt = volume.interpolateVoxel(next);
-                        float ts = t - tstep*ft/(ftdt - ft);
+                        // float t = tmin + steps*tstep;
+                        // float ts = t - tstep*ft/(ftdt - ft);
+                        float ts = tmin + tstep*(steps - ft/(ftdt - ft));
 
                         // avoid division by zero
                         if(!cvIsNaN(ts) && !cvIsInf(ts))
@@ -695,8 +664,8 @@ struct RaycastInvoker : ParallelLoopBody
                     }
                 }
 
-                v_store_aligned((float*)(&ptsRow[x]), point);
-                v_store_aligned((float*)(&nrmRow[x]), normal);
+                v_store((float*)(&ptsRow[x]), point);
+                v_store((float*)(&nrmRow[x]), normal);
             }
         }
     }
@@ -746,41 +715,42 @@ struct RaycastInvoker : ParallelLoopBody
 
                     Point3f rayStep = dir * tstep;
                     Point3f next = (orig + dir * tmin);
-                    volumeType fnext = volume.interpolateVoxel(next);
+                    volumeType f = volume.interpolateVoxel(next), fnext = f;
 
                     //raymarch
-                    volumeType f;
-                    float t;
-                    Point3f tp;
-                    bool surfaceReached = false;
-                    for(t = tmin; t < tmax; t += tstep)
+                    int steps = 0;
+                    int nSteps = floor((tmax - tmin)/tstep);
+                    for(; steps < nSteps; steps++)
                     {
-                        f = fnext;
-                        tp = next;
                         next += rayStep;
-                        // trying to optimize
                         fnext = volume.fetchVoxel(next);
+                        int xdim = dimStep[0], ydim = dimStep[1];
+                        int ix = cvRound(next.x);
+                        int iy = cvRound(next.y);
+                        int iz = cvRound(next.z);
+                        fnext = volume.volume(ix*xdim + iy*ydim + iz).v;
                         if(fnext != f)
+                        {
                             fnext = volume.interpolateVoxel(next);
 
-                        // when ray comes from inside of a surface
-                        if(f < 0.f && fnext > 0.f)
-                            break;
+                            // when ray crosses a surface
+                            if(f * fnext < 0.f)
+                                break;
 
-                        // if ray penetrates a surface from outside
-                        // linear interpolate t between two f values
-                        if(f > 0.f && fnext < 0.f)
-                        {
-                            surfaceReached = true;
-                            break;
+                            f = fnext;
                         }
                     }
 
-                    if(surfaceReached)
+                    // if ray penetrates a surface from outside
+                    // linearly interpolate t between two f values
+                    if(f > 0.f && fnext < 0.f)
                     {
+                        Point3f tp = next - rayStep;
                         volumeType ft   = volume.interpolateVoxel(tp);
                         volumeType ftdt = volume.interpolateVoxel(next);
-                        float ts = t - tstep*ft/(ftdt - ft);
+                        // float t = tmin + steps*tstep;
+                        // float ts = t - tstep*ft/(ftdt - ft);
+                        float ts = tmin + tstep*(steps - ft/(ftdt - ft));
 
                         // avoid division by zero
                         if(!cvIsNaN(ts) && !cvIsInf(ts))
@@ -831,7 +801,8 @@ cv::Ptr<Frame> TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, 
     Points points(frameSize);
     Normals normals(frameSize);
 
-    parallel_for_(Range(0, points.rows), RaycastInvoker(points, normals, cameraPose, intrinsics, *this));
+    const int nstripes = -1;
+    parallel_for_(Range(0, points.rows), RaycastInvoker(points, normals, cameraPose, intrinsics, *this), nstripes);
 
     // build a pyramid of points and normals
     return (*frameGenerator)(points, normals, pyramidLevels);
