@@ -119,6 +119,68 @@ inline float specPow<1>(float x)
     return x;
 }
 
+struct RenderInvoker : ParallelLoopBody
+{
+    RenderInvoker(const Points& _points, const Normals& _normals, Mat_<Vec3b>& _img, Affine3f _lightPose, Size _sz) :
+        ParallelLoopBody(),
+        points(_points),
+        normals(_normals),
+        img(_img),
+        lightPose(_lightPose),
+        sz(_sz)
+    { }
+
+    virtual void operator ()(const Range& range) const
+    {
+        for(int y = range.start; y < range.end; y++)
+        {
+            Vec3b* imgRow = img[y];
+            const ptype* ptsRow = points[y];
+            const ptype* nrmRow = normals[y];
+
+            for(int x = 0; x < sz.width; x++)
+            {
+                Point3f p = fromPtype(ptsRow[x]);
+                Point3f n = fromPtype(nrmRow[x]);
+
+                Vec3b color;
+
+                if(isNaN(p))
+                {
+                    color = Vec3b(0, 32, 0);
+                }
+                else
+                {
+                    const float Ka = 0.3f;  //ambient coeff
+                    const float Kd = 0.5f;  //diffuse coeff
+                    const float Ks = 0.2f;  //specular coeff
+                    const int   sp = 20;  //specular power
+
+                    const float Ax = 1.f;   //ambient color,  can be RGB
+                    const float Dx = 1.f;   //diffuse color,  can be RGB
+                    const float Sx = 1.f;   //specular color, can be RGB
+                    const float Lx = 1.f;   //light color
+
+                    Point3f l = normalize(lightPose.translation() - Vec3f(p));
+                    Point3f v = normalize(-Vec3f(p));
+                    Point3f r = normalize(Vec3f(2.f*n*n.dot(l) - l));
+
+                    uchar ix = (Ax*Ka*Dx + Lx*Kd*Dx*max(0.f, n.dot(l)) + Lx*Ks*Sx*specPow<sp>(max(0.f, r.dot(v))))*255;
+                    color = Vec3b(ix, ix, ix);
+                }
+
+                imgRow[x] = color;
+            }
+        }
+    }
+
+    const Points& points;
+    const Normals& normals;
+    Mat_<Vec3b>& img;
+    Affine3f lightPose;
+    Size sz;
+};
+
 void FrameCPU::render(OutputArray image, int level, Affine3f lightPose) const
 {
     ScopeTime st("frame render");
@@ -130,46 +192,10 @@ void FrameCPU::render(OutputArray image, int level, Affine3f lightPose) const
     image.create(sz, CV_8UC3);
     Mat_<Vec3b> img = image.getMat();
 
-    for(int y = 0; y < sz.height; y++)
-    {
-        Vec3b* imgRow = img[y];
-        const ptype* ptsRow = points[level][y];
-        const ptype* nrmRow = normals[level][y];
-
-        for(int x = 0; x < sz.width; x++)
-        {
-            Point3f p = fromPtype(ptsRow[x]);
-            Point3f n = fromPtype(nrmRow[x]);
-
-            Vec3b color;
-
-            if(isNaN(p))
-            {
-                color = Vec3b(0, 32, 0);
-            }
-            else
-            {
-                const float Ka = 0.3f;  //ambient coeff
-                const float Kd = 0.5f;  //diffuse coeff
-                const float Ks = 0.2f;  //specular coeff
-                const int   sp = 20;  //specular power
-
-                const float Ax = 1.f;   //ambient color,  can be RGB
-                const float Dx = 1.f;   //diffuse color,  can be RGB
-                const float Sx = 1.f;   //specular color, can be RGB
-                const float Lx = 1.f;   //light color
-
-                Point3f l = normalize(lightPose.translation() - Vec3f(p));
-                Point3f v = normalize(-Vec3f(p));
-                Point3f r = normalize(Vec3f(2.f*n*n.dot(l) - l));
-
-                uchar ix = (Ax*Ka*Dx + Lx*Kd*Dx*max(0.f, n.dot(l)) + Lx*Ks*Sx*specPow<sp>(max(0.f, r.dot(v))))*255;
-                color = Vec3b(ix, ix, ix);
-            }
-
-            imgRow[x] = color;
-        }
-    }
+    RenderInvoker ri(points[level], normals[level], img, lightPose, sz);
+    Range range(0, sz.height);
+    const int nstripes = -1;
+    parallel_for_(range, ri, nstripes);
 }
 
 
@@ -217,47 +243,133 @@ void pyrDownPointsNormals(const Points p, const Normals n, Points &pdown, Normal
     }
 }
 
+struct PyrDownBilateralInvoker : ParallelLoopBody
+{
+    PyrDownBilateralInvoker(const Depth& _depth, Depth& _depthDown, float _sigma) :
+        ParallelLoopBody(),
+        depth(_depth),
+        depthDown(_depthDown),
+        sigma(_sigma)
+    { }
+
+    virtual void operator ()(const Range& range) const
+    {
+        float sigma3 = sigma*3;
+        const int D = 5;
+
+        for(int y = range.start; y < range.end; y++)
+        {
+            depthType* downRow = depthDown[y];
+            const depthType* srcCenterRow = depth[2*y];
+
+            for(int x = 0; x < depthDown.cols; x++)
+            {
+                depthType center = srcCenterRow[2*x];
+
+                int sx = max(0, 2*x - D/2), ex = min(2*x - D/2 + D, depth.cols-1);
+                int sy = max(0, 2*y - D/2), ey = min(2*y - D/2 + D, depth.rows-1);
+
+                depthType sum = 0;
+                int count = 0;
+
+                for(int iy = sy; iy < ey; iy++)
+                {
+                    const depthType* srcRow = depth[iy];
+                    for(int ix = sx; ix < ex; ix++)
+                    {
+                        depthType val = srcRow[ix];
+                        if(abs(val - center) < sigma3)
+                        {
+                            sum += val; count ++;
+                        }
+                    }
+                }
+
+                downRow[x] = (count == 0) ? 0 : sum / count;
+            }
+        }
+    }
+
+    const Depth& depth;
+    Depth& depthDown;
+    float sigma;
+};
+
 
 Depth pyrDownBilateral(const Depth depth, float sigma)
 {
     Depth depthDown(depth.rows/2, depth.cols/2);
 
-    float sigma3 = sigma*3;
-    const int D = 5;
+    PyrDownBilateralInvoker pdi(depth, depthDown, sigma);
+    Range range(0, depthDown.rows);
+    const int nstripes = -1;
+    parallel_for_(range, pdi, nstripes);
 
-    for(int y = 0; y < depthDown.rows; y++)
-    {
-        depthType* downRow = depthDown[y];
-        const depthType* srcCenterRow = depth[2*y];
-
-        for(int x = 0; x < depthDown.cols; x++)
-        {
-            depthType center = srcCenterRow[2*x];
-
-            int sx = max(0, 2*x - D/2), ex = min(2*x - D/2 + D, depth.cols-1);
-            int sy = max(0, 2*y - D/2), ey = min(2*y - D/2 + D, depth.rows-1);
-
-            depthType sum = 0;
-            int count = 0;
-
-            for(int iy = sy; iy < ey; iy++)
-            {
-                const depthType* srcRow = depth[iy];
-                for(int ix = sx; ix < ex; ix++)
-                {
-                    depthType val = srcRow[ix];
-                    if(abs(val - center) < sigma3)
-                    {
-                        sum += val; count ++;
-                    }
-                }
-            }
-
-            downRow[x] = (count == 0) ? 0 : sum / count;
-        }
-    }
     return depthDown;
 }
+
+struct ComputePointsNormalsInvoker : ParallelLoopBody
+{
+    ComputePointsNormalsInvoker(const Depth& _depth, Points& _points, Normals& _normals,
+                                const Intr::Reprojector& _reproj, float _dfac) :
+        ParallelLoopBody(),
+        depth(_depth),
+        points(_points),
+        normals(_normals),
+        reproj(_reproj),
+        dfac(_dfac)
+    { }
+
+    virtual void operator ()(const Range& range) const
+    {
+        for(int y = range.start; y < range.end; y++)
+        {
+            const depthType* depthRow0 = depth[y];
+            const depthType* depthRow1 = (y < depth.rows - 1) ? depth[y + 1] : 0;
+            ptype    *ptsRow = points[y];
+            ptype   *normRow = normals[y];
+
+            for(int x = 0; x < depth.cols; x++)
+            {
+                depthType d00 = depthRow0[x];
+                depthType z00 = d00*dfac;
+                Point3f v00 = reproj(Point3f(x, y, z00));
+
+                Point3f p = nan3, n = nan3;
+
+                if(x < depth.cols - 1 && y < depth.rows - 1)
+                {
+                    depthType d01 = depthRow0[x+1];
+                    depthType d10 = depthRow1[x];
+
+                    depthType z01 = d01*dfac;
+                    depthType z10 = d10*dfac;
+
+                    // before it was
+                    //if(z00*z01*z10 != 0)
+                    if(z00 != 0 && z01 != 0 && z10 != 0)
+                    {
+                        Point3f v01 = reproj(Point3f(x+1, y, z01));
+                        Point3f v10 = reproj(Point3f(x, y+1, z10));
+
+                        cv::Vec3f vec = (v01-v00).cross(v10-v00);
+                        n = -normalize(vec);
+                        p = v00;
+                    }
+                }
+
+                ptsRow[x] = toPtype(p);
+                normRow[x] = toPtype(n);
+            }
+        }
+    }
+
+    const Depth& depth;
+    Points& points;
+    Normals& normals;
+    const Intr::Reprojector& reproj;
+    float dfac;
+};
 
 void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
                           Points points, Normals normals)
@@ -273,46 +385,10 @@ void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
 
     Intr::Reprojector reproj = intr.makeReprojector();
 
-    for(int y = 0; y < depth.rows; y++)
-    {
-        const depthType* depthRow0 = depth[y];
-        const depthType* depthRow1 = (y < depth.rows - 1) ? depth[y + 1] : 0;
-        ptype    *ptsRow = points[y];
-        ptype   *normRow = normals[y];
-
-        for(int x = 0; x < depth.cols; x++)
-        {
-            depthType d00 = depthRow0[x];
-            depthType z00 = d00*dfac;
-            Point3f v00 = reproj(Point3f(x, y, z00));
-
-            Point3f p = nan3, n = nan3;
-
-            if(x < depth.cols - 1 && y < depth.rows - 1)
-            {
-                depthType d01 = depthRow0[x+1];
-                depthType d10 = depthRow1[x];
-
-                depthType z01 = d01*dfac;
-                depthType z10 = d10*dfac;
-
-                // before it was
-                //if(z00*z01*z10 != 0)
-                if(z00 != 0 && z01 != 0 && z10 != 0)
-                {
-                    Point3f v01 = reproj(Point3f(x+1, y, z01));
-                    Point3f v10 = reproj(Point3f(x, y+1, z10));
-
-                    cv::Vec3f vec = (v01-v00).cross(v10-v00);
-                    n = -normalize(vec);
-                    p = v00;
-                }
-            }
-
-            ptsRow[x] = toPtype(p);
-            normRow[x] = toPtype(n);
-        }
-    }
+    ComputePointsNormalsInvoker ci(depth, points, normals, reproj, dfac);
+    Range range(0, depth.rows);
+    const int nstripes = -1;
+    parallel_for_(range, ci, nstripes);
 }
 
 ///////// GPU implementation /////////
