@@ -80,7 +80,7 @@ struct CV_EXPORTS_W_SIMPLE Template
   CV_PROP int width;
   CV_PROP int height;
   CV_PROP int pyramid_level;
-  std::vector<Feature> features; // FIXIT: CV_PROP
+  CV_PROP std::vector<Feature> features;
 
   void read(const FileNode& fn);
   void write(FileStorage& fs) const;
