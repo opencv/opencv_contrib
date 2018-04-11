@@ -305,37 +305,42 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f _p) const
 
 inline volumeType TSDFVolumeCPU::interpolateVoxel(const v_float32x4& p) const
 {
-    const v_int32x4 mulDim = v_load(dims);
-
     v_int32x4 ip = v_floor(p);
     v_float32x4 t = p - v_cvt_f32(ip);
-    v_float32x4 t1 = v_setall_f32(1.f) - t;
+    float tx = t.get0();
+    t = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(t)));
+    float ty = t.get0();
+    t = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(t)));
+    float tz = t.get0();
 
-    float CV_DECL_ALIGNED(16) ttmp[8];
-    v_store_aligned(ttmp + 0, t);
-    v_store_aligned(ttmp + 4, t1);
-    float tx = ttmp[0], ty = ttmp[1], tz = ttmp[2];
-    float tx1 = ttmp[4], ty1 = ttmp[5], tz1 = ttmp[6];
-
-    v_float32x4 tmul = v_float32x4(ty1, ty1, ty, ty)*v_float32x4(tz1, tz, tz1, tz);
-    v_float32x4 tv0 = v_setall_f32(tx1)*tmul;
-    v_float32x4 tv1 = v_setall_f32(tx )*tmul;
-
-    int coordBase = v_reduce_sum(ip*mulDim);
-
+    int xdim = dims[0], ydim = dims[1];
     const Voxel* volData = volume[0];
-    volumeType CV_DECL_ALIGNED(16) av[8];
-    for(int i = 0; i < 8; i++)
-        av[i] = volData[neighbourCoords[i] + coordBase].v;
 
-    v_float32x4 v0 = v_load_aligned(av);
-    v_float32x4 v1 = v_load_aligned(av + 4);
+    int ix = ip.get0(); ip = v_rotate_right<1>(ip);
+    int iy = ip.get0(); ip = v_rotate_right<1>(ip);
+    int iz = ip.get0();
 
-    v_float32x4 mulN = tv0 * v0 + tv1 * v1;
+    int coordBase = ix*xdim + iy*ydim + iz;
 
-    volumeType sum = v_reduce_sum(mulN);
+    volumeType v000 = volData[neighbourCoords[0] + coordBase].v;
+    volumeType v001 = volData[neighbourCoords[1] + coordBase].v;
+    volumeType v010 = volData[neighbourCoords[2] + coordBase].v;
+    volumeType v011 = volData[neighbourCoords[3] + coordBase].v;
 
-    return sum;
+    volumeType v100 = volData[neighbourCoords[4] + coordBase].v;
+    volumeType v101 = volData[neighbourCoords[5] + coordBase].v;
+    volumeType v110 = volData[neighbourCoords[6] + coordBase].v;
+    volumeType v111 = volData[neighbourCoords[7] + coordBase].v;
+
+    volumeType v00 = v000 + tz*(v001 - v000);
+    volumeType v01 = v010 + tz*(v011 - v010);
+    volumeType v10 = v100 + tz*(v101 - v100);
+    volumeType v11 = v110 + tz*(v111 - v110);
+
+    volumeType v0 = v00 + ty*(v01 - v00);
+    volumeType v1 = v10 + ty*(v11 - v10);
+
+    return v0 + tx*(v1 - v0);
 }
 #else
 inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
@@ -349,33 +354,28 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
     float tx = p.x - ix;
     float ty = p.y - iy;
     float tz = p.z - iz;
-    float tx1 = 1.f - tx;
-    float ty1 = 1.f - ty;
-    float tz1 = 1.f - tz;
-    float tv[8] = { tx1 * ty1 * tz1,
-                    tx1 * ty1 * tz,
-                    tx1 * ty  * tz1,
-                    tx1 * ty  * tz,
-                    tx  * ty1 * tz1,
-                    tx  * ty1 * tz,
-                    tx  * ty  * tz1,
-                    tx  * ty  * tz  };
 
     int coordBase = ix*xdim + iy*ydim + iz;
 
-    volumeType v[8];
-    for(int i = 0; i < 8; i++)
-        v[i] = volume.at<Voxel>(neighbourCoords[i] + coordBase).v;
+    volumeType v000 = volData[neighbourCoords[0] + coordBase].v;
+    volumeType v001 = volData[neighbourCoords[1] + coordBase].v;
+    volumeType v010 = volData[neighbourCoords[2] + coordBase].v;
+    volumeType v011 = volData[neighbourCoords[3] + coordBase].v;
 
-    volumeType mulN[8];
-    for(int i = 0; i < 8; i++)
-        mulN[i] = tv[i]*v[i];
+    volumeType v100 = volData[neighbourCoords[4] + coordBase].v;
+    volumeType v101 = volData[neighbourCoords[5] + coordBase].v;
+    volumeType v110 = volData[neighbourCoords[6] + coordBase].v;
+    volumeType v111 = volData[neighbourCoords[7] + coordBase].v;
 
-    volumeType sum = 0;
-    for(int i = 0; i < 8; i++)
-        sum += mulN[i];
+    volumeType v00 = v000 + tz*(v001 - v000);
+    volumeType v01 = v010 + tz*(v011 - v010);
+    volumeType v10 = v100 + tz*(v101 - v100);
+    volumeType v11 = v110 + tz*(v111 - v110);
 
-    return sum;
+    volumeType v0 = v00 + ty*(v01 - v00);
+    volumeType v1 = v10 + ty*(v11 - v10);
+
+    return v0 + tx*(v1 - v0);
 }
 #endif
 
