@@ -784,7 +784,9 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
         pVecs(_pVecs),
         nVecs(_nVecs),
         needNormals(_needNormals)
-    { }
+    {
+        volDataStart = vol.volume[0];
+    }
 
     inline void coord(std::vector<ptype>& points, std::vector<ptype>& normals,
                       int x, int y, int z, Point3f V, float v0, int axis) const
@@ -815,9 +817,9 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
 
         if(limits)
         {
-            const Voxel& voxeld = vol.volume((x+shift.x)*vol.dims[0] +
-                                             (y+shift.y)*vol.dims[1] +
-                                             (z+shift.z));
+            const Voxel& voxeld = volDataStart[(x+shift.x)*vol.dims[0] +
+                                               (y+shift.y)*vol.dims[1] +
+                                               (z+shift.z)];
             volumeType vd = voxeld.v;
 
             if(voxeld.weight != 0 && vd != 1.f)
@@ -844,15 +846,17 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
 
     virtual void operator() (const Range& range) const
     {
+        // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
         std::vector<ptype> points, normals;
         for(int x = range.start; x < range.end; x++)
         {
+            const Voxel* volDataX = volDataStart + x*vol.dims[0];
             for(int y = 0; y < vol.edgeResolution; y++)
             {
+                const Voxel* volDataY = volDataX + y*vol.dims[1];
                 for(int z = 0; z < vol.edgeResolution; z++)
                 {
-                    // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
-                    const Voxel& voxel0 = vol.volume(x*vol.dims[0] + y*vol.dims[1] + z);
+                    const Voxel& voxel0 = volDataY[z];
                     volumeType v0 = voxel0.v;
                     if(voxel0.weight != 0 && v0 != 1.f)
                     {
@@ -875,6 +879,7 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
     const TSDFVolumeCPU& vol;
     std::vector< std::vector<ptype> >& pVecs;
     std::vector< std::vector<ptype> >& nVecs;
+    const Voxel* volDataStart;
     bool needNormals;
     mutable Mutex mutex;
 };
