@@ -135,6 +135,55 @@ void TSDFVolumeCPU::reset()
 
 static const bool fixMissingData = false;
 
+#if CV_SIMD128
+static inline depthType bilinearDepth(const Depth& m, const v_float32x4& pt)
+{
+    const depthType defaultValue = 0;
+    const v_float32x4 upLimits = v_cvt_f32(v_int32x4(m.cols-1, m.rows-1, 0, 0));
+    v_uint32x4 limits = v_reinterpret_as_u32(pt < v_setzero_f32()) | v_reinterpret_as_u32(pt >= upLimits);
+    limits = limits | v_rotate_right<1>(limits);
+    if(limits.get0())
+        return defaultValue;
+
+    v_int32x4 ip = v_floor(pt);
+    v_int32x4 ipshift = ip;
+    int xi = ipshift.get0();
+    ipshift = v_rotate_right<1>(ipshift);
+    int yi = ipshift.get0();
+
+    const depthType* row0 = m[yi+0];
+    const depthType* row1 = m[yi+1];
+
+    v_float32x4 v001 = v_load_low(row0 + xi);
+    v_float32x4 v101 = v_load_low(row1 + xi);
+
+    v_float32x4 vall = v_combine_low(v001, v101);
+
+    // assume correct depth is positive
+    // don't fix missing data
+    if(v_check_all(vall > v_setzero_f32()))
+    {
+        v_float32x4 t = pt - v_cvt_f32(ip);
+        v_float32x4 tx = v_setall_f32(t.get0());
+        v_float32x4 v = v001 + tx*(v101 - v001);
+        t = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(t)));
+        float ty = t.get0();
+        float v0 = v.get0();
+        v = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(v)));
+        float v1 = v.get0();
+        return v0 + ty*(v1 - v0);
+    }
+    else
+        return defaultValue;
+}
+
+static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
+{
+    v_float32x4 vp(pt.x, pt.y, 0.f, 0.f);
+    return bilinearDepth(m, vp);
+}
+
+#else
 static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
 {
     const depthType defaultValue = qnan;
@@ -202,11 +251,12 @@ static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
         }
 
         float tx = pt.x - xi, ty = pt.y - yi;
-
-        float tx1 = 1.f-tx, ty1 = 1.f-ty;
-        return v00*tx1*ty1 + v01*tx*ty1 + v10*tx1*ty + v11*tx*ty;
+        depthType v0 = v00 + tx*(v10 - v00);
+        depthType v1 = v01 + tx*(v11 - v01);
+        return v0 + ty*(v1 - v0);
     }
 }
+#endif
 
 struct IntegrateInvoker : ParallelLoopBody
 {
@@ -219,15 +269,124 @@ struct IntegrateInvoker : ParallelLoopBody
         vol2cam(cameraPose.inv() * volume.pose),
         truncDistInv(1./volume.truncDist),
         dfac(1.f/depthFactor)
-    { }
+    {
+        volDataStart = volume.volume[0];
+    }
 
+#if CV_SIMD128
+    virtual void operator() (const Range& range) const
+    {
+        // zStep == vol2cam*(Point3f(x, y, 1)*voxelSize) - basePt;
+        Point3f zStepPt = Point3f(vol2cam.matrix(0, 2), vol2cam.matrix(1, 2), vol2cam.matrix(2, 2))*volume.voxelSize;
+        v_float32x4 zStep(zStepPt.x, zStepPt.y, zStepPt.z, 0);
+        v_float32x4 vfxy(proj.fx, proj.fy, 0.f, 0.f), vcxy(proj.cx, proj.cy, 0.f, 0.f);
+        const v_float32x4 upLimits = v_cvt_f32(v_int32x4(depth.cols-1, depth.rows-1, 0, 0));
+
+        // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
+        for(int x = range.start; x < range.end; x++)
+        {
+            Voxel* volDataX = volDataStart + x*volume.dims[0];
+            for(int y = 0; y < volume.edgeResolution; y++)
+            {
+                Voxel* volDataY = volDataX+y*volume.dims[1];
+                // optimization of camSpace transformation (vector addition instead of matmul at each z)
+                Point3f basePt = vol2cam*Point3f(x*volume.voxelSize, y*volume.voxelSize, 0);
+                v_float32x4 camSpacePt(basePt.x, basePt.y, basePt.z, 0);
+
+                int baseZ = -basePt.z / zStepPt.z;
+                baseZ = max(0, min(volume.edgeResolution, baseZ));
+                for(int z = baseZ; z < volume.edgeResolution; z++)
+                {
+                    // optimization of the following:
+                    //Point3f volPt = Point3f(x, y, z)*voxelSize;
+                    //Point3f camSpacePt = vol2cam * volPt;
+                    camSpacePt += zStep;
+
+                    float zCamSpace = v_reinterpret_as_f32(v_rotate_right<2>(v_reinterpret_as_u32(camSpacePt))).get0();
+
+                    if(zCamSpace <= 0.f)
+                        continue;
+
+                    v_float32x4 camPixVec = camSpacePt/v_setall_f32(zCamSpace);
+                    v_float32x4 projected = v_muladd(camPixVec, vfxy, vcxy);
+                    projected = v_reinterpret_as_f32(v_reinterpret_as_u32(projected) &
+                                                     v_uint32x4(0xFFFFFFFF, 0xFFFFFFFF, 0, 0));
+
+                    depthType v;
+                    // bilinearly interpolate depth at projected
+                    {
+                        const v_float32x4& pt = projected;
+
+                        v_uint32x4 limits = v_reinterpret_as_u32(pt < v_setzero_f32()) | v_reinterpret_as_u32(pt >= upLimits);
+                        limits = limits | v_rotate_right<1>(limits);
+                        if(limits.get0())
+                            continue;
+
+                        v_int32x4 ip = v_floor(pt);
+                        v_int32x4 ipshift = ip;
+                        int xi = ipshift.get0();
+                        ipshift = v_rotate_right<1>(ipshift);
+                        int yi = ipshift.get0();
+
+                        const depthType* row0 = depth[yi+0];
+                        const depthType* row1 = depth[yi+1];
+
+                        v_float32x4 v001 = v_load_low(row0 + xi);
+                        v_float32x4 v101 = v_load_low(row1 + xi);
+
+                        v_float32x4 vall = v_combine_low(v001, v101);
+
+                        // assume correct depth is positive
+                        // don't fix missing data
+                        if(v_check_all(vall > v_setzero_f32()))
+                        {
+                            v_float32x4 t = pt - v_cvt_f32(ip);
+                            v_float32x4 tx = v_setall_f32(t.get0());
+                            v_float32x4 vx = v001 + tx*(v101 - v001);
+                            t = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(t)));
+                            float ty = t.get0();
+                            float v0 = vx.get0();
+                            vx = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(vx)));
+                            float v1 = vx.get0();
+                            v = v0 + ty*(v1 - v0);
+                        }
+                        else
+                            continue;
+                    }
+
+                    // norm(camPixVec) produces double which is too slow
+                    float pixNorm = sqrt(v_reduce_sum(camPixVec*camPixVec));
+                    // difference between distances of point and of surface to camera
+                    volumeType sdf = pixNorm*(v*dfac - zCamSpace);
+                    // possible alternative is:
+                    // kftype sdf = norm(camSpacePt)*(v*dfac/camSpacePt.z - 1);
+
+                    if(sdf >= -volume.truncDist)
+                    {
+                        volumeType tsdf = fmin(1.f, sdf * truncDistInv);
+
+                        Voxel& voxel = volDataY[z];
+                        int& weight = voxel.weight;
+                        volumeType& value = voxel.v;
+
+                        // update TSDF
+                        value = (value*weight+tsdf) / (weight + 1);
+                        weight = min(weight + 1, volume.maxWeight);
+                    }
+                }
+            }
+        }
+    }
+#else
     virtual void operator() (const Range& range) const
     {
         // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
         for(int x = range.start; x < range.end; x++)
         {
+            Voxel* volDataX = volDataStart + x*volume.dims[0];
             for(int y = 0; y < volume.edgeResolution; y++)
             {
+                Voxel* volDataY = volDataX+y*volume.dims[1];
                 // optimization of camSpace transformation (vector addition instead of matmul at each z)
                 Point3f basePt = vol2cam*Point3f(x*volume.voxelSize, y*volume.voxelSize, 0);
                 Point3f camSpacePt = basePt;
@@ -252,8 +411,10 @@ struct IntegrateInvoker : ParallelLoopBody
                     if(v == 0)
                         continue;
 
+                    // norm(camPixVec) produces double which is too slow
+                    float pixNorm = sqrt(camPixVec.dot(camPixVec));
                     // difference between distances of point and of surface to camera
-                    volumeType sdf = norm(camPixVec)*(v*dfac - camSpacePt.z);
+                    volumeType sdf = pixNorm*(v*dfac - camSpacePt.z);
                     // possible alternative is:
                     // kftype sdf = norm(camSpacePt)*(v*dfac/camSpacePt.z - 1);
 
@@ -261,7 +422,7 @@ struct IntegrateInvoker : ParallelLoopBody
                     {
                         volumeType tsdf = fmin(1.f, sdf * truncDistInv);
 
-                        Voxel& voxel = volume.volume(x*volume.dims[0] + y*volume.dims[1] + z);
+                        Voxel& voxel = volDataY[z];
                         int& weight = voxel.weight;
                         volumeType& value = voxel.v;
 
@@ -273,6 +434,7 @@ struct IntegrateInvoker : ParallelLoopBody
             }
         }
     }
+#endif
 
     TSDFVolumeCPU& volume;
     const Depth& depth;
@@ -280,6 +442,7 @@ struct IntegrateInvoker : ParallelLoopBody
     const cv::Affine3f vol2cam;
     const float truncDistInv;
     const float dfac;
+    Voxel* volDataStart;
 };
 
 // use depth instead of distance (optimization)

@@ -42,14 +42,16 @@ struct Intr
         template<typename T>
         inline cv::Point_<T> operator()(cv::Point3_<T> p) const
         {
-            T x = fx*(p.x/p.z) + cx;
-            T y = fy*(p.y/p.z) + cy;
+            T invz = T(1)/p.z;
+            T x = fx*(p.x*invz) + cx;
+            T y = fy*(p.y*invz) + cy;
             return cv::Point_<T>(x, y);
         }
         template<typename T>
         inline cv::Point_<T> operator()(cv::Point3_<T> p, cv::Point3_<T>& pixVec) const
         {
-            pixVec = cv::Point3_<T>(p.x/p.z, p.y/p.z, 1);
+            T invz = T(1)/p.z;
+            pixVec = cv::Point3_<T>(p.x*invz, p.y*invz, 1);
             T x = fx*pixVec.x + cx;
             T y = fy*pixVec.y + cy;
             return cv::Point_<T>(x, y);
