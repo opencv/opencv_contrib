@@ -489,13 +489,16 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(const v_float32x4& p) const
     for(int i = 0; i < 8; i++)
         vx[i] = volData[neighbourCoords[i] + coordBase].v;
 
-    volumeType v00 = vx[0] + tz*(vx[1] - vx[0]);
-    volumeType v01 = vx[2] + tz*(vx[3] - vx[2]);
-    volumeType v10 = vx[4] + tz*(vx[5] - vx[4]);
-    volumeType v11 = vx[6] + tz*(vx[7] - vx[6]);
+    v_float32x4 v0246(vx[0], vx[2], vx[4], vx[6]), v1357(vx[1], vx[3], vx[5], vx[7]);
+    v_float32x4 vxx = v0246 + v_setall_f32(tz)*(v1357 - v0246);
 
-    volumeType v0 = v00 + ty*(v01 - v00);
-    volumeType v1 = v10 + ty*(v11 - v10);
+    v_float32x4 v00_10 = vxx;
+    v_float32x4 v01_11 = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(vxx)));
+
+    v_float32x4 v0_1 = v00_10 + v_setall_f32(ty)*(v01_11 - v00_10);
+    float v0 = v0_1.get0();
+    v0_1 = v_reinterpret_as_f32(v_rotate_right<2>(v_reinterpret_as_u32(v0_1)));
+    float v1 = v0_1.get0();
 
     return v0 + tx*(v1 - v0);
 }
@@ -577,13 +580,16 @@ inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
             vx[i] = volData[neighbourCoords[i] + coordBase + 1*dim].v -
                     volData[neighbourCoords[i] + coordBase - 1*dim].v;
 
-        volumeType v00 = vx[0] + tz*(vx[1] - vx[0]);
-        volumeType v01 = vx[2] + tz*(vx[3] - vx[2]);
-        volumeType v10 = vx[4] + tz*(vx[5] - vx[4]);
-        volumeType v11 = vx[6] + tz*(vx[7] - vx[6]);
+        v_float32x4 v0246(vx[0], vx[2], vx[4], vx[6]), v1357(vx[1], vx[3], vx[5], vx[7]);
+        v_float32x4 vxx = v0246 + v_setall_f32(tz)*(v1357 - v0246);
 
-        volumeType v0 = v00 + ty*(v01 - v00);
-        volumeType v1 = v10 + ty*(v11 - v10);
+        v_float32x4 v00_10 = vxx;
+        v_float32x4 v01_11 = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(vxx)));
+
+        v_float32x4 v0_1 = v00_10 + v_setall_f32(ty)*(v01_11 - v00_10);
+        float v0 = v0_1.get0();
+        v0_1 = v_reinterpret_as_f32(v_rotate_right<2>(v_reinterpret_as_u32(v0_1)));
+        float v1 = v0_1.get0();
 
         nv = v0 + tx*(v1 - v0);
     }
