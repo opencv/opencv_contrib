@@ -85,16 +85,14 @@ static inline bool fastCheck(const Point3f& p)
 #if CV_SIMD128
 static inline bool fastCheck(const v_float32x4& p0, const v_float32x4& p1, const v_float32x4& p2, const v_float32x4& p3)
 {
-    v_float32x4 a0 = v_combine_low(p0, p1);
-    v_float32x4 a1 = v_combine_low(p2, p3);
-    v_float32x4 a = a0 + a1; // NaN should propagate
-    return !v_check_any(a != a);
+    float check = (p0.get0() + p1.get0() +  p2.get0() + p3.get0()); // NaN should propagate
+    return !cvIsNaN(check);
 }
 
 static inline bool fastCheck(const v_float32x4& p0, const v_float32x4& p1)
 {
-    v_float32x4 a = v_combine_low(p0, p1);
-    return !v_check_any(a != a);
+    float check = (p0.get0() + p1.get0());
+    return !cvIsNaN(check);
 }
 
 static inline void getCrossPerm(const v_float32x4& a, v_float32x4& yzx, v_float32x4& zxy)
@@ -187,12 +185,11 @@ struct GetAbInvoker : ParallelLoopBody
 
                 //find correspondence by projecting the point
                 v_float32x4 oldCoords;
-                float pz = 1.f/(v_reinterpret_as_f32(v_rotate_right<2>(v_reinterpret_as_u32(newP))).get0());
+                float pz = (v_reinterpret_as_f32(v_rotate_right<2>(v_reinterpret_as_u32(newP))).get0());
                 // x, y, 0, 0
-                oldCoords = v_muladd(newP*v_setall_f32(pz), vfxy, vcxy);
+                oldCoords = v_muladd(newP/v_setall_f32(pz), vfxy, vcxy);
 
-                if(!(v_check_all(oldCoords >= v_setzero_f32()) &&
-                     v_check_all(oldCoords < vframe)))
+                if(!v_check_all((oldCoords >= v_setzero_f32()) & (oldCoords < vframe)))
                     continue;
 
                 // bilinearly interpolate oldPts and oldNrm under oldCoords point
@@ -210,25 +207,23 @@ struct GetAbInvoker : ParallelLoopBody
                     const float* prow0 = (const float*)oldPts[yi+0];
                     const float* prow1 = (const float*)oldPts[yi+1];
 
-                    v_float32x4 p00 = v_load_aligned(prow0 + (xi+0)*4);
-                    v_float32x4 p01 = v_load_aligned(prow0 + (xi+1)*4);
-                    v_float32x4 p10 = v_load_aligned(prow1 + (xi+0)*4);
-                    v_float32x4 p11 = v_load_aligned(prow1 + (xi+1)*4);
+                    v_float32x4 p00 = v_load(prow0 + (xi+0)*4);
+                    v_float32x4 p01 = v_load(prow0 + (xi+1)*4);
+                    v_float32x4 p10 = v_load(prow1 + (xi+0)*4);
+                    v_float32x4 p11 = v_load(prow1 + (xi+1)*4);
 
-                    //do not fix missing data
-                    if(!fastCheck(p00, p01, p10, p11))
-                        continue;
+                    // do not fix missing data
+                    // NaN check is done later
 
                     const float* nrow0 = (const float*)oldNrm[yi+0];
                     const float* nrow1 = (const float*)oldNrm[yi+1];
 
-                    v_float32x4 n00 = v_load_aligned(nrow0 + (xi+0)*4);
-                    v_float32x4 n01 = v_load_aligned(nrow0 + (xi+1)*4);
-                    v_float32x4 n10 = v_load_aligned(nrow1 + (xi+0)*4);
-                    v_float32x4 n11 = v_load_aligned(nrow1 + (xi+1)*4);
+                    v_float32x4 n00 = v_load(nrow0 + (xi+0)*4);
+                    v_float32x4 n01 = v_load(nrow0 + (xi+1)*4);
+                    v_float32x4 n10 = v_load(nrow1 + (xi+0)*4);
+                    v_float32x4 n11 = v_load(nrow1 + (xi+1)*4);
 
-                    if(!fastCheck(n00, n01, n10, n11))
-                        continue;
+                    // NaN check is done later
 
                     v_float32x4 p0 = p00 + tx*(p10 - p00);
                     v_float32x4 p1 = p01 + tx*(p11 - p01);
@@ -239,16 +234,16 @@ struct GetAbInvoker : ParallelLoopBody
                     oldN = n0 + ty*(n1 - n0);
                 }
 
-                if(!fastCheck(oldP, oldN))
-                    continue;
+                bool oldPNcheck = fastCheck(oldP, oldN);
 
                 //filter by distance
                 v_float32x4 diff = newP - oldP;
-                if(v_reduce_sum(diff*diff) > sqThresh)
-                    continue;
+                bool distCheck = !(v_reduce_sum(diff*diff) > sqThresh);
 
                 //filter by angle
-                if(abs(v_reduce_sum(newN*oldN)) < cosThresh)
+                bool angleCheck = !(abs(v_reduce_sum(newN*oldN)) < cosThresh);
+
+                if(!(oldPNcheck && distCheck && angleCheck))
                     continue;
 
                 // build point-wise vector ab = [ A | b ]
