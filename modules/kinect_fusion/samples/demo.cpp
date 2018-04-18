@@ -165,7 +165,7 @@ int main(int argc, char **argv)
 
     vector<string> depthFileList = readDepth(depthPath);
 
-    kinfu::KinFu kf(kinfu::KinFu::KinFuParams::defaultParams());
+    kinfu::KinFu kf(kinfu::KinFu::KinFuParams::coarseParams());
 
     cv::viz::Viz3d window("debug");
     window.setViewerPose(Affine3f::Identity());

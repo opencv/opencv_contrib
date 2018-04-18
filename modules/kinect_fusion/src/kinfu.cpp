@@ -68,8 +68,7 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
     p.icpDistThresh = 0.1f; // meters
     // default value
     // first non-zero numbers are accepted
-    //const int iters[] = {10, 5, 4, 0};
-    const int iters[] = {10, 5, 4, 1};
+    const int iters[] = {10, 5, 4, 0};
 
     for(size_t i = 0; i < sizeof(iters)/sizeof(int); i++)
     {
@@ -84,9 +83,7 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
 
     p.tsdf_min_camera_movement = 0.f; //meters, disabled
 
-    // default value
-    //p.volumeDims = 512;  //number of voxels
-    p.volumeDims = 128;
+    p.volumeDims = 512;  //number of voxels
 
     p.volumeSize = 3.f;  //meters
 
@@ -96,13 +93,40 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
     p.tsdf_max_weight = 64;   //frames
 
     p.raycast_step_factor = 0.75f;  //in voxel sizes
-    p.gradient_delta_factor = 0.5f; //in voxel sizes
+    // gradient delta factor is fixed at 1.0f and is not used
+    //p.gradient_delta_factor = 0.5f; //in voxel sizes
 
     //p.lightPose = p.volume_pose.translation()/4; //meters
     p.lightPose = Vec3f::all(0.f); //meters
 
     // depth truncation is not used by default
     //p.icp_truncate_depth_dist = 0.f;        //meters, disabled
+
+    return p;
+}
+
+KinFu::KinFuParams KinFu::KinFuParams::coarseParams()
+{
+    KinFuParams p = defaultParams();
+
+    // first non-zero numbers are accepted
+    const int iters[] = {5, 3, 2};
+
+    p.icpIterations.clear();
+    for(size_t i = 0; i < sizeof(iters)/sizeof(int); i++)
+    {
+        if(iters[i])
+        {
+            p.icpIterations.push_back(iters[i]);
+        }
+        else
+            break;
+    }
+    p.pyramidLevels = p.icpIterations.size();
+
+    p.volumeDims = 128; //number of voxels
+
+    p.raycast_step_factor = 0.75f;  //in voxel sizes
 
     return p;
 }
@@ -114,7 +138,7 @@ KinFu::KinFuImpl::KinFuImpl(const KinFu::KinFuParams &_params) :
     icp(makeICP(params.platform, params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
     volume(makeTSDFVolume(params.platform, params.volumeDims, params.volumeSize, params.volumePose,
                           params.tsdf_trunc_dist, params.tsdf_max_weight,
-                          params.raycast_step_factor, params.gradient_delta_factor))
+                          params.raycast_step_factor))
 {
     reset();
 }

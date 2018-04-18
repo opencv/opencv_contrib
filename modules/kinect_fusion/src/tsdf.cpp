@@ -41,7 +41,7 @@ class TSDFVolumeCPU : public TSDFVolume
 public:
     // dimension in voxels, size in meters
     TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-                  float _raycastStepFactor, float _gradientDeltaFactor);
+                  float _raycastStepFactor);
 
     virtual void integrate(cv::Ptr<Frame> depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics);
     virtual cv::Ptr<Frame> raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize, int pyramidLevels,
@@ -71,20 +71,19 @@ public:
     float voxelSizeInv;
     float truncDist;
     float raycastStepFactor;
-    float gradientDeltaFactor;
     int maxWeight;
     cv::Affine3f pose;
 };
 
 
 TSDFVolume::TSDFVolume(int /*_res*/, float /*_size*/, Affine3f /*_pose*/, float /*_truncDist*/, int /*_maxWeight*/,
-                       float /*_raycastStepFactor*/, float /*_gradientDeltaFactor*/)
+                       float /*_raycastStepFactor*/)
 { }
 
 // dimension in voxels, size in meters
 TSDFVolumeCPU::TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-                             float _raycastStepFactor, float _gradientDeltaFactor) :
-    TSDFVolume(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor, _gradientDeltaFactor)
+                             float _raycastStepFactor) :
+    TSDFVolume(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor)
 {
     CV_Assert(_res % 32 == 0);
     edgeResolution = _res;
@@ -112,7 +111,6 @@ TSDFVolumeCPU::TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _t
     pose = _pose;
     truncDist = std::max (_truncDist, 2.1f * voxelSize);
     raycastStepFactor = _raycastStepFactor;
-    gradientDeltaFactor = _gradientDeltaFactor;
     maxWeight = _maxWeight;
     reset();
 }
@@ -1128,7 +1126,7 @@ class TSDFVolumeGPU : public TSDFVolume
 public:
     // dimension in voxels, size in meters
     TSDFVolumeGPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-                  float _raycastStepFactor, float _gradientDeltaFactor);
+                  float _raycastStepFactor);
 
     virtual void integrate(cv::Ptr<Frame> depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics);
     virtual cv::Ptr<Frame> raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize, int pyramidLevels,
@@ -1142,8 +1140,8 @@ public:
 
 
 TSDFVolumeGPU::TSDFVolumeGPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-              float _raycastStepFactor, float _gradientDeltaFactor) :
-    TSDFVolume(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor, _gradientDeltaFactor)
+              float _raycastStepFactor) :
+    TSDFVolume(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor)
 { }
 
 
@@ -1180,16 +1178,16 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray /*points*/, OutputArray /*nor
 
 cv::Ptr<TSDFVolume> makeTSDFVolume(cv::kinfu::KinFu::KinFuParams::PlatformType t,
                                    int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-                                   float _raycastStepFactor, float _gradientDeltaFactor)
+                                   float _raycastStepFactor)
 {
     switch (t)
     {
     case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_CPU:
         return cv::makePtr<TSDFVolumeCPU>(_res, _size, _pose, _truncDist, _maxWeight,
-                                          _raycastStepFactor, _gradientDeltaFactor);
+                                          _raycastStepFactor);
     case cv::kinfu::KinFu::KinFuParams::PlatformType::PLATFORM_GPU:
         return cv::makePtr<TSDFVolumeGPU>(_res, _size, _pose, _truncDist, _maxWeight,
-                                          _raycastStepFactor, _gradientDeltaFactor);
+                                          _raycastStepFactor);
     default:
         return cv::Ptr<TSDFVolume>();
     }

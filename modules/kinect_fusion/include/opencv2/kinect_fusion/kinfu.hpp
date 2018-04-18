@@ -78,6 +78,7 @@ public:
     struct KinFuParams
     {
         static KinFuParams defaultParams();
+        static KinFuParams coarseParams();
 
         enum PlatformType
         {
@@ -128,7 +129,8 @@ public:
         float raycast_step_factor;
 
         // gradient delta in voxel sizes
-        float gradient_delta_factor;
+        // fixed at 1.0f
+        // float gradient_delta_factor;
 
         // light pose for rendering in meters
         Vec3f lightPose;
