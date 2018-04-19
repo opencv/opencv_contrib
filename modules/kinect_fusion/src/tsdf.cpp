@@ -727,12 +727,12 @@ struct RaycastInvoker : ParallelLoopBody
                 float tmin = max(v_reduce_max(minAx), clip);
                 float tmax =     v_reduce_min(maxAx);
 
+                // precautions against getting coordinates out of bounds
+                tmin = tmin + tstep;
+                tmax = tmax - tstep;
+
                 if(tmin < tmax)
                 {
-                    // precautions against getting coordinates out of bounds
-                    tmin = tmin + tstep;
-                    tmax = tmax - tstep - tstep;
-
                     // interpolation optimized a little
                     orig *= invVoxelSize;
                     dir  *= invVoxelSize;
