@@ -291,9 +291,36 @@ struct IntegrateInvoker : ParallelLoopBody
                 Point3f basePt = vol2cam*Point3f(x*volume.voxelSize, y*volume.voxelSize, 0);
                 v_float32x4 camSpacePt(basePt.x, basePt.y, basePt.z, 0);
 
-                int baseZ = -basePt.z / zStepPt.z;
-                baseZ = max(0, min(volume.edgeResolution, baseZ));
-                for(int z = baseZ; z < volume.edgeResolution; z++)
+                int startZ, endZ;
+                if(abs(zStepPt.z) > 1e-5)
+                {
+                    int baseZ = -basePt.z / zStepPt.z;
+                    if(zStepPt.z > 0)
+                    {
+                        startZ = baseZ;
+                        endZ = volume.edgeResolution;
+                    }
+                    else
+                    {
+                        startZ = 0;
+                        endZ = baseZ;
+                    }
+                }
+                else
+                {
+                    if(basePt.z > 0)
+                    {
+                        startZ = 0; endZ = volume.edgeResolution;
+                    }
+                    else
+                    {
+                        // z loop shouldn't be performed
+                        startZ = endZ = 0;
+                    }
+                }
+                startZ = max(0, startZ);
+                endZ = min(volume.edgeResolution, endZ);
+                for(int z = startZ; z < endZ; z++)
                 {
                     // optimization of the following:
                     //Point3f volPt = Point3f(x, y, z)*voxelSize;
@@ -390,9 +417,37 @@ struct IntegrateInvoker : ParallelLoopBody
                 Point3f camSpacePt = basePt;
                 // zStep == vol2cam*(Point3f(x, y, 1)*voxelSize) - basePt;
                 Point3f zStep = Point3f(vol2cam.matrix(0, 2), vol2cam.matrix(1, 2), vol2cam.matrix(2, 2))*volume.voxelSize;
-                int baseZ = -basePt.z / zStep.z;
-                baseZ = max(0, min(volume.edgeResolution, baseZ));
-                for(int z = baseZ; z < volume.edgeResolution; z++)
+
+                int startZ, endZ;
+                if(abs(zStep.z) > 1e-5)
+                {
+                    int baseZ = -basePt.z / zStep.z;
+                    if(zStep.z > 0)
+                    {
+                        startZ = baseZ;
+                        endZ = volume.edgeResolution;
+                    }
+                    else
+                    {
+                        startZ = 0;
+                        endZ = baseZ;
+                    }
+                }
+                else
+                {
+                    if(basePt.z > 0)
+                    {
+                        startZ = 0; endZ = volume.edgeResolution;
+                    }
+                    else
+                    {
+                        // z loop shouldn't be performed
+                        startZ = endZ = 0;
+                    }
+                }
+                startZ = max(0, startZ);
+                endZ = min(volume.edgeResolution, endZ);
+                for(int z = startZ; z < endZ; z++)
                 {
                     // optimization of the following:
                     //Point3f volPt = Point3f(x, y, z)*volume.voxelSize;
