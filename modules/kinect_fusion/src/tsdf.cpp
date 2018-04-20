@@ -395,7 +395,7 @@ struct IntegrateInvoker : ParallelLoopBody
                 for(int z = baseZ; z < volume.edgeResolution; z++)
                 {
                     // optimization of the following:
-                    //Point3f volPt = Point3f(x, y, z)*voxelSize;
+                    //Point3f volPt = Point3f(x, y, z)*volume.voxelSize;
                     //Point3f camSpacePt = vol2cam * volPt;
                     camSpacePt += zStep;
 
@@ -855,7 +855,7 @@ struct RaycastInvoker : ParallelLoopBody
                     {
                         next += rayStep;
                         fnext = volume.fetchVoxel(next);
-                        int xdim = dimStep[0], ydim = dimStep[1];
+                        int xdim = volume.dims[0], ydim = volume.dims[1];
                         int ix = cvRound(next.x);
                         int iy = cvRound(next.y);
                         int iz = cvRound(next.z);
