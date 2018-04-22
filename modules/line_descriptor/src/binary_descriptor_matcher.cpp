@@ -129,13 +129,13 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, std::vector<DM
   /* check data validity */
   if( queryDescriptors.rows == 0 )
   {
-    std::cout << "Error: query descriptors'matrix is empty" << std::endl;
+    std::cerr << "Error: query descriptors'matrix is empty" << std::endl;
     return;
   }
 
   if( masks.size() != 0 && (int) masks.size() != numImages )
   {
-    std::cout << "Error: the number of images in dataset is " << numImages << " but match function received " << masks.size()
+    std::cerr << "Error: the number of images in dataset is " << numImages << " but match function received " << masks.size()
         << " masks. Program will be terminated" << std::endl;
 
     return;
@@ -200,13 +200,13 @@ void BinaryDescriptorMatcher::match( const Mat& queryDescriptors, const Mat& tra
   /* check data validity */
   if( queryDescriptors.rows == 0 || trainDescriptors.rows == 0 )
   {
-    std::cout << "Error: descriptors matrices cannot be void" << std::endl;
+    std::cerr << "Error: descriptors matrices cannot be void" << std::endl;
     return;
   }
 
   if( !mask.empty() && ( mask.rows != queryDescriptors.rows && mask.cols != 1 ) )
   {
-    std::cout << "Error: input mask should have " << queryDescriptors.rows << " rows and 1 column. " << "Program will be terminated" << std::endl;
+    std::cerr << "Error: input mask should have " << queryDescriptors.rows << " rows and 1 column. " << "Program will be terminated" << std::endl;
 
     return;
   }
@@ -262,13 +262,13 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, const Mat& 
   /* check data validity */
   if( queryDescriptors.rows == 0 || trainDescriptors.rows == 0 )
   {
-    std::cout << "Error: descriptors matrices cannot be void" << std::endl;
+    std::cerr << "Error: descriptors matrices cannot be void" << std::endl;
     return;
   }
 
   if( !mask.empty() && ( mask.rows != queryDescriptors.rows || mask.cols != 1 ) )
   {
-    std::cout << "Error: input mask should have " << queryDescriptors.rows << " rows and 1 column. " << "Program will be terminated" << std::endl;
+    std::cerr << "Error: input mask should have " << queryDescriptors.rows << " rows and 1 column. " << "Program will be terminated" << std::endl;
 
     return;
   }
@@ -343,13 +343,13 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, std::vector
   /* check data validity */
   if( queryDescriptors.rows == 0 )
   {
-    std::cout << "Error: descriptors matrix cannot be void" << std::endl;
+    std::cerr << "Error: descriptors matrix cannot be void" << std::endl;
     return;
   }
 
   if( masks.size() != 0 && (int) masks.size() != numImages )
   {
-    std::cout << "Error: the number of images in dataset is " << numImages << " but knnMatch function received " << masks.size()
+    std::cerr << "Error: the number of images in dataset is " << numImages << " but knnMatch function received " << masks.size()
         << " masks. Program will be terminated" << std::endl;
 
     return;
@@ -387,7 +387,7 @@ void BinaryDescriptorMatcher::knnMatch( const Mat& queryDescriptors, std::vector
       /* data validity check */
       if( !masks.empty() && ( masks[itup->second].rows != queryDescriptors.rows || masks[itup->second].cols != 1 ) )
       {
-        std::cout << "Error: mask " << itup->second << " in knnMatch function " << "should have " << queryDescriptors.rows << " and "
+        std::cerr << "Error: mask " << itup->second << " in knnMatch function " << "should have " << queryDescriptors.rows << " and "
             << "1 column. Program will be terminated" << std::endl;
 
         return;
@@ -433,13 +433,13 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, const Ma
   /* check data validity */
   if( queryDescriptors.rows == 0 || trainDescriptors.rows == 0 )
   {
-    std::cout << "Error: descriptors matrices cannot be void" << std::endl;
+    std::cerr << "Error: descriptors matrices cannot be void" << std::endl;
     return;
   }
 
   if( !mask.empty() && ( mask.rows != queryDescriptors.rows && mask.cols != 1 ) )
   {
-    std::cout << "Error: input mask should have " << queryDescriptors.rows << " rows and 1 column. " << "Program will be terminated" << std::endl;
+    std::cerr << "Error: input mask should have " << queryDescriptors.rows << " rows and 1 column. " << "Program will be terminated" << std::endl;
 
     return;
   }
@@ -512,13 +512,13 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, std::vec
   /* check data validity */
   if( queryDescriptors.rows == 0 )
   {
-    std::cout << "Error: descriptors matrices cannot be void" << std::endl;
+    std::cerr << "Error: descriptors matrices cannot be void" << std::endl;
     return;
   }
 
   if( masks.size() != 0 && (int) masks.size() != numImages )
   {
-    std::cout << "Error: the number of images in dataset is " << numImages << " but radiusMatch function received " << masks.size()
+    std::cerr << "Error: the number of images in dataset is " << numImages << " but radiusMatch function received " << masks.size()
         << " masks. Program will be terminated" << std::endl;
 
     return;
@@ -557,7 +557,7 @@ void BinaryDescriptorMatcher::radiusMatch( const Mat& queryDescriptors, std::vec
         /* data validity check */
         if( !masks.empty() && ( masks[itup->second].rows != queryDescriptors.rows || masks[itup->second].cols != 1 ) )
         {
-          std::cout << "Error: mask " << itup->second << " in radiusMatch function " << "should have " << queryDescriptors.rows << " and "
+          std::cerr << "Error: mask " << itup->second << " in radiusMatch function " << "should have " << queryDescriptors.rows << " and "
               << "1 column. Program will be terminated" << std::endl;
 
           return;
