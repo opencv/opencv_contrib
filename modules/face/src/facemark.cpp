@@ -228,8 +228,7 @@ bool loadTrainingData(vector<String> filename,vector< vector<Point2f> >
         f1.open(filename[j].c_str(),ios::in);
         if(!f1.is_open()){
             cout<<filename[j]<<endl;
-            CV_ErrorNoReturn(Error::StsError, "File can't be opened for reading!");
-            return false;
+            CV_Error(Error::StsError, "File can't be opened for reading!");
         }
         //get the path of the image whose landmarks have to be detected
         getline(f1,img);

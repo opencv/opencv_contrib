@@ -79,8 +79,7 @@ bool FacemarkKazemiImpl::convertToUnit(Rect r,Mat &warp){
 bool FacemarkKazemiImpl::setMeanExtreme(){
     if(meanshape.empty()){
         String error_message = "Model not loaded properly.No mean shape found.Aborting...";
-        CV_ErrorNoReturn(Error::StsBadArg, error_message);
-        return false;
+        CV_Error(Error::StsBadArg, error_message);
     }
     for(size_t i=0;i<meanshape.size();i++){
         if(meanshape[i].x>maxmeanx)
@@ -98,7 +97,7 @@ bool FacemarkKazemiImpl::calcMeanShape (vector< vector<Point2f> >& trainlandmark
     //clear the loaded meanshape
     if(trainimages.empty()||trainlandmarks.size()!=trainimages.size()) {
         // throw error if no data (or simply return -1?)
-        CV_ErrorNoReturn(Error::StsBadArg, "Number of images is not equal to corresponding landmarks. Aborting...");
+        CV_Error(Error::StsBadArg, "Number of images is not equal to corresponding landmarks. Aborting...");
     }
     meanshape.clear();
     vector<Mat> finalimages;
@@ -165,7 +164,7 @@ bool FacemarkKazemiImpl::scaleData( vector< vector<Point2f> > & trainlandmarks,
 {
     if(trainimages.empty()||trainimages.size()!=trainlandmarks.size()){
         // throw error if no data (or simply return -1?)
-        CV_ErrorNoReturn(Error::StsBadArg, "The data is not loaded properly by train function. Aborting...");
+        CV_Error(Error::StsBadArg, "The data is not loaded properly by train function. Aborting...");
     }
     float scalex,scaley;
     //scale all images and their landmarks according  to input size
