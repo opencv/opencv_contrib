@@ -466,7 +466,7 @@ Rect FacemarkLBFImpl::getBBox(Mat &img, const Mat_<double> shape) {
     if(!faceDetector){
         defaultFaceDetector(img, rects);
     }else{
-        faceDetector(img, rects,0);
+        faceDetector(img, rects, faceDetectorData);
     }
 
     if (rects.size() == 0) return Rect(-1, -1, -1, -1);
