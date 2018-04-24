@@ -51,7 +51,7 @@ using namespace cv::cuda;
 
 cv::cuda::SURF_CUDA::SURF_CUDA() { throw_no_cuda(); }
 cv::cuda::SURF_CUDA::SURF_CUDA(double, int, int, bool, float, bool) { throw_no_cuda(); }
-int cv::cuda::SURF_CUDA::descriptorSize() const { throw_no_cuda(); return 0;}
+int cv::cuda::SURF_CUDA::descriptorSize() const { throw_no_cuda(); }
 void cv::cuda::SURF_CUDA::uploadKeypoints(const std::vector<KeyPoint>&, GpuMat&) { throw_no_cuda(); }
 void cv::cuda::SURF_CUDA::downloadKeypoints(const GpuMat&, std::vector<KeyPoint>&) { throw_no_cuda(); }
 void cv::cuda::SURF_CUDA::downloadDescriptors(const GpuMat&, std::vector<float>&) { throw_no_cuda(); }

@@ -480,7 +480,6 @@ Ptr<StereoMatcher> createRightMatcher(Ptr<StereoMatcher> matcher_left)
     else
     {
         CV_Error(Error::StsBadArg, "createRightMatcher supports only StereoBM and StereoSGBM");
-        return Ptr<StereoMatcher>();
     }
 }
 

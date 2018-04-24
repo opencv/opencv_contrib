@@ -73,7 +73,6 @@ bool Tracker::init( InputArray image, const Rect2d& boundingBox )
   if( model == 0 )
   {
     CV_Error( -1, "The model is not initialized" );
-    return false;
   }
 
   if( initTracker )

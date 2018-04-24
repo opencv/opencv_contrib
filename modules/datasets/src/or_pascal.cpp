@@ -143,7 +143,6 @@ Ptr<Object> OR_pascalImp::parseAnnotation(const string &path, const string &id)
         case XML_ERROR_FILE_NOT_FOUND:
             error_message = "XML file not found! " + error_message;
             CV_Error(Error::StsParseError, error_message);
-            return annotation;
         default:
             CV_Error(Error::StsParseError, error_message);
             break;

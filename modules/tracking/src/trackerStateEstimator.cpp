@@ -85,7 +85,6 @@ Ptr<TrackerStateEstimator> TrackerStateEstimator::create( const String& trackeSt
   }
 
   CV_Error( -1, "Tracker state estimator type not supported" );
-  return Ptr<TrackerStateEstimator>();
 }
 
 String TrackerStateEstimator::getClassName() const
