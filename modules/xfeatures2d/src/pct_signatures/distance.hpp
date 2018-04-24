@@ -204,10 +204,8 @@ namespace cv
                     return distanceL5(points1, idx1, points2, idx2);
                 case PCTSignatures::L_INFINITY:
                     return distanceLInfinity(points1, idx1, points2, idx2);
-                default:
-                    CV_Error(Error::StsBadArg, "Distance function not implemented!");
-                    return -1;
                 }
+                CV_Error(Error::StsBadArg, "Distance function not implemented!");
             }
         }
     }

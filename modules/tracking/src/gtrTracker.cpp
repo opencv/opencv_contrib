@@ -58,7 +58,7 @@ Ptr<TrackerGOTURN> TrackerGOTURN::create(const TrackerGOTURN::Params &parameters
     return Ptr<gtr::TrackerGOTURNImpl>(new gtr::TrackerGOTURNImpl(parameters));
 #else
     (void)(parameters);
-    CV_ErrorNoReturn(cv::Error::StsNotImplemented , "to use GOTURN, the tracking module needs to be built with opencv_dnn !");
+    CV_Error(cv::Error::StsNotImplemented , "to use GOTURN, the tracking module needs to be built with opencv_dnn !");
 #endif
 }
 Ptr<TrackerGOTURN> TrackerGOTURN::create()
