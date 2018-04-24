@@ -337,13 +337,8 @@ int BinaryDescriptor::descriptorSize() const
 /* power function with error management */
 static inline int get2Pow( int i )
 {
-  if( i >= 0 && i <= 7 )
-    return 1 << i;
-  else
-  {
-    CV_Error( Error::StsBadArg, "Invalid power argument" );
-    return -1;
-  }
+  CV_DbgAssert(i >= 0 && i <= 7);
+  return 1 << i;
 }
 
 /* compute Gaussian pyramids */

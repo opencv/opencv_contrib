@@ -54,8 +54,7 @@ bool FacemarkKazemiImpl::setTrainingParameters(String filename){
     fs.open(filename, FileStorage::READ);
     if (!fs.isOpened())
     {   String error_message = "Error while opening configuration file.Aborting..";
-        CV_ErrorNoReturn(Error::StsBadArg, error_message);
-        return false;
+        CV_Error(Error::StsBadArg, error_message);
     }
     int cascade_depth_;
     int tree_depth_;
@@ -105,8 +104,7 @@ unsigned long FacemarkKazemiImpl::  getNearestLandmark(Point2f pixel)
     if(meanshape.empty()) {
             // throw error if no data (or simply return -1?)
             String error_message = "The data is not loaded properly by train function. Aborting...";
-            CV_ErrorNoReturn(Error::StsBadArg, error_message);
-            return false;
+            CV_Error(Error::StsBadArg, error_message);
     }
     float dist=float(INT_MAX);
     unsigned long index =0;
@@ -122,8 +120,7 @@ unsigned long FacemarkKazemiImpl::  getNearestLandmark(Point2f pixel)
 bool FacemarkKazemiImpl :: getRelativePixels(vector<Point2f> sample,vector<Point2f>& pixel_coordinates,std::vector<int> nearest){
     if(sample.size()!=meanshape.size()){
         String error_message = "Error while finding relative shape. Aborting....";
-        CV_ErrorNoReturn(Error::StsBadArg, error_message);
-        return false;
+        CV_Error(Error::StsBadArg, error_message);
     }
     Mat transform_mat;
     transform_mat = estimateRigidTransform(meanshape,sample,false);
@@ -146,8 +143,7 @@ bool FacemarkKazemiImpl :: getRelativePixels(vector<Point2f> sample,vector<Point
 bool FacemarkKazemiImpl::getPixelIntensities(Mat img,vector<Point2f> pixel_coordinates,vector<int>& pixel_intensities,Rect face){
     if(pixel_coordinates.size()==0){
         String error_message = "No pixel coordinates found. Aborting.....";
-        CV_ErrorNoReturn(Error::StsBadArg, error_message);
-        return false;
+        CV_Error(Error::StsBadArg, error_message);
     }
     Mat transform_mat;
     convertToActual(face,transform_mat);
@@ -259,13 +255,11 @@ bool FacemarkKazemiImpl :: saveModel(String filename){
     ofstream f(filename.c_str(),ios::binary);
     if(!f.is_open()){
         String error_message = "Error while opening file to write model. Aborting....";
-        CV_ErrorNoReturn(Error::StsBadArg, error_message);
-        return false;
+        CV_Error(Error::StsBadArg, error_message);
     }
     if(loaded_forests.size()!=loaded_pixel_coordinates.size()){
         String error_message = "Incorrect training data. Aborting....";
-        CV_ErrorNoReturn(Error::StsBadArg, error_message);
-        return false;
+        CV_Error(Error::StsBadArg, error_message);
     }
     string s("cascade_depth");
     uint64_t len = s.size();
@@ -306,14 +300,12 @@ void FacemarkKazemiImpl::training(String imageList, String groundTruth){
     imageList.clear();
     groundTruth.clear();
     String error_message = "Less arguments than required";
-    CV_ErrorNoReturn(Error::StsBadArg, error_message);
-    return ;
+    CV_Error(Error::StsBadArg, error_message);
 }
 bool FacemarkKazemiImpl::training(vector<Mat>& images, vector< vector<Point2f> >& landmarks,string filename,Size scale,string modelFilename){
     if(!setTrainingParameters(filename)){
         String error_message = "Error while loading training parameters";
-        CV_ErrorNoReturn(Error::StsBadArg, error_message);
-        return false;
+        CV_Error(Error::StsBadArg, error_message);
     }
     vector<Rect> rectangles;
     scaleData(landmarks,images,scale);
@@ -321,8 +313,7 @@ bool FacemarkKazemiImpl::training(vector<Mat>& images, vector< vector<Point2f> >
     if(images.size()!=landmarks.size()){
         // throw error if no data (or simply return -1?)
         String error_message = "The data is not loaded properly. Aborting training function....";
-        CV_ErrorNoReturn(Error::StsBadArg, error_message);
-        return false;
+        CV_Error(Error::StsBadArg, error_message);
     }
     vector<training_sample> samples;
     getTestCoordinates();

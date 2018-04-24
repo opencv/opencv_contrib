@@ -56,6 +56,7 @@ void from32FTo32S(Mat &img, Mat &outImg, int nI, float *mapping)
 {
     int rows = img.rows, cols = img.cols;
     size_t alls = (size_t)rows * cols;
+    CV_Assert(alls < INT_MAX);
 
     CV_Assert(img.isContinuous());
     float *imgPtr = img.ptr<float>();
@@ -66,7 +67,7 @@ void from32FTo32S(Mat &img, Mat &outImg, int nI, float *mapping)
     for (size_t i = 0; i < alls; i++)
     {
         pairFI& d = data[i];
-        d.second = i;
+        d.second = (int)i;
         d.first = imgPtr[i];
     }
 
@@ -128,7 +129,7 @@ void from32FTo32S(Mat &img, Mat &outImg, int nI, float *mapping)
             mapping[cnt] = data[(baseI+i-1)>>1].first; //median
             cnt++;
             base = data[i].first;
-            baseI = i;
+            baseI = (int)i;
         }
         retImgPtr[data[i].second] = cnt;
     }
