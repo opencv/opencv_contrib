@@ -58,6 +58,8 @@ namespace cv {
                     double rank;
                     Rect bounding_box;
 
+                    Region() : id(0), level(0), merged_to(0), rank(0) {}
+
                     friend std::ostream& operator<<(std::ostream& os, const Region& n);
 
                     bool operator <(const Region& n) const {
