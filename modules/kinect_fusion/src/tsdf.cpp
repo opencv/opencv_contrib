@@ -287,6 +287,7 @@ struct IntegrateInvoker : ParallelLoopBody
 
                     v_float32x4 camPixVec = camSpacePt/v_setall_f32(zCamSpace);
                     v_float32x4 projected = v_muladd(camPixVec, vfxy, vcxy);
+                    // leave only first 2 lanes
                     projected = v_reinterpret_as_f32(v_reinterpret_as_u32(projected) &
                                                      v_uint32x4(0xFFFFFFFF, 0xFFFFFFFF, 0, 0));
 
@@ -294,12 +295,14 @@ struct IntegrateInvoker : ParallelLoopBody
                     // bilinearly interpolate depth at projected
                     {
                         const v_float32x4& pt = projected;
-
-                        v_uint32x4 limits = v_reinterpret_as_u32(pt < v_setzero_f32()) | v_reinterpret_as_u32(pt >= upLimits);
+                        // check coords >= 0 and < imgSize
+                        v_uint32x4 limits = v_reinterpret_as_u32(pt < v_setzero_f32()) |
+                                            v_reinterpret_as_u32(pt >= upLimits);
                         limits = limits | v_rotate_right<1>(limits);
                         if(limits.get0())
                             continue;
 
+                        // xi, yi = floor(pt)
                         v_int32x4 ip = v_floor(pt);
                         v_int32x4 ipshift = ip;
                         int xi = ipshift.get0();
@@ -309,7 +312,9 @@ struct IntegrateInvoker : ParallelLoopBody
                         const depthType* row0 = depth[yi+0];
                         const depthType* row1 = depth[yi+1];
 
+                        // v001 = [v(xi + 0, yi + 0), v(xi + 1, yi + 0)]
                         v_float32x4 v001 = v_load_low(row0 + xi);
+                        // v101 = [v(xi + 0, yi + 1), v(xi + 1, yi + 1)]
                         v_float32x4 v101 = v_load_low(row1 + xi);
 
                         v_float32x4 vall = v_combine_low(v001, v101);
@@ -322,6 +327,7 @@ struct IntegrateInvoker : ParallelLoopBody
                             float tx = t.get0();
                             t = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(t)));
                             v_float32x4 ty = v_setall_f32(t.get0());
+                            // vx is y-interpolated between rows 0 and 1
                             v_float32x4 vx = v001 + ty*(v101 - v001);
                             float v0 = vx.get0();
                             vx = v_reinterpret_as_f32(v_rotate_right<1>(v_reinterpret_as_u32(vx)));
@@ -474,6 +480,7 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f _p) const
 
 inline volumeType TSDFVolumeCPU::interpolateVoxel(const v_float32x4& p) const
 {
+    // tx, ty, tz = floor(p)
     v_int32x4 ip = v_floor(p);
     v_float32x4 t = p - v_cvt_f32(ip);
     float tx = t.get0();
@@ -522,6 +529,7 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
     float tz = p.z - iz;
 
     int coordBase = ix*xdim + iy*ydim + iz;
+    const Voxel* volData = volume[0];
 
     volumeType vx[8];
     for(int i = 0; i < 8; i++)
@@ -768,7 +776,7 @@ struct RaycastInvoker : ParallelLoopBody
                             fnext = volume.interpolateVoxel(next);
 
                             // when ray crosses a surface
-                            if(f * fnext < 0.f)
+                            if(std::signbit(f) != std::signbit(fnext))
                                 break;
 
                             f = fnext;
@@ -862,7 +870,6 @@ struct RaycastInvoker : ParallelLoopBody
                     for(; steps < nSteps; steps++)
                     {
                         next += rayStep;
-                        fnext = volume.fetchVoxel(next);
                         int xdim = volume.dims[0], ydim = volume.dims[1];
                         int ix = cvRound(next.x);
                         int iy = cvRound(next.y);
@@ -873,7 +880,7 @@ struct RaycastInvoker : ParallelLoopBody
                             fnext = volume.interpolateVoxel(next);
 
                             // when ray crosses a surface
-                            if(f * fnext < 0.f)
+                            if(std::signbit(f) != std::signbit(fnext))
                                 break;
 
                             f = fnext;
