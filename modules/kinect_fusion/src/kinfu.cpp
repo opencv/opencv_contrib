@@ -66,7 +66,6 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
 
     p.icpAngleThresh = 30.f * CV_PI / 180.f; // radians
     p.icpDistThresh = 0.1f; // meters
-    // default value
     // first non-zero numbers are accepted
     const int iters[] = {10, 5, 4, 0};
 

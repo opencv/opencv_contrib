@@ -1,7 +1,5 @@
 //TODO: correct license
 
-//TODO: maybe pragma once?
-
 #ifndef __OPENCV_KINECT_FUSION_HPP__
 #define __OPENCV_KINECT_FUSION_HPP__
 
@@ -13,11 +11,10 @@ namespace kinfu {
 //! @addtogroup kinect_fusion
 //! @{
 
-//TODO: document it properly
-
-// Camera intrinsics
+/** @brief Camera intrinsics */
 struct Intr
 {
+    /** Reprojects screen point to camera space given z coord. */
     struct Reprojector
     {
         Reprojector() {}
@@ -36,6 +33,7 @@ struct Intr
 
         float fxinv, fyinv, cx, cy;
     };
+    /** Projects camera space vector onto screen */
     struct Projector
     {
         inline Projector(Intr intr) : fx(intr.fx), fy(intr.fy), cx(intr.cx), cy(intr.cy) { }
@@ -72,84 +70,129 @@ struct Intr
     float fx, fy, cx, cy;
 };
 
+/** @brief KinectFusion implementation
+  This class implements a 3d-reconstruction algorithm described in
+  @cite kinectfusion and @cite ACM papers.
+
+  It takes a sequence of depth images taken from depth sensor
+  (or any depth images source such as stereo camera matching algorithm or even raymarching renderer).
+  The output can be obtained as a vector of points and their normals
+  or can be Phong-rendered from given camera pose.
+
+  An internal representation of a model is a voxel cube that keeps TSDF values
+  which are a sort of distances to the surface (for details read the @cite kinectfusion article about TSDF).
+  There is no interface to that representation yet.
+*/
 class CV_EXPORTS KinFu
 {
 public:
     struct KinFuParams
     {
+        /** @brief Default parameters
+        A set of parameters which provides better model quality, can be very slow.
+        */
         static KinFuParams defaultParams();
+
+        /** @brief Coarse parameters
+        A set of parameters which provides better speed, can fail to match frames
+        in case of rapid sensor motion.
+        */
         static KinFuParams coarseParams();
 
         enum PlatformType
         {
+
             PLATFORM_CPU, PLATFORM_GPU
         };
 
+        /** @brief A platform on which to run the algorithm.
+         *
+        Currently KinFu supports only one platform which is a CPU.
+        GPU platform is to be implemented in the future.
+        */
         PlatformType platform;
 
-        // frame size in pixels
+        /** @brief frame size in pixels */
         Size frameSize;
 
-        // camera intrinsics
+        /** @brief camera intrinsics */
         Intr intr;
 
-        // pre-scale for input values
-        // 5000 per 1 meter for the 16-bit PNG files of TUM database
-        // 1 per 1 meter for the 32-bit float images in the ROS bag files
+        /** @brief pre-scale per 1 meter for input values
+
+        Typical values are:
+        * 5000 per 1 meter for the 16-bit PNG files of TUM database
+        * 1 per 1 meter for the 32-bit float images in the ROS bag files
+        */
         float depthFactor;
 
-        // meters
+        /** @brief Depth sigma in meters for bilateral smooth */
         float bilateral_sigma_depth;
-        // pixels
+        /** @brief Spatial sigma in pixels for bilateral smooth */
         float bilateral_sigma_spatial;
-        // pixels
+        /** @brief Kernel size in pixels for bilateral smooth */
         int   bilateral_kernel_size;
 
-        // used for ICP
+        /** @brief Number of pyramid levels for ICP */
         int pyramidLevels;
 
-        // number of voxels
+        /** @brief Resolution of voxel cube
+
+        Number of voxels in each cube edge.
+        */
         int volumeDims;
-        // size of side in meter
+        /** @brief Size of voxel cube side in meters */
         float volumeSize;
 
-        // meters, integrate only if exceedes
+        /** @brief Minimal camera movement in meters
+
+        Integrate new depth frame only if camera movement exceeds this value.
+        */
         float tsdf_min_camera_movement;
 
-        // initial volume pose in meters
+        /** @brief initial volume pose in meters */
         Affine3f volumePose;
 
-        // distance to truncate in meters
+        /** @brief distance to truncate in meters
+
+        Distances that exceed this value will be truncated in voxel cube values.
+        */
         float tsdf_trunc_dist;
 
-        // max # of frames per voxel
+        /** @brief max number of frames per voxel
+
+        Each voxel keeps running average of distances no longer than this value.
+        */
         int tsdf_max_weight;
 
-        // how much voxel sizes we skip
+        /** @brief A length of one raycast step
+
+        How much voxel sizes we skip each raycast step
+        */
         float raycast_step_factor;
 
         // gradient delta in voxel sizes
         // fixed at 1.0f
         // float gradient_delta_factor;
 
-        // light pose for rendering in meters
+        /** @brief light pose for rendering in meters */
         Vec3f lightPose;
 
-        // distance theshold for ICP in meters
+        /** @brief distance theshold for ICP in meters */
         float icpDistThresh;
-        // angle threshold for ICP in radians
+        /** angle threshold for ICP in radians */
         float icpAngleThresh;
-        // number of ICP iterations for each pyramid level
+        /** number of ICP iterations for each pyramid level */
         std::vector<int> icpIterations;
 
         // depth truncation is not used by default
         // float icp_truncate_depth_dist; //meters
-
     };
 
     KinFu(const KinFuParams& _params);
     virtual ~KinFu();
 
+    /** @brief Get current parameters */
     const KinFuParams& getParams() const;
     KinFuParams& getParams();
 
@@ -165,14 +208,46 @@ public:
 
     void render(OutputArray image, const Affine3f cameraPose = Affine3f::Identity()) const;
 
+    /** @brief Gets points and normals of current 3d mesh
+
+      The order of normals corresponds to order of points.
+      The order of points is undefined.
+
+        @param points vector of points which are 4-float vectors
+        @param normals vector of normals which are 4-float vectors
+     */
     void fetchCloud(OutputArray points, OutputArray normals) const;
+
+    /** @brief Gets points of current 3d mesh
+
+     The order of points is undefined.
+
+        @param points vector of points which are 4-float vectors
+     */
     void fetchPoints(OutputArray points) const;
+
+    /** @brief Calculates normals for given points
+        @param points input vector of points which are 4-float vectors
+        @param normals output vector of corresponding normals which are 4-float vectors
+     */
     void fetchNormals(InputArray points, OutputArray normals) const;
 
+    /** @brief Resets the algorithm
+
+    Clears current model and resets a pose.
+    */
     void reset();
 
+    /** @brief Get current pose in voxel cube space */
     const Affine3f getPose() const;
 
+    /** @brief Process next depth frame
+
+      Integrates depth into voxel cube with respect to its ICP-calculated pose.
+      Input image is converted to CV_32F internally if has another type.
+
+    @param depth one-channel image which size and depth scale is described in algorithm's parameters
+    */
     bool operator()(InputArray depth);
 
 private:
