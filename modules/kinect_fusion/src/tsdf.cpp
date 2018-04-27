@@ -63,21 +63,22 @@ public:
     // edgeResolution^3 array
     // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
     Volume volume;
-    float edgeSize;
-    int edgeResolution;
+
     int neighbourCoords[8];
     int dims[4];
     float voxelSize;
     float voxelSizeInv;
     float truncDist;
     float raycastStepFactor;
-    int maxWeight;
-    cv::Affine3f pose;
 };
 
 
-TSDFVolume::TSDFVolume(int /*_res*/, float /*_size*/, Affine3f /*_pose*/, float /*_truncDist*/, int /*_maxWeight*/,
-                       float /*_raycastStepFactor*/)
+TSDFVolume::TSDFVolume(int _res, float _size, Affine3f _pose, float /*_truncDist*/, int _maxWeight,
+                       float /*_raycastStepFactor*/) :
+    edgeSize(_size),
+    edgeResolution(_res),
+    maxWeight(_maxWeight),
+    pose(_pose)
 { }
 
 // dimension in voxels, size in meters
@@ -86,7 +87,7 @@ TSDFVolumeCPU::TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _t
     TSDFVolume(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor)
 {
     CV_Assert(_res % 32 == 0);
-    edgeResolution = _res;
+
     int xdim = edgeResolution*edgeResolution;
     int ydim = edgeResolution;
     int steps[4] = { xdim, ydim, 1, 0 };
@@ -104,14 +105,14 @@ TSDFVolumeCPU::TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _t
     };
     for(int i = 0; i < 8; i++)
         neighbourCoords[i] = coords[i];
-    edgeSize = _size;
+
     voxelSize = edgeSize/edgeResolution;
     voxelSizeInv = edgeResolution/edgeSize;
     volume = Volume(1, _res * _res * _res);
-    pose = _pose;
+
     truncDist = std::max (_truncDist, 2.1f * voxelSize);
     raycastStepFactor = _raycastStepFactor;
-    maxWeight = _maxWeight;
+
     reset();
 }
 

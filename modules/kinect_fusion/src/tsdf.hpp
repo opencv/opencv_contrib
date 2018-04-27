@@ -6,8 +6,6 @@
 #include "precomp.hpp"
 #include "frame.hpp"
 
-//TODO: put some members in parent class
-
 class TSDFVolume
 {
 public:
@@ -25,6 +23,11 @@ public:
     virtual void reset() = 0;
 
     virtual ~TSDFVolume() { }
+
+    float edgeSize;
+    int edgeResolution;
+    int maxWeight;
+    cv::Affine3f pose;
 };
 
 cv::Ptr<TSDFVolume> makeTSDFVolume(cv::kinfu::KinFu::KinFuParams::PlatformType t,
