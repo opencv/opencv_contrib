@@ -35,5 +35,3 @@ cv::Ptr<TSDFVolume> makeTSDFVolume(cv::kinfu::KinFu::KinFuParams::PlatformType t
                                    float _raycastStepFactor);
 
 #endif
-
-

@@ -252,7 +252,7 @@ public:
 
 private:
 
-    struct KinFuImpl;
+    class KinFuImpl;
     cv::Ptr<KinFuImpl> impl;
 };
 

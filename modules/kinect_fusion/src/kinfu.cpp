@@ -10,7 +10,7 @@ namespace kinfu {
 
 class KinFu::KinFuImpl
 {
-public:    
+public:
     KinFuImpl(const KinFu::KinFuParams& _params);
     virtual ~KinFuImpl();
 

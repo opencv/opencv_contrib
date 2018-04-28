@@ -13,9 +13,9 @@ using namespace cv::kinfu;
 struct FrameGeneratorCPU : FrameGenerator
 {
 public:
-    virtual cv::Ptr<Frame> operator() (const InputArray depth, const cv::kinfu::Intr, int levels, float depthFactor,
+    virtual cv::Ptr<Frame> operator() (InputArray depth, const cv::kinfu::Intr, int levels, float depthFactor,
                                        float sigmaDepth, float sigmaSpatial, int kernelSize) const;
-    virtual cv::Ptr<Frame> operator() (const InputArray points, const InputArray normals, int levels) const;
+    virtual cv::Ptr<Frame> operator() (InputArray points, InputArray normals, int levels) const;
     virtual ~FrameGeneratorCPU() {}
 };
 
@@ -23,7 +23,7 @@ void computePointsNormals(const cv::kinfu::Intr, float depthFactor, const Depth,
 Depth pyrDownBilateral(const Depth depth, float sigma);
 void pyrDownPointsNormals(const Points p, const Normals n, Points& pdown, Normals& ndown);
 
-cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const InputArray depth, const Intr intr, int levels, float depthFactor,
+cv::Ptr<Frame> FrameGeneratorCPU::operator ()(InputArray depth, const Intr intr, int levels, float depthFactor,
                                               float sigmaDepth, float sigmaSpatial, int kernelSize) const
 {
     ScopeTime st("frameGenerator: from depth");
@@ -63,7 +63,7 @@ cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const InputArray depth, const Intr
     return frame;
 }
 
-cv::Ptr<Frame> FrameGeneratorCPU::operator ()(const InputArray _points, const InputArray _normals, int levels) const
+cv::Ptr<Frame> FrameGeneratorCPU::operator ()(InputArray _points, InputArray _normals, int levels) const
 {
     ScopeTime st("frameGenerator: pyrDown p, n");
 
@@ -396,19 +396,19 @@ void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
 struct FrameGeneratorGPU : FrameGenerator
 {
 public:
-    virtual cv::Ptr<Frame> operator() (const InputArray depth, const cv::kinfu::Intr, int levels, float depthFactor,
+    virtual cv::Ptr<Frame> operator() (InputArray depth, const cv::kinfu::Intr, int levels, float depthFactor,
                                        float sigmaDepth, float sigmaSpatial, int kernelSize) const;
-    virtual cv::Ptr<Frame> operator() (const InputArray points, const InputArray normals, int levels) const;
+    virtual cv::Ptr<Frame> operator() (InputArray points, InputArray normals, int levels) const;
     virtual ~FrameGeneratorGPU() {}
 };
 
-cv::Ptr<Frame> FrameGeneratorGPU::operator ()(const InputArray /*depth*/, const Intr /*intr*/, int /*levels*/, float /*depthFactor*/,
+cv::Ptr<Frame> FrameGeneratorGPU::operator ()(InputArray /*depth*/, const Intr /*intr*/, int /*levels*/, float /*depthFactor*/,
                                               float /*sigmaDepth*/, float /*sigmaSpatial*/, int /*kernelSize*/) const
 {
     throw std::runtime_error("Not implemented");
 }
 
-cv::Ptr<Frame> FrameGeneratorGPU::operator ()(const InputArray /*_points*/, const InputArray /*_normals*/, int /*levels*/) const
+cv::Ptr<Frame> FrameGeneratorGPU::operator ()(InputArray /*_points*/, InputArray /*_normals*/, int /*levels*/) const
 {
     throw std::runtime_error("Not implemented");
 }
@@ -435,4 +435,3 @@ cv::Ptr<FrameGenerator> makeFrameGenerator(cv::kinfu::KinFu::KinFuParams::Platfo
         return cv::Ptr<FrameGenerator>();
     }
 }
-

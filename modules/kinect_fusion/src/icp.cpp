@@ -77,18 +77,9 @@ bool ICPCPU::estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> _oldFrame
 }
 
 // 1 any coord to check is enough since we know the generation
-static inline bool fastCheck(const Point3f& p)
-{
-    return !cvIsNaN(p.x);
-}
+
 
 #if CV_SIMD128
-static inline bool fastCheck(const v_float32x4& p0, const v_float32x4& p1, const v_float32x4& p2, const v_float32x4& p3)
-{
-    float check = (p0.get0() + p1.get0() +  p2.get0() + p3.get0()); // NaN should propagate
-    return !cvIsNaN(check);
-}
-
 static inline bool fastCheck(const v_float32x4& p0, const v_float32x4& p1)
 {
     float check = (p0.get0() + p1.get0());
@@ -115,6 +106,12 @@ static inline v_float32x4 crossProduct(const v_float32x4& a, const v_float32x4& 
     getCrossPerm(b, byzx, bzxy);
     return ayzx*bzxy - azxy*byzx;
 }
+#else
+static inline bool fastCheck(const Point3f& p)
+{
+    return !cvIsNaN(p.x);
+}
+
 #endif
 
 typedef Matx<float, 6, 7> ABtype;

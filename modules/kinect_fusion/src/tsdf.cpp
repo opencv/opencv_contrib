@@ -132,10 +132,10 @@ void TSDFVolumeCPU::reset()
     volume.forEach(FillZero());
 }
 
-static const bool fixMissingData = false;
-
 // SIMD version of that code is manually inlined
 #if !CV_SIMD128
+static const bool fixMissingData = false;
+
 static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
 {
     const depthType defaultValue = qnan;
@@ -663,7 +663,7 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 
 struct RaycastInvoker : ParallelLoopBody
 {
-    RaycastInvoker(Points _points, Normals _normals, Affine3f cameraPose,
+    RaycastInvoker(Points& _points, Normals& _normals, Affine3f cameraPose,
                    Intr intrinsics, const TSDFVolumeCPU& _volume) :
         ParallelLoopBody(),
         points(_points),
@@ -1208,4 +1208,3 @@ cv::Ptr<TSDFVolume> makeTSDFVolume(cv::kinfu::KinFu::KinFuParams::PlatformType t
         return cv::Ptr<TSDFVolume>();
     }
 }
-

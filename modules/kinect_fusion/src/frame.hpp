@@ -105,14 +105,12 @@ public:
 struct FrameGenerator
 {
 public:
-    virtual cv::Ptr<Frame> operator() (const cv::InputArray depth, const cv::kinfu::Intr, int levels, float depthFactor,
+    virtual cv::Ptr<Frame> operator() (cv::InputArray depth, const cv::kinfu::Intr, int levels, float depthFactor,
                                        float sigmaDepth, float sigmaSpatial, int kernelSize) const = 0;
-    virtual cv::Ptr<Frame> operator() (const cv::InputArray points, const cv::InputArray normals, int levels) const = 0;
+    virtual cv::Ptr<Frame> operator() (cv::InputArray points, cv::InputArray normals, int levels) const = 0;
     virtual ~FrameGenerator() {}
 };
 
 cv::Ptr<FrameGenerator> makeFrameGenerator(cv::kinfu::KinFu::KinFuParams::PlatformType t);
 
 #endif
-
-
