@@ -72,7 +72,7 @@ struct Intr
 
 /** @brief KinectFusion implementation
   This class implements a 3d-reconstruction algorithm described in
-  @cite kinectfusion and @cite ACM papers.
+  @cite kinectfusion paper.
 
   It takes a sequence of depth images taken from depth sensor
   (or any depth images source such as stereo camera matching algorithm or even raymarching renderer).
