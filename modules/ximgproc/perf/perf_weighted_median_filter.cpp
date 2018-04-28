@@ -34,8 +34,7 @@ PERF_TEST_P(WeightedMedianFilterTest, perf,
     Mat src(sz, CV_MAKE_TYPE(srcDepth, srcCn));
     Mat dst(sz, src.type());
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
-    declare.in(joint, src, WARMUP_RNG).out(dst).tbb_threads(cv::getNumberOfCPUs());
+    declare.in(joint, src, WARMUP_RNG).out(dst);
 
     TEST_CYCLE_N(1)
     {

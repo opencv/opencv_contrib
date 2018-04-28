@@ -29,9 +29,7 @@ PERF_TEST_P( AdaptiveManifoldPerfTest, perf,
     Mat src(sz, CV_MAKE_TYPE(depth, srcCnNum));
     Mat dst(sz, CV_MAKE_TYPE(depth, srcCnNum));
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
-
-    declare.in(joint, src, WARMUP_RNG).out(dst).tbb_threads(cv::getNumberOfCPUs());
+    declare.in(joint, src, WARMUP_RNG).out(dst);
 
     double sigma_s = 16;
     double sigma_r = 0.5;

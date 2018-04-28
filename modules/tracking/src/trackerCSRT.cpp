@@ -506,8 +506,6 @@ bool TrackerCSRTImpl::updateImpl(const Mat& image_, Rect2d& boundingBox)
 // *********************************************************************
 bool TrackerCSRTImpl::initImpl(const Mat& image_, const Rect2d& boundingBox)
 {
-    cv::setNumThreads(getNumThreads());
-
     //treat gray image as color image
     Mat image;
     if(image_.channels() == 1) {

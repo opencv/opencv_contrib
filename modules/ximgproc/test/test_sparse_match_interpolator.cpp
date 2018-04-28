@@ -81,7 +81,6 @@ TEST(InterpolatorTest, ReferenceAccuracy)
         to_points.push_back(Point2f(to_x,to_y));
     }
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
     Mat res_flow;
 
     Ptr<EdgeAwareInterpolator> interpolator = createEdgeAwareInterpolator();
@@ -123,6 +122,9 @@ TEST_P(InterpolatorTest, MultiThreadReproducibility)
         to_points.push_back(Point2f(rng.uniform(0.01f,(float)size.width-1.01f),rng.uniform(0.01f,(float)size.height-1.01f)));
     }
 
+    int nThreads = cv::getNumThreads();
+    if (nThreads == 1)
+        throw SkipTestException("Single thread environment");
     for (int iter = 0; iter <= loopsCount; iter++)
     {
         int K = rng.uniform(4,512);
@@ -137,7 +139,7 @@ TEST_P(InterpolatorTest, MultiThreadReproducibility)
         interpolator->setFGSLambda(FGSlambda);
         interpolator->setFGSSigma(FGSsigma);
 
-        cv::setNumThreads(cv::getNumberOfCPUs());
+        cv::setNumThreads(nThreads);
         Mat resMultiThread;
         interpolator->interpolate(from,from_points,Mat(),to_points,resMultiThread);
 

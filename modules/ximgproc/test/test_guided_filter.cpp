@@ -324,12 +324,15 @@ TEST_P(GuidedFilterTest, accuracy)
     guide = convertTypeAndSize(guide, CV_MAKE_TYPE(guide.depth(), guideCnNum), dstSize);
     src = convertTypeAndSize(src, CV_MAKE_TYPE(src.depth(), srcCnNum), dstSize);
 
+    int nThreads = cv::getNumThreads();
+    if (nThreads == 1)
+        throw SkipTestException("Single thread environment");
     for (int iter = 0; iter < 2; iter++)
     {
         int radius = rng.uniform(0, 50);
         double eps = rng.uniform(0.0, SQR(255.0));
 
-        cv::setNumThreads(cv::getNumberOfCPUs());
+        cv::setNumThreads(nThreads);
         Mat res;
         Ptr<GuidedFilter> gf = createGuidedFilter(guide, radius, eps);
         gf->filter(src, res);

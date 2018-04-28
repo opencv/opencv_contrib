@@ -55,7 +55,6 @@ TEST(FastGlobalSmootherTest, ReferenceAccuracy)
     ASSERT_FALSE(src.empty());
     ASSERT_FALSE(ref.empty());
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
     Mat res;
     fastGlobalSmootherFilter(src,src,res,1000.0,10.0);
 
@@ -90,12 +89,15 @@ TEST_P(FastGlobalSmootherTest, MultiThreadReproducibility)
     else
         randu(src, -100000.0f, 100000.0f);
 
+    int nThreads = cv::getNumThreads();
+    if (nThreads == 1)
+        throw SkipTestException("Single thread environment");
     for (int iter = 0; iter <= loopsCount; iter++)
     {
         double lambda = rng.uniform(100.0, 10000.0);
         double sigma  = rng.uniform(1.0, 100.0);
 
-        cv::setNumThreads(cv::getNumberOfCPUs());
+        cv::setNumThreads(nThreads);
         Mat resMultiThread;
         fastGlobalSmootherFilter(guide, src, resMultiThread, lambda, sigma);
 

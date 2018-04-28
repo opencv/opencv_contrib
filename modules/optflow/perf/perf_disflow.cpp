@@ -32,7 +32,6 @@ PERF_TEST_P(DenseOpticalFlow_DIS, perf,
 
     MakeArtificialExample(frame1, frame2);
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
     TEST_CYCLE_N(10)
     {
         Ptr<DenseOpticalFlow> algo = createOptFlow_DIS(preset);

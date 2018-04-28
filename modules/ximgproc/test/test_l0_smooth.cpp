@@ -57,12 +57,15 @@ TEST_P(L0SmoothTest, MultiThreadReproducibility)
         randu(src, -100000.0f, 100000.0f);
 
 
+    int nThreads = cv::getNumThreads();
+    if (nThreads == 1)
+        throw SkipTestException("Single thread environment");
     for (int iter = 0; iter <= loopsCount; iter++)
     {
         double lambda = rng.uniform(0.01, 0.05);
         double kappa  = rng.uniform(1.5, 5.0);
 
-        cv::setNumThreads(cv::getNumberOfCPUs());
+        cv::setNumThreads(nThreads);
         Mat resMultiThread;
         l0Smooth(src, resMultiThread, lambda, kappa);
 
