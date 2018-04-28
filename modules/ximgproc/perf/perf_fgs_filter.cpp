@@ -24,9 +24,8 @@ PERF_TEST_P( FGSFilterPerfTest, perf, Combine(GuideTypes::all(), SrcTypes::all()
     Mat src(sz, srcType);
     Mat dst(sz, srcType);
 
-    declare.in(guide, src, WARMUP_RNG).out(dst).tbb_threads(cv::getNumberOfCPUs());
+    declare.in(guide, src, WARMUP_RNG).out(dst);
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
     TEST_CYCLE_N(10)
     {
         double lambda = rng.uniform(500.0, 10000.0);

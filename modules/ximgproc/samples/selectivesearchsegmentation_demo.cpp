@@ -59,11 +59,6 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    setUseOptimized(true);
-    setNumThreads(8);
-
-    std::srand((int)std::time(0));
-
     Mat img = imread(argv[1]);
 
     Ptr<SelectiveSearchSegmentation> gs = createSelectiveSearchSegmentation();

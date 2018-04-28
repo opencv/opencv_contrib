@@ -16,7 +16,7 @@ elseif(OGRE_VERSION VERSION_GREATER 1.10) # we need C++11 for OGRE 1.11
   endif()
 endif()
 
-include_directories(${OGRE_INCLUDE_DIRS}})
+include_directories(${OGRE_INCLUDE_DIRS})
 link_directories(${OGRE_LIBRARY_DIRS})
 
 ocv_define_module(ovis opencv_core opencv_imgproc opencv_calib3d WRAP python)

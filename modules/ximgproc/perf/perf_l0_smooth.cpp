@@ -23,8 +23,7 @@ PERF_TEST_P(L0SmoothTest, perf,
     Mat src(sz, CV_MAKE_TYPE(depth, srcCn));
     Mat dst(sz, src.type());
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
-    declare.in(src, WARMUP_RNG).out(dst).tbb_threads(cv::getNumberOfCPUs());
+    declare.in(src, WARMUP_RNG).out(dst);
 
     RNG rnd(sz.height + depth + srcCn);
     double lambda = rnd.uniform(0.01, 0.05);

@@ -23,7 +23,6 @@ PERF_TEST_P(DenseOpticalFlow_VariationalRefinement, perf, Combine(Values(szQVGA,
     randu(frame2, 0, 255);
     flow.setTo(0.0f);
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
     TEST_CYCLE_N(10)
     {
         Ptr<VariationalRefinement> var = createVariationalFlowRefinement();

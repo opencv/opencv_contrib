@@ -52,7 +52,6 @@ TEST(WeightedMedianFilterTest, ReferenceAccuracy)
     ASSERT_FALSE(src.empty());
     ASSERT_FALSE(ref.empty());
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
     Mat res;
     weightedMedianFilter(src, src, res, 7);
 

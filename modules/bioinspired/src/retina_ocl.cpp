@@ -391,7 +391,6 @@ bool RetinaOCLImpl::convertToColorPlanes(const UMat& input, UMat &output)
     else
     {
         CV_Error(-1, "Retina ocl only support 1, 3, 4 channel input");
-        return false;
     }
 }
 void RetinaOCLImpl::convertToInterleaved(const UMat& input, bool colorMode, UMat &output)
@@ -449,8 +448,8 @@ void RetinaOCLImpl::getMagnoRAW(OutputArray retinaOutput_magno)
 
 // unimplemented interfaces:
 void RetinaOCLImpl::applyFastToneMapping(InputArray /*inputImage*/, OutputArray /*outputToneMappedImage*/) { NOT_IMPLEMENTED; }
-const Mat RetinaOCLImpl::getMagnoRAW() const { NOT_IMPLEMENTED; return Mat(); }
-const Mat RetinaOCLImpl::getParvoRAW() const { NOT_IMPLEMENTED; return Mat(); }
+const Mat RetinaOCLImpl::getMagnoRAW() const { NOT_IMPLEMENTED; }
+const Mat RetinaOCLImpl::getParvoRAW() const { NOT_IMPLEMENTED; }
 
 ///////////////////////////////////////
 ///////// BasicRetinaFilter ///////////

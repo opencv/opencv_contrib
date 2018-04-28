@@ -192,10 +192,8 @@ TEST_P(JointBilateralFilterTest_NaiveRef, Accuracy)
     Mat resNaive;
     jointBilateralFilterNaive(joint, src, resNaive, 0, sigmaC, sigmaS);
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
     Mat res;
     jointBilateralFilter(joint, src, res, 0, sigmaC, sigmaS);
-    cv::setNumThreads(1);
 
     checkSimilarity(res, resNaive);
 }
@@ -225,8 +223,6 @@ TEST_P(JointBilateralFilterTest_BilateralRef, Accuracy)
 
     RNG rnd(cvRound(10*sigmaS) + srcPath.length() + srcType + src.rows);
     double sigmaC = rnd.uniform(0.0, 255.0);
-
-    cv::setNumThreads(cv::getNumberOfCPUs());
 
     Mat resRef;
     bilateralFilter(src, resRef, 0, sigmaC, sigmaS);
