@@ -6,7 +6,7 @@
 #include <math.h>
 #include <vector>
 #include <iostream>
-
+#include <fstream>
 /*
 If you use this code please cite this @cite BergerRaghunathan1998
 Coalescence in 2 dimensions: experiments on thin copolymer films and numerical simulations  The European Physical Journal B - Condensed Matter and Complex Systems  (Volume:2 ,  Issue: 1 )  1998
@@ -106,8 +106,9 @@ void ContourFitting::estimateTransformation(InputArray _src, InputArray _ref, Ou
 }
 void ContourFitting::estimateTransformation(InputArray _src, InputArray _ref, OutputArray _alphaPhiST,double *distFin, bool fdContour)
 {
+    // New version
     if (!fdContour)
-        CV_Assert( _src.kind() == _InputArray::STD_VECTOR && _ref.kind() == _InputArray::STD_VECTOR);
+        CV_Assert( (_src.kind() == _InputArray::STD_VECTOR || _src.kind() == _InputArray::MAT) && (_ref.kind() == _InputArray::STD_VECTOR || _ref.kind() == _InputArray::MAT));
     else
         CV_Assert(fdContour && _src.kind() == _InputArray::MAT && _ref.kind() == _InputArray::MAT);
     CV_Assert(_src.channels() == 2 && _ref.channels() == 2);
@@ -220,6 +221,8 @@ void fourierDescriptor(InputArray _src, OutputArray _dst, int nbElt, int nbFD)
     Mat  Z;
     if (z.rows*z.cols!=nbElt)
         contourSampling(_src, z,nbElt);
+    else if (_src.depth() == CV_32S)
+        z.convertTo(z, CV_32F);
     dft(z, Z, DFT_SCALE | DFT_REAL_OUTPUT);
     if (nbFD == -1)
     {
@@ -256,7 +259,7 @@ void contourSampling(InputArray _src, OutputArray _out, int nbElt)
         ctr=ctr.t();
     int j = 0;
     int 		nb = ctr.rows;
-    p = arcLength(_src, true);
+    p = arcLength(ctr, true);
     l2 = norm(ctr.row(j) - ctr.row(j + 1)) / p;
     for (int i = 0; i<nbElt; i++)
     {
@@ -284,7 +287,7 @@ void contourSampling(InputArray _src, OutputArray _out, int nbElt)
 void transformFD(InputArray _src, InputArray _t,OutputArray _dst,  bool fdContour)
 {
     if (!fdContour)
-        CV_Assert(_src.kind() == _InputArray::STD_VECTOR);
+        CV_Assert(_src.kind() == _InputArray::STD_VECTOR || _src.kind() == _InputArray::MAT);
     else
         CV_Assert( _src.kind() == _InputArray::MAT );
     CV_Assert(_src.channels() == 2);
@@ -295,6 +298,7 @@ void transformFD(InputArray _src, InputArray _t,OutputArray _dst,  bool fdContou
     if (!fdContour)
     {
         Mat ctr1 = _src.getMat();
+        std::ofstream fs;
         if (ctr1.rows==1)
             ctr1 = ctr1.t();
         Mat newCtr1;
