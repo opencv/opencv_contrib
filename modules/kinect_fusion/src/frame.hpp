@@ -1,4 +1,8 @@
-//TODO: add license
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html
+
+// This code is also subject to the license terms in the LICENSE file found in this module's directory
 
 #ifndef __OPENCV_KINFU_FRAME_H__
 #define __OPENCV_KINFU_FRAME_H__
@@ -84,8 +88,8 @@ public:
     FrameCPU() : points(), normals() { }
     virtual ~FrameCPU() { }
 
-    virtual void render(cv::OutputArray image, int level, cv::Affine3f lightPose) const;
-    virtual void getDepth(cv::OutputArray depth) const;
+    virtual void render(cv::OutputArray image, int level, cv::Affine3f lightPose) const override;
+    virtual void getDepth(cv::OutputArray depth) const override;
 
     std::vector<Points> points;
     std::vector<Normals> normals;
@@ -95,8 +99,8 @@ public:
 struct FrameGPU : Frame
 {
 public:
-    virtual void render(cv::OutputArray image, int level, cv::Affine3f lightPose) const;
-    virtual void getDepth(cv::OutputArray depth) const;
+    virtual void render(cv::OutputArray image, int level, cv::Affine3f lightPose) const override;
+    virtual void getDepth(cv::OutputArray depth) const override;
     virtual ~FrameGPU() { }
 };
 

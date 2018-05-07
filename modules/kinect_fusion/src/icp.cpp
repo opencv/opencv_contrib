@@ -1,4 +1,8 @@
-//TODO: add license
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html
+
+// This code is also subject to the license terms in the LICENSE file found in this module's directory
 
 //TODO: organize includes properly
 #include "precomp.hpp"
@@ -20,7 +24,7 @@ class ICPCPU : public ICP
 public:
     ICPCPU(const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold);
 
-    virtual bool estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> oldFrame, cv::Ptr<Frame> newFrame) const;
+    virtual bool estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> oldFrame, cv::Ptr<Frame> newFrame) const override;
 
     virtual ~ICPCPU() { }
 
@@ -132,7 +136,7 @@ struct GetAbInvoker : ParallelLoopBody
         proj(_proj), sqDistanceThresh(_sqDistanceThresh), minCos(_minCos)
     { }
 
-    virtual void operator ()(const Range& range) const
+    virtual void operator ()(const Range& range) const override
     {
 #if CV_SIMD128
         CV_Assert(ptype::channels == 4);
@@ -477,7 +481,7 @@ class ICPGPU : public ICP
 public:
     ICPGPU(const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold);
 
-    virtual bool estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> oldFrame, cv::Ptr<Frame> newFrame) const;
+    virtual bool estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> oldFrame, cv::Ptr<Frame> newFrame) const override;
 
     virtual ~ICPGPU() { }
 };

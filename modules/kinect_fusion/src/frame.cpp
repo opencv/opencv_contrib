@@ -1,4 +1,8 @@
-//TODO: add license
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html
+
+// This code is also subject to the license terms in the LICENSE file found in this module's directory
 
 #include "precomp.hpp"
 #include "frame.hpp"
@@ -14,8 +18,8 @@ struct FrameGeneratorCPU : FrameGenerator
 {
 public:
     virtual cv::Ptr<Frame> operator() (InputArray depth, const cv::kinfu::Intr, int levels, float depthFactor,
-                                       float sigmaDepth, float sigmaSpatial, int kernelSize) const;
-    virtual cv::Ptr<Frame> operator() (InputArray points, InputArray normals, int levels) const;
+                                       float sigmaDepth, float sigmaSpatial, int kernelSize) const override;
+    virtual cv::Ptr<Frame> operator() (InputArray points, InputArray normals, int levels) const override;
     virtual ~FrameGeneratorCPU() {}
 };
 
@@ -130,7 +134,7 @@ struct RenderInvoker : ParallelLoopBody
         sz(_sz)
     { }
 
-    virtual void operator ()(const Range& range) const
+    virtual void operator ()(const Range& range) const override
     {
         for(int y = range.start; y < range.end; y++)
         {
@@ -252,7 +256,7 @@ struct PyrDownBilateralInvoker : ParallelLoopBody
         sigma(_sigma)
     { }
 
-    virtual void operator ()(const Range& range) const
+    virtual void operator ()(const Range& range) const override
     {
         float sigma3 = sigma*3;
         const int D = 5;
@@ -320,7 +324,7 @@ struct ComputePointsNormalsInvoker : ParallelLoopBody
         dfac(_dfac)
     { }
 
-    virtual void operator ()(const Range& range) const
+    virtual void operator ()(const Range& range) const override
     {
         for(int y = range.start; y < range.end; y++)
         {
@@ -397,8 +401,8 @@ struct FrameGeneratorGPU : FrameGenerator
 {
 public:
     virtual cv::Ptr<Frame> operator() (InputArray depth, const cv::kinfu::Intr, int levels, float depthFactor,
-                                       float sigmaDepth, float sigmaSpatial, int kernelSize) const;
-    virtual cv::Ptr<Frame> operator() (InputArray points, InputArray normals, int levels) const;
+                                       float sigmaDepth, float sigmaSpatial, int kernelSize) const override;
+    virtual cv::Ptr<Frame> operator() (InputArray points, InputArray normals, int levels) const override;
     virtual ~FrameGeneratorGPU() {}
 };
 

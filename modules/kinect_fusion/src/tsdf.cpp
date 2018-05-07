@@ -1,4 +1,8 @@
-//TODO: add license
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html
+
+// This code is also subject to the license terms in the LICENSE file found in this module's directory
 
 #include "precomp.hpp"
 #include "tsdf.hpp"
@@ -43,14 +47,14 @@ public:
     TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                   float _raycastStepFactor);
 
-    virtual void integrate(cv::Ptr<Frame> depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics);
+    virtual void integrate(cv::Ptr<Frame> depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) override;
     virtual cv::Ptr<Frame> raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize, int pyramidLevels,
-                                   cv::Ptr<FrameGenerator> frameGenerator) const;
+                                   cv::Ptr<FrameGenerator> frameGenerator) const override;
 
-    virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const;
-    virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const;
+    virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const override;
+    virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
 
-    virtual void reset();
+    virtual void reset() override;
 
     volumeType interpolateVoxel(cv::Point3f p) const;
     Point3f getNormalVoxel(cv::Point3f p) const;
@@ -226,7 +230,7 @@ struct IntegrateInvoker : ParallelLoopBody
     }
 
 #if CV_SIMD128
-    virtual void operator() (const Range& range) const
+    virtual void operator() (const Range& range) const override
     {
         // zStep == vol2cam*(Point3f(x, y, 1)*voxelSize) - basePt;
         Point3f zStepPt = Point3f(vol2cam.matrix(0, 2), vol2cam.matrix(1, 2), vol2cam.matrix(2, 2))*volume.voxelSize;
@@ -683,7 +687,7 @@ struct RaycastInvoker : ParallelLoopBody
     {  }
 
 #if CV_SIMD128
-    virtual void operator() (const Range& range) const
+    virtual void operator() (const Range& range) const override
     {
         const v_float32x4 vfxy(reproj.fxinv, reproj.fyinv, 0, 0);
         const v_float32x4 vcxy(reproj.cx, reproj.cy, 0, 0);
@@ -1027,7 +1031,7 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
         }
     }
 
-    virtual void operator() (const Range& range) const
+    virtual void operator() (const Range& range) const override
     {
         // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
         std::vector<ptype> points, normals;
@@ -1144,14 +1148,14 @@ public:
     TSDFVolumeGPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                   float _raycastStepFactor);
 
-    virtual void integrate(cv::Ptr<Frame> depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics);
+    virtual void integrate(cv::Ptr<Frame> depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) override;
     virtual cv::Ptr<Frame> raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize, int pyramidLevels,
-                                   cv::Ptr<FrameGenerator> frameGenerator) const;
+                                   cv::Ptr<FrameGenerator> frameGenerator) const override;
 
-    virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const;
-    virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const;
+    virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
+    virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const override;
 
-    virtual void reset();
+    virtual void reset() override;
 };
 
 

@@ -1,4 +1,8 @@
-//TODO: correct license
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html
+
+// This code is also subject to the license terms in the LICENSE file found in this module's directory
 
 #ifndef __OPENCV_KINECT_FUSION_HPP__
 #define __OPENCV_KINECT_FUSION_HPP__
@@ -199,7 +203,7 @@ public:
     /** @brief Renders a volume into an image
 
       Renders a 0-surface of TSDF using Phong shading into a CV_8UC3 Mat.
-      Light pose is fixed in KinFu settings.
+      Light pose is fixed in KinFu params.
 
         @param image resulting image
         @param cameraPose pose of camera to render from. If empty then render from current pose
