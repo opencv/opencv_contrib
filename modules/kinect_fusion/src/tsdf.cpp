@@ -48,8 +48,8 @@ public:
                   float _raycastStepFactor);
 
     virtual void integrate(cv::Ptr<Frame> depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) override;
-    virtual cv::Ptr<Frame> raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize, int pyramidLevels,
-                                   cv::Ptr<FrameGenerator> frameGenerator) const override;
+    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize, int pyramidLevels,
+                         cv::Ptr<FrameGenerator> frameGenerator, cv::Ptr<Frame> frame) const override;
 
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const override;
     virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
@@ -942,8 +942,8 @@ struct RaycastInvoker : ParallelLoopBody
 };
 
 
-cv::Ptr<Frame> TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frameSize,
-                                      int pyramidLevels, cv::Ptr<FrameGenerator> frameGenerator) const
+void TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frameSize, int pyramidLevels,
+                            cv::Ptr<FrameGenerator> frameGenerator, cv::Ptr<Frame> frame) const
 {
     ScopeTime st("tsdf: raycast");
 
@@ -956,7 +956,7 @@ cv::Ptr<Frame> TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, 
     parallel_for_(Range(0, points.rows), RaycastInvoker(points, normals, cameraPose, intrinsics, *this), nstripes);
 
     // build a pyramid of points and normals
-    return (*frameGenerator)(points, normals, pyramidLevels);
+    (*frameGenerator)(frame, points, normals, pyramidLevels);
 }
 
 
@@ -1149,8 +1149,8 @@ public:
                   float _raycastStepFactor);
 
     virtual void integrate(cv::Ptr<Frame> depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) override;
-    virtual cv::Ptr<Frame> raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize, int pyramidLevels,
-                                   cv::Ptr<FrameGenerator> frameGenerator) const override;
+    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize, int pyramidLevels,
+                         cv::Ptr<FrameGenerator> frameGenerator, cv::Ptr<Frame> frame) const override;
 
     virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const override;
@@ -1179,8 +1179,8 @@ void TSDFVolumeGPU::integrate(cv::Ptr<Frame> /*depth*/, float /*depthFactor*/, c
 }
 
 
-cv::Ptr<Frame> TSDFVolumeGPU::raycast(cv::Affine3f /*cameraPose*/, Intr /*intrinsics*/, Size /*frameSize*/, int /*pyramidLevels*/,
-                                      Ptr<FrameGenerator> /* frameGenerator */) const
+void TSDFVolumeGPU::raycast(cv::Affine3f /*cameraPose*/, Intr /*intrinsics*/, Size /*frameSize*/, int /*pyramidLevels*/,
+                            Ptr<FrameGenerator> /* frameGenerator */, Ptr<Frame> /* frame */) const
 {
     throw std::runtime_error("Not implemented");
 }

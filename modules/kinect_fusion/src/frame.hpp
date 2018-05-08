@@ -104,14 +104,12 @@ public:
     virtual ~FrameGPU() { }
 };
 
-//TODO: change interface to avoid extra memory allocations
-
 struct FrameGenerator
 {
 public:
-    virtual cv::Ptr<Frame> operator() (cv::InputArray depth, const cv::kinfu::Intr, int levels, float depthFactor,
+    virtual void operator() (cv::Ptr<Frame>& frame, cv::InputArray depth, const cv::kinfu::Intr, int levels, float depthFactor,
                                        float sigmaDepth, float sigmaSpatial, int kernelSize) const = 0;
-    virtual cv::Ptr<Frame> operator() (cv::InputArray points, cv::InputArray normals, int levels) const = 0;
+    virtual void operator() (cv::Ptr<Frame>& frame, cv::InputArray points, cv::InputArray normals, int levels) const = 0;
     virtual ~FrameGenerator() {}
 };
 

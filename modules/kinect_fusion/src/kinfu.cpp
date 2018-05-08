@@ -179,11 +179,14 @@ bool KinFu::KinFuImpl::operator()(InputArray _depth)
 
     CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
 
-    cv::Ptr<Frame> newFrame = (*frameGenerator)(_depth, params.intr, params.pyramidLevels,
-                                                params.depthFactor,
-                                                params.bilateral_sigma_depth,
-                                                params.bilateral_sigma_spatial,
-                                                params.bilateral_kernel_size);
+    cv::Ptr<Frame> newFrame;
+    (*frameGenerator)(newFrame, _depth,
+                      params.intr,
+                      params.pyramidLevels,
+                      params.depthFactor,
+                      params.bilateral_sigma_depth,
+                      params.bilateral_sigma_spatial,
+                      params.bilateral_kernel_size);
 
     if(frameCounter == 0)
     {
@@ -214,8 +217,8 @@ bool KinFu::KinFuImpl::operator()(InputArray _depth)
         }
 
         // raycast and build a pyramid of points and normals
-        frame = volume->raycast(pose, params.intr, params.frameSize,
-                                params.pyramidLevels, frameGenerator);
+        volume->raycast(pose, params.intr, params.frameSize,
+                        params.pyramidLevels, frameGenerator, frame);
     }
 
     frameCounter++;
@@ -236,8 +239,9 @@ void KinFu::KinFuImpl::render(OutputArray image, const Affine3f cameraPose) cons
     else
     {
         // raycast and build a pyramid of points and normals
-        cv::Ptr<Frame> f = volume->raycast(cameraPose, params.intr, params.frameSize,
-                            params.pyramidLevels, frameGenerator);
+        cv::Ptr<Frame> f;
+        volume->raycast(cameraPose, params.intr, params.frameSize,
+                        params.pyramidLevels, frameGenerator, f);
         f->render(image, 0, params.lightPose);
     }
 }

@@ -13,9 +13,10 @@ using namespace cv::kinfu;
 struct FrameGeneratorCPU : FrameGenerator
 {
 public:
-    virtual cv::Ptr<Frame> operator() (InputArray depth, const cv::kinfu::Intr, int levels, float depthFactor,
-                                       float sigmaDepth, float sigmaSpatial, int kernelSize) const override;
-    virtual cv::Ptr<Frame> operator() (InputArray points, InputArray normals, int levels) const override;
+    virtual void operator() (Ptr<Frame>& _frame, InputArray depth, const kinfu::Intr, int levels, float depthFactor,
+                             float sigmaDepth, float sigmaSpatial, int kernelSize) const override;
+    virtual void operator() (Ptr<Frame>& _frame, InputArray points, InputArray normals, int levels) const override;
+
     virtual ~FrameGeneratorCPU() {}
 };
 
@@ -23,12 +24,15 @@ void computePointsNormals(const cv::kinfu::Intr, float depthFactor, const Depth,
 Depth pyrDownBilateral(const Depth depth, float sigma);
 void pyrDownPointsNormals(const Points p, const Normals n, Points& pdown, Normals& ndown);
 
-cv::Ptr<Frame> FrameGeneratorCPU::operator ()(InputArray depth, const Intr intr, int levels, float depthFactor,
-                                              float sigmaDepth, float sigmaSpatial, int kernelSize) const
+void FrameGeneratorCPU::operator ()(Ptr<Frame>& _frame, InputArray depth, const Intr intr, int levels, float depthFactor,
+                                    float sigmaDepth, float sigmaSpatial, int kernelSize) const
 {
     ScopeTime st("frameGenerator: from depth");
 
-    cv::Ptr<FrameCPU> frame = makePtr<FrameCPU>();
+    Ptr<FrameCPU> frame = _frame.dynamicCast<FrameCPU>();
+
+    if(!frame)
+        frame = makePtr<FrameCPU>();
 
     //CV_Assert(depth.type() == CV_16S);
     // this should convert CV_16S to CV_32F
@@ -46,13 +50,19 @@ cv::Ptr<Frame> FrameGeneratorCPU::operator ()(InputArray depth, const Intr intr,
 
     Depth scaled = smooth;
     Size sz = smooth.size();
+    frame->points.resize(levels);
+    frame->normals.resize(levels);
     for(int i = 0; i < levels; i++)
     {
-        Points p(sz); Normals n(sz);
+        Points p = frame->points[i];
+        Normals n = frame->normals[i];
+        p.create(sz); n.create(sz);
+
         computePointsNormals(intr.scale(i), depthFactor, scaled, p, n);
 
-        frame->points.push_back(p);
-        frame->normals.push_back(n);
+        frame->points[i] = p;
+        frame->normals[i] = n;
+
         if(i < levels - 1)
         {
             sz.width /= 2; sz.height /= 2;
@@ -60,36 +70,37 @@ cv::Ptr<Frame> FrameGeneratorCPU::operator ()(InputArray depth, const Intr intr,
         }
     }
 
-    return frame;
+    _frame = frame;
 }
 
-cv::Ptr<Frame> FrameGeneratorCPU::operator ()(InputArray _points, InputArray _normals, int levels) const
+void FrameGeneratorCPU::operator ()(Ptr<Frame>& _frame, InputArray _points, InputArray _normals, int levels) const
 {
     ScopeTime st("frameGenerator: pyrDown p, n");
-
-    cv::Ptr<FrameCPU> frame = makePtr<FrameCPU>();
 
     CV_Assert( _points.type() == DataType<Points::value_type>::type);
     CV_Assert(_normals.type() == DataType<Points::value_type>::type);
 
-    std::vector<Points>  points  = std::vector<Points>(levels);
-    std::vector<Normals> normals = std::vector<Normals>(levels);
-    points[0]  = _points.getMat();
-    normals[0] = _normals.getMat();
+    Ptr<FrameCPU> frame = _frame.dynamicCast<FrameCPU>();
+
+    if(!frame)
+        frame = makePtr<FrameCPU>();
+
+    frame->depthData = Depth();
+    frame->points.resize(levels);
+    frame->normals.resize(levels);
+    frame->points[0]  = _points.getMat();
+    frame->normals[0] = _normals.getMat();
     Size sz = _points.size();
     for(int i = 1; i < levels; i++)
     {
         sz.width /= 2; sz.height /= 2;
-        points[i]  = Points(sz);
-        normals[i] = Normals(sz);
-        pyrDownPointsNormals(points[i-1], normals[i-1], points[i], normals[i]);
+        frame->points[i].create(sz);
+        frame->normals[i].create(sz);
+        pyrDownPointsNormals(frame->points[i-1], frame->normals[i-1],
+                             frame->points[i  ], frame->normals[i  ]);
     }
 
-    frame->points = points;
-    frame->normals = normals;
-    frame->depthData = Depth();
-
-    return frame;
+    _frame = frame;
 }
 
 template<int p>
@@ -396,19 +407,20 @@ void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
 struct FrameGeneratorGPU : FrameGenerator
 {
 public:
-    virtual cv::Ptr<Frame> operator() (InputArray depth, const cv::kinfu::Intr, int levels, float depthFactor,
-                                       float sigmaDepth, float sigmaSpatial, int kernelSize) const override;
-    virtual cv::Ptr<Frame> operator() (InputArray points, InputArray normals, int levels) const override;
+    virtual void operator() (Ptr<Frame>& frame, InputArray depth, const kinfu::Intr, int levels, float depthFactor,
+                             float sigmaDepth, float sigmaSpatial, int kernelSize) const override;
+    virtual void operator() (Ptr<Frame>& frame, InputArray points, InputArray normals, int levels) const override;
+
     virtual ~FrameGeneratorGPU() {}
 };
 
-cv::Ptr<Frame> FrameGeneratorGPU::operator ()(InputArray /*depth*/, const Intr /*intr*/, int /*levels*/, float /*depthFactor*/,
-                                              float /*sigmaDepth*/, float /*sigmaSpatial*/, int /*kernelSize*/) const
+void FrameGeneratorGPU::operator ()(Ptr<Frame>& /*frame*/, InputArray /*depth*/, const Intr /*intr*/, int /*levels*/, float /*depthFactor*/,
+                                    float /*sigmaDepth*/, float /*sigmaSpatial*/, int /*kernelSize*/) const
 {
     throw std::runtime_error("Not implemented");
 }
 
-cv::Ptr<Frame> FrameGeneratorGPU::operator ()(InputArray /*_points*/, InputArray /*_normals*/, int /*levels*/) const
+void FrameGeneratorGPU::operator ()(Ptr<Frame>& /*frame*/, InputArray /*_points*/, InputArray /*_normals*/, int /*levels*/) const
 {
     throw std::runtime_error("Not implemented");
 }
