@@ -8,8 +8,6 @@
 
 /** @defgroup kinect_fusion Kinect Fusion
 
-TODO: write this
-
-TODO: Cite this: @cite kinectfusion .
+KinectFusion 3d reconstruction algorithm implementation
 
 */

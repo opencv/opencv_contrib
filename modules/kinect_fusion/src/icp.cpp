@@ -4,7 +4,6 @@
 
 // This code is also subject to the license terms in the LICENSE file found in this module's directory
 
-//TODO: organize includes properly
 #include "precomp.hpp"
 #include "icp.hpp"
 

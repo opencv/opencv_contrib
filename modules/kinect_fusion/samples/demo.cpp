@@ -1,4 +1,8 @@
-//TODO: license here
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html
+
+// This code is also subject to the license terms in the LICENSE file found in this module's directory
 
 #include <iostream>
 #include <fstream>
@@ -75,7 +79,7 @@ int main(int argc, char **argv)
 
     kinfu::KinFu kf(kinfu::KinFu::KinFuParams::coarseParams());
 
-    cv::viz::Viz3d window("debug");
+    cv::viz::Viz3d window("cloud");
     window.setViewerPose(Affine3f::Identity());
 
     // TODO: can we use UMats for that?
@@ -112,7 +116,7 @@ int main(int argc, char **argv)
         kf.render(rendered);
         imshow("render", rendered);
 
-        waitKey(10);
+        waitKey(1);
     }
 
     return 0;
