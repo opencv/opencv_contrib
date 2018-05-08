@@ -11,9 +11,12 @@
 #include "opencv2/kinect_fusion/kinfu.hpp"
 #include "opencv2/core/hal/intrin.hpp"
 
-//DEBUG
-//TODO: remove it
+// Print execution times of each block marked with ScopeTime
+#define PRINT_TIME 0
+
+#if PRINT_TIME
 #include <iostream>
+#endif
 
 typedef float depthType;
 
@@ -35,71 +38,17 @@ static inline bool isNaN(const cv::v_float32x4& p)
 }
 #endif
 
-//TODO: remove it
-//debugging code
-
 struct ScopeTime
 {
+    ScopeTime(std::string name_, bool _enablePrint = true);
+    ~ScopeTime();
+
+#if PRINT_TIME
     static int nested;
-    ScopeTime(std::string name_, bool _enablePrint = true) : name(name_), enablePrint(_enablePrint)
-    {
-        start = (double)cv::getTickCount();
-        nested++;
-    }
-
-    ~ScopeTime()
-    {
-        double time_ms =  ((double)cv::getTickCount() - start)*1000.0/cv::getTickFrequency();
-        if(enablePrint)
-        {
-            std::string spaces(nested, '-');
-            std::cout << spaces << "Time(" << name << ") = " << time_ms << " ms" << std::endl;
-        }
-        nested--;
-    }
-
     const std::string name;
     const bool enablePrint;
     double start;
+#endif
 };
-
-/*
-struct SampledScopeTime
-{
-public:
-    enum { ENABLE_PRINT = true, EACH = 33 };
-    SampledScopeTime(double& time_ms) : time_ms_(time_ms)
-    {
-        start = (double)cv::getTickCount();
-    }
-
-    ~SampledScopeTime()
-    {
-        static int i_ = 0;
-        time_ms_ += getTime ();
-        if (i_ % EACH == 0 && i_)
-        {
-            if(ENABLE_PRINT)
-            {
-                std::cout << "Average frame time = " << time_ms_ / EACH << "ms ( " << 1000.f * EACH / time_ms_ << "fps )" << std::endl;
-            }
-            time_ms_ = 0.0;
-        }
-        ++i_;
-    }
-
-private:
-    double getTime()
-    {
-        return ((double)cv::getTickCount() - start)*1000.0/cv::getTickFrequency();
-    }
-
-    SampledScopeTime(const SampledScopeTime&);
-    SampledScopeTime& operator=(const SampledScopeTime&);
-
-    double& time_ms_;
-    double start;
-};
-*/
 
 #endif
