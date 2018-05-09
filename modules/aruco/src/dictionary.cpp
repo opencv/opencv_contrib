@@ -41,6 +41,7 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include "predefined_dictionaries.hpp"
+#include "predefined_dictionaries_apriltag.hpp"
 #include "opencv2/core/hal/hal.hpp"
 
 namespace cv {
@@ -291,6 +292,11 @@ const Dictionary DICT_7X7_100_DATA = Dictionary(Mat(100, (7*7 + 7)/8 ,CV_8UC4, (
 const Dictionary DICT_7X7_250_DATA = Dictionary(Mat(250, (7*7 + 7)/8 ,CV_8UC4, (uchar*)DICT_7X7_1000_BYTES), 7, 8);
 const Dictionary DICT_7X7_1000_DATA = Dictionary(Mat(1000, (7*7 + 7)/8 ,CV_8UC4, (uchar*)DICT_7X7_1000_BYTES), 7, 6);
 
+const Dictionary DICT_APRILTAG_16h5_DATA = Dictionary(Mat(30, (4*4 + 7)/8, CV_8UC4, (uchar*)DICT_APRILTAG_16h5_BYTES), 4, 0);
+const Dictionary DICT_APRILTAG_25h9_DATA = Dictionary(Mat(35, (5*5 + 7)/8, CV_8UC4, (uchar*)DICT_APRILTAG_25h9_BYTES), 5, 0);
+const Dictionary DICT_APRILTAG_36h10_DATA = Dictionary(Mat(2320, (6*6 + 7)/8, CV_8UC4, (uchar*)DICT_APRILTAG_36h10_BYTES), 6, 0);
+const Dictionary DICT_APRILTAG_36h11_DATA = Dictionary(Mat(587, (6*6 + 7)/8, CV_8UC4, (uchar*)DICT_APRILTAG_36h11_BYTES), 6, 0);
+
 
 Ptr<Dictionary> getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
     switch(name) {
@@ -333,6 +339,15 @@ Ptr<Dictionary> getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
         return makePtr<Dictionary>(DICT_7X7_250_DATA);
     case DICT_7X7_1000:
         return makePtr<Dictionary>(DICT_7X7_1000_DATA);
+
+    case DICT_APRILTAG_16h5:
+        return makePtr<Dictionary>(DICT_APRILTAG_16h5_DATA);
+    case DICT_APRILTAG_25h9:
+        return makePtr<Dictionary>(DICT_APRILTAG_25h9_DATA);
+    case DICT_APRILTAG_36h10:
+        return makePtr<Dictionary>(DICT_APRILTAG_36h10_DATA);
+    case DICT_APRILTAG_36h11:
+        return makePtr<Dictionary>(DICT_APRILTAG_36h11_DATA);
 
     }
     return makePtr<Dictionary>(DICT_4X4_50_DATA);
