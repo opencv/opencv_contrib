@@ -36,13 +36,13 @@ public:
 private:
     KinFu::KinFuParams params;
 
-    int frameCounter;
-    Affine3f pose;
-    cv::Ptr<Frame> frame;
-
     cv::Ptr<FrameGenerator> frameGenerator;
     cv::Ptr<ICP> icp;
     cv::Ptr<TSDFVolume> volume;
+
+    int frameCounter;
+    Affine3f pose;
+    cv::Ptr<Frame> frame;
 };
 
 KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
@@ -136,12 +136,12 @@ KinFu::KinFuParams KinFu::KinFuParams::coarseParams()
 
 KinFu::KinFuImpl::KinFuImpl(const KinFu::KinFuParams &_params) :
     params(_params),
-    frame(),
     frameGenerator(makeFrameGenerator(params.platform)),
     icp(makeICP(params.platform, params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
     volume(makeTSDFVolume(params.platform, params.volumeDims, params.volumeSize, params.volumePose,
                           params.tsdf_trunc_dist, params.tsdf_max_weight,
-                          params.raycast_step_factor))
+                          params.raycast_step_factor)),
+    frame()
 {
     reset();
 }
@@ -179,7 +179,7 @@ bool KinFu::KinFuImpl::operator()(InputArray _depth)
 
     CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
 
-    cv::Ptr<Frame> newFrame;
+    cv::Ptr<Frame> newFrame = (*frameGenerator)();
     (*frameGenerator)(newFrame, _depth,
                       params.intr,
                       params.pyramidLevels,
@@ -239,7 +239,7 @@ void KinFu::KinFuImpl::render(OutputArray image, const Affine3f cameraPose) cons
     else
     {
         // raycast and build a pyramid of points and normals
-        cv::Ptr<Frame> f;
+        cv::Ptr<Frame> f = (*frameGenerator)();
         volume->raycast(cameraPose, params.intr, params.frameSize,
                         params.pyramidLevels, frameGenerator, f);
         f->render(image, 0, params.lightPose);

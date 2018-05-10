@@ -13,9 +13,10 @@ using namespace cv::kinfu;
 struct FrameGeneratorCPU : FrameGenerator
 {
 public:
-    virtual void operator() (Ptr<Frame>& _frame, InputArray depth, const kinfu::Intr, int levels, float depthFactor,
+    virtual cv::Ptr<Frame> operator ()() const override;
+    virtual void operator() (Ptr<Frame> _frame, InputArray depth, const kinfu::Intr, int levels, float depthFactor,
                              float sigmaDepth, float sigmaSpatial, int kernelSize) const override;
-    virtual void operator() (Ptr<Frame>& _frame, InputArray points, InputArray normals, int levels) const override;
+    virtual void operator() (Ptr<Frame> _frame, InputArray points, InputArray normals, int levels) const override;
 
     virtual ~FrameGeneratorCPU() {}
 };
@@ -24,15 +25,19 @@ void computePointsNormals(const cv::kinfu::Intr, float depthFactor, const Depth,
 Depth pyrDownBilateral(const Depth depth, float sigma);
 void pyrDownPointsNormals(const Points p, const Normals n, Points& pdown, Normals& ndown);
 
-void FrameGeneratorCPU::operator ()(Ptr<Frame>& _frame, InputArray depth, const Intr intr, int levels, float depthFactor,
+cv::Ptr<Frame> FrameGeneratorCPU::operator ()() const
+{
+    return makePtr<FrameCPU>();
+}
+
+void FrameGeneratorCPU::operator ()(Ptr<Frame> _frame, InputArray depth, const Intr intr, int levels, float depthFactor,
                                     float sigmaDepth, float sigmaSpatial, int kernelSize) const
 {
     ScopeTime st("frameGenerator: from depth");
 
     Ptr<FrameCPU> frame = _frame.dynamicCast<FrameCPU>();
 
-    if(!frame)
-        frame = makePtr<FrameCPU>();
+    CV_Assert(frame);
 
     //CV_Assert(depth.type() == CV_16S);
     // this should convert CV_16S to CV_32F
@@ -73,7 +78,7 @@ void FrameGeneratorCPU::operator ()(Ptr<Frame>& _frame, InputArray depth, const 
     _frame = frame;
 }
 
-void FrameGeneratorCPU::operator ()(Ptr<Frame>& _frame, InputArray _points, InputArray _normals, int levels) const
+void FrameGeneratorCPU::operator ()(Ptr<Frame> _frame, InputArray _points, InputArray _normals, int levels) const
 {
     ScopeTime st("frameGenerator: pyrDown p, n");
 
@@ -82,8 +87,7 @@ void FrameGeneratorCPU::operator ()(Ptr<Frame>& _frame, InputArray _points, Inpu
 
     Ptr<FrameCPU> frame = _frame.dynamicCast<FrameCPU>();
 
-    if(!frame)
-        frame = makePtr<FrameCPU>();
+    CV_Assert(frame);
 
     frame->depthData = Depth();
     frame->points.resize(levels);
@@ -407,20 +411,26 @@ void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
 struct FrameGeneratorGPU : FrameGenerator
 {
 public:
-    virtual void operator() (Ptr<Frame>& frame, InputArray depth, const kinfu::Intr, int levels, float depthFactor,
+    virtual cv::Ptr<Frame> operator ()() const override;
+    virtual void operator() (Ptr<Frame> frame, InputArray depth, const kinfu::Intr, int levels, float depthFactor,
                              float sigmaDepth, float sigmaSpatial, int kernelSize) const override;
-    virtual void operator() (Ptr<Frame>& frame, InputArray points, InputArray normals, int levels) const override;
+    virtual void operator() (Ptr<Frame> frame, InputArray points, InputArray normals, int levels) const override;
 
     virtual ~FrameGeneratorGPU() {}
 };
 
-void FrameGeneratorGPU::operator ()(Ptr<Frame>& /*frame*/, InputArray /*depth*/, const Intr /*intr*/, int /*levels*/, float /*depthFactor*/,
+cv::Ptr<Frame> FrameGeneratorGPU::operator ()() const
+{
+    return makePtr<FrameGPU>();
+}
+
+void FrameGeneratorGPU::operator ()(Ptr<Frame> /*frame*/, InputArray /*depth*/, const Intr /*intr*/, int /*levels*/, float /*depthFactor*/,
                                     float /*sigmaDepth*/, float /*sigmaSpatial*/, int /*kernelSize*/) const
 {
     throw std::runtime_error("Not implemented");
 }
 
-void FrameGeneratorGPU::operator ()(Ptr<Frame>& /*frame*/, InputArray /*_points*/, InputArray /*_normals*/, int /*levels*/) const
+void FrameGeneratorGPU::operator ()(Ptr<Frame> /*frame*/, InputArray /*_points*/, InputArray /*_normals*/, int /*levels*/) const
 {
     throw std::runtime_error("Not implemented");
 }
