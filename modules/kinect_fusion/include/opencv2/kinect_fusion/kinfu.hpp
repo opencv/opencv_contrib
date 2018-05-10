@@ -90,7 +90,7 @@ struct Intr
 class CV_EXPORTS KinFu
 {
 public:
-    struct KinFuParams
+    struct CV_EXPORTS KinFuParams
     {
         /** @brief Default parameters
         A set of parameters which provides better model quality, can be very slow.
