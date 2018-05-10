@@ -47,6 +47,31 @@ static vector<string> readDepth(std::string fileList)
     return v;
 }
 
+const std::string vizWindowName = "cloud";
+
+struct PauseCallbackArgs
+{
+    PauseCallbackArgs(kinfu::KinFu& _kf) : kf(_kf)
+    { }
+
+    kinfu::KinFu& kf;
+};
+
+void pauseCallback(const viz::MouseEvent& me, void* args);
+void pauseCallback(const viz::MouseEvent& me, void* args)
+{
+    if(me.type == viz::MouseEvent::Type::MouseButtonRelease ||
+       me.type == viz::MouseEvent::Type::MouseScrollDown    ||
+       me.type == viz::MouseEvent::Type::MouseScrollUp)
+    {
+        PauseCallbackArgs pca = *((PauseCallbackArgs*)(args));
+        viz::Viz3d window(vizWindowName);
+        Mat rendered;
+        pca.kf.render(rendered, window.getViewerPose());
+        imshow("render", rendered);
+        waitKey(1);
+    }
+}
 
 static const char* keys =
 {
@@ -95,9 +120,11 @@ int main(int argc, char **argv)
     else
         params = kinfu::KinFu::KinFuParams::defaultParams();
 
+    params.volumePose = params.volumePose.translate(Vec3f(0.f, 0.f, 0.5f));
+
     kinfu::KinFu kf(params);
 
-    cv::viz::Viz3d window("cloud");
+    cv::viz::Viz3d window(vizWindowName);
     window.setViewerPose(Affine3f::Identity());
 
     // TODO: can we use UMats for that?
@@ -107,51 +134,81 @@ int main(int argc, char **argv)
 
     double prevTime = getTickCount();
 
+    bool pause = false;
+
     for(size_t nFrame = 0; nFrame < depthFileList.size(); nFrame++)
     {
-        Mat frame = cv::imread(depthFileList[nFrame], IMREAD_ANYDEPTH);
-        if(frame.empty())
-            throw std::runtime_error("Matrix is empty");
-
-        Mat cvt8;
-        convertScaleAbs(frame, cvt8, 0.25f/5000.f*256.f);
-        imshow("depth", cvt8);
-
-        if(!kf(frame))
-            std::cout << "reset" << std::endl;
-        else
+        if(pause)
         {
-            if(coarse)
-            {
-                kf.fetchCloud(points, normals);
-                viz::WCloud cloudWidget(points, viz::Color::white());
-                viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
-                window.showWidget("cloud", cloudWidget);
-                window.showWidget("normals", cloudNormals);
-            }
+            kf.fetchCloud(points, normals);
+            viz::WCloud cloudWidget(points, viz::Color::white());
+            viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
+            window.showWidget("cloud", cloudWidget);
+            window.showWidget("normals", cloudNormals);
 
-            //window.showWidget("worldAxes", viz::WCoordinateSystem());
             window.showWidget("cube", viz::WCube(Vec3d::all(0),
                                                  Vec3d::all(kf.getParams().volumeSize)),
                               kf.getParams().volumePose);
-            window.setViewerPose(kf.getPose());
-            window.spinOnce(1, true);
+            PauseCallbackArgs pca(kf);
+            window.registerMouseCallback(pauseCallback, (void*)&pca);
+            window.spin();
+
+            pause = false;
+        }
+        else
+        {
+            Mat frame = cv::imread(depthFileList[nFrame], IMREAD_ANYDEPTH);
+            if(frame.empty())
+                throw std::runtime_error("Matrix is empty");
+
+            Mat cvt8;
+            convertScaleAbs(frame, cvt8, 0.25f/5000.f*256.f);
+            imshow("depth", cvt8);
+
+            if(!kf(frame))
+                std::cout << "reset" << std::endl;
+            else
+            {
+                if(coarse)
+                {
+                    kf.fetchCloud(points, normals);
+                    viz::WCloud cloudWidget(points, viz::Color::white());
+                    viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
+                    window.showWidget("cloud", cloudWidget);
+                    window.showWidget("normals", cloudNormals);
+                }
+
+                //window.showWidget("worldAxes", viz::WCoordinateSystem());
+                window.showWidget("cube", viz::WCube(Vec3d::all(0),
+                                                     Vec3d::all(kf.getParams().volumeSize)),
+                                  kf.getParams().volumePose);
+                window.setViewerPose(kf.getPose());
+                window.spinOnce(1, true);
+            }
+
+            kf.render(rendered);
         }
 
-        kf.render(rendered);
-
         double newTime = getTickCount();
-        putText(rendered, cv::format("FPS: %2d press R to reset, Q to quit", (int)(getTickFrequency()/(newTime - prevTime))),
-                Point(0, rendered.rows-1), FONT_HERSHEY_SIMPLEX, 1.0, Scalar(0, 255, 255));
+        putText(rendered, cv::format("FPS: %2d press R to reset, P to pause, Q to quit", (int)(getTickFrequency()/(newTime - prevTime))),
+                Point(0, rendered.rows-1), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255));
         prevTime = newTime;
 
         imshow("render", rendered);
 
         int c = waitKey(1);
-        if(c == 'r')
+        switch (c)
+        {
+        case 'r':
             kf.reset();
-        if(c == 'q')
             break;
+        case 'q':
+            return 0;
+        case 'p':
+            pause = true;
+        default:
+            break;
+        }
     }
 
     return 0;
