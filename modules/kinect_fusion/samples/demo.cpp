@@ -6,6 +6,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/viz.hpp>
 #include <opencv2/kinect_fusion.hpp>
@@ -48,6 +49,8 @@ static const char* keys =
 {
     "{help h usage ? | | print this message   }"
     "{@depth |<none>| Path to depth.txt file listing a set of depth images }"
+    "{coarse | | Run on coarse settings (fast but ugly) or on default (slow but looks better),"
+        " in coarse mode points and normals are displayed }"
 };
 
 static const std::string message =
@@ -58,12 +61,18 @@ static const std::string message =
 
 int main(int argc, char **argv)
 {
+    bool coarse = false;
+
     CommandLineParser parser(argc, argv, keys);
     parser.about(message);
     if(parser.has("help"))
     {
         parser.printMessage();
         return 0;
+    }
+    if(parser.has("coarse"))
+    {
+        coarse = true;
     }
 
     String depthPath = parser.get<String>(0);
@@ -77,7 +86,13 @@ int main(int argc, char **argv)
 
     vector<string> depthFileList = readDepth(depthPath);
 
-    kinfu::KinFu kf(kinfu::KinFu::KinFuParams::coarseParams());
+    kinfu::KinFu::KinFuParams params;
+    if(coarse)
+        params = kinfu::KinFu::KinFuParams::coarseParams();
+    else
+        params = kinfu::KinFu::KinFuParams::defaultParams();
+
+    kinfu::KinFu kf(params);
 
     cv::viz::Viz3d window("cloud");
     window.setViewerPose(Affine3f::Identity());
@@ -86,6 +101,8 @@ int main(int argc, char **argv)
     Mat rendered;
     Mat points;
     Mat normals;
+
+    double prevTime = getTickCount();
 
     for(size_t nFrame = 0; nFrame < depthFileList.size(); nFrame++)
     {
@@ -101,22 +118,35 @@ int main(int argc, char **argv)
             std::cout << "reset" << std::endl;
         else
         {
-            kf.fetchCloud(points, normals);
-            viz::WCloud cloudWidget(points, viz::Color::white());
-            viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
-            window.showWidget("cloud", cloudWidget);
-            window.showWidget("normals", cloudNormals);
-            window.showWidget("worldAxes", viz::WCoordinateSystem());
+            if(coarse)
+            {
+                kf.fetchCloud(points, normals);
+                viz::WCloud cloudWidget(points, viz::Color::white());
+                viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
+                window.showWidget("cloud", cloudWidget);
+                window.showWidget("normals", cloudNormals);
+            }
+
+            //window.showWidget("worldAxes", viz::WCoordinateSystem());
             window.showWidget("cube", viz::WCube(Vec3d::all(0),
                                                  Vec3d::all(kf.getParams().volumeSize)),
                               kf.getParams().volumePose);
+            window.setViewerPose(kf.getPose());
             window.spinOnce(1, true);
         }
 
         kf.render(rendered);
+
+        double newTime = getTickCount();
+        putText(rendered, cv::format("FPS: %2d press R to reset", (int)(getTickFrequency()/(newTime - prevTime))),
+                Point(0, rendered.rows-1), FONT_HERSHEY_SIMPLEX, 1.0, Scalar(0, 255, 255));
+        prevTime = newTime;
+
         imshow("render", rendered);
 
-        waitKey(1);
+        int c = waitKey(1);
+        if(c == 'r')
+            kf.reset();
     }
 
     return 0;
