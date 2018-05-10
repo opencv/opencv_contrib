@@ -8,8 +8,11 @@
 #include <fstream>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
-#include <opencv2/viz.hpp>
 #include <opencv2/kinect_fusion.hpp>
+
+#ifdef HAVE_OPENCV_VIZ
+
+#include <opencv2/viz.hpp>
 
 using namespace cv;
 using namespace std;
@@ -151,3 +154,12 @@ int main(int argc, char **argv)
 
     return 0;
 }
+
+#else
+
+int main(int /* argc */, char ** /* argv */)
+{
+    std::cout << "This demo requires viz module" << std::endl;
+    return 0;
+}
+#endif
