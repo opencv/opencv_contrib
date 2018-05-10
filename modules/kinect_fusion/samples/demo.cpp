@@ -141,7 +141,7 @@ int main(int argc, char **argv)
         kf.render(rendered);
 
         double newTime = getTickCount();
-        putText(rendered, cv::format("FPS: %2d press R to reset", (int)(getTickFrequency()/(newTime - prevTime))),
+        putText(rendered, cv::format("FPS: %2d press R to reset, Q to quit", (int)(getTickFrequency()/(newTime - prevTime))),
                 Point(0, rendered.rows-1), FONT_HERSHEY_SIMPLEX, 1.0, Scalar(0, 255, 255));
         prevTime = newTime;
 
@@ -150,6 +150,8 @@ int main(int argc, char **argv)
         int c = waitKey(1);
         if(c == 'r')
             kf.reset();
+        if(c == 'q')
+            break;
     }
 
     return 0;
