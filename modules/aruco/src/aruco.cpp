@@ -1094,6 +1094,8 @@ static void _apriltag(Mat im_orig, const Ptr<DetectorParameters> & _params, std:
 
         candidates.push_back(corners);
     }
+
+    _zarray_destroy(quads);
 }
 
 
