@@ -34,7 +34,7 @@ struct RenderInvoker : ParallelLoopBody
 
                 Point3f orig = pose.translation();
                 // direction through pixel
-                Point3f screenVec = reproj(Point3f(x, y, 1.f));
+                Point3f screenVec = reproj(Point3f((float)x, (float)y, 1.f));
                 float xyt = 1.f/(screenVec.x*screenVec.x +
                                  screenVec.y*screenVec.y + 1.f);
                 Point3f dir = normalize(Vec3f(pose.rotation() * screenVec));
@@ -89,15 +89,15 @@ struct CubeSpheresScene
         boxTmp.x = max(abs(boxPose.x) - boxSize, 0.0f);
         boxTmp.y = max(abs(boxPose.y) - boxSize, 0.0f);
         boxTmp.z = max(abs(boxPose.z) - boxSize, 0.0f);
-        float roundBox = cv::norm(boxTmp) - roundness;
+        float roundBox = (float)cv::norm(boxTmp) - roundness;
 
         float sphereRadius = 0.7f;
-        float sphere = cv::norm(boxPose) - sphereRadius;
+        float sphere = (float)cv::norm(boxPose) - sphereRadius;
 
         float boxMinusSphere = max(roundBox, -sphere);
 
-        float sphere2 = cv::norm(p - Point3f(0.3f, 1.f, 0.f)) - 0.1f;
-        float sphere3 = cv::norm(p - Point3f(0.f, 1.f, 0.f)) - 0.2f;
+        float sphere2 = (float)cv::norm(p - Point3f(0.3f, 1.f, 0.f)) - 0.1f;
+        float sphere3 = (float)cv::norm(p - Point3f(0.0f, 1.f, 0.f)) - 0.2f;
         float res = min(min(plane, boxMinusSphere), min(sphere2, sphere3));
 
         return res;
@@ -119,7 +119,7 @@ struct CubeSpheresScene
         std::vector<Affine3f> poses;
         for(int i = 0; i < framesPerCycle*nCycles; i++)
         {
-            float angle = 2.f*CV_PI*i/framesPerCycle;
+            float angle = (float)(CV_2PI*i/framesPerCycle);
             Affine3f pose;
             pose = pose.rotate(startPose.rotation());
             pose = pose.rotate(Vec3f(0.f, -1.f, 0.f)*angle);
@@ -179,7 +179,7 @@ struct RotatingScene
         Point3f torPos(p - torPlace);
         const Point2f torusParams(1.f, 0.2f);
         Point2f torq(std::sqrt(torPos.x*torPos.x + torPos.z*torPos.z) - torusParams.x, torPos.y);
-        float torus = cv::norm(torq) - torusParams.y;
+        float torus = (float)cv::norm(torq) - torusParams.y;
 
         const Point3f cylShift(0.25f, 0.25f, 0.25f);
 
@@ -190,7 +190,7 @@ struct RotatingScene
         const Point2f cylParams(0.1f,
                                 0.1f+0.1f*sin(p.x*p.y*5.f /* +std::log(1.f+abs(p.x*0.1f)) */));
         Point2f cyld = Point2f(abs(std::sqrt(cylPos.x*cylPos.x + cylPos.z*cylPos.z)), abs(cylPos.y)) - cylParams;
-        float pins = min(max(cyld.x, cyld.y), 0.0f) + cv::norm(Point2f(max(cyld.x, 0.f), max(cyld.y, 0.f)));
+        float pins = min(max(cyld.x, cyld.y), 0.0f) + (float)cv::norm(Point2f(max(cyld.x, 0.f), max(cyld.y, 0.f)));
 
         float terrain = p.y + 0.25f*noise(Point2f(p.x, p.z)*0.01f);
 
@@ -215,7 +215,7 @@ struct RotatingScene
         std::vector<Affine3f> poses;
         for(int i = 0; i < framesPerCycle*nCycles; i++)
         {
-            float angle = 2.f*CV_PI*i/framesPerCycle;
+            float angle = (float)(CV_2PI*i/framesPerCycle);
             Affine3f pose;
             pose = pose.rotate(startPose.rotation());
             pose = pose.rotate(Vec3f(0.f, -1.f, 0.f)*angle);

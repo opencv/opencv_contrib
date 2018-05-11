@@ -223,7 +223,7 @@ struct IntegrateInvoker : ParallelLoopBody
         depth(_depth),
         proj(intrinsics.makeProjector()),
         vol2cam(cameraPose.inv() * volume.pose),
-        truncDistInv(1./volume.truncDist),
+        truncDistInv(1.f/volume.truncDist),
         dfac(1.f/depthFactor)
     {
         volDataStart = volume.volume[0];
@@ -252,7 +252,7 @@ struct IntegrateInvoker : ParallelLoopBody
                 int startZ, endZ;
                 if(abs(zStepPt.z) > 1e-5)
                 {
-                    int baseZ = -basePt.z / zStepPt.z;
+                    int baseZ = (int)(-basePt.z / zStepPt.z);
                     if(zStepPt.z > 0)
                     {
                         startZ = baseZ;
@@ -567,7 +567,7 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f _p) const
 inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
 {
     if(v_check_any((p < v_float32x4(1.f, 1.f, 1.f, 0.f)) +
-                   (p >= v_setall_f32(edgeResolution-2))))
+                   (p >= v_setall_f32((float)(edgeResolution-2)))))
         return nanv;
 
     v_int32x4 ip = v_floor(p);
@@ -723,7 +723,7 @@ struct RaycastInvoker : ParallelLoopBody
                 // get direction through pixel in volume space:
 
                 // 1. reproject (x, y) on projecting plane where z = 1.f
-                v_float32x4 planed = (v_float32x4(x, y, 0.f, 0.f) - vcxy)*vfxy;
+                v_float32x4 planed = (v_float32x4((float)x, (float)y, 0.f, 0.f) - vcxy)*vfxy;
                 planed = v_combine_low(planed, v_float32x4(1.f, 0.f, 0.f, 0.f));
 
                 // 2. rotate to volume space
@@ -765,7 +765,7 @@ struct RaycastInvoker : ParallelLoopBody
 
                     //raymarch
                     int steps = 0;
-                    int nSteps = floor((tmax - tmin)/tstep);
+                    int nSteps = cvFloor((tmax - tmin)/tstep);
                     for(; steps < nSteps; steps++)
                     {
                         next += rayStep;
@@ -980,9 +980,9 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
     {
         // 0 for x, 1 for y, 2 for z
         const int edgeResolution = vol.edgeResolution;
-        bool limits;
+        bool limits = false;
         Point3i shift;
-        float Vc;
+        float Vc = 0.f;
         if(axis == 0)
         {
             shift = Point3i(1, 0, 0);
@@ -1047,7 +1047,8 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
                     volumeType v0 = voxel0.v;
                     if(voxel0.weight != 0 && v0 != 1.f)
                     {
-                        Point3f V = (Point3f(x, y, z) + Point3f(0.5f, 0.5f, 0.5f))*vol.voxelSize;
+                        Point3f V = (Point3f((float)x, (float)y, (float)z) +
+                                     Point3f(0.5f, 0.5f, 0.5f))*vol.voxelSize;
 
                         coord(points, normals, x, y, z, V, v0, 0);
                         coord(points, normals, x, y, z, V, v0, 1);
@@ -1089,13 +1090,13 @@ void TSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _normals
             normals.insert(normals.end(), nVecs[i].begin(), nVecs[i].end());
         }
 
-        _points.create(points.size(), 1, DataType<ptype>::type);
-        Mat(points.size(), 1, DataType<ptype>::type, &points[0]).copyTo(_points.getMat());
+        _points.create((int)points.size(), 1, DataType<ptype>::type);
+        Mat((int)points.size(), 1, DataType<ptype>::type, &points[0]).copyTo(_points.getMat());
 
         if(_normals.needed())
         {
-            _normals.create(normals.size(), 1, DataType<ptype>::type);
-            Mat(normals.size(), 1, DataType<ptype>::type, &normals[0]).copyTo(_normals.getMat());
+            _normals.create((int)normals.size(), 1, DataType<ptype>::type);
+            Mat((int)normals.size(), 1, DataType<ptype>::type, &normals[0]).copyTo(_normals.getMat());
         }
     }
 }

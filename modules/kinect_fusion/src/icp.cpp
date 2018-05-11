@@ -50,8 +50,10 @@ bool ICPCPU::estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> _oldFrame
     const std::vector<Normals>& newNormals = newFrame->normals;
 
     transform = Affine3f::Identity();
-    for(int level = iterations.size() - 1; level >= 0; level--)
+    for(int l = 0; l < iterations.size(); l++)
     {
+        size_t level = iterations.size() - 1 - l;
+
         Points  oldPts = oldPoints [level], newPts = newPoints [level];
         Normals oldNrm = oldNormals[level], newNrm = newNormals[level];
 
@@ -145,14 +147,15 @@ struct GetAbInvoker : ParallelLoopBody
         for(size_t i = 0; i < utBufferSize*4; i++)
             upperTriangle[i] = 0;
         // how values are kept in upperTriangle
+        const int NA = 0;
         const size_t utPos[] =
         {
            0,  1,  2,  4,  5,  6,  3,
-          -1,  9, 10, 12, 13, 14, 11,
-          -1, -1, 18, 20, 21, 22, 19,
-          -1, -1, -1, 24, 28, 30, 32,
-          -1, -1, -1, -1, 25, 29, 33,
-          -1, -1, -1, -1, -1, 26, 34
+          NA,  9, 10, 12, 13, 14, 11,
+          NA, NA, 18, 20, 21, 22, 19,
+          NA, NA, NA, 24, 28, 30, 32,
+          NA, NA, NA, NA, 25, 29, 33,
+          NA, NA, NA, NA, NA, 26, 34
         };
 
         const float (&pm)[16] = pose.matrix.val;
@@ -162,7 +165,7 @@ struct GetAbInvoker : ParallelLoopBody
         v_float32x4 poseTrans(pm[3], pm[7], pm[11], 0);
 
         v_float32x4 vfxy(proj.fx, proj.fy, 0, 0), vcxy(proj.cx, proj.cy, 0, 0);
-        v_float32x4 vframe(oldPts.cols - 1, oldPts.rows - 1, 1, 1);
+        v_float32x4 vframe((float)(oldPts.cols - 1), (float)(oldPts.rows - 1), 1.f, 1.f);
 
         float sqThresh = sqDistanceThresh;
         float cosThresh = minCos;
@@ -305,7 +308,7 @@ struct GetAbInvoker : ParallelLoopBody
         {
             for(int j = i; j < 7; j++)
             {
-                int p = utPos[i*7+j];
+                size_t p = utPos[i*7+j];
                 sumAB(i, j) = upperTriangle[p];
             }
         }

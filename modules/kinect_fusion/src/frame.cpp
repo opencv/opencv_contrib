@@ -180,7 +180,8 @@ struct RenderInvoker : ParallelLoopBody
                     Point3f v = normalize(-Vec3f(p));
                     Point3f r = normalize(Vec3f(2.f*n*n.dot(l) - l));
 
-                    uchar ix = (Ax*Ka*Dx + Lx*Kd*Dx*max(0.f, n.dot(l)) + Lx*Ks*Sx*specPow<sp>(max(0.f, r.dot(v))))*255;
+                    uchar ix = (uchar)((Ax*Ka*Dx + Lx*Kd*Dx*max(0.f, n.dot(l)) +
+                                        Lx*Ks*Sx*specPow<sp>(max(0.f, r.dot(v))))*255.f);
                     color = Vec3b(ix, ix, ix);
                 }
 
@@ -348,7 +349,7 @@ struct ComputePointsNormalsInvoker : ParallelLoopBody
             {
                 depthType d00 = depthRow0[x];
                 depthType z00 = d00*dfac;
-                Point3f v00 = reproj(Point3f(x, y, z00));
+                Point3f v00 = reproj(Point3f((float)x, (float)y, z00));
 
                 Point3f p = nan3, n = nan3;
 
@@ -364,8 +365,8 @@ struct ComputePointsNormalsInvoker : ParallelLoopBody
                     //if(z00*z01*z10 != 0)
                     if(z00 != 0 && z01 != 0 && z10 != 0)
                     {
-                        Point3f v01 = reproj(Point3f(x+1, y, z01));
-                        Point3f v10 = reproj(Point3f(x, y+1, z10));
+                        Point3f v01 = reproj(Point3f((float)(x+1), (float)(y+0), z01));
+                        Point3f v10 = reproj(Point3f((float)(x+0), (float)(y+1), z10));
 
                         cv::Vec3f vec = (v01-v00).cross(v10-v00);
                         n = -normalize(vec);

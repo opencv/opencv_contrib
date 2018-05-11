@@ -68,7 +68,7 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
     p.bilateral_sigma_spatial = 4.5; //pixels
     p.bilateral_kernel_size = 7;     //pixels
 
-    p.icpAngleThresh = 30.f * CV_PI / 180.f; // radians
+    p.icpAngleThresh = (float)(30. * CV_PI / 180.); // radians
     p.icpDistThresh = 0.1f; // meters
     // first non-zero numbers are accepted
     const int iters[] = {10, 5, 4, 0};
@@ -82,7 +82,7 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
         else
             break;
     }
-    p.pyramidLevels = p.icpIterations.size();
+    p.pyramidLevels = (int)p.icpIterations.size();
 
     p.tsdf_min_camera_movement = 0.f; //meters, disabled
 
@@ -125,7 +125,7 @@ KinFu::KinFuParams KinFu::KinFuParams::coarseParams()
         else
             break;
     }
-    p.pyramidLevels = p.icpIterations.size();
+    p.pyramidLevels = (int)p.icpIterations.size();
 
     p.volumeDims = 128; //number of voxels
 
