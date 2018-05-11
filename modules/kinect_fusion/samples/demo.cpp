@@ -60,8 +60,8 @@ struct PauseCallbackArgs
 void pauseCallback(const viz::MouseEvent& me, void* args);
 void pauseCallback(const viz::MouseEvent& me, void* args)
 {
-    if(me.type == viz::MouseEvent::Type::MouseButtonRelease ||
-       me.type == viz::MouseEvent::Type::MouseScrollDown    ||
+    if(me.type == viz::MouseEvent::Type::MouseMove       ||
+       me.type == viz::MouseEvent::Type::MouseScrollDown ||
        me.type == viz::MouseEvent::Type::MouseScrollUp)
     {
         PauseCallbackArgs pca = *((PauseCallbackArgs*)(args));
@@ -151,7 +151,11 @@ int main(int argc, char **argv)
                               kf.getParams().volumePose);
             PauseCallbackArgs pca(kf);
             window.registerMouseCallback(pauseCallback, (void*)&pca);
+            window.showWidget("text", viz::WText(cv::String("Move camera in this window. "
+                                                            "Close the window or press Q to resume"), Point()));
             window.spin();
+            window.removeWidget("text");
+            window.registerMouseCallback(0);
 
             pause = false;
         }
@@ -162,7 +166,7 @@ int main(int argc, char **argv)
                 throw std::runtime_error("Matrix is empty");
 
             Mat cvt8;
-            convertScaleAbs(frame, cvt8, 0.25f/5000.f*256.f);
+            convertScaleAbs(frame, cvt8, 0.25/5000.*256.);
             imshow("depth", cvt8);
 
             if(!kf(frame))
