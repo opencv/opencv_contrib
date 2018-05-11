@@ -50,7 +50,7 @@ bool ICPCPU::estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> _oldFrame
     const std::vector<Normals>& newNormals = newFrame->normals;
 
     transform = Affine3f::Identity();
-    for(int l = 0; l < iterations.size(); l++)
+    for(size_t l = 0; l < iterations.size(); l++)
     {
         size_t level = iterations.size() - 1 - l;
 
@@ -62,7 +62,7 @@ bool ICPCPU::estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> _oldFrame
             Matx66f A;
             Vec6f b;
 
-            getAb(oldPts, oldNrm, newPts, newNrm, transform, level, A, b);
+            getAb(oldPts, oldNrm, newPts, newNrm, transform, (int)level, A, b);
 
             double det = cv::determinant(A);
 
