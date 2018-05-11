@@ -801,6 +801,16 @@ TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_BINBOOST_256, regression
     test.safe_run();
 }
 
+TEST(Features2d_RotationInvariance_Descriptor_10555, regression)
+{
+    //opencv/opencv#10555: Enforce ORB support for SIFT keypoints
+    DescriptorRotationInvarianceTest test(SIFT::create(),
+                                          ORB::create(),
+                                          NORM_HAMMING,
+                                          0.9999f);
+    test.safe_run();
+}
+
 /*
  * Detector's scale invariance check
  */
@@ -975,6 +985,16 @@ TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BINBOOST_256, regression)
                                        BoostDesc::create(BoostDesc::BINBOOST_256, true, 6.25f),
                                        NORM_HAMMING,
                                        0.98f);
+    test.safe_run();
+}
+
+TEST(Features2d_ScaleInvariance_Descriptor_10555, regression)
+{
+    //opencv/opencv#10555: Enforce ORB support for SIFT keypoints
+    DescriptorScaleInvarianceTest test(SIFT::create(),
+                                       ORB::create(),
+                                       NORM_HAMMING,
+                                       0.0022f);
     test.safe_run();
 }
 
