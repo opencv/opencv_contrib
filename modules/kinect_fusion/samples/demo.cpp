@@ -167,11 +167,12 @@ int main(int argc, char **argv)
             if(frame.empty())
                 throw std::runtime_error("Matrix is empty");
 
+            // 5000 for typical per-meter coefficient of PNG files
             Mat cvt8;
             convertScaleAbs(frame, cvt8, 0.25/5000.*256.);
             imshow("depth", cvt8);
 
-            if(!kf(frame))
+            if(!kf.update(frame))
             {
                 kf.reset();
                 std::cout << "reset" << std::endl;

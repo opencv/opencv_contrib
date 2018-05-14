@@ -256,7 +256,7 @@ TEST( KinectFusion, lowDense )
 
         Mat depth = scene.depth(pose);
 
-        ASSERT_TRUE(kf(depth));
+        ASSERT_TRUE(kf.update(depth));
 
         kfPose = kf.getPose();
         if(i == 0)
@@ -296,7 +296,7 @@ TEST( KinectFusion, highDense )
 
         Mat depth = scene.depth(pose);
 
-        ASSERT_TRUE(kf(depth));
+        ASSERT_TRUE(kf.update(depth));
 
         kfPose = kf.getPose();
         if(i == 0)

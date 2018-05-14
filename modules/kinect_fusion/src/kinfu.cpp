@@ -31,7 +31,7 @@ public:
 
     const Affine3f getPose() const;
 
-    bool operator()(InputArray depth);
+    bool update(InputArray depth);
 
 private:
     KinFu::KinFuParams params;
@@ -173,9 +173,9 @@ const Affine3f KinFu::KinFuImpl::getPose() const
     return pose;
 }
 
-bool KinFu::KinFuImpl::operator()(InputArray _depth)
+bool KinFu::KinFuImpl::update(InputArray _depth)
 {
-    ScopeTime st("kinfu");
+    ScopeTime st("kinfu update");
 
     CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
 
@@ -303,9 +303,9 @@ void KinFu::fetchNormals(InputArray points, OutputArray normals) const
     impl->fetchNormals(points, normals);
 }
 
-bool KinFu::operator()(InputArray depth)
+bool KinFu::update(InputArray depth)
 {
-    return impl->operator()(depth);
+    return impl->update(depth);
 }
 
 void KinFu::render(cv::OutputArray image, const Affine3f cameraPose) const
