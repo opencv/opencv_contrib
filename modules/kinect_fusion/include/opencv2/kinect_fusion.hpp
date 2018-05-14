@@ -9,5 +9,6 @@
 /** @defgroup kinect_fusion Kinect Fusion
 
 KinectFusion 3d reconstruction algorithm implementation
+Based on (kinfu-remake)[https://github.com/Nerei/kinfu_remake]
 
 */
