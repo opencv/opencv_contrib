@@ -120,7 +120,9 @@ int main(int argc, char **argv)
     else
         params = kinfu::KinFu::KinFuParams::defaultParams();
 
+    // scene-specific params should be tuned for each scene individually
     params.volumePose = params.volumePose.translate(Vec3f(0.f, 0.f, 0.5f));
+    params.tsdf_max_weight = 16;
 
     kinfu::KinFu kf(params);
 

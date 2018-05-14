@@ -95,7 +95,7 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
     p.tsdf_trunc_dist = 0.04f; //meters;
     p.tsdf_max_weight = 64;   //frames
 
-    p.raycast_step_factor = 0.75f;  //in voxel sizes
+    p.raycast_step_factor = 0.25f;  //in voxel sizes
     // gradient delta factor is fixed at 1.0f and is not used
     //p.gradient_delta_factor = 0.5f; //in voxel sizes
 
