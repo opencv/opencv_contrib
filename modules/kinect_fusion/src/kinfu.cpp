@@ -200,10 +200,7 @@ bool KinFu::KinFuImpl::operator()(InputArray _depth)
         Affine3f affine;
         bool success = icp->estimateTransform(affine, frame, newFrame);
         if(!success)
-        {
-            reset();
             return false;
-        }
 
         pose = pose * affine;
 

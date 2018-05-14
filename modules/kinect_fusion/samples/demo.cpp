@@ -172,7 +172,10 @@ int main(int argc, char **argv)
             imshow("depth", cvt8);
 
             if(!kf(frame))
+            {
+                kf.reset();
                 std::cout << "reset" << std::endl;
+            }
             else
             {
                 if(coarse)

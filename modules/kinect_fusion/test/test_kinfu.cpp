@@ -236,7 +236,7 @@ struct RotatingScene
 
 Mat_<float> RotatingScene::randTexture(256, 256);
 
-const bool display = false;
+static const bool display = false;
 
 TEST( KinectFusion, lowDense )
 {
@@ -256,7 +256,7 @@ TEST( KinectFusion, lowDense )
 
         Mat depth = scene.depth(pose);
 
-        kf(depth);
+        ASSERT_TRUE(kf(depth));
 
         kfPose = kf.getPose();
         if(i == 0)
@@ -296,7 +296,7 @@ TEST( KinectFusion, highDense )
 
         Mat depth = scene.depth(pose);
 
-        kf(depth);
+        ASSERT_TRUE(kf(depth));
 
         kfPose = kf.getPose();
         if(i == 0)
