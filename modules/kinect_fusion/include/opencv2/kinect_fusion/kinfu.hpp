@@ -90,18 +90,18 @@ struct Intr
 class CV_EXPORTS KinFu
 {
 public:
-    struct CV_EXPORTS KinFuParams
+    struct CV_EXPORTS Params
     {
         /** @brief Default parameters
         A set of parameters which provides better model quality, can be very slow.
         */
-        static KinFuParams defaultParams();
+        static Params defaultParams();
 
         /** @brief Coarse parameters
         A set of parameters which provides better speed, can fail to match frames
         in case of rapid sensor motion.
         */
-        static KinFuParams coarseParams();
+        static Params coarseParams();
 
         enum PlatformType
         {
@@ -193,12 +193,12 @@ public:
         // float icp_truncate_depth_dist; //meters
     };
 
-    KinFu(const KinFuParams& _params);
+    KinFu(const Params& _params);
     virtual ~KinFu();
 
     /** @brief Get current parameters */
-    const KinFuParams& getParams() const;
-    KinFuParams& getParams();
+    const Params& getParams() const;
+    Params& getParams();
 
     /** @brief Renders a volume into an image
 

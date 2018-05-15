@@ -240,8 +240,8 @@ static const bool display = false;
 
 TEST( KinectFusion, lowDense )
 {
-    kinfu::KinFu::KinFuParams params;
-    params = kinfu::KinFu::KinFuParams::coarseParams();
+    kinfu::KinFu::Params params;
+    params = kinfu::KinFu::Params::coarseParams();
 
     RotatingScene scene(params.frameSize, params.intr, params.depthFactor);
 
@@ -280,9 +280,9 @@ TEST( KinectFusion, lowDense )
 
 TEST( KinectFusion, highDense )
 {
-    kinfu::KinFu::KinFuParams params;
+    kinfu::KinFu::Params params;
 
-    params = kinfu::KinFu::KinFuParams::defaultParams();
+    params = kinfu::KinFu::Params::defaultParams();
     CubeSpheresScene scene(params.frameSize, params.intr, params.depthFactor);
 
     kinfu::KinFu kf(params);

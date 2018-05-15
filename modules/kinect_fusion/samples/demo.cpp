@@ -15,6 +15,7 @@
 #include <opencv2/viz.hpp>
 
 using namespace cv;
+using namespace cv::kinfu;
 using namespace std;
 
 static vector<string> readDepth(std::string fileList);
@@ -51,10 +52,10 @@ const std::string vizWindowName = "cloud";
 
 struct PauseCallbackArgs
 {
-    PauseCallbackArgs(kinfu::KinFu& _kf) : kf(_kf)
+    PauseCallbackArgs(KinFu& _kf) : kf(_kf)
     { }
 
-    kinfu::KinFu& kf;
+    KinFu& kf;
 };
 
 void pauseCallback(const viz::MouseEvent& me, void* args);
@@ -114,17 +115,17 @@ int main(int argc, char **argv)
 
     vector<string> depthFileList = readDepth(depthPath);
 
-    kinfu::KinFu::KinFuParams params;
+    KinFu::Params params;
     if(coarse)
-        params = kinfu::KinFu::KinFuParams::coarseParams();
+        params = KinFu::Params::coarseParams();
     else
-        params = kinfu::KinFu::KinFuParams::defaultParams();
+        params = KinFu::Params::defaultParams();
 
     // scene-specific params should be tuned for each scene individually
     params.volumePose = params.volumePose.translate(Vec3f(0.f, 0.f, 0.5f));
     params.tsdf_max_weight = 16;
 
-    kinfu::KinFu kf(params);
+    KinFu kf(params);
 
     cv::viz::Viz3d window(vizWindowName);
     window.setViewerPose(Affine3f::Identity());

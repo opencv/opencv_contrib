@@ -34,7 +34,7 @@ public:
     cv::Affine3f pose;
 };
 
-cv::Ptr<TSDFVolume> makeTSDFVolume(cv::kinfu::KinFu::KinFuParams::PlatformType t,
+cv::Ptr<TSDFVolume> makeTSDFVolume(cv::kinfu::KinFu::Params::PlatformType t,
                                    int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                                    float _raycastStepFactor);
 

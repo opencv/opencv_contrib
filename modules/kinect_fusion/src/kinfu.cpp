@@ -15,11 +15,11 @@ namespace kinfu {
 class KinFu::KinFuImpl
 {
 public:
-    KinFuImpl(const KinFu::KinFuParams& _params);
+    KinFuImpl(const KinFu::Params& _params);
     virtual ~KinFuImpl();
 
-    const KinFu::KinFuParams& getParams() const;
-    KinFu::KinFuParams& getParams();
+    const KinFu::Params& getParams() const;
+    KinFu::Params& getParams();
 
     void render(OutputArray image, const Affine3f cameraPose = Affine3f::Identity()) const;
 
@@ -34,7 +34,7 @@ public:
     bool update(InputArray depth);
 
 private:
-    KinFu::KinFuParams params;
+    KinFu::Params params;
 
     cv::Ptr<FrameGenerator> frameGenerator;
     cv::Ptr<ICP> icp;
@@ -45,9 +45,9 @@ private:
     cv::Ptr<Frame> frame;
 };
 
-KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
+KinFu::Params KinFu::Params::defaultParams()
 {
-    KinFuParams p;
+    Params p;
 
     p.platform = PLATFORM_CPU;
 
@@ -108,9 +108,9 @@ KinFu::KinFuParams KinFu::KinFuParams::defaultParams()
     return p;
 }
 
-KinFu::KinFuParams KinFu::KinFuParams::coarseParams()
+KinFu::Params KinFu::Params::coarseParams()
 {
-    KinFuParams p = defaultParams();
+    Params p = defaultParams();
 
     // first non-zero numbers are accepted
     const int iters[] = {5, 3, 2};
@@ -134,7 +134,7 @@ KinFu::KinFuParams KinFu::KinFuParams::coarseParams()
     return p;
 }
 
-KinFu::KinFuImpl::KinFuImpl(const KinFu::KinFuParams &_params) :
+KinFu::KinFuImpl::KinFuImpl(const KinFu::Params &_params) :
     params(_params),
     frameGenerator(makeFrameGenerator(params.platform)),
     icp(makeICP(params.platform, params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
@@ -158,12 +158,12 @@ KinFu::KinFuImpl::~KinFuImpl()
 
 }
 
-const KinFu::KinFuParams& KinFu::KinFuImpl::getParams() const
+const KinFu::Params& KinFu::KinFuImpl::getParams() const
 {
     return params;
 }
 
-KinFu::KinFuParams& KinFu::KinFuImpl::getParams()
+KinFu::Params& KinFu::KinFuImpl::getParams()
 {
     return params;
 }
@@ -261,19 +261,19 @@ void KinFu::KinFuImpl::fetchNormals(InputArray points, OutputArray normals) cons
 
 // importing class
 
-KinFu::KinFu(const KinFuParams& _params)
+KinFu::KinFu(const Params& _params)
 {
     impl = makePtr<KinFu::KinFuImpl>(_params);
 }
 
 KinFu::~KinFu() { }
 
-const KinFu::KinFuParams& KinFu::getParams() const
+const KinFu::Params& KinFu::getParams() const
 {
     return impl->getParams();
 }
 
-KinFu::KinFuParams& KinFu::getParams()
+KinFu::Params& KinFu::getParams()
 {
     return impl->getParams();
 }
