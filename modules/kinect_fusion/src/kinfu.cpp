@@ -57,7 +57,9 @@ KinFu::Params KinFu::Params::defaultParams()
     fx = fy = 525.f;
     cx = p.frameSize.width/2 - 0.5f;
     cy = p.frameSize.height/2 - 0.5f;
-    p.intr = Intr(fx, fy, cx, cy);
+    p.intr = Matx33f(fx,  0, cx,
+                      0, fy, cy,
+                      0,  0,  1);
 
     // 5000 for the 16-bit PNG files
     // 1 for the 32-bit float images in the ROS bag files

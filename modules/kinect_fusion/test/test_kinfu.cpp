@@ -11,11 +11,31 @@ namespace opencv_test { namespace {
 
 using namespace cv;
 
+/** Reprojects screen point to camera space given z coord. */
+struct Reprojector
+{
+    Reprojector() {}
+    inline Reprojector(Matx33f intr)
+    {
+        fxinv = 1.f/intr(0, 0), fyinv = 1.f/intr(1, 1);
+        cx = intr(0, 2), cy = intr(1, 2);
+    }
+    template<typename T>
+    inline cv::Point3_<T> operator()(cv::Point3_<T> p) const
+    {
+        T x = p.z * (p.x - cx) * fxinv;
+        T y = p.z * (p.y - cy) * fyinv;
+        return cv::Point3_<T>(x, y, p.z);
+    }
+
+    float fxinv, fyinv, cx, cy;
+};
+
 template<class Scene>
 struct RenderInvoker : ParallelLoopBody
 {
     RenderInvoker(Mat_<float>& _frame, Affine3f _pose,
-                  kinfu::Intr::Reprojector _reproj,
+                  Reprojector _reproj,
                   float _depthFactor) : ParallelLoopBody(),
         frame(_frame),
         pose(_pose),
@@ -64,7 +84,7 @@ struct RenderInvoker : ParallelLoopBody
 
     Mat_<float>& frame;
     Affine3f pose;
-    kinfu::Intr::Reprojector reproj;
+    Reprojector reproj;
     float depthFactor;
 };
 
@@ -74,7 +94,7 @@ struct CubeSpheresScene
     const int nCycles = 1;
     const Affine3f startPose = Affine3f(Vec3f(-0.5f, 0.f, 0.f), Vec3f(2.1f, 1.4f, -2.1f));
 
-    CubeSpheresScene(Size sz, kinfu::Intr _intr, float _depthFactor) :
+    CubeSpheresScene(Size sz, Matx33f _intr, float _depthFactor) :
         frameSize(sz), intr(_intr), depthFactor(_depthFactor)
     { }
 
@@ -106,7 +126,7 @@ struct CubeSpheresScene
     Mat depth(Affine3f pose)
     {
         Mat_<float> frame(frameSize);
-        kinfu::Intr::Reprojector reproj = intr.makeReprojector();
+        Reprojector reproj(intr);
 
         Range range(0, frame.rows);
         parallel_for_(range, RenderInvoker<CubeSpheresScene>(frame, pose, reproj, depthFactor));
@@ -133,7 +153,7 @@ struct CubeSpheresScene
     }
 
     Size frameSize;
-    kinfu::Intr intr;
+    Matx33f intr;
     float depthFactor;
 };
 
@@ -144,7 +164,7 @@ struct RotatingScene
     const int nCycles = 1;
     const Affine3f startPose = Affine3f(Vec3f(-1.f, 0.f, 0.f), Vec3f(1.5f, 2.f, -1.5f));
 
-    RotatingScene(Size sz, kinfu::Intr _intr, float _depthFactor) :
+    RotatingScene(Size sz, Matx33f _intr, float _depthFactor) :
         frameSize(sz), intr(_intr), depthFactor(_depthFactor)
     {
         cv::RNG rng(0);
@@ -202,7 +222,7 @@ struct RotatingScene
     Mat depth(Affine3f pose)
     {
         Mat_<float> frame(frameSize);
-        kinfu::Intr::Reprojector reproj = intr.makeReprojector();
+        Reprojector reproj(intr);
 
         Range range(0, frame.rows);
         parallel_for_(range, RenderInvoker<RotatingScene>(frame, pose, reproj, depthFactor));
@@ -229,7 +249,7 @@ struct RotatingScene
     }
 
     Size frameSize;
-    kinfu::Intr intr;
+    Matx33f intr;
     float depthFactor;
     static cv::Mat_<float> randTexture;
 };
