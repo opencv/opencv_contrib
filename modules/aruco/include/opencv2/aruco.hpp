@@ -49,14 +49,16 @@ the use of this software, even if advised of the possibility of such damage.
  * These markers are useful for easy, fast and robust camera pose estimation.ç
  *
  * The main functionalities are:
- * - Detection of markers in a image
+ * - Detection of markers in an image
  * - Pose estimation from a single marker or from a board/set of markers
  * - Detection of ChArUco board for high subpixel accuracy
  * - Camera calibration from both, ArUco boards and ChArUco boards.
  * - Detection of ChArUco diamond markers
  * The samples directory includes easy examples of how to use the module.
  *
- * The implementation is based on the ArUco Library by R. Muñoz-Salinas and S. Garrido-Jurado.
+ * The implementation is based on the ArUco Library by R. Muñoz-Salinas and S. Garrido-Jurado @cite Aruco2014.
+ *
+ * Markers can also be detected based on the AprilTag 2 @cite wang2016iros fiducial detection method.
  *
  * @sa S. Garrido-Jurado, R. Muñoz-Salinas, F. J. Madrid-Cuevas, and M. J. Marín-Jiménez. 2014.
  * "Automatic generation and detection of highly reliable fiducial markers under occlusion".
@@ -77,10 +79,10 @@ namespace aruco {
 //! @{
 
 enum CornerRefineMethod{
-	CORNER_REFINE_NONE,     // default corners
-	CORNER_REFINE_SUBPIX,   // refine the corners using subpix
-	CORNER_REFINE_CONTOUR,  // refine the corners using the contour-points
-	CORNER_REFINE_APRILTAG, // detect corners using the AprilTag2 approach
+    CORNER_REFINE_NONE,     ///< Tag and corners detection based on the ArUco approach
+    CORNER_REFINE_SUBPIX,   ///< ArUco approach and refine the corners locations using corner subpixel accuracy
+    CORNER_REFINE_CONTOUR,  ///< ArUco approach and refine the corners locations using the contour-points line fitting
+    CORNER_REFINE_APRILTAG, ///< Tag and corners detection based on the AprilTag 2 approach @cite wang2016iros
 };
 
 /**
