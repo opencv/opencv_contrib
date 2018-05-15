@@ -220,7 +220,7 @@ public:
         @param points vector of points which are 4-float vectors
         @param normals vector of normals which are 4-float vectors
      */
-    void fetchCloud(OutputArray points, OutputArray normals) const;
+    void getCloud(OutputArray points, OutputArray normals) const;
 
     /** @brief Gets points of current 3d mesh
 
@@ -228,13 +228,13 @@ public:
 
         @param points vector of points which are 4-float vectors
      */
-    void fetchPoints(OutputArray points) const;
+    void getPoints(OutputArray points) const;
 
     /** @brief Calculates normals for given points
         @param points input vector of points which are 4-float vectors
         @param normals output vector of corresponding normals which are 4-float vectors
      */
-    void fetchNormals(InputArray points, OutputArray normals) const;
+    void getNormals(InputArray points, OutputArray normals) const;
 
     /** @brief Resets the algorithm
 

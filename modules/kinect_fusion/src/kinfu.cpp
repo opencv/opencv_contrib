@@ -23,9 +23,9 @@ public:
 
     void render(OutputArray image, const Affine3f cameraPose = Affine3f::Identity()) const;
 
-    void fetchCloud(OutputArray points, OutputArray normals) const;
-    void fetchPoints(OutputArray points) const;
-    void fetchNormals(InputArray points, OutputArray normals) const;
+    void getCloud(OutputArray points, OutputArray normals) const;
+    void getPoints(OutputArray points) const;
+    void getNormals(InputArray points, OutputArray normals) const;
 
     void reset();
 
@@ -244,17 +244,17 @@ void KinFu::KinFuImpl::render(OutputArray image, const Affine3f cameraPose) cons
 }
 
 
-void KinFu::KinFuImpl::fetchCloud(OutputArray p, OutputArray n) const
+void KinFu::KinFuImpl::getCloud(OutputArray p, OutputArray n) const
 {
     volume->fetchPointsNormals(p, n);
 }
 
-void KinFu::KinFuImpl::fetchPoints(OutputArray points) const
+void KinFu::KinFuImpl::getPoints(OutputArray points) const
 {
     volume->fetchPointsNormals(points, noArray());
 }
 
-void KinFu::KinFuImpl::fetchNormals(InputArray points, OutputArray normals) const
+void KinFu::KinFuImpl::getNormals(InputArray points, OutputArray normals) const
 {
     volume->fetchNormals(points, normals);
 }
@@ -288,19 +288,19 @@ void KinFu::reset()
     impl->reset();
 }
 
-void KinFu::fetchCloud(cv::OutputArray points, cv::OutputArray normals) const
+void KinFu::getCloud(cv::OutputArray points, cv::OutputArray normals) const
 {
-    impl->fetchCloud(points, normals);
+    impl->getCloud(points, normals);
 }
 
-void KinFu::fetchPoints(OutputArray points) const
+void KinFu::getPoints(OutputArray points) const
 {
-    impl->fetchPoints(points);
+    impl->getPoints(points);
 }
 
-void KinFu::fetchNormals(InputArray points, OutputArray normals) const
+void KinFu::getNormals(InputArray points, OutputArray normals) const
 {
-    impl->fetchNormals(points, normals);
+    impl->getNormals(points, normals);
 }
 
 bool KinFu::update(InputArray depth)

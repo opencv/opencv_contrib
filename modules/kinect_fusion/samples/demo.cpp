@@ -143,7 +143,7 @@ int main(int argc, char **argv)
     {
         if(pause)
         {
-            kf.fetchCloud(points, normals);
+            kf.getCloud(points, normals);
             viz::WCloud cloudWidget(points, viz::Color::white());
             viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
             window.showWidget("cloud", cloudWidget);
@@ -182,7 +182,7 @@ int main(int argc, char **argv)
             {
                 if(coarse)
                 {
-                    kf.fetchCloud(points, normals);
+                    kf.getCloud(points, normals);
                     viz::WCloud cloudWidget(points, viz::Color::white());
                     viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
                     window.showWidget("cloud", cloudWidget);
