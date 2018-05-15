@@ -19,7 +19,7 @@ public:
     virtual ~KinFuImpl();
 
     const KinFu::Params& getParams() const;
-    KinFu::Params& getParams();
+    void setParams(const KinFu::Params&);
 
     void render(OutputArray image, const Affine3f cameraPose = Affine3f::Identity()) const;
 
@@ -163,9 +163,9 @@ const KinFu::Params& KinFu::KinFuImpl::getParams() const
     return params;
 }
 
-KinFu::Params& KinFu::KinFuImpl::getParams()
+void KinFu::KinFuImpl::setParams(const KinFu::Params& p)
 {
-    return params;
+    params = p;
 }
 
 const Affine3f KinFu::KinFuImpl::getPose() const
@@ -273,9 +273,9 @@ const KinFu::Params& KinFu::getParams() const
     return impl->getParams();
 }
 
-KinFu::Params& KinFu::getParams()
+void KinFu::setParams(const Params& p)
 {
-    return impl->getParams();
+    impl->setParams(p);
 }
 
 const Affine3f KinFu::getPose() const

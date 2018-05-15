@@ -198,7 +198,7 @@ public:
 
     /** @brief Get current parameters */
     const Params& getParams() const;
-    Params& getParams();
+    void setParams(const Params&);
 
     /** @brief Renders a volume into an image
 
