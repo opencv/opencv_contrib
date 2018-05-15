@@ -313,5 +313,5 @@ void KinFu::render(cv::OutputArray image, const Affine3f cameraPose) const
     impl->render(image, cameraPose);
 }
 
-}
-}
+} // namespace kinfu
+} // namespace cv

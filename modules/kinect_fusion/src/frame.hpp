@@ -56,7 +56,7 @@ public:
          };
 };
 
-}
+namespace kinfu {
 
 typedef cv::Vec4f ptype;
 inline cv::Vec3f fromPtype(const ptype& x)
@@ -116,4 +116,6 @@ public:
 
 cv::Ptr<FrameGenerator> makeFrameGenerator(cv::kinfu::KinFu::Params::PlatformType t);
 
+} // namespace kinfu
+} // namespace cv
 #endif

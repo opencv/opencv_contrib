@@ -7,9 +7,11 @@
 #include "precomp.hpp"
 #include "icp.hpp"
 
-using namespace cv;
-using namespace cv::kinfu;
 using namespace std;
+
+namespace cv {
+namespace kinfu {
+
 
 ICP::ICP(const Intr _intrinsics, const std::vector<int>& _iterations, float _angleThreshold, float _distanceThreshold) :
     iterations(_iterations), angleThreshold(_angleThreshold), distanceThreshold(_distanceThreshold),
@@ -512,3 +514,6 @@ cv::Ptr<ICP> makeICP(cv::kinfu::KinFu::Params::PlatformType t,
         return cv::Ptr<ICP>();
     }
 }
+
+} // namespace kinfu
+} // namespace cv

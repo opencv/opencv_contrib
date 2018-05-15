@@ -6,6 +6,10 @@
 
 #include "precomp.hpp"
 
+namespace cv {
+namespace kinfu {
+
+
 #if PRINT_TIME
 
 ScopeTime::ScopeTime(std::string name_, bool _enablePrint) :
@@ -36,4 +40,6 @@ ScopeTime::ScopeTime(std::string /*name_*/, bool /*_enablePrint = true*/)
 ScopeTime::~ScopeTime()
 { }
 
+} // namespace kinfu
+} // namespace cv
 #endif

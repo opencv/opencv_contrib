@@ -18,6 +18,9 @@
 #include <iostream>
 #endif
 
+namespace cv {
+namespace kinfu {
+
 typedef float depthType;
 
 const float qnan = std::numeric_limits<float>::quiet_NaN();
@@ -51,4 +54,6 @@ struct ScopeTime
 #endif
 };
 
+} // namespace kinfu
+} // namespace cv
 #endif

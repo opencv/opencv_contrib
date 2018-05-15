@@ -10,6 +10,9 @@
 #include "precomp.hpp"
 #include "frame.hpp"
 
+namespace cv {
+namespace kinfu {
+
 class ICP
 {
 public:
@@ -31,4 +34,6 @@ cv::Ptr<ICP> makeICP(cv::kinfu::KinFu::Params::PlatformType t,
                      const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations,
                      float _angleThreshold, float _distanceThreshold);
 
+} // namespace kinfu
+} // namespace cv
 #endif

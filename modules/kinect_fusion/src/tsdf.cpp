@@ -7,9 +7,9 @@
 #include "precomp.hpp"
 #include "tsdf.hpp"
 
-using namespace cv;
-using namespace cv::kinfu;
+namespace cv {
 
+namespace kinfu {
 
 typedef float volumeType; // can be float16
 struct Voxel
@@ -18,13 +18,12 @@ struct Voxel
     int weight;
 };
 
-namespace cv
-{
+}
 
-template<> class DataType<Voxel>
+template<> class DataType<kinfu::Voxel>
 {
 public:
-    typedef Voxel       value_type;
+    typedef kinfu::Voxel       value_type;
     typedef value_type  work_type;
     typedef value_type  channel_type;
     typedef value_type  vec_type;
@@ -36,7 +35,8 @@ public:
          };
 };
 
-}
+namespace kinfu {
+
 
 class TSDFVolumeCPU : public TSDFVolume
 {
@@ -1213,3 +1213,6 @@ cv::Ptr<TSDFVolume> makeTSDFVolume(cv::kinfu::KinFu::Params::PlatformType t,
         return cv::Ptr<TSDFVolume>();
     }
 }
+
+} // namespace kinfu
+} // namespace cv

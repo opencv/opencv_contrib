@@ -7,8 +7,8 @@
 #include "precomp.hpp"
 #include "frame.hpp"
 
-using namespace cv;
-using namespace cv::kinfu;
+namespace cv {
+namespace kinfu {
 
 struct FrameGeneratorCPU : FrameGenerator
 {
@@ -458,3 +458,6 @@ cv::Ptr<FrameGenerator> makeFrameGenerator(cv::kinfu::KinFu::Params::PlatformTyp
         return cv::Ptr<FrameGenerator>();
     }
 }
+
+} // namespace kinfu
+} // namespace cv
