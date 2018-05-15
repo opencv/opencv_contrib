@@ -5,8 +5,7 @@
 #include "precomp.hpp"
 #include <math.h>
 #include <vector>
-#include <iostream>
-#include <fstream>
+
 /*
 If you use this code please cite this @cite BergerRaghunathan1998
 Coalescence in 2 dimensions: experiments on thin copolymer films and numerical simulations  The European Physical Journal B - Condensed Matter and Complex Systems  (Volume:2 ,  Issue: 1 )  1998
@@ -106,7 +105,6 @@ void ContourFitting::estimateTransformation(InputArray _src, InputArray _ref, Ou
 }
 void ContourFitting::estimateTransformation(InputArray _src, InputArray _ref, OutputArray _alphaPhiST,double *distFin, bool fdContour)
 {
-    // New version
     if (!fdContour)
         CV_Assert( (_src.kind() == _InputArray::STD_VECTOR || _src.kind() == _InputArray::MAT) && (_ref.kind() == _InputArray::STD_VECTOR || _ref.kind() == _InputArray::MAT));
     else
@@ -253,7 +251,6 @@ void contourSampling(InputArray _src, OutputArray _out, int nbElt)
     }
     CV_Assert(ctr.rows==1 || ctr.cols==1);
     double		l1 = 0, l2, p, d, s;
- //   AutoBuffer<Point2d> _buf(nbElt);
     Mat r;
     if (ctr.rows==1)
         ctr=ctr.t();
@@ -278,7 +275,6 @@ void contourSampling(InputArray _src, OutputArray _out, int nbElt)
             Mat d10 = d1 - d0;
             Mat pn = d0 + d10 * (s - l1) / (l2 - l1);
             r.push_back(pn);
- //           _buf[i]=Point2d(pn.at<Point2f>(0,0));
         }
     }
     r.copyTo(_out);
@@ -298,7 +294,6 @@ void transformFD(InputArray _src, InputArray _t,OutputArray _dst,  bool fdContou
     if (!fdContour)
     {
         Mat ctr1 = _src.getMat();
-        std::ofstream fs;
         if (ctr1.rows==1)
             ctr1 = ctr1.t();
         Mat newCtr1;
