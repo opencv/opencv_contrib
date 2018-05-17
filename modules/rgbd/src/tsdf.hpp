@@ -8,7 +8,7 @@
 #define __OPENCV_KINFU_TSDF_H__
 
 #include "precomp.hpp"
-#include "frame.hpp"
+#include "kinfu_frame.hpp"
 
 namespace cv {
 namespace kinfu {
