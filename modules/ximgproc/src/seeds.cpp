@@ -960,16 +960,16 @@ bool SuperpixelSEEDSImpl::probability(int image_idx, int label1, int label2,
         switch( seeds_prior )
         {
         case 5: p *= p;
-            //no break
+            /* fallthrough */
         case 4: p *= p;
-            //no break
+            /* fallthrough */
         case 3: p *= p;
-            //no break
+            /* fallthrough */
         case 2:
             p *= p;
             P_label1 *= T[seeds_top_level][label2];
             P_label2 *= T[seeds_top_level][label1];
-            //no break
+            /* fallthrough */
         case 1:
             P_label1 *= p;
             break;
