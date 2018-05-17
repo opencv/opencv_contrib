@@ -74,8 +74,6 @@ void FrameGeneratorCPU::operator ()(Ptr<Frame> _frame, InputArray depth, const I
             scaled = pyrDownBilateral(scaled, sigmaDepth*depthFactor);
         }
     }
-
-    _frame = frame;
 }
 
 void FrameGeneratorCPU::operator ()(Ptr<Frame> _frame, InputArray _points, InputArray _normals, int levels) const
@@ -103,8 +101,6 @@ void FrameGeneratorCPU::operator ()(Ptr<Frame> _frame, InputArray _points, Input
         pyrDownPointsNormals(frame->points[i-1], frame->normals[i-1],
                              frame->points[i  ], frame->normals[i  ]);
     }
-
-    _frame = frame;
 }
 
 template<int p>

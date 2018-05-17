@@ -1485,7 +1485,6 @@ Size FastICPOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType
     Ptr<FrameGenerator> fg = makeFrameGenerator(KinFu::Params::PlatformType::PLATFORM_CPU);
     Ptr<FrameCPU> f = (*fg)().dynamicCast<FrameCPU>();
     Intr intr(cameraMatrix);
-    iterCounts.total();
     float depthFactor = 1.f; // user should rescale depth manually
     (*fg)(f, frame->depth, intr, iterCounts.total(), depthFactor,
           sigmaDepth, sigmaSpatial, kernelSize);
