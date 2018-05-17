@@ -5,7 +5,7 @@
 // This code is also subject to the license terms in the LICENSE file found in this module's directory
 
 #include "precomp.hpp"
-#include "icp.hpp"
+#include "fast_icp.hpp"
 #include "tsdf.hpp"
 #include "frame.hpp"
 

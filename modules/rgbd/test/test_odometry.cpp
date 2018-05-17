@@ -345,5 +345,11 @@ TEST(DISABLED_RGBD_Odometry_RgbdICP, algorithmic)
     test.safe_run();
 }
 
+TEST(DISABLED_RGBD_Odometry_FastICP, algorithmic)
+{
+    CV_OdometryTest test(cv::rgbd::Odometry::create("FastICPOdometry"), 0.99, 0.99);
+    test.safe_run();
+}
+
 
 }} // namespace

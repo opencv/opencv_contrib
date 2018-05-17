@@ -4,8 +4,8 @@
 
 // This code is also subject to the license terms in the LICENSE file found in this module's directory
 
-#ifndef __OPENCV_KINFU_ICP_H__
-#define __OPENCV_KINFU_ICP_H__
+#ifndef __OPENCV_KINFU_FAST_ICP_H__
+#define __OPENCV_KINFU_FAST_ICP_H__
 
 #include "precomp.hpp"
 #include "frame.hpp"

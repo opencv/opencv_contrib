@@ -135,7 +135,7 @@ int main(int argc, char** argv)
 {
     if(argc != 4)
     {
-        cout << "Format: file_with_rgb_depth_pairs trajectory_file odometry_name [Rgbd or ICP or RgbdICP]" << endl;
+        cout << "Format: file_with_rgb_depth_pairs trajectory_file odometry_name [Rgbd or ICP or RgbdICP or FastICP]" << endl;
         return -1;
     }
     

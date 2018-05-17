@@ -4,8 +4,8 @@
 
 // This code is also subject to the license terms in the LICENSE file found in this module's directory
 
-#ifndef __OPENCV_KINECT_FUSION_HPP__
-#define __OPENCV_KINECT_FUSION_HPP__
+#ifndef __OPENCV_RGBD_KINFU_HPP__
+#define __OPENCV_RGBD_KINFU_HPP__
 
 #include "opencv2/core.hpp"
 #include "opencv2/core/affine.hpp"
@@ -16,9 +16,10 @@ namespace kinfu {
 //! @{
 
 /** @brief KinectFusion implementation
+
   This class implements a 3d reconstruction algorithm described in
   @cite kinectfusion paper.
-
+  
   It takes a sequence of depth images taken from depth sensor
   (or any depth images source such as stereo camera matching algorithm or even raymarching renderer).
   The output can be obtained as a vector of points and their normals
@@ -27,6 +28,8 @@ namespace kinfu {
   An internal representation of a model is a voxel cube that keeps TSDF values
   which are a sort of distances to the surface (for details read the @cite kinectfusion article about TSDF).
   There is no interface to that representation yet.
+  
+  This implementation is based on (kinfu-remake)[https://github.com/Nerei/kinfu_remake].
 */
 class CV_EXPORTS KinFu
 {

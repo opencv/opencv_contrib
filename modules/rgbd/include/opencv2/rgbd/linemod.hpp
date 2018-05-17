@@ -41,8 +41,8 @@
 //
 //M*/
 
-#ifndef __OPENCV_OBJDETECT_LINEMOD_HPP__
-#define __OPENCV_OBJDETECT_LINEMOD_HPP__
+#ifndef __OPENCV_RGBD_LINEMOD_HPP__
+#define __OPENCV_RGBD_LINEMOD_HPP__
 
 #include "opencv2/core.hpp"
 #include <map>

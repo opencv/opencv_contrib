@@ -33,10 +33,10 @@
  *
  */
 
-#include <opencv2/rgbd.hpp>
+#include "precomp.hpp"
 
-#include "depth_to_3d.h"
-#include "utils.h"
+#include "depth_to_3d.hpp"
+#include "utils.hpp"
 
 namespace cv
 {
