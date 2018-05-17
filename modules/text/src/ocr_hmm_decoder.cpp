@@ -935,6 +935,7 @@ Ptr<OCRHMMDecoder::ClassifierCallback> loadOCRHMMClassifier(const String& _filen
             break;
         case OCR_CNN_CLASSIFIER:
             pt = loadOCRHMMClassifierCNN(_filename);
+            break;
         default:
             CV_Error(Error::StsBadArg, "Specified HMM classifier is not supported!");
             break;
