@@ -1434,7 +1434,7 @@ FastICPOdometry::FastICPOdometry(const Mat& _cameraMatrix,
                                  float _angleThreshold,
                                  float _sigmaDepth,
                                  float _sigmaSpatial,
-                                 float _kernelSize,
+                                 int _kernelSize,
                                  const std::vector<int>& _iterCounts) :
     maxDistDiff(_maxDistDiff),
     angleThreshold(_angleThreshold),
@@ -1453,7 +1453,7 @@ Ptr<FastICPOdometry> FastICPOdometry::create(const Mat& _cameraMatrix,
                                              float _angleThreshold,
                                              float _sigmaDepth,
                                              float _sigmaSpatial,
-                                             float _kernelSize,
+                                             int _kernelSize,
                                              const std::vector<int>& _iterCounts)
 {
     return makePtr<FastICPOdometry>(_cameraMatrix, _maxDistDiff, _angleThreshold,

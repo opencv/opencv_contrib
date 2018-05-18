@@ -15,4 +15,3 @@ Note that the KinectFusion algorithm was patented and its use may be restricted 
 * _US8401225B2_  Moving object segmentation using depth images
 
 Since OpenCV's license imposes different restrictions on usage please consult a legal before using this algorithm any way.
-

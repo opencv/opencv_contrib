@@ -1036,7 +1036,7 @@ namespace rgbd
                     float angleThreshold = (float)(30. * CV_PI / 180.),
                     float sigmaDepth = 0.04f,
                     float sigmaSpatial = 4.5f,
-                    float kernelSize = 7,
+                    int kernelSize = 7,
                     const std::vector<int>& iterCounts = std::vector<int>());
 
     CV_WRAP static Ptr<FastICPOdometry> create(const Mat& cameraMatrix,
@@ -1044,7 +1044,7 @@ namespace rgbd
                                                float angleThreshold = (float)(30. * CV_PI / 180.),
                                                float sigmaDepth = 0.04f,
                                                float sigmaSpatial = 4.5f,
-                                               float kernelSize = 7,
+                                               int kernelSize = 7,
                                                const std::vector<int>& iterCounts = std::vector<int>());
 
     CV_WRAP virtual Size prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType) const CV_OVERRIDE;
@@ -1061,7 +1061,7 @@ namespace rgbd
     {
         return maxDistDiff;
     }
-    CV_WRAP void setMaxDistDiff(double val)
+    CV_WRAP void setMaxDistDiff(float val)
     {
         maxDistDiff = val;
     }
@@ -1089,11 +1089,11 @@ namespace rgbd
     {
         sigmaSpatial = f;
     }
-    CV_WRAP float getKernelSize() const
+    CV_WRAP int getKernelSize() const
     {
         return kernelSize;
     }
-    CV_WRAP void setKernelSize(float f)
+    CV_WRAP void setKernelSize(int f)
     {
         kernelSize = f;
     }
@@ -1133,7 +1133,7 @@ namespace rgbd
 
     float sigmaSpatial;
 
-    float kernelSize;
+    int kernelSize;
 
     /*vector<int>*/
     Mat iterCounts;
@@ -1171,4 +1171,3 @@ namespace rgbd
 #endif
 
 /* End of file. */
-
