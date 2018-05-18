@@ -1486,7 +1486,7 @@ Size FastICPOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType
     Ptr<FrameCPU> f = (*fg)().dynamicCast<FrameCPU>();
     Intr intr(cameraMatrix);
     float depthFactor = 1.f; // user should rescale depth manually
-    (*fg)(f, frame->depth, intr, iterCounts.total(), depthFactor,
+    (*fg)(f, frame->depth, intr, (int)iterCounts.total(), depthFactor,
           sigmaDepth, sigmaSpatial, kernelSize);
 
     frame->pyramidCloud.clear();
