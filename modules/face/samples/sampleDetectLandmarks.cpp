@@ -75,19 +75,26 @@ int main(int argc,char** argv){
     resize(img,img,Size(460,460), 0, 0, INTER_LINEAR_EXACT);
     facemark->getFaces(img,faces);
     vector< vector<Point2f> > shapes;
-    if(facemark->fit(img,faces,shapes))
-    {
-        for( size_t i = 0; i < faces.size(); i++ )
+
+    // Check if faces detected or not
+    // Helps in proper exception handling when writing images to the directories.
+    if(faces.size() != 0) {
+        if(facemark->fit(img,faces,shapes))
         {
-            cv::rectangle(img,faces[i],Scalar( 255, 0, 0 ));
+            for( size_t i = 0; i < faces.size(); i++ )
+            {
+                cv::rectangle(img,faces[i],Scalar( 255, 0, 0 ));
+            }
+            for(unsigned long i=0;i<faces.size();i++){
+                for(unsigned long k=0;k<shapes[i].size();k++)
+                    cv::circle(img,shapes[i][k],5,cv::Scalar(0,0,255),FILLED);
+            }
+            namedWindow("Detected_shape");
+            imshow("Detected_shape",img);
+            waitKey(0);
         }
-        for(unsigned long i=0;i<faces.size();i++){
-            for(unsigned long k=0;k<shapes[i].size();k++)
-                cv::circle(img,shapes[i][k],5,cv::Scalar(0,0,255),FILLED);
-        }
-        namedWindow("Detected_shape");
-        imshow("Detected_shape",img);
-        waitKey(0);
+    } else {
+        cout << "Faces not detected." << endl;
     }
     return 0;
 }

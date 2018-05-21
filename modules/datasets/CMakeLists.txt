@@ -9,4 +9,7 @@ endif()
 
 ocv_define_module(datasets opencv_core opencv_imgcodecs opencv_ml opencv_flann OPTIONAL opencv_text WRAP python)
 
-ocv_warnings_disable(CMAKE_CXX_FLAGS /wd4267) # flann, Win64
+ocv_warnings_disable(CMAKE_CXX_FLAGS
+    /wd4267                                      # flann, Win64
+    -Wimplicit-fallthrough                       # tinyxml2.cpp
+)

@@ -125,16 +125,22 @@ FORCE_INLINE void hashMurmurx64 ( const void * key, const int len, const uint se
   {
   case 7:
     k2 ^= tail[6] << 16;
+    /* fallthrough */
   case 6:
     k2 ^= tail[5] << 8;
+    /* fallthrough */
   case 5:
     k2 ^= tail[4] << 0;
+    /* fallthrough */
   case 4:
     k1 ^= tail[3] << 24;
+    /* fallthrough */
   case 3:
     k1 ^= tail[2] << 16;
+    /* fallthrough */
   case 2:
     k1 ^= tail[1] << 8;
+    /* fallthrough */
   case 1:
     k1 ^= tail[0] << 0;
     bmix32(h1,h2,k1,k2,c1,c2);
