@@ -43,6 +43,9 @@ Mentor: Delia Passalacqua
 #include "opencv2/imgproc.hpp"
 #include "opencv2/face.hpp"
 
+// include this header if drawLandmarks function is to be used
+// #include "drawLandmarks.hpp" 
+
 using namespace std;
 using namespace cv;
 using namespace cv::face;
@@ -63,6 +66,14 @@ int main(int argc, char** argv)
     FacemarkLBF::Params params;
     params.model_filename = model_path;
     params.cascade_face = cascade_path;
+    /* Change given parameters according to need. (if not given by user, set by default - default arguments given below).
+    // FacemarkLBF supports 29 and 68 point landmarks currently.
+    params.n_landmarks = 68; 
+    params.initShape_n = 10; 
+    params.stages_n = 5; 
+    params.tree_n = 6;
+    params.tree_depth = 5;
+    */
     Ptr<FacemarkLBF> facemark = FacemarkLBF::create(params);
 
     CascadeClassifier face_cascade;
@@ -104,7 +115,14 @@ int main(int argc, char** argv)
         Mat img = imread(images[i]);
         facemark->getFaces(img, rects);
         facemark->fit(img, rects, landmarks);
-
+         
+        /* use drawLandmarks function - optional
+        for(size_t var = 0; var < landmarks.size(); var++) {
+            drawLandmarks(img, landmarks[var]);
+            // draw landmark points onto the image
+        }
+        */
+       
         for(size_t j=0;j<rects.size();j++){
             drawFacemarks(img, landmarks[j], Scalar(0,0,255));
             rectangle(img, rects[j], Scalar(255,0,255));
