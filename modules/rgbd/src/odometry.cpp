@@ -1532,7 +1532,7 @@ bool FastICPOdometry::computeImpl(const Ptr<OdometryFrame>& srcFrame,
         dstF-> points.push_back(dstFrame->pyramidCloud  [i]);
         dstF->normals.push_back(dstFrame->pyramidNormals[i]);
     }
-    bool result = icp->estimateTransform(transform, srcF, dstF);
+    bool result = icp->estimateTransform(transform, dstF, srcF);
 
     Rt.create(Size(4, 4), CV_64FC1);
     Mat(Matx44d(transform.matrix)).copyTo(Rt.getMat());
