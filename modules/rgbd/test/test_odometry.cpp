@@ -123,10 +123,13 @@ class CV_OdometryTest : public cvtest::BaseTest
 public:
     CV_OdometryTest(const Ptr<Odometry>& _odometry,
                     double _maxError1, 
-                    double _maxError5) :
+                    double _maxError5,
+                    double _idError = DBL_EPSILON) :
         odometry(_odometry), 
         maxError1(_maxError1), 
-        maxError5(_maxError5) {}
+        maxError5(_maxError5),
+        idError(_idError)
+    { }
 
 protected:
     bool readData(Mat& image, Mat& depth) const;
@@ -137,6 +140,7 @@ protected:
     Ptr<Odometry> odometry;
     double maxError1;
     double maxError5;
+    double idError;
 };
 
 bool CV_OdometryTest::readData(Mat& image, Mat& depth) const
@@ -212,8 +216,8 @@ void CV_OdometryTest::run(int)
     Mat calcRt;
     
     // 1. Try to find Rt between the same frame (try masks also).
-    bool isComputed = odometry->compute(image, depth, Mat(image.size(), CV_8UC1, Scalar(255)), 
-                                        image, depth, Mat(image.size(), CV_8UC1, Scalar(255)), 
+    bool isComputed = odometry->compute(image, depth, Mat(image.size(), CV_8UC1, Scalar(255)),
+                                        image, depth, Mat(image.size(), CV_8UC1, Scalar(255)),
                                         calcRt);
     if(!isComputed)
     {
@@ -221,15 +225,15 @@ void CV_OdometryTest::run(int)
         ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_OUTPUT);
     }
     double diff = cv::norm(calcRt, Mat::eye(4,4,CV_64FC1));
-    if(diff > DBL_EPSILON)
+    if(diff > idError)
     {
         ts->printf(cvtest::TS::LOG, "Incorrect transformation between the same frame (not the identity matrix), diff = %f", diff);
         ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
     }
     
-    // 2. Generate random rigid body motion in some ranges several times (iterCount). 
+    // 2. Generate random rigid body motion in some ranges several times (iterCount).
     // On each iteration an input frame is warped using generated transformation.
-    // Odometry is run on the following pair: the original frame and the warped one. 
+    // Odometry is run on the following pair: the original frame and the warped one.
     // Comparing a computed transformation with an applied one we compute 2 errors:
     // better_1time_count - count of poses which error is less than ground thrush pose,
     // better_5times_count - count of poses which error is 5 times less than ground thrush pose.
@@ -244,7 +248,8 @@ void CV_OdometryTest::run(int)
         warpFrame(image, depth, rvec, tvec, K, warpedImage, warpedDepth);
         dilateFrame(warpedImage, warpedDepth); // due to inaccuracy after warping
         
-        isComputed = odometry->compute(image, depth, Mat(), warpedImage, warpedDepth, Mat(), calcRt);
+        Mat imageMask(image.size(), CV_8UC1, Scalar(255));
+        isComputed = odometry->compute(image, depth, imageMask, warpedImage, warpedDepth, imageMask, calcRt);
         if(!isComputed)
             continue;
                 
@@ -320,7 +325,7 @@ TEST(DISABLED_RGBD_Odometry_RgbdICP, algorithmic)
 
 TEST(DISABLED_RGBD_Odometry_FastICP, algorithmic)
 {
-    CV_OdometryTest test(cv::rgbd::Odometry::create("FastICPOdometry"), 0.99, 0.99);
+    CV_OdometryTest test(cv::rgbd::Odometry::create("FastICPOdometry"), 0.99, 0.99, FLT_EPSILON);
     test.safe_run();
 }
 
