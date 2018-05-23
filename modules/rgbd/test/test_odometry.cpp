@@ -307,23 +307,23 @@ void CV_OdometryTest::run(int)
 
 TEST(RGBD_Odometry_Rgbd, algorithmic)
 {
-    CV_OdometryTest test(cv::rgbd::Odometry::create("RgbdOdometry"), 0.99, 0.94);
+    CV_OdometryTest test(cv::rgbd::Odometry::create("RgbdOdometry"), 0.99, 0.89);
     test.safe_run();
 }
 
-TEST(DISABLED_RGBD_Odometry_ICP, algorithmic)
+TEST(RGBD_Odometry_ICP, algorithmic)
 {
     CV_OdometryTest test(cv::rgbd::Odometry::create("ICPOdometry"), 0.99, 0.99);
     test.safe_run();
 }
 
-TEST(DISABLED_RGBD_Odometry_RgbdICP, algorithmic)
+TEST(RGBD_Odometry_RgbdICP, algorithmic)
 {
     CV_OdometryTest test(cv::rgbd::Odometry::create("RgbdICPOdometry"), 0.99, 0.99);
     test.safe_run();
 }
 
-TEST(DISABLED_RGBD_Odometry_FastICP, algorithmic)
+TEST(RGBD_Odometry_FastICP, algorithmic)
 {
     CV_OdometryTest test(cv::rgbd::Odometry::create("FastICPOdometry"), 0.99, 0.99, FLT_EPSILON);
     test.safe_run();
