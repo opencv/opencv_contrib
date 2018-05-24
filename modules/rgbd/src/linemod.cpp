@@ -65,7 +65,7 @@ static inline int getLabel(int quantized)
     case 64:  return 6;
     case 128: return 7;
     default:
-      CV_Error(Error::StsBadArg, "Invalid value of quantized parameter");
+      CV_ErrorNoReturn(Error::StsBadArg, "Invalid value of quantized parameter");
   }
 }
 
