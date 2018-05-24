@@ -52,7 +52,7 @@
 
 #include "opencl_kernels_bioinspired.hpp"
 
-#define NOT_IMPLEMENTED CV_Error(cv::Error::StsNotImplemented, "Not implemented")
+#define NOT_IMPLEMENTED CV_ErrorNoReturn(cv::Error::StsNotImplemented, "Not implemented")
 
 namespace
 {
@@ -390,7 +390,7 @@ bool RetinaOCLImpl::convertToColorPlanes(const UMat& input, UMat &output)
     }
     else
     {
-        CV_Error(-1, "Retina ocl only support 1, 3, 4 channel input");
+        CV_ErrorNoReturn(-1, "Retina ocl only support 1, 3, 4 channel input");
     }
 }
 void RetinaOCLImpl::convertToInterleaved(const UMat& input, bool colorMode, UMat &output)
