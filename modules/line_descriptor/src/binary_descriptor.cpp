@@ -1349,6 +1349,9 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines, bool useDetectionData )
     for ( int g = 0; g < 32; g++ )
     {
       /* get LBD data */
+      if (keyLines[lineIDInScaleVec].empty()) {
+        continue;
+      }
       float* des_Vec = &keyLines[lineIDInScaleVec][0].descriptor.front();
       *pointerToRow = des_Vec[g];
       pointerToRow++;
