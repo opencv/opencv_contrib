@@ -1,3 +1,5 @@
+#define CV__ENABLE_C_API_CTORS // enable C API ctors (must be removed)
+
 #include <opencv2/core.hpp>
 #include <opencv2/core/utility.hpp>
 #include <opencv2/imgproc/imgproc_c.h> // cvFindContours
