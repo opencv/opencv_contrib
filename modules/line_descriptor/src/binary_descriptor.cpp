@@ -1344,20 +1344,6 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines, bool useDetectionData )
     }/* end for(short lineIDInSameLine = 0; lineIDInSameLine<sameLineSize;
      lineIDInSameLine++) */
 
-    cv::Mat appoggio = cv::Mat( 1, 32, CV_32FC1 );
-    float* pointerToRow = appoggio.ptr<float>( 0 );
-    for ( int g = 0; g < 32; g++ )
-    {
-      /* get LBD data */
-      if (keyLines[lineIDInScaleVec].empty()) {
-        continue;
-      }
-      float* des_Vec = &keyLines[lineIDInScaleVec][0].descriptor.front();
-      *pointerToRow = des_Vec[g];
-      pointerToRow++;
-
-    }
-
   }/* end for(short lineIDInScaleVec = 0;
    lineIDInScaleVec<numOfFinalLine; lineIDInScaleVec++) */
 
