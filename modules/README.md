@@ -48,7 +48,7 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 
 - **reg**: Image Registration -- Pixels based image registration for precise alignment. Follows the paper "Image Alignment and Stitching: A Tutorial", by Richard Szeliski.
 
-- **rgbd**: RGB-Depth Processing module -- Linemod 3D object recognition; Fast surface normals and 3D plane finding. 3D visual odometry
+- **rgbd**: RGB-Depth Processing module -- Linemod 3D object recognition; Fast surface normals and 3D plane finding. 3D visual odometry. 3d reconstruction using KinectFusion.
 
 - **saliency**: Saliency API -- Where humans would look in a scene. Has routines for static, motion and "objectness" saliency.
 
