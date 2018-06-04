@@ -835,7 +835,7 @@ void EdgeAwareInterpolatorImpl::ransacInterpolation(vector<SparseMatch>& matches
     float* weighted_inlier_nums = new float[match_num];
     float* eps = new float[match_num];
     for(int i=0;i<match_num;i++)
-        weighted_inlier_nums[i] = -1E+10F;
+        weighted_inlier_nums[i] = -std::numeric_limits<float>::max();
 
     for(int i=0;i<ransac_num_stripes;i++)
         rngs[i] = RNG(0);

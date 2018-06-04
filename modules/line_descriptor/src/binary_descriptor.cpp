@@ -504,7 +504,7 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
   /* delete undesired KeyLines, according to input mask */
   if( !mask.empty() )
   {
-    for ( size_t keyCounter = 0; keyCounter < keylines.size(); keyCounter++ )
+    for ( size_t keyCounter = 0; keyCounter < keylines.size(); )
     {
       KeyLine& kl = keylines[keyCounter];
 
@@ -517,6 +517,8 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
 
       if( mask.at < uchar > ( (int) kl.startPointY, (int) kl.startPointX ) == 0 && mask.at < uchar > ( (int) kl.endPointY, (int) kl.endPointX ) == 0 )
         keylines.erase( keylines.begin() + keyCounter );
+      else
+        keyCounter++;
     }
   }
 
@@ -1341,17 +1343,6 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines, bool useDetectionData )
       }
     }/* end for(short lineIDInSameLine = 0; lineIDInSameLine<sameLineSize;
      lineIDInSameLine++) */
-
-    cv::Mat appoggio = cv::Mat( 1, 32, CV_32FC1 );
-    float* pointerToRow = appoggio.ptr<float>( 0 );
-    for ( int g = 0; g < 32; g++ )
-    {
-      /* get LBD data */
-      float* des_Vec = &keyLines[lineIDInScaleVec][0].descriptor.front();
-      *pointerToRow = des_Vec[g];
-      pointerToRow++;
-
-    }
 
   }/* end for(short lineIDInScaleVec = 0;
    lineIDInScaleVec<numOfFinalLine; lineIDInScaleVec++) */
