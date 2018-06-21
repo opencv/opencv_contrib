@@ -115,7 +115,7 @@ public:
     virtual ~FrameGenerator() {}
 };
 
-cv::Ptr<FrameGenerator> makeFrameGenerator(cv::kinfu::KinFu::Params::PlatformType t);
+cv::Ptr<FrameGenerator> makeFrameGenerator(cv::kinfu::Params::PlatformType t);
 
 } // namespace kinfu
 } // namespace cv

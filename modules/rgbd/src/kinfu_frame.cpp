@@ -442,13 +442,13 @@ void FrameGPU::getDepth(OutputArray /* depth */) const
     throw std::runtime_error("Not implemented");
 }
 
-cv::Ptr<FrameGenerator> makeFrameGenerator(cv::kinfu::KinFu::Params::PlatformType t)
+cv::Ptr<FrameGenerator> makeFrameGenerator(cv::kinfu::Params::PlatformType t)
 {
     switch (t)
     {
-    case cv::kinfu::KinFu::Params::PlatformType::PLATFORM_CPU:
+    case cv::kinfu::Params::PlatformType::PLATFORM_CPU:
         return cv::makePtr<FrameGeneratorCPU>();
-    case cv::kinfu::KinFu::Params::PlatformType::PLATFORM_GPU:
+    case cv::kinfu::Params::PlatformType::PLATFORM_GPU:
         return cv::makePtr<FrameGeneratorGPU>();
     default:
         return cv::Ptr<FrameGenerator>();
