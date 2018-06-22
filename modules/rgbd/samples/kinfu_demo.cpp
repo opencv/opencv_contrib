@@ -49,89 +49,98 @@ static vector<string> readDepth(std::string fileList)
 }
 
 
+const Size kinect2FrameSize(512, 424);
+// approximate values, no guarantee to be correct
+const float kinect2Focal = 366.1f;
+const float kinect2Cx = 258.2f;
+const float kinect2Cy = 204.f;
+
 struct DepthSource
 {
 public:
-	DepthSource() :
-		depthFileList(),
-		frameIdx(0),
-		vc()
-	{ }
+    DepthSource() :
+        depthFileList(),
+        frameIdx(0),
+        vc(),
+        useKinect2Workarounds(true)
+    { }
 
-	DepthSource(int cam) :
-		depthFileList(),
-		frameIdx(),
-		vc(VideoCaptureAPIs::CAP_OPENNI2 + cam)
-	{ }
+    DepthSource(int cam) :
+        depthFileList(),
+        frameIdx(),
+        vc(VideoCaptureAPIs::CAP_OPENNI2 + cam),
+        useKinect2Workarounds(true)
+    { }
 
-	DepthSource(String fileListName) :
-		depthFileList(readDepth(fileListName)),
-		frameIdx(0),
-		vc()
-	{ }
+    DepthSource(String fileListName) :
+        depthFileList(readDepth(fileListName)),
+        frameIdx(0),
+        vc(),
+        useKinect2Workarounds(true)
+    { }
 
-	Mat getDepth()
-	{
-		Mat out;
-		if (!vc.isOpened())
-		{
-			if (frameIdx < depthFileList.size())
-				out = cv::imread(depthFileList[frameIdx++], IMREAD_ANYDEPTH);
-			else
-			{
-				return Mat();
-			}
-		}
-		else
-		{
-			vc.grab();
-			vc.retrieve(out, CAP_OPENNI_DEPTH_MAP);
+    Mat getDepth()
+    {
+        Mat out;
+        if (!vc.isOpened())
+        {
+            if (frameIdx < depthFileList.size())
+                out = cv::imread(depthFileList[frameIdx++], IMREAD_ANYDEPTH);
+            else
+            {
+                return Mat();
+            }
+        }
+        else
+        {
+            vc.grab();
+            vc.retrieve(out, CAP_OPENNI_DEPTH_MAP);
 
-			// workaround for Kinect 2
-			cv::flip(out, out, 1);
-		}
-		if (out.empty())
-			throw std::runtime_error("Matrix is empty");
-		return out;
-	}
+            // workaround for Kinect 2
+            if(useKinect2Workarounds)
+            {
+                out = out(Rect(Point(), kinect2FrameSize));
+                cv::flip(out, out, 1);
+            }
+        }
+        if (out.empty())
+            throw std::runtime_error("Matrix is empty");
+        return out;
+    }
 
-	bool empty()
-	{
-		return depthFileList.empty() && !(vc.isOpened());
-	}
+    bool empty()
+    {
+        return depthFileList.empty() && !(vc.isOpened());
+    }
 
-	void updateParams(KinFu::Params& params)
-	{
-		// approximate value, no guarantee to be correct
-		const float FOCAL_KINECT2 = 366.1f;
-		const float CX_KINECT2 = 258.2f;
-		const float CY_KINECT2 = 204.f;
+    void updateParams(KinFu::Params& params)
+    {
+        if (vc.isOpened())
+        {
+            // this should be set in according to user's depth sensor
+            int w = (int)vc.get(VideoCaptureProperties::CAP_PROP_FRAME_WIDTH);
+            int h = (int)vc.get(VideoCaptureProperties::CAP_PROP_FRAME_HEIGHT);
 
-		if (vc.isOpened())
-		{
-			// this should be set in according to user's depth sensor
-			int w = (int)vc.get(VideoCaptureProperties::CAP_PROP_FRAME_WIDTH);
-			int h = (int)vc.get(VideoCaptureProperties::CAP_PROP_FRAME_HEIGHT);
-			params.frameSize = Size(w, h);
+            float focal = (float)vc.get(CAP_OPENNI_DEPTH_GENERATOR | CAP_PROP_OPENNI_FOCAL_LENGTH);
 
-			// it's recommended to calibrate sensor to obtain its intrinsics
-			float fx, fy, cx, cy;
-			fx = fy = FOCAL_KINECT2;
-			//cx = w / 2 - 0.5f;
-			//cy = h / 2 - 0.5f;
-			cx = CX_KINECT2;
-			cy = CY_KINECT2;
-			params.intr = Matx33f(fx,  0, cx,
-								   0, fy, cy,
-								   0,  0,  1);
+            // it's recommended to calibrate sensor to obtain its intrinsics
+            float fx, fy, cx, cy;
+            fx = fy = useKinect2Workarounds ? kinect2Focal : focal;
+            cx = useKinect2Workarounds ? kinect2Cx : w/2 - 0.5f;
+            cy = useKinect2Workarounds ? kinect2Cy : h/2 - 0.5f;
 
-			params.depthFactor = 1000.f;
-		}
-	}
+            params.frameSize = useKinect2Workarounds ? kinect2FrameSize : Size(w, h);
+            params.intr = Matx33f(fx,  0, cx,
+                                   0, fy, cy,
+                                   0,  0,  1);
+            params.depthFactor = 1000.f;
+        }
+    }
 
-	vector<string> depthFileList;
-	size_t frameIdx;
-	VideoCapture vc;
+    vector<string> depthFileList;
+    size_t frameIdx;
+    VideoCapture vc;
+    bool useKinect2Workarounds;
 };
 
 const std::string vizWindowName = "cloud";
@@ -243,21 +252,24 @@ int main(int argc, char **argv)
         if(pause)
         {
             kf.getCloud(points, normals);
-            viz::WCloud cloudWidget(points, viz::Color::white());
-            viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
-            window.showWidget("cloud", cloudWidget);
-            window.showWidget("normals", cloudNormals);
+            if(!points.empty() && !normals.empty())
+            {
+                viz::WCloud cloudWidget(points, viz::Color::white());
+                viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
+                window.showWidget("cloud", cloudWidget);
+                window.showWidget("normals", cloudNormals);
 
-            window.showWidget("cube", viz::WCube(Vec3d::all(0),
-                                                 Vec3d::all(kf.getParams().volumeSize)),
-                              kf.getParams().volumePose);
-            PauseCallbackArgs pca(kf);
-            window.registerMouseCallback(pauseCallback, (void*)&pca);
-            window.showWidget("text", viz::WText(cv::String("Move camera in this window. "
-                                                            "Close the window or press Q to resume"), Point()));
-            window.spin();
-            window.removeWidget("text");
-            window.registerMouseCallback(0);
+                window.showWidget("cube", viz::WCube(Vec3d::all(0),
+                                                     Vec3d::all(kf.getParams().volumeSize)),
+                                  kf.getParams().volumePose);
+                PauseCallbackArgs pca(kf);
+                window.registerMouseCallback(pauseCallback, (void*)&pca);
+                window.showWidget("text", viz::WText(cv::String("Move camera in this window. "
+                                                                "Close the window or press Q to resume"), Point()));
+                window.spin();
+                window.removeWidget("text");
+                window.registerMouseCallback(0);
+            }
 
             pause = false;
         }
@@ -278,10 +290,13 @@ int main(int argc, char **argv)
                 if(coarse)
                 {
                     kf.getCloud(points, normals);
-                    viz::WCloud cloudWidget(points, viz::Color::white());
-                    viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
-                    window.showWidget("cloud", cloudWidget);
-                    window.showWidget("normals", cloudNormals);
+                    if(!points.empty() && !normals.empty())
+                    {
+                        viz::WCloud cloudWidget(points, viz::Color::white());
+                        viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
+                        window.showWidget("cloud", cloudWidget);
+                        window.showWidget("normals", cloudNormals);
+                    }
                 }
 
                 //window.showWidget("worldAxes", viz::WCoordinateSystem());
