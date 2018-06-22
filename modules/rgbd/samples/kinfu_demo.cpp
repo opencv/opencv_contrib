@@ -69,7 +69,7 @@ public:
 		frameIdx(0),
 		vc()
 	{ }
-	
+
 	Mat getDepth()
 	{
 		Mat out;
@@ -130,7 +130,7 @@ public:
 	}
 
 	vector<string> depthFileList;
-	int frameIdx;
+	size_t frameIdx;
 	VideoCapture vc;
 };
 
@@ -210,7 +210,7 @@ int main(int argc, char **argv)
         parser.printMessage();
         return -1;
     }
-	
+
     KinFu::Params params;
     if(coarse)
         params = KinFu::Params::coarseParams();
