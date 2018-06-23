@@ -56,6 +56,7 @@
 #include "ximgproc/fourier_descriptors.hpp"
 #include "ximgproc/ridgefilter.hpp"
 #include "ximgproc/brightedges.hpp"
+#include "ximgproc/run_length_morphology.hpp"
 
 
 /** @defgroup ximgproc Extended Image Processing
@@ -76,6 +77,26 @@ i.e. algorithms which somehow takes into account pixel affinities in natural ima
     @defgroup ximgproc_fast_line_detector Fast line detector
 
     @defgroup ximgproc_fourier Fourier descriptors
+
+    @defgroup ximgproc_run_length_morphology Binary morphology on run-length encoded image
+
+    These functions support morphological operations on binary images. In order to be fast and space efficient binary images are encoded with a run-length representation.
+    This representation groups continuous horizontal sequences of "on" pixels together in a "run". A run is charactarized by the column position of the first pixel in the run, the column
+    position of the last pixel in the run and the row position. This representation is very compact for binary images which contain large continuous areas of "on" and "off" pixels. A checkerboard
+    pattern would be a good example. The representation is not so suitable for binary images created from random noise images or other images where little correlation between neighboring pixels
+    exists.
+
+    The morphological operations supported here are very similar to the operations supported in the imgproc module. In general they are fast. However on several occasions they are slower than the functions
+    from imgproc. The structuring elements of cv::MORPH_RECT and cv::MORPH_CROSS have very good support from the imgproc module. Also small structuring elements are very fast in imgproc (presumably
+    due to opencl support). Therefore the functions from this module are recommended for larger structuring elements (cv::MORPH_ELLIPSE or self defined structuring elements). A sample application
+    (run_length_morphology_demo) is supplied which allows to compare the speed of some morphological operations for the functions using run-length encoding and the imgproc functions for a given image.
+
+    Run length encoded images are stored in standard opencv images. Images have a single column of cv::Point3i elements. The number of rows is the number of run + 1. The first row contains
+    the size of the original (not encoded) image.  For the runs the following mapping is used (x: column begin, y: column end (last column), z: row).
+
+    The size of the original image is required for compatiblity with the imgproc functions when the boundary handling requires that pixel outside the image boundary are
+    "on".
+
     @}
 */
 
