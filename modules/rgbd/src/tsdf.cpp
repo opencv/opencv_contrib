@@ -1091,12 +1091,14 @@ void TSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _normals
         }
 
         _points.create((int)points.size(), 1, DataType<ptype>::type);
-        Mat((int)points.size(), 1, DataType<ptype>::type, &points[0]).copyTo(_points.getMat());
+        if(!points.empty())
+            Mat((int)points.size(), 1, DataType<ptype>::type, &points[0]).copyTo(_points.getMat());
 
         if(_normals.needed())
         {
             _normals.create((int)normals.size(), 1, DataType<ptype>::type);
-            Mat((int)normals.size(), 1, DataType<ptype>::type, &normals[0]).copyTo(_normals.getMat());
+            if(!normals.empty())
+                Mat((int)normals.size(), 1, DataType<ptype>::type, &normals[0]).copyTo(_normals.getMat());
         }
     }
 }

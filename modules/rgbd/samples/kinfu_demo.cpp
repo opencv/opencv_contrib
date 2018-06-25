@@ -48,6 +48,101 @@ static vector<string> readDepth(std::string fileList)
     return v;
 }
 
+
+const Size kinect2FrameSize(512, 424);
+// approximate values, no guarantee to be correct
+const float kinect2Focal = 366.1f;
+const float kinect2Cx = 258.2f;
+const float kinect2Cy = 204.f;
+
+struct DepthSource
+{
+public:
+    DepthSource() :
+        depthFileList(),
+        frameIdx(0),
+        vc(),
+        useKinect2Workarounds(true)
+    { }
+
+    DepthSource(int cam) :
+        depthFileList(),
+        frameIdx(),
+        vc(VideoCaptureAPIs::CAP_OPENNI2 + cam),
+        useKinect2Workarounds(true)
+    { }
+
+    DepthSource(String fileListName) :
+        depthFileList(readDepth(fileListName)),
+        frameIdx(0),
+        vc(),
+        useKinect2Workarounds(true)
+    { }
+
+    Mat getDepth()
+    {
+        Mat out;
+        if (!vc.isOpened())
+        {
+            if (frameIdx < depthFileList.size())
+                out = cv::imread(depthFileList[frameIdx++], IMREAD_ANYDEPTH);
+            else
+            {
+                return Mat();
+            }
+        }
+        else
+        {
+            vc.grab();
+            vc.retrieve(out, CAP_OPENNI_DEPTH_MAP);
+
+            // workaround for Kinect 2
+            if(useKinect2Workarounds)
+            {
+                out = out(Rect(Point(), kinect2FrameSize));
+                cv::flip(out, out, 1);
+            }
+        }
+        if (out.empty())
+            throw std::runtime_error("Matrix is empty");
+        return out;
+    }
+
+    bool empty()
+    {
+        return depthFileList.empty() && !(vc.isOpened());
+    }
+
+    void updateParams(KinFu::Params& params)
+    {
+        if (vc.isOpened())
+        {
+            // this should be set in according to user's depth sensor
+            int w = (int)vc.get(VideoCaptureProperties::CAP_PROP_FRAME_WIDTH);
+            int h = (int)vc.get(VideoCaptureProperties::CAP_PROP_FRAME_HEIGHT);
+
+            float focal = (float)vc.get(CAP_OPENNI_DEPTH_GENERATOR | CAP_PROP_OPENNI_FOCAL_LENGTH);
+
+            // it's recommended to calibrate sensor to obtain its intrinsics
+            float fx, fy, cx, cy;
+            fx = fy = useKinect2Workarounds ? kinect2Focal : focal;
+            cx = useKinect2Workarounds ? kinect2Cx : w/2 - 0.5f;
+            cy = useKinect2Workarounds ? kinect2Cy : h/2 - 0.5f;
+
+            params.frameSize = useKinect2Workarounds ? kinect2FrameSize : Size(w, h);
+            params.intr = Matx33f(fx,  0, cx,
+                                   0, fy, cy,
+                                   0,  0,  1);
+            params.depthFactor = 1000.f;
+        }
+    }
+
+    vector<string> depthFileList;
+    size_t frameIdx;
+    VideoCapture vc;
+    bool useKinect2Workarounds;
+};
+
 const std::string vizWindowName = "cloud";
 
 struct PauseCallbackArgs
@@ -77,13 +172,14 @@ void pauseCallback(const viz::MouseEvent& me, void* args)
 static const char* keys =
 {
     "{help h usage ? | | print this message   }"
-    "{@depth |<none>| Path to depth.txt file listing a set of depth images }"
+    "{depth | | Path to depth.txt file listing a set of depth images }"
+    "{camera | | Index of depth camera to be used as a depth source }"
     "{coarse | | Run on coarse settings (fast but ugly) or on default (slow but looks better),"
         " in coarse mode points and normals are displayed }"
 };
 
 static const std::string message =
- "\nThis demo uses RGB-D dataset taken from"
+ "\nThis demo uses live depth input or RGB-D dataset taken from"
  "\nhttps://vision.in.tum.de/data/datasets/rgbd-dataset"
  "\nto demonstrate KinectFusion implementation \n";
 
@@ -104,8 +200,6 @@ int main(int argc, char **argv)
         coarse = true;
     }
 
-    String depthPath = parser.get<String>(0);
-
     if(!parser.check())
     {
         parser.printMessage();
@@ -113,7 +207,18 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    vector<string> depthFileList = readDepth(depthPath);
+    DepthSource ds;
+    if (parser.has("depth"))
+        ds = DepthSource(parser.get<String>("depth"));
+    if (parser.has("camera") && ds.empty())
+        ds = DepthSource(parser.get<int>("camera"));
+
+    if (ds.empty())
+    {
+        std::cerr << "Failed to open depth source" << std::endl;
+        parser.printMessage();
+        return -1;
+    }
 
     KinFu::Params params;
     if(coarse)
@@ -121,9 +226,12 @@ int main(int argc, char **argv)
     else
         params = KinFu::Params::defaultParams();
 
-    // scene-specific params should be tuned for each scene individually
-    params.volumePose = params.volumePose.translate(Vec3f(0.f, 0.f, 0.5f));
-    params.tsdf_max_weight = 16;
+    // These params can be different for each depth sensor
+    ds.updateParams(params);
+
+    // Scene-specific params should be tuned for each scene individually
+    //params.volumePose = params.volumePose.translate(Vec3f(0.f, 0.f, 0.5f));
+    //params.tsdf_max_weight = 16;
 
     KinFu kf(params);
 
@@ -135,42 +243,41 @@ int main(int argc, char **argv)
     Mat points;
     Mat normals;
 
-    double prevTime = getTickCount();
+    int64 prevTime = getTickCount();
 
     bool pause = false;
 
-    for(size_t nFrame = 0; nFrame < depthFileList.size(); nFrame++)
+    for(Mat frame = ds.getDepth(); !frame.empty(); frame = ds.getDepth())
     {
         if(pause)
         {
             kf.getCloud(points, normals);
-            viz::WCloud cloudWidget(points, viz::Color::white());
-            viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
-            window.showWidget("cloud", cloudWidget);
-            window.showWidget("normals", cloudNormals);
+            if(!points.empty() && !normals.empty())
+            {
+                viz::WCloud cloudWidget(points, viz::Color::white());
+                viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
+                window.showWidget("cloud", cloudWidget);
+                window.showWidget("normals", cloudNormals);
 
-            window.showWidget("cube", viz::WCube(Vec3d::all(0),
-                                                 Vec3d::all(kf.getParams().volumeSize)),
-                              kf.getParams().volumePose);
-            PauseCallbackArgs pca(kf);
-            window.registerMouseCallback(pauseCallback, (void*)&pca);
-            window.showWidget("text", viz::WText(cv::String("Move camera in this window. "
-                                                            "Close the window or press Q to resume"), Point()));
-            window.spin();
-            window.removeWidget("text");
-            window.registerMouseCallback(0);
+                window.showWidget("cube", viz::WCube(Vec3d::all(0),
+                                                     Vec3d::all(kf.getParams().volumeSize)),
+                                  kf.getParams().volumePose);
+                PauseCallbackArgs pca(kf);
+                window.registerMouseCallback(pauseCallback, (void*)&pca);
+                window.showWidget("text", viz::WText(cv::String("Move camera in this window. "
+                                                                "Close the window or press Q to resume"), Point()));
+                window.spin();
+                window.removeWidget("text");
+                window.registerMouseCallback(0);
+            }
 
             pause = false;
         }
         else
         {
-            Mat frame = cv::imread(depthFileList[nFrame], IMREAD_ANYDEPTH);
-            if(frame.empty())
-                throw std::runtime_error("Matrix is empty");
-
-            // 5000 for typical per-meter coefficient of PNG files
             Mat cvt8;
-            convertScaleAbs(frame, cvt8, 0.25/5000.*256.);
+            float depthFactor = kf.getParams().depthFactor;
+            convertScaleAbs(frame, cvt8, 0.25*256. / depthFactor);
             imshow("depth", cvt8);
 
             if(!kf.update(frame))
@@ -183,10 +290,13 @@ int main(int argc, char **argv)
                 if(coarse)
                 {
                     kf.getCloud(points, normals);
-                    viz::WCloud cloudWidget(points, viz::Color::white());
-                    viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
-                    window.showWidget("cloud", cloudWidget);
-                    window.showWidget("normals", cloudNormals);
+                    if(!points.empty() && !normals.empty())
+                    {
+                        viz::WCloud cloudWidget(points, viz::Color::white());
+                        viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
+                        window.showWidget("cloud", cloudWidget);
+                        window.showWidget("normals", cloudNormals);
+                    }
                 }
 
                 //window.showWidget("worldAxes", viz::WCoordinateSystem());
@@ -200,14 +310,15 @@ int main(int argc, char **argv)
             kf.render(rendered);
         }
 
-        double newTime = getTickCount();
-        putText(rendered, cv::format("FPS: %2d press R to reset, P to pause, Q to quit", (int)(getTickFrequency()/(newTime - prevTime))),
+        int64 newTime = getTickCount();
+        putText(rendered, cv::format("FPS: %2d press R to reset, P to pause, Q to quit",
+                                     (int)(getTickFrequency()/(newTime - prevTime))),
                 Point(0, rendered.rows-1), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255));
         prevTime = newTime;
 
         imshow("render", rendered);
 
-        int c = waitKey(1);
+        int c = waitKey(100);
         switch (c)
         {
         case 'r':
