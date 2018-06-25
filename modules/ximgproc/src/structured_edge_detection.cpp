@@ -801,9 +801,11 @@ protected:
                 {// for j,k in [0;width)x[0;nTreesEval)
 
                     int currentNode = pIndex[j*nTreesEval + k];
-
-                    int start  = __rf.edgeBoundaries[currentNode];
-                    int finish = __rf.edgeBoundaries[currentNode + 1];
+                    size_t sizeBoundaries = __rf.edgeBoundaries.size();
+                    int convertedBoundaries = static_cast<int>(sizeBoundaries);
+                    int nBnds = (convertedBoundaries - 1) / (nTreesNodes * nTrees);
+                    int start = __rf.edgeBoundaries[currentNode * nBnds];
+                    int finish = __rf.edgeBoundaries[currentNode * nBnds + 1];
 
                     if (start == finish)
                         continue;
