@@ -83,7 +83,7 @@ void _thresholdLine(T* pData, int nWidth, int nRow, T threshold, int type, rlVec
   }
 }
 
-void _threshold(cv::Mat& img, rlVec& res, double threshold, int type)
+static void _threshold(cv::Mat& img, rlVec& res, double threshold, int type)
 {
   res.clear();
   switch (img.depth())
@@ -124,19 +124,8 @@ void _threshold(cv::Mat& img, rlVec& res, double threshold, int type)
   }
 }
 
-void convertToOutputArray(rlVec& runs, OutputArray& res)
-{
-    size_t nRuns = runs.size();
-    std::vector<cv::Point3i> segments(nRuns);
-    for (size_t i = 0; i < nRuns; ++i)
-    {
-        rlType& curRun = runs[i];
-        segments[i] = Point3i(curRun.cb, curRun.ce, curRun.r);
-    }
-    Mat(segments).copyTo(res);
-}
 
-void convertToOutputArray(rlVec& runs, Size size, OutputArray& res)
+static void convertToOutputArray(rlVec& runs, Size size, OutputArray& res)
 {
     size_t nRuns = runs.size();
     std::vector<cv::Point3i> segments(nRuns + 1);
@@ -223,7 +212,7 @@ void paint_impl(cv::Mat& img, rlType* pRuns, int nSize, T value)
     }
   }
 
-void translateRegion(rlVec& reg, Point ptTrans)
+static void translateRegion(rlVec& reg, Point ptTrans)
 {
     for (rlVec::iterator it=reg.begin();it!=reg.end();++it)
     {
@@ -248,7 +237,7 @@ CV_EXPORTS Mat getStructuringElement(int shape, Size ksize)
   return rlDest;
 }
 
-void erode_rle (rlVec& regIn, rlVec& regOut, rlVec& se)
+static void erode_rle (rlVec& regIn, rlVec& regOut, rlVec& se)
 {
   using namespace std;
 
@@ -375,7 +364,7 @@ void erode_rle (rlVec& regIn, rlVec& regOut, rlVec& se)
 
 }
 
-void convertInputArrayToRuns(InputArray& theArray, rlVec& runs, Size& theSize)
+static void convertInputArrayToRuns(InputArray& theArray, rlVec& runs, Size& theSize)
 {
   Mat _runs;
   _runs = theArray.getMat();
@@ -397,12 +386,12 @@ void convertInputArrayToRuns(InputArray& theArray, rlVec& runs, Size& theSize)
   }
 }
 
-void sortChords(rlVec& lChords)
+static void sortChords(rlVec& lChords)
 {
     sort(lChords.begin(), lChords.end());
 }
 
-void mergeNeighbouringChords(rlVec& rlIn, rlVec& rlOut)
+static void mergeNeighbouringChords(rlVec& rlIn, rlVec& rlOut)
 {
     rlOut.clear();
     if (rlIn.size() == 0)
@@ -421,7 +410,7 @@ void mergeNeighbouringChords(rlVec& rlIn, rlVec& rlOut)
     }
 }
 
-void union_regions(rlVec& reg1, rlVec& reg2, rlVec& regUnion)
+static void union_regions(rlVec& reg1, rlVec& reg2, rlVec& regUnion)
 {
     rlVec lAllChords(reg1);
 
@@ -431,9 +420,7 @@ void union_regions(rlVec& reg1, rlVec& reg2, rlVec& regUnion)
     mergeNeighbouringChords(lAllChords, regUnion);
 }
 
-void intersect(rlVec& reg1,
-    rlVec& reg2,
-    rlVec& regRes)
+static void intersect(rlVec& reg1, rlVec& reg2, rlVec& regRes)
 {
     rlVec::iterator end1 = reg1.end();
     rlVec::iterator end2 = reg2.end();
@@ -467,7 +454,7 @@ void intersect(rlVec& reg1,
     }
 }
 
-void addBoundary(rlVec& runsIn, int nWidth, int nHeight, int nBoundaryLeft, int nBoundaryTop,
+static void addBoundary(rlVec& runsIn, int nWidth, int nHeight, int nBoundaryLeft, int nBoundaryTop,
     int nBoundaryRight, int nBoundaryBottom, rlVec& res)
 {
     rlVec boundary;
@@ -485,7 +472,7 @@ void addBoundary(rlVec& runsIn, int nWidth, int nHeight, int nBoundaryLeft, int 
     union_regions(runsIn, boundary, res);
 }
 
-cv::Rect getBoundingRectangle(rlVec& reg)
+static cv::Rect getBoundingRectangle(rlVec& reg)
 {
     using namespace std;
     cv::Rect rect;
@@ -511,7 +498,7 @@ cv::Rect getBoundingRectangle(rlVec& reg)
     return rect;
 }
 
-void createUprightRectangle(cv::Rect rect, rlVec &rl)
+static void createUprightRectangle(cv::Rect rect, rlVec &rl)
 {
     rl.clear();
     rlType curRL;
@@ -527,7 +514,7 @@ void createUprightRectangle(cv::Rect rect, rlVec &rl)
     }
 }
 
-void erode_with_boundary_rle(rlVec& runsSource, int nWidth, int nHeight, rlVec& runsDestination,
+static void erode_with_boundary_rle(rlVec& runsSource, int nWidth, int nHeight, rlVec& runsDestination,
     rlVec& runsKernel)
 {
     cv::Rect rect = getBoundingRectangle(runsKernel);
@@ -540,17 +527,6 @@ void erode_with_boundary_rle(rlVec& runsSource, int nWidth, int nHeight, rlVec& 
     intersect(regResultRaw, regFrame, runsDestination);
 }
 
-CV_EXPORTS void erode_with_boundary(InputArray rlSrc, int nWidth, int nHeight,
-    OutputArray rlDest, InputArray rlKernel)
-{
-    rlVec runsSource, runsDestination, runsKernel;
-    Size sizeSource, sizeKernel;
-    convertInputArrayToRuns(rlSrc, runsSource, sizeSource);
-    convertInputArrayToRuns(rlKernel, runsKernel, sizeKernel);
-
-    erode_with_boundary_rle(runsSource, nWidth, nHeight, runsDestination, runsKernel);
-    convertToOutputArray(runsDestination, sizeSource, rlDest);
-}
 
 CV_EXPORTS void erode(InputArray rlSrc, OutputArray rlDest, InputArray rlKernel, bool bBoundaryOn,
     Point anchor)
@@ -571,7 +547,7 @@ CV_EXPORTS void erode(InputArray rlSrc, OutputArray rlDest, InputArray rlKernel,
 }
 
 
-void subtract_rle( rlVec& regFrom,
+static void subtract_rle( rlVec& regFrom,
                         rlVec& regSubtract,
                         rlVec& regRes)
 {
@@ -642,7 +618,7 @@ void subtract_rle( rlVec& regFrom,
 
 
 
-void invertRegion(rlVec& runsIn, rlVec& runsOut)
+static void invertRegion(rlVec& runsIn, rlVec& runsOut)
 {
     // if there is only one chord in row -> do not insert anything for this row
     // otherwise insert chords for the spaces between chords
@@ -667,7 +643,7 @@ void invertRegion(rlVec& runsIn, rlVec& runsOut)
 }
 
 
-void dilate_rle(rlVec& runsSource,
+static void dilate_rle(rlVec& runsSource,
     rlVec& runsDestination,
     rlVec& runsKernel)
 {
