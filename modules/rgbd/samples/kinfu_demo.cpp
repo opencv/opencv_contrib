@@ -10,13 +10,13 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/rgbd/kinfu.hpp>
 
-#ifdef HAVE_OPENCV_VIZ
-
-#include <opencv2/viz.hpp>
-
 using namespace cv;
 using namespace cv::kinfu;
 using namespace std;
+
+#ifdef HAVE_OPENCV_VIZ
+#include <opencv2/viz.hpp>
+#endif
 
 static vector<string> readDepth(std::string fileList);
 
@@ -113,7 +113,7 @@ public:
         return depthFileList.empty() && !(vc.isOpened());
     }
 
-    void updateParams(KinFu::Params& params)
+    void updateParams(Params& params)
     {
         if (vc.isOpened())
         {
@@ -143,6 +143,7 @@ public:
     bool useKinect2Workarounds;
 };
 
+#ifdef HAVE_OPENCV_VIZ
 const std::string vizWindowName = "cloud";
 
 struct PauseCallbackArgs
@@ -163,11 +164,12 @@ void pauseCallback(const viz::MouseEvent& me, void* args)
         PauseCallbackArgs pca = *((PauseCallbackArgs*)(args));
         viz::Viz3d window(vizWindowName);
         Mat rendered;
-        pca.kf.render(rendered, window.getViewerPose());
+        pca.kf.render(rendered, window.getViewerPose().matrix);
         imshow("render", rendered);
         waitKey(1);
     }
 }
+#endif
 
 static const char* keys =
 {
@@ -220,23 +222,26 @@ int main(int argc, char **argv)
         return -1;
     }
 
-    KinFu::Params params;
+    Ptr<Params> params;
     if(coarse)
-        params = KinFu::Params::coarseParams();
+        params = Params::coarseParams();
     else
-        params = KinFu::Params::defaultParams();
+        params = Params::defaultParams();
 
     // These params can be different for each depth sensor
-    ds.updateParams(params);
+    ds.updateParams(*params);
 
     // Scene-specific params should be tuned for each scene individually
     //params.volumePose = params.volumePose.translate(Vec3f(0.f, 0.f, 0.5f));
     //params.tsdf_max_weight = 16;
 
-    KinFu kf(params);
+    Ptr<KinFu> kf = KinFu::create(params);
 
+#ifdef HAVE_OPENCV_VIZ
     cv::viz::Viz3d window(vizWindowName);
     window.setViewerPose(Affine3f::Identity());
+    bool pause = false;
+#endif
 
     // TODO: can we use UMats for that?
     Mat rendered;
@@ -245,13 +250,12 @@ int main(int argc, char **argv)
 
     int64 prevTime = getTickCount();
 
-    bool pause = false;
-
     for(Mat frame = ds.getDepth(); !frame.empty(); frame = ds.getDepth())
     {
+#ifdef HAVE_OPENCV_VIZ
         if(pause)
         {
-            kf.getCloud(points, normals);
+            kf->getCloud(points, normals);
             if(!points.empty() && !normals.empty())
             {
                 viz::WCloud cloudWidget(points, viz::Color::white());
@@ -260,9 +264,9 @@ int main(int argc, char **argv)
                 window.showWidget("normals", cloudNormals);
 
                 window.showWidget("cube", viz::WCube(Vec3d::all(0),
-                                                     Vec3d::all(kf.getParams().volumeSize)),
-                                  kf.getParams().volumePose);
-                PauseCallbackArgs pca(kf);
+                                                     Vec3d::all(kf->getParams().volumeSize)),
+                                  kf->getParams().volumePose);
+                PauseCallbackArgs pca(*kf);
                 window.registerMouseCallback(pauseCallback, (void*)&pca);
                 window.showWidget("text", viz::WText(cv::String("Move camera in this window. "
                                                                 "Close the window or press Q to resume"), Point()));
@@ -274,22 +278,24 @@ int main(int argc, char **argv)
             pause = false;
         }
         else
+#endif
         {
             Mat cvt8;
-            float depthFactor = kf.getParams().depthFactor;
+            float depthFactor = kf->getParams().depthFactor;
             convertScaleAbs(frame, cvt8, 0.25*256. / depthFactor);
             imshow("depth", cvt8);
 
-            if(!kf.update(frame))
+            if(!kf->update(frame))
             {
-                kf.reset();
+                kf->reset();
                 std::cout << "reset" << std::endl;
             }
+#ifdef HAVE_OPENCV_VIZ
             else
             {
                 if(coarse)
                 {
-                    kf.getCloud(points, normals);
+                    kf->getCloud(points, normals);
                     if(!points.empty() && !normals.empty())
                     {
                         viz::WCloud cloudWidget(points, viz::Color::white());
@@ -301,13 +307,14 @@ int main(int argc, char **argv)
 
                 //window.showWidget("worldAxes", viz::WCoordinateSystem());
                 window.showWidget("cube", viz::WCube(Vec3d::all(0),
-                                                     Vec3d::all(kf.getParams().volumeSize)),
-                                  kf.getParams().volumePose);
-                window.setViewerPose(kf.getPose());
+                                                     Vec3d::all(kf->getParams().volumeSize)),
+                                  kf->getParams().volumePose);
+                window.setViewerPose(kf->getPose());
                 window.spinOnce(1, true);
             }
+#endif
 
-            kf.render(rendered);
+            kf->render(rendered);
         }
 
         int64 newTime = getTickCount();
@@ -322,12 +329,14 @@ int main(int argc, char **argv)
         switch (c)
         {
         case 'r':
-            kf.reset();
+            kf->reset();
             break;
         case 'q':
             return 0;
+#ifdef HAVE_OPENCV_VIZ
         case 'p':
             pause = true;
+#endif
         default:
             break;
         }
@@ -335,12 +344,3 @@ int main(int argc, char **argv)
 
     return 0;
 }
-
-#else
-
-int main(int /* argc */, char ** /* argv */)
-{
-    std::cout << "This demo requires viz module" << std::endl;
-    return 0;
-}
-#endif

@@ -12,29 +12,29 @@
 namespace cv {
 namespace kinfu {
 
-class KinFu::KinFuImpl
+class KinFu::KinFuImpl : public KinFu
 {
 public:
-    KinFuImpl(const KinFu::Params& _params);
+    KinFuImpl(const Params& _params);
     virtual ~KinFuImpl();
 
-    const KinFu::Params& getParams() const;
-    void setParams(const KinFu::Params&);
+    const Params& getParams() const CV_OVERRIDE;
+    void setParams(const Params&) CV_OVERRIDE;
 
-    void render(OutputArray image, const Affine3f cameraPose = Affine3f::Identity()) const;
+    void render(OutputArray image, const Matx44f& cameraPose) const CV_OVERRIDE;
 
-    void getCloud(OutputArray points, OutputArray normals) const;
-    void getPoints(OutputArray points) const;
-    void getNormals(InputArray points, OutputArray normals) const;
+    void getCloud(OutputArray points, OutputArray normals) const CV_OVERRIDE;
+    void getPoints(OutputArray points) const CV_OVERRIDE;
+    void getNormals(InputArray points, OutputArray normals) const CV_OVERRIDE;
 
-    void reset();
+    void reset() CV_OVERRIDE;
 
-    const Affine3f getPose() const;
+    const Affine3f getPose() const CV_OVERRIDE;
 
-    bool update(InputArray depth);
+    bool update(InputArray depth) CV_OVERRIDE;
 
 private:
-    KinFu::Params params;
+    Params params;
 
     cv::Ptr<FrameGenerator> frameGenerator;
     cv::Ptr<ICP> icp;
@@ -45,7 +45,7 @@ private:
     cv::Ptr<Frame> frame;
 };
 
-KinFu::Params KinFu::Params::defaultParams()
+Ptr<Params> Params::defaultParams()
 {
     Params p;
 
@@ -107,36 +107,36 @@ KinFu::Params KinFu::Params::defaultParams()
     // depth truncation is not used by default
     //p.icp_truncate_depth_dist = 0.f;        //meters, disabled
 
-    return p;
+    return makePtr<Params>(p);
 }
 
-KinFu::Params KinFu::Params::coarseParams()
+Ptr<Params> Params::coarseParams()
 {
-    Params p = defaultParams();
+    Ptr<Params> p = defaultParams();
 
     // first non-zero numbers are accepted
     const int iters[] = {5, 3, 2};
 
-    p.icpIterations.clear();
+    p->icpIterations.clear();
     for(size_t i = 0; i < sizeof(iters)/sizeof(int); i++)
     {
         if(iters[i])
         {
-            p.icpIterations.push_back(iters[i]);
+            p->icpIterations.push_back(iters[i]);
         }
         else
             break;
     }
-    p.pyramidLevels = (int)p.icpIterations.size();
+    p->pyramidLevels = (int)p->icpIterations.size();
 
-    p.volumeDims = 128; //number of voxels
+    p->volumeDims = 128; //number of voxels
 
-    p.raycast_step_factor = 0.75f;  //in voxel sizes
+    p->raycast_step_factor = 0.75f;  //in voxel sizes
 
     return p;
 }
 
-KinFu::KinFuImpl::KinFuImpl(const KinFu::Params &_params) :
+KinFu::KinFuImpl::KinFuImpl(const Params &_params) :
     params(_params),
     frameGenerator(makeFrameGenerator(params.platform)),
     icp(makeICP(params.platform, params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
@@ -160,12 +160,12 @@ KinFu::KinFuImpl::~KinFuImpl()
 
 }
 
-const KinFu::Params& KinFu::KinFuImpl::getParams() const
+const Params& KinFu::KinFuImpl::getParams() const
 {
     return params;
 }
 
-void KinFu::KinFuImpl::setParams(const KinFu::Params& p)
+void KinFu::KinFuImpl::setParams(const Params& p)
 {
     params = p;
 }
@@ -225,9 +225,11 @@ bool KinFu::KinFuImpl::update(InputArray _depth)
 }
 
 
-void KinFu::KinFuImpl::render(OutputArray image, const Affine3f cameraPose) const
+void KinFu::KinFuImpl::render(OutputArray image, const Matx44f& _cameraPose) const
 {
     ScopeTime st("kinfu render");
+
+    Affine3f cameraPose(_cameraPose);
 
     const Affine3f id = Affine3f::Identity();
     if((cameraPose.rotation() == pose.rotation() && cameraPose.translation() == pose.translation()) ||
@@ -263,57 +265,12 @@ void KinFu::KinFuImpl::getNormals(InputArray points, OutputArray normals) const
 
 // importing class
 
-KinFu::KinFu(const Params& _params)
+Ptr<KinFu> KinFu::create(const Ptr<Params>& _params)
 {
-    impl = makePtr<KinFu::KinFuImpl>(_params);
+    return makePtr<KinFu::KinFuImpl>(*_params);
 }
 
-KinFu::~KinFu() { }
-
-const KinFu::Params& KinFu::getParams() const
-{
-    return impl->getParams();
-}
-
-void KinFu::setParams(const Params& p)
-{
-    impl->setParams(p);
-}
-
-const Affine3f KinFu::getPose() const
-{
-    return impl->getPose();
-}
-
-void KinFu::reset()
-{
-    impl->reset();
-}
-
-void KinFu::getCloud(cv::OutputArray points, cv::OutputArray normals) const
-{
-    impl->getCloud(points, normals);
-}
-
-void KinFu::getPoints(OutputArray points) const
-{
-    impl->getPoints(points);
-}
-
-void KinFu::getNormals(InputArray points, OutputArray normals) const
-{
-    impl->getNormals(points, normals);
-}
-
-bool KinFu::update(InputArray depth)
-{
-    return impl->update(depth);
-}
-
-void KinFu::render(cv::OutputArray image, const Affine3f cameraPose) const
-{
-    impl->render(image, cameraPose);
-}
+KinFu::~KinFu() {}
 
 } // namespace kinfu
 } // namespace cv

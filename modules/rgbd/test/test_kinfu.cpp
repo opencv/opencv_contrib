@@ -262,12 +262,11 @@ static const bool display = false;
 
 TEST( KinectFusion, lowDense )
 {
-    kinfu::KinFu::Params params;
-    params = kinfu::KinFu::Params::coarseParams();
+    Ptr<kinfu::Params> params = kinfu::Params::coarseParams();
 
-    RotatingScene scene(params.frameSize, params.intr, params.depthFactor);
+    RotatingScene scene(params->frameSize, params->intr, params->depthFactor);
 
-    kinfu::KinFu kf(params);
+    Ptr<kinfu::KinFu> kf = kinfu::KinFu::create(params);
 
     std::vector<Affine3f> poses = scene.getPoses();
     Affine3f startPoseGT = poses[0], startPoseKF;
@@ -278,9 +277,9 @@ TEST( KinectFusion, lowDense )
 
         Mat depth = scene.depth(pose);
 
-        ASSERT_TRUE(kf.update(depth));
+        ASSERT_TRUE(kf->update(depth));
 
-        kfPose = kf.getPose();
+        kfPose = kf->getPose();
         if(i == 0)
             startPoseKF = kfPose;
 
@@ -288,9 +287,9 @@ TEST( KinectFusion, lowDense )
 
         if(display)
         {
-            imshow("depth", depth*(1.f/params.depthFactor/4.f));
+            imshow("depth", depth*(1.f/params->depthFactor/4.f));
             Mat rendered;
-            kf.render(rendered);
+            kf->render(rendered);
             imshow("render", rendered);
             waitKey(10);
         }
@@ -302,12 +301,10 @@ TEST( KinectFusion, lowDense )
 
 TEST( KinectFusion, highDense )
 {
-    kinfu::KinFu::Params params;
+    Ptr<kinfu::Params> params = kinfu::Params::defaultParams();
+    CubeSpheresScene scene(params->frameSize, params->intr, params->depthFactor);
 
-    params = kinfu::KinFu::Params::defaultParams();
-    CubeSpheresScene scene(params.frameSize, params.intr, params.depthFactor);
-
-    kinfu::KinFu kf(params);
+    Ptr<kinfu::KinFu> kf = kinfu::KinFu::create(params);
 
     std::vector<Affine3f> poses = scene.getPoses();
     Affine3f startPoseGT = poses[0], startPoseKF;
@@ -318,9 +315,9 @@ TEST( KinectFusion, highDense )
 
         Mat depth = scene.depth(pose);
 
-        ASSERT_TRUE(kf.update(depth));
+        ASSERT_TRUE(kf->update(depth));
 
-        kfPose = kf.getPose();
+        kfPose = kf->getPose();
         if(i == 0)
             startPoseKF = kfPose;
 
@@ -328,9 +325,9 @@ TEST( KinectFusion, highDense )
 
         if(display)
         {
-            imshow("depth", depth*(1.f/params.depthFactor/4.f));
+            imshow("depth", depth*(1.f/params->depthFactor/4.f));
             Mat rendered;
-            kf.render(rendered);
+            kf->render(rendered);
             imshow("render", rendered);
             waitKey(10);
         }

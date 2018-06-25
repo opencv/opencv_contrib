@@ -1482,7 +1482,7 @@ Size FastICPOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType
 
     // mask isn't used by FastICP
 
-    Ptr<FrameGenerator> fg = makeFrameGenerator(KinFu::Params::PlatformType::PLATFORM_CPU);
+    Ptr<FrameGenerator> fg = makeFrameGenerator(Params::PlatformType::PLATFORM_CPU);
     Ptr<FrameCPU> f = (*fg)().dynamicCast<FrameCPU>();
     Intr intr(cameraMatrix);
     float depthFactor = 1.f; // user should rescale depth manually
@@ -1517,7 +1517,7 @@ bool FastICPOdometry::computeImpl(const Ptr<OdometryFrame>& srcFrame,
 {
     kinfu::Intr intr(cameraMatrix);
     std::vector<int> iterations = iterCounts;
-    Ptr<kinfu::ICP> icp = kinfu::makeICP(kinfu::KinFu::Params::PlatformType::PLATFORM_CPU,
+    Ptr<kinfu::ICP> icp = kinfu::makeICP(kinfu::Params::PlatformType::PLATFORM_CPU,
                                          intr,
                                          iterations,
                                          angleThreshold,

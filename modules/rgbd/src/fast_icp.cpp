@@ -500,15 +500,15 @@ bool ICPGPU::estimateTransform(cv::Affine3f& /*transform*/, cv::Ptr<Frame> /*_ol
     throw std::runtime_error("Not implemented");
 }
 
-cv::Ptr<ICP> makeICP(cv::kinfu::KinFu::Params::PlatformType t,
+cv::Ptr<ICP> makeICP(cv::kinfu::Params::PlatformType t,
                      const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations,
                      float _angleThreshold, float _distanceThreshold)
 {
     switch (t)
     {
-    case cv::kinfu::KinFu::Params::PlatformType::PLATFORM_CPU:
+    case cv::kinfu::Params::PlatformType::PLATFORM_CPU:
         return cv::makePtr<ICPCPU>(_intrinsics, _iterations, _angleThreshold, _distanceThreshold);
-    case cv::kinfu::KinFu::Params::PlatformType::PLATFORM_GPU:
+    case cv::kinfu::Params::PlatformType::PLATFORM_GPU:
         return cv::makePtr<ICPGPU>(_intrinsics, _iterations, _angleThreshold, _distanceThreshold);
     default:
         return cv::Ptr<ICP>();
