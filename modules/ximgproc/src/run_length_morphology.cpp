@@ -476,6 +476,11 @@ static cv::Rect getBoundingRectangle(rlVec& reg)
 {
     using namespace std;
     cv::Rect rect;
+    if (reg.empty())
+    {
+        rect.x = rect.y = rect.width = rect.height = 0;
+        return rect;
+    }
 
     int minX = std::numeric_limits<int>::max();
     int minY = std::numeric_limits<int>::max();
@@ -655,12 +660,6 @@ static void dilate_rle(rlVec& runsSource,
     background.y = rectSource.y - 2 * rectKernel.height;
     background.width = rectSource.width + 4 * rectKernel.width;
     background.height = rectSource.height + 4 * rectKernel.height;
-
-    cv::Rect backgroundEroded;
-    backgroundEroded.x = rectSource.x + rectKernel.x;
-    backgroundEroded.y = rectSource.y + rectKernel.y;
-    backgroundEroded.width = rectSource.width + rectKernel.width;
-    backgroundEroded.height = rectSource.height + rectKernel.height;
 
     rlVec rlBackground, rlSourceInverse, rlResultInverse;
     createUprightRectangle(background, rlBackground);
