@@ -26,7 +26,7 @@ static vector<string> readDepth(std::string fileList)
 
     fstream file(fileList);
     if(!file.is_open())
-        throw std::runtime_error("Failed to open file");
+        throw std::runtime_error("Failed to read depth list");
 
     std::string dir;
     size_t slashIdx = fileList.rfind('/');
@@ -48,6 +48,35 @@ static vector<string> readDepth(std::string fileList)
     return v;
 }
 
+struct DepthWriter
+{
+    DepthWriter(string fileList) :
+        file(fileList, ios::out), count(0), dir()
+    {
+        size_t slashIdx = fileList.rfind('/');
+        slashIdx = slashIdx != std::string::npos ? slashIdx : fileList.rfind('\\');
+        dir = fileList.substr(0, slashIdx);
+
+        if(!file.is_open())
+            throw std::runtime_error("Failed to write depth list");
+
+        file << "# depth maps saved from device" << endl;
+        file << "# useless_number filename" << endl;
+    }
+
+    void append(Mat depth)
+    {
+        string depthFname = cv::format("%04d.png", count);
+        string fullDepthFname = dir + '/' + depthFname;
+        if(!imwrite(fullDepthFname, depth))
+            throw std::runtime_error("Failed to write depth to file " + fullDepthFname);
+        file << count++ << " " << depthFname << endl;
+    }
+
+    fstream file;
+    int count;
+    string dir;
+};
 
 namespace Kinect2Params
 {
@@ -213,11 +242,13 @@ void pauseCallback(const viz::MouseEvent& me, void* args)
 static const char* keys =
 {
     "{help h usage ? | | print this message   }"
-    "{depth | | Path to depth.txt file listing a set of depth images }"
+    "{depth  | | Path to depth.txt file listing a set of depth images }"
     "{camera | | Index of depth camera to be used as a depth source }"
     "{coarse | | Run on coarse settings (fast but ugly) or on default (slow but looks better),"
         " in coarse mode points and normals are displayed }"
     "{idle   | | Do not run KinFu, just display depth frames }"
+    "{record | | Write depth frames to specified file list"
+        " (the same format as for the 'depth' key) }"
 };
 
 static const std::string message =
@@ -230,9 +261,18 @@ int main(int argc, char **argv)
 {
     bool coarse = false;
     bool idle = false;
+    string recordPath;
 
     CommandLineParser parser(argc, argv, keys);
     parser.about(message);
+
+    if(!parser.check())
+    {
+        parser.printMessage();
+        parser.printErrors();
+        return -1;
+    }
+
     if(parser.has("help"))
     {
         parser.printMessage();
@@ -242,12 +282,10 @@ int main(int argc, char **argv)
     {
         coarse = true;
     }
-
-    if(!parser.check())
+    if(parser.has("record"))
     {
-        parser.printMessage();
-        parser.printErrors();
-        return -1;
+        recordPath = parser.get<String>("record");
+    }
     if(parser.has("idle"))
     {
         idle = true;
@@ -266,6 +304,10 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    Ptr<DepthWriter> depthWriter;
+    if(!recordPath.empty())
+        depthWriter = makePtr<DepthWriter>(recordPath);
+
     Ptr<Params> params;
     Ptr<KinFu> kf;
 
@@ -278,8 +320,11 @@ int main(int argc, char **argv)
     ds.updateParams(*params);
 
     // Scene-specific params should be tuned for each scene individually
-    //params.volumePose = params.volumePose.translate(Vec3f(0.f, 0.f, 0.5f));
-    //params.tsdf_max_weight = 16;
+    //params->volumePose = params->volumePose.translate(Vec3f(0.f, 0.f, 0.5f));
+    //params->tsdf_max_weight = 16;
+
+    if(!idle)
+        kf = KinFu::create(params);
 
 #ifdef HAVE_OPENCV_VIZ
     cv::viz::Viz3d window(vizWindowName);
@@ -296,11 +341,14 @@ int main(int argc, char **argv)
 
     for(Mat frame = ds.getDepth(); !frame.empty(); frame = ds.getDepth())
     {
+        if(depthWriter)
+            depthWriter->append(frame);
+
 #ifdef HAVE_OPENCV_VIZ
         if(pause)
         {
-izWindowName);
-    window.setViewerPose(Aff            kf->getCloud(points, normals);
+            // doesn't happen in idle mode
+            kf->getCloud(points, normals);
             if(!points.empty() && !normals.empty())
             {
                 viz::WCloud cloudWidget(points, viz::Color::white());
@@ -326,20 +374,7 @@ izWindowName);
 #endif
         {
             Mat cvt8;
-ow.showWidget("text", viz::WText(cv::String("Move cam            convertScaleAbs(frame, cvt8, 0.25*256. / depthFactor);
-                   "Cl            {
- or press Q to resume"), Point()));
-                window.spin();
-                window.removeWidget("text");
-                window.registerMouseCallback(0);
-            }
-
-            pause = false;
-#ifdef HAVE_OPENCV_VIZ
-#endif
-        {
-                    {
-            float depthFactor =                    {
+            float depthFactor = params->depthFactor;
             convertScaleAbs(frame, cvt8, 0.25*256. / depthFactor);
             if(!idle)
             {
@@ -356,9 +391,8 @@ ow.showWidget("text", viz::WText(cv::String("Move cam            convertScaleAbs
                     if(coarse)
                     {
                         kf->getCloud(points, normals);
-                        if(!points.empty()                     }
-
-                      {
+                        if(!points.empty() && !normals.empty())
+                        {
                             viz::WCloud cloudWidget(points, viz::Color::white());
                             viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
                             window.showWidget("cloud", cloudWidget);
@@ -366,11 +400,22 @@ ow.showWidget("text", viz::WText(cv::String("Move cam            convertScaleAbs
                         }
                     }
 
-                 #endif
-
-dow.showWidget("worldAxes", viz::WCoordinateSystem());
+                    //window.showWidget("worldAxes", viz::WCoordinateSystem());
                     window.showWidget("cube", viz::WCube(Vec3d::all(0),
-           }
+                                                         Vec3d::all(kf->getParams().volumeSize)),
+                                      kf->getParams().volumePose);
+                    window.setViewerPose(kf->getPose());
+                    window.spinOnce(1, true);
+                }
+#endif
+
+                kf->render(rendered);
+            }
+            else
+            {
+                rendered = cvt8;
+            }
+        }
 
         int64 newTime = getTickCount();
         putText(rendered, cv::format("FPS: %2d press R to reset, P to pause, Q to quit",
@@ -384,14 +429,16 @@ dow.showWidget("worldAxes", viz::WCoordinateSystem());
         switch (c)
         {
         case 'r':
-ckCount();
-        putText(rendered, cv::format("FP            break;
+            if(!idle)
+                kf->reset();
+            break;
         case 'q':
             return 0;
 #ifdef HAVE_OPENCV_VIZ
         case 'p':
-requency()/(newTime - prevTime))),
-                P#endif
+            if(!idle)
+                pause = true;
+#endif
         default:
             break;
         }
