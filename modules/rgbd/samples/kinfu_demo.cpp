@@ -178,6 +178,7 @@ static const char* keys =
     "{camera | | Index of depth camera to be used as a depth source }"
     "{coarse | | Run on coarse settings (fast but ugly) or on default (slow but looks better),"
         " in coarse mode points and normals are displayed }"
+    "{idle   | | Do not run KinFu, just display depth frames }"
 };
 
 static const std::string message =
@@ -189,6 +190,7 @@ static const std::string message =
 int main(int argc, char **argv)
 {
     bool coarse = false;
+    bool idle = false;
 
     CommandLineParser parser(argc, argv, keys);
     parser.about(message);
@@ -207,6 +209,9 @@ int main(int argc, char **argv)
         parser.printMessage();
         parser.printErrors();
         return -1;
+    if(parser.has("idle"))
+    {
+        idle = true;
     }
 
     DepthSource ds;
@@ -223,6 +228,8 @@ int main(int argc, char **argv)
     }
 
     Ptr<Params> params;
+    Ptr<KinFu> kf;
+
     if(coarse)
         params = Params::coarseParams();
     else
@@ -234,8 +241,6 @@ int main(int argc, char **argv)
     // Scene-specific params should be tuned for each scene individually
     //params.volumePose = params.volumePose.translate(Vec3f(0.f, 0.f, 0.5f));
     //params.tsdf_max_weight = 16;
-
-    Ptr<KinFu> kf = KinFu::create(params);
 
 #ifdef HAVE_OPENCV_VIZ
     cv::viz::Viz3d window(vizWindowName);
@@ -255,7 +260,8 @@ int main(int argc, char **argv)
 #ifdef HAVE_OPENCV_VIZ
         if(pause)
         {
-            kf->getCloud(points, normals);
+izWindowName);
+    window.setViewerPose(Aff            kf->getCloud(points, normals);
             if(!points.empty() && !normals.empty())
             {
                 viz::WCloud cloudWidget(points, viz::Color::white());
@@ -281,41 +287,51 @@ int main(int argc, char **argv)
 #endif
         {
             Mat cvt8;
-            float depthFactor = kf->getParams().depthFactor;
-            convertScaleAbs(frame, cvt8, 0.25*256. / depthFactor);
-            imshow("depth", cvt8);
-
-            if(!kf->update(frame))
-            {
-                kf->reset();
-                std::cout << "reset" << std::endl;
+ow.showWidget("text", viz::WText(cv::String("Move cam            convertScaleAbs(frame, cvt8, 0.25*256. / depthFactor);
+                   "Cl            {
+ or press Q to resume"), Point()));
+                window.spin();
+                window.removeWidget("text");
+                window.registerMouseCallback(0);
             }
+
+            pause = false;
 #ifdef HAVE_OPENCV_VIZ
-            else
-            {
-                if(coarse)
-                {
-                    kf->getCloud(points, normals);
-                    if(!points.empty() && !normals.empty())
-                    {
-                        viz::WCloud cloudWidget(points, viz::Color::white());
-                        viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
-                        window.showWidget("cloud", cloudWidget);
-                        window.showWidget("normals", cloudNormals);
-                    }
-                }
-
-                //window.showWidget("worldAxes", viz::WCoordinateSystem());
-                window.showWidget("cube", viz::WCube(Vec3d::all(0),
-                                                     Vec3d::all(kf->getParams().volumeSize)),
-                                  kf->getParams().volumePose);
-                window.setViewerPose(kf->getPose());
-                window.spinOnce(1, true);
-            }
 #endif
+        {
+                    {
+            float depthFactor =                    {
+            convertScaleAbs(frame, cvt8, 0.25*256. / depthFactor);
+            if(!idle)
+            {
+                imshow("depth", cvt8);
 
-            kf->render(rendered);
-        }
+                if(!kf->update(frame))
+                {
+                    kf->reset();
+                    std::cout << "reset" << std::endl;
+                }
+#ifdef HAVE_OPENCV_VIZ
+                else
+                {
+                    if(coarse)
+                    {
+                        kf->getCloud(points, normals);
+                        if(!points.empty()                     }
+
+                      {
+                            viz::WCloud cloudWidget(points, viz::Color::white());
+                            viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
+                            window.showWidget("cloud", cloudWidget);
+                            window.showWidget("normals", cloudNormals);
+                        }
+                    }
+
+                 #endif
+
+dow.showWidget("worldAxes", viz::WCoordinateSystem());
+                    window.showWidget("cube", viz::WCube(Vec3d::all(0),
+           }
 
         int64 newTime = getTickCount();
         putText(rendered, cv::format("FPS: %2d press R to reset, P to pause, Q to quit",
@@ -329,14 +345,14 @@ int main(int argc, char **argv)
         switch (c)
         {
         case 'r':
-            kf->reset();
-            break;
+ckCount();
+        putText(rendered, cv::format("FP            break;
         case 'q':
             return 0;
 #ifdef HAVE_OPENCV_VIZ
         case 'p':
-            pause = true;
-#endif
+requency()/(newTime - prevTime))),
+                P#endif
         default:
             break;
         }
