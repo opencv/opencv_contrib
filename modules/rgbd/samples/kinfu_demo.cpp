@@ -49,36 +49,43 @@ static vector<string> readDepth(std::string fileList)
 }
 
 
-const Size kinect2FrameSize(512, 424);
-// approximate values, no guarantee to be correct
-const float kinect2Focal = 366.1f;
-const float kinect2Cx = 258.2f;
-const float kinect2Cy = 204.f;
+namespace Kinect2Params
+{
+    static const Size frameSize = Size(512, 424);
+    // approximate values, no guarantee to be correct
+    static const float focal = 366.1f;
+    static const float cx = 258.2f;
+    static const float cy = 204.f;
+    static const float k1 =  0.12f;
+    static const float k2 = -0.34f;
+    static const float k3 =  0.12f;
+};
 
 struct DepthSource
 {
 public:
     DepthSource() :
-        depthFileList(),
-        frameIdx(0),
-        vc(),
-        useKinect2Workarounds(true)
+        DepthSource("", -1)
     { }
 
     DepthSource(int cam) :
-        depthFileList(),
-        frameIdx(),
-        vc(VideoCaptureAPIs::CAP_OPENNI2 + cam),
-        useKinect2Workarounds(true)
+        DepthSource("", cam)
     { }
 
     DepthSource(String fileListName) :
-        depthFileList(readDepth(fileListName)),
+        DepthSource(fileListName, -1)
+    { }
+
+    DepthSource(String fileListName, int cam) :
+        depthFileList(fileListName.empty() ? vector<string>() : readDepth(fileListName)),
         frameIdx(0),
-        vc(),
+        vc( cam >= 0 ? VideoCapture(VideoCaptureAPIs::CAP_OPENNI2 + cam) : VideoCapture()),
+        undistortMap1(),
+        undistortMap2(),
         useKinect2Workarounds(true)
     { }
 
+    //TODO: what if to use UMat?
     Mat getDepth()
     {
         Mat out;
@@ -99,8 +106,14 @@ public:
             // workaround for Kinect 2
             if(useKinect2Workarounds)
             {
-                out = out(Rect(Point(), kinect2FrameSize));
-                cv::flip(out, out, 1);
+                out = out(Rect(Point(), Kinect2Params::frameSize));
+
+                Mat outCopy;
+                // linear remap adds gradient between valid and invalid pixels
+                // which causes garbage, use nearest instead
+                remap(out, outCopy, undistortMap1, undistortMap2, cv::INTER_NEAREST);
+
+                cv::flip(outCopy, out, 1);
             }
         }
         if (out.empty())
@@ -125,21 +138,47 @@ public:
 
             // it's recommended to calibrate sensor to obtain its intrinsics
             float fx, fy, cx, cy;
-            fx = fy = useKinect2Workarounds ? kinect2Focal : focal;
-            cx = useKinect2Workarounds ? kinect2Cx : w/2 - 0.5f;
-            cy = useKinect2Workarounds ? kinect2Cy : h/2 - 0.5f;
+            Size frameSize;
+            if(useKinect2Workarounds)
+            {
+                fx = fy = Kinect2Params::focal;
+                cx = Kinect2Params::cx;
+                cy = Kinect2Params::cy;
 
-            params.frameSize = useKinect2Workarounds ? kinect2FrameSize : Size(w, h);
-            params.intr = Matx33f(fx,  0, cx,
-                                   0, fy, cy,
-                                   0,  0,  1);
+                frameSize = Kinect2Params::frameSize;
+            }
+            else
+            {
+                fx = fy = focal;
+                cx = w/2 - 0.5f;
+                cy = h/2 - 0.5f;
+
+                frameSize = Size(w, h);
+            }
+
+            Matx33f camMatrix = Matx33f(fx,  0, cx,
+                                        0, fy, cy,
+                                        0,  0,  1);
+
+            params.frameSize = frameSize;
+            params.intr = camMatrix;
             params.depthFactor = 1000.f;
+
+            Matx<float, 1, 5> distCoeffs;
+            distCoeffs(0) = Kinect2Params::k1;
+            distCoeffs(1) = Kinect2Params::k2;
+            distCoeffs(4) = Kinect2Params::k3;
+            if(useKinect2Workarounds)
+                initUndistortRectifyMap(camMatrix, distCoeffs, cv::noArray(),
+                                        camMatrix, frameSize, CV_16SC2,
+                                        undistortMap1, undistortMap2);
         }
     }
 
     vector<string> depthFileList;
     size_t frameIdx;
     VideoCapture vc;
+    Mat undistortMap1, undistortMap2;
     bool useKinect2Workarounds;
 };
 
