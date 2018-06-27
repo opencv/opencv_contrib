@@ -109,7 +109,7 @@ bool StaticSaliencySpectralResidual::computeSaliencyImpl( InputArray image, Outp
 
   //-- Get magnitude and phase of frequency spectrum --//
   cartToPolar( mv.at( 0 ), mv.at( 1 ), magnitude, angle, false );
-  log( magnitude, logAmplitude );
+  log( magnitude + Scalar( 1 ), logAmplitude );
   //-- Blur log amplitude with averaging filter --//
   blur( logAmplitude, logAmplitude_blur, Size( 3, 3 ), Point( -1, -1 ), BORDER_DEFAULT );
 
