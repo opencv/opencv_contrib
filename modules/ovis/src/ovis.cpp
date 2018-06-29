@@ -7,6 +7,7 @@
 #include <OgreApplicationContext.h>
 #include <OgreCameraMan.h>
 #include <OgreRectangle2D.h>
+#include <OgreCompositorManager.h>
 
 #include <opencv2/calib3d.hpp>
 
@@ -337,6 +338,23 @@ public:
 
         // ensure bgplane is visible
         bgplane->setVisible(true);
+    }
+
+    void setCompositors(const std::vector<String>& names)
+    {
+        Viewport* vp = frameSrc->getViewport(0);
+        CompositorManager& cm = CompositorManager::getSingleton();
+
+        cm.removeCompositorChain(vp); // remove previous configuration
+
+        for(size_t i = 0; i < names.size(); i++)
+        {
+            if (!cm.addCompositor(vp, names[i])) {
+                LogManager::getSingleton().logError("Failed to add compositor: " + names[i]);
+                continue;
+            }
+            cm.setCompositorEnabled(vp, names[i], true);
+        }
     }
 
     void setBackground(const Scalar& color)
