@@ -566,7 +566,7 @@ void CV_CharucoBoardCreation::run(int)
         Ptr<aruco::CharucoBoard> board_millimeters = aruco::CharucoBoard::create(
             n, n, squareSize_mm, squareSize_mm * markerSizeFactor, dictionary);
 
-        for (int i = 0; i < board_meters->nearestMarkerIdx.size(); i++)
+        for (size_t i = 0; i < board_meters->nearestMarkerIdx.size(); i++)
         {
             if (board_meters->nearestMarkerIdx[i].size() != board_millimeters->nearestMarkerIdx[i].size() ||
                 board_meters->nearestMarkerIdx[i][0] != board_millimeters->nearestMarkerIdx[i][0])
