@@ -587,7 +587,6 @@ TEST(CV_CharucoDetection, accuracy) {
     test.safe_run();
 }
 
-
 TEST(CV_CharucoPoseEstimation, accuracy) {
     CV_CharucoPoseEstimation test;
     test.safe_run();
