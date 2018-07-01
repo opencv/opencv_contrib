@@ -162,8 +162,10 @@ public:
         alphaDerive(ald),
         verbose(false)
     {
-        CV_Assert(img.depth()==CV_8UC1  || img.depth()==CV_8SC1  || img.depth()==CV_16SC1 || img.depth() == CV_16UC1 || img.depth() == CV_32FC1);
-        CV_Assert(dst.depth()==CV_32FC1);
+        int type = img.depth();
+        CV_CheckType(type, type == CV_8UC1 || type == CV_8SC1 || type == CV_16SC1 || type == CV_16UC1 || type == CV_32FC1, "Wrong input type for GradientDericheYCols");
+        type = dst.depth();
+        CV_CheckType(type, type==CV_32FC1, "Wrong output type for GradientDericheYCols");
     }
     void Verbose(bool b) { verbose = b; }
     virtual void operator()(const Range& range) const CV_OVERRIDE
@@ -212,8 +214,10 @@ public:
         alphaMoyenne(alm),
         verbose(false)
     {
-        CV_Assert(img.depth()==CV_32FC1);
-        CV_Assert(dst.depth()==CV_32FC1);
+        int type = img.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong input type for GradientDericheYRows");
+        type = dst.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong output type for GradientDericheYRows");
     }
     void Verbose(bool b) { verbose = b; }
     virtual void operator()(const Range& range) const CV_OVERRIDE
@@ -286,8 +290,10 @@ public:
         alphaMoyenne(alm),
         verbose(false)
     {
-        CV_Assert(img.depth()==CV_32FC1);
-        CV_Assert(dst.depth()==CV_32FC1);
+        int type = img.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong input type for GradientDericheXCols");
+        type = dst.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong output type for GradientDericheXCols");
     }
     void Verbose(bool b) { verbose = b; }
     virtual void operator()(const Range& range) const CV_OVERRIDE
@@ -362,8 +368,10 @@ public:
         alphaDerive(ald),
         verbose(false)
     {
-        CV_Assert(img.depth()==CV_8UC1 || img.depth()==CV_8SC1 || img.depth()==CV_16SC1 || img.depth()==CV_16UC1 || img.depth() == CV_32FC1);
-        CV_Assert(dst.depth()==CV_32FC1);
+        int type = img.depth();
+        CV_CheckType(type, type == CV_8UC1 || type == CV_8SC1 || type == CV_16SC1 || type == CV_16UC1 || type == CV_32FC1, "Wrong input type for GradientDericheXRows");
+        type = dst.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong output type for GradientDericheXRows");
     }
     void Verbose(bool b) { verbose = b; }
     virtual void operator()(const Range& range) const CV_OVERRIDE

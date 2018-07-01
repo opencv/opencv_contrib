@@ -144,8 +144,10 @@ public:
         w(ww),
         verbose(false)
     {
-        CV_Assert(img.depth()==CV_8UC1 || img.depth()==CV_16SC1 || img.depth() == CV_16UC1 || img.depth() == CV_32FC1);
-        CV_Assert(dst.depth()==CV_32FC1);
+        int type = img.depth();
+        CV_CheckType(type, type == CV_8UC1 || type == CV_8SC1 || type == CV_16SC1 || type == CV_16UC1 || type == CV_32FC1, "Wrong input type for GradientPaillouY");
+        type = dst.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong output type for GradientPaillouYCols");
     }
     void Verbose(bool b){verbose=b;}
     virtual void operator()(const Range& range) const CV_OVERRIDE
@@ -196,7 +198,10 @@ public:
         w(ww),
         verbose(false)
     {
-        CV_Assert(img.depth()==CV_32FC1);
+        int type = img.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong input type for GradientPaillouYRows");
+        type = dst.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong output type for GradientPaillouYRows");
     }
     void Verbose(bool b){verbose=b;}
     virtual void operator()(const Range& range) const CV_OVERRIDE
@@ -267,7 +272,10 @@ public:
         w(ww),
         verbose(false)
     {
-        CV_Assert(img.depth()==CV_32FC1);
+        int type = img.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong input type for GradientPaillouXCols");
+        type = dst.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong output type for GradientPaillouXCols");
     }
     void Verbose(bool b){verbose=b;}
     virtual void operator()(const Range& range) const CV_OVERRIDE
@@ -338,8 +346,10 @@ public:
         w(ww),
         verbose(false)
     {
-        CV_Assert(img.depth() == CV_8UC1 || img.depth() == CV_16SC1 || img.depth() == CV_16UC1 || img.depth() == CV_32FC1);
-        CV_Assert(im1.depth() == CV_32FC1);
+        int type = img.depth();
+        CV_CheckType(type, type == CV_8UC1 || type == CV_8SC1 || type == CV_16SC1 || type == CV_16UC1 || type == CV_32FC1, "Wrong input type for GradientPaillouXRows");
+        type = im1.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong output type for GradientPaillouXRows");
     }
     void Verbose(bool b){verbose=b;}
     virtual void operator()(const Range& range) const CV_OVERRIDE
