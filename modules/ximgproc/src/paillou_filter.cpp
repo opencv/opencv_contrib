@@ -143,12 +143,13 @@ public:
         a(aa),
         w(ww),
         verbose(false)
-    {}
+    {
+        CV_Assert(img.depth()==CV_8UC1 || img.depth()==CV_16SC1 || img.depth() == CV_16UC1 || img.depth() == CV_32FC1);
+        CV_Assert(dst.depth()==CV_32FC1);
+    }
     void Verbose(bool b){verbose=b;}
     virtual void operator()(const Range& range) const CV_OVERRIDE
     {
-        CV_Assert(img.depth()==CV_8UC1 || img.depth()==CV_16SC1 || img.depth()==CV_16UC1);
-        CV_Assert(dst.depth()==CV_32FC1);
         if (verbose)
             std::cout << getThreadNum()<<"# :Start from row " << range.start << " to "  << range.end-1<<" ("<<range.end-range.start<<" loops)" << std::endl;
 
@@ -162,8 +163,11 @@ public:
         case CV_16S :
             VerticalIIRFilter<short>(img, dst, range, a, w);
             break;
-        case CV_16U :
+        case CV_16U:
             VerticalIIRFilter<short>(img, dst, range, a, w);
+            break;
+        case CV_32F:
+            VerticalIIRFilter<float>(img, dst, range, a, w);
             break;
         default :
             return ;
@@ -191,11 +195,12 @@ public:
         a(aa),
         w(ww),
         verbose(false)
-    {}
+    {
+        CV_Assert(img.depth()==CV_32FC1);
+    }
     void Verbose(bool b){verbose=b;}
     virtual void operator()(const Range& range) const CV_OVERRIDE
     {
-        CV_Assert(img.depth()==CV_32FC1);
         if (verbose)
             std::cout << getThreadNum()<<"# :Start from row " << range.start << " to "  << range.end-1<<" ("<<range.end-range.start<<" loops)" << std::endl;
         float *iy,*iy0;
@@ -261,11 +266,12 @@ public:
         a(aa),
         w(ww),
         verbose(false)
-    {}
+    {
+        CV_Assert(img.depth()==CV_32FC1);
+    }
     void Verbose(bool b){verbose=b;}
     virtual void operator()(const Range& range) const CV_OVERRIDE
     {
-        CV_Assert(img.depth()==CV_32FC1);
         if (verbose)
             std::cout << getThreadNum() << "# :Start from row " << range.start << " to " << range.end - 1 << " (" << range.end - range.start << " loops)" << std::endl;
         float *iy, *iy0;
@@ -331,7 +337,10 @@ public:
         a(aa),
         w(ww),
         verbose(false)
-    {}
+    {
+        CV_Assert(img.depth() == CV_8UC1 || img.depth() == CV_16SC1 || img.depth() == CV_16UC1 || img.depth() == CV_32FC1);
+        CV_Assert(im1.depth() == CV_32FC1);
+    }
     void Verbose(bool b){verbose=b;}
     virtual void operator()(const Range& range) const CV_OVERRIDE
     {
@@ -349,8 +358,11 @@ public:
         case CV_16S :
             HorizontalIIRFilter<short>(img, im1, range, a, w);
             break;
-        case CV_16U :
+        case CV_16U:
             HorizontalIIRFilter<ushort>(img, im1, range, a, w);
+            break;
+        case CV_32F:
+            HorizontalIIRFilter<float>(img, im1, range, a, w);
             break;
         default :
             return ;
