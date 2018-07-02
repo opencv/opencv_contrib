@@ -1,42 +1,9 @@
-/*
- *  By downloading, copying, installing or using the software you agree to this license.
- *  If you do not agree to this license, do not download, install,
- *  copy or use the software.
- *
- *
- *  License Agreement
- *  For Open Source Computer Vision Library
- *  (3 - clause BSD License)
- *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met :
- *
- *  * Redistributions of source code must retain the above copyright notice,
- *  this list of conditions and the following disclaimer.
- *
- *  * Redistributions in binary form must reproduce the above copyright notice,
- *  this list of conditions and the following disclaimer in the documentation
- *  and / or other materials provided with the distribution.
- *
- *  * Neither the names of the copyright holders nor the names of the contributors
- *  may be used to endorse or promote products derived from this software
- *  without specific prior written permission.
- *
- *  This software is provided by the copyright holders and contributors "as is" and
- *  any express or implied warranties, including, but not limited to, the implied
- *  warranties of merchantability and fitness for a particular purpose are disclaimed.
- *  In no event shall copyright holders or contributors be liable for any direct,
- *  indirect, incidental, special, exemplary, or consequential damages
- *  (including, but not limited to, procurement of substitute goods or services;
- *  loss of use, data, or profits; or business interruption) however caused
- *  and on any theory of liability, whether in contract, strict liability,
- *  or tort(including negligence or otherwise) arising in any way out of
- *  the use of this software, even if advised of the possibility of such damage.
- */
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 
 #ifndef __OPENCV_RUN_LENGTH_MORPHOLOGY_HPP__
 #define __OPENCV_RUN_LENGTH_MORPHOLOGY_HPP__
-#ifdef __cplusplus
 
 #include <opencv2/core.hpp>
 
@@ -55,7 +22,7 @@ namespace rl {
 * @param   src         input array (single-channel).
 * @param   rlDest      resulting run length encoded image.
 * @param   thresh      threshold value.
-* @param   type        thresholding type (only THRESH_BINARY and THRESH_BINARY_INV are supported)
+* @param   type        thresholding type (only cv::THRESH_BINARY and cv::THRESH_BINARY_INV are supported)
 *
 */
 CV_EXPORTS void threshold(InputArray src, OutputArray rlDest, double thresh, int type);
@@ -130,7 +97,7 @@ CV_EXPORTS bool isRLMorphologyPossible(InputArray rlStructuringElement);
 CV_EXPORTS void createRLEImage(std::vector<cv::Point3i>& runs, OutputArray res, Size size = Size(0, 0));
 
 /**
-* @brief   Applies a morphological operation to an run-length encoded binary image.
+* @brief   Applies a morphological operation to a run-length encoded binary image.
 *
 *
 * @param   rlSrc       input image
@@ -149,5 +116,4 @@ CV_EXPORTS void morphologyEx(InputArray rlSrc, OutputArray rlDest, int op, Input
 }
 }
 }
-#endif
 #endif
