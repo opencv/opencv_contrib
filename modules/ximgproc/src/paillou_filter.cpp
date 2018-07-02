@@ -143,12 +143,15 @@ public:
         a(aa),
         w(ww),
         verbose(false)
-    {}
+    {
+        int type = img.depth();
+        CV_CheckType(type, type == CV_8UC1 || type == CV_8SC1 || type == CV_16SC1 || type == CV_16UC1 || type == CV_32FC1, "Wrong input type for GradientPaillouY");
+        type = dst.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong output type for GradientPaillouYCols");
+    }
     void Verbose(bool b){verbose=b;}
     virtual void operator()(const Range& range) const CV_OVERRIDE
     {
-        CV_Assert(img.depth()==CV_8UC1 || img.depth()==CV_16SC1 || img.depth()==CV_16UC1);
-        CV_Assert(dst.depth()==CV_32FC1);
         if (verbose)
             std::cout << getThreadNum()<<"# :Start from row " << range.start << " to "  << range.end-1<<" ("<<range.end-range.start<<" loops)" << std::endl;
 
@@ -162,8 +165,11 @@ public:
         case CV_16S :
             VerticalIIRFilter<short>(img, dst, range, a, w);
             break;
-        case CV_16U :
+        case CV_16U:
             VerticalIIRFilter<short>(img, dst, range, a, w);
+            break;
+        case CV_32F:
+            VerticalIIRFilter<float>(img, dst, range, a, w);
             break;
         default :
             return ;
@@ -191,11 +197,15 @@ public:
         a(aa),
         w(ww),
         verbose(false)
-    {}
+    {
+        int type = img.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong input type for GradientPaillouYRows");
+        type = dst.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong output type for GradientPaillouYRows");
+    }
     void Verbose(bool b){verbose=b;}
     virtual void operator()(const Range& range) const CV_OVERRIDE
     {
-        CV_Assert(img.depth()==CV_32FC1);
         if (verbose)
             std::cout << getThreadNum()<<"# :Start from row " << range.start << " to "  << range.end-1<<" ("<<range.end-range.start<<" loops)" << std::endl;
         float *iy,*iy0;
@@ -261,11 +271,15 @@ public:
         a(aa),
         w(ww),
         verbose(false)
-    {}
+    {
+        int type = img.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong input type for GradientPaillouXCols");
+        type = dst.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong output type for GradientPaillouXCols");
+    }
     void Verbose(bool b){verbose=b;}
     virtual void operator()(const Range& range) const CV_OVERRIDE
     {
-        CV_Assert(img.depth()==CV_32FC1);
         if (verbose)
             std::cout << getThreadNum() << "# :Start from row " << range.start << " to " << range.end - 1 << " (" << range.end - range.start << " loops)" << std::endl;
         float *iy, *iy0;
@@ -331,7 +345,12 @@ public:
         a(aa),
         w(ww),
         verbose(false)
-    {}
+    {
+        int type = img.depth();
+        CV_CheckType(type, type == CV_8UC1 || type == CV_8SC1 || type == CV_16SC1 || type == CV_16UC1 || type == CV_32FC1, "Wrong input type for GradientPaillouXRows");
+        type = im1.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong output type for GradientPaillouXRows");
+    }
     void Verbose(bool b){verbose=b;}
     virtual void operator()(const Range& range) const CV_OVERRIDE
     {
@@ -349,8 +368,11 @@ public:
         case CV_16S :
             HorizontalIIRFilter<short>(img, im1, range, a, w);
             break;
-        case CV_16U :
+        case CV_16U:
             HorizontalIIRFilter<ushort>(img, im1, range, a, w);
+            break;
+        case CV_32F:
+            HorizontalIIRFilter<float>(img, im1, range, a, w);
             break;
         default :
             return ;
