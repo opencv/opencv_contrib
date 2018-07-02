@@ -135,6 +135,7 @@ HorizontalIIRFilter(Mat &img, Mat &dst, const Range &r, double alphaDerive)
         j = cols - 1;
         g2[j] = (a3 + a4)* *c1;
         j--;
+        c1--;
         g2[j] = (a3 + a4) * c1[1] + b1 * g2[j + 1];
         j--;
         c1--;
@@ -160,15 +161,17 @@ public:
         dst(d),
         alphaDerive(ald),
         verbose(false)
-    {}
+    {
+        int type = img.depth();
+        CV_CheckType(type, type == CV_8UC1 || type == CV_8SC1 || type == CV_16SC1 || type == CV_16UC1 || type == CV_32FC1, "Wrong input type for GradientDericheYCols");
+        type = dst.depth();
+        CV_CheckType(type, type==CV_32FC1, "Wrong output type for GradientDericheYCols");
+    }
     void Verbose(bool b) { verbose = b; }
     virtual void operator()(const Range& range) const CV_OVERRIDE
     {
-        CV_Assert(img.depth()==CV_8UC1  || img.depth()==CV_8SC1  || img.depth()==CV_16SC1 || img.depth()==CV_16UC1);
-        CV_Assert(dst.depth()==CV_32FC1);
         if (verbose)
             std::cout << getThreadNum() << "# :Start from row " << range.start << " to " << range.end - 1 << " (" << range.end - range.start << " loops)" << std::endl;
-
 
         switch (img.depth()) {
         case CV_8U:
@@ -182,6 +185,9 @@ public:
             break;
         case CV_16S:
             VerticalIIRFilter<short>(img, dst, range, alphaDerive);
+            break;
+        case CV_32F:
+            VerticalIIRFilter<float>(img, dst, range, alphaDerive);
             break;
         default:
             return;
@@ -207,12 +213,15 @@ public:
         dst(d),
         alphaMoyenne(alm),
         verbose(false)
-    {}
+    {
+        int type = img.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong input type for GradientDericheYRows");
+        type = dst.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong output type for GradientDericheYRows");
+    }
     void Verbose(bool b) { verbose = b; }
     virtual void operator()(const Range& range) const CV_OVERRIDE
     {
-        CV_Assert(img.depth()==CV_32FC1);
-        CV_Assert(dst.depth()==CV_32FC1);
         if (verbose)
             std::cout << getThreadNum() << "# :Start from row " << range.start << " to " << range.end - 1 << " (" << range.end - range.start << " loops)" << std::endl;
         float *f1, *f2;
@@ -280,12 +289,15 @@ public:
         dst(d),
         alphaMoyenne(alm),
         verbose(false)
-    {}
+    {
+        int type = img.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong input type for GradientDericheXCols");
+        type = dst.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong output type for GradientDericheXCols");
+    }
     void Verbose(bool b) { verbose = b; }
     virtual void operator()(const Range& range) const CV_OVERRIDE
     {
-        CV_Assert(img.depth()==CV_32FC1);
-        CV_Assert(dst.depth()==CV_32FC1);
         if (verbose)
             std::cout << getThreadNum() << "# :Start from row " << range.start << " to " << range.end - 1 << " (" << range.end - range.start << " loops)" << std::endl;
         float                *f1, *f2;
@@ -355,12 +367,15 @@ public:
         dst(d),
         alphaDerive(ald),
         verbose(false)
-    {}
+    {
+        int type = img.depth();
+        CV_CheckType(type, type == CV_8UC1 || type == CV_8SC1 || type == CV_16SC1 || type == CV_16UC1 || type == CV_32FC1, "Wrong input type for GradientDericheXRows");
+        type = dst.depth();
+        CV_CheckType(type, type == CV_32FC1, "Wrong output type for GradientDericheXRows");
+    }
     void Verbose(bool b) { verbose = b; }
     virtual void operator()(const Range& range) const CV_OVERRIDE
     {
-        CV_Assert(img.depth()==CV_8UC1 || img.depth()==CV_8SC1 || img.depth()==CV_16SC1 || img.depth()==CV_16UC1);
-        CV_Assert(dst.depth()==CV_32FC1);
         if (verbose)
             std::cout << getThreadNum() << "# :Start from row " << range.start << " to " << range.end - 1 << " (" << range.end - range.start << " loops)" << std::endl;
 
@@ -376,6 +391,9 @@ public:
             break;
         case CV_16S:
             HorizontalIIRFilter<short>(img, dst, range, alphaDerive);
+            break;
+        case CV_32F:
+            HorizontalIIRFilter<float>(img, dst, range, alphaDerive);
             break;
         default:
             return;

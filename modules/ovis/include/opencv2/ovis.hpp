@@ -63,6 +63,16 @@ public:
     CV_WRAP_AS(setBackgroundColor) virtual void setBackground(const Scalar& color) = 0;
 
     /**
+     * enable an ordered chain of full-screen post processing effects
+     *
+     * this way you can add distortion or SSAO effects.
+     * The effects themselves must be defined inside Ogre .compositor scripts.
+     * @see addResourceLocation
+     * @param names compositor names that will be applied in order of appearance
+     */
+    CV_WRAP virtual void setCompositors(const std::vector<String>& names) = 0;
+
+    /**
      * place an entity of an mesh in the scene
      *
      * the mesh needs to be created beforehand. Either programmatically
