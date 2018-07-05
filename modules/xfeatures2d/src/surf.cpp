@@ -676,7 +676,7 @@ struct SURFInvoker : ParallelLoopBody
             /* Extract a window of pixels around the keypoint of size 20s */
             int win_size = (int)((PATCH_SZ+1)*s);
             CV_Assert( imaxSize >= win_size );
-            Mat win(win_size, win_size, CV_8U, winbuf);
+            Mat win(win_size, win_size, CV_8U, winbuf.data());
 
             if( !upright )
             {

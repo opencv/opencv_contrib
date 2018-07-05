@@ -94,7 +94,7 @@ void ptsort_(struct pt *pts, int sz)
 
     // Use stack storage if it's not too big.
     cv::AutoBuffer<struct pt, 1024> _tmp_stack(sz);
-    memcpy(_tmp_stack, pts, sizeof(struct pt) * sz);
+    memcpy(_tmp_stack.data(), pts, sizeof(struct pt) * sz);
 
     int asz = sz/2;
     int bsz = sz - asz;
@@ -470,11 +470,11 @@ int quad_segment_agg(int sz, struct line_fit_pt *lfps, int indices[4]){
     int rvalloc_pos = 0;
     int rvalloc_size = 3*sz;
     cv::AutoBuffer<struct remove_vertex, 0> rvalloc_(std::max(1, rvalloc_size));
-    memset(rvalloc_, 0, sizeof(rvalloc_[0]) * rvalloc_.size()); // TODO Add AutoBuffer zero fill
-    struct remove_vertex *rvalloc = rvalloc_;
+    memset(rvalloc_.data(), 0, sizeof(rvalloc_[0]) * rvalloc_.size()); // TODO Add AutoBuffer zero fill
+    struct remove_vertex *rvalloc = rvalloc_.data();
     cv::AutoBuffer<struct segment, 0> segs_(std::max(1, sz)); // TODO Add AutoBuffer zero fill
-    memset(segs_, 0, sizeof(segs_[0]) * segs_.size());
-    struct segment *segs = segs_;
+    memset(segs_.data(), 0, sizeof(segs_[0]) * segs_.size());
+    struct segment *segs = segs_.data();
 
     // populate with initial entries
     for (int i = 0; i < sz; i++) {
@@ -753,8 +753,8 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
     // efficiently computed for any contiguous range of indices.
 
     cv::AutoBuffer<struct line_fit_pt, 64> lfps_(sz);
-    memset(lfps_, 0, sizeof(lfps_[0]) * lfps_.size()); // TODO Add AutoBuffer zero fill
-    struct line_fit_pt *lfps = lfps_;
+    memset(lfps_.data(), 0, sizeof(lfps_[0]) * lfps_.size()); // TODO Add AutoBuffer zero fill
+    struct line_fit_pt *lfps = lfps_.data();
 
     for (int i = 0; i < sz; i++) {
         struct pt *p;
