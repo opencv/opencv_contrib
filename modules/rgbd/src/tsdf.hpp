@@ -34,6 +34,9 @@ public:
 
     float edgeSize;
     int edgeResolution;
+    float voxelSize;
+    float voxelSizeInv;
+    float truncDist;
     int maxWeight;
     cv::Affine3f pose;
 };

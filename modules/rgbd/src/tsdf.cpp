@@ -70,17 +70,18 @@ public:
 
     int neighbourCoords[8];
     int dims[4];
-    float voxelSize;
-    float voxelSizeInv;
     float truncDist;
     float raycastStepFactor;
 };
 
 
-TSDFVolume::TSDFVolume(int _res, float _size, Affine3f _pose, float /*_truncDist*/, int _maxWeight,
+TSDFVolume::TSDFVolume(int _res, float _size, Affine3f _pose, float _truncDist, int _maxWeight,
                        float /*_raycastStepFactor*/) :
     edgeSize(_size),
     edgeResolution(_res),
+    voxelSize(edgeSize/edgeResolution),
+    voxelSizeInv(edgeResolution/edgeSize),
+    truncDist(std::max(_truncDist, 2.1f * voxelSize)),
     maxWeight(_maxWeight),
     pose(_pose)
 { }
@@ -110,11 +111,8 @@ TSDFVolumeCPU::TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _t
     for(int i = 0; i < 8; i++)
         neighbourCoords[i] = coords[i];
 
-    voxelSize = edgeSize/edgeResolution;
-    voxelSizeInv = edgeResolution/edgeSize;
     volume = Volume(1, _res * _res * _res);
 
-    truncDist = std::max (_truncDist, 2.1f * voxelSize);
     raycastStepFactor = _raycastStepFactor;
 
     reset();

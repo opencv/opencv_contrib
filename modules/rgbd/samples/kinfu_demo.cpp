@@ -186,8 +186,8 @@ public:
             }
 
             Matx33f camMatrix = Matx33f(fx,  0, cx,
-                                        0, fy, cy,
-                                        0,  0,  1);
+                                        0,  fy, cy,
+                                        0,   0,  1);
 
             params.frameSize = frameSize;
             params.intr = camMatrix;

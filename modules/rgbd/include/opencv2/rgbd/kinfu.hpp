@@ -50,8 +50,9 @@ struct CV_EXPORTS_W Params
     /** @brief pre-scale per 1 meter for input values
 
     Typical values are:
-    * 5000 per 1 meter for the 16-bit PNG files of TUM database
-    * 1 per 1 meter for the 32-bit float images in the ROS bag files
+         * 5000 per 1 meter for the 16-bit PNG files of TUM database
+         * 1000 per 1 meter for Kinect 2 device
+         * 1 per 1 meter for the 32-bit float images in the ROS bag files
     */
     CV_PROP_RW float depthFactor;
 
@@ -132,7 +133,7 @@ struct CV_EXPORTS_W Params
   which are a sort of distances to the surface (for details read the @cite kinectfusion article about TSDF).
   There is no interface to that representation yet.
 
-  This implementation is based on (kinfu-remake)[https://github.com/Nerei/kinfu_remake].
+  This implementation is based on [kinfu-remake](https://github.com/Nerei/kinfu_remake).
 */
 class CV_EXPORTS_W KinFu
 {
