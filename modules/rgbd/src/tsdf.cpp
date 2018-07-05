@@ -1142,6 +1142,8 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
 
 ///////// GPU implementation /////////
 
+#ifdef HAVE_OPENCL
+
 class TSDFVolumeGPU : public TSDFVolume
 {
 public:
@@ -1154,29 +1156,82 @@ public:
                          cv::Ptr<FrameGenerator> frameGenerator, cv::Ptr<Frame> frame) const override;
 
     virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
-    virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const override;
+    virtual void fetchNormals(cv::InputArray points, cv::OutputArray normals) const override;
 
     virtual void reset() override;
+
+    // edgeResolution^3 array
+    // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
+    // elem is CV_32FC2, read as (float, int)
+    UMat volume;
+
 };
 
 
 TSDFVolumeGPU::TSDFVolumeGPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-              float _raycastStepFactor) :
-    TSDFVolume(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor)
-{ }
+                             float _raycastStepFactor) :
+    TSDFVolume(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor),
+{
+    CV_Assert(_res % 32 == 0);
+
+    volume = UMat(1, _res*_res*_res, CV_32FC2);
+
+    reset();
+}
 
 
 // zero volume, leave rest params the same
 void TSDFVolumeGPU::reset()
 {
-    throw std::runtime_error("Not implemented");
+    ScopeTime st("tsdf: reset");
+
+    volume.setTo(Scalar(0, 0));
+
 }
 
 
 // use depth instead of distance (optimization)
-void TSDFVolumeGPU::integrate(cv::Ptr<Frame> /*depth*/, float /*depthFactor*/, cv::Affine3f /*cameraPose*/, Intr /*intrinsics*/)
+void TSDFVolumeGPU::integrate(cv::Ptr<Frame> _depth, float depthFactor,
+                              cv::Affine3f cameraPose, Intr intrinsics)
 {
-    throw std::runtime_error("Not implemented");
+    ScopeTime st("tsdf: integrate");
+
+    UMat depth;
+    _depth->getDepth(depth);
+
+    cv::String errorStr;
+    cv::String name = "integrate";
+    ocl::ProgramSource source = ocl::rgbd::tsdf_oclsrc;
+    cv::String options;
+    ocl::Kernel k;
+    k.create(name.c_str(), source, options, &errorStr);
+
+    if(k.empty())
+        throw std::runtime_error("Failed to create kernel" + errorStr);
+
+    cv::Affine3f vol2cam(cameraPose.inv() * pose);
+    UMat vol2camRot;
+    Mat(vol2cam.rotation()).copyTo(vol2camRot);
+    float dfac = 1.f/depthFactor;
+
+
+    k.args(ocl::KernelArg::ReadOnly(depth),
+           ocl::KernelArg::PtrReadWrite(volume),
+           ocl::KernelArg::PtrReadOnly(vol2camRot),
+           voxelSize,
+           edgeResolution,
+           intrinsics.fx, intrinsics.fy, intrinsics.cx, intrinsics.cy,
+           dfac,
+           truncDist,
+           maxWeight);
+
+    size_t globalSize[2];
+    globalSize[0] = (size_t)edgeResolution;
+    globalSize[1] = (size_t)edgeResolution;
+
+    if(!k.run(2, globalSize, NULL, false))
+        throw std::runtime_error("Failed to run kernel");
+
 }
 
 
@@ -1197,6 +1252,8 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray /*points*/, OutputArray /*nor
     throw std::runtime_error("Not implemented");
 }
 
+#endif
+
 cv::Ptr<TSDFVolume> makeTSDFVolume(cv::kinfu::Params::PlatformType t,
                                    int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                                    float _raycastStepFactor)
@@ -1207,8 +1264,12 @@ cv::Ptr<TSDFVolume> makeTSDFVolume(cv::kinfu::Params::PlatformType t,
         return cv::makePtr<TSDFVolumeCPU>(_res, _size, _pose, _truncDist, _maxWeight,
                                           _raycastStepFactor);
     case cv::kinfu::Params::PlatformType::PLATFORM_GPU:
+#ifdef HAVE_OPENCL
         return cv::makePtr<TSDFVolumeGPU>(_res, _size, _pose, _truncDist, _maxWeight,
                                           _raycastStepFactor);
+#else
+        throw std::runtime_error("This platform is not available");
+#endif
     default:
         return cv::Ptr<TSDFVolume>();
     }
