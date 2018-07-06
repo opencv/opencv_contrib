@@ -70,7 +70,6 @@ public:
 
     int neighbourCoords[8];
     int dims[4];
-    float truncDist;
     float raycastStepFactor;
 };
 
@@ -79,9 +78,9 @@ TSDFVolume::TSDFVolume(int _res, float _size, Affine3f _pose, float _truncDist, 
                        float /*_raycastStepFactor*/) :
     edgeSize(_size),
     edgeResolution(_res),
-    voxelSize(edgeSize/edgeResolution),
-    voxelSizeInv(edgeResolution/edgeSize),
-    truncDist(std::max(_truncDist, 2.1f * voxelSize)),
+    voxelSize(_size/_res),
+    voxelSizeInv(_res/_size),
+    truncDist(std::max(_truncDist, 2.1f * (_size/_res))),
     maxWeight(_maxWeight),
     pose(_pose)
 { }
@@ -220,8 +219,8 @@ struct IntegrateInvoker : ParallelLoopBody
         volume(_volume),
         depth(_depth),
         proj(intrinsics.makeProjector()),
-        vol2cam(cameraPose.inv() * volume.pose),
-        truncDistInv(1.f/volume.truncDist),
+        vol2cam(cameraPose.inv() * _volume.pose),
+        truncDistInv(1.f/_volume.truncDist),
         dfac(1.f/depthFactor)
     {
         volDataStart = volume.volume[0];
