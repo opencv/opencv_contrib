@@ -15,3 +15,4 @@ Extended Image Processing
 - Deriche Filter
 - Pei&Lin Normalization
 - Ridge Detection Filter
+- Binary morphology on run-length encoded images
