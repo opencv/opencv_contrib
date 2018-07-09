@@ -112,6 +112,8 @@ namespace cv
 namespace xfeatures2d
 {
 
+#ifdef OPENCV_ENABLE_NONFREE
+
 /*!
  SIFT implementation.
 
@@ -341,7 +343,7 @@ static float calcOrientationHist( const Mat& img, Point pt, int radius,
 
     float expf_scale = -1.f/(2.f * sigma * sigma);
     AutoBuffer<float> buf(len*4 + n+4);
-    float *X = buf, *Y = X + len, *Mag = X, *Ori = Y + len, *W = Ori + len;
+    float *X = buf.data(), *Y = X + len, *Mag = X, *Ori = Y + len, *W = Ori + len;
     float* temphist = W + len + 2;
 
     for( i = 0; i < n; i++ )
@@ -754,7 +756,7 @@ static void calcSIFTDescriptor( const Mat& img, Point2f ptf, float ori, float sc
     int rows = img.rows, cols = img.cols;
 
     AutoBuffer<float> buf(len*6 + histlen);
-    float *X = buf, *Y = X + len, *Mag = Y, *Ori = Mag + len, *W = Ori + len;
+    float *X = buf.data(), *Y = X + len, *Mag = Y, *Ori = Mag + len, *W = Ori + len;
     float *RBin = W + len, *CBin = RBin + len, *hist = CBin + len;
 
     for( i = 0; i < d+2; i++ )
@@ -1196,6 +1198,15 @@ void SIFT_Impl::detectAndCompute(InputArray _image, InputArray _mask,
         //printf("descriptor extraction time: %g\n", t*1000./tf);
     }
 }
+
+#else // ! #ifdef OPENCV_ENABLE_NONFREE
+Ptr<SIFT> SIFT::create( int, int, double, double, double )
+{
+    CV_Error(Error::StsNotImplemented,
+        "This algorithm is patented and is excluded in this configuration; "
+        "Set OPENCV_ENABLE_NONFREE CMake option and rebuild the library");
+}
+#endif
 
 }
 }

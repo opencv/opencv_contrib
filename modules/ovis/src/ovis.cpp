@@ -383,7 +383,12 @@ public:
     void removeEntity(const String& name) {
         SceneNode& node = _getSceneNode(sceneMgr, name);
         node.getAttachedObject(name)->detachFromParent();
+
+        // only one of the following will do something
+        sceneMgr->destroyLight(name);
         sceneMgr->destroyEntity(name);
+        sceneMgr->destroyCamera(name);
+
         sceneMgr->destroySceneNode(&node);
     }
 

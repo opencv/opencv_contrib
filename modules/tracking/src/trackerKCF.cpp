@@ -495,7 +495,7 @@ namespace cv{
       int rows = dst.rows, cols = dst.cols;
 
       AutoBuffer<float> _wc(cols);
-      float * const wc = (float *)_wc;
+      float * const wc = _wc.data();
 
       const float coeff0 = 2.0f * (float)CV_PI / (cols - 1);
       const float coeff1 = 2.0f * (float)CV_PI / (rows - 1);

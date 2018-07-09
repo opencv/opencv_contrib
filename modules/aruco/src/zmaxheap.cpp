@@ -49,9 +49,9 @@ static inline void _swap_default(zmaxheap_t *heap, int a, int b)
     heap->values[b] = t;
 
     cv::AutoBuffer<char> tmp(heap->el_sz);
-    memcpy(tmp, &heap->data[a*heap->el_sz], heap->el_sz);
+    memcpy(tmp.data(), &heap->data[a*heap->el_sz], heap->el_sz);
     memcpy(&heap->data[a*heap->el_sz], &heap->data[b*heap->el_sz], heap->el_sz);
-    memcpy(&heap->data[b*heap->el_sz], tmp, heap->el_sz);
+    memcpy(&heap->data[b*heap->el_sz], tmp.data(), heap->el_sz);
 }
 
 static inline void _swap_pointer(zmaxheap_t *heap, int a, int b)

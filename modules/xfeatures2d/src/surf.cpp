@@ -115,6 +115,8 @@ namespace cv
 namespace xfeatures2d
 {
 
+#ifdef OPENCV_ENABLE_NONFREE
+
 static const int   SURF_ORI_SEARCH_INC = 5;
 static const float SURF_ORI_SIGMA      = 2.5f;
 static const float SURF_DESC_SIGMA     = 3.3f;
@@ -676,7 +678,7 @@ struct SURFInvoker : ParallelLoopBody
             /* Extract a window of pixels around the keypoint of size 20s */
             int win_size = (int)((PATCH_SZ+1)*s);
             CV_Assert( imaxSize >= win_size );
-            Mat win(win_size, win_size, CV_8U, winbuf);
+            Mat win(win_size, win_size, CV_8U, winbuf.data());
 
             if( !upright )
             {
@@ -1004,6 +1006,16 @@ Ptr<SURF> SURF::create(double _threshold, int _nOctaves, int _nOctaveLayers, boo
 {
     return makePtr<SURF_Impl>(_threshold, _nOctaves, _nOctaveLayers, _extended, _upright);
 }
+
+
+#else // ! #ifdef OPENCV_ENABLE_NONFREE
+Ptr<SURF> SURF::create(double, int, int, bool, bool)
+{
+    CV_Error(Error::StsNotImplemented,
+        "This algorithm is patented and is excluded in this configuration; "
+        "Set OPENCV_ENABLE_NONFREE CMake option and rebuild the library");
+}
+#endif
 
 }
 }

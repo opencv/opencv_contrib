@@ -380,12 +380,7 @@ void DISOpticalFlowImpl::precomputeStructureTensor(Mat &dst_I0xx, Mat &dst_I0yy,
         }
     }
 
-    AutoBuffer<float> sum_xx_buf(ws), sum_yy_buf(ws), sum_xy_buf(ws), sum_x_buf(ws), sum_y_buf(ws);
-    float *sum_xx = (float *)sum_xx_buf;
-    float *sum_yy = (float *)sum_yy_buf;
-    float *sum_xy = (float *)sum_xy_buf;
-    float *sum_x = (float *)sum_x_buf;
-    float *sum_y = (float *)sum_y_buf;
+    AutoBuffer<float> sum_xx(ws), sum_yy(ws), sum_xy(ws), sum_x(ws), sum_y(ws);
     for (int j = 0; j < ws; j++)
     {
         sum_xx[j] = 0.0f;
