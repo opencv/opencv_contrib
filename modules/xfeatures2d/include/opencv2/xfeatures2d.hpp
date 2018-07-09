@@ -51,7 +51,7 @@ This section describes experimental algorithms for 2d feature detection.
     @defgroup xfeatures2d_nonfree Non-free 2D Features Algorithms
 
 This section describes two popular algorithms for 2d feature detection, SIFT and SURF, that are
-known to be patented. Use them at your own risk.
+known to be patented. You need to set the OPENCV_ENABLE_NONFREE option in cmake to use those. Use them at your own risk.
 
     @defgroup xfeatures2d_match Experimental 2D Features Matching Algorithm
 
