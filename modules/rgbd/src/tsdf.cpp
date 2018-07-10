@@ -1209,17 +1209,17 @@ void TSDFVolumeGPU::integrate(cv::Ptr<Frame> _depth, float depthFactor,
         throw std::runtime_error("Failed to create kernel" + errorStr);
 
     cv::Affine3f vol2cam(cameraPose.inv() * pose);
-    UMat vol2camRot;
-    Mat(vol2cam.rotation()).copyTo(vol2camRot);
+    UMat vol2camGpu;
+    Mat(vol2cam.matrix).copyTo(vol2camGpu);
     float dfac = 1.f/depthFactor;
-
 
     k.args(ocl::KernelArg::ReadOnly(depth),
            ocl::KernelArg::PtrReadWrite(volume),
-           ocl::KernelArg::PtrReadOnly(vol2camRot),
+           ocl::KernelArg::PtrReadOnly(vol2camGpu),
            voxelSize,
            edgeResolution,
-           intrinsics.fx, intrinsics.fy, intrinsics.cx, intrinsics.cy,
+           intrinsics.fx, intrinsics.fy,
+           intrinsics.cx, intrinsics.cy,
            dfac,
            truncDist,
            maxWeight);
@@ -1228,7 +1228,7 @@ void TSDFVolumeGPU::integrate(cv::Ptr<Frame> _depth, float depthFactor,
     globalSize[0] = (size_t)edgeResolution;
     globalSize[1] = (size_t)edgeResolution;
 
-    if(!k.run(2, globalSize, NULL, false))
+    if(!k.run(2, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
 
 }
