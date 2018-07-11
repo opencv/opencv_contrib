@@ -9,8 +9,7 @@
 __kernel void integrate(__global const char * depthptr,
                         int depth_step, int depth_offset,
                         int depth_rows, int depth_cols,
-//TODO:
-/* ? volatile */        __global float2 * volumeptr,
+                        __global float2 * volumeptr,
                         __global const float * vol2camptr,
                         const float voxelSize,
                         const int edgeResolution,
@@ -86,15 +85,13 @@ __kernel void integrate(__global const char * depthptr,
     for(int z = startZ; z < endZ; z++)
     {
         // optimization of the following:
-        //float3 volPt = float3(x, y, z)*voxelSize;
-        //float3 camSpacePt = vol2cam * volPt;
+        //float3 camSpacePt = vol2cam * ((float3)(x, y, z)*voxelSize);
         camSpacePt += zStep;
 
         if(camSpacePt.z <= 0)
             continue;
 
         float3 camPixVec = camSpacePt / camSpacePt.z;
-        // float3 camPixVec = (camSpacePt.xy / camSpacePt.z, 1.0f);
         float2 projected = fma(camPixVec.xy, fxy, cxy);
 
         float v;
@@ -119,17 +116,8 @@ __kernel void integrate(__global const char * depthptr,
             if(all(vv > 0))
             {
                 float2 t = projected - ip;
-                float v0 = vv.s0 + t.x*(vv.s1 - vv.s0);
-                float v1 = vv.s2 + t.x*(vv.s3 - vv.s2);
-
-                v = v0 + t.y*(v1 - v0);
-
-//TODO: check that
-    //                float2 vf = vv.xz + t.x*(vv.yw - vv.xz);
-    //                v = vf.s0 + t.y*(vf.s1 - vf.s0);
-
-    //                float2 vf = mix(vv.xz, vv.yw, t.x);
-    //                v = mix(vf.s0, vf.s1, t.y);
+                float2 vf = mix(vv.xz, vv.yw, t.x);
+                v = mix(vf.s0, vf.s1, t.y);
             }
             else
                 continue;
@@ -145,12 +133,13 @@ __kernel void integrate(__global const char * depthptr,
         // difference between distances of point and of surface to camera
         float sdf = pixNorm*(v*dfac - camSpacePt.z);
         // possible alternative is:
-        // float sdf = lenght(camSpacePt)*(v*dfac/camSpacePt.z - 1.0);
+        // float sdf = length(camSpacePt)*(v*dfac/camSpacePt.z - 1.0);
 
         if(sdf >= -truncDist)
         {
             float tsdf = fmin(1.0f, sdf * truncDistInv);
 
+//TODO: change weight format: int->float
             float2 voxel = volumeptr[volYidx + z];
             float value  = voxel.s0;
             int weight = as_int(voxel.s1);
