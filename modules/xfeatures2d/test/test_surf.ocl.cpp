@@ -45,7 +45,7 @@
 
 #include "test_precomp.hpp"
 
-#ifdef HAVE_OPENCL
+#if defined(HAVE_OPENCL) && defined(OPENCV_ENABLE_NONFREE)
 
 namespace opencv_test { namespace {
 
@@ -200,4 +200,4 @@ INSTANTIATE_TEST_CASE_P(OCL_Features2D, SURF, testing::Combine(
 
 }} // namespace
 
-#endif // HAVE_OPENCL
+#endif // HAVE_OPENCL && OPENCV_ENABLE_NONFREE

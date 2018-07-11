@@ -3,6 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 #include "perf_precomp.hpp"
 
+#ifdef OPENCV_ENABLE_NONFREE
 namespace opencv_test { namespace {
 
 typedef perf::TestBaseWithParam<std::string> surf;
@@ -64,3 +65,4 @@ PERF_TEST_P(surf, full, testing::Values(SURF_IMAGES))
 }
 
 }} // namespace
+#endif // NONFREE
