@@ -987,7 +987,7 @@ void CV_DescriptorMatcherTest::run( int )
  * Detectors
  */
 
-
+#ifdef OPENCV_ENABLE_NONFREE
 TEST( Features2d_Detector_SIFT, regression )
 {
     CV_FeatureDetectorTest test( "detector-sift", SIFT::create() );
@@ -999,6 +999,7 @@ TEST( Features2d_Detector_SURF, regression )
     CV_FeatureDetectorTest test( "detector-surf", SURF::create() );
     test.safe_run();
 }
+#endif
 
 TEST( Features2d_Detector_STAR, regression )
 {
@@ -1027,6 +1028,7 @@ TEST( Features2d_Detector_Harris_Laplace_Affine, regression )
 /*
  * Descriptors
  */
+#ifdef OPENCV_ENABLE_NONFREE
 TEST( Features2d_DescriptorExtractor_SIFT, regression )
 {
     CV_DescriptorExtractorTest<L1<float> > test( "descriptor-sift", 1.0f,
@@ -1064,6 +1066,7 @@ TEST( Features2d_DescriptorExtractor_SURF_OCL, regression )
     cv::ocl::setUseOpenCL(useOCL);
 }
 #endif
+#endif // NONFREE
 
 TEST( Features2d_DescriptorExtractor_DAISY, regression )
 {
@@ -1204,7 +1207,7 @@ TEST( Features2d_DescriptorExtractor_Calonder_float, regression )
     test.safe_run();
 }
 #endif*/ // CV_SSE2
-
+#ifdef OPENCV_ENABLE_NONFREE
 TEST(Features2d_BruteForceDescriptorMatcher_knnMatch, regression)
 {
     const int sz = 100;
@@ -1254,6 +1257,7 @@ TEST(Features2d_BruteForceDescriptorMatcher_knnMatch, regression)
         }
     }
 }
+#endif
 
 /*TEST(Features2d_DescriptorExtractorParamTest, regression)
 {
@@ -1330,8 +1334,10 @@ protected:
     Ptr<Feature2D> f2d;
 };
 
+#ifdef OPENCV_ENABLE_NONFREE
 TEST(Features2d_SIFTHomographyTest, regression) { CV_DetectPlanarTest test("SIFT", 80, SIFT::create()); test.safe_run(); }
 TEST(Features2d_SURFHomographyTest, regression) { CV_DetectPlanarTest test("SURF", 80, SURF::create()); test.safe_run(); }
+#endif
 
 class FeatureDetectorUsingMaskTest : public cvtest::BaseTest
 {
@@ -1394,6 +1400,7 @@ protected:
     Ptr<FeatureDetector> featureDetector_;
 };
 
+#ifdef OPENCV_ENABLE_NONFREE
 TEST(Features2d_SIFT_using_mask, regression)
 {
     FeatureDetectorUsingMaskTest test(SIFT::create());
@@ -1433,5 +1440,6 @@ TEST( XFeatures2d_DescriptorExtractor, batch )
         EXPECT_GT(descriptors[i].rows, 100);
     }
 }
+#endif // NONFREE
 
 }} // namespace

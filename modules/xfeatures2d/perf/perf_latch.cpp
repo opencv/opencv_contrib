@@ -11,6 +11,7 @@ typedef perf::TestBaseWithParam<std::string> latch;
     "cv/detectors_descriptors_evaluation/images_datasets/leuven/img1.png",\
     "stitching/a3.png"
 
+#ifdef OPENCV_ENABLE_NONFREE
 PERF_TEST_P(latch, extract, testing::Values(LATCH_IMAGES))
 {
     string filename = getDataPath(GetParam());
@@ -30,5 +31,6 @@ PERF_TEST_P(latch, extract, testing::Values(LATCH_IMAGES))
 
     SANITY_CHECK_NOTHING();
 }
+#endif // NONFREE
 
 }} // namespace

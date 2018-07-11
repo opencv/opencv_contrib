@@ -610,6 +610,7 @@ protected:
 /*
  * Detector's rotation invariance check
  */
+#ifdef OPENCV_ENABLE_NONFREE
 TEST(Features2d_RotationInvariance_Detector_SURF, regression)
 {
     DetectorRotationInvarianceTest test(SURF::create(),
@@ -655,6 +656,7 @@ TEST(Features2d_RotationInvariance_Descriptor_LATCH, regression)
                                           0.9999f);
     test.safe_run();
 }
+#endif // NONFREE
 
 TEST(DISABLED_Features2d_RotationInvariance_Descriptor_DAISY, regression)
 {
@@ -701,6 +703,7 @@ TEST(Features2d_RotationInvariance_Descriptor_VGG48, regression)
     test.safe_run();
 }
 
+#ifdef OPENCV_ENABLE_NONFREE
 TEST(Features2d_RotationInvariance_Descriptor_BRIEF_64, regression)
 {
     DescriptorRotationInvarianceTest test(SURF::create(),
@@ -870,6 +873,8 @@ TEST(Features2d_RotationInvariance2_Detector_SURF, regression)
     }
 }
 
+#endif // NONFREE
+
 TEST(DISABLED_Features2d_ScaleInvariance_Descriptor_DAISY, regression)
 {
     DescriptorScaleInvarianceTest test(BRISK::create(),
@@ -915,6 +920,7 @@ TEST(Features2d_ScaleInvariance_Descriptor_VGG48, regression)
     test.safe_run();
 }
 
+#ifdef OPENCV_ENABLE_NONFREE
 TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BGM, regression)
 {
     DescriptorScaleInvarianceTest test(SURF::create(),
@@ -977,5 +983,6 @@ TEST(Features2d_ScaleInvariance_Descriptor_BoostDesc_BINBOOST_256, regression)
                                        0.98f);
     test.safe_run();
 }
+#endif // NONFREE
 
 }} // namespace
