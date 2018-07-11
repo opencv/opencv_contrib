@@ -278,12 +278,15 @@ void CV_DetectorsTest::run( int /*start_from*/ )
     GaussianBlur(to_test, to_test, Size(3, 3), 1.5);
 
     vector<KeyPoint> exp;
+
+#ifdef OPENCV_ENABLE_NONFREE
     LoadExpected(string(ts->get_data_path()) + "detectors/surf.xml", exp);
     if (exp.empty())
         return;
 
     if (!testDetector(to_test, SURF::create(1536+512+512, 2, 2, true, false), exp))
         return;
+#endif
 
     LoadExpected(string(ts->get_data_path()) + "detectors/star.xml", exp);
     if (exp.empty())
