@@ -45,55 +45,58 @@
 //
 //################################################################################
 
+#include "precomp.hpp"
+
+namespace cv
+{
+namespace epf
 #include <iostream>
-#include <string>
-#include <opencv2/opencv.hpp>
+#include <opencv2/core.hpp>
+#include <opencv2/core/utils/trace.hpp>
 #include <opencv2/epf.hpp>
+#include <opencv2/highgui.hpp>
+#include <opencv2/imgcodecs.hpp>
+#include <opencv2/opencv.hpp>
+#include <opencv2/ximgproc.hpp>
+#include <string>
 
 using namespace cv;
 
-int showWindow(cv::Mat image, std::string title);
-
-int showWindow(cv::Mat image, std::string title)
-{
-	namedWindow(title);
-	imshow(title, image);
-
-	waitKey(0);
-
-	return 0;
-}
-
 int main(int argc, char **argv)
 {
+	CV_TRACE_FUNCTION();
+
 	// Help text
-	if (argc != 2)
+	cv::CommandLineParser parser(
+	    argc, argv,
+	    "{help h ?  | | help message }"
+	    "{@image    | | Path to image file to process }");
+	if (parser.has("help") || !parser.has("@image"))
 	{
-		std::cout << "usage: " << argv[0] << " image.jpg" << std::endl;
-		std::cout << "image.jpg contains image, which will be smoothed."
-		          << std::endl;
-		return -1;
+		parser.printMessage();
+		return 0;
 	}
 
 	// Load image from first parameter
 	std::string filename = argv[1];
 	Mat image = imread(filename, 1), res;
-
 	if (!image.data)
 	{
-		std::cerr << "No image data at " << argv[2] << std::endl;
-		throw;
+		std::cerr << "No image data at " << filename << std::endl;
+		return -1;
 	}
 
 	// Before filtering
-	showWindow(image, "Original image");
+	imshow("Original image", image);
+	waitKey(0);
 
 	// Initialize filter. Kernel size 5x5, threshold 20
 	Ptr<epf::edgepreservingFilter> filter =
 	    epf::edgepreservingFilter::create(&image, &res, 5, 20);
 
 	// After filtering
-	showWindow(res, "Filtered image");
+	imshow("Filtered image", res);
+	waitKey(0);
 
 	return 0;
 }
