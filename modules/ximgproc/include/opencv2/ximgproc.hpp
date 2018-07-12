@@ -57,6 +57,7 @@
 #include "ximgproc/ridgefilter.hpp"
 #include "ximgproc/brightedges.hpp"
 #include "ximgproc/run_length_morphology.hpp"
+#include "ximgproc/edgepreserving_filter.hpp"
 
 
 /** @defgroup ximgproc Extended Image Processing
