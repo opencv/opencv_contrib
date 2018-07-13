@@ -24,7 +24,7 @@ namespace cv { namespace ximgproc {
     * @param d Diameter of each pixel neighborhood that is used during filtering. Must be greater or equal 3..
     * @param threshold Threshold, which distinguishes between noise, outliers, and data.
     */
-    CV_EXPORTS_W void edgepreservingFilter( const InputArray *src, OutputArray *dst, int d, int threshold );
+    CV_EXPORTS_W void edgepreservingFilter( const InputArray src, OutputArray dst, int d, int threshold );
 
 }} // namespace
 

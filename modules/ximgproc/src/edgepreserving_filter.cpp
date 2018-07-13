@@ -14,11 +14,16 @@ namespace ximgproc
 {
 using namespace std;
 
-	edgepreservingFilter(const InputArray *src, OutputArray *dst, int d,
+  void edgepreservingFilter(const InputArray _src, OutputArray _dst, int d,
 	                         int threshold)
 	{
+    Mat src = _src.getMat();
 
-		CV_Assert(src->type() == CV_8UC3 && src->data != dst->data);
+    // [re]create the output array so that it has the proper size and type.
+    _dst.create(src.size(), src.type());
+    Mat dst = _dst.getMat();
+
+		CV_Assert(src.type() == CV_8UC3);
 
 		if (d < 3)
 			d = 3;
@@ -28,34 +33,32 @@ using namespace std;
 			threshold = 0;
 
 		// number of image channels
-		int nChannel = src->channels();
+		int nChannel = src.channels();
 
-		src->copyTo(*dst);
-
-		vector<double> pixel(nChannel, 0);
-		vector<vector<double>> line1(src->rows, pixel);
-		vector<vector<vector<double>>> weight(src->cols,
+		vector <double> pixel(nChannel, 0);
+		vector < vector <double> > line1(src.rows, pixel);
+		vector < vector <vector <double> > > weight(src.cols,
 		                                      line1); // global weights
-		vector<vector<vector<double>>> imageResult(
-		    src->cols, line1); // global normalized image
+		vector < vector < vector <double> > > imageResult(
+		    src.cols, line1); // global normalized image
 
 		// do algorithm
 		cv::Mat subwindow;
-		for (int posX = 0; posX < src->cols - subwindowX; posX++)
+		for (int posX = 0; posX < src.cols - subwindowX; posX++)
 		{
-			for (int posY = 0; posY < src->rows - subwindowY;
+			for (int posY = 0; posY < src.rows - subwindowY;
 			     posY++)
 			{
 				cv::Rect roi = cv::Rect(posX, posY, subwindowX,
 				                        subwindowY);
-				subwindow = (*src)(roi);
-				cv::Mat subwindow1 = (*src)(roi);
+				subwindow = src(roi);
+				cv::Mat subwindow1 = src(roi);
 				cv::GaussianBlur(subwindow1, subwindow,
 				                 cv::Size(5, 5), 0.3, 0.3);
 
 				// compute arithmetic mean of subwindow
 				int nCounter = 0;
-				vector<int> colorValue(nChannel, 0);
+				vector <int> colorValue(nChannel, 0);
 
 				for (int subPosX = 0; subPosX < subwindow.cols;
 				     subPosX++)
@@ -77,7 +80,7 @@ using namespace std;
 					};
 				};
 
-				vector<double> ArithmeticMean(nChannel);
+				vector <double> ArithmeticMean(nChannel);
 				ArithmeticMean[0] =
 				    colorValue[0] / nCounter; // B
 				ArithmeticMean[1] =
@@ -86,12 +89,12 @@ using namespace std;
 				    colorValue[2] / nCounter; // R
 
 				// compute pixelwise distance
-				vector<vector<double>> pixelwiseDist;
+				vector < vector <double> > pixelwiseDist;
 
 				for (int subPosX = 0; subPosX < subwindow.cols;
 				     subPosX++)
 				{
-					vector<double> line;
+					vector <double> line;
 					for (int subPosY = 0;
 					     subPosY < subwindow.rows;
 					     subPosY++)
@@ -347,14 +350,14 @@ using namespace std;
 			     globalPosY++)
 			{
 				// cout << "globalPosX: " << globalPosX << "/"
-				// << dst->cols << "," << imageResult.size () <<
+				// << dst.cols << "," << imageResult.size () <<
 				// "\tglobalPosY: " << globalPosY << "/" <<
-				// dst->rows << "," <<imageResult.at
+				// dst.rows << "," <<imageResult.at
 				// (globalPosX).size () << endl;
 
 				// add image to result
 				cv::Vec3b intensity =
-				    src->at<cv::Vec3b>(globalPosY, globalPosX);
+				    src.at<cv::Vec3b>(globalPosY, globalPosX);
 				imageResult[globalPosX][globalPosY][0] +=
 				    (double)intensity.val[0];
 				imageResult[globalPosX][globalPosY][1] +=
@@ -371,13 +374,13 @@ using namespace std;
 				    (weight[globalPosX][globalPosY][2] + 1);
 
 				// copy to output image frame
-				dst->at<cv::Vec3b>(globalPosY, globalPosX)[0] =
+				dst.at<cv::Vec3b>(globalPosY, globalPosX)[0] =
 				    (uchar)
 				        imageResult[globalPosX][globalPosY][0];
-				dst->at<cv::Vec3b>(globalPosY, globalPosX)[1] =
+				dst.at<cv::Vec3b>(globalPosY, globalPosX)[1] =
 				    (uchar)
 				        imageResult[globalPosX][globalPosY][1];
-				dst->at<cv::Vec3b>(globalPosY, globalPosX)[2] =
+				dst.at<cv::Vec3b>(globalPosY, globalPosX)[2] =
 				    (uchar)
 				        imageResult[globalPosX][globalPosY][2];
 			};
