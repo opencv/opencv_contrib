@@ -1,10 +1,6 @@
 #include <iostream>
 #include <string>
-#include <opencv2/imgcodecs.hpp>
-#include <opencv2/highgui.hpp>
 #include <opencv2/ximgproc.hpp>
-#include <opencv2/opencv.hpp>
-#include <opencv2/epf.hpp>
 
 
 using namespace cv;
