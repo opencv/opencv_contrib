@@ -39,6 +39,7 @@ public:
     float truncDist;
     int maxWeight;
     cv::Affine3f pose;
+    float raycastStepFactor;
 };
 
 cv::Ptr<TSDFVolume> makeTSDFVolume(cv::kinfu::Params::PlatformType t,

@@ -365,6 +365,8 @@ int main(int argc, char **argv)
                                                                 "Close the window or press Q to resume"), Point()));
                 window.spin();
                 window.removeWidget("text");
+                window.removeWidget("cloud");
+                window.removeWidget("normals");
                 window.registerMouseCallback(0);
             }
 

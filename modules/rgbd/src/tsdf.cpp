@@ -70,19 +70,19 @@ public:
 
     int neighbourCoords[8];
     int dims[4];
-    float raycastStepFactor;
 };
 
 
 TSDFVolume::TSDFVolume(int _res, float _size, Affine3f _pose, float _truncDist, int _maxWeight,
-                       float /*_raycastStepFactor*/) :
+                       float _raycastStepFactor) :
     edgeSize(_size),
     edgeResolution(_res),
     voxelSize(_size/_res),
     voxelSizeInv(_res/_size),
     truncDist(std::max(_truncDist, 2.1f * (_size/_res))),
     maxWeight(_maxWeight),
-    pose(_pose)
+    pose(_pose),
+    raycastStepFactor(_raycastStepFactor)
 { }
 
 // dimension in voxels, size in meters
@@ -111,8 +111,6 @@ TSDFVolumeCPU::TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _t
         neighbourCoords[i] = coords[i];
 
     volume = Volume(1, _res * _res * _res);
-
-    raycastStepFactor = _raycastStepFactor;
 
     reset();
 }
@@ -852,12 +850,12 @@ struct RaycastInvoker : ParallelLoopBody
                 float tmin = max(max(max(minAx.x, minAx.y), max(minAx.x, minAx.z)), clip);
                 float tmax =     min(min(maxAx.x, maxAx.y), min(maxAx.x, maxAx.z));
 
+                // precautions against getting coordinates out of bounds
+                tmin = tmin + tstep;
+                tmax = tmax - tstep;
+
                 if(tmin < tmax)
                 {
-                    // precautions against getting coordinates out of bounds
-                    tmin = tmin + tstep;
-                    tmax = tmax - tstep - tstep;
-
                     // interpolation optimized a little
                     orig *= volume.voxelSizeInv;
                     dir *= volume.voxelSizeInv;
@@ -1182,10 +1180,9 @@ TSDFVolumeGPU::TSDFVolumeGPU(int _res, float _size, cv::Affine3f _pose, float _t
 // zero volume, leave rest params the same
 void TSDFVolumeGPU::reset()
 {
-    ScopeTime st("tsdf: reset");
+    ScopeTime st("tsdf gpu: reset");
 
     volume.setTo(Scalar(0, 0));
-
 }
 
 
@@ -1193,7 +1190,7 @@ void TSDFVolumeGPU::reset()
 void TSDFVolumeGPU::integrate(cv::Ptr<Frame> _depth, float depthFactor,
                               cv::Affine3f cameraPose, Intr intrinsics)
 {
-    ScopeTime st("tsdf: integrate");
+    ScopeTime st("tsdf gpu: integrate");
 
     UMat depth;
     _depth->getDepth(depth);
@@ -1206,7 +1203,7 @@ void TSDFVolumeGPU::integrate(cv::Ptr<Frame> _depth, float depthFactor,
     k.create(name.c_str(), source, options, &errorStr);
 
     if(k.empty())
-        throw std::runtime_error("Failed to create kernel" + errorStr);
+        throw std::runtime_error("Failed to create kernel: " + errorStr);
 
     cv::Affine3f vol2cam(cameraPose.inv() * pose);
     UMat vol2camGpu;

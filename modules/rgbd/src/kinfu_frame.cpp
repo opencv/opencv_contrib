@@ -59,14 +59,11 @@ void FrameGeneratorCPU::operator ()(Ptr<Frame> _frame, InputArray depth, const I
     frame->normals.resize(levels);
     for(int i = 0; i < levels; i++)
     {
-        Points p = frame->points[i];
-        Normals n = frame->normals[i];
+        Points&  p = frame->points[i];
+        Normals& n = frame->normals[i];
         p.create(sz); n.create(sz);
 
         computePointsNormals(intr.scale(i), depthFactor, scaled, p, n);
-
-        frame->points[i] = p;
-        frame->normals[i] = n;
 
         if(i < levels - 1)
         {
