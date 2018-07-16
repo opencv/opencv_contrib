@@ -1231,10 +1231,83 @@ void TSDFVolumeGPU::integrate(cv::Ptr<Frame> _depth, float depthFactor,
 }
 
 
-void TSDFVolumeGPU::raycast(cv::Affine3f /*cameraPose*/, Intr /*intrinsics*/, Size /*frameSize*/, int /*pyramidLevels*/,
-                            Ptr<FrameGenerator> /* frameGenerator */, Ptr<Frame> /* frame */) const
+void TSDFVolumeGPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frameSize, int pyramidLevels,
+                            Ptr<FrameGenerator> frameGenerator, Ptr<Frame> frame) const
 {
-    throw std::runtime_error("Not implemented");
+    ScopeTime st("tsdf gpu: raycast");
+
+    CV_Assert(frameSize.area() > 0);
+
+    cv::String errorStr;
+    cv::String name = "raycast";
+    ocl::ProgramSource source = ocl::rgbd::tsdf_oclsrc;
+    cv::String options;
+    ocl::Kernel k;
+    k.create(name.c_str(), source, options, &errorStr);
+
+    if(k.empty())
+        throw std::runtime_error("Failed to create kernel: " + errorStr);
+
+    UMat points(frameSize, CV_32FC4);
+    UMat normals(frameSize, CV_32FC4);
+
+    UMat vol2camGpu, cam2volGpu;
+    Mat((pose.inv() * cameraPose).matrix).copyTo(cam2volGpu);
+    Mat((cameraPose.inv() * pose).matrix).copyTo(vol2camGpu);
+    Intr::Reprojector r = intrinsics.makeReprojector();
+    // We do subtract voxel size to minimize checks after
+    // Note: origin of volume coordinate is placed
+    // in the center of voxel (0,0,0), not in the corner of the voxel!
+    Vec4f boxMin, boxMax(edgeSize - voxelSize,
+                         edgeSize - voxelSize,
+                         edgeSize - voxelSize);
+    float tstep = truncDist * raycastStepFactor;
+    //TODO: put it into constructor (or to parent class)
+    int xdim = edgeResolution*edgeResolution;
+    int ydim = edgeResolution;
+    Vec4i volDims(xdim, ydim, 1);
+    Vec8i neighbourCoords(
+        xdim*0 + ydim*0 + 1*0,
+        xdim*0 + ydim*0 + 1*1,
+        xdim*0 + ydim*1 + 1*0,
+        xdim*0 + ydim*1 + 1*1,
+        xdim*1 + ydim*0 + 1*0,
+        xdim*1 + ydim*0 + 1*1,
+        xdim*1 + ydim*1 + 1*0,
+        xdim*1 + ydim*1 + 1*1
+    );
+
+    k.args(ocl::KernelArg::WriteOnly(points),
+           ocl::KernelArg::WriteOnly(normals),
+           ocl::KernelArg::PtrReadOnly(volume),
+           //TODO: try KernelArg::Constant() here and vector args in tsdf.cl file
+           ocl::KernelArg::PtrReadOnly(vol2camGpu),
+           ocl::KernelArg::PtrReadOnly(cam2volGpu),
+           r.fxinv, r.fyinv, r.cx, r.cy,
+           boxMin.val, boxMax.val,
+           tstep,
+           voxelSize,
+           edgeResolution,
+           volDims.val,
+           neighbourCoords.val);
+
+    size_t globalSize[2];
+    globalSize[0] = (size_t)frameSize.width;
+    globalSize[1] = (size_t)frameSize.height;
+
+    if(!k.run(2, globalSize, NULL, true))
+        throw std::runtime_error("Failed to run kernel");
+
+    //DEBUG
+    Mat cpoints(points.size(), points.type());
+    Mat cnormals(normals.size(), normals.type());
+    {
+        points.copyTo(cpoints);
+        normals.copyTo(cnormals);
+    }
+    // build a pyramid of points and normals
+    //TODO: replace cpoints and cnormals with points and normals
+    (*frameGenerator)(frame, cpoints, cnormals, pyramidLevels);
 }
 
 

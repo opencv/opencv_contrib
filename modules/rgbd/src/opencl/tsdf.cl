@@ -154,3 +154,235 @@ __kernel void integrate(__global const char * depthptr,
         }
     }
 }
+
+
+inline float interpolateVoxel(float3 p, __global const float2* volumePtr,
+                              int3 volDims, int8 neighbourCoords)
+{
+    float3 fip = floor(p);
+    int3 ip = convert_int(fip);
+    float3 t = p - fip;
+
+    int3 cmul = volDims*ip;
+    int coordBase = cmul.x + cmul.y + cmul.z;
+    int nco[8];
+    vstore8(neighbourCoords + coordBase, 0, nco);
+
+    float vaz[8];
+    for(int i = 0; i < 8; i++)
+        vaz[i] = volumePtr[nco[i]].s0;
+
+    float8 vz = vload8(0, vaz);
+
+    float4 vy = mix(vz.s0246, vz.s1357, t.z);
+    float2 vx = mix(vy.s02, vy.s13, t.y);
+    return mix(vx.s0, vx.s1, t.x);
+}
+
+inline float3 getNormalVoxel(float3 p, __global const float2* volumePtr,
+                             int edgeResolution, int3 volDims, int8 neighbourCoords)
+{
+    if(any(p < 1) || any(p >= edgeResolution - 2))
+        return nan((uint)0);
+
+    float3 fip = floor(p);
+    int3 ip = convert_int(fip);
+    float3 t = p - fip;
+
+    int3 cmul = volDims*ip;
+    int coordBase = cmul.x + cmul.y + cmul.z;
+    int nco[8];
+    vstore8(neighbourCoords + coordBase, 0, nco);
+
+    int arDims[3];
+    vstore3(volDims, 0, arDims);
+    float an[3];
+    for(int c = 0; c < 3; c++)
+    {
+        int dim = arDims[c];
+        float nv = an[c];
+
+        float vaz[8];
+        for(int i = 0; i < 8; i++)
+            vaz[i] = volumePtr[nco[i] + dim].s0 -
+                     volumePtr[nco[i] - dim].s0;
+
+        float8 vz = vload8(0, vaz);
+
+        float4 vy = mix(vz.s0246, vz.s1357, t.z);
+        float2 vx = mix(vy.s02, vy.s13, t.y);
+        nv = mix(vx.s0, vx.s1, t.x);
+
+        an[c] = nv;
+    }
+
+    //TODO: half?
+    return fast_normalize(vload3(0, an));
+}
+
+typedef float4 ptype;
+
+__kernel void raycast(__global char * pointsptr,
+                      int points_step, int points_offset,
+                      int points_rows, int points_cols,
+                      __global char * normalsptr,
+                      int normals_step, int normals_offset,
+                      int normals_rows, int normals_cols,
+                      __global const float2 * volumeptr,
+                      __global const float * vol2camptr,
+                      __global const float * cam2volptr,
+                      const float fxinv, const float fyinv,
+                      const float cx, const float cy,
+                      const float4 boxDown4,
+                      const float4 boxUp4,
+                      const float tstep,
+                      const float voxelSize,
+                      const int edgeResolution,
+                      const int4 volDims4,
+                      const int8 neighbourCoords
+                      )
+{
+    int x = get_global_id(0);
+    int y = get_global_id(1);
+
+    if(x >= points_cols || y >= points_rows)
+        return;
+
+    // coordinate-independent constants
+
+    __global const float* cm = cam2volptr;
+    const float3 camRot0  = vload4(0, cm).xyz;
+    const float3 camRot1  = vload4(1, cm).xyz;
+    const float3 camRot2  = vload4(2, cm).xyz;
+    const float3 camTrans = (float3)(cm[3], cm[7], cm[11]);
+
+    __global const float* vm = vol2camptr;
+    const float3 volRot0  = vload4(0, vm).xyz;
+    const float3 volRot1  = vload4(1, vm).xyz;
+    const float3 volRot2  = vload4(2, vm).xyz;
+    const float3 volTrans = (float3)(vm[3], vm[7], vm[11]);
+
+    const float2 fixy = (float2)(fxinv, fyinv);
+    const float2 cxy  = (float2)(cx, cy);
+
+    const float3 boxDown = boxDown4.xyz;
+    const float3 boxUp   = boxUp4.xyz;
+    const int3   volDims = volDims4.xyz;
+
+    const float invVoxelSize = native_recip(voxelSize);
+
+    // kernel itself
+
+    float3 point  = nan((uint)0);
+    float3 normal = nan((uint)0);
+
+    float3 orig = camTrans;
+
+    // get direction through pixel in volume space:
+    // 1. reproject (x, y) on projecting plane where z = 1.f
+    float3 planed = (float3)(((float2)(x, y) - cxy)*fixy, 1.f);
+
+    // 2. rotate to volume space
+    planed = (float3)(dot(planed, camRot0),
+                      dot(planed, camRot1),
+                      dot(planed, camRot2));
+
+    // 3. normalize
+    //TODO: half?
+    float3 dir = fast_normalize(planed);
+
+    // compute intersection of ray with all six bbox planes
+    //TODO: half?
+    float3 rayinv = native_recip(dir);
+    float3 tbottom = rayinv*(boxDown - orig);
+    float3 ttop    = rayinv*(boxUp   - orig);
+
+    // re-order intersections to find smallest and largest on each axis
+    float3 minAx = min(ttop, tbottom);
+    float3 maxAx = max(ttop, tbottom);
+
+    // near clipping plane
+    const float clip = 0.f;
+    float tmin = max(max(max(minAx.x, minAx.y), max(minAx.x, minAx.z)), clip);
+    float tmax =     min(min(maxAx.x, maxAx.y), min(maxAx.x, maxAx.z));
+
+    // precautions against getting coordinates out of bounds
+    tmin = tmin + tstep;
+    tmax = tmax - tstep;
+
+    if(tmin < tmax)
+    {
+        // interpolation optimized a little
+        orig *= invVoxelSize;
+        dir  *= invVoxelSize;
+
+        float3 rayStep = dir*tstep;
+        float3 next = (orig + dir*tmin);
+        float f = interpolateVoxel(next, volumeptr, volDims, neighbourCoords);
+        float fnext = f;
+
+        // raymarch
+        int steps = 0;
+        //TODO: half_divide? native?
+        int nSteps = floor((tmax - tmin)/tstep);
+        for(; steps < nSteps; steps++)
+        {
+            next += rayStep;
+
+           // fetch voxel
+           int3 ip = convert_int(round(next));
+           int3 cmul = ip*volDims;
+           int coord = cmul.x + cmul.y + cmul.z;
+           fnext = volumeptr[coord].s0;
+
+           if(fnext != f)
+           {
+                fnext = interpolateVoxel(next, volumeptr, volDims, neighbourCoords);
+
+                // when ray crosses a surface
+                if(signbit(f) != signbit(fnext))
+                    break;
+
+                f = fnext;
+           }
+        }
+
+        // if ray penetrates a surface from outside
+        // linearly interpolate t between two f values
+        if(f > 0 && fnext < 0)
+        {
+            float3 tp = next - rayStep;
+            float ft   = interpolateVoxel(tp,   volumeptr, volDims, neighbourCoords);
+            float ftdt = interpolateVoxel(next, volumeptr, volDims, neighbourCoords);
+            // float t = tmin + steps*tstep;
+            // float ts = t - tstep*ft/(ftdt - ft);
+            //TODO: half_divide? native?
+            float ts = tmin + tstep*(steps - ft/(ftdt - ft));
+
+            // avoid division by zero
+            if(!isnan(ts) && !isinf(ts))
+            {
+                float3 pv = orig + dir*ts;
+                float3 nv = getNormalVoxel(pv, volumeptr, edgeResolution, volDims, neighbourCoords);
+
+                if(!any(isnan(nv)))
+                {
+                    //convert pv and nv to camera space
+                    normal = (float3)(dot(nv, volRot0),
+                                      dot(nv, volRot1),
+                                      dot(nv, volRot2));
+                    // interpolation optimized a little
+                    pv *= voxelSize;
+                    point = (float3)(dot(pv, volRot0),
+                                     dot(pv, volRot1),
+                                     dot(pv, volRot2)) + volTrans;
+                }
+            }
+        }
+    }
+
+    __global float* pts = (__global float*)(pointsptr  +  points_offset + y*points_step  + x*sizeof(ptype));
+    __global float* nrm = (__global float*)(normalsptr + normals_offset + y*normals_step + x*sizeof(ptype));
+    vstore4((float4)(point,  0), 0, pts);
+    vstore4((float4)(normal, 0), 0, nrm);
+}
