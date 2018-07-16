@@ -294,7 +294,7 @@ int main(int argc, char* argv[])
 			 */
 			cv::waitKey(10);
 		}
-	}catch(cv::Exception e)
+	} catch(const cv::Exception& e)
 	{
 		std::cerr<<"Error using Retina : "<<e.what()<<std::endl;
 	}
