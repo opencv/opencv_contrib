@@ -86,7 +86,7 @@ bool ICPCPU::estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> _oldFrame
 // 1 any coord to check is enough since we know the generation
 
 
-#if CV_SIMD128
+#if USE_INTRINSICS
 static inline bool fastCheck(const v_float32x4& p0, const v_float32x4& p1)
 {
     float check = (p0.get0() + p1.get0());
@@ -141,7 +141,7 @@ struct GetAbInvoker : ParallelLoopBody
 
     virtual void operator ()(const Range& range) const override
     {
-#if CV_SIMD128
+#if USE_INTRINSICS
         CV_Assert(ptype::channels == 4);
 
         const size_t utBufferSize = 9;

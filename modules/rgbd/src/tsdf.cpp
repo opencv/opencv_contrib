@@ -59,7 +59,7 @@ public:
     volumeType interpolateVoxel(cv::Point3f p) const;
     Point3f getNormalVoxel(cv::Point3f p) const;
 
-#if CV_SIMD128
+#if USE_INTRINSICS
     volumeType interpolateVoxel(const v_float32x4& p) const;
     v_float32x4 getNormalVoxel(const v_float32x4& p) const;
 #endif
@@ -132,7 +132,7 @@ void TSDFVolumeCPU::reset()
 }
 
 // SIMD version of that code is manually inlined
-#if !CV_SIMD128
+#if !USE_INTRINSICS
 static const bool fixMissingData = false;
 
 static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
@@ -224,7 +224,7 @@ struct IntegrateInvoker : ParallelLoopBody
         volDataStart = volume.volume[0];
     }
 
-#if CV_SIMD128
+#if USE_INTRINSICS
     virtual void operator() (const Range& range) const override
     {
         // zStep == vol2cam*(Point3f(x, y, 1)*voxelSize) - basePt;
@@ -470,7 +470,7 @@ void TSDFVolumeCPU::integrate(cv::Ptr<Frame> _depth, float depthFactor, cv::Affi
     parallel_for_(range, ii);
 }
 
-#if CV_SIMD128
+#if USE_INTRINSICS
 // all coordinate checks should be done in inclosing cycle
 inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f _p) const
 {
@@ -547,8 +547,7 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
 }
 #endif
 
-
-#if CV_SIMD128
+#if USE_INTRINSICS
 //gradientDeltaFactor is fixed at 1.0 of voxel size
 inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f _p) const
 {
@@ -681,7 +680,7 @@ struct RaycastInvoker : ParallelLoopBody
         reproj(intrinsics.makeReprojector())
     {  }
 
-#if CV_SIMD128
+#if USE_INTRINSICS
     virtual void operator() (const Range& range) const override
     {
         const v_float32x4 vfxy(reproj.fxinv, reproj.fyinv, 0, 0);
