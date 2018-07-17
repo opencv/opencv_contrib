@@ -237,7 +237,8 @@ public:
                     if (p.y >= size.height)
                         p.y = size.height - 1;
 
-                    memcpy(&samples[i * stride + j * nSamples], &bm.samples[p.y * stride + p.x * nSamples], sizeof(BackgroundSampleType) * nSamples);
+                    for (int k = 0; k < nSamples; k++)
+                        samples[i * stride + j * nSamples + k] = bm.samples[p.y * stride + p.x * nSamples + k];
                 }
     }
 
