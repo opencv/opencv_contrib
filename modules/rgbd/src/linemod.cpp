@@ -958,8 +958,8 @@ static void spread(const Mat& src, Mat& dst, int T)
     int height = src.rows - r;
     for (int c = 0; c < T; ++c)
     {
-      orUnaligned8u(&src.at<unsigned char>(r, c), static_cast<const int>(src.step1()), dst.ptr(),
-                    static_cast<const int>(dst.step1()), src.cols - c, height);
+      orUnaligned8u(&src.at<unsigned char>(r, c), static_cast<int>(src.step1()), dst.ptr(),
+                    static_cast<int>(dst.step1()), src.cols - c, height);
     }
   }
 }
