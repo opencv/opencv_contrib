@@ -32,10 +32,10 @@ public:
 
     virtual ~TSDFVolume() { }
 
-    float edgeSize;
-    int edgeResolution;
-    float voxelSize;
-    float voxelSizeInv;
+    Point3f volSize;
+    Point3i volResolution;
+    Point3f voxelSize;
+    Point3f voxelSizeInv;
     float truncDist;
     int maxWeight;
     cv::Affine3f pose;

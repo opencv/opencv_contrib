@@ -11,8 +11,9 @@ __kernel void integrate(__global const char * depthptr,
                         int depth_rows, int depth_cols,
                         __global float2 * volumeptr,
                         __global const float * vol2camptr,
-                        const float voxelSize,
-                        const int edgeResolution,
+                        const float4 voxelSize4,
+                        const int4 volResolution4,
+                        const int4 volDims4,
                         const float fx, const float fy,
                         const float cx, const float cy,
                         const float dfac,
@@ -22,10 +23,13 @@ __kernel void integrate(__global const char * depthptr,
     int x = get_global_id(0);
     int y = get_global_id(1);
 
-    if(x >= edgeResolution || y >= edgeResolution)
+    const int3 volResolution = volResolution4.xyz;
+
+    if(x >= volResolution.x || y >= volResolution.y)
         return;
 
     // coord-independent constants
+    const int3 volDims = volDims4.xyz;
     const float2 limits = (float2)(depth_cols-1, depth_rows-1);
 
     const float4 vol2cam0 = vload4(0, vol2camptr);
@@ -37,8 +41,10 @@ __kernel void integrate(__global const char * depthptr,
 
     const float truncDistInv = 1.f/truncDist;
 
+    const float3 voxelSize = voxelSize4.xyz;
+
     // optimization of camSpace transformation (vector addition instead of matmul at each z)
-    float4 inPt = (float4)(x*voxelSize, y*voxelSize, 0, 1);
+    float4 inPt = (float4)(x*voxelSize.x, y*voxelSize.y, 0, 1);
     float3 basePt = (float3)(dot(vol2cam0, inPt),
                              dot(vol2cam1, inPt),
                              dot(vol2cam2, inPt));
@@ -48,8 +54,7 @@ __kernel void integrate(__global const char * depthptr,
     // zStep == vol2cam*(float3(x, y, 1)*voxelSize) - basePt;
     float3 zStep = ((float3)(vol2cam0.z, vol2cam1.z, vol2cam2.z))*voxelSize;
 
-    // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
-    int volYidx = (x*edgeResolution + y)*edgeResolution;
+    int volYidx = x*volDims.x + y*volDims.y;
 
     int startZ, endZ;
     if(fabs(zStep.z) > 1e-5)
@@ -58,7 +63,7 @@ __kernel void integrate(__global const char * depthptr,
         if(zStep.z > 0)
         {
             startZ = baseZ;
-            endZ = edgeResolution;
+            endZ = volResolution.z;
         }
         else
         {
@@ -70,17 +75,18 @@ __kernel void integrate(__global const char * depthptr,
     {
         if(basePt.z > 0)
         {
-            startZ = 0; endZ = edgeResolution;
+            startZ = 0; endZ = volResolution.z;
         }
         else
         {
             // z loop shouldn't be performed
-            startZ = endZ = 0;
+            //startZ = endZ = 0;
+            return;
         }
     }
 
     startZ = max(0, startZ);
-    endZ = min(edgeResolution, endZ);
+    endZ = min(volResolution.z, endZ);
 
     for(int z = startZ; z < endZ; z++)
     {
@@ -138,9 +144,10 @@ __kernel void integrate(__global const char * depthptr,
         if(sdf >= -truncDist)
         {
             float tsdf = fmin(1.0f, sdf * truncDistInv);
+            int volIdx = volYidx + z*volDims.z;
 
 //TODO: change weight format: int->float
-            float2 voxel = volumeptr[volYidx + z];
+            float2 voxel = volumeptr[volIdx];
             float value  = voxel.s0;
             int weight = as_int(voxel.s1);
 
@@ -150,7 +157,7 @@ __kernel void integrate(__global const char * depthptr,
 
             voxel.s0 = value;
             voxel.s1 = as_float(weight);
-            volumeptr[volYidx + z] = voxel;
+            volumeptr[volIdx] = voxel;
         }
     }
 }
@@ -180,9 +187,9 @@ inline float interpolateVoxel(float3 p, __global const float2* volumePtr,
 }
 
 inline float3 getNormalVoxel(float3 p, __global const float2* volumePtr,
-                             int edgeResolution, int3 volDims, int8 neighbourCoords)
+                             int3 volResolution, int3 volDims, int8 neighbourCoords)
 {
-    if(any(p < 1) || any(p >= edgeResolution - 2))
+    if(any(p < 1) || any(p >= convert_float(volResolution - 2)))
         return nan((uint)0);
 
     float3 fip = floor(p);
@@ -236,8 +243,8 @@ __kernel void raycast(__global char * pointsptr,
                       const float4 boxDown4,
                       const float4 boxUp4,
                       const float tstep,
-                      const float voxelSize,
-                      const int edgeResolution,
+                      const float4 voxelSize4,
+                      const int4 volResolution4,
                       const int4 volDims4,
                       const int8 neighbourCoords
                       )
@@ -269,7 +276,10 @@ __kernel void raycast(__global char * pointsptr,
     const float3 boxUp   = boxUp4.xyz;
     const int3   volDims = volDims4.xyz;
 
-    const float invVoxelSize = native_recip(voxelSize);
+    const int3 volResolution = volResolution4.xyz;
+
+    const float3 voxelSize = voxelSize4.xyz;
+    const float3 invVoxelSize = native_recip(voxelSize);
 
     // kernel itself
 
@@ -363,7 +373,7 @@ __kernel void raycast(__global char * pointsptr,
             if(!isnan(ts) && !isinf(ts))
             {
                 float3 pv = orig + dir*ts;
-                float3 nv = getNormalVoxel(pv, volumeptr, edgeResolution, volDims, neighbourCoords);
+                float3 nv = getNormalVoxel(pv, volumeptr, volResolution, volDims, neighbourCoords);
 
                 if(!any(isnan(nv)))
                 {
