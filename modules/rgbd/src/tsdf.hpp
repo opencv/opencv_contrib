@@ -40,6 +40,8 @@ public:
     int maxWeight;
     cv::Affine3f pose;
     float raycastStepFactor;
+    Vec4i volDims;
+    Vec8i neighbourCoords;
 };
 
 cv::Ptr<TSDFVolume> makeTSDFVolume(cv::kinfu::Params::PlatformType t,
