@@ -2687,7 +2687,8 @@ double MaxMeaningfulClustering::probability(vector<int> &cluster)
     //for (int kk=0; kk<angles.size(); kk++)
     //  cout << angles[kk] << " ";
     //cout << endl;
-
+    if (angles.empty() || edge_distances.empty())
+        return 0;
     meanStdDev( angles, mean, std );
     sample.push_back((float)std[0]);
     sample.push_back((float)mean[0]);
