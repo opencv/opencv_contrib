@@ -19,7 +19,7 @@ class TSDFVolume
 public:
     // dimension in voxels, size in meters
     TSDFVolume(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-               float _raycastStepFactor);
+               float _raycastStepFactor, bool zFirstMemOrder = true);
 
     virtual void integrate(cv::Ptr<Frame> depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) = 0;
     virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize, int pyramidLevels,

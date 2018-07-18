@@ -45,7 +45,7 @@ class TSDFVolumeCPU : public TSDFVolume
 public:
     // dimension in voxels, size in meters
     TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-                  float _raycastStepFactor);
+                  float _raycastStepFactor, bool zFirstMemOrder = true);
 
     virtual void integrate(cv::Ptr<Frame> depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) override;
     virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize, int pyramidLevels,
@@ -71,7 +71,7 @@ public:
 
 
 TSDFVolume::TSDFVolume(int _res, float _size, Affine3f _pose, float _truncDist, int _maxWeight,
-                       float _raycastStepFactor) :
+                       float _raycastStepFactor, bool zFirstMemOrder) :
     volSize(_size, _size, _size),
     volResolution(_res, _res, _res),
     maxWeight(_maxWeight),
@@ -88,10 +88,18 @@ TSDFVolume::TSDFVolume(int _res, float _size, Affine3f _pose, float _truncDist, 
                                                                  voxelSize.z)));
 
     int xdim, ydim, zdim;
-
-    xdim = volResolution.z * volResolution.y;
-    ydim = volResolution.z;
-    zdim = 1;
+    if(zFirstMemOrder)
+    {
+        xdim = volResolution.z * volResolution.y;
+        ydim = volResolution.z;
+        zdim = 1;
+    }
+    else
+    {
+        xdim = 1;
+        ydim = volResolution.x;
+        zdim = volResolution.x * volResolution.y;
+    }
 
     volDims = Vec4i(xdim, ydim, zdim);
     neighbourCoords = Vec8i(
@@ -108,8 +116,8 @@ TSDFVolume::TSDFVolume(int _res, float _size, Affine3f _pose, float _truncDist, 
 
 // dimension in voxels, size in meters
 TSDFVolumeCPU::TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-                             float _raycastStepFactor) :
-    TSDFVolume(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor)
+                             float _raycastStepFactor, bool zFirstMemOrder) :
+    TSDFVolume(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor, zFirstMemOrder)
 {
     CV_Assert(_res % 32 == 0);
 
@@ -1205,7 +1213,7 @@ public:
 
 TSDFVolumeGPU::TSDFVolumeGPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                              float _raycastStepFactor) :
-    TSDFVolume(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor),
+    TSDFVolume(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor, false),
 {
     CV_Assert(_res % 32 == 0);
 
