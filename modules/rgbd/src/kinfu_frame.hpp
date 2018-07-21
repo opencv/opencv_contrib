@@ -80,17 +80,19 @@ struct Frame
 public:
     virtual void render(cv::OutputArray image, int level, cv::Affine3f lightPose) const = 0;
     virtual void getDepth(cv::OutputArray depth) const = 0;
+    virtual void getPointsNormals(cv::OutputArray points, cv::OutputArray normals) const = 0;
     virtual ~Frame() { }
 };
 
 struct FrameCPU : Frame
 {
 public:
-    FrameCPU() : points(), normals() { }
+    FrameCPU() : points(), normals(), depthData() { }
     virtual ~FrameCPU() { }
 
     virtual void render(cv::OutputArray image, int level, cv::Affine3f lightPose) const override;
     virtual void getDepth(cv::OutputArray depth) const override;
+    virtual void getPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
 
     std::vector<Points> points;
     std::vector<Normals> normals;
@@ -102,6 +104,8 @@ struct FrameGPU : Frame
 public:
     virtual void render(cv::OutputArray image, int level, cv::Affine3f lightPose) const override;
     virtual void getDepth(cv::OutputArray depth) const override;
+    virtual void getPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
+
     virtual ~FrameGPU() { }
 };
 

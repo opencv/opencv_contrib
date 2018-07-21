@@ -39,17 +39,15 @@ ICPCPU::ICPCPU(const Intr _intrinsics, const std::vector<int> &_iterations, floa
     ICP(_intrinsics, _iterations, _angleThreshold, _distanceThreshold)
 { }
 
-bool ICPCPU::estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> _oldFrame, cv::Ptr<Frame> _newFrame) const
+bool ICPCPU::estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> oldFrame, cv::Ptr<Frame> newFrame) const
 {
-    ScopeTime st("icp");
+    ScopeTime st("icp cpu");
 
-    cv::Ptr<FrameCPU> oldFrame = _oldFrame.dynamicCast<FrameCPU>();
-    cv::Ptr<FrameCPU> newFrame = _newFrame.dynamicCast<FrameCPU>();
+    std::vector<Points> oldPoints, newPoints;
+    std::vector<Normals> oldNormals, newNormals;
 
-    const std::vector<Points>& oldPoints   = oldFrame->points;
-    const std::vector<Normals>& oldNormals = oldFrame->normals;
-    const std::vector<Points>& newPoints  = newFrame->points;
-    const std::vector<Normals>& newNormals = newFrame->normals;
+    oldFrame->getPointsNormals(oldPoints, oldNormals);
+    newFrame->getPointsNormals(newPoints, newNormals);
 
     transform = Affine3f::Identity();
     for(size_t l = 0; l < iterations.size(); l++)
@@ -450,7 +448,7 @@ struct GetAbInvoker : ParallelLoopBody
 void ICPCPU::getAb(const Points& oldPts, const Normals& oldNrm, const Points& newPts, const Normals& newNrm,
                    Affine3f pose, int level, Matx66f &A, Vec6f &b) const
 {
-    ScopeTime st("icp: get ab", false);
+    ScopeTime st("icp cpu: get ab", false);
 
     CV_Assert(oldPts.size() == oldNrm.size());
     CV_Assert(newPts.size() == newNrm.size());

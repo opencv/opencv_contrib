@@ -33,7 +33,7 @@ cv::Ptr<Frame> FrameGeneratorCPU::operator ()() const
 void FrameGeneratorCPU::operator ()(Ptr<Frame> _frame, InputArray depth, const Intr intr, int levels, float depthFactor,
                                     float sigmaDepth, float sigmaSpatial, int kernelSize) const
 {
-    ScopeTime st("frameGenerator: from depth");
+    ScopeTime st("frameGenerator cpu: from depth");
 
     Ptr<FrameCPU> frame = _frame.dynamicCast<FrameCPU>();
 
@@ -75,7 +75,7 @@ void FrameGeneratorCPU::operator ()(Ptr<Frame> _frame, InputArray depth, const I
 
 void FrameGeneratorCPU::operator ()(Ptr<Frame> _frame, InputArray _points, InputArray _normals, int levels) const
 {
-    ScopeTime st("frameGenerator: pyrDown p, n");
+    ScopeTime st("frameGenerator cpu: pyrDown p, n");
 
     CV_Assert( _points.type() == DataType<Points::value_type>::type);
     CV_Assert(_normals.type() == DataType<Points::value_type>::type);
@@ -198,7 +198,7 @@ struct RenderInvoker : ParallelLoopBody
 
 void FrameCPU::render(OutputArray image, int level, Affine3f lightPose) const
 {
-    ScopeTime st("frame render");
+    ScopeTime st("frame cpu render");
 
     CV_Assert(level < (int)points.size());
     CV_Assert(level < (int)normals.size());
@@ -217,7 +217,26 @@ void FrameCPU::render(OutputArray image, int level, Affine3f lightPose) const
 void FrameCPU::getDepth(OutputArray _depth) const
 {
     CV_Assert(!depthData.empty());
+    _depth.createSameSize(depthData, depthData.type());
     _depth.assign(depthData);
+}
+
+
+void FrameCPU::getPointsNormals(OutputArray _points, OutputArray _normals) const
+{
+    CV_Assert(!points.empty());
+    CV_Assert(!normals.empty());
+    std::vector<Mat> pts(points.size());
+    std::vector<Mat> nrm(normals.size());
+    for(size_t i = 0; i < pts.size(); i++)
+    {
+        pts[i] = points [i];
+        nrm[i] = normals[i];
+    }
+    _points.create(1, points.size(), DataType<Points::value_type>::type);
+    _points.assign(pts);
+    _normals.create(1, normals.size(), DataType<Points::value_type>::type);
+    _normals.assign(nrm);
 }
 
 

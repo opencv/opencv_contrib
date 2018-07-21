@@ -12,39 +12,6 @@
 namespace cv {
 namespace kinfu {
 
-class KinFu::KinFuImpl : public KinFu
-{
-public:
-    KinFuImpl(const Params& _params);
-    virtual ~KinFuImpl();
-
-    const Params& getParams() const CV_OVERRIDE;
-    void setParams(const Params&) CV_OVERRIDE;
-
-    void render(OutputArray image, const Matx44f& cameraPose) const CV_OVERRIDE;
-
-    void getCloud(OutputArray points, OutputArray normals) const CV_OVERRIDE;
-    void getPoints(OutputArray points) const CV_OVERRIDE;
-    void getNormals(InputArray points, OutputArray normals) const CV_OVERRIDE;
-
-    void reset() CV_OVERRIDE;
-
-    const Affine3f getPose() const CV_OVERRIDE;
-
-    bool update(InputArray depth) CV_OVERRIDE;
-
-private:
-    Params params;
-
-    cv::Ptr<FrameGenerator> frameGenerator;
-    cv::Ptr<ICP> icp;
-    cv::Ptr<TSDFVolume> volume;
-
-    int frameCounter;
-    Affine3f pose;
-    cv::Ptr<Frame> frame;
-};
-
 Ptr<Params> Params::defaultParams()
 {
     Params p;
@@ -135,6 +102,40 @@ Ptr<Params> Params::coarseParams()
 
     return p;
 }
+
+class KinFu::KinFuImpl : public KinFu
+{
+public:
+    KinFuImpl(const Params& _params);
+    virtual ~KinFuImpl();
+
+    const Params& getParams() const CV_OVERRIDE;
+    void setParams(const Params&) CV_OVERRIDE;
+
+    void render(OutputArray image, const Matx44f& cameraPose) const CV_OVERRIDE;
+
+    void getCloud(OutputArray points, OutputArray normals) const CV_OVERRIDE;
+    void getPoints(OutputArray points) const CV_OVERRIDE;
+    void getNormals(InputArray points, OutputArray normals) const CV_OVERRIDE;
+
+    void reset() CV_OVERRIDE;
+
+    const Affine3f getPose() const CV_OVERRIDE;
+
+    bool update(InputArray depth) CV_OVERRIDE;
+
+private:
+    Params params;
+
+    cv::Ptr<FrameGenerator> frameGenerator;
+    cv::Ptr<ICP> icp;
+    cv::Ptr<TSDFVolume> volume;
+
+    int frameCounter;
+    Affine3f pose;
+    cv::Ptr<Frame> frame;
+};
+
 
 KinFu::KinFuImpl::KinFuImpl(const Params &_params) :
     params(_params),
