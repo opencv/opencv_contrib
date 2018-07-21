@@ -102,11 +102,16 @@ public:
 struct FrameGPU : Frame
 {
 public:
+    FrameGPU() : depthData(), points(), normals() { }
     virtual void render(cv::OutputArray image, int level, cv::Affine3f lightPose) const override;
     virtual void getDepth(cv::OutputArray depth) const override;
     virtual void getPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
 
     virtual ~FrameGPU() { }
+
+    UMat depthData;
+    std::vector<UMat> points;
+    std::vector<UMat> normals;
 };
 
 struct FrameGenerator
