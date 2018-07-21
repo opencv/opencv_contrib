@@ -64,8 +64,8 @@ public:
     v_float32x4 getNormalVoxel(const v_float32x4& p) const;
 #endif
 
-    // edgeResolution^3 array
-    // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
+    // See zFirstMemOrder arg of parent class constructor
+    // for the array layout info
     Volume volume;
 };
 
@@ -78,6 +78,8 @@ TSDFVolume::TSDFVolume(int _res, float _size, Affine3f _pose, float _truncDist, 
     pose(_pose),
     raycastStepFactor(_raycastStepFactor)
 {
+    CV_Assert(_res % 32 == 0);
+
     voxelSize = Point3f(volSize.x / volResolution.x,
                         volSize.y / volResolution.y,
                         volSize.z / volResolution.z);
@@ -87,6 +89,10 @@ TSDFVolume::TSDFVolume(int _res, float _size, Affine3f _pose, float _truncDist, 
     truncDist = std::max(_truncDist, 2.1f * max(voxelSize.x, max(voxelSize.y,
                                                                  voxelSize.z)));
 
+    // (xRes*yRes*zRes) array
+    // Depending on zFirstMemOrder arg:
+    // &elem(x, y, z) = data + x*zRes*yRes + y*zRes + z;
+    // &elem(x, y, z) = data + x + y*xRes + z*xRes*yRes;
     int xdim, ydim, zdim;
     if(zFirstMemOrder)
     {
@@ -119,8 +125,6 @@ TSDFVolumeCPU::TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _t
                              float _raycastStepFactor, bool zFirstMemOrder) :
     TSDFVolume(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor, zFirstMemOrder)
 {
-    CV_Assert(_res % 32 == 0);
-
     volume = Volume(1, volResolution.x * volResolution.y * volResolution.z);
 
     reset();
@@ -247,7 +251,6 @@ struct IntegrateInvoker : ParallelLoopBody
         v_float32x4 vfxy(proj.fx, proj.fy, 0.f, 0.f), vcxy(proj.cx, proj.cy, 0.f, 0.f);
         const v_float32x4 upLimits = v_cvt_f32(v_int32x4(depth.cols-1, depth.rows-1, 0, 0));
 
-        // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
         for(int x = range.start; x < range.end; x++)
         {
             Voxel* volDataX = volDataStart + x*volume.volDims[0];
@@ -379,7 +382,6 @@ struct IntegrateInvoker : ParallelLoopBody
 #else
     virtual void operator() (const Range& range) const override
     {
-        // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
         for(int x = range.start; x < range.end; x++)
         {
             Voxel* volDataX = volDataStart + x*volume.volDims[0];
@@ -1069,7 +1071,6 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
 
     virtual void operator() (const Range& range) const override
     {
-        // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
         std::vector<ptype> points, normals;
         for(int x = range.start; x < range.end; x++)
         {
@@ -1203,9 +1204,9 @@ public:
 
     virtual void reset() override;
 
-    // edgeResolution^3 array
-    // &elem(x, y, z) = data + x*edgeRes^2 + y*edgeRes + z;
-    // elem is CV_32FC2, read as (float, int)
+    // See zFirstMemOrder arg of parent class constructor
+    // for the array layout info
+    // Array elem is CV_32FC2, read as (float, int)
     UMat volume;
 
 };
@@ -1215,8 +1216,6 @@ TSDFVolumeGPU::TSDFVolumeGPU(int _res, float _size, cv::Affine3f _pose, float _t
                              float _raycastStepFactor) :
     TSDFVolume(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor, false),
 {
-    CV_Assert(_res % 32 == 0);
-
     volume = UMat(1, volResolution.x * volResolution.y * volResolution.z, CV_32FC2);
 
     reset();
@@ -1300,8 +1299,10 @@ void TSDFVolumeGPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frame
     UMat normals(frameSize, CV_32FC4);
 
     UMat vol2camGpu, cam2volGpu;
-    Mat((pose.inv() * cameraPose).matrix).copyTo(cam2volGpu);
-    Mat((cameraPose.inv() * pose).matrix).copyTo(vol2camGpu);
+    Affine3f vol2cam = cameraPose.inv() * pose;
+    Affine3f cam2vol = pose.inv() * cameraPose;
+    Mat(cam2vol.matrix).copyTo(cam2volGpu);
+    Mat(vol2cam.matrix).copyTo(vol2camGpu);
     Intr::Reprojector r = intrinsics.makeReprojector();
     // We do subtract voxel size to minimize checks after
     // Note: origin of volume coordinate is placed
@@ -1317,7 +1318,6 @@ void TSDFVolumeGPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frame
     k.args(ocl::KernelArg::WriteOnly(points),
            ocl::KernelArg::WriteOnly(normals),
            ocl::KernelArg::PtrReadOnly(volume),
-           //TODO: try KernelArg::Constant() here and vector args in tsdf.cl file
            ocl::KernelArg::PtrReadOnly(vol2camGpu),
            ocl::KernelArg::PtrReadOnly(cam2volGpu),
            r.fxinv, r.fyinv, r.cx, r.cy,
@@ -1336,15 +1336,8 @@ void TSDFVolumeGPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frame
         throw std::runtime_error("Failed to run kernel");
 
     //DEBUG
-    Mat cpoints(points.size(), points.type());
-    Mat cnormals(normals.size(), normals.type());
-    {
-        points.copyTo(cpoints);
-        normals.copyTo(cnormals);
-    }
     // build a pyramid of points and normals
-    //TODO: replace cpoints and cnormals with points and normals
-    (*frameGenerator)(frame, cpoints, cnormals, pyramidLevels);
+    (*frameGenerator)(frame, points, normals, pyramidLevels);
 }
 
 

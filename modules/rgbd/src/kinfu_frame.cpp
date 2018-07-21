@@ -84,11 +84,17 @@ void FrameGeneratorCPU::operator ()(Ptr<Frame> _frame, InputArray _points, Input
 
     CV_Assert(frame);
 
+    Mat p0 = _points.getMat(), n0 = _normals.getMat();
+    if(_points.kind()  != _InputArray::MAT)
+        p0 = p0.clone();
+    if(_normals.kind() != _InputArray::MAT)
+        n0 = n0.clone();
+
     frame->depthData = Depth();
     frame->points.resize(levels);
     frame->normals.resize(levels);
-    frame->points[0]  = _points.getMat();
-    frame->normals[0] = _normals.getMat();
+    frame->points[0]  = p0;
+    frame->normals[0] = n0;
     Size sz = _points.size();
     for(int i = 1; i < levels; i++)
     {

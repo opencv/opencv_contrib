@@ -4,8 +4,6 @@
 
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
-//TODO: fix all TODOs
-
 __kernel void integrate(__global const char * depthptr,
                         int depth_step, int depth_offset,
                         int depth_rows, int depth_cols,
@@ -146,7 +144,6 @@ __kernel void integrate(__global const char * depthptr,
             float tsdf = fmin(1.0f, sdf * truncDistInv);
             int volIdx = volYidx + z*volDims.z;
 
-//TODO: change weight format: int->float
             float2 voxel = volumeptr[volIdx];
             float value  = voxel.s0;
             int weight = as_int(voxel.s1);
@@ -223,7 +220,7 @@ inline float3 getNormalVoxel(float3 p, __global const float2* volumePtr,
         an[c] = nv;
     }
 
-    //TODO: half?
+    //gradientDeltaFactor is fixed at 1.0 of voxel size
     return fast_normalize(vload3(0, an));
 }
 
@@ -298,11 +295,9 @@ __kernel void raycast(__global char * pointsptr,
                       dot(planed, camRot2));
 
     // 3. normalize
-    //TODO: half?
     float3 dir = fast_normalize(planed);
 
     // compute intersection of ray with all six bbox planes
-    //TODO: half?
     float3 rayinv = native_recip(dir);
     float3 tbottom = rayinv*(boxDown - orig);
     float3 ttop    = rayinv*(boxUp   - orig);
@@ -333,8 +328,7 @@ __kernel void raycast(__global char * pointsptr,
 
         // raymarch
         int steps = 0;
-        //TODO: half_divide? native?
-        int nSteps = floor((tmax - tmin)/tstep);
+        int nSteps = floor(native_divide(tmax - tmin, tstep));
         for(; steps < nSteps; steps++)
         {
             next += rayStep;
@@ -366,8 +360,7 @@ __kernel void raycast(__global char * pointsptr,
             float ftdt = interpolateVoxel(next, volumeptr, volDims, neighbourCoords);
             // float t = tmin + steps*tstep;
             // float ts = t - tstep*ft/(ftdt - ft);
-            //TODO: half_divide? native?
-            float ts = tmin + tstep*(steps - ft/(ftdt - ft));
+            float ts = tmin + tstep*(steps - native_divide(ft, ftdt - ft));
 
             // avoid division by zero
             if(!isnan(ts) && !isinf(ts))
