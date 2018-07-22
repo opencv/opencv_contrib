@@ -99,73 +99,73 @@ Apart from fields inspired to KeyPoint class, KeyLines stores information about 
 original image and in octave it was extracted from, about line's length and number of pixels it
 covers.
  */
-struct CV_EXPORTS KeyLine
+struct CV_EXPORTS_W_SIMPLE KeyLine
 {
  public:
   /** orientation of the line */
-  float angle;
+  CV_PROP_RW float angle;
 
   /** object ID, that can be used to cluster keylines by the line they represent */
-  int class_id;
+  CV_PROP_RW int class_id;
 
   /** octave (pyramid layer), from which the keyline has been extracted */
-  int octave;
+  CV_PROP_RW int octave;
 
   /** coordinates of the middlepoint */
-  Point2f pt;
+  CV_PROP_RW Point2f pt;
 
   /** the response, by which the strongest keylines have been selected.
    It's represented by the ratio between line's length and maximum between
    image's width and height */
-  float response;
+  CV_PROP_RW float response;
 
   /** minimum area containing line */
-  float size;
+  CV_PROP_RW float size;
 
   /** lines's extremes in original image */
-  float startPointX;
-  float startPointY;
-  float endPointX;
-  float endPointY;
+  CV_PROP_RW float startPointX;
+  CV_PROP_RW float startPointY;
+  CV_PROP_RW float endPointX;
+  CV_PROP_RW float endPointY;
 
   /** line's extremes in image it was extracted from */
-  float sPointInOctaveX;
-  float sPointInOctaveY;
-  float ePointInOctaveX;
-  float ePointInOctaveY;
+  CV_PROP_RW float sPointInOctaveX;
+  CV_PROP_RW float sPointInOctaveY;
+  CV_PROP_RW float ePointInOctaveX;
+  CV_PROP_RW float ePointInOctaveY;
 
   /** the length of line */
-  float lineLength;
+  CV_PROP_RW float lineLength;
 
   /** number of pixels covered by the line */
-  int numOfPixels;
+  CV_PROP_RW int numOfPixels;
 
   /** Returns the start point of the line in the original image */
-  Point2f getStartPoint() const
+  CV_WRAP Point2f getStartPoint() const
   {
     return Point2f(startPointX, startPointY);
   }
 
   /** Returns the end point of the line in the original image */
-  Point2f getEndPoint() const
+  CV_WRAP Point2f getEndPoint() const
   {
     return Point2f(endPointX, endPointY);
   }
 
   /** Returns the start point of the line in the octave it was extracted from */
-  Point2f getStartPointInOctave() const
+  CV_WRAP Point2f getStartPointInOctave() const
   {
     return Point2f(sPointInOctaveX, sPointInOctaveY);
   }
 
   /** Returns the end point of the line in the octave it was extracted from */
-  Point2f getEndPointInOctave() const
+  CV_WRAP Point2f getEndPointInOctave() const
   {
     return Point2f(ePointInOctaveX, ePointInOctaveY);
   }
 
   /** constructor */
-  KeyLine()
+  CV_WRAP KeyLine()
   {
   }
 };
@@ -892,7 +892,7 @@ the one used in *BinaryDescriptor* class, data associated to a line's extremes i
 in octave it was extracted from, coincide. KeyLine's field *class_id* is used as an index to
 indicate the order of extraction of a line inside a single octave.
 */
-class CV_EXPORTS LSDDetector : public Algorithm
+class CV_EXPORTS_W LSDDetector : public Algorithm
 {
 public:
 
@@ -905,7 +905,7 @@ LSDDetector()
 
 /** @brief Creates ad LSDDetector object, using smart pointers.
  */
-static Ptr<LSDDetector> createLSDDetector();
+CV_WRAP static Ptr<LSDDetector> createLSDDetector();
 
 /** @brief Detect lines inside an image.
 
@@ -915,7 +915,7 @@ static Ptr<LSDDetector> createLSDDetector();
 @param numOctaves number of octaves inside pyramid
 @param mask mask matrix to detect only KeyLines of interest
  */
-void detect( const Mat& image, CV_OUT std::vector<KeyLine>& keypoints, int scale, int numOctaves, const Mat& mask = Mat() );
+CV_WRAP void detect( const Mat& image, CV_OUT std::vector<KeyLine>& keypoints, int scale, int numOctaves, const Mat& mask = Mat() );
 
 /** @overload
 @param images input images
@@ -924,7 +924,7 @@ void detect( const Mat& image, CV_OUT std::vector<KeyLine>& keypoints, int scale
 @param numOctaves number of octaves inside pyramid
 @param masks vector of mask matrices to detect only KeyLines of interest from each input image
 */
-void detect( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, int scale, int numOctaves,
+CV_WRAP void detect( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, int scale, int numOctaves,
 const std::vector<Mat>& masks = std::vector<Mat>() ) const;
 
 private:
