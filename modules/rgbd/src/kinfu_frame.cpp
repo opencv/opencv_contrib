@@ -432,7 +432,7 @@ static const int GPU_POINTS_TYPE = CV_32FC4;
 
 void computePointsNormalsGpu(const Intr intr, float depthFactor, const UMat depth, UMat points, UMat normals);
 UMat pyrDownBilateralGpu(const UMat depth, float sigma);
-void customBilateralFilterGpu(UMat src, UMat dst, int kernelSize, float sigmaDepth, float sigmaSpatial);
+void customBilateralFilterGpu(const UMat src, UMat& dst, int kernelSize, float sigmaDepth, float sigmaSpatial);
 void pyrDownPointsNormalsGpu(const UMat p, const UMat n, UMat &pdown, UMat &ndown);
 
 
@@ -575,7 +575,7 @@ UMat pyrDownBilateralGpu(const UMat depth, float sigma)
 }
 
 //TODO: remove it when OpenCV's bilateral processes 32f on GPU
-void customBilateralFilterGpu(UMat src /* udepth */, UMat dst /* smooth */,
+void customBilateralFilterGpu(const UMat src /* udepth */, UMat& dst /* smooth */,
                               int kernelSize, float sigmaDepth, float sigmaSpatial)
 {
     CV_Assert(src.size().area() > 0);
@@ -627,7 +627,7 @@ void FrameGeneratorGPU::operator ()(Ptr<Frame> _frame, InputArray _points, Input
     Size sz = _points.size();
     for(int i = 1; i < levels; i++)
     {
-        sz.width /= 2; sz.width /= 2;
+        sz.width /= 2; sz.height /= 2;
         frame->points [i].create(sz, GPU_POINTS_TYPE);
         frame->normals[i].create(sz, GPU_POINTS_TYPE);
         pyrDownPointsNormalsGpu(frame->points[i-1], frame->normals[i-1],
@@ -668,7 +668,7 @@ void FrameGPU::render(OutputArray image, int level, Affine3f lightPose) const
     CV_Assert(level < (int)normals.size());
 
     Size sz = points[level].size();
-    image.create(sz, CV_8UC3);
+    image.create(sz, CV_8UC4);
     UMat img = image.getUMat();
 
     cv::String errorStr;

@@ -4,8 +4,6 @@
 
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
-//TODO: replace by real code
-
 inline float3 reproject(float3 p, float2 fxyinv, float2 cxy)
 {
     float2 pp = p.z*(p.xy - cxy)*fxyinv;
@@ -65,15 +63,15 @@ __kernel void computePointsNormals(__global char * pointsptr,
             float3 v10 = reproject(p10, fxyinv, cxy);
 
             float3 vec = cross(v01 - v00, v10 - v00);
-            n = - fast_normalize(vec);
+            n = - normalize(vec);
             p = v00;
         }
     }
 
     __global float* pts = (__global float*)(pointsptr  +  points_offset + y*points_step  + x*sizeof(ptype));
     __global float* nrm = (__global float*)(normalsptr + normals_offset + y*normals_step + x*sizeof(ptype));
-    vstore4((float4)(p, 0), 0, pts);
-    vstore4((float4)(n, 0), 0, nrm);
+    vstore4((ptype)(p, 0), 0, pts);
+    vstore4((ptype)(n, 0), 0, nrm);
 }
 
 __kernel void pyrDownBilateral(__global const char * depthptr,
@@ -93,7 +91,6 @@ __kernel void pyrDownBilateral(__global const char * depthptr,
 
     const float sigma3 = sigma*3;
     const int D = 5;
-
 
     __global const float* srcCenterRow = (__global const float*)(depthptr + depth_offset +
                                                                  (2*y)*depth_step);
@@ -201,10 +198,8 @@ __kernel void pyrDownPointsNormals(__global const char * pptr,
 
     float3 point = nan((uint)0), normal = nan((uint)0);
 
-    __global const float4* pUpRow0 = (__global const float4*)(pptr + p_offset + (2*y  )*p_offset + (2*x)*sizeof(ptype));
-    __global const float4* pUpRow1 = (__global const float4*)(pptr + p_offset + (2*y+1)*p_offset + (2*x)*sizeof(ptype));
-    __global const float4* nUpRow0 = (__global const float4*)(nptr + n_offset + (2*y  )*n_offset + (2*x)*sizeof(ptype));
-    __global const float4* nUpRow1 = (__global const float4*)(nptr + n_offset + (2*y+1)*n_offset + (2*x)*sizeof(ptype));
+    __global const ptype* pUpRow0 = (__global const ptype*)(pptr + p_offset + (2*y  )*p_step);
+    __global const ptype* pUpRow1 = (__global const ptype*)(pptr + p_offset + (2*y+1)*p_step);
 
     float3 d00 = pUpRow0[2*x  ].xyz;
     float3 d01 = pUpRow0[2*x+1].xyz;
@@ -216,6 +211,9 @@ __kernel void pyrDownPointsNormals(__global const char * pptr,
     {
         point = (d00 + d01 + d10 + d11)*0.25f;
 
+        __global const ptype* nUpRow0 = (__global const ptype*)(nptr + n_offset + (2*y  )*n_step);
+        __global const ptype* nUpRow1 = (__global const ptype*)(nptr + n_offset + (2*y+1)*n_step);
+
         float3 n00 = nUpRow0[2*x  ].xyz;
         float3 n01 = nUpRow0[2*x+1].xyz;
         float3 n10 = nUpRow1[2*x  ].xyz;
@@ -224,13 +222,13 @@ __kernel void pyrDownPointsNormals(__global const char * pptr,
         normal = (n00 + n01 + n10 + n11)*0.25f;
     }
 
-    __global float* pts = (__global float*)(pdownptr + pdown_offset + y*pdown_step + x*sizeof(ptype));
-    __global float* nrm = (__global float*)(ndownptr + ndown_offset + y*ndown_step + x*sizeof(ptype));
-    vstore4((float4)(point, 0), 0, pts);
-    vstore4((float4)(normal, 0), 0, nrm);
+    __global ptype* pts = (__global ptype*)(pdownptr + pdown_offset + y*pdown_step);
+    __global ptype* nrm = (__global ptype*)(ndownptr + ndown_offset + y*ndown_step);
+    pts[x] = (ptype)(point,  0);
+    nrm[x] = (ptype)(normal, 0);
 }
 
-typedef char3 pixelType;
+typedef char4 pixelType;
 
 __kernel void render(__global const char * pointsptr,
                      int points_step, int points_offset,
@@ -250,8 +248,8 @@ __kernel void render(__global const char * pointsptr,
     if(x >= img_cols || y >= img_rows)
         return;
 
-    __global const float4* ptsRow = (__global const float4*)(pointsptr + points_offset + y*points_step + x*sizeof(ptype));
-    __global const float4* nrmRow = (__global const float4*)(normalsptr + normals_offset + y*normals_step + x*sizeof(ptype));
+    __global const ptype* ptsRow = (__global const ptype*)(pointsptr  + points_offset  + y*points_step  + x*sizeof(ptype));
+    __global const ptype* nrmRow = (__global const ptype*)(normalsptr + normals_offset + y*normals_step + x*sizeof(ptype));
 
     float3 p = (*ptsRow).xyz;
     float3 n = (*nrmRow).xyz;
@@ -260,7 +258,7 @@ __kernel void render(__global const char * pointsptr,
 
     if(any(isnan(p)))
     {
-        color = (pixelType)(0, 32, 0);
+        color = (pixelType)(0, 32, 0, 0);
     }
     else
     {
@@ -274,16 +272,17 @@ __kernel void render(__global const char * pointsptr,
         const float Sx = 1.f;   //specular color, can be RGB
         const float Lx = 1.f;   //light color
 
-        float3 l = fast_normalize(lightPt.xyz - p);
-        float3 v = fast_normalize(-p);
-        float3 r = fast_normalize(2.f*n*dot(n, l) - l);
+        float3 l = normalize(lightPt.xyz - p);
+        float3 v = normalize(-p);
+        float3 r = normalize(2.f*n*dot(n, l) - l);
 
         float val = (Ax*Ka*Dx + Lx*Kd*Dx*max(0.f, dot(n, l)) +
                      Lx*Ks*Sx*pown(max(0.f, dot(r, v)), sp));
 
-        uchar ix = convert_char(val*255.f);
+        uchar ix = convert_uchar(val*255.f);
+        color = (pixelType)(ix, ix, ix, 0);
     }
 
     __global char* imgRow = (__global char*)(imgptr + img_offset + y*img_step + x*sizeof(pixelType));
-    vstore3(color, 0, imgRow);
+    vstore4(color, 0, imgRow);
 }
