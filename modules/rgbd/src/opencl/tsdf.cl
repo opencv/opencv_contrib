@@ -96,7 +96,7 @@ __kernel void integrate(__global const char * depthptr,
             continue;
 
         float3 camPixVec = camSpacePt / camSpacePt.z;
-        float2 projected = fma(camPixVec.xy, fxy, cxy);
+        float2 projected = mad(camPixVec.xy, fxy, cxy);
 
         float v;
         // bilinearly interpolate depth at projected
