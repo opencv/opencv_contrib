@@ -653,7 +653,7 @@ namespace cv
                 }
                 else if(params.kernelType == CV_DENSE_CENSUS)
                 {
-                    censusTransform(left,right,params.kernelSize,censusImageLeft,censusImageRight,CV_SPARSE_CENSUS);
+                    censusTransform(left,right,params.kernelSize,censusImageLeft,censusImageRight,CV_DENSE_CENSUS);
                 }
                 else if(params.kernelType == CV_CS_CENSUS)
                 {
