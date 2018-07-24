@@ -1243,7 +1243,7 @@ void TSDFVolumeGPU::integrate(cv::Ptr<Frame> _depth, float depthFactor,
     cv::String errorStr;
     cv::String name = "integrate";
     ocl::ProgramSource source = ocl::rgbd::tsdf_oclsrc;
-    cv::String options;
+    cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
     ocl::Kernel k;
     k.create(name.c_str(), source, options, &errorStr);
 
@@ -1288,7 +1288,7 @@ void TSDFVolumeGPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frame
     cv::String errorStr;
     cv::String name = "raycast";
     ocl::ProgramSource source = ocl::rgbd::tsdf_oclsrc;
-    cv::String options;
+    cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
     ocl::Kernel k;
     k.create(name.c_str(), source, options, &errorStr);
 

@@ -524,7 +524,7 @@ void computePointsNormalsGpu(const Intr intr, float depthFactor, const UMat dept
     cv::String errorStr;
     cv::String name = "computePointsNormals";
     ocl::ProgramSource source = ocl::rgbd::kinfu_frame_oclsrc;
-    cv::String options;
+    cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
     ocl::Kernel k;
     k.create(name.c_str(), source, options, &errorStr);
 
@@ -553,7 +553,7 @@ UMat pyrDownBilateralGpu(const UMat depth, float sigma)
     cv::String errorStr;
     cv::String name = "pyrDownBilateral";
     ocl::ProgramSource source = ocl::rgbd::kinfu_frame_oclsrc;
-    cv::String options;
+    cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
     ocl::Kernel k;
     k.create(name.c_str(), source, options, &errorStr);
 
@@ -586,7 +586,7 @@ void customBilateralFilterGpu(const UMat src /* udepth */, UMat& dst /* smooth *
     cv::String errorStr;
     cv::String name = "customBilateral";
     ocl::ProgramSource source = ocl::rgbd::kinfu_frame_oclsrc;
-    cv::String options;
+    cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
     ocl::Kernel k;
     k.create(name.c_str(), source, options, &errorStr);
 
@@ -640,7 +640,7 @@ void pyrDownPointsNormalsGpu(const UMat p, const UMat n, UMat &pdown, UMat &ndow
     cv::String errorStr;
     cv::String name = "pyrDownPointsNormals";
     ocl::ProgramSource source = ocl::rgbd::kinfu_frame_oclsrc;
-    cv::String options;
+    cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
     ocl::Kernel k;
     k.create(name.c_str(), source, options, &errorStr);
 
@@ -674,7 +674,7 @@ void FrameGPU::render(OutputArray image, int level, Affine3f lightPose) const
     cv::String errorStr;
     cv::String name = "render";
     ocl::ProgramSource source = ocl::rgbd::kinfu_frame_oclsrc;
-    cv::String options;
+    cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
     ocl::Kernel k;
     k.create(name.c_str(), source, options, &errorStr);
 
