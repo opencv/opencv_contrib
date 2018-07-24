@@ -368,7 +368,7 @@ namespace cv
                 }
                 else if(params.kernelType == CV_DENSE_CENSUS)
                 {
-                    censusTransform(left,right,params.kernelSize,censusImage[0],censusImage[1],CV_SPARSE_CENSUS);
+                    censusTransform(left,right,params.kernelSize,censusImage[0],censusImage[1],CV_DENSE_CENSUS);
                 }
                 else if(params.kernelType == CV_CS_CENSUS)
                 {

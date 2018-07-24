@@ -196,8 +196,6 @@ private:
     Mat_<int> nfeatures_;
     Mat_<int> colors_;
     Mat_<float> weights_;
-
-    Mat buf_;
 };
 
 
@@ -459,8 +457,7 @@ void BackgroundSubtractorGMGImpl::apply(InputArray _frame, OutputArray _fgmask, 
 
     if (smoothingRadius > 0)
     {
-        medianBlur(fgmask, buf_, smoothingRadius);
-        swap(fgmask, buf_);
+        medianBlur(fgmask, fgmask, smoothingRadius);
     }
 
     // keep track of how many frames we have processed
@@ -474,7 +471,6 @@ void BackgroundSubtractorGMGImpl::release()
     nfeatures_.release();
     colors_.release();
     weights_.release();
-    buf_.release();
 }
 
 
