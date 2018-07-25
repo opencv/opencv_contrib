@@ -486,6 +486,9 @@ public:
     virtual bool estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> oldFrame, cv::Ptr<Frame> newFrame) const override;
 
     virtual ~ICPGPU() { }
+private:
+    void getAb(const UMat &oldPts, const UMat &oldNrm, const UMat &newPts, const UMat &newNrm,
+               cv::Affine3f pose, int level, cv::Matx66f& A, cv::Vec6f& b) const;
 };
 
 ICPGPU::ICPGPU(const Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold) :
@@ -493,10 +496,141 @@ ICPGPU::ICPGPU(const Intr _intrinsics, const std::vector<int> &_iterations, floa
 { }
 
 
-bool ICPGPU::estimateTransform(cv::Affine3f& /*transform*/, cv::Ptr<Frame> /*_oldFrame*/, cv::Ptr<Frame> /*newFrame*/) const
+bool ICPGPU::estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> oldFrame, cv::Ptr<Frame> newFrame) const
 {
-    throw std::runtime_error("Not implemented");
+    ScopeTime st("icp gpu");
+
+    std::vector<UMat> oldPoints, newPoints;
+    std::vector<UMat> oldNormals, newNormals;
+
+    oldFrame->getPointsNormals(oldPoints, oldNormals);
+    newFrame->getPointsNormals(newPoints, newNormals);
+
+    transform = Affine3f::Identity();
+    for(size_t l = 0; l < iterations.size(); l++)
+    {
+        size_t level = iterations.size() - 1 - l;
+
+        UMat oldPts = oldPoints [level], newPts = newPoints [level];
+        UMat oldNrm = oldNormals[level], newNrm = newNormals[level];
+
+        for(int iter = 0; iter < iterations[level]; iter++)
+        {
+            Matx66f A;
+            Vec6f b;
+
+            getAb(oldPts, oldNrm, newPts, newNrm, transform, (int)level, A, b);
+
+            double det = cv::determinant(A);
+
+            if (abs (det) < 1e-15 || cvIsNaN(det))
+                return false;
+
+            Vec6f x;
+            // theoretically, any method of solving is applicable
+            // since there are usual least square matrices
+            solve(A, b, x, DECOMP_SVD);
+            Affine3f tinc(Vec3f(x.val), Vec3f(x.val+3));
+            transform = tinc * transform;
+        }
+    }
+
+    return true;
 }
+
+//TODO: to what place put it?
+enum
+{
+    UTSIZE = 27
+};
+
+void ICPGPU::getAb(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, const UMat& newNrm,
+                   Affine3f pose, int level, Matx66f &A, Vec6f &b) const
+{
+    ScopeTime st("icp gpu: get ab", false);
+
+    CV_Assert(oldPts.size() == oldNrm.size());
+    CV_Assert(newPts.size() == newNrm.size());
+
+    cv::String errorStr;
+    cv::String name = "getAbNoReduce";
+    ocl::ProgramSource source = ocl::rgbd::icp_oclsrc;
+    cv::String options; //TODO: check "fast" options
+    ocl::Kernel k;
+    k.create(name.c_str(), source, options, &errorStr);
+
+    if(k.empty())
+        throw std::runtime_error("Failed to create kernel: " + errorStr);
+
+    UMat poseGpu;
+    Mat(pose.matrix).copyTo(poseGpu);
+    Intr::Projector proj = intrinsics.scale(level).makeProjector();
+
+    //TODO: remove it
+    // what to reduce
+    UMat reduceable(newPts.rows, newPts.cols*UTSIZE, CV_32F, Scalar::all(0));
+
+    k.args(ocl::KernelArg::ReadOnly(oldPts),
+           ocl::KernelArg::ReadOnly(oldNrm),
+           ocl::KernelArg::ReadOnly(newPts),
+           ocl::KernelArg::ReadOnly(newNrm),
+           ocl::KernelArg::PtrReadOnly(poseGpu),
+           proj.fx, proj.fy, proj.cx, proj.cy,
+           distanceThreshold*distanceThreshold,
+           cos(angleThreshold),
+           //TODO: remove it later
+           ocl::KernelArg::WriteOnly(reduceable));
+
+    size_t globalSize[2];
+    globalSize[0] = (size_t)newPts.cols;
+    globalSize[1] = (size_t)newPts.rows;
+
+    if(!k.run(2, globalSize, NULL, true))
+        throw std::runtime_error("Failed to run kernel");
+
+    //TODO: no reduce
+    float upperTriangle[UTSIZE];
+    Mat reduceableCpu(reduceable.size(), reduceable.type());
+    reduceable.copyTo(reduceableCpu);
+
+    for(int i = 0; i < UTSIZE; i++)
+        upperTriangle[i] = 0;
+    for(int y = 0; y < newPts.rows; y++)
+    {
+        const float* rowr = reduceableCpu.ptr<float>(y);
+        for(int x = 0; x < newPts.cols; x++)
+        {
+            const float* p = rowr + x*UTSIZE;
+            for(int j = 0; j < UTSIZE; j++)
+            {
+                upperTriangle[j] += p[j];
+            }
+        }
+    }
+
+    ABtype sumAB = ABtype::zeros();
+    int pos = 0;
+    for(int i = 0; i < 6; i++)
+    {
+        for(int j = i; j < 7; j++)
+        {
+            sumAB(i, j) = upperTriangle[pos++];
+        }
+    }
+
+    // splitting AB matrix to A and b
+    for(int i = 0; i < 6; i++)
+    {
+        // augment lower triangle of A by symmetry
+        for(int j = i; j < 6; j++)
+        {
+            A(i, j) = A(j, i) = sumAB(i, j);
+        }
+
+        b(i) = sumAB(i, 6);
+    }
+}
+
 
 cv::Ptr<ICP> makeICP(cv::kinfu::Params::PlatformType t,
                      const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations,
