@@ -10,27 +10,27 @@
 
 typedef float4 ptype;
 
-__kernel void getAbNoReduce(__global const char * oldPointsptr,
-                            int oldPoints_step, int oldPoints_offset,
-                            int oldPoints_rows, int oldPoints_cols,
-                            __global const char * oldNormalsptr,
-                            int oldNormals_step, int oldNormals_offset,
-                            int oldNormals_rows, int oldNormals_cols,
-                            __global const char * newPointsptr,
-                            int newPoints_step, int newPoints_offset,
-                            int newPoints_rows, int newPoints_cols,
-                            __global const char * newNormalsptr,
-                            int newNormals_step, int newNormals_offset,
-                            int newNormals_rows, int newNormals_cols,
-                            __global const float * poseptr,
-                            const float fx, const float fy,
-                            const float cx, const float cy,
-                            const float sqDistanceThresh,
-                            const float minCos,
-                            //TODO: remove it later
-                            __global char * reduceableptr,
-                            int reduceable_step, int reduceable_offset,
-                            int reduceable_rows, int reduceable_cols
+__kernel void getAb(__global const char * oldPointsptr,
+                    int oldPoints_step, int oldPoints_offset,
+                    int oldPoints_rows, int oldPoints_cols,
+                    __global const char * oldNormalsptr,
+                    int oldNormals_step, int oldNormals_offset,
+                    int oldNormals_rows, int oldNormals_cols,
+                    __global const char * newPointsptr,
+                    int newPoints_step, int newPoints_offset,
+                    int newPoints_rows, int newPoints_cols,
+                    __global const char * newNormalsptr,
+                    int newNormals_step, int newNormals_offset,
+                    int newNormals_rows, int newNormals_cols,
+                    __global const float * poseptr,
+                    const float fx, const float fy,
+                    const float cx, const float cy,
+                    const float sqDistanceThresh,
+                    const float minCos,
+                    __local float * reducebuf,
+                    __global char* groupedSumptr,
+                    int groupedSum_step, int groupedSum_offset,
+                    int groupedSum_rows, int groupedSum_cols
 )
 {
     int x = get_global_id(0);
@@ -130,9 +130,6 @@ __kernel void getAbNoReduce(__global const char * oldPointsptr,
     if(fabs(dot(newN, oldN)) < minCos)
         return;
 
-    //TODO: when reduce do not forget to init this with zeros
-    float upperTriangle[UTSIZE];
-
     // build point-wise vector ab = [ A | b ]
 
     float3 VxN = cross(newP, oldN);
@@ -141,6 +138,10 @@ __kernel void getAbNoReduce(__global const char * oldPointsptr,
     // build point-wise upper-triangle matrix [ab^T * ab] w/o last row
     // which is [A^T*A | A^T*b]
     // and gather sum
+
+    //TODO: write it straight to local mem instead of private
+    float upperTriangle[UTSIZE];
+
     int pos = 0;
     for(int i = 0; i < 6; i++)
     {
@@ -150,13 +151,45 @@ __kernel void getAbNoReduce(__global const char * oldPointsptr,
         }
     }
 
-    //TODO: remove it and make real reduce
+    // reduce upperTriangle to local mem
 
-    __global float* rd = (__global float*)(reduceableptr + reduceable_offset +
-                                           y*reduceable_step +
-                                           x*UTSIZE*sizeof(float));
+    const int gx = get_group_id(0);
+    const int gy = get_group_id(1);
+    const int gw = get_num_groups(0);
+    const int gh = get_num_groups(1);
+
+    const int lx = get_local_id(0);
+    const int ly = get_local_id(1);
+    const int lw = get_local_size(0);
+    const int lh = get_local_size(1);
+    const int lsz = lw*lh;
+    const int lid = lx + ly*lw;
+
+    for(int i = 0; i < lw*lh*UTSIZE; i++)
+        reducebuf[i] = 0;
+
+    // 0 step
     for(int i = 0; i < UTSIZE; i++)
+        reducebuf[lid*UTSIZE+i] = upperTriangle[i];
+    work_group_barrier(CLK_LOCAL_MEM_FENCE);
+
+    // maxStep = ctz(lsz), ctz isn't supported on CUDA devices
+    const int c = clz(lsz & -lsz);
+    const int maxStep = c ? 31 - c : c;
+    for(int nstep = 1; nstep <= maxStep; nstep++)
     {
-        rd[i] = upperTriangle[i];
+        if(lid % (1 << nstep) == 0)
+        {
+            for(int i = 0; i < UTSIZE; i++)
+                reducebuf[lid*UTSIZE + i] += reducebuf[(lid + (1 << (nstep-1)))*UTSIZE + i];
+        }
+        work_group_barrier(CLK_LOCAL_MEM_FENCE);
     }
+
+    // here group sum should be in reducebuf[0...UTSIZE]
+    __global float* groupedRow = (__global float*)(groupedSumptr +
+                                                   groupedSum_offset +
+                                                   gy*groupedSum_step);
+    for(int i = 0; i < UTSIZE; i++)
+        groupedRow[gx*UTSIZE + i] = reducebuf[i];
 }

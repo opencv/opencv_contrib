@@ -544,6 +544,16 @@ enum
     UTSIZE = 27
 };
 
+inline int roundDownPow2(unsigned int x)
+{
+    unsigned int shift = 0;
+    while(x != 0)
+    {
+        shift++; x >>= 1;
+    }
+    return (1 << (shift-1));
+}
+
 void ICPGPU::getAb(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, const UMat& newNrm,
                    Affine3f pose, int level, Matx66f &A, Vec6f &b) const
 {
@@ -553,7 +563,7 @@ void ICPGPU::getAb(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, c
     CV_Assert(newPts.size() == newNrm.size());
 
     cv::String errorStr;
-    cv::String name = "getAbNoReduce";
+    cv::String name = "getAb";
     ocl::ProgramSource source = ocl::rgbd::icp_oclsrc;
     cv::String options; //TODO: check "fast" options
     ocl::Kernel k;
@@ -562,13 +572,30 @@ void ICPGPU::getAb(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, c
     if(k.empty())
         throw std::runtime_error("Failed to create kernel: " + errorStr);
 
+    size_t globalSize[2];
+    globalSize[0] = (size_t)newPts.cols;
+    globalSize[1] = (size_t)newPts.rows;
+
+    size_t memSize = ocl::Device::getDefault().localMemSize();
+    // local memory should keep all threads' upperTriangles
+    const size_t ltsz = UTSIZE*sizeof(float);
+    const size_t lcols = 64;
+    size_t lrows = memSize/ltsz/lcols;
+    // round lrows down to 2^n
+    lrows = roundDownPow2(lrows);
+    size_t localSize[2] = {lcols, lrows};
+    Size ngroups(divUp(globalSize[0], localSize[0]),
+                 divUp(globalSize[1], localSize[1]));
+
+    // size of local buffer for group-wide reduce
+    size_t lsz = localSize[0]*localSize[1]*UTSIZE*sizeof(float);
+
     UMat poseGpu;
     Mat(pose.matrix).copyTo(poseGpu);
     Intr::Projector proj = intrinsics.scale(level).makeProjector();
 
-    //TODO: remove it
-    // what to reduce
-    UMat reduceable(newPts.rows, newPts.cols*UTSIZE, CV_32F, Scalar::all(0));
+    UMat groupedSumGpu(Size(ngroups.width*UTSIZE, ngroups.height),
+                       CV_32F, Scalar::all(0));
 
     k.args(ocl::KernelArg::ReadOnly(oldPts),
            ocl::KernelArg::ReadOnly(oldNrm),
@@ -578,27 +605,22 @@ void ICPGPU::getAb(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, c
            proj.fx, proj.fy, proj.cx, proj.cy,
            distanceThreshold*distanceThreshold,
            cos(angleThreshold),
-           //TODO: remove it later
-           ocl::KernelArg::WriteOnly(reduceable));
+           ocl::KernelArg(ocl::KernelArg::LOCAL, nullptr, 0, 0, nullptr, lsz),
+           ocl::KernelArg::WriteOnly(groupedSumGpu));
 
-    size_t globalSize[2];
-    globalSize[0] = (size_t)newPts.cols;
-    globalSize[1] = (size_t)newPts.rows;
-
-    if(!k.run(2, globalSize, NULL, true))
+    if(!k.run(2, globalSize, localSize, true))
         throw std::runtime_error("Failed to run kernel");
 
-    //TODO: no reduce
     float upperTriangle[UTSIZE];
-    Mat reduceableCpu(reduceable.size(), reduceable.type());
-    reduceable.copyTo(reduceableCpu);
-
     for(int i = 0; i < UTSIZE; i++)
         upperTriangle[i] = 0;
-    for(int y = 0; y < newPts.rows; y++)
+
+    Mat groupedSumCpu(groupedSumGpu.size(), groupedSumGpu.type());
+    groupedSumGpu.copyTo(groupedSumCpu);
+    for(int y = 0; y < ngroups.height; y++)
     {
-        const float* rowr = reduceableCpu.ptr<float>(y);
-        for(int x = 0; x < newPts.cols; x++)
+        const float* rowr = groupedSumCpu.ptr<float>(y);
+        for(int x = 0; x < ngroups.width; x++)
         {
             const float* p = rowr + x*UTSIZE;
             for(int j = 0; j < UTSIZE; j++)
