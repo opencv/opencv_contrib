@@ -430,8 +430,8 @@ void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
 static const int GPU_DEPTH_TYPE  = CV_32F;
 static const int GPU_POINTS_TYPE = CV_32FC4;
 
-void computePointsNormalsGpu(const Intr intr, float depthFactor, const UMat depth, UMat points, UMat normals);
-UMat pyrDownBilateralGpu(const UMat depth, float sigma);
+void computePointsNormalsGpu(const Intr intr, float depthFactor, const UMat& depth, UMat points, UMat normals);
+UMat pyrDownBilateralGpu(const UMat &depth, float sigma);
 void customBilateralFilterGpu(const UMat src, UMat& dst, int kernelSize, float sigmaDepth, float sigmaSpatial);
 void pyrDownPointsNormalsGpu(const UMat p, const UMat n, UMat &pdown, UMat &ndown);
 
@@ -461,9 +461,21 @@ void FrameGeneratorGPU::operator ()(Ptr<Frame> _frame, InputArray depth, const I
 
     CV_Assert(frame);
 
-    UMat udepth = depth.getUMat();
+    UMat udepth;
     if(depth.type() != GPU_DEPTH_TYPE)
-        udepth.convertTo(udepth, GPU_DEPTH_TYPE);
+    {
+        if(depth.kind() != _InputArray::UMAT)
+            depth.getMat().convertTo(udepth, GPU_DEPTH_TYPE);
+        else
+            depth.getUMat().convertTo(udepth, GPU_DEPTH_TYPE);
+    }
+    else
+    {
+        if(depth.kind() != _InputArray::UMAT)
+            depth.copyTo(udepth);
+        else
+            udepth = depth.getUMat();
+    }
 
     frame->depthData = udepth;
 
@@ -473,15 +485,6 @@ void FrameGeneratorGPU::operator ()(Ptr<Frame> _frame, InputArray depth, const I
     // until 32f isn't implemented in OpenCV, we should use our workarounds
     //bilateralFilter(udepth, smooth, kernelSize, sigmaDepth*depthFactor, sigmaSpatial);
     customBilateralFilterGpu(udepth, smooth, kernelSize, sigmaDepth*depthFactor, sigmaSpatial);
-
-    //TODO: remove that
-    // 5 meters should fit all
-//    float scaleFactor = 255.f/(depthFactor*5.f);
-//    UMat depth8, smooth8;
-//    udepth.convertTo(depth8, CV_8U, scaleFactor);
-//    float sigDepth = sigmaDepth*255.f/depthFactor;
-//    bilateralFilter(depth8, smooth8, kernelSize, sigDepth, sigmaSpatial);
-//    smooth8.convertTo(smooth, CV_32F, 1.f/scaleFactor);
 
     // depth truncation is not used by default
     //if (p.icp_truncate_depth_dist > 0) kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
@@ -506,7 +509,7 @@ void FrameGeneratorGPU::operator ()(Ptr<Frame> _frame, InputArray depth, const I
     }
 }
 
-void computePointsNormalsGpu(const Intr intr, float depthFactor, const UMat depth,
+void computePointsNormalsGpu(const Intr intr, float depthFactor, const UMat& depth,
                              UMat points, UMat normals)
 {
     CV_Assert(!points.empty() && !normals.empty());
@@ -546,7 +549,7 @@ void computePointsNormalsGpu(const Intr intr, float depthFactor, const UMat dept
         throw std::runtime_error("Failed to run kernel");
 }
 
-UMat pyrDownBilateralGpu(const UMat depth, float sigma)
+UMat pyrDownBilateralGpu(const UMat& depth, float sigma)
 {
     UMat depthDown(depth.rows/2, depth.cols/2, GPU_DEPTH_TYPE);
 
@@ -619,6 +622,11 @@ void FrameGeneratorGPU::operator ()(Ptr<Frame> _frame, InputArray _points, Input
     CV_Assert(frame);
 
     UMat p0 = _points.getUMat(), n0 = _normals.getUMat();
+    if(_points.kind()  != _InputArray::UMAT)
+        p0 = p0.clone();
+    if(_normals.kind() != _InputArray::UMAT)
+        n0 = n0.clone();
+
     frame->depthData = UMat();
     frame->points .resize(levels);
     frame->normals.resize(levels);
