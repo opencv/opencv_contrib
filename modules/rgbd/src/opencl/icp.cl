@@ -33,11 +33,25 @@ __kernel void getAb(__global const char * oldPointsptr,
                     int groupedSum_rows, int groupedSum_cols
 )
 {
-    int x = get_global_id(0);
-    int y = get_global_id(1);
+    const int x = get_global_id(0);
+    const int y = get_global_id(1);
 
     if(x >= newPoints_cols || y >= newPoints_rows)
         return;
+
+    const int gx = get_group_id(0);
+    const int gy = get_group_id(1);
+    const int gw = get_num_groups(0);
+    const int gh = get_num_groups(1);
+
+    const int lx = get_local_id(0);
+    const int ly = get_local_id(1);
+    const int lw = get_local_size(0);
+    const int lh = get_local_size(1);
+    const int lsz = lw*lh;
+    const int lid = lx + ly*lw;
+
+    // coord-independent constants
 
     __global const float* pm = poseptr;
     const float3 poseRot0  = vload4(0, pm).xyz;
@@ -48,6 +62,8 @@ __kernel void getAb(__global const char * oldPointsptr,
     const float2 fxy = (float2)(fx, fy);
     const float2 cxy = (float2)(cx, cy);
     const float2 oldEdge = (float2)(oldPoints_cols - 1, oldPoints_rows - 1);
+
+    // kernel itself
 
     __global const ptype* newPtsRow = (__global const ptype*)(newPointsptr +
                                                               newPoints_offset +
@@ -152,19 +168,6 @@ __kernel void getAb(__global const char * oldPointsptr,
     }
 
     // reduce upperTriangle to local mem
-
-    const int gx = get_group_id(0);
-    const int gy = get_group_id(1);
-    const int gw = get_num_groups(0);
-    const int gh = get_num_groups(1);
-
-    const int lx = get_local_id(0);
-    const int ly = get_local_id(1);
-    const int lw = get_local_size(0);
-    const int lh = get_local_size(1);
-    const int lsz = lw*lh;
-    const int lid = lx + ly*lw;
-
     for(int i = 0; i < lw*lh*UTSIZE; i++)
         reducebuf[i] = 0;
 
@@ -180,16 +183,21 @@ __kernel void getAb(__global const char * oldPointsptr,
     {
         if(lid % (1 << nstep) == 0)
         {
+            __local float* rto   = reducebuf + UTSIZE*lid;
+            __local float* rfrom = reducebuf + UTSIZE*(lid+(1 << (nstep-1)));
             for(int i = 0; i < UTSIZE; i++)
-                reducebuf[lid*UTSIZE + i] += reducebuf[(lid + (1 << (nstep-1)))*UTSIZE + i];
+                rto[i] += rfrom[i];
         }
         work_group_barrier(CLK_LOCAL_MEM_FENCE);
     }
 
     // here group sum should be in reducebuf[0...UTSIZE]
-    __global float* groupedRow = (__global float*)(groupedSumptr +
-                                                   groupedSum_offset +
-                                                   gy*groupedSum_step);
-    for(int i = 0; i < UTSIZE; i++)
-        groupedRow[gx*UTSIZE + i] = reducebuf[i];
+    if(lid == 0)
+    {
+        __global float* groupedRow = (__global float*)(groupedSumptr +
+                                                       groupedSum_offset +
+                                                       gy*groupedSum_step);
+        for(int i = 0; i < UTSIZE; i++)
+            groupedRow[gx*UTSIZE + i] = reducebuf[i];
+    }
 }
