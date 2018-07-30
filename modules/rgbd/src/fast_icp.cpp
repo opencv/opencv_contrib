@@ -606,7 +606,8 @@ void ICPGPU::getAb(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, c
            distanceThreshold*distanceThreshold,
            cos(angleThreshold),
            ocl::KernelArg(ocl::KernelArg::LOCAL, nullptr, 0, 0, nullptr, lsz),
-           ocl::KernelArg::WriteOnly(groupedSumGpu));
+           ocl::KernelArg::WriteOnly(groupedSumGpu)
+           );
 
     if(!k.run(2, globalSize, localSize, true))
         throw std::runtime_error("Failed to run kernel");
@@ -615,8 +616,7 @@ void ICPGPU::getAb(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, c
     for(int i = 0; i < UTSIZE; i++)
         upperTriangle[i] = 0;
 
-    Mat groupedSumCpu(groupedSumGpu.size(), groupedSumGpu.type());
-    groupedSumGpu.copyTo(groupedSumCpu);
+    Mat groupedSumCpu = groupedSumGpu.getMat(ACCESS_READ);
     for(int y = 0; y < ngroups.height; y++)
     {
         const float* rowr = groupedSumCpu.ptr<float>(y);
