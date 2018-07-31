@@ -59,36 +59,7 @@ using namespace std;
 				                 cv::Size(5, 5), 0.3, 0.3);
 
 				// compute arithmetic mean of subwindow
-				int nCounter = 0;
-				vector <int> colorValue(nChannel, 0);
-
-				for (int subPosX = 0; subPosX < subwindow.cols;
-				     subPosX++)
-				{
-					for (int subPosY = 0;
-					     subPosY < subwindow.rows;
-					     subPosY++)
-					{
-						cv::Vec3b intensity =
-						    subwindow.at<cv::Vec3b>(
-						        subPosY, subPosX);
-						colorValue[0] +=
-						    (int)intensity.val[0];
-						colorValue[1] +=
-						    (int)intensity.val[1];
-						colorValue[2] +=
-						    (int)intensity.val[2];
-						nCounter++;
-					};
-				};
-
-				vector <double> ArithmeticMean(nChannel);
-				ArithmeticMean[0] =
-				    colorValue[0] / nCounter; // B
-				ArithmeticMean[1] =
-				    colorValue[1] / nCounter; // G
-				ArithmeticMean[2] =
-				    colorValue[2] / nCounter; // R
+        cv::Scalar ArithmeticMean = cv::mean(subwindow);
 
 				// compute pixelwise distance
 				vector < vector <double> > pixelwiseDist;
