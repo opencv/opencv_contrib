@@ -12,6 +12,10 @@ using namespace std;
 namespace cv {
 namespace kinfu {
 
+enum
+{
+    UTSIZE = 27
+};
 
 ICP::ICP(const Intr _intrinsics, const std::vector<int>& _iterations, float _angleThreshold, float _distanceThreshold) :
     iterations(_iterations), angleThreshold(_angleThreshold), distanceThreshold(_distanceThreshold),
@@ -123,11 +127,6 @@ typedef Matx<float, 6, 7> ABtype;
 
 struct GetAbInvoker : ParallelLoopBody
 {
-    enum
-    {
-        UTSIZE = 27
-    };
-
     GetAbInvoker(ABtype& _globalAb, Mutex& _mtx,
                  const Points& _oldPts, const Normals& _oldNrm, const Points& _newPts, const Normals& _newNrm,
                  Affine3f _pose, Intr::Projector _proj, float _sqDistanceThresh, float _minCos) :
@@ -538,12 +537,6 @@ bool ICPGPU::estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> oldFrame,
     return true;
 }
 
-//TODO: to what place put it?
-enum
-{
-    UTSIZE = 27
-};
-
 inline int roundDownPow2(unsigned int x)
 {
     unsigned int shift = 0;
@@ -562,10 +555,14 @@ void ICPGPU::getAb(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, c
     CV_Assert(oldPts.size() == oldNrm.size());
     CV_Assert(newPts.size() == newNrm.size());
 
+    // calculate 1x7 vector ab to produce b and upper triangle of A:
+    // [A|b] = ab*(ab^t)
+    // and then reduce it across work groups
+
     cv::String errorStr;
     cv::String name = "getAb";
     ocl::ProgramSource source = ocl::rgbd::icp_oclsrc;
-    cv::String options; //TODO: check "fast" options
+    cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
     ocl::Kernel k;
     k.create(name.c_str(), source, options, &errorStr);
 
