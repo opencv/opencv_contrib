@@ -111,83 +111,12 @@ void edgepreservingFilter(const InputArray _src, OutputArray _dst, int d,
 				for (int subPosY = 0; subPosY < subwindow.rows;
 				     subPosY++)
 				{
-					if (meanPixelwiseDist <= threshold &&
-					    pixelwiseDist[subPosX][subPosY] <=
-					        threshold)
-					{
-						// global Position
-						int globalPosX = posX + subPosX;
-						int globalPosY = posY + subPosY;
-
-						// compute global weight
-						cv::Vec3b intensity =
-						    subwindow.at<cv::Vec3b>(
-						        subPosY, subPosX);
-						weight[globalPosX][globalPosY]
-						      [0] +=
-						    intensity.val[0] *
-						    (threshold -
-						     pixelwiseDist[subPosX]
-						                  [subPosY]) *
-						    (threshold -
-						     pixelwiseDist[subPosX]
-						                  [subPosY]);
-						weight[globalPosX][globalPosY]
-						      [1] +=
-						    intensity.val[1] *
-						    (threshold -
-						     pixelwiseDist[subPosX]
-						                  [subPosY]) *
-						    (threshold -
-						     pixelwiseDist[subPosX]
-						                  [subPosY]);
-						weight[globalPosX][globalPosY]
-						      [2] +=
-						    intensity.val[2] *
-						    (threshold -
-						     pixelwiseDist[subPosX]
-						                  [subPosY]) *
-						    (threshold -
-						     pixelwiseDist[subPosX]
-						                  [subPosY]);
-
-						// compute final image
-						imageResult[globalPosX]
-						           [globalPosY][0] +=
-						    intensity.val[0] *
-						    (threshold -
-						     pixelwiseDist[subPosX]
-						                  [subPosY]) *
-						    (threshold -
-						     pixelwiseDist[subPosX]
-						                  [subPosY]) *
-						    ArithmeticMean[0];
-						imageResult[globalPosX]
-						           [globalPosY][1] +=
-						    intensity.val[1] *
-						    (threshold -
-						     pixelwiseDist[subPosX]
-						                  [subPosY]) *
-						    (threshold -
-						     pixelwiseDist[subPosX]
-						                  [subPosY]) *
-						    ArithmeticMean[1];
-						imageResult[globalPosX]
-						           [globalPosY][2] +=
-						    intensity.val[2] *
-						    (threshold -
-						     pixelwiseDist[subPosX]
-						                  [subPosY]) *
-						    (threshold -
-						     pixelwiseDist[subPosX]
-						                  [subPosY]) *
-						    ArithmeticMean[2];
-					}
-					else if (meanPixelwiseDist <=
-					             threshold &&
-					         pixelwiseDist[subPosX]
-					                      [subPosY] >
-					             threshold)
+					if ((meanPixelwiseDist <= threshold &&
+					     pixelwiseDist[subPosX][subPosY] <=
+					         threshold) ||
+					    (meanPixelwiseDist <= threshold &&
+					     pixelwiseDist[subPosX][subPosY] >
+					         threshold))
 					{
 						// global Position
 						int globalPosX = posX + subPosX;
