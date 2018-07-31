@@ -488,10 +488,13 @@ public:
 private:
     void getAb(const UMat &oldPts, const UMat &oldNrm, const UMat &newPts, const UMat &newNrm,
                cv::Affine3f pose, int level, cv::Matx66f& A, cv::Vec6f& b) const;
+
+    mutable vector<UMat> groupedSumBuffers;
 };
 
 ICPGPU::ICPGPU(const Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold) :
-    ICP(_intrinsics, _iterations, _angleThreshold, _distanceThreshold)
+    ICP(_intrinsics, _iterations, _angleThreshold, _distanceThreshold),
+    groupedSumBuffers(_iterations.size())
 { }
 
 
@@ -560,11 +563,10 @@ void ICPGPU::getAb(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, c
     // and then reduce it across work groups
 
     cv::String errorStr;
-    cv::String name = "getAb";
     ocl::ProgramSource source = ocl::rgbd::icp_oclsrc;
     cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
     ocl::Kernel k;
-    k.create(name.c_str(), source, options, &errorStr);
+    k.create("getAb", source, options, &errorStr);
 
     if(k.empty())
         throw std::runtime_error("Failed to create kernel: " + errorStr);
@@ -591,8 +593,10 @@ void ICPGPU::getAb(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, c
     Mat(pose.matrix).copyTo(poseGpu);
     Intr::Projector proj = intrinsics.scale(level).makeProjector();
 
-    UMat groupedSumGpu(Size(ngroups.width*UTSIZE, ngroups.height),
-                       CV_32F, Scalar::all(0));
+    UMat& groupedSumGpu = groupedSumBuffers[level];
+    groupedSumGpu.create(Size(ngroups.width*UTSIZE, ngroups.height),
+                         CV_32F);
+    groupedSumGpu.setTo(0);
 
     k.args(ocl::KernelArg::ReadOnly(oldPts),
            ocl::KernelArg::ReadOnly(oldNrm),
