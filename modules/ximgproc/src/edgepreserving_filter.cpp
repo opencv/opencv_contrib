@@ -15,13 +15,15 @@ namespace ximgproc
 using namespace std;
 
   void edgepreservingFilter(const InputArray _src, OutputArray _dst, int d,
-	                         int threshold)
+	                         double threshold)
 	{
     Mat src = _src.getMat();
 
     // [re]create the output array so that it has the proper size and type.
     _dst.create(src.size(), src.type());
     Mat dst = _dst.getMat();
+    src.copyTo(dst);
+
 
 		CV_Assert(src.type() == CV_8UC3);
 
