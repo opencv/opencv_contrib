@@ -64,8 +64,9 @@ struct DepthWriter
         file << "# useless_number filename" << endl;
     }
 
-    void append(Mat depth)
+    void append(InputArray _depth)
     {
+        Mat depth = _depth.getMat();
         string depthFname = cv::format("%04d.png", count);
         string fullDepthFname = dir + '/' + depthFname;
         if(!imwrite(fullDepthFname, depth))
@@ -114,17 +115,19 @@ public:
         useKinect2Workarounds(true)
     { }
 
-    //TODO: what if to use UMat?
-    Mat getDepth()
+    UMat getDepth()
     {
-        Mat out;
+        UMat out;
         if (!vc.isOpened())
         {
             if (frameIdx < depthFileList.size())
-                out = cv::imread(depthFileList[frameIdx++], IMREAD_ANYDEPTH);
+            {
+                Mat f = cv::imread(depthFileList[frameIdx++], IMREAD_ANYDEPTH);
+                out = f.getUMat(ACCESS_READ);
+            }
             else
             {
-                return Mat();
+                return UMat();
             }
         }
         else
@@ -137,7 +140,7 @@ public:
             {
                 out = out(Rect(Point(), Kinect2Params::frameSize));
 
-                Mat outCopy;
+                UMat outCopy;
                 // linear remap adds gradient between valid and invalid pixels
                 // which causes garbage, use nearest instead
                 remap(out, outCopy, undistortMap1, undistortMap2, cv::INTER_NEAREST);
@@ -207,7 +210,7 @@ public:
     vector<string> depthFileList;
     size_t frameIdx;
     VideoCapture vc;
-    Mat undistortMap1, undistortMap2;
+    UMat undistortMap1, undistortMap2;
     bool useKinect2Workarounds;
 };
 
@@ -231,7 +234,7 @@ void pauseCallback(const viz::MouseEvent& me, void* args)
     {
         PauseCallbackArgs pca = *((PauseCallbackArgs*)(args));
         viz::Viz3d window(vizWindowName);
-        Mat rendered;
+        UMat rendered;
         pca.kf.render(rendered, window.getViewerPose().matrix);
         imshow("render", rendered);
         waitKey(1);
@@ -332,14 +335,13 @@ int main(int argc, char **argv)
     bool pause = false;
 #endif
 
-    // TODO: can we use UMats for that?
-    Mat rendered;
-    Mat points;
-    Mat normals;
+    UMat rendered;
+    UMat points;
+    UMat normals;
 
     int64 prevTime = getTickCount();
 
-    for(Mat frame = ds.getDepth(); !frame.empty(); frame = ds.getDepth())
+    for(UMat frame = ds.getDepth(); !frame.empty(); frame = ds.getDepth())
     {
         if(depthWriter)
             depthWriter->append(frame);
@@ -375,7 +377,7 @@ int main(int argc, char **argv)
         else
 #endif
         {
-            Mat cvt8;
+            UMat cvt8;
             float depthFactor = params->depthFactor;
             convertScaleAbs(frame, cvt8, 0.25*256. / depthFactor);
             if(!idle)
