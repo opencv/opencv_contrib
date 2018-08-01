@@ -43,15 +43,14 @@ void edgepreservingFilter(const InputArray _src, OutputArray _dst, int d,
         src.cols, line1); // global normalized image
 
     // do algorithm
-    cv::Mat subwindow;
+    cv::Mat subwindow, subwindow1;
     for (int posX = 0; posX < src.cols - subwindowX; posX++)
     {
         for (int posY = 0; posY < src.rows - subwindowY; posY++)
         {
             cv::Rect roi =
                 cv::Rect(posX, posY, subwindowX, subwindowY);
-            subwindow = src(roi);
-            cv::Mat subwindow1 = src(roi);
+            subwindow1 = src(roi);
             cv::GaussianBlur(subwindow1, subwindow, cv::Size(5, 5),
                              0.3, 0.3);
 
