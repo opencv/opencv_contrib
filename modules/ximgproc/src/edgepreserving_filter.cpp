@@ -13,7 +13,7 @@ namespace ximgproc
 {
 using namespace std;
 
-void edgepreservingFilter(const InputArray _src, OutputArray _dst, int d,
+void edgepreservingFilter(InputArray _src, OutputArray _dst, int d,
                           double threshold)
 {
     CV_Assert(_src.type() == CV_8UC3);
