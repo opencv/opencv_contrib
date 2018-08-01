@@ -9,8 +9,8 @@
 
 namespace cv { namespace ximgproc {
 
-    //! @addtogroup ximgproc
-    //! @{
+//! @addtogroup ximgproc
+//! @{
 
     /**
     * @brief Smoothes an image using the Edge-Preserving filter.
@@ -27,5 +27,7 @@ namespace cv { namespace ximgproc {
     CV_EXPORTS_W void edgepreservingFilter( const InputArray src, OutputArray dst, int d, double threshold );
 
 }} // namespace
+
+//! @}
 
 #endif
