@@ -25,7 +25,7 @@ PERF_TEST_P(EdgepreservingFilterTest, perf,
     double threshold = get<1>(params);
 
     /* 4. Allocate and initialize arguments for tested function */
-    std::string filename = getDataPath("testdata/perf/320x260.png");
+    std::string filename = getDataPath("perf/320x260.png");
     Mat src = imread(filename, 1);
     Mat dst(src.size(), src.type());
 
