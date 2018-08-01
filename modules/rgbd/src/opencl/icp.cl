@@ -22,7 +22,7 @@ inline void calcAb7(__global const char * oldPointsptr,
                     int newPoints_rows, int newPoints_cols,
                     __global const char * newNormalsptr,
                     int newNormals_step, int newNormals_offset,
-                    __global const float * poseptr,
+                    const float16 poseMatrix,
                     const float fx, const float fy,
                     const float cx, const float cy,
                     const float sqDistanceThresh,
@@ -38,11 +38,10 @@ inline void calcAb7(__global const char * oldPointsptr,
 
     // coord-independent constants
 
-    __global const float* pm = poseptr;
-    const float3 poseRot0  = vload4(0, pm).xyz;
-    const float3 poseRot1  = vload4(1, pm).xyz;
-    const float3 poseRot2  = vload4(2, pm).xyz;
-    const float3 poseTrans = (float3)(pm[3], pm[7], pm[11]);
+    const float3 poseRot0 = poseMatrix.s012;
+    const float3 poseRot1 = poseMatrix.s456;
+    const float3 poseRot2 = poseMatrix.s89a;
+    const float3 poseTrans = poseMatrix.s37b;
 
     const float2 fxy = (float2)(fx, fy);
     const float2 cxy = (float2)(cx, cy);
@@ -151,7 +150,7 @@ __kernel void getAb(__global const char * oldPointsptr,
                     __global const char * newNormalsptr,
                     int newNormals_step, int newNormals_offset,
                     int newNormals_rows, int newNormals_cols,
-                    __global const float * poseptr,
+                    const float16 poseMatrix,
                     const float fx, const float fy,
                     const float cx, const float cy,
                     const float sqDistanceThresh,
@@ -194,7 +193,7 @@ __kernel void getAb(__global const char * oldPointsptr,
             newPoints_rows, newPoints_cols,
             newNormalsptr,
             newNormals_step, newNormals_offset,
-            poseptr,
+            poseMatrix,
             fx, fy, cx, cy,
             sqDistanceThresh,
             minCos,
@@ -229,7 +228,7 @@ __kernel void getAb(__global const char * oldPointsptr,
             for(int i = 0; i < UTSIZE; i++)
                 rto[i] += rfrom[i];
         }
-        work_group_barrier(CLK_LOCAL_MEM_FENCE);
+        barrier(CLK_LOCAL_MEM_FENCE);
     }
 
     // here group sum should be in reducebuf[0...UTSIZE]

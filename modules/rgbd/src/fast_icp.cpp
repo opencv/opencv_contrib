@@ -576,7 +576,7 @@ void ICPGPU::getAb(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, c
     globalSize[1] = (size_t)newPts.rows;
 
     size_t memSize = ocl::Device::getDefault().localMemSize();
-    // local memory should keep all threads' upperTriangles
+    // local memory should keep upperTriangles for all threads in group for reduce
     const size_t ltsz = UTSIZE*sizeof(float);
     const size_t lcols = 64;
     size_t lrows = memSize/ltsz/lcols;
@@ -589,8 +589,6 @@ void ICPGPU::getAb(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, c
     // size of local buffer for group-wide reduce
     size_t lsz = localSize[0]*localSize[1]*UTSIZE*sizeof(float);
 
-    UMat poseGpu;
-    Mat(pose.matrix).copyTo(poseGpu);
     Intr::Projector proj = intrinsics.scale(level).makeProjector();
 
     UMat& groupedSumGpu = groupedSumBuffers[level];
@@ -602,7 +600,8 @@ void ICPGPU::getAb(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, c
            ocl::KernelArg::ReadOnly(oldNrm),
            ocl::KernelArg::ReadOnly(newPts),
            ocl::KernelArg::ReadOnly(newNrm),
-           ocl::KernelArg::PtrReadOnly(poseGpu),
+           ocl::KernelArg::Constant(pose.matrix.val,
+                                    sizeof(pose.matrix.val)),
            proj.fx, proj.fy, proj.cx, proj.cy,
            distanceThreshold*distanceThreshold,
            cos(angleThreshold),
@@ -630,6 +629,7 @@ void ICPGPU::getAb(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, c
             }
         }
     }
+    groupedSumCpu.release();
 
     ABtype sumAB = ABtype::zeros();
     int pos = 0;
