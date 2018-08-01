@@ -16,27 +16,26 @@ typedef TestBaseWithParam<RGFTestParam> EdgepreservingFilterTest;
 PERF_TEST_P(EdgepreservingFilterTest, perf,
             Combine(Values(-20, 0, 10), Values(-100, 0, 20)))
 {
-	/* 3. Get actual test parameters */
-	RGFTestParam params = GetParam();
-	int kernelSize = get<0>(params);
-	double threshold = get<1>(params);
+    /* 3. Get actual test parameters */
+    RGFTestParam params = GetParam();
+    int kernelSize = get<0>(params);
+    double threshold = get<1>(params);
 
-	/* 4. Allocate and initialize arguments for tested function */
-	std::string filename = getDataPath("samples/data/corridor.jpg");
-	Mat src = imread(filename, 1);
-	Mat dst(src.size(), src.type());
+    /* 4. Allocate and initialize arguments for tested function */
+    std::string filename = getDataPath("testdata/perf/320x260.png");
+    Mat src = imread(filename, 1);
+    Mat dst(src.size(), src.type());
 
-	/* 5. Manifest your expectations about this test */
-	declare.in(src, WARMUP_RNG).out(dst);
+    /* 5. Manifest your expectations about this test */
+    declare.in(src).out(dst);
 
-	/* 6. Collect the samples! */
-	TEST_CYCLE_N(1)
-	{
-		ximgproc::edgepreservingFilter(src, dst, kernelSize, threshold);
-	}
+    /* 6. Collect the samples! */
+    PERF_SAMPLE_BEGIN();
+        ximgproc::edgepreservingFilter(src, dst, kernelSize, threshold);
+    PERF_SAMPLE_END();
 
-	/* 7. Do not check anything */
-	SANITY_CHECK_NOTHING();
+    /* 7. Do not check anything */
+    SANITY_CHECK_NOTHING();
 }
 
 } // namespace
