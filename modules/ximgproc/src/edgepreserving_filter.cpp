@@ -50,7 +50,7 @@ void edgepreservingFilter(const InputArray _src, OutputArray _dst, int d,
         {
             cv::Rect roi =
                 cv::Rect(posX, posY, subwindowX, subwindowY);
-            cv::Mat subwindow1 = src(roi);
+            subwindow1 = src(roi);
             cv::GaussianBlur(subwindow1, subwindow, cv::Size(5, 5),
                              0.3, 0.3);
 
