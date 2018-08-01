@@ -17,11 +17,11 @@ namespace cv { namespace ximgproc {
     *
     * The function smoothes Gaussian noise as well as salt & pepper noise.
     * For more details about this implementation, please see
-    * [ReiWoe18]  Reich, S. and Wörgötter, F. and Dellen, B. (2018). A Real-Time Edge-Preserving Denoising Filter. Proceedings of the 13th International Joint Conference on Computer Vision, Imaging and Computer Graphics Theory and Applications (VISIGRAPP): Visapp, 85-94, 4. DOI: 10.5220/0006509000850094. 
+    * [ReiWoe18]  Reich, S. and Wörgötter, F. and Dellen, B. (2018). A Real-Time Edge-Preserving Denoising Filter. Proceedings of the 13th International Joint Conference on Computer Vision, Imaging and Computer Graphics Theory and Applications (VISIGRAPP): Visapp, 85-94, 4. DOI: 10.5220/0006509000850094.
     *
     * @param src Source 8-bit 3-channel image.
     * @param dst Destination image of the same size and type as src.
-    * @param d Diameter of each pixel neighborhood that is used during filtering. Must be greater or equal 3..
+    * @param d Diameter of each pixel neighborhood that is used during filtering. Must be greater or equal 3.
     * @param threshold Threshold, which distinguishes between noise, outliers, and data.
     */
     CV_EXPORTS_W void edgepreservingFilter( const InputArray src, OutputArray dst, int d, double threshold );
