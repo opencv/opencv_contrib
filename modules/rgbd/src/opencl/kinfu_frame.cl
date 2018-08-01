@@ -230,6 +230,16 @@ __kernel void pyrDownPointsNormals(__global const char * pptr,
 
 typedef char4 pixelType;
 
+// 20 is fixed power
+float specPow20(float x)
+{
+    float x2 = x*x;
+    float x5 = x2*x2*x;
+    float x10 = x5*x5;
+    float x20 = x10*x10;
+    return x20;
+}
+
 __kernel void render(__global const char * pointsptr,
                      int points_step, int points_offset,
                      int points_rows, int points_cols,
@@ -265,7 +275,7 @@ __kernel void render(__global const char * pointsptr,
         const float Ka = 0.3f;  //ambient coeff
         const float Kd = 0.5f;  //diffuse coeff
         const float Ks = 0.2f;  //specular coeff
-        const int   sp = 20;  //specular power
+        //const int   sp = 20;  //specular power, fixed in specPow20()
 
         const float Ax = 1.f;   //ambient color,  can be RGB
         const float Dx = 1.f;   //diffuse color,  can be RGB
@@ -277,7 +287,7 @@ __kernel void render(__global const char * pointsptr,
         float3 r = normalize(2.f*n*dot(n, l) - l);
 
         float val = (Ax*Ka*Dx + Lx*Kd*Dx*max(0.f, dot(n, l)) +
-                     Lx*Ks*Sx*pown(max(0.f, dot(r, v)), sp));
+                     Lx*Ks*Sx*specPow20(max(0.f, dot(r, v))));
 
         uchar ix = convert_uchar(val*255.f);
         color = (pixelType)(ix, ix, ix, 0);
