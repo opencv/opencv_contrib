@@ -34,7 +34,7 @@ PERF_TEST_P(EdgepreservingFilterTest, perf,
 
     /* 6. Collect the samples! */
     PERF_SAMPLE_BEGIN();
-        ximgproc::edgepreservingFilter(src, dst, kernelSize, threshold);
+        ximgproc::edgePreservingFilter(src, dst, kernelSize, threshold);
     PERF_SAMPLE_END();
 
     /* 7. Do not check anything */

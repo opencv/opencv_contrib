@@ -25,7 +25,7 @@ TEST(ximgproc_EdgepreservingFilter, regression)
     // Filter
     int kernel = 9;
     double threshold = 20;
-    ximgproc::edgepreservingFilter(src, dst, kernel, threshold);
+    ximgproc::edgePreservingFilter(src, dst, kernel, threshold);
 
     double psnr = cvtest::PSNR(original, dst);
     //printf("psnr=%.2f\n", psnr);

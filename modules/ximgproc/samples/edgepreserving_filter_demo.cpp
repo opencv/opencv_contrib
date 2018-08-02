@@ -32,7 +32,7 @@ int main(int argc, char **argv)
     waitKey(0);
 
     // Initialize filter. Kernel size 5x5, threshold 20
-    ximgproc::edgepreservingFilter(image, res, 9, 20);
+    ximgproc::edgePreservingFilter(image, res, 9, 20);
 
     // After filtering
     imshow("Filtered image", res);
