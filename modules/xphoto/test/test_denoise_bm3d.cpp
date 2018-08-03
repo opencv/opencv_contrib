@@ -76,7 +76,7 @@ namespace opencv_test { namespace {
 
         // BM3D: two different calls doing exactly the same thing
         cv::Mat result, resultSec;
-        cv::xphoto::bm3dDenoising(original, cv::Mat(), resultSec, 10, 4, 16, 2500, 400, 8, 1, 0.0f, cv::NORM_L2, cv::xphoto::BM3D_STEPALL);
+        cv::xphoto::bm3dDenoising(original, noArray(), resultSec, 10, 4, 16, 2500, 400, 8, 1, 0.0f, cv::NORM_L2, cv::xphoto::BM3D_STEPALL);
         cv::xphoto::bm3dDenoising(original, result, 10, 4, 16, 2500, 400, 8, 1, 0.0f, cv::NORM_L2, cv::xphoto::BM3D_STEPALL);
 
         DUMP(result, expected_path + ".res.png");
