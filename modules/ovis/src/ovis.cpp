@@ -31,11 +31,28 @@ WindowScene::~WindowScene() {}
 
 void _createTexture(const String& name, Mat image)
 {
+    PixelFormat format;
+    switch(image.type())
+    {
+    case CV_8UC4:
+        format = PF_BYTE_BGRA;
+        break;
+    case CV_8UC3:
+        format = PF_BYTE_BGR;
+        break;
+    case CV_8UC1:
+        format = PF_BYTE_L;
+        break;
+    default:
+        CV_Error(Error::StsBadArg, "currently only CV_8UC1, CV_8UC3, CV_8UC4 textures are supported");
+        break;
+    }
+
     TextureManager& texMgr = TextureManager::getSingleton();
     TexturePtr tex = texMgr.getByName(name, RESOURCEGROUP_NAME);
 
     Image im;
-    im.loadDynamicImage(image.ptr(), image.cols, image.rows, 1, PF_BYTE_BGR);
+    im.loadDynamicImage(image.ptr(), image.cols, image.rows, 1, format);
 
     if (tex)
     {
@@ -323,7 +340,7 @@ public:
 
     void setBackground(InputArray image)
     {
-        CV_Assert(image.type() == CV_8UC3, bgplane);
+        CV_Assert(bgplane);
 
         String name = sceneMgr->getName() + "_Background";
 
@@ -769,6 +786,14 @@ void setMaterialProperty(const String& name, const String& prop, const Scalar& v
 
     if(!set)
         CV_Error_(Error::StsBadArg, ("shader parameter named '%s' not found", prop.c_str()));
+}
+
+void updateTexture(const String& name, InputArray image)
+{
+    CV_Assert(_app);
+    TexturePtr tex = TextureManager::getSingleton().getByName(name, RESOURCEGROUP_NAME);
+    CV_Assert(tex);
+    _createTexture(name, image.getMat());
 }
 }
 }
