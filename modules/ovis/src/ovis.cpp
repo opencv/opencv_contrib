@@ -717,20 +717,23 @@ void setMaterialProperty(const String& name, int prop, const Scalar& val)
 
 void setMaterialProperty(const String& name, int prop, const String& value)
 {
-    CV_Assert(prop == MATERIAL_TEXTURE, _app);
+    CV_Assert(prop >= MATERIAL_TEXTURE0, prop <= MATERIAL_TEXTURE3, _app);
 
     MaterialPtr mat = MaterialManager::getSingleton().getByName(name, RESOURCEGROUP_NAME);
     CV_Assert(mat);
 
     Pass* rpass = mat->getTechniques()[0]->getPasses()[0];
 
-    if (rpass->getTextureUnitStates().empty())
+    size_t texUnit = prop - MATERIAL_TEXTURE0;
+    CV_Assert(texUnit <= rpass->getTextureUnitStates().size());
+
+    if (rpass->getTextureUnitStates().size() <= texUnit)
     {
         rpass->createTextureUnitState(value);
         return;
     }
 
-    rpass->getTextureUnitStates()[0]->setTextureName(value);
+    rpass->getTextureUnitStates()[texUnit]->setTextureName(value);
 }
 
 static bool setShaderProperty(const GpuProgramParametersSharedPtr& params, const String& prop,
