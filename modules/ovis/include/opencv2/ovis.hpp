@@ -35,7 +35,11 @@ enum MaterialProperty
     MATERIAL_POINT_SIZE,
     MATERIAL_OPACITY,
     MATERIAL_EMISSIVE,
-    MATERIAL_TEXTURE
+    MATERIAL_TEXTURE0,
+    MATERIAL_TEXTURE = MATERIAL_TEXTURE0,
+    MATERIAL_TEXTURE1,
+    MATERIAL_TEXTURE2,
+    MATERIAL_TEXTURE3,
 };
 
 enum EntityProperty
@@ -281,6 +285,15 @@ CV_EXPORTS_W void createPointCloudMesh(const String& name, InputArray vertices, 
  * @param segments number of segments per side
  */
 CV_EXPORTS_W void createGridMesh(const String& name, const Size2f& size, const Size& segments = Size(1, 1));
+
+/**
+ * updates an existing texture
+ *
+ * A new texture can be created with @ref createPlaneMesh
+ * @param name name of the texture
+ * @param image the image data
+ */
+CV_EXPORTS_W void updateTexture(const String& name, InputArray image);
 //! @}
 }
 }
