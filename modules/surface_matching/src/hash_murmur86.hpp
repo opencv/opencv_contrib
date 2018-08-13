@@ -8,6 +8,8 @@
 * with support for progressive processing.
 */
 
+#include "cvconfig.h"
+
 /* ------------------------------------------------------------------------- */
 /* Determine what native type to use for uint32_t */
 
@@ -89,10 +91,9 @@ void hashMurmurx86 ( const void * key, const int len, const uint seed, void * ou
 #endif
 
 /* Now find best way we can to READ_UINT32 */
-#if (defined(_M_IX86) || defined(__i386__) || defined(__i386) || defined(i386)) \
-    || (defined(__BYTE_ORDER__) && defined(__ORDER_LITTLE_ENDIAN__) && __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__)
+#ifndef WORDS_BIGENDIAN
 # define READ_UINT32(ptr)   (*((uint32_t*)(ptr)))
-#elif (defined(__BYTE_ORDER__) && defined(__ORDER_BIG_ENDIAN__) && __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__)
+#elif defined(WORDS_BIGENDIAN)
     && defined(__GNUC__) && (__GNUC__>4 || (__GNUC__==4 && __GNUC_MINOR__>=3))
 # define READ_UINT32(ptr)   (__builtin_bswap32(*((uint32_t*)(ptr))))
 #endif
