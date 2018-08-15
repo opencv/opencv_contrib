@@ -655,19 +655,10 @@ void ICPGPU::getAb(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, c
 }
 
 
-cv::Ptr<ICP> makeICP(cv::kinfu::Params::PlatformType t,
-                     const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations,
+cv::Ptr<ICP> makeICP(const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations,
                      float _angleThreshold, float _distanceThreshold)
 {
-    switch (t)
-    {
-    case cv::kinfu::Params::PlatformType::PLATFORM_CPU:
-        return cv::makePtr<ICPCPU>(_intrinsics, _iterations, _angleThreshold, _distanceThreshold);
-    case cv::kinfu::Params::PlatformType::PLATFORM_GPU:
-        return cv::makePtr<ICPGPU>(_intrinsics, _iterations, _angleThreshold, _distanceThreshold);
-    default:
-        return cv::Ptr<ICP>();
-    }
+    return makePtr<ICPImpl>(_intrinsics, _iterations, _angleThreshold, _distanceThreshold);
 }
 
 } // namespace kinfu

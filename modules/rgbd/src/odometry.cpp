@@ -1526,8 +1526,7 @@ bool FastICPOdometry::computeImpl(const Ptr<OdometryFrame>& srcFrame,
 {
     kinfu::Intr intr(cameraMatrix);
     std::vector<int> iterations = iterCounts;
-    Ptr<kinfu::ICP> icp = kinfu::makeICP(kinfu::Params::PlatformType::PLATFORM_CPU,
-                                         intr,
+    Ptr<kinfu::ICP> icp = kinfu::makeICP(intr,
                                          iterations,
                                          angleThreshold,
                                          maxDistDiff);

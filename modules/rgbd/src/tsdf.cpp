@@ -1352,25 +1352,14 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray /*points*/, OutputArray /*nor
 
 #endif
 
-cv::Ptr<TSDFVolume> makeTSDFVolume(cv::kinfu::Params::PlatformType t,
-                                   int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+cv::Ptr<TSDFVolume> makeTSDFVolume(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                                    float _raycastStepFactor)
 {
-    switch (t)
-    {
-    case cv::kinfu::Params::PlatformType::PLATFORM_CPU:
-        return cv::makePtr<TSDFVolumeCPU>(_res, _size, _pose, _truncDist, _maxWeight,
-                                          _raycastStepFactor);
-    case cv::kinfu::Params::PlatformType::PLATFORM_GPU:
 #ifdef HAVE_OPENCL
-        return cv::makePtr<TSDFVolumeGPU>(_res, _size, _pose, _truncDist, _maxWeight,
-                                          _raycastStepFactor);
-#else
-        throw std::runtime_error("This platform is not available");
+    if(cv::ocl::isOpenCLActivated())
+        return cv::makePtr<TSDFVolumeGPU>(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor);
 #endif
-    default:
-        return cv::Ptr<TSDFVolume>();
-    }
+    return cv::makePtr<TSDFVolumeCPU>(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor);
 }
 
 } // namespace kinfu

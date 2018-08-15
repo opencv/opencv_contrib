@@ -44,8 +44,7 @@ public:
     Vec8i neighbourCoords;
 };
 
-cv::Ptr<TSDFVolume> makeTSDFVolume(cv::kinfu::Params::PlatformType t,
-                                   int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+cv::Ptr<TSDFVolume> makeTSDFVolume(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                                    float _raycastStepFactor);
 
 } // namespace kinfu

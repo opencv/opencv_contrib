@@ -16,8 +16,6 @@ Ptr<Params> Params::defaultParams()
 {
     Params p;
 
-    p.platform = PLATFORM_CPU;
-
     p.frameSize = Size(640, 480);
 
     float fx, fy, cx, cy;
@@ -140,8 +138,8 @@ private:
 KinFu::KinFuImpl::KinFuImpl(const Params &_params) :
     params(_params),
     frameGenerator(makeFrameGenerator(params.platform)),
-    icp(makeICP(params.platform, params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
-    volume(makeTSDFVolume(params.platform, params.volumeDims, params.volumeSize, params.volumePose,
+    icp(makeICP(params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
+    volume(makeTSDFVolume(params.volumeDims, params.volumeSize, params.volumePose,
                           params.tsdf_trunc_dist, params.tsdf_max_weight,
                           params.raycast_step_factor)),
     frame()

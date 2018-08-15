@@ -28,19 +28,6 @@ struct CV_EXPORTS_W Params
     */
     CV_WRAP static Ptr<Params> coarseParams();
 
-    enum PlatformType
-    {
-
-        PLATFORM_CPU, PLATFORM_GPU
-    };
-
-    /** @brief A platform on which to run the algorithm.
-     *
-    Currently KinFu supports only one platform which is a CPU.
-    GPU platform is to be implemented in the future.
-    */
-    PlatformType platform;
-
     /** @brief frame size in pixels */
     CV_PROP_RW Size frameSize;
 
@@ -133,6 +120,9 @@ struct CV_EXPORTS_W Params
   which are a sort of distances to the surface (for details read the @cite kinectfusion article about TSDF).
   There is no interface to that representation yet.
 
+  KinFu uses OpenCL acceleration automatically if available.
+  To enable or disable it explicitly use cv::ocl::setUseOpenCL().
+
   This implementation is based on [kinfu-remake](https://github.com/Nerei/kinfu_remake).
 */
 class CV_EXPORTS_W KinFu
@@ -199,9 +189,6 @@ public:
     @return true if succeded to align new frame with current scene, false if opposite
     */
     CV_WRAP virtual bool update(InputArray depth) = 0;
-
-private:
-    class KinFuImpl;
 };
 
 //! @}

@@ -30,8 +30,7 @@ protected:
     cv::kinfu::Intr intrinsics;
 };
 
-cv::Ptr<ICP> makeICP(cv::kinfu::Params::PlatformType t,
-                     const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations,
+cv::Ptr<ICP> makeICP(const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations,
                      float _angleThreshold, float _distanceThreshold);
 
 } // namespace kinfu
