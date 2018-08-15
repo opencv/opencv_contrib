@@ -43,7 +43,7 @@ inline float specPow<1>(float x)
 
 struct RenderInvoker : ParallelLoopBody
 {
-    RenderInvoker(const Points& _points, const Normals& _normals, Mat_<Vec3b>& _img, Affine3f _lightPose, Size _sz) :
+    RenderInvoker(const Points& _points, const Normals& _normals, Mat_<Vec4b>& _img, Affine3f _lightPose, Size _sz) :
         ParallelLoopBody(),
         points(_points),
         normals(_normals),
@@ -56,7 +56,7 @@ struct RenderInvoker : ParallelLoopBody
     {
         for(int y = range.start; y < range.end; y++)
         {
-            Vec3b* imgRow = img[y];
+            Vec4b* imgRow = img[y];
             const ptype* ptsRow = points[y];
             const ptype* nrmRow = normals[y];
 
@@ -65,11 +65,11 @@ struct RenderInvoker : ParallelLoopBody
                 Point3f p = fromPtype(ptsRow[x]);
                 Point3f n = fromPtype(nrmRow[x]);
 
-                Vec3b color;
+                Vec4b color;
 
                 if(isNaN(p))
                 {
-                    color = Vec3b(0, 32, 0);
+                    color = Vec4b(0, 32, 0, 0);
                 }
                 else
                 {
@@ -89,7 +89,7 @@ struct RenderInvoker : ParallelLoopBody
 
                     uchar ix = (uchar)((Ax*Ka*Dx + Lx*Kd*Dx*max(0.f, n.dot(l)) +
                                         Lx*Ks*Sx*specPow<sp>(max(0.f, r.dot(v))))*255.f);
-                    color = Vec3b(ix, ix, ix);
+                    color = Vec4b(ix, ix, ix, 0);
                 }
 
                 imgRow[x] = color;
@@ -99,7 +99,7 @@ struct RenderInvoker : ParallelLoopBody
 
     const Points& points;
     const Normals& normals;
-    Mat_<Vec3b>& img;
+    Mat_<Vec4b>& img;
     Affine3f lightPose;
     Size sz;
 };
