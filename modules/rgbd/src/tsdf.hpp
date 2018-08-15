@@ -21,9 +21,9 @@ public:
     TSDFVolume(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                float _raycastStepFactor, bool zFirstMemOrder = true);
 
-    virtual void integrate(cv::Ptr<Frame> depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) = 0;
-    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize, int pyramidLevels,
-                         cv::Ptr<FrameGenerator> frameGenerator, cv::Ptr<Frame> frame) const = 0;
+    virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) = 0;
+    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
+                         cv::OutputArray points, cv::OutputArray normals) const = 0;
 
     virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const = 0;
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const = 0;

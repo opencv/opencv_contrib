@@ -47,9 +47,9 @@ public:
     TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                   float _raycastStepFactor, bool zFirstMemOrder = true);
 
-    virtual void integrate(cv::Ptr<Frame> depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) override;
-    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize, int pyramidLevels,
-                         cv::Ptr<FrameGenerator> frameGenerator, cv::Ptr<Frame> frame) const override;
+    virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) override;
+    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
+                         cv::OutputArray points, cv::OutputArray normals) const override;
 
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const override;
     virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
@@ -478,12 +478,12 @@ struct IntegrateInvoker : ParallelLoopBody
 };
 
 // use depth instead of distance (optimization)
-void TSDFVolumeCPU::integrate(cv::Ptr<Frame> _depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics)
+void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics)
 {
     ScopeTime st("tsdf: integrate");
 
-    Depth depth;
-    _depth->getDepth(depth);
+    CV_Assert(_depth.type() == DataType<depthType>::type);
+    Depth depth = _depth.getMat();
 
     IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor);
     Range range(0, volResolution.x);
@@ -972,23 +972,23 @@ struct RaycastInvoker : ParallelLoopBody
 };
 
 
-void TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frameSize, int pyramidLevels,
-                            cv::Ptr<FrameGenerator> frameGenerator, cv::Ptr<Frame> frame) const
+void TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frameSize,
+                            cv::OutputArray _points, cv::OutputArray _normals) const
 {
     ScopeTime st("tsdf: raycast");
 
     CV_Assert(frameSize.area() > 0);
 
-    Points points(frameSize);
-    Normals normals(frameSize);
+    _points.create (frameSize, DataType<Points ::value_type>::type);
+    _normals.create(frameSize, DataType<Normals::value_type>::type);
+
+    Points points   =  _points.getMat();
+    Normals normals = _normals.getMat();
 
     RaycastInvoker ri(points, normals, cameraPose, intrinsics, *this);
 
     const int nstripes = -1;
     parallel_for_(Range(0, points.rows), ri, nstripes);
-
-    // build a pyramid of points and normals
-    (*frameGenerator)(frame, points, normals, pyramidLevels);
 }
 
 
@@ -1195,9 +1195,9 @@ public:
     TSDFVolumeGPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                   float _raycastStepFactor);
 
-    virtual void integrate(cv::Ptr<Frame> depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) override;
-    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize, int pyramidLevels,
-                         cv::Ptr<FrameGenerator> frameGenerator, cv::Ptr<Frame> frame) const override;
+    virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) override;
+    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
+                         cv::OutputArray _points, cv::OutputArray _normals) const override;
 
     virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray normals) const override;
@@ -1232,13 +1232,12 @@ void TSDFVolumeGPU::reset()
 
 
 // use depth instead of distance (optimization)
-void TSDFVolumeGPU::integrate(cv::Ptr<Frame> _depth, float depthFactor,
+void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
                               cv::Affine3f cameraPose, Intr intrinsics)
 {
     ScopeTime st("tsdf gpu: integrate");
 
-    UMat depth;
-    _depth->getDepth(depth);
+    UMat depth = _depth.getUMat();
 
     cv::String errorStr;
     cv::String name = "integrate";
@@ -1277,8 +1276,8 @@ void TSDFVolumeGPU::integrate(cv::Ptr<Frame> _depth, float depthFactor,
 }
 
 
-void TSDFVolumeGPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frameSize, int pyramidLevels,
-                            Ptr<FrameGenerator> frameGenerator, Ptr<Frame> frame) const
+void TSDFVolumeGPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frameSize,
+                            cv::OutputArray _points, cv::OutputArray _normals) const
 {
     ScopeTime st("tsdf gpu: raycast");
 
@@ -1294,8 +1293,11 @@ void TSDFVolumeGPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frame
     if(k.empty())
         throw std::runtime_error("Failed to create kernel: " + errorStr);
 
-    UMat points(frameSize, CV_32FC4);
-    UMat normals(frameSize, CV_32FC4);
+    _points.create (frameSize, CV_32FC4);
+    _normals.create(frameSize, CV_32FC4);
+
+    UMat points  =  _points.getUMat();
+    UMat normals = _normals.getUMat();
 
     UMat vol2camGpu, cam2volGpu;
     Affine3f vol2cam = cameraPose.inv() * pose;
@@ -1335,8 +1337,6 @@ void TSDFVolumeGPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frame
         throw std::runtime_error("Failed to run kernel");
 
     //DEBUG
-    // build a pyramid of points and normals
-    (*frameGenerator)(frame, points, normals, pyramidLevels);
 }
 
 
