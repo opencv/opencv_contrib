@@ -133,7 +133,6 @@ public:
 
     /** @brief Get current parameters */
     virtual const Params& getParams() const = 0;
-    virtual void setParams(const Params&) = 0;
 
     /** @brief Renders a volume into an image
 

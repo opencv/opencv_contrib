@@ -110,7 +110,6 @@ public:
     virtual ~KinFuImpl();
 
     const Params& getParams() const CV_OVERRIDE;
-    void setParams(const Params&) CV_OVERRIDE;
 
     void render(OutputArray image, const Matx44f& cameraPose) const CV_OVERRIDE;
 
@@ -167,12 +166,6 @@ template< typename T >
 const Params& KinFuImpl<T>::getParams() const
 {
     return params;
-}
-
-template< typename T >
-void KinFuImpl<T>::setParams(const Params& p)
-{
-    params = p;
 }
 
 template< typename T >
