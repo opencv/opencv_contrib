@@ -18,7 +18,10 @@ class ICP
 public:
     ICP(const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold);
 
-    virtual bool estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> oldFrame, cv::Ptr<Frame> newFrame) const = 0;
+    virtual bool estimateTransform(cv::Affine3f& transform,
+                                   InputArray oldPoints, InputArray oldNormals,
+                                   InputArray newPoints, InputArray newNormals
+                                   ) const = 0;
 
     virtual ~ICP() { }
 
