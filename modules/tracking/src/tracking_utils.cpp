@@ -8,8 +8,8 @@ using namespace cv;
 
 double tracking_internal::computeNCC(const Mat& patch1, const Mat& patch2)
 {
-    CV_Assert( patch1.rows == patch2.rows,
-               patch1.cols == patch2.cols);
+    CV_CheckEQ(patch1.rows, patch2.rows, "");
+    CV_CheckEQ(patch1.cols, patch2.cols, "");
 
     int N = patch1.rows * patch1.cols;
 

@@ -37,8 +37,11 @@ void createPlaneMesh(const String& name, const Size2f& size, InputArray image)
 void createPointCloudMesh(const String& name, InputArray vertices, InputArray colors)
 {
     int color_type = colors.type();
-    CV_Assert(_app, vertices.type() == CV_32FC3 && vertices.isContinuous(),
-              colors.empty() || color_type == CV_8UC3 || color_type == CV_8UC4);
+    CV_Assert(_app);
+    CV_CheckTypeEQ(vertices.type(), CV_32FC3, "")
+    CV_Assert(vertices.isContinuous());
+    if (!colors.empty())
+        CV_CheckType(color_type, color_type == CV_8UC3 || color_type == CV_8UC4);
 
     // material
     MaterialPtr mat = MaterialManager::getSingleton().create(name, RESOURCEGROUP_NAME);
@@ -101,7 +104,7 @@ void createPointCloudMesh(const String& name, InputArray vertices, InputArray co
 
 void createGridMesh(const String& name, const Size2f& size, const Size& segments)
 {
-    CV_Assert(_app, !segments.empty());
+    CV_Assert_N(_app, !segments.empty());
 
     // material
     MaterialPtr mat = MaterialManager::getSingleton().create(name, RESOURCEGROUP_NAME);
