@@ -10,101 +10,9 @@
 namespace cv {
 namespace kinfu {
 
-struct FrameGeneratorCPU : FrameGenerator
-{
-public:
-    virtual cv::Ptr<Frame> operator ()() const override;
-    virtual void operator() (Ptr<Frame> _frame, InputArray depth, const kinfu::Intr, int levels, float depthFactor,
-                             float sigmaDepth, float sigmaSpatial, int kernelSize) const override;
-    virtual void operator() (Ptr<Frame> _frame, InputArray points, InputArray normals, int levels) const override;
-
-    virtual ~FrameGeneratorCPU() {}
-};
-
-void computePointsNormals(const cv::kinfu::Intr, float depthFactor, const Depth, Points, Normals );
-Depth pyrDownBilateral(const Depth depth, float sigma);
-void pyrDownPointsNormals(const Points p, const Normals n, Points& pdown, Normals& ndown);
-
-cv::Ptr<Frame> FrameGeneratorCPU::operator ()() const
-{
-    return makePtr<FrameCPU>();
-}
-
-void FrameGeneratorCPU::operator ()(Ptr<Frame> _frame, InputArray depth, const Intr intr, int levels, float depthFactor,
-                                    float sigmaDepth, float sigmaSpatial, int kernelSize) const
-{
-    ScopeTime st("frameGenerator cpu: from depth");
-
-    Ptr<FrameCPU> frame = _frame.dynamicCast<FrameCPU>();
-
-    CV_Assert(frame);
-
-    //CV_Assert(depth.type() == CV_16S);
-    // this should convert CV_16S to CV_32F
-    frame->depthData = Depth(depth.getMat());
-
-    // looks like OpenCV's bilateral filter works the same as KinFu's
-    Depth smooth;
-    bilateralFilter(frame->depthData, smooth, kernelSize, sigmaDepth*depthFactor, sigmaSpatial);
-
-    // depth truncation is not used by default
-    //if (p.icp_truncate_depth_dist > 0) kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
-
-    // we don't need depth pyramid outside this method
-    // if we do, the code is to be refactored
-
-    Depth scaled = smooth;
-    Size sz = smooth.size();
-    frame->points.resize(levels);
-    frame->normals.resize(levels);
-    for(int i = 0; i < levels; i++)
-    {
-        Points&  p = frame->points[i];
-        Normals& n = frame->normals[i];
-        p.create(sz); n.create(sz);
-
-        computePointsNormals(intr.scale(i), depthFactor, scaled, p, n);
-
-        if(i < levels - 1)
-        {
-            sz.width /= 2; sz.height /= 2;
-            scaled = pyrDownBilateral(scaled, sigmaDepth*depthFactor);
-        }
-    }
-}
-
-void FrameGeneratorCPU::operator ()(Ptr<Frame> _frame, InputArray _points, InputArray _normals, int levels) const
-{
-    ScopeTime st("frameGenerator cpu: pyrDown p, n");
-
-    CV_Assert( _points.type() == DataType<Points::value_type>::type);
-    CV_Assert(_normals.type() == DataType<Points::value_type>::type);
-
-    Ptr<FrameCPU> frame = _frame.dynamicCast<FrameCPU>();
-
-    CV_Assert(frame);
-
-    Mat p0 = _points.getMat(), n0 = _normals.getMat();
-    if(_points.kind()  != _InputArray::MAT)
-        p0 = p0.clone();
-    if(_normals.kind() != _InputArray::MAT)
-        n0 = n0.clone();
-
-    frame->depthData = Depth();
-    frame->points.resize(levels);
-    frame->normals.resize(levels);
-    frame->points[0]  = p0;
-    frame->normals[0] = n0;
-    Size sz = _points.size();
-    for(int i = 1; i < levels; i++)
-    {
-        sz.width /= 2; sz.height /= 2;
-        frame->points[i].create(sz);
-        frame->normals[i].create(sz);
-        pyrDownPointsNormals(frame->points[i-1], frame->normals[i-1],
-                             frame->points[i  ], frame->normals[i  ]);
-    }
-}
+static void computePointsNormals(const cv::kinfu::Intr, float depthFactor, const Depth, Points, Normals );
+static Depth pyrDownBilateral(const Depth depth, float sigma);
+static void pyrDownPointsNormals(const Points p, const Normals n, Points& pdown, Normals& ndown);
 
 template<int p>
 inline float specPow(float x)
@@ -195,49 +103,6 @@ struct RenderInvoker : ParallelLoopBody
     Affine3f lightPose;
     Size sz;
 };
-
-void FrameCPU::render(OutputArray image, int level, Affine3f lightPose) const
-{
-    ScopeTime st("frame cpu render");
-
-    CV_Assert(level < (int)points.size());
-    CV_Assert(level < (int)normals.size());
-
-    Size sz = points[level].size();
-    image.create(sz, CV_8UC3);
-    Mat_<Vec3b> img = image.getMat();
-
-    RenderInvoker ri(points[level], normals[level], img, lightPose, sz);
-    Range range(0, sz.height);
-    const int nstripes = -1;
-    parallel_for_(range, ri, nstripes);
-}
-
-
-void FrameCPU::getDepth(OutputArray _depth) const
-{
-    CV_Assert(!depthData.empty());
-    _depth.createSameSize(depthData, depthData.type());
-    _depth.assign(depthData);
-}
-
-
-void FrameCPU::getPointsNormals(OutputArray _points, OutputArray _normals) const
-{
-    CV_Assert(!points.empty());
-    CV_Assert(!normals.empty());
-    std::vector<Mat> pts(points.size());
-    std::vector<Mat> nrm(normals.size());
-    for(size_t i = 0; i < pts.size(); i++)
-    {
-        pts[i] = points [i];
-        nrm[i] = normals[i];
-    }
-    _points.create(1, points.size(), DataType<Points::value_type>::type);
-    _points.assign(pts);
-    _normals.create(1, normals.size(), DataType<Points::value_type>::type);
-    _normals.assign(nrm);
-}
 
 
 void pyrDownPointsNormals(const Points p, const Normals n, Points &pdown, Normals &ndown)
@@ -427,97 +292,30 @@ void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
 
 ///////// GPU implementation /////////
 
-static const int GPU_DEPTH_TYPE  = CV_32F;
-static const int GPU_POINTS_TYPE = CV_32FC4;
+static bool ocl_renderPointsNormals(const UMat points, const UMat normals, UMat image, Affine3f lightPose);
+static bool ocl_makeFrameFromDepth(const UMat depth, OutputArrayOfArrays points, OutputArrayOfArrays normals,
+                                   const Intr intr, int levels, float depthFactor,
+                                   float sigmaDepth, float sigmaSpatial, int kernelSize);
+static bool ocl_buildPyramidPointsNormals(const UMat points, const UMat normals,
+                                          OutputArrayOfArrays pyrPoints, OutputArrayOfArrays pyrNormals,
+                                          int levels);
 
-void computePointsNormalsGpu(const Intr intr, float depthFactor, const UMat& depth, UMat points, UMat normals);
-UMat pyrDownBilateralGpu(const UMat &depth, float sigma);
-void customBilateralFilterGpu(const UMat src, UMat& dst, int kernelSize, float sigmaDepth, float sigmaSpatial);
-void pyrDownPointsNormalsGpu(const UMat p, const UMat n, UMat &pdown, UMat &ndown);
+
+static bool computePointsNormalsGpu(const Intr intr, float depthFactor, const UMat& depth, UMat points, UMat normals);
+static bool pyrDownBilateralGpu(const UMat& depth, UMat& depthDown, float sigma);
+static bool customBilateralFilterGpu(const UMat src, UMat& dst, int kernelSize, float sigmaDepth, float sigmaSpatial);
+static bool pyrDownPointsNormalsGpu(const UMat p, const UMat n, UMat &pdown, UMat &ndown);
 
 
-struct FrameGeneratorGPU : FrameGenerator
-{
-public:
-    virtual cv::Ptr<Frame> operator ()() const override;
-    virtual void operator() (Ptr<Frame> frame, InputArray depth, const kinfu::Intr, int levels, float depthFactor,
-                             float sigmaDepth, float sigmaSpatial, int kernelSize) const override;
-    virtual void operator() (Ptr<Frame> frame, InputArray points, InputArray normals, int levels) const override;
-
-    virtual ~FrameGeneratorGPU() {}
-};
-
-cv::Ptr<Frame> FrameGeneratorGPU::operator ()() const
-{
-    return makePtr<FrameGPU>();
-}
-
-void FrameGeneratorGPU::operator ()(Ptr<Frame> _frame, InputArray depth, const Intr intr, int levels, float depthFactor,
-                                    float sigmaDepth, float sigmaSpatial, int kernelSize) const
-{
-    ScopeTime st("frameGenerator gpu: from depth");
-
-    Ptr<FrameGPU> frame = _frame.dynamicCast<FrameGPU>();
-
-    CV_Assert(frame);
-
-    UMat udepth;
-    if(depth.type() != GPU_DEPTH_TYPE)
-    {
-        if(depth.kind() != _InputArray::UMAT)
-            depth.getMat().convertTo(udepth, GPU_DEPTH_TYPE);
-        else
-            depth.getUMat().convertTo(udepth, GPU_DEPTH_TYPE);
-    }
-    else
-    {
-        if(depth.kind() != _InputArray::UMAT)
-            depth.copyTo(udepth);
-        else
-            udepth = depth.getUMat();
-    }
-
-    frame->depthData = udepth;
-
-    // looks like OpenCV's bilateral filter works the same as KinFu's
-    UMat smooth;
-    //TODO: fix that
-    // until 32f isn't implemented in OpenCV, we should use our workarounds
-    //bilateralFilter(udepth, smooth, kernelSize, sigmaDepth*depthFactor, sigmaSpatial);
-    customBilateralFilterGpu(udepth, smooth, kernelSize, sigmaDepth*depthFactor, sigmaSpatial);
-
-    // depth truncation is not used by default
-    //if (p.icp_truncate_depth_dist > 0) kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
-
-    UMat scaled = smooth;
-    Size sz = smooth.size();
-    frame->points.resize(levels);
-    frame->normals.resize(levels);
-    for(int i = 0; i < levels; i++)
-    {
-        UMat& p = frame->points[i];
-        UMat& n = frame->normals[i];
-        p.create(sz, GPU_POINTS_TYPE); n.create(sz, GPU_POINTS_TYPE);
-
-        computePointsNormalsGpu(intr.scale(i), depthFactor, scaled, p, n);
-
-        if(i < levels - 1)
-        {
-            sz.width /= 2, sz.height /= 2;
-            scaled = pyrDownBilateralGpu(scaled, sigmaDepth*depthFactor);
-        }
-    }
-}
-
-void computePointsNormalsGpu(const Intr intr, float depthFactor, const UMat& depth,
+bool computePointsNormalsGpu(const Intr intr, float depthFactor, const UMat& depth,
                              UMat points, UMat normals)
 {
     CV_Assert(!points.empty() && !normals.empty());
     CV_Assert(depth.size() == points.size());
     CV_Assert(depth.size() == normals.size());
-    CV_Assert(depth.type() == GPU_DEPTH_TYPE);
-    CV_Assert(points.type() == GPU_POINTS_TYPE);
-    CV_Assert(normals.type() == GPU_POINTS_TYPE);
+    CV_Assert(depth.type() == DEPTH_TYPE);
+    CV_Assert(points.type()  == POINT_TYPE);
+    CV_Assert(normals.type() == POINT_TYPE);
 
     // conversion to meters
     float dfac = 1.f/depthFactor;
@@ -532,7 +330,7 @@ void computePointsNormalsGpu(const Intr intr, float depthFactor, const UMat& dep
     k.create(name.c_str(), source, options, &errorStr);
 
     if(k.empty())
-        throw std::runtime_error("Failed to create kernel: " + errorStr);
+        return false;
 
     k.args(ocl::KernelArg::WriteOnly(points),
            ocl::KernelArg::WriteOnly(normals),
@@ -545,13 +343,13 @@ void computePointsNormalsGpu(const Intr intr, float depthFactor, const UMat& dep
     globalSize[0] = (size_t)depth.cols;
     globalSize[1] = (size_t)depth.rows;
 
-    if(!k.run(2, globalSize, NULL, true))
-        throw std::runtime_error("Failed to run kernel");
+    return k.run(2, globalSize, NULL, true);
 }
 
-UMat pyrDownBilateralGpu(const UMat& depth, float sigma)
+
+bool pyrDownBilateralGpu(const UMat& depth, UMat& depthDown, float sigma)
 {
-    UMat depthDown(depth.rows/2, depth.cols/2, GPU_DEPTH_TYPE);
+    depthDown.create(depth.rows/2, depth.cols/2, DEPTH_TYPE);
 
     cv::String errorStr;
     cv::String name = "pyrDownBilateral";
@@ -561,7 +359,7 @@ UMat pyrDownBilateralGpu(const UMat& depth, float sigma)
     k.create(name.c_str(), source, options, &errorStr);
 
     if(k.empty())
-        throw std::runtime_error("Failed to create kernel: " + errorStr);
+        return false;
 
     k.args(ocl::KernelArg::ReadOnly(depth),
            ocl::KernelArg::WriteOnly(depthDown),
@@ -571,20 +369,17 @@ UMat pyrDownBilateralGpu(const UMat& depth, float sigma)
     globalSize[0] = (size_t)depthDown.cols;
     globalSize[1] = (size_t)depthDown.rows;
 
-    if(!k.run(2, globalSize, NULL, true))
-        throw std::runtime_error("Failed to run kernel");
-
-    return depthDown;
+    return k.run(2, globalSize, NULL, true);
 }
 
 //TODO: remove it when OpenCV's bilateral processes 32f on GPU
-void customBilateralFilterGpu(const UMat src /* udepth */, UMat& dst /* smooth */,
+bool customBilateralFilterGpu(const UMat src /* udepth */, UMat& dst /* smooth */,
                               int kernelSize, float sigmaDepth, float sigmaSpatial)
 {
     CV_Assert(src.size().area() > 0);
-    CV_Assert(src.type() == GPU_DEPTH_TYPE);
+    CV_Assert(src.type() == DEPTH_TYPE);
 
-    dst.create(src.size(), GPU_DEPTH_TYPE);
+    dst.create(src.size(), DEPTH_TYPE);
 
     cv::String errorStr;
     cv::String name = "customBilateral";
@@ -594,7 +389,7 @@ void customBilateralFilterGpu(const UMat src /* udepth */, UMat& dst /* smooth *
     k.create(name.c_str(), source, options, &errorStr);
 
     if(k.empty())
-        throw std::runtime_error("Failed to create kernel: " + errorStr);
+        return false;
 
     k.args(ocl::KernelArg::ReadOnly(src),
            ocl::KernelArg::WriteOnly(dst),
@@ -606,44 +401,11 @@ void customBilateralFilterGpu(const UMat src /* udepth */, UMat& dst /* smooth *
     globalSize[0] = (size_t)src.cols;
     globalSize[1] = (size_t)src.rows;
 
-    if(!k.run(2, globalSize, NULL, true))
-        throw std::runtime_error("Failed to run kernel");
+    return k.run(2, globalSize, NULL, true);
 }
 
-void FrameGeneratorGPU::operator ()(Ptr<Frame> _frame, InputArray _points, InputArray _normals, int levels) const
-{
-    ScopeTime st("frameGenerator gpu: pyrDown p, n");
 
-    CV_Assert( _points.type() == GPU_POINTS_TYPE);
-    CV_Assert(_normals.type() == GPU_POINTS_TYPE);
-
-    Ptr<FrameGPU> frame = _frame.dynamicCast<FrameGPU>();
-
-    CV_Assert(frame);
-
-    UMat p0 = _points.getUMat(), n0 = _normals.getUMat();
-    if(_points.kind()  != _InputArray::UMAT)
-        p0 = p0.clone();
-    if(_normals.kind() != _InputArray::UMAT)
-        n0 = n0.clone();
-
-    frame->depthData = UMat();
-    frame->points .resize(levels);
-    frame->normals.resize(levels);
-    frame->points [0] = p0;
-    frame->normals[0] = n0;
-    Size sz = _points.size();
-    for(int i = 1; i < levels; i++)
-    {
-        sz.width /= 2; sz.height /= 2;
-        frame->points [i].create(sz, GPU_POINTS_TYPE);
-        frame->normals[i].create(sz, GPU_POINTS_TYPE);
-        pyrDownPointsNormalsGpu(frame->points[i-1], frame->normals[i-1],
-                                frame->points[i  ], frame->normals[i  ]);
-    }
-}
-
-void pyrDownPointsNormalsGpu(const UMat p, const UMat n, UMat &pdown, UMat &ndown)
+bool pyrDownPointsNormalsGpu(const UMat p, const UMat n, UMat &pdown, UMat &ndown)
 {
     cv::String errorStr;
     cv::String name = "pyrDownPointsNormals";
@@ -653,7 +415,7 @@ void pyrDownPointsNormalsGpu(const UMat p, const UMat n, UMat &pdown, UMat &ndow
     k.create(name.c_str(), source, options, &errorStr);
 
     if(k.empty())
-        throw std::runtime_error("Failed to create kernel: " + errorStr);
+        return false;
 
     k.args(ocl::KernelArg::ReadOnly(p),
            ocl::KernelArg::ReadOnly(n),
@@ -664,20 +426,16 @@ void pyrDownPointsNormalsGpu(const UMat p, const UMat n, UMat &pdown, UMat &ndow
     globalSize[0] = (size_t)pdown.cols;
     globalSize[1] = (size_t)pdown.rows;
 
-    if(!k.run(2, globalSize, NULL, true))
-        throw std::runtime_error("Failed to run kernel");
+    return k.run(2, globalSize, NULL, true);
 }
 
-void FrameGPU::render(OutputArray image, int level, Affine3f lightPose) const
+
+static bool ocl_renderPointsNormals(const UMat points, const UMat normals,
+                                    UMat img, Affine3f lightPose)
 {
-    ScopeTime st("frame gpu render");
+    CV_TRACE_FUNCTION();
 
-    CV_Assert(level < (int) points.size());
-    CV_Assert(level < (int)normals.size());
-
-    Size sz = points[level].size();
-    image.create(sz, CV_8UC4);
-    UMat img = image.getUMat();
+    ScopeTime st("frame ocl render");
 
     cv::String errorStr;
     cv::String name = "render";
@@ -687,52 +445,228 @@ void FrameGPU::render(OutputArray image, int level, Affine3f lightPose) const
     k.create(name.c_str(), source, options, &errorStr);
 
     if(k.empty())
-        throw std::runtime_error("Failed to create kernel: " + errorStr);
+        return false;
 
     Vec4f lightPt(lightPose.translation()[0],
                   lightPose.translation()[1],
                   lightPose.translation()[2]);
 
-    k.args(ocl::KernelArg::ReadOnly(points [level]),
-           ocl::KernelArg::ReadOnly(normals[level]),
+    k.args(ocl::KernelArg::ReadOnly(points),
+           ocl::KernelArg::ReadOnly(normals),
            ocl::KernelArg::WriteOnly(img),
            lightPt.val);
 
     size_t globalSize[2];
-    globalSize[0] = (size_t)sz.width;
-    globalSize[1] = (size_t)sz.height;
+    globalSize[0] = (size_t)points.cols;
+    globalSize[1] = (size_t)points.rows;
 
-    if(!k.run(2, globalSize, NULL, true))
-        throw std::runtime_error("Failed to run kernel");
+    return k.run(2, globalSize, NULL, true);
 }
 
-void FrameGPU::getDepth(OutputArray _depth) const
+
+void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray image, Affine3f lightPose)
 {
-    CV_Assert(!depthData.empty());
-    _depth.createSameSize(depthData, depthData.type());
-    _depth.assign(depthData);
+    CV_TRACE_FUNCTION();
+
+    CV_Assert(_points.size().area() > 0);
+    CV_Assert(_points.size() == _normals.size());
+
+    Size sz = _points.size();
+    image.create(sz, CV_8UC4);
+
+    CV_OCL_RUN(_points.isUMat() && _normals.isUMat() && image.isUMat(),
+               ocl_renderPointsNormals(_points.getUMat(),
+                                       _normals.getUMat(),
+                                       image.getUMat(), lightPose))
+
+    ScopeTime st("frame cpu render");
+
+    Points  points  = _points.getMat();
+    Normals normals = _normals.getMat();
+
+    Mat_<Vec4b> img = image.getMat();
+
+    RenderInvoker ri(points, normals, img, lightPose, sz);
+    Range range(0, sz.height);
+    const int nstripes = -1;
+    parallel_for_(range, ri, nstripes);
 }
 
-void FrameGPU::getPointsNormals(OutputArray _points, OutputArray _normals) const
-{
-    CV_Assert(!points.empty());
-    CV_Assert(!normals.empty());
-    _points.create(1, points.size(), GPU_POINTS_TYPE);
-    _points.assign(points);
-    _normals.create(1, normals.size(), GPU_POINTS_TYPE);
-    _normals.assign(normals);
-}
 
-cv::Ptr<FrameGenerator> makeFrameGenerator(cv::kinfu::Params::PlatformType t)
+static bool ocl_makeFrameFromDepth(const UMat depth, OutputArrayOfArrays points, OutputArrayOfArrays normals,
+                                   const Intr intr, int levels, float depthFactor,
+                                   float sigmaDepth, float sigmaSpatial, int kernelSize)
 {
-    switch (t)
+    CV_TRACE_FUNCTION();
+
+    ScopeTime st("frameGenerator gpu: from depth");
+
+    // looks like OpenCV's bilateral filter works the same as KinFu's
+    UMat smooth;
+    //TODO: fix that
+    // until 32f isn't implemented in OpenCV, we should use our workarounds
+    //bilateralFilter(udepth, smooth, kernelSize, sigmaDepth*depthFactor, sigmaSpatial);
+    if(!customBilateralFilterGpu(depth, smooth, kernelSize, sigmaDepth*depthFactor, sigmaSpatial))
+        return  false;
+
+    // depth truncation is not used by default
+    //if (p.icp_truncate_depth_dist > 0) kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
+
+    UMat scaled = smooth;
+    Size sz = smooth.size();
+    points.create(levels, 1, POINT_TYPE);
+    normals.create(levels, 1, POINT_TYPE);
+    for(int i = 0; i < levels; i++)
     {
-    case cv::kinfu::Params::PlatformType::PLATFORM_CPU:
-        return cv::makePtr<FrameGeneratorCPU>();
-    case cv::kinfu::Params::PlatformType::PLATFORM_GPU:
-        return cv::makePtr<FrameGeneratorGPU>();
-    default:
-        return cv::Ptr<FrameGenerator>();
+        UMat& p = points.getUMatRef(i);
+        UMat& n = normals.getUMatRef(i);
+        p.create(sz, POINT_TYPE);
+        n.create(sz, POINT_TYPE);
+
+        if(!computePointsNormalsGpu(intr.scale(i), depthFactor, scaled, p, n))
+            return false;
+
+        if(i < levels - 1)
+        {
+            sz.width /= 2, sz.height /= 2;
+            UMat halfDepth(sz, DEPTH_TYPE);
+            pyrDownBilateralGpu(scaled, halfDepth, sigmaDepth*depthFactor);
+            scaled = halfDepth;
+        }
+    }
+
+    return true;
+}
+
+
+void makeFrameFromDepth(InputArray _depth,
+                        OutputArray pyrPoints, OutputArray pyrNormals,
+                        const Intr intr, int levels, float depthFactor,
+                        float sigmaDepth, float sigmaSpatial, int kernelSize)
+{
+    CV_TRACE_FUNCTION();
+
+    CV_Assert(_depth.type() == DEPTH_TYPE);
+
+    CV_OCL_RUN(_depth.isUMat() && pyrPoints.isUMatVector() && pyrNormals.isUMatVector(),
+               ocl_makeFrameFromDepth(_depth.getUMat(), pyrPoints, pyrNormals,
+                                      intr, levels, depthFactor,
+                                      sigmaDepth, sigmaSpatial, kernelSize));
+
+    ScopeTime st("frameGenerator cpu: from depth");
+
+    Depth depth = _depth.getMat();
+
+    // looks like OpenCV's bilateral filter works the same as KinFu's
+    Depth smooth;
+    bilateralFilter(depth, smooth, kernelSize, sigmaDepth*depthFactor, sigmaSpatial);
+
+    // depth truncation is not used by default
+    //if (p.icp_truncate_depth_dist > 0) kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
+
+    // we don't need depth pyramid outside this method
+    // if we do, the code is to be refactored
+
+    Depth scaled = smooth;
+    Size sz = smooth.size();
+    pyrPoints.create(levels, 1, POINT_TYPE);
+    pyrNormals.create(levels, 1, POINT_TYPE);
+    for(int i = 0; i < levels; i++)
+    {
+        Mat& mp = pyrPoints. getMatRef(i);
+        Mat& mn = pyrNormals.getMatRef(i);
+        mp.create(sz, POINT_TYPE);
+        mn.create(sz, POINT_TYPE);
+        Points  p = mp;
+        Normals n = mn;
+
+        computePointsNormals(intr.scale(i), depthFactor, scaled, p, n);
+
+        if(i < levels - 1)
+        {
+            sz.width /= 2; sz.height /= 2;
+            scaled = pyrDownBilateral(scaled, sigmaDepth*depthFactor);
+        }
+    }
+}
+
+
+static bool ocl_buildPyramidPointsNormals(const UMat points, const UMat normals,
+                                          OutputArrayOfArrays pyrPoints, OutputArrayOfArrays pyrNormals,
+                                          int levels)
+{
+    CV_TRACE_FUNCTION();
+
+    ScopeTime st("frameGenerator gpu: pyrDown p, n");
+
+    pyrPoints .create(levels, 1, POINT_TYPE);
+    pyrNormals.create(levels, 1, POINT_TYPE);
+
+    pyrPoints .getUMatRef(0) = points;
+    pyrNormals.getUMatRef(0) = normals;
+
+    Size sz = points.size();
+    for(int i = 1; i < levels; i++)
+    {
+        UMat p1 = pyrPoints .getUMat(i-1);
+        UMat n1 = pyrNormals.getUMat(i-1);
+
+        sz.width /= 2; sz.height /= 2;
+        UMat& p0 = pyrPoints .getUMatRef(i);
+        UMat& n0 = pyrNormals.getUMatRef(i);
+        p0.create(sz, POINT_TYPE);
+        n0.create(sz, POINT_TYPE);
+
+        if(!pyrDownPointsNormalsGpu(p1, n1, p0, n0))
+            return false;
+    }
+
+    return true;
+}
+
+
+void buildPyramidPointsNormals(InputArray _points, InputArray _normals,
+                               OutputArrayOfArrays pyrPoints, OutputArrayOfArrays pyrNormals,
+                               int levels)
+{
+    CV_TRACE_FUNCTION();
+
+    CV_Assert(_points.type() == POINT_TYPE);
+    CV_Assert(_points.type() == _normals.type());
+    CV_Assert(_points.size() == _normals.size());
+
+    CV_OCL_RUN(_points.isUMat() && _normals.isUMat() &&
+               pyrPoints.isUMatVector() && pyrNormals.isUMatVector(),
+               ocl_buildPyramidPointsNormals(_points.getUMat(), _normals.getUMat(),
+                                             pyrPoints, pyrNormals,
+                                             levels));
+
+    ScopeTime st("frameGenerator cpu: pyrDown p, n");
+
+
+    Mat p0 = _points.getMat(), n0 = _normals.getMat();
+
+    pyrPoints .create(levels, 1, POINT_TYPE);
+    pyrNormals.create(levels, 1, POINT_TYPE);
+
+    pyrPoints .getMatRef(0) = p0;
+    pyrNormals.getMatRef(0) = n0;
+
+    Size sz = _points.size();
+    for(int i = 1; i < levels; i++)
+    {
+        Points  p1 = pyrPoints .getMat(i-1);
+        Normals n1 = pyrNormals.getMat(i-1);
+
+        sz.width /= 2; sz.height /= 2;
+        Mat& mpd = pyrPoints .getMatRef(i);
+        Mat& mnd = pyrNormals.getMatRef(i);
+        mpd.create(sz, POINT_TYPE);
+        mnd.create(sz, POINT_TYPE);
+        Points  pd = mpd;
+        Normals nd = mnd;
+
+        pyrDownPointsNormals(p1, n1, pd, nd);
     }
 }
 
