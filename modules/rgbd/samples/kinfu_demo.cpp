@@ -123,7 +123,7 @@ public:
             if (frameIdx < depthFileList.size())
             {
                 Mat f = cv::imread(depthFileList[frameIdx++], IMREAD_ANYDEPTH);
-                out = f.getUMat(ACCESS_READ);
+                f.copyTo(out);
             }
             else
             {
