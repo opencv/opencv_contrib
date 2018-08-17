@@ -204,7 +204,6 @@ inline float3 getNormalVoxel(float3 p, __global const float2* volumePtr,
     for(int c = 0; c < 3; c++)
     {
         int dim = arDims[c];
-        float nv = an[c];
 
         float vaz[8];
         for(int i = 0; i < 8; i++)
@@ -215,9 +214,8 @@ inline float3 getNormalVoxel(float3 p, __global const float2* volumePtr,
 
         float4 vy = mix(vz.s0246, vz.s1357, t.z);
         float2 vx = mix(vy.s02, vy.s13, t.y);
-        nv = mix(vx.s0, vx.s1, t.x);
 
-        an[c] = nv;
+        an[c] = mix(vx.s0, vx.s1, t.x);
     }
 
     //gradientDeltaFactor is fixed at 1.0 of voxel size
@@ -329,26 +327,34 @@ __kernel void raycast(__global char * pointsptr,
         // raymarch
         int steps = 0;
         int nSteps = floor(native_divide(tmax - tmin, tstep));
-        for(; steps < nSteps; steps++)
+        bool stop = false;
+        for(int i = 0; i < nSteps; i++)
         {
-            next += rayStep;
+            // fix for wrong steps counting
+            if(!stop)
+            {
+                next += rayStep;
 
-           // fetch voxel
-           int3 ip = convert_int(round(next));
-           int3 cmul = ip*volDims;
-           int coord = cmul.x + cmul.y + cmul.z;
-           fnext = volumeptr[coord].s0;
+                // fetch voxel
+                int3 ip = convert_int(round(next));
+                int3 cmul = ip*volDims;
+                int coord = cmul.x + cmul.y + cmul.z;
+                fnext = volumeptr[coord].s0;
 
-           if(fnext != f)
-           {
-                fnext = interpolateVoxel(next, volumeptr, volDims, neighbourCoords);
+                if(fnext != f)
+                {
+                    fnext = interpolateVoxel(next, volumeptr, volDims, neighbourCoords);
 
-                // when ray crosses a surface
-                if(signbit(f) != signbit(fnext))
-                    break;
+                    // when ray crosses a surface
+                    if(signbit(f) != signbit(fnext))
+                    {
+                        stop = true; continue;
+                    }
 
-                f = fnext;
-           }
+                    f = fnext;
+                }
+                steps++;
+            }
         }
 
         // if ray penetrates a surface from outside
