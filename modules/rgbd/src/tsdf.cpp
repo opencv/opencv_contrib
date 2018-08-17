@@ -141,7 +141,7 @@ struct FillZero
 // zero volume, leave rest params the same
 void TSDFVolumeCPU::reset()
 {
-    ScopeTime st("tsdf: reset");
+    CV_TRACE_FUNCTION();
 
     volume.forEach(FillZero());
 }
@@ -480,7 +480,7 @@ struct IntegrateInvoker : ParallelLoopBody
 // use depth instead of distance (optimization)
 void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics)
 {
-    ScopeTime st("tsdf: integrate");
+    CV_TRACE_FUNCTION();
 
     CV_Assert(_depth.type() == DataType<depthType>::type);
     Depth depth = _depth.getMat();
@@ -975,7 +975,7 @@ struct RaycastInvoker : ParallelLoopBody
 void TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frameSize,
                             cv::OutputArray _points, cv::OutputArray _normals) const
 {
-    ScopeTime st("tsdf: raycast");
+    CV_TRACE_FUNCTION();
 
     CV_Assert(frameSize.area() > 0);
 
@@ -1112,7 +1112,7 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
 
 void TSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _normals) const
 {
-    ScopeTime st("tsdf: fetch points+normals");
+    CV_TRACE_FUNCTION();
 
     if(_points.needed())
     {
@@ -1170,7 +1170,7 @@ struct PushNormals
 
 void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
 {
-    ScopeTime st("tsdf: fetch normals");
+    CV_TRACE_FUNCTION();
 
     if(_normals.needed())
     {
@@ -1225,7 +1225,7 @@ TSDFVolumeGPU::TSDFVolumeGPU(int _res, float _size, cv::Affine3f _pose, float _t
 // zero volume, leave rest params the same
 void TSDFVolumeGPU::reset()
 {
-    ScopeTime st("tsdf gpu: reset");
+    CV_TRACE_FUNCTION();
 
     volume.setTo(Scalar(0, 0));
 }
@@ -1235,7 +1235,7 @@ void TSDFVolumeGPU::reset()
 void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
                               cv::Affine3f cameraPose, Intr intrinsics)
 {
-    ScopeTime st("tsdf gpu: integrate");
+    CV_TRACE_FUNCTION();
 
     UMat depth = _depth.getUMat();
 
@@ -1279,7 +1279,7 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
 void TSDFVolumeGPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frameSize,
                             cv::OutputArray _points, cv::OutputArray _normals) const
 {
-    ScopeTime st("tsdf gpu: raycast");
+    CV_TRACE_FUNCTION();
 
     CV_Assert(frameSize.area() > 0);
 

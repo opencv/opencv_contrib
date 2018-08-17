@@ -50,9 +50,6 @@ namespace kinfu {
 // One place to turn intrinsics on and off
 #define USE_INTRINSICS CV_SIMD128
 
-// Print execution times of each block marked with ScopeTime
-#define PRINT_TIME 0
-
 typedef float depthType;
 
 const float qnan = std::numeric_limits<float>::quiet_NaN();
@@ -72,19 +69,6 @@ static inline bool isNaN(const cv::v_float32x4& p)
     return cv::v_check_any(p != p);
 }
 #endif
-
-struct ScopeTime
-{
-    ScopeTime(std::string name_, bool _enablePrint = true);
-    ~ScopeTime();
-
-#if PRINT_TIME
-    static int nested;
-    const std::string name;
-    const bool enablePrint;
-    double start;
-#endif
-};
 
 /** @brief Camera intrinsics */
 struct Intr

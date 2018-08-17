@@ -216,8 +216,6 @@ bool KinFuImpl<T>::updateT(T depth)
 {
     CV_TRACE_FUNCTION();
 
-    ScopeTime st("kinfu update");
-
     if(depth.type() != DEPTH_TYPE)
         depth.convertTo(depth, DEPTH_TYPE);
 
@@ -272,8 +270,6 @@ template< typename T >
 void KinFuImpl<T>::render(OutputArray image, const Matx44f& _cameraPose) const
 {
     CV_TRACE_FUNCTION();
-
-    ScopeTime st("kinfu render");
 
     Affine3f cameraPose(_cameraPose);
 

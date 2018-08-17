@@ -107,6 +107,8 @@ struct RenderInvoker : ParallelLoopBody
 
 void pyrDownPointsNormals(const Points p, const Normals n, Points &pdown, Normals &ndown)
 {
+    CV_TRACE_FUNCTION();
+
     for(int y = 0; y < pdown.rows; y++)
     {
         ptype* ptsRow = pdown[y];
@@ -197,6 +199,8 @@ struct PyrDownBilateralInvoker : ParallelLoopBody
 
 Depth pyrDownBilateral(const Depth depth, float sigma)
 {
+    CV_TRACE_FUNCTION();
+
     Depth depthDown(depth.rows/2, depth.cols/2);
 
     PyrDownBilateralInvoker pdi(depth, depthDown, sigma);
@@ -273,6 +277,8 @@ struct ComputePointsNormalsInvoker : ParallelLoopBody
 void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
                           Points points, Normals normals)
 {
+    CV_TRACE_FUNCTION();
+
     CV_Assert(!points.empty() && !normals.empty());
     CV_Assert(depth.size() == points.size());
     CV_Assert(depth.size() == normals.size());
@@ -300,7 +306,6 @@ static bool ocl_buildPyramidPointsNormals(const UMat points, const UMat normals,
                                           OutputArrayOfArrays pyrPoints, OutputArrayOfArrays pyrNormals,
                                           int levels);
 
-
 static bool computePointsNormalsGpu(const Intr intr, float depthFactor, const UMat& depth, UMat points, UMat normals);
 static bool pyrDownBilateralGpu(const UMat& depth, UMat& depthDown, float sigma);
 static bool customBilateralFilterGpu(const UMat src, UMat& dst, int kernelSize, float sigmaDepth, float sigmaSpatial);
@@ -310,6 +315,8 @@ static bool pyrDownPointsNormalsGpu(const UMat p, const UMat n, UMat &pdown, UMa
 bool computePointsNormalsGpu(const Intr intr, float depthFactor, const UMat& depth,
                              UMat points, UMat normals)
 {
+    CV_TRACE_FUNCTION();
+
     CV_Assert(!points.empty() && !normals.empty());
     CV_Assert(depth.size() == points.size());
     CV_Assert(depth.size() == normals.size());
@@ -349,6 +356,8 @@ bool computePointsNormalsGpu(const Intr intr, float depthFactor, const UMat& dep
 
 bool pyrDownBilateralGpu(const UMat& depth, UMat& depthDown, float sigma)
 {
+    CV_TRACE_FUNCTION();
+
     depthDown.create(depth.rows/2, depth.cols/2, DEPTH_TYPE);
 
     cv::String errorStr;
@@ -376,6 +385,8 @@ bool pyrDownBilateralGpu(const UMat& depth, UMat& depthDown, float sigma)
 bool customBilateralFilterGpu(const UMat src /* udepth */, UMat& dst /* smooth */,
                               int kernelSize, float sigmaDepth, float sigmaSpatial)
 {
+    CV_TRACE_FUNCTION();
+
     CV_Assert(src.size().area() > 0);
     CV_Assert(src.type() == DEPTH_TYPE);
 
@@ -407,6 +418,8 @@ bool customBilateralFilterGpu(const UMat src /* udepth */, UMat& dst /* smooth *
 
 bool pyrDownPointsNormalsGpu(const UMat p, const UMat n, UMat &pdown, UMat &ndown)
 {
+    CV_TRACE_FUNCTION();
+
     cv::String errorStr;
     cv::String name = "pyrDownPointsNormals";
     ocl::ProgramSource source = ocl::rgbd::kinfu_frame_oclsrc;
@@ -434,8 +447,6 @@ static bool ocl_renderPointsNormals(const UMat points, const UMat normals,
                                     UMat img, Affine3f lightPose)
 {
     CV_TRACE_FUNCTION();
-
-    ScopeTime st("frame ocl render");
 
     cv::String errorStr;
     cv::String name = "render";
@@ -479,8 +490,6 @@ void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray im
                                        _normals.getUMat(),
                                        image.getUMat(), lightPose))
 
-    ScopeTime st("frame cpu render");
-
     Points  points  = _points.getMat();
     Normals normals = _normals.getMat();
 
@@ -498,8 +507,6 @@ static bool ocl_makeFrameFromDepth(const UMat depth, OutputArrayOfArrays points,
                                    float sigmaDepth, float sigmaSpatial, int kernelSize)
 {
     CV_TRACE_FUNCTION();
-
-    ScopeTime st("frameGenerator gpu: from depth");
 
     // looks like OpenCV's bilateral filter works the same as KinFu's
     UMat smooth;
@@ -553,8 +560,6 @@ void makeFrameFromDepth(InputArray _depth,
                                       intr, levels, depthFactor,
                                       sigmaDepth, sigmaSpatial, kernelSize));
 
-    ScopeTime st("frameGenerator cpu: from depth");
-
     Depth depth = _depth.getMat();
 
     // looks like OpenCV's bilateral filter works the same as KinFu's
@@ -597,8 +602,6 @@ static bool ocl_buildPyramidPointsNormals(const UMat points, const UMat normals,
 {
     CV_TRACE_FUNCTION();
 
-    ScopeTime st("frameGenerator gpu: pyrDown p, n");
-
     pyrPoints .create(levels, 1, POINT_TYPE);
     pyrNormals.create(levels, 1, POINT_TYPE);
 
@@ -640,8 +643,6 @@ void buildPyramidPointsNormals(InputArray _points, InputArray _normals,
                ocl_buildPyramidPointsNormals(_points.getUMat(), _normals.getUMat(),
                                              pyrPoints, pyrNormals,
                                              levels));
-
-    ScopeTime st("frameGenerator cpu: pyrDown p, n");
 
 
     Mat p0 = _points.getMat(), n0 = _normals.getMat();

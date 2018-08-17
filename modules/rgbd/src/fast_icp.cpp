@@ -497,8 +497,6 @@ void ICPImpl::getAb<Mat>(const Mat& oldPts, const Mat& oldNrm, const Mat& newPts
 {
     CV_TRACE_FUNCTION();
 
-    ScopeTime st("icp cpu: get ab", false);
-
     CV_Assert(oldPts.size() == oldNrm.size());
     CV_Assert(newPts.size() == newNrm.size());
 
@@ -544,8 +542,6 @@ void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& ne
                           Affine3f pose, int level, Matx66f &A, Vec6f &b) const
 {
     CV_TRACE_FUNCTION();
-
-    ScopeTime st("icp gpu: get ab", false);
 
     CV_Assert(oldPts.size() == oldNrm.size());
     CV_Assert(newPts.size() == newNrm.size());
