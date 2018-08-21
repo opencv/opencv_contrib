@@ -67,8 +67,8 @@ void _createTexture(const String& name, Mat image)
 
 static void _convertRT(InputArray rot, InputArray tvec, Quaternion& q, Vector3& t, bool invert = false)
 {
-    CV_Assert(rot.empty() || rot.rows() == 3 || rot.size() == Size(3, 3),
-              tvec.empty() || tvec.rows() == 3);
+    CV_Assert_N(rot.empty() || rot.rows() == 3 || rot.size() == Size(3, 3),
+                tvec.empty() || tvec.rows() == 3);
 
     q = Quaternion::IDENTITY;
     t = Vector3::ZERO;
@@ -717,7 +717,7 @@ void setMaterialProperty(const String& name, int prop, const Scalar& val)
 
 void setMaterialProperty(const String& name, int prop, const String& value)
 {
-    CV_Assert(prop >= MATERIAL_TEXTURE0, prop <= MATERIAL_TEXTURE3, _app);
+    CV_Assert_N(prop >= MATERIAL_TEXTURE0, prop <= MATERIAL_TEXTURE3, _app);
 
     MaterialPtr mat = MaterialManager::getSingleton().getByName(name, RESOURCEGROUP_NAME);
     CV_Assert(mat);
