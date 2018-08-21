@@ -53,12 +53,13 @@ Ptr<Params> Params::defaultParams()
 
     p.tsdf_min_camera_movement = 0.f; //meters, disabled
 
-    p.volumeDims = 512;  //number of voxels
+    p.volumeDims = Vec3i::all(512); //number of voxels
 
-    p.volumeSize = 3.f;  //meters
+    float volSize = 3.f;
+    p.volumeSize = Point3f(volSize, volSize, volSize);  //meters
 
     // default pose of volume cube
-    p.volumePose = Affine3f().translate(Vec3f(-p.volumeSize/2, -p.volumeSize/2, 0.5f));
+    p.volumePose = Affine3f().translate(Vec3f(-volSize/2.f, -volSize/2.f, 0.5f));
     p.tsdf_trunc_dist = 0.04f; //meters;
     p.tsdf_max_weight = 64;   //frames
 
@@ -94,7 +95,7 @@ Ptr<Params> Params::coarseParams()
     }
     p->pyramidLevels = (int)p->icpIterations.size();
 
-    p->volumeDims = 128; //number of voxels
+    p->volumeDims = Vec3i::all(128); //number of voxels
 
     p->raycast_step_factor = 0.75f;  //in voxel sizes
 

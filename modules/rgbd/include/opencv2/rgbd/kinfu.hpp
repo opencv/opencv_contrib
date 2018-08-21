@@ -53,13 +53,13 @@ struct CV_EXPORTS_W Params
     /** @brief Number of pyramid levels for ICP */
     CV_PROP_RW int pyramidLevels;
 
-    /** @brief Resolution of voxel cube
+    /** @brief Resolution of voxel space
 
-    Number of voxels in each cube edge.
+    Number of voxels in each dimension.
     */
-    CV_PROP_RW int volumeDims;
-    /** @brief Size of voxel cube side in meters */
-    CV_PROP_RW float volumeSize;
+    CV_PROP_RW Vec3i volumeDims;
+    /** @brief Size of voxel in meters */
+    CV_PROP_RW Point3f volumeSize;
 
     /** @brief Minimal camera movement in meters
 
@@ -72,7 +72,7 @@ struct CV_EXPORTS_W Params
 
     /** @brief distance to truncate in meters
 
-    Distances that exceed this value will be truncated in voxel cube values.
+    Distances to surface that exceed this value will be truncated to 1.0.
     */
     CV_PROP_RW float tsdf_trunc_dist;
 
@@ -116,7 +116,7 @@ struct CV_EXPORTS_W Params
   The output can be obtained as a vector of points and their normals
   or can be Phong-rendered from given camera pose.
 
-  An internal representation of a model is a voxel cube that keeps TSDF values
+  An internal representation of a model is a voxel cuboid that keeps TSDF values
   which are a sort of distances to the surface (for details read the @cite kinectfusion article about TSDF).
   There is no interface to that representation yet.
 
@@ -136,7 +136,7 @@ public:
 
     /** @brief Renders a volume into an image
 
-      Renders a 0-surface of TSDF using Phong shading into a CV_8UC3 Mat.
+      Renders a 0-surface of TSDF using Phong shading into a CV_8UC4 Mat.
       Light pose is fixed in KinFu params.
 
         @param image resulting image
@@ -176,12 +176,12 @@ public:
     */
     CV_WRAP virtual void reset() = 0;
 
-    /** @brief Get current pose in voxel cube space */
+    /** @brief Get current pose in voxel space */
     virtual const Affine3f getPose() const = 0;
 
     /** @brief Process next depth frame
 
-      Integrates depth into voxel cube with respect to its ICP-calculated pose.
+      Integrates depth into voxel space with respect to its ICP-calculated pose.
       Input image is converted to CV_32F internally if has another type.
 
     @param depth one-channel image which size and depth scale is described in algorithm's parameters

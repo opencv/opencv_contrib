@@ -44,7 +44,7 @@ class TSDFVolumeCPU : public TSDFVolume
 
 public:
     // dimension in voxels, size in meters
-    TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+    TSDFVolumeCPU(Point3i _res, Point3f _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                   float _raycastStepFactor, bool zFirstMemOrder = true);
 
     virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) override;
@@ -70,15 +70,18 @@ public:
 };
 
 
-TSDFVolume::TSDFVolume(int _res, float _size, Affine3f _pose, float _truncDist, int _maxWeight,
+TSDFVolume::TSDFVolume(Point3i _res, Point3f _size, Affine3f _pose, float _truncDist, int _maxWeight,
                        float _raycastStepFactor, bool zFirstMemOrder) :
-    volSize(_size, _size, _size),
-    volResolution(_res, _res, _res),
+    volSize(_size),
+    volResolution(_res),
     maxWeight(_maxWeight),
     pose(_pose),
     raycastStepFactor(_raycastStepFactor)
 {
-    CV_Assert(_res % 32 == 0);
+    //TODO: check if this required or not
+    CV_Assert(_res.x % 32 == 0);
+    CV_Assert(_res.y % 32 == 0);
+    CV_Assert(_res.z % 32 == 0);
 
     voxelSize = Point3f(volSize.x / volResolution.x,
                         volSize.y / volResolution.y,
@@ -121,7 +124,7 @@ TSDFVolume::TSDFVolume(int _res, float _size, Affine3f _pose, float _truncDist, 
 }
 
 // dimension in voxels, size in meters
-TSDFVolumeCPU::TSDFVolumeCPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+TSDFVolumeCPU::TSDFVolumeCPU(Point3i _res, Point3f _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                              float _raycastStepFactor, bool zFirstMemOrder) :
     TSDFVolume(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor, zFirstMemOrder)
 {
@@ -1192,7 +1195,7 @@ class TSDFVolumeGPU : public TSDFVolume
 {
 public:
     // dimension in voxels, size in meters
-    TSDFVolumeGPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+    TSDFVolumeGPU(Point3i _res, Point3f _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                   float _raycastStepFactor);
 
     virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) override;
@@ -1212,7 +1215,7 @@ public:
 };
 
 
-TSDFVolumeGPU::TSDFVolumeGPU(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+TSDFVolumeGPU::TSDFVolumeGPU(Point3i _res, Point3f _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                              float _raycastStepFactor) :
     TSDFVolume(_res, _size, _pose, _truncDist, _maxWeight, _raycastStepFactor, false),
 {
@@ -1352,7 +1355,7 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray /*points*/, OutputArray /*nor
 
 #endif
 
-cv::Ptr<TSDFVolume> makeTSDFVolume(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+cv::Ptr<TSDFVolume> makeTSDFVolume(Point3i _res, Point3f _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                                    float _raycastStepFactor)
 {
 #ifdef HAVE_OPENCL

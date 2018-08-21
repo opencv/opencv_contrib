@@ -644,7 +644,6 @@ void buildPyramidPointsNormals(InputArray _points, InputArray _normals,
                                              pyrPoints, pyrNormals,
                                              levels));
 
-
     Mat p0 = _points.getMat(), n0 = _normals.getMat();
 
     pyrPoints .create(levels, 1, POINT_TYPE);

@@ -18,7 +18,7 @@ class TSDFVolume
 {
 public:
     // dimension in voxels, size in meters
-    TSDFVolume(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+    TSDFVolume(Point3i _res, Point3f _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                float _raycastStepFactor, bool zFirstMemOrder = true);
 
     virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) = 0;
@@ -44,7 +44,7 @@ public:
     Vec8i neighbourCoords;
 };
 
-cv::Ptr<TSDFVolume> makeTSDFVolume(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+cv::Ptr<TSDFVolume> makeTSDFVolume(Point3i _res, Point3f _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                                    float _raycastStepFactor);
 
 } // namespace kinfu
