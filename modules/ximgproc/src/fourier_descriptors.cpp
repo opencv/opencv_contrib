@@ -5,7 +5,6 @@
 #include "precomp.hpp"
 #include <math.h>
 #include <vector>
-#include <iostream>
 
 /*
 If you use this code please cite this @cite BergerRaghunathan1998
@@ -107,7 +106,7 @@ void ContourFitting::estimateTransformation(InputArray _src, InputArray _ref, Ou
 void ContourFitting::estimateTransformation(InputArray _src, InputArray _ref, OutputArray _alphaPhiST,double *distFin, bool fdContour)
 {
     if (!fdContour)
-        CV_Assert( _src.kind() == _InputArray::STD_VECTOR && _ref.kind() == _InputArray::STD_VECTOR);
+        CV_Assert( (_src.kind() == _InputArray::STD_VECTOR || _src.kind() == _InputArray::MAT) && (_ref.kind() == _InputArray::STD_VECTOR || _ref.kind() == _InputArray::MAT));
     else
         CV_Assert(fdContour && _src.kind() == _InputArray::MAT && _ref.kind() == _InputArray::MAT);
     CV_Assert(_src.channels() == 2 && _ref.channels() == 2);
@@ -220,6 +219,8 @@ void fourierDescriptor(InputArray _src, OutputArray _dst, int nbElt, int nbFD)
     Mat  Z;
     if (z.rows*z.cols!=nbElt)
         contourSampling(_src, z,nbElt);
+    else if (_src.depth() == CV_32S)
+        z.convertTo(z, CV_32F);
     dft(z, Z, DFT_SCALE | DFT_REAL_OUTPUT);
     if (nbFD == -1)
     {
@@ -250,13 +251,12 @@ void contourSampling(InputArray _src, OutputArray _out, int nbElt)
     }
     CV_Assert(ctr.rows==1 || ctr.cols==1);
     double		l1 = 0, l2, p, d, s;
- //   AutoBuffer<Point2d> _buf(nbElt);
     Mat r;
     if (ctr.rows==1)
         ctr=ctr.t();
     int j = 0;
     int 		nb = ctr.rows;
-    p = arcLength(_src, true);
+    p = arcLength(ctr, true);
     l2 = norm(ctr.row(j) - ctr.row(j + 1)) / p;
     for (int i = 0; i<nbElt; i++)
     {
@@ -275,7 +275,6 @@ void contourSampling(InputArray _src, OutputArray _out, int nbElt)
             Mat d10 = d1 - d0;
             Mat pn = d0 + d10 * (s - l1) / (l2 - l1);
             r.push_back(pn);
- //           _buf[i]=Point2d(pn.at<Point2f>(0,0));
         }
     }
     r.copyTo(_out);
@@ -284,7 +283,7 @@ void contourSampling(InputArray _src, OutputArray _out, int nbElt)
 void transformFD(InputArray _src, InputArray _t,OutputArray _dst,  bool fdContour)
 {
     if (!fdContour)
-        CV_Assert(_src.kind() == _InputArray::STD_VECTOR);
+        CV_Assert(_src.kind() == _InputArray::STD_VECTOR || _src.kind() == _InputArray::MAT);
     else
         CV_Assert( _src.kind() == _InputArray::MAT );
     CV_Assert(_src.channels() == 2);

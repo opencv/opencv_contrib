@@ -1,37 +1,10 @@
-/*
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2012, Willow Garage, Inc.
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of Willow Garage, Inc. nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- *
- */
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html
+
+// This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
+
+// This code is also subject to the license terms in the LICENSE_WillowGarage.md file found in this module's directory
 
 #include "test_precomp.hpp"
 
@@ -150,10 +123,13 @@ class CV_OdometryTest : public cvtest::BaseTest
 public:
     CV_OdometryTest(const Ptr<Odometry>& _odometry,
                     double _maxError1, 
-                    double _maxError5) :
+                    double _maxError5,
+                    double _idError = DBL_EPSILON) :
         odometry(_odometry), 
         maxError1(_maxError1), 
-        maxError5(_maxError5) {}
+        maxError5(_maxError5),
+        idError(_idError)
+    { }
 
 protected:
     bool readData(Mat& image, Mat& depth) const;
@@ -164,6 +140,7 @@ protected:
     Ptr<Odometry> odometry;
     double maxError1;
     double maxError5;
+    double idError;
 };
 
 bool CV_OdometryTest::readData(Mat& image, Mat& depth) const
@@ -239,8 +216,8 @@ void CV_OdometryTest::run(int)
     Mat calcRt;
     
     // 1. Try to find Rt between the same frame (try masks also).
-    bool isComputed = odometry->compute(image, depth, Mat(image.size(), CV_8UC1, Scalar(255)), 
-                                        image, depth, Mat(image.size(), CV_8UC1, Scalar(255)), 
+    bool isComputed = odometry->compute(image, depth, Mat(image.size(), CV_8UC1, Scalar(255)),
+                                        image, depth, Mat(image.size(), CV_8UC1, Scalar(255)),
                                         calcRt);
     if(!isComputed)
     {
@@ -248,15 +225,15 @@ void CV_OdometryTest::run(int)
         ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_OUTPUT);
     }
     double diff = cv::norm(calcRt, Mat::eye(4,4,CV_64FC1));
-    if(diff > DBL_EPSILON)
+    if(diff > idError)
     {
         ts->printf(cvtest::TS::LOG, "Incorrect transformation between the same frame (not the identity matrix), diff = %f", diff);
         ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
     }
     
-    // 2. Generate random rigid body motion in some ranges several times (iterCount). 
+    // 2. Generate random rigid body motion in some ranges several times (iterCount).
     // On each iteration an input frame is warped using generated transformation.
-    // Odometry is run on the following pair: the original frame and the warped one. 
+    // Odometry is run on the following pair: the original frame and the warped one.
     // Comparing a computed transformation with an applied one we compute 2 errors:
     // better_1time_count - count of poses which error is less than ground thrush pose,
     // better_5times_count - count of poses which error is 5 times less than ground thrush pose.
@@ -271,7 +248,8 @@ void CV_OdometryTest::run(int)
         warpFrame(image, depth, rvec, tvec, K, warpedImage, warpedDepth);
         dilateFrame(warpedImage, warpedDepth); // due to inaccuracy after warping
         
-        isComputed = odometry->compute(image, depth, Mat(), warpedImage, warpedDepth, Mat(), calcRt);
+        Mat imageMask(image.size(), CV_8UC1, Scalar(255));
+        isComputed = odometry->compute(image, depth, imageMask, warpedImage, warpedDepth, imageMask, calcRt);
         if(!isComputed)
             continue;
                 
@@ -329,19 +307,25 @@ void CV_OdometryTest::run(int)
 
 TEST(RGBD_Odometry_Rgbd, algorithmic)
 {
-    CV_OdometryTest test(cv::rgbd::Odometry::create("RgbdOdometry"), 0.99, 0.94);
+    CV_OdometryTest test(cv::rgbd::Odometry::create("RgbdOdometry"), 0.99, 0.89);
     test.safe_run();
 }
 
-TEST(DISABLED_RGBD_Odometry_ICP, algorithmic)
+TEST(RGBD_Odometry_ICP, algorithmic)
 {
     CV_OdometryTest test(cv::rgbd::Odometry::create("ICPOdometry"), 0.99, 0.99);
     test.safe_run();
 }
 
-TEST(DISABLED_RGBD_Odometry_RgbdICP, algorithmic)
+TEST(RGBD_Odometry_RgbdICP, algorithmic)
 {
     CV_OdometryTest test(cv::rgbd::Odometry::create("RgbdICPOdometry"), 0.99, 0.99);
+    test.safe_run();
+}
+
+TEST(RGBD_Odometry_FastICP, algorithmic)
+{
+    CV_OdometryTest test(cv::rgbd::Odometry::create("FastICPOdometry"), 0.99, 0.99, FLT_EPSILON);
     test.safe_run();
 }
 

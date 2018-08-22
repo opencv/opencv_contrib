@@ -4,7 +4,7 @@
 
 #include "precomp.hpp"
 #include "face_alignmentimpl.hpp"
-#include "opencv2/video/tracking.hpp"
+#include "opencv2/calib3d.hpp"
 #include <climits>
 
 using namespace std;
@@ -123,7 +123,7 @@ bool FacemarkKazemiImpl :: getRelativePixels(vector<Point2f> sample,vector<Point
         CV_Error(Error::StsBadArg, error_message);
     }
     Mat transform_mat;
-    transform_mat = estimateRigidTransform(meanshape,sample,false);
+    transform_mat = estimateAffinePartial2D(meanshape, sample);
     unsigned long index;
     for (unsigned long i = 0;i<pixel_coordinates.size();i++) {
         if(!nearest.empty())
