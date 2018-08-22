@@ -35,7 +35,8 @@ protected:
             float x_max = buffer[k*nCol + 5]*inputShape.width;
             float y_max = buffer[k*nCol + 6]*inputShape.height;
 
-            CV_Assert(x_min < x_max, y_min < y_max);
+            CV_CheckLT(x_min, x_max, "");
+            CV_CheckLT(y_min, y_max, "");
 
             x_min = std::max(0.f, x_min);
             y_min = std::max(0.f, y_min);
@@ -62,7 +63,7 @@ public:
 
     void detect(InputArray inputImage_, std::vector<Rect>& Bbox, std::vector<float>& confidence) CV_OVERRIDE
     {
-        CV_Assert(inputImage_.channels() == inputChannelCount_);
+        CV_CheckEQ(inputImage_.channels(), inputChannelCount_, "");
         Mat inputImage = inputImage_.getMat();
         Bbox.resize(0);
         confidence.resize(0);
@@ -75,7 +76,7 @@ public:
             int nbrTextBoxes = outputNet.size[2];
             int nCol = outputNet.size[3];
             int outputChannelCount = outputNet.size[1];
-            CV_Assert(outputChannelCount == 1);
+            CV_CheckEQ(outputChannelCount, 1, "");
             getOutputs((float*)(outputNet.data), nbrTextBoxes, nCol, Bbox, confidence, inputImage.size());
         }
      }
