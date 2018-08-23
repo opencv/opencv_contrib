@@ -566,7 +566,7 @@ void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& ne
     size_t memSize = ocl::Device::getDefault().localMemSize();
     // local memory should keep upperTriangles for all threads in group for reduce
     const size_t ltsz = UTSIZE*sizeof(float);
-    const size_t lcols = 64;
+    const size_t lcols = 32;
     size_t lrows = memSize/ltsz/lcols;
     // round lrows down to 2^n
     lrows = roundDownPow2(lrows);
