@@ -59,7 +59,7 @@ struct CV_EXPORTS_W Params
     */
     CV_PROP_RW Vec3i volumeDims;
     /** @brief Size of voxel in meters */
-    CV_PROP_RW Point3f volumeSize;
+    CV_PROP_RW float voxelSize;
 
     /** @brief Minimal camera movement in meters
 

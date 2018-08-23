@@ -56,7 +56,7 @@ Ptr<Params> Params::defaultParams()
     p.volumeDims = Vec3i::all(512); //number of voxels
 
     float volSize = 3.f;
-    p.volumeSize = Point3f(volSize, volSize, volSize);  //meters
+    p.voxelSize = volSize/512.f; //meters
 
     // default pose of volume cube
     p.volumePose = Affine3f().translate(Vec3f(-volSize/2.f, -volSize/2.f, 0.5f));
@@ -95,7 +95,9 @@ Ptr<Params> Params::coarseParams()
     }
     p->pyramidLevels = (int)p->icpIterations.size();
 
+    float volSize = 3.f;
     p->volumeDims = Vec3i::all(128); //number of voxels
+    p->voxelSize  = volSize/128.f;
 
     p->raycast_step_factor = 0.75f;  //in voxel sizes
 
@@ -143,7 +145,7 @@ template< typename T >
 KinFuImpl<T>::KinFuImpl(const Params &_params) :
     params(_params),
     icp(makeICP(params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
-    volume(makeTSDFVolume(params.volumeDims, params.volumeSize, params.volumePose,
+    volume(makeTSDFVolume(params.volumeDims, params.voxelSize, params.volumePose,
                           params.tsdf_trunc_dist, params.tsdf_max_weight,
                           params.raycast_step_factor)),
     pyrPoints(), pyrNormals()

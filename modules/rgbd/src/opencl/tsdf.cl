@@ -9,7 +9,7 @@ __kernel void integrate(__global const char * depthptr,
                         int depth_rows, int depth_cols,
                         __global float2 * volumeptr,
                         const float16 vol2camMatrix,
-                        const float4 voxelSize4,
+                        const float voxelSize,
                         const int4 volResolution4,
                         const int4 volDims4,
                         const float fx, const float fy,
@@ -39,10 +39,8 @@ __kernel void integrate(__global const char * depthptr,
 
     const float truncDistInv = 1.f/truncDist;
 
-    const float3 voxelSize = voxelSize4.xyz;
-
     // optimization of camSpace transformation (vector addition instead of matmul at each z)
-    float4 inPt = (float4)(x*voxelSize.x, y*voxelSize.y, 0, 1);
+    float4 inPt = (float4)(x*voxelSize, y*voxelSize, 0, 1);
     float3 basePt = (float3)(dot(vol2cam0, inPt),
                              dot(vol2cam1, inPt),
                              dot(vol2cam2, inPt));
@@ -238,7 +236,7 @@ __kernel void raycast(__global char * pointsptr,
                       const float4 boxDown4,
                       const float4 boxUp4,
                       const float tstep,
-                      const float4 voxelSize4,
+                      const float voxelSize,
                       const int4 volResolution4,
                       const int4 volDims4,
                       const int8 neighbourCoords
@@ -273,8 +271,7 @@ __kernel void raycast(__global char * pointsptr,
 
     const int3 volResolution = volResolution4.xyz;
 
-    const float3 voxelSize = voxelSize4.xyz;
-    const float3 invVoxelSize = native_recip(voxelSize);
+    const float invVoxelSize = native_recip(voxelSize);
 
     // kernel itself
 

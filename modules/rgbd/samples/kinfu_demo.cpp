@@ -358,8 +358,9 @@ int main(int argc, char **argv)
                 window.showWidget("cloud", cloudWidget);
                 window.showWidget("normals", cloudNormals);
 
+                Vec3d volSize = kf->getParams().voxelSize*kf->getParams().volumeDims;
                 window.showWidget("cube", viz::WCube(Vec3d::all(0),
-                                                     Vec3d::all(kf->getParams().volumeSize)),
+                                                     volSize),
                                   kf->getParams().volumePose);
                 PauseCallbackArgs pca(*kf);
                 window.registerMouseCallback(pauseCallback, (void*)&pca);
@@ -405,8 +406,9 @@ int main(int argc, char **argv)
                     }
 
                     //window.showWidget("worldAxes", viz::WCoordinateSystem());
+                    Vec3d volSize = kf->getParams().voxelSize*kf->getParams().volumeDims;
                     window.showWidget("cube", viz::WCube(Vec3d::all(0),
-                                                         Vec3d::all(kf->getParams().volumeSize)),
+                                                         volSize),
                                       kf->getParams().volumePose);
                     window.setViewerPose(kf->getPose());
                     window.spinOnce(1, true);
