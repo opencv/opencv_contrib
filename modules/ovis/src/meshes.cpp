@@ -38,10 +38,10 @@ void createPointCloudMesh(const String& name, InputArray vertices, InputArray co
 {
     int color_type = colors.type();
     CV_Assert(_app);
-    CV_CheckTypeEQ(vertices.type(), CV_32FC3, "")
+    CV_CheckTypeEQ(vertices.type(), CV_32FC3, "vertices type must be Vec3f");
     CV_Assert(vertices.isContinuous());
     if (!colors.empty())
-        CV_CheckType(color_type, color_type == CV_8UC3 || color_type == CV_8UC4);
+        CV_CheckType(color_type, color_type == CV_8UC3 || color_type == CV_8UC4, "unsupported type");
 
     // material
     MaterialPtr mat = MaterialManager::getSingleton().create(name, RESOURCEGROUP_NAME);
