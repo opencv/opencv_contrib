@@ -5,6 +5,7 @@
 /*
 Ridge Detection Filter.
 OpenCV port by : Kushal Vyas (@kushalvyas), Venkatesh Vijaykumar(@venkateshvijaykumar)
+Adapted from Niki Estner's explaination of RidgeFilter.
 */
 
 #ifndef __OPENCV_XIMGPROC_RIDGEFILTER_HPP__
@@ -20,7 +21,8 @@ namespace cv { namespace ximgproc {
 /** @brief  Applies Ridge Detection Filter to an input image.
 Implements Ridge detection similar to the one in [Mathematica](http://reference.wolfram.com/language/ref/RidgeFilter.html)
 using the eigen values from the Hessian Matrix of the input image using Sobel Derivatives.
-Additional refinement can be done using Skeletonization and Binarization.
+Additional refinement can be done using Skeletonization and Binarization. Adapted from @cite segleafvein and @cite M_RF
+
 */
 class CV_EXPORTS_W RidgeDetectionFilter : public Algorithm
 {
