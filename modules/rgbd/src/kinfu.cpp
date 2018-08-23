@@ -126,7 +126,7 @@ public:
 
     bool update(InputArray depth) CV_OVERRIDE;
 
-    bool updateT(T depth);
+    bool updateT(const T& depth);
 
 private:
     Params params;
@@ -215,12 +215,15 @@ bool KinFuImpl<UMat>::update(InputArray _depth)
 
 
 template< typename T >
-bool KinFuImpl<T>::updateT(T depth)
+bool KinFuImpl<T>::updateT(const T& _depth)
 {
     CV_TRACE_FUNCTION();
 
-    if(depth.type() != DEPTH_TYPE)
-        depth.convertTo(depth, DEPTH_TYPE);
+    T depth;
+    if(_depth.type() != DEPTH_TYPE)
+        _depth.convertTo(depth, DEPTH_TYPE);
+    else
+        depth = _depth;
 
     std::vector<T> newPoints, newNormals;
     makeFrameFromDepth(depth, newPoints, newNormals, params.intr,
