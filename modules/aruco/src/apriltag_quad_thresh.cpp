@@ -935,8 +935,8 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
                 double x = lines[i1][0] - L1*A01;
                 double y = lines[i1][1] - L1*A11;
 
-                CV_Assert(fabs(x - quad->p[i][0]) < 0.001,
-                        fabs(y - quad->p[i][1]) < 0.001);
+                CV_Assert(fabs(x - quad->p[i][0]) < 0.001);
+                CV_Assert(fabs(y - quad->p[i][1]) < 0.001);
             }
 #endif // NDEBUG
 
