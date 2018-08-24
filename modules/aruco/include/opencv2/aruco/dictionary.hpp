@@ -138,7 +138,7 @@ class CV_EXPORTS_W Dictionary {
  * - DICT_ARUCO_ORIGINAL: standard ArUco Library Markers. 1024 markers, 5x5 bits, 0 minimum
                           distance
  */
-enum CV_EXPORTS_W_SIMPLE PREDEFINED_DICTIONARY_NAME {
+enum PREDEFINED_DICTIONARY_NAME {
     DICT_4X4_50 = 0,
     DICT_4X4_100,
     DICT_4X4_250,
