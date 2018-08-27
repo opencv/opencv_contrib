@@ -84,7 +84,7 @@ TSDFVolume::TSDFVolume(Point3i _res, float _voxelSize, Affine3f _pose, float _tr
     CV_Assert(_res.y % 32 == 0);
     CV_Assert(_res.z % 32 == 0);
 
-    volSize = volResolution * voxelSize;
+    volSize = Point3f(volResolution) * voxelSize;
 
     truncDist = std::max(_truncDist, 2.1f * voxelSize);
 
