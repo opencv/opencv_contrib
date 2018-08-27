@@ -441,10 +441,13 @@ void HDF5Impl::atread(String* value, const String& atlabel)
         CV_Error_(Error::StsInternal, ("Attribute '%s' is not of string type!", atlabel.c_str()));
     }
     size_t size = H5Tget_size(atype);
-    *value = String(size, 0); // allocate space
+    AutoBuffer<char> buf(size);
 
     hid_t atype_mem = H5Tget_native_type(atype, H5T_DIR_ASCEND);
-    H5Aread(attr, atype_mem, const_cast<char*>(value->c_str()));
+    H5Aread(attr, atype_mem, buf.data());
+    if (size > 0 && buf[size - 1] == '\0')
+        size--;
+    value->assign(buf.data(), size);
 
     H5Tclose(atype_mem);
     H5Tclose(atype);
