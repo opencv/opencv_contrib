@@ -66,7 +66,7 @@ bool StaticSaliencyFineGrained::computeSaliencyImpl(InputArray image, OutputArra
 {
     Mat dst(Size(image.getMat().cols, image.getMat().rows), CV_8UC1);
     calcIntensityChannel(image.getMat(), dst);
-    dst.copyTo(saliencyMap);
+    dst.convertTo(saliencyMap, CV_32F, 1.0f/255.0f); // values are in range [0; 1]
 
     #ifdef SALIENCY_DEBUG
     // visualize saliency map
