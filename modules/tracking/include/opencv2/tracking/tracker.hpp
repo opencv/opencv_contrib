@@ -1522,7 +1522,7 @@ public:
 
   CV_WRAP static Ptr<TrackerCSRT> create();
 
-  virtual void setInitialMask(const Mat mask) = 0;
+  CV_WRAP virtual void setInitialMask(InputArray mask) = 0;
 
   virtual ~TrackerCSRT() CV_OVERRIDE {}
 };
