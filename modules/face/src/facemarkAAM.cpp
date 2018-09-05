@@ -801,11 +801,10 @@ inline Mat FacemarkAAMImpl::linearize(std::vector<Point2f> s){ // all x values a
     return linearize(Mat(s));
 }
 
-void FacemarkAAMImpl::delaunay(std::vector<Point2f> s, std::vector<Vec3i> & triangles){
-
+void FacemarkAAMImpl::delaunay(std::vector<Point2f> s, std::vector<Vec3i> & triangles)
+{
     triangles.clear();
 
-    std::vector<int> idx;
     std::vector<Vec6f> tp;
 
     double min_x, max_x, min_y, max_y;
@@ -815,36 +814,38 @@ void FacemarkAAMImpl::delaunay(std::vector<Point2f> s, std::vector<Vec3i> & tria
     minMaxIdx(s_x, &min_x, &max_x);
     minMaxIdx(s_y, &min_y, &max_y);
 
-    // TODO: set the rectangle as configurable parameter
-    Subdiv2D subdiv(Rect(-500,-500,1000,1000));
-    subdiv.insert(s);
+    // TODO FIXIT Some triangles are lost
+    //Subdiv2D subdiv(Rect(cvFloor(min_x), cvFloor(min_y), cvCeil(max_x) - cvFloor(min_x), cvCeil(max_y) - cvFloor(min_y)));
+    Subdiv2D subdiv(Rect(cvFloor(min_x) - 10, cvFloor(min_y) - 10, cvCeil(max_x) - cvFloor(min_x) + 20, cvCeil(max_y) - cvFloor(min_y) + 20));
 
-    int a,b;
-    subdiv.locate(s.back(),a,b);
-    idx.resize(b+1);
-
-    Point2f p;
-    for(unsigned i=0;i<s.size();i++){
-        subdiv.locate(s[i],a,b);
-        idx[b] = i;
+    // map subdiv_verter -> original point (or the first alias)
+    std::vector<int> idx(s.size() + 4);
+    for (size_t i = 0; i < s.size(); ++i)
+    {
+        int vertex = subdiv.insert(s[i]);
+        if (idx.size() <= (size_t)vertex)
+            idx.resize(vertex + 1);
+        idx[vertex] = (int)i;
     }
 
-    int v1,v2,v3;
     subdiv.getTriangleList(tp);
 
-    for(unsigned i=0;i<tp.size();i++){
-        Vec6f t = tp[i];
+    for (size_t i = 0; i < tp.size(); i++)
+    {
+        const Vec6f& t = tp[i];
 
         //accept only vertex point
-        if(t[0]>=min_x && t[0]<=max_x && t[1]>=min_y && t[1]<=max_y
-            && t[2]>=min_x && t[2]<=max_x && t[3]>=min_y && t[3]<=max_y
-            && t[4]>=min_x && t[4]<=max_x && t[5]>=min_y && t[5]<=max_y
-        ){
-            subdiv.locate(Point2f(t[0],t[1]),a,v1);
-            subdiv.locate(Point2f(t[2],t[3]),a,v2);
-            subdiv.locate(Point2f(t[4],t[5]),a,v3);
-            triangles.push_back(Vec3i(idx[v1],idx[v2],idx[v3]));
-        } //if
+        CV_Assert(
+            t[0]>=min_x && t[0]<=max_x && t[1]>=min_y && t[1]<=max_y &&
+            t[2]>=min_x && t[2]<=max_x && t[3]>=min_y && t[3]<=max_y &&
+            t[4]>=min_x && t[4]<=max_x && t[5]>=min_y && t[5]<=max_y
+        );
+
+        int tmp = 0, v1 = 0, v2 = 0, v3 = 0;
+        subdiv.locate(Point2f(t[0], t[1]), tmp, v1);
+        subdiv.locate(Point2f(t[2], t[3]), tmp, v2);
+        subdiv.locate(Point2f(t[4], t[5]), tmp, v3);
+        triangles.push_back(Vec3i(idx[v1], idx[v2], idx[v3]));
     } // for
 }
 
