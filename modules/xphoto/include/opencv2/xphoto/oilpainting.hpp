@@ -11,7 +11,7 @@
 //                For Open Source Computer Vision Library
 //
 // Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
-// Copyright (C) 2009, Willow Garage Inc., all rights reserved.
+// Copyright (C) 2009-2011, Willow Garage Inc., all rights reserved.
 // Third party copyrights are property of their respective owners.
 //
 // Redistribution and use in source and binary forms, with or without modification,
@@ -40,15 +40,45 @@
 //
 //M*/
 
-#ifndef __OPENCV_XPHOTO_HPP__
-#define __OPENCV_XPHOTO_HPP__
+#ifndef __OPENCV_OIL_PAINTING_HPP__
+#define __OPENCV_OIL_PAINTING_HPP__
 
-/** @defgroup xphoto Additional photo processing algorithms
+/** @file
+@date Sept 26, 2018
+@author Laurent Berger
 */
 
-#include "xphoto/inpainting.hpp"
-#include "xphoto/white_balance.hpp"
-#include "xphoto/dct_image_denoising.hpp"
-#include "xphoto/bm3d_image_denoising.hpp"
-#include "xphoto/oilpainting.hpp"
-#endif
+#include <opencv2/core.hpp>
+#include <opencv2/imgproc.hpp>
+
+namespace cv
+{
+namespace xphoto
+{
+
+//! @addtogroup xphoto
+//! @{
+
+/** @brief oilPainting
+See the book @cite Holzmann1988 for details.
+@param _src Input three-channel or one channel image (either CV_8UC3 or CV_8UC1)
+@param _dst Output image of the same size and type as src.
+@param size neighbouring size is 2-size+1
+@param dynRatio image is divided by dynRatio before histogram processing
+@param code	color space conversion code(see ColorConversionCodes). Histogram will used only first plane
+*/
+    CV_EXPORTS_W void oilPainting(InputArray _src, OutputArray _dst, int size, int dynRatio, int code);
+    /** @brief oilPainting
+    See the book @cite Holzmann1988 for details.
+    @param _src Input three-channel or one channel image (either CV_8UC3 or CV_8UC1)
+    @param _dst Output image of the same size and type as src.
+    @param size neighbouring size is 2-size+1
+    @param dynRatio image is divided by dynRatio before histogram processing
+    */
+    CV_EXPORTS_W void oilPainting(InputArray _src, OutputArray _dst, int size, int dynRatio);
+
+//! @}
+}
+}
+
+#endif // __OPENCV_OIL_PAINTING_HPP__
