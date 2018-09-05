@@ -560,6 +560,10 @@ void makeFrameFromDepth(InputArray _depth,
                                       intr, levels, depthFactor,
                                       sigmaDepth, sigmaSpatial, kernelSize));
 
+    int kp = pyrPoints.kind(), kn = pyrNormals.kind();
+    CV_Assert(kp == _InputArray::STD_ARRAY_MAT || kp == _InputArray::STD_VECTOR_MAT);
+    CV_Assert(kn == _InputArray::STD_ARRAY_MAT || kn == _InputArray::STD_VECTOR_MAT);
+
     Depth depth = _depth.getMat();
 
     // looks like OpenCV's bilateral filter works the same as KinFu's
@@ -577,13 +581,12 @@ void makeFrameFromDepth(InputArray _depth,
     pyrPoints.create(levels, 1, POINT_TYPE);
     pyrNormals.create(levels, 1, POINT_TYPE);
     for(int i = 0; i < levels; i++)
-    {
-        Mat& mp = pyrPoints. getMatRef(i);
-        Mat& mn = pyrNormals.getMatRef(i);
-        mp.create(sz, POINT_TYPE);
-        mn.create(sz, POINT_TYPE);
-        Points  p = mp;
-        Normals n = mn;
+    {        
+        pyrPoints .create(sz, POINT_TYPE, i);
+        pyrNormals.create(sz, POINT_TYPE, i);
+
+        Points  p = pyrPoints. getMatRef(i);
+        Normals n = pyrNormals.getMatRef(i);
 
         computePointsNormals(intr.scale(i), depthFactor, scaled, p, n);
 
@@ -644,6 +647,10 @@ void buildPyramidPointsNormals(InputArray _points, InputArray _normals,
                                              pyrPoints, pyrNormals,
                                              levels));
 
+    int kp = pyrPoints.kind(), kn = pyrNormals.kind();
+    CV_Assert(kp == _InputArray::STD_ARRAY_MAT || kp == _InputArray::STD_VECTOR_MAT);
+    CV_Assert(kn == _InputArray::STD_ARRAY_MAT || kn == _InputArray::STD_VECTOR_MAT);
+
     Mat p0 = _points.getMat(), n0 = _normals.getMat();
 
     pyrPoints .create(levels, 1, POINT_TYPE);
@@ -659,12 +666,11 @@ void buildPyramidPointsNormals(InputArray _points, InputArray _normals,
         Normals n1 = pyrNormals.getMat(i-1);
 
         sz.width /= 2; sz.height /= 2;
-        Mat& mpd = pyrPoints .getMatRef(i);
-        Mat& mnd = pyrNormals.getMatRef(i);
-        mpd.create(sz, POINT_TYPE);
-        mnd.create(sz, POINT_TYPE);
-        Points  pd = mpd;
-        Normals nd = mnd;
+
+        pyrPoints .create(sz, POINT_TYPE, i);
+        pyrNormals.create(sz, POINT_TYPE, i);
+        Points  pd = pyrPoints. getMatRef(i);
+        Normals nd = pyrNormals.getMatRef(i);
 
         pyrDownPointsNormals(p1, n1, pd, nd);
     }
