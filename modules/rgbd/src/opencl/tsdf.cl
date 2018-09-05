@@ -162,7 +162,7 @@ inline float interpolateVoxel(float3 p, __global const float2* volumePtr,
                               int3 volDims, int8 neighbourCoords)
 {
     float3 fip = floor(p);
-    int3 ip = convert_int(fip);
+    int3 ip = convert_int3(fip);
     float3 t = p - fip;
 
     int3 cmul = volDims*ip;
@@ -184,11 +184,11 @@ inline float interpolateVoxel(float3 p, __global const float2* volumePtr,
 inline float3 getNormalVoxel(float3 p, __global const float2* volumePtr,
                              int3 volResolution, int3 volDims, int8 neighbourCoords)
 {
-    if(any(p < 1) || any(p >= convert_float(volResolution - 2)))
+    if(any(p < 1) || any(p >= convert_float3(volResolution - 2)))
         return nan((uint)0);
 
     float3 fip = floor(p);
-    int3 ip = convert_int(fip);
+    int3 ip = convert_int3(fip);
     float3 t = p - fip;
 
     int3 cmul = volDims*ip;
@@ -333,7 +333,7 @@ __kernel void raycast(__global char * pointsptr,
                 next += rayStep;
 
                 // fetch voxel
-                int3 ip = convert_int(round(next));
+                int3 ip = convert_int3(round(next));
                 int3 cmul = ip*volDims;
                 int coord = cmul.x + cmul.y + cmul.z;
                 fnext = volumeptr[coord].s0;

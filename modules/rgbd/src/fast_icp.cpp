@@ -563,11 +563,14 @@ void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& ne
     globalSize[0] = (size_t)newPts.cols;
     globalSize[1] = (size_t)newPts.rows;
 
-    size_t memSize = ocl::Device::getDefault().localMemSize();
+    const ocl::Device& device = ocl::Device::getDefault();
+    // workaround for Intel's integrated GPU
+    size_t wgsLimit = device.isIntel() ? 64 : device.maxWorkGroupSize();
+    size_t memSize = device.localMemSize();
     // local memory should keep upperTriangles for all threads in group for reduce
     const size_t ltsz = UTSIZE*sizeof(float);
     const size_t lcols = 32;
-    size_t lrows = memSize/ltsz/lcols;
+    size_t lrows = min(memSize/ltsz, wgsLimit)/lcols;
     // round lrows down to 2^n
     lrows = roundDownPow2(lrows);
     size_t localSize[2] = {lcols, lrows};

@@ -42,7 +42,7 @@ __kernel void computePointsNormals(__global char * pointsptr,
 
     float d00 = row0[x];
     float z00 = d00*dfac;
-    float3 p00 = (float3)(convert_float((int2)(x, y)), z00);
+    float3 p00 = (float3)(convert_float2((int2)(x, y)), z00);
     float3 v00 = reproject(p00, fxyinv, cxy);
 
     float3 p = nan((uint)0), n = nan((uint)0);
@@ -57,8 +57,8 @@ __kernel void computePointsNormals(__global char * pointsptr,
 
         if(z00 != 0 && z01 != 0 && z10 != 0)
         {
-            float3 p01 = (float3)(convert_float((int2)(x+1, y+0)), z01);
-            float3 p10 = (float3)(convert_float((int2)(x+0, y+1)), z10);
+            float3 p01 = (float3)(convert_float2((int2)(x+1, y+0)), z01);
+            float3 p10 = (float3)(convert_float2((int2)(x+0, y+1)), z10);
             float3 v01 = reproject(p01, fxyinv, cxy);
             float3 v10 = reproject(p10, fxyinv, cxy);
 
