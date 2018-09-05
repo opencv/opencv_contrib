@@ -121,7 +121,7 @@ struct CV_EXPORTS_W Params
   There is no interface to that representation yet.
 
   KinFu uses OpenCL acceleration automatically if available.
-  To enable or disable it explicitly use cv::ocl::setUseOpenCL().
+  To enable or disable it explicitly use cv::setUseOptimized() or cv::ocl::setUseOpenCL().
 
   This implementation is based on [kinfu-remake](https://github.com/Nerei/kinfu_remake).
 */

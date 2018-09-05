@@ -322,6 +322,9 @@ int main(int argc, char **argv)
     // These params can be different for each depth sensor
     ds.updateParams(*params);
 
+    // Enables OpenCL explicitly (by default can be switched-off)
+    cv::setUseOptimized(true);
+
     // Scene-specific params should be tuned for each scene individually
     //params->volumePose = params->volumePose.translate(Vec3f(0.f, 0.f, 0.5f));
     //params->tsdf_max_weight = 16;
