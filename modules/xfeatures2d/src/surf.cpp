@@ -847,7 +847,7 @@ struct SURFInvoker : ParallelLoopBody
 
             // unit vector is essential for contrast invariance
             vec = descriptors->ptr<float>(k);
-            float scale = (float)(1./(std::sqrt(square_mag) + DBL_EPSILON));
+            float scale = (float)(1./(std::sqrt(square_mag) + FLT_EPSILON));
             for( kk = 0; kk < dsize; kk++ )
                 vec[kk] *= scale;
         }
