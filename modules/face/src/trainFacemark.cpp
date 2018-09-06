@@ -219,9 +219,15 @@ void FacemarkKazemiImpl :: writeLeaf(ofstream& os, const vector<Point2f> &leaf)
     os.write((char*)&size, sizeof(size));
     os.write((char*)&leaf[0], leaf.size() * sizeof(Point2f));
 }
-void FacemarkKazemiImpl :: writeSplit(ofstream& os, splitr split)
+void FacemarkKazemiImpl :: writeSplit(ofstream& os, const splitr& vec)
 {
-    os.write((char*)&split, sizeof(split));
+    os.write((char*)&vec.index1, sizeof(vec.index1));
+    os.write((char*)&vec.index2, sizeof(vec.index2));
+    os.write((char*)&vec.thresh, sizeof(vec.thresh));
+    uint32_t dummy_ = 0;
+    os.write((char*)&dummy_, sizeof(dummy_)); // buggy original writer structure alignment
+    CV_CheckEQ((int)(sizeof(vec.index1) + sizeof(vec.index2) + sizeof(vec.thresh) + sizeof(dummy_)), 24, "Invalid build configuration");
+
 }
 void FacemarkKazemiImpl :: writeTree(ofstream &f,regtree tree)
 {

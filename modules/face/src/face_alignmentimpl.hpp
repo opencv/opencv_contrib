@@ -103,7 +103,7 @@ protected:
     // This function randomly  generates test splits to get the best split.
     splitr getTestSplits(std::vector<Point2f> pixel_coordinates,int seed);
     // This function writes a split node to the XML file storing the trained model
-    void writeSplit(std::ofstream& os,const splitr split);
+    void writeSplit(std::ofstream& os, const splitr& split);
     // This function writes a leaf node to the binary file storing the trained model
     void writeLeaf(std::ofstream& os, const std::vector<Point2f> &leaf);
     // This function writes a tree to the binary file containing the model
