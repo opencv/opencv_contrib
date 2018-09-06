@@ -479,7 +479,7 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, cv::Affine3f
 {
     CV_TRACE_FUNCTION();
 
-    CV_Assert(_depth.type() == DataType<depthType>::type);
+    CV_Assert(_depth.type() == DEPTH_TYPE);
     Depth depth = _depth.getMat();
 
     IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor);
@@ -972,8 +972,8 @@ void TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frame
 
     CV_Assert(frameSize.area() > 0);
 
-    _points.create (frameSize, DataType<Points ::value_type>::type);
-    _normals.create(frameSize, DataType<Normals::value_type>::type);
+    _points.create (frameSize, POINT_TYPE);
+    _normals.create(frameSize, POINT_TYPE);
 
     Points points   =  _points.getMat();
     Normals normals = _normals.getMat();
@@ -1113,15 +1113,15 @@ void TSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _normals
             normals.insert(normals.end(), nVecs[i].begin(), nVecs[i].end());
         }
 
-        _points.create((int)points.size(), 1, DataType<ptype>::type);
+        _points.create((int)points.size(), 1, POINT_TYPE);
         if(!points.empty())
-            Mat((int)points.size(), 1, DataType<ptype>::type, &points[0]).copyTo(_points.getMat());
+            Mat((int)points.size(), 1, POINT_TYPE, &points[0]).copyTo(_points.getMat());
 
         if(_normals.needed())
         {
-            _normals.create((int)normals.size(), 1, DataType<ptype>::type);
+            _normals.create((int)normals.size(), 1, POINT_TYPE);
             if(!normals.empty())
-                Mat((int)normals.size(), 1, DataType<ptype>::type, &normals[0]).copyTo(_normals.getMat());
+                Mat((int)normals.size(), 1, POINT_TYPE, &normals[0]).copyTo(_normals.getMat());
         }
     }
 }
@@ -1158,7 +1158,7 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
     if(_normals.needed())
     {
         Points points = _points.getMat();
-        CV_Assert(points.type() == DataType<ptype>::type);
+        CV_Assert(points.type() == POINT_TYPE);
 
         _normals.createSameSize(_points, _points.type());
         Mat_<ptype> normals = _normals.getMat();
