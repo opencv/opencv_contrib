@@ -79,7 +79,7 @@ namespace cv
             }
             void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int c[num_images]) const
             {
-                (void)w2;
+                CV_UNUSED(w2);
                 for (int i = 0; i < stop; i++)
                 {
                     if (image[i][rrWidth + jj] > image[i][rWidth + j])
@@ -114,7 +114,7 @@ namespace cv
             }
             void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int c[num_images]) const
             {
-                (void)w2;
+                CV_UNUSED(w2);
                 for(int i = 0; i < imageStop; i++)
                 {
                     if (image[i][rrWidth + jj] > image[i][rWidth + j] - t)
@@ -154,8 +154,8 @@ namespace cv
             }
             void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int c[num_images]) const
             {
-                (void)j;
-                (void)rWidth;
+                CV_UNUSED(j);
+                CV_UNUSED(rWidth);
                 for(int i = 0; i < imageStop; i++)
                 {
                     if (image[i][(rrWidth + jj)] > image[i][(w2 + (jj + n2))])
@@ -181,7 +181,7 @@ namespace cv
             }
             void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int c[num_images]) const
             {
-                (void)w2;
+                CV_UNUSED(w2);
                 for(int i = 0; i < imageStop; i++)
                 {
                     ////compare a pixel with the center from the kernel
