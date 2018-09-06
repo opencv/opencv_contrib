@@ -1321,9 +1321,52 @@ void TSDFVolumeGPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frame
 }
 
 
-void TSDFVolumeGPU::fetchNormals(InputArray /*_points*/, OutputArray /*_normals*/) const
+void TSDFVolumeGPU::fetchNormals(InputArray _points, OutputArray _normals) const
 {
-    throw std::runtime_error("Not implemented");
+    CV_TRACE_FUNCTION();
+
+    if(_normals.needed())
+    {
+        UMat points = _points.getUMat();
+        CV_Assert(points.type() == POINT_TYPE);
+
+        _normals.createSameSize(_points, POINT_TYPE);
+        UMat normals = _normals.getUMat();
+
+        cv::String errorStr;
+        cv::String name = "getNormals";
+        ocl::ProgramSource source = ocl::rgbd::tsdf_oclsrc;
+        cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
+        ocl::Kernel k;
+        k.create(name.c_str(), source, options, &errorStr);
+
+        if(k.empty())
+            throw std::runtime_error("Failed to create kernel: " + errorStr);
+
+        UMat volPoseGpu, invPoseGpu;
+        Affine3f volPose = pose;
+        Affine3f invPose = pose.inv();
+        Mat(volPose.matrix).copyTo(volPoseGpu);
+        Mat(invPose.matrix).copyTo(invPoseGpu);
+        Vec4i volResGpu(volResolution.x, volResolution.y, volResolution.z);
+
+        k.args(ocl::KernelArg::ReadOnly(points),
+               ocl::KernelArg::WriteOnly(normals),
+               ocl::KernelArg::PtrReadOnly(volume),
+               ocl::KernelArg::PtrReadOnly(volPoseGpu),
+               ocl::KernelArg::PtrReadOnly(invPoseGpu),
+               voxelSizeInv,
+               volResGpu.val,
+               volDims.val,
+               neighbourCoords.val);
+
+        size_t globalSize[2];
+        globalSize[0] = (size_t)points.cols;
+        globalSize[1] = (size_t)points.rows;
+
+        if(!k.run(2, globalSize, NULL, true))
+            throw std::runtime_error("Failed to run kernel");
+    }
 }
 
 void TSDFVolumeGPU::fetchPointsNormals(OutputArray /*points*/, OutputArray /*normals*/) const

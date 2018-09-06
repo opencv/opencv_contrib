@@ -392,3 +392,69 @@ __kernel void raycast(__global char * pointsptr,
     vstore4((float4)(point,  0), 0, pts);
     vstore4((float4)(normal, 0), 0, nrm);
 }
+
+
+__kernel void getNormals(__global const char * pointsptr,
+                         int points_step, int points_offset,
+                         int points_rows, int points_cols,
+                         __global char * normalsptr,
+                         int normals_step, int normals_offset,
+                         int normals_rows, int normals_cols,
+                         __global const float2* volumeptr,
+                         __global const float * volPoseptr,
+                         __global const float * invPoseptr,
+                         const float voxelSizeInv,
+                         const int4 volResolution4,
+                         const int4 volDims4,
+                         const int8 neighbourCoords
+                         )
+{
+    int x = get_global_id(0);
+    int y = get_global_id(1);
+
+    if(x >= points_cols || y >= points_rows)
+        return;
+
+    // coordinate-independent constants
+
+    __global const float* vp = volPoseptr;
+    const float3 volRot0  = vload4(0, vp).xyz;
+    const float3 volRot1  = vload4(1, vp).xyz;
+    const float3 volRot2  = vload4(2, vp).xyz;
+    const float3 volTrans = (float3)(vp[3], vp[7], vp[11]);
+
+    __global const float* iv = invPoseptr;
+    const float3 invRot0 = vload4(0, iv).xyz;
+    const float3 invRot1 = vload4(1, iv).xyz;
+    const float3 invRot2 = vload4(2, iv).xyz;
+    const float3 invTrans = (float3)(iv[3], iv[7], iv[11]);
+
+    const int3 volResolution = volResolution4.xyz;
+    const int3 volDims = volDims4.xyz;
+
+    // kernel itself
+
+    __global const ptype* ptsRow = (__global const ptype*)(pointsptr +
+                                                           points_offset +
+                                                           y*points_step);
+    float3 p = ptsRow[x].xyz;
+    float3 n = nan((uint)0);
+    if(!any(isnan(p)))
+    {
+        float3 voxPt = (float3)(dot(p, invRot0),
+                                dot(p, invRot1),
+                                dot(p, invRot2)) + invTrans;
+        voxPt = voxPt * voxelSizeInv;
+        n = getNormalVoxel(voxPt, volumeptr, volResolution, volDims, neighbourCoords);
+        n = (float3)(dot(n, volRot0),
+                     dot(n, volRot1),
+                     dot(n, volRot2));
+    }
+
+    __global float* nrm = (__global float*)(normalsptr +
+                                            normals_offset +
+                                            y*normals_step +
+                                            x*sizeof(ptype));
+
+    vstore4((float4)(n, 0), 0, nrm);
+}
