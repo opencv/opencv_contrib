@@ -26,7 +26,12 @@ bool FacemarkKazemiImpl :: findNearestLandmarks( vector< vector<int> >& nearest)
 }
 void FacemarkKazemiImpl :: readSplit(ifstream& is, splitr &vec)
 {
-    is.read((char*)&vec, sizeof(splitr));
+    is.read((char*)&vec.index1, sizeof(vec.index1));
+    is.read((char*)&vec.index2, sizeof(vec.index2));
+    is.read((char*)&vec.thresh, sizeof(vec.thresh));
+    uint32_t dummy_ = 0;
+    is.read((char*)&dummy_, sizeof(dummy_)); // buggy writer structure alignment
+    CV_CheckEQ((int)(sizeof(vec.index1) + sizeof(vec.index2) + sizeof(vec.thresh) + sizeof(dummy_)), 24, "Invalid build configuration");
 }
 void FacemarkKazemiImpl :: readLeaf(ifstream& is, vector<Point2f> &leaf)
 {
