@@ -130,6 +130,16 @@ struct Intr
     float fx, fy, cx, cy;
 };
 
+inline int roundDownPow2(unsigned int x)
+{
+    unsigned int shift = 0;
+    while(x != 0)
+    {
+        shift++; x >>= 1;
+    }
+    return (1 << (shift-1));
+}
+
 } // namespace kinfu
 
 } // namespace cv

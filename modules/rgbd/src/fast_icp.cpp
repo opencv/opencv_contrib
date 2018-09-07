@@ -526,17 +526,6 @@ void ICPImpl::getAb<Mat>(const Mat& oldPts, const Mat& oldNrm, const Mat& newPts
 
 ///////// GPU implementation /////////
 
-inline int roundDownPow2(unsigned int x)
-{
-    unsigned int shift = 0;
-    while(x != 0)
-    {
-        shift++; x >>= 1;
-    }
-    return (1 << (shift-1));
-}
-
-
 template <>
 void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, const UMat& newNrm,
                           Affine3f pose, int level, Matx66f &A, Vec6f &b) const
@@ -578,7 +567,7 @@ void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& ne
                  divUp(globalSize[1], localSize[1]));
 
     // size of local buffer for group-wide reduce
-    size_t lsz = localSize[0]*localSize[1]*UTSIZE*sizeof(float);
+    size_t lsz = localSize[0]*localSize[1]*ltsz;
 
     Intr::Projector proj = intrinsics.scale(level).makeProjector();
 
