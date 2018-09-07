@@ -292,7 +292,7 @@ void getAllDCTDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDescri
   const Size sz = imgCh[0].size();
   descr.reserve( ( sz.height - 2 * patchRadius ) * ( sz.width - 2 * patchRadius ) );
 
-  (void)mp; // Fix unused parameter warning in case OpenCL is not available
+  CV_UNUSED(mp); // Fix unused parameter warning in case OpenCL is not available
   CV_OCL_RUN( mp.useOpenCL, ocl_getAllDCTDescriptorsForImage( imgCh, descr ) )
 
   descr.resize( ( sz.height - 2 * patchRadius ) * ( sz.width - 2 * patchRadius ) );
