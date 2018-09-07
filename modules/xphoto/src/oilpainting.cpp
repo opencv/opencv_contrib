@@ -82,7 +82,7 @@ namespace xphoto
                             }
                         }
                     }
-                    int64 pos = distance(histogram.begin(), std::max_element(histogram.begin(), histogram.end()));
+                    auto pos = distance(histogram.begin(), std::max_element(histogram.begin(), histogram.end()));
                     *vDst = meanBGR[pos] / histogram[pos];
                 }
             }
