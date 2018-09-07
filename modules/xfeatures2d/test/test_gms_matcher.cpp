@@ -27,21 +27,20 @@ CV_GMSMatcherTest::CV_GMSMatcherTest()
     combinations[2][0] = true; combinations[2][1] = false;
     combinations[3][0] = true; combinations[3][1] = true;
 
-    //Threshold = truncate(min(acc_win32, acc_win64))
-    eps[0][0] = 0.9313;
-    eps[0][1] = 0.9223;
-    eps[0][2] = 0.9313;
-    eps[0][3] = 0.9223;
+    eps[0][0] = 0.91;
+    eps[0][1] = 0.91;
+    eps[0][2] = 0.91;
+    eps[0][3] = 0.91;
 
-    eps[1][0] = 0.8199;
-    eps[1][1] = 0.7964;
-    eps[1][2] = 0.8199;
-    eps[1][3] = 0.7964;
+    eps[1][0] = 0.80;
+    eps[1][1] = 0.78;
+    eps[1][2] = 0.80;
+    eps[1][3] = 0.78;
 
-    eps[2][0] = 0.7098;
-    eps[2][1] = 0.6659;
-    eps[2][2] = 0.6939;
-    eps[2][3] = 0.6457;
+    eps[2][0] = 0.70;
+    eps[2][1] = 0.66;
+    eps[2][2] = 0.68;
+    eps[2][3] = 0.63;
 
     correctMatchDistThreshold = 5.0;
 }
@@ -66,7 +65,8 @@ void CV_GMSMatcherTest::run( int )
     const int nImgs = 3;
     for (int num = startImg; num < startImg+nImgs; num++)
     {
-        string imgPath = string(ts->get_data_path()) + format("detectors_descriptors_evaluation/images_datasets/graf/img%d.png", num);
+        string fileName = cv::format("img%d.png", num);
+        string imgPath = string(ts->get_data_path()) + "detectors_descriptors_evaluation/images_datasets/graf/" + fileName;
         Mat imgCur = imread(imgPath);
         orb->detectAndCompute(imgCur, noArray(), keypointsCur, descriptorsCur);
 
@@ -102,14 +102,11 @@ void CV_GMSMatcherTest::run( int )
             }
 
             double ratio = nbCorrectMatches / (double) matchesGMS.size();
-            if (ratio < eps[num-startImg][comb])
-            {
-                ts->printf( cvtest::TS::LOG, "Invalid accuracy for image %s and combination withRotation=%d withScale=%d, "
-                                             "matches ratio is %f, ratio threshold is %f, distance threshold is %f.\n",
-                            imgPath.substr(imgPath.size()-8).c_str(), combinations[comb][0], combinations[comb][1], ratio,
+            EXPECT_GT(ratio, eps[num-startImg][comb]) <<
+                cv::format("Invalid accuracy for image %s and combination withRotation=%d withScale=%d, "
+                           "matches ratio is %g, ratio threshold is %g, distance threshold is %g.",
+                            fileName.c_str(), combinations[comb][0], combinations[comb][1], ratio,
                             eps[num-startImg][comb], correctMatchDistThreshold);
-                ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
-            }
         }
     }
 }
