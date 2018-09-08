@@ -1,5 +1,3 @@
-set(BUILD_opencv_matlab_INIT OFF)  # Matlab module is broken
-
 # ----------------------------------------------------------------------------
 #  CMake file for Matlab/Octave support
 #
