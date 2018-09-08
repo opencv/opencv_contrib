@@ -204,10 +204,16 @@ public:
 
     /**
      * set intrinsics of the camera
-     * @param K intrinsic matrix
+     *
+     * @param K intrinsic matrix or noArray(). If noArray() is specified, imsize
+     * is ignored and zNear/ zFar can be set separately.
      * @param imsize image size
+     * @param zNear near clip distance or -1 to keep the current
+     * @param zFar  far clip distance or -1 to keep the current
      */
-    CV_WRAP virtual void setCameraIntrinsics(InputArray K, const Size& imsize) = 0;
+    CV_WRAP virtual void setCameraIntrinsics(InputArray K, const Size& imsize,
+                                             float zNear = -1,
+                                             float zFar = -1) = 0;
 };
 
 /**
