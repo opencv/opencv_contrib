@@ -5,74 +5,73 @@
 
 namespace opencv_test { namespace {
 
-
-    Mat testOilPainting(Mat imgSrc, int halfSize, int dynRatio, int colorSpace)
+Mat testOilPainting(Mat imgSrc, int halfSize, int dynRatio, int colorSpace)
+{
+    vector<int> histogramme;
+    vector<Vec3f> moyenneRGB;
+    Mat dst(imgSrc.size(), imgSrc.type());
+    Mat lum;
+    if (imgSrc.channels() != 1)
     {
-        vector<int> histogramme;
-        vector<Vec3f> moyenneRGB;
-        Mat dst(imgSrc.size(), imgSrc.type());
-        Mat lum;
-        if (imgSrc.channels() != 1)
+        cvtColor(imgSrc, lum, colorSpace);
+        if (lum.channels() > 1)
         {
-            cvtColor(imgSrc, lum, colorSpace);
-            if (lum.channels() > 1)
+            extractChannel(lum, lum, 0);
+        }
+    }
+    else
+        lum = imgSrc.clone();
+    lum = lum / dynRatio;
+    if (dst.channels() == 3)
+        for (int y = 0; y < imgSrc.rows; y++)
+        {
+            Vec3b *vDst = dst.ptr<Vec3b>(y);
+            for (int x = 0; x < imgSrc.cols; x++, vDst++) //for each pixel
             {
-                extractChannel(lum, lum, 0);
+                Mat mask(lum.size(), CV_8UC1, Scalar::all(0));
+                Rect r(Point(x - halfSize, y - halfSize), Size(2 * halfSize + 1, 2 * halfSize + 1));
+                r = r & Rect(Point(0, 0), lum.size());
+                mask(r).setTo(255);
+                int histSize[] = { 256 };
+                float hranges[] = { 0, 256 };
+                const float* ranges[] = { hranges };
+                Mat hist;
+                int channels[] = { 0 };
+                calcHist(&lum, 1, channels, mask, hist, 1, histSize, ranges, true, false);
+                double maxVal = 0;
+                Point pMin, pMax;
+                minMaxLoc(hist, 0, &maxVal, &pMin, &pMax);
+                mask.setTo(0, lum != static_cast<int>(pMax.y));
+                Scalar v = mean(imgSrc, mask);
+                *vDst = Vec3b(static_cast<uchar>(v[0]), static_cast<uchar>(v[1]), static_cast<uchar>(v[2]));
             }
         }
-        else
-            lum = imgSrc.clone();
-        lum = lum / dynRatio;
-        if (dst.channels() == 3)
-            for (int y = 0; y < imgSrc.rows; y++)
+    else
+        for (int y = 0; y < imgSrc.rows; y++)
+        {
+            uchar *vDst = dst.ptr<uchar>(y);
+            for (int x = 0; x < imgSrc.cols; x++, vDst++) //for each pixel
             {
-                Vec3b *vDst = dst.ptr<Vec3b>(y);
-                for (int x = 0; x < imgSrc.cols; x++, vDst++) //for each pixel
-                {
-                    Mat mask(lum.size(), CV_8UC1, Scalar::all(0));
-                    Rect r(Point(x - halfSize, y - halfSize), Size(2 * halfSize + 1, 2 * halfSize + 1));
-                    r = r & Rect(Point(0, 0), lum.size());
-                    mask(r).setTo(255);
-                    int histSize[] = { 256 };
-                    float hranges[] = { 0, 256 };
-                    const float* ranges[] = { hranges };
-                    Mat hist;
-                    int channels[] = { 0 };
-                    calcHist(&lum, 1, channels, mask, hist, 1, histSize, ranges, true, false);
-                    double maxVal = 0;
-                    Point pMin, pMax;
-                    minMaxLoc(hist, 0, &maxVal, &pMin, &pMax);
-                    mask.setTo(0, lum != static_cast<int>(pMax.y));
-                    Scalar v = mean(imgSrc, mask);
-                    *vDst = Vec3b(static_cast<uchar>(v[0]), static_cast<uchar>(v[1]), static_cast<uchar>(v[2]));
-                }
+                Mat mask(lum.size(), CV_8UC1, Scalar::all(0));
+                Rect r(Point(x - halfSize, y - halfSize), Size(2 * halfSize + 1, 2 * halfSize + 1));
+                r = r & Rect(Point(0, 0), lum.size());
+                mask(r).setTo(255);
+                int histSize[] = { 256 };
+                float hranges[] = { 0, 256 };
+                const float* ranges[] = { hranges };
+                Mat hist;
+                int channels[] = { 0 };
+                calcHist(&lum, 1, channels, mask, hist, 1, histSize, ranges, true, false);
+                double maxVal = 0;
+                Point pMin, pMax;
+                minMaxLoc(hist, 0, &maxVal, &pMin, &pMax);
+                mask.setTo(0, lum != static_cast<int>(pMax.y));
+                Scalar v = mean(imgSrc, mask);
+                *vDst = static_cast<uchar>(v[0]);
             }
-        else
-            for (int y = 0; y < imgSrc.rows; y++)
-            {
-                uchar *vDst = dst.ptr<uchar>(y);
-                for (int x = 0; x < imgSrc.cols; x++, vDst++) //for each pixel
-                {
-                    Mat mask(lum.size(), CV_8UC1, Scalar::all(0));
-                    Rect r(Point(x - halfSize, y - halfSize), Size(2 * halfSize + 1, 2 * halfSize + 1));
-                    r = r & Rect(Point(0, 0), lum.size());
-                    mask(r).setTo(255);
-                    int histSize[] = { 256 };
-                    float hranges[] = { 0, 256 };
-                    const float* ranges[] = { hranges };
-                    Mat hist;
-                    int channels[] = { 0 };
-                    calcHist(&lum, 1, channels, mask, hist, 1, histSize, ranges, true, false);
-                    double maxVal = 0;
-                    Point pMin, pMax;
-                    minMaxLoc(hist, 0, &maxVal, &pMin, &pMax);
-                    mask.setTo(0, lum != static_cast<int>(pMax.y));
-                    Scalar v = mean(imgSrc, mask);
-                    *vDst = static_cast<uchar>(v[0]);
-                }
-            }
-        return dst;
-    }
+        }
+    return dst;
+}
 
 TEST(xphoto_oil_painting, regression)
 {

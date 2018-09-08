@@ -155,7 +155,7 @@ namespace xphoto
         else
             lum = src.clone();
         double dratio = 1 / double(dynValue);
-        lum.forEach<uchar>([=](uchar &pixel, const int * /*position*/) { pixel = static_cast<uchar>(cvRound(pixel * dratio)); });
+        lum.forEach<uchar>([=](uchar &pixel, const int * /*position*/) { pixel = saturate_cast<uchar>(cvRound(pixel * dratio)); });
         if (_src.type() == CV_8UC1)
         {
             ParallelOilPainting<uchar> oilAlgo(src, dst, lum, size, dynValue);
