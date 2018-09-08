@@ -61,7 +61,7 @@ TrackerModel::~TrackerModel()
 
 bool TrackerModel::setTrackerStateEstimator( Ptr<TrackerStateEstimator> trackerStateEstimator )
 {
-  if( stateEstimator != 0 )
+  if (stateEstimator.get())
   {
     return false;
   }
@@ -109,12 +109,12 @@ void TrackerModel::modelUpdate()
 
 bool TrackerModel::runStateEstimator()
 {
-  if( stateEstimator == 0 )
+  if (!stateEstimator)
   {
     CV_Error( -1, "Tracker state estimator is not setted" );
   }
   Ptr<TrackerTargetState> targetState = stateEstimator->estimate( confidenceMaps );
-  if( targetState == 0 )
+  if (!targetState)
     return false;
 
   setLastTargetState( targetState );
