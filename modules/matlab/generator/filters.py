@@ -5,8 +5,6 @@ urlexpr = re.compile(r"((https?):((//)|(\\\\))+[\w\d:#@%/;$()~_?\+-=\\\.&]*)", r
 
 def inputs(args):
     '''Keeps only the input arguments in a list of elements.
-    In OpenCV input arguments are all arguments with names
-    not beginning with 'dst'
     '''
     try:
       return [arg for arg in args['only'] if arg.I and not arg.O]
@@ -20,7 +18,7 @@ def ninputs(fun):
 def outputs(args):
     '''Determines whether any of the given arguments is an output
     reference, and returns a list of only those elements.
-    In OpenCV, output references are preceeded by 'dst'
+    In OpenCV, output references are preceeded by CV_OUT or has *OutputArray* type
     '''
     try:
       return [arg for arg in args['only'] if arg.O and not arg.I]
