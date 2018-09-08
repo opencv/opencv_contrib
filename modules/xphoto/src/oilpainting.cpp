@@ -17,22 +17,25 @@ public :
     cv::Vec3f make(int);
 };
 
-
+template<>
 uchar Vec3fTo<uchar>::extract()
 {
     return static_cast<uchar>(a[0]);
 }
 
+template<>
 cv::Vec3b Vec3fTo<cv::Vec3b>::extract()
 {
     return a;
 }
 
+template<>
 cv::Vec3f Vec3fTo<uchar>::make(int x)
 {
     return cv::Vec3f((a*x)/x);
 }
 
+template<>
 cv::Vec3f Vec3fTo<cv::Vec3b>::make(int x)
 {
     return cv::Vec3f(static_cast<float>(static_cast<int>(a[0]*x)/x),

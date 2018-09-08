@@ -59,14 +59,14 @@ namespace xphoto
 //! @addtogroup xphoto
 //! @{
 
-/** @brief oilPainting
-See the book @cite Holzmann1988 for details.
-@param _src Input three-channel or one channel image (either CV_8UC3 or CV_8UC1)
-@param _dst Output image of the same size and type as src.
-@param size neighbouring size is 2-size+1
-@param dynRatio image is divided by dynRatio before histogram processing
-@param code	color space conversion code(see ColorConversionCodes). Histogram will used only first plane
-*/
+    /** @brief oilPainting
+    See the book @cite Holzmann1988 for details.
+    @param src Input three-channel or one channel image (either CV_8UC3 or CV_8UC1)
+    @param dst Output image of the same size and type as src.
+    @param size neighbouring size is 2-size+1
+    @param dynRatio image is divided by dynRatio before histogram processing
+    @param code	color space conversion code(see ColorConversionCodes). Histogram will used only first plane
+    */
     CV_EXPORTS_W void oilPainting(InputArray src, OutputArray dst, int size, int dynRatio, int code);
     /** @brief oilPainting
     See the book @cite Holzmann1988 for details.
@@ -74,17 +74,8 @@ See the book @cite Holzmann1988 for details.
     @param dst Output image of the same size and type as src.
     @param size neighbouring size is 2-size+1
     @param dynRatio image is divided by dynRatio before histogram processing
-    @param code color space. Only first plane is used in histogram
     */
     CV_EXPORTS_W void oilPainting(InputArray src, OutputArray dst, int size, int dynRatio);
-    /** @brief oilPainting
-    This is an overloaded member function, provided for convenience.It differs from the above function only in what argument(s) it accepts.
-    color space is COLOR_BGR2GRAY
-    @param src Input three-channel or one channel image (either CV_8UC3 or CV_8UC1)
-    @param dst Output image of the same size and type as src.
-    @param size neighbouring size is 2-size+1
-    @param dynRatio image is divided by dynRatio before histogram processing
-    */
 //! @}
 }
 }
