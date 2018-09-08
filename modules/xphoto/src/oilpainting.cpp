@@ -6,10 +6,46 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
+template<class T>
+class Vec3fTo {
+public :
+    cv::Vec3f a;
+    Vec3fTo(cv::Vec3f x) {
+        a = x;
+    };
+    T extract();
+    cv::Vec3f make(int);
+};
+
+
+uchar Vec3fTo<uchar>::extract()
+{
+    return static_cast<uchar>(a[0]);
+}
+
+cv::Vec3b Vec3fTo<cv::Vec3b>::extract()
+{
+    return a;
+}
+
+cv::Vec3f Vec3fTo<uchar>::make(int x)
+{
+    return cv::Vec3f((a*x)/x);
+}
+
+cv::Vec3f Vec3fTo<cv::Vec3b>::make(int x)
+{
+    return cv::Vec3f(static_cast<float>(static_cast<int>(a[0]*x)/x),
+        static_cast<float>(static_cast<int>(a[1] * x) / x),
+        static_cast<float>(static_cast<int>(a[2] * x) / x));
+}
+
+
+
 namespace cv
 {
 namespace xphoto
-{
+{   template<typename Type>
     class ParallelOilPainting : public ParallelLoopBody
     {
     private:
@@ -17,13 +53,15 @@ namespace xphoto
         Mat &dst;
         Mat &imgLuminance;
         int halfsize;
+        int dynRatio;
 
     public:
-        ParallelOilPainting(Mat& img, Mat &d, Mat &iLuminance, int r) :
+        ParallelOilPainting<Type>(Mat& img, Mat &d, Mat &iLuminance, int r,int k) :
             imgSrc(img),
             dst(d),
             imgLuminance(iLuminance),
-            halfsize(r)
+            halfsize(r),
+            dynRatio(k)
         {}
         virtual void operator()(const Range& range) const CV_OVERRIDE
         {
@@ -32,25 +70,25 @@ namespace xphoto
 
             for (int y = range.start; y < range.end; y++)
             {
-                Vec3b *vDst = (Vec3b *)dst.ptr(y);
+                Type *vDst = dst.ptr<Type>(y);
                 for (int x = 0; x < imgSrc.cols; x++, vDst++)
                 {
                     if (x == 0)
                     {
                         histogram.assign(256, 0);
-                        meanBGR.assign(256, Vec3f(0, 0, 0));
+                        meanBGR.assign(256, Vec3f(0,0,0));
                         for (int yy = -halfsize; yy <= halfsize; yy++)
                         {
                             if (y + yy >= 0 && y + yy < imgSrc.rows)
                             {
-                                Vec3b *vPtr = (Vec3b *)imgSrc.ptr(y + yy) + x - 0;
+                                Type *vPtr = imgSrc.ptr<Type>(y + yy) + x - 0;
                                 uchar *uc = imgLuminance.ptr(y + yy) + x - 0;
                                 for (int xx = 0; xx <= halfsize; xx++, vPtr++, uc++)
                                 {
                                     if (x + xx >= 0 && x + xx < imgSrc.cols)
                                     {
                                         histogram[*uc]++;
-                                        meanBGR[*uc] += *vPtr;
+                                        meanBGR[*uc] += Vec3fTo<Type>(*vPtr).make(dynRatio);
                                     }
                                 }
                             }
@@ -63,55 +101,49 @@ namespace xphoto
                         {
                             if (y + yy >= 0 && y + yy < imgSrc.rows)
                             {
-                                Vec3b *vPtr = (Vec3b *)imgSrc.ptr(y + yy) + x - halfsize - 1;
+                                Type *vPtr = imgSrc.ptr<Type>(y + yy) + x - halfsize - 1;
                                 uchar *uc = imgLuminance.ptr(y + yy) + x - halfsize - 1;
                                 int xx = -halfsize - 1;
                                 if (x + xx >= 0 && x + xx < imgSrc.cols)
                                 {
                                     histogram[*uc]--;
-                                    meanBGR[*uc] -= *vPtr;
+                                    meanBGR[*uc] -= Vec3fTo<Type>(*vPtr).make(dynRatio);
                                 }
-                                vPtr = (Vec3b *)imgSrc.ptr(y + yy) + x + halfsize;
+                                vPtr = imgSrc.ptr<Type>(y + yy) + x + halfsize;
                                 uc = imgLuminance.ptr(y + yy) + x + halfsize;
                                 xx = halfsize;
                                 if (x + xx >= 0 && x + xx < imgSrc.cols)
                                 {
                                     histogram[*uc]++;
-                                    meanBGR[*uc] += *vPtr;
+                                    meanBGR[*uc] += Vec3fTo<Type>(*vPtr).make(dynRatio);
                                 }
                             }
                         }
                     }
                     auto pos = distance(histogram.begin(), std::max_element(histogram.begin(), histogram.end()));
-                    *vDst = meanBGR[pos] / histogram[pos];
+                    *vDst = Vec3fTo<Type>(meanBGR[pos] / histogram[pos]).extract();
                 }
             }
         }
     };
 
-    class Quotient {
-        uchar q;
-    public:
-        Quotient(int v) { q = static_cast<uchar>(v); };
-        void operator ()(uchar &pixel, const int * ) const {
-            pixel = pixel / q;
-        }
-    };
-
-    void oilPainting(InputArray _src, OutputArray _dst, int size, int dynValue)
+    void oilPainting(InputArray src, OutputArray dst, int size, int dynValue)
     {
-        oilPainting(_src, _dst, size, dynValue, COLOR_BGR2GRAY);
+        oilPainting(src, dst, size, dynValue, COLOR_BGR2GRAY);
     }
 
     void oilPainting(InputArray _src, OutputArray _dst, int size, int dynValue,int code)
     {
-        CV_Assert(_src.kind() == _InputArray::MAT && size>=1 && dynValue>0 && dynValue<128);
+        CV_CheckType(_src.type(), _src.type() == CV_8UC1 || _src.type() == CV_8UC3, "only 1 or 3 channels (CV_8UC)");
+        CV_Assert(_src.kind() == _InputArray::MAT);
+        CV_Assert(size >= 1);
+        CV_CheckGT(dynValue , 0,"dynValue must be  0");
+        CV_CheckLT(dynValue, 128, "dynValue must less than 128 ");
         Mat src = _src.getMat();
-        CV_Assert(src.type()==CV_8UC1 || src.type() == CV_8UC3);
-        Mat lum,dst(src.size(),src.type());
+        Mat lum,dst(_src.size(),_src.type());
         if (src.type() == CV_8UC3)
         {
-            cvtColor(src, lum, code);
+            cvtColor(_src, lum, code);
             if (lum.channels() > 1)
             {
                 extractChannel(lum, lum, 0);
@@ -119,9 +151,18 @@ namespace xphoto
         }
         else
             lum = src.clone();
-        lum.forEach<uchar>(Quotient(dynValue));
-        ParallelOilPainting oilAlgo(src, dst, lum, size);
-        parallel_for_(Range(0,src.rows), oilAlgo, getNumThreads());
+        double dratio = 1 / double(dynValue);
+        lum.forEach<uchar>([=](uchar &pixel, const int * /*position*/) { pixel = static_cast<uchar>(cvRound(pixel * dratio)); });
+        if (_src.type() == CV_8UC1)
+        {
+            ParallelOilPainting<uchar> oilAlgo(src, dst, lum, size, dynValue);
+            parallel_for_(Range(0, src.rows), oilAlgo);
+        }
+        else
+        {
+            ParallelOilPainting<Vec3b> oilAlgo(src, dst, lum, size, dynValue);
+            parallel_for_(Range(0, src.rows), oilAlgo);
+        }
         dst.copyTo(_dst);
         dst = (dst  / dynValue) * dynValue;
     }
