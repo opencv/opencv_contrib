@@ -48,8 +48,8 @@ void FaceRecognizer::setLabelInfo(int label, const String &strInfo)
 
 void FaceRecognizer::update(InputArrayOfArrays src, InputArray labels)
 {
-    (void)src;
-    (void)labels;
+    CV_UNUSED(src);
+    CV_UNUSED(labels);
     String error_msg = format("This FaceRecognizer does not support updating, you have to use FaceRecognizer::train to update it.");
     CV_Error(Error::StsNotImplemented, error_msg);
 }

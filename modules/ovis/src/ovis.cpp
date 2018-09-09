@@ -641,10 +641,13 @@ public:
         }
     }
 
-    void setCameraIntrinsics(InputArray K, const Size& imsize)
+    void setCameraIntrinsics(InputArray K, const Size& imsize, float zNear, float zFar)
     {
         Camera* cam = sceneMgr->getCamera(title);
-        _setCameraIntrinsics(cam, K, imsize);
+
+        if(zNear >= 0) cam->setNearClipDistance(zNear);
+        if(zFar >= 0) cam->setFarClipDistance(zFar);
+        if(!K.empty()) _setCameraIntrinsics(cam, K, imsize);
     }
 
     void setCameraLookAt(const String& target, InputArray offset)

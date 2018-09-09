@@ -262,7 +262,7 @@ public:
   #ifdef HAVE_TESSERACT
         tess.SetVariable("tessedit_char_whitelist", char_whitelist.c_str());
   #else
-        (void)char_whitelist;
+        CV_UNUSED(char_whitelist);
   #endif
     }
 };
