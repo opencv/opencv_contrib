@@ -262,14 +262,14 @@ TEST(Features2d_BruteForceDescriptorMatcher_knnMatch, regression)
     const int k = 3;
 
     Ptr<DescriptorExtractor> ext = SURF::create();
-    ASSERT_TRUE(ext != NULL);
+    ASSERT_TRUE(ext);
 
     Ptr<FeatureDetector> det = SURF::create();
     //"%YAML:1.0\nhessianThreshold: 8000.\noctaves: 3\noctaveLayers: 4\nupright: 0\n"
-    ASSERT_TRUE(det != NULL);
+    ASSERT_TRUE(det);
 
     Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce");
-    ASSERT_TRUE(matcher != NULL);
+    ASSERT_TRUE(matcher);
 
     Mat imgT(256, 256, CV_8U, Scalar(255));
     line(imgT, Point(20, sz/2), Point(sz-21, sz/2), Scalar(100), 2);
