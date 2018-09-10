@@ -665,12 +665,12 @@ void ERFilterNM::er_merge(ERStat *parent, ERStat *child)
     child->level = child->level*thresholdDelta;
 
     // before saving calculate P(child|character) and filter if possible
-    if (classifier)
+    if (classifier != nullptr)
     {
         child->probability = classifier->eval(*child);
     }
 
-    if ( (((classifier)?(child->probability >= minProbability):true)||(nonMaxSuppression)) &&
+    if ((((classifier != nullptr) ? (child->probability >= minProbability) : true) || (nonMaxSuppression)) &&
          ((child->area >= (minArea*region_mask.rows*region_mask.cols)) &&
           (child->area <= (maxArea*region_mask.rows*region_mask.cols)) &&
           (child->rect.width > 2) && (child->rect.height > 2)) )
@@ -858,15 +858,15 @@ ERStat* ERFilterNM::er_tree_filter ( InputArray image, ERStat * stat, ERStat *pa
 
 
     // calculate P(child|character) and filter if possible
-    if (classifier && (stat->parent != NULL))
+    if ((classifier != nullptr) && (stat->parent != nullptr))
     {
         stat->probability = classifier->eval(*stat);
     }
 
-    if ( ( ((classifier)?(stat->probability >= minProbability):true) &&
+    if ((((classifier != nullptr) ? (stat->probability >= minProbability) : true) &&
           ((stat->area >= minArea*region_mask.rows*region_mask.cols) &&
            (stat->area <= maxArea*region_mask.rows*region_mask.cols)) ) ||
-        (stat->parent == NULL) )
+           (stat->parent == nullptr))
     {
 
         num_accepted_regions++;

@@ -1055,8 +1055,8 @@ bool Odometry::compute(Ptr<OdometryFrame>& srcFrame, Ptr<OdometryFrame>& dstFram
 
 Size Odometry::prepareFrameCache(Ptr<OdometryFrame> &frame, int /*cacheType*/) const
 {
-    if (!frame)
-        CV_Error(Error::StsBadArg, "Null frame pointer.");
+    if (frame == nullptr)
+        CV_Error(Error::StsBadArg, "Null frame pointer.\n");
 
     return Size();
 }
