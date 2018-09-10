@@ -101,7 +101,7 @@ bool TrackerFeatureSet::addTrackerFeature( String trackerFeatureType )
   }
   Ptr<TrackerFeature> feature = TrackerFeature::create( trackerFeatureType );
 
-  if (!feature)
+  if (feature == nullptr)
   {
     return false;
   }
