@@ -93,7 +93,7 @@ void hashMurmurx86 ( const void * key, const int len, const uint seed, void * ou
 /* Now find best way we can to READ_UINT32 */
 #ifndef WORDS_BIGENDIAN
 # define READ_UINT32(ptr)   (*((uint32_t*)(ptr)))
-#elif defined(WORDS_BIGENDIAN)
+#elif defined(WORDS_BIGENDIAN) \
     && defined(__GNUC__) && (__GNUC__>4 || (__GNUC__==4 && __GNUC_MINOR__>=3))
 # define READ_UINT32(ptr)   (__builtin_bswap32(*((uint32_t*)(ptr))))
 #endif
