@@ -6,11 +6,6 @@
 #ifndef __OPENCV_OIL_PAINTING_HPP__
 #define __OPENCV_OIL_PAINTING_HPP__
 
-/** @file
-@date Sept 26, 2018
-@author Laurent Berger
-*/
-
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
