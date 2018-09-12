@@ -28,11 +28,18 @@ endif()
 # 2. attempt compile if required
 # 3. if the compile fails, throw an error and cancel compilation
 file(GLOB SOURCE_FILES "${CMAKE_CURRENT_BINARY_DIR}/src/*.cpp")
+list(LENGTH SOURCE_FILES __size)
+message("Matlab: compiling ${__size} files")
+set(__index 0)
 foreach(SOURCE_FILE ${SOURCE_FILES})
+    MATH(EXPR __index "${__index}+1")
     # strip out the filename
     get_filename_component(FILENAME ${SOURCE_FILE} NAME_WE)
+    message("[${__index}/${__size}] Compiling: ${FILENAME}")
     # compile the source file using mex
-    if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/+cv/${FILENAME}.${MATLAB_MEXEXT})
+    if (NOT EXISTS "${CMAKE_CURRENT_BINARY_DIR}/+cv/${FILENAME}.${MATLAB_MEXEXT}" OR
+        "${SOURCE_FILE}" IS_NEWER_THAN "${CMAKE_CURRENT_BINARY_DIR}/+cv/${FILENAME}.${MATLAB_MEXEXT}"
+    )
         execute_process(
             COMMAND ${MATLAB_MEX_SCRIPT} ${MEX_OPTS} "CXXFLAGS=\$CXXFLAGS ${MEX_CXXFLAGS}" ${MEX_INCLUDE_DIRS_LIST}
                     ${MEX_LIB_DIR} ${MEX_LIBS_LIST} ${SOURCE_FILE}

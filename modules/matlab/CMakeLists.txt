@@ -1,5 +1,3 @@
-set(BUILD_opencv_matlab_INIT OFF)  # Matlab module is broken
-
 # ----------------------------------------------------------------------------
 #  CMake file for Matlab/Octave support
 #
@@ -261,6 +259,13 @@ add_custom_command(
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/test/help.m ${CMAKE_CURRENT_BINARY_DIR}/+cv
     COMMAND ${CMAKE_COMMAND} -E touch ${GENERATE_PROXY}
     COMMENT "Generating Matlab source files"
+    DEPENDS "${CMAKE_CURRENT_LIST_DIR}/generator/build_info.py"
+    DEPENDS "${CMAKE_CURRENT_LIST_DIR}/generator/cvmex.py"
+    DEPENDS "${CMAKE_CURRENT_LIST_DIR}/generator/filters.py"
+    DEPENDS "${CMAKE_CURRENT_LIST_DIR}/generator/gen_matlab.py"
+    DEPENDS "${CMAKE_CURRENT_LIST_DIR}/generator/parse_tree.py"
+    DEPENDS "${CMAKE_CURRENT_LIST_DIR}/generator/templates/functional.cpp"
+    DEPENDS "${CMAKE_CURRENT_LIST_DIR}/generator/templates/template_function_base.cpp"
 )
 
 # compile

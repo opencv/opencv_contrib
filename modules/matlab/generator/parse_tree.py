@@ -8,6 +8,21 @@ except NameError:
   # Python 3.3+
   basestring = str
 
+
+valid_types = (
+    'int', 'bool', 'float', 'double', 'size_t', 'char',
+    'Mat', 'Scalar', 'String',
+    'TermCriteria', 'Size', 'Point', 'Point2f', 'Point2d', 'Rect', 'RotatedRect',
+    'RNG', 'DMatch', 'Moments',
+    'vector_Mat', 'vector_Point', 'vector_int', 'vector_float', 'vector_double', 'vector_String', 'vector_uchar', 'vector_Rect', 'vector_DMatch', 'vector_KeyPoint',
+    'vector_Point2f', 'vector_vector_char', 'vector_vector_DMatch', 'vector_vector_KeyPoint',
+    'Ptr_StereoBM', 'Ptr_StereoSGBM', 'Ptr_FeatureDetector', 'Ptr_CLAHE', 'Ptr_LineSegmentDetector', 'Ptr_AlignMTB', 'Ptr_CalibrateDebevec',
+    'Ptr_CalibrateRobertson', 'Ptr_DenseOpticalFlow', 'Ptr_DualTVL1OpticalFlow', 'Ptr_MergeDebevec', 'Ptr_MergeMertens', 'Ptr_MergeRobertson',
+    'Ptr_Stitcher', 'Ptr_Tonemap', 'Ptr_TonemapDrago', 'Ptr_TonemapDurand', 'Ptr_TonemapMantiuk', 'Ptr_TonemapReinhard', 'Ptr_float',
+    # Not supported:
+    #vector_vector_KeyPoint
+)
+
 class ParseTree(object):
     """
     The ParseTree class produces a semantic tree of C++ definitions given
@@ -89,7 +104,11 @@ class ParseTree(object):
             methods = []
             constants = []
             for defn in definitions:
-                obj = babel.translate(defn)
+                try:
+                    obj = babel.translate(defn)
+                except Exception as e:
+                    print(e)
+                    obj = None
                 if obj is None:
                     continue
                 if type(obj) is Class or obj.clss:
@@ -176,15 +195,15 @@ class Translator(object):
         return Constant(name, clss, tp, const, '', val)
 
     def translateArgument(self, defn):
+        modifiers = defn[3]
         ref   = '*' if '*' in defn[0] else ''
-        ref   = '&' if '&' in defn[0] else ref
-        const = ' const ' in ' '+defn[0]+' '
+        ref   = '&' if '&' in defn[0] or '/Ref' in modifiers else ref
+        const = '/C' in modifiers
         tp    = " ".join([word for word in defn[0].replace(ref, '').split() if not ' const ' in ' '+word+' '])
         name = defn[1]
         default = defn[2] if defn[2] else ''
-        modifiers = ''.join(defn[3])
-        I = True if not modifiers or 'I' in modifiers else False
-        O = True if 'O' in modifiers else False
+        I = True if '/I' in modifiers or not '/O' in modifiers else False
+        O = True if '/O' in modifiers else False
         return Argument(name, tp, const, I, O, ref, default)
 
     def translateName(self, name):
@@ -292,6 +311,8 @@ class Argument(object):
         self.O    = O
         self.const = const
         self.default = default
+        if not tp in valid_types:
+            raise Exception("Non-supported argument type: {} (name: {})".format(tp, name))
 
     def __str__(self):
         return ('const ' if self.const else '')+self.tp+self.ref+\

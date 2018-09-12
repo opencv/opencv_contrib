@@ -104,21 +104,23 @@ addVariant("{{ fun.name }}", {{ fun.req|inputs|length }}, {{ fun.opt|inputs|leng
 {%- macro handleInputs(fun) %}
 
   {% if fun|ninputs or (fun|noutputs and not fun.constructor) %}
-  // unpack the arguments
-  {# ----------- Inputs ------------- #}
+  // - inputs
   {% for arg in fun.req|inputs %}
   {{arg.tp}} {{arg.name}} = inputs[{{ loop.index0 }}].to{{arg.tp|toUpperCamelCase}}();
   {% endfor %}
+  // - inputs (opt)
   {% for opt in fun.opt|inputs %}
   {{opt.tp}} {{opt.name}} = inputs[{{loop.index0 + fun.req|inputs|length}}].empty() ? ({{opt.tp}}) {% if opt.ref == '*' -%} {{opt.tp}}() {%- else -%} {{opt.default}} {%- endif %} : inputs[{{loop.index0 + fun.req|inputs|length}}].to{{opt.tp|toUpperCamelCase}}();
   {% endfor %}
-  {# ----------- Outputs ------------ #}
+  // - outputs
   {% for arg in fun.req|only|outputs %}
   {{arg.tp}} {{arg.name}};
   {% endfor %}
+  // - outputs (opt)
   {% for opt in fun.opt|only|outputs %}
   {{opt.tp}} {{opt.name}};
   {% endfor %}
+  // - return
   {% if not fun.rtp|void and not fun.constructor %}
   {{fun.rtp}} retval;
   {% endif %}

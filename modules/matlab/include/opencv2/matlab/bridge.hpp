@@ -249,13 +249,13 @@ public:
       case mxUINT16_CLASS:  deepCopyAndTranspose<uint16_t, Scalar>(ptr_, mat); break;
       case mxINT32_CLASS:   deepCopyAndTranspose<int32_t,  Scalar>(ptr_, mat); break;
       case mxUINT32_CLASS:  deepCopyAndTranspose<uint32_t, Scalar>(ptr_, mat); break;
-      case mxINT64_CLASS:   deepCopyAndTranspose<int64_t,  Scalar>(ptr_, mat); break;
-      case mxUINT64_CLASS:  deepCopyAndTranspose<uint64_t, Scalar>(ptr_, mat); break;
+      //case mxINT64_CLASS:   deepCopyAndTranspose<int64_t,  Scalar>(ptr_, mat); break;
+      //case mxUINT64_CLASS:  deepCopyAndTranspose<uint64_t, Scalar>(ptr_, mat); break;
       case mxSINGLE_CLASS:  deepCopyAndTranspose<float,    Scalar>(ptr_, mat); break;
       case mxDOUBLE_CLASS:  deepCopyAndTranspose<double,   Scalar>(ptr_, mat); break;
       case mxCHAR_CLASS:    deepCopyAndTranspose<char,     Scalar>(ptr_, mat); break;
       case mxLOGICAL_CLASS: deepCopyAndTranspose<int8_t,   Scalar>(ptr_, mat); break;
-      default: matlab::error("Attempted to convert from unknown class");
+      default: matlab::error("Attempted to convert from unknown/unsupported class");
     }
     return mat;
   }
@@ -576,13 +576,13 @@ cv::Mat Bridge::toMat<matlab::InheritType>() const {
     case mxUINT16_CLASS:  return toMat<uint16_t>();
     case mxINT32_CLASS:   return toMat<int32_t>();
     case mxUINT32_CLASS:  return toMat<int32_t>();
-    case mxINT64_CLASS:   return toMat<int64_t>();
-    case mxUINT64_CLASS:  return toMat<int64_t>();
+    //case mxINT64_CLASS:   return toMat<int64_t>();
+    //case mxUINT64_CLASS:  return toMat<int64_t>();
     case mxSINGLE_CLASS:  return toMat<float>();
     case mxDOUBLE_CLASS:  return toMat<float>(); //NOTE: OpenCV uses float as native type!
     case mxCHAR_CLASS:    return toMat<int8_t>();
     case mxLOGICAL_CLASS: return toMat<int8_t>();
-    default: matlab::error("Attempted to convert from unknown class");
+    default: matlab::error("Attempted to convert from unknown/unsuported class");
   }
   return cv::Mat();
 }
@@ -598,18 +598,26 @@ cv::Mat Bridge::toMat() const { return toMat<matlab::InheritType>(); }
 
 template <typename InputScalar, typename OutputScalar>
 void deepCopyAndTranspose(const cv::Mat& in, matlab::MxArray& out) {
+  const int cols = out.cols();
+  const int rows = out.rows();
   matlab::conditionalError(static_cast<size_t>(in.rows) == out.rows(), "Matrices must have the same number of rows");
   matlab::conditionalError(static_cast<size_t>(in.cols) == out.cols(), "Matrices must have the same number of cols");
   matlab::conditionalError(static_cast<size_t>(in.channels()) == out.channels(), "Matrices must have the same number of channels");
   std::vector<cv::Mat> channels;
   cv::split(in, channels);
   for (size_t c = 0; c < out.channels(); ++c) {
-    cv::transpose(channels[c], channels[c]);
-    cv::Mat outmat(out.cols(), out.rows(), cv::DataType<OutputScalar>::type,
-      static_cast<void *>(out.real<OutputScalar>() + out.cols()*out.rows()*c));
-    channels[c].convertTo(outmat, cv::DataType<OutputScalar>::type);
+    cv::Mat_<InputScalar> m;
+    cv::transpose(channels[c], m);
+    OutputScalar* dst_plane = (OutputScalar*)out.real<InputScalar>() + cols*rows*c;
+    for (int x = 0; x < cols; x++)
+    {
+        OutputScalar* dst_col = dst_plane + x * rows;
+        for (int y = 0; y < rows; y++)
+        {
+            dst_col[y] = cv::saturate_cast<OutputScalar>(m(y, x));
+        }
+    }
   }
-
   //const InputScalar* inp = in.ptr<InputScalar>(0);
   //OutputScalar* outp = out.real<OutputScalar>();
   //gemt('R', out.rows(), out.cols(), inp, in.step1(), outp, out.rows());
@@ -617,17 +625,25 @@ void deepCopyAndTranspose(const cv::Mat& in, matlab::MxArray& out) {
 
 template <typename InputScalar, typename OutputScalar>
 void deepCopyAndTranspose(const matlab::MxArray& in, cv::Mat& out) {
+  const int cols = in.cols();
+  const int rows = in.rows();
   matlab::conditionalError(in.rows() == static_cast<size_t>(out.rows), "Matrices must have the same number of rows");
   matlab::conditionalError(in.cols() == static_cast<size_t>(out.cols), "Matrices must have the same number of cols");
   matlab::conditionalError(in.channels() == static_cast<size_t>(out.channels()), "Matrices must have the same number of channels");
   std::vector<cv::Mat> channels;
   for (size_t c = 0; c < in.channels(); ++c) {
-    cv::Mat outmat;
-    cv::Mat inmat(in.cols(), in.rows(), cv::DataType<InputScalar>::type,
-      static_cast<void *>(const_cast<InputScalar *>(in.real<InputScalar>() + in.cols()*in.rows()*c)));
-    inmat.convertTo(outmat, cv::DataType<OutputScalar>::type);
-    cv::transpose(outmat, outmat);
-    channels.push_back(outmat);
+    cv::Mat_<OutputScalar> m(cols, rows);
+    const InputScalar* src_plane = in.real<InputScalar>() + cols*rows*c;
+    for (int x = 0; x < cols; x++)
+    {
+        const InputScalar* src_col = src_plane + x * rows;
+        for (int y = 0; y < rows; y++)
+        {
+            m(y, x) = cv::saturate_cast<InputScalar>(src_col[y]);
+        }
+    }
+    cv::transpose(m, m);
+    channels.push_back(m);
   }
   cv::merge(channels, out);
 
