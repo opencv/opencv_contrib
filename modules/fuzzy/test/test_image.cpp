@@ -60,9 +60,9 @@ TEST(fuzzy_image, inpainting)
     ft::inpaint(orig, mask2, res2, 2, ft::LINEAR, ft::MULTI_STEP);
     ft::inpaint(orig, mask2, res3, 2, ft::LINEAR, ft::ITERATIVE);
 
-    res1.convertTo(res1, CV_8UC3);
-    res2.convertTo(res2, CV_8UC3);
-    res3.convertTo(res3, CV_8UC3);
+    res1.convertTo(res1, CV_8U);
+    res2.convertTo(res2, CV_8U);
+    res3.convertTo(res3, CV_8U);
 
     double n1 = cvtest::norm(exp1, res1, NORM_INF);
     double n2 = cvtest::norm(exp2, res2, NORM_INF);
@@ -87,7 +87,7 @@ TEST(fuzzy_image, filtering)
     Mat res4;
     ft::filter(orig, kernel, res4);
 
-    res4.convertTo(res4, CV_8UC3);
+    res4.convertTo(res4, CV_8U);
 
     double n1 = cvtest::norm(exp4, res4, NORM_INF);
 
