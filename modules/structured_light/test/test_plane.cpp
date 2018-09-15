@@ -313,8 +313,8 @@ void CV_PlaneTest::run( int )
 
   // Computing the point cloud
   Mat pointcloud;
-  disparityMap.convertTo( disparityMap, CV_32FC1 );
-  reprojectImageTo3D( disparityMap, pointcloud, Q, true, -1 );
+  disparityMap.convertTo( disparityMap, CV_32F );
+  reprojectImageTo3D( disparityMap, pointcloud, Q, true);
   // from mm (unit of calibration) to m
   pointcloud = pointcloud / 1000;
 
