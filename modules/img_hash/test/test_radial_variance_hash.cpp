@@ -34,7 +34,7 @@ protected:
 
 CV_RadialVarianceHashTest::CV_RadialVarianceHashTest()
 {
-    input.create(8, 8, CV_8U);
+    input.create(8, 8, CV_8UC1);
     uchar *inPtr = input.ptr<uchar>(0);
     for(size_t i = 0; i != input.total(); ++i)
     {
@@ -45,7 +45,7 @@ CV_RadialVarianceHashTest::CV_RadialVarianceHashTest()
 
 void CV_RadialVarianceHashTest::testComputeHash()
 {
-    cv::Mat hashOne(1, 40, CV_8U);
+    cv::Mat hashOne(1, 40, CV_8UC1);
     uchar buffer[] =
     {
       52,  41,  49,  64,  40,  67,  76,  71,  69,
@@ -54,7 +54,7 @@ void CV_RadialVarianceHashTest::testComputeHash()
       51,  45,  44,  42,  61,  54,  75,  50,  79,
       65,  43,  53,  56
     };
-    cv::Mat hashTwo(1, 40, CV_8U, buffer);
+    cv::Mat hashTwo(1, 40, CV_8UC1, buffer);
     for(uchar i = 0; i != 40; ++i)
     {
       hashOne.at<uchar>(0, i) = i;
