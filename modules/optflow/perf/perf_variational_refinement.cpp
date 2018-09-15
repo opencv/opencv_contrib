@@ -15,8 +15,8 @@ PERF_TEST_P(DenseOpticalFlow_VariationalRefinement, perf, Combine(Values(szQVGA,
     int sorIter = get<1>(params);
     int fixedPointIter = get<2>(params);
 
-    Mat frame1(sz, CV_8U);
-    Mat frame2(sz, CV_8U);
+    Mat frame1(sz, CV_8UC1);
+    Mat frame2(sz, CV_8UC1);
     Mat flow(sz, CV_32FC2);
 
     randu(frame1, 0, 255);
