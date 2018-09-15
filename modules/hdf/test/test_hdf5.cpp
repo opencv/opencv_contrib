@@ -19,7 +19,7 @@ struct HDF5_Test : public testing::Test
 
         // 0 1 2
         // 3 4 5
-        m_single_channel.create(2, 3, CV_32F);
+        m_single_channel.create(2, 3, CV_32FC1);
         for (size_t i = 0; i < m_single_channel.total(); i++)
         {
             ((float*)m_single_channel.data)[i] = i;
