@@ -89,7 +89,7 @@ class CV_BD_DescriptorsTest : public cvtest::BaseTest
       return;
     }
 
-    CV_Assert( validDescriptors.type() == CV_8U );
+    CV_Assert( validDescriptors.type() == CV_8UC1 );
 
     int dimension = validDescriptors.cols;
     DistanceType curMaxDist = std::numeric_limits<DistanceType>::min();
@@ -378,7 +378,7 @@ TEST( BinaryDescriptor_Descriptors, regression )
 
 TEST( BinaryDescriptor, no_lines_found )
 {
-  Mat Image = Mat::zeros(100, 100, CV_8U);
+  Mat Image = Mat::zeros(100, 100, CV_8UC1);
   Ptr<line_descriptor::BinaryDescriptor> binDescriptor =
     line_descriptor::BinaryDescriptor::createBinaryDescriptor();
 

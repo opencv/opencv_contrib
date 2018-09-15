@@ -107,7 +107,7 @@ void generateData( Mat& query, Mat& train )
 
   Mat buf( QUERY_DES_COUNT, DIM, CV_8UC1 );
   rng.fill( buf, RNG::UNIFORM, Scalar( 0 ), Scalar( 255 ) );
-  buf.convertTo( query, CV_8UC1 );
+  buf.convertTo( query, CV_8U );
 
   for ( int i = 0; i < query.rows; i++ )
   {
