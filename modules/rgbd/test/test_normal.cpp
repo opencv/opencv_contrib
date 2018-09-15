@@ -62,7 +62,7 @@ void points3dToDepth16U(const Mat_<Vec3f>& points3d, Mat& depthMap)
       points3dvec.push_back(Point3f(points3d(i,j)[0], points3d(i,j)[1], points3d(i,j)[2]));
 
   std::vector<Point2f> img_points;
-  depthMap = Mat::zeros(H, W, CV_32F);
+  depthMap = Mat::zeros(H, W, CV_32FC1);
   Vec3f R(0.0,0.0,0.0);
   Vec3f T(0.0,0.0,0.0);
   cv::projectPoints(points3dvec, R, T, K, Mat(), img_points);
@@ -213,7 +213,7 @@ protected:
 
         for (unsigned char j = 0; j < 2; ++j)
         {
-          int depth = (j % 2 == 0) ? CV_32F : CV_64F;
+          ElemDepth depth = (j % 2 == 0) ? CV_32F : CV_64F;
           if (depth == CV_32F)
             std::cout << "* float" << std::endl;
           else
@@ -302,8 +302,8 @@ protected:
     tm.stop();
 
     Mat_<Vec3f> normals, ground_normals;
-    in_normals.convertTo(normals, CV_32FC3);
-    in_ground_normals.convertTo(ground_normals, CV_32FC3);
+    in_normals.convertTo(normals, CV_32F);
+    in_ground_normals.convertTo(ground_normals, CV_32F);
 
     float err = 0;
     for (int y = 0; y < normals.rows; ++y)
@@ -375,7 +375,7 @@ protected:
       {
         tm1.start();
         // First, get the normals
-        int depth = CV_32F;
+        ElemDepth depth = CV_32F;
         RgbdNormals normals_computer(H, W, depth, K, 5, RgbdNormals::RGBD_NORMALS_METHOD_FALS);
         Mat normals;
         normals_computer(points3d, normals);
