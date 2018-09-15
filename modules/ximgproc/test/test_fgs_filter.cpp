@@ -10,9 +10,7 @@ static string getDataDir()
     return cvtest::TS::ptr()->get_data_path();
 }
 
-CV_ENUM(SrcTypes, CV_8UC1, CV_8UC3, CV_8UC4, CV_16SC1, CV_16SC3, CV_32FC1);
-CV_ENUM(GuideTypes, CV_8UC1, CV_8UC3)
-typedef tuple<Size, SrcTypes, GuideTypes> FGSParams;
+typedef tuple<Size, MatType, MatType> FGSParams;
 typedef TestWithParam<FGSParams> FastGlobalSmootherTest;
 
 TEST(FastGlobalSmootherTest, SplatSurfaceAccuracy)
@@ -76,8 +74,8 @@ TEST_P(FastGlobalSmootherTest, MultiThreadReproducibility)
 
     FGSParams params = GetParam();
     Size size     = get<0>(params);
-    int srcType   = get<1>(params);
-    int guideType = get<2>(params);
+    ElemType srcType = get<1>(params);
+    ElemType guideType = get<2>(params);
 
     Mat guide(size, guideType);
     randu(guide, 0, 255);
@@ -109,7 +107,14 @@ TEST_P(FastGlobalSmootherTest, MultiThreadReproducibility)
         EXPECT_LE(cv::norm(resSingleThread, resMultiThread, NORM_L1), MAX_MEAN_DIF*src.total()*src.channels());
     }
 }
-INSTANTIATE_TEST_CASE_P(FullSet, FastGlobalSmootherTest,Combine(Values(szODD, szQVGA), SrcTypes::all(), GuideTypes::all()));
+INSTANTIATE_TEST_CASE_P(FullSet, FastGlobalSmootherTest,
+                            Combine
+                            (
+                                Values(szODD, szQVGA),
+                                Values(CV_8UC1, CV_8UC3, CV_8UC4, CV_16SC1, CV_16SC3, CV_32FC1),
+                                Values(CV_8UC1, CV_8UC3)
+                            )
+                       );
 
 
 }} // namespace

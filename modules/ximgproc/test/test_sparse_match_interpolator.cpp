@@ -54,8 +54,7 @@ Mat readOpticalFlow( const String& path )
     return flow;
 }
 
-CV_ENUM(GuideTypes, CV_8UC1, CV_8UC3)
-typedef tuple<Size, GuideTypes> InterpolatorParams;
+typedef tuple<Size, MatType> InterpolatorParams;
 typedef TestWithParam<InterpolatorParams> InterpolatorTest;
 
 TEST(InterpolatorTest, ReferenceAccuracy)
@@ -107,7 +106,7 @@ TEST_P(InterpolatorTest, MultiThreadReproducibility)
 
     InterpolatorParams params = GetParam();
     Size size       = get<0>(params);
-    int guideType   = get<1>(params);
+    ElemType guideType   = get<1>(params);
 
     Mat from(size, guideType);
     randu(from, 0, 255);
@@ -151,7 +150,13 @@ TEST_P(InterpolatorTest, MultiThreadReproducibility)
         EXPECT_LE(cv::norm(resSingleThread, resMultiThread, NORM_L1) , MAX_MEAN_DIF*resMultiThread.total());
     }
 }
-INSTANTIATE_TEST_CASE_P(FullSet,InterpolatorTest, Combine(Values(szODD,szVGA), GuideTypes::all()));
+INSTANTIATE_TEST_CASE_P(FullSet, InterpolatorTest,
+                            Combine
+                            (
+                                Values(szODD, szVGA),
+                                Values(CV_8UC1, CV_8UC3)
+                            )
+                        );
 
 
 }} // namespace

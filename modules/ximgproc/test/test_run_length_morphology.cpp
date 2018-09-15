@@ -216,7 +216,7 @@ TEST_F(RL_CreateCustomKernel, check_valid)
     ASSERT_TRUE(dest.rows == 1);
 }
 
-typedef tuple<int> RLPParams;
+typedef tuple<MatType> RLPParams;
 
 class RL_Paint : public RLTestBase, public ::testing::TestWithParam<RLPParams>
 {
@@ -230,11 +230,11 @@ TEST_P(RL_Paint, same_result)
 {
     Mat converted, pixBinary, painted;
     RLPParams param = GetParam();
-    int rType = get<0>(param);
+    ElemType rType = get<0>(param);
 
     double dThreshold = 100.0;
     double dMaxValue = 105.0;
-    test_image[1].convertTo(converted, rType);
+    test_image[1].convertTo(converted, CV_MAT_DEPTH(rType));
     cv::threshold(converted, pixBinary, dThreshold, dMaxValue, THRESH_BINARY);
 
     painted.create(test_image[1].rows, test_image[1].cols, rType);

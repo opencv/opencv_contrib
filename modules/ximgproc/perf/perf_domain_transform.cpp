@@ -5,17 +5,15 @@
 
 namespace opencv_test { namespace {
 
-CV_ENUM(GuideMatType, CV_8UC1, CV_8UC3, CV_32FC1, CV_32FC3) //reduced set
-CV_ENUM(SourceMatType, CV_8UC1, CV_8UC3, CV_8UC4, CV_32FC1, CV_32FC3) //reduced set
 CV_ENUM(DTFMode, DTF_NC, DTF_IC, DTF_RF)
-typedef tuple<GuideMatType, SourceMatType, Size, double, double, DTFMode> DTTestParams;
+typedef tuple<MatType, MatType, Size, double, double, DTFMode> DTTestParams;
 
 typedef TestBaseWithParam<DTTestParams> DomainTransformTest;
 
 PERF_TEST_P( DomainTransformTest, perf,
              Combine(
-                      GuideMatType::all(),
-                      SourceMatType::all(),
+                      Values(CV_8UC1, CV_8UC3, CV_32FC1, CV_32FC3), //reduced set),
+                      Values(CV_8UC1, CV_8UC3, CV_8UC4, CV_32FC1, CV_32FC3), //reduced set
                       Values(szVGA, sz720p),
                       Values(10.0, 80.0),
                       Values(30.0, 50.0),
@@ -23,8 +21,8 @@ PERF_TEST_P( DomainTransformTest, perf,
                     )
            )
 {
-    int guideType       = get<0>(GetParam());
-    int srcType         = get<1>(GetParam());
+    ElemType guideType  = get<0>(GetParam());
+    ElemType srcType    = get<1>(GetParam());
     Size size           = get<2>(GetParam());
     double sigmaSpatial = get<3>(GetParam());
     double sigmaColor   = get<4>(GetParam());

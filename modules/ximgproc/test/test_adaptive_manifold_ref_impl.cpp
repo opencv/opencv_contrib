@@ -236,8 +236,8 @@ using namespace cv::ximgproc;
             const size_t minstep = m.cols * esz;
 
             Size wholeSize;
-            wholeSize.height = std::max(static_cast<int>((delta2 - minstep) / m.step + 1), m.rows);
-            wholeSize.width = std::max(static_cast<int>((delta2 - m.step * (wholeSize.height - 1)) / esz), m.cols);
+            wholeSize.height = CV_MAX_DEPTH(((delta2 - minstep) / m.step + 1), m.rows);
+            wholeSize.width = CV_MAX_DEPTH(((delta2 - m.step * (wholeSize.height - 1)) / esz), m.cols);
 
             if (wholeSize.height < rows || wholeSize.width < cols)
                 m.create(rows, cols, type);
@@ -267,8 +267,8 @@ using namespace cv::ximgproc;
             const size_t minstep = m.cols * esz;
 
             Size wholeSize;
-            wholeSize.height = std::max(static_cast<int>((delta2 - minstep) / m.step + 1), m.rows);
-            wholeSize.width = std::max(static_cast<int>((delta2 - m.step * (wholeSize.height - 1)) / esz), m.cols);
+            wholeSize.height = CV_MAX_DEPTH(((delta2 - minstep) / m.step + 1), m.rows);
+            wholeSize.width = CV_MAX_DEPTH(((delta2 - m.step * (wholeSize.height - 1)) / esz), m.cols);
 
             if (wholeSize.height < rows || wholeSize.width < cols)
                 m.create(rows, cols);
@@ -389,7 +389,7 @@ using namespace cv::ximgproc;
         CV_Assert( src_joint.empty() || (src_joint.type() == src.type() && src_joint.size() == srcSize) );
 
         ensureSizeIsEnough(srcSize, src_f_);
-        src.convertTo(src_f_, src_f_.type(), 1.0 / 255.0);
+        src.convertTo(src_f_, src_f_.depth(), 1.0 / 255.0);
 
         ensureSizeIsEnough(srcSize, sum_w_ki_Psi_blur_);
         sum_w_ki_Psi_blur_.setTo(Scalar::all(0));
@@ -408,7 +408,7 @@ using namespace cv::ximgproc;
         if (src_joint.empty())
             src_f_.copyTo(src_joint_f_);
         else
-            src_joint.convertTo(src_joint_f_, src_joint_f_.type(), 1.0 / 255.0);
+            src_joint.convertTo(src_joint_f_, src_joint_f_.depth(), 1.0 / 255.0);
 
         // Use the center pixel as seed to random number generation.
         const double seedCoef = src_joint_f_(src_joint_f_.rows / 2, src_joint_f_.cols / 2).x;
@@ -688,11 +688,11 @@ using namespace cv::ximgproc;
         }
 
         ensureSizeIsEnough(buf.dIdx.size(), buf.dHdx);
-        buf.dIdx.convertTo(buf.dHdx, buf.dHdx.type(), (sigma_s / sigma_r) * (sigma_s / sigma_r), (sigma_s / sigma_s) * (sigma_s / sigma_s));
+        buf.dIdx.convertTo(buf.dHdx, buf.dHdx.depth(), (sigma_s / sigma_r) * (sigma_s / sigma_r), (sigma_s / sigma_s) * (sigma_s / sigma_s));
         sqrt(buf.dHdx, buf.dHdx);
 
         ensureSizeIsEnough(buf.dIdy.size(), buf.dVdy);
-        buf.dIdy.convertTo(buf.dVdy, buf.dVdy.type(), (sigma_s / sigma_r) * (sigma_s / sigma_r), (sigma_s / sigma_s) * (sigma_s / sigma_s));
+        buf.dIdy.convertTo(buf.dVdy, buf.dVdy.depth(), (sigma_s / sigma_r) * (sigma_s / sigma_r), (sigma_s / sigma_s) * (sigma_s / sigma_s));
         sqrt(buf.dVdy, buf.dVdy);
 
         ensureSizeIsEnough(src.size(), dst);
