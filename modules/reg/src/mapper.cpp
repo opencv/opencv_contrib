@@ -49,10 +49,10 @@ void Mapper::gradient(const Mat& img1, const Mat& img2, Mat& Ix, Mat& Iy, Mat& I
     Size sz1 = img2.size();
 
     Mat xkern = (Mat_<double>(1, 3) << -1., 0., 1.)/2.;
-    filter2D(img2, Ix, -1, xkern, Point(-1,-1), 0., BORDER_REPLICATE);
+    filter2D(img2, Ix, CV_DEPTH_AUTO, xkern, Point(-1,-1), 0., BORDER_REPLICATE);
 
     Mat ykern = (Mat_<double>(3, 1) << -1., 0., 1.)/2.;
-    filter2D(img2, Iy, -1, ykern, Point(-1,-1), 0., BORDER_REPLICATE);
+    filter2D(img2, Iy, CV_DEPTH_AUTO, ykern, Point(-1,-1), 0., BORDER_REPLICATE);
 
     It = Mat::zeros(sz1, img1.type());
     It = img2 - img1;
