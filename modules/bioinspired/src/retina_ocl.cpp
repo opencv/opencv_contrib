@@ -62,7 +62,7 @@ namespace
         return (int)N;
     }
 
-    inline void ensureSizeIsEnough(int rows, int cols, int type, cv::UMat &m)
+    inline void ensureSizeIsEnough(int rows, int cols, ElemType type, cv::UMat &m)
     {
         m.create(rows, cols, type, m.usageFlags);
     }
