@@ -6,8 +6,8 @@ using namespace cv;
 
 int main()
 {
-    Mat data_x( 1, 51, CV_64F );
-    Mat data_y( 1, 51, CV_64F );
+    Mat data_x( 1, 51, CV_64FC1);
+    Mat data_y( 1, 51, CV_64FC1);
 
     for ( int i = 0; i < data_x.cols; i++ )
     {
