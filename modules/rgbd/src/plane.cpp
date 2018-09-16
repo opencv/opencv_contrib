@@ -525,7 +525,7 @@ private:
     }
 
     // Pre-computations
-    mask_out.create(points3d.size(), CV_8U);
+    mask_out.create(points3d.size(), CV_8UC1);
     Mat mask_out_mat = mask_out.getMat();
     Mat_<unsigned char> mask_out_uc = (Mat_<unsigned char>&) mask_out_mat;
     mask_out_uc.setTo(255);
