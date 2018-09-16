@@ -133,12 +133,12 @@ class VariationalRefinementImpl CV_FINAL : public VariationalRefinement
     };
     void gradHorizAndSplitOp(void *src, void *dst, void *dst_split)
     {
-        Sobel(*(Mat *)src, *(Mat *)dst, -1, 1, 0, 1, 1, 0.00, BORDER_REPLICATE);
+        Sobel(*(Mat *)src, *(Mat *)dst, CV_DEPTH_AUTO, 1, 0, 1, 1, 0.00, BORDER_REPLICATE);
         splitCheckerboard(*(RedBlackBuffer *)dst_split, *(Mat *)dst);
     }
     void gradVertAndSplitOp(void *src, void *dst, void *dst_split)
     {
-        Sobel(*(Mat *)src, *(Mat *)dst, -1, 0, 1, 1, 1, 0.00, BORDER_REPLICATE);
+        Sobel(*(Mat *)src, *(Mat *)dst, CV_DEPTH_AUTO, 0, 1, 1, 1, 0.00, BORDER_REPLICATE);
         splitCheckerboard(*(RedBlackBuffer *)dst_split, *(Mat *)dst);
     }
     void averageOp(void *src1, void *src2, void *dst)
