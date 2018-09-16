@@ -110,7 +110,7 @@ int main(int argc, char** argv)
     Mat left_for_matcher, right_for_matcher;
     Mat left_disp,right_disp;
     Mat filtered_disp;
-    Mat conf_map = Mat(left.rows,left.cols,CV_8U);
+    Mat conf_map = Mat(left.rows,left.cols,CV_8UC1);
     conf_map = Scalar(255);
     Rect ROI;
     Ptr<DisparityWLSFilter> wls_filter;

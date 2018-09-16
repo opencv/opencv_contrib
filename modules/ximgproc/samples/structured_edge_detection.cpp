@@ -51,7 +51,7 @@ int main( int argc, const char** argv )
     if ( modelFilename.size() == 0)
         CV_Error(Error::StsError, String("Empty model name"));
 
-    image.convertTo(image, DataType<float>::type, 1/255.0);
+    image.convertTo(image, DataType<float>::depth, 1/255.0);
 
     Mat edges(image.size(), image.type());
 

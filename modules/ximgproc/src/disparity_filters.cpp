@@ -185,8 +185,8 @@ void DisparityWLSFilterImpl::computeDepthDiscontinuityMaps(Mat& left_disp, Mat& 
         parallel_for_(Range(0,4),ParallelMatOp_ParBody(*this,_ops,_src,_dst));
     }
 
-    left_dst  = Mat::zeros(left_disp.rows,left_disp.cols,CV_32F);
-    right_dst = Mat::zeros(right_disp.rows,right_disp.cols,CV_32F);
+    left_dst = Mat::zeros(left_disp.rows, left_disp.cols, CV_32FC1);
+    right_dst = Mat::zeros(right_disp.rows, right_disp.cols, CV_32FC1);
     Mat left_dst_ROI (left_dst,valid_disp_ROI);
     Mat right_dst_ROI(right_dst,right_view_valid_disp_ROI);
 
@@ -497,7 +497,7 @@ Ptr<DisparityWLSFilter> createDisparityWLSFilterGeneric(bool use_confidence)
 int readGT(String src_path,OutputArray dst)
 {
     Mat src = imread(src_path,IMREAD_UNCHANGED);
-    dst.create(src.rows,src.cols,CV_16S);
+    dst.create(src.rows,src.cols,CV_16SC1);
     Mat& dstMat = dst.getMatRef();
 
     if(!src.empty() && src.channels()==3 && src.depth()==CV_8U)
@@ -539,7 +539,7 @@ double computeMSE(InputArray GT, InputArray src, Rect ROI)
 
     Mat tmp, dtmp, gt_mask = (GT_ROI == UNKNOWN_DISPARITY);
     absdiff(GT_ROI, src_ROI, tmp); tmp.setTo(0, gt_mask); multiply(tmp, tmp, tmp);
-    tmp.convertTo(dtmp, CV_64FC1);
+    tmp.convertTo(dtmp, CV_64F);
     return sum(dtmp)[0] / ((gt_mask.total() - countNonZero(gt_mask))*256);
 }
 
@@ -564,7 +564,7 @@ void getDisparityVis(InputArray src,OutputArray dst,double scale)
     dst.create(srcMat.rows,srcMat.cols,CV_8UC1);
     Mat& dstMat = dst.getMatRef();
 
-    srcMat.convertTo(dstMat, CV_8UC1, scale / 16.0);
+    srcMat.convertTo(dstMat, CV_8U, scale / 16.0);
     dstMat &= (srcMat != UNKNOWN_DISPARITY);
 }
 

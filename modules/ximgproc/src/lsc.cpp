@@ -251,7 +251,7 @@ void SuperpixelLSCImpl::initialize()
     }
 
     // intitialize label storage
-    m_klabels = Mat( m_height, m_width, CV_32S, Scalar::all(0) );
+    m_klabels = Mat( m_height, m_width, CV_32SC1, Scalar::all(0) );
 
     // init seeds
     GetChSeeds();
@@ -397,7 +397,7 @@ inline void SuperpixelLSCImpl::PreEnforceLabelConnectivity( int min_element_size
 
     int adj = 0;
     vector<int> xLoc, yLoc;
-    cv::Mat mask( m_height, m_width, CV_8U , Scalar::all(0) );
+    cv::Mat mask( m_height, m_width, CV_8UC1, Scalar::all(0) );
 
     for( int i = 0; i < m_width; i++ )
     {
@@ -483,7 +483,7 @@ inline void SuperpixelLSCImpl::PostEnforceLabelConnectivity( int threshold )
     vector< vector<float> > centerC1( m_nr_channels );
     vector< vector<float> > centerC2( m_nr_channels );
 
-    cv::Mat mask( m_height, m_width, CV_8U, Scalar::all(0) );
+    cv::Mat mask( m_height, m_width, CV_8UC1, Scalar::all(0) );
 
     int L;
     int sLabel = -1;
@@ -1183,7 +1183,7 @@ inline void SuperpixelLSCImpl::GetFeatureSpace()
     }
 
     // compute m_W normalization array
-    m_W = Mat( m_height, m_width, CV_32F, 0.0f );
+    m_W = Mat( m_height, m_width, CV_32FC1, 0.0f );
     parallel_for_( Range(0, m_width), FeatureSpaceWeights( m_chvec, &m_W,
                    sigmaX1, sigmaX2, sigmaY1, sigmaY2, sigmaC1, sigmaC2,
                    m_nr_channels, m_chvec_max, m_dist_coeff, m_color_coeff,
@@ -1737,7 +1737,7 @@ struct FeatureNormals : ParallelLoopBody
 inline void SuperpixelLSCImpl::PerformLSC( const int&  itrnum )
 {
     // allocate initial workspaces
-    cv::Mat dist( m_height, m_width, CV_32F );
+    cv::Mat dist( m_height, m_width, CV_32FC1);
 
     vector<float> centerX1( m_numlabels );
     vector<float> centerX2( m_numlabels );

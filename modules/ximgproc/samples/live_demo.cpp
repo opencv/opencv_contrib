@@ -110,7 +110,7 @@ void filterStylize(const Mat& frame, Mat& dst)
     //multiply a blurred frame to the value inversely proportional to the magnitude
     Mat multiplier = 1.0/(1.0 + gradMagnitude);
     cvtColor(multiplier, multiplier, COLOR_GRAY2BGR);
-    multiply(filtered, multiplier, dst, 1, dst.type());
+    multiply(filtered, multiplier, dst, 1, dst.depth());
 }
 
 void filterDetailEnhancement(const Mat& frame8u, Mat& dst)
@@ -171,7 +171,7 @@ void splitScreen(const Mat& rawFrame, Mat& outputFrame, Mat& srcFrame, Mat& proc
     outputFrame.create(h, 2 * w, CV_MAKE_TYPE(CV_8U, cn));
     srcFrame = outputFrame(Range::all(), Range(0, w));
     processedFrame = outputFrame(Range::all(), Range(w, 2 * w));
-    rawFrame.convertTo(srcFrame, srcFrame.type());
+    rawFrame.convertTo(srcFrame, srcFrame.depth());
 }
 
 int main()

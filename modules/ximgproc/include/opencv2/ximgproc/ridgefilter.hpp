@@ -33,13 +33,13 @@ public:
     @param dx Order of derivative x, default is 1
     @param dy  Order of derivative y, default is 1
     @param ksize Sobel kernel size , default is 3
-    @param out_dtype Converted format for output, default is CV_8UC1
+    @param out_ddepth Converted depth for output, default is CV_8U
     @param scale Optional scale value for derivative values, default is 1
     @param delta  Optional bias added to output, default is 0
     @param borderType Pixel extrapolation method, default is BORDER_DEFAULT
     @see Sobel, threshold, getStructuringElement, morphologyEx.( for additional refinement)
     */
-    CV_WRAP static Ptr<RidgeDetectionFilter> create(int ddepth = CV_32FC1, int dx=1, int dy=1, int ksize = 3, int out_dtype=CV_8UC1, double scale = 1, double delta = 0, int borderType = BORDER_DEFAULT);
+    CV_WRAP static Ptr<RidgeDetectionFilter> create(ElemDepth ddepth = CV_32F, int dx = 1, int dy = 1, int ksize = 3, ElemType out_dtype = CV_8UC1, double scale = 1, double delta = 0, int borderType = BORDER_DEFAULT);
     /**
     @brief Apply Ridge detection filter on input image.
     @param _img InputArray as supported by Sobel. img can be 1-Channel or 3-Channels.

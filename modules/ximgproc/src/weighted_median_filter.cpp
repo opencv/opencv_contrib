@@ -146,7 +146,7 @@ void from32FTo32S(Mat &img, Mat &outImg, int nI, float *mapping)
 ***************************************************************/
 void from32STo32F(Mat &img, Mat &outImg, float *mapping)
 {
-    Mat retImg(img.size(),CV_32F);
+    Mat retImg(img.size(),CV_32FC1);
     CV_Assert(img.isContinuous());
     CV_Assert(retImg.isContinuous());
     int rows = img.rows, cols = img.cols, alls = rows*cols;
@@ -318,7 +318,7 @@ void featureIndexing(Mat &F, float **&wMap, int &nF, float sigmaI, int weightTyp
         }
 
         nF = min(nF, candCnt);
-        Mat samples(candCnt,3,CV_32F);
+        Mat samples(candCnt,3,CV_32FC1);
 
         //prepare for K-means
         int top=0;
@@ -422,7 +422,7 @@ Mat filterCore(Mat &I, Mat &F, float **wMap, int r=20, int nF=256, int nI=256, M
     // Handle Mask
     if(mask.empty())
     {
-        mask = Mat(I.size(),CV_8U);
+        mask = Mat(I.size(),CV_8UC1);
         mask = Scalar(1);
     }
 

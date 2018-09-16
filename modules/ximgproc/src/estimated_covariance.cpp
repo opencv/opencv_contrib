@@ -351,18 +351,18 @@ void covarianceEstimation(InputArray input_, OutputArray output_,int windowRows,
 
     Mat temp=input_.getMat();
     if(temp.channels() == 1){
-        temp.convertTo(temp,CV_32FC2);
-        Mat zmat = Mat::zeros(temp.size(), CV_32F);
+        temp.convertTo(temp,CV_32F);
+        Mat zmat = Mat::zeros(temp.size(), CV_32FC1);
         Mat twoChannelsbefore[] = {temp,zmat};
         cv::merge(twoChannelsbefore,2,input);
     }else{
-        temp.convertTo(input, CV_32FC2);
+        temp.convertTo(input, CV_32F);
 
     }
 
     EstimateCovariance estCov(windowRows,windowCols);
 
-    //input_.getMat().convertTo(input, CV_32FC2);
+    //input_.getMat().convertTo(input, CV_32F);
 
     output_.create(windowRows*windowCols,windowRows*windowCols,  DataType<std::complex<float> >::type);
 

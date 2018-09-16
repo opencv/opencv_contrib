@@ -205,7 +205,7 @@ static bool ocl_anisotropicDiffusion(InputArray src_, OutputArray dst_,
                                      const std::vector<float>& exptab)
 {
     UMat src0 = src_.getUMat(), dst0 = dst_.getUMat();
-    int type = src0.type();
+    ElemType type = src0.type();
     int rows = src0.rows, cols = src0.cols;
 
     ocl::Kernel k("anisodiff", ocl::ximgproc::anisodiff_oclsrc, "");
@@ -218,7 +218,7 @@ static bool ocl_anisotropicDiffusion(InputArray src_, OutputArray dst_,
     UMat temp1(temp1x, Rect(1, 1, cols, rows));
 
     int tabsz = (int)exptab.size();
-    UMat uexptab = Mat(1, tabsz, CV_32F, (void*)&exptab[0]).getUMat(ACCESS_READ);
+    UMat uexptab = Mat(1, tabsz, CV_32FC1, (void*)&exptab[0]).getUMat(ACCESS_READ);
 
     for (int t = 0; t < niters; t++)
     {
@@ -247,7 +247,7 @@ void anisotropicDiffusion(InputArray src_, OutputArray dst_, float alpha, float 
         return;
     }
 
-    int type = src_.type();
+    ElemType type = src_.type();
     CV_Assert(src_.dims() == 2 && type == CV_8UC3);
     CV_Assert(K != 0);
     CV_Assert(alpha > 0);

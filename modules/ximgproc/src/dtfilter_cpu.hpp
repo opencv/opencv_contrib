@@ -59,7 +59,7 @@ public: /*Non-template methods*/
 
     static Ptr<DTFilterCPU> createRF(InputArray adistHor, InputArray adistVert, double sigmaSpatial, double sigmaColor, int numIters = 3);
 
-    void filter(InputArray src, OutputArray dst, int dDepth = -1) CV_OVERRIDE;
+    void filter(InputArray src, OutputArray dst, ElemDepth dDepth = CV_DEPTH_AUTO) CV_OVERRIDE;
 
     void setSingleFilterCall(bool value);
 
@@ -76,7 +76,7 @@ public: /*Template methods*/
     void init_(Mat& guide, double sigmaSpatial, double sigmaColor, int mode = DTF_NC, int numIters = 3);
 
     template<typename SrcVec>
-    void filter_(const Mat& src, Mat& dst, int dDepth = -1);
+    void filter_(const Mat& src, Mat& dst, ElemDepth dDepth = CV_DEPTH_AUTO);
 
 protected: /*Typedefs declarations*/
 
@@ -237,7 +237,7 @@ protected: /*Auxiliary implementation functions*/
     template<typename SrcVec>
     static void prepareSrcImg_IC(const Mat& src, Mat& inner, Mat& outer);
 
-    static Mat getWExtendedMat(int h, int w, int type, int brdleft = 0, int brdRight = 0, int cacheAlign = 0);
+    static Mat getWExtendedMat(int h, int w, ElemType type, int brdleft = 0, int brdRight = 0, int cacheAlign = 0);
 
     template<typename SrcVec, typename SrcWorkVec>
     static void integrateSparseRow(const SrcVec *src, const float *dist, SrcWorkVec *dst, int cols);

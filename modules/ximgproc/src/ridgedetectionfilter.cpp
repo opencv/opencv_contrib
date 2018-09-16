@@ -11,14 +11,15 @@ namespace cv { namespace ximgproc {
 class RidgeDetectionFilterImpl : public RidgeDetectionFilter
 {
 public:
-    int _ddepth, _dx, _dy, _ksize;
+    ElemDepth _ddepth;
+    int _dx, _dy, _ksize;
     double _scale, _delta;
     int _borderType;
-    int _out_dtype;
-    RidgeDetectionFilterImpl(int ddepth=CV_32FC1, int dx=1, int dy=1, int ksize = 3, int out_dtype=CV_8UC1, double scale = 1, double delta = 0, int borderType = BORDER_DEFAULT)
+    ElemType _out_dtype;
+    RidgeDetectionFilterImpl(ElemDepth ddepth = CV_32F, int dx = 1, int dy = 1, int ksize = 3, ElemType out_dtype = CV_8UC1, double scale = 1, double delta = 0, int borderType = BORDER_DEFAULT)
     {
         CV_Assert((ksize == 1 || ksize == 3 || ksize == 5 || ksize == 7));
-        CV_Assert((ddepth == CV_32FC1 || ddepth == CV_64FC1));
+        CV_Assert((ddepth == CV_32F || ddepth == CV_64F));
         _ddepth = ddepth;
         _dx = dx;
         _dy = dy;
@@ -62,10 +63,10 @@ void RidgeDetectionFilterImpl::getRidgeFilteredImage(InputArray _img, OutputArra
     sqrt(rootex, root);
     Mat ridgexp;
     ridgexp = ( (sbxx + sbyy) + root );
-    ridgexp.convertTo(out, _out_dtype, 0.5);
+    ridgexp.convertTo(out, CV_MAT_DEPTH(_out_dtype), 0.5);
 }
 
-Ptr<RidgeDetectionFilter> RidgeDetectionFilter::create(int ddepth, int dx, int dy, int ksize, int out_dtype, double scale, double delta, int borderType)
+Ptr<RidgeDetectionFilter> RidgeDetectionFilter::create(ElemDepth ddepth, int dx, int dy, int ksize, ElemType out_dtype, double scale, double delta, int borderType)
 {
     return makePtr<RidgeDetectionFilterImpl>(ddepth, dx, dy, ksize, out_dtype, scale, delta, borderType);
 }
