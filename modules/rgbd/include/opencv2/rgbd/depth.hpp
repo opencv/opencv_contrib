@@ -102,11 +102,32 @@ namespace rgbd
      */
     RgbdNormals(int rows, int cols, ElemDepth depth, InputArray K, int window_size = 5, int method =
         RgbdNormals::RGBD_NORMALS_METHOD_FALS);
+#ifdef CV_TYPE_COMPATIBLE_API
+    CV_DEPRECATED_INT_TO_ELEMDEPTH_ATTR(depth, depth)
+    inline RgbdNormals(int rows, int cols, int depth, InputArray K, int window_size, int method )
+        : RgbdNormals(rows, cols, static_cast<ElemDepth>(depth), K, window_size, method)
+    {
+    }
+#endif // CV_TYPE_COMPATIBLE_API
 
     ~RgbdNormals();
 
     CV_WRAP static Ptr<RgbdNormals> create(int rows, int cols, ElemDepth depth, InputArray K, int window_size = 5, int method =
         RgbdNormals::RGBD_NORMALS_METHOD_FALS);
+#ifdef CV_TYPE_COMPATIBLE_API
+    CV_DEPRECATED_INT_TO_ELEMDEPTH_ATTR(depth, depth)
+    static inline Ptr<RgbdNormals> create(int rows, int cols, int depth, InputArray K, int window_size = 5, int method =
+        RgbdNormals::RGBD_NORMALS_METHOD_FALS)
+    {
+        return create(rows, cols, static_cast<ElemDepth>(depth), K, window_size, method);
+    }
+    CV_DEPRECATED_ELEMTYPE_TO_ELEMDEPTH_ATTR(depth, depth)
+    static inline Ptr<RgbdNormals> create(int rows, int cols, ElemType depth, InputArray K, int window_size = 5, int method =
+        RgbdNormals::RGBD_NORMALS_METHOD_FALS)
+    {
+        return create(rows, cols, CV_MAT_DEPTH(depth), K, window_size, method);
+    }
+#endif // CV_TYPE_COMPATIBLE_API
 
     /** Given a set of 3d points in a depth image, compute the normals at each point.
      * @param points a rows x cols x 3 matrix of CV_32F/CV64F or a rows x cols x 1 CV_U16S
@@ -153,6 +174,18 @@ namespace rgbd
     {
         depth_ = val;
     }
+#ifdef CV_TYPE_COMPATIBLE_API
+    CV_DEPRECATED_INT_TO_ELEMDEPTH_ATTR(val, val)
+    inline void setDepth(int val)
+    {
+        return setDepth(static_cast<ElemDepth>(val));
+    }
+    CV_DEPRECATED_ELEMTYPE_TO_ELEMDEPTH_ATTR(val, val)
+    inline void setDepth(ElemType val)
+    {
+        return setDepth(CV_MAT_DEPTH(val));
+    }
+#endif // CV_TYPE_COMPATIBLE_API
     CV_WRAP cv::Mat getK() const
     {
         return K_;
@@ -173,6 +206,20 @@ namespace rgbd
   protected:
     void
     initialize_normals_impl(int rows, int cols, ElemDepth depth, const Mat & K, int window_size, int method) const;
+#ifdef CV_TYPE_COMPATIBLE_API
+    CV_DEPRECATED_INT_TO_ELEMDEPTH_ATTR(depth, depth)
+    inline void
+    initialize_normals_impl(int rows, int cols, int depth, const Mat & K, int window_size, int method) const
+    {
+        return initialize_normals_impl(rows, cols, static_cast<ElemDepth>(depth), K, window_size, method);
+    }
+    CV_DEPRECATED_ELEMTYPE_TO_ELEMDEPTH_ATTR(depth, depth)
+    inline void
+    initialize_normals_impl(int rows, int cols, ElemType depth, const Mat & K, int window_size, int method) const
+    {
+        return initialize_normals_impl(rows, cols, CV_MAT_DEPTH(depth), K, window_size, method);
+    }
+#endif // CV_TYPE_COMPATIBLE_API
 
     int rows_, cols_;
     ElemDepth depth_;
@@ -211,10 +258,29 @@ namespace rgbd
      * @param method one of the methods to use: RGBD_NORMALS_METHOD_SRI, RGBD_NORMALS_METHOD_FALS
      */
     DepthCleaner(ElemDepth depth, int window_size = 5, int method = DepthCleaner::DEPTH_CLEANER_NIL);
+#ifdef CV_TYPE_COMPATIBLE_API
+    CV_DEPRECATED_INT_TO_ELEMDEPTH_ATTR(depth, depth)
+    inline DepthCleaner(int depth, int window_size, int method )
+        : DepthCleaner(static_cast<ElemDepth>(depth), window_size, method)
+    {
+    }
+#endif // CV_TYPE_COMPATIBLE_API
 
     ~DepthCleaner();
 
     CV_WRAP static Ptr<DepthCleaner> create(ElemDepth depth, int window_size = 5, int method = DepthCleaner::DEPTH_CLEANER_NIL);
+#ifdef CV_TYPE_COMPATIBLE_API
+    CV_DEPRECATED_INT_TO_ELEMDEPTH_ATTR(depth, depth)
+    static inline Ptr<DepthCleaner> create(int depth, int window_size, int method)
+    {
+        return create(static_cast<ElemDepth>(depth), window_size, method);
+    }
+    CV_DEPRECATED_ELEMTYPE_TO_ELEMDEPTH_ATTR(depth, depth)
+    static inline Ptr<DepthCleaner> create(ElemType depth, int window_size, int method)
+    {
+        return create(CV_MAT_DEPTH(depth), window_size, method);
+    }
+#endif // CV_TYPE_COMPATIBLE_API
 
     /** Given a set of 3d points in a depth image, compute the normals at each point.
      * @param points a rows x cols x 3 matrix of CV_32F/CV64F or a rows x cols x 1 CV_U16S
@@ -245,6 +311,18 @@ namespace rgbd
     {
         depth_ = val;
     }
+#ifdef CV_TYPE_COMPATIBLE_API
+    CV_DEPRECATED_INT_TO_ELEMDEPTH_ATTR(val, val)
+    inline void setDepth(int val)
+    {
+        return setDepth(static_cast<ElemDepth>(val));
+    }
+    CV_DEPRECATED_ELEMTYPE_TO_ELEMDEPTH_ATTR(val, val)
+    inline void setDepth(ElemType val)
+    {
+        return setDepth(CV_MAT_DEPTH(val));
+    }
+#endif // CV_TYPE_COMPATIBLE_API
     CV_WRAP int getMethod() const
     {
         return method_;
@@ -323,6 +401,20 @@ namespace rgbd
   CV_EXPORTS_W
   void
   rescaleDepth(InputArray in, ElemDepth depth, OutputArray out);
+#ifdef CV_TYPE_COMPATIBLE_API
+  CV_DEPRECATED_INT_TO_ELEMDEPTH_ATTR(depth, depth)
+  inline void
+  rescaleDepth(InputArray in, int depth, OutputArray out)
+  {
+      return rescaleDepth(in, static_cast<ElemDepth>(depth), out);
+  }
+  CV_DEPRECATED_ELEMTYPE_TO_ELEMDEPTH_ATTR(depth, depth)
+  inline void
+  rescaleDepth(InputArray in, ElemType depth, OutputArray out)
+  {
+      return rescaleDepth(in, CV_MAT_DEPTH(depth), out);
+  }
+#endif // CV_TYPE_COMPATIBLE_API
 
   /** Object that can compute planes in an image
    */
