@@ -127,7 +127,7 @@ public:
      int DP;                                     //!< Dimensionality of the state vector.
      int MP;                                     //!< Dimensionality of the measurement vector.
      int CP;                                     //!< Dimensionality of the control vector.
-     int dataType;                               //!< Type of elements of vectors and matrices, default is CV_64F.
+     ElemType dataType;                          //!< Type of elements of vectors and matrices, default is CV_64F.
 
      Mat stateInit;                              //!< Initial state, DP x 1, default is zero.
      Mat errorCovInit;                           //!< State estimate cross-covariance matrix, DP x DP, default is identity.
@@ -157,7 +157,7 @@ public:
     * @param type - type of the created matrices that should be CV_32F or CV_64F.
     */
     UnscentedKalmanFilterParams( int dp, int mp, int cp, double processNoiseCovDiag, double measurementNoiseCovDiag,
-                                Ptr<UkfSystemModel> dynamicalSystem, int type = CV_64F );
+                                Ptr<UkfSystemModel> dynamicalSystem, ElemType type = CV_64FC1 );
 
     /** The function for initialization of Unscented Kalman filter
     * @param dp - dimensionality of the state vector,
@@ -169,7 +169,7 @@ public:
     * @param type - type of the created matrices that should be CV_32F or CV_64F.
     */
     void init( int dp, int mp, int cp, double processNoiseCovDiag, double measurementNoiseCovDiag,
-                                Ptr<UkfSystemModel> dynamicalSystem, int type = CV_64F );
+                                Ptr<UkfSystemModel> dynamicalSystem, ElemType type = CV_64FC1 );
 };
 
 /** @brief Augmented Unscented Kalman filter parameters.
@@ -191,7 +191,7 @@ public:
     * @param type - type of the created matrices that should be CV_32F or CV_64F.
     */
     AugmentedUnscentedKalmanFilterParams( int dp, int mp, int cp, double processNoiseCovDiag, double measurementNoiseCovDiag,
-                                Ptr<UkfSystemModel> dynamicalSystem, int type = CV_64F );
+                                Ptr<UkfSystemModel> dynamicalSystem, ElemType type = CV_64FC1 );
 
     /** The function for initialization of Augmented Unscented Kalman filter
     * @param dp - dimensionality of the state vector,
@@ -203,7 +203,7 @@ public:
     * @param type - type of the created matrices that should be CV_32F or CV_64F.
     */
     void init( int dp, int mp, int cp, double processNoiseCovDiag, double measurementNoiseCovDiag,
-                                Ptr<UkfSystemModel> dynamicalSystem, int type = CV_64F );
+                                Ptr<UkfSystemModel> dynamicalSystem, ElemType type = CV_64FC1 );
 };
 
 /** @brief Unscented Kalman Filter factory method

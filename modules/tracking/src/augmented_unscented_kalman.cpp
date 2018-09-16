@@ -49,13 +49,13 @@ namespace tracking
 
 void AugmentedUnscentedKalmanFilterParams::
     init( int dp, int mp, int cp, double processNoiseCovDiag, double measurementNoiseCovDiag,
-                                Ptr<UkfSystemModel> dynamicalSystem, int type )
+                                Ptr<UkfSystemModel> dynamicalSystem, ElemType type )
 {
     CV_Assert( dp > 0 && mp > 0 );
     DP = dp;
     MP = mp;
     CP = std::max( cp, 0 );
-    CV_Assert( type == CV_32F || type == CV_64F );
+    CV_Assert(type == CV_32FC1 || type == CV_64FC1);
     dataType = type;
 
     this->model = dynamicalSystem;
@@ -73,7 +73,7 @@ void AugmentedUnscentedKalmanFilterParams::
 
 AugmentedUnscentedKalmanFilterParams::
     AugmentedUnscentedKalmanFilterParams( int dp, int mp, int cp, double processNoiseCovDiag, double measurementNoiseCovDiag,
-                                          Ptr<UkfSystemModel> dynamicalSystem, int type )
+    Ptr<UkfSystemModel> dynamicalSystem, ElemType type)
 {
     init( dp, mp, cp, processNoiseCovDiag, measurementNoiseCovDiag, dynamicalSystem, type );
 }
@@ -86,7 +86,7 @@ class AugmentedUnscentedKalmanFilterImpl: public UnscentedKalmanFilter
     int MP;                                     // dimensionality of the measurement vector
     int CP;                                     // dimensionality of the control vector
     int DAug;                                   // dimensionality of the augmented vector, DAug = 2*DP + MP
-    int dataType;                               // type of elements of vectors and matrices
+    ElemType dataType;                          // type of elements of vectors and matrices
 
     Mat state;                                  // estimate of the system state (x*), DP x 1
     Mat errorCov;                               // estimate of the state cross-covariance matrix (P), DP x DP
@@ -160,7 +160,7 @@ AugmentedUnscentedKalmanFilterImpl::AugmentedUnscentedKalmanFilterImpl(const Aug
     k = params.k;
 
     CV_Assert( params.DP > 0 && params.MP > 0 );
-    CV_Assert( params.dataType == CV_32F || params.dataType == CV_64F );
+    CV_Assert(params.dataType == CV_32FC1 || params.dataType == CV_64FC1);
     DP = params.DP;
     MP = params.MP;
     CP = std::max( params.CP, 0 );
@@ -209,7 +209,7 @@ AugmentedUnscentedKalmanFilterImpl::AugmentedUnscentedKalmanFilterImpl(const Aug
     Wm = tmp2Lambda * Mat::ones( 2*DAug+1, 1, dataType );
     Wc = tmp2Lambda * Mat::eye( 2*DAug+1, 2*DAug+1, dataType );
 
-    if ( dataType == CV_64F )
+    if (dataType == CV_64FC1)
     {
         Wm.at<double>(0,0) = lambda/tmpLambda;
         Wc.at<double>(0,0) = lambda/tmpLambda + 1.0 - alpha*alpha + beta;
@@ -267,11 +267,11 @@ Mat AugmentedUnscentedKalmanFilterImpl::getSigmaPoints(const Mat &mean, const Ma
     Mat covMatrixL = covMatrix.clone();
 
 // covMatrixL = cholesky( covMatrix )
-    if ( dataType == CV_64F )
+    if (dataType == CV_64FC1)
         choleskyDecomposition<double>(
                     covMatrix.ptr<double>(), covMatrix.step, covMatrix.rows,
                     covMatrixL.ptr<double>(), covMatrixL.step );
-    else if ( dataType == CV_32F )
+    else if (dataType == CV_32FC1)
         choleskyDecomposition<float>(
                     covMatrix.ptr<float>(), covMatrix.step, covMatrix.rows,
                     covMatrixL.ptr<float>(), covMatrixL.step );

@@ -84,7 +84,7 @@ int main(int argc, char** argv)
                 poly_points[i] = Point(elements[2 * i] - sx, elements[2 * i + 1] - sy);
             }
             cv::fillConvexPoly(mask, poly_points, Scalar(1.0), 8);
-            mask.convertTo(mask, CV_32FC1);
+            mask.convertTo(mask, CV_32F);
             tracker->setInitialMask(mask);
         }
         else {

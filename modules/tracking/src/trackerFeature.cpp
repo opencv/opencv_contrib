@@ -205,7 +205,7 @@ bool TrackerFeatureHAAR::extractSelected( const std::vector<int> selFeatures, co
   int numSelFeatures = (int)selFeatures.size();
 
   //response = Mat_<float>( Size( images.size(), numFeatures ) );
-  response.create( Size( (int)images.size(), numFeatures ), CV_32F );
+  response.create( Size( (int)images.size(), numFeatures ), CV_32FC1 );
   response.setTo( 0 );
 
   //double t = getTickCount();
