@@ -153,9 +153,9 @@ void Feature::computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const
     const Size visible = blockSize*sbin;
 
     // initialize historgram, norm, output feature matrices
-    Mat histM = Mat::zeros(Size(blockSize.width*numOrient, blockSize.height), CV_64F);
-    Mat normM = Mat::zeros(Size(blockSize.width, blockSize.height), CV_64F);
-    featM = Mat::zeros(Size(outSize.width*dimHOG, outSize.height), CV_64F);
+    Mat histM = Mat::zeros(Size(blockSize.width*numOrient, blockSize.height), CV_64FC1);
+    Mat normM = Mat::zeros(Size(blockSize.width, blockSize.height), CV_64FC1);
+    featM = Mat::zeros(Size(outSize.width*dimHOG, outSize.height), CV_64FC1);
 
     // get the stride of each matrix
     const size_t imStride = imageM.step1();
@@ -352,7 +352,7 @@ void Feature::projectFeaturePyramid(const Mat &pcaCoeff, const std::vector< Mat 
         int width = orgM.cols/dimHOG;
         int height = orgM.rows;
         // initialize the project feature matrix
-        Mat projM = Mat::zeros(height, width*dimPCA, CV_64F);
+        Mat projM = Mat::zeros(height, width*dimPCA, CV_64FC1);
         //get the pointer of the matrix
         double* const featOrg = orgM.ptr<double>(0);
         double* const featProj = projM.ptr<double>(0);
@@ -387,7 +387,7 @@ void Feature::projectFeaturePyramid(const Mat &pcaCoeff, const std::vector< Mat 
 
 void Feature::computeLocationFeatures(const int numLevels, Mat &locFeature)
 {
-    locFeature = Mat::zeros(Size(numLevels, 3), CV_64F);
+    locFeature = Mat::zeros(Size(numLevels, 3), CV_64FC1);
 
     int b = 0;
     int e = min(numLevels, params.interval);

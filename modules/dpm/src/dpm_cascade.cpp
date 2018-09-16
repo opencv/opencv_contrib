@@ -146,7 +146,7 @@ vector< vector<double> > DPMCascade::detect(Mat &image)
         cvtColor(image, image, COLOR_GRAY2BGR);
 
     if (image.depth() != CV_64F)
-        image.convertTo(image, CV_64FC3);
+        image.convertTo(image, CV_64F);
 
     // compute features
     computeFeatures(image);
@@ -248,7 +248,7 @@ void ParalComputeRootPCAScores::operator() (const Range &range) const
         int height = feat.rows - filter.rows + 1;
         int width = (feat.cols - filter.cols) / pcaDim + 1;
 
-        Mat result = Mat::zeros(Size(width, height), CV_64F);
+        Mat result = Mat::zeros(Size(width, height), CV_64FC1);
         // convolution engine
         ConvolutionEngine convEngine;
         convEngine.convolve(feat, filter, pcaDim, result);
