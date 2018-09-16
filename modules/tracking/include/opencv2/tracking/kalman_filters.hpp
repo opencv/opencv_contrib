@@ -158,6 +158,14 @@ public:
     */
     UnscentedKalmanFilterParams( int dp, int mp, int cp, double processNoiseCovDiag, double measurementNoiseCovDiag,
                                 Ptr<UkfSystemModel> dynamicalSystem, ElemType type = CV_64FC1 );
+#ifdef CV_TYPE_COMPATIBLE_API
+    CV_DEPRECATED_INT_TO_ELEMTYPE_ATTR(type, type)
+    inline UnscentedKalmanFilterParams( int dp, int mp, int cp, double processNoiseCovDiag, double measurementNoiseCovDiag,
+                                Ptr<UkfSystemModel> dynamicalSystem, int type)
+        : UnscentedKalmanFilterParams(dp, mp, cp, processNoiseCovDiag, measurementNoiseCovDiag, dynamicalSystem, static_cast<ElemType>(type))
+    {
+    }
+#endif // CV_TYPE_COMPATIBLE_API
 
     /** The function for initialization of Unscented Kalman filter
     * @param dp - dimensionality of the state vector,
@@ -170,6 +178,20 @@ public:
     */
     void init( int dp, int mp, int cp, double processNoiseCovDiag, double measurementNoiseCovDiag,
                                 Ptr<UkfSystemModel> dynamicalSystem, ElemType type = CV_64FC1 );
+#ifdef CV_TYPE_COMPATIBLE_API
+    CV_DEPRECATED_INT_TO_ELEMTYPE_ATTR(type, type)
+    inline void init( int dp, int mp, int cp, double processNoiseCovDiag, double measurementNoiseCovDiag,
+                                Ptr<UkfSystemModel> dynamicalSystem, int type)
+    {
+        return init(dp, mp, cp, processNoiseCovDiag, measurementNoiseCovDiag, dynamicalSystem, static_cast<ElemType>(type));
+    }
+    CV_DEPRECATED_ELEMDEPTH_TO_ELEMTYPE_ATTR(type, type)
+    inline void init( int dp, int mp, int cp, double processNoiseCovDiag, double measurementNoiseCovDiag,
+                                Ptr<UkfSystemModel> dynamicalSystem, ElemDepth type)
+    {
+        return init(dp, mp, cp, processNoiseCovDiag, measurementNoiseCovDiag, dynamicalSystem, CV_MAKETYPE(type, 1));
+    }
+#endif // CV_TYPE_COMPATIBLE_API
 };
 
 /** @brief Augmented Unscented Kalman filter parameters.
@@ -192,6 +214,14 @@ public:
     */
     AugmentedUnscentedKalmanFilterParams( int dp, int mp, int cp, double processNoiseCovDiag, double measurementNoiseCovDiag,
                                 Ptr<UkfSystemModel> dynamicalSystem, ElemType type = CV_64FC1 );
+#ifdef CV_TYPE_COMPATIBLE_API
+    CV_DEPRECATED_INT_TO_ELEMTYPE_ATTR(type, type)
+    inline AugmentedUnscentedKalmanFilterParams( int dp, int mp, int cp, double processNoiseCovDiag, double measurementNoiseCovDiag,
+                                Ptr<UkfSystemModel> dynamicalSystem, int type)
+        : AugmentedUnscentedKalmanFilterParams(dp, mp, cp, processNoiseCovDiag, measurementNoiseCovDiag, dynamicalSystem, static_cast<ElemType>(type))
+    {
+    }
+#endif // CV_TYPE_COMPATIBLE_API
 
     /** The function for initialization of Augmented Unscented Kalman filter
     * @param dp - dimensionality of the state vector,
@@ -204,6 +234,20 @@ public:
     */
     void init( int dp, int mp, int cp, double processNoiseCovDiag, double measurementNoiseCovDiag,
                                 Ptr<UkfSystemModel> dynamicalSystem, ElemType type = CV_64FC1 );
+#ifdef CV_TYPE_COMPATIBLE_API
+    CV_DEPRECATED_INT_TO_ELEMTYPE_ATTR(type, type)
+    inline void init( int dp, int mp, int cp, double processNoiseCovDiag, double measurementNoiseCovDiag,
+                                Ptr<UkfSystemModel> dynamicalSystem, int type)
+    {
+        return init(dp, mp, cp, processNoiseCovDiag, measurementNoiseCovDiag, dynamicalSystem, static_cast<ElemType>(type));
+    }
+    CV_DEPRECATED_ELEMDEPTH_TO_ELEMTYPE_ATTR(type, type)
+    inline void init( int dp, int mp, int cp, double processNoiseCovDiag, double measurementNoiseCovDiag,
+                                Ptr<UkfSystemModel> dynamicalSystem, ElemDepth type)
+    {
+        return init(dp, mp, cp, processNoiseCovDiag, measurementNoiseCovDiag, dynamicalSystem, CV_MAKETYPE(type, 1));
+    }
+#endif // CV_TYPE_COMPATIBLE_API
 };
 
 /** @brief Unscented Kalman Filter factory method
