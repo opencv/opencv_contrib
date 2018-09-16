@@ -58,7 +58,7 @@ int main(int argc, char** argv)
         << "aggregationWindow " << aggregation_window << "\n"
         << "scallingFactor " << scale << "\n" << "Descriptor name : " << b[binary_descriptor_type] << "\n";
 
-    Mat imgDisparity16S2 = Mat(image1.rows, image1.cols, CV_16S);
+    Mat imgDisparity16S2 = Mat(image1.rows, image1.cols, CV_16SC1);
     Mat imgDisparity8U2 = Mat(image1.rows, image1.cols, CV_8UC1);
     imshow("Original Left image", image1);
 
@@ -101,11 +101,11 @@ int main(int argc, char** argv)
         sgbm->setSubPixelInterpolationMethod(CV_SIMETRICV_INTERPOLATION);
         sgbm->compute(image1, image2, imgDisparity16S2);
         /*Alternative for scalling
-        imgDisparity16S2.convertTo(imgDisparity8U2, CV_8UC1, scale);
+        imgDisparity16S2.convertTo(imgDisparity8U2, CV_8U, scale);
         */
         double minVal; double maxVal;
         minMaxLoc(imgDisparity16S2, &minVal, &maxVal);
-        imgDisparity16S2.convertTo(imgDisparity8U2, CV_8UC1, 255 / (maxVal - minVal));
+        imgDisparity16S2.convertTo(imgDisparity8U2, CV_8U, 255 / (maxVal - minVal));
         //show the disparity image
         imshow("Windowsgm", imgDisparity8U2);
     }

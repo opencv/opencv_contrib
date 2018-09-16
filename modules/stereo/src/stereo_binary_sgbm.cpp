@@ -196,7 +196,7 @@ namespace cv
                 width*(sizeof(CostType) + sizeof(DispType)) + 1024; // disp2cost + disp2
             if( buffer.empty() || !buffer.isContinuous() ||
                 buffer.cols*buffer.rows*buffer.elemSize() < totalBufSize )
-                buffer.create(1, (int)totalBufSize, CV_8U);
+                buffer.create(1, (int)totalBufSize, CV_8UC1);
             // summary cost over different (nDirs) directions
             CostType* Cbuf = (CostType*)alignPtr(buffer.ptr(), ALIGN);
             CostType* Sbuf = Cbuf + CSBufSize;
@@ -640,12 +640,12 @@ namespace cv
                 Mat left = leftarr.getMat(), right = rightarr.getMat();
                 CV_Assert( left.size() == right.size() && left.type() == right.type() &&
                     left.depth() == CV_8U );
-                disparr.create( left.size(), CV_16S );
+                disparr.create( left.size(), CV_16SC1 );
                 Mat disp = disparr.getMat();
                 censusImageLeft.create(left.rows,left.cols,CV_32SC4);
                 censusImageRight.create(left.rows,left.cols,CV_32SC4);
 
-                hamDist.create(left.rows, left.cols * (params.numDisparities + 1),CV_16S);
+                hamDist.create(left.rows, left.cols * (params.numDisparities + 1),CV_16SC1);
 
                 if(params.kernelType == CV_SPARSE_CENSUS)
                 {
@@ -699,7 +699,7 @@ namespace cv
                         puss.create(height, width);
                     }
                     Mat aux;
-                    aux.create(height,width,CV_16S);
+                    aux.create(height,width,CV_16SC1);
                     Median1x9Filter<short>(disp, aux);
                     Median9x1Filter<short>(aux,disp);
                     smallRegionRemoval<short>(disp, params.speckleWindowSize, disp);
@@ -709,7 +709,7 @@ namespace cv
                     int width = left.cols;
                     int height = left.rows;
                     Mat aux;
-                    aux.create(height,width,CV_16S);
+                    aux.create(height,width,CV_16SC1);
                     Median1x9Filter<short>(disp, aux);
                     Median9x1Filter<short>(aux,disp);
                     if( params.speckleWindowSize > 0 )
