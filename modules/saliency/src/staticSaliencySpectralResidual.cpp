@@ -79,14 +79,14 @@ bool StaticSaliencySpectralResidual::computeSaliencyImpl( InputArray image, Outp
   std::vector<Mat> mv;
   Size resizedImageSize( resImWidth, resImHeight );
 
-  Mat realImage( resizedImageSize, CV_64F );
-  Mat imaginaryImage( resizedImageSize, CV_64F );
+  Mat realImage(resizedImageSize, CV_64FC1);
+  Mat imaginaryImage(resizedImageSize, CV_64FC1);
   imaginaryImage.setTo( 0 );
   Mat combinedImage( resizedImageSize, CV_64FC2 );
   Mat imageDFT;
   Mat logAmplitude;
-  Mat angle( resizedImageSize, CV_64F );
-  Mat magnitude( resizedImageSize, CV_64F );
+  Mat angle(resizedImageSize, CV_64FC1);
+  Mat magnitude(resizedImageSize, CV_64FC1);
   Mat logAmplitude_blur, imageGR;
 
   if( image.channels() == 3 )

@@ -60,9 +60,9 @@ Mat CmShow::HistBins( CMat& color3f, CMat& val, bool descendShow, CMat &with )
   if( with.size() == val.size() )
     with.convertTo( width1i, CV_32S, 400 / sum( with ).val[0] );  // Default shown width
   else
-    width1i = Mat( 1, n, CV_32S, Scalar( 10 ) );  // Default bin width = 10
+    width1i = Mat( 1, n, CV_32SC1, Scalar( 10 ) );  // Default bin width = 10
   int W = cvRound( sum( width1i ).val[0] );
-  color3f.convertTo( binColor3b, CV_8UC3, 255 );
+  color3f.convertTo( binColor3b, CV_8U, 255 );
   double maxVal, minVal;
   minMaxLoc( val, &minVal, &maxVal );
   printf( "%g\n", H / max( maxVal, -minVal ) );
