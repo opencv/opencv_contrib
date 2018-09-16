@@ -196,7 +196,7 @@ namespace cv
                 {
                     // prepare matrices
                     Mat image = _image.getMat();
-                    _samples.create((int)(mInitSamplingPoints.size()), SIGNATURE_DIMENSION, CV_32F);
+                    _samples.create((int)(mInitSamplingPoints.size()), SIGNATURE_DIMENSION, CV_32FC1);
                     Mat samples = _samples.getMat();
                     GrayscaleBitmap grayscaleBitmap(image, mGrayscaleBits);
 
@@ -214,7 +214,7 @@ namespace cv
                         // get Lab pixel color
                         Mat rgbPixel(image, Rect(x, y, 1, 1));
                         Mat labPixel;
-                        rgbPixel.convertTo(rgbPixel, CV_32FC3, 1.0 / 255);
+                        rgbPixel.convertTo(rgbPixel, CV_32F, 1.0 / 255);
                         cvtColor(rgbPixel, labPixel, COLOR_BGR2Lab);
                         Vec3f labColor = labPixel.at<Vec3f>(0, 0);
 

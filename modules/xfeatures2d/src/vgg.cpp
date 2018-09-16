@@ -86,7 +86,7 @@ public:
     virtual int descriptorSize() const CV_OVERRIDE { return m_descriptor_size; }
 
     // returns the descriptor type
-    virtual int descriptorType() const CV_OVERRIDE { return CV_32F; }
+    virtual ElemType descriptorType() const CV_OVERRIDE{ return CV_32FC1; }
 
     // returns the default norm type
     virtual int defaultNorm() const CV_OVERRIDE { return NORM_L2; }
@@ -226,7 +226,7 @@ static void get_desc( const Mat Patch, Mat& PatchTrans, int anglebins, bool img_
     Mat Ix, Iy;
     // % compute gradient
     float kparam[3] = { -1,  0,  1 };
-    Mat Kernel( 1, 3, CV_32F, &kparam );
+    Mat Kernel( 1, 3, CV_32FC1, &kparam );
     filter2D( Patch, Ix, CV_32F, Kernel,     Point( -1, -1 ), 0, BORDER_REPLICATE );
     filter2D( Patch, Iy, CV_32F, Kernel.t(), Point( -1, -1 ), 0, BORDER_REPLICATE );
 
@@ -239,7 +239,7 @@ static void get_desc( const Mat Patch, Mat& PatchTrans, int anglebins, bool img_
     // % gradient orientation: [0; 2 * pi]
     // % GAngle = atan2(Iy, Ix) + pi;
     //phase( Ix, Iy, GAngle, false ); //<- opencv is buggy
-    GAngle = Mat( GMag.rows, GMag.cols, CV_32F );
+    GAngle = Mat( GMag.rows, GMag.cols, CV_32FC1);
     for ( int i = 0; i < (int)GAngle.total(); i++ )
       GAngle.at<float>(i) = atan2( Iy.at<float>(i), Ix.at<float>(i) ) + (float)CV_PI;
 
@@ -248,15 +248,15 @@ static void get_desc( const Mat Patch, Mat& PatchTrans, int anglebins, bool img_
     Mat GAngleRatio = GAngle / AngleStep - 0.5f;
 
     // % Offset1 = mod(GAngleRatio, 1);
-    Mat Offset1( GAngleRatio.rows, GAngleRatio.cols, CV_32F );
+    Mat Offset1( GAngleRatio.rows, GAngleRatio.cols, CV_32FC1);
     for ( int i = 0; i < (int)GAngleRatio.total(); i++ )
       Offset1.at<float>(i) = GAngleRatio.at<float>(i) - floor( GAngleRatio.at<float>(i) );
 
     Mat w1 = 1.0f - Offset1.t();
     Mat w2 = Offset1.t();
 
-    Mat Bin1( GAngleRatio.rows, GAngleRatio.cols, CV_8U );
-    Mat Bin2( GAngleRatio.rows, GAngleRatio.cols, CV_8U );
+    Mat Bin1( GAngleRatio.rows, GAngleRatio.cols, CV_8UC1);
+    Mat Bin2( GAngleRatio.rows, GAngleRatio.cols, CV_8UC1);
 
     // % Bin1 = ceil(GAngleRatio);
     // % Bin1(Bin1 == 0) = Params.nAngleBins;
@@ -314,7 +314,7 @@ static void get_desc( const Mat Patch, Mat& PatchTrans, int anglebins, bool img_
     Mat GMagT = GMag.t();
 
     // % feature channels
-    PatchTrans = Mat( (int)Patch.total(), anglebins, CV_32F, Scalar::all(0) );
+    PatchTrans = Mat( (int)Patch.total(), anglebins, CV_32FC1, Scalar::all(0) );
 
     for ( int i = 0; i < anglebins; i++ )
     {
@@ -355,7 +355,7 @@ struct ComputeVGGInvoker : ParallelLoopBody
     void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       Mat Desc, PatchTrans;
-      Mat Patch( 64, 64, CV_32F );
+      Mat Patch( 64, 64, CV_32FC1);
       for (int k = range.start; k < range.end; k++)
       {
         // sample patch from image
@@ -412,7 +412,7 @@ void VGG_Impl::compute( InputArray _image, vector<KeyPoint>& keypoints, OutputAr
     GaussianBlur( m_image, m_image, Size( 0, 0 ), m_isigma, m_isigma, BORDER_REPLICATE );
 
     // allocate array
-    _descriptors.create( (int) keypoints.size(), m_descriptor_size, CV_32F );
+    _descriptors.create( (int) keypoints.size(), m_descriptor_size, CV_32FC1 );
 
     // prepare descriptors
     Mat descriptors = _descriptors.getMat();
@@ -442,9 +442,9 @@ void VGG_Impl::ini_params( const int PRrows, const int PRcols,
     int idx;
 
     // initialize pool-region matrix
-    m_PRFilters = Mat::zeros( PRrows, PRcols, CV_32F );
+    m_PRFilters = Mat::zeros(PRrows, PRcols, CV_32FC1);
     // initialize projection matrix
-    m_Proj = Mat::zeros( PJrows, PJcols, CV_32F );
+    m_Proj = Mat::zeros(PJrows, PJcols, CV_32FC1);
 
     idx = 0;
     // fill sparse pool-region matrix

@@ -155,7 +155,7 @@ namespace cv
 
             void GrayscaleBitmap::convertToMat(OutputArray _bitmap, bool normalize) const
             {
-                _bitmap.create((int)getHeight(), (int)getWidth(), CV_8U);
+                _bitmap.create((int)getHeight(), (int)getWidth(), CV_8UC1);
                 Mat bitmap = _bitmap.getMat();
 
                 for (int y = 0; y < getHeight(); ++y)
