@@ -46,7 +46,7 @@ int main(int argc, char **argv)
     t.stop();
 
     int prob_size[3] = {1000, 1, 1};
-    cv::Mat prob_data(3, prob_size, CV_32F, prob.ptr<float>(0));
+    cv::Mat prob_data(3, prob_size, CV_32FC1, prob.ptr<float>(0));
 
     double max_prob = -1.0;
     int class_idx = -1;
