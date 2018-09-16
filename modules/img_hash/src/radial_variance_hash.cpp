@@ -49,7 +49,7 @@ public:
         cv::Mat const input = inputArr.getMat();
         CV_Assert(input.type() == CV_8UC4 ||
                   input.type() == CV_8UC3 ||
-                  input.type() == CV_8U);
+                  input.type() == CV_8UC1);
 
         if(input.type() == CV_8UC3)
         {
@@ -67,7 +67,7 @@ public:
         cv::GaussianBlur(grayImg_, blurImg_, cv::Size(0,0), sigma_, sigma_);
         radialProjections(blurImg_);
         findFeatureVector();
-        outputArr.create(1, hashSize, CV_8U);
+        outputArr.create(1, hashSize, CV_8UC1);
         cv::Mat hash = outputArr.getMat();
         hashCalculate(hash);
     }
@@ -79,11 +79,11 @@ public:
         CV_Assert(hashOneF.cols == hashSize && hashOneF.cols == hashTwoF.cols);
 
         float bufferOne[hashSize];
-        cv::Mat hashFloatOne(1, hashSize, CV_32F, bufferOne);
+        cv::Mat hashFloatOne(1, hashSize, CV_32FC1, bufferOne);
         hashOneF.convertTo(hashFloatOne, CV_32F);
 
         float bufferTwo[hashSize];
-        cv::Mat hashFloatTwo(1, hashSize, CV_32F, bufferTwo);
+        cv::Mat hashFloatTwo(1, hashSize, CV_32FC1, bufferTwo);
         hashTwoF.convertTo(hashFloatTwo, CV_32F);
 
         int const pixNum = hashFloatOne.rows * hashFloatOne.cols;
@@ -275,9 +275,9 @@ public:
         int const D = (input.cols > input.rows) ? input.cols : input.rows;
         //Different with PHash, this part reverse the row size and col size,
         //because cv::Mat is row major but not column major
-        projections_.create(numOfAngelLine_, D, CV_8U);
+        projections_.create(numOfAngelLine_, D, CV_8UC1);
         projections_ = 0;
-        pixPerLine_.create(1, numOfAngelLine_, CV_32S);
+        pixPerLine_.create(1, numOfAngelLine_, CV_32SC1);
         pixPerLine_ = 0;
         int const xOff = createOffSet(input.cols);
         int const yOff = createOffSet(input.rows);

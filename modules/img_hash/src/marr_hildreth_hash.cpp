@@ -15,7 +15,7 @@ void getMHKernel(float alpha, float level, cv::Mat &kernel)
     int const sigma = static_cast<int>(4*std::pow(alpha,level));
 
     float const ratio = std::pow(alpha, -level);
-    kernel.create(2*sigma+1, 2*sigma+1, CV_32F);
+    kernel.create(2*sigma+1, 2*sigma+1, CV_32FC1);
     for(int row = 0; row != kernel.rows; ++row)
     {
         float const ydiff = static_cast<float>(row - sigma);
@@ -93,7 +93,7 @@ public:
     MarrHildrethHashImpl(float alpha = 2.0f, float scale = 1.0f) : alphaVal(alpha), scaleVal(scale)
     {
         getMHKernel(alphaVal, scaleVal, mhKernel);
-        blocks.create(31,31, CV_32F);
+        blocks.create(31,31, CV_32FC1);
     }
 
     ~MarrHildrethHashImpl() CV_OVERRIDE { }
@@ -103,7 +103,7 @@ public:
         cv::Mat const input = inputArr.getMat();
         CV_Assert(input.type() == CV_8UC4 ||
                   input.type() == CV_8UC3 ||
-                  input.type() == CV_8U);
+                  input.type() == CV_8UC1);
 
         if(input.type() == CV_8UC3)
         {
@@ -126,7 +126,7 @@ public:
         cv::filter2D(equalizeImg, freImg, CV_32F, mhKernel);
         fillBlocks(freImg, blocks);
 
-        outputArr.create(1, 72, CV_8U);
+        outputArr.create(1, 72, CV_8UC1);
         cv::Mat hash = outputArr.getMat();
         createHash(blocks, hash);
     }
