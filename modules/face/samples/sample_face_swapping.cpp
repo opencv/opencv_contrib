@@ -186,13 +186,13 @@ int main( int argc, char** argv)
             Point pt((int)boundary_image2[i].x,(int)boundary_image2[i].y);
             hull.push_back(pt);
         }
-        Mat mask = Mat::zeros(img2.rows, img2.cols, img2.depth());
+        Mat mask = Mat::zeros(img2.rows, img2.cols, CV_MAKETYPE(img2.depth(), 1));
         fillConvexPoly(mask,&hull[0],(int)hull.size(), Scalar(255,255,255));
         // Clone seamlessly.
         Rect r = boundingRect(boundary_image2);
         Point center = (r.tl() + r.br()) / 2;
         Mat output;
-        img1Warped.convertTo(img1Warped, CV_8UC3);
+        img1Warped.convertTo(img1Warped, CV_8U);
         seamlessClone(img1Warped,img2, mask, center, output, NORMAL_CLONE);
         imshow("Face_Swapped", output);
         waitKey(0);

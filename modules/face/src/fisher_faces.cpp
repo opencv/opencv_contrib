@@ -117,7 +117,7 @@ void Fisherfaces::train(InputArrayOfArrays src, InputArray _lbls) {
     // store labels
     _labels = labels.clone();
     // store the eigenvalues of the discriminants
-    lda.eigenvalues().convertTo(_eigenvalues, CV_64FC1);
+    lda.eigenvalues().convertTo(_eigenvalues, CV_64F);
     // Now calculate the projection matrix as pca.eigenvectors * lda.eigenvectors.
     // Note: OpenCV stores the eigenvectors by row, so we need to transpose it!
     gemm(pca.eigenvectors, lda.eigenvectors(), 1.0, Mat(), 0.0, _eigenvectors, GEMM_1_T);

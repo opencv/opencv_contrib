@@ -180,7 +180,7 @@ int main(int argc, const char *argv[]) {
             Mat ev = W.col(i).clone();
             // Reshape to original size & normalize to [0...255] for imshow.
             Mat grayscale;
-            normalize(ev.reshape(1), grayscale, 0, 255, NORM_MINMAX, CV_8UC1);
+            normalize(ev.reshape(1), grayscale, 0, 255, NORM_MINMAX, CV_8U);
             // Show the image & apply a Jet colormap for better sensing.
             Mat cgrayscale;
             applyColorMap(grayscale, cgrayscale, COLORMAP_JET);

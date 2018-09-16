@@ -121,7 +121,7 @@ private:
 void BIFImpl::compute(cv::InputArray _image,
                       cv::OutputArray _features) const {
     cv::Mat image = _image.getMat();
-    CV_Assert(image.type() == CV_32F);
+    CV_Assert(image.type() == CV_32FC1);
 
     std::vector<cv::Mat> fea_units(units_.size());
     int fea_dim = 0;
@@ -131,7 +131,7 @@ void BIFImpl::compute(cv::InputArray _image,
         fea_dim += fea_units[i].rows;
     }
 
-    _features.create(fea_dim, 1, CV_32F);
+    _features.create(fea_dim, 1, CV_32FC1);
     cv::Mat fea = _features.getMat();
 
     int offset = 0;
@@ -158,7 +158,7 @@ void BIFImpl::initUnits(int num_bands, int num_rotations) {
             for (int i = 0; i < 2; ++i) {
                 kernel[i] = cv::getGaborKernel(
                     kGaborSize[bi][i], kGaborSigmas[bi][i], angle,
-                    kGaborWavelens[bi][i], kGaborGamma, 0, CV_32F);
+                    kGaborWavelens[bi][i], kGaborGamma, 0, CV_32FC1);
 
                 // Make variance for the Gaussian part of the Gabor filter
                 // the same across all filters.
@@ -190,7 +190,7 @@ void BIFImpl::computeUnit(int unit_idx, const cv::Mat &img,
 
     int nrows = (resp.rows + Hhalf - 1) / Hhalf;
     int ncols = (resp.cols + Whalf - 1) / Whalf;
-    dst.create(nrows*ncols, 1, CV_32F);
+    dst.create(nrows*ncols, 1, CV_32FC1);
 
     for (int pos = 0, yc = 0; yc < resp.rows; yc += Hhalf) {
         int y0 = std::max(0, yc - Hhalf);
