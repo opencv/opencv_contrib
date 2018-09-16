@@ -173,7 +173,7 @@ class LearningBasedWBImpl : public LearningBasedWB
  */
 void LearningBasedWBImpl::preprocessing(Mat &src)
 {
-    mask.create(src.size(), CV_8U);
+    mask.create(src.size(), CV_8UC1);
     uchar *mask_ptr = mask.ptr<uchar>();
     int src_len = src.rows * src.cols;
     int thresh = (int)(saturation_thresh * range_max_val);
