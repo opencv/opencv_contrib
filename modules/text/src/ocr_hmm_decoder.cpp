@@ -202,7 +202,7 @@ public:
         {
 
             Mat_<float> vector_w((int)image.cols,1);
-            reduce(image, vector_w, 0, REDUCE_SUM, -1);
+            reduce(image, vector_w, 0, REDUCE_SUM);
 
             vector<int> spaces;
             vector<int> spaces_start;
@@ -450,7 +450,7 @@ public:
         {
 
             Mat_<float> vector_w((int)mask.cols,1);
-            reduce(mask, vector_w, 0, REDUCE_SUM, -1);
+            reduce(mask, vector_w, 0, REDUCE_SUM);
 
             vector<int> spaces;
             vector<int> spaces_start;
@@ -1231,14 +1231,14 @@ void createOCRHMMTransitionsTable(string& vocabulary, vector<string>& lexicon, O
 
     if ( (_transitions.getMat().cols != (int)vocabulary.size()) ||
          (_transitions.getMat().rows != (int)vocabulary.size()) ||
-         (_transitions.getMat().type() != CV_64F) )
+         (_transitions.getMat().type() != CV_64FC1) )
     {
-      _transitions.create((int)vocabulary.size(), (int)vocabulary.size(), CV_64F);
+      _transitions.create((int)vocabulary.size(), (int)vocabulary.size(), CV_64FC1);
     }
 
     Mat transitions = _transitions.getMat();
     transitions = Scalar(0);
-    Mat count_pairs = Mat::zeros(1, (int)vocabulary.size(), CV_64F);
+    Mat count_pairs = Mat::zeros(1, (int)vocabulary.size(), CV_64FC1);
 
     for (size_t w=0; w<lexicon.size(); w++)
     {

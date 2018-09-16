@@ -236,7 +236,7 @@ public:
 
 #else
 
-        cout << "OCRTesseract(" << component_level << image.type() <<"): Tesseract not found." << endl;
+        cout << "OCRTesseract(" << component_level << static_cast<int>(image.type()) <<"): Tesseract not found." << endl;
         output.clear();
         if(component_rects)
             component_rects->clear();
