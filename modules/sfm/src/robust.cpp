@@ -96,10 +96,10 @@ fundamentalFromCorrespondences8PointRobust( InputArray _x1,
                                             double outliers_probability )
 {
   const Mat x1 = _x1.getMat(), x2 = _x2.getMat();
-  const int depth =  x1.depth();
+  const ElemDepth depth =  x1.depth();
   CV_Assert(x1.size() == x2.size() && (depth == CV_32F || depth == CV_64F));
 
-  _F.create(3, 3, depth);
+  _F.create(3, 3, CV_MAKETYPE(depth, 1));
 
   Mat F = _F.getMat();
   std::vector<int>& inliers = *(std::vector<int>*)_inliers.getObj();
@@ -164,10 +164,10 @@ fundamentalFromCorrespondences7PointRobust( InputArray _x1,
                                             double outliers_probability )
 {
   const Mat x1 = _x1.getMat(), x2 = _x2.getMat();
-  const int depth =  x1.depth();
+  const ElemDepth depth =  x1.depth();
   CV_Assert(x1.size() == x2.size() && (depth == CV_32F || depth == CV_64F));
 
-  _F.create(3, 3, depth);
+  _F.create(3, 3, CV_MAKETYPE(depth, 1));
 
   Mat F = _F.getMat();
   std::vector<int>& inliers = *(std::vector<int>*)_inliers.getObj();

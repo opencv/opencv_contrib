@@ -101,7 +101,7 @@ namespace sfm
     // OpenCV data types
     std::vector<Mat> pts2d;
     points2d.getMatVector(pts2d);
-    const int depth = pts2d[0].depth();
+    const ElemDepth depth = pts2d[0].depth();
 
     Matx33d Ka = K.getMat();
 
@@ -195,7 +195,7 @@ namespace sfm
     CV_Assert( nviews >= 2 );
 
     Matx33d Ka = K.getMat();
-    const int depth = Mat(Ka).depth();
+    const ElemDepth depth = Mat(Ka).depth();
 
     // Projective reconstruction
 
