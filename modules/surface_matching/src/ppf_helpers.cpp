@@ -49,7 +49,7 @@ typedef cv::flann::L2<float> Distance_32F;
 typedef cv::flann::GenericIndex< Distance_32F > FlannIndex;
 
 void shuffle(int *array, size_t n);
-Mat genRandomMat(int rows, int cols, double mean, double stddev, int type);
+Mat genRandomMat(int rows, int cols, double mean, double stddev, ElemType type);
 void getRandQuat(Vec4d& q);
 void getRandomRotation(Matx33d& R);
 void meanCovLocalPC(const Mat& pc, const int point_count, Matx33d& CovMat, Vec3d& Mean);
@@ -343,7 +343,7 @@ Mat samplePCByQuantization(Mat pc, Vec2f& xrange, Vec2f& yrange, Vec2f& zrange, 
     numPoints += (map[i].size()>0);
   }
 
-  Mat pcSampled = Mat(numPoints, pc.cols, CV_32F);
+  Mat pcSampled = Mat(numPoints, pc.cols, CV_32FC1);
   int c = 0;
 
   for (unsigned int i=0; i<map.size(); i++)
@@ -567,7 +567,7 @@ Mat transPCCoeff(Mat pc, float scale, float Cx, float Cy, float Cz, float MinVal
 
 Mat transformPCPose(Mat pc, const Matx44d& Pose)
 {
-  Mat pct = Mat(pc.rows, pc.cols, CV_32F);
+  Mat pct = Mat(pc.rows, pc.cols, CV_32FC1);
 
   Matx33d R;
   Vec3d t;
@@ -609,7 +609,7 @@ Mat transformPCPose(Mat pc, const Matx44d& Pose)
   return pct;
 }
 
-Mat genRandomMat(int rows, int cols, double mean, double stddev, int type)
+Mat genRandomMat(int rows, int cols, double mean, double stddev, ElemType type)
 {
   Mat meanMat = mean*Mat::ones(1,1,type);
   Mat sigmaMat= stddev*Mat::ones(1,1,type);
@@ -707,10 +707,10 @@ int computeNormalsPC3d(const Mat& PC, Mat& PCNormals, const int NumNeighbors, co
     CV_Error(cv::Error::BadImageSize, "PC should have 3 or 6 elements in its columns");
   }
 
-  PCNormals.create(PC.rows, 6, CV_32F);
+  PCNormals.create(PC.rows, 6, CV_32FC1);
   Mat PCInput = PCNormals.colRange(0, 3);
-  Mat Distances(PC.rows, NumNeighbors, CV_32F);
-  Mat Indices(PC.rows, NumNeighbors, CV_32S);
+  Mat Distances(PC.rows, NumNeighbors, CV_32FC1);
+  Mat Indices(PC.rows, NumNeighbors, CV_32SC1);
 
   PC.rowRange(0, PC.rows).colRange(0, 3).copyTo(PCNormals.rowRange(0, PC.rows).colRange(0, 3));
 
