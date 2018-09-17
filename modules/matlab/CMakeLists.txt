@@ -75,6 +75,9 @@ macro(WARN_MIXED_PRECISION COMPILER_BITNESS MATLAB_BITNESS)
     message(WARNING ${MSG})
 endmacro()
 
+ocv_assert(DEFINED MATLAB_ARCH)
+ocv_assert(DEFINED MATLAB_MEX_SCRIPT)
+ocv_assert(DEFINED MATLAB_MEXEXT)
 
 # If the user built OpenCV as X-bit, but they have a Y-bit version of Matlab,
 # attempting to link to OpenCV during binding generation will fail, since
