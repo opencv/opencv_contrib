@@ -77,7 +77,7 @@ void Fisherfaces::train(InputArrayOfArrays src, InputArray _lbls) {
     if(src.total() > 1) {
         for(int i = 1; i < static_cast<int>(src.total()); i++) {
             if(src.getMat(i-1).total() != src.getMat(i).total()) {
-                String error_message = format("In the Fisherfaces method all input samples (training images) must be of equal size! Expected %d pixels, but was %d pixels.", src.getMat(i-1).total(), src.getMat(i).total());
+                String error_message = format("In the Fisherfaces method all input samples (training images) must be of equal size! Expected %zu pixels, but was %zu pixels.", src.getMat(i-1).total(), src.getMat(i).total());
                 CV_Error(Error::StsUnsupportedFormat, error_message);
             }
         }
@@ -89,10 +89,10 @@ void Fisherfaces::train(InputArrayOfArrays src, InputArray _lbls) {
     int N = data.rows;
     // make sure labels are passed in correct shape
     if(labels.total() != (size_t) N) {
-        String error_message = format("The number of samples (src) must equal the number of labels (labels)! len(src)=%d, len(labels)=%d.", N, labels.total());
+        String error_message = format("The number of samples (src) must equal the number of labels (labels)! len(src)=%d, len(labels)=%zu.", N, labels.total());
         CV_Error(Error::StsBadArg, error_message);
     } else if(labels.rows != 1 && labels.cols != 1) {
-        String error_message = format("Expected the labels in a matrix with one row or column! Given dimensions are rows=%s, cols=%d.", labels.rows, labels.cols);
+        String error_message = format("Expected the labels in a matrix with one row or column! Given dimensions are rows=%d, cols=%d.", labels.rows, labels.cols);
        CV_Error(Error::StsBadArg, error_message);
     }
     // clear existing model data
@@ -136,7 +136,7 @@ void Fisherfaces::predict(InputArray _src, Ptr<PredictCollector> collector) cons
         String error_message = "This Fisherfaces model is not computed yet. Did you call Fisherfaces::train?";
         CV_Error(Error::StsBadArg, error_message);
     } else if(src.total() != (size_t) _eigenvectors.rows) {
-        String error_message = format("Wrong input image size. Reason: Training and Test images must be of equal size! Expected an image with %d elements, but got %d.", _eigenvectors.rows, src.total());
+        String error_message = format("Wrong input image size. Reason: Training and Test images must be of equal size! Expected an image with %d elements, but got %zu.", _eigenvectors.rows, src.total());
         CV_Error(Error::StsBadArg, error_message);
     }
     // project into LDA subspace

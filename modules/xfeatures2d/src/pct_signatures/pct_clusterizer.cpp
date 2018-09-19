@@ -126,7 +126,7 @@ namespace cv
 
                     if ((int)(this->mInitSeedIndexes.size()) > samples.rows)
                     {
-                        CV_Error_(Error::StsBadArg, ("Number of seeds %d must be less or equal to the number of samples %d.",
+                        CV_Error_(Error::StsBadArg, ("Number of seeds %zu must be less or equal to the number of samples %d.",
                             mInitSeedIndexes.size(), samples.rows));
                     }
 

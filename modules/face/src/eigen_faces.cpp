@@ -68,7 +68,7 @@ void Eigenfaces::train(InputArrayOfArrays _src, InputArray _local_labels) {
     if(_src.total() > 1) {
         for(int i = 1; i < static_cast<int>(_src.total()); i++) {
             if(_src.getMat(i-1).total() != _src.getMat(i).total()) {
-                String error_message = format("In the Eigenfaces method all input samples (training images) must be of equal size! Expected %d pixels, but was %d pixels.", _src.getMat(i-1).total(), _src.getMat(i).total());
+                String error_message = format("In the Eigenfaces method all input samples (training images) must be of equal size! Expected %zu pixels, but was %zu pixels.", _src.getMat(i-1).total(), _src.getMat(i).total());
                 CV_Error(Error::StsUnsupportedFormat, error_message);
             }
         }
@@ -82,7 +82,7 @@ void Eigenfaces::train(InputArrayOfArrays _src, InputArray _local_labels) {
    int n = data.rows;
     // assert there are as much samples as labels
     if(static_cast<int>(labels.total()) != n) {
-        String error_message = format("The number of samples (src) must equal the number of labels (labels)! len(src)=%d, len(labels)=%d.", n, labels.total());
+        String error_message = format("The number of samples (src) must equal the number of labels (labels)! len(src)=%d, len(labels)=%zu.", n, labels.total());
         CV_Error(Error::StsBadArg, error_message);
     }
     // clear existing model data
@@ -117,7 +117,7 @@ void Eigenfaces::predict(InputArray _src, Ptr<PredictCollector> collector) const
         CV_Error(Error::StsError, error_message);
     } else if(_eigenvectors.rows != static_cast<int>(src.total())) {
         // check data alignment just for clearer exception messages
-        String error_message = format("Wrong input image size. Reason: Training and Test images must be of equal size! Expected an image with %d elements, but got %d.", _eigenvectors.rows, src.total());
+        String error_message = format("Wrong input image size. Reason: Training and Test images must be of equal size! Expected an image with %d elements, but got %zu.", _eigenvectors.rows, src.total());
         CV_Error(Error::StsBadArg, error_message);
     }
     // project into PCA subspace

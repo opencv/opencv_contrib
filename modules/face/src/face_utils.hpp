@@ -28,7 +28,7 @@ inline Mat asRowMatrix(InputArrayOfArrays src, int rtype, double alpha=1, double
     for(unsigned int i = 0; i < n; i++) {
         // make sure data can be reshaped, throw exception if not!
         if(src.getMat(i).total() != d) {
-            String error_message = format("Wrong number of elements in matrix #%d! Expected %d was %d.", i, d, src.getMat(i).total());
+            String error_message = format("Wrong number of elements in matrix #%u! Expected %zu was %zu.", i, d, src.getMat(i).total());
             CV_Error(Error::StsBadArg, error_message);
         }
         // get a hold of the current row
