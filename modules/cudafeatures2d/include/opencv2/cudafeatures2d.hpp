@@ -426,14 +426,10 @@ public:
 class CV_EXPORTS_W FastFeatureDetector : public Feature2DAsync
 {
 public:
-    enum
-    {
-        LOCATION_ROW = 0,
-        RESPONSE_ROW,
-        ROWS_COUNT,
-
-        FEATURE_SIZE = 7
-    };
+    static const int LOCATION_ROW = 0;
+    static const int RESPONSE_ROW = 1;
+    static const int ROWS_COUNT   = 2;
+    static const int FEATURE_SIZE = 7;
 
     CV_WRAP static Ptr<cuda::FastFeatureDetector> create(int threshold=10,
                                            bool nonmaxSuppression=true,
