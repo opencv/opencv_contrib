@@ -196,12 +196,12 @@ DAISY::NRM_SIFT mean that descriptors are normalized for L2 norm equal to 1.0 bu
 class CV_EXPORTS_W DAISY : public Feature2D
 {
 public:
-    enum
+    enum NormalizationType
     {
         NRM_NONE = 100, NRM_PARTIAL = 101, NRM_FULL = 102, NRM_SIFT = 103,
     };
     CV_WRAP static Ptr<DAISY> create( float radius = 15, int q_radius = 3, int q_theta = 8,
-                int q_hist = 8, int norm = DAISY::NRM_NONE, InputArray H = noArray(),
+                int q_hist = 8, DAISY::NormalizationType norm = DAISY::NRM_NONE, InputArray H = noArray(),
                 bool interpolation = true, bool use_orientation = false );
 
     /** @overload
