@@ -48,6 +48,7 @@
 #endif
 
 #include "opencv2/core/cuda.hpp"
+#include "opencv2/objdetect.hpp"
 
 /**
   @addtogroup cuda
@@ -78,12 +79,6 @@ namespace cv { namespace cuda {
 class CV_EXPORTS_W HOG : public Algorithm
 {
 public:
-    enum
-    {
-        DESCR_FORMAT_ROW_BY_ROW,
-        DESCR_FORMAT_COL_BY_COL
-    };
-
     /** @brief Creates the HOG descriptor and detector.
 
     @param win_size Detection window size. Align to block size and block stride.
@@ -138,8 +133,8 @@ public:
     //! Descriptor storage format:
     //!   - **DESCR_FORMAT_ROW_BY_ROW** - Row-major order.
     //!   - **DESCR_FORMAT_COL_BY_COL** - Column-major order.
-    CV_WRAP virtual void setDescriptorFormat(int descr_format) = 0;
-    CV_WRAP virtual int getDescriptorFormat() const = 0;
+    CV_WRAP virtual void setDescriptorFormat(HOGDescriptor::DescriptorStorageFormat descr_format) = 0;
+    CV_WRAP virtual HOGDescriptor::DescriptorStorageFormat getDescriptorFormat() const = 0;
 
     /** @brief Returns the number of coefficients required for the classification.
      */

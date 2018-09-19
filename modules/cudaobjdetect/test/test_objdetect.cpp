@@ -187,10 +187,10 @@ CUDA_TEST_P(HOG, GetDescriptors)
 
     hog->setWinStride(Size(64, 128));
 
-    hog->setDescriptorFormat(cv::cuda::HOG::DESCR_FORMAT_ROW_BY_ROW);
+    hog->setDescriptorFormat(HOGDescriptor::DESCR_FORMAT_ROW_BY_ROW);
     hog->compute(d_img, descriptors);
 
-    hog->setDescriptorFormat(cv::cuda::HOG::DESCR_FORMAT_COL_BY_COL);
+    hog->setDescriptorFormat(HOGDescriptor::DESCR_FORMAT_COL_BY_COL);
     hog->compute(d_img, descriptors_by_cols);
 
     // Check size of the result train table
