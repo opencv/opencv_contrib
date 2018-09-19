@@ -172,9 +172,7 @@ namespace
     IMPLEMENT_PARAM_CLASS(ORB_BlurForDescriptor, bool)
 }
 
-CV_ENUM(ORB_ScoreType, cv::ORB::HARRIS_SCORE, cv::ORB::FAST_SCORE)
-
-PARAM_TEST_CASE(ORB, cv::cuda::DeviceInfo, ORB_FeaturesCount, ORB_ScaleFactor, ORB_LevelsCount, ORB_EdgeThreshold, ORB_firstLevel, ORB_WTA_K, ORB_ScoreType, ORB_PatchSize, ORB_BlurForDescriptor)
+PARAM_TEST_CASE(ORB, cv::cuda::DeviceInfo, ORB_FeaturesCount, ORB_ScaleFactor, ORB_LevelsCount, ORB_EdgeThreshold, ORB_firstLevel, ORB_WTA_K, cv::ORB::ScoreType, ORB_PatchSize, ORB_BlurForDescriptor)
 {
     cv::cuda::DeviceInfo devInfo;
     int nFeatures;
@@ -183,7 +181,7 @@ PARAM_TEST_CASE(ORB, cv::cuda::DeviceInfo, ORB_FeaturesCount, ORB_ScaleFactor, O
     int edgeThreshold;
     int firstLevel;
     int WTA_K;
-    int scoreType;
+    cv::ORB::ScoreType scoreType;
     int patchSize;
     bool blurForDescriptor;
 
@@ -260,7 +258,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_Features2D, ORB,  testing::Combine(
     testing::Values(ORB_EdgeThreshold(31)),
     testing::Values(ORB_firstLevel(0)),
     testing::Values(ORB_WTA_K(2), ORB_WTA_K(3), ORB_WTA_K(4)),
-    testing::Values(ORB_ScoreType(cv::ORB::HARRIS_SCORE)),
+    testing::Values(cv::ORB::HARRIS_SCORE),
     testing::Values(ORB_PatchSize(31), ORB_PatchSize(29)),
     testing::Values(ORB_BlurForDescriptor(false), ORB_BlurForDescriptor(true))));
 
