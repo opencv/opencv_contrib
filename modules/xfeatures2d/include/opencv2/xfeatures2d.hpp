@@ -84,10 +84,9 @@ class CV_EXPORTS_W FREAK : public Feature2D
 {
 public:
 
-    enum
-    {
-        NB_SCALES = 64, NB_PAIRS = 512, NB_ORIENPAIRS = 45
-    };
+    static const int    NB_SCALES        = 64;
+    static const int    NB_PAIRS         = 512;
+    static const int    NB_ORIENPAIRS    = 45;
 
     /**
     @param orientationNormalized Enable orientation normalization.
