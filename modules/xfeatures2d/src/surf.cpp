@@ -491,8 +491,8 @@ static void fastHessianDetector( const Mat& sum, const Mat& mask_sum, std::vecto
         for( int layer = 0; layer < nOctaveLayers+2; layer++ )
         {
             /* The integral image sum is one pixel bigger than the source image*/
-            dets[index].create( (sum.rows-1)/step, (sum.cols-1)/step, CV_32F );
-            traces[index].create( (sum.rows-1)/step, (sum.cols-1)/step, CV_32F );
+            dets[index].create((sum.rows - 1) / step, (sum.cols - 1) / step, CV_32FC1);
+            traces[index].create((sum.rows - 1) / step, (sum.cols - 1) / step, CV_32FC1);
             sizes[index] = (SURF_HAAR_SIZE0 + SURF_HAAR_SIZE_INC*layer) << octave;
             sampleSteps[index] = step;
 
@@ -541,7 +541,7 @@ struct SURFInvoker : ParallelLoopBody
         DW.resize(PATCH_SZ*PATCH_SZ);
 
         /* Coordinates and weights of samples used to calculate orientation */
-        Mat G_ori = getGaussianKernel( 2*ORI_RADIUS+1, SURF_ORI_SIGMA, CV_32F );
+        Mat G_ori = getGaussianKernel(2 * ORI_RADIUS + 1, SURF_ORI_SIGMA, CV_32FC1);
         nOriSamples = 0;
         for( int i = -ORI_RADIUS; i <= ORI_RADIUS; i++ )
         {
@@ -557,7 +557,7 @@ struct SURFInvoker : ParallelLoopBody
         CV_Assert( nOriSamples <= nOriSampleBound );
 
         /* Gaussian used to weight descriptor samples */
-        Mat G_desc = getGaussianKernel( PATCH_SZ, SURF_DESC_SIGMA, CV_32F );
+        Mat G_desc = getGaussianKernel(PATCH_SZ, SURF_DESC_SIGMA, CV_32FC1);
         for( int i = 0; i < PATCH_SZ; i++ )
         {
             for( int j = 0; j < PATCH_SZ; j++ )
@@ -579,7 +579,7 @@ struct SURFInvoker : ParallelLoopBody
         float X[nOriSampleBound], Y[nOriSampleBound], angle[nOriSampleBound];
         uchar PATCH[PATCH_SZ+1][PATCH_SZ+1];
         float DX[PATCH_SZ][PATCH_SZ], DY[PATCH_SZ][PATCH_SZ];
-        Mat _patch(PATCH_SZ+1, PATCH_SZ+1, CV_8U, PATCH);
+        Mat _patch(PATCH_SZ+1, PATCH_SZ+1, CV_8UC1, PATCH);
 
         int dsize = extended ? 128 : 64;
 
@@ -646,7 +646,7 @@ struct SURFInvoker : ParallelLoopBody
                     continue;
                 }
 
-                phase( Mat(1, nangle, CV_32F, X), Mat(1, nangle, CV_32F, Y), Mat(1, nangle, CV_32F, angle), true );
+                phase( Mat(1, nangle, CV_32FC1, X), Mat(1, nangle, CV_32FC1, Y), Mat(1, nangle, CV_32FC1, angle), true );
 
                 float bestx = 0, besty = 0, descriptor_mod = 0;
                 for( i = 0; i < 360; i += SURF_ORI_SEARCH_INC )
@@ -678,7 +678,7 @@ struct SURFInvoker : ParallelLoopBody
             /* Extract a window of pixels around the keypoint of size 20s */
             int win_size = (int)((PATCH_SZ+1)*s);
             CV_Assert( imaxSize >= win_size );
-            Mat win(win_size, win_size, CV_8U, winbuf.data());
+            Mat win(win_size, win_size, CV_8UC1, winbuf.data());
 
             if( !upright )
             {
@@ -691,7 +691,7 @@ struct SURFInvoker : ParallelLoopBody
                 /*
                 float w[] = { cos_dir, sin_dir, center.x,
                 -sin_dir, cos_dir , center.y };
-                CvMat W = cvMat(2, 3, CV_32F, w);
+                CvMat W = cvMat(2, 3, CV_32FC1, w);
                 cvGetQuadrangleSubPix( img, &win, &W );
                 */
 
@@ -879,7 +879,7 @@ SURF_Impl::SURF_Impl(double _threshold, int _nOctaves, int _nOctaveLayers, bool 
 }
 
 int SURF_Impl::descriptorSize() const { return extended ? 128 : 64; }
-int SURF_Impl::descriptorType() const { return CV_32F; }
+ElemType SURF_Impl::descriptorType() const { return CV_32FC1; }
 int SURF_Impl::defaultNorm() const { return NORM_L2; }
 
 
@@ -888,7 +888,8 @@ void SURF_Impl::detectAndCompute(InputArray _img, InputArray _mask,
                       OutputArray _descriptors,
                       bool useProvidedKeypoints)
 {
-    int imgtype = _img.type(), imgcn = CV_MAT_CN(imgtype);
+    ElemType imgtype = _img.type();
+    int imgcn = CV_MAT_CN(imgtype);
     bool doDescriptors = _descriptors.needed();
 
     CV_Assert(!_img.empty() && CV_MAT_DEPTH(imgtype) == CV_8U && (imgcn == 1 || imgcn == 3 || imgcn == 4));
@@ -928,7 +929,7 @@ void SURF_Impl::detectAndCompute(InputArray _img, InputArray _mask,
     if( imgcn > 1 )
         cvtColor(img, img, COLOR_BGR2GRAY);
 
-    CV_Assert(mask.empty() || (mask.type() == CV_8U && mask.size() == img.size()));
+    CV_Assert(mask.empty() || (mask.type() == CV_8UC1 && mask.size() == img.size()));
     CV_Assert(hessianThreshold >= 0);
     CV_Assert(nOctaves > 0);
     CV_Assert(nOctaveLayers > 0);
@@ -956,15 +957,15 @@ void SURF_Impl::detectAndCompute(InputArray _img, InputArray _mask,
 
         if( doDescriptors )
         {
-            _1d = _descriptors.kind() == _InputArray::STD_VECTOR && _descriptors.type() == CV_32F;
+            _1d = _descriptors.kind() == _InputArray::STD_VECTOR && _descriptors.type() == CV_32FC1;
             if( _1d )
             {
-                _descriptors.create(N*dcols, 1, CV_32F);
+                _descriptors.create(N*dcols, 1, CV_32FC1);
                 descriptors = _descriptors.getMat().reshape(1, N);
             }
             else
             {
-                _descriptors.create(N, dcols, CV_32F);
+                _descriptors.create(N, dcols, CV_32FC1);
                 descriptors = _descriptors.getMat();
             }
         }

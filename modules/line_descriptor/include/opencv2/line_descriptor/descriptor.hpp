@@ -303,7 +303,7 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
 
   /** @brief Return data type
    */
-  int descriptorType() const;
+  ElemType descriptorType() const;
 
   /** returns norm mode */
   /*CV_WRAP*/

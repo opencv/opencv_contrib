@@ -59,7 +59,7 @@ TEST(BackgroundSubtractor_LSBP, Discrimination)
     Mat lena = imread(getLenaImagePath());
     Mat lsv;
 
-    lena.convertTo(lena, CV_32FC3);
+    lena.convertTo(lena, CV_32F);
 
     bgsegm::BackgroundSubtractorLSBPDesc::calcLocalSVDValues(lsv, lena);
 
@@ -109,7 +109,7 @@ static double evaluateBGSAlgorithm(Ptr<T> bgs) {
         EXPECT_EQ(sz, gtMask.size());
         EXPECT_EQ(gtMask.size(), mask.size());
         EXPECT_EQ(mask.type(), gtMask.type());
-        EXPECT_EQ(mask.type(), CV_8U);
+        EXPECT_EQ(mask.type(), CV_8UC1);
 
         // We will give the algorithm some time for the proper background model inference.
         // Almost all background subtraction algorithms have a problem with cold start and require some time for background model initialization.

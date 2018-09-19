@@ -186,11 +186,11 @@ void EdgeAwareInterpolatorImpl::interpolate(InputArray from_image, InputArray fr
     CV_Assert(match_num<SHRT_MAX);
 
     Mat src = from_image.getMat();
-    labels = Mat(h,w,CV_16S);
+    labels = Mat(h,w,CV_16SC1);
     labels = Scalar(-1);
-    NNlabels = Mat(match_num,k,CV_16S);
+    NNlabels = Mat(match_num,k,CV_16SC1);
     NNlabels = Scalar(-1);
-    NNdistances = Mat(match_num,k,CV_32F);
+    NNdistances = Mat(match_num,k,CV_32FC1);
     NNdistances = Scalar(0.0f);
     g = new vector<node>[match_num];
 
@@ -207,8 +207,8 @@ void EdgeAwareInterpolatorImpl::interpolate(InputArray from_image, InputArray fr
 
 void EdgeAwareInterpolatorImpl::preprocessData(Mat& src, vector<SparseMatch>& matches)
 {
-    Mat distances(h,w,CV_32F);
-    Mat cost_map (h,w,CV_32F);
+    Mat distances(h,w,CV_32FC1);
+    Mat cost_map (h,w,CV_32FC1);
     distances = Scalar(INF);
 
     int x,y;
@@ -628,9 +628,9 @@ void EdgeAwareInterpolatorImpl::GetKNNMatches_ParBody::operator() (const Range& 
 void weightedLeastSquaresAffineFit(short* labels, float* weights, int count, float lambda, SparseMatch* matches, Mat& dst)
 {
     double sa[6][6]={{0.}}, sb[6]={0.};
-    Mat A (6, 6, CV_64F, &sa[0][0]),
-        B (6, 1, CV_64F, sb),
-        MM(1, 6, CV_64F);
+    Mat A (6, 6, CV_64FC1, &sa[0][0]),
+        B (6, 1, CV_64FC1, sb),
+        MM(1, 6, CV_64FC1);
     Point2f a,b;
     float w;
 

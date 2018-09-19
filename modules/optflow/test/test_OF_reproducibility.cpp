@@ -62,9 +62,9 @@ TEST_P(DenseOpticalFlow_DIS, MultithreadReproducibility)
         throw SkipTestException("Single thread environment");
     for (int iter = 0; iter <= loopsCount; iter++)
     {
-        Mat frame1(size, CV_8U);
+        Mat frame1(size, CV_8UC1);
         randu(frame1, 0, 255);
-        Mat frame2(size, CV_8U);
+        Mat frame2(size, CV_8UC1);
         randu(frame2, 0, 255);
 
         Ptr<DISOpticalFlow> algo = createOptFlow_DIS();
@@ -119,9 +119,9 @@ TEST_P(DenseOpticalFlow_VariationalRefinement, MultithreadReproducibility)
         throw SkipTestException("Single thread environment");
     for (int iter = 0; iter <= loopsCount; iter++)
     {
-        Mat frame1(size, CV_8U);
+        Mat frame1(size, CV_8UC1);
         randu(frame1, 0, 255);
-        Mat frame2(size, CV_8U);
+        Mat frame2(size, CV_8UC1);
         randu(frame2, 0, 255);
         Mat flow(size, CV_32FC2);
         randu(flow, -input_flow_rad, input_flow_rad);

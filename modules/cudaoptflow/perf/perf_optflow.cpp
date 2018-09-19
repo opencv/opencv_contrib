@@ -62,8 +62,8 @@ PERF_TEST_P(ImagePair, BroxOpticalFlow,
     cv::Mat frame1 = readImage(GetParam().second, cv::IMREAD_GRAYSCALE);
     ASSERT_FALSE(frame1.empty());
 
-    frame0.convertTo(frame0, CV_32FC1, 1.0 / 255.0);
-    frame1.convertTo(frame1, CV_32FC1, 1.0 / 255.0);
+    frame0.convertTo(frame0, CV_32F, 1.0 / 255.0);
+    frame1.convertTo(frame1, CV_32F, 1.0 / 255.0);
 
     if (PERF_RUN_CUDA())
     {

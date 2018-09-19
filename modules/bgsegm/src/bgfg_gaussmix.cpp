@@ -118,7 +118,7 @@ public:
         // the mixture sort key (w/sum_of_variances), the mixture weight (w),
         // the mean (nchannels values) and
         // the diagonal covariance matrix (another nchannels values)
-        bgmodel.create( 1, frameSize.height*frameSize.width*nmixtures*(2 + 2*nchannels), CV_32F );
+        bgmodel.create( 1, frameSize.height*frameSize.width*nmixtures*(2 + 2*nchannels), CV_32FC1 );
         bgmodel = Scalar::all(0);
     }
 
@@ -446,7 +446,7 @@ void BackgroundSubtractorMOGImpl::apply(InputArray _image, OutputArray _fgmask, 
         initialize(image.size(), image.type());
 
     CV_Assert( image.depth() == CV_8U );
-    _fgmask.create( image.size(), CV_8U );
+    _fgmask.create( image.size(), CV_8UC1 );
     Mat fgmask = _fgmask.getMat();
 
     ++nframes;

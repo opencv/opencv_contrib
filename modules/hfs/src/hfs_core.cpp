@@ -117,7 +117,7 @@ Mat HfsCore::getSLICIdxCpu(const Mat& img3u, int &num_css)
         indexes[i] = (indexes[i] != 0) ? num_css++ : 0;
     for (int i = 0; i < _s; i++)
         idx_img[i] = indexes[idx_img[i]];
-    Mat idx_mat(_h, _w, CV_32S, idx_img.data());
+    Mat idx_mat(_h, _w, CV_32SC1, idx_img.data());
     idx_mat.convertTo(idx_mat, CV_16U);
     return idx_mat;
 }
@@ -144,10 +144,10 @@ int HfsCore::getAvgGradientBdry( const Mat& idx_mat,
     gradients.resize(size);
     for (int i = 0; i < size; i++)
     {
-        gradients[i].create(num_css, num_css, CV_32F);
+        gradients[i].create(num_css, num_css, CV_32FC1);
         gradients[i] = Scalar::all(0);
     }
-    bd_num.create(num_css, num_css, CV_32F);
+    bd_num.create(num_css, num_css, CV_32FC1);
     bd_num = Scalar::all(0);
 
     for (int r = 1; r < _h - 1; r++)
@@ -316,7 +316,7 @@ void HfsCore::getSegmentationI( const Mat &lab3u, const Mat &mag1u,
         reg2ind[i] = indexes[comp];
     }
     CV_Assert(regions->num_sets() == idx - 1);
-    seg.create(_h, _w, CV_16U);
+    seg.create(_h, _w, CV_16UC1);
     for (int r_ = 0; r_ < _h; r_++)
     {
         ushort *sP = seg.ptr<ushort>(r_);
@@ -392,7 +392,7 @@ void HfsCore::getSegmentationII(
         reg2ind[i] = indexes[comp];
     }
     CV_Assert(regions->num_sets() == idx);
-    seg.create(_h, _w, CV_16U);
+    seg.create(_h, _w, CV_16UC1);
     for (int r_ = 0; r_ < _h; r_++)
     {
         ushort *sP = seg.ptr<ushort>(r_);
@@ -497,7 +497,7 @@ Mat HfsCore::getSLICIdxGpu(const Mat& img3u, int &num_css)
         indexes[i] = (indexes[i] != 0) ? num_css++ : 0;
     for (int i = 0; i < _s; i++)
         idx_img_ptr[i] = indexes[idx_img_ptr[i]];
-    Mat idx_mat(_h, _w, CV_32S, idx_img_ptr);
+    Mat idx_mat(_h, _w, CV_32SC1, idx_img_ptr);
     idx_mat.convertTo(idx_mat, CV_16U);
     return idx_mat;
 }

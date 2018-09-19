@@ -130,7 +130,7 @@ public:
     int descriptorSize() const CV_OVERRIDE;
 
     //! returns the descriptor type
-    int descriptorType() const CV_OVERRIDE;
+    ElemType descriptorType() const CV_OVERRIDE;
 
     //! returns the default norm type
     int defaultNorm() const CV_OVERRIDE;
@@ -225,10 +225,10 @@ static Mat createInitialImage( const Mat& img, bool doubleImageSize, float sigma
     if( img.channels() == 3 || img.channels() == 4 )
     {
         cvtColor(img, gray, COLOR_BGR2GRAY);
-        gray.convertTo(gray_fpt, DataType<sift_wt>::type, SIFT_FIXPT_SCALE, 0);
+        gray.convertTo(gray_fpt, DataType<sift_wt>::depth, SIFT_FIXPT_SCALE, 0);
     }
     else
-        img.convertTo(gray_fpt, DataType<sift_wt>::type, SIFT_FIXPT_SCALE, 0);
+        img.convertTo(gray_fpt, DataType<sift_wt>::depth, SIFT_FIXPT_SCALE, 0);
 
     float sig_diff;
 
@@ -317,7 +317,7 @@ public:
             const Mat& src1 = gpyr[o*(nOctaveLayers + 3) + i];
             const Mat& src2 = gpyr[o*(nOctaveLayers + 3) + i + 1];
             Mat& dst = dogpyr[o*(nOctaveLayers + 2) + i];
-            subtract(src2, src1, dst, noArray(), DataType<sift_wt>::type);
+            subtract(src2, src1, dst, noArray(), DataType<sift_wt>::depth);
         }
     }
 
@@ -1100,9 +1100,9 @@ int SIFT_Impl::descriptorSize() const
     return SIFT_DESCR_WIDTH*SIFT_DESCR_WIDTH*SIFT_DESCR_HIST_BINS;
 }
 
-int SIFT_Impl::descriptorType() const
+ElemType SIFT_Impl::descriptorType() const
 {
-    return CV_32F;
+    return CV_32FC1;
 }
 
 int SIFT_Impl::defaultNorm() const
@@ -1190,7 +1190,7 @@ void SIFT_Impl::detectAndCompute(InputArray _image, InputArray _mask,
     {
         //t = (double)getTickCount();
         int dsize = descriptorSize();
-        _descriptors.create((int)keypoints.size(), dsize, CV_32F);
+        _descriptors.create((int)keypoints.size(), dsize, CV_32FC1);
         Mat descriptors = _descriptors.getMat();
 
         calcDescriptors(gpyr, keypoints, descriptors, nOctaveLayers, firstOctave);

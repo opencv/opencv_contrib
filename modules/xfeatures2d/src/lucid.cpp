@@ -65,7 +65,7 @@ namespace cv {
                 virtual int descriptorSize() const CV_OVERRIDE;
 
                 /** returns the descriptor type */
-                virtual int descriptorType() const CV_OVERRIDE;
+                virtual ElemType descriptorType() const CV_OVERRIDE;
 
                 /** returns the default norm type */
                 virtual int defaultNorm() const CV_OVERRIDE;
@@ -89,7 +89,7 @@ namespace cv {
             return (l_kernel*2+1)*(l_kernel*2+1)*3;
         }
 
-        int LUCIDImpl::descriptorType() const {
+        ElemType LUCIDImpl::descriptorType() const {
             return CV_8UC1;
         }
 

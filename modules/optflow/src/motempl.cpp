@@ -162,8 +162,8 @@ void calcMotionGradient( InputArray _mhi, OutputArray _mask,
     Mat mhi = _mhi.getMat();
     Size size = mhi.size();
 
-    _mask.create(size, CV_8U);
-    _orientation.create(size, CV_32F);
+    _mask.create(size, CV_8UC1);
+    _orientation.create(size, CV_32FC1);
 
     Mat mask = _mask.getMat();
     Mat orient = _orientation.getMat();
@@ -181,7 +181,7 @@ void calcMotionGradient( InputArray _mhi, OutputArray _mask,
     if( orient.data == mhi.data )
     {
         _orientation.release();
-        _orientation.create(size, CV_32F);
+        _orientation.create(size, CV_32FC1);
         orient = _orientation.getMat();
     }
 
@@ -263,7 +263,7 @@ double calcGlobalOrientation( InputArray _orientation, InputArray _mask,
     Mat orient = _orientation.getMat(), mask = _mask.getMat(), mhi = _mhi.getMat();
     Size size = mhi.size();
 
-    CV_Assert( mask.type() == CV_8U && orient.type() == CV_32F && mhi.type() == CV_32F );
+    CV_Assert( mask.type() == CV_8UC1 && orient.type() == CV_32FC1 && mhi.type() == CV_32FC1 );
     CV_Assert( mask.size() == size && orient.size() == size );
     CV_Assert( duration > 0 );
 
@@ -354,11 +354,11 @@ void segmentMotion(InputArray _mhi, OutputArray _segmask,
 {
     Mat mhi = _mhi.getMat();
 
-    _segmask.create(mhi.size(), CV_32F);
+    _segmask.create(mhi.size(), CV_32FC1);
     Mat segmask = _segmask.getMat();
     segmask = Scalar::all(0);
 
-    CV_Assert( mhi.type() == CV_32F );
+    CV_Assert( mhi.type() == CV_32FC1 );
     CV_Assert( segThresh >= 0 );
 
     Mat mask = Mat::zeros( mhi.rows + 2, mhi.cols + 2, CV_8UC1 );

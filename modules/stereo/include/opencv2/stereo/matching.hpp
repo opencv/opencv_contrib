@@ -422,8 +422,8 @@ namespace cv
             //preprocessing the cost volume in order to get it ready for aggregation
             void costGathering(const Mat &hammingDistanceCost, Mat &cost)
             {
-                CV_Assert(hammingDistanceCost.type() == CV_16S);
-                CV_Assert(cost.type() == CV_16S);
+                CV_Assert(hammingDistanceCost.type() == CV_16SC1);
+                CV_Assert(cost.type() == CV_16SC1);
                 int maxDisp = maxDisparity;
                 int width = cost.cols / ( maxDisp + 1) - 1;
                 int height = cost.rows - 1;

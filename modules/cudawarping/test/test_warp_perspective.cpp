@@ -187,7 +187,7 @@ PARAM_TEST_CASE(WarpPerspective, cv::cuda::DeviceInfo, cv::Size, MatType, Invers
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemType type;
     bool inverse;
     int interpolation;
     int borderType;
@@ -228,7 +228,7 @@ CUDA_TEST_P(WarpPerspective, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Warping, WarpPerspective, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_16UC1), MatType(CV_16UC3), MatType(CV_16UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
+    testing::Values(CV_8UC1, CV_8UC3, CV_8UC4, CV_16UC1, CV_16UC3, CV_16UC4, CV_32FC1, CV_32FC3, CV_32FC4),
     DIRECT_INVERSE,
     testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC)),
     testing::Values(BorderType(cv::BORDER_REFLECT101), BorderType(cv::BORDER_REPLICATE), BorderType(cv::BORDER_REFLECT), BorderType(cv::BORDER_WRAP)),
@@ -240,7 +240,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_Warping, WarpPerspective, testing::Combine(
 PARAM_TEST_CASE(WarpPerspectiveNPP, cv::cuda::DeviceInfo, MatType, Inverse, Interpolation)
 {
     cv::cuda::DeviceInfo devInfo;
-    int type;
+    ElemType type;
     bool inverse;
     int interpolation;
 
@@ -276,7 +276,7 @@ CUDA_TEST_P(WarpPerspectiveNPP, Accuracy)
 
 INSTANTIATE_TEST_CASE_P(CUDA_Warping, WarpPerspectiveNPP, testing::Combine(
     ALL_DEVICES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
+    testing::Values(CV_8UC1, CV_8UC3, CV_8UC4, CV_32FC1, CV_32FC3, CV_32FC4),
     DIRECT_INVERSE,
     testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC))));
 

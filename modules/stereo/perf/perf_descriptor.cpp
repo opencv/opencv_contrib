@@ -55,10 +55,10 @@ PERF_TEST_P( descript_params, census_sparse_descriptor,
             )
 {
     Size sz = get<0>(GetParam());
-    int matType = get<1>(GetParam());
-    int sdepth = get<2>(GetParam());
+    ElemType matType = get<1>(GetParam());
+    ElemDepth sdepth = get<2>(GetParam());
     Mat left(sz, matType);
-    Mat out1(sz, sdepth);
+    Mat out1(sz, CV_MAKETYPE(sdepth, 1));
     declare.in(left, WARMUP_RNG)
         .out(out1)
         .time(0.01);
@@ -77,10 +77,10 @@ PERF_TEST_P( descript_params, star_census_transform,
             )
 {
     Size sz = get<0>(GetParam());
-    int matType = get<1>(GetParam());
-    int sdepth = get<2>(GetParam());
+    ElemType matType = get<1>(GetParam());
+    ElemDepth sdepth = get<2>(GetParam());
     Mat left(sz, matType);
-    Mat out1(sz, sdepth);
+    Mat out1(sz, CV_MAKETYPE(sdepth, 1));
     declare.in(left, WARMUP_RNG)
         .out(out1)
         .time(0.01);
@@ -99,11 +99,11 @@ PERF_TEST_P( descript_params, modified_census_transform,
             )
 {
     Size sz = get<0>(GetParam());
-    int matType = get<1>(GetParam());
-    int sdepth = get<2>(GetParam());
+    ElemType matType = get<1>(GetParam());
+    ElemDepth sdepth = get<2>(GetParam());
 
     Mat left(sz, matType);
-    Mat out1(sz, sdepth);
+    Mat out1(sz, CV_MAKETYPE(sdepth, 1));
 
     declare.in(left, WARMUP_RNG)
         .out(out1)
@@ -123,11 +123,11 @@ PERF_TEST_P( descript_params, center_symetric_census,
             )
 {
     Size sz = get<0>(GetParam());
-    int matType = get<1>(GetParam());
-    int sdepth = get<2>(GetParam());
+    ElemType matType = get<1>(GetParam());
+    ElemDepth sdepth = get<2>(GetParam());
 
     Mat left(sz, matType);
-    Mat out1(sz, sdepth);
+    Mat out1(sz, CV_MAKETYPE(sdepth, 1));
 
     declare.in(left, WARMUP_RNG)
         .out(out1)

@@ -37,7 +37,7 @@ public:
         cv::Mat const input = inputArr.getMat();
         CV_Assert(input.type() == CV_8UC4 ||
                   input.type() == CV_8UC3 ||
-                  input.type() == CV_8U);
+                  input.type() == CV_8UC1);
 
         cv::resize(input, resizeImg_, cv::Size(imgWidth,imgHeight), 0, 0, INTER_LINEAR_EXACT);
         if(input.type() == CV_8UC3)
@@ -76,7 +76,7 @@ public:
 
         mean_.resize(numOfBlocks);
         findMean(pixRowStep, pixColStep);
-        outputArr.create(1, numOfBlocks/8 + numOfBlocks % 8, CV_8U);
+        outputArr.create(1, numOfBlocks/8 + numOfBlocks % 8, CV_8UC1);
         cv::Mat hash = outputArr.getMat();
         createHash(hash);
     }

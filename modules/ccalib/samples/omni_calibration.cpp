@@ -43,7 +43,7 @@ static bool detecChessboardCorners(const vector<string>& list, vector<string>& l
         if (found)
         {
             if (points.type() != CV_64FC2)
-                points.convertTo(points, CV_64FC2);
+                points.convertTo(points, CV_64F);
             imagePoints.push_back(points);
             list_detected.push_back(list[i]);
         }
@@ -120,7 +120,7 @@ static void saveCameraParams( const string & filename, int flags, const Mat& cam
 
     if ( !rvecs.empty() && !tvecs.empty() )
     {
-        Mat rvec_tvec((int)rvecs.size(), 6, CV_64F);
+        Mat rvec_tvec((int)rvecs.size(), 6, CV_64FC1);
         for (int i = 0; i < (int)rvecs.size(); ++i)
         {
             Mat(rvecs[i]).reshape(1, 1).copyTo(rvec_tvec(Rect(0, i, 3, 1)));

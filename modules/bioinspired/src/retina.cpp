@@ -695,7 +695,7 @@ void RetinaImpl::getParvoRAW(OutputArray parvoOutputBufferCopy)
 const Mat RetinaImpl::getMagnoRAW() const {
     CV_Assert(!_wasOCLRunCalled);
     // create a cv::Mat header for the valarray
-    return Mat((int)_retinaFilter->getMovingContours().size(),1, CV_32F, (void*)get_data(_retinaFilter->getMovingContours()));
+    return Mat((int)_retinaFilter->getMovingContours().size(),1, CV_32FC1, (void*)get_data(_retinaFilter->getMovingContours()));
 
 }
 
@@ -704,11 +704,11 @@ const Mat RetinaImpl::getParvoRAW() const {
     if (_retinaFilter->getColorMode()) // check if color mode is enabled
     {
         // create a cv::Mat table (for RGB planes as a single vector)
-        return Mat((int)_retinaFilter->getColorOutput().size(), 1, CV_32F, (void*)get_data(_retinaFilter->getColorOutput()));
+        return Mat((int)_retinaFilter->getColorOutput().size(), 1, CV_32FC1, (void*)get_data(_retinaFilter->getColorOutput()));
     }
     // otherwise, output is gray level
     // create a cv::Mat header for the valarray
-    return Mat((int)_retinaFilter->getContours().size(), 1, CV_32F, (void*)get_data(_retinaFilter->getContours()));
+    return Mat((int)_retinaFilter->getContours().size(), 1, CV_32FC1, (void*)get_data(_retinaFilter->getContours()));
 }
 
 // private method called by constructors
@@ -740,7 +740,7 @@ void RetinaImpl::_convertValarrayBuffer2cvMat(const std::valarray<float> &grayMa
     const float *valarrayPTR=get_data(grayMatrixToConvert);
     if (!colorMode)
     {
-        outBuffer.create(cv::Size(nbColumns, nbRows), CV_8U);
+        outBuffer.create(cv::Size(nbColumns, nbRows), CV_8UC1);
         Mat outMat = outBuffer.getMat();
         for (unsigned int i=0;i<nbRows;++i)
         {
@@ -785,7 +785,7 @@ bool RetinaImpl::_convertCvMat2ValarrayBuffer(InputArray inputMat, std::valarray
 
         // convert to float AND fill the valarray buffer
     typedef float T; // define here the target pixel format, here, float
-    const int dsttype = DataType<T>::depth; // output buffer is float format
+    const ElemType dsttype = CV_MAKETYPE(DataType<T>::depth, 1); // output buffer is float format
 
     const unsigned int nbPixels=inputMat.getMat().rows*inputMat.getMat().cols;
     const unsigned int doubleNBpixels=inputMat.getMat().rows*inputMat.getMat().cols*2;
@@ -819,7 +819,7 @@ bool RetinaImpl::_convertCvMat2ValarrayBuffer(InputArray inputMat, std::valarray
     {
         // create a cv::Mat header for the valarray
         cv::Mat dst(inputMatToConvert.size(), dsttype, &outputValarrayMatrix[0]);
-        inputMatToConvert.convertTo(dst, dsttype);
+        inputMatToConvert.convertTo(dst, CV_MAT_DEPTH(dsttype));
     }
     else
         CV_Error(Error::StsUnsupportedFormat, "input image must be single channel (gray levels), bgr format (color) or bgra (color with transparency which won't be considered");

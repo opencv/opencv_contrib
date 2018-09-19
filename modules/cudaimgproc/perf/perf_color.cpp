@@ -75,7 +75,7 @@ PERF_TEST_P(Sz_Depth_Code, CvtColor,
                            CvtColorInfo(3, 3, cv::COLOR_Luv2LRGB))))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const CvtColorInfo info = GET_PARAM(2);
 
     cv::Mat src(size, CV_MAKETYPE(depth, info.scn));
@@ -114,7 +114,7 @@ PERF_TEST_P(Sz_Depth_Code, CvtColorBayer,
                            CvtColorInfo(1, 1, cv::COLOR_BayerGR2GRAY))))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const CvtColorInfo info = GET_PARAM(2);
 
     cv::Mat src(size, CV_MAKETYPE(depth, info.scn));
@@ -226,7 +226,7 @@ PERF_TEST_P(Sz_Type_Op, AlphaComp,
                     AlphaOp::all()))
 {
     const cv::Size size = GET_PARAM(0);
-    const int type = GET_PARAM(1);
+    const ElemType type = GET_PARAM(1);
     const int alpha_op = GET_PARAM(2);
 
     cv::Mat img1(size, type);

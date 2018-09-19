@@ -26,7 +26,7 @@ Mat circshift(Mat matrix, int dx, int dy)
 Mat gaussian_shaped_labels(const float sigma, const int w, const int h)
 {
     // create 2D Gaussian peak, convert to Fourier space and stores it into the yf
-    Mat y = Mat::zeros(h, w, CV_32F);
+    Mat y = Mat::zeros(h, w, CV_32FC1);
     float w2 = static_cast<float>(cvFloor(w / 2));
     float h2 = static_cast<float>(cvFloor(h / 2));
 
@@ -215,8 +215,8 @@ static double modified_bessel(int order, double x)
 
 Mat get_hann_win(Size sz)
 {
-    Mat hann_rows = Mat::ones(sz.height, 1, CV_32F);
-    Mat hann_cols = Mat::ones(1, sz.width, CV_32F);
+    Mat hann_rows = Mat::ones(sz.height, 1, CV_32FC1);
+    Mat hann_cols = Mat::ones(1, sz.width, CV_32FC1);
     int NN = sz.height - 1;
     if(NN != 0) {
         for (int i = 0; i < hann_rows.rows; ++i) {
@@ -234,8 +234,8 @@ Mat get_hann_win(Size sz)
 
 Mat get_kaiser_win(Size sz, float alpha)
 {
-    Mat kaiser_rows = Mat::ones(sz.height, 1, CV_32F);
-    Mat kaiser_cols = Mat::ones(1, sz.width, CV_32F);
+    Mat kaiser_rows = Mat::ones(sz.height, 1, CV_32FC1);
+    Mat kaiser_cols = Mat::ones(1, sz.width, CV_32FC1);
 
     int N = sz.height - 1;
     double shape = alpha;
@@ -296,9 +296,9 @@ static void computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const i
     const Size visible = blockSize*sbin;
 
     // initialize historgram, norm, output feature matrices
-    Mat histM = Mat::zeros(Size(blockSize.width*numOrient, blockSize.height), CV_64F);
-    Mat normM = Mat::zeros(Size(blockSize.width, blockSize.height), CV_64F);
-    featM = Mat::zeros(Size(outSize.width*dimHOG, outSize.height), CV_64F);
+    Mat histM = Mat::zeros(Size(blockSize.width*numOrient, blockSize.height), CV_64FC1);
+    Mat normM = Mat::zeros(Size(blockSize.width, blockSize.height), CV_64FC1);
+    featM = Mat::zeros(Size(outSize.width*dimHOG, outSize.height), CV_64FC1);
 
     // get the stride of each matrix
     const size_t imStride = imageM.step1();
@@ -483,7 +483,7 @@ std::vector<Mat> get_features_hog(const Mat &im, const int bin_size)
 {
     Mat hogmatrix;
     Mat im_;
-    im.convertTo(im_, CV_64FC3, 1.0/255.0);
+    im.convertTo(im_, CV_64F, 1.0/255.0);
     computeHOG32D(im_,hogmatrix,bin_size,1,1);
     hogmatrix.convertTo(hogmatrix, CV_32F);
     Size hog_size = im.size();
@@ -555,7 +555,7 @@ Mat bgr2hsv(const Mat &img)
     cvtColor(img, hsv_img, CV_BGR2HSV);
     std::vector<Mat> hsv_img_channels;
     split(hsv_img, hsv_img_channels);
-    hsv_img_channels.at(0).convertTo(hsv_img_channels.at(0), CV_8UC1, 255.0 / 180.0);
+    hsv_img_channels.at(0).convertTo(hsv_img_channels.at(0), CV_8U, 255.0 / 180.0);
     merge(hsv_img_channels, hsv_img);
     return hsv_img;
 }

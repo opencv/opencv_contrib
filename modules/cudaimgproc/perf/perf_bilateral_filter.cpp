@@ -58,7 +58,7 @@ PERF_TEST_P(Sz_Depth_Cn_KernelSz, BilateralFilter,
     declare.time(60.0);
 
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
     const int kernel_size = GET_PARAM(3);
 
@@ -66,7 +66,7 @@ PERF_TEST_P(Sz_Depth_Cn_KernelSz, BilateralFilter,
     const float sigma_spatial = 5;
     const int borderMode = cv::BORDER_REFLECT101;
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);

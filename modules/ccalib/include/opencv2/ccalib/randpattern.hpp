@@ -78,7 +78,7 @@ public:
     @matcher feature matcher.
     */
     RandomPatternCornerFinder(float patternWidth, float patternHeight,
-        int nminiMatch = 20, int depth = CV_32F, int verbose = 0, int showExtraction = 0,
+        int nminiMatch = 20, ElemDepth depth = CV_32F, int verbose = 0, int showExtraction = 0,
         Ptr<FeatureDetector> detector = AKAZE::create(AKAZE::DESCRIPTOR_MLDB, 0, 3, 0.005f),
         Ptr<DescriptorExtractor> descriptor = AKAZE::create(AKAZE::DESCRIPTOR_MLDB,0, 3, 0.005f),
         Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create("BruteForce-L1"));
@@ -127,7 +127,7 @@ private:
     float _patternWidth, _patternHeight;
     cv::Size _patternImageSize;
     int _nminiMatch;
-    int _depth;
+    ElemDepth _depth;
 	int _verbose;
 
     Ptr<FeatureDetector> _detector;

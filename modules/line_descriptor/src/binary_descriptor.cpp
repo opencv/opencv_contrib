@@ -323,9 +323,9 @@ int BinaryDescriptor::defaultNorm() const
 }
 
 /* return data type */
-int BinaryDescriptor::descriptorType() const
+ElemType BinaryDescriptor::descriptorType() const
 {
-  return CV_8U;
+  return CV_8UC1;
 }
 
 /*return descriptor size */
@@ -387,8 +387,8 @@ void BinaryDescriptor::computeSobel( const cv::Mat& image, const int numOctaves 
     dxImg_vector[sobelCnt].create( images_sizes[sobelCnt].height, images_sizes[sobelCnt].width, CV_16SC1 );
     dyImg_vector[sobelCnt].create( images_sizes[sobelCnt].height, images_sizes[sobelCnt].width, CV_16SC1 );
 
-    cv::Sobel( octaveImages[sobelCnt], dxImg_vector[sobelCnt], CV_16SC1, 1, 0, 3 );
-    cv::Sobel( octaveImages[sobelCnt], dyImg_vector[sobelCnt], CV_16SC1, 0, 1, 3 );
+    cv::Sobel( octaveImages[sobelCnt], dxImg_vector[sobelCnt], CV_16S, 1, 0, 3 );
+    cv::Sobel( octaveImages[sobelCnt], dyImg_vector[sobelCnt], CV_16S, 0, 1, 3 );
   }
 }
 
@@ -1468,8 +1468,8 @@ int BinaryDescriptor::EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &e
     pAnchorX_ = new unsigned int[edgePixelArraySize];
     pAnchorY_ = new unsigned int[edgePixelArraySize];
   }
-  cv::Sobel( image, dxImg_, CV_16SC1, 1, 0, 3 );
-  cv::Sobel( image, dyImg_, CV_16SC1, 0, 1, 3 );
+  cv::Sobel( image, dxImg_, CV_16S, 1, 0, 3 );
+  cv::Sobel( image, dyImg_, CV_16S, 0, 1, 3 );
 
   //compute gradient and direction images
   cv::Mat dxABS_m = cv::abs( dxImg_ );

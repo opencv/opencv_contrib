@@ -55,10 +55,10 @@ PERF_TEST_P(Sz_Depth_Cn, BlendLinear,
                     CUDA_CHANNELS_1_3_4))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat img1(size, type);
     cv::Mat img2(size, type);

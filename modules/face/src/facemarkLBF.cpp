@@ -510,7 +510,7 @@ void FacemarkLBFImpl::prepareTrainingData(Mat img, std::vector<Point2f> facePoin
     Mat _shape = Mat(facePoints).reshape(1);
     Rect box = getBBox(img, _shape);
     if(box.x != -1){
-        _shape.convertTo(shape, CV_64FC1);
+        _shape.convertTo(shape, CV_64F);
         Mat sx = shape.col(0);
         Mat sy = shape.col(1);
         double min_x, max_x, min_y, max_y;

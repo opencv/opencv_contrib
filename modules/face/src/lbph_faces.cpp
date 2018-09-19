@@ -288,25 +288,29 @@ histc_(const Mat& src, int minVal=0, int maxVal=255, bool normed=false)
 static Mat histc(InputArray _src, int minVal, int maxVal, bool normed)
 {
     Mat src = _src.getMat();
-    switch (src.type()) {
-        case CV_8SC1:
+    CV_Assert(src.channels() == 1);
+    switch (src.depth()) {
+        case CV_8S:
             return histc_(Mat_<float>(src), minVal, maxVal, normed);
             break;
-        case CV_8UC1:
+        case CV_8U:
             return histc_(src, minVal, maxVal, normed);
             break;
-        case CV_16SC1:
+        case CV_16S:
             return histc_(Mat_<float>(src), minVal, maxVal, normed);
             break;
-        case CV_16UC1:
+        case CV_16U:
             return histc_(src, minVal, maxVal, normed);
             break;
-        case CV_32SC1:
+        case CV_32S:
             return histc_(Mat_<float>(src), minVal, maxVal, normed);
             break;
-        case CV_32FC1:
+        case CV_32F:
             return histc_(src, minVal, maxVal, normed);
             break;
+        case CV_64F:
+        case CV_16F:
+            break; //unhandled
     }
     CV_Error(Error::StsUnmatchedFormats, "This type is not implemented yet.");
 }
@@ -333,7 +337,7 @@ static Mat spatial_histogram(InputArray _src, int numPatterns,
             Mat cell_hist = histc(src_cell, 0, (numPatterns-1), true);
             // copy to the result matrix
             Mat result_row = result.row(resultRowIdx);
-            cell_hist.reshape(1,1).convertTo(result_row, CV_32FC1);
+            cell_hist.reshape(1,1).convertTo(result_row, CV_32F);
             // increase row count in result matrix
             resultRowIdx++;
         }

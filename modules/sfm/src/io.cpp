@@ -72,10 +72,10 @@ importReconstruction(const cv::String &file, OutputArrayOfArrays _Rs,
     const size_t num_cameras = Rs.size();
     const size_t num_points = points3d.size();
 
-    _Rs.create(num_cameras, 1, CV_64F);
-    _Ts.create(num_cameras, 1, CV_64F);
-    _Ks.create(num_cameras, 1, CV_64F);
-    _points3d.create(num_points, 1, CV_64F);
+    _Rs.create(num_cameras, 1, CV_64FC1);
+    _Ts.create(num_cameras, 1, CV_64FC1);
+    _Ks.create(num_cameras, 1, CV_64FC1);
+    _points3d.create(num_points, 1, CV_64FC1);
 
     for (size_t i = 0; i < num_cameras; ++i) {
         Mat(Rs[i]).copyTo(_Rs.getMatRef(i));

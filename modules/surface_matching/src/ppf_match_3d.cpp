@@ -202,7 +202,7 @@ PPF3DDetector::~PPF3DDetector()
 // TODO: Check all step sizes to be positive
 void PPF3DDetector::trainModel(const Mat &PC)
 {
-  CV_Assert(PC.type() == CV_32F || PC.type() == CV_32FC1);
+  CV_Assert(PC.type() == CV_32FC1 || PC.type() == CV_32FC1);
 
   // compute bbox
   Vec2f xRange, yRange, zRange;
@@ -414,7 +414,7 @@ void PPF3DDetector::match(const Mat& pc, std::vector<Pose3DPtr>& results, const 
     throw cv::Exception(cv::Error::StsError, "The model is not trained. Cannot match without training", __FUNCTION__, __FILE__, __LINE__);
   }
 
-  CV_Assert(pc.type() == CV_32F || pc.type() == CV_32FC1);
+  CV_Assert(pc.type() == CV_32FC1 || pc.type() == CV_32FC1);
   CV_Assert(relativeSceneSampleStep<=1 && relativeSceneSampleStep>0);
 
   scene_sample_step = (int)(1.0/relativeSceneSampleStep);

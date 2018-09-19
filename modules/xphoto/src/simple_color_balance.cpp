@@ -175,34 +175,39 @@ class SimpleWBImpl CV_FINAL : public SimpleWB
 
         switch (src.depth())
         {
-        case CV_8U:
-        {
+          case CV_8U:
+          {
             std::vector<Mat_<uchar> > mv;
             split(src, mv);
             balanceWhiteSimple(mv, dst, inputMin, inputMax, outputMin, outputMax, p);
             break;
-        }
-        case CV_16S:
-        {
+          }
+          case CV_16S:
+          {
             std::vector<Mat_<short> > mv;
             split(src, mv);
             balanceWhiteSimple(mv, dst, inputMin, inputMax, outputMin, outputMax, p);
             break;
-        }
-        case CV_32S:
-        {
+          }
+          case CV_32S:
+          {
             std::vector<Mat_<int> > mv;
             split(src, mv);
             balanceWhiteSimple(mv, dst, inputMin, inputMax, outputMin, outputMax, p);
             break;
-        }
-        case CV_32F:
-        {
+          }
+          case CV_32F:
+          {
             std::vector<Mat_<float> > mv;
             split(src, mv);
             balanceWhiteSimple(mv, dst, inputMin, inputMax, outputMin, outputMax, p);
             break;
-        }
+          }
+          case CV_8S:
+          case CV_16U:
+          case CV_64F:
+          case CV_16F:
+              break; //unhandled
         }
     }
 };

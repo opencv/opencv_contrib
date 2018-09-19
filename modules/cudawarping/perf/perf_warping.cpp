@@ -100,13 +100,13 @@ PERF_TEST_P(Sz_Depth_Cn_Inter_Border_Mode, Remap,
     declare.time(20.0);
 
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
     const int interpolation = GET_PARAM(3);
     const int borderMode = GET_PARAM(4);
     const int remapMode = GET_PARAM(5);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -151,12 +151,12 @@ PERF_TEST_P(Sz_Depth_Cn_Inter_Scale, Resize,
     declare.time(20.0);
 
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
     const int interpolation = GET_PARAM(3);
     const double f = GET_PARAM(4);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -194,12 +194,12 @@ PERF_TEST_P(Sz_Depth_Cn_Scale, ResizeArea,
     declare.time(1.0);
 
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
     const int interpolation = cv::INTER_AREA;
     const double f = GET_PARAM(3);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -238,12 +238,12 @@ PERF_TEST_P(Sz_Depth_Cn_Inter_Border, WarpAffine,
     declare.time(20.0);
 
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
     const int interpolation = GET_PARAM(3);
     const int borderMode = GET_PARAM(4);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -254,7 +254,7 @@ PERF_TEST_P(Sz_Depth_Cn_Inter_Border, WarpAffine,
         std::cos(aplha), -std::sin(aplha), static_cast<double>(src.cols) / 2.0,
         std::sin(aplha),  std::cos(aplha), 0
     };
-    const cv::Mat M(2, 3, CV_64F, (void*) mat);
+    const cv::Mat M(2, 3, CV_64FC1, (void*)mat);
 
     if (PERF_RUN_CUDA())
     {
@@ -288,12 +288,12 @@ PERF_TEST_P(Sz_Depth_Cn_Inter_Border, WarpPerspective,
     declare.time(20.0);
 
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
     const int interpolation = GET_PARAM(3);
     const int borderMode = GET_PARAM(4);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -302,7 +302,7 @@ PERF_TEST_P(Sz_Depth_Cn_Inter_Border, WarpPerspective,
     double mat[3][3] = { {std::cos(aplha), -std::sin(aplha), static_cast<double>(src.cols) / 2.0},
                          {std::sin(aplha),  std::cos(aplha), 0},
                          {0.0,              0.0,             1.0}};
-    const cv::Mat M(3, 3, CV_64F, (void*) mat);
+    const cv::Mat M(3, 3, CV_64FC1, (void*)mat);
 
     if (PERF_RUN_CUDA())
     {
@@ -335,11 +335,11 @@ PERF_TEST_P(Sz_Depth_Cn_Inter, Rotate,
                     Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC))))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
     const int interpolation = GET_PARAM(3);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -370,10 +370,10 @@ PERF_TEST_P(Sz_Depth_Cn, PyrDown,
                     CUDA_CHANNELS_1_3_4))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -406,10 +406,10 @@ PERF_TEST_P(Sz_Depth_Cn, PyrUp,
                     CUDA_CHANNELS_1_3_4))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);

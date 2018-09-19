@@ -196,7 +196,7 @@ void MultiCameraCalibration::loadImages()
             rms = cv::calibrateCamera(_objectPointsForEachCamera[camera], _imagePointsForEachCamera[camera],
                 image.size(), _cameraMatrix[camera], _distortCoeffs[camera], _omEachCamera[camera],
                 _tEachCamera[camera],_flags);
-            idx = Mat(1, (int)_omEachCamera[camera].size(), CV_32S);
+            idx = Mat(1, (int)_omEachCamera[camera].size(), CV_32SC1);
             for (int i = 0; i < (int)idx.total(); ++i)
             {
                 idx.at<int>(i) = i;
@@ -207,7 +207,7 @@ void MultiCameraCalibration::loadImages()
         //    rms = cv::fisheye::calibrate(_objectPointsForEachCamera[camera], _imagePointsForEachCamera[camera],
         //        image.size(), _cameraMatrix[camera], _distortCoeffs[camera], _omEachCamera[camera],
         //        _tEachCamera[camera], _flags);
-        //    idx = Mat(1, (int)_omEachCamera[camera].size(), CV_32S);
+        //    idx = Mat(1, (int)_omEachCamera[camera].size(), CV_32SC1);
         //    for (int i = 0; i < (int)idx.total(); ++i)
         //    {
         //        idx.at<int>(i) = i;
@@ -236,16 +236,16 @@ void MultiCameraCalibration::loadImages()
 
 			photoVertex = this->getPhotoVertex(timestamp);
 
-			if (_omEachCamera[camera][i].type()!=CV_32F)
+			if (_omEachCamera[camera][i].depth()!=CV_32F)
 			{
 				_omEachCamera[camera][i].convertTo(_omEachCamera[camera][i], CV_32F);
 			}
-			if (_tEachCamera[camera][i].type()!=CV_32F)
+			if (_tEachCamera[camera][i].depth()!=CV_32F)
 			{
 				_tEachCamera[camera][i].convertTo(_tEachCamera[camera][i], CV_32F);
 			}
 
-			Mat transform = Mat::eye(4, 4, CV_32F);
+			Mat transform = Mat::eye(4, 4, CV_32FC1);
 			Mat R, T;
 			Rodrigues(_omEachCamera[camera][i], R);
 			T = (_tEachCamera[camera][i]).reshape(1, 3);
@@ -279,7 +279,7 @@ int MultiCameraCalibration::getPhotoVertex(int timestamp)
     // add a new photo vertex
     if (photoVertex == INVALID)
     {
-        _vertexList.push_back(vertex(Mat::eye(4, 4, CV_32F), timestamp));
+        _vertexList.push_back(vertex(Mat::eye(4, 4, CV_32FC1), timestamp));
         photoVertex = (int)_vertexList.size() - 1;
     }
 
@@ -292,7 +292,7 @@ void MultiCameraCalibration::initialize()
     int nEdges = (int) _edgeList.size();
 
     // build graph
-    Mat G = Mat::zeros(nVertices, nVertices, CV_32S);
+    Mat G = Mat::zeros(nVertices, nVertices, CV_32SC1);
     for (int edgeIdx = 0; edgeIdx < nEdges; ++edgeIdx)
     {
         G.at<int>(this->_edgeList[edgeIdx].cameraVertex, this->_edgeList[edgeIdx].photoVertex) = edgeIdx + 1;
@@ -341,7 +341,7 @@ double MultiCameraCalibration::optimizeExtrinsics()
     // get om, t vector
     int nVertex = (int)this->_vertexList.size();
 
-    Mat extrinParam(1, (nVertex-1)*6, CV_32F);
+    Mat extrinParam(1, (nVertex - 1) * 6, CV_32FC1);
     int offset = 0;
     // the pose of the vertex[0] is eye
     for (int i = 1; i < nVertex; ++i)
@@ -386,7 +386,7 @@ double MultiCameraCalibration::optimizeExtrinsics()
     for (int verIdx = 1; verIdx < (int)_vertexList.size(); ++verIdx)
     {
         Mat R;
-        Mat pose = Mat::eye(4, 4, CV_32F);
+        Mat pose = Mat::eye(4, 4, CV_32FC1);
         Rodrigues(rvecVertex[verIdx-1], R);
         R.copyTo(pose.colRange(0, 3).rowRange(0, 3));
         Mat(tvecVertex[verIdx-1]).reshape(1, 3).copyTo(pose.rowRange(0, 3).col(3));
@@ -412,11 +412,11 @@ void MultiCameraCalibration::computeJacobianExtrinsic(const Mat& extrinsicParams
         pointsLocation[edgeIdx+1] = pointsLocation[edgeIdx] + nPoints*2;
     }
 
-    JTJ_inv = Mat(nParam, nParam, CV_64F);
-    JTE = Mat(nParam, 1, CV_64F);
+    JTJ_inv = Mat(nParam, nParam, CV_64FC1);
+    JTE = Mat(nParam, 1, CV_64FC1);
 
-    Mat J = Mat::zeros(pointsLocation[nEdge], nParam, CV_64F);
-    Mat E = Mat::zeros(pointsLocation[nEdge], 1, CV_64F);
+    Mat J = Mat::zeros(pointsLocation[nEdge], nParam, CV_64FC1);
+    Mat E = Mat::zeros(pointsLocation[nEdge], 1, CV_64FC1);
 
     for (int edgeIdx = 0; edgeIdx < nEdge; ++edgeIdx)
     {
@@ -443,8 +443,8 @@ void MultiCameraCalibration::computeJacobianExtrinsic(const Mat& extrinsicParams
         }
         else
         {
-            rvecCamera = Mat::zeros(3, 1, CV_32F);
-            tvecCamera = Mat::zeros(3, 1, CV_32F);
+            rvecCamera = Mat::zeros(3, 1, CV_32FC1);
+            tvecCamera = Mat::zeros(3, 1, CV_32FC1);
         }
 
         Mat jacobianPhoto, jacobianCamera, error;
@@ -507,7 +507,7 @@ void MultiCameraCalibration::computePhotoCameraJacobian(const Mat& rvecPhoto, co
     }
     if (objectPoints.depth() == CV_32F)
     {
-        Mat(imagePoints - imagePoints2).convertTo(E, CV_64FC2);
+        Mat(imagePoints - imagePoints2).convertTo(E, CV_64F);
     }
     else
     {
@@ -520,8 +520,8 @@ void MultiCameraCalibration::computePhotoCameraJacobian(const Mat& rvecPhoto, co
     dx_drvecPhoto = jacobian.colRange(0, 3) * drvecTran_drecvPhoto + jacobian.colRange(3, 6) * dtvecTran_drvecPhoto;
     dx_dtvecPhoto = jacobian.colRange(0, 3) * drvecTran_dtvecPhoto + jacobian.colRange(3, 6) * dtvecTran_dtvecPhoto;
 
-    jacobianCamera = cv::Mat(dx_drvecCamera.rows, 6, CV_64F);
-    jacobianPhoto = cv::Mat(dx_drvecPhoto.rows, 6, CV_64F);
+    jacobianCamera = cv::Mat(dx_drvecCamera.rows, 6, CV_64FC1);
+    jacobianPhoto = cv::Mat(dx_drvecPhoto.rows, 6, CV_64FC1);
 
     dx_drvecCamera.copyTo(jacobianCamera.colRange(0, 3));
     dx_dtvecCamera.copyTo(jacobianCamera.colRange(3, 6));
@@ -577,7 +577,7 @@ void MultiCameraCalibration::findRowNonZero(const Mat& row, Mat& idx)
         }
     }
     idx.release();
-    idx.create(1, (int)_idx.size(), CV_32S);
+    idx.create(1, (int)_idx.size(), CV_32SC1);
     for (int i = 0; i < (int)_idx.size(); ++i)
     {
         idx.at<int>(i) = _idx[i];
@@ -606,8 +606,8 @@ double MultiCameraCalibration::computeProjectError(Mat& parameters)
         int PhotoIndex = edgeList[edgeIdx].photoIndex;
         TPhoto = Mat(tvecVertex[photoVertex - 1]).reshape(1, 3);
 
-        //edgeList[edgeIdx].transform = Mat::ones(4, 4, CV_32F);
-        transform = Mat::eye(4, 4, CV_32F);
+        //edgeList[edgeIdx].transform = Mat::ones(4, 4, CV_32FC1);
+        transform = Mat::eye(4, 4, CV_32FC1);
         cv::Rodrigues(rvecVertex[photoVertex-1], RPhoto);
         if (cameraVertex == 0)
         {
@@ -732,7 +732,7 @@ void MultiCameraCalibration::parameters2vector(const std::vector<Vec3f>& rvecVer
     CV_Assert(rvecVertex.size() == tvecVertex.size());
     int nVertex = (int)rvecVertex.size();
     // the pose of the first camera is known
-    parameters.create(1, 6*(nVertex-1), CV_32F);
+    parameters.create(1, 6*(nVertex-1), CV_32FC1);
 
     for (int i = 0; i < nVertex-1; ++i)
     {

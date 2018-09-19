@@ -88,9 +88,9 @@ namespace opencv_test { namespace {
 
             // test the 16-bit depth:
             Mat currentResult_16U, src_16U;
-            src.convertTo(src_16U, CV_16UC3, 256.0);
+            src.convertTo(src_16U, CV_16U, 256.0);
             wb->balanceWhite(src_16U, currentResult_16U);
-            currentResult_16U.convertTo(currentResult, CV_8UC3, 1/256.0);
+            currentResult_16U.convertTo(currentResult, CV_8U, 1/256.0);
             ASSERT_LE(cv::norm(currentResult, referenceResult, NORM_INF), acc_thresh);
         }
     }

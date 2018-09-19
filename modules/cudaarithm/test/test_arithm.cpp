@@ -58,7 +58,7 @@ PARAM_TEST_CASE(GEMM, cv::cuda::DeviceInfo, cv::Size, MatType, GemmFlags, UseRoi
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemType type;
     int flags;
     bool useRoi;
 
@@ -121,7 +121,7 @@ CUDA_TEST_P(GEMM, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Arithm, GEMM, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_32FC1), MatType(CV_32FC2), MatType(CV_64FC1), MatType(CV_64FC2)),
+    testing::Values(CV_32FC1, CV_32FC2, CV_64FC1, CV_64FC2),
     ALL_GEMM_FLAGS,
     WHOLE_SUBMAT));
 
@@ -171,7 +171,7 @@ CUDA_TEST_P(MulSpectrums, Scaled)
 
     cv::Mat c_gold;
     cv::mulSpectrums(a, b, c_gold, flag, false);
-    c_gold.convertTo(c_gold, c_gold.type(), scale);
+    c_gold.convertTo(c_gold, c_gold.depth(), scale);
 
     EXPECT_MAT_NEAR(c_gold, c, 1e-2);
 }
@@ -297,8 +297,8 @@ namespace
                 d_b_data.create(1, a.rows * (a.cols / 2 + 1), CV_32FC2);
                 d_b = cv::cuda::GpuMat(a.rows, a.cols / 2 + 1, CV_32FC2, d_b_data.ptr(), (a.cols / 2 + 1) * d_b_data.elemSize());
             }
-            d_c_data.create(1, a.size().area(), CV_32F);
-            d_c = cv::cuda::GpuMat(a.rows, a.cols, CV_32F, d_c_data.ptr(), a.cols * d_c_data.elemSize());
+            d_c_data.create(1, a.size().area(), CV_32FC1);
+            d_c = cv::cuda::GpuMat(a.rows, a.cols, CV_32FC1, d_c_data.ptr(), a.cols * d_c_data.elemSize());
         }
 
         cv::cuda::dft(loadMat(a), d_b, cv::Size(cols, rows), 0);

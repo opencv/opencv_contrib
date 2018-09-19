@@ -191,7 +191,7 @@ PARAM_TEST_CASE(ReprojectImageTo3D, cv::cuda::DeviceInfo, cv::Size, MatDepth, Us
 
 CUDA_TEST_P(ReprojectImageTo3D, Accuracy)
 {
-    cv::Mat disp = randomMat(size, depth, 5.0, 30.0);
+    cv::Mat disp = randomMat(size, CV_MAKETYPE(depth, 1), 5.0, 30.0);
     cv::Mat Q = randomMat(cv::Size(4, 4), CV_32FC1, 0.1, 1.0);
 
     cv::cuda::GpuMat dst;

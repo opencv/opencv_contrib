@@ -230,14 +230,14 @@ void hysteresisGradient(Mat& magnitude, Mat& angle,
 static void quantizedOrientations(const Mat& src, Mat& magnitude,
                            Mat& angle, float threshold)
 {
-  magnitude.create(src.size(), CV_32F);
+  magnitude.create(src.size(), CV_32FC1);
 
   // Allocate temporary buffers
   Size size = src.size();
   Mat sobel_3dx; // per-channel horizontal derivative
   Mat sobel_3dy; // per-channel vertical derivative
-  Mat sobel_dx(size, CV_32F);      // maximum horizontal derivative
-  Mat sobel_dy(size, CV_32F);      // maximum vertical derivative
+  Mat sobel_dx(size, CV_32FC1);      // maximum horizontal derivative
+  Mat sobel_dy(size, CV_32FC1);      // maximum vertical derivative
   Mat sobel_ag;  // final gradient orientation (unquantized)
   Mat smoothed;
 
@@ -336,7 +336,7 @@ void hysteresisGradient(Mat& magnitude, Mat& quantized_angle,
 
   // Filter the raw quantized image. Only accept pixels where the magnitude is above some
   // threshold, and there is local agreement on the quantization.
-  quantized_angle = Mat::zeros(angle.size(), CV_8U);
+  quantized_angle = Mat::zeros(angle.size(), CV_8UC1);
   for (int r = 1; r < angle.rows - 1; ++r)
   {
     float* mag_r = magnitude.ptr<float>(r);
@@ -454,7 +454,7 @@ void ColorGradientPyramid::pyrDown()
 
 void ColorGradientPyramid::quantize(Mat& dst) const
 {
-  dst = Mat::zeros(angle.size(), CV_8U);
+  dst = Mat::zeros(angle.size(), CV_8UC1);
   angle.copyTo(dst, mask);
 }
 
@@ -595,7 +595,7 @@ static void accumBilateral(long delta, long i, long j, long * A, long * b, int t
 static void quantizedNormals(const Mat& src, Mat& dst, int distance_threshold,
                       int difference_threshold)
 {
-  dst = Mat::zeros(src.size(), CV_8U);
+  dst = Mat::zeros(src.size(), CV_8UC1);
 
   const unsigned short * lp_depth   = src.ptr<ushort>();
   unsigned char  * lp_normals = dst.ptr<uchar>();
@@ -740,7 +740,7 @@ void DepthNormalPyramid::pyrDown()
 
 void DepthNormalPyramid::quantize(Mat& dst) const
 {
-  dst = Mat::zeros(normal.size(), CV_8U);
+  dst = Mat::zeros(normal.size(), CV_8UC1);
   normal.copyTo(dst, mask);
 }
 
@@ -754,7 +754,7 @@ bool DepthNormalPyramid::extractTemplate(Template& templ) const
   }
 
   // Compute distance transform for each individual quantized orientation
-  Mat temp = Mat::zeros(normal.size(), CV_8U);
+  Mat temp = Mat::zeros(normal.size(), CV_8UC1);
   Mat distances[8];
   for (int i = 0; i < 8; ++i)
   {
@@ -950,7 +950,7 @@ static void orUnaligned8u(const uchar * src, const int src_stride,
 static void spread(const Mat& src, Mat& dst, int T)
 {
   // Allocate and zero-initialize spread (OR'ed) image
-  dst = Mat::zeros(src.size(), CV_8U);
+  dst = Mat::zeros(src.size(), CV_8UC1);
 
   // Fill in spread gradient image (section 2.3)
   for (int r = 0; r < T; ++r)
@@ -982,10 +982,10 @@ static void computeResponseMaps(const Mat& src, std::vector<Mat>& response_maps)
   // Allocate response maps
   response_maps.resize(8);
   for (int i = 0; i < 8; ++i)
-    response_maps[i].create(src.size(), CV_8U);
+    response_maps[i].create(src.size(), CV_8UC1);
 
-  Mat lsb4(src.size(), CV_8U);
-  Mat msb4(src.size(), CV_8U);
+  Mat lsb4(src.size(), CV_8UC1);
+  Mat msb4(src.size(), CV_8UC1);
 
   for (int r = 0; r < src.rows; ++r)
   {
@@ -1064,7 +1064,7 @@ static void linearize(const Mat& response_map, Mat& linearized, int T)
   // linearized has T^2 rows, where each row is a linear memory
   int mem_width = response_map.cols / T;
   int mem_height = response_map.rows / T;
-  linearized.create(T*T, mem_width * mem_height, CV_8U);
+  linearized.create(T*T, mem_width * mem_height, CV_8UC1);
 
   // Outer two for loops iterate over top-left T^2 starting pixels
   int index = 0;
@@ -1156,7 +1156,7 @@ static void similarity(const std::vector<Mat>& linear_memories, const Template& 
 
   /// @todo In old code, dst is buffer of size m_U. Could make it something like
   /// (span_x)x(span_y) instead?
-  dst = Mat::zeros(H, W, CV_8U);
+  dst = Mat::zeros(H, W, CV_8UC1);
   uchar* dst_ptr = dst.ptr<uchar>();
 
 #if CV_SSE2
@@ -1231,7 +1231,7 @@ static void similarityLocal(const std::vector<Mat>& linear_memories, const Templ
 
   // Compute the similarity map in a 16x16 patch around center
   int W = size.width / T;
-  dst = Mat::zeros(16, 16, CV_8U);
+  dst = Mat::zeros(16, 16, CV_8UC1);
 
   // Offset each feature point by the requested center. Further adjust to (-8,-8) from the
   // center to get the top-left corner of the 16x16 patch.
@@ -1327,7 +1327,7 @@ static void addSimilarities(const std::vector<Mat>& similarities, Mat& dst)
   else
   {
     // NOTE: add() seems to be rather slow in the 8U + 8U -> 16U case
-    dst.create(similarities[0].size(), CV_16U);
+    dst.create(similarities[0].size(), CV_16UC1);
     addUnaligned8u16u(similarities[0].ptr(), similarities[1].ptr(), dst.ptr<ushort>(), static_cast<int>(dst.total()));
 
     /// @todo Optimize 16u + 8u -> 16u when more than 2 modalities
@@ -1358,7 +1358,7 @@ void Detector::match(const std::vector<Mat>& sources, float threshold, std::vect
 {
   matches.clear();
   if (quantized_images.needed())
-    quantized_images.create(1, static_cast<int>(pyramid_levels * modalities.size()), CV_8U);
+    quantized_images.create(1, static_cast<int>(pyramid_levels * modalities.size()), CV_8UC1);
 
   CV_Assert(sources.size() == modalities.size());
   // Initialize each modality with our sources

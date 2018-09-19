@@ -74,7 +74,7 @@ CUDA_TEST_P(Merge, Accuracy)
     std::vector<cv::Mat> src;
     src.reserve(channels);
     for (int i = 0; i < channels; ++i)
-        src.push_back(cv::Mat(size, depth, cv::Scalar::all(i)));
+        src.push_back(cv::Mat(size, CV_MAKETYPE(depth, 1), cv::Scalar::all(i)));
 
     std::vector<cv::cuda::GpuMat> d_src;
     for (int i = 0; i < channels; ++i)
@@ -122,7 +122,7 @@ PARAM_TEST_CASE(Split, cv::cuda::DeviceInfo, cv::Size, MatDepth, Channels, UseRo
     int channels;
     bool useRoi;
 
-    int type;
+    ElemType type;
 
     virtual void SetUp()
     {
@@ -185,7 +185,7 @@ PARAM_TEST_CASE(Transpose, cv::cuda::DeviceInfo, cv::Size, MatType, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemType type;
     bool useRoi;
 
     virtual void SetUp()
@@ -230,13 +230,13 @@ CUDA_TEST_P(Transpose, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Transpose, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1),
-                    MatType(CV_8UC4),
-                    MatType(CV_16UC2),
-                    MatType(CV_16SC2),
-                    MatType(CV_32SC1),
-                    MatType(CV_32SC2),
-                    MatType(CV_64FC1)),
+    testing::Values(CV_8UC1,
+                    CV_8UC4,
+                    CV_16UC2,
+                    CV_16SC2,
+                    CV_32SC1,
+                    CV_32SC2,
+                    CV_64FC1),
     WHOLE_SUBMAT));
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -250,7 +250,7 @@ PARAM_TEST_CASE(Flip, cv::cuda::DeviceInfo, cv::Size, MatType, FlipCode, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemType type;
     int flip_code;
     bool useRoi;
 
@@ -282,18 +282,18 @@ CUDA_TEST_P(Flip, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Flip, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1),
-                    MatType(CV_8UC3),
-                    MatType(CV_8UC4),
-                    MatType(CV_16UC1),
-                    MatType(CV_16UC3),
-                    MatType(CV_16UC4),
-                    MatType(CV_32SC1),
-                    MatType(CV_32SC3),
-                    MatType(CV_32SC4),
-                    MatType(CV_32FC1),
-                    MatType(CV_32FC3),
-                    MatType(CV_32FC4)),
+    testing::Values(CV_8UC1,
+                    CV_8UC3,
+                    CV_8UC4,
+                    CV_16UC1,
+                    CV_16UC3,
+                    CV_16UC4,
+                    CV_32SC1,
+                    CV_32SC3,
+                    CV_32SC4,
+                    CV_32FC1,
+                    CV_32FC3,
+                    CV_32FC4),
     ALL_FLIP_CODES,
     WHOLE_SUBMAT));
 
@@ -304,7 +304,7 @@ PARAM_TEST_CASE(LUT, cv::cuda::DeviceInfo, cv::Size, MatType, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemType type;
     bool useRoi;
 
     virtual void SetUp()
@@ -353,7 +353,7 @@ CUDA_TEST_P(LUT, MultiChannel)
 INSTANTIATE_TEST_CASE_P(CUDA_Arithm, LUT, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC3)),
+    testing::Values(CV_8UC1, CV_8UC3),
     WHOLE_SUBMAT));
 
 //////////////////////////////////////////////////////////////////////////////
@@ -368,7 +368,7 @@ PARAM_TEST_CASE(CopyMakeBorder, cv::cuda::DeviceInfo, cv::Size, MatType, Border,
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemType type;
     int border;
     int borderType;
     bool useRoi;
@@ -403,15 +403,15 @@ CUDA_TEST_P(CopyMakeBorder, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Arithm, CopyMakeBorder, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1),
-                    MatType(CV_8UC3),
-                    MatType(CV_8UC4),
-                    MatType(CV_16UC1),
-                    MatType(CV_16UC3),
-                    MatType(CV_16UC4),
-                    MatType(CV_32FC1),
-                    MatType(CV_32FC3),
-                    MatType(CV_32FC4)),
+    testing::Values(CV_8UC1,
+                    CV_8UC3,
+                    CV_8UC4,
+                    CV_16UC1,
+                    CV_16UC3,
+                    CV_16UC4,
+                    CV_32FC1,
+                    CV_32FC3,
+                    CV_32FC4),
     testing::Values(Border(1), Border(10), Border(50)),
     ALL_BORDER_TYPES,
     WHOLE_SUBMAT));

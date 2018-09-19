@@ -440,7 +440,7 @@ void SinusoidalPatternProfilometry_Impl::computeDft( InputArray patternImage,
     int n = getOptimalDFTSize(pattern_.cols);
     copyMakeBorder(pattern_, padded, 0, m - pattern_.rows, 0, n - pattern_.cols, BORDER_CONSTANT,
                    Scalar::all(0));
-    Mat planes[] = {Mat_<float>(padded), Mat::zeros(padded.size(), CV_32F)};
+    Mat planes[] = {Mat_<float>(padded), Mat::zeros(padded.size(), CV_32FC1)};
     merge(planes, 2, FourierTransform_);
     dft(FourierTransform_, FourierTransform_);
 }
@@ -536,7 +536,7 @@ void SinusoidalPatternProfilometry_Impl::frequencyFiltering( InputOutputArray Fo
     Mat &FourierTransform_ = *(Mat*) FourierTransform.getObj();
     int rows = FourierTransform_.rows;
     int cols = FourierTransform_.cols;
-    int type = FourierTransform_.type();
+    ElemType type = FourierTransform_.type();
     if( keepInsideRegion )
     {
         Mat maskedTransform(rows, cols, type);
@@ -739,7 +739,7 @@ void SinusoidalPatternProfilometry_Impl::computeShadowMask( InputArrayOfArrays p
             mean.at<float>(i, j) = (i1 + i2 + i3) / 3;
         }
     }
-    mean.convertTo(mean, CV_8UC1);
+    mean.convertTo(mean, CV_8U);
     threshold(mean, shadowMask_, 10, 255, 0);
 
 }
@@ -769,7 +769,7 @@ void SinusoidalPatternProfilometry_Impl::computeDataModulationTerm( InputArrayOf
     }
     if( shadowMask_.empty() )
     {
-        shadowMask_.create(rows, cols, CV_8U);
+        shadowMask_.create(rows, cols, CV_8UC1);
         shadowMask_ = Scalar::all(255);
     }
     for( int i = 0; i < rows; ++i )
@@ -832,7 +832,7 @@ void SinusoidalPatternProfilometry_Impl::computeDataModulationTerm( InputArrayOf
             }
         }
     }
-    Mat kernel(3, 3, CV_32F);
+    Mat kernel(3, 3, CV_32FC1);
     kernel.at<float>(0, 0) = 1.f/16.f;
     kernel.at<float>(1, 0) = 2.f/16.f;
     kernel.at<float>(2, 0) = 1.f/16.f;
@@ -847,12 +847,12 @@ void SinusoidalPatternProfilometry_Impl::computeDataModulationTerm( InputArrayOf
 
     Point anchor = Point(-1, -1);
     double delta = 0;
-    int ddepth = -1;
+    ElemDepth ddepth = CV_DEPTH_AUTO;
 
     filter2D(dmt, dmt, ddepth, kernel, anchor, delta, BORDER_DEFAULT);
 
     threshold(dmt, threshedDmt, 0.4, 1, THRESH_BINARY);
-    threshedDmt.convertTo(dataModulationTerm_, CV_8UC1, 255, 0);
+    threshedDmt.convertTo(dataModulationTerm_, CV_8U, 255, 0);
 }
 
 //Extract marker location on the DMT. Duplicates are removed

@@ -84,7 +84,7 @@ namespace rgbd
         :
           rows_(0),
           cols_(0),
-          depth_(0),
+          depth_(CV_8U),
           K_(Mat()),
           window_size_(0),
           method_(RGBD_NORMALS_METHOD_FALS),
@@ -100,12 +100,12 @@ namespace rgbd
      * @param window_size the window size to compute the normals: can only be 1,3,5 or 7
      * @param method one of the methods to use: RGBD_NORMALS_METHOD_SRI, RGBD_NORMALS_METHOD_FALS
      */
-    RgbdNormals(int rows, int cols, int depth, InputArray K, int window_size = 5, int method =
+    RgbdNormals(int rows, int cols, ElemDepth depth, InputArray K, int window_size = 5, int method =
         RgbdNormals::RGBD_NORMALS_METHOD_FALS);
 
     ~RgbdNormals();
 
-    CV_WRAP static Ptr<RgbdNormals> create(int rows, int cols, int depth, InputArray K, int window_size = 5, int method =
+    CV_WRAP static Ptr<RgbdNormals> create(int rows, int cols, ElemDepth depth, InputArray K, int window_size = 5, int method =
         RgbdNormals::RGBD_NORMALS_METHOD_FALS);
 
     /** Given a set of 3d points in a depth image, compute the normals at each point.
@@ -149,7 +149,7 @@ namespace rgbd
     {
         return depth_;
     }
-    CV_WRAP void setDepth(int val)
+    CV_WRAP void setDepth(ElemDepth val)
     {
         depth_ = val;
     }
@@ -172,9 +172,10 @@ namespace rgbd
 
   protected:
     void
-    initialize_normals_impl(int rows, int cols, int depth, const Mat & K, int window_size, int method) const;
+    initialize_normals_impl(int rows, int cols, ElemDepth depth, const Mat & K, int window_size, int method) const;
 
-    int rows_, cols_, depth_;
+    int rows_, cols_;
+    ElemDepth depth_;
     Mat K_;
     int window_size_;
     int method_;
@@ -197,7 +198,7 @@ namespace rgbd
 
     DepthCleaner()
         :
-          depth_(0),
+          depth_(CV_8U),
           window_size_(0),
           method_(DEPTH_CLEANER_NIL),
           depth_cleaner_impl_(0)
@@ -209,11 +210,11 @@ namespace rgbd
      * @param window_size the window size to compute the normals: can only be 1,3,5 or 7
      * @param method one of the methods to use: RGBD_NORMALS_METHOD_SRI, RGBD_NORMALS_METHOD_FALS
      */
-    DepthCleaner(int depth, int window_size = 5, int method = DepthCleaner::DEPTH_CLEANER_NIL);
+    DepthCleaner(ElemDepth depth, int window_size = 5, int method = DepthCleaner::DEPTH_CLEANER_NIL);
 
     ~DepthCleaner();
 
-    CV_WRAP static Ptr<DepthCleaner> create(int depth, int window_size = 5, int method = DepthCleaner::DEPTH_CLEANER_NIL);
+    CV_WRAP static Ptr<DepthCleaner> create(ElemDepth depth, int window_size = 5, int method = DepthCleaner::DEPTH_CLEANER_NIL);
 
     /** Given a set of 3d points in a depth image, compute the normals at each point.
      * @param points a rows x cols x 3 matrix of CV_32F/CV64F or a rows x cols x 1 CV_U16S
@@ -240,7 +241,7 @@ namespace rgbd
     {
         return depth_;
     }
-    CV_WRAP void setDepth(int val)
+    CV_WRAP void setDepth(ElemDepth val)
     {
         depth_ = val;
     }
@@ -257,7 +258,7 @@ namespace rgbd
     void
     initialize_cleaner_impl() const;
 
-    int depth_;
+    ElemDepth depth_;
     int window_size_;
     int method_;
     mutable void* depth_cleaner_impl_;
@@ -321,7 +322,7 @@ namespace rgbd
    */
   CV_EXPORTS_W
   void
-  rescaleDepth(InputArray in, int depth, OutputArray out);
+  rescaleDepth(InputArray in, ElemDepth depth, OutputArray out);
 
   /** Object that can compute planes in an image
    */

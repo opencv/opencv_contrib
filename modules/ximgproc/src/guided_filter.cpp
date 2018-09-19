@@ -130,7 +130,7 @@ public:
 
     static Ptr<GuidedFilterImpl> create(InputArray guide, int radius, double eps);
 
-    void filter(InputArray src, OutputArray dst, int dDepth = -1) CV_OVERRIDE;
+    void filter(InputArray src, OutputArray dst, ElemDepth dDepth = CV_DEPTH_AUTO) CV_OVERRIDE;
 
 protected:
 
@@ -709,7 +709,7 @@ void GuidedFilterImpl::computeCovGuide(SymArray2D<Mat>& covars)
     runParBody(ComputeCovGuideFromChannelsMul_ParBody(*this, covars));
 }
 
-void GuidedFilterImpl::filter(InputArray src, OutputArray dst, int dDepth /*= -1*/)
+void GuidedFilterImpl::filter(InputArray src, OutputArray dst, ElemDepth dDepth /*= CV_DEPTH_AUTO */)
 {
     CV_Assert( !src.empty() && (src.depth() == CV_32F || src.depth() == CV_8U) );
     if (src.rows() != h || src.cols() != w)
@@ -718,7 +718,7 @@ void GuidedFilterImpl::filter(InputArray src, OutputArray dst, int dDepth /*= -1
         return;
     }
 
-    if (dDepth == -1) dDepth = src.depth();
+    if (dDepth == CV_DEPTH_AUTO) dDepth = src.depth();
     int srcCnNum = src.channels();
 
     vector<Mat> srcCn(srcCnNum);
@@ -788,7 +788,7 @@ Ptr<GuidedFilter> createGuidedFilter(InputArray guide, int radius, double eps)
 }
 
 CV_EXPORTS_W
-void guidedFilter(InputArray guide, InputArray src, OutputArray dst, int radius, double eps, int dDepth)
+void guidedFilter(InputArray guide, InputArray src, OutputArray dst, int radius, double eps, ElemDepth dDepth)
 {
     Ptr<GuidedFilter> gf = createGuidedFilter(guide, radius, eps);
     gf->filter(src, dst, dDepth);

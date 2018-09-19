@@ -72,9 +72,9 @@ static bool detecChessboardCorners(const vector<string>& list1, vector<string>& 
         if (found_l && found_r)
         {
             if (points_1.type() != CV_64FC2)
-                points_1.convertTo(points_1, CV_64FC2);
+                points_1.convertTo(points_1, CV_64F);
             if (points_2.type() != CV_64FC2)
-                points_2.convertTo(points_2, CV_64FC2);
+                points_2.convertTo(points_2, CV_64F);
             image_points_1.push_back(points_1);
             image_points_2.push_back(points_2);
             list_detected_1.push_back(list1[i]);
@@ -152,7 +152,7 @@ static void saveCameraParams( const string & filename, const int flags, const Ma
     fs << "distortion_coefficients_2" << disCoeffs2;
     fs << "xi_2" << xi2;
 
-    Mat om_t(1, 6, CV_64F);
+    Mat om_t(1, 6, CV_64FC1);
     Mat(rvec).reshape(1, 1).copyTo(om_t.colRange(0, 3));
     Mat(tvec).reshape(1, 1).copyTo(om_t.colRange(3, 6));
     //cvWriteComment( *fs, "6-tuples (rotation vector + translation vector) for each view", 0 );
@@ -160,7 +160,7 @@ static void saveCameraParams( const string & filename, const int flags, const Ma
 
     if ( !rvecs.empty() && !tvecs.empty() )
     {
-        Mat rvec_tvec((int)rvecs.size(), 6, CV_64F);
+        Mat rvec_tvec((int)rvecs.size(), 6, CV_64FC1);
         for (int i = 0; i < (int)rvecs.size(); ++i)
         {
             Mat(rvecs[i]).reshape(1, 1).copyTo(rvec_tvec(Rect(0, i, 3, 1)));

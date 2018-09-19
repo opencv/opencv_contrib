@@ -60,7 +60,7 @@ void buildPyramidCameraMatrix(const Mat& cameraMatrix, int levels, std::vector<M
     pyramidCameraMatrix.resize(levels);
 
     Mat cameraMatrix_dbl;
-    cameraMatrix.convertTo(cameraMatrix_dbl, CV_64FC1);
+    cameraMatrix.convertTo(cameraMatrix_dbl, CV_64F);
 
     for(int i = 0; i < levels; i++)
     {
@@ -975,11 +975,11 @@ warpFrameImpl(const Mat& image, const Mat& depth, const Mat& mask,
 
 ///////////////////////////////////////////////////////////////////////////////////////////////
 
-Ptr<RgbdNormals> RgbdNormals::create(int rows_in, int cols_in, int depth_in, InputArray K_in, int window_size_in, int method_in) {
+Ptr<RgbdNormals> RgbdNormals::create(int rows_in, int cols_in, ElemDepth depth_in, InputArray K_in, int window_size_in, int method_in) {
   return makePtr<RgbdNormals>(rows_in, cols_in, depth_in, K_in, window_size_in, method_in);
 }
 
-Ptr<DepthCleaner> DepthCleaner::create(int depth_in, int window_size_in, int method_in) {
+Ptr<DepthCleaner> DepthCleaner::create(ElemDepth depth_in, int window_size_in, int method_in) {
   return makePtr<DepthCleaner>(depth_in, window_size_in, method_in);
 }
 

@@ -57,7 +57,7 @@ PERF_TEST_P(Sz_Type_KernelSz, Blur,
     declare.time(20.0);
 
     const cv::Size size = GET_PARAM(0);
-    const int type = GET_PARAM(1);
+    const ElemType type = GET_PARAM(1);
     const int ksize = GET_PARAM(2);
 
     cv::Mat src(size, type);
@@ -68,7 +68,7 @@ PERF_TEST_P(Sz_Type_KernelSz, Blur,
         const cv::cuda::GpuMat d_src(src);
         cv::cuda::GpuMat dst;
 
-        cv::Ptr<cv::cuda::Filter> blurFilter = cv::cuda::createBoxFilter(d_src.type(), -1, cv::Size(ksize, ksize));
+        cv::Ptr<cv::cuda::Filter> blurFilter = cv::cuda::createBoxFilter(d_src.type(), CV_TYPE_AUTO, cv::Size(ksize, ksize));
 
         TEST_CYCLE() blurFilter->apply(d_src, dst);
 
@@ -92,7 +92,7 @@ PERF_TEST_P(Sz_Type_KernelSz, Filter2D, Combine(CUDA_TYPICAL_MAT_SIZES, Values(C
     declare.time(20.0);
 
     const cv::Size size = GET_PARAM(0);
-    const int type = GET_PARAM(1);
+    const ElemType type = GET_PARAM(1);
     const int ksize = GET_PARAM(2);
 
     cv::Mat src(size, type);
@@ -106,7 +106,7 @@ PERF_TEST_P(Sz_Type_KernelSz, Filter2D, Combine(CUDA_TYPICAL_MAT_SIZES, Values(C
         const cv::cuda::GpuMat d_src(src);
         cv::cuda::GpuMat dst;
 
-        cv::Ptr<cv::cuda::Filter> filter2D = cv::cuda::createLinearFilter(d_src.type(), -1, kernel);
+        cv::Ptr<cv::cuda::Filter> filter2D = cv::cuda::createLinearFilter(d_src.type(), CV_TYPE_AUTO, kernel);
 
         TEST_CYCLE() filter2D->apply(d_src, dst);
 
@@ -116,7 +116,7 @@ PERF_TEST_P(Sz_Type_KernelSz, Filter2D, Combine(CUDA_TYPICAL_MAT_SIZES, Values(C
     {
         cv::Mat dst;
 
-        TEST_CYCLE() cv::filter2D(src, dst, -1, kernel);
+        TEST_CYCLE() cv::filter2D(src, dst, CV_DEPTH_AUTO, kernel);
 
         CPU_SANITY_CHECK(dst);
     }
@@ -130,7 +130,7 @@ PERF_TEST_P(Sz_Type_KernelSz, Laplacian, Combine(CUDA_TYPICAL_MAT_SIZES, Values(
     declare.time(20.0);
 
     const cv::Size size = GET_PARAM(0);
-    const int type = GET_PARAM(1);
+    const ElemType type = GET_PARAM(1);
     const int ksize = GET_PARAM(2);
 
     cv::Mat src(size, type);
@@ -141,7 +141,7 @@ PERF_TEST_P(Sz_Type_KernelSz, Laplacian, Combine(CUDA_TYPICAL_MAT_SIZES, Values(
         const cv::cuda::GpuMat d_src(src);
         cv::cuda::GpuMat dst;
 
-        cv::Ptr<cv::cuda::Filter> laplacian = cv::cuda::createLaplacianFilter(d_src.type(), -1, ksize);
+        cv::Ptr<cv::cuda::Filter> laplacian = cv::cuda::createLaplacianFilter(d_src.type(), CV_TYPE_AUTO, ksize);
 
         TEST_CYCLE() laplacian->apply(d_src, dst);
 
@@ -151,7 +151,7 @@ PERF_TEST_P(Sz_Type_KernelSz, Laplacian, Combine(CUDA_TYPICAL_MAT_SIZES, Values(
     {
         cv::Mat dst;
 
-        TEST_CYCLE() cv::Laplacian(src, dst, -1, ksize);
+        TEST_CYCLE() cv::Laplacian(src, dst, CV_DEPTH_AUTO, ksize);
 
         CPU_SANITY_CHECK(dst);
     }
@@ -165,7 +165,7 @@ PERF_TEST_P(Sz_Type_KernelSz, Sobel, Combine(CUDA_TYPICAL_MAT_SIZES, Values(CV_8
     declare.time(20.0);
 
     const cv::Size size = GET_PARAM(0);
-    const int type = GET_PARAM(1);
+    const ElemType type = GET_PARAM(1);
     const int ksize = GET_PARAM(2);
 
     cv::Mat src(size, type);
@@ -176,7 +176,7 @@ PERF_TEST_P(Sz_Type_KernelSz, Sobel, Combine(CUDA_TYPICAL_MAT_SIZES, Values(CV_8
         const cv::cuda::GpuMat d_src(src);
         cv::cuda::GpuMat dst;
 
-        cv::Ptr<cv::cuda::Filter> sobel = cv::cuda::createSobelFilter(d_src.type(), -1, 1, 1, ksize);
+        cv::Ptr<cv::cuda::Filter> sobel = cv::cuda::createSobelFilter(d_src.type(), CV_TYPE_AUTO, 1, 1, ksize);
 
         TEST_CYCLE() sobel->apply(d_src, dst);
 
@@ -186,7 +186,7 @@ PERF_TEST_P(Sz_Type_KernelSz, Sobel, Combine(CUDA_TYPICAL_MAT_SIZES, Values(CV_8
     {
         cv::Mat dst;
 
-        TEST_CYCLE() cv::Sobel(src, dst, -1, 1, 1, ksize);
+        TEST_CYCLE() cv::Sobel(src, dst, CV_DEPTH_AUTO, 1, 1, ksize);
 
         CPU_SANITY_CHECK(dst);
     }
@@ -200,7 +200,7 @@ PERF_TEST_P(Sz_Type, Scharr, Combine(CUDA_TYPICAL_MAT_SIZES, Values(CV_8UC1, CV_
     declare.time(20.0);
 
     const cv::Size size = GET_PARAM(0);
-    const int type = GET_PARAM(1);
+    const ElemType type = GET_PARAM(1);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -210,7 +210,7 @@ PERF_TEST_P(Sz_Type, Scharr, Combine(CUDA_TYPICAL_MAT_SIZES, Values(CV_8UC1, CV_
         const cv::cuda::GpuMat d_src(src);
         cv::cuda::GpuMat dst;
 
-        cv::Ptr<cv::cuda::Filter> scharr = cv::cuda::createScharrFilter(d_src.type(), -1, 1, 0);
+        cv::Ptr<cv::cuda::Filter> scharr = cv::cuda::createScharrFilter(d_src.type(), CV_TYPE_AUTO, 1, 0);
 
         TEST_CYCLE() scharr->apply(d_src, dst);
 
@@ -220,7 +220,7 @@ PERF_TEST_P(Sz_Type, Scharr, Combine(CUDA_TYPICAL_MAT_SIZES, Values(CV_8UC1, CV_
     {
         cv::Mat dst;
 
-        TEST_CYCLE() cv::Scharr(src, dst, -1, 1, 0);
+        TEST_CYCLE() cv::Scharr(src, dst, CV_DEPTH_AUTO, 1, 0);
 
         CPU_SANITY_CHECK(dst);
     }
@@ -234,7 +234,7 @@ PERF_TEST_P(Sz_Type_KernelSz, GaussianBlur, Combine(CUDA_TYPICAL_MAT_SIZES, Valu
     declare.time(20.0);
 
     const cv::Size size = GET_PARAM(0);
-    const int type = GET_PARAM(1);
+    const ElemType type = GET_PARAM(1);
     const int ksize = GET_PARAM(2);
 
     cv::Mat src(size, type);
@@ -245,7 +245,7 @@ PERF_TEST_P(Sz_Type_KernelSz, GaussianBlur, Combine(CUDA_TYPICAL_MAT_SIZES, Valu
         const cv::cuda::GpuMat d_src(src);
         cv::cuda::GpuMat dst;
 
-        cv::Ptr<cv::cuda::Filter> gauss = cv::cuda::createGaussianFilter(d_src.type(), -1, cv::Size(ksize, ksize), 0.5);
+        cv::Ptr<cv::cuda::Filter> gauss = cv::cuda::createGaussianFilter(d_src.type(), CV_TYPE_AUTO, cv::Size(ksize, ksize), 0.5);
 
         TEST_CYCLE() gauss->apply(d_src, dst);
 
@@ -269,7 +269,7 @@ PERF_TEST_P(Sz_Type, Erode, Combine(CUDA_TYPICAL_MAT_SIZES, Values(CV_8UC1, CV_8
     declare.time(20.0);
 
     const cv::Size size = GET_PARAM(0);
-    const int type = GET_PARAM(1);
+    const ElemType type = GET_PARAM(1);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -305,7 +305,7 @@ PERF_TEST_P(Sz_Type, Dilate, Combine(CUDA_TYPICAL_MAT_SIZES, Values(CV_8UC1, CV_
     declare.time(20.0);
 
     const cv::Size size = GET_PARAM(0);
-    const int type = GET_PARAM(1);
+    const ElemType type = GET_PARAM(1);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -345,7 +345,7 @@ PERF_TEST_P(Sz_Type_Op, MorphologyEx, Combine(CUDA_TYPICAL_MAT_SIZES, Values(CV_
     declare.time(20.0);
 
     const cv::Size size = GET_PARAM(0);
-    const int type = GET_PARAM(1);
+    const ElemType type = GET_PARAM(1);
     const int morphOp = GET_PARAM(2);
 
     cv::Mat src(size, type);
@@ -386,8 +386,8 @@ PERF_TEST_P(Sz_KernelSz, Median, Combine(CUDA_TYPICAL_MAT_SIZES, Values(3, 5, 7,
     declare.time(20.0);
 
     const cv::Size size = GET_PARAM(0);
-    // const int type = GET_PARAM(1);
-    const int type = CV_8UC1;
+    // const ElemType type = GET_PARAM(1);
+    const ElemType type = CV_8UC1;
     const int kernel = GET_PARAM(1);
 
     cv::Mat src(size, type);

@@ -57,13 +57,13 @@ PERF_TEST_P(Sz_Depth_Cn, Merge,
                     Values(2, 3, 4)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
 
     std::vector<cv::Mat> src(channels);
     for (int i = 0; i < channels; ++i)
     {
-        src[i].create(size, depth);
+        src[i].create(size, CV_MAKETYPE(depth, 1));
         declare.in(src[i], WARMUP_RNG);
     }
 
@@ -98,7 +98,7 @@ PERF_TEST_P(Sz_Depth_Cn, Split,
                     Values(2, 3, 4)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
 
     cv::Mat src(size, CV_MAKE_TYPE(depth, channels));
@@ -139,7 +139,7 @@ PERF_TEST_P(Sz_Type, Transpose,
                     Values(CV_8UC1, CV_8UC4, CV_16UC2, CV_16SC2, CV_32SC1, CV_32SC2, CV_64FC1)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int type = GET_PARAM(1);
+    const ElemType type = GET_PARAM(1);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -178,11 +178,11 @@ PERF_TEST_P(Sz_Depth_Cn_Code, Flip,
                     FlipCode::all()))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
     const int flipCode = GET_PARAM(3);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -214,7 +214,7 @@ PERF_TEST_P(Sz_Type, LutOneChannel,
                     Values(CV_8UC1, CV_8UC3)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int type = GET_PARAM(1);
+    const ElemType type = GET_PARAM(1);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -251,7 +251,7 @@ PERF_TEST_P(Sz_Type, LutMultiChannel,
                     Values<MatType>(CV_8UC3)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int type = GET_PARAM(1);
+    const ElemType type = GET_PARAM(1);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -292,11 +292,11 @@ PERF_TEST_P(Sz_Depth_Cn_Border, CopyMakeBorder,
                     ALL_BORDER_MODES))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
     const int borderMode = GET_PARAM(3);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);

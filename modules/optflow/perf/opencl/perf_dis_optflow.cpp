@@ -29,8 +29,8 @@ OCL_PERF_TEST_P(DenseOpticalFlow_DIS, perf,
         preset = DISOpticalFlow::PRESET_MEDIUM;
     Size sz = get<1>(params);
 
-    UMat frame1(sz, CV_8U);
-    UMat frame2(sz, CV_8U);
+    UMat frame1(sz, CV_8UC1);
+    UMat frame2(sz, CV_8UC1);
     UMat flow;
 
     MakeArtificialExample(frame1, frame2);
@@ -51,7 +51,7 @@ void MakeArtificialExample(UMat &dst_frame1, UMat &dst_frame2)
     int OF_scale = 6;
     double sigma = dst_frame1.cols / 300;
 
-    UMat tmp(Size(dst_frame1.cols / (1 << src_scale), dst_frame1.rows / (1 << src_scale)), CV_8U);
+    UMat tmp(Size(dst_frame1.cols / (1 << src_scale), dst_frame1.rows / (1 << src_scale)), CV_8UC1);
     randu(tmp, 0, 255);
     resize(tmp, dst_frame1, dst_frame1.size(), 0.0, 0.0, INTER_LINEAR_EXACT);
     resize(tmp, dst_frame2, dst_frame2.size(), 0.0, 0.0, INTER_LINEAR_EXACT);

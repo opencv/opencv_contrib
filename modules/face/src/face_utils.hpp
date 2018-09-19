@@ -9,7 +9,7 @@
 
 using namespace cv;
 
-inline Mat asRowMatrix(InputArrayOfArrays src, int rtype, double alpha=1, double beta=0) {
+inline Mat asRowMatrix(InputArrayOfArrays src, ElemType rtype, double alpha=1, double beta=0) {
     // make sure the input data is a vector of matrices or vector of vector
     if(src.kind() != _InputArray::STD_VECTOR_MAT && src.kind() != _InputArray::STD_VECTOR_VECTOR) {
         String error_message = "The data is expected as InputArray::STD_VECTOR_MAT (a std::vector<Mat>) or _InputArray::STD_VECTOR_VECTOR (a std::vector< std::vector<...> >).";
@@ -35,9 +35,9 @@ inline Mat asRowMatrix(InputArrayOfArrays src, int rtype, double alpha=1, double
         Mat xi = data.row(i);
         // make reshape happy by cloning for non-continuous matrices
         if(src.getMat(i).isContinuous()) {
-            src.getMat(i).reshape(1, 1).convertTo(xi, rtype, alpha, beta);
+            src.getMat(i).reshape(1, 1).convertTo(xi, CV_MAT_DEPTH(rtype), alpha, beta);
         } else {
-            src.getMat(i).clone().reshape(1, 1).convertTo(xi, rtype, alpha, beta);
+            src.getMat(i).clone().reshape(1, 1).convertTo(xi, CV_MAT_DEPTH(rtype), alpha, beta);
         }
     }
     return data;

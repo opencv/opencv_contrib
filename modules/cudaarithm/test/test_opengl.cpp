@@ -290,8 +290,8 @@ PARAM_TEST_CASE(Texture2D, cv::Size, MatType)
     }
 
     cv::Size size;
-    int type;
-    int depth;
+    ElemType type;
+    ElemDepth depth;
     int cn;
     cv::ogl::Texture2D::Format format;
 

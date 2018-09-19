@@ -62,7 +62,7 @@ void ft::createKernel(int function, int radius, OutputArray kernel, const int ch
 {
     int basicFunctionWidth = 2 * radius + 1;
     Mat kernelOneChannel;
-    Mat A(1, basicFunctionWidth, CV_32F, 0.0f);
+    Mat A(1, basicFunctionWidth, CV_32FC1, 0.0f);
     std::vector<Mat> channels;
 
     A.at<float>(0, radius) = 1;
@@ -161,7 +161,7 @@ void ft::inpaint(InputArray image, InputArray mask, OutputArray output, int radi
 
 void ft::filter(InputArray image, InputArray kernel, OutputArray output)
 {
-    Mat mask = Mat::ones(image.size(), CV_8U);
+    Mat mask = Mat::ones(image.size(), CV_8UC1);
 
     ft::FT02D_process(image, kernel, output, mask);
 }

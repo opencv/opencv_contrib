@@ -55,10 +55,10 @@ PERF_TEST_P(Sz_Depth_Norm, Norm,
                     Values(NormType(cv::NORM_INF), NormType(cv::NORM_L1), NormType(cv::NORM_L2))))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int normType = GET_PARAM(2);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     if (depth == CV_8U)
         cv::randu(src, 0, 254);
     else
@@ -134,10 +134,10 @@ PERF_TEST_P(Sz_Depth_Cn, Sum,
                     CUDA_CHANNELS_1_3_4))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -170,10 +170,10 @@ PERF_TEST_P(Sz_Depth_Cn, SumAbs,
                     CUDA_CHANNELS_1_3_4))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -202,10 +202,10 @@ PERF_TEST_P(Sz_Depth_Cn, SumSqr,
                     CUDA_CHANNELS_1_3_4))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -235,9 +235,9 @@ PERF_TEST_P(Sz_Depth, MinMax,
                     Values(CV_8U, CV_16U, CV_32F, CV_64F)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     if (depth == CV_8U)
         cv::randu(src, 0, 254);
     else
@@ -272,9 +272,9 @@ PERF_TEST_P(Sz_Depth, MinMaxLoc,
                     Values(CV_8U, CV_16U, CV_32F, CV_64F)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     if (depth == CV_8U)
         cv::randu(src, 0, 254);
     else
@@ -311,9 +311,9 @@ PERF_TEST_P(Sz_Depth, CountNonZero,
                     Values(CV_8U, CV_16U, CV_32F, CV_64F)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -353,12 +353,12 @@ PERF_TEST_P(Sz_Depth_Cn_Code_Dim, Reduce,
                     ReduceDim::all()))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
     const int reduceOp = GET_PARAM(3);
     const int dim = GET_PARAM(4);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -398,13 +398,13 @@ PERF_TEST_P(Sz_Depth_NormType, Normalize,
                            NormType(cv::NORM_MINMAX))))
 {
     const cv::Size size = GET_PARAM(0);
-    const int type = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int norm_type = GET_PARAM(2);
 
     const double alpha = 1;
     const double beta = 0;
 
-    cv::Mat src(size, type);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -412,7 +412,7 @@ PERF_TEST_P(Sz_Depth_NormType, Normalize,
         const cv::cuda::GpuMat d_src(src);
         cv::cuda::GpuMat dst;
 
-        TEST_CYCLE() cv::cuda::normalize(d_src, dst, alpha, beta, norm_type, type, cv::cuda::GpuMat());
+        TEST_CYCLE() cv::cuda::normalize(d_src, dst, alpha, beta, norm_type, depth, cv::cuda::GpuMat());
 
         CUDA_SANITY_CHECK(dst, 1e-6);
     }
@@ -420,7 +420,7 @@ PERF_TEST_P(Sz_Depth_NormType, Normalize,
     {
         cv::Mat dst;
 
-        TEST_CYCLE() cv::normalize(src, dst, alpha, beta, norm_type, type);
+        TEST_CYCLE() cv::normalize(src, dst, alpha, beta, norm_type, depth);
 
         CPU_SANITY_CHECK(dst);
     }

@@ -43,7 +43,7 @@ namespace opencv_test { namespace {
 TEST(CV_StaticSaliencySpectralResidual, should_not_contain_nan)
 {
     Ptr<StaticSaliencySpectralResidual> saliencyAlgorithm = StaticSaliencySpectralResidual::create();
-    Mat img = Mat::zeros(cv::Size(1, 1), CV_32F);
+    Mat img = Mat::zeros(cv::Size(1, 1), CV_32FC1);
     Mat saliencyMap;
 
     saliencyAlgorithm->computeSaliency(img, saliencyMap);

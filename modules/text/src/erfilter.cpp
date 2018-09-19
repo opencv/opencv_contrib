@@ -1211,11 +1211,11 @@ void get_gradient_magnitude(Mat& _grey_img, Mat& _gradient_magnitude)
 
     Mat kernel = (Mat_<float>(1,3) << -1,0,1);
     Mat grad_x;
-    filter2D(C, grad_x, -1, kernel, Point(-1,-1), 0, BORDER_DEFAULT);
+    filter2D(C, grad_x, CV_DEPTH_AUTO, kernel, Point(-1,-1), 0, BORDER_DEFAULT);
 
     Mat kernel2 = (Mat_<float>(3,1) << -1,0,1);
     Mat grad_y;
-    filter2D(C, grad_y, -1, kernel2, Point(-1,-1), 0, BORDER_DEFAULT);
+    filter2D(C, grad_y, CV_DEPTH_AUTO, kernel2, Point(-1, -1), 0, BORDER_DEFAULT);
 
     magnitude( grad_x, grad_y, _gradient_magnitude);
 }
@@ -1253,7 +1253,7 @@ void computeNMChannels(InputArray _src, CV_OUT OutputArrayOfArrays _channels, in
 
     if (_mode == ERFILTER_NM_IHSGrad)
     {
-        _channels.create( 4, 1, src.depth());
+        _channels.create( 4, 1, CV_MAKETYPE(src.depth(), 1));
 
         Mat hsv;
         cvtColor(src, hsv, COLOR_RGB2HSV);
@@ -1271,7 +1271,7 @@ void computeNMChannels(InputArray _src, CV_OUT OutputArrayOfArrays _channels, in
         cvtColor(src, grey, COLOR_RGB2GRAY);
         Mat gradient_magnitude = Mat_<float>(grey.size());
         get_gradient_magnitude( grey, gradient_magnitude);
-        gradient_magnitude.convertTo(gradient_magnitude, CV_8UC1);
+        gradient_magnitude.convertTo(gradient_magnitude, CV_8U);
 
         _channels.create(src.rows, src.cols, CV_8UC1, 3);
         Mat channelGrad = _channels.getMat(3);
@@ -1279,7 +1279,7 @@ void computeNMChannels(InputArray _src, CV_OUT OutputArrayOfArrays _channels, in
 
     } else if (_mode == ERFILTER_NM_RGBLGrad) {
 
-        _channels.create( 5, 1, src.depth());
+        _channels.create( 5, 1, CV_MAKETYPE(src.depth(), 1));
 
         vector<Mat> channelsRGB;
         split(src, channelsRGB);
@@ -1303,7 +1303,7 @@ void computeNMChannels(InputArray _src, CV_OUT OutputArrayOfArrays _channels, in
         cvtColor(src, grey, COLOR_RGB2GRAY);
         Mat gradient_magnitude = Mat_<float>(grey.size());
         get_gradient_magnitude( grey, gradient_magnitude);
-        gradient_magnitude.convertTo(gradient_magnitude, CV_8UC1);
+        gradient_magnitude.convertTo(gradient_magnitude, CV_8U);
 
         _channels.create(src.rows, src.cols, CV_8UC1, 4);
         Mat channelGrad = _channels.getMat(4);
@@ -2569,14 +2569,14 @@ double MaxMeaningfulClustering::probability(vector<int> &cluster)
     vector<float> sample;
     sample.push_back((float)cluster.size());
 
-    Mat diameters      ( (int)cluster.size(), 1, CV_32F, 1 );
-    Mat strokes        ( (int)cluster.size(), 1, CV_32F, 1 );
-    Mat gradients      ( (int)cluster.size(), 1, CV_32F, 1 );
-    Mat fg_intensities ( (int)cluster.size(), 1, CV_32F, 1 );
-    Mat bg_intensities ( (int)cluster.size(), 1, CV_32F, 1 );
-    Mat axial_ratios   ( (int)cluster.size(), 1, CV_32F, 1 );
-    Mat chull_ratios   ( (int)cluster.size(), 1, CV_32F, 1 );
-    Mat convexities    ( (int)cluster.size(), 1, CV_32F, 1 );
+    Mat diameters      ( (int)cluster.size(), 1, CV_32FC1, 1 );
+    Mat strokes        ( (int)cluster.size(), 1, CV_32FC1, 1 );
+    Mat gradients      ( (int)cluster.size(), 1, CV_32FC1, 1 );
+    Mat fg_intensities ( (int)cluster.size(), 1, CV_32FC1, 1 );
+    Mat bg_intensities ( (int)cluster.size(), 1, CV_32FC1, 1 );
+    Mat axial_ratios   ( (int)cluster.size(), 1, CV_32FC1, 1 );
+    Mat chull_ratios   ( (int)cluster.size(), 1, CV_32FC1, 1 );
+    Mat convexities    ( (int)cluster.size(), 1, CV_32FC1, 1 );
     Subdiv2D subdiv(Rect(0,0,imsize.width,imsize.height));
     vector< vector<Point> > forest(cluster.size());
     float maxAvgOverlap = 0;

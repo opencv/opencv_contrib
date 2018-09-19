@@ -82,7 +82,7 @@ namespace rgbd
       n_points = convertDepthToFloat<short>(depth, mask, 1.0f / 1000.0f, u_mat, v_mat, z_mat);
     else
     {
-      CV_Assert(depth.type() == CV_32F);
+      CV_Assert(depth.type() == CV_32FC1);
       n_points = convertDepthToFloat<float>(depth, mask, 1.0f, u_mat, v_mat, z_mat);
     }
 
@@ -160,7 +160,7 @@ namespace rgbd
 
     cv::Mat points_float;
     if (points.depth() != CV_32F)
-      points.convertTo(points_float, CV_32FC2);
+      points.convertTo(points_float, CV_32F);
     else
       points_float = points;
 
@@ -173,7 +173,7 @@ namespace rgbd
       convertDepthToFloat<short>(depth, 1.0f / 1000.0f, points_float, z_mat);
     else
     {
-      CV_Assert(depth.type() == CV_32F);
+      CV_Assert(depth.type() == CV_32FC1);
       convertDepthToFloat<float>(depth, 1.0f, points_float, z_mat);
     }
 

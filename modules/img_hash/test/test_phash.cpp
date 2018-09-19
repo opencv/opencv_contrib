@@ -22,7 +22,7 @@ CV_PHashTest::~CV_PHashTest(){}
 
 void CV_PHashTest::run(int )
 {
-    cv::Mat input(32, 32, CV_8U);
+    cv::Mat input(32, 32, CV_8UC1);
     cv::Mat hash;
 
     uchar value = 0;

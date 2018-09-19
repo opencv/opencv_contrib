@@ -130,7 +130,7 @@ namespace xphoto
         }
         res /= num;
 
-        res.convertTo( dst, src.type() );
+        res.convertTo( dst, src.depth() );
     }
 
     void rgbDctDenoising(const Mat &src, Mat &dst, const double sigma, const int psize)
@@ -166,9 +166,8 @@ namespace xphoto
     {
         CV_Assert( src.channels() == 3 || src.channels() == 1 );
 
-        int xtype = CV_MAKE_TYPE( CV_32F, src.channels() );
-        Mat img( src.size(), xtype );
-        src.convertTo(img, xtype);
+        Mat img(src.size(), CV_MAKE_TYPE(CV_32F, src.channels()));
+        src.convertTo(img, CV_32F);
 
         if ( img.type() == CV_32FC3 )
             rgbDctDenoising( img, img, sigma, psize );
@@ -178,7 +177,7 @@ namespace xphoto
             CV_Error_( CV_StsNotImplemented,
             ("Unsupported source image format (=%d)", img.type()) );
 
-        img.convertTo( dst, src.type() );
+        img.convertTo( dst, src.depth() );
     }
 
 }

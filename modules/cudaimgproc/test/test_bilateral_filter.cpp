@@ -53,7 +53,7 @@ PARAM_TEST_CASE(BilateralFilter, cv::cuda::DeviceInfo, cv::Size, MatType)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemType type;
     int kernel_size;
     float sigma_color;
     float sigma_spatial;
@@ -76,7 +76,7 @@ CUDA_TEST_P(BilateralFilter, Accuracy)
 {
     cv::Mat src = randomMat(size, type);
 
-    src.convertTo(src, type);
+    src.convertTo(src, CV_MAT_DEPTH(type));
     cv::cuda::GpuMat dst;
 
     cv::cuda::bilateralFilter(loadMat(src), dst, kernel_size, sigma_color, sigma_spatial);
@@ -90,7 +90,7 @@ CUDA_TEST_P(BilateralFilter, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, BilateralFilter, testing::Combine(
     ALL_DEVICES,
     testing::Values(cv::Size(128, 128), cv::Size(113, 113), cv::Size(639, 481)),
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_32FC1), MatType(CV_32FC3))
+    testing::Values(CV_8UC1, CV_8UC3, CV_32FC1, CV_32FC3)
     ));
 
 

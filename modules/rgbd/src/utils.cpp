@@ -11,7 +11,7 @@
 namespace cv
 {
 namespace rgbd
-{    
+{
   /** If the input image is of type CV_16UC1 (like the Kinect one), the image is converted to floats, divided
    * by 1000 to get a depth in meters, and the values 0 are converted to std::numeric_limits<float>::quiet_NaN()
    * Otherwise, the image is simply converted to floats
@@ -21,15 +21,15 @@ namespace rgbd
    * @param out_out The rescaled float depth image
    */
   void
-  rescaleDepth(InputArray in_in, int depth, OutputArray out_out)
+  rescaleDepth(InputArray in_in, ElemDepth depth, OutputArray out_out)
   {
     cv::Mat in = in_in.getMat();
     CV_Assert(in.type() == CV_64FC1 || in.type() == CV_32FC1 || in.type() == CV_16UC1 || in.type() == CV_16SC1);
-    CV_Assert(depth == CV_64FC1 || depth == CV_32FC1);
+    CV_Assert(depth == CV_64F || depth == CV_32F);
 
-    int in_depth = in.depth();
+        int in_depth = in.depth();
 
-    out_out.create(in.size(), depth);
+    out_out.create(in.size(), CV_MAKETYPE(depth, 1));
     cv::Mat out = out_out.getMat();
     if (in_depth == CV_16U)
     {

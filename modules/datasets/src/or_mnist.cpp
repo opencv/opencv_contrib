@@ -104,7 +104,7 @@ void OR_mnistImp::loadDatasetPart(const string &imagesFile, const string &labels
         Ptr<OR_mnistObj> curr(new OR_mnistObj);
         curr->label = labels[i];
 
-        curr->image = Mat(28, 28, CV_8U);
+        curr->image = Mat(28, 28, CV_8UC1);
         unsigned int imageIdx = i*imageSize;
         for (int j=0; j<curr->image.rows; ++j)
         {

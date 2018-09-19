@@ -59,7 +59,7 @@ TEST(CV_Face_BIF, fails_when_zero_rotations) {
 }
 
 TEST(CV_Face_BIF, can_compute) {
-    cv::Mat image(60, 60, CV_32F);
+    cv::Mat image(60, 60, CV_32FC1);
     cv::theRNG().fill(image, cv::RNG::UNIFORM, -1, 1);
 
     cv::Ptr<cv::face::BIF> bif = cv::face::BIF::create();

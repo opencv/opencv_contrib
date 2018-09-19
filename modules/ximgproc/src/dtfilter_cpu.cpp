@@ -119,7 +119,7 @@ void DTFilterCPU::init(InputArray guide_, double sigmaSpatial_, double sigmaColo
     #undef CREATE_DTF
 }
 
-void DTFilterCPU::filter(InputArray src_, OutputArray dst_, int dDepth)
+void DTFilterCPU::filter(InputArray src_, OutputArray dst_, ElemDepth dDepth)
 {
     Mat src = src_.getMat();
     dst_.create(src.size(), src.type());
@@ -182,7 +182,7 @@ void DTFilterCPU::release()
     adistVert.release();
 }
 
-Mat DTFilterCPU::getWExtendedMat(int h, int w, int type, int brdleft /*= 0*/, int brdRight /*= 0*/, int cacheAlign /*= 0*/)
+Mat DTFilterCPU::getWExtendedMat(int h, int w, ElemType type, int brdleft /*= 0*/, int brdRight /*= 0*/, int cacheAlign /*= 0*/)
 {
     int wrapperCols = w + brdleft + brdRight;
     if (cacheAlign > 0)
