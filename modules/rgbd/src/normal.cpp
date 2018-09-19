@@ -365,6 +365,8 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
           computeImpl<double, double>(depth, normals);
           break;
         }
+        default:
+          CV_Assert(0);
       }
     }
 

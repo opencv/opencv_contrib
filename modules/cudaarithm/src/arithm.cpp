@@ -277,6 +277,9 @@ void cv::cuda::gemm(InputArray _src1, InputArray _src2, double alpha, InputArray
             &betac,
             dst.ptr<cuDoubleComplex>(), static_cast<int>(dst.step / sizeof(cuDoubleComplex))) );
         break;
+
+    default:
+        CV_Assert(0);
     }
 
     cublasSafeCall( cublasDestroy_v2(handle) );
