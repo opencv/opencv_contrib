@@ -363,10 +363,10 @@ public:
         // this should be applied to all owned render targets
         Ogre::RenderTarget* targets[] = {frameSrc, rWin, depthRTT};
 
-        for(int j = 0; j < 3; j++)
+        for(int j = (frameSrc == rWin); j < 3; j++) // skip frameSrc if it is the same as rWin
         {
             Ogre::RenderTarget* tgt = targets[j];
-            if(!tgt || (frameSrc == rWin && tgt == rWin)) continue;
+            if(!tgt) continue;
 
             Viewport* vp = tgt->getViewport(0);
             cm.removeCompositorChain(vp); // remove previous configuration
