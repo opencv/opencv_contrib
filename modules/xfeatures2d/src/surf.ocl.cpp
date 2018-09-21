@@ -160,11 +160,11 @@ bool SURF_OCL::detectKeypoints(UMat &keypoints)
 {
     // create image pyramid buffers
     // different layers have same sized buffers, but they are sampled from Gaussian kernel.
-    det.create(img_rows * (params->nOctaveLayers + 2), img_cols, CV_32F);
+    det.create(img_rows * (params->nOctaveLayers + 2), img_cols, CV_32FC1);
     trace.create(img_rows * (params->nOctaveLayers + 2), img_cols, CV_32FC1);
 
     maxPosBuffer.create(1, maxCandidates, CV_32SC4);
-    keypoints.create(SURF_OCL::ROWS_COUNT, maxFeatures, CV_32F);
+    keypoints.create(SURF_OCL::ROWS_COUNT, maxFeatures, CV_32FC1);
     keypoints.setTo(Scalar::all(0));
     Mat cpuCounters;
 
@@ -225,12 +225,12 @@ bool SURF_OCL::computeDescriptors(const UMat &keypoints, OutputArray _descriptor
         _descriptors.release();
         return true;
     }
-    _descriptors.create(nFeatures, dsize, CV_32F);
+    _descriptors.create(nFeatures, dsize, CV_32FC1);
     UMat descriptors;
     if( _descriptors.isUMat() )
         descriptors = _descriptors.getUMat();
     else
-        descriptors.create(nFeatures, dsize, CV_32F);
+        descriptors.create(nFeatures, dsize, CV_32FC1);
 
     ocl::Kernel kerCalcDesc, kerNormDesc;
 

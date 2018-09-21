@@ -464,7 +464,7 @@ void HarrisLaplaceFeatureDetector_Impl::detect(InputArray img, std::vector<KeyPo
             GaussianBlur(Lym2, Lym2smooth, Size(gsize, gsize), si, si, BORDER_REPLICATE);
             GaussianBlur(Lxmy, Lxmysmooth, Size(gsize, gsize), si, si, BORDER_REPLICATE);
 
-            Mat cornern_mat(curr_layer.size(), CV_32F);
+            Mat cornern_mat(curr_layer.size(), CV_32FC1);
 
             /*Calculates cornerness in each pixel of the image*/
             for (int row = 0; row < curr_layer.rows; row++)

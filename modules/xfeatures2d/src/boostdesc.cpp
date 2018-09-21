@@ -85,7 +85,7 @@ public:
     virtual int descriptorSize() const CV_OVERRIDE { return m_descriptor_size; }
 
     // returns the descriptor type
-    virtual int descriptorType() const CV_OVERRIDE { return m_descriptor_type; }
+    virtual ElemType descriptorType() const CV_OVERRIDE { return m_descriptor_type; }
 
     // returns the default norm type
     virtual int defaultNorm()    const CV_OVERRIDE { return m_descriptor_norm; }
@@ -108,7 +108,7 @@ protected:
 
     // size, type, norm
     int m_descriptor_size;
-    int m_descriptor_type;
+    ElemType m_descriptor_type;
     int m_descriptor_norm;
 
     // desc type
@@ -621,23 +621,23 @@ void BoostDesc_Impl::ini_params( const int orientQuant, const int patchSize,
     m_grad_atype = iGradAssignType;
 
     // cast into opencv Mat type as float
-    m_wl_thresh = Mat( dim0, dim1, CV_32F, reinterpret_cast<float *>(const_cast<unsigned int *>(thresh)) );
-    m_wl_alpha  = Mat( dim0, dim1, CV_32F, reinterpret_cast<float *>(const_cast<unsigned int *>(alpha )) );
+    m_wl_thresh = Mat( dim0, dim1, CV_32FC1, reinterpret_cast<float *>(const_cast<unsigned int *>(thresh)) );
+    m_wl_alpha  = Mat( dim0, dim1, CV_32FC1, reinterpret_cast<float *>(const_cast<unsigned int *>(alpha )) );
 
     // cast into opencv Mat type as integer
-    m_wl_orient = Mat( dim0, dim1, CV_32S, const_cast<int *>(orient) );
-    m_wl_x_min  = Mat( dim0, dim1, CV_32S, const_cast<int *>(x_min ) );
-    m_wl_x_max  = Mat( dim0, dim1, CV_32S, const_cast<int *>(x_max ) );
-    m_wl_y_min  = Mat( dim0, dim1, CV_32S, const_cast<int *>(y_min ) );
-    m_wl_y_max  = Mat( dim0, dim1, CV_32S, const_cast<int *>(y_max ) );
+    m_wl_orient = Mat( dim0, dim1, CV_32SC1, const_cast<int *>(orient) );
+    m_wl_x_min  = Mat( dim0, dim1, CV_32SC1, const_cast<int *>(x_min ) );
+    m_wl_x_max  = Mat( dim0, dim1, CV_32SC1, const_cast<int *>(x_max ) );
+    m_wl_y_min  = Mat( dim0, dim1, CV_32SC1, const_cast<int *>(y_min ) );
+    m_wl_y_max  = Mat( dim0, dim1, CV_32SC1, const_cast<int *>(y_max ) );
 
     // no beta
     if ( beta == NULL ) return;
 
     if ( m_desc_type == LBGM )
-      m_wl_beta = Mat( dim1, nDim, CV_32F, reinterpret_cast<float *>(const_cast<unsigned int *>(beta)) );
+      m_wl_beta = Mat( dim1, nDim, CV_32FC1, reinterpret_cast<float *>(const_cast<unsigned int *>(beta)) );
     else
-      m_wl_beta = Mat( dim0, dim1, CV_32F, reinterpret_cast<float *>(const_cast<unsigned int *>(beta)) );
+      m_wl_beta = Mat( dim0, dim1, CV_32FC1, reinterpret_cast<float *>(const_cast<unsigned int *>(beta)) );
 }
 
 // constructor

@@ -71,7 +71,7 @@ public:
     virtual int descriptorSize() const CV_OVERRIDE;
 
     /** returns the descriptor type */
-    virtual int descriptorType() const CV_OVERRIDE;
+    virtual ElemType descriptorType() const CV_OVERRIDE;
 
     /** returns the default norm type */
     virtual int defaultNorm() const CV_OVERRIDE;
@@ -453,7 +453,7 @@ void FREAK_Impl::computeDescriptors( InputArray _image, std::vector<KeyPoint>& k
 
     Mat image = _image.getMat();
     Mat imgIntegral;
-    integral(image, imgIntegral, DataType<iiMatType>::type);
+    integral(image, imgIntegral, DataType<iiMatType>::depth);
     std::vector<int> kpScaleIdx(keypoints.size()); // used to save pattern scale index corresponding to each keypoints
     const std::vector<int>::iterator ScaleIdxBegin = kpScaleIdx.begin(); // used in std::vector erase function
     const std::vector<cv::KeyPoint>::iterator kpBegin = keypoints.begin(); // used in std::vector erase function
@@ -510,7 +510,7 @@ void FREAK_Impl::computeDescriptors( InputArray _image, std::vector<KeyPoint>& k
     if( !extAll )
     {
         // extract the best comparisons only
-        _descriptors.create((int)keypoints.size(), FREAK_NB_PAIRS/8, CV_8U);
+        _descriptors.create((int)keypoints.size(), FREAK_NB_PAIRS / 8, CV_8UC1);
         _descriptors.setTo(Scalar::all(0));
         Mat descriptors = _descriptors.getMat();
 
@@ -567,7 +567,7 @@ void FREAK_Impl::computeDescriptors( InputArray _image, std::vector<KeyPoint>& k
     }
     else // extract all possible comparisons for selection
     {
-        _descriptors.create((int)keypoints.size(), 128, CV_8U);
+        _descriptors.create((int)keypoints.size(), 128, CV_8UC1);
         _descriptors.setTo(Scalar::all(0));
         Mat descriptors = _descriptors.getMat();
         std::bitset<1024>* ptr = (std::bitset<1024>*) (descriptors.data+(keypoints.size()-1)*descriptors.step[0]);
@@ -715,7 +715,7 @@ std::vector<int> FREAK_Impl::selectPairs(const std::vector<Mat>& images
         std::cout << "number of keypoints: " << descriptors.rows << std::endl;
 
     //descriptor in floating point format (each bit is a float)
-    Mat descriptorsFloat = Mat::zeros(descriptors.rows, 903, CV_32F);
+    Mat descriptorsFloat = Mat::zeros(descriptors.rows, 903, CV_32FC1);
 
     std::bitset<1024>* ptr = (std::bitset<1024>*) (descriptors.data+(descriptors.rows-1)*descriptors.step[0]);
     for( int m = descriptors.rows; m--; )
@@ -830,9 +830,9 @@ int FREAK_Impl::descriptorSize() const
     return FREAK_NB_PAIRS / 8; // descriptor length in bytes
 }
 
-int FREAK_Impl::descriptorType() const
+ElemType FREAK_Impl::descriptorType() const
 {
-    return CV_8U;
+    return CV_8UC1;
 }
 
 int FREAK_Impl::defaultNorm() const

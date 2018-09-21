@@ -342,7 +342,7 @@ namespace cv
                 return;
             }
             Mat signature = _signature.getMat();
-            if (signature.type() != CV_32F || signature.cols != SIGNATURE_DIMENSION)
+            if (signature.type() != CV_32FC1 || signature.cols != SIGNATURE_DIMENSION)
             {
                 CV_Error_(Error::StsBadArg, ("Invalid signature format. Type must be CV_32F and signature.cols must be %d.", SIGNATURE_DIMENSION));
             }
@@ -361,7 +361,7 @@ namespace cv
                 labPixel.at<Vec3f>(0, 0) = labColor;
                 Mat rgbPixel;
                 cvtColor(labPixel, rgbPixel, COLOR_Lab2BGR);
-                rgbPixel.convertTo(rgbPixel, CV_8UC3, 255);
+                rgbPixel.convertTo(rgbPixel, CV_8U, 255);
                 Vec3b rgbColor = rgbPixel.at<Vec3b>(0, 0);
 
                 // precompute variables

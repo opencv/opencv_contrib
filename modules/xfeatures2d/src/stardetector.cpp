@@ -85,7 +85,7 @@ Ptr<StarDetector> StarDetector::create(int _maxSize,
 
 template <typename inMatType, typename outMatType> static void
 computeIntegralImages( const Mat& matI, Mat& matS, Mat& matT, Mat& _FT,
-                       int iiType )
+                       ElemType iiType )
 {
     int x, y, rows = matI.rows, cols = matI.cols;
 
@@ -140,7 +140,7 @@ computeIntegralImages( const Mat& matI, Mat& matS, Mat& matT, Mat& _FT,
 
 template <typename iiMatType> static int
 StarDetectorComputeResponses( const Mat& img, Mat& responses, Mat& sizes,
-                              int maxSize, int iiType )
+                              int maxSize, ElemType iiType )
 {
     const int MAX_PATTERN = 17;
     static const int sizes0[] = {1, 2, 3, 4, 6, 8, 11, 12, 16, 22, 23, 32, 45, 46, 64, 90, 128, -1};
@@ -155,7 +155,7 @@ StarDetectorComputeResponses( const Mat& img, Mat& responses, Mat& sizes,
     __m128 sizes1_4[MAX_PATTERN];
     union { int i; float f; } absmask;
     absmask.i = 0x7fffffff;
-    volatile bool useSIMD = cv::checkHardwareSupport(CV_CPU_SSE2) && iiType == CV_32S;
+    volatile bool useSIMD = cv::checkHardwareSupport(CV_CPU_SSE2) && iiType == CV_32SC1;
 #endif
 
     struct StarFeature
@@ -170,8 +170,8 @@ StarDetectorComputeResponses( const Mat& img, Mat& responses, Mat& sizes,
     int y, rows = img.rows, cols = img.cols;
     int border, npatterns=0, maxIdx=0;
 
-    responses.create( img.size(), CV_32F );
-    sizes.create( img.size(), CV_16S );
+    responses.create( img.size(), CV_32FC1 );
+    sizes.create( img.size(), CV_16SC1 );
 
     while( npatterns < MAX_PAIR && !
           ( sizes0[pairs[npatterns][0]] >= maxSize
@@ -185,13 +185,13 @@ StarDetectorComputeResponses( const Mat& img, Mat& responses, Mat& sizes,
     maxIdx = pairs[npatterns-1][0];
 
     // Create the integral image appropriate for our type & usage
-    if ( img.type() == CV_8U )
+    if ( img.type() == CV_8UC1 )
         computeIntegralImages<uchar, iiMatType>( img, sum, tilted, flatTilted, iiType );
-    else if ( img.type() == CV_8S )
+    else if ( img.type() == CV_8SC1 )
         computeIntegralImages<char, iiMatType>( img, sum, tilted, flatTilted, iiType );
-    else if ( img.type() == CV_16U )
+    else if ( img.type() == CV_16UC1 )
         computeIntegralImages<ushort, iiMatType>( img, sum, tilted, flatTilted, iiType );
-    else if ( img.type() == CV_16S )
+    else if ( img.type() == CV_16SC1 )
         computeIntegralImages<short, iiMatType>( img, sum, tilted, flatTilted, iiType );
     else
         CV_Error( Error::StsUnsupportedFormat, "" );
@@ -498,9 +498,9 @@ void StarDetectorImpl::detect( InputArray _image, std::vector<KeyPoint>& keypoin
     // Use 32-bit integers if we won't overflow in the integral image
     if ((grayImage.depth() == CV_8U || grayImage.depth() == CV_8S) &&
         (int)grayImage.total() < 8388608 ) // 8388608 = 2 ^ (32 - 8(bit depth) - 1(sign bit))
-        border = StarDetectorComputeResponses<int>( grayImage, responses, sizes, maxSize, CV_32S );
+        border = StarDetectorComputeResponses<int>( grayImage, responses, sizes, maxSize, CV_32SC1 );
     else
-        border = StarDetectorComputeResponses<double>( grayImage, responses, sizes, maxSize, CV_64F );
+        border = StarDetectorComputeResponses<double>( grayImage, responses, sizes, maxSize, CV_64FC1 );
 
     keypoints.clear();
     if( border >= 0 )

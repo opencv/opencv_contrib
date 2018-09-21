@@ -497,7 +497,7 @@ void calcAffineCovariantDescriptors(const Ptr<DescriptorExtractor>& dextractor, 
 
     assert(!affRegions.empty());
     int descriptorSize = dextractor->descriptorSize();
-    int descriptorType = dextractor->descriptorType();
+    ElemType descriptorType = dextractor->descriptorType();
     descriptors.create(Size(descriptorSize, int(affRegions.size())), descriptorType);
     descriptors.setTo(0);
 
@@ -603,7 +603,7 @@ protected:
     void detectAndCompute(InputArray image, InputArray mask, std::vector<Elliptic_KeyPoint>& keypoints, OutputArray descriptors, bool useProvidedKeypoints) CV_OVERRIDE;
     void detectAndCompute(InputArray image, InputArray mask, std::vector<KeyPoint>& keypoints, OutputArray descriptors, bool useProvidedKeypoints) CV_OVERRIDE;
     int descriptorSize() const CV_OVERRIDE;
-    int descriptorType() const CV_OVERRIDE;
+    ElemType descriptorType() const CV_OVERRIDE;
     int defaultNorm() const CV_OVERRIDE;
 private:
     Ptr<FeatureDetector> m_keypoint_detector;
@@ -672,7 +672,7 @@ int AffineFeature2D_Impl::descriptorSize() const
     return m_descriptor_extractor->descriptorSize();
 }
 
-int AffineFeature2D_Impl::descriptorType() const
+ElemType AffineFeature2D_Impl::descriptorType() const
 {
     return m_descriptor_extractor->descriptorType();
 }

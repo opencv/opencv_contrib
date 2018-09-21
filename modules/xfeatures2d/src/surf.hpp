@@ -27,7 +27,7 @@ public:
     CV_WRAP int descriptorSize() const CV_OVERRIDE;
 
     //! returns the descriptor type
-    CV_WRAP int descriptorType() const CV_OVERRIDE;
+    CV_WRAP ElemType descriptorType() const CV_OVERRIDE;
 
     //! returns the descriptor type
     CV_WRAP int defaultNorm() const CV_OVERRIDE;
@@ -154,7 +154,7 @@ template<typename _Tp> void copyVectorToUMat(const std::vector<_Tp>& v, UMat& um
     if(v.empty())
         um.release();
     else
-        Mat(1, (int)(v.size()*sizeof(v[0])), CV_8U, (void*)&v[0]).copyTo(um);
+        Mat(1, (int)(v.size()*sizeof(v[0])), CV_8UC1, (void*)&v[0]).copyTo(um);
 }
 
 template<typename _Tp> void copyUMatToVector(const UMat& um, std::vector<_Tp>& v)
