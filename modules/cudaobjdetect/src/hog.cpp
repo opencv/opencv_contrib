@@ -170,8 +170,8 @@ namespace
         virtual void setGroupThreshold(int group_threshold) { group_threshold_ = group_threshold; }
         virtual int getGroupThreshold() const { return group_threshold_; }
 
-        virtual void setDescriptorFormat(int descr_format) { descr_format_ = descr_format; }
-        virtual int getDescriptorFormat() const { return descr_format_; }
+        virtual void setDescriptorFormat(HOGDescriptor::DescriptorStorageFormat descr_format) { descr_format_ = descr_format; }
+        virtual HOGDescriptor::DescriptorStorageFormat getDescriptorFormat() const { return descr_format_; }
 
         virtual size_t getDescriptorSize() const;
 
@@ -208,7 +208,7 @@ namespace
         Size win_stride_;
         double scale0_;
         int group_threshold_;
-        int descr_format_;
+        HOGDescriptor::DescriptorStorageFormat descr_format_;
         Size cells_per_block_;
 
     private:
@@ -240,7 +240,7 @@ namespace
         win_stride_(block_stride),
         scale0_(1.05),
         group_threshold_(2),
-        descr_format_(DESCR_FORMAT_COL_BY_COL),
+        descr_format_(HOGDescriptor::DESCR_FORMAT_COL_BY_COL),
         cells_per_block_(block_size.width / cell_size.width, block_size.height / cell_size.height)
     {
         CV_Assert((win_size.width  - block_size.width ) % block_stride.width  == 0 &&
@@ -502,7 +502,7 @@ namespace
 
         switch (descr_format_)
         {
-        case DESCR_FORMAT_ROW_BY_ROW:
+        case HOGDescriptor::DESCR_FORMAT_ROW_BY_ROW:
             hog::extract_descrs_by_rows(win_size_.height, win_size_.width,
                                         block_stride_.height, block_stride_.width,
                                         win_stride_.height, win_stride_.width,
@@ -512,7 +512,7 @@ namespace
                                         descriptors,
                                         StreamAccessor::getStream(stream));
             break;
-        case DESCR_FORMAT_COL_BY_COL:
+        case HOGDescriptor::DESCR_FORMAT_COL_BY_COL:
             hog::extract_descrs_by_cols(win_size_.height, win_size_.width,
                                         block_stride_.height, block_stride_.width,
                                         win_stride_.height, win_stride_.width,

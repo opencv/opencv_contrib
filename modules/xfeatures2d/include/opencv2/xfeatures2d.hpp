@@ -84,10 +84,9 @@ class CV_EXPORTS_W FREAK : public Feature2D
 {
 public:
 
-    enum
-    {
-        NB_SCALES = 64, NB_PAIRS = 512, NB_ORIENPAIRS = 45
-    };
+    static const int    NB_SCALES        = 64;
+    static const int    NB_PAIRS         = 512;
+    static const int    NB_ORIENPAIRS    = 45;
 
     /**
     @param orientationNormalized Enable orientation normalization.
@@ -197,12 +196,12 @@ DAISY::NRM_SIFT mean that descriptors are normalized for L2 norm equal to 1.0 bu
 class CV_EXPORTS_W DAISY : public Feature2D
 {
 public:
-    enum
+    enum NormalizationType
     {
         NRM_NONE = 100, NRM_PARTIAL = 101, NRM_FULL = 102, NRM_SIFT = 103,
     };
     CV_WRAP static Ptr<DAISY> create( float radius = 15, int q_radius = 3, int q_theta = 8,
-                int q_hist = 8, int norm = DAISY::NRM_NONE, InputArray H = noArray(),
+                int q_hist = 8, DAISY::NormalizationType norm = DAISY::NRM_NONE, InputArray H = noArray(),
                 bool interpolation = true, bool use_orientation = false );
 
     /** @overload
@@ -961,7 +960,7 @@ FastFeatureDetector::TYPE_5_8
 Detects corners using the FAST algorithm by @cite Rosten06 .
  */
 CV_EXPORTS void FASTForPointSet( InputArray image, CV_IN_OUT std::vector<KeyPoint>& keypoints,
-                      int threshold, bool nonmaxSuppression=true, int type=FastFeatureDetector::TYPE_9_16);
+                      int threshold, bool nonmaxSuppression=true, FastFeatureDetector::DetectorType type=FastFeatureDetector::TYPE_9_16);
 
 
 //! @}

@@ -426,14 +426,10 @@ public:
 class CV_EXPORTS_W FastFeatureDetector : public Feature2DAsync
 {
 public:
-    enum
-    {
-        LOCATION_ROW = 0,
-        RESPONSE_ROW,
-        ROWS_COUNT,
-
-        FEATURE_SIZE = 7
-    };
+    static const int LOCATION_ROW = 0;
+    static const int RESPONSE_ROW = 1;
+    static const int ROWS_COUNT   = 2;
+    static const int FEATURE_SIZE = 7;
 
     CV_WRAP static Ptr<cuda::FastFeatureDetector> create(int threshold=10,
                                            bool nonmaxSuppression=true,
@@ -456,16 +452,13 @@ public:
 class CV_EXPORTS_W ORB : public Feature2DAsync
 {
 public:
-    enum
-    {
-        X_ROW = 0,
-        Y_ROW,
-        RESPONSE_ROW,
-        ANGLE_ROW,
-        OCTAVE_ROW,
-        SIZE_ROW,
-        ROWS_COUNT
-    };
+    static const int X_ROW        = 0;
+    static const int Y_ROW        = 1;
+    static const int RESPONSE_ROW = 2;
+    static const int ANGLE_ROW    = 3;
+    static const int OCTAVE_ROW   = 4;
+    static const int SIZE_ROW     = 5;
+    static const int ROWS_COUNT   = 6;
 
     CV_WRAP static Ptr<cuda::ORB> create(int nfeatures=500,
                            float scaleFactor=1.2f,
