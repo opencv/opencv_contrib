@@ -76,7 +76,7 @@ std::string type2str(const Mat& mat)
   int type = mat.type();
   std::string r;
 
-  uchar depth = type & CV_MAT_DEPTH_MASK;
+  uchar depth = CV_MAT_DEPTH(type);
   uchar chans = (uchar)CV_MAT_CN(type);
 
   switch ( depth ) {
