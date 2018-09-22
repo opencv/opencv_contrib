@@ -46,7 +46,7 @@ namespace opencv_test { namespace {
 
 void make_test_data(std::vector<cv::Mat> &images, std::vector<int> &labels) {
     for (int i=0; i<5; i++) {
-        cv::Mat m(100,100,CV_8U);
+        cv::Mat m(100,100,CV_8UC1);
         cv::randu(m,0,255);
         images.push_back(m);
         labels.push_back(i);

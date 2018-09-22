@@ -60,8 +60,8 @@ PERF_TEST_P(srcSize_srcType_dstDepth, FastHoughTransform,
             )
 {
     Size srcSize  = get<0>(GetParam());
-    int  srcType  = get<1>(GetParam());
-    int  dstDepth = get<2>(GetParam());
+    ElemType  srcType  = get<1>(GetParam());
+    ElemDepth  dstDepth = get<2>(GetParam());
 
     Mat src(srcSize, srcType);
     Mat fht;

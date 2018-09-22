@@ -72,7 +72,7 @@ void getZoom(const Mat& img, Mat& aff, Mat& out)
 {
     const double mult = 1.2;
 
-    aff.create(2, 3, CV_64F);
+    aff.create(2, 3, CV_64FC1);
     double *data = aff.ptr<double>();
     data[0] = mult; data[1] =    0; data[2] = 0;
     data[3] =    0; data[4] = mult; data[5] = 0;
@@ -82,7 +82,7 @@ void getZoom(const Mat& img, Mat& aff, Mat& out)
 
 void getBlur(const Mat& img, Mat& aff, Mat& out)
 {
-    aff.create(2, 3, CV_64F);
+    aff.create(2, 3, CV_64FC1);
     double *data = aff.ptr<double>();
     data[0] = 1; data[1] = 0; data[2] = 0;
     data[3] = 0; data[4] = 1; data[5] = 0;
@@ -92,7 +92,7 @@ void getBlur(const Mat& img, Mat& aff, Mat& out)
 
 void getBrightness(const Mat& img, Mat& aff, Mat& out)
 {
-    aff.create(2, 3, CV_64F);
+    aff.create(2, 3, CV_64FC1);
     double *data = aff.ptr<double>();
     data[0] = 1; data[1] = 0; data[2] = 0;
     data[3] = 0; data[4] = 1; data[5] = 0;

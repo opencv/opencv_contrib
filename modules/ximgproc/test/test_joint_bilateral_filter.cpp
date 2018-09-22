@@ -42,7 +42,7 @@ static Mat convertTypeAndSize(Mat src, int dstType, Size dstSize)
         CV_Error(Error::BadNumChannels, "Bad num channels in src");
     }
 
-    dst.convertTo(dst, dstType);
+    dst.convertTo(dst, CV_MAT_DEPTH(dstType));
     resize(dst, dst, dstSize, 0, 0, INTER_LINEAR_EXACT);
 
     return dst;
@@ -207,7 +207,7 @@ INSTANTIATE_TEST_CASE_P(Set2, JointBilateralFilterTest_NaiveRef,
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-typedef tuple<string, int> BFTestParam;
+typedef tuple<string, MatType> BFTestParam;
 typedef TestWithParam<BFTestParam> JointBilateralFilterTest_BilateralRef;
 
 TEST_P(JointBilateralFilterTest_BilateralRef, Accuracy)
@@ -215,7 +215,7 @@ TEST_P(JointBilateralFilterTest_BilateralRef, Accuracy)
     BFTestParam param   = GetParam();
     double sigmaS       = 4.0;
     string srcPath      = get<0>(param);
-    int srcType         = get<1>(param);
+    ElemType srcType    = get<1>(param);
 
     Mat src = imread(getOpenCVExtraDir() + srcPath);
     ASSERT_TRUE(!src.empty());

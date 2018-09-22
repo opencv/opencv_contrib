@@ -131,7 +131,7 @@ TEST(UKF, br_landing_point)
     int MP = 2;
     int DP = 5;
     int CP = 0;
-    int type = CV_64F;
+    ElemType type = CV_64FC1;
 
     Mat processNoiseCov = Mat::zeros( DP, DP, type );
     processNoiseCov.at<double>(0, 0) = 1e-14;
@@ -218,7 +218,7 @@ TEST(UKF, DISABLED_br_mean_squared_error)
     int MP = 2;
     int DP = 5;
     int CP = 0;
-    int type = CV_64F;
+    ElemType type = CV_64FC1;
 
     Mat processNoiseCov = Mat::zeros( DP, DP, type );
     processNoiseCov.at<double>(0, 0) = 1e-14;
@@ -355,7 +355,7 @@ TEST(UKF, DISABLED_ungm_mean_squared_error)
     int MP = 1;
     int DP = 1;
     int CP = 0;
-    int type = CV_64F;
+    ElemType type = CV_64FC1;
 
     Ptr<UnivariateNonstationaryGrowthModel> model( new UnivariateNonstationaryGrowthModel() );
     UnscentedKalmanFilterParams params( DP, MP, CP, 0, 0, model );

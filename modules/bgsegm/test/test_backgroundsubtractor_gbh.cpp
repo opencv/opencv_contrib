@@ -31,7 +31,7 @@ void CV_BackgroundSubtractorTest::run(int)
     RNG& rng = ts->get_rng();
     int type = ((unsigned int)rng)%7;  //!< pick a random type, 0 - 6, defined in types_c.h
     int channels = 1 + ((unsigned int)rng)%4;  //!< random number of channels from 1 to 4.
-    int channelsAndType = CV_MAKETYPE(type,channels);
+    ElemType channelsAndType = CV_MAKETYPE(type,channels);
     int width = 2 + ((unsigned int)rng)%98; //!< Mat will be 2 to 100 in width and height
     int height = 2 + ((unsigned int)rng)%98;
 
@@ -111,7 +111,7 @@ void CV_BackgroundSubtractorTest::run(int)
          * Feed simulated images into background subtractor
          */
         fgbg->apply(simImage,fgmask);
-        Mat fullbg = Mat::zeros(simImage.rows, simImage.cols, CV_8U);
+        Mat fullbg = Mat::zeros(simImage.rows, simImage.cols, CV_8UC1);
 
         //! fgmask should be entirely background during training
         code = cvtest::cmpEps2( ts, fgmask, fullbg, 0, false, "The training foreground mask" );
@@ -123,7 +123,7 @@ void CV_BackgroundSubtractorTest::run(int)
 
     fgbg->apply(simImage,fgmask);
     //! now fgmask should be entirely foreground
-    Mat fullfg = 255*Mat::ones(simImage.rows, simImage.cols, CV_8U);
+    Mat fullfg = 255*Mat::ones(simImage.rows, simImage.cols, CV_8UC1);
     code = cvtest::cmpEps2( ts, fgmask, fullfg, 255, false, "The final foreground mask" );
     if (code < 0)
     {

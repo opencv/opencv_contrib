@@ -8,19 +8,26 @@ namespace opencv_test { namespace {
 
 void MakeArtificialExample(RNG rng, Mat& dst_left_view, Mat& dst_left_disparity_map, Mat& dst_right_disparity_map, Rect& dst_ROI);
 
-CV_ENUM(GuideTypes, CV_8UC3);
-CV_ENUM(SrcTypes, CV_16S);
-typedef tuple<GuideTypes, SrcTypes, Size, bool, bool> DisparityWLSParams;
+typedef tuple<MatType, MatType, Size, bool, bool> DisparityWLSParams;
 
 typedef TestBaseWithParam<DisparityWLSParams> DisparityWLSFilterPerfTest;
 
-PERF_TEST_P( DisparityWLSFilterPerfTest, perf, Combine(GuideTypes::all(), SrcTypes::all(), Values(sz720p), Values(true,false), Values(true,false)) )
+PERF_TEST_P( DisparityWLSFilterPerfTest, perf,
+               Combine
+               (
+                   Values(CV_8UC3),
+                   Values(CV_16SC1),
+                   Values(sz720p),
+                   Values(true,false),
+                   Values(true,false)
+               )
+           )
 {
     RNG rng(0);
 
     DisparityWLSParams params = GetParam();
-    int guideType        = get<0>(params);
-    int srcType          = get<1>(params);
+    ElemType guideType        = get<0>(params);
+    ElemType srcType    = get<1>(params);
     Size sz              = get<2>(params);
     bool use_conf        = get<3>(params);
     bool use_downscale   = get<4>(params);

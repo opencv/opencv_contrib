@@ -13,8 +13,8 @@ PERF_TEST_P(DenseOpticalFlow_DeepFlow, perf, Values(szVGA, sz720p))
     DFParams params = GetParam();
     Size sz = get<0>(params);
 
-    Mat frame1(sz, CV_8U);
-    Mat frame2(sz, CV_8U);
+    Mat frame1(sz, CV_8UC1);
+    Mat frame2(sz, CV_8UC1);
     Mat flow;
 
     randu(frame1, 0, 255);

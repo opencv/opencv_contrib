@@ -63,7 +63,7 @@ TEST(WeightedMedianFilterTest, ReferenceAccuracy)
 TEST(WeightedMedianFilterTest, mask_zeros_no_crash)
 {
     Mat img = imread(getDataDir() + "cv/ximgproc/sources/01.png");
-    Mat mask = Mat::zeros(img.size(), CV_8U);
+    Mat mask = Mat::zeros(img.size(), CV_8UC1);
     Mat filtered;
     weightedMedianFilter(img, img, filtered, 3, 20, WMF_EXP, mask);
 

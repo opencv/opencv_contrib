@@ -11,9 +11,7 @@ static string getDataDir()
     return cvtest::TS::ptr()->get_data_path();
 }
 
-CV_ENUM(SrcTypes, CV_16S);
-CV_ENUM(GuideTypes, CV_8UC1, CV_8UC3)
-typedef tuple<Size, SrcTypes, GuideTypes, bool, bool> DisparityWLSParams;
+typedef tuple<Size, MatType, MatType, bool, bool> DisparityWLSParams;
 typedef TestWithParam<DisparityWLSParams> DisparityWLSFilterTest;
 
 TEST(DisparityWLSFilterTest, ReferenceAccuracy)
@@ -66,8 +64,8 @@ TEST_P(DisparityWLSFilterTest, MultiThreadReproducibility)
 
     DisparityWLSParams params = GetParam();
     Size size          = get<0>(params);
-    int srcType        = get<1>(params);
-    int guideType      = get<2>(params);
+    ElemType srcType = get<1>(params);
+    ElemType guideType      = get<2>(params);
     bool use_conf      = get<3>(params);
     bool use_downscale = get<4>(params);
 
@@ -111,7 +109,16 @@ TEST_P(DisparityWLSFilterTest, MultiThreadReproducibility)
         EXPECT_LE(cv::norm(resSingleThread, resMultiThread, NORM_L1), MAX_MEAN_DIF*left.total());
     }
 }
-INSTANTIATE_TEST_CASE_P(FullSet,DisparityWLSFilterTest,Combine(Values(szODD, szQVGA), SrcTypes::all(), GuideTypes::all(),Values(true,false),Values(true,false)));
+INSTANTIATE_TEST_CASE_P(FullSet,DisparityWLSFilterTest,
+                           Combine
+                           (
+                               Values(szODD, szQVGA),
+                               Values(CV_16SC1),
+                               Values(CV_8UC1, CV_8UC3),
+                               Values(true,false),
+                               Values(true,false)
+                           )
+                       );
 
 
 }} // namespace

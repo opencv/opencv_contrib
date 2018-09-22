@@ -14,12 +14,12 @@ TEST(ximgproc_ridgedetectionfilter, ReferenceAccuracy)
     Mat src = imread(openCVExtraDir + srcImgPath);
     Mat ref = imread(openCVExtraDir + refPath, 0);
     Mat n_ref;
-    ref.convertTo(n_ref, CV_8UC1);
+    ref.convertTo(n_ref, CV_8U);
     Ptr<RidgeDetectionFilter> rdf = RidgeDetectionFilter::create();
     Mat out;
     rdf->getRidgeFilteredImage(src, out);
     Mat out_cmp;
-    out.convertTo(out_cmp, CV_8UC1);
+    out.convertTo(out_cmp, CV_8U);
     Mat sb;
     subtract(out_cmp, n_ref, sb);
     int zeros = countNonZero(sb);

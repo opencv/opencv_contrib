@@ -18,7 +18,7 @@ PERF_TEST_P(RLMorphologyPerfTest, perf, Combine(Values(1,7, 21), Values(sz720p, 
     Size sz = get<1>(params);
     int op = get<2>(params);
 
-    Mat src(sz, CV_8U);
+    Mat src(sz, CV_8UC1);
     Mat thresholded, dstRLE;
     Mat se = rl::getStructuringElement(MORPH_ELLIPSE, cv::Size(2 * seSize + 1, 2 * seSize + 1));
 

@@ -172,12 +172,12 @@ Matx<double, 3, 3> perfProjective(const Mat& img1)
 
 PERF_TEST_P(Size_MatType, Registration_Shift,
             Combine(Values(szSmall64, szSmall128),
-                    Values(MatType(CV_64FC1), MatType(CV_64FC3))))
+                    Values(CV_64FC1, CV_64FC3)))
 {
     declare.time(60);
 
     const Size size = get<0>(GetParam());
-    const int type = get<1>(GetParam());
+    const ElemType type = get<1>(GetParam());
 
     Mat frame(size, type);
     Vec<double, 2> shift;
@@ -190,12 +190,12 @@ PERF_TEST_P(Size_MatType, Registration_Shift,
 
 PERF_TEST_P(Size_MatType, Registration_Euclidean,
             Combine(Values(szSmall64, szSmall128),
-                    Values(MatType(CV_64FC1), MatType(CV_64FC3))))
+                    Values(CV_64FC1, CV_64FC3)))
 {
     declare.time(60);
 
     const Size size = get<0>(GetParam());
-    const int type = get<1>(GetParam());
+    const ElemType type = get<1>(GetParam());
 
     Mat frame(size, type);
     Matx<double, 2, 6> result;
@@ -208,12 +208,12 @@ PERF_TEST_P(Size_MatType, Registration_Euclidean,
 
 PERF_TEST_P(Size_MatType, Registration_Similarity,
             Combine(Values(szSmall64, szSmall128),
-                    Values(MatType(CV_64FC1), MatType(CV_64FC3))))
+                    Values(CV_64FC1, CV_64FC3)))
 {
     declare.time(60);
 
     const Size size = get<0>(GetParam());
-    const int type = get<1>(GetParam());
+    const ElemType type = get<1>(GetParam());
 
     Mat frame(size, type);
     Matx<double, 2, 6> result;
@@ -226,12 +226,12 @@ PERF_TEST_P(Size_MatType, Registration_Similarity,
 
 PERF_TEST_P(Size_MatType, Registration_Affine,
             Combine(Values(szSmall64, szSmall128),
-                    Values(MatType(CV_64FC1), MatType(CV_64FC3))))
+                    Values(CV_64FC1, CV_64FC3)))
 {
     declare.time(60);
 
     const Size size = get<0>(GetParam());
-    const int type = get<1>(GetParam());
+    const ElemType type = get<1>(GetParam());
 
     Mat frame(size, type);
     Matx<double, 2, 6> result;
@@ -244,12 +244,12 @@ PERF_TEST_P(Size_MatType, Registration_Affine,
 
 PERF_TEST_P(Size_MatType, Registration_Projective,
             Combine(Values(szSmall64, szSmall128),
-                    Values(MatType(CV_64FC1), MatType(CV_64FC3))))
+                    Values(CV_64FC1, CV_64FC3)))
 {
     declare.time(60);
 
     const Size size = get<0>(GetParam());
-    const int type = get<1>(GetParam());
+    const ElemType type = get<1>(GetParam());
 
     Mat frame(size, type);
     Matx<double, 3, 3> result;

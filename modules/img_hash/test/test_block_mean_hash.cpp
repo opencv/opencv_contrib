@@ -32,7 +32,7 @@ protected:
 
 CV_BlockMeanHashTest::CV_BlockMeanHashTest()
 {
-    input.create(256, 256, CV_8U);
+    input.create(256, 256, CV_8UC1);
     for(int row = 0; row != input.rows; ++row)
     {
         uchar value = static_cast<uchar>(row);

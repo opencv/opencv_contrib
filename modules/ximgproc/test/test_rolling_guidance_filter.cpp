@@ -16,7 +16,7 @@ static void checkSimilarity(InputArray src, InputArray ref)
     EXPECT_LE(cvtest::norm(src, ref, NORM_L2 | NORM_RELATIVE), 1e-3);
 }
 
-static Mat convertTypeAndSize(Mat src, int dstType, Size dstSize)
+static Mat convertTypeAndSize(Mat src, ElemType dstType, Size dstSize)
 {
     Mat dst;
     int srcCnNum = src.channels();
@@ -39,7 +39,7 @@ static Mat convertTypeAndSize(Mat src, int dstType, Size dstSize)
         CV_Error(Error::BadNumChannels, "Bad num channels in src");
     }
 
-    dst.convertTo(dst, dstType);
+    dst.convertTo(dst, CV_MAT_DEPTH(dstType));
     resize(dst, dst, dstSize, 0, 0, INTER_LINEAR_EXACT);
 
     return dst;
@@ -136,7 +136,7 @@ INSTANTIATE_TEST_CASE_P(TypicalSet1, RollingGuidanceFilterTest,
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////
 
-typedef tuple<double, string, int> RGFBFParam;
+typedef tuple<double, string, MatType> RGFBFParam;
 typedef TestWithParam<RGFBFParam> RollingGuidanceFilterTest_BilateralRef;
 
 TEST_P(RollingGuidanceFilterTest_BilateralRef, Accuracy)
@@ -144,7 +144,7 @@ TEST_P(RollingGuidanceFilterTest_BilateralRef, Accuracy)
     RGFBFParam params = GetParam();
     double sigmaS       = get<0>(params);
     string srcPath      = get<1>(params);
-    int srcType         = get<2>(params);
+    ElemType srcType    = get<2>(params);
 
     Mat src = imread(getOpenCVExtraDir() + srcPath);
     ASSERT_TRUE(!src.empty());

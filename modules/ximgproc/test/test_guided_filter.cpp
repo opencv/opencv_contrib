@@ -14,7 +14,7 @@ static string getOpenCVExtraDir()
     return cvtest::TS::ptr()->get_data_path();
 }
 
-static Mat convertTypeAndSize(Mat src, int dstType, Size dstSize)
+static Mat convertTypeAndSize(Mat src, ElemType dstType, Size dstSize)
 {
     Mat dst;
     int srcCnNum = src.channels();
@@ -58,7 +58,7 @@ static Mat convertTypeAndSize(Mat src, int dstType, Size dstSize)
         merge(srcCn, dst);
     }
 
-    dst.convertTo(dst, dstType);
+    dst.convertTo(dst, CV_MAT_DEPTH(dstType));
     resize(dst, dst, dstSize, 0, 0, INTER_LINEAR_EXACT);
 
     return dst;
@@ -77,7 +77,7 @@ class GuidedFilterRefImpl : public GuidedFilter
 
     void computeCovGuideInv();
 
-    void applyTransform(int cNum, Mat *Ichannels, Mat *beta, Mat **alpha, int dDepth);
+    void applyTransform(int cNum, Mat *Ichannels, Mat *beta, Mat **alpha, ElemDepth dDepth);
 
     void computeCovGuideAndSrc(int cNum, Mat **vars_I, Mat *Ichannels, Mat *exp_I);
 
@@ -89,7 +89,7 @@ public:
 
     GuidedFilterRefImpl(InputArray guide_, int rad, double eps);
 
-    void filter(InputArray src, OutputArray dst, int dDepth = -1);
+    void filter(InputArray src, OutputArray dst, ElemDepth dDepth = CV_DEPTH_AUTO);
 
     ~GuidedFilterRefImpl();
 };
@@ -143,7 +143,7 @@ void GuidedFilterRefImpl::computeCovGuide()
         vars[i][j] -= exps[i].mul(exps[j]);
 
         if (i == j)
-            vars[i][j] += eps * Mat::ones(height, width, CV_32F);
+            vars[i][j] += eps * Mat::ones(height, width, CV_32FC1);
         else
             vars[j][i] = vars[i][j];
     }
@@ -172,7 +172,7 @@ void GuidedFilterRefImpl::computeCovGuideInv()
         A[0][1] = -vars[0][1];
     }
     else if (chNum == 1)
-        A[0][0] = Mat::ones(height, width, CV_32F);
+        A[0][0] = Mat::ones(height, width, CV_32FC1);
 
     for (int i = 0; i < chNum; ++i)
         for (int j = 0; j < i; ++j)
@@ -197,9 +197,9 @@ GuidedFilterRefImpl::~GuidedFilterRefImpl(){
     delete [] vars;
 }
 
-void GuidedFilterRefImpl::filter(InputArray src_, OutputArray dst_, int dDepth)
+void GuidedFilterRefImpl::filter(InputArray src_, OutputArray dst_, ElemDepth dDepth)
 {
-    if (dDepth == -1) dDepth = src_.depth();
+    if (dDepth == CV_DEPTH_AUTO) dDepth = src_.depth();
     dst_.create(height, width, src_.type());
     Mat src = src_.getMat();
     Mat dst = dst_.getMat();
@@ -288,7 +288,7 @@ void GuidedFilterRefImpl::computeCovGuideAndSrc(int cNum, Mat **vars_I, Mat *Ich
         }
 }
 
-void GuidedFilterRefImpl::applyTransform(int cNum, Mat *Ichannels, Mat *beta, Mat **alpha, int dDepth)
+void GuidedFilterRefImpl::applyTransform(int cNum, Mat *Ichannels, Mat *beta, Mat **alpha, ElemDepth dDepth)
 {
     for (int i = 0; i < cNum; ++i)
     {

@@ -9,17 +9,17 @@ typedef tuple<MatDepth, int, Size> RDFParams;
 typedef TestBaseWithParam<RDFParams> RidgeDetectionFilterPerfTest;
 
 PERF_TEST_P(RidgeDetectionFilterPerfTest, perf, Combine(
-        Values((MatDepth)CV_32F),
+        Values(CV_32F),
         Values(3),
         SZ_TYPICAL
 ))
 {
     RDFParams params = GetParam();
-    int ddepth = get<0>(params);
+    ElemDepth ddepth = get<0>(params);
     int ksize = get<1>(params);
     Size sz = get<2>(params);
 
-    Mat src(sz, ddepth);
+    Mat src(sz, CV_MAKETYPE(ddepth, 1));
     Mat out(sz, src.type());
 
     declare.in(src).out(out);

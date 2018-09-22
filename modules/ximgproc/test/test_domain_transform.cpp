@@ -10,9 +10,8 @@ static string getOpenCVExtraDir()
     return cvtest::TS::ptr()->get_data_path();
 }
 
-CV_ENUM(SupportedTypes, CV_8UC1, CV_8UC3, CV_32FC1); // reduced set
 CV_ENUM(ModeType, DTF_NC, DTF_IC, DTF_RF)
-typedef tuple<Size, ModeType, SupportedTypes, SupportedTypes> DTParams;
+typedef tuple<Size, ModeType, MatType, MatType> DTParams;
 
 Mat convertTypeAndSize(Mat src, int dstType, Size dstSize)
 {
@@ -43,7 +42,7 @@ Mat convertTypeAndSize(Mat src, int dstType, Size dstSize)
         merge(srcCn, 4, dst);
     }
 
-    dst.convertTo(dst, dstType);
+    dst.convertTo(dst, CV_MAT_DEPTH(dstType));
     resize(dst, dst, dstSize, 0, 0, dstType == CV_32FC1 ? INTER_LINEAR : INTER_LINEAR_EXACT);
 
     return dst;
@@ -93,7 +92,7 @@ TEST_P(DomainTransformTest, MultiThreadReproducibility)
     DTParams params = GetParam();
     Size size = get<0>(params);
     int mode = get<1>(params);
-    int guideType = get<2>(params);
+    ElemType guideType = get<2>(params);
     int srcType = get<3>(params);
 
     Mat original = imread(getOpenCVExtraDir() + "cv/edgefilter/statue.png");
@@ -122,7 +121,13 @@ TEST_P(DomainTransformTest, MultiThreadReproducibility)
 }
 
 INSTANTIATE_TEST_CASE_P(FullSet, DomainTransformTest,
-    Combine(Values(szODD, szQVGA), ModeType::all(), SupportedTypes::all(), SupportedTypes::all())
+    Combine
+    (
+        Values(szODD, szQVGA),
+        ModeType::all(),
+        Values(CV_8UC1, CV_8UC3, CV_32FC1), // reduced set
+        Values(CV_8UC1, CV_8UC3, CV_32FC1) // reduced set
+    )
 );
 
 template<typename SrcVec>

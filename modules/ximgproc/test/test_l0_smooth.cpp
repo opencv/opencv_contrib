@@ -5,8 +5,7 @@
 
 namespace opencv_test { namespace {
 
-CV_ENUM(SrcTypes, CV_8UC1, CV_8UC3, CV_16UC1, CV_16UC3);
-typedef tuple<Size, SrcTypes> L0SmoothParams;
+typedef tuple<Size, MatType> L0SmoothParams;
 typedef TestWithParam<L0SmoothParams> L0SmoothTest;
 
 TEST(L0SmoothTest, SplatSurfaceAccuracy)
@@ -46,7 +45,7 @@ TEST_P(L0SmoothTest, MultiThreadReproducibility)
 
     L0SmoothParams params = GetParam();
     Size size     = get<0>(params);
-    int srcType   = get<1>(params);
+    ElemType srcType = get<1>(params);
 
     Mat src(size,srcType);
     if(src.depth()==CV_8U)
@@ -77,7 +76,13 @@ TEST_P(L0SmoothTest, MultiThreadReproducibility)
         EXPECT_LE(cv::norm(resSingleThread, resMultiThread, NORM_L1), MAX_MEAN_DIF*src.total()*src.channels());
     }
 }
-INSTANTIATE_TEST_CASE_P(FullSet, L0SmoothTest,Combine(Values(szODD, szQVGA), SrcTypes::all()));
+INSTANTIATE_TEST_CASE_P(FullSet, L0SmoothTest,
+                            Combine
+                            (
+                                Values(szODD, szQVGA),
+                                Values(CV_8UC1, CV_8UC3, CV_16UC1, CV_16UC3)
+                            )
+                        );
 
 
 }} // namespace

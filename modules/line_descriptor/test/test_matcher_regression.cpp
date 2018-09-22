@@ -221,7 +221,7 @@ void CV_BinaryDescriptorMatcherTest::generateData( Mat& query, Mat& train )
    Descriptor vector elements are binary values. */
   Mat buf( queryDescCount, dim, CV_8UC1 );
   rng.fill( buf, RNG::UNIFORM, Scalar( 0 ), Scalar( 255 ) );
-  buf.convertTo( query, CV_8UC1 );
+  buf.convertTo( query, CV_8U );
 
   for ( int i = 0; i < query.rows; i++ )
   {

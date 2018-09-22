@@ -5,19 +5,23 @@
 
 namespace opencv_test { namespace {
 
-CV_ENUM(GuideTypes, CV_8UC1, CV_8UC3);
-CV_ENUM(SrcTypes, CV_8UC1, CV_8UC3, CV_16SC1, CV_16SC3, CV_32FC1, CV_32FC3);
-typedef tuple<GuideTypes, SrcTypes, Size> FGSParams;
+typedef tuple<MatType, MatType, Size> FGSParams;
 
 typedef TestBaseWithParam<FGSParams> FGSFilterPerfTest;
 
-PERF_TEST_P( FGSFilterPerfTest, perf, Combine(GuideTypes::all(), SrcTypes::all(), Values(sz720p)) )
+PERF_TEST_P( FGSFilterPerfTest, perf,
+             Combine(
+                 Values(CV_8UC1, CV_8UC3),
+                 Values(CV_8UC1, CV_8UC3, CV_16SC1, CV_16SC3, CV_32FC1, CV_32FC3),
+                 Values(sz720p)
+             )
+)
 {
     RNG rng(0);
 
     FGSParams params = GetParam();
-    int guideType   = get<0>(params);
-    int srcType     = get<1>(params);
+    ElemType guideType   = get<0>(params);
+    ElemType srcType     = get<1>(params);
     Size sz         = get<2>(params);
 
     Mat guide(sz, guideType);
