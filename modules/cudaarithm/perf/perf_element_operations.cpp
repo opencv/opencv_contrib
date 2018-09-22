@@ -56,12 +56,12 @@ PERF_TEST_P(Sz_Depth, AddMat,
                     ARITHM_MAT_DEPTH))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src1(size, depth);
+    cv::Mat src1(size, CV_MAKETYPE(depth, 1));
     declare.in(src1, WARMUP_RNG);
 
-    cv::Mat src2(size, depth);
+    cv::Mat src2(size, CV_MAKETYPE(depth, 1));
     declare.in(src2, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -92,9 +92,9 @@ PERF_TEST_P(Sz_Depth, AddScalar,
                     ARITHM_MAT_DEPTH))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     cv::Scalar s;
@@ -127,12 +127,12 @@ PERF_TEST_P(Sz_Depth, SubtractMat,
                     ARITHM_MAT_DEPTH))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src1(size, depth);
+    cv::Mat src1(size, CV_MAKETYPE(depth, 1));
     declare.in(src1, WARMUP_RNG);
 
-    cv::Mat src2(size, depth);
+    cv::Mat src2(size, CV_MAKETYPE(depth, 1));
     declare.in(src2, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -163,9 +163,9 @@ PERF_TEST_P(Sz_Depth, SubtractScalar,
                     ARITHM_MAT_DEPTH))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     cv::Scalar s;
@@ -198,12 +198,12 @@ PERF_TEST_P(Sz_Depth, MultiplyMat,
                     ARITHM_MAT_DEPTH))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src1(size, depth);
+    cv::Mat src1(size, CV_MAKETYPE(depth, 1));
     declare.in(src1, WARMUP_RNG);
 
-    cv::Mat src2(size, depth);
+    cv::Mat src2(size, CV_MAKETYPE(depth, 1));
     declare.in(src2, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -234,9 +234,9 @@ PERF_TEST_P(Sz_Depth, MultiplyScalar,
                     ARITHM_MAT_DEPTH))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     cv::Scalar s;
@@ -269,12 +269,12 @@ PERF_TEST_P(Sz_Depth, DivideMat,
                     ARITHM_MAT_DEPTH))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src1(size, depth);
+    cv::Mat src1(size, CV_MAKETYPE(depth, 1));
     declare.in(src1, WARMUP_RNG);
 
-    cv::Mat src2(size, depth);
+    cv::Mat src2(size, CV_MAKETYPE(depth, 1));
     declare.in(src2, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -305,9 +305,9 @@ PERF_TEST_P(Sz_Depth, DivideScalar,
                     ARITHM_MAT_DEPTH))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     cv::Scalar s;
@@ -340,9 +340,9 @@ PERF_TEST_P(Sz_Depth, DivideScalarInv,
                     ARITHM_MAT_DEPTH))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     cv::Scalar s;
@@ -375,12 +375,12 @@ PERF_TEST_P(Sz_Depth, AbsDiffMat,
                     ARITHM_MAT_DEPTH))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src1(size, depth);
+    cv::Mat src1(size, CV_MAKETYPE(depth, 1));
     declare.in(src1, WARMUP_RNG);
 
-    cv::Mat src2(size, depth);
+    cv::Mat src2(size, CV_MAKETYPE(depth, 1));
     declare.in(src2, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -411,9 +411,9 @@ PERF_TEST_P(Sz_Depth, AbsDiffScalar,
                     ARITHM_MAT_DEPTH))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     cv::Scalar s;
@@ -446,9 +446,9 @@ PERF_TEST_P(Sz_Depth, Abs,
                     Values(CV_16S, CV_32F)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -474,9 +474,9 @@ PERF_TEST_P(Sz_Depth, Sqr,
                     Values(CV_8U, CV_16S, CV_32F)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -502,9 +502,9 @@ PERF_TEST_P(Sz_Depth, Sqrt,
                     Values(CV_8U, CV_16S, CV_32F)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     cv::randu(src, 0, 100000);
 
     if (PERF_RUN_CUDA())
@@ -534,9 +534,9 @@ PERF_TEST_P(Sz_Depth, Log,
                     Values(CV_8U, CV_16S, CV_32F)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     cv::randu(src, 0, 100000);
 
     if (PERF_RUN_CUDA())
@@ -566,9 +566,9 @@ PERF_TEST_P(Sz_Depth, Exp,
                     Values(CV_8U, CV_16S, CV_32F)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     cv::randu(src, 0, 10);
 
     if (PERF_RUN_CUDA())
@@ -601,10 +601,10 @@ PERF_TEST_P(Sz_Depth_Power, Pow,
                     Values(0.3, 2.0, 2.4)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const double power = GET_PARAM(2);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -639,13 +639,13 @@ PERF_TEST_P(Sz_Depth_Code, CompareMat,
                     CmpCode::all()))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int cmp_code = GET_PARAM(2);
 
-    cv::Mat src1(size, depth);
+    cv::Mat src1(size, CV_MAKETYPE(depth, 1));
     declare.in(src1, WARMUP_RNG);
 
-    cv::Mat src2(size, depth);
+    cv::Mat src2(size, CV_MAKETYPE(depth, 1));
     declare.in(src2, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -677,10 +677,10 @@ PERF_TEST_P(Sz_Depth_Code, CompareScalar,
                     CmpCode::all()))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int cmp_code = GET_PARAM(2);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     cv::Scalar s;
@@ -713,9 +713,9 @@ PERF_TEST_P(Sz_Depth, BitwiseNot,
                     Values(CV_8U, CV_16U, CV_32S)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -745,12 +745,12 @@ PERF_TEST_P(Sz_Depth, BitwiseAndMat,
                     Values(CV_8U, CV_16U, CV_32S)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src1(size, depth);
+    cv::Mat src1(size, CV_MAKETYPE(depth, 1));
     declare.in(src1, WARMUP_RNG);
 
-    cv::Mat src2(size, depth);
+    cv::Mat src2(size, CV_MAKETYPE(depth, 1));
     declare.in(src2, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -784,10 +784,10 @@ PERF_TEST_P(Sz_Depth_Cn, BitwiseAndScalar,
                     CUDA_CHANNELS_1_3_4))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -823,12 +823,12 @@ PERF_TEST_P(Sz_Depth, BitwiseOrMat,
                     Values(CV_8U, CV_16U, CV_32S)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src1(size, depth);
+    cv::Mat src1(size, CV_MAKETYPE(depth, 1));
     declare.in(src1, WARMUP_RNG);
 
-    cv::Mat src2(size, depth);
+    cv::Mat src2(size, CV_MAKETYPE(depth, 1));
     declare.in(src2, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -860,10 +860,10 @@ PERF_TEST_P(Sz_Depth_Cn, BitwiseOrScalar,
                     CUDA_CHANNELS_1_3_4))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -899,12 +899,12 @@ PERF_TEST_P(Sz_Depth, BitwiseXorMat,
                     Values(CV_8U, CV_16U, CV_32S)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src1(size, depth);
+    cv::Mat src1(size, CV_MAKETYPE(depth, 1));
     declare.in(src1, WARMUP_RNG);
 
-    cv::Mat src2(size, depth);
+    cv::Mat src2(size, CV_MAKETYPE(depth, 1));
     declare.in(src2, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -936,10 +936,10 @@ PERF_TEST_P(Sz_Depth_Cn, BitwiseXorScalar,
                     CUDA_CHANNELS_1_3_4))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -976,10 +976,10 @@ PERF_TEST_P(Sz_Depth_Cn, RShift,
                     CUDA_CHANNELS_1_3_4))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -1010,10 +1010,10 @@ PERF_TEST_P(Sz_Depth_Cn, LShift,
                     CUDA_CHANNELS_1_3_4))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int channels = GET_PARAM(2);
 
-    const int type = CV_MAKE_TYPE(depth, channels);
+    const ElemType type = CV_MAKE_TYPE(depth, channels);
 
     cv::Mat src(size, type);
     declare.in(src, WARMUP_RNG);
@@ -1043,12 +1043,12 @@ PERF_TEST_P(Sz_Depth, MinMat,
                     Values(CV_8U, CV_16U, CV_32F)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src1(size, depth);
+    cv::Mat src1(size, CV_MAKETYPE(depth, 1));
     declare.in(src1, WARMUP_RNG);
 
-    cv::Mat src2(size, depth);
+    cv::Mat src2(size, CV_MAKETYPE(depth, 1));
     declare.in(src2, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -1079,9 +1079,9 @@ PERF_TEST_P(Sz_Depth, MinScalar,
                     Values(CV_8U, CV_16U, CV_32F)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     cv::Scalar val;
@@ -1114,12 +1114,12 @@ PERF_TEST_P(Sz_Depth, MaxMat,
                     Values(CV_8U, CV_16U, CV_32F)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src1(size, depth);
+    cv::Mat src1(size, CV_MAKETYPE(depth, 1));
     declare.in(src1, WARMUP_RNG);
 
-    cv::Mat src2(size, depth);
+    cv::Mat src2(size, CV_MAKETYPE(depth, 1));
     declare.in(src2, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -1150,9 +1150,9 @@ PERF_TEST_P(Sz_Depth, MaxScalar,
                     Values(CV_8U, CV_16U, CV_32F)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     cv::Scalar val;
@@ -1189,14 +1189,14 @@ PERF_TEST_P(Sz_3Depth, AddWeighted,
                     Values(CV_8U, CV_16U, CV_32F, CV_64F)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth1 = GET_PARAM(1);
-    const int depth2 = GET_PARAM(2);
-    const int dst_depth = GET_PARAM(3);
+    const ElemDepth depth1 = GET_PARAM(1);
+    const ElemDepth depth2 = GET_PARAM(2);
+    const ElemDepth dst_depth = GET_PARAM(3);
 
-    cv::Mat src1(size, depth1);
+    cv::Mat src1(size, CV_MAKETYPE(depth1, 1));
     declare.in(src1, WARMUP_RNG);
 
-    cv::Mat src2(size, depth2);
+    cv::Mat src2(size, CV_MAKETYPE(depth2, 1));
     declare.in(src2, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -1473,10 +1473,10 @@ PERF_TEST_P(Sz_Depth_Op, Threshold,
             ThreshOp::all()))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int threshOp = GET_PARAM(2);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())

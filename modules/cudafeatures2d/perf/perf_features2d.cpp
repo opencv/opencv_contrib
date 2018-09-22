@@ -155,7 +155,7 @@ PERF_TEST_P(DescSize_Norm, BFMatch,
     const int desc_size = GET_PARAM(0);
     const int normType = GET_PARAM(1);
 
-    const int type = normType == cv::NORM_HAMMING ? CV_8U : CV_32F;
+    const ElemType type = normType == cv::NORM_HAMMING ? CV_8UC1 : CV_32FC1;
 
     cv::Mat query(3000, desc_size, type);
     declare.in(query, WARMUP_RNG);
@@ -214,7 +214,7 @@ PERF_TEST_P(DescSize_K_Norm, BFKnnMatch,
     const int k = GET_PARAM(1);
     const int normType = GET_PARAM(2);
 
-    const int type = normType == cv::NORM_HAMMING ? CV_8U : CV_32F;
+    const ElemType type = normType == cv::NORM_HAMMING ? CV_8UC1 : CV_32FC1;
 
     cv::Mat query(3000, desc_size, type);
     declare.in(query, WARMUP_RNG);
@@ -267,7 +267,7 @@ PERF_TEST_P(DescSize_Norm, BFRadiusMatch,
     const int desc_size = GET_PARAM(0);
     const int normType = GET_PARAM(1);
 
-    const int type = normType == cv::NORM_HAMMING ? CV_8U : CV_32F;
+    const ElemType type = normType == cv::NORM_HAMMING ? CV_8UC1 : CV_32FC1;
     const float maxDistance = 10000;
 
     cv::Mat query(3000, desc_size, type);

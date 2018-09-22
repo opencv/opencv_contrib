@@ -810,8 +810,8 @@ static Point3f _interpolate2Dline(const std::vector<cv::Point2f>& nContours){
 		maxY = nContours[i].y > maxY ? nContours[i].y : maxY;
 	}
 
-	Mat A = Mat::ones((int)nContours.size(), 2, CV_32F); // Coefficient Matrix (N x 2)
-	Mat B((int)nContours.size(), 1, CV_32F);				// Variables   Matrix (N x 1)
+	Mat A = Mat::ones((int)nContours.size(), 2, CV_32FC1); // Coefficient Matrix (N x 2)
+	Mat B((int)nContours.size(), 1, CV_32FC1);				// Variables   Matrix (N x 1)
 	Mat C;											// Constant
 
 	if(maxX - minX > maxY - minY){
@@ -1230,7 +1230,7 @@ void estimatePoseSingleMarkers(InputArrayOfArrays _corners, float markerLength,
                   SinglePoseEstimationParallel(markerObjPoints, _corners, _cameraMatrix,
                                                _distCoeffs, rvecs, tvecs));
     if(_objPoints.needed()){
-        markerObjPoints.convertTo(_objPoints, -1);
+        markerObjPoints.convertTo(_objPoints, CV_DEPTH_AUTO);
     }
 }
 

@@ -123,7 +123,7 @@ PARAM_TEST_CASE(Resize, cv::cuda::DeviceInfo, cv::Size, MatType, double, Interpo
     cv::Size size;
     double coeff;
     int interpolation;
-    int type;
+    ElemType type;
     bool useRoi;
 
     virtual void SetUp()
@@ -155,7 +155,7 @@ CUDA_TEST_P(Resize, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Warping, Resize, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_16UC1), MatType(CV_16UC3), MatType(CV_16UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
+    testing::Values(CV_8UC1, CV_8UC3, CV_8UC4, CV_16UC1, CV_16UC3, CV_16UC4, CV_32FC1, CV_32FC3, CV_32FC4),
     testing::Values(0.3, 0.5, 1.5, 2.0),
     testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_LINEAR), Interpolation(cv::INTER_CUBIC)),
     WHOLE_SUBMAT));
@@ -168,7 +168,7 @@ PARAM_TEST_CASE(ResizeSameAsHost, cv::cuda::DeviceInfo, cv::Size, MatType, doubl
     cv::Size size;
     double coeff;
     int interpolation;
-    int type;
+    ElemType type;
     bool useRoi;
 
     virtual void SetUp()
@@ -201,7 +201,7 @@ CUDA_TEST_P(ResizeSameAsHost, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Warping, ResizeSameAsHost, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_16UC1), MatType(CV_16UC3), MatType(CV_16UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
+    testing::Values(CV_8UC1, CV_8UC3, CV_8UC4, CV_16UC1, CV_16UC3, CV_16UC4, CV_32FC1, CV_32FC3, CV_32FC4),
     testing::Values(0.3, 0.5),
     testing::Values(Interpolation(cv::INTER_NEAREST), Interpolation(cv::INTER_AREA)),
     WHOLE_SUBMAT));

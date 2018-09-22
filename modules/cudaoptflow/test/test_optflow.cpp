@@ -165,22 +165,16 @@ INSTANTIATE_TEST_CASE_P(CUDA_OptFlow, BroxOpticalFlow, ALL_DEVICES);
 //////////////////////////////////////////////////////
 // PyrLKOpticalFlow
 
-namespace
-{
-    IMPLEMENT_PARAM_CLASS(Chan, int)
-    IMPLEMENT_PARAM_CLASS(DataType, int)
-}
-
-PARAM_TEST_CASE(PyrLKOpticalFlow, cv::cuda::DeviceInfo, Chan, DataType)
+PARAM_TEST_CASE(PyrLKOpticalFlow, cv::cuda::DeviceInfo, int, MatDepth)
 {
     cv::cuda::DeviceInfo devInfo;
     int channels;
-    int dataType;
+    ElemDepth dataDepth;
     virtual void SetUp()
     {
         devInfo = GET_PARAM(0);
         channels = GET_PARAM(1);
-        dataType = GET_PARAM(2);
+        dataDepth = GET_PARAM(2);
         cv::cuda::setDevice(devInfo.deviceID());
     }
 };
@@ -222,8 +216,8 @@ CUDA_TEST_P(PyrLKOpticalFlow, Sparse)
         cv::cvtColor(frame0, frame0, cv::COLOR_BGR2BGRA);
         cv::cvtColor(frame1, frame1, cv::COLOR_BGR2BGRA);
     }
-    frame0.convertTo(converted0, dataType);
-    frame1.convertTo(converted1, dataType);
+    frame0.convertTo(converted0, dataDepth);
+    frame1.convertTo(converted1, dataDepth);
 
     pyrLK->calc(loadMat(converted0), loadMat(converted1), d_pts, d_nextPts, d_status);
 
@@ -268,8 +262,8 @@ CUDA_TEST_P(PyrLKOpticalFlow, Sparse)
 
 INSTANTIATE_TEST_CASE_P(CUDA_OptFlow, PyrLKOpticalFlow, testing::Combine(
     ALL_DEVICES,
-    testing::Values(Chan(1), Chan(3), Chan(4)),
-    testing::Values(DataType(CV_8U), DataType(CV_16U), DataType(CV_32S), DataType(CV_32F))));
+    testing::Values(1, 3, 4),
+    testing::Values(CV_8U, CV_16U, CV_32S, CV_32F)));
 
 
 

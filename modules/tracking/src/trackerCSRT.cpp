@@ -203,7 +203,7 @@ std::vector<Mat> TrackerCSRTImpl::get_features(const Mat &patch, const Size2i &f
         Mat gray_m;
         cvtColor(patch, gray_m, CV_BGR2GRAY);
         resize(gray_m, gray_m, feature_size, 0, 0, INTER_CUBIC);
-        gray_m.convertTo(gray_m, CV_32FC1, 1.0/255.0, -0.5);
+        gray_m.convertTo(gray_m, CV_32F, 1.0/255.0, -0.5);
         features.push_back(gray_m);
     }
     if(params.use_rgb) {
@@ -356,7 +356,7 @@ Mat TrackerCSRTImpl::segment_region(
     probs.first(valid_pixels).copyTo(mask(valid_pixels));
     double max_resp = get_max(mask);
     threshold(mask, mask, max_resp / 2.0, 1, THRESH_BINARY);
-    mask.convertTo(mask, CV_32FC1, 1.0);
+    mask.convertTo(mask, CV_32F, 1.0);
     return mask;
 }
 
@@ -385,7 +385,7 @@ void TrackerCSRTImpl::extract_histograms(const Mat &image, cv::Rect region, Hist
     std::vector<Mat> img_channels(image.channels());
     split(image, img_channels);
     for(size_t k=0; k<img_channels.size(); k++) {
-        img_channels.at(k).convertTo(img_channels.at(k), CV_8UC1);
+        img_channels.at(k).convertTo(img_channels.at(k), CV_8U);
     }
 
     hf.extractForegroundHistogram(img_channels, Mat(), false, x1, y1, x2, y2);

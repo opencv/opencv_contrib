@@ -58,7 +58,7 @@ void ft::FT12D_polynomial(InputArray matrix, InputArray kernel, OutputArray c00,
 
     if (mask.getMat().empty())
     {
-        inputMask = Mat::ones(matrix.size(), CV_8U);
+        inputMask = Mat::ones(matrix.size(), CV_8UC1);
     }
     else
     {
@@ -76,10 +76,10 @@ void ft::FT12D_polynomial(InputArray matrix, InputArray kernel, OutputArray c00,
     copyMakeBorder(matrix, matrixPadded, radiusY, kernel.rows(), radiusX, kernel.cols(), BORDER_ISOLATED, Scalar(0));
     copyMakeBorder(inputMask, maskPadded, radiusY, kernel.rows(), radiusX, kernel.cols(), BORDER_ISOLATED, Scalar(0));
 
-    c00.create(Bn, An, CV_32F);
-    c10.create(Bn, An, CV_32F);
-    c01.create(Bn, An, CV_32F);
-    components.create(Bn * kernel.rows(), An * kernel.cols(), CV_32F);
+    c00.create(Bn, An, CV_32FC1);
+    c10.create(Bn, An, CV_32FC1);
+    c01.create(Bn, An, CV_32FC1);
+    components.create(Bn * kernel.rows(), An * kernel.cols(), CV_32FC1);
 
     Mat c00Mat = c00.getMat();
     Mat c10Mat = c10.getMat();
@@ -191,9 +191,9 @@ void ft::FT12D_inverseFT(InputArray components, InputArray kernel, OutputArray o
     int outputWidthPadded = radiusX + width + kernel.cols();
     int outputHeightPadded = radiusY + height + kernel.rows();
 
-    output.create(height, width, CV_32F);
+    output.create(height, width, CV_32FC1);
 
-    Mat outputZeroes(outputHeightPadded, outputWidthPadded, CV_32F, Scalar(0));
+    Mat outputZeroes(outputHeightPadded, outputWidthPadded, CV_32FC1, Scalar(0));
 
     for (int i = 0; i < componentsMat.cols / kernel.cols(); i++)
     {
@@ -224,7 +224,7 @@ void ft::FT12D_process(InputArray matrix, InputArray kernel, OutputArray output,
 
     if (mask.getMat().empty())
     {
-        inputMask = Mat::ones(matrix.size(), CV_8U);
+        inputMask = Mat::ones(matrix.size(), CV_8UC1);
     }
     else
     {

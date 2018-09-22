@@ -171,8 +171,8 @@ void FindSparseCorrLK(const Mat& src, const Mat& dst, std::vector<Point2f>& srcP
     dst.copyTo(dstGr);
     srcGr *= 255;
     dstGr *= 255;
-    srcGr.convertTo(srcGr, CV_8UC3);
-    dstGr.convertTo(dstGr, CV_8UC3);
+    srcGr.convertTo(srcGr, CV_8U);
+    dstGr.convertTo(dstGr, CV_8U);
 
     calcOpticalFlowPyrLK(srcGr, dstGr, srcPoints, dstPoints, predictedStatus, predictedError);
 
@@ -410,7 +410,7 @@ public:
 void BackgroundSubtractorLSBPDesc::calcLocalSVDValues(OutputArray _localSVDValues, const Mat& frame) {
     Mat frameGray;
     const Size sz = frame.size();
-    _localSVDValues.create(sz, CV_32F);
+    _localSVDValues.create(sz, CV_32FC1);
     Mat localSVDValues = _localSVDValues.getMat();
     localSVDValues = 0.0f;
 
@@ -444,7 +444,7 @@ void BackgroundSubtractorLSBPDesc::calcLocalSVDValues(OutputArray _localSVDValue
 
 void BackgroundSubtractorLSBPDesc::computeFromLocalSVDValues(OutputArray _desc, const Mat& localSVDValues, const Point2i* LSBPSamplePoints) {
     const Size sz = localSVDValues.size();
-    _desc.create(sz, CV_32S);
+    _desc.create(sz, CV_32SC1);
     Mat desc = _desc.getMat();
 
     parallel_for_(Range(0, sz.area()), ParallelFromLocalSVDValues(sz, desc, localSVDValues, LSBPSamplePoints));
@@ -709,7 +709,7 @@ void BackgroundSubtractorGSOCImpl::postprocessing(Mat& fgMask) {
 
 void BackgroundSubtractorGSOCImpl::apply(InputArray _image, OutputArray _fgmask, double learningRate) {
     const Size sz = _image.size();
-    _fgmask.create(sz, CV_8U);
+    _fgmask.create(sz, CV_8UC1);
     Mat fgMask = _fgmask.getMat();
 
     Mat frame = _image.getMat();
@@ -730,9 +730,9 @@ void BackgroundSubtractorGSOCImpl::apply(InputArray _image, OutputArray _fgmask,
     if (backgroundModel.empty()) {
         backgroundModel = makePtr<BackgroundModelGSOC>(sz, nSamples);
         backgroundModelPrev = makePtr<BackgroundModelGSOC>(sz, nSamples);
-        distMovingAvg = Mat(sz, CV_32F, Scalar::all(0.005f));
-        prevFgMask = Mat(sz, CV_8U, Scalar::all(0));
-        blinkingSupression = Mat(sz, CV_32F, Scalar::all(0.0f));
+        distMovingAvg = Mat(sz, CV_32FC1, Scalar::all(0.005f));
+        prevFgMask = Mat(sz, CV_8UC1, Scalar::all(0));
+        blinkingSupression = Mat(sz, CV_32FC1, Scalar::all(0.0f));
 
         for (int i = 0; i < sz.height; ++i)
             for (int j = 0; j < sz.width; ++j) {
@@ -853,7 +853,7 @@ void BackgroundSubtractorLSBPImpl::postprocessing(Mat& fgMask) {
 
 void BackgroundSubtractorLSBPImpl::apply(InputArray _image, OutputArray _fgmask, double learningRate) {
     const Size sz = _image.size();
-    _fgmask.create(sz, CV_8U);
+    _fgmask.create(sz, CV_8UC1);
     Mat fgMask = _fgmask.getMat();
 
     Mat frame = _image.getMat();
@@ -869,16 +869,16 @@ void BackgroundSubtractorLSBPImpl::apply(InputArray _image, OutputArray _fgmask,
     }
 
     CV_Assert(frame.channels() == 3);
-    Mat LSBPDesc(sz, CV_32S, Scalar::all(0));
+    Mat LSBPDesc(sz, CV_32SC1, Scalar::all(0));
 
     BackgroundSubtractorLSBPDesc::compute(LSBPDesc, frame, LSBPSamplePoints);
 
     if (backgroundModel.empty()) {
         backgroundModel = makePtr<BackgroundModelLSBP>(sz, nSamples);
         backgroundModelPrev = makePtr<BackgroundModelLSBP>(sz, nSamples);
-        T = Mat(sz, CV_32F);
+        T = Mat(sz, CV_32FC1);
         T = (Tlower + Tupper) * 0.5f;
-        R = Mat(sz, CV_32F);
+        R = Mat(sz, CV_32FC1);
         R = 0.1f;
 
         for (int i = 0; i < sz.height; ++i)

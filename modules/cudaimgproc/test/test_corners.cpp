@@ -58,7 +58,7 @@ namespace
 PARAM_TEST_CASE(CornerHarris, cv::cuda::DeviceInfo, MatType, BorderType, BlockSize, ApertureSize)
 {
     cv::cuda::DeviceInfo devInfo;
-    int type;
+    ElemType type;
     int borderType;
     int blockSize;
     int apertureSize;
@@ -95,7 +95,7 @@ CUDA_TEST_P(CornerHarris, Accuracy)
 
 INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, CornerHarris, testing::Combine(
     ALL_DEVICES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_32FC1)),
+    testing::Values(CV_8UC1, CV_32FC1),
     testing::Values(BorderType(cv::BORDER_REFLECT101), BorderType(cv::BORDER_REPLICATE), BorderType(cv::BORDER_REFLECT)),
     testing::Values(BlockSize(3), BlockSize(5), BlockSize(7)),
     testing::Values(ApertureSize(0), ApertureSize(3), ApertureSize(5), ApertureSize(7))));
@@ -106,7 +106,7 @@ INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, CornerHarris, testing::Combine(
 PARAM_TEST_CASE(CornerMinEigen, cv::cuda::DeviceInfo, MatType, BorderType, BlockSize, ApertureSize)
 {
     cv::cuda::DeviceInfo devInfo;
-    int type;
+    ElemType type;
     int borderType;
     int blockSize;
     int apertureSize;
@@ -141,7 +141,7 @@ CUDA_TEST_P(CornerMinEigen, Accuracy)
 
 INSTANTIATE_TEST_CASE_P(CUDA_ImgProc, CornerMinEigen, testing::Combine(
     ALL_DEVICES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_32FC1)),
+    testing::Values(CV_8UC1, CV_32FC1),
     testing::Values(BorderType(cv::BORDER_REFLECT101), BorderType(cv::BORDER_REPLICATE), BorderType(cv::BORDER_REFLECT)),
     testing::Values(BlockSize(3), BlockSize(5), BlockSize(7)),
     testing::Values(ApertureSize(0), ApertureSize(3), ApertureSize(5), ApertureSize(7))));

@@ -61,7 +61,7 @@ PERF_TEST_P(Sz_Type_Flags, GEMM,
                     ALL_GEMM_FLAGS))
 {
     const cv::Size size = GET_PARAM(0);
-    const int type = GET_PARAM(1);
+    const ElemType type = GET_PARAM(1);
     const int flags = GET_PARAM(2);
 
     cv::Mat src1(size, type);

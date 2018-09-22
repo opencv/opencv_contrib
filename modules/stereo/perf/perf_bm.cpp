@@ -56,12 +56,12 @@ PERF_TEST_P( s_bm, sgm_perf,
             )
 {
     Size sz = get<0>(GetParam());
-    int matType = get<1>(GetParam());
-    int sdepth = get<2>(GetParam());
+    ElemType matType = get<1>(GetParam());
+    ElemDepth sdepth = get<2>(GetParam());
 
     Mat left(sz, matType);
     Mat right(sz, matType);
-    Mat out1(sz, sdepth);
+    Mat out1(sz, CV_MAKETYPE(sdepth, 1));
     Ptr<StereoBinarySGBM> sgbm = StereoBinarySGBM::create(0, 16, 5);
     sgbm->setBinaryKernelType(CV_DENSE_CENSUS);
     declare.in(left, WARMUP_RNG)
@@ -83,12 +83,12 @@ PERF_TEST_P( s_bm, bm_perf,
             )
 {
     Size sz = get<0>(GetParam());
-    int matType = get<1>(GetParam());
-    int sdepth = get<2>(GetParam());
+    ElemType matType = get<1>(GetParam());
+    ElemDepth sdepth = get<2>(GetParam());
 
     Mat left(sz, matType);
     Mat right(sz, matType);
-    Mat out1(sz, sdepth);
+    Mat out1(sz, CV_MAKETYPE(sdepth, 1));
     Ptr<StereoBinaryBM> sbm = StereoBinaryBM::create(16, 9);
     // we set the corresponding parameters
     sbm->setPreFilterCap(31);

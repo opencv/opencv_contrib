@@ -201,8 +201,8 @@ void FastGlobalSmootherFilterImpl::filter(InputArray src, OutputArray dst)
     {
         lambda = lambda_ref;
         Mat cur_res = src_channels[i].clone();
-        if(src.depth()!=traits::Type<WorkVec>::value)
-            cur_res.convertTo(cur_res,traits::Type<WorkVec>::value);
+        if(src.depth() != traits::Depth<WorkVec>::value)
+            cur_res.convertTo(cur_res, traits::Depth<WorkVec>::value);
 
         for(int n=0;n<num_iter;n++)
         {
@@ -212,8 +212,8 @@ void FastGlobalSmootherFilterImpl::filter(InputArray src, OutputArray dst)
         }
 
         Mat dstMat;
-        if(src.depth()!=traits::Type<WorkVec>::value)
-            cur_res.convertTo(dstMat,src.depth());
+        if(src.depth() != traits::Depth<WorkVec>::value)
+            cur_res.convertTo(dstMat, src.depth());
         else
             dstMat = cur_res;
 

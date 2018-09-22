@@ -267,8 +267,8 @@ int main( int argc, char** argv )
 
     // Compute the point cloud
     Mat pointcloud;
-    disparityMap.convertTo( disparityMap, CV_32FC1 );
-    reprojectImageTo3D( disparityMap, pointcloud, Q, true, -1 );
+    disparityMap.convertTo( disparityMap, CV_32F);
+    reprojectImageTo3D( disparityMap, pointcloud, Q, true);
 
     // Compute a mask to remove background
     Mat dst, thresholded_disp;

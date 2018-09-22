@@ -56,7 +56,7 @@ PARAM_TEST_CASE(GpuMat_SetTo, cv::cuda::DeviceInfo, cv::Size, MatType, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemType type;
     bool useRoi;
 
     virtual void SetUp()
@@ -172,7 +172,7 @@ PARAM_TEST_CASE(GpuMat_CopyTo, cv::cuda::DeviceInfo, cv::Size, MatType, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemType type;
     bool useRoi;
 
 
@@ -242,8 +242,8 @@ PARAM_TEST_CASE(GpuMat_ConvertTo, cv::cuda::DeviceInfo, cv::Size, MatDepth, MatD
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int depth1;
-    int depth2;
+    ElemDepth depth1;
+    ElemDepth depth2;
     bool useRoi;
 
     virtual void SetUp()
@@ -260,7 +260,7 @@ PARAM_TEST_CASE(GpuMat_ConvertTo, cv::cuda::DeviceInfo, cv::Size, MatDepth, MatD
 
 CUDA_TEST_P(GpuMat_ConvertTo, WithOutScaling)
 {
-    cv::Mat src = randomMat(size, depth1);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth1, 1));
 
     if ((depth1 == CV_64F || depth2 == CV_64F) && !supportFeature(devInfo, cv::cuda::NATIVE_DOUBLE))
     {
@@ -278,7 +278,7 @@ CUDA_TEST_P(GpuMat_ConvertTo, WithOutScaling)
     else
     {
         cv::cuda::GpuMat d_src = loadMat(src, useRoi);
-        cv::cuda::GpuMat dst = createMat(size, depth2, useRoi);
+        cv::cuda::GpuMat dst = createMat(size, CV_MAKETYPE(depth2, 1), useRoi);
         d_src.convertTo(dst, depth2);
 
         cv::Mat dst_gold;
@@ -290,7 +290,7 @@ CUDA_TEST_P(GpuMat_ConvertTo, WithOutScaling)
 
 CUDA_TEST_P(GpuMat_ConvertTo, WithScaling)
 {
-    cv::Mat src = randomMat(size, depth1);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth1, 1));
     double a = randomDouble(0.0, 1.0);
     double b = randomDouble(-10.0, 10.0);
 
@@ -310,7 +310,7 @@ CUDA_TEST_P(GpuMat_ConvertTo, WithScaling)
     else
     {
         cv::cuda::GpuMat d_src = loadMat(src, useRoi);
-        cv::cuda::GpuMat dst = createMat(size, depth2, useRoi);
+        cv::cuda::GpuMat dst = createMat(size, CV_MAKETYPE(depth2, 1), useRoi);
         d_src.convertTo(dst, depth2, a, b);
 
         cv::Mat dst_gold;
@@ -341,18 +341,18 @@ struct EnsureSizeIsEnough : testing::TestWithParam<cv::cuda::DeviceInfo>
 
 CUDA_TEST_P(EnsureSizeIsEnough, BufferReuse)
 {
-    cv::cuda::GpuMat buffer(100, 100, CV_8U);
+    cv::cuda::GpuMat buffer(100, 100, CV_8UC1);
     cv::cuda::GpuMat old = buffer;
 
     // don't reallocate memory
-    cv::cuda::ensureSizeIsEnough(10, 20, CV_8U, buffer);
+    cv::cuda::ensureSizeIsEnough(10, 20, CV_8UC1, buffer);
     EXPECT_EQ(10, buffer.rows);
     EXPECT_EQ(20, buffer.cols);
     EXPECT_EQ(CV_8UC1, buffer.type());
     EXPECT_EQ(reinterpret_cast<intptr_t>(old.data), reinterpret_cast<intptr_t>(buffer.data));
 
     // don't reallocate memory
-    cv::cuda::ensureSizeIsEnough(20, 30, CV_8U, buffer);
+    cv::cuda::ensureSizeIsEnough(20, 30, CV_8UC1, buffer);
     EXPECT_EQ(20, buffer.rows);
     EXPECT_EQ(30, buffer.cols);
     EXPECT_EQ(CV_8UC1, buffer.type());

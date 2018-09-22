@@ -197,9 +197,9 @@ PERF_TEST_P(Sz_Depth, ReprojectImageTo3D,
                     Values(CV_8U, CV_16S)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     cv::Mat Q(4, 4, CV_32FC1);
@@ -232,9 +232,9 @@ PERF_TEST_P(Sz_Depth, DrawColorDisp,
                     Values(CV_8U, CV_16S)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int type = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, type);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())

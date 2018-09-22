@@ -392,7 +392,7 @@ void fromCamToWorld( Mat cameraMatrix, vector<Mat> rV, vector<Mat> tV,
         vector<Point3f> wpTemp;
         int s2 = (int) imgPoints[i].size();
         for(int j = 0; j < s2; ++j){
-            Mat coords(3, 1, CV_32F);
+            Mat coords(3, 1, CV_32FC1);
             coords.at<float>(0, 0) = imgPoints[i][j].x;
             coords.at<float>(1, 0) = imgPoints[i][j].y;
             coords.at<float>(2, 0) = 1.0f;
@@ -453,12 +453,12 @@ void normalize( const Mat &pts, const int& dim, Mat& normpts, Mat &T )
 
     //centroid
 
-    Mat centroid(dim,1,CV_32F);
+    Mat centroid(dim,1,CV_32FC1);
     Scalar tmp;
 
     if( normpts.empty() )
     {
-        normpts= Mat(pts.rows,pts.cols,CV_32F);
+        normpts= Mat(pts.rows,pts.cols,CV_32FC1);
     }
 
     for( int i = 0 ; i < dim ; ++i )
@@ -481,7 +481,7 @@ void normalize( const Mat &pts, const int& dim, Mat& normpts, Mat &T )
 
     normpts = normpts * scale;
 
-    T=cv::Mat::eye(dim+1,dim+1,CV_32F);
+    T=cv::Mat::eye(dim+1,dim+1,CV_32FC1);
     for( int i = 0; i < dim; ++i )
     {
         T.at<float>(i, i) = scale;
@@ -494,7 +494,7 @@ void fromVectorToMat( vector<Point2f> v, Mat &pts )
     int nbrOfPoints = (int) v.size();
 
     if( pts.empty() )
-        pts.create(2, nbrOfPoints, CV_32F);
+        pts.create(2, nbrOfPoints, CV_32FC1);
 
     for( int i = 0; i < nbrOfPoints; ++i )
     {

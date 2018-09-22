@@ -195,8 +195,8 @@ static float getRejectionThreshold(float* r, int m, float outlierScale)
 static void minimizePointToPlaneMetric(Mat Src, Mat Dst, Vec3d& rpy, Vec3d& t)
 {
   //Mat sub = Dst - Src;
-  Mat A = Mat(Src.rows, 6, CV_64F);
-  Mat b = Mat(Src.rows, 1, CV_64F);
+  Mat A = Mat(Src.rows, 6, CV_64FC1);
+  Mat b = Mat(Src.rows, 1, CV_64FC1);
   Mat rpy_t;
 
 #if defined _OPENMP
@@ -272,7 +272,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
   // initialize pose
   pose = Matx44d::eye();
 
-  Mat M = Mat::eye(4,4,CV_64F);
+  Mat M = Mat::eye(4,4,CV_64FC1);
 
   double tempResidual = 0;
 
@@ -312,8 +312,8 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
     float* distances = new float[numElSrc];
     int* indices = new int[numElSrc];
 
-    Mat Indices(2, sizesResult, CV_32S, indices, 0);
-    Mat Distances(2, sizesResult, CV_32F, distances, 0);
+    Mat Indices(2, sizesResult, CV_32SC1, indices, 0);
+    Mat Distances(2, sizesResult, CV_32FC1, distances, 0);
 
     // use robust weighting for outlier treatment
     int* indicesModel = new int[numElSrc];
@@ -399,8 +399,8 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
       if (selInd >= 6)
       {
 
-        Mat Src_Match = Mat(selInd, srcPCT.cols, CV_64F);
-        Mat Dst_Match = Mat(selInd, srcPCT.cols, CV_64F);
+        Mat Src_Match = Mat(selInd, srcPCT.cols, CV_64FC1);
+        Mat Dst_Match = Mat(selInd, srcPCT.cols, CV_64FC1);
 
         for (di=0; di<selInd; di++)
         {

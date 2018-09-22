@@ -64,7 +64,7 @@ namespace cv
                 if(_plotData.cols > 1 && _plotData.rows > 1)
                     CV_Error(Error::StsBadArg, "ERROR: Plot data must be a 1xN or Nx1 matrix.\n");
 
-                CV_Assert(_plotData.type() == CV_64F);
+                CV_Assert(_plotData.type() == CV_64FC1);
 
                 //in case we have a row matrix than needs to be transposed
                 if(_plotData.cols > _plotData.rows)
@@ -92,7 +92,7 @@ namespace cv
                 if((_plotDataX.cols > 1 && _plotDataX.rows > 1) || (_plotDataY.cols > 1 && _plotDataY.rows > 1))
                     CV_Error(Error::StsBadArg, "ERROR: Plot data must be a 1xN or Nx1 matrix.\n");
 
-                CV_Assert(_plotDataX.type() == CV_64F && _plotDataY.type() == CV_64F);
+                CV_Assert(_plotDataX.type() == CV_64FC1 && _plotDataY.type() == CV_64FC1);
 
                 //in case we have a row matrix than needs to be transposed
                 if(_plotDataX.cols > _plotDataX.rows)
@@ -298,8 +298,8 @@ namespace cv
 
                 int NumVecElements = plotDataX.rows;
 
-                plotDataX_plusZero = Mat::zeros(NumVecElements+1,1,CV_64F);
-                plotDataY_plusZero = Mat::zeros(NumVecElements+1,1,CV_64F);
+                plotDataX_plusZero = Mat::zeros(NumVecElements+1,1,CV_64FC1);
+                plotDataY_plusZero = Mat::zeros(NumVecElements+1,1,CV_64FC1);
 
                 for(int i=0; i<NumVecElements; i++){
                     plotDataX_plusZero.at<double>(i,0) = plotDataX.at<double>(i,0);

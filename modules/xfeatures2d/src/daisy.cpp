@@ -110,7 +110,7 @@ public:
     };
 
     /** returns the descriptor type */
-    virtual int descriptorType() const CV_OVERRIDE { return CV_32F; }
+    virtual ElemType descriptorType() const CV_OVERRIDE{ return CV_32FC1; }
 
     /** returns the default norm type */
     virtual int defaultNorm() const CV_OVERRIDE { return NORM_L2; }
@@ -415,7 +415,7 @@ struct LayeredGradientInvoker : ParallelLoopBody
       for (int l = range.start; l < range.end; ++l)
       {
         double angle = l * 2 * (float)CV_PI / layer_no;
-        Mat layer( dx.rows, dx.cols, CV_32F, layers->ptr<float>(l,0,0) );
+        Mat layer( dx.rows, dx.cols, CV_32FC1, layers->ptr<float>(l,0,0) );
         addWeighted( dx, cos( angle ), dy, sin( angle ), 0.0f, layer, CV_32F );
         max( layer, 0.0f, layer );
       }
@@ -963,7 +963,7 @@ inline void DAISY_Impl::compute_grid_points()
     double t_step = 2*CV_PI / m_th_q_no;
 
     m_grid_points.release();
-    m_grid_points = Mat( m_grid_point_number, 2, CV_64F );
+    m_grid_points = Mat( m_grid_point_number, 2, CV_64FC1);
 
     for( int y=0; y<m_grid_point_number; y++ )
     {
@@ -1102,7 +1102,7 @@ inline void DAISY_Impl::initialize()
 
     int dims[3] = { m_hist_th_q_no, m_image.rows, m_image.cols };
     for ( int c=0; c<=m_rad_q_no; c++)
-      m_smoothed_gradient_layers[c] = Mat( 3, dims, CV_32F );
+      m_smoothed_gradient_layers[c] = Mat( 3, dims, CV_32FC1);
 
     layered_gradient( m_image, &m_smoothed_gradient_layers[0] );
 
@@ -1116,7 +1116,7 @@ inline void DAISY_Impl::compute_cube_sigmas()
     if( m_cube_sigmas.empty() )
     {
 
-      m_cube_sigmas = Mat(1, m_rad_q_no, CV_64F);
+      m_cube_sigmas = Mat(1, m_rad_q_no, CV_64FC1);
 
       double r_step = (double)m_rad / m_rad_q_no / 2;
       for( int r=0; r<m_rad_q_no; r++ )
@@ -1180,7 +1180,7 @@ inline void DAISY_Impl::compute_histograms()
 
       // recreate cube space
       int dims[3] = { m_y, m_x, m_h };
-      m_smoothed_gradient_layers.at(r) = Mat( 3, dims, CV_32F );
+      m_smoothed_gradient_layers.at(r) = Mat( 3, dims, CV_32FC1);
 
       // copy backward all cubes and realign structure
       parallel_for_( Range(0, m_image.rows), ComputeHistogramsInvoker( &m_smoothed_gradient_layers, r ) );
@@ -1206,8 +1206,8 @@ inline void DAISY_Impl::compute_smoothed_gradient_layers()
 
       for( int th=0; th<m_hist_th_q_no; th++ )
       {
-        Mat cvI( m_image.rows, m_image.cols, CV_32F, m_smoothed_gradient_layers[r  ].ptr<float>(th,0,0) );
-        Mat cvO( m_image.rows, m_image.cols, CV_32F, m_smoothed_gradient_layers[r+1].ptr<float>(th,0,0) );
+        Mat cvI( m_image.rows, m_image.cols, CV_32FC1, m_smoothed_gradient_layers[r  ].ptr<float>(th,0,0) );
+        Mat cvO( m_image.rows, m_image.cols, CV_32FC1, m_smoothed_gradient_layers[r+1].ptr<float>(th,0,0) );
         GaussianBlur( cvI, cvO, Size(ks, ks), sigma, sigma, BORDER_REPLICATE );
       }
     }
@@ -1217,7 +1217,7 @@ inline void DAISY_Impl::compute_smoothed_gradient_layers()
 inline void DAISY_Impl::compute_oriented_grid_points()
 {
     m_oriented_grid_points =
-        Mat( g_grid_orientation_resolution, m_grid_point_number*2, CV_64F );
+        Mat( g_grid_orientation_resolution, m_grid_point_number*2, CV_64FC1);
 
     for( int i=0; i<g_grid_orientation_resolution; i++ )
     {
@@ -1300,8 +1300,8 @@ inline void DAISY_Impl::compute_scales()
     int ks = filter_size( sigma, 3.0f );
     GaussianBlur( m_image, sim, Size(ks, ks), sigma, sigma, BORDER_REPLICATE );
 
-    Mat max_dog( m_image.rows, m_image.cols, CV_32F, Scalar(0) );
-    m_scale_map = Mat( m_image.rows, m_image.cols, CV_32F, Scalar(0) );
+    Mat max_dog( m_image.rows, m_image.cols, CV_32FC1, Scalar(0) );
+    m_scale_map = Mat( m_image.rows, m_image.cols, CV_32FC1, Scalar(0) );
 
 
     float sigma_prev;
@@ -1346,10 +1346,10 @@ inline void DAISY_Impl::compute_orientations()
     CV_Assert( !m_image.empty() );
 
     int dims[4] = { 1, m_orientation_resolution, m_image.rows, m_image.cols };
-    Mat rotation_layers(4, dims, CV_32F);
+    Mat rotation_layers(4, dims, CV_32FC1);
     layered_gradient( m_image, &rotation_layers );
 
-    m_orientation_map = Mat(m_image.rows, m_image.cols, CV_16U, Scalar(0));
+    m_orientation_map = Mat(m_image.rows, m_image.cols, CV_16UC1, Scalar(0));
 
     int ori, max_ind;
     float max_val;
@@ -1376,7 +1376,7 @@ inline void DAISY_Impl::compute_orientations()
 
       for( y=0; y<m_image.rows; y ++ )
       {
-         hist = Mat(1, m_orientation_resolution, CV_32F);
+         hist = Mat(1, m_orientation_resolution, CV_32FC1);
 
          for( x=0; x<m_image.cols; x++ )
          {
@@ -1504,7 +1504,7 @@ void DAISY_Impl::compute( InputArray _image, std::vector<KeyPoint>& keypoints, O
     initialize_single_descriptor_mode();
 
     // allocate array
-    _descriptors.create( (int) keypoints.size(), m_descriptor_size, CV_32F );
+    _descriptors.create( (int) keypoints.size(), m_descriptor_size, CV_32FC1 );
 
     // prepare descriptors
     Mat descriptors = _descriptors.getMat();
@@ -1552,7 +1552,7 @@ void DAISY_Impl::compute( InputArray _image, Rect roi, OutputArray _descriptors 
     set_parameters();
     initialize_single_descriptor_mode();
 
-    _descriptors.create( m_roi.width*m_roi.height, m_descriptor_size, CV_32F );
+    _descriptors.create( m_roi.width*m_roi.height, m_descriptor_size, CV_32FC1 );
 
     Mat descriptors = _descriptors.getMat();
 
@@ -1579,7 +1579,7 @@ void DAISY_Impl::compute( InputArray _image, OutputArray _descriptors )
     set_parameters();
     initialize_single_descriptor_mode();
 
-    _descriptors.create( m_roi.width*m_roi.height, m_descriptor_size, CV_32F );
+    _descriptors.create( m_roi.width*m_roi.height, m_descriptor_size, CV_32FC1 );
 
     Mat descriptors = _descriptors.getMat();
 

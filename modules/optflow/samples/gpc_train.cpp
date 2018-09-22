@@ -45,7 +45,7 @@ int main( int argc, const char **argv )
   if ( parser.has( "min-samples" ) )
     params.minNumberOfSamples = parser.get< unsigned >( "min-samples" );
   if ( parser.has( "descriptor-type" ) )
-    params.descriptorType = parser.get< int >( "descriptor-type" );
+      params.descriptorType = parser.get< optflow::GPCDescType >("descriptor-type");
   if ( parser.has( "print-progress" ) )
     params.printProgress = parser.get< unsigned >( "print-progress" ) != 0;
 

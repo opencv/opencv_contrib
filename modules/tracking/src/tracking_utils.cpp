@@ -13,7 +13,7 @@ double tracking_internal::computeNCC(const Mat& patch1, const Mat& patch2)
 
     int N = patch1.rows * patch1.cols;
 
-    if(N <= 1000 && patch1.type() == CV_8U && patch2.type() == CV_8U)
+    if(N <= 1000 && patch1.type() == CV_8UC1 && patch2.type() == CV_8UC1)
     {
         unsigned s1 = 0, s2 = 0;
         unsigned n1 = 0, n2 = 0;

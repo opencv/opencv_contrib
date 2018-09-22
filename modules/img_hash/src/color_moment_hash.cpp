@@ -20,7 +20,7 @@ public:
       cv::Mat const input = inputArr.getMat();
       CV_Assert(input.type() == CV_8UC4 ||
                 input.type() == CV_8UC3 ||
-                input.type() == CV_8U);
+                input.type() == CV_8UC1);
 
       if(input.type() == CV_8UC3)
       {
@@ -41,7 +41,7 @@ public:
 
       cv::cvtColor(blurImg_, colorSpace_, CV_BGR2HSV);
       cv::split(colorSpace_, channels_);
-      outputArr.create(1, 42, CV_64F);
+      outputArr.create(1, 42, CV_64FC1);
       cv::Mat hash = outputArr.getMat();
       hash.setTo(0);
       computeMoments(hash.ptr<double>(0));

@@ -169,7 +169,7 @@ bool CV_OdometryTest::readData(Mat& image, Mat& depth) const
     CV_DbgAssert(depth.type() == CV_16UC1);
     {
         Mat depth_flt;
-        depth.convertTo(depth_flt, CV_32FC1, 1.f/5000.f);
+        depth.convertTo(depth_flt, CV_32F, 1.f/5000.f);
         depth_flt.setTo(std::numeric_limits<float>::quiet_NaN(), depth_flt < FLT_EPSILON);
         depth = depth_flt;
     }

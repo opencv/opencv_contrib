@@ -51,7 +51,7 @@ namespace opencv_test { namespace {
 class RegTest : public testing::Test
 {
 public:
-    void loadImage(int dstDataType = CV_32FC3);
+    void loadImage(ElemType dstDataType = CV_32FC3);
 
     void testShift();
     void testEuclidean();
@@ -233,13 +233,13 @@ void RegTest::testProjective()
     EXPECT_GE(projNorm, sqrt(3.) - 0.01);
 }
 
-void RegTest::loadImage(int dstDataType)
+void RegTest::loadImage(ElemType dstDataType)
 {
     const string imageName = cvtest::TS::ptr()->get_data_path() + "reg/home.png";
 
     img1 = imread(imageName, -1);
     ASSERT_TRUE(!img1.empty());
-    img1.convertTo(img1, dstDataType);
+    img1.convertTo(img1, CV_MAT_DEPTH(dstDataType));
 }
 
 

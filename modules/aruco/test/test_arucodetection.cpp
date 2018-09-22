@@ -90,7 +90,7 @@ void CV_ArucoDetectionSimple::run(int) {
                 groundTruthCorners.back().push_back(firstCorner + Point2f(0, markerSidePixels - 1));
             }
         }
-        if(i % 2 == 1) img.convertTo(img, CV_8UC3);
+        if(i % 2 == 1) img.convertTo(img, CV_8U);
 
         // detect markers
         vector< vector< Point2f > > corners;

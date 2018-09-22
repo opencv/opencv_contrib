@@ -86,7 +86,7 @@ parser_2D_tracks(const string &_filename, std::vector<Mat> &points2d )
 
     double x, y;
     string line_str;
-    Mat nan_mat = Mat(2, 1 , CV_64F, -1);
+    Mat nan_mat = Mat(2, 1, CV_64FC1, -1);
     int n_frames = 0, n_tracks = 0, track = 0;
 
     while ( getline(myfile, line_str) )

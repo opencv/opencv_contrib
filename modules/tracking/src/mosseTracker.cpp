@@ -153,10 +153,10 @@ protected:
 
         Mat window;
         getRectSubPix(img, size, center, window);
-        createHanningWindow(hanWin, size, CV_32F);
+        createHanningWindow(hanWin, size, CV_32FC1);
 
         // goal
-        Mat g=Mat::zeros(size,CV_32F);
+        Mat g=Mat::zeros(size,CV_32FC1);
         g.at<float>(h/2, w/2) = 1;
         GaussianBlur(g, g, Size(-1,-1), 2.0);
         double maxVal;

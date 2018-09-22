@@ -272,7 +272,7 @@ int main(int argc, char *argv[]) {
     double repError;
 
     if(calibrationFlags & CALIB_FIX_ASPECT_RATIO) {
-        cameraMatrix = Mat::eye(3, 3, CV_64F);
+        cameraMatrix = Mat::eye(3, 3, CV_64FC1);
         cameraMatrix.at< double >(0, 0) = aspectRatio;
     }
 

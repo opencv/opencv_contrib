@@ -19,12 +19,12 @@ public:
     typedef value_type  work_type;
     typedef value_type  channel_type;
     typedef value_type  vec_type;
-    enum { generic_type = 0,
-           depth        = CV_32F,
-           channels     = 3,
-           fmt          = (int)'f',
-           type         = CV_MAKETYPE(depth, channels)
-         };
+
+    static const bool       generic_type = false;
+    static const ElemDepth  depth        = CV_32F;
+    static const int        channels     = 3;
+    static const int        fmt          = (int)'f';
+    static const ElemType   type         = CV_MAKETYPE(depth, channels);
 };
 
 template<> class DataType<cv::Vec3f>
@@ -34,12 +34,12 @@ public:
     typedef value_type  work_type;
     typedef value_type  channel_type;
     typedef value_type  vec_type;
-    enum { generic_type = 0,
-           depth        = CV_32F,
-           channels     = 3,
-           fmt          = (int)'f',
-           type         = CV_MAKETYPE(depth, channels)
-         };
+
+    static const bool       generic_type = false;
+    static const ElemDepth  depth        = CV_32F;
+    static const int        channels     = 3;
+    static const int        fmt          = (int)'f';
+    static const ElemType   type         = CV_MAKETYPE(depth, channels);
 };
 
 template<> class DataType<cv::Vec4f>
@@ -49,12 +49,12 @@ public:
     typedef value_type  work_type;
     typedef value_type  channel_type;
     typedef value_type  vec_type;
-    enum { generic_type = 0,
-           depth        = CV_32F,
-           channels     = 4,
-           fmt          = (int)'f',
-           type         = CV_MAKETYPE(depth, channels)
-         };
+
+    static const bool       generic_type = false;
+    static const ElemDepth  depth        = CV_32F;
+    static const int        channels     = 4;
+    static const int        fmt          = (int)'f';
+    static const ElemType   type         = CV_MAKETYPE(depth, channels);
 };
 
 namespace kinfu {

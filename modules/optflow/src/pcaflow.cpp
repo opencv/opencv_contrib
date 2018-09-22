@@ -123,17 +123,17 @@ void solveLSQR( const Mat &A, const Mat &b, OutputArray xOut, const double damp 
 {
   const int n = A.size().width;
   CV_Assert( A.size().height == b.size().height );
-  CV_Assert( A.type() == CV_32F );
-  CV_Assert( b.type() == CV_32F );
-  xOut.create( n, 1, CV_32F );
+  CV_Assert( A.type() == CV_32FC1 );
+  CV_Assert( b.type() == CV_32FC1 );
+  xOut.create( n, 1, CV_32FC1 );
 
-  Mat v( n, 1, CV_32F, 0.0f );
+  Mat v( n, 1, CV_32FC1, 0.0f );
   Mat u = b;
   Mat x = xOut.getMat();
   x = Mat::zeros( x.size(), x.type() );
   double alfa = 0;
   double beta = cv::norm( u, NORM_L2 );
-  Mat w( n, 1, CV_32F, 0.0f );
+  Mat w( n, 1, CV_32FC1, 0.0f );
   const Mat AT = A.t();
 
   if ( beta > 0 )
@@ -223,8 +223,8 @@ void applyCLAHE( UMat &img, float claheClip )
 void reduceToFlow( const Mat &w1, const Mat &w2, Mat &flow, const Size &basisSize )
 {
   const Size size = flow.size();
-  Mat flowX( size, CV_32F, 0.0f );
-  Mat flowY( size, CV_32F, 0.0f );
+  Mat flowX(size, CV_32FC1, 0.0f);
+  Mat flowY(size, CV_32FC1, 0.0f);
 
   const float mult = sqrt( static_cast<float>(size.area()) ) * 0.5;
 
@@ -318,9 +318,9 @@ void OpticalFlowPCAFlow::getSystem( OutputArray AOut, OutputArray b1Out, OutputA
                                     const std::vector<Point2f> &features, const std::vector<Point2f> &predictedFeatures,
                                     const Size size )
 {
-  AOut.create( features.size(), basisSize.area(), CV_32F );
-  b1Out.create( features.size(), 1, CV_32F );
-  b2Out.create( features.size(), 1, CV_32F );
+  AOut.create( features.size(), basisSize.area(), CV_32FC1 );
+  b1Out.create( features.size(), 1, CV_32FC1 );
+  b2Out.create( features.size(), 1, CV_32FC1 );
   if ( useOpenCL )
   {
     UMat A = AOut.getUMat();
@@ -364,10 +364,10 @@ void OpticalFlowPCAFlow::getSystem( OutputArray A1Out, OutputArray A2Out, Output
 {
   CV_Assert( prior->getBasisSize() == basisSize.area() );
 
-  A1Out.create( features.size() + prior->getPadding(), basisSize.area(), CV_32F );
-  A2Out.create( features.size() + prior->getPadding(), basisSize.area(), CV_32F );
-  b1Out.create( features.size() + prior->getPadding(), 1, CV_32F );
-  b2Out.create( features.size() + prior->getPadding(), 1, CV_32F );
+  A1Out.create( features.size() + prior->getPadding(), basisSize.area(), CV_32FC1 );
+  A2Out.create( features.size() + prior->getPadding(), basisSize.area(), CV_32FC1 );
+  b1Out.create( features.size() + prior->getPadding(), 1, CV_32FC1 );
+  b2Out.create( features.size() + prior->getPadding(), 1, CV_32FC1 );
 
   if ( useOpenCL )
   {
@@ -502,10 +502,10 @@ PCAPrior::PCAPrior( const char *pathToPrior )
   CV_Assert( fread( &n, sizeof( n ), 1, f ) == 1 );
   CV_Assert( fread( &m, sizeof( m ), 1, f ) == 1 );
 
-  L1.create( n, m, CV_32F );
-  L2.create( n, m, CV_32F );
-  c1.create( n, 1, CV_32F );
-  c2.create( n, 1, CV_32F );
+  L1.create(n, m, CV_32FC1);
+  L2.create(n, m, CV_32FC1);
+  c1.create(n, 1, CV_32FC1);
+  c2.create(n, 1, CV_32FC1);
 
   CV_Assert( fread( L1.ptr<float>(), n * m * sizeof( float ), 1, f ) == 1 );
   CV_Assert( fread( L2.ptr<float>(), n * m * sizeof( float ), 1, f ) == 1 );

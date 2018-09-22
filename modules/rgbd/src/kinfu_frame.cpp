@@ -39,7 +39,7 @@ void FrameGeneratorCPU::operator ()(Ptr<Frame> _frame, InputArray depth, const I
 
     CV_Assert(frame);
 
-    //CV_Assert(depth.type() == CV_16S);
+    //CV_Assert(depth.type() == CV_16SC1);
     // this should convert CV_16S to CV_32F
     frame->depthData = Depth(depth.getMat());
 

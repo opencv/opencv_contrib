@@ -348,7 +348,7 @@ bool FacemarkAAMImpl::fitConfig( InputArray image, InputArray roi, OutputArrayOf
             fitImpl(img, landmarks[i], configs[i].R,configs[i].t, configs[i].scale, configs[i].model_scale_idx);
         }
     }else{
-        Mat R =  Mat::eye(2, 2, CV_32F);
+        Mat R =  Mat::eye(2, 2, CV_32FC1);
         Point2f t = Point2f((float)(img.cols/2.0),(float)(img.rows/2.0));
         float scale = 1.0;
 
@@ -591,8 +591,8 @@ Mat FacemarkAAMImpl::procrustes(std::vector<Point2f> P, std::vector<Point2f> Q, 
 
     Mat muX(mx),mX; muX.pop_back();muX.pop_back();
     Mat muY(my),mY; muY.pop_back();muY.pop_back();
-    muX.convertTo(mX,CV_32FC1);
-    muY.convertTo(mY,CV_32FC1);
+    muX.convertTo(mX,CV_32F);
+    muY.convertTo(mY,CV_32F);
 
     Mat t = mX.t()-scale*mY.t()*rot;
     trans[0] = t.at<float>(0);
@@ -706,7 +706,7 @@ void FacemarkAAMImpl::getProjection(const Mat M, Mat & P,  int n){
 
 Mat FacemarkAAMImpl::orthonormal(Mat Mo){
     Mat M;
-    Mo.convertTo(M,CV_32FC1);
+    Mo.convertTo(M,CV_32F);
 
     // TODO: float precission is only 1e-7, but MATLAB version use thresh=2.2204e-16
     float thresh = (float)2.2204e-6;
@@ -753,12 +753,12 @@ void FacemarkAAMImpl::calcSimilarityEig(std::vector<Point2f> s0,Mat S, Mat & Q_o
 
     /*c0 = s0(:)*/
     Mat w = linearize(s0);
-    // w.convertTo(w, CV_64FC1);
+    // w.convertTo(w, CV_64F);
     w.copyTo(c0);
 
     /*c1 = [-s0(npts:2*npts); s0(0:npts-1)]*/
     Mat s0_mat = Mat(s0).reshape(1);
-    // s0_mat.convertTo(s0_mat, CV_64FC1);
+    // s0_mat.convertTo(s0_mat, CV_64F);
     Mat swapper = Mat::zeros(2,npts,CV_32FC1);
     Mat s00 = s0_mat.col(0);
     Mat s01 = s0_mat.col(1);
@@ -850,7 +850,7 @@ void FacemarkAAMImpl::delaunay(std::vector<Point2f> s, std::vector<Vec3i> & tria
 }
 
 Mat FacemarkAAMImpl::createMask(std::vector<Point2f> base_shape,  Rect res){
-    Mat mask = Mat::zeros(res.height, res.width, CV_8U);
+    Mat mask = Mat::zeros(res.height, res.width, CV_8UC1);
     std::vector<Point> hull;
     std::vector<Point> shape;
     Mat(base_shape).convertTo(shape, CV_32S);
@@ -861,7 +861,7 @@ Mat FacemarkAAMImpl::createMask(std::vector<Point2f> base_shape,  Rect res){
 
 Mat FacemarkAAMImpl::createTextureBase(std::vector<Point2f> shape, std::vector<Vec3i> triangles, Rect res, std::vector<std::vector<Point> > & textureIdx){
     // max supported amount of triangles only 255
-    Mat mask = Mat::zeros(res.height, res.width, CV_8U);
+    Mat mask = Mat::zeros(res.height, res.width, CV_8UC1);
 
     std::vector<Point2f> p(3);
     textureIdx.clear();
@@ -896,8 +896,8 @@ Mat FacemarkAAMImpl::warpImage(
     const Rect res, const std::vector<std::vector<Point> > textureIdx)
 {
     // TODO: this part can be optimized, collect tranformation pair form all triangles first, then do one time remapping
-    Mat warped = Mat::zeros(res.height, res.width, CV_8U);
-    Mat warped2 = Mat::zeros(res.height, res.width, CV_8U);
+    Mat warped = Mat::zeros(res.height, res.width, CV_8UC1);
+    Mat warped2 = Mat::zeros(res.height, res.width, CV_8UC1);
     Mat image,part, warped_part;
 
     if(img.channels()>1){
@@ -907,7 +907,7 @@ Mat FacemarkAAMImpl::warpImage(
     }
 
     Mat A,R,t;
-    A = Mat::zeros(2,3,CV_64F);
+    A = Mat::zeros(2,3,CV_64FC1);
     std::vector<Point2f> target(3),source(3);
     std::vector<Point> polygon;
     for(size_t i=0;i<triangles.size();i++){
@@ -952,7 +952,7 @@ Mat FacemarkAAMImpl::warpImage(
         Mat base_ind = (by-1)*res.width+bx;
 
         Mat pts_f;
-        pts.convertTo(pts_f,CV_64FC1);
+        pts.convertTo(pts_f,CV_64F);
         pts_f.push_back(Mat::ones(1,(int)textureIdx[i].size(),CV_64FC1));
 
         Mat trans = (A*pts_f).t();
@@ -1159,7 +1159,7 @@ void FacemarkAAMImpl::createWarpJacobian(Mat S, Mat Q, std::vector<Vec3i> triang
     /*calculate dW_dxdy*/
     float v0x,v0y,v1x,v1y,v2x,v2y, denominator;
     for(int k=0;k<npts;k++){
-        Mat acc = Mat::zeros(resolution.height, resolution.width, CV_32F);
+        Mat acc = Mat::zeros(resolution.height, resolution.width, CV_32FC1);
 
         /*for each triangle on k-th point*/
         for(size_t i=0;i<triangles_on_a_point[k].size();i++){
@@ -1196,7 +1196,7 @@ void FacemarkAAMImpl::createWarpJacobian(Mat S, Mat Q, std::vector<Vec3i> triang
             Mat res = 1.0 - alpha/denominator - beta/denominator; // same just different order
 
             /*remap to image form*/
-            Mat dx = Mat::zeros(resolution.height, resolution.width, CV_32F);
+            Mat dx = Mat::zeros(resolution.height, resolution.width, CV_32FC1);
             for(int j=0;j<res.rows;j++){
                 dx.at<float>((int)(y.at<float>(j)-1.0), (int)(x.at<float>(j)-1.0)) = res.at<float>(j); // matlab use offset
             };

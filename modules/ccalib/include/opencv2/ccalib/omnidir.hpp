@@ -134,7 +134,7 @@ namespace omnidir
     are supported.
      */
     CV_EXPORTS_W void initUndistortRectifyMap(InputArray K, InputArray D, InputArray xi, InputArray R, InputArray P, const cv::Size& size,
-        int mltype, OutputArray map1, OutputArray map2, int flags);
+        ElemType mltype, OutputArray map1, OutputArray map2, int flags);
 
     /** @brief Undistort omnidirectional images to perspective images
 
@@ -149,7 +149,7 @@ namespace omnidir
     @param R Rotation matrix between the input and output images. By default, it is identity matrix.
     */
     CV_EXPORTS_W void undistortImage(InputArray distorted, OutputArray undistorted, InputArray K, InputArray D, InputArray xi, int flags,
-        InputArray Knew = cv::noArray(), const Size& new_size = Size(), InputArray R = Mat::eye(3, 3, CV_64F));
+        InputArray Knew = cv::noArray(), const Size& new_size = Size(), InputArray R = Mat::eye(3, 3, CV_64FC1));
 
     /** @brief Perform omnidirectional camera calibration, the default depth of outputs is CV_64F.
 

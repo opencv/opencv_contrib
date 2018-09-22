@@ -238,7 +238,7 @@ namespace
             const int nFeatures = keypoints.cols;
             if (nFeatures > 0)
             {
-                ensureSizeIsEnough(nFeatures, descriptorSize, CV_32F, descriptors);
+                ensureSizeIsEnough(nFeatures, descriptorSize, CV_32FC1, descriptors);
                 compute_descriptors_gpu(descriptors, keypoints.ptr<float>(SURF_CUDA::X_ROW), keypoints.ptr<float>(SURF_CUDA::Y_ROW),
                     keypoints.ptr<float>(SURF_CUDA::SIZE_ROW), keypoints.ptr<float>(SURF_CUDA::ANGLE_ROW), nFeatures);
             }
@@ -368,10 +368,10 @@ void cv::cuda::SURF_CUDA::downloadDescriptors(const GpuMat& descriptorsGPU, std:
         descriptors.clear();
     else
     {
-        CV_Assert(descriptorsGPU.type() == CV_32F);
+        CV_Assert(descriptorsGPU.type() == CV_32FC1);
 
         descriptors.resize(descriptorsGPU.rows * descriptorsGPU.cols);
-        Mat descriptorsCPU(descriptorsGPU.size(), CV_32F, &descriptors[0]);
+        Mat descriptorsCPU(descriptorsGPU.size(), CV_32FC1, &descriptors[0]);
         descriptorsGPU.download(descriptorsCPU);
     }
 }

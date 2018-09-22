@@ -110,7 +110,7 @@ public:
 
         vertex()
         {
-            pose = Mat::eye(4, 4, CV_32F);
+            pose = Mat::eye(4, 4, CV_32FC1);
             timestamp = -1;
         }
     };

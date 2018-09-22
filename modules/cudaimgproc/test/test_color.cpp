@@ -677,7 +677,7 @@ CUDA_TEST_P(CvtColor, XYZ42BGR)
 
     cv::Mat channels[4];
     cv::split(src, channels);
-    channels[3] = cv::Mat(src.size(), depth, cv::Scalar::all(0));
+    channels[3] = cv::Mat(src.size(), CV_MAKETYPE(depth, 1), cv::Scalar::all(0));
     cv::merge(channels, 4, src);
 
     cv::cuda::GpuMat dst;
@@ -696,7 +696,7 @@ CUDA_TEST_P(CvtColor, XYZ42BGRA)
 
     cv::Mat channels[4];
     cv::split(src, channels);
-    channels[3] = cv::Mat(src.size(), depth, cv::Scalar::all(0));
+    channels[3] = cv::Mat(src.size(), CV_MAKETYPE(depth, 1), cv::Scalar::all(0));
     cv::merge(channels, 4, src);
 
     cv::cuda::GpuMat dst;
@@ -812,7 +812,7 @@ CUDA_TEST_P(CvtColor, YCrCb42RGB)
 
     cv::Mat channels[4];
     cv::split(src, channels);
-    channels[3] = cv::Mat(src.size(), depth, cv::Scalar::all(0));
+    channels[3] = cv::Mat(src.size(), CV_MAKETYPE(depth, 1), cv::Scalar::all(0));
     cv::merge(channels, 4, src);
 
     cv::cuda::GpuMat dst;
@@ -831,7 +831,7 @@ CUDA_TEST_P(CvtColor, YCrCb42RGBA)
 
     cv::Mat channels[4];
     cv::split(src, channels);
-    channels[3] = cv::Mat(src.size(), depth, cv::Scalar::all(0));
+    channels[3] = cv::Mat(src.size(), CV_MAKETYPE(depth, 1), cv::Scalar::all(0));
     cv::merge(channels, 4, src);
 
     cv::cuda::GpuMat dst;
@@ -1049,7 +1049,7 @@ CUDA_TEST_P(CvtColor, HSV42BGR)
 
     cv::Mat channels[4];
     cv::split(src, channels);
-    channels[3] = cv::Mat(src.size(), depth, cv::Scalar::all(0));
+    channels[3] = cv::Mat(src.size(), CV_MAKETYPE(depth, 1), cv::Scalar::all(0));
     cv::merge(channels, 4, src);
 
     cv::cuda::GpuMat dst;
@@ -1071,7 +1071,7 @@ CUDA_TEST_P(CvtColor, HSV42BGRA)
 
     cv::Mat channels[4];
     cv::split(src, channels);
-    channels[3] = cv::Mat(src.size(), depth, cv::Scalar::all(0));
+    channels[3] = cv::Mat(src.size(), CV_MAKETYPE(depth, 1), cv::Scalar::all(0));
     cv::merge(channels, 4, src);
 
     cv::cuda::GpuMat dst;
@@ -1127,7 +1127,7 @@ CUDA_TEST_P(CvtColor, HLS42RGB)
 
     cv::Mat channels[4];
     cv::split(src, channels);
-    channels[3] = cv::Mat(src.size(), depth, cv::Scalar::all(0));
+    channels[3] = cv::Mat(src.size(), CV_MAKETYPE(depth, 1), cv::Scalar::all(0));
     cv::merge(channels, 4, src);
 
     cv::cuda::GpuMat dst;
@@ -1149,7 +1149,7 @@ CUDA_TEST_P(CvtColor, HLS42RGBA)
 
     cv::Mat channels[4];
     cv::split(src, channels);
-    channels[3] = cv::Mat(src.size(), depth, cv::Scalar::all(0));
+    channels[3] = cv::Mat(src.size(), CV_MAKETYPE(depth, 1), cv::Scalar::all(0));
     cv::merge(channels, 4, src);
 
 
@@ -1368,7 +1368,7 @@ CUDA_TEST_P(CvtColor, HSV42RGB_FULL)
 
     cv::Mat channels[4];
     cv::split(src, channels);
-    channels[3] = cv::Mat(src.size(), depth, cv::Scalar::all(0));
+    channels[3] = cv::Mat(src.size(), CV_MAKETYPE(depth, 1), cv::Scalar::all(0));
     cv::merge(channels, 4, src);
 
     cv::cuda::GpuMat dst;
@@ -1390,7 +1390,7 @@ CUDA_TEST_P(CvtColor, HSV42RGBA_FULL)
 
     cv::Mat channels[4];
     cv::split(src, channels);
-    channels[3] = cv::Mat(src.size(), depth, cv::Scalar::all(0));
+    channels[3] = cv::Mat(src.size(), CV_MAKETYPE(depth, 1), cv::Scalar::all(0));
     cv::merge(channels, 4, src);
 
     cv::cuda::GpuMat dst;
@@ -1446,7 +1446,7 @@ CUDA_TEST_P(CvtColor, HLS42RGB_FULL)
 
     cv::Mat channels[4];
     cv::split(src, channels);
-    channels[3] = cv::Mat(src.size(), depth, cv::Scalar::all(0));
+    channels[3] = cv::Mat(src.size(), CV_MAKETYPE(depth, 1), cv::Scalar::all(0));
     cv::merge(channels, 4, src);
 
     cv::cuda::GpuMat dst;
@@ -1468,7 +1468,7 @@ CUDA_TEST_P(CvtColor, HLS42RGBA_FULL)
 
     cv::Mat channels[4];
     cv::split(src, channels);
-    channels[3] = cv::Mat(src.size(), depth, cv::Scalar::all(0));
+    channels[3] = cv::Mat(src.size(), CV_MAKETYPE(depth, 1), cv::Scalar::all(0));
     cv::merge(channels, 4, src);
 
     cv::cuda::GpuMat dst;
@@ -1527,7 +1527,7 @@ CUDA_TEST_P(CvtColor, YUV42BGR)
 
     cv::Mat channels[4];
     cv::split(src, channels);
-    channels[3] = cv::Mat(src.size(), depth, cv::Scalar::all(0));
+    channels[3] = cv::Mat(src.size(), CV_MAKETYPE(depth, 1), cv::Scalar::all(0));
     cv::merge(channels, 4, src);
 
     cv::cuda::GpuMat dst;
@@ -1546,7 +1546,7 @@ CUDA_TEST_P(CvtColor, YUV42BGRA)
 
     cv::Mat channels[4];
     cv::split(src, channels);
-    channels[3] = cv::Mat(src.size(), depth, cv::Scalar::all(0));
+    channels[3] = cv::Mat(src.size(), CV_MAKETYPE(depth, 1), cv::Scalar::all(0));
     cv::merge(channels, 4, src);
 
     cv::cuda::GpuMat dst;
@@ -2073,7 +2073,7 @@ CUDA_TEST_P(CvtColor, BayerBG2BGR)
     if ((depth != CV_8U && depth != CV_16U) || useRoi)
         return;
 
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     cv::cuda::GpuMat dst;
     cv::cuda::cvtColor(loadMat(src, useRoi), dst, cv::COLOR_BayerBG2BGR);
@@ -2089,7 +2089,7 @@ CUDA_TEST_P(CvtColor, BayerBG2BGR4)
     if ((depth != CV_8U && depth != CV_16U) || useRoi)
         return;
 
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     cv::cuda::GpuMat dst;
     cv::cuda::cvtColor(loadMat(src, useRoi), dst, cv::COLOR_BayerBG2BGR, 4);
@@ -2112,7 +2112,7 @@ CUDA_TEST_P(CvtColor, BayerGB2BGR)
     if ((depth != CV_8U && depth != CV_16U) || useRoi)
         return;
 
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     cv::cuda::GpuMat dst;
     cv::cuda::cvtColor(loadMat(src, useRoi), dst, cv::COLOR_BayerGB2BGR);
@@ -2128,7 +2128,7 @@ CUDA_TEST_P(CvtColor, BayerGB2BGR4)
     if ((depth != CV_8U && depth != CV_16U) || useRoi)
         return;
 
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     cv::cuda::GpuMat dst;
     cv::cuda::cvtColor(loadMat(src, useRoi), dst, cv::COLOR_BayerGB2BGR, 4);
@@ -2150,7 +2150,7 @@ CUDA_TEST_P(CvtColor, BayerRG2BGR)
     if ((depth != CV_8U && depth != CV_16U) || useRoi)
         return;
 
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     cv::cuda::GpuMat dst;
     cv::cuda::cvtColor(loadMat(src, useRoi), dst, cv::COLOR_BayerRG2BGR);
@@ -2166,7 +2166,7 @@ CUDA_TEST_P(CvtColor, BayerRG2BGR4)
     if ((depth != CV_8U && depth != CV_16U) || useRoi)
         return;
 
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     cv::cuda::GpuMat dst;
     cv::cuda::cvtColor(loadMat(src, useRoi), dst, cv::COLOR_BayerRG2BGR, 4);
@@ -2188,7 +2188,7 @@ CUDA_TEST_P(CvtColor, BayerGR2BGR)
     if ((depth != CV_8U && depth != CV_16U) || useRoi)
         return;
 
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     cv::cuda::GpuMat dst;
     cv::cuda::cvtColor(loadMat(src, useRoi), dst, cv::COLOR_BayerGR2BGR);
@@ -2204,7 +2204,7 @@ CUDA_TEST_P(CvtColor, BayerGR2BGR4)
     if ((depth != CV_8U && depth != CV_16U) || useRoi)
         return;
 
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     cv::cuda::GpuMat dst;
     cv::cuda::cvtColor(loadMat(src, useRoi), dst, cv::COLOR_BayerGR2BGR, 4);
@@ -2226,7 +2226,7 @@ CUDA_TEST_P(CvtColor, BayerBG2Gray)
     if ((depth != CV_8U && depth != CV_16U) || useRoi)
         return;
 
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     cv::cuda::GpuMat dst;
     cv::cuda::cvtColor(loadMat(src, useRoi), dst, cv::COLOR_BayerBG2GRAY);
@@ -2242,7 +2242,7 @@ CUDA_TEST_P(CvtColor, BayerGB2Gray)
     if ((depth != CV_8U && depth != CV_16U) || useRoi)
         return;
 
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     cv::cuda::GpuMat dst;
     cv::cuda::cvtColor(loadMat(src, useRoi), dst, cv::COLOR_BayerGB2GRAY);
@@ -2258,7 +2258,7 @@ CUDA_TEST_P(CvtColor, BayerRG2Gray)
     if ((depth != CV_8U && depth != CV_16U) || useRoi)
         return;
 
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     cv::cuda::GpuMat dst;
     cv::cuda::cvtColor(loadMat(src, useRoi), dst, cv::COLOR_BayerRG2GRAY);
@@ -2274,7 +2274,7 @@ CUDA_TEST_P(CvtColor, BayerGR2Gray)
     if ((depth != CV_8U && depth != CV_16U) || useRoi)
         return;
 
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     cv::cuda::GpuMat dst;
     cv::cuda::cvtColor(loadMat(src, useRoi), dst, cv::COLOR_BayerGR2GRAY);

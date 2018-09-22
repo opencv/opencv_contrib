@@ -64,7 +64,7 @@ TEST(fuzzy_f0, components)
         { 0, 0, 0, 10, 34, 57, 80, 104, 127, 150, 174, 197, 221, 244, 255, 255 },
         { 0, 0, 0, 10, 34, 57, 80, 104, 127, 150, 174, 197, 221, 244, 255, 255 }
     };
-    Mat I = Mat(16, 16, CV_32F, arI);
+    Mat I = Mat(16, 16, CV_32FC1, arI);
 
     float arDemandedComp[9][9] =
     {
@@ -78,7 +78,7 @@ TEST(fuzzy_f0, components)
         { 0, 2.5, 33.75, 80.25, 127, 173.75, 220.75, 252.25, 255 },
         { 0, 2.5, 33.75, 80.25, 127, 173.75, 220.75, 252.25, 255 }
     };
-    Mat demandedComp = Mat(9, 9, CV_32F, arDemandedComp);
+    Mat demandedComp = Mat(9, 9, CV_32FC1, arDemandedComp);
 
     Mat kernel;
     ft::createKernel(ft::LINEAR, 2, kernel, 1);
@@ -112,7 +112,7 @@ TEST(fuzzy_f0, inversion)
         { 0, 1.25, 2.5, 18.125, 33.75, 57, 80.25, 103.625, 127, 150.375, 173.75, 197.25, 220.75, 236.5, 252.25, 253.625 },
         { 0, 1.25, 2.5, 18.125, 33.75, 57, 80.25, 103.625, 127, 150.375, 173.75, 197.25, 220.75, 236.5, 252.25, 253.625 }
     };
-    Mat demandedO = Mat(16, 16, CV_32F, arDemandedO);
+    Mat demandedO = Mat(16, 16, CV_32FC1, arDemandedO);
 
     float arComp[9][9] =
     {
@@ -126,7 +126,7 @@ TEST(fuzzy_f0, inversion)
         { 0, 2.5, 33.75, 80.25, 127, 173.75, 220.75, 252.25, 255 },
         { 0, 2.5, 33.75, 80.25, 127, 173.75, 220.75, 252.25, 255 }
     };
-    Mat comp = Mat(9, 9, CV_32F, arComp);
+    Mat comp = Mat(9, 9, CV_32FC1, arComp);
 
     Mat kernel;
     ft::createKernel(ft::LINEAR, 2, kernel, 1);
@@ -160,7 +160,7 @@ TEST(fuzzy_f0, process)
         { 0, 0, 0, 10, 34, 57, 80, 104, 127, 150, 174, 197, 221, 244, 255, 255 },
         { 0, 0, 0, 10, 34, 57, 80, 104, 127, 150, 174, 197, 221, 244, 255, 255 }
     };
-    Mat I = Mat(16, 16, CV_32F, arI);
+    Mat I = Mat(16, 16, CV_32FC1, arI);
 
     float arDemandedO[16][16] =
     {
@@ -181,7 +181,7 @@ TEST(fuzzy_f0, process)
         { 0, 1.25, 2.5, 18.125, 33.75, 57, 80.25, 103.625, 127, 150.375, 173.75, 197.25, 220.75, 236.5, 252.25, 253.625 },
         { 0, 1.25, 2.5, 18.125, 33.75, 57, 80.25, 103.625, 127, 150.375, 173.75, 197.25, 220.75, 236.5, 252.25, 253.625 }
     };
-    Mat demandedO = Mat(16, 16, CV_32F, arDemandedO);
+    Mat demandedO = Mat(16, 16, CV_32FC1, arDemandedO);
 
     Mat kernel;
     ft::createKernel(ft::LINEAR, 2, kernel, 1);
@@ -205,7 +205,7 @@ TEST(fuzzy_f0, FL_process)
     Mat res5;
     ft::FT02D_FL_process(orig, 5, res5);
 
-    res5.convertTo(res5, CV_8UC3);
+    res5.convertTo(res5, CV_8U);
 
     double n1 = cvtest::norm(exp5, res5, NORM_INF);
 
@@ -223,7 +223,7 @@ TEST(fuzzy_f0, FL_process_float)
     Mat res6;
     ft::FT02D_FL_process_float(orig, 5, res6);
 
-    res6.convertTo(res6, CV_8UC3);
+    res6.convertTo(res6, CV_8U);
 
     double n1 = cvtest::norm(exp6, res6, NORM_INF);
 

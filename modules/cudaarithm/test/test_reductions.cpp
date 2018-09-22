@@ -53,7 +53,7 @@ PARAM_TEST_CASE(Norm, cv::cuda::DeviceInfo, cv::Size, MatDepth, NormCode, UseRoi
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int depth;
+    ElemDepth depth;
     int normCode;
     bool useRoi;
 
@@ -71,7 +71,7 @@ PARAM_TEST_CASE(Norm, cv::cuda::DeviceInfo, cv::Size, MatDepth, NormCode, UseRoi
 
 CUDA_TEST_P(Norm, Accuracy)
 {
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
     cv::Mat mask = randomMat(size, CV_8UC1, 0, 2);
 
     double val = cv::cuda::norm(loadMat(src, useRoi), normCode, loadMat(mask, useRoi));
@@ -83,7 +83,7 @@ CUDA_TEST_P(Norm, Accuracy)
 
 CUDA_TEST_P(Norm, Async)
 {
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
     cv::Mat mask = randomMat(size, CV_8UC1, 0, 2);
 
     cv::cuda::Stream stream;
@@ -260,7 +260,7 @@ PARAM_TEST_CASE(Sum, cv::cuda::DeviceInfo, cv::Size, MatType, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemType type;
     bool useRoi;
 
     cv::Mat src;
@@ -372,7 +372,7 @@ PARAM_TEST_CASE(MinMax, cv::cuda::DeviceInfo, cv::Size, MatDepth, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int depth;
+    ElemDepth depth;
     bool useRoi;
 
     virtual void SetUp()
@@ -388,7 +388,7 @@ PARAM_TEST_CASE(MinMax, cv::cuda::DeviceInfo, cv::Size, MatDepth, UseRoi)
 
 CUDA_TEST_P(MinMax, WithoutMask)
 {
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     if (depth == CV_64F && !supportFeature(devInfo, cv::cuda::NATIVE_DOUBLE))
     {
@@ -417,7 +417,7 @@ CUDA_TEST_P(MinMax, WithoutMask)
 
 CUDA_TEST_P(MinMax, Async)
 {
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     cv::cuda::Stream stream;
 
@@ -439,7 +439,7 @@ CUDA_TEST_P(MinMax, Async)
 
 CUDA_TEST_P(MinMax, WithMask)
 {
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
     cv::Mat mask = randomMat(size, CV_8UC1, 0.0, 2.0);
 
     if (depth == CV_64F && !supportFeature(devInfo, cv::cuda::NATIVE_DOUBLE))
@@ -469,7 +469,7 @@ CUDA_TEST_P(MinMax, WithMask)
 
 CUDA_TEST_P(MinMax, NullPtr)
 {
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     if (depth == CV_64F && !supportFeature(devInfo, cv::cuda::NATIVE_DOUBLE))
     {
@@ -538,7 +538,7 @@ PARAM_TEST_CASE(MinMaxLoc, cv::cuda::DeviceInfo, cv::Size, MatDepth, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int depth;
+    ElemDepth depth;
     bool useRoi;
 
     virtual void SetUp()
@@ -554,7 +554,7 @@ PARAM_TEST_CASE(MinMaxLoc, cv::cuda::DeviceInfo, cv::Size, MatDepth, UseRoi)
 
 CUDA_TEST_P(MinMaxLoc, WithoutMask)
 {
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     if (depth == CV_64F && !supportFeature(devInfo, cv::cuda::NATIVE_DOUBLE))
     {
@@ -589,7 +589,7 @@ CUDA_TEST_P(MinMaxLoc, WithoutMask)
 
 CUDA_TEST_P(MinMaxLoc, OneRowMat)
 {
-    cv::Mat src = randomMat(cv::Size(size.width, 1), depth);
+    cv::Mat src = randomMat(cv::Size(size.width, 1), CV_MAKETYPE(depth, 1));
 
     double minVal, maxVal;
     cv::Point minLoc, maxLoc;
@@ -608,7 +608,7 @@ CUDA_TEST_P(MinMaxLoc, OneRowMat)
 
 CUDA_TEST_P(MinMaxLoc, OneColumnMat)
 {
-    cv::Mat src = randomMat(cv::Size(1, size.height), depth);
+    cv::Mat src = randomMat(cv::Size(1, size.height), CV_MAKETYPE(depth, 1));
 
     double minVal, maxVal;
     cv::Point minLoc, maxLoc;
@@ -627,7 +627,7 @@ CUDA_TEST_P(MinMaxLoc, OneColumnMat)
 
 CUDA_TEST_P(MinMaxLoc, Async)
 {
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     cv::cuda::Stream stream;
 
@@ -662,7 +662,7 @@ CUDA_TEST_P(MinMaxLoc, Async)
 
 CUDA_TEST_P(MinMaxLoc, WithMask)
 {
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
     cv::Mat mask = randomMat(size, CV_8UC1, 0.0, 2.0);
 
     if (depth == CV_64F && !supportFeature(devInfo, cv::cuda::NATIVE_DOUBLE))
@@ -698,7 +698,7 @@ CUDA_TEST_P(MinMaxLoc, WithMask)
 
 CUDA_TEST_P(MinMaxLoc, NullPtr)
 {
-    cv::Mat src = randomMat(size, depth);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     if (depth == CV_64F && !supportFeature(devInfo, cv::cuda::NATIVE_DOUBLE))
     {
@@ -750,7 +750,7 @@ PARAM_TEST_CASE(CountNonZero, cv::cuda::DeviceInfo, cv::Size, MatDepth, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int depth;
+    ElemDepth depth;
     bool useRoi;
 
     cv::Mat src;
@@ -764,7 +764,7 @@ PARAM_TEST_CASE(CountNonZero, cv::cuda::DeviceInfo, cv::Size, MatDepth, UseRoi)
 
         cv::cuda::setDevice(devInfo.deviceID());
 
-        cv::Mat srcBase = randomMat(size, CV_8U, 0.0, 1.5);
+        cv::Mat srcBase = randomMat(size, CV_8UC1, 0.0, 1.5);
         srcBase.convertTo(src, depth);
     }
 };
@@ -826,14 +826,14 @@ PARAM_TEST_CASE(Reduce, cv::cuda::DeviceInfo, cv::Size, MatDepth, Channels, Redu
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int depth;
+    ElemDepth depth;
     int channels;
     int reduceOp;
     bool useRoi;
 
-    int type;
-    int dst_depth;
-    int dst_type;
+    ElemType type;
+    ElemDepth dst_depth;
+    ElemType dst_type;
 
     virtual void SetUp()
     {
@@ -905,7 +905,7 @@ PARAM_TEST_CASE(Normalize, cv::cuda::DeviceInfo, cv::Size, MatDepth, NormCode, U
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemDepth depth;
     int norm_type;
     bool useRoi;
 
@@ -916,7 +916,7 @@ PARAM_TEST_CASE(Normalize, cv::cuda::DeviceInfo, cv::Size, MatDepth, NormCode, U
     {
         devInfo = GET_PARAM(0);
         size = GET_PARAM(1);
-        type = GET_PARAM(2);
+        depth = GET_PARAM(2);
         norm_type = GET_PARAM(3);
         useRoi = GET_PARAM(4);
 
@@ -930,31 +930,31 @@ PARAM_TEST_CASE(Normalize, cv::cuda::DeviceInfo, cv::Size, MatDepth, NormCode, U
 
 CUDA_TEST_P(Normalize, WithOutMask)
 {
-    cv::Mat src = randomMat(size, type);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
-    cv::cuda::GpuMat dst = createMat(size, type, useRoi);
-    cv::cuda::normalize(loadMat(src, useRoi), dst, alpha, beta, norm_type, type);
+    cv::cuda::GpuMat dst = createMat(size, CV_MAKETYPE(depth, 1), useRoi);
+    cv::cuda::normalize(loadMat(src, useRoi), dst, alpha, beta, norm_type, depth);
 
     cv::Mat dst_gold;
-    cv::normalize(src, dst_gold, alpha, beta, norm_type, type);
+    cv::normalize(src, dst_gold, alpha, beta, norm_type, depth);
 
-    EXPECT_MAT_NEAR(dst_gold, dst, type < CV_32F ? 1.0 : 1e-4);
+    EXPECT_MAT_NEAR(dst_gold, dst, depth < CV_32F ? 1.0 : 1e-4);
 }
 
 CUDA_TEST_P(Normalize, WithMask)
 {
-    cv::Mat src = randomMat(size, type);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
     cv::Mat mask = randomMat(size, CV_8UC1, 0, 2);
 
-    cv::cuda::GpuMat dst = createMat(size, type, useRoi);
+    cv::cuda::GpuMat dst = createMat(size, CV_MAKETYPE(depth, 1), useRoi);
     dst.setTo(cv::Scalar::all(0));
-    cv::cuda::normalize(loadMat(src, useRoi), dst, alpha, beta, norm_type, -1, loadMat(mask, useRoi));
+    cv::cuda::normalize(loadMat(src, useRoi), dst, alpha, beta, norm_type, CV_DEPTH_AUTO, loadMat(mask, useRoi));
 
-    cv::Mat dst_gold(size, type);
+    cv::Mat dst_gold(size, CV_MAKETYPE(depth, 1));
     dst_gold.setTo(cv::Scalar::all(0));
-    cv::normalize(src, dst_gold, alpha, beta, norm_type, -1, mask);
+    cv::normalize(src, dst_gold, alpha, beta, norm_type, CV_DEPTH_AUTO, mask);
 
-    EXPECT_MAT_NEAR(dst_gold, dst, type < CV_32F ? 1.0 : 1e-4);
+    EXPECT_MAT_NEAR(dst_gold, dst, depth < CV_32F ? 1.0 : 1e-4);
 }
 
 INSTANTIATE_TEST_CASE_P(CUDA_Arithm, Normalize, testing::Combine(

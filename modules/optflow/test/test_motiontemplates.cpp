@@ -50,9 +50,9 @@ public:
     CV_MHIBaseTest();
 
 protected:
-    void get_test_array_types_and_sizes( int test_case_idx, vector<vector<Size> >& sizes, vector<vector<int> >& types );
-    void get_minmax_bounds( int i, int j, int type, Scalar& low, Scalar& high );
-    int prepare_test_case( int test_case_idx );
+    void get_test_array_types_and_sizes(int test_case_idx, vector<vector<Size> >& sizes, vector<vector<ElemType> >& types) CV_OVERRIDE;
+    void get_minmax_bounds(int i, int j, ElemDepth depth, Scalar& low, Scalar& high) CV_OVERRIDE;
+    int prepare_test_case(int test_case_idx) CV_OVERRIDE;
     double timestamp, duration, max_log_duration;
     int mhi_i, mhi_ref_i;
     double silh_ratio;
@@ -69,10 +69,10 @@ CV_MHIBaseTest::CV_MHIBaseTest()
 }
 
 
-void CV_MHIBaseTest::get_minmax_bounds( int i, int j, int type, Scalar& low, Scalar& high )
+void CV_MHIBaseTest::get_minmax_bounds( int i, int j, ElemDepth depth, Scalar& low, Scalar& high )
 {
-    cvtest::ArrayTest::get_minmax_bounds( i, j, type, low, high );
-    if( i == INPUT && CV_MAT_DEPTH(type) == CV_8U )
+    cvtest::ArrayTest::get_minmax_bounds(i, j, depth, low, high);
+    if (i == INPUT && depth == CV_8U)
     {
         low = Scalar::all(cvRound(-1./silh_ratio)+2.);
         high = Scalar::all(2);
@@ -86,7 +86,7 @@ void CV_MHIBaseTest::get_minmax_bounds( int i, int j, int type, Scalar& low, Sca
 
 
 void CV_MHIBaseTest::get_test_array_types_and_sizes( int test_case_idx,
-                                                vector<vector<Size> >& sizes, vector<vector<int> >& types )
+                                                vector<vector<Size> >& sizes, vector<vector<ElemType> >& types )
 {
     RNG& rng = ts->get_rng();
     cvtest::ArrayTest::get_test_array_types_and_sizes( test_case_idx, sizes, types );
@@ -145,9 +145,9 @@ public:
     CV_UpdateMHITest();
 
 protected:
-    double get_success_error_level( int test_case_idx, int i, int j );
-    void run_func();
-    void prepare_to_validation( int );
+    double get_success_error_level( int test_case_idx, int i, int j ) CV_OVERRIDE;
+    void run_func() CV_OVERRIDE;
+    void prepare_to_validation( int ) CV_OVERRIDE;
 };
 
 
@@ -194,7 +194,7 @@ static void test_MHIGradient( const Mat& mhi, Mat& mask, Mat& orientation,
     kernel = cvtest::calcSobelKernel2D( 0, 1, aperture_size );
     cvtest::filter2D( mhi, dy, CV_32F, kernel, anchor, 0, BORDER_REPLICATE );
 
-    kernel = Mat::ones(aperture_size, aperture_size, CV_8U);
+    kernel = Mat::ones(aperture_size, aperture_size, CV_8UC1);
     cvtest::erode(mhi, min_mhi, kernel, anchor, 0, BORDER_REPLICATE);
     cvtest::dilate(mhi, max_mhi, kernel, anchor, 0, BORDER_REPLICATE);
 
@@ -242,10 +242,10 @@ public:
     CV_MHIGradientTest();
 
 protected:
-    void get_test_array_types_and_sizes( int test_case_idx, vector<vector<Size> >& sizes, vector<vector<int> >& types );
-    double get_success_error_level( int test_case_idx, int i, int j );
-    void run_func();
-    void prepare_to_validation( int );
+    void get_test_array_types_and_sizes( int test_case_idx, vector<vector<Size> >& sizes, vector<vector<ElemType> >& types ) CV_OVERRIDE;
+    double get_success_error_level( int test_case_idx, int i, int j ) CV_OVERRIDE;
+    void run_func() CV_OVERRIDE;
+    void prepare_to_validation( int ) CV_OVERRIDE;
 
     double delta1, delta2, delta_range_log;
     int aperture_size;
@@ -266,7 +266,7 @@ CV_MHIGradientTest::CV_MHIGradientTest()
 }
 
 
-void CV_MHIGradientTest::get_test_array_types_and_sizes( int test_case_idx, vector<vector<Size> >& sizes, vector<vector<int> >& types )
+void CV_MHIGradientTest::get_test_array_types_and_sizes(int test_case_idx, vector<vector<Size> >& sizes, vector<vector<ElemType> >& types)
 {
     RNG& rng = ts->get_rng();
     CV_MHIBaseTest::get_test_array_types_and_sizes( test_case_idx, sizes, types );
@@ -390,11 +390,11 @@ public:
     CV_MHIGlobalOrientTest();
 
 protected:
-    void get_test_array_types_and_sizes( int test_case_idx, vector<vector<Size> >& sizes, vector<vector<int> >& types );
-    void get_minmax_bounds( int i, int j, int type, Scalar& low, Scalar& high );
-    double get_success_error_level( int test_case_idx, int i, int j );
-    int validate_test_results( int test_case_idx );
-    void run_func();
+    void get_test_array_types_and_sizes(int test_case_idx, vector<vector<Size> >& sizes, vector<vector<ElemType> >& types) CV_OVERRIDE;
+    void get_minmax_bounds(int i, int j, ElemDepth depth, Scalar& low, Scalar& high) CV_OVERRIDE;
+    double get_success_error_level(int test_case_idx, int i, int j) CV_OVERRIDE;
+    int validate_test_results(int test_case_idx) CV_OVERRIDE;
+    void run_func() CV_OVERRIDE;
     double angle, min_angle, max_angle;
 };
 
@@ -409,7 +409,7 @@ CV_MHIGlobalOrientTest::CV_MHIGlobalOrientTest()
 }
 
 
-void CV_MHIGlobalOrientTest::get_test_array_types_and_sizes( int test_case_idx, vector<vector<Size> >& sizes, vector<vector<int> >& types )
+void CV_MHIGlobalOrientTest::get_test_array_types_and_sizes(int test_case_idx, vector<vector<Size> >& sizes, vector<vector<ElemType> >& types)
 {
     RNG& rng = ts->get_rng();
     CV_MHIBaseTest::get_test_array_types_and_sizes( test_case_idx, sizes, types );
@@ -434,9 +434,9 @@ void CV_MHIGlobalOrientTest::get_test_array_types_and_sizes( int test_case_idx, 
 }
 
 
-void CV_MHIGlobalOrientTest::get_minmax_bounds( int i, int j, int type, Scalar& low, Scalar& high )
+void CV_MHIGlobalOrientTest::get_minmax_bounds(int i, int j, ElemDepth depth, Scalar& low, Scalar& high)
 {
-    CV_MHIBaseTest::get_minmax_bounds( i, j, type, low, high );
+    CV_MHIBaseTest::get_minmax_bounds( i, j, depth, low, high );
     if( i == INPUT && j == 2 )
     {
         low = Scalar::all(min_angle);

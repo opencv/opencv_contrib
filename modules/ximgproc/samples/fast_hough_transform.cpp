@@ -63,7 +63,7 @@ static void help()
             "Usage:\n"
             "./fasthoughtransform\n"
             "<image_name>, default is '../../../samples/data/building.jpg'\n"
-            "<fht_image_depth>, default is " << CV_32S << "\n"
+            "<fht_image_depth>, default is " << (int)CV_32S << " (CV_32S)\n"
             "<fht_angle_range>, default is " << 6 << " (@see cv::AngleRangeOption)\n"
             "<fht_operator>, default is " << 2 << " (@see cv::HoughOp)\n"
             "<fht_makeskew>, default is " << 1 << "(@see cv::HoughDeskewOption)" << endl;
@@ -102,7 +102,7 @@ static bool parseArgs(int argc, const char **argv,
 static bool getEdges(const Mat &src, Mat &dst)
 {
     Mat ucharSingleSrc;
-    src.convertTo(ucharSingleSrc, CV_8UC1);
+    src.convertTo(ucharSingleSrc, CV_8U);
 
     Canny(ucharSingleSrc, dst, 50, 200, 3);
     return true;
@@ -239,7 +239,7 @@ static void rescale(Mat const &src, Mat &dst,
 static void showHumanReadableImg(string const &name, Mat const &img)
 {
     Mat ucharImg;
-    img.convertTo(ucharImg, CV_MAKETYPE(CV_8U, img.channels()));
+    img.convertTo(ucharImg, CV_8U);
     rescale(ucharImg, ucharImg);
     imshow(name, ucharImg);
 }
@@ -249,7 +249,7 @@ static void showFht(Mat const &fht)
     double minv(0), maxv(0);
     minMaxLoc(fht, &minv, &maxv);
     Mat ucharFht;
-    fht.convertTo(ucharFht, CV_MAKETYPE(CV_8U, fht.channels()),
+    fht.convertTo(ucharFht, CV_8U,
                   255.0 / (maxv + minv), minv / (maxv + minv));
     rescale(ucharFht, ucharFht);
     imshow("fast hough transform", ucharFht);

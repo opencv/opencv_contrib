@@ -79,7 +79,7 @@ public:
     */
     struct CV_EXPORTS Config
     {
-        Config( Mat rot = Mat::eye(2,2,CV_32F),
+        Config( Mat rot = Mat::eye(2,2,CV_32FC1),
                 Point2f trans = Point2f(0.0f, 0.0f),
                 float scaling = 1.0f,
                 int scale_id=0

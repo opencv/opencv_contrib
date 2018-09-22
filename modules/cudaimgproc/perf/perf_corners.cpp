@@ -47,17 +47,17 @@ namespace opencv_test { namespace {
 //////////////////////////////////////////////////////////////////////
 // CornerHarris
 
-DEF_PARAM_TEST(Image_Type_Border_BlockSz_ApertureSz, string, MatType, BorderMode, int, int);
+DEF_PARAM_TEST(Image_Type_Border_BlockSz_ApertureSz, string, MatDepth, BorderMode, int, int);
 
 PERF_TEST_P(Image_Type_Border_BlockSz_ApertureSz, CornerHarris,
             Combine(Values<string>("gpu/stereobm/aloe-L.png"),
-                    Values(CV_8UC1, CV_32FC1),
+                    Values(CV_8U, CV_32F),
                     Values(BorderMode(cv::BORDER_REFLECT101), BorderMode(cv::BORDER_REPLICATE), BorderMode(cv::BORDER_REFLECT)),
                     Values(3, 5, 7),
                     Values(0, 3, 5, 7)))
 {
     const string fileName = GET_PARAM(0);
-    const int type = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int borderMode = GET_PARAM(2);
     const int blockSize = GET_PARAM(3);
     const int apertureSize = GET_PARAM(4);
@@ -65,7 +65,7 @@ PERF_TEST_P(Image_Type_Border_BlockSz_ApertureSz, CornerHarris,
     cv::Mat img = readImage(fileName, cv::IMREAD_GRAYSCALE);
     ASSERT_FALSE(img.empty());
 
-    img.convertTo(img, type, type == CV_32F ? 1.0 / 255.0 : 1.0);
+    img.convertTo(img, depth, depth == CV_32F ? 1.0 / 255.0 : 1.0);
 
     const double k = 0.5;
 
@@ -95,13 +95,13 @@ PERF_TEST_P(Image_Type_Border_BlockSz_ApertureSz, CornerHarris,
 
 PERF_TEST_P(Image_Type_Border_BlockSz_ApertureSz, CornerMinEigenVal,
             Combine(Values<string>("gpu/stereobm/aloe-L.png"),
-                    Values(CV_8UC1, CV_32FC1),
+                    Values(CV_8U, CV_32F),
                     Values(BorderMode(cv::BORDER_REFLECT101), BorderMode(cv::BORDER_REPLICATE), BorderMode(cv::BORDER_REFLECT)),
                     Values(3, 5, 7),
                     Values(0, 3, 5, 7)))
 {
     const string fileName = GET_PARAM(0);
-    const int type = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
     const int borderMode = GET_PARAM(2);
     const int blockSize = GET_PARAM(3);
     const int apertureSize = GET_PARAM(4);
@@ -109,7 +109,7 @@ PERF_TEST_P(Image_Type_Border_BlockSz_ApertureSz, CornerMinEigenVal,
     cv::Mat img = readImage(fileName, cv::IMREAD_GRAYSCALE);
     ASSERT_FALSE(img.empty());
 
-    img.convertTo(img, type, type == CV_32F ? 1.0 / 255.0 : 1.0);
+    img.convertTo(img, depth, depth == CV_32F ? 1.0 / 255.0 : 1.0);
 
     if (PERF_RUN_CUDA())
     {

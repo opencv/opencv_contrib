@@ -301,9 +301,9 @@ namespace cv
                 // h, v subproblem
                 Mat h, v;
 
-                filter2D(S, h, -1, Mat(1, 2, CV_32FC1, kernel), Point(0, 0),
+                filter2D(S, h, CV_DEPTH_AUTO, Mat(1, 2, CV_32FC1, kernel), Point(0, 0),
                 0, BORDER_REPLICATE);
-                filter2D(S, v, -1, Mat(2, 1, CV_32FC1, kernel), Point(0, 0),
+                filter2D(S, v, CV_DEPTH_AUTO, Mat(2, 1, CV_32FC1, kernel), Point(0, 0),
                 0, BORDER_REPLICATE);
 
                 Mat hvMag = h.mul(h) + v.mul(v);
@@ -341,8 +341,8 @@ namespace cv
                 }
 
                 Mat hGrad, vGrad;
-                filter2D(h, hGrad, -1, Mat(1, 2, CV_32FC1, kernel_inv));
-                filter2D(v, vGrad, -1, Mat(2, 1, CV_32FC1, kernel_inv));
+                filter2D(h, hGrad, CV_DEPTH_AUTO, Mat(1, 2, CV_32FC1, kernel_inv));
+                filter2D(v, vGrad, CV_DEPTH_AUTO, Mat(2, 1, CV_32FC1, kernel_inv));
 
                 vector<Mat> hvGradFreq;
                 dftMultiChannel(hGrad+vGrad, hvGradFreq);

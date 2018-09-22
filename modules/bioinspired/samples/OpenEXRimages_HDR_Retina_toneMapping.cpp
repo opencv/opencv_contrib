@@ -28,7 +28,7 @@ static void help(std::string errorMessage)
 static void drawPlot(const cv::Mat curve, const std::string figureTitle, const int lowerLimit, const int upperLimit)
 {
 	//std::cout<<"curve size(h,w) = "<<curve.size().height<<", "<<curve.size().width<<std::endl;
-	cv::Mat displayedCurveImage = cv::Mat::ones(200, curve.size().height, CV_8U);
+	cv::Mat displayedCurveImage = cv::Mat::ones(200, curve.size().height, CV_8UC1);
 
 	cv::Mat windowNormalizedCurve;
 	normalize(curve, windowNormalizedCurve, 0, 200, cv::NORM_MINMAX, CV_32F);
@@ -71,7 +71,7 @@ static void rescaleGrayLevelMat(const cv::Mat &inputMat, cv::Mat &outputMat, con
 	}else
 	{
 		cv::Mat rgbIntImg;
-		outputMat.convertTo(rgbIntImg, CV_8UC3);
+		outputMat.convertTo(rgbIntImg, CV_8U);
 		cvtColor(rgbIntImg, intGrayImage, cv::COLOR_BGR2GRAY);
 	}
 
@@ -87,7 +87,7 @@ static void rescaleGrayLevelMat(const cv::Mat &inputMat, cv::Mat &outputMat, con
 	//std::cout<<"Hist max,min = "<<max_val<<", "<<min_val<<std::endl;
 
 	// compute density probability
-	cv::Mat denseProb=cv::Mat::zeros(normalizedHist.size(), CV_32F);
+	cv::Mat denseProb=cv::Mat::zeros(normalizedHist.size(), CV_32FC1);
 	denseProb.at<float>(0)=normalizedHist.at<float>(0);
 	int histLowerLimit=0, histUpperLimit=0;
 	for (int i=1;i<normalizedHist.size().height;++i)

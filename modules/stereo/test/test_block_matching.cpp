@@ -194,7 +194,7 @@ void CV_SGBlockMatchingTest::run(int )
         kernel_size = 9;
 
     Mat test = Mat(image1.rows, image1.cols, CV_8UC1);
-    Mat imgDisparity16S2 = Mat(image1.rows, image1.cols, CV_16S);
+    Mat imgDisparity16S2 = Mat(image1.rows, image1.cols, CV_16SC1);
     Ptr<StereoBinarySGBM> sgbm = StereoBinarySGBM::create(0, 16, kernel_size);
     //setting the penalties for sgbm
     sgbm->setP1(10);
@@ -212,7 +212,7 @@ void CV_SGBlockMatchingTest::run(int )
     double minVal; double maxVal;
     minMaxLoc(imgDisparity16S2, &minVal, &maxVal);
 
-    imgDisparity16S2.convertTo(test, CV_8UC1, 255 / (maxVal - minVal));
+    imgDisparity16S2.convertTo(test, CV_8U, 255 / (maxVal - minVal));
 
     if(test.empty())
     {

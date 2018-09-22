@@ -104,7 +104,7 @@ PERF_TEST_P(Count, Calib3D_SolvePnPRansac,
     camera_mat.at<float>(2, 0) = 0.f;
     camera_mat.at<float>(2, 1) = 0.f;
 
-    const cv::Mat dist_coef(1, 8, CV_32F, cv::Scalar::all(0));
+    const cv::Mat dist_coef(1, 8, CV_32FC1, cv::Scalar::all(0));
 
     cv::Mat rvec_gold(1, 3, CV_32FC1);
     cv::randu(rvec_gold, 0, 1);

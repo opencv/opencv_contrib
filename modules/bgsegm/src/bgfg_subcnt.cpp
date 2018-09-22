@@ -110,7 +110,7 @@ void BackgroundSubtractorCNTImpl::getBackgroundImage(OutputArray _backgroundImag
 {
     CV_Assert(! data.empty());
 
-    _backgroundImage.create(prevFrame.size(), CV_8U); // OutputArray usage requires this step
+    _backgroundImage.create(prevFrame.size(), CV_8UC1); // OutputArray usage requires this step
     Mat backgroundImage = _backgroundImage.getMat();
 
     // mixChannels requires same types to mix,
@@ -347,7 +347,7 @@ void BackgroundSubtractorCNTImpl::apply(InputArray image, OutputArray _fgmask, d
     if(frameIn.channels() != 1)
         cvtColor(frameIn, frameIn, COLOR_BGR2GRAY);
 
-    _fgmask.create(image.size(), CV_8U); // OutputArray usage requires this step
+    _fgmask.create(image.size(), CV_8UC1); // OutputArray usage requires this step
     Mat fgMask = _fgmask.getMat();
 
     bool needToInitialize = data.empty() || learningRate >= 1 || frameIn.size() != prevFrame.size();

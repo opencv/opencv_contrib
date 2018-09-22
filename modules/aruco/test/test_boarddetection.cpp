@@ -340,7 +340,7 @@ TEST(CV_ArucoBoardPose, CheckNegativeZ)
     double matrixData[9] = { -3.9062571886921410e+02, 0., 4.2350000000000000e+02,
                               0., 3.9062571886921410e+02, 2.3950000000000000e+02,
                               0., 0., 1 };
-    cv::Mat cameraMatrix = cv::Mat(3, 3, CV_64F, matrixData);
+    cv::Mat cameraMatrix = cv::Mat(3, 3, CV_64FC1, matrixData);
 
     cv::Ptr<cv::aruco::Board> boardPtr(new cv::aruco::Board);
     cv::aruco::Board& board = *boardPtr;

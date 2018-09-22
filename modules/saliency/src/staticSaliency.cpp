@@ -54,8 +54,8 @@ bool StaticSaliency::computeBinaryMap( InputArray _saliencyMap, OutputArray _bin
 {
   Mat saliencyMap = _saliencyMap.getMat();
   CV_CheckTypeEQ(saliencyMap.type(), CV_32FC1, "");
-  Mat labels = Mat::zeros( saliencyMap.rows * saliencyMap.cols, 1, 1 );
-  Mat samples = Mat_<float>( saliencyMap.rows * saliencyMap.cols, 1 );
+  Mat labels = Mat::zeros(saliencyMap.rows * saliencyMap.cols, 1, CV_8SC1);
+  Mat samples = Mat_<float>(saliencyMap.rows * saliencyMap.cols, CV_8SC1);
   Mat centers;
   TermCriteria terminationCriteria;
   terminationCriteria.epsilon = 0.2;
@@ -88,7 +88,7 @@ bool StaticSaliency::computeBinaryMap( InputArray _saliencyMap, OutputArray _bin
 
   //Convert
   outputMat = outputMat * 255;
-  outputMat.convertTo( outputMat, CV_8U );
+  outputMat.convertTo( outputMat, CV_8U);
 
   // adaptative thresholding using Otsu's method, to make saliency map binary
   _binaryMap.createSameSize(outputMat, outputMat.type());

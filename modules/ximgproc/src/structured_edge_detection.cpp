@@ -87,7 +87,7 @@ static cv::Mat imsmooth(const cv::Mat &src, const int rad)
         if (rad <= 1)
         {
             CV_INIT_VECTOR(kernelXY, float, {1/(p + 2), p/(p + 2), 1/(p + 2)});
-            cv::sepFilter2D(src, dst, -1, kernelXY, kernelXY);
+            cv::sepFilter2D(src, dst, CV_DEPTH_AUTO, kernelXY, kernelXY);
         }
         else
         {
@@ -99,7 +99,7 @@ static cv::Mat imsmooth(const cv::Mat &src, const int rad)
                 kernelXY[2*rad - i] = (i + 1) / nrml;
                 kernelXY[i] = (i + 1) / nrml;
             }
-            sepFilter2D(src, dst, -1, kernelXY, kernelXY);
+            sepFilter2D(src, dst, CV_DEPTH_AUTO, kernelXY, kernelXY);
         }
 
         return dst;
@@ -194,9 +194,9 @@ static void gradientHist(const cv::Mat &src, cv::Mat &magnitude, cv::Mat &histog
 
     histogram.setTo(0);
 
-    cv::Sobel( src, Dx, cv::DataType<float>::type,
+    cv::Sobel( src, Dx, cv::DataType<float>::depth,
         1, 0, 1, 1.0, 0.0, cv::BORDER_REFLECT );
-    cv::Sobel( src, Dy, cv::DataType<float>::type,
+    cv::Sobel( src, Dy, cv::DataType<float>::depth,
         0, 1, 1, 1.0, 0.0, cv::BORDER_REFLECT );
 
     int nchannels = src.channels();
@@ -383,7 +383,7 @@ public:
         }
 
         // Mixing
-        int resType = CV_MAKETYPE(cv::DataType<float>::type, outNum);
+        ElemType resType = CV_MAKETYPE(cv::DataType<float>::type, outNum);
         features.create(nSize, resType);
 
         std::vector <int> fromTo;
@@ -568,9 +568,9 @@ public:
       Mat src = _src.getMat();
       cv::Mat E_conv = imsmooth(src, __rf.options.gradientNormalizationRadius);
 
-      Sobel(E_conv, Oxx, -1, 2, 0);
-      Sobel(E_conv, Oxy, -1, 1, 1);
-      Sobel(E_conv, Oyy, -1, 0, 2);
+      Sobel(E_conv, Oxx, CV_DEPTH_AUTO, 2, 0);
+      Sobel(E_conv, Oxy, CV_DEPTH_AUTO, 1, 1);
+      Sobel(E_conv, Oyy, CV_DEPTH_AUTO, 0, 2);
 
       Mat dst = _dst.getMat();
       float *o = dst.ptr<float>();

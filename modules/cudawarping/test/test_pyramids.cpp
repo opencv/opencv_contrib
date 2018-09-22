@@ -53,7 +53,7 @@ PARAM_TEST_CASE(PyrDown, cv::cuda::DeviceInfo, cv::Size, MatType, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemType type;
     bool useRoi;
 
     virtual void SetUp()
@@ -83,7 +83,7 @@ CUDA_TEST_P(PyrDown, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Warping, PyrDown, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_16UC1), MatType(CV_16UC3), MatType(CV_16UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
+    testing::Values(CV_8UC1, CV_8UC3, CV_8UC4, CV_16UC1, CV_16UC3, CV_16UC4, CV_32FC1, CV_32FC3, CV_32FC4),
     WHOLE_SUBMAT));
 
 ////////////////////////////////////////////////////////
@@ -93,7 +93,7 @@ PARAM_TEST_CASE(PyrUp, cv::cuda::DeviceInfo, cv::Size, MatType, UseRoi)
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemType type;
     bool useRoi;
 
     virtual void SetUp()
@@ -123,7 +123,7 @@ CUDA_TEST_P(PyrUp, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Warping, PyrUp, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC3), MatType(CV_8UC4), MatType(CV_16UC1), MatType(CV_16UC3), MatType(CV_16UC4), MatType(CV_32FC1), MatType(CV_32FC3), MatType(CV_32FC4)),
+    testing::Values(CV_8UC1, CV_8UC3, CV_8UC4, CV_16UC1, CV_16UC3, CV_16UC4, CV_32FC1, CV_32FC3, CV_32FC4),
     WHOLE_SUBMAT));
 
 

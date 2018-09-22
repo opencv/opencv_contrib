@@ -67,7 +67,7 @@ int main(int argc, char **argv)
 
     cv::resize(img, img, cv::Size(416, 416));
     Mat img_copy(img);
-    img.convertTo(img, CV_32FC3);
+    img.convertTo(img, CV_32F);
     Mat input_blob = blobFromImage(img, 1.0, Size(), cv::Scalar(104, 117, 123), false);
 
     // Set the input blob
@@ -112,13 +112,13 @@ int main(int argc, char **argv)
     }
 
     int delta_bbox_size[3] = {23, 23, 36};
-    Mat delta_bbox(3, delta_bbox_size, CV_32F, outblobs[0].ptr<float>());
+    Mat delta_bbox(3, delta_bbox_size, CV_32FC1, outblobs[0].ptr<float>());
 
     int class_scores_size[2] = {4761, 20};
-    Mat class_scores(2, class_scores_size, CV_32F, outblobs[1].ptr<float>());
+    Mat class_scores(2, class_scores_size, CV_32FC1, outblobs[1].ptr<float>());
 
     int conf_scores_size[3] = {23, 23, 9};
-    Mat conf_scores(3, conf_scores_size, CV_32F, outblobs[2].ptr<float>());
+    Mat conf_scores(3, conf_scores_size, CV_32FC1, outblobs[2].ptr<float>());
 
     InferBbox inf(delta_bbox, class_scores, conf_scores);
     inf.filter(threshold);

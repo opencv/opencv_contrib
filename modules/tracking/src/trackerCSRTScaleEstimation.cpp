@@ -41,7 +41,7 @@ public:
             Size patch_sz = Size(static_cast<int>(current_scale * scale_factors[s] * base_target_sz.width),
                     static_cast<int>(current_scale * scale_factors[s] * base_target_sz.height));
             Mat img_patch = get_subwindow(img, pos, patch_sz.width, patch_sz.height);
-            img_patch.convertTo(img_patch, CV_32FC3);
+            img_patch.convertTo(img_patch, CV_32F);
             resize(img_patch, img_patch, Size(scale_model_sz.width, scale_model_sz.height),0,0,INTER_LINEAR);
             std::vector<Mat> hog;
             hog = get_features_hog(img_patch, 4);
@@ -127,7 +127,7 @@ DSST::DSST(const Mat &image,
     mulSpectrums(ysf, Fscale_resp, sf_num, 0 , true);
     Mat sf_den_all;
     mulSpectrums(Fscale_resp, Fscale_resp, sf_den_all, 0, true);
-    reduce(sf_den_all, sf_den, 0, CV_REDUCE_SUM, -1);
+    reduce(sf_den_all, sf_den, 0, CV_REDUCE_SUM);
 }
 
 DSST::~DSST()
@@ -148,11 +148,11 @@ Mat DSST::get_scale_features(
     Size patch_sz = Size(cvFloor(current_scale * scale_factors[0] * base_target_sz.width),
             cvFloor(current_scale * scale_factors[0] * base_target_sz.height));
     Mat img_patch = get_subwindow(img, pos, patch_sz.width, patch_sz.height);
-    img_patch.convertTo(img_patch, CV_32FC3);
+    img_patch.convertTo(img_patch, CV_32F);
     resize(img_patch, img_patch, Size(scale_model_sz.width, scale_model_sz.height),0,0,INTER_LINEAR);
     std::vector<Mat> hog;
     hog = get_features_hog(img_patch, 4);
-    result = Mat(Size((int)scale_factors.size(), hog[0].cols * hog[0].rows * (int)hog.size()), CV_32F);
+    result = Mat(Size((int)scale_factors.size(), hog[0].cols * hog[0].rows * (int)hog.size()), CV_32FC1);
     col_len = hog[0].cols * hog[0].rows;
     for (int i = 0; i < static_cast<int>(hog.size()); ++i) {
         hog[i] = hog[i].t();
@@ -178,7 +178,7 @@ void DSST::update(const Mat &image, const Point2f object_center)
     mulSpectrums(ysf, Fscale_features, new_sf_num, DFT_ROWS, true);
     Mat sf_den_all;
     mulSpectrums(Fscale_features, Fscale_features, new_sf_den_all, DFT_ROWS, true);
-    reduce(new_sf_den_all, new_sf_den, 0, CV_REDUCE_SUM, -1);
+    reduce(new_sf_den_all, new_sf_den, 0, CV_REDUCE_SUM);
 
     sf_num = (1 - learn_rate) * sf_num + learn_rate * new_sf_num;
     sf_den = (1 - learn_rate) * sf_den + learn_rate * new_sf_den;
@@ -194,7 +194,7 @@ float DSST::getScale(const Mat &image, const Point2f object_center)
 
     mulSpectrums(Fscale_features, sf_num, Fscale_features, 0, false);
     Mat scale_resp;
-    reduce(Fscale_features, scale_resp, 0, CV_REDUCE_SUM, -1);
+    reduce(Fscale_features, scale_resp, 0, CV_REDUCE_SUM);
     scale_resp = divide_complex_matrices(scale_resp, sf_den + 0.01f);
     idft(scale_resp, scale_resp, DFT_REAL_OUTPUT|DFT_SCALE);
     Point max_loc;

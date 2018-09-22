@@ -170,7 +170,7 @@ namespace cv {
                         // Compute histogram for each channels
                         float tt = 0;
 
-                        Mat tmp_hists = Mat(histogram_size, 1, CV_32F);
+                        Mat tmp_hists = Mat(histogram_size, 1, CV_32FC1);
                         float *tmp_histogram = tmp_hists.ptr<float>(0);
                         int h_pos = 0;
                         Mat tmp_hist;

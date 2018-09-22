@@ -54,9 +54,9 @@ PERF_TEST_P(Sz_Depth, HistEvenC1,
                     Values(CV_8U, CV_16U, CV_16S)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
-    cv::Mat src(size, depth);
+    cv::Mat src(size, CV_MAKETYPE(depth, 1));
     declare.in(src, WARMUP_RNG);
 
     if (PERF_RUN_CUDA())
@@ -92,7 +92,7 @@ PERF_TEST_P(Sz_Depth, HistEvenC4,
                     Values(CV_8U, CV_16U, CV_16S)))
 {
     const cv::Size size = GET_PARAM(0);
-    const int depth = GET_PARAM(1);
+    const ElemDepth depth = GET_PARAM(1);
 
     cv::Mat src(size, CV_MAKE_TYPE(depth, 4));
     declare.in(src, WARMUP_RNG);

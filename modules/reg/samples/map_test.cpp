@@ -70,8 +70,8 @@ using namespace std;
 static void showDifference(const Mat& image1, const Mat& image2, const char* title)
 {
     Mat img1, img2;
-    image1.convertTo(img1, CV_32FC3);
-    image2.convertTo(img2, CV_32FC3);
+    image1.convertTo(img1, CV_32F);
+    image2.convertTo(img2, CV_32F);
     if(img1.channels() != 1)
         cvtColor(img1, img1, CV_RGB2GRAY);
     if(img2.channels() != 1)
@@ -84,7 +84,7 @@ static void showDifference(const Mat& image1, const Mat& image2, const char* tit
     imgDiff += 128.f;
 
     Mat imgSh;
-    imgDiff.convertTo(imgSh, CV_8UC3);
+    imgDiff.convertTo(imgSh, CV_8U);
     imshow(title, imgSh);
 }
 
@@ -344,8 +344,8 @@ static void calcHomographyFeature(const Mat& image1, const Mat& image2)
     cout << "--- Feature method\n" << H << endl;
 
     Mat imf1, resf;
-    image1.convertTo(imf1, CV_64FC3);
-    result.convertTo(resf, CV_64FC3);
+    image1.convertTo(imf1, CV_64F);
+    result.convertTo(resf, CV_64F);
     showDifference(imf1, resf, difffeat);
 }
 
@@ -375,8 +375,8 @@ static void comparePixelVsFeature(const Mat& img1_8b, const Mat& img2_8b)
 
     // Show difference of images
     Mat img1, img2;
-    img1_8b.convertTo(img1, CV_64FC3);
-    img2_8b.convertTo(img2, CV_64FC3);
+    img1_8b.convertTo(img1, CV_64F);
+    img2_8b.convertTo(img2, CV_64F);
     showDifference(img1, img2, difforig);
     cout << endl << "--- Comparing feature-based with pixel difference based ---" << endl;
 
@@ -399,7 +399,7 @@ int main(void)
         return -1;
     }
     // Convert to double, 3 channels
-    img1.convertTo(img1, CV_64FC3);
+    img1.convertTo(img1, CV_64F);
 
     testShift(img1);
     testEuclidean(img1);

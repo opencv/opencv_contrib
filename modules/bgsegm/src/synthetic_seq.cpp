@@ -204,7 +204,7 @@ void SyntheticSequenceGenerator::getNextFrame(OutputArray _frame, OutputArray _g
         dir.y = std::sin(phi);
     }
 
-    _gtMask.create(sz, CV_8U);
+    _gtMask.create(sz, CV_8UC1);
     Mat gtMask = _gtMask.getMat();
     gtMask = 0;
     gtMask(Rect(Point2i(pos), objSz)) = 255;

@@ -278,7 +278,7 @@ namespace xphoto
             cv::Vec <float, cn> val = pointSeq[i][labelSeq[i]];
             img.template at<cv::Vec <float, cn> >(pPath[i]) = val;
         }
-        img.convertTo( dst, dst.type() );
+        img.convertTo( dst, dst.depth() );
     }
 
     template <typename Tp, unsigned int cn>

@@ -69,7 +69,7 @@ namespace cv
             virtual void write( FileStorage& ) const CV_OVERRIDE;
 
             virtual int descriptorSize() const CV_OVERRIDE;
-            virtual int descriptorType() const CV_OVERRIDE;
+            virtual ElemType descriptorType() const CV_OVERRIDE;
             virtual int defaultNorm() const CV_OVERRIDE;
 
             virtual void compute(InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors) CV_OVERRIDE;
@@ -442,7 +442,7 @@ namespace cv
             return bytes_;
         }
 
-        int LATCHDescriptorExtractorImpl::descriptorType() const
+        ElemType LATCHDescriptorExtractorImpl::descriptorType() const
         {
             return CV_8UC1;
         }
@@ -527,19 +527,19 @@ namespace cv
             bool _1d = false;
             Mat descriptors;
 
-            _1d = _descriptors.kind() == _InputArray::STD_VECTOR && _descriptors.type() == CV_8U;
+            _1d = _descriptors.kind() == _InputArray::STD_VECTOR && _descriptors.type() == CV_8UC1;
             if( _1d )
             {
-                _descriptors.create((int)keypoints.size()*bytes_, 1, CV_8U);
+                _descriptors.create((int)keypoints.size()*bytes_, 1, CV_8UC1);
                 descriptors = _descriptors.getMat().reshape(1, (int)keypoints.size());
             }
             else
             {
-                _descriptors.create((int)keypoints.size(), bytes_, CV_8U);
+                _descriptors.create((int)keypoints.size(), bytes_, CV_8UC1);
                 descriptors = _descriptors.getMat();
             }
 
-            //_descriptors.create((int)keypoints.size(), bytes_, CV_8U);
+            //_descriptors.create((int)keypoints.size(), bytes_, CV_8UC1);
             // prepare descriptors as mat
             //Mat descriptors = _descriptors.getMat();
 

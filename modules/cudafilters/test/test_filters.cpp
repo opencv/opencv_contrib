@@ -70,7 +70,7 @@ PARAM_TEST_CASE(Blur, cv::cuda::DeviceInfo, cv::Size, MatType, KSize, Anchor, Bo
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemType type;
     cv::Size ksize;
     cv::Point anchor;
     int borderType;
@@ -94,7 +94,7 @@ CUDA_TEST_P(Blur, Accuracy)
 {
     cv::Mat src = randomMat(size, type);
 
-    cv::Ptr<cv::cuda::Filter> blurFilter = cv::cuda::createBoxFilter(src.type(), -1, ksize, anchor, borderType);
+    cv::Ptr<cv::cuda::Filter> blurFilter = cv::cuda::createBoxFilter(src.type(), CV_TYPE_AUTO, ksize, anchor, borderType);
 
     cv::cuda::GpuMat dst = createMat(size, type, useRoi);
     blurFilter->apply(loadMat(src, useRoi), dst);
@@ -108,7 +108,7 @@ CUDA_TEST_P(Blur, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Filters, Blur, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC4), MatType(CV_32FC1)),
+    testing::Values(CV_8UC1, CV_8UC4, CV_32FC1),
     testing::Values(KSize(cv::Size(3, 3)), KSize(cv::Size(5, 5)), KSize(cv::Size(7, 7))),
     testing::Values(Anchor(cv::Point(-1, -1)), Anchor(cv::Point(0, 0)), Anchor(cv::Point(2, 2))),
     testing::Values(BorderType(cv::BORDER_REFLECT101), BorderType(cv::BORDER_REPLICATE), BorderType(cv::BORDER_CONSTANT), BorderType(cv::BORDER_REFLECT)),
@@ -121,7 +121,7 @@ PARAM_TEST_CASE(Filter2D, cv::cuda::DeviceInfo, cv::Size, MatType, KSize, Anchor
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemType type;
     cv::Size ksize;
     cv::Point anchor;
     int borderType;
@@ -146,13 +146,13 @@ CUDA_TEST_P(Filter2D, Accuracy)
     cv::Mat src = randomMat(size, type);
     cv::Mat kernel = randomMat(cv::Size(ksize.width, ksize.height), CV_32FC1, 0.0, 1.0);
 
-    cv::Ptr<cv::cuda::Filter> filter2D = cv::cuda::createLinearFilter(src.type(), -1, kernel, anchor, borderType);
+    cv::Ptr<cv::cuda::Filter> filter2D = cv::cuda::createLinearFilter(src.type(), CV_TYPE_AUTO, kernel, anchor, borderType);
 
     cv::cuda::GpuMat dst = createMat(size, type, useRoi);
     filter2D->apply(loadMat(src, useRoi), dst);
 
     cv::Mat dst_gold;
-    cv::filter2D(src, dst_gold, -1, kernel, anchor, 0, borderType);
+    cv::filter2D(src, dst_gold, CV_DEPTH_AUTO, kernel, anchor, 0, borderType);
 
     EXPECT_MAT_NEAR(dst_gold, dst, CV_MAT_DEPTH(type) == CV_32F ? 1e-1 : 1.0);
 }
@@ -160,7 +160,7 @@ CUDA_TEST_P(Filter2D, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Filters, Filter2D, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC4), MatType(CV_16UC1), MatType(CV_16UC4), MatType(CV_32FC1), MatType(CV_32FC4)),
+    testing::Values(CV_8UC1, CV_8UC4, CV_16UC1, CV_16UC4, CV_32FC1, CV_32FC4),
     testing::Values(KSize(cv::Size(3, 3)), KSize(cv::Size(5, 5)), KSize(cv::Size(7, 7)), KSize(cv::Size(11, 11)), KSize(cv::Size(13, 13)), KSize(cv::Size(15, 15))),
     testing::Values(Anchor(cv::Point(-1, -1)), Anchor(cv::Point(0, 0)), Anchor(cv::Point(2, 2))),
     testing::Values(BorderType(cv::BORDER_REFLECT101), BorderType(cv::BORDER_REPLICATE), BorderType(cv::BORDER_CONSTANT), BorderType(cv::BORDER_REFLECT)),
@@ -173,7 +173,7 @@ PARAM_TEST_CASE(Laplacian, cv::cuda::DeviceInfo, cv::Size, MatType, KSize, UseRo
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemType type;
     cv::Size ksize;
     bool useRoi;
 
@@ -193,13 +193,13 @@ CUDA_TEST_P(Laplacian, Accuracy)
 {
     cv::Mat src = randomMat(size, type);
 
-    cv::Ptr<cv::cuda::Filter> laplacian = cv::cuda::createLaplacianFilter(src.type(), -1, ksize.width);
+    cv::Ptr<cv::cuda::Filter> laplacian = cv::cuda::createLaplacianFilter(src.type(), CV_TYPE_AUTO, ksize.width);
 
     cv::cuda::GpuMat dst = createMat(size, type, useRoi);
     laplacian->apply(loadMat(src, useRoi), dst);
 
     cv::Mat dst_gold;
-    cv::Laplacian(src, dst_gold, -1, ksize.width);
+    cv::Laplacian(src, dst_gold, CV_DEPTH_AUTO, ksize.width);
 
     EXPECT_MAT_NEAR(dst_gold, dst, src.depth() < CV_32F ? 0.0 : 1e-3);
 }
@@ -207,7 +207,7 @@ CUDA_TEST_P(Laplacian, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Filters, Laplacian, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC4), MatType(CV_32FC1)),
+    testing::Values(CV_8UC1, CV_8UC4, CV_32FC1),
     testing::Values(KSize(cv::Size(1, 1)), KSize(cv::Size(3, 3))),
     WHOLE_SUBMAT));
 
@@ -225,7 +225,7 @@ PARAM_TEST_CASE(SeparableLinearFilter, cv::cuda::DeviceInfo, cv::Size, MatDepth,
     int borderType;
     bool useRoi;
 
-    int type;
+    ElemType type;
 
     virtual void SetUp()
     {
@@ -250,13 +250,13 @@ CUDA_TEST_P(SeparableLinearFilter, Accuracy)
     cv::Mat rowKernel = randomMat(Size(ksize.width, 1), CV_32FC1, 0.0, 1.0);
     cv::Mat columnKernel = randomMat(Size(ksize.height, 1), CV_32FC1, 0.0, 1.0);
 
-    cv::Ptr<cv::cuda::Filter> filter = cv::cuda::createSeparableLinearFilter(src.type(), -1, rowKernel, columnKernel, anchor, borderType);
+    cv::Ptr<cv::cuda::Filter> filter = cv::cuda::createSeparableLinearFilter(src.type(), CV_TYPE_AUTO, rowKernel, columnKernel, anchor, borderType);
 
     cv::cuda::GpuMat dst = createMat(size, type, useRoi);
     filter->apply(loadMat(src, useRoi), dst);
 
     cv::Mat dst_gold;
-    cv::sepFilter2D(src, dst_gold, -1, rowKernel, columnKernel, anchor, 0, borderType);
+    cv::sepFilter2D(src, dst_gold, CV_DEPTH_AUTO, rowKernel, columnKernel, anchor, 0, borderType);
 
     EXPECT_MAT_NEAR(dst_gold, dst, src.depth() < CV_32F ? 1.0 : 1e-2);
 }
@@ -295,7 +295,7 @@ PARAM_TEST_CASE(Sobel, cv::cuda::DeviceInfo, cv::Size, MatDepth, Channels, KSize
     int borderType;
     bool useRoi;
 
-    int type;
+    ElemType type;
 
     virtual void SetUp()
     {
@@ -322,13 +322,13 @@ CUDA_TEST_P(Sobel, Accuracy)
 
     cv::Mat src = randomMat(size, type);
 
-    cv::Ptr<cv::cuda::Filter> sobel = cv::cuda::createSobelFilter(src.type(), -1, dx, dy, ksize.width, 1.0, borderType);
+    cv::Ptr<cv::cuda::Filter> sobel = cv::cuda::createSobelFilter(src.type(), CV_TYPE_AUTO, dx, dy, ksize.width, 1.0, borderType);
 
     cv::cuda::GpuMat dst = createMat(size, type, useRoi);
     sobel->apply(loadMat(src, useRoi), dst);
 
     cv::Mat dst_gold;
-    cv::Sobel(src, dst_gold, -1, dx, dy, ksize.width, 1.0, 0.0, borderType);
+    cv::Sobel(src, dst_gold, CV_DEPTH_AUTO, dx, dy, ksize.width, 1.0, 0.0, borderType);
 
     EXPECT_MAT_NEAR(dst_gold, dst, src.depth() < CV_32F ? 0.0 : 0.1);
 }
@@ -361,7 +361,7 @@ PARAM_TEST_CASE(Scharr, cv::cuda::DeviceInfo, cv::Size, MatDepth, Channels, Deri
     int borderType;
     bool useRoi;
 
-    int type;
+    ElemType type;
 
     virtual void SetUp()
     {
@@ -387,13 +387,13 @@ CUDA_TEST_P(Scharr, Accuracy)
 
     cv::Mat src = randomMat(size, type);
 
-    cv::Ptr<cv::cuda::Filter> scharr = cv::cuda::createScharrFilter(src.type(), -1, dx, dy, 1.0, borderType);
+    cv::Ptr<cv::cuda::Filter> scharr = cv::cuda::createScharrFilter(src.type(), CV_TYPE_AUTO, dx, dy, 1.0, borderType);
 
     cv::cuda::GpuMat dst = createMat(size, type, useRoi);
     scharr->apply(loadMat(src, useRoi), dst);
 
     cv::Mat dst_gold;
-    cv::Scharr(src, dst_gold, -1, dx, dy, 1.0, 0.0, borderType);
+    cv::Scharr(src, dst_gold, CV_DEPTH_AUTO, dx, dy, 1.0, 0.0, borderType);
 
     EXPECT_MAT_NEAR(dst_gold, dst, src.depth() < CV_32F ? 0.0 : 0.1);
 }
@@ -424,7 +424,7 @@ PARAM_TEST_CASE(GaussianBlur, cv::cuda::DeviceInfo, cv::Size, MatDepth, Channels
     int borderType;
     bool useRoi;
 
-    int type;
+    ElemType type;
 
     virtual void SetUp()
     {
@@ -448,7 +448,7 @@ CUDA_TEST_P(GaussianBlur, Accuracy)
     double sigma1 = randomDouble(0.1, 1.0);
     double sigma2 = randomDouble(0.1, 1.0);
 
-    cv::Ptr<cv::cuda::Filter> gauss = cv::cuda::createGaussianFilter(src.type(), -1, ksize, sigma1, sigma2, borderType);
+    cv::Ptr<cv::cuda::Filter> gauss = cv::cuda::createGaussianFilter(src.type(), CV_TYPE_AUTO, ksize, sigma1, sigma2, borderType);
 
     cv::cuda::GpuMat dst = createMat(size, type, useRoi);
     gauss->apply(loadMat(src, useRoi), dst);
@@ -492,7 +492,7 @@ PARAM_TEST_CASE(Erode, cv::cuda::DeviceInfo, cv::Size, MatType, Anchor, Iteratio
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemType type;
     cv::Point anchor;
     int iterations;
     bool useRoi;
@@ -513,7 +513,7 @@ PARAM_TEST_CASE(Erode, cv::cuda::DeviceInfo, cv::Size, MatType, Anchor, Iteratio
 CUDA_TEST_P(Erode, Accuracy)
 {
     cv::Mat src = randomMat(size, type);
-    cv::Mat kernel = cv::Mat::ones(3, 3, CV_8U);
+    cv::Mat kernel = cv::Mat::ones(3, 3, CV_8UC1);
 
     cv::Ptr<cv::cuda::Filter> erode = cv::cuda::createMorphologyFilter(cv::MORPH_ERODE, src.type(), kernel, anchor, iterations);
 
@@ -531,7 +531,7 @@ CUDA_TEST_P(Erode, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Filters, Erode, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC4)),
+    testing::Values(CV_8UC1, CV_8UC4),
     testing::Values(Anchor(cv::Point(-1, -1)), Anchor(cv::Point(0, 0)), Anchor(cv::Point(2, 2))),
     testing::Values(Iterations(1), Iterations(2), Iterations(3)),
     WHOLE_SUBMAT));
@@ -543,7 +543,7 @@ PARAM_TEST_CASE(Dilate, cv::cuda::DeviceInfo, cv::Size, MatType, Anchor, Iterati
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemType type;
     cv::Point anchor;
     int iterations;
     bool useRoi;
@@ -564,7 +564,7 @@ PARAM_TEST_CASE(Dilate, cv::cuda::DeviceInfo, cv::Size, MatType, Anchor, Iterati
 CUDA_TEST_P(Dilate, Accuracy)
 {
     cv::Mat src = randomMat(size, type);
-    cv::Mat kernel = cv::Mat::ones(3, 3, CV_8U);
+    cv::Mat kernel = cv::Mat::ones(3, 3, CV_8UC1);
 
     cv::Ptr<cv::cuda::Filter> dilate = cv::cuda::createMorphologyFilter(cv::MORPH_DILATE, src.type(), kernel, anchor, iterations);
 
@@ -582,7 +582,7 @@ CUDA_TEST_P(Dilate, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Filters, Dilate, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC4)),
+    testing::Values(CV_8UC1, CV_8UC4),
     testing::Values(Anchor(cv::Point(-1, -1)), Anchor(cv::Point(0, 0)), Anchor(cv::Point(2, 2))),
     testing::Values(Iterations(1), Iterations(2), Iterations(3)),
     WHOLE_SUBMAT));
@@ -596,7 +596,7 @@ PARAM_TEST_CASE(MorphEx, cv::cuda::DeviceInfo, cv::Size, MatType, MorphOp, Ancho
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemType type;
     int morphOp;
     cv::Point anchor;
     int iterations;
@@ -619,7 +619,7 @@ PARAM_TEST_CASE(MorphEx, cv::cuda::DeviceInfo, cv::Size, MatType, MorphOp, Ancho
 CUDA_TEST_P(MorphEx, Accuracy)
 {
     cv::Mat src = randomMat(size, type);
-    cv::Mat kernel = cv::Mat::ones(3, 3, CV_8U);
+    cv::Mat kernel = cv::Mat::ones(3, 3, CV_8UC1);
 
     cv::Ptr<cv::cuda::Filter> morph = cv::cuda::createMorphologyFilter(morphOp, src.type(), kernel, anchor, iterations);
 
@@ -637,7 +637,7 @@ CUDA_TEST_P(MorphEx, Accuracy)
 INSTANTIATE_TEST_CASE_P(CUDA_Filters, MorphEx, testing::Combine(
     ALL_DEVICES,
     DIFFERENT_SIZES,
-    testing::Values(MatType(CV_8UC1), MatType(CV_8UC4)),
+    testing::Values(CV_8UC1, CV_8UC4),
     MorphOp::all(),
     testing::Values(Anchor(cv::Point(-1, -1)), Anchor(cv::Point(0, 0)), Anchor(cv::Point(2, 2))),
     testing::Values(Iterations(1), Iterations(2), Iterations(3)),
@@ -651,7 +651,7 @@ PARAM_TEST_CASE(Median, cv::cuda::DeviceInfo, cv::Size, MatDepth,  KernelSize, U
 {
     cv::cuda::DeviceInfo devInfo;
     cv::Size size;
-    int type;
+    ElemDepth depth;
     int kernel;
     bool useRoi;
 
@@ -659,7 +659,7 @@ PARAM_TEST_CASE(Median, cv::cuda::DeviceInfo, cv::Size, MatDepth,  KernelSize, U
     {
         devInfo = GET_PARAM(0);
         size = GET_PARAM(1);
-        type = GET_PARAM(2);
+        depth = GET_PARAM(2);
         kernel = GET_PARAM(3);
         useRoi = GET_PARAM(4);
 
@@ -671,11 +671,11 @@ PARAM_TEST_CASE(Median, cv::cuda::DeviceInfo, cv::Size, MatDepth,  KernelSize, U
 
 CUDA_TEST_P(Median, Accuracy)
 {
-    cv::Mat src = randomMat(size, type);
+    cv::Mat src = randomMat(size, CV_MAKETYPE(depth, 1));
 
     cv::Ptr<cv::cuda::Filter> median = cv::cuda::createMedianFilter(src.type(), kernel);
 
-    cv::cuda::GpuMat dst = createMat(size, type, useRoi);
+    cv::cuda::GpuMat dst = createMat(size, CV_MAKETYPE(depth, 1), useRoi);
     median->apply(loadMat(src, useRoi), dst);
 
     cv::Mat dst_gold;

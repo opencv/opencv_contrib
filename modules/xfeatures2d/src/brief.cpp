@@ -67,7 +67,7 @@ public:
     virtual void write( FileStorage& ) const CV_OVERRIDE;
 
     virtual int descriptorSize() const CV_OVERRIDE;
-    virtual int descriptorType() const CV_OVERRIDE;
+    virtual ElemType descriptorType() const CV_OVERRIDE;
     virtual int defaultNorm() const CV_OVERRIDE;
 
     virtual void compute(InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors) CV_OVERRIDE;
@@ -193,7 +193,7 @@ int BriefDescriptorExtractorImpl::descriptorSize() const
     return bytes_;
 }
 
-int BriefDescriptorExtractorImpl::descriptorType() const
+ElemType BriefDescriptorExtractorImpl::descriptorType() const
 {
     return CV_8UC1;
 }
@@ -236,10 +236,10 @@ void BriefDescriptorExtractorImpl::compute(InputArray image,
     Mat sum;
 
     Mat grayImage = image.getMat();
-    if( image.type() != CV_8U ) cvtColor( image, grayImage, COLOR_BGR2GRAY );
+    if( image.type() != CV_8UC1 ) cvtColor( image, grayImage, COLOR_BGR2GRAY );
 
     ///TODO allow the user to pass in a precomputed integral image
-    //if(image.type() == CV_32S)
+    //if(image.type() == CV_32SC1)
     //  sum = image;
     //else
 
@@ -248,7 +248,7 @@ void BriefDescriptorExtractorImpl::compute(InputArray image,
     //Remove keypoints very close to the border
     KeyPointsFilter::runByImageBorder(keypoints, image.size(), PATCH_SIZE/2 + KERNEL_SIZE/2);
 
-    descriptors.create((int)keypoints.size(), bytes_, CV_8U);
+    descriptors.create((int)keypoints.size(), bytes_, CV_8UC1);
     descriptors.setTo(Scalar::all(0));
     test_fn_(sum, keypoints, descriptors, use_orientation_);
 }

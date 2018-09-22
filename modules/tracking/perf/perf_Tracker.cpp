@@ -192,7 +192,7 @@ PERF_TEST_P(tracking, mil, testing::Combine(TESTSET_NAMES, SEGMENTS))
     }
   }
   //save the bounding boxes in a Mat
-  Mat bbs_mat( (int)bbs.size(), 4, CV_32F );
+  Mat bbs_mat( (int)bbs.size(), 4, CV_32FC1 );
   getMatOfRects( bbs, bbs_mat );
 
   SANITY_CHECK( bbs_mat, 15, ERROR_RELATIVE );
@@ -262,7 +262,7 @@ PERF_TEST_P(tracking, boosting, testing::Combine(TESTSET_NAMES, SEGMENTS))
     }
   }
   //save the bounding boxes in a Mat
-  Mat bbs_mat( (int)bbs.size(), 4, CV_32F );
+  Mat bbs_mat( (int)bbs.size(), 4, CV_32FC1 );
   getMatOfRects( bbs, bbs_mat );
 
   SANITY_CHECK( bbs_mat, 15, ERROR_RELATIVE );
@@ -332,7 +332,7 @@ PERF_TEST_P(tracking, tld, testing::Combine(TESTSET_NAMES, SEGMENTS))
     }
   }
   //save the bounding boxes in a Mat
-  Mat bbs_mat( (int)bbs.size(), 4, CV_32F );
+  Mat bbs_mat( (int)bbs.size(), 4, CV_32FC1 );
   getMatOfRects( bbs, bbs_mat );
 
   SANITY_CHECK( bbs_mat, 15, ERROR_RELATIVE );
@@ -402,7 +402,7 @@ PERF_TEST_P(tracking, GOTURN, testing::Combine(TESTSET_NAMES, SEGMENTS))
     }
   }
   //save the bounding boxes in a Mat
-  Mat bbs_mat((int)bbs.size(), 4, CV_32F);
+  Mat bbs_mat((int)bbs.size(), 4, CV_32FC1);
   getMatOfRects(bbs, bbs_mat);
 
   SANITY_CHECK(bbs_mat, 15, ERROR_RELATIVE);

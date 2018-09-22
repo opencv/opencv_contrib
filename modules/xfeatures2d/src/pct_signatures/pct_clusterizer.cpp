@@ -333,7 +333,7 @@ namespace cv
                     clusters.create(1, points.cols, CV_32FC1);
 
                     // Sum all points.
-                    reduce(points, clusters, 0, CV_REDUCE_SUM, CV_32FC1);
+                    reduce(points, clusters, 0, CV_REDUCE_SUM, CV_32F);
 
                     // Sum all weights, all points have the same weight -> sum is the point count
                     clusters.at<float>(0, WEIGHT_IDX) = static_cast<float>(points.rows);
