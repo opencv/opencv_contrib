@@ -85,11 +85,11 @@ meanAndVarianceAlongRows( InputArray _A,
                           OutputArray _variance )
 {
   const Mat A = _A.getMat();
-  const int depth = A.depth();
+  const ElemDepth depth = A.depth();
   CV_Assert( depth == CV_32F || depth == CV_64F );
 
-  _mean.create(A.rows, 1, depth);
-  _variance.create(A.rows, 1, depth);
+  _mean.create(A.rows, 1, CV_MAKETYPE(depth, 1));
+  _variance.create(A.rows, 1, CV_MAKETYPE(depth, 1));
 
   Mat mean = _mean.getMat(), variance = _variance.getMat();
 
@@ -147,7 +147,7 @@ Mat
 skew( InputArray _x )
 {
   const Mat x = _x.getMat();
-  const int depth = x.depth();
+  const ElemDepth depth = x.depth();
   CV_Assert( x.size() == Size(3,1) || x.size() == Size(1,3) );
   CV_Assert( depth == CV_32F || depth == CV_64F );
 

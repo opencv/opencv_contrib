@@ -268,7 +268,7 @@ bool ocl_getAllDCTDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDe
   ocl::Kernel kernel( "getPatchDescriptor", ocl::optflow::sparse_matching_gpc_oclsrc,
                       format( "-DPATCH_RADIUS_DOUBLED=%d -DCV_PI=%f -DSQRT2_INV=%f", PATCH_RADIUS_DOUBLED, CV_PI, SQRT2_INV ) );
   size_t globSize[] = {sz.height - 2 * patchRadius, sz.width - 2 * patchRadius};
-  UMat out( globSize[0] * globSize[1], GPCPatchDescriptor::nFeatures, CV_64F );
+  UMat out( globSize[0] * globSize[1], GPCPatchDescriptor::nFeatures, CV_64FC1);
   if (
     kernel
     .args( cv::ocl::KernelArg::ReadOnlyNoSize( imgCh[0].getUMat( ACCESS_READ ) ),
@@ -342,7 +342,7 @@ void buildIndex( OutputArray featuresOut, flann::Index &index, const Mat *imgCh,
   std::vector< GPCPatchDescriptor > descriptors;
   getAllDescrFn( imgCh, descriptors, GPCMatchingParams() );
 
-  featuresOut.create( descriptors.size(), GPCPatchDescriptor::nFeatures, CV_32F );
+  featuresOut.create( descriptors.size(), GPCPatchDescriptor::nFeatures, CV_32FC1 );
   Mat features = featuresOut.getMat();
 
   for ( size_t i = 0; i < descriptors.size(); ++i )
@@ -654,7 +654,7 @@ void GPCTree::write( FileStorage &fs ) const
 void GPCTree::read( const FileNode &fn )
 {
   fn["nodes"] >> nodes;
-  fn["dtype"] >> (int &)params.descriptorType;
+  fn["dtype"] >> (GPCDescType &)params.descriptorType;
 }
 
 unsigned GPCTree::findLeafForPatch( const GPCPatchDescriptor &descr ) const
@@ -672,7 +672,7 @@ unsigned GPCTree::findLeafForPatch( const GPCPatchDescriptor &descr ) const
 }
 
 Ptr< GPCTrainingSamples > GPCTrainingSamples::create( const std::vector< String > &imagesFrom, const std::vector< String > &imagesTo,
-                                                      const std::vector< String > &gt, int _descriptorType )
+                                                      const std::vector< String > &gt, GPCDescType _descriptorType )
 {
   CV_Assert( imagesFrom.size() == imagesTo.size() );
   CV_Assert( imagesFrom.size() == gt.size() );
@@ -692,8 +692,8 @@ Ptr< GPCTrainingSamples > GPCTrainingSamples::create( const std::vector< String 
     CV_Assert( from.channels() == 3 );
     CV_Assert( to.channels() == 3 );
 
-    from.convertTo( from, CV_32FC3 );
-    to.convertTo( to, CV_32FC3 );
+    from.convertTo( from, CV_32F );
+    to.convertTo( to, CV_32F );
     cvtColor( from, from, COLOR_BGR2YCrCb );
     cvtColor( to, to, COLOR_BGR2YCrCb );
 
@@ -704,7 +704,7 @@ Ptr< GPCTrainingSamples > GPCTrainingSamples::create( const std::vector< String 
 }
 
 Ptr< GPCTrainingSamples > GPCTrainingSamples::create( InputArrayOfArrays imagesFrom, InputArrayOfArrays imagesTo,
-                                                      InputArrayOfArrays gt, int _descriptorType )
+                                                      InputArrayOfArrays gt, GPCDescType _descriptorType )
 {
   CV_Assert( imagesFrom.total() == imagesTo.total() );
   CV_Assert( imagesFrom.total() == gt.total() );
@@ -724,8 +724,8 @@ Ptr< GPCTrainingSamples > GPCTrainingSamples::create( InputArrayOfArrays imagesF
     CV_Assert( from.channels() == 3 );
     CV_Assert( to.channels() == 3 );
 
-    from.convertTo( from, CV_32FC3 );
-    to.convertTo( to, CV_32FC3 );
+    from.convertTo( from, CV_32F );
+    to.convertTo( to, CV_32F );
     cvtColor( from, from, COLOR_BGR2YCrCb );
     cvtColor( to, to, COLOR_BGR2YCrCb );
 

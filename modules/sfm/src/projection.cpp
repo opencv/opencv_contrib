@@ -114,11 +114,11 @@ void
 projectionFromKRt(InputArray _K, InputArray _R, InputArray _t, OutputArray _P)
 {
   const Mat K = _K.getMat(), R = _R.getMat(), t = _t.getMat();
-  const int depth = K.depth();
+  const ElemDepth depth = K.depth();
   CV_Assert((K.cols == 3 && K.rows == 3) && (t.cols == 1 && t.rows == 3) && (K.size() == R.size()));
   CV_Assert((depth == CV_32F || depth == CV_64F) && depth == R.depth() && depth == t.depth());
 
-  _P.create(3, 4, depth);
+  _P.create(3, 4, CV_MAKETYPE(depth, 1));
 
   Mat P = _P.getMat();
 
@@ -155,12 +155,12 @@ void
 KRtFromProjection( InputArray _P, OutputArray _K, OutputArray _R, OutputArray _t )
 {
   const Mat P = _P.getMat();
-  const int depth = P.depth();
+  const ElemDepth depth = P.depth();
   CV_Assert((P.cols == 4 && P.rows == 3) && (depth == CV_32F || depth == CV_64F));
 
-  _K.create(3, 3, depth);
-  _R.create(3, 3, depth);
-  _t.create(3, 1, depth);
+  _K.create(3, 3, CV_MAKETYPE(depth, 1));
+  _R.create(3, 3, CV_MAKETYPE(depth, 1));
+  _t.create(3, 1, CV_MAKETYPE(depth, 1));
 
   Mat K = _K.getMat(), R = _R.getMat(), t = _t.getMat();
 
@@ -200,7 +200,7 @@ double
 depth( InputArray _R, InputArray _t, InputArray _X)
 {
   const Mat R = _R.getMat(), t = _t.getMat(), X = _X.getMat();
-  const int depth = R.depth();
+  const ElemDepth depth = R.depth();
   CV_Assert( R.rows == 3 && R.cols == 3 && t.rows == 3 && t.cols == 1 );
   CV_Assert( (X.rows == 3 && X.cols == 1) || (X.rows == 4 && X.cols == 1) );
   CV_Assert( depth == CV_32F || depth == CV_64F );

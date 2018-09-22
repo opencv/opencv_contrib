@@ -130,7 +130,9 @@ void bm3dDenoising(
     int step,
     int transformType)
 {
-    int type = _src.type(), depth = CV_MAT_DEPTH(type), cn = CV_MAT_CN(type);
+    ElemType type = _src.type();
+    ElemDepth depth = CV_MAT_DEPTH(type);
+    int cn = CV_MAT_CN(type);
     CV_Assert(1 == cn);
     CV_Assert(HAAR == transformType);
     CV_Assert(searchWindowSize > templateWindowSize);

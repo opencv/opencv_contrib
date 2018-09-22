@@ -138,13 +138,13 @@ triangulatePoints(InputArrayOfArrays _points2d, InputArrayOfArrays _projection_m
         // Make sure the dimensions are right
         for(size_t i=0; i<nviews; ++i) {
             CV_Assert(points2d_tmp[i].rows == 2 && points2d_tmp[i].cols == n_points);
-            if (points2d_tmp[i].type() == CV_64F)
+            if (points2d_tmp[i].type() == CV_64FC1)
                 points2d[i] = points2d_tmp[i];
             else
                 points2d_tmp[i].convertTo(points2d[i], CV_64F);
 
             CV_Assert(projection_matrices_tmp[i].rows == 3 && projection_matrices_tmp[i].cols == 4);
-            if (projection_matrices_tmp[i].type() == CV_64F)
+            if (projection_matrices_tmp[i].type() == CV_64FC1)
               projection_matrices[i] = projection_matrices_tmp[i];
             else
               projection_matrices_tmp[i].convertTo(projection_matrices[i], CV_64F);
@@ -152,7 +152,7 @@ triangulatePoints(InputArrayOfArrays _points2d, InputArrayOfArrays _projection_m
     }
 
     // output
-    _points3d.create(3, n_points, CV_64F);
+    _points3d.create(3, n_points, CV_64FC1);
     cv::Mat points3d = _points3d.getMat();
 
     // Two view

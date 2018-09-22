@@ -18,7 +18,7 @@ public:
         cv::Mat const input = inputArr.getMat();
         CV_Assert(input.type() == CV_8UC4 ||
                   input.type() == CV_8UC3 ||
-                  input.type() == CV_8U);
+                  input.type() == CV_8UC1);
 
         cv::resize(input, resizeImg, cv::Size(32,32), 0, 0, INTER_LINEAR_EXACT);
         if(input.type() == CV_8UC3)
@@ -42,7 +42,7 @@ public:
 
         cv::compare(topLeftDCT, imgMean, bitsImg, CMP_GT);
         bitsImg /= 255;
-        outputArr.create(1, 8, CV_8U);
+        outputArr.create(1, 8, CV_8UC1);
         cv::Mat hash = outputArr.getMat();
         uchar *hash_ptr = hash.ptr<uchar>(0);
         uchar const *bits_ptr = bitsImg.ptr<uchar>(0);

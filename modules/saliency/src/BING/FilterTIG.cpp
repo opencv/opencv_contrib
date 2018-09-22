@@ -74,7 +74,7 @@ float ObjectnessBING::FilterTIG::dot( TIG_TYPE tig1, TIG_TYPE tig2, TIG_TYPE tig
 
 void ObjectnessBING::FilterTIG::update( Mat &w1f )
 {
-  CV_Assert( w1f.cols * w1f.rows == D && w1f.type() == CV_32F && w1f.isContinuous() );
+  CV_Assert( w1f.cols * w1f.rows == D && w1f.type() == CV_32FC1 && w1f.isContinuous() );
   float b[D], residuals[D];
   memcpy( residuals, w1f.data, sizeof(float) * D );
   for ( int i = 0; i < NUM_COMP; i++ )
@@ -98,7 +98,7 @@ void ObjectnessBING::FilterTIG::update( Mat &w1f )
 
 void ObjectnessBING::FilterTIG::reconstruct( Mat &w1f )
 {
-  w1f = Mat::zeros( 8, 8, CV_32F );
+  w1f = Mat::zeros(8, 8, CV_32FC1);
   float *weight = (float*) w1f.data;
   for ( int i = 0; i < NUM_COMP; i++ )
   {

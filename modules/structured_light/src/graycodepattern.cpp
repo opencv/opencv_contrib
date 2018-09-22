@@ -130,7 +130,7 @@ bool GrayCodePattern_Impl::generate( OutputArrayOfArrays pattern )
 
   for( size_t i = 0; i < numOfPatternImages; i++ )
   {
-    pattern_[i] = Mat( params.height, params.width, CV_8U );
+    pattern_[i] = Mat( params.height, params.width, CV_8UC1);
   }
 
   uchar flag = 0;
@@ -257,7 +257,7 @@ bool GrayCodePattern_Impl::decode( const std::vector< std::vector<Mat> >& patter
     std::vector<Point> cam1Pixs, cam2Pixs;
 
     Mat& disparityMap_ = *( Mat* ) disparityMap.getObj();
-    disparityMap_ = Mat( cam_height, cam_width, CV_64F, double( 0 ) );
+    disparityMap_ = Mat( cam_height, cam_width, CV_64FC1, double( 0 ) );
 
     double number_of_pixels_cam1 = 0;
     double number_of_pixels_cam2 = 0;
@@ -340,7 +340,7 @@ void GrayCodePattern_Impl::computeShadowMasks( InputArrayOfArrays blackImages, I
   // TODO: parallelize for
   for( int k = 0; k < (int) shadowMasks_.size(); k++ )
   {
-    shadowMasks_[k] = Mat( cam_height, cam_width, CV_8U );
+    shadowMasks_[k] = Mat( cam_height, cam_width, CV_8UC1);
     for( int i = 0; i < cam_width; i++ )
     {
       for( int j = 0; j < cam_height; j++ )
@@ -367,8 +367,8 @@ void GrayCodePattern_Impl::getImagesForShadowMasks( InputOutputArray blackImage,
   Mat& blackImage_ = *( Mat* ) blackImage.getObj();
   Mat& whiteImage_ = *( Mat* ) whiteImage.getObj();
 
-  blackImage_ = Mat( params.height, params.width, CV_8U, Scalar( 0 ) );
-  whiteImage_ = Mat( params.height, params.width, CV_8U, Scalar( 255 ) );
+  blackImage_ = Mat( params.height, params.width, CV_8UC1, Scalar( 0 ) );
+  whiteImage_ = Mat( params.height, params.width, CV_8UC1, Scalar( 255 ) );
 }
 
 // For a (x,y) pixel of the camera returns the corresponding projector's pixel

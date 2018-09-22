@@ -407,7 +407,7 @@ private:
         //       in other cases we do it because the overlapping between two chars is too large
         // TODO  Add more heuristics (e.g. penalize large inter-character variance)
 
-        Mat interdist ((int)segmentation.size()-1, 1, CV_32F, 1);
+        Mat interdist ((int)segmentation.size()-1, 1, CV_32FC1, 1);
         for (size_t i=0; i<segmentation.size()-1; i++)
         {
           interdist.at<float>((int)i,0) = (float)oversegmentation[segmentation[(int)i+1]]*step_size

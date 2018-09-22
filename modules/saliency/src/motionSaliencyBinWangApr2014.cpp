@@ -87,7 +87,7 @@ bool MotionSaliencyBinWangApr2014::init()
 {
   activityControlFlag = false;
   Size imgSize( imageWidth, imageHeight );
-  epslonPixelsValue = Mat( imgSize.height, imgSize.width, CV_32F, Scalar( epslonGeneric ) );
+  epslonPixelsValue = Mat( imgSize.height, imgSize.width, CV_32FC1, Scalar( epslonGeneric ) );
   potentialBackground = Mat( imgSize.height, imgSize.width, CV_8UC2, Scalar( 0, 0 ) );
   backgroundModel.resize( K + 1 );
 
@@ -100,9 +100,9 @@ bool MotionSaliencyBinWangApr2014::init()
     backgroundModel[i] = tmp;
   }
 
-  noisePixelMask.create( imgSize.height, imgSize.width, CV_8U );
+  noisePixelMask.create(imgSize.height, imgSize.width, CV_8UC1);
   noisePixelMask.setTo( Scalar( 0 ) );
-  activityPixelsValue.create( imgSize.height, imgSize.width, CV_8U );
+  activityPixelsValue.create(imgSize.height, imgSize.width, CV_8UC1);
   activityPixelsValue.setTo( Scalar( 0 ) );
 
   return true;
@@ -124,7 +124,7 @@ bool MotionSaliencyBinWangApr2014::fullResolutionDetection( const Mat& image2, M
   bool backgFlag = false;
 
   // Initially, all pixels are considered as foreground and then we evaluate with the background model
-  highResBFMask.create( image.rows, image.cols, CV_8U );
+  highResBFMask.create(image.rows, image.cols, CV_8UC1);
   highResBFMask.setTo( 1 );
 
   uchar* pImage;
@@ -232,7 +232,7 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
     Mat currentModel;
 
     // Initially, all pixels are considered as foreground and then we evaluate with the background model
-    lowResBFMask.create( image.rows, image.cols, CV_8U );
+    lowResBFMask.create(image.rows, image.cols, CV_8UC1);
     lowResBFMask.setTo( 1 );
 
     // Scan all the ROI of original matrices
@@ -308,7 +308,7 @@ bool MotionSaliencyBinWangApr2014::lowResolutionDetection( const Mat& image, Mat
   }
   else
   {
-    lowResBFMask.create( image.rows, image.cols, CV_8U );
+    lowResBFMask.create(image.rows, image.cols, CV_8UC1);
     lowResBFMask.setTo( 1 );
     return false;
   }
@@ -356,7 +356,7 @@ bool MotionSaliencyBinWangApr2014::templateOrdering()
   }
 
   // SORT Template T0 and T1
-  Mat M_deltaL( backgroundModel[0]->rows, backgroundModel[0]->cols, CV_32F, Scalar( thetaL ) );
+  Mat M_deltaL( backgroundModel[0]->rows, backgroundModel[0]->cols, CV_32FC1, Scalar( thetaL ) );
 
   compare( channelSplit[1][1], M_deltaL, dstMask2, CMP_GT );
   compare( M_deltaL, channelSplit[0][1], dstMask3, CMP_GT );
@@ -411,9 +411,9 @@ bool MotionSaliencyBinWangApr2014::templateReplacement( const Mat& finalBFMask, 
   int roiSize = 3;  // FIXED ROI SIZE, not change until you first appropriately adjust the following controls in the EVALUATION section!
   int countNonZeroElements = 0;
   std::vector<Mat> mv;
-  Mat replicateCurrentBAMat( roiSize, roiSize, CV_8U );
-  Mat backgroundModelROI( roiSize, roiSize, CV_32F );
-  Mat diffResult( roiSize, roiSize, CV_8U );
+  Mat replicateCurrentBAMat( roiSize, roiSize, CV_8UC1);
+  Mat backgroundModelROI( roiSize, roiSize, CV_32FC1);
+  Mat diffResult( roiSize, roiSize, CV_8UC1);
 
 // Scan all pixels of finalBFMask and all pixels of others models (the dimension are the same)
   const uchar* finalBFMaskP;
@@ -556,7 +556,7 @@ bool MotionSaliencyBinWangApr2014::activityControl( const Mat& current_noisePixe
   Mat discordanceFramesNoise, not_current_noisePixelsMask;
   Mat nonZeroIndexes, not_discordanceFramesNoise;  //u_current_noisePixelsMask;
 
-//current_noisePixelsMask.convertTo( u_current_noisePixelsMask, CV_8UC1 );
+//current_noisePixelsMask.convertTo( u_current_noisePixelsMask, CV_8U );
 
 // Derive the discrepancy between noise in the frame n-1 and frame n
 //threshold( u_current_noisePixelsMask, not_current_noisePixelsMask, 0.5, 1.0, THRESH_BINARY_INV );

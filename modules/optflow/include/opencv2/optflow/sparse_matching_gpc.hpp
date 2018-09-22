@@ -99,21 +99,21 @@ class CV_EXPORTS_W GPCTrainingSamples
 {
 private:
   GPCSamplesVector samples;
-  int descriptorType;
+  GPCDescType descriptorType;
 
 public:
   /** @brief This function can be used to extract samples from a pair of images and a ground truth flow.
    * Sizes of all the provided vectors must be equal.
    */
   static Ptr< GPCTrainingSamples > create( const std::vector< String > &imagesFrom, const std::vector< String > &imagesTo,
-                                           const std::vector< String > &gt, int descriptorType );
+                                           const std::vector< String > &gt, GPCDescType descriptorType );
 
   static Ptr< GPCTrainingSamples > create( InputArrayOfArrays imagesFrom, InputArrayOfArrays imagesTo, InputArrayOfArrays gt,
-                                           int descriptorType );
+                                           GPCDescType descriptorType );
 
   size_t size() const { return samples.size(); }
 
-  int type() const { return descriptorType; }
+  GPCDescType type() const { return descriptorType; }
 
   operator GPCSamplesVector &() { return samples; }
 };
@@ -124,7 +124,7 @@ struct GPCTrainingParams
 {
   unsigned maxTreeDepth;  //!< Maximum tree depth to stop partitioning.
   int minNumberOfSamples; //!< Minimum number of samples in the node to stop partitioning.
-  int descriptorType;     //!< Type of descriptors to use.
+  GPCDescType descriptorType;     //!< Type of descriptors to use.
   bool printProgress;     //!< Print progress to stdout.
 
   GPCTrainingParams( unsigned _maxTreeDepth = 20, int _minNumberOfSamples = 3, GPCDescType _descriptorType = GPC_DESCRIPTOR_DCT,
@@ -324,8 +324,8 @@ void GPCForest< T >::findCorrespondences( InputArray imgFrom, InputArray imgTo, 
   CV_Assert( imgTo.channels() == 3 );
 
   Mat from, to;
-  imgFrom.getMat().convertTo( from, CV_32FC3 );
-  imgTo.getMat().convertTo( to, CV_32FC3 );
+  imgFrom.getMat().convertTo( from, CV_32F );
+  imgTo.getMat().convertTo( to, CV_32F );
   cvtColor( from, from, COLOR_BGR2YCrCb );
   cvtColor( to, to, COLOR_BGR2YCrCb );
 

@@ -111,7 +111,7 @@ int ObjectnessBING::loadTrainedModel()  // Return -1, 0, or 1 if partial, none, 
   _tigF.update( filters1f );
 
   _svmSzIdxs = idx1i;
-  CV_Assert( _svmSzIdxs.size() > 1 && filters1f.size() == Size(_W, _W) && filters1f.type() == CV_32F );
+  CV_Assert( _svmSzIdxs.size() > 1 && filters1f.size() == Size(_W, _W) && filters1f.type() == CV_32FC1 );
   _svmFilter = filters1f;
 
   if( !matRead( s2, _svmReW1f ) || _svmReW1f.size() != Size( 2, (int) _svmSzIdxs.size() ) )
@@ -194,7 +194,7 @@ void ObjectnessBING::getObjBndBoxes( Mat &img3u, ValStructVec<float, Vec4i> &val
 void ObjectnessBING::nonMaxSup( Mat &matchCost1f, ValStructVec<float, Point> &matchCost, int NSS, int maxPoint, bool fast )
 {
   const int _h = matchCost1f.rows, _w = matchCost1f.cols;
-  Mat isMax1u = Mat::ones( _h, _w, CV_8U ), costSmooth1f;
+  Mat isMax1u = Mat::ones(_h, _w, CV_8UC1), costSmooth1f;
   ValStructVec<float, Point> valPnt;
   matchCost.reserve( _h * _w );
   valPnt.reserve( _h * _w );
@@ -262,7 +262,7 @@ void ObjectnessBING::gradientMag( Mat &imgBGR3u, Mat &mag1u )
 void ObjectnessBING::gradientRGB( Mat &bgr3u, Mat &mag1u )
 {
   const int H = bgr3u.rows, W = bgr3u.cols;
-  Mat Ix( H, W, CV_32S ), Iy( H, W, CV_32S );
+  Mat Ix(H, W, CV_32SC1), Iy(H, W, CV_32SC1);
 
   // Left/right most column Ix
   for ( int y = 0; y < H; y++ )
@@ -300,7 +300,7 @@ void ObjectnessBING::gradientGray( Mat &bgr3u, Mat &mag1u )
   Mat g1u;
   cvtColor( bgr3u, g1u, COLOR_BGR2GRAY );
   const int H = g1u.rows, W = g1u.cols;
-  Mat Ix( H, W, CV_32S ), Iy( H, W, CV_32S );
+  Mat Ix(H, W, CV_32SC1), Iy(H, W, CV_32SC1);
 
   // Left/right most column Ix
   for ( int y = 0; y < H; y++ )
@@ -332,7 +332,7 @@ void ObjectnessBING::gradientHSV( Mat &bgr3u, Mat &mag1u )
   Mat hsv3u;
   cvtColor( bgr3u, hsv3u, COLOR_BGR2HSV );
   const int H = hsv3u.rows, W = hsv3u.cols;
-  Mat Ix( H, W, CV_32S ), Iy( H, W, CV_32S );
+  Mat Ix(H, W, CV_32SC1), Iy(H, W, CV_32SC1);
 
   // Left/right most column Ix
   for ( int y = 0; y < H; y++ )
@@ -362,7 +362,7 @@ void ObjectnessBING::gradientHSV( Mat &bgr3u, Mat &mag1u )
 void ObjectnessBING::gradientXY( Mat &x1i, Mat &y1i, Mat &mag1u )
 {
   const int H = x1i.rows, W = x1i.cols;
-  mag1u.create( H, W, CV_8U );
+  mag1u.create(H, W, CV_8UC1);
   for ( int r = 0; r < H; r++ )
   {
     const int *x = x1i.ptr<int>( r ), *y = y1i.ptr<int>( r );

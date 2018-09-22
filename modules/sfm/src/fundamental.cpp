@@ -84,11 +84,11 @@ namespace sfm
                               OutputArray _P2 )
   {
     const Mat F = _F.getMat();
-    const int depth = F.depth();
+    const ElemDepth depth = F.depth();
     CV_Assert(F.cols == 3 && F.rows == 3 && (depth == CV_32F || depth == CV_64F));
 
-    _P1.create(3, 4, depth);
-    _P2.create(3, 4, depth);
+    _P1.create(3, 4, CV_MAKETYPE(depth, 1));
+    _P2.create(3, 4, CV_MAKETYPE(depth, 1));
 
     Mat P1 = _P1.getMat(),  P2 = _P2.getMat();
 
@@ -135,11 +135,11 @@ namespace sfm
                               OutputArray _F )
   {
     const Mat P1 = _P1.getMat(), P2 = _P2.getMat();
-    const int depth = P1.depth();
+    const ElemDepth depth = P1.depth();
     CV_Assert((P1.cols == 4 && P1.rows == 3) && P1.rows == P2.rows && P1.cols == P2.cols);
     CV_Assert((depth == CV_32F || depth == CV_64F) && depth == P2.depth());
 
-    _F.create(3, 3, depth);
+    _F.create(3, 3, CV_MAKETYPE(depth, 1));
 
     Mat F = _F.getMat();
 
@@ -176,10 +176,10 @@ namespace sfm
   normalizedEightPointSolver( InputArray _x1, InputArray _x2, OutputArray _F )
   {
     const Mat x1 = _x1.getMat(), x2 = _x2.getMat();
-    const int depth = x1.depth();
+    const ElemDepth depth = x1.depth();
     CV_Assert(x1.dims == 2 && x1.dims == x2.dims && (depth == CV_32F || depth == CV_64F));
 
-    _F.create(3, 3, depth);
+    _F.create(3, 3, CV_MAKETYPE(depth, 1));
 
     Mat F = _F.getMat();
 
@@ -213,13 +213,13 @@ namespace sfm
                         InputArray _t2, OutputArray _R, OutputArray _t )
   {
     const Mat R1 = _R1.getMat(), t1 = _t1.getMat(), R2 = _R2.getMat(), t2 = _t2.getMat();
-    const int depth = R1.depth();
+    const ElemDepth depth = R1.depth();
     CV_Assert((R1.cols == 3 && R1.rows == 3) && (R1.size() == R2.size()));
     CV_Assert((t1.cols == 1 && t1.rows == 3) && (t1.size() == t2.size()));
     CV_Assert((depth == CV_32F || depth == CV_64F) && depth == R2.depth() && depth == t1.depth() && depth == t2.depth());
 
-    _R.create(3, 3, depth);
-    _t.create(3, 1, depth);
+    _R.create(3, 3, CV_MAKETYPE(depth, 1));
+    _t.create(3, 1, CV_MAKETYPE(depth, 1));
 
     Mat R = _R.getMat(), t = _t.getMat();
 
@@ -273,15 +273,16 @@ namespace sfm
                        OutputArrayOfArrays _ts )
   {
     const Mat E = _E.getMat();
-    const int depth = E.depth(), cn = 4;
+    const ElemDepth depth = E.depth();
+    int cn = 4;
     CV_Assert(E.cols == 3 && E.rows == 3 && (depth == CV_32F || depth == CV_64F));
 
-    _Rs.create(cn, 1, depth);
-    _ts.create(cn, 1, depth);
+    _Rs.create(cn, 1, CV_MAKETYPE(depth, 1));
+    _ts.create(cn, 1, CV_MAKETYPE(depth, 1));
     for (int i = 0; i < cn; ++i)
     {
-      _Rs.create(Size(3,3), depth, i);
-      _ts.create(Size(3,1), depth, i);
+      _Rs.create(Size(3, 3), CV_MAKETYPE(depth, 1), i);
+      _ts.create(Size(3, 1), CV_MAKETYPE(depth, 1), i);
     }
 
     std::vector<Mat> Rs, ts;
@@ -362,7 +363,7 @@ namespace sfm
     _Rs.getMatVector(Rs);
     _ts.getMatVector(ts);
     const Mat K1 = _K1.getMat(), x1 = _x1.getMat(), K2 = _K2.getMat(), x2 = _x2.getMat();
-    const int depth = K1.depth();
+    const ElemDepth depth = K1.depth();
     CV_Assert( Rs.size() == 4 && ts.size() == 4 );
     CV_Assert((K1.cols == 3 && K1.rows == 3) && (K1.size() == K2.size()));
     CV_Assert((x1.cols == 1 && x1.rows == 2) && (x1.size() == x2.size()));
@@ -400,10 +401,10 @@ namespace sfm
                             OutputArray _F )
   {
     const Mat E = _E.getMat(), K1 = _K1.getMat(), K2 = _K2.getMat();
-    const int depth =  E.depth();
+    const ElemDepth depth =  E.depth();
     CV_Assert(E.cols == 3 && E.rows == 3 && E.size() == _K1.size() && E.size() == _K2.size() && (depth == CV_32F || depth == CV_64F));
 
-    _F.create(3, 3, depth);
+    _F.create(3, 3, CV_MAKETYPE(depth, 1));
 
     Mat F = _F.getMat();
 
@@ -436,10 +437,10 @@ namespace sfm
                             OutputArray _E )
   {
     const Mat F = _F.getMat(), K1 = _K1.getMat(), K2 = _K2.getMat();
-    const int depth =  F.depth();
+    const ElemDepth depth =  F.depth();
     CV_Assert(F.cols == 3 && F.rows == 3 && F.size() == _K1.size() && F.size() == _K2.size() && (depth == CV_32F || depth == CV_64F));
 
-    _E.create(3, 3, depth);
+    _E.create(3, 3, CV_MAKETYPE(depth, 1));
 
     Mat E = _E.getMat();
 
@@ -484,12 +485,12 @@ namespace sfm
                    OutputArray _E )
   {
     const Mat R1 = _R1.getMat(), t1 = _t1.getMat(), R2 = _R2.getMat(), t2 = _t2.getMat();
-    const int depth = R1.depth();
+    const ElemDepth depth = R1.depth();
     CV_Assert((R1.cols == 3 && R1.rows == 3) && (R1.size() == R2.size()));
     CV_Assert((t1.cols == 1 && t1.rows == 3) && (t1.size() == t2.size()));
     CV_Assert((depth == CV_32F || depth == CV_64F) && depth == R2.depth() && depth == t1.depth() && depth == t2.depth());
 
-    _E.create(3, 3, depth);
+    _E.create(3, 3, CV_MAKETYPE(depth, 1));
 
     Mat E = _E.getMat();
 
@@ -522,10 +523,10 @@ namespace sfm
                         OutputArray _F_normalized )
   {
     const Mat F = _F.getMat();
-    const int depth =  F.depth();
+    const ElemDepth depth =  F.depth();
     CV_Assert(F.cols == 3 && F.rows == 3 && (depth == CV_32F || depth == CV_64F));
 
-    _F_normalized.create(3, 3, depth);
+    _F_normalized.create(3, 3, CV_MAKETYPE(depth, 1));
 
     Mat F_normalized = _F_normalized.getMat();
 
@@ -572,11 +573,11 @@ namespace sfm
                       double s )
   {
     const Mat x1 = _x1.getMat(), x2 = _x2.getMat();
-    const int depth =  x1.depth();
+    const ElemDepth depth =  x1.depth();
     CV_Assert(x1.size() == x2.size() && (depth == CV_32F || depth == CV_64F));
 
-    _R.create(3, 3, depth);
-    _t.create(3, 1, depth);
+    _R.create(3, 3, CV_MAKETYPE(depth, 1));
+    _t.create(3, 1, CV_MAKETYPE(depth, 1));
 
     Mat R = _R.getMat(), t = _t.getMat();
 

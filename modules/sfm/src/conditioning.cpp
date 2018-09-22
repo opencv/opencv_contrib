@@ -71,10 +71,10 @@ preconditionerFromPoints( InputArray _points,
                           OutputArray _T )
 {
   const Mat points = _points.getMat();
-  const int depth = points.depth();
+  const ElemDepth depth = points.depth();
   CV_Assert((points.dims == 2 || points.dims == 3) && (depth == CV_32F || depth == CV_64F));
 
-  _T.create(3, 3, depth);
+  _T.create(3, 3, CV_MAKETYPE(depth, 1));
 
   Mat T = _T.getMat();
 
@@ -108,10 +108,10 @@ isotropicPreconditionerFromPoints( InputArray _points,
                                    OutputArray _T )
 {
   const Mat points = _points.getMat();
-  const int depth = points.depth();
+  const ElemDepth depth = points.depth();
   CV_Assert((points.dims == 2 || points.dims == 3) && (depth == CV_32F || depth == CV_64F));
 
-  _T.create(3, 3, depth);
+  _T.create(3, 3, CV_MAKETYPE(depth, 1));
 
   Mat T = _T.getMat();
 
@@ -148,10 +148,10 @@ applyTransformationToPoints( InputArray _points,
                              OutputArray _transformed_points )
 {
   const Mat points = _points.getMat(), T = _T.getMat();
-  const int depth = points.depth();
+  const ElemDepth depth = points.depth();
   CV_Assert((points.dims == 2 || points.dims == 3) && T.size() == Size(3,3) && (depth == CV_32F || depth == CV_64F));
 
-  _transformed_points.create(points.size(), depth);
+  _transformed_points.create(points.size(), CV_MAKETYPE(depth, 1));
 
   Mat transformed_points = _transformed_points.getMat();
 

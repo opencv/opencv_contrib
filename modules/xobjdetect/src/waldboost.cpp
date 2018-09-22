@@ -202,7 +202,7 @@ void WaldBoost::fit(Mat& data_pos, Mat& data_neg)
     Mat1f neg_trace(1, data_neg.cols, 0.0f);
 
     bool quantize = false;
-    if (data_pos.type() != CV_8U) {
+    if (data_pos.type() != CV_8UC1) {
         std::cerr << "quantize" << std::endl;
         quantize = true;
     }

@@ -68,7 +68,7 @@ namespace cv
                 uniquenessRatio = 15;
                 speckleRange = speckleWindowSize = 0;
                 disp12MaxDiff = -1;
-                dispType = CV_16S;
+                dispType = CV_16SC1;
                 usePrefilter = false;
                 regionRemoval = 1;
                 scalling = 4;
@@ -87,7 +87,7 @@ namespace cv
             int speckleRange;
             int speckleWindowSize;
             int disp12MaxDiff;
-            int dispType;
+            ElemType dispType;
             int scalling;
             bool usePrefilter;
             int regionRemoval;
@@ -279,7 +279,7 @@ namespace cv
 
             void compute(InputArray leftarr, InputArray rightarr, OutputArray disparr) CV_OVERRIDE
             {
-                int dtype = disparr.fixedType() ? disparr.type() : params.dispType;
+                ElemType dtype = disparr.fixedType() ? disparr.type() : params.dispType;
                 Size leftsize = leftarr.size();
 
                 if (leftarr.size() != rightarr.size())
@@ -330,12 +330,12 @@ namespace cv
                     censusImage[0].create(left0.rows,left0.cols,CV_32SC4);
                     censusImage[1].create(left0.rows,left0.cols,CV_32SC4);
 
-                    partialSumsLR.create(left0.rows + 1,(left0.cols + 1) * (params.numDisparities + 1),CV_16S);
-                    agregatedHammingLRCost.create(left0.rows + 1,(left0.cols + 1) * (params.numDisparities + 1),CV_16S);
-                    hammingDistance.create(left0.rows, left0.cols * (params.numDisparities + 1),CV_16S);
+                    partialSumsLR.create(left0.rows + 1,(left0.cols + 1) * (params.numDisparities + 1),CV_16SC1);
+                    agregatedHammingLRCost.create(left0.rows + 1,(left0.cols + 1) * (params.numDisparities + 1),CV_16SC1);
+                    hammingDistance.create(left0.rows, left0.cols * (params.numDisparities + 1),CV_16SC1);
 
-                    preFilteredImg0.create(left0.size(), CV_8U);
-                    preFilteredImg1.create(left0.size(), CV_8U);
+                    preFilteredImg0.create(left0.size(), CV_8UC1);
+                    preFilteredImg1.create(left0.size(), CV_8UC1);
 
                     aux.create(height,width,CV_8UC1);
                 }

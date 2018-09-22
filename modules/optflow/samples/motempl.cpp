@@ -56,11 +56,11 @@ static void  update_mhi(const Mat& img, Mat& dst, int diff_threshold)
     // reallocate them if the frame size is changed
     if (mhi.size() != size)
     {
-        mhi = Mat::zeros(size, CV_32F);
-        zplane = Mat::zeros(size, CV_8U);
+        mhi = Mat::zeros(size, CV_32FC1);
+        zplane = Mat::zeros(size, CV_8UC1);
 
-        buf[0] = Mat::zeros(size, CV_8U);
-        buf[1] = Mat::zeros(size, CV_8U);
+        buf[0] = Mat::zeros(size, CV_8UC1);
+        buf[1] = Mat::zeros(size, CV_8UC1);
     }
 
     cvtColor(img, buf[last], COLOR_BGR2GRAY); // convert frame to grayscale

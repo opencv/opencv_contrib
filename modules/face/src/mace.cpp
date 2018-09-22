@@ -83,7 +83,7 @@ struct MACEImpl CV_FINAL : MACE {
 
     void salt(const String &passphrase) CV_OVERRIDE {
         theRNG().state = ((int64)crc64((uchar*)passphrase.c_str(), passphrase.size()));
-        convFilter.create(IMGSIZE, IMGSIZE, CV_64F);
+        convFilter.create(IMGSIZE, IMGSIZE, CV_64FC1);
         randn(convFilter, 0, 1.0/(IMGSIZE*IMGSIZE));
     }
 

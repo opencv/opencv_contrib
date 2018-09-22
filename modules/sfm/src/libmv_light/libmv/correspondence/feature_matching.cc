@@ -68,7 +68,7 @@ cv::Mat FeatureSet::FeatureSetDescriptorsToContiguousArray
   }
   int descriptorSize = featureSet.features[0].descriptor.cols;
   // Allocate and paste the necessary data.
-  cv::Mat array(featureSet.features.size(), descriptorSize, CV_32F);
+  cv::Mat array(featureSet.features.size(), descriptorSize, CV_32FC1);
 
   //-- Paste data in the contiguous array :
   for (int i = 0; i < (int)featureSet.features.size(); ++i) {

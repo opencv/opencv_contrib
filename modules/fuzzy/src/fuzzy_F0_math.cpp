@@ -307,7 +307,7 @@ void ft::FT02D_components(InputArray matrix, InputArray kernel, OutputArray comp
 
     if (mask.getMat().empty())
     {
-        inputMask = Mat::ones(matrix.size(), CV_8U);
+        inputMask = Mat::ones(matrix.size(), CV_8UC1);
     }
     else
     {
@@ -367,9 +367,9 @@ void ft::FT02D_inverseFT(InputArray components, InputArray kernel, OutputArray o
     int outputWidthPadded = radiusX + width + kernel.cols();
     int outputHeightPadded = radiusY + height + kernel.rows();
 
-    output.create(height, width, CV_32F);
+    output.create(height, width, CV_32FC1);
 
-    Mat outputZeroes(outputHeightPadded, outputWidthPadded, CV_32F, Scalar(0));
+    Mat outputZeroes(outputHeightPadded, outputWidthPadded, CV_32FC1, Scalar(0));
 
     for (int i = 0; i < componentsMat.cols; i++)
     {
@@ -400,7 +400,7 @@ void ft::FT02D_process(InputArray matrix, InputArray kernel, OutputArray output,
 
     if (mask.getMat().empty())
     {
-        inputMask = Mat::ones(matrix.size(), CV_8U);
+        inputMask = Mat::ones(matrix.size(), CV_8UC1);
     }
     else
     {

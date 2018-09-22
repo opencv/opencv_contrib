@@ -88,7 +88,7 @@ static void removeOcclusions(const Mat& flow,
   const int rows = flow.rows;
   const int cols = flow.cols;
   if (!confidence.data) {
-    confidence = Mat::zeros(rows, cols, CV_32F);
+      confidence = Mat::zeros(rows, cols, CV_32FC1);
   }
   for (int r = 0; r < rows; ++r) {
     for (int c = 0; c < cols; ++c) {
@@ -131,7 +131,7 @@ public:
             flag(flag_),
             spaceWeights(spaceWeights_),
             expLut(expLut_) {
-      CV_DbgAssert(joint.type() == traits::Type<JointVec>::value && confidence.type() == CV_32F && src.type() == dst.type() && src.type() == traits::Type<SrcVec>::value);
+      CV_DbgAssert(joint.type() == traits::Type<JointVec>::value && confidence.type() == CV_32FC1 && src.type() == dst.type() && src.type() == traits::Type<SrcVec>::value);
       CV_DbgAssert(joint.rows == src.rows && confidence.rows == src.rows && src.rows == dst.rows + 2 * radius);
       CV_DbgAssert(joint.cols == src.cols && confidence.cols == src.cols && src.cols == dst.cols + 2 * radius);
     }
@@ -188,7 +188,7 @@ static void crossBilateralFilter(InputArray joint_,
   Mat confidence = confidence_.getMat();
 
   CV_Assert(src.size() == joint.size() && confidence.size() == src.size());
-  CV_Assert(joint.depth() == CV_8U && confidence.type() == CV_32F);
+  CV_Assert(joint.depth() == CV_8U && confidence.type() == CV_32FC1);
 
   if (sigmaColor <= 0)
     sigmaColor = 1;
@@ -209,7 +209,7 @@ static void crossBilateralFilter(InputArray joint_,
   copyMakeBorder(confidence, confidenceTemp, radius, radius, radius, radius, BORDER_CONSTANT, Scalar(0));
   copyMakeBorder(src, srcTemp, radius, radius, radius, radius, BORDER_DEFAULT);
 
-  Mat spaceWeights(d, d, CV_32F);
+  Mat spaceWeights(d, d, CV_32FC1);
   wd(spaceWeights, radius, radius, radius, radius, sigmaSpace);
 
   double gaussColorCoeff = -0.5 / (sigmaColor * sigmaColor);
@@ -229,7 +229,7 @@ static void calcConfidence(const Mat& prev,
                            int max_flow) {
   const int rows = prev.rows;
   const int cols = prev.cols;
-  confidence = Mat::zeros(rows, cols, CV_32F);
+  confidence = Mat::zeros(rows, cols, CV_32FC1);
 
   for (int r0 = 0; r0 < rows; ++r0) {
     for (int c0 = 0; c0 < cols; ++c0) {
@@ -298,7 +298,7 @@ public:
 
     void operator()(const Range &range) const CV_OVERRIDE {
       int d = 2 * radius + 1;
-      Mat weights(d, d, CV_32F);
+      Mat weights(d, d, CV_32FC1);
       for (int i = range.start; i < range.end; i++) {
         const uchar *maskRow = mask.ptr<uchar>(i);
         const DstVec *dstRow = dst.ptr<DstVec>(i);
@@ -392,7 +392,7 @@ static void calcOpticalFlowSingleScaleSF(InputArray prev_,
 
   int d = 2 * radius + 1;
 
-  Mat spaceWeights(d, d, CV_32F);
+  Mat spaceWeights(d, d, CV_32FC1);
   wd(spaceWeights, radius, radius, radius, radius, sigmaSpace);
 
   double gaussColorCoeff = -0.5 / (sigmaColor * sigmaColor);
@@ -423,7 +423,7 @@ static Mat upscaleOpticalFlow(int new_rows,
 static Mat calcIrregularityMat(const Mat& flow, int radius) {
   const int rows = flow.rows;
   const int cols = flow.cols;
-  Mat irregularity = Mat::zeros(rows, cols, CV_32F);
+  Mat irregularity = Mat::zeros(rows, cols, CV_32FC1);
   for (int r = 0; r < rows; ++r) {
     const int start_row = std::max(0, r - radius);
     const int end_row = std::min(rows - 1, r + radius);
@@ -456,9 +456,9 @@ static void selectPointsToRecalcFlow(const Mat& flow,
 
   Mat is_flow_regular = calcIrregularityMat(flow, irregularity_metric_radius)
                               < speed_up_thr;
-  Mat done = Mat::zeros(prev_rows, prev_cols, CV_8U);
-  speed_up = Mat::zeros(curr_rows, curr_cols, CV_8U);
-  mask = Mat::zeros(curr_rows, curr_cols, CV_8U);
+  Mat done = Mat::zeros(prev_rows, prev_cols, CV_8UC1);
+  speed_up = Mat::zeros(curr_rows, curr_cols, CV_8UC1);
+  mask = Mat::zeros(curr_rows, curr_cols, CV_8UC1);
 
   for (int r = 0; r < is_flow_regular.rows; ++r) {
     for (int c = 0; c < is_flow_regular.cols; ++c) {
@@ -546,7 +546,7 @@ static void extrapolateFlow(Mat& flow,
                             const Mat& speed_up) {
   const int rows = flow.rows;
   const int cols = flow.cols;
-  Mat done = Mat::zeros(rows, cols, CV_8U);
+  Mat done = Mat::zeros(rows, cols, CV_8UC1);
   for (int r = 0; r < rows; ++r) {
     for (int c = 0; c < cols; ++c) {
       if (!done.at<uchar>(r, c) && speed_up.at<uchar>(r, c) > 1) {
@@ -634,8 +634,8 @@ CV_EXPORTS_W void calcOpticalFlowSF(InputArray _from,
   curr_from = pyr_from_images[layers - 1];
   curr_to = pyr_to_images[layers - 1];
 
-  Mat mask = Mat::ones(curr_from.size(), CV_8U);
-  Mat mask_inv = Mat::ones(curr_from.size(), CV_8U);
+  Mat mask = Mat::ones(curr_from.size(), CV_8UC1);
+  Mat mask_inv = Mat::ones(curr_from.size(), CV_8UC1);
 
   Mat flow = Mat::zeros(curr_from.size(), CV_32FC2);
   Mat flow_inv = Mat::zeros(curr_to.size(), CV_32FC2);
@@ -672,8 +672,8 @@ CV_EXPORTS_W void calcOpticalFlowSF(InputArray _from,
                    (float)occ_thr,
                    confidence_inv);
 
-  Mat speed_up = Mat::zeros(curr_from.size(), CV_8U);
-  Mat speed_up_inv = Mat::zeros(curr_from.size(), CV_8U);
+  Mat speed_up = Mat::zeros(curr_from.size(), CV_8UC1);
+  Mat speed_up_inv = Mat::zeros(curr_from.size(), CV_8UC1);
 
   for (int curr_layer = layers - 2; curr_layer >= 0; --curr_layer) {
     curr_from = pyr_from_images[curr_layer];

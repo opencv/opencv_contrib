@@ -108,7 +108,7 @@ static void calculateStats( Mat errors, Mat mask = Mat(), bool display_images = 
     float R_thresholds[] = { 0.5f, 1.f, 2.f, 5.f, 10.f };
     float A_thresholds[] = { 0.5f, 0.75f, 0.95f };
     if ( mask.empty() )
-        mask = Mat::ones(errors.size(), CV_8U);
+        mask = Mat::ones(errors.size(), CV_8UC1);
     CV_Assert(errors.size() == mask.size());
     CV_Assert(mask.depth() == CV_8U);
 
@@ -319,7 +319,7 @@ int main( int argc, char** argv )
 
         Mat mask;
         if( region == "all" )
-            mask = Mat::ones(ground_truth.size(), CV_8U) * 255;
+            mask = Mat::ones(ground_truth.size(), CV_8UC1) * 255;
         else if ( region == "discontinuities" )
         {
             Mat truth_merged, grad_x, grad_y, gradient;
@@ -337,7 +337,7 @@ int main( int argc, char** argv )
             s_mean = mean(gradient);
             double threshold = s_mean[0]; // threshold value arbitrary
             mask = gradient > threshold;
-            dilate(mask, mask, Mat::ones(9, 9, CV_8U));
+            dilate(mask, mask, Mat::ones(9, 9, CV_8UC1));
         }
         else if ( region == "untextured" )
         {
@@ -358,7 +358,7 @@ int main( int argc, char** argv )
             // arbitrary threshold value used - could be determined statistically from the image?
             double threshold = 1000;
             mask = gradient < threshold;
-            dilate(mask, mask, Mat::ones(3, 3, CV_8U));
+            dilate(mask, mask, Mat::ones(3, 3, CV_8UC1));
         }
 
         else
