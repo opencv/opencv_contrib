@@ -63,7 +63,7 @@ static void help()
             "Usage:\n"
             "./fasthoughtransform\n"
             "<image_name>, default is '../../../samples/data/building.jpg'\n"
-            "<fht_image_depth>, default is " << CV_32S << "\n"
+            "<fht_image_depth>, default is " << (int)CV_32S << " (CV_32S)\n"
             "<fht_angle_range>, default is " << 6 << " (@see cv::AngleRangeOption)\n"
             "<fht_operator>, default is " << 2 << " (@see cv::HoughOp)\n"
             "<fht_makeskew>, default is " << 1 << "(@see cv::HoughDeskewOption)" << endl;

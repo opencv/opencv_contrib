@@ -203,6 +203,8 @@ class SimpleWBImpl CV_FINAL : public SimpleWB
             balanceWhiteSimple(mv, dst, inputMin, inputMax, outputMin, outputMax, p);
             break;
         }
+        default:
+            CV_Assert(0);
         }
     }
 };

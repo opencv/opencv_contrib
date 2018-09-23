@@ -307,6 +307,8 @@ static Mat histc(InputArray _src, int minVal, int maxVal, bool normed)
         case CV_32FC1:
             return histc_(src, minVal, maxVal, normed);
             break;
+        default:
+            break;
     }
     CV_Error(Error::StsUnmatchedFormats, "This type is not implemented yet.");
 }

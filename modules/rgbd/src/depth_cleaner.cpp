@@ -97,6 +97,8 @@ namespace rgbd
           computeImpl<double, double>(depth, depth_out, 1);
           break;
         }
+        default:
+          CV_Assert(0);
       }
     }
 

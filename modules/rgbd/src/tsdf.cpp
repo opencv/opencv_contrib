@@ -27,12 +27,12 @@ public:
     typedef value_type  work_type;
     typedef value_type  channel_type;
     typedef value_type  vec_type;
-    enum { generic_type = 0,
-           depth        = CV_64F,
-           channels     = 1,
-           fmt          = (int)'v',
-           type         = CV_MAKETYPE(depth, channels)
-         };
+
+    static const bool       generic_type = false;
+    static const ElemDepth  depth        = CV_64F;
+    static const int        channels     = 1;
+    static const int        fmt          = (int)'v';
+    static const ElemType   type         = CV_MAKETYPE(depth, channels);
 };
 
 namespace kinfu {

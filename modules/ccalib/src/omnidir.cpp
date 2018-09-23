@@ -344,7 +344,7 @@ void cv::omnidir::initUndistortRectifyMap(InputArray K, InputArray D, InputArray
 {
     CV_Assert( m1type == CV_16SC2 || m1type == CV_32F || m1type <=0 );
     map1.create( size, m1type <= 0 ? CV_16SC2 : m1type );
-    map2.create( size, map1.type() == CV_16SC2 ? CV_16UC1 : CV_32F );
+    map2.create( size, map1.type() == CV_16SC2 ? CV_16UC1 : CV_32FC1 );
 
     CV_Assert((K.depth() == CV_32F || K.depth() == CV_64F) && (D.depth() == CV_32F || D.depth() == CV_64F));
     CV_Assert(K.size() == Size(3, 3) && (D.empty() || D.total() == 4));
@@ -1180,8 +1180,8 @@ double cv::omnidir::calibrate(InputArrayOfArrays patternPoints, InputArrayOfArra
         D.create(1, 4, CV_64F);
     }
 
-    Mat(_K).convertTo(K.getMat(), K.empty()? CV_64F : K.type());
-    Mat(_D).convertTo(D.getMat(), D.empty() ? CV_64F: D.type());
+    Mat(_K).convertTo(K.getMat(), K.empty()? CV_64F : K.depth());
+    Mat(_D).convertTo(D.getMat(), D.empty() ? CV_64F: D.depth());
 
     if (xi.empty())
     {
@@ -1189,7 +1189,7 @@ double cv::omnidir::calibrate(InputArrayOfArrays patternPoints, InputArrayOfArra
     }
     Mat xi_m = Mat(1, 1, CV_64F);
     xi_m.at<double>(0) = _xi;
-    xi_m.convertTo(xi.getMat(), xi.empty() ? CV_64F : xi.type());
+    xi_m.convertTo(xi.getMat(), xi.empty() ? CV_64F : xi.depth());
 
     if (idx.needed())
     {
@@ -1315,13 +1315,13 @@ double cv::omnidir::stereoCalibrate(InputOutputArrayOfArrays objectPoints, Input
         tL.create(1, n, CV_64FC3);
     }
 
-    Mat(_K1).convertTo(K1.getMat(), K1.empty() ? CV_64F : K1.type());
-    Mat(_D1).convertTo(D1.getMat(), D1.empty() ? CV_64F : D1.type());
-    Mat(_K2).convertTo(K2.getMat(), K2.empty() ? CV_64F : K2.type());
-    Mat(_D2).convertTo(D2.getMat(), D2.empty() ? CV_64F : D2.type());
+    Mat(_K1).convertTo(K1.getMat(), K1.empty() ? CV_64F : K1.depth());
+    Mat(_D1).convertTo(D1.getMat(), D1.empty() ? CV_64F : D1.depth());
+    Mat(_K2).convertTo(K2.getMat(), K2.empty() ? CV_64F : K2.depth());
+    Mat(_D2).convertTo(D2.getMat(), D2.empty() ? CV_64F : D2.depth());
 
-    Mat(_om).convertTo(om.getMat(), om.empty() ? CV_64F: om.type());
-    Mat(_T).convertTo(T.getMat(), T.empty() ? CV_64F: T.type());
+    Mat(_om).convertTo(om.getMat(), om.empty() ? CV_64F: om.depth());
+    Mat(_T).convertTo(T.getMat(), T.empty() ? CV_64F: T.depth());
 
     if (omL.needed())
     {
@@ -1344,8 +1344,8 @@ double cv::omnidir::stereoCalibrate(InputOutputArrayOfArrays objectPoints, Input
     }
     else
     {
-        Mat(_omL).convertTo(omL, omL.empty() ? CV_64FC3 : omL.type());
-        Mat(_TL).convertTo(tL, tL.empty() ? CV_64FC3 : tL.type());
+        Mat(_omL).convertTo(omL, omL.empty() ? CV_64F : omL.depth());
+        Mat(_TL).convertTo(tL, tL.empty() ? CV_64F : tL.depth());
     }
 
     Mat xi1_m = Mat(1, 1, CV_64F),
@@ -1361,8 +1361,8 @@ double cv::omnidir::stereoCalibrate(InputOutputArrayOfArrays objectPoints, Input
     {
         xi2.create(1, 1, CV_64F);
     }
-    xi1_m.convertTo(xi1, xi1.empty() ? CV_64F : xi1.type());
-    xi2_m.convertTo(xi2, xi2.empty() ? CV_64F : xi2.type());
+    xi1_m.convertTo(xi1, xi1.empty() ? CV_64F : xi1.depth());
+    xi2_m.convertTo(xi2, xi2.empty() ? CV_64F : xi2.depth());
 
     // compute uncertainty
     Vec2d std_error;

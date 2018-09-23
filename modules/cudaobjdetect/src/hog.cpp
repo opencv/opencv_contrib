@@ -458,6 +458,7 @@ namespace
                 {
                     case CV_8UC1: hog::resize_8UC1(img, smaller_img); break;
                     case CV_8UC4: hog::resize_8UC4(img, smaller_img); break;
+                     default: CV_Assert(0);
                 }
             }
 
@@ -566,6 +567,7 @@ namespace
                                             gamma_correction_,
                                             StreamAccessor::getStream(stream));
                 break;
+             default: CV_Assert(0);
         }
 
         hog::compute_hists(nbins_,

@@ -34,7 +34,7 @@ int main(int argc, const char * argv[])
 
     Mat image = imread(argv[1], IMREAD_GRAYSCALE);
 
-    cout << "Read image (" << argv[1] << "): " << image.size << ", channels: " << image.channels() << ", depth: " << image.depth() << endl;
+    cout << "Read image (" << argv[1] << "): " << image.size << ", channels: " << image.channels() << ", depth: " << depthToString(image.depth()) << endl;
 
     if (image.empty())
     {
