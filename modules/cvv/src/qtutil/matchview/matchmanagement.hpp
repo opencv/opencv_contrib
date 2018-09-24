@@ -35,7 +35,7 @@ public:
 	/**
 	 * @brief set the settings if this match is selected
 	 */
-	virtual void setSettings(CVVMatch &match);
+    virtual void setSettings(CVVMatch &match) CV_OVERRIDE;
 
 	/**
 	 * @brief add the given MatchSettingsSelector to the list

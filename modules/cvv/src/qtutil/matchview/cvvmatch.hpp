@@ -48,13 +48,13 @@ class CVVMatch : public QGraphicsObject,public cv::DMatch
 	 * @brief returns the boundingrect of this Mathc
 	 * @return the boundingrect of this Mathc
 	 */
-	virtual QRectF boundingRect() const;
+    virtual QRectF boundingRect() const CV_OVERRIDE;
 
 	/**
 	 * @brief the paint function
 	 */
 	virtual void paint(QPainter *painter, const QStyleOptionGraphicsItem *,
-			   QWidget *);
+               QWidget *) CV_OVERRIDE;
 
 	/**
 	 * @brief returns the left keypoint.

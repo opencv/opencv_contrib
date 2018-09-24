@@ -20,17 +20,17 @@ class ZoomableProxyObject : public QGraphicsProxyWidget
       public:
 	ZoomableProxyObject(ZoomableImage *zoom);
 
-	~ZoomableProxyObject()
+    ~ZoomableProxyObject() CV_OVERRIDE
 	{
 	}
 
       protected:
-	virtual void contextMenuEvent(QGraphicsSceneContextMenuEvent *event)
+    virtual void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) CV_OVERRIDE
 	{
 		event->ignore();
 	}
 
-	virtual void wheelEvent(QGraphicsSceneWheelEvent *event);
+    virtual void wheelEvent(QGraphicsSceneWheelEvent *event) CV_OVERRIDE;
 
       private:
 	ZoomableImage *image_;

@@ -28,7 +28,7 @@ public:
 	 * @brief select matches of the given selection
 	 * @return the selected matches
 	 */
-	std::vector<cv::DMatch> select(const std::vector<cv::DMatch>& selection);
+    std::vector<cv::DMatch> select(const std::vector<cv::DMatch>& selection) CV_OVERRIDE;
 
 public slots:
 	/**
