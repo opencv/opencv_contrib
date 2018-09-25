@@ -188,21 +188,6 @@ template<> struct VecTraits<char4>
 
 namespace cv {
 
-template <> class DataType<uint>
-{
-public:
-    typedef uint         value_type;
-    typedef value_type   work_type;
-    typedef value_type   channel_type;
-    typedef value_type   vec_type;
-    enum { generic_type = 0,
-           depth        = CV_32S,
-           channels     = 1,
-           fmt          = (int)'i',
-           type         = CV_MAKE_TYPE(depth, channels)
-         };
-};
-
 #define CV_CUDEV_DATA_TYPE_INST(_depth_type, _channel_num) \
     template <> class DataType< _depth_type ## _channel_num > \
     { \
