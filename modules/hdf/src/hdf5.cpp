@@ -257,7 +257,7 @@ inline int HDF5Impl::GetCVtype( hid_t h5Type ) const
     else if ( H5Tequal( h5Type, H5T_NATIVE_INT    ) )
       cvType = CV_32S;
     else
-      CV_Error_(Error::StsInternal, ("Unknown H5Type: %d.", h5Type));
+      CV_Error_(Error::StsInternal, ("Unknown H5Type: %lld.", (long long)h5Type));
 
     return cvType;
 }
