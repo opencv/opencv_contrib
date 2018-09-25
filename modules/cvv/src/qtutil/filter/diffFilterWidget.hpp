@@ -54,13 +54,13 @@ class DiffFilterFunction : public FilterFunctionWidget<2, 1>
 	* @param in Array of input matrices
 	* @param out Array of output matrices
 	*/
-	void applyFilter(InputArray in, OutputArray out) const;
+    void applyFilter(InputArray in, OutputArray out) const CV_OVERRIDE;
 
 	/**
 	* @brief Checks whether matrices in 'in' can be processed by this
 	* DiffFilter
 	*/
-	std::pair<bool, QString> checkInput(InputArray in) const;
+    std::pair<bool, QString> checkInput(InputArray in) const CV_OVERRIDE;
 
       private:
 	DiffFilterType filterType_;
