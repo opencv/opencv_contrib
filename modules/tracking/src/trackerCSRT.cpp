@@ -429,8 +429,12 @@ Point2f TrackerCSRTImpl::estimate_new_position(const Mat &image)
 
     Mat resp = calculate_response(image, csr_filter);
 
+    double max_val;
     Point max_loc;
-    minMaxLoc(resp, NULL, NULL, NULL, &max_loc);
+    minMaxLoc(resp, NULL, &max_val, NULL, &max_loc);
+    if (max_val < params.psr_threshold)
+        return Point2f(-1,-1); // target "lost"
+
     // take into account also subpixel accuracy
     float col = ((float) max_loc.x) + subpixel_peak(resp, "horizontal", max_loc);
     float row = ((float) max_loc.y) + subpixel_peak(resp, "vertical", max_loc);
@@ -472,6 +476,8 @@ bool TrackerCSRTImpl::updateImpl(const Mat& image_, Rect2d& boundingBox)
     }
 
     object_center = estimate_new_position(image);
+    if (object_center.x < 0 && object_center.y < 0)
+        return false;
 
     current_scale_factor = dsst.getScale(image, object_center);
     //update bouding_box according to new scale and location
@@ -651,6 +657,7 @@ TrackerCSRT::Params::Params()
     histogram_bins = 16;
     background_ratio = 2;
     histogram_lr = 0.04f;
+    psr_threshold = 0.035f;
 }
 
 void TrackerCSRT::Params::read(const FileNode& fn)
@@ -708,6 +715,8 @@ void TrackerCSRT::Params::read(const FileNode& fn)
         fn["background_ratio"] >> background_ratio;
     if(!fn["histogram_lr"].empty())
         fn["histogram_lr"] >> histogram_lr;
+    if(!fn["psr_threshold"].empty())
+        fn["psr_threshold"] >> psr_threshold;
     CV_Assert(number_of_scales % 2 == 1);
     CV_Assert(use_gray || use_color_names || use_hog || use_rgb);
 }
@@ -739,5 +748,6 @@ void TrackerCSRT::Params::write(FileStorage& fs) const
     fs << "histogram_bins" << histogram_bins;
     fs << "background_ratio" << background_ratio;
     fs << "histogram_lr" << histogram_lr;
+    fs << "psr_threshold" << psr_threshold;
 }
 } /* namespace cv */
