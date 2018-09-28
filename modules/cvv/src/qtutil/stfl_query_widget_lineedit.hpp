@@ -6,6 +6,7 @@
 #include <QKeyEvent>
 #include <QAbstractItemView>
 
+#include "opencv2/core/cvdef.h"
 #include "stfl_query_widget_completer.hpp"
 
 namespace cvv
@@ -41,7 +42,7 @@ class STFLQueryWidgetLineEdit : public QLineEdit
 	void showSuggestions(QStringList suggestions);
 
       protected:
-	void keyPressEvent(QKeyEvent *e);
+    void keyPressEvent(QKeyEvent *e) CV_OVERRIDE;
 
 signals:
 	/**

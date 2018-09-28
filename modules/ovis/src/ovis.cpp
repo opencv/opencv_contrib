@@ -187,13 +187,13 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
         // empty impl to show cursor
     }
 
-    bool keyPressed(const OgreBites::KeyboardEvent& evt)
+    bool keyPressed(const OgreBites::KeyboardEvent& evt) CV_OVERRIDE
     {
         key_pressed = evt.keysym.sym;
         return true;
     }
 
-    bool oneTimeConfig()
+    bool oneTimeConfig() CV_OVERRIDE
     {
         Ogre::RenderSystem* rs = getRoot()->getRenderSystemByName(RENDERSYSTEM_NAME);
         CV_Assert(rs);
@@ -202,7 +202,7 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
     }
 
     OgreBites::NativeWindowPair createWindow(const Ogre::String& name, uint32_t _w, uint32_t _h,
-                                             NameValuePairList miscParams = NameValuePairList())
+                                             NameValuePairList miscParams = NameValuePairList()) CV_OVERRIDE
     {
         Ogre::String _name = name;
         if (!sceneMgr)
@@ -224,7 +224,7 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
         return ret;
     }
 
-    void locateResources()
+    void locateResources() CV_OVERRIDE
     {
         OgreBites::ApplicationContext::locateResources();
         ResourceGroupManager& rgm = ResourceGroupManager::getSingleton();
@@ -244,7 +244,7 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
         }
     }
 
-    void setup()
+    void setup() CV_OVERRIDE
     {
         OgreBites::ApplicationContext::setup();
 
@@ -338,7 +338,7 @@ public:
         }
     }
 
-    void setBackground(InputArray image)
+    void setBackground(InputArray image) CV_OVERRIDE
     {
         CV_Assert(bgplane);
 
@@ -357,16 +357,16 @@ public:
         bgplane->setVisible(true);
     }
 
-    void setCompositors(const std::vector<String>& names)
+    void setCompositors(const std::vector<String>& names) CV_OVERRIDE
     {
         CompositorManager& cm = CompositorManager::getSingleton();
         // this should be applied to all owned render targets
         Ogre::RenderTarget* targets[] = {frameSrc, rWin, depthRTT};
 
-        for(int j = 0; j < 3; j++)
+        for(int j = (frameSrc == rWin); j < 3; j++) // skip frameSrc if it is the same as rWin
         {
             Ogre::RenderTarget* tgt = targets[j];
-            if(!tgt || (frameSrc == rWin && tgt == rWin)) continue;
+            if(!tgt) continue;
 
             Viewport* vp = tgt->getViewport(0);
             cm.removeCompositorChain(vp); // remove previous configuration
@@ -382,7 +382,7 @@ public:
         }
     }
 
-    void setBackground(const Scalar& color)
+    void setBackground(const Scalar& color) CV_OVERRIDE
     {
         // hide background plane
         bgplane->setVisible(false);
@@ -394,7 +394,7 @@ public:
             frameSrc->getViewport(0)->setBackgroundColour(_color);
     }
 
-    void createEntity(const String& name, const String& meshname, InputArray tvec, InputArray rot)
+    void createEntity(const String& name, const String& meshname, InputArray tvec, InputArray rot) CV_OVERRIDE
     {
         Entity* ent = sceneMgr->createEntity(name, meshname, RESOURCEGROUP_NAME);
 
@@ -405,7 +405,7 @@ public:
         node->attachObject(ent);
     }
 
-    void removeEntity(const String& name) {
+    void removeEntity(const String& name) CV_OVERRIDE {
         SceneNode& node = _getSceneNode(sceneMgr, name);
         node.getAttachedObject(name)->detachFromParent();
 
@@ -418,7 +418,7 @@ public:
     }
 
     Rect2d createCameraEntity(const String& name, InputArray K, const Size& imsize, float zFar,
-                              InputArray tvec, InputArray rot)
+                              InputArray tvec, InputArray rot) CV_OVERRIDE
     {
         MaterialPtr mat = MaterialManager::getSingleton().create(name, RESOURCEGROUP_NAME);
         Pass* rpass = mat->getTechniques()[0]->getPasses()[0];
@@ -451,7 +451,7 @@ public:
     }
 
     void createLightEntity(const String& name, InputArray tvec, InputArray rot, const Scalar& diffuseColour,
-                           const Scalar& specularColour)
+                           const Scalar& specularColour) CV_OVERRIDE
     {
         Light* light = sceneMgr->createLight(name);
         light->setDirection(Vector3::NEGATIVE_UNIT_Z);
@@ -466,7 +466,7 @@ public:
         node->attachObject(light);
     }
 
-    void updateEntityPose(const String& name, InputArray tvec, InputArray rot)
+    void updateEntityPose(const String& name, InputArray tvec, InputArray rot) CV_OVERRIDE
     {
         SceneNode& node = _getSceneNode(sceneMgr, name);
         Quaternion q;
@@ -476,7 +476,7 @@ public:
         node.translate(t, Ogre::Node::TS_LOCAL);
     }
 
-    void setEntityPose(const String& name, InputArray tvec, InputArray rot, bool invert)
+    void setEntityPose(const String& name, InputArray tvec, InputArray rot, bool invert) CV_OVERRIDE
     {
         SceneNode& node = _getSceneNode(sceneMgr, name);
         Quaternion q;
@@ -486,7 +486,7 @@ public:
         node.setPosition(t);
     }
 
-    void setEntityProperty(const String& name, int prop, const String& value)
+    void setEntityProperty(const String& name, int prop, const String& value) CV_OVERRIDE
     {
         CV_Assert(prop == ENTITY_MATERIAL);
         SceneNode& node = _getSceneNode(sceneMgr, name);
@@ -506,7 +506,7 @@ public:
         ent->setMaterial(mat);
     }
 
-    void setEntityProperty(const String& name, int prop, const Scalar& value)
+    void setEntityProperty(const String& name, int prop, const Scalar& value) CV_OVERRIDE
     {
         CV_Assert(prop == ENTITY_SCALE);
         SceneNode& node = _getSceneNode(sceneMgr, name);
@@ -541,7 +541,7 @@ public:
         sceneMgr->getRootSceneNode()->createChildSceneNode()->attachObject(bgplane.get());
     }
 
-    void getScreenshot(OutputArray frame)
+    void getScreenshot(OutputArray frame) CV_OVERRIDE
     {
         PixelFormat src_type = frameSrc->suggestPixelFormat();
         int dst_type = src_type == PF_BYTE_RGB ? CV_8UC3 : CV_32FC4;
@@ -556,7 +556,7 @@ public:
         cvtColor(out, out, dst_type == CV_8UC3 ? COLOR_RGB2BGR : COLOR_RGBA2BGRA);
     }
 
-    void getDepth(OutputArray depth)
+    void getDepth(OutputArray depth) CV_OVERRIDE
     {
         Camera* cam = sceneMgr->getCamera(title);
         if (!depthRTT)
@@ -588,7 +588,7 @@ public:
         ndc = (2 * f * n) / ndc;
     }
 
-    void fixCameraYawAxis(bool useFixed, InputArray _up)
+    void fixCameraYawAxis(bool useFixed, InputArray _up) CV_OVERRIDE
     {
         Vector3 up = Vector3::NEGATIVE_UNIT_Y;
         if (!_up.empty())
@@ -599,7 +599,7 @@ public:
         camNode->setFixedYawAxis(useFixed, up);
     }
 
-    void setCameraPose(InputArray tvec, InputArray rot, bool invert)
+    void setCameraPose(InputArray tvec, InputArray rot, bool invert) CV_OVERRIDE
     {
         Quaternion q;
         Vector3 t;
@@ -612,7 +612,7 @@ public:
             camNode->setPosition(t);
     }
 
-    void getCameraPose(OutputArray R, OutputArray tvec, bool invert)
+    void getCameraPose(OutputArray R, OutputArray tvec, bool invert) CV_OVERRIDE
     {
         Matrix3 _R;
         // toOGRE.Inverse() == toOGRE
@@ -641,7 +641,7 @@ public:
         }
     }
 
-    void setCameraIntrinsics(InputArray K, const Size& imsize, float zNear, float zFar)
+    void setCameraIntrinsics(InputArray K, const Size& imsize, float zNear, float zFar) CV_OVERRIDE
     {
         Camera* cam = sceneMgr->getCamera(title);
 
@@ -650,7 +650,7 @@ public:
         if(!K.empty()) _setCameraIntrinsics(cam, K, imsize);
     }
 
-    void setCameraLookAt(const String& target, InputArray offset)
+    void setCameraLookAt(const String& target, InputArray offset) CV_OVERRIDE
     {
         SceneNode* tgt = sceneMgr->getEntity(target)->getParentSceneNode();
 

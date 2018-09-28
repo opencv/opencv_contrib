@@ -78,7 +78,7 @@ class OverviewGroupSubtable : public QWidget
 	void setRowGroup(stfl::ElementGroup<OverviewTableRow> &newGroup);
 	
 protected:
-	void resizeEvent(QResizeEvent *event);
+    void resizeEvent(QResizeEvent *event) CV_OVERRIDE;
 
 private slots:
 	void rowClicked(int row, int collumn);

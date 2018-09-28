@@ -44,7 +44,7 @@ class OverlayFilterWidget : public FilterFunctionWidget<2, 1>
 	* @param in Array of input matrices
 	* @param out Array of output matrices
 	*/
-	void applyFilter(InputArray in, OutputArray out) const;
+    void applyFilter(InputArray in, OutputArray out) const CV_OVERRIDE;
 
 	/**
 	* Checks whether the matrices have the same size and same number of
@@ -52,7 +52,7 @@ class OverlayFilterWidget : public FilterFunctionWidget<2, 1>
 	* @brief Checks whether matrices in "in" can be processed by Overlayfilter
 	* @param in Array of input matrices
 	*/
-	std::pair<bool, QString> checkInput(InputArray in) const;
+    std::pair<bool, QString> checkInput(InputArray in) const CV_OVERRIDE;
 
       private:
 	double opacityOfFilterImg_;
