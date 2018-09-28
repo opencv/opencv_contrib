@@ -12,8 +12,8 @@ __kernel void integrate(__global const char * depthptr,
                         const float voxelSize,
                         const int4 volResolution4,
                         const int4 volDims4,
-                        const float fx, const float fy,
-                        const float cx, const float cy,
+                        const float2 fxy,
+                        const float2 cxy,
                         const float dfac,
                         const float truncDist,
                         const int maxWeight)
@@ -33,9 +33,6 @@ __kernel void integrate(__global const char * depthptr,
     const float4 vol2cam0 = vol2camMatrix.s0123;
     const float4 vol2cam1 = vol2camMatrix.s4567;
     const float4 vol2cam2 = vol2camMatrix.s89ab;
-
-    const float2 fxy = (float2)(fx, fy);
-    const float2 cxy = (float2)(cx, cy);
 
     const float truncDistInv = 1.f/truncDist;
 
@@ -224,15 +221,14 @@ typedef float4 ptype;
 
 __kernel void raycast(__global char * pointsptr,
                       int points_step, int points_offset,
-                      int points_rows, int points_cols,
                       __global char * normalsptr,
                       int normals_step, int normals_offset,
-                      int normals_rows, int normals_cols,
+                      const int2 frameSize,
                       __global const float2 * volumeptr,
                       __global const float * vol2camptr,
                       __global const float * cam2volptr,
-                      const float fxinv, const float fyinv,
-                      const float cx, const float cy,
+                      const float2 fixy,
+                      const float2 cxy,
                       const float4 boxDown4,
                       const float4 boxUp4,
                       const float tstep,
@@ -245,7 +241,7 @@ __kernel void raycast(__global char * pointsptr,
     int x = get_global_id(0);
     int y = get_global_id(1);
 
-    if(x >= points_cols || y >= points_rows)
+    if(x >= frameSize.x || y >= frameSize.y)
         return;
 
     // coordinate-independent constants
@@ -261,9 +257,6 @@ __kernel void raycast(__global char * pointsptr,
     const float3 volRot1  = vload4(1, vm).xyz;
     const float3 volRot2  = vload4(2, vm).xyz;
     const float3 volTrans = (float3)(vm[3], vm[7], vm[11]);
-
-    const float2 fixy = (float2)(fxinv, fyinv);
-    const float2 cxy  = (float2)(cx, cy);
 
     const float3 boxDown = boxDown4.xyz;
     const float3 boxUp   = boxUp4.xyz;
@@ -396,10 +389,9 @@ __kernel void raycast(__global char * pointsptr,
 
 __kernel void getNormals(__global const char * pointsptr,
                          int points_step, int points_offset,
-                         int points_rows, int points_cols,
                          __global char * normalsptr,
                          int normals_step, int normals_offset,
-                         int normals_rows, int normals_cols,
+                         const int2 frameSize,
                          __global const float2* volumeptr,
                          __global const float * volPoseptr,
                          __global const float * invPoseptr,
@@ -412,7 +404,7 @@ __kernel void getNormals(__global const char * pointsptr,
     int x = get_global_id(0);
     int y = get_global_id(1);
 
-    if(x >= points_cols || y >= points_rows)
+    if(x >= frameSize.x || y >= frameSize.y)
         return;
 
     // coordinate-independent constants
@@ -583,9 +575,6 @@ __kernel void scanSize(__global const float2* volumeptr,
     const int gx = get_group_id(0);
     const int gy = get_group_id(1);
     const int gz = get_group_id(2);
-    const int gw = get_num_groups(0);
-    const int gh = get_num_groups(1);
-    const int gd = get_num_groups(2);
 
     const int lx = get_local_id(0);
     const int ly = get_local_id(1);
@@ -699,9 +688,6 @@ __kernel void fillPtsNrm(__global const float2* volumeptr,
     const int gx = get_group_id(0);
     const int gy = get_group_id(1);
     const int gz = get_group_id(2);
-    const int gw = get_num_groups(0);
-    const int gh = get_num_groups(1);
-    const int gd = get_num_groups(2);
 
     __global int* groupedRow = (__global int*)(groupedSumptr +
                                                groupedSum_offset +

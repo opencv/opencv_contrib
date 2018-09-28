@@ -1234,6 +1234,7 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
     cv::Affine3f vol2cam(cameraPose.inv() * pose);
     float dfac = 1.f/depthFactor;
     Vec4i volResGpu(volResolution.x, volResolution.y, volResolution.z);
+    Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
 
     k.args(ocl::KernelArg::ReadOnly(depth),
            ocl::KernelArg::PtrReadWrite(volume),
@@ -1242,8 +1243,8 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
            voxelSize,
            volResGpu.val,
            volDims.val,
-           intrinsics.fx, intrinsics.fy,
-           intrinsics.cx, intrinsics.cy,
+           fxy.val,
+           cxy.val,
            dfac,
            truncDist,
            maxWeight);
@@ -1292,16 +1293,18 @@ void TSDFVolumeGPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frame
     Vec4f boxMin, boxMax(volSize.x - voxelSize,
                          volSize.y - voxelSize,
                          volSize.z - voxelSize);
+    Vec2f finv(r.fxinv, r.fyinv), cxy(r.cx, r.cy);
     float tstep = truncDist * raycastStepFactor;
 
     Vec4i volResGpu(volResolution.x, volResolution.y, volResolution.z);
 
-    k.args(ocl::KernelArg::WriteOnly(points),
-           ocl::KernelArg::WriteOnly(normals),
+    k.args(ocl::KernelArg::WriteOnlyNoSize(points),
+           ocl::KernelArg::WriteOnlyNoSize(normals),
+           frameSize,
            ocl::KernelArg::PtrReadOnly(volume),
            ocl::KernelArg::PtrReadOnly(vol2camGpu),
            ocl::KernelArg::PtrReadOnly(cam2volGpu),
-           r.fxinv, r.fyinv, r.cx, r.cy,
+           finv.val, cxy.val,
            boxMin.val, boxMax.val,
            tstep,
            voxelSize,
@@ -1344,9 +1347,11 @@ void TSDFVolumeGPU::fetchNormals(InputArray _points, OutputArray _normals) const
         Mat(pose      .matrix).copyTo(volPoseGpu);
         Mat(pose.inv().matrix).copyTo(invPoseGpu);
         Vec4i volResGpu(volResolution.x, volResolution.y, volResolution.z);
+        Size frameSize = points.size();
 
-        k.args(ocl::KernelArg::ReadOnly(points),
-               ocl::KernelArg::WriteOnly(normals),
+        k.args(ocl::KernelArg::ReadOnlyNoSize(points),
+               ocl::KernelArg::WriteOnlyNoSize(normals),
+               frameSize,
                ocl::KernelArg::PtrReadOnly(volume),
                ocl::KernelArg::PtrReadOnly(volPoseGpu),
                ocl::KernelArg::PtrReadOnly(invPoseGpu),
