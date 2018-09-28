@@ -455,8 +455,8 @@ static void filterPlane(IplImage * ap_depth, std::vector<IplImage *> & a_masks, 
   reprojectPoints(lp_src_3Dpts, lp_src_3Dpts, f);
 
   CvMat * lp_pts = cvCreateMat((int)l_chain_vector.size(), 4, CV_32F);
-  CvMat * lp_v = cvCreateMat(4, 4, CV_32F);
-  CvMat * lp_w = cvCreateMat(4, 1, CV_32F);
+  CvMat * lp_v = cvCreateMat(4, 4, CV_32FC1);
+  CvMat * lp_w = cvCreateMat(4, 1, CV_32FC1);
 
   for (int l_i = 0; l_i < (int)l_chain_vector.size(); ++l_i)
   {
@@ -578,7 +578,7 @@ static void filterPlane(IplImage * ap_depth, std::vector<IplImage *> & a_masks, 
 
 void subtractPlane(const cv::Mat& depth, cv::Mat& mask, std::vector<CvPoint>& chain, double f)
 {
-  mask = cv::Mat::zeros(depth.size(), CV_8U);
+  mask = cv::Mat::zeros(depth.size(), CV_8UC1);
   std::vector<IplImage*> tmp;
   IplImage mask_ipl = mask;
   tmp.push_back(&mask_ipl);
@@ -681,7 +681,7 @@ void templateConvexHull(const std::vector<cv::linemod::Template>& templates,
   std::vector<cv::Point> hull;
   cv::convexHull(points, hull);
 
-  dst = cv::Mat::zeros(size, CV_8U);
+  dst = cv::Mat::zeros(size, CV_8UC1);
   const int hull_count = (int)hull.size();
   const cv::Point* hull_pts = &hull[0];
   cv::fillPoly(dst, &hull_pts, &hull_count, 1, cv::Scalar(255));

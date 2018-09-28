@@ -126,7 +126,7 @@ namespace cv
 			UMat devPatch = patch.getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
 			UMat devPositiveSamples = posExp->getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
 			UMat devNegativeSamples = negExp->getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
-			UMat devNCC(1, 2*MAX_EXAMPLES_IN_MODEL, CV_32FC1, ACCESS_RW, USAGE_ALLOCATE_DEVICE_MEMORY);
+			UMat devNCC(1, 2 * MAX_EXAMPLES_IN_MODEL, CV_32FC1, _InputArray::NONE | ACCESS_RW, USAGE_ALLOCATE_DEVICE_MEMORY);
 
 
 			ocl::Kernel k;
@@ -167,8 +167,8 @@ namespace cv
 			UMat devPatches = patches.getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
 			UMat devPositiveSamples = posExp->getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
 			UMat devNegativeSamples = negExp->getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
-			UMat devPosNCC(MAX_EXAMPLES_IN_MODEL, numOfPatches, CV_32FC1, ACCESS_RW, USAGE_ALLOCATE_DEVICE_MEMORY);
-			UMat devNegNCC(MAX_EXAMPLES_IN_MODEL, numOfPatches, CV_32FC1, ACCESS_RW, USAGE_ALLOCATE_DEVICE_MEMORY);
+			UMat devPosNCC(MAX_EXAMPLES_IN_MODEL, numOfPatches, CV_32FC1, _InputArray::NONE | ACCESS_RW, USAGE_ALLOCATE_DEVICE_MEMORY);
+			UMat devNegNCC(MAX_EXAMPLES_IN_MODEL, numOfPatches, CV_32FC1, _InputArray::NONE | ACCESS_RW, USAGE_ALLOCATE_DEVICE_MEMORY);
 
 			ocl::Kernel k;
 			ocl::ProgramSource src = ocl::tracking::tldDetector_oclsrc;
@@ -252,7 +252,7 @@ namespace cv
 			UMat devPatch = patch.getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
 			UMat devPositiveSamples = posExp->getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
 			UMat devNegativeSamples = negExp->getUMat(ACCESS_READ, USAGE_ALLOCATE_DEVICE_MEMORY);
-			UMat devNCC(1, 2 * MAX_EXAMPLES_IN_MODEL, CV_32FC1, ACCESS_RW, USAGE_ALLOCATE_DEVICE_MEMORY);
+			UMat devNCC(1, 2 * MAX_EXAMPLES_IN_MODEL, CV_32FC1, _InputArray::NONE | ACCESS_RW, USAGE_ALLOCATE_DEVICE_MEMORY);
 
 
 			ocl::Kernel k;

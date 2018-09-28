@@ -408,25 +408,25 @@ std::pair<cv::Mat, cv::Mat> Segment::getRegularizedSegmentation(
         cv::Mat P_Io = prior_o.mul(prob_o) + std::numeric_limits<double>::epsilon();
         cv::Mat P_Ib = prior_b.mul(prob_b) + std::numeric_limits<double>::epsilon();
 
-        cv::filter2D(prior_o, Si_o, -1, lambda, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
-        cv::filter2D(prior_b, Si_b, -1, lambda, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
+        cv::filter2D(prior_o, Si_o, CV_DEPTH_AUTO, lambda, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
+        cv::filter2D(prior_b, Si_b, CV_DEPTH_AUTO, lambda, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
         Si_o = Si_o.mul(prior_o);
         Si_b = Si_b.mul(prior_b);
         cv::Mat normSi = 1.0/(Si_o + Si_b);
         Si_o = Si_o.mul(normSi);
         Si_b = Si_b.mul(normSi);
-        cv::filter2D(Si_o, Ssum_o, -1, lambda2, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
-        cv::filter2D(Si_b, Ssum_b, -1, lambda2, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
+        cv::filter2D(Si_o, Ssum_o, CV_DEPTH_AUTO, lambda2, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
+        cv::filter2D(Si_b, Ssum_b, CV_DEPTH_AUTO, lambda2, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
 
-        cv::filter2D(P_Io, Qi_o, -1, lambda, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
-        cv::filter2D(P_Ib, Qi_b, -1, lambda, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
+        cv::filter2D(P_Io, Qi_o, CV_DEPTH_AUTO, lambda, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
+        cv::filter2D(P_Ib, Qi_b, CV_DEPTH_AUTO, lambda, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
         Qi_o = Qi_o.mul(P_Io);
         Qi_b = Qi_b.mul(P_Ib);
         cv::Mat normQi = 1.0/(Qi_o + Qi_b);
         Qi_o = Qi_o.mul(normQi);
         Qi_b = Qi_b.mul(normQi);
-        cv::filter2D(Qi_o, Qsum_o, -1, lambda2, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
-        cv::filter2D(Qi_b, Qsum_b, -1, lambda2, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
+        cv::filter2D(Qi_o, Qsum_o, CV_DEPTH_AUTO, lambda2, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
+        cv::filter2D(Qi_b, Qsum_b, CV_DEPTH_AUTO, lambda2, cv::Point(-1, -1), 0, cv::BORDER_REFLECT);
 
         prior_o = (Qsum_o + Ssum_o)*0.25;
         prior_b = (Qsum_b + Ssum_b)*0.25;

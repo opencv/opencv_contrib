@@ -245,10 +245,10 @@ void SuperpixelSLICImpl::initialize()
     m_kseeds.resize( m_nr_channels );
 
     // intitialize label storage
-    m_klabels = Mat( m_height, m_width, CV_32S, Scalar::all(0) );
+    m_klabels = Mat( m_height, m_width, CV_32SC1, Scalar::all(0) );
 
     // storage for edge magnitudes
-    Mat edgemag = Mat( m_height, m_width, CV_32F, Scalar::all(0) );
+    Mat edgemag = Mat( m_height, m_width, CV_32FC1, Scalar::all(0) );
 
     // perturb seeds is not absolutely necessary,
     // one can set this flag to false
@@ -380,7 +380,7 @@ void SuperpixelSLICImpl::enforceLabelConnectivity( int min_element_size )
     int div = int(100.0f/(float)min_element_size + 0.5f);
     int min_sp_sz = max(3, supsz / div);
 
-    Mat nlabels( m_height, m_width, CV_32S, Scalar(INT_MAX) );
+    Mat nlabels( m_height, m_width, CV_32SC1, Scalar(INT_MAX) );
 
     int label = 0;
     vector<int> xvec(sz);
@@ -1137,9 +1137,9 @@ struct SLICOGrowInvoker : ParallelLoopBody
  */
 inline void SuperpixelSLICImpl::PerformSLICO( const int&  itrnum )
 {
-    Mat distxy( m_height, m_width, CV_32F, Scalar::all(FLT_MAX) );
-    Mat distvec( m_height, m_width, CV_32F, Scalar::all(FLT_MAX) );
-    Mat distchans( m_height, m_width, CV_32F, Scalar::all(FLT_MAX) );
+    Mat distxy( m_height, m_width, CV_32FC1, Scalar::all(FLT_MAX) );
+    Mat distvec( m_height, m_width, CV_32FC1, Scalar::all(FLT_MAX) );
+    Mat distchans( m_height, m_width, CV_32FC1, Scalar::all(FLT_MAX) );
 
     // this is the variable value of M, just start with 10
     vector<float> maxchans( m_numlabels, FLT_MIN );
@@ -1328,7 +1328,7 @@ struct SLICGrowInvoker : ParallelLoopBody
  */
 inline void SuperpixelSLICImpl::PerformSLIC( const int&  itrnum )
 {
-    Mat distvec( m_height, m_width, CV_32F );
+    Mat distvec( m_height, m_width, CV_32FC1);
 
     const float xywt = (m_region_size/m_ruler)*(m_region_size/m_ruler);
 
@@ -1376,7 +1376,7 @@ inline void SuperpixelSLICImpl::PerformMSLIC( const int&  itrnum )
     for( int b = 0; b < m_nr_channels; b++ )
       sigma[b].resize(m_numlabels, 0);
 
-    Mat distvec( m_height, m_width, CV_32F );
+    Mat distvec( m_height, m_width, CV_32FC1);
 
     const float xywt = (m_region_size/m_ruler)*(m_region_size/m_ruler);
 

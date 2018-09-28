@@ -59,7 +59,7 @@ using namespace std;
 
 namespace cv { namespace randpattern {
 RandomPatternCornerFinder::RandomPatternCornerFinder(float patternWidth, float patternHeight,
-    int nminiMatch, int depth, int verbose, int showExtraction, Ptr<FeatureDetector> detector, Ptr<DescriptorExtractor> descriptor,
+    int nminiMatch, ElemDepth depth, int verbose, int showExtraction, Ptr<FeatureDetector> detector, Ptr<DescriptorExtractor> descriptor,
     Ptr<DescriptorMatcher> matcher)
 {
     _patternHeight = patternHeight;
@@ -107,8 +107,8 @@ void RandomPatternCornerFinder::keyPoints2MatchedLocation(const std::vector<cv::
         image.push_back(Vec2d(imgPt.x, imgPt.y));
         pattern.push_back(Vec2d(patPt.x, patPt.y));
     }
-    Mat(image).convertTo(matchedImagelocation, CV_64FC2);
-    Mat(pattern).convertTo(matchedPatternLocation, CV_64FC2);
+    Mat(image).convertTo(matchedImagelocation, CV_64F);
+    Mat(pattern).convertTo(matchedPatternLocation, CV_64F);
 }
 
 void RandomPatternCornerFinder::getFilteredLocation(cv::Mat& imageKeypoints, cv::Mat& patternKeypoints, const cv::Mat mask)
@@ -127,19 +127,17 @@ void RandomPatternCornerFinder::getFilteredLocation(cv::Mat& imageKeypoints, cv:
             vecPattern.push_back(tmpPattern.at<Vec2d>(i));
         }
     }
-    Mat(vecKeypoint).convertTo(imageKeypoints, CV_64FC2);
-    Mat(vecPattern).convertTo(patternKeypoints, CV_64FC2);
+    Mat(vecKeypoint).convertTo(imageKeypoints, CV_64F);
+    Mat(vecPattern).convertTo(patternKeypoints, CV_64F);
 }
 
 void RandomPatternCornerFinder::getObjectImagePoints(const cv::Mat& imageKeypoints, const cv::Mat& patternKeypoints)
 {
     Mat imagePoints_i, objectPoints_i;
-    int imagePointsType = CV_MAKETYPE(_depth, 2);
-    int objectPointsType = CV_MAKETYPE(_depth, 3);
-    imageKeypoints.convertTo(imagePoints_i, imagePointsType);
+    imageKeypoints.convertTo(imagePoints_i, _depth);
     _imagePoints.push_back(imagePoints_i);
-    if (patternKeypoints.total()!=CV_64FC2)
-        patternKeypoints.convertTo(patternKeypoints, CV_64FC2);
+    if (patternKeypoints.total() != static_cast<size_t>(CV_64FC2))
+        patternKeypoints.convertTo(patternKeypoints, CV_64F);
 
     std::vector<Vec3d> objectPoints;
 
@@ -152,7 +150,7 @@ void RandomPatternCornerFinder::getObjectImagePoints(const cv::Mat& imageKeypoin
         objectPoints.push_back(Vec3d(x, y, 0));
     }
 
-    Mat(objectPoints).convertTo(objectPoints_i, objectPointsType);
+    Mat(objectPoints).convertTo(objectPoints_i, _depth);
     _objectPonits.push_back(objectPoints_i);
 }
 
@@ -241,7 +239,7 @@ const std::vector<cv::Mat> &RandomPatternCornerFinder::getImagePoints()
 void RandomPatternCornerFinder::loadPattern(const cv::Mat &patternImage)
 {
     _patternImage = patternImage.clone();
-    if (_patternImage.type()!= CV_8U)
+    if (_patternImage.type()!= CV_8UC1)
         _patternImage.convertTo(_patternImage, CV_8U);
     _patternImageSize = _patternImage.size();
     _detector->detect(patternImage, _keypointsPattern);
@@ -256,7 +254,7 @@ void RandomPatternCornerFinder::loadPattern(const cv::Mat &patternImage, const s
     CV_Assert(patternDescriptors.type()==_descriptor->descriptorType());
 
     _patternImage=patternImage.clone();
-    if(_patternImage.type()!=CV_8U)
+    if(_patternImage.type()!=CV_8UC1)
         _patternImage.convertTo(_patternImage, CV_8U);
     _patternImageSize=patternImage.size();
     _keypointsPattern=patternKeyPoints;
@@ -270,7 +268,7 @@ std::vector<cv::Mat> RandomPatternCornerFinder::computeObjectImagePointsForSingl
     std::vector<cv::Mat> r(2);
     Mat descriptorImage1, descriptorImage2,descriptorImage;
     std::vector<cv::KeyPoint> keypointsImage1, keypointsImage2, keypointsImage;
-    if (inputImage.type()!=CV_8U)
+    if (inputImage.type()!=CV_8UC1)
     {
         inputImage.convertTo(inputImage, CV_8U);
     }
@@ -350,10 +348,7 @@ std::vector<cv::Mat> RandomPatternCornerFinder::computeObjectImagePointsForSingl
 
     std::vector<Vec3d> objectPoints;
 
-    int imagePointsType = CV_MAKETYPE(_depth, 2);
-    int objectPointsType = CV_MAKETYPE(_depth, 3);
-
-    keypointsImageLocation.convertTo(r[0], imagePointsType);
+    keypointsImageLocation.convertTo(r[0], _depth);
 
     for (int i = 0; i < (int)keypointsPatternLocation.total(); ++i)
     {
@@ -363,7 +358,7 @@ std::vector<cv::Mat> RandomPatternCornerFinder::computeObjectImagePointsForSingl
         y = y / _patternImageSize.height * _patternHeight;
         objectPoints.push_back(Vec3d(x, y, 0));
     }
-    Mat(objectPoints).convertTo(r[1], objectPointsType);
+    Mat(objectPoints).convertTo(r[1], _depth);
     return r;
 }
 
@@ -375,7 +370,7 @@ RandomPatternGenerator::RandomPatternGenerator(int imageWidth, int imageHeight)
 
 void RandomPatternGenerator::generatePattern()
 {
-    Mat pattern = Mat(_imageHeight, _imageWidth, CV_32F, Scalar(0.));
+    Mat pattern = Mat(_imageHeight, _imageWidth, CV_32FC1, Scalar(0.));
 
     int m = 5;
     int count = 0;
@@ -384,7 +379,7 @@ void RandomPatternGenerator::generatePattern()
     {
         int n = (int)std::floor(double(_imageHeight) / double(_imageWidth) * double(m)) + 1;
 
-        Mat r = Mat(n, m, CV_32F);
+        Mat r = Mat(n, m, CV_32FC1);
         cv::randn(r, Scalar::all(0), Scalar::all(1));
         cv::resize(r, r, Size(_imageWidth ,_imageHeight));
         double min_r, max_r;

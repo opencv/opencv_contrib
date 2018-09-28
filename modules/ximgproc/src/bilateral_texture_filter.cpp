@@ -68,10 +68,10 @@ namespace ximgproc
     Mat I;
     src.copyTo(I);
     if (src.type() == CV_8UC1) {
-      I.convertTo(I, CV_32FC1, 1.0 / 255.0);
+      I.convertTo(I, CV_32F, 1.0 / 255.0);
     }
     else if (src.type() == CV_8UC3) {
-      I.convertTo(I, CV_32FC3, 1.0 / 255.0);
+      I.convertTo(I, CV_32F, 1.0 / 255.0);
     }
 
     for (int iter = 0; iter < numIter; iter++)
@@ -122,10 +122,10 @@ namespace ximgproc
       I = J;
     }
     if (src.type() == CV_8UC1) {
-      I.convertTo(I, CV_8UC1, 255.0);
+      I.convertTo(I, CV_8U, 255.0);
     }
     else if (src.type() == CV_8UC3) {
-      I.convertTo(I, CV_8UC3, 255.0);
+      I.convertTo(I, CV_8U, 255.0);
     }
 
     I.copyTo(dst_);
@@ -140,14 +140,14 @@ namespace ximgproc
     // Calculate image derivative(gradient)
     Mat G;
     Mat Gx, Gy, kernelx, kernely;
-    kernelx = Mat::zeros(1, 3, CV_32F);
+    kernelx = Mat::zeros(1, 3, CV_32FC1);
     kernelx.at<float>(0, 1) = -1.0;
     kernelx.at<float>(0, 2) = 1.0;
-    filter2D(L, Gx, -1, kernelx, Point(-1, -1), 0, BORDER_REFLECT);
-    kernely = Mat::zeros(3, 1, CV_32F);
+    filter2D(L, Gx, CV_DEPTH_AUTO, kernelx, Point(-1, -1), 0, BORDER_REFLECT);
+    kernely = Mat::zeros(3, 1, CV_32FC1);
     kernely.at<float>(1, 0) = -1.0;
     kernely.at<float>(2, 0) = 1.0;
-    filter2D(L, Gy, -1, kernely, Point(-1, -1), 0, BORDER_REFLECT);
+    filter2D(L, Gy, CV_DEPTH_AUTO, kernely, Point(-1, -1), 0, BORDER_REFLECT);
 
     Gx = Gx.mul(Gx);
     Gy = Gy.mul(Gy);

@@ -120,7 +120,7 @@ void DTFilterCPU::init_(Mat& guide, double sigmaSpatial_, double sigmaColor_, in
 }
 
 template <typename SrcVec>
-void DTFilterCPU::filter_(const Mat& src, Mat& dst, int dDepth)
+void DTFilterCPU::filter_(const Mat& src, Mat& dst, ElemDepth dDepth)
 {
     typedef typename DataType<Vec<WorkType, SrcVec::channels> >::vec_type WorkVec;
     CV_Assert( src.type() == traits::Type<SrcVec>::value );
@@ -136,7 +136,7 @@ void DTFilterCPU::filter_(const Mat& src, Mat& dst, int dDepth)
     numFilterCalls++;
 
     Mat res;
-    if (dDepth == -1) dDepth = src.depth();
+    if (dDepth == CV_DEPTH_AUTO) dDepth = src.depth();
 
     //small optimization to avoid extra copying of data
     bool useDstAsRes = (dDepth == traits::Depth<WorkVec>::value && (mode == DTF_NC || mode == DTF_RF));
@@ -149,7 +149,7 @@ void DTFilterCPU::filter_(const Mat& src, Mat& dst, int dDepth)
     if (mode == DTF_NC)
     {
         Mat resT(src.cols, src.rows, traits::Type<WorkVec>::value);
-        src.convertTo(res, traits::Type<WorkVec>::value);
+        src.convertTo(res, traits::Depth<WorkVec>::value);
 
         FilterNC_horPass<WorkVec> horParBody(res, idistHor, resT);
         FilterNC_horPass<WorkVec> vertParBody(resT, idistVert, res);
@@ -180,7 +180,7 @@ void DTFilterCPU::filter_(const Mat& src, Mat& dst, int dDepth)
     }
     else if (mode == DTF_RF)
     {
-        src.convertTo(res, traits::Type<WorkVec>::value);
+        src.convertTo(res, traits::Depth<WorkVec>::value);
 
         for (int iter = 1; iter <= numIters; iter++)
         {
@@ -243,7 +243,7 @@ void DTFilterCPU::prepareSrcImg_IC(const Mat& src, Mat& dst, Mat& dstT)
     dst = dstOut(Range::all(), Range(1, src.cols+1));
     dstT = dstOutT(Range::all(), Range(1, src.rows+1));
 
-    src.convertTo(dst, traits::Type<WorkVec>::value);
+    src.convertTo(dst, traits::Depth<WorkVec>::value);
 
     WorkVec *line;
     int ri = dstOut.cols - 1;

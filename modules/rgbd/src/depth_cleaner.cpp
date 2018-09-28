@@ -15,7 +15,7 @@ namespace rgbd
   class DepthCleanerImpl
   {
   public:
-    DepthCleanerImpl(int window_size, int depth, DepthCleaner::DEPTH_CLEANER_METHOD method)
+    DepthCleanerImpl(int window_size, ElemDepth depth, DepthCleaner::DEPTH_CLEANER_METHOD method)
         :
           depth_(depth),
           window_size_(window_size),
@@ -37,7 +37,7 @@ namespace rgbd
       return (window_size == window_size_) && (depth == depth_) && (method == method_);
     }
   protected:
-    int depth_;
+    ElemDepth depth_;
     int window_size_;
     DepthCleaner::DEPTH_CLEANER_METHOD method_;
   };
@@ -55,7 +55,7 @@ namespace rgbd
     typedef Vec<T, 3> Vec3T;
     typedef Matx<T, 3, 3> Mat33T;
 
-    NIL(int window_size, int depth, DepthCleaner::DEPTH_CLEANER_METHOD method)
+    NIL(int window_size, ElemDepth depth, DepthCleaner::DEPTH_CLEANER_METHOD method)
         :
           DepthCleanerImpl(window_size, depth, method)
     {
@@ -97,6 +97,12 @@ namespace rgbd
           computeImpl<double, double>(depth, depth_out, 1);
           break;
         }
+        case CV_8U:
+        case CV_8S:
+        case CV_16S:
+        case CV_32S:
+        case CV_16F:
+            break; //unhandled
       }
     }
 
@@ -167,7 +173,7 @@ namespace rgbd
 
   /** Default constructor of the Algorithm class that computes normals
    */
-  DepthCleaner::DepthCleaner(int depth, int window_size, int method_in)
+  DepthCleaner::DepthCleaner(ElemDepth depth, int window_size, int method_in)
       :
         depth_(depth),
         window_size_(window_size),
@@ -198,6 +204,12 @@ namespace rgbd
           case CV_64F:
             delete reinterpret_cast<const NIL<double> *>(depth_cleaner_impl_);
             break;
+          case CV_8U:
+          case CV_8S:
+          case CV_16S:
+          case CV_32S:
+          case CV_16F:
+              break; //unhandled
         }
         break;
       }
@@ -225,6 +237,12 @@ namespace rgbd
           case CV_64F:
             depth_cleaner_impl_ = new NIL<double>(window_size_, depth_, DEPTH_CLEANER_NIL);
             break;
+          case CV_8U:
+          case CV_8S:
+          case CV_16S:
+          case CV_32S:
+          case CV_16F:
+              break; //unhandled
         }
         break;
       }
@@ -260,7 +278,7 @@ namespace rgbd
     CV_Assert(depth_in.dims == 2);
     CV_Assert(depth_in.channels() == 1);
 
-    depth_out_array.create(depth_in.size(), depth_);
+    depth_out_array.create(depth_in.size(), CV_MAKETYPE(depth_, 1));
     Mat depth_out = depth_out_array.getMat();
 
     // Initialize the pimpl
@@ -282,6 +300,12 @@ namespace rgbd
           case CV_64F:
             reinterpret_cast<const NIL<double> *>(depth_cleaner_impl_)->compute(depth_in, depth_out);
             break;
+          case CV_8U:
+          case CV_8S:
+          case CV_16S:
+          case CV_32S:
+          case CV_16F:
+              break; //unhandled
         }
         break;
       }

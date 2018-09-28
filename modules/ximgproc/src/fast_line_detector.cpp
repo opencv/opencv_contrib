@@ -334,7 +334,7 @@ template<class T>
         lk = xk.cross(lh);
         xk = lk.cross(l);
 
-        xk.convertTo(xk, -1, 1.0 / xk.at<double>(2,0));
+        xk.convertTo(xk, CV_DEPTH_AUTO, 1.0 / xk.at<double>(2, 0));
 
         Point2f pt_tmp;
         pt_tmp.x = (float)xk.at<double>(0,0) < 0.0f ? 0.0f : (float)xk.at<double>(0,0)

@@ -89,7 +89,7 @@ public:
 
     GuidedFilterRefImpl(InputArray guide_, int rad, double eps);
 
-    void filter(InputArray src, OutputArray dst, int dDepth = -1);
+    void filter(InputArray src, OutputArray dst, ElemDepth dDepth = CV_DEPTH_AUTO);
 
     ~GuidedFilterRefImpl();
 };
@@ -197,7 +197,7 @@ GuidedFilterRefImpl::~GuidedFilterRefImpl(){
     delete [] vars;
 }
 
-void GuidedFilterRefImpl::filter(InputArray src_, OutputArray dst_, int dDepth)
+void GuidedFilterRefImpl::filter(InputArray src_, OutputArray dst_, ElemDepth dDepth)
 {
     if (dDepth == -1) dDepth = src_.depth();
     dst_.create(height, width, src_.type());

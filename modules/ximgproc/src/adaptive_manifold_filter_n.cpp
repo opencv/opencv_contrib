@@ -383,7 +383,7 @@ void AdaptiveManifoldFilterN::filter(InputArray src, OutputArray dst, InputArray
 
 void AdaptiveManifoldFilterN::gatherResult(InputArray src_, OutputArray dst_)
 {
-    int dDepth = src_.depth();
+    ElemDepth dDepth = src_.depth();
     vector<Mat> dstCn(srcCnNum);
 
     if (!adjust_outliers_)
@@ -602,7 +602,7 @@ void AdaptiveManifoldFilterN::computeDTHor(vector<Mat>& srcCn, Mat& dst, float s
     float sigmaRatioSqr = (float) SQR(sigma_s / sigma_r);
     float lnAlpha       = (float) (-sqrt(2.0) / sigma_s);
 
-    dst.create(h, w-1, CV_32F);
+    dst.create(h, w-1, CV_32FC1);
 
     for (int i = 0; i < h; i++)
     {
@@ -633,7 +633,7 @@ void AdaptiveManifoldFilterN::computeDTVer(vector<Mat>& srcCn, Mat& dst, float s
     int h = srcCn[0].rows;
     int w = srcCn[0].cols;
 
-    dst.create(h-1, w, CV_32F);
+    dst.create(h-1, w, CV_32FC1);
 
     float sigmaRatioSqr = (float) SQR(sigma_s / sigma_r);
     float lnAlpha       = (float) (-sqrt(2.0) / sigma_s);

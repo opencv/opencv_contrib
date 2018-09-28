@@ -49,10 +49,10 @@ namespace cv { namespace ximgproc {
     typedef __int32 int32_t;
 #endif
 
-template<typename T, int D, HoughOp Op>
+template<typename T, ElemType D, HoughOp Op>
 struct HoughOperator { };
 #define SPECIALIZE_HOUGHOP(TOp, body)                                         \
-    template<typename T, int D>                                               \
+    template<typename T, ElemType D>                                               \
     struct HoughOperator<T, D, TOp> {                                         \
         static void operate(T *pDst, T *pSrc0, T* pSrc1, int len) {           \
             Mat dst (Size(1, len), D, pDst);                                  \
@@ -69,7 +69,7 @@ SPECIALIZE_HOUGHOP(FHT_AVE, addWeighted(src0, 0.5, src1, 0.5, 0.0, dst));
 
 //----------------------fht----------------------------------------------------
 
-template <typename T, int D, HoughOp OP>
+template <typename T, ElemType D, HoughOp OP>
 void fhtCore(Mat     &img0,
              Mat     &img1,
              int32_t  y0,
@@ -203,7 +203,7 @@ void fhtCore(Mat     &img0,
     }
 }
 
-template <typename T, int D, HoughOp Op>
+template <typename T, ElemType D, HoughOp Op>
 void fhtVoT(Mat    &img0,
             Mat    &img1,
             bool    isPositiveShift,
@@ -216,7 +216,7 @@ void fhtVoT(Mat    &img0,
     fhtCore<T, D, Op>(img0, img1, 0, img0.rows, isPositiveShift, level, aspl);
 }
 
-template <typename T, int D>
+template <typename T, ElemType D>
 void fhtVo(Mat    &img0,
            Mat    &img1,
            bool    isPositiveShift,
@@ -298,7 +298,7 @@ static void FHT(Mat       &dst,
         level++;
 
     Mat tmp;
-    src.convertTo(tmp, dst.type());
+    src.convertTo(tmp, dst.depth());
     if (!isVertical)
         transpose(tmp, tmp);
     tmp.copyTo(dst);

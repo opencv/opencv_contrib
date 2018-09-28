@@ -89,7 +89,7 @@ namespace cv{
     /*
     * KCF functions and vars
     */
-    void createHanningWindow(OutputArray dest, const cv::Size winSize, const int type) const;
+    void createHanningWindow(OutputArray dest, const cv::Size winSize, const ElemType type) const;
     void inline fft2(const Mat src, std::vector<Mat> & dest, std::vector<Mat> & layers_data) const;
     void inline fft2(const Mat src, Mat & dest) const;
     void inline ifft2(const Mat src, Mat & dest) const;
@@ -237,14 +237,14 @@ namespace cv{
     roi.height*=2;
 
     // initialize the hann window filter
-    createHanningWindow(hann, roi.size(), CV_32F);
+    createHanningWindow(hann, roi.size(), CV_32FC1);
 
     // hann window filter for CN feature
     Mat _layer[] = {hann, hann, hann, hann, hann, hann, hann, hann, hann, hann};
     merge(_layer, 10, hann_cn);
 
     // create gaussian response
-    y=Mat::zeros((int)roi.height,(int)roi.width,CV_32F);
+    y=Mat::zeros((int)roi.height,(int)roi.width,CV_32FC1);
     for(int i=0;i<int(roi.height);i++){
       for(int j=0;j<int(roi.width);j++){
         y.at<float>(i,j) =
@@ -486,7 +486,7 @@ namespace cv{
   /*
    * hann window filter
    */
-  void TrackerKCFImpl::createHanningWindow(OutputArray dest, const cv::Size winSize, const int type) const {
+  void TrackerKCFImpl::createHanningWindow(OutputArray dest, const cv::Size winSize, const ElemType type) const {
       CV_Assert( type == CV_32FC1 || type == CV_64FC1 );
 
       dest.create(winSize, type);

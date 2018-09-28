@@ -137,7 +137,7 @@ namespace rgbd
   class RgbdNormalsImpl
   {
   public:
-    RgbdNormalsImpl(int rows, int cols, int window_size, int depth, const Mat &K,
+    RgbdNormalsImpl(int rows, int cols, int window_size, ElemDepth depth, const Mat &K,
                     RgbdNormals::RGBD_NORMALS_METHOD method)
         :
           rows_(rows),
@@ -168,7 +168,8 @@ namespace rgbd
              && (method == method_);
     }
   protected:
-    int rows_, cols_, depth_;
+    int rows_, cols_;
+    ElemDepth depth_;
     Mat K_, K_ori_;
     int window_size_;
     RgbdNormals::RGBD_NORMALS_METHOD method_;
@@ -189,7 +190,7 @@ namespace rgbd
     typedef Vec<T, 9> Vec9T;
     typedef Vec<T, 3> Vec3T;
 
-    FALS(int rows, int cols, int window_size, int depth, const Mat &K, RgbdNormals::RGBD_NORMALS_METHOD method)
+    FALS(int rows, int cols, int window_size, ElemDepth depth, const Mat &K, RgbdNormals::RGBD_NORMALS_METHOD method)
         :
           RgbdNormalsImpl(rows, cols, window_size, depth, K, method)
     {
@@ -324,7 +325,7 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
     typedef Vec<T, 3> Vec3T;
     typedef Matx<T, 3, 3> Mat33T;
 
-    LINEMOD(int rows, int cols, int window_size, int depth, const Mat &K,
+    LINEMOD(int rows, int cols, int window_size, ElemDepth depth, const Mat &K,
             RgbdNormals::RGBD_NORMALS_METHOD method)
         :
           RgbdNormalsImpl(rows, cols, window_size, depth, K, method)
@@ -365,6 +366,12 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
           computeImpl<double, double>(depth, normals);
           break;
         }
+        case CV_8U:
+        case CV_8S:
+        case CV_16S:
+        case CV_32S:
+        case CV_16F:
+            break; //unhandled
       }
     }
 
@@ -479,7 +486,7 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
     typedef Vec<T, 9> Vec9T;
     typedef Vec<T, 3> Vec3T;
 
-    SRI(int rows, int cols, int window_size, int depth, const Mat &K, RgbdNormals::RGBD_NORMALS_METHOD method)
+    SRI(int rows, int cols, int window_size, ElemDepth depth, const Mat &K, RgbdNormals::RGBD_NORMALS_METHOD method)
         :
           RgbdNormalsImpl(rows, cols, window_size, depth, K, method),
           phi_step_(0),
@@ -496,8 +503,8 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
       computeThetaPhi<T>(rows_, cols_, K_, cos_theta, sin_theta, cos_phi, sin_phi);
 
       // Create the derivative kernels
-      getDerivKernels(kx_dx_, ky_dx_, 1, 0, window_size_, true, depth_);
-      getDerivKernels(kx_dy_, ky_dy_, 0, 1, window_size_, true, depth_);
+      getDerivKernels(kx_dx_, ky_dx_, 1, 0, window_size_, true, CV_MAKETYPE(depth_, 1));
+      getDerivKernels(kx_dy_, ky_dy_, 0, 1, window_size_, true, CV_MAKETYPE(depth_, 1));
 
       // Get the mapping function for SRI
       float min_theta = (float)std::asin(sin_theta(0, 0)), max_theta = (float)std::asin(sin_theta(0, cols_ - 1));
@@ -646,7 +653,7 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
 
   /** Default constructor of the Algorithm class that computes normals
    */
-  RgbdNormals::RgbdNormals(int rows, int cols, int depth, InputArray K_in, int window_size, int method_in)
+  RgbdNormals::RgbdNormals(int rows, int cols, ElemDepth depth, InputArray K_in, int window_size, int method_in)
       :
         rows_(rows),
         cols_(cols),
@@ -703,7 +710,7 @@ multiply_by_K_inv(const Matx<T, 3, 3> & K_inv, U a, U b, U c, Vec<T, 3> &res)
   }
 
   void
-  RgbdNormals::initialize_normals_impl(int rows, int cols, int depth, const Mat & K, int window_size,
+  RgbdNormals::initialize_normals_impl(int rows, int cols, ElemDepth depth, const Mat & K, int window_size,
                                        int method_in) const
   {
     CV_Assert(rows > 0 && cols > 0 && (depth == CV_32F || depth == CV_64F));

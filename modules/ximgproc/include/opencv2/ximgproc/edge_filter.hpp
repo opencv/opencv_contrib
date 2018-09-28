@@ -73,10 +73,22 @@ public:
 
     @param dst destination image.
 
-    @param dDepth optional depth of the output image. dDepth can be set to -1, which will be equivalent
+    @param dDepth optional depth of the output image. dDepth can be set to CV_DEPTH_AUTO, which will be equivalent
     to src.depth().
      */
-    CV_WRAP virtual void filter(InputArray src, OutputArray dst, int dDepth = -1) = 0;
+    CV_WRAP virtual void filter(InputArray src, OutputArray dst, ElemDepth dDepth = CV_DEPTH_AUTO) = 0;
+#ifdef CV_TYPE_COMPATIBLE_API
+    CV_DEPRECATED_INT_TO_ELEMDEPTH_ATTR(dDepth, dDepth)
+    inline virtual void filter(InputArray src, OutputArray dst, int dDepth)
+    {
+        return filter(src, dst, static_cast<ElemDepth>(dDepth));
+    }
+    CV_DEPRECATED_ELEMTYPE_TO_ELEMDEPTH_ATTR(dDepth, dDepth)
+    inline virtual void filter(InputArray src, OutputArray dst, ElemType dDepth)
+    {
+        return filter(src, dst, CV_MAT_DEPTH(dDepth));
+    }
+#endif // CV_TYPE_COMPATIBLE_API
 };
 
 /** @brief Factory method, create instance of DTFilter and produce initialization routines.
@@ -137,10 +149,22 @@ public:
 
     @param dst output image.
 
-    @param dDepth optional depth of the output image. dDepth can be set to -1, which will be equivalent
+    @param dDepth optional depth of the output image. dDepth can be set to CV_DEPTH_AUTO, which will be equivalent
     to src.depth().
      */
-    CV_WRAP virtual void filter(InputArray src, OutputArray dst, int dDepth = -1) = 0;
+    CV_WRAP virtual void filter(InputArray src, OutputArray dst, ElemDepth dDepth = CV_DEPTH_AUTO) = 0;
+#ifdef CV_TYPE_COMPATIBLE_API
+    CV_DEPRECATED_INT_TO_ELEMDEPTH_ATTR(dDepth, dDepth)
+    inline virtual void filter(InputArray src, OutputArray dst, int dDepth)
+    {
+        return filter(src, dst, static_cast<ElemDepth>(dDepth));
+    }
+    CV_DEPRECATED_ELEMTYPE_TO_ELEMDEPTH_ATTR(dDepth, dDepth)
+    inline virtual void filter(InputArray src, OutputArray dst, ElemType dDepth)
+    {
+        return filter(src, dst, CV_MAT_DEPTH(dDepth));
+    }
+#endif // CV_TYPE_COMPATIBLE_API
 };
 
 /** @brief Factory method, create instance of GuidedFilter and produce initialization routines.
@@ -177,7 +201,19 @@ space into bilateralFilter.
 @param dDepth optional depth of the output image.
 
 @sa bilateralFilter, dtFilter, amFilter */
-CV_EXPORTS_W void guidedFilter(InputArray guide, InputArray src, OutputArray dst, int radius, double eps, int dDepth = -1);
+CV_EXPORTS_W void guidedFilter(InputArray guide, InputArray src, OutputArray dst, int radius, double eps, ElemDepth dDepth = CV_DEPTH_AUTO);
+#ifdef CV_TYPE_COMPATIBLE_API
+CV_DEPRECATED_INT_TO_ELEMDEPTH_ATTR(dDepth, dDepth)
+static inline void guidedFilter(InputArray guide, InputArray src, OutputArray dst, int radius, double eps, int dDepth)
+{
+    return guidedFilter(guide, src, dst, radius, eps, static_cast<ElemDepth>(dDepth));
+}
+CV_DEPRECATED_ELEMTYPE_TO_ELEMDEPTH_ATTR(dDepth, dDepth)
+static inline void guidedFilter(InputArray guide, InputArray src, OutputArray dst, int radius, double eps, ElemType dDepth)
+{
+    return guidedFilter(guide, src, dst, radius, eps, CV_MAT_DEPTH(dDepth));
+}
+#endif // CV_TYPE_COMPATIBLE_API
 
 //////////////////////////////////////////////////////////////////////////
 //////////////////////////////////////////////////////////////////////////

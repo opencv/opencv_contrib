@@ -134,7 +134,21 @@ namespace omnidir
     are supported.
      */
     CV_EXPORTS_W void initUndistortRectifyMap(InputArray K, InputArray D, InputArray xi, InputArray R, InputArray P, const cv::Size& size,
-        int mltype, OutputArray map1, OutputArray map2, int flags);
+        ElemType mltype, OutputArray map1, OutputArray map2, int flags);
+#ifdef CV_TYPE_COMPATIBLE_API
+    CV_DEPRECATED_INT_TO_ELEMTYPE_ATTR(mltype, mltype)
+    static inline void initUndistortRectifyMap(InputArray K, InputArray D, InputArray xi, InputArray R, InputArray P, const cv::Size& size,
+        int mltype, OutputArray map1, OutputArray map2, int flags)
+    {
+        return initUndistortRectifyMap(K, D, xi, R, P, size, static_cast<ElemType>(mltype), map1, map2, flags);
+    }
+    CV_DEPRECATED_ELEMDEPTH_TO_ELEMTYPE_ATTR(mltype, mltype)
+    static inline void initUndistortRectifyMap(InputArray K, InputArray D, InputArray xi, InputArray R, InputArray P, const cv::Size& size,
+        ElemDepth mltype, OutputArray map1, OutputArray map2, int flags)
+    {
+        return initUndistortRectifyMap(K, D, xi, R, P, size, CV_MAKETYPE(mltype, 1), map1, map2, flags);
+    }
+#endif // CV_TYPE_COMPATIBLE_API
 
     /** @brief Undistort omnidirectional images to perspective images
 
@@ -149,7 +163,7 @@ namespace omnidir
     @param R Rotation matrix between the input and output images. By default, it is identity matrix.
     */
     CV_EXPORTS_W void undistortImage(InputArray distorted, OutputArray undistorted, InputArray K, InputArray D, InputArray xi, int flags,
-        InputArray Knew = cv::noArray(), const Size& new_size = Size(), InputArray R = Mat::eye(3, 3, CV_64F));
+        InputArray Knew = cv::noArray(), const Size& new_size = Size(), InputArray R = Mat::eye(3, 3, CV_64FC1));
 
     /** @brief Perform omnidirectional camera calibration, the default depth of outputs is CV_64F.
 
