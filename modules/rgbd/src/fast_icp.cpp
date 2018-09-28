@@ -526,14 +526,17 @@ void ICPImpl::getAb<Mat>(const Mat& oldPts, const Mat& oldNrm, const Mat& newPts
 
 ///////// GPU implementation /////////
 
+#ifdef HAVE_OPENCL
+
 template <>
 void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, const UMat& newNrm,
                           Affine3f pose, int level, Matx66f &A, Vec6f &b) const
 {
     CV_TRACE_FUNCTION();
 
-    CV_Assert(oldPts.size() == oldNrm.size());
-    CV_Assert(newPts.size() == newNrm.size());
+    Size oldSize = oldPts.size(), newSize = newPts.size();
+    CV_Assert(oldSize == oldNrm.size());
+    CV_Assert(newSize == newNrm.size());
 
     // calculate 1x7 vector ab to produce b and upper triangle of A:
     // [A|b] = ab*(ab^t)
@@ -570,23 +573,26 @@ void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& ne
     size_t lsz = localSize[0]*localSize[1]*ltsz;
 
     Intr::Projector proj = intrinsics.scale(level).makeProjector();
+    Vec2f fxy(proj.fx, proj.fy), cxy(proj.cx, proj.cy);
 
     UMat& groupedSumGpu = groupedSumBuffers[level];
     groupedSumGpu.create(Size(ngroups.width*UTSIZE, ngroups.height),
                          CV_32F);
     groupedSumGpu.setTo(0);
 
-    k.args(ocl::KernelArg::ReadOnly(oldPts),
-           ocl::KernelArg::ReadOnly(oldNrm),
-           ocl::KernelArg::ReadOnly(newPts),
-           ocl::KernelArg::ReadOnly(newNrm),
+    k.args(ocl::KernelArg::ReadOnlyNoSize(oldPts),
+           ocl::KernelArg::ReadOnlyNoSize(oldNrm),
+           oldSize,
+           ocl::KernelArg::ReadOnlyNoSize(newPts),
+           ocl::KernelArg::ReadOnlyNoSize(newNrm),
+           newSize,
            ocl::KernelArg::Constant(pose.matrix.val,
                                     sizeof(pose.matrix.val)),
-           proj.fx, proj.fy, proj.cx, proj.cy,
+           fxy.val, cxy.val,
            distanceThreshold*distanceThreshold,
            cos(angleThreshold),
            ocl::KernelArg(ocl::KernelArg::LOCAL, nullptr, 0, 0, nullptr, lsz),
-           ocl::KernelArg::WriteOnly(groupedSumGpu)
+           ocl::KernelArg::WriteOnlyNoSize(groupedSumGpu)
            );
 
     if(!k.run(2, globalSize, localSize, true))
@@ -597,6 +603,7 @@ void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& ne
         upperTriangle[i] = 0;
 
     Mat groupedSumCpu = groupedSumGpu.getMat(ACCESS_READ);
+
     for(int y = 0; y < ngroups.height; y++)
     {
         const float* rowr = groupedSumCpu.ptr<float>(y);
@@ -633,6 +640,8 @@ void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& ne
         b(i) = sumAB(i, 6);
     }
 }
+
+#endif
 
 ///
 

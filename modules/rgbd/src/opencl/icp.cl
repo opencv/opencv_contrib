@@ -14,17 +14,17 @@ typedef float4 ptype;
 
 inline void calcAb7(__global const char * oldPointsptr,
                     int oldPoints_step, int oldPoints_offset,
-                    int oldPoints_rows, int oldPoints_cols,
                     __global const char * oldNormalsptr,
                     int oldNormals_step, int oldNormals_offset,
+                    const int2 oldSize,
                     __global const char * newPointsptr,
                     int newPoints_step, int newPoints_offset,
-                    int newPoints_rows, int newPoints_cols,
                     __global const char * newNormalsptr,
                     int newNormals_step, int newNormals_offset,
+                    const int2 newSize,
                     const float16 poseMatrix,
-                    const float fx, const float fy,
-                    const float cx, const float cy,
+                    const float2 fxy,
+                    const float2 cxy,
                     const float sqDistanceThresh,
                     const float minCos,
                     float* ab7
@@ -33,7 +33,7 @@ inline void calcAb7(__global const char * oldPointsptr,
     const int x = get_global_id(0);
     const int y = get_global_id(1);
 
-    if(x >= newPoints_cols || y >= newPoints_rows)
+    if(x >= newSize.x || y >= newSize.y)
         return;
 
     // coord-independent constants
@@ -43,9 +43,7 @@ inline void calcAb7(__global const char * oldPointsptr,
     const float3 poseRot2 = poseMatrix.s89a;
     const float3 poseTrans = poseMatrix.s37b;
 
-    const float2 fxy = (float2)(fx, fy);
-    const float2 cxy = (float2)(cx, cy);
-    const float2 oldEdge = (float2)(oldPoints_cols - 1, oldPoints_rows - 1);
+    const float2 oldEdge = (float2)(oldSize.x - 1, oldSize.y - 1);
 
     __global const ptype* newPtsRow = (__global const ptype*)(newPointsptr +
                                                               newPoints_offset +
@@ -140,31 +138,28 @@ inline void calcAb7(__global const char * oldPointsptr,
 
 __kernel void getAb(__global const char * oldPointsptr,
                     int oldPoints_step, int oldPoints_offset,
-                    int oldPoints_rows, int oldPoints_cols,
                     __global const char * oldNormalsptr,
                     int oldNormals_step, int oldNormals_offset,
-                    int oldNormals_rows, int oldNormals_cols,
+                    const int2 oldSize,
                     __global const char * newPointsptr,
                     int newPoints_step, int newPoints_offset,
-                    int newPoints_rows, int newPoints_cols,
                     __global const char * newNormalsptr,
                     int newNormals_step, int newNormals_offset,
-                    int newNormals_rows, int newNormals_cols,
+                    const int2 newSize,
                     const float16 poseMatrix,
-                    const float fx, const float fy,
-                    const float cx, const float cy,
+                    const float2 fxy,
+                    const float2 cxy,
                     const float sqDistanceThresh,
                     const float minCos,
                     __local float * reducebuf,
                     __global char* groupedSumptr,
-                    int groupedSum_step, int groupedSum_offset,
-                    int groupedSum_rows, int groupedSum_cols
+                    int groupedSum_step, int groupedSum_offset
 )
 {
     const int x = get_global_id(0);
     const int y = get_global_id(1);
 
-    if(x >= newPoints_cols || y >= newPoints_rows)
+    if(x >= newSize.x || y >= newSize.y)
         return;
 
     const int gx = get_group_id(0);
@@ -185,16 +180,16 @@ __kernel void getAb(__global const char * oldPointsptr,
 
     calcAb7(oldPointsptr,
             oldPoints_step, oldPoints_offset,
-            oldPoints_rows, oldPoints_cols,
             oldNormalsptr,
             oldNormals_step, oldNormals_offset,
+            oldSize,
             newPointsptr,
             newPoints_step, newPoints_offset,
-            newPoints_rows, newPoints_cols,
             newNormalsptr,
             newNormals_step, newNormals_offset,
+            newSize,
             poseMatrix,
-            fx, fy, cx, cy,
+            fxy, cxy,
             sqDistanceThresh,
             minCos,
             ab);
