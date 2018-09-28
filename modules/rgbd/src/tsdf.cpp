@@ -1191,13 +1191,12 @@ public:
     // for the array layout info
     // Array elem is CV_32FC2, read as (float, int)
     UMat volume;
-
 };
 
 
 TSDFVolumeGPU::TSDFVolumeGPU(Point3i _res, float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                              float _raycastStepFactor) :
-    TSDFVolume(_res, _voxelSize, _pose, _truncDist, _maxWeight, _raycastStepFactor, false),
+    TSDFVolume(_res, _voxelSize, _pose, _truncDist, _maxWeight, _raycastStepFactor, false)
 {
     volume = UMat(1, volResolution.x * volResolution.y * volResolution.z, CV_32FC2);
 
@@ -1316,8 +1315,6 @@ void TSDFVolumeGPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frame
 
     if(!k.run(2, globalSize, NULL, true))
         throw std::runtime_error("Failed to run kernel");
-
-    //DEBUG
 }
 
 
@@ -1344,10 +1341,8 @@ void TSDFVolumeGPU::fetchNormals(InputArray _points, OutputArray _normals) const
             throw std::runtime_error("Failed to create kernel: " + errorStr);
 
         UMat volPoseGpu, invPoseGpu;
-        Affine3f volPose = pose;
-        Affine3f invPose = pose.inv();
-        Mat(volPose.matrix).copyTo(volPoseGpu);
-        Mat(invPose.matrix).copyTo(invPoseGpu);
+        Mat(pose      .matrix).copyTo(volPoseGpu);
+        Mat(pose.inv().matrix).copyTo(invPoseGpu);
         Vec4i volResGpu(volResolution.x, volResolution.y, volResolution.z);
 
         k.args(ocl::KernelArg::ReadOnly(points),
@@ -1369,9 +1364,119 @@ void TSDFVolumeGPU::fetchNormals(InputArray _points, OutputArray _normals) const
     }
 }
 
-void TSDFVolumeGPU::fetchPointsNormals(OutputArray /*points*/, OutputArray /*normals*/) const
+void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) const
 {
-    throw std::runtime_error("Not implemented");
+    CV_TRACE_FUNCTION();
+
+    if(points.needed())
+    {
+        bool needNormals = normals.needed();
+
+        // 1. scan to count points in each group and allocate output arrays
+
+        ocl::Kernel kscan;
+
+        cv::String errorStr;
+        ocl::ProgramSource source = ocl::rgbd::tsdf_oclsrc;
+        cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
+
+        kscan.create("scanSize", source, options, &errorStr);
+
+        if(kscan.empty())
+            throw std::runtime_error("Failed to create kernel: " + errorStr);
+
+        size_t globalSize[3];
+        globalSize[0] = (size_t)volResolution.x;
+        globalSize[1] = (size_t)volResolution.y;
+        globalSize[2] = (size_t)volResolution.z;
+
+        const ocl::Device& device = ocl::Device::getDefault();
+        size_t wgsLimit = device.maxWorkGroupSize();
+        size_t memSize  = device.localMemSize();
+        // local mem should keep a point (and a normal) for each thread in a group
+        // use 4 float per each point and normal
+        size_t elemSize = (sizeof(float)*4)*(needNormals ? 2 : 1);
+        const size_t lcols = 8;
+        const size_t lrows = 8;
+        size_t lplanes = min(memSize/elemSize, wgsLimit)/lcols/lrows;
+        lplanes = roundDownPow2(lplanes);
+        size_t localSize[3] = {lcols, lrows, lplanes};
+        Vec3i ngroups(divUp(globalSize[0], localSize[0]),
+                      divUp(globalSize[1], localSize[1]),
+                      divUp(globalSize[2], localSize[2]));
+
+        const size_t counterSize = sizeof(int);
+        size_t lsz = localSize[0]*localSize[1]*localSize[2]*counterSize;
+
+        const int gsz[3] = {ngroups[2], ngroups[1], ngroups[0]};
+        UMat groupedSum(3, gsz, CV_32S, Scalar(0));
+
+        UMat volPoseGpu;
+        Mat(pose.matrix).copyTo(volPoseGpu);
+        Vec4i volResGpu(volResolution.x, volResolution.y, volResolution.z);
+
+        kscan.args(ocl::KernelArg::PtrReadOnly(volume),
+                   volResGpu.val,
+                   volDims.val,
+                   neighbourCoords.val,
+                   ocl::KernelArg::PtrReadOnly(volPoseGpu),
+                   voxelSize,
+                   voxelSizeInv,
+                   ocl::KernelArg(ocl::KernelArg::LOCAL, nullptr, 0, 0, nullptr, lsz),
+                   ocl::KernelArg::WriteOnlyNoSize(groupedSum));
+
+        if(!kscan.run(3, globalSize, localSize, true))
+            throw std::runtime_error("Failed to run kernel");
+
+        Mat groupedSumCpu = groupedSum.getMat(ACCESS_READ);
+        int gpuSum = cv::sum(groupedSumCpu)[0];
+        // should be no CPU copies when new kernel is executing
+        groupedSumCpu.release();
+
+        // 2. fill output arrays according to per-group points count
+
+        ocl::Kernel kfill;
+        kfill.create("fillPtsNrm", source, options, &errorStr);
+
+        if(kfill.empty())
+            throw std::runtime_error("Failed to create kernel: " + errorStr);
+
+        points.create(gpuSum, 1, POINT_TYPE);
+        UMat pts = points.getUMat();
+        UMat nrm;
+        if(needNormals)
+        {
+            normals.create(gpuSum, 1, POINT_TYPE);
+            nrm = normals.getUMat();
+        }
+        else
+        {
+            // it won't access but empty args are forbidden
+            nrm = UMat(1, 1, POINT_TYPE);
+        }
+        UMat atomicCtr(1, 1, CV_32S, Scalar(0));
+
+        // mem size to keep pts (and normals optionally) for all work-items in a group
+        lsz = localSize[0]*localSize[1]*localSize[2]*elemSize;
+
+        kfill.args(ocl::KernelArg::PtrReadOnly(volume),
+                   volResGpu.val,
+                   volDims.val,
+                   neighbourCoords.val,
+                   ocl::KernelArg::PtrReadOnly(volPoseGpu),
+                   voxelSize,
+                   voxelSizeInv,
+                   ((int)needNormals),
+                   ocl::KernelArg(ocl::KernelArg::LOCAL, nullptr, 0, 0, nullptr, lsz),
+                   ocl::KernelArg::PtrReadWrite(atomicCtr),
+                   ocl::KernelArg::ReadOnlyNoSize(groupedSum),
+                   ocl::KernelArg::WriteOnlyNoSize(pts),
+                   ocl::KernelArg::WriteOnlyNoSize(nrm)
+                   );
+
+        if(!kfill.run(3, globalSize, localSize, true))
+            throw std::runtime_error("Failed to run kernel");
+    }
 }
 
 #endif

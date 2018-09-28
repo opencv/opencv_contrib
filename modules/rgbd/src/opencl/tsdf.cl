@@ -335,8 +335,8 @@ __kernel void raycast(__global char * pointsptr,
                 // fetch voxel
                 int3 ip = convert_int3(round(next));
                 int3 cmul = ip*volDims;
-                int coord = cmul.x + cmul.y + cmul.z;
-                fnext = volumeptr[coord].s0;
+                int idx = cmul.x + cmul.y + cmul.z;
+                fnext = volumeptr[idx].s0;
 
                 if(fnext != f)
                 {
@@ -457,4 +457,374 @@ __kernel void getNormals(__global const char * pointsptr,
                                             x*sizeof(ptype));
 
     vstore4((float4)(n, 0), 0, nrm);
+}
+
+#pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics:enable
+
+struct CoordReturn
+{
+    bool result;
+    float3 point;
+    float3 normal;
+};
+
+inline struct CoordReturn coord(int x, int y, int z, float3 V, float v0, int axis,
+                                __global const float2* volumeptr,
+                                int3 volResolution, int3 volDims,
+                                int8 neighbourCoords,
+                                float voxelSize, float voxelSizeInv,
+                                const float3 volRot0,
+                                const float3 volRot1,
+                                const float3 volRot2,
+                                const float3 volTrans,
+                                bool needNormals,
+                                bool scan
+                                )
+{
+    struct CoordReturn cr;
+
+    // 0 for x, 1 for y, 2 for z
+    bool limits = false;
+    int3 shift;
+    float Vc = 0.f;
+    if(axis == 0)
+    {
+        shift = (int3)(1, 0, 0);
+        limits = (x + 1 < volResolution.x);
+        Vc = V.x;
+    }
+    if(axis == 1)
+    {
+        shift = (int3)(0, 1, 0);
+        limits = (y + 1 < volResolution.y);
+        Vc = V.y;
+    }
+    if(axis == 2)
+    {
+        shift = (int3)(0, 0, 1);
+        limits = (z + 1 < volResolution.z);
+        Vc = V.z;
+    }
+
+    if(limits)
+    {
+        int3 ip = ((int3)(x, y, z)) + shift;
+        int3 cmul = ip*volDims;
+        int idx = cmul.x + cmul.y + cmul.z;
+        float2 voxel = volumeptr[idx].s0;
+        float vd  = voxel.s0;
+        int weight = as_int(voxel.s1);
+
+        if(weight != 0 && vd != 1.f)
+        {
+            if((v0 > 0 && vd < 0) || (v0 < 0 && vd > 0))
+            {
+                // calc actual values or estimate amount of space
+                if(!scan)
+                {
+                    // linearly interpolate coordinate
+                    float Vn = Vc + voxelSize;
+                    float dinv = 1.f/(fabs(v0)+fabs(vd));
+                    float inter = (Vc*fabs(vd) + Vn*fabs(v0))*dinv;
+
+                    float3 p = (float3)(shift.x ? inter : V.x,
+                                        shift.y ? inter : V.y,
+                                        shift.z ? inter : V.z);
+
+                    cr.point = (float3)(dot(p, volRot0),
+                                        dot(p, volRot1),
+                                        dot(p, volRot2)) + volTrans;
+
+                    if(needNormals)
+                    {
+                        float3 nv = getNormalVoxel(p * voxelSizeInv,
+                                                   volumeptr, volResolution, volDims, neighbourCoords);
+
+                        cr.normal = (float3)(dot(nv, volRot0),
+                                             dot(nv, volRot1),
+                                             dot(nv, volRot2));
+                    }
+                }
+
+                cr.result = true;
+                return cr;
+            }
+        }
+    }
+
+    cr.result = false;
+    return cr;
+}
+
+
+__kernel void scanSize(__global const float2* volumeptr,
+                       const int4 volResolution4,
+                       const int4 volDims4,
+                       const int8 neighbourCoords,
+                       __global const float * volPoseptr,
+                       const float voxelSize,
+                       const float voxelSizeInv,
+                       __local int* reducebuf,
+                       __global char* groupedSumptr,
+                       int groupedSum_slicestep,
+                       int groupedSum_step, int groupedSum_offset
+                       )
+{
+    const int3 volDims = volDims4.xyz;
+    const int3 volResolution = volResolution4.xyz;
+
+    int x = get_global_id(0);
+    int y = get_global_id(1);
+    int z = get_global_id(2);
+
+    if(x >= volResolution.x || y >= volResolution.y || z >= volResolution.z)
+        return;
+
+    const int gx = get_group_id(0);
+    const int gy = get_group_id(1);
+    const int gz = get_group_id(2);
+    const int gw = get_num_groups(0);
+    const int gh = get_num_groups(1);
+    const int gd = get_num_groups(2);
+
+    const int lx = get_local_id(0);
+    const int ly = get_local_id(1);
+    const int lz = get_local_id(2);
+    const int lw = get_local_size(0);
+    const int lh = get_local_size(1);
+    const int ld = get_local_size(2);
+    const int lsz = lw*lh*ld;
+    const int lid = lx + ly*lw + lz*lw*lh;
+
+    // coordinate-independent constants
+
+    __global const float* vp = volPoseptr;
+    const float3 volRot0  = vload4(0, vp).xyz;
+    const float3 volRot1  = vload4(1, vp).xyz;
+    const float3 volRot2  = vload4(2, vp).xyz;
+    const float3 volTrans = (float3)(vp[3], vp[7], vp[11]);
+
+    // kernel itself
+    int3 ip = (int3)(x, y, z);
+    int3 cmul = ip*volDims;
+    int idx = cmul.x + cmul.y + cmul.z;
+    float2 voxel = volumeptr[idx].s0;
+    float value  = voxel.s0;
+    int weight = as_int(voxel.s1);
+
+    int npts = 0;
+
+    // if voxel is not empty
+    if(weight != 0 && value != 1.f)
+    {
+        float3 V = (((float3)(x, y, z)) + 0.5f)*voxelSize;
+
+        #pragma unroll
+        for(int i = 0; i < 3; i++)
+        {
+            struct CoordReturn cr;
+            cr = coord(x, y, z, V, value, i,
+                       volumeptr, volResolution, volDims,
+                       neighbourCoords,
+                       voxelSize, voxelSizeInv,
+                       volRot0, volRot1, volRot2, volTrans,
+                       false, true);
+            if(cr.result)
+            {
+                npts++;
+            }
+        }
+    }
+
+    // reducebuf keeps counters for each thread
+    reducebuf[lid] = npts;
+
+    // reduce counter to local mem
+
+    // maxStep = ctz(lsz), ctz isn't supported on CUDA devices
+    const int c = clz(lsz & -lsz);
+    const int maxStep = c ? 31 - c : c;
+    for(int nstep = 1; nstep <= maxStep; nstep++)
+    {
+        if(lid % (1 << nstep) == 0)
+        {
+            int rto   = lid;
+            int rfrom = lid + (1 << (nstep-1));
+            reducebuf[rto] += reducebuf[rfrom];
+        }
+        barrier(CLK_LOCAL_MEM_FENCE);
+    }
+
+    if(lid == 0)
+    {
+        __global int* groupedRow = (__global int*)(groupedSumptr +
+                                                   groupedSum_offset +
+                                                   gy*groupedSum_step +
+                                                   gz*groupedSum_slicestep);
+
+        groupedRow[gx] = reducebuf[0];
+    }
+}
+
+
+__kernel void fillPtsNrm(__global const float2* volumeptr,
+                         const int4 volResolution4,
+                         const int4 volDims4,
+                         const int8 neighbourCoords,
+                         __global const float * volPoseptr,
+                         const float voxelSize,
+                         const float voxelSizeInv,
+                         const int needNormals,
+                         __local float* localbuf,
+                         volatile __global int* atomicCtr,
+                         __global const char* groupedSumptr,
+                         int groupedSum_slicestep,
+                         int groupedSum_step, int groupedSum_offset,
+                         __global char * pointsptr,
+                         int points_step, int points_offset,
+                         __global char * normalsptr,
+                         int normals_step, int normals_offset
+                         )
+{
+    const int3 volDims = volDims4.xyz;
+    const int3 volResolution = volResolution4.xyz;
+
+    int x = get_global_id(0);
+    int y = get_global_id(1);
+    int z = get_global_id(2);
+
+    if(x >= volResolution.x || y >= volResolution.y || z >= volResolution.z)
+        return;
+
+    const int gx = get_group_id(0);
+    const int gy = get_group_id(1);
+    const int gz = get_group_id(2);
+    const int gw = get_num_groups(0);
+    const int gh = get_num_groups(1);
+    const int gd = get_num_groups(2);
+
+    __global int* groupedRow = (__global int*)(groupedSumptr +
+                                               groupedSum_offset +
+                                               gy*groupedSum_step +
+                                               gz*groupedSum_slicestep);
+
+    // this group contains 0 pts, skip it
+    int nptsGroup = groupedRow[gx];
+    if(nptsGroup == 0)
+        return;
+
+    const int lx = get_local_id(0);
+    const int ly = get_local_id(1);
+    const int lz = get_local_id(2);
+    const int lw = get_local_size(0);
+    const int lh = get_local_size(1);
+    const int ld = get_local_size(2);
+    const int lsz = lw*lh*ld;
+    const int lid = lx + ly*lw + lz*lw*lh;
+
+    // coordinate-independent constants
+
+    __global const float* vp = volPoseptr;
+    const float3 volRot0  = vload4(0, vp).xyz;
+    const float3 volRot1  = vload4(1, vp).xyz;
+    const float3 volRot2  = vload4(2, vp).xyz;
+    const float3 volTrans = (float3)(vp[3], vp[7], vp[11]);
+
+    // kernel itself
+    int3 ip = (int3)(x, y, z);
+    int3 cmul = ip*volDims;
+    int idx = cmul.x + cmul.y + cmul.z;
+    float2 voxel = volumeptr[idx].s0;
+    float value  = voxel.s0;
+    int weight = as_int(voxel.s1);
+
+    int npts = 0;
+    float3 parr[3], narr[3];
+
+    // if voxel is not empty
+    if(weight != 0 && value != 1.f)
+    {
+        float3 V = (((float3)(x, y, z)) + 0.5f)*voxelSize;
+
+        #pragma unroll
+        for(int i = 0; i < 3; i++)
+        {
+            struct CoordReturn cr;
+            cr = coord(x, y, z, V, value, i,
+                       volumeptr, volResolution, volDims,
+                       neighbourCoords,
+                       voxelSize, voxelSizeInv,
+                       volRot0, volRot1, volRot2, volTrans,
+                       needNormals, false);
+
+            if(cr.result)
+            {
+                parr[npts] = cr.point;
+                narr[npts] = cr.normal;
+                npts++;
+            }
+        }
+    }
+
+    // 4 floats per point or normal
+    const int elemStep = 4;
+
+    // push all pts (and nrm) from private array to local mem
+    __local int localCtr;
+    if(lid == 0)
+        localCtr = 0;
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    int privateCtr = atomic_add(&localCtr, npts);
+    barrier(CLK_LOCAL_MEM_FENCE);
+
+    for(int i = 0; i < npts; i++)
+    {
+        __local float* addr = localbuf + (privateCtr+i)*elemStep;
+        vstore4((float4)(parr[i], 0), 0, addr);
+    }
+
+    __local float* normAddr = localbuf + localCtr*elemStep;
+    if(needNormals)
+    {
+        for(int i = 0; i < npts; i++)
+        {
+            __local float* addr = normAddr + (privateCtr+i)*elemStep;
+            vstore4((float4)(narr[i], 0), 0, addr);
+        }
+    }
+
+    // debugging purposes
+    if(lid == 0)
+    {
+        if(localCtr != nptsGroup)
+        {
+            printf("!!! fetchPointsNormals result may be incorrect, npts != localCtr at %3d %3d %3d: %3d vs %3d\n",
+                   gx, gy, gz, localCtr, nptsGroup);
+        }
+    }
+
+    __local int whereToWrite;
+    if(lid == 0)
+        whereToWrite = atomic_add(atomicCtr, localCtr);
+    barrier(CLK_GLOBAL_MEM_FENCE);
+
+    // copy local buffer to global mem
+    event_t ev[2];
+    int evn = 0;
+    // points and normals are 1-column matrices
+    __global float* pts = (__global float*)(pointsptr +
+                                            points_offset +
+                                            whereToWrite*points_step);
+    ev[evn++] = async_work_group_copy(pts, localbuf, localCtr*elemStep, 0);
+
+    if(needNormals)
+    {
+        __global float* nrm = (__global float*)(normalsptr +
+                                                normals_offset +
+                                                whereToWrite*normals_step);
+        ev[evn++] = async_work_group_copy(nrm, normAddr, localCtr*elemStep, 0);
+    }
+
+    wait_group_events(evn, ev);
 }
