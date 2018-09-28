@@ -4,7 +4,4 @@
 using cv::xfeatures2d::DAISY;
 
 typedef DAISY::NormalizationType DAISY_NormalizationType;
-
-CV_PY_FROM_ENUM(DAISY::NormalizationType);
-CV_PY_TO_ENUM(DAISY::NormalizationType);
 #endif
