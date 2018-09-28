@@ -298,6 +298,8 @@ void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
 
 ///////// GPU implementation /////////
 
+#ifdef HAVE_OPENCL
+
 static bool ocl_renderPointsNormals(const UMat points, const UMat normals, UMat image, Affine3f lightPose);
 static bool ocl_makeFrameFromDepth(const UMat depth, OutputArrayOfArrays points, OutputArrayOfArrays normals,
                                    const Intr intr, int levels, float depthFactor,
@@ -339,11 +341,13 @@ bool computePointsNormalsGpu(const Intr intr, float depthFactor, const UMat& dep
     if(k.empty())
         return false;
 
-    k.args(ocl::KernelArg::WriteOnly(points),
-           ocl::KernelArg::WriteOnly(normals),
+    Vec2f fxyinv(reproj.fxinv, reproj.fyinv), cxy(reproj.cx, reproj.cy);
+
+    k.args(ocl::KernelArg::WriteOnlyNoSize(points),
+           ocl::KernelArg::WriteOnlyNoSize(normals),
            ocl::KernelArg::ReadOnly(depth),
-           reproj.fxinv, reproj.fyinv,
-           reproj.cx, reproj.cy,
+           fxyinv.val,
+           cxy.val,
            dfac);
 
     size_t globalSize[2];
@@ -387,10 +391,12 @@ bool customBilateralFilterGpu(const UMat src /* udepth */, UMat& dst /* smooth *
 {
     CV_TRACE_FUNCTION();
 
-    CV_Assert(src.size().area() > 0);
+    Size frameSize = src.size();
+
+    CV_Assert(frameSize.area() > 0);
     CV_Assert(src.type() == DEPTH_TYPE);
 
-    dst.create(src.size(), DEPTH_TYPE);
+    dst.create(frameSize, DEPTH_TYPE);
 
     cv::String errorStr;
     cv::String name = "customBilateral";
@@ -402,8 +408,9 @@ bool customBilateralFilterGpu(const UMat src /* udepth */, UMat& dst /* smooth *
     if(k.empty())
         return false;
 
-    k.args(ocl::KernelArg::ReadOnly(src),
-           ocl::KernelArg::WriteOnly(dst),
+    k.args(ocl::KernelArg::ReadOnlyNoSize(src),
+           ocl::KernelArg::WriteOnlyNoSize(dst),
+           frameSize,
            kernelSize,
            0.5f / (sigmaSpatial * sigmaSpatial),
            0.5f / (sigmaDepth * sigmaDepth));
@@ -430,10 +437,13 @@ bool pyrDownPointsNormalsGpu(const UMat p, const UMat n, UMat &pdown, UMat &ndow
     if(k.empty())
         return false;
 
-    k.args(ocl::KernelArg::ReadOnly(p),
-           ocl::KernelArg::ReadOnly(n),
-           ocl::KernelArg::WriteOnly(pdown),
-           ocl::KernelArg::WriteOnly(ndown));
+    Size downSize = pdown.size();
+
+    k.args(ocl::KernelArg::ReadOnlyNoSize(p),
+           ocl::KernelArg::ReadOnlyNoSize(n),
+           ocl::KernelArg::WriteOnlyNoSize(pdown),
+           ocl::KernelArg::WriteOnlyNoSize(ndown),
+           downSize);
 
     size_t globalSize[2];
     globalSize[0] = (size_t)pdown.cols;
@@ -461,10 +471,12 @@ static bool ocl_renderPointsNormals(const UMat points, const UMat normals,
     Vec4f lightPt(lightPose.translation()[0],
                   lightPose.translation()[1],
                   lightPose.translation()[2]);
+    Size frameSize = points.size();
 
-    k.args(ocl::KernelArg::ReadOnly(points),
-           ocl::KernelArg::ReadOnly(normals),
-           ocl::KernelArg::WriteOnly(img),
+    k.args(ocl::KernelArg::ReadOnlyNoSize(points),
+           ocl::KernelArg::ReadOnlyNoSize(normals),
+           ocl::KernelArg::WriteOnlyNoSize(img),
+           frameSize,
            lightPt.val);
 
     size_t globalSize[2];
@@ -472,33 +484,6 @@ static bool ocl_renderPointsNormals(const UMat points, const UMat normals,
     globalSize[1] = (size_t)points.rows;
 
     return k.run(2, globalSize, NULL, true);
-}
-
-
-void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray image, Affine3f lightPose)
-{
-    CV_TRACE_FUNCTION();
-
-    CV_Assert(_points.size().area() > 0);
-    CV_Assert(_points.size() == _normals.size());
-
-    Size sz = _points.size();
-    image.create(sz, CV_8UC4);
-
-    CV_OCL_RUN(_points.isUMat() && _normals.isUMat() && image.isUMat(),
-               ocl_renderPointsNormals(_points.getUMat(),
-                                       _normals.getUMat(),
-                                       image.getUMat(), lightPose))
-
-    Points  points  = _points.getMat();
-    Normals normals = _normals.getMat();
-
-    Mat_<Vec4b> img = image.getMat();
-
-    RenderInvoker ri(points, normals, img, lightPose, sz);
-    Range range(0, sz.height);
-    const int nstripes = -1;
-    parallel_for_(range, ri, nstripes);
 }
 
 
@@ -543,6 +528,67 @@ static bool ocl_makeFrameFromDepth(const UMat depth, OutputArrayOfArrays points,
     }
 
     return true;
+}
+
+
+static bool ocl_buildPyramidPointsNormals(const UMat points, const UMat normals,
+                                          OutputArrayOfArrays pyrPoints, OutputArrayOfArrays pyrNormals,
+                                          int levels)
+{
+    CV_TRACE_FUNCTION();
+
+    pyrPoints .create(levels, 1, POINT_TYPE);
+    pyrNormals.create(levels, 1, POINT_TYPE);
+
+    pyrPoints .getUMatRef(0) = points;
+    pyrNormals.getUMatRef(0) = normals;
+
+    Size sz = points.size();
+    for(int i = 1; i < levels; i++)
+    {
+        UMat p1 = pyrPoints .getUMat(i-1);
+        UMat n1 = pyrNormals.getUMat(i-1);
+
+        sz.width /= 2; sz.height /= 2;
+        UMat& p0 = pyrPoints .getUMatRef(i);
+        UMat& n0 = pyrNormals.getUMatRef(i);
+        p0.create(sz, POINT_TYPE);
+        n0.create(sz, POINT_TYPE);
+
+        if(!pyrDownPointsNormalsGpu(p1, n1, p0, n0))
+            return false;
+    }
+
+    return true;
+}
+
+#endif
+
+
+void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray image, Affine3f lightPose)
+{
+    CV_TRACE_FUNCTION();
+
+    CV_Assert(_points.size().area() > 0);
+    CV_Assert(_points.size() == _normals.size());
+
+    Size sz = _points.size();
+    image.create(sz, CV_8UC4);
+
+    CV_OCL_RUN(_points.isUMat() && _normals.isUMat() && image.isUMat(),
+               ocl_renderPointsNormals(_points.getUMat(),
+                                       _normals.getUMat(),
+                                       image.getUMat(), lightPose))
+
+    Points  points  = _points.getMat();
+    Normals normals = _normals.getMat();
+
+    Mat_<Vec4b> img = image.getMat();
+
+    RenderInvoker ri(points, normals, img, lightPose, sz);
+    Range range(0, sz.height);
+    const int nstripes = -1;
+    parallel_for_(range, ri, nstripes);
 }
 
 
@@ -596,38 +642,6 @@ void makeFrameFromDepth(InputArray _depth,
             scaled = pyrDownBilateral(scaled, sigmaDepth*depthFactor);
         }
     }
-}
-
-
-static bool ocl_buildPyramidPointsNormals(const UMat points, const UMat normals,
-                                          OutputArrayOfArrays pyrPoints, OutputArrayOfArrays pyrNormals,
-                                          int levels)
-{
-    CV_TRACE_FUNCTION();
-
-    pyrPoints .create(levels, 1, POINT_TYPE);
-    pyrNormals.create(levels, 1, POINT_TYPE);
-
-    pyrPoints .getUMatRef(0) = points;
-    pyrNormals.getUMatRef(0) = normals;
-
-    Size sz = points.size();
-    for(int i = 1; i < levels; i++)
-    {
-        UMat p1 = pyrPoints .getUMat(i-1);
-        UMat n1 = pyrNormals.getUMat(i-1);
-
-        sz.width /= 2; sz.height /= 2;
-        UMat& p0 = pyrPoints .getUMatRef(i);
-        UMat& n0 = pyrNormals.getUMatRef(i);
-        p0.create(sz, POINT_TYPE);
-        n0.create(sz, POINT_TYPE);
-
-        if(!pyrDownPointsNormalsGpu(p1, n1, p0, n0))
-            return false;
-    }
-
-    return true;
 }
 
 

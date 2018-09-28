@@ -14,15 +14,13 @@ typedef float4 ptype;
 
 __kernel void computePointsNormals(__global char * pointsptr,
                                    int points_step, int points_offset,
-                                   int points_rows, int points_cols,
                                    __global char * normalsptr,
                                    int normals_step, int normals_offset,
-                                   int normals_rows, int normals_cols,
                                    __global const char * depthptr,
                                    int depth_step, int depth_offset,
                                    int depth_rows, int depth_cols,
-                                   const float fxinv, const float fyinv,
-                                   const float cx, const float cy,
+                                   const float2 fxyinv,
+                                   const float2 cxy,
                                    const float dfac
                                     )
 {
@@ -31,9 +29,6 @@ __kernel void computePointsNormals(__global char * pointsptr,
 
     if(x >= depth_cols || y >= depth_rows)
         return;
-
-    const float2 fxyinv = (float2)(fxinv, fyinv);
-    const float2 cxy    = (float2)(cx, cy);
 
     __global const float* row0 = (__global const float*)(depthptr + depth_offset +
                                                          (y+0)*depth_step);
@@ -127,10 +122,9 @@ __kernel void pyrDownBilateral(__global const char * depthptr,
 
 __kernel void customBilateral(__global const char * srcptr,
                               int src_step, int src_offset,
-                              int src_rows, int src_cols,
                               __global char * dstptr,
                               int dst_step, int dst_offset,
-                              int dst_rows, int dst_cols,
+                              const int2 frameSize,
                               const int kernelSize,
                               const float sigma_spatial2_inv_half,
                               const float sigma_depth2_inv_half
@@ -139,15 +133,15 @@ __kernel void customBilateral(__global const char * srcptr,
     int x = get_global_id(0);
     int y = get_global_id(1);
 
-    if(x >= src_cols || y >= src_rows)
+    if(x >= frameSize.x || y >= frameSize.y)
         return;
 
     __global const float* srcCenterRow = (__global const float*)(srcptr + src_offset +
                                                                  y*src_step);
     float value = srcCenterRow[x];
 
-    int tx = min (x - kernelSize / 2 + kernelSize, src_cols - 1);
-    int ty = min (y - kernelSize / 2 + kernelSize, src_rows - 1);
+    int tx = min (x - kernelSize / 2 + kernelSize, frameSize.x - 1);
+    int ty = min (y - kernelSize / 2 + kernelSize, frameSize.y - 1);
 
     float sum1 = 0;
     float sum2 = 0;
@@ -178,22 +172,19 @@ __kernel void customBilateral(__global const char * srcptr,
 
 __kernel void pyrDownPointsNormals(__global const char * pptr,
                                    int p_step, int p_offset,
-                                   int p_rows, int p_cols,
                                    __global const char * nptr,
                                    int n_step, int n_offset,
-                                   int n_rows, int n_cols,
                                    __global char * pdownptr,
                                    int pdown_step, int pdown_offset,
-                                   int pdown_rows, int pdown_cols,
                                    __global char * ndownptr,
                                    int ndown_step, int ndown_offset,
-                                   int ndown_rows, int ndown_cols
+                                   const int2 downSize
                                    )
 {
     int x = get_global_id(0);
     int y = get_global_id(1);
 
-    if(x >= pdown_cols || y >= pdown_rows)
+    if(x >= downSize.x || y >= downSize.y)
         return;
 
     float3 point = nan((uint)0), normal = nan((uint)0);
@@ -242,20 +233,18 @@ float specPow20(float x)
 
 __kernel void render(__global const char * pointsptr,
                      int points_step, int points_offset,
-                     int points_rows, int points_cols,
                      __global const char * normalsptr,
                      int normals_step, int normals_offset,
-                     int normals_rows, int normals_cols,
                      __global char * imgptr,
                      int img_step, int img_offset,
-                     int img_rows, int img_cols,
+                     const int2 frameSize,
                      const float4 lightPt
                     )
 {
     int x = get_global_id(0);
     int y = get_global_id(1);
 
-    if(x >= img_cols || y >= img_rows)
+    if(x >= frameSize.x || y >= frameSize.y)
         return;
 
     __global const ptype* ptsRow = (__global const ptype*)(pointsptr  + points_offset  + y*points_step  + x*sizeof(ptype));
