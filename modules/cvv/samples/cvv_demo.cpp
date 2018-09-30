@@ -28,13 +28,6 @@ template<class T> std::string toString(const T& p_arg)
 }
 
 
-void
-usage()
-{
-  printf("usage: cvv_demo [-r WxH]\n");
-  printf("-h       print this help\n");
-  printf("-r WxH   change resolution to width W and height H\n");
-}
 
 
 int
@@ -44,35 +37,29 @@ main(int argc, char** argv)
 
   // parser keys
   const char *keys =
-      "{ help h usage ? |    | show this message }"
-      "{ resolution r   |0x0| resolution to width and height in the format WxH }";
+      "{ help h usage ?  |   | show this message }"
+      "{ width W         |  0| camera resolution width. leave at 0 to use defaults }"
+      "{ height H        |  0| camera resolution height. leave at 0 to use defaults }";
+
   CommandLineParser parser(argc, argv, keys);
-  string res(parser.get<string>("resolution"));
   if (parser.has("help")) {
-    usage();
+    parser.printMessage();
     return 0;
   }
-  if (res != "0x0") {
-    char dummych;
-    resolution = new cv::Size();
-    if (sscanf(res.c_str(), "%d%c%d", &resolution->width, &dummych, &resolution->height) != 3) {
-      cout << res << " not a valid resolution" << endl;
-      return 1;
-    }
-  }
+  int res_w = parser.get<int>("width");
+  int res_h = parser.get<int>("height");
 
   // setup video capture
   cv::VideoCapture capture(0);
   if (!capture.isOpened()) {
     std::cout << "Could not open VideoCapture" << std::endl;
-    return 3;
+    return 1;
   }
 
-  if (resolution) {
-    printf("Setting resolution to %dx%d\n", resolution->width, resolution->height);
-    capture.set(CV_CAP_PROP_FRAME_WIDTH, resolution->width);
-    capture.set(CV_CAP_PROP_FRAME_HEIGHT, resolution->height);
-    delete resolution;
+  if (res_w>0 && res_h>0) {
+    printf("Setting resolution to %dx%d\n", res_w, res_h);
+    capture.set(CV_CAP_PROP_FRAME_WIDTH, res_w);
+    capture.set(CV_CAP_PROP_FRAME_HEIGHT, res_h);
   }
 
 
