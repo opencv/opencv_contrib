@@ -382,6 +382,57 @@ public:
         }
     }
 
+    void getCompositorTexture(const String& compname, const String& texname, OutputArray out,
+                              int mrtIndex) CV_OVERRIDE
+    {
+        CompositorManager& cm = CompositorManager::getSingleton();
+        CompositorChain* chain = cm.getCompositorChain(frameSrc->getViewport(0));
+        CV_Assert(chain && "no active compositors");
+
+        CompositorInstance* inst = chain->getCompositor(compname);
+        if(!inst)
+            CV_Error_(Error::StsBadArg, ("no active compositor named: %s", compname.c_str()));
+
+        TexturePtr tex = inst->getTextureInstance(texname, mrtIndex);
+        if(!tex)
+            CV_Error_(Error::StsBadArg, ("no texture named: %s", texname.c_str()));
+
+        PixelFormat src_type = tex->getFormat();
+        int dst_type;
+        switch(src_type)
+        {
+        case PF_BYTE_RGB:
+            dst_type = CV_8UC3;
+            break;
+        case PF_BYTE_RGBA:
+            dst_type = CV_8UC4;
+            break;
+        case PF_FLOAT32_RGB:
+            dst_type = CV_32FC3;
+            break;
+        case PF_FLOAT32_RGBA:
+            dst_type = CV_32FC4;
+            break;
+        case PF_DEPTH16:
+            dst_type = CV_16U;
+            break;
+        default:
+            CV_Error(Error::StsNotImplemented, "unsupported texture format");
+        }
+
+        out.create(tex->getHeight(), tex->getWidth(), dst_type);
+
+        Mat mat = out.getMat();
+        PixelBox pb(tex->getWidth(), tex->getHeight(), 1, src_type, mat.ptr());
+        tex->getBuffer()->blitToMemory(pb, pb);
+
+        if(CV_MAT_CN(dst_type) < 3)
+            return;
+
+        // convert to OpenCV channel order
+        cvtColor(mat, mat, CV_MAT_CN(dst_type) == 3 ? COLOR_RGB2BGR : COLOR_RGBA2BGRA);
+    }
+
     void setBackground(const Scalar& color) CV_OVERRIDE
     {
         // hide background plane

@@ -162,6 +162,16 @@ public:
     CV_WRAP virtual void getScreenshot(OutputArray frame) = 0;
 
     /**
+     * read back the texture of an active compositor
+     * @param compname name of the compositor
+     * @param texname name of the texture inside the compositor
+     * @param mrtIndex if texture is a MRT, specifies the attachment
+     * @param out the texture contents
+     */
+    CV_WRAP virtual void getCompositorTexture(const String& compname, const String& texname,
+                                              OutputArray out, int mrtIndex = 0) = 0;
+
+    /**
      * get the depth for the current frame.
      *
      * return the per pixel distance to the camera in world units
