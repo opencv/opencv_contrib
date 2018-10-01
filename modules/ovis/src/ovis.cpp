@@ -264,7 +264,6 @@ class WindowSceneImpl : public WindowScene
     Ptr<OgreBites::CameraMan> camman;
     Ptr<Rectangle2D> bgplane;
 
-    Ogre::RenderTarget* frameSrc;
     Ogre::RenderTarget* depthRTT;
 public:
     WindowSceneImpl(Ptr<Application> app, const String& _title, const Size& sz, int flags)
@@ -324,18 +323,6 @@ public:
         }
 
         rWin->addViewport(cam);
-        frameSrc = rWin;
-
-        if (flags & SCENE_RENDER_FLOAT)
-        {
-            // also render into an offscreen texture
-            // currently this draws everything twice, but we spare the float->byte conversion for display
-            TexturePtr tex = TextureManager::getSingleton().createManual(
-                title + "_rt", RESOURCEGROUP_NAME, TEX_TYPE_2D, sz.width, sz.height, 0, PF_FLOAT32_RGBA,
-                TU_RENDERTARGET);
-            frameSrc = tex->getBuffer()->getRenderTarget();
-            frameSrc->addViewport(cam);
-        }
     }
 
     void setBackground(InputArray image) CV_OVERRIDE
@@ -361,9 +348,9 @@ public:
     {
         CompositorManager& cm = CompositorManager::getSingleton();
         // this should be applied to all owned render targets
-        Ogre::RenderTarget* targets[] = {frameSrc, rWin, depthRTT};
+        Ogre::RenderTarget* targets[] = {rWin, depthRTT};
 
-        for(int j = (frameSrc == rWin); j < 3; j++) // skip frameSrc if it is the same as rWin
+        for(int j = 0; j < 2; j++)
         {
             Ogre::RenderTarget* tgt = targets[j];
             if(!tgt) continue;
@@ -386,7 +373,7 @@ public:
                               int mrtIndex) CV_OVERRIDE
     {
         CompositorManager& cm = CompositorManager::getSingleton();
-        CompositorChain* chain = cm.getCompositorChain(frameSrc->getViewport(0));
+        CompositorChain* chain = cm.getCompositorChain(rWin->getViewport(0));
         CV_Assert(chain && "no active compositors");
 
         CompositorInstance* inst = chain->getCompositor(compname);
@@ -441,8 +428,6 @@ public:
         // BGRA as uchar
         ColourValue _color = ColourValue(color[2], color[1], color[0], color[3]) / 255;
         rWin->getViewport(0)->setBackgroundColour(_color);
-        if(frameSrc != rWin)
-            frameSrc->getViewport(0)->setBackgroundColour(_color);
     }
 
     void createEntity(const String& name, const String& meshname, InputArray tvec, InputArray rot) CV_OVERRIDE
@@ -594,17 +579,14 @@ public:
 
     void getScreenshot(OutputArray frame) CV_OVERRIDE
     {
-        PixelFormat src_type = frameSrc->suggestPixelFormat();
-        int dst_type = src_type == PF_BYTE_RGB ? CV_8UC3 : CV_32FC4;
-
-        frame.create(frameSrc->getHeight(), frameSrc->getWidth(), dst_type);
+        frame.create(rWin->getHeight(), rWin->getWidth(), CV_8UC3);
 
         Mat out = frame.getMat();
-        PixelBox pb(frameSrc->getWidth(), frameSrc->getHeight(), 1, src_type, out.ptr());
-        frameSrc->copyContentsToMemory(pb, pb);
+        PixelBox pb(rWin->getWidth(), rWin->getHeight(), 1, PF_BYTE_RGB, out.ptr());
+        rWin->copyContentsToMemory(pb, pb);
 
         // convert to OpenCV channel order
-        cvtColor(out, out, dst_type == CV_8UC3 ? COLOR_RGB2BGR : COLOR_RGBA2BGRA);
+        cvtColor(out, out, COLOR_RGB2BGR);
     }
 
     void getDepth(OutputArray depth) CV_OVERRIDE
@@ -615,8 +597,8 @@ public:
             // render into an offscreen texture
             // currently this draws everything twice as OGRE lacks depth texture attachments
             TexturePtr tex = TextureManager::getSingleton().createManual(
-                title + "_Depth", RESOURCEGROUP_NAME, TEX_TYPE_2D, frameSrc->getWidth(),
-                frameSrc->getHeight(), 0, PF_DEPTH, TU_RENDERTARGET);
+                title + "_Depth", RESOURCEGROUP_NAME, TEX_TYPE_2D, rWin->getWidth(),
+                rWin->getHeight(), 0, PF_DEPTH, TU_RENDERTARGET);
             depthRTT = tex->getBuffer()->getRenderTarget();
             depthRTT->addViewport(cam);
             depthRTT->setAutoUpdated(false); // only update when requested

@@ -24,10 +24,8 @@ enum SceneSettings
     SCENE_INTERACTIVE = 2,
     /// draw coordinate system crosses for debugging
     SCENE_SHOW_CS_CROSS = 4,
-    /// @ref WindowScene::getScreenshot returns images as CV_32FC4 instead of CV_8UC3
-    SCENE_RENDER_FLOAT = 8,
     /// Apply anti-aliasing. The first window determines the setting for all windows.
-    SCENE_AA = 16
+    SCENE_AA = 8
 };
 
 enum MaterialProperty
