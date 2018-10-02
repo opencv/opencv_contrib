@@ -208,7 +208,7 @@ CV_EXPORTS_W void pow(InputArray src, double power, OutputArray dst, Stream& str
 
 @param src1 First source matrix or scalar.
 @param src2 Second source matrix or scalar.
-@param dst Destination matrix that has the same size and type as the input array(s).
+@param dst Destination matrix that has the same size as the input array(s) and type CV_8U.
 @param cmpop Flag specifying the relation between the elements to be checked:
 -   **CMP_EQ:** a(.) == b(.)
 -   **CMP_GT:** a(.) \> b(.)
@@ -415,10 +415,10 @@ CV_EXPORTS_W void cartToPolar(InputArray x, InputArray y, OutputArray magnitude,
 
 /** @brief Converts polar coordinates into Cartesian.
 
-@param magnitude Source matrix containing magnitudes ( CV_32FC1 ).
-@param angle Source matrix containing angles ( CV_32FC1 ).
-@param x Destination matrix of real components ( CV_32FC1 ).
-@param y Destination matrix of imaginary components ( CV_32FC1 ).
+@param magnitude Source matrix containing magnitudes ( CV_32FC1 or CV_64FC1 ).
+@param angle Source matrix containing angles ( same type as magnitude ).
+@param x Destination matrix of real components ( same type as magnitude ).
+@param y Destination matrix of imaginary components ( same type as magnitude ).
 @param angleInDegrees Flag that indicates angles in degrees.
 @param stream Stream for the asynchronous version.
  */
