@@ -1513,6 +1513,8 @@ public:
     float scale_model_max_area;
     float scale_lr;
     float scale_step;
+
+    float psr_threshold; //!< we lost the target, if the psr is lower than this.
   };
 
   /** @brief Constructor
