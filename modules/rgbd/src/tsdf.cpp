@@ -79,10 +79,8 @@ TSDFVolume::TSDFVolume(Point3i _res, float _voxelSize, Affine3f _pose, float _tr
     pose(_pose),
     raycastStepFactor(_raycastStepFactor)
 {
-    //TODO: check if this required or not
-    CV_Assert(_res.x % 32 == 0);
-    CV_Assert(_res.y % 32 == 0);
-    CV_Assert(_res.z % 32 == 0);
+    // Unlike original code, this should work with any volume size
+    // Not only when (x,y,z % 32) == 0
 
     volSize = Point3f(volResolution) * voxelSize;
 

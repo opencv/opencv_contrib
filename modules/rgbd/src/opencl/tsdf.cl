@@ -569,8 +569,9 @@ __kernel void scanSize(__global const float2* volumeptr,
     int y = get_global_id(1);
     int z = get_global_id(2);
 
+    bool validVoxel = true;
     if(x >= volResolution.x || y >= volResolution.y || z >= volResolution.z)
-        return;
+        validVoxel = false;
 
     const int gx = get_group_id(0);
     const int gy = get_group_id(1);
@@ -594,33 +595,35 @@ __kernel void scanSize(__global const float2* volumeptr,
     const float3 volTrans = (float3)(vp[3], vp[7], vp[11]);
 
     // kernel itself
-    int3 ip = (int3)(x, y, z);
-    int3 cmul = ip*volDims;
-    int idx = cmul.x + cmul.y + cmul.z;
-    float2 voxel = volumeptr[idx].s0;
-    float value  = voxel.s0;
-    int weight = as_int(voxel.s1);
-
     int npts = 0;
-
-    // if voxel is not empty
-    if(weight != 0 && value != 1.f)
+    if(validVoxel)
     {
-        float3 V = (((float3)(x, y, z)) + 0.5f)*voxelSize;
+        int3 ip = (int3)(x, y, z);
+        int3 cmul = ip*volDims;
+        int idx = cmul.x + cmul.y + cmul.z;
+        float2 voxel = volumeptr[idx].s0;
+        float value  = voxel.s0;
+        int weight = as_int(voxel.s1);
 
-        #pragma unroll
-        for(int i = 0; i < 3; i++)
+        // if voxel is not empty
+        if(weight != 0 && value != 1.f)
         {
-            struct CoordReturn cr;
-            cr = coord(x, y, z, V, value, i,
-                       volumeptr, volResolution, volDims,
-                       neighbourCoords,
-                       voxelSize, voxelSizeInv,
-                       volRot0, volRot1, volRot2, volTrans,
-                       false, true);
-            if(cr.result)
+            float3 V = (((float3)(x, y, z)) + 0.5f)*voxelSize;
+
+            #pragma unroll
+            for(int i = 0; i < 3; i++)
             {
-                npts++;
+                struct CoordReturn cr;
+                cr = coord(x, y, z, V, value, i,
+                           volumeptr, volResolution, volDims,
+                           neighbourCoords,
+                           voxelSize, voxelSizeInv,
+                           volRot0, volRot1, volRot2, volTrans,
+                           false, true);
+                if(cr.result)
+                {
+                    npts++;
+                }
             }
         }
     }
@@ -682,8 +685,9 @@ __kernel void fillPtsNrm(__global const float2* volumeptr,
     int y = get_global_id(1);
     int z = get_global_id(2);
 
+    bool validVoxel = true;
     if(x >= volResolution.x || y >= volResolution.y || z >= volResolution.z)
-        return;
+        validVoxel = false;
 
     const int gx = get_group_id(0);
     const int gy = get_group_id(1);
@@ -717,37 +721,39 @@ __kernel void fillPtsNrm(__global const float2* volumeptr,
     const float3 volTrans = (float3)(vp[3], vp[7], vp[11]);
 
     // kernel itself
-    int3 ip = (int3)(x, y, z);
-    int3 cmul = ip*volDims;
-    int idx = cmul.x + cmul.y + cmul.z;
-    float2 voxel = volumeptr[idx].s0;
-    float value  = voxel.s0;
-    int weight = as_int(voxel.s1);
-
     int npts = 0;
     float3 parr[3], narr[3];
-
-    // if voxel is not empty
-    if(weight != 0 && value != 1.f)
+    if(validVoxel)
     {
-        float3 V = (((float3)(x, y, z)) + 0.5f)*voxelSize;
+        int3 ip = (int3)(x, y, z);
+        int3 cmul = ip*volDims;
+        int idx = cmul.x + cmul.y + cmul.z;
+        float2 voxel = volumeptr[idx].s0;
+        float value  = voxel.s0;
+        int weight = as_int(voxel.s1);
 
-        #pragma unroll
-        for(int i = 0; i < 3; i++)
+        // if voxel is not empty
+        if(weight != 0 && value != 1.f)
         {
-            struct CoordReturn cr;
-            cr = coord(x, y, z, V, value, i,
-                       volumeptr, volResolution, volDims,
-                       neighbourCoords,
-                       voxelSize, voxelSizeInv,
-                       volRot0, volRot1, volRot2, volTrans,
-                       needNormals, false);
+            float3 V = (((float3)(x, y, z)) + 0.5f)*voxelSize;
 
-            if(cr.result)
+            #pragma unroll
+            for(int i = 0; i < 3; i++)
             {
-                parr[npts] = cr.point;
-                narr[npts] = cr.normal;
-                npts++;
+                struct CoordReturn cr;
+                cr = coord(x, y, z, V, value, i,
+                           volumeptr, volResolution, volDims,
+                           neighbourCoords,
+                           voxelSize, voxelSizeInv,
+                           volRot0, volRot1, volRot2, volTrans,
+                           needNormals, false);
+
+                if(cr.result)
+                {
+                    parr[npts] = cr.point;
+                    narr[npts] = cr.normal;
+                    npts++;
+                }
             }
         }
     }
@@ -755,13 +761,15 @@ __kernel void fillPtsNrm(__global const float2* volumeptr,
     // 4 floats per point or normal
     const int elemStep = 4;
 
-    // push all pts (and nrm) from private array to local mem
+    __local float* normAddr;
     __local int localCtr;
     if(lid == 0)
         localCtr = 0;
-    barrier(CLK_LOCAL_MEM_FENCE);
 
-    int privateCtr = atomic_add(&localCtr, npts);
+    // push all pts (and nrm) from private array to local mem
+    int privateCtr = 0;
+    barrier(CLK_LOCAL_MEM_FENCE);
+    privateCtr = atomic_add(&localCtr, npts);
     barrier(CLK_LOCAL_MEM_FENCE);
 
     for(int i = 0; i < npts; i++)
@@ -770,9 +778,10 @@ __kernel void fillPtsNrm(__global const float2* volumeptr,
         vstore4((float4)(parr[i], 0), 0, addr);
     }
 
-    __local float* normAddr = localbuf + localCtr*elemStep;
     if(needNormals)
     {
+        normAddr = localbuf + localCtr*elemStep;
+
         for(int i = 0; i < npts; i++)
         {
             __local float* addr = normAddr + (privateCtr+i)*elemStep;
@@ -790,12 +799,12 @@ __kernel void fillPtsNrm(__global const float2* volumeptr,
         }
     }
 
+    // copy local buffer to global mem
     __local int whereToWrite;
     if(lid == 0)
         whereToWrite = atomic_add(atomicCtr, localCtr);
     barrier(CLK_GLOBAL_MEM_FENCE);
 
-    // copy local buffer to global mem
     event_t ev[2];
     int evn = 0;
     // points and normals are 1-column matrices
