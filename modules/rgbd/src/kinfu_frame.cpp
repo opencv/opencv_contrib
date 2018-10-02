@@ -627,7 +627,7 @@ void makeFrameFromDepth(InputArray _depth,
     pyrPoints.create(levels, 1, POINT_TYPE);
     pyrNormals.create(levels, 1, POINT_TYPE);
     for(int i = 0; i < levels; i++)
-    {        
+    {
         pyrPoints .create(sz, POINT_TYPE, i);
         pyrNormals.create(sz, POINT_TYPE, i);
 
