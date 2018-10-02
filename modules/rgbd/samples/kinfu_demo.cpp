@@ -361,7 +361,7 @@ int main(int argc, char **argv)
                 window.showWidget("cloud", cloudWidget);
                 window.showWidget("normals", cloudNormals);
 
-                Vec3d volSize = kf->getParams().voxelSize*kf->getParams().volumeDims;
+                Vec3d volSize = kf->getParams().voxelSize*Vec3d(kf->getParams().volumeDims);
                 window.showWidget("cube", viz::WCube(Vec3d::all(0),
                                                      volSize),
                                   kf->getParams().volumePose);
@@ -434,7 +434,7 @@ int main(int argc, char **argv)
 
         imshow("render", rendered);
 
-        int c = waitKey(100);
+        int c = waitKey(1);
         switch (c)
         {
         case 'r':
