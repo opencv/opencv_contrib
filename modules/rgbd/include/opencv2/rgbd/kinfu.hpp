@@ -124,6 +124,11 @@ struct CV_EXPORTS_W Params
   To enable or disable it explicitly use cv::setUseOptimized() or cv::ocl::setUseOpenCL().
 
   This implementation is based on [kinfu-remake](https://github.com/Nerei/kinfu_remake).
+
+  Note that the KinectFusion algorithm was patented and its use may be restricted by
+  the list of patents mentioned in README.md file in this module directory.
+
+  That's why you need to set the OPENCV_ENABLE_NONFREE option in CMake to use KinectFusion.
 */
 class CV_EXPORTS_W KinFu
 {

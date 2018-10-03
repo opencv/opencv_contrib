@@ -316,6 +316,8 @@ void KinFuImpl<T>::getNormals(InputArray points, OutputArray normals) const
 
 // importing class
 
+#ifdef OPENCV_ENABLE_NONFREE
+
 Ptr<KinFu> KinFu::create(const Ptr<Params>& params)
 {
 #ifdef HAVE_OPENCL
@@ -324,6 +326,15 @@ Ptr<KinFu> KinFu::create(const Ptr<Params>& params)
 #endif
     return makePtr< KinFuImpl<Mat> >(*params);
 }
+
+#else
+Ptr<KinFu> KinFu::create(const Ptr<Params>& /*params*/)
+{
+    CV_Error(Error::StsNotImplemented,
+             "This algorithm is patented and is excluded in this configuration; "
+             "Set OPENCV_ENABLE_NONFREE CMake option and rebuild the library");
+}
+#endif
 
 KinFu::~KinFu() {}
 

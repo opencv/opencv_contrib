@@ -15,3 +15,5 @@ Note that the KinectFusion algorithm was patented and its use may be restricted 
 * _US8401225B2_  Moving object segmentation using depth images
 
 Since OpenCV's license imposes different restrictions on usage please consult a legal before using this algorithm any way.
+
+That's why you need to set the OPENCV_ENABLE_NONFREE option in CMake to use KinectFusion.
