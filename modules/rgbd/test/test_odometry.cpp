@@ -238,7 +238,7 @@ void CV_OdometryTest::run(int)
     // better_1time_count - count of poses which error is less than ground thrush pose,
     // better_5times_count - count of poses which error is 5 times less than ground thrush pose.
     int iterCount = 100;
-    int better_1time_count = 0; 
+    int better_1time_count = 0;
     int better_5times_count = 0;
     for(int iter = 0; iter < iterCount; iter++)
     {

@@ -235,7 +235,7 @@ struct IntegrateInvoker : ParallelLoopBody
             {
                 Voxel* volDataY = volDataX + y*volume.volDims[1];
                 // optimization of camSpace transformation (vector addition instead of matmul at each z)
-                Point3f basePt = vol2cam*(Point3f(x, y, 0)*volume.voxelSize);
+                Point3f basePt = vol2cam*(Point3f((float)x, (float)y, 0)*volume.voxelSize);
                 v_float32x4 camSpacePt(basePt.x, basePt.y, basePt.z, 0);
 
                 int startZ, endZ;
@@ -556,9 +556,9 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f _p) const
 inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
 {
     if(v_check_any((p < v_float32x4(1.f, 1.f, 1.f, 0.f)) +
-                   (p >= v_float32x4(volResolution.x-2,
-                                     volResolution.y-2,
-                                     volResolution.z-2, 1.f))
+                   (p >= v_float32x4((float)(volResolution.x-2),
+                                     (float)(volResolution.y-2),
+                                     (float)(volResolution.z-2), 1.f))
                    ))
         return nanv;
 
