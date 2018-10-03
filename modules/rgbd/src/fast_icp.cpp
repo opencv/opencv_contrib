@@ -580,6 +580,8 @@ void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& ne
                          CV_32F);
     groupedSumGpu.setTo(0);
 
+    // TODO: optimization possible:
+    // samplers instead of oldPts/oldNrm (mask needed)
     k.args(ocl::KernelArg::ReadOnlyNoSize(oldPts),
            ocl::KernelArg::ReadOnlyNoSize(oldNrm),
            oldSize,

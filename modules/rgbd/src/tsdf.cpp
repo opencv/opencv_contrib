@@ -11,37 +11,20 @@ namespace cv {
 
 namespace kinfu {
 
-typedef float volumeType; // can be float16
+// TODO: Optimization possible:
+// * volumeType can be FP16
+// * weight can be int16
+typedef float volumeType;
 struct Voxel
 {
     volumeType v;
     int weight;
 };
-
-}
-
-template<> class DataType<kinfu::Voxel>
-{
-public:
-    typedef kinfu::Voxel       value_type;
-    typedef value_type  work_type;
-    typedef value_type  channel_type;
-    typedef value_type  vec_type;
-    enum { generic_type = 0,
-           depth        = CV_64F,
-           channels     = 1,
-           fmt          = (int)'v',
-           type         = CV_MAKETYPE(depth, channels)
-         };
-};
-
-namespace kinfu {
+typedef Vec<uchar, sizeof(Voxel)> VecT;
 
 
 class TSDFVolumeCPU : public TSDFVolume
 {
-    typedef cv::Mat_<Voxel> Volume;
-
 public:
     // dimension in voxels, size in meters
     TSDFVolumeCPU(Point3i _res, float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
@@ -66,7 +49,8 @@ public:
 
     // See zFirstMemOrder arg of parent class constructor
     // for the array layout info
-    Volume volume;
+    // Consist of Voxel elements
+    Mat volume;
 };
 
 
@@ -122,25 +106,21 @@ TSDFVolumeCPU::TSDFVolumeCPU(Point3i _res, float _voxelSize, cv::Affine3f _pose,
                              float _raycastStepFactor, bool zFirstMemOrder) :
     TSDFVolume(_res, _voxelSize, _pose, _truncDist, _maxWeight, _raycastStepFactor, zFirstMemOrder)
 {
-    volume = Volume(1, volResolution.x * volResolution.y * volResolution.z);
+    volume = Mat(1, volResolution.x * volResolution.y * volResolution.z, rawType<Voxel>());
 
     reset();
 }
-
-struct FillZero
-{
-    void operator ()(Voxel &v, const int* /*position*/) const
-    {
-        v.v = 0; v.weight = 0;
-    }
-};
 
 // zero volume, leave rest params the same
 void TSDFVolumeCPU::reset()
 {
     CV_TRACE_FUNCTION();
 
-    volume.forEach(FillZero());
+    volume.forEach<VecT>([](VecT& vv, const int* /* position */)
+    {
+        Voxel& v = reinterpret_cast<Voxel&>(vv);
+        v.v = 0; v.weight = 0;
+    });
 }
 
 // SIMD version of that code is manually inlined
@@ -233,7 +213,7 @@ struct IntegrateInvoker : ParallelLoopBody
         truncDistInv(1.f/_volume.truncDist),
         dfac(1.f/depthFactor)
     {
-        volDataStart = volume.volume[0];
+        volDataStart = volume.volume.ptr<Voxel>();
     }
 
 #if USE_INTRINSICS
@@ -505,7 +485,7 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(const v_float32x4& p) const
     float tz = t.get0();
 
     int xdim = volDims[0], ydim = volDims[1], zdim = volDims[2];
-    const Voxel* volData = volume[0];
+    const Voxel* volData = volume.ptr<Voxel>();
 
     int ix = ip.get0(); ip = v_rotate_right<1>(ip);
     int iy = ip.get0(); ip = v_rotate_right<1>(ip);
@@ -544,7 +524,7 @@ inline volumeType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
     float tz = p.z - iz;
 
     int coordBase = ix*xdim + iy*ydim + iz*zdim;
-    const Voxel* volData = volume[0];
+    const Voxel* volData = volume.ptr<Voxel>();
 
     volumeType vx[8];
     for(int i = 0; i < 8; i++)
@@ -591,7 +571,7 @@ inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
     float tz = t.get0();
 
     const int xdim = volDims[0], ydim = volDims[1], zdim = volDims[2];
-    const Voxel* volData = volume[0];
+    const Voxel* volData = volume.ptr<Voxel>();
 
     int ix = ip.get0(); ip = v_rotate_right<1>(ip);
     int iy = ip.get0(); ip = v_rotate_right<1>(ip);
@@ -633,7 +613,7 @@ inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
 inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 {
     const int xdim = volDims[0], ydim = volDims[1], zdim = volDims[2];
-    const Voxel* volData = volume[0];
+    const Voxel* volData = volume.ptr<Voxel>();
 
     if(p.x < 1 || p.x >= volResolution.x - 2 ||
        p.y < 1 || p.y >= volResolution.y - 2 ||
@@ -791,7 +771,7 @@ struct RaycastInvoker : ParallelLoopBody
                         int iz = ip.get0();
                         int coord = ix*xdim + iy*ydim + iz*zdim;
 
-                        fnext = volume.volume(coord).v;
+                        fnext = volume.volume.at<Voxel>(coord).v;
                         if(fnext != f)
                         {
                             fnext = volume.interpolateVoxel(next);
@@ -900,7 +880,7 @@ struct RaycastInvoker : ParallelLoopBody
                         int ix = cvRound(next.x);
                         int iy = cvRound(next.y);
                         int iz = cvRound(next.z);
-                        fnext = volume.volume(ix*xdim + iy*ydim + iz*zdim).v;
+                        fnext = volume.volume.at<Voxel>(ix*xdim + iy*ydim + iz*zdim).v;
                         if(fnext != f)
                         {
                             fnext = volume.interpolateVoxel(next);
@@ -995,7 +975,7 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
         nVecs(_nVecs),
         needNormals(_needNormals)
     {
-        volDataStart = vol.volume[0];
+        volDataStart = vol.volume.ptr<Voxel>();
     }
 
     inline void coord(std::vector<ptype>& points, std::vector<ptype>& normals,
@@ -1188,6 +1168,7 @@ public:
     // See zFirstMemOrder arg of parent class constructor
     // for the array layout info
     // Array elem is CV_32FC2, read as (float, int)
+    // TODO: optimization possible to (fp16, int16), see Voxel definition
     UMat volume;
 };
 
@@ -1234,6 +1215,8 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
     Vec4i volResGpu(volResolution.x, volResolution.y, volResolution.z);
     Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
 
+    // TODO: optimization possible
+    // Use sampler for depth (mask needed)
     k.args(ocl::KernelArg::ReadOnly(depth),
            ocl::KernelArg::PtrReadWrite(volume),
            ocl::KernelArg::Constant(vol2cam.matrix.val,
