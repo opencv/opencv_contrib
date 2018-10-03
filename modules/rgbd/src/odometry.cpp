@@ -1520,10 +1520,11 @@ bool FastICPOdometry::computeImpl(const Ptr<OdometryFrame>& srcFrame,
                                          angleThreshold,
                                          maxDistDiff);
 
+    // KinFu's ICP calculates transformation from new frame to old one (src to dst)
     Affine3f transform;
     bool result = icp->estimateTransform(transform,
-                                         srcFrame->pyramidCloud, srcFrame->pyramidNormals,
-                                         dstFrame->pyramidCloud, dstFrame->pyramidNormals);
+                                         dstFrame->pyramidCloud, dstFrame->pyramidNormals,
+                                         srcFrame->pyramidCloud, srcFrame->pyramidNormals);
 
     Rt.create(Size(4, 4), CV_64FC1);
     Mat(Matx44d(transform.matrix)).copyTo(Rt.getMat());
