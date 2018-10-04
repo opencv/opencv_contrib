@@ -177,7 +177,7 @@ Class' interface is mainly based on the ones of classical detectors and extracto
 Feature2d's @ref features2d_main and @ref features2d_match. Retrieved information about lines is
 stored in line_descriptor::KeyLine objects.
  */
-class CV_EXPORTS BinaryDescriptor : public Algorithm
+class CV_EXPORTS_W BinaryDescriptor : public Algorithm
 {
 
  public:
@@ -221,7 +221,7 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
   /** @brief Create a BinaryDescriptor object with default parameters (or with the ones provided)
   and return a smart pointer to it
      */
-  static Ptr<BinaryDescriptor> createBinaryDescriptor();
+  CV_WRAP static Ptr<BinaryDescriptor> createBinaryDescriptor();
   static Ptr<BinaryDescriptor> createBinaryDescriptor( Params parameters );
 
   /** destructor */
@@ -229,25 +229,25 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
 
   /** @brief Get current number of octaves
   */
-  int getNumOfOctaves();/*CV_WRAP*/
+  CV_WRAP int getNumOfOctaves();
   /** @brief Set number of octaves
     @param octaves number of octaves
      */
-  void setNumOfOctaves( int octaves );/*CV_WRAP*/
+  CV_WRAP void setNumOfOctaves( int octaves );
   /** @brief Get current width of bands
     */
-  int getWidthOfBand();/*CV_WRAP*/
+  CV_WRAP int getWidthOfBand();
   /** @brief Set width of bands
     @param width width of bands
     */
-  void setWidthOfBand( int width );/*CV_WRAP*/
+  CV_WRAP void setWidthOfBand( int width );
   /** @brief Get current reduction ratio (used in Gaussian pyramids)
     */
-  int getReductionRatio();/*CV_WRAP*/
+  CV_WRAP int getReductionRatio();
   /** @brief Set reduction ratio (used in Gaussian pyramids)
     @param rRatio reduction ratio
      */
-  void setReductionRatio( int rRatio );
+  CV_WRAP void setReductionRatio( int rRatio );
 
   /** @brief Read parameters from a FileNode object and store them
 
@@ -267,7 +267,7 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
     @param keypoints vector that will store extracted lines for one or more images
     @param mask mask matrix to detect only KeyLines of interest
      */
-  void detect( const Mat& image, CV_OUT std::vector<KeyLine>& keypoints, const Mat& mask = Mat() );
+  CV_WRAP void detect( const Mat& image, CV_OUT std::vector<KeyLine>& keypoints, const Mat& mask = Mat() );
 
   /** @overload
 
@@ -285,7 +285,7 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
     @param descriptors
     @param returnFloatDescr flag (when set to true, original non-binary descriptors are returned)
      */
-  void compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors, bool returnFloatDescr = false ) const;
+  CV_WRAP void compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors, bool returnFloatDescr = false ) const;
 
   /** @overload
 
@@ -897,8 +897,7 @@ class CV_EXPORTS_W LSDDetector : public Algorithm
 public:
 
 /* constructor */
-/*CV_WRAP*/
-LSDDetector()
+CV_WRAP LSDDetector()
 {
 }
 ;
@@ -976,7 +975,7 @@ candidates \f$\mathcal{N}_i(\mathbf{q})\f$ is obtained. The union of sets
 of **q**. Then, last step of algorithm is computing the Hamming distance between **q** and each
 element in \f$\mathcal{N}(\mathbf{q})\f$, deleting the codes that are distant more that *r* from **q**.
 */
-class CV_EXPORTS BinaryDescriptorMatcher : public Algorithm
+class CV_EXPORTS_W BinaryDescriptorMatcher : public Algorithm
 {
 
 public:
@@ -988,7 +987,7 @@ or from the one internal to class
 @param matches vector to host retrieved matches
 @param mask mask to select which input descriptors must be matched to one in dataset
  */
-void match( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<DMatch>& matches, const Mat& mask = Mat() ) const;
+CV_WRAP void match( const Mat& queryDescriptors, const Mat& trainDescriptors, CV_OUT std::vector<DMatch>& matches, const Mat& mask = Mat() ) const;
 
 /** @overload
 @param queryDescriptors query descriptors
@@ -997,7 +996,7 @@ void match( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vecto
 (the *i*-th mask in vector indicates whether each input query can be matched with descriptors in
 dataset relative to *i*-th image)
 */
-void match( const Mat& queryDescriptors, std::vector<DMatch>& matches, const std::vector<Mat>& masks = std::vector<Mat>() );
+CV_WRAP_AS(matchQuery) void match( const Mat& queryDescriptors, CV_OUT std::vector<DMatch>& matches, const std::vector<Mat>& masks = std::vector<Mat>() );
 
 /** @brief For every input query descriptor, retrieve the best *k* matching ones from a dataset provided from
 user or from the one internal to class
@@ -1010,7 +1009,7 @@ user or from the one internal to class
 @param compactResult flag to obtain a compact result (if true, a vector that doesn't contain any
 matches for a given query is not inserted in final result)
  */
-void knnMatch( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<std::vector<DMatch> >& matches, int k, const Mat& mask = Mat(),
+CV_WRAP void knnMatch( const Mat& queryDescriptors, const Mat& trainDescriptors, CV_OUT std::vector<std::vector<DMatch> >& matches, int k, const Mat& mask = Mat(),
 bool compactResult = false ) const;
 
 /** @overload
@@ -1023,7 +1022,7 @@ dataset relative to *i*-th image)
 @param compactResult flag to obtain a compact result (if true, a vector that doesn't contain any
 matches for a given query is not inserted in final result)
 */
-void knnMatch( const Mat& queryDescriptors, std::vector<std::vector<DMatch> >& matches, int k, const std::vector<Mat>& masks = std::vector<Mat>(),
+CV_WRAP_AS(knnMatchQuery) void knnMatch( const Mat& queryDescriptors, std::vector<std::vector<DMatch> >& matches, int k, const std::vector<Mat>& masks = std::vector<Mat>(),
 bool compactResult = false );
 
 /** @brief For every input query descriptor, retrieve, from a dataset provided from user or from the one
@@ -1082,7 +1081,7 @@ void clear() CV_OVERRIDE;
 
 The BinaryDescriptorMatcher constructed is able to store and manage 256-bits long entries.
  */
-BinaryDescriptorMatcher();
+CV_WRAP BinaryDescriptorMatcher();
 
 /** destructor */
 ~BinaryDescriptorMatcher()
@@ -1314,9 +1313,9 @@ int descrInDS;
  -------------------------------------------------------------------------------------------- */
 
 /** struct for drawing options */
-struct CV_EXPORTS DrawLinesMatchesFlags
+struct CV_EXPORTS_W_SIMPLE DrawLinesMatchesFlags
 {
-enum
+CV_PROP_RW enum
 {
 DEFAULT = 0,  //!< Output image matrix will be created (Mat::create),
               //!< i.e. existing memory of output image may be reused.
@@ -1345,10 +1344,10 @@ NOT_DRAW_SINGLE_LINES = 2//!< Single keylines will not be drawn.
 @note If both *matchColor* and *singleLineColor* are set to their default values, function draws
 matched lines and line connecting them with same color
  */
-CV_EXPORTS void drawLineMatches( const Mat& img1, const std::vector<KeyLine>& keylines1, const Mat& img2, const std::vector<KeyLine>& keylines2,
-                                 const std::vector<DMatch>& matches1to2, Mat& outImg, const Scalar& matchColor = Scalar::all( -1 ),
-                                 const Scalar& singleLineColor = Scalar::all( -1 ), const std::vector<char>& matchesMask = std::vector<char>(),
-                                 int flags = DrawLinesMatchesFlags::DEFAULT );
+CV_EXPORTS_W void drawLineMatches( const Mat& img1, const std::vector<KeyLine>& keylines1, const Mat& img2, const std::vector<KeyLine>& keylines2,
+                                   const std::vector<DMatch>& matches1to2, CV_OUT Mat& outImg, const Scalar& matchColor = Scalar::all( -1 ),
+                                   const Scalar& singleLineColor = Scalar::all( -1 ), const std::vector<char>& matchesMask = std::vector<char>(),
+                                   int flags = DrawLinesMatchesFlags::DEFAULT );
 
 /** @brief Draws keylines.
 
@@ -1358,8 +1357,8 @@ CV_EXPORTS void drawLineMatches( const Mat& img1, const std::vector<KeyLine>& ke
 @param color color of lines to be drawn (if set to defaul value, color is chosen randomly)
 @param flags drawing flags
  */
-CV_EXPORTS void drawKeylines( const Mat& image, const std::vector<KeyLine>& keylines, Mat& outImage, const Scalar& color = Scalar::all( -1 ),
-                              int flags = DrawLinesMatchesFlags::DEFAULT );
+CV_EXPORTS_W void drawKeylines( const Mat& image, const std::vector<KeyLine>& keylines, CV_OUT Mat& outImage, const Scalar& color = Scalar::all( -1 ),
+                                int flags = DrawLinesMatchesFlags::DEFAULT );
 
 //! @}
 
