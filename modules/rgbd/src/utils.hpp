@@ -130,7 +130,7 @@ struct Intr
     float fx, fy, cx, cy;
 };
 
-inline int roundDownPow2(unsigned int x)
+inline size_t roundDownPow2(size_t x)
 {
     unsigned int shift = 0;
     while(x != 0)

@@ -1387,9 +1387,9 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
         size_t lplanes = min(memSize/elemSize, wgsLimit)/lcols/lrows;
         lplanes = roundDownPow2(lplanes);
         size_t localSize[3] = {lcols, lrows, lplanes};
-        Vec3i ngroups(divUp(globalSize[0], localSize[0]),
-                      divUp(globalSize[1], localSize[1]),
-                      divUp(globalSize[2], localSize[2]));
+        Vec3i ngroups((int)divUp(globalSize[0], (size_t)localSize[0]),
+                      (int)divUp(globalSize[1], (size_t)localSize[1]),
+                      (int)divUp(globalSize[2], (size_t)localSize[2]));
 
         const size_t counterSize = sizeof(int);
         size_t lsz = localSize[0]*localSize[1]*localSize[2]*counterSize;

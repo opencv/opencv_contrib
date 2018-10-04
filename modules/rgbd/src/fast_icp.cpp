@@ -566,8 +566,8 @@ void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& ne
     // round lrows down to 2^n
     lrows = roundDownPow2(lrows);
     size_t localSize[2] = {lcols, lrows};
-    Size ngroups(divUp(globalSize[0], localSize[0]),
-                 divUp(globalSize[1], localSize[1]));
+    Size ngroups((int)divUp(globalSize[0], (size_t)localSize[0]),
+                 (int)divUp(globalSize[1], (size_t)localSize[1]));
 
     // size of local buffer for group-wide reduce
     size_t lsz = localSize[0]*localSize[1]*ltsz;
