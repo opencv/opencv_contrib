@@ -137,7 +137,7 @@ inline size_t roundDownPow2(size_t x)
     {
         shift++; x >>= 1;
     }
-    return (1 << (shift-1));
+    return (size_t)(1 << (shift-1));
 }
 
 } // namespace kinfu
