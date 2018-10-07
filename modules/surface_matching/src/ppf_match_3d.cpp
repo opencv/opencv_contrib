@@ -126,8 +126,8 @@ PPF3DDetector::PPF3DDetector()
   angle_step = angle_step_radians;
   trained = false;
 
-  hash_table = NULL;
-  hash_nodes = NULL;
+  hash_table = nullptr;
+  hash_nodes = nullptr;
 
   setSearchParams();
 }
@@ -142,8 +142,8 @@ PPF3DDetector::PPF3DDetector(const double RelativeSamplingStep, const double Rel
   angle_step = angle_step_radians;
   trained = false;
 
-  hash_table = NULL;
-  hash_nodes = NULL;
+  hash_table = nullptr;
+  hash_nodes = nullptr;
 
   setSearchParams();
 }
@@ -220,7 +220,7 @@ void PPF3DDetector::trainModel(const Mat &PC)
 
   int size = sampled.rows*sampled.rows;
 
-  hashtable_int* hashTable = hashtableCreate(size, NULL);
+  hashtable_int* hashTable = hashtableCreate(size, nullptr);
 
   int numPPF = sampled.rows*sampled.rows;
   ppf = Mat(numPPF, PPF_LENGTH, CV_32FC1);

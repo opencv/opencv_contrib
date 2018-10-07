@@ -132,7 +132,7 @@ CUDA_TEST_P(Async, Convert)
 
 CUDA_TEST_P(Async, WrapStream)
 {
-    cudaStream_t cuda_stream = NULL;
+    cudaStream_t cuda_stream = nullptr;
     ASSERT_EQ(cudaSuccess, cudaStreamCreate(&cuda_stream));
 
     {

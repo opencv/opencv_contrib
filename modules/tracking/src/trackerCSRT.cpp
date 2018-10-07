@@ -162,7 +162,7 @@ void TrackerCSRTImpl::update_csr_filter(const Mat &image, const Mat &mask)
         for(size_t i = 0; i < new_csr_filter.size(); ++i) {
             mulSpectrums(Fftrs[i], new_csr_filter[i], current_resp, 0, true);
             idft(current_resp, current_resp, DFT_SCALE | DFT_REAL_OUTPUT);
-            minMaxLoc(current_resp, NULL, &max_val, NULL, NULL);
+            minMaxLoc(current_resp, nullptr, &max_val, nullptr, nullptr);
             sum_weights += static_cast<float>(max_val);
             new_filter_weights[i] = static_cast<float>(max_val);
         }
@@ -324,7 +324,7 @@ Mat TrackerCSRTImpl::get_location_prior(
     }
 
     double max_val;
-    cv::minMaxLoc(kernel_weight, NULL, &max_val, NULL, NULL);
+    cv::minMaxLoc(kernel_weight, nullptr, &max_val, nullptr, nullptr);
     Mat fg_prior = kernel_weight / max_val;
     fg_prior.setTo(0.5, fg_prior < 0.5);
     fg_prior.setTo(0.9, fg_prior > 0.9);
@@ -431,7 +431,7 @@ Point2f TrackerCSRTImpl::estimate_new_position(const Mat &image)
 
     double max_val;
     Point max_loc;
-    minMaxLoc(resp, NULL, &max_val, NULL, &max_loc);
+    minMaxLoc(resp, nullptr, &max_val, nullptr, &max_loc);
     if (max_val < params.psr_threshold)
         return Point2f(-1,-1); // target "lost"
 
@@ -611,7 +611,7 @@ bool TrackerCSRTImpl::initImpl(const Mat& image_, const Rect2d& boundingBox)
             mulSpectrums(Fftrs[i], csr_filter[i], current_resp, 0, true);
             idft(current_resp, current_resp, DFT_SCALE | DFT_REAL_OUTPUT);
             double max_val;
-            minMaxLoc(current_resp, NULL, &max_val, NULL , NULL);
+            minMaxLoc(current_resp, nullptr, &max_val, nullptr , nullptr);
             chw_sum += static_cast<float>(max_val);
             filter_weights[i] = static_cast<float>(max_val);
         }

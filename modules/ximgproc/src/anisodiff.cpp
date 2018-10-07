@@ -229,7 +229,7 @@ static bool ocl_anisotropicDiffusion(InputArray src_, OutputArray dst_,
                ocl::KernelArg::PtrReadOnly(uexptab), alpha);
 
         size_t globalsize[] = { (size_t)cols, (size_t)rows };
-        if(!k.run(2, globalsize, NULL, true))
+        if(!k.run(2, globalsize, nullptr, true))
             return false;
 
         std::swap(temp0, temp1);

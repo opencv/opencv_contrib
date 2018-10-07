@@ -89,7 +89,7 @@ TEST(xphoto_oil_painting, regression)
     {
         double maxVal;
         Point pIdx;
-        minMaxLoc(p, NULL, &maxVal, NULL, &pIdx);
+        minMaxLoc(p, nullptr, &maxVal, nullptr, &pIdx);
         ASSERT_LE(p.at<uchar>(pIdx), 2);
     }
     Mat orig2 = imread(folder + "exp1.png",IMREAD_GRAYSCALE);
@@ -101,7 +101,7 @@ TEST(xphoto_oil_painting, regression)
     absdiff(dst3, dst4, ddd);
     double maxVal;
     Point pIdx;
-    minMaxLoc(ddd, NULL, &maxVal, NULL, &pIdx);
+    minMaxLoc(ddd, nullptr, &maxVal, nullptr, &pIdx);
     ASSERT_LE(ddd.at<uchar>(pIdx), 2);
 }
 

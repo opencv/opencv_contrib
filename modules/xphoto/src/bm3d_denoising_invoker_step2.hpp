@@ -142,7 +142,7 @@ Bm3dDenoisingInvokerStep2<T, D, WT, TT, TC>::Bm3dDenoisingInvokerStep2(
     const int &groupSize,
     const int &slidingStep,
     const float &beta) :
-    src_(src), basic_(basic), dst_(dst), groupSize_(groupSize), slidingStep_(slidingStep), thrMap_(NULL), kaiser_(NULL)
+    src_(src), basic_(basic), dst_(dst), groupSize_(groupSize), slidingStep_(slidingStep), thrMap_(nullptr), kaiser_(nullptr)
 {
     groupSize_ = getLargestPowerOf2SmallerThan(groupSize);
     CV_Assert(groupSize > 0);

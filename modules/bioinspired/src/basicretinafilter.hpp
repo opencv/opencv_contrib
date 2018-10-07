@@ -219,7 +219,7 @@ namespace bioinspired
         * run low pass filtering with progressive parameters (models the retina log sampling of the photoreceptors and its low pass filtering effect consequence: more powerfull low pass filtering effect on the corners)
         * @param inputFrame: the input image to be processed
         * @param filterIndex: the index which specifies the parameter set that should be used for the filtering
-        * @return the processed image, the output is reachable later by using function getOutput() if outputFrame is NULL
+        * @return the processed image, the output is reachable later by using function getOutput() if outputFrame is nullptr
         */
         inline void runProgressiveFilter(std::valarray<float> &inputFrame, const unsigned int filterIndex=0) { _spatiotemporalLPfilter_Irregular(&inputFrame[0], filterIndex); }
 

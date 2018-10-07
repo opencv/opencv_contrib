@@ -76,13 +76,13 @@ hashtable_int *hashtableCreate(size_t size, size_t (*hashfunc)(uint))
 
     hashtbl=(hashtable_int*)malloc(sizeof(hashtable_int));
     if (!hashtbl)
-        return NULL;
+        return nullptr;
 
     hashtbl->nodes=(hashnode_i**)calloc(size, sizeof(struct hashnode_i*));
     if (!hashtbl->nodes)
     {
         free(hashtbl);
-        return NULL;
+        return nullptr;
     }
 
     hashtbl->size=size;
@@ -185,7 +185,7 @@ int hashtableInsertHashed(hashtable_int *hashtbl, KeyType key, void *data)
 
 int hashtableRemove(hashtable_int *hashtbl, KeyType key)
 {
-    struct hashnode_i *node, *prevnode=NULL;
+    struct hashnode_i *node, *prevnode=nullptr;
     size_t hash=hashtbl->hashfunc(key)%hashtbl->size;
 
     node=hashtbl->nodes[hash];
@@ -223,7 +223,7 @@ void *hashtableGet(hashtable_int *hashtbl, KeyType key)
         node=node->next;
     }
 
-    return NULL;
+    return nullptr;
 }
 
 hashnode_i* hashtableGetBucketHashed(hashtable_int *hashtbl, KeyType key)
@@ -349,7 +349,7 @@ hashtable_int *hashtableRead(FILE* f)
                     if (!data)
                     {
                         hashtableDestroy(hashtbl);
-                        return NULL;
+                        return nullptr;
                     }
                     status = fread(data, dataSize, 1, f);
                 }

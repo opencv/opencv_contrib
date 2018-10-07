@@ -160,7 +160,7 @@ public:
      */
     virtual void detect(InputArray img,
                         std::vector<Point>& found_locations,
-                        std::vector<double>* confidences = NULL) = 0;
+                        std::vector<double>* confidences = nullptr) = 0;
 
     /** @brief Performs object detection with a multi-scale window.
 
@@ -170,7 +170,7 @@ public:
      */
     virtual void detectMultiScale(InputArray img,
                                   std::vector<Rect>& found_locations,
-                                  std::vector<double>* confidences = NULL) = 0;
+                                  std::vector<double>* confidences = nullptr) = 0;
 
     /** @brief Returns block descriptors computed for the whole image.
 

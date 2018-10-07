@@ -96,7 +96,7 @@ static void run(int argc, char** argv) {
   printf(APP_NAME "calcOpticalFlowSF : %lf sec\n", (getTickCount() - start) / getTickFrequency());
 
   FILE* file = fopen(argv[2], "wb");
-  if (file == NULL) {
+  if (file == nullptr) {
     printf(APP_NAME "Unable to open file '%s' for writing\n", argv[2]);
     exit(1);
   }
@@ -172,7 +172,7 @@ static void eval(int argc, char** argv) {
   Mat flow1, flow2;
 
   FILE* flow_file_1 = fopen(argv[0], "rb");
-  if (flow_file_1 == NULL) {
+  if (flow_file_1 == nullptr) {
     printf(APP_NAME "Cannot open file with first flow : %s\n", argv[0]);
     exit(1);
   }
@@ -183,7 +183,7 @@ static void eval(int argc, char** argv) {
   fclose(flow_file_1);
 
   FILE* flow_file_2 = fopen(argv[1], "rb");
-  if (flow_file_2 == NULL) {
+  if (flow_file_2 == nullptr) {
     printf(APP_NAME "Cannot open file with first flow : %s\n", argv[1]);
     exit(1);
   }

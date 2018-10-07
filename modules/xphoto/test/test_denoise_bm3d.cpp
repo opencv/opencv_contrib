@@ -337,8 +337,8 @@ namespace opencv_test { namespace {
         int maxGroupSize = 64;
 
         // Precompute separate maps for transform and shrinkage verification
-        short *thrMapTransform = NULL;
-        short *thrMapShrinkage = NULL;
+        short *thrMapTransform = nullptr;
+        short *thrMapShrinkage = nullptr;
         HaarTransform<short, short>::calcThresholdMap3D(thrMapTransform, 0, templateWindowSize, maxGroupSize);
         HaarTransform<short, short>::calcThresholdMap3D(thrMapShrinkage, h, templateWindowSize, maxGroupSize);
 
@@ -383,7 +383,7 @@ namespace opencv_test { namespace {
     {
         const int numberOfElements = 8;
         const int arrSize = (numberOfElements << 1) - 1;
-        float *thrMap1D = NULL;
+        float *thrMap1D = nullptr;
         HaarTransform<short, short>::calcThresholdMap1D(thrMap1D, numberOfElements);
 
         // Expected array
@@ -403,7 +403,7 @@ namespace opencv_test { namespace {
     TEST(xphoto_DenoisingBm3dTransforms, regression_2D_generate_4x4)
     {
         const int templateWindowSize = 4;
-        float *thrMap2D = NULL;
+        float *thrMap2D = nullptr;
         HaarTransform<short, short>::calcThresholdMap2D(thrMap2D, templateWindowSize);
 
         // Expected array
@@ -423,7 +423,7 @@ namespace opencv_test { namespace {
     TEST(xphoto_DenoisingBm3dTransforms, regression_2D_generate_8x8)
     {
         const int templateWindowSize = 8;
-        float *thrMap2D = NULL;
+        float *thrMap2D = nullptr;
         HaarTransform<short, short>::calcThresholdMap2D(thrMap2D, templateWindowSize);
 
         // Expected array

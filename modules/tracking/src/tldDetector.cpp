@@ -146,7 +146,7 @@ namespace cv
 
 			size_t globSize = 1000;
 
-			if (!k.run(1, &globSize, NULL, false))
+			if (!k.run(1, &globSize, nullptr, false))
 				printf("Kernel Run Error!!!");
 
 			Mat resNCC = devNCC.getMat(ACCESS_READ);
@@ -189,7 +189,7 @@ namespace cv
 
 			size_t globSize = 2 * numOfPatches*MAX_EXAMPLES_IN_MODEL;
 
-			if (!k.run(1, &globSize, NULL, true))
+			if (!k.run(1, &globSize, nullptr, true))
 				printf("Kernel Run Error!!!");
 
 			Mat posNCC = devPosNCC.getMat(ACCESS_READ);
@@ -272,7 +272,7 @@ namespace cv
 
 			size_t globSize = 1000;
 
-			if (!k.run(1, &globSize, NULL, false))
+			if (!k.run(1, &globSize, nullptr, false))
 				printf("Kernel Run Error!!!");
 
 			Mat resNCC = devNCC.getMat(ACCESS_READ);

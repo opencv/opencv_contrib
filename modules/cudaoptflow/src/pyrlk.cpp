@@ -205,7 +205,7 @@ namespace
         };
 
         func_t func = funcs[type][cn-1];
-        CV_Assert(func != NULL && "Datatype not implemented");
+        CV_Assert(func != nullptr && "Datatype not implemented");
         for (int level = maxLevel_; level >= 0; level--)
         {
             func(prevPyr[level], nextPyr[level],
@@ -332,7 +332,7 @@ namespace
             const GpuMat prevPts = _prevPts.getGpuMat();
             GpuMat& nextPts = _nextPts.getGpuMatRef();
             GpuMat& status = _status.getGpuMatRef();
-            GpuMat* err = _err.needed() ? &(_err.getGpuMatRef()) : NULL;
+            GpuMat* err = _err.needed() ? &(_err.getGpuMatRef()) : nullptr;
             if (_prevImg.kind() == _InputArray::STD_VECTOR_CUDA_GPU_MAT && _prevImg.kind() == _InputArray::STD_VECTOR_CUDA_GPU_MAT)
             {
                 std::vector<GpuMat> prevPyr, nextPyr;

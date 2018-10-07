@@ -261,7 +261,7 @@ static void drawPlot(const cv::Mat curve, const std::string figureTitle, const i
          // apply default parameters of user interaction variables
          rescaleGrayLevelMat(inputImage, imageInputRescaled, (float)histogramClippingValue/100);
          retina->setColorSaturation(true,(float)colorSaturationFactor);
-         callBack_updateRetinaParams(1,NULL); // first call for default parameters setup
+         callBack_updateRetinaParams(1,nullptr); // first call for default parameters setup
 
          // processing loop with stop condition
          bool continueProcessing=true;

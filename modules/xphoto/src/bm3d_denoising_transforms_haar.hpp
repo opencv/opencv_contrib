@@ -132,7 +132,7 @@ public:
 
         // Allocate memory for the array
         const int arrSize = (numberOfElements << 1) - 1;
-        if (thrMap1D == NULL)
+        if (thrMap1D == nullptr)
             thrMap1D = new float[arrSize];
 
         for (int i = 1, idx = 0; i <= numberOfElements; i *= 2)
@@ -144,7 +144,7 @@ public:
     static void calcThresholdMap2D(float *&thrMap2D, const int &templateWindowSize)
     {
         // Allocate memory for the array
-        if (thrMap2D == NULL)
+        if (thrMap2D == nullptr)
             thrMap2D = new float[templateWindowSize * templateWindowSize];
 
         fillHaarCoefficients2D(thrMap2D, templateWindowSize);
@@ -161,15 +161,15 @@ public:
         const int templateWindowSizeSq = templateWindowSize * templateWindowSize;
 
         // Allocate memory for the output array
-        if (outThrMap1D == NULL)
+        if (outThrMap1D == nullptr)
             outThrMap1D = new TT[templateWindowSizeSq * ((groupSize << 1) - 1)];
 
         // Generate 1D coefficients map
-        float *thrMap1D = NULL;
+        float *thrMap1D = nullptr;
         calcThresholdMap1D(thrMap1D, groupSize);
 
         // Generate 2D coefficients map
-        float *thrMap2D = NULL;
+        float *thrMap2D = nullptr;
         calcThresholdMap2D(thrMap2D, templateWindowSize);
 
         // Generate 3D threshold map
@@ -265,8 +265,8 @@ template <typename T, typename TT>                                  \
 typename Transform<T, TT>::type HaarTransform<T, TT>::member = value;
 
 // 2D transforms
-INITIALIZE_HAAR_TRANSFORM(Forward2D, forwardTransform2D, NULL)
-INITIALIZE_HAAR_TRANSFORM(Inverse2D, inverseTransform2D, NULL)
+INITIALIZE_HAAR_TRANSFORM(Forward2D, forwardTransform2D, nullptr)
+INITIALIZE_HAAR_TRANSFORM(Inverse2D, inverseTransform2D, nullptr)
 
 // 1D transforms
 INITIALIZE_HAAR_TRANSFORM(Forward1D, forwardTransformN, HaarTransform1D::ForwardTransformN)

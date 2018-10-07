@@ -101,7 +101,7 @@ int main(int argc, const char * argv[])
         cvtColor(image(bbox[indexes[i]]), wordImg, COLOR_BGR2GRAY);
         string word;
         vector<float> confs;
-        wordSpotter->run(wordImg, word, NULL, NULL, &confs);
+        wordSpotter->run(wordImg, word, nullptr, nullptr, &confs);
 
         Rect currrentBox = bbox[indexes[i]];
         rectangle(image_copy, currrentBox, Scalar( 0, 255, 255 ), 2, LINE_AA);

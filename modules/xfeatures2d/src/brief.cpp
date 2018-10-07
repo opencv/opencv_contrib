@@ -168,7 +168,7 @@ static void pixelTests64(InputArray _sum, const std::vector<KeyPoint>& keypoints
 }
 
 BriefDescriptorExtractorImpl::BriefDescriptorExtractorImpl(int bytes, bool use_orientation) :
-    bytes_(bytes), test_fn_(NULL)
+    bytes_(bytes), test_fn_(nullptr)
 {
     use_orientation_ = use_orientation;
 

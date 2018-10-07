@@ -166,7 +166,7 @@ Ptr<Facemark> createFacemarkAAM(){
 
 FacemarkAAMImpl::FacemarkAAMImpl( const FacemarkAAM::Params &parameters ) :
     params( parameters ),
-    faceDetector(NULL), faceDetectorData(NULL)
+    faceDetector(nullptr), faceDetectorData(nullptr)
 {
     isModelTrained = false;
 }

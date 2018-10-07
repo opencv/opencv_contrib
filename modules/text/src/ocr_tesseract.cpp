@@ -62,11 +62,11 @@ void OCRTesseract::run(Mat& image, string& output_text, vector<Rect>* component_
     CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
     CV_Assert( (component_level == OCR_LEVEL_TEXTLINE) || (component_level == OCR_LEVEL_WORD) );
     output_text.clear();
-    if (component_rects != NULL)
+    if (component_rects != nullptr)
         component_rects->clear();
-    if (component_texts != NULL)
+    if (component_texts != nullptr)
         component_texts->clear();
-    if (component_confidences != NULL)
+    if (component_confidences != nullptr)
         component_confidences->clear();
 }
 
@@ -78,11 +78,11 @@ void OCRTesseract::run(Mat& image, Mat& mask, string& output_text, vector<Rect>*
     CV_Assert( mask.type() == CV_8UC1 );
     CV_Assert( (component_level == OCR_LEVEL_TEXTLINE) || (component_level == OCR_LEVEL_WORD) );
     output_text.clear();
-    if (component_rects != NULL)
+    if (component_rects != nullptr)
         component_rects->clear();
-    if (component_texts != NULL)
+    if (component_texts != nullptr)
         component_texts->clear();
-    if (component_confidences != NULL)
+    if (component_confidences != nullptr)
         component_confidences->clear();
 }
 
@@ -93,7 +93,7 @@ CV_WRAP String OCRTesseract::run(InputArray image, int min_confidence, int compo
     vector<string> component_texts;
     vector<float> component_confidences;
     Mat image_m = image.getMat();
-    run(image_m, output1, NULL, &component_texts, &component_confidences, component_level);
+    run(image_m, output1, nullptr, &component_texts, &component_confidences, component_level);
     for(unsigned int i = 0; i < component_texts.size(); i++)
     {
         // cout << "confidence: " << component_confidences[i] << " text:" << component_texts[i] << endl;
@@ -113,7 +113,7 @@ CV_WRAP String OCRTesseract::run(InputArray image, InputArray mask, int min_conf
     vector<float> component_confidences;
     Mat image_m = image.getMat();
     Mat mask_m = mask.getMat();
-    run(image_m, mask_m, output1, NULL, &component_texts, &component_confidences, component_level);
+    run(image_m, mask_m, output1, nullptr, &component_texts, &component_confidences, component_level);
     for(unsigned int i = 0; i < component_texts.size(); i++)
     {
         // cout << "confidence: " << component_confidences[i] << " text:" << component_texts[i] << endl;
@@ -141,7 +141,7 @@ public:
 
 #ifdef HAVE_TESSERACT
         const char *lang = "eng";
-        if (language != NULL)
+        if (language != nullptr)
             lang = language;
 
         if (tess.Init(datapath, lang, (tesseract::OcrEngineMode)oemode))
@@ -155,7 +155,7 @@ public:
         tesseract::PageSegMode pagesegmode = (tesseract::PageSegMode)psmode;
         tess.SetPageSegMode(pagesegmode);
 
-        if(char_whitelist != NULL)
+        if(char_whitelist != nullptr)
             tess.SetVariable("tessedit_char_whitelist", char_whitelist);
         else
             tess.SetVariable("tessedit_char_whitelist", "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
@@ -163,11 +163,11 @@ public:
         tess.SetVariable("save_best_choices", "T");
 #else
         cout << "OCRTesseract("<<oemode<<psmode<<"): Tesseract not found." << endl;
-        if (datapath != NULL)
+        if (datapath != nullptr)
             cout << "            " << datapath << endl;
-        if (language != NULL)
+        if (language != nullptr)
             cout << "            " << language << endl;
-        if (char_whitelist != NULL)
+        if (char_whitelist != nullptr)
             cout << "            " << char_whitelist << endl;
 #endif
     }
@@ -179,8 +179,8 @@ public:
 #endif
     }
 
-    void run(Mat& image, string& output, vector<Rect>* component_rects=NULL,
-             vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL,
+    void run(Mat& image, string& output, vector<Rect>* component_rects=nullptr,
+             vector<string>* component_texts=nullptr, vector<float>* component_confidences=nullptr,
              int component_level=0) CV_OVERRIDE
     {
 
@@ -200,10 +200,10 @@ public:
         char *outText;
         outText = tess.GetUTF8Text();
         output = string(outText);
-        if (outText != NULL)
+        if (outText != nullptr)
             delete [] outText;
 
-        if ( (component_rects != NULL) || (component_texts != NULL) || (component_confidences != NULL) )
+        if ( (component_rects != nullptr) || (component_texts != nullptr) || (component_confidences != nullptr) )
         {
             tesseract::ResultIterator* ri = tess.GetIterator();
             tesseract::PageIteratorLevel level = tesseract::RIL_WORD;
@@ -213,7 +213,7 @@ public:
             if (ri != 0) {
                 do {
                     const char* word = ri->GetUTF8Text(level);
-                    if (word == NULL)
+                    if (word == nullptr)
                         continue;
                     float conf = ri->Confidence(level);
                     int x1, y1, x2, y2;
@@ -247,8 +247,8 @@ public:
 #endif
     }
 
-    void run(Mat& image, Mat& mask, string& output, vector<Rect>* component_rects=NULL,
-             vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL,
+    void run(Mat& image, Mat& mask, string& output, vector<Rect>* component_rects=nullptr,
+             vector<string>* component_texts=nullptr, vector<float>* component_confidences=nullptr,
              int component_level=0) CV_OVERRIDE
     {
         CV_Assert( mask.type() == CV_8UC1 );

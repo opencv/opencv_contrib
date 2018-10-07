@@ -398,7 +398,7 @@ namespace
                     first_seq = seq->h_next;
 
                     if (seq->h_next)
-                        seq->h_next->h_prev = NULL;
+                        seq->h_next->h_prev = nullptr;
                 }
             }
             else

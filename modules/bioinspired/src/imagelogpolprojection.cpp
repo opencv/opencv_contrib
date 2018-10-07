@@ -401,7 +401,7 @@ std::valarray<float> &ImageLogPolProjection::runProjection(const std::valarray<f
     {
         // progressive filtering and storage of the result in _tempBuffer
         _spatiotemporalLPfilter_Irregular(get_data(inputFrame), &_irregularLPfilteredFrame[0]);
-        _spatiotemporalLPfilter_Irregular(&_irregularLPfilteredFrame[0], &_tempBuffer[0]); // warning, temporal issue may occur, if the temporal constant is not NULL !!!
+        _spatiotemporalLPfilter_Irregular(&_irregularLPfilteredFrame[0], &_tempBuffer[0]); // warning, temporal issue may occur, if the temporal constant is not nullptr !!!
 
         _spatiotemporalLPfilter_Irregular(get_data(inputFrame)+_filterOutput.getNBpixels(), &_irregularLPfilteredFrame[0]);
         _spatiotemporalLPfilter_Irregular(&_irregularLPfilteredFrame[0], &_tempBuffer[0]+_filterOutput.getNBpixels());

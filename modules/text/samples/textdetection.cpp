@@ -111,7 +111,7 @@ void er_show(vector<Mat> &channels, vector<vector<ERStat> > &regions)
         for (int r=0; r<(int)regions[c].size(); r++)
         {
             ERStat er = regions[c][r];
-            if (er.parent != NULL) // deprecate the root region
+            if (er.parent != nullptr) // deprecate the root region
             {
                 int newMaskVal = 255;
                 int flags = 4 + (newMaskVal << 8) + FLOODFILL_FIXED_RANGE + FLOODFILL_MASK_ONLY;

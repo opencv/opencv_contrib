@@ -1045,7 +1045,7 @@ static void _apriltag(Mat im_orig, const Ptr<DetectorParameters> & _params, std:
     /// Step 2. do the Threshold :: get the set of candidate quads
     zarray_t *quads = apriltag_quad_thresh(_params, quad_im, contours);
 
-    CV_Assert(quads != NULL);
+    CV_Assert(quads != nullptr);
 
     // adjust centers of pixels so that they correspond to the
     // original full-resolution image.

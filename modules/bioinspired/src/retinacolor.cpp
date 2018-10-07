@@ -168,7 +168,7 @@ void RetinaColor::_initColorSampling()
 {
 
     // filling the conversion table for multiplexed <=> demultiplexed frame
-    srand((unsigned)time(NULL));
+    srand((unsigned)time(nullptr));
 
     // preInit cones probabilities
     _pR=_pB=_pG=0;
@@ -391,7 +391,7 @@ void RetinaColor::runColorDemultiplexing(const std::valarray<float> &multiplexed
     }
 
     // eliminate saturated colors by simple clipping values to the input range
-    clipRGBOutput_0_maxInputValue(NULL, maxInputValue);
+    clipRGBOutput_0_maxInputValue(nullptr, maxInputValue);
 
     /* transfert image gradient in order to check validity
     memcpy((*_luminance), _imageGradient, sizeof(float)*_filterOutput.getNBpixels());
@@ -434,7 +434,7 @@ void RetinaColor::clipRGBOutput_0_maxInputValue(float *inputOutputBuffer, const 
 {
     //std::cout<<"RetinaColor::normalizing RGB frame..."<<std::endl;
     // if outputBuffer unsassigned, the rewrite the buffer
-    if (inputOutputBuffer==NULL)
+    if (inputOutputBuffer==nullptr)
         inputOutputBuffer= &_demultiplexedColorFrame[0];
 
 #ifdef MAKE_PARALLEL // call the TemplateBuffer TBB clipping method

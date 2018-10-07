@@ -911,7 +911,7 @@ namespace cv {
                         is_neighbour = Mat::zeros(nb_segs, nb_segs, CV_8UC1);
                         sizes = Mat::zeros(nb_segs, 1, CV_32SC1);
 
-                        const int* previous_p = NULL;
+                        const int* previous_p = nullptr;
 
                         for (int i = 0; i < (int)img_regions.rows; i++) {
                             const int* p = img_regions.ptr<int>(i);

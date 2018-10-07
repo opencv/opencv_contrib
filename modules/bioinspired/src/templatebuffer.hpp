@@ -302,13 +302,13 @@ public:
         * @param sensitivity: strenght of the sigmoide
         * @param maxOutputValue: the maximum output value
         */
-        void normalizeGrayOutputNearZeroCentreredSigmoide(type *inputPicture=(type*)NULL, type *outputBuffer=(type*)NULL, const type sensitivity=(type)40, const type maxOutputValue=(type)255.0);
+        void normalizeGrayOutputNearZeroCentreredSigmoide(type *inputPicture=(type*)nullptr, type *outputBuffer=(type*)nullptr, const type sensitivity=(type)40, const type maxOutputValue=(type)255.0);
 
         /**
         * center and reduct the image (image-mean)/std
         * @param inputOutputBuffer: the image to be normalized if no parameter, the result is rewrited on it
         */
-        void centerReductImageLuminance(type *inputOutputBuffer=(type*)NULL);
+        void centerReductImageLuminance(type *inputOutputBuffer=(type*)nullptr);
 
         /**
         * @return standard deviation of the buffer
@@ -453,9 +453,9 @@ public:
     template <class type>
     void TemplateBuffer<type>::normalizeGrayOutputNearZeroCentreredSigmoide(type *inputBuffer, type *outputBuffer, const type sensitivity, const type maxOutputValue)
     {
-        if (inputBuffer==NULL)
+        if (inputBuffer==nullptr)
             inputBuffer=Buffer();
-        if (outputBuffer==NULL)
+        if (outputBuffer==nullptr)
             outputBuffer=Buffer();
 
         type X0cube=sensitivity*sensitivity*sensitivity;
@@ -498,7 +498,7 @@ public:
     void TemplateBuffer<type>::centerReductImageLuminance(type *inputOutputBuffer)
     {
         // if outputBuffer unsassigned, the rewrite the buffer
-        if (inputOutputBuffer==NULL)
+        if (inputOutputBuffer==nullptr)
             inputOutputBuffer=Buffer();
         type meanValue=0, stdValue=0;
 

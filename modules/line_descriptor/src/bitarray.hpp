@@ -64,7 +64,7 @@ class bitarray
   /* constructor setting default values */
   bitarray()
   {
-    arr = NULL;
+    arr = nullptr;
     length = 0;
   }
 

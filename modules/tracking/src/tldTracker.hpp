@@ -136,7 +136,7 @@ public:
 		bool operator()(Rect2d /*box*/){ return false; }
 		int additionalExamples(std::vector<Mat_<uchar> >& examplesForModel, std::vector<Mat_<uchar> >& examplesForEnsemble);
 	protected:
-		Pexpert() : detector_(NULL) {}
+		Pexpert() : detector_(nullptr) {}
 		Mat img_, imgBlurred_;
 		Rect2d resultBox_;
 		const TLDDetector* detector_;

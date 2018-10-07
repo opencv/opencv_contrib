@@ -31,8 +31,8 @@ bool FacemarkKazemiImpl::getFaces(InputArray image, OutputArray faces)
     return faceDetector(image, faces, faceDetectorData);
 }
 FacemarkKazemiImpl::FacemarkKazemiImpl(const FacemarkKazemi::Params& parameters) :
-    faceDetector(NULL),
-    faceDetectorData(NULL)
+    faceDetector(nullptr),
+    faceDetectorData(nullptr)
 {
     minmeanx=8000.0;
     maxmeanx=0.0;

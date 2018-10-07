@@ -306,7 +306,7 @@ int main(int argc, char* argv[])
                     continue;
                 words_detection.push_back(words[i][j]);
                 rectangle(out_img, boxes[i][j].tl(), boxes[i][j].br(), Scalar(255,0,255),3);
-                Size word_size = getTextSize(words[i][j], FONT_HERSHEY_SIMPLEX, (double)scale_font, (int)(3*scale_font), NULL);
+                Size word_size = getTextSize(words[i][j], FONT_HERSHEY_SIMPLEX, (double)scale_font, (int)(3*scale_font), nullptr);
                 rectangle(out_img, boxes[i][j].tl()-Point(3,word_size.height+3), boxes[i][j].tl()+Point(word_size.width,0), Scalar(255,0,255),-1);
                 putText(out_img, words[i][j], boxes[i][j].tl()-Point(1,1), FONT_HERSHEY_SIMPLEX, scale_font, Scalar(255,255,255),(int)(3*scale_font));
             }
@@ -397,7 +397,7 @@ void er_draw(vector<Mat> &channels, vector<vector<ERStat> > &regions, vector<Vec
     for (int r=0; r<(int)group.size(); r++)
     {
         ERStat er = regions[group[r][0]][group[r][1]];
-        if (er.parent != NULL) // deprecate the root region
+        if (er.parent != nullptr) // deprecate the root region
         {
             int newMaskVal = 255;
             int flags = 4 + (newMaskVal << 8) + FLOODFILL_FIXED_RANGE + FLOODFILL_MASK_ONLY;

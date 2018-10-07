@@ -1165,14 +1165,14 @@ UINT32 length;
 /** constructor setting default values */
 bitarray()
 {
-arr = NULL;
+arr = nullptr;
 length = 0;
 }
 
 /** constructor setting sequence's length */
 bitarray( UINT64 _bits )
 {
-arr = NULL;
+arr = nullptr;
 init( _bits );
 }
 

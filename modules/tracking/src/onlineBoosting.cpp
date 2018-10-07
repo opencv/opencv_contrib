@@ -699,9 +699,9 @@ ClassifierThreshold::ClassifierThreshold( EstimatedGaussDistribution* posSamples
 
 ClassifierThreshold::~ClassifierThreshold()
 {
-  if( m_posSamples != NULL )
+  if( m_posSamples != nullptr )
     delete m_posSamples;
-  if( m_negSamples != NULL )
+  if( m_negSamples != nullptr )
     delete m_negSamples;
 }
 

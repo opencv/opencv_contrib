@@ -57,7 +57,7 @@ static void listDir(const char *path, std::vector<String>& files, bool r)
     char childpath[512];
     pDir = opendir(path);
     memset(childpath, 0, sizeof(childpath));
-    while ((ent = readdir(pDir)) != NULL)
+    while ((ent = readdir(pDir)) != nullptr)
     {
         if (ent->d_type & DT_DIR)
         {

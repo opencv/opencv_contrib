@@ -219,7 +219,7 @@ public:
                          that a higher compression level indicates a higher computational cost. It relies
                          on GNU gzip for compression.
     @param dims_chunks each array member specifies the chunking size to be used for block I/O,
-           by default NULL means none at all.
+           by default nullptr means none at all.
 
     @note If the dataset already exists, an exception will be thrown (CV_Error() is called).
 
@@ -299,7 +299,7 @@ public:
                          that a higher compression level indicates a higher computational cost. It relies
                          on GNU gzip for compression.
     @param dims_chunks each array member specifies chunking sizes to be used for block I/O,
-           by default NULL means none at all.
+           by default nullptr means none at all.
     @note If the dataset already exists, an exception will be thrown. Existence of the dataset can be checked
     using hlexists().
 

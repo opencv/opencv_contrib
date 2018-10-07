@@ -2,26 +2,26 @@
  *  By downloading, copying, installing or using the software you agree to this license.
  *  If you do not agree to this license, do not download, install,
  *  copy or use the software.
- *  
- *  
+ *
+ *
  *  License Agreement
  *  For Open Source Computer Vision Library
  *  (3 - clause BSD License)
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
- *  
+ *
  *  * Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and / or other materials provided with the distribution.
- *  
+ *
  *  * Neither the names of the copyright holders nor the names of the contributors
  *  may be used to endorse or promote products derived from this software
  *  without specific prior written permission.
- *  
+ *
  *  This software is provided by the copyright holders and contributors "as is" and
  *  any express or implied warranties, including, but not limited to, the implied
  *  warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -47,7 +47,7 @@ using namespace std;
 
 typedef void(*FilteringOperation)(const Mat& src, Mat& dst);
 //current mode (filtering operation example)
-FilteringOperation g_filterOp = NULL;
+FilteringOperation g_filterOp = nullptr;
 
 //list of filtering operations
 void filterDoNothing(const Mat& frame, Mat& dst);
@@ -185,7 +185,7 @@ int main()
 
     namedWindow("Demo");
     displayOverlay("Demo", "Press Ctrl+P to show property window", 5000);
-    
+
     //Thread trackbar
     createTrackbar("Threads", String(), &g_numberOfCPUs, cv::getNumberOfCPUs(), changeNumberOfCpuCallback);
 
@@ -199,7 +199,7 @@ int main()
     g_filterOp = filterDetailEnhancement; //set Details Enhancement as default filter
     createTrackbar("Detail contrast", String(), &g_contrastBase, 200);
     createTrackbar("Detail level" , String(), &g_detailsLevel, 200);
-    
+
     //sliders for Stylizing mode
     createTrackbar("Style gamma", String(), &g_edgesGamma, 300);
 

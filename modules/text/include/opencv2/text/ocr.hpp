@@ -93,11 +93,11 @@ class CV_EXPORTS_W BaseOCR
 {
 public:
     virtual ~BaseOCR() {};
-    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
-                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=nullptr,
+                     std::vector<std::string>* component_texts=nullptr, std::vector<float>* component_confidences=nullptr,
                      int component_level=0) = 0;
-    virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
-                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+    virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=nullptr,
+                     std::vector<std::string>* component_texts=nullptr, std::vector<float>* component_confidences=nullptr,
                      int component_level=0) = 0;
 };
 
@@ -132,12 +132,12 @@ public:
     for the recognition of individual text elements found (e.g. words or text lines).
     @param component_level OCR_LEVEL_WORD (by default), or OCR_LEVEL_TEXTLINE.
      */
-    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
-                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=nullptr,
+                     std::vector<std::string>* component_texts=nullptr, std::vector<float>* component_confidences=nullptr,
                      int component_level=0) CV_OVERRIDE;
 
-    virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
-                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+    virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=nullptr,
+                     std::vector<std::string>* component_texts=nullptr, std::vector<float>* component_confidences=nullptr,
                      int component_level=0) CV_OVERRIDE;
 
     // aliases for scripting
@@ -150,10 +150,10 @@ public:
 
     /** @brief Creates an instance of the OCRTesseract class. Initializes Tesseract.
 
-    @param datapath the name of the parent directory of tessdata ended with "/", or NULL to use the
+    @param datapath the name of the parent directory of tessdata ended with "/", or nullptr to use the
     system's default directory.
-    @param language an ISO 639-3 code or NULL will default to "eng".
-    @param char_whitelist specifies the list of characters used for recognition. NULL defaults to
+    @param language an ISO 639-3 code or nullptr will default to "eng".
+    @param char_whitelist specifies the list of characters used for recognition. nullptr defaults to
     "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".
     @param oem tesseract-ocr offers different OCR Engine Modes (OEM), by default
     tesseract::OEM_DEFAULT is used. See the tesseract-ocr API documentation for other possible
@@ -162,8 +162,8 @@ public:
     (fully automatic layout analysis) is used. See the tesseract-ocr API documentation for other
     possible values.
      */
-    CV_WRAP static Ptr<OCRTesseract> create(const char* datapath=NULL, const char* language=NULL,
-                                    const char* char_whitelist=NULL, int oem=OEM_DEFAULT, int psmode=PSM_AUTO);
+    CV_WRAP static Ptr<OCRTesseract> create(const char* datapath=nullptr, const char* language=nullptr,
+                                    const char* char_whitelist=nullptr, int oem=OEM_DEFAULT, int psmode=PSM_AUTO);
 };
 
 
@@ -238,8 +238,8 @@ public:
 
     @param component_level Only OCR_LEVEL_WORD is supported.
      */
-    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
-                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=nullptr,
+                     std::vector<std::string>* component_texts=nullptr, std::vector<float>* component_confidences=nullptr,
                      int component_level=0) CV_OVERRIDE;
 
     /** @brief Recognize text using HMM.
@@ -265,8 +265,8 @@ public:
 
     @param component_level Only OCR_LEVEL_WORD is supported.
      */
-    virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
-                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+    virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=nullptr,
+                     std::vector<std::string>* component_texts=nullptr, std::vector<float>* component_confidences=nullptr,
                      int component_level=0) CV_OVERRIDE;
 
     // aliases for scripting
@@ -443,12 +443,12 @@ public:
 
     @param component_level Only OCR_LEVEL_WORD is supported.
      */
-    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL,
-                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+    virtual void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=nullptr,
+                     std::vector<std::string>* component_texts=nullptr, std::vector<float>* component_confidences=nullptr,
                      int component_level=0) CV_OVERRIDE;
 
-    virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL,
-                     std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL,
+    virtual void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=nullptr,
+                     std::vector<std::string>* component_texts=nullptr, std::vector<float>* component_confidences=nullptr,
                      int component_level=0) CV_OVERRIDE;
 
     // aliases for scripting
@@ -544,9 +544,9 @@ class CV_EXPORTS OCRHolisticWordRecognizer : public BaseOCR
 public:
     virtual void run(Mat& image,
                      std::string& output_text,
-                     std::vector<Rect>* component_rects = NULL,
-                     std::vector<std::string>* component_texts = NULL,
-                     std::vector<float>* component_confidences = NULL,
+                     std::vector<Rect>* component_rects = nullptr,
+                     std::vector<std::string>* component_texts = nullptr,
+                     std::vector<float>* component_confidences = nullptr,
                      int component_level = OCR_LEVEL_WORD) CV_OVERRIDE = 0;
 
     /** @brief Recognize text using a segmentation based word-spotting/classifier cnn.
@@ -561,13 +561,13 @@ public:
 
     @param output_text Output text of the the word spoting, always one that exists in the dictionary.
 
-    @param component_rects Not applicable for word spotting can be be NULL if not, a single elemnt will
+    @param component_rects Not applicable for word spotting can be be nullptr if not, a single elemnt will
         be put in the vector.
 
-    @param component_texts Not applicable for word spotting can be be NULL if not, a single elemnt will
+    @param component_texts Not applicable for word spotting can be be nullptr if not, a single elemnt will
         be put in the vector.
 
-    @param component_confidences Not applicable for word spotting can be be NULL if not, a single elemnt will
+    @param component_confidences Not applicable for word spotting can be be nullptr if not, a single elemnt will
         be put in the vector.
 
     @param component_level must be OCR_LEVEL_WORD.
@@ -575,9 +575,9 @@ public:
     virtual void run(Mat& image,
                      Mat& mask,
                      std::string& output_text,
-                     std::vector<Rect>* component_rects = NULL,
-                     std::vector<std::string>* component_texts = NULL,
-                     std::vector<float>* component_confidences = NULL,
+                     std::vector<Rect>* component_rects = nullptr,
+                     std::vector<std::string>* component_texts = nullptr,
+                     std::vector<float>* component_confidences = nullptr,
                      int component_level = OCR_LEVEL_WORD) CV_OVERRIDE = 0;
 
     /** @brief Creates an instance of the OCRHolisticWordRecognizer class.

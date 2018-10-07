@@ -828,7 +828,7 @@ NCVStatus nppsStCompactGetSize_32f(Ncv32u srcLen, Ncv32u *pBufsize, cudaDevicePr
  * \param d_src             [IN] Source vector pointer (CUDA device memory)
  * \param srcLen            [IN] Source vector length
  * \param d_dst             [OUT] Destination vector pointer (CUDA device memory)
- * \param p_dstLen          [OUT] Pointer to the destination vector length (Pinned memory or NULL)
+ * \param p_dstLen          [OUT] Pointer to the destination vector length (Pinned memory or nullptr)
  * \param elemRemove        [IN] The value to be removed
  * \param pBuffer           [IN] Pointer to the pre-allocated temporary buffer (CUDA device memory)
  * \param bufSize           [IN] Size of the pBuffer in bytes
@@ -871,7 +871,7 @@ NCVStatus nppsStCompact_32f(Ncv32f *d_src, Ncv32u srcLen,
  * \param h_src             [IN] Source vector pointer (CUDA device memory)
  * \param srcLen            [IN] Source vector length
  * \param h_dst             [OUT] Destination vector pointer (CUDA device memory)
- * \param dstLen            [OUT] Pointer to the destination vector length (can be NULL)
+ * \param dstLen            [OUT] Pointer to the destination vector length (can be nullptr)
  * \param elemRemove        [IN] The value to be removed
  *
  * \return NCV status code

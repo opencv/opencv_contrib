@@ -77,7 +77,7 @@ int main( int argc, char** argv )
 
   /* load image */
   cv::Mat imageMat = imread( image_path, 1 );
-  if( imageMat.data == NULL )
+  if( imageMat.data == nullptr )
   {
     std::cout << "Error, image could not be loaded. Please, check its path" << std::endl;
     return -1;

@@ -85,7 +85,7 @@ namespace bioinspired
         _MagnoRetinaFilter((1-(int)useRetinaLogSampling)*sizeRows+useRetinaLogSampling*ImageLogPolProjection::predictOutputSize(sizeRows, reductionFactor), (1-(int)useRetinaLogSampling)*sizeColumns+useRetinaLogSampling*ImageLogPolProjection::predictOutputSize(sizeColumns, reductionFactor)),
         _colorEngine((1-(int)useRetinaLogSampling)*sizeRows+useRetinaLogSampling*ImageLogPolProjection::predictOutputSize(sizeRows, reductionFactor), (1-(int)useRetinaLogSampling)*sizeColumns+useRetinaLogSampling*ImageLogPolProjection::predictOutputSize(sizeColumns, reductionFactor), samplingMethod),
         // configure retina photoreceptors log sampling... if necessary
-        _photoreceptorsLogSampling(NULL)
+        _photoreceptorsLogSampling(nullptr)
     {
 
 #ifdef RETINADEBUG
@@ -98,7 +98,7 @@ namespace bioinspired
             {
                 std::cerr<<"RetinaFilter::Problem initializing photoreceptors log sampling, could not setup retina filter"<<std::endl;
                 delete _photoreceptorsLogSampling;
-                _photoreceptorsLogSampling=NULL;
+                _photoreceptorsLogSampling=nullptr;
             }
             else
             {
@@ -135,7 +135,7 @@ namespace bioinspired
     // destructor
     RetinaFilter::~RetinaFilter()
     {
-        if (_photoreceptorsLogSampling!=NULL)
+        if (_photoreceptorsLogSampling!=nullptr)
             delete _photoreceptorsLogSampling;
     }
 
@@ -146,7 +146,7 @@ namespace bioinspired
         _ParvoRetinaFilter.clearAllBuffers();
         _MagnoRetinaFilter.clearAllBuffers();
         _colorEngine.clearAllBuffers();
-        if (_photoreceptorsLogSampling!=NULL)
+        if (_photoreceptorsLogSampling!=nullptr)
             _photoreceptorsLogSampling->clearAllBuffers();
         // stability controls value init
         _setInitPeriodCount();
@@ -416,7 +416,7 @@ namespace bioinspired
         /*  // preliminary check
         const std::valarray<float> &bufferInput=checkInput(LMSimageInput, true);
         if (!bufferInput)
-        return NULL;
+        return nullptr;
 
         if (!_useColorMode)
         std::cerr<<"RetinaFilter::Can not call tone mapping oeration if the retina filter was created for gray scale images"<<std::endl;

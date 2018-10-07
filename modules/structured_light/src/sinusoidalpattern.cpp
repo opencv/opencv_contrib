@@ -606,8 +606,8 @@ bool SinusoidalPatternProfilometry_Impl::findMaxInHalvesTransform( InputArray Fo
                 Rect(centerX + margin, 0, centerX - margin, FourierTransformMag_.rows));
     }
 
-    minMaxLoc(h0, NULL, &maxV1, NULL, &maxPosition1);
-    minMaxLoc(h1, NULL, &maxV2, NULL, &maxPosition2);
+    minMaxLoc(h0, nullptr, &maxV1, nullptr, &maxPosition1);
+    minMaxLoc(h1, nullptr, &maxV2, nullptr, &maxPosition2);
 
     if( params.horizontal )
     {

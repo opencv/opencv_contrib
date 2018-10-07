@@ -257,7 +257,7 @@ Ptr<Facemark> createFacemarkLBF(){
 }
 
 FacemarkLBFImpl::FacemarkLBFImpl( const FacemarkLBF::Params &parameters ) :
-    faceDetector(NULL), faceDetectorData(NULL)
+    faceDetector(nullptr), faceDetectorData(nullptr)
 {
     isModelTrained = false;
     params = parameters;
@@ -1332,7 +1332,7 @@ Mat FacemarkLBFImpl::Regressor::supportVectorRegression(
 Mat FacemarkLBFImpl::Regressor::globalRegressionPredict(const Mat &lbf, int stage) {
     const Mat_<double> &weight = (Mat_<double>)gl_regression_weights[stage];
     Mat_<double> delta_shape(weight.rows / 2, 2);
-    const double *w_ptr = NULL;
+    const double *w_ptr = nullptr;
     const int *lbf_ptr = lbf.ptr<int>(0);
 
     //#pragma omp parallel for num_threads(2) private(w_ptr)

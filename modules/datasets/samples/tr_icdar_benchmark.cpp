@@ -124,7 +124,7 @@ void er_draw(vector<Mat> &channels, vector<vector<ERStat> > &regions, vector<Vec
     for (int r=0; r<(int)group.size(); r++)
     {
         ERStat er = regions[group[r][0]][group[r][1]];
-        if (er.parent != NULL) // deprecate the root region
+        if (er.parent != nullptr) // deprecate the root region
         {
             int newMaskVal = 255;
             int flags = 4 + (newMaskVal << 8) + FLOODFILL_FIXED_RANGE + FLOODFILL_MASK_ONLY;

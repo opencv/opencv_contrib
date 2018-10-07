@@ -345,7 +345,7 @@ namespace
 
         Size wins_per_img = numPartsWithin(img.size(), win_size_, win_stride_);
 
-        if (confidences == NULL)
+        if (confidences == nullptr)
         {
             GpuMat labels = pool.getBuffer(1, wins_per_img.area(), CV_8UC1);
 
@@ -413,7 +413,7 @@ namespace
         const GpuMat img = _img.getGpuMat();
 
         CV_Assert( img.type() == CV_8UC1 || img.type() == CV_8UC4 );
-        CV_Assert( confidences == NULL || group_threshold_ == 0 );
+        CV_Assert( confidences == nullptr || group_threshold_ == 0 );
 
         std::vector<double> level_scale;
         double scale = 1.0;
@@ -462,7 +462,7 @@ namespace
             }
 
             detect(smaller_img, level_hits,
-                   confidences ? &level_confidences : NULL);
+                   confidences ? &level_confidences : nullptr);
 
             Size scaled_win_size(cvRound(win_size_.width * scale),
                                  cvRound(win_size_.height * scale));

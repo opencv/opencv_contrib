@@ -187,7 +187,7 @@ public:
     }
     // get the instance field
     matlab::MxArray inst = ptr_.field("inst_");
-    Object* obj = NULL;
+    Object* obj = nullptr;
     // make sure the pointer is the correct size for the system
     if (sizeof(void *) == 8 && inst.ID() == mxUINT64_CLASS) {
       // 64-bit pointers
@@ -200,8 +200,8 @@ public:
       matlab::error("Incorrect pointer type stored for architecture");
     }
 
-    // finally check if the object is NULL
-    matlab::conditionalError(obj, std::string("Object ").append(std::string(name)).append(std::string(" is NULL")));
+    // finally check if the object is nullptr
+    matlab::conditionalError(obj, std::string("Object ").append(std::string(name)).append(std::string(" is nullptr")));
     return obj;
   }
 

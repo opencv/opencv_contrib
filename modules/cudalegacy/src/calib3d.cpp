@@ -252,7 +252,7 @@ void cv::cuda::solvePnPRansac(const Mat& object, const Mat& image, const Mat& ca
     // Find the best hypothesis index
     Point best_idx;
     double best_score;
-    cuda::minMaxLoc(d_hypothesis_scores, NULL, &best_score, NULL, &best_idx);
+    cuda::minMaxLoc(d_hypothesis_scores, nullptr, &best_score, nullptr, &best_idx);
     int num_inliers = static_cast<int>(best_score);
 
     // Extract the best hypothesis data
@@ -265,7 +265,7 @@ void cv::cuda::solvePnPRansac(const Mat& object, const Mat& image, const Mat& ca
     tvec = tvec.reshape(0, 1);
 
     // Build vector of inlier indices
-    if (inliers != NULL)
+    if (inliers != nullptr)
     {
         inliers->clear();
         inliers->reserve(num_inliers);

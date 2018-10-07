@@ -53,10 +53,10 @@ inline static zarray_t *_zarray_create(size_t el_sz){
  * created by zarray_create(). After calling, 'za' will no longer be valid for storage.
  */
 inline static void _zarray_destroy(zarray_t *za){
-    if (za == NULL)
+    if (za == nullptr)
         return;
 
-    if (za->data != NULL)
+    if (za->data != nullptr)
         free(za->data);
     memset(za, 0, sizeof(zarray_t));
     free(za);
@@ -139,7 +139,7 @@ static inline void _zarray_set(zarray_t *za, int idx, const void *p, void *outp)
     CV_DbgAssert(idx >= 0);
     CV_DbgAssert(idx < za->size);
 
-    if (outp != NULL)
+    if (outp != nullptr)
         memcpy(outp, &za->data[idx*za->el_sz], za->el_sz);
 
     memcpy(&za->data[idx*za->el_sz], p, za->el_sz);

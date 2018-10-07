@@ -136,7 +136,7 @@ int main( int argc, char** argv )
   cv::Mat imageMat1 = imread( image_path1, 1 );
   cv::Mat imageMat2 = imread( image_path2, 1 );
 
-  if( imageMat1.data == NULL || imageMat2.data == NULL )
+  if( imageMat1.data == nullptr || imageMat2.data == nullptr )
   {
     std::cout << "Error, images could not be loaded. Please, check their paths" << std::endl;
   }
@@ -165,7 +165,7 @@ int main( int argc, char** argv )
   Mat descr2Copy = descr1.clone();
 
   /* randomly change some bits in original descriptors */
-  srand( (unsigned int) time( NULL ) );
+  srand( (unsigned int) time( nullptr ) );
 
   for ( int j = 0; j < descr1.rows; j++ )
   {

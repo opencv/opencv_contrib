@@ -84,7 +84,7 @@ void getDirList(const string &dirName, vector<string> &fileNames)
 {
 #ifndef _WIN32
     struct dirent **namelist;
-    int n = scandir(dirName.c_str(), &namelist, NULL, alphasort);
+    int n = scandir(dirName.c_str(), &namelist, nullptr, alphasort);
     for (int i=0; i<n; ++i)
     {
         string fileName(namelist[i]->d_name);
