@@ -281,7 +281,7 @@ of inliers is achieved. It is not supported for now.
 CV_EXPORTS void solvePnPRansac(const Mat& object, const Mat& image, const Mat& camera_mat,
                                const Mat& dist_coef, Mat& rvec, Mat& tvec, bool use_extrinsic_guess=false,
                                int num_iters=100, float max_dist=8.0, int min_inlier_count=100,
-                               std::vector<int>* inliers=NULL);
+                               std::vector<int>* inliers=nullptr);
 
 //! @}
 

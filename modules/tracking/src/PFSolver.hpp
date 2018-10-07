@@ -51,7 +51,7 @@ namespace cv{
 
     PFSolver::PFSolver(){
         _Function=Ptr<MinProblemSolver::Function>();
-        _real_function=NULL;
+        _real_function=nullptr;
         _std=Mat_<double>();
         rng=RNG(getTickCount());
     }
@@ -164,7 +164,7 @@ namespace cv{
         MinProblemSolver::Function* f_ptr=static_cast<MinProblemSolver::Function*>(non_const_f);
 
         PFSolver::Function *pff=dynamic_cast<PFSolver::Function*>(f_ptr);
-        CV_Assert(pff!=NULL);
+        CV_Assert(pff!=nullptr);
         _Function=f;
         _real_function=pff;
     }

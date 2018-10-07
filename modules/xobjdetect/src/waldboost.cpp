@@ -239,8 +239,8 @@ void WaldBoost::fit(Mat& data_pos, Mat& data_neg)
 
             int idx1[2], idx2[2];
             double err1, err2;
-            minMaxIdx(err_direct, &err1, NULL, idx1);
-            minMaxIdx(err_backward, &err2, NULL, idx2);
+            minMaxIdx(err_direct, &err1, nullptr, idx1);
+            minMaxIdx(err_backward, &err2, nullptr, idx2);
 //#pragma omp critical
             {
             if (min(err1, err2) < min_err) {

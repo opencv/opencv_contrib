@@ -76,10 +76,10 @@ static void deleteERStatTree(ERStat* root) {
         ERStat* n = to_delete.front();
         to_delete.pop();
         ERStat* c = n->child;
-        if (c != NULL) {
+        if (c != nullptr) {
             to_delete.push(c);
             ERStat* sibling = c->next;
-            while (sibling != NULL) {
+            while (sibling != nullptr) {
                 to_delete.push(sibling);
                 sibling = sibling->next;
             }
@@ -239,19 +239,19 @@ void ERFilterNM::run( InputArray image, vector<ERStat>& _regions )
             vector<ERStat> aux_regions;
             regions->swap(aux_regions);
             regions->reserve(aux_regions.size());
-            er_tree_nonmax_suppression( &aux_regions.front(), NULL, NULL );
+            er_tree_nonmax_suppression( &aux_regions.front(), nullptr, nullptr );
             aux_regions.clear();
         }
     }
     else // if regions vector is already filled we'll just filter the current regions
     {
         // the tree root must have no parent
-        CV_Assert( regions->front().parent == NULL );
+        CV_Assert( regions->front().parent == nullptr );
 
         vector<ERStat> aux_regions;
         regions->swap(aux_regions);
         regions->reserve(aux_regions.size());
-        er_tree_filter( image, &aux_regions.front(), NULL, NULL );
+        er_tree_filter( image, &aux_regions.front(), nullptr, nullptr );
         aux_regions.clear();
     }
 }
@@ -514,7 +514,7 @@ void ERFilterNM::er_tree_extract( InputArray image )
 
             // save the extracted regions into the output vector
             regions->reserve(num_accepted_regions+1);
-            er_save(er_stack.back(), NULL, NULL);
+            er_save(er_stack.back(), nullptr, nullptr);
 
             // clean memory
             for (size_t r=0; r<er_stack.size(); r++)
@@ -688,13 +688,13 @@ void ERFilterNM::er_merge(ERStat *parent, ERStat *child)
 
         num_rejected_regions++;
 
-        if (child->prev !=NULL)
+        if (child->prev !=nullptr)
             child->prev->next = child->next;
 
         ERStat *new_child = child->child;
-        if (new_child != NULL)
+        if (new_child != nullptr)
         {
-            while (new_child->next != NULL)
+            while (new_child->next != nullptr)
                 new_child = new_child->next;
             new_child->next = parent->child;
             if (parent->child)
@@ -720,24 +720,24 @@ ERStat* ERFilterNM::er_save( ERStat *er, ERStat *parent, ERStat *prev )
     regions->push_back(*er);
 
     regions->back().parent = parent;
-    if (prev != NULL)
+    if (prev != nullptr)
     {
       prev->next = &(regions->back());
     }
-    else if (parent != NULL)
+    else if (parent != nullptr)
       parent->child = &(regions->back());
 
-    ERStat *old_prev = NULL;
+    ERStat *old_prev = nullptr;
     ERStat *this_er  = &regions->back();
 
-    if (this_er->parent == NULL)
+    if (this_er->parent == nullptr)
     {
        this_er->probability = 0;
     }
 
     if (nonMaxSuppression)
     {
-        if (this_er->parent == NULL)
+        if (this_er->parent == nullptr)
         {
             this_er->max_probability_ancestor = this_er;
             this_er->min_probability_ancestor = this_er;
@@ -858,7 +858,7 @@ ERStat* ERFilterNM::er_tree_filter ( InputArray image, ERStat * stat, ERStat *pa
 
 
     // calculate P(child|character) and filter if possible
-    if (classifier && (stat->parent != NULL))
+    if (classifier && (stat->parent != nullptr))
     {
         stat->probability = classifier->eval(*stat);
     }
@@ -866,22 +866,22 @@ ERStat* ERFilterNM::er_tree_filter ( InputArray image, ERStat * stat, ERStat *pa
     if ( ( ((classifier)?(stat->probability >= minProbability):true) &&
           ((stat->area >= minArea*region_mask.rows*region_mask.cols) &&
            (stat->area <= maxArea*region_mask.rows*region_mask.cols)) ) ||
-        (stat->parent == NULL) )
+        (stat->parent == nullptr) )
     {
 
         num_accepted_regions++;
         regions->push_back(*stat);
 
         regions->back().parent = parent;
-        regions->back().next   = NULL;
-        regions->back().child  = NULL;
+        regions->back().next   = nullptr;
+        regions->back().child  = nullptr;
 
-        if (prev != NULL)
+        if (prev != nullptr)
             prev->next = &(regions->back());
-        else if (parent != NULL)
+        else if (parent != nullptr)
             parent->child = &(regions->back());
 
-        ERStat *old_prev = NULL;
+        ERStat *old_prev = nullptr;
         ERStat *this_er  = &regions->back();
 
         for (ERStat * child = stat->child; child; child = child->next)
@@ -911,21 +911,21 @@ ERStat* ERFilterNM::er_tree_filter ( InputArray image, ERStat * stat, ERStat *pa
 ERStat* ERFilterNM::er_tree_nonmax_suppression ( ERStat * stat, ERStat *parent, ERStat *prev )
 {
 
-    if ( ( stat->local_maxima ) || ( stat->parent == NULL ) )
+    if ( ( stat->local_maxima ) || ( stat->parent == nullptr ) )
     {
 
         regions->push_back(*stat);
 
         regions->back().parent = parent;
-        regions->back().next   = NULL;
-        regions->back().child  = NULL;
+        regions->back().next   = nullptr;
+        regions->back().child  = nullptr;
 
-        if (prev != NULL)
+        if (prev != nullptr)
             prev->next = &(regions->back());
-        else if (parent != NULL)
+        else if (parent != nullptr)
             parent->child = &(regions->back());
 
-        ERStat *old_prev = NULL;
+        ERStat *old_prev = nullptr;
         ERStat *this_er  = &regions->back();
 
         for (ERStat * child = stat->child; child; child = child->next)
@@ -1548,7 +1548,7 @@ class auto_array_ptr {
 private:
     type * ptr;
 public:
-    auto_array_ptr() { ptr = NULL; }
+    auto_array_ptr() { ptr = nullptr; }
     template <typename index>
     auto_array_ptr(index const size) { init(size); }
     template <typename index, typename value>
@@ -1560,7 +1560,7 @@ public:
     }
     void free() {
         delete [] ptr;
-        ptr = NULL;
+        ptr = nullptr;
     }
     template <typename index>
     void init(index const size)
@@ -2028,13 +2028,13 @@ public:
                      dim(_dim),
                      N(_Num),
                      members(_members),
-                     postprocessfn(NULL),
-                     V(NULL)
+                     postprocessfn(nullptr),
+                     V(nullptr)
     {
         switch (method) {
             case METHOD_METR_SINGLE: // only single linkage allowed here but others may come...
             default:
-                postprocessfn = NULL; // default
+                postprocessfn = nullptr; // default
                 switch (metric)
                 {
                     case METRIC_EUCLIDEAN:
@@ -2083,7 +2083,7 @@ public:
 
     void postprocess(cluster_result & Z2) const
     {
-        if (postprocessfn!=NULL)
+        if (postprocessfn!=nullptr)
         {
             (Z2.*postprocessfn)(postprocessarg);
         }
@@ -2267,7 +2267,7 @@ void MaxMeaningfulClustering::operator()(double *data, unsigned int num, int dim
 {
 
     double *Z = (double*)malloc(((num-1)*4) * sizeof(double)); // we need 4 floats foreach sample merge.
-    if (Z == NULL)
+    if (Z == nullptr)
         CV_Error(Error::StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
 
     linkage_vector(data, (int)num, dim, Z, method, metric);
@@ -2891,7 +2891,7 @@ static float extract_features(Mat &grey, Mat& channel, vector<ERStat> &regions, 
         f.rect = stat->rect;
         f.center = Point(f.rect.x+(f.rect.width/2),f.rect.y+(f.rect.height/2));
 
-        if (regions.at(r).parent != NULL)
+        if (regions.at(r).parent != nullptr)
         {
 
             //Fill the region and calculate features
@@ -2903,7 +2903,7 @@ static float extract_features(Mat &grey, Mat& channel, vector<ERStat> &regions, 
 
             floodFill( channel(stat->rect),
                        region, Point(stat->pixel%channel.cols - stat->rect.x, stat->pixel/channel.cols - stat->rect.y),
-                       Scalar(255), NULL, Scalar(stat->level), Scalar(0), flags );
+                       Scalar(255), nullptr, Scalar(stat->level), Scalar(0), flags );
             Mat rect_mask = region_mask(Rect(stat->rect.x+1,stat->rect.y+1,stat->rect.width,stat->rect.height));
 
 
@@ -3059,7 +3059,7 @@ static void erGroupingGK(InputArray _image, InputArrayOfArrays _src, vector<vect
         unsigned int N = (unsigned int)regions.at(c).size();
         int dim = 7; //dimensionality of feature space
         double *data = (double*)malloc(dim*N * sizeof(double));
-        if (data == NULL)
+        if (data == nullptr)
             CV_Error(Error::StsNoMem, "Not enough Memory for erGrouping hierarchical clustering structures!");
 
         //Learned weights
@@ -3509,7 +3509,7 @@ bool isValidPair(Mat &grey, Mat &lab, Mat &mask, vector<Mat> &channels, vector< 
         ( norm_distance  > PAIR_MAX_REGION_DIST))
         return false;
 
-    if ((i->parent == NULL)||(j->parent == NULL)) // deprecate the root region
+    if ((i->parent == nullptr)||(j->parent == nullptr)) // deprecate the root region
       return false;
 
     i = &regions[idx1[0]][idx1[1]];
@@ -3524,7 +3524,7 @@ bool isValidPair(Mat &grey, Mat &lab, Mat &mask, vector<Mat> &channels, vector< 
 
     floodFill( channels[idx1[0]](i->rect),
                region, Point(i->pixel%grey.cols, i->pixel/grey.cols) - i->rect.tl(),
-               Scalar(255), NULL, Scalar(i->level), Scalar(0), flags);
+               Scalar(255), nullptr, Scalar(i->level), Scalar(0), flags);
     Mat rect_mask = mask(Rect(i->rect.x+1,i->rect.y+1,i->rect.width,i->rect.height));
 
     Scalar mean,std;
@@ -3539,7 +3539,7 @@ bool isValidPair(Mat &grey, Mat &lab, Mat &mask, vector<Mat> &channels, vector< 
 
     floodFill( channels[idx2[0]](j->rect),
                region, Point(j->pixel%grey.cols, j->pixel/grey.cols) - j->rect.tl(),
-               Scalar(255), NULL, Scalar(j->level), Scalar(0), flags);
+               Scalar(255), nullptr, Scalar(j->level), Scalar(0), flags);
     rect_mask = mask(Rect(j->rect.x+1,j->rect.y+1,j->rect.width,j->rect.height));
 
     meanStdDev(grey(j->rect),mean,std,rect_mask);
@@ -4210,7 +4210,7 @@ void detectRegions(InputArray image, const Ptr<ERFilter>& er_filter1, const Ptr<
       floodFill( src(stat->rect),
                  region_mask,
                  seed_pt - stat->rect.tl(),
-                 Scalar(255), NULL, Scalar(/*stat->level*/255), Scalar(0), flags );
+                 Scalar(255), nullptr, Scalar(/*stat->level*/255), Scalar(0), flags );
 
       vector<vector<Point> > contours;
       vector<Vec4i> hierarchy;

@@ -198,7 +198,7 @@ float DSST::getScale(const Mat &image, const Point2f object_center)
     scale_resp = divide_complex_matrices(scale_resp, sf_den + 0.01f);
     idft(scale_resp, scale_resp, DFT_REAL_OUTPUT|DFT_SCALE);
     Point max_loc;
-    minMaxLoc(scale_resp, NULL, NULL, NULL, &max_loc);
+    minMaxLoc(scale_resp, nullptr, nullptr, nullptr, &max_loc);
 
     current_scale_factor *= scale_factors[max_loc.x];
     if(current_scale_factor < min_scale_factor)

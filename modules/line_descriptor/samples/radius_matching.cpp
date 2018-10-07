@@ -91,7 +91,7 @@ int main( int argc, char** argv )
 
     /* load image */
     Mat loadedImage = imread( image_path.str().c_str(), 1 );
-    if( loadedImage.data == NULL )
+    if( loadedImage.data == nullptr )
     {
       std::cout << "Could not load images." << std::endl;
       help();

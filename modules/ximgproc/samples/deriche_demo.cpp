@@ -114,7 +114,7 @@ int main(int argc, char* argv[])
     /// Create a Trackbar for user to enter threshold
     createTrackbar( "Derive:",winName, &alDerive, 400, DericheFilter );
     createTrackbar( "Mean:", winName, &alMean, 400, DericheFilter );
-    DericheFilter(0,NULL);
+    DericheFilter(0,nullptr);
     waitKey();
     return 0;
 }

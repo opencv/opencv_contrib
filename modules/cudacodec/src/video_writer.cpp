@@ -632,7 +632,7 @@ namespace
         efparams.repeatFirstField = 0;
         efparams.progressiveFrame = (surfaceFormat_ == NV12) ? 1 : 0;
         efparams.bLast = lastFrame;
-        efparams.picBuf = 0; // Must be set to NULL in order to support device memory input
+        efparams.picBuf = 0; // Must be set to nullptr in order to support device memory input
 
         // Don't forget we need to lock/unlock between memcopies
         cuSafeCall( cuvidCtxLock(cuCtxLock_, 0) );

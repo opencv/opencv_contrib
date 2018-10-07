@@ -307,7 +307,7 @@ int quad_segment_maxima(const Ptr<DetectorParameters> &td, int sz, struct line_f
     std::vector<double> errs(sz);
 
     for (int i = 0; i < sz; i++) {
-        fit_line(lfps, sz, (i + sz - ksz) % sz, (i + ksz) % sz, NULL, &errs[i], NULL);
+        fit_line(lfps, sz, (i + sz - ksz) % sz, (i + ksz) % sz, nullptr, &errs[i], nullptr);
     }
 
     // apply a low-pass filter to errs
@@ -488,7 +488,7 @@ int quad_segment_agg(int sz, struct line_fit_pt *lfps, int indices[4]){
             rv->right = (i+1) % sz;
         }
 
-        fit_line(lfps, sz, rv->left, rv->right, NULL, NULL, &rv->err);
+        fit_line(lfps, sz, rv->left, rv->right, nullptr, nullptr, &rv->err);
 
         //TODO is finite CV_Assert():
         CV_DbgAssert (!cvIsNaN(-rv->err) && "zmaxheap_add: Trying to add non-finite number to heap.  NaN's prohibited, could allow INF with testing");
@@ -534,7 +534,7 @@ int quad_segment_agg(int sz, struct line_fit_pt *lfps, int indices[4]){
             child->left = segs[rv->left].left;
             child->right = rv->right;
 
-            fit_line(lfps, sz, child->left, child->right, NULL, NULL, &child->err);
+            fit_line(lfps, sz, child->left, child->right, nullptr, nullptr, &child->err);
 
             //TODO is finite CV_Assert():
             CV_DbgAssert (!cvIsNaN(-child->err) && "zmaxheap_add: Trying to add non-finite number to heap.  NaN's prohibited, could allow INF with testing");
@@ -548,7 +548,7 @@ int quad_segment_agg(int sz, struct line_fit_pt *lfps, int indices[4]){
             child->left = rv->left;
             child->right = segs[rv->right].right;
 
-            fit_line(lfps, sz, child->left, child->right, NULL, NULL, &child->err);
+            fit_line(lfps, sz, child->left, child->right, nullptr, nullptr, &child->err);
 
             //TODO is finite CV_Assert():
             CV_DbgAssert (!cvIsNaN(-child->err) && "zmaxheap_add: Trying to add non-finite number to heap.  NaN's prohibited, could allow INF with testing");
@@ -601,7 +601,7 @@ static void do_unionfind_line(unionfind_t *uf, Mat &im, int w, int s, int y){
  *  quad
  **/
 int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *cluster, struct sQuad *quad){
-    CV_Assert(cluster != NULL);
+    CV_Assert(cluster != nullptr);
 
     int res = 0;
 
@@ -735,7 +735,7 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
         for (int i = 0; i < nbuckets; i++) {
             for (int j = 0; j < ASSOC; j++) {
                 if (v[i][j].theta != 0) {
-                    _zarray_set(cluster, outsz, &v[i][j], NULL);
+                    _zarray_set(cluster, outsz, &v[i][j], nullptr);
                     outsz++;
                 }
             }
@@ -878,7 +878,7 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
             }
 
             double err;
-            fit_line(lfps, sz, i0, i1, lines[i], NULL, &err);
+            fit_line(lfps, sz, i0, i1, lines[i], nullptr, &err);
 
             if (err > _params->aprilTagMaxLineFitMse) {
                 res = 0;
@@ -1041,7 +1041,7 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
  */
 static void do_quad(int nCidx0, int nCidx1, zarray_t &nClusters, int nW, int nH, zarray_t *nquads, const Ptr<DetectorParameters> &td, const Mat im){
 
-    CV_Assert(nquads != NULL);
+    CV_Assert(nquads != nullptr);
 
     //struct quad_task *task = (struct quad_task*) p;
 
@@ -1458,7 +1458,7 @@ out = Mat::zeros(h, w, CV_8UC3);
     ////////////////////////////////////////////////////////
     // step 3. process each connected component.
     zarray_t *clusters = _zarray_create(sizeof(zarray_t*)); //, uint64_zarray_hash_size(clustermap));
-    CV_Assert(clusters != NULL);
+    CV_Assert(clusters != nullptr);
 
     for (int i = 0; i < nclustermap; i++) {
         for (struct uint64_zarray_entry *entry = clustermap[i]; entry; entry = entry->next) {

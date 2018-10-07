@@ -182,7 +182,7 @@ static void rescaleGrayLevelMat(const cv::Mat &inputMat, cv::Mat &outputMat, con
 // loadNewFrame : loads a n image wrt filename parameters. it also manages image rescaling/histogram edges cutting (acts differently at first image i.e. if firstTimeread=true)
 static void loadNewFrame(const std::string filenamePrototype, const int currentFileIndex, const bool firstTimeread)
 {
-     char *currentImageName=NULL;
+     char *currentImageName=nullptr;
     currentImageName = (char*)malloc(sizeof(char)*filenamePrototype.size()+10);
 
     // grab the first frame
@@ -222,7 +222,7 @@ static void loadNewFrame(const std::string filenamePrototype, const int currentF
         globalOffset= cv::Scalar(channelOffset, channelOffset, channelOffset, channelOffset);
     }
     // call the generic input image rescaling callback
-    callBack_rescaleGrayLevelMat(1,NULL);
+    callBack_rescaleGrayLevelMat(1,nullptr);
 }
 
  int main(int argc, char* argv[]) {
@@ -324,8 +324,8 @@ static void loadNewFrame(const std::string filenamePrototype, const int currentF
 
          /////////////////////////////////////////////
          // apply default parameters of user interaction variables
-         callBack_updateRetinaParams(1,NULL); // first call for default parameters setup
-         callback_saturateColors(1, NULL);
+         callBack_updateRetinaParams(1,nullptr); // first call for default parameters setup
+         callback_saturateColors(1, nullptr);
 
          // processing loop with stop condition
          currentFrameIndex=startFrameIndex;

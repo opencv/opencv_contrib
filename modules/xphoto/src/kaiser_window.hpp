@@ -101,7 +101,7 @@ static void calcKaiserWindow1D(cv::Mat &dst, const int N, const float beta)
 
 static void calcKaiserWindow2D(float *&kaiser, const int N, const float beta)
 {
-    if (kaiser == NULL)
+    if (kaiser == nullptr)
         kaiser = new float[N * N];
 
     if (beta == 0.0f)

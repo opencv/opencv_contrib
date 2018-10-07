@@ -135,7 +135,7 @@ public:
 * \param model : name of the file where the model is stored
 * \param howToGetFeatures : optional object inheriting from RFFeatureGetter.
 *                           You need it only if you would like to train your
-*                           own forest, pass NULL otherwise
+*                           own forest, pass nullptr otherwise
 */
 CV_EXPORTS_W Ptr<StructuredEdgeDetection> createStructuredEdgeDetection(const String &model,
     Ptr<const RFFeatureGetter> howToGetFeatures = Ptr<RFFeatureGetter>());

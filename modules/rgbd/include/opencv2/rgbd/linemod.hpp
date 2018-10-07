@@ -329,7 +329,7 @@ public:
    * \return Template ID, or -1 if failed to extract a valid template.
    */
   CV_WRAP int addTemplate(const std::vector<Mat>& sources, const String& class_id,
-          const Mat& object_mask, CV_OUT Rect* bounding_box = NULL);
+          const Mat& object_mask, CV_OUT Rect* bounding_box = nullptr);
 
   /**
    * \brief Add a new object template computed by external means.

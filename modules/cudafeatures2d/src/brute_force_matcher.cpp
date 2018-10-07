@@ -463,9 +463,9 @@ namespace
         matches.clear();
         matches.reserve(nQuery);
 
-        const int* trainIdxPtr = NULL;
-        const int* imgIdxPtr = NULL;
-        const float* distancePtr = NULL;
+        const int* trainIdxPtr = nullptr;
+        const int* imgIdxPtr = nullptr;
+        const float* distancePtr = nullptr;
 
         if (gpu_matches.rows == 2)
         {
@@ -749,9 +749,9 @@ namespace
 
         int nQuery = -1, k = -1;
 
-        const int* trainIdxPtr = NULL;
-        const int* imgIdxPtr = NULL;
-        const float* distancePtr = NULL;
+        const int* trainIdxPtr = nullptr;
+        const int* imgIdxPtr = nullptr;
+        const float* distancePtr = nullptr;
 
         if (gpu_matches.type() == CV_32SC2)
         {
@@ -1005,10 +1005,10 @@ namespace
 
         int nQuery = -1;
 
-        const int* trainIdxPtr = NULL;
-        const int* imgIdxPtr = NULL;
-        const float* distancePtr = NULL;
-        const int* nMatchesPtr = NULL;
+        const int* trainIdxPtr = nullptr;
+        const int* imgIdxPtr = nullptr;
+        const float* distancePtr = nullptr;
+        const int* nMatchesPtr = nullptr;
 
         if (gpu_matches.type() == CV_32SC1)
         {

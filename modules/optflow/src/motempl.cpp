@@ -65,7 +65,7 @@ static bool ocl_updateMotionHistory( InputArray _silhouette, InputOutputArray _m
            timestamp, delbound);
 
     size_t globalsize[2] = { (size_t)silh.cols, (size_t)silh.rows };
-    return k.run(2, globalsize, NULL, false);
+    return k.run(2, globalsize, nullptr, false);
 }
 
 #endif

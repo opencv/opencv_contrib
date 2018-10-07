@@ -138,7 +138,7 @@ static void calculateStats( Mat errors, Mat mask = Mat(), bool display_images = 
 
     //AX stats
     double max_value;
-    minMaxLoc(errors, NULL, &max_value, NULL, NULL, mask);
+    minMaxLoc(errors, nullptr, &max_value, nullptr, nullptr, mask);
 
     Mat hist;
     const int n_images = 1;

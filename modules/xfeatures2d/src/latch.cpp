@@ -405,7 +405,7 @@ namespace cv
 
 
         LATCHDescriptorExtractorImpl::LATCHDescriptorExtractorImpl(int bytes, bool rotationInvariance, int half_ssd_size, double sigma) :
-            bytes_(bytes), test_fn_(NULL), rotationInvariance_(rotationInvariance), half_ssd_size_(half_ssd_size), sigma_(sigma)
+            bytes_(bytes), test_fn_(nullptr), rotationInvariance_(rotationInvariance), half_ssd_size_(half_ssd_size), sigma_(sigma)
         {
             switch (bytes)
             {

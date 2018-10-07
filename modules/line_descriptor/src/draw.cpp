@@ -69,7 +69,7 @@ void drawLineMatches( const Mat& img1, const std::vector<KeyLine>& keylines1, co
   }
 
   /* initialize random seed: */
-  srand( (unsigned int) time( NULL ) );
+  srand( (unsigned int) time( nullptr ) );
 
   Scalar singleLineColorRGB;
   if( singleLineColor == Scalar::all( -1 ) )

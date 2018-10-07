@@ -82,7 +82,7 @@ void niBlackThreshold( InputArray _src, OutputArray _dst, double maxValue,
 		break;
         case BINARIZATION_WOLF:
 		minMaxIdx(src, &srcMin);
-		minMaxIdx(stddev, NULL, &stddevMax);
+		minMaxIdx(stddev, nullptr, &stddevMax);
 		thresh = mean - static_cast<float>(k) * (mean - srcMin - stddev.mul(mean - srcMin) / stddevMax);
 		break;
         case BINARIZATION_NICK:

@@ -711,7 +711,7 @@ void weightedMedianFilter(InputArray joint, InputArray src, OutputArray dst, int
     //The output "F" is CV_32S type, containing indexes of feature values.
     //"wMap" is a 2D array that defines the distance between each pair of feature indexes.
     // wMap[i][j] is the weight between feature index "i" and "j".
-    float **wMap = NULL;
+    float **wMap = nullptr;
     featureIndexing(F, wMap, nF, float(sigma), weightType);
 
     //Filtering - Joint-Histogram Framework

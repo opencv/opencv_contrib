@@ -409,13 +409,13 @@ unsigned char BinaryDescriptor::binaryConversion( float* f1, float* f2 )
 /* requires line detection (only one image) */
 void BinaryDescriptor::detect( const Mat& image, CV_OUT std::vector<KeyLine>& keylines, const Mat& mask )
 {
-  if( image.data == NULL )
+  if( image.data == nullptr )
   {
     std::cout << "Error: input image for detection is empty" << std::endl;
     return;
   }
 
-  if( mask.data != NULL && ( mask.size() != image.size() || mask.type() != CV_8UC1 ) )
+  if( mask.data != nullptr && ( mask.size() != image.size() || mask.type() != CV_8UC1 ) )
     CV_Error( Error::StsBadArg, "Mask error while detecting lines: please check its dimensions and that data type is CV_8UC1" );
 
   else
@@ -435,7 +435,7 @@ void BinaryDescriptor::detect( const std::vector<Mat>& images, std::vector<std::
   /* detect lines from each image */
   for ( size_t counter = 0; counter < images.size(); counter++ )
   {
-    if( masks[counter].data != NULL && ( masks[counter].size() != images[counter].size() || masks[counter].type() != CV_8UC1 ) )
+    if( masks[counter].data != nullptr && ( masks[counter].size() != images[counter].size() || masks[counter].type() != CV_8UC1 ) )
       CV_Error( Error::StsBadArg, "Mask error while detecting lines: please check its dimensions and that data type is CV_8UC1" );
 
     else
@@ -1402,19 +1402,19 @@ void BinaryDescriptor::EDLineDetector::InitEDLine_()
   dxImg_.create( 1, 1, CV_16SC1 );
   dyImg_.create( 1, 1, CV_16SC1 );
   gImgWO_.create( 1, 1, CV_8SC1 );
-  pFirstPartEdgeX_ = NULL;
-  pFirstPartEdgeY_ = NULL;
-  pFirstPartEdgeS_ = NULL;
-  pSecondPartEdgeX_ = NULL;
-  pSecondPartEdgeY_ = NULL;
-  pSecondPartEdgeS_ = NULL;
-  pAnchorX_ = NULL;
-  pAnchorY_ = NULL;
+  pFirstPartEdgeX_ = nullptr;
+  pFirstPartEdgeY_ = nullptr;
+  pFirstPartEdgeS_ = nullptr;
+  pSecondPartEdgeX_ = nullptr;
+  pSecondPartEdgeY_ = nullptr;
+  pSecondPartEdgeS_ = nullptr;
+  pAnchorX_ = nullptr;
+  pAnchorY_ = nullptr;
 }
 
 BinaryDescriptor::EDLineDetector::~EDLineDetector()
 {
-  if( pFirstPartEdgeX_ != NULL )
+  if( pFirstPartEdgeX_ != nullptr )
   {
     delete[] pFirstPartEdgeX_;
     delete[] pFirstPartEdgeY_;
@@ -1423,7 +1423,7 @@ BinaryDescriptor::EDLineDetector::~EDLineDetector()
     delete[] pAnchorX_;
     delete[] pAnchorY_;
   }
-  if( pFirstPartEdgeS_ != NULL )
+  if( pFirstPartEdgeS_ != nullptr )
   {
     delete[] pFirstPartEdgeS_;
     delete[] pSecondPartEdgeS_;
@@ -1441,7 +1441,7 @@ int BinaryDescriptor::EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &e
   //compute dx, dy images
   if( gImg_.cols != (int) imageWidth || gImg_.rows != (int) imageHeight )
   {
-    if( pFirstPartEdgeX_ != NULL )
+    if( pFirstPartEdgeX_ != nullptr )
     {
       delete[] pFirstPartEdgeX_;
       delete[] pFirstPartEdgeY_;

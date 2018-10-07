@@ -478,7 +478,7 @@ static int quantize_radius( float rad, const int _rad_q_no, const Mat& _cube_sig
         return _rad_q_no-1;
 
     int idx_min[2];
-    minMaxIdx( abs( _cube_sigmas - rad ), NULL, NULL, idx_min );
+    minMaxIdx( abs( _cube_sigmas - rad ), nullptr, nullptr, idx_min );
 
     return idx_min[1];
 }
@@ -666,7 +666,7 @@ static void ni_get_descriptor( const double y, const double x, const int orienta
     CV_Assert( orientation >= 0 && orientation < 360 );
     CV_Assert( !layers->empty() );
     CV_Assert( !_oriented_grid_points->empty() );
-    CV_Assert( descriptor != NULL );
+    CV_Assert( descriptor != nullptr );
 
     int _rad_q_no = (int) layers->size();
     int _hist_th_q_no = layers->at(0).size[2];
@@ -713,7 +713,7 @@ static void i_get_descriptor( const double y, const double x, const int orientat
     CV_Assert( orientation >= 0 && orientation < 360 );
     CV_Assert( !layers->empty() );
     CV_Assert( !_oriented_grid_points->empty() );
-    CV_Assert( descriptor != NULL );
+    CV_Assert( descriptor != nullptr );
 
     int _rad_q_no = (int) layers->size();
     int _hist_th_q_no = layers->at(0).size[2];
@@ -751,7 +751,7 @@ static bool ni_get_descriptor_h( const double y, const double x, const int orien
 {
     CV_Assert( orientation >= 0 && orientation < 360 );
     CV_Assert( !layers->empty() );
-    CV_Assert( descriptor != NULL );
+    CV_Assert( descriptor != nullptr );
 
     int hradius[MAX_CUBE_NO];
 
@@ -818,7 +818,7 @@ static bool i_get_descriptor_h( const double y, const double x, const int orient
 {
     CV_Assert( orientation >= 0 && orientation < 360 );
     CV_Assert( !layers->empty() );
-    CV_Assert( descriptor != NULL );
+    CV_Assert( descriptor != nullptr );
 
     int hradius[MAX_CUBE_NO];
 

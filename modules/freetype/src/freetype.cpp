@@ -172,8 +172,8 @@ void FreeType2Impl::loadFontData(String fontFileName, int idx)
         CV_Assert(!FT_Done_Face(mFace));
     }
     CV_Assert(!FT_New_Face( mLibrary, fontFileName.c_str(), idx, &(mFace) ) );
-    mHb_font = hb_ft_font_create (mFace, NULL);
-    CV_Assert( mHb_font != NULL );
+    mHb_font = hb_ft_font_create (mFace, nullptr);
+    CV_Assert( mHb_font != nullptr );
     mIsFaceAvailable = true;
 }
 
@@ -235,7 +235,7 @@ void FreeType2Impl::putTextOutline(
    int _thickness, int _line_type, bool _bottomLeftOrigin )
 {
     hb_buffer_t *hb_buffer = hb_buffer_create ();
-    CV_Assert( hb_buffer != NULL );
+    CV_Assert( hb_buffer != nullptr );
 
     unsigned int textLen;
     hb_buffer_guess_segment_properties (hb_buffer);
@@ -243,9 +243,9 @@ void FreeType2Impl::putTextOutline(
 
     hb_glyph_info_t *info =
         hb_buffer_get_glyph_infos(hb_buffer,&textLen );
-    CV_Assert( info != NULL );
+    CV_Assert( info != nullptr );
 
-    hb_shape (mHb_font, hb_buffer, NULL, 0);
+    hb_shape (mHb_font, hb_buffer, nullptr, 0);
 
     if( _bottomLeftOrigin == true ){
         _org.y -= _fontHeight;
@@ -280,7 +280,7 @@ void FreeType2Impl::putTextOutline(
         CV_Assert( !FT_Outline_Decompose(&outline, &mFn, (void*)userData) );
 
         // Draw (Last Path)
-        mvFn( NULL, (void*)userData );
+        mvFn( nullptr, (void*)userData );
 
         _org.x += ( mFace->glyph->advance.x ) >> 6;
         _org.y += ( mFace->glyph->advance.y ) >> 6;
@@ -299,16 +299,16 @@ void FreeType2Impl::putTextBitmapMono(
 
     Mat dst = _img.getMat();
     hb_buffer_t *hb_buffer = hb_buffer_create ();
-    CV_Assert( hb_buffer != NULL );
+    CV_Assert( hb_buffer != nullptr );
 
     unsigned int textLen;
     hb_buffer_guess_segment_properties (hb_buffer);
     hb_buffer_add_utf8 (hb_buffer, _text.c_str(), -1, 0, -1);
     hb_glyph_info_t *info =
         hb_buffer_get_glyph_infos(hb_buffer,&textLen );
-    CV_Assert( info != NULL );
+    CV_Assert( info != nullptr );
 
-    hb_shape (mHb_font, hb_buffer, NULL, 0);
+    hb_shape (mHb_font, hb_buffer, nullptr, 0);
 
     _org.y += _fontHeight;
     if( _bottomLeftOrigin == true ){
@@ -373,16 +373,16 @@ void FreeType2Impl::putTextBitmapBlend(
 
     Mat dst = _img.getMat();
     hb_buffer_t *hb_buffer = hb_buffer_create ();
-    CV_Assert( hb_buffer != NULL );
+    CV_Assert( hb_buffer != nullptr );
 
     unsigned int textLen;
     hb_buffer_guess_segment_properties (hb_buffer);
     hb_buffer_add_utf8 (hb_buffer, _text.c_str(), -1, 0, -1);
     hb_glyph_info_t *info =
         hb_buffer_get_glyph_infos(hb_buffer,&textLen );
-    CV_Assert( info != NULL );
+    CV_Assert( info != nullptr );
 
-    hb_shape (mHb_font, hb_buffer, NULL, 0);
+    hb_shape (mHb_font, hb_buffer, nullptr, 0);
 
     _org.y += _fontHeight;
     if( _bottomLeftOrigin == true ){
@@ -454,7 +454,7 @@ Size FreeType2Impl::getTextSize(
     CV_Assert(!FT_Set_Pixel_Sizes( mFace, _fontHeight, _fontHeight ));
 
     hb_buffer_t *hb_buffer = hb_buffer_create ();
-    CV_Assert( hb_buffer != NULL );
+    CV_Assert( hb_buffer != nullptr );
     Point _org(0,0);
 
     unsigned int textLen;
@@ -462,8 +462,8 @@ Size FreeType2Impl::getTextSize(
     hb_buffer_add_utf8 (hb_buffer, _text.c_str(), -1, 0, -1);
     hb_glyph_info_t *info =
         hb_buffer_get_glyph_infos(hb_buffer,&textLen );
-    CV_Assert( info != NULL );
-    hb_shape (mHb_font, hb_buffer, NULL, 0);
+    CV_Assert( info != nullptr );
+    hb_shape (mHb_font, hb_buffer, nullptr, 0);
 
     _org.y -= _fontHeight;
     int xMin = INT_MAX, xMax = INT_MIN;
@@ -540,7 +540,7 @@ Size FreeType2Impl::getTextSize(
 
 int FreeType2Impl::mvFn( const FT_Vector *to, void * user)
 {
-    if(user == NULL ) { return 1; }
+    if(user == nullptr ) { return 1; }
     PathUserData *p = (PathUserData*)user;
 
     if( p->mPts.size() > 0 ){
@@ -562,7 +562,7 @@ int FreeType2Impl::mvFn( const FT_Vector *to, void * user)
 
     p->mPts.clear();
 
-    if( to == NULL ) { return 1; }
+    if( to == nullptr ) { return 1; }
 
     p->mPts.push_back( Point ( ftd(to->x), ftd(to->y) ) );
     p->mOldP = *to;
@@ -571,8 +571,8 @@ int FreeType2Impl::mvFn( const FT_Vector *to, void * user)
 
 int FreeType2Impl::lnFn( const FT_Vector *to, void * user)
 {
-    if(to   == NULL ) { return 1; }
-    if(user == NULL ) { return 1; }
+    if(to   == nullptr ) { return 1; }
+    if(user == nullptr ) { return 1; }
 
     PathUserData *p = (PathUserData *)user;
     p->mPts.push_back( Point ( ftd(to->x), ftd(to->y) ) );
@@ -584,9 +584,9 @@ int FreeType2Impl::coFn( const FT_Vector *cnt,
                      const FT_Vector *to,
                      void * user)
 {
-    if(cnt  == NULL ) { return 1; }
-    if(to   == NULL ) { return 1; }
-    if(user == NULL ) { return 1; }
+    if(cnt  == nullptr ) { return 1; }
+    if(to   == nullptr ) { return 1; }
+    if(user == nullptr ) { return 1; }
 
     PathUserData *p = (PathUserData *)user;
 
@@ -611,10 +611,10 @@ int FreeType2Impl::cuFn( const FT_Vector *cnt1,
                      const FT_Vector *to,
                      void * user)
 {
-    if(cnt1 == NULL ) { return 1; }
-    if(cnt2 == NULL ) { return 1; }
-    if(to   == NULL ) { return 1; }
-    if(user == NULL ) { return 1; }
+    if(cnt1 == nullptr ) { return 1; }
+    if(cnt2 == nullptr ) { return 1; }
+    if(to   == nullptr ) { return 1; }
+    if(user == nullptr ) { return 1; }
 
     PathUserData *p = (PathUserData *)user;
 

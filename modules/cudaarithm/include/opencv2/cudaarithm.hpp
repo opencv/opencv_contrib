@@ -579,8 +579,8 @@ CV_EXPORTS_W void calcSqrSum(InputArray src, OutputArray dst, InputArray mask = 
 /** @brief Finds global minimum and maximum matrix elements and returns their values.
 
 @param src Single-channel source image.
-@param minVal Pointer to the returned minimum value. Use NULL if not required.
-@param maxVal Pointer to the returned maximum value. Use NULL if not required.
+@param minVal Pointer to the returned minimum value. Use nullptr if not required.
+@param maxVal Pointer to the returned maximum value. Use nullptr if not required.
 @param mask Optional mask to select a sub-matrix.
 
 The function does not work with CV_64F images on GPUs with the compute capability \< 1.3.
@@ -594,10 +594,10 @@ CV_EXPORTS_W void findMinMax(InputArray src, OutputArray dst, InputArray mask = 
 /** @brief Finds global minimum and maximum matrix elements and returns their values with locations.
 
 @param src Single-channel source image.
-@param minVal Pointer to the returned minimum value. Use NULL if not required.
-@param maxVal Pointer to the returned maximum value. Use NULL if not required.
-@param minLoc Pointer to the returned minimum location. Use NULL if not required.
-@param maxLoc Pointer to the returned maximum location. Use NULL if not required.
+@param minVal Pointer to the returned minimum value. Use nullptr if not required.
+@param maxVal Pointer to the returned maximum value. Use nullptr if not required.
+@param minLoc Pointer to the returned minimum location. Use nullptr if not required.
+@param maxLoc Pointer to the returned maximum location. Use nullptr if not required.
 @param mask Optional mask to select a sub-matrix.
 
 The function does not work with CV_64F images on GPU with the compute capability \< 1.3.

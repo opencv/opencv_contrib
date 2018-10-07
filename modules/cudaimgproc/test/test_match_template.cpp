@@ -204,7 +204,7 @@ CUDA_TEST_P(MatchTemplateBlackSource, Accuracy)
 
     double maxValue;
     cv::Point maxLoc;
-    cv::minMaxLoc(dst, NULL, &maxValue, NULL, &maxLoc);
+    cv::minMaxLoc(dst, nullptr, &maxValue, nullptr, &maxLoc);
 
     cv::Point maxLocGold = cv::Point(284, 12);
 

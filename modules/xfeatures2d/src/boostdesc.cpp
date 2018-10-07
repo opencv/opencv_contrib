@@ -632,7 +632,7 @@ void BoostDesc_Impl::ini_params( const int orientQuant, const int patchSize,
     m_wl_y_max  = Mat( dim0, dim1, CV_32S, const_cast<int *>(y_max ) );
 
     // no beta
-    if ( beta == NULL ) return;
+    if ( beta == nullptr ) return;
 
     if ( m_desc_type == LBGM )
       m_wl_beta = Mat( dim1, nDim, CV_32F, reinterpret_cast<float *>(const_cast<unsigned int *>(beta)) );
@@ -655,7 +655,7 @@ BoostDesc_Impl::BoostDesc_Impl( int _desc, bool _use_scale_orientation, float _s
                       iGradAssignType,
                       nDim, nWLs, thresh, orient,
                       x_min, x_max, y_min, y_max,
-                      alpha, NULL );
+                      alpha, nullptr );
         }
         break;
       case BGM_HARD:
@@ -665,7 +665,7 @@ BoostDesc_Impl::BoostDesc_Impl( int _desc, bool _use_scale_orientation, float _s
                       iGradAssignType,
                       nDim, nWLs, thresh, orient,
                       x_min, x_max, y_min, y_max,
-                      alpha, NULL );
+                      alpha, nullptr );
         }
         break;
       case BGM_BILINEAR:
@@ -675,7 +675,7 @@ BoostDesc_Impl::BoostDesc_Impl( int _desc, bool _use_scale_orientation, float _s
                       iGradAssignType,
                       nDim, nWLs, thresh, orient,
                       x_min, x_max, y_min, y_max,
-                      alpha, NULL );
+                      alpha, nullptr );
         }
         break;
       case LBGM:

@@ -476,7 +476,7 @@ bool ColorGradientPyramid::extractTemplate(Template& templ) const
   {
     const uchar* angle_r = angle.ptr<uchar>(r);
     const float* magnitude_r = magnitude.ptr<float>(r);
-    const uchar* mask_r = no_mask ? NULL : local_mask.ptr<uchar>(r);
+    const uchar* mask_r = no_mask ? nullptr : local_mask.ptr<uchar>(r);
 
     for (int c = 0; c < magnitude.cols; ++c)
     {
@@ -773,7 +773,7 @@ bool DepthNormalPyramid::extractTemplate(Template& templ) const
   for (int r = 0; r < normal.rows; ++r)
   {
     const uchar* normal_r = normal.ptr<uchar>(r);
-    const uchar* mask_r = no_mask ? NULL : local_mask.ptr<uchar>(r);
+    const uchar* mask_r = no_mask ? nullptr : local_mask.ptr<uchar>(r);
 
     for (int c = 0; c < normal.cols; ++c)
     {

@@ -31,7 +31,7 @@ Mat gaussian_shaped_labels(const float sigma, const int w, const int h);
 std::vector<Mat> fourier_transform_features(const std::vector<Mat> &M);
 Mat divide_complex_matrices(const Mat &A, const Mat &B);
 Mat get_subwindow(const Mat &image, const Point2f center,
-        const int w, const int h,Rect *valid_pixels = NULL);
+        const int w, const int h,Rect *valid_pixels = nullptr);
 
 float subpixel_peak(const Mat &response, const std::string &s, const Point2f &p);
 double get_max(const Mat &m);

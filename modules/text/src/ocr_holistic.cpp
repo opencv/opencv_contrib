@@ -34,26 +34,26 @@ public:
         CV_Assert(getClassCount() == words.size());
     }
 
-    void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL, std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL, int component_level=0) CV_OVERRIDE
+    void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=nullptr, std::vector<std::string>* component_texts=nullptr, std::vector<float>* component_confidences=nullptr, int component_level=0) CV_OVERRIDE
     {
         CV_Assert(component_level==OCR_LEVEL_WORD); //Componnents not applicable for word spotting
         double confidence;
         output_text = classify(image, confidence);
-        if(component_rects!=NULL){
+        if(component_rects!=nullptr){
             component_rects->resize(1);
             (*component_rects)[0]=Rect(0,0,image.size().width,image.size().height);
         }
-        if(component_texts!=NULL){
+        if(component_texts!=nullptr){
             component_texts->resize(1);
             (*component_texts)[0] = output_text;
         }
-        if(component_confidences!=NULL){
+        if(component_confidences!=nullptr){
             component_confidences->resize(1);
             (*component_confidences)[0] = float(confidence);
         }
     }
 
-    void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL, std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL, int component_level=0) CV_OVERRIDE
+    void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=nullptr, std::vector<std::string>* component_texts=nullptr, std::vector<float>* component_confidences=nullptr, int component_level=0) CV_OVERRIDE
     {
         //Mask is ignored because the CNN operates on a full image
         CV_Assert(mask.cols == image.cols && mask.rows == image.rows);

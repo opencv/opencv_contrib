@@ -113,7 +113,7 @@ Mat get_subwindow(
     Mat subwin = image(roi).clone();
     copyMakeBorder(subwin, subwin, padding_top, padding_bottom, padding_left, padding_right, BORDER_REPLICATE);
 
-    if(valid_pixels != NULL) {
+    if(valid_pixels != nullptr) {
         *valid_pixels = Rect(padding_left, padding_top, roi.width, roi.height);
     }
     return subwin;
@@ -538,14 +538,14 @@ std::vector<Mat> get_features_rgb(const Mat &patch, const Size &output_size)
 double get_max(const Mat &m)
 {
     double val;
-    minMaxLoc(m, NULL, &val, NULL, NULL);
+    minMaxLoc(m, nullptr, &val, nullptr, nullptr);
     return val;
 }
 
 double get_min(const Mat &m)
 {
     double val;
-    minMaxLoc(m, &val, NULL, NULL, NULL);
+    minMaxLoc(m, &val, nullptr, nullptr, nullptr);
     return val;
 }
 

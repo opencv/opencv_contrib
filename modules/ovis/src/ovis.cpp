@@ -132,7 +132,7 @@ static void _setCameraIntrinsics(Camera* cam, InputArray _K, const Size& imsize)
 
 static SceneNode& _getSceneNode(SceneManager* sceneMgr, const String& name)
 {
-    MovableObject* mo = NULL;
+    MovableObject* mo = nullptr;
 
     try
     {
@@ -174,7 +174,7 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
     int flags;
 
     Application(const Ogre::String& _title, const Size& sz, int _flags)
-        : OgreBites::ApplicationContext("ovis", false), sceneMgr(NULL), title(_title), w(sz.width),
+        : OgreBites::ApplicationContext("ovis", false), sceneMgr(nullptr), title(_title), w(sz.width),
           h(sz.height), key_pressed(-1), flags(_flags)
     {
         logMgr.reset(new LogManager());
@@ -268,7 +268,7 @@ class WindowSceneImpl : public WindowScene
     Ogre::RenderTarget* depthRTT;
 public:
     WindowSceneImpl(Ptr<Application> app, const String& _title, const Size& sz, int flags)
-        : title(_title), root(app->getRoot()), depthRTT(NULL)
+        : title(_title), root(app->getRoot()), depthRTT(nullptr)
     {
         if (!app->sceneMgr)
         {

@@ -58,7 +58,7 @@ template <typename T> class Reference;
 template <typename T> Reference<T> makeRef(T &val);
 
 /**
- * Reference-class to signal that a type is neither owned nor NULL.
+ * Reference-class to signal that a type is neither owned nor nullptr.
  *
  * Note that const Reference<Foo> does not mean that the pointed to Foo is
  *const. If that is what

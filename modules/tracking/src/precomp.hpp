@@ -69,13 +69,13 @@ namespace cv
     template<> bool
     inline callHalCholesky<float>( float* L, size_t lstep, int lsize )
     {
-        return hal::Cholesky32f(L, lstep, lsize, NULL, 0, 0);
+        return hal::Cholesky32f(L, lstep, lsize, nullptr, 0, 0);
     }
 
     template<> bool
     inline callHalCholesky<double>( double* L, size_t lstep, int lsize)
     {
-        return hal::Cholesky64f(L, lstep, lsize, NULL, 0, 0);
+        return hal::Cholesky64f(L, lstep, lsize, nullptr, 0, 0);
     }
 
     template<typename _Tp> bool

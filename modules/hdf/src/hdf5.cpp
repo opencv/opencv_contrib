@@ -150,7 +150,7 @@ public:
 
     /* append / merge into dataset */
     virtual void dsinsert( InputArray Array, const String& dslabel,
-             const int* dims_offset = NULL, const int* dims_counts = NULL ) const CV_OVERRIDE;
+             const int* dims_offset = nullptr, const int* dims_counts = nullptr ) const CV_OVERRIDE;
 
     // overload dsread() #1
     virtual void dsread( OutputArray Array, const String& dslabel ) const CV_OVERRIDE;
@@ -273,7 +273,7 @@ HDF5Impl::HDF5Impl( const String& _hdf5_filename )
     H5Eget_auto( stackid, &errfunc, &errdata );
 
     // turn off error handling
-    H5Eset_auto( stackid, NULL, NULL );
+    H5Eset_auto( stackid, nullptr, nullptr );
 
     // check HDF5 file presence (err suppressed)
     htri_t check = H5Fis_hdf5( m_hdf5_filename.c_str() );
@@ -328,7 +328,7 @@ bool HDF5Impl::atexists(const String& atlabel) const
     H5Eget_auto(stackid, &errfunc, &errdata);
 
     // turn off error handling
-    H5Eset_auto(stackid, NULL, NULL);
+    H5Eset_auto(stackid, nullptr, nullptr);
 
     hid_t attr = H5Aopen_name(m_h5_file_id, atlabel.c_str());
     if (attr >= 0)
@@ -368,7 +368,7 @@ void HDF5Impl::atwrite(const int value, const String& atlabel)
 void HDF5Impl::atread(int* value, const String& atlabel)
 {
     if (!value)
-        CV_Error(Error::StsBadArg, "NULL pointer");
+        CV_Error(Error::StsBadArg, "nullptr pointer");
 
     if (!atexists(atlabel))
         CV_Error_(Error::StsInternal, ("Attribute '%s' does not exist!", atlabel.c_str()));
@@ -395,7 +395,7 @@ void HDF5Impl::atwrite(const double value, const String& atlabel)
 void HDF5Impl::atread(double* value, const String& atlabel)
 {
     if (!value)
-        CV_Error(Error::StsBadArg, "NULL pointer");
+        CV_Error(Error::StsBadArg, "nullptr pointer");
 
     if (!atexists(atlabel))
         CV_Error_(Error::StsInternal, ("Attribute '%s' does not exist!", atlabel.c_str()));
@@ -426,7 +426,7 @@ void HDF5Impl::atwrite(const String& value, const String& atlabel)
 void HDF5Impl::atread(String* value, const String& atlabel)
 {
     if (!value)
-        CV_Error(Error::StsBadArg, "NULL pointer");
+        CV_Error(Error::StsBadArg, "nullptr pointer");
 
     if (!atexists(atlabel))
         CV_Error_(Error::StsInternal, ("Attribute '%s' does not exist!", atlabel.c_str()));
@@ -478,7 +478,7 @@ void HDF5Impl::atwrite(InputArray value, const String& atlabel)
     }
 
     hid_t aid = H5Screate(H5S_SIMPLE);
-    H5Sset_extent_simple(aid, ndims, dim_vec.data(), NULL);
+    H5Sset_extent_simple(aid, ndims, dim_vec.data(), nullptr);
 
     hid_t attr = H5Acreate2(m_h5_file_id, atlabel.c_str(), dtype,
                             aid, H5P_DEFAULT, H5P_DEFAULT);
@@ -503,7 +503,7 @@ void HDF5Impl::atread(OutputArray value, const String& atlabel)
     int rank = H5Sget_simple_extent_ndims(aspace);
 
     vector<hsize_t> dim_vec_(rank);
-    H5Sget_simple_extent_dims(aspace, dim_vec_.data(), NULL);
+    H5Sget_simple_extent_dims(aspace, dim_vec_.data(), nullptr);
     vector<int> dim_vec(dim_vec_.begin(), dim_vec_.end());
 
     int nchannels = 1;
@@ -571,9 +571,9 @@ vector<int> HDF5Impl::dsgetsize( const String& dslabel, int dims_flag ) const
          dims_flag == H5_GETMAXDIMS )
     {
       if ( dims_flag == H5_GETDIMS )
-        H5Sget_simple_extent_dims( fspace, dims, NULL );
+        H5Sget_simple_extent_dims( fspace, dims, nullptr );
       else
-        H5Sget_simple_extent_dims( fspace, NULL, dims );
+        H5Sget_simple_extent_dims( fspace, nullptr, dims );
       SizeVect.resize( n_dims );
     }
     else if ( dims_flag == H5_GETCHUNKDIMS )
@@ -646,7 +646,7 @@ void HDF5Impl::dscreate( const int rows, const int cols, const int type,
     int dsizes[2] = { rows, cols };
 
     // create the two dim array
-    dscreate( 2, dsizes, type, dslabel, HDF5::H5_NONE, NULL );
+    dscreate( 2, dsizes, type, dslabel, HDF5::H5_NONE, nullptr );
 }
 
 // overload
@@ -657,7 +657,7 @@ void HDF5Impl::dscreate( const int rows, const int cols, const int type,
     int dsizes[2] = { rows, cols };
 
     // create the two dim array
-    dscreate( 2, dsizes, type, dslabel, compresslevel, NULL );
+    dscreate( 2, dsizes, type, dslabel, compresslevel, nullptr );
 }
 
 // overload
@@ -666,7 +666,7 @@ void HDF5Impl::dscreate( const int rows, const int cols, const int type,
                  const vector<int>& dims_chunks ) const
 {
     CV_Assert( dims_chunks.empty() || dims_chunks.size() == 2 );
-    dscreate( rows, cols, type, dslabel, compresslevel, dims_chunks.empty() ? NULL : &(dims_chunks[0]) );
+    dscreate( rows, cols, type, dslabel, compresslevel, dims_chunks.empty() ? nullptr : &(dims_chunks[0]) );
 }
 
 void HDF5Impl::dscreate( const int rows, const int cols, const int type,
@@ -683,14 +683,14 @@ void HDF5Impl::dscreate( const int rows, const int cols, const int type,
 void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
                  const String& dslabel ) const
 {
-    dscreate( n_dims, sizes, type, dslabel, H5_NONE, NULL );
+    dscreate( n_dims, sizes, type, dslabel, H5_NONE, nullptr );
 }
 
 // overload
 void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
                  const String& dslabel, const int compresslevel ) const
 {
-    dscreate( n_dims, sizes, type, dslabel, compresslevel, NULL );
+    dscreate( n_dims, sizes, type, dslabel, compresslevel, nullptr );
 }
 
 // overload
@@ -701,7 +701,7 @@ void HDF5Impl::dscreate( const vector<int>& sizes, const int type,
     CV_Assert( dims_chunks.empty() || dims_chunks.size() == sizes.size() );
 
     const int n_dims = (int) sizes.size();
-    dscreate( n_dims, &sizes[0], type, dslabel, compresslevel, dims_chunks.empty() ? NULL : &(dims_chunks[0]) );
+    dscreate( n_dims, &sizes[0], type, dslabel, compresslevel, dims_chunks.empty() ? nullptr : &(dims_chunks[0]) );
 }
 
 void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
@@ -727,7 +727,7 @@ void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
       // dataset dimension
       if ( sizes[d] == H5_UNLIMITED )
       {
-        CV_Assert( dims_chunks != NULL );
+        CV_Assert( dims_chunks != nullptr );
 
         dsdims[d] = 0;
         maxdim[d] = H5S_UNLIMITED;
@@ -738,7 +738,7 @@ void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
         maxdim[d] = sizes[d];
       }
       // default chunking
-      if ( dims_chunks == NULL )
+      if ( dims_chunks == nullptr )
         chunks[d] = sizes[d];
       else
         chunks[d] = dims_chunks[d];
@@ -754,7 +754,7 @@ void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
     if ( compresslevel >= 0 )
       H5Pset_deflate( dsdcpl, compresslevel );
 
-    if ( dims_chunks != NULL || compresslevel >= 0 )
+    if ( dims_chunks != nullptr || compresslevel >= 0 )
       H5Pset_chunk( dsdcpl, n_dims, chunks );
 
     // convert to h5 type
@@ -786,14 +786,14 @@ void HDF5Impl::dscreate( const int n_dims, const int* sizes, const int type,
 // overload
 void HDF5Impl::dsread( OutputArray Array, const String& dslabel ) const
 {
-    dsread( Array, dslabel, NULL, NULL );
+    dsread( Array, dslabel, nullptr, nullptr );
 }
 
 // overload
 void HDF5Impl::dsread( OutputArray Array, const String& dslabel,
              const int* dims_offset ) const
 {
-    dsread( Array, dslabel, dims_offset, NULL );
+    dsread( Array, dslabel, dims_offset, nullptr );
 }
 
 // overload
@@ -842,17 +842,17 @@ void HDF5Impl::dsread( OutputArray Array, const String& dslabel,
 
     // fetch dims
     hsize_t *dsdims = new hsize_t[n_dims];
-    H5Sget_simple_extent_dims( fspace, dsdims, NULL );
+    H5Sget_simple_extent_dims( fspace, dsdims, nullptr );
 
     // set amount by custom offset
-    if ( dims_offset != NULL )
+    if ( dims_offset != nullptr )
     {
       for ( int d = 0; d < n_dims; d++ )
         dsdims[d] -= dims_offset[d];
     }
 
     // set custom amount of data
-    if ( dims_counts != NULL )
+    if ( dims_counts != nullptr )
     {
       for ( int d = 0; d < n_dims; d++ )
         dsdims[d] = dims_counts[d];
@@ -871,14 +871,14 @@ void HDF5Impl::dsread( OutputArray Array, const String& dslabel,
     Array.create( n_dims, mxdims, CV_MAKETYPE(dType, channs) );
 
     // get blank data space
-    hid_t dspace = H5Screate_simple( n_dims, dsdims, NULL );
+    hid_t dspace = H5Screate_simple( n_dims, dsdims, nullptr );
 
     // get matrix write window
     H5Sselect_hyperslab( dspace, H5S_SELECT_SET,
-                         foffset, NULL, dsdims, NULL );
+                         foffset, nullptr, dsdims, nullptr );
 
     // set custom offsets
-    if ( dims_offset != NULL )
+    if ( dims_offset != nullptr )
     {
       for ( int d = 0; d < n_dims; d++ )
         foffset[d] = dims_offset[d];
@@ -886,7 +886,7 @@ void HDF5Impl::dsread( OutputArray Array, const String& dslabel,
 
     // get a file read window
     H5Sselect_hyperslab( fspace, H5S_SELECT_SET,
-                         foffset, NULL, dsdims, NULL );
+                         foffset, nullptr, dsdims, nullptr );
 
     // read from DS
     Mat matrix = Array.getMat();
@@ -906,13 +906,13 @@ void HDF5Impl::dsread( OutputArray Array, const String& dslabel,
 // overload
 void HDF5Impl::dswrite( InputArray Array, const String& dslabel ) const
 {
-    dswrite( Array, dslabel, NULL, NULL );
+    dswrite( Array, dslabel, nullptr, nullptr );
 }
 // overload
 void HDF5Impl::dswrite( InputArray Array, const String& dslabel,
              const int* dims_offset ) const
 {
-    dswrite( Array, dslabel, dims_offset, NULL );
+    dswrite( Array, dslabel, dims_offset, nullptr );
 }
 // overload
 void HDF5Impl::dswrite( InputArray Array, const String& dslabel,
@@ -955,7 +955,7 @@ void HDF5Impl::dswrite( InputArray Array, const String& dslabel,
       dscreate( n_dims, dsizes, matrix.type(), dslabel );
 
     // set custom amount of data
-    if ( dims_counts != NULL )
+    if ( dims_counts != nullptr )
     {
       for ( int d = 0; d < n_dims; d++ )
         dsdims[d] = dims_counts[d];
@@ -965,10 +965,10 @@ void HDF5Impl::dswrite( InputArray Array, const String& dslabel,
     hid_t dsdata = H5Dopen( m_h5_file_id, dslabel.c_str(), H5P_DEFAULT );
 
     // create input data space
-    hid_t dspace = H5Screate_simple( n_dims, dsdims, NULL );
+    hid_t dspace = H5Screate_simple( n_dims, dsdims, nullptr );
 
     // set custom offsets
-    if ( dims_offset != NULL )
+    if ( dims_offset != nullptr )
     {
       for ( int d = 0; d < n_dims; d++ )
         offset[d] = dims_offset[d];
@@ -977,7 +977,7 @@ void HDF5Impl::dswrite( InputArray Array, const String& dslabel,
     // create offset write window space
     hid_t fspace = H5Dget_space( dsdata );
     H5Sselect_hyperslab( fspace, H5S_SELECT_SET,
-                         offset, NULL, dsdims, NULL );
+                         offset, nullptr, dsdims, nullptr );
 
     // convert type
     hid_t dstype = GetH5type( matrix.type() );
@@ -1008,14 +1008,14 @@ void HDF5Impl::dswrite( InputArray Array, const String& dslabel,
 // overload
 void HDF5Impl::dsinsert( InputArray Array, const String& dslabel ) const
 {
-    dsinsert( Array, dslabel, NULL, NULL );
+    dsinsert( Array, dslabel, nullptr, nullptr );
 }
 
 // overload
 void HDF5Impl::dsinsert( InputArray Array, const String& dslabel,
              const int* dims_offset ) const
 {
-    dsinsert( Array, dslabel, dims_offset, NULL );
+    dsinsert( Array, dslabel, dims_offset, nullptr );
 }
 
 // overload
@@ -1054,7 +1054,7 @@ void HDF5Impl::dsinsert( InputArray Array, const String& dslabel,
     }
 
     // set custom amount of data
-    if ( dims_counts != NULL )
+    if ( dims_counts != nullptr )
     {
       for ( int d = 0; d < n_dims; d++ )
       {
@@ -1067,10 +1067,10 @@ void HDF5Impl::dsinsert( InputArray Array, const String& dslabel,
     hid_t dsdata = H5Dopen( m_h5_file_id, dslabel.c_str(), H5P_DEFAULT );
 
     // create input data space
-    hid_t dspace = H5Screate_simple( n_dims, dsdims, NULL );
+    hid_t dspace = H5Screate_simple( n_dims, dsdims, nullptr );
 
     // set custom offsets
-    if ( dims_offset != NULL )
+    if ( dims_offset != nullptr )
     {
       for ( int d = 0; d < n_dims; d++ )
         offset[d] = dims_offset[d];
@@ -1080,7 +1080,7 @@ void HDF5Impl::dsinsert( InputArray Array, const String& dslabel,
     hid_t fspace = H5Dget_space( dsdata );
     int f_dims = H5Sget_simple_extent_ndims( fspace );
     hsize_t *fsdims = new hsize_t[f_dims];
-    H5Sget_simple_extent_dims( fspace, fsdims, NULL );
+    H5Sget_simple_extent_dims( fspace, fsdims, nullptr );
     H5Sclose( fspace );
 
     CV_Assert( f_dims == n_dims );
@@ -1092,10 +1092,10 @@ void HDF5Impl::dsinsert( InputArray Array, const String& dslabel,
       // init
       nwdims[d] = 0;
       // add offset
-      if ( dims_offset != NULL )
+      if ( dims_offset != nullptr )
         nwdims[d] += dims_offset[d];
       // add counts or matrix size
-      if ( dims_counts != NULL )
+      if ( dims_counts != nullptr )
         nwdims[d] += dims_counts[d];
       else
         nwdims[d] += matrix.size[d];
@@ -1112,7 +1112,7 @@ void HDF5Impl::dsinsert( InputArray Array, const String& dslabel,
     fspace = H5Dget_space( dsdata );
 
     H5Sselect_hyperslab( fspace, H5S_SELECT_SET,
-                         offset, NULL, dsdims, NULL );
+                         offset, nullptr, dsdims, nullptr );
 
     // convert type
     hid_t dstype = GetH5type( matrix.type() );
@@ -1253,7 +1253,7 @@ void HDF5Impl::kpwrite( const vector<KeyPoint> keypoints, const String& kplabel,
     hid_t dsdata = H5Dopen( m_h5_file_id, kplabel.c_str(), H5P_DEFAULT );
 
     // create input data space
-    hid_t dspace = H5Screate_simple( 1, dsddims, NULL );
+    hid_t dspace = H5Screate_simple( 1, dsddims, nullptr );
 
     // set custom offsets
     if ( offset != H5_NONE )
@@ -1262,7 +1262,7 @@ void HDF5Impl::kpwrite( const vector<KeyPoint> keypoints, const String& kplabel,
     // create offset write window space
     hid_t fspace = H5Dget_space( dsdata );
     H5Sselect_hyperslab( fspace, H5S_SELECT_SET,
-                         doffset, NULL, dsddims, NULL );
+                         doffset, nullptr, dsddims, nullptr );
 
     // memory compound type
     hid_t mmtype = H5Tcreate( H5T_COMPOUND, sizeof( KeyPoint ) );
@@ -1307,7 +1307,7 @@ void HDF5Impl::kpinsert( const vector<KeyPoint> keypoints, const String& kplabel
     hid_t dsdata = H5Dopen( m_h5_file_id, kplabel.c_str(), H5P_DEFAULT );
 
     // create input data space
-    hid_t dspace = H5Screate_simple( 1, dsddims, NULL );
+    hid_t dspace = H5Screate_simple( 1, dsddims, nullptr );
 
     // set custom offsets
     if ( offset != H5_NONE )
@@ -1317,7 +1317,7 @@ void HDF5Impl::kpinsert( const vector<KeyPoint> keypoints, const String& kplabel
     hid_t fspace = H5Dget_space( dsdata );
     int f_dims = H5Sget_simple_extent_ndims( fspace );
     hsize_t *fsdims = new hsize_t[f_dims];
-    H5Sget_simple_extent_dims( fspace, fsdims, NULL );
+    H5Sget_simple_extent_dims( fspace, fsdims, nullptr );
     H5Sclose( fspace );
 
     CV_Assert( f_dims == 1 );
@@ -1344,7 +1344,7 @@ void HDF5Impl::kpinsert( const vector<KeyPoint> keypoints, const String& kplabel
     fspace = H5Dget_space( dsdata );
 
     H5Sselect_hyperslab( fspace, H5S_SELECT_SET,
-                         doffset, NULL, dsddims, NULL );
+                         doffset, nullptr, dsddims, nullptr );
 
     // memory compound type
     hid_t mmtype = H5Tcreate( H5T_COMPOUND, sizeof( KeyPoint ) );
@@ -1388,7 +1388,7 @@ void HDF5Impl::kpread( vector<KeyPoint>& keypoints, const String& kplabel,
 
     // fetch dims
     hsize_t dsddims[1];
-    H5Sget_simple_extent_dims( fspace, dsddims, NULL );
+    H5Sget_simple_extent_dims( fspace, dsddims, nullptr );
 
     // set amount by custom offset
     if ( offset != H5_NONE )
@@ -1405,11 +1405,11 @@ void HDF5Impl::kpread( vector<KeyPoint>& keypoints, const String& kplabel,
     keypoints.resize( dsddims[0] );
 
     // get blank data space
-    hid_t dspace = H5Screate_simple( 1, dsddims, NULL );
+    hid_t dspace = H5Screate_simple( 1, dsddims, nullptr );
 
     // get matrix write window
     H5Sselect_hyperslab( dspace, H5S_SELECT_SET,
-                         foffset, NULL, dsddims, NULL );
+                         foffset, nullptr, dsddims, nullptr );
 
     // set custom offsets
     if ( offset != H5_NONE )
@@ -1417,7 +1417,7 @@ void HDF5Impl::kpread( vector<KeyPoint>& keypoints, const String& kplabel,
 
     // get a file read window
     H5Sselect_hyperslab( fspace, H5S_SELECT_SET,
-                         foffset, NULL, dsddims, NULL );
+                         foffset, nullptr, dsddims, nullptr );
 
     // read from DS
     H5Dread( dsdata, dstype, dspace, fspace, H5P_DEFAULT, &keypoints[0] );

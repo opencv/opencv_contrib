@@ -168,7 +168,7 @@ Ncv32u alignUp(Ncv32u what, Ncv32u alignment)
 
 void NCVMemPtr::clear()
 {
-    ptr = NULL;
+    ptr = nullptr;
     memtype = NCVMemoryTypeNone;
 }
 
@@ -329,9 +329,9 @@ NCVStatus memSegCopyHelper2D(void *dst, Ncv32u dstPitch, NCVMemoryType dstType,
 NCVMemStackAllocator::NCVMemStackAllocator(Ncv32u alignment_) :
     _memType(NCVMemoryTypeNone),
     _alignment(alignment_),
-    allocBegin(NULL),
-    begin(NULL),
-    end(NULL),
+    allocBegin(nullptr),
+    begin(nullptr),
+    end(nullptr),
     currentSize(0),
     _maxSize(0),
     bReusesMemory(false)
@@ -344,7 +344,7 @@ NCVMemStackAllocator::NCVMemStackAllocator(Ncv32u alignment_) :
 NCVMemStackAllocator::NCVMemStackAllocator(NCVMemoryType memT, size_t capacity, Ncv32u alignment_, void *reusePtr) :
     _memType(memT),
     _alignment(alignment_),
-    allocBegin(NULL),
+    allocBegin(nullptr),
     currentSize(0),
     _maxSize(0)
 {
@@ -352,9 +352,9 @@ NCVMemStackAllocator::NCVMemStackAllocator(NCVMemoryType memT, size_t capacity, 
     ncvAssertPrintCheck(bProperAlignment, "NCVMemStackAllocator ctor:: _alignment not power of 2");
     ncvAssertPrintCheck(memT != NCVMemoryTypeNone, "NCVMemStackAllocator ctor:: Incorrect allocator type");
 
-    allocBegin = NULL;
+    allocBegin = nullptr;
 
-    if (reusePtr == NULL && capacity != 0)
+    if (reusePtr == nullptr && capacity != 0)
     {
         bReusesMemory = false;
         switch (memT)
@@ -392,7 +392,7 @@ NCVMemStackAllocator::NCVMemStackAllocator(NCVMemoryType memT, size_t capacity, 
 
 NCVMemStackAllocator::~NCVMemStackAllocator()
 {
-    if (allocBegin != NULL)
+    if (allocBegin != nullptr)
     {
         ncvAssertPrintCheck(currentSize == 0, "NCVMemStackAllocator dtor:: not all objects were deallocated properly, forcing destruction");
 
@@ -413,7 +413,7 @@ NCVMemStackAllocator::~NCVMemStackAllocator()
             }
         }
 
-        allocBegin = NULL;
+        allocBegin = nullptr;
     }
 }
 
@@ -446,7 +446,7 @@ NCVStatus NCVMemStackAllocator::dealloc(NCVMemSegment &seg)
 {
     ncvAssertReturn(isInitialized(), NCV_ALLOCATOR_BAD_ALLOC);
     ncvAssertReturn(seg.begin.memtype == this->_memType, NCV_ALLOCATOR_BAD_DEALLOC);
-    ncvAssertReturn(seg.begin.ptr != NULL || isCounting(), NCV_ALLOCATOR_BAD_DEALLOC);
+    ncvAssertReturn(seg.begin.ptr != nullptr || isCounting(), NCV_ALLOCATOR_BAD_DEALLOC);
     ncvAssertReturn(seg.begin.ptr == begin - seg.size, NCV_ALLOCATOR_DEALLOC_ORDER);
 
     currentSize -= seg.size;
@@ -462,7 +462,7 @@ NCVStatus NCVMemStackAllocator::dealloc(NCVMemSegment &seg)
 
 NcvBool NCVMemStackAllocator::isInitialized(void) const
 {
-    return (((this->_alignment & (this->_alignment-1)) == 0) && isCounting()) || this->allocBegin != NULL;
+    return (((this->_alignment & (this->_alignment-1)) == 0) && isCounting()) || this->allocBegin != nullptr;
 }
 
 
@@ -546,7 +546,7 @@ NCVStatus NCVMemNativeAllocator::dealloc(NCVMemSegment &seg)
 {
     ncvAssertReturn(isInitialized(), NCV_ALLOCATOR_BAD_ALLOC);
     ncvAssertReturn(seg.begin.memtype == this->_memType, NCV_ALLOCATOR_BAD_DEALLOC);
-    ncvAssertReturn(seg.begin.ptr != NULL, NCV_ALLOCATOR_BAD_DEALLOC);
+    ncvAssertReturn(seg.begin.ptr != nullptr, NCV_ALLOCATOR_BAD_DEALLOC);
 
     ncvAssertReturn(currentSize >= alignUp(static_cast<Ncv32u>(seg.size), this->_alignment), NCV_ALLOCATOR_BAD_DEALLOC);
     currentSize -= alignUp(static_cast<Ncv32u>(seg.size), this->_alignment);
@@ -772,7 +772,7 @@ NCVStatus ncvGroupRectangles_host(NCVVector<NcvRect32u> &hypotheses,
 {
     ncvAssertReturn(hypotheses.memType() == NCVMemoryTypeHostPageable ||
                     hypotheses.memType() == NCVMemoryTypeHostPinned, NCV_MEM_RESIDENCE_ERROR);
-    if (hypothesesWeights != NULL)
+    if (hypothesesWeights != nullptr)
     {
         ncvAssertReturn(hypothesesWeights->memType() == NCVMemoryTypeHostPageable ||
                         hypothesesWeights->memType() == NCVMemoryTypeHostPinned, NCV_MEM_RESIDENCE_ERROR);
@@ -787,13 +787,13 @@ NCVStatus ncvGroupRectangles_host(NCVVector<NcvRect32u> &hypotheses,
     memcpy(&rects[0], hypotheses.ptr(), numHypotheses * sizeof(NcvRect32u));
 
     std::vector<Ncv32u> weights;
-    if (hypothesesWeights != NULL)
+    if (hypothesesWeights != nullptr)
     {
         groupRectangles(rects, minNeighbors, intersectEps, &weights);
     }
     else
     {
-        groupRectangles(rects, minNeighbors, intersectEps, NULL);
+        groupRectangles(rects, minNeighbors, intersectEps, nullptr);
     }
 
     numHypotheses = (Ncv32u)rects.size();
@@ -802,7 +802,7 @@ NCVStatus ncvGroupRectangles_host(NCVVector<NcvRect32u> &hypotheses,
         memcpy(hypotheses.ptr(), &rects[0], numHypotheses * sizeof(NcvRect32u));
     }
 
-    if (hypothesesWeights != NULL)
+    if (hypothesesWeights != nullptr)
     {
         memcpy(hypothesesWeights->ptr(), &weights[0], numHypotheses * sizeof(Ncv32u));
     }
@@ -820,7 +820,7 @@ static NCVStatus drawRectsWrapperHost(T *h_dst,
                                       Ncv32u numRects,
                                       T color)
 {
-    ncvAssertReturn(h_dst != NULL && h_rects != NULL, NCV_NULL_PTR);
+    ncvAssertReturn(h_dst != nullptr && h_rects != nullptr, NCV_NULL_PTR);
     ncvAssertReturn(dstWidth > 0 && dstHeight > 0, NCV_DIMENSIONS_INVALID);
     ncvAssertReturn(dstStride >= dstWidth, NCV_INVALID_STEP);
     ncvAssertReturn(numRects != 0, NCV_SUCCESS);

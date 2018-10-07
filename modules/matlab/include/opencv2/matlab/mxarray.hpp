@@ -239,7 +239,7 @@ private:
   }
 
   void dealloc() {
-    if (owns_ && ptr_) { mxDestroyArray(ptr_); ptr_ = NULL; owns_ = false; }
+    if (owns_ && ptr_) { mxDestroyArray(ptr_); ptr_ = nullptr; owns_ = false; }
   }
 public:
   // --------------------------------------------------------------------------
@@ -282,7 +282,7 @@ public:
    * This constructor explicitly creates an MxArray of the given size and type.
    */
   MxArray(size_t m, size_t n, size_t k, mxClassID id, mxComplexity com = matlab::Traits<>::Real)
-      : ptr_(NULL), owns_(true) {
+      : ptr_(nullptr), owns_(true) {
     mwSize dims[] = { static_cast<mwSize>(m), static_cast<mwSize>(n), static_cast<mwSize>(k) };
     ptr_ = mxCreateNumericArray(3, dims, id, com);
   }

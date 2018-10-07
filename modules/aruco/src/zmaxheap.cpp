@@ -143,9 +143,9 @@ static int zmaxheap_remove_index(zmaxheap_t *heap, int idx, void *p, float *v)
         return 0;
 
     // copy out the requested element from the heap.
-    if (v != NULL)
+    if (v != nullptr)
         *v = heap->values[idx];
-    if (p != NULL)
+    if (p != nullptr)
         memcpy(p, &heap->data[idx*heap->el_sz], heap->el_sz);
 
     heap->size--;

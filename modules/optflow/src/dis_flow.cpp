@@ -770,7 +770,7 @@ void DISOpticalFlowImpl::PatchInverseSearch_ParBody::operator()(const Range &ran
     float *y_ptr = dis->I0y_buf.ptr<float>();
 
     bool use_temporal_candidates = false;
-    float *initial_Ux_ptr = NULL, *initial_Uy_ptr = NULL;
+    float *initial_Ux_ptr = nullptr, *initial_Uy_ptr = nullptr;
     if (!dis->initial_Ux.empty())
     {
         initial_Ux_ptr = dis->initial_Ux[pyr_level].ptr<float>();

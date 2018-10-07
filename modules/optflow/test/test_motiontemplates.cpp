@@ -153,9 +153,9 @@ protected:
 
 CV_UpdateMHITest::CV_UpdateMHITest()
 {
-    test_array[INPUT].push_back(NULL);
-    test_array[INPUT_OUTPUT].push_back(NULL);
-    test_array[REF_INPUT_OUTPUT].push_back(NULL);
+    test_array[INPUT].push_back(nullptr);
+    test_array[INPUT_OUTPUT].push_back(nullptr);
+    test_array[REF_INPUT_OUTPUT].push_back(nullptr);
     mhi_i = INPUT_OUTPUT; mhi_ref_i = REF_INPUT_OUTPUT;
 }
 
@@ -255,11 +255,11 @@ protected:
 CV_MHIGradientTest::CV_MHIGradientTest()
 {
     mhi_i = mhi_ref_i = INPUT;
-    test_array[INPUT].push_back(NULL);
-    test_array[OUTPUT].push_back(NULL);
-    test_array[OUTPUT].push_back(NULL);
-    test_array[REF_OUTPUT].push_back(NULL);
-    test_array[REF_OUTPUT].push_back(NULL);
+    test_array[INPUT].push_back(nullptr);
+    test_array[OUTPUT].push_back(nullptr);
+    test_array[OUTPUT].push_back(nullptr);
+    test_array[REF_OUTPUT].push_back(nullptr);
+    test_array[REF_OUTPUT].push_back(nullptr);
     delta1 = delta2 = 0;
     aperture_size = 0;
     delta_range_log = 4;
@@ -402,9 +402,9 @@ protected:
 CV_MHIGlobalOrientTest::CV_MHIGlobalOrientTest()
 {
     mhi_i = mhi_ref_i = INPUT;
-    test_array[INPUT].push_back(NULL);
-    test_array[INPUT].push_back(NULL);
-    test_array[INPUT].push_back(NULL);
+    test_array[INPUT].push_back(nullptr);
+    test_array[INPUT].push_back(nullptr);
+    test_array[INPUT].push_back(nullptr);
     min_angle = max_angle = 0;
 }
 

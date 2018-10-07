@@ -958,7 +958,7 @@ UINT32* BinaryDescriptorMatcher::BucketGroup::query( int subindex, int *size )
   else
   {
     *size = 0;
-    return NULL;
+    return nullptr;
   }
 }
 

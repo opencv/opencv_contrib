@@ -84,7 +84,7 @@ int main( int argc, char** argv )
   cv::Mat imageMat1 = imread( image_path1, 1 );
   cv::Mat imageMat2 = imread( image_path2, 1 );
 
-  if( imageMat1.data == NULL || imageMat2.data == NULL )
+  if( imageMat1.data == nullptr || imageMat2.data == nullptr )
   {
     std::cout << "Error, images could not be loaded. Please, check their path" << std::endl;
   }

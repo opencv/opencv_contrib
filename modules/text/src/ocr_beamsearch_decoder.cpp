@@ -65,11 +65,11 @@ void OCRBeamSearchDecoder::run(Mat& image, string& output_text, vector<Rect>* co
     CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
     CV_Assert( (component_level == OCR_LEVEL_TEXTLINE) || (component_level == OCR_LEVEL_WORD) );
     output_text.clear();
-    if (component_rects != NULL)
+    if (component_rects != nullptr)
         component_rects->clear();
-    if (component_texts != NULL)
+    if (component_texts != nullptr)
         component_texts->clear();
-    if (component_confidences != NULL)
+    if (component_confidences != nullptr)
         component_confidences->clear();
 }
 void OCRBeamSearchDecoder::run(Mat& image, Mat& mask, string& output_text, vector<Rect>* component_rects,
@@ -80,11 +80,11 @@ void OCRBeamSearchDecoder::run(Mat& image, Mat& mask, string& output_text, vecto
     CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
     CV_Assert( (component_level == OCR_LEVEL_TEXTLINE) || (component_level == OCR_LEVEL_WORD) );
     output_text.clear();
-    if (component_rects != NULL)
+    if (component_rects != nullptr)
         component_rects->clear();
-    if (component_texts != NULL)
+    if (component_texts != nullptr)
         component_texts->clear();
-    if (component_confidences != NULL)
+    if (component_confidences != nullptr)
         component_confidences->clear();
 }
 
@@ -95,7 +95,7 @@ CV_WRAP String OCRBeamSearchDecoder::run(InputArray image, int min_confidence, i
     vector<string> component_texts;
     vector<float> component_confidences;
     Mat image_m = image.getMat();
-    run(image_m, output1, NULL, &component_texts, &component_confidences, component_level);
+    run(image_m, output1, nullptr, &component_texts, &component_confidences, component_level);
     for(unsigned int i = 0; i < component_texts.size(); i++)
     {
         //cout << "confidence: " << component_confidences[i] << " text:" << component_texts[i] << endl;
@@ -115,7 +115,7 @@ CV_WRAP String OCRBeamSearchDecoder::run(InputArray image, InputArray mask, int 
     vector<float> component_confidences;
     Mat image_m = image.getMat();
     Mat mask_m = mask.getMat();
-    run(image_m, mask_m, output1, NULL, &component_texts, &component_confidences, component_level);
+    run(image_m, mask_m, output1, nullptr, &component_texts, &component_confidences, component_level);
     for(unsigned int i = 0; i < component_texts.size(); i++)
     {
         //cout << "confidence: " << component_confidences[i] << " text:" << component_texts[i] << endl;
@@ -216,11 +216,11 @@ public:
         CV_Assert( (src.cols > 0) && (src.rows > 0) );
         CV_Assert( component_level == OCR_LEVEL_WORD );
         out_sequence.clear();
-        if (component_rects != NULL)
+        if (component_rects != nullptr)
             component_rects->clear();
-        if (component_texts != NULL)
+        if (component_texts != nullptr)
             component_texts->clear();
-        if (component_confidences != NULL)
+        if (component_confidences != nullptr)
             component_confidences->clear();
 
         if(src.type() == CV_8UC3)
