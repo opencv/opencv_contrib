@@ -23,7 +23,7 @@ See the book @cite Holzmann1988 for details.
 @param dst Output image of the same size and type as src.
 @param size neighbouring size is 2-size+1
 @param dynRatio image is divided by dynRatio before histogram processing
-@param code	color space conversion code(see ColorConversionCodes). Histogram will used only first plane
+@param code color space conversion code(see ColorConversionCodes). Histogram will used only first plane
 */
 CV_EXPORTS_W void oilPainting(InputArray src, OutputArray dst, int size, int dynRatio, int code);
 /** @brief oilPainting
