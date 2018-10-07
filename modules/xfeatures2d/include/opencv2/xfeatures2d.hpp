@@ -960,7 +960,7 @@ FastFeatureDetector::TYPE_5_8
 Detects corners using the FAST algorithm by @cite Rosten06 .
  */
 CV_EXPORTS void FASTForPointSet( InputArray image, CV_IN_OUT std::vector<KeyPoint>& keypoints,
-                      int threshold, bool nonmaxSuppression=true, FastFeatureDetector::DetectorType type=FastFeatureDetector::TYPE_9_16);
+                      int threshold, bool nonmaxSuppression=true, cv::FastFeatureDetector::DetectorType type=FastFeatureDetector::TYPE_9_16);
 
 
 //! @}
