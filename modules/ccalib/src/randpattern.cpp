@@ -72,7 +72,7 @@ RandomPatternCornerFinder::RandomPatternCornerFinder(float patternWidth, float p
     _descriptor = descriptor;
     _matcher = matcher;
     _showExtraction = showExtraction;
-	_verbose = verbose;
+    _verbose = verbose;
 }
 
 void RandomPatternCornerFinder::computeObjectImagePoints(std::vector<cv::Mat> inputImages)
@@ -318,28 +318,28 @@ std::vector<cv::Mat> RandomPatternCornerFinder::computeObjectImagePointsForSingl
             innerMask1, innerMask2, 1);
     }
 
-	if (_verbose)
-	{
-		std::cout << "number of matched points " << (int)keypointsImageLocation.total() << std::endl;
-	}
+    if (_verbose)
+    {
+        std::cout << "number of matched points " << (int)keypointsImageLocation.total() << std::endl;
+    }
     // outlier remove
     findFundamentalMat(keypointsImageLocation, keypointsPatternLocation,
         FM_RANSAC, 1, 0.995, innerMask1);
     getFilteredLocation(keypointsImageLocation, keypointsPatternLocation, innerMask1);
 
-	if (this->_showExtraction)
-	{
-		drawCorrespondence(inputImage, keypointsImage, _patternImage, _keypointsPattern, matchesImgtoPat,
-			innerMask1, innerMask2, 2);
-	}
+    if (this->_showExtraction)
+    {
+        drawCorrespondence(inputImage, keypointsImage, _patternImage, _keypointsPattern, matchesImgtoPat,
+            innerMask1, innerMask2, 2);
+    }
 
     findHomography(keypointsImageLocation, keypointsPatternLocation, RANSAC, 30*inputImage.cols/1000, innerMask2);
     getFilteredLocation(keypointsImageLocation, keypointsPatternLocation, innerMask2);
 
-	if (_verbose)
-	{
-		std::cout << "number of filtered points " << (int)keypointsImageLocation.total() << std::endl;
-	}
+    if (_verbose)
+    {
+        std::cout << "number of filtered points " << (int)keypointsImageLocation.total() << std::endl;
+    }
 
     // draw filtered correspondence
     if (this->_showExtraction)

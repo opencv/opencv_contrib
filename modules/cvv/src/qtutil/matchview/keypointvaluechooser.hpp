@@ -15,30 +15,30 @@ namespace cvv{ namespace qtutil{
  */
 class KeyPointValueChooser:public QWidget{
 
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	/**
-	 * @brief the constructor
-	 * @param parent the parent Widget
-	 */
-	KeyPointValueChooser(QWidget *parent=nullptr);
+    /**
+     * @brief the constructor
+     * @param parent the parent Widget
+     */
+    KeyPointValueChooser(QWidget *parent=nullptr);
 
-	/**
-	 * @brief returns the choosen value of the given keypoint
-	 * @return the choosen value of the given keypoint
-	 */
-	double getChoosenValue(cv::KeyPoint keypoint);
+    /**
+     * @brief returns the choosen value of the given keypoint
+     * @return the choosen value of the given keypoint
+     */
+    double getChoosenValue(cv::KeyPoint keypoint);
 
 signals:
 
-	/**
-	 * @brief this signal will be emitted if the user selected an other value
-	 */
-	void valueChanged();
+    /**
+     * @brief this signal will be emitted if the user selected an other value
+     */
+    void valueChanged();
 
 private:
-	QComboBox *combBox_;
+    QComboBox *combBox_;
 
 };
 

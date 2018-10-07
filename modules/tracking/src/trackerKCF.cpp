@@ -116,14 +116,14 @@ namespace cv{
   private:
     float output_sigma;
     Rect2d roi;
-    Mat hann; 	//hann window filter
+    Mat hann;    //hann window filter
     Mat hann_cn; //10 dimensional hann-window filter for CN features,
 
-    Mat y,yf; 	// training response and its FFT
-    Mat x; 	// observation and its FFT
-    Mat k,kf;	// dense gaussian kernel and its FFT
+    Mat y,yf;   // training response and its FFT
+    Mat x;      // observation and its FFT
+    Mat k,kf;   // dense gaussian kernel and its FFT
     Mat kf_lambda; // kf+lambda
-    Mat new_alphaf, alphaf;	// training coefficients
+    Mat new_alphaf, alphaf;         // training coefficients
     Mat new_alphaf_den, alphaf_den; // for splitted training coefficients
     Mat z; // model
     Mat response; // detection result
@@ -298,8 +298,8 @@ namespace cv{
    * Main part of the KCF algorithm
    */
   bool TrackerKCFImpl::updateImpl( const Mat& image, Rect2d& boundingBox ){
-    double minVal, maxVal;	// min-max response
-    Point minLoc,maxLoc;	// min-max location
+    double minVal, maxVal;  // min-max response
+    Point minLoc,maxLoc;    // min-max location
 
     Mat img=image.clone();
     // check the channels of the input image, grayscale is preferred

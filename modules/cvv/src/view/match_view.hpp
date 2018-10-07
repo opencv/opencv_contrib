@@ -20,66 +20,66 @@ namespace view
  */
 class MatchView : public QWidget
 {
-	Q_OBJECT
+    Q_OBJECT
 
 signals:
 
-	/**
-	 * @brief update left Footer.
-	 * Signal to update the left side of the footer with newText.
-	 * @param newText to update the footer with.
-	 */
-	void updateLeftFooter(QString newText);
+    /**
+     * @brief update left Footer.
+     * Signal to update the left side of the footer with newText.
+     * @param newText to update the footer with.
+     */
+    void updateLeftFooter(QString newText);
 
-	/**
-	 * @brief update right Footer.
-	 * Signal to update the right side of the footer with newText.
-	 * @param newText to update the footer with.
-	 */
-	void updateRightFoooter(QString newText);
+    /**
+     * @brief update right Footer.
+     * Signal to update the right side of the footer with newText.
+     * @param newText to update the footer with.
+     */
+    void updateRightFoooter(QString newText);
 
       public:
-	/**
-	 * @brief default constructor
-	 */
-	MatchView() : MatchView{ 0 }
-	{
-	}
+    /**
+     * @brief default constructor
+     */
+    MatchView() : MatchView{ 0 }
+    {
+    }
 
-	/**
-	 * @brief default destructor.
-	 */
-	virtual ~MatchView() = default;
+    /**
+     * @brief default destructor.
+     */
+    virtual ~MatchView() = default;
 
-	virtual std::vector<cv::DMatch> getMatchSelection()
-	{
-		return std::vector<cv::DMatch>{};
-	}
+    virtual std::vector<cv::DMatch> getMatchSelection()
+    {
+        return std::vector<cv::DMatch>{};
+    }
 
-	virtual std::vector<cv::KeyPoint> getKeyPointSelection()
-	{
-		return std::vector<cv::KeyPoint>{};
-	}
+    virtual std::vector<cv::KeyPoint> getKeyPointSelection()
+    {
+        return std::vector<cv::KeyPoint>{};
+    }
 
       public
 slots:
 
-	virtual void setMatchSelection(std::vector<cv::DMatch>)
-	{
-	}
+    virtual void setMatchSelection(std::vector<cv::DMatch>)
+    {
+    }
 
-	virtual void setKeyPointSelection(std::vector<cv::KeyPoint>)
-	{
-	}
+    virtual void setKeyPointSelection(std::vector<cv::KeyPoint>)
+    {
+    }
 
       protected:
-	/**
-	 * @brief constructor of QWidget(parent).
-	 * @param parent the parent of this view.
-	 **/
-	MatchView(QWidget *parent) : QWidget{ parent }
-	{
-	}
+    /**
+     * @brief constructor of QWidget(parent).
+     * @param parent the parent of this view.
+     **/
+    MatchView(QWidget *parent) : QWidget{ parent }
+    {
+    }
 };
 }
 } // namespaces

@@ -57,43 +57,43 @@ using namespace cv::datasets;
 
 int main(int argc, char *argv[])
 {
-	const char *keys =
-		"{ help h usage ? |    | show this message }"
-		"{ path p         |true| path to folder with dataset }"
-		"{ datasetID id         |1| Dataset ID}";
-	CommandLineParser parser(argc, argv, keys);
-	string path(parser.get<string>("path"));
-	int datasetID(parser.get<int>("datasetID"));
-	if (parser.has("help") || path == "true")
-	{
-		parser.printMessage();
-		getchar();
-		return -1;
-	}
+    const char *keys =
+        "{ help h usage ? |    | show this message }"
+        "{ path p         |true| path to folder with dataset }"
+        "{ datasetID id         |1| Dataset ID}";
+    CommandLineParser parser(argc, argv, keys);
+    string path(parser.get<string>("path"));
+    int datasetID(parser.get<int>("datasetID"));
+    if (parser.has("help") || path == "true")
+    {
+        parser.printMessage();
+        getchar();
+        return -1;
+    }
 
-	Ptr<TRACK_vot> dataset = TRACK_vot::create();
-	dataset->load(path);
-	printf("Datasets number: %d\n", dataset->getDatasetsNum());
-	for (int i = 1; i <= dataset->getDatasetsNum(); i++)
-		printf("\tDataset #%d size: %d\n", i, dataset->getDatasetLength(i));
+    Ptr<TRACK_vot> dataset = TRACK_vot::create();
+    dataset->load(path);
+    printf("Datasets number: %d\n", dataset->getDatasetsNum());
+    for (int i = 1; i <= dataset->getDatasetsNum(); i++)
+        printf("\tDataset #%d size: %d\n", i, dataset->getDatasetLength(i));
 
-	dataset->initDataset(datasetID);
+    dataset->initDataset(datasetID);
 
-	for (int i = 0; i < dataset->getDatasetLength(datasetID); i++)
-	{
-		Mat frame;
-		if (!dataset->getNextFrame(frame))
-			break;
-		//Draw Ground Truth BB
-		vector <Point2d> gtPoints =  dataset->getGT();
-		for (int j = 0; j < (int)(gtPoints.size()-1); j++)
-			line(frame, gtPoints[j], gtPoints[j + 1], Scalar(0, 255, 0), 2);
-		line(frame, gtPoints[0], gtPoints[(int)(gtPoints.size()-1)], Scalar(0, 255, 0), 2);
+    for (int i = 0; i < dataset->getDatasetLength(datasetID); i++)
+    {
+        Mat frame;
+        if (!dataset->getNextFrame(frame))
+            break;
+        //Draw Ground Truth BB
+        vector <Point2d> gtPoints =  dataset->getGT();
+        for (int j = 0; j < (int)(gtPoints.size()-1); j++)
+            line(frame, gtPoints[j], gtPoints[j + 1], Scalar(0, 255, 0), 2);
+        line(frame, gtPoints[0], gtPoints[(int)(gtPoints.size()-1)], Scalar(0, 255, 0), 2);
 
-		imshow("VOT 2015 DATASET TEST...", frame);
-		waitKey(100);
-	}
+        imshow("VOT 2015 DATASET TEST...", frame);
+        waitKey(100);
+    }
 
-	getchar();
-	return 0;
+    getchar();
+    return 0;
 }

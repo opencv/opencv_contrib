@@ -67,9 +67,9 @@
 * => please take a look at the nice and efficient demosaicing strategy introduced by B.Chaix de Lavarene, take a look at the cited paper for more mathematical details
 * @brief Retina color sampling model which allows classical bayer sampling, random and potentially several other method ! Low color errors on corners !
 * -> Based on the research of:
-*		.Brice Chaix Lavarene (chaix@lis.inpg.fr)
-*		.Jeanny Herault (herault@lis.inpg.fr)
-*		.David Alleyson (david.alleyson@upmf-grenoble.fr)
+*       .Brice Chaix Lavarene (chaix@lis.inpg.fr)
+*       .Jeanny Herault (herault@lis.inpg.fr)
+*       .David Alleyson (david.alleyson@upmf-grenoble.fr)
 *      .collaboration: alexandre benoit (benoit.alexandre.vision@gmail.com or benoit@lis.inpg.fr)
 * Please cite: B. Chaix de Lavarene, D. Alleysson, B. Durette, J. Herault (2007). "Efficient demosaicing through recursive filtering", IEEE International Conference on Image Processing ICIP 2007
 * @author Alexandre BENOIT, benoit.alexandre.vision@gmail.com, LISTIC / Gipsa-Lab, France: www.gipsa-lab.inpg.fr/

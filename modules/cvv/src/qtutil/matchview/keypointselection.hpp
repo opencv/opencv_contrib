@@ -12,20 +12,20 @@ namespace cvv{ namespace qtutil{
  */
 class KeyPointSelection:public QFrame{
 
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	/**
-	 * @brief the constructor
-	 */
-	KeyPointSelection(QWidget * parent =nullptr):QFrame{parent}{}
+    /**
+     * @brief the constructor
+     */
+    KeyPointSelection(QWidget * parent =nullptr):QFrame{parent}{}
 
 
-	virtual std::vector<cv::KeyPoint> select(const std::vector<cv::KeyPoint>& selection) = 0;
+    virtual std::vector<cv::KeyPoint> select(const std::vector<cv::KeyPoint>& selection) = 0;
 
 signals:
 
-	void settingsChanged();
+    void settingsChanged();
 
 };
 

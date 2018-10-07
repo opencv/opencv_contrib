@@ -6,34 +6,34 @@
 namespace cvv{ namespace qtutil {
 
 MatchShowSetting::MatchShowSetting(std::vector<cv::DMatch>, QWidget *parent):
-	MatchSettings{parent}
+    MatchSettings{parent}
 {
-	auto layout=util::make_unique<QVBoxLayout>();
-	auto button=util::make_unique<QPushButton>();
+    auto layout=util::make_unique<QVBoxLayout>();
+    auto button=util::make_unique<QPushButton>();
 
-	button_=button.get();
+    button_=button.get();
 
-	button_->setEnabled(true);
-	button_->setCheckable(true);
+    button_->setEnabled(true);
+    button_->setCheckable(true);
 
 
-	connect(button.get(),SIGNAL(clicked()),this,SLOT(updateAll()));
-	connect(button.get(),SIGNAL(clicked()),this,SLOT(updateButton()));
+    connect(button.get(),SIGNAL(clicked()),this,SLOT(updateAll()));
+    connect(button.get(),SIGNAL(clicked()),this,SLOT(updateButton()));
 
-	button->setChecked(true);
-	layout->addWidget(button.release());
+    button->setChecked(true);
+    layout->addWidget(button.release());
 
-	setLayout(layout.release());
-	updateButton();
+    setLayout(layout.release());
+    updateButton();
 }
 
 void MatchShowSetting::updateButton()
 {
-	if(button_->isChecked()){
-		button_->setText("show");
-	}else{
-		button_->setText("hide");
-	}
+    if(button_->isChecked()){
+        button_->setText("show");
+    }else{
+        button_->setText("hide");
+    }
 }
 
 }}

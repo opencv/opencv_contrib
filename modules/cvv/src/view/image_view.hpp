@@ -19,39 +19,39 @@ namespace view
  */
 class ImageView : public QWidget
 {
-	Q_OBJECT
+    Q_OBJECT
 
 signals:
 
-	/**
-	 * @brief update left Footer.
-	 * Signal to update the left side of the footer with newText.
-	 * @param newText to update the footer with.
-	 */
-	void updateLeftFooter(const QString &newText);
+    /**
+     * @brief update left Footer.
+     * Signal to update the left side of the footer with newText.
+     * @param newText to update the footer with.
+     */
+    void updateLeftFooter(const QString &newText);
 
-	/**
-	 * @brief update right Footer.
-	 * Signal to update the right side of the footer with newText.
-	 * @param newText to update the footer with.
-	 */
-	void updateRightFoooter(const QString &newText);
+    /**
+     * @brief update right Footer.
+     * Signal to update the right side of the footer with newText.
+     * @param newText to update the footer with.
+     */
+    void updateRightFoooter(const QString &newText);
 
       public:
-	/**
-	 * @brief Constructor.
-	 * @param image to show.
-	 * @param parent of this QWidget.
-	 **/
-	ImageView(const cv::Mat &image, QWidget *parent = nullptr);
+    /**
+     * @brief Constructor.
+     * @param image to show.
+     * @param parent of this QWidget.
+     **/
+    ImageView(const cv::Mat &image, QWidget *parent = nullptr);
 
-	/**
-	 * @brief Shows the full image.
-	 */
-	void showFullImage();
+    /**
+     * @brief Shows the full image.
+     */
+    void showFullImage();
 
       private:
-	util::ObserverPtr<qtutil::ZoomableImage> image;
+    util::ObserverPtr<qtutil::ZoomableImage> image;
 };
 }
 } // namespaces

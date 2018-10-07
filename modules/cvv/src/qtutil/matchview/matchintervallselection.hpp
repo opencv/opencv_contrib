@@ -16,24 +16,24 @@ namespace qtutil
  */
 class MatchIntervallSelector:public MatchSelection{
 
-	Q_OBJECT
+    Q_OBJECT
 public:
-	/**
-	 * @brief the constructor
-	 * @param matches all matches which can be selected
-	 * @param parent the parent widget
-	 */
-	MatchIntervallSelector(std::vector<cv::DMatch> matches,QWidget*parent=nullptr);
+    /**
+     * @brief the constructor
+     * @param matches all matches which can be selected
+     * @param parent the parent widget
+     */
+    MatchIntervallSelector(std::vector<cv::DMatch> matches,QWidget*parent=nullptr);
 
-	/**
-	 * @brief select matches from the given selecton
-	 * @param selection the current selection
-	 * @return the selected matches
-	 */
-	virtual std::vector<cv::DMatch> select(const std::vector<cv::DMatch>& selection)override;
+    /**
+     * @brief select matches from the given selecton
+     * @param selection the current selection
+     * @return the selected matches
+     */
+    virtual std::vector<cv::DMatch> select(const std::vector<cv::DMatch>& selection)override;
 
 private:
-	IntervallSelector* selector_;
+    IntervallSelector* selector_;
 
 };
 

@@ -16,53 +16,53 @@ namespace cvv{ namespace qtutil{
  */
 class MatchSelectionSelector:public MatchSelection,public RegisterHelper<MatchSelection,std::vector<cv::DMatch>>{
 
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	/**
-	 * @brief the constructor
-	 */
-	MatchSelectionSelector(const std::vector<cv::DMatch>& univers,QWidget * parent=nullptr);
+    /**
+     * @brief the constructor
+     */
+    MatchSelectionSelector(const std::vector<cv::DMatch>& univers,QWidget * parent=nullptr);
 
-	/**
-	 * @brief select matches of the given selection
-	 * @return the selected matches
-	 */
+    /**
+     * @brief select matches of the given selection
+     * @return the selected matches
+     */
     std::vector<cv::DMatch> select(const std::vector<cv::DMatch>& selection) CV_OVERRIDE;
 
 public slots:
-	/**
-	 * @brief emits the signal remove with this.
-	 */
-	void removeMe()
-		{emit remove(this);}
+    /**
+     * @brief emits the signal remove with this.
+     */
+    void removeMe()
+        {emit remove(this);}
 
 signals:
-	/**
-	 * @brief this signal contains a KeyPointSelectionSelector which should be removed. Normally the argumen is this.
-	 */
-	void remove(MatchSelectionSelector*);
+    /**
+     * @brief this signal contains a KeyPointSelectionSelector which should be removed. Normally the argumen is this.
+     */
+    void remove(MatchSelectionSelector*);
 
 private slots:
 
-	/**
-	 * @brief swap the current MatchSelection if the user choose another.
-	 */
-	virtual void changeSelector();
+    /**
+     * @brief swap the current MatchSelection if the user choose another.
+     */
+    virtual void changeSelector();
 
 private:
-	MatchSelection * selection_=nullptr;
-	std::vector<cv::DMatch> univers_;
-	QLayout *layout_;
+    MatchSelection * selection_=nullptr;
+    std::vector<cv::DMatch> univers_;
+    QLayout *layout_;
 };
 template <class Selection>
 bool registerMatchSelection(const QString &name)
 {
-	return MatchSelectionSelector::registerElement(
-	    name, [](std::vector<cv::DMatch> univers)
-	{
-		    return std::unique_ptr<MatchSelection>{ new Selection{univers}};
-	});
+    return MatchSelectionSelector::registerElement(
+        name, [](std::vector<cv::DMatch> univers)
+    {
+            return std::unique_ptr<MatchSelection>{ new Selection{univers}};
+    });
 }
 }}
 

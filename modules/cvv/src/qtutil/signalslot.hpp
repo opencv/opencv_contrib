@@ -24,29 +24,29 @@ namespace qtutil
  */
 class Signal : public QObject
 {
-	Q_OBJECT
+    Q_OBJECT
       public:
-	/**
-	 * @brief Constructor
-	 * @param parent The parent
-	 */
-	Signal(QObject *parent = nullptr) : QObject{ parent }
-	{
-	}
+    /**
+     * @brief Constructor
+     * @param parent The parent
+     */
+    Signal(QObject *parent = nullptr) : QObject{ parent }
+    {
+    }
 
-	/**
-	 * @brief Emits the signal.
-	 * @param args The arguments
-	 */
-	void emitSignal() const
-	{
-		emit signal();
-	}
+    /**
+     * @brief Emits the signal.
+     * @param args The arguments
+     */
+    void emitSignal() const
+    {
+        emit signal();
+    }
 signals:
-	/**
-	 * @brief The signal emited by emitSignal.
-	 */
-	void signal() const;
+    /**
+     * @brief The signal emited by emitSignal.
+     */
+    void signal() const;
 };
 
 /**
@@ -56,36 +56,36 @@ signals:
  */
 class Slot : public QObject
 {
-	Q_OBJECT
+    Q_OBJECT
       public:
-	/**
-	 * @brief Constructor
-	 * @param f Function called by the slot slot()
-	 * @throw std::invalid_argument If f is invalide
-	 * @param parent The parent
-	 */
-	Slot(const std::function<void()> &f, QObject *parent = nullptr)
-	    : QObject{ parent }, function_{ f }
-	{
-		if (!f)
-			throw std::invalid_argument{ "invalid function" };
-	}
+    /**
+     * @brief Constructor
+     * @param f Function called by the slot slot()
+     * @throw std::invalid_argument If f is invalide
+     * @param parent The parent
+     */
+    Slot(const std::function<void()> &f, QObject *parent = nullptr)
+        : QObject{ parent }, function_{ f }
+    {
+        if (!f)
+            throw std::invalid_argument{ "invalid function" };
+    }
 
       public
 slots:
-	/**
-	 * @brief The slot calling function()
-	 */
-	void slot() const
-	{
-		function_();
-	}
+    /**
+     * @brief The slot calling function()
+     */
+    void slot() const
+    {
+        function_();
+    }
 
       private:
-	/**
-	 * @brief The function called by the slot slot()
-	 */
-	std::function<void()> function_;
+    /**
+     * @brief The function called by the slot slot()
+     */
+    std::function<void()> function_;
 };
 
 // ///////////////////////////////////////////////////////////////
@@ -97,18 +97,18 @@ slots:
  */
 class SignalQString : public QObject
 {
-	Q_OBJECT
+    Q_OBJECT
       public:
-	SignalQString(QObject *parent = nullptr) : QObject{ parent }
-	{
-	}
+    SignalQString(QObject *parent = nullptr) : QObject{ parent }
+    {
+    }
 
-	void emitSignal(const QString &t) const
-	{
-		emit signal(t);
-	}
+    void emitSignal(const QString &t) const
+    {
+        emit signal(t);
+    }
 signals:
-	void signal(QString t) const;
+    void signal(QString t) const;
 };
 
 /**
@@ -116,29 +116,29 @@ signals:
  */
 class SlotQString : public QObject
 {
-	Q_OBJECT
+    Q_OBJECT
       public:
-	SlotQString(const std::function<void(QString)> &f,
-	            QObject *parent = nullptr)
-	    : QObject{ parent }, function_{ f }
-	{
-		if (!f)
-			throw std::invalid_argument{ "invalide function" };
-	}
+    SlotQString(const std::function<void(QString)> &f,
+                QObject *parent = nullptr)
+        : QObject{ parent }, function_{ f }
+    {
+        if (!f)
+            throw std::invalid_argument{ "invalide function" };
+    }
 
-	~SlotQString()
-	{
-	}
+    ~SlotQString()
+    {
+    }
 
       public
 slots:
-	void slot(QString t) const
-	{
-		function_(t);
-	}
+    void slot(QString t) const
+    {
+        function_(t);
+    }
 
       private:
-	std::function<void(QString)> function_;
+    std::function<void(QString)> function_;
 };
 
 /**
@@ -146,21 +146,21 @@ slots:
  */
 class SignalMatRef : public QObject
 {
-	Q_OBJECT
+    Q_OBJECT
       public:
-	SignalMatRef(QObject *parent = nullptr) : QObject{ parent }
-	{
-	}
+    SignalMatRef(QObject *parent = nullptr) : QObject{ parent }
+    {
+    }
 
-	void emitSignal(cv::Mat &mat) const
-	{
-		emit signal(mat);
-	}
+    void emitSignal(cv::Mat &mat) const
+    {
+        emit signal(mat);
+    }
 signals:
-	/**
-	 * @brief The signal emited by emitSignal.
-	 */
-	void signal(cv::Mat &mat) const;
+    /**
+     * @brief The signal emited by emitSignal.
+     */
+    void signal(cv::Mat &mat) const;
 };
 
 /**
@@ -168,24 +168,24 @@ signals:
  */
 class SlotBool : public QObject
 {
-	Q_OBJECT
+    Q_OBJECT
       public:
-	SlotBool(const std::function<void(bool)> &f, QObject *parent = nullptr)
-	    : QObject{ parent }, function_{ f }
-	{
-		if (!f)
-			throw std::invalid_argument{ "invalide function" };
-	}
+    SlotBool(const std::function<void(bool)> &f, QObject *parent = nullptr)
+        : QObject{ parent }, function_{ f }
+    {
+        if (!f)
+            throw std::invalid_argument{ "invalide function" };
+    }
 
       public
 slots:
-	void slot(bool t) const
-	{
-		function_(t);
-	}
+    void slot(bool t) const
+    {
+        function_(t);
+    }
 
       private:
-	std::function<void(bool)> function_;
+    std::function<void(bool)> function_;
 };
 }
 } // end namespaces qtutil, cvv

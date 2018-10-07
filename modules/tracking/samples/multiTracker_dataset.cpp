@@ -75,169 +75,169 @@ static const char* keys =
 
 static void onMouse(int event, int x, int y, int, void*)
 {
-	if (!selectObjects)
-	{
-		switch (event)
-		{
-		case EVENT_LBUTTONDOWN:
-			//set origin of the bounding box
-			startSelection = true;
-			boundingBox.x = x;
-			boundingBox.y = y;
-			boundingBox.width = boundingBox.height = 0;
-			break;
-		case EVENT_LBUTTONUP:
-			//sei with and height of the bounding box
-			boundingBox.width = std::abs(x - boundingBox.x);
-			boundingBox.height = std::abs(y - boundingBox.y);
-			boundingBoxes.push_back(boundingBox);
-			targetsCnt++;
-			if (targetsCnt == targetsNum)
-			{
-				paused = false;
-				selectObjects = true;
-			}
-			startSelection = false;
-			break;
-		case EVENT_MOUSEMOVE:
+    if (!selectObjects)
+    {
+        switch (event)
+        {
+        case EVENT_LBUTTONDOWN:
+            //set origin of the bounding box
+            startSelection = true;
+            boundingBox.x = x;
+            boundingBox.y = y;
+            boundingBox.width = boundingBox.height = 0;
+            break;
+        case EVENT_LBUTTONUP:
+            //sei with and height of the bounding box
+            boundingBox.width = std::abs(x - boundingBox.x);
+            boundingBox.height = std::abs(y - boundingBox.y);
+            boundingBoxes.push_back(boundingBox);
+            targetsCnt++;
+            if (targetsCnt == targetsNum)
+            {
+                paused = false;
+                selectObjects = true;
+            }
+            startSelection = false;
+            break;
+        case EVENT_MOUSEMOVE:
 
-			if (startSelection && !selectObjects)
-			{
-				//draw the bounding box
-				Mat currentFrame;
-				image.copyTo(currentFrame);
-				for (int i = 0; i < (int)boundingBoxes.size(); i++)
-					rectangle(currentFrame, boundingBoxes[i], Scalar(255, 0, 0), 2, 1);
-				rectangle(currentFrame, Point((int)boundingBox.x, (int)boundingBox.y), Point(x, y), Scalar(255, 0, 0), 2, 1);
-				imshow("Tracking API", currentFrame);
-			}
-			break;
-		}
-	}
+            if (startSelection && !selectObjects)
+            {
+                //draw the bounding box
+                Mat currentFrame;
+                image.copyTo(currentFrame);
+                for (int i = 0; i < (int)boundingBoxes.size(); i++)
+                    rectangle(currentFrame, boundingBoxes[i], Scalar(255, 0, 0), 2, 1);
+                rectangle(currentFrame, Point((int)boundingBox.x, (int)boundingBox.y), Point(x, y), Scalar(255, 0, 0), 2, 1);
+                imshow("Tracking API", currentFrame);
+            }
+            break;
+        }
+    }
 }
 
 static void help()
 {
-	cout << "\nThis example shows the functionality of \"Long-term optical tracking API\""
-		"TLD dataset ID: 1~10, VOT2015 dataset ID: 1~60\n"
-		"-- pause video [p] and draw a bounding boxes around the targets to start the tracker\n"
-		"Example:\n"
-		"./example_tracking_multiTracker_dataset<tracker_algorithm> <number_of_targets> <dataset_path> <dataset_id>\n"
-		<< endl;
+    cout << "\nThis example shows the functionality of \"Long-term optical tracking API\""
+        "TLD dataset ID: 1~10, VOT2015 dataset ID: 1~60\n"
+        "-- pause video [p] and draw a bounding boxes around the targets to start the tracker\n"
+        "Example:\n"
+        "./example_tracking_multiTracker_dataset<tracker_algorithm> <number_of_targets> <dataset_path> <dataset_id>\n"
+        << endl;
 
-	cout << "\n\nHot keys: \n"
-		"\tq - quit the program\n"
-		"\tp - pause video\n";
+    cout << "\n\nHot keys: \n"
+        "\tq - quit the program\n"
+        "\tp - pause video\n";
 }
 
 int main(int argc, char *argv[])
 {
-	CommandLineParser parser(argc, argv, keys);
-	string tracker_algorithm = parser.get<string>(0);
-	targetsNum = parser.get<int>(1);
-	string datasetRootPath = parser.get<string>(2);
-	int datasetID = parser.get<int>(3);
-	if (tracker_algorithm.empty() || datasetRootPath.empty() || targetsNum < 1)
-	{
-		help();
-		return -1;
-	}
+    CommandLineParser parser(argc, argv, keys);
+    string tracker_algorithm = parser.get<string>(0);
+    targetsNum = parser.get<int>(1);
+    string datasetRootPath = parser.get<string>(2);
+    int datasetID = parser.get<int>(3);
+    if (tracker_algorithm.empty() || datasetRootPath.empty() || targetsNum < 1)
+    {
+        help();
+        return -1;
+    }
 
-	Mat frame;
-	paused = false;
-	namedWindow("Tracking API", 0);
-	setMouseCallback("Tracking API", onMouse, 0);
+    Mat frame;
+    paused = false;
+    namedWindow("Tracking API", 0);
+    setMouseCallback("Tracking API", onMouse, 0);
 
-	MultiTrackerTLD mt;
-	//Init Dataset
-	Ptr<TRACK_vot> dataset = TRACK_vot::create();
-	dataset->load(datasetRootPath);
-	dataset->initDataset(datasetID);
+    MultiTrackerTLD mt;
+    //Init Dataset
+    Ptr<TRACK_vot> dataset = TRACK_vot::create();
+    dataset->load(datasetRootPath);
+    dataset->initDataset(datasetID);
 
-	//Read first frame
-	dataset->getNextFrame(frame);
-	frame.copyTo(image);
-	for (int i = 0; i < (int)boundingBoxes.size(); i++)
-		rectangle(image, boundingBoxes[i], Scalar(255, 0, 0), 2, 1);
-	imshow("Tracking API", image);
+    //Read first frame
+    dataset->getNextFrame(frame);
+    frame.copyTo(image);
+    for (int i = 0; i < (int)boundingBoxes.size(); i++)
+        rectangle(image, boundingBoxes[i], Scalar(255, 0, 0), 2, 1);
+    imshow("Tracking API", image);
 
-	bool initialized = false;
-	paused = true;
-	int frameCounter = 0;
+    bool initialized = false;
+    paused = true;
+    int frameCounter = 0;
 
-	//Time measurment
-	int64 e3 = getTickCount();
+    //Time measurment
+    int64 e3 = getTickCount();
 
-	for (;;)
-	{
-		if (!paused)
-		{
-			//Time measurment
-			int64 e1 = getTickCount();
-			if (initialized){
-				if (!dataset->getNextFrame(frame))
-					break;
-				frame.copyTo(image);
-			}
+    for (;;)
+    {
+        if (!paused)
+        {
+            //Time measurment
+            int64 e1 = getTickCount();
+            if (initialized){
+                if (!dataset->getNextFrame(frame))
+                    break;
+                frame.copyTo(image);
+            }
 
-			if (!initialized && selectObjects)
-			{
-				//Initialize the tracker and add targets
-				for (int i = 0; i < (int)boundingBoxes.size(); i++)
-				{
+            if (!initialized && selectObjects)
+            {
+                //Initialize the tracker and add targets
+                for (int i = 0; i < (int)boundingBoxes.size(); i++)
+                {
                     if (!mt.addTarget(frame, boundingBoxes[i], createTrackerByName(tracker_algorithm)))
-					{
-						cout << "Trackers Init Error!!!";
-						return 0;
-					}
-					rectangle(frame, boundingBoxes[i], mt.colors[0], 2, 1);
-				}
-				initialized = true;
-			}
-			else if (initialized)
-			{
-				//Update all targets
-				if (mt.update(frame))
-				{
-					for (int i = 0; i < mt.targetNum; i++)
-					{
-						rectangle(frame, mt.boundingBoxes[i], mt.colors[i], 2, 1);
-					}
-				}
-			}
-			imshow("Tracking API", frame);
-			frameCounter++;
-			//Time measurment
-			int64 e2 = getTickCount();
-			double t1 = (e2 - e1) / getTickFrequency();
-			cout << frameCounter << "\tframe :  " << t1 * 1000.0 << "ms" << endl;
-		}
+                    {
+                        cout << "Trackers Init Error!!!";
+                        return 0;
+                    }
+                    rectangle(frame, boundingBoxes[i], mt.colors[0], 2, 1);
+                }
+                initialized = true;
+            }
+            else if (initialized)
+            {
+                //Update all targets
+                if (mt.update(frame))
+                {
+                    for (int i = 0; i < mt.targetNum; i++)
+                    {
+                        rectangle(frame, mt.boundingBoxes[i], mt.colors[i], 2, 1);
+                    }
+                }
+            }
+            imshow("Tracking API", frame);
+            frameCounter++;
+            //Time measurment
+            int64 e2 = getTickCount();
+            double t1 = (e2 - e1) / getTickFrequency();
+            cout << frameCounter << "\tframe :  " << t1 * 1000.0 << "ms" << endl;
+        }
 
-		char c = (char)waitKey(2);
-		if (c == 'q')
-			break;
-		if (c == 'p')
-			paused = !paused;
+        char c = (char)waitKey(2);
+        if (c == 'q')
+            break;
+        if (c == 'p')
+            paused = !paused;
 
-		//waitKey(0);
-	}
+        //waitKey(0);
+    }
 
-	//Time measurment
-	int64 e4 = getTickCount();
-	double t2 = (e4 - e3) / getTickFrequency();
-	cout << "Average Time for Frame:  " << t2 * 1000.0 / frameCounter << "ms" << endl;
-	cout << "Average FPS:  " << 1.0 / t2*frameCounter << endl;
+    //Time measurment
+    int64 e4 = getTickCount();
+    double t2 = (e4 - e3) / getTickFrequency();
+    cout << "Average Time for Frame:  " << t2 * 1000.0 / frameCounter << "ms" << endl;
+    cout << "Average FPS:  " << 1.0 / t2*frameCounter << endl;
 
 
-	waitKey(0);
+    waitKey(0);
 
-	return 0;
+    return 0;
 }
 
 #else // ! HAVE_OPENCV_DATASETS
 #include <opencv2/core.hpp>
 int main() {
-	CV_Error(cv::Error::StsNotImplemented , "this sample needs to be built with opencv_datasets !");
-	return -1;
+    CV_Error(cv::Error::StsNotImplemented , "this sample needs to be built with opencv_datasets !");
+    return -1;
 }
 #endif // HAVE_OPENCV_DATASETS

@@ -18,43 +18,43 @@ namespace qtutil
 
 class SingleColorKeyPen : public KeyPointSettings
 {
-	Q_OBJECT
+    Q_OBJECT
       public:
-	/**
-	 * @brief the consructor
-	 * @param parent the parent Widget
-	 */
-	SingleColorKeyPen(std::vector<cv::KeyPoint> ,QWidget *parent = nullptr);
+    /**
+     * @brief the consructor
+     * @param parent the parent Widget
+     */
+    SingleColorKeyPen(std::vector<cv::KeyPoint> ,QWidget *parent = nullptr);
 
-	/**
-	 * @brief the destructor
-	 */
-	~SingleColorKeyPen()
-	{ colordia_->deleteLater();}
+    /**
+     * @brief the destructor
+     */
+    ~SingleColorKeyPen()
+    { colordia_->deleteLater();}
 
-	/**
-	 * @brief this method returns the same PEn for all CVVKeyPoints
-	 * @return the same Pen for all CVVKeyPoint
-	 */
-	virtual void setSettings(CVVKeyPoint &keypoint) override;
+    /**
+     * @brief this method returns the same PEn for all CVVKeyPoints
+     * @return the same Pen for all CVVKeyPoint
+     */
+    virtual void setSettings(CVVKeyPoint &keypoint) override;
       public
 slots:
 
-	/**
-	 * @brief this method updates the Color of the Pen which will be
-	 * returned in getPen()
-	 * @param color the new Color
-	 */
-	void updateColor(const QColor &color);
+    /**
+     * @brief this method updates the Color of the Pen which will be
+     * returned in getPen()
+     * @param color the new Color
+     */
+    void updateColor(const QColor &color);
 
       private
 slots:
-	void colorButtonClicked()
-		{colordia_->show();}
+    void colorButtonClicked()
+        {colordia_->show();}
 
       private:
-	QColorDialog *colordia_;
-	QColor color_;
+    QColorDialog *colordia_;
+    QColor color_;
 };
 }
 }

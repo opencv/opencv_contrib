@@ -21,43 +21,43 @@ namespace qtutil
 
 class SingleColorMatchPen : public MatchSettings
 {
-	Q_OBJECT
+    Q_OBJECT
       public:
-	/**
-	 * @brief the constructor
-	 * @param parent the parent Widget
-	 */
-	SingleColorMatchPen(std::vector<cv::DMatch> ,QWidget *parent = nullptr);
+    /**
+     * @brief the constructor
+     * @param parent the parent Widget
+     */
+    SingleColorMatchPen(std::vector<cv::DMatch> ,QWidget *parent = nullptr);
 
-	/**
-	 * @brief the destructor
-	 * the QColorDialog has no parent/layout it must be deleted.
-	 */
-	~SingleColorMatchPen()
-		{colorDialog_->deleteLater();}
+    /**
+     * @brief the destructor
+     * the QColorDialog has no parent/layout it must be deleted.
+     */
+    ~SingleColorMatchPen()
+        {colorDialog_->deleteLater();}
 
-	/**
-	 * @brief return a single Color for all CVVMatch
-	 */
-	virtual void setSettings(CVVMatch &match) override;
+    /**
+     * @brief return a single Color for all CVVMatch
+     */
+    virtual void setSettings(CVVMatch &match) override;
 
       public
 slots:
 
-	/**
-	 * @brief updates the Color which will be returned in getPen(CVVMAtch&).
-	 * @param color a QColor
-	 */
-	void updateColor(const QColor &color);
+    /**
+     * @brief updates the Color which will be returned in getPen(CVVMAtch&).
+     * @param color a QColor
+     */
+    void updateColor(const QColor &color);
 
       protected
 slots:
-	void colorButtonClicked()
-		{colorDialog_->show();}
+    void colorButtonClicked()
+        {colorDialog_->show();}
 
       protected:
-	QColor color_;
-	QColorDialog *colorDialog_;
+    QColor color_;
+    QColorDialog *colorDialog_;
 };
 }
 }

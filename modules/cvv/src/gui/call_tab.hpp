@@ -19,38 +19,38 @@ namespace gui
  */
 class CallTab : public QWidget
 {
-	Q_OBJECT
+    Q_OBJECT
       public:
-	/**
-	 * @brief Returns the name of this tab.
-	 * @return current name
-	 */
-	const QString getName() const
-	{
-		return name;
-	}
+    /**
+     * @brief Returns the name of this tab.
+     * @return current name
+     */
+    const QString getName() const
+    {
+        return name;
+    }
 
-	/**
-	 * @brief Sets the name of this tab.
-	 * @param name new name
-	 */
-	void setName(const QString &newName)
-	{
-		name = newName;
-	}
+    /**
+     * @brief Sets the name of this tab.
+     * @param name new name
+     */
+    void setName(const QString &newName)
+    {
+        name = newName;
+    }
 
-	/**
-	 * @brief Returns the of this CallTab.
-	 * @return the ID of the CallTab
-	 * (ID is equal to the ID of the associated call in derived classes)
-	 */
-	virtual size_t getId() const
-	{
-		return 0;
-	}
+    /**
+     * @brief Returns the of this CallTab.
+     * @return the ID of the CallTab
+     * (ID is equal to the ID of the associated call in derived classes)
+     */
+    virtual size_t getId() const
+    {
+        return 0;
+    }
 
       private:
-	QString name;
+    QString name;
 };
 }
 } // namespaces

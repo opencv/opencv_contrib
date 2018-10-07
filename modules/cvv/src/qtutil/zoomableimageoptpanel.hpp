@@ -23,31 +23,31 @@ namespace qtutil
 class ZoomableOptPanel : public QWidget
 {
 
-	Q_OBJECT
+    Q_OBJECT
 
       public:
-	/**
-	 * @brief the constructor
-	 * @param image the ZoomableImage which will be connected
-	 * @param parent the parent Widget
-	 */
-	ZoomableOptPanel(const ZoomableImage &zoomIm,
-			 bool showHideButton=true,QWidget *parent = nullptr);
+    /**
+     * @brief the constructor
+     * @param image the ZoomableImage which will be connected
+     * @param parent the parent Widget
+     */
+    ZoomableOptPanel(const ZoomableImage &zoomIm,
+             bool showHideButton=true,QWidget *parent = nullptr);
 
       public
 slots:
-	void updateMat(cv::Mat mat);
-	void updateConvertStatus(const cv::Mat &,ImageConversionResult result);
-	void setZoom(QRectF, qreal);
+    void updateMat(cv::Mat mat);
+    void updateConvertStatus(const cv::Mat &,ImageConversionResult result);
+    void setZoom(QRectF, qreal);
 
       private:
-	QDoubleSpinBox *zoomSpin_;
-	QLabel *labelConvert_;
-	QLabel *labelDim_;
-	QLabel *labelType_;
-	QLabel *labelChannel_;
-	QLabel *labelSize_;
-	QLabel *labelDepth_;
+    QDoubleSpinBox *zoomSpin_;
+    QLabel *labelConvert_;
+    QLabel *labelDim_;
+    QLabel *labelType_;
+    QLabel *labelChannel_;
+    QLabel *labelSize_;
+    QLabel *labelDepth_;
 };
 }
 }

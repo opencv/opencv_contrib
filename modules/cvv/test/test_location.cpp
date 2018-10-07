@@ -14,20 +14,20 @@ namespace opencv_test { namespace {
 
 TEST(LocationTest, FileLineFunction)
 {
-	auto locationMacroResult = CVVISUAL_LOCATION;
-	size_t line = __LINE__ - 1;
-	auto file = __FILE__;
-	auto fun = CV_Func;
-	EXPECT_EQ(locationMacroResult.isKnown, true);
-	EXPECT_EQ(locationMacroResult.file, file);
-	EXPECT_EQ(locationMacroResult.line, line);
-	EXPECT_EQ(locationMacroResult.function, fun);
+    auto locationMacroResult = CVVISUAL_LOCATION;
+    size_t line = __LINE__ - 1;
+    auto file = __FILE__;
+    auto fun = CV_Func;
+    EXPECT_EQ(locationMacroResult.isKnown, true);
+    EXPECT_EQ(locationMacroResult.file, file);
+    EXPECT_EQ(locationMacroResult.line, line);
+    EXPECT_EQ(locationMacroResult.function, fun);
 }
 
 TEST(LocationTest, EmptyLocation)
 {
-	cvv::impl::CallMetaData loc{};
-	EXPECT_EQ(loc.isKnown, false);
+    cvv::impl::CallMetaData loc{};
+    EXPECT_EQ(loc.isKnown, false);
 }
 
 }} // namespace

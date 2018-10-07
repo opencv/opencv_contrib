@@ -80,12 +80,12 @@ main(int argc, char** argv)
 
     std::string imgIdString{"imgRead"};
     imgIdString += toString(imgId);
-		cvv::showImage(imgRead, CVVISUAL_LOCATION, imgIdString.c_str());
+        cvv::showImage(imgRead, CVVISUAL_LOCATION, imgIdString.c_str());
 
     // convert to grayscale
     cv::Mat imgGray;
     cv::cvtColor(imgRead, imgGray, CV_BGR2GRAY);
-		cvv::debugFilter(imgRead, imgGray, CVVISUAL_LOCATION, "to gray");
+        cvv::debugFilter(imgRead, imgGray, CVVISUAL_LOCATION, "to gray");
 
     // detect ORB features
     std::vector<cv::KeyPoint> keypoints;

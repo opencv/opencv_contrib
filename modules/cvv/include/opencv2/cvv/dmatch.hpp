@@ -52,12 +52,12 @@ debugDMatch(cv::InputArray img1, std::vector<cv::KeyPoint> keypoints1,
             const char *description = nullptr, const char *view = nullptr,
             bool useTrainDescriptor = true)
 {
-	if (debugMode())
-	{
-		impl::debugDMatch(img1, std::move(keypoints1), img2,
-		                  std::move(keypoints2), std::move(matches),
-		                  data, description, view, useTrainDescriptor);
-	}
+    if (debugMode())
+    {
+        impl::debugDMatch(img1, std::move(keypoints1), img2,
+                          std::move(keypoints2), std::move(matches),
+                          data, description, view, useTrainDescriptor);
+    }
 }
 /** @overload */
 static inline void
@@ -67,13 +67,13 @@ debugDMatch(cv::InputArray img1, std::vector<cv::KeyPoint> keypoints1,
             const std::string &description, const std::string &view,
             bool useTrainDescriptor = true)
 {
-	if (debugMode())
-	{
-		impl::debugDMatch(img1, std::move(keypoints1), img2,
-		                  std::move(keypoints2), std::move(matches),
-		                  data, description.c_str(), view.c_str(),
-		                  useTrainDescriptor);
-	}
+    if (debugMode())
+    {
+        impl::debugDMatch(img1, std::move(keypoints1), img2,
+                          std::move(keypoints2), std::move(matches),
+                          data, description.c_str(), view.c_str(),
+                          useTrainDescriptor);
+    }
 }
 #else
 static inline void debugDMatch(cv::InputArray, std::vector<cv::KeyPoint>,

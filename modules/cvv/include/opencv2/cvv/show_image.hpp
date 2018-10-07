@@ -40,21 +40,21 @@ static inline void showImage(cv::InputArray img,
                              const char *description = nullptr,
                              const char *view = nullptr)
 {
-	if (debugMode())
-	{
-		impl::showImage(img, metaData, description, view);
-	}
+    if (debugMode())
+    {
+        impl::showImage(img, metaData, description, view);
+    }
 }
 /** @overload */
 static inline void showImage(cv::InputArray img, impl::CallMetaData metaData,
                              const ::std::string &description,
                              const ::std::string &view = "")
 {
-	if (debugMode())
-	{
-		impl::showImage(img, metaData, description.c_str(),
-		                view.c_str());
-	}
+    if (debugMode())
+    {
+        impl::showImage(img, metaData, description.c_str(),
+                        view.c_str());
+    }
 }
 #else
 static inline void showImage(cv::InputArray,

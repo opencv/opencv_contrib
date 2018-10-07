@@ -21,61 +21,61 @@ namespace impl
 class DataController
 {
       public:
-	DataController() = default;
-	~DataController()
-	{
-	}
+    DataController() = default;
+    ~DataController()
+    {
+    }
 
-	/**
-	 * Add a new call to the calls-list.
-	 */
-	void addCall(std::unique_ptr<Call> call);
+    /**
+     * Add a new call to the calls-list.
+     */
+    void addCall(std::unique_ptr<Call> call);
 
-	/**
-	 * Remove a call.
-	 * @throws std::invalid_argument if no such call exists
-	 */
-	void removeCall(size_t Id);
+    /**
+     * Remove a call.
+     * @throws std::invalid_argument if no such call exists
+     */
+    void removeCall(size_t Id);
 
-	/**
-	 * Get read-access to a certain call.
-	 */
-	const Call &getCall(size_t Id) const;
+    /**
+     * Get read-access to a certain call.
+     */
+    const Call &getCall(size_t Id) const;
 
-	/**
-	 * Get read/write-access to a certain call.
-	 */
-	Call &getCall(size_t Id);
+    /**
+     * Get read/write-access to a certain call.
+     */
+    Call &getCall(size_t Id);
 
-	bool hasCall(size_t Id);
+    bool hasCall(size_t Id);
 
-	/**
-	 * Get the number of currently managed calls.
-	 */
-	size_t numCalls() const;
+    /**
+     * Get the number of currently managed calls.
+     */
+    size_t numCalls() const;
 
-	/**
-	 * Passes control to the View-controller.
-	 *
-	 * Returns when the ViewController signals that normal program-execution
-	 *shall continue.
-	 *
-	 */
-	void callUI();
+    /**
+     * Passes control to the View-controller.
+     *
+     * Returns when the ViewController signals that normal program-execution
+     *shall continue.
+     *
+     */
+    void callUI();
 
-	/**
-	 * @brief Replace the continue-buttons with close-buttons and show the
-	 *UI.
-	 *
-	 * This function is intended to be called directly before main returns
-	 *after all the actual
-	 * work is done.
-	 */
-	void lastCall();
+    /**
+     * @brief Replace the continue-buttons with close-buttons and show the
+     *UI.
+     *
+     * This function is intended to be called directly before main returns
+     *after all the actual
+     * work is done.
+     */
+    void lastCall();
 
       private:
-	std::vector<std::unique_ptr<Call>> calls;
-	controller::ViewController viewController;
+    std::vector<std::unique_ptr<Call>> calls;
+    controller::ViewController viewController;
 };
 
 /**

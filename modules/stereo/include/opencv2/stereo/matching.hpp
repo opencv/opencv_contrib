@@ -41,7 +41,7 @@
 //the use of this software, even if advised of the possibility of such damage.
 
 /*****************************************************************************************************************\
-*   The interface contains the main methods for computing the matching between the left and right images	      *
+*   The interface contains the main methods for computing the matching between the left and right images          *
 *                                                                                                                 *
 \******************************************************************************************************************/
 #ifndef _OPENCV_MATCHING_HPP_

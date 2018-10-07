@@ -93,10 +93,10 @@ enum ThinningTypes{
 * @brief Specifies the binarization method to use in cv::ximgproc::niBlackThreshold
 */
 enum LocalBinarizationMethods{
-	BINARIZATION_NIBLACK = 0, //!< Classic Niblack binarization. See @cite Niblack1985 .
-	BINARIZATION_SAUVOLA = 1, //!< Sauvola's technique. See @cite Sauvola1997 .
-	BINARIZATION_WOLF = 2,    //!< Wolf's technique. See @cite Wolf2004 .
-	BINARIZATION_NICK = 3     //!< NICK technique. See @cite Khurshid2009 .
+    BINARIZATION_NIBLACK = 0, //!< Classic Niblack binarization. See @cite Niblack1985 .
+    BINARIZATION_SAUVOLA = 1, //!< Sauvola's technique. See @cite Sauvola1997 .
+    BINARIZATION_WOLF = 2,    //!< Wolf's technique. See @cite Wolf2004 .
+    BINARIZATION_NICK = 3     //!< NICK technique. See @cite Khurshid2009 .
 };
 
 //! @addtogroup ximgproc

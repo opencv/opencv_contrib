@@ -41,9 +41,9 @@ void ContourFitting::frequencyInit()
 
 void ContourFitting::fAlpha(double x, double &fn, double &df)
 {
-    int 	nbElt = static_cast<int>(rho.size());
-    double	s1 = 0, s2 = 0, s3 = 0, s4 = 0;
-    double	ds1 = 0, ds2 = 0, ds3 = 0, ds4 = 0;
+    int     nbElt = static_cast<int>(rho.size());
+    double  s1 = 0, s2 = 0, s3 = 0, s4 = 0;
+    double  ds1 = 0, ds2 = 0, ds3 = 0, ds4 = 0;
 
     for (int n = 1; n <= fdSize; n++)
     {
@@ -70,8 +70,8 @@ void ContourFitting::fAlpha(double x, double &fn, double &df)
 
 double ContourFitting::distance(std::complex<double> r, double alpha)
 {
-    std::complex<double>		j(0, 1);
-    double 		d = 0;
+    std::complex<double> j(0, 1);
+    double               d = 0;
 
     for (int i = 1; i <= fdSize; i++)
         d += abs(a[i] - b[i] * r*exp(j*alpha*frequence[i])) + abs(a[a.size() - i] - b[a.size() - i] * r*exp(j*alpha*frequence[a.size() - i]));
@@ -136,11 +136,11 @@ void ContourFitting::estimateTransformation(InputArray _src, InputArray _ref, Ou
     b.resize(ctrSize);
     a.resize(ctrSize);
     frequencyInit();
-    double  alphaMin, phiMin, sMin;
-    long		    n, nbElt = ctrSize;
-    double 		    s1, s2, sign1, sign2, df, x1 = nbElt, x2 = nbElt, dx;
-    double		    dist, distMin = 10000, alpha, s, phi;
-    std::complex<double> 	j(0, 1), zz;
+    double               alphaMin, phiMin, sMin;
+    long                 n, nbElt = ctrSize;
+    double               s1, s2, sign1, sign2, df, x1 = nbElt, x2 = nbElt, dx;
+    double               dist, distMin = 10000, alpha, s, phi;
+    std::complex<double> j(0, 1), zz;
 
     for (n = 0; n<nbElt; n++)
     {
@@ -249,13 +249,13 @@ void contourSampling(InputArray _src, OutputArray _out, int nbElt)
         return;
     }
     CV_Assert(ctr.rows==1 || ctr.cols==1);
-    double		l1 = 0, l2, p, d, s;
+    double l1 = 0, l2, p, d, s;
  //   AutoBuffer<Point2d> _buf(nbElt);
     Mat r;
     if (ctr.rows==1)
         ctr=ctr.t();
     int j = 0;
-    int 		nb = ctr.rows;
+    int nb = ctr.rows;
     p = arcLength(_src, true);
     l2 = norm(ctr.row(j) - ctr.row(j + 1)) / p;
     for (int i = 0; i<nbElt; i++)

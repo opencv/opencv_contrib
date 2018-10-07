@@ -18,22 +18,22 @@ namespace structures
 class ZoomableProxyObject : public QGraphicsProxyWidget
 {
       public:
-	ZoomableProxyObject(ZoomableImage *zoom);
+    ZoomableProxyObject(ZoomableImage *zoom);
 
     ~ZoomableProxyObject() CV_OVERRIDE
-	{
-	}
+    {
+    }
 
       protected:
     virtual void contextMenuEvent(QGraphicsSceneContextMenuEvent *event) CV_OVERRIDE
-	{
-		event->ignore();
-	}
+    {
+        event->ignore();
+    }
 
     virtual void wheelEvent(QGraphicsSceneWheelEvent *event) CV_OVERRIDE;
 
       private:
-	ZoomableImage *image_;
+    ZoomableImage *image_;
 };
 
 }

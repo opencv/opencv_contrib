@@ -47,44 +47,44 @@
 
 namespace cv
 {
-	namespace tld
-	{
-		class TrackerTLDModel : public TrackerModel
-		{
-		public:
-			TrackerTLDModel(TrackerTLD::Params params, const Mat& image, const Rect2d& boundingBox, Size minSize);
-			Rect2d getBoundingBox(){ return boundingBox_; }
-			void setBoudingBox(Rect2d boundingBox){ boundingBox_ = boundingBox; }
-			void integrateRelabeled(Mat& img, Mat& imgBlurred, const std::vector<TLDDetector::LabeledPatch>& patches);
-			void integrateAdditional(const std::vector<Mat_<uchar> >& eForModel, const std::vector<Mat_<uchar> >& eForEnsemble, bool isPositive);
+    namespace tld
+    {
+        class TrackerTLDModel : public TrackerModel
+        {
+        public:
+            TrackerTLDModel(TrackerTLD::Params params, const Mat& image, const Rect2d& boundingBox, Size minSize);
+            Rect2d getBoundingBox(){ return boundingBox_; }
+            void setBoudingBox(Rect2d boundingBox){ boundingBox_ = boundingBox; }
+            void integrateRelabeled(Mat& img, Mat& imgBlurred, const std::vector<TLDDetector::LabeledPatch>& patches);
+            void integrateAdditional(const std::vector<Mat_<uchar> >& eForModel, const std::vector<Mat_<uchar> >& eForEnsemble, bool isPositive);
 #ifdef HAVE_OPENCL
-			void ocl_integrateAdditional(const std::vector<Mat_<uchar> >& eForModel, const std::vector<Mat_<uchar> >& eForEnsemble, bool isPositive);
+            void ocl_integrateAdditional(const std::vector<Mat_<uchar> >& eForModel, const std::vector<Mat_<uchar> >& eForEnsemble, bool isPositive);
 #endif
-			Size getMinSize(){ return minSize_; }
-			void printme(FILE* port = stdout);
-			Ptr<TLDDetector> detector;
+            Size getMinSize(){ return minSize_; }
+            void printme(FILE* port = stdout);
+            Ptr<TLDDetector> detector;
 
-			std::vector<Mat_<uchar> > positiveExamples, negativeExamples;
-			Mat posExp, negExp;
-			int posNum, negNum;
-			std::vector<int> timeStampsPositive, timeStampsNegative;
-			int timeStampPositiveNext, timeStampNegativeNext;
-			double originalVariance_;
-			std::vector<double> srValues;
+            std::vector<Mat_<uchar> > positiveExamples, negativeExamples;
+            Mat posExp, negExp;
+            int posNum, negNum;
+            std::vector<int> timeStampsPositive, timeStampsNegative;
+            int timeStampPositiveNext, timeStampNegativeNext;
+            double originalVariance_;
+            std::vector<double> srValues;
 
-			double getOriginalVariance(){ return originalVariance_; }
+            double getOriginalVariance(){ return originalVariance_; }
 
-		protected:
-			Size minSize_;
-			TrackerTLD::Params params_;
-			void pushIntoModel(const Mat_<uchar>& example, bool positive);
-			void modelEstimationImpl(const std::vector<Mat>& /*responses*/) CV_OVERRIDE {}
-			void modelUpdateImpl() CV_OVERRIDE {}
-			Rect2d boundingBox_;
-			RNG rng;
-		};
+        protected:
+            Size minSize_;
+            TrackerTLD::Params params_;
+            void pushIntoModel(const Mat_<uchar>& example, bool positive);
+            void modelEstimationImpl(const std::vector<Mat>& /*responses*/) CV_OVERRIDE {}
+            void modelUpdateImpl() CV_OVERRIDE {}
+            Rect2d boundingBox_;
+            RNG rng;
+        };
 
-	}
+    }
 }
 
 #endif

@@ -123,7 +123,7 @@ public:
     @patternHeight the physical height of pattern, in user defined unit.
     @showExtration whether show extracted features and feature filtering.
     @nMiniMatches minimal number of matched features for a frame.
-	@flags Calibration flags
+    @flags Calibration flags
     @criteria optimization stopping criteria.
     @detector feature detector that detect feature points in pattern and images.
     @descriptor feature descriptor.
@@ -186,7 +186,7 @@ private:
     int _nCamera;
     int _nMiniMatches;
     int _flags;
-	int _verbose;
+    int _verbose;
     double _error;
     float _patternWidth, _patternHeight;
     TermCriteria _criteria;

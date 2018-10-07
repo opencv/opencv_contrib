@@ -31,51 +31,51 @@ class RawviewTableCollumn;
  */
 class RawviewTable : public QWidget
 {
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	/**
-	 * @brief Constructor of this class.
-	 * @param parent parent view
-	 */
-	RawviewTable(view::Rawview *parent);
+    /**
+     * @brief Constructor of this class.
+     * @param parent parent view
+     */
+    RawviewTable(view::Rawview *parent);
 
-	/**
-	 * @brief Update the inherited groups of rows and rebuild the UI fully.
-	 * @param newGroups new groups for this table
-	 */
-	void updateRowGroups(
-	    const std::vector<stfl::ElementGroup<RawviewTableRow>> newGroups);
+    /**
+     * @brief Update the inherited groups of rows and rebuild the UI fully.
+     * @param newGroups new groups for this table
+     */
+    void updateRowGroups(
+        const std::vector<stfl::ElementGroup<RawviewTableRow>> newGroups);
 
-	/**
-	 * @brief Updates the UI
-	 */
-	void updateUI();
+    /**
+     * @brief Updates the UI
+     */
+    void updateUI();
 
-	/**
-	 * @brief Returns the parent view.
-	 * @return parent view
-	 */
-	view::Rawview *getParent()
-	{
-		return parent;
-	}
+    /**
+     * @brief Returns the parent view.
+     * @return parent view
+     */
+    view::Rawview *getParent()
+    {
+        return parent;
+    }
 
-	std::vector<cv::DMatch> getMatchSelection();
+    std::vector<cv::DMatch> getMatchSelection();
 
-	std::vector<cv::KeyPoint> getKeyPointSelection();	
+    std::vector<cv::KeyPoint> getKeyPointSelection();
 
 public slots:
-	
-	void setMatchSelection(std::vector<cv::DMatch> matches);
 
-	void setKeyPointSelection(std::vector<cv::KeyPoint> keyPoints);
-	
+    void setMatchSelection(std::vector<cv::DMatch> matches);
+
+    void setKeyPointSelection(std::vector<cv::KeyPoint> keyPoints);
+
 private:
-	view::Rawview *parent;
-	qtutil::Accordion *subtableAccordion;
-	std::vector<RawviewGroupSubtable *> subTables{};
-	
+    view::Rawview *parent;
+    qtutil::Accordion *subtableAccordion;
+    std::vector<RawviewGroupSubtable *> subTables{};
+
 };
 }
 }

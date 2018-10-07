@@ -45,9 +45,9 @@ int main( int argc, const char** argv )
         return -1;
     }
 
-	double sigma = parser.get<double>("sigma");
-	if (sigma == 0.0)
-		sigma = 15.0;
+    double sigma = parser.get<double>("sigma");
+    if (sigma == 0.0)
+        sigma = 15.0;
 
     int psize = parser.get<int>("psize");
     if (psize == 0)

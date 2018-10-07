@@ -25,7 +25,7 @@ const std::string keys  =
 
 int main(int argc, char* argv[])
 {
-	// welcome message
+    // welcome message
     std::cout<<"****************************************************"<<std::endl
       <<"* Retina demonstration : demonstrates the use of is a wrapper class of the Gipsa/Listic Labs retina model."<<std::endl
       <<"* This retina model allows spatio-temporal image processing (applied on still images, video sequences)."<<std::endl
@@ -76,67 +76,67 @@ int main(int argc, char* argv[])
         return 0;
     }
 
-	//////////////////////////////////////////////////////////////////////////////
-	// Program start in a try/catch safety context (Retina may throw errors)
-	try
-	{
-		// create a retina instance with default parameters setup, uncomment the initialisation you wanna test
-		cv::Ptr<cv::bioinspired::Retina> myRetina;
+    //////////////////////////////////////////////////////////////////////////////
+    // Program start in a try/catch safety context (Retina may throw errors)
+    try
+    {
+        // create a retina instance with default parameters setup, uncomment the initialisation you wanna test
+        cv::Ptr<cv::bioinspired::Retina> myRetina;
 
-		// if the last parameter is 'log', then activate log sampling (favour foveal vision and subsamples peripheral vision)
-		if (useLogSampling)
-		{
+        // if the last parameter is 'log', then activate log sampling (favour foveal vision and subsamples peripheral vision)
+        if (useLogSampling)
+        {
             myRetina = cv::bioinspired::Retina::create(inputFrame.size(),
                                                        true, cv::bioinspired::RETINA_COLOR_BAYER, true, 2.0, 10.0);
-		}
-		else// -> else allocate "classical" retina :
+        }
+        else// -> else allocate "classical" retina :
             myRetina = cv::bioinspired::Retina::create(inputFrame.size());
 
-		// save default retina parameters file in order to let you see this and maybe modify it and reload using method "setup"
-		myRetina->write("RetinaDefaultParameters.xml");
+        // save default retina parameters file in order to let you see this and maybe modify it and reload using method "setup"
+        myRetina->write("RetinaDefaultParameters.xml");
 
-		// load parameters if file exists
-		myRetina->setup("RetinaSpecificParameters.xml");
-		myRetina->clearBuffers();
+        // load parameters if file exists
+        myRetina->setup("RetinaSpecificParameters.xml");
+        myRetina->clearBuffers();
 
-		// declare retina output buffers
+        // declare retina output buffers
         cv::UMat retinaOutput_parvo;
         cv::UMat retinaOutput_magno;
 
-		// processing loop with stop condition
+        // processing loop with stop condition
         int64 totalTime = 0;
         int64 totalFrames = 0;
         while(true)
-		{
-			// if using video stream, then, grabbing a new frame, else, input remains the same
-			if (videoCapture.isOpened())
-				videoCapture>>inputFrame;
+        {
+            // if using video stream, then, grabbing a new frame, else, input remains the same
+            if (videoCapture.isOpened())
+                videoCapture>>inputFrame;
             if(inputFrame.empty())
                 break;
 
-			// run retina filter
+            // run retina filter
             int64 frameTime = cv::getTickCount();
-			myRetina->run(inputFrame);
-			// Retrieve and display retina output
+            myRetina->run(inputFrame);
+            // Retrieve and display retina output
             frameTime = cv::getTickCount() - frameTime;
             totalTime += frameTime;
             totalFrames++;
-			myRetina->getParvo(retinaOutput_parvo);
-			myRetina->getMagno(retinaOutput_magno);
-			cv::imshow("retina input", inputFrame);
-			cv::imshow("Retina Parvo", retinaOutput_parvo);
-			cv::imshow("Retina Magno", retinaOutput_magno);
+            myRetina->getParvo(retinaOutput_parvo);
+            myRetina->getMagno(retinaOutput_magno);
+            cv::imshow("retina input", inputFrame);
+            cv::imshow("Retina Parvo", retinaOutput_parvo);
+            cv::imshow("Retina Magno", retinaOutput_magno);
 
             int key = cv::waitKey(5);
             if(key == 'q')
                 break;
-		}
+        }
         std::cout << "\nMean frame processing time: " << (totalTime / cv::getTickFrequency()) / totalFrames << " s" << std::endl;
         std::cout << "Retina demo end" << std::endl;
     }
     catch(const cv::Exception& e)
-	{
-		std::cerr<<"Error using Retina : "<<e.what()<<std::endl;
-	}
-	return 0;
+    {
+        std::cerr<<"Error using Retina : "<<e.what()<<std::endl;
+    }
+    return 0;
 }

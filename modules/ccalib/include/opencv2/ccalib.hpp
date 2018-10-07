@@ -60,94 +60,94 @@ namespace cv{ namespace ccalib{
 class CV_EXPORTS CustomPattern : public Algorithm
 {
 public:
-	CustomPattern();
-	virtual ~CustomPattern();
+    CustomPattern();
+    virtual ~CustomPattern();
 
-	bool create(InputArray pattern, const Size2f boardSize, OutputArray output = noArray());
+    bool create(InputArray pattern, const Size2f boardSize, OutputArray output = noArray());
 
-	bool findPattern(InputArray image, OutputArray matched_features, OutputArray pattern_points, const double ratio = 0.7,
-					 const double proj_error = 8.0, const bool refine_position = false, OutputArray out = noArray(),
-					 OutputArray H = noArray(), OutputArray pattern_corners = noArray());
+    bool findPattern(InputArray image, OutputArray matched_features, OutputArray pattern_points, const double ratio = 0.7,
+                     const double proj_error = 8.0, const bool refine_position = false, OutputArray out = noArray(),
+                     OutputArray H = noArray(), OutputArray pattern_corners = noArray());
 
-	bool isInitialized();
+    bool isInitialized();
 
-	void getPatternPoints(std::vector<KeyPoint>& original_points);
+    void getPatternPoints(std::vector<KeyPoint>& original_points);
     /**<
-		Returns a vector<Point> of the original points.
-	*/
-	double getPixelSize();
+        Returns a vector<Point> of the original points.
+    */
+    double getPixelSize();
     /**<
-		Get the pixel size of the pattern
-	*/
+        Get the pixel size of the pattern
+    */
 
-	bool setFeatureDetector(Ptr<FeatureDetector> featureDetector);
-	bool setDescriptorExtractor(Ptr<DescriptorExtractor> extractor);
-	bool setDescriptorMatcher(Ptr<DescriptorMatcher> matcher);
+    bool setFeatureDetector(Ptr<FeatureDetector> featureDetector);
+    bool setDescriptorExtractor(Ptr<DescriptorExtractor> extractor);
+    bool setDescriptorMatcher(Ptr<DescriptorMatcher> matcher);
 
-	Ptr<FeatureDetector> getFeatureDetector();
-	Ptr<DescriptorExtractor> getDescriptorExtractor();
-	Ptr<DescriptorMatcher> getDescriptorMatcher();
+    Ptr<FeatureDetector> getFeatureDetector();
+    Ptr<DescriptorExtractor> getDescriptorExtractor();
+    Ptr<DescriptorMatcher> getDescriptorMatcher();
 
-	double calibrate(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints,
-				Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
-				OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs, int flags = 0,
-				TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
+    double calibrate(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints,
+                Size imageSize, InputOutputArray cameraMatrix, InputOutputArray distCoeffs,
+                OutputArrayOfArrays rvecs, OutputArrayOfArrays tvecs, int flags = 0,
+                TermCriteria criteria = TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 30, DBL_EPSILON));
     /**<
-		Calls the calirateCamera function with the same inputs.
-	*/
+        Calls the calirateCamera function with the same inputs.
+    */
 
-	bool findRt(InputArray objectPoints, InputArray imagePoints, InputArray cameraMatrix, InputArray distCoeffs,
+    bool findRt(InputArray objectPoints, InputArray imagePoints, InputArray cameraMatrix, InputArray distCoeffs,
                 OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess = false, int flags = SOLVEPNP_ITERATIVE);
-	bool findRt(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
+    bool findRt(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
                 OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess = false, int flags = SOLVEPNP_ITERATIVE);
     /**<
-		Uses solvePnP to find the rotation and translation of the pattern
-		with respect to the camera frame.
-	*/
+        Uses solvePnP to find the rotation and translation of the pattern
+        with respect to the camera frame.
+    */
 
-	bool findRtRANSAC(InputArray objectPoints, InputArray imagePoints, InputArray cameraMatrix, InputArray distCoeffs,
-				OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess = false, int iterationsCount = 100,
-				float reprojectionError = 8.0, int minInliersCount = 100, OutputArray inliers = noArray(), int flags = SOLVEPNP_ITERATIVE);
-	bool findRtRANSAC(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
-				OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess = false, int iterationsCount = 100,
-				float reprojectionError = 8.0, int minInliersCount = 100, OutputArray inliers = noArray(), int flags = SOLVEPNP_ITERATIVE);
+    bool findRtRANSAC(InputArray objectPoints, InputArray imagePoints, InputArray cameraMatrix, InputArray distCoeffs,
+                OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess = false, int iterationsCount = 100,
+                float reprojectionError = 8.0, int minInliersCount = 100, OutputArray inliers = noArray(), int flags = SOLVEPNP_ITERATIVE);
+    bool findRtRANSAC(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
+                OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess = false, int iterationsCount = 100,
+                float reprojectionError = 8.0, int minInliersCount = 100, OutputArray inliers = noArray(), int flags = SOLVEPNP_ITERATIVE);
         /**<
-		Uses solvePnPRansac()
-	*/
+        Uses solvePnPRansac()
+    */
 
-	void drawOrientation(InputOutputArray image, InputArray tvec, InputArray rvec, InputArray cameraMatrix,
-						 InputArray distCoeffs, double axis_length = 3, int axis_width = 2);
+    void drawOrientation(InputOutputArray image, InputArray tvec, InputArray rvec, InputArray cameraMatrix,
+                         InputArray distCoeffs, double axis_length = 3, int axis_width = 2);
     /**<
-		pattern_corners -> projected over the image position of the edges of the pattern.
-	*/
+        pattern_corners -> projected over the image position of the edges of the pattern.
+    */
 
 private:
 
-	Mat img_roi;
-	std::vector<Point2f> obj_corners;
-	double pxSize;
+    Mat img_roi;
+    std::vector<Point2f> obj_corners;
+    double pxSize;
 
-	bool initialized;
+    bool initialized;
 
-	Ptr<FeatureDetector> detector;
-	Ptr<DescriptorExtractor> descriptorExtractor;
-	Ptr<DescriptorMatcher> descriptorMatcher;
+    Ptr<FeatureDetector> detector;
+    Ptr<DescriptorExtractor> descriptorExtractor;
+    Ptr<DescriptorMatcher> descriptorMatcher;
 
-	std::vector<KeyPoint> keypoints;
-	std::vector<Point3f> points3d;
-	Mat descriptor;
+    std::vector<KeyPoint> keypoints;
+    std::vector<Point3f> points3d;
+    Mat descriptor;
 
-	bool init(Mat& image, const float pixel_size, OutputArray output = noArray());
-	bool findPatternPass(const Mat& image, std::vector<Point2f>& matched_features, std::vector<Point3f>& pattern_points,
-						 Mat& H, std::vector<Point2f>& scene_corners, const double pratio, const double proj_error,
-						 const bool refine_position = false, const Mat& mask = Mat(), OutputArray output = noArray());
-	void scaleFoundPoints(const double squareSize, const std::vector<KeyPoint>& corners, std::vector<Point3f>& pts3d);
-	void check_matches(std::vector<Point2f>& matched, const std::vector<Point2f>& pattern, std::vector<DMatch>& good, std::vector<Point3f>& pattern_3d, const Mat& H);
+    bool init(Mat& image, const float pixel_size, OutputArray output = noArray());
+    bool findPatternPass(const Mat& image, std::vector<Point2f>& matched_features, std::vector<Point3f>& pattern_points,
+                         Mat& H, std::vector<Point2f>& scene_corners, const double pratio, const double proj_error,
+                         const bool refine_position = false, const Mat& mask = Mat(), OutputArray output = noArray());
+    void scaleFoundPoints(const double squareSize, const std::vector<KeyPoint>& corners, std::vector<Point3f>& pts3d);
+    void check_matches(std::vector<Point2f>& matched, const std::vector<Point2f>& pattern, std::vector<DMatch>& good, std::vector<Point3f>& pattern_3d, const Mat& H);
 
-	void keypoints2points(const std::vector<KeyPoint>& in, std::vector<Point2f>& out);
-	void updateKeypointsPos(std::vector<KeyPoint>& in, const std::vector<Point2f>& new_pos);
-	void refinePointsPos(const Mat& img, std::vector<Point2f>& p);
-	void refineKeypointsPos(const Mat& img, std::vector<KeyPoint>& kp);
+    void keypoints2points(const std::vector<KeyPoint>& in, std::vector<Point2f>& out);
+    void updateKeypointsPos(std::vector<KeyPoint>& in, const std::vector<Point2f>& new_pos);
+    void refinePointsPos(const Mat& img, std::vector<Point2f>& p);
+    void refineKeypointsPos(const Mat& img, std::vector<KeyPoint>& kp);
 };
 
 //! @}

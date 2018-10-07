@@ -338,7 +338,7 @@ void BasicRetinaFilter::_localLuminanceAdaptation(float *inputOutputFrame, const
 void BasicRetinaFilter::_localLuminanceAdaptation(const float *inputFrame, const float *localLuminance, float *outputFrame, const bool updateLuminanceMean)
 {
     if (updateLuminanceMean)
-    {	float meanLuminance=0;
+    {   float meanLuminance=0;
         const float *luminancePTR=inputFrame;
         for (unsigned int i=0;i<_filterOutput.getNBpixels();++i)
             meanLuminance+=*(luminancePTR++);

@@ -54,7 +54,7 @@ void niBlackThreshold( InputArray _src, OutputArray _dst, double maxValue,
     CV_Assert(src.channels() == 1);
     CV_Assert(blockSize % 2 == 1 && blockSize > 1);
     if (binarizationMethod == BINARIZATION_SAUVOLA) {
-	CV_Assert(src.depth() == CV_8U);
+    CV_Assert(src.depth() == CV_8U);
     }
     type &= THRESH_MASK;
 
@@ -75,23 +75,23 @@ void niBlackThreshold( InputArray _src, OutputArray _dst, double maxValue,
         switch (binarizationMethod)
         {
         case BINARIZATION_NIBLACK:
-		thresh = mean + stddev * static_cast<float>(k);
-		break;
+        thresh = mean + stddev * static_cast<float>(k);
+        break;
         case BINARIZATION_SAUVOLA:
-		thresh = mean.mul(1. + static_cast<float>(k) * (stddev / 128.0 - 1.));
-		break;
+        thresh = mean.mul(1. + static_cast<float>(k) * (stddev / 128.0 - 1.));
+        break;
         case BINARIZATION_WOLF:
-		minMaxIdx(src, &srcMin);
-		minMaxIdx(stddev, NULL, &stddevMax);
-		thresh = mean - static_cast<float>(k) * (mean - srcMin - stddev.mul(mean - srcMin) / stddevMax);
-		break;
+        minMaxIdx(src, &srcMin);
+        minMaxIdx(stddev, NULL, &stddevMax);
+        thresh = mean - static_cast<float>(k) * (mean - srcMin - stddev.mul(mean - srcMin) / stddevMax);
+        break;
         case BINARIZATION_NICK:
-		sqrt(variance + sqmean, sqrtVarianceMeanSum);
-		thresh = mean + static_cast<float>(k) * sqrtVarianceMeanSum;
-		break;
+        sqrt(variance + sqmean, sqrtVarianceMeanSum);
+        thresh = mean + static_cast<float>(k) * sqrtVarianceMeanSum;
+        break;
         default:
-		CV_Error( CV_StsBadArg, "Unknown binarization method" );
-		break;
+        CV_Error( CV_StsBadArg, "Unknown binarization method" );
+        break;
         }
         thresh.convertTo(thresh, src.depth());
     }

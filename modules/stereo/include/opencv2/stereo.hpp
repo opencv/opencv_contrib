@@ -61,8 +61,8 @@ namespace cv
     {
         //! @addtogroup stereo
         //! @{
-        //		 void correctMatches( InputArray F, InputArray points1, InputArray points2,
-        //	OutputArray newPoints1, OutputArray newPoints2 );
+        //  void correctMatches( InputArray F, InputArray points1, InputArray points2,
+        //    OutputArray newPoints1, OutputArray newPoints2 );
         /** @brief Filters off small noise blobs (speckles) in the disparity map
         @param img The input 16-bit signed disparity image
         @param newVal The disparity value used to paint-off the speckles

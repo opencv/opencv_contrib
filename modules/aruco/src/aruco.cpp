@@ -799,41 +799,41 @@ class MarkerSubpixelParallel : public ParallelLoopBody {
  * @param nContours, contour-container
  */
 static Point3f _interpolate2Dline(const std::vector<cv::Point2f>& nContours){
-	float minX, minY, maxX, maxY;
-	minX = maxX = nContours[0].x;
-	minY = maxY = nContours[0].y;
+    float minX, minY, maxX, maxY;
+    minX = maxX = nContours[0].x;
+    minY = maxY = nContours[0].y;
 
-	for(unsigned int i = 0; i< nContours.size(); i++){
-		minX = nContours[i].x < minX ? nContours[i].x : minX;
-		minY = nContours[i].y < minY ? nContours[i].y : minY;
-		maxX = nContours[i].x > maxX ? nContours[i].x : maxX;
-		maxY = nContours[i].y > maxY ? nContours[i].y : maxY;
-	}
+    for(unsigned int i = 0; i< nContours.size(); i++){
+        minX = nContours[i].x < minX ? nContours[i].x : minX;
+        minY = nContours[i].y < minY ? nContours[i].y : minY;
+        maxX = nContours[i].x > maxX ? nContours[i].x : maxX;
+        maxY = nContours[i].y > maxY ? nContours[i].y : maxY;
+    }
 
-	Mat A = Mat::ones((int)nContours.size(), 2, CV_32F); // Coefficient Matrix (N x 2)
-	Mat B((int)nContours.size(), 1, CV_32F);				// Variables   Matrix (N x 1)
-	Mat C;											// Constant
+    Mat A = Mat::ones((int)nContours.size(), 2, CV_32F); // Coefficient Matrix (N x 2)
+    Mat B((int)nContours.size(), 1, CV_32F);             // Variables   Matrix (N x 1)
+    Mat C;                                               // Constant
 
-	if(maxX - minX > maxY - minY){
-		for(unsigned int i =0; i < nContours.size(); i++){
+    if(maxX - minX > maxY - minY){
+        for(unsigned int i =0; i < nContours.size(); i++){
             A.at<float>(i,0)= nContours[i].x;
             B.at<float>(i,0)= nContours[i].y;
-		}
+        }
 
-		solve(A, B, C, DECOMP_NORMAL);
+        solve(A, B, C, DECOMP_NORMAL);
 
-		return Point3f(C.at<float>(0, 0), -1., C.at<float>(1, 0));
-	}
-	else{
-		for(unsigned int i =0; i < nContours.size(); i++){
-			A.at<float>(i,0)= nContours[i].y;
-			B.at<float>(i,0)= nContours[i].x;
-		}
+        return Point3f(C.at<float>(0, 0), -1., C.at<float>(1, 0));
+    }
+    else{
+        for(unsigned int i =0; i < nContours.size(); i++){
+            A.at<float>(i,0)= nContours[i].y;
+            B.at<float>(i,0)= nContours[i].x;
+        }
 
-		solve(A, B, C, DECOMP_NORMAL);
+        solve(A, B, C, DECOMP_NORMAL);
 
-		return Point3f(-1., C.at<float>(0, 0), C.at<float>(1, 0));
-	}
+        return Point3f(-1., C.at<float>(0, 0), C.at<float>(1, 0));
+    }
 
 }
 
@@ -844,9 +844,9 @@ static Point3f _interpolate2Dline(const std::vector<cv::Point2f>& nContours){
  * @return Crossed Point
  */
 static Point2f _getCrossPoint(Point3f nLine1, Point3f nLine2){
-	Matx22f A(nLine1.x, nLine1.y, nLine2.x, nLine2.y);
-	Vec2f B(-nLine1.z, -nLine2.z);
-	return Vec2f(A.solve(B).val);
+    Matx22f A(nLine1.x, nLine1.y, nLine2.x, nLine2.y);
+    Vec2f B(-nLine1.z, -nLine2.z);
+    return Vec2f(A.solve(B).val);
 }
 
 static void _distortPoints(vector<cv::Point2f>& in, const Mat& camMatrix, const Mat& distCoeff) {
@@ -872,68 +872,68 @@ static void _distortPoints(vector<cv::Point2f>& in, const Mat& camMatrix, const 
  * @param distCoeff, distCoeffs vector of distortion coefficient
  */
 static void _refineCandidateLines(std::vector<Point>& nContours, std::vector<Point2f>& nCorners, const Mat& camMatrix, const Mat& distCoeff){
-	vector<Point2f> contour2f(nContours.begin(), nContours.end());
+    vector<Point2f> contour2f(nContours.begin(), nContours.end());
 
-	if(!camMatrix.empty() && !distCoeff.empty()){
-		undistortPoints(contour2f, contour2f, camMatrix, distCoeff);
-	}
+    if(!camMatrix.empty() && !distCoeff.empty()){
+        undistortPoints(contour2f, contour2f, camMatrix, distCoeff);
+    }
 
-	/* 5 groups :: to group the edges
-	 * 4 - classified by its corner
-	 * extra group - (temporary) if contours do not begin with a corner
-	 */
-	vector<Point2f> cntPts[5];
-	int cornerIndex[4]={-1};
-	int group=4;
+    /* 5 groups :: to group the edges
+     * 4 - classified by its corner
+     * extra group - (temporary) if contours do not begin with a corner
+     */
+    vector<Point2f> cntPts[5];
+    int cornerIndex[4]={-1};
+    int group=4;
 
-	for ( unsigned int i =0; i < nContours.size(); i++ ) {
-		for(unsigned int j=0; j<4; j++){
-			if ( nCorners[j] == contour2f[i] ){
-				cornerIndex[j] = i;
-				group=j;
-			}
-		}
-		cntPts[group].push_back(contour2f[i]);
-	}
+    for ( unsigned int i =0; i < nContours.size(); i++ ) {
+        for(unsigned int j=0; j<4; j++){
+            if ( nCorners[j] == contour2f[i] ){
+                cornerIndex[j] = i;
+                group=j;
+            }
+        }
+        cntPts[group].push_back(contour2f[i]);
+    }
 
-	// saves extra group into corresponding
-	if( !cntPts[4].empty() ){
-		for( unsigned int i=0; i < cntPts[4].size() ; i++ )
-			cntPts[group].push_back(cntPts[4].at(i));
-		cntPts[4].clear();
-	}
+    // saves extra group into corresponding
+    if( !cntPts[4].empty() ){
+        for( unsigned int i=0; i < cntPts[4].size() ; i++ )
+            cntPts[group].push_back(cntPts[4].at(i));
+        cntPts[4].clear();
+    }
 
-	//Evaluate contour direction :: using the position of the detected corners
-	int inc=1;
+    //Evaluate contour direction :: using the position of the detected corners
+    int inc=1;
 
         inc = ( (cornerIndex[0] > cornerIndex[1]) &&  (cornerIndex[3] > cornerIndex[0]) ) ? -1:inc;
-	inc = ( (cornerIndex[2] > cornerIndex[3]) &&  (cornerIndex[1] > cornerIndex[2]) ) ? -1:inc;
+    inc = ( (cornerIndex[2] > cornerIndex[3]) &&  (cornerIndex[1] > cornerIndex[2]) ) ? -1:inc;
 
-	// calculate the line :: who passes through the grouped points
-	Point3f lines[4];
-	for(int i=0; i<4; i++){
-		lines[i]=_interpolate2Dline(cntPts[i]);
-	}
+    // calculate the line :: who passes through the grouped points
+    Point3f lines[4];
+    for(int i=0; i<4; i++){
+        lines[i]=_interpolate2Dline(cntPts[i]);
+    }
 
-	/*
-	 * calculate the corner :: where the lines crosses to each other
-	 * clockwise direction		no clockwise direction
-	 *      0                           1
-	 *      .---. 1                     .---. 2
-	 *      |   |                       |   |
-	 *    3 .___.                     0 .___.
-	 *          2                           3
-	 */
-	for(int i=0; i < 4; i++){
-		if(inc<0)
-			nCorners[i] = _getCrossPoint(lines[ i ], lines[ (i+1)%4 ]);	// 01 12 23 30
-		else
-			nCorners[i] = _getCrossPoint(lines[ i ], lines[ (i+3)%4 ]);	// 30 01 12 23
-	}
+    /*
+     * calculate the corner :: where the lines crosses to each other
+     * clockwise direction no clockwise direction
+     *      0                           1
+     *      .---. 1                     .---. 2
+     *      |   |                       |   |
+     *    3 .___.                     0 .___.
+     *          2                           3
+     */
+    for(int i=0; i < 4; i++){
+        if(inc<0)
+            nCorners[i] = _getCrossPoint(lines[ i ], lines[ (i+1)%4 ]); // 01 12 23 30
+        else
+            nCorners[i] = _getCrossPoint(lines[ i ], lines[ (i+3)%4 ]); // 30 01 12 23
+    }
 
-	if(!camMatrix.empty() && !distCoeff.empty()){
-		_distortPoints(nCorners, camMatrix, distCoeff);
-	}
+    if(!camMatrix.empty() && !distCoeff.empty()){
+        _distortPoints(nCorners, camMatrix, distCoeff);
+    }
 }
 
 

@@ -49,74 +49,74 @@
 
 namespace cv
 {
-	namespace tld
-	{
-		const int STANDARD_PATCH_SIZE = 15;
-		const int NEG_EXAMPLES_IN_INIT_MODEL = 300;
-		const int MAX_EXAMPLES_IN_MODEL = 500;
-		const int MEASURES_PER_CLASSIFIER = 13;
-		const int GRIDSIZE = 15;
-		const int DOWNSCALE_MODE = cv::INTER_LINEAR_EXACT;
+    namespace tld
+    {
+        const int STANDARD_PATCH_SIZE = 15;
+        const int NEG_EXAMPLES_IN_INIT_MODEL = 300;
+        const int MAX_EXAMPLES_IN_MODEL = 500;
+        const int MEASURES_PER_CLASSIFIER = 13;
+        const int GRIDSIZE = 15;
+        const int DOWNSCALE_MODE = cv::INTER_LINEAR_EXACT;
         const double THETA_NN = 0.5;
-		const double CORE_THRESHOLD = 0.5;
+        const double CORE_THRESHOLD = 0.5;
         const double CLASSIFIER_MARGIN = 0.1;
-		const double SCALE_STEP = 1.2;
-		const double ENSEMBLE_THRESHOLD = 0.5;
-		const double VARIANCE_THRESHOLD = 0.5;
-		const double NEXPERT_THRESHOLD = 0.2;
+        const double SCALE_STEP = 1.2;
+        const double ENSEMBLE_THRESHOLD = 0.5;
+        const double VARIANCE_THRESHOLD = 0.5;
+        const double NEXPERT_THRESHOLD = 0.2;
 
-		static const cv::Size GaussBlurKernelSize(3, 3);
+        static const cv::Size GaussBlurKernelSize(3, 3);
 
 
 
-		class TLDDetector
-		{
-		public:
-			TLDDetector(){}
-			~TLDDetector(){}
-			double ensembleClassifierNum(const uchar* data);
-			void prepareClassifiers(int rowstep);
-			double Sr(const Mat_<uchar>& patch) const;
-			double Sc(const Mat_<uchar>& patch) const;
+        class TLDDetector
+        {
+        public:
+            TLDDetector(){}
+            ~TLDDetector(){}
+            double ensembleClassifierNum(const uchar* data);
+            void prepareClassifiers(int rowstep);
+            double Sr(const Mat_<uchar>& patch) const;
+            double Sc(const Mat_<uchar>& patch) const;
             std::pair<double, double> SrAndSc(const Mat_<uchar>& patch) const;
 #ifdef HAVE_OPENCL
-			double ocl_Sr(const Mat_<uchar>& patch);
-			double ocl_Sc(const Mat_<uchar>& patch);
-			void ocl_batchSrSc(const Mat_<uchar>& patches, double *resultSr, double *resultSc, int numOfPatches);
+            double ocl_Sr(const Mat_<uchar>& patch);
+            double ocl_Sc(const Mat_<uchar>& patch);
+            void ocl_batchSrSc(const Mat_<uchar>& patches, double *resultSr, double *resultSc, int numOfPatches);
 #endif
 
-			std::vector<TLDEnsembleClassifier> classifiers;
-			Mat *posExp, *negExp;
-			int *posNum, *negNum;
-			std::vector<Mat_<uchar> > *positiveExamples, *negativeExamples;
-			std::vector<int> *timeStampsPositive, *timeStampsNegative;
-			double *originalVariancePtr;
-			std::vector<double> scValues, srValues;
-			std::vector<Mat_<uchar> > standardPatches;
+            std::vector<TLDEnsembleClassifier> classifiers;
+            Mat *posExp, *negExp;
+            int *posNum, *negNum;
+            std::vector<Mat_<uchar> > *positiveExamples, *negativeExamples;
+            std::vector<int> *timeStampsPositive, *timeStampsNegative;
+            double *originalVariancePtr;
+            std::vector<double> scValues, srValues;
+            std::vector<Mat_<uchar> > standardPatches;
 
-			std::vector <Mat> resized_imgs, blurred_imgs;
-			std::vector <Point> varBuffer, ensBuffer;
-			std::vector <int> varScaleIDs, ensScaleIDs;
+            std::vector <Mat> resized_imgs, blurred_imgs;
+            std::vector <Point> varBuffer, ensBuffer;
+            std::vector <int> varScaleIDs, ensScaleIDs;
 
-			static void generateScanGrid(int rows, int cols, Size initBox, std::vector<Rect2d>& res, bool withScaling = false);
-			struct LabeledPatch
-			{
-				Rect2d rect;
-				bool isObject, shouldBeIntegrated;
-			};
-			bool detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches, Size initSize);
-			bool ocl_detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches,  Size initSize);
+            static void generateScanGrid(int rows, int cols, Size initBox, std::vector<Rect2d>& res, bool withScaling = false);
+            struct LabeledPatch
+            {
+                Rect2d rect;
+                bool isObject, shouldBeIntegrated;
+            };
+            bool detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches, Size initSize);
+            bool ocl_detect(const Mat& img, const Mat& imgBlurred, Rect2d& res, std::vector<LabeledPatch>& patches,  Size initSize);
 
-			friend class MyMouseCallbackDEBUG;
-			static void computeIntegralImages(const Mat& img, Mat_<double>& intImgP, Mat_<double>& intImgP2){ integral(img, intImgP, intImgP2, CV_64F); }
-			static inline bool patchVariance(Mat_<double>& intImgP, Mat_<double>& intImgP2, double *originalVariance, Point pt, Size size);
+            friend class MyMouseCallbackDEBUG;
+            static void computeIntegralImages(const Mat& img, Mat_<double>& intImgP, Mat_<double>& intImgP2){ integral(img, intImgP, intImgP2, CV_64F); }
+            static inline bool patchVariance(Mat_<double>& intImgP, Mat_<double>& intImgP2, double *originalVariance, Point pt, Size size);
 
         protected:
             double computeSminus(const Mat_<uchar>& patch) const;
-		};
+        };
 
 
-	}
+    }
 }
 
 #endif

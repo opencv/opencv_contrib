@@ -34,48 +34,48 @@ class RawviewTable;
  */
 class RawviewGroupSubtable : public QWidget
 {
-	Q_OBJECT
+    Q_OBJECT
 
       public:
-	/**
-	 * @brief Constructs an over group subtable.
-	     * @param controller view controller
-	     * @param parent parent table
-	     * @param group the displayed group of overview data sets
-	 */
-	RawviewGroupSubtable(RawviewTable *parent,
-	                     stfl::ElementGroup<RawviewTableRow> group);
+    /**
+     * @brief Constructs an over group subtable.
+         * @param controller view controller
+         * @param parent parent table
+         * @param group the displayed group of overview data sets
+     */
+    RawviewGroupSubtable(RawviewTable *parent,
+                         stfl::ElementGroup<RawviewTableRow> group);
 
-	/**
-	 * @brief Updates the displayed table UI.
-	 */
-	void updateUI();
-	
-	std::vector<cv::DMatch> getMatchSelection();
+    /**
+     * @brief Updates the displayed table UI.
+     */
+    void updateUI();
 
-	std::vector<cv::KeyPoint> getKeyPointSelection();	
+    std::vector<cv::DMatch> getMatchSelection();
+
+    std::vector<cv::KeyPoint> getKeyPointSelection();
 
 public slots:
-	
-	void setMatchSelection(std::vector<cv::DMatch> matches);
 
-	void setKeyPointSelection(std::vector<cv::KeyPoint> keyPoints);
+    void setMatchSelection(std::vector<cv::DMatch> matches);
+
+    void setKeyPointSelection(std::vector<cv::KeyPoint> keyPoints);
 
 private slots:
-	
-	void customMenuRequested(QPoint location);
-	void customMenuAction(QAction *action);
-	void selectionChanged();
+
+    void customMenuRequested(QPoint location);
+    void customMenuAction(QAction *action);
+    void selectionChanged();
 
 private:
-	RawviewTable *parent;
-	stfl::ElementGroup<RawviewTableRow> group;
-	QTableWidget *qTable;
-	std::set<int> currentRowIndexes;
-	
-	std::vector<RawviewTableRow> getSelectedRows();
-	
-	void setSelectedRows(std::set<int> rowIndexes);
+    RawviewTable *parent;
+    stfl::ElementGroup<RawviewTableRow> group;
+    QTableWidget *qTable;
+    std::set<int> currentRowIndexes;
+
+    std::vector<RawviewTableRow> getSelectedRows();
+
+    void setSelectedRows(std::set<int> rowIndexes);
 };
 }
 }

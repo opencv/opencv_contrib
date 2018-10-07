@@ -80,29 +80,29 @@ namespace bioinspired
 /** @brief parameter structure that stores the transient events detector setup parameters
 */
 struct SegmentationParameters{ // CV_EXPORTS_W_MAP to export to python native dictionnaries
-	// default structure instance construction with default values
-	SegmentationParameters():
-	    thresholdON(100),
-	    thresholdOFF(100),
-	    localEnergy_temporalConstant(0.5),
-	    localEnergy_spatialConstant(5),
-	    neighborhoodEnergy_temporalConstant(1),
-	    neighborhoodEnergy_spatialConstant(15),
-	    contextEnergy_temporalConstant(1),
-	    contextEnergy_spatialConstant(75){};
-	// all properties list
-	float thresholdON;
-	float thresholdOFF;
-	//! the time constant of the first order low pass filter, use it to cut high temporal frequencies (noise or fast motion), unit is frames, typical value is 0.5 frame
-	float localEnergy_temporalConstant;
-	//! the spatial constant of the first order low pass filter, use it to cut high spatial frequencies (noise or thick contours), unit is pixels, typical value is 5 pixel
-	float localEnergy_spatialConstant;
-	//! local neighborhood energy filtering parameters : the aim is to get information about the energy neighborhood to perform a center surround energy analysis
-	float neighborhoodEnergy_temporalConstant;
-	float neighborhoodEnergy_spatialConstant;
-	//! context neighborhood energy filtering parameters : the aim is to get information about the energy on a wide neighborhood area to filtered out local effects
-	float contextEnergy_temporalConstant;
-	float contextEnergy_spatialConstant;
+    // default structure instance construction with default values
+    SegmentationParameters():
+        thresholdON(100),
+        thresholdOFF(100),
+        localEnergy_temporalConstant(0.5),
+        localEnergy_spatialConstant(5),
+        neighborhoodEnergy_temporalConstant(1),
+        neighborhoodEnergy_spatialConstant(15),
+        contextEnergy_temporalConstant(1),
+        contextEnergy_spatialConstant(75){};
+    // all properties list
+    float thresholdON;
+    float thresholdOFF;
+    //! the time constant of the first order low pass filter, use it to cut high temporal frequencies (noise or fast motion), unit is frames, typical value is 0.5 frame
+    float localEnergy_temporalConstant;
+    //! the spatial constant of the first order low pass filter, use it to cut high spatial frequencies (noise or thick contours), unit is pixels, typical value is 5 pixel
+    float localEnergy_spatialConstant;
+    //! local neighborhood energy filtering parameters : the aim is to get information about the energy neighborhood to perform a center surround energy analysis
+    float neighborhoodEnergy_temporalConstant;
+    float neighborhoodEnergy_spatialConstant;
+    //! context neighborhood energy filtering parameters : the aim is to get information about the energy on a wide neighborhood area to filtered out local effects
+    float contextEnergy_temporalConstant;
+    float contextEnergy_spatialConstant;
 };
 
 /** @brief class which provides a transient/moving areas segmentation module

@@ -86,21 +86,21 @@ namespace cv
                 iedge.ptr(row)[col + 1] +
                 iedge.ptr(row)[col + 2];
             if (line == 0) lines += 1;
-			// Around horizontal
+            // Around horizontal
             line =
                 iedge.ptr(row)[col - 2] +
                 iedge.ptr(row)[col - 1] +
                 iedge.ptr(row + 1)[col + 1] +
                 iedge.ptr(row + 1)[col + 2];
             if (line == 0) lines += 1;
-			// Around Diagonal top right to bottom left
+            // Around Diagonal top right to bottom left
             line =
                 iedge.ptr(row - 2)[col] +
                 iedge.ptr(row - 1)[col] +
                 iedge.ptr(row + 1)[col + 1] +
                 iedge.ptr(row + 2)[col + 1];
             if (line == 0) lines += 1;
-			// Around vertical
+            // Around vertical
             line =
                 iedge.ptr(row - 2)[col - 1] +
                 iedge.ptr(row - 1)[col - 1] +

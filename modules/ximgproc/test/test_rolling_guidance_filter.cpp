@@ -69,7 +69,7 @@ TEST_P(RollingGuidanceFilterTest, SplatSurfaceAccuracy)
         Mat src(sz, CV_MAKE_TYPE(depth, srcCn), surfaceValue);
 
         double sigmaC = rnd.uniform(1.0, 255.0);
-	int iterNum = int(rnd.uniform(1.0, 5.0));
+    int iterNum = int(rnd.uniform(1.0, 5.0));
 
         Mat res;
         rollingGuidanceFilter(src, res, -1, sigmaC, sigmaS, iterNum);
