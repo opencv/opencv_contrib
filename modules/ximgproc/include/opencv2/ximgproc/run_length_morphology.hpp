@@ -61,8 +61,8 @@ CV_EXPORTS void erode(InputArray rlSrc, OutputArray rlDest, InputArray rlKernel,
 * @brief   Returns a run length encoded structuring element of the specified size and shape.
 *
 *
-* @param   shape	Element shape that can be one of cv::MorphShapes
-* @param   ksize	Size of the structuring element.
+* @param   shape    Element shape that can be one of cv::MorphShapes
+* @param   ksize    Size of the structuring element.
 *
 */
 CV_EXPORTS cv::Mat getStructuringElement(int shape, Size ksize);
