@@ -14,19 +14,19 @@ namespace cvv {namespace qtutil{
  */
 class MatchPortionSelection:public MatchSelection{
 public:
-	/**
-	 * @brief the constructor
-	 * @param parent the parent widget
-	 */
-	MatchPortionSelection(std::vector<cv::DMatch>, QWidget * parent=nullptr);
+    /**
+     * @brief the constructor
+     * @param parent the parent widget
+     */
+    MatchPortionSelection(std::vector<cv::DMatch>, QWidget * parent=nullptr);
 
-	/**
-	 * @brief see MatchSelection
-	 */
-	virtual std::vector<cv::DMatch> select(const std::vector<cv::DMatch>& selection)override;
+    /**
+     * @brief see MatchSelection
+     */
+    virtual std::vector<cv::DMatch> select(const std::vector<cv::DMatch>& selection)override;
 
 private:
-	PortionSelector* selector_;
+    PortionSelector* selector_;
 };
 
 }}

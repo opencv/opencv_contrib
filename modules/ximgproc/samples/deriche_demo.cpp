@@ -52,18 +52,18 @@ const string & winName = "Gradient Modulus";
 
 static void DisplayImage(Mat x,string s)
 {
-	vector<Mat> sx;
-	split(x, sx);
-	vector<double> minVal(3), maxVal(3);
-	for (size_t i = 0; i < sx.size(); i++)
-	{
-		minMaxLoc(sx[i], &minVal[i], &maxVal[i]);
-	}
-	maxVal[0] = *max_element(maxVal.begin(), maxVal.end());
-	minVal[0] = *min_element(minVal.begin(), minVal.end());
-	Mat uc;
-	x.convertTo(uc, CV_8U,255/(maxVal[0]-minVal[0]),-255*minVal[0]/(maxVal[0]-minVal[0]));
-	imshow(s, uc);
+    vector<Mat> sx;
+    split(x, sx);
+    vector<double> minVal(3), maxVal(3);
+    for (size_t i = 0; i < sx.size(); i++)
+    {
+        minMaxLoc(sx[i], &minVal[i], &maxVal[i]);
+    }
+    maxVal[0] = *max_element(maxVal.begin(), maxVal.end());
+    minVal[0] = *min_element(minVal.begin(), minVal.end());
+    Mat uc;
+    x.convertTo(uc, CV_8U,255/(maxVal[0]-minVal[0]),-255*minVal[0]/(maxVal[0]-minVal[0]));
+    imshow(s, uc);
 }
 
 

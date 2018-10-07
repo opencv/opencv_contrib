@@ -316,8 +316,8 @@ namespace cv
             int ax = points[count];
             int ay = points[count + 1];
 
-            int	bx = points[count + 2];
-            int	by = points[count + 3];
+            int bx = points[count + 2];
+            int by = points[count + 3];
 
             int cx = points[count + 4];
             int cy = points[count + 5];

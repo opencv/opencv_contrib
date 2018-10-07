@@ -582,7 +582,7 @@ private:
         plane = Ptr<PlaneBase>(new Plane(plane_grid.m_(y, x), n, (int)index_plane));
       else
         plane = Ptr<PlaneBase>(new PlaneABC(plane_grid.m_(y, x), n, (int)index_plane,
-			(float)sensor_error_a_, (float)sensor_error_b_, (float)sensor_error_c_));
+            (float)sensor_error_a_, (float)sensor_error_b_, (float)sensor_error_c_));
 
       Mat_<unsigned char> plane_mask = Mat_<unsigned char>::zeros(points3d.rows / block_size_,
                                                                           points3d.cols / block_size_);

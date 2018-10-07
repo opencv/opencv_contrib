@@ -21,42 +21,42 @@ namespace qtutil
  */
 class STFLQueryWidgetLineEdit : public QLineEdit
 {
-	Q_OBJECT
+    Q_OBJECT
       public:
-	/**
-	 * @brief Contructor of this class.
-	 * @param parent widget.
-	 */
-	STFLQueryWidgetLineEdit(QWidget *parent = 0);
+    /**
+     * @brief Contructor of this class.
+     * @param parent widget.
+     */
+    STFLQueryWidgetLineEdit(QWidget *parent = 0);
 
-	/**
-	 * @brief Gets the inherited completer.
-	 * @return the inherited completer
-	 */
-	STFLQueryWidgetCompleter *completer();
+    /**
+     * @brief Gets the inherited completer.
+     * @return the inherited completer
+     */
+    STFLQueryWidgetCompleter *completer();
 
-	/**
-	 * @brief Show the given suggestions in a list.
-	 * @param suggestions given suggestions
-	 */
-	void showSuggestions(QStringList suggestions);
+    /**
+     * @brief Show the given suggestions in a list.
+     * @param suggestions given suggestions
+     */
+    void showSuggestions(QStringList suggestions);
 
       protected:
     void keyPressEvent(QKeyEvent *e) CV_OVERRIDE;
 
 signals:
-	/**
-	 * @brief New suggestions are requested for the given user input.
-	 * @param input given user input
-	 */
-	void requestSuggestions(QString input);
+    /**
+     * @brief New suggestions are requested for the given user input.
+     * @param input given user input
+     */
+    void requestSuggestions(QString input);
 
       private
 slots:
-	void insertCompletion(const QString &completion);
+    void insertCompletion(const QString &completion);
 
       private:
-	STFLQueryWidgetCompleter *queryCompleter;
+    STFLQueryWidgetCompleter *queryCompleter;
 };
 }
 }

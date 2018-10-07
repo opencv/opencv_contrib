@@ -250,7 +250,7 @@ namespace internal
         double &xi1, double &xi2, int flags, OutputArray idx);
 
     void computeJacobian(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints, InputArray parameters, Mat& JTJ_inv, Mat& JTE, int flags,
-							double epsilon);
+                            double epsilon);
 
     void computeJacobianStereo(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints1, InputArrayOfArrays imagePoints2,
         InputArray parameters, Mat& JTJ_inv, Mat& JTE, int flags, double epsilon);

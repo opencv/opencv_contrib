@@ -91,7 +91,7 @@ MultiCameraCalibration::MultiCameraCalibration(int cameraType, int nCameras, con
     _detector = detector;
     _descriptor = descriptor;
     _matcher = matcher;
-	_verbose = verbose;
+    _verbose = verbose;
     for (int i = 0; i < _nCamera; ++i)
     {
         _vertexList.push_back(vertex());
@@ -136,7 +136,7 @@ void MultiCameraCalibration::loadImages()
 
     std::vector<std::vector<std::string> > filesEachCameraFull(_nCamera);
     std::vector<std::vector<int> > timestampFull(_nCamera);
-	std::vector<std::vector<int> > timestampAvailable(_nCamera);
+    std::vector<std::vector<int> > timestampAvailable(_nCamera);
 
     for (int i = 1; i < (int)file_list.size(); ++i)
     {
@@ -167,25 +167,25 @@ void MultiCameraCalibration::loadImages()
         for (int imgIdx = 0; imgIdx < (int)filesEachCameraFull[camera].size(); ++imgIdx)
         {
             image = imread(filesEachCameraFull[camera][imgIdx], IMREAD_GRAYSCALE);
-			if (!image.empty() && _verbose)
-			{
-				std::cout << "open image " << filesEachCameraFull[camera][imgIdx] << " successfully" << std::endl;
-			}
-			else if (image.empty() && _verbose)
-			{
-				std::cout << "open image" << filesEachCameraFull[camera][imgIdx] << " failed" << std::endl;
-			}
+            if (!image.empty() && _verbose)
+            {
+                std::cout << "open image " << filesEachCameraFull[camera][imgIdx] << " successfully" << std::endl;
+            }
+            else if (image.empty() && _verbose)
+            {
+                std::cout << "open image" << filesEachCameraFull[camera][imgIdx] << " failed" << std::endl;
+            }
             std::vector<Mat> imgObj = finder.computeObjectImagePointsForSingle(image);
-			if ((int)imgObj[0].total() > _nMiniMatches)
-			{
-				_imagePointsForEachCamera[camera].push_back(imgObj[0]);
-				_objectPointsForEachCamera[camera].push_back(imgObj[1]);
-				timestampAvailable[camera].push_back(timestampFull[camera][imgIdx]);
-			}
-			else if ((int)imgObj[0].total() <= _nMiniMatches && _verbose)
-			{
-				std::cout << "image " << filesEachCameraFull[camera][imgIdx] <<" has too few matched points "<< std::endl;
-			}
+            if ((int)imgObj[0].total() > _nMiniMatches)
+            {
+                _imagePointsForEachCamera[camera].push_back(imgObj[0]);
+                _objectPointsForEachCamera[camera].push_back(imgObj[1]);
+                timestampAvailable[camera].push_back(timestampFull[camera][imgIdx]);
+            }
+            else if ((int)imgObj[0].total() <= _nMiniMatches && _verbose)
+            {
+                std::cout << "image " << filesEachCameraFull[camera][imgIdx] <<" has too few matched points "<< std::endl;
+            }
         }
 
         // calibrate
@@ -230,34 +230,34 @@ void MultiCameraCalibration::loadImages()
 
         for (int i = 0; i < (int)_omEachCamera[camera].size(); ++i)
         {
-			int cameraVertex, timestamp, photoVertex;
-			cameraVertex = camera;
-			timestamp = timestampAvailable[camera][idx.at<int>(i)];
+            int cameraVertex, timestamp, photoVertex;
+            cameraVertex = camera;
+            timestamp = timestampAvailable[camera][idx.at<int>(i)];
 
-			photoVertex = this->getPhotoVertex(timestamp);
+            photoVertex = this->getPhotoVertex(timestamp);
 
-			if (_omEachCamera[camera][i].type()!=CV_32F)
-			{
-				_omEachCamera[camera][i].convertTo(_omEachCamera[camera][i], CV_32F);
-			}
-			if (_tEachCamera[camera][i].type()!=CV_32F)
-			{
-				_tEachCamera[camera][i].convertTo(_tEachCamera[camera][i], CV_32F);
-			}
+            if (_omEachCamera[camera][i].type()!=CV_32F)
+            {
+                _omEachCamera[camera][i].convertTo(_omEachCamera[camera][i], CV_32F);
+            }
+            if (_tEachCamera[camera][i].type()!=CV_32F)
+            {
+                _tEachCamera[camera][i].convertTo(_tEachCamera[camera][i], CV_32F);
+            }
 
-			Mat transform = Mat::eye(4, 4, CV_32F);
-			Mat R, T;
-			Rodrigues(_omEachCamera[camera][i], R);
-			T = (_tEachCamera[camera][i]).reshape(1, 3);
-			R.copyTo(transform.rowRange(0, 3).colRange(0, 3));
-			T.copyTo(transform.rowRange(0, 3).col(3));
+            Mat transform = Mat::eye(4, 4, CV_32F);
+            Mat R, T;
+            Rodrigues(_omEachCamera[camera][i], R);
+            T = (_tEachCamera[camera][i]).reshape(1, 3);
+            R.copyTo(transform.rowRange(0, 3).colRange(0, 3));
+            T.copyTo(transform.rowRange(0, 3).col(3));
 
-			this->_edgeList.push_back(edge(cameraVertex, photoVertex, idx.at<int>(i), transform));
+            this->_edgeList.push_back(edge(cameraVertex, photoVertex, idx.at<int>(i), transform));
         }
-		std::cout << "initialized for camera " << camera << " rms = " << rms << std::endl;
-		std::cout << "initialized camera matrix for camera " << camera << " is" << std::endl;
-		std::cout << _cameraMatrix[camera] << std::endl;
-		std::cout << "xi for camera " << camera << " is " << _xi[camera] << std::endl;
+        std::cout << "initialized for camera " << camera << " rms = " << rms << std::endl;
+        std::cout << "initialized camera matrix for camera " << camera << " is" << std::endl;
+        std::cout << _cameraMatrix[camera] << std::endl;
+        std::cout << "xi for camera " << camera << " is " << _xi[camera] << std::endl;
     }
 
 }
@@ -322,11 +322,11 @@ void MultiCameraCalibration::initialize()
         {
             this->_vertexList[vertexIdx].pose = transform * prePose.inv();
             this->_vertexList[vertexIdx].pose.convertTo(this->_vertexList[vertexIdx].pose, CV_32F);
-			if (_verbose)
-			{
-				std::cout << "initial pose for camera " << vertexIdx << " is " << std::endl;
-				std::cout << this->_vertexList[vertexIdx].pose << std::endl;
-			}
+            if (_verbose)
+            {
+                std::cout << "initial pose for camera " << vertexIdx << " is " << std::endl;
+                std::cout << this->_vertexList[vertexIdx].pose << std::endl;
+            }
         }
         else
         {
@@ -391,11 +391,11 @@ double MultiCameraCalibration::optimizeExtrinsics()
         R.copyTo(pose.colRange(0, 3).rowRange(0, 3));
         Mat(tvecVertex[verIdx-1]).reshape(1, 3).copyTo(pose.rowRange(0, 3).col(3));
         _vertexList[verIdx].pose = pose;
-		if (_verbose && verIdx < _nCamera)
-		{
-			std::cout << "final camera pose of camera " << verIdx << " is" << std::endl;
-			std::cout << pose << std::endl;
-		}
+        if (_verbose && verIdx < _nCamera)
+        {
+            std::cout << "final camera pose of camera " << verIdx << " is" << std::endl;
+            std::cout << pose << std::endl;
+        }
     }
     return error;
 }

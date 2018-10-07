@@ -413,17 +413,17 @@ void TransientAreasSegmentationModuleImpl::run(InputArray inputToProcess, const 
     // preliminary basic error check
     if ( (inputToSegment.rows*inputToSegment.cols) != (int)_inputToSegment.size())
     {
-    	std::stringstream errorMsg;
-    	errorMsg<<"Input matrix size does not match instance buffers setup !"
-    			<<"\n\t Input size is : "<<inputToSegment.rows*inputToSegment.cols
-    			<<"\n\t v.s. internalBuffer size is : "<<  _inputToSegment.size();
-    	throw cv::Exception(-1, errorMsg.str().c_str(), "SegmentationModule::run", "SegmentationModule.cpp", 0);
+        std::stringstream errorMsg;
+        errorMsg<<"Input matrix size does not match instance buffers setup !"
+                <<"\n\t Input size is : "<<inputToSegment.rows*inputToSegment.cols
+                <<"\n\t v.s. internalBuffer size is : "<<  _inputToSegment.size();
+        throw cv::Exception(-1, errorMsg.str().c_str(), "SegmentationModule::run", "SegmentationModule.cpp", 0);
     }
     if (channelIndex >= inputToSegment.channels())
     {
-    	std::stringstream errorMsg;
-    	errorMsg<<"Cannot access channel index "<<channelIndex<<" on the input matrix with channels quantity = "<<inputToSegment.channels();
-    	throw cv::Exception(-1, errorMsg.str().c_str(), "SegmentationModule::run", "SegmentationModule.cpp", 0);
+        std::stringstream errorMsg;
+        errorMsg<<"Cannot access channel index "<<channelIndex<<" on the input matrix with channels quantity = "<<inputToSegment.channels();
+        throw cv::Exception(-1, errorMsg.str().c_str(), "SegmentationModule::run", "SegmentationModule.cpp", 0);
     }
 
     // create a cv::Mat header for the input valarray

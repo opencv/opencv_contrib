@@ -18,23 +18,23 @@ class TabWidget : public QTabWidget
 {
 
       public:
-	/**
-	 * @brief Constructor of this class.
-	 */
-	TabWidget(QWidget *parent) : QTabWidget(parent)
-	{
-	};
+    /**
+     * @brief Constructor of this class.
+     */
+    TabWidget(QWidget *parent) : QTabWidget(parent)
+    {
+    };
 
-	/**
-	 * @brief Returns the shown tab bar.
-	 * This method helps to access the member tabBar which has by default
-	 * only a protected setter.
-	 * @return shown tab bar.
-	 */
-	QTabBar *getTabBar() const
-	{
-		return tabBar();
-	}
+    /**
+     * @brief Returns the shown tab bar.
+     * This method helps to access the member tabBar which has by default
+     * only a protected setter.
+     * @return shown tab bar.
+     */
+    QTabBar *getTabBar() const
+    {
+        return tabBar();
+    }
 };
 }
 }

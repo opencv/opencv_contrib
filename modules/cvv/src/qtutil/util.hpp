@@ -24,13 +24,13 @@ namespace qtutil
  */
 enum class ImageConversionResult
 {
-	SUCCESS,
-	MAT_EMPTY,
-	MAT_NOT_2D,
-	FLOAT_OUT_OF_0_TO_1,
-	NUMBER_OF_CHANNELS_NOT_SUPPORTED,
-	MAT_INVALID_SIZE,
-	MAT_UNSUPPORTED_DEPTH
+    SUCCESS,
+    MAT_EMPTY,
+    MAT_NOT_2D,
+    FLOAT_OUT_OF_0_TO_1,
+    NUMBER_OF_CHANNELS_NOT_SUPPORTED,
+    MAT_INVALID_SIZE,
+    MAT_UNSUPPORTED_DEPTH
 };
 
 /**
@@ -43,8 +43,8 @@ enum class ImageConversionResult
  */
 std::pair<ImageConversionResult, QImage>
 convertMatToQImage(const cv::Mat &mat, bool skipFloatRangeTest = true,
-		   unsigned int threads =
-		       std::numeric_limits<unsigned int>::max());
+           unsigned int threads =
+               std::numeric_limits<unsigned int>::max());
 
 /**
  * @brief Converts a cv::Mat to a QPixmap.
@@ -56,8 +56,8 @@ convertMatToQImage(const cv::Mat &mat, bool skipFloatRangeTest = true,
  */
 std::pair<ImageConversionResult, QPixmap>
 convertMatToQPixmap(const cv::Mat &mat, bool skipFloatRangeTest = true,
-		    unsigned int threads =
-			std::numeric_limits<unsigned int>::max());
+            unsigned int threads =
+            std::numeric_limits<unsigned int>::max());
 
 /**
  * @brief Creates a QSet<QString> with the given string as an inherited value.
@@ -114,7 +114,7 @@ void openHelpBrowser(const QString &topic);
  * @param value default value of the setting
  */
 void setDefaultSetting(const QString &scope, const QString &key,
-		       const QString &value);
+               const QString &value);
 
 /**
  * @brief Set the setting for a given stettings key and scope.

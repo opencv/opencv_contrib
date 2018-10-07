@@ -9,12 +9,12 @@ namespace impl
 
 void finalShow()
 {
-	auto &controller = impl::dataController();
-	if (controller.numCalls() != 0)
-	{
-		controller.lastCall();
-	}
-	impl::deleteDataController();
+    auto &controller = impl::dataController();
+    if (controller.numCalls() != 0)
+    {
+        controller.lastCall();
+    }
+    impl::deleteDataController();
 }
 }
 } // namespaces cvv::impl

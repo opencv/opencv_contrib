@@ -67,7 +67,7 @@ namespace cv
             //Load Dataset
             virtual void load(const string &path) CV_OVERRIDE;
 
-		protected:
+        protected:
             virtual int getDatasetsNum() CV_OVERRIDE;
 
             virtual int getDatasetLength(int id) CV_OVERRIDE;
@@ -151,10 +151,10 @@ namespace cv
                         currObj->id = currFrameID;
 
                         //Get Ground Truth data
-                        double	x1 = 0, y1 = 0,
-                            x2 = 0, y2 = 0,
-                            x3 = 0, y3 = 0,
-                            x4 = 0, y4 = 0;
+                        double x1 = 0, y1 = 0,
+                               x2 = 0, y2 = 0,
+                               x3 = 0, y3 = 0,
+                               x4 = 0, y4 = 0;
                         string tmp;
                         getline(gtList, tmp);
                         sscanf(tmp.c_str(), "%lf,%lf,%lf,%lf,%lf,%lf,%lf,%lf", &x1, &y1, &x2, &y2, &x3, &y3, &x4, &y4);

@@ -16,30 +16,30 @@ namespace qtutil
  */
 class STFLQueryWidgetCompleter : public QCompleter
 {
-	Q_OBJECT
+    Q_OBJECT
 
       public:
-	/**
-	 * @brief Constructor of this class.
-	 * @param parent widget
-	 */
-	STFLQueryWidgetCompleter(QObject *parent) : QCompleter(parent), model()
-	{
-		setModel(&model);
-	}
+    /**
+     * @brief Constructor of this class.
+     * @param parent widget
+     */
+    STFLQueryWidgetCompleter(QObject *parent) : QCompleter(parent), model()
+    {
+        setModel(&model);
+    }
 
-	/**
-	 * @brief Update the inherited model with the given suggestions.
-	 * @param suggestions given suggestions
-	 */
-	void update(QStringList suggestions)
-	{
-		model.setStringList(suggestions);
-		complete();
-	}
+    /**
+     * @brief Update the inherited model with the given suggestions.
+     * @param suggestions given suggestions
+     */
+    void update(QStringList suggestions)
+    {
+        model.setStringList(suggestions);
+        complete();
+    }
 
       private:
-	QStringListModel model;
+    QStringListModel model;
 };
 }
 }

@@ -16,23 +16,23 @@ MainCallWindow::MainCallWindow(
     OverviewPanel *ovPanel)
     : CallWindow(controller, id), ovPanel{ ovPanel }
 {
-	tabOffset = 1;
-	QString name = "Overview";
-	tabWidget->insertTab(0, ovPanel, name);
-	auto *tabBar = tabWidget->getTabBar();
-	tabBar->tabButton(0, QTabBar::RightSide)->hide();
-	setWindowTitle(QString("CVVisual | main window"));
+    tabOffset = 1;
+    QString name = "Overview";
+    tabWidget->insertTab(0, ovPanel, name);
+    auto *tabBar = tabWidget->getTabBar();
+    tabBar->tabButton(0, QTabBar::RightSide)->hide();
+    setWindowTitle(QString("CVVisual | main window"));
 }
 
 void MainCallWindow::showOverviewTab()
 {
-	tabWidget->setCurrentWidget(ovPanel);
+    tabWidget->setCurrentWidget(ovPanel);
 }
 
 void MainCallWindow::closeEvent(QCloseEvent *event)
 {
-	(void)event;
-	controller->setMode(controller::Mode::HIDE);
+    (void)event;
+    controller->setMode(controller::Mode::HIDE);
 }
 }
 }

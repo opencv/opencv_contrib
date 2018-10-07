@@ -44,11 +44,11 @@
 namespace cv
 {
 
-	TrackerTLD::Params::Params(){}
+    TrackerTLD::Params::Params(){}
 
-	void TrackerTLD::Params::read(const cv::FileNode& /*fn*/){}
+    void TrackerTLD::Params::read(const cv::FileNode& /*fn*/){}
 
-	void TrackerTLD::Params::write(cv::FileStorage& /*fs*/) const {}
+    void TrackerTLD::Params::write(cv::FileStorage& /*fs*/) const {}
 
 
 Ptr<TrackerTLD> TrackerTLD::create(const TrackerTLD::Params &parameters)
@@ -196,7 +196,7 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     if( data->confident )
     {
         Pexpert pExpert(imageForDetector, image_blurred, boundingBox, tldModel->detector, params, data->getMinSize());
-		Nexpert nExpert(imageForDetector, boundingBox, tldModel->detector, params);
+        Nexpert nExpert(imageForDetector, boundingBox, tldModel->detector, params);
         std::vector<Mat_<uchar> > examplesForModel, examplesForEnsemble;
         examplesForModel.reserve(100); examplesForEnsemble.reserve(100);
         int negRelabeled = 0;

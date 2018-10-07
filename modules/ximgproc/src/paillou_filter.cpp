@@ -391,8 +391,8 @@ void GradientPaillouY(InputArray _op, OutputArray _dst, double alpha, double ome
     std::vector<Mat> planDst;
     for (int i = 0; i <static_cast<int>(planSrc.size()); i++)
     {
-		planTmp.push_back(Mat(_op.size(), CV_32FC1));
-		planDst.push_back(Mat(_op.size(), CV_32FC1));
+        planTmp.push_back(Mat(_op.size(), CV_32FC1));
+        planDst.push_back(Mat(_op.size(), CV_32FC1));
         CV_Assert(planSrc[i].isContinuous() && planTmp[i].isContinuous() && planDst[i].isContinuous());
         ParallelGradientPaillouYCols x(planSrc[i],planTmp[i],alpha,omega);
         parallel_for_(Range(0, planSrc[i].cols), x,getNumThreads());
@@ -410,8 +410,8 @@ void GradientPaillouX(InputArray _op, OutputArray _dst, double alpha, double ome
     std::vector<Mat> planDst;
     for (int i = 0; i <static_cast<int>(planSrc.size()); i++)
     {
-		planTmp.push_back(Mat(_op.size(), CV_32FC1));
-		planDst.push_back(Mat(_op.size(), CV_32FC1));
+        planTmp.push_back(Mat(_op.size(), CV_32FC1));
+        planDst.push_back(Mat(_op.size(), CV_32FC1));
         CV_Assert(planSrc[i].isContinuous() && planTmp[i].isContinuous() && planDst[i].isContinuous());
         ParallelGradientPaillouXRows x(planSrc[i],planTmp[i],alpha,omega);
         parallel_for_(Range(0, planSrc[i].rows), x,getNumThreads());

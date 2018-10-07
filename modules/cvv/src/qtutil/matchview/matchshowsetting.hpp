@@ -15,30 +15,30 @@ namespace cvv{ namespace qtutil{
  */
 class MatchShowSetting:public MatchSettings{
 
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	/**
-	 * @brief the constructor
-	 * std::vector<cv::DMatch> this argument is for the MatchSettingSelector and will be ignored.
-	 * @param parent
-	 */
-	MatchShowSetting(std::vector<cv::DMatch>,QWidget* parent=nullptr);
+    /**
+     * @brief the constructor
+     * std::vector<cv::DMatch> this argument is for the MatchSettingSelector and will be ignored.
+     * @param parent
+     */
+    MatchShowSetting(std::vector<cv::DMatch>,QWidget* parent=nullptr);
 
-	/**
-	 * @brief set the Settings of the given match
-	 * @param match a cvvmatch
-	 */
-	virtual void setSettings(CVVMatch &match) override
-		{match.setShow(button_->isChecked());}
+    /**
+     * @brief set the Settings of the given match
+     * @param match a cvvmatch
+     */
+    virtual void setSettings(CVVMatch &match) override
+        {match.setShow(button_->isChecked());}
 
-	/*virtual void setUnSelectedSettings(CVVMatch &match) override
-		{match.setShow(!(button_->isChecked()));}*/
+    /*virtual void setUnSelectedSettings(CVVMatch &match) override
+        {match.setShow(!(button_->isChecked()));}*/
 public slots:
 
-	void updateButton();
+    void updateButton();
 private:
-	QPushButton *button_;
+    QPushButton *button_;
 };
 
 }}

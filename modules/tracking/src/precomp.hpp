@@ -51,7 +51,7 @@
 
 namespace cv
 {
-	extern const float ColorNames[][10];
+    extern const float ColorNames[][10];
 
     namespace tracking {
 

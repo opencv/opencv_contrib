@@ -37,11 +37,11 @@ debugFilter(cv::InputArray original, cv::InputArray result,
             impl::CallMetaData metaData = impl::CallMetaData(),
             const char *description = nullptr, const char *view = nullptr)
 {
-	if (debugMode())
-	{
-		impl::debugFilter(original, result, metaData, description,
-		                  view);
-	}
+    if (debugMode())
+    {
+        impl::debugFilter(original, result, metaData, description,
+                          view);
+    }
 }
 /** @overload */
 static inline void debugFilter(cv::InputArray original, cv::InputArray result,
@@ -49,11 +49,11 @@ static inline void debugFilter(cv::InputArray original, cv::InputArray result,
                                const ::std::string &description,
                                const ::std::string &view = "")
 {
-	if (debugMode())
-	{
-		impl::debugFilter(original, result, metaData,
-		                  description.c_str(), view.c_str());
-	}
+    if (debugMode())
+    {
+        impl::debugFilter(original, result, metaData,
+                          description.c_str(), view.c_str());
+    }
 }
 #else
 static inline void debugFilter(cv::InputArray, cv::InputArray,

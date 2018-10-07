@@ -18,29 +18,29 @@ namespace impl
 class SingleImageCall : public Call
 {
       public:
-	/**
-	 * @brief Constructs a SingleImageCall.
-	 */
-	SingleImageCall(cv::InputArray img, impl::CallMetaData data,
-	                QString type, QString description,
-	                QString requestedView);
+    /**
+     * @brief Constructs a SingleImageCall.
+     */
+    SingleImageCall(cv::InputArray img, impl::CallMetaData data,
+                    QString type, QString description,
+                    QString requestedView);
 
-	size_t matrixCount() const override
-	{
-		return 1;
-	}
-	const cv::Mat &matrixAt(size_t index) const override;
+    size_t matrixCount() const override
+    {
+        return 1;
+    }
+    const cv::Mat &matrixAt(size_t index) const override;
 
-	/**
-	 * @returns the original image
-	 */
-	const cv::Mat &mat() const
-	{
-		return img;
-	}
+    /**
+     * @returns the original image
+     */
+    const cv::Mat &mat() const
+    {
+        return img;
+    }
 
       private:
-	cv::Mat img;
+    cv::Mat img;
 };
 
 /**

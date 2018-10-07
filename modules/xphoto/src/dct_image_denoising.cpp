@@ -155,9 +155,9 @@ namespace xphoto
     }
 
     /*! This function implements simple dct-based image denoising,
-	 *	link: http://www.ipol.im/pub/art/2011/ys-dct/
+     *  link: http://www.ipol.im/pub/art/2011/ys-dct/
      *
-	 *  \param src : source image (rgb, or gray)
+     *  \param src : source image (rgb, or gray)
      *  \param dst : destination image
      *  \param sigma : expected noise standard deviation
      *  \param psize : size of block side where dct is computed

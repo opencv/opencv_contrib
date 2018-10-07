@@ -15,30 +15,30 @@ namespace cvv{ namespace qtutil{
  */
 class KeyPointShowSetting:public KeyPointSettings{
 
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	/**
-	 * @brief the constructor
-	 * std::vector<cv::KeyPoint> this argument is for the KeyPointSettingSelector and will be ignored.
-	 * @param parent
-	 */
-	KeyPointShowSetting(std::vector<cv::KeyPoint>,QWidget* parent=nullptr);
+    /**
+     * @brief the constructor
+     * std::vector<cv::KeyPoint> this argument is for the KeyPointSettingSelector and will be ignored.
+     * @param parent
+     */
+    KeyPointShowSetting(std::vector<cv::KeyPoint>,QWidget* parent=nullptr);
 
-	/**
-	 * @brief set the Settings of the given keyPoint
-	 * @param key a CVVKeyPoint
-	 */
-	virtual void setSettings(CVVKeyPoint &key) override
-		{key.setShow(button_->isChecked());}
+    /**
+     * @brief set the Settings of the given keyPoint
+     * @param key a CVVKeyPoint
+     */
+    virtual void setSettings(CVVKeyPoint &key) override
+        {key.setShow(button_->isChecked());}
 
-	/*virtual void setUnSelectedSettings(CVVKeyPoint &key) override
-		{key.setShow(!(button_->isChecked()));}*/
+    /*virtual void setUnSelectedSettings(CVVKeyPoint &key) override
+        {key.setShow(!(button_->isChecked()));}*/
 public slots:
 
-	void updateButton();
+    void updateButton();
 private:
-	QPushButton *button_;
+    QPushButton *button_;
 };
 
 }}

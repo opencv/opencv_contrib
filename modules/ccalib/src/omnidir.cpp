@@ -561,14 +561,14 @@ void cv::omnidir::internal::initializeCalibration(InputArrayOfArrays patternPoin
     for (int image_idx = 0; image_idx < n_img; ++image_idx)
     {
         cv::Mat objPoints, imgPoints;
-		patternPoints.getMat(image_idx).copyTo(objPoints);
-		imagePoints.getMat(image_idx).copyTo(imgPoints);
+        patternPoints.getMat(image_idx).copyTo(objPoints);
+        imagePoints.getMat(image_idx).copyTo(imgPoints);
 
-		int n_point = imgPoints.rows * imgPoints.cols;
-		if (objPoints.rows != n_point)
-			objPoints = objPoints.reshape(3, n_point);
-		if (imgPoints.rows != n_point)
-			imgPoints = imgPoints.reshape(2, n_point);
+        int n_point = imgPoints.rows * imgPoints.cols;
+        if (objPoints.rows != n_point)
+            objPoints = objPoints.reshape(3, n_point);
+        if (imgPoints.rows != n_point)
+            imgPoints = imgPoints.reshape(2, n_point);
 
         // objectPoints should be 3-channel data, imagePoints should be 2-channel data
         CV_Assert(objPoints.type() == CV_64FC3 && imgPoints.type() == CV_64FC2 );
@@ -871,10 +871,10 @@ void cv::omnidir::internal::computeJacobian(InputArrayOfArrays objectPoints, Inp
     for (int i = 0; i < n; i++)
     {
         Mat objPoints, imgPoints, om, T;
-		objectPoints.getMat(i).copyTo(objPoints);
-		imagePoints.getMat(i).copyTo(imgPoints);
-		objPoints = objPoints.reshape(3, objPoints.rows*objPoints.cols);
-		imgPoints = imgPoints.reshape(2, imgPoints.rows*imgPoints.cols);
+        objectPoints.getMat(i).copyTo(objPoints);
+        imagePoints.getMat(i).copyTo(imgPoints);
+        objPoints = objPoints.reshape(3, objPoints.rows*objPoints.cols);
+        imgPoints = imgPoints.reshape(2, imgPoints.rows*imgPoints.cols);
 
         om = parameters.getMat().colRange(i*6, i*6+3);
         T = parameters.getMat().colRange(i*6+3, (i+1)*6);
@@ -915,14 +915,14 @@ void cv::omnidir::internal::computeJacobian(InputArrayOfArrays objectPoints, Inp
     subMatrix(JTJ, JTJ, _idx, _idx);
     subMatrix(JTE, JTE, std::vector<int>(1, 1), _idx);
     // in case JTJ is singular
-	//SVD svd(JTJ, SVD::NO_UV);
-	//double cond = svd.w.at<double>(0)/svd.w.at<double>(5);
+    //SVD svd(JTJ, SVD::NO_UV);
+    //double cond = svd.w.at<double>(0)/svd.w.at<double>(5);
 
-	//if (cond_JTJ.needed())
-	//{
-	//	cond_JTJ.create(1, 1, CV_64F);
-	//	cond_JTJ.getMat().at<double>(0) = cond;
-	//}
+    //if (cond_JTJ.needed())
+    //{
+    //  cond_JTJ.create(1, 1, CV_64F);
+    //  cond_JTJ.getMat().at<double>(0) = cond;
+    //}
 
     //double epsilon = 1e-4*std::exp(cond);
     JTJ_inv = Mat(JTJ+epsilon).inv();
@@ -1122,7 +1122,7 @@ double cv::omnidir::calibrate(InputArrayOfArrays patternPoints, InputArrayOfArra
             break;
         double alpha_smooth2 = 1 - std::pow(1 - alpha_smooth, (double)iter + 1.0);
         Mat JTJ_inv, JTError;
-		double epsilon = 0.01 * std::pow(0.9, (double)iter/10);
+        double epsilon = 0.01 * std::pow(0.9, (double)iter/10);
         cv::omnidir::internal::computeJacobian(_patternPoints, _imagePoints, currentParam, JTJ_inv, JTError, flags, epsilon);
 
         // Gauss - Newton
@@ -1217,7 +1217,7 @@ double cv::omnidir::stereoCalibrate(InputOutputArrayOfArrays objectPoints, Input
     int depth = objectPoints.depth();
 
     std::vector<Mat> _objectPoints, _imagePoints1, _imagePoints2,
-					_objectPointsFilt, _imagePoints1Filt, _imagePoints2Filt;
+                    _objectPointsFilt, _imagePoints1Filt, _imagePoints2Filt;
     for (int i = 0; i < (int)objectPoints.total(); ++i)
     {
         _objectPoints.push_back(objectPoints.getMat(i));
@@ -1247,12 +1247,12 @@ double cv::omnidir::stereoCalibrate(InputOutputArrayOfArrays objectPoints, Input
         idx.create(1, (int)_idx.total(), CV_32S);
         _idx.copyTo(idx.getMat());
     }
-	for (int i = 0; i < (int)_idx.total(); ++i)
-	{
-		_objectPointsFilt.push_back(_objectPoints[_idx.at<int>(i)]);
-		_imagePoints1Filt.push_back(_imagePoints1[_idx.at<int>(i)]);
-		_imagePoints2Filt.push_back(_imagePoints2[_idx.at<int>(i)]);
-	}
+    for (int i = 0; i < (int)_idx.total(); ++i)
+    {
+        _objectPointsFilt.push_back(_objectPoints[_idx.at<int>(i)]);
+        _imagePoints1Filt.push_back(_imagePoints1[_idx.at<int>(i)]);
+        _imagePoints2Filt.push_back(_imagePoints2[_idx.at<int>(i)]);
+    }
 
     int n = (int)_objectPointsFilt.size();
     Mat finalParam(1, 10 + 6*n, CV_64F);
@@ -1273,10 +1273,10 @@ double cv::omnidir::stereoCalibrate(InputOutputArrayOfArrays objectPoints, Input
             break;
         double alpha_smooth2 = 1 - std::pow(1 - alpha_smooth, (double)iter + 1.0);
         Mat JTJ_inv, JTError;
-		double epsilon = 0.01 * std::pow(0.9, (double)iter/10);
+        double epsilon = 0.01 * std::pow(0.9, (double)iter/10);
 
         cv::omnidir::internal::computeJacobianStereo(_objectPointsFilt, _imagePoints1Filt, _imagePoints2Filt, currentParam,
-			JTJ_inv, JTError, flags, epsilon);
+            JTJ_inv, JTError, flags, epsilon);
 
         // Gauss - Newton
         Mat G = alpha_smooth2*JTJ_inv * JTError;
@@ -1370,7 +1370,7 @@ double cv::omnidir::stereoCalibrate(InputOutputArrayOfArrays objectPoints, Input
     Mat errors;
 
     cv::omnidir::internal::estimateUncertaintiesStereo(_objectPointsFilt, _imagePoints1Filt, _imagePoints2Filt,
-		finalParam, errors, std_error, rms, flags);
+        finalParam, errors, std_error, rms, flags);
     return rms;
 }
 
@@ -1428,13 +1428,13 @@ void cv::omnidir::stereoReconstruct(InputArray image1, InputArray image2, InputA
 
     //cv::StereoSGBM matching(0, numDisparities, SADWindowSize, 8*channel*SADWindowSize*SADWindowSize, 32*channel*SADWindowSize*SADWindowSize);
     //matching(undis1, undis2, _depthMap);
-	Ptr<StereoSGBM> sgbm = StereoSGBM::create(0, numDisparities, SADWindowSize, 8 * channel*SADWindowSize*SADWindowSize, 32 * channel*SADWindowSize*SADWindowSize);
+    Ptr<StereoSGBM> sgbm = StereoSGBM::create(0, numDisparities, SADWindowSize, 8 * channel*SADWindowSize*SADWindowSize, 32 * channel*SADWindowSize*SADWindowSize);
 
-	sgbm->compute(undis1, undis2, _disMap);
+    sgbm->compute(undis1, undis2, _disMap);
 
     // some regions of image1 is black, the corresponding regions of disparity map is also invalid.
     Mat realDis;
-	_disMap.convertTo(_disMap, CV_32F);
+    _disMap.convertTo(_disMap, CV_32F);
     Mat(_disMap/16.0f).convertTo(realDis, CV_32F);
 
     Mat grayImg, binaryImg, idx;
@@ -1752,11 +1752,11 @@ void cv::omnidir::internal::estimateUncertainties(InputArrayOfArrays objectPoint
 
     for(int i=0; i < n; ++i)
     {
-		Mat imgPoints, objPoints;
-		imagePoints.getMat(i).copyTo(imgPoints);
-		objectPoints.getMat(i).copyTo(objPoints);
-		imgPoints = imgPoints.reshape(2, imgPoints.rows*imgPoints.cols);
-		objPoints = objPoints.reshape(3, objPoints.rows*objPoints.cols);
+        Mat imgPoints, objPoints;
+        imagePoints.getMat(i).copyTo(imgPoints);
+        objectPoints.getMat(i).copyTo(objPoints);
+        imgPoints = imgPoints.reshape(2, imgPoints.rows*imgPoints.cols);
+        objPoints = objPoints.reshape(3, objPoints.rows*objPoints.cols);
 
         Mat om = parameters.getMat().colRange(i*6, i*6+3);
         Mat T = parameters.getMat().colRange(i*6+3, (i+1)*6);
@@ -1896,10 +1896,10 @@ double cv::omnidir::internal::computeMeanReproErr(InputArrayOfArrays imagePoints
     {
         for (int i = 0; i < n; i++)
         {
-			Mat x, proj_x;
-			imagePoints.getMat(i).copyTo(x);
-			proImagePoints.getMat(i).copyTo(proj_x);
-			Mat errorI = x.reshape(2, x.rows*x.cols) - proj_x.reshape(2, proj_x.rows*proj_x.cols);
+            Mat x, proj_x;
+            imagePoints.getMat(i).copyTo(x);
+            proImagePoints.getMat(i).copyTo(proj_x);
+            Mat errorI = x.reshape(2, x.rows*x.cols) - proj_x.reshape(2, proj_x.rows*proj_x.cols);
             //Mat errorI = imagePoints.getMat(i) - proImagePoints.getMat(i);
             totalPoints += (int)errorI.total();
             Vec2d* ptr_err = errorI.ptr<Vec2d>();
@@ -1911,10 +1911,10 @@ double cv::omnidir::internal::computeMeanReproErr(InputArrayOfArrays imagePoints
     }
     else
     {
-		Mat x, proj_x;
-		imagePoints.getMat().copyTo(x);
-		proImagePoints.getMat().copyTo(proj_x);
-		Mat errorI = x.reshape(2, x.rows*x.cols) - proj_x.reshape(2, proj_x.rows*proj_x.cols);
+        Mat x, proj_x;
+        imagePoints.getMat().copyTo(x);
+        proImagePoints.getMat().copyTo(proj_x);
+        Mat errorI = x.reshape(2, x.rows*x.cols) - proj_x.reshape(2, proj_x.rows*proj_x.cols);
         //Mat errorI = imagePoints.getMat() - proImagePoints.getMat();
         totalPoints += (int)errorI.total();
         Vec2d* ptr_err = errorI.ptr<Vec2d>();

@@ -9,30 +9,30 @@
 namespace cvv{ namespace qtutil{
 
 MatchIntervallSelector::MatchIntervallSelector(std::vector<cv::DMatch> matches, QWidget *parent):
-	MatchSelection{parent}
+    MatchSelection{parent}
 {
-	double min=0.0;
-	double max=0.0;
+    double min=0.0;
+    double max=0.0;
 
-	for(auto& match:matches)
-	{
-		min=std::min(static_cast<double>(match.distance),min);
-		max=std::max(static_cast<double>(match.distance),max);
-	}
+    for(auto& match:matches)
+    {
+        min=std::min(static_cast<double>(match.distance),min);
+        max=std::max(static_cast<double>(match.distance),max);
+    }
 
-	auto layout=util::make_unique<QVBoxLayout>();
-	auto selector=util::make_unique<IntervallSelector>(min,max);
+    auto layout=util::make_unique<QVBoxLayout>();
+    auto selector=util::make_unique<IntervallSelector>(min,max);
 
-	selector_=selector.get();
-	connect(&(selector->signalSettingsChanged()),SIGNAL(signal()),this,SIGNAL(settingsChanged()));
+    selector_=selector.get();
+    connect(&(selector->signalSettingsChanged()),SIGNAL(signal()),this,SIGNAL(settingsChanged()));
 
-	layout->addWidget(selector.release());
-	setLayout(layout.release());
+    layout->addWidget(selector.release());
+    setLayout(layout.release());
 }
 
 std::vector<cv::DMatch> MatchIntervallSelector::select(const std::vector<cv::DMatch> &selection)
 {
-	return selector_->select(selection, [&](const cv::DMatch& match){return match.distance;});
+    return selector_->select(selection, [&](const cv::DMatch& match){return match.distance;});
 }
 
 

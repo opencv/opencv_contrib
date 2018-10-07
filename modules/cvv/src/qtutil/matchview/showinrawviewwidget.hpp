@@ -16,29 +16,29 @@ namespace  cvv {namespace qtutil{
  */
 class ShowInRawView:public QWidget{
 
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	/**
-	 * @brief the constructor
-	 * @param left_key the left keypoints
-	 * @param right_key th right keypoints
-	 * @param matches the matches
-	 * @param matchmnt the matchmanagement
-	 * @param keymnt the keypointmanagement
-	 * @param parent the parent Widget
-	 */
-	ShowInRawView(std::vector<cv::KeyPoint> left_key,
-		      std::vector<cv::KeyPoint> right_key,
-		      std::vector<cv::DMatch> matches,
-		      MatchManagement* matchmnt,
-		      KeyPointManagement* keymnt,
-		      QWidget*parent=nullptr);
+    /**
+     * @brief the constructor
+     * @param left_key the left keypoints
+     * @param right_key th right keypoints
+     * @param matches the matches
+     * @param matchmnt the matchmanagement
+     * @param keymnt the keypointmanagement
+     * @param parent the parent Widget
+     */
+    ShowInRawView(std::vector<cv::KeyPoint> left_key,
+              std::vector<cv::KeyPoint> right_key,
+              std::vector<cv::DMatch> matches,
+              MatchManagement* matchmnt,
+              KeyPointManagement* keymnt,
+              QWidget*parent=nullptr);
 
-	/**
-	 * @brief the cestructor deletes the RawViewWindow
-	 */
-	~ShowInRawView();
+    /**
+     * @brief the cestructor deletes the RawViewWindow
+     */
+    ~ShowInRawView();
 
 protected:
     virtual void hideEvent(QHideEvent * ) CV_OVERRIDE;
@@ -47,15 +47,15 @@ protected:
 
 private slots:
 
-	void getcurrentSelection();
+    void getcurrentSelection();
 
 private:
-	MatchManagement* matchmnt_;
-	KeyPointManagement* keymnt_;
-	RawviewWindow* rawViewWindow_;
-	std::vector<cv::KeyPoint> left_key_;
-	std::vector<cv::KeyPoint> right_key_;
-	std::vector<cv::DMatch> matches_;
+    MatchManagement* matchmnt_;
+    KeyPointManagement* keymnt_;
+    RawviewWindow* rawViewWindow_;
+    std::vector<cv::KeyPoint> left_key_;
+    std::vector<cv::KeyPoint> right_key_;
+    std::vector<cv::DMatch> matches_;
 };
 
 }}

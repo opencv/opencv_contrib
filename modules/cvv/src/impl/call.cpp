@@ -8,8 +8,8 @@ namespace impl
 
 size_t newCallId()
 {
-	static std::atomic_size_t nextId (1);
-	return nextId++;
+    static std::atomic_size_t nextId (1);
+    return nextId++;
 }
 
 Call::Call() : metaData_{}, id{ newCallId() }, calltype{}

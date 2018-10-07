@@ -14,9 +14,9 @@ void debugDMatch(cv::InputArray img1, std::vector<cv::KeyPoint> keypoints1,
                  const char *description, const char *view,
                  bool useTrainDescriptor)
 {
-	debugMatchCall(img1, std::move(keypoints1), img2, std::move(keypoints2),
-	               std::move(matches), data, description, view,
-	               useTrainDescriptor);
+    debugMatchCall(img1, std::move(keypoints1), img2, std::move(keypoints2),
+                   std::move(matches), data, description, view,
+                   useTrainDescriptor);
 }
 }
 } // namespaces

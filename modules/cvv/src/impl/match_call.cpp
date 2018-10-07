@@ -19,7 +19,7 @@ MatchCall::MatchCall(cv::InputArray img1, std::vector<cv::KeyPoint> keypoints1,
                      QString type, QString description, QString requestedView,
                      bool useTrainDescriptor)
     : Call( data,                   std::move(type),
-	    std::move(description), std::move(requestedView) ),
+        std::move(description), std::move(requestedView) ),
       img1_{ img1.getMat().clone() }, keypoints1_{ std::move(keypoints1) },
       img2_{ img2.getMat().clone() }, keypoints2_{ std::move(keypoints2) },
       matches_{ std::move(matches) }, usesTrainDescriptor_{ useTrainDescriptor }
@@ -28,15 +28,15 @@ MatchCall::MatchCall(cv::InputArray img1, std::vector<cv::KeyPoint> keypoints1,
 
 const cv::Mat &MatchCall::matrixAt(size_t index) const
 {
-	switch (index)
-	{
-	case 0:
-		return img1();
-	case 1:
-		return img2();
-	default:
-		throw std::out_of_range{ "" };
-	}
+    switch (index)
+    {
+    case 0:
+        return img1();
+    case 1:
+        return img2();
+    default:
+        throw std::out_of_range{ "" };
+    }
 }
 
 void debugMatchCall(cv::InputArray img1, std::vector<cv::KeyPoint> keypoints1,
@@ -45,13 +45,13 @@ void debugMatchCall(cv::InputArray img1, std::vector<cv::KeyPoint> keypoints1,
                     const char *description, const char *view,
                     bool useTrainDescriptor)
 {
-	dataController().addCall(util::make_unique<MatchCall>(
-	    img1, std::move(keypoints1), img2, std::move(keypoints2),
-	    std::move(matches), data, "match",
-	    description ? QString::fromLocal8Bit(description)
-	                : QString{ "<no description>" },
-	    view ? QString::fromLocal8Bit(view) : QString{},
-	    useTrainDescriptor));
+    dataController().addCall(util::make_unique<MatchCall>(
+        img1, std::move(keypoints1), img2, std::move(keypoints2),
+        std::move(matches), data, "match",
+        description ? QString::fromLocal8Bit(description)
+                    : QString{ "<no description>" },
+        view ? QString::fromLocal8Bit(view) : QString{},
+        useTrainDescriptor));
 }
 }
 } // namespaces cvv::impl

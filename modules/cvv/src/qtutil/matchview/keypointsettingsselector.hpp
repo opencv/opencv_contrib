@@ -16,44 +16,44 @@ namespace cvv{ namespace qtutil{
  */
 class KeyPointSettingsSelector:public KeyPointSettings, public RegisterHelper<KeyPointSettings,std::vector<cv::KeyPoint>>{
 
-	Q_OBJECT
+    Q_OBJECT
 
 public:
-	/**
-	 * @brief the constructor
-	 */
-	KeyPointSettingsSelector(const std::vector<cv::KeyPoint>& univers,QWidget * parent=nullptr);
+    /**
+     * @brief the constructor
+     */
+    KeyPointSettingsSelector(const std::vector<cv::KeyPoint>& univers,QWidget * parent=nullptr);
 
-	/**
-	 * @brief set settings o the given keypoint
-	 *
-	 */
-	virtual void setSettings(CVVKeyPoint &key)override;
+    /**
+     * @brief set settings o the given keypoint
+     *
+     */
+    virtual void setSettings(CVVKeyPoint &key)override;
 
 public slots:
 
-	/**
-	 * @brief emits the remove signal this
-	 */
-	void removeMe()
-		{emit remove(this);}
+    /**
+     * @brief emits the remove signal this
+     */
+    void removeMe()
+        {emit remove(this);}
 
 signals:
-	/**
-	 * @brief this signal will be emit if this selector should be removed
-	 */
-	void remove(KeyPointSettingsSelector*);
+    /**
+     * @brief this signal will be emit if this selector should be removed
+     */
+    void remove(KeyPointSettingsSelector*);
 private slots:
 
-	/**
-	 * @brief swap the current KeyPointSetting if the user choose another.
-	 */
-	virtual void changedSetting();
+    /**
+     * @brief swap the current KeyPointSetting if the user choose another.
+     */
+    virtual void changedSetting();
 
 private:
-	KeyPointSettings * setting_=nullptr;
-	std::vector<cv::KeyPoint> univers_;
-	QLayout * layout_;
+    KeyPointSettings * setting_=nullptr;
+    std::vector<cv::KeyPoint> univers_;
+    QLayout * layout_;
 
 };
 
@@ -61,11 +61,11 @@ private:
 template <class Setting>
 bool registerKeyPointSetting(const QString &name)
 {
-	return KeyPointSettingsSelector::registerElement(
-	    name, [](std::vector<cv::KeyPoint> univers)
-	{
-		    return std::unique_ptr<KeyPointSettings>{ new Setting{univers}};
-	});
+    return KeyPointSettingsSelector::registerElement(
+        name, [](std::vector<cv::KeyPoint> univers)
+    {
+            return std::unique_ptr<KeyPointSettings>{ new Setting{univers}};
+    });
 }
 
 }}

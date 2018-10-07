@@ -97,8 +97,8 @@ bool SURF_OCL::init(const SURF_Impl* p)
                 return false;
             haveImageSupport = dev.imageSupport();
             kerOpts = format("%s%s",
-				haveImageSupport ? "-D HAVE_IMAGE2D" : "",
-				dev.doubleFPConfig() > 0? " -D DOUBLE_SUPPORT": "");
+                haveImageSupport ? "-D HAVE_IMAGE2D" : "",
+                dev.doubleFPConfig() > 0? " -D DOUBLE_SUPPORT": "");
             status = 1;
         }
     }

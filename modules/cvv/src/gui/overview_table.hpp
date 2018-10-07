@@ -28,61 +28,61 @@ class OverviewTableRow;
  */
 class OverviewTable : public QWidget
 {
-	Q_OBJECT
+    Q_OBJECT
 
       public:
-	/**
-	 * @brief Constructs a new OverviewTable.
-	 * @param controller it's ViewController
-	 */
-	OverviewTable(util::Reference<controller::ViewController> controller);
+    /**
+     * @brief Constructs a new OverviewTable.
+     * @param controller it's ViewController
+     */
+    OverviewTable(util::Reference<controller::ViewController> controller);
 
-	~OverviewTable()
-	{
-	}
+    ~OverviewTable()
+    {
+    }
 
-	/**
-	 * @brief Update the inherited groups of rows and rebuild the UI fully.
-	 * @param newGroups new groups for this table
-	 */
-	void updateRowGroups(
-	    const std::vector<stfl::ElementGroup<OverviewTableRow>> newGroups);
+    /**
+     * @brief Update the inherited groups of rows and rebuild the UI fully.
+     * @param newGroups new groups for this table
+     */
+    void updateRowGroups(
+        const std::vector<stfl::ElementGroup<OverviewTableRow>> newGroups);
 
-	/**
-	 * @brief Hide the thumbnail images in the tables.
-	 */
-	void hideImages();
+    /**
+     * @brief Hide the thumbnail images in the tables.
+     */
+    void hideImages();
 
-	/**
-	 * @brief Show thumbnail images in the tables.
-	 */
-	void showImages();
+    /**
+     * @brief Show thumbnail images in the tables.
+     */
+    void showImages();
 
-	/**
-	 * @brief Does this the tables show thumbnail images?
-	 */
-	bool isShowingImages();
+    /**
+     * @brief Does this the tables show thumbnail images?
+     */
+    bool isShowingImages();
 
-	/**
-	 * @brief Updates the UI.
-	 * Updates all subtables.
-	 */
-	void updateUI();
+    /**
+     * @brief Updates the UI.
+     * Updates all subtables.
+     */
+    void updateUI();
 
-	/**
-	 * @brief Removes the table element with the given id.
-	 * @param id given element id
-	 */
-	void removeElement(size_t id);
+    /**
+     * @brief Removes the table element with the given id.
+     * @param id given element id
+     */
+    void removeElement(size_t id);
 
       private:
-	util::Reference<controller::ViewController> controller;
-	bool doesShowImages = true;
-	qtutil::Accordion *subtableAccordion;
-	std::vector<OverviewGroupSubtable *> subTables{};
-	std::vector<stfl::ElementGroup<OverviewTableRow>> groups;
+    util::Reference<controller::ViewController> controller;
+    bool doesShowImages = true;
+    qtutil::Accordion *subtableAccordion;
+    std::vector<OverviewGroupSubtable *> subTables{};
+    std::vector<stfl::ElementGroup<OverviewTableRow>> groups;
 
-	void appendRowGroupToTable(stfl::ElementGroup<OverviewTableRow> group);
+    void appendRowGroupToTable(stfl::ElementGroup<OverviewTableRow> group);
 };
 }
 }

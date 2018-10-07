@@ -21,8 +21,8 @@ namespace impl
  */
 static inline bool &getDebugFlag()
 {
-	CVVISUAL_THREAD_LOCAL static bool flag = true;
-	return flag;
+    CVVISUAL_THREAD_LOCAL static bool flag = true;
+    return flag;
 }
 
 } // namespace impl
@@ -31,7 +31,7 @@ static inline bool &getDebugFlag()
 */
 static inline bool debugMode()
 {
-	return impl::getDebugFlag();
+    return impl::getDebugFlag();
 }
 
 /** @brief Enable or disable cvv for current translation unit and thread
@@ -41,7 +41,7 @@ static inline bool debugMode()
  */
 static inline void setDebugFlag(bool active)
 {
-	impl::getDebugFlag() = active;
+    impl::getDebugFlag() = active;
 }
 
 //! @}

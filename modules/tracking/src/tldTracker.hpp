@@ -57,58 +57,58 @@ namespace tld
 class TrackerProxy
 {
 public:
-	virtual bool init(const Mat& image, const Rect2d& boundingBox) = 0;
-	virtual bool update(const Mat& image, Rect2d& boundingBox) = 0;
-	virtual ~TrackerProxy(){}
+    virtual bool init(const Mat& image, const Rect2d& boundingBox) = 0;
+    virtual bool update(const Mat& image, Rect2d& boundingBox) = 0;
+    virtual ~TrackerProxy(){}
 };
 
 
 class MyMouseCallbackDEBUG
 {
 public:
-	MyMouseCallbackDEBUG(Mat& img, Mat& imgBlurred, TLDDetector* detector) :img_(img), imgBlurred_(imgBlurred), detector_(detector){}
-	static void onMouse(int event, int x, int y, int, void* obj){ ((MyMouseCallbackDEBUG*)obj)->onMouse(event, x, y); }
-	MyMouseCallbackDEBUG& operator = (const MyMouseCallbackDEBUG& /*other*/){ return *this; }
+    MyMouseCallbackDEBUG(Mat& img, Mat& imgBlurred, TLDDetector* detector) :img_(img), imgBlurred_(imgBlurred), detector_(detector){}
+    static void onMouse(int event, int x, int y, int, void* obj){ ((MyMouseCallbackDEBUG*)obj)->onMouse(event, x, y); }
+    MyMouseCallbackDEBUG& operator = (const MyMouseCallbackDEBUG& /*other*/){ return *this; }
 private:
-	void onMouse(int event, int x, int y);
-	Mat& img_, imgBlurred_;
-	TLDDetector* detector_;
+    void onMouse(int event, int x, int y);
+    Mat& img_, imgBlurred_;
+    TLDDetector* detector_;
 };
 
 
 class Data
 {
 public:
-	Data(Rect2d initBox);
-	Size getMinSize(){ return minSize; }
-	double getScale(){ return scale; }
-	bool confident;
-	bool failedLastTime;
-	int frameNum;
-	void printme(FILE*  port = stdout);
+    Data(Rect2d initBox);
+    Size getMinSize(){ return minSize; }
+    double getScale(){ return scale; }
+    bool confident;
+    bool failedLastTime;
+    int frameNum;
+    void printme(FILE*  port = stdout);
 private:
-	double scale;
-	Size minSize;
+    double scale;
+    Size minSize;
 };
 
 template<class T, class Tparams>
 class TrackerProxyImpl : public TrackerProxy
 {
 public:
-	TrackerProxyImpl(Tparams params = Tparams()) :params_(params){}
-	bool init(const Mat& image, const Rect2d& boundingBox) CV_OVERRIDE
-	{
+    TrackerProxyImpl(Tparams params = Tparams()) :params_(params){}
+    bool init(const Mat& image, const Rect2d& boundingBox) CV_OVERRIDE
+    {
         trackerPtr = T::create();
-		return trackerPtr->init(image, boundingBox);
-	}
-	bool update(const Mat& image, Rect2d& boundingBox) CV_OVERRIDE
-	{
-		return trackerPtr->update(image, boundingBox);
-	}
+        return trackerPtr->init(image, boundingBox);
+    }
+    bool update(const Mat& image, Rect2d& boundingBox) CV_OVERRIDE
+    {
+        return trackerPtr->update(image, boundingBox);
+    }
 private:
-	Ptr<T> trackerPtr;
-	Tparams params_;
-	Rect2d boundingBox_;
+    Ptr<T> trackerPtr;
+    Tparams params_;
+    Rect2d boundingBox_;
 };
 
 
@@ -118,53 +118,53 @@ private:
 class TrackerTLDImpl : public TrackerTLD
 {
 public:
-	TrackerTLDImpl(const TrackerTLD::Params &parameters = TrackerTLD::Params());
-	void read(const FileNode& fn) CV_OVERRIDE;
-	void write(FileStorage& fs) const CV_OVERRIDE;
+    TrackerTLDImpl(const TrackerTLD::Params &parameters = TrackerTLD::Params());
+    void read(const FileNode& fn) CV_OVERRIDE;
+    void write(FileStorage& fs) const CV_OVERRIDE;
 
     Ptr<TrackerModel> getModel()
     {
       return model;
     }
 
-	class Pexpert
-	{
-	public:
-		Pexpert(const Mat& img_in, const Mat& imgBlurred_in, Rect2d& resultBox_in,
-			const TLDDetector* detector_in, TrackerTLD::Params params_in, Size initSize_in) :
-			img_(img_in), imgBlurred_(imgBlurred_in), resultBox_(resultBox_in), detector_(detector_in), params_(params_in), initSize_(initSize_in){}
-		bool operator()(Rect2d /*box*/){ return false; }
-		int additionalExamples(std::vector<Mat_<uchar> >& examplesForModel, std::vector<Mat_<uchar> >& examplesForEnsemble);
-	protected:
-		Pexpert() : detector_(NULL) {}
-		Mat img_, imgBlurred_;
-		Rect2d resultBox_;
-		const TLDDetector* detector_;
-		TrackerTLD::Params params_;
-		RNG rng;
-		Size initSize_;
-	};
+    class Pexpert
+    {
+    public:
+        Pexpert(const Mat& img_in, const Mat& imgBlurred_in, Rect2d& resultBox_in,
+            const TLDDetector* detector_in, TrackerTLD::Params params_in, Size initSize_in) :
+            img_(img_in), imgBlurred_(imgBlurred_in), resultBox_(resultBox_in), detector_(detector_in), params_(params_in), initSize_(initSize_in){}
+        bool operator()(Rect2d /*box*/){ return false; }
+        int additionalExamples(std::vector<Mat_<uchar> >& examplesForModel, std::vector<Mat_<uchar> >& examplesForEnsemble);
+    protected:
+        Pexpert() : detector_(NULL) {}
+        Mat img_, imgBlurred_;
+        Rect2d resultBox_;
+        const TLDDetector* detector_;
+        TrackerTLD::Params params_;
+        RNG rng;
+        Size initSize_;
+    };
 
-	class Nexpert : public Pexpert
-	{
-	public:
-		Nexpert(const Mat& img_in, Rect2d& resultBox_in, const TLDDetector* detector_in, TrackerTLD::Params params_in)
-		{
-			img_ = img_in; resultBox_ = resultBox_in; detector_ = detector_in; params_ = params_in;
-		}
-		bool operator()(Rect2d box);
-		int additionalExamples(std::vector<Mat_<uchar> >& examplesForModel, std::vector<Mat_<uchar> >& examplesForEnsemble)
-		{
-			examplesForModel.clear(); examplesForEnsemble.clear(); return 0;
-		}
-	};
+    class Nexpert : public Pexpert
+    {
+    public:
+        Nexpert(const Mat& img_in, Rect2d& resultBox_in, const TLDDetector* detector_in, TrackerTLD::Params params_in)
+        {
+            img_ = img_in; resultBox_ = resultBox_in; detector_ = detector_in; params_ = params_in;
+        }
+        bool operator()(Rect2d box);
+        int additionalExamples(std::vector<Mat_<uchar> >& examplesForModel, std::vector<Mat_<uchar> >& examplesForEnsemble)
+        {
+            examplesForModel.clear(); examplesForEnsemble.clear(); return 0;
+        }
+    };
 
-	bool initImpl(const Mat& image, const Rect2d& boundingBox) CV_OVERRIDE;
-	bool updateImpl(const Mat& image, Rect2d& boundingBox) CV_OVERRIDE;
+    bool initImpl(const Mat& image, const Rect2d& boundingBox) CV_OVERRIDE;
+    bool updateImpl(const Mat& image, Rect2d& boundingBox) CV_OVERRIDE;
 
-	TrackerTLD::Params params;
-	Ptr<Data> data;
-	Ptr<TrackerProxy> trackerProxy;
+    TrackerTLD::Params params;
+    Ptr<Data> data;
+    Ptr<TrackerProxy> trackerProxy;
 
 };
 

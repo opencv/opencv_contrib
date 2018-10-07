@@ -23,10 +23,10 @@ instance of FinalShowCaller, which calls finalShow() in its destructor (RAII-sty
 inline void finalShow()
 {
 #ifdef CVVISUAL_DEBUGMODE
-	if (debugMode())
-	{
-		impl::finalShow();
-	}
+    if (debugMode())
+    {
+        impl::finalShow();
+    }
 #endif
 }
 
@@ -36,13 +36,13 @@ inline void finalShow()
 class FinalShowCaller
 {
 public:
-	/**
-	 * @brief Calls finalShow().
-	 */
-	~FinalShowCaller()
-	{
-		finalShow();
-	}
+    /**
+     * @brief Calls finalShow().
+     */
+    ~FinalShowCaller()
+    {
+        finalShow();
+    }
 };
 
 //! @}

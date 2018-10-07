@@ -5,25 +5,25 @@
 namespace cvv {namespace qtutil{
 
 MatchPortionSelection::MatchPortionSelection(std::vector<cv::DMatch> , QWidget *parent):
-	MatchSelection{parent}
+    MatchSelection{parent}
 {
-	auto layout=util::make_unique<QVBoxLayout>();
-	auto selector=util::make_unique<PortionSelector>();
+    auto layout=util::make_unique<QVBoxLayout>();
+    auto selector=util::make_unique<PortionSelector>();
 
-	selector_=selector.get();
+    selector_=selector.get();
 
-	connect(&(selector->signalSettingsChanged()),SIGNAL(signal()),this,SIGNAL(settingsChanged()));
+    connect(&(selector->signalSettingsChanged()),SIGNAL(signal()),this,SIGNAL(settingsChanged()));
 
-	layout->addWidget(selector.release());
+    layout->addWidget(selector.release());
 
-	setLayout(layout.release());
+    setLayout(layout.release());
 }
 
 std::vector<cv::DMatch> MatchPortionSelection::select(const std::vector<cv::DMatch> &selection)
 {
-	return selector_->select(  selection ,
-			[&](cv::DMatch arg1,cv::DMatch arg2)
-			{return arg1<arg2;});
+    return selector_->select(  selection ,
+            [&](cv::DMatch arg1,cv::DMatch arg2)
+            {return arg1<arg2;});
 }
 
 }}

@@ -56,7 +56,7 @@ void Histogram::setArea(QRectF rect, qreal zoom)
 }
 
 std::vector<cv::Mat> Histogram::calcHist(cv::Mat mat, cv::Rect rect, int bins, float rangeMin,
-	float rangeMax)
+    float rangeMax)
 {
   cv::Mat rectMat(mat, rect);
   cv::Mat histMat;
@@ -71,22 +71,22 @@ std::vector<cv::Mat> Histogram::calcHist(cv::Mat mat, cv::Rect rect, int bins, f
 
   std::vector<cv::Mat> channelHists(channelPlanes.size());
 
-  for (size_t chan = 0; chan < channelPlanes.size(); chan++) 
+  for (size_t chan = 0; chan < channelPlanes.size(); chan++)
   {
-    cv::calcHist(&channelPlanes[chan], 1, 0, cv::Mat(), channelHists[chan], 1, &histSize, 
-		&histRange, uniform, accumulate);
+    cv::calcHist(&channelPlanes[chan], 1, 0, cv::Mat(), channelHists[chan], 1, &histSize,
+        &histRange, uniform, accumulate);
   }
 
   return channelHists;
 }
 
-cv::Mat Histogram::drawHist(const std::vector<cv::Mat>& channelHists, cv::Size histSize, 
-	int lineWidth, const cv::Scalar& backgroundColor)
+cv::Mat Histogram::drawHist(const std::vector<cv::Mat>& channelHists, cv::Size histSize,
+    int lineWidth, const cv::Scalar& backgroundColor)
 {
   int binCount = channelHists[0].rows;
   int binWidth = cvRound(double(histSize.width)/binCount);
-  std::vector<cv::Scalar> colors{cv::Scalar(255, 0, 0), cv::Scalar(0, 255, 0), 
-	  cv::Scalar(0, 0, 255), cv::Scalar(0, 0, 0)}; // BGR
+  std::vector<cv::Scalar> colors{cv::Scalar(255, 0, 0), cv::Scalar(0, 255, 0),
+      cv::Scalar(0, 0, 255), cv::Scalar(0, 0, 0)}; // BGR
 
   cv::Mat histMat(histSize, CV_8UC3, backgroundColor);
 
@@ -105,12 +105,12 @@ cv::Mat Histogram::drawHist(const std::vector<cv::Mat>& channelHists, cv::Size h
     auto& color = colors[channel];
 
     for (int bin = 1; bin < binCount; bin++)
-   	{
+       {
       //printf("%zd:%d=%f\n", channel, bin, hist.at<float>(bin));
-      auto pt1 = cv::Point(binWidth * (bin-1), 
-			  histSize.height - cvRound(hist.at<float>(bin-1) * valScale));
-      auto pt2 = cv::Point(binWidth * bin, 
-			  histSize.height - cvRound(hist.at<float>(bin) * valScale));
+      auto pt1 = cv::Point(binWidth * (bin-1),
+              histSize.height - cvRound(hist.at<float>(bin-1) * valScale));
+      auto pt2 = cv::Point(binWidth * bin,
+              histSize.height - cvRound(hist.at<float>(bin) * valScale));
       cv::line(histMat, pt1, pt2, color, lineWidth);
     }
   }
@@ -121,7 +121,7 @@ cv::Mat Histogram::drawHist(const std::vector<cv::Mat>& channelHists, cv::Size h
   double fontScale = 0.5;
   auto textColor = cv::Scalar::all(0);
   int thickness = 1;
-  for (int binTextId = 0; binTextId < binCount; binTextId += binTextStep) 
+  for (int binTextId = 0; binTextId < binCount; binTextId += binTextStep)
   {
     auto text = QString::number(binTextId).toLatin1();
     auto textSize = cv::getTextSize(text.data(), fontFace, fontScale, thickness, NULL);

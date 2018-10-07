@@ -46,11 +46,11 @@
 
 namespace cv
 {
-	namespace tld
-	{
-		CV_EXPORTS cv::Rect2d tld_InitDataset(int videoInd, const char* rootPath = "TLD_dataset", int datasetInd = 0);
-		CV_EXPORTS cv::String tld_getNextDatasetFrame();
-	}
+    namespace tld
+    {
+        CV_EXPORTS cv::Rect2d tld_InitDataset(int videoInd, const char* rootPath = "TLD_dataset", int datasetInd = 0);
+        CV_EXPORTS cv::String tld_getNextDatasetFrame();
+    }
 }
 
 #endif

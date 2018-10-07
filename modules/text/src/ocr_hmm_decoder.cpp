@@ -964,7 +964,7 @@ protected:
     double eval_feature(Mat& feature, vector<double>& prob_estimates);
 
 private:
-    int nr_class;		 // number of classes
+    int nr_class;    // number of classes
     int nr_feature;  // number of features
     Mat feature_min; // scale range
     Mat feature_max;

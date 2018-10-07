@@ -26,7 +26,7 @@ namespace extend
  */
 template <class FView> void addFilterView(const QString name)
 {
-	cvv::gui::FilterCallTab::registerFilterView<FView>(name);
+    cvv::gui::FilterCallTab::registerFilterView<FView>(name);
 }
 
 /**
@@ -37,7 +37,7 @@ template <class FView> void addFilterView(const QString name)
  */
 template <class MView> void addMatchView(const QString name)
 {
-	cvv::gui::MatchCallTab::registerMatchView<MView>(name);
+    cvv::gui::MatchCallTab::registerMatchView<MView>(name);
 }
 
 using TabFactory = controller::TabFactory;
@@ -55,7 +55,7 @@ template <std::size_t In, std::size_t Out, class Filter>
  */
 bool registerFilter(const QString &name)
 {
-	return cvv::qtutil::registerFilter<In, Out, Filter>(name);
+    return cvv::qtutil::registerFilter<In, Out, Filter>(name);
 }
 }
 } // namespaces cvv::extend

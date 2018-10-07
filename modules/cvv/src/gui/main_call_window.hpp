@@ -29,37 +29,37 @@ class OverviewPanel;
 class MainCallWindow : public CallWindow
 {
 
-	Q_OBJECT
+    Q_OBJECT
 
       public:
-	/**
-	 * @brief Constructs a new main call window.
-	 * @param controller view controller inheriting this main window
-	 * @param id id of this main window
-	 * @param ovPanel inherited overview panel
-	 */
-	MainCallWindow(util::Reference<controller::ViewController> controller,
-	               size_t id, OverviewPanel *ovPanel);
+    /**
+     * @brief Constructs a new main call window.
+     * @param controller view controller inheriting this main window
+     * @param id id of this main window
+     * @param ovPanel inherited overview panel
+     */
+    MainCallWindow(util::Reference<controller::ViewController> controller,
+                   size_t id, OverviewPanel *ovPanel);
 
-	~MainCallWindow()
-	{
-	}
+    ~MainCallWindow()
+    {
+    }
 
-	/**
-	 * @brief Show the overview tab.
-	 */
-	void showOverviewTab();
+    /**
+     * @brief Show the overview tab.
+     */
+    void showOverviewTab();
 
-	/**
-	 * @brief Hides the close window.
-	 */
-	void hideCloseWindow();
+    /**
+     * @brief Hides the close window.
+     */
+    void hideCloseWindow();
 
       protected:
     void closeEvent(QCloseEvent *event) CV_OVERRIDE;
 
       private:
-	OverviewPanel *ovPanel;
+    OverviewPanel *ovPanel;
 };
 }
 }

@@ -18,21 +18,21 @@ namespace qtutil
 class FalseColorMatchPen : public MatchSettings
 {
 public:
-	/**
-	 * @brief the constructor
-	 * @param univers all matches (for max value)
-	 * @param parent the parent Widget
-	 */
-	FalseColorMatchPen(std::vector<cv::DMatch> univers, QWidget *parent = nullptr);
+    /**
+     * @brief the constructor
+     * @param univers all matches (for max value)
+     * @param parent the parent Widget
+     */
+    FalseColorMatchPen(std::vector<cv::DMatch> univers, QWidget *parent = nullptr);
 
-	/**
-	 * @brief set the falseColor of the distance to the given match
-	 */
-	virtual void setSettings(CVVMatch &match) override;
+    /**
+     * @brief set the falseColor of the distance to the given match
+     */
+    virtual void setSettings(CVVMatch &match) override;
 
 private:
-	double maxDistance_;
-	double minDistance_=0.0;//always 0
+    double maxDistance_;
+    double minDistance_=0.0;//always 0
 };
 }
 }

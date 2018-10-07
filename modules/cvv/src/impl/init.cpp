@@ -50,58 +50,58 @@ namespace impl
 
 void initializeFilterAndViews()
 {
-	static bool alreadyCalled = false;
-	if (alreadyCalled)
-	{
-		return;
-	}
-	alreadyCalled = true;
+    static bool alreadyCalled = false;
+    if (alreadyCalled)
+    {
+        return;
+    }
+    alreadyCalled = true;
 
-	// filter for filter-selector-widget
-	qtutil::registerFilter<1, 1, qtutil::GrayFilterWidget>("Gray filter");
-	qtutil::registerFilter<1, 1, qtutil::SobelFilterWidget>("Sobel");
-	qtutil::registerFilter<1, 1, qtutil::ChannelReorderFilter>(
-	    "Reorder channels");
+    // filter for filter-selector-widget
+    qtutil::registerFilter<1, 1, qtutil::GrayFilterWidget>("Gray filter");
+    qtutil::registerFilter<1, 1, qtutil::SobelFilterWidget>("Sobel");
+    qtutil::registerFilter<1, 1, qtutil::ChannelReorderFilter>(
+        "Reorder channels");
 
-	qtutil::registerFilter<2, 1, qtutil::DiffFilterFunction>("Difference");
-	qtutil::registerFilter<2, 1, qtutil::OverlayFilterWidget>("Overlay");
-	qtutil::registerFilter<2, 1, qtutil::ChangedPixelsWidget>("Changed Pixels");
+    qtutil::registerFilter<2, 1, qtutil::DiffFilterFunction>("Difference");
+    qtutil::registerFilter<2, 1, qtutil::OverlayFilterWidget>("Overlay");
+    qtutil::registerFilter<2, 1, qtutil::ChangedPixelsWidget>("Changed Pixels");
 
-	// filter-views:
-	cvv::gui::FilterCallTab::registerFilterView<
-	    cvv::view::DefaultFilterView> ("DefaultFilterView");
-	cvv::gui::FilterCallTab::registerFilterView<cvv::view::DualFilterView> (
-	    "DualFilterView");
-	cvv::gui::FilterCallTab::registerFilterView<
-	    cvv::view::SingleFilterView>("SingleFilterView");
+    // filter-views:
+    cvv::gui::FilterCallTab::registerFilterView<
+        cvv::view::DefaultFilterView> ("DefaultFilterView");
+    cvv::gui::FilterCallTab::registerFilterView<cvv::view::DualFilterView> (
+        "DualFilterView");
+    cvv::gui::FilterCallTab::registerFilterView<
+        cvv::view::SingleFilterView>("SingleFilterView");
 
-	// match-views:
-	cvv::gui::MatchCallTab::registerMatchView<cvv::view::LineMatchView>(
-	    "LineMatchView");
-	cvv::gui::MatchCallTab::registerMatchView<
-	    cvv::view::TranslationMatchView>("TranslationMatchView");
-	cvv::gui::MatchCallTab::registerMatchView<cvv::view::PointMatchView>(
-	    "PointMatchView");
-	cvv::gui::MatchCallTab::registerMatchView<cvv::view::Rawview>(
-	    "RawView");
+    // match-views:
+    cvv::gui::MatchCallTab::registerMatchView<cvv::view::LineMatchView>(
+        "LineMatchView");
+    cvv::gui::MatchCallTab::registerMatchView<
+        cvv::view::TranslationMatchView>("TranslationMatchView");
+    cvv::gui::MatchCallTab::registerMatchView<cvv::view::PointMatchView>(
+        "PointMatchView");
+    cvv::gui::MatchCallTab::registerMatchView<cvv::view::Rawview>(
+        "RawView");
 
-	//match Settings
-	cvv::qtutil::registerMatchSettings<cvv::qtutil::SingleColorMatchPen>("Single Color");
-	cvv::qtutil::registerMatchSettings<cvv::qtutil::FalseColorMatchPen>("False Color");
-	//cvv::qtutil::registerMatchSettings<cvv::qtutil::MatchShowSetting>("Show/Hide");
+    //match Settings
+    cvv::qtutil::registerMatchSettings<cvv::qtutil::SingleColorMatchPen>("Single Color");
+    cvv::qtutil::registerMatchSettings<cvv::qtutil::FalseColorMatchPen>("False Color");
+    //cvv::qtutil::registerMatchSettings<cvv::qtutil::MatchShowSetting>("Show/Hide");
 
-	//match Selector
-	cvv::qtutil::registerMatchSelection<cvv::qtutil::MatchIntervallSelector>("Intervall Selector");
-	cvv::qtutil::registerMatchSelection<cvv::qtutil::MatchPortionSelection>("Portion Selector");
+    //match Selector
+    cvv::qtutil::registerMatchSelection<cvv::qtutil::MatchIntervallSelector>("Intervall Selector");
+    cvv::qtutil::registerMatchSelection<cvv::qtutil::MatchPortionSelection>("Portion Selector");
 
-	//keypoint Settings
-	cvv::qtutil::registerKeyPointSetting<cvv::qtutil::SingleColorKeyPen>("Single Color");
-	cvv::qtutil::registerKeyPointSetting<cvv::qtutil::FalseColorKeyPointPen>("False Color");
-	//cvv::qtutil::registerKeyPointSetting<cvv::qtutil::KeyPointShowSetting>("Show/Hide");
+    //keypoint Settings
+    cvv::qtutil::registerKeyPointSetting<cvv::qtutil::SingleColorKeyPen>("Single Color");
+    cvv::qtutil::registerKeyPointSetting<cvv::qtutil::FalseColorKeyPointPen>("False Color");
+    //cvv::qtutil::registerKeyPointSetting<cvv::qtutil::KeyPointShowSetting>("Show/Hide");
 
-	//keypoint Selection
-	cvv::qtutil::registerKeyPointSelection<cvv::qtutil::KeyPointIntervallSelector>("Intervall Selector");
-	cvv::qtutil::registerKeyPointSelection<cvv::qtutil::KeyPointPortionSelection>("Portion Selector");
+    //keypoint Selection
+    cvv::qtutil::registerKeyPointSelection<cvv::qtutil::KeyPointIntervallSelector>("Intervall Selector");
+    cvv::qtutil::registerKeyPointSelection<cvv::qtutil::KeyPointPortionSelection>("Portion Selector");
 
 }
 }

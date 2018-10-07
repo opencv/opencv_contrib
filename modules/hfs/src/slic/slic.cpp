@@ -46,12 +46,12 @@ void cSLIC::init_data(Mat image_) {
 }
 
 Mat cSLIC::cvt_img_space() {
-    float epsilon = 0.008856f;	//actual CIE standard
-    float kappa = 903.3f;		//actual CIE standard
+    float epsilon = 0.008856f;  //actual CIE standard
+    float kappa = 903.3f;       //actual CIE standard
 
-    float Xr = 0.950456f;	//reference white
-	float Yr = 1.0f;		//reference white
-	float Zr = 1.088754f;	//reference white
+    float Xr = 0.950456f;   //reference white
+    float Yr = 1.0f;        //reference white
+    float Zr = 1.088754f;   //reference white
 
     Mat lab_ = Mat(image.size(), CV_32FC3);
 
@@ -59,36 +59,36 @@ Mat cSLIC::cvt_img_space() {
         for(int j = 0; j < image.cols; ++j){
             Vec3b pix_in = image.at<Vec3b>(i,j);
             float _r = (float)pix_in[0] / 255;
-	        float _g = (float)pix_in[1] / 255;
-	        float _b = (float)pix_in[2] / 255;
+            float _g = (float)pix_in[1] / 255;
+            float _b = (float)pix_in[2] / 255;
 
-	        if (_b <= 0.04045f)    _b = _b / 12.92f;
-	        else                   _b = pow((_b + 0.055f) / 1.055f, 2.4f);
-	        if (_g <= 0.04045f)    _g = _g / 12.92f;
-	        else                   _g = pow((_g + 0.055f) / 1.055f, 2.4f);
-	        if (_r <= 0.04045f)    _r = _r / 12.92f;
-	        else                   _r = pow((_r + 0.055f) / 1.055f, 2.4f);
+            if (_b <= 0.04045f)    _b = _b / 12.92f;
+            else                   _b = pow((_b + 0.055f) / 1.055f, 2.4f);
+            if (_g <= 0.04045f)    _g = _g / 12.92f;
+            else                   _g = pow((_g + 0.055f) / 1.055f, 2.4f);
+            if (_r <= 0.04045f)    _r = _r / 12.92f;
+            else                   _r = pow((_r + 0.055f) / 1.055f, 2.4f);
 
-	        float x = _r*0.4124564f + _g*0.3575761f + _b*0.1804375f;
-	        float y = _r*0.2126729f + _g*0.7151522f + _b*0.0721750f;
-	        float z = _r*0.0193339f + _g*0.1191920f + _b*0.9503041f;
+            float x = _r*0.4124564f + _g*0.3575761f + _b*0.1804375f;
+            float y = _r*0.2126729f + _g*0.7151522f + _b*0.0721750f;
+            float z = _r*0.0193339f + _g*0.1191920f + _b*0.9503041f;
 
 
-	        float xr = x / Xr;
-	        float yr = y / Yr;
-	        float zr = z / Zr;
+            float xr = x / Xr;
+            float yr = y / Yr;
+            float zr = z / Zr;
 
-	        float fx, fy, fz;
-	        if (xr > epsilon)	fx = pow(xr, 1.0f / 3.0f);
-	        else				fx = (kappa*xr + 16.0f) / 116.0f;
-	        if (yr > epsilon)	fy = pow(yr, 1.0f / 3.0f);
-	        else				fy = (kappa*yr + 16.0f) / 116.0f;
-	        if (zr > epsilon)	fz = pow(zr, 1.0f / 3.0f);
-	        else				fz = (kappa*zr + 16.0f) / 116.0f;
+            float fx, fy, fz;
+            if (xr > epsilon)   fx = pow(xr, 1.0f / 3.0f);
+            else                fx = (kappa*xr + 16.0f) / 116.0f;
+            if (yr > epsilon)   fy = pow(yr, 1.0f / 3.0f);
+            else                fy = (kappa*yr + 16.0f) / 116.0f;
+            if (zr > epsilon)   fz = pow(zr, 1.0f / 3.0f);
+            else                fz = (kappa*zr + 16.0f) / 116.0f;
 
-	        lab_.at<Vec3f>(i, j)[0] = 116.0f*fy - 16.0f;
-	        lab_.at<Vec3f>(i, j)[1]  = 500.0f*(fx - fy);
-	        lab_.at<Vec3f>(i, j)[2]  = 200.0f*(fy - fz);
+            lab_.at<Vec3f>(i, j)[0] = 116.0f*fy - 16.0f;
+            lab_.at<Vec3f>(i, j)[1]  = 500.0f*(fx - fy);
+            lab_.at<Vec3f>(i, j)[2]  = 200.0f*(fy - fz);
         }
     }
 
