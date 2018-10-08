@@ -43,7 +43,6 @@ cv::Mat mat_pallet(PALLET_RADIUS*2,PALLET_RADIUS*2,CV_8UC3);
 
 static void mouseCallback(int event, int x, int y, int flags, void* param);
 void drawTrajectoryByReference(cv::Mat& img);
-cv::Mat copyGlayForRGB(cv::Mat gray, cv::Mat color);
 double module(Point pt);
 double distance(Point pt1, Point pt2);
 double cross(Point pt1, Point pt2);
@@ -56,13 +55,13 @@ void createPlate(Mat &im1, int radius);
 
 const String keys =
     "{help h usage ?     |                | print this message                                                }"
-    "{@image             |                | imput image                                                       }"
+    "{@image             |                | input image                                                       }"
     "{sigma_spatial      |8               | parameter of post-filtering                                       }"
     "{sigma_luma         |8               | parameter of post-filtering                                       }"
     "{sigma_chroma       |8               | parameter of post-filtering                                       }"
     "{dst_path           |None            | optional path to save the resulting colorized image               }"
     "{dst_raw_path       |None            | optional path to save drawed image before filtering               }"
-    "{draw_by_reference  |fasle           | optional flag to use color image as reference                     }"
+    "{draw_by_reference  |false           | optional flag to use color image as reference                     }"
     ;
 
 
@@ -88,8 +87,16 @@ int main(int argc, char* argv[])
     String dst_raw_path = parser.get<String>("dst_raw_path");
     drawByReference = parser.get<bool>("draw_by_reference");
 
-    mat_input_reference = cv::imread(img,1);
-    mat_input_gray = cv::imread(img,0);
+    mat_input_reference = cv::imread(img, IMREAD_COLOR);
+    if (mat_input_reference.empty())
+    {
+        std::cerr << "input image '" << img << "' could not be read !" << std::endl << std::endl;
+        parser.printMessage();
+        return 1;
+    }
+
+    mat_input_gray;
+    cvtColor(mat_input_reference, mat_input_gray, COLOR_BGR2GRAY);
 
     if(mat_input_gray.cols > max_width)
     {
@@ -105,15 +112,19 @@ int main(int argc, char* argv[])
         cv::resize(mat_input_gray, mat_input_gray, cv::Size(), scale, scale);
     }
 
-    cv::Mat target;
 
     float filtering_time;
     std::cout << "mat_input_reference:" << mat_input_reference.cols<<"x"<< mat_input_reference.rows<< std::endl;
+    std::cout << "please select a color from the palette, by clicking into that," << std::endl;
+    std::cout << "  then select a coarse region in the image to be coloured." << std::endl;
+    std::cout << "  press 'escape' to see the final coloured image." << std::endl;
 
 
     cv::Mat mat_gray;
     cv::cvtColor(mat_input_reference, mat_gray, cv::COLOR_BGR2GRAY);
-    target = copyGlayForRGB(mat_gray, mat_input_reference);
+
+    cv::Mat target = mat_input_reference.clone();
+    cvtColor(mat_gray, mat_input_reference, COLOR_GRAY2BGR);
 
     cv::namedWindow("draw", cv::WINDOW_AUTOSIZE);
 
@@ -133,7 +144,6 @@ int main(int argc, char* argv[])
     cv::setMouseCallback("draw", mouseCallback, (void *)&mat_show);
     mat_input_confidence = 0*cv::Mat::ones(mat_gray.size(),mat_gray.type());
 
-    // mat_input_confidence = mat_gray;
     int show_count = 0;
     while (1)
     {
@@ -338,30 +348,6 @@ void drawTrajectoryByReference(cv::Mat& img)
             }
         }
     }
-}
-
-cv::Mat copyGlayForRGB(cv::Mat gray, cv::Mat color)
-{
-    int y, x, c;
-    uchar* gray_pix;
-    uchar* colorPix;
-    cv::Mat ret = color.clone();
-    gray_pix = gray.ptr<uchar>(0, 0);
-    colorPix = ret.ptr<uchar>(0, 0);
-
-    for(y=0; y<gray.rows; y++)
-    {
-        for(x=0; x<gray.cols; x++)
-        {
-            for(c=0; c<color.channels(); c++)
-            {
-                *colorPix = *gray_pix;
-                colorPix++;
-            }
-            gray_pix++;
-        }
-    }
-    return ret;
 }
 
 double module(Point pt)

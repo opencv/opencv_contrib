@@ -61,20 +61,20 @@ typedef TestWithParam<FBSParams> FastBilateralSolverTest;
 TEST(FastBilateralSolverTest, SplatSurfaceAccuracy)
 {
     RNG rnd(0);
+    int chanLut[] = {1,3,4};
 
     for (int i = 0; i < 5; i++)
     {
         Size sz(rnd.uniform(512, 1024), rnd.uniform(512, 1024));
 
-        int guideCn = rnd.uniform(1, 2);
-        if(guideCn==2) guideCn++; //1 or 3 channels
-        Mat guide(sz, CV_MAKE_TYPE(CV_8U, guideCn));
+        int guideCn = rnd.uniform(0, 2); // 1 or 3 channels
+        Mat guide(sz, CV_MAKE_TYPE(CV_8U, chanLut[guideCn]));
         randu(guide, 0, 255);
 
         Scalar surfaceValue;
-        int srcCn = rnd.uniform(1, 4);
+        int srcCn = rnd.uniform(0, 3); // 1, 3 or 4 channels
         rnd.fill(surfaceValue, RNG::UNIFORM, 0, 255);
-        Mat src(sz, CV_MAKE_TYPE(CV_16S, srcCn), surfaceValue);
+        Mat src(sz, CV_MAKE_TYPE(CV_16S, chanLut[srcCn]), surfaceValue);
         Mat confidence(sz, CV_MAKE_TYPE(CV_8U, 1), 255);
 
         double sigma_spatial = rnd.uniform(4.0, 40.0);

@@ -62,8 +62,8 @@
     #include <map>
     typedef std::map<long long /* hash */, int /* vert id */>  mapId;
 #else
-    #include <boost/unordered_map.hpp>
-    typedef boost::unordered_map<long long /* hash */, int /* vert id */>  mapId;
+    #include <unordered_map>
+    typedef std::unordered_map<long long /* hash */, int /* vert id */>  mapId;
 #endif
 
 namespace cv
@@ -84,7 +84,7 @@ namespace ximgproc
             return Ptr<FastBilateralSolverFilterImpl>(fbs);
         }
 
-        void filter(InputArray src, InputArray confidence, OutputArray dst)
+        void filter(InputArray src, InputArray confidence, OutputArray dst) CV_OVERRIDE
         {
 
             CV_Assert(!src.empty() && (src.depth() == CV_8U || src.depth() == CV_16S || src.depth() == CV_32F) && src.channels()<=4);
@@ -241,8 +241,6 @@ namespace ximgproc
                     coord[0] = int(x / sigma_spatial);
                     coord[1] = int(y / sigma_spatial);
                     coord[2] = int(pref[0] / sigma_luma);
-                    // coord[3] = int(pref[1] / sigma_chroma);
-                    // coord[4] = int(pref[2] / sigma_chroma);
 
                     // convert the coordinate to a hash value
                     long long hash_coord = 0;
@@ -433,15 +431,7 @@ namespace ximgproc
             m = n.array() * (bluredn).array();
             diagonal(m,Dm);
             diagonal(n,Dn);
-
         }
-
-
-
-
-        // int debugn = blurs.nonZeros(); //FIXME: if don't call nonZeros(), the result will be destroy
-        // debugn = 0;
-
     }
 
     void FastBilateralSolverFilterImpl::Splat(Eigen::VectorXf& input, Eigen::VectorXf& output)
@@ -563,13 +553,11 @@ namespace ximgproc
 
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
-CV_EXPORTS_W
 Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma, int num_iter, double max_tol)
 {
     return Ptr<FastBilateralSolverFilter>(FastBilateralSolverFilterImpl::create(guide, sigma_spatial, sigma_luma, sigma_chroma, num_iter, max_tol));
 }
 
-CV_EXPORTS_W
 void fastBilateralSolverFilter(InputArray guide, InputArray src, InputArray confidence, OutputArray dst, double sigma_spatial, double sigma_luma, double sigma_chroma, int num_iter, double max_tol)
 {
     Ptr<FastBilateralSolverFilter> fbs = createFastBilateralSolverFilter(guide, sigma_spatial, sigma_luma, sigma_chroma, num_iter, max_tol);
@@ -587,17 +575,14 @@ namespace cv
 namespace ximgproc
 {
 
-CV_EXPORTS_W
 Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray, double, double, double, int, double)
 {
-    std::cout << "ERROR createFastBilateralSolverFilter : don't have eigen" << '\n';
-    exit(0);
+    CV_Error(Error::StsNotImplemented, "createFastBilateralSolverFilter : needs to be compiled with EIGEN");
 }
 
-CV_EXPORTS_W
 void fastBilateralSolverFilter(InputArray, InputArray, InputArray, OutputArray, double, double, double, int, double)
 {
-    std::cout << "ERROR fastBilateralSolverFilter : don't have eigen" << '\n';
+    CV_Error(Error::StsNotImplemented, "fastBilateralSolverFilter : needs to be compiled with EIGEN");
 }
 
 
