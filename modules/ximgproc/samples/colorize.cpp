@@ -95,7 +95,6 @@ int main(int argc, char* argv[])
         return 1;
     }
 
-    mat_input_gray;
     cvtColor(mat_input_reference, mat_input_gray, COLOR_BGR2GRAY);
 
     if(mat_input_gray.cols > max_width)
