@@ -170,7 +170,7 @@ struct CubeSpheresScene : Scene
 
 struct RotatingScene : Scene
 {
-    const int framesPerCycle = 64;
+    const int framesPerCycle = 32;
     const int nCycles = 1;
     const Affine3f startPose = Affine3f(Vec3f(-1.f, 0.f, 0.f), Vec3f(1.5f, 2.f, -1.5f));
 
