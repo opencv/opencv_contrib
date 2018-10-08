@@ -38,13 +38,9 @@
 
 #ifdef HAVE_EIGEN
 
-namespace cvtest
-{
+namespace opencv_test { namespace {
 
 using namespace std;
-using namespace std::tr1;
-using namespace testing;
-using namespace perf;
 using namespace cv;
 using namespace cv::ximgproc;
 
@@ -112,6 +108,7 @@ TEST(FastBilateralSolverTest, ReferenceAccuracy)
 
 INSTANTIATE_TEST_CASE_P(FullSet, FastBilateralSolverTest,Combine(Values(szODD, szQVGA), SrcTypes::all(), GuideTypes::all()));
 
+}
 }
 
 #endif //HAVE_EIGEN
