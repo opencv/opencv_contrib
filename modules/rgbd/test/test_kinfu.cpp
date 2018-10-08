@@ -101,7 +101,7 @@ struct Scene
 struct CubeSpheresScene : Scene
 {
     const int framesPerCycle = 32;
-    const int nCycles = 1;
+    const float nCycles = 0.25f;
     const Affine3f startPose = Affine3f(Vec3f(-0.5f, 0.f, 0.f), Vec3f(2.1f, 1.4f, -2.1f));
 
     CubeSpheresScene(Size sz, Matx33f _intr, float _depthFactor) :
@@ -147,7 +147,7 @@ struct CubeSpheresScene : Scene
     std::vector<Affine3f> getPoses() override
     {
         std::vector<Affine3f> poses;
-        for(int i = 0; i < framesPerCycle*nCycles; i++)
+        for(int i = 0; i < (int)(framesPerCycle*nCycles); i++)
         {
             float angle = (float)(CV_2PI*i/framesPerCycle);
             Affine3f pose;
@@ -171,7 +171,7 @@ struct CubeSpheresScene : Scene
 struct RotatingScene : Scene
 {
     const int framesPerCycle = 32;
-    const int nCycles = 1;
+    const float nCycles = 0.5f;
     const Affine3f startPose = Affine3f(Vec3f(-1.f, 0.f, 0.f), Vec3f(1.5f, 2.f, -1.5f));
 
     RotatingScene(Size sz, Matx33f _intr, float _depthFactor) :
@@ -321,7 +321,8 @@ void flyTest(bool hiDense, bool inequal)
         }
     }
 
-    ASSERT_LT(cv::norm(kfPose.rvec() - pose.rvec()), 0.01);
+    double rvecThreshold = hiDense ? 0.01 : 0.02;
+    ASSERT_LT(cv::norm(kfPose.rvec() - pose.rvec()), rvecThreshold);
     double poseThreshold = hiDense ? 0.03 : 0.1;
     ASSERT_LT(cv::norm(kfPose.translation() - pose.translation()), poseThreshold);
 }
@@ -338,7 +339,7 @@ TEST( KinectFusion, highDense )
 
 TEST( KinectFusion, inequal )
 {
-    flyTest(true, true);
+    flyTest(false, true);
 }
 
 #ifdef HAVE_OPENCL

@@ -132,12 +132,12 @@ struct Intr
 
 inline size_t roundDownPow2(size_t x)
 {
-    unsigned int shift = 0;
+    size_t shift = 0;
     while(x != 0)
     {
         shift++; x >>= 1;
     }
-    return (size_t)(1 << (shift-1));
+    return (size_t)(1ULL << (shift-1));
 }
 
 } // namespace kinfu
