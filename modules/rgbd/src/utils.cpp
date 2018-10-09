@@ -50,38 +50,6 @@ namespace rgbd
 
 namespace kinfu {
 
-#if PRINT_TIME
-
-ScopeTime::ScopeTime(std::string name_, bool _enablePrint) :
-    name(name_), enablePrint(_enablePrint)
-{
-    start = (double)cv::getTickCount();
-    nested++;
-}
-
-ScopeTime::~ScopeTime()
-{
-    double time_ms =  ((double)cv::getTickCount() - start)*1000.0/cv::getTickFrequency();
-    if(enablePrint)
-    {
-        std::string spaces(nested, '-');
-        std::cout << spaces << "Time(" << name << ") = " << time_ms << " ms" << std::endl;
-    }
-    nested--;
-}
-
-int ScopeTime::nested  = 0;
-
-#else
-
-ScopeTime::ScopeTime(std::string /*name_*/, bool /*_enablePrint = true*/)
-{ }
-
-ScopeTime::~ScopeTime()
-{ }
-
-#endif
-
 } // namespace kinfu
 } // namespace cv
 

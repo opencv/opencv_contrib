@@ -1490,21 +1490,10 @@ Size FastICPOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType
     checkDepth(frame->depth, frame->depth.size());
 
     // mask isn't used by FastICP
-
-    Ptr<FrameGenerator> fg = makeFrameGenerator(Params::PlatformType::PLATFORM_CPU);
-    Ptr<FrameCPU> f = (*fg)().dynamicCast<FrameCPU>();
     Intr intr(cameraMatrix);
     float depthFactor = 1.f; // user should rescale depth manually
-    (*fg)(f, frame->depth, intr, (int)iterCounts.total(), depthFactor,
-          sigmaDepth, sigmaSpatial, kernelSize);
-
-    frame->pyramidCloud.clear();
-    frame->pyramidNormals.clear();
-    for(size_t i = 0; i < f->points.size(); i++)
-    {
-        frame->pyramidCloud.push_back(f->points[i]);
-        frame->pyramidNormals.push_back(f->normals[i]);
-    }
+    makeFrameFromDepth(frame->depth, frame->pyramidCloud, frame->pyramidNormals, intr, (int)iterCounts.total(),
+                       depthFactor, sigmaDepth, sigmaSpatial, kernelSize);
 
     return frame->depth.size();
 }
@@ -1526,22 +1515,16 @@ bool FastICPOdometry::computeImpl(const Ptr<OdometryFrame>& srcFrame,
 {
     kinfu::Intr intr(cameraMatrix);
     std::vector<int> iterations = iterCounts;
-    Ptr<kinfu::ICP> icp = kinfu::makeICP(kinfu::Params::PlatformType::PLATFORM_CPU,
-                                         intr,
+    Ptr<kinfu::ICP> icp = kinfu::makeICP(intr,
                                          iterations,
                                          angleThreshold,
                                          maxDistDiff);
 
+    // KinFu's ICP calculates transformation from new frame to old one (src to dst)
     Affine3f transform;
-    Ptr<FrameCPU> srcF = makePtr<FrameCPU>(), dstF = makePtr<FrameCPU>();
-    for(size_t i = 0; i < srcFrame->pyramidCloud.size(); i++)
-    {
-        srcF-> points.push_back(srcFrame->pyramidCloud  [i]);
-        srcF->normals.push_back(srcFrame->pyramidNormals[i]);
-        dstF-> points.push_back(dstFrame->pyramidCloud  [i]);
-        dstF->normals.push_back(dstFrame->pyramidNormals[i]);
-    }
-    bool result = icp->estimateTransform(transform, dstF, srcF);
+    bool result = icp->estimateTransform(transform,
+                                         dstFrame->pyramidCloud, dstFrame->pyramidNormals,
+                                         srcFrame->pyramidCloud, srcFrame->pyramidNormals);
 
     Rt.create(Size(4, 4), CV_64FC1);
     Mat(Matx44d(transform.matrix)).copyTo(Rt.getMat());

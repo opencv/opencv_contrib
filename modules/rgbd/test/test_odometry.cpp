@@ -235,10 +235,10 @@ void CV_OdometryTest::run(int)
     // On each iteration an input frame is warped using generated transformation.
     // Odometry is run on the following pair: the original frame and the warped one.
     // Comparing a computed transformation with an applied one we compute 2 errors:
-    // better_1time_count - count of poses which error is less than ground thrush pose,
-    // better_5times_count - count of poses which error is 5 times less than ground thrush pose.
+    // better_1time_count - count of poses which error is less than ground truth pose,
+    // better_5times_count - count of poses which error is 5 times less than ground truth pose.
     int iterCount = 100;
-    int better_1time_count = 0; 
+    int better_1time_count = 0;
     int better_5times_count = 0;
     for(int iter = 0; iter < iterCount; iter++)
     {
@@ -266,7 +266,6 @@ void CV_OdometryTest::run(int)
         imshow("resultImage", resultImage);
         waitKey();
 #endif
-
 
         // compare rotation
         double rdiffnorm = cv::norm(rvec - calcRvec),

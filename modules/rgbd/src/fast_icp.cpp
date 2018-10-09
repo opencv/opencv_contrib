@@ -12,52 +12,98 @@ using namespace std;
 namespace cv {
 namespace kinfu {
 
+enum
+{
+    UTSIZE = 27
+};
 
 ICP::ICP(const Intr _intrinsics, const std::vector<int>& _iterations, float _angleThreshold, float _distanceThreshold) :
     iterations(_iterations), angleThreshold(_angleThreshold), distanceThreshold(_distanceThreshold),
     intrinsics(_intrinsics)
 { }
 
-///////// CPU implementation /////////
-
-class ICPCPU : public ICP
+class ICPImpl : public ICP
 {
 public:
-    ICPCPU(const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold);
+    ICPImpl(const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold);
 
-    virtual bool estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> oldFrame, cv::Ptr<Frame> newFrame) const override;
+    virtual bool estimateTransform(cv::Affine3f& transform,
+                                   InputArray oldPoints, InputArray oldNormals,
+                                   InputArray newPoints, InputArray newNormals
+                                   ) const override;
 
-    virtual ~ICPCPU() { }
+    template < typename T >
+    bool estimateTransformT(cv::Affine3f& transform,
+                            const vector<T>& oldPoints, const vector<T>& oldNormals,
+                            const vector<T>& newPoints, const vector<T>& newNormals
+                            ) const;
+
+    virtual ~ICPImpl() { }
+
+    template < typename T >
+    void getAb(const T& oldPts, const T& oldNrm, const T& newPts, const T& newNrm,
+               cv::Affine3f pose, int level, cv::Matx66f& A, cv::Vec6f& b) const;
 
 private:
-    void getAb(const Points &oldPts, const Normals &oldNrm, const Points &newPts, const Normals &newNrm,
-               cv::Affine3f pose, int level, cv::Matx66f& A, cv::Vec6f& b) const;
+
+    mutable vector<UMat> groupedSumBuffers;
+
 };
 
-
-ICPCPU::ICPCPU(const Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold) :
-    ICP(_intrinsics, _iterations, _angleThreshold, _distanceThreshold)
+ICPImpl::ICPImpl(const Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold) :
+    ICP(_intrinsics, _iterations, _angleThreshold, _distanceThreshold),
+    groupedSumBuffers(_iterations.size())
 { }
 
-bool ICPCPU::estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> _oldFrame, cv::Ptr<Frame> _newFrame) const
+
+bool ICPImpl::estimateTransform(cv::Affine3f& transform,
+                                InputArray _oldPoints, InputArray _oldNormals,
+                                InputArray _newPoints, InputArray _newNormals
+                                ) const
 {
-    ScopeTime st("icp");
+    CV_TRACE_FUNCTION();
 
-    cv::Ptr<FrameCPU> oldFrame = _oldFrame.dynamicCast<FrameCPU>();
-    cv::Ptr<FrameCPU> newFrame = _newFrame.dynamicCast<FrameCPU>();
+    CV_Assert(_oldPoints.size() == _oldNormals.size());
+    CV_Assert(_newPoints.size() == _newNormals.size());
+    CV_Assert(_oldPoints.size() == _newPoints.size());
 
-    const std::vector<Points>& oldPoints   = oldFrame->points;
-    const std::vector<Normals>& oldNormals = oldFrame->normals;
-    const std::vector<Points>& newPoints  = newFrame->points;
-    const std::vector<Normals>& newNormals = newFrame->normals;
+#ifdef HAVE_OPENCL
+    if(cv::ocl::isOpenCLActivated() &&
+       _oldPoints.isUMatVector() && _oldNormals.isUMatVector() &&
+       _newPoints.isUMatVector() && _newNormals.isUMatVector())
+    {
+        std::vector<UMat> op, np, on, nn;
+        _oldPoints.getUMatVector(op);
+        _newPoints.getUMatVector(np);
+        _oldNormals.getUMatVector(on);
+        _newNormals.getUMatVector(nn);
+        return estimateTransformT<UMat>(transform, op, on, np, nn);
+    }
+#endif
+
+    std::vector<Mat> op, on, np, nn;
+    _oldPoints.getMatVector(op);
+    _newPoints.getMatVector(np);
+    _oldNormals.getMatVector(on);
+    _newNormals.getMatVector(nn);
+    return estimateTransformT<Mat>(transform, op, on, np, nn);
+}
+
+template < typename T >
+bool ICPImpl::estimateTransformT(cv::Affine3f& transform,
+                                 const vector<T>& oldPoints, const vector<T>& oldNormals,
+                                 const vector<T>& newPoints, const vector<T>& newNormals
+                                 ) const
+{
+    CV_TRACE_FUNCTION();
 
     transform = Affine3f::Identity();
     for(size_t l = 0; l < iterations.size(); l++)
     {
         size_t level = iterations.size() - 1 - l;
 
-        Points  oldPts = oldPoints [level], newPts = newPoints [level];
-        Normals oldNrm = oldNormals[level], newNrm = newNormals[level];
+        const T& oldPts = oldPoints [level], newPts = newPoints [level];
+        const T& oldNrm = oldNormals[level], newNrm = newNormals[level];
 
         for(int iter = 0; iter < iterations[level]; iter++)
         {
@@ -83,10 +129,13 @@ bool ICPCPU::estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> _oldFrame
     return true;
 }
 
+
+///////// CPU implementation /////////
+
 // 1 any coord to check is enough since we know the generation
 
 
-#if CV_SIMD128
+#if USE_INTRINSICS
 static inline bool fastCheck(const v_float32x4& p0, const v_float32x4& p1)
 {
     float check = (p0.get0() + p1.get0());
@@ -125,11 +174,6 @@ typedef Matx<float, 6, 7> ABtype;
 
 struct GetAbInvoker : ParallelLoopBody
 {
-    enum
-    {
-        UTSIZE = 27
-    };
-
     GetAbInvoker(ABtype& _globalAb, Mutex& _mtx,
                  const Points& _oldPts, const Normals& _oldNrm, const Points& _newPts, const Normals& _newNrm,
                  Affine3f _pose, Intr::Projector _proj, float _sqDistanceThresh, float _minCos) :
@@ -141,7 +185,7 @@ struct GetAbInvoker : ParallelLoopBody
 
     virtual void operator ()(const Range& range) const override
     {
-#if CV_SIMD128
+#if USE_INTRINSICS
         CV_Assert(ptype::channels == 4);
 
         const size_t utBufferSize = 9;
@@ -447,18 +491,20 @@ struct GetAbInvoker : ParallelLoopBody
 };
 
 
-void ICPCPU::getAb(const Points& oldPts, const Normals& oldNrm, const Points& newPts, const Normals& newNrm,
-                   Affine3f pose, int level, Matx66f &A, Vec6f &b) const
+template <>
+void ICPImpl::getAb<Mat>(const Mat& oldPts, const Mat& oldNrm, const Mat& newPts, const Mat& newNrm,
+                         cv::Affine3f pose, int level, cv::Matx66f& A, cv::Vec6f& b) const
 {
-    ScopeTime st("icp: get ab", false);
+    CV_TRACE_FUNCTION();
 
     CV_Assert(oldPts.size() == oldNrm.size());
     CV_Assert(newPts.size() == newNrm.size());
 
     ABtype sumAB = ABtype::zeros();
-
     Mutex mutex;
-    GetAbInvoker invoker(sumAB, mutex, oldPts, oldNrm, newPts, newNrm, pose,
+    const Points  op(oldPts), on(oldNrm);
+    const Normals np(newPts), nn(newNrm);
+    GetAbInvoker invoker(sumAB, mutex, op, on, np, nn, pose,
                          intrinsics.scale(level).makeProjector(),
                          distanceThreshold*distanceThreshold, cos(angleThreshold));
     Range range(0, newPts.rows);
@@ -480,39 +526,133 @@ void ICPCPU::getAb(const Points& oldPts, const Normals& oldNrm, const Points& ne
 
 ///////// GPU implementation /////////
 
-class ICPGPU : public ICP
+#ifdef HAVE_OPENCL
+
+template <>
+void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, const UMat& newNrm,
+                          Affine3f pose, int level, Matx66f &A, Vec6f &b) const
 {
-public:
-    ICPGPU(const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold);
+    CV_TRACE_FUNCTION();
 
-    virtual bool estimateTransform(cv::Affine3f& transform, cv::Ptr<Frame> oldFrame, cv::Ptr<Frame> newFrame) const override;
+    Size oldSize = oldPts.size(), newSize = newPts.size();
+    CV_Assert(oldSize == oldNrm.size());
+    CV_Assert(newSize == newNrm.size());
 
-    virtual ~ICPGPU() { }
-};
+    // calculate 1x7 vector ab to produce b and upper triangle of A:
+    // [A|b] = ab*(ab^t)
+    // and then reduce it across work groups
 
-ICPGPU::ICPGPU(const Intr _intrinsics, const std::vector<int> &_iterations, float _angleThreshold, float _distanceThreshold) :
-    ICP(_intrinsics, _iterations, _angleThreshold, _distanceThreshold)
-{ }
+    cv::String errorStr;
+    ocl::ProgramSource source = ocl::rgbd::icp_oclsrc;
+    cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
+    ocl::Kernel k;
+    k.create("getAb", source, options, &errorStr);
 
+    if(k.empty())
+        throw std::runtime_error("Failed to create kernel: " + errorStr);
 
-bool ICPGPU::estimateTransform(cv::Affine3f& /*transform*/, cv::Ptr<Frame> /*_oldFrame*/, cv::Ptr<Frame> /*newFrame*/) const
-{
-    throw std::runtime_error("Not implemented");
+    size_t globalSize[2];
+    globalSize[0] = (size_t)newPts.cols;
+    globalSize[1] = (size_t)newPts.rows;
+
+    const ocl::Device& device = ocl::Device::getDefault();
+    // workaround for Intel's integrated GPU
+    size_t wgsLimit = device.isIntel() ? 64 : device.maxWorkGroupSize();
+    size_t memSize = device.localMemSize();
+    // local memory should keep upperTriangles for all threads in group for reduce
+    const size_t ltsz = UTSIZE*sizeof(float);
+    const size_t lcols = 32;
+    size_t lrows = min(memSize/ltsz, wgsLimit)/lcols;
+    // round lrows down to 2^n
+    lrows = roundDownPow2(lrows);
+    size_t localSize[2] = {lcols, lrows};
+    Size ngroups((int)divUp(globalSize[0], (unsigned int)localSize[0]),
+                 (int)divUp(globalSize[1], (unsigned int)localSize[1]));
+
+    // size of local buffer for group-wide reduce
+    size_t lsz = localSize[0]*localSize[1]*ltsz;
+
+    Intr::Projector proj = intrinsics.scale(level).makeProjector();
+    Vec2f fxy(proj.fx, proj.fy), cxy(proj.cx, proj.cy);
+
+    UMat& groupedSumGpu = groupedSumBuffers[level];
+    groupedSumGpu.create(Size(ngroups.width*UTSIZE, ngroups.height),
+                         CV_32F);
+    groupedSumGpu.setTo(0);
+
+    // TODO: optimization possible:
+    // samplers instead of oldPts/oldNrm (mask needed)
+    k.args(ocl::KernelArg::ReadOnlyNoSize(oldPts),
+           ocl::KernelArg::ReadOnlyNoSize(oldNrm),
+           oldSize,
+           ocl::KernelArg::ReadOnlyNoSize(newPts),
+           ocl::KernelArg::ReadOnlyNoSize(newNrm),
+           newSize,
+           ocl::KernelArg::Constant(pose.matrix.val,
+                                    sizeof(pose.matrix.val)),
+           fxy.val, cxy.val,
+           distanceThreshold*distanceThreshold,
+           cos(angleThreshold),
+           //TODO: replace by KernelArg::Local(lsz)
+           ocl::KernelArg(ocl::KernelArg::LOCAL, 0, 1, 1, 0, lsz),
+           ocl::KernelArg::WriteOnlyNoSize(groupedSumGpu)
+           );
+
+    if(!k.run(2, globalSize, localSize, true))
+        throw std::runtime_error("Failed to run kernel");
+
+    float upperTriangle[UTSIZE];
+    for(int i = 0; i < UTSIZE; i++)
+        upperTriangle[i] = 0;
+
+    Mat groupedSumCpu = groupedSumGpu.getMat(ACCESS_READ);
+
+    for(int y = 0; y < ngroups.height; y++)
+    {
+        const float* rowr = groupedSumCpu.ptr<float>(y);
+        for(int x = 0; x < ngroups.width; x++)
+        {
+            const float* p = rowr + x*UTSIZE;
+            for(int j = 0; j < UTSIZE; j++)
+            {
+                upperTriangle[j] += p[j];
+            }
+        }
+    }
+    groupedSumCpu.release();
+
+    ABtype sumAB = ABtype::zeros();
+    int pos = 0;
+    for(int i = 0; i < 6; i++)
+    {
+        for(int j = i; j < 7; j++)
+        {
+            sumAB(i, j) = upperTriangle[pos++];
+        }
+    }
+
+    // splitting AB matrix to A and b
+    for(int i = 0; i < 6; i++)
+    {
+        // augment lower triangle of A by symmetry
+        for(int j = i; j < 6; j++)
+        {
+            A(i, j) = A(j, i) = sumAB(i, j);
+        }
+
+        b(i) = sumAB(i, 6);
+    }
 }
 
-cv::Ptr<ICP> makeICP(cv::kinfu::Params::PlatformType t,
-                     const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations,
+#endif
+
+///
+
+
+cv::Ptr<ICP> makeICP(const cv::kinfu::Intr _intrinsics, const std::vector<int> &_iterations,
                      float _angleThreshold, float _distanceThreshold)
 {
-    switch (t)
-    {
-    case cv::kinfu::Params::PlatformType::PLATFORM_CPU:
-        return cv::makePtr<ICPCPU>(_intrinsics, _iterations, _angleThreshold, _distanceThreshold);
-    case cv::kinfu::Params::PlatformType::PLATFORM_GPU:
-        return cv::makePtr<ICPGPU>(_intrinsics, _iterations, _angleThreshold, _distanceThreshold);
-    default:
-        return cv::Ptr<ICP>();
-    }
+    return makePtr<ICPImpl>(_intrinsics, _iterations, _angleThreshold, _distanceThreshold);
 }
 
 } // namespace kinfu

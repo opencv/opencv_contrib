@@ -47,14 +47,14 @@ rescaleDepthTemplated<double>(const Mat& in, Mat& out)
 
 namespace kinfu {
 
-// Print execution times of each block marked with ScopeTime
-#define PRINT_TIME 0
+// One place to turn intrinsics on and off
+#define USE_INTRINSICS CV_SIMD128
 
 typedef float depthType;
 
 const float qnan = std::numeric_limits<float>::quiet_NaN();
 const cv::Vec3f nan3(qnan, qnan, qnan);
-#if CV_SIMD128
+#if USE_INTRINSICS
 const cv::v_float32x4 nanv(qnan, qnan, qnan, qnan);
 #endif
 
@@ -63,25 +63,12 @@ inline bool isNaN(cv::Point3f p)
     return (cvIsNaN(p.x) || cvIsNaN(p.y) || cvIsNaN(p.z));
 }
 
-#if CV_SIMD128
+#if USE_INTRINSICS
 static inline bool isNaN(const cv::v_float32x4& p)
 {
     return cv::v_check_any(p != p);
 }
 #endif
-
-struct ScopeTime
-{
-    ScopeTime(std::string name_, bool _enablePrint = true);
-    ~ScopeTime();
-
-#if PRINT_TIME
-    static int nested;
-    const std::string name;
-    const bool enablePrint;
-    double start;
-#endif
-};
 
 /** @brief Camera intrinsics */
 struct Intr
@@ -142,6 +129,16 @@ struct Intr
 
     float fx, fy, cx, cy;
 };
+
+inline size_t roundDownPow2(size_t x)
+{
+    size_t shift = 0;
+    while(x != 0)
+    {
+        shift++; x >>= 1;
+    }
+    return (size_t)(1ULL << (shift-1));
+}
 
 } // namespace kinfu
 

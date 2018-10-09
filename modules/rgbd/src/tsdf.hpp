@@ -18,12 +18,12 @@ class TSDFVolume
 {
 public:
     // dimension in voxels, size in meters
-    TSDFVolume(int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-               float _raycastStepFactor);
+    TSDFVolume(Point3i _res, float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+               float _raycastStepFactor, bool zFirstMemOrder = true);
 
-    virtual void integrate(cv::Ptr<Frame> depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) = 0;
-    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize, int pyramidLevels,
-                         cv::Ptr<FrameGenerator> frameGenerator, cv::Ptr<Frame> frame) const = 0;
+    virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) = 0;
+    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
+                         cv::OutputArray points, cv::OutputArray normals) const = 0;
 
     virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const = 0;
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const = 0;
@@ -32,14 +32,20 @@ public:
 
     virtual ~TSDFVolume() { }
 
-    float edgeSize;
-    int edgeResolution;
+    float voxelSize;
+    float voxelSizeInv;
+    Point3i volResolution;
     int maxWeight;
     cv::Affine3f pose;
+    float raycastStepFactor;
+
+    Point3f volSize;
+    float truncDist;
+    Vec4i volDims;
+    Vec8i neighbourCoords;
 };
 
-cv::Ptr<TSDFVolume> makeTSDFVolume(cv::kinfu::Params::PlatformType t,
-                                   int _res, float _size, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+cv::Ptr<TSDFVolume> makeTSDFVolume(Point3i _res,  float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                                    float _raycastStepFactor);
 
 } // namespace kinfu

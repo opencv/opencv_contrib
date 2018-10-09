@@ -26,7 +26,7 @@ static vector<string> readDepth(std::string fileList)
 
     fstream file(fileList);
     if(!file.is_open())
-        throw std::runtime_error("Failed to open file");
+        throw std::runtime_error("Failed to read depth list");
 
     std::string dir;
     size_t slashIdx = fileList.rfind('/');
@@ -48,47 +48,86 @@ static vector<string> readDepth(std::string fileList)
     return v;
 }
 
+struct DepthWriter
+{
+    DepthWriter(string fileList) :
+        file(fileList, ios::out), count(0), dir()
+    {
+        size_t slashIdx = fileList.rfind('/');
+        slashIdx = slashIdx != std::string::npos ? slashIdx : fileList.rfind('\\');
+        dir = fileList.substr(0, slashIdx);
 
-const Size kinect2FrameSize(512, 424);
-// approximate values, no guarantee to be correct
-const float kinect2Focal = 366.1f;
-const float kinect2Cx = 258.2f;
-const float kinect2Cy = 204.f;
+        if(!file.is_open())
+            throw std::runtime_error("Failed to write depth list");
+
+        file << "# depth maps saved from device" << endl;
+        file << "# useless_number filename" << endl;
+    }
+
+    void append(InputArray _depth)
+    {
+        Mat depth = _depth.getMat();
+        string depthFname = cv::format("%04d.png", count);
+        string fullDepthFname = dir + '/' + depthFname;
+        if(!imwrite(fullDepthFname, depth))
+            throw std::runtime_error("Failed to write depth to file " + fullDepthFname);
+        file << count++ << " " << depthFname << endl;
+    }
+
+    fstream file;
+    int count;
+    string dir;
+};
+
+namespace Kinect2Params
+{
+    static const Size frameSize = Size(512, 424);
+    // approximate values, no guarantee to be correct
+    static const float focal = 366.1f;
+    static const float cx = 258.2f;
+    static const float cy = 204.f;
+    static const float k1 =  0.12f;
+    static const float k2 = -0.34f;
+    static const float k3 =  0.12f;
+};
 
 struct DepthSource
 {
 public:
     DepthSource() :
-        depthFileList(),
-        frameIdx(0),
-        vc(),
-        useKinect2Workarounds(true)
+        DepthSource("", -1)
     { }
 
     DepthSource(int cam) :
-        depthFileList(),
-        frameIdx(),
-        vc(VideoCaptureAPIs::CAP_OPENNI2 + cam),
-        useKinect2Workarounds(true)
+        DepthSource("", cam)
     { }
 
     DepthSource(String fileListName) :
-        depthFileList(readDepth(fileListName)),
+        DepthSource(fileListName, -1)
+    { }
+
+    DepthSource(String fileListName, int cam) :
+        depthFileList(fileListName.empty() ? vector<string>() : readDepth(fileListName)),
         frameIdx(0),
-        vc(),
+        vc( cam >= 0 ? VideoCapture(VideoCaptureAPIs::CAP_OPENNI2 + cam) : VideoCapture()),
+        undistortMap1(),
+        undistortMap2(),
         useKinect2Workarounds(true)
     { }
 
-    Mat getDepth()
+    UMat getDepth()
     {
-        Mat out;
+        UMat out;
         if (!vc.isOpened())
         {
             if (frameIdx < depthFileList.size())
-                out = cv::imread(depthFileList[frameIdx++], IMREAD_ANYDEPTH);
+            {
+                Mat f = cv::imread(depthFileList[frameIdx++], IMREAD_ANYDEPTH);
+                f.copyTo(out);
+            }
             else
             {
-                return Mat();
+                return UMat();
             }
         }
         else
@@ -99,8 +138,14 @@ public:
             // workaround for Kinect 2
             if(useKinect2Workarounds)
             {
-                out = out(Rect(Point(), kinect2FrameSize));
-                cv::flip(out, out, 1);
+                out = out(Rect(Point(), Kinect2Params::frameSize));
+
+                UMat outCopy;
+                // linear remap adds gradient between valid and invalid pixels
+                // which causes garbage, use nearest instead
+                remap(out, outCopy, undistortMap1, undistortMap2, cv::INTER_NEAREST);
+
+                cv::flip(outCopy, out, 1);
             }
         }
         if (out.empty())
@@ -125,21 +170,47 @@ public:
 
             // it's recommended to calibrate sensor to obtain its intrinsics
             float fx, fy, cx, cy;
-            fx = fy = useKinect2Workarounds ? kinect2Focal : focal;
-            cx = useKinect2Workarounds ? kinect2Cx : w/2 - 0.5f;
-            cy = useKinect2Workarounds ? kinect2Cy : h/2 - 0.5f;
+            Size frameSize;
+            if(useKinect2Workarounds)
+            {
+                fx = fy = Kinect2Params::focal;
+                cx = Kinect2Params::cx;
+                cy = Kinect2Params::cy;
 
-            params.frameSize = useKinect2Workarounds ? kinect2FrameSize : Size(w, h);
-            params.intr = Matx33f(fx,  0, cx,
-                                   0, fy, cy,
-                                   0,  0,  1);
+                frameSize = Kinect2Params::frameSize;
+            }
+            else
+            {
+                fx = fy = focal;
+                cx = w/2 - 0.5f;
+                cy = h/2 - 0.5f;
+
+                frameSize = Size(w, h);
+            }
+
+            Matx33f camMatrix = Matx33f(fx,  0, cx,
+                                        0,  fy, cy,
+                                        0,   0,  1);
+
+            params.frameSize = frameSize;
+            params.intr = camMatrix;
             params.depthFactor = 1000.f;
+
+            Matx<float, 1, 5> distCoeffs;
+            distCoeffs(0) = Kinect2Params::k1;
+            distCoeffs(1) = Kinect2Params::k2;
+            distCoeffs(4) = Kinect2Params::k3;
+            if(useKinect2Workarounds)
+                initUndistortRectifyMap(camMatrix, distCoeffs, cv::noArray(),
+                                        camMatrix, frameSize, CV_16SC2,
+                                        undistortMap1, undistortMap2);
         }
     }
 
     vector<string> depthFileList;
     size_t frameIdx;
     VideoCapture vc;
+    UMat undistortMap1, undistortMap2;
     bool useKinect2Workarounds;
 };
 
@@ -163,7 +234,7 @@ void pauseCallback(const viz::MouseEvent& me, void* args)
     {
         PauseCallbackArgs pca = *((PauseCallbackArgs*)(args));
         viz::Viz3d window(vizWindowName);
-        Mat rendered;
+        UMat rendered;
         pca.kf.render(rendered, window.getViewerPose().matrix);
         imshow("render", rendered);
         waitKey(1);
@@ -174,10 +245,13 @@ void pauseCallback(const viz::MouseEvent& me, void* args)
 static const char* keys =
 {
     "{help h usage ? | | print this message   }"
-    "{depth | | Path to depth.txt file listing a set of depth images }"
+    "{depth  | | Path to depth.txt file listing a set of depth images }"
     "{camera | | Index of depth camera to be used as a depth source }"
     "{coarse | | Run on coarse settings (fast but ugly) or on default (slow but looks better),"
         " in coarse mode points and normals are displayed }"
+    "{idle   | | Do not run KinFu, just display depth frames }"
+    "{record | | Write depth frames to specified file list"
+        " (the same format as for the 'depth' key) }"
 };
 
 static const std::string message =
@@ -189,9 +263,19 @@ static const std::string message =
 int main(int argc, char **argv)
 {
     bool coarse = false;
+    bool idle = false;
+    string recordPath;
 
     CommandLineParser parser(argc, argv, keys);
     parser.about(message);
+
+    if(!parser.check())
+    {
+        parser.printMessage();
+        parser.printErrors();
+        return -1;
+    }
+
     if(parser.has("help"))
     {
         parser.printMessage();
@@ -201,12 +285,13 @@ int main(int argc, char **argv)
     {
         coarse = true;
     }
-
-    if(!parser.check())
+    if(parser.has("record"))
     {
-        parser.printMessage();
-        parser.printErrors();
-        return -1;
+        recordPath = parser.get<String>("record");
+    }
+    if(parser.has("idle"))
+    {
+        idle = true;
     }
 
     DepthSource ds;
@@ -222,7 +307,13 @@ int main(int argc, char **argv)
         return -1;
     }
 
+    Ptr<DepthWriter> depthWriter;
+    if(!recordPath.empty())
+        depthWriter = makePtr<DepthWriter>(recordPath);
+
     Ptr<Params> params;
+    Ptr<KinFu> kf;
+
     if(coarse)
         params = Params::coarseParams();
     else
@@ -231,11 +322,15 @@ int main(int argc, char **argv)
     // These params can be different for each depth sensor
     ds.updateParams(*params);
 
-    // Scene-specific params should be tuned for each scene individually
-    //params.volumePose = params.volumePose.translate(Vec3f(0.f, 0.f, 0.5f));
-    //params.tsdf_max_weight = 16;
+    // Enables OpenCL explicitly (by default can be switched-off)
+    cv::setUseOptimized(true);
 
-    Ptr<KinFu> kf = KinFu::create(params);
+    // Scene-specific params should be tuned for each scene individually
+    //params->volumePose = params->volumePose.translate(Vec3f(0.f, 0.f, 0.5f));
+    //params->tsdf_max_weight = 16;
+
+    if(!idle)
+        kf = KinFu::create(params);
 
 #ifdef HAVE_OPENCV_VIZ
     cv::viz::Viz3d window(vizWindowName);
@@ -243,18 +338,21 @@ int main(int argc, char **argv)
     bool pause = false;
 #endif
 
-    // TODO: can we use UMats for that?
-    Mat rendered;
-    Mat points;
-    Mat normals;
+    UMat rendered;
+    UMat points;
+    UMat normals;
 
     int64 prevTime = getTickCount();
 
-    for(Mat frame = ds.getDepth(); !frame.empty(); frame = ds.getDepth())
+    for(UMat frame = ds.getDepth(); !frame.empty(); frame = ds.getDepth())
     {
+        if(depthWriter)
+            depthWriter->append(frame);
+
 #ifdef HAVE_OPENCV_VIZ
         if(pause)
         {
+            // doesn't happen in idle mode
             kf->getCloud(points, normals);
             if(!points.empty() && !normals.empty())
             {
@@ -263,8 +361,9 @@ int main(int argc, char **argv)
                 window.showWidget("cloud", cloudWidget);
                 window.showWidget("normals", cloudNormals);
 
+                Vec3d volSize = kf->getParams().voxelSize*Vec3d(kf->getParams().volumeDims);
                 window.showWidget("cube", viz::WCube(Vec3d::all(0),
-                                                     Vec3d::all(kf->getParams().volumeSize)),
+                                                     volSize),
                                   kf->getParams().volumePose);
                 PauseCallbackArgs pca(*kf);
                 window.registerMouseCallback(pauseCallback, (void*)&pca);
@@ -272,6 +371,8 @@ int main(int argc, char **argv)
                                                                 "Close the window or press Q to resume"), Point()));
                 window.spin();
                 window.removeWidget("text");
+                window.removeWidget("cloud");
+                window.removeWidget("normals");
                 window.registerMouseCallback(0);
             }
 
@@ -280,41 +381,49 @@ int main(int argc, char **argv)
         else
 #endif
         {
-            Mat cvt8;
-            float depthFactor = kf->getParams().depthFactor;
+            UMat cvt8;
+            float depthFactor = params->depthFactor;
             convertScaleAbs(frame, cvt8, 0.25*256. / depthFactor);
-            imshow("depth", cvt8);
+            if(!idle)
+            {
+                imshow("depth", cvt8);
 
-            if(!kf->update(frame))
-            {
-                kf->reset();
-                std::cout << "reset" << std::endl;
-            }
-#ifdef HAVE_OPENCV_VIZ
-            else
-            {
-                if(coarse)
+                if(!kf->update(frame))
                 {
-                    kf->getCloud(points, normals);
-                    if(!points.empty() && !normals.empty())
-                    {
-                        viz::WCloud cloudWidget(points, viz::Color::white());
-                        viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
-                        window.showWidget("cloud", cloudWidget);
-                        window.showWidget("normals", cloudNormals);
-                    }
+                    kf->reset();
+                    std::cout << "reset" << std::endl;
                 }
+#ifdef HAVE_OPENCV_VIZ
+                else
+                {
+                    if(coarse)
+                    {
+                        kf->getCloud(points, normals);
+                        if(!points.empty() && !normals.empty())
+                        {
+                            viz::WCloud cloudWidget(points, viz::Color::white());
+                            viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
+                            window.showWidget("cloud", cloudWidget);
+                            window.showWidget("normals", cloudNormals);
+                        }
+                    }
 
-                //window.showWidget("worldAxes", viz::WCoordinateSystem());
-                window.showWidget("cube", viz::WCube(Vec3d::all(0),
-                                                     Vec3d::all(kf->getParams().volumeSize)),
-                                  kf->getParams().volumePose);
-                window.setViewerPose(kf->getPose());
-                window.spinOnce(1, true);
-            }
+                    //window.showWidget("worldAxes", viz::WCoordinateSystem());
+                    Vec3d volSize = kf->getParams().voxelSize*kf->getParams().volumeDims;
+                    window.showWidget("cube", viz::WCube(Vec3d::all(0),
+                                                         volSize),
+                                      kf->getParams().volumePose);
+                    window.setViewerPose(kf->getPose());
+                    window.spinOnce(1, true);
+                }
 #endif
 
-            kf->render(rendered);
+                kf->render(rendered);
+            }
+            else
+            {
+                rendered = cvt8;
+            }
         }
 
         int64 newTime = getTickCount();
@@ -325,17 +434,19 @@ int main(int argc, char **argv)
 
         imshow("render", rendered);
 
-        int c = waitKey(100);
+        int c = waitKey(1);
         switch (c)
         {
         case 'r':
-            kf->reset();
+            if(!idle)
+                kf->reset();
             break;
         case 'q':
             return 0;
 #ifdef HAVE_OPENCV_VIZ
         case 'p':
-            pause = true;
+            if(!idle)
+                pause = true;
 #endif
         default:
             break;

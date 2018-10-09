@@ -70,52 +70,24 @@ inline ptype toPtype(const cv::Vec3f& x)
     return ptype(x[0], x[1], x[2], 0);
 }
 
+enum
+{
+    DEPTH_TYPE = DataType<depthType>::type,
+    POINT_TYPE = DataType<ptype    >::type
+};
+
 typedef cv::Mat_< ptype > Points;
 typedef Points Normals;
 
 typedef cv::Mat_< depthType > Depth;
 
-struct Frame
-{
-public:
-    virtual void render(cv::OutputArray image, int level, cv::Affine3f lightPose) const = 0;
-    virtual void getDepth(cv::OutputArray depth) const = 0;
-    virtual ~Frame() { }
-};
-
-struct FrameCPU : Frame
-{
-public:
-    FrameCPU() : points(), normals() { }
-    virtual ~FrameCPU() { }
-
-    virtual void render(cv::OutputArray image, int level, cv::Affine3f lightPose) const override;
-    virtual void getDepth(cv::OutputArray depth) const override;
-
-    std::vector<Points> points;
-    std::vector<Normals> normals;
-    Depth depthData;
-};
-
-struct FrameGPU : Frame
-{
-public:
-    virtual void render(cv::OutputArray image, int level, cv::Affine3f lightPose) const override;
-    virtual void getDepth(cv::OutputArray depth) const override;
-    virtual ~FrameGPU() { }
-};
-
-struct FrameGenerator
-{
-public:
-    virtual cv::Ptr<Frame> operator ()() const = 0;
-    virtual void operator() (cv::Ptr<Frame> frame, cv::InputArray depth, const cv::kinfu::Intr, int levels, float depthFactor,
-                                       float sigmaDepth, float sigmaSpatial, int kernelSize) const = 0;
-    virtual void operator() (cv::Ptr<Frame> frame, cv::InputArray points, cv::InputArray normals, int levels) const = 0;
-    virtual ~FrameGenerator() {}
-};
-
-cv::Ptr<FrameGenerator> makeFrameGenerator(cv::kinfu::Params::PlatformType t);
+void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray image, cv::Affine3f lightPose);
+void makeFrameFromDepth(InputArray depth, OutputArray pyrPoints, OutputArray pyrNormals,
+                        const Intr intr, int levels, float depthFactor,
+                        float sigmaDepth, float sigmaSpatial, int kernelSize);
+void buildPyramidPointsNormals(InputArray _points, InputArray _normals,
+                               OutputArrayOfArrays pyrPoints, OutputArrayOfArrays pyrNormals,
+                               int levels);
 
 } // namespace kinfu
 } // namespace cv
