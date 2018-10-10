@@ -93,11 +93,15 @@ namespace color_cvt_detail
 
     enum
     {
+        rgb_shift  = 15,
         yuv_shift  = 14,
         xyz_shift  = 12,
         R2Y        = 4899,
         G2Y        = 9617,
         B2Y        = 1868,
+        RY15       = 9798,
+        GY15       = 19235,
+        BY15       = 3735,
         BLOCK_SIZE = 256
     };
 
@@ -311,6 +315,18 @@ namespace color_cvt_detail
             const int g = src.y;
             const int r = bidx == 0 ? src.z : src.x;
             return (T) CV_CUDEV_DESCALE(b * B2Y + g * G2Y + r * R2Y, yuv_shift);
+        }
+    };
+
+    template <int scn, int bidx> struct RGB2Gray<uchar, scn, bidx>
+        : unary_function<typename MakeVec<uchar, scn>::type, uchar>
+    {
+        __device__ uchar operator ()(const typename MakeVec<uchar, scn>::type& src) const
+        {
+            const int b = bidx == 0 ? src.x : src.z;
+            const int g = src.y;
+            const int r = bidx == 0 ? src.z : src.x;
+            return (uchar)CV_CUDEV_DESCALE(b * BY15 + g * GY15 + r * RY15, rgb_shift);
         }
     };
 
