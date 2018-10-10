@@ -31,6 +31,7 @@ enum SceneSettings
 enum MaterialProperty
 {
     MATERIAL_POINT_SIZE,
+    MATERIAL_LINE_WIDTH,
     MATERIAL_OPACITY,
     MATERIAL_EMISSIVE,
     MATERIAL_TEXTURE0,

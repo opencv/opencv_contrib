@@ -753,6 +753,13 @@ void setMaterialProperty(const String& name, int prop, const Scalar& val)
         col.saturate();
         rpass->setEmissive(col);
         break;
+    case MATERIAL_LINE_WIDTH:
+#if OGRE_VERSION >= ((1 << 16) | (11 << 8) | 2)
+        rpass->setLineWidth(val[0]);
+#else
+        CV_Error(Error::StsError, "needs OGRE 1.11.2+ for this");
+#endif
+        break;
     default:
         CV_Error(Error::StsBadArg, "invalid or non Scalar property");
         break;
