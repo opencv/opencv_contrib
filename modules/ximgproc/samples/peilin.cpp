@@ -4,13 +4,6 @@
 
 #include <iostream>
 
-static void help()
-{
-    std::cout << "\nThis program demonstrates Pei&Lin Normalization\n"
-                 "Usage:\n"
-                 "./peilin [image1_name -- default is ../data/peilin_plane.png] [image2_name -- default is ../data/peilin_shape.png]\n" << std::endl;
-}
-
 static inline cv::Mat operator& ( const cv::Mat& lhs, const cv::Matx23d& rhs )
 {
     cv::Mat ret;
@@ -27,12 +20,10 @@ static inline cv::Mat operator& ( const cv::Matx23d& lhs, const cv::Mat& rhs )
 
 int main(int argc, char** argv)
 {
-    cv::CommandLineParser parser(argc, argv, "{help h | | }{ @input1 | ../data/peilin_plane.png | }{ @input2 | ../data/peilin_plane.png | }");
-    if (parser.has("help"))
-    {
-        help();
-        return 0;
-    }
+    cv::CommandLineParser parser(argc, argv, "{ @input1 | ../data/peilin_plane.png | }{ @input2 | ../data/peilin_shape.png | }");
+    parser.about("\nThis program demonstrates Pei&Lin Normalization\n");
+    parser.printMessage();
+
     std::string filename1 = parser.get<std::string>("@input1");
     std::string filename2 = parser.get<std::string>("@input2");
 
