@@ -486,7 +486,6 @@ void FastGlobalSmootherFilterImpl::VerticalPass_ParBody::operator()(const Range&
     int start = std::min(range.start * stripe_sz, w);
     int end   = std::min(range.end   * stripe_sz, w);
 
-    //float lambda = fgs->lambda;
     WorkType denom;
     WorkType *Cvert_row, *Cvert_row_prev;
     WorkType *interD_row, *interD_row_prev, *cur_row, *cur_row_prev, *cur_row_next;
@@ -677,13 +676,11 @@ void FastGlobalSmootherFilterImpl::ComputeLUT_ParBody::operator()(const Range& r
 
 ////////////////////////////////////////////////////////////////////////////////////////////////
 
-CV_EXPORTS_W
 Ptr<FastGlobalSmootherFilter> createFastGlobalSmootherFilter(InputArray guide, double lambda, double sigma_color, double lambda_attenuation, int num_iter)
 {
     return Ptr<FastGlobalSmootherFilter>(FastGlobalSmootherFilterImpl::create(guide, lambda, sigma_color, num_iter, lambda_attenuation));
 }
 
-CV_EXPORTS_W
 void fastGlobalSmootherFilter(InputArray guide, InputArray src, OutputArray dst, double lambda, double sigma_color, double lambda_attenuation, int num_iter)
 {
     Ptr<FastGlobalSmootherFilter> fgs = createFastGlobalSmootherFilter(guide, lambda, sigma_color, lambda_attenuation, num_iter);

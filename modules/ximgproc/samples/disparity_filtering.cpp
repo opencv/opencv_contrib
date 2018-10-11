@@ -3,7 +3,7 @@
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/core/utility.hpp"
-#include "opencv2/ximgproc/disparity_filter.hpp"
+#include "opencv2/ximgproc.hpp"
 #include <iostream>
 #include <string>
 
@@ -21,7 +21,7 @@ const String keys =
     "{dst_path       |None              | optional path to save the resulting filtered disparity map        }"
     "{dst_raw_path   |None              | optional path to save raw disparity map before filtering          }"
     "{algorithm      |bm                | stereo matching method (bm or sgbm)                               }"
-    "{filter         |wls_conf          | used post-filtering (wls_conf or wls_no_conf)                     }"
+    "{filter         |wls_conf          | used post-filtering (wls_conf or wls_no_conf or fbs_conf)                     }"
     "{no-display     |                  | don't display results                                             }"
     "{no-downscale   |                  | force stereo matching on full-sized views to improve quality      }"
     "{dst_conf_path  |None              | optional path to save the confidence map used in filtering        }"
@@ -107,14 +107,15 @@ int main(int argc, char** argv)
         }
     }
 
-    Mat left_for_matcher, right_for_matcher;
+    Mat left_for_matcher, right_for_matcher, guide;
     Mat left_disp,right_disp;
-    Mat filtered_disp;
+    Mat filtered_disp,solved_disp;
     Mat conf_map = Mat(left.rows,left.cols,CV_8U);
     conf_map = Scalar(255);
     Rect ROI;
     Ptr<DisparityWLSFilter> wls_filter;
     double matching_time, filtering_time;
+    double solving_time = 0;
     if(max_disp<=0 || max_disp%16!=0)
     {
         cout<<"Incorrect max_disparity value: it should be positive and divisible by 16";
@@ -125,6 +126,7 @@ int main(int argc, char** argv)
         cout<<"Incorrect window_size value: it should be positive and odd";
         return -1;
     }
+
     if(filter=="wls_conf") // filtering with confidence (significantly better quality than wls_no_conf)
     {
         if(!no_downscale)
@@ -201,6 +203,99 @@ int main(int argc, char** argv)
             ROI = Rect(ROI.x*2,ROI.y*2,ROI.width*2,ROI.height*2);
         }
     }
+    else if(filter=="fbs_conf") // filtering with confidence (significantly better quality than wls_no_conf)
+    {
+        if(!no_downscale)
+        {
+            // downscale the views to speed-up the matching stage, as we will need to compute both left
+            // and right disparity maps for confidence map computation
+            //! [downscale_wls]
+            max_disp/=2;
+            if(max_disp%16!=0)
+                max_disp += 16-(max_disp%16);
+            resize(left ,left_for_matcher ,Size(),0.5,0.5);
+            resize(right,right_for_matcher,Size(),0.5,0.5);
+            //! [downscale_wls]
+        }
+        else
+        {
+            left_for_matcher  = left.clone();
+            right_for_matcher = right.clone();
+        }
+        guide = left_for_matcher.clone();
+
+        if(algo=="bm")
+        {
+            //! [matching_wls]
+            Ptr<StereoBM> left_matcher = StereoBM::create(max_disp,wsize);
+            wls_filter = createDisparityWLSFilter(left_matcher);
+            Ptr<StereoMatcher> right_matcher = createRightMatcher(left_matcher);
+
+            cvtColor(left_for_matcher,  left_for_matcher,  COLOR_BGR2GRAY);
+            cvtColor(right_for_matcher, right_for_matcher, COLOR_BGR2GRAY);
+
+            matching_time = (double)getTickCount();
+            left_matcher-> compute(left_for_matcher, right_for_matcher,left_disp);
+            right_matcher->compute(right_for_matcher,left_for_matcher, right_disp);
+            matching_time = ((double)getTickCount() - matching_time)/getTickFrequency();
+            //! [matching_wls]
+        }
+        else if(algo=="sgbm")
+        {
+            Ptr<StereoSGBM> left_matcher  = StereoSGBM::create(0,max_disp,wsize);
+            left_matcher->setP1(24*wsize*wsize);
+            left_matcher->setP2(96*wsize*wsize);
+            left_matcher->setPreFilterCap(63);
+            left_matcher->setMode(StereoSGBM::MODE_SGBM_3WAY);
+            wls_filter = createDisparityWLSFilter(left_matcher);
+            Ptr<StereoMatcher> right_matcher = createRightMatcher(left_matcher);
+
+            matching_time = (double)getTickCount();
+            left_matcher-> compute(left_for_matcher, right_for_matcher,left_disp);
+            right_matcher->compute(right_for_matcher,left_for_matcher, right_disp);
+            matching_time = ((double)getTickCount() - matching_time)/getTickFrequency();
+        }
+        else
+        {
+            cout<<"Unsupported algorithm";
+            return -1;
+        }
+
+        //! [filtering_wls]
+        wls_filter->setLambda(lambda);
+        wls_filter->setSigmaColor(sigma);
+        filtering_time = (double)getTickCount();
+        wls_filter->filter(left_disp,left,filtered_disp,right_disp);
+        filtering_time = ((double)getTickCount() - filtering_time)/getTickFrequency();
+        //! [filtering_wls]
+
+        conf_map = wls_filter->getConfidenceMap();
+
+        Mat left_disp_resized;
+        resize(left_disp,left_disp_resized,left.size());
+
+        // Get the ROI that was used in the last filter call:
+        ROI = wls_filter->getROI();
+        if(!no_downscale)
+        {
+            // upscale raw disparity and ROI back for a proper comparison:
+            resize(left_disp,left_disp,Size(),2.0,2.0);
+            left_disp = left_disp*2.0;
+            ROI = Rect(ROI.x*2,ROI.y*2,ROI.width*2,ROI.height*2);
+        }
+
+#ifdef HAVE_EIGEN
+        //! [filtering_fbs]
+        solving_time = (double)getTickCount();
+        // wls_filter->filter(left_disp,left,filtered_disp,right_disp);
+        // fastBilateralSolverFilter(left, filtered_disp, conf_map, solved_disp, 16.0, 16.0, 16.0);
+        fastBilateralSolverFilter(left, left_disp_resized, conf_map, solved_disp, 16.0, 16.0, 16.0);
+        solving_time = ((double)getTickCount() - solving_time)/getTickFrequency();
+	      solved_disp.convertTo(solved_disp, CV_8UC1);
+        cv::equalizeHist(solved_disp, solved_disp);
+        //! [filtering_fbs]
+#endif
+    }
     else if(filter=="wls_no_conf")
     {
         /* There is no convenience function for the case of filtering with no confidence, so we
@@ -263,6 +358,7 @@ int main(int argc, char** argv)
     cout.precision(2);
     cout<<"Matching time:  "<<matching_time<<"s"<<endl;
     cout<<"Filtering time: "<<filtering_time<<"s"<<endl;
+    cout<<"solving time: "<<solving_time<<"s"<<endl;
     cout<<endl;
 
     double MSE_before,percent_bad_before,MSE_after,percent_bad_after;
@@ -323,6 +419,33 @@ int main(int argc, char** argv)
         getDisparityVis(filtered_disp,filtered_disp_vis,vis_mult);
         namedWindow("filtered disparity", WINDOW_AUTOSIZE);
         imshow("filtered disparity", filtered_disp_vis);
+
+        if(!solved_disp.empty())
+        {
+            namedWindow("solved disparity", WINDOW_AUTOSIZE);
+            imshow("solved disparity", solved_disp);
+
+#define ENABLE_DOMAIN_TRANSFORM_FILTER
+#ifdef ENABLE_DOMAIN_TRANSFORM_FILTER
+	const float property_dt_sigmaSpatial = 40.0f;
+	const float property_dt_sigmaColor = 220.0f;
+	const int property_dt_numIters = 3;
+	cv::Mat final_disparty_dtfiltered_image;
+	cv::ximgproc::dtFilter(left,
+		solved_disp, final_disparty_dtfiltered_image,
+		property_dt_sigmaSpatial, property_dt_sigmaColor,
+		cv::ximgproc::DTF_RF,
+		property_dt_numIters);
+
+	// display disparity image
+	cv::Mat adjmap_dt;
+	final_disparty_dtfiltered_image.convertTo(adjmap_dt, CV_8UC1);
+		// 255.0f / 255.0f, 0.0f);
+	cv::imshow("disparity image + domain transform", adjmap_dt);
+#endif
+
+        }
+
         waitKey();
         //! [visualization]
     }
