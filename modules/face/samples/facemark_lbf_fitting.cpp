@@ -58,13 +58,12 @@ using namespace cv;
 using namespace cv::face;
 
 static bool myDetector(InputArray image, OutputArray ROIs, CascadeClassifier *face_cascade);
-static bool parseArguments(int argc, char** argv, CommandLineParser & parser,
+static bool parseArguments(int argc, char** argv,
     String & cascade, String & model,String & video);
 
 int main(int argc, char** argv ){
-    CommandLineParser parser(argc, argv,"");
     String cascade_path,model_path,images_path, video_path;
-    if(!parseArguments(argc, argv, parser,cascade_path,model_path,video_path))
+    if(!parseArguments(argc, argv, cascade_path,model_path,video_path))
        return -1;
 
     CascadeClassifier face_cascade;
@@ -161,7 +160,7 @@ bool myDetector(InputArray image, OutputArray faces, CascadeClassifier *face_cas
     return true;
 }
 
-bool parseArguments(int argc, char** argv, CommandLineParser & parser,
+bool parseArguments(int argc, char** argv,
     String & cascade,
     String & model,
     String & video
@@ -173,7 +172,7 @@ bool parseArguments(int argc, char** argv, CommandLineParser & parser,
        "{ help h usage ?     |      | facemark_lbf_fitting -cascade -model -video [-t]\n"
             " example: facemark_lbf_fitting ../face_cascade.xml ../LBF.model ../video.mp4}"
    ;
-   parser = CommandLineParser(argc, argv,keys);
+   CommandLineParser parser(argc, argv,keys);
    parser.about("hello");
 
    if (parser.has("help")){

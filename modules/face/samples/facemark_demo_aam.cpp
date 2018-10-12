@@ -53,15 +53,14 @@ using namespace cv::face;
 bool myDetector( InputArray image, OutputArray ROIs, CascadeClassifier *face_cascade);
 bool getInitialFitting(Mat image, Rect face, std::vector<Point2f> s0,
     CascadeClassifier eyes_cascade, Mat & R, Point2f & Trans, float & scale);
-bool parseArguments(int argc, char** argv, CommandLineParser & , String & cascade,
+bool parseArguments(int argc, char** argv, String & cascade,
     String & model, String & images, String & annotations, String & testImages
 );
 
 int main(int argc, char** argv )
 {
-    CommandLineParser parser(argc, argv,"");
     String cascade_path,eyes_cascade_path,images_path, annotations_path, test_images_path;
-    if(!parseArguments(argc, argv, parser,cascade_path,eyes_cascade_path,images_path, annotations_path, test_images_path))
+    if(!parseArguments(argc, argv, cascade_path,eyes_cascade_path,images_path, annotations_path, test_images_path))
        return -1;
 
     //! [instance_creation]
@@ -247,7 +246,7 @@ bool getInitialFitting(Mat image, Rect face, std::vector<Point2f> s0 ,CascadeCla
     return found;
 }
 
-bool parseArguments(int argc, char** argv, CommandLineParser & parser,
+bool parseArguments(int argc, char** argv,
     String & cascade,
     String & model,
     String & images,
@@ -263,7 +262,7 @@ bool parseArguments(int argc, char** argv, CommandLineParser & parser,
         "{ help h usage ?     |      | facemark_demo_aam -face-cascade -eyes-cascade -images -annotations [-t]\n"
              " example: facemark_demo_aam ../face_cascade.xml ../eyes_cascade.xml ../images_train.txt ../points_train.txt ../test.txt}"
     ;
-    parser = CommandLineParser(argc, argv,keys);
+    CommandLineParser parser(argc, argv,keys);
     parser.about("hello");
 
     if (parser.has("help")){
