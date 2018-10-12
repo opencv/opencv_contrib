@@ -7,6 +7,8 @@
 #include "precomp.hpp"
 #include "tsdf.hpp"
 
+#include "opencl_kernels_rgbd.hpp"
+
 namespace cv {
 
 namespace kinfu {
