@@ -7,7 +7,6 @@
 #ifndef __OPENCV_KINFU_FRAME_H__
 #define __OPENCV_KINFU_FRAME_H__
 
-#include "precomp.hpp"
 #include "utils.hpp"
 
 namespace cv {

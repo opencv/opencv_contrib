@@ -321,7 +321,7 @@ void KinFuImpl<T>::getNormals(InputArray points, OutputArray normals) const
 Ptr<KinFu> KinFu::create(const Ptr<Params>& params)
 {
 #ifdef HAVE_OPENCL
-    if(cv::ocl::isOpenCLActivated())
+    if(cv::ocl::useOpenCL())
         return makePtr< KinFuImpl<UMat> >(*params);
 #endif
     return makePtr< KinFuImpl<Mat> >(*params);
