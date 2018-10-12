@@ -7,6 +7,8 @@
 #include "precomp.hpp"
 #include "fast_icp.hpp"
 
+#include "opencl_kernels_rgbd.hpp"
+
 using namespace std;
 
 namespace cv {
