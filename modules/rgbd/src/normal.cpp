@@ -283,10 +283,13 @@ namespace rgbd
       Vec3T *row_B = B[0];
       for (; row_r != row_r_end; ++row_r, ++row_B, ++row_V)
       {
-        if (cvIsNaN(*row_r))
-          *row_B = Vec3T();
+        Vec3T val = (*row_V) / (*row_r);
+        if(cvIsInf(val[0]) || cvIsNaN(val[0]) ||
+           cvIsInf(val[1]) || cvIsNaN(val[1]) ||
+           cvIsInf(val[2]) || cvIsNaN(val[2]))
+            *row_B = Vec3T();
         else
-          *row_B = (*row_V) / (*row_r);
+            *row_B = val;
       }
 
       // Apply a box filter to B

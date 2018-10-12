@@ -149,21 +149,25 @@ class CV_OdometryTest : public cvtest::BaseTest
 {
 public:
     CV_OdometryTest(const Ptr<Odometry>& _odometry,
-                    double _maxError1, 
-                    double _maxError5) :
-        odometry(_odometry), 
-        maxError1(_maxError1), 
-        maxError5(_maxError5) {}
+                    double _maxError1,
+                    double _maxError5,
+                    double _idError = DBL_EPSILON) :
+        odometry(_odometry),
+        maxError1(_maxError1),
+        maxError5(_maxError5),
+        idError(_idError)
+    { }
 
 protected:
     bool readData(Mat& image, Mat& depth) const;
     static void generateRandomTransformation(Mat& R, Mat& t);
-    
+
     virtual void run(int);
 
     Ptr<Odometry> odometry;
     double maxError1;
     double maxError5;
+    double idError;
 };
 
 bool CV_OdometryTest::readData(Mat& image, Mat& depth) const
@@ -239,8 +243,8 @@ void CV_OdometryTest::run(int)
     Mat calcRt;
     
     // 1. Try to find Rt between the same frame (try masks also).
-    bool isComputed = odometry->compute(image, depth, Mat(image.size(), CV_8UC1, Scalar(255)), 
-                                        image, depth, Mat(image.size(), CV_8UC1, Scalar(255)), 
+    bool isComputed = odometry->compute(image, depth, Mat(image.size(), CV_8UC1, Scalar(255)),
+                                        image, depth, Mat(image.size(), CV_8UC1, Scalar(255)),
                                         calcRt);
     if(!isComputed)
     {
@@ -248,20 +252,20 @@ void CV_OdometryTest::run(int)
         ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_OUTPUT);
     }
     double diff = cv::norm(calcRt, Mat::eye(4,4,CV_64FC1));
-    if(diff > DBL_EPSILON)
+    if(diff > idError)
     {
         ts->printf(cvtest::TS::LOG, "Incorrect transformation between the same frame (not the identity matrix), diff = %f", diff);
         ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
     }
     
-    // 2. Generate random rigid body motion in some ranges several times (iterCount). 
+    // 2. Generate random rigid body motion in some ranges several times (iterCount).
     // On each iteration an input frame is warped using generated transformation.
-    // Odometry is run on the following pair: the original frame and the warped one. 
+    // Odometry is run on the following pair: the original frame and the warped one.
     // Comparing a computed transformation with an applied one we compute 2 errors:
-    // better_1time_count - count of poses which error is less than ground thrush pose,
-    // better_5times_count - count of poses which error is 5 times less than ground thrush pose.
+    // better_1time_count - count of poses which error is less than ground truth pose,
+    // better_5times_count - count of poses which error is 5 times less than ground truth pose.
     int iterCount = 100;
-    int better_1time_count = 0; 
+    int better_1time_count = 0;
     int better_5times_count = 0;
     for(int iter = 0; iter < iterCount; iter++)
     {
@@ -271,7 +275,8 @@ void CV_OdometryTest::run(int)
         warpFrame(image, depth, rvec, tvec, K, warpedImage, warpedDepth);
         dilateFrame(warpedImage, warpedDepth); // due to inaccuracy after warping
         
-        isComputed = odometry->compute(image, depth, Mat(), warpedImage, warpedDepth, Mat(), calcRt);
+        Mat imageMask(image.size(), CV_8UC1, Scalar(255));
+        isComputed = odometry->compute(image, depth, imageMask, warpedImage, warpedDepth, imageMask, calcRt);
         if(!isComputed)
             continue;
                 
@@ -329,17 +334,17 @@ void CV_OdometryTest::run(int)
 
 TEST(RGBD_Odometry_Rgbd, algorithmic)
 {
-    CV_OdometryTest test(cv::rgbd::Odometry::create("RgbdOdometry"), 0.99, 0.94);
+    CV_OdometryTest test(cv::rgbd::Odometry::create("RgbdOdometry"), 0.99, 0.89);
     test.safe_run();
 }
 
-TEST(DISABLED_RGBD_Odometry_ICP, algorithmic)
+TEST(RGBD_Odometry_ICP, algorithmic)
 {
     CV_OdometryTest test(cv::rgbd::Odometry::create("ICPOdometry"), 0.99, 0.99);
     test.safe_run();
 }
 
-TEST(DISABLED_RGBD_Odometry_RgbdICP, algorithmic)
+TEST(RGBD_Odometry_RgbdICP, algorithmic)
 {
     CV_OdometryTest test(cv::rgbd::Odometry::create("RgbdICPOdometry"), 0.99, 0.99);
     test.safe_run();
