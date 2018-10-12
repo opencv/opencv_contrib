@@ -6,6 +6,7 @@
 
 #include "precomp.hpp"
 #include "tsdf.hpp"
+#include "opencl_kernels_rgbd.hpp"
 
 namespace cv {
 
@@ -1473,7 +1474,7 @@ cv::Ptr<TSDFVolume> makeTSDFVolume(Point3i _res,  float _voxelSize, cv::Affine3f
                                    float _raycastStepFactor)
 {
 #ifdef HAVE_OPENCL
-    if(cv::ocl::isOpenCLActivated())
+    if(cv::ocl::useOpenCL())
         return cv::makePtr<TSDFVolumeGPU>(_res, _voxelSize, _pose, _truncDist, _maxWeight, _raycastStepFactor);
 #endif
     return cv::makePtr<TSDFVolumeCPU>(_res, _voxelSize, _pose, _truncDist, _maxWeight, _raycastStepFactor);
