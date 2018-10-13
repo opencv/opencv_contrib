@@ -48,15 +48,14 @@ using namespace cv;
 using namespace cv::face;
 
 static bool myDetector( InputArray image, OutputArray roi, CascadeClassifier *face_detector);
-static bool parseArguments(int argc, char** argv, CommandLineParser & , String & cascade,
+static bool parseArguments(int argc, char** argv, String & cascade,
    String & model, String & images, String & annotations, String & testImages
 );
 
 int main(int argc, char** argv)
 {
-    CommandLineParser parser(argc, argv,"");
     String cascade_path,model_path,images_path, annotations_path, test_images_path;
-    if(!parseArguments(argc, argv, parser,cascade_path,model_path,images_path, annotations_path, test_images_path))
+    if(!parseArguments(argc, argv, cascade_path,model_path,images_path, annotations_path, test_images_path))
        return -1;
 
     /*create the facemark instance*/
@@ -137,7 +136,7 @@ bool myDetector(InputArray image, OutputArray faces, CascadeClassifier *face_cas
     return true;
 }
 
-bool parseArguments(int argc, char** argv, CommandLineParser & parser,
+bool parseArguments(int argc, char** argv,
     String & cascade,
     String & model,
     String & images,
@@ -153,7 +152,7 @@ bool parseArguments(int argc, char** argv, CommandLineParser & parser,
         "{ help h usage ?     |      | facemark_demo_lbf -cascade -images -annotations -model [-t] \n"
          " example: facemark_demo_lbf ../face_cascade.xml ../images_train.txt ../points_train.txt ../lbf.model}"
     ;
-    parser = CommandLineParser(argc, argv,keys);
+    CommandLineParser parser(argc, argv,keys);
     parser.about("hello");
 
     if (parser.has("help")){

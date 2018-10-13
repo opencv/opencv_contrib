@@ -122,11 +122,11 @@ class CV_OdometryTest : public cvtest::BaseTest
 {
 public:
     CV_OdometryTest(const Ptr<Odometry>& _odometry,
-                    double _maxError1, 
+                    double _maxError1,
                     double _maxError5,
                     double _idError = DBL_EPSILON) :
-        odometry(_odometry), 
-        maxError1(_maxError1), 
+        odometry(_odometry),
+        maxError1(_maxError1),
         maxError5(_maxError5),
         idError(_idError)
     { }
@@ -134,7 +134,7 @@ public:
 protected:
     bool readData(Mat& image, Mat& depth) const;
     static void generateRandomTransformation(Mat& R, Mat& t);
-    
+
     virtual void run(int);
 
     Ptr<Odometry> odometry;
