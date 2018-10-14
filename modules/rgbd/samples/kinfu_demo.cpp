@@ -95,10 +95,6 @@ namespace Kinect2Params
 struct DepthSource
 {
 public:
-    DepthSource() :
-        DepthSource("", -1)
-    { }
-
     DepthSource(int cam) :
         DepthSource("", cam)
     { }
@@ -247,7 +243,7 @@ static const char* keys =
 {
     "{help h usage ? | | print this message   }"
     "{depth  | | Path to depth.txt file listing a set of depth images }"
-    "{camera | | Index of depth camera to be used as a depth source }"
+    "{camera |0| Index of depth camera to be used as a depth source }"
     "{coarse | | Run on coarse settings (fast but ugly) or on default (slow but looks better),"
         " in coarse mode points and normals are displayed }"
     "{idle   | | Do not run KinFu, just display depth frames }"
@@ -295,13 +291,13 @@ int main(int argc, char **argv)
         idle = true;
     }
 
-    DepthSource ds;
+    Ptr<DepthSource> ds;
     if (parser.has("depth"))
-        ds = DepthSource(parser.get<String>("depth"));
-    if (parser.has("camera") && ds.empty())
-        ds = DepthSource(parser.get<int>("camera"));
+        ds = makePtr<DepthSource>(parser.get<String>("depth"));
+    else
+        ds = makePtr<DepthSource>(parser.get<int>("camera"));
 
-    if (ds.empty())
+    if (ds->empty())
     {
         std::cerr << "Failed to open depth source" << std::endl;
         parser.printMessage();
@@ -321,7 +317,7 @@ int main(int argc, char **argv)
         params = Params::defaultParams();
 
     // These params can be different for each depth sensor
-    ds.updateParams(*params);
+    ds->updateParams(*params);
 
     // Enables OpenCL explicitly (by default can be switched-off)
     cv::setUseOptimized(true);
@@ -345,7 +341,7 @@ int main(int argc, char **argv)
 
     int64 prevTime = getTickCount();
 
-    for(UMat frame = ds.getDepth(); !frame.empty(); frame = ds.getDepth())
+    for(UMat frame = ds->getDepth(); !frame.empty(); frame = ds->getDepth())
     {
         if(depthWriter)
             depthWriter->append(frame);
