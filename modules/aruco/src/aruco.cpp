@@ -1767,7 +1767,7 @@ void drawMarker(const Ptr<Dictionary> &dictionary, int id, int sidePixels, Outpu
 void _drawPlanarBoardImpl(Board *_board, Size outSize, OutputArray _img, int marginSize,
                      int borderBits) {
 
-    CV_Assert(outSize.area() > 0);
+    CV_Assert(!outSize.empty());
     CV_Assert(marginSize >= 0);
 
     _img.create(outSize, CV_8UC1);
