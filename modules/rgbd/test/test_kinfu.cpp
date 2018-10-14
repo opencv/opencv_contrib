@@ -327,23 +327,40 @@ void flyTest(bool hiDense, bool inequal)
     ASSERT_LT(cv::norm(kfPose.translation() - pose.translation()), poseThreshold);
 }
 
+
+#ifdef OPENCV_ENABLE_NONFREE
 TEST( KinectFusion, lowDense )
+#else
+TEST(KinectFusion, DISABLED_lowDense)
+#endif
 {
     flyTest(false, false);
 }
 
+#ifdef OPENCV_ENABLE_NONFREE
 TEST( KinectFusion, highDense )
+#else
+TEST(KinectFusion, DISABLED_highDense)
+#endif
 {
     flyTest(true, false);
 }
 
+#ifdef OPENCV_ENABLE_NONFREE
 TEST( KinectFusion, inequal )
+#else
+TEST(KinectFusion, DISABLED_inequal)
+#endif
 {
     flyTest(false, true);
 }
 
 #ifdef HAVE_OPENCL
+#ifdef OPENCV_ENABLE_NONFREE
 TEST( KinectFusion, OCL )
+#else
+TEST(KinectFusion, DISABLED_OCL)
+#endif
 {
     cv::ocl::setUseOpenCL(false);
     flyTest(false, false);
