@@ -675,6 +675,10 @@ namespace cv{
     if(region.width>img.cols)region.width=img.cols;
     if(region.height>img.rows)region.height=img.rows;
 
+    // return false if region has no width/height
+    if (region.width < 1 || region.height < 1) 
+        return false;
+
     patch=img(region).clone();
 
     // add some padding to compensate when the patch is outside image border
