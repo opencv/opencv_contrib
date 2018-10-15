@@ -130,8 +130,8 @@ void calculateChannelSums(uint &sumB, uint &sumG, uint &sumR, uchar *src_data, i
         v_expand(v_max_val, v_max1, v_max2);
 
         // Calculate masks
-        v_m1 = ~((v_max1 - v_min1) * v_255 > v_thresh * v_max1);
-        v_m2 = ~((v_max2 - v_min2) * v_255 > v_thresh * v_max2);
+        v_m1 = ~(v_mul_wrap(v_max1 - v_min1, v_255) > v_mul_wrap(v_thresh, v_max1));
+        v_m2 = ~(v_mul_wrap(v_max2 - v_min2, v_255) > v_mul_wrap(v_thresh, v_max2));
 
         // Apply masks
         v_iB1 = (v_iB1 & v_m1) + (v_iB2 & v_m2);
@@ -282,12 +282,12 @@ void applyChannelGains(InputArray _src, OutputArray _dst, float gainB, float gai
             v_expand(v_inR, v_sR1, v_sR2);
 
             // Multiply by gains
-            v_sB1 = (v_sB1 * v_gainB) >> 8;
-            v_sB2 = (v_sB2 * v_gainB) >> 8;
-            v_sG1 = (v_sG1 * v_gainG) >> 8;
-            v_sG2 = (v_sG2 * v_gainG) >> 8;
-            v_sR1 = (v_sR1 * v_gainR) >> 8;
-            v_sR2 = (v_sR2 * v_gainR) >> 8;
+            v_sB1 = v_mul_wrap(v_sB1, v_gainB) >> 8;
+            v_sB2 = v_mul_wrap(v_sB2, v_gainB) >> 8;
+            v_sG1 = v_mul_wrap(v_sG1, v_gainG) >> 8;
+            v_sG2 = v_mul_wrap(v_sG2, v_gainG) >> 8;
+            v_sR1 = v_mul_wrap(v_sR1, v_gainR) >> 8;
+            v_sR2 = v_mul_wrap(v_sR2, v_gainR) >> 8;
 
             // Pack into vectors of v_uint8x16
             v_store_interleave(&dst_data[i], v_pack(v_sB1, v_sB2), v_pack(v_sG1, v_sG2), v_pack(v_sR1, v_sR2));
