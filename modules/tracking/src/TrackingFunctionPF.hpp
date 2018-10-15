@@ -66,7 +66,7 @@ namespace cv{
     }
     double TrackingFunctionPF::calc(const double* x) const{
         Rect rect=rectFromRow(x);
-        if(rect.area()==0){
+        if(rect.empty()){
             return 2.0;
         }
         return _origHist.dist(TrackingHistogram(_image(rect),_nh,_ns,_nv));

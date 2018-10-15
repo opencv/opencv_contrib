@@ -532,7 +532,7 @@ void cv::omnidir::initUndistortRectifyMap(InputArray K, InputArray D, InputArray
 void cv::omnidir::undistortImage(InputArray distorted, OutputArray undistorted,
     InputArray K, InputArray D, InputArray xi, int flags, InputArray Knew, const Size& new_size, InputArray R)
 {
-    Size size = new_size.area() != 0 ? new_size : distorted.size();
+    Size size = new_size.empty() ? distorted.size() : new_size;
 
     cv::Mat map1, map2;
     omnidir::initUndistortRectifyMap(K, D, xi, R, Knew, size, CV_16SC2, map1, map2, flags);
