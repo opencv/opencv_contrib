@@ -37,18 +37,8 @@ Ptr<Params> Params::defaultParams()
 
     p.icpAngleThresh = (float)(30. * CV_PI / 180.); // radians
     p.icpDistThresh = 0.1f; // meters
-    // first non-zero numbers are accepted
-    const int iters[] = {10, 5, 4, 0};
 
-    for(size_t i = 0; i < sizeof(iters)/sizeof(int); i++)
-    {
-        if(iters[i])
-        {
-            p.icpIterations.push_back(iters[i]);
-        }
-        else
-            break;
-    }
+    p.icpIterations = {10, 5, 4};
     p.pyramidLevels = (int)p.icpIterations.size();
 
     p.tsdf_min_camera_movement = 0.f; //meters, disabled
@@ -80,19 +70,7 @@ Ptr<Params> Params::coarseParams()
 {
     Ptr<Params> p = defaultParams();
 
-    // first non-zero numbers are accepted
-    const int iters[] = {5, 3, 2};
-
-    p->icpIterations.clear();
-    for(size_t i = 0; i < sizeof(iters)/sizeof(int); i++)
-    {
-        if(iters[i])
-        {
-            p->icpIterations.push_back(iters[i]);
-        }
-        else
-            break;
-    }
+    p->icpIterations = {5, 3, 2};
     p->pyramidLevels = (int)p->icpIterations.size();
 
     float volSize = 3.f;
