@@ -676,7 +676,7 @@ namespace cv{
     if(region.height>img.rows)region.height=img.rows;
 
     // return false if region has no width/height
-    if (region.width < 1 || region.height < 1) 
+    If(region.empty()) 
         return false;
 
     patch=img(region).clone();
