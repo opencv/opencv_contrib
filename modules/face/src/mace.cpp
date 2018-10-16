@@ -135,14 +135,22 @@ struct MACEImpl CV_FINAL : MACE {
             }
         }
 
-        Mat sq; cv::sqrt(D, sq);
-        Mat_<Vec2d> DINV = TOTALPIXEL * size / sq;
+#if 0   // https://github.com/opencv/opencv_contrib/issues/1848
+        // FIXIT What is expected here? complex numbers math?
+        // D(,)[1] is 0 (always)
+        Mat sq; cv::sqrt(D, sq);  // Per-element sqrt(): sq(,)[1] is 0 (always)
+        Mat_<Vec2d> DINV = TOTALPIXEL * size / sq;  // "per-element" division which provides "Inf"
+#else
+        Mat sq; cv::sqrt(D.reshape(1).col(0), sq);
+        Mat_<Vec2d> DINV(TOTALPIXEL, 1, Vec2d(0, 0));
+        DINV.reshape(1).col(0) = TOTALPIXEL * size / sq;
+#endif
         Mat_<Vec2d> DINV_S(TOTALPIXEL, size, 0.0);
         Mat_<Vec2d> SPLUS_DINV(size, TOTALPIXEL, 0.0);
         for (int l=0; l<size; l++) {
             for (int m=0; m<TOTALPIXEL; m++) {
                 SPLUS_DINV(l, m)[0] = SPLUS(l,m)[0] * DINV(m,0)[0];
-                SPLUS_DINV(l, m)[1] = SPLUS(l,m)[1] * DINV(m,0)[1];
+                SPLUS_DINV(l, m)[1] = SPLUS(l,m)[1] * DINV(m,0)[1];  // FIXIT: DINV(,)[1] is 0 (always)
                 DINV_S(m, l)[0] = S(m,l)[0] * DINV(m,0)[0];
                 DINV_S(m, l)[1] = S(m,l)[1] * DINV(m,0)[1];
             }
