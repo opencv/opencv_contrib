@@ -119,9 +119,9 @@ struct MACEImpl CV_FINAL : MACE {
         int IMGSIZE_2X = IMGSIZE * 2;
         int TOTALPIXEL = IMGSIZE_2X * IMGSIZE_2X;
 
-        Mat_<Vec2d> D(TOTALPIXEL, 1, 0.0);
-        Mat_<Vec2d> S(TOTALPIXEL, size, 0.0);
-        Mat_<Vec2d> SPLUS(size, TOTALPIXEL, 0.0);
+        Mat_<double> D(TOTALPIXEL, 1, 0.0);
+        Mat_<Vec2d>  S(TOTALPIXEL, size, Vec2d(0,0));
+        Mat_<Vec2d>  SPLUS(size, TOTALPIXEL, Vec2d(0,0));
         for (int i=0; i<size; i++) {
             Mat_<Vec2d> dftImg = isdft ? images[i] : dftImage(images[i]);
             for (int l=0; l<IMGSIZE_2X; l++) {
@@ -130,35 +130,24 @@ struct MACEImpl CV_FINAL : MACE {
                     Vec2d s = dftImg(l, m);
                     S(j, i) = s;
                     SPLUS(i, j) = Vec2d(s[0], -s[1]);
-                    D(j, 0)[0] += (s[0]*s[0]) + (s[1]*s[1]);
+                    D(j, 0) += (s[0]*s[0]) + (s[1]*s[1]);
                 }
             }
         }
+        Mat_<double> DSQ; cv::sqrt(D, DSQ);
+        Mat_<double> DINV = TOTALPIXEL * size / DSQ;
 
-#if 0   // https://github.com/opencv/opencv_contrib/issues/1848
-        // FIXIT What is expected here? complex numbers math?
-        // D(,)[1] is 0 (always)
-        Mat sq; cv::sqrt(D, sq);  // Per-element sqrt(): sq(,)[1] is 0 (always)
-        Mat_<Vec2d> DINV = TOTALPIXEL * size / sq;  // "per-element" division which provides "Inf"
-#else
-        Mat sq; cv::sqrt(D.reshape(1).col(0), sq);
-        Mat_<Vec2d> DINV(TOTALPIXEL, 1, Vec2d(0, 0));
-        DINV.reshape(1).col(0) = TOTALPIXEL * size / sq;
-#endif
-        Mat_<Vec2d> DINV_S(TOTALPIXEL, size, 0.0);
-        Mat_<Vec2d> SPLUS_DINV(size, TOTALPIXEL, 0.0);
+        Mat_<Vec2d>  DINV_S(TOTALPIXEL, size);
+        Mat_<Vec2d>  SPLUS_DINV(size, TOTALPIXEL);
         for (int l=0; l<size; l++) {
             for (int m=0; m<TOTALPIXEL; m++) {
-                SPLUS_DINV(l, m)[0] = SPLUS(l,m)[0] * DINV(m,0)[0];
-                SPLUS_DINV(l, m)[1] = SPLUS(l,m)[1] * DINV(m,0)[1];  // FIXIT: DINV(,)[1] is 0 (always)
-                DINV_S(m, l)[0] = S(m,l)[0] * DINV(m,0)[0];
-                DINV_S(m, l)[1] = S(m,l)[1] * DINV(m,0)[1];
+                DINV_S(m, l)     = S(m,l)     * DINV(m,0);
+                SPLUS_DINV(l, m) = SPLUS(l,m) * DINV(m,0);
             }
         }
 
         Mat_<Vec2d> SPLUS_DINV_S = SPLUS_DINV * S;
-        Mat_<Vec2d> SPLUS_DINV_S_INV(size, size);
-        Mat_<double> SPLUS_DINV_S_INV_1(2*size, 2*size);
+        Mat_<double> SPLUS_DINV_S_INV_1(2*size, 2*size, 0.0);
         for (int l=0; l<size; l++) {
             for (int m=0; m<size; m++) {
                 Vec2d s = SPLUS_DINV_S(l, m);
@@ -170,6 +159,7 @@ struct MACEImpl CV_FINAL : MACE {
         }
         invert(SPLUS_DINV_S_INV_1, SPLUS_DINV_S_INV_1);
 
+        Mat_<Vec2d> SPLUS_DINV_S_INV(size, size);
         for (int l=0; l<size; l++) {
             for (int m=0; m<size; m++) {
                 SPLUS_DINV_S_INV(l, m) = Vec2d(SPLUS_DINV_S_INV_1(l,m), SPLUS_DINV_S_INV_1(l,m+size));
@@ -177,7 +167,7 @@ struct MACEImpl CV_FINAL : MACE {
         }
 
         Mat_<Vec2d> Hmace = DINV_S * SPLUS_DINV_S_INV;
-        Mat_<Vec2d> C(size,1, Vec2d(1,0));
+        Mat_<Vec2d> C(size, 1, Vec2d(1,0));
         maceFilter = Mat(Hmace * C).reshape(2,IMGSIZE_2X);
     }
 
