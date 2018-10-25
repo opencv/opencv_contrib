@@ -40,8 +40,9 @@
 //
 //M*/
 
-#include "opencv2/core/hal/intrin.hpp"
 #include "precomp.hpp"
+#include "opencv2/core/hal/intrin.hpp"
+
 using namespace std;
 
 namespace cv
