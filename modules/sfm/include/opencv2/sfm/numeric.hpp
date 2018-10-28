@@ -38,8 +38,6 @@
 
 #include <opencv2/core.hpp>
 
-#include <Eigen/Core>
-
 namespace cv
 {
 namespace sfm
