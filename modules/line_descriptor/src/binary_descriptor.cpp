@@ -625,7 +625,7 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
   /* delete useless OctaveSingleLines */
   for ( size_t i = 0; i < sl.size(); i++ )
   {
-    for ( size_t j = 0; j < sl[i].size(); j++ )
+    for ( size_t j = sl[i].size() - 1; j > -1; --j )
     {
       //if( (int) ( sl[i][j] ).octaveCount > params.numOfOctave_ )
       if( (int) ( sl[i][j] ).octaveCount > octaveIndex )
