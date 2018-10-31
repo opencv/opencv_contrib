@@ -563,6 +563,35 @@ public:
         node.setScale(value[0], value[1], value[2]);
     }
 
+    void getEntityProperty(const String& name, int prop, OutputArray value)
+    {
+        SceneNode& node = _getSceneNode(sceneMgr, name);
+        switch(prop)
+        {
+        case ENTITY_SCALE:
+        {
+            Vector3 s = node.getScale();
+            Mat_<Real>(1, 3, s.ptr()).copyTo(value);
+            return;
+        }
+        case ENTITY_AABB_WORLD:
+        {
+            Entity* ent = dynamic_cast<Entity*>(node.getAttachedObject(name));
+            CV_Assert(ent && "invalid entity");
+            AxisAlignedBox aabb = ent->getWorldBoundingBox(true);
+            Vector3 mn = aabb.getMinimum();
+            Vector3 mx = aabb.getMaximum();
+            Mat_<Real> ret(2, 3);
+            Mat_<Real>(1, 3, mn.ptr()).copyTo(ret.row(0));
+            Mat_<Real>(1, 3, mx.ptr()).copyTo(ret.row(1));
+            ret.copyTo(value);
+            return;
+        }
+        default:
+            CV_Error(Error::StsBadArg, "unsupported property");
+        }
+    }
+
     void _createBackground()
     {
         String name = "_" + sceneMgr->getName() + "_DefaultBackground";
