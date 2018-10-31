@@ -700,7 +700,7 @@ namespace cv{
         break;
       default: // GRAY
         if(img.channels()>1)
-          cvtColor(patch,feat, CV_BGR2GRAY);
+          cvtColor(patch,feat, COLOR_BGR2GRAY);
         else
           feat=patch;
         //feat.convertTo(feat,CV_32F);

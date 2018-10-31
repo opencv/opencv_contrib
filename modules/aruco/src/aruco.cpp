@@ -103,13 +103,12 @@ Ptr<DetectorParameters> DetectorParameters::create() {
   */
 static void _convertToGrey(InputArray _in, OutputArray _out) {
 
-    CV_Assert(_in.getMat().channels() == 1 || _in.getMat().channels() == 3);
+    CV_Assert(_in.type() == CV_8UC1 || _in.type() == CV_8UC3);
 
-    _out.create(_in.getMat().size(), CV_8UC1);
-    if(_in.getMat().type() == CV_8UC3)
-        cvtColor(_in.getMat(), _out.getMat(), COLOR_BGR2GRAY);
+    if(_in.type() == CV_8UC3)
+        cvtColor(_in, _out, COLOR_BGR2GRAY);
     else
-        _in.getMat().copyTo(_out);
+        _in.copyTo(_out);
 }
 
 

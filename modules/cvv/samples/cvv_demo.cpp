@@ -84,7 +84,7 @@ main(int argc, char** argv)
 
     // convert to grayscale
     cv::Mat imgGray;
-    cv::cvtColor(imgRead, imgGray, CV_BGR2GRAY);
+    cv::cvtColor(imgRead, imgGray, COLOR_BGR2GRAY);
 		cvv::debugFilter(imgRead, imgGray, CVVISUAL_LOCATION, "to gray");
 
     // detect ORB features

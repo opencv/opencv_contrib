@@ -102,7 +102,7 @@ void sobelExtractor(const Mat img, const Rect roi, Mat& feat){
     //! [insideimage]
 
     patch=img(region).clone();
-    cvtColor(patch,patch, CV_BGR2GRAY);
+    cvtColor(patch,patch, COLOR_BGR2GRAY);
 
     //! [padding]
     // add some padding to compensate when the patch is outside image border

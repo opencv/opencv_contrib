@@ -40,18 +40,10 @@ public:
                   input.type() == CV_8U);
 
         cv::resize(input, resizeImg_, cv::Size(imgWidth,imgHeight), 0, 0, INTER_LINEAR_EXACT);
-        if(input.type() == CV_8UC3)
-        {
-            cv::cvtColor(resizeImg_, grayImg_, CV_BGR2GRAY);
-        }
-        else if(input.type() == CV_8UC4)
-        {
-            cv::cvtColor(resizeImg_, grayImg_, CV_BGRA2GRAY);
-        }
+        if(input.channels() > 1)
+            cv::cvtColor(resizeImg_, grayImg_, COLOR_BGR2GRAY);
         else
-        {
             grayImg_ = resizeImg_;
-        }
 
         int pixColStep = blockWidth;
         int pixRowStep = blockHeigth;

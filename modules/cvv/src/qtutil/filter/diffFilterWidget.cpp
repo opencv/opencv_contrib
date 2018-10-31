@@ -69,8 +69,8 @@ void DiffFilterFunction::applyFilter(InputArray in, OutputArray out) const
 	}
 
 	cv::Mat originalHSV, filteredHSV;
-	cv::cvtColor(in.at(0).get(), originalHSV, CV_BGR2HSV);
-	cv::cvtColor(in.at(1).get(), filteredHSV, CV_BGR2HSV);
+	cv::cvtColor(in.at(0).get(), originalHSV, COLOR_BGR2HSV);
+	cv::cvtColor(in.at(1).get(), filteredHSV, COLOR_BGR2HSV);
 	auto diffHSV = cv::abs(originalHSV - filteredHSV);
 
 	std::array<cv::Mat, 3> splitVector;
