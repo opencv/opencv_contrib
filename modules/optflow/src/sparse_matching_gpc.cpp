@@ -767,7 +767,7 @@ void GPCDetails::dropOutliers( std::vector< std::pair< Point2i, Point2i > > &cor
 
 void write( FileStorage &fs, const String &name, const optflow::GPCTree::Node &node )
 {
-  cv::internal::WriteStructContext ws( fs, name, CV_NODE_SEQ + CV_NODE_FLOW );
+  cv::internal::WriteStructContext ws( fs, name, FileNode::SEQ + FileNode::FLOW );
   for ( unsigned i = 0; i < optflow::GPCPatchDescriptor::nFeatures; ++i )
     write( fs, node.coef[i] );
   write( fs, node.rhs );
