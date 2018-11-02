@@ -155,7 +155,7 @@ The proposed class allows the [Gipsa](http://www.gipsa-lab.inpg.fr) (preliminary
 [Listic](http://www.listic.univ-savoie.fr) labs retina model to be used.
 It can be applied on still images, images sequences and video sequences.
 
-Here is an overview of the Retina interface, allocate one instance with the *createRetina*
+Here is an overview of the Retina interface, allocate one instance with the *Retina::create()*
 functions (C++, Java, Python) :
 
 @code{.cpp}
@@ -206,8 +206,8 @@ functions (C++, Java, Python) :
     };
 
       // Allocators
-      cv::Ptr<Retina> createRetina (Size inputSize);
-      cv::Ptr<Retina> createRetina (Size inputSize, const bool colorMode, RETINA_COLORSAMPLINGMETHOD colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
+      cv::Ptr<Retina> Retina::create (Size inputSize);
+      cv::Ptr<Retina> Retina::create (Size inputSize, const bool colorMode, RETINA_COLORSAMPLINGMETHOD colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
       }} // cv and bioinspired namespaces end
 @endcode
 
@@ -432,7 +432,7 @@ videoHandler = cv.VideoCapture(0)
 succeed, inputImage=videoHandler.read()
 
 #allocate a retina instance with input size equal to the one of the loaded image
-retina = cv.bioinspired.createRetina((inputImage.shape[1], inputImage.shape[0]))
+retina = cv.bioinspired_Retina.create((inputImage.shape[1], inputImage.shape[0]))
 
 #retina parameters management methods use sample
 #-> save current (here default) retina parameters to a xml file (you may use it only one time to get the file and modify it)
