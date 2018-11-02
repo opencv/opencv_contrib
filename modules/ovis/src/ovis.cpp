@@ -43,8 +43,14 @@ void _createTexture(const String& name, Mat image)
     case CV_8UC1:
         format = PF_BYTE_L;
         break;
+    case CV_16UC1:
+        format = PF_L16;
+        break;
+    case CV_32FC1:
+        format = PF_FLOAT32_R;
+        break;
     default:
-        CV_Error(Error::StsBadArg, "currently only CV_8UC1, CV_8UC3, CV_8UC4 textures are supported");
+        CV_Error(Error::StsBadArg, "currently supported formats are only CV_8UC1, CV_8UC3, CV_8UC4, CV_16UC1, CV_32FC1");
         break;
     }
 
@@ -388,11 +394,18 @@ public:
         int dst_type;
         switch(src_type)
         {
+        case PF_R8:
+        case PF_L8:
+            dst_type = CV_8U;
+            break;
         case PF_BYTE_RGB:
             dst_type = CV_8UC3;
             break;
         case PF_BYTE_RGBA:
             dst_type = CV_8UC4;
+            break;
+        case PF_FLOAT32_R:
+            dst_type = CV_32F;
             break;
         case PF_FLOAT32_RGB:
             dst_type = CV_32FC3;
@@ -400,6 +413,7 @@ public:
         case PF_FLOAT32_RGBA:
             dst_type = CV_32FC4;
             break;
+        case PF_L16:
         case PF_DEPTH16:
             dst_type = CV_16U;
             break;
@@ -547,6 +561,35 @@ public:
         CV_Assert(prop == ENTITY_SCALE);
         SceneNode& node = _getSceneNode(sceneMgr, name);
         node.setScale(value[0], value[1], value[2]);
+    }
+
+    void getEntityProperty(const String& name, int prop, OutputArray value)
+    {
+        SceneNode& node = _getSceneNode(sceneMgr, name);
+        switch(prop)
+        {
+        case ENTITY_SCALE:
+        {
+            Vector3 s = node.getScale();
+            Mat_<Real>(1, 3, s.ptr()).copyTo(value);
+            return;
+        }
+        case ENTITY_AABB_WORLD:
+        {
+            Entity* ent = dynamic_cast<Entity*>(node.getAttachedObject(name));
+            CV_Assert(ent && "invalid entity");
+            AxisAlignedBox aabb = ent->getWorldBoundingBox(true);
+            Vector3 mn = aabb.getMinimum();
+            Vector3 mx = aabb.getMaximum();
+            Mat_<Real> ret(2, 3);
+            Mat_<Real>(1, 3, mn.ptr()).copyTo(ret.row(0));
+            Mat_<Real>(1, 3, mx.ptr()).copyTo(ret.row(1));
+            ret.copyTo(value);
+            return;
+        }
+        default:
+            CV_Error(Error::StsBadArg, "unsupported property");
+        }
     }
 
     void _createBackground()

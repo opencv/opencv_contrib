@@ -45,6 +45,7 @@ enum EntityProperty
 {
     ENTITY_MATERIAL,
     ENTITY_SCALE,
+    ENTITY_AABB_WORLD
 };
 
 /**
@@ -105,6 +106,14 @@ public:
 
     /// @overload
     CV_WRAP virtual void setEntityProperty(const String& name, int prop, const String& value) = 0;
+
+    /**
+     * get the property of an entity
+     * @param name entity name
+     * @param prop @ref EntityProperty
+     * @param value the value
+     */
+    CV_WRAP virtual void getEntityProperty(const String& name, int prop, OutputArray value) = 0;
 
     /**
      * convenience method to visualize a camera position
