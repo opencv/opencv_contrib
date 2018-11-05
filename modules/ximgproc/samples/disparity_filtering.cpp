@@ -21,15 +21,19 @@ const String keys =
     "{dst_path       |None              | optional path to save the resulting filtered disparity map        }"
     "{dst_raw_path   |None              | optional path to save raw disparity map before filtering          }"
     "{algorithm      |bm                | stereo matching method (bm or sgbm)                               }"
-    "{filter         |wls_conf          | used post-filtering (wls_conf or wls_no_conf or fbs_conf)                     }"
+    "{filter         |wls_conf          | used post-filtering (wls_conf or wls_no_conf or fbs_conf)         }"
     "{no-display     |                  | don't display results                                             }"
     "{no-downscale   |                  | force stereo matching on full-sized views to improve quality      }"
     "{dst_conf_path  |None              | optional path to save the confidence map used in filtering        }"
     "{vis_mult       |1.0               | coefficient used to scale disparity map visualizations            }"
     "{max_disparity  |160               | parameter of stereo matching                                      }"
     "{window_size    |-1                | parameter of stereo matching                                      }"
-    "{wls_lambda     |8000.0            | parameter of post-filtering                                       }"
-    "{wls_sigma      |1.5               | parameter of post-filtering                                       }"
+    "{wls_lambda     |8000.0            | parameter of wls post-filtering                                   }"
+    "{wls_sigma      |1.5               | parameter of wls post-filtering                                   }"
+    "{wls_sigma      |1.5               | parameter of wls post-filtering                                   }"
+    "{fbs_spatial    |16.0              | parameter of fbs post-filtering                                   }"
+    "{fbs_luma       |8.0               | parameter of fbs post-filtering                                   }"
+    "{fbs_chroma     |8.0               | parameter of fbs post-filtering                                   }"
     ;
 
 int main(int argc, char** argv)
@@ -56,6 +60,9 @@ int main(int argc, char** argv)
     int max_disp = parser.get<int>("max_disparity");
     double lambda = parser.get<double>("wls_lambda");
     double sigma  = parser.get<double>("wls_sigma");
+    double fbs_spatial = parser.get<double>("fbs_spatial");
+    double fbs_luma = parser.get<double>("fbs_luma");
+    double fbs_chroma = parser.get<double>("fbs_chroma");
     double vis_mult = parser.get<double>("vis_mult");
 
     int wsize;
@@ -281,18 +288,19 @@ int main(int argc, char** argv)
             // upscale raw disparity and ROI back for a proper comparison:
             resize(left_disp,left_disp,Size(),2.0,2.0);
             left_disp = left_disp*2.0;
+            left_disp_resized = left_disp_resized*2.0;
             ROI = Rect(ROI.x*2,ROI.y*2,ROI.width*2,ROI.height*2);
         }
 
 #ifdef HAVE_EIGEN
         //! [filtering_fbs]
         solving_time = (double)getTickCount();
-        // wls_filter->filter(left_disp,left,filtered_disp,right_disp);
-        // fastBilateralSolverFilter(left, filtered_disp, conf_map, solved_disp, 16.0, 16.0, 16.0);
-        fastBilateralSolverFilter(left, left_disp_resized, conf_map, solved_disp, 16.0, 16.0, 16.0);
+        double min, max;
+        minMaxLoc(left_disp_resized, &min, &max);
+        left_disp_resized.convertTo(left_disp_resized, CV_16UC1,1.0,-min);
+        fastBilateralSolverFilter(left, left_disp_resized, conf_map, solved_disp, fbs_spatial, fbs_luma, fbs_chroma);
+        solved_disp.convertTo(solved_disp, CV_16SC1,1.0,min);
         solving_time = ((double)getTickCount() - solving_time)/getTickFrequency();
-	      solved_disp.convertTo(solved_disp, CV_8UC1);
-        cv::equalizeHist(solved_disp, solved_disp);
         //! [filtering_fbs]
 #endif
     }
@@ -422,31 +430,18 @@ int main(int argc, char** argv)
 
         if(!solved_disp.empty())
         {
+            Mat solved_disp_vis;
+            getDisparityVis(solved_disp,solved_disp_vis,vis_mult);
             namedWindow("solved disparity", WINDOW_AUTOSIZE);
-            imshow("solved disparity", solved_disp);
-
-#define ENABLE_DOMAIN_TRANSFORM_FILTER
-#ifdef ENABLE_DOMAIN_TRANSFORM_FILTER
-	const float property_dt_sigmaSpatial = 40.0f;
-	const float property_dt_sigmaColor = 220.0f;
-	const int property_dt_numIters = 3;
-	cv::Mat final_disparty_dtfiltered_image;
-	cv::ximgproc::dtFilter(left,
-		solved_disp, final_disparty_dtfiltered_image,
-		property_dt_sigmaSpatial, property_dt_sigmaColor,
-		cv::ximgproc::DTF_RF,
-		property_dt_numIters);
-
-	// display disparity image
-	cv::Mat adjmap_dt;
-	final_disparty_dtfiltered_image.convertTo(adjmap_dt, CV_8UC1);
-		// 255.0f / 255.0f, 0.0f);
-	cv::imshow("disparity image + domain transform", adjmap_dt);
-#endif
-
+            imshow("solved disparity", solved_disp_vis);
         }
 
-        waitKey();
+        while(1)
+        {
+            char key = (char)waitKey();
+            if( key == 27 || key == 'q' || key == 'Q') // 'ESC'
+                break;
+        }
         //! [visualization]
     }
 

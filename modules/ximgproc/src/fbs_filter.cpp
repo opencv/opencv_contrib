@@ -66,6 +66,8 @@
     typedef std::unordered_map<long long /* hash */, int /* vert id */>  mapId;
 #endif
 
+#define EPS 1e-43f
+
 namespace cv
 {
 namespace ximgproc
@@ -87,7 +89,7 @@ namespace ximgproc
         void filter(InputArray src, InputArray confidence, OutputArray dst) CV_OVERRIDE
         {
 
-            CV_Assert(!src.empty() && (src.depth() == CV_8U || src.depth() == CV_16S || src.depth() == CV_32F) && src.channels()<=4);
+            CV_Assert(!src.empty() && (src.depth() == CV_8U || src.depth() == CV_16U || src.depth() == CV_32F) && src.channels()<=4);
             CV_Assert(!confidence.empty() && (confidence.depth() == CV_8U || confidence.depth() == CV_16S || confidence.depth() == CV_32F) && confidence.channels()==1);
             if (src.rows() != rows || src.cols() != cols)
             {
@@ -114,8 +116,6 @@ namespace ximgproc
             for(int i=0;i<src.channels();i++)
             {
                 Mat cur_res = src_channels[i].clone();
-                if(src.depth() != CV_8UC1)
-                    cur_res.convertTo(cur_res, CV_8UC1);
 
                 solve(cur_res,conf,cur_res);
                 cur_res.convertTo(cur_res, src.type());
@@ -206,6 +206,7 @@ namespace ximgproc
 
     void FastBilateralSolverFilterImpl::init(cv::Mat& reference, double sigma_spatial, double sigma_luma, double sigma_chroma, int num_iter, double max_tol)
     {
+
         guide = reference.clone();
 
         bs_param.cg_maxiter = num_iter;
@@ -487,12 +488,18 @@ namespace ximgproc
         cv::Mat filtered_disp;
         float fgs_colorSigma = 1.5;
         float fgs_spatialSigma = 2000;
-	      target.convertTo(x, CV_32FC1, 1.0f/255.0f);
-	      confidence.convertTo(w, CV_32FC1);
+
+        if(target.depth() == CV_16U)
+            target.convertTo(x, CV_32FC1, 1.0f/65535.0f);
+        else if(target.depth() == CV_8U)
+            target.convertTo(x, CV_32FC1, 1.0f/255.0f);
+
+        confidence.convertTo(w, CV_32FC1);
+
         xw = x.mul(w);
         cv::ximgproc::fastGlobalSmootherFilter(guide, xw, filtered_xw, fgs_spatialSigma, fgs_colorSigma);
         cv::ximgproc::fastGlobalSmootherFilter(guide, w, filtered_w, fgs_spatialSigma, fgs_colorSigma);
-        cv::divide(filtered_xw, filtered_w, filtered_disp, 1.0f, CV_32FC1);
+        cv::divide(filtered_xw, filtered_w+EPS, filtered_disp, 1.0f, CV_32FC1);
 
 
         //construct A
@@ -541,10 +548,29 @@ namespace ximgproc
         std::cout << "estimated error: " << cg.error()      << std::endl;
 
         //slice
-        uchar *pftar = (uchar*)(output.data);
-        for (int i = 0; i < int(splat_idx.size()); i++)
+        if(target.depth() == CV_16U)
         {
-            pftar[i] = uchar(y(splat_idx[i]) * 255.0f);
+            uint16_t *pftar = (uint16_t*) output.data;
+            for (int i = 0; i < int(splat_idx.size()); i++)
+            {
+                pftar[i] = uint16_t(y(splat_idx[i]) * 65535.0f);
+            }
+        }
+        else if (target.depth() == CV_8U)
+        {
+            uchar *pftar = (uchar*) output.data;
+            for (int i = 0; i < int(splat_idx.size()); i++)
+            {
+                pftar[i] = uchar(y(splat_idx[i]) * 255.0f);
+            }
+        }
+        else
+        {
+            float *pftar = (float*)(output.data);
+            for (int i = 0; i < int(splat_idx.size()); i++)
+            {
+                pftar[i] = y(splat_idx[i]);
+            }
         }
 
 
