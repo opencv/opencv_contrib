@@ -37,6 +37,9 @@
 
 #if CERES_FOUND
 
+// Eigen
+#include <Eigen/Core>
+
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/xfeatures2d.hpp>
 

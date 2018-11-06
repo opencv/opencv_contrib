@@ -190,7 +190,7 @@ void CV_OdometryTest::generateRandomTransformation(Mat& rvec, Mat& tvec)
     normalize(rvec, rvec, rng.uniform(0.007f, maxRotation));
 
     randu(tvec, Scalar(-1000), Scalar(1000));
-    normalize(tvec, tvec, rng.uniform(0.007f, maxTranslation));
+    normalize(tvec, tvec, rng.uniform(0.008f, maxTranslation));
 }
 
 void CV_OdometryTest::run(int)

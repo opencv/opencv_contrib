@@ -182,7 +182,7 @@ protected:
             std::cout << std::endl << "*** FALS" << std::endl;
             errors[0][0] = 0.006f;
             errors[0][1] = 0.03f;
-            errors[1][0] = 0.00008f;
+            errors[1][0] = 0.0001f;
             errors[1][1] = 0.02f;
             break;
           case 1:

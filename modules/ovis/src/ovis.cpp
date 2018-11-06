@@ -10,6 +10,7 @@
 #include <OgreCompositorManager.h>
 
 #include <opencv2/calib3d.hpp>
+#include <opencv2/core/utils/configuration.private.hpp>
 
 namespace cv
 {
@@ -183,6 +184,10 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
         : OgreBites::ApplicationContext("ovis", false), sceneMgr(NULL), title(_title), w(sz.width),
           h(sz.height), key_pressed(-1), flags(_flags)
     {
+        if(utils::getConfigurationParameterBool("OPENCV_OVIS_VERBOSE_LOG", false))
+            return;
+
+        // set default log with low log level
         logMgr.reset(new LogManager());
         logMgr->createLog("ovis.log", true, true, true);
         logMgr->setLogDetail(LL_LOW);
@@ -201,8 +206,9 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
 
     bool oneTimeConfig() CV_OVERRIDE
     {
-        Ogre::RenderSystem* rs = getRoot()->getRenderSystemByName(RENDERSYSTEM_NAME);
-        CV_Assert(rs);
+        Ogre::String rsname = utils::getConfigurationParameterString("OPENCV_OVIS_RENDERSYSTEM", RENDERSYSTEM_NAME);
+        Ogre::RenderSystem* rs = getRoot()->getRenderSystemByName(rsname);
+        CV_Assert(rs && "Could not find rendersystem");
         getRoot()->setRenderSystem(rs);
         return true;
     }
