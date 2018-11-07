@@ -30,7 +30,6 @@ const String keys =
     "{window_size    |-1                | parameter of stereo matching                                      }"
     "{wls_lambda     |8000.0            | parameter of wls post-filtering                                   }"
     "{wls_sigma      |1.5               | parameter of wls post-filtering                                   }"
-    "{wls_sigma      |1.5               | parameter of wls post-filtering                                   }"
     "{fbs_spatial    |16.0              | parameter of fbs post-filtering                                   }"
     "{fbs_luma       |8.0               | parameter of fbs post-filtering                                   }"
     "{fbs_chroma     |8.0               | parameter of fbs post-filtering                                   }"
@@ -116,7 +115,7 @@ int main(int argc, char** argv)
 
     Mat left_for_matcher, right_for_matcher, guide;
     Mat left_disp,right_disp;
-    Mat filtered_disp,solved_disp;
+    Mat filtered_disp,solved_disp,solved_filtered_disp;
     Mat conf_map = Mat(left.rows,left.cols,CV_8U);
     conf_map = Scalar(255);
     Rect ROI;
@@ -210,7 +209,7 @@ int main(int argc, char** argv)
             ROI = Rect(ROI.x*2,ROI.y*2,ROI.width*2,ROI.height*2);
         }
     }
-    else if(filter=="fbs_conf") // filtering with confidence (significantly better quality than wls_no_conf)
+    else if(filter=="fbs_conf") // filtering with fbs and confidence using also wls pre-processing
     {
         if(!no_downscale)
         {
@@ -294,14 +293,14 @@ int main(int argc, char** argv)
 
 #ifdef HAVE_EIGEN
         //! [filtering_fbs]
-        solving_time = (double)getTickCount();
-        double min, max;
-        minMaxLoc(left_disp_resized, &min, &max);
-        left_disp_resized.convertTo(left_disp_resized, CV_16UC1,1.0,-min);
-        fastBilateralSolverFilter(left, left_disp_resized, conf_map, solved_disp, fbs_spatial, fbs_luma, fbs_chroma);
-        solved_disp.convertTo(solved_disp, CV_16SC1,1.0,min);
+        solving_time = (double)getTickCount();        
+        fastBilateralSolverFilter(left, left_disp_resized, conf_map/255.0f, solved_disp, fbs_spatial, fbs_luma, fbs_chroma);
         solving_time = ((double)getTickCount() - solving_time)/getTickFrequency();
         //! [filtering_fbs]
+
+        //! [filtering_wls2fbs]
+        fastBilateralSolverFilter(left, filtered_disp, conf_map/255.0f, solved_filtered_disp, fbs_spatial, fbs_luma, fbs_chroma);
+        //! [filtering_wls2fbs]
 #endif
     }
     else if(filter=="wls_no_conf")
@@ -434,6 +433,11 @@ int main(int argc, char** argv)
             getDisparityVis(solved_disp,solved_disp_vis,vis_mult);
             namedWindow("solved disparity", WINDOW_AUTOSIZE);
             imshow("solved disparity", solved_disp_vis);
+
+            Mat solved_filtered_disp_vis;
+            getDisparityVis(solved_filtered_disp,solved_filtered_disp_vis,vis_mult);
+            namedWindow("solved wls disparity", WINDOW_AUTOSIZE);
+            imshow("solved wls disparity", solved_filtered_disp_vis);
         }
 
         while(1)
