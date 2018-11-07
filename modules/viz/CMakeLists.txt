@@ -26,7 +26,15 @@ endif()
 
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Winconsistent-missing-override -Wsuggest-override)
 
-ocv_define_module(viz opencv_core WRAP python)
+ocv_add_module(viz opencv_core WRAP python)
+ocv_glob_module_sources()
+ocv_module_include_directories()
+ocv_create_module()
+
+ocv_add_accuracy_tests()
+ocv_add_perf_tests()
+ocv_add_samples(opencv_imgproc opencv_calib3d opencv_features2d opencv_flann)
+
 ocv_target_link_libraries(${the_module} LINK_PRIVATE ${VTK_LIBRARIES})
 
 if(APPLE AND BUILD_opencv_viz)
