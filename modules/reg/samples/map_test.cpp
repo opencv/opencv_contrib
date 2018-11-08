@@ -39,9 +39,6 @@
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/highgui.hpp> // OpenCV window I/O
 #include <opencv2/imgproc.hpp> // OpenCV image transformations
-#include <opencv2/imgproc/types_c.h>
-#include <opencv2/imgcodecs/imgcodecs_c.h>
-#include <opencv2/highgui/highgui_c.h>
 
 #ifdef COMPARE_FEATURES
 #include <opencv2/xfeatures2d.hpp>
@@ -73,9 +70,9 @@ static void showDifference(const Mat& image1, const Mat& image2, const char* tit
     image1.convertTo(img1, CV_32FC3);
     image2.convertTo(img2, CV_32FC3);
     if(img1.channels() != 1)
-        cvtColor(img1, img1, CV_RGB2GRAY);
+        cvtColor(img1, img1, COLOR_RGB2GRAY);
     if(img2.channels() != 1)
-        cvtColor(img2, img2, CV_RGB2GRAY);
+        cvtColor(img2, img2, COLOR_RGB2GRAY);
 
     Mat imgDiff;
     img1.copyTo(imgDiff);
@@ -115,8 +112,8 @@ static void testShift(const Mat& img1)
     showDifference(img1, dest, DIFF_REGPIX_IM);
 
     waitKey(0);
-    cvDestroyWindow(DIFF_IM);
-    cvDestroyWindow(DIFF_REGPIX_IM);
+    destroyWindow(DIFF_IM);
+    destroyWindow(DIFF_REGPIX_IM);
 }
 
 static void testEuclidean(const Mat& img1)
@@ -152,8 +149,8 @@ static void testEuclidean(const Mat& img1)
     showDifference(img1, dest, DIFF_REGPIX_IM);
 
     waitKey(0);
-    cvDestroyWindow(DIFF_IM);
-    cvDestroyWindow(DIFF_REGPIX_IM);
+    destroyWindow(DIFF_IM);
+    destroyWindow(DIFF_REGPIX_IM);
 }
 
 static void testSimilarity(const Mat& img1)
@@ -190,8 +187,8 @@ static void testSimilarity(const Mat& img1)
     showDifference(img1, dest, DIFF_REGPIX_IM);
 
     waitKey(0);
-    cvDestroyWindow(DIFF_IM);
-    cvDestroyWindow(DIFF_REGPIX_IM);
+    destroyWindow(DIFF_IM);
+    destroyWindow(DIFF_REGPIX_IM);
 }
 
 static void testAffine(const Mat& img1)
@@ -224,8 +221,8 @@ static void testAffine(const Mat& img1)
     showDifference(img1, dest, DIFF_REGPIX_IM);
 
     waitKey(0);
-    cvDestroyWindow(DIFF_IM);
-    cvDestroyWindow(DIFF_REGPIX_IM);
+    destroyWindow(DIFF_IM);
+    destroyWindow(DIFF_REGPIX_IM);
 }
 
 static void testProjective(const Mat& img1)
@@ -256,8 +253,8 @@ static void testProjective(const Mat& img1)
     showDifference(img1, dest, DIFF_REGPIX_IM);
 
     waitKey(0);
-    cvDestroyWindow(DIFF_IM);
-    cvDestroyWindow(DIFF_REGPIX_IM);
+    destroyWindow(DIFF_IM);
+    destroyWindow(DIFF_REGPIX_IM);
 }
 
 #ifdef COMPARE_FEATURES
@@ -273,11 +270,11 @@ static void calcHomographyFeature(const Mat& image1, const Mat& image2)
     Mat gray_image2;
     // Convert to Grayscale
     if(image1.channels() != 1)
-        cvtColor(image1, gray_image1, CV_RGB2GRAY);
+        cvtColor(image1, gray_image1, COLOR_RGB2GRAY);
     else
         image1.copyTo(gray_image1);
     if(image2.channels() != 1)
-        cvtColor(image2, gray_image2, CV_RGB2GRAY);
+        cvtColor(image2, gray_image2, COLOR_RGB2GRAY);
     else
         image2.copyTo(gray_image2);
 

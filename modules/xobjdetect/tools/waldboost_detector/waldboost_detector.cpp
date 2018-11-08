@@ -1,6 +1,5 @@
 #include "opencv2/xobjdetect.hpp"
 #include "opencv2/imgcodecs.hpp"
-#include "opencv2/imgcodecs/imgcodecs_c.h"
 #include "opencv2/imgproc.hpp"
 #include <iostream>
 #include <cstdio>
