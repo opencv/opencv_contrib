@@ -292,7 +292,7 @@ int main(int argc, char** argv)
 
 #ifdef HAVE_EIGEN
         //! [filtering_fbs]
-        solving_time = (double)getTickCount();        
+        solving_time = (double)getTickCount();
         fastBilateralSolverFilter(left, left_disp_resized, conf_map/255.0f, solved_disp, fbs_spatial, fbs_luma, fbs_chroma);
         solving_time = ((double)getTickCount() - solving_time)/getTickFrequency();
         //! [filtering_fbs]
@@ -300,7 +300,13 @@ int main(int argc, char** argv)
         //! [filtering_wls2fbs]
         fastBilateralSolverFilter(left, filtered_disp, conf_map/255.0f, solved_filtered_disp, fbs_spatial, fbs_luma, fbs_chroma);
         //! [filtering_wls2fbs]
+
+#else
+        (void)fbs_spatial;
+        (void)fbs_luma;
+        (void)fbs_chroma;
 #endif
+
     }
     else if(filter=="wls_no_conf")
     {
