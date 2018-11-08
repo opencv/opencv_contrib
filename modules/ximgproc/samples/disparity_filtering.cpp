@@ -113,7 +113,7 @@ int main(int argc, char** argv)
         }
     }
 
-    Mat left_for_matcher, right_for_matcher, guide;
+    Mat left_for_matcher, right_for_matcher;
     Mat left_disp,right_disp;
     Mat filtered_disp,solved_disp,solved_filtered_disp;
     Mat conf_map = Mat(left.rows,left.cols,CV_8U);
@@ -228,7 +228,6 @@ int main(int argc, char** argv)
             left_for_matcher  = left.clone();
             right_for_matcher = right.clone();
         }
-        guide = left_for_matcher.clone();
 
         if(algo=="bm")
         {
