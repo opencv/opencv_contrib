@@ -300,7 +300,6 @@ int main(int argc, char** argv)
         //! [filtering_wls2fbs]
         fastBilateralSolverFilter(left, filtered_disp, conf_map/255.0f, solved_filtered_disp, fbs_spatial, fbs_luma, fbs_chroma);
         //! [filtering_wls2fbs]
-
 #else
         (void)fbs_spatial;
         (void)fbs_luma;
@@ -370,7 +369,7 @@ int main(int argc, char** argv)
     cout.precision(2);
     cout<<"Matching time:  "<<matching_time<<"s"<<endl;
     cout<<"Filtering time: "<<filtering_time<<"s"<<endl;
-    cout<<"solving time: "<<solving_time<<"s"<<endl;
+    cout<<"Solving time: "<<solving_time<<"s"<<endl;
     cout<<endl;
 
     double MSE_before,percent_bad_before,MSE_after,percent_bad_after;
