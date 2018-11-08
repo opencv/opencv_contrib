@@ -370,7 +370,7 @@ int main(int argc, char** argv)
     cout.precision(2);
     cout<<"Matching time:  "<<matching_time<<"s"<<endl;
     cout<<"Filtering time: "<<filtering_time<<"s"<<endl;
-    cout<<"solving time: "<<solving_time<<"s"<<endl;
+    cout<<"Solving time: "<<solving_time<<"s"<<endl;
     cout<<endl;
 
     double MSE_before,percent_bad_before,MSE_after,percent_bad_after;

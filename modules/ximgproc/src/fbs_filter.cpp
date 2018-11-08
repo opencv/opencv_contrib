@@ -475,7 +475,7 @@ namespace ximgproc
         Eigen::VectorXf y1(nvertices);
         Eigen::VectorXf w_splat(nvertices);
 
-        Eigen::VectorXf x(npixels);        
+        Eigen::VectorXf x(npixels);
         Eigen::VectorXf w(npixels);
 
         if(target.depth() == CV_16S)
