@@ -7,10 +7,12 @@
 //  copy or use the software.
 //
 //
-//                        Intel License Agreement
+//                           License Agreement
 //                For Open Source Computer Vision Library
 //
-// Copyright (C) 2000, Intel Corporation, all rights reserved.
+// Copyright (C) 2010-2012, Institute Of Software Chinese Academy Of Science, all rights reserved.
+// Copyright (C) 2010-2012, Advanced Micro Devices, Inc., all rights reserved.
+// Copyright (C) 2010-2012, Multicoreware, Inc., all rights reserved.
 // Third party copyrights are property of their respective owners.
 //
 // Redistribution and use in source and binary forms, with or without modification,
@@ -23,7 +25,7 @@
 //     this list of conditions and the following disclaimer in the documentation
 //     and/or other materials provided with the distribution.
 //
-//   * The name of Intel Corporation may not be used to endorse or promote products
+//   * The name of the copyright holders may not be used to endorse or promote products
 //     derived from this software without specific prior written permission.
 //
 // This software is provided by the copyright holders and contributors "as is" and
@@ -44,53 +46,72 @@
 
 #ifdef HAVE_OPENCL
 
-namespace opencv_test { namespace {
+namespace opencv_test {
+namespace ocl {
 
-PARAM_TEST_CASE(OCL_DenseOpticalFlow_DIS, int)
+/////////////////////////////////////////////////////////////////////////////////////////////////
+// Optical_flow_tvl1
+namespace
 {
-    int preset;
+    IMPLEMENT_PARAM_CLASS(UseInitFlow, bool)
+    IMPLEMENT_PARAM_CLASS(MedianFiltering, int)
+    IMPLEMENT_PARAM_CLASS(ScaleStep, double)
+}
 
+PARAM_TEST_CASE(OpticalFlowTVL1, UseInitFlow, MedianFiltering, ScaleStep)
+{
+    bool useInitFlow;
+    int medianFiltering;
+    double scaleStep;
     virtual void SetUp()
     {
-        preset = GET_PARAM(0);
+        useInitFlow = GET_PARAM(0);
+        medianFiltering = GET_PARAM(1);
+        scaleStep = GET_PARAM(2);
     }
 };
 
-OCL_TEST_P(OCL_DenseOpticalFlow_DIS, Mat)
+OCL_TEST_P(OpticalFlowTVL1, Mat)
 {
-    Mat frame1, frame2, GT;
+    Mat frame0 = readImage("optflow/RubberWhale1.png", IMREAD_GRAYSCALE);
+    ASSERT_FALSE(frame0.empty());
 
-    frame1 = imread(TS::ptr()->get_data_path() + "optflow/RubberWhale1.png");
-    frame2 = imread(TS::ptr()->get_data_path() + "optflow/RubberWhale2.png");
+    Mat frame1 = readImage("optflow/RubberWhale2.png", IMREAD_GRAYSCALE);
+    ASSERT_FALSE(frame1.empty());
 
-    CV_Assert(!frame1.empty() && !frame2.empty());
+    Mat flow; UMat uflow;
 
-    cvtColor(frame1, frame1, COLOR_BGR2GRAY);
-    cvtColor(frame2, frame2, COLOR_BGR2GRAY);
+    //create algorithm
+    Ptr<DualTVL1OpticalFlow> alg = createOptFlow_DualTVL1();
 
-    Ptr<DenseOpticalFlow> algo;
+    //set parameters
+    alg->setScaleStep(scaleStep);
+    alg->setMedianFiltering(medianFiltering);
 
-    // iterate over presets:
-    for (int i = 0; i < cvtest::ocl::test_loop_times; i++)
+    //create initial flow as result of algorithm calculation
+    if (useInitFlow)
     {
-        Mat flow;
-        UMat ocl_flow;
-
-        algo = createOptFlow_DIS(preset);
-        OCL_OFF(algo->calc(frame1, frame2, flow));
-        OCL_ON(algo->calc(frame1, frame2, ocl_flow));
-        ASSERT_EQ(flow.rows, ocl_flow.rows);
-        ASSERT_EQ(flow.cols, ocl_flow.cols);
-
-        EXPECT_MAT_SIMILAR(flow, ocl_flow, 6e-3);
+        OCL_ON(alg->calc(frame0, frame1, uflow));
+        uflow.copyTo(flow);
     }
+
+    //set flag to use initial flow as it is ready to use
+    alg->setUseInitialFlow(useInitFlow);
+
+    OCL_OFF(alg->calc(frame0, frame1, flow));
+    OCL_ON(alg->calc(frame0, frame1, uflow));
+
+    EXPECT_MAT_SIMILAR(flow, uflow, 1e-2);
 }
 
-OCL_INSTANTIATE_TEST_CASE_P(Contrib, OCL_DenseOpticalFlow_DIS,
-                            Values(DISOpticalFlow::PRESET_ULTRAFAST,
-                                   DISOpticalFlow::PRESET_FAST,
-                                   DISOpticalFlow::PRESET_MEDIUM));
+OCL_INSTANTIATE_TEST_CASE_P(Contrib, OpticalFlowTVL1,
+    Combine(
+    Values(UseInitFlow(false), UseInitFlow(true)),
+    Values(MedianFiltering(3), MedianFiltering(-1)),
+    Values(ScaleStep(0.3),ScaleStep(0.5))
+    )
+    );
 
-}} // namespace
+} } // namespace opencv_test::ocl
 
 #endif // HAVE_OPENCL
