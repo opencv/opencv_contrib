@@ -149,7 +149,7 @@ static SceneNode& _getSceneNode(SceneManager* sceneMgr, const String& name)
         if(mo)
             return *mo->getParentSceneNode()->getParentSceneNode();
     }
-    catch (ItemIdentityException&)
+    catch (const ItemIdentityException&)
     {
         // ignore
     }
@@ -159,7 +159,7 @@ static SceneNode& _getSceneNode(SceneManager* sceneMgr, const String& name)
         if (!mo)
             mo = sceneMgr->getMovableObject(name, "Light");
     }
-    catch (ItemIdentityException&)
+    catch (const ItemIdentityException&)
     {
         // ignore
     }

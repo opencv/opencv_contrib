@@ -109,7 +109,7 @@ int main(int argc, char* argv[])
         }
         printf("Average: %.4fms\n", (double)total_time / total_loop_count / cv::getTickFrequency() * 1000.0);
     }
-    catch(cv::Exception e)
+    catch(const cv::Exception& e)
     {
         std::cerr << "Error using Retina : " << e.what() << std::endl;
     }
