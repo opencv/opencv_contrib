@@ -384,9 +384,9 @@ class CV_EXPORTS_W FastBilateralSolverFilter : public Algorithm
 public:
     /** @brief Apply smoothing operation to the source image.
 
-    @param src source image for filtering with unsigned 8-bit or signed 16-bit or floating-point 32-bit depth and up to 4 channels.
+    @param src source image for filtering with unsigned 8-bit or signed 16-bit or floating-point 32-bit depth and up to 3 channels.
 
-    @param confidence confidence image with unsigned 8-bit or signed 16-bit or floating-point 32-bit confidence and 1 channel.
+    @param confidence confidence image with unsigned 8-bit or floating-point 32-bit confidence and 1 channel.
 
     @param dst destination image.
     */
@@ -405,9 +405,10 @@ public:
 
 @param num_iter number of iterations used for solving, 25 is usually enough.
 
-@param max_tol solving tolerance used for solving, 25 is usually enough.
+@param max_tol solving tolerance used for solving.
 
 For more details about the Fast Bilateral Solver parameters, see the original paper @cite BarronPoole2016.
+
 */
 CV_EXPORTS_W Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma, int num_iter = 25, double max_tol = 1e-5);
 
@@ -419,7 +420,7 @@ guide then use FastBilateralSolverFilter interface to avoid extra computations.
 
 @param src source image for filtering with unsigned 8-bit or signed 16-bit or floating-point 32-bit depth and up to 4 channels.
 
-@param confidence confidence image with unsigned 8-bit or signed 16-bit or floating-point 32-bit confidence and 1 channel.
+@param confidence confidence image with unsigned 8-bit or floating-point 32-bit confidence and 1 channel.
 
 @param dst destination image.
 
@@ -431,7 +432,9 @@ guide then use FastBilateralSolverFilter interface to avoid extra computations.
 
 @param num_iter number of iterations used for solving, 25 is usually enough.
 
-@param max_tol solving tolerance used for solving, 25 is usually enough.
+@param max_tol solving tolerance used for solving.
+
+@note Confidence images with CV_8U depth are expected to in [0, 255] and CV_32F in [0, 1] range.
 */
 CV_EXPORTS_W void fastBilateralSolverFilter(InputArray guide, InputArray src, InputArray confidence, OutputArray dst, double sigma_spatial = 8, double sigma_luma = 8, double sigma_chroma = 8, int num_iter = 25, double max_tol = 1e-5);
 //////////////////////////////////////////////////////////////////////////
