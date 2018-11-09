@@ -41,6 +41,7 @@
 //M*/
 
 #include "precomp.hpp"
+#include "opencv2/optflow.hpp"
 #include "opencv2/core/opencl/ocl_defs.hpp"
 
 using namespace cv;
@@ -371,12 +372,12 @@ namespace
         void impl(InputArray input0, InputArray input1, OutputArray dst) CV_OVERRIDE;
 
     private:
-        Ptr<cv::DualTVL1OpticalFlow> alg_;
+        Ptr<optflow::DualTVL1OpticalFlow> alg_;
     };
 
     DualTVL1::DualTVL1() : CpuOpticalFlow(CV_8UC1)
     {
-        alg_ = cv::createOptFlow_DualTVL1();
+        alg_ = optflow::createOptFlow_DualTVL1();
     }
 
     void DualTVL1::calc(InputArray frame0, InputArray frame1, OutputArray flow1, OutputArray flow2)
