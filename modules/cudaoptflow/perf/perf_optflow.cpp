@@ -316,7 +316,7 @@ PERF_TEST_P(ImagePair, OpticalFlowDual_TVL1,
     {
         cv::Mat flow;
 
-        cv::Ptr<cv::DualTVL1OpticalFlow> alg = cv::createOptFlow_DualTVL1();
+        cv::Ptr<cv::optflow::DualTVL1OpticalFlow> alg = cv::optflow::createOptFlow_DualTVL1();
         alg->setMedianFiltering(1);
         alg->setInnerIterations(1);
         alg->setOuterIterations(300);

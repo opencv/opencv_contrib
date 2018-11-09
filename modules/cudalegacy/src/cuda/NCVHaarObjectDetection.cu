@@ -66,7 +66,7 @@
 
 #ifdef HAVE_OPENCV_OBJDETECT
 #  include "opencv2/objdetect.hpp"
-#  include "opencv2/objdetect/objdetect_c.h"
+//#  include "opencv2/objdetect/objdetect_c.h"
 #endif
 
 #include "opencv2/cudalegacy/NCV.hpp"
@@ -2112,15 +2112,13 @@ static NCVStatus loadFromXML(const cv::String &filename,
                       std::vector<HaarClassifierNode128> &haarClassifierNodes,
                       std::vector<HaarFeature64> &haarFeatures)
 {
-#ifndef HAVE_OPENCV_OBJDETECT
     CV_UNUSED(filename);
     CV_UNUSED(haar);
     CV_UNUSED(haarStages);
     CV_UNUSED(haarClassifierNodes);
     CV_UNUSED(haarFeatures);
-    CV_Error(cv::Error::StsNotImplemented, "This functionality requires objdetect module");
-    return NCV_HAAR_XML_LOADING_EXCEPTION;
-#else
+    CV_Error(cv::Error::StsNotImplemented, "Loading from XML file is not available");
+#if 0 // CvLoad is not available since OpenCV 4.0
     NCVStatus ncvStat;
 
     haar.NumStages = 0;

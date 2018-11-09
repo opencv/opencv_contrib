@@ -263,7 +263,7 @@ CUDA_TEST_P(CalTech, HOG)
 #endif
 }
 
-INSTANTIATE_TEST_CASE_P(detect, CalTech, testing::Combine(ALL_DEVICES,
+INSTANTIATE_TEST_CASE_P(DISABLED_detect, CalTech, testing::Combine(ALL_DEVICES,
     ::testing::Values<std::string>("caltech/image_00000009_0.png", "caltech/image_00000032_0.png",
         "caltech/image_00000165_0.png", "caltech/image_00000261_0.png", "caltech/image_00000469_0.png",
         "caltech/image_00000527_0.png", "caltech/image_00000574_0.png")));
@@ -325,7 +325,7 @@ CUDA_TEST_P(Hog_var, HOG)
     cpu_hog.compute(c_img, cpu_desc_vec, win_stride, Size(0,0));
 }
 
-INSTANTIATE_TEST_CASE_P(detect, Hog_var, testing::Combine(ALL_DEVICES,
+INSTANTIATE_TEST_CASE_P(DISABLED_detect, Hog_var, testing::Combine(ALL_DEVICES,
     ::testing::Values<std::string>("/hog/road.png")));
 
 struct Hog_var_cell : public ::testing::TestWithParam<tuple<cv::cuda::DeviceInfo, std::string> >
@@ -465,7 +465,7 @@ CUDA_TEST_P(Hog_var_cell, HOG)
 //------------------------------------------------------------------------------
 }
 
-INSTANTIATE_TEST_CASE_P(detect, Hog_var_cell, testing::Combine(ALL_DEVICES,
+INSTANTIATE_TEST_CASE_P(DISABLED_detect, Hog_var_cell, testing::Combine(ALL_DEVICES,
     ::testing::Values<std::string>("/hog/road.png")));
 //////////////////////////////////////////////////////////////////////////////////////////
 /// LBP classifier
@@ -494,7 +494,7 @@ CUDA_TEST_P(LBP_Read_classifier, Accuracy)
     ASSERT_FALSE(d_cascade.empty());
 }
 
-INSTANTIATE_TEST_CASE_P(CUDA_ObjDetect, LBP_Read_classifier,
+INSTANTIATE_TEST_CASE_P(DISABLED_CUDA_ObjDetect, LBP_Read_classifier,
                         testing::Combine(ALL_DEVICES, testing::Values<int>(0)));
 
 
@@ -555,7 +555,7 @@ CUDA_TEST_P(LBP_classify, Accuracy)
 #endif
 }
 
-INSTANTIATE_TEST_CASE_P(CUDA_ObjDetect, LBP_classify,
+INSTANTIATE_TEST_CASE_P(DISABLED_CUDA_ObjDetect, LBP_classify,
                         testing::Combine(ALL_DEVICES, testing::Values<int>(0)));
 
 
