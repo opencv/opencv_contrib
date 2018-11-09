@@ -82,7 +82,7 @@ TEST(FastBilateralSolverTest, SplatSurfaceAccuracy)
 
         // When filtering a constant image we should get the same image:
         double normL1 = cvtest::norm(src, res, NORM_L1)/src.total()/src.channels();
-        EXPECT_LE(normL1, 1.0);
+        EXPECT_LE(normL1, 1.0/64);
     }
 }
 
@@ -91,7 +91,8 @@ TEST(FastBilateralSolverTest, ReferenceAccuracy)
     string dir = getDataDir() + "cv/edgefilter";
 
     Mat src = imread(dir + "/kodim23.png");
-    Mat ref = imread(dir + "/fgs/kodim23_lambda=1000_sigma=10.png");
+    Mat ref = imread(dir + "/fbs/kodim23_spatial=16_luma=16_chroma=16.png");
+
     Mat confidence(src.size(), CV_MAKE_TYPE(CV_8U, 1), 255);
 
     ASSERT_FALSE(src.empty());
@@ -103,7 +104,7 @@ TEST(FastBilateralSolverTest, ReferenceAccuracy)
     double totalMaxError = 1.0/64.0*src.total()*src.channels();
 
     EXPECT_LE(cvtest::norm(res, ref, NORM_L2), totalMaxError);
-    EXPECT_LE(cvtest::norm(res, ref, NORM_INF), 100);
+    EXPECT_LE(cvtest::norm(res, ref, NORM_INF), 1);
 }
 
 INSTANTIATE_TEST_CASE_P(FullSet, FastBilateralSolverTest,Combine(Values(szODD, szQVGA), SrcTypes::all(), GuideTypes::all()));
