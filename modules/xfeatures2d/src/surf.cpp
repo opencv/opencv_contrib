@@ -944,6 +944,19 @@ void SURF_Impl::detectAndCompute(InputArray _img, InputArray _mask,
             integral(mask1, msum, CV_32S);
         }
         fastHessianDetector( sum, msum, keypoints, nOctaves, nOctaveLayers, (float)hessianThreshold );
+        if (!mask.empty())
+        {
+            for (size_t i = 0; i < keypoints.size(); )
+            {
+                Point pt(keypoints[i].pt);
+                if (mask.at<uchar>(pt.y, pt.x) == 0)
+                {
+                    keypoints.erase(keypoints.begin() + i);
+                    continue; // keep "i"
+                }
+                i++;
+            }
+        }
     }
 
     int i, j, N = (int)keypoints.size();
