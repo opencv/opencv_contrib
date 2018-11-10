@@ -53,11 +53,11 @@ public:
 
         if(input.type() == CV_8UC3)
         {
-            cv::cvtColor(input, grayImg_, CV_BGR2GRAY);
+            cv::cvtColor(input, grayImg_, COLOR_BGR2GRAY);
         }
         else if(input.type() == CV_8UC4)
         {
-            cv::cvtColor(input, grayImg_, CV_BGRA2GRAY);
+            cv::cvtColor(input, grayImg_, COLOR_BGRA2GRAY);
         }
         else
         {

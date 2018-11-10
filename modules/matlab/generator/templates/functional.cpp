@@ -85,9 +85,9 @@ addVariant("{{ fun.name }}", {{ fun.req|inputs|length }}, {{ fun.opt|inputs|leng
   // [out =] namespace.fun(src1, ..., srcn, dst1, ..., dstn, opt1, ..., optn);
   try {
     {{ compose(fun) }}
-  } catch(cv::Exception& e) {
+  } catch(const cv::Exception& e) {
     error(std::string("cv::exception caught: ").append(e.what()).c_str());
-  } catch(std::exception& e) {
+  } catch(const std::exception& e) {
     error(std::string("std::exception caught: ").append(e.what()).c_str());
   } catch(...) {
     error("Uncaught exception occurred in {{fun.name}}");

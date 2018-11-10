@@ -105,18 +105,11 @@ public:
                   input.type() == CV_8UC3 ||
                   input.type() == CV_8U);
 
-        if(input.type() == CV_8UC3)
-        {
-            cv::cvtColor(input, grayImg, CV_BGR2GRAY);
-        }
-        else if(input.type() == CV_8UC4)
-        {
-            cv::cvtColor(input, grayImg, CV_BGRA2GRAY);
-        }
+        if(input.channels() > 1)
+            cv::cvtColor(input, grayImg, COLOR_BGR2GRAY);
         else
-        {
             grayImg = input;
-        }
+
         //pHash use Canny-deritch filter to blur the image
         cv::GaussianBlur(grayImg, blurImg, cv::Size(7, 7), 0);
         cv::resize(blurImg, resizeImg, cv::Size(512, 512), 0, 0, INTER_CUBIC);

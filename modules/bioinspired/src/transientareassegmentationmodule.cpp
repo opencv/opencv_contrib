@@ -298,7 +298,7 @@ void TransientAreasSegmentationModuleImpl::setup(String segmentationParameterFil
         // opening retinaParameterFile in read mode
         cv::FileStorage fs(segmentationParameterFile, cv::FileStorage::READ);
         setup(fs, applyDefaultSetupOnFailure);
-    }catch(cv::Exception &e)
+    }catch(const cv::Exception &e)
     {
         printf("Retina::setup: wrong/unappropriate xml parameter file : error report :`n=>%s\n", e.what());
         if (applyDefaultSetupOnFailure)
@@ -338,7 +338,7 @@ void TransientAreasSegmentationModuleImpl::setup(cv::FileStorage &fs, const bool
         currFn["contextEnergy_spatialConstant"]>>_segmentationParameters.contextEnergy_spatialConstant;
         setup(_segmentationParameters);
 
-    }catch(cv::Exception &e)
+    }catch(const cv::Exception &e)
     {
         std::cout<<"Retina::setup: resetting retina with default parameters"<<std::endl;
         if (applyDefaultSetupOnFailure)

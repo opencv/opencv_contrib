@@ -46,7 +46,7 @@ resize(img,img,Size(460,460),0,0,INTER_LINEAR_EXACT);
 Mat gray;
 std::vector<Rect> faces;
 if(img.channels()>1){
-    cvtColor(img.getMat(),gray,CV_BGR2GRAY);
+    cvtColor(img.getMat(),gray,COLOR_BGR2GRAY);
 }
 else{
     gray = img.getMat().clone();

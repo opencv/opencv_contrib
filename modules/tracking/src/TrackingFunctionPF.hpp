@@ -31,7 +31,7 @@ namespace cv{
 
         Mat hsv;
         img.convertTo(hsv,CV_32F,1.0/255.0);
-        cvtColor(hsv,hsv,CV_BGR2HSV);
+        cvtColor(hsv,hsv,COLOR_BGR2HSV);
 
         HShist=Mat_<double>(nh,ns,0.0);
         Vhist=Mat_<double>(1,nv,0.0);

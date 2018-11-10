@@ -127,7 +127,7 @@ void RetinaOCLImpl::setup(String retinaParameterFile, const bool applyDefaultSet
         cv::FileStorage fs(retinaParameterFile, cv::FileStorage::READ);
         setup(fs, applyDefaultSetupOnFailure);
     }
-    catch(Exception &e)
+    catch(const Exception &e)
     {
         std::cout << "RetinaOCLImpl::setup: wrong/inappropriate xml parameter file : error report :`n=>" << e.what() << std::endl;
         if (applyDefaultSetupOnFailure)
@@ -181,7 +181,7 @@ void RetinaOCLImpl::setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFai
         setupIPLMagnoChannel(_retinaParameters.IplMagno.normaliseOutput, _retinaParameters.IplMagno.parasolCells_beta, _retinaParameters.IplMagno.parasolCells_tau, _retinaParameters.IplMagno.parasolCells_k, _retinaParameters.IplMagno.amacrinCellsTemporalCutFrequency, _retinaParameters.IplMagno.V0CompressionParameter, _retinaParameters.IplMagno.localAdaptintegration_tau, _retinaParameters.IplMagno.localAdaptintegration_k);
 
     }
-    catch(Exception &e)
+    catch(const Exception &e)
     {
         std::cout << "RetinaOCLImpl::setup: resetting retina with default parameters" << std::endl;
         if (applyDefaultSetupOnFailure)

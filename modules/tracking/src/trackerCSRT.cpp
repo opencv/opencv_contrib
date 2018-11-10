@@ -201,7 +201,7 @@ std::vector<Mat> TrackerCSRTImpl::get_features(const Mat &patch, const Size2i &f
     }
     if(params.use_gray) {
         Mat gray_m;
-        cvtColor(patch, gray_m, CV_BGR2GRAY);
+        cvtColor(patch, gray_m, COLOR_BGR2GRAY);
         resize(gray_m, gray_m, feature_size, 0, 0, INTER_CUBIC);
         gray_m.convertTo(gray_m, CV_32FC1, 1.0/255.0, -0.5);
         features.push_back(gray_m);
@@ -465,15 +465,11 @@ Point2f TrackerCSRTImpl::estimate_new_position(const Mat &image)
 // *********************************************************************
 bool TrackerCSRTImpl::updateImpl(const Mat& image_, Rect2d& boundingBox)
 {
-    //treat gray image as color image
     Mat image;
-    if(image_.channels() == 1) {
-        std::vector<Mat> channels(3);
-        channels[0] = channels[1] = channels[2] = image_;
-        merge(channels, image);
-    } else {
+    if(image_.channels() == 1)    //treat gray image as color image
+        cvtColor(image_, image, COLOR_GRAY2BGR);
+    else
         image = image_;
-    }
 
     object_center = estimate_new_position(image);
     if (object_center.x < 0 && object_center.y < 0)
@@ -512,15 +508,11 @@ bool TrackerCSRTImpl::updateImpl(const Mat& image_, Rect2d& boundingBox)
 // *********************************************************************
 bool TrackerCSRTImpl::initImpl(const Mat& image_, const Rect2d& boundingBox)
 {
-    //treat gray image as color image
     Mat image;
-    if(image_.channels() == 1) {
-        std::vector<Mat> channels(3);
-        channels[0] = channels[1] = channels[2] = image_;
-        merge(channels, image);
-    } else {
+    if(image_.channels() == 1)    //treat gray image as color image
+        cvtColor(image_, image, COLOR_GRAY2BGR);
+    else
         image = image_;
-    }
 
     current_scale_factor = 1.0;
     image_size = image.size();

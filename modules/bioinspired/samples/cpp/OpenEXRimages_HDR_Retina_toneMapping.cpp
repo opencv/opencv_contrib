@@ -292,7 +292,7 @@ static void drawPlot(const cv::Mat curve, const std::string figureTitle, const i
 */
              cv::waitKey(10);
          }
-     }catch(cv::Exception e)
+     }catch(const cv::Exception& e)
      {
          std::cerr<<"Error using Retina : "<<e.what()<<std::endl;
      }

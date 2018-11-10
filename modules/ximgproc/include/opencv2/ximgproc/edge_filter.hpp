@@ -437,8 +437,7 @@ guide then use FastBilateralSolverFilter interface to avoid extra computations.
 @note Confidence images with CV_8U depth are expected to in [0, 255] and CV_32F in [0, 1] range.
 */
 CV_EXPORTS_W void fastBilateralSolverFilter(InputArray guide, InputArray src, InputArray confidence, OutputArray dst, double sigma_spatial = 8, double sigma_luma = 8, double sigma_chroma = 8, int num_iter = 25, double max_tol = 1e-5);
-//////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////
+
 
 /** @brief Interface for implementations of Fast Global Smoother filter.
 

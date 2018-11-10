@@ -305,7 +305,6 @@ int main(int argc, char** argv)
         (void)fbs_luma;
         (void)fbs_chroma;
 #endif
-
     }
     else if(filter=="wls_no_conf")
     {
