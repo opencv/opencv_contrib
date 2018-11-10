@@ -21,18 +21,10 @@ public:
                   input.type() == CV_8U);
 
         cv::resize(input, resizeImg, cv::Size(32,32), 0, 0, INTER_LINEAR_EXACT);
-        if(input.type() == CV_8UC3)
-        {
-            cv::cvtColor(resizeImg, grayImg, CV_BGR2GRAY);
-        }
-        else if(input.type() == CV_8UC4)
-        {
-            cv::cvtColor(resizeImg, grayImg, CV_BGRA2GRAY);
-        }
+        if(input.channels() > 1)
+            cv::cvtColor(resizeImg, grayImg, COLOR_BGR2GRAY);
         else
-        {
             grayImg = resizeImg;
-        }
 
         grayImg.convertTo(grayFImg, CV_32F);
         cv::dct(grayFImg, dctImg);

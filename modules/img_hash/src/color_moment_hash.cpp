@@ -28,25 +28,24 @@ public:
       }
       else if(input.type() == CV_8UC4)
       {
-          cv::cvtColor(input, colorImg_, CV_BGRA2BGR);
+          cv::cvtColor(input, colorImg_, COLOR_BGRA2BGR);
       }
       else
       {
-          cv::cvtColor(input, colorImg_, CV_GRAY2BGR);
+          cv::cvtColor(input, colorImg_, COLOR_GRAY2BGR);
       }
 
-      cv::resize(colorImg_, resizeImg_, cv::Size(512,512), 0, 0,
-                 INTER_CUBIC);
+      cv::resize(colorImg_, resizeImg_, cv::Size(512,512), 0, 0, INTER_CUBIC);
       cv::GaussianBlur(resizeImg_, blurImg_, cv::Size(3,3), 0, 0);
 
-      cv::cvtColor(blurImg_, colorSpace_, CV_BGR2HSV);
+      cv::cvtColor(blurImg_, colorSpace_, COLOR_BGR2HSV);
       cv::split(colorSpace_, channels_);
       outputArr.create(1, 42, CV_64F);
       cv::Mat hash = outputArr.getMat();
       hash.setTo(0);
       computeMoments(hash.ptr<double>(0));
 
-      cv::cvtColor(blurImg_, colorSpace_, CV_BGR2YCrCb);
+      cv::cvtColor(blurImg_, colorSpace_, COLOR_BGR2YCrCb);
       cv::split(colorSpace_, channels_);
       computeMoments(hash.ptr<double>(0) + 21);
     }

@@ -345,10 +345,10 @@ static int _selectAndRefineChessboardCorners(InputArray _allCorners, InputArray 
 
     // corner refinement, first convert input image to grey
     Mat grey;
-    if(_image.getMat().type() == CV_8UC3)
-        cvtColor(_image.getMat(), grey, COLOR_BGR2GRAY);
+    if(_image.type() == CV_8UC3)
+        cvtColor(_image, grey, COLOR_BGR2GRAY);
     else
-        _image.getMat().copyTo(grey);
+        _image.copyTo(grey);
 
     const Ptr<DetectorParameters> params = DetectorParameters::create(); // use default params for corner refinement
 
@@ -754,10 +754,10 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
 
     // convert input image to grey
     Mat grey;
-    if(_image.getMat().type() == CV_8UC3)
-        cvtColor(_image.getMat(), grey, COLOR_BGR2GRAY);
+    if(_image.type() == CV_8UC3)
+        cvtColor(_image, grey, COLOR_BGR2GRAY);
     else
-        _image.getMat().copyTo(grey);
+        _image.copyTo(grey);
 
     // for each of the detected markers, try to find a diamond
     for(unsigned int i = 0; i < _markerIds.total(); i++) {
