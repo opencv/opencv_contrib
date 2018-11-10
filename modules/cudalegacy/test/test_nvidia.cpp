@@ -116,14 +116,14 @@ CUDA_TEST_P(NCV, VectorOperations)
     ASSERT_TRUE(res);
 }
 
-CUDA_TEST_P(NCV, HaarCascadeLoader)
+CUDA_TEST_P(NCV, DISABLED_HaarCascadeLoader)
 {
     bool res = nvidia_NCV_Haar_Cascade_Loader(_path, nvidiaTestOutputLevel);
 
     ASSERT_TRUE(res);
 }
 
-CUDA_TEST_P(NCV, HaarCascadeApplication)
+CUDA_TEST_P(NCV, DISABLED_HaarCascadeApplication)
 {
     bool res = nvidia_NCV_Haar_Cascade_Application(_path, nvidiaTestOutputLevel);
 

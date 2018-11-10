@@ -385,7 +385,7 @@ CUDA_TEST_P(OpticalFlowDual_TVL1, Accuracy)
     cv::cuda::GpuMat d_flow;
     d_alg->calc(loadMat(frame0), loadMat(frame1), d_flow);
 
-    cv::Ptr<cv::DualTVL1OpticalFlow> alg = cv::createOptFlow_DualTVL1();
+    cv::Ptr<cv::optflow::DualTVL1OpticalFlow> alg = cv::optflow::createOptFlow_DualTVL1();
     alg->setMedianFiltering(1);
     alg->setInnerIterations(1);
     alg->setOuterIterations(d_alg->getNumIterations());
