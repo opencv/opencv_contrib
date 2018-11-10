@@ -137,7 +137,7 @@ int main(int argc, char* argv[]) {
             cv::imshow("Retina Magno", retinaOutput_magno);
             cv::waitKey(10);
         }
-    }catch(cv::Exception e)
+    }catch(const cv::Exception& e)
     {
         std::cerr<<"Error using Retina or end of video sequence reached : "<<e.what()<<std::endl;
     }

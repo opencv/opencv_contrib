@@ -24,7 +24,7 @@ void mexFunction(int nlhs, mxArray* plhs[],
   // [out =] namespace.fun(src1, ..., srcn, dst1, ..., dstn, opt1, ..., optn);
   try {
     throw std::exception();
-  } catch(std::exception& e) {
+  } catch(const std::exception& e) {
     mexErrMsgTxt(e.what());
   } catch(...) {
     mexErrMsgTxt("Incorrect exception caught!");
