@@ -159,7 +159,7 @@ public:
     virtual void setMinProbability(float minProbability) = 0;
     virtual void setMinProbabilityDiff(float minProbabilityDiff) = 0;
     virtual void setNonMaxSuppression(bool nonMaxSuppression) = 0;
-    virtual int  getNumRejected() = 0;
+    virtual int  getNumRejected() const = 0;
 };
 
 
