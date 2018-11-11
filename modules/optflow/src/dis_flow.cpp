@@ -41,7 +41,9 @@
 //M*/
 
 #include "precomp.hpp"
+#include "opencv2/core/hal/intrin.hpp"
 #include "opencl_kernels_optflow.hpp"
+
 
 using namespace std;
 #define EPS 0.001F
@@ -519,7 +521,7 @@ inline float processPatch(float &dst_dUx, float &dst_dUy, uchar *I0_ptr, uchar *
                           int I0_stride, int I1_stride, float w00, float w01, float w10, float w11, int patch_sz)
 {
     float SSD = 0.0f;
-#ifdef CV_SIMD128
+#if CV_SIMD128
     if (patch_sz == 8)
     {
         /* Variables to accumulate the sums */
@@ -571,7 +573,7 @@ inline float processPatch(float &dst_dUx, float &dst_dUy, uchar *I0_ptr, uchar *
                 dst_dUx += diff * I0x_ptr[i * I0_stride + j];
                 dst_dUy += diff * I0y_ptr[i * I0_stride + j];
             }
-#ifdef CV_SIMD128
+#if CV_SIMD128
     }
 #endif
     return SSD;
@@ -588,7 +590,7 @@ inline float processPatchMeanNorm(float &dst_dUx, float &dst_dUy, uchar *I0_ptr,
     float sum_I0x_mul = 0.0, sum_I0y_mul = 0.0;
     float n = (float)patch_sz * patch_sz;
 
-#ifdef CV_SIMD128
+#if CV_SIMD128
     if (patch_sz == 8)
     {
         /* Variables to accumulate the sums */
@@ -643,7 +645,7 @@ inline float processPatchMeanNorm(float &dst_dUx, float &dst_dUy, uchar *I0_ptr,
                 sum_I0x_mul += diff * I0x_ptr[i * I0_stride + j];
                 sum_I0y_mul += diff * I0y_ptr[i * I0_stride + j];
             }
-#ifdef CV_SIMD128
+#if CV_SIMD128
     }
 #endif
     dst_dUx = sum_I0x_mul - sum_diff * x_grad_sum / n;
@@ -656,7 +658,7 @@ inline float computeSSD(uchar *I0_ptr, uchar *I1_ptr, int I0_stride, int I1_stri
                         float w11, int patch_sz)
 {
     float SSD = 0.0f;
-#ifdef CV_SIMD128
+#if CV_SIMD128
     if (patch_sz == 8)
     {
         v_float32x4 SSD_vec = v_setall_f32(0);
@@ -681,7 +683,7 @@ inline float computeSSD(uchar *I0_ptr, uchar *I1_ptr, int I0_stride, int I1_stri
                        I0_ptr[i * I0_stride + j];
                 SSD += diff * diff;
             }
-#ifdef CV_SIMD128
+#if CV_SIMD128
     }
 #endif
     return SSD;
@@ -693,7 +695,7 @@ inline float computeSSDMeanNorm(uchar *I0_ptr, uchar *I1_ptr, int I0_stride, int
 {
     float sum_diff = 0.0f, sum_diff_sq = 0.0f;
     float n = (float)patch_sz * patch_sz;
-#ifdef CV_SIMD128
+#if CV_SIMD128
     if (patch_sz == 8)
     {
         v_float32x4 sum_diff_vec = v_setall_f32(0);
@@ -723,7 +725,7 @@ inline float computeSSDMeanNorm(uchar *I0_ptr, uchar *I1_ptr, int I0_stride, int
                 sum_diff += diff;
                 sum_diff_sq += diff * diff;
             }
-#ifdef CV_SIMD128
+#if CV_SIMD128
     }
 #endif
     return sum_diff_sq - sum_diff * sum_diff / n;
