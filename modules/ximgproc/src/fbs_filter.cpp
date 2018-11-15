@@ -266,7 +266,7 @@ namespace ximgproc
             nvertices = hashed_coords.size();
 
             // construct Blur matrices
-            Eigen::VectorXf ones_nvertices = Eigen::VectorXf::Ones(nvertices);            
+            Eigen::VectorXf ones_nvertices = Eigen::VectorXf::Ones(nvertices);
             diagonal(ones_nvertices,blurs);
             blurs *= 10;
             for(int offset = -1; offset <= 1;++offset)
@@ -378,7 +378,7 @@ namespace ximgproc
             nvertices = hashed_coords.size();
 
             // construct Blur matrices
-            Eigen::VectorXf ones_nvertices = Eigen::VectorXf::Ones(nvertices);            
+            Eigen::VectorXf ones_nvertices = Eigen::VectorXf::Ones(nvertices);
             diagonal(ones_nvertices,blurs);
             blurs *= 10;
             for(int offset = -1; offset <= 1;++offset)

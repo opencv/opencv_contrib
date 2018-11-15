@@ -307,6 +307,7 @@ int main(int argc, char** argv)
         (void)fbs_spatial;
         (void)fbs_luma;
         (void)fbs_chroma;
+        (void)fbs_lambda;
 
 #endif
     }
