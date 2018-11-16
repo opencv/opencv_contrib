@@ -629,12 +629,12 @@ namespace cv
 namespace ximgproc
 {
 
-Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray, double, double, double, int, double)
+Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray, double, double, double, double, int, double)
 {
     CV_Error(Error::StsNotImplemented, "createFastBilateralSolverFilter : needs to be compiled with EIGEN");
 }
 
-void fastBilateralSolverFilter(InputArray, InputArray, InputArray, OutputArray, double, double, double, int, double)
+void fastBilateralSolverFilter(InputArray, InputArray, InputArray, OutputArray, double, double, double, double, int, double)
 {
     CV_Error(Error::StsNotImplemented, "fastBilateralSolverFilter : needs to be compiled with EIGEN");
 }
