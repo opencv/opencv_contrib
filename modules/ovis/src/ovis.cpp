@@ -236,6 +236,8 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
         return ret;
     }
 
+    size_t numWindows() const { return mWindows.size(); }
+
     void locateResources() CV_OVERRIDE
     {
         OgreBites::ApplicationContext::locateResources();
@@ -277,9 +279,10 @@ class WindowSceneImpl : public WindowScene
     Ptr<Rectangle2D> bgplane;
 
     Ogre::RenderTarget* depthRTT;
+    int flags;
 public:
-    WindowSceneImpl(Ptr<Application> app, const String& _title, const Size& sz, int flags)
-        : title(_title), root(app->getRoot()), depthRTT(NULL)
+    WindowSceneImpl(Ptr<Application> app, const String& _title, const Size& sz, int _flags)
+        : title(_title), root(app->getRoot()), depthRTT(NULL), flags(_flags)
     {
         if (!app->sceneMgr)
         {
@@ -335,6 +338,25 @@ public:
         }
 
         rWin->addViewport(cam);
+    }
+
+    ~WindowSceneImpl()
+    {
+        if (flags & SCENE_SEPERATE)
+        {
+            MaterialManager::getSingleton().remove(bgplane->getMaterial());
+            bgplane.release();
+            String texName = sceneMgr->getName() + "_Background";
+            TextureManager::getSingleton().remove(texName, RESOURCEGROUP_NAME);
+        }
+
+        if(_app->sceneMgr == sceneMgr && (flags & SCENE_SEPERATE))
+        {
+            // this is the root window owning the context
+            CV_Assert(_app->numWindows() == 1 && "the first OVIS window must be deleted last");
+            _app->closeApp();
+            _app.release();
+        }
     }
 
     void setBackground(InputArray image) CV_OVERRIDE
