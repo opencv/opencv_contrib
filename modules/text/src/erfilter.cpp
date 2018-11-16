@@ -145,7 +145,7 @@ public:
     void setMinProbability(float minProbability) CV_OVERRIDE;
     void setMinProbabilityDiff(float minProbabilityDiff) CV_OVERRIDE;
     void setNonMaxSuppression(bool nonMaxSuppression) CV_OVERRIDE;
-    int  getNumRejected() CV_OVERRIDE;
+    int  getNumRejected() const CV_OVERRIDE;
 
 private:
     // pointer to the input/output regions vector
@@ -223,6 +223,8 @@ ERFilterNM::ERFilterNM()
 // input/output for the second one.
 void ERFilterNM::run( InputArray image, vector<ERStat>& _regions )
 {
+    num_rejected_regions=0;
+    num_accepted_regions=0;
 
     // assert correct image type
     CV_Assert( image.getMat().type() == CV_8UC1 );
@@ -999,7 +1001,7 @@ void ERFilterNM::setNonMaxSuppression(bool _nonMaxSuppression)
     return;
 }
 
-int ERFilterNM::getNumRejected()
+int ERFilterNM::getNumRejected() const
 {
     return num_rejected_regions;
 }
