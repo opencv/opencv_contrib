@@ -35,7 +35,7 @@ SobelFilterWidget::SobelFilterWidget(QWidget *parent)
 	ksize_->addItem("3");
 	ksize_->addItem("5");
 	ksize_->addItem("7");
-	ksize_->addItem("CV_SCHARR(-1)");
+	ksize_->addItem("FILTER_SCHARR(-1)");
 	ksize_->setCurrentIndex(1);
 
 	borderType_->addItem("BORDER_DEFAULT");
@@ -133,7 +133,7 @@ void SobelFilterWidget::applyFilter(InputArray in, OutputArray out) const
 		ksize = 7;
 		break;
 	case 4:
-		ksize = CV_SCHARR;
+		ksize = FILTER_SCHARR;
 		break;
 	}
 
@@ -258,15 +258,15 @@ std::pair<bool, QString> SobelFilterWidget::checkInput(InputArray in) const
 		ksize = 7;
 		break;
 	case 4:
-		ksize = CV_SCHARR;
+		ksize = FILTER_SCHARR;
 		break;
 	}
 
-	if (ksize == CV_SCHARR)
+	if (ksize == FILTER_SCHARR)
 	{
 		if (dx + dy != 1)
 		{
-			return { false, "ksize=CV_SCHARR but dx+dy != 1" };
+			return { false, "ksize=FILTER_SCHARR but dx+dy != 1" };
 		}
 	}
 	else
