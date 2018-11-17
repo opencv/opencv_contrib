@@ -33,6 +33,7 @@ const String keys =
     "{fbs_spatial    |16.0              | parameter of fbs post-filtering                                   }"
     "{fbs_luma       |8.0               | parameter of fbs post-filtering                                   }"
     "{fbs_chroma     |8.0               | parameter of fbs post-filtering                                   }"
+    "{fbs_lambda     |128.0             | parameter of fbs post-filtering                                   }"
     ;
 
 int main(int argc, char** argv)
@@ -62,6 +63,7 @@ int main(int argc, char** argv)
     double fbs_spatial = parser.get<double>("fbs_spatial");
     double fbs_luma = parser.get<double>("fbs_luma");
     double fbs_chroma = parser.get<double>("fbs_chroma");
+    double fbs_lambda = parser.get<double>("fbs_lambda");
     double vis_mult = parser.get<double>("vis_mult");
 
     int wsize;
@@ -293,17 +295,18 @@ int main(int argc, char** argv)
 #ifdef HAVE_EIGEN
         //! [filtering_fbs]
         solving_time = (double)getTickCount();
-        fastBilateralSolverFilter(left, left_disp_resized, conf_map/255.0f, solved_disp, fbs_spatial, fbs_luma, fbs_chroma);
+        fastBilateralSolverFilter(left, left_disp_resized, conf_map/255.0f, solved_disp, fbs_spatial, fbs_luma, fbs_chroma, fbs_lambda);
         solving_time = ((double)getTickCount() - solving_time)/getTickFrequency();
         //! [filtering_fbs]
 
         //! [filtering_wls2fbs]
-        fastBilateralSolverFilter(left, filtered_disp, conf_map/255.0f, solved_filtered_disp, fbs_spatial, fbs_luma, fbs_chroma);
+        fastBilateralSolverFilter(left, filtered_disp, conf_map/255.0f, solved_filtered_disp, fbs_spatial, fbs_luma, fbs_chroma, fbs_lambda);
         //! [filtering_wls2fbs]
 #else
         (void)fbs_spatial;
         (void)fbs_luma;
         (void)fbs_chroma;
+        (void)fbs_lambda;
 #endif
     }
     else if(filter=="wls_no_conf")
