@@ -442,7 +442,7 @@ public:
             dst_type = CV_32FC4;
             break;
         case PF_L16:
-        case PF_DEPTH16:
+        case PF_DEPTH:
             dst_type = CV_16U;
             break;
         default:
