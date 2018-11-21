@@ -14,6 +14,7 @@
 
 namespace cvv
 {
+using namespace cv;
 namespace qtutil
 {
 
