@@ -66,8 +66,6 @@
     typedef std::unordered_map<long long /* hash */, int /* vert id */>  mapId;
 #endif
 
-#define EPS 1e-43f
-
 namespace cv
 {
 namespace ximgproc
@@ -501,7 +499,7 @@ namespace ximgproc
                 x(i) = cv::saturate_cast<float>(pft[i])/255.0f;
             }
         }
-        else if(confidence.depth() == CV_32F)
+        else if(target.depth() == CV_32F)
         {
             const float *pft = reinterpret_cast<const float*>(target.data);
             for (int i = 0; i < npixels; i++)
