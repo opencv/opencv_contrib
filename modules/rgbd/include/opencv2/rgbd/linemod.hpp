@@ -240,6 +240,15 @@ protected:
 CV_EXPORTS_W void colormap(const Mat& quantized, CV_OUT Mat& dst);
 
 /**
+ * \brief Debug function to draw linemod features
+ * @param img
+ * @param templates see @ref Detector::addTemplate
+ * @param tl template bbox top-left offset see @ref Detector::addTemplate
+ * @param size marker size see @ref cv::drawMarker
+ */
+CV_EXPORTS_W void drawFeatures(InputOutputArray img, const std::vector<Template>& templates, const Point2i& tl, int size = 10);
+
+/**
  * \brief Represents a successful template match.
  */
 struct CV_EXPORTS_W_SIMPLE Match
