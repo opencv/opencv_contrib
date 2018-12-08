@@ -207,6 +207,29 @@ void colormap(const Mat& quantized, Mat& dst)
   }
 }
 
+void drawFeatures(InputOutputArray img, const std::vector<Template>& templates, const Point2i& tl, int size)
+{
+#ifdef HAVE_OPENCV_IMGPROC
+    static Scalar colors[] = {{0, 0, 255}, {0, 255, 0}};
+    static int markers[] = {MARKER_SQUARE, MARKER_DIAMOND};
+
+    int modality = 0;
+    for(const Template& t : templates)
+    {
+        if(t.pyramid_level != 0) continue;
+
+        for(const Feature& f : t.features)
+        {
+            drawMarker(img, tl + Point(f.x, f.y), colors[int(modality != 0)], markers[int(modality != 0)], size);
+        }
+
+        modality++;
+    }
+#else
+    CV_Assert(false, "functionality needs imgproc module");
+#endif
+}
+
 /****************************************************************************************\
 *                             Color gradient modality                                    *
 \****************************************************************************************/
