@@ -68,7 +68,7 @@ Functions reading and writing .flo files in "Middlebury" format, see: <http://vi
 
 #include "opencv2/optflow/pcaflow.hpp"
 #include "opencv2/optflow/sparse_matching_gpc.hpp"
-#include "opencv2/optflow/rlofflow.hpp"
+
 namespace cv
 {
 namespace optflow
@@ -172,7 +172,6 @@ CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_Farneback();
 
 //! Additional interface to the SparseToDenseFlow algorithm - calcOpticalFlowSparseToDense()
 CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_SparseToDense();
-
 
 /** @brief "Dual TV L1" Optical Flow Algorithm.
 
