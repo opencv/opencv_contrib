@@ -46,6 +46,8 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 
 - **plot**: Plotting -- The plot module allows you to easily plot data in 1D or 2D.
 
+- **qds**: Dense Stereo Correspondence -- Densification of stereo matches using Quasi Dense Stereo method.
+
 - **reg**: Image Registration -- Pixels based image registration for precise alignment. Follows the paper "Image Alignment and Stitching: A Tutorial", by Richard Szeliski.
 
 - **rgbd**: RGB-Depth Processing module -- Linemod 3D object recognition; Fast surface normals and 3D plane finding. 3D visual odometry. 3d reconstruction using KinectFusion.
