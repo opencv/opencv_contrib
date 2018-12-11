@@ -936,8 +936,10 @@ public:
 
             nextPt -= halfWin;
             Point2f prevDelta(0,0);    //relates to h(t-1)
+#ifdef RLOF_SSE
             __m128i mmMask0, mmMask1, mmMask;
             getWBitMask(winSize.width, mmMask0, mmMask1, mmMask);
+#endif
             for( j = 0; j < criteria.maxCount; j++ )
             {
                 status[ptidx] = static_cast<uchar>(j);

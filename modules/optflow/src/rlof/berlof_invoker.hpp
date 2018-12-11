@@ -222,8 +222,10 @@ namespace berlof
                     nextPt -= halfWin;
                     Point2f prevDelta(0,0);    //denotes h(t-1)
                     cv::Size _winSize = winSize;
+#ifdef RLOF_SSE
                     __m128i mmMask0, mmMask1, mmMask;
                     getWBitMask(_winSize.width, mmMask0, mmMask1, mmMask);
+#endif
                     float MEstimatorScale = 1;
                     int buffIdx = 0;
                     float c[8];
@@ -1803,8 +1805,10 @@ namespace beplk
                 Point2f prevDelta(0,0);
 
                 float c[8];
+#ifdef RLOF_SSE
                 __m128i mmMask0, mmMask1, mmMask;
                 getWBitMask(winSize.width, mmMask0, mmMask1, mmMask);
+#endif
                 for( j = 0; j < criteria.maxCount; j++ )
                 {
                     cv::Point2f delta;

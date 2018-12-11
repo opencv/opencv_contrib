@@ -243,8 +243,10 @@ namespace ica
                 cv::Point2f backUpNextPt = nextPt;
                 nextPt -= halfWin;
                 int j;
+#ifdef RLOF_SSE
                 __m128i mmMask0, mmMask1, mmMask;
                 getWBitMask(winSize.width, mmMask0, mmMask1, mmMask);
+#endif
                 float MEstimatorScale = 1;
                 int buffIdx = 0;
                 cv::Point2f prevDelta(0, 0);

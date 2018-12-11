@@ -31,6 +31,7 @@ namespace cv
 namespace optflow
 {
     typedef short deriv_type;
+#ifdef RLOF_SSE
     inline void get4BitMask(const int & width, __m128i & mask)
     {
         int noBits = width - static_cast<int>(floor(width / 4.f) * 4.f);
@@ -54,7 +55,7 @@ namespace optflow
         t0 = _mm_set_epi16(val[3], val[3], val[2], val[2], val[1], val[1], val[0], val[0]);
         t2 = _mm_set_epi16(val[7], val[6], val[5], val[4], val[3], val[2], val[1], val[0]);
     }
-
+#endif
     typedef uchar tMaskType;
 #define tCVMaskType CV_8UC1
 #define MaskSet 0xffffffff
