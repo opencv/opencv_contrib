@@ -161,7 +161,8 @@ public:
             float w1 = 0, w2 = 0; // -IyI
             float dI = 0; // I^2
             float D = 0;
- #ifdef CV_SSE4_1
+ #ifdef RLOF_SSE
+
             __m128i qw0 = _mm_set1_epi32(iw00 + (iw01 << 16));
             __m128i qw1 = _mm_set1_epi32(iw10 + (iw11 << 16));
             __m128i z = _mm_setzero_si128();
@@ -183,7 +184,7 @@ public:
                 short* dIptr = (short*)(derivIWinBuf.data + y*derivIWinBuf.step);
                 
                 x = 0;
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                for( ; x <= winBufSize.width*cn - 4; x += 4, dsrc += 4*2, dIptr += 4*2 )
                 {
                     __m128i mask_0_7_epi16 = _mm_mullo_epi16(_mm_cvtepi8_epi16(_mm_loadl_epi64((const __m128i*)(maskPtr+x))), mmMaskSet_epi16);
@@ -296,7 +297,7 @@ public:
                     A12 = 0;
                     A22 = 0;
                 }
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                 qw0 = _mm_set1_epi32(iw00 + (iw01 << 16));
                 qw1 = _mm_set1_epi32(iw10 + (iw11 << 16));
                 __m128 qb0 = _mm_setzero_ps(), qb1 = _mm_setzero_ps(), qb2 = _mm_setzero_ps();
@@ -306,7 +307,7 @@ public:
                 __m128 mmSumIy = _mm_setzero_ps(),  mmSumIx = _mm_setzero_ps();
                 __m128 mmAxx = _mm_setzero_ps(), mmAxy = _mm_setzero_ps(), mmAyy = _mm_setzero_ps();
                 float gainVal = gainVec.x > 0 ? gainVec.x : -gainVec.x;
-                int bitShift = gainVec.x == 0 ? 1 : static_cast<int>(ceil(log(200.f / gainVal) / log(2.f)));    // zwei stellen nach den komma 
+                int bitShift = gainVec.x == 0 ? 1 : static_cast<int>(ceil(log(200.f / gainVal) / log(2.f)));
                 __m128i mmGainValue_epi16 = _mm_set1_epi16(static_cast<short>(gainVec.x * (float)(1 << bitShift)));
                 __m128i mmConstValue_epi16 = _mm_set1_epi16(static_cast<short>(gainVec.y));
 #endif
@@ -318,7 +319,7 @@ public:
                     const short* dIptr = (const short*)(derivIWinBuf.data + (y)*derivIWinBuf.step);
                     
                     x = 0;
-#ifdef CV_SSE4_1                    
+#ifdef RLOF_SSE                    
                     
                     for( ; x <= winSize.width*cn; x += 8, dIptr += 8*2 )
                     {
@@ -506,7 +507,7 @@ public:
                 float CV_DECL_ALIGNED(16) wbuf[4];//
                 if( j == 0 )
                 {
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                         _mm_store_ps(wbuf, mmSumW1);
                         w1  = wbuf[0] + wbuf[1] + wbuf[2] + wbuf[3];
                         _mm_store_ps(wbuf, mmSumW2);
@@ -529,7 +530,7 @@ public:
                     w1 *= -FLT_SCALE;
                     w2 *= -FLT_SCALE;
                     dI *= FLT_SCALE;
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                     float CV_DECL_ALIGNED(32) A11buf[4], A12buf[4], A22buf[4];//                
                     
                     _mm_store_ps(A11buf, mmAxx);
@@ -545,7 +546,7 @@ public:
                     A22 *= FLT_SCALE; 
                 }
 
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                 float CV_DECL_ALIGNED(16) bbuf[4];
                 _mm_store_ps(bbuf, _mm_add_ps(qb0, qb1));
                 b1 = bbuf[0] + bbuf[2];
@@ -794,7 +795,7 @@ public:
             CV_Assert( step == (int)(J.step/J.elemSize1()) );
             float A11 = 0, A12 = 0, A22 = 0;
             
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
             __m128i qw0 = _mm_set1_epi32(iw00 + (iw01 << 16));
             __m128i qw1 = _mm_set1_epi32(iw10 + (iw11 << 16));
             __m128i z = _mm_setzero_si128();
@@ -818,7 +819,7 @@ public:
                 
                 x = 0;
                 
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                 for( ; x <= winSize.width*cn; x += 4, dsrc += 4*2, dIptr += 4*2 )
                 {
                     __m128i wMask = _mm_set_epi32(MaskSet * maskPtr[x+3], 
@@ -900,7 +901,7 @@ public:
 #endif
             }
             
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
             float CV_DECL_ALIGNED(16) A11buf[4], A12buf[4], A22buf[4];
             _mm_store_ps(A11buf, qA11);
             _mm_store_ps(A12buf, qA12);
@@ -956,7 +957,7 @@ public:
                 iw10 = cvRound((1.f - a)*b*(1 << W_BITS));
                 iw11 = (1 << W_BITS) - iw00 - iw01 - iw10;
                 float b1 = 0, b2 = 0;
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                 qw0 = _mm_set1_epi32(iw00 + (iw01 << 16));
                 qw1 = _mm_set1_epi32(iw10 + (iw11 << 16));
                 __m128 qb0 = _mm_setzero_ps(), qb1 = _mm_setzero_ps();
@@ -970,7 +971,7 @@ public:
                     const short* dIptr = (const short*)(derivIWinBuf.data + (y)*derivIWinBuf.step);
                     
                     x = 0;
-#ifdef CV_SSE4_1                    
+#ifdef RLOF_SSE                    
                     const tMaskType* maskPtr = (const tMaskType*)winMaskMat.data + y * mStep;
                     for( ; x <= winSize.width*cn; x += 8, dIptr += 8*2 )
                     {
@@ -1038,7 +1039,7 @@ public:
 #endif
                 }
                 
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                 float CV_DECL_ALIGNED(16) bbuf[4];
                 _mm_store_ps(bbuf, _mm_add_ps(qb0, qb1));
                 b1 += bbuf[0] + bbuf[2];

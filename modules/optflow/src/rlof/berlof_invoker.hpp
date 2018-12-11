@@ -708,7 +708,7 @@ namespace berlof
                     float dI = 0; // I^2
                     float D = 0;
 
-        #ifdef CV_SSE4_1
+        #ifdef RLOF_SSE
 
                     __m128i qw0 = _mm_set1_epi32(iw00 + (iw01 << 16));
                     __m128i qw1 = _mm_set1_epi32(iw10 + (iw11 << 16));
@@ -734,7 +734,7 @@ namespace berlof
 
 
 
-        #ifdef CV_SSE4_1
+        #ifdef RLOF_SSE
                         for( ; x <= winBufSize.width*cn - 4; x += 4, dsrc += 4*2, dIptr += 4*2 )
                         {
                             __m128i mask_0_7_epi16 = _mm_mullo_epi16(_mm_cvtepi8_epi16(_mm_loadl_epi64((const __m128i*)(maskPtr+x))), mmMaskSet_epi16);
@@ -906,7 +906,7 @@ namespace berlof
                         fParam0 = param[0] * MEstimatorScale;
                         fParam1 = param[1] * MEstimatorScale;
 
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
 
                         qw0 = _mm_set1_epi32(iw00 + (iw01 << 16));
                         qw1 = _mm_set1_epi32(iw10 + (iw11 << 16));
@@ -952,7 +952,7 @@ namespace berlof
                             const short* dIptr = (const short*)(derivIWinBuf.data + y*derivIWinBuf.step);
 
                             x = 0;
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                         for( ; x <= _winSize.width*cn; x += 8, dIptr += 8*2 )
                         {
                             __m128i mask_0_7_epi16 = _mm_mullo_epi16(_mm_cvtepi8_epi16(_mm_loadl_epi64((const __m128i*)(maskPtr+x))), mmMaskSet_epi16);
@@ -1269,7 +1269,7 @@ namespace berlof
 #endif
                         }
 
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                         short etaValues[8];
                         _mm_storeu_si128((__m128i*)(etaValues), mmEta);
                         MEstimatorScale += eta * (etaValues[0] + etaValues[1] + etaValues[2] + etaValues[3]
@@ -1279,7 +1279,7 @@ namespace berlof
                         float CV_DECL_ALIGNED(32) wbuf[4];//
                         if( j == 0 )
                         {
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                                 _mm_store_ps(wbuf, mmSumW1);
                                 w1  = wbuf[0] + wbuf[1] + wbuf[2] + wbuf[3];
                                 _mm_store_ps(wbuf, mmSumW2);
@@ -1304,7 +1304,7 @@ namespace berlof
                                 dI *= FLT_SCALE;
 
 
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                             float CV_DECL_ALIGNED(16) A11buf[4], A12buf[4], A22buf[4];//
 
                             _mm_store_ps(A11buf, mmAxx);
@@ -1362,7 +1362,7 @@ namespace berlof
                         }
 
 
-        #ifdef CV_SSE4_1
+        #ifdef RLOF_SSE
                         float CV_DECL_ALIGNED(16) bbuf[4];
                         for(int mmi = 0; mmi < 4; mmi++)
                         {
@@ -1658,7 +1658,7 @@ namespace beplk
                 CV_Assert( step == (int)(J.step/J.elemSize1()) );
                 float A11 = 0, A12 = 0, A22 = 0;
 
-    #ifdef CV_SSE4_1
+    #ifdef RLOF_SSE
                 __m128i qw0 = _mm_set1_epi32(iw00 + (iw01 << 16));
                 __m128i qw1 = _mm_set1_epi32(iw10 + (iw11 << 16));
                 __m128i z = _mm_setzero_si128();
@@ -1682,7 +1682,7 @@ namespace beplk
 
                     x = 0;
 
-    #ifdef CV_SSE4_1
+    #ifdef RLOF_SSE
                     for( ; x < winSize.width*cn; x += 4, dsrc += 4*2, dIptr += 4*2 )
                     {
                         __m128i wMask = _mm_set_epi32(MaskSet * maskPtr[x+3],
@@ -1763,7 +1763,7 @@ namespace beplk
 
                 }
 
-    #ifdef CV_SSE4_1
+    #ifdef RLOF_SSE
                 float CV_DECL_ALIGNED(16) A11buf[4], A12buf[4], A22buf[4];
                 _mm_store_ps(A11buf, qA11);
                 _mm_store_ps(A12buf, qA12);
@@ -1834,7 +1834,7 @@ namespace beplk
 
                     float _b1[4] = {0,0,0,0};
                     float _b2[4] = {0,0,0,0};
-    #ifdef CV_SSE4_1
+    #ifdef RLOF_SSE
                     __m128 qbc0[4] = {_mm_setzero_ps(),_mm_setzero_ps(),_mm_setzero_ps(),_mm_setzero_ps()};
                     __m128 qbc1[4] = {_mm_setzero_ps(),_mm_setzero_ps(),_mm_setzero_ps(),_mm_setzero_ps()};
                     qw0 = _mm_set1_epi32(iw00 + (iw01 << 16));
@@ -1846,7 +1846,7 @@ namespace beplk
                         const short* Iptr = (const short*)(IWinBuf.data + ( y)*IWinBuf.step);
                         const short* dIptr = (const short*)(derivIWinBuf.data + (y)*derivIWinBuf.step);
                         x = 0;
-    #ifdef CV_SSE4_1
+    #ifdef RLOF_SSE
                         const tMaskType* maskPtr = (const tMaskType*)winMaskMat.data + y * mStep;
                         for( ; x <= winSize.width*cn; x += 8, dIptr += 8*2 )
                         {
@@ -1982,7 +1982,7 @@ namespace beplk
 
                     }
 
-    #ifdef CV_SSE4_1
+    #ifdef RLOF_SSE
                     float CV_DECL_ALIGNED(16) bbuf[4];
                     _mm_store_ps(bbuf, _mm_add_ps(qbc0[0], qbc1[0]));
                     _b1[0] += bbuf[0] + bbuf[2];

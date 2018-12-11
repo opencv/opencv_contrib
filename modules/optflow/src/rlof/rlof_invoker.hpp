@@ -165,7 +165,7 @@ namespace ica
                 float D = 0;
                 float minEig;
 
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                 __m128i qw0 = _mm_set1_epi32(iw00 + (iw01 << 16));
                 __m128i qw1 = _mm_set1_epi32(iw10 + (iw11 << 16));
                 __m128i z = _mm_setzero_si128();
@@ -189,7 +189,7 @@ namespace ica
 
                     x = 0;
 
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                     
                     for (; x <= winSize.width*cn; x += 4, dsrc += 4 * 2, dIptr += 4 * 2)
                     {
@@ -326,7 +326,7 @@ namespace ica
                     float fParam1 = param[1] * 32.f;
                     fParam0 = param[0] * MEstimatorScale;
                     fParam1 = param[1] * MEstimatorScale;
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                     qw0 = _mm_set1_epi32(iw00 + (iw01 << 16));
                     qw1 = _mm_set1_epi32(iw10 + (iw11 << 16));
                     __m128 qb0 = _mm_setzero_ps(), qb1 = _mm_setzero_ps();
@@ -334,7 +334,7 @@ namespace ica
                     __m128i mmParam0 = _mm_set1_epi16(MIN(std::numeric_limits<short>::max() - 1, static_cast<short>(fParam0)));
                     __m128i mmParam1 = _mm_set1_epi16(MIN(std::numeric_limits<short>::max() - 1, static_cast<short>(fParam1)));
                     float s2Val = param[2] > 0 ? param[2] : -param[2];
-                    int s2bitShift = param[2] == 0 ? 1 : static_cast<int>(ceil(log(200.f / s2Val) / log(2.f)));    // zwei stellen nach den komma 
+                    int s2bitShift = param[2] == 0 ? 1 : static_cast<int>(ceil(log(200.f / s2Val) / log(2.f)));
                     __m128i mmParam2_epi16 = _mm_set1_epi16(static_cast<short>(param[2] * (float)(1 << s2bitShift)));
                     __m128i mmOness_epi16 = _mm_set1_epi16(1 << s2bitShift);
                     __m128  mmParam2s = _mm_set1_ps(0.01f * param[2]);
@@ -354,7 +354,7 @@ namespace ica
                         const short* dIptr = (const short*)(derivIWinBuf.data + (y)*derivIWinBuf.step);
 
                         x = 0;
-#ifdef CV_SSE4_1                    
+#ifdef RLOF_SSE                    
                         for (; x <= winSize.width*cn; x += 8, dIptr += 8 * 2)
                         {
                             __m128i mask_0_7_epi16 = _mm_mullo_epi16(_mm_cvtepi8_epi16(_mm_loadl_epi64((const __m128i*)(maskPtr + x))), mmMaskSet_epi16);
@@ -532,7 +532,7 @@ namespace ica
 #endif
                     }
                     
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                     short etaValues[8];
                     _mm_storeu_si128((__m128i*)(etaValues), mmEta);
                     MEstimatorScale += eta * (etaValues[0] + etaValues[1] + etaValues[2] + etaValues[3]
@@ -542,7 +542,7 @@ namespace ica
 #endif
                     if (j == 0)
                     {
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                         float CV_DECL_ALIGNED(16) A11buf[4], A12buf[4], A22buf[4];//                
 
                         _mm_store_ps(A11buf, mmAxx);
@@ -576,7 +576,7 @@ namespace ica
                         }
                     }
 
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                     float CV_DECL_ALIGNED(16) bbuf[4];
                     _mm_store_ps(bbuf, _mm_add_ps(qb0, qb1));
                     b1 += bbuf[0] + bbuf[2];
@@ -786,7 +786,7 @@ namespace radial
                 float dI = 0; // I^2
                 float D = 0;
 
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                 __m128i qw0 = _mm_set1_epi32(iw00 + (iw01 << 16));
                 __m128i qw1 = _mm_set1_epi32(iw10 + (iw11 << 16));
                 __m128i z = _mm_setzero_si128();
@@ -810,7 +810,7 @@ namespace radial
 
                     x = 0;
 
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                     for (; x <= winBufSize.width*cn - 4; x += 4, dsrc += 4 * 2, dIptr += 4 * 2)
                     {
                         __m128i mask_0_7_epi16 = _mm_mullo_epi16(_mm_cvtepi8_epi16(_mm_loadl_epi64((const __m128i*)(maskPtr + x))), mmMaskSet_epi16);
@@ -971,7 +971,7 @@ namespace radial
                     fParam0 = param[0] * MEstimatorScale;
                     fParam1 = param[1] * MEstimatorScale;
                     
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
 
                     qw0 = _mm_set1_epi32(iw00 + (iw01 << 16));
                     qw1 = _mm_set1_epi32(iw10 + (iw11 << 16));
@@ -986,14 +986,14 @@ namespace radial
 
 
                     float s2Val = param[2] > 0 ? param[2] : -param[2];
-                    int s2bitShift = param[2] == 0 ? 1 : static_cast<int>(ceil(log(200.f / s2Val) / log(2.f)));    // zwei stellen nach den komma 
+                    int s2bitShift = param[2] == 0 ? 1 : static_cast<int>(ceil(log(200.f / s2Val) / log(2.f)));
                     __m128i mmParam2_epi16 = _mm_set1_epi16(static_cast<short>(param[2] * (float)(1 << s2bitShift)));
                     __m128i mmOness_epi16 = _mm_set1_epi16(1 << s2bitShift);
                     __m128  mmParam2s = _mm_set1_ps(0.01f * param[2]);
                     __m128  mmParam2s2 = _mm_set1_ps(param[2] * param[2]);
 
                     float gainVal = gainVec.x > 0 ? gainVec.x : -gainVec.x;
-                    int bitShift = gainVec.x == 0 ? 1 : static_cast<int>(ceil(log(200.f / gainVal) / log(2.f)));    // zwei stellen nach den komma 
+                    int bitShift = gainVec.x == 0 ? 1 : static_cast<int>(ceil(log(200.f / gainVal) / log(2.f)));
 
                     __m128i mmGainValue_epi16 = _mm_set1_epi16(static_cast<short>(gainVec.x * (float)(1 << bitShift)));
                     __m128i mmConstValue_epi16 = _mm_set1_epi16(static_cast<short>(gainVec.y));
@@ -1011,7 +1011,7 @@ namespace radial
                         const short* dIptr = (const short*)(derivIWinBuf.data + y * derivIWinBuf.step);
 
                         x = 0;
-#ifdef CV_SSE4_1                    
+#ifdef RLOF_SSE                    
 
 
                         for (; x <= _winSize.width*cn; x += 8, dIptr += 8 * 2)
@@ -1057,7 +1057,7 @@ namespace radial
                             mmEta = _mm_add_epi16(mmEta, _mm_add_epi16(_mm_and_si128(scalediffIsPos_epi16, _mm_set1_epi16(2)), _mm_set1_epi16(-1)));
                                 
         
-                            __m128i Ixy_0 = _mm_loadu_si128((const __m128i*)(dIptr)); // Ix0 Iy0 Ix1 Iy1 ... 
+                            __m128i Ixy_0 = _mm_loadu_si128((const __m128i*)(dIptr)); // Ix0 Iy0 Ix1 Iy1
                             __m128i Ixy_1 = _mm_loadu_si128((const __m128i*)(dIptr + 8));
 
 
@@ -1072,7 +1072,7 @@ namespace radial
                             // val = |It| -/+ sigma1
                             __m128i tmpParam1_epi16 = _mm_add_epi16(_mm_and_si128(diffIsPos_epi16, _mm_sub_epi16(mmDiff_epi16, mmParam1)),
                                 _mm_andnot_si128(diffIsPos_epi16, _mm_add_epi16(mmDiff_epi16, mmParam1)));
-                            // It == 0     ? |It| > sigma13 
+                            // It == 0     ? |It| > sigma13
                             mmDiff_epi16 = _mm_and_si128(bSet2_epi16, mmDiff_epi16);
                             // It == val ? sigma0 < |It| < sigma1
                             mmDiff_epi16 = _mm_blendv_epi8(mmDiff_epi16, tmpParam1_epi16, bSet1_epi16);
@@ -1167,7 +1167,7 @@ namespace radial
                                 __m128 I_tale_ps = _mm_mul_ps(I_ps, tale_0_3_ps);
                                 mmSumI = _mm_add_ps(mmSumI, I_tale_ps);
 
-                                // sumW 
+                                // sumW
                                 mmSumW = _mm_add_ps(mmSumW, tale_0_3_ps);
 
                                 // sumDI
@@ -1201,10 +1201,8 @@ namespace radial
                                 I_tale_ps = _mm_mul_ps(I_ps, tale_4_7_ps);
                                 mmSumI = _mm_add_ps(mmSumI, I_tale_ps);
 
-                                // sumW 
                                 mmSumW = _mm_add_ps(mmSumW, tale_4_7_ps);
 
-                                // sumDI
                                 mmSumDI = _mm_add_ps(mmSumDI, _mm_mul_ps(I_ps, I_tale_ps));
                             }
 
@@ -1287,17 +1285,17 @@ namespace radial
                     }
 
                     
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                     short etaValues[8];
                     _mm_storeu_si128((__m128i*)(etaValues), mmEta);
                     MEstimatorScale += eta * (etaValues[0] + etaValues[1] + etaValues[2] + etaValues[3]
                             + etaValues[4] + etaValues[5] + etaValues[6] + etaValues[7]);
 
-#endif                
+#endif
                     float CV_DECL_ALIGNED(32) wbuf[4];//
                     if (j == 0)
                     {
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                         _mm_store_ps(wbuf, mmSumW1);
                         w1 = wbuf[0] + wbuf[1] + wbuf[2] + wbuf[3];
                         _mm_store_ps(wbuf, mmSumW2);
@@ -1322,7 +1320,7 @@ namespace radial
                         dI *= FLT_SCALE;
 
 
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
 
                         float CV_DECL_ALIGNED(16) A11buf[4], A12buf[4], A22buf[4];//                
 
@@ -1335,15 +1333,15 @@ namespace radial
                         A12 = A12buf[0] + A12buf[1] + A12buf[2] + A12buf[3];
                         A22 = A22buf[0] + A22buf[1] + A22buf[2] + A22buf[3];
 #endif
-                        A11 *= FLT_SCALE; 
-                        A12 *= FLT_SCALE; 
-                        A22 *= FLT_SCALE; 
+                        A11 *= FLT_SCALE;
+                        A12 *= FLT_SCALE;
+                        A22 *= FLT_SCALE;
 
                     
                     }
 
 
-#ifdef CV_SSE4_1
+#ifdef RLOF_SSE
                     float CV_DECL_ALIGNED(16) bbuf[4];
                     _mm_store_ps(bbuf, _mm_add_ps(qb0, qb1));
                     b1 = bbuf[0] + bbuf[2];
@@ -1413,8 +1411,7 @@ namespace radial
                     nextPts[ptidx] = nextPt + halfWin;
                     gainVecs[ptidx] = gainVec;
 
-                    
-                    if (// j > 1 && 
+                    if (
                         (std::abs(delta.x - prevDelta.x) < 0.01  &&    std::abs(delta.y - prevDelta.y) < 0.01)
                         || ((delta.ddot(delta) <= 0.001) && std::abs(prevGain.x - deltaGain.x) < 0.01)
                         )
@@ -1440,7 +1437,7 @@ namespace radial
         const Point2f*    prevPts;
         Point2f*        nextPts;
         uchar*            status;
-        cv::Point2f*    gainVecs;        
+        cv::Point2f*    gainVecs;
         float*            err;
         int                maxWinSize;
         int                minWinSize;

@@ -33,7 +33,7 @@ T quickselect(const Mat & inp, int k)
                 std::swap(values.at<T>(l), values.at<T>(ir));
             return values.at<T>(k);
         }
-        else 
+        else
         {
             mid = (l + ir) >> 1;
             std::swap(values.at<T>(mid), values.at<T>(l+1));
@@ -46,7 +46,7 @@ T quickselect(const Mat & inp, int k)
             i = l + 1;
             j = ir;
             a = values.at<T>(l+1);
-            while (true) 
+            while (true)
             {
                 do
                 {
@@ -91,7 +91,6 @@ public:
     }
     void setBlurFromRGB(const cv::Mat & inp)
     {
-        //cv::medianBlur(constNextImage, blurNextImg, 7);
         if(m_Overwrite)
             cv::GaussianBlur(inp, m_BlurredImage, cv::Size(7,7), -1);
     }

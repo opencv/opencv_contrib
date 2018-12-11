@@ -14,29 +14,29 @@ namespace optflow
     //! @addtogroup optflow
     //! @{
 
-    /** @brief This is used store and set up the parameters of the robust local optical flow (RLOF) algoritm. 
+    /** @brief This is used store and set up the parameters of the robust local optical flow (RLOF) algoritm.
      *
-     * The RLOF is a fast local optical flow approach similar to the pyramidal iterative Lucas-Kanade method as 
-     * proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK(). 
-     * This RLOF implementation can be seen as an improved pyramidal iterative Lucas-Kanade and includes 
+     * The RLOF is a fast local optical flow approach similar to the pyramidal iterative Lucas-Kanade method as
+     * proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK().
+     * This RLOF implementation can be seen as an improved pyramidal iterative Lucas-Kanade and includes
      * a set of improving modules. The main improvements in respect to the pyramidal iterative Lucas-Kanade
      * are:
-     *    - A more robust redecending M-estimator framework (see @cite Senst2012) to improve the accuracy at 
+     *   - A more robust redecending M-estimator framework (see @cite Senst2012) to improve the accuracy at
      *     motion boundaries and appearing and disappearing pixels.
-     *  - an adaptive support region strategies to improve the accuracy at motion boundaries to reduce the 
-     *     corona effect, i.e oversmoothing of the PLK at motion/object boundaries. The cross-based segementation 
-     *     strategy (SR_CROSS) proposed in @cite Senst2014 uses a simple segmenation approach to obtain the optimal 
+     *  - an adaptive support region strategies to improve the accuracy at motion boundaries to reduce the
+     *     corona effect, i.e oversmoothing of the PLK at motion/object boundaries. The cross-based segementation
+     *     strategy (SR_CROSS) proposed in @cite Senst2014 uses a simple segmenation approach to obtain the optimal
      *     shape of the support region.
-     *  - To deal with illumination changes (outdoor sequences and shadow) the intensity constancy assumption 
-     *     based optical flow equation has been adopt with the Gennert and Negahdaripour illumination model 
+     *  - To deal with illumination changes (outdoor sequences and shadow) the intensity constancy assumption
+     *     based optical flow equation has been adopt with the Gennert and Negahdaripour illumination model
      *     (see @cite Senst2016). This model can be switched on/off with the useIlluminationModel variable.
      *  - By using a global motion prior initialization (see @cite Senst2016) of the iterative refinement
      *     the accuracy could be significantly improved for large displacements. This initialization can be
      *     switched on and of with useGlobalMotionPrior variable.
      *
-     * The RLOF can be computed with the SparseOpticalFlow class or function interface to track a set of features 
-     * or with the DenseOpticalFlow class or function interface to compute dense optical flow. 
-     * 
+     * The RLOF can be computed with the SparseOpticalFlow class or function interface to track a set of features
+     * or with the DenseOpticalFlow class or function interface to compute dense optical flow.
+     *
      * @see optflow::DenseRLOFOpticalFlow, optflow::calcOpticalFlowDenseRLOF(), optflow::SparseRLOFOpticalFlow, optflow::calcOpticalFlowSparseRLOF()
      */
     enum SupportRegionType {
@@ -54,7 +54,7 @@ namespace optflow
 
     enum InterpolationType
     {
-        INTERP_GEO = 0,    /**<  Fast geodesic interpolation, see @cite Geister2016 */
+        INTERP_GEO = 0,    /**<  Fast geodesic interpolation, see @cite Geistert2016 */
         INTERP_EPIC = 1,    /**<  Edge-preserving interpolation, see @cite Revaud2015,Geistert2016. */
     };
 
@@ -86,14 +86,14 @@ namespace optflow
         */
 
         float normSigma0;
-        /**< \$ \sigma_0 \$ paramter of the shrinked Hampel norm introduced in @cite Senst2012. If
-         * \$ \sigma_0 \$ = std::numeric_limist<float>::max() the least-square estimator will be used
+        /**< &sigma paramter of the shrinked Hampel norm introduced in @cite Senst2012. If
+         * &sigma = std::numeric_limist<float>::max() the least-square estimator will be used
          * instead of the M-estimator. Althoug M-estimator is more robust against outlier in the support
          * region the least-square can be fast in computation.
         */
         float normSigma1;
-        /**< \$ \sigma_1 \$ paramter of the shrinked Hampel norm introduced in @cite Senst2012. If
-         * \$ \sigma_1 \$ = std::numeric_limist<float>::max() the least-square estimator will be used
+        /**< &sigma paramter of the shrinked Hampel norm introduced in @cite Senst2012. If
+         * &sigma = std::numeric_limist<float>::max() the least-square estimator will be used
          * instead of the M-estimator. Althoug M-estimator is more robust against outlier in the support
          * region the least-square can be fast in computation.
         */
@@ -122,7 +122,7 @@ namespace optflow
         bool useIlluminationModel;
         /**< Use the Gennert and Negahdaripour illumination model instead of the intensity brigthness
          *   constraint. (Probosed in @cite Senst2016 ) This model is defined as follow:
-         *   \f[ I(\mathbf{x},t) + m \cdot I(\mathbf{x},t) + c = I(\mathbf{x},t+1) \f[
+         *   \f[ I(\mathbf{x},t) + m \cdot I(\mathbf{x},t) + c = I(\mathbf{x},t+1) \f]
          *   and contains with m and c a multiplicative and additive term which makes the estimate
          *   more robust against illumination changes. The computational complexity is increased by
          *   enabling the illumination model.
@@ -148,15 +148,15 @@ namespace optflow
         */
     };
 
-    /** @brief Fast dense optical flow computation based on robust local optical flow (RLOF) algorithms and sparse-to-dense interpolation 
+    /** @brief Fast dense optical flow computation based on robust local optical flow (RLOF) algorithms and sparse-to-dense interpolation
      * scheme.
      *
-     * The RLOF is a fast local optical flow approach similar to the pyramidal iterative Lucas-Kanade method as 
-     * proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK(). 
+     * The RLOF is a fast local optical flow approach similar to the pyramidal iterative Lucas-Kanade method as
+     * proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK().
      *
      * The sparse-to-dense interpolation scheme allows for fast computation of dense optical flow using RLOF (see @cite Geistert2016).
      * For this scheme the following steps are applied:
-     * -# motion vector seeded at a regular sampled grid are computed. The sparsity of this grid can be configured with setGridStep 
+     * -# motion vector seeded at a regular sampled grid are computed. The sparsity of this grid can be configured with setGridStep
      * -# (optinally) errornous motion vectors are filter based on the forward backward confidence. The threshold can be configured
      * with setForwardBackward. The filter is only applied if the threshold >0 but than the runtime is doubled due to the estimation
      * of the backward flow.
@@ -165,7 +165,7 @@ namespace optflow
      * For the RLOF configuration see optflow::RLOFOpticalFlowParameter for further details.
      * Parameters have been described in @cite Senst2012 @cite Senst2013 @cite Senst2014 and @cite Senst2016.
      *
-     * @note If the grid size is set to (1,1) and the forward backward threshold <= 0 that the dense optical flow field is purely.
+     * @note SIMD parallelization is available compiled with SSE4.1. If the grid size is set to (1,1) and the forward backward threshold <= 0 that the dense optical flow field is purely.
      * computed with the RLOF.
      *
      * @see optflow::calcOpticalFlowDenseRLOF(), optflow::RLOFOpticalFlowParameter
@@ -174,43 +174,43 @@ namespace optflow
     {
     public:
         //! @brief Configuration of the RLOF alogrithm.
-        /** 
-            @see optflow::RLOFOpticalFlowParameter, getRLOFOpticalFlowParameter 
+        /**
+            @see optflow::RLOFOpticalFlowParameter, getRLOFOpticalFlowParameter
         */
         CV_WRAP virtual void setRLOFOpticalFlowParameter(Ptr<RLOFOpticalFlowParameter>  val) = 0;
-        /** @copybrief setRLOFOpticalFlowParameter 
-            @see optflow::RLOFOpticalFlowParameter, setRLOFOpticalFlowParameter 
+        /** @copybrief setRLOFOpticalFlowParameter
+            @see optflow::RLOFOpticalFlowParameter, setRLOFOpticalFlowParameter
         */
         CV_WRAP virtual Ptr<RLOFOpticalFlowParameter>  getRLOFOpticalFlowParameter() const = 0;
         //! @brief Threshold for the forward backward confidence check
-        /**For each grid point \f$ \mathbf{x} \f$ a motion vector \f$ d_{I0,I1}(\mathbf{x}) \f$ is computed. 
+        /**For each grid point \f$ \mathbf{x} \f$ a motion vector \f$ d_{I0,I1}(\mathbf{x}) \f$ is computed.
          *     If the forward backward error \f[ EP_{FB} = || d_{I0,I1} + d_{I1,I0} || \f]
-         *     is larger than threshold given by this function then the motion vector will not be used by the following 
+         *     is larger than threshold given by this function then the motion vector will not be used by the following
          *    vector field interpolation. \f$ d_{I1,I0} \f$ denotes the backward flow. Note, the forward backward test
          *    will only be applied if the threshold > 0. This may results into a doubled runtime for the motion estimation.
          *    @see getForwardBackward, setGridStep
         */
         CV_WRAP virtual void setForwardBackward(float val) = 0;
         /** @copybrief setForwardBackward
-            @see setForwardBackward 
+            @see setForwardBackward
         */
         CV_WRAP virtual float getForwardBackward() const = 0;
         //! @brief Size of the grid to spawn the motion vectors.
-        /** For each grid point a motion vector is computed. Some motion vectors will be removed due to the forwatd backward 
+        /** For each grid point a motion vector is computed. Some motion vectors will be removed due to the forwatd backward
          *  threshold (if set >0). The rest will be the base of the vector field interpolation.
          *    @see getForwardBackward, setGridStep
         */
         CV_WRAP virtual Size getGridStep() const = 0;
         /** @copybrief getGridStep
-         *    @see getGridStep 
+         *    @see getGridStep
          */
         CV_WRAP virtual void setGridStep(Size val) = 0;
 
         //! @brief Interpolation used to compute the dense optical flow.
         /** Two interpolation algorithms have been supported
-         * - **INTERP_GEO** applies the fast geodesic interpolation, see @cite Geister2016.
+         * - **INTERP_GEO** applies the fast geodesic interpolation, see @cite Geistert2016.
          * - **INTERP_EPIC_RESIDUAL** applies the edge-preserving interpolation, see @cite Revaud2015,Geistert2016.
-         * @see ximgproc::EdgeAwareInterpolator, getInterpolation 
+         * @see ximgproc::EdgeAwareInterpolator, getInterpolation
         */
         CV_WRAP virtual void setInterpolation(InterpolationType val) = 0;
         /** @copybrief setInterpolation
@@ -224,7 +224,7 @@ namespace optflow
         */
         CV_WRAP virtual int getEPICK() const = 0;
         /** @copybrief getEPICK
-         *    @see ximgproc::EdgeAwareInterpolator, getEPICK 
+         *    @see ximgproc::EdgeAwareInterpolator, getEPICK
          */
         CV_WRAP virtual void setEPICK(int val) = 0;
         //! @brief see ximgproc::EdgeAwareInterpolator() sigma value.
@@ -235,7 +235,7 @@ namespace optflow
         */
         CV_WRAP virtual float getEPICSigma() const = 0;
         /** @copybrief getEPICSigma
-         *  @see ximgproc::EdgeAwareInterpolator, getEPICSigma 
+         *  @see ximgproc::EdgeAwareInterpolator, getEPICSigma
          */
         CV_WRAP virtual void setEPICSigma(float val) = 0;
         //! @brief  see ximgproc::EdgeAwareInterpolator() lambda value.
@@ -245,7 +245,7 @@ namespace optflow
         */
         CV_WRAP virtual float getEPICLambda() const = 0;
         /** @copybrief getEPICLambda
-         *    @see ximgproc::EdgeAwareInterpolator, getEPICLambda 
+         *    @see ximgproc::EdgeAwareInterpolator, getEPICLambda
         */
         CV_WRAP virtual void setEPICLambda(float val) = 0;
         //! @brief see ximgproc::EdgeAwareInterpolator().
@@ -254,16 +254,16 @@ namespace optflow
         */
         CV_WRAP virtual float getFgsLambda() const = 0;
         /** @copybrief getFgsLambda
-         *    @see ximgproc::EdgeAwareInterpolator, ximgproc::fastGlobalSmootherFilter, getFgsLambda 
+         *    @see ximgproc::EdgeAwareInterpolator, ximgproc::fastGlobalSmootherFilter, getFgsLambda
         */
         CV_WRAP virtual void setFgsLambda(float val) = 0;
         //! @brief see ximgproc::EdgeAwareInterpolator().
         /** Sets the respective fastGlobalSmootherFilter() parameter.
-         *    @see ximgproc::EdgeAwareInterpolator, ximgproc::fastGlobalSmootherFilter, setFgsSigma 
+         *    @see ximgproc::EdgeAwareInterpolator, ximgproc::fastGlobalSmootherFilter, setFgsSigma
         */
         CV_WRAP virtual float getFgsSigma() const = 0;
         /** @copybrief getFgsSigma
-         *    @see ximgproc::EdgeAwareInterpolator, ximgproc::fastGlobalSmootherFilter, getFgsSigma  
+         *    @see ximgproc::EdgeAwareInterpolator, ximgproc::fastGlobalSmootherFilter, getFgsSigma
          */
         CV_WRAP virtual void setFgsSigma(float val) = 0;
         //! @brief enables ximgproc::fastGlobalSmootherFilter
@@ -275,7 +275,7 @@ namespace optflow
          *    @see ximgproc::fastGlobalSmootherFilter, setUsePostProc
          */
         CV_WRAP virtual bool getUsePostProc() const = 0;
-        //! @brief Creates instance of optflow::DenseRLOFOpticalFlow 
+        //! @brief Creates instance of optflow::DenseRLOFOpticalFlow
         /**
          *    @param rlofParam see optflow::RLOFOpticalFlowParameter
          *    @param forwardBackwardThreshold see setForwardBackward
@@ -283,6 +283,7 @@ namespace optflow
          *    @param epicK see setEPICK
          *    @param epicSigma see setEPICSigma
          *    @param epicLambda see setEPICLambda
+         *    @param use_post_proc see setUsePostProc
          *    @param fgsLambda see setFgsLambda
          *    @param fgsSigma see setFgsSigma
         */
@@ -294,19 +295,21 @@ namespace optflow
             int epicK = 128,
             float epicSigma = 0.05f,
             float epicLambda = 999.0f,
+            bool use_post_proc = true,
             float fgsLambda = 500.0f,
             float fgsSigma = 1.5f);
     };
 
     /** @brief Class used for calculation sparse optical flow and feature tracking with robust local optical flow (RLOF) algorithms.
     *
-    * The RLOF is a fast local optical flow approach similar to the pyramidal iterative Lucas-Kanade method as 
-    * proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK(). 
+    * The RLOF is a fast local optical flow approach similar to the pyramidal iterative Lucas-Kanade method as
+    * proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK().
     *
-    * For the RLOF configuration see optflow::RLOFOpticalFlowParameter for further details. 
+    * For the RLOF configuration see optflow::RLOFOpticalFlowParameter for further details.
     * Parameters have been described in @cite Senst2012, @cite Senst2013, @cite Senst2014 and @cite Senst2016.
-    @sa optflow::calcOpticalFlowSparseRLOF(), optflow::RLOFOpticalFlowParameter
-
+    *
+    * @note SIMD parallelization is available compiled with SSE4.1.
+    *@see optflow::calcOpticalFlowSparseRLOF(), optflow::RLOFOpticalFlowParameter
     */
     class CV_EXPORTS_W SparseRLOFOpticalFlow : public SparseOpticalFlow
     {
@@ -331,8 +334,8 @@ namespace optflow
          *    @see setForwardBackward
         */
         CV_WRAP virtual float getForwardBackward() const = 0;
-        
-        //! @brief Creates instance of SparseRLOFOpticalFlow 
+
+        //! @brief Creates instance of SparseRLOFOpticalFlow
         /**
          *    @param rlofParam see setRLOFOpticalFlowParameter
          *    @param forwardBackwardThreshold see setForwardBackward
@@ -345,8 +348,8 @@ namespace optflow
 
     /** @brief Fast dense optical flow computation based on robust local optical flow (RLOF) algorithms and sparse-to-dense interpolation scheme.
      *
-     * The RLOF is a fast local optical flow approach similar to the pyramidal iterative Lucas-Kanade method as 
-     * proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK(). 
+     * The RLOF is a fast local optical flow approach similar to the pyramidal iterative Lucas-Kanade method as
+     * proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK().
      *
      * The sparse-to-dense interpolation scheme allows for fast computation of dense optical flow using RLOF (see @cite Geistert2016).
      * For this scheme the following steps are applied:
@@ -356,20 +359,20 @@ namespace optflow
      * of the backward flow.
      * -# Vector field interpolation is applied to the motion vector set to obtain a dense vector field.
      *
-     * @param I0 first 8-bit input image. If The cross-based RLOF is used (by selecting optflow::RLOFOpticalFlowParameter::supportRegionType 
-     * = SupportRegionType::SR_CROSS) image has to be a 8-bit 3 channel image. 
-     * @param I1 second 8-bit input image. If The cross-based RLOF is used (by selecting optflow::RLOFOpticalFlowParameter::supportRegionType 
+     * @param I0 first 8-bit input image. If The cross-based RLOF is used (by selecting optflow::RLOFOpticalFlowParameter::supportRegionType
+     * = SupportRegionType::SR_CROSS) image has to be a 8-bit 3 channel image.
+     * @param I1 second 8-bit input image. If The cross-based RLOF is used (by selecting optflow::RLOFOpticalFlowParameter::supportRegionType
      * = SupportRegionType::SR_CROSS) image has to be a 8-bit 3 channel image.
      * @param flow computed flow image that has the same size as I0 and type CV_32FC2.
      * @param rlofParam see optflow::RLOFOpticalFlowParameter
-     * @param forwardBackwardThreshold Threshold for the forward backward confidence check.
-     * For each grid point \f$ \mathbf{x} \f$ a motion vector \f$ d_{I0,I1}(\mathbf{x}) \f$ is computed. 
+     * @param forewardBackwardThreshold Threshold for the forward backward confidence check.
+     * For each grid point \f$ \mathbf{x} \f$ a motion vector \f$ d_{I0,I1}(\mathbf{x}) \f$ is computed.
      * If the forward backward error \f[ EP_{FB} = || d_{I0,I1} + d_{I1,I0} || \f]
-     * is larger than threshold given by this function then the motion vector will not be used by the following 
+     * is larger than threshold given by this function then the motion vector will not be used by the following
      * vector field interpolation. \f$ d_{I1,I0} \f$ denotes the backward flow. Note, the forward backward test
      *    will only be applied if the threshold > 0. This may results into a doubled runtime for the motion estimation.
-     * @param gridStep Size of the grid to spawn the motion vectors. For each grid point a motion vector is computed. 
-     * Some motion vectors will be removed due to the forwatd backward threshold (if set >0). The rest will be the 
+     * @param gridStep Size of the grid to spawn the motion vectors. For each grid point a motion vector is computed.
+     * Some motion vectors will be removed due to the forwatd backward threshold (if set >0). The rest will be the
      * base of the vector field interpolation.
      * @param epicK see ximgproc::EdgeAwareInterpolator() sets the respective parameter.
      * @param epicSigma see ximgproc::EdgeAwareInterpolator() sets the respective parameter.
@@ -383,35 +386,39 @@ namespace optflow
      * @note If the grid size is set to (1,1) and the forward backward threshold <= 0 that the dense optical flow field is purely
      * computed with the RLOF.
      *
+     * @note SIMD parallelization is available compiled with SSE4.1.
+     *
      * @sa optflow::DenseRLOFOpticalFlow, optflow::RLOFOpticalFlowParameter
     */
     CV_EXPORTS_W void calcOpticalFlowDenseRLOF(InputArray I0, InputArray I1, InputOutputArray flow,
         Ptr<RLOFOpticalFlowParameter> rlofParam = Ptr<RLOFOpticalFlowParameter>(),
         float forewardBackwardThreshold = 0, Size gridStep = Size(6, 6),
         InterpolationType interp_type = InterpolationType::INTERP_EPIC,
-        int epicK = 128, float epicSigma = 0.05f, 
+        int epicK = 128, float epicSigma = 0.05f, float epicLambda = 100.f,
         bool use_post_proc = true, float fgsLambda = 500.0f, float fgsSigma = 1.5f);
 
-    /** @brief Calculates fast optical flow for a sparse feature set using the robust local optical flow (RLOF) similar 
+    /** @brief Calculates fast optical flow for a sparse feature set using the robust local optical flow (RLOF) similar
     * to optflow::calcOpticalFlowPyrLK().
     *
     * The RLOF is a fast local optical flow approach similar to the pyramidal iterative Lucas-Kanade method as
     * proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK().
     *
-    * @param I0 first 8-bit input image. If The cross-based RLOF is used (by selecting optflow::RLOFOpticalFlowParameter::supportRegionType
+    * @param prevImg first 8-bit input image. If The cross-based RLOF is used (by selecting optflow::RLOFOpticalFlowParameter::supportRegionType
     * = SupportRegionType::SR_CROSS) image has to be a 8-bit 3 channel image.
-    * @param I1 second 8-bit input image. If The cross-based RLOF is used (by selecting optflow::RLOFOpticalFlowParameter::supportRegionType
+    * @param nextImg second 8-bit input image. If The cross-based RLOF is used (by selecting optflow::RLOFOpticalFlowParameter::supportRegionType
     * = SupportRegionType::SR_CROSS) image has to be a 8-bit 3 channel image.
-    * @param prevPts vector of 2D points for which the flow needs to be found; point coordinates must be single-precision 
+    * @param prevPts vector of 2D points for which the flow needs to be found; point coordinates must be single-precision
     * floating-point numbers.
-    * @param nextPts output vector of 2D points (with single-precision floating-point coordinates) containing the calculated 
-    * new positions of input features in the second image; when optflow::RLOFOpticalFlowParameter::useInitialFlow variable is true  the vector must 
+    * @param nextPts output vector of 2D points (with single-precision floating-point coordinates) containing the calculated
+    * new positions of input features in the second image; when optflow::RLOFOpticalFlowParameter::useInitialFlow variable is true  the vector must
     * have the same size as in the input and contain the initialization point correspondences.
-    * @param status output status vector (of unsigned chars); each element of the vector is set to 1 if the flow for the 
-    * corresponding features has passed the forward backward check. 
-    * @param err output vector of errors; each element of the vector is set to the forward backward error for the corresponding feature. 
+    * @param status output status vector (of unsigned chars); each element of the vector is set to 1 if the flow for the
+    * corresponding features has passed the forward backward check.
+    * @param err output vector of errors; each element of the vector is set to the forward backward error for the corresponding feature.
     * @param rlofParam see optflow::RLOFOpticalFlowParameter
-    * @param forwardBackwardThreshold Threshold for the forward backward confidence check. If forewardBackwardThreshold <=0 the forward
+    * @param forewardBackwardThreshold Threshold for the forward backward confidence check. If forewardBackwardThreshold <=0 the forward
+    *
+    * @note SIMD parallelization is available compiled with SSE4.1.
     *
     * Parameters have been described in @cite Senst2012, @cite Senst2013, @cite Senst2014 and @cite Senst2016.
     * For the RLOF configuration see optflow::RLOFOpticalFlowParameter for further details.

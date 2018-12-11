@@ -6,7 +6,7 @@
 #include "rlof/geo_interpolation.hpp"
 #include "opencv2/ximgproc.hpp"
 namespace cv
-{ 
+{
 namespace optflow
 {
 
@@ -30,8 +30,8 @@ namespace optflow
             currPyramid[0] = cv::Ptr< CImageBuffer>(new CImageBuffer);
             currPyramid[1] = cv::Ptr< CImageBuffer>(new CImageBuffer);
         }
-        virtual void setRLOFOpticalFlowParameter(Ptr<RLOFOpticalFlowParameter>  val) CV_OVERRIDE { }//param = *val; }
-        virtual Ptr<RLOFOpticalFlowParameter>  getRLOFOpticalFlowParameter() const CV_OVERRIDE { return Ptr<RLOFOpticalFlowParameter>(); }
+        virtual void setRLOFOpticalFlowParameter(Ptr<RLOFOpticalFlowParameter>  val) CV_OVERRIDE { param = val; }
+        virtual Ptr<RLOFOpticalFlowParameter>  getRLOFOpticalFlowParameter() const CV_OVERRIDE { return param; }
 
         virtual float getForwardBackward() const CV_OVERRIDE { return forwardBackwardThreshold; }
         virtual void setForwardBackward(float val) CV_OVERRIDE { forwardBackwardThreshold = val; }
@@ -65,7 +65,7 @@ namespace optflow
             CV_Assert(!I0.empty() && I0.depth() == CV_8U && (I0.channels() == 3 || I0.channels() == 1));
             CV_Assert(!I1.empty() && I1.depth() == CV_8U && (I1.channels() == 3 || I1.channels() == 1));
             CV_Assert(I0.sameSize(I1));
-            if (param.supportRegionType == SR_CROSS)
+            if (param->supportRegionType == SR_CROSS)
                 CV_Assert( I0.channels() == 3 && I1.channels() == 3);
             CV_Assert(interp_type == InterpolationType::INTERP_EPIC || interp_type == InterpolationType::INTERP_GEO);
 
@@ -86,7 +86,7 @@ namespace optflow
             prevPoints.erase(prevPoints.begin() + noPoints, prevPoints.end());
             currPoints.resize(prevPoints.size());
 
-            calcLocalOpticalFlow(prevImage, currImage, prevPyramid, currPyramid, prevPoints, currPoints, param);
+            calcLocalOpticalFlow(prevImage, currImage, prevPyramid, currPyramid, prevPoints, currPoints, *(param.get()));
 
             flow.create(prevImage.size(), CV_32FC2);
             Mat dense_flow = flow.getMat();
@@ -104,7 +104,7 @@ namespace optflow
             if (forwardBackwardThreshold > 0)
             {
                 // reuse image pyramids
-                calcLocalOpticalFlow(currImage, prevImage, currPyramid, prevPyramid, currPoints, refPoints, param);
+                calcLocalOpticalFlow(currImage, prevImage, currPyramid, prevPyramid, currPoints, refPoints, *(param.get()));
 
                 filtered_prevPoints.resize(prevPoints.size());
                 filtered_currPoints.resize(prevPoints.size());
@@ -167,7 +167,7 @@ namespace optflow
         }
 
     protected:
-        RLOFOpticalFlowParameter        param;
+        Ptr<RLOFOpticalFlowParameter> param;
         float                forwardBackwardThreshold;
         Ptr<CImageBuffer>    prevPyramid[2];
         Ptr<CImageBuffer>    currPyramid[2];
@@ -189,6 +189,7 @@ namespace optflow
         int epicK,
         float epicSigma,
         float epicLambda,
+        bool use_post_proc,
         float fgs_lambda,
         float fgs_sigma)
     {
@@ -200,6 +201,7 @@ namespace optflow
         algo->setEPICK(epicK);
         algo->setEPICSigma(epicSigma);
         algo->setEPICLambda(epicLambda);
+        algo->setUsePostProc(use_post_proc);
         algo->setFgsLambda(fgs_lambda);
         algo->setFgsSigma(fgs_sigma);
         return algo;
@@ -235,7 +237,7 @@ namespace optflow
             Mat nextImage = nextImg.getMat();
             Mat prevPtsMat = prevPts.getMat();
 
-            if (param.useInitialFlow == false)
+            if (param->useInitialFlow == false)
                 nextPts.create(prevPtsMat.size(), prevPtsMat.type(), -1, true);
 
             int npoints = 0;
@@ -253,7 +255,7 @@ namespace optflow
             CV_Assert(nextPtsMat.checkVector(2, CV_32F, true) == npoints);
             std::vector<cv::Point2f> prevPoints(npoints), nextPoints(npoints), refPoints;
             prevPtsMat.copyTo(cv::Mat(1, npoints, CV_32FC2, &prevPoints[0]));
-            if (param.useInitialFlow )
+            if (param->useInitialFlow )
                 nextPtsMat.copyTo(cv::Mat(1, nextPtsMat.cols, CV_32FC2, &nextPoints[0]));
 
             cv::Mat statusMat;
@@ -272,12 +274,12 @@ namespace optflow
                 errorMat.setTo(0);
             }
 
-            calcLocalOpticalFlow(prevImage, nextImage, prevPyramid, currPyramid, prevPoints, nextPoints, param);
+            calcLocalOpticalFlow(prevImage, nextImage, prevPyramid, currPyramid, prevPoints, nextPoints, *(param.get()));
             cv::Mat(1,npoints , CV_32FC2, &nextPoints[0]).copyTo(nextPtsMat);
             if (forwardBackwardThreshold > 0)
             {
                 // reuse image pyramids
-                calcLocalOpticalFlow(nextImage, prevImage, currPyramid, prevPyramid, nextPoints, refPoints, param);
+                calcLocalOpticalFlow(nextImage, prevImage, currPyramid, prevPyramid, nextPoints, refPoints, *(param.get()));
             }
             for (unsigned int r = 0; r < refPoints.size(); r++)
             {
@@ -290,7 +292,7 @@ namespace optflow
         }
 
     protected:
-        RLOFOpticalFlowParameter    param;
+        Ptr<RLOFOpticalFlowParameter> param;
         float                forwardBackwardThreshold;
         Ptr<CImageBuffer>    prevPyramid[2];
         Ptr<CImageBuffer>    currPyramid[2];
@@ -310,12 +312,12 @@ namespace optflow
         Ptr<RLOFOpticalFlowParameter>  rlofParam ,
         float forewardBackwardThreshold, Size gridStep,
         InterpolationType interp_type,
-        int epicK, float epicSigma,
+        int epicK, float epicSigma, float epicLambda,
         bool use_post_proc, float fgsLambda, float fgsSigma)
     {
         Ptr<DenseRLOFOpticalFlow> algo = DenseRLOFOpticalFlow::create(
             rlofParam, forewardBackwardThreshold, gridStep, interp_type,
-            epicK, epicSigma, use_post_proc, fgsLambda, fgsSigma);
+            epicK, epicSigma, epicLambda, use_post_proc, fgsLambda, fgsSigma);
         algo->calc(I0, I1, flow);
         algo->collectGarbage();
     }
