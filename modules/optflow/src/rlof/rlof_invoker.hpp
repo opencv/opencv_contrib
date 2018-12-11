@@ -12,26 +12,6 @@ namespace rlof
 {
 namespace ica
 {
-    inline int calc_diff(int diff,float fParam0,float fParam1,float param_2)
-    {
-        int abss = (diff < 0) ? -diff : diff;
-        if (abss > fParam1)
-        {
-            diff = 0;
-        }
-        else if (abss > fParam0 && diff >= 0)
-        {
-            //diff = fParam1 * (diff - fParam1);
-            diff = static_cast<int>(param_2 * (diff - fParam1));
-        }
-        else if (abss > fParam0 && diff < 0)
-        {
-            //diff = fParam1 * (diff + fParam1);
-            diff = static_cast<int>(param_2 * (diff + fParam1));
-
-        }
-        return diff;
-    }
     class TrackerInvoker : public cv::ParallelLoopBody
     {
     public:
@@ -77,8 +57,11 @@ namespace ica
             crossSegmentationThreshold = _crossSegmentationThreshold;
         }
         TrackerInvoker & operator=(const TrackerInvoker &) { return *this; };
-        void operator()(const cv::Range& range) const
+        void operator()(const cv::Range& range) const CV_OVERRIDE
         {
+#ifdef DEBUG_INVOKER
+            printf("rlof::ica");fflush(stdout);
+#endif
             cv::Size    winSize;
             cv::Point2f halfWin;
 
@@ -497,8 +480,22 @@ namespace ica
                             if (diff < MEstimatorScale)
                                 MEstimatorScale -= eta;
 
-                            calc_diff(diff, fParam0, fParam1, param[2]);
+                            int abss = (diff < 0) ? -diff : diff;
+                            if (abss > fParam1)
+                            {
+                                diff = 0;
+                            }
+                            else if (abss > fParam0 && diff >= 0)
+                            {
+                                //diff = fParam1 * (diff - fParam1);
+                                diff = static_cast<int>(param[2] * (diff - fParam1));
+                            }
+                            else if (abss > fParam0 && diff < 0)
+                            {
+                                //diff = fParam1 * (diff + fParam1);
+                                diff = static_cast<int>(param[2] * (diff + fParam1));
 
+                            }
 
                             float ixval = (float)(dIptr[0]);
                             float iyval = (float)(dIptr[1]);
@@ -507,9 +504,7 @@ namespace ica
 
                             if ( j == 0)
                             {
-                                int abss = (diff < 0) ? -diff : diff;
                                 float tale = param[2] * FLT_RESCALE;
-                                //float tale = fParam1 * FLT_RESCALE;
                                 if (abss < fParam0)
                                 {
                                     tale = FLT_RESCALE;
@@ -681,8 +676,11 @@ namespace radial
         }
 
         TrackerInvoker & operator=(const TrackerInvoker &) { return *this; };
-        void operator()(const cv::Range& range) const
+        void operator()(const cv::Range& range) const CV_OVERRIDE
         {
+#ifdef DEBUG_INVOKER
+            printf("rlof::radial");fflush(stdout);
+#endif
             Point2f halfWin;
             cv::Size winSize;
             const Mat& I = *prevImg;
@@ -801,7 +799,6 @@ namespace radial
                 int x, y;
                 for (y = 0; y < winSize.height; y++)
                 {
-                    const tMaskType* maskPtr = (const tMaskType*)winMaskMat.data + y * mStep;
                     const uchar* src = (const uchar*)I.data + (y + iprevPt.y)*step + iprevPt.x*cn;
                     const short* dsrc = (const short*)derivI.data + (y + iprevPt.y)*dstep + iprevPt.x*cn2;
 
@@ -811,6 +808,7 @@ namespace radial
                     x = 0;
 
 #ifdef RLOF_SSE
+                    const tMaskType* maskPtr = (const tMaskType*)winMaskMat.data + y * mStep;
                     for (; x <= winBufSize.width*cn - 4; x += 4, dsrc += 4 * 2, dIptr += 4 * 2)
                     {
                         __m128i mask_0_7_epi16 = _mm_mullo_epi16(_mm_cvtepi8_epi16(_mm_loadl_epi64((const __m128i*)(maskPtr + x))), mmMaskSet_epi16);
@@ -886,9 +884,11 @@ namespace radial
                 cv::Point2f backUpGain = gainVec;
                 cv::Size _winSize = winSize;
                 int j;
+#ifdef RLOF_SSE
                 __m128i mmMask0, mmMask1, mmMask;
                 getWBitMask(_winSize.width, mmMask0, mmMask1, mmMask);
                 __m128  mmOnes = _mm_set1_ps(1.f);
+#endif
                 float MEstimatorScale = 1;
                 int buffIdx = 0;
                 float minEigValue;
@@ -1211,11 +1211,11 @@ namespace radial
                         {
                             if (maskPtr[x] == 0)
                                 continue;
-                            float J = CV_DESCALE(Jptr[x] * iw00 + Jptr[x + cn] * iw01 + Jptr[x + step] * iw10 + Jptr[x + step + cn] * iw11,
+                            float J_val = CV_DESCALE(Jptr[x] * iw00 + Jptr[x + cn] * iw01 + Jptr[x + step] * iw10 + Jptr[x + step + cn] * iw11,
                                 W_BITS1 - 5);
                             short ixval = static_cast<short>(dIptr[0]);
                             short iyval = static_cast<short>(dIptr[1]);
-                            int diff = J - static_cast<int>(Iptr[x]) + Iptr[x] * gainVec.x + gainVec.y;
+                            int diff = J_val - static_cast<int>(Iptr[x]) + Iptr[x] * gainVec.x + gainVec.y;
                             int abss = (diff < 0) ? -diff : diff;
                             if (diff > MEstimatorScale)
                                 MEstimatorScale += eta;
@@ -1281,9 +1281,8 @@ namespace radial
                     _mm_storeu_si128((__m128i*)(etaValues), mmEta);
                     MEstimatorScale += eta * (etaValues[0] + etaValues[1] + etaValues[2] + etaValues[3]
                             + etaValues[4] + etaValues[5] + etaValues[6] + etaValues[7]);
-
+                            float CV_DECL_ALIGNED(32) wbuf[4];
 #endif
-                    float CV_DECL_ALIGNED(32) wbuf[4];//
                     if (j == 0)
                     {
 #ifdef RLOF_SSE

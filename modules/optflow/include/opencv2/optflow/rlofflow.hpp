@@ -21,7 +21,7 @@ namespace optflow
      * This RLOF implementation can be seen as an improved pyramidal iterative Lucas-Kanade and includes
      * a set of improving modules. The main improvements in respect to the pyramidal iterative Lucas-Kanade
      * are:
-     *   - A more robust redecending M-estimator framework (see @cite Senst2012) to improve the accuracy at
+     *  - A more robust redecending M-estimator framework (see @cite Senst2012) to improve the accuracy at
      *     motion boundaries and appearing and disappearing pixels.
      *  - an adaptive support region strategies to improve the accuracy at motion boundaries to reduce the
      *     corona effect, i.e oversmoothing of the PLK at motion/object boundaries. The cross-based segementation
@@ -143,8 +143,8 @@ namespace optflow
         float globalMotionRansacThreshold;
         /**< To apply the global motion prior motion vectors will be computed on a regulary sampled which
          *   are the basis for Homography estimation using RANSAC. The reprojection threshold is based on
-         *   n-th percentil (given by this value [0 ... 100]) of the forward backward errors relating to
-         *   the motion vectors. See @cite Senst2016 for more details.
+         *   n-th percentil (given by this value [0 ... 100]) of the motion vectors magnitude.
+         *   See @cite Senst2016 for more details.
         */
     };
 
@@ -165,7 +165,8 @@ namespace optflow
      * For the RLOF configuration see optflow::RLOFOpticalFlowParameter for further details.
      * Parameters have been described in @cite Senst2012 @cite Senst2013 @cite Senst2014 and @cite Senst2016.
      *
-     * @note SIMD parallelization is available compiled with SSE4.1. If the grid size is set to (1,1) and the forward backward threshold <= 0 that the dense optical flow field is purely.
+     * @note SIMD parallelization is only available when compiling with SSE4.1. If the grid size is set to (1,1) and the
+     * forward backward threshold <= 0 that the dense optical flow field is purely.
      * computed with the RLOF.
      *
      * @see optflow::calcOpticalFlowDenseRLOF(), optflow::RLOFOpticalFlowParameter
@@ -207,7 +208,7 @@ namespace optflow
         CV_WRAP virtual void setGridStep(Size val) = 0;
 
         //! @brief Interpolation used to compute the dense optical flow.
-        /** Two interpolation algorithms have been supported
+        /** Two interpolation algorithms are supported
          * - **INTERP_GEO** applies the fast geodesic interpolation, see @cite Geistert2016.
          * - **INTERP_EPIC_RESIDUAL** applies the edge-preserving interpolation, see @cite Revaud2015,Geistert2016.
          * @see ximgproc::EdgeAwareInterpolator, getInterpolation
@@ -280,6 +281,7 @@ namespace optflow
          *    @param rlofParam see optflow::RLOFOpticalFlowParameter
          *    @param forwardBackwardThreshold see setForwardBackward
          *    @param gridStep see setGridStep
+         *    @param interp_type see setInterpolation
          *    @param epicK see setEPICK
          *    @param epicSigma see setEPICSigma
          *    @param epicLambda see setEPICLambda
@@ -308,8 +310,8 @@ namespace optflow
     * For the RLOF configuration see optflow::RLOFOpticalFlowParameter for further details.
     * Parameters have been described in @cite Senst2012, @cite Senst2013, @cite Senst2014 and @cite Senst2016.
     *
-    * @note SIMD parallelization is available compiled with SSE4.1.
-    *@see optflow::calcOpticalFlowSparseRLOF(), optflow::RLOFOpticalFlowParameter
+    * @note SIMD parallelization is only available when compiling with SSE4.1.
+    * @see optflow::calcOpticalFlowSparseRLOF(), optflow::RLOFOpticalFlowParameter
     */
     class CV_EXPORTS_W SparseRLOFOpticalFlow : public SparseOpticalFlow
     {
@@ -365,7 +367,7 @@ namespace optflow
      * = SupportRegionType::SR_CROSS) image has to be a 8-bit 3 channel image.
      * @param flow computed flow image that has the same size as I0 and type CV_32FC2.
      * @param rlofParam see optflow::RLOFOpticalFlowParameter
-     * @param forewardBackwardThreshold Threshold for the forward backward confidence check.
+     * @param forwardBackwardThreshold Threshold for the forward backward confidence check.
      * For each grid point \f$ \mathbf{x} \f$ a motion vector \f$ d_{I0,I1}(\mathbf{x}) \f$ is computed.
      * If the forward backward error \f[ EP_{FB} = || d_{I0,I1} + d_{I1,I0} || \f]
      * is larger than threshold given by this function then the motion vector will not be used by the following
@@ -374,6 +376,10 @@ namespace optflow
      * @param gridStep Size of the grid to spawn the motion vectors. For each grid point a motion vector is computed.
      * Some motion vectors will be removed due to the forwatd backward threshold (if set >0). The rest will be the
      * base of the vector field interpolation.
+     * @param interp_type interpolation method used to compute the dense optical flow. Two interpolation algorithms are
+     * supported:
+     * - **INTERP_GEO** applies the fast geodesic interpolation, see @cite Geistert2016.
+     * - **INTERP_EPIC_RESIDUAL** applies the edge-preserving interpolation, see @cite Revaud2015,Geistert2016.
      * @param epicK see ximgproc::EdgeAwareInterpolator() sets the respective parameter.
      * @param epicSigma see ximgproc::EdgeAwareInterpolator() sets the respective parameter.
      * @param epicLambda see ximgproc::EdgeAwareInterpolator() sets the respective parameter.
@@ -386,13 +392,13 @@ namespace optflow
      * @note If the grid size is set to (1,1) and the forward backward threshold <= 0 that the dense optical flow field is purely
      * computed with the RLOF.
      *
-     * @note SIMD parallelization is available compiled with SSE4.1.
+     * @note SIMD parallelization is only available when compiling with SSE4.1.
      *
      * @sa optflow::DenseRLOFOpticalFlow, optflow::RLOFOpticalFlowParameter
     */
     CV_EXPORTS_W void calcOpticalFlowDenseRLOF(InputArray I0, InputArray I1, InputOutputArray flow,
         Ptr<RLOFOpticalFlowParameter> rlofParam = Ptr<RLOFOpticalFlowParameter>(),
-        float forewardBackwardThreshold = 0, Size gridStep = Size(6, 6),
+        float forwardBackwardThreshold = 0, Size gridStep = Size(6, 6),
         InterpolationType interp_type = InterpolationType::INTERP_EPIC,
         int epicK = 128, float epicSigma = 0.05f, float epicLambda = 100.f,
         bool use_post_proc = true, float fgsLambda = 500.0f, float fgsSigma = 1.5f);
@@ -416,9 +422,9 @@ namespace optflow
     * corresponding features has passed the forward backward check.
     * @param err output vector of errors; each element of the vector is set to the forward backward error for the corresponding feature.
     * @param rlofParam see optflow::RLOFOpticalFlowParameter
-    * @param forewardBackwardThreshold Threshold for the forward backward confidence check. If forewardBackwardThreshold <=0 the forward
+    * @param forwardBackwardThreshold Threshold for the forward backward confidence check. If forewardBackwardThreshold <=0 the forward
     *
-    * @note SIMD parallelization is available compiled with SSE4.1.
+    * @note SIMD parallelization is only available when compiling with SSE4.1.
     *
     * Parameters have been described in @cite Senst2012, @cite Senst2013, @cite Senst2014 and @cite Senst2016.
     * For the RLOF configuration see optflow::RLOFOpticalFlowParameter for further details.
@@ -427,7 +433,7 @@ namespace optflow
         InputArray prevPts, InputOutputArray nextPts,
         OutputArray status, OutputArray err,
         Ptr<RLOFOpticalFlowParameter> rlofParam = Ptr<RLOFOpticalFlowParameter>(),
-        float forewardBackwardThreshold = 0);
+        float forwardBackwardThreshold = 0);
 
     //! Additional interface to the Dense RLOF algorithm - optflow::calcOpticalFlowDenseRLOF()
     CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_DenseRLOF();

@@ -14,7 +14,8 @@ namespace optflow
     {
     public:
         DenseOpticalFlowRLOFImpl()
-            : forwardBackwardThreshold(1.f)
+            : param(Ptr<RLOFOpticalFlowParameter>(new RLOFOpticalFlowParameter))
+            , forwardBackwardThreshold(1.f)
             , gridStep(6, 6)
             , interp_type(InterpolationType::INTERP_GEO)
             , k(128)
@@ -68,7 +69,6 @@ namespace optflow
             if (param->supportRegionType == SR_CROSS)
                 CV_Assert( I0.channels() == 3 && I1.channels() == 3);
             CV_Assert(interp_type == InterpolationType::INTERP_EPIC || interp_type == InterpolationType::INTERP_GEO);
-
             Mat prevImage = I0.getMat();
             Mat currImage = I1.getMat();
             int noPoints = prevImage.cols * prevImage.rows;
@@ -85,7 +85,6 @@ namespace optflow
             }
             prevPoints.erase(prevPoints.begin() + noPoints, prevPoints.end());
             currPoints.resize(prevPoints.size());
-
             calcLocalOpticalFlow(prevImage, currImage, prevPyramid, currPyramid, prevPoints, currPoints, *(param.get()));
 
             flow.create(prevImage.size(), CV_32FC2);
@@ -211,15 +210,16 @@ namespace optflow
     {
         public:
         SparseRLOFOpticalFlowImpl()
-            : forwardBackwardThreshold(1.f)
+            : param(Ptr<RLOFOpticalFlowParameter>(new RLOFOpticalFlowParameter))
+            , forwardBackwardThreshold(1.f)
         {
             prevPyramid[0] = cv::Ptr< CImageBuffer>(new CImageBuffer);
             prevPyramid[1] = cv::Ptr< CImageBuffer>(new CImageBuffer);
             currPyramid[0] = cv::Ptr< CImageBuffer>(new CImageBuffer);
             currPyramid[1] = cv::Ptr< CImageBuffer>(new CImageBuffer);
         }
-        virtual void setRLOFOpticalFlowParameter(Ptr<RLOFOpticalFlowParameter>  val) CV_OVERRIDE  { } // param = *val; }
-        virtual Ptr<RLOFOpticalFlowParameter>  getRLOFOpticalFlowParameter() const CV_OVERRIDE { return Ptr<RLOFOpticalFlowParameter>(); }
+        virtual void setRLOFOpticalFlowParameter(Ptr<RLOFOpticalFlowParameter>  val) CV_OVERRIDE { param = val; }
+        virtual Ptr<RLOFOpticalFlowParameter>  getRLOFOpticalFlowParameter() const CV_OVERRIDE { return param; }
 
         virtual float getForwardBackward()  const CV_OVERRIDE { return forwardBackwardThreshold; }
         virtual void setForwardBackward(float val) CV_OVERRIDE { forwardBackwardThreshold = val; }

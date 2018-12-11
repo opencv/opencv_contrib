@@ -7,10 +7,12 @@
 
 #if CV_CPU_COMPILE_SSE4_1
 #define RLOF_SSE
-#elif CV_CPU_COMPILE_SSE4_2
+#endif
+#if CV_CPU_COMPILE_SSE4_2
 #define RLOF_SSE
 #endif
 
+//#define DEBUG_INVOKER
 
 #define  CV_DESCALE(x,n)     (((x) + (1 << ((n)-1))) >> (n))
 #define FLT_RESCALE 1
@@ -271,8 +273,5 @@ namespace optflow
         return quickselect<short>(absMat, absMat.rows / 2);
     }
 }
-
-    
 }
-
 #endif

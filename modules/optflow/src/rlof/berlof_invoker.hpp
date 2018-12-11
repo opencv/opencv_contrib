@@ -95,9 +95,11 @@ namespace berlof
             }
 
             TrackerInvoker & operator=(const TrackerInvoker &) {return *this;};
-            void operator()(const cv::Range& range) const
+            void operator()(const cv::Range& range) const CV_OVERRIDE
             {
-
+#ifdef DEBUG_INVOKER
+                printf("berlof::ica");fflush(stdout);
+#endif
                 Point2f halfWin;
                 cv::Size winSize;
                 const Mat& I = *prevImg;
@@ -610,8 +612,11 @@ namespace berlof
             }
 
             TrackerInvoker & operator=(const TrackerInvoker &) {return *this;};
-            void operator()(const cv::Range& range) const
+            void operator()(const cv::Range& range) const CV_OVERRIDE
             {
+#ifdef DEBUG_INVOKER
+                printf("berlof::radial");fflush(stdout);
+#endif
                 Point2f halfWin;
                 cv::Size winSize;
                 const Mat& I = *prevImg;
@@ -725,16 +730,14 @@ namespace berlof
                     for( y = 0; y < winSize.height; y++ )
                     {
                         x = 0;
-                        const tMaskType* maskPtr = (const tMaskType*)winMaskMat.data + y * mStep;
+
                         const uchar* src = (const uchar*)I.data + (y + iprevPt.y)*step + iprevPt.x*cn;
                         const short* dsrc = (const short*)derivI.data + (y + iprevPt.y)*dstep + iprevPt.x*cn2;
 
                         short* Iptr = (short*)(IWinBuf.data + y*IWinBuf.step);
                         short* dIptr = (short*)(derivIWinBuf.data + y*derivIWinBuf.step);
-
-
-
         #ifdef RLOF_SSE
+                        const tMaskType* maskPtr = (const tMaskType*)winMaskMat.data + y * mStep;
                         for( ; x <= winBufSize.width*cn - 4; x += 4, dsrc += 4*2, dIptr += 4*2 )
                         {
                             __m128i mask_0_7_epi16 = _mm_mullo_epi16(_mm_cvtepi8_epi16(_mm_loadl_epi64((const __m128i*)(maskPtr+x))), mmMaskSet_epi16);
@@ -812,9 +815,11 @@ namespace berlof
                     cv::Point2f backUpGain = gainVec;
                     cv::Size _winSize = winSize;
                     int j;
+        #ifdef RLOF_SSE
                     __m128i mmMask0, mmMask1, mmMask;
                     getWBitMask(_winSize.width, mmMask0, mmMask1, mmMask);
                     __m128  mmOnes   = _mm_set1_ps(1.f );
+        #endif
                     float MEstimatorScale = 1;
                     int buffIdx = 0;
                     float c[8];
@@ -1172,11 +1177,11 @@ namespace berlof
                                              (Jptr[x] << 5)            + illValue};
 
 
-                                float J  =  CV_DESCALE(Jptr[x]*iw00 + Jptr[x+cn]*iw01 +
+                                float J_val  =  CV_DESCALE(Jptr[x]*iw00 + Jptr[x+cn]*iw01 +
                                                       Jptr[x+step]*iw10 + Jptr[x+step+cn]*iw11,
                                                       W_BITS1-5);
 
-                                int diff =  J + illValue;
+                                int diff =  J_val + illValue;
 
 
 
@@ -1274,9 +1279,8 @@ namespace berlof
                         _mm_storeu_si128((__m128i*)(etaValues), mmEta);
                         MEstimatorScale += eta * (etaValues[0] + etaValues[1] + etaValues[2] + etaValues[3]
                                                    + etaValues[4] + etaValues[5] + etaValues[6] + etaValues[7]);
-
+                        float CV_DECL_ALIGNED(32) wbuf[4];
 #endif
-                        float CV_DECL_ALIGNED(32) wbuf[4];//
                         if( j == 0 )
                         {
 #ifdef RLOF_SSE
@@ -1575,7 +1579,7 @@ namespace beplk
 
         TrackerInvoker & operator=(const TrackerInvoker &) {return *this;};
 
-        void operator()(const cv::Range& range) const
+        void operator()(const cv::Range& range) const CV_OVERRIDE
         {
             cv::Size    winSize;
             cv::Point2f halfWin;

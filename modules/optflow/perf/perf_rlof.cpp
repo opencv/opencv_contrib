@@ -1,6 +1,5 @@
 #include "perf_precomp.hpp"
-namespace opencv_test {
-    namespace {
+namespace opencv_test { namespace {
         typedef tuple<std::string, std::string, bool> ST_SR_IM_Sparse_t;
         typedef TestBaseWithParam<ST_SR_IM_Sparse_t> ST_SR_IM_Sparse;
         PERF_TEST_P(ST_SR_IM_Sparse, OpticalFlow_SparseRLOF,
@@ -10,12 +9,8 @@ namespace opencv_test {
                 testing::Values(true, false))
         )
         {
-            string frame1_path = TS::ptr()->get_data_path() + "/cv/optflow/RubberWhale1.png";
-            string frame2_path = TS::ptr()->get_data_path() + "/cv/optflow/RubberWhale2.png";
-            frame1_path.erase(std::remove_if(frame1_path.begin(), frame1_path.end(), isspace), frame1_path.end());
-            frame2_path.erase(std::remove_if(frame2_path.begin(), frame2_path.end(), isspace), frame2_path.end());
-            Mat frame1 = imread(frame1_path);
-            Mat frame2 = imread(frame2_path);
+            Mat frame1 = imread(getDataPath("cv/optflow/RubberWhale1.png"));
+            Mat frame2 = imread(getDataPath("cv/optflow/RubberWhale2.png"));
             ASSERT_FALSE(frame1.empty());
             ASSERT_FALSE(frame2.empty());
             vector<Point2f> prevPts, currPts;
@@ -29,7 +24,7 @@ namespace opencv_test {
             vector<uchar> status(prevPts.size());
             vector<float> err(prevPts.size());
 
-            Ptr<RLOFOpticalFlowParameter> param;
+            Ptr<RLOFOpticalFlowParameter> param = Ptr<RLOFOpticalFlowParameter>(new RLOFOpticalFlowParameter);
             if (get<0>(GetParam()) == "ST_BILINEAR")
                 param->solverType = ST_BILINEAR;
             if (get<0>(GetParam()) == "ST_STANDART")
@@ -57,16 +52,11 @@ namespace opencv_test {
         )
         {
             Mat flow;
-            string frame1_path = TS::ptr()->get_data_path() + "/cv/optflow/RubberWhale1.png";
-            string frame2_path = TS::ptr()->get_data_path() + "/cv/optflow/RubberWhale2.png";
-            // removing space may be an issue on windows machines
-            frame1_path.erase(std::remove_if(frame1_path.begin(), frame1_path.end(), isspace), frame1_path.end());
-            frame2_path.erase(std::remove_if(frame2_path.begin(), frame2_path.end(), isspace), frame2_path.end());
-            Mat frame1 = imread(frame1_path);
-            Mat frame2 = imread(frame2_path);
+            Mat frame1 = imread(getDataPath("cv/optflow/RubberWhale1.png"));
+            Mat frame2 = imread(getDataPath("cv/optflow/RubberWhale1.png"));
             ASSERT_FALSE(frame1.empty());
             ASSERT_FALSE(frame2.empty());
-            Ptr<RLOFOpticalFlowParameter> param;
+            Ptr<RLOFOpticalFlowParameter> param = Ptr<RLOFOpticalFlowParameter>(new RLOFOpticalFlowParameter);;
             Ptr< DenseRLOFOpticalFlow> algo = DenseRLOFOpticalFlow::create();
             InterpolationType interp_type;
             if (get<0>(GetParam()) == "INTERP_EPIC")

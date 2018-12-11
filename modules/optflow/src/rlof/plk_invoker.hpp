@@ -61,8 +61,11 @@ public:
     }
 
     TrackerInvoker & operator=(const TrackerInvoker &) {return *this;};
-    void operator()(const cv::Range& range) const
+    void operator()(const cv::Range& range) const CV_OVERRIDE
     {
+#ifdef DEBUG_INVOKER
+        printf("plk::radial");fflush(stdout);
+#endif
         cv::Size    winSize;
         cv::Point2f halfWin;
 
@@ -467,10 +470,10 @@ public:
                     {
                         if( maskPtr[x] == 0)
                             continue;
-                        int J = CV_DESCALE(Jptr[x]*iw00 + Jptr[x+cn]*iw01 +
+                        int J_val = CV_DESCALE(Jptr[x]*iw00 + Jptr[x+cn]*iw01 +
                                               Jptr[x+step]*iw10 + Jptr[x+step+cn]*iw11,
                                               W_BITS1-5);
-                        int diff = J - Iptr[x] + static_cast<int>(Iptr[x]) * gainVec.x + gainVec.y;
+                        int diff = J_val - Iptr[x] + static_cast<int>(Iptr[x]) * gainVec.x + gainVec.y;
 
                         b1 += (float)(diff*dIptr[0])  * FLT_RESCALE;
                         b2 += (float)(diff*dIptr[1])  * FLT_RESCALE;
@@ -499,8 +502,9 @@ public:
                     }
 #endif
                 }
-
-                float CV_DECL_ALIGNED(16) wbuf[4];//
+#ifdef RLOF_SSE
+                float CV_DECL_ALIGNED(16) wbuf[4];
+#endif
                 if( j == 0 )
                 {
 #ifdef RLOF_SSE
@@ -704,8 +708,11 @@ public:
     }
 
     TrackerInvoker & operator=(const TrackerInvoker &) {return *this;};
-    void operator()(const cv::Range& range) const
+    void operator()(const cv::Range& range) const CV_OVERRIDE
     {
+#ifdef DEBUG_INVOKER
+        printf("plk::ica");fflush(stdout);
+#endif
         cv::Size    winSize;
         cv::Point2f halfWin;
 
