@@ -1217,7 +1217,7 @@ namespace radial
                                 W_BITS1 - 5);
                             short ixval = static_cast<short>(dIptr[0]);
                             short iyval = static_cast<short>(dIptr[1]);
-                            int diff = J_val - static_cast<int>(Iptr[x]) + Iptr[x] * gainVec.x + gainVec.y;
+                            int diff = static_cast<int>(J_val - Iptr[x] + Iptr[x] * gainVec.x + gainVec.y);
                             int abss = (diff < 0) ? -diff : diff;
                             if (diff > MEstimatorScale)
                                 MEstimatorScale += eta;
@@ -1225,7 +1225,7 @@ namespace radial
                                 MEstimatorScale -= eta;
                             if (abss > static_cast<int>(fParam1))
                             {
-                                diff = 0.f;
+                                diff = 0;
                             }
                             else if (abss > static_cast<int>(fParam0) && diff >= 0)
                             {

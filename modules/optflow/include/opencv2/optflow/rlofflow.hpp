@@ -121,7 +121,7 @@ namespace optflow
         */
         bool useIlluminationModel;
         /**< Use the Gennert and Negahdaripour illumination model instead of the intensity brigthness
-         *   constraint. (Probosed in @cite Senst2016 ) This model is defined as follow:
+         *   constraint. (proposed in @cite Senst2016 ) This model is defined as follow:
          *   \f[ I(\mathbf{x},t) + m \cdot I(\mathbf{x},t) + c = I(\mathbf{x},t+1) \f]
          *   and contains with m and c a multiplicative and additive term which makes the estimate
          *   more robust against illumination changes. The computational complexity is increased by
