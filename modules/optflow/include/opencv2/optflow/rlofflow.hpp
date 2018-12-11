@@ -14,6 +14,25 @@ namespace optflow
     //! @addtogroup optflow
     //! @{
 
+     enum SupportRegionType {
+        SR_FIXED = 0,           /**<  Apply a constant support region */
+        SR_CROSS = 1            /**<  Apply a adaptive support region obtained by cross-based segmentation
+                                 *    as described in @cite Senst2014
+                                */
+    };
+    enum SolverType {
+        ST_STANDART = 0,        /**< Apply standard iterative refinement */
+        ST_BILINEAR = 1         /**< Apply optimized iterative refinement based bilinear equation solutions
+                                 *   as described in @cite Senst2013
+                                */
+    };
+
+    enum InterpolationType
+    {
+        INTERP_GEO = 0,    /**<  Fast geodesic interpolation, see @cite Geistert2016 */
+        INTERP_EPIC = 1,    /**<  Edge-preserving interpolation, see @cite Revaud2015,Geistert2016. */
+    };
+
     /** @brief This is used store and set up the parameters of the robust local optical flow (RLOF) algoritm.
      *
      * The RLOF is a fast local optical flow approach similar to the pyramidal iterative Lucas-Kanade method as
@@ -39,25 +58,6 @@ namespace optflow
      *
      * @see optflow::DenseRLOFOpticalFlow, optflow::calcOpticalFlowDenseRLOF(), optflow::SparseRLOFOpticalFlow, optflow::calcOpticalFlowSparseRLOF()
      */
-    enum SupportRegionType {
-        SR_FIXED = 0,           /**<  Apply a constant support region */
-        SR_CROSS = 1            /**<  Apply a adaptive support region obtained by cross-based segmentation
-                                 *    as described in @cite Senst2014
-                                */
-    };
-    enum SolverType {
-        ST_STANDART = 0,        /**< Apply standard iterative refinement */
-        ST_BILINEAR = 1         /**< Apply optimized iterative refinement based bilinear equation solutions
-                                 *   as described in @cite Senst2013
-                                */
-    };
-
-    enum InterpolationType
-    {
-        INTERP_GEO = 0,    /**<  Fast geodesic interpolation, see @cite Geistert2016 */
-        INTERP_EPIC = 1,    /**<  Edge-preserving interpolation, see @cite Revaud2015,Geistert2016. */
-    };
-
     class CV_EXPORTS_W RLOFOpticalFlowParameter{
     public:
         RLOFOpticalFlowParameter()
