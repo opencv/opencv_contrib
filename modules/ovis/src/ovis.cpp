@@ -348,10 +348,18 @@ public:
     {
         if (flags & SCENE_SEPERATE)
         {
+            TextureManager& texMgr =  TextureManager::getSingleton();
+
             MaterialManager::getSingleton().remove(bgplane->getMaterial());
             bgplane.release();
-            String texName = sceneMgr->getName() + "_Background";
-            TextureManager::getSingleton().remove(texName, RESOURCEGROUP_NAME);
+            String texName = "_"+sceneMgr->getName() + "_DefaultBackground";
+            texMgr.remove(texName, RESOURCEGROUP_NAME);
+
+            texName = sceneMgr->getName() + "_Background";
+            if(texMgr.resourceExists(texName, RESOURCEGROUP_NAME))
+            {
+                texMgr.remove(texName, RESOURCEGROUP_NAME);
+            }
         }
 
         if(_app->sceneMgr == sceneMgr && (flags & SCENE_SEPERATE))
