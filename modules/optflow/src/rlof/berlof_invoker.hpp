@@ -1275,7 +1275,7 @@ namespace berlof
                         MEstimatorScale += eta * (etaValues[0] + etaValues[1] + etaValues[2] + etaValues[3]
                                                    + etaValues[4] + etaValues[5] + etaValues[6] + etaValues[7]);
 
-#endif                
+#endif
                         float CV_DECL_ALIGNED(32) wbuf[4];//
                         if( j == 0 )
                         {

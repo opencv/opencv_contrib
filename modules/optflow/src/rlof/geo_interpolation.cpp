@@ -2,7 +2,6 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 // This functions have been contributed by Jonas Geisters <geistert@nue.tu-berlin.de>
-#include "precomp.hpp"
 #include "geo_interpolation.hpp"
 #include <string>
 #include <map>
@@ -11,7 +10,7 @@ namespace cv
 namespace optflow
 {
 
-    double K_h1(float x, double h2)
+    inline double K_h1(float x, double h2)
     {
         return exp(-(0.5 / (h2)) * x);
     }
@@ -135,7 +134,7 @@ namespace optflow
         /*
             * assign quellknoten ids.
             */
-        for (int i = 0; i < prevPoints.size(); i++)
+        for (int i = 0; i < static_cast<int>(prevPoints.size()); i++)
         {
             int x = (int)prevPoints[i].x;
             int y = (int)prevPoints[i].y;

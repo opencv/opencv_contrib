@@ -181,7 +181,6 @@ TEST(SparseOpticalFlow, ReferenceAccuracy)
     Mat frame1, frame2, GT;
     ASSERT_TRUE(readRubberWhale(frame1, frame2, GT));
     vector<Point2f> prevPts, currPts;
-    
     for (int r = 0; r < frame1.rows; r+=10)
     {
         for (int c = 0; c < frame1.cols; c+=10)
@@ -197,7 +196,6 @@ TEST(SparseOpticalFlow, ReferenceAccuracy)
     Ptr<RLOFOpticalFlowParameter> param;
     param->supportRegionType = SR_CROSS;
     param->useIlluminationModel = true;
-    
     param->solverType = ST_BILINEAR;
     algo->setRLOFOpticalFlowParameter(param);
     algo->calc(frame1, frame2, prevPts, currPts, status, err);
@@ -209,7 +207,6 @@ TEST(SparseOpticalFlow, ReferenceAccuracy)
     EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.34f);
 
     param->useIlluminationModel = false;
-    
     param->solverType = ST_BILINEAR;
     algo->setRLOFOpticalFlowParameter(param);
     algo->calc(frame1, frame2, prevPts, currPts, status, err);
@@ -251,7 +248,6 @@ TEST(DenseOpticalFlow_RLOF, ReferenceAccuracy)
 {
     Mat frame1, frame2, GT;
     ASSERT_TRUE(readRubberWhale(frame1, frame2, GT));
-    
     Mat flow;
     Ptr<DenseRLOFOpticalFlow> algo = DenseRLOFOpticalFlow::create();
     Ptr<RLOFOpticalFlowParameter> param;
@@ -260,7 +256,6 @@ TEST(DenseOpticalFlow_RLOF, ReferenceAccuracy)
     algo->setRLOFOpticalFlowParameter(param);
     algo->setForwardBackward(1.0f);
     algo->setGridStep(cv::Size(4, 4));
-    
     algo->setInterpolation(INTERP_EPIC);
     algo->calc(frame1, frame2, flow);
 

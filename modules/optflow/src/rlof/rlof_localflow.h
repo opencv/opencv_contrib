@@ -25,9 +25,9 @@ T quickselect(const Mat & inp, int k)
 
     l = 0;
     ir = MAX(values.rows, values.cols) - 1;
-    while (true) 
+    while(true)
     {
-        if (ir <= l + 1) 
+        if (ir <= l + 1)
         {
             if (ir == l + 1 && values.at<T>(ir) < values.at<T>(l))
                 std::swap(values.at<T>(l), values.at<T>(ir));

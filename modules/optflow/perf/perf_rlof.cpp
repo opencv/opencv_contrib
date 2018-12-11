@@ -1,7 +1,6 @@
 #include "perf_precomp.hpp"
 namespace opencv_test {
     namespace {
-        
         typedef tuple<std::string, std::string, bool> ST_SR_IM_Sparse_t;
         typedef TestBaseWithParam<ST_SR_IM_Sparse_t> ST_SR_IM_Sparse;
         PERF_TEST_P(ST_SR_IM_Sparse, OpticalFlow_SparseRLOF,
@@ -67,7 +66,6 @@ namespace opencv_test {
             Mat frame2 = imread(frame2_path);
             ASSERT_FALSE(frame1.empty());
             ASSERT_FALSE(frame2.empty());
-        
             Ptr<RLOFOpticalFlowParameter> param;
             Ptr< DenseRLOFOpticalFlow> algo = DenseRLOFOpticalFlow::create();
             InterpolationType interp_type;
@@ -75,13 +73,10 @@ namespace opencv_test {
                 interp_type = INTERP_EPIC;
             if (get<0>(GetParam()) == "INTERP_GEO")
                 interp_type = INTERP_GEO;
-            
-
             TEST_CYCLE_N(5)
             {
                 calcOpticalFlowDenseRLOF(frame1, frame2,flow, param, 1.0f, Size(get<1>(GetParam()), get<1>(GetParam())), interp_type);
             }
-
             SANITY_CHECK_NOTHING();
         }
     }

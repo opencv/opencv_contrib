@@ -190,7 +190,7 @@ namespace ica
                     x = 0;
 
 #ifdef RLOF_SSE
-                    
+
                     for (; x <= winSize.width*cn; x += 4, dsrc += 4 * 2, dIptr += 4 * 2)
                     {
                         __m128i mask_0_7_epi16 = _mm_mullo_epi16(_mm_cvtepi8_epi16(_mm_loadl_epi64((const __m128i*)(maskPtr + x))), mmMaskSet_epi16);
@@ -281,7 +281,7 @@ namespace ica
                         break;
                     }
 
-                
+
                     a = nextPt.x - inextPt.x;
                     b = nextPt.y - inextPt.y;
                     iw00 = cvRound((1.f - a)*(1.f - b)*(1 << W_BITS));
@@ -344,7 +344,7 @@ namespace ica
                     __m128i mmScale = _mm_set1_epi16(static_cast<short>(MEstimatorScale));
 
 #endif
-                    
+
                     buffIdx = 0;
                     for (y = 0; y < winSize.height; y++)
                     {
@@ -354,7 +354,7 @@ namespace ica
                         const short* dIptr = (const short*)(derivIWinBuf.data + (y)*derivIWinBuf.step);
 
                         x = 0;
-#ifdef RLOF_SSE                    
+#ifdef RLOF_SSE
                         for (; x <= winSize.width*cn; x += 8, dIptr += 8 * 2)
                         {
                             __m128i mask_0_7_epi16 = _mm_mullo_epi16(_mm_cvtepi8_epi16(_mm_loadl_epi64((const __m128i*)(maskPtr + x))), mmMaskSet_epi16);
@@ -377,12 +377,12 @@ namespace ica
 
                             mmDiff_epi16 = _mm_and_si128(mmDiff_epi16, mask_0_7_epi16);
 
-                            
+
                             __m128i scalediffIsPos_epi16 = _mm_cmpgt_epi16(mmDiff_epi16, mmScale);
                             mmEta = _mm_add_epi16(mmEta, _mm_add_epi16(_mm_and_si128(scalediffIsPos_epi16, _mm_set1_epi16(2)), _mm_set1_epi16(-1)));
-                            
 
-                            __m128i Ixy_0 = _mm_loadu_si128((const __m128i*)(dIptr)); // Ix0 Iy0 Ix1 Iy1 ... 
+
+                            __m128i Ixy_0 = _mm_loadu_si128((const __m128i*)(dIptr)); // Ix0 Iy0 Ix1 Iy1 ...
                             __m128i Ixy_1 = _mm_loadu_si128((const __m128i*)(dIptr + 8));
 
                             __m128i abs_epi16 = _mm_abs_epi16(mmDiff_epi16);
@@ -396,20 +396,20 @@ namespace ica
                             // val = |It| -/+ sigma1
                             __m128i tmpParam1_epi16 = _mm_add_epi16(_mm_and_si128(diffIsPos_epi16, _mm_sub_epi16(mmDiff_epi16, mmParam1)),
                                 _mm_andnot_si128(diffIsPos_epi16, _mm_add_epi16(mmDiff_epi16, mmParam1)));
-                            // It == 0     ? |It| > sigma13 
+                            // It == 0     ? |It| > sigma13
                             mmDiff_epi16 = _mm_and_si128(bSet2_epi16, mmDiff_epi16);
                             // It == val ? sigma0 < |It| < sigma1
                             mmDiff_epi16 = _mm_blendv_epi8(mmDiff_epi16, tmpParam1_epi16, bSet1_epi16);
 
 
                             __m128i tale_epi16_ = _mm_blendv_epi8(mmOness_epi16, mmParam2_epi16, bSet1_epi16); // mask for 0 - 3
-                            // diff = diff * sigma2 
+                            // diff = diff * sigma2
                             __m128i lo = _mm_mullo_epi16(tale_epi16_, mmDiff_epi16);
                             __m128i hi = _mm_mulhi_epi16(tale_epi16_, mmDiff_epi16);
-                            __m128i diff_0_3_epi32 = _mm_srai_epi32(_mm_unpacklo_epi16(lo, hi), s2bitShift); //diff 0_3_epi32 
+                            __m128i diff_0_3_epi32 = _mm_srai_epi32(_mm_unpacklo_epi16(lo, hi), s2bitShift); //diff 0_3_epi32
                             __m128i diff_4_7_epi32 = _mm_srai_epi32(_mm_unpackhi_epi16(lo, hi), s2bitShift); // diff 4_7_epi32
 
-                            mmDiff_epi16 = _mm_packs_epi32(diff_0_3_epi32, diff_4_7_epi32); 
+                            mmDiff_epi16 = _mm_packs_epi32(diff_0_3_epi32, diff_4_7_epi32);
                             diff1 = _mm_unpackhi_epi16(mmDiff_epi16, mmDiff_epi16); // It4 It4 It5 It5 It6 It6 It7 It7   | It12 It12 It13 It13...
                             diff0 = _mm_unpacklo_epi16(mmDiff_epi16, mmDiff_epi16); // It0 It0 It1 It1 It2 It2 It3 It3   | It8 It8 It9 It9...
 
@@ -449,7 +449,7 @@ namespace ica
 
                                 tale_0_3_ps = _mm_blendv_ps(_mm_set1_ps(0), tale_0_3_ps, mask_0_4_ps);
                                 tale_4_7_ps = _mm_blendv_ps(_mm_set1_ps(0), tale_4_7_ps, mask_4_7_ps);
-                                
+
                                 t0 = _mm_srai_epi32(Ixy_0, 16); // Iy0 Iy1 Iy2 Iy3
                                 t1 = _mm_srai_epi32(_mm_slli_epi32(Ixy_0, 16), 16); // Ix0 Ix1 Ix2 Ix3
 
@@ -488,18 +488,18 @@ namespace ica
                                 Jptr[x + step] * iw10 + Jptr[x + step + cn] * iw11,
                                 W_BITS1 - 5) - Iptr[x];
 
-                        
 
 
-                            
+
+
                             if (diff > MEstimatorScale)
                                 MEstimatorScale += eta;
                             if (diff < MEstimatorScale)
                                 MEstimatorScale -= eta;
-                            
+
                             calc_diff(diff, fParam0, fParam1, param[2]);
-                            
-                
+
+
                             float ixval = (float)(dIptr[0]);
                             float iyval = (float)(dIptr[1]);
                             b1 += (float)(diff*ixval);
@@ -531,19 +531,19 @@ namespace ica
                         }
 #endif
                     }
-                    
+
 #ifdef RLOF_SSE
                     short etaValues[8];
                     _mm_storeu_si128((__m128i*)(etaValues), mmEta);
                     MEstimatorScale += eta * (etaValues[0] + etaValues[1] + etaValues[2] + etaValues[3]
                             + etaValues[4] + etaValues[5] + etaValues[6] + etaValues[7]);
 
-                
+
 #endif
                     if (j == 0)
                     {
 #ifdef RLOF_SSE
-                        float CV_DECL_ALIGNED(16) A11buf[4], A12buf[4], A22buf[4];//                
+                        float CV_DECL_ALIGNED(16) A11buf[4], A12buf[4], A22buf[4];//
 
                         _mm_store_ps(A11buf, mmAxx);
                         _mm_store_ps(A12buf, mmAxy);
@@ -554,8 +554,8 @@ namespace ica
                         A12 = A12buf[0] + A12buf[1] + A12buf[2] + A12buf[3];
                         A22 = A22buf[0] + A22buf[1] + A22buf[2] + A22buf[3];
 #endif
-                        A11 *= FLT_SCALE; 
-                        A12 *= FLT_SCALE; 
+                        A11 *= FLT_SCALE;
+                        A12 *= FLT_SCALE;
                         A22 *= FLT_SCALE;
 
 
@@ -683,7 +683,7 @@ namespace radial
         TrackerInvoker & operator=(const TrackerInvoker &) { return *this; };
         void operator()(const cv::Range& range) const
         {
-            Point2f halfWin; 
+            Point2f halfWin;
             cv::Size winSize;
             const Mat& I = *prevImg;
             const Mat& J = *nextImg;
@@ -729,7 +729,7 @@ namespace radial
                 else
                 {
                     nextPt = nextPts[ptidx] * 2.f;
-                    
+
                 }
                 nextPts[ptidx] = nextPt;
 
@@ -895,7 +895,7 @@ namespace radial
 
                 for (j = 0; j < criteria.maxCount; j++)
                 {
-                    
+
                     inextPt.x = cvFloor(nextPt.x);
                     inextPt.y = cvFloor(nextPt.y);
 
@@ -952,9 +952,9 @@ namespace radial
                             {
                                 if (dIptr[0] == 0 && dIptr[1] == 0)
                                     continue;
-                                int diff = static_cast<int>(CV_DESCALE(    Jptr[x] * iw00 + 
-                                                        Jptr[x + cn] * iw01 + 
-                                                        Jptr[x + step] * iw10 + 
+                                int diff = static_cast<int>(CV_DESCALE(    Jptr[x] * iw00 +
+                                                        Jptr[x + cn] * iw01 +
+                                                        Jptr[x + step] * iw10 +
                                                         Jptr[x + step + cn] * iw11, W_BITS1 - 5)
                                     - Iptr[x] + Iptr[x] * gainVec.x + gainVec.y);
                                 residualMat.at<short>(buffIdx++) = static_cast<short>(diff);
@@ -970,7 +970,7 @@ namespace radial
                     float fParam1 = param[1] * 32.f;
                     fParam0 = param[0] * MEstimatorScale;
                     fParam1 = param[1] * MEstimatorScale;
-                    
+
 #ifdef RLOF_SSE
 
                     qw0 = _mm_set1_epi32(iw00 + (iw01 << 16));
@@ -1011,7 +1011,7 @@ namespace radial
                         const short* dIptr = (const short*)(derivIWinBuf.data + y * derivIWinBuf.step);
 
                         x = 0;
-#ifdef RLOF_SSE                    
+#ifdef RLOF_SSE
 
 
                         for (; x <= _winSize.width*cn; x += 8, dIptr += 8 * 2)
@@ -1020,7 +1020,7 @@ namespace radial
                             __m128i diff0, diff1;
                             __m128i I_0_7_epi16 = _mm_loadu_si128((const __m128i*)(Iptr + x)); // von element 0 bis 7
                                __m128i v00 = _mm_unpacklo_epi8(
-                            _mm_loadl_epi64((const __m128i*)(Jptr + x)) , z); //J0 , 0, J1, 0, J2, 0 ... J7,0 
+                            _mm_loadl_epi64((const __m128i*)(Jptr + x)) , z); //J0 , 0, J1, 0, J2, 0 ... J7,0
                             __m128i v01 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(Jptr + x + cn)), z);
                             __m128i v10 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(Jptr + x + step)), z);
                             __m128i v11 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(Jptr + x + step + cn)), z);
@@ -1036,7 +1036,7 @@ namespace radial
                             t0 = _mm_srai_epi32(_mm_add_epi32(t0, qdelta), W_BITS1 - 5);
                             t1 = _mm_srai_epi32(_mm_add_epi32(t1, qdelta), W_BITS1 - 5);
 
-                            
+
                             __m128i lo = _mm_mullo_epi16(mmGainValue_epi16, I_0_7_epi16);
                             __m128i hi = _mm_mulhi_epi16(mmGainValue_epi16, I_0_7_epi16);
 
@@ -1049,14 +1049,14 @@ namespace radial
                                 _mm_subs_epi16(_mm_packs_epi32(t0, t1), I_0_7_epi16),    // J - I
                                 _mm_add_epi16(Igain_epi16, mmConstValue_epi16));
 
-                            
+
                             mmDiff_epi16 = _mm_and_si128(mmDiff_epi16, mask_0_7_epi16);
 
-                            
+
                             __m128i scalediffIsPos_epi16 = _mm_cmpgt_epi16(mmDiff_epi16, mmScale);
                             mmEta = _mm_add_epi16(mmEta, _mm_add_epi16(_mm_and_si128(scalediffIsPos_epi16, _mm_set1_epi16(2)), _mm_set1_epi16(-1)));
-                                
-        
+
+
                             __m128i Ixy_0 = _mm_loadu_si128((const __m128i*)(dIptr)); // Ix0 Iy0 Ix1 Iy1
                             __m128i Ixy_1 = _mm_loadu_si128((const __m128i*)(dIptr + 8));
 
@@ -1079,10 +1079,10 @@ namespace radial
 
 
                             __m128i tale_epi16_ = _mm_blendv_epi8(mmOness_epi16, mmParam2_epi16, bSet1_epi16); // mask for 0 - 3
-                            // diff = diff * sigma2 
+                            // diff = diff * sigma2
                             lo = _mm_mullo_epi16(tale_epi16_, mmDiff_epi16);
                             hi = _mm_mulhi_epi16(tale_epi16_, mmDiff_epi16);
-                            __m128i diff_0_3_epi32 = _mm_srai_epi32(_mm_unpacklo_epi16(lo, hi), s2bitShift); //diff 0_3_epi32 
+                            __m128i diff_0_3_epi32 = _mm_srai_epi32(_mm_unpacklo_epi16(lo, hi), s2bitShift); //diff 0_3_epi32
                             __m128i diff_4_7_epi32 = _mm_srai_epi32(_mm_unpackhi_epi16(lo, hi), s2bitShift); // diff 4_7_epi32
 
                             mmDiff_epi16 = _mm_packs_epi32(diff_0_3_epi32, diff_4_7_epi32); // ,da das ergebniss kleiner als 16 bit sein sollte
@@ -1120,7 +1120,7 @@ namespace radial
 
                             qb3 = _mm_add_ps(qb3, _mm_cvtepi32_ps(diff_0_3_epi32));
                             qb3 = _mm_add_ps(qb3, _mm_cvtepi32_ps(diff_4_7_epi32));
-                
+
                             if (j == 0)
                             {
                                 __m128 bSet1_0_3_ps = _mm_cvtepi32_ps(_mm_cvtepi16_epi32(bSet1_epi16));
@@ -1138,9 +1138,8 @@ namespace radial
 
                                 tale_0_3_ps = _mm_blendv_ps(_mm_set1_ps(0), tale_0_3_ps, mask_0_4_ps);
                                 tale_4_7_ps = _mm_blendv_ps(_mm_set1_ps(0), tale_4_7_ps, mask_4_7_ps);
-    
-                                t0 = _mm_srai_epi32(Ixy_0, 16); // Iy0 Iy1 Iy2 Iy3
-                                t1 = _mm_srai_epi32(_mm_slli_epi32(Ixy_0, 16), 16); // Ix0 Ix1 Ix2 Ix3
+                                t0 = _mm_srai_epi32(Ixy_0, 16);
+                                t1 = _mm_srai_epi32(_mm_slli_epi32(Ixy_0, 16), 16);
 
                                 __m128 fy = _mm_cvtepi32_ps(t0);
                                 __m128 fx = _mm_cvtepi32_ps(t1);
@@ -1212,9 +1211,7 @@ namespace radial
                         {
                             if (maskPtr[x] == 0)
                                 continue;
-                            
-                            float J = CV_DESCALE(Jptr[x] * iw00 + Jptr[x + cn] * iw01 +
-                                Jptr[x + step] * iw10 + Jptr[x + step + cn] * iw11,
+                            float J = CV_DESCALE(Jptr[x] * iw00 + Jptr[x + cn] * iw01 + Jptr[x + step] * iw10 + Jptr[x + step + cn] * iw11,
                                 W_BITS1 - 5);
                             short ixval = static_cast<short>(dIptr[0]);
                             short iyval = static_cast<short>(dIptr[1]);
@@ -1224,8 +1221,6 @@ namespace radial
                                 MEstimatorScale += eta;
                             if (diff < MEstimatorScale)
                                 MEstimatorScale -= eta;
-                            // compute the missmatch vector
-                            
                             if (abss > fParam1)
                             {
                                 diff = 0.f;
@@ -1238,8 +1233,6 @@ namespace radial
                             {
                                 diff = param[2] * (diff + fParam1);
                             }
-                            
-
                             b1 += (float)(diff*ixval);
                             b2 += (float)(diff*iyval); ;
                             b3 += (float)(diff)* Iptr[x];
@@ -1283,8 +1276,6 @@ namespace radial
                         }
 #endif
                     }
-
-                    
 #ifdef RLOF_SSE
                     short etaValues[8];
                     _mm_storeu_si128((__m128i*)(etaValues), mmEta);
@@ -1318,12 +1309,8 @@ namespace radial
                         w1 *= -FLT_SCALE;
                         w2 *= -FLT_SCALE;
                         dI *= FLT_SCALE;
-
-
 #ifdef RLOF_SSE
-
-                        float CV_DECL_ALIGNED(16) A11buf[4], A12buf[4], A22buf[4];//                
-
+                        float CV_DECL_ALIGNED(16) A11buf[4], A12buf[4], A22buf[4];
                         _mm_store_ps(A11buf, mmAxx);
                         _mm_store_ps(A12buf, mmAxy);
                         _mm_store_ps(A22buf, mmAyy);
@@ -1336,11 +1323,7 @@ namespace radial
                         A11 *= FLT_SCALE;
                         A12 *= FLT_SCALE;
                         A22 *= FLT_SCALE;
-
-                    
                     }
-
-
 #ifdef RLOF_SSE
                     float CV_DECL_ALIGNED(16) bbuf[4];
                     _mm_store_ps(bbuf, _mm_add_ps(qb0, qb1));
@@ -1350,9 +1333,7 @@ namespace radial
                     b3 = bbuf[0] + bbuf[1] + bbuf[2] + bbuf[3];
                     _mm_store_ps(bbuf, qb3);
                     b4 = bbuf[0] + bbuf[1] + bbuf[2] + bbuf[3];
-                    
 #endif
-
                     mismatchMat.at<float>(0, 0) = b1 * FLT_SCALE;
                     mismatchMat.at<float>(1, 0) = b2 * FLT_SCALE;
                     mismatchMat.at<float>(2, 0) = -b3 * FLT_SCALE;
@@ -1397,13 +1378,12 @@ namespace radial
 
                     resultMat = invTensorMat * mismatchMat;
 
-                
                     Point2f delta(-resultMat.at<float>(0), -resultMat.at<float>(1));
                     Point2f deltaGain(resultMat.at<float>(2), resultMat.at<float>(3));
 
 
 
-                    
+
                     if (j == 0)
                         prevGain = deltaGain;
                     gainVec += deltaGain * 0.8;
