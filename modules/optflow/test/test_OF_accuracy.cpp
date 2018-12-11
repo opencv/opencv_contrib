@@ -95,7 +95,7 @@ static float calcRMSE(vector<Point2f> prevPts, vector<Point2f> currPts, Mat flow
             ee.push_back(sqrt(diffFlow.x * diffFlow.x + diffFlow.y * diffFlow.y));
         }
     }
-    return mean(ee).val[0];
+    return static_cast<float>(mean(ee).val[0]);
 }
 static float calcAvgEPE(vector< pair<Point2i, Point2i> > corr, Mat flow)
 {

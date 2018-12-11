@@ -58,7 +58,7 @@ namespace opencv_test { namespace {
             ASSERT_FALSE(frame2.empty());
             Ptr<RLOFOpticalFlowParameter> param = Ptr<RLOFOpticalFlowParameter>(new RLOFOpticalFlowParameter);;
             Ptr< DenseRLOFOpticalFlow> algo = DenseRLOFOpticalFlow::create();
-            InterpolationType interp_type;
+            InterpolationType interp_type = INTERP_EPIC;
             if (get<0>(GetParam()) == "INTERP_EPIC")
                 interp_type = INTERP_EPIC;
             if (get<0>(GetParam()) == "INTERP_GEO")

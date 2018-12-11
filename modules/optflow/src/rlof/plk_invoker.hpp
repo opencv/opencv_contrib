@@ -473,7 +473,7 @@ public:
                         int J_val = CV_DESCALE(Jptr[x]*iw00 + Jptr[x+cn]*iw01 +
                                               Jptr[x+step]*iw10 + Jptr[x+step+cn]*iw11,
                                               W_BITS1-5);
-                        int diff = J_val - Iptr[x] + static_cast<int>(Iptr[x]) * gainVec.x + gainVec.y;
+                        int diff = static_cast<int>(J_val - Iptr[x] + Iptr[x] * gainVec.x + gainVec.y);
 
                         b1 += (float)(diff*dIptr[0])  * FLT_RESCALE;
                         b2 += (float)(diff*dIptr[1])  * FLT_RESCALE;

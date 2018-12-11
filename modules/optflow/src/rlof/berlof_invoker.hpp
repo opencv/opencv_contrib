@@ -1169,9 +1169,9 @@ namespace berlof
                                 if( maskPtr[x] == 0)
                                     continue;
 
-                                short ixval = static_cast<float>(dIptr[0]);
-                                short iyval = static_cast<float>(dIptr[1]);
-                                int illValue =  Iptr[x] * gainVec.x + gainVec.y  - Iptr[x];
+                                short ixval = dIptr[0];
+                                short iyval = dIptr[1];
+                                int illValue =  static_cast<int>(Iptr[x] * gainVec.x + gainVec.y  - Iptr[x]);
 
                                 int It[4] = {(Jptr[x+step+cn]<< 5)    + illValue,
                                              (Jptr[x+cn]<< 5)        + illValue,
@@ -1179,7 +1179,7 @@ namespace berlof
                                              (Jptr[x] << 5)            + illValue};
 
 
-                                float J_val  =  CV_DESCALE(Jptr[x]*iw00 + Jptr[x+cn]*iw01 +
+                                int J_val  =  CV_DESCALE(Jptr[x]*iw00 + Jptr[x+cn]*iw01 +
                                                       Jptr[x+step]*iw10 + Jptr[x+step+cn]*iw11,
                                                       W_BITS1-5);
 
@@ -1202,19 +1202,19 @@ namespace berlof
                                         It[2] = 0;
                                         It[3] = 0;
                                     }
-                                    else if( abss > fParam0 && diff >= 0 )
+                                    else if( abss > static_cast<int>(fParam0) && diff >= 0 )
                                     {
-                                        It[0] = param[2] * (It[0] - fParam1);
-                                        It[1] = param[2] * (It[1] - fParam1);
-                                        It[2] = param[2] * (It[2] - fParam1);
-                                        It[3] = param[2] * (It[3] - fParam1);
+                                        It[0] = static_cast<int>(param[2] * (It[0] - fParam1));
+                                        It[1] = static_cast<int>(param[2] * (It[1] - fParam1));
+                                        It[2] = static_cast<int>(param[2] * (It[2] - fParam1));
+                                        It[3] = static_cast<int>(param[2] * (It[3] - fParam1));
                                     }
-                                    else if( abss > fParam0 && diff < 0 )
+                                    else if( abss > static_cast<int>(fParam0) && diff < 0 )
                                     {
-                                        It[0] = param[2] * (It[0] + fParam1);
-                                        It[1] = param[2] * (It[1] + fParam1);
-                                        It[2] = param[2] * (It[2] + fParam1);
-                                        It[3] = param[2] * (It[3] + fParam1);
+                                        It[0] = static_cast<int>(param[2] * (It[0] + fParam1));
+                                        It[1] = static_cast<int>(param[2] * (It[1] + fParam1));
+                                        It[2] = static_cast<int>(param[2] * (It[2] + fParam1));
+                                        It[3] = static_cast<int>(param[2] * (It[3] + fParam1));
                                     }
                                 }
                                 _b0[0] += (float)(It[0]*dIptr[0]) ;

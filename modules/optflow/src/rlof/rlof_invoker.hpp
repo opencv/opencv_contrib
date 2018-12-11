@@ -1213,7 +1213,7 @@ namespace radial
                         {
                             if (maskPtr[x] == 0)
                                 continue;
-                            float J_val = CV_DESCALE(Jptr[x] * iw00 + Jptr[x + cn] * iw01 + Jptr[x + step] * iw10 + Jptr[x + step + cn] * iw11,
+                            int J_val = CV_DESCALE(Jptr[x] * iw00 + Jptr[x + cn] * iw01 + Jptr[x + step] * iw10 + Jptr[x + step + cn] * iw11,
                                 W_BITS1 - 5);
                             short ixval = static_cast<short>(dIptr[0]);
                             short iyval = static_cast<short>(dIptr[1]);
@@ -1223,17 +1223,17 @@ namespace radial
                                 MEstimatorScale += eta;
                             if (diff < MEstimatorScale)
                                 MEstimatorScale -= eta;
-                            if (abss > fParam1)
+                            if (abss > static_cast<int>(fParam1))
                             {
                                 diff = 0.f;
                             }
-                            else if (abss > fParam0 && diff >= 0)
+                            else if (abss > static_cast<int>(fParam0) && diff >= 0)
                             {
-                                diff = param[2] * (diff - fParam1);
+                                diff = static_cast<int>(param[2] * (diff - fParam1));
                             }
-                            else if (abss > fParam0 && diff < 0)
+                            else if (abss > static_cast<int>(fParam0) && diff < 0)
                             {
-                                diff = param[2] * (diff + fParam1);
+                                diff = static_cast<int>(param[2] * (diff + fParam1));
                             }
                             b1 += (float)(diff*ixval);
                             b2 += (float)(diff*iyval); ;

@@ -363,7 +363,7 @@ namespace optflow
             }
         }
         return ret;
-
+/*
         for (int y = 0; y < in.rows; y++) {
             for (int x = 0; x < in.cols; x++) {
                 int v_id = y * in.cols + x;
@@ -389,7 +389,7 @@ namespace optflow
         }
         free(graph_helper.mem);
         return nnFlow;
-
+*/
 
     }
     Mat getGraph(const Mat &image, float edge_length)
