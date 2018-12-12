@@ -173,7 +173,7 @@ int QuasiDenseStereo::saveParameters(cv::String filepath)
     return -1;
 }
 
-void QuasiDenseStereo::getSparseMatches(std::vector<Match> &sMatches)
+void QuasiDenseStereo::getSparseMatches(std::vector<qds::Match> &sMatches)
 {
     Match tmpMatch;
     sMatches.clear();
@@ -185,7 +185,7 @@ void QuasiDenseStereo::getSparseMatches(std::vector<Match> &sMatches)
         sMatches.push_back(tmpMatch);
     }
 }
-void QuasiDenseStereo::getDenseMatches(std::vector<Match> &dMatches)
+void QuasiDenseStereo::getDenseMatches(std::vector<qds::Match> &dMatches)
 {
     Match tmpMatch;
     dMatches.clear();

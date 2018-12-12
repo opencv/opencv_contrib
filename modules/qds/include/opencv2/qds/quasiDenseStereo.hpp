@@ -174,7 +174,7 @@ public:
      * @note The method clears the sMatches vector.
      * @note The returned Match elements inside the sMatches vector, do not use corr member.
      */
-     CV_WRAP void getSparseMatches(std::vector<Match> &sMatches);
+     CV_WRAP void getSparseMatches(std::vector<qds::Match> &sMatches);
 
 
     /**
@@ -183,7 +183,7 @@ public:
      * @note The method clears the dMatches vector.
      * @note The returned Match elements inside the sMatches vector, do not use corr member.
      */
-    CV_WRAP void getDenseMatches(std::vector<Match> &dMatches);
+    CV_WRAP void getDenseMatches(std::vector<qds::Match> &dMatches);
 
 
 
