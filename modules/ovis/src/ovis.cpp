@@ -319,7 +319,11 @@ public:
         {
             camman.reset(new OgreBites::CameraMan(camNode));
             camman->setStyle(OgreBites::CS_ORBIT);
-            camNode->setFixedYawAxis(true, Vector3::NEGATIVE_UNIT_Y);
+#if OGRE_VERSION >= ((1 << 16) | (11 << 8) | 5)
+            camman->setFixedYaw(false);
+#else
+            camNode->setFixedYawAxis(true, Vector3::NEGATIVE_UNIT_Y); // OpenCV +Y in Ogre CS
+#endif
         }
 
         if (!app->sceneMgr)
@@ -344,10 +348,18 @@ public:
     {
         if (flags & SCENE_SEPERATE)
         {
+            TextureManager& texMgr =  TextureManager::getSingleton();
+
             MaterialManager::getSingleton().remove(bgplane->getMaterial());
             bgplane.release();
-            String texName = sceneMgr->getName() + "_Background";
-            TextureManager::getSingleton().remove(texName, RESOURCEGROUP_NAME);
+            String texName = "_"+sceneMgr->getName() + "_DefaultBackground";
+            texMgr.remove(texName, RESOURCEGROUP_NAME);
+
+            texName = sceneMgr->getName() + "_Background";
+            if(texMgr.resourceExists(texName, RESOURCEGROUP_NAME))
+            {
+                texMgr.remove(texName, RESOURCEGROUP_NAME);
+            }
         }
 
         if(_app->sceneMgr == sceneMgr && (flags & SCENE_SEPERATE))
@@ -694,6 +706,10 @@ public:
 
     void fixCameraYawAxis(bool useFixed, InputArray _up) CV_OVERRIDE
     {
+#if OGRE_VERSION >= ((1 << 16) | (11 << 8) | 5)
+        if(camman) camman->setFixedYaw(useFixed);
+#endif
+
         Vector3 up = Vector3::NEGATIVE_UNIT_Y;
         if (!_up.empty())
         {
