@@ -10,6 +10,53 @@ namespace cv
 namespace optflow
 {
 
+    Ptr<RLOFOpticalFlowParameter> RLOFOpticalFlowParameter::create()
+    {
+        return Ptr<RLOFOpticalFlowParameter>(new RLOFOpticalFlowParameter);
+    }
+
+    void RLOFOpticalFlowParameter::setSolverType(SolverType val){ solverType = val;}
+    SolverType RLOFOpticalFlowParameter::getSolverType() const { return solverType;}
+
+    void RLOFOpticalFlowParameter::setSupportRegionType(SupportRegionType val){ supportRegionType = val;}
+    SupportRegionType RLOFOpticalFlowParameter::getSupportRegionType() const { return supportRegionType;}
+
+    void RLOFOpticalFlowParameter::setNormSigma0(float val){ normSigma0 = val;}
+    float RLOFOpticalFlowParameter::getNormSigma0() const { return normSigma0;}
+
+    void RLOFOpticalFlowParameter::setNormSigma1(float val){ normSigma1 = val;}
+    float RLOFOpticalFlowParameter::getNormSigma1() const { return normSigma1;}
+
+    void RLOFOpticalFlowParameter::setSmallWinSize(int val){ smallWinSize = val;}
+    int RLOFOpticalFlowParameter::getSmallWinSize() const { return smallWinSize;}
+
+    void RLOFOpticalFlowParameter::setLargeWinSize(int val){ largeWinSize = val;}
+    int RLOFOpticalFlowParameter::getLargeWinSize() const { return largeWinSize;}
+
+    void RLOFOpticalFlowParameter::setCrossSegmentationThreshold(int val){ crossSegmentationThreshold = val;}
+    int RLOFOpticalFlowParameter::getCrossSegmentationThreshold() const { return crossSegmentationThreshold;}
+
+    void RLOFOpticalFlowParameter::setMaxLevel(int val){ maxLevel = val;}
+    int RLOFOpticalFlowParameter::getMaxLevel() const { return maxLevel;}
+
+    void RLOFOpticalFlowParameter::setUseInitialFlow(bool val){ useInitialFlow = val;}
+    bool RLOFOpticalFlowParameter::getUseInitialFlow() const { return useInitialFlow;}
+
+    void RLOFOpticalFlowParameter::setUseIlluminationModel(bool val){ useIlluminationModel = val;}
+    bool RLOFOpticalFlowParameter::getUseIlluminationModel() const { return useIlluminationModel;}
+
+    void RLOFOpticalFlowParameter::setUseGlobalMotionPrior(bool val){ useGlobalMotionPrior = val;}
+    bool RLOFOpticalFlowParameter::getUseGlobalMotionPrior() const { return useGlobalMotionPrior;}
+
+    void RLOFOpticalFlowParameter::setMaxIteration(int val){ maxIteration = val;}
+    int RLOFOpticalFlowParameter::getMaxIteration() const { return maxIteration;}
+
+    void RLOFOpticalFlowParameter::setMinEigenValue(float val){ minEigenValue = val;}
+    float RLOFOpticalFlowParameter::getMinEigenValue() const { return minEigenValue;}
+
+    void RLOFOpticalFlowParameter::setGlobalMotionRansacThreshold(float val){ globalMotionRansacThreshold = val;}
+    float RLOFOpticalFlowParameter::getGlobalMotionRansacThreshold() const { return globalMotionRansacThreshold;}
+
     class DenseOpticalFlowRLOFImpl : public DenseRLOFOpticalFlow
     {
     public:
@@ -66,9 +113,13 @@ namespace optflow
             CV_Assert(!I0.empty() && I0.depth() == CV_8U && (I0.channels() == 3 || I0.channels() == 1));
             CV_Assert(!I1.empty() && I1.depth() == CV_8U && (I1.channels() == 3 || I1.channels() == 1));
             CV_Assert(I0.sameSize(I1));
+            if (param.empty())
+                param = Ptr<RLOFOpticalFlowParameter>(new RLOFOpticalFlowParameter());
             if (param->supportRegionType == SR_CROSS)
                 CV_Assert( I0.channels() == 3 && I1.channels() == 3);
             CV_Assert(interp_type == InterpolationType::INTERP_EPIC || interp_type == InterpolationType::INTERP_GEO);
+            // if no parameter is used use the default parameter
+
             Mat prevImage = I0.getMat();
             Mat currImage = I1.getMat();
             int noPoints = prevImage.cols * prevImage.rows;
@@ -86,7 +137,6 @@ namespace optflow
             prevPoints.erase(prevPoints.begin() + noPoints, prevPoints.end());
             currPoints.resize(prevPoints.size());
             calcLocalOpticalFlow(prevImage, currImage, prevPyramid, currPyramid, prevPoints, currPoints, *(param.get()));
-
             flow.create(prevImage.size(), CV_32FC2);
             Mat dense_flow = flow.getMat();
 
@@ -236,6 +286,11 @@ namespace optflow
             Mat prevImage = prevImg.getMat();
             Mat nextImage = nextImg.getMat();
             Mat prevPtsMat = prevPts.getMat();
+
+            if (param.empty())
+            {
+                param = Ptr<RLOFOpticalFlowParameter>(new RLOFOpticalFlowParameter);
+            }
 
             if (param->useInitialFlow == false)
                 nextPts.create(prevPtsMat.size(), prevPtsMat.type(), -1, true);

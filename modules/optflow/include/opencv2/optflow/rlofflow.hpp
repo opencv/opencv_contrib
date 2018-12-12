@@ -76,6 +76,7 @@ namespace optflow
             ,minEigenValue(0.0001f)
             ,globalMotionRansacThreshold(10)
         {}
+
         SolverType solverType;
         /**< Variable specifies the iterative refinement strategy. Please consider citing  @cite Senst2013 when
          *  using ST_BILINEAR.
@@ -146,6 +147,51 @@ namespace optflow
          *   n-th percentil (given by this value [0 ... 100]) of the motion vectors magnitude.
          *   See @cite Senst2016 for more details.
         */
+
+        CV_WRAP void setSolverType(SolverType val);
+        CV_WRAP SolverType getSolverType() const;
+
+        CV_WRAP void setSupportRegionType(SupportRegionType val);
+        CV_WRAP SupportRegionType getSupportRegionType() const;
+
+        CV_WRAP void setNormSigma0(float val);
+        CV_WRAP float getNormSigma0() const;
+
+        CV_WRAP void setNormSigma1(float val);
+        CV_WRAP float getNormSigma1() const;
+
+        CV_WRAP void setSmallWinSize(int val);
+        CV_WRAP int getSmallWinSize() const;
+
+        CV_WRAP void setLargeWinSize(int val);
+        CV_WRAP int getLargeWinSize() const;
+
+        CV_WRAP void setCrossSegmentationThreshold(int val);
+        CV_WRAP int getCrossSegmentationThreshold() const;
+
+        CV_WRAP void setMaxLevel(int val);
+        CV_WRAP int getMaxLevel() const;
+
+        CV_WRAP void setUseInitialFlow(bool val);
+        CV_WRAP bool getUseInitialFlow() const;
+
+        CV_WRAP void setUseIlluminationModel(bool val);
+        CV_WRAP bool getUseIlluminationModel() const;
+
+        CV_WRAP void setUseGlobalMotionPrior(bool val);
+        CV_WRAP bool getUseGlobalMotionPrior() const;
+
+        CV_WRAP void setMaxIteration(int val);
+        CV_WRAP int getMaxIteration() const;
+
+        CV_WRAP void setMinEigenValue(float val);
+        CV_WRAP float getMinEigenValue() const;
+
+        CV_WRAP void setGlobalMotionRansacThreshold(float val);
+        CV_WRAP float getGlobalMotionRansacThreshold() const;
+
+        //! @brief Creates instance of optflow::RLOFOpticalFlowParameter
+        CV_WRAP static Ptr<RLOFOpticalFlowParameter> create();
     };
 
     /** @brief Fast dense optical flow computation based on robust local optical flow (RLOF) algorithms and sparse-to-dense interpolation
