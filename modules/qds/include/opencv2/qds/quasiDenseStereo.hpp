@@ -75,7 +75,7 @@ struct CV_EXPORTS_W_SIMPLE Match
     CV_PROP_RW cv::Point2i p1;
     CV_PROP_RW float	corr;
 
-    CV_WRAP bool operator < (const Match & rhs) const
+    CV_WRAP_AS(less) bool operator < (const Match & rhs) const
     {
         return corr < rhs.corr;
     }
@@ -370,7 +370,7 @@ protected:
      * @retval true If b is equal or grater Match than a.
      * @retval false If b is less Match than a.
      */
-    CV_PROP_RW CV_WRAP bool MatchCompare(const Match a, const Match b);
+    CV_WRAP bool MatchCompare(const Match a, const Match b);
 
 
     /**
@@ -378,7 +378,7 @@ protected:
      * @param[in] img The image we need to compute the descriptor for.
      * @param[out] descriptor The texture descriptor of the image.
      */
-    CV_PROP_RW CV_WRAP void buildTextureDescriptor(cv::Mat &img,cv::Mat &descriptor);
+    CV_WRAP void buildTextureDescriptor(cv::Mat &img,cv::Mat &descriptor);
 
 
     // Variables used at sparse feature extraction.
