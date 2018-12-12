@@ -130,7 +130,7 @@ public:
      * @note Default value is an an empty string "". In this case the class default parameters,
      * found in the defaults.hpp file, are loaded.
      */
-    QuasiDenseStereo(cv::Size monoImgSize, std::string paramFilepath ="");
+    QuasiDenseStereo(cv::Size monoImgSize, cv::String paramFilepath ="");
 
 
     /**
@@ -154,7 +154,7 @@ public:
      * in case of video processing.
      * @sa loadParameters
      */
-    CV_WRAP int loadParameters(std::string filepath="");
+    CV_WRAP int loadParameters(cv::String filepath="");
 
 
     /**
@@ -165,7 +165,7 @@ public:
      * @note This method can be used to generate a template file for tuning the class.
      * @sa loadParameters
      */
-    CV_WRAP int saveParameters(std::string filepath="./qds_parameters.yaml");
+    CV_WRAP int saveParameters(cv::String filepath="./qds_parameters.yaml");
 
 
     /**

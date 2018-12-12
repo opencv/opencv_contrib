@@ -42,7 +42,7 @@ the use of this software, even if advised of the possibility of such damage.
 namespace cv {
 namespace qds {
 
-QuasiDenseStereo::QuasiDenseStereo(cv::Size monoImgSize, std::string paramFilepath)
+QuasiDenseStereo::QuasiDenseStereo(cv::Size monoImgSize, cv::String paramFilepath)
 {
     loadParameters(paramFilepath);
     width = monoImgSize.width;
@@ -85,7 +85,7 @@ QuasiDenseStereo::~QuasiDenseStereo()
 }
 
 
-int QuasiDenseStereo::loadParameters(std::string filepath)
+int QuasiDenseStereo::loadParameters(cv::String filepath)
 {
     cv::FileStorage fs;
     //if user specified a pathfile, try to use it.
@@ -145,7 +145,7 @@ int QuasiDenseStereo::loadParameters(std::string filepath)
     return -1;
 }
 
-int QuasiDenseStereo::saveParameters(std::string filepath)
+int QuasiDenseStereo::saveParameters(cv::String filepath)
 {
     cv::FileStorage fs(filepath, cv::FileStorage::WRITE);
     if (fs.isOpened())
