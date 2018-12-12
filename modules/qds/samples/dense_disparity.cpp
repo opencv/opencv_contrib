@@ -22,7 +22,7 @@ int main()
     // Initialize qds and start process.
     qds::QuasiDenseStereo stereo(frameSize);
 
-    int displvl = 80;					// Number of disparity levels
+    uint8_t displvl = 80;					// Number of disparity levels
     cv::Mat disp;
 
     // Compute dense stereo.

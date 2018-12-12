@@ -305,11 +305,9 @@ void QuasiDenseStereo::patchSumSum2(const cv::Point2i p, const cv::Mat &sum, con
     cv::Point2i obr(p.x+xWindow+1, p.y+yWindow+1);
 
     // sum and squared sum for right window
-    s = sum.at<int>(otl) - sum.at<int>(otr)
-    -sum.at<int>(obl) + sum.at<int>(obr);
+    s = (float)(sum.at<int>(otl) - sum.at<int>(otr) - sum.at<int>(obl) + sum.at<int>(obr));
 
-    ss = ssum.at<double>(otl) - ssum.at<double>(otr)
-    -ssum.at<double>(obl) + ssum.at<double>(obr);
+    ss = (float)(ssum.at<double>(otl) - ssum.at<double>(otr) - ssum.at<double>(obl) + ssum.at<double>(obr));
 }
 
 
@@ -341,7 +339,7 @@ void QuasiDenseStereo::buildTextureDescriptor(cv::Mat &src,cv::Mat &descriptor)
             c = (float)abs(center - left);
             d = (float)abs(center - right);
             //choose the biggest of them.
-            int val = std::max(a, std::max(b, std::max(c, d)));
+            int val = (int) std::max(a, std::max(b, std::max(c, d)));
             descriptor.at<int>(row, col) = val;
         }
     }
@@ -510,8 +508,8 @@ void QuasiDenseStereo::computeDisparity(const cv::Mat_<cv::Point2i> &matchMap,
                 continue;
             }
             //if a match is found, compute the difference in location of the match and current pixel.
-            float dx = col-matchMap.at<cv::Point2i>(tmpPoint).x;
-            float dy = row-matchMap.at<cv::Point2i>(tmpPoint).y;
+            int dx = col-matchMap.at<cv::Point2i>(tmpPoint).x;
+            int dy = row-matchMap.at<cv::Point2i>(tmpPoint).y;
             //calculate disparity of current pixel.
             dispMat.at<float>(tmpPoint) = sqrt(float(dx*dx+dy*dy));
         }
@@ -530,7 +528,7 @@ cv::Mat QuasiDenseStereo::quantiseDisparity(const cv::Mat_<float> &dispMat, cons
         for(int col=0; col<width; col++)
         {
             tmpPixelVal = dispMat.at<float>(row, col);
-            tmpPixelVal = 255. - 255.0*(tmpPixelVal-min)/(max-min);
+            tmpPixelVal = (float) (255. - 255.0*(tmpPixelVal-min)/(max-min));
 
             disparityImg.at<uchar>(row, col) =  (uint8_t) tmpPixelVal;
         }

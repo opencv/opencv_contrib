@@ -47,7 +47,7 @@ the use of this software, even if advised of the possibility of such damage.
 #define CORR_WIN_SIZE_Y 5
 
 #define NEIGHBORHOOD_SIZE  5					// neighbors
-#define CORR_THRESHOLD 0.5					// corr threshold for seeds
+#define CORR_THRESHOLD 0.5f					// corr threshold for seeds
 #define TEXTURE_THRESHOLD 200					// texture threshold for seeds
 #define DISPARITY_GRADIENT 1					// disparity gradient
 
@@ -55,9 +55,9 @@ the use of this software, even if advised of the possibility of such damage.
 #define LK_FLOW_TEMPLAETE_SIZE 3
 #define LK_FLOW_PYR_LVL 3
 #define LK_FLOW_TERM_1 3
-#define LK_FLOW_TERM_2 0.003
+#define LK_FLOW_TERM_2 0.003f
 
-#define GFT_QUALITY_THRESHOLD 0.01
+#define GFT_QUALITY_THRESHOLD 0.01f
 #define GFT_MIN_SEPERATION_DIST 10
 #define GFT_MAX_NUM_FEATURES 500
 
