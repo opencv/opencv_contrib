@@ -1,5 +1,4 @@
 #ifdef HAVE_OPENCV_QDS
-#include "opencv2/core/saturate.hpp"
 
 template<> struct pyopencvVecConverter<qds::Match>
 {
