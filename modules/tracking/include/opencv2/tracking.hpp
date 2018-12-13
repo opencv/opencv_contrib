@@ -39,8 +39,8 @@
  //
  //M*/
 
-#ifndef __OPENCV_TRACKING_LENLEN_HPP__
-#define __OPENCV_TRACKING_LENLEN_HPP__
+#ifndef __OPENCV_TRACKING_HPP__
+#define __OPENCV_TRACKING_HPP__
 
 #include "opencv2/core/cvdef.h"
 
@@ -49,12 +49,12 @@
 Long-term optical tracking API
 ------------------------------
 
-Long-term optical tracking is one of most important issue for many computer vision applications in
+Long-term optical tracking is an important issue for many computer vision applications in
 real world scenario. The development in this area is very fragmented and this API is an unique
 interface useful for plug several algorithms and compare them. This work is partially based on
 @cite AAM and @cite AMVOT .
 
-This algorithms start from a bounding box of the target and with their internal representation they
+These algorithms start from a bounding box of the target and with their internal representation they
 avoid the drift during the tracking. These long-term trackers are able to evaluate online the
 quality of the location of the target in the new frame, without ground truth.
 
@@ -69,23 +69,16 @@ the TrackerModel is the statistical model.
 
 A recent benchmark between these algorithms can be found in @cite OOT
 
-To see how API works, try tracker demo:
-<https://github.com/lenlen/opencv/blob/tracking_api/samples/cpp/tracker.cpp>
-
-Creating Own Tracker
+Creating Your Own %Tracker
 --------------------
 
-If you want create a new tracker, here's what you have to do. First, decide on the name of the class
+If you want to create a new tracker, here's what you have to do. First, decide on the name of the class
 for the tracker (to meet the existing style, we suggest something with prefix "tracker", e.g.
-trackerMIL, trackerBoosting) -- we shall refer to this choice as to "classname" in subsequent. Also,
-you should decide upon the name of the tracker, is it will be known to user (the current style
-suggests using all capitals, say MIL or BOOSTING) --we'll call it a "name".
+trackerMIL, trackerBoosting) -- we shall refer to this choice as to "classname" in subsequent.
 
--   Declare your tracker in include/opencv2/tracking/tracker.hpp. Your tracker should inherit from
+-   Declare your tracker in modules/tracking/include/opencv2/tracking/tracker.hpp. Your tracker should inherit from
     Tracker (please, see the example below). You should declare the specialized Param structure,
-    where you probably will want to put the data, needed to initialize your tracker. Also don't
-    forget to put the BOILERPLATE_CODE(name,classname) macro inside the class declaration. That
-    macro will generate static createTracker() function, which we'll talk about later. You should
+    where you probably will want to put the data, needed to initialize your tracker. You should
     get something similar to :
 @code
         class CV_EXPORTS_W TrackerMIL : public Tracker
@@ -109,20 +102,10 @@ suggests using all capitals, say MIL or BOOSTING) --we'll call it a "name".
 @endcode
     of course, you can also add any additional methods of your choice. It should be pointed out,
     however, that it is not expected to have a constructor declared, as creation should be done via
-    the corresponding createTracker() method.
--   In src/tracker.cpp file add BOILERPLATE_CODE(name,classname) line to the body of
-    Tracker::create() method you will find there, like :
-@code
-        Ptr<Tracker> Tracker::create( const String& trackerType )
-        {
-          BOILERPLATE_CODE("BOOSTING",TrackerBoosting);
-          BOILERPLATE_CODE("MIL",TrackerMIL);
-          return Ptr<Tracker>();
-        }
-@endcode
+    the corresponding create() method.
 -   Finally, you should implement the function with signature :
 @code
-        Ptr<classname> classname::createTracker(const classname::Params &parameters){
+        Ptr<classname> classname::create(const classname::Params &parameters){
             ...
         }
 @endcode
@@ -292,16 +275,10 @@ Example of creating specialized TrackerTargetState TrackerMILTargetState : :
 
     };
 @endcode
-### Try it
-
-To try your tracker you can use the demo at
-<https://github.com/lenlen/opencv/blob/tracking_api/samples/cpp/tracker.cpp>.
-
-The first argument is the name of the tracker and the second is a video source.
 
 */
 
 #include <opencv2/tracking/tracker.hpp>
 #include <opencv2/tracking/tldDataset.hpp>
 
-#endif //__OPENCV_TRACKING_LENLEN
+#endif //__OPENCV_TRACKING_HPP__
