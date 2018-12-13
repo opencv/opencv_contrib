@@ -45,19 +45,9 @@ the use of this software, even if advised of the possibility of such damage.
 
 
 #include <opencv2/core.hpp>
-#include <opencv2/imgproc.hpp> //GFT
-#include <opencv2/video/tracking.hpp> //LK
-#include <math.h>
-#include <iostream>
-#include <algorithm> //max
 #include <queue>
-#include <stdint.h>
-#include <opencv2/tracking.hpp>
-#include <fstream>
-#include <string.h>
 
 
-#include <opencv2/qds/defaults.hpp>
 
 namespace cv
 {
@@ -75,9 +65,9 @@ struct CV_EXPORTS_W_SIMPLE Match
     CV_PROP_RW cv::Point2i p1;
     CV_PROP_RW float	corr;
 
-    CV_WRAP_AS(less) bool operator < (const Match & rhs) const
+    CV_WRAP_AS(less) bool operator < (const Match & rhs) const//fixme  may be used uninitialized in this function
     {
-        return corr < rhs.corr;
+        return this->corr < rhs.corr;
     }
 };
 struct CV_EXPORTS_W_SIMPLE PropagationParameters
@@ -225,7 +215,7 @@ public:
 
 
 
-    PropagationParameters	Param;
+    CV_PROP_RW PropagationParameters	Param;
 
 protected:
     /**
