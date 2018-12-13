@@ -241,8 +241,8 @@ void QuasiDenseStereo::sparseMatching(const cv::Mat &imgLeft ,const cv::Mat &img
     Param.gftQualityThres, Param.gftMinSeperationDist);
 
     cv::Size templateSize(Param.lkTemplateSize,Param.lkTemplateSize);
-    cv::TermCriteria termination(CV_TERMCRIT_ITER|CV_TERMCRIT_EPS,
-    Param.lkTermParam1, Param.lkTermParam2);
+    cv::TermCriteria termination(cv::TermCriteria::MAX_ITER | cv::TermCriteria::EPS,
+                                 Param.lkTermParam1, Param.lkTermParam2);
     cv::calcOpticalFlowPyrLK(imgLeft, imgRight, featuresLeft, featuresRight,
     featureStatus, error,
     templateSize, Param.lkPyrLvl, termination);
@@ -430,7 +430,7 @@ void QuasiDenseStereo::quasiDenseMatching(const std::vector< cv::Point2f > &feat
         {
             for(int x=-Param.neighborhoodSize;x<=Param.neighborhoodSize;x++)
             {
-                CvPoint p0 = cvPoint(m.p0.x+x,m.p0.y+y);
+                cv::Point2i p0 = cv::Point2i(m.p0.x+x,m.p0.y+y);
 
                 // Check if its unique in ref
                 if(refMap.at<cv::Point2i>(p0.y,p0.x) != NO_MATCH)
