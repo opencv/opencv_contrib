@@ -65,7 +65,7 @@ struct CV_EXPORTS_W_SIMPLE Match
     CV_PROP_RW cv::Point2i p1;
     CV_PROP_RW float	corr;
 
-    CV_WRAP_AS(less) bool operator < (const Match & rhs) const//fixme  may be used uninitialized in this function
+    bool operator < (const Match & rhs) const//fixme  may be used uninitialized in this function
     {
         return this->corr < rhs.corr;
     }
@@ -233,7 +233,7 @@ protected:
      * @note featuresLeft and featuresRight must have the same length and corresponding features
      * must be indexed the same way in both vectors.
      */
-    CV_WRAP virtual void sparseMatching(const cv::Mat &imgLeft ,const cv::Mat &imgRight,
+    virtual void sparseMatching(const cv::Mat &imgLeft ,const cv::Mat &imgRight,
                                         std::vector< cv::Point2f > &featuresLeft,
                                         std::vector< cv::Point2f > &featuresRight);
 
@@ -260,7 +260,7 @@ protected:
      * @param[in] featuresLeft The location of the features in the left image.
      * @param[in] featuresRight The location of the features in the right image.
      */
-    CV_WRAP void quasiDenseMatching(const std::vector< cv::Point2f > &featuresLeft,
+    void quasiDenseMatching(const std::vector< cv::Point2f > &featuresLeft,
                                     const std::vector< cv::Point2f > &featuresRight);
 
 
@@ -272,7 +272,7 @@ protected:
      * @sa quantizeDisparity
      * @sa getDisparity
      */
-    CV_WRAP void computeDisparity(const cv::Mat_<cv::Point2i> &matchMap,
+    void computeDisparity(const cv::Mat_<cv::Point2i> &matchMap,
                                     cv::Mat_<float> &dispMat);
 
 
@@ -285,7 +285,7 @@ protected:
      * @sa computeDisparity
      * @sa quantiseDisparity
      */
-    CV_WRAP cv::Mat quantiseDisparity(const cv::Mat_<float> &dispMat, const int lvls);
+    cv::Mat quantiseDisparity(const cv::Mat_<float> &dispMat, const int lvls);
 
 
     /**
@@ -300,7 +300,7 @@ protected:
      * @return The value of the the zero-mean normalized cross correlation.
      * @note Default value for wx, wy is 1. in this case the patch is 3x3.
      */
-    CV_WRAP float iZNCC_c1(const cv::Point2i p0, const cv::Point2i p1, const int wx=1, const int wy=1);
+    float iZNCC_c1(const cv::Point2i p0, const cv::Point2i p1, const int wx=1, const int wy=1);
 
 
     /**
@@ -317,7 +317,7 @@ protected:
      * @note integral images are very useful to sum values of patches in constant time independent of their
      * size. For more information refer to the cv::Integral function OpenCV page.
      */
-    CV_WRAP void patchSumSum2(const cv::Point2i p, const cv::Mat &sum, const cv::Mat &ssum,
+    void patchSumSum2(const cv::Point2i p, const cv::Mat &sum, const cv::Mat &ssum,
                                float &s, float &ss, const int xWindow=1, const int yWindow=1);
 
 
@@ -334,7 +334,7 @@ protected:
      * matrix stores the location of the corresponding point in the left image.
      * @return Priority queue containing sparse matches.
      */
-    CV_WRAP t_matchPriorityQueue extractSparseSeeds(const std::vector< cv::Point2f > &featuresLeft,
+    t_matchPriorityQueue extractSparseSeeds(const std::vector< cv::Point2f > &featuresLeft,
                                                     const std::vector< cv::Point2f >  &featuresRight,
                                                     cv::Mat_<cv::Point2i> &leftMap,
                                                     cv::Mat_<cv::Point2i> &rightMap);
@@ -350,7 +350,7 @@ protected:
      * @retval true If the feature is in the border of the image.
      * @retval false If the feature is not in the border of image.
      */
-    CV_WRAP bool CheckBorder(Match m, int bx, int by, int w, int h);
+    bool CheckBorder(Match m, int bx, int by, int w, int h);
 
 
     /**
@@ -360,7 +360,7 @@ protected:
      * @retval true If b is equal or grater Match than a.
      * @retval false If b is less Match than a.
      */
-    CV_WRAP bool MatchCompare(const Match a, const Match b);
+    bool MatchCompare(const Match a, const Match b);
 
 
     /**
@@ -368,36 +368,36 @@ protected:
      * @param[in] img The image we need to compute the descriptor for.
      * @param[out] descriptor The texture descriptor of the image.
      */
-    CV_WRAP void buildTextureDescriptor(cv::Mat &img,cv::Mat &descriptor);
+    void buildTextureDescriptor(cv::Mat &img,cv::Mat &descriptor);
 
 
     // Variables used at sparse feature extraction.
     // Container for left images' features, extracted with GFT algorithm.
-    CV_PROP_RW std::vector< cv::Point2f > leftFeatures;
+    std::vector< cv::Point2f > leftFeatures;
     // Container for right images' features, matching is done with LK flow algorithm.
-    CV_PROP_RW std::vector< cv::Point2f > rightFeatures;
+    std::vector< cv::Point2f > rightFeatures;
 
     // Width and height of a single image.
-    CV_PROP_RW int width;
-    CV_PROP_RW int height;
-    CV_PROP_RW int dMatchesLen;
+    int width;
+    int height;
+    int dMatchesLen;
     // Containers to store input images.
-    CV_PROP_RW cv::Mat grayLeft;
-    CV_PROP_RW cv::Mat grayRight;
+    cv::Mat grayLeft;
+    cv::Mat grayRight;
     // Containers to store the locations of each points pair.
-    CV_PROP_RW cv::Mat_<cv::Point2i> refMap;
-    CV_PROP_RW cv::Mat_<cv::Point2i> mtcMap;
-    CV_PROP_RW cv::Mat_<int32_t> sum0;
-    CV_PROP_RW cv::Mat_<int32_t> sum1;
-    CV_PROP_RW cv::Mat_<double> ssum0;
-    CV_PROP_RW cv::Mat_<double> ssum1;
+    cv::Mat_<cv::Point2i> refMap;
+    cv::Mat_<cv::Point2i> mtcMap;
+    cv::Mat_<int32_t> sum0;
+    cv::Mat_<int32_t> sum1;
+    cv::Mat_<double> ssum0;
+    cv::Mat_<double> ssum1;
     // Container to store the disparity un-normalized
-    CV_PROP_RW cv::Mat_<float> disparity;
+    cv::Mat_<float> disparity;
     // Container to store the disparity image.
-    CV_PROP_RW cv::Mat_<uchar> disparityImg;
+    cv::Mat_<uchar> disparityImg;
     // Containers to store textures descriptors.
-    CV_PROP_RW cv::Mat_<int> textureDescLeft;
-    CV_PROP_RW cv::Mat_<int> textureDescRight;
+    cv::Mat_<int> textureDescLeft;
+    cv::Mat_<int> textureDescRight;
 
 };
 
