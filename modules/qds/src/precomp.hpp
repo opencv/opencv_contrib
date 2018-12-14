@@ -43,6 +43,5 @@ the use of this software, even if advised of the possibility of such damage.
 #include <opencv2/imgproc.hpp>
 #include <opencv2/video/tracking.hpp>
 #include <opencv2/qds/quasiDenseStereo.hpp>
-#include <opencv2/qds/defaults.hpp>
 
 #endif

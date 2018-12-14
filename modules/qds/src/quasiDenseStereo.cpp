@@ -42,6 +42,8 @@ the use of this software, even if advised of the possibility of such damage.
 namespace cv {
 namespace qds {
 
+#define NO_MATCH cv::Point(0,0)
+
 QuasiDenseStereo::QuasiDenseStereo(cv::Size monoImgSize, cv::String paramFilepath)
 {
     loadParameters(paramFilepath);
@@ -117,25 +119,26 @@ int QuasiDenseStereo::loadParameters(cv::String filepath)
         fs.release();
         return 1;
     }
-    // If the filepath was incorrect or non existent, load the defaults.
-    Param.borderX = BORDER_X;
-    Param.borderY = BORDER_Y;
-    Param.corrWinSizeX = CORR_WIN_SIZE_X;
-    Param.corrWinSizeY = CORR_WIN_SIZE_Y;
-    Param.correlationThreshold = CORR_THRESHOLD;
-    Param.textrureThreshold = TEXTURE_THRESHOLD;
+    // If the filepath was incorrect or non existent, load default parameters.
+    Param.borderX = 15;
+    Param.borderY = 15;
+    // corr window size
+    Param.corrWinSizeX = 5;
+    Param.corrWinSizeY = 5;
+    Param.correlationThreshold = (float)0.5;
+    Param.textrureThreshold = 200;
 
-    Param.neighborhoodSize = NEIGHBORHOOD_SIZE;
-    Param.disparityGradient = DISPARITY_GRADIENT;
+    Param.neighborhoodSize = 5;
+    Param.disparityGradient = 1;
 
-    Param.lkTemplateSize = LK_FLOW_TEMPLAETE_SIZE;
-    Param.lkPyrLvl = LK_FLOW_PYR_LVL;
-    Param.lkTermParam1 = LK_FLOW_TERM_1;
-    Param.lkTermParam2 = LK_FLOW_TERM_2;
+    Param.lkTemplateSize = 3;
+    Param.lkPyrLvl = 3;
+    Param.lkTermParam1 = 3;
+    Param.lkTermParam2 = (float)0.003;
 
-    Param.gftQualityThres = GFT_QUALITY_THRESHOLD;
-    Param.gftMinSeperationDist = GFT_MIN_SEPERATION_DIST;
-    Param.gftMaxNumFeatures = GFT_MAX_NUM_FEATURES;
+    Param.gftQualityThres = (float)0.01;
+    Param.gftMinSeperationDist = 10;
+    Param.gftMaxNumFeatures = 500;
     // Return 0 if there was no filepath provides.
     // Return -1 if there was a problem opening the filepath provided.
     if(filepath.empty())
