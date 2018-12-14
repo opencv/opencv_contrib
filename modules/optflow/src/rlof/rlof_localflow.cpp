@@ -110,6 +110,141 @@ static void calcSharrDeriv(const cv::Mat& src, cv::Mat& dst)
 } // namespace
 namespace optflow {
 
+/*! Helper function for preCalcCrossSegmentation. Everything is performed on the large
+*\param data CV_8UC3 image ( use extended image mit winSize)
+*\param winSize
+*\param dst CV_32SC1 bounding map
+*\param threshold
+*\param stride if true store into first two bounding maps
+*/
+class HorizontalCrossSegmentation  : public cv::ParallelLoopBody
+{
+public:
+    HorizontalCrossSegmentation(
+            const cv::Point2f * ptList,
+            int npoints,
+            float pointScale,
+            const cv::Mat * data,
+            const int winSize,
+            cv::Mat * dst,
+            int threshold,
+            bool stride,
+            const cv::Mat * mask
+    )
+    {
+        m_ptList        = ptList;
+        m_npoints       = npoints;
+        m_pointScale    = pointScale;
+        m_data          = data;
+        m_winSize       = winSize;
+        m_dst           = dst;
+        m_threshold     = threshold;
+        m_stride        = stride;
+        m_mask          = mask;
+    }
+
+    void operator()(const cv::Range& range) const CV_OVERRIDE
+    {
+        uchar channel[2];
+        channel[0] = m_stride ? 2 : 0;
+        channel[1] = m_stride ? 3 : 1;
+        int hWinSize        = (m_winSize - 1) / 2;
+        std::vector<int> differenz(m_winSize);
+        for( int r = range.start; r < range.end; r++ )
+        {
+            for(int c = hWinSize; c < m_data->cols - hWinSize; c++)
+            {
+                if( m_mask->at<uchar>(r,c) == 0)
+                    continue;
+                const cv::Point3_<uchar> & ucval = m_data->at<cv::Point3_<uchar>>(r,c);
+                cv::Point3i val(static_cast<int>(ucval.x), static_cast<int>(ucval.y), static_cast<int>(ucval.z));
+                int x = c - hWinSize;
+                cv::Point dstPos = m_stride ? cv::Point(r,c) : cv::Point(c,r);
+                for(int ix = 0; ix < m_winSize; ix++, x++)
+                {
+                    const cv::Point3_<uchar> & valref = m_data->at<cv::Point3_<uchar>>(r,x);
+                    differenz[ix] = MAX(std::abs(static_cast<int>(valref.x) - val.x),
+                                    MAX(std::abs(static_cast<int>(valref.y) - val.y),
+                                    (std::abs(static_cast<int>(valref.z) - val.z))));
+
+                }
+                cv::Vec4i & bounds = m_dst->at<cv::Vec4i>(dstPos);
+                bounds.val[channel[0]] = c - hWinSize;
+                bounds.val[channel[1]] = c + hWinSize;
+                int * diffPtr = &differenz[hWinSize];
+                bool useUpperBound = false;
+                bool useLowerBound = false;
+                for(int ix = 1; ix <= hWinSize; ix++)
+                {
+                    if( !useUpperBound && diffPtr[-ix] > m_threshold)
+                    {
+                        useUpperBound = true;
+                        bounds.val[channel[0]] = c - ix;
+                    }
+                    if( !useLowerBound && diffPtr[ix-1] > m_threshold)
+                    {
+                        useLowerBound = true;
+                        bounds.val[channel[1]] = c + ix - 1;
+                    }
+                    if( useUpperBound && useLowerBound)
+                        break;
+                }
+            }
+        }
+    }
+
+    const cv::Point2f * m_ptList;
+    int                 m_npoints;
+    float               m_pointScale;
+    const cv::Mat *     m_data;
+    int                 m_winSize;
+    cv::Mat *           m_dst;
+    int                 m_threshold;
+    bool                m_stride;
+    const cv::Mat *     m_mask;
+};
+
+static
+void preCalcCrossSegmentation(
+    const cv::Point2f * ptList,
+    int npoints,
+    float pointScale,
+    const cv::Mat & img,
+    const int winSize,
+    cv::Mat & dst,
+    int threshold
+)
+{
+    int hWinSize = (winSize - 1) / 2;
+    cv::Mat data = img;
+    data.adjustROI(hWinSize, hWinSize, hWinSize, hWinSize);
+    if( dst.size() != dst.size() || dst.type() != CV_32SC4)
+    {
+        dst.release();
+        dst.create(data.size(), CV_32SC4);
+    }
+    cv::Mat mask(data.cols, data.rows, CV_8UC1);
+    mask.setTo(0);
+    for( unsigned int n = 0; n < static_cast<unsigned int>(npoints); n++)
+    {
+        cv::Point ipos( static_cast<int>(floor(ptList[n].y * pointScale)),
+                        static_cast<int>(floor(ptList[n].x * pointScale) + hWinSize));
+        ipos.x = MAX( MIN(ipos.x, mask.cols - 1), 0);
+        int to = MIN( mask.cols - 1, ipos.x + winSize );
+        int ypos = MAX( MIN(ipos.y, mask.rows - 1), 0);
+        for(int x = ipos.x; x <= to ; x++)
+        {
+            mask.at<uchar>(ypos, x) = 255;
+        }
+    }
+    cv::Mat datat = data.t();
+    cv::Mat maskt = mask.t();
+    parallel_for_(cv::Range(0, datat.rows),    HorizontalCrossSegmentation(ptList, npoints, pointScale, &datat, winSize, &dst, threshold, true, &mask));
+    parallel_for_(cv::Range(0, data.rows),    HorizontalCrossSegmentation(ptList, npoints, pointScale, &data, winSize, &dst, threshold, false, &maskt));
+
+}
+
+
 int buildOpticalFlowPyramidScale(InputArray _img, OutputArrayOfArrays pyramid, Size winSize, int maxLevel, bool withDerivatives,
     int pyrBorder, int derivBorder, bool tryReuseInputImage, float levelScale[2]);
 void calcLocalOpticalFlowCore(Ptr<CImageBuffer>  prevPyramids[2], Ptr<CImageBuffer> currPyramids[2], InputArray _prevPts,
@@ -254,6 +389,7 @@ void calcLocalOpticalFlowCore(
     std::vector<float> rlofNorm = get_norm(param.normSigma0, param.normSigma1);
     CV_Assert(winSizes[0] <= winSizes[1]);
 
+    bool usePreComputedCross = winSizes[0] != winSizes[1];
     Mat prevPtsMat = _prevPts.getMat();
     const int derivDepth = DataType<detail::deriv_type>::depth;
 
@@ -322,6 +458,13 @@ void calcLocalOpticalFlowCore(
         cv::Mat prevImage = prevPyramids[0]->getImage(level);
         cv::Mat currImage = currPyramids[0]->getImage(level);
 
+        cv::Mat preCrossMap;
+        if( usePreComputedCross )
+        {
+            preCalcCrossSegmentation(prevPts, npoints, (float)(1./(1 << level)), tRGBPrevPyr, winSizes[1], preCrossMap, param.crossSegmentationThreshold);
+            tRGBNextPyr = cv::Mat();
+            tRGBPrevPyr = preCrossMap;
+        }
         // apply plk like tracker
         if (isrobust(param) == false)
         {

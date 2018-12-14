@@ -72,36 +72,23 @@ static inline bool notSameColor(const cv::Point3_<uchar> & ref, int r, int c, co
     return diff > threshold;
 }
 
-/*! Estimate the mask with points of the same color as the middle point
-*\param prevGray input CV_8UC1
-*\param prevImg input CV_8UC3
-*\param nextImg input CV_8UC3
-*\param prevPoint global position of the middle point of the mask window
-*\param nextPoint global position of the middle point of the mask window
-*\param winPointMask mask matrice with 1 labeling points contained and 0 point is not contained by the segment
-*\param noPoints number of points contained by the segment
-*\param winRoi rectangle of the region of interesset in global coordinates
-*\param minWinSize,
-*\param threshold,
-*\param useBothImages
-*/
 static
 void getLocalPatch(
-    const cv::Mat & prevImg,
-    const cv::Point2i & prevPoint, // feature points
-    cv::Mat & winPointMask,
-    int & noPoints,
-    cv::Rect & winRoi,
-    int minWinSize,
-    int threshold)
+        const cv::Mat & src,
+        const cv::Point2i & prevPoint, // feature points
+        cv::Mat & winPointMask,
+        int & noPoints,
+        cv::Rect & winRoi,
+        int minWinSize)
 {
     int maxWinSizeH = (winPointMask.cols - 1) / 2;
-    winRoi.x = prevPoint.x;
-    winRoi.y = prevPoint.y;
-    winRoi.width = winPointMask.cols;
-    winRoi.height = winPointMask.rows;
+    winRoi.x = prevPoint.x;// - maxWinSizeH;
+    winRoi.y = prevPoint.y;// - maxWinSizeH;
+    winRoi.width  =  winPointMask.cols;
+    winRoi.height =  winPointMask.rows;
 
-    if (minWinSize == winPointMask.cols)
+    if( minWinSize == winPointMask.cols || prevPoint.x < 0 || prevPoint.y < 0
+        || prevPoint.x + 2*maxWinSizeH >= src.cols || prevPoint.y + 2*maxWinSizeH >= src.rows)
     {
         winRoi.x = prevPoint.x - maxWinSizeH;
         winRoi.y = prevPoint.y - maxWinSizeH;
@@ -109,127 +96,57 @@ void getLocalPatch(
         noPoints = winPointMask.size().area();
         return;
     }
+    winPointMask.setTo(0);
     noPoints = 0;
-    int c = prevPoint.x;
-    int r = prevPoint.y;
-    int c_left = c - 1;
-    int c_right = c + 1;
-    int r_top = r - 1;
-    int r_bottom = r;
-    int border_left = c - maxWinSizeH;
-    int border_right = c + maxWinSizeH;
-    int border_top = r - maxWinSizeH;
-    int border_bottom = r + maxWinSizeH;
-    int c_local_diff = prevPoint.x - maxWinSizeH;
-    int r_local_diff = prevPoint.y - maxWinSizeH;
-    int _c = c - c_local_diff;
-    int _r = r - r_local_diff;
-    int min_r = _r;
-    int max_r = _r;
-    int min_c = _c;
-    int max_c = _c;
-    // horizontal line
-    if (r < 0 || r >= prevImg.rows || c < 0 || c >= prevImg.cols)
-    {
-        noPoints = 0;
-        return;
-    }
-    cv::Point3_<uchar> val1 = prevImg.at<cv::Point3_<uchar>>(r, c); // middle grayvalue
-    cv::Point3_<uchar> tval;
+    int c            = prevPoint.x + maxWinSizeH;
+    int r            = prevPoint.y + maxWinSizeH;
+    int min_c = c;
+    int max_c = c;
+    int border_left    = c - maxWinSizeH;
+    int border_top    = r - maxWinSizeH;
+    cv::Vec4i bounds = src.at<cv::Vec4i>(r,c);
+    int min_r = bounds.val[2];
+    int max_r = bounds.val[3];
 
-    //vertical line
-    for (int dr = r_top; dr >= border_top; dr--)
+    for( int _r = min_r; _r <= max_r; _r++)
     {
-        if (notSameColor(val1, dr, c, prevImg, maxWinSizeH, threshold))
-            break;
-
-        int _dr = dr - r_local_diff;
-        min_r = MIN(min_r, _dr);
-        max_r = MAX(max_r, _dr);
-        winPointMask.at<uchar>(_dr, _c) = 1;
-        noPoints++;
-    }
-    for (int dr = r_bottom; dr < border_bottom; dr++)
-    {
-        if (notSameColor(val1, dr, c, prevImg, maxWinSizeH, threshold)
-            )
-            break;
-
-        int _dr = dr - r_local_diff;
-        min_r = MIN(min_r, _dr);
-        max_r = MAX(max_r, _dr);
-        winPointMask.at<uchar>(_dr, _c) = 1;
-        noPoints++;
-    }
-    // accumulate along the vertical line and the search line that was still labled
-    for (int dr = min_r + r_local_diff; dr <= max_r + r_local_diff; dr++)
-    {
-        int _dr = dr - r_local_diff;
-        if (winPointMask.at<uchar>(_dr, _c) == 0)
+        cv::Rect roi(maxWinSizeH, _r - border_top,  winPointMask.cols, 1);
+        if( _r >= 0 && _r < src.cols)
         {
-            winPointMask.row(_dr).setTo(0);
-            continue;
+            bounds = src.at<cv::Vec4i>(_r,c);
+            roi.x      = bounds.val[0] - border_left;
+            roi.width = bounds.val[1] - bounds.val[0];
         }
-        bool skip = false;
-        int _dc = c_right - c_local_diff;
-        for (int dc = c_right; dc < border_right; dc++, _dc++)
+        else
         {
-            if (skip == false)
-            {
-                if (notSameColor(val1, dr, dc, prevImg, maxWinSizeH, threshold))
-                    skip = true;
-            }
-            if (skip == false)
-            {
-                min_c = MIN(min_c, _dc);
-                max_c = MAX(max_c, _dc);
-                winPointMask.at<uchar>(_dr, _dc) = 1;
-                noPoints++;
-            }
-            else
-                winPointMask.at<uchar>(_dr, _dc) = 0;
+            bounds.val[0] = border_left;
+            bounds.val[1] = border_left + roi.width;
         }
-
-        skip = false;
-        _dc = c_left - c_local_diff;
-        for (int dc = c_left; dc >= border_left; dc--, _dc--)
-        {
-            if (skip == false)
-            {
-                if (notSameColor(val1, dr, dc, prevImg, maxWinSizeH, threshold))
-                    skip = true;
-            }
-            if (skip == false)
-            {
-                min_c = MIN(min_c, _dc);
-                max_c = MAX(max_c, _dc);
-                winPointMask.at<uchar>(_dr, _dc) = 1;
-                noPoints++;
-            }
-            else
-                winPointMask.at<uchar>(_dr, _dc) = 0;
-        }
-    }
-
-
-    // get the initial small window
-    if (noPoints < minWinSize * minWinSize)
-    {
-        cv::Rect roi(winPointMask.cols / 2 - (minWinSize - 1) / 2,
-                     winPointMask.rows / 2 - (minWinSize - 1) / 2,
-                     minWinSize, minWinSize);
         cv::Mat(winPointMask, roi).setTo(1);
-        min_c = MIN(MIN(min_c, roi.tl().x), roi.br().x - 1);
-        max_c = MAX(MAX(max_c, roi.tl().x), roi.br().x - 1);
-        min_r = MIN(MIN(min_r, roi.tl().y), roi.br().y - 1);
-        max_r = MAX(MAX(max_r, roi.tl().y), roi.br().y - 1);
+        min_c = MIN(min_c, bounds.val[0]);
+        max_c = MAX(max_c, bounds.val[1]);
+        noPoints += roi.width;
+    }
+
+    if( noPoints < minWinSize * minWinSize)
+    {
+        cv::Rect roi(    winPointMask.cols / 2 - (minWinSize-1)/2,
+                        winPointMask.rows / 2 - (minWinSize-1)/2,
+                        minWinSize, minWinSize);
+        cv::Mat(winPointMask, roi).setTo(1);
+        roi.x += border_left;
+        roi.y += border_top;
+        min_c = MIN(MIN(min_c, roi.tl().x),roi.br().x);
+        max_c = MAX(MAX(max_c, roi.tl().x),roi.br().x);
+        min_r = MIN(MIN(min_r, roi.tl().y),roi.br().y);
+        max_r = MAX(MAX(max_r, roi.tl().y),roi.br().y);
         noPoints += minWinSize * minWinSize;
     }
-    winRoi.x = c_local_diff + min_c;
-    winRoi.y = r_local_diff + min_r;
-    winRoi.width = max_c - min_c + 1;
-    winRoi.height = max_r - min_r + 1;
-    winPointMask = winPointMask(cv::Rect(min_c, min_r, winRoi.width, winRoi.height));
+    winRoi.x = min_c - maxWinSizeH;
+    winRoi.y = min_r - maxWinSizeH;
+    winRoi.width  =  max_c - min_c;
+    winRoi.height =  max_r - min_r;
+    winPointMask = winPointMask(cv::Rect(min_c - border_left, min_r - border_top, winRoi.width, winRoi.height));
 }
 
 static inline
@@ -242,14 +159,13 @@ bool calcWinMaskMat(
         cv::Point2f & halfWin,
         int & winArea,
         const int minWinSize,
-        const int maxWinSize,
-        const int crossSegmentationThreshold)
+        const int maxWinSize)
 {
     if (windowType == SR_CROSS && maxWinSize != minWinSize)
     {
         // patch generation
         cv::Rect winRoi;
-        getLocalPatch(BI, iprevPt, winMaskMat, winArea, winRoi, minWinSize, crossSegmentationThreshold);
+        getLocalPatch(BI, iprevPt, winMaskMat, winArea, winRoi, minWinSize);
         if (winArea == 0)
             return false;
         winSize = winRoi.size();

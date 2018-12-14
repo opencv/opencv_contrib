@@ -117,7 +117,7 @@ public:
             winMaskMatBuf.setTo(0);
             if( calcWinMaskMat(BI, windowType, iprevPt,
                                 winMaskMat,winSize,halfWin,winArea,
-                                minWinSize,maxWinSize, crossSegmentationThreshold) == false)
+                                minWinSize,maxWinSize) == false)
                         continue;
 
             prevPt -= halfWin;
@@ -764,7 +764,7 @@ public:
 
             if( calcWinMaskMat(BI,  windowType, iprevPt,
                                 winMaskMat,winSize,halfWin,winArea,
-                                minWinSize,maxWinSize, crossSegmentationThreshold) == false)
+                                minWinSize,maxWinSize) == false)
                         continue;
 
 
