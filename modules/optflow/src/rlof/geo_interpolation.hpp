@@ -3,7 +3,6 @@
 // of this distribution and at http://opencv.org/license.html.
 #ifndef _GEO_INTERPOLATION_HPP_
 #define _GEO_INTERPOLATION_HPP_
-#include <opencv2/core.hpp>
 
 namespace cv {
 namespace optflow {
@@ -32,5 +31,5 @@ Mat interpolate_irregular_nn_raster(const std::vector<Point2f> & prevPoints,
     const std::vector<uchar> & status,
     const Mat & i1);
 
-}}  // namespace
+}} // namespace
 #endif

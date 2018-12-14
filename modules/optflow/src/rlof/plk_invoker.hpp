@@ -59,7 +59,6 @@ public:
         crossSegmentationThreshold = _crossSegmentationThreshold;
     }
 
-    TrackerInvoker & operator=(const TrackerInvoker &) {return *this;};
     void operator()(const cv::Range& range) const CV_OVERRIDE
     {
 #ifdef DEBUG_INVOKER
@@ -711,7 +710,6 @@ public:
         crossSegmentationThreshold = _crossSegmentationThreshold;
     }
 
-    TrackerInvoker & operator=(const TrackerInvoker &) {return *this;};
     void operator()(const cv::Range& range) const CV_OVERRIDE
     {
 #ifdef DEBUG_INVOKER

@@ -1,10 +1,11 @@
 // This file is part of OpenCV project.
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
+#include "../precomp.hpp"
+
+#include "opencv2/calib3d.hpp"  // findHomography
+
 #include "rlof_localflow.h"
-#ifdef HAVE_OPENCV_CALIB3D
-#include "opencv2/calib3d.hpp"
-#endif
 #include "berlof_invoker.hpp"
 #include "rlof_invoker.hpp"
 #include "plk_invoker.hpp"

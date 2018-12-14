@@ -2,46 +2,43 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 // This functions have been contributed by Jonas Geisters <geistert@nue.tu-berlin.de>
+
+#include "../precomp.hpp"
+
 #include "geo_interpolation.hpp"
 #include <string>
 #include <map>
 namespace cv {
 namespace optflow {
 
-inline double K_h1(float x, double h2)
-{
-    return exp(-(0.5 / (h2)) * x);
-}
-
 struct Graph_helper {
-    int * mem;
+    std::vector<int> mem;
     int e_size;
     Graph_helper(int k, int num_nodes) {
         e_size = (2 * k + 1);
-        mem = (int*)malloc(sizeof(int) * e_size * num_nodes);
-        memset(mem, 0, sizeof(int) * e_size * num_nodes);
+        mem.resize(e_size * num_nodes, 0);
     }
     inline int size(int id) {
         int r_addr = id * (e_size);
-        return ((int*)mem)[r_addr];
+        return mem[r_addr];
     }
     inline int * data(int id) {
         int r_addr = id * (e_size)+1;
-        return mem + r_addr;
+        return &mem[r_addr];
     }
     inline void add(int id, std::pair<float, int> data) {
         int r_addr = id * (e_size);
-        int size = ++((int*)mem)[r_addr];
+        int size = ++mem[r_addr];
         r_addr += 2 * size - 1;//== 1 + 2*(size-1);
-        ((float*)mem)[r_addr] = data.first;
-        ((int*)mem)[r_addr + 1] = data.second;
+        *(float*)&mem[r_addr] = data.first;
+        mem[r_addr + 1] = data.second;
     }
     inline bool color_in_target(int id, int color) {
         int r_addr = id * (e_size);
-        int size = (((int*)mem)[r_addr]);
+        int size = mem[r_addr];
         r_addr += 2;
         for (int i = 0; i < size; i++) {
-            if (((int*)mem)[r_addr] == color) {
+            if (mem[r_addr] == color) {
                 return true;
             }
             r_addr += 2;
@@ -481,4 +478,4 @@ Mat interpolate_irregular_nn(
     return nnFlow;
 }
 
-}}  // namespace
+}} // namespace

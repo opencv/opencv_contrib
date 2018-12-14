@@ -5,20 +5,19 @@
 #define _RLOF_INVOKERBASE_HPP_
 
 
-#ifdef CV_CPU_COMPILE_SSE4_1
-#define RLOF_SSE
-#endif
-#ifdef CV_CPU_COMPILE_SSE4_2
+#if CV_SSE4_1
 #define RLOF_SSE
 #endif
 
 //#define DEBUG_INVOKER
 
-#define  CV_DESCALE(x,n)     (((x) + (1 << ((n)-1))) >> (n))
+#ifndef CV_DESCALE
+#define CV_DESCALE(x, n)     (((x) + (1 << ((n)-1))) >> (n))
+#endif
+
 #define FLT_RESCALE 1
 
-#include "opencv2/core.hpp"
-#include "opencv2/video.hpp"
+
 #include "rlof_localflow.h"
 #include <unordered_map>
 #include "opencv2/core/hal/intrin.hpp"
@@ -31,7 +30,7 @@ namespace optflow {
 
 typedef short deriv_type;
 #ifdef RLOF_SSE
-inline void get4BitMask(const int & width, __m128i & mask)
+static inline void get4BitMask(const int & width, __m128i & mask)
 {
     int noBits = width - static_cast<int>(floor(width / 4.f) * 4.f);
     unsigned int val[4];
@@ -42,7 +41,7 @@ inline void get4BitMask(const int & width, __m128i & mask)
     mask = _mm_set_epi32(val[3], val[2], val[1], val[0]);
 
 }
-inline void getWBitMask(const int & width, __m128i & t0, __m128i & t1, __m128i & t2)
+static inline void getWBitMask(const int & width, __m128i & t0, __m128i & t1, __m128i & t2)
 {
     int noBits = width - static_cast<int>(floor(width / 8.f) * 8.f);
     unsigned short val[8];
@@ -59,7 +58,7 @@ typedef uchar tMaskType;
 #define tCVMaskType CV_8UC1
 #define MaskSet 0xffffffff
 
-inline bool notSameColor(const cv::Point3_<uchar> & ref, int r, int c, const cv::Mat & img, int winSize, int threshold)
+static inline bool notSameColor(const cv::Point3_<uchar> & ref, int r, int c, const cv::Mat & img, int winSize, int threshold)
 {
     if (r >= img.rows + winSize || c >= img.cols + winSize || r < -winSize || c < -winSize) return true;
     int step = static_cast<int>(img.step1());
@@ -86,7 +85,8 @@ inline bool notSameColor(const cv::Point3_<uchar> & ref, int r, int c, const cv:
 *\param threshold,
 *\param useBothImages
 */
-static void getLocalPatch(
+static
+void getLocalPatch(
     const cv::Mat & prevImg,
     const cv::Point2i & prevPoint, // feature points
     cv::Mat & winPointMask,
@@ -232,7 +232,8 @@ static void getLocalPatch(
     winPointMask = winPointMask(cv::Rect(min_c, min_r, winRoi.width, winRoi.height));
 }
 
-inline bool calcWinMaskMat(
+static inline
+bool calcWinMaskMat(
         const cv::Mat & BI,
         const int windowType,
         const cv::Point2i & iprevPt,
@@ -264,7 +265,8 @@ inline bool calcWinMaskMat(
     return true;
 }
 
-inline short estimateScale(cv::Mat & residuals)
+static inline
+short estimateScale(cv::Mat & residuals)
 {
     cv::Mat absMat = cv::abs(residuals);
     return quickselect<short>(absMat, absMat.rows / 2);

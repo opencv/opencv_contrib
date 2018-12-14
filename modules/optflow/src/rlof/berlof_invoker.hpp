@@ -10,7 +10,7 @@ namespace cv{
 namespace optflow{
 
 
-inline bool checkSolution(float x, float y, float * c )
+static inline bool checkSolution(float x, float y, float * c )
 {
     float _a = x - 0.002f;
     float _b = y - 0.002f;
@@ -25,13 +25,13 @@ inline bool checkSolution(float x, float y, float * c )
         && (bl.x >= 0 && bl.y <= 0) && (br.x <= 0 && br.y <= 0);
 }
 
-inline cv::Point2f est_DeltaGain( const cv::Mat & src, const cv::Vec4f & val)
+static inline cv::Point2f est_DeltaGain( const cv::Mat & src, const cv::Vec4f & val)
 {
     return cv::Point2f(
         src.at<float>(2,0) * val[0] + src.at<float>(2,1) * val[1] + src.at<float>(2,2) * val[2] + src.at<float>(2,3) * val[3],
         src.at<float>(3,0) * val[0] + src.at<float>(3,1) * val[1] + src.at<float>(3,2) * val[2] + src.at<float>(3,3) * val[3]);
 }
-inline void est_Result( const cv::Mat & src, const cv::Vec4f & val, cv::Point2f & delta, cv::Point2f & gain)
+static inline void est_Result( const cv::Mat & src, const cv::Vec4f & val, cv::Point2f & delta, cv::Point2f & gain)
 {
 
     delta = cv::Point2f(
@@ -92,7 +92,6 @@ public:
         crossSegmentationThreshold = _crossSegmentationThreshold;
     }
 
-    TrackerInvoker & operator=(const TrackerInvoker &) {return *this;};
     void operator()(const cv::Range& range) const CV_OVERRIDE
     {
 #ifdef DEBUG_INVOKER
@@ -610,7 +609,6 @@ public:
         crossSegmentationThreshold = _crossSegmentationThreshold;
     }
 
-    TrackerInvoker & operator=(const TrackerInvoker &) {return *this;};
     void operator()(const cv::Range& range) const CV_OVERRIDE
     {
 #ifdef DEBUG_INVOKER
@@ -1575,8 +1573,6 @@ public:
         useInitialFlow = _useInitialFlow;
         crossSegmentationThreshold = _crossSegmentationThreshold;
     }
-
-    TrackerInvoker & operator=(const TrackerInvoker &) {return *this;};
 
     void operator()(const cv::Range& range) const CV_OVERRIDE
     {
