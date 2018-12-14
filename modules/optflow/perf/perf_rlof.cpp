@@ -36,10 +36,9 @@ PERF_TEST_P(ST_SR_IM_Sparse, OpticalFlow_SparseRLOF,
         param->supportRegionType = SR_FIXED;
     param->useIlluminationModel = get<2>(GetParam());
 
-    TEST_CYCLE_N(1)
-    {
+    PERF_SAMPLE_BEGIN()
         calcOpticalFlowSparseRLOF(frame1, frame2, prevPts, currPts, status, err, param, 1.f);
-    }
+    PERF_SAMPLE_END()
 
     SANITY_CHECK_NOTHING();
 }
@@ -64,10 +63,9 @@ PERF_TEST_P(INTERP_GRID_Dense, OpticalFlow_DenseRLOF,
         interp_type = INTERP_EPIC;
     if (get<0>(GetParam()) == "INTERP_GEO")
         interp_type = INTERP_GEO;
-    TEST_CYCLE_N(5)
-    {
+    PERF_SAMPLE_BEGIN()
         calcOpticalFlowDenseRLOF(frame1, frame2,flow, param, 1.0f, Size(get<1>(GetParam()), get<1>(GetParam())), interp_type);
-    }
+    PERF_SAMPLE_END()
     SANITY_CHECK_NOTHING();
 }
 
