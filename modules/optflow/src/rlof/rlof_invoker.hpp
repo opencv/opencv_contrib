@@ -700,9 +700,9 @@ public:
         int winbufwidth = static_cast<int>(ceil(winSize.width / 16.f)) * 16;
         cv::Size winBufSize(winbufwidth, winbufwidth);
 
-        cv::Mat invTensorMat(4, 4, CV_32FC1);
-        cv::Mat mismatchMat(4, 1, CV_32FC1);
-        cv::Mat resultMat(4, 1, CV_32FC1);
+        cv::Matx44f invTensorMat;
+        cv::Vec4f mismatchMat;
+        cv::Vec4f resultMat;
 
 
         std::vector<short> _buf(winBufSize.area()*(cn + cn2));
@@ -1332,10 +1332,10 @@ public:
                 _mm_store_ps(bbuf, qb3);
                 b4 = bbuf[0] + bbuf[1] + bbuf[2] + bbuf[3];
 #endif
-                mismatchMat.at<float>(0, 0) = b1 * FLT_SCALE;
-                mismatchMat.at<float>(1, 0) = b2 * FLT_SCALE;
-                mismatchMat.at<float>(2, 0) = -b3 * FLT_SCALE;
-                mismatchMat.at<float>(3, 0) = -b4 * FLT_SCALE;
+                mismatchMat(0) = b1 * FLT_SCALE;
+                mismatchMat(1) = b2 * FLT_SCALE;
+                mismatchMat(2) = -b3 * FLT_SCALE;
+                mismatchMat(3) = -b4 * FLT_SCALE;
 
                 D = -A12 * A12*sumI*sumI + dI * sumW*A12*A12 + 2 * A12*sumI*sumIx*w2 + 2 * A12*sumI*sumIy*w1
                     - 2 * dI*A12*sumIx*sumIy - 2 * sumW*A12*w1*w2 + A11 * A22*sumI*sumI - 2 * A22*sumI*sumIx*w1
@@ -1358,26 +1358,27 @@ public:
 
                 D = (1.f / D);
 
-                invTensorMat.at<float>(0, 0) = (A22*sumI*sumI - 2 * sumI*sumIy*w2 + dI * sumIy*sumIy + sumW * w2*w2 - A22 * dI*sumW)* D;                                                invTensorMat.at<float>(0, 1) = (A12*dI*sumW - A12 * sumI * sumI - dI * sumIx*sumIy + sumI * sumIx*w2 + sumI * sumIy*w1 - sumW * w1*w2)* D;
-                invTensorMat.at<float>(0, 2) = (A12*sumI*sumIy - sumIy * sumIy*w1 - A22 * sumI*sumIx - A12 * sumW*w2 + A22 * sumW*w1 + sumIx * sumIy*w2)* D;
-                invTensorMat.at<float>(0, 3) = (A22*dI*sumIx - A12 * dI*sumIy - sumIx * w2*w2 + A12 * sumI*w2 - A22 * sumI*w1 + sumIy * w1*w2) * D;
-                invTensorMat.at<float>(1, 0) = invTensorMat.at<float>(0, 1);
-                invTensorMat.at<float>(1, 1) = (A11*sumI * sumI - 2 * sumI*sumIx*w1 + dI * sumIx * sumIx + sumW * w1*w1 - A11 * dI*sumW) * D;
-                invTensorMat.at<float>(1, 2) = (A12*sumI*sumIx - A11 * sumI*sumIy - sumIx * sumIx*w2 + A11 * sumW*w2 - A12 * sumW*w1 + sumIx * sumIy*w1) * D;
-                invTensorMat.at<float>(1, 3) = (A11*dI*sumIy - sumIy * w1*w1 - A12 * dI*sumIx - A11 * sumI*w2 + A12 * sumI*w1 + sumIx * w1*w2)* D;
-                invTensorMat.at<float>(2, 0) = invTensorMat.at<float>(0, 2);
-                invTensorMat.at<float>(2, 1) = invTensorMat.at<float>(1, 2);
-                invTensorMat.at<float>(2, 2) = (sumW*A12*A12 - 2 * A12*sumIx*sumIy + A22 * sumIx*sumIx + A11 * sumIy*sumIy - A11 * A22*sumW)* D;
-                invTensorMat.at<float>(2, 3) = (A11*A22*sumI - A12 * A12*sumI - A11 * sumIy*w2 + A12 * sumIx*w2 + A12 * sumIy*w1 - A22 * sumIx*w1)* D;
-                invTensorMat.at<float>(3, 0) = invTensorMat.at<float>(0, 3);
-                invTensorMat.at<float>(3, 1) = invTensorMat.at<float>(1, 3);
-                invTensorMat.at<float>(3, 2) = invTensorMat.at<float>(2, 3);
-                invTensorMat.at<float>(3, 3) = (dI*A12*A12 - 2 * A12*w1*w2 + A22 * w1*w1 + A11 * w2*w2 - A11 * A22*dI)* D;
+                invTensorMat(0, 0) = (A22*sumI*sumI - 2 * sumI*sumIy*w2 + dI * sumIy*sumIy + sumW * w2*w2 - A22 * dI*sumW)* D;
+                invTensorMat(0, 1) = (A12*dI*sumW - A12 * sumI * sumI - dI * sumIx*sumIy + sumI * sumIx*w2 + sumI * sumIy*w1 - sumW * w1*w2)* D;
+                invTensorMat(0, 2) = (A12*sumI*sumIy - sumIy * sumIy*w1 - A22 * sumI*sumIx - A12 * sumW*w2 + A22 * sumW*w1 + sumIx * sumIy*w2)* D;
+                invTensorMat(0, 3) = (A22*dI*sumIx - A12 * dI*sumIy - sumIx * w2*w2 + A12 * sumI*w2 - A22 * sumI*w1 + sumIy * w1*w2) * D;
+                invTensorMat(1, 0) = invTensorMat(0, 1);
+                invTensorMat(1, 1) = (A11*sumI * sumI - 2 * sumI*sumIx*w1 + dI * sumIx * sumIx + sumW * w1*w1 - A11 * dI*sumW) * D;
+                invTensorMat(1, 2) = (A12*sumI*sumIx - A11 * sumI*sumIy - sumIx * sumIx*w2 + A11 * sumW*w2 - A12 * sumW*w1 + sumIx * sumIy*w1) * D;
+                invTensorMat(1, 3) = (A11*dI*sumIy - sumIy * w1*w1 - A12 * dI*sumIx - A11 * sumI*w2 + A12 * sumI*w1 + sumIx * w1*w2)* D;
+                invTensorMat(2, 0) = invTensorMat(0, 2);
+                invTensorMat(2, 1) = invTensorMat(1, 2);
+                invTensorMat(2, 2) = (sumW*A12*A12 - 2 * A12*sumIx*sumIy + A22 * sumIx*sumIx + A11 * sumIy*sumIy - A11 * A22*sumW)* D;
+                invTensorMat(2, 3) = (A11*A22*sumI - A12 * A12*sumI - A11 * sumIy*w2 + A12 * sumIx*w2 + A12 * sumIy*w1 - A22 * sumIx*w1)* D;
+                invTensorMat(3, 0) = invTensorMat(0, 3);
+                invTensorMat(3, 1) = invTensorMat(1, 3);
+                invTensorMat(3, 2) = invTensorMat(2, 3);
+                invTensorMat(3, 3) = (dI*A12*A12 - 2 * A12*w1*w2 + A22 * w1*w1 + A11 * w2*w2 - A11 * A22*dI)* D;
 
                 resultMat = invTensorMat * mismatchMat;
 
-                Point2f delta(-resultMat.at<float>(0), -resultMat.at<float>(1));
-                Point2f deltaGain(resultMat.at<float>(2), resultMat.at<float>(3));
+                Point2f delta(-resultMat(0), -resultMat(1));
+                Point2f deltaGain(resultMat(2), resultMat(3));
 
 
 
