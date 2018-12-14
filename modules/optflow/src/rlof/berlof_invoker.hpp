@@ -67,8 +67,12 @@ public:
         bool            _useInitialFlow,
         int             _supportRegionType,
         int             _crossSegmentationThreshold,
-        std::vector<float> _normSigmas,
-        float           _minEigenValue)
+        const std::vector<float>& _normSigmas,
+        float           _minEigenValue
+    ) :
+        normSigma0(_normSigmas[0]),
+        normSigma1(_normSigmas[1]),
+        normSigma2(_normSigmas[2])
     {
         prevImg =       &_prevImg;
         prevDeriv =     &_prevDeriv;
@@ -87,7 +91,6 @@ public:
         maxLevel =      _maxLevel;
         windowType =    _supportRegionType;
         minEigThreshold = _minEigenValue;
-        paramReset =    _normSigmas;
         useInitialFlow = _useInitialFlow;
         crossSegmentationThreshold = _crossSegmentationThreshold;
     }
@@ -112,7 +115,6 @@ public:
         cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType);
         winMaskMatBuf.setTo(1);
 
-        std::vector<float> param = paramReset;
         int j, cn = I.channels(), cn2 = cn*2;
         int winbufwidth = static_cast<int>(ceil(winSize.width / 16.f)) * 16;
         cv::Size winBufSize(winbufwidth,winbufwidth);
@@ -294,10 +296,10 @@ public:
                     }
 
                     float eta = 1.f / winArea;
-                    float fParam0 = param[0] * 32.f;
-                    float fParam1 = param[1] * 32.f;
-                    fParam0 = param[0] * MEstimatorScale;
-                    fParam1 = param[1] * MEstimatorScale;
+                    float fParam0 = normSigma0 * 32.f;
+                    float fParam1 = normSigma1 * 32.f;
+                    fParam0 = normSigma0 * MEstimatorScale;
+                    fParam1 = normSigma1 * MEstimatorScale;
 
 
                     buffIdx = 0;
@@ -351,17 +353,17 @@ public:
                                 }
                                 else if( abss > fParam0 && diff >= 0 )
                                 {
-                                    It[0] = param[2] * (It[0] - fParam1);
-                                    It[1] = param[2] * (It[1] - fParam1);
-                                    It[2] = param[2] * (It[2] - fParam1);
-                                    It[3] = param[2] * (It[3] - fParam1);
+                                    It[0] = normSigma2 * (It[0] - fParam1);
+                                    It[1] = normSigma2 * (It[1] - fParam1);
+                                    It[2] = normSigma2 * (It[2] - fParam1);
+                                    It[3] = normSigma2 * (It[3] - fParam1);
                                 }
                                 else if( abss > fParam0 && diff < 0 )
                                 {
-                                    It[0] = param[2] * (It[0] + fParam1);
-                                    It[1] = param[2] * (It[1] + fParam1);
-                                    It[2] = param[2] * (It[2] + fParam1);
-                                    It[3] = param[2] * (It[3] + fParam1);
+                                    It[0] = normSigma2 * (It[0] + fParam1);
+                                    It[1] = normSigma2 * (It[1] + fParam1);
+                                    It[2] = normSigma2 * (It[2] + fParam1);
+                                    It[3] = normSigma2 * (It[3] + fParam1);
                                 }
                             }
 
@@ -387,7 +389,7 @@ public:
                             // compute the Gradient Matrice
                             if( j == 0)
                             {
-                                float tale = param[2] * FLT_RESCALE;
+                                float tale = normSigma2 * FLT_RESCALE;
                                 if( abss < fParam0 || j < 0)
                                 {
                                     tale = FLT_RESCALE;
@@ -398,7 +400,7 @@ public:
                                 }
                                 else
                                 {
-                                    tale *= param[2];
+                                    tale *= normSigma2;
                                 }
 
                                 A11 += (float)(ixval*ixval)*tale;
@@ -555,7 +557,7 @@ public:
     int                 windowType;
     float               minEigThreshold;
     bool                useInitialFlow;
-    std::vector<float>  paramReset;
+    const float         normSigma0, normSigma1, normSigma2;
     int                 crossSegmentationThreshold;
 
 };
@@ -583,8 +585,12 @@ public:
         bool            _useInitialFlow,
         int             _supportRegionType,
         int             _crossSegmentationThreshold,
-        std::vector<float> _normSigmas,
-        float           _minEigenValue)
+        const std::vector<float>& _normSigmas,
+        float           _minEigenValue
+    ) :
+        normSigma0(_normSigmas[0]),
+        normSigma1(_normSigmas[1]),
+        normSigma2(_normSigmas[2])
     {
         prevImg = &_prevImg;
         prevDeriv = &_prevDeriv;
@@ -604,7 +610,6 @@ public:
         maxLevel = _maxLevel;
         windowType = _supportRegionType;
         minEigThreshold = _minEigenValue;
-        paramReset = _normSigmas;
         useInitialFlow = _useInitialFlow;
         crossSegmentationThreshold = _crossSegmentationThreshold;
     }
@@ -626,7 +631,6 @@ public:
         cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType);
         winMaskMatBuf.setTo(1);
 
-        std::vector<float> param = paramReset;
         int cn = I.channels(), cn2 = cn*2;
         int winbufwidth = static_cast<int>(ceil(winSize.width / 16.f)) * 16;
         cv::Size winBufSize(winbufwidth,winbufwidth);
@@ -901,10 +905,10 @@ public:
                 }
 
                 float eta = 1.f / winArea;
-                float fParam0 = param[0] * 32.f;
-                float fParam1 = param[1] * 32.f;
-                fParam0 = param[0] * MEstimatorScale;
-                fParam1 = param[1] * MEstimatorScale;
+                float fParam0 = normSigma0 * 32.f;
+                float fParam1 = normSigma1 * 32.f;
+                fParam0 = normSigma0 * MEstimatorScale;
+                fParam1 = normSigma1 * MEstimatorScale;
 
 #ifdef RLOF_SSE
 
@@ -922,12 +926,12 @@ public:
                 __m128i mmParam1 = _mm_set1_epi16(MIN(std::numeric_limits<short>::max()- 1, static_cast<short>(fParam1)));
 
 
-                float s2Val = param[2] > 0 ? param[2] : -param[2];
-                int s2bitShift = param[2] == 0 ? 1 : static_cast<int>(ceil(log(200.f / s2Val) / log(2.f)));
-                __m128i mmParam2_epi16 = _mm_set1_epi16(static_cast<short>(param[2] * (float)(1 << s2bitShift)));
+                float s2Val = std::fabs(normSigma2);
+                int s2bitShift = normSigma2 == 0 ? 1 : static_cast<int>(ceil(log(200.f / s2Val) / log(2.f)));
+                __m128i mmParam2_epi16 = _mm_set1_epi16(static_cast<short>(normSigma2 * (float)(1 << s2bitShift)));
                 __m128i mmOness_epi16 = _mm_set1_epi16(1 << s2bitShift);
-                __m128  mmParam2s = _mm_set1_ps(0.01f * param[2]);
-                __m128  mmParam2s2 = _mm_set1_ps(param[2] * param[2]);
+                __m128  mmParam2s = _mm_set1_ps(0.01f * normSigma2);
+                __m128  mmParam2s2 = _mm_set1_ps(normSigma2 * normSigma2);
                 float gainVal = gainVec.x > 0 ? gainVec.x : -gainVec.x;
                 int bitShift = gainVec.x == 0 ? 1 : static_cast<int>(ceil(log(200.f / gainVal) / log(2.f)));
                 __m128i mmGainValue_epi16 = _mm_set1_epi16(static_cast<short>(gainVec.x * (float)(1 << bitShift)));
@@ -1197,17 +1201,17 @@ public:
                             }
                             else if( abss > static_cast<int>(fParam0) && diff >= 0 )
                             {
-                                It[0] = static_cast<int>(param[2] * (It[0] - fParam1));
-                                It[1] = static_cast<int>(param[2] * (It[1] - fParam1));
-                                It[2] = static_cast<int>(param[2] * (It[2] - fParam1));
-                                It[3] = static_cast<int>(param[2] * (It[3] - fParam1));
+                                It[0] = static_cast<int>(normSigma2 * (It[0] - fParam1));
+                                It[1] = static_cast<int>(normSigma2 * (It[1] - fParam1));
+                                It[2] = static_cast<int>(normSigma2 * (It[2] - fParam1));
+                                It[3] = static_cast<int>(normSigma2 * (It[3] - fParam1));
                             }
                             else if( abss > static_cast<int>(fParam0) && diff < 0 )
                             {
-                                It[0] = static_cast<int>(param[2] * (It[0] + fParam1));
-                                It[1] = static_cast<int>(param[2] * (It[1] + fParam1));
-                                It[2] = static_cast<int>(param[2] * (It[2] + fParam1));
-                                It[3] = static_cast<int>(param[2] * (It[3] + fParam1));
+                                It[0] = static_cast<int>(normSigma2 * (It[0] + fParam1));
+                                It[1] = static_cast<int>(normSigma2 * (It[1] + fParam1));
+                                It[2] = static_cast<int>(normSigma2 * (It[2] + fParam1));
+                                It[3] = static_cast<int>(normSigma2 * (It[3] + fParam1));
                             }
                         }
                         _b0[0] += (float)(It[0]*dIptr[0]) ;
@@ -1234,7 +1238,7 @@ public:
                         // compute the Gradient Matrice
                         if( j == 0)
                         {
-                            float tale = param[2] * FLT_RESCALE;
+                            float tale = normSigma2 * FLT_RESCALE;
                             if( abss < fParam0 || j < 0)
                             {
                                 tale = FLT_RESCALE;
@@ -1245,7 +1249,7 @@ public:
                             }
                             else
                             {
-                                tale *= param[2];
+                                tale *= normSigma2;
                             }
                             if( j == 0 )
                             {
@@ -1521,7 +1525,7 @@ public:
     int                 windowType;
     float               minEigThreshold;
     bool                useInitialFlow;
-    std::vector<float>  paramReset;
+    const float         normSigma0, normSigma1, normSigma2;
     int                 crossSegmentationThreshold;
 };
 
