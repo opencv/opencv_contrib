@@ -216,8 +216,8 @@ void getLocalPatch(
     if (noPoints < minWinSize * minWinSize)
     {
         cv::Rect roi(winPointMask.cols / 2 - (minWinSize - 1) / 2,
-            winPointMask.rows / 2 - (minWinSize - 1) / 2,
-            minWinSize, minWinSize);
+                     winPointMask.rows / 2 - (minWinSize - 1) / 2,
+                     minWinSize, minWinSize);
         cv::Mat(winPointMask, roi).setTo(1);
         min_c = MIN(MIN(min_c, roi.tl().x), roi.br().x - 1);
         max_c = MAX(MAX(max_c, roi.tl().x), roi.br().x - 1);
@@ -254,7 +254,7 @@ bool calcWinMaskMat(
             return false;
         winSize = winRoi.size();
         halfWin = Point2f(static_cast<float>(iprevPt.x - winRoi.tl().x),
-            static_cast<float>(iprevPt.y - winRoi.tl().y));
+                          static_cast<float>(iprevPt.y - winRoi.tl().y));
     }
     else
     {

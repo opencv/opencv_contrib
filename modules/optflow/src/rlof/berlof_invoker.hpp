@@ -111,12 +111,12 @@ public:
         const float FLT_SCALE = (1.f/(1 << 16));
 
         winSize = cv::Size(maxWinSize,maxWinSize);
-        int winMaskwidth = static_cast<int>(ceil(winSize.width / 16.f)) * 16;
+        int winMaskwidth = roundUp(winSize.width, 16);
         cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType);
         winMaskMatBuf.setTo(1);
 
         int j, cn = I.channels(), cn2 = cn*2;
-        int winbufwidth = static_cast<int>(ceil(winSize.width / 16.f)) * 16;
+        int winbufwidth = roundUp(winSize.width, 16);
         cv::Size winBufSize(winbufwidth,winbufwidth);
 
         cv::AutoBuffer<deriv_type> _buf(winBufSize.area()*(cn + cn2));
@@ -627,12 +627,12 @@ public:
         const Mat& BI = *rgbPrevImg;
         const float FLT_SCALE = (1.f/(1 << 16));//(1.f/(1 << 20)); // 20
         winSize = cv::Size(maxWinSize,maxWinSize);
-        int winMaskwidth = static_cast<int>(ceil(winSize.width / 16.f)) * 16;
+        int winMaskwidth = roundUp(winSize.width, 16);
         cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType);
         winMaskMatBuf.setTo(1);
 
         int cn = I.channels(), cn2 = cn*2;
-        int winbufwidth = static_cast<int>(ceil(winSize.width / 16.f)) * 16;
+        int winbufwidth = roundUp(winSize.width, 16);
         cv::Size winBufSize(winbufwidth,winbufwidth);
 
 
@@ -927,13 +927,13 @@ public:
 
 
                 float s2Val = std::fabs(normSigma2);
-                int s2bitShift = normSigma2 == 0 ? 1 : static_cast<int>(ceil(log(200.f / s2Val) / log(2.f)));
+                int s2bitShift = normSigma2 == 0 ? 1 : cvCeil(log(200.f / s2Val) / log(2.f));
                 __m128i mmParam2_epi16 = _mm_set1_epi16(static_cast<short>(normSigma2 * (float)(1 << s2bitShift)));
                 __m128i mmOness_epi16 = _mm_set1_epi16(1 << s2bitShift);
                 __m128  mmParam2s = _mm_set1_ps(0.01f * normSigma2);
                 __m128  mmParam2s2 = _mm_set1_ps(normSigma2 * normSigma2);
                 float gainVal = gainVec.x > 0 ? gainVec.x : -gainVec.x;
-                int bitShift = gainVec.x == 0 ? 1 : static_cast<int>(ceil(log(200.f / gainVal) / log(2.f)));
+                int bitShift = gainVec.x == 0 ? 1 : cvCeil(log(200.f / gainVal) / log(2.f));
                 __m128i mmGainValue_epi16 = _mm_set1_epi16(static_cast<short>(gainVec.x * (float)(1 << bitShift)));
                 __m128i mmConstValue_epi16 = _mm_set1_epi16(static_cast<short>(gainVec.y));
                 __m128i mmEta     = _mm_setzero_si128();
@@ -1587,14 +1587,14 @@ public:
         const Mat& BI = *rgbPrevImg;
 
         winSize = cv::Size(maxWinSize,maxWinSize);
-        int winMaskwidth = static_cast<int>(ceil(winSize.width / 8.f)) * 16;
+        int winMaskwidth = roundUp(winSize.width, 8) * 2;
         cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType);
         winMaskMatBuf.setTo(1);
 
         const float FLT_SCALE = (1.f/(1 << 20)); // 20
 
         int j, cn = I.channels(), cn2 = cn*2;
-        int winbufwidth = static_cast<int>(ceil(winSize.width / 8.f)) * 8;
+        int winbufwidth = roundUp(winSize.width, 8);
         cv::Size winBufSize(winbufwidth,winbufwidth);
 
         std::vector<short> _buf(winBufSize.area()*(cn + cn2));
