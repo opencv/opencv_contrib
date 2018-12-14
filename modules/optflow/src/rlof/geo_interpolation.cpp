@@ -358,34 +358,6 @@ Mat interpolate_irregular_knn(
         }
     }
     return ret;
-/*
-    for (int y = 0; y < in.rows; y++) {
-        for (int x = 0; x < in.cols; x++) {
-            int v_id = y * in.cols + x;
-            std::vector<std::pair<float, Vec2f> > flow_s(k);
-
-            for (int i = 0; i < k; i++) {
-                color = *((int*)(graph_helper.data(v_id) + 1 + 2 * i));
-                int cy = flow_point_list[color][0];
-                int cx = flow_point_list[color][1];
-                Vec2f flow = in.at<Vec2f>(cy, cx);
-                flow_s[i] = std::make_pair(static_cast<float>(norm(flow)), flow);
-
-
-
-            }
-
-            nnFlow.at<Vec2f>(y, x) = std::min_element(flow_s.begin(), flow_s.end(), [](const std::pair<float, Vec2f> &left, const std::pair<float, Vec2f> &right) {
-                return left.first < right.first;
-            })->second;
-
-
-        }
-    }
-    free(graph_helper.mem);
-    return nnFlow;
-*/
-
 }
 
 Mat getGraph(const Mat &image, float edge_length)
