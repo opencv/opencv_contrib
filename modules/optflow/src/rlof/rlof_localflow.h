@@ -69,16 +69,15 @@ T quickselect(const Mat & inp, int k)
     }
 }
 
-namespace cv
-{
-namespace optflow
-{
+namespace cv {
+namespace optflow {
+
 class CImageBuffer
 {
 public:
     CImageBuffer()
         : m_Overwrite(true)
-    {};
+    {}
     void setGrayFromRGB(const cv::Mat & inp)
     {
         if(m_Overwrite)
@@ -98,12 +97,12 @@ public:
     int buildPyramid(cv::Size winSize, int maxLevel, float levelScale[2]);
     cv::Mat & getImage(int level) {return m_ImagePyramid[level];}
 
-    std::vector<cv::Mat>        m_ImagePyramid;
-    cv::Mat                        m_BlurredImage;
-    cv::Mat                        m_Image;
-    std::vector<cv::Mat>        m_CrossPyramid;
-    int                            m_maxLevel;
-    bool m_Overwrite;
+    std::vector<cv::Mat>     m_ImagePyramid;
+    cv::Mat                  m_BlurredImage;
+    cv::Mat                  m_Image;
+    std::vector<cv::Mat>     m_CrossPyramid;
+    int                      m_maxLevel;
+    bool                     m_Overwrite;
 };
 
 void calcLocalOpticalFlow(
@@ -114,6 +113,6 @@ void calcLocalOpticalFlow(
     const std::vector<Point2f> & prevPoints,
     std::vector<Point2f> & currPoints,
     const RLOFOpticalFlowParameter & param);
-}
-}
+
+}} // namespace
 #endif

@@ -173,7 +173,6 @@ CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_Farneback();
 //! Additional interface to the SparseToDenseFlow algorithm - calcOpticalFlowSparseToDense()
 CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_SparseToDense();
 
-
 /** @brief "Dual TV L1" Optical Flow Algorithm.
 
 The class implements the "Dual TV L1" optical flow algorithm described in @cite Zach2007 and

@@ -6,37 +6,36 @@
 #include "rlof_invokerbase.hpp"
 
 
-namespace cv{
-namespace optflow{
-namespace plk
-{
+namespace cv {
+namespace optflow {
+namespace plk {
 
 // implementierung ohne SSE
-namespace radial
-{
+namespace radial {
+
 class TrackerInvoker : public cv::ParallelLoopBody
 {
 public:
     TrackerInvoker(
 
-        const Mat&    _prevImg,
-        const Mat&    _prevDeriv,
-        const Mat&    _nextImg,
-        const Mat&    _rgbPrevImg,
-        const Mat&    _rgbNextImg,
-        const Point2f*    _prevPts,
+        const Mat&      _prevImg,
+        const Mat&      _prevDeriv,
+        const Mat&      _nextImg,
+        const Mat&      _rgbPrevImg,
+        const Mat&      _rgbNextImg,
+        const Point2f*  _prevPts,
         Point2f*        _nextPts,
-        uchar*            _status,
-        float*            _err,
+        uchar*          _status,
+        float*          _err,
         Point2f*        _gainVecs,
-        int                _level,
-        int                _maxLevel,
-        int                _winSize[2],
-        int                _maxIteration,
+        int             _level,
+        int             _maxLevel,
+        int             _winSize[2],
+        int             _maxIteration,
         bool            _useInitialFlow,
-        int                _supportRegionType,
+        int             _supportRegionType,
         float           _minEigenValue,
-        int                _crossSegmentationThreshold)
+        int             _crossSegmentationThreshold)
     {
         prevImg = &_prevImg;
         prevDeriv = &_prevDeriv;
@@ -615,11 +614,13 @@ public:
                 gainVecs[ptidx]= gainVec;
                 if( delta.ddot(delta) <= criteria.epsilon)
                     break;
-                if(    (   std::abs(delta.x - prevDelta.x) < 0.01
-                    &&    std::abs(delta.y - prevDelta.y) < 0.01)
-                    || ((delta.ddot(delta) <= 0.001)
-                       && std::abs(prevGain.x - deltaGain.x) < 0.01)
-                        )
+                if ((
+                        std::abs(delta.x - prevDelta.x) < 0.01 &&
+                        std::abs(delta.y - prevDelta.y) < 0.01
+                    ) || (
+                        delta.ddot(delta) <= 0.001 &&
+                        std::abs(prevGain.x - deltaGain.x) < 0.01
+                    ))
                 {
                     nextPts[ptidx]  -= delta*0.5f;
                     gainVecs[ptidx] -= deltaGain* 0.5f;
@@ -643,47 +644,50 @@ public:
 
     }
 
-    const Mat*        prevImg;
-    const Mat*        nextImg;
-    const Mat*        prevDeriv;
-    const Mat*        rgbPrevImg;
-    const Mat*        rgbNextImg;
-    const Point2f*    prevPts;
-    Point2f*        nextPts;
-    uchar*            status;
-    cv::Point2f*    gainVecs;        // gain vector x -> multiplier y -> offset
-    float*            err;
-    int                maxWinSize;
-    int                minWinSize;
-    TermCriteria    criteria;
-    int                level;
-    int                maxLevel;
-    int                windowType;
-    float            minEigThreshold;
-    bool            useInitialFlow;
-    int                crossSegmentationThreshold;
+    const Mat*          prevImg;
+    const Mat*          nextImg;
+    const Mat*          prevDeriv;
+    const Mat*          rgbPrevImg;
+    const Mat*          rgbNextImg;
+    const Point2f*      prevPts;
+    Point2f*            nextPts;
+    uchar*              status;
+    cv::Point2f*        gainVecs;        // gain vector x -> multiplier y -> offset
+    float*              err;
+    int                 maxWinSize;
+    int                 minWinSize;
+    TermCriteria        criteria;
+    int                 level;
+    int                 maxLevel;
+    int                 windowType;
+    float               minEigThreshold;
+    bool                useInitialFlow;
+    int                 crossSegmentationThreshold;
 };
-}
-namespace ica{
+
+}  // namespace
+namespace ica {
+
 class TrackerInvoker : public cv::ParallelLoopBody
 {
 public:
-    TrackerInvoker(const Mat&    _prevImg,
-        const Mat&    _prevDeriv,
-        const Mat&    _nextImg,
-        const Mat&    _rgbPrevImg,
-        const Mat&    _rgbNextImg,
-        const Point2f*    _prevPts,
+    TrackerInvoker(
+        const Mat&      _prevImg,
+        const Mat&      _prevDeriv,
+        const Mat&      _nextImg,
+        const Mat&      _rgbPrevImg,
+        const Mat&      _rgbNextImg,
+        const Point2f*  _prevPts,
         Point2f*        _nextPts,
-        uchar*            _status,
-        float*            _err,
-        int                _level,
-        int                _maxLevel,
-        int                _winSize[2],
-        int                _maxIteration,
+        uchar*          _status,
+        float*          _err,
+        int             _level,
+        int             _maxLevel,
+        int             _winSize[2],
+        int             _maxIteration,
         bool            _useInitialFlow,
-        int                _supportRegionType,
-        int                _crossSegmentationThreshold,
+        int             _supportRegionType,
+        int             _crossSegmentationThreshold,
         float           _minEigenValue)
     {
         prevImg = &_prevImg;
@@ -1062,7 +1066,7 @@ public:
                 nextPt += delta;
                 nextPts[ptidx] = nextPt + halfWin;
 
-                 if( delta.ddot(delta) <= criteria.epsilon)
+                if( delta.ddot(delta) <= criteria.epsilon)
                     break;
                 if(j > 0 && std::abs(delta.x - prevDelta.x) < 0.01  &&
                             std::abs(delta.y - prevDelta.y) < 0.01)
@@ -1075,34 +1079,29 @@ public:
 
             }
 
-
-
-
-
         }
 
     }
 
-    const Mat*        prevImg;
-    const Mat*        nextImg;
-    const Mat*        prevDeriv;
-    const Mat*        rgbPrevImg;
-    const Mat*        rgbNextImg;
-    const Point2f*    prevPts;
-    Point2f*        nextPts;
-    uchar*            status;
-    float*            err;
-    int                maxWinSize;
-    int                minWinSize;
-    TermCriteria    criteria;
-    int                level;
-    int                maxLevel;
-    int                windowType;
-    float            minEigThreshold;
-    bool            useInitialFlow;
-    int        crossSegmentationThreshold;
+    const Mat*          prevImg;
+    const Mat*          nextImg;
+    const Mat*          prevDeriv;
+    const Mat*          rgbPrevImg;
+    const Mat*          rgbNextImg;
+    const Point2f*      prevPts;
+    Point2f*            nextPts;
+    uchar*              status;
+    float*              err;
+    int                 maxWinSize;
+    int                 minWinSize;
+    TermCriteria        criteria;
+    int                 level;
+    int                 maxLevel;
+    int                 windowType;
+    float               minEigThreshold;
+    bool                useInitialFlow;
+    int                 crossSegmentationThreshold;
 };
-}
-}
-}}
+
+}}}}  // namespace
 #endif
