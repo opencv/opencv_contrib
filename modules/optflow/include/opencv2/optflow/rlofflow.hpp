@@ -68,7 +68,7 @@ public:
         ,smallWinSize(9)
         ,largeWinSize(21)
         ,crossSegmentationThreshold(25)
-        ,maxLevel(3)
+        ,maxLevel(5)
         ,useInitialFlow(false)
         ,useIlluminationModel(true)
         ,useGlobalMotionPrior(true)
