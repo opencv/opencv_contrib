@@ -145,9 +145,6 @@ public:
             int iw01 = cvRound(a*(1.f - b)*(1 << W_BITS));
             int iw10 = cvRound((1.f - a)*b*(1 << W_BITS));
             int iw11 = (1 << W_BITS) - iw00 - iw01 - iw10;
-            int dstep = (int)(derivI.step/derivI.elemSize1());
-            int step = (int)(I.step/I.elemSize1());
-            CV_Assert( step == (int)(J.step/J.elemSize1()) );
             float A11 = 0, A12 = 0, A22 = 0;
             // tensor
             float sumIx = 0;
@@ -173,21 +170,23 @@ public:
             for( y = 0; y < winSize.height; y++ )
             {
                 const uchar* src = I.ptr<uchar>(y + iprevPt.y, 0) + iprevPt.x*cn;
+                const uchar* src1 = I.ptr<uchar>(y + iprevPt.y + 1, 0) + iprevPt.x*cn;
                 const short* dsrc = derivI.ptr<short>(y + iprevPt.y, 0) + iprevPt.x*cn2;
+                const short* dsrc1 = derivI.ptr<short>(y + iprevPt.y + 1, 0) + iprevPt.x*cn2;
                 short* Iptr  = IWinBuf.ptr<short>(y, 0);
                 short* dIptr = derivIWinBuf.ptr<short>(y, 0);
                 const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
                 x = 0;
 #ifdef RLOF_SSE
-               for( ; x <= winBufSize.width*cn - 4; x += 4, dsrc += 4*2, dIptr += 4*2 )
+               for( ; x <= winBufSize.width*cn - 4; x += 4, dsrc += 4*2, dsrc1 += 8, dIptr += 4*2 )
                 {
                     __m128i mask_0_7_epi16 = _mm_mullo_epi16(_mm_cvtepi8_epi16(_mm_loadl_epi64((const __m128i*)(maskPtr+x))), mmMaskSet_epi16);
                     __m128i mask_0_3_epi16 = _mm_unpacklo_epi16(mask_0_7_epi16, mask_0_7_epi16);
                     __m128i v00, v01, v10, v11, t0, t1;
                     v00 = _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(const int*)(src + x)), z);
                     v01 = _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(const int*)(src + x + cn)), z);
-                    v10 = _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(const int*)(src + x + step)), z);
-                    v11 = _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(const int*)(src + x + step + cn)), z);
+                    v10 = _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(const int*)(src1 + x)), z);
+                    v11 = _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(const int*)(src1 + x + cn)), z);
 
                     t0 = _mm_add_epi32(_mm_madd_epi16(_mm_unpacklo_epi16(v00, v01), qw0),
                                        _mm_madd_epi16(_mm_unpacklo_epi16(v10, v11), qw1));
@@ -202,8 +201,8 @@ public:
 
                     v00 = _mm_loadu_si128((const __m128i*)(dsrc));
                     v01 = _mm_loadu_si128((const __m128i*)(dsrc + cn2));
-                    v10 = _mm_loadu_si128((const __m128i*)(dsrc + dstep));
-                    v11 = _mm_loadu_si128((const __m128i*)(dsrc + dstep + cn2));
+                    v10 = _mm_loadu_si128((const __m128i*)(dsrc1));
+                    v11 = _mm_loadu_si128((const __m128i*)(dsrc1 + cn2));
 
                     t0 = _mm_add_epi32(_mm_madd_epi16(_mm_unpacklo_epi16(v00, v01), qw0),
                                        _mm_madd_epi16(_mm_unpacklo_epi16(v10, v11), qw1));
@@ -220,7 +219,7 @@ public:
                     _mm_storeu_si128((__m128i*)dIptr, v00);
                 }
 #else
-                for( ; x < winSize.width*cn; x++, dsrc += 2, dIptr += 2 )
+                for( ; x < winSize.width*cn; x++, dsrc += 2, dsrc1 += 2, dIptr += 2 )
                 {
                     if( maskPtr[x] == 0)
                     {
@@ -229,11 +228,11 @@ public:
                         continue;
                     }
                     int ival = CV_DESCALE(src[x]*iw00 + src[x+cn]*iw01 +
-                                          src[x+step]*iw10 + src[x+step+cn]*iw11, W_BITS1-5);
+                                          src1[x]*iw10 + src1[x+cn]*iw11, W_BITS1-5);
                     int ixval = CV_DESCALE(dsrc[0]*iw00 + dsrc[cn2]*iw01 +
-                                           dsrc[dstep]*iw10 + dsrc[dstep+cn2]*iw11, W_BITS1);
-                    int iyval = CV_DESCALE(dsrc[1]*iw00 + dsrc[cn2+1]*iw01 + dsrc[dstep+1]*iw10 +
-                                           dsrc[dstep+cn2+1]*iw11, W_BITS1);
+                                           dsrc1[0]*iw10 + dsrc1[cn2]*iw11, W_BITS1);
+                    int iyval = CV_DESCALE(dsrc[1]*iw00 + dsrc[cn2+1]*iw01 + dsrc1[1]*iw10 +
+                                           dsrc1[cn2+1]*iw11, W_BITS1);
 
                     Iptr[x] = (short)ival;
                     dIptr[0] = (short)ixval;
@@ -308,6 +307,7 @@ public:
                 for( y = 0; y < winSize.height; y++ )
                 {
                     const uchar* Jptr = J.ptr<uchar>(y + inextPt.y, inextPt.x*cn);
+                    const uchar* Jptr1 = J.ptr<uchar>(y + inextPt.y + 1, inextPt.x*cn);
                     const short* Iptr  = IWinBuf.ptr<short>(y, 0);
                     const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
                     const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
@@ -328,8 +328,8 @@ public:
                             _mm_loadl_epi64((const __m128i*)(Jptr + x)) // J0, J1, J2, ..., J7, 64 bit nullen
                                 , z); //J0 , 0, J1, 0, J2, 0 ... J7,0
                         __m128i v01 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(Jptr + x + cn)), z);
-                        __m128i v10 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(Jptr + x + step)), z);
-                        __m128i v11 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(Jptr + x + step + cn)), z);
+                        __m128i v10 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(Jptr1 + x)), z);
+                        __m128i v11 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(Jptr1 + x + cn)), z);
 
 
                         __m128i t0 = _mm_add_epi32
@@ -465,7 +465,7 @@ public:
                         if( maskPtr[x] == 0)
                             continue;
                         int J_val = CV_DESCALE(Jptr[x]*iw00 + Jptr[x+cn]*iw01 +
-                                              Jptr[x+step]*iw10 + Jptr[x+step+cn]*iw11,
+                                              Jptr1[x]*iw10 + Jptr1[x+cn]*iw11,
                                               W_BITS1-5);
                         int diff = static_cast<int>(J_val - Iptr[x] + Iptr[x] * gainVec.x + gainVec.y);
 
@@ -790,10 +790,6 @@ public:
             int iw01 = cvRound(a*(1.f - b)*(1 << W_BITS));
             int iw10 = cvRound((1.f - a)*b*(1 << W_BITS));
             int iw11 = (1 << W_BITS) - iw00 - iw01 - iw10;
-
-            int dstep = (int)(derivI.step/derivI.elemSize1());
-            int step = (int)(I.step/I.elemSize1());
-            CV_Assert( step == (int)(J.step/J.elemSize1()) );
             float A11 = 0, A12 = 0, A22 = 0;
 
 #ifdef RLOF_SSE
@@ -812,13 +808,15 @@ public:
             for( y = 0; y < winSize.height; y++ )
             {
                 const uchar* src = I.ptr<uchar>(y + iprevPt.y, 0) + iprevPt.x*cn;
+                const uchar* src1 = I.ptr<uchar>(y + iprevPt.y + 1, 0) + iprevPt.x*cn;
                 const short* dsrc = derivI.ptr<short>(y + iprevPt.y, 0) + iprevPt.x*cn2;
+                const short* dsrc1 = derivI.ptr<short>(y + iprevPt.y + 1, 0) + iprevPt.x*cn2;
                 short* Iptr  = IWinBuf.ptr<short>(y, 0);
                 short* dIptr = derivIWinBuf.ptr<short>(y, 0);
                 const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
                 x = 0;
 #ifdef RLOF_SSE
-                for( ; x <= winSize.width*cn; x += 4, dsrc += 4*2, dIptr += 4*2 )
+                for( ; x <= winSize.width*cn; x += 4, dsrc += 4*2, dsrc1 += 8, dIptr += 4*2 )
                 {
                     __m128i wMask = _mm_set_epi32(MaskSet * maskPtr[x+3],
                                                   MaskSet * maskPtr[x+2],
@@ -827,8 +825,8 @@ public:
                     __m128i v00, v01, v10, v11, t0, t1;
                     v00 = _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(const int*)(src + x)), z);
                     v01 = _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(const int*)(src + x + cn)), z);
-                    v10 = _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(const int*)(src + x + step)), z);
-                    v11 = _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(const int*)(src + x + step + cn)), z);
+                    v10 = _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(const int*)(src1 + x)), z);
+                    v11 = _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(const int*)(src1 + x + cn)), z);
 
                     t0 = _mm_add_epi32(_mm_madd_epi16(_mm_unpacklo_epi16(v00, v01), qw0),
                                        _mm_madd_epi16(_mm_unpacklo_epi16(v10, v11), qw1));
@@ -843,8 +841,8 @@ public:
 
                     v00 = _mm_loadu_si128((const __m128i*)(dsrc));
                     v01 = _mm_loadu_si128((const __m128i*)(dsrc + cn2));
-                    v10 = _mm_loadu_si128((const __m128i*)(dsrc + dstep));
-                    v11 = _mm_loadu_si128((const __m128i*)(dsrc + dstep + cn2));
+                    v10 = _mm_loadu_si128((const __m128i*)(dsrc1));
+                    v11 = _mm_loadu_si128((const __m128i*)(dsrc1 + cn2));
 
                     t0 = _mm_add_epi32(_mm_madd_epi16(_mm_unpacklo_epi16(v00, v01), qw0),
                                        _mm_madd_epi16(_mm_unpacklo_epi16(v10, v11), qw1));
@@ -874,7 +872,7 @@ public:
                 }
 #else
 
-                for( ; x < winSize.width*cn; x++, dsrc += 2, dIptr += 2 )
+                for( ; x < winSize.width*cn; x++, dsrc += 2, dsrc1 += 2, dIptr += 2 )
                 {
                     if( maskPtr[x] == 0)
                     {
@@ -883,11 +881,11 @@ public:
                         continue;
                     }
                     int ival = CV_DESCALE(src[x]*iw00 + src[x+cn]*iw01 +
-                                          src[x+step]*iw10 + src[x+step+cn]*iw11, W_BITS1-5);
+                                          src1[x]*iw10 + src1[x+cn]*iw11, W_BITS1-5);
                     int ixval = CV_DESCALE(dsrc[0]*iw00 + dsrc[cn2]*iw01 +
-                                           dsrc[dstep]*iw10 + dsrc[dstep+cn2]*iw11, W_BITS1);
-                    int iyval = CV_DESCALE(dsrc[1]*iw00 + dsrc[cn2+1]*iw01 + dsrc[dstep+1]*iw10 +
-                                           dsrc[dstep+cn2+1]*iw11, W_BITS1);
+                                           dsrc1[0]*iw10 + dsrc1[cn2]*iw11, W_BITS1);
+                    int iyval = CV_DESCALE(dsrc[1]*iw00 + dsrc[cn2+1]*iw01 + dsrc1[1]*iw10 +
+                                           dsrc1[cn2+1]*iw11, W_BITS1);
 
                     Iptr[x] = (short)ival;
                     dIptr[0] = (short)ixval;
@@ -967,6 +965,7 @@ public:
                 for( y = 0; y < winSize.height; y++ )
                 {
                     const uchar* Jptr = J.ptr<uchar>(y + inextPt.y, inextPt.x*cn);
+                    const uchar* Jptr1 = J.ptr<uchar>(y + inextPt.y + 1, inextPt.x*cn);
                     const short* Iptr  = IWinBuf.ptr<short>(y, 0);
                     const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
 
@@ -981,8 +980,8 @@ public:
                         __m128i diff0 = _mm_loadu_si128((const __m128i*)(Iptr + x)), diff1;
                         __m128i v00 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(Jptr + x)), z);
                         __m128i v01 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(Jptr + x + cn)), z);
-                        __m128i v10 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(Jptr + x + step)), z);
-                        __m128i v11 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(Jptr + x + step + cn)), z);
+                        __m128i v10 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(Jptr1 + x)), z);
+                        __m128i v11 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(Jptr1 + x + cn)), z);
 
                         __m128i t0 = _mm_add_epi32(_mm_madd_epi16(_mm_unpacklo_epi16(v00, v01), qw0),
                                                    _mm_madd_epi16(_mm_unpacklo_epi16(v10, v11), qw1));
@@ -1030,7 +1029,7 @@ public:
                         if( dIptr[0] == 0 && dIptr[1] == 0)
                             continue;
                         int diff = CV_DESCALE(Jptr[x]*iw00 + Jptr[x+cn]*iw01 +
-                                              Jptr[x+step]*iw10 + Jptr[x+step+cn]*iw11,
+                                              Jptr1[x]*iw10 + Jptr1[x+cn]*iw11,
                                               W_BITS1-5) - Iptr[x];
 
                         b1 += (float)(diff*dIptr[0]) * FLT_RESCALE;

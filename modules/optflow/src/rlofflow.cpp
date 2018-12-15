@@ -126,9 +126,9 @@ public:
         std::vector<cv::Point2f> currPoints, refPoints;
         noPoints = 0;
         cv::Size grid_h = gridStep / 2;
-        for (int r = grid_h.height; r < prevImage.rows; r += gridStep.height)
+        for (int r = grid_h.height; r < prevImage.rows - grid_h.height; r += gridStep.height)
         {
-            for (int c = grid_h.width; c < prevImage.cols; c += gridStep.width)
+            for (int c = grid_h.width; c < prevImage.cols - grid_h.width; c += gridStep.width)
             {
                 prevPoints[noPoints++] = cv::Point2f(static_cast<float>(c), static_cast<float>(r));
             }

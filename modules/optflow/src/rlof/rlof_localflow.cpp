@@ -255,8 +255,7 @@ void preprocess(Ptr<CImageBuffer> prevPyramids[2], Ptr<CImageBuffer> currPyramid
 
 inline bool isrobust(const RLOFOpticalFlowParameter & param)
 {
-    return (param.normSigma0 != std::numeric_limits<float>::max())
-        && (param.normSigma1 != std::numeric_limits<float>::max());
+    return (param.normSigma0 < 255 && param.normSigma1 < 255);
 }
 inline std::vector<float> get_norm(float sigma0, float sigma1)
 {
