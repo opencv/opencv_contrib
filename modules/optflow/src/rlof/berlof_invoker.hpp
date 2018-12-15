@@ -150,8 +150,9 @@ public:
             if( calcWinMaskMat(BI, windowType, iprevPt,
                                 winMaskMat,winSize,halfWin,winArea,
                                 minWinSize,maxWinSize) == false)
+            {
                 continue;
-
+            }
             prevPt -= halfWin;
             iprevPt.x = cvFloor(prevPt.x);
             iprevPt.y = cvFloor(prevPt.y);
@@ -180,7 +181,6 @@ public:
 
             int dstep = (int)(derivI.step/derivI.elemSize1());
             int step = (int)(I.step/I.elemSize1());
-            int mStep = (int)(winMaskMat.step/winMaskMat.elemSize1());
             CV_Assert( step == (int)(J.step/J.elemSize1()) );
 
             float A11 = 0, A12 = 0, A22 = 0;
@@ -190,11 +190,10 @@ public:
             int x, y;
             for( y = 0; y < winSize.height; y++ )
             {
-                const uchar* src = (const uchar*)I.data + (y + iprevPt.y)*step + iprevPt.x*cn;
-                const short* dsrc = (const short*)derivI.data + (y + iprevPt.y)*dstep + iprevPt.x*cn2;
-
-                short* Iptr = (short*)(IWinBuf.data + y*IWinBuf.step);
-                short* dIptr = (short*)(derivIWinBuf.data + y*derivIWinBuf.step);
+                const uchar* src = I.ptr<uchar>(y + iprevPt.y, 0) + iprevPt.x*cn;
+                const short* dsrc = derivI.ptr<short>(y + iprevPt.y, 0) + iprevPt.x*cn2;
+                short* Iptr  = IWinBuf.ptr<short>(y, 0);
+                short* dIptr = derivIWinBuf.ptr<short>(y, 0);
                 x = 0;
                 for( ; x < winSize.width*cn; x++, dsrc += 2, dIptr += 2 )
                 {
@@ -276,10 +275,10 @@ public:
                         buffIdx = 0;
                         for( y = 0; y < winSize.height; y++ )
                         {
-                            const uchar* Jptr = (const uchar*)J.data + (y + inextPt.y )*step + (inextPt.x )*cn;
-                            const short* Iptr = (const short*)(IWinBuf.data + (y)*IWinBuf.step);
-                            const short* dIptr = (const short*)(derivIWinBuf.data + (y)*derivIWinBuf.step);
-                            const tMaskType* maskPtr = (const tMaskType*)winMaskMat.data + y * mStep;
+                            const uchar* Jptr = J.ptr<uchar>(y + inextPt.y, inextPt.x*cn);
+                            const short* Iptr  = IWinBuf.ptr<short>(y, 0);
+                            const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
+                            const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
                             x = 0;
                             for( ; x < winSize.width*cn; x++, dIptr += 2)
                             {
@@ -310,11 +309,10 @@ public:
                     */
                     for( y = 0; y < _winSize.height; y++ )
                     {
-                        const tMaskType* maskPtr = (const tMaskType*)winMaskMat.data + y * mStep;
-                        const uchar* Jptr = (const uchar*)J.data + (y + inextPt.y)*step + (inextPt.x )*cn;
-                        const short* Iptr = (const short*)(IWinBuf.data +  y*IWinBuf.step);
-                        const short* dIptr = (const short*)(derivIWinBuf.data + y*derivIWinBuf.step);
-
+                        const uchar* Jptr = J.ptr<uchar>(y + inextPt.y, inextPt.x*cn);
+                        const short* Iptr  = IWinBuf.ptr<short>(y, 0);
+                        const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
+                        const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
                         x = 0;
                         for( ; x < _winSize.width*cn; x++, dIptr += 2 )
                         {
@@ -668,7 +666,7 @@ public:
             if( calcWinMaskMat(BI,  windowType, iprevPt,
                                 winMaskMat,winSize,halfWin,winArea,
                                 minWinSize,maxWinSize) == false)
-                continue;
+            continue;
 
             prevPt -= halfWin;
             iprevPt.x = cvFloor(prevPt.x);
@@ -698,7 +696,6 @@ public:
 
             int dstep = (int)(derivI.step/derivI.elemSize1());
             int step = (int)(I.step/I.elemSize1());
-            int mStep = (int)(winMaskMat.step/winMaskMat.elemSize1());
             CV_Assert( step == (int)(J.step/J.elemSize1()) );
 
             float A11 = 0, A12 = 0, A22 = 0;
@@ -729,14 +726,12 @@ public:
             for( y = 0; y < winSize.height; y++ )
             {
                 x = 0;
-
-                const uchar* src = (const uchar*)I.data + (y + iprevPt.y)*step + iprevPt.x*cn;
-                const short* dsrc = (const short*)derivI.data + (y + iprevPt.y)*dstep + iprevPt.x*cn2;
-
-                short* Iptr = (short*)(IWinBuf.data + y*IWinBuf.step);
-                short* dIptr = (short*)(derivIWinBuf.data + y*derivIWinBuf.step);
+                const uchar* src = I.ptr<uchar>(y + iprevPt.y, 0) + iprevPt.x*cn;
+                const short* dsrc = derivI.ptr<short>(y + iprevPt.y, 0) + iprevPt.x*cn2;
+                short* Iptr  = IWinBuf.ptr<short>(y, 0);
+                short* dIptr = derivIWinBuf.ptr<short>(y, 0);
 #ifdef RLOF_SSE
-                const tMaskType* maskPtr = (const tMaskType*)winMaskMat.data + y * mStep;
+                const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
                 for( ; x <= winBufSize.width*cn - 4; x += 4, dsrc += 4*2, dIptr += 4*2 )
                 {
                     __m128i mask_0_7_epi16 = _mm_mullo_epi16(_mm_cvtepi8_epi16(_mm_loadl_epi64((const __m128i*)(maskPtr+x))), mmMaskSet_epi16);
@@ -885,10 +880,10 @@ public:
                     buffIdx = 0;
                     for( y = 0; y < winSize.height; y++ )
                     {
-                        const uchar* Jptr = (const uchar*)J.data + (y + inextPt.y )*step + (inextPt.x )*cn;
-                        const short* Iptr = (const short*)(IWinBuf.data + (y)*IWinBuf.step);
-                        const short* dIptr = (const short*)(derivIWinBuf.data + (y)*derivIWinBuf.step);
-                        const tMaskType* maskPtr = (const tMaskType*)winMaskMat.data + y * mStep;
+                        const uchar* Jptr = J.ptr<uchar>(y + inextPt.y, inextPt.x*cn);
+                        const short* Iptr  = IWinBuf.ptr<short>(y, 0);
+                        const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
+                        const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
                         x = 0;
                         for( ; x < winSize.width*cn; x++, dIptr += 2)
                         {
@@ -950,11 +945,10 @@ public:
                 */
                 for( y = 0; y < _winSize.height; y++ )
                 {
-                    const tMaskType* maskPtr = (const tMaskType*)winMaskMat.data + y * mStep;
-                    const uchar* Jptr = (const uchar*)J.data + (y + inextPt.y)*step + (inextPt.x )*cn;
-                    const short* Iptr = (const short*)(IWinBuf.data +  y*IWinBuf.step);
-                    const short* dIptr = (const short*)(derivIWinBuf.data + y*derivIWinBuf.step);
-
+                    const uchar* Jptr = J.ptr<uchar>(y + inextPt.y, inextPt.x*cn);
+                    const short* Iptr  = IWinBuf.ptr<short>(y, 0);
+                    const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
+                    const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
                     x = 0;
 #ifdef RLOF_SSE
                     for( ; x <= _winSize.width*cn; x += 8, dIptr += 8*2 )
@@ -1623,8 +1617,8 @@ public:
             cv::Mat winMaskMat(winMaskMatBuf, cv::Rect(0,0, maxWinSize,maxWinSize));
 
             if( calcWinMaskMat(BI, windowType, iprevPt,
-                        winMaskMat,winSize,halfWin,winArea,
-                        minWinSize,maxWinSize) == false)
+                    winMaskMat,winSize,halfWin,winArea,
+                    minWinSize,maxWinSize) == false)
                 continue;
 
             prevPt -= halfWin;
@@ -1655,7 +1649,6 @@ public:
 
             int dstep = (int)(derivI.step/derivI.elemSize1());
             int step = (int)(I.step/I.elemSize1());
-            int mStep = (int)(winMaskMat.step/winMaskMat.elemSize1());
             CV_Assert( step == (int)(J.step/J.elemSize1()) );
             float A11 = 0, A12 = 0, A22 = 0;
 
@@ -1674,15 +1667,12 @@ public:
             int x, y;
             for( y = 0; y < winSize.height; y++ )
             {
-                const tMaskType* maskPtr = (const tMaskType*)winMaskMat.data + y * mStep;
-                const uchar* src = (const uchar*)I.data + (y + iprevPt.y)*step + iprevPt.x*cn;
-                const short* dsrc = (const short*)derivI.data + (y + iprevPt.y)*dstep + iprevPt.x*cn2;
-
-                short* Iptr = (short*)(IWinBuf.data + y*IWinBuf.step);
-                short* dIptr = (short*)(derivIWinBuf.data + y*derivIWinBuf.step);
-
+                const uchar* src = I.ptr<uchar>(y + iprevPt.y, 0) + iprevPt.x*cn;
+                const short* dsrc = derivI.ptr<short>(y + iprevPt.y, 0) + iprevPt.x*cn2;
+                short* Iptr  = IWinBuf.ptr<short>(y, 0);
+                short* dIptr = derivIWinBuf.ptr<short>(y, 0);
+                const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
                 x = 0;
-
 #ifdef RLOF_SSE
                 for( ; x < winSize.width*cn; x += 4, dsrc += 4*2, dIptr += 4*2 )
                 {
@@ -1845,12 +1835,13 @@ public:
 #endif
                 for( y = 0; y < winSize.height; y++ )
                 {
-                    const uchar* Jptr = (const uchar*)J.data + (y + inextPt.y)*step + (inextPt.x )*cn;
-                    const short* Iptr = (const short*)(IWinBuf.data + ( y)*IWinBuf.step);
-                    const short* dIptr = (const short*)(derivIWinBuf.data + (y)*derivIWinBuf.step);
+                    const uchar* Jptr = J.ptr<uchar>(y + inextPt.y, inextPt.x*cn);
+                    const short* Iptr  = IWinBuf.ptr<short>(y, 0);
+                    const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
                     x = 0;
 #ifdef RLOF_SSE
-                    const tMaskType* maskPtr = (const tMaskType*)winMaskMat.data + y * mStep;
+
+                    const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
                     for( ; x <= winSize.width*cn; x += 8, dIptr += 8*2 )
                     {
                         if( maskPtr[x  ] == 0 && maskPtr[x+1] == 0 && maskPtr[x+2] == 0 && maskPtr[x+3] == 0

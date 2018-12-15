@@ -147,7 +147,6 @@ public:
             int iw11 = (1 << W_BITS) - iw00 - iw01 - iw10;
             int dstep = (int)(derivI.step/derivI.elemSize1());
             int step = (int)(I.step/I.elemSize1());
-            int mStep = (int)(winMaskMat.step/winMaskMat.elemSize1());
             CV_Assert( step == (int)(J.step/J.elemSize1()) );
             float A11 = 0, A12 = 0, A22 = 0;
             // tensor
@@ -173,13 +172,11 @@ public:
             int x, y;
             for( y = 0; y < winSize.height; y++ )
             {
-                const tMaskType* maskPtr = (const tMaskType*)winMaskMat.data + y * mStep;
-                const uchar* src = (const uchar*)I.data + (y + iprevPt.y)*step + iprevPt.x*cn;
-                const short* dsrc = (const short*)derivI.data + (y + iprevPt.y)*dstep + iprevPt.x*cn2;
-
-                short* Iptr = (short*)(IWinBuf.data + y*IWinBuf.step);
-                short* dIptr = (short*)(derivIWinBuf.data + y*derivIWinBuf.step);
-
+                const uchar* src = I.ptr<uchar>(y + iprevPt.y, 0) + iprevPt.x*cn;
+                const short* dsrc = derivI.ptr<short>(y + iprevPt.y, 0) + iprevPt.x*cn2;
+                short* Iptr  = IWinBuf.ptr<short>(y, 0);
+                short* dIptr = derivIWinBuf.ptr<short>(y, 0);
+                const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
                 x = 0;
 #ifdef RLOF_SSE
                for( ; x <= winBufSize.width*cn - 4; x += 4, dsrc += 4*2, dIptr += 4*2 )
@@ -310,11 +307,10 @@ public:
 #endif
                 for( y = 0; y < winSize.height; y++ )
                 {
-                    const tMaskType* maskPtr = (const tMaskType*)winMaskMat.data + y * mStep;
-                    const uchar* Jptr = (const uchar*)J.data + (y + inextPt.y)*step + (inextPt.x )*cn;
-                    const short* Iptr = (const short*)(IWinBuf.data + ( y)*IWinBuf.step);
-                    const short* dIptr = (const short*)(derivIWinBuf.data + (y)*derivIWinBuf.step);
-
+                    const uchar* Jptr = J.ptr<uchar>(y + inextPt.y, inextPt.x*cn);
+                    const short* Iptr  = IWinBuf.ptr<short>(y, 0);
+                    const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
+                    const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
                     x = 0;
 #ifdef RLOF_SSE
 
@@ -797,7 +793,6 @@ public:
 
             int dstep = (int)(derivI.step/derivI.elemSize1());
             int step = (int)(I.step/I.elemSize1());
-            int mStep = (int)(winMaskMat.step/winMaskMat.elemSize1());
             CV_Assert( step == (int)(J.step/J.elemSize1()) );
             float A11 = 0, A12 = 0, A22 = 0;
 
@@ -816,15 +811,12 @@ public:
             int x, y;
             for( y = 0; y < winSize.height; y++ )
             {
-                const tMaskType* maskPtr = (const tMaskType*)winMaskMat.data + y * mStep;
-                const uchar* src = (const uchar*)I.data + (y + iprevPt.y)*step + iprevPt.x*cn;
-                const short* dsrc = (const short*)derivI.data + (y + iprevPt.y)*dstep + iprevPt.x*cn2;
-
-                short* Iptr = (short*)(IWinBuf.data + y*IWinBuf.step);
-                short* dIptr = (short*)(derivIWinBuf.data + y*derivIWinBuf.step);
-
+                const uchar* src = I.ptr<uchar>(y + iprevPt.y, 0) + iprevPt.x*cn;
+                const short* dsrc = derivI.ptr<short>(y + iprevPt.y, 0) + iprevPt.x*cn2;
+                short* Iptr  = IWinBuf.ptr<short>(y, 0);
+                short* dIptr = derivIWinBuf.ptr<short>(y, 0);
+                const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
                 x = 0;
-
 #ifdef RLOF_SSE
                 for( ; x <= winSize.width*cn; x += 4, dsrc += 4*2, dIptr += 4*2 )
                 {
@@ -974,13 +966,13 @@ public:
 #endif
                 for( y = 0; y < winSize.height; y++ )
                 {
-                    const uchar* Jptr = (const uchar*)J.data + (y + inextPt.y)*step + (inextPt.x )*cn;
-                    const short* Iptr = (const short*)(IWinBuf.data + ( y)*IWinBuf.step);
-                    const short* dIptr = (const short*)(derivIWinBuf.data + (y)*derivIWinBuf.step);
+                    const uchar* Jptr = J.ptr<uchar>(y + inextPt.y, inextPt.x*cn);
+                    const short* Iptr  = IWinBuf.ptr<short>(y, 0);
+                    const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
 
                     x = 0;
 #ifdef RLOF_SSE
-                    const tMaskType* maskPtr = (const tMaskType*)winMaskMat.data + y * mStep;
+                    const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
                     for( ; x <= winSize.width*cn; x += 8, dIptr += 8*2 )
                     {
                         if( maskPtr[x  ] == 0 && maskPtr[x+1] == 0 && maskPtr[x+2] == 0 && maskPtr[x+3] == 0

@@ -606,7 +606,7 @@ void preprocess(Ptr<CImageBuffer> prevPyramids[2],
 
     // Initialize point grid
     int stepr = prevPyramids[0]->m_Image.rows / 30;
-    int stepc = prevPyramids[0]->m_Image.rows / 40;
+    int stepc = prevPyramids[0]->m_Image.cols / 40;
     for (int r = stepr / 2; r < prevPyramids[0]->m_Image.rows; r += stepr)
     {
         for (int c = stepc / 2; c < prevPyramids[0]->m_Image.cols; c += stepc)
