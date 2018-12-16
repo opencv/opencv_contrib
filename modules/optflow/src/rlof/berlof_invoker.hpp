@@ -1663,9 +1663,9 @@ public:
             for( y = 0; y < winSize.height; y++ )
             {
                 const uchar* src = I.ptr<uchar>(y + iprevPt.y, 0) + iprevPt.x*cn;
-                const uchar* src1 = I.ptr<uchar>(y + iprevPt.y, 0) + iprevPt.x*cn;
+                const uchar* src1 = I.ptr<uchar>(y + iprevPt.y + 1, 0) + iprevPt.x*cn;
                 const short* dsrc = derivI.ptr<short>(y + iprevPt.y, 0) + iprevPt.x*cn2;
-                const short* dsrc1 = derivI.ptr<short>(y + iprevPt.y, 0) + iprevPt.x*cn2;
+                const short* dsrc1 = derivI.ptr<short>(y + iprevPt.y + 1, 0) + iprevPt.x*cn2;
                 short* Iptr  = IWinBuf.ptr<short>(y, 0);
                 short* dIptr = derivIWinBuf.ptr<short>(y, 0);
                 const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
@@ -1833,7 +1833,7 @@ public:
                 for( y = 0; y < winSize.height; y++ )
                 {
                     const uchar* Jptr = J.ptr<uchar>(y + inextPt.y, inextPt.x*cn);
-                    const uchar* Jptr1 = J.ptr<uchar>(y + inextPt.y, inextPt.x*cn);
+                    const uchar* Jptr1 = J.ptr<uchar>(y + inextPt.y + 1, inextPt.x*cn);
                     const short* Iptr  = IWinBuf.ptr<short>(y, 0);
                     const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
                     x = 0;

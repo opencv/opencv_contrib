@@ -198,7 +198,7 @@ TEST(SparseOpticalFlow, ReferenceAccuracy)
     param->solverType = ST_BILINEAR;
     algo->setRLOFOpticalFlowParameter(param);
     algo->calc(frame1, frame2, prevPts, currPts, status, err);
-    EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.25f);
+    EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.27f);
 
     param->solverType = ST_STANDART;
     algo->setRLOFOpticalFlowParameter(param);
@@ -209,12 +209,12 @@ TEST(SparseOpticalFlow, ReferenceAccuracy)
     param->solverType = ST_BILINEAR;
     algo->setRLOFOpticalFlowParameter(param);
     algo->calc(frame1, frame2, prevPts, currPts, status, err);
-    EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.25f);
+    EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.27f);
 
     param->solverType = ST_STANDART;
     algo->setRLOFOpticalFlowParameter(param);
     algo->calc(frame1, frame2, prevPts, currPts, status, err);
-    EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.25f);
+    EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.27f);
 
     param->normSigma0 = numeric_limits<float>::max();
     param->normSigma1 = numeric_limits<float>::max();
@@ -235,7 +235,7 @@ TEST(SparseOpticalFlow, ReferenceAccuracy)
     param->solverType = ST_BILINEAR;
     algo->setRLOFOpticalFlowParameter(param);
     algo->calc(frame1, frame2, prevPts, currPts, status, err);
-    EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.25f);
+    EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.80f);
 
     param->solverType = ST_STANDART;
     algo->setRLOFOpticalFlowParameter(param);
@@ -260,14 +260,14 @@ TEST(DenseOpticalFlow_RLOF, ReferenceAccuracy)
 
     ASSERT_EQ(GT.rows, flow.rows);
     ASSERT_EQ(GT.cols, flow.cols);
-    EXPECT_LE(calcRMSE(GT, flow), 0.37f);
+    EXPECT_LE(calcRMSE(GT, flow), 0.44f);
 
     algo->setInterpolation(INTERP_GEO);
     algo->calc(frame1, frame2, flow);
 
     ASSERT_EQ(GT.rows, flow.rows);
     ASSERT_EQ(GT.cols, flow.cols);
-    EXPECT_LE(calcRMSE(GT, flow), 0.49f);
+    EXPECT_LE(calcRMSE(GT, flow), 0.53f);
 
 }
 
