@@ -245,25 +245,19 @@ void preCalcCrossSegmentation(
 }
 
 
-int buildOpticalFlowPyramidScale(InputArray _img, OutputArrayOfArrays pyramid, Size winSize, int maxLevel, bool withDerivatives,
-    int pyrBorder, int derivBorder, bool tryReuseInputImage, float levelScale[2]);
-void calcLocalOpticalFlowCore(Ptr<CImageBuffer>  prevPyramids[2], Ptr<CImageBuffer> currPyramids[2], InputArray _prevPts,
-    InputOutputArray _nextPts, const RLOFOpticalFlowParameter & param);
-
-void preprocess(Ptr<CImageBuffer> prevPyramids[2], Ptr<CImageBuffer> currPyramids[2], const std::vector<cv::Point2f> & prevPoints,
-    std::vector<cv::Point2f> & currPoints,  const RLOFOpticalFlowParameter & param);
-
-inline bool isrobust(const RLOFOpticalFlowParameter & param)
+static inline
+bool isrobust(const RLOFOpticalFlowParameter & param)
 {
     return (param.normSigma0 < 255 && param.normSigma1 < 255);
 }
-inline std::vector<float> get_norm(float sigma0, float sigma1)
+static inline
+std::vector<float> get_norm(float sigma0, float sigma1)
 {
     std::vector<float> result = { sigma0, sigma1, sigma0 / (sigma0 - sigma1), sigma0 * sigma1 };
     return result;
 }
 
-
+static
 int buildOpticalFlowPyramidScale(InputArray _img, OutputArrayOfArrays pyramid, Size winSize, int maxLevel, bool withDerivatives,
     int pyrBorder, int derivBorder, bool tryReuseInputImage, float levelScale[2])
 {
@@ -368,6 +362,7 @@ int CImageBuffer::buildPyramid(cv::Size winSize, int maxLevel, float levelScale[
     return m_maxLevel;
 }
 
+static
 void calcLocalOpticalFlowCore(
     Ptr<CImageBuffer>  prevPyramids[2],
     Ptr<CImageBuffer> currPyramids[2],
@@ -581,6 +576,7 @@ void calcLocalOpticalFlowCore(
     }
 }
 
+static
 void preprocess(Ptr<CImageBuffer> prevPyramids[2],
     Ptr<CImageBuffer> currPyramids[2],
     const std::vector<cv::Point2f> & prevPoints,
