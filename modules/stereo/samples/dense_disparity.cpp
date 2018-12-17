@@ -1,7 +1,7 @@
 #include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <fstream>
-#include <opencv2/qds.hpp>
+#include <opencv2/stereo.hpp>
 
 
 
@@ -20,7 +20,7 @@ int main()
     rightImg = imread("./imgRight.png", IMREAD_COLOR);
     cv::Size frameSize = leftImg.size();
     // Initialize qds and start process.
-    Ptr<qds::QuasiDenseStereo> stereo = qds::QuasiDenseStereo::create(frameSize);
+    Ptr<stereo::QuasiDenseStereo> stereo = stereo::QuasiDenseStereo::create(frameSize);
 
     uint8_t displvl = 80;					// Number of disparity levels
     cv::Mat disp;
@@ -31,7 +31,7 @@ int main()
     // Compute disparity between left and right channel of current frame.
     disp = stereo->getDisparity(displvl);
 
-    vector<qds::Match> matches;
+    vector<stereo::Match> matches;
     stereo->getDenseMatches(matches);
 
     // Create three windows and show images.

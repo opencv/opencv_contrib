@@ -18,7 +18,7 @@ This is very useful for fine-tuning the class' parameters on the fly. To extract
 parameter file you run the following code.
 ```
 std::string parameterFileLocation = "./parameters.yaml";
-Ptr<qds::QuasiDenseStereo> stereo =  qds::QuasiDenseStereo::create(cv::Size(5,5));
+Ptr<stereo::QuasiDenseStereo> stereo =  stereo::QuasiDenseStereo::create(cv::Size(5,5));
 stereo->saveParameters(parameterFileLocation);
 ```
 We make an instance of a `QuasiDenseStereo` object. Not specifying the second argument of the constructor,

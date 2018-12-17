@@ -26,7 +26,7 @@ rightImg = imread("./imgRight.png", IMREAD_COLOR);
 We need to know the frame size of a single image, in order to create an instance of a `QuasiDesnseStereo` object.
 ```
 cv::Size frameSize = leftImg.size();
-Ptr<qds::QuasiDenseStereo> stereo = qds::QuasiDenseStereo::create(frameSize);
+Ptr<stereo::QuasiDenseStereo> stereo = stereo::QuasiDenseStereo::create(frameSize);
 ```
 Because we didn't specify the second argument in the constructor, the `QuasiDesnseStereo` object will
 load default parameters.
@@ -50,6 +50,6 @@ cv::imshow("disparity map", disp);
 
 At this point we can also extract all the corresponding points using `getDenseMatches()` method.
 ```
-vector<qds::Match> matches;
+vector<stereo::Match> matches;
 stereo->getDenseMatches(matches);
 ```

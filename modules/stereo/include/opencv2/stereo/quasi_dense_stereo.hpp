@@ -51,9 +51,9 @@ the use of this software, even if advised of the possibility of such damage.
 
 namespace cv
 {
-namespace qds
+namespace stereo
 {
-/** \addtogroup qds
+/** \addtogroup stereo
  *  @{
  */
 
@@ -104,6 +104,27 @@ typedef std::priority_queue<Match, std::vector<Match>, std::less<Match> > t_matc
 /**
  * @brief Class containing the methods needed for Quasi Dense Stereo computation.
  *
+ * This module contains the code to perform quasi dense stereo matching.
+ * The method initially starts with a sparse 3D reconstruction based on feature matching across a
+ * stereo image pair and subsequently propagates the structure into neighboring image regions.
+ * To obtain initial seed correspondences, the algorithm locates Shi and Tomashi features in the
+ * left image of the stereo pair and then tracks them using pyramidal Lucas-Kanade in the right image.
+ * To densify the sparse correspondences, the algorithm computes the zero-mean normalized
+ * cross-correlation (ZNCC) in small patches around every seed pair and uses it as a quality metric
+ * for each match. In this code, we introduce a custom structure to store the location and ZNCC value
+ * of correspondences called "Match". Seed Matches are stored in a priority queue sorted according to
+ * their ZNCC value, allowing for the best quality Match to be readily available. The algorithm pops
+ * Matches and uses them to extract new matches around them. This is done by considering a small
+ * neighboring area around each Seed and retrieving correspondences above a certain texture threshold
+ * that are not previously computed. New matches are stored in the seed priority queue and used as seeds.
+ * The propagation process ends when no additional matches can be retrieved.
+ *
+ *
+ * @sa This code represents the work presented in @cite Stoyanov2010.
+ * If this code is useful for your work please cite @cite Stoyanov2010.
+ *
+ * Also the original growing scheme idea is described in @cite Lhuillier2000
+ *
  */
 
 class CV_EXPORTS_W QuasiDenseStereo
@@ -119,8 +140,7 @@ public:
     /**
      * @brief Load a file containing the configuration parameters of the class.
      * @param[in] filepath The location of the .YAML file containing the configuration parameters.
-     * @note default value is an empty string in which case the default
-     * parameters, specified in the qds/defaults.h header-file, are loaded.
+     * @note default value is an empty string in which case the default parameters will be loaded.
      * @retval 1: If the path is not empty and the program loaded the parameters successfully.
      * @retval 0: If the path is empty and the program loaded default parameters.
      * @retval -1: If the file location is not valid or the program could not open the file and
@@ -130,7 +150,7 @@ public:
      * in case of video processing.
      * @sa loadParameters
      */
-    CV_WRAP virtual int loadParameters(cv::String filepath="") = 0;
+    CV_EXPORTS virtual int loadParameters(cv::String filepath="") = 0;
 
 
     /**
@@ -141,7 +161,7 @@ public:
      * @note This method can be used to generate a template file for tuning the class.
      * @sa loadParameters
      */
-    CV_WRAP virtual int saveParameters(cv::String filepath="./qds_parameters.yaml") = 0;
+    CV_EXPORTS virtual int saveParameters(cv::String filepath="./qds_parameters.yaml") = 0;
 
 
     /**
@@ -150,7 +170,7 @@ public:
      * @note The method clears the sMatches vector.
      * @note The returned Match elements inside the sMatches vector, do not use corr member.
      */
-     CV_WRAP virtual void getSparseMatches(std::vector<qds::Match> &sMatches) = 0;
+     CV_EXPORTS virtual void getSparseMatches(std::vector<stereo::Match> &sMatches) = 0;
 
 
     /**
@@ -159,7 +179,7 @@ public:
      * @note The method clears the dMatches vector.
      * @note The returned Match elements inside the sMatches vector, do not use corr member.
      */
-    CV_WRAP virtual void getDenseMatches(std::vector<qds::Match> &dMatches) = 0;
+    CV_EXPORTS virtual void getDenseMatches(std::vector<stereo::Match> &dMatches) = 0;
 
 
 
@@ -175,7 +195,7 @@ public:
      * @sa sparseMatching
      * @sa quasiDenseMatching
      */
-    CV_WRAP virtual void process(const cv::Mat &imgLeft ,const cv::Mat &imgRight) = 0;
+    CV_EXPORTS virtual void process(const cv::Mat &imgLeft ,const cv::Mat &imgRight) = 0;
 
 
     /**
@@ -186,7 +206,7 @@ public:
      * @retval cv::Point(0, 0) (NO_MATCH)  if no match is found in the right image for the specified pixel location in the left image.
      * @note This method should be always called after process, otherwise the matches will not be correct.
      */
-    CV_WRAP virtual cv::Point2f getMatch(const int x, const int y) = 0;
+    CV_EXPORTS virtual cv::Point2f getMatch(const int x, const int y) = 0;
 
 
     /**
@@ -197,17 +217,17 @@ public:
      * @sa computeDisparity
      * @sa quantizeDisparity
      */
-    CV_WRAP virtual cv::Mat getDisparity(uint8_t disparityLvls=50) = 0;
+    CV_EXPORTS virtual cv::Mat getDisparity(uint8_t disparityLvls=50) = 0;
 
 
-    CV_WRAP static cv::Ptr<QuasiDenseStereo> create(cv::Size monoImgSize, cv::String paramFilepath ="");
+    CV_EXPORTS static cv::Ptr<QuasiDenseStereo> create(cv::Size monoImgSize, cv::String paramFilepath ="");
 
 
     CV_PROP_RW PropagationParameters Param;
 };
 
 } //namespace cv
-} //namespace qds
+} //namespace stereo
 
 /** @}*/
 
