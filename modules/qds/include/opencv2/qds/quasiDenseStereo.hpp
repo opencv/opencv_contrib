@@ -108,26 +108,12 @@ typedef std::priority_queue<Match, std::vector<Match>, std::less<Match> > t_matc
 
 class CV_EXPORTS_W QuasiDenseStereo
 {
-
-
 public:
-    /**
-     * @brief constructor
-     * @param monoImgSize The size of the input images.
-     * @note Left and right images must be of the same size.
-     * @param paramFilepath Specifies the location of the file containing the values of all the
-     * parameters used in this class.
-     * @note Default value is an an empty string "". In this case the class default parameters,
-     * found in the defaults.hpp file, are loaded.
-     */
-    QuasiDenseStereo(cv::Size monoImgSize, cv::String paramFilepath ="");
-
-
     /**
      * @brief destructor
      * Method to free all the memory allocated by matrices and vectors in this class.
      */
-    virtual ~QuasiDenseStereo();
+    virtual ~QuasiDenseStereo() = 0;
 
 
     /**
@@ -144,7 +130,7 @@ public:
      * in case of video processing.
      * @sa loadParameters
      */
-    CV_WRAP int loadParameters(cv::String filepath="");
+    CV_WRAP virtual int loadParameters(cv::String filepath="") = 0;
 
 
     /**
@@ -155,7 +141,7 @@ public:
      * @note This method can be used to generate a template file for tuning the class.
      * @sa loadParameters
      */
-    CV_WRAP int saveParameters(cv::String filepath="./qds_parameters.yaml");
+    CV_WRAP virtual int saveParameters(cv::String filepath="./qds_parameters.yaml") = 0;
 
 
     /**
@@ -164,7 +150,7 @@ public:
      * @note The method clears the sMatches vector.
      * @note The returned Match elements inside the sMatches vector, do not use corr member.
      */
-     CV_WRAP void getSparseMatches(std::vector<qds::Match> &sMatches);
+     CV_WRAP virtual void getSparseMatches(std::vector<qds::Match> &sMatches) = 0;
 
 
     /**
@@ -173,7 +159,7 @@ public:
      * @note The method clears the dMatches vector.
      * @note The returned Match elements inside the sMatches vector, do not use corr member.
      */
-    CV_WRAP void getDenseMatches(std::vector<qds::Match> &dMatches);
+    CV_WRAP virtual void getDenseMatches(std::vector<qds::Match> &dMatches) = 0;
 
 
 
@@ -189,7 +175,7 @@ public:
      * @sa sparseMatching
      * @sa quasiDenseMatching
      */
-    CV_WRAP void process(const cv::Mat &imgLeft ,const cv::Mat &imgRight);
+    CV_WRAP virtual void process(const cv::Mat &imgLeft ,const cv::Mat &imgRight) = 0;
 
 
     /**
@@ -200,7 +186,7 @@ public:
      * @retval cv::Point(0, 0) (NO_MATCH)  if no match is found in the right image for the specified pixel location in the left image.
      * @note This method should be always called after process, otherwise the matches will not be correct.
      */
-    CV_WRAP cv::Point2f getMatch(const int x, const int y);
+    CV_WRAP virtual cv::Point2f getMatch(const int x, const int y) = 0;
 
 
     /**
@@ -211,194 +197,13 @@ public:
      * @sa computeDisparity
      * @sa quantizeDisparity
      */
-    CV_WRAP cv::Mat getDisparity(uint8_t disparityLvls=50);
+    CV_WRAP virtual cv::Mat getDisparity(uint8_t disparityLvls=50) = 0;
 
 
-
-    CV_PROP_RW PropagationParameters	Param;
-
-protected:
-    /**
-     * @brief Computes sparse stereo. The output is stores in refMap and mthMap.
-     *
-     * This method used the "goodFeaturesToTrack" function of OpenCV to extracts salient points
-     * in the left image. Feature locations are used as inputs in the "calcOpticalFlowPyrLK"
-     * function of OpenCV along with the left and right images. The optical flow algorithm estimates
-     * tracks the locations of the features in the right image. The two set of locations constitute
-     * the sparse set of matches. These are then used as seeds in the intensification stage of the algorithm.
-     * @param[in] imgLeft The left Channel of a stereo image.
-     * @param[in] imgRight The right Channel of a stereo image.
-     * @param[out] featuresLeft (vector of points) The location of the features in the left image.
-     * @param[out] featuresRight (vector of points) The location of the features in the right image.
-     * @note featuresLeft and featuresRight must have the same length and corresponding features
-     * must be indexed the same way in both vectors.
-     */
-    virtual void sparseMatching(const cv::Mat &imgLeft ,const cv::Mat &imgRight,
-                                        std::vector< cv::Point2f > &featuresLeft,
-                                        std::vector< cv::Point2f > &featuresRight);
+    CV_WRAP static cv::Ptr<QuasiDenseStereo> create(cv::Size monoImgSize, cv::String paramFilepath ="");
 
 
-    /**
-     * @brief Based on the seeds computed in sparse stereo, this method calculates the semi dense set of correspondences.
-     *
-     * The method initially discards low quality matches based on their zero-normalized cross correlation (zncc) value.
-     * This is done by calling the "extractSparseSeeds" method. Remaining high quality Matches are stored in a t_matchPriorityQueue
-     * sorted according to their zncc value. The priority queue allows for new matches to be added while keeping track
-     * of the best Match. The algorithm then process the queue iteratively.
-     * In every iteration a Match is popped from the queue. The algorithm then tries to find candidate
-     * matches by matching every point in a small patch around the left Match feature, with a point
-     * within a same sized patch around the corresponding right feature. For each candidate point match,
-     * the zncc is computed and if it surpasses a threshold, the candidate pair is stored in a temporary
-     * priority queue. After this process completed the candidate matches are popped from the Local
-     * priority queue and if a match is not registered in refMap, it means that is the best match for
-     * this point. The algorithm registers this point in refMap and also push it to the Seed queue.
-     * if a candidate match is already registered, it means that is not the best and the algorithm
-     * discards it.
-     *
-     * @note This method does not have input arguments, but uses the "leftFeatures" and "rightFeatures" vectors.
-     * Also there is no output since the method used refMap and mtcMap to store the results.
-     * @param[in] featuresLeft The location of the features in the left image.
-     * @param[in] featuresRight The location of the features in the right image.
-     */
-    void quasiDenseMatching(const std::vector< cv::Point2f > &featuresLeft,
-                                    const std::vector< cv::Point2f > &featuresRight);
-
-
-    /**
-     * @brief Compute the disparity map based on the Euclidean distance of corresponding points.
-     * @param[in] matchMap A matrix of points, the same size as the left channel. Each cell of this
-     * matrix stores the location of the corresponding point in the right image.
-     * @param[out] dispMat The disparity map.
-     * @sa quantizeDisparity
-     * @sa getDisparity
-     */
-    void computeDisparity(const cv::Mat_<cv::Point2i> &matchMap,
-                                    cv::Mat_<float> &dispMat);
-
-
-    /**
-     * @brief Disparity map normalization for display purposes. If needed specify the quantization level as input argument.
-     * @param[in] dispMat The disparity Map.
-     * @param[in] lvls The quantization level of the output disparity map.
-     * @return Disparity image.
-     * @note Stores the output in the disparityImage class variable.
-     * @sa computeDisparity
-     * @sa quantiseDisparity
-     */
-    cv::Mat quantiseDisparity(const cv::Mat_<float> &dispMat, const int lvls);
-
-
-    /**
-     * @brief Compute the Zero-mean Normalized Cross-correlation.
-     *
-     * Compare a patch in the left image, centered in point p0 with a patch in the right image, centered in point p1.
-     * Patches are defined by wy, wx and the patch size is (2*wx+1) by (2*wy+1).
-     * @param [in] p0 The central point of the patch in the left image.
-     * @param [in] p1 The central point of the patch in the right image.
-     * @param [in] wx The distance from the center of the patch to the border in the x direction.
-     * @param [in] wy The distance from the center of the patch to the border in the y direction.
-     * @return The value of the the zero-mean normalized cross correlation.
-     * @note Default value for wx, wy is 1. in this case the patch is 3x3.
-     */
-    float iZNCC_c1(const cv::Point2i p0, const cv::Point2i p1, const int wx=1, const int wy=1);
-
-
-    /**
-     * @brief Compute the sum of values and the sum of squared values of a patch with dimensions
-     * 2*xWindow+1 by 2*yWindow+1 and centered in point p, using the integral image and integral image of squared pixel values.
-     * @param[in] p The center of the patch we want to calculate the sum and sum of squared values.
-     * @param[in] s The integral image
-     * @param[in] ss The integral image of squared values.
-     * @param[out] sum The sum of pixels inside the patch.
-     * @param[out] ssum The sum of squared values inside the patch.
-     * @param [in] xWindow The distance from the central pixel of the patch to the border in x direction.
-     * @param [in] yWindow The distance from the central pixel of the patch to the border in y direction.
-     * @note Default value for xWindow, yWindow is 1. in this case the patch is 3x3.
-     * @note integral images are very useful to sum values of patches in constant time independent of their
-     * size. For more information refer to the cv::Integral function OpenCV page.
-     */
-    void patchSumSum2(const cv::Point2i p, const cv::Mat &sum, const cv::Mat &ssum,
-                               float &s, float &ss, const int xWindow=1, const int yWindow=1);
-
-
-    /**
-     * @brief Create a priority queue containing sparse Matches
-     *
-     * This method computes the zncc for each Match extracted in "sparseMatching". If the zncc is over
-     * the correlation threshold then the Match is inserted in the output priority queue.
-     * @param[in] featuresLeft The feature locations in the left image.
-     * @param[in] featuresRight The features locations in the right image.
-     * @param[out] leftMap A matrix of points, of the same size as the left image. Each cell of this
-     * matrix stores the location of the corresponding point in the right image.
-     * @param[out] rightMap A matrix of points, the same size as the right image. Each cell of this
-     * matrix stores the location of the corresponding point in the left image.
-     * @return Priority queue containing sparse matches.
-     */
-    t_matchPriorityQueue extractSparseSeeds(const std::vector< cv::Point2f > &featuresLeft,
-                                                    const std::vector< cv::Point2f >  &featuresRight,
-                                                    cv::Mat_<cv::Point2i> &leftMap,
-                                                    cv::Mat_<cv::Point2i> &rightMap);
-
-
-    /**
-     * @brief Check if a match is close to the boarder of an image.
-     * @param[in] m The match containing points in both image.
-     * @param[in] bx The offset of the image edge that defines the border in x direction.
-     * @param[in] by The offset of the image edge that defines the border in y direction.
-     * @param[in] w The width of the image.
-     * @param[in] h The height of the image.
-     * @retval true If the feature is in the border of the image.
-     * @retval false If the feature is not in the border of image.
-     */
-    bool CheckBorder(Match m, int bx, int by, int w, int h);
-
-
-    /**
-     * @brief Compare two matches based on their zncc correlation values.
-     * @param[in] a First Match.
-     * @param[in] b Second Match.
-     * @retval true If b is equal or grater Match than a.
-     * @retval false If b is less Match than a.
-     */
-    bool MatchCompare(const Match a, const Match b);
-
-
-    /**
-     * @brief Build a texture descriptor
-     * @param[in] img The image we need to compute the descriptor for.
-     * @param[out] descriptor The texture descriptor of the image.
-     */
-    void buildTextureDescriptor(cv::Mat &img,cv::Mat &descriptor);
-
-
-    // Variables used at sparse feature extraction.
-    // Container for left images' features, extracted with GFT algorithm.
-    std::vector< cv::Point2f > leftFeatures;
-    // Container for right images' features, matching is done with LK flow algorithm.
-    std::vector< cv::Point2f > rightFeatures;
-
-    // Width and height of a single image.
-    int width;
-    int height;
-    int dMatchesLen;
-    // Containers to store input images.
-    cv::Mat grayLeft;
-    cv::Mat grayRight;
-    // Containers to store the locations of each points pair.
-    cv::Mat_<cv::Point2i> refMap;
-    cv::Mat_<cv::Point2i> mtcMap;
-    cv::Mat_<int32_t> sum0;
-    cv::Mat_<int32_t> sum1;
-    cv::Mat_<double> ssum0;
-    cv::Mat_<double> ssum1;
-    // Container to store the disparity un-normalized
-    cv::Mat_<float> disparity;
-    // Container to store the disparity image.
-    cv::Mat_<uchar> disparityImg;
-    // Containers to store textures descriptors.
-    cv::Mat_<int> textureDescLeft;
-    cv::Mat_<int> textureDescRight;
-
+    CV_PROP_RW PropagationParameters Param;
 };
 
 } //namespace cv
