@@ -20,19 +20,19 @@ int main()
     rightImg = imread("./imgRight.png", IMREAD_COLOR);
     cv::Size frameSize = leftImg.size();
     // Initialize qds and start process.
-    qds::QuasiDenseStereo stereo(frameSize);
+    Ptr<qds::QuasiDenseStereo> stereo = qds::QuasiDenseStereo::create(frameSize);
 
     uint8_t displvl = 80;					// Number of disparity levels
     cv::Mat disp;
 
     // Compute dense stereo.
-    stereo.process(leftImg, rightImg);
+    stereo->process(leftImg, rightImg);
 
     // Compute disparity between left and right channel of current frame.
-    disp = stereo.getDisparity(displvl);
+    disp = stereo->getDisparity(displvl);
 
     vector<qds::Match> matches;
-    stereo.getDenseMatches(matches);
+    stereo->getDenseMatches(matches);
 
     // Create three windows and show images.
     cv::namedWindow("right channel");

@@ -26,14 +26,14 @@ rightImg = imread("./imgRight.png", IMREAD_COLOR);
 We need to know the frame size of a single image, in order to create an instance of a `QuasiDesnseStereo` object.
 ```
 cv::Size frameSize = leftImg.size();
-qds::QuasiDenseStereo stereo(frameSize);
+Ptr<qds::QuasiDenseStereo> stereo = qds::QuasiDenseStereo::create(frameSize);
 ```
 Because we didn't specify the second argument in the constructor, the `QuasiDesnseStereo` object will
-load default parameters from this [headerfile](../include/opencv2/qds/defaults.hpp).
+load default parameters.
 
 We can then pass the imported stereo images in the process method like this
 ```
-stereo.process(leftChannel, rightChannel);
+stereo->process(leftImg, rightImg);
 ```
 The process method contains most of the functionality of the class and does two main things.
 -   Computes a sparse stereo based in "Good Features to Track" and "pyramidal Lucas-Kanade" flow algorithm
@@ -43,7 +43,7 @@ After the execution of `process()` we can display the disparity Image of the ste
 ```
 int displvl = 80;
 Mat disp;
-disp = stereo.getDisparity(displvl);
+disp = stereo->getDisparity(displvl);
 cv::namedWindow("disparity map");
 cv::imshow("disparity map", disp);
 ```
@@ -51,5 +51,5 @@ cv::imshow("disparity map", disp);
 At this point we can also extract all the corresponding points using `getDenseMatches()` method.
 ```
 vector<qds::Match> matches;
-stereo.getDenseMatches(matches);
+stereo->getDenseMatches(matches);
 ```

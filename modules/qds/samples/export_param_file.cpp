@@ -6,11 +6,13 @@ using namespace std;
 
 int main(int argc, char* argv[])
 {
-    std::string parameterFileLocation = "";
+    std::string parameterFileLocation = "./parameters.yaml";
     if (argc > 1)
-    parameterFileLocation = argv[1];
+        parameterFileLocation = argv[1];
 
-    qds::QuasiDenseStereo(cv::Size(5,5)).saveParameters(parameterFileLocation);
+
+    Ptr<qds::QuasiDenseStereo> stereo =  qds::QuasiDenseStereo::create(cv::Size(5,5));
+    stereo->saveParameters(parameterFileLocation);
 
     return 0;
 }
