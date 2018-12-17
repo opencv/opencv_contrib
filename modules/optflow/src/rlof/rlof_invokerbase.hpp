@@ -58,20 +58,6 @@ typedef uchar tMaskType;
 #define tCVMaskType CV_8UC1
 #define MaskSet 0xffffffff
 
-static inline bool notSameColor(const cv::Point3_<uchar> & ref, int r, int c, const cv::Mat & img, int winSize, int threshold)
-{
-    if (r >= img.rows + winSize || c >= img.cols + winSize || r < -winSize || c < -winSize) return true;
-    int step = static_cast<int>(img.step1());
-    const cv::Point3_<uchar> * tval = img.ptr<cv::Point3_<uchar>>();
-    tval += c;
-    tval += r * step / 3;
-    int R = std::abs((int)ref.x - (int)tval->x);
-    int G = std::abs((int)ref.y - (int)tval->y);
-    int B = std::abs((int)ref.z - (int)tval->z);
-    int diff = MAX(R, MAX(G, B));
-    return diff > threshold;
-}
-
 static
 void getLocalPatch(
         const cv::Mat & src,

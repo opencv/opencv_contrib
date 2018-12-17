@@ -59,9 +59,6 @@ public:
 
     void operator()(const cv::Range& range) const CV_OVERRIDE
     {
-#ifdef DEBUG_INVOKER
-        printf("rlof::ica");fflush(stdout);
-#endif
         cv::Size    winSize;
         cv::Point2f halfWin;
 
@@ -110,14 +107,12 @@ public:
                 winMaskMat, winSize, halfWin, winArea,
                 minWinSize, maxWinSize) == false)
                 continue;
-
-
-            prevPt -= halfWin;
+            halfWin = Point2f(static_cast<float>(maxWinSize) ,static_cast<float>(maxWinSize) ) - halfWin;
+            prevPt += halfWin;
             iprevPt.x = cvFloor(prevPt.x);
             iprevPt.y = cvFloor(prevPt.y);
-
-            if (iprevPt.x + halfWin.x < 0 || iprevPt.x + halfWin.x >= derivI.cols ||
-                iprevPt.y + halfWin.y < 0 || iprevPt.y + halfWin.y >= derivI.rows)
+            if( iprevPt.x < 0 || iprevPt.x >= derivI.cols - winSize.width ||
+                iprevPt.y < 0 || iprevPt.y >= derivI.rows - winSize.height - 1)
             {
                 if (level == 0)
                 {
@@ -234,7 +229,7 @@ public:
             cv::Mat residualMat = cv::Mat::zeros(winSize.height * (winSize.width + 8) * cn, 1, CV_16SC1);
 
             cv::Point2f backUpNextPt = nextPt;
-            nextPt -= halfWin;
+            nextPt += halfWin;
             int j;
 #ifdef RLOF_SSE
             __m128i mmMask0, mmMask1, mmMask;
@@ -249,8 +244,8 @@ public:
                 inextPt.x = cvFloor(nextPt.x);
                 inextPt.y = cvFloor(nextPt.y);
 
-                if (inextPt.x < -winSize.width || inextPt.x >= J.cols ||
-                    inextPt.y < -winSize.height || inextPt.y >= J.rows)
+                if( inextPt.x < 0 || inextPt.x >= J.cols - winSize.width ||
+                    inextPt.y < 0 || inextPt.y >= J.rows - winSize.height - 1)
                 {
                     if (level == 0 && status)
                         status[ptidx] = 3;
@@ -584,7 +579,7 @@ public:
                 delta.y = (delta.y != delta.y) ? 0 : delta.y;
 
                 nextPt += delta * 0.7;
-                nextPts[ptidx] = nextPt + halfWin;
+                nextPts[ptidx] = nextPt - halfWin;
 
                 if (j > 0 && std::abs(delta.x - prevDelta.x) < 0.01  &&
                     std::abs(delta.y - prevDelta.y) < 0.01)
@@ -739,13 +734,12 @@ public:
                 winMaskMat, winSize, halfWin, winArea,
                 minWinSize, maxWinSize) == false)
                 continue;
-
-            prevPt -= halfWin;
+            halfWin = Point2f(static_cast<float>(maxWinSize) ,static_cast<float>(maxWinSize) ) - halfWin;
+            prevPt += halfWin;
             iprevPt.x = cvFloor(prevPt.x);
             iprevPt.y = cvFloor(prevPt.y);
-
-            if (iprevPt.x < -winSize.width || iprevPt.x >= derivI.cols ||
-                iprevPt.y < -winSize.height || iprevPt.y >= derivI.rows)
+            if( iprevPt.x < 0 || iprevPt.x >= derivI.cols - winSize.width ||
+                iprevPt.y < 0 || iprevPt.y >= derivI.rows - winSize.height - 1)
             {
                 if (level == 0)
                 {
@@ -870,7 +864,7 @@ public:
             cv::Mat residualMat = cv::Mat::zeros(winSize.height * (winSize.width + 8) * cn, 1, CV_16SC1);
 
             cv::Point2f backUpNextPt = nextPt;
-            nextPt -= halfWin;
+            nextPt += halfWin;
             Point2f prevDelta(0, 0);    //related to h(t-1)
             Point2f prevGain(0, 0);
             cv::Point2f gainVec = gainVecs[ptidx];
@@ -892,8 +886,8 @@ public:
                 inextPt.x = cvFloor(nextPt.x);
                 inextPt.y = cvFloor(nextPt.y);
 
-                if (inextPt.x < -winSize.width || inextPt.x >= J.cols ||
-                    inextPt.y < -winSize.height || inextPt.y >= J.rows)
+                if( inextPt.x < 0 || inextPt.x >= J.cols - winSize.width ||
+                    inextPt.y < 0 || inextPt.y >= J.rows - winSize.height - 1)
                 {
                     if (level == 0 && status)
                         status[ptidx] = 3;
@@ -1382,7 +1376,7 @@ public:
                     prevGain = deltaGain;
                 gainVec += deltaGain * 0.8;
                 nextPt += delta * 0.8;
-                nextPts[ptidx] = nextPt + halfWin;
+                nextPts[ptidx] = nextPt - halfWin;
                 gainVecs[ptidx] = gainVec;
 
                 if (

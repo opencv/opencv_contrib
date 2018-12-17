@@ -61,9 +61,6 @@ public:
 
     void operator()(const cv::Range& range) const CV_OVERRIDE
     {
-#ifdef DEBUG_INVOKER
-        printf("plk::radial");fflush(stdout);
-#endif
         cv::Size    winSize;
         cv::Point2f halfWin;
 
@@ -119,14 +116,14 @@ public:
                                 winMaskMat,winSize,halfWin,winArea,
                                 minWinSize,maxWinSize) == false)
                         continue;
-
-            prevPt -= halfWin;
+            halfWin = Point2f(static_cast<float>(maxWinSize) ,static_cast<float>(maxWinSize) ) - halfWin;
+            prevPt += halfWin;
             iprevPt.x = cvFloor(prevPt.x);
             iprevPt.y = cvFloor(prevPt.y);
 
 
-            if( iprevPt.x < -winSize.width || iprevPt.x >= derivI.cols ||
-                iprevPt.y < -winSize.height || iprevPt.y >= derivI.rows )
+            if( iprevPt.x < 0 || iprevPt.x >= derivI.cols - winSize.width ||
+                iprevPt.y < 0 || iprevPt.y >= derivI.rows - winSize.height - 1)
             {
                 if( level == 0 )
                 {
@@ -243,7 +240,7 @@ public:
             }
 
             cv::Point2f backUpNextPt = nextPt;
-            nextPt -= halfWin;
+            nextPt += halfWin;
             Point2f prevDelta(0,0);    //relates to h(t-1)
             Point2f prevGain(1,0);
             cv::Point2f gainVec = gainVecs[ptidx];
@@ -255,9 +252,8 @@ public:
                 inextPt.x = cvFloor(nextPt.x);
                 inextPt.y = cvFloor(nextPt.y);
 
-
-                if( inextPt.x + halfWin.x < 0 || inextPt.x + halfWin.x>= derivI.cols ||
-                    inextPt.y + halfWin.y < 0 || inextPt.y + halfWin.y >= derivI.rows )
+                if( inextPt.x < 0 || inextPt.x >= J.cols - winSize.width ||
+                    inextPt.y < 0 || inextPt.y >= J.rows - winSize.height - 1)
                 {
                     if( level == 0 && status )
                         status[ptidx] = 3;
@@ -606,7 +602,7 @@ public:
                 if( j == 0)
                     prevGain = deltaGain;
                 nextPt += delta;
-                nextPts[ptidx] = nextPt + halfWin;
+                nextPts[ptidx] = nextPt - halfWin;
                 gainVecs[ptidx]= gainVec;
                 if( delta.ddot(delta) <= criteria.epsilon)
                     break;
@@ -709,9 +705,6 @@ public:
 
     void operator()(const cv::Range& range) const CV_OVERRIDE
     {
-#ifdef DEBUG_INVOKER
-        printf("plk::ica");fflush(stdout);
-#endif
         cv::Size    winSize;
         cv::Point2f halfWin;
 
@@ -762,15 +755,13 @@ public:
                                 winMaskMat,winSize,halfWin,winArea,
                                 minWinSize,maxWinSize) == false)
                         continue;
-
-
-            prevPt -= halfWin;
+            halfWin = Point2f(static_cast<float>(maxWinSize), static_cast<float>(maxWinSize)) - halfWin;
+            prevPt += halfWin;
             iprevPt.x = cvFloor(prevPt.x);
             iprevPt.y = cvFloor(prevPt.y);
 
-
-            if( iprevPt.x < -winSize.width || iprevPt.x >= derivI.cols ||
-                iprevPt.y < -winSize.height || iprevPt.y >= derivI.rows )
+            if( iprevPt.x < 0 || iprevPt.x >= derivI.cols - winSize.width ||
+                iprevPt.y < 0 || iprevPt.y >= derivI.rows - winSize.height - 1)
             {
                 if( level == 0 )
                 {
@@ -927,7 +918,7 @@ public:
 
             D = 1.f/D;
 
-            nextPt -= halfWin;
+            nextPt += halfWin;
             Point2f prevDelta(0,0);    //relates to h(t-1)
 #ifdef RLOF_SSE
             __m128i mmMask0, mmMask1, mmMask;
@@ -939,9 +930,8 @@ public:
                 inextPt.x = cvFloor(nextPt.x);
                 inextPt.y = cvFloor(nextPt.y);
 
-
-                if( inextPt.x + halfWin.x < 0 || inextPt.x + halfWin.x>= derivI.cols ||
-                    inextPt.y + halfWin.y < 0 || inextPt.y + halfWin.y >= derivI.rows )
+                if( inextPt.x < 0 || inextPt.x >= J.cols - winSize.width ||
+                    inextPt.y < 0 || inextPt.y >= J.rows - winSize.height - 1)
                 {
                     if( level == 0 && status )
                         status[ptidx] = 3;
@@ -1054,7 +1044,7 @@ public:
 
 
                 nextPt += delta;
-                nextPts[ptidx] = nextPt + halfWin;
+                nextPts[ptidx] = nextPt - halfWin;
 
                 if( delta.ddot(delta) <= criteria.epsilon)
                     break;

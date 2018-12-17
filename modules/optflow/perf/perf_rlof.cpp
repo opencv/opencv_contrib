@@ -48,7 +48,7 @@ typedef TestBaseWithParam<INTERP_GRID_Dense_t> INTERP_GRID_Dense;
 PERF_TEST_P(INTERP_GRID_Dense, OpticalFlow_DenseRLOF,
     testing::Combine(
         testing::Values<std::string>("INTERP_EPIC", "INTERP_GEO"),
-        testing::Values<int>(4,10,50))
+        testing::Values<int>(4,10))
 )
 {
     Mat flow;

@@ -4,7 +4,7 @@
 #include "../precomp.hpp"
 
 #include "opencv2/calib3d.hpp"  // findHomography
-
+#include "opencv2/highgui.hpp"
 #include "rlof_localflow.h"
 #include "berlof_invoker.hpp"
 #include "rlof_invoker.hpp"
@@ -156,13 +156,13 @@ public:
             {
                 if( m_mask->at<uchar>(r,c) == 0)
                     continue;
-                const cv::Point3_<uchar> & ucval = m_data->at<cv::Point3_<uchar>>(r,c);
-                cv::Point3i val(static_cast<int>(ucval.x), static_cast<int>(ucval.y), static_cast<int>(ucval.z));
+        const Point3_<uchar> & ucval = m_data->at<Point3_<uchar>>(r,c);
+        Point3i val(static_cast<int>(ucval.x), static_cast<int>(ucval.y), static_cast<int>(ucval.z));
                 int x = c - hWinSize;
-                cv::Point dstPos = m_stride ? cv::Point(r,c) : cv::Point(c,r);
+        Point dstPos = m_stride ? Point(r,c) : Point(c,r);
                 for(int ix = 0; ix < m_winSize; ix++, x++)
                 {
-                    const cv::Point3_<uchar> & valref = m_data->at<cv::Point3_<uchar>>(r,x);
+            const Point3_<uchar> & valref = m_data->at<Point3_<uchar>>(r,x);
                     differenz[ix] = MAX(std::abs(static_cast<int>(valref.x) - val.x),
                                     MAX(std::abs(static_cast<int>(valref.y) - val.y),
                                     (std::abs(static_cast<int>(valref.z) - val.z))));
@@ -460,6 +460,9 @@ void calcLocalOpticalFlowCore(
             tRGBPrevPyr = preCrossMap;
         }
         // apply plk like tracker
+            prevImage.adjustROI(iWinSize, iWinSize, iWinSize, iWinSize);
+            currImage.adjustROI(iWinSize, iWinSize, iWinSize, iWinSize);
+            derivI.adjustROI(iWinSize, iWinSize, iWinSize, iWinSize);
         if (isrobust(param) == false)
         {
             if (param.useIlluminationModel)
