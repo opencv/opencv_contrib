@@ -519,7 +519,7 @@ public:
     //-------------------------------------------------------------------------
 
 
-    void getSparseMatches(std::vector<qds::Match> &sMatches)
+    void getSparseMatches(std::vector<qds::Match> &sMatches) override
     {
         Match tmpMatch;
         sMatches.clear();
@@ -531,7 +531,7 @@ public:
             sMatches.push_back(tmpMatch);
         }
     }
-    int loadParameters(cv::String filepath)
+    int loadParameters(cv::String filepath) override
     {
         cv::FileStorage fs;
         //if user specified a pathfile, try to use it.
@@ -592,7 +592,7 @@ public:
         return -1;
     }
 
-    int saveParameters(cv::String filepath)
+    int saveParameters(cv::String filepath) override
     {
         cv::FileStorage fs(filepath, cv::FileStorage::WRITE);
         if (fs.isOpened())
@@ -620,7 +620,7 @@ public:
         return -1;
     }
 
-    void getDenseMatches(std::vector<qds::Match> &dMatches)
+    void getDenseMatches(std::vector<qds::Match> &dMatches) override
     {
         Match tmpMatch;
         dMatches.clear();
@@ -640,7 +640,7 @@ public:
         }
     }
 
-    void process(const cv::Mat &imgLeft , const cv::Mat &imgRight)
+    void process(const cv::Mat &imgLeft , const cv::Mat &imgRight) override
     {
         if (imgLeft.channels()>1)
         {
@@ -657,13 +657,13 @@ public:
     }
 
 
-    cv::Point2f getMatch(const int x, const int y)
+    cv::Point2f getMatch(const int x, const int y) override
     {
         return refMap.at<cv::Point2i>(y, x);
     }
 
 
-    cv::Mat getDisparity(uint8_t disparityLvls)
+    cv::Mat getDisparity(uint8_t disparityLvls) override
     {
         computeDisparity(refMap, disparity);
         return quantiseDisparity(disparity, disparityLvls);
