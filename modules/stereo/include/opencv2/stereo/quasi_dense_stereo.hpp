@@ -61,9 +61,9 @@ namespace stereo
 // A basic match structure
 struct CV_EXPORTS_W_SIMPLE Match
 {
-    CV_PROP_RW cv::Point2i p0;
-    CV_PROP_RW cv::Point2i p1;
-    CV_PROP_RW float	corr;
+    cv::Point2i p0;
+    cv::Point2i p1;
+    float	corr;
 
     bool operator < (const Match & rhs) const//fixme  may be used uninitialized in this function
     {
@@ -72,29 +72,29 @@ struct CV_EXPORTS_W_SIMPLE Match
 };
 struct CV_EXPORTS_W_SIMPLE PropagationParameters
 {
-    CV_PROP_RW int	corrWinSizeX;			// similarity window
-    CV_PROP_RW int	corrWinSizeY;
+    int	corrWinSizeX;			// similarity window
+    int	corrWinSizeY;
 
-    CV_PROP_RW int borderX;					// border to ignore
-    CV_PROP_RW int borderY;
+    int borderX;					// border to ignore
+    int borderY;
 
     //matching
-    CV_PROP_RW float correlationThreshold;	// correlation threshold
-    CV_PROP_RW float textrureThreshold;		// texture threshold
+    float correlationThreshold;	// correlation threshold
+    float textrureThreshold;		// texture threshold
 
-    CV_PROP_RW int	  neighborhoodSize;		// neighborhood size
-    CV_PROP_RW int	  disparityGradient;	// disparity gradient threshold
+    int	  neighborhoodSize;		// neighborhood size
+    int	  disparityGradient;	// disparity gradient threshold
 
     // Parameters for LK flow algorithm
-    CV_PROP_RW int lkTemplateSize;
-    CV_PROP_RW int lkPyrLvl;
-    CV_PROP_RW int lkTermParam1;
-    CV_PROP_RW float lkTermParam2;
+    int lkTemplateSize;
+    int lkPyrLvl;
+    int lkTermParam1;
+    float lkTermParam2;
 
     // Parameters for GFT algorithm.
-    CV_PROP_RW float gftQualityThres;
-    CV_PROP_RW int gftMinSeperationDist;
-    CV_PROP_RW int gftMaxNumFeatures;
+    float gftQualityThres;
+    int gftMinSeperationDist;
+    int gftMaxNumFeatures;
 
 };
 
@@ -223,7 +223,7 @@ public:
     CV_EXPORTS static cv::Ptr<QuasiDenseStereo> create(cv::Size monoImgSize, cv::String paramFilepath ="");
 
 
-    CV_PROP_RW PropagationParameters Param;
+    PropagationParameters Param;
 };
 
 } //namespace cv
