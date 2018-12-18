@@ -1,4 +1,4 @@
-/*
+CV_EXPORTS/*
 By downloading, copying, installing or using the software you agree to this license.
 If you do not agree to this license, do not download, install,
 copy or use the software.
@@ -59,7 +59,7 @@ namespace stereo
 
 
 // A basic match structure
-struct CV_EXPORTS_W_SIMPLE Match
+struct CV_EXPORTS Match
 {
     cv::Point2i p0;
     cv::Point2i p1;
@@ -70,7 +70,7 @@ struct CV_EXPORTS_W_SIMPLE Match
         return this->corr < rhs.corr;
     }
 };
-struct CV_EXPORTS_W_SIMPLE PropagationParameters
+struct CV_EXPORTS PropagationParameters
 {
     int	corrWinSizeX;			// similarity window
     int	corrWinSizeY;
@@ -127,7 +127,7 @@ typedef std::priority_queue<Match, std::vector<Match>, std::less<Match> > t_matc
  *
  */
 
-class CV_EXPORTS_W QuasiDenseStereo
+class CV_EXPORTS QuasiDenseStereo
 {
 public:
     /**
@@ -150,7 +150,7 @@ public:
      * in case of video processing.
      * @sa loadParameters
      */
-    CV_EXPORTS virtual int loadParameters(cv::String filepath="") = 0;
+    virtual int loadParameters(cv::String filepath="") = 0;
 
 
     /**
@@ -161,7 +161,7 @@ public:
      * @note This method can be used to generate a template file for tuning the class.
      * @sa loadParameters
      */
-    CV_EXPORTS virtual int saveParameters(cv::String filepath="./qds_parameters.yaml") = 0;
+    virtual int saveParameters(cv::String filepath="./qds_parameters.yaml") = 0;
 
 
     /**
@@ -170,7 +170,7 @@ public:
      * @note The method clears the sMatches vector.
      * @note The returned Match elements inside the sMatches vector, do not use corr member.
      */
-     CV_EXPORTS virtual void getSparseMatches(std::vector<stereo::Match> &sMatches) = 0;
+     virtual void getSparseMatches(std::vector<stereo::Match> &sMatches) = 0;
 
 
     /**
@@ -179,7 +179,7 @@ public:
      * @note The method clears the dMatches vector.
      * @note The returned Match elements inside the sMatches vector, do not use corr member.
      */
-    CV_EXPORTS virtual void getDenseMatches(std::vector<stereo::Match> &dMatches) = 0;
+    virtual void getDenseMatches(std::vector<stereo::Match> &dMatches) = 0;
 
 
 
@@ -195,7 +195,7 @@ public:
      * @sa sparseMatching
      * @sa quasiDenseMatching
      */
-    CV_EXPORTS virtual void process(const cv::Mat &imgLeft ,const cv::Mat &imgRight) = 0;
+    virtual void process(const cv::Mat &imgLeft ,const cv::Mat &imgRight) = 0;
 
 
     /**
@@ -206,7 +206,7 @@ public:
      * @retval cv::Point(0, 0) (NO_MATCH)  if no match is found in the right image for the specified pixel location in the left image.
      * @note This method should be always called after process, otherwise the matches will not be correct.
      */
-    CV_EXPORTS virtual cv::Point2f getMatch(const int x, const int y) = 0;
+    virtual cv::Point2f getMatch(const int x, const int y) = 0;
 
 
     /**
@@ -217,10 +217,10 @@ public:
      * @sa computeDisparity
      * @sa quantizeDisparity
      */
-    CV_EXPORTS virtual cv::Mat getDisparity(uint8_t disparityLvls=50) = 0;
+    virtual cv::Mat getDisparity(uint8_t disparityLvls=50) = 0;
 
 
-    CV_EXPORTS static cv::Ptr<QuasiDenseStereo> create(cv::Size monoImgSize, cv::String paramFilepath ="");
+    static cv::Ptr<QuasiDenseStereo> create(cv::Size monoImgSize, cv::String paramFilepath ="");
 
 
     PropagationParameters Param;
