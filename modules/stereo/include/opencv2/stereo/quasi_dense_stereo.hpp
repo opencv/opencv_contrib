@@ -1,4 +1,4 @@
-CV_EXPORTS/*
+/*
 By downloading, copying, installing or using the software you agree to this license.
 If you do not agree to this license, do not download, install,
 copy or use the software.
@@ -170,7 +170,7 @@ public:
      * @note The method clears the sMatches vector.
      * @note The returned Match elements inside the sMatches vector, do not use corr member.
      */
-     virtual void getSparseMatches(std::vector<stereo::Match> &sMatches) = 0;
+    virtual void getSparseMatches(std::vector<stereo::Match> &sMatches) = 0;
 
 
     /**
