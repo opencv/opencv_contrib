@@ -12,43 +12,49 @@ using namespace std;
 
 int main()
 {
-
-    Mat rightImg, leftImg;
-
-    //Read video meta-data to determine the correct frame size for initialization.
+//!     [load]
+    cv::Mat rightImg, leftImg;
     leftImg = imread("./imgLeft.png", IMREAD_COLOR);
     rightImg = imread("./imgRight.png", IMREAD_COLOR);
+//!     [load]
+
+
+//!     [create]
     cv::Size frameSize = leftImg.size();
-    // Initialize qds and start process.
     Ptr<stereo::QuasiDenseStereo> stereo = stereo::QuasiDenseStereo::create(frameSize);
+//!     [create]
 
-    uint8_t displvl = 80;					// Number of disparity levels
-    cv::Mat disp;
 
-    // Compute dense stereo.
+//!     [process]
     stereo->process(leftImg, rightImg);
+//!     [process]
 
-    // Compute disparity between left and right channel of current frame.
+
+//!     [disp]
+    uint8_t displvl = 80;
+    cv::Mat disp;
     disp = stereo->getDisparity(displvl);
-
-    vector<stereo::Match> matches;
-    stereo->getDenseMatches(matches);
-
-    // Create three windows and show images.
-    cv::namedWindow("right channel");
-    cv::namedWindow("left channel");
     cv::namedWindow("disparity map");
     cv::imshow("disparity map", disp);
+//!     [disp]
+
+
+    cv::namedWindow("right channel");
+    cv::namedWindow("left channel");
     cv::imshow("left channel", leftImg);
     cv::imshow("right channel", rightImg);
 
-    std::ofstream dense("./dense.txt", std::ios::out);
 
+//!     [export]
+    vector<stereo::Match> matches;
+    stereo->getDenseMatches(matches);
+    std::ofstream dense("./dense.txt", std::ios::out);
     for (uint i=0; i< matches.size(); i++)
     {
         dense << matches[i].p0 << matches[i].p1 << endl;
     }
     dense.close();
+//!     [export]
 
 
 

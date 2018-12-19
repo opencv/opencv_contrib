@@ -1,4 +1,4 @@
-Quasi dense Stereo {#quasi_dense_stereo}
+Quasi dense Stereo {#tutorial_qds_quasi_dense_stereo}
 ==================
 
 Goal
@@ -9,8 +9,7 @@ In this tutorial you will learn how to
 -   Configure a QuasiDenseStero object
 -   Compute dense Stereo correspondences.
 
------------
-[Source Code](../samples/dense_disparity.cpp)
+@include ./samples/dense_disparity.cpp
 
 ## Explanation:
 
@@ -18,19 +17,15 @@ The program loads a stereo image pair.
 
 
 After importing the images.
-```
-Mat rightImg, leftImg;
-leftImg = imread("./imgLeft.png", IMREAD_COLOR);
-rightImg = imread("./imgRight.png", IMREAD_COLOR);
-```
+@snippet ./samples/dense_disparity.cpp load
 We need to know the frame size of a single image, in order to create an instance of a `QuasiDesnseStereo` object.
-```
-cv::Size frameSize = leftImg.size();
-Ptr<stereo::QuasiDenseStereo> stereo = stereo::QuasiDenseStereo::create(frameSize);
-```
+
+@snippet ./samples/dense_disparity.cpp create
+
 Because we didn't specify the second argument in the constructor, the `QuasiDesnseStereo` object will
 load default parameters.
 
+@snippet ./samples/dense_disparity.cpp process
 We can then pass the imported stereo images in the process method like this
 ```
 stereo->process(leftImg, rightImg);
@@ -40,16 +35,8 @@ The process method contains most of the functionality of the class and does two 
 -   Based on those sparse stereo points, densifies the stereo correspondences using Quasi Dense Stereo method.
 
 After the execution of `process()` we can display the disparity Image of the stereo.
-```
-int displvl = 80;
-Mat disp;
-disp = stereo->getDisparity(displvl);
-cv::namedWindow("disparity map");
-cv::imshow("disparity map", disp);
-```
+@snippet ./samples/dense_disparity.cpp disp
 
-At this point we can also extract all the corresponding points using `getDenseMatches()` method.
-```
-vector<stereo::Match> matches;
-stereo->getDenseMatches(matches);
-```
+
+At this point we can also extract all the corresponding points using `getDenseMatches()` method and export them in a file.
+@snippet ./samples/dense_disparity.cpp export
