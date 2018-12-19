@@ -138,11 +138,11 @@ public:
 
     /**
      * @brief Get The dense corresponding points.
-     * @param[out] dMatches A vector containing all dense matches.
-     * @note The method clears the dMatches vector.
+     * @param[out] denseMatches A vector containing all dense matches.
+     * @note The method clears the denseMatches vector.
      * @note The returned Match elements inside the sMatches vector, do not use corr member.
      */
-    virtual void getDenseMatches(std::vector<stereo::Match> &dMatches) = 0;
+    virtual void getDenseMatches(std::vector<stereo::Match> &denseMatches) = 0;
 
 
 

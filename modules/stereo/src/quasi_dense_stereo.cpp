@@ -626,11 +626,10 @@ public:
         return -1;
     }
 
-    void getDenseMatches(std::vector<stereo::Match> &dMatches) override
+    void getDenseMatches(std::vector<stereo::Match> &denseMatches) override
     {
         Match tmpMatch;
-        dMatches.clear();
-    //	dMatches.resize(dMatchesLen);
+        denseMatches.clear();
         for (int row=0; row<height; row++)
         {
             for(int col=0; col<width; col++)
@@ -641,7 +640,7 @@ public:
                 {
                     continue;
                 }
-                dMatches.push_back(tmpMatch);
+                denseMatches.push_back(tmpMatch);
             }
         }
     }
@@ -684,7 +683,6 @@ public:
     // Width and height of a single image.
     int width;
     int height;
-    int dMatchesLen;
     // Containers to store input images.
     cv::Mat grayLeft;
     cv::Mat grayRight;
