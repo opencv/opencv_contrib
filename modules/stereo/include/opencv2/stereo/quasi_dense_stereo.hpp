@@ -45,8 +45,6 @@ the use of this software, even if advised of the possibility of such damage.
 
 
 #include <opencv2/core.hpp>
-#include <queue>
-
 
 
 namespace cv
@@ -97,8 +95,6 @@ struct CV_EXPORTS PropagationParameters
     int gftMaxNumFeatures;
 
 };
-
-typedef std::priority_queue<Match, std::vector<Match>, std::less<Match> > t_matchPriorityQueue;
 
 
 /**

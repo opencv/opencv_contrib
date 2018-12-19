@@ -40,11 +40,15 @@ the use of this software, even if advised of the possibility of such damage.
 #include "precomp.hpp"
 #include <opencv2/video/tracking.hpp>
 #include <opencv2/stereo/quasi_dense_stereo.hpp>
+#include <queue>
+
 
 namespace cv {
 namespace stereo {
 
 #define NO_MATCH cv::Point(0,0)
+
+typedef std::priority_queue<Match, std::vector<Match>, std::less<Match> > t_matchPriorityQueue;
 
 
 class QuasiDenseStereoImpl : public QuasiDenseStereo
