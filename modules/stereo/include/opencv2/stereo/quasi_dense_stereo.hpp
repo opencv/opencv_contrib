@@ -146,7 +146,7 @@ public:
      * in case of video processing.
      * @sa loadParameters
      */
-    virtual int loadParameters(cv::String filepath="") = 0;
+    virtual int loadParameters(cv::String filepath) = 0;
 
 
     /**
@@ -157,7 +157,7 @@ public:
      * @note This method can be used to generate a template file for tuning the class.
      * @sa loadParameters
      */
-    virtual int saveParameters(cv::String filepath="./qds_parameters.yaml") = 0;
+    virtual int saveParameters(cv::String filepath) = 0;
 
 
     /**
@@ -216,7 +216,7 @@ public:
     virtual cv::Mat getDisparity(uint8_t disparityLvls=50) = 0;
 
 
-    static cv::Ptr<QuasiDenseStereo> create(cv::Size monoImgSize, cv::String paramFilepath ="");
+    static cv::Ptr<QuasiDenseStereo> create(cv::Size monoImgSize, cv::String paramFilepath = cv::String());
 
 
     PropagationParameters Param;
