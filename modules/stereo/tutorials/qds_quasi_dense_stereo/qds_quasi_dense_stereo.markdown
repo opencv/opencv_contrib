@@ -15,7 +15,6 @@ In this tutorial you will learn how to
 
 The program loads a stereo image pair.
 
-
 After importing the images.
 @snippet ./samples/dense_disparity.cpp load
 We need to know the frame size of a single image, in order to create an instance of a `QuasiDesnseStereo` object.
@@ -25,11 +24,9 @@ We need to know the frame size of a single image, in order to create an instance
 Because we didn't specify the second argument in the constructor, the `QuasiDesnseStereo` object will
 load default parameters.
 
-@snippet ./samples/dense_disparity.cpp process
 We can then pass the imported stereo images in the process method like this
-```
-stereo->process(leftImg, rightImg);
-```
+@snippet ./samples/dense_disparity.cpp process
+
 The process method contains most of the functionality of the class and does two main things.
 -   Computes a sparse stereo based in "Good Features to Track" and "pyramidal Lucas-Kanade" flow algorithm
 -   Based on those sparse stereo points, densifies the stereo correspondences using Quasi Dense Stereo method.
