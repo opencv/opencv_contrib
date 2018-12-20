@@ -176,6 +176,7 @@ public:
     void quasiDenseMatching(const std::vector< cv::Point2f > &featuresLeft,
                             const std::vector< cv::Point2f > &featuresRight)
     {
+        dMatchesLen = 0;
         refMap = cv::Mat_<cv::Point2i>(cv::Size(width, height), cv::Point2i(0, 0));
         mtcMap = cv::Point2i(0, 0);
 
@@ -269,6 +270,7 @@ public:
                 // Unique match
                 refMap.at<cv::Point2i>(lm.p0.y, lm.p0.x) = lm.p1;
                 mtcMap.at<cv::Point2i>(lm.p1.y, lm.p1.x) = lm.p0;
+                dMatchesLen++;
                 // Add to the seed list
                 seeds.push(lm);
             }
@@ -529,7 +531,7 @@ public:
     {
         Match tmpMatch;
         sMatches.clear();
-        sMatches.resize(leftFeatures.size());
+        sMatches.reserve(leftFeatures.size());
         for (uint i=0; i<leftFeatures.size(); i++)
         {
             tmpMatch.p0 = leftFeatures[i];
@@ -537,6 +539,7 @@ public:
             sMatches.push_back(tmpMatch);
         }
     }
+
     int loadParameters(cv::String filepath) override
     {
         cv::FileStorage fs;
@@ -630,6 +633,7 @@ public:
     {
         Match tmpMatch;
         denseMatches.clear();
+        denseMatches.reserve(dMatchesLen);
         for (int row=0; row<height; row++)
         {
             for(int col=0; col<width; col++)
@@ -661,12 +665,10 @@ public:
         quasiDenseMatching(leftFeatures, rightFeatures);
     }
 
-
     cv::Point2f getMatch(const int x, const int y) override
     {
         return refMap.at<cv::Point2i>(y, x);
     }
-
 
     cv::Mat getDisparity(uint8_t disparityLvls) override
     {
@@ -683,6 +685,7 @@ public:
     // Width and height of a single image.
     int width;
     int height;
+    int dMatchesLen;
     // Containers to store input images.
     cv::Mat grayLeft;
     cv::Mat grayRight;
