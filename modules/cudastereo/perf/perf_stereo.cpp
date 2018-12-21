@@ -252,4 +252,38 @@ PERF_TEST_P(Sz_Depth, DrawColorDisp,
     }
 }
 
+//////////////////////////////////////////////////////////////////////
+// StereoSGM
+
+PERF_TEST_P(ImagePair, StereoSGM,
+    Values(pair_string("gpu/perf/aloe.png", "gpu/perf/aloeR.png")))
+{
+    declare.time(300.0);
+
+    const cv::Mat imgLeft = readImage(GET_PARAM(0), cv::IMREAD_GRAYSCALE);
+    ASSERT_FALSE(imgLeft.empty());
+
+    const cv::Mat imgRight = readImage(GET_PARAM(1), cv::IMREAD_GRAYSCALE);
+    ASSERT_FALSE(imgRight.empty());
+
+    const int ndisp = 128;
+
+    if (PERF_RUN_CUDA())
+    {
+        cv::Ptr<cv::cuda::StereoSGM> d_sgm = cv::cuda::createStereoSGM(0, ndisp);
+
+        const cv::cuda::GpuMat d_imgLeft(imgLeft);
+        const cv::cuda::GpuMat d_imgRight(imgRight);
+        cv::cuda::GpuMat dst;
+
+        TEST_CYCLE() d_sgm->compute(d_imgLeft, d_imgRight, dst);
+
+        CUDA_SANITY_CHECK(dst);
+    }
+    else
+    {
+        FAIL_NO_CPU();
+    }
+}
+
 }} // namespace
