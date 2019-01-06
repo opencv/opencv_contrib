@@ -32,15 +32,24 @@ SSIM and GMSD were originally tested by their respective researchers on grayscal
 but this implementation will compute the values for each channel if the user desires to do so.
 
 
-Examples
+Quick Start/Usage
 -----------------------------------------
-- TODO
+
+    #include <opencv2/quality.hpp>
+    
+    cv::Mat img1, img2; /* your cv::Mat images */
+    std::vector<quality::quality_map_type> quality_maps;  /* output quality maps, optional */
+    
+     /* compute MSE via static method */
+    cv::Scalar result_static = quality::QualityMSE::compute(img1, img2, quality_maps);  /* or cv::noArray() if not interested in output quality maps */
+    
+    /* alternatively, compute MSE via instance */
+    cv::Ptr<quality::QualityBase> ptr = quality::QualityMSE::create(img1);  
+    cv::Scalar result = ptr->compute( img2 );  /* compute MSE, compare img1 vs img2.  Quality maps accessed via ptr->getQualityMaps() */
 
 
 To Do
 -----------------------------------------
-- Examples
-- Brief summary of different IQA algorithms
 - Document the output quality maps for each algorithm
 - Implement at least one no-reference IQA algorithm
 - Investigate performance difference between Linux/gcc and Win32/msvc (Linux ~15-20X faster on same h/w)
