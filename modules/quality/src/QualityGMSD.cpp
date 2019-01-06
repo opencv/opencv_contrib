@@ -2,7 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
-#include "opencv2/quality/qualityGMSD.hpp"
+#include "opencv2/quality/QualityGMSD.hpp"
 #include "opencv2/core/ocl.hpp"
 
 #include "opencv2/imgproc.hpp"  // blur, resize

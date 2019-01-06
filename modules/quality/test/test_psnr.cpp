@@ -3,8 +3,6 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include "test_precomp.hpp"
-#include <chrono>
-#include <opencv2/quality/quality_utils.hpp>
 
 #define TEST_CASE_NAME CV_Quality_PSNR
 

@@ -2,7 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
-#include "opencv2/quality/qualityMSE.hpp"
+#include "opencv2/quality/QualityMSE.hpp"
 #include "opencv2/quality/quality_utils.hpp"
 
 namespace
