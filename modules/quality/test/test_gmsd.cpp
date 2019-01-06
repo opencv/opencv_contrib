@@ -7,7 +7,7 @@ namespace opencv_test {
 
         // gmsd per channel
         const cv::Scalar
-            GMSD_EXPECTED_1 = { .1602 }
+            GMSD_EXPECTED_1 = { .2393 }
             , GMSD_EXPECTED_2 = { .0942, .1016, .0995 }
         ;
 
@@ -32,7 +32,7 @@ namespace opencv_test {
         {
             std::vector<quality::quality_map_type> qMats = {};
             quality_expect_near(quality::QualityGMSD::compute(get_testfile_1a(), get_testfile_1a(), qMats), cv::Scalar(0.)); // ref vs ref == 0.
-            EXPECT_EQ(qMats.size(), 1);
+            EXPECT_EQ(qMats.size(), 1U );
         }
 
         // single channel

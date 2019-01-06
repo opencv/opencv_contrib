@@ -1,6 +1,6 @@
 #include "opencv2/quality/qualitySSIM.hpp"
 
-#include "opencv2/imgproc/imgproc.hpp"  // GaussianBlur
+#include "opencv2/imgproc.hpp"  // GaussianBlur
 #include "opencv2/quality/quality_utils.hpp"
 
 namespace
@@ -93,6 +93,8 @@ namespace
 
         for (unsigned i = 0; i < sz; ++i)
         {
+            CV_Assert(!lhs.empty() && !rhs.empty());
+
             auto cmp = compute(lhs[i], rhs[i]); // differs slightly when using umat vs mat
 
             cv::add(result, cmp.first, result);     // result += cmp.first

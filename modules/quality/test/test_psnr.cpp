@@ -8,7 +8,7 @@ namespace opencv_test {
     namespace quality_test {
 
         const cv::Scalar 
-            PSNR_EXPECTED_1 = { 21.4383, INFINITY, INFINITY, INFINITY } // matlab: psnr('basketball1.png', 'basketball2.png') == 21.4383
+            PSNR_EXPECTED_1 = { 14.8347, INFINITY, INFINITY, INFINITY } // matlab: psnr('rock_1.bmp', 'rock_2.bmp') == 14.8347
             , PSNR_EXPECTED_2 = { 28.4542, 27.7402, 27.2886, INFINITY }  // matlab: psnr('rubberwhale1.png', 'rubberwhale2.png') == BGR: 28.4542, 27.7402, 27.2886,  avg 27.8015
         ;
 
@@ -17,7 +17,7 @@ namespace opencv_test {
         {
             std::vector<quality::quality_map_type> qMats = {};
             quality_expect_near(quality::QualityPSNR::compute(get_testfile_1a(), get_testfile_1a(), qMats), cv::Scalar(INFINITY,INFINITY,INFINITY,INFINITY)); // ref vs ref == inf
-            EXPECT_EQ(qMats.size(), 1);
+            EXPECT_EQ(qMats.size(), 1U);
         }
 
         // single channel

@@ -10,7 +10,7 @@ namespace opencv_test {
         {
             std::vector<quality::quality_map_type> qMats = {};
             quality_expect_near(quality::QualityMSE::compute(get_testfile_1a(), get_testfile_1a(), qMats), cv::Scalar(0.)); // ref vs ref == 0
-            EXPECT_EQ(qMats.size(), 1);
+            EXPECT_EQ(qMats.size(), 1U);
         }
 
         // single channel

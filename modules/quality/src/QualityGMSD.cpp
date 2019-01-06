@@ -1,7 +1,7 @@
 #include "opencv2/quality/qualityGMSD.hpp"
 #include "opencv2/core/ocl.hpp"
 
-#include "opencv2/imgproc/imgproc.hpp"  // blur, resize
+#include "opencv2/imgproc.hpp"  // blur, resize
 #include "opencv2/quality/quality_utils.hpp"
 
 namespace
@@ -57,7 +57,7 @@ namespace
         cv::flip(kernel, kernel_flipped, -1);
 
         if (CONVOLUTION_FULL == type) {
-            source = {};
+            source = MatSrc();
             const int additionalRows = kernel.rows - 1, additionalCols = kernel.cols - 1;
             cv::copyMakeBorder(img, source, (additionalRows + 1) / 2, additionalRows / 2,
                 (additionalCols + 1) / 2, additionalCols / 2, BORDER_CONSTANT, Scalar(0));
@@ -123,6 +123,8 @@ namespace
 
         for (unsigned i = 0; i < sz; ++i)
         {
+            CV_Assert(!lhs.empty() && !rhs.empty());
+
             auto cmp = compute(lhs[i], rhs[i]); // differs slightly when using umat vs mat
 
             cv::add(result, cmp.first, result);     // result += cmp.first
@@ -147,6 +149,8 @@ namespace
 // construct mat_data from _mat_type
 _mat_data_type::mat_data(const _mat_type& mat)
 {
+    CV_Assert(!mat.empty());
+
     // 2x2 avg kernel
     _mat_type 
         tmp1 = {}

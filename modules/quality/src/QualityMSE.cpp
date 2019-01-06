@@ -19,11 +19,7 @@ namespace
         cv::multiply(result.second, result.second, result.second); // slightly faster than pow2
 
         result.first = cv::mean(result.second);
-        /*
-        result.first = (double)cv::sum(cv::sum(result.second))[0]
-            / (double)(lhs.total() * lhs.channels())
-            ;
-            */
+
         return result;
     }
 
@@ -39,6 +35,8 @@ namespace
 
         for (unsigned i = 0; i < sz; ++i)
         {
+            CV_Assert(!lhs.empty() && !rhs.empty());
+
             auto cmp = compute(lhs[i], rhs[i]);
             cv::add(result, cmp.first, result);
 

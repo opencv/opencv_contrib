@@ -1,6 +1,4 @@
 #include "test_precomp.hpp"
-#include <chrono>
-#include <opencv2/quality/quality_utils.hpp>
 
 #define TEST_CASE_NAME CV_Quality_SSIM
 
@@ -9,7 +7,7 @@ namespace opencv_test {
 
         // ssim per channel
         const cv::Scalar
-            SSIM_EXPECTED_1 = { .8511 }
+            SSIM_EXPECTED_1 = { .1501 }
             , SSIM_EXPECTED_2 = { .7541, .7742, .8095 }
             ;
 
@@ -18,7 +16,7 @@ namespace opencv_test {
         {
             std::vector<quality::quality_map_type> qMats = {};
             quality_expect_near(quality::QualitySSIM::compute(get_testfile_1a(), get_testfile_1a(), qMats), cv::Scalar(1.)); // ref vs ref == 1.
-            EXPECT_EQ(qMats.size(), 1);
+            EXPECT_EQ(qMats.size(), 1U );
         }
 
         // single channel
@@ -47,7 +45,7 @@ namespace opencv_test {
             cv::add(SSIM_EXPECTED_1, SSIM_EXPECTED_2, expected);
             quality::quality_utils::scalar_multiply(expected, .5);
 
-            quality_test(quality::QualitySSIM::create(get_testfile_1a2a()), get_testfile_1b2b(), expected, 2);
+            quality_test(quality::QualitySSIM::create(get_testfile_1a2a()), get_testfile_1b2b(), expected, 2U );
         }
 
         // internal performance test

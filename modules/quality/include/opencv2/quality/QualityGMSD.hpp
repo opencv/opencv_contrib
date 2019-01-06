@@ -30,6 +30,7 @@ namespace cv {
 
         /**
         @brief Full reference GMSD algorithm
+        http://www4.comp.polyu.edu.hk/~cslzhang/IQA/GMSD/GMSD.htm
         */
         class CV_EXPORTS QualityGMSD
             : public QualityBase {
