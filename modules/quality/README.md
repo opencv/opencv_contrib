@@ -53,4 +53,5 @@ To Do
 - Document the output quality maps for each algorithm
 - Implement at least one no-reference IQA algorithm
 - Investigate performance difference between Linux/gcc and Win32/msvc (Linux ~15-20X faster on same h/w)
+- Investigate precision loss with cv::Filter2D + UMat + CV_32F + OCL for GMSD
 - (Fast?) MS-SSIM?
