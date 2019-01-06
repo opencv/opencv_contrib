@@ -38,7 +38,11 @@ namespace cv {
             : public QualityBase {
         public:
 
-            /** @brief */
+            /**
+            @brief Computes SSIM
+            @param cmpImgs Comparison images
+            @returns cv::Scalar with per-channel quality values.  Values range from 0 (worst) to 1 (best)
+            */
             CV_WRAP cv::Scalar compute(InputArrayOfArrays cmpImgs) CV_OVERRIDE;
 
             /** @brief Implements Algorithm::empty()  */
@@ -60,8 +64,8 @@ namespace cv {
             @brief static method for computing quality
             @param refImgs reference image(s)
             @param cmpImgs comparison image(s)
-            @param output qualityMaps quality map(s)
-            @returns cv::Scalar with per-channel SSIM.  Values range from 0 (worst) to 1 (best)
+            @param qualityMaps output quality map(s), or cv::noArray()
+            @returns cv::Scalar with per-channel quality values.  Values range from 0 (worst) to 1 (best)
             */
             CV_WRAP static cv::Scalar compute(InputArrayOfArrays refImgs, InputArrayOfArrays cmpImgs, OutputArrayOfArrays qualityMaps);
 
@@ -74,8 +78,8 @@ namespace cv {
             std::vector<quality_map_type> _qualityMaps;
 
             /**
-            @brief Base class constructor
-            @param refImgs vector of reference images, converted to internal type
+            @brief Constructor
+            @param refImgData vector of reference images, converted to internal type
             */
             QualitySSIM(std::vector<detail::ssim::mat_data> refImgData)
                 : _refImgData(std::move(refImgData))

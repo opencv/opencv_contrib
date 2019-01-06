@@ -17,7 +17,10 @@ namespace cv {
 		class CV_EXPORTS_W QualityMSE : public QualityBase {
 		public:
 
-            /** @brief */
+            /** @brief Computes MSE for reference images supplied in class constructor and provided comparison images
+            @param cmpImgs Comparison image(s)
+            @returns cv::Scalar with per-channel quality values.  Values range from 0 (best) to potentially max float (worst)
+            */
             CV_WRAP cv::Scalar compute( InputArrayOfArrays cmpImgs ) CV_OVERRIDE;
 
             /** @brief Implements Algorithm::empty()  */
@@ -30,7 +33,7 @@ namespace cv {
             CV_WRAP const std::vector<quality_map_type>& getQualityMaps() const CV_OVERRIDE { return _qualityMaps; }
 
             /**
-            @brief Create an object which calculates quality via mean square error
+            @brief Create an object which calculates quality
             @param refImgs input image(s) to use as the source for comparison
             */
             CV_WRAP static Ptr<QualityMSE> create(InputArrayOfArrays refImgs);
@@ -39,8 +42,8 @@ namespace cv {
             @brief static method for computing quality
             @param refImgs reference image(s)
             @param cmpImgs comparison image(s)
-            @param output qualityMaps quality map(s)
-            @returns cv::Scalar with per-channel mean square error.  Values range from 0 (best) to potentially max float (worst)
+            @param qualityMaps output quality map(s), or cv::noArray()
+            @returns cv::Scalar with per-channel quality values.  Values range from 0 (best) to potentially max float (worst)
             */
             CV_WRAP static cv::Scalar compute( InputArrayOfArrays refImgs, InputArrayOfArrays cmpImgs, OutputArrayOfArrays qualityMaps );
 
@@ -53,7 +56,7 @@ namespace cv {
             std::vector<quality_map_type> _qualityMaps;
 
             /**
-            @brief Base class constructor
+            @brief Constructor
             @param refImgs vector of reference images, converted to internal type
             */
             QualityMSE(std::vector<UMat> refImgs)

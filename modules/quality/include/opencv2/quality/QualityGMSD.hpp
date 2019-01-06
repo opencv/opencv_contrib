@@ -36,7 +36,11 @@ namespace cv {
             : public QualityBase {
         public:
 
-            /** @brief */
+            /**
+            @brief Compute GMSD
+            @param cmpImgs Comparison images
+            @returns Per-channel GMSD
+            */
             CV_WRAP cv::Scalar compute(InputArrayOfArrays cmpImgs) CV_OVERRIDE;
 
             /** @brief Implements Algorithm::empty()  */
@@ -49,7 +53,7 @@ namespace cv {
             CV_WRAP const std::vector<quality_map_type>& getQualityMaps() const CV_OVERRIDE { return _qualityMaps; }
 
             /**
-            @brief Create an object which calculates quality via mean square error
+            @brief Create an object which calculates image quality
             @param refImgs input image(s) to use as the source for comparison
             */
             CV_WRAP static Ptr<QualityGMSD> create(InputArrayOfArrays refImgs);
@@ -58,7 +62,7 @@ namespace cv {
             @brief static method for computing quality
             @param refImgs reference image(s)
             @param cmpImgs comparison image(s)
-            @param output qualityMaps quality map(s)
+            @param qualityMaps output quality map(s), or cv::noArray()
             @returns cv::Scalar with per-channel quality value.  Values range from 0 (worst) to 1 (best)
             */
             CV_WRAP static cv::Scalar compute(InputArrayOfArrays refImgs, InputArrayOfArrays cmpImgs, OutputArrayOfArrays qualityMaps);
@@ -72,8 +76,8 @@ namespace cv {
             std::vector<quality_map_type> _qualityMaps;
 
             /**
-            @brief Base class constructor
-            @param refImgs vector of reference images, converted to internal type
+            @brief Constructor
+            @param refImgData vector of reference images, converted to internal type
             */
             QualityGMSD(std::vector<detail::gmsd::mat_data> refImgData)
                 : _refImgData(std::move(refImgData))

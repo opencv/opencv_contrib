@@ -81,10 +81,12 @@ namespace opencv_test {
             EXPECT_TRUE(ptr->empty());
             EXPECT_TRUE(ptr->getQualityMaps().empty());
 
+            if (disable_ocl)    // keep this outside ifdef HAVE_OPENCL to avoid unused parameter compiler warnings
+            {
 #ifdef HAVE_OPENCL
-            if ( disable_ocl)
                 cv::ocl::setUseOpenCL(prev);
 #endif
+            }
         }
 
         template <typename Fn>

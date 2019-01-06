@@ -28,7 +28,7 @@ namespace cv {
             {
                 for (int i = 0; i < mse.rows; ++i)
                     mse(i) = mse_to_psnr(mse(i), max_pixel_value);
-                return std::move(mse);
+                return mse;
             }
         }
 
@@ -46,14 +46,18 @@ namespace cv {
             /**
             @brief Create an object which calculates quality via mean square error
 	        @param refImgs input image(s) to use as the source for comparison
+            @param maxPixelValue maximum per-channel value for any individual pixel; eg 255 for uint8 image
             */
             CV_WRAP static Ptr<QualityPSNR> create(InputArrayOfArrays refImgs, double maxPixelValue = QUALITY_PSNR_MAX_PIXEL_VALUE_DEFAULT)
             {
                 return Ptr<QualityPSNR>(new QualityPSNR(QualityMSE::create(refImgs), maxPixelValue));
             }
 
-            /** @brief compute the PSNR
-            @returns cv::Scalar with per-channel PSNR.  Values range from 0 (worst) to +infinity (best)
+            /**
+            @brief compute the PSNR
+            @param cmpImgs Comparison images
+            @returns Per-channel PSNR value, or std::numeric_limits<double>::infinity() if the MSE between the two images == 0
+            The PSNR for multi-frame images is computed by calculating the average MSE of all frames and then generating the PSNR from that value
             */
             CV_WRAP cv::Scalar compute(InputArrayOfArrays cmpImgs) CV_OVERRIDE
             {
@@ -73,8 +77,8 @@ namespace cv {
             @brief static method for computing quality
             @param refImgs reference image(s)
             @param cmpImgs comparison image(s)
-            @param output qualityMaps quality map(s)
-            @param maxPixelValue maximum value for a pixel; eg 255 for uint8 images
+            @param qualityMaps output quality map(s), or cv::noArray()
+            @param maxPixelValue maximum per-channel value for any individual pixel; eg 255 for uint8 image
             @returns PSNR value, or std::numeric_limits<double>::infinity() if the MSE between the two images == 0
             The PSNR for multi-frame images is computed by calculating the average MSE of all frames and then generating the PSNR from that value
             */
@@ -89,7 +93,10 @@ namespace cv {
             /** @brief return the maximum pixel value used for PSNR computation */
             CV_WRAP double getMaxPixelValue() const { return _maxPixelValue; }
 
-            /** @brief sets the maximum pixel value used for PSNR computation */
+            /**
+            @brief sets the maximum pixel value used for PSNR computation
+            @param val Maximum pixel value
+            */
             CV_WRAP void setMaxPixelValue(double val) { this->_maxPixelValue = val; }
 
             /** @brief Returns pointer to output quality maps images that were generated during computation, if supported by the algorithm.  */
