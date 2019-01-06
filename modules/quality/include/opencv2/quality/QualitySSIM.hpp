@@ -34,7 +34,7 @@ namespace cv {
         /**
         @brief Full reference mean square error algorithm  https://en.wikipedia.org/wiki/Structural_similarity
         */
-        class CV_EXPORTS QualitySSIM
+        class CV_EXPORTS_W QualitySSIM
             : public QualityBase {
         public:
 

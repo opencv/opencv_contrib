@@ -38,7 +38,7 @@ namespace cv {
 		/**
         @brief Full reference peak signal to noise ratio (PSNR) algorithm  https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio
         */
-		class CV_EXPORTS QualityPSNR
+		class CV_EXPORTS_W QualityPSNR
             : public QualityBase {
 
 		public:

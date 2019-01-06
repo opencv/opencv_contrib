@@ -14,7 +14,7 @@ namespace cv {
 		/**
         @brief Full reference mean square error algorithm  https://en.wikipedia.org/wiki/Mean_squared_error
         */
-		class CV_EXPORTS QualityMSE : public QualityBase {
+		class CV_EXPORTS_W QualityMSE : public QualityBase {
 		public:
 
             /** @brief */
