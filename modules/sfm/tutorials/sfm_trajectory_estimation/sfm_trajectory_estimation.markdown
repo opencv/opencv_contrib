@@ -14,7 +14,7 @@ In this tutorial you will learn how to use the reconstruction api for camera mot
 Code
 ----
 
-@include sfm/samples/trajectory_reconstruccion.cpp
+@include sfm/samples/trajectory_reconstruction.cpp
 
 Explanation
 -----------

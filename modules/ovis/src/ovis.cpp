@@ -181,7 +181,7 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
     int flags;
 
     Application(const Ogre::String& _title, const Size& sz, int _flags)
-        : OgreBites::ApplicationContext("ovis", false), sceneMgr(NULL), title(_title), w(sz.width),
+        : OgreBites::ApplicationContext("ovis"), sceneMgr(NULL), title(_title), w(sz.width),
           h(sz.height), key_pressed(-1), flags(_flags)
     {
         if(utils::getConfigurationParameterBool("OPENCV_OVIS_VERBOSE_LOG", false))
