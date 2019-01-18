@@ -116,11 +116,11 @@ enum CornerRefineMethod{
  * - cornerRefinementMinAccuracy: minimum error for the stop cristeria of the corner refinement
  *   process (default: 0.1)
  * - markerBorderBits: number of bits of the marker border, i.e. marker border width (default 1).
- * - perpectiveRemovePixelPerCell: number of bits (per dimension) for each cell of the marker
+ * - perspectiveRemovePixelPerCell: number of bits (per dimension) for each cell of the marker
  *   when removing the perspective (default 8).
  * - perspectiveRemoveIgnoredMarginPerCell: width of the margin of pixels on each cell not
  *   considered for the determination of the cell bit. Represents the rate respect to the total
- *   size of the cell, i.e. perpectiveRemovePixelPerCell (default 0.13)
+ *   size of the cell, i.e. perspectiveRemovePixelPerCell (default 0.13)
  * - maxErroneousBitsInBorderRate: maximum number of accepted erroneous bits in the border (i.e.
  *   number of allowed white bits in the border). Represented as a rate respect to the total
  *   number of bits per marker (default 0.35).
