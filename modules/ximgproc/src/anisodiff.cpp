@@ -248,7 +248,7 @@ void anisotropicDiffusion(InputArray src_, OutputArray dst_, float alpha, float 
     }
 
     int type = src_.type();
-    CV_Assert(src_.dims() == 2 && type == CV_8UC3);
+    CV_Assert(src_.dims() == 2 && type == CV_8UC1);
     CV_Assert(K != 0);
     CV_Assert(alpha > 0);
     CV_Assert(niters >= 0);
