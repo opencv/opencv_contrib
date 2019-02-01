@@ -140,7 +140,7 @@ skewMat( const Mat_<T> &x )
           x(2),    0 , -x(0),
          -x(1),  x(0),    0;
 
-  return skew;
+  return std::move(skew);
 }
 
 Mat

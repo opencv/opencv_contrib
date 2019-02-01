@@ -603,7 +603,7 @@ public:
         node.setScale(value[0], value[1], value[2]);
     }
 
-    void getEntityProperty(const String& name, int prop, OutputArray value)
+    void getEntityProperty(const String& name, int prop, OutputArray value) CV_OVERRIDE
     {
         SceneNode& node = _getSceneNode(sceneMgr, name);
         switch(prop)
