@@ -12,21 +12,21 @@ namespace opencv_test {
         // static method
         TEST(TEST_CASE_NAME, static_ )
         {
-            std::vector<quality::quality_map_type> qMats = {};
+            std::vector<cv::Mat> qMats = {};
             quality_expect_near(quality::QualityMSE::compute(get_testfile_1a(), get_testfile_1a(), qMats), cv::Scalar(0.)); // ref vs ref == 0
             EXPECT_EQ(qMats.size(), 1U);
         }
 
-        // single channel
+        // single channel, with and without opencl
         TEST(TEST_CASE_NAME, single_channel )
         {
-            quality_test(quality::QualityMSE::create(get_testfile_1a()), get_testfile_1b(), MSE_EXPECTED_1);
-        }
-
-        // single channel, no opencl
-        TEST(TEST_CASE_NAME, single_channel_no_ocl)
-        {
-            quality_test(quality::QualityMSE::create(get_testfile_1a()), get_testfile_1b(), MSE_EXPECTED_1, true, true );
+            auto fn = []() { quality_test(quality::QualityMSE::create(get_testfile_1a()), get_testfile_1b(), MSE_EXPECTED_1); };
+#ifdef HAVE_OPENCL
+            OCL_OFF(fn);
+            OCL_ON(fn);
+#else
+            fn();
+#endif
         }
 
         // multi-channel

@@ -2,6 +2,8 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+#include "precomp.hpp"
+#include "opencv2/quality/QualityBase.hpp"
 #include "opencv2/quality/QualityMSE.hpp"
 #include "opencv2/quality/quality_utils.hpp"
 
@@ -11,11 +13,12 @@ namespace
     using namespace cv::quality;
 
     using mse_mat_type = UMat;
+    using _quality_map_type = quality::detail::quality_map_type;
 
     // computes mse and quality map for single frame
-    std::pair<cv::Scalar, quality_map_type> compute(const mse_mat_type& lhs, const mse_mat_type& rhs)
+    std::pair<cv::Scalar, _quality_map_type> compute(const mse_mat_type& lhs, const mse_mat_type& rhs)
     {
-        std::pair<cv::Scalar, quality_map_type> result;
+        std::pair<cv::Scalar, _quality_map_type> result;
 
         cv::subtract( lhs, rhs, result.second );
 
@@ -34,7 +37,7 @@ namespace
         CV_Assert(lhs.size() == rhs.size());
 
         cv::Scalar result = {};
-        std::vector<quality_map_type> quality_maps = {};
+        std::vector<_quality_map_type> quality_maps = {};
         const auto sz = lhs.size();
 
         for (unsigned i = 0; i < sz; ++i)
