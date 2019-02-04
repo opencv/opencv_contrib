@@ -10,3 +10,6 @@ tags
 tegra/
 *.i
 .download*
+/.vs
+/modules/quality/vs
+/modules/quality/doc
