@@ -445,8 +445,5 @@ void TrackerMedianFlow::Params::write( cv::FileStorage& fs ) const{
 Ptr<TrackerMedianFlow> TrackerMedianFlow::create(const TrackerMedianFlow::Params &parameters){
     return Ptr<TrackerMedianFlowImpl>(new TrackerMedianFlowImpl(parameters));
 }
-Ptr<TrackerMedianFlow> TrackerMedianFlow::create(){
-    return Ptr<TrackerMedianFlowImpl>(new TrackerMedianFlowImpl());
-}
 
 } /* namespace cv */

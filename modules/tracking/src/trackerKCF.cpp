@@ -172,9 +172,6 @@ namespace cv{
   Ptr<TrackerKCF> TrackerKCF::create(const TrackerKCF::Params &parameters){
       return Ptr<TrackerKCFImpl>(new TrackerKCFImpl(parameters));
   }
-  Ptr<TrackerKCF> TrackerKCF::create(){
-      return Ptr<TrackerKCFImpl>(new TrackerKCFImpl());
-  }
   TrackerKCFImpl::TrackerKCFImpl( const TrackerKCF::Params &parameters ) :
       params( parameters )
   {

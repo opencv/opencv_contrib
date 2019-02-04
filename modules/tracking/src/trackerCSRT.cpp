@@ -79,10 +79,6 @@ Ptr<TrackerCSRT> TrackerCSRT::create(const TrackerCSRT::Params &parameters)
 {
     return Ptr<TrackerCSRTImpl>(new TrackerCSRTImpl(parameters));
 }
-Ptr<TrackerCSRT> TrackerCSRT::create()
-{
-    return Ptr<TrackerCSRTImpl>(new TrackerCSRTImpl());
-}
 TrackerCSRTImpl::TrackerCSRTImpl(const TrackerCSRT::Params &parameters) :
     params(parameters)
 {

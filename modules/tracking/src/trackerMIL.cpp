@@ -108,9 +108,6 @@ void TrackerMIL::Params::write( cv::FileStorage& fs ) const
 Ptr<TrackerMIL> TrackerMIL::create(const TrackerMIL::Params &parameters){
     return Ptr<TrackerMILImpl>(new TrackerMILImpl(parameters));
 }
-Ptr<TrackerMIL> TrackerMIL::create(){
-    return Ptr<TrackerMILImpl>(new TrackerMILImpl());
-}
 TrackerMILImpl::TrackerMILImpl( const TrackerMIL::Params &parameters ) :
     params( parameters )
 {

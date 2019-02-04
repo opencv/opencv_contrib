@@ -55,10 +55,6 @@ Ptr<TrackerTLD> TrackerTLD::create(const TrackerTLD::Params &parameters)
 {
     return Ptr<tld::TrackerTLDImpl>(new tld::TrackerTLDImpl(parameters));
 }
-Ptr<TrackerTLD> TrackerTLD::create()
-{
-    return Ptr<tld::TrackerTLDImpl>(new tld::TrackerTLDImpl());
-}
 
 namespace tld
 {

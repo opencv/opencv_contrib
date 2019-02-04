@@ -780,15 +780,15 @@ class CV_EXPORTS TrackerSamplerCSC : public TrackerSamplerAlgorithm
     MODE_DETECT = 5   //!< mode for detect samples
   };
 
-  struct CV_EXPORTS Params
+  struct CV_EXPORTS_W_SIMPLE Params
   {
-    Params();
-    float initInRad;        //!< radius for gathering positive instances during init
-    float trackInPosRad;    //!< radius for gathering positive instances during tracking
-    float searchWinSize;  //!< size of search window
-    int initMaxNegNum;      //!< # negative samples to use during init
-    int trackMaxPosNum;     //!< # positive samples to use during training
-    int trackMaxNegNum;     //!< # negative samples to use during training
+    CV_WRAP Params();
+    CV_PROP_RW float initInRad;        //!< radius for gathering positive instances during init
+    CV_PROP_RW float trackInPosRad;    //!< radius for gathering positive instances during tracking
+    CV_PROP_RW float searchWinSize;    //!< size of search window
+    CV_PROP_RW int initMaxNegNum;      //!< # negative samples to use during init
+    CV_PROP_RW int trackMaxPosNum;     //!< # positive samples to use during training
+    CV_PROP_RW int trackMaxNegNum;     //!< # negative samples to use during training
   };
 
   /** @brief Constructor
@@ -836,11 +836,11 @@ class CV_EXPORTS TrackerSamplerCS : public TrackerSamplerAlgorithm
     MODE_CLASSIFY = 3  //!< mode for classify samples
   };
 
-  struct CV_EXPORTS Params
+  struct CV_EXPORTS_W_SIMPLE Params
   {
-    Params();
-    float overlap;  //!<overlapping for the search windows
-    float searchFactor;  //!<search region parameter
+    CV_WRAP Params();
+    CV_PROP_RW float overlap;       //!<overlapping for the search windows
+    CV_PROP_RW float searchFactor;  //!<search region parameter
   };
   /** @brief Constructor
     @param parameters TrackerSamplerCS parameters TrackerSamplerCS::Params
@@ -900,15 +900,15 @@ public:
     algorithm. Below is the structure exposed, together with its members briefly explained with
     reference to the above discussion on algorithm's working.
  */
-  struct CV_EXPORTS Params
+  struct CV_EXPORTS_W_SIMPLE Params
   {
-    Params();
-    int iterationNum; //!< number of selection rounds
-    int particlesNum; //!< number of "perturbed" boxes on each round
-    double alpha; //!< with each new round we exponentially decrease the amount of "perturbing" we allow (like in simulated annealing)
-                  //!< and this very alpha controls how fast annealing happens, ie. how fast perturbing decreases
-    Mat_<double> std; //!< initial values for perturbing (1-by-4 array, as each rectangle is given by 4 values -- coordinates of opposite vertices,
-                      //!< hence we have 4 values to perturb)
+    CV_WRAP Params();
+    CV_PROP_RW int iterationNum; //!< number of selection rounds
+    CV_PROP_RW int particlesNum; //!< number of "perturbed" boxes on each round
+    CV_PROP_RW double alpha;     //!< with each new round we exponentially decrease the amount of "perturbing" we allow (like in simulated annealing)
+                                 //!< and this very alpha controls how fast annealing happens, ie. how fast perturbing decreases
+    Mat_<double> std;            //!< initial values for perturbing (1-by-4 array, as each rectangle is given by 4 values -- coordinates of opposite vertices,
+                                 //!< hence we have 4 values to perturb)
   };
   /** @brief Constructor
     @param chosenRect Initial rectangle, that is supposed to contain target we'd like to track.
@@ -977,12 +977,12 @@ class CV_EXPORTS TrackerFeatureHOG : public TrackerFeature
 class CV_EXPORTS TrackerFeatureHAAR : public TrackerFeature
 {
  public:
-  struct CV_EXPORTS Params
+  struct CV_EXPORTS_W_SIMPLE Params
   {
-    Params();
-    int numFeatures;  //!< # of rects
-    Size rectSize;    //!< rect size
-    bool isIntegral;  //!< true if input images are integral, false otherwise
+    CV_WRAP Params();
+    CV_PROP_RW int numFeatures;  //!< # of rects
+    CV_PROP_RW Size rectSize;    //!< rect size
+    CV_PROP_RW bool isIntegral;  //!< true if input images are integral, false otherwise
   };
 
   /** @brief Constructor
@@ -1065,17 +1065,17 @@ Original code can be found here <http://vision.ucsd.edu/~bbabenko/project_miltra
 class CV_EXPORTS_W TrackerMIL : public Tracker
 {
  public:
-  struct CV_EXPORTS Params
+  struct CV_EXPORTS_W_SIMPLE Params
   {
-    Params();
+    CV_WRAP Params();
     //parameters for sampler
-    float samplerInitInRadius;  //!< radius for gathering positive instances during init
-    int samplerInitMaxNegNum;  //!< # negative samples to use during init
-    float samplerSearchWinSize;  //!< size of search window
-    float samplerTrackInRadius;  //!< radius for gathering positive instances during tracking
-    int samplerTrackMaxPosNum;  //!< # positive samples to use during tracking
-    int samplerTrackMaxNegNum;  //!< # negative samples to use during tracking
-    int featureSetNumFeatures;  //!< # features
+    CV_PROP_RW float samplerInitInRadius;  //!< radius for gathering positive instances during init
+    CV_PROP_RW int samplerInitMaxNegNum;   //!< # negative samples to use during init
+    CV_PROP_RW float samplerSearchWinSize; //!< size of search window
+    CV_PROP_RW float samplerTrackInRadius; //!< radius for gathering positive instances during tracking
+    CV_PROP_RW int samplerTrackMaxPosNum;  //!< # positive samples to use during tracking
+    CV_PROP_RW int samplerTrackMaxNegNum;  //!< # negative samples to use during tracking
+    CV_PROP_RW int featureSetNumFeatures;  //!< # features
 
     void read( const FileNode& fn );
     void write( FileStorage& fs ) const;
@@ -1084,9 +1084,7 @@ class CV_EXPORTS_W TrackerMIL : public Tracker
   /** @brief Constructor
     @param parameters MIL parameters TrackerMIL::Params
      */
-  static Ptr<TrackerMIL> create(const TrackerMIL::Params &parameters);
-
-  CV_WRAP static Ptr<TrackerMIL> create();
+  CV_WRAP static Ptr<TrackerMIL> create(const TrackerMIL::Params &parameters = TrackerMIL::Params());
 
   virtual ~TrackerMIL() CV_OVERRIDE {}
 };
@@ -1100,14 +1098,14 @@ drifting problem. The implementation is based on @cite OLB .
 class CV_EXPORTS_W TrackerBoosting : public Tracker
 {
  public:
-  struct CV_EXPORTS Params
+  struct CV_EXPORTS_W_SIMPLE Params
   {
-    Params();
-    int numClassifiers;  //!<the number of classifiers to use in a OnlineBoosting algorithm
-    float samplerOverlap;  //!<search region parameters to use in a OnlineBoosting algorithm
-    float samplerSearchFactor;  //!< search region parameters to use in a OnlineBoosting algorithm
-    int iterationInit;  //!<the initial iterations
-    int featureSetNumFeatures;  //!< # features
+    CV_WRAP Params();
+    CV_PROP_RW int numClassifiers;         //!<the number of classifiers to use in a OnlineBoosting algorithm
+    CV_PROP_RW float samplerOverlap;       //!<search region parameters to use in a OnlineBoosting algorithm
+    CV_PROP_RW float samplerSearchFactor;  //!< search region parameters to use in a OnlineBoosting algorithm
+    CV_PROP_RW int iterationInit;          //!<the initial iterations
+    CV_PROP_RW int featureSetNumFeatures;  //!< # features
     /**
      * \brief Read parameters from a file
      */
@@ -1122,9 +1120,7 @@ class CV_EXPORTS_W TrackerBoosting : public Tracker
   /** @brief Constructor
     @param parameters BOOSTING parameters TrackerBoosting::Params
      */
-  static Ptr<TrackerBoosting> create(const TrackerBoosting::Params &parameters);
-
-  CV_WRAP static Ptr<TrackerBoosting> create();
+  CV_WRAP static Ptr<TrackerBoosting> create(const TrackerBoosting::Params &parameters = TrackerBoosting::Params());
 
   virtual ~TrackerBoosting() CV_OVERRIDE {}
 };
@@ -1142,17 +1138,17 @@ reference purpose.
 class CV_EXPORTS_W TrackerMedianFlow : public Tracker
 {
  public:
-  struct CV_EXPORTS Params
+  struct CV_EXPORTS_W_SIMPLE Params
   {
-    Params(); //!<default constructor
-              //!<note that the default values of parameters are recommended for most of use cases
-    int pointsInGrid;      //!<square root of number of keypoints used; increase it to trade
-                           //!<accurateness for speed
-    cv::Size winSize;      //!<window size parameter for Lucas-Kanade optical flow
-    int maxLevel;          //!<maximal pyramid level number for Lucas-Kanade optical flow
-    TermCriteria termCriteria; //!<termination criteria for Lucas-Kanade optical flow
-    cv::Size winSizeNCC;   //!<window size around a point for normalized cross-correlation check
-    double maxMedianLengthOfDisplacementDifference; //!<criterion for loosing the tracked object
+    CV_WRAP Params(); //!<default constructor
+                      //!<note that the default values of parameters are recommended for most of use cases
+    CV_PROP_RW int pointsInGrid;      //!<square root of number of keypoints used; increase it to trade
+                                      //!<accurateness for speed
+    CV_PROP_RW cv::Size winSize;      //!<window size parameter for Lucas-Kanade optical flow
+    CV_PROP_RW int maxLevel;          //!<maximal pyramid level number for Lucas-Kanade optical flow
+    CV_PROP_RW TermCriteria termCriteria; //!<termination criteria for Lucas-Kanade optical flow
+    CV_PROP_RW cv::Size winSizeNCC;   //!<window size around a point for normalized cross-correlation check
+    CV_PROP_RW double maxMedianLengthOfDisplacementDifference; //!<criterion for loosing the tracked object
 
     void read( const FileNode& /*fn*/ );
     void write( FileStorage& /*fs*/ ) const;
@@ -1161,9 +1157,7 @@ class CV_EXPORTS_W TrackerMedianFlow : public Tracker
   /** @brief Constructor
     @param parameters Median Flow parameters TrackerMedianFlow::Params
     */
-  static Ptr<TrackerMedianFlow> create(const TrackerMedianFlow::Params &parameters);
-
-  CV_WRAP static Ptr<TrackerMedianFlow> create();
+  CV_WRAP static Ptr<TrackerMedianFlow> create(const TrackerMedianFlow::Params &parameters = TrackerMedianFlow::Params());
 
   virtual ~TrackerMedianFlow() CV_OVERRIDE {}
 };
@@ -1184,9 +1178,9 @@ occlusions, object absence etc.
 class CV_EXPORTS_W TrackerTLD : public Tracker
 {
  public:
-  struct CV_EXPORTS Params
+  struct CV_EXPORTS_W_SIMPLE Params
   {
-    Params();
+    CV_WRAP Params();
     void read( const FileNode& /*fn*/ );
     void write( FileStorage& /*fs*/ ) const;
   };
@@ -1194,9 +1188,7 @@ class CV_EXPORTS_W TrackerTLD : public Tracker
   /** @brief Constructor
     @param parameters TLD parameters TrackerTLD::Params
      */
-  static Ptr<TrackerTLD> create(const TrackerTLD::Params &parameters);
-
-  CV_WRAP static Ptr<TrackerTLD> create();
+  CV_WRAP static Ptr<TrackerTLD> create(const TrackerTLD::Params &parameters = TrackerTLD::Params());
 
   virtual ~TrackerTLD() CV_OVERRIDE {}
 };
@@ -1224,12 +1216,12 @@ public:
     CUSTOM = (1 << 2)
   };
 
-  struct CV_EXPORTS Params
+  struct CV_EXPORTS_W_SIMPLE Params
   {
     /**
     * \brief Constructor
     */
-    Params();
+    CV_WRAP Params();
 
     /**
     * \brief Read parameters from a file
@@ -1241,20 +1233,20 @@ public:
     */
     void write(FileStorage& /*fs*/) const;
 
-    float detect_thresh;         //!<  detection confidence threshold
-    float sigma;                 //!<  gaussian kernel bandwidth
-    float lambda;                //!<  regularization
-    float interp_factor;         //!<  linear interpolation factor for adaptation
-    float output_sigma_factor;   //!<  spatial bandwidth (proportional to target)
-    float pca_learning_rate;     //!<  compression learning rate
-    bool resize;                  //!<  activate the resize feature to improve the processing speed
-    bool split_coeff;             //!<  split the training coefficients into two matrices
-    bool wrap_kernel;             //!<  wrap around the kernel values
-    bool compress_feature;        //!<  activate the pca method to compress the features
-    int max_patch_size;           //!<  threshold for the ROI size
-    int compressed_size;          //!<  feature size after compression
-    int desc_pca;        //!<  compressed descriptors of TrackerKCF::MODE
-    int desc_npca;       //!<  non-compressed descriptors of TrackerKCF::MODE
+    CV_PROP_RW float detect_thresh;         //!<  detection confidence threshold
+    CV_PROP_RW float sigma;                 //!<  gaussian kernel bandwidth
+    CV_PROP_RW float lambda;                //!<  regularization
+    CV_PROP_RW float interp_factor;         //!<  linear interpolation factor for adaptation
+    CV_PROP_RW float output_sigma_factor;   //!<  spatial bandwidth (proportional to target)
+    CV_PROP_RW float pca_learning_rate;     //!<  compression learning rate
+    CV_PROP_RW bool resize;                 //!<  activate the resize feature to improve the processing speed
+    CV_PROP_RW bool split_coeff;            //!<  split the training coefficients into two matrices
+    CV_PROP_RW bool wrap_kernel;            //!<  wrap around the kernel values
+    CV_PROP_RW bool compress_feature;       //!<  activate the pca method to compress the features
+    CV_PROP_RW int max_patch_size;          //!<  threshold for the ROI size
+    CV_PROP_RW int compressed_size;         //!<  feature size after compression
+    CV_PROP_RW int desc_pca;                //!<  compressed descriptors of TrackerKCF::MODE
+    CV_PROP_RW int desc_npca;               //!<  non-compressed descriptors of TrackerKCF::MODE
   };
 
   virtual void setFeatureExtractor(void(*)(const Mat, const Rect, Mat&), bool pca_func = false) = 0;
@@ -1262,9 +1254,7 @@ public:
   /** @brief Constructor
   @param parameters KCF parameters TrackerKCF::Params
   */
-  static Ptr<TrackerKCF> create(const TrackerKCF::Params &parameters);
-
-  CV_WRAP static Ptr<TrackerKCF> create();
+  CV_WRAP static Ptr<TrackerKCF> create(const TrackerKCF::Params &parameters = TrackerKCF::Params());
 
   virtual ~TrackerKCF() CV_OVERRIDE {}
 };
@@ -1287,9 +1277,9 @@ public:
 class CV_EXPORTS_W TrackerGOTURN : public Tracker
 {
 public:
-  struct CV_EXPORTS Params
+  struct CV_EXPORTS_W_SIMPLE Params
   {
-    Params();
+    CV_WRAP Params();
     void read(const FileNode& /*fn*/);
     void write(FileStorage& /*fs*/) const;
   };
@@ -1297,9 +1287,7 @@ public:
   /** @brief Constructor
   @param parameters GOTURN parameters TrackerGOTURN::Params
   */
-  static Ptr<TrackerGOTURN> create(const TrackerGOTURN::Params &parameters);
-
-  CV_WRAP static Ptr<TrackerGOTURN> create();
+  CV_WRAP static Ptr<TrackerGOTURN> create(const TrackerGOTURN::Params &parameters = TrackerGOTURN::Params());
 
   virtual ~TrackerGOTURN() CV_OVERRIDE {}
 };
@@ -1479,12 +1467,12 @@ The implementation is based on @cite Lukezic_IJCV2018 Discriminative Correlation
 class CV_EXPORTS_W TrackerCSRT : public Tracker
 {
 public:
-  struct CV_EXPORTS Params
+  struct CV_EXPORTS_W_SIMPLE Params
   {
     /**
     * \brief Constructor
     */
-    Params();
+    CV_WRAP Params();
 
     /**
     * \brief Read parameters from a file
@@ -1496,44 +1484,42 @@ public:
     */
     void write(cv::FileStorage& fs) const;
 
-    bool use_hog;
-    bool use_color_names;
-    bool use_gray;
-    bool use_rgb;
-    bool use_channel_weights;
-    bool use_segmentation;
+    CV_PROP_RW bool use_hog;
+    CV_PROP_RW bool use_color_names;
+    CV_PROP_RW bool use_gray;
+    CV_PROP_RW bool use_rgb;
+    CV_PROP_RW bool use_channel_weights;
+    CV_PROP_RW bool use_segmentation;
 
-    std::string window_function; //!<  Window function: "hann", "cheb", "kaiser"
-    float kaiser_alpha;
-    float cheb_attenuation;
+    CV_PROP_RW std::string window_function; //!<  Window function: "hann", "cheb", "kaiser"
+    CV_PROP_RW float kaiser_alpha;
+    CV_PROP_RW float cheb_attenuation;
 
-    float template_size;
-    float gsl_sigma;
-    float hog_orientations;
-    float hog_clip;
-    float padding;
-    float filter_lr;
-    float weights_lr;
-    int num_hog_channels_used;
-    int admm_iterations;
-    int histogram_bins;
-    float histogram_lr;
-    int background_ratio;
-    int number_of_scales;
-    float scale_sigma_factor;
-    float scale_model_max_area;
-    float scale_lr;
-    float scale_step;
+    CV_PROP_RW float template_size;
+    CV_PROP_RW float gsl_sigma;
+    CV_PROP_RW float hog_orientations;
+    CV_PROP_RW float hog_clip;
+    CV_PROP_RW float padding;
+    CV_PROP_RW float filter_lr;
+    CV_PROP_RW float weights_lr;
+    CV_PROP_RW int num_hog_channels_used;
+    CV_PROP_RW int admm_iterations;
+    CV_PROP_RW int histogram_bins;
+    CV_PROP_RW float histogram_lr;
+    CV_PROP_RW int background_ratio;
+    CV_PROP_RW int number_of_scales;
+    CV_PROP_RW float scale_sigma_factor;
+    CV_PROP_RW float scale_model_max_area;
+    CV_PROP_RW float scale_lr;
+    CV_PROP_RW float scale_step;
 
-    float psr_threshold; //!< we lost the target, if the psr is lower than this.
+    CV_PROP_RW float psr_threshold; //!< we lost the target, if the psr is lower than this.
   };
 
   /** @brief Constructor
   @param parameters CSRT parameters TrackerCSRT::Params
   */
-  static Ptr<TrackerCSRT> create(const TrackerCSRT::Params &parameters);
-
-  CV_WRAP static Ptr<TrackerCSRT> create();
+  CV_WRAP static Ptr<TrackerCSRT> create(const TrackerCSRT::Params &parameters = TrackerCSRT::Params());
 
   virtual void setInitialMask(const Mat mask) = 0;
 
