@@ -5,75 +5,74 @@
 #ifndef OPENCV_QUALITY_QUALITY_UTILS_HPP
 #define OPENCV_QUALITY_QUALITY_UTILS_HPP
 
-#include <vector>
 #include "QualityBase.hpp"
 
 namespace cv {
-    namespace quality {
-        namespace quality_utils {
+namespace quality {
+namespace quality_utils {
 
-            // default type of matrix to expand to
-            static const int EXPANDED_MAT_DEFAULT_TYPE = CV_32F;
+    // default type of matrix to expand to
+    static CV_CONSTEXPR const int EXPANDED_MAT_DEFAULT_TYPE = CV_32F;
 
-            // expand matrix to target type
-            template <typename OutT, typename InT>
-            inline OutT expand_mat(const InT& src, int TYPE_DEFAULT = EXPANDED_MAT_DEFAULT_TYPE)
-            {
-                OutT result = {};
+    // expand matrix to target type
+    template <typename OutT, typename InT>
+    inline OutT expand_mat(const InT& src, int TYPE_DEFAULT = EXPANDED_MAT_DEFAULT_TYPE)
+    {
+        OutT result = {};
 
-                // by default, expand to 32F unless we already have >= 32 bits, then go to 64
-                //  if/when we can detect OpenCL CV_16F support, opt for that when input depth == 8
-                //  note that this may impact the precision of the algorithms and would need testing
-                int type = TYPE_DEFAULT;
+        // by default, expand to 32F unless we already have >= 32 bits, then go to 64
+        //  if/when we can detect OpenCL CV_16F support, opt for that when input depth == 8
+        //  note that this may impact the precision of the algorithms and would need testing
+        int type = TYPE_DEFAULT;
 
-                switch (src.depth())
-                {
-                case CV_32F:
-                case CV_32S:
-                case CV_64F:
-                    type = CV_64F;
-                };  // switch
+        switch (src.depth())
+        {
+        case CV_32F:
+        case CV_32S:
+        case CV_64F:
+            type = CV_64F;
+        };  // switch
 
-                src.convertTo(result, type);
-                return result;
-            }
-
-            // convert input array to vector of expanded mat types
-            template <typename R>
-            inline std::vector<R> expand_mats(InputArrayOfArrays arr, int TYPE_DEFAULT = EXPANDED_MAT_DEFAULT_TYPE)
-            {
-                std::vector<R> result = {};
-                std::vector<UMat> umats = {};
-                std::vector<Mat> mats = {};
-
-                if (arr.isUMatVector())
-                    arr.getUMatVector(umats);
-                else if (arr.isUMat())
-                    umats.emplace_back(arr.getUMat());
-                else if (arr.isMatVector())
-                    arr.getMatVector(mats);
-                else if (arr.isMat())
-                    mats.emplace_back(arr.getMat());
-                else
-                    CV_Error(Error::StsNotImplemented, "Unsupported input type");
-
-                // convert umats, mats to expanded internal type
-                for (auto& umat : umats)
-                    result.emplace_back(expand_mat<R>(umat, TYPE_DEFAULT ));
-
-                for (auto& mat : mats)
-                    result.emplace_back(expand_mat<R>(mat, TYPE_DEFAULT ));
-
-                return result;
-            }
-
-            // multiply a cv::Scalar by a scalar
-            inline void scalar_multiply(cv::Scalar& what, double val)
-            {
-                cv::multiply(what, cv::Scalar{ val, val, val, val }, what);
-            }
-
-        }
+        src.convertTo(result, type);
+        return result;
     }
+
+    // convert input array to vector of expanded mat types
+    template <typename R>
+    inline std::vector<R> expand_mats(InputArrayOfArrays arr, int TYPE_DEFAULT = EXPANDED_MAT_DEFAULT_TYPE)
+    {
+        std::vector<R> result = {};
+        std::vector<UMat> umats = {};
+        std::vector<Mat> mats = {};
+
+        if (arr.isUMatVector())
+            arr.getUMatVector(umats);
+        else if (arr.isUMat())
+            umats.emplace_back(arr.getUMat());
+        else if (arr.isMatVector())
+            arr.getMatVector(mats);
+        else if (arr.isMat())
+            mats.emplace_back(arr.getMat());
+        else
+            CV_Error(Error::StsNotImplemented, "Unsupported input type");
+
+        // convert umats, mats to expanded internal type
+        for (auto& umat : umats)
+            result.emplace_back(expand_mat<R>(umat, TYPE_DEFAULT ));
+
+        for (auto& mat : mats)
+            result.emplace_back(expand_mat<R>(mat, TYPE_DEFAULT ));
+
+        return result;
+    }
+
+    // multiply a cv::Scalar by a scalar
+    inline void scalar_multiply(cv::Scalar& what, double val)
+    {
+        cv::multiply(what, cv::Scalar{ val, val, val, val }, what);
+    }
+
+}   // quality_utils
+}
 }
 #endif

@@ -18,21 +18,17 @@ namespace opencv_test {
         // static method
         TEST(TEST_CASE_NAME, static_)
         {
-            std::vector<quality::quality_map_type> qMats = {};
+            std::vector<cv::Mat> qMats = {};
             quality_expect_near(quality::QualitySSIM::compute(get_testfile_1a(), get_testfile_1a(), qMats), cv::Scalar(1.)); // ref vs ref == 1.
             EXPECT_EQ(qMats.size(), 1U );
         }
 
-        // single channel
+        // single channel, with/without opencl
         TEST(TEST_CASE_NAME, single_channel)
         {
-            quality_test(quality::QualitySSIM::create(get_testfile_1a()), get_testfile_1b(), SSIM_EXPECTED_1);
-        }
-
-        // single channel, no opencl
-        TEST(TEST_CASE_NAME, single_channel_no_ocl)
-        {
-            quality_test(quality::QualitySSIM::create(get_testfile_1a()), get_testfile_1b(), SSIM_EXPECTED_1, true, true);
+            auto fn = []() { quality_test(quality::QualitySSIM::create(get_testfile_1a()), get_testfile_1b(), SSIM_EXPECTED_1); };
+            OCL_OFF(fn);
+            OCL_ON(fn);
         }
 
         // multi-channel

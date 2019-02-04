@@ -7,9 +7,7 @@
 #include <chrono>
 #include <opencv2/core.hpp>
 #include <opencv2/ts.hpp>
-#ifdef HAVE_OPENCL
-#include "opencv2/core/ocl.hpp" // setUseOpenCL
-#endif
+#include <opencv2/ts/ocl_test.hpp>  // OCL_ON, OCL_OFF
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/quality.hpp>
 
@@ -62,31 +60,25 @@ namespace opencv_test {
 
         // execute quality test for a pair of images
         template <typename TMat>
-        inline void quality_test( cv::Ptr<quality::QualityBase> ptr, const TMat& cmp, const Scalar& expected, const std::size_t quality_maps_expected = 1, const bool disable_ocl = false )
+        inline void quality_test(cv::Ptr<quality::QualityBase> ptr, const TMat& cmp, const Scalar& expected, const std::size_t quality_maps_expected = 1)
         {
-#ifdef HAVE_OPENCL
-            auto prev = cv::ocl::useOpenCL();
-            if ( disable_ocl )
-                cv::ocl::setUseOpenCL(false);
-#endif // HAVE_OPENCL
-
-            EXPECT_TRUE( ptr->getQualityMaps().empty());
+            std::vector<cv::Mat> qMats = {};
+            ptr->getQualityMaps(qMats);
+            EXPECT_TRUE( qMats.empty());
 
             quality_expect_near( expected, ptr->compute(cmp));
 
             EXPECT_FALSE(ptr->empty());
-            EXPECT_EQ(ptr->getQualityMaps().size(), quality_maps_expected);
+            ptr->getQualityMaps(qMats);
+            EXPECT_EQ( qMats.size(), quality_maps_expected);
+            for (auto& qm : qMats)
+            {
+                EXPECT_GT(qm.rows, 0);
+                EXPECT_GT(qm.cols, 0);
+            }
 
             ptr->clear();
             EXPECT_TRUE(ptr->empty());
-            EXPECT_TRUE(ptr->getQualityMaps().empty());
-
-            if (disable_ocl)    // keep this outside ifdef HAVE_OPENCL to avoid unused parameter compiler warnings
-            {
-#ifdef HAVE_OPENCL
-                cv::ocl::setUseOpenCL(prev);
-#endif
-            }
         }
 
         template <typename Fn>

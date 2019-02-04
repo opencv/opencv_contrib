@@ -38,14 +38,15 @@ Quick Start/Usage
     #include <opencv2/quality.hpp>
 
     cv::Mat img1, img2; /* your cv::Mat images */
-    std::vector<quality::quality_map_type> quality_maps;  /* output quality maps, optional */
+    std::vector<cv::Mat> quality_maps;  /* output quality map(s) (optional) */
 
      /* compute MSE via static method */
     cv::Scalar result_static = quality::QualityMSE::compute(img1, img2, quality_maps);  /* or cv::noArray() if not interested in output quality maps */
 
     /* alternatively, compute MSE via instance */
     cv::Ptr<quality::QualityBase> ptr = quality::QualityMSE::create(img1);
-    cv::Scalar result = ptr->compute( img2 );  /* compute MSE, compare img1 vs img2.  Quality maps accessed via ptr->getQualityMaps() */
+    cv::Scalar result = ptr->compute( img2 );  /* compute MSE, compare img1 vs img2 */
+	ptr->getQualityMaps(quality_maps);	/* optionally, access output quality maps */
 
 
 To Do

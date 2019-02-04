@@ -2,8 +2,9 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+#include "precomp.hpp"
+#include "opencv2/quality/QualityBase.hpp"
 #include "opencv2/quality/QualitySSIM.hpp"
-
 #include "opencv2/imgproc.hpp"  // GaussianBlur
 #include "opencv2/quality/quality_utils.hpp"
 
@@ -14,6 +15,7 @@ namespace
 
     using _mat_type = quality::detail::ssim::mat_type;
     using _mat_data_type = quality::detail::ssim::mat_data;
+    using _quality_map_type = quality::detail::quality_map_type;
 
     // converts mat/umat to vector of mat_data
     std::vector<_mat_data_type> create_mat_data(InputArrayOfArrays arr)
@@ -36,7 +38,7 @@ namespace
 
     // computes ssim and quality map for single frame
     // based on https://docs.opencv.org/2.4/doc/tutorials/highgui/video-input-psnr-ssim/video-input-psnr-ssim.html
-    std::pair<cv::Scalar, quality_map_type> compute(const _mat_data_type& lhs, const _mat_data_type& rhs)
+    std::pair<cv::Scalar, _quality_map_type> compute(const _mat_data_type& lhs, const _mat_data_type& rhs)
     {
         const double
             C1 = 6.5025
@@ -92,7 +94,7 @@ namespace
         CV_Assert(lhs.size() == rhs.size());
 
         Scalar result = {};
-        std::vector<quality_map_type> quality_maps = {};
+        std::vector<_quality_map_type> quality_maps = {};
         const auto sz = lhs.size();
 
         for (unsigned i = 0; i < sz; ++i)

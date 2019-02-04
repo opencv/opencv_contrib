@@ -17,21 +17,17 @@ namespace opencv_test {
         // static method
         TEST(TEST_CASE_NAME, static_)
         {
-            std::vector<quality::quality_map_type> qMats = {};
+            std::vector<cv::Mat> qMats = {};
             quality_expect_near(quality::QualityPSNR::compute(get_testfile_1a(), get_testfile_1a(), qMats), cv::Scalar(INFINITY,INFINITY,INFINITY,INFINITY)); // ref vs ref == inf
             EXPECT_EQ(qMats.size(), 1U);
         }
 
-        // single channel
+        // single channel, with/without opencl
         TEST(TEST_CASE_NAME, single_channel)
         {
-            quality_test(quality::QualityPSNR::create(get_testfile_1a()), get_testfile_1b(), PSNR_EXPECTED_1);
-        }
-
-        // single channel, no opencl
-        TEST(TEST_CASE_NAME, single_channel_no_ocl)
-        {
-            quality_test(quality::QualityPSNR::create(get_testfile_1a()), get_testfile_1b(), PSNR_EXPECTED_1, true, true);
+            auto fn = []() { quality_test(quality::QualityPSNR::create(get_testfile_1a()), get_testfile_1b(), PSNR_EXPECTED_1); };
+            OCL_OFF( fn );
+            OCL_ON( fn );
         }
 
         // multi-channel
@@ -46,7 +42,7 @@ namespace opencv_test {
             cv::Scalar expected;
             cv::add(MSE_EXPECTED_1, MSE_EXPECTED_2, expected);
             quality::quality_utils::scalar_multiply(expected, .5);
-            expected = quality::detail::mse_to_psnr(expected, QUALITY_PSNR_MAX_PIXEL_VALUE_DEFAULT);
+            expected = quality::detail::mse_to_psnr(expected, quality::detail::QUALITY_PSNR_MAX_PIXEL_VALUE_DEFAULT);
 
             quality_test(quality::QualityPSNR::create(get_testfile_1a2a()), get_testfile_1b2b(), expected, 2);
         }

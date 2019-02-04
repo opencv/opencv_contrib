@@ -2,6 +2,8 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+#include "precomp.hpp"
+
 #include "opencv2/quality/QualityGMSD.hpp"
 #include "opencv2/core/ocl.hpp"
 
@@ -15,6 +17,7 @@ namespace
 
     using _mat_type = quality::detail::gmsd::mat_type;
     using _mat_data_type = quality::detail::gmsd::mat_data;
+    using _quality_map_type = quality::detail::quality_map_type;
 
     template <typename SrcMat, typename DstMat>
     void filter_2D(const SrcMat& src, DstMat& dst, cv::InputArray kernel, cv::Point anchor, double delta, int border_type )
@@ -22,7 +25,7 @@ namespace
         cv::filter2D(src, dst, src.depth(), kernel, anchor, delta, border_type);
     }
 
-    // At the time of this writing (OpenCV 4.0.0) cv::Filter2D with OpenCL+UMat/32F suffers from precision loss large enough
+    // At the time of this writing (OpenCV 4.0.1) cv::Filter2D with OpenCL+UMat/32F suffers from precision loss large enough
     //  to warrant conversion prior to application of Filter2D
     template <typename DstMat>
     void filter_2D( const UMat& src, DstMat& dst, cv::InputArray kernel, cv::Point anchor, double delta, int border_type )
@@ -34,8 +37,7 @@ namespace
 
         // UMat conversion to 64F
         UMat src_converted = {};
-        src.copyTo(src_converted);
-        src_converted.convertTo(src_converted, CV_64F);
+        src.convertTo(src_converted, CV_64F);
         dst.convertTo(dst, CV_64F);
 
         filter_2D<UMat, DstMat>(src_converted, dst, kernel, anchor, delta, border_type);
@@ -90,10 +92,10 @@ namespace
     }
 
     // computes gmsd and quality map for single frame
-    std::pair<cv::Scalar, quality_map_type> compute(const _mat_data_type& lhs, const _mat_data_type& rhs)
+    std::pair<cv::Scalar, _quality_map_type> compute(const _mat_data_type& lhs, const _mat_data_type& rhs)
     {
         static const double T = 170.;
-        std::pair<cv::Scalar, quality_map_type> result;
+        std::pair<cv::Scalar, _quality_map_type> result;
 
         // compute quality_map = (2 * gm1 .* gm2 + T) ./ (gm1 .^2 + gm2 .^2 + T);
         _mat_type num
@@ -111,6 +113,7 @@ namespace
         cv::divide(num, denom, qm);
 
         cv::meanStdDev(qm, cv::noArray(), result.first);
+        result.second = std::move(qm);
 
         return result;
     }   // compute
@@ -122,7 +125,7 @@ namespace
         CV_Assert(lhs.size() == rhs.size());
 
         Scalar result = {};
-        std::vector<quality_map_type> quality_maps = {};
+        std::vector<_quality_map_type> quality_maps = {};
         const auto sz = lhs.size();
 
         for (unsigned i = 0; i < sz; ++i)
