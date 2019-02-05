@@ -782,7 +782,7 @@ class CV_EXPORTS TrackerSamplerCSC : public TrackerSamplerAlgorithm
 
   struct CV_EXPORTS_W_SIMPLE Params
   {
-    CV_WRAP Params();
+    Params();
     CV_PROP_RW float initInRad;        //!< radius for gathering positive instances during init
     CV_PROP_RW float trackInPosRad;    //!< radius for gathering positive instances during tracking
     CV_PROP_RW float searchWinSize;    //!< size of search window
@@ -838,7 +838,7 @@ class CV_EXPORTS TrackerSamplerCS : public TrackerSamplerAlgorithm
 
   struct CV_EXPORTS_W_SIMPLE Params
   {
-    CV_WRAP Params();
+    Params();
     CV_PROP_RW float overlap;       //!<overlapping for the search windows
     CV_PROP_RW float searchFactor;  //!<search region parameter
   };
@@ -902,7 +902,7 @@ public:
  */
   struct CV_EXPORTS_W_SIMPLE Params
   {
-    CV_WRAP Params();
+    Params();
     CV_PROP_RW int iterationNum; //!< number of selection rounds
     CV_PROP_RW int particlesNum; //!< number of "perturbed" boxes on each round
     CV_PROP_RW double alpha;     //!< with each new round we exponentially decrease the amount of "perturbing" we allow (like in simulated annealing)
@@ -979,7 +979,7 @@ class CV_EXPORTS TrackerFeatureHAAR : public TrackerFeature
  public:
   struct CV_EXPORTS_W_SIMPLE Params
   {
-    CV_WRAP Params();
+    Params();
     CV_PROP_RW int numFeatures;  //!< # of rects
     CV_PROP_RW Size rectSize;    //!< rect size
     CV_PROP_RW bool isIntegral;  //!< true if input images are integral, false otherwise
@@ -1067,7 +1067,7 @@ class CV_EXPORTS_W TrackerMIL : public Tracker
  public:
   struct CV_EXPORTS_W_SIMPLE Params
   {
-    CV_WRAP Params();
+    Params();
     //parameters for sampler
     CV_PROP_RW float samplerInitInRadius;  //!< radius for gathering positive instances during init
     CV_PROP_RW int samplerInitMaxNegNum;   //!< # negative samples to use during init
@@ -1100,7 +1100,7 @@ class CV_EXPORTS_W TrackerBoosting : public Tracker
  public:
   struct CV_EXPORTS_W_SIMPLE Params
   {
-    CV_WRAP Params();
+    Params();
     CV_PROP_RW int numClassifiers;         //!<the number of classifiers to use in a OnlineBoosting algorithm
     CV_PROP_RW float samplerOverlap;       //!<search region parameters to use in a OnlineBoosting algorithm
     CV_PROP_RW float samplerSearchFactor;  //!< search region parameters to use in a OnlineBoosting algorithm
@@ -1140,7 +1140,7 @@ class CV_EXPORTS_W TrackerMedianFlow : public Tracker
  public:
   struct CV_EXPORTS_W_SIMPLE Params
   {
-    CV_WRAP Params(); //!<default constructor
+    Params();         //!<default constructor
                       //!<note that the default values of parameters are recommended for most of use cases
     CV_PROP_RW int pointsInGrid;      //!<square root of number of keypoints used; increase it to trade
                                       //!<accurateness for speed
@@ -1180,7 +1180,7 @@ class CV_EXPORTS_W TrackerTLD : public Tracker
  public:
   struct CV_EXPORTS_W_SIMPLE Params
   {
-    CV_WRAP Params();
+    Params();
     void read( const FileNode& /*fn*/ );
     void write( FileStorage& /*fs*/ ) const;
   };
@@ -1221,7 +1221,7 @@ public:
     /**
     * \brief Constructor
     */
-    CV_WRAP Params();
+    Params();
 
     /**
     * \brief Read parameters from a file
@@ -1279,7 +1279,7 @@ class CV_EXPORTS_W TrackerGOTURN : public Tracker
 public:
   struct CV_EXPORTS_W_SIMPLE Params
   {
-    CV_WRAP Params();
+    Params();
     void read(const FileNode& /*fn*/);
     void write(FileStorage& /*fs*/) const;
   };
@@ -1472,7 +1472,7 @@ public:
     /**
     * \brief Constructor
     */
-    CV_WRAP Params();
+    Params();
 
     /**
     * \brief Read parameters from a file
