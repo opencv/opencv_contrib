@@ -163,7 +163,7 @@ protected:
 /**
  * \brief Modality that computes quantized gradient orientations from a color image.
  */
-class CV_EXPORTS ColorGradient : public Modality
+class CV_EXPORTS_W ColorGradient : public Modality
 {
 public:
   /**
@@ -181,14 +181,16 @@ public:
    */
   ColorGradient(float weak_threshold, size_t num_features, float strong_threshold);
 
+  CV_WRAP static Ptr<ColorGradient> create(float weak_threshold, size_t num_features, float strong_threshold);
+
   virtual String name() const CV_OVERRIDE;
 
   virtual void read(const FileNode& fn) CV_OVERRIDE;
   virtual void write(FileStorage& fs) const CV_OVERRIDE;
 
-  float weak_threshold;
-  size_t num_features;
-  float strong_threshold;
+  CV_PROP float weak_threshold;
+  CV_PROP size_t num_features;
+  CV_PROP float strong_threshold;
 
 protected:
   virtual Ptr<QuantizedPyramid> processImpl(const Mat& src,
@@ -198,7 +200,7 @@ protected:
 /**
  * \brief Modality that computes quantized surface normals from a dense depth map.
  */
-class CV_EXPORTS DepthNormal : public Modality
+class CV_EXPORTS_W DepthNormal : public Modality
 {
 public:
   /**
@@ -219,15 +221,18 @@ public:
   DepthNormal(int distance_threshold, int difference_threshold, size_t num_features,
               int extract_threshold);
 
+  CV_WRAP static Ptr<DepthNormal> create(int distance_threshold, int difference_threshold,
+                                         size_t num_features, int extract_threshold);
+
   virtual String name() const CV_OVERRIDE;
 
   virtual void read(const FileNode& fn) CV_OVERRIDE;
   virtual void write(FileStorage& fs) const CV_OVERRIDE;
 
-  int distance_threshold;
-  int difference_threshold;
-  size_t num_features;
-  int extract_threshold;
+  CV_PROP int distance_threshold;
+  CV_PROP int difference_threshold;
+  CV_PROP size_t num_features;
+  CV_PROP int extract_threshold;
 
 protected:
   virtual Ptr<QuantizedPyramid> processImpl(const Mat& src,
