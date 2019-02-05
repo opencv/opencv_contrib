@@ -27,13 +27,8 @@ namespace opencv_test {
         TEST(TEST_CASE_NAME, single_channel)
         {
             auto fn = []() { quality_test(quality::QualityGMSD::create(get_testfile_1a()), get_testfile_1b(), GMSD_EXPECTED_1); };
-
-#ifdef HAVE_OPENCL
-            OCL_OFF(fn);
-            OCL_ON(fn);
-#else
-            fn();
-#endif
+            OCL_OFF(fn());
+            OCL_ON(fn());
         }
 
         // multi-channel
