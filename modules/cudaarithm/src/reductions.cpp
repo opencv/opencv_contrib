@@ -189,7 +189,7 @@ void cv::cuda::rectStdDev(InputArray _src, InputArray _sqr, OutputArray _dst, Re
     GpuMat src = getInputMat(_src, _stream);
     GpuMat sqr = getInputMat(_sqr, _stream);
 
-    CV_Assert( src.type() == CV_32SC1 && sqr.type() == CV_64FC1 );
+    CV_Assert( src.type() == CV_32SC1 && sqr.type() == CV_32FC1 );
 
     GpuMat dst = getOutputMat(_dst, src.size(), CV_32FC1, _stream);
 
