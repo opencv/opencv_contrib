@@ -1,0 +1,15 @@
+*.autosave
+*.pyc
+*.user
+*~
+.*.swp
+.DS_Store
+.sw[a-z]
+Thumbs.db
+tags
+tegra/
+*.i
+.download*
+/.vs
+/modules/quality/vs
+/modules/quality/doc
