@@ -9,74 +9,79 @@
 
 namespace cv {
 namespace quality {
-namespace detail {
-namespace gmsd {
 
-    using mat_type = UMat;
+/**
+@brief Full reference GMSD algorithm
+http://www4.comp.polyu.edu.hk/~cslzhang/IQA/GMSD/GMSD.htm
+*/
+class CV_EXPORTS_W QualityGMSD
+    : public QualityBase {
+public:
+
+    /**
+    @brief Compute GMSD
+    @param cmpImgs Comparison images
+    @returns Per-channel GMSD
+    */
+    CV_WRAP cv::Scalar compute(InputArrayOfArrays cmpImgs) CV_OVERRIDE;
+
+    /** @brief Implements Algorithm::empty()  */
+    CV_WRAP bool empty() const CV_OVERRIDE { return _refImgData.empty() && QualityBase::empty(); }
+
+    /** @brief Implements Algorithm::clear()  */
+    CV_WRAP void clear() CV_OVERRIDE { _refImgData.clear(); QualityBase::clear(); }
+
+    /**
+    @brief Create an object which calculates image quality
+    @param refImgs input image(s) to use as the source for comparison
+    */
+    CV_WRAP static Ptr<QualityGMSD> create(InputArrayOfArrays refImgs);
+
+    /**
+    @brief static method for computing quality
+    @param refImgs reference image(s)
+    @param cmpImgs comparison image(s)
+    @param qualityMaps output quality map(s), or cv::noArray()
+    @returns cv::Scalar with per-channel quality value.  Values range from 0 (worst) to 1 (best)
+    */
+    CV_WRAP static cv::Scalar compute(InputArrayOfArrays refImgs, InputArrayOfArrays cmpImgs, OutputArrayOfArrays qualityMaps);
+
+private:
 
     // holds computed values for an input mat
-    struct mat_data
+    struct _mat_data
     {
+        using mat_type = cv::UMat;
+
         mat_type
             gradient_map
             , gradient_map_squared
             ;
 
-        mat_data(const mat_type&);
+        _mat_data(const mat_type&);
+
+        // converts mat/umat to vector of mat_data
+        static std::vector<_mat_data> create(InputArrayOfArrays arr);
+
+        static cv::Scalar compute(const std::vector<_mat_data>& lhs, const std::vector<_mat_data>& rhs, OutputArrayOfArrays qualityMaps);
+        static std::pair<cv::Scalar, cv::UMat> compute(const _mat_data& lhs, const _mat_data& rhs);
+
     };  // mat_data
-}   // gmsd
-}   // detail
+
+protected:
+
+    /** @brief Reference image data */
+    std::vector<_mat_data> _refImgData;
 
     /**
-    @brief Full reference GMSD algorithm
-    http://www4.comp.polyu.edu.hk/~cslzhang/IQA/GMSD/GMSD.htm
+    @brief Constructor
+    @param refImgData vector of reference images, converted to internal type
     */
-    class CV_EXPORTS_W QualityGMSD
-        : public QualityBase {
-    public:
+    QualityGMSD(std::vector<_mat_data> refImgData)
+        : _refImgData(std::move(refImgData))
+    {}
 
-        /**
-        @brief Compute GMSD
-        @param cmpImgs Comparison images
-        @returns Per-channel GMSD
-        */
-        CV_WRAP cv::Scalar compute(InputArrayOfArrays cmpImgs) CV_OVERRIDE;
-
-        /** @brief Implements Algorithm::empty()  */
-        CV_WRAP bool empty() const CV_OVERRIDE { return _refImgData.empty() && QualityBase::empty(); }
-
-        /** @brief Implements Algorithm::clear()  */
-        CV_WRAP void clear() CV_OVERRIDE { _refImgData.clear(); QualityBase::clear(); }
-
-        /**
-        @brief Create an object which calculates image quality
-        @param refImgs input image(s) to use as the source for comparison
-        */
-        CV_WRAP static Ptr<QualityGMSD> create(InputArrayOfArrays refImgs);
-
-        /**
-        @brief static method for computing quality
-        @param refImgs reference image(s)
-        @param cmpImgs comparison image(s)
-        @param qualityMaps output quality map(s), or cv::noArray()
-        @returns cv::Scalar with per-channel quality value.  Values range from 0 (worst) to 1 (best)
-        */
-        CV_WRAP static cv::Scalar compute(InputArrayOfArrays refImgs, InputArrayOfArrays cmpImgs, OutputArrayOfArrays qualityMaps);
-
-    protected:
-
-        /** @brief Reference image data */
-        std::vector<detail::gmsd::mat_data> _refImgData;
-
-        /**
-        @brief Constructor
-        @param refImgData vector of reference images, converted to internal type
-        */
-        QualityGMSD(std::vector<detail::gmsd::mat_data> refImgData)
-            : _refImgData(std::move(refImgData))
-        {}
-
-    };	// QualityGMSD
-}
-}
+};	// QualityGMSD
+}   // quality
+}   // cv
 #endif

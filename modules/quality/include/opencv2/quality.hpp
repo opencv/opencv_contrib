@@ -5,10 +5,10 @@
 #ifndef OPENCV_QUALITY_HPP
 #define OPENCV_QUALITY_HPP
 
-#include "quality/QualityBase.hpp"
-#include "quality/QualityMSE.hpp"
-#include "quality/QualityPSNR.hpp"
-#include "quality/QualitySSIM.hpp"
-#include "quality/QualityGMSD.hpp"
+#include "quality/qualitybase.hpp"
+#include "quality/qualitymse.hpp"
+#include "quality/qualitypsnr.hpp"
+#include "quality/qualityssim.hpp"
+#include "quality/qualitygmsd.hpp"
 
 #endif

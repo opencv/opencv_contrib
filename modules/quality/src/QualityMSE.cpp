@@ -3,8 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include "precomp.hpp"
-#include "opencv2/quality/QualityBase.hpp"
-#include "opencv2/quality/QualityMSE.hpp"
+#include "opencv2/quality/qualitybase.hpp"
+#include "opencv2/quality/qualitymse.hpp"
 #include "opencv2/quality/quality_utils.hpp"
 
 namespace
@@ -13,7 +13,7 @@ namespace
     using namespace cv::quality;
 
     using mse_mat_type = UMat;
-    using _quality_map_type = quality::detail::quality_map_type;
+    using _quality_map_type = UMat;
 
     // computes mse and quality map for single frame
     std::pair<cv::Scalar, _quality_map_type> compute(const mse_mat_type& lhs, const mse_mat_type& rhs)
