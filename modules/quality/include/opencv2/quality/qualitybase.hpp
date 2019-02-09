@@ -25,9 +25,7 @@ class CV_EXPORTS_W QualityBase
 {
 public:
 
-    /**
-	@brief Destructor
-		*/
+    /** @brief Destructor */
 	virtual ~QualityBase() = default;
 
     /**
