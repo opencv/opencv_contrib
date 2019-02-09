@@ -23,7 +23,7 @@ class CV_EXPORTS_W QualityPSNR
 public:
 
     /** @brief Default maximum pixel value */
-    CV_PROP static CV_CONSTEXPR const double MAX_PIXEL_VALUE_DEFAULT = 255.;
+    static CV_CONSTEXPR const double MAX_PIXEL_VALUE_DEFAULT = 255.;
 
     /**
     @brief Create an object which calculates quality via mean square error
