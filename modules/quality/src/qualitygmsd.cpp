@@ -16,7 +16,7 @@ namespace
     using namespace cv::quality;
 
     using _mat_type = cv::UMat;// match QualityGMSD::_mat_data::mat_type
-    using _quality_map_type = cv::UMat;
+    using _quality_map_type = _mat_type;
 
     template <typename SrcMat, typename DstMat>
     void filter_2D(const SrcMat& src, DstMat& dst, cv::InputArray kernel, cv::Point anchor, double delta, int border_type )

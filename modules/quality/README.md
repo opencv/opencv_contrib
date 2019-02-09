@@ -46,7 +46,7 @@ Quick Start/Usage
     /* alternatively, compute MSE via instance */
     cv::Ptr<quality::QualityBase> ptr = quality::QualityMSE::create(img1);
     cv::Scalar result = ptr->compute( img2 );  /* compute MSE, compare img1 vs img2 */
-	ptr->getQualityMaps(quality_maps);	/* optionally, access output quality maps */
+    ptr->getQualityMaps(quality_maps);  /* optionally, access output quality maps */
 
 
 To Do

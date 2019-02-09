@@ -7,8 +7,10 @@
 
 #include "qualitybase.hpp"
 
-namespace cv {
-namespace quality {
+namespace cv
+{
+namespace quality
+{
 
 /**
 @brief Full reference structural similarity algorithm  https://en.wikipedia.org/wiki/Structural_similarity
@@ -45,12 +47,12 @@ public:
     */
     CV_WRAP static cv::Scalar compute(InputArrayOfArrays refImgs, InputArrayOfArrays cmpImgs, OutputArrayOfArrays qualityMaps);
 
-private:
+protected:
 
     // holds computed values for a mat
     struct _mat_data
     {
-        using mat_type = UMat;
+        using mat_type = QualityBase::_quality_map_type;
 
         mat_type
             I
@@ -62,6 +64,7 @@ private:
 
         _mat_data(const mat_type&);
 
+        // construct vector of _mat_data for input mats
         static std::vector<_mat_data> create(InputArrayOfArrays arr);
 
         // computes ssim and quality map for single frame
@@ -83,7 +86,7 @@ private:
         : _refImgData(std::move(refImgData))
     {}
 
-};	// QualitySSIM
+};  // QualitySSIM
 }   // quality
 }   // cv
 #endif

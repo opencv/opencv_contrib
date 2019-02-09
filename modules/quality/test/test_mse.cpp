@@ -6,8 +6,10 @@
 
 #define TEST_CASE_NAME CV_Quality_MSE
 
-namespace opencv_test {
-namespace quality_test {
+namespace opencv_test
+{
+namespace quality_test
+{
 
 // static method
 TEST(TEST_CASE_NAME, static_ )

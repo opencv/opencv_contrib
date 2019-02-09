@@ -13,7 +13,7 @@ namespace
     using namespace cv::quality;
 
     using mse_mat_type = UMat;
-    using _quality_map_type = UMat;
+    using _quality_map_type = mse_mat_type;
 
     // computes mse and quality map for single frame
     std::pair<cv::Scalar, _quality_map_type> compute(const mse_mat_type& lhs, const mse_mat_type& rhs)

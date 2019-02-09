@@ -13,8 +13,10 @@
 
 #include <opencv2/quality/quality_utils.hpp>
 
-namespace opencv_test {
-namespace quality_test {
+namespace opencv_test
+{
+namespace quality_test
+{
 
 const cv::String
     dataDir = "cv/optflow/"

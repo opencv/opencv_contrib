@@ -8,9 +8,12 @@
 #include <limits>   // numeric_limits
 #include "qualitybase.hpp"
 
-namespace cv {
-namespace quality {
-namespace quality_utils {
+namespace cv
+{
+namespace quality
+{
+namespace quality_utils
+{
 
 // default type of matrix to expand to
 static CV_CONSTEXPR const int EXPANDED_MAT_DEFAULT_TYPE = CV_32F;

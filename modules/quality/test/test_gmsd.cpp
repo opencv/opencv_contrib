@@ -6,8 +6,10 @@
 
 #define TEST_CASE_NAME CV_Quality_GMSD
 
-namespace opencv_test {
-namespace quality_test {
+namespace opencv_test
+{
+namespace quality_test
+{
 
 // gmsd per channel
 const cv::Scalar

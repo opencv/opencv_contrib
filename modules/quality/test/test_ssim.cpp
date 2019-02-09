@@ -6,8 +6,10 @@
 
 #define TEST_CASE_NAME CV_Quality_SSIM
 
-namespace opencv_test {
-namespace quality_test {
+namespace opencv_test
+{
+namespace quality_test
+{
 
 // ssim per channel
 const cv::Scalar

@@ -7,8 +7,10 @@
 
 #include "qualitybase.hpp"
 
-namespace cv {
-namespace quality {
+namespace cv
+{
+namespace quality
+{
 
 /**
 @brief Full reference GMSD algorithm
@@ -46,12 +48,12 @@ public:
     */
     CV_WRAP static cv::Scalar compute(InputArrayOfArrays refImgs, InputArrayOfArrays cmpImgs, OutputArrayOfArrays qualityMaps);
 
-private:
+protected:
 
     // holds computed values for an input mat
     struct _mat_data
     {
-        using mat_type = cv::UMat;
+        using mat_type = QualityBase::_quality_map_type;
 
         mat_type
             gradient_map
@@ -63,12 +65,13 @@ private:
         // converts mat/umat to vector of mat_data
         static std::vector<_mat_data> create(InputArrayOfArrays arr);
 
+        // compute for a single frame
+        static std::pair<cv::Scalar, mat_type> compute(const _mat_data& lhs, const _mat_data& rhs);
+
+        // compute for vector of inputs
         static cv::Scalar compute(const std::vector<_mat_data>& lhs, const std::vector<_mat_data>& rhs, OutputArrayOfArrays qualityMaps);
-        static std::pair<cv::Scalar, cv::UMat> compute(const _mat_data& lhs, const _mat_data& rhs);
 
     };  // mat_data
-
-protected:
 
     /** @brief Reference image data */
     std::vector<_mat_data> _refImgData;
@@ -81,7 +84,7 @@ protected:
         : _refImgData(std::move(refImgData))
     {}
 
-};	// QualityGMSD
+};  // QualityGMSD
 }   // quality
 }   // cv
 #endif

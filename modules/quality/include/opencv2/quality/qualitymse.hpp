@@ -7,8 +7,10 @@
 
 #include "qualitybase.hpp"
 
-namespace cv {
-namespace quality {
+namespace cv
+{
+namespace quality
+{
 
 /**
 @brief Full reference mean square error algorithm  https://en.wikipedia.org/wiki/Mean_squared_error
@@ -46,17 +48,17 @@ public:
 protected:
 
     /** @brief Reference images, converted to internal mat type */
-    std::vector<UMat> _refImgs;
+    std::vector<QualityBase::_quality_map_type> _refImgs;
 
     /**
     @brief Constructor
     @param refImgs vector of reference images, converted to internal type
     */
-    QualityMSE(std::vector<UMat> refImgs)
+    QualityMSE(std::vector<QualityBase::_quality_map_type> refImgs)
         : _refImgs(std::move(refImgs))
     {}
 
-};	// QualityMSE
+};  // QualityMSE
 }   // quality
 }   // cv
 #endif

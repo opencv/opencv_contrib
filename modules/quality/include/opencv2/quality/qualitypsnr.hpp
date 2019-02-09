@@ -9,8 +9,10 @@
 #include "qualitymse.hpp"
 #include "quality_utils.hpp"
 
-namespace cv {
-namespace quality {
+namespace cv
+{
+namespace quality
+{
 
 /**
 @brief Full reference peak signal to noise ratio (PSNR) algorithm  https://en.wikipedia.org/wiki/Peak_signal-to-noise_ratio
@@ -21,11 +23,11 @@ class CV_EXPORTS_W QualityPSNR
 public:
 
     /** @brief Default maximum pixel value */
-    static CV_CONSTEXPR const double MAX_PIXEL_VALUE_DEFAULT = 255.;
+    CV_PROP static CV_CONSTEXPR const double MAX_PIXEL_VALUE_DEFAULT = 255.;
 
     /**
     @brief Create an object which calculates quality via mean square error
-	@param refImgs input image(s) to use as the source for comparison
+    @param refImgs input image(s) to use as the source for comparison
     @param maxPixelValue maximum per-channel value for any individual pixel; eg 255 for uint8 image
     */
     CV_WRAP static Ptr<QualityPSNR> create(InputArrayOfArrays refImgs, double maxPixelValue = QualityPSNR::MAX_PIXEL_VALUE_DEFAULT )
@@ -92,7 +94,7 @@ protected:
         , _maxPixelValue(maxPixelValue)
     {}
 
-};	// QualityPSNR
+};    // QualityPSNR
 }   // quality
 }   // cv
 #endif

@@ -6,8 +6,10 @@
 
 #define TEST_CASE_NAME CV_Quality_PSNR
 
-namespace opencv_test {
-namespace quality_test {
+namespace opencv_test
+{
+namespace quality_test
+{
 
 const cv::Scalar
     PSNR_EXPECTED_1 = { 14.8347, INFINITY, INFINITY, INFINITY } // matlab: psnr('rock_1.bmp', 'rock_2.bmp') == 14.8347

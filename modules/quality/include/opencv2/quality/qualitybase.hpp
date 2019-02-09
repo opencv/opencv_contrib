@@ -12,8 +12,10 @@
 @defgroup quality Image Quality Analysis (IQA) API
 */
 
-namespace cv {
-namespace quality {
+namespace cv
+{
+namespace quality
+{
 
 //! @addtogroup quality
 //! @{
@@ -26,7 +28,7 @@ class CV_EXPORTS_W QualityBase
 public:
 
     /** @brief Destructor */
-	virtual ~QualityBase() = default;
+    virtual ~QualityBase() = default;
 
     /**
     @brief Compute quality score per channel with the per-channel score in each element of the resulting cv::Scalar.  See specific algorithm for interpreting result scores

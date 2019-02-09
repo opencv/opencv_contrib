@@ -14,7 +14,7 @@ namespace
     using namespace cv::quality;
 
     using _mat_type = UMat;
-    using _quality_map_type = UMat;
+    using _quality_map_type = _mat_type;
 
     // SSIM blur function
     _mat_type blur(const _mat_type& mat)
