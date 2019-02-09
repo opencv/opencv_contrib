@@ -5,7 +5,7 @@
 #ifndef OPENCV_QUALITY_QUALITYSSIM_HPP
 #define OPENCV_QUALITY_QUALITYSSIM_HPP
 
-#include "QualityBase.hpp"
+#include "qualitybase.hpp"
 
 namespace cv {
 namespace quality {
