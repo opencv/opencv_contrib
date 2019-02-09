@@ -49,6 +49,18 @@ Quick Start/Usage
     ptr->getQualityMaps(quality_maps);  /* optionally, access output quality maps */
 
 
+Library Design
+-----------------------------------------
+Each implemented algorithm shall:
+- Inherit from `QualityBase`, and properly implement/override `compute`, `empty` and `clear` instance methods, along with a static `compute` method.
+- Accept one or more `cv::Mat` or `cv::UMat` via `InputArrayOfArrays` for computation.  Each input `cv::Mat` or `cv::UMat` may contain one or more channels.  If the algorithm does not support multiple channels or multiple inputs, it should be documented and an appropriate assertion should be in place.
+- Return a `cv::Scalar` with per-channel computed value.  If multiple input images are provided, the resulting scalar should return the average result per channel.
+- Compute result via a single, static method named `compute` and via an overridden instance method (see `compute` in `qualitybase.hpp`).
+- Perform any setup and/or pre-processing of reference images in the constructor, allowing for efficient computation when comparing the reference image(s) versus multiple comparison image(s).  No-reference algorithms should accept images for evaluation in the `compute` method.
+- Optionally compute resulting quality maps.  Instance `compute` method should store them in `QualityBase::_qualityMaps` as the mat type defined by `QualityBase::_quality_map_type`, or override `QualityBase::getQualityMaps`.  Static `compute` method should return them in an `OutputArrayOfArrays` parameter.
+- Document algorithm in this readme and in its respective header.  Documentation should include interpretation for the results of `compute` as well as the format of the output quality maps (if supported), along with any other notable usage information.
+
+
 To Do
 -----------------------------------------
 - Document the output quality maps for each algorithm
