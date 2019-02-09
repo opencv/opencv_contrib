@@ -27,8 +27,8 @@ TEST(TEST_CASE_NAME, static_)
 TEST(TEST_CASE_NAME, single_channel)
 {
     auto fn = []() { quality_test(quality::QualitySSIM::create(get_testfile_1a()), get_testfile_1b(), SSIM_EXPECTED_1); };
-    OCL_OFF(fn);
-    OCL_ON(fn);
+    OCL_OFF(fn());
+    OCL_ON(fn());
 }
 
 // multi-channel
