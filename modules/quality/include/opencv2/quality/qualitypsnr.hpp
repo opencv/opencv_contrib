@@ -84,7 +84,7 @@ public:
 protected:
 
     Ptr<QualityMSE> _qualityMSE;
-    double _maxPixelValue = MAX_PIXEL_VALUE_DEFAULT;
+    double _maxPixelValue = QualityPSNR::MAX_PIXEL_VALUE_DEFAULT;
 
     /** @brief Constructor */
     QualityPSNR( Ptr<QualityMSE> qualityMSE, double maxPixelValue )
