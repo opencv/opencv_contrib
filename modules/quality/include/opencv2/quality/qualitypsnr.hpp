@@ -28,7 +28,7 @@ public:
 	@param refImgs input image(s) to use as the source for comparison
     @param maxPixelValue maximum per-channel value for any individual pixel; eg 255 for uint8 image
     */
-    CV_WRAP static Ptr<QualityPSNR> create(InputArrayOfArrays refImgs, double maxPixelValue = MAX_PIXEL_VALUE_DEFAULT )
+    CV_WRAP static Ptr<QualityPSNR> create(InputArrayOfArrays refImgs, double maxPixelValue = QualityPSNR::MAX_PIXEL_VALUE_DEFAULT )
     {
         return Ptr<QualityPSNR>(new QualityPSNR(QualityMSE::create(refImgs), maxPixelValue));
     }
@@ -64,7 +64,7 @@ public:
     @returns PSNR value, or std::numeric_limits<double>::infinity() if the MSE between the two images == 0
     The PSNR for multi-frame images is computed by calculating the average MSE of all frames and then generating the PSNR from that value
     */
-    CV_WRAP static cv::Scalar compute(InputArrayOfArrays refImgs, InputArrayOfArrays cmpImgs, OutputArrayOfArrays qualityMaps, double maxPixelValue = MAX_PIXEL_VALUE_DEFAULT)
+    CV_WRAP static cv::Scalar compute(InputArrayOfArrays refImgs, InputArrayOfArrays cmpImgs, OutputArrayOfArrays qualityMaps, double maxPixelValue = QualityPSNR::MAX_PIXEL_VALUE_DEFAULT)
     {
         return quality_utils::mse_to_psnr(
             QualityMSE::compute(refImgs, cmpImgs, qualityMaps)
@@ -84,7 +84,7 @@ public:
 protected:
 
     Ptr<QualityMSE> _qualityMSE;
-    double _maxPixelValue = MAX_PIXEL_VALUE_DEFAULT;
+    double _maxPixelValue = QualityPSNR::MAX_PIXEL_VALUE_DEFAULT;
 
     /** @brief Constructor */
     QualityPSNR( Ptr<QualityMSE> qualityMSE, double maxPixelValue )
