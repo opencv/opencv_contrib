@@ -432,15 +432,15 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
 
   typedef std::list<Pixel> PixelChain;  //each edge is a pixel chain
 
-  struct EDLineParam
+  struct CV_EXPORTS_W_SIMPLE EDLineParam
   {
-    int ksize;
-    float sigma;
-    float gradientThreshold;
-    float anchorThreshold;
-    int scanIntervals;
-    int minLineLen;
-    double lineFitErrThreshold;
+    CV_PROP_RW int ksize;
+    CV_PROP_RW float sigma;
+    CV_PROP_RW float gradientThreshold;
+    CV_PROP_RW float anchorThreshold;
+    CV_PROP_RW int scanIntervals;
+    CV_PROP_RW int minLineLen;
+    CV_PROP_RW double lineFitErrThreshold;
   };
 
   #define RELATIVE_ERROR_FACTOR   100.0
@@ -455,13 +455,19 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
    * PS: The linking step of edge detection has a little bit difference with the Edge drawing algorithm
    *     described in the paper. The edge chain doesn't stop when the pixel direction is changed.
    */
-  class EDLineDetector
+  class CV_EXPORTS_W EDLineDetector
   {
    public:
-    EDLineDetector();
-    EDLineDetector( EDLineParam param );
+    CV_WRAP EDLineDetector();
+    CV_WRAP_AS(EDLineDetectorWithParams) EDLineDetector( EDLineParam param );
     ~EDLineDetector();
 
+    /** @brief Creates an EDLineDetector object, using smart pointers.
+     */
+    CV_WRAP static Ptr<EDLineDetector> createEDLineDetector();
+
+
+    CV_WRAP_AS(createEDLineDetectorWithParams) static Ptr<EDLineDetector> createEDLineDetector(EDLineParam params);
     /*extract edges from image
      *image:    In, gray image;
      *edges:    Out, store the edges, each edge is a pixel chain
@@ -477,7 +483,7 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
     int EDline( cv::Mat &image, LineChains &lines );
 
     /** extract line from image, and store them */
-    int EDline( cv::Mat &image );
+    CV_WRAP int EDline( cv::Mat &image );
 
     cv::Mat dxImg_;  //store the dxImg;
 
@@ -892,12 +898,38 @@ the one used in *BinaryDescriptor* class, data associated to a line's extremes i
 in octave it was extracted from, coincide. KeyLine's field *class_id* is used as an index to
 indicate the order of extraction of a line inside a single octave.
 */
+struct CV_EXPORTS_W_SIMPLE LSDParam
+{
+  CV_PROP_RW double scale ;
+  CV_PROP_RW double sigma_scale;
+  CV_PROP_RW double quant;
+  CV_PROP_RW double ang_th;
+  CV_PROP_RW double log_eps;
+  CV_PROP_RW double density_th ;
+  CV_PROP_RW int n_bins ;
+
+
+CV_WRAP LSDParam():scale(0.8),
+                   sigma_scale(0.6),
+                   quant(2.0),
+                   ang_th(22.5),
+                   log_eps(0),
+                   density_th(0.7),
+                   n_bins(1024){}
+
+};
+
 class CV_EXPORTS_W LSDDetector : public Algorithm
 {
 public:
 
 /* constructor */
-CV_WRAP LSDDetector()
+CV_WRAP LSDDetector() : params()
+{
+}
+;
+
+CV_WRAP_AS(LSDDetectorWithParams) LSDDetector(LSDParam _params) : params(_params)
 {
 }
 ;
@@ -905,6 +937,10 @@ CV_WRAP LSDDetector()
 /** @brief Creates ad LSDDetector object, using smart pointers.
  */
 CV_WRAP static Ptr<LSDDetector> createLSDDetector();
+
+
+CV_WRAP_AS(createLSDDetectorWithParams) static Ptr<LSDDetector> createLSDDetector(LSDParam params);
+
 
 /** @brief Detect lines inside an image.
 
@@ -935,6 +971,9 @@ void detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, int numOct
 
 /* matrices for Gaussian pyramids */
 std::vector<cv::Mat> gaussianPyrs;
+
+/* parameters */
+LSDParam params;
 };
 
 /** @brief furnishes all functionalities for querying a dataset provided by user or internal to
