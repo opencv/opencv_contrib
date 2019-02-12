@@ -338,6 +338,12 @@ void WaldBoost::fit(Mat& data_pos, Mat& data_neg)
             break;
         }
 
+        // Avoid crashing on next Mat creation
+        if (pos <= 1) {
+            weak_count_ = i + 1;
+            break;
+        }
+
         // Normalize weights
         double z = (sum(pos_weights) + sum(neg_weights))[0];
         pos_weights /= z;
