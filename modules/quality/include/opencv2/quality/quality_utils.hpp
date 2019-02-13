@@ -70,12 +70,6 @@ inline std::vector<R> expand_mats(InputArrayOfArrays arr, int TYPE_DEFAULT = EXP
     return result;
 }
 
-// multiply a cv::Scalar by a scalar
-inline void scalar_multiply(cv::Scalar& what, double val)
-{
-    cv::multiply(what, cv::Scalar{ val, val, val, val }, what);
-}
-
 // convert mse to psnr
 inline double mse_to_psnr(double mse, double max_pixel_value)
 {

@@ -45,7 +45,7 @@ TEST(TEST_CASE_NAME, multi_frame)
     // result == average of all frames
     cv::Scalar expected;
     cv::add(SSIM_EXPECTED_1, SSIM_EXPECTED_2, expected);
-    quality::quality_utils::scalar_multiply(expected, .5);
+    expected /= 2.;
 
     quality_test(quality::QualitySSIM::create(get_testfile_1a2a()), get_testfile_1b2b(), expected, 2U );
 }

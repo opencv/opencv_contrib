@@ -212,6 +212,7 @@ cv::Scalar QualityGMSD::_mat_data::compute(const std::vector<QualityGMSD::_mat_d
     }
 
     if (sz > 1)
-        quality_utils::scalar_multiply(result, 1. / (double)sz);  // average result
+        result /= (cv::Scalar::value_type)sz;  // average result
+
     return result;
 }

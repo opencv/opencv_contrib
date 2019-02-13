@@ -39,7 +39,8 @@ TEST(TEST_CASE_NAME, multi_frame)
     // result mse == average mse of all frames
     cv::Scalar expected;
     cv::add(MSE_EXPECTED_1, MSE_EXPECTED_2, expected);
-    quality::quality_utils::scalar_multiply(expected, .5);
+    expected /= 2.;
+
     quality_test(quality::QualityMSE::create(get_testfile_1a2a()), get_testfile_1b2b(), expected, 2 );
 }
 

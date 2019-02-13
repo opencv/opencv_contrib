@@ -59,12 +59,10 @@ Each implemented algorithm shall:
 - Perform any setup and/or pre-processing of reference images in the constructor, allowing for efficient computation when comparing the reference image(s) versus multiple comparison image(s).  No-reference algorithms should accept images for evaluation in the `compute` method.
 - Optionally compute resulting quality maps.  Instance `compute` method should store them in `QualityBase::_qualityMaps` as the mat type defined by `QualityBase::_quality_map_type`, or override `QualityBase::getQualityMaps`.  Static `compute` method should return them in an `OutputArrayOfArrays` parameter.
 - Document algorithm in this readme and in its respective header.  Documentation should include interpretation for the results of `compute` as well as the format of the output quality maps (if supported), along with any other notable usage information.
-
+- Implement tests of static `compute` method and instance methods using single- and multi-channel images, multi-frame images, and OpenCL enabled and disabled
 
 To Do
 -----------------------------------------
 - Document the output quality maps for each algorithm
 - Implement at least one no-reference IQA algorithm
-- Investigate performance difference between Linux/gcc and Win32/msvc (Linux ~15-20X faster on same h/w)
 - Investigate precision loss with cv::Filter2D + UMat + CV_32F + OCL for GMSD
-- (Fast?) MS-SSIM?

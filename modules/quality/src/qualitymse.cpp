@@ -58,8 +58,9 @@ namespace
             qualityMaps.assign(quality_maps);
         }
 
-        if ( sz > 1 )
-            quality_utils::scalar_multiply( result, 1. / (double)sz);
+        if (sz > 1)
+            result /= (cv::Scalar::value_type)sz;   // average result
+
         return result;
     }
 }
