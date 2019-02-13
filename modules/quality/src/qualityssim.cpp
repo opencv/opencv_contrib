@@ -3,7 +3,6 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include "precomp.hpp"
-#include "opencv2/quality/qualitybase.hpp"
 #include "opencv2/quality/qualityssim.hpp"
 #include "opencv2/imgproc.hpp"  // GaussianBlur
 #include "opencv2/quality/quality_utils.hpp"

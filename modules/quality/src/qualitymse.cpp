@@ -3,7 +3,6 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include "precomp.hpp"
-#include "opencv2/quality/qualitybase.hpp"
 #include "opencv2/quality/qualitymse.hpp"
 #include "opencv2/quality/quality_utils.hpp"
 
