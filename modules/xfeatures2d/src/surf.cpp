@@ -115,6 +115,8 @@ namespace cv
 namespace xfeatures2d
 {
 
+#ifdef OPENCV_ENABLE_NONFREE
+
 static const int   SURF_ORI_SEARCH_INC = 5;
 static const float SURF_ORI_SIGMA      = 2.5f;
 static const float SURF_DESC_SIGMA     = 3.3f;
@@ -274,7 +276,7 @@ struct SURFBuildInvoker : ParallelLoopBody
         traces = &_traces;
     }
 
-    void operator()(const Range& range) const
+    void operator()(const Range& range) const CV_OVERRIDE
     {
         for( int i=range.start; i<range.end; i++ )
             calcLayerDetAndTrace( *sum, (*sizes)[i], (*sampleSteps)[i], (*dets)[i], (*traces)[i] );
@@ -313,7 +315,7 @@ struct SURFFindInvoker : ParallelLoopBody
                    const std::vector<int>& sizes, std::vector<KeyPoint>& keypoints,
                    int octave, int layer, float hessianThreshold, int sampleStep );
 
-    void operator()(const Range& range) const
+    void operator()(const Range& range) const CV_OVERRIDE
     {
         for( int i=range.start; i<range.end; i++ )
         {
@@ -563,7 +565,7 @@ struct SURFInvoker : ParallelLoopBody
         }
     }
 
-    void operator()(const Range& range) const
+    void operator()(const Range& range) const CV_OVERRIDE
     {
         /* X and Y gradient wavelet data */
         const int NX=2, NY=2;
@@ -676,7 +678,7 @@ struct SURFInvoker : ParallelLoopBody
             /* Extract a window of pixels around the keypoint of size 20s */
             int win_size = (int)((PATCH_SZ+1)*s);
             CV_Assert( imaxSize >= win_size );
-            Mat win(win_size, win_size, CV_8U, winbuf);
+            Mat win(win_size, win_size, CV_8U, winbuf.data());
 
             if( !upright )
             {
@@ -845,7 +847,7 @@ struct SURFInvoker : ParallelLoopBody
 
             // unit vector is essential for contrast invariance
             vec = descriptors->ptr<float>(k);
-            float scale = (float)(1./(std::sqrt(square_mag) + DBL_EPSILON));
+            float scale = (float)(1./(std::sqrt(square_mag) + FLT_EPSILON));
             for( kk = 0; kk < dsize; kk++ )
                 vec[kk] *= scale;
         }
@@ -893,7 +895,7 @@ void SURF_Impl::detectAndCompute(InputArray _img, InputArray _mask,
     CV_Assert(_descriptors.needed() || !useProvidedKeypoints);
 
 #ifdef HAVE_OPENCL
-    if( ocl::useOpenCL() )
+    if( ocl::useOpenCL() && _img.isUMat())
     {
         SURF_OCL ocl_surf;
         UMat gpu_kpt;
@@ -942,6 +944,19 @@ void SURF_Impl::detectAndCompute(InputArray _img, InputArray _mask,
             integral(mask1, msum, CV_32S);
         }
         fastHessianDetector( sum, msum, keypoints, nOctaves, nOctaveLayers, (float)hessianThreshold );
+        if (!mask.empty())
+        {
+            for (size_t i = 0; i < keypoints.size(); )
+            {
+                Point pt(keypoints[i].pt);
+                if (mask.at<uchar>(pt.y, pt.x) == 0)
+                {
+                    keypoints.erase(keypoints.begin() + i);
+                    continue; // keep "i"
+                }
+                i++;
+            }
+        }
     }
 
     int i, j, N = (int)keypoints.size();
@@ -1004,7 +1019,17 @@ Ptr<SURF> SURF::create(double _threshold, int _nOctaves, int _nOctaveLayers, boo
 {
     return makePtr<SURF_Impl>(_threshold, _nOctaves, _nOctaveLayers, _extended, _upright);
 }
-    
+
+
+#else // ! #ifdef OPENCV_ENABLE_NONFREE
+Ptr<SURF> SURF::create(double, int, int, bool, bool)
+{
+    CV_Error(Error::StsNotImplemented,
+        "This algorithm is patented and is excluded in this configuration; "
+        "Set OPENCV_ENABLE_NONFREE CMake option and rebuild the library");
+}
+#endif
+
 }
 }
 

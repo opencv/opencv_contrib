@@ -52,7 +52,7 @@ namespace cv
     namespace datasets
     {
 
-        class TRACK_votImpl : public TRACK_vot
+        class TRACK_votImpl CV_FINAL : public TRACK_vot
         {
         public:
             //Constructor
@@ -62,21 +62,21 @@ namespace cv
                 frameCounter = 0;
             }
             //Destructor
-            virtual ~TRACK_votImpl() {}
+            virtual ~TRACK_votImpl() CV_OVERRIDE {}
 
             //Load Dataset
-            virtual void load(const string &path);
+            virtual void load(const string &path) CV_OVERRIDE;
 
 		protected:
-            virtual int getDatasetsNum();
+            virtual int getDatasetsNum() CV_OVERRIDE;
 
-            virtual int getDatasetLength(int id);
+            virtual int getDatasetLength(int id) CV_OVERRIDE;
 
-            virtual bool initDataset(int id);
+            virtual bool initDataset(int id) CV_OVERRIDE;
 
-            virtual bool getNextFrame(Mat &frame);
+            virtual bool getNextFrame(Mat &frame) CV_OVERRIDE;
 
-            virtual vector <Point2d> getGT();
+            virtual vector <Point2d> getGT() CV_OVERRIDE;
 
             void loadDataset(const string &path);
 
@@ -91,7 +91,7 @@ namespace cv
         string TRACK_votImpl::numberToString(int number)
         {
             string out;
-            char numberStr[9];
+            char numberStr[20];
             sprintf(numberStr, "%u", number);
             for (unsigned int i = 0; i < 8 - strlen(numberStr); ++i)
             {
@@ -134,9 +134,9 @@ namespace cv
                         printf("Error to open groundtruth.txt!!!");
 
                     //Make a list of datasets lengths
-                    int currFrameID = 1;
+                    int currFrameID = 0;
                     if (currDatasetID == 0)
-                        printf("VOT 2015 Dataset Initialization...\n");
+                        printf("VOT Dataset Initialization...\n");
                     bool trFLG = true;
                     do
                     {
@@ -174,7 +174,7 @@ namespace cv
             }
             else
             {
-                printf("Couldn't find a *list.txt* in VOT 2015 folder!!!");
+                printf("Couldn't find a *list.txt* in VOT Dataset folder!!!");
             }
 
             namesList.close();
@@ -202,11 +202,12 @@ namespace cv
             if (id > 0 && id <= (int)data.size())
             {
                 activeDatasetID = id;
+                frameCounter = 0;
                 return true;
             }
             else
             {
-				printf("Dataset ID is out of range...\nAllowed IDs are: 1~%d\n", (int)data.size());
+                printf("Dataset ID is out of range...\nAllowed IDs are: 1~%d\n", (int)data.size());
                 return false;
             }
         }

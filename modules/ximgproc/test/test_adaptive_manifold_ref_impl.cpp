@@ -1,54 +1,22 @@
-/*
- *  By downloading, copying, installing or using the software you agree to this license.
- *  If you do not agree to this license, do not download, install,
- *  copy or use the software.
- *  
- *  
- *  License Agreement
- *  For Open Source Computer Vision Library
- *  (3 - clause BSD License)
- *  
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met :
- *  
- *  * Redistributions of source code must retain the above copyright notice,
- *  this list of conditions and the following disclaimer.
- *  
- *  * Redistributions in binary form must reproduce the above copyright notice,
- *  this list of conditions and the following disclaimer in the documentation
- *  and / or other materials provided with the distribution.
- *  
- *  * Neither the names of the copyright holders nor the names of the contributors
- *  may be used to endorse or promote products derived from this software
- *  without specific prior written permission.
- *  
- *  This software is provided by the copyright holders and contributors "as is" and
- *  any express or implied warranties, including, but not limited to, the implied
- *  warranties of merchantability and fitness for a particular purpose are disclaimed.
- *  In no event shall copyright holders or contributors be liable for any direct,
- *  indirect, incidental, special, exemplary, or consequential damages
- *  (including, but not limited to, procurement of substitute goods or services;
- *  loss of use, data, or profits; or business interruption) however caused
- *  and on any theory of liability, whether in contract, strict liability,
- *  or tort(including negligence or otherwise) arising in any way out of
- *  the use of this software, even if advised of the possibility of such damage.
- */
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 
 /*
  * The MIT License(MIT)
- * 
+ *
  * Copyright(c) 2013 Vladislav Vinogradov
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files(the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to
  * use, copy, modify, merge, publish, distribute, sublicense, and / or sell copies of
  * the Software, and to permit persons to whom the Software is furnished to do so,
  * subject to the following conditions :
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
  * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR
@@ -59,14 +27,10 @@
 
 #include "test_precomp.hpp"
 #include <opencv2/core/private.hpp>
-#include <cmath>
 
-namespace
-{
+namespace opencv_test { namespace {
 
-    using std::numeric_limits;
-    using namespace cv;
-    using namespace cv::ximgproc;
+using namespace cv::ximgproc;
 
     struct Buf
     {
@@ -185,12 +149,18 @@ namespace
 
         void collectGarbage();
 
-        CV_IMPL_PROPERTY(double, SigmaS, sigma_s_)
-        CV_IMPL_PROPERTY(double, SigmaR, sigma_r_)
-        CV_IMPL_PROPERTY(int, TreeHeight, tree_height_)
-        CV_IMPL_PROPERTY(int, PCAIterations, num_pca_iterations_)
-        CV_IMPL_PROPERTY(bool, AdjustOutliers, adjust_outliers_)
-        CV_IMPL_PROPERTY(bool, UseRNG, useRNG)
+        inline double getSigmaS() const CV_OVERRIDE { return sigma_s_; }
+        inline void setSigmaS(double val) CV_OVERRIDE { sigma_s_ = val; }
+        inline double getSigmaR() const CV_OVERRIDE { return sigma_r_; }
+        inline void setSigmaR(double val) CV_OVERRIDE { sigma_r_ = val; }
+        inline int getTreeHeight() const CV_OVERRIDE { return tree_height_; }
+        inline void setTreeHeight(int val) CV_OVERRIDE { tree_height_ = val; }
+        inline int getPCAIterations() const CV_OVERRIDE { return num_pca_iterations_; }
+        inline void setPCAIterations(int val) CV_OVERRIDE { num_pca_iterations_ = val; }
+        inline bool getAdjustOutliers() const CV_OVERRIDE { return adjust_outliers_; }
+        inline void setAdjustOutliers(bool val) CV_OVERRIDE { adjust_outliers_ = val; }
+        inline bool getUseRNG() const CV_OVERRIDE { return useRNG; }
+        inline void setUseRNG(bool val) CV_OVERRIDE { useRNG = val; }
 
     protected:
         bool adjust_outliers_;
@@ -478,7 +448,7 @@ namespace
             times(buf_.diff, buf_.alpha, buf_.diff);
 
             ensureSizeIsEnough(srcSize, buf_.dst);
-            add(src_f_, buf_.diff, buf_.dst);
+            cv::add(src_f_, buf_.diff, buf_.dst);  // TODO cvtest
 
             buf_.dst.convertTo(_dst, CV_8U, 255.0);
         }
@@ -800,8 +770,8 @@ namespace
             }
         }
 
-        double n = norm(dst);
-        divide(dst, n, dst);
+        double n = cvtest::norm(dst, NORM_L2);
+        cv::divide(dst, n, dst);  // TODO cvtest
     }
 
     void calcEta(const Mat_<Point3f>& src_joint_f, const Mat_<float>& theta, const Mat_<uchar>& cluster, Mat_<Point3f>& dst, float sigma_s, float df, Buf& buf)
@@ -818,7 +788,7 @@ namespace
         resize(buf.mul, buf.numerator, Size(), 1.0 / df, 1.0 / df);
 
         ensureSizeIsEnough(nsz, buf.denominator);
-        resize(buf.theta_masked, buf.denominator, Size(), 1.0 / df, 1.0 / df);        
+        resize(buf.theta_masked, buf.denominator, Size(), 1.0 / df, 1.0 / df);
         h_filter(buf.numerator, buf.numerator_filtered, sigma_s / df);
         h_filter(buf.denominator, buf.denominator_filtered, sigma_s / df);
 
@@ -860,7 +830,7 @@ namespace
         // Project pixel colors onto the manifold -- Eq. (3), Eq. (5)
 
         ensureSizeIsEnough(buf_.X.size(), buf_.X_squared);
-        multiply(buf_.X, buf_.X, buf_.X_squared);
+        cv::multiply(buf_.X, buf_.X, buf_.X_squared);  // TODO cvtest
 
         channelsSum(buf_.X_squared, buf_.pixel_dist_to_manifold_squared);
 
@@ -897,12 +867,12 @@ namespace
         ensureSizeIsEnough(src_f_.size(), buf_.w_ki_Psi_blur_resized);
         resize(buf_.w_ki_Psi_blur, buf_.w_ki_Psi_blur_resized, src_f_.size());
         times(buf_.w_ki_Psi_blur_resized, w_ki, buf_.w_ki_Psi_blur_resized);
-        add(sum_w_ki_Psi_blur_, buf_.w_ki_Psi_blur_resized, sum_w_ki_Psi_blur_);
+        cv::add(sum_w_ki_Psi_blur_, buf_.w_ki_Psi_blur_resized, sum_w_ki_Psi_blur_);  // TODO cvtest
 
         ensureSizeIsEnough(src_f_.size(), buf_.w_ki_Psi_blur_0_resized);
         resize(buf_.w_ki_Psi_blur_0, buf_.w_ki_Psi_blur_0_resized, src_f_.size());
         times(buf_.w_ki_Psi_blur_0_resized, w_ki, buf_.w_ki_Psi_blur_0_resized);
-        add(sum_w_ki_Psi_blur_0_, buf_.w_ki_Psi_blur_0_resized, sum_w_ki_Psi_blur_0_);
+        cv::add(sum_w_ki_Psi_blur_0_, buf_.w_ki_Psi_blur_0_resized, sum_w_ki_Psi_blur_0_);  // TODO cvtest
 
         // Compute two new manifolds eta_minus and eta_plus
 
@@ -933,13 +903,13 @@ namespace
 
             Mat_<uchar>& cluster_minus = buf_.cluster_minus[current_tree_level];
             ensureSizeIsEnough(dot.size(), cluster_minus);
-            compare(dot, 0, cluster_minus, CMP_LT);
+            cvtest::compare(dot, 0, cluster_minus, CMP_LT);
             bitwise_and(cluster_minus, cluster_k, cluster_minus);
 
             Mat_<uchar>& cluster_plus = buf_.cluster_plus[current_tree_level];
             ensureSizeIsEnough(dot.size(), cluster_plus);
             //compare(dot, 0, cluster_plus, CMP_GT);
-            compare(dot, 0, cluster_plus, CMP_GE);
+            cvtest::compare(dot, 0, cluster_plus, CMP_GE);
             bitwise_and(cluster_plus, cluster_k, cluster_plus);
 
             // Algorithm 1, Step 4: Compute new manifolds by weighted low-pass filtering -- Eq. (7-8)
@@ -960,17 +930,13 @@ namespace
             buildManifoldsAndPerformFiltering(eta_plus, cluster_plus, current_tree_level + 1);
         }
     }
-}
 
-namespace cvtest
-{
-
-using namespace cv::ximgproc;
+} // namespace
 
 Ptr<AdaptiveManifoldFilter> createAMFilterRefImpl(double sigma_s, double sigma_r, bool adjust_outliers)
 {
     Ptr<AdaptiveManifoldFilter> amf(new AdaptiveManifoldFilterRefImpl());
-    
+
     amf->setSigmaS(sigma_s);
     amf->setSigmaR(sigma_r);
     amf->setAdjustOutliers(adjust_outliers);
@@ -978,4 +944,4 @@ Ptr<AdaptiveManifoldFilter> createAMFilterRefImpl(double sigma_s, double sigma_r
     return amf;
 }
 
-}
+} // namespace

@@ -52,7 +52,7 @@ static const char* keys =
 { "{@saliency_algorithm | | Saliency algorithm <saliencyAlgorithmType.[saliencyAlgorithmTypeSubType]> }"
     "{@video_name      | | video name            }"
     "{@start_frame     |1| Start frame           }"
-    "{@training_path   |1| Path of the folder containing the trained files}" };
+    "{@training_path   |ObjectnessTrainedModel| Path of the folder containing the trained files}" };
 
 static void help()
 {
@@ -64,6 +64,7 @@ static void help()
 
 int main( int argc, char** argv )
 {
+
   CommandLineParser parser( argc, argv, keys );
 
   String saliency_algorithm = parser.get<String>( 0 );
@@ -94,13 +95,7 @@ int main( int argc, char** argv )
   Mat frame;
 
   //instantiates the specific Saliency
-  Ptr<Saliency> saliencyAlgorithm = Saliency::create( saliency_algorithm );
-
-  if( saliencyAlgorithm == NULL )
-  {
-    cout << "***Error in the instantiation of the saliency algorithm...***\n";
-    return -1;
-  }
+  Ptr<Saliency> saliencyAlgorithm;
 
   Mat binaryMap;
   Mat image;
@@ -116,6 +111,7 @@ int main( int argc, char** argv )
   if( saliency_algorithm.find( "SPECTRAL_RESIDUAL" ) == 0 )
   {
     Mat saliencyMap;
+    saliencyAlgorithm = StaticSaliencySpectralResidual::create();
     if( saliencyAlgorithm->computeSaliency( image, saliencyMap ) )
     {
       StaticSaliencySpectralResidual spec;
@@ -131,6 +127,7 @@ int main( int argc, char** argv )
   else if( saliency_algorithm.find( "FINE_GRAINED" ) == 0 )
   {
     Mat saliencyMap;
+    saliencyAlgorithm = StaticSaliencyFineGrained::create();
     if( saliencyAlgorithm->computeSaliency( image, saliencyMap ) )
     {
       imshow( "Saliency Map", saliencyMap );
@@ -150,21 +147,38 @@ int main( int argc, char** argv )
 
     else
     {
+      saliencyAlgorithm = ObjectnessBING::create();
       vector<Vec4i> saliencyMap;
       saliencyAlgorithm.dynamicCast<ObjectnessBING>()->setTrainingPath( training_path );
-      saliencyAlgorithm.dynamicCast<ObjectnessBING>()->setBBResDir( training_path + "/Results" );
+      saliencyAlgorithm.dynamicCast<ObjectnessBING>()->setBBResDir( "Results" );
 
       if( saliencyAlgorithm->computeSaliency( image, saliencyMap ) )
       {
-        std::cout << "Objectness done" << std::endl;
+        int ndet = int(saliencyMap.size());
+        std::cout << "Objectness done " << ndet << std::endl;
+        // The result are sorted by objectness. We only use the first maxd boxes here.
+        int maxd = 7, step = 255 / maxd, jitter=9; // jitter to seperate single rects
+        Mat draw = image.clone();
+        for (int i = 0; i < std::min(maxd, ndet); i++) {
+          Vec4i bb = saliencyMap[i];
+          Scalar col = Scalar(((i*step)%255), 50, 255-((i*step)%255));
+          Point off(theRNG().uniform(-jitter,jitter), theRNG().uniform(-jitter,jitter));
+          rectangle(draw, Point(bb[0]+off.x, bb[1]+off.y), Point(bb[2]+off.x, bb[3]+off.y), col, 2);
+          rectangle(draw, Rect(20, 20+i*10, 10,10), col, -1); // mini temperature scale
+        }
+        imshow("BING", draw);
+        waitKey();
+      }
+      else
+      {
+        std::cout << "No saliency found for " << video_name << std::endl;
       }
     }
 
   }
   else if( saliency_algorithm.find( "BinWangApr2014" ) == 0 )
   {
-
-    //Ptr<Size> size = Ptr<Size>( new Size( image.cols, image.rows ) );
+    saliencyAlgorithm = MotionSaliencyBinWangApr2014::create();
     saliencyAlgorithm.dynamicCast<MotionSaliencyBinWangApr2014>()->setImagesize( image.cols, image.rows );
     saliencyAlgorithm.dynamicCast<MotionSaliencyBinWangApr2014>()->init();
 
@@ -175,13 +189,14 @@ int main( int argc, char** argv )
       {
 
         cap >> frame;
+        if( frame.empty() )
+        {
+          return 0;
+        }
         cvtColor( frame, frame, COLOR_BGR2GRAY );
 
         Mat saliencyMap;
-        if( saliencyAlgorithm->computeSaliency( frame, saliencyMap ) )
-        {
-          std::cout << "current frame motion saliency done" << std::endl;
-        }
+        saliencyAlgorithm->computeSaliency( frame, saliencyMap );
 
         imshow( "image", frame );
         imshow( "saliencyMap", saliencyMap * 255 );

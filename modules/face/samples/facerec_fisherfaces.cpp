@@ -85,7 +85,7 @@ int main(int argc, const char *argv[]) {
     // input filename is given.
     try {
         read_csv(fn_csv, images, labels);
-    } catch (cv::Exception& e) {
+    } catch (const cv::Exception& e) {
         cerr << "Error opening file \"" << fn_csv << "\". Reason: " << e.msg << endl;
         // nothing more we can do
         exit(1);
@@ -114,7 +114,7 @@ int main(int argc, const char *argv[]) {
     // If you just want to keep 10 Fisherfaces, then call
     // the factory method like this:
     //
-    //      cv::createFisherFaceRecognizer(10);
+    //      FisherFaceRecognizer::create(10);
     //
     // However it is not useful to discard Fisherfaces! Please
     // always try to use _all_ available Fisherfaces for
@@ -124,9 +124,9 @@ int main(int argc, const char *argv[]) {
     // confidence threshold (e.g. 123.0) and use _all_
     // Fisherfaces, then call it with:
     //
-    //      cv::createFisherFaceRecognizer(0, 123.0);
+    //      FisherFaceRecognizer::create(0, 123.0);
     //
-    Ptr<BasicFaceRecognizer> model = createFisherFaceRecognizer();
+    Ptr<FisherFaceRecognizer> model = FisherFaceRecognizer::create();
     model->train(images, labels);
     // The following line predicts the label of a given
     // test image:

@@ -17,7 +17,7 @@
  */
 #include "precomp.hpp"
 #include "opencv2/face.hpp"
-#include "face_basic.hpp"
+#include "face_utils.hpp"
 
 namespace cv { namespace face {
 
@@ -46,8 +46,8 @@ private:
 
 
 public:
-    using FaceRecognizer::save;
-    using FaceRecognizer::load;
+    using FaceRecognizer::read;
+    using FaceRecognizer::write;
 
     // Initializes this LBPH Model. The current implementation is rather fixed
     // as it uses the Extended Local Binary Patterns per default.
@@ -81,36 +81,53 @@ public:
         train(src, labels);
     }
 
-    ~LBPH() { }
+    ~LBPH() CV_OVERRIDE { }
 
     // Computes a LBPH model with images in src and
     // corresponding labels in labels.
-    void train(InputArrayOfArrays src, InputArray labels);
+    void train(InputArrayOfArrays src, InputArray labels) CV_OVERRIDE;
 
     // Updates this LBPH model with images in src and
     // corresponding labels in labels.
-    void update(InputArrayOfArrays src, InputArray labels);
+    void update(InputArrayOfArrays src, InputArray labels) CV_OVERRIDE;
 
     // Send all predict results to caller side for custom result handling
-    void predict(InputArray src, Ptr<PredictCollector> collector) const;
+    void predict(InputArray src, Ptr<PredictCollector> collector) const CV_OVERRIDE;
 
-    // See FaceRecognizer::load.
-    void load(const FileStorage& fs);
+    // See FaceRecognizer::write.
+    void read(const FileNode& fn) CV_OVERRIDE;
 
     // See FaceRecognizer::save.
-    void save(FileStorage& fs) const;
+    void write(FileStorage& fs) const CV_OVERRIDE;
 
-    CV_IMPL_PROPERTY(int, GridX, _grid_x)
-    CV_IMPL_PROPERTY(int, GridY, _grid_y)
-    CV_IMPL_PROPERTY(int, Radius, _radius)
-    CV_IMPL_PROPERTY(int, Neighbors, _neighbors)
-    CV_IMPL_PROPERTY(double, Threshold, _threshold)
-    CV_IMPL_PROPERTY_RO(std::vector<cv::Mat>, Histograms, _histograms)
-    CV_IMPL_PROPERTY_RO(cv::Mat, Labels, _labels)
+    bool empty() const CV_OVERRIDE {
+        return (_labels.empty());
+    }
+    String getDefaultName() const CV_OVERRIDE
+    {
+        return "opencv_lbphfaces";
+    }
+
+    inline int getGridX() const CV_OVERRIDE { return _grid_x; }
+    inline void setGridX(int val) CV_OVERRIDE { _grid_x = val; }
+    inline int getGridY() const CV_OVERRIDE { return _grid_y; }
+    inline void setGridY(int val) CV_OVERRIDE { _grid_y = val; }
+    inline int getRadius() const CV_OVERRIDE { return _radius; }
+    inline void setRadius(int val) CV_OVERRIDE { _radius = val; }
+    inline int getNeighbors() const CV_OVERRIDE { return _neighbors; }
+    inline void setNeighbors(int val) CV_OVERRIDE { _neighbors = val; }
+    inline double getThreshold() const CV_OVERRIDE { return _threshold; }
+    inline void setThreshold(double val) CV_OVERRIDE { _threshold = val; }
+    inline std::vector<cv::Mat> getHistograms() const CV_OVERRIDE { return _histograms; }
+    inline cv::Mat getLabels() const CV_OVERRIDE { return _labels; }
 };
 
 
-void LBPH::load(const FileStorage& fs) {
+void LBPH::read(const FileNode& fs) {
+    double _t = 0;
+    fs["threshold"] >> _t; // older versions might not have "threshold"
+    if (_t !=0)
+        _threshold = _t;    // be careful, not to overwrite DBL_MAX with 0 !
     fs["radius"] >> _radius;
     fs["neighbors"] >> _neighbors;
     fs["grid_x"] >> _grid_x;
@@ -132,7 +149,8 @@ void LBPH::load(const FileStorage& fs) {
 }
 
 // See FaceRecognizer::save.
-void LBPH::save(FileStorage& fs) const {
+void LBPH::write(FileStorage& fs) const {
+    fs << "threshold" << _threshold;
     fs << "radius" << _radius;
     fs << "neighbors" << _neighbors;
     fs << "grid_x" << _grid_x;
@@ -289,10 +307,8 @@ static Mat histc(InputArray _src, int minVal, int maxVal, bool normed)
         case CV_32FC1:
             return histc_(src, minVal, maxVal, normed);
             break;
-        default:
-            CV_Error(Error::StsUnmatchedFormats, "This type is not implemented yet."); break;
     }
-    return Mat();
+    CV_Error(Error::StsUnmatchedFormats, "This type is not implemented yet.");
 }
 
 
@@ -355,7 +371,7 @@ void LBPH::train(InputArrayOfArrays _in_src, InputArray _in_labels, bool preserv
     Mat labels = _in_labels.getMat();
     // check if data is well- aligned
     if(labels.total() != src.size()) {
-        String error_message = format("The number of samples (src) must equal the number of labels (labels). Was len(samples)=%d, len(labels)=%d.", src.size(), _labels.total());
+        String error_message = format("The number of samples (src) must equal the number of labels (labels). Was len(samples)=%zu, len(labels)=%zu.", src.size(), _labels.total());
         CV_Error(Error::StsBadArg, error_message);
     }
     // if this model should be trained without preserving old data, delete old model data
@@ -407,11 +423,10 @@ void LBPH::predict(InputArray _src, Ptr<PredictCollector> collector) const {
     }
 }
 
-Ptr<LBPHFaceRecognizer> createLBPHFaceRecognizer(int radius, int neighbors,
+Ptr<LBPHFaceRecognizer> LBPHFaceRecognizer::create(int radius, int neighbors,
                                              int grid_x, int grid_y, double threshold)
 {
     return makePtr<LBPH>(radius, neighbors, grid_x, grid_y, threshold);
 }
-
 
 }}

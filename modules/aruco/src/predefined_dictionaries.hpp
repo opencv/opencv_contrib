@@ -45,10 +45,10 @@ namespace {
   * On each rotation, the marker is divided in bytes assuming a row-major order
   * This format allows a faster marker identification.
   * For a dictionary composed by M markers of NxN bits, the structure dimensions should be:
-  * const char name[nMarkers][nBytes][4rotations], or more specifically:
-  * const char name[M][ceil(NxN/8)][4]
-  * The element [i][j][k] represents the j-th byte of the i-th marker in the dictionary
-  * in its k-th rotation.
+  * const char name[nMarkers][4rotations][nBytes], or more specifically:
+  * const char name[M][4][ceil(NxN/8)]
+  * The element [i][j][k] represents the k-th byte of the i-th marker in the dictionary
+  * in its j-th rotation.
   * Each rotation implies a 90 degree rotation of the marker in anticlockwise direction.
   */
 

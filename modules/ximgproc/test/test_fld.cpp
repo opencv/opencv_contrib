@@ -1,10 +1,9 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 
-#include <vector>
-
-using namespace cv;
-using namespace cv::ximgproc;
-using namespace std;
+namespace opencv_test { namespace {
 
 const Size img_size(640, 480);
 const int FLD_TEST_SEED = 0x134679;
@@ -171,3 +170,6 @@ TEST_F(ximgproc_FLD, rotatedRect)
     }
     ASSERT_EQ(EPOCHS, passedtests);
 }
+
+
+}} // namespace

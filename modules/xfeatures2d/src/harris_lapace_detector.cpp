@@ -21,10 +21,8 @@ protected:
     {
     public:
         std::vector<Mat> layers;
-        Octave();
         Octave(std::vector<Mat> layers);
         virtual ~Octave();
-        std::vector<Mat> getLayers();
         Mat getLayerAt(int i);
     };
 
@@ -33,10 +31,8 @@ protected:
     public:
         std::vector<Mat> layers;
 
-        DOGOctave();
         DOGOctave(std::vector<Mat> layers);
         virtual ~DOGOctave();
-        std::vector<Mat> getLayers();
         Mat getLayerAt(int i);
     };
 
@@ -53,29 +49,20 @@ public:
         float sigma0;
         int omin;
         float step;
-        Params();
         Params(int octavesN, int layersN, float sigma0, int omin);
         void clear();
     };
     Params params;
 
-    Pyramid();
     Pyramid(const Mat& img, int octavesN, int layersN = 2, float sigma0 = 1, int omin = 0,
             bool DOG = false);
     Mat getLayer(int octave, int layer);
     Mat getDOGLayer(int octave, int layer);
-    float getSigma(int octave, int layer);
     float getSigma(int layer);
 
     virtual ~Pyramid();
-    Params getParams();
     void clear();
-    bool empty();
 };
-
-Pyramid::Pyramid()
-{
-}
 
 /**
  * Pyramid class constructor
@@ -86,7 +73,13 @@ Pyramid::Pyramid()
  * _DOG: if true, a DOG pyramid is build
  */
 Pyramid::Pyramid(const Mat & img, int octavesN_, int layersN_, float sigma0_, int omin_, bool _DOG) :
-    params(octavesN_, layersN_, sigma0_, omin_)
+    params(
+        //Need to set the octavesN parameter globally. See issue #1513
+        MIN(octavesN_, int(floor(log((double)MIN(img.size().width, img.size().height)) / log(2.0f)))),
+        layersN_,
+        sigma0_,
+        omin_
+    )
 {
     build(img, _DOG);
 }
@@ -102,9 +95,6 @@ void Pyramid::build(const Mat& img, bool DOG)
     Size ksize(0, 0);
     int gsize;
 
-    Size imgSize = img.size();
-    int minSize = MIN(imgSize.width, imgSize.height);
-    int octavesN = MIN(params.octavesN, int(floor(log((double) minSize)/log((float)2))));
     float sigma0 = params.sigma0;
     float sigma = sigma0;
     int layersN = params.layersN + 3;
@@ -178,7 +168,7 @@ void Pyramid::build(const Mat& img, bool DOG)
     /*for every octave build layers*/
     sigma_prev = sigma;
 
-    for (octave = 0; octave < octavesN; octave++)
+    for (octave = 0; octave < params.octavesN; octave++)
     {
         for (layer = 1; layer < layersN; layer++)
         {
@@ -235,15 +225,6 @@ Mat Pyramid::getDOGLayer(int octave, int layer)
 }
 
 /**
- * Return sigma value of indicated octave and layer
- */
-float Pyramid::getSigma(int octave, int layer)
-{
-
-    return powf(2.0f, float(octave)) * powf(params.step, float(layer)) * params.sigma0;
-}
-
-/**
  * Return sigma value of indicated layer
  * sigma value of layer is the same at each octave
  * i.e. sigma of first layer at each octave is sigma0
@@ -272,19 +253,6 @@ void Pyramid::clear()
 }
 
 /**
- * Empty Pyramid
- * @return
- */
-bool Pyramid::empty()
-{
-    return octaves.empty();
-}
-
-Pyramid::Params::Params()
-{
-}
-
-/**
  * Params for Pyramid class
  *
  */
@@ -293,14 +261,6 @@ Pyramid::Params::Params(int octavesN_, int layersN_, float sigma0_, int omin_) :
 {
     CV_Assert(layersN > 0 && octavesN_>0);
     step = powf(2, 1.0f / layersN);
-}
-
-/**
- * Returns Pyramid's params
- */
-Pyramid::Params Pyramid::getParams()
-{
-    return params;
 }
 
 /**
@@ -321,18 +281,6 @@ void Pyramid::Params::clear()
 Pyramid::Octave::Octave(std::vector<Mat> _layers) : layers(_layers) {}
 
 /**
- * Return layers of the Octave
- */
-std::vector<Mat> Pyramid::Octave::getLayers()
-{
-    return layers;
-}
-
-Pyramid::Octave::Octave()
-{
-}
-
-/**
  * Return the Octave's layer at index i
  */
 Mat Pyramid::Octave::getLayerAt(int i)
@@ -345,19 +293,10 @@ Pyramid::Octave::~Octave()
 {
 }
 
-Pyramid::DOGOctave::DOGOctave()
-{
-}
-
 Pyramid::DOGOctave::DOGOctave(std::vector<Mat> _layers) : layers(_layers) {}
 
 Pyramid::DOGOctave::~DOGOctave()
 {
-}
-
-std::vector<Mat> Pyramid::DOGOctave::getLayers()
-{
-    return layers;
 }
 
 Mat Pyramid::DOGOctave::getLayerAt(int i)
@@ -376,7 +315,7 @@ namespace xfeatures2d
 /*
  *  HarrisLaplaceFeatureDetector_Impl
  */
-class HarrisLaplaceFeatureDetector_Impl : public HarrisLaplaceFeatureDetector
+class HarrisLaplaceFeatureDetector_Impl CV_FINAL : public HarrisLaplaceFeatureDetector
 {
 public:
     HarrisLaplaceFeatureDetector_Impl(
@@ -386,11 +325,11 @@ public:
         int maxCorners=5000,
         int num_layers=4
     );
-    virtual void read( const FileNode& fn );
-    virtual void write( FileStorage& fs ) const;
+    virtual void read( const FileNode& fn ) CV_OVERRIDE;
+    virtual void write( FileStorage& fs ) const CV_OVERRIDE;
 
 protected:
-    void detect( InputArray image, std::vector<KeyPoint>& keypoints, InputArray mask=noArray() );
+    void detect( InputArray image, std::vector<KeyPoint>& keypoints, InputArray mask=noArray() ) CV_OVERRIDE;
 
     int numOctaves;
     float corn_thresh;
@@ -475,7 +414,8 @@ void HarrisLaplaceFeatureDetector_Impl::detect(InputArray img, std::vector<KeyPo
     keypoints = std::vector<KeyPoint> (0);
 
     /*Find Harris corners on each layer*/
-    for (int octave = 0; octave <= numOctaves; octave++)
+    //Use pyr.params.octavesN instead of numOctaves. See issue #1513
+    for (int octave = 0; octave <= pyr.params.octavesN; octave++)
     {
         for (int layer = 1; layer <= num_layers; layer++)
         {

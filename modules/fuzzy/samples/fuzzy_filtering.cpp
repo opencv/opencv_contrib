@@ -11,7 +11,7 @@
  * using "kernel2" with radius 100.
  *
  * Both kernels are created from linear function, using
- * linear interpolation (parametr ft:LINEAR).
+ * linear interpolation (parameter ft:LINEAR).
  */
 
 #include "opencv2/core.hpp"
@@ -26,7 +26,7 @@ int main(void)
     // Input image
     Mat I = imread("input.png");
 
-    // Kernel cretion
+    // Kernel creation
     Mat kernel1, kernel2;
 
     ft::createKernel(ft::LINEAR, 3, kernel1, 3);

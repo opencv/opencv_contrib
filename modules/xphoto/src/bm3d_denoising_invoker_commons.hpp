@@ -89,7 +89,7 @@ inline static void hardThreshold2D(T *dst, T *thrMap, const int &templateWindowS
 {
     for (int i = 1; i < templateWindowSizeSq; ++i)
     {
-        if (std::abs(dst[i] < thrMap[i]))
+        if (std::abs(dst[i]) < thrMap[i])
             dst[i] = 0;
     }
 }

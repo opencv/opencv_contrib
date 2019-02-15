@@ -41,9 +41,9 @@ public:
 	~ShowInRawView();
 
 protected:
-	virtual void hideEvent(QHideEvent * );
+    virtual void hideEvent(QHideEvent * ) CV_OVERRIDE;
 
-	virtual void showEvent(QShowEvent *);
+    virtual void showEvent(QShowEvent *) CV_OVERRIDE;
 
 private slots:
 

@@ -44,8 +44,7 @@ SingleFilterView::SingleFilterView(const std::vector<cv::Mat> &images,
 		auto originalZoomIm = util::make_unique<qtutil::ZoomableImage>(image);
 		accor->insert(
 		    QString("Info original image ") + QString::number(count),
-		    std::move(
-			util::make_unique<qtutil::ZoomableOptPanel>(*originalZoomIm)));
+            util::make_unique<qtutil::ZoomableOptPanel>(*originalZoomIm));
 		syncVec.push_back(originalZoomIm.get());
 
 
@@ -66,8 +65,7 @@ SingleFilterView::SingleFilterView(const std::vector<cv::Mat> &images,
 
 		accor->insert(
 		    QString("Info filtered image ") + QString::number(count),
-		    std::move(
-			util::make_unique<qtutil::ZoomableOptPanel>(*filterZoomIm)));
+            util::make_unique<qtutil::ZoomableOptPanel>(*filterZoomIm));
 
 		syncVec.push_back(filterZoomIm.get());
 
@@ -84,7 +82,7 @@ SingleFilterView::SingleFilterView(const std::vector<cv::Mat> &images,
 	imwid->setLayout(imageLayout.release());
 
 	accor->insert("Zoom synchronization",
-		std::move(util::make_unique<qtutil::SyncZoomWidget>(syncVec)), true, 1);
+        util::make_unique<qtutil::SyncZoomWidget>(syncVec), true, 1);
 
 	layout->addWidget(accor.release());
 	layout->addWidget(imwid.release());

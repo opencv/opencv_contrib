@@ -116,7 +116,7 @@ CV_WRAP String OCRTesseract::run(InputArray image, InputArray mask, int min_conf
     run(image_m, mask_m, output1, NULL, &component_texts, &component_confidences, component_level);
     for(unsigned int i = 0; i < component_texts.size(); i++)
     {
-        cout << "confidence: " << component_confidences[i] << " text:" << component_texts[i] << endl;
+        // cout << "confidence: " << component_confidences[i] << " text:" << component_texts[i] << endl;
 
         if(component_confidences[i] > min_confidence)
         {
@@ -127,7 +127,7 @@ CV_WRAP String OCRTesseract::run(InputArray image, InputArray mask, int min_conf
 }
 
 
-class OCRTesseractImpl : public OCRTesseract
+class OCRTesseractImpl CV_FINAL : public OCRTesseract
 {
 private:
 #ifdef HAVE_TESSERACT
@@ -172,7 +172,7 @@ public:
 #endif
     }
 
-    ~OCRTesseractImpl()
+    ~OCRTesseractImpl() CV_OVERRIDE
     {
 #ifdef HAVE_TESSERACT
         tess.End();
@@ -181,7 +181,7 @@ public:
 
     void run(Mat& image, string& output, vector<Rect>* component_rects=NULL,
              vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL,
-             int component_level=0)
+             int component_level=0) CV_OVERRIDE
     {
 
         CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
@@ -200,7 +200,8 @@ public:
         char *outText;
         outText = tess.GetUTF8Text();
         output = string(outText);
-        delete [] outText;
+        if (outText != NULL)
+            delete [] outText;
 
         if ( (component_rects != NULL) || (component_texts != NULL) || (component_confidences != NULL) )
         {
@@ -227,8 +228,8 @@ public:
 
                     delete[] word;
                 } while (ri->Next(level));
+                delete ri;
             }
-            delete ri;
         }
 
         tess.Clear();
@@ -248,7 +249,7 @@ public:
 
     void run(Mat& image, Mat& mask, string& output, vector<Rect>* component_rects=NULL,
              vector<string>* component_texts=NULL, vector<float>* component_confidences=NULL,
-             int component_level=0)
+             int component_level=0) CV_OVERRIDE
     {
         CV_Assert( mask.type() == CV_8UC1 );
         CV_Assert( (image.type() == CV_8UC1) || (image.type() == CV_8UC3) );
@@ -256,12 +257,12 @@ public:
         run( mask, output, component_rects, component_texts, component_confidences, component_level);
     }
 
-    void setWhiteList(const String& char_whitelist)
+    void setWhiteList(const String& char_whitelist) CV_OVERRIDE
     {
   #ifdef HAVE_TESSERACT
         tess.SetVariable("tessedit_char_whitelist", char_whitelist.c_str());
   #else
-        (void)char_whitelist;
+        CV_UNUSED(char_whitelist);
   #endif
     }
 };

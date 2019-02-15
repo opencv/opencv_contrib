@@ -69,7 +69,8 @@ namespace sfm
 
     // Camera data
     Matx33d Ka = K.getMat();
-    const double focal_length = Ka(0,0);
+    const double focal_length_x = Ka(0,0);
+    const double focal_length_y = Ka(1,1);
     const double principal_x = Ka(0,2), principal_y = Ka(1,2), k1 = 0, k2 = 0, k3 = 0;
 
     // Set reconstruction options
@@ -77,7 +78,8 @@ namespace sfm
 
     libmv_CameraIntrinsicsOptions camera_instrinsic_options =
       libmv_CameraIntrinsicsOptions(SFM_DISTORTION_MODEL_POLYNOMIAL,
-                                    focal_length, principal_x, principal_y,
+                                    focal_length_x, focal_length_y,
+                                    principal_x, principal_y,
                                     k1, k2, k3);
 
     //-- Instantiate reconstruction pipeline
@@ -152,6 +154,7 @@ namespace sfm
     else
     {
       // TODO: implement me
+      CV_Error(Error::StsNotImplemented, "Affine reconstruction not yet implemented");
     }
 
   }
@@ -180,13 +183,14 @@ namespace sfm
     else
     {
       // TODO: implement me
+      CV_Error(Error::StsNotImplemented, "Affine reconstruction not yet implemented");
     }
 
   }
 
 
   void
-  reconstruct(const std::vector<std::string> images, OutputArray Ps, OutputArray points3d,
+  reconstruct(const std::vector<cv::String> images, OutputArray Ps, OutputArray points3d,
               InputOutputArray K, bool is_projective)
   {
     const int nviews = static_cast<int>(images.size());
@@ -223,13 +227,14 @@ namespace sfm
     else
     {
       // TODO: implement me
+      CV_Error(Error::StsNotImplemented, "Affine reconstruction not yet implemented");
     }
 
   }
 
 
   void
-  reconstruct(const std::vector<std::string> images, OutputArray Rs, OutputArray Ts,
+  reconstruct(const std::vector<cv::String> images, OutputArray Rs, OutputArray Ts,
               InputOutputArray K, OutputArray points3d, bool is_projective)
   {
     const int nviews = static_cast<int>(images.size());
@@ -239,7 +244,7 @@ namespace sfm
 
     if ( is_projective )
     {
-      reconstruct_(images, Rs, Ts, K, points3d, false);
+      reconstruct_(images, Rs, Ts, K, points3d);
     }
 
 
@@ -248,6 +253,7 @@ namespace sfm
     else
     {
       // TODO: implement me
+      CV_Error(Error::StsNotImplemented, "Affine reconstruction not yet implemented");
     }
 
   }

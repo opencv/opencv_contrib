@@ -48,6 +48,7 @@
 #include <opencv2/tracking.hpp>
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
+#include "samples_utility.hpp"
 #include <iostream>
 
 using namespace std;
@@ -184,7 +185,7 @@ int main(int argc, char *argv[])
 				//Initialize the tracker and add targets
 				for (int i = 0; i < (int)boundingBoxes.size(); i++)
 				{
-					if (!mt.addTarget(frame, boundingBoxes[i], tracker_algorithm))
+                    if (!mt.addTarget(frame, boundingBoxes[i], createTrackerByName(tracker_algorithm)))
 					{
 						cout << "Trackers Init Error!!!";
 						return 0;

@@ -37,9 +37,6 @@ static Ptr<BackgroundSubtractor> createBGSubtractorByName(const String& algoName
 
 int main(int argc, char** argv)
 {
-    setUseOptimized(true);
-    setNumThreads(8);
-
     CommandLineParser parser(argc, argv, keys);
     parser.about(about);
     parser.printMessage();

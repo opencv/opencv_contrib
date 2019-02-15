@@ -53,6 +53,7 @@
 #include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include "samples_utility.hpp"
 
 #include <iostream>
 
@@ -143,8 +144,8 @@ int main(int argc, char *argv[])
 	setMouseCallback("Tracking API", onMouse, 0);
 
 	//Create Tracker
-	Ptr<Tracker> tracker = Tracker::create(tracker_algorithm);
-	if (tracker == NULL)
+    Ptr<Tracker> tracker = createTrackerByName(tracker_algorithm);
+	if (!tracker)
 	{
 		cout << "***Error in the instantiation of the tracker...***\n";
 		getchar();

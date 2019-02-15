@@ -41,8 +41,7 @@ DefaultFilterView::DefaultFilterView(const std::vector<cv::Mat> &images,
 
 		accor->insert(
 		    QString("Image Information: ") + QString::number(count),
-		    std::move(
-			util::make_unique<qtutil::ZoomableOptPanel>(*zoomIm)));
+            util::make_unique<qtutil::ZoomableOptPanel>(*zoomIm));
 
 		zoomIm->setMat(image);
 
@@ -51,7 +50,7 @@ DefaultFilterView::DefaultFilterView(const std::vector<cv::Mat> &images,
 		histogram->setVisible(false);
 		connect(zoomIm.get(), SIGNAL(updateArea(QRectF, qreal)), histogram.get(), SLOT(setArea(QRectF, qreal)));
 
-		accor->insert(QString("Histogram: ") + QString::number(count), std::move(util::make_unique<qtutil::HistogramOptPanel>(*histogram)));
+        accor->insert(QString("Histogram: ") + QString::number(count), util::make_unique<qtutil::HistogramOptPanel>(*histogram));
 
 		imageLayout->addWidget(zoomIm.release(), 0, count);
     imageLayout->addWidget(histogram.release(), 1, count);

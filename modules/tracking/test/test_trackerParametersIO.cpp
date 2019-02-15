@@ -3,9 +3,8 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include "test_precomp.hpp"
-#include "opencv2/tracking.hpp"
 
-using namespace cv;
+namespace opencv_test { namespace {
 
 TEST(MEDIAN_FLOW_Parameters, IO)
 {
@@ -63,10 +62,10 @@ TEST(KCF_Parameters, IO)
 {
     TrackerKCF::Params parameters;
 
-    parameters.sigma = 0.3;
-    parameters.lambda = 0.02;
-    parameters.interp_factor = 0.08;
-    parameters.output_sigma_factor = 1.0/ 32.0;
+    parameters.sigma = 0.3f;
+    parameters.lambda = 0.02f;
+    parameters.interp_factor = 0.08f;
+    parameters.output_sigma_factor = 1.0f/ 32.0f;
     parameters.resize=false;
     parameters.max_patch_size=90*90;
     parameters.split_coeff=false;
@@ -75,7 +74,7 @@ TEST(KCF_Parameters, IO)
     parameters.desc_pca = TrackerKCF::GRAY;
     parameters.compress_feature=false;
     parameters.compressed_size=3;
-    parameters.pca_learning_rate=0.2;
+    parameters.pca_learning_rate=0.2f;
 
     FileStorage fsWriter("parameters.xml", FileStorage::WRITE + FileStorage::MEMORY);
     parameters.write(fsWriter);
@@ -125,3 +124,5 @@ TEST(KCF_Parameters, Default_Value_If_Absent)
     ASSERT_EQ(defaultParameters.compressed_size, readParameters.compressed_size);
     ASSERT_DOUBLE_EQ(defaultParameters.pca_learning_rate, readParameters.pca_learning_rate);
 }
+
+}} // namespace

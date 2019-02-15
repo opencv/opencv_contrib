@@ -3,9 +3,6 @@
 #include "opencv2/imgproc.hpp"
 #include "opencv2/highgui.hpp"
 
-#include "opencv2/core/utility.hpp"
-#include "opencv2/imgproc/types_c.h"
-
 #include <ctime>
 #include <iostream>
 
@@ -41,22 +38,22 @@ int main( int argc, const char** argv )
     std::string maskFilename = parser.get<std::string>("m");
     std::string outFilename = parser.get<std::string>("o");
 
-    cv::Mat src = cv::imread(inFilename, -1);
+    cv::Mat src = cv::imread(inFilename, cv::IMREAD_UNCHANGED);
     if ( src.empty() )
     {
         printf( "Cannot read image file: %s\n", inFilename.c_str() );
         return -1;
     }
 
-    cv::cvtColor(src, src, CV_RGB2Lab);
+    cv::cvtColor(src, src, cv::COLOR_BGR2Lab);
 
-    cv::Mat mask = cv::imread(maskFilename, 0);
+    cv::Mat mask = cv::imread(maskFilename, cv::IMREAD_GRAYSCALE);
     if ( mask.empty() )
     {
         printf( "Cannot read image file: %s\n", maskFilename.c_str() );
         return -1;
     }
-    cv::threshold(mask, mask, 128, 255, CV_THRESH_BINARY | CV_THRESH_OTSU);
+    cv::threshold(mask, mask, 128, 255, cv::THRESH_BINARY | cv::THRESH_OTSU);
 
     cv::Mat res(src.size(), src.type());
 
@@ -65,7 +62,7 @@ int main( int argc, const char** argv )
     std::cout << "time = " << (clock() - time)
         / double(CLOCKS_PER_SEC) << std::endl;
 
-    cv::cvtColor(res, res, CV_Lab2RGB);
+    cv::cvtColor(res, res, cv::COLOR_Lab2BGR);
 
     if ( outFilename == "" )
     {

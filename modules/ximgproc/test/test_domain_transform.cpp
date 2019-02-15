@@ -1,50 +1,9 @@
-/*
- *  By downloading, copying, installing or using the software you agree to this license.
- *  If you do not agree to this license, do not download, install,
- *  copy or use the software.
- *
- *
- *  License Agreement
- *  For Open Source Computer Vision Library
- *  (3 - clause BSD License)
- *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met :
- *
- *  * Redistributions of source code must retain the above copyright notice,
- *  this list of conditions and the following disclaimer.
- *
- *  * Redistributions in binary form must reproduce the above copyright notice,
- *  this list of conditions and the following disclaimer in the documentation
- *  and / or other materials provided with the distribution.
- *
- *  * Neither the names of the copyright holders nor the names of the contributors
- *  may be used to endorse or promote products derived from this software
- *  without specific prior written permission.
- *
- *  This software is provided by the copyright holders and contributors "as is" and
- *  any express or implied warranties, including, but not limited to, the implied
- *  warranties of merchantability and fitness for a particular purpose are disclaimed.
- *  In no event shall copyright holders or contributors be liable for any direct,
- *  indirect, incidental, special, exemplary, or consequential damages
- *  (including, but not limited to, procurement of substitute goods or services;
- *  loss of use, data, or profits; or business interruption) however caused
- *  and on any theory of liability, whether in contract, strict liability,
- *  or tort(including negligence or otherwise) arising in any way out of
- *  the use of this software, even if advised of the possibility of such damage.
- */
-
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 
-namespace cvtest
-{
-
-using namespace std;
-using namespace std::tr1;
-using namespace testing;
-using namespace perf;
-using namespace cv;
-using namespace cv::ximgproc;
+namespace opencv_test { namespace {
 
 static string getOpenCVExtraDir()
 {
@@ -85,7 +44,7 @@ Mat convertTypeAndSize(Mat src, int dstType, Size dstSize)
     }
 
     dst.convertTo(dst, dstType);
-    resize(dst, dst, dstSize);
+    resize(dst, dst, dstSize, 0, 0, dstType == CV_32FC1 ? INTER_LINEAR : INTER_LINEAR_EXACT);
 
     return dst;
 }
@@ -141,12 +100,15 @@ TEST_P(DomainTransformTest, MultiThreadReproducibility)
     Mat guide = convertTypeAndSize(original, guideType, size);
     Mat src = convertTypeAndSize(original, srcType, size);
 
+    int nThreads = cv::getNumThreads();
+    if (nThreads == 1)
+        throw SkipTestException("Single thread environment");
     for (int iter = 0; iter <= loopsCount; iter++)
     {
         double ss = rng.uniform(0.0, 100.0);
         double sc = rng.uniform(0.0, 100.0);
 
-        cv::setNumThreads(cv::getNumberOfCPUs());
+        cv::setNumThreads(nThreads);
         Mat resMultithread;
         dtFilter(guide, src, resMultithread, ss, sc, mode);
 
@@ -168,7 +130,7 @@ Mat getChessMat1px(Size sz, double whiteIntensity = 255)
 {
     typedef typename DataType<SrcVec>::channel_type SrcType;
 
-    Mat dst(sz, DataType<SrcVec>::type);
+    Mat dst(sz, traits::Type<SrcVec>::value);
 
     SrcVec black = SrcVec::all(0);
     SrcVec white = SrcVec::all((SrcType)whiteIntensity);
@@ -235,7 +197,6 @@ TEST(DomainTransformTest, AuthorReferenceAccuracy)
     ASSERT_FALSE(ref_IC.empty());
     ASSERT_FALSE(ref_RF.empty());
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
     Mat res_NC, res_IC, res_RF;
     dtFilter(src, src, res_NC, ss, sc, DTF_NC);
     dtFilter(src, src, res_IC, ss, sc, DTF_IC);
@@ -253,4 +214,4 @@ TEST(DomainTransformTest, AuthorReferenceAccuracy)
     EXPECT_LE(cvtest::norm(res_IC, ref_IC, NORM_INF), 1);
 }
 
-}
+}} // namespace

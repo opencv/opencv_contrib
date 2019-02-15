@@ -28,7 +28,7 @@ public:
 	 * @brief select keypoint of the given selection
 	 * @return the selected matches
 	 */
-	std::vector<cv::KeyPoint> select(const std::vector<cv::KeyPoint>& selection);
+    std::vector<cv::KeyPoint> select(const std::vector<cv::KeyPoint>& selection) CV_OVERRIDE;
 
 public slots:
 	/**

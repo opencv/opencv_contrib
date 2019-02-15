@@ -49,14 +49,14 @@ namespace datasets
 
 using namespace std;
 
-class HPE_parseImp : public HPE_parse
+class HPE_parseImp CV_FINAL : public HPE_parse
 {
 public:
     HPE_parseImp() {}
     //HPE_parseImp(const string &path);
     virtual ~HPE_parseImp() {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

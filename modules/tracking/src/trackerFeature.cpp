@@ -90,7 +90,6 @@ Ptr<TrackerFeature> TrackerFeature::create( const String& trackerFeatureType )
   }
 
   CV_Error( -1, "Tracker feature type not supported" );
-  return Ptr<TrackerFeature>();
 }
 
 String TrackerFeature::getClassName() const
@@ -248,9 +247,9 @@ class Parallel_compute : public cv::ParallelLoopBody
     //features = featureEvaluator->getFeatures();
   }
 
-  virtual void operator()( const cv::Range &r ) const
+  virtual void operator()( const cv::Range &r ) const CV_OVERRIDE
   {
-    for ( register int jf = r.start; jf != r.end; ++jf )
+    for ( int jf = r.start; jf != r.end; ++jf )
     {
       int cols = images[jf].cols;
       int rows = images[jf].rows;

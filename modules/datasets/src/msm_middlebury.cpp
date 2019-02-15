@@ -49,14 +49,14 @@ namespace datasets
 
 using namespace std;
 
-class MSM_middleburyImp : public MSM_middlebury
+class MSM_middleburyImp CV_FINAL : public MSM_middlebury
 {
 public:
     MSM_middleburyImp() {}
     //MSM_middleburyImp(const string &path);
     virtual ~MSM_middleburyImp() {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

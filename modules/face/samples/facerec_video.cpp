@@ -68,7 +68,7 @@ int main(int argc, const char *argv[]) {
     // Read in the data (fails if no valid input filename is given, but you'll get an error message):
     try {
         read_csv(fn_csv, images, labels);
-    } catch (cv::Exception& e) {
+    } catch (const cv::Exception& e) {
         cerr << "Error opening file \"" << fn_csv << "\". Reason: " << e.msg << endl;
         // nothing more we can do
         exit(1);
@@ -79,7 +79,7 @@ int main(int argc, const char *argv[]) {
     int im_width = images[0].cols;
     int im_height = images[0].rows;
     // Create a FaceRecognizer and train it on the given images:
-    Ptr<BasicFaceRecognizer> model = createFisherFaceRecognizer();
+    Ptr<FisherFaceRecognizer> model = FisherFaceRecognizer::create();
     model->train(images, labels);
     // That's it for learning the Face Recognition model. You now
     // need to create the classifier for the task of Face Detection.

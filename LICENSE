@@ -7,12 +7,12 @@ copy or use the software.
                For Open Source Computer Vision Library
                        (3-clause BSD License)
 
-Copyright (C) 2000-2015, Intel Corporation, all rights reserved.
+Copyright (C) 2000-2018, Intel Corporation, all rights reserved.
 Copyright (C) 2009-2011, Willow Garage Inc., all rights reserved.
 Copyright (C) 2009-2015, NVIDIA Corporation, all rights reserved.
 Copyright (C) 2010-2013, Advanced Micro Devices, Inc., all rights reserved.
-Copyright (C) 2015, OpenCV Foundation, all rights reserved.
-Copyright (C) 2015, Itseez Inc., all rights reserved.
+Copyright (C) 2015-2018, OpenCV Foundation, all rights reserved.
+Copyright (C) 2015-2016, Itseez Inc., all rights reserved.
 Third party copyrights are property of their respective owners.
 
 Redistribution and use in source and binary forms, with or without modification,
@@ -39,4 +39,3 @@ loss of use, data, or profits; or business interruption) however caused
 and on any theory of liability, whether in contract, strict liability,
 or tort (including negligence or otherwise) arising in any way out of
 the use of this software, even if advised of the possibility of such damage.
-

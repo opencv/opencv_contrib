@@ -57,17 +57,17 @@ TranslationMatchView::TranslationMatchView(
 	accor->insert("Match Settings", std::move(matchmnt));
 	accor->insert("KeyPoint Settings", std::move(keyPointmnt));
 	accor->insert("Show selection in rawview window",
-		      std::move(util::make_unique<qtutil::ShowInRawView>(leftKeyPoints,
+              util::make_unique<qtutil::ShowInRawView>(leftKeyPoints,
 								 rightKeyPoints,
 								 matches,
 								 matchManagment_,
-								 keyManagment_)));
+                                 keyManagment_));
 	accor->insert("Sync Zoom ",
-		      std::move(matchscene_ptr->getSyncZoomWidget()));
+              matchscene_ptr->getSyncZoomWidget());
 	accor->insert("Left Image ",
-		      std::move(matchscene_ptr->getLeftMatInfoWidget()));
+              matchscene_ptr->getLeftMatInfoWidget());
 	accor->insert("Right Image ",
-		      std::move(matchscene_ptr->getRightMatInfoWidget()));
+              matchscene_ptr->getRightMatInfoWidget());
 
 	layout->addWidget(accor.release());
 	layout->addWidget(matchscene.release());

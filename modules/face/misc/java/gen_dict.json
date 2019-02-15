@@ -1,0 +1,16 @@
+{
+    "const_ignore_list": [
+    ],
+    "const_private_list" : [
+    ],
+    "missing_consts" : {
+    },
+    "ManualFuncs" : {
+    },
+    "func_arg_fix" : {
+        "fit" : {
+            "landmarks" : {"ctype" : "vector_vector_Point2f"},
+            "faces" : {"ctype" : "vector_Rect"}
+        }
+    }
+}

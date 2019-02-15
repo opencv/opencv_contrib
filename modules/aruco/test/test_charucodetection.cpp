@@ -38,12 +38,8 @@ the use of this software, even if advised of the possibility of such damage.
 
 
 #include "test_precomp.hpp"
-#include <opencv2/aruco/charuco.hpp>
-#include <string>
 
-using namespace std;
-using namespace cv;
-
+namespace opencv_test { namespace {
 
 static double deg2rad(double deg) { return deg * CV_PI / 180.; }
 
@@ -289,7 +285,7 @@ void CV_CharucoDetection::run(int) {
                         return;
                     }
 
-                    double repError = norm(charucoCorners[i] - projectedCharucoCorners[currentId]);
+                    double repError = cv::norm(charucoCorners[i] - projectedCharucoCorners[currentId]);  // TODO cvtest
 
 
                     if(repError > 5.) {
@@ -394,7 +390,7 @@ void CV_CharucoPoseEstimation::run(int) {
                         return;
                     }
 
-                    double repError = norm(charucoCorners[i] - projectedCharucoCorners[currentId]);
+                    double repError = cv::norm(charucoCorners[i] - projectedCharucoCorners[currentId]);  // TODO cvtest
 
 
                     if(repError > 5.) {
@@ -504,8 +500,7 @@ void CV_CharucoDiamondDetection::run(int) {
 
                 for(unsigned int i = 0; i < 4; i++) {
 
-                    double repError =
-                        norm(diamondCorners[0][i] - projectedDiamondCornersReorder[i]);
+                    double repError = cv::norm(diamondCorners[0][i] - projectedDiamondCornersReorder[i]);  // TODO cvtest
 
                     if(repError > 5.) {
                         ts->printf(cvtest::TS::LOG, "Diamond corner reprojection error too high");
@@ -530,8 +525,7 @@ void CV_CharucoDiamondDetection::run(int) {
                               distCoeffs, projectedDiamondCornersPose);
 
                 for(unsigned int i = 0; i < 4; i++) {
-                    double repError =
-                        norm(projectedDiamondCornersReorder[i] - projectedDiamondCornersPose[i]);
+                    double repError = cv::norm(projectedDiamondCornersReorder[i] - projectedDiamondCornersPose[i]);  // TODO cvtest
 
                     if(repError > 5.) {
                         ts->printf(cvtest::TS::LOG, "Charuco pose error too high");
@@ -544,14 +538,54 @@ void CV_CharucoDiamondDetection::run(int) {
     }
 }
 
+/**
+* @brief Check charuco board creation
+*/
+class CV_CharucoBoardCreation : public cvtest::BaseTest {
+public:
+    CV_CharucoBoardCreation();
 
+protected:
+    void run(int);
+};
+
+CV_CharucoBoardCreation::CV_CharucoBoardCreation() {}
+
+void CV_CharucoBoardCreation::run(int)
+{
+    Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_5X5_250);
+    int n = 6;
+
+    float markerSizeFactor = 0.5f;
+
+    for (float squareSize_mm = 5.0f; squareSize_mm < 35.0f; squareSize_mm += 0.1f)
+    {
+        Ptr<aruco::CharucoBoard> board_meters = aruco::CharucoBoard::create(
+            n, n, squareSize_mm*1e-3f, squareSize_mm * markerSizeFactor * 1e-3f, dictionary);
+
+        Ptr<aruco::CharucoBoard> board_millimeters = aruco::CharucoBoard::create(
+            n, n, squareSize_mm, squareSize_mm * markerSizeFactor, dictionary);
+
+        for (size_t i = 0; i < board_meters->nearestMarkerIdx.size(); i++)
+        {
+            if (board_meters->nearestMarkerIdx[i].size() != board_millimeters->nearestMarkerIdx[i].size() ||
+                board_meters->nearestMarkerIdx[i][0] != board_millimeters->nearestMarkerIdx[i][0])
+            {
+                ts->printf(cvtest::TS::LOG,
+                    cv::format("Charuco board topology is sensitive to scale with squareSize=%.1f\n",
+                        squareSize_mm).c_str());
+                ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_OUTPUT);
+                break;
+            }
+        }
+    }
+}
 
 
 TEST(CV_CharucoDetection, accuracy) {
     CV_CharucoDetection test;
     test.safe_run();
 }
-
 
 TEST(CV_CharucoPoseEstimation, accuracy) {
     CV_CharucoPoseEstimation test;
@@ -562,3 +596,10 @@ TEST(CV_CharucoDiamondDetection, accuracy) {
     CV_CharucoDiamondDetection test;
     test.safe_run();
 }
+
+TEST(CV_CharucoBoardCreation, accuracy) {
+    CV_CharucoBoardCreation test;
+    test.safe_run();
+}
+
+}} // namespace

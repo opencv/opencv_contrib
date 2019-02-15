@@ -62,15 +62,15 @@ namespace cv {
                 LUCIDImpl(const int lucid_kernel = 1, const int blur_kernel = 2);
 
                 /** returns the descriptor length */
-                virtual int descriptorSize() const;
+                virtual int descriptorSize() const CV_OVERRIDE;
 
                 /** returns the descriptor type */
-                virtual int descriptorType() const;
+                virtual int descriptorType() const CV_OVERRIDE;
 
                 /** returns the default norm type */
-                virtual int defaultNorm() const;
+                virtual int defaultNorm() const CV_OVERRIDE;
 
-                virtual void compute(InputArray _src, std::vector<KeyPoint> &keypoints, OutputArray _desc);
+                virtual void compute(InputArray _src, std::vector<KeyPoint> &keypoints, OutputArray _desc) CV_OVERRIDE;
 
             protected:
                 int l_kernel, b_kernel;
@@ -100,10 +100,15 @@ namespace cv {
         // gliese581h suggested filling a cv::Mat with descriptors to enable BFmatcher compatibility
         // speed-ups and enhancements by gliese581h
         void LUCIDImpl::compute(InputArray _src, std::vector<KeyPoint> &keypoints, OutputArray _desc) {
-            cv::Mat src_input = _src.getMat();
-            if (src_input.empty())
-                return;
-            CV_Assert(src_input.depth() == CV_8U && src_input.channels() == 3);
+            if (_src.empty()) return;
+            CV_Assert(_src.depth() == CV_8U);
+            cv::Mat src_input;
+            if (_src.channels() == 4)
+                cvtColor(_src, src_input, COLOR_BGRA2BGR);
+            else {
+                CV_Assert(_src.channels() == 3);
+                src_input = _src.getMat();
+            }
 
             Mat_<Vec3b> src;
 

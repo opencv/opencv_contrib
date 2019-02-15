@@ -1,5 +1,4 @@
 // system includes
-#include <getopt.h>
 #include <iostream>
 
 // library includes
@@ -16,6 +15,7 @@
 #include <opencv2/cvv/dmatch.hpp>
 #include <opencv2/cvv/final_show.hpp>
 
+using namespace std;
 using namespace cv;
 
 template<class T> std::string toString(const T& p_arg)
@@ -28,13 +28,6 @@ template<class T> std::string toString(const T& p_arg)
 }
 
 
-void
-usage()
-{
-  printf("usage: cvv_demo [-r WxH]\n");
-  printf("-h       print this help\n");
-  printf("-r WxH   change resolution to width W and height H\n");
-}
 
 
 int
@@ -42,42 +35,31 @@ main(int argc, char** argv)
 {
   cv::Size* resolution = nullptr;
 
-  // parse options
-  const char* optstring = "hr:";
-  int opt;
-  while ((opt = getopt(argc, argv, optstring)) != -1) {
-    switch (opt) {
-    case 'h':
-      usage();
-      return 0;
-      break;
-    case 'r':
-      {
-        char dummych;
-        resolution = new cv::Size();
-        if (sscanf(optarg, "%d%c%d", &resolution->width, &dummych, &resolution->height) != 3) {
-          printf("%s not a valid resolution\n", optarg);
-          return 1;
-        }
-      }
-      break;
-    default: /* '?' */
-      usage();
-      return 2;
-    }
+  // parser keys
+  const char *keys =
+      "{ help h usage ?  |   | show this message }"
+      "{ width W         |  0| camera resolution width. leave at 0 to use defaults }"
+      "{ height H        |  0| camera resolution height. leave at 0 to use defaults }";
+
+  CommandLineParser parser(argc, argv, keys);
+  if (parser.has("help")) {
+    parser.printMessage();
+    return 0;
   }
+  int res_w = parser.get<int>("width");
+  int res_h = parser.get<int>("height");
 
   // setup video capture
   cv::VideoCapture capture(0);
   if (!capture.isOpened()) {
     std::cout << "Could not open VideoCapture" << std::endl;
-    return 3;
+    return 1;
   }
 
-  if (resolution) {
-    printf("Setting resolution to %dx%d\n", resolution->width, resolution->height);
-    capture.set(CV_CAP_PROP_FRAME_WIDTH, resolution->width);
-    capture.set(CV_CAP_PROP_FRAME_HEIGHT, resolution->height);
+  if (res_w>0 && res_h>0) {
+    printf("Setting resolution to %dx%d\n", res_w, res_h);
+    capture.set(CV_CAP_PROP_FRAME_WIDTH, res_w);
+    capture.set(CV_CAP_PROP_FRAME_HEIGHT, res_h);
   }
 
 
@@ -102,7 +84,7 @@ main(int argc, char** argv)
 
     // convert to grayscale
     cv::Mat imgGray;
-    cv::cvtColor(imgRead, imgGray, CV_BGR2GRAY);
+    cv::cvtColor(imgRead, imgGray, COLOR_BGR2GRAY);
 		cvv::debugFilter(imgRead, imgGray, CVVISUAL_LOCATION, "to gray");
 
     // detect ORB features

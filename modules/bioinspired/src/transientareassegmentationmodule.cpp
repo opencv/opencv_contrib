@@ -227,17 +227,17 @@ class TransientAreasSegmentationModuleImpl_: public  TransientAreasSegmentationM
 {
 public:
     TransientAreasSegmentationModuleImpl_(const Size size):_segmTool(size){}
-    inline virtual Size getSize(){return _segmTool.getSize();}
-    inline virtual void write( cv::FileStorage& fs ) const{_segmTool.write(fs);}
-    inline virtual void setup(String segmentationParameterFile, const bool applyDefaultSetupOnFailure){_segmTool.setup(segmentationParameterFile, applyDefaultSetupOnFailure);}
-    inline virtual void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure){_segmTool.setup(fs, applyDefaultSetupOnFailure);}
-    inline virtual void setup(SegmentationParameters newParameters){_segmTool.setup(newParameters);}
-    inline virtual const String printSetup(){return _segmTool.printSetup();}
-    inline virtual struct SegmentationParameters getParameters(){return _segmTool.getParameters();}
-    inline virtual void write( String fs ) const{_segmTool.write(fs);}
-    inline virtual void run(InputArray inputToSegment, const int channelIndex){_segmTool.run(inputToSegment, channelIndex);}
-    inline virtual void getSegmentationPicture(OutputArray transientAreas){return _segmTool.getSegmentationPicture(transientAreas);}
-    inline virtual void clearAllBuffers(){_segmTool.clearAllBuffers();}
+    inline virtual Size getSize() CV_OVERRIDE { return _segmTool.getSize(); }
+    inline virtual void write( cv::FileStorage& fs ) const CV_OVERRIDE { _segmTool.write(fs); }
+    inline virtual void setup(String segmentationParameterFile, const bool applyDefaultSetupOnFailure) CV_OVERRIDE { _segmTool.setup(segmentationParameterFile, applyDefaultSetupOnFailure); }
+    inline virtual void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure) CV_OVERRIDE { _segmTool.setup(fs, applyDefaultSetupOnFailure); }
+    inline virtual void setup(SegmentationParameters newParameters) CV_OVERRIDE { _segmTool.setup(newParameters); }
+    inline virtual const String printSetup() CV_OVERRIDE { return _segmTool.printSetup(); }
+    inline virtual struct SegmentationParameters getParameters() CV_OVERRIDE { return _segmTool.getParameters(); }
+    inline virtual void write( String fs ) const CV_OVERRIDE { _segmTool.write(fs); }
+    inline virtual void run(InputArray inputToSegment, const int channelIndex) CV_OVERRIDE { _segmTool.run(inputToSegment, channelIndex); }
+    inline virtual void getSegmentationPicture(OutputArray transientAreas) CV_OVERRIDE { return _segmTool.getSegmentationPicture(transientAreas); }
+    inline virtual void clearAllBuffers() CV_OVERRIDE { _segmTool.clearAllBuffers(); }
 
 private:
     TransientAreasSegmentationModuleImpl _segmTool;
@@ -247,7 +247,7 @@ private:
 * allocator
 * @param Size : size of the images input to segment (output will be the same size)
 */
-Ptr<TransientAreasSegmentationModule> createTransientAreasSegmentationModule(Size inputSize){
+Ptr<TransientAreasSegmentationModule> TransientAreasSegmentationModule::create(Size inputSize){
     return makePtr<TransientAreasSegmentationModuleImpl_>(inputSize);
 }
 
@@ -298,7 +298,7 @@ void TransientAreasSegmentationModuleImpl::setup(String segmentationParameterFil
         // opening retinaParameterFile in read mode
         cv::FileStorage fs(segmentationParameterFile, cv::FileStorage::READ);
         setup(fs, applyDefaultSetupOnFailure);
-    }catch(cv::Exception &e)
+    }catch(const cv::Exception &e)
     {
         printf("Retina::setup: wrong/unappropriate xml parameter file : error report :`n=>%s\n", e.what());
         if (applyDefaultSetupOnFailure)
@@ -338,7 +338,7 @@ void TransientAreasSegmentationModuleImpl::setup(cv::FileStorage &fs, const bool
         currFn["contextEnergy_spatialConstant"]>>_segmentationParameters.contextEnergy_spatialConstant;
         setup(_segmentationParameters);
 
-    }catch(cv::Exception &e)
+    }catch(const cv::Exception &e)
     {
         std::cout<<"Retina::setup: resetting retina with default parameters"<<std::endl;
         if (applyDefaultSetupOnFailure)
@@ -462,7 +462,7 @@ void TransientAreasSegmentationModuleImpl::_run(const std::valarray<float> &inpu
     float*localMotionPTR=&_localMotion[0], *neighborhoodMotionPTR=&_neighborhoodMotion[0], *contextMotionPTR=&_contextMotionEnergy[0];
 
     // float meanEnergy=LPfilter2.sum()/(float)_LPfilter2.size();
-    register bool *segmentationPicturePTR= &_segmentedAreas[0];
+    bool *segmentationPicturePTR= &_segmentedAreas[0];
     for (unsigned int index=0; index<_filterOutput.getNBpixels() ; ++index, ++segmentationPicturePTR, ++localMotionPTR, ++neighborhoodMotionPTR, contextMotionPTR++)
     {
         float generalMotionContextDecision=*neighborhoodMotionPTR-*contextMotionPTR;
@@ -520,7 +520,7 @@ void TransientAreasSegmentationModuleImpl::_convertValarrayBuffer2cvMat(const st
 {
     // fill output buffer with the valarray buffer
     const bool *valarrayPTR=get_data(grayMatrixToConvert);
-   
+
     outBuffer.create(cv::Size(nbColumns, nbRows), CV_8U);
     Mat outMat = outBuffer.getMat();
     for (unsigned int i=0;i<nbRows;++i)

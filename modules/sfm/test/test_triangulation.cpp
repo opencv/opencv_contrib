@@ -35,9 +35,7 @@
 
 #include "test_precomp.hpp"
 
-using namespace cv;
-using namespace cv::sfm;
-using namespace std;
+namespace opencv_test { namespace {
 
 static void
 checkTriangulation(int nviews, int npoints, bool is_projective, float err_max2d, float err_max3d)
@@ -66,12 +64,12 @@ checkTriangulation(int nviews, int npoints, bool is_projective, float err_max2d,
             homogeneousToEuclidean( cv::Mat(Ps[k])*X_homogeneous.col(i), x_reprojected );
 
             // Check reprojection error. Should be nearly zero.
-            double error = norm( x_reprojected - points2d[k].col(i) );
+            double error = cvtest::norm(x_reprojected, points2d[k].col(i), NORM_L2);
             EXPECT_LE(error*error, err_max2d);
         }
 
         // Check 3d error. Should be nearly zero.
-        double error = norm( X.col(i) - points3d.col(i) );
+        double error = cvtest::norm(X.col(i), points3d.col(i), NORM_L2);
         EXPECT_LE(error*error, err_max3d);
     }
 }
@@ -94,3 +92,6 @@ TEST(Sfm_triangulate, NViewTriangulate_FiveViews)
 
     checkTriangulation(nviews, npoints, is_projective, 1e-7, 1e-9);
 }
+
+
+}} // namespace

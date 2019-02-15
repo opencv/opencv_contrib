@@ -64,7 +64,7 @@ namespace sfm
 
   Reference: @cite HartleyZ00 12.2 pag.312
  */
-void
+static void
 triangulateDLT( const Vec2d &xl, const Vec2d &xr,
                 const Matx34d &Pl, const Matx34d &Pr,
                 Vec3d &point3d )
@@ -92,7 +92,7 @@ triangulateDLT( const Vec2d &xl, const Vec2d &xr,
 
  * Reference: it is the standard DLT; for derivation see appendix of Keir's thesis
  */
-void
+static void
 triangulateNViews(const Mat_<double> &x, const std::vector<Matx34d> &Ps, Vec3d &X)
 {
     CV_Assert(x.rows == 2);

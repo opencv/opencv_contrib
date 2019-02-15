@@ -487,7 +487,7 @@ namespace bioinspired
 #endif
             }
 
-            virtual void operator()( const Range& r ) const {
+            virtual void operator()( const Range& r ) const CV_OVERRIDE {
 
 #ifdef DEBUG_TBB
                 std::cout<<"Parallel_horizontalAnticausalFilter::operator() :"
@@ -498,8 +498,8 @@ namespace bioinspired
 #endif
                 for (int IDrow=r.start; IDrow!=r.end; ++IDrow)
                 {
-                    register float* outputPTR=outputFrame+(IDrowEnd-IDrow)*(nbColumns)-1;
-                    register float result=0;
+                    float* outputPTR=outputFrame+(IDrowEnd-IDrow)*(nbColumns)-1;
+                    float result=0;
                     for (unsigned int index=0; index<nbColumns; ++index)
                     {
                         result = *(outputPTR)+  filterParam_a* result;
@@ -520,12 +520,12 @@ namespace bioinspired
             Parallel_horizontalCausalFilter_addInput(const float *bufferToAddAsInputProcess, float *bufferToProcess, const unsigned int idStart, const unsigned int nbCols,  const float a,  const float tau)
                 :inputFrame(bufferToAddAsInputProcess), outputFrame(bufferToProcess), IDrowStart(idStart), nbColumns(nbCols), filterParam_a(a), filterParam_tau(tau){}
 
-            virtual void operator()( const Range& r ) const {
+            virtual void operator()( const Range& r ) const CV_OVERRIDE {
                 for (int IDrow=r.start; IDrow!=r.end; ++IDrow)
                 {
-                    register float* outputPTR=outputFrame+(IDrowStart+IDrow)*nbColumns;
-                    register const float* inputPTR=inputFrame+(IDrowStart+IDrow)*nbColumns;
-                    register float result=0;
+                    float* outputPTR=outputFrame+(IDrowStart+IDrow)*nbColumns;
+                    const float* inputPTR=inputFrame+(IDrowStart+IDrow)*nbColumns;
+                    float result=0;
                     for (unsigned int index=0; index<nbColumns; ++index)
                     {
                         result = *(inputPTR++) + filterParam_tau**(outputPTR)+  filterParam_a* result;
@@ -545,11 +545,11 @@ namespace bioinspired
             Parallel_verticalCausalFilter(float *bufferToProcess, const unsigned int nbRws, const unsigned int nbCols, const float a )
                 :outputFrame(bufferToProcess), nbRows(nbRws), nbColumns(nbCols), filterParam_a(a){}
 
-            virtual void operator()( const Range& r ) const {
+            virtual void operator()( const Range& r ) const CV_OVERRIDE {
                 for (int IDcolumn=r.start; IDcolumn!=r.end; ++IDcolumn)
                 {
-                    register float result=0;
-                    register float *outputPTR=outputFrame+IDcolumn;
+                    float result=0;
+                    float *outputPTR=outputFrame+IDcolumn;
 
                     for (unsigned int index=0; index<nbRows; ++index)
                     {
@@ -572,12 +572,12 @@ namespace bioinspired
             Parallel_verticalAnticausalFilter_multGain(float *bufferToProcess, const unsigned int nbRws, const unsigned int nbCols, const float a, const float  gain)
                 :outputFrame(bufferToProcess), nbRows(nbRws), nbColumns(nbCols), filterParam_a(a), filterParam_gain(gain){}
 
-            virtual void operator()( const Range& r ) const {
+            virtual void operator()( const Range& r ) const CV_OVERRIDE {
                 float* offset=outputFrame+nbColumns*nbRows-nbColumns;
                 for (int IDcolumn=r.start; IDcolumn!=r.end; ++IDcolumn)
                 {
-                    register float result=0;
-                    register float *outputPTR=offset+IDcolumn;
+                    float result=0;
+                    float *outputPTR=offset+IDcolumn;
 
                     for (unsigned int index=0; index<nbRows; ++index)
                     {
@@ -600,11 +600,11 @@ namespace bioinspired
             Parallel_localAdaptation(const float *localLum, const float *inputImg, float *bufferToProcess, const float localLuminanceFact, const float localLuminanceAdd, const float maxInputVal)
                 :localLuminance(localLum), inputFrame(inputImg),outputFrame(bufferToProcess), localLuminanceFactor(localLuminanceFact), localLuminanceAddon(localLuminanceAdd), maxInputValue(maxInputVal) {}
 
-            virtual void operator()( const Range& r ) const {
+            virtual void operator()( const Range& r ) const CV_OVERRIDE {
                 const float *localLuminancePTR=localLuminance+r.start;
                 const float *inputFramePTR=inputFrame+r.start;
                 float *outputFramePTR=outputFrame+r.start;
-                for (register int IDpixel=r.start ; IDpixel!=r.end ; ++IDpixel, ++inputFramePTR, ++outputFramePTR)
+                for (int IDpixel=r.start ; IDpixel!=r.end ; ++IDpixel, ++inputFramePTR, ++outputFramePTR)
                 {
                     float X0=*(localLuminancePTR++)*localLuminanceFactor+localLuminanceAddon;
                     // TODO : the following line can lead to a divide by zero ! A small offset is added, take care if the offset is too large in case of High Dynamic Range images which can use very small values...
@@ -626,13 +626,13 @@ namespace bioinspired
             Parallel_horizontalAnticausalFilter_Irregular(float *bufferToProcess, const float *spatialConst, const unsigned int idEnd, const unsigned int nbCols)
                 :outputFrame(bufferToProcess), spatialConstantBuffer(spatialConst), IDrowEnd(idEnd), nbColumns(nbCols){}
 
-            virtual void operator()( const Range& r ) const {
+            virtual void operator()( const Range& r ) const CV_OVERRIDE {
 
                 for (int IDrow=r.start; IDrow!=r.end; ++IDrow)
                 {
-                    register float* outputPTR=outputFrame+(IDrowEnd-IDrow)*(nbColumns)-1;
-                    register const float* spatialConstantPTR=spatialConstantBuffer+(IDrowEnd-IDrow)*(nbColumns)-1;
-                    register float result=0;
+                    float* outputPTR=outputFrame+(IDrowEnd-IDrow)*(nbColumns)-1;
+                    const float* spatialConstantPTR=spatialConstantBuffer+(IDrowEnd-IDrow)*(nbColumns)-1;
+                    float result=0;
                     for (unsigned int index=0; index<nbColumns; ++index)
                     {
                         result = *(outputPTR)+  *(spatialConstantPTR--)* result;
@@ -652,12 +652,12 @@ namespace bioinspired
             Parallel_verticalCausalFilter_Irregular(float *bufferToProcess, const float *spatialConst, const unsigned int nbRws, const unsigned int nbCols)
                 :outputFrame(bufferToProcess), spatialConstantBuffer(spatialConst), nbRows(nbRws), nbColumns(nbCols){}
 
-            virtual void operator()( const Range& r ) const {
+            virtual void operator()( const Range& r ) const CV_OVERRIDE {
                 for (int IDcolumn=r.start; IDcolumn!=r.end; ++IDcolumn)
                 {
-                    register float result=0;
-                    register float *outputPTR=outputFrame+IDcolumn;
-                    register const float* spatialConstantPTR=spatialConstantBuffer+IDcolumn;
+                    float result=0;
+                    float *outputPTR=outputFrame+IDcolumn;
+                    const float* spatialConstantPTR=spatialConstantBuffer+IDcolumn;
                     for (unsigned int index=0; index<nbRows; ++index)
                     {
                         result = *(outputPTR) +  *(spatialConstantPTR) * result;

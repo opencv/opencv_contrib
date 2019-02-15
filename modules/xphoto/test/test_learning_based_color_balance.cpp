@@ -1,7 +1,10 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
-using namespace cv;
-namespace cvtest
-{
+
+namespace opencv_test { namespace {
+
 TEST(xphoto_simplefeatures, regression)
 {
     float acc_thresh = 0.01f;
@@ -10,7 +13,7 @@ TEST(xphoto_simplefeatures, regression)
     Mat test_im(1000, 1000, CV_8UC3);
     RNG rng(1234);
     rng.fill(test_im, RNG::NORMAL, Scalar(64, 100, 128), Scalar(10, 10, 10));
-    threshold(test_im, test_im, 200.0, 255.0, THRESH_TRUNC);
+    cvtest::threshold(test_im, test_im, 200.0, 255.0, THRESH_TRUNC);
     test_im.at<Vec3b>(0, 0) = Vec3b(240, 220, 200);
 
     // Which should have the following features:
@@ -39,4 +42,6 @@ TEST(xphoto_simplefeatures, regression)
     ASSERT_LE(cv::norm(dst_features[2], ref1, NORM_INF), acc_thresh);
     ASSERT_LE(cv::norm(dst_features[3], ref1, NORM_INF), acc_thresh);
 }
-}
+
+
+}} // namespace

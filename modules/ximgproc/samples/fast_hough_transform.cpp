@@ -233,7 +233,7 @@ static void rescale(Mat const &src, Mat &dst,
 {
     double scale = min(min(static_cast<double>(maxWidth) / src.cols,
                            static_cast<double>(maxHeight) / src.rows), 1.0);
-    resize(src, dst, Size(), scale, scale, INTER_LINEAR);
+    resize(src, dst, Size(), scale, scale, INTER_LINEAR_EXACT);
 }
 
 static void showHumanReadableImg(string const &name, Mat const &img)

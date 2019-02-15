@@ -5,7 +5,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <string>
 
 using namespace std;
 using namespace cv;
@@ -21,7 +20,7 @@ static void help() {
       << "        example_sfm_scene_reconstruction <path_to_file> <f> <cx> <cy>\n"
       << " where: path_to_file is the file absolute path into your system which contains\n"
       << "        the list of images to use for reconstruction. \n"
-      << "        f  is the focal lenght in pixels. \n"
+      << "        f  is the focal length in pixels. \n"
       << "        cx is the image principal point x coordinates in pixels. \n"
       << "        cy is the image principal point y coordinates in pixels. \n"
       << "------------------------------------------------------------------------------------\n\n"
@@ -29,7 +28,7 @@ static void help() {
 }
 
 
-int getdir(const string _filename, vector<string> &files)
+static int getdir(const string _filename, vector<String> &files)
 {
   ifstream myfile(_filename.c_str());
   if (!myfile.is_open()) {
@@ -57,11 +56,11 @@ int main(int argc, char* argv[])
 
   // Parse the image paths
 
-  vector<string> images_paths;
+  vector<String> images_paths;
   getdir( argv[1], images_paths );
 
 
-  // Build instrinsics
+  // Build intrinsics
 
   float f  = atof(argv[2]),
         cx = atof(argv[3]), cy = atof(argv[4]);

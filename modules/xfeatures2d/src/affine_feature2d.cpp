@@ -170,6 +170,10 @@ bool calcAffineAdaptation(const Mat & fimage, Elliptic_KeyPoint & keypoint)
             //Differentation scale selection
             selDifferentiationScale(warpedImg, Lxm2smooth, Lxmysmooth, Lym2smooth, si,
                     Point(cx, cy));
+            if (Lym2smooth.empty()) {
+                divergence = true;
+                continue;
+            }
 
             //Spatial Localization
             cxPr = cx; //Previous iteration point in normalized window
@@ -428,7 +432,8 @@ float selDifferentiationScale(const Mat & img, Mat & Lxm2smooth, Mat & Lxmysmoot
         eigen(M, eval);
         double eval1 = std::abs(eval.at<float> (0, 0));
         double eval2 = std::abs(eval.at<float> (1, 0));
-        double q = min(eval1, eval2) / max(eval1, eval2);
+        double m = max(eval1, eval2);
+        double q = (m == 0) ? -1 : min(eval1, eval2) / m;
 
         if (q >= qMax)
         {
@@ -584,7 +589,7 @@ namespace cv
 {
 namespace xfeatures2d
 {
-class AffineFeature2D_Impl : public AffineFeature2D
+class AffineFeature2D_Impl CV_FINAL : public AffineFeature2D
 {
 public:
     AffineFeature2D_Impl(
@@ -594,12 +599,12 @@ public:
       , m_descriptor_extractor(descriptor_extractor) {}
 protected:
     using Feature2D::detect; // overload, don't hide
-    void detect(InputArray image, std::vector<Elliptic_KeyPoint>& keypoints, InputArray mask);
-    void detectAndCompute(InputArray image, InputArray mask, std::vector<Elliptic_KeyPoint>& keypoints, OutputArray descriptors, bool useProvidedKeypoints);
-    void detectAndCompute(InputArray image, InputArray mask, std::vector<KeyPoint>& keypoints, OutputArray descriptors, bool useProvidedKeypoints);
-    int descriptorSize() const;
-    int descriptorType() const;
-    int defaultNorm() const;
+    void detect(InputArray image, std::vector<Elliptic_KeyPoint>& keypoints, InputArray mask) CV_OVERRIDE;
+    void detectAndCompute(InputArray image, InputArray mask, std::vector<Elliptic_KeyPoint>& keypoints, OutputArray descriptors, bool useProvidedKeypoints) CV_OVERRIDE;
+    void detectAndCompute(InputArray image, InputArray mask, std::vector<KeyPoint>& keypoints, OutputArray descriptors, bool useProvidedKeypoints) CV_OVERRIDE;
+    int descriptorSize() const CV_OVERRIDE;
+    int descriptorType() const CV_OVERRIDE;
+    int defaultNorm() const CV_OVERRIDE;
 private:
     Ptr<FeatureDetector> m_keypoint_detector;
     Ptr<DescriptorExtractor> m_descriptor_extractor;

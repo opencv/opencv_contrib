@@ -36,7 +36,7 @@ public:
 	/**
 	 * @brief set the settings if this KeyPoint is selected
 	 */
-	virtual void setSettings(CVVKeyPoint &match);
+    virtual void setSettings(CVVKeyPoint &match) CV_OVERRIDE;
 
 	/**
 	 * @brief add the given KeyPointSettingsSelector to the list

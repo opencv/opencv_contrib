@@ -7,11 +7,10 @@ Dependencies
 The Structure from Motion module depends on some open source libraries.
 
   - [Eigen](http://eigen.tuxfamily.org) 3.2.2 or later. \b Required
-  - [GLog](http://code.google.com/p/google-glog) 0.3.1 or later. \b Required
-  - [GFlags](http://code.google.com/p/gflags). \b Required
+  - [GLog](https://github.com/google/glog) 0.3.1 or later. \b Required
+  - [GFlags]( https://github.com/gflags). \b Required
   - [Ceres Solver](http://ceres-solver.org). Needed by the reconstruction API in order to solve part of the Bundle Adjustment plus the points Intersect. If Ceres Solver is not installed on your system, the reconstruction funcionality will be disabled. \b Recommended
 
-@note The module is only available for Linux/GNU systems.
 
 
 Installation

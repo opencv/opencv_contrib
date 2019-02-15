@@ -12,7 +12,7 @@ minCornerDistance: 10.0
 minDistanceToBorder: 3
 minMarkerDistance: 10.0
 minMarkerDistanceRate: 0.05
-doCornerRefinement: false
+cornerRefinementMethod: 0
 cornerRefinementWinSize: 5
 cornerRefinementMaxIterations: 30
 cornerRefinementMinAccuracy: 0.1

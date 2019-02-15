@@ -1,11 +1,9 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 #include "perf_precomp.hpp"
 
-using namespace std;
-using namespace cv;
-using namespace cv::xfeatures2d;
-using namespace perf;
-using std::tr1::make_tuple;
-using std::tr1::get;
+namespace opencv_test { namespace {
 
 typedef perf::TestBaseWithParam<std::string> latch;
 
@@ -13,6 +11,7 @@ typedef perf::TestBaseWithParam<std::string> latch;
     "cv/detectors_descriptors_evaluation/images_datasets/leuven/img1.png",\
     "stitching/a3.png"
 
+#ifdef OPENCV_ENABLE_NONFREE
 PERF_TEST_P(latch, extract, testing::Values(LATCH_IMAGES))
 {
     string filename = getDataPath(GetParam());
@@ -32,3 +31,6 @@ PERF_TEST_P(latch, extract, testing::Values(LATCH_IMAGES))
 
     SANITY_CHECK_NOTHING();
 }
+#endif // NONFREE
+
+}} // namespace

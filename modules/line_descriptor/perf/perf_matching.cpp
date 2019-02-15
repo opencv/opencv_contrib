@@ -41,12 +41,7 @@
 
 #include "perf_precomp.hpp"
 
-using namespace cv;
-using namespace cv::line_descriptor;
-using namespace std;
-using namespace perf;
-using std::tr1::make_tuple;
-using std::tr1::get;
+namespace opencv_test { namespace {
 
 #define QUERY_DES_COUNT  300
 #define DIM  32
@@ -185,3 +180,5 @@ PERF_TEST(radius_match, radius_match_distances_test)
 
 }
 
+
+}} // namespace

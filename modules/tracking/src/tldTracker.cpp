@@ -41,7 +41,6 @@
 
 #include "tldTracker.hpp"
 
-
 namespace cv
 {
 
@@ -52,9 +51,13 @@ namespace cv
 	void TrackerTLD::Params::write(cv::FileStorage& /*fs*/) const {}
 
 
-Ptr<TrackerTLD> TrackerTLD::createTracker(const TrackerTLD::Params &parameters)
+Ptr<TrackerTLD> TrackerTLD::create(const TrackerTLD::Params &parameters)
 {
     return Ptr<tld::TrackerTLDImpl>(new tld::TrackerTLDImpl(parameters));
+}
+Ptr<TrackerTLD> TrackerTLD::create()
+{
+    return Ptr<tld::TrackerTLDImpl>(new tld::TrackerTLDImpl());
 }
 
 namespace tld
@@ -115,7 +118,14 @@ bool TrackerTLDImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
 bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
 {
     Mat image_gray, image_blurred, imageForDetector;
-    cvtColor( image, image_gray, COLOR_BGR2GRAY );
+    if(image.channels() > 1)
+    {
+        cvtColor( image, image_gray, COLOR_BGR2GRAY );
+    }
+    else
+    {
+        image_gray = image.clone();
+    }
     double scale = data->getScale();
     if( scale > 1.0 )
         resize(image_gray, imageForDetector, Size(cvRound(image.cols*scale), cvRound(image.rows*scale)), 0, 0, DOWNSCALE_MODE);
@@ -130,38 +140,38 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     std::vector<Rect2d> candidates;
     std::vector<double> candidatesRes;
     bool trackerNeedsReInit = false;
-	bool DETECT_FLG = false;
-    for( int i = 0; i < 2; i++ )
-    {
-        Rect2d tmpCandid = boundingBox;
+    bool DETECT_FLG = false;
 
-		if (i == 1)
-		{
-#ifdef HAVE_OPENCL
-			if (ocl::haveOpenCL())
-				DETECT_FLG = tldModel->detector->ocl_detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
-			else
-#endif
-				DETECT_FLG = tldModel->detector->detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
-		}
-        if( ( (i == 0) && !data->failedLastTime && trackerProxy->update(image, tmpCandid) ) || ( DETECT_FLG))
-        {
-            candidates.push_back(tmpCandid);
-            if( i == 0 )
-                resample(image_gray, tmpCandid, standardPatch);
-            else
-                resample(imageForDetector, tmpCandid, standardPatch);
-            candidatesRes.push_back(tldModel->detector->Sc(standardPatch));
-        }
-        else
-        {
-            if( i == 0 )
-                trackerNeedsReInit = true;
-        }
+    //run tracker
+    Rect2d tmpCandid = boundingBox;
+    if(!data->failedLastTime && trackerProxy->update(image, tmpCandid))
+    {
+        candidates.push_back(tmpCandid);
+        resample(image_gray, tmpCandid, standardPatch);
+        candidatesRes.push_back(tldModel->detector->Sc(standardPatch));
     }
+    else
+        trackerNeedsReInit = true;
+
+    //run detector
+    tmpCandid = boundingBox;
+#ifdef HAVE_OPENCL
+    if (false)//ocl::useOpenCL())
+        DETECT_FLG = tldModel->detector->ocl_detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
+    else
+#endif
+        DETECT_FLG = tldModel->detector->detect(imageForDetector, image_blurred, tmpCandid, detectorResults, tldModel->getMinSize());
+
+    if(DETECT_FLG)
+    {
+        candidates.push_back(tmpCandid);
+        resample(imageForDetector, tmpCandid, standardPatch);
+        candidatesRes.push_back(tldModel->detector->Sc(standardPatch));
+    }
+
     std::vector<double>::iterator it = std::max_element(candidatesRes.begin(), candidatesRes.end());
 
-    if( it == candidatesRes.end() )
+    if( it == candidatesRes.end() ) //candidates are empty
     {
         data->confident = false;
         data->failedLastTime = true;
@@ -210,7 +220,7 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
         tldModel->integrateRelabeled(imageForDetector, image_blurred, detectorResults);
         pExpert.additionalExamples(examplesForModel, examplesForEnsemble);
 #ifdef HAVE_OPENCL
-        if (ocl::haveOpenCL())
+        if (false)//ocl::useOpenCL())
             tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, true);
         else
 #endif
@@ -219,7 +229,7 @@ bool TrackerTLDImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
         nExpert.additionalExamples(examplesForModel, examplesForEnsemble);
 
 #ifdef HAVE_OPENCL
-        if (ocl::haveOpenCL())
+        if (false)//ocl::useOpenCL())
             tldModel->ocl_integrateAdditional(examplesForModel, examplesForEnsemble, false);
         else
 #endif
@@ -246,12 +256,13 @@ int TrackerTLDImpl::Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examp
 
     double scale = scaleAndBlur(img_, cvRound(log(1.0 * resultBox_.width / (initSize_.width)) / log(SCALE_STEP)),
             scaledImg, blurredImg, GaussBlurKernelSize, SCALE_STEP);
+
     TLDDetector::generateScanGrid(img_.rows, img_.cols, initSize_, scanGrid);
     getClosestN(scanGrid, Rect2d(resultBox_.x / scale, resultBox_.y / scale, resultBox_.width / scale, resultBox_.height / scale), 10, closest);
 
-    for( int i = 0; i < (int)closest.size(); i++ )
+    for( size_t i = 0; i < closest.size(); i++ )
     {
-        for( int j = 0; j < 10; j++ )
+        for( size_t j = 0; j < 10; j++ )
         {
             Point2f center;
             Size2f size;
@@ -262,21 +273,24 @@ int TrackerTLDImpl::Pexpert::additionalExamples(std::vector<Mat_<uchar> >& examp
             size.height = (float)(closest[i].height * rng.uniform((double)0.99, (double)1.01));
             float angle = (float)rng.uniform(-5.0, 5.0);
 
+            resample(scaledImg, RotatedRect(center, size, angle), standardPatch);
             for( int y = 0; y < standardPatch.rows; y++ )
             {
+                uchar* patchRow = standardPatch.ptr(y);
                 for( int x = 0; x < standardPatch.cols; x++ )
                 {
-                    standardPatch(x, y) += (uchar)rng.gaussian(5.0);
+                    int newValue = patchRow[x] + cvRound(rng.gaussian(5.0));
+                    patchRow[x] = saturate_cast<uchar>(newValue);
                 }
             }
-#ifdef BLUR_AS_VADIM
+            examplesForModel.push_back(standardPatch);
+
+#if defined BLUR_AS_VADIM
             GaussianBlur(standardPatch, blurredPatch, GaussBlurKernelSize, 0.0);
-            resize(blurredPatch, blurredPatch, initSize_);
+            resize(blurredPatch, blurredPatch, initSize_, 0, 0, INTER_LINEAR_EXACT);
 #else
             resample(blurredImg, RotatedRect(center, size, angle), blurredPatch);
 #endif
-            resample(scaledImg, RotatedRect(center, size, angle), standardPatch);
-            examplesForModel.push_back(standardPatch);
             examplesForEnsemble.push_back(blurredPatch);
         }
     }

@@ -1,0 +1,1115 @@
+# SqueezeDet architecture for object detection on PASCAL VOC dataset
+
+name: "SqueezeDet"
+
+input: "data"
+input_dim: 1
+input_dim: 3
+input_dim: 416
+input_dim: 416
+
+layer {
+   name: "conv1"
+   type: "Convolution"
+   bottom: "data"
+   top: "conv1"
+   convolution_param {
+      num_output: 96
+      kernel_size: 7
+      stride: 2
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_conv1"
+   type: "ReLU"
+   bottom: "conv1"
+   top: "conv1"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "pool1"
+   type: "Pooling"
+   bottom: "conv1"
+   top: "pool1"
+   pooling_param {
+      pool: MAX
+      kernel_size: 3
+      stride: 2
+   }
+}
+
+layer {
+   name: "fire2_squeeze"
+   type: "Convolution"
+   bottom: "pool1"
+   top: "fire2_squeeze"
+   convolution_param {
+      num_output: 16
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire2_squeeze"
+   type: "ReLU"
+   bottom: "fire2_squeeze"
+   top: "fire2_squeeze"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire2_expand_1x1"
+   type: "Convolution"
+   bottom: "fire2_squeeze"
+   top: "fire2_expand_1x1"
+   convolution_param {
+      num_output: 64
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire2_expand_1x1"
+   type: "ReLU"
+   bottom: "fire2_expand_1x1"
+   top: "fire2_expand_1x1"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire2_expand_3x3"
+   type: "Convolution"
+   bottom: "fire2_squeeze"
+   top: "fire2_expand_3x3"
+   convolution_param {
+      num_output: 64
+      kernel_size: 3
+      stride: 1
+      pad: 1
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire2_expand_3x3"
+   type: "ReLU"
+   bottom: "fire2_expand_3x3"
+   top: "fire2_expand_3x3"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire2"
+   type: "Concat"
+   bottom: "fire2_expand_1x1"
+   bottom: "fire2_expand_3x3"
+   top: "fire2"
+   concat_param {
+      axis: 1
+   }
+}
+
+layer {
+   name: "fire3_squeeze"
+   type: "Convolution"
+   bottom: "fire2"
+   top: "fire3_squeeze"
+   convolution_param {
+      num_output: 16
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire3_squeeze"
+   type: "ReLU"
+   bottom: "fire3_squeeze"
+   top: "fire3_squeeze"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire3_expand_1x1"
+   type: "Convolution"
+   bottom: "fire3_squeeze"
+   top: "fire3_expand_1x1"
+   convolution_param {
+      num_output: 64
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire3_expand_1x1"
+   type: "ReLU"
+   bottom: "fire3_expand_1x1"
+   top: "fire3_expand_1x1"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire3_expand_3x3"
+   type: "Convolution"
+   bottom: "fire3_squeeze"
+   top: "fire3_expand_3x3"
+   convolution_param {
+      num_output: 64
+      kernel_size: 3
+      stride: 1
+      pad: 1
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire3_expand_3x3"
+   type: "ReLU"
+   bottom: "fire3_expand_3x3"
+   top: "fire3_expand_3x3"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire3"
+   type: "Concat"
+   bottom: "fire3_expand_1x1"
+   bottom: "fire3_expand_3x3"
+   top: "fire3"
+   concat_param {
+      axis: 1
+   }
+}
+
+layer {
+   name: "fire4_squeeze"
+   type: "Convolution"
+   bottom: "fire3"
+   top: "fire4_squeeze"
+   convolution_param {
+      num_output: 32
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire4_squeeze"
+   type: "ReLU"
+   bottom: "fire4_squeeze"
+   top: "fire4_squeeze"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire4_expand_1x1"
+   type: "Convolution"
+   bottom: "fire4_squeeze"
+   top: "fire4_expand_1x1"
+   convolution_param {
+      num_output: 128
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire4_expand_1x1"
+   type: "ReLU"
+   bottom: "fire4_expand_1x1"
+   top: "fire4_expand_1x1"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire4_expand_3x3"
+   type: "Convolution"
+   bottom: "fire4_squeeze"
+   top: "fire4_expand_3x3"
+   convolution_param {
+      num_output: 128
+      kernel_size: 3
+      stride: 1
+      pad: 1
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire4_expand_3x3"
+   type: "ReLU"
+   bottom: "fire4_expand_3x3"
+   top: "fire4_expand_3x3"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire4"
+   type: "Concat"
+   bottom: "fire4_expand_1x1"
+   bottom: "fire4_expand_3x3"
+   top: "fire4"
+   concat_param {
+      axis: 1
+   }
+}
+layer {
+   name: "pool4"
+   type: "Pooling"
+   bottom: "fire4"
+   top: "pool4"
+   pooling_param {
+      pool: MAX
+      kernel_size: 3
+      stride: 2
+   }
+}
+layer {
+   name: "fire5_squeeze"
+   type: "Convolution"
+   bottom: "pool4"
+   top: "fire5_squeeze"
+   convolution_param {
+      num_output: 32
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire5_squeeze"
+   type: "ReLU"
+   bottom: "fire5_squeeze"
+   top: "fire5_squeeze"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire5_expand_1x1"
+   type: "Convolution"
+   bottom: "fire5_squeeze"
+   top: "fire5_expand_1x1"
+   convolution_param {
+      num_output: 128
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire5_expand_1x1"
+   type: "ReLU"
+   bottom: "fire5_expand_1x1"
+   top: "fire5_expand_1x1"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire5_expand_3x3"
+   type: "Convolution"
+   bottom: "fire5_squeeze"
+   top: "fire5_expand_3x3"
+   convolution_param {
+      num_output: 128
+      kernel_size: 3
+      stride: 1
+      pad: 1
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire5_expand_3x3"
+   type: "ReLU"
+   bottom: "fire5_expand_3x3"
+   top: "fire5_expand_3x3"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire5"
+   type: "Concat"
+   bottom: "fire5_expand_1x1"
+   bottom: "fire5_expand_3x3"
+   top: "fire5"
+   concat_param {
+      axis: 1
+   }
+}
+layer {
+   name: "fire6_squeeze"
+   type: "Convolution"
+   bottom: "fire5"
+   top: "fire6_squeeze"
+   convolution_param {
+      num_output: 48
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire6_squeeze"
+   type: "ReLU"
+   bottom: "fire6_squeeze"
+   top: "fire6_squeeze"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire6_expand_1x1"
+   type: "Convolution"
+   bottom: "fire6_squeeze"
+   top: "fire6_expand_1x1"
+   convolution_param {
+      num_output: 192
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire6_expand_1x1"
+   type: "ReLU"
+   bottom: "fire6_expand_1x1"
+   top: "fire6_expand_1x1"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire6_expand_3x3"
+   type: "Convolution"
+   bottom: "fire6_squeeze"
+   top: "fire6_expand_3x3"
+   convolution_param {
+      num_output: 192
+      kernel_size: 3
+      stride: 1
+      pad: 1
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire6_expand_3x3"
+   type: "ReLU"
+   bottom: "fire6_expand_3x3"
+   top: "fire6_expand_3x3"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire6"
+   type: "Concat"
+   bottom: "fire6_expand_1x1"
+   bottom: "fire6_expand_3x3"
+   top: "fire6"
+   concat_param {
+      axis: 1
+   }
+}
+layer {
+   name: "fire7_squeeze"
+   type: "Convolution"
+   bottom: "fire6"
+   top: "fire7_squeeze"
+   convolution_param {
+      num_output: 48
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire7_squeeze"
+   type: "ReLU"
+   bottom: "fire7_squeeze"
+   top: "fire7_squeeze"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire7_expand_1x1"
+   type: "Convolution"
+   bottom: "fire7_squeeze"
+   top: "fire7_expand_1x1"
+   convolution_param {
+      num_output: 192
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire7_expand_1x1"
+   type: "ReLU"
+   bottom: "fire7_expand_1x1"
+   top: "fire7_expand_1x1"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire7_expand_3x3"
+   type: "Convolution"
+   bottom: "fire7_squeeze"
+   top: "fire7_expand_3x3"
+   convolution_param {
+      num_output: 192
+      kernel_size: 3
+      stride: 1
+      pad: 1
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire7_expand_3x3"
+   type: "ReLU"
+   bottom: "fire7_expand_3x3"
+   top: "fire7_expand_3x3"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire7"
+   type: "Concat"
+   bottom: "fire7_expand_1x1"
+   bottom: "fire7_expand_3x3"
+   top: "fire7"
+   concat_param {
+      axis: 1
+   }
+}
+layer {
+   name: "fire8_squeeze"
+   type: "Convolution"
+   bottom: "fire7"
+   top: "fire8_squeeze"
+   convolution_param {
+      num_output: 64
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire8_squeeze"
+   type: "ReLU"
+   bottom: "fire8_squeeze"
+   top: "fire8_squeeze"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire8_expand_1x1"
+   type: "Convolution"
+   bottom: "fire8_squeeze"
+   top: "fire8_expand_1x1"
+   convolution_param {
+      num_output: 256
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire8_expand_1x1"
+   type: "ReLU"
+   bottom: "fire8_expand_1x1"
+   top: "fire8_expand_1x1"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire8_expand_3x3"
+   type: "Convolution"
+   bottom: "fire8_squeeze"
+   top: "fire8_expand_3x3"
+   convolution_param {
+      num_output: 256
+      kernel_size: 3
+      stride: 1
+      pad: 1
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire8_expand_3x3"
+   type: "ReLU"
+   bottom: "fire8_expand_3x3"
+   top: "fire8_expand_3x3"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire8"
+   type: "Concat"
+   bottom: "fire8_expand_1x1"
+   bottom: "fire8_expand_3x3"
+   top: "fire8"
+   concat_param {
+      axis: 1
+   }
+}
+layer {
+   name: "pool8"
+   type: "Pooling"
+   bottom: "fire8"
+   top: "pool8"
+   pooling_param {
+      pool: MAX
+      kernel_size: 3
+      stride: 2
+   }
+}
+layer {
+   name: "fire9_squeeze"
+   type: "Convolution"
+   bottom: "pool8"
+   top: "fire9_squeeze"
+   convolution_param {
+      num_output: 64
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire9_squeeze"
+   type: "ReLU"
+   bottom: "fire9_squeeze"
+   top: "fire9_squeeze"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire9_expand_1x1"
+   type: "Convolution"
+   bottom: "fire9_squeeze"
+   top: "fire9_expand_1x1"
+   convolution_param {
+      num_output: 256
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire9_expand_1x1"
+   type: "ReLU"
+   bottom: "fire9_expand_1x1"
+   top: "fire9_expand_1x1"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire9_expand_3x3"
+   type: "Convolution"
+   bottom: "fire9_squeeze"
+   top: "fire9_expand_3x3"
+   convolution_param {
+      num_output: 256
+      kernel_size: 3
+      stride: 1
+      pad: 1
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire9_expand_3x3"
+   type: "ReLU"
+   bottom: "fire9_expand_3x3"
+   top: "fire9_expand_3x3"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire9"
+   type: "Concat"
+   bottom: "fire9_expand_1x1"
+   bottom: "fire9_expand_3x3"
+   top: "fire9"
+   concat_param {
+      axis: 1
+   }
+}
+layer {
+   name: "conv10"
+   type: "Convolution"
+   bottom: "fire9"
+   top: "conv10"
+   convolution_param {
+      num_output: 1000
+      kernel_size: 1
+      stride: 1
+      weight_filler {
+         type: "gaussian"
+         mean: 0.0
+         std: 0.01
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_conv10"
+   type: "ReLU"
+   bottom: "conv10"
+   top: "conv10"
+   relu_param {
+     negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire10_squeeze"
+   type: "Convolution"
+   bottom: "conv10"
+   top: "fire10_squeeze"
+   convolution_param {
+      num_output: 96
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire10_squeeze"
+   type: "ReLU"
+   bottom: "fire10_squeeze"
+   top: "fire10_squeeze"
+   relu_param {
+      negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire10_expand_1x1"
+   type: "Convolution"
+   bottom: "fire10_squeeze"
+   top: "fire10_expand_1x1"
+   convolution_param {
+      num_output: 384
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire10_expand_1x1"
+   type: "ReLU"
+   bottom: "fire10_expand_1x1"
+   top: "fire10_expand_1x1"
+   relu_param {
+      negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire10_expand_3x3"
+   type: "Convolution"
+   bottom: "fire10_squeeze"
+   top: "fire10_expand_3x3"
+   convolution_param {
+      num_output: 384
+      kernel_size: 3
+      stride: 1
+      pad: 1
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire10_expand_3x3"
+   type: "ReLU"
+   bottom: "fire10_expand_3x3"
+   top: "fire10_expand_3x3"
+   relu_param {
+      negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire10"
+   type: "Concat"
+   bottom: "fire10_expand_1x1"
+   bottom: "fire10_expand_3x3"
+   top: "fire10"
+   concat_param {
+      axis: 1
+   }
+}
+layer {
+   name: "fire11_squeeze"
+   type: "Convolution"
+   bottom: "fire10"
+   top: "fire11_squeeze"
+   convolution_param {
+      num_output: 96
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire11_squeeze"
+   type: "ReLU"
+   bottom: "fire11_squeeze"
+   top: "fire11_squeeze"
+   relu_param {
+      negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire11_expand_1x1"
+   type: "Convolution"
+   bottom: "fire11_squeeze"
+   top: "fire11_expand_1x1"
+   convolution_param {
+      num_output: 384
+      kernel_size: 1
+      stride: 1
+      pad: 0
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire11_expand_1x1"
+   type: "ReLU"
+   bottom: "fire11_expand_1x1"
+   top: "fire11_expand_1x1"
+   relu_param {
+      negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire11_expand_3x3"
+   type: "Convolution"
+   bottom: "fire11_squeeze"
+   top: "fire11_expand_3x3"
+   convolution_param {
+      num_output: 384
+      kernel_size: 3
+      stride: 1
+      pad: 1
+      weight_filler {
+         type: "xavier"
+      }
+      bias_filler {
+         type: "constant"
+         value: 0.01
+      }
+   }
+}
+layer {
+   name: "rect_fire11_expand_3x3"
+   type: "ReLU"
+   bottom: "fire11_expand_3x3"
+   top: "fire11_expand_3x3"
+   relu_param {
+      negative_slope: 0.01
+   }
+}
+layer {
+   name: "fire11"
+   type: "Concat"
+   bottom: "fire11_expand_1x1"
+   bottom: "fire11_expand_3x3"
+   top: "fire11"
+   concat_param {
+      axis: 1
+   }
+}
+layer {
+   name: "conv11"
+   type: "Convolution"
+   bottom: "fire11"
+   top: "conv11"
+   convolution_param {
+      num_output: 225
+      kernel_size: 3
+      stride: 1
+      weight_filler {
+        type: "gaussian"
+        mean: 0.0
+        std: 0.0001
+      }
+      bias_filler {
+        type: "constant"
+        value: 0.01
+      }
+   }
+}
+layer {
+  name: "permute"
+  type: "Permute"
+  bottom: "conv11"
+  top: "permute_conv11"
+  permute_param {
+    order: 0 # N
+    order: 2 # H
+    order: 3 # W
+    order: 1 # C
+  }
+}
+layer {
+  name: "slice"
+  type: "Slice"
+  bottom: "permute_conv11"
+  top: "soft_class_reg"
+  top: "sig_conf_reg"
+  top: "delta_bbox"
+  slice_param {
+    axis: 3
+    slice_point: 180 # anchors_per_grid * classes_
+    slice_point: 189 # anchors_per_grid * (classes_ + 1)
+  }
+}
+layer {
+  name: "reshape"
+  type: "Reshape"
+  bottom: "soft_class_reg"
+  top: "reshape_soft_class_reg"
+  reshape_param {
+    shape {
+      dim: 0    # batch_size
+      dim: 4761 # H*W*anchors_per_grid
+      dim: 20   # No. of classes
+    }
+  }
+}
+layer {
+  name: "softmax"
+  type: "Softmax"
+  bottom: "reshape_soft_class_reg"
+  top: "class_scores"
+  softmax_param {
+    axis: 2
+  }
+}
+layer {
+  name: "sigmoid"
+  type: "Sigmoid"
+  bottom: "sig_conf_reg"
+  top: "conf_scores"
+}

@@ -80,7 +80,7 @@ namespace cv
 namespace bioinspired
 {
 
-class RetinaImpl : public Retina
+class RetinaImpl CV_FINAL : public Retina
 {
 public:
     /**
@@ -100,16 +100,16 @@ public:
      */
     RetinaImpl(const Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
 
-    virtual ~RetinaImpl();
+    virtual ~RetinaImpl() CV_OVERRIDE;
     /**
      * retreive retina input buffer size
      */
-    Size getInputSize();
+    Size getInputSize() CV_OVERRIDE;
 
     /**
      * retreive retina output buffer size
      */
-    Size getOutputSize();
+    Size getOutputSize() CV_OVERRIDE;
 
     /**
      * try to open an XML retina parameters file to adjust current retina instance setup
@@ -118,7 +118,7 @@ public:
      * @param retinaParameterFile : the parameters filename
      * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
-    void setup(String retinaParameterFile="", const bool applyDefaultSetupOnFailure=true);
+    void setup(String retinaParameterFile="", const bool applyDefaultSetupOnFailure=true) CV_OVERRIDE;
 
 
     /**
@@ -128,7 +128,7 @@ public:
      * @param fs : the open Filestorage which contains retina parameters
      * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
-    void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure=true);
+    void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure=true) CV_OVERRIDE;
 
     /**
      * try to open an XML retina parameters file to adjust current retina instance setup
@@ -137,31 +137,31 @@ public:
      * @param newParameters : a parameters structures updated with the new target configuration
      * @param applyDefaultSetupOnFailure : set to true if an error must be thrown on error
      */
-    void setup(RetinaParameters newParameters);
+    void setup(RetinaParameters newParameters) CV_OVERRIDE;
 
     /**
     * @return the current parameters setup
     */
-    struct RetinaParameters getParameters();
+    struct RetinaParameters getParameters() CV_OVERRIDE;
 
     /**
      * parameters setup display method
      * @return a string which contains formatted parameters information
      */
-    const String printSetup();
+    const String printSetup() CV_OVERRIDE;
 
     /**
      * write xml/yml formated parameters information
      * @rparam fs : the filename of the xml file that will be open and writen with formatted parameters information
      */
-    virtual void write( String fs ) const;
+    virtual void write( String fs ) const CV_OVERRIDE;
 
 
     /**
      * write xml/yml formated parameters information
      * @param fs : a cv::Filestorage object ready to be filled
          */
-    virtual void write( FileStorage& fs ) const;
+    virtual void write( FileStorage& fs ) const CV_OVERRIDE;
 
     /**
      * setup the OPL and IPL parvo channels (see biologocal model)
@@ -178,7 +178,7 @@ public:
      * @param HcellsSpatialConstant: the spatial constant of the first order low pass filter of the horizontal cells, use it to cut low spatial frequencies (local luminance), unit is pixels, typical value is 5 pixel, this value is also used for local contrast computing when computing the local contrast adaptation at the ganglion cells level (Inner Plexiform Layer parvocellular channel model)
      * @param ganglionCellsSensitivity: the compression strengh of the ganglion cells local adaptation output, set a value between 160 and 250 for best results, a high value increases more the low value sensitivity... and the output saturates faster, recommended value: 230
      */
-    void setupOPLandIPLParvoChannel(const bool colorMode=true, const bool normaliseOutput = true, const float photoreceptorsLocalAdaptationSensitivity=0.7f, const float photoreceptorsTemporalConstant=0.5f, const float photoreceptorsSpatialConstant=0.53f, const float horizontalCellsGain=0.f, const float HcellsTemporalConstant=1.f, const float HcellsSpatialConstant=7.f, const float ganglionCellsSensitivity=0.7f);
+    void setupOPLandIPLParvoChannel(const bool colorMode=true, const bool normaliseOutput = true, const float photoreceptorsLocalAdaptationSensitivity=0.7f, const float photoreceptorsTemporalConstant=0.5f, const float photoreceptorsSpatialConstant=0.53f, const float horizontalCellsGain=0.f, const float HcellsTemporalConstant=1.f, const float HcellsSpatialConstant=7.f, const float ganglionCellsSensitivity=0.7f) CV_OVERRIDE;
 
     /**
      * set parameters values for the Inner Plexiform Layer (IPL) magnocellular channel
@@ -192,13 +192,13 @@ public:
      * @param localAdaptintegration_tau: specifies the temporal constant of the low pas filter involved in the computation of the local "motion mean" for the local adaptation computation
      * @param localAdaptintegration_k: specifies the spatial constant of the low pas filter involved in the computation of the local "motion mean" for the local adaptation computation
      */
-    void setupIPLMagnoChannel(const bool normaliseOutput = true, const float parasolCells_beta=0.f, const float parasolCells_tau=0.f, const float parasolCells_k=7.f, const float amacrinCellsTemporalCutFrequency=1.2f, const float V0CompressionParameter=0.95f, const float localAdaptintegration_tau=0.f, const float localAdaptintegration_k=7.f);
+    void setupIPLMagnoChannel(const bool normaliseOutput = true, const float parasolCells_beta=0.f, const float parasolCells_tau=0.f, const float parasolCells_k=7.f, const float amacrinCellsTemporalCutFrequency=1.2f, const float V0CompressionParameter=0.95f, const float localAdaptintegration_tau=0.f, const float localAdaptintegration_k=7.f) CV_OVERRIDE;
 
     /**
      * method which allows retina to be applied on an input image, after run, encapsulated retina module is ready to deliver its outputs using dedicated acccessors, see getParvo and getMagno methods
      * @param inputImage : the input cv::Mat image to be processed, can be gray level or BGR coded in any format (from 8bit to 16bits)
      */
-    void run(InputArray inputImage);
+    void run(InputArray inputImage) CV_OVERRIDE;
 
     /**
      * method that applies a luminance correction (initially High Dynamic Range (HDR) tone mapping) using only the 2 local adaptation stages of the retina parvo channel : photoreceptors level and ganlion cells level. Spatio temporal filtering is applied but limited to temporal smoothing and eventually high frequencies attenuation. This is a lighter method than the one available using the regular run method. It is then faster but it does not include complete temporal filtering nor retina spectral whitening. This is an adptation of the original still image HDR tone mapping algorithm of David Alleyson, Sabine Susstruck and Laurence Meylan's work, please cite:
@@ -206,35 +206,35 @@ public:
      @param inputImage the input image to process RGB or gray levels
      @param outputToneMappedImage the output tone mapped image
      */
-    void applyFastToneMapping(InputArray inputImage, OutputArray outputToneMappedImage);
+    void applyFastToneMapping(InputArray inputImage, OutputArray outputToneMappedImage) CV_OVERRIDE;
 
     /**
      * accessor of the details channel of the retina (models foveal vision)
      * @param retinaOutput_parvo : the output buffer (reallocated if necessary), this output is rescaled for standard 8bits image processing use in OpenCV
      */
-    void getParvo(OutputArray retinaOutput_parvo);
+    void getParvo(OutputArray retinaOutput_parvo) CV_OVERRIDE;
 
     /**
      * accessor of the details channel of the retina (models foveal vision)
      * @param retinaOutput_parvo : a cv::Mat header filled with the internal parvo buffer of the retina module. This output is the original retina filter model output, without any quantification or rescaling
      */
-    void getParvoRAW(OutputArray retinaOutput_parvo);
+    void getParvoRAW(OutputArray retinaOutput_parvo) CV_OVERRIDE;
 
     /**
      * accessor of the motion channel of the retina (models peripheral vision)
      * @param retinaOutput_magno : the output buffer (reallocated if necessary), this output is rescaled for standard 8bits image processing use in OpenCV
      */
-    void getMagno(OutputArray retinaOutput_magno);
+    void getMagno(OutputArray retinaOutput_magno) CV_OVERRIDE;
 
     /**
      * accessor of the motion channel of the retina (models peripheral vision)
      * @param retinaOutput_magno : a cv::Mat header filled with the internal retina magno buffer of the retina module. This output is the original retina filter model output, without any quantification or rescaling
      */
-    void getMagnoRAW(OutputArray retinaOutput_magno);
+    void getMagnoRAW(OutputArray retinaOutput_magno) CV_OVERRIDE;
 
     // original API level data accessors : get buffers addresses from a Mat header, similar to getParvoRAW and getMagnoRAW...
-    const Mat getMagnoRAW() const;
-    const Mat getParvoRAW() const;
+    const Mat getMagnoRAW() const CV_OVERRIDE;
+    const Mat getParvoRAW() const CV_OVERRIDE;
 
     /**
      * activate color saturation as the final step of the color demultiplexing process
@@ -242,24 +242,24 @@ public:
      * @param saturateColors: boolean that activates color saturation (if true) or desactivate (if false)
      * @param colorSaturationValue: the saturation factor
      */
-    void setColorSaturation(const bool saturateColors=true, const float colorSaturationValue=4.0f);
+    void setColorSaturation(const bool saturateColors=true, const float colorSaturationValue=4.0f) CV_OVERRIDE;
 
     /**
      * clear all retina buffers (equivalent to opening the eyes after a long period of eye close ;o)
      */
-    void clearBuffers();
+    void clearBuffers() CV_OVERRIDE;
 
     /**
      * Activate/desactivate the Magnocellular pathway processing (motion information extraction), by default, it is activated
      * @param activate: true if Magnocellular output should be activated, false if not
      */
-    void activateMovingContoursProcessing(const bool activate);
+    void activateMovingContoursProcessing(const bool activate) CV_OVERRIDE;
 
     /**
      * Activate/desactivate the Parvocellular pathway processing (contours information extraction), by default, it is activated
      * @param activate: true if Parvocellular (contours information extraction) output should be activated, false if not
      */
-    void activateContoursProcessing(const bool activate);
+    void activateContoursProcessing(const bool activate) CV_OVERRIDE;
 private:
 
     // Parameteres setup members
@@ -269,7 +269,7 @@ private:
     std::valarray<float> _inputBuffer; //!< buffer used to convert input cv::Mat to internal retina buffers format (valarrays)
 
     // pointer to retina model
-    RetinaFilter* _retinaFilter; //!< the pointer to the retina module, allocated with instance construction
+    cv::Ptr<RetinaFilter> _retinaFilter; //!< the pointer to the retina module, allocated with instance construction
 
     //! private method called by constructors, gathers their parameters and use them in a unified way
     void _init(const Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
@@ -293,8 +293,9 @@ private:
     bool _convertCvMat2ValarrayBuffer(InputArray inputMatToConvert, std::valarray<float> &outputValarrayMatrix);
 
 
+    bool _wasOCLRunCalled;
 #ifdef HAVE_OPENCL
-    ocl::RetinaOCLImpl* _ocl_retina;
+    cv::Ptr<ocl::RetinaOCLImpl> _ocl_retina;
 
     bool ocl_run(InputArray inputImage);
     bool ocl_getParvo(OutputArray retinaOutput_parvo);
@@ -305,12 +306,12 @@ private:
 };
 
 // smart pointers allocation :
-Ptr<Retina> createRetina(Size inputSize)
+Ptr<Retina> Retina::create(Size inputSize)
 {
     return makePtr<RetinaImpl>(inputSize);
 }
 
-Ptr<Retina> createRetina(Size inputSize, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const float reductionFactor, const float samplingStrenght)
+Ptr<Retina> Retina::create(Size inputSize, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const float reductionFactor, const float samplingStrenght)
 {
     return makePtr<RetinaImpl>(inputSize, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
 }
@@ -319,36 +320,26 @@ Ptr<Retina> createRetina(Size inputSize, const bool colorMode, int colorSampling
 // RetinaImpl code
 RetinaImpl::RetinaImpl(const cv::Size inputSz)
 {
-    _retinaFilter = 0;
     _init(inputSz, true, RETINA_COLOR_BAYER, false);
 #ifdef HAVE_OPENCL
-    _ocl_retina = 0;
-    if (inputSz.width % 4 == 0)
-        _ocl_retina = new ocl::RetinaOCLImpl(inputSz);
+    if (inputSz.width % 4 == 0 && cv::ocl::useOpenCL())
+        _ocl_retina.reset(new ocl::RetinaOCLImpl(inputSz));
 #endif
 }
 
 RetinaImpl::RetinaImpl(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const float reductionFactor, const float samplingStrenght)
 {
-    _retinaFilter = 0;
     _init(inputSz, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
 #ifdef HAVE_OPENCL
-    _ocl_retina = 0;
-    if (inputSz.width % 4 == 0)
-        _ocl_retina = new ocl::RetinaOCLImpl(inputSz, colorMode, colorSamplingMethod,
-                                             useRetinaLogSampling, reductionFactor, samplingStrenght);
+    if (inputSz.width % 4 == 0 && !useRetinaLogSampling && cv::ocl::useOpenCL())
+        _ocl_retina.reset(new ocl::RetinaOCLImpl(inputSz, colorMode, colorSamplingMethod,
+                                                 useRetinaLogSampling, reductionFactor, samplingStrenght));
 #endif
 }
 
 RetinaImpl::~RetinaImpl()
 {
-    if (_retinaFilter)
-        delete _retinaFilter;
-
-#ifdef HAVE_OPENCL
-    if (_ocl_retina)
-        delete _ocl_retina;
-#endif
+    // nothing
 }
 
 /**
@@ -377,7 +368,7 @@ void RetinaImpl::setup(String retinaParameterFile, const bool applyDefaultSetupO
         cv::FileStorage fs(retinaParameterFile, cv::FileStorage::READ);
         setup(fs, applyDefaultSetupOnFailure);
     }
-    catch(Exception &e)
+    catch(const Exception &e)
     {
         printf("Retina::setup: wrong/unappropriate xml parameter file : error report :`n=>%s\n", e.what());
         if (applyDefaultSetupOnFailure)
@@ -431,7 +422,7 @@ void RetinaImpl::setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailur
         setupIPLMagnoChannel(_retinaParameters.IplMagno.normaliseOutput, _retinaParameters.IplMagno.parasolCells_beta, _retinaParameters.IplMagno.parasolCells_tau, _retinaParameters.IplMagno.parasolCells_k, _retinaParameters.IplMagno.amacrinCellsTemporalCutFrequency,_retinaParameters.IplMagno.V0CompressionParameter, _retinaParameters.IplMagno.localAdaptintegration_tau, _retinaParameters.IplMagno.localAdaptintegration_k);
 
     }
-    catch(Exception &e)
+    catch(const Exception &e)
     {
         printf("RetinaImpl::setup: resetting retina with default parameters\n");
         if (applyDefaultSetupOnFailure)
@@ -564,19 +555,21 @@ void RetinaImpl::setupIPLMagnoChannel(const bool normaliseOutput, const float pa
 bool RetinaImpl::ocl_run(InputArray inputMatToConvert)
 {
     _ocl_retina->run(inputMatToConvert);
+    _wasOCLRunCalled = true;
     return true;
 }
 #endif
 
 void RetinaImpl::run(InputArray inputMatToConvert)
 {
-    CV_OCL_RUN((_ocl_retina != 0), ocl_run(inputMatToConvert));
+    CV_OCL_RUN((_ocl_retina && inputMatToConvert.isUMat()), ocl_run(inputMatToConvert));
 
+    _wasOCLRunCalled = false;
     // first convert input image to the compatible format : std::valarray<float>
     const bool colorMode = _convertCvMat2ValarrayBuffer(inputMatToConvert.getMat(), _inputBuffer);
     // process the retina
     if (!_retinaFilter->runFilter(_inputBuffer, colorMode, false, _retinaParameters.OPLandIplParvo.colorMode && colorMode, false))
-        throw cv::Exception(-1, "RetinaImpl cannot be applied, wrong input buffer size", "RetinaImpl::run", "RetinaImpl.h", 0);
+        CV_Error(Error::StsBadArg, "RetinaImpl cannot be applied, wrong input buffer size");
 }
 
 void RetinaImpl::applyFastToneMapping(InputArray inputImage, OutputArray outputToneMappedImage)
@@ -603,6 +596,7 @@ void RetinaImpl::applyFastToneMapping(InputArray inputImage, OutputArray outputT
 #ifdef HAVE_OPENCL
 bool RetinaImpl::ocl_getParvo(OutputArray retinaOutput_parvo)
 {
+    CV_Assert(_wasOCLRunCalled);
     _ocl_retina->getParvo(retinaOutput_parvo);
     return true;
 }
@@ -610,7 +604,11 @@ bool RetinaImpl::ocl_getParvo(OutputArray retinaOutput_parvo)
 
 void RetinaImpl::getParvo(OutputArray retinaOutput_parvo)
 {
-    CV_OCL_RUN((_ocl_retina != 0) && retinaOutput_parvo.isUMat(), ocl_getParvo(retinaOutput_parvo));
+    if (_wasOCLRunCalled)
+    {
+        CV_OCL_RUN(true, ocl_getParvo(retinaOutput_parvo));
+        CV_Error(Error::StsInternal, "");
+    }
 
     if (_retinaFilter->getColorMode())
     {
@@ -627,6 +625,7 @@ void RetinaImpl::getParvo(OutputArray retinaOutput_parvo)
 #ifdef HAVE_OPENCL
 bool RetinaImpl::ocl_getMagno(OutputArray retinaOutput_magno)
 {
+    CV_Assert(_wasOCLRunCalled);
     _ocl_retina->getMagno(retinaOutput_magno);
     return true;
 }
@@ -634,7 +633,11 @@ bool RetinaImpl::ocl_getMagno(OutputArray retinaOutput_magno)
 
 void RetinaImpl::getMagno(OutputArray retinaOutput_magno)
 {
-    CV_OCL_RUN((_ocl_retina != 0) && retinaOutput_magno.isUMat(), ocl_getMagno(retinaOutput_magno));
+    if (_wasOCLRunCalled)
+    {
+        CV_OCL_RUN(true, ocl_getMagno(retinaOutput_magno));
+        CV_Error(Error::StsInternal, "");
+    }
 
     // reallocate output buffer (if necessary)
     _convertValarrayBuffer2cvMat(_retinaFilter->getMovingContours(), _retinaFilter->getOutputNBrows(), _retinaFilter->getOutputNBcolumns(), false, retinaOutput_magno);
@@ -644,15 +647,20 @@ void RetinaImpl::getMagno(OutputArray retinaOutput_magno)
 #ifdef HAVE_OPENCL
 bool RetinaImpl::ocl_getMagnoRAW(OutputArray magnoOutputBufferCopy)
 {
+    CV_Assert(_wasOCLRunCalled);
     _ocl_retina->getMagnoRAW(magnoOutputBufferCopy);
     return true;
 }
 #endif
 
 // original API level data accessors : copy buffers if size matches, reallocate if required
-void RetinaImpl::getMagnoRAW(OutputArray magnoOutputBufferCopy){
-
-    CV_OCL_RUN((_ocl_retina != 0) && magnoOutputBufferCopy.isUMat(), ocl_getMagnoRAW(magnoOutputBufferCopy));
+void RetinaImpl::getMagnoRAW(OutputArray magnoOutputBufferCopy)
+{
+    if (_wasOCLRunCalled)
+    {
+        CV_OCL_RUN(true, ocl_getMagnoRAW(magnoOutputBufferCopy));
+        CV_Error(Error::StsInternal, "");
+    }
 
     // get magno channel header
     const cv::Mat magnoChannel=cv::Mat(getMagnoRAW());
@@ -663,14 +671,19 @@ void RetinaImpl::getMagnoRAW(OutputArray magnoOutputBufferCopy){
 #ifdef HAVE_OPENCL
 bool RetinaImpl::ocl_getParvoRAW(OutputArray parvoOutputBufferCopy)
 {
+    CV_Assert(_wasOCLRunCalled);
     _ocl_retina->getParvoRAW(parvoOutputBufferCopy);
     return true;
 }
 #endif
 
-void RetinaImpl::getParvoRAW(OutputArray parvoOutputBufferCopy){
-
-    CV_OCL_RUN((_ocl_retina != 0) && parvoOutputBufferCopy.isUMat(), ocl_getParvoRAW(parvoOutputBufferCopy));
+void RetinaImpl::getParvoRAW(OutputArray parvoOutputBufferCopy)
+{
+    if (_wasOCLRunCalled)
+    {
+        CV_OCL_RUN(true, ocl_getParvoRAW(parvoOutputBufferCopy));
+        CV_Error(Error::StsInternal, "");
+    }
 
     // get parvo channel header
     const cv::Mat parvoChannel=cv::Mat(getParvoRAW());
@@ -680,12 +693,14 @@ void RetinaImpl::getParvoRAW(OutputArray parvoOutputBufferCopy){
 
 // original API level data accessors : get buffers addresses...
 const Mat RetinaImpl::getMagnoRAW() const {
+    CV_Assert(!_wasOCLRunCalled);
     // create a cv::Mat header for the valarray
     return Mat((int)_retinaFilter->getMovingContours().size(),1, CV_32F, (void*)get_data(_retinaFilter->getMovingContours()));
 
 }
 
 const Mat RetinaImpl::getParvoRAW() const {
+    CV_Assert(!_wasOCLRunCalled);
     if (_retinaFilter->getColorMode()) // check if color mode is enabled
     {
         // create a cv::Mat table (for RGB planes as a single vector)
@@ -699,18 +714,17 @@ const Mat RetinaImpl::getParvoRAW() const {
 // private method called by constructors
 void RetinaImpl::_init(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const float reductionFactor, const float samplingStrenght)
 {
+    _wasOCLRunCalled = false;
     // basic error check
     if (inputSz.height*inputSz.width <= 0)
-        throw cv::Exception(-1, "Bad retina size setup : size height and with must be superior to zero", "RetinaImpl::setup", "Retina.cpp", 0);
+        CV_Error(Error::StsBadArg, "Bad retina size setup : size height and with must be superior to zero");
 
     unsigned int nbPixels=inputSz.height*inputSz.width;
     // resize buffers if size does not match
     _inputBuffer.resize(nbPixels*3); // buffer supports gray images but also 3 channels color buffers... (larger is better...)
 
     // allocate the retina model
-        if (_retinaFilter)
-           delete _retinaFilter;
-    _retinaFilter = new RetinaFilter(inputSz.height, inputSz.width, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
+    _retinaFilter.reset(new RetinaFilter(inputSz.height, inputSz.width, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght));
 
     _retinaParameters.OPLandIplParvo.colorMode = colorMode;
     // prepare the default parameter XML file with default setup
@@ -764,7 +778,7 @@ bool RetinaImpl::_convertCvMat2ValarrayBuffer(InputArray inputMat, std::valarray
     const Mat inputMatToConvert=inputMat.getMat();
     // first check input consistency
     if (inputMatToConvert.empty())
-        throw cv::Exception(-1, "RetinaImpl cannot be applied, input buffer is empty", "RetinaImpl::run", "RetinaImpl.h", 0);
+        CV_Error(Error::StsBadArg, "RetinaImpl cannot be applied, input buffer is empty");
 
     // retreive color mode from image input
     int imageNumberOfChannels = inputMatToConvert.channels();
@@ -816,7 +830,7 @@ bool RetinaImpl::_convertCvMat2ValarrayBuffer(InputArray inputMat, std::valarray
 void RetinaImpl::clearBuffers()
 {
 #ifdef HAVE_OPENCL
-    if (_ocl_retina != 0)
+    if (_ocl_retina)
         _ocl_retina->clearBuffers();
 #endif
 

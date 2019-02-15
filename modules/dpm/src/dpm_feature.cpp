@@ -58,65 +58,11 @@ Feature::Feature (PyramidParameter p):params(p)
 
 void Feature::computeFeaturePyramid(const Mat &imageM, vector< Mat > &pyramid)
 {
-#ifdef HAVE_TBB
     ParalComputePyramid paralTask(imageM, pyramid, params);
     paralTask.initialize();
-    // perform parallel computing
     parallel_for_(Range(0, params.interval), paralTask);
-#else
-    CV_Assert(params.interval > 0);
-    // scale factor between two levels
-    params.sfactor = pow(2.0, 1.0/params.interval);
-    const Size_<double> imSize = imageM.size();
-    params.maxScale = 1 + (int)floor(log(min(imSize.width, imSize.height)/
-                (float)(params.binSize*5.0))/log(params.sfactor));
-
-    if (params.maxScale < params.interval)
-    {
-        CV_Error(CV_StsBadArg, "The image is too small to create a pyramid");
-        return;
-    }
-
-    pyramid.resize(params.maxScale + params.interval);
-    params.scales.resize(params.maxScale + params.interval);
-
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-    for (int i = 0; i < params.interval; i++)
-    {
-        const double scale = (double)(1.0f/pow(params.sfactor, i));
-        Mat imScaled;
-        resize(imageM, imScaled, imSize * scale);
-        // First octave at twice the image resolution
-        computeHOG32D(imScaled, pyramid[i], params.binSize/2,
-                params.padx + 1, params.pady + 1);
-
-        params.scales[i] = 2*scale;
-
-        // Second octave at the original resolution
-        if (i + params.interval <= params.maxScale)
-            computeHOG32D(imScaled, pyramid[i+params.interval],
-                    params.binSize, params.padx + 1, params.pady + 1);
-
-        params.scales[i+params.interval] = scale;
-
-        // Remaining octaves
-        for ( int j = i + params.interval; j < params.maxScale; j += params.interval)
-        {
-            Mat imScaled2;
-            Size_<double> imScaledSize = imScaled.size();
-            resize(imScaled, imScaled2, imScaledSize*0.5);
-            imScaled = imScaled2;
-            computeHOG32D(imScaled2, pyramid[j+params.interval],
-                    params.binSize, params.padx + 1, params.pady + 1);
-            params.scales[j+params.interval] = params.scales[j]*0.5;
-        }
-    }
-#endif
 }
 
-#ifdef HAVE_TBB
 ParalComputePyramid::ParalComputePyramid(const Mat &inputImage, \
         vector< Mat > &outputPyramid,\
         PyramidParameter &p):
@@ -177,7 +123,6 @@ void ParalComputePyramid::operator() (const Range &range) const
         }
     }
 }
-#endif
 
 void Feature::computeHOG32D(const Mat &imageM, Mat &featM, const int sbin, const int pad_x, const int pad_y)
 {

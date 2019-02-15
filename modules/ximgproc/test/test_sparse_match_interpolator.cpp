@@ -1,52 +1,10 @@
-/*
- *  By downloading, copying, installing or using the software you agree to this license.
- *  If you do not agree to this license, do not download, install,
- *  copy or use the software.
- *
- *
- *  License Agreement
- *  For Open Source Computer Vision Library
- *  (3 - clause BSD License)
- *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met :
- *
- *  * Redistributions of source code must retain the above copyright notice,
- *  this list of conditions and the following disclaimer.
- *
- *  * Redistributions in binary form must reproduce the above copyright notice,
- *  this list of conditions and the following disclaimer in the documentation
- *  and / or other materials provided with the distribution.
- *
- *  * Neither the names of the copyright holders nor the names of the contributors
- *  may be used to endorse or promote products derived from this software
- *  without specific prior written permission.
- *
- *  This software is provided by the copyright holders and contributors "as is" and
- *  any express or implied warranties, including, but not limited to, the implied
- *  warranties of merchantability and fitness for a particular purpose are disclaimed.
- *  In no event shall copyright holders or contributors be liable for any direct,
- *  indirect, incidental, special, exemplary, or consequential damages
- *  (including, but not limited to, procurement of substitute goods or services;
- *  loss of use, data, or profits; or business interruption) however caused
- *  and on any theory of liability, whether in contract, strict liability,
- *  or tort(including negligence or otherwise) arising in any way out of
- *  the use of this software, even if advised of the possibility of such damage.
- */
-
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 #include "opencv2/ximgproc/sparse_match_interpolator.hpp"
-#include <fstream>
 
-namespace cvtest
-{
-
-using namespace std;
-using namespace std::tr1;
-using namespace testing;
-using namespace perf;
-using namespace cv;
-using namespace cv::ximgproc;
+namespace opencv_test { namespace {
 
 static string getDataDir()
 {
@@ -60,14 +18,14 @@ Mat readOpticalFlow( const String& path )
     //FIXME: ensure right sizes of int and float - here and in writeOpticalFlow()
 
     Mat_<Point2f> flow;
-    ifstream file(path.c_str(), std::ios_base::binary);
+    std::ifstream file(path.c_str(), std::ios_base::binary);
     if ( !file.good() )
-        return flow; // no file - return empty matrix
+        return std::move(flow); // no file - return empty matrix
 
     float tag;
     file.read((char*) &tag, sizeof(float));
     if ( tag != FLOW_TAG_FLOAT )
-        return flow;
+        return std::move(flow);
 
     int width, height;
 
@@ -86,14 +44,14 @@ Mat readOpticalFlow( const String& path )
             if ( !file.good() )
             {
                 flow.release();
-                return flow;
+                return std::move(flow);
             }
 
             flow(i, j) = u;
         }
     }
     file.close();
-    return flow;
+    return std::move(flow);
 }
 
 CV_ENUM(GuideTypes, CV_8UC1, CV_8UC3)
@@ -112,7 +70,7 @@ TEST(InterpolatorTest, ReferenceAccuracy)
     Mat ref_flow = readOpticalFlow(dir + "/RubberWhale_reference_result.flo");
     ASSERT_FALSE(ref_flow.empty());
 
-    ifstream file((dir + "/RubberWhale_sparse_matches.txt").c_str());
+    std::ifstream file((dir + "/RubberWhale_sparse_matches.txt").c_str());
     float from_x,from_y,to_x,to_y;
     vector<Point2f> from_points;
     vector<Point2f> to_points;
@@ -123,7 +81,6 @@ TEST(InterpolatorTest, ReferenceAccuracy)
         to_points.push_back(Point2f(to_x,to_y));
     }
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
     Mat res_flow;
 
     Ptr<EdgeAwareInterpolator> interpolator = createEdgeAwareInterpolator();
@@ -165,6 +122,9 @@ TEST_P(InterpolatorTest, MultiThreadReproducibility)
         to_points.push_back(Point2f(rng.uniform(0.01f,(float)size.width-1.01f),rng.uniform(0.01f,(float)size.height-1.01f)));
     }
 
+    int nThreads = cv::getNumThreads();
+    if (nThreads == 1)
+        throw SkipTestException("Single thread environment");
     for (int iter = 0; iter <= loopsCount; iter++)
     {
         int K = rng.uniform(4,512);
@@ -179,7 +139,7 @@ TEST_P(InterpolatorTest, MultiThreadReproducibility)
         interpolator->setFGSLambda(FGSlambda);
         interpolator->setFGSSigma(FGSsigma);
 
-        cv::setNumThreads(cv::getNumberOfCPUs());
+        cv::setNumThreads(nThreads);
         Mat resMultiThread;
         interpolator->interpolate(from,from_points,Mat(),to_points,resMultiThread);
 
@@ -192,4 +152,6 @@ TEST_P(InterpolatorTest, MultiThreadReproducibility)
     }
 }
 INSTANTIATE_TEST_CASE_P(FullSet,InterpolatorTest, Combine(Values(szODD,szVGA), GuideTypes::all()));
-}
+
+
+}} // namespace

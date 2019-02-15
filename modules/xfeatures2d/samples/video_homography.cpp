@@ -6,6 +6,7 @@
 */
 
 #include <iostream>
+#include "opencv2/opencv_modules.hpp"
 
 #ifdef HAVE_OPENCV_CALIB3D
 

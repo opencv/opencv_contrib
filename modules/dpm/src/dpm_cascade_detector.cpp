@@ -49,19 +49,19 @@ namespace cv
 namespace dpm
 {
 
-class DPMDetectorImpl : public DPMDetector
+class DPMDetectorImpl CV_FINAL : public DPMDetector
 {
 public:
 
     DPMDetectorImpl( const vector<string>& filenames, const vector<string>& classNames=vector<string>() );
-    ~DPMDetectorImpl();
+    ~DPMDetectorImpl() CV_OVERRIDE;
 
-    bool isEmpty() const;
+    bool isEmpty() const CV_OVERRIDE;
 
-    void detect(Mat &image, CV_OUT vector<ObjectDetection>& objects);
+    void detect(Mat &image, CV_OUT vector<ObjectDetection>& objects) CV_OVERRIDE;
 
-    const vector<string>& getClassNames() const;
-    size_t getClassCount() const;
+    const vector<string>& getClassNames() const CV_OVERRIDE;
+    size_t getClassCount() const CV_OVERRIDE;
     string extractModelName( const string& filename );
 
 private:

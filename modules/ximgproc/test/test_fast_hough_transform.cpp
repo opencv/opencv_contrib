@@ -43,15 +43,7 @@
 
 #include "test_precomp.hpp"
 
-namespace cvtest
-{
-using namespace cv;
-using namespace cv::ximgproc;
-using namespace std;
-using namespace testing;
-
-using std::tr1::make_tuple;
-using std::tr1::get;
+namespace opencv_test { namespace {
 
 //----------------------utils---------------------------------------------------
 
@@ -441,7 +433,7 @@ int TestFHT::run_n_tests_t(int depth,
 }
 
 //----------------------TEST_P--------------------------------------------------
-typedef std::tr1::tuple<int, int, int, int> Depth_Channels_PtsC_nPerTest;
+typedef tuple<int, int, int, int> Depth_Channels_PtsC_nPerTest;
 typedef TestWithParam<Depth_Channels_PtsC_nPerTest> FastHoughTransformTest;
 
 TEST_P(FastHoughTransformTest, accuracy)
@@ -467,4 +459,4 @@ INSTANTIATE_TEST_CASE_P(FullSet, FastHoughTransformTest,
 #undef FHT_ALL_DEPTHS
 #undef FHT_ALL_CHANNELS
 
-} // namespace cvtest
+}} // namespace

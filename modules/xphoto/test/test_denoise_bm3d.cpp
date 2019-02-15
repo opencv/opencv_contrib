@@ -41,7 +41,6 @@
 //M*/
 
 #include "test_precomp.hpp"
-#include <string>
 
 //#define DUMP_RESULTS
 //#define TEST_TRANSFORMS
@@ -61,8 +60,8 @@ using namespace cv::xphoto;
 
 #ifdef OPENCV_ENABLE_NONFREE
 
-namespace cvtest
-{
+namespace opencv_test { namespace {
+
     TEST(xphoto_DenoisingBm3dGrayscale, regression_L2)
     {
         std::string folder = std::string(cvtest::TS::ptr()->get_data_path()) + "cv/xphoto/bm3d_image_denoising/";
@@ -77,7 +76,7 @@ namespace cvtest
 
         // BM3D: two different calls doing exactly the same thing
         cv::Mat result, resultSec;
-        cv::xphoto::bm3dDenoising(original, cv::Mat(), resultSec, 10, 4, 16, 2500, 400, 8, 1, 0.0f, cv::NORM_L2, cv::xphoto::BM3D_STEPALL);
+        cv::xphoto::bm3dDenoising(original, noArray(), resultSec, 10, 4, 16, 2500, 400, 8, 1, 0.0f, cv::NORM_L2, cv::xphoto::BM3D_STEPALL);
         cv::xphoto::bm3dDenoising(original, result, 10, 4, 16, 2500, 400, 8, 1, 0.0f, cv::NORM_L2, cv::xphoto::BM3D_STEPALL);
 
         DUMP(result, expected_path + ".res.png");
@@ -460,6 +459,6 @@ namespace cvtest
 
 #endif  // TEST_TRANSFORMS
 
-}
+}} // namespace
 
 #endif  // OPENCV_ENABLE_NONFREE

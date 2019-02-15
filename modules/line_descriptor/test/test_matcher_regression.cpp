@@ -41,8 +41,7 @@
 
 #include "test_precomp.hpp"
 
-using namespace cv;
-using namespace cv::line_descriptor;
+namespace opencv_test { namespace {
 
 class CV_BinaryDescriptorMatcherTest : public cvtest::BaseTest
 {
@@ -577,3 +576,5 @@ TEST( BinaryDescriptor_Matcher, regression)
   CV_BinaryDescriptorMatcherTest test( 0.01f );
   test.safe_run();
 }
+
+}} // namespace

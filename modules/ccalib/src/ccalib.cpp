@@ -405,9 +405,9 @@ bool CustomPattern::findPattern(InputArray image, OutputArray matched_features, 
     return (!m_ftrs.empty());
 }
 
-void CustomPattern::getPatternPoints(OutputArray original_points)
+void CustomPattern::getPatternPoints(std::vector<KeyPoint>& original_points)
 {
-    return Mat(keypoints).copyTo(original_points);
+    original_points = keypoints;
 }
 
 double CustomPattern::getPixelSize()

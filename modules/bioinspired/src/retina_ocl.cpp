@@ -25,7 +25,7 @@
 //
 //   * Redistribution's in binary form must reproduce the above copyright notice,
 //     this list of conditions and the following disclaimer in the documentation
-//     and/or other oclMaterials provided with the distribution.
+//     and/or other materials provided with the distribution.
 //
 //   * The name of the copyright holders may not be used to endorse or promote products
 //     derived from this software without specific prior written permission.
@@ -78,22 +78,17 @@ using namespace cv::ocl;
 
 RetinaOCLImpl::RetinaOCLImpl(const cv::Size inputSz)
 {
-    _retinaFilter = 0;
     _init(inputSz, true, RETINA_COLOR_BAYER, false);
 }
 
 RetinaOCLImpl::RetinaOCLImpl(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const double reductionFactor, const double samplingStrenght)
 {
-    _retinaFilter = 0;
     _init(inputSz, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
 }
 
 RetinaOCLImpl::~RetinaOCLImpl()
 {
-    if (_retinaFilter)
-    {
-        delete _retinaFilter;
-    }
+    // nothing
 }
 
 /**
@@ -132,7 +127,7 @@ void RetinaOCLImpl::setup(String retinaParameterFile, const bool applyDefaultSet
         cv::FileStorage fs(retinaParameterFile, cv::FileStorage::READ);
         setup(fs, applyDefaultSetupOnFailure);
     }
-    catch(Exception &e)
+    catch(const Exception &e)
     {
         std::cout << "RetinaOCLImpl::setup: wrong/inappropriate xml parameter file : error report :`n=>" << e.what() << std::endl;
         if (applyDefaultSetupOnFailure)
@@ -186,7 +181,7 @@ void RetinaOCLImpl::setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFai
         setupIPLMagnoChannel(_retinaParameters.IplMagno.normaliseOutput, _retinaParameters.IplMagno.parasolCells_beta, _retinaParameters.IplMagno.parasolCells_tau, _retinaParameters.IplMagno.parasolCells_k, _retinaParameters.IplMagno.amacrinCellsTemporalCutFrequency, _retinaParameters.IplMagno.V0CompressionParameter, _retinaParameters.IplMagno.localAdaptintegration_tau, _retinaParameters.IplMagno.localAdaptintegration_k);
 
     }
-    catch(Exception &e)
+    catch(const Exception &e)
     {
         std::cout << "RetinaOCLImpl::setup: resetting retina with default parameters" << std::endl;
         if (applyDefaultSetupOnFailure)
@@ -323,13 +318,13 @@ void RetinaOCLImpl::run(InputArray input)
     // process the retina
     if (!_retinaFilter->runFilter(_inputBuffer, colorMode, false, _retinaParameters.OPLandIplParvo.colorMode && colorMode, false))
     {
-        throw cv::Exception(-1, "Retina cannot be applied, wrong input buffer size", "RetinaOCLImpl::run", "Retina.h", 0);
+        CV_Error(Error::StsBadArg, "Retina cannot be applied, wrong input buffer size");
     }
 }
 
 void RetinaOCLImpl::getParvo(OutputArray output)
 {
-    UMat &retinaOutput_parvo = output.getUMatRef();
+    UMat retinaOutput_parvo;
     if (_retinaFilter->getColorMode())
     {
         // reallocate output buffer (if necessary)
@@ -341,13 +336,15 @@ void RetinaOCLImpl::getParvo(OutputArray output)
         convertToInterleaved(_retinaFilter->getContours(), false, retinaOutput_parvo);
     }
     //retinaOutput_parvo/=255.0;
+    output.assign(retinaOutput_parvo);
 }
 void RetinaOCLImpl::getMagno(OutputArray output)
 {
-    UMat &retinaOutput_magno = output.getUMatRef();
+    UMat retinaOutput_magno;
     // reallocate output buffer (if necessary)
     convertToInterleaved(_retinaFilter->getMovingContours(), false, retinaOutput_magno);
     //retinaOutput_magno/=255.0;
+    output.assign(retinaOutput_magno);
 }
 // private method called by constructors
 void RetinaOCLImpl::_init(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const double reductionFactor, const double samplingStrenght)
@@ -355,15 +352,11 @@ void RetinaOCLImpl::_init(const cv::Size inputSz, const bool colorMode, int colo
     // basic error check
     if (inputSz.height*inputSz.width <= 0)
     {
-        throw cv::Exception(-1, "Bad retina size setup : size height and with must be superior to zero", "RetinaOCLImpl::setup", "Retina.h", 0);
+        CV_Error(Error::StsBadArg, "Bad retina size setup : size height and with must be superior to zero");
     }
 
     // allocate the retina model
-    if (_retinaFilter)
-    {
-        delete _retinaFilter;
-    }
-    _retinaFilter = new RetinaFilter(inputSz.height, inputSz.width, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
+    _retinaFilter.reset(new RetinaFilter(inputSz.height, inputSz.width, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght));
 
     // prepare the default parameter XML file with default setup
     setup(_retinaParameters);
@@ -398,7 +391,6 @@ bool RetinaOCLImpl::convertToColorPlanes(const UMat& input, UMat &output)
     else
     {
         CV_Error(-1, "Retina ocl only support 1, 3, 4 channel input");
-        return false;
     }
 }
 void RetinaOCLImpl::convertToInterleaved(const UMat& input, bool colorMode, UMat &output)
@@ -456,8 +448,8 @@ void RetinaOCLImpl::getMagnoRAW(OutputArray retinaOutput_magno)
 
 // unimplemented interfaces:
 void RetinaOCLImpl::applyFastToneMapping(InputArray /*inputImage*/, OutputArray /*outputToneMappedImage*/) { NOT_IMPLEMENTED; }
-const Mat RetinaOCLImpl::getMagnoRAW() const { NOT_IMPLEMENTED; return Mat(); }
-const Mat RetinaOCLImpl::getParvoRAW() const { NOT_IMPLEMENTED; return Mat(); }
+const Mat RetinaOCLImpl::getMagnoRAW() const { NOT_IMPLEMENTED; }
+const Mat RetinaOCLImpl::getParvoRAW() const { NOT_IMPLEMENTED; }
 
 ///////////////////////////////////////
 ///////// BasicRetinaFilter ///////////
@@ -1514,4 +1506,4 @@ void RetinaFilter::_processRetinaParvoMagnoMapping()
 }  /* namespace bioinspired */
 }  /* namespace cv */
 
-#endif /* #ifdef HAVE_OPENCL */
+#endif // HAVE_OPENCL

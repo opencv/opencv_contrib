@@ -108,7 +108,7 @@ reconstruct(InputArrayOfArrays points2d, OutputArray Rs, OutputArray Ts, InputOu
 */
 CV_EXPORTS
 void
-reconstruct(const std::vector<std::string> images, OutputArray Ps, OutputArray points3d,
+reconstruct(const std::vector<String> images, OutputArray Ps, OutputArray points3d,
             InputOutputArray K, bool is_projective = false);
 
 /** @brief Reconstruct 3d points from 2d images while performing autocalibration.
@@ -128,7 +128,7 @@ reconstruct(const std::vector<std::string> images, OutputArray Ps, OutputArray p
 */
 CV_EXPORTS
 void
-reconstruct(const std::vector<std::string> images, OutputArray Rs, OutputArray Ts,
+reconstruct(const std::vector<String> images, OutputArray Rs, OutputArray Ts,
             InputOutputArray K, OutputArray points3d, bool is_projective = false);
 
 #endif /* CV_DOXYGEN || CERES_FOUND */

@@ -144,7 +144,7 @@ struct beamSearch_node {
     double score;
     vector<int> segmentation;
     bool expanded;
-    // TODO calculating score of its childs would be much faster if we store the last column
+    // TODO calculating score of its child would be much faster if we store the last column
     //      of their "root" path.
 };
 
@@ -155,7 +155,7 @@ bool beam_sort_function ( beamSearch_node a, beamSearch_node b )
 }
 
 
-class OCRBeamSearchDecoderImpl : public OCRBeamSearchDecoder
+class OCRBeamSearchDecoderImpl CV_FINAL : public OCRBeamSearchDecoder
 {
 public:
     //Default constructor
@@ -186,7 +186,7 @@ public:
         }
     }
 
-    ~OCRBeamSearchDecoderImpl()
+    ~OCRBeamSearchDecoderImpl() CV_OVERRIDE
     {
     }
 
@@ -196,7 +196,7 @@ public:
               vector<Rect>* component_rects,
               vector<string>* component_texts,
               vector<float>* component_confidences,
-              int component_level)
+              int component_level) CV_OVERRIDE
     {
         CV_Assert(mask.type() == CV_8UC1);
         //nothing to do with a mask here
@@ -209,7 +209,7 @@ public:
               vector<Rect>* component_rects,
               vector<string>* component_texts,
               vector<float>* component_confidences,
-              int component_level)
+              int component_level) CV_OVERRIDE
     {
 
         CV_Assert( (src.type() == CV_8UC1) || (src.type() == CV_8UC3) );
@@ -231,7 +231,7 @@ public:
 
         // TODO if input is a text line (not a word) we may need to split into words here!
 
-        // do sliding window classification along a croped word image
+        // do sliding window classification along a cropped word image
         classifier->eval(src, recognition_probabilities, oversegmentation);
 
         // if the number of oversegmentation points found is less than 2 we can not do nothing!!
@@ -499,7 +499,7 @@ Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create( Ptr<OCRBeamSearchDecoder
     return makePtr<OCRBeamSearchDecoderImpl>(_classifier, _vocabulary, transition_p, emission_p, _mode, _beam_size);
 }
 
-CV_EXPORTS_W Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(Ptr<OCRBeamSearchDecoder::ClassifierCallback> _classifier,
+Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(Ptr<OCRBeamSearchDecoder::ClassifierCallback> _classifier,
                                                         const String& _vocabulary,
                                                         InputArray transition_p,
                                                         InputArray emission_p,
@@ -509,16 +509,25 @@ CV_EXPORTS_W Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(Ptr<OCRBeamS
     return makePtr<OCRBeamSearchDecoderImpl>(_classifier, _vocabulary, transition_p, emission_p, (decoder_mode)_mode, _beam_size);
 }
 
+Ptr<OCRBeamSearchDecoder> OCRBeamSearchDecoder::create(const String& _filename,
+                                                        const String& _vocabulary,
+                                                        InputArray transition_p,
+                                                        InputArray emission_p,
+                                                        int _mode,
+                                                        int _beam_size)
+{
+    return makePtr<OCRBeamSearchDecoderImpl>(loadOCRBeamSearchClassifierCNN(_filename), _vocabulary, transition_p, emission_p, (decoder_mode)_mode, _beam_size);
+}
 
-class CV_EXPORTS OCRBeamSearchClassifierCNN : public OCRBeamSearchDecoder::ClassifierCallback
+class OCRBeamSearchClassifierCNN CV_FINAL : public OCRBeamSearchDecoder::ClassifierCallback
 {
 public:
     //constructor
     OCRBeamSearchClassifierCNN(const std::string& filename);
     // Destructor
-    ~OCRBeamSearchClassifierCNN() {}
+    ~OCRBeamSearchClassifierCNN() CV_OVERRIDE {}
 
-    void eval( InputArray src, vector< vector<double> >& recognition_probabilities, vector<int>& oversegmentation );
+    void eval( InputArray src, vector< vector<double> >& recognition_probabilities, vector<int>& oversegmentation ) CV_OVERRIDE;
 
     int getWindowSize() {return window_size;}
     int getStepSize() {return step_size;}
@@ -594,7 +603,7 @@ void OCRBeamSearchClassifierCNN::eval( InputArray _src, vector< vector<double> >
         cvtColor(src,src,COLOR_RGB2GRAY);
     }
 
-    resize(src,src,Size(window_size*src.cols/src.rows,window_size));
+    resize(src,src,Size(window_size*src.cols/src.rows,window_size),0,0,INTER_LINEAR_EXACT);
 
     int seg_points = 0;
 

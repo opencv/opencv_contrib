@@ -63,14 +63,14 @@ public:
     // bytes is a length of descriptor in bytes. It can be equal 16, 32 or 64 bytes.
     BriefDescriptorExtractorImpl( int bytes = 32, bool use_orientation = false );
 
-    virtual void read( const FileNode& );
-    virtual void write( FileStorage& ) const;
+    virtual void read( const FileNode& ) CV_OVERRIDE;
+    virtual void write( FileStorage& ) const CV_OVERRIDE;
 
-    virtual int descriptorSize() const;
-    virtual int descriptorType() const;
-    virtual int defaultNorm() const;
+    virtual int descriptorSize() const CV_OVERRIDE;
+    virtual int descriptorType() const CV_OVERRIDE;
+    virtual int defaultNorm() const CV_OVERRIDE;
 
-    virtual void compute(InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors);
+    virtual void compute(InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors) CV_OVERRIDE;
 
 protected:
     typedef void(*PixelTestFn)(InputArray, const std::vector<KeyPoint>&, OutputArray, bool use_orientation );
@@ -93,8 +93,10 @@ inline int smoothedSum(const Mat& sum, const KeyPoint& pt, int y, int x, bool us
     {
       int rx = (int)(((float)x)*R(1,0) - ((float)y)*R(0,0));
       int ry = (int)(((float)x)*R(0,0) + ((float)y)*R(1,0));
-      if (rx > 24) rx = 24; if (rx < -24) rx = -24;
-      if (ry > 24) ry = 24; if (ry < -24) ry = -24;
+      if (rx > 24) rx = 24;
+      if (rx < -24) rx = -24;
+      if (ry > 24) ry = 24;
+      if (ry < -24) ry = -24;
       x = rx; y = ry;
     }
     const int img_y = (int)(pt.pt.y + 0.5) + y;

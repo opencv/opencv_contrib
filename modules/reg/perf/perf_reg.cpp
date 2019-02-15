@@ -42,25 +42,10 @@
 //M*/
 
 #include "perf_precomp.hpp"
-#include "opencv2/ts.hpp"
 
-#include "opencv2/reg/mapaffine.hpp"
-#include "opencv2/reg/mapshift.hpp"
-#include "opencv2/reg/mapprojec.hpp"
-#include "opencv2/reg/mappergradshift.hpp"
-#include "opencv2/reg/mappergradeuclid.hpp"
-#include "opencv2/reg/mappergradsimilar.hpp"
-#include "opencv2/reg/mappergradaffine.hpp"
-#include "opencv2/reg/mappergradproj.hpp"
-#include "opencv2/reg/mapperpyramid.hpp"
+namespace opencv_test { namespace {
 
-using namespace std;
-using namespace std::tr1;
-using namespace testing;
 using namespace perf;
-using namespace cv;
-using namespace cv::reg;
-
 
 Vec<double, 2> perfShift(const Mat& img1)
 {
@@ -274,3 +259,5 @@ PERF_TEST_P(Size_MatType, Registration_Projective,
 
     SANITY_CHECK_NOTHING();
 }
+
+}} // namespace

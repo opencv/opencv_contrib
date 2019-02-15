@@ -875,9 +875,6 @@ inline float linearFilter(
     float centerX, float centerY, float win_offset,
     float cos_dir, float sin_dir, float y, float x )
 {
-    x -= 0.5f;
-    y -= 0.5f;
-
     float out = 0.0f;
 
     const int x1 = round(x);
@@ -896,6 +893,60 @@ inline float linearFilter(
 
     src_reg = readerGet(centerX, centerY, win_offset, cos_dir, sin_dir, y2, x2);
     out = out + src_reg * ((x - x1) * (y - y1));
+
+    return out;
+}
+
+inline float areaFilter( __PARAM_imgTex__, int img_rows, int img_cols,
+    float centerX, float centerY, float win_offset,
+    float cos_dir, float sin_dir, float x, float y, float s)
+{
+    float fsx1 = x * s;
+    float fsx2 = fsx1 + s;
+
+    int sx1 = convert_int_rtp(fsx1);
+    int sx2 = convert_int_rtn(fsx2);
+
+    float fsy1 = y * s;
+    float fsy2 = fsy1 + s;
+
+    int sy1 = convert_int_rtp(fsy1);
+    int sy2 = convert_int_rtn(fsy2);
+
+    float scale = 1.f / (s * s);
+    float out = 0.f;
+
+    for (int dy = sy1; dy < sy2; ++dy)
+    {
+        for (int dx = sx1; dx < sx2; ++dx)
+            out = out + readerGet(centerX, centerY, win_offset, cos_dir, sin_dir, dy, dx) * scale;
+
+        if (sx1 > fsx1)
+            out = out + readerGet(centerX, centerY, win_offset, cos_dir, sin_dir, dy, (sx1 -1)) * ((sx1 - fsx1) * scale);
+
+        if (sx2 < fsx2)
+            out = out + readerGet(centerX, centerY, win_offset, cos_dir, sin_dir, dy, sx2) * ((fsx2 -sx2) * scale);
+    }
+
+    if (sy1 > fsy1)
+        for (int dx = sx1; dx < sx2; ++dx)
+            out = out + readerGet(centerX, centerY, win_offset, cos_dir, sin_dir, (sy1 - 1) , dx) * ((sy1 -fsy1) * scale);
+
+    if (sy2 < fsy2)
+        for (int dx = sx1; dx < sx2; ++dx)
+            out = out + readerGet(centerX, centerY, win_offset, cos_dir, sin_dir, sy2, dx) * ((fsy2 -sy2) * scale);
+
+    if ((sy1 > fsy1) &&  (sx1 > fsx1))
+        out = out + readerGet(centerX, centerY, win_offset, cos_dir, sin_dir, (sy1 - 1) , (sx1 - 1)) * ((sy1 -fsy1) * (sx1 -fsx1) * scale);
+
+    if ((sy1 > fsy1) &&  (sx2 < fsx2))
+        out = out + readerGet(centerX, centerY, win_offset, cos_dir, sin_dir, (sy1 - 1) , sx2) * ((sy1 -fsy1) * (fsx2 -sx2) * scale);
+
+    if ((sy2 < fsy2) &&  (sx2 < fsx2))
+        out = out + readerGet(centerX, centerY, win_offset, cos_dir, sin_dir, sy2, sx2) * ((fsy2 -sy2) * (fsx2 -sx2) * scale);
+
+    if ((sy2 < fsy2) &&  (sx1 > fsx1))
+        out = out + readerGet(centerX, centerY, win_offset, cos_dir, sin_dir, sy2, (sx1 - 1)) * ((fsy2 -sy2) * (sx1 -fsx1) * scale);
 
     return out;
 }
@@ -946,9 +997,18 @@ void calc_dx_dy(
     const float icoo = ((float)yIndex / (PATCH_SZ + 1)) * win_size;
     const float jcoo = ((float)xIndex / (PATCH_SZ + 1)) * win_size;
 
-    s_PATCH[get_local_id(1) * 6 + get_local_id(0)] =
-        linearFilter(__PASS_imgTex__, img_rows, img_cols, centerX, centerY,
-                     win_offset, cos_dir, sin_dir, icoo, jcoo);
+    if (s > 1)
+    {
+        s_PATCH[get_local_id(1) * 6 + get_local_id(0)] =
+            areaFilter(__PASS_imgTex__, img_rows, img_cols, centerX, centerY,
+                win_offset, cos_dir, sin_dir, xIndex, yIndex, s);
+    }
+    else
+    {
+        s_PATCH[get_local_id(1) * 6 + get_local_id(0)] =
+            linearFilter(__PASS_imgTex__, img_rows, img_cols, centerX, centerY,
+                win_offset, cos_dir, sin_dir, icoo, jcoo);
+    }
 
     barrier(CLK_LOCAL_MEM_FENCE);
 
@@ -1075,18 +1135,16 @@ void SURF_computeDescriptors64(
     reduce_sum25(sdx, sdy, sdxabs, sdyabs, tid);
 
     barrier(CLK_LOCAL_MEM_FENCE);
-    if (tid < 25)
+    if (tid == 0)
     {
         __global float* descriptors_block = descriptors + descriptors_step * get_group_id(0) + (get_group_id(1) << 2);
 
         // write dx, dy, |dx|, |dy|
-        if (tid == 0)
-        {
-            descriptors_block[0] = sdx[0];
-            descriptors_block[1] = sdy[0];
-            descriptors_block[2] = sdxabs[0];
-            descriptors_block[3] = sdyabs[0];
-        }
+
+        descriptors_block[0] = sdx[0];
+        descriptors_block[1] = sdy[0];
+        descriptors_block[2] = sdxabs[0];
+        descriptors_block[3] = sdyabs[0];
     }
 }
 
@@ -1102,10 +1160,10 @@ void SURF_computeDescriptors128(
     descriptors_step /= sizeof(*descriptors);
     keypoints_step   /= sizeof(*keypoints);
 
-    __global float * featureX   = keypoints + X_ROW * keypoints_step;
-    __global float * featureY   = keypoints + Y_ROW * keypoints_step;
-    __global float* featureSize = keypoints + SIZE_ROW * keypoints_step;
-    __global float* featureDir  = keypoints + ANGLE_ROW * keypoints_step;
+    __global const float * featureX   = keypoints + X_ROW * keypoints_step;
+    __global const float * featureY   = keypoints + Y_ROW * keypoints_step;
+    __global const float* featureSize = keypoints + SIZE_ROW * keypoints_step;
+    __global const float* featureDir  = keypoints + ANGLE_ROW * keypoints_step;
 
     // 2 floats (dx,dy) for each thread (5x5 sample points in each sub-region)
     volatile __local  float sdx[25];

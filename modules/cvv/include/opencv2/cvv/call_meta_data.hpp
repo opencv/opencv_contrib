@@ -58,18 +58,10 @@ struct CallMetaData
 
 } // namespaces
 
-#ifdef __GNUC__
-#define CVVISUAL_FUNCTION_NAME_MACRO __PRETTY_FUNCTION__
-#else
-#define CVVISUAL_FUNCTION_NAME_MACRO __func__
-#endif
-
 /**
  * @brief Creates an instance of CallMetaData with the location of the macro as
  * value.
  */
-#define CVVISUAL_LOCATION                                                      \
-	::cvv::impl::CallMetaData(__FILE__, __LINE__,                          \
-	                          CVVISUAL_FUNCTION_NAME_MACRO)
+#define CVVISUAL_LOCATION ::cvv::impl::CallMetaData(__FILE__, __LINE__, CV_Func)
 
 #endif

@@ -130,7 +130,7 @@ void WaldBoost::detect(Ptr<CvFeatureEvaluator> eval,
     float h;
     for (size_t i = 0; i < scales.size(); ++i) {
         float scale = scales[i];
-        resize(img, resized_img, Size(), scale, scale);
+        resize(img, resized_img, Size(), scale, scale, INTER_LINEAR_EXACT);
         eval->setImage(resized_img, 0, 0, feature_indices_);
         int n_rows = (int)(24 / scale);
         int n_cols = (int)(24 / scale);
@@ -162,7 +162,7 @@ void WaldBoost::detect(Ptr<CvFeatureEvaluator> eval,
     float h;
     for (size_t i = 0; i < scales.size(); ++i) {
         float scale = scales[i];
-        resize(img, resized_img, Size(), scale, scale);
+        resize(img, resized_img, Size(), scale, scale, INTER_LINEAR_EXACT);
         eval->setImage(resized_img, 0, 0, feature_indices_);
         int n_rows = (int)(24 / scale);
         int n_cols = (int)(24 / scale);

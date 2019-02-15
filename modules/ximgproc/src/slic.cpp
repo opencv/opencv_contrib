@@ -6,10 +6,10 @@
  * email : Radhakrishna [dot] Achanta [at] epfl [dot] ch
  * web : http://ivrl.epfl.ch/people/achanta
  *
- * MSLIC Copyright (c) 2016
+ * MSLIC Copyright (c) 2016, 2017
  * Yong-Jin Liu
  * email : liuyongjin [at] tsinghua [dot] edu [dot] cn
- * web : http://cg.cs.tsinghua.edu.cn/people/~Yongjin/yongjin.htm
+ * web : http://47.89.51.189/liuyj
  *
  *  Redistribution and use in source and binary forms, with or without
  *  modification, are permitted provided that the following conditions
@@ -49,10 +49,11 @@
  Aurelien Lucchi, Pascal Fua, and Sabine Süsstrunk, EPFL Technical
  Report no. 149300, June 2010.
 
- "Manifold SLIC: A Fast Method to Compute Content-Sensitive Superpixels"
+ "Intrinsic Manifold SLIC: A Simple and Efficient Method for Computing
+ Content-Sensitive Superpixels"
  Yong-Jin Liu, Cheng-Chi Yu, Min-Jing Yu, Ying He,
- The IEEE Conference on Computer Vision and Pattern Recognition (CVPR),
- 2016, pp. 651-659.
+ IEEE Transactions on Pattern Analysis and Machine Intelligence,
+ March 2017, Issue 99.
 
  OpenCV port by: Cristian Balint <cristian dot balint at gmail dot com>
  */
@@ -71,22 +72,22 @@ public:
 
     SuperpixelSLICImpl( InputArray image, int algorithm, int region_size, float ruler );
 
-    virtual ~SuperpixelSLICImpl();
+    virtual ~SuperpixelSLICImpl() CV_OVERRIDE;
 
     // perform amount of iteration
-    virtual void iterate( int num_iterations = 10 );
+    virtual void iterate( int num_iterations = 10 ) CV_OVERRIDE;
 
     // get amount of superpixels
-    virtual int getNumberOfSuperpixels() const;
+    virtual int getNumberOfSuperpixels() const CV_OVERRIDE;
 
     // get image with labels
-    virtual void getLabels( OutputArray labels_out ) const;
+    virtual void getLabels( OutputArray labels_out ) const CV_OVERRIDE;
 
     // get mask image with contour
-    virtual void getLabelContourMask( OutputArray image, bool thick_line = true ) const;
+    virtual void getLabelContourMask( OutputArray image, bool thick_line = true ) const CV_OVERRIDE;
 
     // enforce connectivity over labels
-    virtual void enforceLabelConnectivity( int min_element_size = 25 );
+    virtual void enforceLabelConnectivity( int min_element_size = 25 ) CV_OVERRIDE;
 
 
 protected:
@@ -278,6 +279,9 @@ void SuperpixelSLICImpl::initialize()
 
 void SuperpixelSLICImpl::iterate( int num_iterations )
 {
+    // store total iterations
+    m_iterations = num_iterations;
+
     if( m_algorithm == SLICO )
       PerformSLICO( num_iterations );
     else if( m_algorithm == SLIC )
@@ -836,7 +840,7 @@ struct SeedNormInvoker : ParallelLoopBody
       clustersize = _clustersize;
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       for (int k = range.start; k < range.end; ++k)
       {
@@ -1005,7 +1009,7 @@ struct SLICOGrowInvoker : ParallelLoopBody
       nr_channels = _nr_channels;
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       int cols = klabels->cols;
       int rows = klabels->rows;
@@ -1217,7 +1221,7 @@ struct SLICGrowInvoker : ParallelLoopBody
       nr_channels = _nr_channels;
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       for (int y = range.start; y < range.end; ++y)
       {
@@ -1371,10 +1375,6 @@ inline void SuperpixelSLICImpl::PerformMSLIC( const int&  itrnum )
     vector< vector<float> > sigma(m_nr_channels);
     for( int b = 0; b < m_nr_channels; b++ )
       sigma[b].resize(m_numlabels, 0);
-
-    vector<float> sigmax(m_numlabels, 0);
-    vector<float> sigmay(m_numlabels, 0);
-    vector<int> clustersize(m_numlabels, 0);
 
     Mat distvec( m_height, m_width, CV_32F );
 

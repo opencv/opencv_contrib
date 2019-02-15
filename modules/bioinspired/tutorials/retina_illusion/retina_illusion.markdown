@@ -117,10 +117,10 @@ iterations. This is an arbitrary number that we found experimentally to be (more
 enough
 
 @code{.py}
-import cv2
+import cv2 as cv
 
-inputImage = cv2.imread('checkershadow_illusion4med.jpg', 1)
-retina = cv2.bioinspired.createRetina((inputImage.shape[1], inputImage.shape[0]))
+inputImage = cv.imread('checkershadow_illusion4med.jpg', 1)
+retina = cv.bioinspired.createRetina((inputImage.shape[1], inputImage.shape[0]))
 
 # the retina object is created with default parameters. If you want to read
 # the parameters from an external XML file, uncomment the next line
@@ -134,15 +134,15 @@ for i in range(20):
 retinaOut_parvo = retina.getParvo()
 
 # show both the original image and the processed one
-cv2.imshow('image', inputImage)
-cv2.imshow('retina parvo out', retinaOut_parvo)
+cv.imshow('image', inputImage)
+cv.imshow('retina parvo out', retinaOut_parvo)
 
 # wait for a key to be pressed and exit
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+cv.waitKey(0)
+cv.destroyAllWindows()
 
 # write the output image on a file
-cv2.imwrite('checkershadow_parvo.png', retinaOut_parvo)
+cv.imwrite('checkershadow_parvo.png', retinaOut_parvo)
 @endcode
 
 Whatever method you used to process the image, you should end up

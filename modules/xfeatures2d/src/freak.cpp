@@ -49,7 +49,7 @@ namespace xfeatures2d
 /*!
  FREAK implementation
  */
-class FREAK_Impl : public FREAK
+class FREAK_Impl CV_FINAL : public FREAK
 {
 public:
     /** Constructor
@@ -68,13 +68,13 @@ public:
     virtual ~FREAK_Impl();
 
     /** returns the descriptor length in bytes */
-    virtual int descriptorSize() const;
+    virtual int descriptorSize() const CV_OVERRIDE;
 
     /** returns the descriptor type */
-    virtual int descriptorType() const;
+    virtual int descriptorType() const CV_OVERRIDE;
 
     /** returns the default norm type */
-    virtual int defaultNorm() const;
+    virtual int defaultNorm() const CV_OVERRIDE;
 
     /** select the 512 "best description pairs"
      * @param images grayscale images set
@@ -85,7 +85,7 @@ public:
      */
     std::vector<int> selectPairs( const std::vector<Mat>& images, std::vector<std::vector<KeyPoint> >& keypoints,
                                  const double corrThresh = 0.7, bool verbose = true );
-    virtual void compute( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors );
+    virtual void compute( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors ) CV_OVERRIDE;
 
 protected:
 
@@ -131,21 +131,17 @@ protected:
         int weight_dx; // dx/(norm_sq))*4096
         int weight_dy; // dy/(norm_sq))*4096
     };
-    
+
     std::vector<PatternPoint> patternLookup; // look-up table for the pattern points (position+sigma of all points at all scales and orientation)
     int patternSizes[NB_SCALES]; // size of the pattern at a specific scale (used to check if a point is within image boundaries)
     DescriptionPair descriptionPairs[NB_PAIRS];
     OrientationPair orientationPairs[NB_ORIENPAIRS];
 };
 
-
 static const double FREAK_LOG2 = 0.693147180559945;
 static const int FREAK_NB_ORIENTATION = 256;
 static const int FREAK_NB_POINTS = 43;
 static const int FREAK_SMALLEST_KP_SIZE = 7; // smallest size of keypoints
-static const int FREAK_NB_SCALES = FREAK::NB_SCALES;
-static const int FREAK_NB_PAIRS = FREAK::NB_PAIRS;
-static const int FREAK_NB_ORIENPAIRS = FREAK::NB_ORIENPAIRS;
 
 // default pairs
 static const int FREAK_DEF_PAIRS[FREAK_Impl::NB_PAIRS] =
@@ -209,8 +205,8 @@ void FREAK_Impl::buildPattern()
     nOctaves0 = nOctaves;
     patternScale0 = patternScale;
 
-    patternLookup.resize(FREAK_NB_SCALES*FREAK_NB_ORIENTATION*FREAK_NB_POINTS);
-    double scaleStep = std::pow(2.0, (double)(nOctaves)/FREAK_NB_SCALES ); // 2 ^ ( (nOctaves-1) /nbScales)
+    patternLookup.resize(FREAK::NB_SCALES*FREAK_NB_ORIENTATION*FREAK_NB_POINTS);
+    double scaleStep = std::pow(2.0, (double)(nOctaves)/FREAK::NB_SCALES ); // 2 ^ ( (nOctaves-1) /nbScales)
     double scalingFactor, alpha, beta, theta = 0;
 
     // pattern definition, radius normalized to 1.0 (outer point position+sigma=1.0)
@@ -226,7 +222,7 @@ void FREAK_Impl::buildPattern()
                              radius[6]/2.0, radius[6]/2.0
                             };
     // fill the lookup table
-    for( int scaleIdx=0; scaleIdx < FREAK_NB_SCALES; ++scaleIdx )
+    for( int scaleIdx=0; scaleIdx < FREAK::NB_SCALES; ++scaleIdx )
     {
         patternSizes[scaleIdx] = 0; // proper initialization
         scalingFactor = std::pow(scaleStep,scaleIdx); //scale of the pattern, scaleStep ^ scaleIdx
@@ -282,7 +278,7 @@ void FREAK_Impl::buildPattern()
     orientationPairs[39].i=30; orientationPairs[39].j=33; orientationPairs[40].i=31; orientationPairs[40].j=34; orientationPairs[41].i=32; orientationPairs[41].j=35;
     orientationPairs[42].i=36; orientationPairs[42].j=39; orientationPairs[43].i=37; orientationPairs[43].j=40; orientationPairs[44].i=38; orientationPairs[44].j=41;
 
-    for( unsigned m = FREAK_NB_ORIENPAIRS; m--; )
+    for( unsigned m = FREAK::NB_ORIENPAIRS; m--; )
     {
         const float dx = patternLookup[orientationPairs[m].i].x-patternLookup[orientationPairs[m].j].x;
         const float dy = patternLookup[orientationPairs[m].i].y-patternLookup[orientationPairs[m].j].y;
@@ -305,9 +301,9 @@ void FREAK_Impl::buildPattern()
     // Input vector provided
     if( !selectedPairs0.empty() )
     {
-        if( (int)selectedPairs0.size() == FREAK_NB_PAIRS )
+        if( (int)selectedPairs0.size() == FREAK::NB_PAIRS )
         {
-            for( int i = 0; i < FREAK_NB_PAIRS; ++i )
+            for( int i = 0; i < FREAK::NB_PAIRS; ++i )
                  descriptionPairs[i] = allPairs[selectedPairs0.at(i)];
         }
         else
@@ -317,7 +313,7 @@ void FREAK_Impl::buildPattern()
     }
     else // default selected pairs
     {
-        for( int i = 0; i < FREAK_NB_PAIRS; ++i )
+        for( int i = 0; i < FREAK::NB_PAIRS; ++i )
              descriptionPairs[i] = allPairs[FREAK_DEF_PAIRS[i]];
     }
 }
@@ -333,8 +329,13 @@ void FREAK_Impl::compute( InputArray _image, std::vector<KeyPoint>& keypoints, O
     ((FREAK_Impl*)this)->buildPattern();
 
     // Convert to gray if not already
-    Mat grayImage = image;
-    CV_Assert(grayImage.channels() == 1);
+    Mat grayImage;
+    if( image.channels() == 3 || image.channels() == 4 )
+        cvtColor(image, grayImage, COLOR_BGR2GRAY);
+    else {
+        CV_Assert(image.channels() == 1);
+        grayImage = image;
+    }
 
     // Use 32-bit integers if we won't overflow in the integral image
     if ((image.depth() == CV_8U || image.depth() == CV_8S) &&
@@ -365,11 +366,11 @@ void FREAK_Impl::compute( InputArray _image, std::vector<KeyPoint>& keypoints, O
 template <typename srcMatType>
 void FREAK_Impl::extractDescriptor(srcMatType *pointsValue, void ** ptr)
 {
-    std::bitset<FREAK_NB_PAIRS>** ptrScalar = (std::bitset<FREAK_NB_PAIRS>**) ptr;
+    std::bitset<FREAK::NB_PAIRS>** ptrScalar = (std::bitset<FREAK::NB_PAIRS>**) ptr;
 
     // extracting descriptor preserving the order of SSE version
     int cnt = 0;
-    for( int n = 7; n < FREAK_NB_PAIRS; n += 128)
+    for( int n = 7; n < FREAK::NB_PAIRS; n += 128)
     {
         for( int m = 8; m--; )
         {
@@ -391,7 +392,7 @@ void FREAK_Impl::extractDescriptor(uchar *pointsValue, void ** ptr)
 
     // note that comparisons order is modified in each block (but first 128 comparisons remain globally the same-->does not affect the 128,384 bits segmanted matching strategy)
     int cnt = 0;
-    for( int n = FREAK_NB_PAIRS/128; n-- ; )
+    for( int n = FREAK::NB_PAIRS/128; n-- ; )
     {
         __m128i result128 = _mm_setzero_si128();
         for( int m = 128/16; m--; cnt += 16 )
@@ -452,7 +453,7 @@ void FREAK_Impl::computeDescriptors( InputArray _image, std::vector<KeyPoint>& k
     std::vector<int> kpScaleIdx(keypoints.size()); // used to save pattern scale index corresponding to each keypoints
     const std::vector<int>::iterator ScaleIdxBegin = kpScaleIdx.begin(); // used in std::vector erase function
     const std::vector<cv::KeyPoint>::iterator kpBegin = keypoints.begin(); // used in std::vector erase function
-    const float sizeCst = static_cast<float>(FREAK_NB_SCALES/(FREAK_LOG2* nOctaves));
+    const float sizeCst = static_cast<float>(FREAK::NB_SCALES/(FREAK_LOG2* nOctaves));
     srcMatType pointsValue[FREAK_NB_POINTS];
     int thetaIdx = 0;
     int direction0;
@@ -465,8 +466,8 @@ void FREAK_Impl::computeDescriptors( InputArray _image, std::vector<KeyPoint>& k
         {
             //Is k non-zero? If so, decrement it and continue"
             kpScaleIdx[k] = std::max( (int)(std::log(keypoints[k].size/FREAK_SMALLEST_KP_SIZE)*sizeCst+0.5) ,0);
-            if( kpScaleIdx[k] >= FREAK_NB_SCALES )
-                kpScaleIdx[k] = FREAK_NB_SCALES-1;
+            if( kpScaleIdx[k] >= FREAK::NB_SCALES )
+                kpScaleIdx[k] = FREAK::NB_SCALES-1;
 
             if( keypoints[k].pt.x <= patternSizes[kpScaleIdx[k]] || //check if the description at this specific position and scale fits inside the image
                  keypoints[k].pt.y <= patternSizes[kpScaleIdx[k]] ||
@@ -485,9 +486,9 @@ void FREAK_Impl::computeDescriptors( InputArray _image, std::vector<KeyPoint>& k
         for( size_t k = keypoints.size(); k--; )
         {
             kpScaleIdx[k] = scIdx; // equivalent to the formule when the scale is normalized with a constant size of keypoints[k].size=3*SMALLEST_KP_SIZE
-            if( kpScaleIdx[k] >= FREAK_NB_SCALES )
+            if( kpScaleIdx[k] >= FREAK::NB_SCALES )
             {
-                kpScaleIdx[k] = FREAK_NB_SCALES-1;
+                kpScaleIdx[k] = FREAK::NB_SCALES-1;
             }
             if( keypoints[k].pt.x <= patternSizes[kpScaleIdx[k]] ||
                 keypoints[k].pt.y <= patternSizes[kpScaleIdx[k]] ||
@@ -505,7 +506,7 @@ void FREAK_Impl::computeDescriptors( InputArray _image, std::vector<KeyPoint>& k
     if( !extAll )
     {
         // extract the best comparisons only
-        _descriptors.create((int)keypoints.size(), FREAK_NB_PAIRS/8, CV_8U);
+        _descriptors.create((int)keypoints.size(), FREAK::NB_PAIRS/8, CV_8U);
         _descriptors.setTo(Scalar::all(0));
         Mat descriptors = _descriptors.getMat();
 
@@ -768,9 +769,9 @@ std::vector<int> FREAK_Impl::selectPairs(const std::vector<Mat>& images
     }
 
     std::vector<int> idxBestPairs;
-    if( (int)bestPairs.size() >= FREAK_NB_PAIRS )
+    if( (int)bestPairs.size() >= FREAK::NB_PAIRS )
     {
-        for( int i = 0; i < FREAK_NB_PAIRS; ++i )
+        for( int i = 0; i < FREAK::NB_PAIRS; ++i )
             idxBestPairs.push_back(bestPairs[i].idx);
     }
     else
@@ -822,7 +823,7 @@ FREAK_Impl::~FREAK_Impl()
 
 int FREAK_Impl::descriptorSize() const
 {
-    return FREAK_NB_PAIRS / 8; // descriptor length in bytes
+    return FREAK::NB_PAIRS / 8; // descriptor length in bytes
 }
 
 int FREAK_Impl::descriptorType() const

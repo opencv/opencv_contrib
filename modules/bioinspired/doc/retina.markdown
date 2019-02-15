@@ -4,7 +4,7 @@ Bioinspired Module Retina Introduction {#bioinspired_retina}
 Retina class overview
 ---------------------
 
-@note do not forget that the retina model is included in the following namespace : cv::bioinspired with C++ and in cv2.bioinspired with Python
+@note do not forget that the retina model is included in the following namespace : cv::bioinspired with C++ and in cv.bioinspired with Python
 
 ### Introduction
 
@@ -155,7 +155,7 @@ The proposed class allows the [Gipsa](http://www.gipsa-lab.inpg.fr) (preliminary
 [Listic](http://www.listic.univ-savoie.fr) labs retina model to be used.
 It can be applied on still images, images sequences and video sequences.
 
-Here is an overview of the Retina interface, allocate one instance with the *createRetina*
+Here is an overview of the Retina interface, allocate one instance with the *Retina::create()*
 functions (C++, Java, Python) :
 
 @code{.cpp}
@@ -206,8 +206,8 @@ functions (C++, Java, Python) :
     };
 
       // Allocators
-      cv::Ptr<Retina> createRetina (Size inputSize);
-      cv::Ptr<Retina> createRetina (Size inputSize, const bool colorMode, RETINA_COLORSAMPLINGMETHOD colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
+      cv::Ptr<Retina> Retina::create (Size inputSize);
+      cv::Ptr<Retina> Retina::create (Size inputSize, const bool colorMode, RETINA_COLORSAMPLINGMETHOD colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
       }} // cv and bioinspired namespaces end
 @endcode
 
@@ -425,14 +425,14 @@ Python version
 
 @code{.py}
 #import OpenCV module
-import cv2 
+import cv2 as cv
 
 #setup webcam reader
-videoHandler = cv2.VideoCapture(0)
+videoHandler = cv.VideoCapture(0)
 succeed, inputImage=videoHandler.read()
 
 #allocate a retina instance with input size equal to the one of the loaded image
-retina = cv2.bioinspired.createRetina((inputImage.shape[1], inputImage.shape[0]))
+retina = cv.bioinspired_Retina.create((inputImage.shape[1], inputImage.shape[0]))
 
 #retina parameters management methods use sample
 #-> save current (here default) retina parameters to a xml file (you may use it only one time to get the file and modify it)
@@ -446,7 +446,7 @@ while stillProcess is True:
 
 	#grab a new frame and display it
 	stillProcess, inputImage=videoHandler.read()
-	cv2.imshow('input frame', inputImage)
+	cv.imshow('input frame', inputImage)
 
 	#run retina on the input image
 	retina.run(inputImage)
@@ -456,11 +456,11 @@ while stillProcess is True:
 	retinaOut_magno=retina.getMagno()
 
 	#draw retina outputs
-	cv2.imshow('retina parvo out', retinaOut_parvo)
-	cv2.imshow('retina magno out', retinaOut_magno)
+	cv.imshow('retina parvo out', retinaOut_parvo)
+	cv.imshow('retina magno out', retinaOut_magno)
 
 	#wait a little to let the time for figures to be drawn
-	cv2.waitKey(2)
+	cv.waitKey(2)
 @endcode
 
 

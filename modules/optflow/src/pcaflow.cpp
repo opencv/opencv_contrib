@@ -40,8 +40,8 @@
  //
  //M*/
 
-#include "opencv2/ximgproc/edge_filter.hpp"
 #include "precomp.hpp"
+#include "opencv2/ximgproc/edge_filter.hpp"
 
 /* Disable "from double to float" and "from size_t to int" warnings.
  * Fixing these would make the code look ugly by introducing explicit cast all around.

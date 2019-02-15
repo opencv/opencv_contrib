@@ -5,11 +5,7 @@
 #include "test_precomp.hpp"
 #include "opencv2/imgcodecs.hpp"
 
-using namespace cv;
-using namespace cv::text;
-using namespace cvtest;
-
-namespace {
+namespace opencv_test { namespace {
 
 // Just skip test in case of missed testdata
 static cv::String findDataFile(const String& path)
@@ -88,4 +84,6 @@ INSTANTIATE_TEST_CASE_P(Text, Detection,
         ),
         testing::Bool()
     ));
-}
+
+
+}} // namespace

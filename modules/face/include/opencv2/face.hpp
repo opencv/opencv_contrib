@@ -40,7 +40,7 @@ the use of this software, even if advised of the possibility of such damage.
 #define __OPENCV_FACE_HPP__
 
 /**
-@defgroup face Face Recognition
+@defgroup face Face Analysis
 
 - @ref face_changelog
 - @ref tutorial_face_main
@@ -70,7 +70,7 @@ which is available since the 2.4 release. I suggest you take a look at its descr
 
 Algorithm provides the following features for all derived classes:
 
--   So called “virtual constructor”. That is, each Algorithm derivative is registered at program
+-   So called "virtual constructor". That is, each Algorithm derivative is registered at program
     start and you can get the list of registered algorithms and create instance of a particular
     algorithm by its name (see Algorithm::create). If you plan to add your own algorithms, it is
     good practice to add a unique prefix to your algorithms to distinguish them from other
@@ -113,7 +113,7 @@ int num_components = 10;
 double threshold = 10.0;
 // Then if you want to have a cv::FaceRecognizer with a confidence threshold,
 // create the concrete implementation with the appropiate parameters:
-Ptr<FaceRecognizer> model = createEigenFaceRecognizer(num_components, threshold);
+Ptr<FaceRecognizer> model = EigenFaceRecognizer::create(num_components, threshold);
 @endcode
 
 Sometimes it's impossible to train the model, just to experiment with threshold values. Thanks to
@@ -131,7 +131,7 @@ If you've set the threshold to 0.0 as we did above, then:
 
 @code
 //
-Mat img = imread("person1/3.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+Mat img = imread("person1/3.jpg", IMREAD_GRAYSCALE);
 // Get a prediction from the model. Note: We've set a threshold of 0.0 above,
 // since the distance is almost always larger than 0.0, you'll get -1 as
 // label, which indicates, this face is unknown
@@ -148,7 +148,7 @@ FaceRecognizer:
 
 @code
 // Create a FaceRecognizer:
-Ptr<FaceRecognizer> model = createEigenFaceRecognizer();
+Ptr<FaceRecognizer> model = EigenFaceRecognizer::create();
 // And here's how to get its name:
 String name = model->name();
 @endcode
@@ -176,13 +176,13 @@ public:
     vector<Mat> images;
     vector<int> labels;
     // images for first person
-    images.push_back(imread("person0/0.jpg", CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(0);
-    images.push_back(imread("person0/1.jpg", CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(0);
-    images.push_back(imread("person0/2.jpg", CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(0);
+    images.push_back(imread("person0/0.jpg", IMREAD_GRAYSCALE)); labels.push_back(0);
+    images.push_back(imread("person0/1.jpg", IMREAD_GRAYSCALE)); labels.push_back(0);
+    images.push_back(imread("person0/2.jpg", IMREAD_GRAYSCALE)); labels.push_back(0);
     // images for second person
-    images.push_back(imread("person1/0.jpg", CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(1);
-    images.push_back(imread("person1/1.jpg", CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(1);
-    images.push_back(imread("person1/2.jpg", CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(1);
+    images.push_back(imread("person1/0.jpg", IMREAD_GRAYSCALE)); labels.push_back(1);
+    images.push_back(imread("person1/1.jpg", IMREAD_GRAYSCALE)); labels.push_back(1);
+    images.push_back(imread("person1/2.jpg", IMREAD_GRAYSCALE)); labels.push_back(1);
     @endcode
 
     Now that you have read some images, we can create a new FaceRecognizer. In this example I'll create
@@ -192,7 +192,7 @@ public:
     // Create a new Fisherfaces model and retain all available Fisherfaces,
     // this is the most common usage of this specific FaceRecognizer:
     //
-    Ptr<FaceRecognizer> model =  createFisherFaceRecognizer();
+    Ptr<FaceRecognizer> model =  FisherFaceRecognizer::create();
     @endcode
 
     And finally train it on the given dataset (the face images and labels):
@@ -223,7 +223,7 @@ public:
     // Create a new LBPH model (it can be updated) and use the default parameters,
     // this is the most common usage of this specific FaceRecognizer:
     //
-    Ptr<FaceRecognizer> model =  createLBPHFaceRecognizer();
+    Ptr<FaceRecognizer> model =  LBPHFaceRecognizer::create();
     // This is the common interface to train all of the available cv::FaceRecognizer
     // implementations:
     //
@@ -241,7 +241,7 @@ public:
     // with the new features extracted from newImages!
     @endcode
 
-    Calling update on an Eigenfaces model (see createEigenFaceRecognizer), which doesn't support
+    Calling update on an Eigenfaces model (see EigenFaceRecognizer::create), which doesn't support
     updating, will throw an error similar to:
 
     @code
@@ -275,7 +275,7 @@ public:
     // Do your initialization here (create the cv::FaceRecognizer model) ...
     // ...
     // Read in a sample image:
-    Mat img = imread("person1/3.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+    Mat img = imread("person1/3.jpg", IMREAD_GRAYSCALE);
     // And get a prediction from the cv::FaceRecognizer:
     int predicted = model->predict(img);
     @endcode
@@ -286,7 +286,7 @@ public:
     using namespace cv;
     // Do your initialization here (create the cv::FaceRecognizer model) ...
     // ...
-    Mat img = imread("person1/3.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+    Mat img = imread("person1/3.jpg", IMREAD_GRAYSCALE);
     // Some variables for the predicted label and associated confidence (e.g. distance):
     int predicted_label = -1;
     double predicted_confidence = 0.0;
@@ -318,7 +318,7 @@ public:
     The suffix const means that prediction does not affect the internal model state, so the method can
     be safely called from within different threads.
      */
-    CV_WRAP virtual void save(const String& filename) const;
+    CV_WRAP virtual void write(const String& filename) const;
 
     /** @brief Loads a FaceRecognizer and its model state.
 
@@ -327,16 +327,19 @@ public:
     FaceRecognizer::load(FileStorage& fs) in turn gets called by
     FaceRecognizer::load(const String& filename), to ease saving a model.
      */
-    CV_WRAP virtual void load(const String& filename);
+    CV_WRAP virtual void read(const String& filename);
 
     /** @overload
     Saves this model to a given FileStorage.
     @param fs The FileStorage to store this FaceRecognizer to.
     */
-    virtual void save(FileStorage& fs) const = 0;
+    virtual void write(FileStorage& fs) const CV_OVERRIDE = 0;
 
     /** @overload */
-    virtual void load(const FileStorage& fs) = 0;
+    virtual void read(const FileNode& fn) CV_OVERRIDE = 0;
+
+    /** @overload */
+    virtual bool empty() const CV_OVERRIDE = 0;
 
     /** @brief Sets string info for the specified model's label.
 
@@ -371,5 +374,11 @@ protected:
 }}
 
 #include "opencv2/face/facerec.hpp"
+#include "opencv2/face/facemark.hpp"
+#include "opencv2/face/facemark_train.hpp"
+#include "opencv2/face/facemarkLBF.hpp"
+#include "opencv2/face/facemarkAAM.hpp"
+#include "opencv2/face/face_alignment.hpp"
+#include "opencv2/face/mace.hpp"
 
-#endif
+#endif // __OPENCV_FACE_HPP__

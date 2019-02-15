@@ -23,3 +23,6 @@ target_link_libraries(facerec_fisherfaces opencv_face opencv_core opencv_imgproc
 
 add_executable(facerec_lbph facerec_lbph.cpp)
 target_link_libraries(facerec_lbph opencv_face opencv_core opencv_imgproc opencv_highgui)
+
+add_executable(mace_webcam mace_webcam.cpp)
+target_link_libraries(mace_webcam opencv_face opencv_core opencv_imgproc opencv_highgui opencv_videoio)

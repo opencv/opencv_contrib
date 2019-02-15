@@ -35,10 +35,7 @@
 
 #include "test_precomp.hpp"
 
-using namespace cv;
-using namespace cv::sfm;
-using namespace std;
-
+namespace opencv_test { namespace {
 
 template<typename T>
 static void
@@ -89,3 +86,6 @@ TEST(Sfm_numeric, skewMat)
   EXPECT_DOUBLE_EQ( bx(0,2), -bx(2,0) );
   EXPECT_DOUBLE_EQ( bx(1,2), -bx(2,1) );
 }
+
+
+}} // namespace

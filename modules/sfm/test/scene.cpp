@@ -38,8 +38,7 @@
 
 #include "test_precomp.hpp"
 
-cv::Matx33d
-randomK(bool is_projective)
+static cv::Matx33d randomK(bool is_projective)
 {
   static cv::RNG rng;
 

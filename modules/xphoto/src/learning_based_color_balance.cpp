@@ -95,7 +95,27 @@ class LearningBasedWBImpl : public LearningBasedWB
         palette_size = 300;
         palette_bandwidth = 0.1f;
         prediction_thresh = 0.025f;
-        if (path_to_model.empty())
+        /* try to load model from file */
+        FileStorage fs;
+        if (!path_to_model.empty() && fs.open(path_to_model, FileStorage::READ))
+        {
+            if (fs["num_trees"].isReal()) { //workaround for #10506
+                double nt = fs["num_trees"];
+                num_trees = int(nt);
+                double ntn = fs["num_tree_nodes"];
+                num_tree_nodes = int(ntn);
+            } else {
+                num_trees = fs["num_trees"];
+                num_tree_nodes = fs["num_tree_nodes"];
+            }
+            fs["feature_idx"] >> feature_idx_Mat;
+            fs["thresh_vals"] >> thresh_vals_Mat;
+            fs["leaf_vals"] >> leaf_vals_Mat;
+            feature_idx = feature_idx_Mat.ptr<uchar>();
+            thresh_vals = thresh_vals_Mat.ptr<float>();
+            leaf_vals = leaf_vals_Mat.ptr<float>();
+        }
+        else
         {
             /* use the default model */
             num_trees = _num_trees;
@@ -104,31 +124,18 @@ class LearningBasedWBImpl : public LearningBasedWB
             thresh_vals = _thresh_vals;
             leaf_vals = _leaf_vals;
         }
-        else
-        {
-            /* load model from file */
-            FileStorage fs(path_to_model, 0);
-            num_trees = fs["num_trees"];
-            num_tree_nodes = fs["num_tree_nodes"];
-            fs["feature_idx"] >> feature_idx_Mat;
-            fs["thresh_vals"] >> thresh_vals_Mat;
-            fs["leaf_vals"] >> leaf_vals_Mat;
-            feature_idx = feature_idx_Mat.ptr<uchar>();
-            thresh_vals = thresh_vals_Mat.ptr<float>();
-            leaf_vals = leaf_vals_Mat.ptr<float>();
-        }
     }
 
-    int getRangeMaxVal() const { return range_max_val; }
-    void setRangeMaxVal(int val) { range_max_val = val; }
+    int getRangeMaxVal() const CV_OVERRIDE { return range_max_val; }
+    void setRangeMaxVal(int val) CV_OVERRIDE { range_max_val = val; }
 
-    float getSaturationThreshold() const { return saturation_thresh; }
-    void setSaturationThreshold(float val) { saturation_thresh = val; }
+    float getSaturationThreshold() const CV_OVERRIDE { return saturation_thresh; }
+    void setSaturationThreshold(float val) CV_OVERRIDE { saturation_thresh = val; }
 
-    int getHistBinNum() const { return hist_bin_num; }
-    void setHistBinNum(int val) { hist_bin_num = val; }
+    int getHistBinNum() const CV_OVERRIDE { return hist_bin_num; }
+    void setHistBinNum(int val) CV_OVERRIDE { hist_bin_num = val; }
 
-    void extractSimpleFeatures(InputArray _src, OutputArray _dst)
+    void extractSimpleFeatures(InputArray _src, OutputArray _dst) CV_OVERRIDE
     {
         CV_Assert(!_src.empty());
         CV_Assert(_src.isContinuous());
@@ -142,7 +149,7 @@ class LearningBasedWBImpl : public LearningBasedWB
         Mat(dst).convertTo(_dst, CV_32F);
     }
 
-    void balanceWhite(InputArray _src, OutputArray _dst)
+    void balanceWhite(InputArray _src, OutputArray _dst) CV_OVERRIDE
     {
         CV_Assert(!_src.empty());
         CV_Assert(_src.isContinuous());

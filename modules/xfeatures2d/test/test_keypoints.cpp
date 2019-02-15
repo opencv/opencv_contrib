@@ -40,10 +40,8 @@
 //M*/
 
 #include "test_precomp.hpp"
-#include "opencv2/highgui.hpp"
 
-using namespace std;
-using namespace cv;
+namespace opencv_test { namespace {
 
 const string FEATURES2D_DIR = "features2d";
 const string IMAGE_FILENAME = "tsukuba.png";
@@ -117,7 +115,7 @@ protected:
 
 
 // Registration of tests
-
+#ifdef OPENCV_ENABLE_NONFREE
 TEST(Features2d_Detector_Keypoints_SURF, validation)
 {
     CV_FeatureDetectorKeypointsTest test(xfeatures2d::SURF::create());
@@ -129,6 +127,8 @@ TEST(Features2d_Detector_Keypoints_SIFT, validation)
     CV_FeatureDetectorKeypointsTest test(xfeatures2d::SIFT::create());
     test.safe_run();
 }
+#endif // NONFREE
+
 
 TEST(Features2d_Detector_Keypoints_Star, validation)
 {
@@ -142,3 +142,5 @@ TEST(Features2d_Detector_Keypoints_MSDDetector, validation)
     CV_FeatureDetectorKeypointsTest test(xfeatures2d::MSDDetector::create());
     test.safe_run();
 }
+
+}} // namespace

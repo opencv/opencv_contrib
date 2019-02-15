@@ -94,9 +94,9 @@ public:
     Parallel_clipBufferValues(type* bufferToProcess, const type min, const type max)
         : bufferToClip(bufferToProcess), minValue(min), maxValue(max) { }
 
-    virtual void operator()( const cv::Range &r ) const {
-        register type *inputOutputBufferPTR=bufferToClip+r.start;
-        for (register int jf = r.start; jf != r.end; ++jf, ++inputOutputBufferPTR)
+    virtual void operator()( const cv::Range &r ) const CV_OVERRIDE {
+        type *inputOutputBufferPTR=bufferToClip+r.start;
+        for (int jf = r.start; jf != r.end; ++jf, ++inputOutputBufferPTR)
         {
             if (*inputOutputBufferPTR>maxValue)
                 *inputOutputBufferPTR=maxValue;
@@ -293,7 +293,7 @@ public:
         * @param sensitivity: strenght of the sigmoide
         * @param maxOutputValue: the maximum output value
         */
-        inline void normalizeGrayOutputCentredSigmoide(const type meanValue=(type)0.0, const type sensitivity=(type)2.0, const type maxOutputValue=(type)255.0) {  (void)maxOutputValue; normalizeGrayOutputCentredSigmoide(meanValue, sensitivity, 255.0, this->Buffer(), this->Buffer(), this->getNBpixels()); }
+        inline void normalizeGrayOutputCentredSigmoide(const type meanValue=(type)0.0, const type sensitivity=(type)2.0, const type maxOutputValue=(type)255.0) {  CV_UNUSED(maxOutputValue); normalizeGrayOutputCentredSigmoide(meanValue, sensitivity, 255.0, this->Buffer(), this->Buffer(), this->getNBpixels()); }
 
         /**
         * sigmoide image normalization function (saturates min and max values), in this function, the sigmoide is centered on low values (high saturation of the medium and high values
@@ -430,8 +430,8 @@ public:
         type maxValue=inputOutputBuffer[0], minValue=inputOutputBuffer[0];
 
         // get the min and max value
-        register type *inputOutputBufferPTR=inputOutputBuffer;
-        for (register size_t j = 0; j<processedPixels; ++j)
+        type *inputOutputBufferPTR=inputOutputBuffer;
+        for (size_t j = 0; j<processedPixels; ++j)
         {
             type pixValue = *(inputOutputBufferPTR++);
             if (maxValue < pixValue)
@@ -445,7 +445,7 @@ public:
         type offset = (type)(-minValue*factor);
 
         inputOutputBufferPTR=inputOutputBuffer;
-        for (register size_t j = 0; j < processedPixels; ++j, ++inputOutputBufferPTR)
+        for (size_t j = 0; j < processedPixels; ++j, ++inputOutputBufferPTR)
             *inputOutputBufferPTR=*(inputOutputBufferPTR)*factor+offset;
 
     }
@@ -460,10 +460,10 @@ public:
 
         type X0cube=sensitivity*sensitivity*sensitivity;
 
-        register type *inputBufferPTR=inputBuffer;
-        register type *outputBufferPTR=outputBuffer;
+        type *inputBufferPTR=inputBuffer;
+        type *outputBufferPTR=outputBuffer;
 
-        for (register size_t j = 0; j < _NBpixels; ++j, ++inputBufferPTR)
+        for (size_t j = 0; j < _NBpixels; ++j, ++inputBufferPTR)
         {
 
             type currentCubeLuminance=*inputBufferPTR**inputBufferPTR**inputBufferPTR;
@@ -485,10 +485,10 @@ public:
 
         type X0=maxOutputValue/(sensitivity-(type)1.0);
 
-        register type *inputBufferPTR=inputBuffer;
-        register type *outputBufferPTR=outputBuffer;
+        type *inputBufferPTR=inputBuffer;
+        type *outputBufferPTR=outputBuffer;
 
-        for (register size_t j = 0; j < nbPixels; ++j, ++inputBufferPTR)
+        for (size_t j = 0; j < nbPixels; ++j, ++inputBufferPTR)
             *(outputBufferPTR++)=(meanValue+(meanValue+X0)*(*(inputBufferPTR)-meanValue)/(_abs(*(inputBufferPTR)-meanValue)+X0));
 
     }
@@ -503,12 +503,12 @@ public:
         type meanValue=0, stdValue=0;
 
         // compute mean value
-        for (register size_t j = 0; j < _NBpixels; ++j)
+        for (size_t j = 0; j < _NBpixels; ++j)
             meanValue+=inputOutputBuffer[j];
         meanValue/=((type)_NBpixels);
 
         // compute std value
-        register type *inputOutputBufferPTR=inputOutputBuffer;
+        type *inputOutputBufferPTR=inputOutputBuffer;
         for (size_t index=0;index<_NBpixels;++index)
         {
             type inputMinusMean=*(inputOutputBufferPTR++)-meanValue;

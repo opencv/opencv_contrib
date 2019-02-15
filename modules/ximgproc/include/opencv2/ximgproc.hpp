@@ -41,6 +41,7 @@
 #include "ximgproc/disparity_filter.hpp"
 #include "ximgproc/sparse_match_interpolator.hpp"
 #include "ximgproc/structured_edge_detection.hpp"
+#include "ximgproc/edgeboxes.hpp"
 #include "ximgproc/seeds.hpp"
 #include "ximgproc/segmentation.hpp"
 #include "ximgproc/fast_hough_transform.hpp"
@@ -51,6 +52,14 @@
 #include "ximgproc/paillou_filter.hpp"
 #include "ximgproc/fast_line_detector.hpp"
 #include "ximgproc/deriche_filter.hpp"
+#include "ximgproc/peilin.hpp"
+#include "ximgproc/fourier_descriptors.hpp"
+#include "ximgproc/ridgefilter.hpp"
+#include "ximgproc/brightedges.hpp"
+#include "ximgproc/run_length_morphology.hpp"
+#include "ximgproc/edgepreserving_filter.hpp"
+#include "ximgproc/color_match.hpp"
+
 
 /** @defgroup ximgproc Extended Image Processing
   @{
@@ -59,6 +68,8 @@
 This module contains implementations of modern structured edge detection algorithms,
 i.e. algorithms which somehow takes into account pixel affinities in natural images.
 
+    @defgroup ximgproc_edgeboxes EdgeBoxes
+
     @defgroup ximgproc_filters Filters
 
     @defgroup ximgproc_superpixel Superpixels
@@ -66,7 +77,29 @@ i.e. algorithms which somehow takes into account pixel affinities in natural ima
     @defgroup ximgproc_segmentation Image segmentation
 
     @defgroup ximgproc_fast_line_detector Fast line detector
-  @}
+
+    @defgroup ximgproc_fourier Fourier descriptors
+
+    @defgroup ximgproc_run_length_morphology Binary morphology on run-length encoded image
+
+    These functions support morphological operations on binary images. In order to be fast and space efficient binary images are encoded with a run-length representation.
+    This representation groups continuous horizontal sequences of "on" pixels together in a "run". A run is charactarized by the column position of the first pixel in the run, the column
+    position of the last pixel in the run and the row position. This representation is very compact for binary images which contain large continuous areas of "on" and "off" pixels. A checkerboard
+    pattern would be a good example. The representation is not so suitable for binary images created from random noise images or other images where little correlation between neighboring pixels
+    exists.
+
+    The morphological operations supported here are very similar to the operations supported in the imgproc module. In general they are fast. However on several occasions they are slower than the functions
+    from imgproc. The structuring elements of cv::MORPH_RECT and cv::MORPH_CROSS have very good support from the imgproc module. Also small structuring elements are very fast in imgproc (presumably
+    due to opencl support). Therefore the functions from this module are recommended for larger structuring elements (cv::MORPH_ELLIPSE or self defined structuring elements). A sample application
+    (run_length_morphology_demo) is supplied which allows to compare the speed of some morphological operations for the functions using run-length encoding and the imgproc functions for a given image.
+
+    Run length encoded images are stored in standard opencv images. Images have a single column of cv::Point3i elements. The number of rows is the number of run + 1. The first row contains
+    the size of the original (not encoded) image.  For the runs the following mapping is used (x: column begin, y: column end (last column), z: row).
+
+    The size of the original image is required for compatiblity with the imgproc functions when the boundary handling requires that pixel outside the image boundary are
+    "on".
+
+    @}
 */
 
 namespace cv
@@ -79,10 +112,21 @@ enum ThinningTypes{
     THINNING_GUOHALL      = 1  // Thinning technique of Guo-Hall
 };
 
+/**
+* @brief Specifies the binarization method to use in cv::ximgproc::niBlackThreshold
+*/
+enum LocalBinarizationMethods{
+	BINARIZATION_NIBLACK = 0, //!< Classic Niblack binarization. See @cite Niblack1985 .
+	BINARIZATION_SAUVOLA = 1, //!< Sauvola's technique. See @cite Sauvola1997 .
+	BINARIZATION_WOLF = 2,    //!< Wolf's technique. See @cite Wolf2004 .
+	BINARIZATION_NICK = 3     //!< NICK technique. See @cite Khurshid2009 .
+};
+
 //! @addtogroup ximgproc
 //! @{
 
-/** @brief Applies Niblack thresholding to input image.
+/** @brief Performs thresholding on input images using Niblack's technique or some of the
+popular variations it inspired.
 
 The function transforms a grayscale image to a binary image according to the formulae:
 -   **THRESH_BINARY**
@@ -91,8 +135,9 @@ The function transforms a grayscale image to a binary image according to the for
     \f[dst(x,y) =  \fork{0}{if \(src(x,y) > T(x,y)\)}{\texttt{maxValue}}{otherwise}\f]
 where \f$T(x,y)\f$ is a threshold calculated individually for each pixel.
 
-The threshold value \f$T(x, y)\f$ is the mean minus \f$ delta \f$ times standard deviation
-of \f$\texttt{blockSize} \times\texttt{blockSize}\f$ neighborhood of \f$(x, y)\f$.
+The threshold value \f$T(x, y)\f$ is determined based on the binarization method chosen. For
+classic Niblack, it is the mean minus \f$ k \f$ times standard deviation of
+\f$\texttt{blockSize} \times\texttt{blockSize}\f$ neighborhood of \f$(x, y)\f$.
 
 The function can't process the image in-place.
 
@@ -103,14 +148,17 @@ used with the THRESH_BINARY and THRESH_BINARY_INV thresholding types.
 @param type Thresholding type, see cv::ThresholdTypes.
 @param blockSize Size of a pixel neighborhood that is used to calculate a threshold value
 for the pixel: 3, 5, 7, and so on.
-@param delta Constant multiplied with the standard deviation and subtracted from the mean.
-Normally, it is taken to be a real number between 0 and 1.
+@param k The user-adjustable parameter used by Niblack and inspired techniques. For Niblack, this is
+normally a value between 0 and 1 that is multiplied with the standard deviation and subtracted from
+the mean.
+@param binarizationMethod Binarization method to use. By default, Niblack's technique is used.
+Other techniques can be specified, see cv::ximgproc::LocalBinarizationMethods.
 
 @sa  threshold, adaptiveThreshold
  */
 CV_EXPORTS_W void niBlackThreshold( InputArray _src, OutputArray _dst,
                                     double maxValue, int type,
-                                    int blockSize, double delta );
+                                    int blockSize, double k, int binarizationMethod = BINARIZATION_NIBLACK );
 
 /** @brief Applies a binary blob thinning operation, to achieve a skeletization of the input image.
 
@@ -122,6 +170,27 @@ The function transforms a binary blob image into a skeletized form using the tec
  */
 CV_EXPORTS_W void thinning( InputArray src, OutputArray dst, int thinningType = THINNING_ZHANGSUEN);
 
+/** @brief Performs anisotropic diffusian on an image.
+
+ The function applies Perona-Malik anisotropic diffusion to an image. This is the solution to the partial differential equation:
+
+ \f[{\frac  {\partial I}{\partial t}}={\mathrm  {div}}\left(c(x,y,t)\nabla I\right)=\nabla c\cdot \nabla I+c(x,y,t)\Delta I\f]
+
+ Suggested functions for c(x,y,t) are:
+
+ \f[c\left(\|\nabla I\|\right)=e^{{-\left(\|\nabla I\|/K\right)^{2}}}\f]
+
+ or
+
+ \f[ c\left(\|\nabla I\|\right)={\frac {1}{1+\left({\frac  {\|\nabla I\|}{K}}\right)^{2}}} \f]
+
+ @param src Grayscale Source image.
+ @param dst Destination image of the same size and the same number of channels as src .
+ @param alpha The amount of time to step forward by on each iteration (normally, it's between 0 and 1).
+ @param K sensitivity to the edges
+ @param niters The number of iterations
+*/
+CV_EXPORTS_W void anisotropicDiffusion(InputArray src, OutputArray dst, float alpha, float K, int niters );
 
 //! @}
 

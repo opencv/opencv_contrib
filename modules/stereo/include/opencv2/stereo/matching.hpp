@@ -44,11 +44,11 @@
 *   The interface contains the main methods for computing the matching between the left and right images	      *
 *                                                                                                                 *
 \******************************************************************************************************************/
-#include <stdint.h>
-
 #ifndef _OPENCV_MATCHING_HPP_
 #define _OPENCV_MATCHING_HPP_
-#ifdef __cplusplus
+
+#include <stdint.h>
+#include "opencv2/core.hpp"
 
 namespace cv
 {
@@ -156,7 +156,7 @@ namespace cv
             public :
                 hammingDistance(const Mat &leftImage, const Mat &rightImage, short *cost, int maxDisp, int kerSize, int *hammingLUT):
                     left((int *)leftImage.data), right((int *)rightImage.data), c(cost), v(maxDisp),kernelSize(kerSize),width(leftImage.cols), MASK(65535), hammLut(hammingLUT){}
-                void operator()(const cv::Range &r) const {
+                void operator()(const cv::Range &r) const CV_OVERRIDE {
                     for (int i = r.start; i <= r.end ; i++)
                     {
                         int iw = i * width;
@@ -202,7 +202,7 @@ namespace cv
                     height = cost.rows - 1;
                     parSum = (short *)partialSums.data;
                 }
-                void operator()(const cv::Range &r) const {
+                void operator()(const cv::Range &r) const CV_OVERRIDE {
                     for (int i = r.start; i <= r.end; i++)
                     {
                         int iwi = (i - 1) * width;
@@ -243,7 +243,7 @@ namespace cv
                     scallingFact = scale;
                     confCheck = confidence;
                 }
-                void operator()(const cv::Range &r) const {
+                void operator()(const cv::Range &r) const CV_OVERRIDE {
                     for (int i = r.start; i <= r.end ; i++)
                     {
                         int lr;
@@ -300,7 +300,7 @@ namespace cv
                     height = originalImage.rows;
                     width = originalImage.cols;
                 }
-                void operator()(const cv::Range &r) const{
+                void operator()(const cv::Range &r) const CV_OVERRIDE {
                     for (int m = r.start; m <= r.end; m++)
                     {
                         for (int n = 4; n < width - 4; ++n)
@@ -340,7 +340,7 @@ namespace cv
                     height = originalImage.rows;
                     width = originalImage.cols;
                 }
-                void operator()(const Range &r) const{
+                void operator()(const Range &r) const CV_OVERRIDE {
                     for (int n = r.start; n <= r.end; ++n)
                     {
                         for (int m = 4; m < height - 4; ++m)
@@ -366,13 +366,12 @@ namespace cv
             };
         protected:
             //arrays used in the region removal
-            Mat speckleY;
-            Mat speckleX;
-            Mat puss;
+            Mat_<int> speckleY;
+            Mat_<int> speckleX;
+            Mat_<int> puss;
             //int *specklePointX;
             //int *specklePointY;
             //long long *pus;
-            int previous_size;
             //!method for setting the maximum disparity
             void setMaxDisparity(int val)
             {
@@ -423,7 +422,6 @@ namespace cv
             //preprocessing the cost volume in order to get it ready for aggregation
             void costGathering(const Mat &hammingDistanceCost, Mat &cost)
             {
-                CV_Assert(hammingDistanceCost.rows == hammingDistanceCost.rows);
                 CV_Assert(hammingDistanceCost.type() == CV_16S);
                 CV_Assert(cost.type() == CV_16S);
                 int maxDisp = maxDisparity;
@@ -481,10 +479,10 @@ namespace cv
                 CV_Assert(currentMap.cols == out.cols);
                 CV_Assert(currentMap.rows == out.rows);
                 CV_Assert(t >= 0);
-                int *pus = (int *)puss.data;
+                CV_Assert(!puss.empty());
                 int *specklePointX = (int *)speckleX.data;
                 int *specklePointY = (int *)speckleY.data;
-                memset(pus, 0, previous_size * sizeof(pus[0]));
+                puss.setTo(Scalar::all(0));
                 T *map = (T *)currentMap.data;
                 T *outputMap = (T *)out.data;
                 int height = currentMap.rows;
@@ -512,7 +510,7 @@ namespace cv
                             speckle_size = dr;
                             specklePointX[dr] = i;
                             specklePointY[dr] = j;
-                            pus[i * width + j] = 1;
+                            puss(i, j) = 1;
                             dr++;
                             map[iw + j] = k;
                             while (st < dr)
@@ -523,7 +521,7 @@ namespace cv
                                 for (int d = 0; d < 8; d++)
                                 {//if insisde
                                     if (ii + di[d] >= 0 && ii + di[d] < height && jj + dj[d] >= 0 && jj + dj[d] < width &&
-                                        pus[(ii + di[d]) * width + jj + dj[d]] == 0)
+                                        puss(ii + di[d], jj + dj[d]) == 0)
                                     {
                                         T val = map[(ii + di[d]) * width + jj + dj[d]];
                                         if (val == 0)
@@ -532,7 +530,7 @@ namespace cv
                                             specklePointX[dr] = (ii + di[d]);
                                             specklePointY[dr] = (jj + dj[d]);
                                             dr++;
-                                            pus[(ii + di[d]) * width + jj + dj[d]] = 1;
+                                            puss(ii + di[d], jj + dj[d]) = 1;
                                         }//this means that my point is a good point to be used in computing the final filling value
                                         else if (val >= 1 && val < 250)
                                         {
@@ -619,6 +617,5 @@ namespace cv
         };
     }
 }
-#endif
 #endif
 /*End of file*/

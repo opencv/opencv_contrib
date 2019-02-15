@@ -74,7 +74,7 @@ struct TR_icdarObj : public Object
 class CV_EXPORTS TR_icdar : public Dataset
 {
 public:
-    virtual void load(const std::string &path) = 0;
+    virtual void load(const std::string &path) CV_OVERRIDE = 0;
 
     static Ptr<TR_icdar> create();
 };

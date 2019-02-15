@@ -1,11 +1,10 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 #include "perf_precomp.hpp"
 
-using namespace std;
-using namespace cv;
-using namespace cv::xfeatures2d;
-using namespace perf;
-using std::tr1::make_tuple;
-using std::tr1::get;
+#ifdef OPENCV_ENABLE_NONFREE
+namespace opencv_test { namespace {
 
 typedef perf::TestBaseWithParam<std::string> surf;
 
@@ -40,7 +39,7 @@ PERF_TEST_P(surf, extract, testing::Values(SURF_IMAGES))
 
     Ptr<SURF> detector = SURF::create();
     vector<KeyPoint> points;
-    vector<float> descriptors;
+    Mat descriptors;
     detector->detect(frame, points, mask);
 
     TEST_CYCLE() detector->compute(frame, points, descriptors);
@@ -58,9 +57,12 @@ PERF_TEST_P(surf, full, testing::Values(SURF_IMAGES))
     declare.in(frame).time(90);
     Ptr<SURF> detector = SURF::create();
     vector<KeyPoint> points;
-    vector<float> descriptors;
+    Mat descriptors;
 
     TEST_CYCLE() detector->detectAndCompute(frame, mask, points, descriptors, false);
 
     SANITY_CHECK_NOTHING();
 }
+
+}} // namespace
+#endif // NONFREE

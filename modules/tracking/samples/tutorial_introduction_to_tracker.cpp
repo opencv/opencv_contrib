@@ -4,7 +4,6 @@
 #include <opencv2/highgui.hpp>
 #include <iostream>
 #include <cstring>
-#include "roiSelector.hpp"
 
 using namespace std;
 using namespace cv;
@@ -31,7 +30,7 @@ int main( int argc, char** argv ){
 
   // create a tracker object
   //! [create]
-  Ptr<Tracker> tracker = Tracker::create( "KCF" );
+  Ptr<Tracker> tracker = TrackerKCF::create();
   //! [create]
 
   // set input video

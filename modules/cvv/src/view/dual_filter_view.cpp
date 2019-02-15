@@ -69,8 +69,7 @@ DualFilterView::DualFilterView(std::array<cv::Mat, 2> images, QWidget *parent)
 
 		accor->insert(
 		    QString("Image Information: ") + QString::number(count),
-		    std::move(
-		        util::make_unique<qtutil::ZoomableOptPanel>(*zoomIm)));
+                util::make_unique<qtutil::ZoomableOptPanel>(*zoomIm));
 
 		if (count != 1)
 		{
@@ -99,7 +98,7 @@ DualFilterView::DualFilterView(std::array<cv::Mat, 2> images, QWidget *parent)
 	syncVec.push_back(lambda(rawImages_.at(1), 2));
 	
 	accor->insert("Zoom synchronization",
-		std::move(util::make_unique<qtutil::SyncZoomWidget>(syncVec)), true, 1);
+        util::make_unique<qtutil::SyncZoomWidget>(syncVec), true, 1);
 	
 	//ensure that all images have same width
 	imwid->setLayout(imageLayout.release());

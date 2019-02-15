@@ -3,7 +3,7 @@
 import os
 import sys
 import numpy as np
-import cv2
+import cv2 as cv
 import struct
 import argparse
 from math import sqrt
@@ -73,7 +73,7 @@ def load_flo(flo):
 
 def get_w(m):
     s = m.shape
-    w = cv2.dct(m)
+    w = cv.dct(m)
     w *= 2.0 / sqrt(s[0] * s[1])
     #w[0,0] *= 0.5
     w[:, 0] *= sqrt(0.5)

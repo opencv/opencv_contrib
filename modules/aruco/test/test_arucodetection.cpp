@@ -38,12 +38,8 @@ the use of this software, even if advised of the possibility of such damage.
 
 
 #include "test_precomp.hpp"
-#include <opencv2/aruco.hpp>
-#include <string>
 
-using namespace std;
-using namespace cv;
-
+namespace opencv_test { namespace {
 
 /**
  * @brief Draw 2D synthetic markers and detect them
@@ -100,6 +96,7 @@ void CV_ArucoDetectionSimple::run(int) {
         vector< vector< Point2f > > corners;
         vector< int > ids;
         Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
+
         aruco::detectMarkers(img, dictionary, corners, ids, params);
 
         // check detection results
@@ -118,7 +115,7 @@ void CV_ArucoDetectionSimple::run(int) {
             }
 
             for(int c = 0; c < 4; c++) {
-                double dist = norm(groundTruthCorners[m][c] - corners[idx][c]);
+                double dist = cv::norm(groundTruthCorners[m][c] - corners[idx][c]);  // TODO cvtest
                 if(dist > 0.001) {
                     ts->printf(cvtest::TS::LOG, "Incorrect marker corners position");
                     ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
@@ -249,7 +246,7 @@ class CV_ArucoDetectionPerspective : public cvtest::BaseTest {
 CV_ArucoDetectionPerspective::CV_ArucoDetectionPerspective() {}
 
 
-void CV_ArucoDetectionPerspective::run(int) {
+void CV_ArucoDetectionPerspective::run(int aprilDecimate) {
 
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
@@ -278,6 +275,11 @@ void CV_ArucoDetectionPerspective::run(int) {
                 Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
                 params->minDistanceToBorder = 1;
                 params->markerBorderBits = markerBorder;
+
+                if(aprilDecimate == 1){
+                        params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_APRILTAG;
+                }
+
                 aruco::detectMarkers(img, dictionary, corners, ids, params);
 
                 // check results
@@ -290,7 +292,7 @@ void CV_ArucoDetectionPerspective::run(int) {
                     return;
                 }
                 for(int c = 0; c < 4; c++) {
-                    double dist = norm(groundTruthCorners[c] - corners[0][c]);
+                    double dist = cv::norm(groundTruthCorners[c] - corners[0][c]);  // TODO cvtest
                     if(dist > 5) {
                         ts->printf(cvtest::TS::LOG, "Incorrect marker corners position");
                         ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
@@ -485,8 +487,12 @@ void CV_ArucoBitCorrection::run(int) {
     }
 }
 
+typedef CV_ArucoDetectionPerspective CV_AprilTagDetectionPerspective;
 
-
+TEST(CV_AprilTagDetectionPerspective, algorithmic) {
+    CV_AprilTagDetectionPerspective test;
+    test.safe_run(1);
+}
 
 TEST(CV_ArucoDetectionSimple, algorithmic) {
     CV_ArucoDetectionSimple test;
@@ -507,3 +513,5 @@ TEST(CV_ArucoBitCorrection, algorithmic) {
     CV_ArucoBitCorrection test;
     test.safe_run();
 }
+
+}} // namespace

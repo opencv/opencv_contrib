@@ -1,0 +1,13 @@
+# Training and Testing protocol for Object Detection
+base_lr: 0.000001
+display: 1
+max_iter: 100000
+lr_policy: "step"
+gamma: 0.5
+stepsize: 100000
+momentum: 0.9
+weight_decay: 0.0002
+snapshot: 1000
+snapshot_prefix: "snapshot"
+solver_mode: GPU
+net: "SqueezeDet_train_test.prototxt"

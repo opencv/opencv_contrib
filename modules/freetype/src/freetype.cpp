@@ -61,22 +61,22 @@ namespace freetype {
 
 using namespace std;
 
-class CV_EXPORTS_W FreeType2Impl : public FreeType2
+class CV_EXPORTS_W FreeType2Impl CV_FINAL : public FreeType2
 {
 public:
     FreeType2Impl();
     ~FreeType2Impl();
-    void loadFontData(String fontFileName, int id) ;
-    void setSplitNumber( int num );
+    void loadFontData(String fontFileName, int id) CV_OVERRIDE;
+    void setSplitNumber( int num ) CV_OVERRIDE;
     void putText(
         InputOutputArray img, const String& text, Point org,
         int fontHeight, Scalar color,
         int thickness, int line_type, bool bottomLeftOrigin
-    );
+    ) CV_OVERRIDE;
     Size getTextSize(
         const String& text, int fontHeight, int thickness,
         CV_OUT int* baseLine
-    );
+    ) CV_OVERRIDE;
 
 private:
     FT_Library       mLibrary;

@@ -1,44 +1,8 @@
-/*M///////////////////////////////////////////////////////////////////////////////////////
-//
-//  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
-//
-//  By downloading, copying, installing or using the software you agree to this license.
-//  If you do not agree to this license, do not download, install,
-//  copy or use the software.
-//
-//
-//                           License Agreement
-//                For Open Source Computer Vision Library
-//
-// Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
-// Copyright (C) 2009, Willow Garage Inc., all rights reserved.
-// Third party copyrights are property of their respective owners.
-//
-// Redistribution and use in source and binary forms, with or without modification,
-// are permitted provided that the following conditions are met:
-//
-//   * Redistribution's of source code must retain the above copyright notice,
-//     this list of conditions and the following disclaimer.
-//
-//   * Redistribution's in binary form must reproduce the above copyright notice,
-//     this list of conditions and the following disclaimer in the documentation
-//     and/or other materials provided with the distribution.
-//
-//   * The name of the copyright holders may not be used to endorse or promote products
-//     derived from this software without specific prior written permission.
-//
-// This software is provided by the copyright holders and contributors "as is" and
-// any express or implied warranties, including, but not limited to, the implied
-// warranties of merchantability and fitness for a particular purpose are disclaimed.
-// In no event shall the Intel Corporation or contributors be liable for any direct,
-// indirect, incidental, special, exemplary, or consequential damages
-// (including, but not limited to, procurement of substitute goods or services;
-// loss of use, data, or profits; or business interruption) however caused
-// and on any theory of liability, whether in contract, strict liability,
-// or tort (including negligence or otherwise) arising in any way out of
-// the use of this software, even if advised of the possibility of such damage.
-//
-//M*/
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html
+
+// This code is also subject to the license terms in the LICENSE_WillowGarage.md file found in this module's directory
 
 #include "precomp.hpp"
 
@@ -66,7 +30,6 @@ static inline int getLabel(int quantized)
     case 128: return 7;
     default:
       CV_Error(Error::StsBadArg, "Invalid value of quantized parameter");
-      return -1; //avoid warning
   }
 }
 
@@ -244,6 +207,29 @@ void colormap(const Mat& quantized, Mat& dst)
   }
 }
 
+void drawFeatures(InputOutputArray img, const std::vector<Template>& templates, const Point2i& tl, int size)
+{
+#ifdef HAVE_OPENCV_IMGPROC
+    static Scalar colors[] = {{0, 0, 255}, {0, 255, 0}};
+    static int markers[] = {MARKER_SQUARE, MARKER_DIAMOND};
+
+    int modality = 0;
+    for(const Template& t : templates)
+    {
+        if(t.pyramid_level != 0) continue;
+
+        for(const Feature& f : t.features)
+        {
+            drawMarker(img, tl + Point(f.x, f.y), colors[int(modality != 0)], markers[int(modality != 0)], size);
+        }
+
+        modality++;
+    }
+#else
+    CV_Assert(false, "functionality needs imgproc module");
+#endif
+}
+
 /****************************************************************************************\
 *                             Color gradient modality                                    *
 \****************************************************************************************/
@@ -291,11 +277,11 @@ static void quantizedOrientations(const Mat& src, Mat& magnitude,
   float * ptr0y = (float *)sobel_dy.data;
   float * ptrmg = (float *)magnitude.data;
 
-  const int length1 = static_cast<const int>(sobel_3dx.step1());
-  const int length2 = static_cast<const int>(sobel_3dy.step1());
-  const int length3 = static_cast<const int>(sobel_dx.step1());
-  const int length4 = static_cast<const int>(sobel_dy.step1());
-  const int length5 = static_cast<const int>(magnitude.step1());
+  const int length1 = static_cast<int>(sobel_3dx.step1());
+  const int length2 = static_cast<int>(sobel_3dy.step1());
+  const int length3 = static_cast<int>(sobel_dx.step1());
+  const int length4 = static_cast<int>(sobel_dy.step1());
+  const int length5 = static_cast<int>(magnitude.step1());
   const int length0 = sobel_3dy.cols * 3;
 
   for (int r = 0; r < sobel_3dy.rows; ++r)
@@ -428,11 +414,11 @@ public:
                        float weak_threshold, size_t num_features,
                        float strong_threshold);
 
-  virtual void quantize(Mat& dst) const;
+  virtual void quantize(Mat& dst) const CV_OVERRIDE;
 
-  virtual bool extractTemplate(Template& templ) const;
+  virtual bool extractTemplate(Template& templ) const CV_OVERRIDE;
 
-  virtual void pyrDown();
+  virtual void pyrDown() CV_OVERRIDE;
 
 protected:
   /// Recalculate angle and magnitude images
@@ -561,6 +547,11 @@ ColorGradient::ColorGradient(float _weak_threshold, size_t _num_features, float 
     num_features(_num_features),
     strong_threshold(_strong_threshold)
 {
+}
+
+Ptr<ColorGradient> ColorGradient::create(float weak_threshold, size_t num_features, float strong_threshold)
+{
+    return makePtr<ColorGradient>(weak_threshold, num_features, strong_threshold);
 }
 
 static const char CG_NAME[] = "ColorGradient";
@@ -728,11 +719,11 @@ public:
                      int distance_threshold, int difference_threshold, size_t num_features,
                      int extract_threshold);
 
-  virtual void quantize(Mat& dst) const;
+  virtual void quantize(Mat& dst) const CV_OVERRIDE;
 
-  virtual bool extractTemplate(Template& templ) const;
+  virtual bool extractTemplate(Template& templ) const CV_OVERRIDE;
 
-  virtual void pyrDown();
+  virtual void pyrDown() CV_OVERRIDE;
 
 protected:
   Mat mask;
@@ -878,6 +869,12 @@ DepthNormal::DepthNormal(int _distance_threshold, int _difference_threshold, siz
 {
 }
 
+Ptr<DepthNormal> DepthNormal::create(int distance_threshold, int difference_threshold, size_t num_features,
+                                     int extract_threshold)
+{
+    return makePtr<DepthNormal>(distance_threshold, difference_threshold, num_features, extract_threshold);
+}
+
 static const char DN_NAME[] = "DepthNormal";
 
 String DepthNormal::name() const
@@ -995,8 +992,8 @@ static void spread(const Mat& src, Mat& dst, int T)
     int height = src.rows - r;
     for (int c = 0; c < T; ++c)
     {
-      orUnaligned8u(&src.at<unsigned char>(r, c), static_cast<const int>(src.step1()), dst.ptr(),
-                    static_cast<const int>(dst.step1()), src.cols - c, height);
+      orUnaligned8u(&src.at<unsigned char>(r, c), static_cast<int>(src.step1()), dst.ptr(),
+                    static_cast<int>(dst.step1()), src.cols - c, height);
     }
   }
 }

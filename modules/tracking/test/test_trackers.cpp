@@ -40,15 +40,9 @@
  //M*/
 
 #include "test_precomp.hpp"
-#include "opencv2/tracking.hpp"
-#include <fstream>
 
-using namespace cv;
-using namespace testing;
-using namespace std;
+namespace opencv_test { namespace {
 
-#define PARAM_TEST_CASE(name, ...) struct name : testing::TestWithParam< std::tr1::tuple< __VA_ARGS__ > >
-#define GET_PARAM(k) std::tr1::get< k >(GetParam())
 #define TESTSET_NAMES testing::Values("david","dudek","faceocc2")
 
 const string TRACKING_DIR = "tracking";
@@ -327,7 +321,7 @@ void TrackerTest::checkDataTest()
   fs.release();
 
   string gtFile = cvtest::TS::ptr()->get_data_path() + TRACKING_DIR + "/" + video + "/gt.txt";
-  ifstream gt;
+  std::ifstream gt;
   //open the ground truth
   gt.open( gtFile.c_str() );
   if( !gt.is_open() )
@@ -350,7 +344,7 @@ void TrackerTest::checkDataTest()
 
   //exclude from the images sequence, the frames where the target is occluded or out of view
   string omitFile = cvtest::TS::ptr()->get_data_path() + TRACKING_DIR + "/" + video + "/" + FOLDER_OMIT_INIT + "/" + video + ".txt";
-  ifstream omit;
+  std::ifstream omit;
   omit.open( omitFile.c_str() );
   if( omit.is_open() )
   {
@@ -375,7 +369,7 @@ void TrackerTest::checkDataTest()
   startFrame += ( segmentIdx - 1 ) * numFrame;
   endFrame = startFrame + numFrame;
 
-  ifstream gt2;
+  std::ifstream gt2;
   //open the ground truth
   gt2.open( gtFile.c_str() );
   if( !gt2.is_open() )
@@ -439,103 +433,142 @@ PARAM_TEST_CASE(DistanceAndOverlap, string)
 
 TEST_P(DistanceAndOverlap, MedianFlow)
 {
-  TrackerTest test( Tracker::create( "MEDIANFLOW" ), dataset, 35, .5f, NoTransform, 1, 1);
+  TrackerTest test( TrackerMedianFlow::create(), dataset, 35, .5f, NoTransform, 1, 1);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, MIL)
 {
-  TrackerTest test( Tracker::create( "MIL" ), dataset, 30, .65f, NoTransform);
+  TrackerTest test( TrackerMIL::create(), dataset, 30, .65f, NoTransform);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Boosting)
 {
-  TrackerTest test( Tracker::create( "BOOSTING" ), dataset, 70, .7f, NoTransform);
+  TrackerTest test( TrackerBoosting::create(), dataset, 70, .7f, NoTransform);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, KCF)
 {
-  TrackerTest test( Tracker::create( "KCF" ), dataset, 20, .35f, NoTransform, 5);
+  TrackerTest test( TrackerKCF::create(), dataset, 20, .35f, NoTransform, 5);
   test.run();
 }
 
-TEST_P(DistanceAndOverlap, DISABLED_TLD)
+TEST_P(DistanceAndOverlap, TLD)
 {
-  TrackerTest test( Tracker::create( "TLD" ), dataset, 60, .4f, NoTransform);
+  TrackerTest test( TrackerTLD::create(), dataset, 40, .45f, NoTransform);
   test.run();
 }
+
+TEST_P(DistanceAndOverlap, MOSSE)
+{
+  TrackerTest test( TrackerMOSSE::create(), dataset, 22, .7f, NoTransform);
+  test.run();
+}
+
+TEST_P(DistanceAndOverlap, CSRT)
+{
+  TrackerTest test( TrackerCSRT::create(), dataset, 22, .7f, NoTransform);
+  test.run();
+}
+
 /***************************************************************************************/
 //Tests with shifted initial window
 TEST_P(DistanceAndOverlap, Shifted_Data_MedianFlow)
 {
-  TrackerTest test( Tracker::create( "MEDIANFLOW" ), dataset, 80, .2f, CenterShiftLeft, 1, 1);
+  TrackerTest test( TrackerMedianFlow::create(), dataset, 80, .2f, CenterShiftLeft, 1, 1);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Shifted_Data_MIL)
 {
-  TrackerTest test( Tracker::create( "MIL" ), dataset, 30, .6f, CenterShiftLeft);
+  TrackerTest test( TrackerMIL::create(), dataset, 30, .6f, CenterShiftLeft);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Shifted_Data_Boosting)
 {
-  TrackerTest test( Tracker::create( "BOOSTING" ), dataset, 80, .65f, CenterShiftLeft);
+  TrackerTest test( TrackerBoosting::create(), dataset, 80, .65f, CenterShiftLeft);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Shifted_Data_KCF)
 {
-  TrackerTest test( Tracker::create( "KCF" ), dataset, 20, .4f, CenterShiftLeft, 5);
+  TrackerTest test( TrackerKCF::create(), dataset, 20, .4f, CenterShiftLeft, 5);
   test.run();
 }
 
-TEST_P(DistanceAndOverlap, DISABLED_Shifted_Data_TLD)
+TEST_P(DistanceAndOverlap, Shifted_Data_TLD)
 {
-  TrackerTest test( Tracker::create( "TLD" ), dataset, 120, .2f, CenterShiftLeft);
+  TrackerTest test( TrackerTLD::create(), dataset, 30, .35f, CenterShiftLeft);
+  test.run();
+}
+
+TEST_P(DistanceAndOverlap, Shifted_Data_MOSSE)
+{
+  TrackerTest test( TrackerMOSSE::create(), dataset, 13, .69f, CenterShiftLeft);
+  test.run();
+}
+
+TEST_P(DistanceAndOverlap, Shifted_Data_CSRT)
+{
+  TrackerTest test( TrackerCSRT::create(), dataset, 13, .69f, CenterShiftLeft);
   test.run();
 }
 /***************************************************************************************/
 //Tests with scaled initial window
 TEST_P(DistanceAndOverlap, Scaled_Data_MedianFlow)
 {
-  TrackerTest test( Tracker::create( "MEDIANFLOW" ), dataset, 25, .5f, Scale_1_1, 1, 1);
+  TrackerTest test( TrackerMedianFlow::create(), dataset, 25, .5f, Scale_1_1, 1, 1);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Scaled_Data_MIL)
 {
-  TrackerTest test( Tracker::create( "MIL" ), dataset, 30, .7f, Scale_1_1);
+  TrackerTest test( TrackerMIL::create(), dataset, 30, .7f, Scale_1_1);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Scaled_Data_Boosting)
 {
-  TrackerTest test( Tracker::create( "BOOSTING" ), dataset, 80, .7f, Scale_1_1);
+  TrackerTest test( TrackerBoosting::create(), dataset, 80, .7f, Scale_1_1);
   test.run();
 }
 
 TEST_P(DistanceAndOverlap, Scaled_Data_KCF)
 {
-  TrackerTest test( Tracker::create( "KCF" ), dataset, 20, .4f, Scale_1_1, 5);
+  TrackerTest test( TrackerKCF::create(), dataset, 20, .4f, Scale_1_1, 5);
   test.run();
 }
 
-TEST_P(DistanceAndOverlap, DISABLED_Scaled_Data_TLD)
+TEST_P(DistanceAndOverlap, Scaled_Data_TLD)
 {
-  TrackerTest test( Tracker::create( "TLD" ), dataset, 120, .45f, Scale_1_1);
+  TrackerTest test( TrackerTLD::create(), dataset, 30, .45f, Scale_1_1);
   test.run();
 }
 
 
 TEST_P(DistanceAndOverlap, DISABLED_GOTURN)
 {
-  TrackerTest test(Tracker::create("GOTURN"), dataset, 0, 100, NoTransform);
+  TrackerTest test(TrackerGOTURN::create(), dataset, 18, .5f, NoTransform);
   test.run();
 }
 
+TEST_P(DistanceAndOverlap, Scaled_Data_MOSSE)
+{
+  TrackerTest test( TrackerMOSSE::create(), dataset, 22, 0.69f, Scale_1_1, 1);
+  test.run();
+}
+
+TEST_P(DistanceAndOverlap, Scaled_Data_CSRT)
+{
+  TrackerTest test( TrackerCSRT::create(), dataset, 22, 0.69f, Scale_1_1, 1);
+  test.run();
+}
+
+
 INSTANTIATE_TEST_CASE_P( Tracking, DistanceAndOverlap, TESTSET_NAMES);
 
+}} // namespace
 /* End of file. */

@@ -41,7 +41,14 @@
 
 #include "opencv2/datasets/or_pascal.hpp"
 #include "opencv2/datasets/util.hpp"
+#if defined(__GNUC__) && __GNUC__ >= 5
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wsuggest-override"
+#endif
 #include "tinyxml2/tinyxml2.h"
+#if defined(__GNUC__) && __GNUC__ >= 5
+#pragma GCC diagnostic pop
+#endif
 #include <fstream>
 
 namespace cv
@@ -52,12 +59,12 @@ namespace datasets
 using namespace std;
 using namespace tinyxml2;
 
-class OR_pascalImp : public OR_pascal
+class OR_pascalImp CV_FINAL : public OR_pascal
 {
 public:
     OR_pascalImp() {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path, const string &nameImageSet, vector< Ptr<Object> > &imageSet);
@@ -136,7 +143,6 @@ Ptr<Object> OR_pascalImp::parseAnnotation(const string &path, const string &id)
         case XML_ERROR_FILE_NOT_FOUND:
             error_message = "XML file not found! " + error_message;
             CV_Error(Error::StsParseError, error_message);
-            return annotation;
         default:
             CV_Error(Error::StsParseError, error_message);
             break;

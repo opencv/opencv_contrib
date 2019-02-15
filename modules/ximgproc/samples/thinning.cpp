@@ -11,7 +11,7 @@ using namespace cv;
 int main()
 {
     Mat img = imread("opencv-logo.png", IMREAD_COLOR);
-    resize(img, img, Size(), 0.5, 0.5);
+    resize(img, img, Size(), 0.5, 0.5, INTER_LINEAR_EXACT);
 
     /// Threshold the input image
     Mat img_grayscale, img_binary;

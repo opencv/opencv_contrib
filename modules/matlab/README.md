@@ -73,7 +73,7 @@ void mexFunction(int nlhs, mxArray* plhs[],
 
   // add an argument parser to automatically handle basic options
   ArgumentParser parser("my function");
-  parser.addVariant(1, 1, "opt");
+  parser.addVariant("variant1", 1, 1, "opt");
   MxArrayVector reordered = parser.parse(raw);
 
   // if we get here, we know the inputs are valid and reordered. Unpack...
@@ -90,7 +90,8 @@ void mexFunction(int nlhs, mxArray* plhs[],
   }
 
   // allocate an output
-  Bridge out = required;
+  Bridge out;
+  out = required;
   plhs[0] = out.toMxArray().releaseOwnership();
 }
 ```
@@ -363,7 +364,7 @@ then you can create an `ArgumentParser` as follows:
 
 ```cpp
 ArgumentParser parser("f");
-parser.addVariant(2, 2, "mask", "dtype");
+parser.addVariant("f", 2, 2, "mask", "dtype");
 MxArrayVector inputs = parser.parse(prhs, prhs+nrhs);
 ```
 

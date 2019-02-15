@@ -93,7 +93,7 @@ int main(int argc, const char *argv[]) {
     // input filename is given.
     try {
         read_csv(fn_csv, images, labels, labelsInfo);
-    } catch (cv::Exception& e) {
+    } catch (const cv::Exception& e) {
         cerr << "Error opening file \"" << fn_csv << "\". Reason: " << e.msg << endl;
         // nothing more we can do
         exit(1);
@@ -121,14 +121,14 @@ int main(int argc, const char *argv[]) {
     // 10 principal components (read Eigenfaces), then call
     // the factory method like this:
     //
-    //      cv::createEigenFaceRecognizer(10);
+    //      EigenFaceRecognizer::create(10);
     //
     // If you want to create a FaceRecognizer with a
     // confidennce threshold, call it with:
     //
-    //      cv::createEigenFaceRecognizer(10, 123.0);
+    //      EigenFaceRecognizer::create(10, 123.0);
     //
-    Ptr<BasicFaceRecognizer> model = createEigenFaceRecognizer();
+    Ptr<EigenFaceRecognizer> model = EigenFaceRecognizer::create();
     for( int i = 0; i < nlabels; i++ )
         model->setLabelInfo(i, labelsInfo[i]);
     model->train(images, labels);

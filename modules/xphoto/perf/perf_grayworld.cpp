@@ -1,10 +1,11 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 #include "perf_precomp.hpp"
 
-using namespace std;
-using namespace cv;
-using namespace perf;
+namespace opencv_test { namespace {
 
-typedef std::tr1::tuple<Size, float> Size_WBThresh_t;
+typedef tuple<Size, float> Size_WBThresh_t;
 typedef perf::TestBaseWithParam<Size_WBThresh_t> Size_WBThresh;
 
 PERF_TEST_P( Size_WBThresh, autowbGrayworld,
@@ -14,8 +15,8 @@ PERF_TEST_P( Size_WBThresh, autowbGrayworld,
     )
 )
 {
-    Size size = std::tr1::get<0>(GetParam());
-    float wb_thresh = std::tr1::get<1>(GetParam());
+    Size size = get<0>(GetParam());
+    float wb_thresh = get<1>(GetParam());
 
     Mat src(size, CV_8UC3);
     Mat dst(size, CV_8UC3);
@@ -29,3 +30,5 @@ PERF_TEST_P( Size_WBThresh, autowbGrayworld,
     SANITY_CHECK(dst);
 }
 
+
+}} // namespace

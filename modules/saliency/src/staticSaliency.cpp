@@ -53,6 +53,7 @@ namespace saliency
 bool StaticSaliency::computeBinaryMap( InputArray _saliencyMap, OutputArray _binaryMap )
 {
   Mat saliencyMap = _saliencyMap.getMat();
+  CV_CheckTypeEQ(saliencyMap.type(), CV_32FC1, "");
   Mat labels = Mat::zeros( saliencyMap.rows * saliencyMap.cols, 1, 1 );
   Mat samples = Mat_<float>( saliencyMap.rows * saliencyMap.cols, 1 );
   Mat centers;

@@ -55,7 +55,8 @@ enum {
 
 /** @brief Data structure describing the camera model and its parameters.
   @param _distortion_model Type of camera model.
-  @param _focal_length focal length of the camera (in pixels).
+  @param _focal_length_x focal length of the camera (in pixels).
+  @param _focal_length_y focal length of the camera (in pixels).
   @param _principal_point_x principal point of the camera in the x direction (in pixels).
   @param _principal_point_y principal point of the camera in the y direction (in pixels).
   @param _polynomial_k1 radial distortion parameter.
@@ -73,7 +74,8 @@ class CV_EXPORTS_W_SIMPLE libmv_CameraIntrinsicsOptions
 public:
   CV_WRAP
   libmv_CameraIntrinsicsOptions(const int _distortion_model=0,
-                                const double _focal_length=0,
+                                const double _focal_length_x=0,
+                                const double _focal_length_y=0,
                                 const double _principal_point_x=0,
                                 const double _principal_point_y=0,
                                 const double _polynomial_k1=0,
@@ -84,7 +86,8 @@ public:
     : distortion_model(_distortion_model),
       image_width(2*_principal_point_x),
       image_height(2*_principal_point_y),
-      focal_length(_focal_length),
+      focal_length_x(_focal_length_x),
+      focal_length_y(_focal_length_y),
       principal_point_x(_principal_point_x),
       principal_point_y(_principal_point_y),
       polynomial_k1(_polynomial_k1),
@@ -103,7 +106,8 @@ public:
   // Common settings of all distortion models.
   CV_PROP_RW int distortion_model;
   CV_PROP_RW int image_width, image_height;
-  CV_PROP_RW double focal_length;
+  CV_PROP_RW double focal_length_x;
+  CV_PROP_RW double focal_length_y;
   CV_PROP_RW double principal_point_x, principal_point_y;
 
   // Radial distortion model.
@@ -166,8 +170,8 @@ public:
   virtual void run(InputArrayOfArrays points2d, InputOutputArray K, OutputArray Rs,
                    OutputArray Ts, OutputArray points3d) = 0;
 
-  virtual void run(const std::vector<std::string> &images) = 0;
-  virtual void run(const std::vector<std::string> &images, InputOutputArray K, OutputArray Rs,
+  virtual void run(const std::vector<String> &images) = 0;
+  virtual void run(const std::vector<String> &images, InputOutputArray K, OutputArray Rs,
                    OutputArray Ts, OutputArray points3d) = 0;
 
   CV_WRAP virtual double getError() const = 0;
@@ -196,7 +200,7 @@ public:
       - Tracks must be as precise as possible. It does not handle outliers and is very sensible to them.
   */
   CV_WRAP
-  virtual void run(InputArrayOfArrays points2d) = 0;
+  virtual void run(InputArrayOfArrays points2d) CV_OVERRIDE = 0;
 
   /** @brief Calls the pipeline in order to perform Eclidean reconstruction.
     @param points2d Input vector of vectors of 2d points (the inner vector is per image).
@@ -210,7 +214,7 @@ public:
   */
   CV_WRAP
   virtual void run(InputArrayOfArrays points2d, InputOutputArray K, OutputArray Rs,
-                   OutputArray Ts, OutputArray points3d) = 0;
+                   OutputArray Ts, OutputArray points3d) CV_OVERRIDE = 0;
 
   /** @brief Calls the pipeline in order to perform Eclidean reconstruction.
     @param images a vector of string with the images paths.
@@ -219,7 +223,7 @@ public:
       - The images must be ordered as they were an image sequence. Additionally, each frame should be as close as posible to the previous and posterior.
       - For now DAISY features are used in order to compute the 2d points tracks and it only works for 3-4 images.
   */
-  virtual void run(const std::vector<std::string> &images) = 0;
+  virtual void run(const std::vector<String> &images) CV_OVERRIDE = 0;
 
   /** @brief Calls the pipeline in order to perform Eclidean reconstruction.
     @param images a vector of string with the images paths.
@@ -232,31 +236,31 @@ public:
       - The images must be ordered as they were an image sequence. Additionally, each frame should be as close as posible to the previous and posterior.
       - For now DAISY features are used in order to compute the 2d points tracks and it only works for 3-4 images.
   */
-  virtual void run(const std::vector<std::string> &images, InputOutputArray K, OutputArray Rs,
-                   OutputArray Ts, OutputArray points3d) = 0;
+  virtual void run(const std::vector<String> &images, InputOutputArray K, OutputArray Rs,
+                   OutputArray Ts, OutputArray points3d) CV_OVERRIDE = 0;
 
   /** @brief Returns the computed reprojection error.
   */
   CV_WRAP
-  virtual double getError() const = 0;
+  virtual double getError() const CV_OVERRIDE = 0;
 
   /** @brief Returns the estimated 3d points.
     @param points3d Output array with estimated 3d points.
   */
   CV_WRAP
-  virtual void getPoints(OutputArray points3d) = 0;
+  virtual void getPoints(OutputArray points3d) CV_OVERRIDE = 0;
 
   /** @brief Returns the refined camera calibration matrix.
   */
   CV_WRAP
-  virtual cv::Mat getIntrinsics() const = 0;
+  virtual cv::Mat getIntrinsics() const CV_OVERRIDE = 0;
 
   /** @brief Returns the estimated camera extrinsic parameters.
     @param Rs Output vector of 3x3 rotations of the camera.
     @param Ts Output vector of 3x1 translations of the camera.
   */
   CV_WRAP
-  virtual void getCameras(OutputArray Rs, OutputArray Ts) = 0;
+  virtual void getCameras(OutputArray Rs, OutputArray Ts) CV_OVERRIDE = 0;
 
   /** @brief Setter method for reconstruction options.
     @param libmv_reconstruction_options struct with reconstruction options such as initial keyframes,
@@ -264,7 +268,7 @@ public:
   */
   CV_WRAP
   virtual void
-  setReconstructionOptions(const libmv_ReconstructionOptions &libmv_reconstruction_options) = 0;
+  setReconstructionOptions(const libmv_ReconstructionOptions &libmv_reconstruction_options) CV_OVERRIDE = 0;
 
   /** @brief Setter method for camera intrinsic options.
     @param libmv_camera_intrinsics_options struct with camera intrinsic options such as camera model and
@@ -272,7 +276,7 @@ public:
   */
   CV_WRAP
   virtual void
-  setCameraIntrinsicOptions(const libmv_CameraIntrinsicsOptions &libmv_camera_intrinsics_options) = 0;
+  setCameraIntrinsicOptions(const libmv_CameraIntrinsicsOptions &libmv_camera_intrinsics_options) CV_OVERRIDE = 0;
 
   /** @brief Creates an instance of the SFMLibmvEuclideanReconstruction class. Initializes Libmv. */
   static Ptr<SFMLibmvEuclideanReconstruction>

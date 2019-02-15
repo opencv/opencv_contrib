@@ -59,10 +59,20 @@ int main( int argc, const char** argv )
         createStructuredEdgeDetection(modelFilename);
     pDollar->detectEdges(image, edges);
 
+    // computes orientation from edge map
+    Mat orientation_map;
+    pDollar->computeOrientation(edges, orientation_map);
+
+    // suppress edges
+    Mat edge_nms;
+    pDollar->edgesNms(edges, orientation_map, edge_nms, 2, 0, 1, true);
+
     if ( outFilename.size() == 0 )
     {
         namedWindow("edges", 1);
         imshow("edges", edges);
+        namedWindow("edges nms", 1);
+        imshow("edges nms", edge_nms);
         waitKey(0);
     }
     else

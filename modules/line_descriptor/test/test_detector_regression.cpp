@@ -41,8 +41,7 @@
 
 #include "test_precomp.hpp"
 
-using namespace cv;
-using namespace cv::line_descriptor;
+namespace opencv_test { namespace {
 
 /****************************************************************************************\
 *            Regression tests for line detector comparing keylines.                 *
@@ -195,7 +194,7 @@ bool CV_BinaryDescriptorDetectorTest::isSimilarKeylines( const KeyLine& k1, cons
   const float maxAngleDif = 2.f;
   const float maxResponseDif = 0.1f;
 
-  float dist = (float) norm( k1.pt - k2.pt );
+  float dist = (float)cv::norm(k1.pt - k2.pt);
   return ( dist < maxPtDif && fabs( k1.size - k2.size ) < maxSizeDif && abs( k1.angle - k2.angle ) < maxAngleDif
       && abs( k1.response - k2.response ) < maxResponseDif && k1.octave == k2.octave && k1.class_id == k2.class_id );
 }
@@ -225,7 +224,7 @@ void CV_BinaryDescriptorDetectorTest::compareKeylineSets( const std::vector<KeyL
     for ( size_t c = 0; c < calcKeylines.size(); c++ )
     {
       progress = update_progress( progress, (int) ( v * calcKeylines.size() + c ), progressCount, 0 );
-      float curDist = (float) norm( calcKeylines[c].pt - validKeylines[v].pt );
+      float curDist = (float)cv::norm(calcKeylines[c].pt - validKeylines[v].pt);
       if( curDist < minDist )
       {
         minDist = curDist;
@@ -337,3 +336,5 @@ TEST( BinaryDescriptor_Detector, regression )
   CV_BinaryDescriptorDetectorTest test( std::string( "edl_detector_keylines_cameraman" ) );
   test.safe_run();
 }
+
+}} // namespace

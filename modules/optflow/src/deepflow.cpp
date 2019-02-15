@@ -52,8 +52,8 @@ class OpticalFlowDeepFlow: public DenseOpticalFlow
 public:
     OpticalFlowDeepFlow();
 
-    void calc( InputArray I0, InputArray I1, InputOutputArray flow );
-    void collectGarbage();
+    void calc( InputArray I0, InputArray I1, InputOutputArray flow ) CV_OVERRIDE;
+    void collectGarbage() CV_OVERRIDE;
 
 protected:
     float sigma; // Gaussian smoothing parameter
@@ -97,8 +97,7 @@ std::vector<Mat> OpticalFlowDeepFlow::buildPyramid( const Mat& src )
     std::vector<Mat> pyramid;
     pyramid.push_back(src);
     Mat prev = pyramid[0];
-    int i = 0;
-    while ( i < this->maxLayers )
+    for( int i = 0; i < this->maxLayers; ++i)
     {
         Mat next; //TODO: filtering at each level?
         Size nextSize((int) (prev.cols * downscaleFactor + 0.5f),
@@ -148,7 +147,7 @@ void OpticalFlowDeepFlow::calc( InputArray _I0, InputArray _I1, InputOutputArray
 
     for ( int level = levelCount - 1; level >= 0; --level )
     { //iterate through  all levels, beginning with the most coarse
-        Ptr<VariationalRefinement> var = createVariationalFlowRefinement();
+        Ptr<VariationalRefinement> var = VariationalRefinement::create();
 
         var->setAlpha(4 * alpha);
         var->setDelta(delta / 3);

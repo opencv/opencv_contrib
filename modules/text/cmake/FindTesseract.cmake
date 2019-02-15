@@ -5,14 +5,17 @@ endif()
 if(NOT Tesseract_FOUND)
   find_path(Tesseract_INCLUDE_DIR tesseract/baseapi.h
     HINTS
+    /usr/include
     /usr/local/include)
 
   find_library(Tesseract_LIBRARY NAMES tesseract
     HINTS
+    /usr/lib
     /usr/local/lib)
 
   find_library(Lept_LIBRARY NAMES lept
     HINTS
+    /usr/lib
     /usr/local/lib)
 
   if(Tesseract_INCLUDE_DIR AND Tesseract_LIBRARY AND Lept_LIBRARY)

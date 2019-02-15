@@ -758,9 +758,8 @@ BinaryDescriptorMatcher::Mihasher::Mihasher( int B_val, int _m )
   m = _m;
   b = (int) ceil( (double) B / m );
 
-  /* assuming that B/2 is large enough radius to include
-   all of the k nearest neighbors */
-  D = (int) ceil( B / 2.0 );
+  /* set radius to search for nearest neighbors to size of descriptor */
+  D = (int) ceil( B );
   d = (int) ceil( (double) D / m );
 
   /* mplus is the number of chunks with b bits

@@ -43,18 +43,9 @@
 
 #include "perf_precomp.hpp"
 
-namespace cvtest {
+namespace opencv_test { namespace {
 
-using namespace std;
-using namespace cv;
-using namespace cv::ximgproc;
-using namespace perf;
-using namespace testing;
-
-using std::tr1::make_tuple;
-using std::tr1::get;
-
-typedef std::tr1::tuple<Size, MatType, MatDepth> srcSize_srcType_dstDepth_t;
+typedef tuple<Size, MatType, MatDepth> srcSize_srcType_dstDepth_t;
 typedef perf::TestBaseWithParam<srcSize_srcType_dstDepth_t>
         srcSize_srcType_dstDepth;
 
@@ -87,4 +78,4 @@ PERF_TEST_P(srcSize_srcType_dstDepth, FastHoughTransform,
 
 #undef ALL_MAT_DEPHTS
 
-} // namespace cvtest
+}} // namespace

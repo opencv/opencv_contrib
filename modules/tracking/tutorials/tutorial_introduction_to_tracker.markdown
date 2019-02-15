@@ -44,12 +44,14 @@ Explanation
 
     @snippet tracking/samples/tutorial_introduction_to_tracker.cpp create
 
-    There are at least 5 types of tracker algorithms that can be used:
+    There are at least 7 types of tracker algorithms that can be used:
     + MIL
     + BOOSTING
     + MEDIANFLOW
     + TLD
     + KCF
+    + GOTURN
+    + MOSSE
 
     Each tracker algorithm has their own advantages and disadvantages, please refer the documentation of @ref cv::Tracker for more detailed information.
 
@@ -64,8 +66,8 @@ Explanation
 
     @snippet tracking/samples/tutorial_introduction_to_tracker.cpp init
 
-    Tracker algorithm should be initialized with the provided image data as well as the bounding box of the tracked object.
-    Make sure that the bounding box is not valid (size more than zero) to avoid the initialization process failed.
+    Any tracker algorithm should be initialized with the provided image data, and an initial bounding box of the tracked object.
+    Make sure that the bounding box is valid (size more than zero) to avoid failure of the initialization process.
 
 -#  **Update**
 

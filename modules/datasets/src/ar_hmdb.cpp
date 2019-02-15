@@ -58,7 +58,7 @@ public:
     //AR_hmdbImp(const string &path, int number = 0);
     virtual ~AR_hmdbImp() {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDatasetSplit(const string &path, int number = 0);

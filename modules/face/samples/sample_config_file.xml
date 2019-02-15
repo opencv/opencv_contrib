@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!-- cascade_depth stores the depth of cascade of regressors used for training.
+     tree_depth    stores the depth of trees created as weak learners during gradient boosting.
+     num_trees_per_cascade_level stores number of trees required per cascade level.
+     learning_rate stores the learning rate for gradient boosting.This is required to prevent overfitting using shrinkage.
+     oversampling_amount stores the oversampling amount for the samples.
+     num_test_coordinates stores number of test coordinates to be generated as samples to decide for making the split.
+     lambda stores the value used for calculating the probabilty which helps to select closer pixels for making the split.
+     num_test_splits stores the number of test splits to be generated before making the best split.
+ -->
+<opencv_storage>
+<cascade_depth>15</cascade_depth>
+<tree_depth>4</tree_depth>
+<num_trees_per_cascade_level>500</num_trees_per_cascade_level>
+<learning_rate>1.0000000149011612e-01</learning_rate>
+<oversampling_amount>20</oversampling_amount>
+<num_test_coordinates>400</num_test_coordinates>
+<lambda>1.0000000149011612e-01</lambda>
+<num_test_splits>20</num_test_splits>
+</opencv_storage>

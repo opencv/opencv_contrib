@@ -1,49 +1,11 @@
-/*
- *  By downloading, copying, installing or using the software you agree to this license.
- *  If you do not agree to this license, do not download, install,
- *  copy or use the software.
- *
- *
- *  License Agreement
- *  For Open Source Computer Vision Library
- *  (3 - clause BSD License)
- *
- *  Redistribution and use in source and binary forms, with or without modification,
- *  are permitted provided that the following conditions are met :
- *
- *  * Redistributions of source code must retain the above copyright notice,
- *  this list of conditions and the following disclaimer.
- *
- *  * Redistributions in binary form must reproduce the above copyright notice,
- *  this list of conditions and the following disclaimer in the documentation
- *  and / or other materials provided with the distribution.
- *
- *  * Neither the names of the copyright holders nor the names of the contributors
- *  may be used to endorse or promote products derived from this software
- *  without specific prior written permission.
- *
- *  This software is provided by the copyright holders and contributors "as is" and
- *  any express or implied warranties, including, but not limited to, the implied
- *  warranties of merchantability and fitness for a particular purpose are disclaimed.
- *  In no event shall copyright holders or contributors be liable for any direct,
- *  indirect, incidental, special, exemplary, or consequential damages
- *  (including, but not limited to, procurement of substitute goods or services;
- *  loss of use, data, or profits; or business interruption) however caused
- *  and on any theory of liability, whether in contract, strict liability,
- *  or tort(including negligence or otherwise) arising in any way out of
- *  the use of this software, even if advised of the possibility of such damage.
- */
-
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 
-namespace cvtest
-{
-
-using namespace std;
-using namespace std::tr1;
-using namespace testing;
-using namespace cv;
-using namespace cv::ximgproc;
+namespace opencv_test {
+Ptr<AdaptiveManifoldFilter> createAMFilterRefImpl(double sigma_s, double sigma_r, bool adjust_outliers = false);
+namespace {
 
 #ifndef SQR
 #define SQR(x) ((x)*(x))
@@ -59,15 +21,13 @@ static void checkSimilarity(InputArray res, InputArray ref, double maxNormInf = 
     double normInf = cvtest::norm(res, ref, NORM_INF);
     double normL2 = cvtest::norm(res, ref, NORM_L2) / res.total();
 
-    if (maxNormInf >= 0) EXPECT_LE(normInf, maxNormInf);
-    if (maxNormL2 >= 0) EXPECT_LE(normL2, maxNormL2);
+    if (maxNormInf >= 0) { EXPECT_LE(normInf, maxNormInf); }
+    if (maxNormL2 >= 0) { EXPECT_LE(normL2, maxNormL2); }
 }
 
 TEST(AdaptiveManifoldTest, SplatSurfaceAccuracy)
 {
     RNG rnd(0);
-
-    cv::setNumThreads(cv::getNumberOfCPUs());
 
     for (int i = 0; i < 5; i++)
     {
@@ -128,8 +88,6 @@ TEST(AdaptiveManifoldTest, AuthorsReferenceAccuracy)
     Mat srcImg = imread(getOpenCVExtraDir() + srcImgPath);
     ASSERT_TRUE(!srcImg.empty());
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
-
     for (int i = 0; i < 3; i++)
     {
         Mat refRes = imread(getOpenCVExtraDir() + refPaths[i]);
@@ -166,8 +124,6 @@ TEST(AdaptiveManifoldTest, AuthorsReferenceAccuracy)
 typedef tuple<string, string> AMRefTestParams;
 typedef TestWithParam<AMRefTestParams> AdaptiveManifoldRefImplTest;
 
-Ptr<AdaptiveManifoldFilter> createAMFilterRefImpl(double sigma_s, double sigma_r, bool adjust_outliers = false);
-
 TEST_P(AdaptiveManifoldRefImplTest, RefImplAccuracy)
 {
     AMRefTestParams params = GetParam();
@@ -185,16 +141,19 @@ TEST_P(AdaptiveManifoldRefImplTest, RefImplAccuracy)
     //inconsistent downsample/upsample operations in reference implementation
     Size dstSize((guide.cols + 15) & ~15, (guide.rows + 15) & ~15);
 
-    resize(guide, guide, dstSize);
-    resize(src, src, dstSize);
+    resize(guide, guide, dstSize, 0, 0, INTER_LINEAR_EXACT);
+    resize(src, src, dstSize, 0, 0, INTER_LINEAR_EXACT);
 
+    int nThreads = cv::getNumThreads();
+    if (nThreads == 1)
+        throw SkipTestException("Single thread environment");
     for (int iter = 0; iter < 4; iter++)
     {
         double sigma_s = rnd.uniform(1.0, 50.0);
         double sigma_r = rnd.uniform(0.1, 0.9);
         bool adjust_outliers = (iter % 2 == 0);
 
-        cv::setNumThreads(cv::getNumberOfCPUs());
+        cv::setNumThreads(nThreads);
         Mat res;
         amFilter(guide, src, res, sigma_s, sigma_r, adjust_outliers);
 
@@ -216,4 +175,5 @@ INSTANTIATE_TEST_CASE_P(TypicalSet, AdaptiveManifoldRefImplTest,
     Values("cv/edgefilter/kodim23.png", "cv/npr/test4.png")
 ));
 
-}
+
+}} // namespace

@@ -38,12 +38,8 @@ the use of this software, even if advised of the possibility of such damage.
 
 
 #include "test_precomp.hpp"
-#include <string>
-#include <opencv2/aruco.hpp>
 
-using namespace std;
-using namespace cv;
-
+namespace opencv_test { namespace {
 
 static double deg2rad(double deg) { return deg * CV_PI / 180.; }
 
@@ -237,7 +233,7 @@ void CV_ArucoBoardPose::run(int) {
                                   projectedCorners);
 
                     for(int c = 0; c < 4; c++) {
-                        double repError = norm(projectedCorners[c] - corners[i][c]);
+                        double repError = cv::norm(projectedCorners[c] - corners[i][c]);  // TODO cvtest
                         if(repError > 5.) {
                             ts->printf(cvtest::TS::LOG, "Corner reprojection error too high");
                             ts->set_failed_test_info(cvtest::TS::FAIL_MISMATCH);
@@ -299,7 +295,7 @@ void CV_ArucoRefine::run(int) {
                 vector< int > ids;
                 Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
                 params->minDistanceToBorder = 3;
-                params->doCornerRefinement = true;
+                params->cornerRefinementMethod = aruco::CORNER_REFINE_SUBPIX;
                 params->markerBorderBits = markerBorder;
                 aruco::detectMarkers(img, dictionary, corners, ids, params, rejected);
 
@@ -407,3 +403,5 @@ TEST(CV_ArucoBoardPose, CheckNegativeZ)
     out = cv::Point3d(tvec) + rotm*Point3d(board.objPoints[0][0]);
     ASSERT_GT(out.z, 0);
 }
+
+}} // namespace

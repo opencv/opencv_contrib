@@ -52,7 +52,6 @@ the use of this software, even if advised of the possibility of such damage.
 #define __OPENCV_OPTFLOW_SPARSE_MATCHING_GPC_HPP__
 
 #include "opencv2/core.hpp"
-#include "opencv2/core/hal/intrin.hpp"
 #include "opencv2/imgproc.hpp"
 
 namespace cv
@@ -183,9 +182,9 @@ private:
 public:
   void train( GPCTrainingSamples &samples, const GPCTrainingParams params = GPCTrainingParams() );
 
-  void write( FileStorage &fs ) const;
+  void write( FileStorage &fs ) const CV_OVERRIDE;
 
-  void read( const FileNode &fn );
+  void read( const FileNode &fn ) CV_OVERRIDE;
 
   unsigned findLeafForPatch( const GPCPatchDescriptor &descr ) const;
 
@@ -196,7 +195,7 @@ public:
   int getDescriptorType() const { return params.descriptorType; }
 };
 
-template < int T > class CV_EXPORTS_W GPCForest : public Algorithm
+template < int T > class GPCForest : public Algorithm
 {
 private:
   struct Trail
@@ -228,7 +227,7 @@ private:
     ParallelTrailsFilling( const GPCForest *_forest, const std::vector< GPCPatchDescriptor > *_descr, std::vector< Trail > *_trails )
         : forest( _forest ), descr( _descr ), trails( _trails ){};
 
-    void operator()( const Range &range ) const
+    void operator()( const Range &range ) const CV_OVERRIDE
     {
       for ( int t = range.start; t < range.end; ++t )
         for ( size_t i = 0; i < descr->size(); ++i )
@@ -273,7 +272,7 @@ public:
     }
   }
 
-  void write( FileStorage &fs ) const
+  void write( FileStorage &fs ) const CV_OVERRIDE
   {
     fs << "ntrees" << T << "trees"
        << "[";
@@ -286,7 +285,7 @@ public:
     fs << "]";
   }
 
-  void read( const FileNode &fn )
+  void read( const FileNode &fn ) CV_OVERRIDE
   {
     CV_Assert( T <= (int)fn["ntrees"] );
     FileNodeIterator it = fn["trees"].begin();

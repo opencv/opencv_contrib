@@ -47,7 +47,7 @@ void ft::createKernel(InputArray A, InputArray B, OutputArray kernel, const int 
 {
     Mat AMat = A.getMat();
     Mat BMat = B.getMat();
-    Mat kernelOneChannel = AMat * BMat;
+    Mat kernelOneChannel = BMat * AMat;
     std::vector<Mat> channels;
 
     for (int i = 0; i < chn; i++)

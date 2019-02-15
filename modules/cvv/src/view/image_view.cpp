@@ -32,8 +32,7 @@ ImageView::ImageView(const cv::Mat &image, QWidget *parent)
 	accor->setMaximumWidth(300);
 
 	auto zoomim = util::make_unique<qtutil::ZoomableImage>();
-	accor->insert(QString("ImageInformation:"),
-		std::move(util::make_unique<qtutil::ZoomableOptPanel>(*zoomim,false)));
+    accor->insert(QString("ImageInformation:"), util::make_unique<qtutil::ZoomableOptPanel>(*zoomim,false));
 	zoomim->setMat(image);
 
 	auto histogram = util::make_unique<qtutil::Histogram>();
@@ -41,7 +40,7 @@ ImageView::ImageView(const cv::Mat &image, QWidget *parent)
 	histogram->setVisible(false);
 	connect(zoomim.get(), SIGNAL(updateArea(QRectF, qreal)), histogram.get(), SLOT(setArea(QRectF, qreal)));
 
-	accor->insert(QString("Histogram:"), std::move(util::make_unique<qtutil::HistogramOptPanel>(*histogram)));
+    accor->insert(QString("Histogram:"), util::make_unique<qtutil::HistogramOptPanel>(*histogram));
 
 	this->image = (*zoomim);
 	imageLayout->addWidget(zoomim.release(), 0, 0);

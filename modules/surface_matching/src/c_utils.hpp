@@ -55,35 +55,23 @@ const float EPS = 1.192092896e-07F;        /* smallest such that 1.0+FLT_EPSILON
 #define M_PI  3.1415926535897932384626433832795
 #endif
 
-static inline double TNorm3(const double v[])
+static inline void TNormalize3(Vec3d& v)
 {
-  return (sqrt(v[0]*v[0]+v[1]*v[1]+v[2]*v[2]));
-}
-
-static inline void TNormalize3(double v[])
-{
-  double normTemp=TNorm3(v);
-  if (normTemp>0)
+  double norm = cv::norm(v);
+  if (norm > EPS)
   {
-    v[0]/=normTemp;
-    v[1]/=normTemp;
-    v[2]/=normTemp;
+    v *= 1.0 / norm;
   }
 }
 
-static inline double TDot3(const double a[3], const double b[3])
-{
-  return  ((a[0])*(b[0])+(a[1])*(b[1])+(a[2])*(b[2]));
-}
-
-static inline void TCross(const double a[], const double b[], double c[])
-{
-  c[0] = (a[1])*(b[2])-(a[2])*(b[1]);
-  c[1] = (a[2])*(b[0])-(a[0])*(b[2]);
-  c[2] = (a[0])*(b[1])-(a[1])*(b[0]);
-}
-
-static inline double TAngle3Normalized(const double a[3], const double b[3])
+/**
+ *  \brief Calculate angle between two normalized vectors
+ *
+ *  \param [in] a normalized vector
+ *  \param [in] b normalized vector
+ *  \return angle between a and b vectors in radians
+ */
+static inline double TAngle3Normalized(const Vec3d& a, const Vec3d& b)
 {
   /*
    angle = atan2(a dot b, |a x b|) # Bertram (accidental mistake)
@@ -91,417 +79,161 @@ static inline double TAngle3Normalized(const double a[3], const double b[3])
    angle = acos(a dot b)           # Hamdi Sahloul (simplification, a & b are normalized)
   */
 
-  return acos(TDot3(a, b));
+  return acos(a.dot(b));
 }
 
-static inline void matrixProduct33(double *A, double *B, double *R)
+static inline void rtToPose(const Matx33d& R, const Vec3d& t, Matx44d& Pose)
 {
-  R[0] = A[0] * B[0] + A[1] * B[3] + A[2] * B[6];
-  R[1] = A[0] * B[1] + A[1] * B[4] + A[2] * B[7];
-  R[2] = A[0] * B[2] + A[1] * B[5] + A[2] * B[8];
-
-  R[3] = A[3] * B[0] + A[4] * B[3] + A[5] * B[6];
-  R[4] = A[3] * B[1] + A[4] * B[4] + A[5] * B[7];
-  R[5] = A[3] * B[2] + A[4] * B[5] + A[5] * B[8];
-
-  R[6] = A[6] * B[0] + A[7] * B[3] + A[8] * B[6];
-  R[7] = A[6] * B[1] + A[7] * B[4] + A[8] * B[7];
-  R[8] = A[6] * B[2] + A[7] * B[5] + A[8] * B[8];
+  Matx34d P;
+  hconcat(R, t, P);
+  vconcat(P, Matx14d(0, 0, 0, 1), Pose);
 }
 
-// A is a vector
-static inline void matrixProduct133(double *A, double *B, double *R)
+static inline void poseToR(const Matx44d& Pose, Matx33d& R)
 {
-  R[0] = A[0] * B[0] + A[1] * B[3] + A[2] * B[6];
-  R[1] = A[0] * B[1] + A[1] * B[4] + A[2] * B[7];
-  R[2] = A[0] * B[2] + A[1] * B[5] + A[2] * B[8];
+  Mat(Pose).rowRange(0, 3).colRange(0, 3).copyTo(R);
 }
 
-static inline void matrixProduct331(const double A[9], const double b[3], double r[3])
+static inline void poseToRT(const Matx44d& Pose, Matx33d& R, Vec3d& t)
 {
-  r[0] = A[0] * b[0] + A[1] * b[1] + A[2] * b[2];
-  r[1] = A[3] * b[0] + A[4] * b[1] + A[5] * b[2];
-  r[2] = A[6] * b[0] + A[7] * b[1] + A[8] * b[2];
-}
-
-static inline void matrixTranspose33(double *A, double *At)
-{
-  At[0] = A[0];
-  At[4] = A[4];
-  At[8] = A[8];
-  At[1] = A[3];
-  At[2] = A[6];
-  At[3] = A[1];
-  At[5] = A[7];
-  At[6] = A[2];
-  At[7] = A[5];
-}
-
-static inline void matrixProduct44(const double A[16], const double B[16], double R[16])
-{
-  R[0] = A[0] * B[0] + A[1] * B[4] + A[2] * B[8] + A[3] * B[12];
-  R[1] = A[0] * B[1] + A[1] * B[5] + A[2] * B[9] + A[3] * B[13];
-  R[2] = A[0] * B[2] + A[1] * B[6] + A[2] * B[10] + A[3] * B[14];
-  R[3] = A[0] * B[3] + A[1] * B[7] + A[2] * B[11] + A[3] * B[15];
-
-  R[4] = A[4] * B[0] + A[5] * B[4] + A[6] * B[8] + A[7] * B[12];
-  R[5] = A[4] * B[1] + A[5] * B[5] + A[6] * B[9] + A[7] * B[13];
-  R[6] = A[4] * B[2] + A[5] * B[6] + A[6] * B[10] + A[7] * B[14];
-  R[7] = A[4] * B[3] + A[5] * B[7] + A[6] * B[11] + A[7] * B[15];
-
-  R[8] = A[8] * B[0] + A[9] * B[4] + A[10] * B[8] + A[11] * B[12];
-  R[9] = A[8] * B[1] + A[9] * B[5] + A[10] * B[9] + A[11] * B[13];
-  R[10] = A[8] * B[2] + A[9] * B[6] + A[10] * B[10] + A[11] * B[14];
-  R[11] = A[8] * B[3] + A[9] * B[7] + A[10] * B[11] + A[11] * B[15];
-
-  R[12] = A[12] * B[0] + A[13] * B[4] + A[14] * B[8] + A[15] * B[12];
-  R[13] = A[12] * B[1] + A[13] * B[5] + A[14] * B[9] + A[15] * B[13];
-  R[14] = A[12] * B[2] + A[13] * B[6] + A[14] * B[10] + A[15] * B[14];
-  R[15] = A[12] * B[3] + A[13] * B[7] + A[14] * B[11] + A[15] * B[15];
-}
-
-static inline void matrixProduct441(const double A[16], const double B[4], double R[4])
-{
-  R[0] = A[0] * B[0] + A[1] * B[1] + A[2] * B[2] + A[3] * B[3];
-  R[1] = A[4] * B[0] + A[5] * B[1] + A[6] * B[2] + A[7] * B[3];
-  R[2] = A[8] * B[0] + A[9] * B[1] + A[10] * B[2] + A[11] * B[3];
-  R[3] = A[12] * B[0] + A[13] * B[1] + A[14] * B[2] + A[15] * B[3];
-}
-
-static inline void matrixPrint(double *A, int m, int n)
-{
-  int i, j;
-
-  for (i = 0; i < m; i++)
-  {
-    printf("  ");
-    for (j = 0; j < n; j++)
-    {
-      printf(" %0.6f ", A[i * n + j]);
-    }
-    printf("\n");
-  }
-}
-
-static inline void matrixIdentity(int n, double *A)
-{
-  int i;
-
-  for (i = 0; i < n*n; i++)
-  {
-    A[i] = 0.0;
-  }
-
-  for (i = 0; i < n; i++)
-  {
-    A[i * n + i] = 1.0;
-  }
-}
-
-static inline void rtToPose(const double R[9], const double t[3], double Pose[16])
-{
-  Pose[0]=R[0];
-  Pose[1]=R[1];
-  Pose[2]=R[2];
-  Pose[4]=R[3];
-  Pose[5]=R[4];
-  Pose[6]=R[5];
-  Pose[8]=R[6];
-  Pose[9]=R[7];
-  Pose[10]=R[8];
-  Pose[3]=t[0];
-  Pose[7]=t[1];
-  Pose[11]=t[2];
-
-  Pose[15] = 1;
-}
-
-
-static inline void poseToRT(const double Pose[16], double R[9], double t[3])
-{
-  R[0] = Pose[0];
-  R[1] = Pose[1];
-  R[2] = Pose[2];
-  R[3] = Pose[4];
-  R[4] = Pose[5];
-  R[5] = Pose[6];
-  R[6] = Pose[8];
-  R[7] = Pose[9];
-  R[8] = Pose[10];
-
-  t[0]=Pose[3];
-  t[1]=Pose[7];
-  t[2]=Pose[11];
-}
-
-static inline void poseToR(const double Pose[16], double R[9])
-{
-  R[0] = Pose[0];
-  R[1] = Pose[1];
-  R[2] = Pose[2];
-  R[3] = Pose[4];
-  R[4] = Pose[5];
-  R[5] = Pose[6];
-  R[6] = Pose[8];
-  R[7] = Pose[9];
-  R[8] = Pose[10];
-}
-
-/**
- *  \brief Axis angle to rotation but only compute y and z components
- */
-static inline void aaToRyz(double angle, const double r[3], double row2[3], double row3[3])
-{
-  const double sinA=sin(angle);
-  const double cosA=cos(angle);
-  const double cos1A=(1-cosA);
-
-  row2[0] =  0.f;
-  row2[1] = cosA;
-  row2[2] =  0.f;
-  row3[0] =  0.f;
-  row3[1] =  0.f;
-  row3[2] = cosA;
-
-  row2[0] +=  r[2] * sinA;
-  row2[2] += -r[0] * sinA;
-  row3[0] += -r[1] * sinA;
-  row3[1] +=  r[0] * sinA;
-
-  row2[0] += r[1] * r[0] * cos1A;
-  row2[1] += r[1] * r[1] * cos1A;
-  row2[2] += r[1] * r[2] * cos1A;
-  row3[0] += r[2] * r[0] * cos1A;
-  row3[1] += r[2] * r[1] * cos1A;
-  row3[2] += r[2] * r[2] * cos1A;
+  poseToR(Pose, R);
+  Mat(Pose).rowRange(0, 3).colRange(3, 4).copyTo(t);
 }
 
 /**
  *  \brief Axis angle to rotation
  */
-static inline void aaToR(double angle, const double r[3], double R[9])
+static inline void aaToR(const Vec3d& axis, double angle, Matx33d& R)
 {
-  const double sinA=sin(angle);
-  const double cosA=cos(angle);
-  const double cos1A=(1-cosA);
-  double *row1 = &R[0];
-  double *row2 = &R[3];
-  double *row3 = &R[6];
+  const double sinA = sin(angle);
+  const double cosA = cos(angle);
+  const double cos1A = (1 - cosA);
+  uint i, j;
 
-  row1[0] =  cosA;
-  row1[1] = 0.0f;
-  row1[2] =  0.f;
-  row2[0] =  0.f;
-  row2[1] = cosA;
-  row2[2] =  0.f;
-  row3[0] =  0.f;
-  row3[1] =  0.f;
-  row3[2] = cosA;
+  Mat(cosA * Matx33d::eye()).copyTo(R);
 
-  row1[1] += -r[2] * sinA;
-  row1[2] +=  r[1] * sinA;
-  row2[0] +=  r[2] * sinA;
-  row2[2] += -r[0] * sinA;
-  row3[0] += -r[1] * sinA;
-  row3[1] +=  r[0] * sinA;
-
-  row1[0] += r[0] * r[0] * cos1A;
-  row1[1] += r[0] * r[1] * cos1A;
-  row1[2] += r[0] * r[2] * cos1A;
-  row2[0] += r[1] * r[0] * cos1A;
-  row2[1] += r[1] * r[1] * cos1A;
-  row2[2] += r[1] * r[2] * cos1A;
-  row3[0] += r[2] * r[0] * cos1A;
-  row3[1] += r[2] * r[1] * cos1A;
-  row3[2] += r[2] * r[2] * cos1A;
+  for (i = 0; i < 3; i++)
+    for (j = 0; j < 3; j++)
+    {
+      if (i != j)
+      {
+        // Symmetry skew matrix
+        R(i, j) += (((i + 1) % 3 == j) ? -1 : 1) * sinA * axis[3 - i - j];
+      }
+      R(i, j) += cos1A * axis[i] * axis[j];
+    }
 }
 
 /**
  *  \brief Compute a rotation in order to rotate around X direction
  */
-static inline void getUnitXRotation(double angle, double R[9])
+static inline void getUnitXRotation(double angle, Matx33d& Rx)
 {
-  const double sinA=sin(angle);
-  const double cosA=cos(angle);
-  double *row1 = &R[0];
-  double *row2 = &R[3];
-  double *row3 = &R[6];
+  const double sx = sin(angle);
+  const double cx = cos(angle);
 
-  row1[0] =  1;
-  row1[1] = 0.0f;
-  row1[2] =  0.f;
-  row2[0] =  0.f;
-  row2[1] = cosA;
-  row2[2] =  -sinA;
-  row3[0] =  0.f;
-  row3[1] =  sinA;
-  row3[2] = cosA;
-}
-/**
- *  \brief Compute a transformation in order to rotate around X direction
- */
-static inline void getUnitXRotation_44(double angle, double T[16])
-{
-  const double sinA=sin(angle);
-  const double cosA=cos(angle);
-  double *row1 = &T[0];
-  double *row2 = &T[4];
-  double *row3 = &T[8];
-
-  row1[0] =  1;
-  row1[1] = 0.0f;
-  row1[2] =  0.f;
-  row2[0] =  0.f;
-  row2[1] = cosA;
-  row2[2] =  -sinA;
-  row3[0] =  0.f;
-  row3[1] =  sinA;
-  row3[2] = cosA;
-
-  row1[3]=0;
-  row2[3]=0;
-  row3[3]=0;
-  T[3]=0;
-  T[7]=0;
-  T[11]=0;
-  T[15] = 1;
+  Mat(Rx.eye()).copyTo(Rx);
+  Rx(1, 1) = cx;
+  Rx(1, 2) = -sx;
+  Rx(2, 1) = sx;
+  Rx(2, 2) = cx;
 }
 
 /**
- *  \brief Compute the yz components of the transformation needed to rotate n1 onto x axis and p1 to origin
- */
-static inline void computeTransformRTyz(const double p1[4], const double n1[4], double row2[3], double row3[3], double t[3])
+*  \brief Compute a rotation in order to rotate around Y direction
+*/
+static inline void getUnitYRotation(double angle, Matx33d& Ry)
 {
-  // dot product with x axis
-  double angle=acos( n1[0] );
+  const double sy = sin(angle);
+  const double cy = cos(angle);
 
-  // cross product with x axis
-  double axis[3]={0, n1[2], -n1[1]};
-  double axisNorm;
-
-  // we try to project on the ground plane but it's already parallel
-  if (n1[1]==0 && n1[2]==0)
-  {
-    axis[1]=1;
-    axis[2]=0;
-  }
-  else
-  {
-    axisNorm=sqrt(axis[2]*axis[2]+axis[1]*axis[1]);
-
-    if (axisNorm>EPS)
-    {
-      axis[1]/=axisNorm;
-      axis[2]/=axisNorm;
-    }
-  }
-
-  aaToRyz(angle, axis, row2, row3);
-
-  t[1] = row2[0] * (-p1[0]) + row2[1] * (-p1[1]) + row2[2] * (-p1[2]);
-  t[2] = row3[0] * (-p1[0]) + row3[1] * (-p1[1]) + row3[2] * (-p1[2]);
+  Mat(Ry.eye()).copyTo(Ry);
+  Ry(0, 0) = cy;
+  Ry(0, 2) = sy;
+  Ry(2, 0) = -sy;
+  Ry(2, 2) = cy;
 }
+
+/**
+*  \brief Compute a rotation in order to rotate around Z direction
+*/
+static inline void getUnitZRotation(double angle, Matx33d& Rz)
+{
+  const double sz = sin(angle);
+  const double cz = cos(angle);
+
+  Mat(Rz.eye()).copyTo(Rz);
+  Rz(0, 0) = cz;
+  Rz(0, 1) = -sz;
+  Rz(1, 0) = sz;
+  Rz(1, 1) = cz;
+}
+
+/**
+*  \brief Convert euler representation to rotation matrix
+*
+*  \param [in] euler RPY angles
+*  \param [out] R 3x3 Rotation matrix
+*/
+static inline void eulerToDCM(const Vec3d& euler, Matx33d& R)
+{
+  Matx33d Rx, Ry, Rz;
+
+  getUnitXRotation(euler[0], Rx);
+  getUnitYRotation(euler[1], Ry);
+  getUnitZRotation(euler[2], Rz);
+
+  Mat(Rx * (Ry * Rz)).copyTo(R);
+}
+
 
 /**
  *  \brief Compute the transformation needed to rotate n1 onto x axis and p1 to origin
  */
-static inline void computeTransformRT(const double p1[4], const double n1[4], double R[9], double t[3])
+static inline void computeTransformRT(const Vec3d& p1, const Vec3d& n1, Matx33d& R, Vec3d& t)
 {
   // dot product with x axis
-  double angle=acos( n1[0] );
+  double angle = acos(n1[0]);
 
   // cross product with x axis
-  double axis[3]={0, n1[2], -n1[1]};
-  double axisNorm;
-  double *row1, *row2, *row3;
+  Vec3d axis(0, n1[2], -n1[1]);
 
   // we try to project on the ground plane but it's already parallel
-  if (n1[1]==0 && n1[2]==0)
+  if (n1[1] == 0 && n1[2] == 0)
   {
-    axis[1]=1;
-    axis[2]=0;
+    axis[1] = 1;
+    axis[2] = 0;
   }
   else
   {
-    axisNorm=sqrt(axis[2]*axis[2]+axis[1]*axis[1]);
-
-    if (axisNorm>EPS)
-    {
-      axis[1]/=axisNorm;
-      axis[2]/=axisNorm;
-    }
+    TNormalize3(axis);
   }
 
-  aaToR(angle, axis, R);
-  row1 = &R[0];
-  row2 = &R[3];
-  row3 = &R[6];
-
-  t[0] = row1[0] * (-p1[0]) + row1[1] * (-p1[1]) + row1[2] * (-p1[2]);
-  t[1] = row2[0] * (-p1[0]) + row2[1] * (-p1[1]) + row2[2] * (-p1[2]);
-  t[2] = row3[0] * (-p1[0]) + row3[1] * (-p1[1]) + row3[2] * (-p1[2]);
+  aaToR(axis, angle, R);
+  t = -R * p1;
 }
 
 /**
  *  \brief Flip a normal to the viewing direction
  *
  *  \param [in] point Scene point
- *  \param [in] vp_x X component of view direction
- *  \param [in] vp_y Y component of view direction
- *  \param [in] vp_z Z component of view direction
- *  \param [in] nx X component of normal
- *  \param [in] ny Y component of normal
- *  \param [in] nz Z component of normal
+ *  \param [in] vp view direction
+ *  \param [in] n normal
  */
-static inline void flipNormalViewpoint(const float* point, double vp_x, double vp_y, double vp_z, double *nx, double *ny, double *nz)
-{
-  double cos_theta;
-
-  // See if we need to flip any plane normals
-  vp_x -= (double)point[0];
-  vp_y -= (double)point[1];
-  vp_z -= (double)point[2];
-
-  // Dot product between the (viewpoint - point) and the plane normal
-  cos_theta = (vp_x * (*nx) + vp_y * (*ny) + vp_z * (*nz));
-
-  // Flip the plane normal
-  if (cos_theta < 0)
-  {
-    (*nx) *= -1;
-    (*ny) *= -1;
-    (*nz) *= -1;
-  }
-}
-/**
- *  \brief Flip a normal to the viewing direction
- *
- *  \param [in] point Scene point
- *  \param [in] vp_x X component of view direction
- *  \param [in] vp_y Y component of view direction
- *  \param [in] vp_z Z component of view direction
- *  \param [in] nx X component of normal
- *  \param [in] ny Y component of normal
- *  \param [in] nz Z component of normal
- */
-static inline void flipNormalViewpoint_32f(const float* point, float vp_x, float vp_y, float vp_z, float *nx, float *ny, float *nz)
+static inline void flipNormalViewpoint(const Vec3f& point, const Vec3f& vp, Vec3f& n)
 {
   float cos_theta;
 
   // See if we need to flip any plane normals
-  vp_x -= (float)point[0];
-  vp_y -= (float)point[1];
-  vp_z -= (float)point[2];
+  Vec3f diff = vp - point;
 
   // Dot product between the (viewpoint - point) and the plane normal
-  cos_theta = (vp_x * (*nx) + vp_y * (*ny) + vp_z * (*nz));
+  cos_theta = diff.dot(n);
 
   // Flip the plane normal
   if (cos_theta < 0)
   {
-    (*nx) *= -1;
-    (*ny) *= -1;
-    (*nz) *= -1;
+    n *= -1;
   }
 }
 
@@ -509,25 +241,16 @@ static inline void flipNormalViewpoint_32f(const float* point, float vp_x, float
  *  \brief Convert a rotation matrix to axis angle representation
  *
  *  \param [in] R Rotation matrix
- *  \param [in] axis Axis vector
- *  \param [in] angle Angle in radians
+ *  \param [out] axis Axis vector
+ *  \param [out] angle Angle in radians
  */
-static inline void dcmToAA(double *R, double *axis, double *angle)
+static inline void dcmToAA(Matx33d& R, Vec3d& axis, double *angle)
 {
-  double d1 = R[7] - R[5];
-  double d2 = R[2] - R[6];
-  double d3 = R[3] - R[1];
-
-  double norm = sqrt(d1 * d1 + d2 * d2 + d3 * d3);
-  double x = (R[7] - R[5]) / norm;
-  double y = (R[2] - R[6]) / norm;
-  double z = (R[3] - R[1]) / norm;
-
-  *angle = acos((R[0] + R[4] + R[8] - 1.0) * 0.5);
-
-  axis[0] = x;
-  axis[1] = y;
-  axis[2] = z;
+  Mat(Vec3d(R(2, 1) - R(2, 1),
+            R(0, 2) - R(2, 0),
+            R(1, 0) - R(0, 1))).copyTo(axis);
+  TNormalize3(axis);
+  *angle = acos(0.5 * (cv::trace(R) - 1.0));
 }
 
 /**
@@ -535,39 +258,18 @@ static inline void dcmToAA(double *R, double *axis, double *angle)
  *
  *  \param [in] axis Axis Vector
  *  \param [in] angle Angle (In radians)
- *  \param [in] R 3x3 Rotation matrix
+ *  \param [out] R 3x3 Rotation matrix
  */
-static inline void aaToDCM(double *axis, double angle, double *R)
+static inline void aaToDCM(const Vec3d& axis, double angle, Matx33d& R)
 {
-  double ident[9]={1,0,0,0,1,0,0,0,1};
-  double n[9] = { 0.0, -axis[2], axis[1],
-                  axis[2], 0.0, -axis[0],
-                  -axis[1], axis[0], 0.0
-                };
+  uint i, j;
+  Matx33d n = Matx33d::all(0);
 
-  double nsq[9];
-  double c, s;
-  int i;
-
-  //c = 1-cos(angle);
-  c = cos(angle);
-  s = sin(angle);
-
-  matrixProduct33(n, n, nsq);
-
-  for (i = 0; i < 9; i++)
-  {
-    const double sni = n[i]*s;
-    const double cnsqi = nsq[i]*(c);
-    R[i]=ident[i]+sni+cnsqi;
-  }
-
-  // The below code is the matrix based implemntation of the above
-  // double nsq[9], sn[9], cnsq[9], tmp[9];
-  //matrix_scale(3, 3, n, s, sn);
-  //matrix_scale(3, 3, nsq, (1 - c), cnsq);
-  //matrix_sum(3, 3, 3, 3, ident, sn, tmp);
-  //matrix_sum(3, 3, 3, 3, tmp, cnsq, R);
+  for (i = 0; i < 3; i++)
+    for (j = 0; j < 3; j++)
+      if (i != j)
+        n(i, j) = (((i + 1) % 3 == j) ? -1 : 1) * axis[3 - i - j];
+  Mat(Matx33d::eye() + sin(angle) * n + cos(angle) * n * n).copyTo(R);
 }
 
 /**
@@ -576,52 +278,20 @@ static inline void aaToDCM(double *axis, double angle, double *R)
  *  \param [in] R Rotation Matrix
  *  \param [in] q Quaternion
  */
-static inline void dcmToQuat(double *R, double *q)
+static inline void dcmToQuat(Matx33d& R, Vec4d& q)
 {
-  double n4; // the norm of quaternion multiplied by 4
-  double tr = R[0] + R[4] + R[8]; // trace of martix
-  double factor;
-
-  if (tr > 0.0)
+  double tr = cv::trace(R);
+  Vec3d v(R(0, 0), R(1, 1), R(2, 2));
+  int idx = tr > 0.0 ? 3 : (int)(std::max_element(v.val, v.val + 3) - v.val);
+  double norm4 = q[(idx + 1) % 4] = 1.0 + (tr > 0.0 ? tr : 2 * R(idx, idx) - tr);
+  int i, prev, next, step = idx % 2 ? 1 : -1, curr = 3;
+  for (i = 0; i < 3; i++)
   {
-    q[1] = R[5] - R[7];
-    q[2] = R[6] - R[2];
-    q[3] = R[1] - R[3];
-    q[0] = tr + 1.0;
-    n4 = q[0];
+    curr = (curr + step) % 4;
+    next = (curr + 1) % 3, prev = (curr + 2) % 3;
+    q[(idx + i + 2) % 4] = R(next, prev) + (tr > 0.0 || idx == curr ? -1 : 1) * R(prev, next);
   }
-  else
-    if ((R[0] > R[4]) && (R[0] > R[8]))
-    {
-      q[1] = 1.0 + R[0] - R[4] - R[8];
-      q[2] = R[3] + R[1];
-      q[3] = R[6] + R[2];
-      q[0] = R[5] - R[7];
-      n4 = q[1];
-    }
-    else
-      if (R[4] > R[8])
-      {
-        q[1] = R[3] + R[1];
-        q[2] = 1.0 + R[4] - R[0] - R[8];
-        q[3] = R[7] + R[5];
-        q[0] = R[6] - R[2];
-        n4 = q[2];
-      }
-      else
-      {
-        q[1] = R[6] + R[2];
-        q[2] = R[7] + R[5];
-        q[3] = 1.0 + R[8] - R[0] - R[4];
-        q[0] = R[1] - R[3];
-        n4 = q[3];
-      }
-
-  factor = 0.5 / sqrt(n4);
-  q[0] *= factor;
-  q[1] *= factor;
-  q[2] *= factor;
-  q[3] *= factor;
+  q *= 0.5 / sqrt(norm4);
 }
 
 /**
@@ -631,36 +301,33 @@ static inline void dcmToQuat(double *R, double *q)
  *  \param [in] R Rotation Matrix
  *
  */
-static inline void quatToDCM(double *q, double *R)
+static inline void quatToDCM(Vec4d& q, Matx33d& R)
 {
-  double sqw = q[0] * q[0];
-  double sqx = q[1] * q[1];
-  double sqy = q[2] * q[2];
-  double sqz = q[3] * q[3];
+  Vec4d sq = q.mul(q);
 
   double tmp1, tmp2;
 
-  R[0] =  sqx - sqy - sqz + sqw; // since sqw + sqx + sqy + sqz = 1
-  R[4] = -sqx + sqy - sqz + sqw;
-  R[8] = -sqx - sqy + sqz + sqw;
+  R(0, 0) = sq[0] + sq[1] - sq[2] - sq[3]; // since norm(q) = 1
+  R(1, 1) = sq[0] - sq[1] + sq[2] - sq[3];
+  R(2, 2) = sq[0] - sq[1] - sq[2] + sq[3];
 
   tmp1 = q[1] * q[2];
   tmp2 = q[3] * q[0];
 
-  R[1] = 2.0 * (tmp1 + tmp2);
-  R[3] = 2.0 * (tmp1 - tmp2);
+  R(0, 1) = 2.0 * (tmp1 + tmp2);
+  R(1, 0) = 2.0 * (tmp1 - tmp2);
 
   tmp1 = q[1] * q[3];
   tmp2 = q[2] * q[0];
 
-  R[2] = 2.0 * (tmp1 - tmp2);
-  R[6] = 2.0 * (tmp1 + tmp2);
+  R(0, 2) = 2.0 * (tmp1 - tmp2);
+  R(2, 0) = 2.0 * (tmp1 + tmp2);
 
   tmp1 = q[2] * q[3];
   tmp2 = q[1] * q[0];
 
-  R[5] = 2.0 * (tmp1 + tmp2);
-  R[7] = 2.0 * (tmp1 - tmp2);
+  R(1, 2) = 2.0 * (tmp1 + tmp2);
+  R(2, 1) = 2.0 * (tmp1 - tmp2);
 }
 
 } // namespace ppf_match_3d

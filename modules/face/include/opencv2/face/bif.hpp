@@ -68,14 +68,14 @@ public:
      */
     CV_WRAP virtual void compute(InputArray image,
                                  OutputArray features) const = 0;
-};
 
-/**
- * @param num_bands The number of filter bands (<=8) used for computing BIF.
- * @param num_rotations The number of image rotations for computing BIF.
- * @returns Object for computing BIF.
- */
-CV_EXPORTS_W cv::Ptr<BIF> createBIF(int num_bands = 8, int num_rotations = 12);
+    /**
+     * @param num_bands The number of filter bands (<=8) used for computing BIF.
+     * @param num_rotations The number of image rotations for computing BIF.
+     * @returns Object for computing BIF.
+     */
+    CV_WRAP static Ptr<BIF> create(int num_bands = 8, int num_rotations = 12);
+};
 
 }  // namespace cv
 }  // namespace face

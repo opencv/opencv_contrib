@@ -96,12 +96,12 @@ class TrackerProxyImpl : public TrackerProxy
 {
 public:
 	TrackerProxyImpl(Tparams params = Tparams()) :params_(params){}
-	bool init(const Mat& image, const Rect2d& boundingBox)
+	bool init(const Mat& image, const Rect2d& boundingBox) CV_OVERRIDE
 	{
-		trackerPtr = T::createTracker();
+        trackerPtr = T::create();
 		return trackerPtr->init(image, boundingBox);
 	}
-	bool update(const Mat& image, Rect2d& boundingBox)
+	bool update(const Mat& image, Rect2d& boundingBox) CV_OVERRIDE
 	{
 		return trackerPtr->update(image, boundingBox);
 	}
@@ -112,15 +112,20 @@ private:
 };
 
 
-#define BLUR_AS_VADIM
+#undef BLUR_AS_VADIM
 #undef CLOSED_LOOP
 
 class TrackerTLDImpl : public TrackerTLD
 {
 public:
 	TrackerTLDImpl(const TrackerTLD::Params &parameters = TrackerTLD::Params());
-	void read(const FileNode& fn);
-	void write(FileStorage& fs) const;
+	void read(const FileNode& fn) CV_OVERRIDE;
+	void write(FileStorage& fs) const CV_OVERRIDE;
+
+    Ptr<TrackerModel> getModel()
+    {
+      return model;
+    }
 
 	class Pexpert
 	{
@@ -131,7 +136,7 @@ public:
 		bool operator()(Rect2d /*box*/){ return false; }
 		int additionalExamples(std::vector<Mat_<uchar> >& examplesForModel, std::vector<Mat_<uchar> >& examplesForEnsemble);
 	protected:
-		Pexpert(){}
+		Pexpert() : detector_(NULL) {}
 		Mat img_, imgBlurred_;
 		Rect2d resultBox_;
 		const TLDDetector* detector_;
@@ -154,8 +159,8 @@ public:
 		}
 	};
 
-	bool initImpl(const Mat& image, const Rect2d& boundingBox);
-	bool updateImpl(const Mat& image, Rect2d& boundingBox);
+	bool initImpl(const Mat& image, const Rect2d& boundingBox) CV_OVERRIDE;
+	bool updateImpl(const Mat& image, Rect2d& boundingBox) CV_OVERRIDE;
 
 	TrackerTLD::Params params;
 	Ptr<Data> data;

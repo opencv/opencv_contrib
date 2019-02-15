@@ -75,7 +75,7 @@ class CV_EXPORTS TRACK_alov : public Dataset
 public:
     static Ptr<TRACK_alov> create();
 
-    virtual void load(const std::string &path) = 0;
+    virtual void load(const std::string &path) CV_OVERRIDE = 0;
 
     //Load only frames with annotations (~every 5-th frame)
     virtual void loadAnnotatedOnly(const std::string &path) = 0;

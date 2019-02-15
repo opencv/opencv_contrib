@@ -158,7 +158,6 @@ void changeModeCallback(int state, void *filter)
 void changeNumberOfCpuCallback(int count, void*)
 {
     count = std::max(1, count);
-    cv::setNumThreads(count);
     g_numberOfCPUs = count;
 }
 
@@ -188,7 +187,6 @@ int main()
     displayOverlay("Demo", "Press Ctrl+P to show property window", 5000);
     
     //Thread trackbar
-    cv::setNumThreads(g_numberOfCPUs); //speedup filtering
     createTrackbar("Threads", String(), &g_numberOfCPUs, cv::getNumberOfCPUs(), changeNumberOfCpuCallback);
 
     //Buttons to choose different modes
@@ -218,6 +216,8 @@ int main()
         {
             cap >> rawFrame;
         } while (rawFrame.empty());
+
+        cv::setNumThreads(g_numberOfCPUs); //speedup filtering
 
         splitScreen(rawFrame, outputFrame, srcFrame, processedFrame);
         g_filterOp(srcFrame, processedFrame);

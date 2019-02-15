@@ -26,7 +26,7 @@ def substitute(cv, output_dir):
 
 if __name__ == "__main__":
     """
-    Usage: python cvmex.py  --jinja2 /path/to/jinja2/engine
+    Usage: python cvmex.py
                             --opts [-list -of -opts]
                             --include_dirs [-list -of -opencv_include_directories]
                             --lib_dir opencv_lib_directory
@@ -44,7 +44,6 @@ if __name__ == "__main__":
     import sys, re, os, time
     from argparse import ArgumentParser
     parser = ArgumentParser()
-    parser.add_argument('--jinja2')
     parser.add_argument('--opts')
     parser.add_argument('--include_dirs')
     parser.add_argument('--lib_dir')
@@ -52,9 +51,6 @@ if __name__ == "__main__":
     parser.add_argument('--flags')
     parser.add_argument('--outdir')
     cv = parser.parse_args()
-
-    # add jinja to the path
-    sys.path.append(cv.jinja2)
 
     from filters import *
     from jinja2 import Environment, FileSystemLoader

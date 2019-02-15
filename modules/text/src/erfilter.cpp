@@ -107,14 +107,14 @@ ERStat::ERStat(int init_level, int init_pixel, int init_x, int init_y) : pixel(i
 // derivative classes
 
 
-// the classe implementing the interface for the 1st and 2nd stages of Neumann and Matas algorithm
+// the classes implementing the interface for the 1st and 2nd stages of Neumann and Matas algorithm
 class CV_EXPORTS ERFilterNM : public ERFilter
 {
 public:
     //Constructor
     ERFilterNM();
     //Destructor
-    ~ERFilterNM() {}
+    ~ERFilterNM() CV_OVERRIDE {}
 
     float minProbability;
     bool  nonMaxSuppression;
@@ -122,7 +122,7 @@ public:
 
     // the key method. Takes image on input, vector of ERStat is output for the first stage,
     // input/output - for the second one.
-    void run( InputArray image, vector<ERStat>& regions );
+    void run( InputArray image, vector<ERStat>& regions ) CV_OVERRIDE;
 
 protected:
     int thresholdDelta;
@@ -138,14 +138,14 @@ protected:
 public:
 
     // set/get methods to set the algorithm properties,
-    void setCallback(const Ptr<ERFilter::Callback>& cb);
-    void setThresholdDelta(int thresholdDelta);
-    void setMinArea(float minArea);
-    void setMaxArea(float maxArea);
-    void setMinProbability(float minProbability);
-    void setMinProbabilityDiff(float minProbabilityDiff);
-    void setNonMaxSuppression(bool nonMaxSuppression);
-    int  getNumRejected();
+    void setCallback(const Ptr<ERFilter::Callback>& cb) CV_OVERRIDE;
+    void setThresholdDelta(int thresholdDelta) CV_OVERRIDE;
+    void setMinArea(float minArea) CV_OVERRIDE;
+    void setMaxArea(float maxArea) CV_OVERRIDE;
+    void setMinProbability(float minProbability) CV_OVERRIDE;
+    void setMinProbabilityDiff(float minProbabilityDiff) CV_OVERRIDE;
+    void setNonMaxSuppression(bool nonMaxSuppression) CV_OVERRIDE;
+    int  getNumRejected() const CV_OVERRIDE;
 
 private:
     // pointer to the input/output regions vector
@@ -171,32 +171,32 @@ private:
 
 
 // default 1st stage classifier
-class CV_EXPORTS ERClassifierNM1 : public ERFilter::Callback
+class CV_EXPORTS ERClassifierNM1 CV_FINAL : public ERFilter::Callback
 {
 public:
     //Constructor
     ERClassifierNM1(const string& filename);
     // Destructor
-    ~ERClassifierNM1() {}
+    ~ERClassifierNM1() CV_OVERRIDE {}
 
     // The classifier must return probability measure for the region.
-    double eval(const ERStat& stat);
+    double eval(const ERStat& stat) CV_OVERRIDE;
 
 private:
     Ptr<Boost> boost;
 };
 
 // default 2nd stage classifier
-class CV_EXPORTS ERClassifierNM2 : public ERFilter::Callback
+class CV_EXPORTS ERClassifierNM2 CV_FINAL : public ERFilter::Callback
 {
 public:
     //constructor
     ERClassifierNM2(const string& filename);
     // Destructor
-    ~ERClassifierNM2() {}
+    ~ERClassifierNM2() CV_OVERRIDE {}
 
     // The classifier must return probability measure for the region.
-    double eval(const ERStat& stat);
+    double eval(const ERStat& stat) CV_OVERRIDE;
 
 private:
     Ptr<Boost> boost;
@@ -223,6 +223,8 @@ ERFilterNM::ERFilterNM()
 // input/output for the second one.
 void ERFilterNM::run( InputArray image, vector<ERStat>& _regions )
 {
+    num_rejected_regions=0;
+    num_accepted_regions=0;
 
     // assert correct image type
     CV_Assert( image.getMat().type() == CV_8UC1 );
@@ -277,11 +279,11 @@ void ERFilterNM::er_tree_extract( InputArray image )
     // the component stack
     vector<ERStat*> er_stack;
 
-    // the quads for euler number calculation
+    // the quads for Euler's number calculation
     // quads[2][2] and quads[2][3] are never used.
-    // The four lowest bits in each quads[i][j] correspond to the 2x2 binary patterns 
-    // Q_1, Q_2, Q_3 in the Neumann and Matas CVPR 2012 paper 
-    // (see in page 4 at the end of first column). 
+    // The four lowest bits in each quads[i][j] correspond to the 2x2 binary patterns
+    // Q_1, Q_2, Q_3 in the Neumann and Matas CVPR 2012 paper
+    // (see in page 4 at the end of first column).
     // Q_1 and Q_2 have four patterns, while Q_3 has only two.
     const int quads[3][4] =
     {
@@ -336,7 +338,7 @@ void ERFilterNM::er_tree_extract( InputArray image )
                     default: if (y > 0) neighbour_pixel = current_pixel - width; break;
             }
 
-            // if neighbour is not accessible, mark it accessible and retreive its grey-level value
+            // if neighbour is not accessible, mark it accessible and retrieve its grey-level value
             if ( !accessible_pixel_mask[neighbour_pixel] && (neighbour_pixel != current_pixel) )
             {
 
@@ -377,14 +379,14 @@ void ERFilterNM::er_tree_extract( InputArray image )
                 }
             }
 
-        } // else neigbor was already accessible
+        } // else neighbour was already accessible
 
         if (push_new_component) continue;
 
 
         // once here we can add the current pixel to the component at the top of the stack
         // but first we find how many of its neighbours are part of the region boundary (needed for
-        // perimeter and crossings calc.) and the increment in quads counts for euler number calc.
+        // perimeter and crossings calc.) and the increment in quads counts for Euler's number calc.
         int non_boundary_neighbours = 0;
         int non_boundary_neighbours_horiz = 0;
 
@@ -665,12 +667,12 @@ void ERFilterNM::er_merge(ERStat *parent, ERStat *child)
     child->level = child->level*thresholdDelta;
 
     // before saving calculate P(child|character) and filter if possible
-    if (classifier != NULL)
+    if (classifier)
     {
         child->probability = classifier->eval(*child);
     }
 
-    if ( (((classifier!=NULL)?(child->probability >= minProbability):true)||(nonMaxSuppression)) &&
+    if ( (((classifier)?(child->probability >= minProbability):true)||(nonMaxSuppression)) &&
          ((child->area >= (minArea*region_mask.rows*region_mask.cols)) &&
           (child->area <= (maxArea*region_mask.rows*region_mask.cols)) &&
           (child->rect.width > 2) && (child->rect.height > 2)) )
@@ -801,7 +803,7 @@ ERStat* ERFilterNM::er_tree_filter ( InputArray image, ERStat * stat, ERStat *pa
     vector<Point> contour_poly;
     vector<Vec4i> hierarchy;
     findContours( region, contours, hierarchy, RETR_TREE, CHAIN_APPROX_NONE, Point(0, 0) );
-    //TODO check epsilon parameter of approxPolyDP (set empirically) : we want more precission
+    //TODO check epsilon parameter of approxPolyDP (set empirically) : we want more precision
     //     if the region is very small because otherwise we'll loose all the convexities
     approxPolyDP( Mat(contours[0]), contour_poly, (float)min(rect.width,rect.height)/17, true );
 
@@ -858,12 +860,12 @@ ERStat* ERFilterNM::er_tree_filter ( InputArray image, ERStat * stat, ERStat *pa
 
 
     // calculate P(child|character) and filter if possible
-    if ( (classifier != NULL) && (stat->parent != NULL) )
+    if (classifier && (stat->parent != NULL))
     {
         stat->probability = classifier->eval(*stat);
     }
 
-    if ( ( ((classifier != NULL)?(stat->probability >= minProbability):true) &&
+    if ( ( ((classifier)?(stat->probability >= minProbability):true) &&
           ((stat->area >= minArea*region_mask.rows*region_mask.cols) &&
            (stat->area <= maxArea*region_mask.rows*region_mask.cols)) ) ||
         (stat->parent == NULL) )
@@ -999,7 +1001,7 @@ void ERFilterNM::setNonMaxSuppression(bool _nonMaxSuppression)
     return;
 }
 
-int ERFilterNM::getNumRejected()
+int ERFilterNM::getNumRejected() const
 {
     return num_rejected_regions;
 }
@@ -1089,9 +1091,9 @@ double ERClassifierNM2::eval(const ERStat& stat)
                               default classifier can be implicitly load with function loadClassifierNM1()
                               from file in samples/cpp/trained_classifierNM1.xml
     \param  thresholdDelta    Threshold step in subsequent thresholds when extracting the component tree
-    \param  minArea           The minimum area (% of image size) allowed for retreived ER's
-    \param  minArea           The maximum area (% of image size) allowed for retreived ER's
-    \param  minProbability    The minimum probability P(er|character) allowed for retreived ER's
+    \param  minArea           The minimum area (% of image size) allowed for retrieved ER's
+    \param  minArea           The maximum area (% of image size) allowed for retrieved ER's
+    \param  minProbability    The minimum probability P(er|character) allowed for retrieved ER's
     \param  nonMaxSuppression Whenever non-maximum suppression is done over the branch probabilities
     \param  minProbability    The minimum probability difference between local maxima and local minima ERs
 */
@@ -1145,6 +1147,17 @@ Ptr<ERFilter> createERFilterNM2(const Ptr<ERFilter::Callback>& cb, float minProb
     return (Ptr<ERFilter>)filter;
 }
 
+Ptr<ERFilter> createERFilterNM1(const String& filename, int _thresholdDelta,
+                                float _minArea, float _maxArea, float _minProbability,
+                                bool _nonMaxSuppression, float _minProbabilityDiff) {
+    return createERFilterNM1(loadClassifierNM1(filename), _thresholdDelta, _minArea, _maxArea, _minProbability, _nonMaxSuppression, _minProbabilityDiff);
+
+}
+
+Ptr<ERFilter> createERFilterNM2(const String& filename, float _minProbability) {
+    return createERFilterNM2(loadClassifierNM2(filename), _minProbability);
+}
+
 /*!
     Allow to implicitly load the default classifier when creating an ERFilter object.
     The function takes as parameter the XML or YAML file with the classifier model
@@ -1167,16 +1180,16 @@ Ptr<ERFilter::Callback> loadClassifierNM2(const String& filename)
 }
 
 // dummy classifier
-class ERDummyClassifier : public ERFilter::Callback
+class ERDummyClassifier CV_FINAL : public ERFilter::Callback
 {
 public:
     //Constructor
     ERDummyClassifier() {}
     // Destructor
-    ~ERDummyClassifier() {}
+    ~ERDummyClassifier() CV_OVERRIDE {}
 
     // The classifier must return probability measure for the region.
-    double eval(const ERStat& s) {if (s.area ==0) return (double)0.0; return (double)1.0;}
+    double eval(const ERStat& s) CV_OVERRIDE {if (s.area ==0) return (double)0.0; return (double)1.0;}
 };
 
 /* Create a dummy classifier that accepts all regions */
@@ -1211,12 +1224,12 @@ void get_gradient_magnitude(Mat& _grey_img, Mat& _gradient_magnitude)
 
 
 /*!
-    Compute the diferent channels to be processed independently in the N&M algorithm
+    Compute the different channels to be processed independently in the N&M algorithm
     Neumann L., Matas J.: Real-Time Scene Text Localization and Recognition, CVPR 2012
 
     In N&M algorithm, the combination of intensity (I), hue (H), saturation (S), and gradient
-    magnitude channels (Grad) are used in order to obatin high localization recall.
-    This implementation also the alternative combination of red (R), grren (G), blue (B),
+    magnitude channels (Grad) are used in order to obtain high localization recall.
+    This implementation also the alternative combination of red (R), green (G), blue (B),
     lightness (L), and gradient magnitude (Grad).
 
     \param  _src           Source image. Must be RGB CV_8UC3.
@@ -1954,7 +1967,7 @@ public:
 static void generate_dendrogram(double * const Z, cluster_result & Z2, const int_fast32_t N)
 {
     // The array "nodes" is a union-find data structure for the cluster
-    // identites (only needed for unsorted cluster_result input).
+    // identities (only needed for unsorted cluster_result input).
     union_find nodes;
     stable_sort(Z2[0], Z2[N-1]);
     nodes.init(N);
@@ -2185,11 +2198,11 @@ struct HCluster{
     vector<int> elements;   // elements (contour ID)
     int nfa;                // the number of false alarms for this merge
     float dist;             // distance of the merge
-    float dist_ext;         // distamce where this merge will merge with another
+    float dist_ext;         // distance where this merge will merge with another
     long double volume;     // volume of the bounding sphere (or bounding box)
     long double volume_ext; // volume of the sphere(or box) + envolvent empty space
     vector<vector<float> > points; // nD points in this cluster
-    bool max_meaningful;    // is this merge max meaningul ?
+    bool max_meaningful;    // is this merge max meaningful ?
     vector<int> max_in_branch; // otherwise which merges are the max_meaningful in this branch
     int min_nfa_in_branch;  // min nfa detected within the chilhood
     int node1;
@@ -2274,7 +2287,7 @@ void MaxMeaningfulClustering::build_merge_info(double *Z, double *X, int N, int 
                                                vector< vector<int> > *meaningful_clusters)
 {
 
-    // walk the whole dendogram
+    // walk the whole dendrogram
     for (int i=0; i<(N-1)*4; i=i+4)
     {
         HCluster cluster;
@@ -2676,7 +2689,8 @@ double MaxMeaningfulClustering::probability(vector<int> &cluster)
     //for (int kk=0; kk<angles.size(); kk++)
     //  cout << angles[kk] << " ";
     //cout << endl;
-
+    if (angles.empty() || edge_distances.empty())
+        return 0;
     meanStdDev( angles, mean, std );
     sample.push_back((float)std[0]);
     sample.push_back((float)mean[0]);
@@ -2953,7 +2967,7 @@ static float extract_features(Mat &grey, Mat& channel, vector<ERStat> &regions, 
             f.convex_hull_ratio = (float)contourArea(hull)/contourArea(contours0[0]);
             vector<Vec4i> cx;
             vector<int> hull_idx;
-            //TODO check epsilon parameter of approxPolyDP (set empirically) : we want more precission
+            //TODO check epsilon parameter of approxPolyDP (set empirically) : we want more precision
             //     if the region is very small because otherwise we'll loose all the convexities
             approxPolyDP( Mat(contours0[0]), contours0[0], (float)min(rrect.size.width,rrect.size.height)/17, true );
             convexHull(contours0[0],hull_idx,false,false);
@@ -2996,7 +3010,7 @@ static float extract_features(Mat &grey, Mat& channel, vector<ERStat> &regions, 
 
     \param  _image         Original RGB image from wich the regions were extracted.
     \param  _src           Vector of sinle channel images CV_8UC1 from wich the regions were extracted.
-    \param  regions        Vector of ER's retreived from the ERFilter algorithm from each channel
+    \param  regions        Vector of ER's retrieved from the ERFilter algorithm from each channel
     \param  groups         The output of the algorithm are stored in this parameter as list of indexes to provided regions.
     \param  text_boxes     The output of the algorithm are stored in this parameter as list of rectangles.
     \param  filename       The XML or YAML file with the classifier model (e.g. trained_classifier_erGrouping.xml)
@@ -3147,7 +3161,7 @@ struct line_estimates
 };
 
 // distanceLinesEstimates
-// Calculates the distance between two line estimates deﬁned as the largest
+// Calculates the distance between two line estimates defined as the largest
 // normalized vertical difference of their top/bottom lines at their boundary points
 // out float distance
 float distanceLinesEstimates(line_estimates &a, line_estimates &b);
@@ -3317,7 +3331,7 @@ void fitLineOLS(Point p1, Point p2, Point p3, float &a0, float &a1)
     a1=(float)(3*sumxy-sumx*sumy) / (3*sumx2-sumx*sumx);
 }
 
-// Fit line from three points using (heutistic) Least-Median of Squares
+// Fit line from three points using (heuristic) Least-Median of Squares
 // out a0 is the intercept
 // out a1 is the slope
 // returns the error of the single point that doesn't fit the line
@@ -3328,7 +3342,7 @@ float fitLineLMS(Point p1, Point p2, Point p3, float &a0, float &a1)
     a1 = 0;
 
     //Least-Median of Squares does not make sense with only three points
-    //becuse any line passing by two of them has median_error = 0
+    //because any line passing by two of them has median_error = 0
     //So we'll take the one with smaller slope
     float l_a0, l_a1, best_slope=FLT_MAX, err=0;
 
@@ -3719,7 +3733,7 @@ bool sort_couples (Vec3i i,Vec3i j) { return (i[0]<j[0]); }
 
     \param  _img           Original RGB image from wich the regions were extracted.
     \param  _src           Vector of sinle channel images CV_8UC1 from wich the regions were extracted.
-    \param  regions        Vector of ER's retreived from the ERFilter algorithm from each channel
+    \param  regions        Vector of ER's retrieved from the ERFilter algorithm from each channel
     \param  out_groups     The output of the algorithm are stored in this parameter as list of indexes to provided regions.
     \param  out_boxes      The output of the algorithm are stored in this parameter as list of rectangles.
     \param  do_feedback    Whenever the grouping algorithm uses a feedback loop to recover missing regions in a line.
@@ -3812,7 +3826,7 @@ void erGroupingNM(InputArray _img, InputArrayOfArrays _src, vector< vector<ERSta
         {
             for (size_t j=i+1; j<valid_pairs.size(); j++)
             {
-                // check colinearity rules
+                // check collinearity rules
                 region_triplet valid_triplet(Vec2i(0,0),Vec2i(0,0),Vec2i(0,0));
                 if (isValidTriplet(regions, valid_pairs[i],valid_pairs[j], valid_triplet))
                 {
@@ -3880,7 +3894,7 @@ void erGroupingNM(InputArray _img, InputArrayOfArrays _src, vector< vector<ERSta
         if (do_feedback_loop)
         {
 
-            //Feedback loop of detected lines to region extraction ... tries to recover missmatches in the region decomposition step by extracting regions in the neighbourhood of a valid sequence and checking if they are consistent with its line estimates
+            //Feedback loop of detected lines to region extraction ... tries to recover mismatches in the region decomposition step by extracting regions in the neighbourhood of a valid sequence and checking if they are consistent with its line estimates
             Ptr<ERFilter> er_filter = createERFilterNM1(loadDummyClassifier(),1,0.005f,0.3f,0.f,false);
             for (int i=0; i<(int)valid_sequences.size(); i++)
             {
@@ -4161,7 +4175,7 @@ void MSERsToERStats(InputArray image, vector<vector<Point> > &contours, vector<v
   }
 }
 
-// Utility funtion for scripting
+// Utility function for scripting
 void detectRegions(InputArray image, const Ptr<ERFilter>& er_filter1, const Ptr<ERFilter>& er_filter2, CV_OUT vector< vector<Point> >& regions)
 {
     // assert correct image type
@@ -4206,6 +4220,42 @@ void detectRegions(InputArray image, const Ptr<ERFilter>& er_filter1, const Ptr<
 
       regions.push_back(contours[0]);
     }
+}
+
+
+void detectRegions(InputArray image, const Ptr<ERFilter>& er_filter1, const Ptr<ERFilter>& er_filter2,
+                                           CV_OUT std::vector<Rect> &groups_rects,
+                                           int method,
+                                           const String& filename,
+                                           float minProbability)
+{
+    // assert correct image type
+    CV_Assert( image.type() == CV_8UC3 );
+
+    CV_Assert( !er_filter1.empty() );
+    CV_Assert( !er_filter2.empty() );
+
+    // Extract channels to be processed individually
+    vector<Mat> channels;
+
+    Mat grey;
+    cvtColor(image,grey,COLOR_RGB2GRAY);
+
+    // here we are only using grey channel
+    channels.push_back(grey);
+    channels.push_back(255-grey);
+
+    vector<vector<ERStat> > regions(channels.size());
+
+    // Apply the default cascade classifier to each independent channel (could be done in parallel)
+    for (int c=0; c<(int)channels.size(); c++)
+    {
+        er_filter1->run(channels[c], regions[c]);
+        er_filter2->run(channels[c], regions[c]);
+    }
+   // Detect character groups
+    vector< vector<Vec2i> > nm_region_groups;
+    erGrouping(image, channels, regions, nm_region_groups, groups_rects, method, filename, minProbability);
 }
 
 }

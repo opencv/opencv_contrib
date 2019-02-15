@@ -1,101 +1,32 @@
-/*
- * Software License Agreement (BSD License)
- *
- *  Copyright (c) 2012, Willow Garage, Inc.
- *  All rights reserved.
- *
- *  Redistribution and use in source and binary forms, with or without
- *  modification, are permitted provided that the following conditions
- *  are met:
- *
- *   * Redistributions of source code must retain the above copyright
- *     notice, this list of conditions and the following disclaimer.
- *   * Redistributions in binary form must reproduce the above
- *     copyright notice, this list of conditions and the following
- *     disclaimer in the documentation and/or other materials provided
- *     with the distribution.
- *   * Neither the name of Willow Garage, Inc. nor the names of its
- *     contributors may be used to endorse or promote products derived
- *     from this software without specific prior written permission.
- *
- *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- *  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- *  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
- *  FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
- *  COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
- *  INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
- *  BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
- *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
- *  CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
- *  LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
- *  ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
- *  POSSIBILITY OF SUCH DAMAGE.
- *
- */
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html
+
+// This code is also subject to the license terms in the LICENSE_WillowGarage.md file found in this module's directory
 
 #include "test_precomp.hpp"
 #include <opencv2/rgbd.hpp>
 #include <opencv2/calib3d.hpp>
 
-namespace cv
-{
-namespace rgbd
-{
+namespace opencv_test { namespace {
 
-class CV_EXPORTS TickMeter
-{
-public:
-    TickMeter();
-    void start();
-    void stop();
-
-    int64 getTimeTicks() const;
-    double getTimeMicro() const;
-    double getTimeMilli() const;
-    double getTimeSec()   const;
-    int64 getCounter() const;
-
-    void reset();
-private:
-    int64 counter;
-    int64 sumTime;
-    int64 startTime;
-};
-
-TickMeter::TickMeter() { reset(); }
-int64 TickMeter::getTimeTicks() const { return sumTime; }
-double TickMeter::getTimeSec()   const { return (double)getTimeTicks()/getTickFrequency(); }
-double TickMeter::getTimeMilli() const { return getTimeSec()*1e3; }
-double TickMeter::getTimeMicro() const { return getTimeMilli()*1e3; }
-int64 TickMeter::getCounter() const { return counter; }
-void  TickMeter::reset() {startTime = 0; sumTime = 0; counter = 0; }
-
-void TickMeter::start(){ startTime = getTickCount(); }
-void TickMeter::stop()
-{
-    int64 time = getTickCount();
-    if ( startTime == 0 )
-        return;
-
-    ++counter;
-
-    sumTime += ( time - startTime );
-    startTime = 0;
-}
-
+#if 0
 Point3f
-rayPlaneIntersection(Point2f uv, const Mat& centroid, const Mat& normal, const Mat_<float>& Kinv);
+rayPlaneIntersection(Point2f uv, const Mat& centroid, const Mat& normal, const Mat_<float>& Kinv)
+{
+  Matx33d dKinv(Kinv);
+  Vec3d dNormal(normal);
+  return rayPlaneIntersection(Vec3d(uv.x, uv.y, 1), centroid.dot(normal), dNormal, dKinv);
+}
+#endif
 
-Vec3f
-rayPlaneIntersection(const Vec3d& uv1, double centroid_dot_normal, const Vec3d& normal,
-                     const Matx33d& Kinv);
 Vec3f
 rayPlaneIntersection(const Vec3d& uv1, double centroid_dot_normal, const Vec3d& normal, const Matx33d& Kinv)
 {
 
   Matx31d L = Kinv * uv1; //a ray passing through camera optical center
   //and uv.
-  L = L * (1.0 / norm(L));
+  L = L * (1.0 / cv::norm(L));
   double LdotNormal = L.dot(normal);
   double d;
   if (std::fabs(LdotNormal) > 1e-9)
@@ -111,18 +42,9 @@ rayPlaneIntersection(const Vec3d& uv1, double centroid_dot_normal, const Vec3d& 
   Vec3f xyz((float)(d * L(0)), (float)(d * L(1)), (float)(d * L(2)));
   return xyz;
 }
-
-Point3f
-rayPlaneIntersection(Point2f uv, const Mat& centroid, const Mat& normal, const Mat_<float>& Kinv)
-{
-  Matx33d dKinv(Kinv);
-  Vec3d dNormal(normal);
-  return rayPlaneIntersection(Vec3d(uv.x, uv.y, 1), centroid.dot(normal), dNormal, dKinv);
-}
-
 const int W = 640;
 const int H = 480;
-int window_size = 5;
+//int window_size = 5;
 float focal_length = 525;
 float cx = W / 2.f + 0.5f;
 float cy = H / 2.f + 0.5f;
@@ -170,7 +92,7 @@ struct Plane
     n[0] = rng.uniform(-0.5, 0.5);
     n[1] = rng.uniform(-0.5, 0.5);
     n[2] = -0.3; //rng.uniform(-1.f, 0.5f);
-    n = n / norm(n);
+    n = n / cv::norm(n);
     set_d((float)rng.uniform(-2.0, 0.6));
   }
 
@@ -188,9 +110,6 @@ struct Plane
   }
 };
 
-void
-gen_points_3d(std::vector<Plane>& planes_out, Mat_<unsigned char> &plane_mask, Mat& points3d, Mat& normals,
-              int n_planes);
 void
 gen_points_3d(std::vector<Plane>& planes_out, Mat_<unsigned char> &plane_mask, Mat& points3d, Mat& normals,
               int n_planes)
@@ -263,7 +182,7 @@ protected:
             std::cout << std::endl << "*** FALS" << std::endl;
             errors[0][0] = 0.006f;
             errors[0][1] = 0.03f;
-            errors[1][0] = 0.00008f;
+            errors[1][0] = 0.0001f;
             errors[1][1] = 0.02f;
             break;
           case 1:
@@ -391,8 +310,8 @@ protected:
       for (int x = 0; x < normals.cols; ++x)
       {
         Vec3f vec1 = normals(y, x), vec2 = ground_normals(y, x);
-        vec1 = vec1 / norm(vec1);
-        vec2 = vec2 / norm(vec2);
+        vec1 = vec1 / cv::norm(vec1);
+        vec2 = vec2 / cv::norm(vec2);
 
         float dot = vec1.dot(vec2);
         // Just for rounding errors
@@ -508,19 +427,18 @@ protected:
   }
 };
 
-}
-}
-
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 TEST(Rgbd_Normals, compute)
 {
-  cv::rgbd::CV_RgbdNormalsTest test;
+  CV_RgbdNormalsTest test;
   test.safe_run();
 }
 
 TEST(Rgbd_Plane, compute)
 {
-  cv::rgbd::CV_RgbdPlaneTest test;
+  CV_RgbdPlaneTest test;
   test.safe_run();
 }
+
+}} // namespace

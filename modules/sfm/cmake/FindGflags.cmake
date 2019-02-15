@@ -418,7 +418,7 @@ function(__find_exported_gflags)
         "version: ${gflags_VERSION} exported here: ${gflags_DIR} using CMake.")
     endif (NOT GFLAGS_NAMESPACE)
   else (FOUND_INSTALLED_GFLAGS_CMAKE_CONFIGURATION)
-    message(STATUS "Failed to find an installed/exported CMake configuration "
+    gflags_report_not_found("Failed to find an installed/exported CMake configuration "
       "for gflags, will perform search for installed gflags components.")
   endif (FOUND_INSTALLED_GFLAGS_CMAKE_CONFIGURATION)
 

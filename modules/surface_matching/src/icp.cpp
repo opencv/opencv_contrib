@@ -44,7 +44,7 @@ namespace cv
 {
 namespace ppf_match_3d
 {
-static void subtractColumns(Mat srcPC, double mean[3])
+static void subtractColumns(Mat srcPC, Vec3d& mean)
 {
   int height = srcPC.rows;
 
@@ -60,7 +60,7 @@ static void subtractColumns(Mat srcPC, double mean[3])
 }
 
 // as in PCA
-static void computeMeanCols(Mat srcPC, double mean[3])
+static void computeMeanCols(Mat srcPC, Vec3d& mean)
 {
   int height = srcPC.rows;
 
@@ -86,7 +86,7 @@ static void computeMeanCols(Mat srcPC, double mean[3])
 }
 
 // as in PCA
-/*static void subtractMeanFromColumns(Mat srcPC, double mean[3])
+/*static void subtractMeanFromColumns(Mat srcPC, Vec3d& mean)
 {
     computeMeanCols(srcPC, mean);
     subtractColumns(srcPC, mean);
@@ -192,88 +192,38 @@ static float getRejectionThreshold(float* r, int m, float outlierScale)
 }
 
 // Kok Lim Low's linearization
-static void minimizePointToPlaneMetric(Mat Src, Mat Dst, Mat& X)
+static void minimizePointToPlaneMetric(Mat Src, Mat Dst, Vec3d& rpy, Vec3d& t)
 {
   //Mat sub = Dst - Src;
   Mat A = Mat(Src.rows, 6, CV_64F);
   Mat b = Mat(Src.rows, 1, CV_64F);
+  Mat rpy_t;
 
 #if defined _OPENMP
 #pragma omp parallel for
 #endif
   for (int i=0; i<Src.rows; i++)
   {
-    const double *srcPt = Src.ptr<double>(i);
-    const double *dstPt = Dst.ptr<double>(i);
-    const double *normals = &dstPt[3];
-    double *bVal = b.ptr<double>(i);
-    double *aRow = A.ptr<double>(i);
+    const Vec3d srcPt(Src.ptr<double>(i));
+    const Vec3d dstPt(Dst.ptr<double>(i));
+    const Vec3d normals(Dst.ptr<double>(i) + 3);
+    const Vec3d sub = dstPt - srcPt;
+    const Vec3d axis = srcPt.cross(normals);
 
-    const double sub[3]={dstPt[0]-srcPt[0], dstPt[1]-srcPt[1], dstPt[2]-srcPt[2]};
-
-    *bVal = TDot3(sub, normals);
-    TCross(srcPt, normals, aRow);
-
-    aRow[3] = normals[0];
-    aRow[4] = normals[1];
-    aRow[5] = normals[2];
+    *b.ptr<double>(i) = sub.dot(normals);
+    hconcat(axis.reshape<1, 3>(), normals.reshape<1, 3>(), A.row(i));
   }
 
-  cv::solve(A, b, X, DECOMP_SVD);
+  cv::solve(A, b, rpy_t, DECOMP_SVD);
+  rpy_t.rowRange(0, 3).copyTo(rpy);
+  rpy_t.rowRange(3, 6).copyTo(t);
 }
 
-
-static void getTransformMat(Mat X, double Pose[16])
+static void getTransformMat(Vec3d& euler, Vec3d& t, Matx44d& Pose)
 {
-  Mat DCM;
-  double *r1, *r2, *r3;
-  double* x = (double*)X.data;
-
-  const double sx = sin(x[0]);
-  const double cx = cos(x[0]);
-  const double sy = sin(x[1]);
-  const double cy = cos(x[1]);
-  const double sz = sin(x[2]);
-  const double cz = cos(x[2]);
-
-  Mat R1 = Mat::eye(3,3, CV_64F);
-  Mat R2 = Mat::eye(3,3, CV_64F);
-  Mat R3 = Mat::eye(3,3, CV_64F);
-
-  r1= (double*)R1.data;
-  r2= (double*)R2.data;
-  r3= (double*)R3.data;
-
-  r1[4]= cx;
-  r1[5]= -sx;
-  r1[7]= sx;
-  r1[8]= cx;
-
-  r2[0]= cy;
-  r2[2]= sy;
-  r2[6]= -sy;
-  r2[8]= cy;
-
-  r3[0]= cz;
-  r3[1]= -sz;
-  r3[3]= sz;
-  r3[4]= cz;
-
-  DCM = R1*(R2*R3);
-
-  Pose[0] = DCM.at<double>(0,0);
-  Pose[1] = DCM.at<double>(0,1);
-  Pose[2] = DCM.at<double>(0,2);
-  Pose[4] = DCM.at<double>(1,0);
-  Pose[5] = DCM.at<double>(1,1);
-  Pose[6] = DCM.at<double>(1,2);
-  Pose[8] = DCM.at<double>(2,0);
-  Pose[9] = DCM.at<double>(2,1);
-  Pose[10] = DCM.at<double>(2,2);
-  Pose[3]=x[3];
-  Pose[7]=x[4];
-  Pose[11]=x[5];
-  Pose[15]=1;
+  Matx33d R;
+  eulerToDCM(euler, R);
+  rtToPose(R, t, Pose);
 }
 
 /* Fast way to look up the duplicates
@@ -301,10 +251,10 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
 
   Mat srcTemp = srcPC.clone();
   Mat dstTemp = dstPC.clone();
-  double meanSrc[3], meanDst[3];
+  Vec3d meanSrc, meanDst;
   computeMeanCols(srcTemp, meanSrc);
   computeMeanCols(dstTemp, meanDst);
-  double meanAvg[3]={0.5*(meanSrc[0]+meanDst[0]), 0.5*(meanSrc[1]+meanDst[1]), 0.5*(meanSrc[2]+meanDst[2])};
+  Vec3d meanAvg = 0.5 * (meanSrc + meanDst);
   subtractColumns(srcTemp, meanAvg);
   subtractColumns(dstTemp, meanAvg);
 
@@ -320,7 +270,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
   Mat dstPC0 = dstTemp;
 
   // initialize pose
-  matrixIdentity(4, pose.val);
+  pose = Matx44d::eye();
 
   Mat M = Mat::eye(4,4,CV_64F);
 
@@ -338,7 +288,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
     const int MaxIterationsPyr = cvRound((double)m_maxIterations/(level+1));
 
     // Obtain the sampled point clouds for this level: Also rotates the normals
-    Mat srcPCT = transformPCPose(srcPC0, pose.val);
+    Mat srcPCT = transformPCPose(srcPC0, pose);
 
     const int sampleStep = cvRound((double)n/(double)numSamples);
 
@@ -372,8 +322,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
     int* newI = new int[numElSrc];
     int* newJ = new int[numElSrc];
 
-    double PoseX[16]={0};
-    matrixIdentity(4, PoseX);
+    Matx44d PoseX = Matx44d::eye();
 
     while ( (!(fval_perc<(1+TolP) && fval_perc>(1-TolP))) && i<MaxIterationsPyr)
     {
@@ -470,10 +419,11 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
           }
         }
 
-        Mat X;
-        minimizePointToPlaneMetric(Src_Match, Dst_Match, X);
-
-        getTransformMat(X, PoseX);
+        Vec3d rpy, t;
+        minimizePointToPlaneMetric(Src_Match, Dst_Match, rpy, t);
+        if (cvIsNaN(cv::trace(rpy)) || cvIsNaN(cv::norm(t)))
+          break;
+        getTransformMat(rpy, t, PoseX);
         Src_Moved = transformPCPose(srcPCT, PoseX);
 
         double fval = cv::norm(Src_Match, Dst_Match)/(double)(Src_Moved.rows);
@@ -494,13 +444,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
 
     }
 
-    double TempPose[16];
-    matrixProduct44(PoseX, pose.val, TempPose);
-
-    // no need to copy the last 4 rows
-    for (int c=0; c<12; c++)
-      pose.val[c] = TempPose[c];
-
+    pose = PoseX * pose;
     residual = tempResidual;
 
     delete[] newI;
@@ -514,18 +458,11 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
     destroyFlann(flann);
   }
 
-  // Pose(1:3, 4) = Pose(1:3, 4)./scale;
-  pose.val[3] = pose.val[3]/scale + meanAvg[0];
-  pose.val[7] = pose.val[7]/scale + meanAvg[1];
-  pose.val[11] = pose.val[11]/scale + meanAvg[2];
-
-  // In MATLAB this would be : Pose(1:3, 4) = Pose(1:3, 4)./scale + meanAvg' - Pose(1:3, 1:3)*meanAvg';
-  double Rpose[9], Cpose[3];
-  poseToR(pose.val, Rpose);
-  matrixProduct331(Rpose, meanAvg, Cpose);
-  pose.val[3] -= Cpose[0];
-  pose.val[7] -= Cpose[1];
-  pose.val[11] -= Cpose[2];
+  Matx33d Rpose;
+  Vec3d Cpose;
+  poseToRT(pose, Rpose, Cpose);
+  Cpose = Cpose / scale + meanAvg - Rpose * meanAvg;
+  rtToPose(Rpose, Cpose, pose);
 
   residual = tempResidual;
 
@@ -543,7 +480,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, std::vector<Po
     Matx44d poseICP = Matx44d::eye();
     Mat srcTemp = transformPCPose(srcPC, poses[i]->pose);
     registerModelToScene(srcTemp, dstPC, poses[i]->residual, poseICP);
-    poses[i]->appendPose(poseICP.val);
+    poses[i]->appendPose(poseICP);
   }
   return 0;
 }

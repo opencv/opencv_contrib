@@ -126,10 +126,10 @@ public:
     (default is 1, see reference paper)
      */
     CV_WRAP virtual void setup(const float photoreceptorsNeighborhoodRadius=3.f, const float ganglioncellsNeighborhoodRadius=1.f, const float meanLuminanceModulatorK=1.f)=0;
+
+    CV_WRAP static Ptr<RetinaFastToneMapping> create(Size inputSize);
 };
 
-//! @relates bioinspired::RetinaFastToneMapping
-CV_EXPORTS_W Ptr<RetinaFastToneMapping> createRetinaFastToneMapping(Size inputSize);
 
 //! @}
 

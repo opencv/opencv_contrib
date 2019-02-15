@@ -35,10 +35,7 @@
 
 #include "test_precomp.hpp"
 
-using namespace cv;
-using namespace cv::sfm;
-using namespace cvtest;
-using namespace std;
+namespace opencv_test { namespace {
 
 TEST(Sfm_fundamental, fundamentalFromProjections)
 {
@@ -88,7 +85,7 @@ TEST(Sfm_fundamental, motionFromEssential)
 {
     double tolerance = 1e-8;
 
-    cvtest::TwoViewDataSet d;
+    TwoViewDataSet d;
     generateTwoViewRandomScene(d);
 
     Matx33d E;
@@ -105,7 +102,7 @@ TEST(Sfm_fundamental, motionFromEssential)
     bool one_solution_is_correct = false;
     for ( int i = 0; i < Rs.size(); ++i )
     {
-        if ( (norm(Rs[i], R) < tolerance) && (norm(ts[i], t) < tolerance) )
+        if ( (cvtest::norm(Rs[i], R, NORM_L2) < tolerance) && (cvtest::norm(ts[i], t, NORM_L2) < tolerance) )
         {
             one_solution_is_correct = true;
             break;
@@ -171,6 +168,8 @@ TEST(Sfm_fundamental, motionFromEssentialChooseSolution)
 
     EXPECT_LE(0, solution);
     EXPECT_LE(solution, 3);
-    EXPECT_LE(norm(Rs[solution]-Mat(R)), 1e-8);
-    EXPECT_LE(norm(ts[solution]-Mat(t)), 1e-8);
+    EXPECT_LE(cvtest::norm(Rs[solution], Mat(R), NORM_L2), 1e-8);
+    EXPECT_LE(cvtest::norm(ts[solution], Mat(t), NORM_L2), 1e-8);
 }
+
+}} // namespace

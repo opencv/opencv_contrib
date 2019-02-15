@@ -235,7 +235,6 @@ static void gradientHist(const cv::Mat &src, cv::Mat &magnitude, cv::Mat &histog
     magnitude /= imsmooth( magnitude, gnrmRad )
         + 0.01*cv::Mat::ones( magnitude.size(), magnitude.type() );
 
-    int pHistSize = histogram.cols*histogram.channels() - 1;
     for (int i = 0; i < phase.rows; ++i)
     {
         const float *pPhase = phase.ptr<float>(i);
@@ -245,12 +244,91 @@ static void gradientHist(const cv::Mat &src, cv::Mat &magnitude, cv::Mat &histog
 
         for (int j = 0; j < phase.cols; ++j)
         {
-            int index  = cvRound((j/pSize + pPhase[j])*nBins);
-            index = std::max(0, std::min(index, pHistSize));
+            int angle = cvRound(pPhase[j]*nBins);
+            if(angle >= nBins)
+            {
+              angle = 0;
+            }
+            const int index = (j/pSize)*nBins + angle;
             pHist[index] += pMagn[j] / CV_SQR(pSize);
         }
     }
 }
+
+/*!
+ * The class parallelizing the edgenms algorithm.
+ *
+ * \param E : edge image
+ * \param O : orientation image
+ * \param dst : destination image
+ * \param r : radius for NMS suppression
+ * \param s : radius for boundary suppression
+ * \param m : multiplier for conservative suppression
+ */
+class NmsInvoker : public cv::ParallelLoopBody
+{
+
+private:
+  const cv::Mat &E;
+  const cv::Mat &O;
+  cv::Mat &dst;
+  const int r;
+  const float m;
+
+public:
+  NmsInvoker(const cv::Mat &_E, const cv::Mat &_O, cv::Mat &_dst, const int _r, const float _m)
+              : E(_E), O(_O), dst(_dst), r(_r), m(_m)
+              {
+              }
+
+  void operator()(const cv::Range &range) const CV_OVERRIDE
+  {
+     for (int x = range.start; x < range.end; x++)
+     {
+       const float *e_ptr = E.ptr<float>(x);
+       const float *o_ptr = O.ptr<float>(x);
+       float *dst_ptr = dst.ptr<float>(x);
+       for (int y=0; y < E.cols; y++)
+       {
+         float e = e_ptr[y];
+         dst_ptr[y] = e;
+         if (!e) continue;
+         e *= m;
+         float coso = cos(o_ptr[y]);
+         float sino = sin(o_ptr[y]);
+         for (int d=-r; d<=r; d++)
+         {
+           if (d)
+           {
+             float xdcos = x+d*coso;
+             float ydsin = y+d*sino;
+             xdcos = xdcos < 0 ? 0 : (xdcos > E.rows - 1.001f ? E.rows - 1.001f : xdcos);
+             ydsin = ydsin < 0 ? 0 : (ydsin > E.cols - 1.001f ? E.cols - 1.001f : ydsin);
+             int x0 = (int)xdcos;
+             int y0 = (int)ydsin;
+             int x1 = x0 + 1;
+             int y1 = y0 + 1;
+             float dx0 = xdcos - x0;
+             float dy0 = ydsin - y0;
+             float dx1 = 1 - dx0;
+             float dy1 = 1 - dy0;
+             float e0 = E.at<float>(x0, y0) * dx1 * dy1 +
+                         E.at<float>(x1, y0) * dx0 * dy1 +
+                         E.at<float>(x0, y1) * dx1 * dy0 +
+                         E.at<float>(x1, y1) * dx0 * dy0;
+
+             if(e < e0)
+             {
+               dst_ptr[y] = 0;
+               break;
+             }
+           }
+         }
+
+       }
+     }
+  }
+};
 
 /********************* RFFeatureGetter class *********************/
 
@@ -281,7 +359,7 @@ public:
      * \param gradNum : __rf.options.numberOfGradientOrientations
      */
     virtual void getFeatures(const Mat &src, Mat &features, const int gnrmRad, const int gsmthRad,
-                             const int shrink, const int outNum, const int gradNum) const
+                             const int shrink, const int outNum, const int gradNum) const CV_OVERRIDE
     {
         cv::Mat luvImg = rgb2luv(src);
 
@@ -442,21 +520,23 @@ public:
     /*!
      * The function detects edges in src and draw them to dst
      *
-     * \param src : source image (RGB, float, in [0;1]) to detect edges
-     * \param dst : destination image (grayscale, float, in [0;1])
+     * \param _src : source image (RGB, float, in [0;1]) to detect edges
+     * \param _dst : destination image (grayscale, float, in [0;1])
      *              where edges are drawn
      */
-    void detectEdges(const cv::Mat &src, cv::Mat &dst) const
+    void detectEdges(cv::InputArray _src, cv::OutputArray _dst) const CV_OVERRIDE
     {
-        CV_Assert( src.type() == CV_32FC3 );
+        CV_Assert( _src.type() == CV_32FC3 );
 
-        dst.create( src.size(), cv::DataType<float>::type );
+        _dst.createSameSize( _src, cv::DataType<float>::type );
+        _dst.setTo(0);
+        Mat dst = _dst.getMat();
 
         int padding = ( __rf.options.patchSize
             - __rf.options.patchInnerSize )/2;
 
         cv::Mat nSrc;
-        copyMakeBorder( src, nSrc, padding, padding,
+        copyMakeBorder( _src, nSrc, padding, padding,
             padding, padding, BORDER_REFLECT );
 
         NChannelsMat features;
@@ -468,6 +548,101 @@ public:
             __rf.options.numberOfGradientOrientations );
         predictEdges( features, dst );
     }
+
+    /*!
+     * The function computes orientation from edge image.
+     *
+     * \param src : edge image.
+     * \param dst : orientation image.
+     * \param r : filter radius.
+     */
+    void computeOrientation(cv::InputArray _src, cv::OutputArray _dst) const CV_OVERRIDE
+    {
+      CV_Assert( _src.type() == CV_32FC1 );
+
+      cv::Mat Oxx, Oxy, Oyy;
+
+      _dst.createSameSize( _src, _src.type() );
+      _dst.setTo(0);
+
+      Mat src = _src.getMat();
+      cv::Mat E_conv = imsmooth(src, __rf.options.gradientNormalizationRadius);
+
+      Sobel(E_conv, Oxx, -1, 2, 0);
+      Sobel(E_conv, Oxy, -1, 1, 1);
+      Sobel(E_conv, Oyy, -1, 0, 2);
+
+      Mat dst = _dst.getMat();
+      float *o = dst.ptr<float>();
+      float *oxx = Oxx.ptr<float>();
+      float *oxy = Oxy.ptr<float>();
+      float *oyy = Oyy.ptr<float>();
+      for (int i = 0; i < dst.rows * dst.cols; i++)
+      {
+          int xysign = -((oxy[i] > 0) - (oxy[i] < 0));
+          o[i] = (atan((oyy[i] * xysign / (oxx[i] + 1e-5))) > 0) ? (float) fmod(
+                  atan((oyy[i] * xysign / (oxx[i] + 1e-5))), CV_PI) : (float) fmod(
+                  atan((oyy[i] * xysign / (oxx[i] + 1e-5))) + CV_PI, CV_PI);
+      }
+    }
+
+     /*!
+     * The function suppress edges where edge is stronger in orthogonal direction
+     * \param edge_image : edge image from detectEdges function.
+     * \param orientation_image : orientation image from computeOrientation function.
+     * \param _dst : suppressed image (grayscale, float, in [0;1])
+     * \param r : radius for NMS suppression.
+     * \param s : radius for boundary suppression.
+     * \param m : multiplier for conservative suppression.
+     * \param isParallel: enables/disables parallel computing.
+     */
+    void edgesNms(cv::InputArray edge_image, cv::InputArray orientation_image, cv::OutputArray _dst, int r, int s, float m, bool isParallel) const CV_OVERRIDE
+    {
+        CV_Assert(edge_image.type() == CV_32FC1);
+        CV_Assert(orientation_image.type() == CV_32FC1);
+
+        cv::Mat E = edge_image.getMat();
+        cv::Mat O = orientation_image.getMat();
+        cv::Mat E_t = E.t();
+        cv::Mat O_t = O.t();
+
+        cv::Mat dst = _dst.getMat();
+        dst.create(E.cols, E.rows, E.type());
+        dst.setTo(0);
+
+        cv::Range sizeRange = cv::Range(0, E_t.rows);
+        NmsInvoker body = NmsInvoker(E_t, O_t, dst, r, m);
+        if (isParallel)
+        {
+          cv::parallel_for_(sizeRange, body);
+        } else
+        {
+          body(sizeRange);
+        }
+
+        s = s > E_t.rows / 2 ? E_t.rows / 2 : s;
+        s = s > E_t.cols / 2 ? E_t.cols / 2 : s;
+        for (int x=0; x<s; x++)
+        {
+          for (int y=0; y<E_t.cols; y++)
+          {
+            dst.at<float>(x, y) *= x / (float)s;
+            dst.at<float>(E_t.rows-1-x, y) *= x / (float)s;
+          }
+        }
+
+        for (int x=0; x < E_t.rows; x++)
+        {
+          for (int y=0; y < s; y++)
+          {
+            dst.at<float>(x, y) *= y / (float)s;
+            dst.at<float>(x, E_t.cols-1-y) *= y / (float)s;
+          }
+        }
+      transpose(dst, dst);
+      dst.copyTo(_dst);
+    }
+
 
 protected:
     /*!
@@ -554,73 +729,83 @@ protected:
                 offsetY[n] = x2*features.cols*nchannels + y2*nchannels + z;
             }
             // lookup tables for mapping linear index to offset pairs
-        #ifdef _OPENMP
-        #pragma omp parallel for
+
+        #ifdef CV_CXX11
+        parallel_for_(cv::Range(0, height), [&](const cv::Range& range)
+        #else
+        const cv::Range range(0, height);
         #endif
-        for (int i = 0; i < height; ++i)
         {
-            float *regFeaturesPtr = regFeatures.ptr<float>(i*stride/shrink);
-            float  *ssFeaturesPtr = ssFeatures.ptr<float>(i*stride/shrink);
+            for(int i = range.start; i < range.end; ++i) {
+                float *regFeaturesPtr = regFeatures.ptr<float>(i*stride/shrink);
+                float  *ssFeaturesPtr = ssFeatures.ptr<float>(i*stride/shrink);
 
-            int *indexPtr = indexes.ptr<int>(i);
+                int *indexPtr = indexes.ptr<int>(i);
 
-            for (int j = 0, k = 0; j < width; ++k, j += !(k %= nTreesEval))
-                // for j,k in [0;width)x[0;nTreesEval)
-            {
-                int baseNode = ( ((i + j)%(2*nTreesEval) + k)%nTrees )*nTreesNodes;
-                int currentNode = baseNode;
-                // select root node of the tree to evaluate
-
-                int offset = (j*stride/shrink)*nchannels;
-                while ( __rf.childs[currentNode] != 0 )
+                for (int j = 0, k = 0; j < width; ++k, j += !(k %= nTreesEval))
+                    // for j,k in [0;width)x[0;nTreesEval)
                 {
-                    int currentId = __rf.featureIds[currentNode];
-                    float currentFeature;
+                    int baseNode = ( ((i + j)%(2*nTreesEval) + k)%nTrees )*nTreesNodes;
+                    int currentNode = baseNode;
+                    // select root node of the tree to evaluate
 
-                    if (currentId >= nFeatures)
+                    int offset = (j*stride/shrink)*nchannels;
+                    while ( __rf.childs[currentNode] != 0 )
                     {
-                        int xIndex = offsetX[currentId - nFeatures];
-                        float A = ssFeaturesPtr[offset + xIndex];
+                        int currentId = __rf.featureIds[currentNode];
+                        float currentFeature;
 
-                        int yIndex = offsetY[currentId - nFeatures];
-                        float B = ssFeaturesPtr[offset + yIndex];
+                        if (currentId >= nFeatures)
+                        {
+                            int xIndex = offsetX[currentId - nFeatures];
+                            float A = ssFeaturesPtr[offset + xIndex];
 
-                        currentFeature = A - B;
+                            int yIndex = offsetY[currentId - nFeatures];
+                            float B = ssFeaturesPtr[offset + yIndex];
+
+                            currentFeature = A - B;
+                        }
+                        else
+                            currentFeature = regFeaturesPtr[offset + offsetI[currentId]];
+
+                        // compare feature to threshold and move left or right accordingly
+                        if (currentFeature < __rf.thresholds[currentNode])
+                            currentNode = baseNode + __rf.childs[currentNode] - 1;
+                        else
+                            currentNode = baseNode + __rf.childs[currentNode];
                     }
-                    else
-                        currentFeature = regFeaturesPtr[offset + offsetI[currentId]];
 
-                    // compare feature to threshold and move left or right accordingly
-                    if (currentFeature < __rf.thresholds[currentNode])
-                        currentNode = baseNode + __rf.childs[currentNode] - 1;
-                    else
-                        currentNode = baseNode + __rf.childs[currentNode];
+                    indexPtr[j*nTreesEval + k] = currentNode;
                 }
-
-                indexPtr[j*nTreesEval + k] = currentNode;
             }
         }
+        #ifdef CV_CXX11
+        );
+        #endif
 
         NChannelsMat dstM(dst.size(),
             CV_MAKETYPE(DataType<float>::type, outNum));
         dstM.setTo(0);
 
         float step = 2.0f * CV_SQR(stride) / CV_SQR(ipSize) / nTreesEval;
-        #ifdef _OPENMP
-        #pragma omp parallel for
+        #ifdef CV_CXX11
+        parallel_for_(cv::Range(0, height), [&](const cv::Range& range)
         #endif
-        for (int i = 0; i < height; ++i)
         {
-            int *pIndex = indexes.ptr<int>(i);
-            float *pDst = dstM.ptr<float>(i*stride);
+            for(int i = range.start; i < range.end; ++i)
+            {
+                int *pIndex = indexes.ptr<int>(i);
+                float *pDst = dstM.ptr<float>(i*stride);
 
                 for (int j = 0, k = 0; j < width; ++k, j += !(k %= nTreesEval))
                 {// for j,k in [0;width)x[0;nTreesEval)
 
                     int currentNode = pIndex[j*nTreesEval + k];
-
-                    int start  = __rf.edgeBoundaries[currentNode];
-                    int finish = __rf.edgeBoundaries[currentNode + 1];
+                    size_t sizeBoundaries = __rf.edgeBoundaries.size();
+                    int convertedBoundaries = static_cast<int>(sizeBoundaries);
+                    int nBnds = (convertedBoundaries - 1) / (nTreesNodes * nTrees);
+                    int start = __rf.edgeBoundaries[currentNode * nBnds];
+                    int finish = __rf.edgeBoundaries[currentNode * nBnds + 1];
 
                     if (start == finish)
                         continue;
@@ -629,7 +814,11 @@ protected:
                     for (int p = start; p < finish; ++p)
                         pDst[offset + offsetE[__rf.edgeBins[p]]] += step;
                 }
+            }
         }
+        #ifdef CV_CXX11
+        );
+        #endif
 
         cv::reduce( dstM.reshape(1, int( dstM.total() ) ), dstM, 2, CV_REDUCE_SUM);
         imsmooth( dstM.reshape(1, dst.rows), 1 ).copyTo(dst);

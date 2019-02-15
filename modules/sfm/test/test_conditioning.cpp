@@ -35,9 +35,7 @@
 
 #include "test_precomp.hpp"
 
-using namespace cv;
-using namespace cv::sfm;
-using namespace std;
+namespace opencv_test { namespace {
 
 TEST(Sfm_conditioning, normalizePoints)
 {
@@ -62,3 +60,5 @@ TEST(Sfm_conditioning, normalizeIsotropicPoints)
 {
   //TODO: implement me
 }
+
+}} // namespace

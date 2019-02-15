@@ -49,14 +49,14 @@ namespace datasets
 
 using namespace std;
 
-class IR_affineImp : public IR_affine
+class IR_affineImp CV_FINAL : public IR_affine
 {
 public:
     IR_affineImp() {}
     //IR_affineImp(const string &path);
-    virtual ~IR_affineImp() {}
+    virtual ~IR_affineImp() CV_OVERRIDE {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

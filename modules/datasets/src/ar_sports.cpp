@@ -56,7 +56,7 @@ public:
     //AR_sportsImp(const string &path);
     virtual ~AR_sportsImp() {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

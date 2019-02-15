@@ -228,17 +228,17 @@ void RandomPatternCornerFinder::drawCorrespondence(const Mat& image1, const std:
     waitKey(0);
 }
 
-std::vector<cv::Mat> RandomPatternCornerFinder::getObjectPoints()
+const std::vector<cv::Mat> &RandomPatternCornerFinder::getObjectPoints()
 {
     return _objectPonits;
 }
 
-std::vector<cv::Mat> RandomPatternCornerFinder::getImagePoints()
+const std::vector<cv::Mat> &RandomPatternCornerFinder::getImagePoints()
 {
     return _imagePoints;
 }
 
-void RandomPatternCornerFinder::loadPattern(cv::Mat patternImage)
+void RandomPatternCornerFinder::loadPattern(const cv::Mat &patternImage)
 {
     _patternImage = patternImage.clone();
     if (_patternImage.type()!= CV_8U)
@@ -246,6 +246,21 @@ void RandomPatternCornerFinder::loadPattern(cv::Mat patternImage)
     _patternImageSize = _patternImage.size();
     _detector->detect(patternImage, _keypointsPattern);
     _descriptor->compute(patternImage, _keypointsPattern, _descriptorPattern);
+    _descriptorPattern.convertTo(_descriptorPattern, CV_32F);
+}
+
+void RandomPatternCornerFinder::loadPattern(const cv::Mat &patternImage, const std::vector<cv::KeyPoint> &patternKeyPoints, const cv::Mat &patternDescriptors)
+{
+    CV_Assert((int)patternKeyPoints.size()==patternDescriptors.rows);
+    CV_Assert(patternDescriptors.cols==_descriptor->descriptorSize());
+    CV_Assert(patternDescriptors.type()==_descriptor->descriptorType());
+
+    _patternImage=patternImage.clone();
+    if(_patternImage.type()!=CV_8U)
+        _patternImage.convertTo(_patternImage, CV_8U);
+    _patternImageSize=patternImage.size();
+    _keypointsPattern=patternKeyPoints;
+    _descriptorPattern=patternDescriptors.clone();
     _descriptorPattern.convertTo(_descriptorPattern, CV_32F);
 }
 

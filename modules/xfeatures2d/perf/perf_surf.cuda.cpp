@@ -42,13 +42,11 @@
 
 #include "perf_precomp.hpp"
 
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) && defined(OPENCV_ENABLE_NONFREE)
 
 #include "opencv2/ts/cuda_perf.hpp"
 
-using namespace std;
-using namespace testing;
-using namespace perf;
+namespace opencv_test { namespace {
 
 //////////////////////////////////////////////////////////////////////
 // SURF
@@ -100,4 +98,5 @@ PERF_TEST_P(Image, CUDA_SURF,
 
 #endif // HAVE_OPENCV_CUDAARITHM
 
-#endif // HAVE_CUDA
+}} // namespace
+#endif // HAVE_CUDA && OPENCV_ENABLE_NONFREE

@@ -247,7 +247,7 @@ namespace cv
                 state = _state;
             }
 
-            void operator()(const Range& range) const
+            void operator()(const Range& range) const CV_OVERRIDE
             {
                 for (int i = range.start; i < range.end; i++)
                 {
@@ -264,7 +264,7 @@ namespace cv
             StereoBinaryBMParams* state;
         };
 
-        class StereoBinaryBMImpl : public StereoBinaryBM, public Matching
+        class StereoBinaryBMImpl CV_FINAL : public StereoBinaryBM, public Matching
         {
         public:
             StereoBinaryBMImpl(): Matching(64)
@@ -275,10 +275,9 @@ namespace cv
             StereoBinaryBMImpl(int _numDisparities, int _kernelSize) : Matching(_numDisparities)
             {
                 params = StereoBinaryBMParams(_numDisparities, _kernelSize);
-                previous_size = 0;
             }
 
-            void compute(InputArray leftarr, InputArray rightarr, OutputArray disparr)
+            void compute(InputArray leftarr, InputArray rightarr, OutputArray disparr) CV_OVERRIDE
             {
                 int dtype = disparr.fixedType() ? disparr.type() : params.dispType;
                 Size leftsize = leftarr.size();
@@ -322,12 +321,11 @@ namespace cv
 
                 int width = left0.cols;
                 int height = left0.rows;
-                if(previous_size != width * height)
+                if (puss.total() != (size_t)width * height)
                 {
-                    previous_size = width * height;
-                    speckleX.create(height,width,CV_32SC4);
-                    speckleY.create(height,width,CV_32SC4);
-                    puss.create(height,width,CV_32SC4);
+                    speckleX.create(height, width);
+                    speckleY.create(height, width);
+                    puss.create(height, width);
 
                     censusImage[0].create(left0.rows,left0.cols,CV_32SC4);
                     censusImage[1].create(left0.rows,left0.cols,CV_32SC4);
@@ -370,7 +368,7 @@ namespace cv
                 }
                 else if(params.kernelType == CV_DENSE_CENSUS)
                 {
-                    censusTransform(left,right,params.kernelSize,censusImage[0],censusImage[1],CV_SPARSE_CENSUS);
+                    censusTransform(left,right,params.kernelSize,censusImage[0],censusImage[1],CV_DENSE_CENSUS);
                 }
                 else if(params.kernelType == CV_CS_CENSUS)
                 {
@@ -417,58 +415,58 @@ namespace cv
                         filterSpeckles(disp0, FILTERED, params.speckleWindowSize, params.speckleRange, slidingSumBuf);
                 }
             }
-            int getAgregationWindowSize() const { return params.agregationWindowSize;}
-            void setAgregationWindowSize(int value = 9) { CV_Assert(value % 2 != 0); params.agregationWindowSize = value;}
+            int getAgregationWindowSize() const CV_OVERRIDE { return params.agregationWindowSize;}
+            void setAgregationWindowSize(int value = 9) CV_OVERRIDE { CV_Assert(value % 2 != 0); params.agregationWindowSize = value;}
 
-            int getBinaryKernelType() const { return params.kernelType;}
-            void setBinaryKernelType(int value = CV_MODIFIED_CENSUS_TRANSFORM) { CV_Assert(value < 7); params.kernelType = value; }
+            int getBinaryKernelType() const CV_OVERRIDE { return params.kernelType;}
+            void setBinaryKernelType(int value = CV_MODIFIED_CENSUS_TRANSFORM) CV_OVERRIDE { CV_Assert(value < 7); params.kernelType = value; }
 
-            int getSpekleRemovalTechnique() const { return params.regionRemoval;}
-            void setSpekleRemovalTechnique(int factor = CV_SPECKLE_REMOVAL_AVG_ALGORITHM) {CV_Assert(factor < 2); params.regionRemoval = factor; }
+            int getSpekleRemovalTechnique() const CV_OVERRIDE { return params.regionRemoval;}
+            void setSpekleRemovalTechnique(int factor = CV_SPECKLE_REMOVAL_AVG_ALGORITHM) CV_OVERRIDE { CV_Assert(factor < 2); params.regionRemoval = factor; }
 
-            bool getUsePrefilter() const { return params.usePrefilter;}
-            void setUsePrefilter(bool value = false) { params.usePrefilter = value;}
+            bool getUsePrefilter() const CV_OVERRIDE { return params.usePrefilter;}
+            void setUsePrefilter(bool value = false) CV_OVERRIDE { params.usePrefilter = value;}
 
-            int getScalleFactor() const { return params.scalling;}
-            void setScalleFactor(int factor = 4) {CV_Assert(factor > 0); params.scalling = factor; setScallingFactor(factor);}
+            int getScalleFactor() const CV_OVERRIDE { return params.scalling;}
+            void setScalleFactor(int factor = 4) CV_OVERRIDE { CV_Assert(factor > 0); params.scalling = factor; setScallingFactor(factor); }
 
-            int getMinDisparity() const { return params.minDisparity; }
-            void setMinDisparity(int minDisparity) {CV_Assert(minDisparity >= 0); params.minDisparity = minDisparity; }
+            int getMinDisparity() const CV_OVERRIDE { return params.minDisparity; }
+            void setMinDisparity(int minDisparity) CV_OVERRIDE { CV_Assert(minDisparity >= 0); params.minDisparity = minDisparity; }
 
-            int getNumDisparities() const { return params.numDisparities; }
-            void setNumDisparities(int numDisparities) {CV_Assert(numDisparities > 0); params.numDisparities = numDisparities; }
+            int getNumDisparities() const CV_OVERRIDE { return params.numDisparities; }
+            void setNumDisparities(int numDisparities) CV_OVERRIDE { CV_Assert(numDisparities > 0); params.numDisparities = numDisparities; }
 
-            int getBlockSize() const { return params.kernelSize; }
-            void setBlockSize(int blockSize) {CV_Assert(blockSize % 2 != 0); params.kernelSize = blockSize; }
+            int getBlockSize() const CV_OVERRIDE { return params.kernelSize; }
+            void setBlockSize(int blockSize) CV_OVERRIDE { CV_Assert(blockSize % 2 != 0); params.kernelSize = blockSize; }
 
-            int getSpeckleWindowSize() const { return params.speckleWindowSize; }
-            void setSpeckleWindowSize(int speckleWindowSize) {CV_Assert(speckleWindowSize >= 0); params.speckleWindowSize = speckleWindowSize; }
+            int getSpeckleWindowSize() const CV_OVERRIDE { return params.speckleWindowSize; }
+            void setSpeckleWindowSize(int speckleWindowSize) CV_OVERRIDE { CV_Assert(speckleWindowSize >= 0); params.speckleWindowSize = speckleWindowSize; }
 
-            int getSpeckleRange() const { return params.speckleRange; }
-            void setSpeckleRange(int speckleRange) {CV_Assert(speckleRange >= 0); params.speckleRange = speckleRange; }
+            int getSpeckleRange() const CV_OVERRIDE { return params.speckleRange; }
+            void setSpeckleRange(int speckleRange) CV_OVERRIDE { CV_Assert(speckleRange >= 0); params.speckleRange = speckleRange; }
 
-            int getDisp12MaxDiff() const { return params.disp12MaxDiff; }
-            void setDisp12MaxDiff(int disp12MaxDiff) {CV_Assert(disp12MaxDiff >= 0); params.disp12MaxDiff = disp12MaxDiff; }
+            int getDisp12MaxDiff() const CV_OVERRIDE { return params.disp12MaxDiff; }
+            void setDisp12MaxDiff(int disp12MaxDiff) CV_OVERRIDE { CV_Assert(disp12MaxDiff >= 0); params.disp12MaxDiff = disp12MaxDiff; }
 
-            int getPreFilterType() const { return params.preFilterType; }
-            void setPreFilterType(int preFilterType) { CV_Assert(preFilterType >= 0); params.preFilterType = preFilterType; }
+            int getPreFilterType() const CV_OVERRIDE { return params.preFilterType; }
+            void setPreFilterType(int preFilterType) CV_OVERRIDE { CV_Assert(preFilterType >= 0); params.preFilterType = preFilterType; }
 
-            int getPreFilterSize() const { return params.preFilterSize; }
-            void setPreFilterSize(int preFilterSize) { CV_Assert(preFilterSize >= 0);  params.preFilterSize = preFilterSize; }
+            int getPreFilterSize() const CV_OVERRIDE { return params.preFilterSize; }
+            void setPreFilterSize(int preFilterSize) CV_OVERRIDE { CV_Assert(preFilterSize >= 0);  params.preFilterSize = preFilterSize; }
 
-            int getPreFilterCap() const { return params.preFilterCap; }
-            void setPreFilterCap(int preFilterCap) {CV_Assert(preFilterCap >= 0); params.preFilterCap = preFilterCap; }
+            int getPreFilterCap() const CV_OVERRIDE { return params.preFilterCap; }
+            void setPreFilterCap(int preFilterCap) CV_OVERRIDE { CV_Assert(preFilterCap >= 0); params.preFilterCap = preFilterCap; }
 
-            int getTextureThreshold() const { return params.textureThreshold; }
-            void setTextureThreshold(int textureThreshold) {CV_Assert(textureThreshold >= 0); params.textureThreshold = textureThreshold; }
+            int getTextureThreshold() const CV_OVERRIDE { return params.textureThreshold; }
+            void setTextureThreshold(int textureThreshold) CV_OVERRIDE { CV_Assert(textureThreshold >= 0); params.textureThreshold = textureThreshold; }
 
-            int getUniquenessRatio() const { return params.uniquenessRatio; }
-            void setUniquenessRatio(int uniquenessRatio) {CV_Assert(uniquenessRatio >= 0); params.uniquenessRatio = uniquenessRatio; }
+            int getUniquenessRatio() const CV_OVERRIDE { return params.uniquenessRatio; }
+            void setUniquenessRatio(int uniquenessRatio) CV_OVERRIDE { CV_Assert(uniquenessRatio >= 0); params.uniquenessRatio = uniquenessRatio; }
 
-            int getSmallerBlockSize() const { return 0; }
-            void setSmallerBlockSize(int) {}
+            int getSmallerBlockSize() const CV_OVERRIDE { return 0; }
+            void setSmallerBlockSize(int) CV_OVERRIDE {}
 
-            void write(FileStorage& fs) const
+            void write(FileStorage& fs) const CV_OVERRIDE
             {
                 fs << "name" << name_
                     << "minDisparity" << params.minDisparity
@@ -484,7 +482,7 @@ namespace cv
                     << "uniquenessRatio" << params.uniquenessRatio;
             }
 
-            void read(const FileNode& fn)
+            void read(const FileNode& fn) CV_OVERRIDE
             {
                 FileNode n = fn["name"];
                 CV_Assert(n.isString() && String(n) == name_);

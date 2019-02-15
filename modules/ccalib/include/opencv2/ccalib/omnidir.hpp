@@ -278,8 +278,6 @@ namespace internal
     double computeMeanReproErrStereo(InputArrayOfArrays objectPoints, InputArrayOfArrays imagePoints1, InputArrayOfArrays imagePoints2, InputArray K1, InputArray K2,
         InputArray D1, InputArray D2, double xi1, double xi2, InputArray om, InputArray T, InputArrayOfArrays omL, InputArrayOfArrays TL);
 
-    void checkFixed(Mat &G, int flags, int n);
-
     void subMatrix(const Mat& src, Mat& dst, const std::vector<int>& cols, const std::vector<int>& rows);
 
     void flags2idx(int flags, std::vector<int>& idx, int n);

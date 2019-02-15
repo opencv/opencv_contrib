@@ -40,12 +40,12 @@
  //M*/
 
 #include <iostream>
+#include <opencv2/opencv_modules.hpp>
 
 #ifdef HAVE_OPENCV_FEATURES2D
 
 #include <opencv2/line_descriptor.hpp>
-
-#include "opencv2/core/utility.hpp"
+#include <opencv2/core/utility.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/highgui.hpp>

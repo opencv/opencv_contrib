@@ -51,14 +51,14 @@ namespace datasets
 
 using namespace std;
 
-class OR_sunImp : public OR_sun
+class OR_sunImp CV_FINAL : public OR_sun
 {
 public:
     OR_sunImp() {}
     //OR_sunImp(const string &path);
-    virtual ~OR_sunImp() {}
+    virtual ~OR_sunImp() CV_OVERRIDE {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

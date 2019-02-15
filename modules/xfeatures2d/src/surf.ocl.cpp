@@ -57,6 +57,8 @@ namespace cv
 namespace xfeatures2d
 {
 
+#ifdef OPENCV_ENABLE_NONFREE
+
 enum { ORI_SEARCH_INC=5, ORI_LOCAL_SIZE=(360 / ORI_SEARCH_INC) };
 
 static inline int calcSize(int octave, int layer)
@@ -91,11 +93,13 @@ bool SURF_OCL::init(const SURF_Impl* p)
         if(ocl::haveOpenCL())
         {
             const ocl::Device& dev = ocl::Device::getDefault();
-            if( dev.type() == ocl::Device::TYPE_CPU || dev.doubleFPConfig() == 0 )
+            if( dev.type() == ocl::Device::TYPE_CPU )
                 return false;
-            haveImageSupport = false;//dev.imageSupport();
-            kerOpts = haveImageSupport ? "-D HAVE_IMAGE2D -D DOUBLE_SUPPORT" : "";
-//            status = 1;
+            haveImageSupport = dev.imageSupport();
+            kerOpts = format("%s%s",
+				haveImageSupport ? "-D HAVE_IMAGE2D" : "",
+				dev.doubleFPConfig() > 0? " -D DOUBLE_SUPPORT": "");
+            status = 1;
         }
     }
     return status > 0;
@@ -243,7 +247,7 @@ bool SURF_OCL::computeDescriptors(const UMat &keypoints, OutputArray _descriptor
     }
 
     size_t localThreads[] = {6, 6};
-    size_t globalThreads[] = {nFeatures*localThreads[0], localThreads[1]};
+    size_t globalThreads[] = {nFeatures*localThreads[0], 16 * localThreads[1]};
 
     if(haveImageSupport)
     {
@@ -420,7 +424,7 @@ bool SURF_OCL::findMaximaInLayer(int counterOffset, int octave,
                               ocl::KernelArg::PtrReadWrite(maxPosBuffer),
                               ocl::KernelArg::PtrReadWrite(counters),
                               counterOffset, img_rows, img_cols,
-                              octave, nOctaveLayers,
+                              nOctaveLayers, octave,
                               layer_rows, layer_cols,
                               maxCandidates,
                               (float)params->hessianThreshold).run(2, globalThreads, localThreads, true);
@@ -460,6 +464,8 @@ bool SURF_OCL::calcOrientation(UMat &keypoints)
     size_t globalThreads[3] = {nFeatures * localThreads[0], 1};
     return kerOri.run(2, globalThreads, localThreads, true);
 }
+
+#endif // ! #ifdef OPENCV_ENABLE_NONFREE
 
 }
 }

@@ -36,11 +36,7 @@
 #include "test_precomp.hpp"
 #include "opencv2/sfm/robust.hpp"
 
-using namespace cv;
-using namespace cv::sfm;
-using namespace cvtest;
-using namespace std;
-
+namespace opencv_test { namespace {
 
 TEST(Sfm_robust, fundamentalFromCorrespondences8PointRobust)
 {
@@ -81,7 +77,7 @@ TEST(Sfm_robust, fundamentalFromCorrespondences8PointRobust)
 TEST(Sfm_robust, fundamentalFromCorrespondences8PointRealisticNoOutliers)
 {
     double tolerance = 1e-8;
-    cvtest::TwoViewDataSet d;
+    TwoViewDataSet d;
     generateTwoViewRandomScene(d);
 
     Matx33d F_estimated;
@@ -140,7 +136,7 @@ TEST(Sfm_robust, fundamentalFromCorrespondences7PointRobust)
 TEST(Sfm_robust, fundamentalFromCorrespondences7PointRealisticNoOutliers)
 {
     double tolerance = 1e-8;
-    cvtest::TwoViewDataSet d;
+    TwoViewDataSet d;
     generateTwoViewRandomScene(d);
 
     Matx33d F_estimated;
@@ -158,3 +154,5 @@ TEST(Sfm_robust, fundamentalFromCorrespondences7PointRealisticNoOutliers)
     // Check fundamental properties.
     expectFundamentalProperties( F_estimated, d.x1, d.x2, tolerance);
 }
+
+}} // namespace

@@ -128,7 +128,6 @@ class DPMCascade
         std::vector< std::vector<double> > detect(Mat &image);
 };
 
-#ifdef HAVE_TBB
 /** @brief This class convolves root PCA feature pyramid
  * and root PCA filters in parallel using Intel Threading
  * Building Blocks (TBB)
@@ -141,7 +140,7 @@ class ParalComputeRootPCAScores : public ParallelLoopBody
                 int dim, std::vector< Mat > &scores);
 
         // parallel loop body
-        void operator() (const Range &range) const;
+        void operator() (const Range &range) const CV_OVERRIDE;
 
         ParalComputeRootPCAScores(const ParalComputeRootPCAScores &pComp);
 
@@ -151,7 +150,6 @@ class ParalComputeRootPCAScores : public ParallelLoopBody
         int pcaDim;
         std::vector< Mat > &scores;
 };
-#endif
 } // namespace dpm
 } // namespace cv
 

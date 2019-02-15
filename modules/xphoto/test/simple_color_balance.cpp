@@ -1,7 +1,10 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 
-namespace cvtest
-{
+namespace opencv_test { namespace {
+
     TEST(xphoto_simplecolorbalance, regression)
     {
         cv::String dir = cvtest::TS::ptr()->get_data_path() + "cv/xphoto/simple_white_balance/";
@@ -51,4 +54,6 @@ namespace cvtest
 
         ASSERT_NEAR(maxDst, newMax, newMax*1e-4);
     }
-}
+
+
+}} // namespace

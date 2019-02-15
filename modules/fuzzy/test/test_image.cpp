@@ -41,10 +41,7 @@
 
 #include "test_precomp.hpp"
 
-#include <string>
-
-using namespace std;
-using namespace cv;
+namespace opencv_test { namespace {
 
 TEST(fuzzy_image, inpainting)
 {
@@ -102,13 +99,15 @@ TEST(fuzzy_image, kernel)
     Mat kernel1;
     ft::createKernel(ft::LINEAR, 2, kernel1, 1);
 
-    Mat vector1 = (Mat_<float>(5, 1) << 0, 0.5, 1, 0.5, 0);
-    Mat vector2 = (Mat_<float>(1, 5) << 0, 0.5, 1, 0.5, 0);
+    Mat vectorA = (Mat_<float>(1, 5) << 0, 0.5, 1, 0.5, 0);
+    Mat vectorB = (Mat_<float>(5, 1) << 0, 0.5, 1, 0.5, 0);
 
     Mat kernel2;
-    ft::createKernel(vector1, vector2, kernel2, 1);
+    ft::createKernel(vectorA, vectorB, kernel2, 1);
 
     double diff = cvtest::norm(kernel1, kernel2, NORM_INF);
 
     EXPECT_DOUBLE_EQ(diff, 0);
 }
+
+}} // namespace

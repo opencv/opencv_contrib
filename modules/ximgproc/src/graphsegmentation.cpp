@@ -106,28 +106,28 @@ namespace cv {
                         name_ = "GraphSegmentation";
                     }
 
-                    ~GraphSegmentationImpl() {
+                    ~GraphSegmentationImpl() CV_OVERRIDE {
                     };
 
-                    virtual void processImage(InputArray src, OutputArray dst);
+                    virtual void processImage(InputArray src, OutputArray dst) CV_OVERRIDE;
 
-                    virtual void setSigma(double sigma_) { if (sigma_ <= 0) { sigma_ = 0.001; } sigma = sigma_; }
-                    virtual double getSigma() { return sigma; }
+                    virtual void setSigma(double sigma_) CV_OVERRIDE { if (sigma_ <= 0) { sigma_ = 0.001; } sigma = sigma_; }
+                    virtual double getSigma() CV_OVERRIDE { return sigma; }
 
-                    virtual void setK(float k_) { k = k_; }
-                    virtual float getK() { return k; }
+                    virtual void setK(float k_) CV_OVERRIDE { k = k_; }
+                    virtual float getK() CV_OVERRIDE { return k; }
 
-                    virtual void setMinSize(int min_size_) { min_size = min_size_; }
-                    virtual int getMinSize() { return min_size; }
+                    virtual void setMinSize(int min_size_) CV_OVERRIDE { min_size = min_size_; }
+                    virtual int getMinSize() CV_OVERRIDE { return min_size; }
 
-                    virtual void write(FileStorage& fs) const {
+                    virtual void write(FileStorage& fs) const CV_OVERRIDE {
                         fs << "name" << name_
                         << "sigma" << sigma
                         << "k" << k
                         << "min_size" << (int)min_size;
                     }
 
-                    virtual void read(const FileNode& fn) {
+                    virtual void read(const FileNode& fn) CV_OVERRIDE {
                         CV_Assert( (String)fn["name"] == name_ );
 
                         sigma = (double)fn["sigma"];

@@ -49,13 +49,13 @@ class TrackerBoostingImpl : public TrackerBoosting
 {
  public:
   TrackerBoostingImpl( const TrackerBoosting::Params &parameters = TrackerBoosting::Params() );
-  void read( const FileNode& fn );
-  void write( FileStorage& fs ) const;
+  void read( const FileNode& fn ) CV_OVERRIDE;
+  void write( FileStorage& fs ) const CV_OVERRIDE;
 
  protected:
 
-  bool initImpl( const Mat& image, const Rect2d& boundingBox );
-  bool updateImpl( const Mat& image, Rect2d& boundingBox );
+  bool initImpl( const Mat& image, const Rect2d& boundingBox ) CV_OVERRIDE;
+  bool updateImpl( const Mat& image, Rect2d& boundingBox ) CV_OVERRIDE;
 
   TrackerBoosting::Params params;
 };
@@ -97,8 +97,11 @@ void TrackerBoosting::Params::write( cv::FileStorage& fs ) const
 /*
  * Constructor
  */
-Ptr<TrackerBoosting> TrackerBoosting::createTracker(const TrackerBoosting::Params &parameters){
+Ptr<TrackerBoosting> TrackerBoosting::create(const TrackerBoosting::Params &parameters){
     return Ptr<TrackerBoostingImpl>(new TrackerBoostingImpl(parameters));
+}
+Ptr<TrackerBoosting> TrackerBoosting::create(){
+    return Ptr<TrackerBoostingImpl>(new TrackerBoostingImpl());
 }
 TrackerBoostingImpl::TrackerBoostingImpl( const TrackerBoostingImpl::Params &parameters ) :
     params( parameters )
@@ -123,7 +126,7 @@ bool TrackerBoostingImpl::initImpl( const Mat& image, const Rect2d& boundingBox 
   Mat_<int> intImage;
   Mat_<double> intSqImage;
   Mat image_;
-  cvtColor( image, image_, CV_RGB2GRAY );
+  cvtColor( image, image_, COLOR_BGR2GRAY );
   integral( image_, intImage, intSqImage, CV_32S );
   TrackerSamplerCS::Params CSparameters;
   CSparameters.overlap = params.samplerOverlap;
@@ -205,7 +208,7 @@ bool TrackerBoostingImpl::updateImpl( const Mat& image, Rect2d& boundingBox )
   Mat_<int> intImage;
   Mat_<double> intSqImage;
   Mat image_;
-  cvtColor( image, image_, CV_RGB2GRAY );
+  cvtColor( image, image_, COLOR_BGR2GRAY );
   integral( image_, intImage, intSqImage, CV_32S );
   //get the last location [AAM] X(k-1)
   Ptr<TrackerTargetState> lastLocation = model->getLastTargetState();

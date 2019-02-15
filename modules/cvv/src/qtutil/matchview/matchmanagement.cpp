@@ -137,7 +137,7 @@ void MatchManagement::setSelection(
 
 void MatchManagement::addSetting()
 {
-	addSetting(std::move(util::make_unique<MatchSettingsSelector>(univers_)));
+    addSetting(util::make_unique<MatchSettingsSelector>(univers_));
 }
 
 
@@ -172,7 +172,7 @@ void MatchManagement::removeSetting(MatchSettingsSelector *setting)
 
 void MatchManagement::addSelection()
 {
-	addSelection(std::move(util::make_unique<MatchSelectionSelector>(univers_)));
+    addSelection(util::make_unique<MatchSelectionSelector>(univers_));
 }
 
 void MatchManagement::addSelection(std::unique_ptr<MatchSelectionSelector> selection)

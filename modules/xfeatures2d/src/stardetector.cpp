@@ -60,7 +60,7 @@ public:
                          int _lineThresholdBinarized=8,
                          int _suppressNonmaxSize=5);
 
-    void detect( InputArray image, std::vector<KeyPoint>& keypoints, InputArray mask=noArray() );
+    void detect( InputArray image, std::vector<KeyPoint>& keypoints, InputArray mask=noArray() ) CV_OVERRIDE;
 
 protected:
     int maxSize;
