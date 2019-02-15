@@ -10,7 +10,6 @@
 #include <opencv2/ts/ocl_test.hpp>  // OCL_ON, OCL_OFF
 #include <opencv2/imgcodecs.hpp>
 #include <opencv2/quality.hpp>
-
 #include <opencv2/quality/quality_utils.hpp>
 
 namespace opencv_test
@@ -84,21 +83,29 @@ inline void quality_test(cv::Ptr<quality::QualityBase> ptr, const TMat& cmp, con
     EXPECT_TRUE(ptr->empty());
 }
 
+/* A/B test benchmarking for development purposes */
+/*
 template <typename Fn>
 inline void quality_performance_test( const char* name, Fn&& op )
 {
-    // only run tests in !_DEBUG mode
-#ifndef _DEBUG
-    const int NRUNS = 100;
-    const auto start_t = std::chrono::high_resolution_clock::now();
-    for (int i = 0; i < NRUNS; ++i)
-        op();
+    const auto exec_test = [&]()
+    {
+        const int NRUNS = 100;
+        const auto start_t = std::chrono::high_resolution_clock::now();
+        for (int i = 0; i < NRUNS; ++i)
+            op();
 
-    const auto end_t = std::chrono::high_resolution_clock::now();
-    std::cout << name << " performance: " << (double)(std::chrono::duration_cast<std::chrono::milliseconds>(end_t - start_t).count()) / (double)NRUNS << "ms\n";
+        const auto end_t = std::chrono::high_resolution_clock::now();
+        std::cout << name << " performance (OCL=" << cv::ocl::useOpenCL() << "): " << (double)(std::chrono::duration_cast<std::chrono::milliseconds>(end_t - start_t).count()) / (double)NRUNS << "ms\n";
+    };
+
+    // only run tests in NDEBUG mode
+#ifdef NDEBUG
+    OCL_OFF(exec_test());
+    OCL_ON(exec_test());
 #endif
 }
-
+*/
 }
 }
 

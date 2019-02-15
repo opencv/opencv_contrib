@@ -50,13 +50,14 @@ TEST(TEST_CASE_NAME, multi_frame)
     quality_test(quality::QualitySSIM::create(get_testfile_1a2a()), get_testfile_1b2b(), expected, 2U );
 }
 
-// internal performance test
+// internal a/b test
+/*
 TEST(TEST_CASE_NAME, performance)
 {
     auto ref = get_testfile_1a();
     auto cmp = get_testfile_1b();
     quality_performance_test("SSIM", [&]() { cv::quality::QualitySSIM::compute(ref, cmp, cv::noArray()); });
 }
-
+*/
 }
 } // namespace

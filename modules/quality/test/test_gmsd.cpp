@@ -50,13 +50,15 @@ TEST(TEST_CASE_NAME, multi_frame)
     quality_test(quality::QualityGMSD::create(get_testfile_1a2a()), get_testfile_1b2b(), expected, 2);
 }
 
-// internal performance test
+// internal A/B test
+/*
 TEST(TEST_CASE_NAME, performance)
 {
     auto ref = get_testfile_1a();
     auto cmp = get_testfile_1b();
     quality_performance_test("GMSD", [&]() { cv::quality::QualityGMSD::compute(ref, cmp, cv::noArray()); });
 }
+*/
 
 }
 } // namespace
