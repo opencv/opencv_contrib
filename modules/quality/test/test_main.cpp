@@ -3,4 +3,6 @@
 // of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 
-CV_TEST_MAIN("")
+CV_TEST_MAIN("",
+    cvtest::addDataSearchSubDirectory("quality")
+)
