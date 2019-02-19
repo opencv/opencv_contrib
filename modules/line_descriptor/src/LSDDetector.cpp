@@ -51,6 +51,11 @@ Ptr<LSDDetector> LSDDetector::createLSDDetector()
   return Ptr<LSDDetector>( new LSDDetector() );
 }
 
+Ptr<LSDDetector> LSDDetector::createLSDDetector(LSDParam params)
+{
+  return Ptr<LSDDetector>( new LSDDetector(params) );
+}
+
 /* compute Gaussian pyramid of input image */
 void LSDDetector::computeGaussianPyramid( const Mat& image, int numOctaves, int scale )
 {
@@ -145,7 +150,10 @@ void LSDDetector::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keyline
   lsd->computeGaussianPyramid( image, numOctaves, scale );
 
   /* create an LSD extractor */
-  cv::Ptr<cv::LineSegmentDetector> ls = cv::createLineSegmentDetector( cv::LSD_REFINE_ADV );
+  cv::Ptr<cv::LineSegmentDetector> ls = cv::createLineSegmentDetector(
+    cv::LSD_REFINE_ADV, params.scale, params.sigma_scale,
+    params.quant, params.ang_th, params.log_eps,
+    params.density_th, params.n_bins);
 
   /* prepare a vector to host extracted segments */
   std::vector<std::vector<cv::Vec4f> > lines_lsd;
