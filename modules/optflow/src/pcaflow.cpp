@@ -328,7 +328,8 @@ void OpticalFlowPCAFlow::getSystem( OutputArray AOut, OutputArray b1Out, OutputA
     Mat b2 = b2Out.getMat();
 
     ocl::Kernel kernel( "fillDCTSampledPoints", _ocl_fillDCTSampledPointsSource );
-    size_t globSize[] = {features.size(), basisSize.width, basisSize.height};
+    CV_Assert(basisSize.width > 0 && basisSize.height > 0);
+    size_t globSize[] = {features.size(), (size_t)basisSize.width, (size_t)basisSize.height};
     kernel
       .args( cv::ocl::KernelArg::ReadOnlyNoSize( Mat( features ).getUMat( ACCESS_READ ) ),
              cv::ocl::KernelArg::WriteOnlyNoSize( A ), (int)features.size(), (int)basisSize.width,
@@ -376,7 +377,8 @@ void OpticalFlowPCAFlow::getSystem( OutputArray A1Out, OutputArray A2Out, Output
     Mat b2 = b2Out.getMat();
 
     ocl::Kernel kernel( "fillDCTSampledPoints", _ocl_fillDCTSampledPointsSource );
-    size_t globSize[] = {features.size(), basisSize.width, basisSize.height};
+    CV_Assert(basisSize.width > 0 && basisSize.height > 0);
+    size_t globSize[] = {features.size(), (size_t)basisSize.width, (size_t)basisSize.height};
     kernel
       .args( cv::ocl::KernelArg::ReadOnlyNoSize( Mat( features ).getUMat( ACCESS_READ ) ),
              cv::ocl::KernelArg::WriteOnlyNoSize( A ), (int)features.size(), (int)basisSize.width,
