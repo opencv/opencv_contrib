@@ -338,11 +338,11 @@ void drawTrajectoryByReference(cv::Mat& img)
 
                 if(drawByReference)
                 {
-                    cv::circle(img, cv::Point2d(x, y), 0.1, cv::Scalar(blue, green, red), -1);
+                    cv::circle(img, cv::Point2d(x, y), 1, cv::Scalar(blue, green, red), -1);
                 }
                 else
                 {
-                    cv::circle(img, cv::Point2d(x, y), 0.1, cv::Scalar(draw_b, draw_g, draw_r), -1);
+                    cv::circle(img, cv::Point2d(x, y), 1, cv::Scalar(draw_b, draw_g, draw_r), -1);
                 }
             }
         }
