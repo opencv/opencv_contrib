@@ -267,7 +267,9 @@ bool ocl_getAllDCTDescriptorsForImage( const Mat *imgCh, std::vector< GPCPatchDe
   const Size sz = imgCh[0].size();
   ocl::Kernel kernel( "getPatchDescriptor", ocl::optflow::sparse_matching_gpc_oclsrc,
                       format( "-DPATCH_RADIUS_DOUBLED=%d -DCV_PI=%f -DSQRT2_INV=%f", PATCH_RADIUS_DOUBLED, CV_PI, SQRT2_INV ) );
-  size_t globSize[] = {sz.height - 2 * patchRadius, sz.width - 2 * patchRadius};
+  CV_Assert(sz.height - 2 * patchRadius > 0);
+  CV_Assert(sz.width - 2 * patchRadius > 0);
+  size_t globSize[] = {(size_t)(sz.height - 2 * patchRadius), (size_t)(sz.width - 2 * patchRadius)};
   UMat out( globSize[0] * globSize[1], GPCPatchDescriptor::nFeatures, CV_64F );
   if (
     kernel
