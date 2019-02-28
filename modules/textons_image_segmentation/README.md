@@ -54,3 +54,6 @@ Results with cluster values as 7 and iterations as 10
 
 
 *  Advisable to keep number of iterations high (recommended>=100) for reproducibility of result
+
+### To-Do
+* Add feature to stop k means on the basis of accuracy
