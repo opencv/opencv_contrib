@@ -174,9 +174,9 @@ public:
     @code
     // holds images and labels
     vector<Mat> images;
-    vector<int> labels; 
+    vector<int> labels;
     // using Mat of type CV_32SC1
-    // Mat labels(number_of_samples, 1, CV_32SC1); 
+    // Mat labels(number_of_samples, 1, CV_32SC1);
     // images for first person
     images.push_back(imread("person0/0.jpg", CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(0);
     images.push_back(imread("person0/1.jpg", CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(0);
