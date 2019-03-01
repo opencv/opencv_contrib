@@ -137,17 +137,18 @@ class CvParams
 class CvFeatureParams : public CvParams
 {
  public:
-  enum
+  enum FeatureType
   {
     HAAR = 0,
     LBP = 1,
     HOG = 2
   };
+
   CvFeatureParams();
   virtual void init( const CvFeatureParams& fp );
   virtual void write( FileStorage &fs ) const CV_OVERRIDE;
   virtual bool read( const FileNode &node ) CV_OVERRIDE;
-  static Ptr<CvFeatureParams> create( int featureType );
+  static Ptr<CvFeatureParams> create(CvFeatureParams::FeatureType featureType);
   int maxCatCount;  // 0 in case of numerical features
   int featSize;  // 1 in case of simple features (HAAR, LBP) and N_BINS(9)*N_CELLS(4) in case of Dalal's HOG features
   int numFeatures;
@@ -163,7 +164,7 @@ class CvFeatureEvaluator
   virtual void setImage( const Mat& img, uchar clsLabel, int idx );
   virtual void writeFeatures( FileStorage &fs, const Mat& featureMap ) const = 0;
   virtual float operator()( int featureIdx, int sampleIdx ) = 0;
-  static Ptr<CvFeatureEvaluator> create( int type );
+  static Ptr<CvFeatureEvaluator> create(CvFeatureParams::FeatureType type);
 
   int getNumFeatures() const
   {

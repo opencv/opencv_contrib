@@ -12,3 +12,7 @@ if(NOT boost_status OR NOT vgg_status)
 endif()
 
 ocv_module_include_directories("${DOWNLOAD_DIR}")
+
+if(TARGET opencv_test_${name})
+  ocv_target_include_directories(opencv_test_${name} "${OpenCV_SOURCE_DIR}/modules")  # use common files from features2d tests
+endif()

@@ -147,7 +147,7 @@ void OpticalFlowDeepFlow::calc( InputArray _I0, InputArray _I1, InputOutputArray
 
     for ( int level = levelCount - 1; level >= 0; --level )
     { //iterate through  all levels, beginning with the most coarse
-        Ptr<VariationalRefinement> var = createVariationalFlowRefinement();
+        Ptr<VariationalRefinement> var = VariationalRefinement::create();
 
         var->setAlpha(4 * alpha);
         var->setDelta(delta / 3);

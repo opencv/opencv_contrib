@@ -127,9 +127,9 @@ private :
   Matches m_tracks;
 
   /// Interface to detect Keypoint.
-  cv::Ptr<cv::FeatureDetector> m_pDetector;
+  std::shared_ptr<cv::FeatureDetector> m_pDetector;
   /// Interface to describe Keypoint.
-  cv::Ptr<cv::DescriptorExtractor> m_pDescriber;
+  std::shared_ptr<cv::DescriptorExtractor> m_pDescriber;
 };
 
 } // using namespace correspondence

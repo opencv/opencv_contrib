@@ -98,7 +98,7 @@ public:
      * @param use_orientation sample patterns using keypoints orientation, disabled by default.
      */
     explicit DAISY_Impl(float radius=15, int q_radius=3, int q_theta=8, int q_hist=8,
-                        int norm = DAISY::NRM_NONE, InputArray H = noArray(),
+                        DAISY::NormalizationType norm = DAISY::NRM_NONE, InputArray H = noArray(),
                         bool interpolation = true, bool use_orientation = false);
 
     virtual ~DAISY_Impl() CV_OVERRIDE;
@@ -189,7 +189,7 @@ protected:
 
     // holds the type of the normalization to apply; equals to NRM_PARTIAL by
     // default. change the value using set_normalization() function.
-    int m_nrm_type;
+    DAISY::NormalizationType m_nrm_type;
 
     // the size of the descriptor vector
     int m_descriptor_size;
@@ -561,7 +561,7 @@ static void normalize_full( float* desc, const int _descriptor_size )
     }
 }
 
-static void normalize_descriptor( float* desc, const int nrm_type, const int _grid_point_number,
+static void normalize_descriptor( float* desc, const DAISY::NormalizationType nrm_type, const int _grid_point_number,
                                   const int _hist_th_q_no, const int _descriptor_size  )
 {
     if( nrm_type == DAISY::NRM_NONE ) return;
@@ -888,7 +888,7 @@ static void get_descriptor( const double y, const double x, const int orientatio
             const std::vector<Mat>* m_smoothed_gradient_layers, const Mat* m_oriented_grid_points,
             const double* m_orientation_shift_table, const int m_th_q_no, const int m_hist_th_q_no,
             const int m_grid_point_number, const int m_descriptor_size, const bool m_enable_interpolation,
-            const int m_nrm_type )
+            const DAISY::NormalizationType m_nrm_type)
 {
     get_unnormalized_descriptor( y, x, orientation, descriptor, m_smoothed_gradient_layers,
                                  m_oriented_grid_points, m_orientation_shift_table, m_th_q_no, m_enable_interpolation );
@@ -912,7 +912,7 @@ static bool get_descriptor_h( const double y, const double x, const int orientat
             const std::vector<Mat>* m_smoothed_gradient_layers, const Mat& m_cube_sigmas,
             const Mat* m_grid_points, const double* m_orientation_shift_table, const int m_th_q_no,
             const int m_hist_th_q_no, const int m_grid_point_number, const int m_descriptor_size,
-            const bool m_enable_interpolation, const int m_nrm_type  )
+            const bool m_enable_interpolation, const DAISY::NormalizationType m_nrm_type)
 
 {
     bool rval =
@@ -1054,7 +1054,7 @@ inline void DAISY_Impl::compute_descriptors( Mat* m_dense_descriptors )
 
 struct NormalizeDescriptorsInvoker : ParallelLoopBody
 {
-    NormalizeDescriptorsInvoker( Mat* _descriptors, int _nrm_type, int _grid_point_number,
+    NormalizeDescriptorsInvoker( Mat* _descriptors, DAISY::NormalizationType _nrm_type, int _grid_point_number,
                                  int _hist_th_q_no, int _descriptor_size )
     {
       descriptors = _descriptors;
@@ -1074,7 +1074,7 @@ struct NormalizeDescriptorsInvoker : ParallelLoopBody
     }
 
     Mat *descriptors;
-    int nrm_type;
+    DAISY::NormalizationType nrm_type;
     int grid_point_number;
     int hist_th_q_no;
     int descriptor_size;
@@ -1590,7 +1590,7 @@ void DAISY_Impl::compute( InputArray _image, OutputArray _descriptors )
 
 // constructor
 DAISY_Impl::DAISY_Impl( float _radius, int _q_radius, int _q_theta, int _q_hist,
-             int _norm, InputArray _H, bool _interpolation, bool _use_orientation )
+             DAISY::NormalizationType _norm, InputArray _H, bool _interpolation, bool _use_orientation )
            : m_rad(_radius), m_rad_q_no(_q_radius), m_th_q_no(_q_theta), m_hist_th_q_no(_q_hist),
              m_nrm_type(_norm), m_enable_interpolation(_interpolation), m_use_orientation(_use_orientation)
 {
@@ -1612,7 +1612,7 @@ DAISY_Impl::~DAISY_Impl()
 }
 
 Ptr<DAISY> DAISY::create( float radius, int q_radius, int q_theta, int q_hist,
-             int norm, InputArray H, bool interpolation, bool use_orientation)
+             DAISY::NormalizationType norm, InputArray H, bool interpolation, bool use_orientation)
 {
     return makePtr<DAISY_Impl>(radius, q_radius, q_theta, q_hist, norm, H, interpolation, use_orientation);
 }
