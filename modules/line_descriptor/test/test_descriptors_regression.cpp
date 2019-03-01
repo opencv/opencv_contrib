@@ -376,7 +376,7 @@ TEST( BinaryDescriptor_Descriptors, regression )
 *                                Other tests                                             *
  \****************************************************************************************/
 
-TEST( BinaryDescriptor, no_lines_found )
+TEST( BinaryDescriptor, DISABLED_no_lines_found )
 {
   Mat Image = Mat::zeros(100, 100, CV_8U);
   Ptr<line_descriptor::BinaryDescriptor> binDescriptor =
