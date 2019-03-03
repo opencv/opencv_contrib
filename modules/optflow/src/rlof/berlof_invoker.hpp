@@ -1941,11 +1941,12 @@ public:
                         {
                             if( dIptr[0] == 0 && dIptr[1] == 0)
                                 continue;
-                            short It[4] = {(Jptr[x] << 5)            - Iptr[x],
-                                                (Jptr[x+cn]<< 5)        - Iptr[x],
-                                                (Jptr1[x]<< 5)        - Iptr[x],
-                                                (Jptr1[x+cn]<< 5)    - Iptr[x]};
-
+                            short It[4] = {
+                                (short)((Jptr [x]    << 5)        - Iptr[x]),
+                                (short)((Jptr [x+cn] << 5)        - Iptr[x]),
+                                (short)((Jptr1[x]    << 5)        - Iptr[x]),
+                                (short)((Jptr1[x+cn] << 5)        - Iptr[x])
+                            };
                             _b1[0] += (float)(It[0]*dIptr[0]);
                             _b1[1] += (float)(It[1]*dIptr[0]);
                             _b1[2] += (float)(It[2]*dIptr[0]);
