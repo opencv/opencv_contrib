@@ -417,6 +417,7 @@ For more details about the Fast Bilateral Solver parameters, see the original pa
 CV_EXPORTS_W Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma, double lambda = 128.0, int num_iter = 25, double max_tol = 1e-5);
 
 
+
 /** @brief Simple one-line Fast Bilateral Solver filter call. If you have multiple images to filter with the same
 guide then use FastBilateralSolverFilter interface to avoid extra computations.
 

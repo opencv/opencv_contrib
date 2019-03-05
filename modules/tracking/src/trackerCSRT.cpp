@@ -35,7 +35,7 @@ protected:
     TrackerCSRT::Params params;
 
     bool initImpl(const Mat& image, const Rect2d& boundingBox) CV_OVERRIDE;
-    virtual void setInitialMask(const Mat mask) CV_OVERRIDE;
+    virtual void setInitialMask(InputArray mask) CV_OVERRIDE;
     bool updateImpl(const Mat& image, Rect2d& boundingBox) CV_OVERRIDE;
     void update_csr_filter(const Mat &image, const Mat &my_mask);
     void update_histograms(const Mat &image, const Rect &region);
@@ -99,9 +99,9 @@ void TrackerCSRTImpl::write(cv::FileStorage& fs) const
     params.write(fs);
 }
 
-void TrackerCSRTImpl::setInitialMask(const Mat mask)
+void TrackerCSRTImpl::setInitialMask(InputArray mask)
 {
-    preset_mask = mask;
+    preset_mask = mask.getMat();
 }
 
 bool TrackerCSRTImpl::check_mask_area(const Mat &mat, const double obj_area)

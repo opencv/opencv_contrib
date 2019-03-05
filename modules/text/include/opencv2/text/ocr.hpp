@@ -290,14 +290,6 @@ public:
     @param mode HMM Decoding algorithm. Only OCR_DECODER_VITERBI is available for the moment
     (<http://en.wikipedia.org/wiki/Viterbi_algorithm>).
      */
-    static Ptr<OCRHMMDecoder> create(const Ptr<OCRHMMDecoder::ClassifierCallback> classifier,// The character classifier with built in feature extractor
-                                     const std::string& vocabulary,                    // The language vocabulary (chars when ASCII English text)
-                                                                                       //     size() must be equal to the number of classes
-                                     InputArray transition_probabilities_table,        // Table with transition probabilities between character pairs
-                                                                                       //     cols == rows == vocabulary.size()
-                                     InputArray emission_probabilities_table,          // Table with observation emission probabilities
-                                                                                       //     cols == rows == vocabulary.size()
-                                     decoder_mode mode = OCR_DECODER_VITERBI);         // HMM Decoding algorithm (only Viterbi for the moment)
 
     CV_WRAP static Ptr<OCRHMMDecoder> create(const Ptr<OCRHMMDecoder::ClassifierCallback> classifier,// The character classifier with built in feature extractor
                                      const String& vocabulary,                    // The language vocabulary (chars when ASCII English text)

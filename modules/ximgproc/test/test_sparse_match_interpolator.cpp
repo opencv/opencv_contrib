@@ -20,12 +20,12 @@ Mat readOpticalFlow( const String& path )
     Mat_<Point2f> flow;
     std::ifstream file(path.c_str(), std::ios_base::binary);
     if ( !file.good() )
-        return flow; // no file - return empty matrix
+        return std::move(flow); // no file - return empty matrix
 
     float tag;
     file.read((char*) &tag, sizeof(float));
     if ( tag != FLOW_TAG_FLOAT )
-        return flow;
+        return std::move(flow);
 
     int width, height;
 
@@ -44,14 +44,14 @@ Mat readOpticalFlow( const String& path )
             if ( !file.good() )
             {
                 flow.release();
-                return flow;
+                return std::move(flow);
             }
 
             flow(i, j) = u;
         }
     }
     file.close();
-    return flow;
+    return std::move(flow);
 }
 
 CV_ENUM(GuideTypes, CV_8UC1, CV_8UC3)

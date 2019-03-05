@@ -106,7 +106,7 @@ int main(int argc, char** argv)
     cout << endl << "Starting matching..." << endl;
     vector<Pose3DPtr> results;
     tick1 = cv::getTickCount();
-    detector.match(pcTest, results, 1.0/40.0, 0.05);
+    detector.match(pcTest, results, 1.0/4.0, 0.05);
     tick2 = cv::getTickCount();
     cout << endl << "PPF Elapsed Time " <<
          (tick2-tick1)/cv::getTickFrequency() << " sec" << endl;

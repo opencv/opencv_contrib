@@ -55,7 +55,11 @@ namespace ppf_match_3d
 //! @addtogroup surface_matching
 //! @{
 
-typedef uint KeyType;
+#if (defined x86_64 || defined _M_X64)
+typedef uint64_t KeyType;
+#else
+typedef unsigned int KeyType;
+#endif
 
 typedef struct hashnode_i
 {

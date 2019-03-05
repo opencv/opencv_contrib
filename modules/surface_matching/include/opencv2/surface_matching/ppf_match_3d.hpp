@@ -147,6 +147,7 @@ protected:
 
   double angle_step, angle_step_radians, distance_step;
   double sampling_step_relative, angle_step_relative, distance_step_relative;
+  double m_diameter;
   Mat sampled_pc, ppf;
   int num_ref_points;
   hashtable_int* hash_table;

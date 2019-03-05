@@ -61,7 +61,7 @@ namespace ximgproc
 //! @addtogroup ximgproc_superpixel
 //! @{
 
-    enum SLIC { SLIC = 100, SLICO = 101, MSLIC = 102 };
+    enum SLICType { SLIC = 100, SLICO = 101, MSLIC = 102 };
 
 /** @brief Class implementing the SLIC (Simple Linear Iterative Clustering) superpixels
 algorithm described in @cite Achanta2012.
