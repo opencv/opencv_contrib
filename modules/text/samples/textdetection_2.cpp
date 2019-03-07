@@ -10,36 +10,39 @@
 #include "opencv2/text.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
-#include "opencv2/ml.hpp"
 
 #include <vector>
 #include <iostream>
-#include <fstream>
 #include <omp.h>
 #include <iomanip>
-#include <queue>
-#include <sys/time.h>
-#include <tesseract/baseapi.h>
-#include <leptonica/allheaders.h>
 #define MIN_HEIGHT_RATIO 0.5
 
 using namespace std;
 using namespace cv;
 using namespace cv::text;
-using namespace cv::ml;
 
 bool cmp(ERStat &a,ERStat &b);
 vector< vector<ERStat> > Sort(Mat &src,vector<vector<ERStat> > &regions);
+//Draw ER's in an image via floodFill
+void   er_draw(vector<Mat> &channels, vector<vector<ERStat> > &regions, vector<Vec2i> group, Mat& segmentation);
+
 
 int main(int argc, const char * argv[]){
 	
-    Mat gray, src = imread(argv[1]);
+	if(argc != 2){
+		cout << "Error: argv(1) = ImagePath" << endl;
+		return 0;
+	}
+	
+	Mat src = imread(argv[1]);
+    Mat gray;
+       
 	
     // Extract channels to be processed individually
     vector<Mat> channels;
     cvtColor(src,gray,COLOR_BGR2GRAY);
     
-    // Append negative channels to detect ER- (bright regions over dark background)
+    // Append gray and negative channel to detect ER- (bright regions over dark background)
     channels.push_back(gray);
     channels.push_back(255-gray);
     
@@ -47,9 +50,10 @@ int main(int argc, const char * argv[]){
     
 	//Text Spotting
 	
-    // Create ERFilter objects with the 1st and 2nd stage default classifiers
+    // Create ERFilter objects with the 1st and 2nd stage default classifiers for each channel
     Ptr<ERFilter> er_filter1[2];
     Ptr<ERFilter> er_filter2[2];
+    
     
     for (int c=0; c < cn ; c++)
     {
@@ -66,14 +70,15 @@ int main(int argc, const char * argv[]){
     // Apply the default cascade classifier to each independent channel (could be done in parallel)
     //cout << "Extracting Class Specific Extremal Regions from " << (int)channels.size() << " channels ..." << endl;
     //cout << "    (...) this may take a while (...)" << endl << endl;
-    //#pragma omp parallel for num_threads(2)
+    //Parallelizing the process of region extraction
+    #pragma omp parallel for num_threads(2)
     for (int c=0; c < cn ; c++)
     {
         er_filter1[c]->run(channels[c], regions[c]);
         er_filter2[c]->run(channels[c], regions[c]);
     }
     
-    //vector< vector<ERStat> > sort_regions = Sort( src , regions );
+    vector< vector<ERStat> > sort_regions = Sort( src , regions );
 	
     // Detect character groups
     //cout << "Grouping extracted ERs ... ";
@@ -83,34 +88,40 @@ int main(int argc, const char * argv[]){
     //erGrouping(src, channels, regions, region_groups, groups_boxes, ERGROUPING_ORIENTATION_ANY, "./trained_classifier_erGrouping.xml", 0.5);
     //End Text Spotting
     
-    //Text Recognition
-    Pix *image = pixRead(argv[1]);
-  	tesseract::TessBaseAPI *api = new tesseract::TessBaseAPI();
-  	api->Init(NULL, "eng");
-  	api->SetImage(image);
-  	
-  	int i;
-    for(i = 0 ; i < groups_boxes.size(); i++){
-    	api->SetRectangle(groups_boxes[i].x, groups_boxes[i].y, groups_boxes[i].width, groups_boxes[i].height);
-    	char* text = api->GetUTF8Text();
-    	int conf = api->MeanTextConf();
-    			
-		printf("%d %d %d %d ",groups_boxes[i].x, groups_boxes[i].y, groups_boxes[i].width, groups_boxes[i].height);
-		if( strlen(text) == 0 or text == NULL )
-			printf("\n");
-		else{
-			int j;
-			for(j = 0; j < strlen(text); j++)
-				if( text[j] != '\n' )
-					printf("%c",text[j]);
-				else
-					printf(" ");
-			printf("\n");
-		}
-    }
+    Mat out_img;
+    Mat out_img_detection;
+    Mat out_img_segmentation = Mat::zeros(src.rows+2, src.cols+2, CV_8UC1);
+    src.copyTo(out_img);
+    src.copyTo(out_img_detection);
+    string output;
     
-    api->End();
-    pixDestroy(&image);
+    //Text Recognition
+    Ptr<OCRTesseract> ocr = OCRTesseract::create();
+  	 
+    for(int i = 0 ; i < groups_boxes.size(); i++){
+    	rectangle(out_img_detection, groups_boxes[i].tl(), groups_boxes[i].br(), Scalar(0,255,255), 3);
+    	Mat group_img = Mat::zeros(src.rows+2, src.cols+2, CV_8UC1);
+        er_draw(channels, regions, region_groups[i], group_img);
+        Mat group_segmentation;
+        group_img.copyTo(group_segmentation);
+        //image(nm_boxes[i]).copyTo(group_img);
+        group_img(groups_boxes[i]).copyTo(group_img);
+        copyMakeBorder(group_img,group_img,15,15,15,15,BORDER_CONSTANT,Scalar(0));
+        vector<Rect>   boxes;
+        vector<string> words;
+        vector<float>  confidences;
+        ocr->run(group_img, output, &boxes, &words, &confidences, OCR_LEVEL_WORD);
+        printf("x: %d - y: %d - width: %d - height: %d ",\
+        groups_boxes[i].x, groups_boxes[i].y, groups_boxes[i].width, groups_boxes[i].height);
+        printf("- text: ");
+		for(int j = 0; j < output.size(); j++){
+			if( output[j] != '\n' )
+				printf("%c",output[j]);
+			else
+				printf(" ");
+		}
+		printf("\n");
+    }
     
     // memory clean-up
     er_filter1[0].release();
@@ -122,6 +133,21 @@ int main(int argc, const char * argv[]){
     }
     
     return 0;
+}
+
+void er_draw(vector<Mat> &channels, vector<vector<ERStat> > &regions, vector<Vec2i> group, Mat& segmentation)
+{
+    for (int r=0; r<(int)group.size(); r++)
+    {
+        ERStat er = regions[group[r][0]][group[r][1]];
+        if (er.parent != NULL) // deprecate the root region
+        {
+            int newMaskVal = 255;
+            int flags = 4 + (newMaskVal << 8) + FLOODFILL_FIXED_RANGE + FLOODFILL_MASK_ONLY;
+            floodFill(channels[group[r][0]],segmentation,Point(er.pixel%channels[group[r][0]].cols,er.pixel/channels[group[r][0]].cols),
+                      Scalar(255),0,Scalar(er.level),Scalar(0),flags);
+        }
+    }
 }
 
 vector<vector<ERStat>> Sort(Mat &src,vector<vector<ERStat> > &regions){
