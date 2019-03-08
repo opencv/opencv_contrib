@@ -291,7 +291,7 @@ namespace color_cvt_detail
     {
         __device__ uchar operator ()(ushort src) const
         {
-            return (uchar) CV_CUDEV_DESCALE(((src << 3) & 0xf8) * B2Y + ((src >> 2) & 0xf8) * G2Y + ((src >> 7) & 0xf8) * R2Y, yuv_shift);
+            return (uchar) CV_CUDEV_DESCALE(((src << 3) & 0xf8) * BY15 + ((src >> 2) & 0xf8) * GY15 + ((src >> 7) & 0xf8) * RY15, rgb_shift);
         }
     };
 
@@ -300,7 +300,7 @@ namespace color_cvt_detail
     {
         __device__ uchar operator ()(ushort src) const
         {
-            return (uchar) CV_CUDEV_DESCALE(((src << 3) & 0xf8) * B2Y + ((src >> 3) & 0xfc) * G2Y + ((src >> 8) & 0xf8) * R2Y, yuv_shift);
+            return (uchar) CV_CUDEV_DESCALE(((src << 3) & 0xf8) * BY15 + ((src >> 3) & 0xfc) * GY15 + ((src >> 8) & 0xf8) * RY15, rgb_shift);
         }
     };
 
@@ -314,19 +314,7 @@ namespace color_cvt_detail
             const int b = bidx == 0 ? src.x : src.z;
             const int g = src.y;
             const int r = bidx == 0 ? src.z : src.x;
-            return (T) CV_CUDEV_DESCALE(b * B2Y + g * G2Y + r * R2Y, yuv_shift);
-        }
-    };
-
-    template <int scn, int bidx> struct RGB2Gray<uchar, scn, bidx>
-        : unary_function<typename MakeVec<uchar, scn>::type, uchar>
-    {
-        __device__ uchar operator ()(const typename MakeVec<uchar, scn>::type& src) const
-        {
-            const int b = bidx == 0 ? src.x : src.z;
-            const int g = src.y;
-            const int r = bidx == 0 ? src.z : src.x;
-            return (uchar)CV_CUDEV_DESCALE(b * BY15 + g * GY15 + r * RY15, rgb_shift);
+            return (T)CV_CUDEV_DESCALE(b * BY15 + g * GY15 + r * RY15, rgb_shift);
         }
     };
 
