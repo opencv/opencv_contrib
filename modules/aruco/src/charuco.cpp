@@ -51,7 +51,7 @@ using namespace std;
 
 /**
  */
-void CharucoBoard::draw(Size outSize, OutputArray _img, int marginSize, int borderBits) {
+void CharucoBoard::draw(Size outSize, OutputArray _img, int marginSize, int borderBits, bool tintMargin) {
 
     CV_Assert(!outSize.empty());
     CV_Assert(marginSize >= 0);
@@ -70,17 +70,61 @@ void CharucoBoard::draw(Size outSize, OutputArray _img, int marginSize, int bord
     double xReduction = totalLengthX / double(noMarginsImg.cols);
     double yReduction = totalLengthY / double(noMarginsImg.rows);
 
+    // offset and field size :: for tinted margin
+    int offsetX = 0;
+    int offsetY = 0;
+    double borderFieldSize=0;
+
     // determine the zone where the chessboard is placed
     Mat chessboardZoneImg;
     if(xReduction > yReduction) {
-        int nRows = int(totalLengthY / xReduction);
-        int rowsMargins = (noMarginsImg.rows - nRows) / 2;
+        int rowsMargins = int(( (_squaresX * noMarginsImg.rows) - (_squaresY * noMarginsImg.cols) ) / (2 *_squaresX));
+        offsetY = rowsMargins;
+
+        // square size
+        borderFieldSize = min(double(noMarginsImg.cols) / double(_squaresX),
+                          double(noMarginsImg.rows - rowsMargins) / double(_squaresY));
+
+        int diffWithSquare = (tintMargin * int(borderFieldSize / 2))-marginSize;
+
+        // square bigger than margin
+        if(diffWithSquare > 0){
+            noMarginsImg = noMarginsImg.colRange(diffWithSquare, noMarginsImg.cols - diffWithSquare)
+                                       .rowRange(diffWithSquare, noMarginsImg.rows - diffWithSquare);
+            rowsMargins = int(( (_squaresX * noMarginsImg.rows) - (_squaresY * noMarginsImg.cols) ) / (2 *_squaresX));
+            offsetY=rowsMargins;
+        }
+        // margin bigger than square
+        else if(diffWithSquare < 0){
+            offsetY += abs(diffWithSquare);
+            offsetX = abs(diffWithSquare);
+        }
         chessboardZoneImg = noMarginsImg.rowRange(rowsMargins, noMarginsImg.rows - rowsMargins);
     } else {
-        int nCols = int(totalLengthX / yReduction);
-        int colsMargins = (noMarginsImg.cols - nCols) / 2;
+        int colsMargins = int(( (_squaresY * noMarginsImg.cols) - (_squaresX * noMarginsImg.rows) ) / (2 *_squaresY));
+        offsetX = colsMargins;
+
+        // square size
+        borderFieldSize = min(double(noMarginsImg.cols - colsMargins) / double(_squaresX),
+                          double(noMarginsImg.rows) / double(_squaresY));
+
+        int diffWithSquare = (tintMargin * int(borderFieldSize / 2))-marginSize;
+
+        // square bigger than margin
+        if(diffWithSquare > 0){
+            noMarginsImg = noMarginsImg.colRange(diffWithSquare, noMarginsImg.cols - diffWithSquare)
+                                       .rowRange(diffWithSquare, noMarginsImg.rows - diffWithSquare);
+            colsMargins =  int( (_squaresY * noMarginsImg.cols) - (_squaresX * noMarginsImg.rows) ) / (2 *_squaresY);
+            offsetX=colsMargins;
+        }
+        // margin bigger than square
+        else if(diffWithSquare < 0){
+            offsetX += abs(diffWithSquare);
+            offsetY = abs(diffWithSquare);
+        }
         chessboardZoneImg = noMarginsImg.colRange(colsMargins, noMarginsImg.cols - colsMargins);
     }
+    borderFieldSize = borderFieldSize/2;
 
     // determine the margins to draw only the markers
     // take the minimum just to be sure
@@ -98,21 +142,32 @@ void CharucoBoard::draw(Size outSize, OutputArray _img, int marginSize, int bord
 
     markersImg.copyTo(chessboardZoneImg);
 
-    // now draw black squares
-    for(int y = 0; y < _squaresY; y++) {
-        for(int x = 0; x < _squaresX; x++) {
+    // draw chessboard
+    int fieldsOnX = _squaresX + (2*tintMargin);
+    int fieldsOnY = _squaresY + (2*tintMargin);
+    int positionY = offsetY;
+    for(int y = 0; y < fieldsOnY; y++) {
+        int positionX = offsetX;
+        int fieldSizeY = squareSizePixels;
 
-            if(y % 2 != x % 2) continue; // white corner, dont do anything
+        for(int x = 0; x < fieldsOnX; x++) {
+            int fieldSizeX = squareSizePixels;
 
-            double startX, startY;
-            startX = squareSizePixels * double(x);
-            startY = double(chessboardZoneImg.rows) - squareSizePixels * double(y + 1);
+            // Draw border
+            if(tintMargin && (x == 0 || x == _squaresX+1))
+                fieldSizeX = borderFieldSize;
+            if(tintMargin && (y == 0 || y == _squaresY+1 ))
+                fieldSizeY = borderFieldSize;
 
-            Mat squareZone = chessboardZoneImg.rowRange(int(startY), int(startY + squareSizePixels))
-                                 .colRange(int(startX), int(startX + squareSizePixels));
-
-            squareZone.setTo(0);
+            bool draw = _squaresY % 2==0 ? (y % 2 != x % 2):(y % 2 == x % 2);
+            if(draw){
+                Mat field= out.rowRange(int(positionY), int(positionY + fieldSizeY))
+                          .colRange(int(positionX), int(positionX + fieldSizeX));
+                field.setTo(0);
+            }
+            positionX += fieldSizeX;
         }
+        positionY += fieldSizeY;
     }
 }
 

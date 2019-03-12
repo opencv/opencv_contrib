@@ -77,10 +77,11 @@ class CV_EXPORTS_W CharucoBoard : public Board {
      * and the board will be on the center, keeping the board proportions.
      * @param marginSize minimum margins (in pixels) of the board in the output image
      * @param borderBits width of the marker borders.
+     * @param tintMargin defines whether the border of the board should be tinted.
      *
      * This function return the image of the ChArUco board, ready to be printed.
      */
-    CV_WRAP void draw(Size outSize, OutputArray img, int marginSize = 0, int borderBits = 1);
+    CV_WRAP void draw(Size outSize, OutputArray img, int marginSize = 0, int borderBits = 1, bool tintMargin=false);
 
 
     /**
