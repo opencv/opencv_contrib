@@ -1,3 +1,6 @@
+//! @addtogroup quality
+//! @{
+
 Quality API, Image Quality Analysis
 =======================================
 
@@ -57,10 +60,9 @@ Quick Start/Usage
 
 ```cpp
     #include <opencv2/quality.hpp>
-    cv::Mat img;
-    // check testdata subdirectory
-    cv::String model_path = "testdata/brisque_allmodel.dat"; // path to the trained model
-    cv::String range_path = "testdata/brisque_allrange.dat"; // path to range file
+    cv::Mat img = cv::imread("/path/to/my_image.bmp"); // path to the image to evaluate
+    cv::String model_path = "path/to/brisque_model_live.yml"; // path to the trained model
+    cv::String range_path = "path/to/brisque_range_live.yml"; // path to range file
     /* compute BRISQUE quality score via static method */
     cv::Scalar result_static = quality::QualityBRISQUE::compute(img,
 model_path, range_path);
@@ -119,3 +121,5 @@ To Do
 -----------------------------------------
 - Document the output quality maps for each algorithm
 - Investigate precision loss with cv::Filter2D + UMat + CV_32F + OCL for GMSD
+
+//! @}

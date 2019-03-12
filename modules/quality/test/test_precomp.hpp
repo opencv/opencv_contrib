@@ -111,6 +111,7 @@ inline void quality_performance_test( const char* name, Fn&& op )
 #endif
 }
 */
+
 }
 }
 

@@ -31,12 +31,9 @@ AND THE UNIVERSITY OF TEXAS AT AUSTIN HAS NO OBLIGATION TO PROVIDE MAINTENANCE, 
 
 /* Original Paper: @cite Mittal2 and Original Implementation: @cite Mittal2_software */
 #include "precomp.hpp"
-#include <fstream>
 #include "opencv2/imgproc.hpp"
 #include "opencv2/quality/qualitybrisque.hpp"
 #include "opencv2/quality/quality_utils.hpp"
-#include "opencv2/quality/libsvm/svm.hpp"   // libsvm
-#include <iostream>
 
 namespace
 {
@@ -54,44 +51,41 @@ namespace
     //  Win32+Mat:  CV_64F is 2X slower than CV_32F
     static constexpr const int BRISQUE_CALC_MAT_TYPE = CV_32F;
     // brisque intermediate matrix element type.  float if BRISQUE_CALC_MAT_TYPE == CV_32F, double if BRISQUE_CALC_MAT_TYPE == CV_64F
-    using brique_calc_element_type = float;
+    using brisque_calc_element_type = float;
 
-    template<class T> class Image {
-    private:
-        brisque_mat_type imgP;
-    public:
-        Image(brisque_mat_type img) {
-            imgP = img.clone();
-        }
-        ~Image() {
-            imgP = 0;
-        }
-        brisque_mat_type equate(brisque_mat_type img) {
-            img = imgP.clone();
-            return img;
-        }
+    // convert mat to grayscale, range [0-1]
+    brisque_mat_type mat_convert( const brisque_mat_type& mat )
+    {
+        brisque_mat_type result = mat;
+        switch (mat.channels())
+        {
+        case 1:
+            break;
+        case 3:
+            cv::cvtColor(result, result, cv::COLOR_BGR2GRAY, 1);
+            break;
+        case 4:
+            cv::cvtColor(result, result, cv::COLOR_BGRA2GRAY, 1);
+            break;
+        default:
+            CV_Error(cv::Error::StsNotImplemented, "Unknown/unsupported channel count");
+        };//switch
 
-        inline T* operator[](const int rowIndx) {
-            // return (T*)(imgP.getMat(ACCESS_READ).data + rowIndx * imgP.step);   // UMat version
-            return (T*)(imgP.data + rowIndx * imgP.step);    // Mat version
-        }
-    };
-
-    typedef Image<brique_calc_element_type> BwImage;
+        // scale to 0-1 range
+        result.convertTo(result, BRISQUE_CALC_MAT_TYPE, 1. / 255.);
+        return result;
+    }
 
     // function to compute best fit parameters from AGGDfit
-    brisque_mat_type AGGDfit(brisque_mat_type structdis, double& lsigma_best, double& rsigma_best, double& gamma_best)
+    void AGGDfit(const brisque_mat_type& structdis, double& lsigma_best, double& rsigma_best, double& gamma_best)
     {
-        // create a copy of an image using BwImage constructor (brisque.h - more info)
-        BwImage ImArr(structdis);
-
         long int poscount = 0, negcount = 0;
         double possqsum = 0, negsqsum = 0, abssum = 0;
         for (int i = 0; i < structdis.rows; i++)
         {
             for (int j = 0; j < structdis.cols; j++)
             {
-                double pt = ImArr[i][j]; // BwImage provides [][] access
+                double pt = structdis.at<brisque_calc_element_type>(i, j);
                 if (pt > 0)
                 {
                     poscount++;
@@ -128,12 +122,14 @@ namespace
         }
         gamma_best = prevgamma;
 
-        return structdis.clone();
+        // return structdis.clone();
     }
 
-    void ComputeBrisqueFeature(brisque_mat_type& orig, std::vector<double>& featurevector)
+    std::vector<brisque_calc_element_type> ComputeBrisqueFeature( const brisque_mat_type& orig )
     {
-        CV_Assert(orig.channels() == 1);
+        CV_DbgAssert(orig.channels() == 1);
+
+        std::vector<brisque_calc_element_type> featurevector;
 
         auto orig_bw = orig;
 
@@ -149,7 +145,7 @@ namespace
             // calculating MSCN coefficients
             // compute mu (local mean)
             brisque_mat_type mu;//  (imdist_scaled.size(), CV_64FC1, 1);
-            cv::GaussianBlur(imdist_scaled, mu, cv::Size(7, 7), 1.16666, 0., cv::BORDER_REPLICATE );
+            cv::GaussianBlur(imdist_scaled, mu, cv::Size(7, 7), 7. / 6., 0., cv::BORDER_REPLICATE );
 
             brisque_mat_type mu_sq;
             cv::pow(mu, double(2.0), mu_sq);
@@ -158,7 +154,7 @@ namespace
             brisque_mat_type sigma;// (imdist_scaled.size(), CV_64FC1, 1);
             cv::multiply(imdist_scaled, imdist_scaled, sigma);
 
-            cv::GaussianBlur(sigma, sigma, cv::Size(7, 7), 1.16666, 0., cv::BORDER_REPLICATE );
+            cv::GaussianBlur(sigma, sigma, cv::Size(7, 7), 7./6., 0., cv::BORDER_REPLICATE );
 
             cv::subtract(sigma, mu_sq, sigma);
             cv::pow(sigma, double(0.5), sigma);
@@ -171,9 +167,10 @@ namespace
             // Compute AGGD fit to MSCN image
             double lsigma_best, rsigma_best, gamma_best;
 
-            structdis = AGGDfit(structdis, lsigma_best, rsigma_best, gamma_best);
-            featurevector.push_back(gamma_best);
-            featurevector.push_back((lsigma_best*lsigma_best + rsigma_best * rsigma_best) / 2);
+            //structdis = AGGDfit(structdis, lsigma_best, rsigma_best, gamma_best);
+            AGGDfit(structdis, lsigma_best, rsigma_best, gamma_best);
+            featurevector.push_back( (brisque_calc_element_type) gamma_best);
+            featurevector.push_back(( (brisque_calc_element_type)(  lsigma_best*lsigma_best + rsigma_best * rsigma_best) / 2 ));
 
             // Compute paired product images
             // indices for orientations (H, V, D1, D2)
@@ -187,11 +184,6 @@ namespace
                 // declare, create shifted_structdis as pairwise image
                 brisque_mat_type shifted_structdis(imdist_scaled.size(), BRISQUE_CALC_MAT_TYPE); //(imdist_scaled.size(), CV_64FC1, 1);
 
-                // create copies of the images using BwImage constructor
-                // utility constructor for better subscript access (for pixels)
-                BwImage OrigArr(structdis);
-                BwImage ShiftArr(shifted_structdis);
-
                 // create pair-wise product for the given orientation (reqshift)
                 for (int i = 0; i < structdis.rows; i++)
                 {
@@ -199,80 +191,59 @@ namespace
                     {
                         if (i + reqshift[0] >= 0 && i + reqshift[0] < structdis.rows && j + reqshift[1] >= 0 && j + reqshift[1] < structdis.cols)
                         {
-                            ShiftArr[i][j] = OrigArr[i + reqshift[0]][j + reqshift[1]];
+                            shifted_structdis.at<brisque_calc_element_type>(i,j) = structdis.at<brisque_calc_element_type>(i + reqshift[0], j + reqshift[1]);
                         }
                         else
                         {
-                            ShiftArr[i][j] = 0;
+                            shifted_structdis.at<brisque_calc_element_type>(i, j) = (brisque_calc_element_type) 0;
                         }
                     }
                 }
-
-                // Mat structdis_pairwise;
-                shifted_structdis = ShiftArr.equate(shifted_structdis);
 
                 // calculate the products of the pairs
                 cv::multiply(structdis, shifted_structdis, shifted_structdis);
 
                 // fit the pairwise product to AGGD
-                shifted_structdis = AGGDfit(shifted_structdis, lsigma_best, rsigma_best, gamma_best);
+                // shifted_structdis = AGGDfit(shifted_structdis, lsigma_best, rsigma_best, gamma_best);
+                AGGDfit(shifted_structdis, lsigma_best, rsigma_best, gamma_best);
 
                 double constant = sqrt(tgamma(1 / gamma_best)) / sqrt(tgamma(3 / gamma_best));
                 double meanparam = (rsigma_best - lsigma_best)*(tgamma(2 / gamma_best) / tgamma(1 / gamma_best))*constant;
 
                 // push the calculated parameters from AGGD fit to pair-wise products
-                featurevector.push_back(gamma_best);
-                featurevector.push_back(meanparam);
-                featurevector.push_back(cv::pow(lsigma_best, 2));
-                featurevector.push_back(cv::pow(rsigma_best, 2));
+                featurevector.push_back((brisque_calc_element_type)gamma_best);
+                featurevector.push_back((brisque_calc_element_type)meanparam);
+                featurevector.push_back( (brisque_calc_element_type) cv::pow(lsigma_best, 2));
+                featurevector.push_back( (brisque_calc_element_type) cv::pow(rsigma_best, 2));
             }
         }
+
+        return featurevector;
     }
 
-    double computescore(const svm_model* model, const float* range_min, const float* range_max, brisque_mat_type& orig) {
-        double qualityscore;
-        int i;
+    brisque_calc_element_type computescore(const cv::Ptr<cv::ml::SVM>& model, const cv::Mat& range, const brisque_mat_type& img ) {
 
-        std::vector<double> brisqueFeatures; // feature vector initialization
-        ComputeBrisqueFeature(orig, brisqueFeatures); // compute brisque features
+        const auto brisqueFeatures = ComputeBrisqueFeature( img ); // compute brisque features
 
-        struct svm_node x[37];
+        cv::Mat feat_mat( 1,(int)brisqueFeatures.size(), CV_32FC1, (void*)brisqueFeatures.data() ); // load to mat
+        quality_utils::scale(feat_mat, range, -1.f, 1.f);// scale to range [-1,1]
 
-        // rescale the brisqueFeatures vector from -1 to 1
-        // also convert vector to svm node array object
-        for (i = 0; i < 36; ++i) {
-            const float
-                min = range_min[i]
-                , max = range_max[i]
-                ;
-
-            x[i].value = -1 + (2.0 / (max - min) * (brisqueFeatures[i] - min));
-            x[i].index = i + 1;
-        }
-        x[36].index = -1;
-
-
-        int nr_class = svm_get_nr_class(model);
-
-        std::vector<double> prob_estimates = std::vector<double>(nr_class);
-
-        // predict quality score using libsvm class
-        qualityscore = svm_predict_probability(model, x, prob_estimates.data());
-
-        return qualityscore;
+        cv::Mat result;
+        model->predict(feat_mat, result);
+        return result.at<float>(0);
     }
 
     // computes score for a single frame
-    cv::Scalar compute(const svm_model* model, const float* range_min, const float* range_max, brisque_mat_type& img)
+    cv::Scalar compute(const cv::Ptr<cv::ml::SVM>& model, const cv::Mat& range, const brisque_mat_type& img)
     {
         auto result = cv::Scalar{ 0. };
-        result[0] = computescore(model, range_min, range_max, img);
+        result[0] = computescore(model, range, img);
         return result;
     }
 
-    cv::Scalar compute(const svm_model* model, const float* range_min, const float* range_max, std::vector<brisque_mat_type>& imgs)
+    cv::Scalar compute( const cv::Ptr<cv::ml::SVM>& model, const cv::Mat& range, std::vector<brisque_mat_type>& imgs)
     {
-        CV_Assert(imgs.size() > 0);
+        CV_DbgAssert(imgs.size() > 0);
 
         cv::Scalar result = {};
 
@@ -280,7 +251,7 @@ namespace
 
         for (unsigned i = 0; i < sz; ++i)
         {
-            auto cmp = compute(model, range_min, range_max, imgs[i]);
+            auto cmp = compute(model, range, imgs[i]);
             cv::add(result, cmp, result);
         }
 
@@ -292,11 +263,18 @@ namespace
 }
 
 // static
-Ptr<QualityBRISQUE> QualityBRISQUE::create(const cv::String& model_file_path, const cv::String& range_file_path)
+cv::Ptr<QualityBRISQUE> QualityBRISQUE::create(const cv::String& model_file_path, const cv::String& range_file_path)
 {
-    return Ptr<QualityBRISQUE>(new QualityBRISQUE(model_file_path, range_file_path));
+    return cv::Ptr<QualityBRISQUE>(new QualityBRISQUE(model_file_path, range_file_path));
 }
 
+// static
+cv::Ptr<QualityBRISQUE> QualityBRISQUE::create(const cv::Ptr<cv::ml::SVM>& model, const cv::Mat& range)
+{
+    return cv::Ptr<QualityBRISQUE>(new QualityBRISQUE(model, range));
+}
+
+// static
 cv::Scalar QualityBRISQUE::compute(InputArrayOfArrays imgs, const cv::String& model_file_path, const cv::String& range_file_path)
 {
     auto obj = create(model_file_path, range_file_path);
@@ -317,8 +295,8 @@ QualityBRISQUE::QualityBRISQUE(const cv::String& model_file_path, const cv::Stri
     };
 
     const auto
-        modelpath = model_file_path.empty() ? get_data_path("brisque_allmodel.dat") : model_file_path
-        , rangepath = range_file_path.empty() ? get_data_path("brisque_allrange.dat") : range_file_path
+        modelpath = model_file_path.empty() ? get_data_path("brisque_model_live.yml") : model_file_path
+        , rangepath = range_file_path.empty() ? get_data_path("brisque_range_live.yml") : range_file_path
         ;
 
     if (modelpath.empty())
@@ -327,68 +305,44 @@ QualityBRISQUE::QualityBRISQUE(const cv::String& model_file_path, const cv::Stri
     if (rangepath.empty())
         CV_Error(cv::Error::StsObjectNotFound, "BRISQUE range data not found");
 
-    // load svm data
-    this->_svm_model = svm_load_model(modelpath.c_str());
-    if (!this->_svm_model)
-        CV_Error(cv::Error::StsParseError, "Error loading BRISQUE model file");
-
-    // load range data
-    // based on original brisque impl
-    //check if file exists
-    char buff[100];
-    FILE* range_file = fopen(rangepath.c_str(), "r");
-    if (range_file == NULL)
-        CV_Error(cv::Error::StsParseError, "Error loading BRISQUE range file");
-
-    //assume standard file format for this program
-    CV_Assert(fgets(buff, 100, range_file) != NULL);
-    CV_Assert(fgets(buff, 100, range_file) != NULL);
-
-    //now we can fill the array
-    for (std::size_t i = 0; i < _SVM_RANGE_SIZE; ++i) {
-        float a, b, c;
-        CV_Assert(fscanf(range_file, "%f %f %f", &a, &b, &c) == 3);
-        this->_svm_range_min[i] = (_svm_range_type)b;
-        this->_svm_range_max[i] = (_svm_range_type)c;
-    }
-    fclose(range_file);
+    *this = QualityBRISQUE(
+        cv::ml::SVM::load(modelpath)
+        , cv::FileStorage(rangepath, cv::FileStorage::READ)["range"].mat()
+    );
 }
 
 cv::Scalar QualityBRISQUE::compute(InputArrayOfArrays imgs)
 {
-    auto vec = quality_utils::expand_mats<brisque_mat_type>(imgs);// convert inputarrayofarrays to vector of brisque_mat_type
+    auto vec = quality_utils::extract_mats<brisque_mat_type>(imgs); // extract input mats
 
-    // convert all mats to single channel/bgr2gray as needed, scale to 0-1
+    CV_Assert(!vec.empty());
+
     for (auto& mat : vec)
-    {
-        switch (mat.channels())
-        {
-        case 1:
-            break;
-        case 3:
-            cv::cvtColor(mat, mat, cv::COLOR_RGB2GRAY, 1);
-            break;
-        case 4:
-            cv::cvtColor(mat, mat, cv::COLOR_RGBA2GRAY, 1);
-            break;
-        default:
-            CV_Error(cv::Error::StsNotImplemented, "Unknown/unsupported channel count");
-        };//switch
+        mat = mat_convert(mat); // convert to gs, scale to [0,1]
 
-        // scale to 0-1 range
-        mat.convertTo(mat, BRISQUE_CALC_MAT_TYPE, 1. / 255.);
-    }
-
-    // const brisque_svm_data* data_ptr = static_cast<const brisque_svm_data*>(this->_svm_data.get());
-    return ::compute( (const svm_model*)this->_svm_model, this->_svm_range_min.data(), this->_svm_range_max.data(), vec);
+    return ::compute(this->_model, this->_range, vec);
 }
 
-QualityBRISQUE::~QualityBRISQUE()
+//static
+void QualityBRISQUE::computeFeatures(InputArray img, OutputArray features)
 {
-    if (this->_svm_model != nullptr)
-    {
-        svm_model* ptr = (svm_model*)this->_svm_model;
-        svm_free_and_destroy_model(&ptr);
-        this->_svm_model = nullptr;
-    }
+    CV_Assert(features.needed());
+    CV_Assert(img.isMat());
+    CV_Assert(!img.getMat().empty());
+
+    auto mat = mat_convert(img.getMat());
+
+    const auto vals = ComputeBrisqueFeature(mat);
+    cv::Mat valmat( cv::Size( (int)vals.size(), 1 ), CV_32FC1, (void*)vals.data()); // create row vector, type depends on brisque_calc_element_type
+
+    if (features.isUMat())
+        valmat.copyTo(features.getUMatRef());
+    else if (features.isMat())
+        // how to move data instead?
+        // if calling this:
+        //      features.getMatRef() = valmat;
+        //  then shared data is erased when valmat is released, corrupting the data in the outputarray for the caller
+        valmat.copyTo(features.getMatRef());
+    else
+        CV_Error(cv::Error::StsNotImplemented, "Unsupported output type");
 }
