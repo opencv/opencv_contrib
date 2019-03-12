@@ -86,7 +86,8 @@ DetectorParameters::DetectorParameters()
       aprilTagCriticalRad( (float)(10* CV_PI /180) ),
       aprilTagMaxLineFitMse(10.0),
       aprilTagMinWhiteBlackDiff(5),
-      aprilTagDeglitch(0){}
+      aprilTagDeglitch(0),
+      detectInvertedMarker(false){}
 
 
 /**
@@ -512,7 +513,18 @@ static bool _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArray 
         int(dictionary->markerSize * dictionary->markerSize * params->maxErroneousBitsInBorderRate);
     int borderErrors =
         _getBorderErrors(candidateBits, dictionary->markerSize, params->markerBorderBits);
-    if(borderErrors > maximumErrorsInBorder) return false; // border is wrong
+
+    // check if it is a white marker
+    if(params->detectInvertedMarker){
+	// to get from 255 to 1
+        int invBError = _getBorderErrors(~candidateBits-254, dictionary->markerSize, params->markerBorderBits);
+	// white marker
+        if(invBError<borderErrors){
+            borderErrors = invBError;
+            candidateBits=~candidateBits-254;
+        }
+    }
+    if(borderErrors > maximumErrorsInBorder) return false;
 
     // take only inner bits
     Mat onlyBits =
