@@ -67,10 +67,10 @@ typedef Ptr<PoseCluster3D> PoseCluster3DPtr;
 * various helper methods to work with poses
 *
 */
-class CV_EXPORTS Pose3D
+class CV_EXPORTS_W Pose3D
 {
 public:
-  Pose3D()
+  CV_WRAP Pose3D()
   {
     alpha=0;
     modelIndex=0;
@@ -80,7 +80,7 @@ public:
     pose = Matx44d::all(0);
   }
 
-  Pose3D(double Alpha, size_t ModelIndex=0, size_t NumVotes=0)
+  CV_WRAP Pose3D(double Alpha, size_t ModelIndex=0, size_t NumVotes=0)
   {
     alpha = Alpha;
     modelIndex = ModelIndex;
@@ -94,24 +94,24 @@ public:
    *  \brief Updates the pose with the new one
    *  \param [in] NewPose New pose to overwrite
    */
-  void updatePose(Matx44d& NewPose);
+  CV_WRAP void updatePose(Matx44d& NewPose);
 
   /**
    *  \brief Updates the pose with the new one
    */
-  void updatePose(Matx33d& NewR, Vec3d& NewT);
+  CV_WRAP void updatePose(Matx33d& NewR, Vec3d& NewT);
 
   /**
    *  \brief Updates the pose with the new one, but this time using quaternions to represent rotation
    */
-  void updatePoseQuat(Vec4d& Q, Vec3d& NewT);
+  CV_WRAP void updatePoseQuat(Vec4d& Q, Vec3d& NewT);
 
   /**
    *  \brief Left multiplies the existing pose in order to update the transformation
    *  \param [in] IncrementalPose New pose to apply
    */
-  void appendPose(Matx44d& IncrementalPose);
-  void printPose();
+  CV_WRAP void appendPose(Matx44d& IncrementalPose);
+  CV_WRAP void printPose();
 
   Pose3DPtr clone();
 
@@ -122,12 +122,12 @@ public:
 
   virtual ~Pose3D() {}
 
-  double alpha, residual;
-  size_t modelIndex, numVotes;
-  Matx44d pose;
-  double angle;
-  Vec3d t;
-  Vec4d q;
+  CV_PROP double alpha, residual;
+  CV_PROP size_t modelIndex, numVotes;
+  CV_PROP Matx44d pose;
+  CV_PROP double angle;
+  CV_PROP Vec3d t;
+  CV_PROP Vec4d q;
 };
 
 /**
