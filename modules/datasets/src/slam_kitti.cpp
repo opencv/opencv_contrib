@@ -49,14 +49,14 @@ namespace datasets
 
 using namespace std;
 
-class SLAM_kittiImp : public SLAM_kitti
+class SLAM_kittiImp CV_FINAL : public SLAM_kitti
 {
 public:
     SLAM_kittiImp() {}
     //SLAM_kittiImp(const string &path);
-    virtual ~SLAM_kittiImp() {}
+    virtual ~SLAM_kittiImp() CV_OVERRIDE {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

@@ -80,7 +80,7 @@ namespace bioinspired
 /** @brief parameter structure that stores the transient events detector setup parameters
 */
 struct SegmentationParameters{ // CV_EXPORTS_W_MAP to export to python native dictionnaries
-	// default structure instance construction with default values	
+	// default structure instance construction with default values
 	SegmentationParameters():
 	    thresholdON(100),
 	    thresholdOFF(100),
@@ -171,7 +171,7 @@ public:
     /** @brief write xml/yml formated parameters information
     @param fs : a cv::Filestorage object ready to be filled
     */
-    virtual void write( cv::FileStorage& fs ) const=0;
+    virtual void write( cv::FileStorage& fs ) const CV_OVERRIDE = 0;
 
     /** @brief main processing method, get result using methods getSegmentationPicture()
     @param inputToSegment : the image to process, it must match the instance buffer size !

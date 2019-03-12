@@ -4,11 +4,11 @@
 #ifndef __OPENCV_FACE_ALIGNMENT_HPP__
 #define __OPENCV_FACE_ALIGNMENT_HPP__
 
-#include "facemark.hpp"
+#include "opencv2/face/facemark_train.hpp"
 
 namespace cv{
 namespace face{
-class CV_EXPORTS_W FacemarkKazemi : public Algorithm
+class CV_EXPORTS_W FacemarkKazemi : public Facemark
 {
 public:
     struct CV_EXPORTS Params
@@ -39,8 +39,6 @@ public:
     static Ptr<FacemarkKazemi> create(const FacemarkKazemi::Params &parameters = FacemarkKazemi::Params());
     virtual ~FacemarkKazemi();
 
-    /// @brief training the facemark model, input are the file names of image list and landmark annotation
-    virtual void training(String imageList, String groundTruth)=0;
     /** @brief This function is used to train the model using gradient boosting to get a cascade of regressors
     *which can then be used to predict shape.
     *@param images A vector of type cv::Mat which stores the images which are used in training samples.
@@ -51,16 +49,7 @@ public:
     *@returns A boolean value. The function returns true if the model is trained properly or false if it is not trained.
     */
     virtual bool training(std::vector<Mat>& images, std::vector< std::vector<Point2f> >& landmarks,std::string configfile,Size scale,std::string modelFilename = "face_landmarks.dat")=0;
-    /** @brief This function is used to load the trained model..
-    *@param filename A variable of type cv::String which stores the name of the file in which trained model is stored.
-    */
-    virtual void loadModel(String filename)=0;
-    /** @brief This functions retrieves a centered and scaled face shape, according to the bounding rectangle.
-    *@param image A variable of type cv::InputArray which stores the image whose landmarks have to be found
-    *@param faces A variable of type cv::InputArray which stores the bounding boxes of faces found in a given image.
-    *@param landmarks A variable of type cv::InputOutputArray which stores the landmarks of all the faces found in the image
-    */
-    virtual bool fit( InputArray image, InputArray faces, InputOutputArray landmarks )=0;//!< from many ROIs
+
     /// set the custom face detector
     virtual bool setFaceDetector(bool(*f)(InputArray , OutputArray, void*), void* userData)=0;
     /// get faces using the custom detector

@@ -94,7 +94,7 @@ public:
     Parallel_clipBufferValues(type* bufferToProcess, const type min, const type max)
         : bufferToClip(bufferToProcess), minValue(min), maxValue(max) { }
 
-    virtual void operator()( const cv::Range &r ) const {
+    virtual void operator()( const cv::Range &r ) const CV_OVERRIDE {
         type *inputOutputBufferPTR=bufferToClip+r.start;
         for (int jf = r.start; jf != r.end; ++jf, ++inputOutputBufferPTR)
         {
@@ -293,7 +293,7 @@ public:
         * @param sensitivity: strenght of the sigmoide
         * @param maxOutputValue: the maximum output value
         */
-        inline void normalizeGrayOutputCentredSigmoide(const type meanValue=(type)0.0, const type sensitivity=(type)2.0, const type maxOutputValue=(type)255.0) {  (void)maxOutputValue; normalizeGrayOutputCentredSigmoide(meanValue, sensitivity, 255.0, this->Buffer(), this->Buffer(), this->getNBpixels()); }
+        inline void normalizeGrayOutputCentredSigmoide(const type meanValue=(type)0.0, const type sensitivity=(type)2.0, const type maxOutputValue=(type)255.0) {  CV_UNUSED(maxOutputValue); normalizeGrayOutputCentredSigmoide(meanValue, sensitivity, 255.0, this->Buffer(), this->Buffer(), this->getNBpixels()); }
 
         /**
         * sigmoide image normalization function (saturates min and max values), in this function, the sigmoide is centered on low values (high saturation of the medium and high values

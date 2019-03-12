@@ -37,14 +37,14 @@ Mentor: Delia Passalacqua
 #ifndef __OPENCV_FACEMARK_AAM_HPP__
 #define __OPENCV_FACEMARK_AAM_HPP__
 
-#include "opencv2/face/facemark.hpp"
+#include "opencv2/face/facemark_train.hpp"
 namespace cv {
 namespace face {
 
 //! @addtogroup face
 //! @{
 
-class CV_EXPORTS_W FacemarkAAM : public Facemark
+class CV_EXPORTS_W FacemarkAAM : public FacemarkTrain
 {
 public:
     struct CV_EXPORTS Params
@@ -105,8 +105,6 @@ public:
     */
     struct CV_EXPORTS Model
     {
-        int npts; //!<  unused delete
-        int max_n; //!<  unused delete
         std::vector<float>scales;
         //!<  defines the scales considered to build the model
 
@@ -147,7 +145,11 @@ public:
 
     };
 
-    //!<  initializer
+    //! overload with additional Config structures
+    virtual bool fitConfig( InputArray image, InputArray roi, OutputArrayOfArrays _landmarks, const std::vector<Config> &runtime_params ) = 0;
+
+
+    //!  initializer
     static Ptr<FacemarkAAM> create(const FacemarkAAM::Params &parameters = FacemarkAAM::Params() );
     virtual ~FacemarkAAM() {}
 

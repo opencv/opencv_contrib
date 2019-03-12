@@ -487,7 +487,7 @@ namespace bioinspired
 #endif
             }
 
-            virtual void operator()( const Range& r ) const {
+            virtual void operator()( const Range& r ) const CV_OVERRIDE {
 
 #ifdef DEBUG_TBB
                 std::cout<<"Parallel_horizontalAnticausalFilter::operator() :"
@@ -520,7 +520,7 @@ namespace bioinspired
             Parallel_horizontalCausalFilter_addInput(const float *bufferToAddAsInputProcess, float *bufferToProcess, const unsigned int idStart, const unsigned int nbCols,  const float a,  const float tau)
                 :inputFrame(bufferToAddAsInputProcess), outputFrame(bufferToProcess), IDrowStart(idStart), nbColumns(nbCols), filterParam_a(a), filterParam_tau(tau){}
 
-            virtual void operator()( const Range& r ) const {
+            virtual void operator()( const Range& r ) const CV_OVERRIDE {
                 for (int IDrow=r.start; IDrow!=r.end; ++IDrow)
                 {
                     float* outputPTR=outputFrame+(IDrowStart+IDrow)*nbColumns;
@@ -545,7 +545,7 @@ namespace bioinspired
             Parallel_verticalCausalFilter(float *bufferToProcess, const unsigned int nbRws, const unsigned int nbCols, const float a )
                 :outputFrame(bufferToProcess), nbRows(nbRws), nbColumns(nbCols), filterParam_a(a){}
 
-            virtual void operator()( const Range& r ) const {
+            virtual void operator()( const Range& r ) const CV_OVERRIDE {
                 for (int IDcolumn=r.start; IDcolumn!=r.end; ++IDcolumn)
                 {
                     float result=0;
@@ -572,7 +572,7 @@ namespace bioinspired
             Parallel_verticalAnticausalFilter_multGain(float *bufferToProcess, const unsigned int nbRws, const unsigned int nbCols, const float a, const float  gain)
                 :outputFrame(bufferToProcess), nbRows(nbRws), nbColumns(nbCols), filterParam_a(a), filterParam_gain(gain){}
 
-            virtual void operator()( const Range& r ) const {
+            virtual void operator()( const Range& r ) const CV_OVERRIDE {
                 float* offset=outputFrame+nbColumns*nbRows-nbColumns;
                 for (int IDcolumn=r.start; IDcolumn!=r.end; ++IDcolumn)
                 {
@@ -600,7 +600,7 @@ namespace bioinspired
             Parallel_localAdaptation(const float *localLum, const float *inputImg, float *bufferToProcess, const float localLuminanceFact, const float localLuminanceAdd, const float maxInputVal)
                 :localLuminance(localLum), inputFrame(inputImg),outputFrame(bufferToProcess), localLuminanceFactor(localLuminanceFact), localLuminanceAddon(localLuminanceAdd), maxInputValue(maxInputVal) {}
 
-            virtual void operator()( const Range& r ) const {
+            virtual void operator()( const Range& r ) const CV_OVERRIDE {
                 const float *localLuminancePTR=localLuminance+r.start;
                 const float *inputFramePTR=inputFrame+r.start;
                 float *outputFramePTR=outputFrame+r.start;
@@ -626,7 +626,7 @@ namespace bioinspired
             Parallel_horizontalAnticausalFilter_Irregular(float *bufferToProcess, const float *spatialConst, const unsigned int idEnd, const unsigned int nbCols)
                 :outputFrame(bufferToProcess), spatialConstantBuffer(spatialConst), IDrowEnd(idEnd), nbColumns(nbCols){}
 
-            virtual void operator()( const Range& r ) const {
+            virtual void operator()( const Range& r ) const CV_OVERRIDE {
 
                 for (int IDrow=r.start; IDrow!=r.end; ++IDrow)
                 {
@@ -652,7 +652,7 @@ namespace bioinspired
             Parallel_verticalCausalFilter_Irregular(float *bufferToProcess, const float *spatialConst, const unsigned int nbRws, const unsigned int nbCols)
                 :outputFrame(bufferToProcess), spatialConstantBuffer(spatialConst), nbRows(nbRws), nbColumns(nbCols){}
 
-            virtual void operator()( const Range& r ) const {
+            virtual void operator()( const Range& r ) const CV_OVERRIDE {
                 for (int IDcolumn=r.start; IDcolumn!=r.end; ++IDcolumn)
                 {
                     float result=0;

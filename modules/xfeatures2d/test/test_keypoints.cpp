@@ -115,7 +115,7 @@ protected:
 
 
 // Registration of tests
-
+#ifdef OPENCV_ENABLE_NONFREE
 TEST(Features2d_Detector_Keypoints_SURF, validation)
 {
     CV_FeatureDetectorKeypointsTest test(xfeatures2d::SURF::create());
@@ -127,6 +127,8 @@ TEST(Features2d_Detector_Keypoints_SIFT, validation)
     CV_FeatureDetectorKeypointsTest test(xfeatures2d::SIFT::create());
     test.safe_run();
 }
+#endif // NONFREE
+
 
 TEST(Features2d_Detector_Keypoints_Star, validation)
 {

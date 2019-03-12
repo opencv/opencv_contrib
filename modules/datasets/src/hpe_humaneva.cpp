@@ -51,14 +51,14 @@ namespace datasets
 
 using namespace std;
 
-class HPE_humanevaImp : public HPE_humaneva
+class HPE_humanevaImp CV_FINAL : public HPE_humaneva
 {
 public:
     HPE_humanevaImp() {}
     //HPE_humanevaImp(const string &path);
     virtual ~HPE_humanevaImp() {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);
@@ -138,7 +138,7 @@ public:
     //HPE_humanevaImpII(const string &path);
     virtual ~HPE_humanevaImpII() {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

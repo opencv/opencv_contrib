@@ -10,12 +10,12 @@ using namespace std;
 
 namespace {
 
-class ColorMomentHashImpl : public ImgHashBase::ImgHashImpl
+class ColorMomentHashImpl CV_FINAL : public ImgHashBase::ImgHashImpl
 {
 public:
-    ~ColorMomentHashImpl() {}
+    ~ColorMomentHashImpl() CV_OVERRIDE {}
 
-    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr)
+    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr) CV_OVERRIDE
     {
       cv::Mat const input = inputArr.getMat();
       CV_Assert(input.type() == CV_8UC4 ||
@@ -28,30 +28,29 @@ public:
       }
       else if(input.type() == CV_8UC4)
       {
-          cv::cvtColor(input, colorImg_, CV_BGRA2BGR);
+          cv::cvtColor(input, colorImg_, COLOR_BGRA2BGR);
       }
       else
       {
-          cv::cvtColor(input, colorImg_, CV_GRAY2BGR);
+          cv::cvtColor(input, colorImg_, COLOR_GRAY2BGR);
       }
 
-      cv::resize(colorImg_, resizeImg_, cv::Size(512,512), 0, 0,
-                 INTER_CUBIC);
+      cv::resize(colorImg_, resizeImg_, cv::Size(512,512), 0, 0, INTER_CUBIC);
       cv::GaussianBlur(resizeImg_, blurImg_, cv::Size(3,3), 0, 0);
 
-      cv::cvtColor(blurImg_, colorSpace_, CV_BGR2HSV);
+      cv::cvtColor(blurImg_, colorSpace_, COLOR_BGR2HSV);
       cv::split(colorSpace_, channels_);
       outputArr.create(1, 42, CV_64F);
       cv::Mat hash = outputArr.getMat();
       hash.setTo(0);
       computeMoments(hash.ptr<double>(0));
 
-      cv::cvtColor(blurImg_, colorSpace_, CV_BGR2YCrCb);
+      cv::cvtColor(blurImg_, colorSpace_, COLOR_BGR2YCrCb);
       cv::split(colorSpace_, channels_);
       computeMoments(hash.ptr<double>(0) + 21);
     }
 
-    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const
+    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const CV_OVERRIDE
     {
       return norm(hashOne, hashTwo, NORM_L2) * 10000;
     }

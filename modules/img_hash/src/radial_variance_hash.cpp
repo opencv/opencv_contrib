@@ -26,7 +26,7 @@ inline int createOffSet(int length)
     return static_cast<int>(std::floor(center + roundingFactor(center)));
 }
 
-class RadialVarianceHashImpl : public ImgHashBase::ImgHashImpl
+class RadialVarianceHashImpl CV_FINAL : public ImgHashBase::ImgHashImpl
 {
 public:
     cv::Mat blurImg_;
@@ -42,9 +42,9 @@ public:
     {
     }
 
-    ~RadialVarianceHashImpl() {}
+    ~RadialVarianceHashImpl() CV_OVERRIDE {}
 
-    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr)
+    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr) CV_OVERRIDE
     {
         cv::Mat const input = inputArr.getMat();
         CV_Assert(input.type() == CV_8UC4 ||
@@ -53,11 +53,11 @@ public:
 
         if(input.type() == CV_8UC3)
         {
-            cv::cvtColor(input, grayImg_, CV_BGR2GRAY);
+            cv::cvtColor(input, grayImg_, COLOR_BGR2GRAY);
         }
         else if(input.type() == CV_8UC4)
         {
-            cv::cvtColor(input, grayImg_, CV_BGRA2GRAY);
+            cv::cvtColor(input, grayImg_, COLOR_BGRA2GRAY);
         }
         else
         {
@@ -72,7 +72,7 @@ public:
         hashCalculate(hash);
     }
 
-    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const
+    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const CV_OVERRIDE
     {
         cv::Mat const hashOneF = hashOne.getMat();
         cv::Mat const hashTwoF = hashTwo.getMat();

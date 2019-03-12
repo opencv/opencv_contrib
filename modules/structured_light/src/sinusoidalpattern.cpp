@@ -44,37 +44,37 @@
 
 namespace cv {
 namespace structured_light {
-class CV_EXPORTS_W SinusoidalPatternProfilometry_Impl : public SinusoidalPattern
+class CV_EXPORTS_W SinusoidalPatternProfilometry_Impl CV_FINAL : public SinusoidalPattern
 {
 public:
     // Constructor
     explicit SinusoidalPatternProfilometry_Impl( const SinusoidalPattern::Params &parameters =
                                                  SinusoidalPattern::Params() );
     // Destructor
-    virtual ~SinusoidalPatternProfilometry_Impl(){};
+    virtual ~SinusoidalPatternProfilometry_Impl() CV_OVERRIDE {};
 
     // Generate sinusoidal patterns
-    bool generate( OutputArrayOfArrays patternImages );
+    bool generate( OutputArrayOfArrays patternImages ) CV_OVERRIDE;
 
     bool decode( const std::vector< std::vector<Mat> >& patternImages, OutputArray disparityMap,
                 InputArrayOfArrays blackImages = noArray(), InputArrayOfArrays whiteImages =
-                noArray(), int flags = 0 ) const;
+                noArray(), int flags = 0 ) const CV_OVERRIDE;
 
     // Compute a wrapped phase map from the sinusoidal patterns
     void computePhaseMap( InputArrayOfArrays patternImages, OutputArray wrappedPhaseMap,
-                         OutputArray shadowMask = noArray(), InputArray fundamental = noArray());
+                         OutputArray shadowMask = noArray(), InputArray fundamental = noArray()) CV_OVERRIDE;
     // Unwrap the wrapped phase map to retrieve correspondences
     void unwrapPhaseMap( InputArray wrappedPhaseMap,
                          OutputArray unwrappedPhaseMap,
                          cv::Size camSize,
-                         InputArray shadowMask = noArray() );
+                         InputArray shadowMask = noArray() ) CV_OVERRIDE;
     // Find correspondences between the devices
     void findProCamMatches( InputArray projUnwrappedPhaseMap, InputArray camUnwrappedPhaseMap,
-                            OutputArrayOfArrays matches );
+                            OutputArrayOfArrays matches ) CV_OVERRIDE;
 
     void computeDataModulationTerm( InputArrayOfArrays patternImages,
                                     OutputArray dataModulationTerm,
-                                    InputArray shadowMask );
+                                    InputArray shadowMask ) CV_OVERRIDE;
 
 private:
     // Compute The Fourier transform of a pattern. Output is complex. Taken from the DFT example in OpenCV
@@ -263,11 +263,11 @@ bool SinusoidalPatternProfilometry_Impl::decode(const std::vector< std::vector<M
                                                 InputArrayOfArrays blackImages,
                                                 InputArrayOfArrays whiteImages, int flags ) const
 {
-    (void) patternImages;
-    (void) disparityMap;
-    (void) blackImages;
-    (void) whiteImages;
-    (void) flags;
+    CV_UNUSED(patternImages);
+    CV_UNUSED(disparityMap);
+    CV_UNUSED(blackImages);
+    CV_UNUSED(whiteImages);
+    CV_UNUSED(flags);
     return true;
 }
 // Most of the steps described in the paper to get the wrapped phase map take place here
@@ -310,7 +310,7 @@ void SinusoidalPatternProfilometry_Impl::computePhaseMap( InputArrayOfArrays pat
     {
         Mat &shadowMask_ = *(Mat*) shadowMask.getObj();
         //Mat &fundamental_ = *(Mat*) fundamental.getObj();
-        (void) fundamental;
+        CV_UNUSED(fundamental);
         Mat dmt;
         int nbrOfPatterns = static_cast<int>(pattern_.size());
         std::vector<Mat> filteredPatterns(nbrOfPatterns);
@@ -425,9 +425,9 @@ void SinusoidalPatternProfilometry_Impl::findProCamMatches( InputArray projUnwra
                                                             InputArray camUnwrappedPhaseMap,
                                                             OutputArrayOfArrays matches )
 {
-    (void) projUnwrappedPhaseMap;
-    (void) camUnwrappedPhaseMap;
-    (void) matches;
+    CV_UNUSED(projUnwrappedPhaseMap);
+    CV_UNUSED(camUnwrappedPhaseMap);
+    CV_UNUSED(matches);
 }
 
 void SinusoidalPatternProfilometry_Impl::computeDft( InputArray patternImage,
@@ -896,8 +896,8 @@ void SinusoidalPatternProfilometry_Impl::convertToAbsolutePhaseMap( InputArrayOf
                                                                     InputArray fundamentalMatrix )
 {
     std::vector<Mat> &camPatterns_ = *(std::vector<Mat>*) camPatterns.getObj();
-    (void) unwrappedCamPhaseMap;
-    (void) unwrappedProjPhaseMap;
+    CV_UNUSED(unwrappedCamPhaseMap);
+    CV_UNUSED(unwrappedProjPhaseMap);
 
     Mat &fundamental = *(Mat*) fundamentalMatrix.getObj();
 

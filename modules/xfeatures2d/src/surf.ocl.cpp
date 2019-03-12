@@ -57,6 +57,8 @@ namespace cv
 namespace xfeatures2d
 {
 
+#ifdef OPENCV_ENABLE_NONFREE
+
 enum { ORI_SEARCH_INC=5, ORI_LOCAL_SIZE=(360 / ORI_SEARCH_INC) };
 
 static inline int calcSize(int octave, int layer)
@@ -462,6 +464,8 @@ bool SURF_OCL::calcOrientation(UMat &keypoints)
     size_t globalThreads[3] = {nFeatures * localThreads[0], 1};
     return kerOri.run(2, globalThreads, localThreads, true);
 }
+
+#endif // ! #ifdef OPENCV_ENABLE_NONFREE
 
 }
 }

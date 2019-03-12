@@ -10,7 +10,7 @@ using namespace cv;
 using namespace cv::stereo;
 
 enum { STEREO_BINARY_BM, STEREO_BINARY_SGM };
-static cv::CommandLineParser parse_argument_values(int argc, char **argv, string &left, string &right, int &kernel_size, int &number_of_disparities,
+static bool parse_argument_values(int argc, char **argv, string &left, string &right, int &kernel_size, int &number_of_disparities,
                                                    int &aggregation_window, int &P1, int &P2, float &scale, int &algo, int &binary_descriptor_type, int &success);
 int main(int argc, char** argv)
 {
@@ -22,17 +22,14 @@ int main(int argc, char** argv)
     int success;
     // here we extract the values that were added as arguments
     // we also test to see if they are provided correcly
-    cv::CommandLineParser parser =
-        parse_argument_values(argc, argv, left, right,
-        kernel_size,
-        number_of_disparities,
-        aggregation_window,
-        P1, P2,
-        scale,
-        algo, binary_descriptor_type,success);
-    if (!parser.check() || !success)
+    if (!parse_argument_values(argc, argv, left, right,
+                               kernel_size,
+                               number_of_disparities,
+                               aggregation_window,
+                               P1, P2,
+                               scale,
+                               algo, binary_descriptor_type,success))
     {
-        parser.printMessage();
         return 1;
     }
     // verify if the user inputs the correct number of parameters
@@ -44,8 +41,6 @@ int main(int argc, char** argv)
     if (image1.empty() || image2.empty())
     {
         cout << " --(!) Error reading images \n";
-
-        parser.printMessage();
         return 1;
     }
     // we display the parsed parameters
@@ -112,7 +107,7 @@ int main(int argc, char** argv)
     waitKey(0);
     return 0;
 }
-static cv::CommandLineParser parse_argument_values(int argc, char **argv, string &left, string &right, int &kernel_size, int &number_of_disparities,
+static bool parse_argument_values(int argc, char **argv, string &left, string &right, int &kernel_size, int &number_of_disparities,
                                                    int &aggregation_window, int &P1, int &P2, float &scale, int &algo, int &binary_descriptor_type, int &success)
 {
     static const char* keys =
@@ -192,5 +187,10 @@ static cv::CommandLineParser parse_argument_values(int argc, char **argv, string
         cout << " Penalties should be greater than 0\n";
         success = 0;
     }
-    return parser;
+    if (!parser.check() || !success)
+    {
+        parser.printMessage();
+        return false;
+    }
+    return true;
 }

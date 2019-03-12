@@ -2,26 +2,26 @@
  *  By downloading, copying, installing or using the software you agree to this license.
  *  If you do not agree to this license, do not download, install,
  *  copy or use the software.
- *  
- *  
+ *
+ *
  *  License Agreement
  *  For Open Source Computer Vision Library
  *  (3 - clause BSD License)
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
- *  
+ *
  *  * Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and / or other materials provided with the distribution.
- *  
+ *
  *  * Neither the names of the copyright holders nor the names of the contributors
  *  may be used to endorse or promote products derived from this software
  *  without specific prior written permission.
- *  
+ *
  *  This software is provided by the copyright holders and contributors "as is" and
  *  any express or implied warranties, including, but not limited to, the implied
  *  warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -74,7 +74,7 @@ public:
     JointBilateralFilter_32f(Mat& joint_, Mat& src_, Mat& dst_, int radius_,
         int maxk_, float scaleIndex_, int *spaceOfs_, float *spaceWeights_, float *expLUT_)
         :
-        joint(joint_), src(src_), dst(dst_), radius(radius_), maxk(maxk_), 
+        joint(joint_), src(src_), dst(dst_), radius(radius_), maxk(maxk_),
         scaleIndex(scaleIndex_), spaceOfs(spaceOfs_), spaceWeights(spaceWeights_), expLUT(expLUT_)
     {
         CV_DbgAssert(joint.type() == traits::Type<JointVec>::value && src.type() == dst.type() && src.type() == traits::Type<SrcVec>::value);
@@ -82,7 +82,7 @@ public:
         CV_DbgAssert(joint.cols == src.cols && src.cols == dst.cols + 2*radius);
     }
 
-    void operator () (const Range& range) const
+    void operator () (const Range& range) const CV_OVERRIDE
     {
         for (int i = radius + range.start; i < radius + range.end; i++)
         {
@@ -122,7 +122,7 @@ public:
 void jointBilateralFilter_32f(Mat& joint, Mat& src, Mat& dst, int radius, double sigmaColor, double sigmaSpace, int borderType)
 {
     CV_DbgAssert(joint.depth() == CV_32F && src.depth() == CV_32F);
-    
+
     int d = 2*radius + 1;
     int jCn = joint.channels();
     const int kExpNumBinsPerChannel = 1 << 12;
@@ -228,7 +228,7 @@ public:
         CV_DbgAssert(joint.cols == src.cols && src.cols == dst.cols + 2 * radius);
     }
 
-    void operator () (const Range& range) const
+    void operator () (const Range& range) const CV_OVERRIDE
     {
         typedef Vec<int, JointVec::channels> JointVeci;
         typedef Vec<float, SrcVec::channels> SrcVecf;
@@ -250,7 +250,7 @@ public:
                     int alpha = 0;
                     for (int cn = 0; cn < JointVec::channels; cn++)
                         alpha += std::abs(jointPix0[cn] - (int)jointPix[cn]);
-                    
+
                     float weight = spaceWeights[k] * expLUT[alpha];
 
                     uchar *srcPix = reinterpret_cast<uchar*>(srcCenterPixPtr + spaceOfs[k]);

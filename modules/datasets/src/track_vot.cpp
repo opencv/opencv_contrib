@@ -52,7 +52,7 @@ namespace cv
     namespace datasets
     {
 
-        class TRACK_votImpl : public TRACK_vot
+        class TRACK_votImpl CV_FINAL : public TRACK_vot
         {
         public:
             //Constructor
@@ -62,21 +62,21 @@ namespace cv
                 frameCounter = 0;
             }
             //Destructor
-            virtual ~TRACK_votImpl() {}
+            virtual ~TRACK_votImpl() CV_OVERRIDE {}
 
             //Load Dataset
-            virtual void load(const string &path);
+            virtual void load(const string &path) CV_OVERRIDE;
 
 		protected:
-            virtual int getDatasetsNum();
+            virtual int getDatasetsNum() CV_OVERRIDE;
 
-            virtual int getDatasetLength(int id);
+            virtual int getDatasetLength(int id) CV_OVERRIDE;
 
-            virtual bool initDataset(int id);
+            virtual bool initDataset(int id) CV_OVERRIDE;
 
-            virtual bool getNextFrame(Mat &frame);
+            virtual bool getNextFrame(Mat &frame) CV_OVERRIDE;
 
-            virtual vector <Point2d> getGT();
+            virtual vector <Point2d> getGT() CV_OVERRIDE;
 
             void loadDataset(const string &path);
 

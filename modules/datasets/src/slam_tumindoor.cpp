@@ -51,14 +51,14 @@ namespace datasets
 
 using namespace std;
 
-class SLAM_tumindoorImp : public SLAM_tumindoor
+class SLAM_tumindoorImp CV_FINAL : public SLAM_tumindoor
 {
 public:
     SLAM_tumindoorImp() {}
     //SLAM_tumindoorImp(const string &path);
-    virtual ~SLAM_tumindoorImp() {}
+    virtual ~SLAM_tumindoorImp() CV_OVERRIDE {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

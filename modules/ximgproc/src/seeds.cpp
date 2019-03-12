@@ -79,13 +79,13 @@ public:
 
     virtual ~SuperpixelSEEDSImpl();
 
-    virtual int getNumberOfSuperpixels() { return nrLabels(seeds_top_level); }
+    virtual int getNumberOfSuperpixels() CV_OVERRIDE { return nrLabels(seeds_top_level); }
 
-    virtual void iterate(InputArray img, int num_iterations = 4);
+    virtual void iterate(InputArray img, int num_iterations = 4) CV_OVERRIDE;
 
 
-    virtual void getLabels(OutputArray labels_out);
-    virtual void getLabelContourMask(OutputArray image, bool thick_line = false);
+    virtual void getLabels(OutputArray labels_out) CV_OVERRIDE;
+    virtual void getLabelContourMask(OutputArray image, bool thick_line = false) CV_OVERRIDE;
 
 private:
     /* initialization */
@@ -960,16 +960,16 @@ bool SuperpixelSEEDSImpl::probability(int image_idx, int label1, int label2,
         switch( seeds_prior )
         {
         case 5: p *= p;
-            //no break
+            /* fallthrough */
         case 4: p *= p;
-            //no break
+            /* fallthrough */
         case 3: p *= p;
-            //no break
+            /* fallthrough */
         case 2:
             p *= p;
             P_label1 *= T[seeds_top_level][label2];
             P_label2 *= T[seeds_top_level][label1];
-            //no break
+            /* fallthrough */
         case 1:
             P_label1 *= p;
             break;

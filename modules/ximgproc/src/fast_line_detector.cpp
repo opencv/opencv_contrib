@@ -49,7 +49,7 @@ class FastLineDetectorImpl : public FastLineDetector
          *                  a line. Where Vec4f is (x1, y1, x2, y2), point 1 is the start, point 2 is the end.
          *                  Returned lines are directed so that the brighter side is placed on left.
          */
-        void detect(InputArray _image, OutputArray _lines);
+        void detect(InputArray _image, OutputArray _lines) CV_OVERRIDE;
 
         /**
          * Draw lines on the given canvas.
@@ -59,7 +59,7 @@ class FastLineDetectorImpl : public FastLineDetector
          * @param lines          The lines that need to be drawn
          * @param draw_arrow     If true, arrow heads will be drawn
          */
-        void drawSegments(InputOutputArray _image, InputArray lines, bool draw_arrow = false);
+        void drawSegments(InputOutputArray _image, InputArray lines, bool draw_arrow = false) CV_OVERRIDE;
 
     private:
         int imagewidth, imageheight, threshold_length;

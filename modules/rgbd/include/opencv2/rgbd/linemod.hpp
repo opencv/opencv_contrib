@@ -1,48 +1,11 @@
-/*M///////////////////////////////////////////////////////////////////////////////////////
-//
-//  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
-//
-//  By downloading, copying, installing or using the software you agree to this license.
-//  If you do not agree to this license, do not download, install,
-//  copy or use the software.
-//
-//
-//                          License Agreement
-//                For Open Source Computer Vision Library
-//
-// Copyright (C) 2000-2008, Intel Corporation, all rights reserved.
-// Copyright (C) 2009, Willow Garage Inc., all rights reserved.
-// Copyright (C) 2013, OpenCV Foundation, all rights reserved.
-// Third party copyrights are property of their respective owners.
-//
-// Redistribution and use in source and binary forms, with or without modification,
-// are permitted provided that the following conditions are met:
-//
-//   * Redistribution's of source code must retain the above copyright notice,
-//     this list of conditions and the following disclaimer.
-//
-//   * Redistribution's in binary form must reproduce the above copyright notice,
-//     this list of conditions and the following disclaimer in the documentation
-//     and/or other materials provided with the distribution.
-//
-//   * The name of the copyright holders may not be used to endorse or promote products
-//     derived from this software without specific prior written permission.
-//
-// This software is provided by the copyright holders and contributors "as is" and
-// any express or implied warranties, including, but not limited to, the implied
-// warranties of merchantability and fitness for a particular purpose are disclaimed.
-// In no event shall the Intel Corporation or contributors be liable for any direct,
-// indirect, incidental, special, exemplary, or consequential damages
-// (including, but not limited to, procurement of substitute goods or services;
-// loss of use, data, or profits; or business interruption) however caused
-// and on any theory of liability, whether in contract, strict liability,
-// or tort (including negligence or otherwise) arising in any way out of
-// the use of this software, even if advised of the possibility of such damage.
-//
-//M*/
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html
 
-#ifndef __OPENCV_OBJDETECT_LINEMOD_HPP__
-#define __OPENCV_OBJDETECT_LINEMOD_HPP__
+// This code is also subject to the license terms in the LICENSE_WillowGarage.md file found in this module's directory
+
+#ifndef __OPENCV_RGBD_LINEMOD_HPP__
+#define __OPENCV_RGBD_LINEMOD_HPP__
 
 #include "opencv2/core.hpp"
 #include <map>
@@ -80,7 +43,7 @@ struct CV_EXPORTS_W_SIMPLE Template
   CV_PROP int width;
   CV_PROP int height;
   CV_PROP int pyramid_level;
-  std::vector<Feature> features; // FIXIT: CV_PROP
+  CV_PROP std::vector<Feature> features;
 
   void read(const FileNode& fn);
   void write(FileStorage& fs) const;
@@ -200,7 +163,7 @@ protected:
 /**
  * \brief Modality that computes quantized gradient orientations from a color image.
  */
-class CV_EXPORTS ColorGradient : public Modality
+class CV_EXPORTS_W ColorGradient : public Modality
 {
 public:
   /**
@@ -218,24 +181,26 @@ public:
    */
   ColorGradient(float weak_threshold, size_t num_features, float strong_threshold);
 
-  virtual String name() const;
+  CV_WRAP static Ptr<ColorGradient> create(float weak_threshold, size_t num_features, float strong_threshold);
 
-  virtual void read(const FileNode& fn);
-  virtual void write(FileStorage& fs) const;
+  virtual String name() const CV_OVERRIDE;
 
-  float weak_threshold;
-  size_t num_features;
-  float strong_threshold;
+  virtual void read(const FileNode& fn) CV_OVERRIDE;
+  virtual void write(FileStorage& fs) const CV_OVERRIDE;
+
+  CV_PROP float weak_threshold;
+  CV_PROP size_t num_features;
+  CV_PROP float strong_threshold;
 
 protected:
   virtual Ptr<QuantizedPyramid> processImpl(const Mat& src,
-                        const Mat& mask) const;
+                        const Mat& mask) const CV_OVERRIDE;
 };
 
 /**
  * \brief Modality that computes quantized surface normals from a dense depth map.
  */
-class CV_EXPORTS DepthNormal : public Modality
+class CV_EXPORTS_W DepthNormal : public Modality
 {
 public:
   /**
@@ -256,25 +221,37 @@ public:
   DepthNormal(int distance_threshold, int difference_threshold, size_t num_features,
               int extract_threshold);
 
-  virtual String name() const;
+  CV_WRAP static Ptr<DepthNormal> create(int distance_threshold, int difference_threshold,
+                                         size_t num_features, int extract_threshold);
 
-  virtual void read(const FileNode& fn);
-  virtual void write(FileStorage& fs) const;
+  virtual String name() const CV_OVERRIDE;
 
-  int distance_threshold;
-  int difference_threshold;
-  size_t num_features;
-  int extract_threshold;
+  virtual void read(const FileNode& fn) CV_OVERRIDE;
+  virtual void write(FileStorage& fs) const CV_OVERRIDE;
+
+  CV_PROP int distance_threshold;
+  CV_PROP int difference_threshold;
+  CV_PROP size_t num_features;
+  CV_PROP int extract_threshold;
 
 protected:
   virtual Ptr<QuantizedPyramid> processImpl(const Mat& src,
-                        const Mat& mask) const;
+                        const Mat& mask) const CV_OVERRIDE;
 };
 
 /**
  * \brief Debug function to colormap a quantized image for viewing.
  */
 CV_EXPORTS_W void colormap(const Mat& quantized, CV_OUT Mat& dst);
+
+/**
+ * \brief Debug function to draw linemod features
+ * @param img
+ * @param templates see @ref Detector::addTemplate
+ * @param tl template bbox top-left offset see @ref Detector::addTemplate
+ * @param size marker size see @ref cv::drawMarker
+ */
+CV_EXPORTS_W void drawFeatures(InputOutputArray img, const std::vector<Template>& templates, const Point2i& tl, int size = 10);
 
 /**
  * \brief Represents a successful template match.

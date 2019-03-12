@@ -140,7 +140,7 @@ class CV_EXPORTS_W GrayCodePattern : public StructuredLightPattern
    *  @param projPix Projector's pixel corresponding to the camera's pixel: projPix.x and projPix.y are the image coordinates of the projector's pixel corresponding to the pixel being decoded in a camera.
    */
   CV_WRAP
-  virtual bool getProjPixel( InputArrayOfArrays patternImages, int x, int y, Point &projPix ) const = 0;
+  virtual bool getProjPixel( InputArrayOfArrays patternImages, int x, int y, CV_OUT Point &projPix ) const = 0;
 };
 
 //! @}

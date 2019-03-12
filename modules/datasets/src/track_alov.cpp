@@ -52,7 +52,7 @@ namespace cv
 namespace datasets
 {
 
-class TRACK_alovImpl : public TRACK_alov
+class TRACK_alovImpl CV_FINAL : public TRACK_alov
 {
 public:
     //Constructor
@@ -62,24 +62,24 @@ public:
         frameCounter = 0;
     }
     //Destructor
-    virtual ~TRACK_alovImpl() {}
+    virtual ~TRACK_alovImpl() CV_OVERRIDE {}
 
     //Load Dataset
-    virtual void load(const string &path);
-    virtual void loadAnnotatedOnly(const std::string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
+    virtual void loadAnnotatedOnly(const std::string &path) CV_OVERRIDE;
 
 protected:
-    virtual int getDatasetsNum();
+    virtual int getDatasetsNum() CV_OVERRIDE;
 
-    virtual int getDatasetLength(int id);
+    virtual int getDatasetLength(int id) CV_OVERRIDE;
 
-    virtual bool initDataset(int id);
+    virtual bool initDataset(int id) CV_OVERRIDE;
 
-    virtual bool getNextFrame(Mat &frame);
-    virtual bool getFrame(Mat &frame, int datasetID, int frameID);
+    virtual bool getNextFrame(Mat &frame) CV_OVERRIDE;
+    virtual bool getFrame(Mat &frame, int datasetID, int frameID) CV_OVERRIDE;
 
-    virtual vector <Point2f> getNextGT();
-    virtual vector <Point2f> getGT(int datasetID, int frameID);
+    virtual vector <Point2f> getNextGT() CV_OVERRIDE;
+    virtual vector <Point2f> getGT(int datasetID, int frameID) CV_OVERRIDE;
 
     void loadDataset(const string &path);
     void loadDatasetAnnotatedOnly(const string &path);

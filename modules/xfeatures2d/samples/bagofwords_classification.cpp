@@ -1794,12 +1794,9 @@ bool VocData::getClassifierGroundTruthImage(const string& obj_class, const strin
     {
         //image found, so return corresponding ground truth
         return m_classifier_gt_all_present[std::distance(m_classifier_gt_all_ids.begin(),it)] != 0;
-    } else {
-        string err_msg = "could not find classifier ground truth for image '" + id + "' and class '" + obj_class + "'";
-        CV_Error(Error::StsError,err_msg.c_str());
     }
-
-    return true;
+    string err_msg = "could not find classifier ground truth for image '" + id + "' and class '" + obj_class + "'";
+    CV_Error(Error::StsError,err_msg.c_str());
 }
 
 //-------------------------------------------------------------------

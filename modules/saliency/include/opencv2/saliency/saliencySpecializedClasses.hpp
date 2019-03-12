@@ -86,8 +86,8 @@ public:
     return computeSaliencyImpl( image, saliencyMap );
   }
 
-  CV_WRAP void read( const FileNode& fn );
-  void write( FileStorage& fs ) const;
+  CV_WRAP void read( const FileNode& fn ) CV_OVERRIDE;
+  void write( FileStorage& fs ) const CV_OVERRIDE;
 
   CV_WRAP int getImageWidth() const
   {
@@ -107,7 +107,7 @@ public:
   }
 
 protected:
-  bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap );
+  bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap ) CV_OVERRIDE;
   CV_PROP_RW int resImWidth;
   CV_PROP_RW int resImHeight;
 
@@ -140,7 +140,7 @@ public:
   virtual ~StaticSaliencyFineGrained();
 
 protected:
-  bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap );
+  bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap ) CV_OVERRIDE;
 
 private:
   void calcIntensityChannel(Mat src, Mat dst);
@@ -222,7 +222,7 @@ protected:
        The saliency map is given by a single *Mat* (one for each frame of an hypothetical video
         stream).
   */
-  bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap );
+  bool computeSaliencyImpl( InputArray image, OutputArray saliencyMap ) CV_OVERRIDE;
 
 private:
 
@@ -369,7 +369,7 @@ protected:
     specialized algorithm, the objectnessBoundingBox is a *vector\<Vec4i\>*. Each bounding box is
     represented by a *Vec4i* for (minX, minY, maxX, maxY).
      */
-  bool computeSaliencyImpl( InputArray image, OutputArray objectnessBoundingBox );
+  bool computeSaliencyImpl( InputArray image, OutputArray objectnessBoundingBox ) CV_OVERRIDE;
 
 private:
 

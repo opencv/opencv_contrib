@@ -32,7 +32,7 @@ public:
                          vector<Ptr<ERFilter> >_er_filter1, vector<Ptr<ERFilter> >_er_filter2)
         : channels(_channels),regions(_regions),er_filter1(_er_filter1),er_filter2(_er_filter2) {}
 
-    virtual void operator()( const cv::Range &r ) const
+    virtual void operator()( const cv::Range &r ) const CV_OVERRIDE
     {
         for (int c=r.start; c < r.end; c++)
         {
@@ -63,7 +63,7 @@ public:
           confidences(_confidences), ocrs(_ocrs)
     {}
 
-    virtual void operator()( const cv::Range &r ) const
+    virtual void operator()( const cv::Range &r ) const CV_OVERRIDE
     {
         for (int c=r.start; c < r.end; c++)
         {

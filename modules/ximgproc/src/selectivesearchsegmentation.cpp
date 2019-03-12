@@ -58,6 +58,8 @@ namespace cv {
                     double rank;
                     Rect bounding_box;
 
+                    Region() : id(0), level(0), merged_to(0), rank(0) {}
+
                     friend std::ostream& operator<<(std::ostream& os, const Region& n);
 
                     bool operator <(const Region& n) const {
@@ -113,16 +115,16 @@ namespace cv {
              * Stragegy / Color
              ***************************************/
 
-            class SelectiveSearchSegmentationStrategyColorImpl : public SelectiveSearchSegmentationStrategyColor {
+            class SelectiveSearchSegmentationStrategyColorImpl CV_FINAL : public SelectiveSearchSegmentationStrategyColor {
                 public:
                     SelectiveSearchSegmentationStrategyColorImpl() {
                         name_ = "SelectiveSearchSegmentationStrategyColor";
                         last_image_id = -1;
                     }
 
-                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1);
-                    virtual float get(int r1, int r2);
-                    virtual void merge(int r1, int r2);
+                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1) CV_OVERRIDE;
+                    virtual float get(int r1, int r2) CV_OVERRIDE;
+                    virtual void merge(int r1, int r2) CV_OVERRIDE;
 
                 private:
                     String name_;
@@ -242,19 +244,19 @@ namespace cv {
              * Stragegy / Multiple
              ***************************************/
 
-            class SelectiveSearchSegmentationStrategyMultipleImpl : public SelectiveSearchSegmentationStrategyMultiple {
+            class SelectiveSearchSegmentationStrategyMultipleImpl CV_FINAL : public SelectiveSearchSegmentationStrategyMultiple {
                 public:
                     SelectiveSearchSegmentationStrategyMultipleImpl() {
                         name_ = "SelectiveSearchSegmentationStrategyMultiple";
                         weights_total = 0;
                     }
 
-                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1);
-                    virtual float get(int r1, int r2);
-                    virtual void merge(int r1, int r2);
+                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1) CV_OVERRIDE;
+                    virtual float get(int r1, int r2) CV_OVERRIDE;
+                    virtual void merge(int r1, int r2) CV_OVERRIDE;
 
-                    virtual void addStrategy(Ptr<SelectiveSearchSegmentationStrategy> g, float weight);
-                    virtual void clearStrategies();
+                    virtual void addStrategy(Ptr<SelectiveSearchSegmentationStrategy> g, float weight) CV_OVERRIDE;
+                    virtual void clearStrategies() CV_OVERRIDE;
 
                 private:
                     String name_;
@@ -346,15 +348,15 @@ namespace cv {
              * Stragegy / Size
              ***************************************/
 
-            class SelectiveSearchSegmentationStrategySizeImpl : public SelectiveSearchSegmentationStrategySize {
+            class SelectiveSearchSegmentationStrategySizeImpl CV_FINAL : public SelectiveSearchSegmentationStrategySize {
                 public:
                     SelectiveSearchSegmentationStrategySizeImpl() {
                         name_ = "SelectiveSearchSegmentationStrategySize";
                     }
 
-                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1);
-                    virtual float get(int r1, int r2);
-                    virtual void merge(int r1, int r2);
+                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1) CV_OVERRIDE;
+                    virtual float get(int r1, int r2) CV_OVERRIDE;
+                    virtual void merge(int r1, int r2) CV_OVERRIDE;
 
                 private:
                     String name_;
@@ -393,15 +395,15 @@ namespace cv {
              * Stragegy / Fill
              ***************************************/
 
-            class SelectiveSearchSegmentationStrategyFillImpl : public SelectiveSearchSegmentationStrategyFill {
+            class SelectiveSearchSegmentationStrategyFillImpl CV_FINAL : public SelectiveSearchSegmentationStrategyFill {
                 public:
                     SelectiveSearchSegmentationStrategyFillImpl() {
                         name_ = "SelectiveSearchSegmentationStrategyFill";
                     }
 
-                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1);
-                    virtual float get(int r1, int r2);
-                    virtual void merge(int r1, int r2);
+                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1) CV_OVERRIDE;
+                    virtual float get(int r1, int r2) CV_OVERRIDE;
+                    virtual void merge(int r1, int r2) CV_OVERRIDE;
 
                 private:
                     String name_;
@@ -471,16 +473,16 @@ namespace cv {
              * Stragegy / Texture
              ***************************************/
 
-            class SelectiveSearchSegmentationStrategyTextureImpl : public SelectiveSearchSegmentationStrategyTexture {
+            class SelectiveSearchSegmentationStrategyTextureImpl CV_FINAL : public SelectiveSearchSegmentationStrategyTexture {
                 public:
                     SelectiveSearchSegmentationStrategyTextureImpl() {
                         name_ = "SelectiveSearchSegmentationStrategyTexture";
                         last_image_id = -1;
                     }
 
-                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1);
-                    virtual float get(int r1, int r2);
-                    virtual void merge(int r1, int r2);
+                    virtual void setImage(InputArray img, InputArray regions, InputArray sizes, int image_id = -1) CV_OVERRIDE;
+                    virtual float get(int r1, int r2) CV_OVERRIDE;
+                    virtual void merge(int r1, int r2) CV_OVERRIDE;
 
                 private:
                     String name_;
@@ -678,39 +680,39 @@ namespace cv {
 
             // Core
 
-            class SelectiveSearchSegmentationImpl : public SelectiveSearchSegmentation {
+            class SelectiveSearchSegmentationImpl CV_FINAL : public SelectiveSearchSegmentation {
                 public:
                     SelectiveSearchSegmentationImpl() {
                         name_ = "SelectiveSearchSegmentation";
                     }
 
-                    ~SelectiveSearchSegmentationImpl() {
+                    ~SelectiveSearchSegmentationImpl() CV_OVERRIDE {
                     };
 
-                    virtual void write(FileStorage& fs) const {
+                    virtual void write(FileStorage& fs) const CV_OVERRIDE {
                         fs << "name" << name_;
                     }
 
-                    virtual void read(const FileNode& fn) {
+                    virtual void read(const FileNode& fn) CV_OVERRIDE {
                         CV_Assert( (String)fn["name"] == name_);
                     }
 
-                    virtual void setBaseImage(InputArray img);
+                    virtual void setBaseImage(InputArray img) CV_OVERRIDE;
 
-                    virtual void switchToSingleStrategy(int k = 200, float sigma = 0.8);
-                    virtual void switchToSelectiveSearchFast(int base_k = 150, int inc_k = 150, float sigma = 0.8);
-                    virtual void switchToSelectiveSearchQuality(int base_k = 150, int inc_k = 150, float sigma = 0.8);
+                    virtual void switchToSingleStrategy(int k = 200, float sigma = 0.8) CV_OVERRIDE;
+                    virtual void switchToSelectiveSearchFast(int base_k = 150, int inc_k = 150, float sigma = 0.8) CV_OVERRIDE;
+                    virtual void switchToSelectiveSearchQuality(int base_k = 150, int inc_k = 150, float sigma = 0.8) CV_OVERRIDE;
 
-                    virtual void addImage(InputArray img);
-                    virtual void clearImages();
+                    virtual void addImage(InputArray img) CV_OVERRIDE;
+                    virtual void clearImages() CV_OVERRIDE;
 
-                    virtual void addGraphSegmentation(Ptr<GraphSegmentation> g);
-                    virtual void clearGraphSegmentations();
+                    virtual void addGraphSegmentation(Ptr<GraphSegmentation> g) CV_OVERRIDE;
+                    virtual void clearGraphSegmentations() CV_OVERRIDE;
 
-                    virtual void addStrategy(Ptr<SelectiveSearchSegmentationStrategy> s);
-                    virtual void clearStrategies();
+                    virtual void addStrategy(Ptr<SelectiveSearchSegmentationStrategy> s) CV_OVERRIDE;
+                    virtual void clearStrategies() CV_OVERRIDE;
 
-                    virtual void process(std::vector<Rect>& rects);
+                    virtual void process(std::vector<Rect>& rects) CV_OVERRIDE;
 
 
                 private:
@@ -809,7 +811,7 @@ namespace cv {
                 Ptr<SelectiveSearchSegmentationStrategyTexture> texture2 = createSelectiveSearchSegmentationStrategyTexture();
                 Ptr<SelectiveSearchSegmentationStrategySize> size2 = createSelectiveSearchSegmentationStrategySize();
 
-                Ptr<SelectiveSearchSegmentationStrategyMultiple> m2 = createSelectiveSearchSegmentationStrategyMultiple(fill, texture, size);
+                Ptr<SelectiveSearchSegmentationStrategyMultiple> m2 = createSelectiveSearchSegmentationStrategyMultiple(fill2, texture2, size2);
 
                 addStrategy(m2);
 
@@ -837,10 +839,7 @@ namespace cv {
                 addImage(channel[0]);
 
                 split(base_image, channel);
-                std::vector<Mat> channel2;
-                channel2.push_back(channel[2]);
-                channel2.push_back(channel[1]);
-                channel2.push_back(I);
+                std::vector<Mat> channel2 = {channel[2], channel[1], I};
 
                 Mat rgI;
                 merge(channel2, rgI);
@@ -866,7 +865,7 @@ namespace cv {
                 Ptr<SelectiveSearchSegmentationStrategyTexture> texture2 = createSelectiveSearchSegmentationStrategyTexture();
                 Ptr<SelectiveSearchSegmentationStrategySize> size2 = createSelectiveSearchSegmentationStrategySize();
 
-                Ptr<SelectiveSearchSegmentationStrategyMultiple> m2 = createSelectiveSearchSegmentationStrategyMultiple(fill, texture, size);
+                Ptr<SelectiveSearchSegmentationStrategyMultiple> m2 = createSelectiveSearchSegmentationStrategyMultiple(fill2, texture2, size2);
 
                 addStrategy(m2);
 

@@ -148,6 +148,8 @@ void bm3dDenoising(
         _dst.create(srcSize, type);
         break;
     case BM3D_STEPALL:
+        if (_basic.needed())
+            _basic.create(srcSize, type);
         _dst.create(srcSize, type);
         break;
     default:

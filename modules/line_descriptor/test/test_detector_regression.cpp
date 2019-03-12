@@ -331,7 +331,7 @@ void CV_BinaryDescriptorDetectorTest::run( int )
 *                                Tests registrations                                     *
  \****************************************************************************************/
 
-TEST( BinaryDescriptor_Detector, regression )
+TEST( BinaryDescriptor_Detector, DISABLED_regression )
 {
   CV_BinaryDescriptorDetectorTest test( std::string( "edl_detector_keylines_cameraman" ) );
   test.safe_run();

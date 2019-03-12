@@ -69,7 +69,7 @@ namespace xfeatures2d
 /*
  !VGG implementation
  */
-class VGG_Impl : public VGG
+class VGG_Impl CV_FINAL : public VGG
 {
 
 public:
@@ -80,35 +80,35 @@ public:
                        float scale_factor = 6.25f, bool dsc_normalize = false );
 
     // destructor
-    virtual ~VGG_Impl();
+    virtual ~VGG_Impl() CV_OVERRIDE;
 
     // returns the descriptor length in bytes
-    virtual int descriptorSize() const { return m_descriptor_size; }
+    virtual int descriptorSize() const CV_OVERRIDE { return m_descriptor_size; }
 
     // returns the descriptor type
-    virtual int descriptorType() const { return CV_32F; }
+    virtual int descriptorType() const CV_OVERRIDE { return CV_32F; }
 
     // returns the default norm type
-    virtual int defaultNorm() const { return NORM_L2; }
+    virtual int defaultNorm() const CV_OVERRIDE { return NORM_L2; }
 
     // compute descriptors given keypoints
-    virtual void compute( InputArray image, vector<KeyPoint>& keypoints, OutputArray descriptors );
+    virtual void compute( InputArray image, vector<KeyPoint>& keypoints, OutputArray descriptors ) CV_OVERRIDE;
 
     // getter / setter
-    virtual void setSigma(const float isigma) { m_isigma = isigma; }
-    virtual float getSigma() const { return m_isigma; }
+    virtual void setSigma(const float isigma) CV_OVERRIDE { m_isigma = isigma; }
+    virtual float getSigma() const CV_OVERRIDE { return m_isigma; }
 
-    virtual void setUseNormalizeImage(const bool img_normalize) { m_img_normalize = img_normalize; }
-    virtual bool getUseNormalizeImage() const { return m_img_normalize; }
+    virtual void setUseNormalizeImage(const bool img_normalize) CV_OVERRIDE { m_img_normalize = img_normalize; }
+    virtual bool getUseNormalizeImage() const CV_OVERRIDE { return m_img_normalize; }
 
-    virtual void setUseScaleOrientation(const bool use_scale_orientation) { m_use_scale_orientation = use_scale_orientation; }
-    virtual bool getUseScaleOrientation() const { return m_use_scale_orientation; }
+    virtual void setUseScaleOrientation(const bool use_scale_orientation) CV_OVERRIDE { m_use_scale_orientation = use_scale_orientation; }
+    virtual bool getUseScaleOrientation() const CV_OVERRIDE { return m_use_scale_orientation; }
 
-    virtual void setScaleFactor(const float scale_factor) { m_scale_factor = scale_factor; }
-    virtual float getScaleFactor() const { return m_scale_factor; }
+    virtual void setScaleFactor(const float scale_factor) CV_OVERRIDE { m_scale_factor = scale_factor; }
+    virtual float getScaleFactor() const CV_OVERRIDE { return m_scale_factor; }
 
-    virtual void setUseNormalizeDescriptor(const bool dsc_normalize) { m_dsc_normalize = dsc_normalize; }
-    virtual bool getUseNormalizeDescriptor() const { return m_dsc_normalize; }
+    virtual void setUseNormalizeDescriptor(const bool dsc_normalize) CV_OVERRIDE { m_dsc_normalize = dsc_normalize; }
+    virtual bool getUseNormalizeDescriptor() const CV_OVERRIDE { return m_dsc_normalize; }
 
 protected:
 
@@ -352,7 +352,7 @@ struct ComputeVGGInvoker : ParallelLoopBody
       use_scale_orientation  = _use_scale_orientation;
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       Mat Desc, PatchTrans;
       Mat Patch( 64, 64, CV_32F );

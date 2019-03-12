@@ -53,7 +53,7 @@ namespace cv
     {
         using namespace std;
 
-        class Plot2dImpl : public Plot2d
+        class Plot2dImpl CV_FINAL : public Plot2d
         {
             public:
 
@@ -108,59 +108,59 @@ namespace cv
             }
 
             //set functions
-            void setMinX(double _plotMinX)
+            void setMinX(double _plotMinX) CV_OVERRIDE
             {
                 plotMinX = _plotMinX;
                 plotMinX_plusZero = _plotMinX;
             }
-            void setMaxX(double _plotMaxX)
+            void setMaxX(double _plotMaxX) CV_OVERRIDE
             {
                 plotMaxX = _plotMaxX;
                 plotMaxX_plusZero = _plotMaxX;
             }
-            void setMinY(double _plotMinY)
+            void setMinY(double _plotMinY) CV_OVERRIDE
             {
                 plotMinY = _plotMinY;
                 plotMinY_plusZero = _plotMinY;
             }
-            void setMaxY(double _plotMaxY)
+            void setMaxY(double _plotMaxY) CV_OVERRIDE
             {
                 plotMaxY = _plotMaxY;
                 plotMaxY_plusZero = _plotMaxY;
             }
-            void setPlotLineWidth(int _plotLineWidth)
+            void setPlotLineWidth(int _plotLineWidth) CV_OVERRIDE
             {
                 plotLineWidth = _plotLineWidth;
             }
-            void setInvertOrientation(bool _invertOrientation)
+            void setInvertOrientation(bool _invertOrientation) CV_OVERRIDE
             {
                 invertOrientation = _invertOrientation;
             }
-            void setNeedPlotLine(bool _needPlotLine)
+            void setNeedPlotLine(bool _needPlotLine) CV_OVERRIDE
             {
                 needPlotLine = _needPlotLine;
             }
-            void setPlotLineColor(Scalar _plotLineColor)
+            void setPlotLineColor(Scalar _plotLineColor) CV_OVERRIDE
             {
                 plotLineColor=_plotLineColor;
             }
-            void setPlotBackgroundColor(Scalar _plotBackgroundColor)
+            void setPlotBackgroundColor(Scalar _plotBackgroundColor) CV_OVERRIDE
             {
                 plotBackgroundColor=_plotBackgroundColor;
             }
-            void setPlotAxisColor(Scalar _plotAxisColor)
+            void setPlotAxisColor(Scalar _plotAxisColor) CV_OVERRIDE
             {
                 plotAxisColor=_plotAxisColor;
             }
-            void setPlotGridColor(Scalar _plotGridColor)
+            void setPlotGridColor(Scalar _plotGridColor) CV_OVERRIDE
             {
                 plotGridColor=_plotGridColor;
             }
-            void setPlotTextColor(Scalar _plotTextColor)
+            void setPlotTextColor(Scalar _plotTextColor) CV_OVERRIDE
             {
                 plotTextColor=_plotTextColor;
             }
-            void setPlotSize(int _plotSizeWidth, int _plotSizeHeight)
+            void setPlotSize(int _plotSizeWidth, int _plotSizeHeight) CV_OVERRIDE
             {
                 if(_plotSizeWidth > 400)
                     plotSizeWidth = _plotSizeWidth;
@@ -172,28 +172,28 @@ namespace cv
                 else
                     plotSizeHeight = 300;
             }
-            void setShowGrid(bool _needShowGrid)
+            void setShowGrid(bool _needShowGrid) CV_OVERRIDE
             {
                 needShowGrid = _needShowGrid;
             }
-            void setShowText(bool _needShowText)
+            void setShowText(bool _needShowText) CV_OVERRIDE
             {
                 needShowText = _needShowText;
             }
-            void setGridLinesNumber(int _gridLinesNumber)
+            void setGridLinesNumber(int _gridLinesNumber) CV_OVERRIDE
             {
                 if(_gridLinesNumber <= 0)
                     _gridLinesNumber = 1;
                 gridLinesNumber = _gridLinesNumber;
             }
-            void setPointIdxToPrint(int _cursorPos)
+            void setPointIdxToPrint(int _cursorPos) CV_OVERRIDE
             {
                 if(_cursorPos >= plotDataX.rows || _cursorPos < 0)
                     _cursorPos = plotDataX.rows - 1;
                 cursorPos = _cursorPos;
             }
             //render the plotResult to a Mat
-            void render(OutputArray _plotResult)
+            void render(OutputArray _plotResult) CV_OVERRIDE
             {
                 //create the plot result
                 _plotResult.create(plotSizeHeight, plotSizeWidth, CV_8UC3);

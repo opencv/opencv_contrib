@@ -552,7 +552,7 @@ double get_min(const Mat &m)
 Mat bgr2hsv(const Mat &img)
 {
     Mat hsv_img;
-    cvtColor(img, hsv_img, CV_BGR2HSV);
+    cvtColor(img, hsv_img, COLOR_BGR2HSV);
     std::vector<Mat> hsv_img_channels;
     split(hsv_img, hsv_img_channels);
     hsv_img_channels.at(0).convertTo(hsv_img_channels.at(0), CV_8UC1, 255.0 / 180.0);

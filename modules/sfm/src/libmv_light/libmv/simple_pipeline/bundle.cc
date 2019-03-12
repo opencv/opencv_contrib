@@ -430,7 +430,10 @@ void EuclideanBundlePointsOnly(const DistortionModelType distortion_model,
 
 #ifdef _OPENMP
   options.num_threads = omp_get_max_threads();
+#if CERES_VERSION_MAJOR <= 1 && CERES_VERSION_MINOR <= 13
+  // deprecated since Ceres 1.14.0
   options.num_linear_solver_threads = omp_get_max_threads();
+#endif
 #endif
 
   // Solve!
@@ -600,7 +603,10 @@ void EuclideanBundleCommonIntrinsics(
 
 #ifdef _OPENMP
   options.num_threads = omp_get_max_threads();
+#if CERES_VERSION_MAJOR <= 1 && CERES_VERSION_MINOR <= 13
+  // deprecated since Ceres 1.14.0
   options.num_linear_solver_threads = omp_get_max_threads();
+#endif
 #endif
 
   // Solve!

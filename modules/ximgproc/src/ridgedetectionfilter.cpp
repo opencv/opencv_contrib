@@ -28,7 +28,7 @@ public:
         _borderType = borderType;
         _out_dtype = out_dtype;
     }
-    virtual void getRidgeFilteredImage(InputArray _img, OutputArray out);
+    virtual void getRidgeFilteredImage(InputArray _img, OutputArray out) CV_OVERRIDE;
 };
 
 void RidgeDetectionFilterImpl::getRidgeFilteredImage(InputArray _img, OutputArray out)

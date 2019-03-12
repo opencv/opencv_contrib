@@ -231,7 +231,7 @@ if __name__ == '__main__':
         state = load_json(args.state)
 
     algorithm_list = parse_sequence(args.algorithms)
-    img_range = map(int, parse_sequence(args.range))
+    img_range = list(map(int, parse_sequence(args.range)))
     if len(img_range)!=2:
         print("Error: Please specify the -r parameter in form <first_image_index>,<last_image_index>")
         sys.exit(1)

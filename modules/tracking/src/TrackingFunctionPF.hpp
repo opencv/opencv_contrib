@@ -9,9 +9,9 @@ namespace cv{
         public:
             TrackingFunctionPF(const Mat& chosenRect);
             void update(const Mat& image);
-            int getDims() const { return 4; }
-            double calc(const double* x) const;
-            void correctParams(double* pt)const;
+            int getDims() const CV_OVERRIDE { return 4; }
+            double calc(const double* x) const CV_OVERRIDE;
+            void correctParams(double* pt)const CV_OVERRIDE;
         private:
             Mat _image;
             static inline Rect rectFromRow(const double* row);
@@ -31,7 +31,7 @@ namespace cv{
 
         Mat hsv;
         img.convertTo(hsv,CV_32F,1.0/255.0);
-        cvtColor(hsv,hsv,CV_BGR2HSV);
+        cvtColor(hsv,hsv,COLOR_BGR2HSV);
 
         HShist=Mat_<double>(nh,ns,0.0);
         Vhist=Mat_<double>(1,nv,0.0);
@@ -66,7 +66,7 @@ namespace cv{
     }
     double TrackingFunctionPF::calc(const double* x) const{
         Rect rect=rectFromRow(x);
-        if(rect.area()==0){
+        if(rect.empty()){
             return 2.0;
         }
         return _origHist.dist(TrackingHistogram(_image(rect),_nh,_ns,_nv));

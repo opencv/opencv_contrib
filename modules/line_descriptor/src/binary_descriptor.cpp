@@ -42,6 +42,8 @@
 #include "precomp.hpp"
 
 #ifdef _MSC_VER
+    #pragma warning(disable:4702)  // unreachable code
+
     #if (_MSC_VER <= 1700)
         /* This function rounds x to the nearest integer, but rounds halfway cases away from zero. */
         static inline double round(double x)
@@ -337,13 +339,8 @@ int BinaryDescriptor::descriptorSize() const
 /* power function with error management */
 static inline int get2Pow( int i )
 {
-  if( i >= 0 && i <= 7 )
-    return 1 << i;
-  else
-  {
-    CV_Error( Error::StsBadArg, "Invalid power argument" );
-    return -1;
-  }
+  CV_DbgAssert(i >= 0 && i <= 7);
+  return 1 << i;
 }
 
 /* compute Gaussian pyramids */
@@ -509,7 +506,7 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
   /* delete undesired KeyLines, according to input mask */
   if( !mask.empty() )
   {
-    for ( size_t keyCounter = 0; keyCounter < keylines.size(); keyCounter++ )
+    for ( size_t keyCounter = 0; keyCounter < keylines.size(); )
     {
       KeyLine& kl = keylines[keyCounter];
 
@@ -522,6 +519,8 @@ void BinaryDescriptor::detectImpl( const Mat& imageSrc, std::vector<KeyLine>& ke
 
       if( mask.at < uchar > ( (int) kl.startPointY, (int) kl.startPointX ) == 0 && mask.at < uchar > ( (int) kl.endPointY, (int) kl.endPointX ) == 0 )
         keylines.erase( keylines.begin() + keyCounter );
+      else
+        keyCounter++;
     }
   }
 
@@ -551,7 +550,7 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
   if( imageSrc.channels() != 1 )
     cvtColor( imageSrc, image, COLOR_BGR2GRAY );
   else
-    image = imageSrc.clone();
+    image = imageSrc;
 
   /*check whether image's depth is different from 0 */
   if( image.depth() != 0 )
@@ -628,11 +627,11 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
   /* delete useless OctaveSingleLines */
   for ( size_t i = 0; i < sl.size(); i++ )
   {
-    for ( size_t j = 0; j < sl[i].size(); j++ )
+    for ( size_t j = 0; j < sl[i].size(); )
     {
-      //if( (int) ( sl[i][j] ).octaveCount > params.numOfOctave_ )
       if( (int) ( sl[i][j] ).octaveCount > octaveIndex )
         ( sl[i] ).erase( ( sl[i] ).begin() + j );
+      else j++;
     }
   }
 
@@ -693,7 +692,7 @@ void BinaryDescriptor::computeImpl( const Mat& imageSrc, std::vector<KeyLine>& k
 
 int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
 {
-
+#if 0
   /* final number of extracted lines */
   unsigned int numOfFinalLine = 0;
 
@@ -1026,6 +1025,10 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
 
   delete[] scale;
   return 1;
+#else
+    CV_UNUSED(image); CV_UNUSED(keyLines);
+    CV_Error(Error::StsNotImplemented, "Implementation has been removed due original code license issues");
+#endif
 }
 
 int BinaryDescriptor::computeLBD( ScaleLines &keyLines, bool useDetectionData )
@@ -1346,17 +1349,6 @@ int BinaryDescriptor::computeLBD( ScaleLines &keyLines, bool useDetectionData )
       }
     }/* end for(short lineIDInSameLine = 0; lineIDInSameLine<sameLineSize;
      lineIDInSameLine++) */
-
-    cv::Mat appoggio = cv::Mat( 1, 32, CV_32FC1 );
-    float* pointerToRow = appoggio.ptr<float>( 0 );
-    for ( int g = 0; g < 32; g++ )
-    {
-      /* get LBD data */
-      float* des_Vec = &keyLines[lineIDInScaleVec][0].descriptor.front();
-      *pointerToRow = des_Vec[g];
-      pointerToRow++;
-
-    }
 
   }/* end for(short lineIDInScaleVec = 0;
    lineIDInScaleVec<numOfFinalLine; lineIDInScaleVec++) */
@@ -2251,7 +2243,7 @@ int BinaryDescriptor::EDLineDetector::EdgeDrawing( cv::Mat &image, EdgeChains &e
 
 int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image, LineChains &lines )
 {
-
+#if 0
   //first, call EdgeDrawing function to extract edges
   EdgeChains edges;
   if( ( EdgeDrawing( image, edges ) ) != 1 )
@@ -2489,6 +2481,10 @@ int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image, LineChains &lines 
   lines.numOfLines = numOfLines;
 
   return 1;
+#else
+    CV_UNUSED(image); CV_UNUSED(lines);
+    CV_Error(Error::StsNotImplemented, "Implementation has been removed due original code license issues");
+#endif
 }
 
 double BinaryDescriptor::EDLineDetector::LeastSquaresLineFit_( unsigned int *xCors, unsigned int *yCors, unsigned int offsetS,
@@ -2655,88 +2651,14 @@ double BinaryDescriptor::EDLineDetector::LeastSquaresLineFit_( unsigned int *xCo
 bool BinaryDescriptor::EDLineDetector::LineValidation_( unsigned int *xCors, unsigned int *yCors, unsigned int offsetS, unsigned int offsetE,
                                                         std::vector<double> &lineEquation, float &direction )
 {
-  if( bValidate_ )
-  {
-    int n = offsetE - offsetS;
-    /*first compute the direction of line, make sure that the dark side always be the
-     *left side of a line.*/
-    int meanGradientX = 0, meanGradientY = 0;
-    short *pdxImg = dxImg_.ptr<short>();
-    short *pdyImg = dyImg_.ptr<short>();
-    double dx, dy;
-    std::vector<double> pointDirection;
-    int index;
-    for ( int i = 0; i < n; i++ )
-    {
-      index = yCors[offsetS] * imageWidth + xCors[offsetS];
-      offsetS++;
-      meanGradientX += pdxImg[index];
-      meanGradientY += pdyImg[index];
-      dx = (double) pdxImg[index];
-      dy = (double) pdyImg[index];
-      pointDirection.push_back( atan2( -dx, dy ) );
-    }
-    dx = fabs( lineEquation[1] );
-    dy = fabs( lineEquation[0] );
-    if( meanGradientX == 0 && meanGradientY == 0 )
-    {         //not possible, if happens, it must be a wrong line,
-      return false;
-    }
-    if( meanGradientX > 0 && meanGradientY >= 0 )
-    {         //first quadrant, and positive direction of X axis.
-      direction = (float) atan2( -dy, dx );         //line direction is in fourth quadrant
-    }
-    if( meanGradientX <= 0 && meanGradientY > 0 )
-    {         //second quadrant, and positive direction of Y axis.
-      direction = (float) atan2( dy, dx );          //line direction is in first quadrant
-    }
-    if( meanGradientX < 0 && meanGradientY <= 0 )
-    {         //third quadrant, and negative direction of X axis.
-      direction = (float) atan2( dy, -dx );         //line direction is in second quadrant
-    }
-    if( meanGradientX >= 0 && meanGradientY < 0 )
-    {         //fourth quadrant, and negative direction of Y axis.
-      direction = (float) atan2( -dy, -dx );          //line direction is in third quadrant
-    }
-    /*then check whether the line is on the border of the image. We don't keep the border line.*/
-    if( fabs( direction ) < 0.15 || M_PI - fabs( direction ) < 0.15 )
-    {         //Horizontal line
-      if( fabs( lineEquation[2] ) < 10 || fabs( imageHeight - fabs( lineEquation[2] ) ) < 10 )
-      {         //upper border or lower border
-        return false;
-      }
-    }
-    if( fabs( fabs( direction ) - M_PI * 0.5 ) < 0.15 )
-    {         //Vertical line
-      if( fabs( lineEquation[2] ) < 10 || fabs( imageWidth - fabs( lineEquation[2] ) ) < 10 )
-      {         //left border or right border
-        return false;
-      }
-    }
-    //count the aligned points on the line which have the same direction as the line.
-    double disDirection;
-    int k = 0;
-    for ( int i = 0; i < n; i++ )
-    {
-      disDirection = fabs( direction - pointDirection[i] );
-      if( fabs( 2 * M_PI - disDirection ) < 0.392699 || disDirection < 0.392699 )
-      {         //same direction, pi/8 = 0.392699081698724
-        k++;
-      }
-    }
-    //now compute NFA(Number of False Alarms)
-    double ret = nfa( n, k, 0.125, logNT_ );
-
-    return ( ret > 0 );  //0 corresponds to 1 mean false alarm
-  }
-  else
-  {
-    return true;
-  }
+    CV_UNUSED(xCors); CV_UNUSED(yCors); CV_UNUSED(offsetS); CV_UNUSED(offsetE);
+    CV_UNUSED(lineEquation); CV_UNUSED(direction);
+    CV_Error(Error::StsNotImplemented, "Implementation has been removed due original code license issues");
 }
 
 int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image )
 {
+#if 0
   if( ( EDline( image, lines_/*, smoothed*/) ) != 1 )
   {
     return -1;
@@ -2758,6 +2680,10 @@ int BinaryDescriptor::EDLineDetector::EDline( cv::Mat &image )
     lineSalience_[i] = (float) salience;
   }
   return 1;
+#else
+    CV_UNUSED(image);
+    CV_Error(Error::StsNotImplemented, "Implementation has been removed due original code license issues");
+#endif
 }
 
 }

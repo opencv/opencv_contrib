@@ -64,7 +64,7 @@ static bool customDetector( InputArray image, OutputArray ROIs, CascadeClassifie
 TEST(CV_Face_FacemarkAAM, can_create_default) {
     FacemarkAAM::Params params;
 
-    Ptr<Facemark> facemark;
+    Ptr<FacemarkAAM> facemark;
     EXPECT_NO_THROW(facemark = FacemarkAAM::create(params));
     EXPECT_FALSE(facemark.empty());
 }
@@ -75,7 +75,7 @@ TEST(CV_Face_FacemarkAAM, can_set_custom_detector) {
     CascadeClassifier face_detector;
     EXPECT_TRUE(face_detector.load(cascade_filename));
 
-    Ptr<Facemark> facemark = FacemarkAAM::create();
+    Ptr<FacemarkAAM> facemark = FacemarkAAM::create();
     EXPECT_TRUE(facemark->setFaceDetector((cv::face::FN_FaceDetector)customDetector, &face_detector));
 }
 
@@ -104,7 +104,7 @@ TEST(CV_Face_FacemarkAAM, test_workflow) {
     params.m = 1;
     params.verbose = false;
     params.save_model = false;
-    Ptr<Facemark> facemark = FacemarkAAM::create(params);
+    Ptr<FacemarkAAM> facemark = FacemarkAAM::create(params);
 
     Mat image;
     std::vector<Point2f> landmarks;

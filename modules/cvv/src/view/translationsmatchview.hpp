@@ -60,19 +60,19 @@ class TranslationMatchView : public MatchView
 		return matchManagment_->getCurrentSelection();
 	}
 
-	virtual std::vector<cv::KeyPoint> getKeyPointSelection()
+    virtual std::vector<cv::KeyPoint> getKeyPointSelection() CV_OVERRIDE
 	{
 		return keyManagment_->getCurrentSelection();
 	}
 
 public slots:
 
-	virtual void setMatchSelection(std::vector<cv::DMatch> selection)
+    virtual void setMatchSelection(std::vector<cv::DMatch> selection) CV_OVERRIDE
 	{
 		matchManagment_->setSelection(selection);
 	}
 
-	virtual void setKeyPointSelection(std::vector<cv::KeyPoint> selection)
+    virtual void setKeyPointSelection(std::vector<cv::KeyPoint> selection) CV_OVERRIDE
 	{
 		keyManagment_->setSelection(selection);
 	}

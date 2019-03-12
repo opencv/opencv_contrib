@@ -50,7 +50,7 @@ namespace cv
 namespace bgsegm
 {
 
-class BackgroundSubtractorCNTImpl: public BackgroundSubtractorCNT
+class BackgroundSubtractorCNTImpl CV_FINAL : public BackgroundSubtractorCNT
 {
 public:
 
@@ -60,20 +60,20 @@ public:
                                 bool isParallel);
 
     // BackgroundSubtractor interface
-    virtual void apply(InputArray image, OutputArray fgmask, double learningRate);
-    virtual void getBackgroundImage(OutputArray backgroundImage) const;
+    virtual void apply(InputArray image, OutputArray fgmask, double learningRate) CV_OVERRIDE;
+    virtual void getBackgroundImage(OutputArray backgroundImage) const CV_OVERRIDE;
 
-    int getMinPixelStability() const;
-    void setMinPixelStability(int value);
+    int getMinPixelStability() const CV_OVERRIDE;
+    void setMinPixelStability(int value) CV_OVERRIDE;
 
-    int getMaxPixelStability() const;
-    void setMaxPixelStability(int value);
+    int getMaxPixelStability() const CV_OVERRIDE;
+    void setMaxPixelStability(int value) CV_OVERRIDE;
 
-    bool getUseHistory() const;
-    void setUseHistory(bool value);
+    bool getUseHistory() const CV_OVERRIDE;
+    void setUseHistory(bool value) CV_OVERRIDE;
 
-    bool getIsParallel() const;
-    void setIsParallel(bool value);
+    bool getIsParallel() const CV_OVERRIDE;
+    void setIsParallel(bool value) CV_OVERRIDE;
 
     //! the destructor
     virtual ~BackgroundSubtractorCNTImpl() {}
@@ -185,7 +185,7 @@ struct BGSubtractPixel : public CNTFunctor
     //! the destructor
     virtual ~BGSubtractPixel() {}
 
-    void operator()(Vec4i &vec, uchar currColor, uchar prevColor, uchar &fgMaskPixelRef)
+    void operator()(Vec4i &vec, uchar currColor, uchar prevColor, uchar &fgMaskPixelRef) CV_OVERRIDE
     {
         int &stabilityRef = vec[0];
         int &bgImgRef = vec[3];
@@ -248,7 +248,7 @@ struct BGSubtractPixelWithHistory : public CNTFunctor
         }
     }
 
-    void operator()(Vec4i &vec, uchar currColor, uchar prevColor, uchar &fgMaskPixelRef)
+    void operator()(Vec4i &vec, uchar currColor, uchar prevColor, uchar &fgMaskPixelRef) CV_OVERRIDE
     {
         int &stabilityRef = vec[0];
         int &historyColorRef = vec[1];
@@ -316,7 +316,7 @@ public:
     }
 
     // Iterate rows
-    void operator()(const Range& range) const
+    void operator()(const Range& range) const CV_OVERRIDE
     {
         for (int r = range.start; r < range.end; ++r)
         {

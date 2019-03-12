@@ -50,7 +50,7 @@ the use of this software, even if advised of the possibility of such damage.
 #include <utility>
 #include <cfloat>
 
-#include "opencv2/core/cvstd.hpp"
+#include "opencv2/core/base.hpp"
 
 namespace cv {
 namespace face {
@@ -66,7 +66,7 @@ public:
     /** @brief Interface method called by face recognizer before results processing
     @param size total size of prediction evaluation that recognizer could perform
     */
-    virtual void init(size_t size) { (void)size; }
+    virtual void init(size_t size) { CV_UNUSED(size); }
 
     /** @brief Interface method called by face recognizer for each result
     @param label current prediction label
@@ -98,9 +98,9 @@ public:
     */
     StandardCollector(double threshold_ = DBL_MAX);
     /** @brief overloaded interface method */
-    void init(size_t size);
+    void init(size_t size) CV_OVERRIDE;
     /** @brief overloaded interface method */
-    bool collect(int label, double dist);
+    bool collect(int label, double dist) CV_OVERRIDE;
     /** @brief Returns label with minimal distance */
     CV_WRAP int getMinLabel() const;
     /** @brief Returns minimal distance value */

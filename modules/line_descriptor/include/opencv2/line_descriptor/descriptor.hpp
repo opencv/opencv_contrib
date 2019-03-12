@@ -99,73 +99,73 @@ Apart from fields inspired to KeyPoint class, KeyLines stores information about 
 original image and in octave it was extracted from, about line's length and number of pixels it
 covers.
  */
-struct CV_EXPORTS KeyLine
+struct CV_EXPORTS_W_SIMPLE KeyLine
 {
  public:
   /** orientation of the line */
-  float angle;
+  CV_PROP_RW float angle;
 
   /** object ID, that can be used to cluster keylines by the line they represent */
-  int class_id;
+  CV_PROP_RW int class_id;
 
   /** octave (pyramid layer), from which the keyline has been extracted */
-  int octave;
+  CV_PROP_RW int octave;
 
   /** coordinates of the middlepoint */
-  Point2f pt;
+  CV_PROP_RW Point2f pt;
 
   /** the response, by which the strongest keylines have been selected.
    It's represented by the ratio between line's length and maximum between
    image's width and height */
-  float response;
+  CV_PROP_RW float response;
 
   /** minimum area containing line */
-  float size;
+  CV_PROP_RW float size;
 
   /** lines's extremes in original image */
-  float startPointX;
-  float startPointY;
-  float endPointX;
-  float endPointY;
+  CV_PROP_RW float startPointX;
+  CV_PROP_RW float startPointY;
+  CV_PROP_RW float endPointX;
+  CV_PROP_RW float endPointY;
 
   /** line's extremes in image it was extracted from */
-  float sPointInOctaveX;
-  float sPointInOctaveY;
-  float ePointInOctaveX;
-  float ePointInOctaveY;
+  CV_PROP_RW float sPointInOctaveX;
+  CV_PROP_RW float sPointInOctaveY;
+  CV_PROP_RW float ePointInOctaveX;
+  CV_PROP_RW float ePointInOctaveY;
 
   /** the length of line */
-  float lineLength;
+  CV_PROP_RW float lineLength;
 
   /** number of pixels covered by the line */
-  int numOfPixels;
+  CV_PROP_RW int numOfPixels;
 
   /** Returns the start point of the line in the original image */
-  Point2f getStartPoint() const
+  CV_WRAP Point2f getStartPoint() const
   {
     return Point2f(startPointX, startPointY);
   }
 
   /** Returns the end point of the line in the original image */
-  Point2f getEndPoint() const
+  CV_WRAP Point2f getEndPoint() const
   {
     return Point2f(endPointX, endPointY);
   }
 
   /** Returns the start point of the line in the octave it was extracted from */
-  Point2f getStartPointInOctave() const
+  CV_WRAP Point2f getStartPointInOctave() const
   {
     return Point2f(sPointInOctaveX, sPointInOctaveY);
   }
 
   /** Returns the end point of the line in the octave it was extracted from */
-  Point2f getEndPointInOctave() const
+  CV_WRAP Point2f getEndPointInOctave() const
   {
     return Point2f(ePointInOctaveX, ePointInOctaveY);
   }
 
   /** constructor */
-  KeyLine()
+  CV_WRAP KeyLine()
   {
   }
 };
@@ -177,7 +177,7 @@ Class' interface is mainly based on the ones of classical detectors and extracto
 Feature2d's @ref features2d_main and @ref features2d_match. Retrieved information about lines is
 stored in line_descriptor::KeyLine objects.
  */
-class CV_EXPORTS BinaryDescriptor : public Algorithm
+class CV_EXPORTS_W BinaryDescriptor : public Algorithm
 {
 
  public:
@@ -221,7 +221,7 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
   /** @brief Create a BinaryDescriptor object with default parameters (or with the ones provided)
   and return a smart pointer to it
      */
-  static Ptr<BinaryDescriptor> createBinaryDescriptor();
+  CV_WRAP static Ptr<BinaryDescriptor> createBinaryDescriptor();
   static Ptr<BinaryDescriptor> createBinaryDescriptor( Params parameters );
 
   /** destructor */
@@ -229,37 +229,37 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
 
   /** @brief Get current number of octaves
   */
-  int getNumOfOctaves();/*CV_WRAP*/
+  CV_WRAP int getNumOfOctaves();
   /** @brief Set number of octaves
     @param octaves number of octaves
      */
-  void setNumOfOctaves( int octaves );/*CV_WRAP*/
+  CV_WRAP void setNumOfOctaves( int octaves );
   /** @brief Get current width of bands
     */
-  int getWidthOfBand();/*CV_WRAP*/
+  CV_WRAP int getWidthOfBand();
   /** @brief Set width of bands
     @param width width of bands
     */
-  void setWidthOfBand( int width );/*CV_WRAP*/
+  CV_WRAP void setWidthOfBand( int width );
   /** @brief Get current reduction ratio (used in Gaussian pyramids)
     */
-  int getReductionRatio();/*CV_WRAP*/
+  CV_WRAP int getReductionRatio();
   /** @brief Set reduction ratio (used in Gaussian pyramids)
     @param rRatio reduction ratio
      */
-  void setReductionRatio( int rRatio );
+  CV_WRAP void setReductionRatio( int rRatio );
 
   /** @brief Read parameters from a FileNode object and store them
 
     @param fn source FileNode file
      */
-  virtual void read( const cv::FileNode& fn );
+  virtual void read( const cv::FileNode& fn ) CV_OVERRIDE;
 
   /** @brief Store parameters to a FileStorage object
 
     @param fs output FileStorage file
      */
-  virtual void write( cv::FileStorage& fs ) const;
+  virtual void write( cv::FileStorage& fs ) const CV_OVERRIDE;
 
   /** @brief Requires line detection
 
@@ -267,7 +267,7 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
     @param keypoints vector that will store extracted lines for one or more images
     @param mask mask matrix to detect only KeyLines of interest
      */
-  void detect( const Mat& image, CV_OUT std::vector<KeyLine>& keypoints, const Mat& mask = Mat() );
+  CV_WRAP void detect( const Mat& image, CV_OUT std::vector<KeyLine>& keypoints, const Mat& mask = Mat() );
 
   /** @overload
 
@@ -285,7 +285,7 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
     @param descriptors
     @param returnFloatDescr flag (when set to true, original non-binary descriptors are returned)
      */
-  void compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors, bool returnFloatDescr = false ) const;
+  CV_WRAP void compute( const Mat& image, CV_OUT CV_IN_OUT std::vector<KeyLine>& keylines, CV_OUT Mat& descriptors, bool returnFloatDescr = false ) const;
 
   /** @overload
 
@@ -432,15 +432,15 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
 
   typedef std::list<Pixel> PixelChain;  //each edge is a pixel chain
 
-  struct EDLineParam
+  struct CV_EXPORTS_W_SIMPLE EDLineParam
   {
-    int ksize;
-    float sigma;
-    float gradientThreshold;
-    float anchorThreshold;
-    int scanIntervals;
-    int minLineLen;
-    double lineFitErrThreshold;
+    CV_PROP_RW int ksize;
+    CV_PROP_RW float sigma;
+    CV_PROP_RW float gradientThreshold;
+    CV_PROP_RW float anchorThreshold;
+    CV_PROP_RW int scanIntervals;
+    CV_PROP_RW int minLineLen;
+    CV_PROP_RW double lineFitErrThreshold;
   };
 
   #define RELATIVE_ERROR_FACTOR   100.0
@@ -455,13 +455,19 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
    * PS: The linking step of edge detection has a little bit difference with the Edge drawing algorithm
    *     described in the paper. The edge chain doesn't stop when the pixel direction is changed.
    */
-  class EDLineDetector
+  class CV_EXPORTS_W EDLineDetector
   {
    public:
-    EDLineDetector();
-    EDLineDetector( EDLineParam param );
+    CV_WRAP EDLineDetector();
+    CV_WRAP_AS(EDLineDetectorWithParams) EDLineDetector( EDLineParam param );
     ~EDLineDetector();
 
+    /** @brief Creates an EDLineDetector object, using smart pointers.
+     */
+    CV_WRAP static Ptr<EDLineDetector> createEDLineDetector();
+
+
+    CV_WRAP_AS(createEDLineDetectorWithParams) static Ptr<EDLineDetector> createEDLineDetector(EDLineParam params);
     /*extract edges from image
      *image:    In, gray image;
      *edges:    Out, store the edges, each edge is a pixel chain
@@ -477,7 +483,7 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
     int EDline( cv::Mat &image, LineChains &lines );
 
     /** extract line from image, and store them */
-    int EDline( cv::Mat &image );
+    CV_WRAP int EDline( cv::Mat &image );
 
     cv::Mat dxImg_;  //store the dxImg;
 
@@ -622,208 +628,6 @@ class CV_EXPORTS BinaryDescriptor : public Algorithm
 
     cv::Mat_<float> tempVecLineFit;    //the vector used in line fit function;
 
-    /** Compare doubles by relative error.
-     The resulting rounding error after floating point computations
-     depend on the specific operations done. The same number computed by
-     different algorithms could present different rounding errors. For a
-     useful comparison, an estimation of the relative rounding error
-     should be considered and compared to a factor times EPS. The factor
-     should be related to the accumulated rounding error in the chain of
-     computation. Here, as a simplification, a fixed factor is used.
-     */
-    static int double_equal( double a, double b )
-    {
-      double abs_diff, aa, bb, abs_max;
-      /* trivial case */
-      if( a == b )
-        return true;
-      abs_diff = fabs( a - b );
-      aa = fabs( a );
-      bb = fabs( b );
-      abs_max = aa > bb ? aa : bb;
-
-      /* DBL_MIN is the smallest normalized number, thus, the smallest
-       number whose relative error is bounded by DBL_EPSILON. For
-       smaller numbers, the same quantization steps as for DBL_MIN
-       are used. Then, for smaller numbers, a meaningful "relative"
-       error should be computed by dividing the difference by DBL_MIN. */
-      if( abs_max < DBL_MIN )
-        abs_max = DBL_MIN;
-
-      /* equal if relative error <= factor x eps */
-      return ( abs_diff / abs_max ) <= ( RELATIVE_ERROR_FACTOR * DBL_EPSILON );
-    }
-
-    /** Computes the natural logarithm of the absolute value of
-     the gamma function of x using the Lanczos approximation.
-     See http://www.rskey.org/gamma.htm
-     The formula used is
-     @f[
-     \Gamma(x) = \frac{ \sum_{n=0}^{N} q_n x^n }{ \Pi_{n=0}^{N} (x+n) }
-     (x+5.5)^{x+0.5} e^{-(x+5.5)}
-     @f]
-     so
-     @f[
-     \log\Gamma(x) = \log\left( \sum_{n=0}^{N} q_n x^n \right)
-     + (x+0.5) \log(x+5.5) - (x+5.5) - \sum_{n=0}^{N} \log(x+n)
-     @f]
-     and
-     q0 = 75122.6331530,
-     q1 = 80916.6278952,
-     q2 = 36308.2951477,
-     q3 = 8687.24529705,
-     q4 = 1168.92649479,
-     q5 = 83.8676043424,
-     q6 = 2.50662827511.
-     */
-    static double log_gamma_lanczos( double x )
-    {
-      static double q[7] =
-      { 75122.6331530, 80916.6278952, 36308.2951477, 8687.24529705, 1168.92649479, 83.8676043424, 2.50662827511 };
-      double a = ( x + 0.5 ) * log( x + 5.5 ) - ( x + 5.5 );
-      double b = 0.0;
-      int n;
-      for ( n = 0; n < 7; n++ )
-      {
-        a -= log( x + (double) n );
-        b += q[n] * pow( x, (double) n );
-      }
-      return a + log( b );
-    }
-
-    /** Computes the natural logarithm of the absolute value of
-     the gamma function of x using Windschitl method.
-     See http://www.rskey.org/gamma.htm
-     The formula used is
-     @f[
-     \Gamma(x) = \sqrt{\frac{2\pi}{x}} \left( \frac{x}{e}
-     \sqrt{ x\sinh(1/x) + \frac{1}{810x^6} } \right)^x
-     @f]
-     so
-     @f[
-     \log\Gamma(x) = 0.5\log(2\pi) + (x-0.5)\log(x) - x
-     + 0.5x\log\left( x\sinh(1/x) + \frac{1}{810x^6} \right).
-     @f]
-     This formula is a good approximation when x > 15.
-     */
-    static double log_gamma_windschitl( double x )
-    {
-      return 0.918938533204673 + ( x - 0.5 ) * log( x ) - x + 0.5 * x * log( x * sinh( 1 / x ) + 1 / ( 810.0 * pow( x, 6.0 ) ) );
-    }
-
-    /** Computes -log10(NFA).
-     NFA stands for Number of False Alarms:
-     @f[
-     \mathrm{NFA} = NT \cdot B(n,k,p)
-     @f]
-     - NT       - number of tests
-     - B(n,k,p) - tail of binomial distribution with parameters n,k and p:
-     @f[
-     B(n,k,p) = \sum_{j=k}^n
-     \left(\begin{array}{c}n\\j\end{array}\right)
-     p^{j} (1-p)^{n-j}
-     @f]
-     The value -log10(NFA) is equivalent but more intuitive than NFA:
-     - -1 corresponds to 10 mean false alarms
-     -  0 corresponds to 1 mean false alarm
-     -  1 corresponds to 0.1 mean false alarms
-     -  2 corresponds to 0.01 mean false alarms
-     -  ...
-     Used this way, the bigger the value, better the detection,
-     and a logarithmic scale is used.
-     @param n,k,p binomial parameters.
-     @param logNT logarithm of Number of Tests
-     The computation is based in the gamma function by the following
-     relation:
-     @f[
-     \left(\begin{array}{c}n\\k\end{array}\right)
-     = \frac{ \Gamma(n+1) }{ \Gamma(k+1) \cdot \Gamma(n-k+1) }.
-     @f]
-     We use efficient algorithms to compute the logarithm of
-     the gamma function.
-     To make the computation faster, not all the sum is computed, part
-     of the terms are neglected based on a bound to the error obtained
-     (an error of 10% in the result is accepted).
-     */
-    static double nfa( int n, int k, double p, double logNT )
-    {
-      double tolerance = 0.1; /* an error of 10% in the result is accepted */
-      double log1term, term, bin_term, mult_term, bin_tail, err, p_term;
-      int i;
-
-      /* check parameters */
-      if( n < 0 || k < 0 || k > n || p <= 0.0 || p >= 1.0 )
-        CV_Error(Error::StsBadArg, "nfa: wrong n, k or p values.\n");
-      /* trivial cases */
-      if( n == 0 || k == 0 )
-        return -logNT;
-      if( n == k )
-        return -logNT - (double) n * log10( p );
-
-      /* probability term */
-      p_term = p / ( 1.0 - p );
-
-      /* compute the first term of the series */
-      /*
-       binomial_tail(n,k,p) = sum_{i=k}^n bincoef(n,i) * p^i * (1-p)^{n-i}
-       where bincoef(n,i) are the binomial coefficients.
-       But
-       bincoef(n,k) = gamma(n+1) / ( gamma(k+1) * gamma(n-k+1) ).
-       We use this to compute the first term. Actually the log of it.
-       */
-      log1term = log_gamma( (double) n + 1.0 )- log_gamma( (double ) k + 1.0 )- log_gamma( (double ) ( n - k ) + 1.0 )
-+ (double) k * log( p )
-+ (double) ( n - k ) * log( 1.0 - p );
-term = exp( log1term );
-
-/* in some cases no more computations are needed */
-if( double_equal( term, 0.0 ) )
-{ /* the first term is almost zero */
-  if( (double) k > (double) n * p ) /* at begin or end of the tail?  */
-  return -log1term / MLN10 - logNT; /* end: use just the first term  */
-  else
-  return -logNT; /* begin: the tail is roughly 1  */
-}
-
-/* compute more terms if needed */
-bin_tail = term;
-for ( i = k + 1; i <= n; i++ )
-{
-  /*    As
-   term_i = bincoef(n,i) * p^i * (1-p)^(n-i)
-   and
-   bincoef(n,i)/bincoef(n,i-1) = n-i+1 / i,
-   then,
-   term_i / term_i-1 = (n-i+1)/i * p/(1-p)
-   and
-   term_i = term_i-1 * (n-i+1)/i * p/(1-p).
-   p/(1-p) is computed only once and stored in 'p_term'.
-   */
-  bin_term = (double) ( n - i + 1 ) / (double) i;
-  mult_term = bin_term * p_term;
-  term *= mult_term;
-  bin_tail += term;
-  if( bin_term < 1.0 )
-  {
-    /* When bin_term<1 then mult_term_j<mult_term_i for j>i.
-     Then, the error on the binomial tail when truncated at
-     the i term can be bounded by a geometric series of form
-     term_i * sum mult_term_i^j.                            */
-    err = term * ( ( 1.0 - pow( mult_term, (double) ( n - i + 1 ) ) ) / ( 1.0 - mult_term ) - 1.0 );
-    /* One wants an error at most of tolerance*final_result, or:
-     tolerance * abs(-log10(bin_tail)-logNT).
-     Now, the error that can be accepted on bin_tail is
-     given by tolerance*final_result divided by the derivative
-     of -log10(x) when x=bin_tail. that is:
-     tolerance * abs(-log10(bin_tail)-logNT) / (1/bin_tail)
-     Finally, we truncate the tail if the error is less than:
-     tolerance * abs(-log10(bin_tail)-logNT) * bin_tail        */
-    if( err < tolerance * fabs( -log10( bin_tail ) - logNT ) * bin_tail )
-    break;
-  }
-}
-return -log10( bin_tail ) - logNT;
-}
 };
 
   // Specifies a vector of lines.
@@ -892,20 +696,49 @@ the one used in *BinaryDescriptor* class, data associated to a line's extremes i
 in octave it was extracted from, coincide. KeyLine's field *class_id* is used as an index to
 indicate the order of extraction of a line inside a single octave.
 */
-class CV_EXPORTS LSDDetector : public Algorithm
+struct CV_EXPORTS_W_SIMPLE LSDParam
+{
+  CV_PROP_RW double scale ;
+  CV_PROP_RW double sigma_scale;
+  CV_PROP_RW double quant;
+  CV_PROP_RW double ang_th;
+  CV_PROP_RW double log_eps;
+  CV_PROP_RW double density_th ;
+  CV_PROP_RW int n_bins ;
+
+
+CV_WRAP LSDParam():scale(0.8),
+                   sigma_scale(0.6),
+                   quant(2.0),
+                   ang_th(22.5),
+                   log_eps(0),
+                   density_th(0.7),
+                   n_bins(1024){}
+
+};
+
+class CV_EXPORTS_W LSDDetector : public Algorithm
 {
 public:
 
 /* constructor */
-/*CV_WRAP*/
-LSDDetector()
+CV_WRAP LSDDetector() : params()
+{
+}
+;
+
+CV_WRAP_AS(LSDDetectorWithParams) LSDDetector(LSDParam _params) : params(_params)
 {
 }
 ;
 
 /** @brief Creates ad LSDDetector object, using smart pointers.
  */
-static Ptr<LSDDetector> createLSDDetector();
+CV_WRAP static Ptr<LSDDetector> createLSDDetector();
+
+
+CV_WRAP_AS(createLSDDetectorWithParams) static Ptr<LSDDetector> createLSDDetector(LSDParam params);
+
 
 /** @brief Detect lines inside an image.
 
@@ -915,7 +748,7 @@ static Ptr<LSDDetector> createLSDDetector();
 @param numOctaves number of octaves inside pyramid
 @param mask mask matrix to detect only KeyLines of interest
  */
-void detect( const Mat& image, CV_OUT std::vector<KeyLine>& keypoints, int scale, int numOctaves, const Mat& mask = Mat() );
+CV_WRAP void detect( const Mat& image, CV_OUT std::vector<KeyLine>& keypoints, int scale, int numOctaves, const Mat& mask = Mat() );
 
 /** @overload
 @param images input images
@@ -924,7 +757,7 @@ void detect( const Mat& image, CV_OUT std::vector<KeyLine>& keypoints, int scale
 @param numOctaves number of octaves inside pyramid
 @param masks vector of mask matrices to detect only KeyLines of interest from each input image
 */
-void detect( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, int scale, int numOctaves,
+CV_WRAP void detect( const std::vector<Mat>& images, std::vector<std::vector<KeyLine> >& keylines, int scale, int numOctaves,
 const std::vector<Mat>& masks = std::vector<Mat>() ) const;
 
 private:
@@ -936,6 +769,9 @@ void detectImpl( const Mat& imageSrc, std::vector<KeyLine>& keylines, int numOct
 
 /* matrices for Gaussian pyramids */
 std::vector<cv::Mat> gaussianPyrs;
+
+/* parameters */
+LSDParam params;
 };
 
 /** @brief furnishes all functionalities for querying a dataset provided by user or internal to
@@ -976,7 +812,7 @@ candidates \f$\mathcal{N}_i(\mathbf{q})\f$ is obtained. The union of sets
 of **q**. Then, last step of algorithm is computing the Hamming distance between **q** and each
 element in \f$\mathcal{N}(\mathbf{q})\f$, deleting the codes that are distant more that *r* from **q**.
 */
-class CV_EXPORTS BinaryDescriptorMatcher : public Algorithm
+class CV_EXPORTS_W BinaryDescriptorMatcher : public Algorithm
 {
 
 public:
@@ -988,7 +824,7 @@ or from the one internal to class
 @param matches vector to host retrieved matches
 @param mask mask to select which input descriptors must be matched to one in dataset
  */
-void match( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<DMatch>& matches, const Mat& mask = Mat() ) const;
+CV_WRAP void match( const Mat& queryDescriptors, const Mat& trainDescriptors, CV_OUT std::vector<DMatch>& matches, const Mat& mask = Mat() ) const;
 
 /** @overload
 @param queryDescriptors query descriptors
@@ -997,7 +833,7 @@ void match( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vecto
 (the *i*-th mask in vector indicates whether each input query can be matched with descriptors in
 dataset relative to *i*-th image)
 */
-void match( const Mat& queryDescriptors, std::vector<DMatch>& matches, const std::vector<Mat>& masks = std::vector<Mat>() );
+CV_WRAP_AS(matchQuery) void match( const Mat& queryDescriptors, CV_OUT std::vector<DMatch>& matches, const std::vector<Mat>& masks = std::vector<Mat>() );
 
 /** @brief For every input query descriptor, retrieve the best *k* matching ones from a dataset provided from
 user or from the one internal to class
@@ -1010,7 +846,7 @@ user or from the one internal to class
 @param compactResult flag to obtain a compact result (if true, a vector that doesn't contain any
 matches for a given query is not inserted in final result)
  */
-void knnMatch( const Mat& queryDescriptors, const Mat& trainDescriptors, std::vector<std::vector<DMatch> >& matches, int k, const Mat& mask = Mat(),
+CV_WRAP void knnMatch( const Mat& queryDescriptors, const Mat& trainDescriptors, CV_OUT std::vector<std::vector<DMatch> >& matches, int k, const Mat& mask = Mat(),
 bool compactResult = false ) const;
 
 /** @overload
@@ -1023,7 +859,7 @@ dataset relative to *i*-th image)
 @param compactResult flag to obtain a compact result (if true, a vector that doesn't contain any
 matches for a given query is not inserted in final result)
 */
-void knnMatch( const Mat& queryDescriptors, std::vector<std::vector<DMatch> >& matches, int k, const std::vector<Mat>& masks = std::vector<Mat>(),
+CV_WRAP_AS(knnMatchQuery) void knnMatch( const Mat& queryDescriptors, std::vector<std::vector<DMatch> >& matches, int k, const std::vector<Mat>& masks = std::vector<Mat>(),
 bool compactResult = false );
 
 /** @brief For every input query descriptor, retrieve, from a dataset provided from user or from the one
@@ -1076,13 +912,13 @@ static Ptr<BinaryDescriptorMatcher> createBinaryDescriptorMatcher();
 
 /** @brief Clear dataset and internal data
  */
-void clear();
+void clear() CV_OVERRIDE;
 
 /** @brief Constructor.
 
 The BinaryDescriptorMatcher constructed is able to store and manage 256-bits long entries.
  */
-BinaryDescriptorMatcher();
+CV_WRAP BinaryDescriptorMatcher();
 
 /** destructor */
 ~BinaryDescriptorMatcher()
@@ -1314,9 +1150,9 @@ int descrInDS;
  -------------------------------------------------------------------------------------------- */
 
 /** struct for drawing options */
-struct CV_EXPORTS DrawLinesMatchesFlags
+struct CV_EXPORTS_W_SIMPLE DrawLinesMatchesFlags
 {
-enum
+CV_PROP_RW enum
 {
 DEFAULT = 0,  //!< Output image matrix will be created (Mat::create),
               //!< i.e. existing memory of output image may be reused.
@@ -1345,10 +1181,10 @@ NOT_DRAW_SINGLE_LINES = 2//!< Single keylines will not be drawn.
 @note If both *matchColor* and *singleLineColor* are set to their default values, function draws
 matched lines and line connecting them with same color
  */
-CV_EXPORTS void drawLineMatches( const Mat& img1, const std::vector<KeyLine>& keylines1, const Mat& img2, const std::vector<KeyLine>& keylines2,
-                                 const std::vector<DMatch>& matches1to2, Mat& outImg, const Scalar& matchColor = Scalar::all( -1 ),
-                                 const Scalar& singleLineColor = Scalar::all( -1 ), const std::vector<char>& matchesMask = std::vector<char>(),
-                                 int flags = DrawLinesMatchesFlags::DEFAULT );
+CV_EXPORTS_W void drawLineMatches( const Mat& img1, const std::vector<KeyLine>& keylines1, const Mat& img2, const std::vector<KeyLine>& keylines2,
+                                   const std::vector<DMatch>& matches1to2, CV_OUT Mat& outImg, const Scalar& matchColor = Scalar::all( -1 ),
+                                   const Scalar& singleLineColor = Scalar::all( -1 ), const std::vector<char>& matchesMask = std::vector<char>(),
+                                   int flags = DrawLinesMatchesFlags::DEFAULT );
 
 /** @brief Draws keylines.
 
@@ -1358,8 +1194,8 @@ CV_EXPORTS void drawLineMatches( const Mat& img1, const std::vector<KeyLine>& ke
 @param color color of lines to be drawn (if set to defaul value, color is chosen randomly)
 @param flags drawing flags
  */
-CV_EXPORTS void drawKeylines( const Mat& image, const std::vector<KeyLine>& keylines, Mat& outImage, const Scalar& color = Scalar::all( -1 ),
-                              int flags = DrawLinesMatchesFlags::DEFAULT );
+CV_EXPORTS_W void drawKeylines( const Mat& image, const std::vector<KeyLine>& keylines, CV_OUT Mat& outImage, const Scalar& color = Scalar::all( -1 ),
+                                int flags = DrawLinesMatchesFlags::DEFAULT );
 
 //! @}
 

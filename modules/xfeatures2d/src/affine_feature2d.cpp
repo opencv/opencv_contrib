@@ -589,7 +589,7 @@ namespace cv
 {
 namespace xfeatures2d
 {
-class AffineFeature2D_Impl : public AffineFeature2D
+class AffineFeature2D_Impl CV_FINAL : public AffineFeature2D
 {
 public:
     AffineFeature2D_Impl(
@@ -599,12 +599,12 @@ public:
       , m_descriptor_extractor(descriptor_extractor) {}
 protected:
     using Feature2D::detect; // overload, don't hide
-    void detect(InputArray image, std::vector<Elliptic_KeyPoint>& keypoints, InputArray mask);
-    void detectAndCompute(InputArray image, InputArray mask, std::vector<Elliptic_KeyPoint>& keypoints, OutputArray descriptors, bool useProvidedKeypoints);
-    void detectAndCompute(InputArray image, InputArray mask, std::vector<KeyPoint>& keypoints, OutputArray descriptors, bool useProvidedKeypoints);
-    int descriptorSize() const;
-    int descriptorType() const;
-    int defaultNorm() const;
+    void detect(InputArray image, std::vector<Elliptic_KeyPoint>& keypoints, InputArray mask) CV_OVERRIDE;
+    void detectAndCompute(InputArray image, InputArray mask, std::vector<Elliptic_KeyPoint>& keypoints, OutputArray descriptors, bool useProvidedKeypoints) CV_OVERRIDE;
+    void detectAndCompute(InputArray image, InputArray mask, std::vector<KeyPoint>& keypoints, OutputArray descriptors, bool useProvidedKeypoints) CV_OVERRIDE;
+    int descriptorSize() const CV_OVERRIDE;
+    int descriptorType() const CV_OVERRIDE;
+    int defaultNorm() const CV_OVERRIDE;
 private:
     Ptr<FeatureDetector> m_keypoint_detector;
     Ptr<DescriptorExtractor> m_descriptor_extractor;

@@ -22,7 +22,7 @@ namespace cv{
         PFSolver();
         void getOptParam(OutputArray params)const;
         int iteration();
-        double minimize(InputOutputArray x);
+        double minimize(InputOutputArray x) CV_OVERRIDE;
 
         void setParticlesNum(int num);
         int getParticlesNum();
@@ -31,10 +31,10 @@ namespace cv{
         void getParamsSTD(OutputArray std)const;
         void setParamsSTD(InputArray std);
 
-        Ptr<MinProblemSolver::Function> getFunction() const;
-        void setFunction(const Ptr<MinProblemSolver::Function>& f);
-        TermCriteria getTermCriteria() const;
-        void setTermCriteria(const TermCriteria& termcrit);
+        Ptr<MinProblemSolver::Function> getFunction() const CV_OVERRIDE;
+        void setFunction(const Ptr<MinProblemSolver::Function>& f) CV_OVERRIDE;
+        TermCriteria getTermCriteria() const CV_OVERRIDE;
+        void setTermCriteria(const TermCriteria& termcrit) CV_OVERRIDE;
     private:
         Mat_<double> _std,_particles,_logweight;
         Ptr<MinProblemSolver::Function> _Function;

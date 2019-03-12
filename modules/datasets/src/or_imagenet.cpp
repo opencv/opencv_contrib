@@ -51,14 +51,14 @@ namespace datasets
 
 using namespace std;
 
-class OR_imagenetImp : public OR_imagenet
+class OR_imagenetImp CV_FINAL : public OR_imagenet
 {
 public:
     OR_imagenetImp() {}
     //OR_imagenetImp(const string &path);
-    virtual ~OR_imagenetImp() {}
+    virtual ~OR_imagenetImp() CV_OVERRIDE {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

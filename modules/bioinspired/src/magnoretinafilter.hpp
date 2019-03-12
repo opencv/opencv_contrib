@@ -211,7 +211,7 @@ namespace bioinspired
             Parallel_amacrineCellsComputing(const float *OPL_ON_PTR, const float *OPL_OFF_PTR, float *previousInput_ON_PTR, float *previousInput_OFF_PTR, float *amacrinCellsTempOutput_ON_PTR, float *amacrinCellsTempOutput_OFF_PTR, float temporalCoefficientVal)
                 :OPL_ON(OPL_ON_PTR), OPL_OFF(OPL_OFF_PTR), previousInput_ON(previousInput_ON_PTR), previousInput_OFF(previousInput_OFF_PTR), amacrinCellsTempOutput_ON(amacrinCellsTempOutput_ON_PTR), amacrinCellsTempOutput_OFF(amacrinCellsTempOutput_OFF_PTR), temporalCoefficient(temporalCoefficientVal) {}
 
-            virtual void operator()( const Range& r ) const {
+            virtual void operator()( const Range& r ) const CV_OVERRIDE {
                 const float *OPL_ON_PTR=OPL_ON+r.start;
                 const float *OPL_OFF_PTR=OPL_OFF+r.start;
                 float *previousInput_ON_PTR= previousInput_ON+r.start;

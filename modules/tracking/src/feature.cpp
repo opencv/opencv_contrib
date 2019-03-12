@@ -100,7 +100,7 @@ bool CvFeatureParams::read( const FileNode &node )
   return ( maxCatCount >= 0 && featSize >= 1 );
 }
 
-Ptr<CvFeatureParams> CvFeatureParams::create( int featureType )
+Ptr<CvFeatureParams> CvFeatureParams::create(FeatureType featureType)
 {
   return featureType == HAAR ? Ptr<CvFeatureParams>( new CvHaarFeatureParams ) : featureType == LBP ? Ptr<CvFeatureParams>( new CvLBPFeatureParams ) :
          featureType == HOG ? Ptr<CvFeatureParams>( new CvHOGFeatureParams ) : Ptr<CvFeatureParams>();
@@ -128,7 +128,7 @@ void CvFeatureEvaluator::setImage( const Mat &img, uchar clsLabel, int idx )
   cls.ptr<float>( idx )[0] = clsLabel;
 }
 
-Ptr<CvFeatureEvaluator> CvFeatureEvaluator::create( int type )
+Ptr<CvFeatureEvaluator> CvFeatureEvaluator::create(CvFeatureParams::FeatureType type)
 {
   return type == CvFeatureParams::HAAR ? Ptr<CvFeatureEvaluator>( new CvHaarEvaluator ) :
          type == CvFeatureParams::LBP ? Ptr<CvFeatureEvaluator>( new CvLBPEvaluator ) :
@@ -925,7 +925,7 @@ void CvHOGEvaluator::integralHistogram( const Mat &img, std::vector<Mat> &histog
   Mat qangle( gradSize, CV_8U );
 
   AutoBuffer<int> mapbuf( gradSize.width + gradSize.height + 4 );
-  int* xmap = (int*) mapbuf + 1;
+  int* xmap =  mapbuf.data() + 1;
   int* ymap = xmap + gradSize.width + 2;
 
   const int borderType = (int) BORDER_REPLICATE;
@@ -937,7 +937,7 @@ void CvHOGEvaluator::integralHistogram( const Mat &img, std::vector<Mat> &histog
 
   int width = gradSize.width;
   AutoBuffer<float> _dbuf( width * 4 );
-  float* dbuf = _dbuf;
+  float* dbuf = _dbuf.data();
   Mat Dx( 1, width, CV_32F, dbuf );
   Mat Dy( 1, width, CV_32F, dbuf + width );
   Mat Mag( 1, width, CV_32F, dbuf + width * 2 );

@@ -18,7 +18,7 @@ class doSum : public ParallelLoopBody
         sum(sum_)
         {
         }
-        virtual void operator()( const Range& range) const
+        virtual void operator()( const Range& range) const CV_OVERRIDE
         {
             for (int j = range.start; j < range.end; ++j){
                 for(unsigned long k=0;k<(*samples)[j].shapeResiduals.size();k++){
@@ -38,7 +38,7 @@ class modifySamples : public ParallelLoopBody
         temp(temp_)
         {
         }
-        virtual void operator()( const Range& range) const
+        virtual void operator()( const Range& range) const CV_OVERRIDE
         {
             for (int j = range.start; j < range.end; ++j){
                 for(unsigned long k=0;k<(*samples)[j].shapeResiduals.size();k++){
@@ -62,7 +62,7 @@ class splitSamples : public ParallelLoopBody
         feats(feats_)
         {
         }
-        virtual void operator()( const Range& range) const
+        virtual void operator()( const Range& range) const CV_OVERRIDE
         {
             for (int i = range.start; i < range.end; ++i){
                 for(unsigned long j=0;j<*(num_test_splits);j++){
@@ -113,8 +113,7 @@ bool FacemarkKazemiImpl:: getBestSplit(vector<Point2f> pixel_coordinates, vector
 {
     if(samples[0].shapeResiduals.size()!=samples[0].current_shape.size()){
         String error_message = "Error while generating split.Residuals are not complete.Aborting....";
-        CV_ErrorNoReturn(Error::StsBadArg, error_message);
-        return false;
+        CV_Error(Error::StsBadArg, error_message);
     }
     //This vector stores the matrices where each matrix represents
     //sum of the residuals of shapes of samples which go to the left
@@ -222,13 +221,11 @@ bool FacemarkKazemiImpl :: generateSplit(queue<node_info>& curr,vector<Point2f> 
 bool FacemarkKazemiImpl :: buildRegtree(regtree& tree,vector<training_sample>& samples,vector<Point2f> pixel_coordinates){
     if(samples.size()==0){
         String error_message = "Error while building regression tree.Empty samples. Aborting....";
-        CV_ErrorNoReturn(Error::StsBadArg, error_message);
-        return false;
+        CV_Error(Error::StsBadArg, error_message);
     }
     if(pixel_coordinates.size()==0){
         String error_message = "Error while building regression tree.No pixel coordinates. Aborting....";
-        CV_ErrorNoReturn(Error::StsBadArg, error_message);
-        return false;
+        CV_Error(Error::StsBadArg, error_message);
     }
     queue<node_info> curr;
     node_info parent;
@@ -291,8 +288,7 @@ unsigned long FacemarkKazemiImpl::divideSamples (splitr split,vector<training_sa
 {
     if(samples.size()==0){
         String error_message = "Error while dividing samples. Sample array empty. Aborting....";
-        CV_ErrorNoReturn(Error::StsBadArg, error_message);
-        return 0;
+        CV_Error(Error::StsBadArg, error_message);
     }
     unsigned long i = start;
     training_sample temp;

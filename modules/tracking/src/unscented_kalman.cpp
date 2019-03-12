@@ -132,19 +132,19 @@ public:
 
 // perform prediction step
 // control - the optional control vector, CP x 1
-    Mat predict( InputArray control = noArray() );
+    Mat predict( InputArray control = noArray() ) CV_OVERRIDE;
 
 // perform correction step
 // measurement - current measurement vector, MP x 1
-    Mat correct( InputArray measurement );
+    Mat correct( InputArray measurement ) CV_OVERRIDE;
 
 //  Get system parameters
-    Mat getProcessNoiseCov() const;
-    Mat getMeasurementNoiseCov() const;
-    Mat getErrorCov() const;
+    Mat getProcessNoiseCov() const CV_OVERRIDE;
+    Mat getMeasurementNoiseCov() const CV_OVERRIDE;
+    Mat getErrorCov() const CV_OVERRIDE;
 
 //  Get the state estimate
-    Mat getState() const;
+    Mat getState() const CV_OVERRIDE;
 };
 
 UnscentedKalmanFilterImpl::UnscentedKalmanFilterImpl(const UnscentedKalmanFilterParams& params)

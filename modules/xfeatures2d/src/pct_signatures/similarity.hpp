@@ -62,8 +62,6 @@ References:
 
 #ifdef __cplusplus
 
-#include "precomp.hpp"
-
 #include "distance.hpp"
 
 namespace cv
@@ -119,10 +117,8 @@ namespace cv
                     return gaussianSimilarity(distancefunction, similarityParameter, points1, idx1, points2, idx2);
                 case PCTSignatures::HEURISTIC:
                     return heuristicSimilarity(distancefunction, similarityParameter, points1, idx1, points2, idx2);
-                default:
-                    CV_Error(Error::StsNotImplemented, "Similarity function not implemented!");
-                    return -1;
                 }
+                CV_Error(Error::StsNotImplemented, "Similarity function not implemented!");
             }
         }
     }

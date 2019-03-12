@@ -47,11 +47,32 @@
 using namespace cv;
 using namespace cv::cuda;
 
-#if (!defined (HAVE_CUDA) || !defined (HAVE_OPENCV_CUDAARITHM))
+#ifndef OPENCV_ENABLE_NONFREE
+#define throw_no_nonfree     CV_Error(Error::StsNotImplemented, \
+        "This algorithm is patented and is excluded in this configuration; " \
+        "Set OPENCV_ENABLE_NONFREE CMake option and rebuild the library");
+
+cv::cuda::SURF_CUDA::SURF_CUDA() { throw_no_nonfree }
+cv::cuda::SURF_CUDA::SURF_CUDA(double, int, int, bool, float, bool) { throw_no_nonfree }
+int cv::cuda::SURF_CUDA::descriptorSize() const { throw_no_nonfree }
+int cv::cuda::SURF_CUDA::defaultNorm() const { throw_no_nonfree }
+void cv::cuda::SURF_CUDA::uploadKeypoints(const std::vector<KeyPoint>&, GpuMat&) { throw_no_nonfree }
+void cv::cuda::SURF_CUDA::downloadKeypoints(const GpuMat&, std::vector<KeyPoint>&) { throw_no_nonfree }
+void cv::cuda::SURF_CUDA::downloadDescriptors(const GpuMat&, std::vector<float>&) { throw_no_nonfree }
+void cv::cuda::SURF_CUDA::operator()(const GpuMat&, const GpuMat&, GpuMat&) { throw_no_nonfree }
+void cv::cuda::SURF_CUDA::operator()(const GpuMat&, const GpuMat&, GpuMat&, GpuMat&, bool) { throw_no_nonfree }
+void cv::cuda::SURF_CUDA::operator()(const GpuMat&, const GpuMat&, std::vector<KeyPoint>&) { throw_no_nonfree }
+void cv::cuda::SURF_CUDA::operator()(const GpuMat&, const GpuMat&, std::vector<KeyPoint>&, GpuMat&, bool) { throw_no_nonfree }
+void cv::cuda::SURF_CUDA::operator()(const GpuMat&, const GpuMat&, std::vector<KeyPoint>&, std::vector<float>&, bool) { throw_no_nonfree }
+void cv::cuda::SURF_CUDA::releaseMemory() { throw_no_nonfree }
+
+
+#elif (!defined (HAVE_CUDA) || !defined (HAVE_OPENCV_CUDAARITHM))
 
 cv::cuda::SURF_CUDA::SURF_CUDA() { throw_no_cuda(); }
 cv::cuda::SURF_CUDA::SURF_CUDA(double, int, int, bool, float, bool) { throw_no_cuda(); }
-int cv::cuda::SURF_CUDA::descriptorSize() const { throw_no_cuda(); return 0;}
+int cv::cuda::SURF_CUDA::descriptorSize() const { throw_no_cuda(); }
+int cv::cuda::SURF_CUDA::defaultNorm() const { throw_no_cuda(); }
 void cv::cuda::SURF_CUDA::uploadKeypoints(const std::vector<KeyPoint>&, GpuMat&) { throw_no_cuda(); }
 void cv::cuda::SURF_CUDA::downloadKeypoints(const GpuMat&, std::vector<KeyPoint>&) { throw_no_cuda(); }
 void cv::cuda::SURF_CUDA::downloadDescriptors(const GpuMat&, std::vector<float>&) { throw_no_cuda(); }
@@ -62,7 +83,7 @@ void cv::cuda::SURF_CUDA::operator()(const GpuMat&, const GpuMat&, std::vector<K
 void cv::cuda::SURF_CUDA::operator()(const GpuMat&, const GpuMat&, std::vector<KeyPoint>&, std::vector<float>&, bool) { throw_no_cuda(); }
 void cv::cuda::SURF_CUDA::releaseMemory() { throw_no_cuda(); }
 
-#else // !defined (HAVE_CUDA)
+#else // OPENCV_ENABLE_NONFREE
 
 namespace cv { namespace cuda { namespace device
 {
@@ -430,6 +451,6 @@ void cv::cuda::SURF_CUDA::releaseMemory()
     maxPosBuffer.release();
 }
 
-#endif // !defined (HAVE_CUDA)
+#endif // !defined (OPENCV_ENABLE_NONFREE)
 #endif
 

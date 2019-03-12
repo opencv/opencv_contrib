@@ -104,12 +104,15 @@ TEST_P(RollingGuidanceFilterTest, MultiThreadReproducibility)
     else
         randu(src, -100000.0f, 100000.0f);
 
+    int nThreads = cv::getNumThreads();
+    if (nThreads == 1)
+        throw SkipTestException("Single thread environment");
     for (int iter = 0; iter <= loopsCount; iter++)
     {
         int iterNum = int(rnd.uniform(1.0, 5.0));
         double sigmaC = rnd.uniform(1.0, 255.0);
 
-        cv::setNumThreads(cv::getNumberOfCPUs());
+        cv::setNumThreads(nThreads);
         Mat resMultiThread;
         rollingGuidanceFilter(src, resMultiThread, -1, sigmaC, sigmaS, iterNum);
 
@@ -149,8 +152,6 @@ TEST_P(RollingGuidanceFilterTest_BilateralRef, Accuracy)
 
     RNG rnd(0);
     double sigmaC = rnd.uniform(0.0, 255.0);
-
-    cv::setNumThreads(cv::getNumberOfCPUs());
 
     Mat resRef;
     bilateralFilter(src, resRef, 0, sigmaC, sigmaS);

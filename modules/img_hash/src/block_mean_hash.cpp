@@ -22,7 +22,7 @@ enum
     colSize = imgWidth - blockWidth
 };
 
-class BlockMeanHashImpl : public ImgHashBase::ImgHashImpl
+class BlockMeanHashImpl CV_FINAL : public ImgHashBase::ImgHashImpl
 {
 public:
     BlockMeanHashImpl(int mode)
@@ -30,9 +30,9 @@ public:
         setMode(mode);
     }
 
-    ~BlockMeanHashImpl() {}
+    ~BlockMeanHashImpl() CV_OVERRIDE {}
 
-    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr)
+    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr) CV_OVERRIDE
     {
         cv::Mat const input = inputArr.getMat();
         CV_Assert(input.type() == CV_8UC4 ||
@@ -40,18 +40,10 @@ public:
                   input.type() == CV_8U);
 
         cv::resize(input, resizeImg_, cv::Size(imgWidth,imgHeight), 0, 0, INTER_LINEAR_EXACT);
-        if(input.type() == CV_8UC3)
-        {
-            cv::cvtColor(resizeImg_, grayImg_, CV_BGR2GRAY);
-        }
-        else if(input.type() == CV_8UC4)
-        {
-            cv::cvtColor(resizeImg_, grayImg_, CV_BGRA2GRAY);
-        }
+        if(input.channels() > 1)
+            cv::cvtColor(resizeImg_, grayImg_, COLOR_BGR2GRAY);
         else
-        {
             grayImg_ = resizeImg_;
-        }
 
         int pixColStep = blockWidth;
         int pixRowStep = blockHeigth;
@@ -81,7 +73,7 @@ public:
         createHash(hash);
     }
 
-    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const
+    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const CV_OVERRIDE
     {
         return norm(hashOne, hashTwo, NORM_HAMMING);
     }

@@ -49,14 +49,14 @@ namespace datasets
 
 using namespace std;
 
-class PD_caltechImp : public PD_caltech
+class PD_caltechImp CV_FINAL : public PD_caltech
 {
 public:
     PD_caltechImp() {}
     //PD_caltechImp(const string &path);
-    virtual ~PD_caltechImp() {}
+    virtual ~PD_caltechImp() CV_OVERRIDE {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

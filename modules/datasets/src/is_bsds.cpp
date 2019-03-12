@@ -49,14 +49,14 @@ namespace datasets
 
 using namespace std;
 
-class IS_bsdsImp : public IS_bsds
+class IS_bsdsImp CV_FINAL : public IS_bsds
 {
 public:
     IS_bsdsImp() {}
     //IS_bsdsImp(const string &path);
     virtual ~IS_bsdsImp() {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

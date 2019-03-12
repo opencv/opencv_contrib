@@ -55,51 +55,65 @@ using namespace cv::ximgproc;
 void from32FTo32S(Mat &img, Mat &outImg, int nI, float *mapping)
 {
     int rows = img.rows, cols = img.cols;
-    int alls = rows * cols;
+    size_t alls = (size_t)rows * cols;
+    CV_Assert(alls < INT_MAX);
 
+    CV_Assert(img.isContinuous());
     float *imgPtr = img.ptr<float>();
     typedef pair<float,int> pairFI;
-    pairFI *data = (pairFI *)malloc(alls*sizeof(pairFI));
+    std::vector<pairFI> data(alls);
 
     // Sort all pixels of the image by ascending order of pixel value
-    for(int i=0;i<alls;i++){
-        data[i].second = i;
-        data[i].first = imgPtr[i];
+    for (size_t i = 0; i < alls; i++)
+    {
+        pairFI& d = data[i];
+        d.second = (int)i;
+        d.first = imgPtr[i];
     }
-    sort(data,data+alls);
+
+    struct PixelValueOrder {
+        static bool compare(const pairFI &a, const pairFI &b) {
+            return a.first < b.first;
+        }
+    };
+    sort(data.begin(), data.end(), PixelValueOrder::compare);
 
     // Find lower bound and upper bound of the pixel values
-    double maxVal,minVal;
-    minMaxLoc(img,&minVal,&maxVal);
-    float maxRange = (float)(maxVal - minVal);
-    float th = 1e-5f;
+    double maxVal = data[alls - 1].first, minVal = data[0].first;
+
+    const float maxRange = (float)(maxVal - minVal);
 
     float l = 0, r = maxRange*2.0f/nI;
     // Perform binary search on error bound
-    while(r-l > th)
+    while (r > l)
     {
-        float m = (r+l)*0.5f;
+        float m = (r + l) * 0.5f;
+        if (m == r || m == l)
+            break;  // bailout on numeric accuracy limit
         bool suc = true;
         float base = (float)minVal;
-        int cnt=0;
-        for(int i=0;i<alls;i++)
+        int cnt = 0;
+        for (size_t i = 0; i < alls; i++)
         {
-            if(data[i].first>base+m)
+            if (data[i].first > base + m)
             {
                 cnt++;
                 base = data[i].first;
-                if(cnt==nI)
+                if (cnt == nI)
                 {
                     suc = false;
                     break;
                 }
             }
         }
-        if(suc)r=m;
-        else l=m;
+        if (suc)
+            r = m;
+        else
+            l = m;
     }
 
     Mat retImg(img.size(),CV_32SC1);
+    CV_Assert(retImg.isContinuous());
     int *retImgPtr = retImg.ptr<int>();
 
     // In the sorted list, divide pixel values into clusters according to the minimum error bound
@@ -108,23 +122,22 @@ void from32FTo32S(Mat &img, Mat &outImg, int nI, float *mapping)
     float base = (float)minVal;
     int baseI = 0;
     int cnt = 0;
-    for(int i=0;i<=alls;i++)
+    for (size_t i = 0; i < alls; i++)
     {
-        if(i==alls || data[i].first>base+r)
+        if (data[i].first > base + r)
         {
             mapping[cnt] = data[(baseI+i-1)>>1].first; //median
-            if(i==alls)break;
             cnt++;
             base = data[i].first;
-            baseI = i;
+            baseI = (int)i;
         }
         retImgPtr[data[i].second] = cnt;
     }
-
-    free(data);
+    // tail: i == alls
+    mapping[cnt] = data[(baseI+alls-1)>>1].first; // median
 
     //end of the function
-    outImg = retImg;
+    swap(outImg, retImg);
 }
 
 /***************************************************************/
@@ -134,6 +147,8 @@ void from32FTo32S(Mat &img, Mat &outImg, int nI, float *mapping)
 void from32STo32F(Mat &img, Mat &outImg, float *mapping)
 {
     Mat retImg(img.size(),CV_32F);
+    CV_Assert(img.isContinuous());
+    CV_Assert(retImg.isContinuous());
     int rows = img.rows, cols = img.cols, alls = rows*cols;
     float *retImgPtr = retImg.ptr<float>();
     int *imgPtr = img.ptr<int>();

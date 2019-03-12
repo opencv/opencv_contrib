@@ -61,9 +61,9 @@ public:
      */
     CV_WRAP MapperPyramid(Ptr<Mapper> baseMapper);
 
-    CV_WRAP virtual cv::Ptr<Map> calculate(InputArray img1, InputArray img2, cv::Ptr<Map> init = cv::Ptr<Map>()) const;
+    CV_WRAP virtual cv::Ptr<Map> calculate(InputArray img1, InputArray img2, cv::Ptr<Map> init = cv::Ptr<Map>()) const CV_OVERRIDE;
 
-    CV_WRAP cv::Ptr<Map> getMap() const;
+    CV_WRAP cv::Ptr<Map> getMap() const CV_OVERRIDE;
 
     CV_PROP_RW int numLev_;           /*!< Number of levels of the pyramid */
     CV_PROP_RW int numIterPerScale_;  /*!< Number of iterations at a given scale of the pyramid */

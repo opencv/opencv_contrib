@@ -132,7 +132,7 @@ public:
      @param inputImage the input image to process RGB or gray levels
      @param outputToneMappedImage the output tone mapped image
      */
-    virtual void applyFastToneMapping(InputArray inputImage, OutputArray outputToneMappedImage)
+    virtual void applyFastToneMapping(InputArray inputImage, OutputArray outputToneMappedImage) CV_OVERRIDE
     {
         // first convert input image to the compatible format :
         const bool colorMode = _convertCvMat2ValarrayBuffer(inputImage.getMat(), _inputBuffer);
@@ -157,7 +157,7 @@ public:
      * @param ganglioncellsNeighborhoodRadius the second stage local adaptation area
      * @param meanLuminanceModulatorK the factor applied to modulate the meanLuminance information (default is 1, see reference paper)
      */
-    virtual void setup(const float photoreceptorsNeighborhoodRadius=3.f, const float ganglioncellsNeighborhoodRadius=1.f, const float meanLuminanceModulatorK=1.f)
+    virtual void setup(const float photoreceptorsNeighborhoodRadius=3.f, const float ganglioncellsNeighborhoodRadius=1.f, const float meanLuminanceModulatorK=1.f) CV_OVERRIDE
     {
         // setup the spatio-temporal properties of each filter
         _meanLuminanceModulatorK = meanLuminanceModulatorK;

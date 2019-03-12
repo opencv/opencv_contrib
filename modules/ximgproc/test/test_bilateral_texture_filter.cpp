@@ -66,9 +66,12 @@ TEST_P(BilateralTextureFilterTest, MultiThreadReproducibility)
     else
         randu(src, 0.0f, 1.0f);
 
+    int nThreads = cv::getNumThreads();
+    if (nThreads == 1)
+        throw SkipTestException("Single thread environment");
     for (int iter = 0; iter <= loopsCount; iter++)
     {
-        cv::setNumThreads(cv::getNumberOfCPUs());
+        cv::setNumThreads(nThreads);
         Mat resMultiThread;
         bilateralTextureFilter(src, resMultiThread, fr, 1, sigmaAlpha, sigmaAvg);
 

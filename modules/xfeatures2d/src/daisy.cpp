@@ -83,7 +83,7 @@ void DAISY::compute( InputArrayOfArrays images,
 /*
  !DAISY implementation
  */
-class DAISY_Impl : public DAISY
+class DAISY_Impl CV_FINAL : public DAISY
 {
 
 public:
@@ -98,42 +98,42 @@ public:
      * @param use_orientation sample patterns using keypoints orientation, disabled by default.
      */
     explicit DAISY_Impl(float radius=15, int q_radius=3, int q_theta=8, int q_hist=8,
-                        int norm = DAISY::NRM_NONE, InputArray H = noArray(),
+                        DAISY::NormalizationType norm = DAISY::NRM_NONE, InputArray H = noArray(),
                         bool interpolation = true, bool use_orientation = false);
 
-    virtual ~DAISY_Impl();
+    virtual ~DAISY_Impl() CV_OVERRIDE;
 
     /** returns the descriptor length in bytes */
-    virtual int descriptorSize() const {
+    virtual int descriptorSize() const CV_OVERRIDE {
         // +1 is for center pixel
         return ( (m_rad_q_no * m_th_q_no + 1) * m_hist_th_q_no );
     };
 
     /** returns the descriptor type */
-    virtual int descriptorType() const { return CV_32F; }
+    virtual int descriptorType() const CV_OVERRIDE { return CV_32F; }
 
     /** returns the default norm type */
-    virtual int defaultNorm() const { return NORM_L2; }
+    virtual int defaultNorm() const CV_OVERRIDE { return NORM_L2; }
 
     /**
      * @param image image to extract descriptors
      * @param keypoints of interest within image
      * @param descriptors resulted descriptors array
      */
-    virtual void compute( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors );
+    virtual void compute( InputArray image, std::vector<KeyPoint>& keypoints, OutputArray descriptors ) CV_OVERRIDE;
 
     /** @overload
      * @param image image to extract descriptors
      * @param roi region of interest within image
      * @param descriptors resulted descriptors array
      */
-    virtual void compute( InputArray image, Rect roi, OutputArray descriptors );
+    virtual void compute( InputArray image, Rect roi, OutputArray descriptors ) CV_OVERRIDE;
 
     /** @overload
      * @param image image to extract descriptors
      * @param descriptors resulted descriptors array
      */
-    virtual void compute( InputArray image, OutputArray descriptors );
+    virtual void compute( InputArray image, OutputArray descriptors ) CV_OVERRIDE;
 
     /**
      * @param y position y on image
@@ -141,24 +141,7 @@ public:
      * @param orientation orientation on image (0->360)
      * @param descriptor supplied array for descriptor storage
      */
-    virtual void GetDescriptor( double y, double x, int orientation, float* descriptor ) const;
-
-    /**
-     * @param y position y on image
-     * @param x position x on image
-     * @param orientation orientation on image (0->360)
-     * @param descriptor supplied array for descriptor storage
-     * @param H homography matrix for warped grid
-     */
-    virtual bool GetDescriptor( double y, double x, int orientation, float* descriptor, double* H ) const;
-
-    /**
-     * @param y position y on image
-     * @param x position x on image
-     * @param orientation orientation on image (0->360)
-     * @param descriptor supplied array for descriptor storage
-     */
-    virtual void GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor ) const;
+    virtual void GetDescriptor( double y, double x, int orientation, float* descriptor ) const CV_OVERRIDE;
 
     /**
      * @param y position y on image
@@ -167,7 +150,24 @@ public:
      * @param descriptor supplied array for descriptor storage
      * @param H homography matrix for warped grid
      */
-    virtual bool GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor, double* H ) const;
+    virtual bool GetDescriptor( double y, double x, int orientation, float* descriptor, double* H ) const CV_OVERRIDE;
+
+    /**
+     * @param y position y on image
+     * @param x position x on image
+     * @param orientation orientation on image (0->360)
+     * @param descriptor supplied array for descriptor storage
+     */
+    virtual void GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor ) const CV_OVERRIDE;
+
+    /**
+     * @param y position y on image
+     * @param x position x on image
+     * @param orientation orientation on image (0->360)
+     * @param descriptor supplied array for descriptor storage
+     * @param H homography matrix for warped grid
+     */
+    virtual bool GetUnnormalizedDescriptor( double y, double x, int orientation, float* descriptor, double* H ) const CV_OVERRIDE;
 
 protected:
 
@@ -189,7 +189,7 @@ protected:
 
     // holds the type of the normalization to apply; equals to NRM_PARTIAL by
     // default. change the value using set_normalization() function.
-    int m_nrm_type;
+    DAISY::NormalizationType m_nrm_type;
 
     // the size of the descriptor vector
     int m_descriptor_size;
@@ -410,7 +410,7 @@ struct LayeredGradientInvoker : ParallelLoopBody
       layer_no = layers->size[0];
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       for (int l = range.start; l < range.end; ++l)
       {
@@ -450,7 +450,7 @@ struct SmoothLayersInvoker : ParallelLoopBody
       ks = filter_size( sigma, 5.0f );
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       for (int l = range.start; l < range.end; ++l)
       {
@@ -561,7 +561,7 @@ static void normalize_full( float* desc, const int _descriptor_size )
     }
 }
 
-static void normalize_descriptor( float* desc, const int nrm_type, const int _grid_point_number,
+static void normalize_descriptor( float* desc, const DAISY::NormalizationType nrm_type, const int _grid_point_number,
                                   const int _hist_th_q_no, const int _descriptor_size  )
 {
     if( nrm_type == DAISY::NRM_NONE ) return;
@@ -888,7 +888,7 @@ static void get_descriptor( const double y, const double x, const int orientatio
             const std::vector<Mat>* m_smoothed_gradient_layers, const Mat* m_oriented_grid_points,
             const double* m_orientation_shift_table, const int m_th_q_no, const int m_hist_th_q_no,
             const int m_grid_point_number, const int m_descriptor_size, const bool m_enable_interpolation,
-            const int m_nrm_type )
+            const DAISY::NormalizationType m_nrm_type)
 {
     get_unnormalized_descriptor( y, x, orientation, descriptor, m_smoothed_gradient_layers,
                                  m_oriented_grid_points, m_orientation_shift_table, m_th_q_no, m_enable_interpolation );
@@ -912,7 +912,7 @@ static bool get_descriptor_h( const double y, const double x, const int orientat
             const std::vector<Mat>* m_smoothed_gradient_layers, const Mat& m_cube_sigmas,
             const Mat* m_grid_points, const double* m_orientation_shift_table, const int m_th_q_no,
             const int m_hist_th_q_no, const int m_grid_point_number, const int m_descriptor_size,
-            const bool m_enable_interpolation, const int m_nrm_type  )
+            const bool m_enable_interpolation, const DAISY::NormalizationType m_nrm_type)
 
 {
     bool rval =
@@ -1003,7 +1003,7 @@ struct ComputeDescriptorsInvoker : ParallelLoopBody
       orientation_shift_table = _orientation_shift_table;
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       int index, orientation;
       for (int y = range.start; y < range.end; ++y)
@@ -1054,7 +1054,7 @@ inline void DAISY_Impl::compute_descriptors( Mat* m_dense_descriptors )
 
 struct NormalizeDescriptorsInvoker : ParallelLoopBody
 {
-    NormalizeDescriptorsInvoker( Mat* _descriptors, int _nrm_type, int _grid_point_number,
+    NormalizeDescriptorsInvoker( Mat* _descriptors, DAISY::NormalizationType _nrm_type, int _grid_point_number,
                                  int _hist_th_q_no, int _descriptor_size )
     {
       descriptors = _descriptors;
@@ -1064,7 +1064,7 @@ struct NormalizeDescriptorsInvoker : ParallelLoopBody
       descriptor_size = _descriptor_size;
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       for (int d = range.start; d < range.end; ++d)
       {
@@ -1074,7 +1074,7 @@ struct NormalizeDescriptorsInvoker : ParallelLoopBody
     }
 
     Mat *descriptors;
-    int nrm_type;
+    DAISY::NormalizationType nrm_type;
     int grid_point_number;
     int hist_th_q_no;
     int descriptor_size;
@@ -1146,7 +1146,7 @@ struct ComputeHistogramsInvoker : ParallelLoopBody
       _hist_th_q_no = layers->at(r).size[2];
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       for (int y = range.start; y < range.end; ++y)
       {
@@ -1251,7 +1251,7 @@ struct MaxDoGInvoker : ParallelLoopBody
       scale_map = _scale_map;
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       for (int c = range.start; c < range.end; ++c)
       {
@@ -1277,7 +1277,7 @@ struct RoundingInvoker : ParallelLoopBody
       scale_map = _scale_map;
     }
 
-    void operator ()(const cv::Range& range) const
+    void operator ()(const cv::Range& range) const CV_OVERRIDE
     {
       for (int c = range.start; c < range.end; ++c)
       {
@@ -1590,7 +1590,7 @@ void DAISY_Impl::compute( InputArray _image, OutputArray _descriptors )
 
 // constructor
 DAISY_Impl::DAISY_Impl( float _radius, int _q_radius, int _q_theta, int _q_hist,
-             int _norm, InputArray _H, bool _interpolation, bool _use_orientation )
+             DAISY::NormalizationType _norm, InputArray _H, bool _interpolation, bool _use_orientation )
            : m_rad(_radius), m_rad_q_no(_q_radius), m_th_q_no(_q_theta), m_hist_th_q_no(_q_hist),
              m_nrm_type(_norm), m_enable_interpolation(_interpolation), m_use_orientation(_use_orientation)
 {
@@ -1612,7 +1612,7 @@ DAISY_Impl::~DAISY_Impl()
 }
 
 Ptr<DAISY> DAISY::create( float radius, int q_radius, int q_theta, int q_hist,
-             int norm, InputArray H, bool interpolation, bool use_orientation)
+             DAISY::NormalizationType norm, InputArray H, bool interpolation, bool use_orientation)
 {
     return makePtr<DAISY_Impl>(radius, q_radius, q_theta, q_hist, norm, H, interpolation, use_orientation);
 }

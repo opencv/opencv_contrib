@@ -93,7 +93,7 @@ int main( int argc, char** argv ){
 
   //instantiates the specific Tracker
   Ptr<Tracker> tracker = createTrackerByName(tracker_algorithm);
-  if( tracker == NULL )
+  if (!tracker)
   {
     cout << "***Error in the instantiation of the tracker...***\n";
     return -1;

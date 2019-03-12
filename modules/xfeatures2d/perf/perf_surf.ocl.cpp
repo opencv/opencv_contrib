@@ -45,7 +45,7 @@
 
 #include "perf_precomp.hpp"
 
-#ifdef HAVE_OPENCV_OCL
+#if defined(HAVE_OPENCV_OCL) && defined(OPENCV_ENABLE_NONFREE)
 
 namespace opencv_test { namespace {
 
@@ -105,4 +105,4 @@ PERF_TEST_P(OCL_SURF, DISABLED_without_data_transfer, testing::Values(SURF_IMAGE
 }
 
 }} // namespace
-#endif // HAVE_OPENCV_OCL
+#endif // HAVE_OPENCV_OCL && OPENCV_ENABLE_NONFREE

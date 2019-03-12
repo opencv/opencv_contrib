@@ -19,8 +19,8 @@ public:
     TrackerCSRTModel(TrackerCSRT::Params /*params*/){}
     ~TrackerCSRTModel(){}
 protected:
-    void modelEstimationImpl(const std::vector<Mat>& /*responses*/){}
-    void modelUpdateImpl(){}
+    void modelEstimationImpl(const std::vector<Mat>& /*responses*/) CV_OVERRIDE {}
+    void modelUpdateImpl() CV_OVERRIDE {}
 };
 
 
@@ -28,15 +28,15 @@ class TrackerCSRTImpl : public TrackerCSRT
 {
 public:
     TrackerCSRTImpl(const TrackerCSRT::Params &parameters = TrackerCSRT::Params());
-    void read(const FileNode& fn);
-    void write(FileStorage& fs) const;
+    void read(const FileNode& fn) CV_OVERRIDE;
+    void write(FileStorage& fs) const CV_OVERRIDE;
 
 protected:
     TrackerCSRT::Params params;
 
-    bool initImpl(const Mat& image, const Rect2d& boundingBox);
-    virtual void setInitialMask(const Mat mask);
-    bool updateImpl(const Mat& image, Rect2d& boundingBox);
+    bool initImpl(const Mat& image, const Rect2d& boundingBox) CV_OVERRIDE;
+    virtual void setInitialMask(InputArray mask) CV_OVERRIDE;
+    bool updateImpl(const Mat& image, Rect2d& boundingBox) CV_OVERRIDE;
     void update_csr_filter(const Mat &image, const Mat &my_mask);
     void update_histograms(const Mat &image, const Rect &region);
     void extract_histograms(const Mat &image, cv::Rect region, Histogram &hf, Histogram &hb);
@@ -99,9 +99,9 @@ void TrackerCSRTImpl::write(cv::FileStorage& fs) const
     params.write(fs);
 }
 
-void TrackerCSRTImpl::setInitialMask(const Mat mask)
+void TrackerCSRTImpl::setInitialMask(InputArray mask)
 {
-    preset_mask = mask;
+    preset_mask = mask.getMat();
 }
 
 bool TrackerCSRTImpl::check_mask_area(const Mat &mat, const double obj_area)
@@ -201,7 +201,7 @@ std::vector<Mat> TrackerCSRTImpl::get_features(const Mat &patch, const Size2i &f
     }
     if(params.use_gray) {
         Mat gray_m;
-        cvtColor(patch, gray_m, CV_BGR2GRAY);
+        cvtColor(patch, gray_m, COLOR_BGR2GRAY);
         resize(gray_m, gray_m, feature_size, 0, 0, INTER_CUBIC);
         gray_m.convertTo(gray_m, CV_32FC1, 1.0/255.0, -0.5);
         features.push_back(gray_m);
@@ -232,7 +232,7 @@ public:
         this->P = P;
         this->admm_iterations = admm_iterations;
     }
-    virtual void operator ()(const Range& range) const
+    virtual void operator ()(const Range& range) const CV_OVERRIDE
     {
         for (int i = range.start; i < range.end; i++) {
             float mu = 5.0f;
@@ -429,8 +429,12 @@ Point2f TrackerCSRTImpl::estimate_new_position(const Mat &image)
 
     Mat resp = calculate_response(image, csr_filter);
 
+    double max_val;
     Point max_loc;
-    minMaxLoc(resp, NULL, NULL, NULL, &max_loc);
+    minMaxLoc(resp, NULL, &max_val, NULL, &max_loc);
+    if (max_val < params.psr_threshold)
+        return Point2f(-1,-1); // target "lost"
+
     // take into account also subpixel accuracy
     float col = ((float) max_loc.x) + subpixel_peak(resp, "horizontal", max_loc);
     float row = ((float) max_loc.y) + subpixel_peak(resp, "vertical", max_loc);
@@ -461,17 +465,15 @@ Point2f TrackerCSRTImpl::estimate_new_position(const Mat &image)
 // *********************************************************************
 bool TrackerCSRTImpl::updateImpl(const Mat& image_, Rect2d& boundingBox)
 {
-    //treat gray image as color image
     Mat image;
-    if(image_.channels() == 1) {
-        std::vector<Mat> channels(3);
-        channels[0] = channels[1] = channels[2] = image_;
-        merge(channels, image);
-    } else {
+    if(image_.channels() == 1)    //treat gray image as color image
+        cvtColor(image_, image, COLOR_GRAY2BGR);
+    else
         image = image_;
-    }
 
     object_center = estimate_new_position(image);
+    if (object_center.x < 0 && object_center.y < 0)
+        return false;
 
     current_scale_factor = dsst.getScale(image, object_center);
     //update bouding_box according to new scale and location
@@ -506,17 +508,11 @@ bool TrackerCSRTImpl::updateImpl(const Mat& image_, Rect2d& boundingBox)
 // *********************************************************************
 bool TrackerCSRTImpl::initImpl(const Mat& image_, const Rect2d& boundingBox)
 {
-    cv::setNumThreads(getNumThreads());
-
-    //treat gray image as color image
     Mat image;
-    if(image_.channels() == 1) {
-        std::vector<Mat> channels(3);
-        channels[0] = channels[1] = channels[2] = image_;
-        merge(channels, image);
-    } else {
+    if(image_.channels() == 1)    //treat gray image as color image
+        cvtColor(image_, image, COLOR_GRAY2BGR);
+    else
         image = image_;
-    }
 
     current_scale_factor = 1.0;
     image_size = image.size();
@@ -653,6 +649,7 @@ TrackerCSRT::Params::Params()
     histogram_bins = 16;
     background_ratio = 2;
     histogram_lr = 0.04f;
+    psr_threshold = 0.035f;
 }
 
 void TrackerCSRT::Params::read(const FileNode& fn)
@@ -710,6 +707,8 @@ void TrackerCSRT::Params::read(const FileNode& fn)
         fn["background_ratio"] >> background_ratio;
     if(!fn["histogram_lr"].empty())
         fn["histogram_lr"] >> histogram_lr;
+    if(!fn["psr_threshold"].empty())
+        fn["psr_threshold"] >> psr_threshold;
     CV_Assert(number_of_scales % 2 == 1);
     CV_Assert(use_gray || use_color_names || use_hog || use_rgb);
 }
@@ -741,5 +740,6 @@ void TrackerCSRT::Params::write(FileStorage& fs) const
     fs << "histogram_bins" << histogram_bins;
     fs << "background_ratio" << background_ratio;
     fs << "histogram_lr" << histogram_lr;
+    fs << "psr_threshold" << psr_threshold;
 }
 } /* namespace cv */

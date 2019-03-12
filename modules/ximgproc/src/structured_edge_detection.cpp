@@ -281,7 +281,7 @@ public:
               {
               }
 
-  void operator()(const cv::Range &range) const
+  void operator()(const cv::Range &range) const CV_OVERRIDE
   {
      for (int x = range.start; x < range.end; x++)
      {
@@ -359,7 +359,7 @@ public:
      * \param gradNum : __rf.options.numberOfGradientOrientations
      */
     virtual void getFeatures(const Mat &src, Mat &features, const int gnrmRad, const int gsmthRad,
-                             const int shrink, const int outNum, const int gradNum) const
+                             const int shrink, const int outNum, const int gradNum) const CV_OVERRIDE
     {
         cv::Mat luvImg = rgb2luv(src);
 
@@ -524,7 +524,7 @@ public:
      * \param _dst : destination image (grayscale, float, in [0;1])
      *              where edges are drawn
      */
-    void detectEdges(cv::InputArray _src, cv::OutputArray _dst) const
+    void detectEdges(cv::InputArray _src, cv::OutputArray _dst) const CV_OVERRIDE
     {
         CV_Assert( _src.type() == CV_32FC3 );
 
@@ -556,7 +556,7 @@ public:
      * \param dst : orientation image.
      * \param r : filter radius.
      */
-    void computeOrientation(cv::InputArray _src, cv::OutputArray _dst) const
+    void computeOrientation(cv::InputArray _src, cv::OutputArray _dst) const CV_OVERRIDE
     {
       CV_Assert( _src.type() == CV_32FC1 );
 
@@ -596,7 +596,7 @@ public:
      * \param m : multiplier for conservative suppression.
      * \param isParallel: enables/disables parallel computing.
      */
-    void edgesNms(cv::InputArray edge_image, cv::InputArray orientation_image, cv::OutputArray _dst, int r, int s, float m, bool isParallel) const
+    void edgesNms(cv::InputArray edge_image, cv::InputArray orientation_image, cv::OutputArray _dst, int r, int s, float m, bool isParallel) const CV_OVERRIDE
     {
         CV_Assert(edge_image.type() == CV_32FC1);
         CV_Assert(orientation_image.type() == CV_32FC1);
@@ -801,9 +801,11 @@ protected:
                 {// for j,k in [0;width)x[0;nTreesEval)
 
                     int currentNode = pIndex[j*nTreesEval + k];
-
-                    int start  = __rf.edgeBoundaries[currentNode];
-                    int finish = __rf.edgeBoundaries[currentNode + 1];
+                    size_t sizeBoundaries = __rf.edgeBoundaries.size();
+                    int convertedBoundaries = static_cast<int>(sizeBoundaries);
+                    int nBnds = (convertedBoundaries - 1) / (nTreesNodes * nTrees);
+                    int start = __rf.edgeBoundaries[currentNode * nBnds];
+                    int finish = __rf.edgeBoundaries[currentNode * nBnds + 1];
 
                     if (start == finish)
                         continue;

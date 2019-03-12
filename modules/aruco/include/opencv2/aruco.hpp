@@ -49,14 +49,16 @@ the use of this software, even if advised of the possibility of such damage.
  * These markers are useful for easy, fast and robust camera pose estimation.ç
  *
  * The main functionalities are:
- * - Detection of markers in a image
+ * - Detection of markers in an image
  * - Pose estimation from a single marker or from a board/set of markers
  * - Detection of ChArUco board for high subpixel accuracy
  * - Camera calibration from both, ArUco boards and ChArUco boards.
  * - Detection of ChArUco diamond markers
  * The samples directory includes easy examples of how to use the module.
  *
- * The implementation is based on the ArUco Library by R. Muñoz-Salinas and S. Garrido-Jurado.
+ * The implementation is based on the ArUco Library by R. Muñoz-Salinas and S. Garrido-Jurado @cite Aruco2014.
+ *
+ * Markers can also be detected based on the AprilTag 2 @cite wang2016iros fiducial detection method.
  *
  * @sa S. Garrido-Jurado, R. Muñoz-Salinas, F. J. Madrid-Cuevas, and M. J. Marín-Jiménez. 2014.
  * "Automatic generation and detection of highly reliable fiducial markers under occlusion".
@@ -77,9 +79,10 @@ namespace aruco {
 //! @{
 
 enum CornerRefineMethod{
-	CORNER_REFINE_NONE,     // default corners
-	CORNER_REFINE_SUBPIX,   // refine the corners using subpix
-	CORNER_REFINE_CONTOUR   // refine the corners using the contour-points
+    CORNER_REFINE_NONE,     ///< Tag and corners detection based on the ArUco approach
+    CORNER_REFINE_SUBPIX,   ///< ArUco approach and refine the corners locations using corner subpixel accuracy
+    CORNER_REFINE_CONTOUR,  ///< ArUco approach and refine the corners locations using the contour-points line fitting
+    CORNER_REFINE_APRILTAG, ///< Tag and corners detection based on the AprilTag 2 approach @cite wang2016iros
 };
 
 /**
@@ -105,18 +108,19 @@ enum CornerRefineMethod{
  *   similar, so that the smaller one is removed. The rate is relative to the smaller perimeter
  *   of the two markers (default 0.05).
  * - cornerRefinementMethod: corner refinement method. (CORNER_REFINE_NONE, no refinement.
- *   CORNER_REFINE_SUBPIX, do subpixel refinement. CORNER_REFINE_CONTOUR use contour-Points)
+ *   CORNER_REFINE_SUBPIX, do subpixel refinement. CORNER_REFINE_CONTOUR use contour-Points,
+ *   CORNER_REFINE_APRILTAG  use the AprilTag2 approach)
  * - cornerRefinementWinSize: window size for the corner refinement process (in pixels) (default 5).
  * - cornerRefinementMaxIterations: maximum number of iterations for stop criteria of the corner
  *   refinement process (default 30).
  * - cornerRefinementMinAccuracy: minimum error for the stop cristeria of the corner refinement
  *   process (default: 0.1)
  * - markerBorderBits: number of bits of the marker border, i.e. marker border width (default 1).
- * - perpectiveRemovePixelPerCell: number of bits (per dimension) for each cell of the marker
+ * - perspectiveRemovePixelPerCell: number of bits (per dimension) for each cell of the marker
  *   when removing the perspective (default 8).
  * - perspectiveRemoveIgnoredMarginPerCell: width of the margin of pixels on each cell not
  *   considered for the determination of the cell bit. Represents the rate respect to the total
- *   size of the cell, i.e. perpectiveRemovePixelPerCell (default 0.13)
+ *   size of the cell, i.e. perspectiveRemovePixelPerCell (default 0.13)
  * - maxErroneousBitsInBorderRate: maximum number of accepted erroneous bits in the border (i.e.
  *   number of allowed white bits in the border). Represented as a rate respect to the total
  *   number of bits per marker (default 0.35).
@@ -125,6 +129,21 @@ enum CornerRefineMethod{
  *   than 128 or not) (default 5.0)
  * - errorCorrectionRate error correction rate respect to the maximun error correction capability
  *   for each dictionary. (default 0.6).
+ * - aprilTagMinClusterPixels: reject quads containing too few pixels.
+ * - aprilTagMaxNmaxima: how many corner candidates to consider when segmenting a group of pixels into a quad.
+ * - aprilTagCriticalRad: Reject quads where pairs of edges have angles that are close to straight or close to
+ *   180 degrees. Zero means that no quads are rejected. (In radians).
+ * - aprilTagMaxLineFitMse:  When fitting lines to the contours, what is the maximum mean squared error
+ *   allowed?  This is useful in rejecting contours that are far from being quad shaped; rejecting
+ *   these quads "early" saves expensive decoding processing.
+ * - aprilTagMinWhiteBlackDiff: When we build our model of black & white pixels, we add an extra check that
+ *   the white model must be (overall) brighter than the black model.  How much brighter? (in pixel values, [0,255]).
+ * - aprilTagDeglitch:  should the thresholded image be deglitched? Only useful for very noisy images
+ * - aprilTagQuadDecimate: Detection of quads can be done on a lower-resolution image, improving speed at a
+ *   cost of pose accuracy and a slight decrease in detection rate. Decoding the binary payload is still
+ *   done at full resolution.
+ * - aprilTagQuadSigma: What Gaussian blur should be applied to the segmented image (used for quad detection?)
+ *   Parameter is the standard deviation in pixels.  Very noisy images benefit from non-zero values (e.g. 0.8).
  */
 struct CV_EXPORTS_W DetectorParameters {
 
@@ -152,6 +171,18 @@ struct CV_EXPORTS_W DetectorParameters {
     CV_PROP_RW double maxErroneousBitsInBorderRate;
     CV_PROP_RW double minOtsuStdDev;
     CV_PROP_RW double errorCorrectionRate;
+
+    // April :: User-configurable parameters.
+    CV_PROP_RW float aprilTagQuadDecimate;
+    CV_PROP_RW float aprilTagQuadSigma;
+
+    // April :: Internal variables
+    CV_PROP_RW int aprilTagMinClusterPixels;
+    CV_PROP_RW int aprilTagMaxNmaxima;
+    CV_PROP_RW float aprilTagCriticalRad;
+    CV_PROP_RW float aprilTagMaxLineFitMse;
+    CV_PROP_RW int aprilTagMinWhiteBlackDiff;
+    CV_PROP_RW int aprilTagDeglitch;
 };
 
 

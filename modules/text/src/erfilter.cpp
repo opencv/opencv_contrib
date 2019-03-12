@@ -114,7 +114,7 @@ public:
     //Constructor
     ERFilterNM();
     //Destructor
-    ~ERFilterNM() {}
+    ~ERFilterNM() CV_OVERRIDE {}
 
     float minProbability;
     bool  nonMaxSuppression;
@@ -122,7 +122,7 @@ public:
 
     // the key method. Takes image on input, vector of ERStat is output for the first stage,
     // input/output - for the second one.
-    void run( InputArray image, vector<ERStat>& regions );
+    void run( InputArray image, vector<ERStat>& regions ) CV_OVERRIDE;
 
 protected:
     int thresholdDelta;
@@ -138,14 +138,14 @@ protected:
 public:
 
     // set/get methods to set the algorithm properties,
-    void setCallback(const Ptr<ERFilter::Callback>& cb);
-    void setThresholdDelta(int thresholdDelta);
-    void setMinArea(float minArea);
-    void setMaxArea(float maxArea);
-    void setMinProbability(float minProbability);
-    void setMinProbabilityDiff(float minProbabilityDiff);
-    void setNonMaxSuppression(bool nonMaxSuppression);
-    int  getNumRejected();
+    void setCallback(const Ptr<ERFilter::Callback>& cb) CV_OVERRIDE;
+    void setThresholdDelta(int thresholdDelta) CV_OVERRIDE;
+    void setMinArea(float minArea) CV_OVERRIDE;
+    void setMaxArea(float maxArea) CV_OVERRIDE;
+    void setMinProbability(float minProbability) CV_OVERRIDE;
+    void setMinProbabilityDiff(float minProbabilityDiff) CV_OVERRIDE;
+    void setNonMaxSuppression(bool nonMaxSuppression) CV_OVERRIDE;
+    int  getNumRejected() const CV_OVERRIDE;
 
 private:
     // pointer to the input/output regions vector
@@ -171,32 +171,32 @@ private:
 
 
 // default 1st stage classifier
-class CV_EXPORTS ERClassifierNM1 : public ERFilter::Callback
+class CV_EXPORTS ERClassifierNM1 CV_FINAL : public ERFilter::Callback
 {
 public:
     //Constructor
     ERClassifierNM1(const string& filename);
     // Destructor
-    ~ERClassifierNM1() {}
+    ~ERClassifierNM1() CV_OVERRIDE {}
 
     // The classifier must return probability measure for the region.
-    double eval(const ERStat& stat);
+    double eval(const ERStat& stat) CV_OVERRIDE;
 
 private:
     Ptr<Boost> boost;
 };
 
 // default 2nd stage classifier
-class CV_EXPORTS ERClassifierNM2 : public ERFilter::Callback
+class CV_EXPORTS ERClassifierNM2 CV_FINAL : public ERFilter::Callback
 {
 public:
     //constructor
     ERClassifierNM2(const string& filename);
     // Destructor
-    ~ERClassifierNM2() {}
+    ~ERClassifierNM2() CV_OVERRIDE {}
 
     // The classifier must return probability measure for the region.
-    double eval(const ERStat& stat);
+    double eval(const ERStat& stat) CV_OVERRIDE;
 
 private:
     Ptr<Boost> boost;
@@ -223,6 +223,8 @@ ERFilterNM::ERFilterNM()
 // input/output for the second one.
 void ERFilterNM::run( InputArray image, vector<ERStat>& _regions )
 {
+    num_rejected_regions=0;
+    num_accepted_regions=0;
 
     // assert correct image type
     CV_Assert( image.getMat().type() == CV_8UC1 );
@@ -665,12 +667,12 @@ void ERFilterNM::er_merge(ERStat *parent, ERStat *child)
     child->level = child->level*thresholdDelta;
 
     // before saving calculate P(child|character) and filter if possible
-    if (classifier != NULL)
+    if (classifier)
     {
         child->probability = classifier->eval(*child);
     }
 
-    if ( (((classifier!=NULL)?(child->probability >= minProbability):true)||(nonMaxSuppression)) &&
+    if ( (((classifier)?(child->probability >= minProbability):true)||(nonMaxSuppression)) &&
          ((child->area >= (minArea*region_mask.rows*region_mask.cols)) &&
           (child->area <= (maxArea*region_mask.rows*region_mask.cols)) &&
           (child->rect.width > 2) && (child->rect.height > 2)) )
@@ -858,12 +860,12 @@ ERStat* ERFilterNM::er_tree_filter ( InputArray image, ERStat * stat, ERStat *pa
 
 
     // calculate P(child|character) and filter if possible
-    if ( (classifier != NULL) && (stat->parent != NULL) )
+    if (classifier && (stat->parent != NULL))
     {
         stat->probability = classifier->eval(*stat);
     }
 
-    if ( ( ((classifier != NULL)?(stat->probability >= minProbability):true) &&
+    if ( ( ((classifier)?(stat->probability >= minProbability):true) &&
           ((stat->area >= minArea*region_mask.rows*region_mask.cols) &&
            (stat->area <= maxArea*region_mask.rows*region_mask.cols)) ) ||
         (stat->parent == NULL) )
@@ -999,7 +1001,7 @@ void ERFilterNM::setNonMaxSuppression(bool _nonMaxSuppression)
     return;
 }
 
-int ERFilterNM::getNumRejected()
+int ERFilterNM::getNumRejected() const
 {
     return num_rejected_regions;
 }
@@ -1178,16 +1180,16 @@ Ptr<ERFilter::Callback> loadClassifierNM2(const String& filename)
 }
 
 // dummy classifier
-class ERDummyClassifier : public ERFilter::Callback
+class ERDummyClassifier CV_FINAL : public ERFilter::Callback
 {
 public:
     //Constructor
     ERDummyClassifier() {}
     // Destructor
-    ~ERDummyClassifier() {}
+    ~ERDummyClassifier() CV_OVERRIDE {}
 
     // The classifier must return probability measure for the region.
-    double eval(const ERStat& s) {if (s.area ==0) return (double)0.0; return (double)1.0;}
+    double eval(const ERStat& s) CV_OVERRIDE {if (s.area ==0) return (double)0.0; return (double)1.0;}
 };
 
 /* Create a dummy classifier that accepts all regions */
@@ -2687,7 +2689,8 @@ double MaxMeaningfulClustering::probability(vector<int> &cluster)
     //for (int kk=0; kk<angles.size(); kk++)
     //  cout << angles[kk] << " ";
     //cout << endl;
-
+    if (angles.empty() || edge_distances.empty())
+        return 0;
     meanStdDev( angles, mean, std );
     sample.push_back((float)std[0]);
     sample.push_back((float)mean[0]);

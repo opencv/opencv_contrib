@@ -353,7 +353,7 @@ static void loadNewFrame(const std::string filenamePrototype, const int currentF
             // jump to next frame
             ++currentFrameIndex;
          }
-     }catch(cv::Exception e)
+     }catch(const cv::Exception& e)
      {
          std::cerr<<"Error using Retina : "<<e.what()<<std::endl;
      }

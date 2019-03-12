@@ -146,7 +146,7 @@ enum {
     </opencv_storage>
     @endcode
       */
-    struct RetinaParameters{ 
+    struct RetinaParameters{
         //! Outer Plexiform Layer (OPL) and Inner Plexiform Layer Parvocellular (IplParvo) parameters
         struct OPLandIplParvoParameters{
                OPLandIplParvoParameters():colorMode(true),
@@ -208,7 +208,7 @@ class CV_EXPORTS_W Retina : public Algorithm {
 
 public:
 
-    
+
     /** @brief Retreive retina input buffer size
     @return the retina input buffer size
      */
@@ -260,7 +260,7 @@ public:
     CV_WRAP virtual void write( String fs ) const=0;
 
     /** @overload */
-    virtual void write( FileStorage& fs ) const=0;
+    virtual void write( FileStorage& fs ) const CV_OVERRIDE = 0;
 
     /** @brief Setup the OPL and IPL parvo channels (see biologocal model)
 

@@ -100,12 +100,15 @@ TEST_P(DomainTransformTest, MultiThreadReproducibility)
     Mat guide = convertTypeAndSize(original, guideType, size);
     Mat src = convertTypeAndSize(original, srcType, size);
 
+    int nThreads = cv::getNumThreads();
+    if (nThreads == 1)
+        throw SkipTestException("Single thread environment");
     for (int iter = 0; iter <= loopsCount; iter++)
     {
         double ss = rng.uniform(0.0, 100.0);
         double sc = rng.uniform(0.0, 100.0);
 
-        cv::setNumThreads(cv::getNumberOfCPUs());
+        cv::setNumThreads(nThreads);
         Mat resMultithread;
         dtFilter(guide, src, resMultithread, ss, sc, mode);
 
@@ -194,7 +197,6 @@ TEST(DomainTransformTest, AuthorReferenceAccuracy)
     ASSERT_FALSE(ref_IC.empty());
     ASSERT_FALSE(ref_RF.empty());
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
     Mat res_NC, res_IC, res_RF;
     dtFilter(src, src, res_NC, ss, sc, DTF_NC);
     dtFilter(src, src, res_IC, ss, sc, DTF_IC);

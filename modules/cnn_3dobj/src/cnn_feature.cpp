@@ -222,26 +222,24 @@ namespace cnn_3dobj
     {
         /* Convert the input image to the input image format of the network. */
         cv::Mat sample;
-        if (img.channels() == 3 && num_channels == 1)
-            cv::cvtColor(img, sample, CV_BGR2GRAY);
-        else if (img.channels() == 4 && num_channels == 1)
-            cv::cvtColor(img, sample, CV_BGRA2GRAY);
+        if (num_channels == 1)
+            cv::cvtColor(img, sample, COLOR_BGR2GRAY);
         else if (img.channels() == 4 && num_channels == 3)
-            cv::cvtColor(img, sample, CV_BGRA2BGR);
+            cv::cvtColor(img, sample, COLOR_BGRA2BGR);
         else if (img.channels() == 1 && num_channels == 3)
-            cv::cvtColor(img, sample, CV_GRAY2BGR);
+            cv::cvtColor(img, sample, COLOR_GRAY2BGR);
         else
             sample = img;
+
         cv::Mat sample_resized;
         if (sample.size() != input_geometry)
             cv::resize(sample, sample_resized, input_geometry);
         else
         sample_resized = sample;
+
         cv::Mat sample_float;
-        if (num_channels == 3)
-            sample_resized.convertTo(sample_float, CV_32FC3);
-        else
-            sample_resized.convertTo(sample_float, CV_32FC1);
+        sample_resized.convertTo(sample_float, CV_32F);
+
         cv::Mat sample_normalized;
         if (net_ready == 2)
             cv::subtract(sample_float, mean_, sample_normalized);

@@ -112,6 +112,8 @@ namespace cv
 namespace xfeatures2d
 {
 
+#ifdef OPENCV_ENABLE_NONFREE
+
 /*!
  SIFT implementation.
 
@@ -125,20 +127,20 @@ public:
                           double sigma = 1.6);
 
     //! returns the descriptor size in floats (128)
-    int descriptorSize() const;
+    int descriptorSize() const CV_OVERRIDE;
 
     //! returns the descriptor type
-    int descriptorType() const;
+    int descriptorType() const CV_OVERRIDE;
 
     //! returns the default norm type
-    int defaultNorm() const;
+    int defaultNorm() const CV_OVERRIDE;
 
     //! finds the keypoints and computes descriptors for them using SIFT algorithm.
     //! Optionally it can compute descriptors for the user-provided keypoints
     void detectAndCompute(InputArray img, InputArray mask,
                     std::vector<KeyPoint>& keypoints,
                     OutputArray descriptors,
-                    bool useProvidedKeypoints = false);
+                    bool useProvidedKeypoints = false) CV_OVERRIDE;
 
     void buildGaussianPyramid( const Mat& base, std::vector<Mat>& pyr, int nOctaves ) const;
     void buildDoGPyramid( const std::vector<Mat>& pyr, std::vector<Mat>& dogpyr ) const;
@@ -302,7 +304,7 @@ public:
           gpyr(_gpyr),
           dogpyr(_dogpyr) { }
 
-    void operator()( const cv::Range& range ) const
+    void operator()( const cv::Range& range ) const CV_OVERRIDE
     {
         const int begin = range.start;
         const int end = range.end;
@@ -341,7 +343,7 @@ static float calcOrientationHist( const Mat& img, Point pt, int radius,
 
     float expf_scale = -1.f/(2.f * sigma * sigma);
     AutoBuffer<float> buf(len*4 + n+4);
-    float *X = buf, *Y = X + len, *Mag = X, *Ori = Y + len, *W = Ori + len;
+    float *X = buf.data(), *Y = X + len, *Mag = X, *Ori = Y + len, *W = Ori + len;
     float* temphist = W + len + 2;
 
     for( i = 0; i < n; i++ )
@@ -605,7 +607,7 @@ public:
           gauss_pyr(_gauss_pyr),
           dog_pyr(_dog_pyr),
           tls_kpts_struct(_tls_kpts_struct) { }
-    void operator()( const cv::Range& range ) const
+    void operator()( const cv::Range& range ) const CV_OVERRIDE
     {
         const int begin = range.start;
         const int end = range.end;
@@ -754,7 +756,7 @@ static void calcSIFTDescriptor( const Mat& img, Point2f ptf, float ori, float sc
     int rows = img.rows, cols = img.cols;
 
     AutoBuffer<float> buf(len*6 + histlen);
-    float *X = buf, *Y = X + len, *Mag = Y, *Ori = Mag + len, *W = Ori + len;
+    float *X = buf.data(), *Y = X + len, *Mag = Y, *Ori = Mag + len, *W = Ori + len;
     float *RBin = W + len, *CBin = RBin + len, *hist = CBin + len;
 
     for( i = 0; i < d+2; i++ )
@@ -1046,7 +1048,7 @@ public:
           nOctaveLayers(_nOctaveLayers),
           firstOctave(_firstOctave) { }
 
-    void operator()( const cv::Range& range ) const
+    void operator()( const cv::Range& range ) const CV_OVERRIDE
     {
         const int begin = range.start;
         const int end = range.end;
@@ -1196,6 +1198,15 @@ void SIFT_Impl::detectAndCompute(InputArray _image, InputArray _mask,
         //printf("descriptor extraction time: %g\n", t*1000./tf);
     }
 }
+
+#else // ! #ifdef OPENCV_ENABLE_NONFREE
+Ptr<SIFT> SIFT::create( int, int, double, double, double )
+{
+    CV_Error(Error::StsNotImplemented,
+        "This algorithm is patented and is excluded in this configuration; "
+        "Set OPENCV_ENABLE_NONFREE CMake option and rebuild the library");
+}
+#endif
 
 }
 }

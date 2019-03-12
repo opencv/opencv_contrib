@@ -86,7 +86,7 @@ void createHash(cv::Mat const &blocks, cv::Mat &hash)
     }
 }
 
-class MarrHildrethHashImpl : public ImgHashBase::ImgHashImpl
+class MarrHildrethHashImpl CV_FINAL : public ImgHashBase::ImgHashImpl
 {
 public:
 
@@ -96,27 +96,20 @@ public:
         blocks.create(31,31, CV_32F);
     }
 
-    ~MarrHildrethHashImpl() { }
+    ~MarrHildrethHashImpl() CV_OVERRIDE { }
 
-    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr)
+    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr) CV_OVERRIDE
     {
         cv::Mat const input = inputArr.getMat();
         CV_Assert(input.type() == CV_8UC4 ||
                   input.type() == CV_8UC3 ||
                   input.type() == CV_8U);
 
-        if(input.type() == CV_8UC3)
-        {
-            cv::cvtColor(input, grayImg, CV_BGR2GRAY);
-        }
-        else if(input.type() == CV_8UC4)
-        {
-            cv::cvtColor(input, grayImg, CV_BGRA2GRAY);
-        }
+        if(input.channels() > 1)
+            cv::cvtColor(input, grayImg, COLOR_BGR2GRAY);
         else
-        {
             grayImg = input;
-        }
+
         //pHash use Canny-deritch filter to blur the image
         cv::GaussianBlur(grayImg, blurImg, cv::Size(7, 7), 0);
         cv::resize(blurImg, resizeImg, cv::Size(512, 512), 0, 0, INTER_CUBIC);
@@ -131,7 +124,7 @@ public:
         createHash(blocks, hash);
     }
 
-    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const
+    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const CV_OVERRIDE
     {
         return norm(hashOne, hashTwo, NORM_HAMMING);
     }

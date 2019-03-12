@@ -53,7 +53,7 @@ using namespace std;
  */
 void CharucoBoard::draw(Size outSize, OutputArray _img, int marginSize, int borderBits) {
 
-    CV_Assert(outSize.area() > 0);
+    CV_Assert(!outSize.empty());
     CV_Assert(marginSize >= 0);
 
     _img.create(outSize, CV_8UC1);
@@ -194,7 +194,7 @@ void CharucoBoard::_getNearestMarkerCorners() {
             double sqDistance;
             Point3f distVector = charucoCorner - center;
             sqDistance = distVector.x * distVector.x + distVector.y * distVector.y;
-            if(j == 0 || fabs(sqDistance - minDist) < 0.0001) {
+            if(j == 0 || fabs(sqDistance - minDist) < cv::pow(0.01 * _squareLength, 2)) {
                 // if same minimum distance (or first iteration), add to nearestMarkerIdx vector
                 nearestMarkerIdx[i].push_back(j);
                 minDist = sqDistance;
@@ -282,7 +282,7 @@ class CharucoSubpixelParallel : public ParallelLoopBody {
         : grey(_grey), filteredChessboardImgPoints(_filteredChessboardImgPoints),
           filteredWinSizes(_filteredWinSizes), params(_params) {}
 
-    void operator()(const Range &range) const {
+    void operator()(const Range &range) const CV_OVERRIDE {
         const int begin = range.start;
         const int end = range.end;
 
@@ -345,10 +345,10 @@ static int _selectAndRefineChessboardCorners(InputArray _allCorners, InputArray 
 
     // corner refinement, first convert input image to grey
     Mat grey;
-    if(_image.getMat().type() == CV_8UC3)
-        cvtColor(_image.getMat(), grey, COLOR_BGR2GRAY);
+    if(_image.type() == CV_8UC3)
+        cvtColor(_image, grey, COLOR_BGR2GRAY);
     else
-        _image.getMat().copyTo(grey);
+        _image.copyTo(grey);
 
     const Ptr<DetectorParameters> params = DetectorParameters::create(); // use default params for corner refinement
 
@@ -754,10 +754,10 @@ void detectCharucoDiamond(InputArray _image, InputArrayOfArrays _markerCorners,
 
     // convert input image to grey
     Mat grey;
-    if(_image.getMat().type() == CV_8UC3)
-        cvtColor(_image.getMat(), grey, COLOR_BGR2GRAY);
+    if(_image.type() == CV_8UC3)
+        cvtColor(_image, grey, COLOR_BGR2GRAY);
     else
-        _image.getMat().copyTo(grey);
+        _image.copyTo(grey);
 
     // for each of the detected markers, try to find a diamond
     for(unsigned int i = 0; i < _markerIds.total(); i++) {

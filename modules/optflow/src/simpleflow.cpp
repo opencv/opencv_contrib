@@ -136,7 +136,7 @@ public:
       CV_DbgAssert(joint.cols == src.cols && confidence.cols == src.cols && src.cols == dst.cols + 2 * radius);
     }
 
-    void operator()(const Range &range) const {
+    void operator()(const Range &range) const CV_OVERRIDE {
       const int d = 2*radius +1;
       for (int i = range.start; i < range.end; i++) {
         SrcVec* dstRow = dst.ptr<SrcVec>(i);
@@ -296,7 +296,7 @@ public:
       CV_DbgAssert(prev.cols == next.cols && next.cols == dst.cols + 2 * radius);
     }
 
-    void operator()(const Range &range) const {
+    void operator()(const Range &range) const CV_OVERRIDE {
       int d = 2 * radius + 1;
       Mat weights(d, d, CV_32F);
       for (int i = range.start; i < range.end; i++) {

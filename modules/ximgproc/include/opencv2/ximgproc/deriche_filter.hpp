@@ -51,25 +51,25 @@ namespace ximgproc {
 *
 * For more details about this implementation, please see http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.476.5736&rep=rep1&type=pdf
 *
-* @param   _op         Source 8-bit or 16bit image, 1-channel or 3-channel image.
-* @param   _dst        result CV_32FC image with same number of channel than _op.
-* @param   alphaDerive double see paper
-* @param   alphaMean   double see paper
+* @param   op         Source 8-bit or 16bit image, 1-channel or 3-channel image.
+* @param   dst        result CV_32FC image with same number of channel than _op.
+* @param   alpha double see paper
+* @param   omega   double see paper
 *
 */
-CV_EXPORTS void GradientDericheY(InputArray _op, OutputArray _dst, double alphaDerive,double alphaMean);
+CV_EXPORTS_W void GradientDericheY(InputArray op, OutputArray dst, double alpha,double omega);
 /**
 * @brief   Applies X Deriche filter to an image.
 *
 * For more details about this implementation, please see http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.476.5736&rep=rep1&type=pdf
 *
-* @param   _op         Source 8-bit or 16bit image, 1-channel or 3-channel image.
-* @param   _dst        result CV_32FC image with same number of channel than _op.
-* @param   alphaDerive double see paper
-* @param   alphaMean   double see paper
+* @param   op         Source 8-bit or 16bit image, 1-channel or 3-channel image.
+* @param   dst        result CV_32FC image with same number of channel than _op.
+* @param   alpha double see paper
+* @param   omega   double see paper
 *
 */
-CV_EXPORTS void GradientDericheX(InputArray _op, OutputArray _dst, double alphaDerive,double alphaMean);
+CV_EXPORTS_W void GradientDericheX(InputArray op, OutputArray dst, double alpha,double omega);
 
 }
 }

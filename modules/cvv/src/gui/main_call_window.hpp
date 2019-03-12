@@ -56,7 +56,7 @@ class MainCallWindow : public CallWindow
 	void hideCloseWindow();
 
       protected:
-	void closeEvent(QCloseEvent *event);
+    void closeEvent(QCloseEvent *event) CV_OVERRIDE;
 
       private:
 	OverviewPanel *ovPanel;

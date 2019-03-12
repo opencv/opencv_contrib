@@ -2,26 +2,26 @@
  *  By downloading, copying, installing or using the software you agree to this license.
  *  If you do not agree to this license, do not download, install,
  *  copy or use the software.
- *  
- *  
+ *
+ *
  *  License Agreement
  *  For Open Source Computer Vision Library
  *  (3 - clause BSD License)
- *  
+ *
  *  Redistribution and use in source and binary forms, with or without modification,
  *  are permitted provided that the following conditions are met :
- *  
+ *
  *  * Redistributions of source code must retain the above copyright notice,
  *  this list of conditions and the following disclaimer.
- *  
+ *
  *  * Redistributions in binary form must reproduce the above copyright notice,
  *  this list of conditions and the following disclaimer in the documentation
  *  and / or other materials provided with the distribution.
- *  
+ *
  *  * Neither the names of the copyright holders nor the names of the contributors
  *  may be used to endorse or promote products derived from this software
  *  without specific prior written permission.
- *  
+ *
  *  This software is provided by the copyright holders and contributors "as is" and
  *  any express or implied warranties, including, but not limited to, the implied
  *  warranties of merchantability and fitness for a particular purpose are disclaimed.
@@ -109,16 +109,22 @@ class AdaptiveManifoldFilterN : public AdaptiveManifoldFilter
 public:
     AdaptiveManifoldFilterN();
 
-    void filter(InputArray src, OutputArray dst, InputArray joint);
+    void filter(InputArray src, OutputArray dst, InputArray joint) CV_OVERRIDE;
 
-    void collectGarbage();
+    void collectGarbage() CV_OVERRIDE;
 
-    CV_IMPL_PROPERTY(double, SigmaS, sigma_s_)
-    CV_IMPL_PROPERTY(double, SigmaR, sigma_r_)
-    CV_IMPL_PROPERTY(int, TreeHeight, tree_height_)
-    CV_IMPL_PROPERTY(int, PCAIterations, num_pca_iterations_)
-    CV_IMPL_PROPERTY(bool, AdjustOutliers, adjust_outliers_)
-    CV_IMPL_PROPERTY(bool, UseRNG, useRNG)
+    inline double getSigmaS() const CV_OVERRIDE { return sigma_s_; }
+    inline void setSigmaS(double val) CV_OVERRIDE { sigma_s_ = val; }
+    inline double getSigmaR() const CV_OVERRIDE { return sigma_r_; }
+    inline void setSigmaR(double val) CV_OVERRIDE { sigma_r_ = val; }
+    inline int getTreeHeight() const CV_OVERRIDE { return tree_height_; }
+    inline void setTreeHeight(int val) CV_OVERRIDE { tree_height_ = val; }
+    inline int getPCAIterations() const CV_OVERRIDE { return num_pca_iterations_; }
+    inline void setPCAIterations(int val) CV_OVERRIDE { num_pca_iterations_ = val; }
+    inline bool getAdjustOutliers() const CV_OVERRIDE { return adjust_outliers_; }
+    inline void setAdjustOutliers(bool val) CV_OVERRIDE { adjust_outliers_ = val; }
+    inline bool getUseRNG() const CV_OVERRIDE { return useRNG; }
+    inline void setUseRNG(bool val) CV_OVERRIDE { useRNG = val; }
 
 protected:
 
@@ -130,7 +136,7 @@ protected:
     bool useRNG;
 
 private:
-    
+
     Size srcSize;
     Size smallSize;
     int jointCnNum;
@@ -142,14 +148,14 @@ private:
     vector<Mat> etaFull;
 
     vector<Mat> sum_w_ki_Psi_blur_;
-    Mat sum_w_ki_Psi_blur_0_;    
-    
+    Mat sum_w_ki_Psi_blur_0_;
+
     Mat w_k;
     Mat Psi_splat_0_small;
     vector<Mat> Psi_splat_small;
 
     Mat1f minDistToManifoldSquared;
-    
+
     int curTreeHeight;
     float sigma_r_over_sqrt_2;
 
@@ -256,8 +262,8 @@ private: /*Parallelization routines*/
         MapFunc transform;
         const vector<Mat>& srcv;
         vector<Mat>& dstv;
-        
-        void operator () (const Range& range) const 
+
+        void operator () (const Range& range) const CV_OVERRIDE
         {
             for (int i = range.start; i < range.end; i++)
                 (instancePtr->*transform)(srcv[i], dstv[i]);
@@ -299,7 +305,7 @@ void AdaptiveManifoldFilterN::initBuffers(InputArray src_, InputArray joint_)
     sum_w_ki_Psi_blur_0_ = Mat::zeros(srcSize, CV_32FC1);
     w_k.create(srcSize, CV_32FC1);
     Psi_splat_0_small.create(smallSize, CV_32FC1);
-    
+
     if (adjust_outliers_)
         minDistToManifoldSquared.create(srcSize);
 }
@@ -335,7 +341,7 @@ void AdaptiveManifoldFilterN::initSrcAndJoint(InputArray src_, InputArray joint_
     else
     {
         splitChannels(joint_, jointCn);
-        
+
         jointCnNum = (int)jointCn.size();
         int jointDepth = jointCn[0].depth();
         Size jointSize = jointCn[0].size();
@@ -364,7 +370,7 @@ void AdaptiveManifoldFilterN::filter(InputArray src, OutputArray dst, InputArray
     const double seedCoef = jointCn[0].at<float>(srcSize.height/2, srcSize.width/2);
     const uint64 baseCoef = numeric_limits<uint64>::max() / 0xFFFF;
     rnd.state = static_cast<int64>(baseCoef*seedCoef);
-    
+
     Mat1b cluster0(srcSize, 0xFF);
     vector<Mat> eta0(jointCnNum);
     for (int i = 0; i < jointCnNum; i++)
@@ -431,7 +437,7 @@ void AdaptiveManifoldFilterN::buildManifoldsAndPerformFiltering(vector<Mat>& eta
         upsample(eta, etaFull);
         compute_w_k(etaFull, w_k, sigma_r_over_sqrt_2, treeLevel);
     }
-    
+
     //blurring
     Psi_splat_small.resize(srcCnNum);
     for (int si = 0; si < srcCnNum; si++)
@@ -611,13 +617,13 @@ void AdaptiveManifoldFilterN::computeDTHor(vector<Mat>& srcCn, Mat& dst, float s
             else
                 add_sqr_dif(dstRow, curCnRow, curCnRow + 1, w - 1);
         }
-        
+
         mad(dstRow, dstRow, sigmaRatioSqr, 1.0f, w - 1);
         sqrt_(dstRow, dstRow, w - 1);
         mul(dstRow, dstRow, lnAlpha, w - 1);
         //Exp_32f(dstRow, dstRow, w - 1);
     }
-    
+
     cv::exp(dst, dst);
 }
 
@@ -680,7 +686,7 @@ void AdaptiveManifoldFilterN::RFFilterPass(vector<Mat>& joint, vector<Mat>& Psi_
 
 void AdaptiveManifoldFilterN::computeClusters(Mat1b& cluster, Mat1b& cluster_minus, Mat1b& cluster_plus)
 {
-    
+
     Mat1f difOreientation;
     if (jointCnNum > 1)
     {
@@ -723,7 +729,7 @@ void AdaptiveManifoldFilterN::computeEta(Mat& teta, Mat1b& cluster, vector<Mat>&
 
     Mat1f tetaMasked = Mat1f::zeros(srcSize);
     teta.copyTo(tetaMasked, cluster);
-    
+
     float sigma_s = (float)(sigma_s_ / getResizeRatio());
 
     Mat1f tetaMaskedBlur;
@@ -750,7 +756,7 @@ void AdaptiveManifoldFilterN::computeEigenVector(const vector<Mat>& X, const Mat
     vecDst.create(1, cnNum);
     CV_Assert(vecRand.size() == Size(cnNum, 1) && vecDst.size() == Size(cnNum, 1));
     CV_Assert(mask.rows == height && mask.cols == width);
-    
+
     const float *pVecRand = vecRand.ptr<float>();
     Mat1d vecDstd(1, cnNum, 0.0);
     double *pVecDst = vecDstd.ptr<double>();
@@ -763,7 +769,7 @@ void AdaptiveManifoldFilterN::computeEigenVector(const vector<Mat>& X, const Mat
             const uchar *maskRow = mask.ptr<uchar>(i);
             float *mulRow = Xw.ptr<float>(i);
 
-            //first multiplication 
+            //first multiplication
             for (int cn = 0; cn < cnNum; cn++)
             {
                 const float *srcRow = X[cn].ptr<float>(i);
@@ -793,7 +799,7 @@ void AdaptiveManifoldFilterN::computeEigenVector(const vector<Mat>& X, const Mat
                 for (int j = 0; j < width; j++)
                     curCnSum += mulRow[j]*srcRow[j];
 
-                //TODO: parallel reduce 
+                //TODO: parallel reduce
                 pVecDst[cn] += curCnSum;
             }
         }
@@ -852,7 +858,7 @@ Ptr<AdaptiveManifoldFilter> AdaptiveManifoldFilter::create()
 Ptr<AdaptiveManifoldFilter> createAMFilter(double sigma_s, double sigma_r, bool adjust_outliers)
 {
     Ptr<AdaptiveManifoldFilter> amf(new AdaptiveManifoldFilterN());
-    
+
     amf->setSigmaS(sigma_s);
     amf->setSigmaR(sigma_r);
     amf->setAdjustOutliers(adjust_outliers);

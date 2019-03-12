@@ -4,19 +4,19 @@
 
 /*
  * The MIT License(MIT)
- * 
+ *
  * Copyright(c) 2013 Vladislav Vinogradov
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
  * this software and associated documentation files(the "Software"), to deal in
  * the Software without restriction, including without limitation the rights to
  * use, copy, modify, merge, publish, distribute, sublicense, and / or sell copies of
  * the Software, and to permit persons to whom the Software is furnished to do so,
  * subject to the following conditions :
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all
  * copies or substantial portions of the Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
  * FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE AUTHORS OR
@@ -149,12 +149,18 @@ using namespace cv::ximgproc;
 
         void collectGarbage();
 
-        CV_IMPL_PROPERTY(double, SigmaS, sigma_s_)
-        CV_IMPL_PROPERTY(double, SigmaR, sigma_r_)
-        CV_IMPL_PROPERTY(int, TreeHeight, tree_height_)
-        CV_IMPL_PROPERTY(int, PCAIterations, num_pca_iterations_)
-        CV_IMPL_PROPERTY(bool, AdjustOutliers, adjust_outliers_)
-        CV_IMPL_PROPERTY(bool, UseRNG, useRNG)
+        inline double getSigmaS() const CV_OVERRIDE { return sigma_s_; }
+        inline void setSigmaS(double val) CV_OVERRIDE { sigma_s_ = val; }
+        inline double getSigmaR() const CV_OVERRIDE { return sigma_r_; }
+        inline void setSigmaR(double val) CV_OVERRIDE { sigma_r_ = val; }
+        inline int getTreeHeight() const CV_OVERRIDE { return tree_height_; }
+        inline void setTreeHeight(int val) CV_OVERRIDE { tree_height_ = val; }
+        inline int getPCAIterations() const CV_OVERRIDE { return num_pca_iterations_; }
+        inline void setPCAIterations(int val) CV_OVERRIDE { num_pca_iterations_ = val; }
+        inline bool getAdjustOutliers() const CV_OVERRIDE { return adjust_outliers_; }
+        inline void setAdjustOutliers(bool val) CV_OVERRIDE { adjust_outliers_ = val; }
+        inline bool getUseRNG() const CV_OVERRIDE { return useRNG; }
+        inline void setUseRNG(bool val) CV_OVERRIDE { useRNG = val; }
 
     protected:
         bool adjust_outliers_;
@@ -930,7 +936,7 @@ using namespace cv::ximgproc;
 Ptr<AdaptiveManifoldFilter> createAMFilterRefImpl(double sigma_s, double sigma_r, bool adjust_outliers)
 {
     Ptr<AdaptiveManifoldFilter> amf(new AdaptiveManifoldFilterRefImpl());
-    
+
     amf->setSigmaS(sigma_s);
     amf->setSigmaR(sigma_r);
     amf->setAdjustOutliers(adjust_outliers);

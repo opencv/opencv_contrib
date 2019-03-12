@@ -284,9 +284,27 @@ TEST_F(HDF5_Test, test_attribute_String)
 
     m_hdf_io->atwrite(attr_value, attr_name);
 
-    String expected_attr_value;
-    m_hdf_io->atread(&expected_attr_value, attr_name);
-    EXPECT_EQ(attr_value.compare(expected_attr_value), 0);
+    String got_attr_value;
+    m_hdf_io->atread(&got_attr_value, attr_name);
+    EXPECT_EQ(attr_value, got_attr_value);
+
+    m_hdf_io->close();
+}
+
+TEST_F(HDF5_Test, test_attribute_String_empty)
+{
+    reset();
+
+    String attr_name = "test-empty-string";
+    String attr_value;
+
+    m_hdf_io = hdf::open(m_filename);
+
+    m_hdf_io->atwrite(attr_value, attr_name);
+
+    String got_attr_value;
+    m_hdf_io->atread(&got_attr_value, attr_name);
+    EXPECT_EQ(attr_value, got_attr_value);
 
     m_hdf_io->close();
 }

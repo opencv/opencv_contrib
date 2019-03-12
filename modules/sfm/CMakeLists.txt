@@ -81,6 +81,7 @@ ocv_add_module(sfm
   opencv_calib3d
   opencv_features2d
   opencv_xfeatures2d
+  opencv_imgcodecs
   WRAP python
 )
 
@@ -93,6 +94,7 @@ ocv_warnings_disable(CMAKE_CXX_FLAGS
   -Wunused-but-set-variable
   -Wunused-parameter
   -Wunused-function
+  -Wsuggest-override
 )
 
 if(UNIX)

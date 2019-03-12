@@ -42,7 +42,7 @@
 
 #include "test_precomp.hpp"
 
-#ifdef HAVE_CUDA
+#if defined(HAVE_CUDA) && defined(OPENCV_ENABLE_NONFREE)
 
 namespace opencv_test { namespace {
 
@@ -181,4 +181,4 @@ INSTANTIATE_TEST_CASE_P(CUDA_Features2D, SURF, testing::Combine(
 #endif // HAVE_OPENCV_CUDAARITHM
 
 }} // namespace
-#endif // HAVE_CUDA
+#endif // HAVE_CUDA && OPENCV_ENABLE_NONFREE

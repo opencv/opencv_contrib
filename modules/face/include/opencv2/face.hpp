@@ -131,7 +131,7 @@ If you've set the threshold to 0.0 as we did above, then:
 
 @code
 //
-Mat img = imread("person1/3.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+Mat img = imread("person1/3.jpg", IMREAD_GRAYSCALE);
 // Get a prediction from the model. Note: We've set a threshold of 0.0 above,
 // since the distance is almost always larger than 0.0, you'll get -1 as
 // label, which indicates, this face is unknown
@@ -176,13 +176,13 @@ public:
     vector<Mat> images;
     vector<int> labels;
     // images for first person
-    images.push_back(imread("person0/0.jpg", CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(0);
-    images.push_back(imread("person0/1.jpg", CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(0);
-    images.push_back(imread("person0/2.jpg", CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(0);
+    images.push_back(imread("person0/0.jpg", IMREAD_GRAYSCALE)); labels.push_back(0);
+    images.push_back(imread("person0/1.jpg", IMREAD_GRAYSCALE)); labels.push_back(0);
+    images.push_back(imread("person0/2.jpg", IMREAD_GRAYSCALE)); labels.push_back(0);
     // images for second person
-    images.push_back(imread("person1/0.jpg", CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(1);
-    images.push_back(imread("person1/1.jpg", CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(1);
-    images.push_back(imread("person1/2.jpg", CV_LOAD_IMAGE_GRAYSCALE)); labels.push_back(1);
+    images.push_back(imread("person1/0.jpg", IMREAD_GRAYSCALE)); labels.push_back(1);
+    images.push_back(imread("person1/1.jpg", IMREAD_GRAYSCALE)); labels.push_back(1);
+    images.push_back(imread("person1/2.jpg", IMREAD_GRAYSCALE)); labels.push_back(1);
     @endcode
 
     Now that you have read some images, we can create a new FaceRecognizer. In this example I'll create
@@ -275,7 +275,7 @@ public:
     // Do your initialization here (create the cv::FaceRecognizer model) ...
     // ...
     // Read in a sample image:
-    Mat img = imread("person1/3.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+    Mat img = imread("person1/3.jpg", IMREAD_GRAYSCALE);
     // And get a prediction from the cv::FaceRecognizer:
     int predicted = model->predict(img);
     @endcode
@@ -286,7 +286,7 @@ public:
     using namespace cv;
     // Do your initialization here (create the cv::FaceRecognizer model) ...
     // ...
-    Mat img = imread("person1/3.jpg", CV_LOAD_IMAGE_GRAYSCALE);
+    Mat img = imread("person1/3.jpg", IMREAD_GRAYSCALE);
     // Some variables for the predicted label and associated confidence (e.g. distance):
     int predicted_label = -1;
     double predicted_confidence = 0.0;
@@ -333,13 +333,13 @@ public:
     Saves this model to a given FileStorage.
     @param fs The FileStorage to store this FaceRecognizer to.
     */
-    virtual void write(FileStorage& fs) const = 0;
+    virtual void write(FileStorage& fs) const CV_OVERRIDE = 0;
 
     /** @overload */
-    virtual void read(const FileNode& fn) = 0;
+    virtual void read(const FileNode& fn) CV_OVERRIDE = 0;
 
     /** @overload */
-    virtual bool empty() const = 0;
+    virtual bool empty() const CV_OVERRIDE = 0;
 
     /** @brief Sets string info for the specified model's label.
 
@@ -375,8 +375,10 @@ protected:
 
 #include "opencv2/face/facerec.hpp"
 #include "opencv2/face/facemark.hpp"
+#include "opencv2/face/facemark_train.hpp"
 #include "opencv2/face/facemarkLBF.hpp"
 #include "opencv2/face/facemarkAAM.hpp"
 #include "opencv2/face/face_alignment.hpp"
+#include "opencv2/face/mace.hpp"
 
 #endif // __OPENCV_FACE_HPP__

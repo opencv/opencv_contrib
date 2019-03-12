@@ -289,7 +289,7 @@ namespace bioinspired
             Parallel_adaptiveHorizontalCausalFilter_addInput(const float *inputImg, float *bufferToProcess, const float *imageGrad, const unsigned int nbCols)
                 :outputFrame(bufferToProcess), inputFrame(inputImg), imageGradient(imageGrad), nbColumns(nbCols) { }
 
-            virtual void operator()( const Range& r ) const
+            virtual void operator()( const Range& r ) const CV_OVERRIDE
             {
                 float* outputPTR=outputFrame+r.start*nbColumns;
                 const float* inputPTR=inputFrame+r.start*nbColumns;
@@ -317,7 +317,7 @@ namespace bioinspired
             Parallel_adaptiveVerticalAnticausalFilter_multGain(float *bufferToProcess, const float *imageGrad, const unsigned int nbRws, const unsigned int nbCols, const float  gain)
                 :outputFrame(bufferToProcess), imageGradient(imageGrad), nbRows(nbRws), nbColumns(nbCols), filterParam_gain(gain) { }
 
-            virtual void operator()( const Range& r ) const {
+            virtual void operator()( const Range& r ) const CV_OVERRIDE {
                 float* offset=outputFrame+nbColumns*nbRows-nbColumns;
                 const float* gradOffset= imageGradient+nbColumns*nbRows-nbColumns;
                 for (int IDcolumn=r.start; IDcolumn!=r.end; ++IDcolumn)
@@ -346,7 +346,7 @@ namespace bioinspired
             Parallel_computeGradient(const unsigned int nbCols, const unsigned int nbRws, const float *lum, float *imageGrad)
             :imageGradient(imageGrad), luminance(lum), nbColumns(nbCols), doubleNbColumns(2*nbCols), nbRows(nbRws), nbPixels(nbRws*nbCols) { }
 
-            virtual void operator()( const Range& r ) const {
+            virtual void operator()( const Range& r ) const CV_OVERRIDE {
                 for (int idLine=r.start;idLine!=r.end;++idLine)
                 {
                     for (unsigned int idColumn=2;idColumn<nbColumns-2;++idColumn)

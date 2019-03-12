@@ -48,7 +48,7 @@ public:
     @param Bbox a vector of Rect that will store the detected word bounding box
     @param confidence a vector of float that will be updated with the confidence the classifier has for the selected bounding box
     */
-    CV_WRAP virtual void detect(InputArray inputImage, CV_OUT std::vector<Rect>& Bbox, CV_OUT std::vector<float>& confidence) = 0;
+    CV_WRAP virtual void detect(InputArray inputImage, CV_OUT std::vector<Rect>& Bbox, CV_OUT std::vector<float>& confidence) CV_OVERRIDE = 0;
 
     /** @brief Creates an instance of the TextDetectorCNN class using the provided parameters.
 

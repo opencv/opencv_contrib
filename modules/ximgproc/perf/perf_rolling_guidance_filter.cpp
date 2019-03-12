@@ -25,8 +25,7 @@ PERF_TEST_P(RollingGuidanceFilterTest, perf,
     Mat src(sz, CV_MAKE_TYPE(depth, srcCn));
     Mat dst(sz, src.type());
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
-    declare.in(src, WARMUP_RNG).out(dst).tbb_threads(cv::getNumberOfCPUs());
+    declare.in(src, WARMUP_RNG).out(dst);
 
     RNG rnd(cvRound(10*sigmaS) + sz.height + depth + srcCn);
     double sigmaC = rnd.uniform(1.0, 255.0);

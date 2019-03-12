@@ -39,7 +39,6 @@ TEST(DisparityWLSFilterTest, ReferenceAccuracy)
     double ref_MSE = (double)reference_res["MSE_after"];
     double ref_BadPercent = (double)reference_res["BadPercent_after"];
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
     Mat res;
 
     Ptr<DisparityWLSFilter> wls_filter = createDisparityWLSFilterGeneric(true);
@@ -88,6 +87,9 @@ TEST_P(DisparityWLSFilterTest, MultiThreadReproducibility)
         ROI = Rect(ROI.x/2,ROI.y/2,ROI.width/2,ROI.height/2);
     }
 
+    int nThreads = cv::getNumThreads();
+    if (nThreads == 1)
+        throw SkipTestException("Single thread environment");
     for (int iter = 0; iter <= loopsCount; iter++)
     {
         double lambda = rng.uniform(100.0, 10000.0);
@@ -97,7 +99,7 @@ TEST_P(DisparityWLSFilterTest, MultiThreadReproducibility)
         wls_filter->setLambda(lambda);
         wls_filter->setSigmaColor(sigma);
 
-        cv::setNumThreads(cv::getNumberOfCPUs());
+        cv::setNumThreads(nThreads);
         Mat resMultiThread;
         wls_filter->filter(left_disp,left,resMultiThread,right_disp,ROI);
 

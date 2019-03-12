@@ -70,13 +70,13 @@ public:
      */
     ~MapShift();
 
-    CV_WRAP void inverseWarp(InputArray img1, OutputArray img2) const;
+    CV_WRAP void inverseWarp(InputArray img1, OutputArray img2) const CV_OVERRIDE;
 
-    CV_WRAP cv::Ptr<Map> inverseMap() const;
+    CV_WRAP cv::Ptr<Map> inverseMap() const CV_OVERRIDE;
 
-    CV_WRAP void compose(cv::Ptr<Map> map);
+    CV_WRAP void compose(cv::Ptr<Map> map) CV_OVERRIDE;
 
-    CV_WRAP void scale(double factor);
+    CV_WRAP void scale(double factor) CV_OVERRIDE;
 
     /*!
      * Return displacement

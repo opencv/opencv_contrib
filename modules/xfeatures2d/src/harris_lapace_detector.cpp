@@ -315,7 +315,7 @@ namespace xfeatures2d
 /*
  *  HarrisLaplaceFeatureDetector_Impl
  */
-class HarrisLaplaceFeatureDetector_Impl : public HarrisLaplaceFeatureDetector
+class HarrisLaplaceFeatureDetector_Impl CV_FINAL : public HarrisLaplaceFeatureDetector
 {
 public:
     HarrisLaplaceFeatureDetector_Impl(
@@ -325,11 +325,11 @@ public:
         int maxCorners=5000,
         int num_layers=4
     );
-    virtual void read( const FileNode& fn );
-    virtual void write( FileStorage& fs ) const;
+    virtual void read( const FileNode& fn ) CV_OVERRIDE;
+    virtual void write( FileStorage& fs ) const CV_OVERRIDE;
 
 protected:
-    void detect( InputArray image, std::vector<KeyPoint>& keypoints, InputArray mask=noArray() );
+    void detect( InputArray image, std::vector<KeyPoint>& keypoints, InputArray mask=noArray() ) CV_OVERRIDE;
 
     int numOctaves;
     float corn_thresh;

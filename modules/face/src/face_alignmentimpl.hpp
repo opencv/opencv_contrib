@@ -70,14 +70,17 @@ class FacemarkKazemiImpl : public FacemarkKazemi{
 
 public:
     FacemarkKazemiImpl(const FacemarkKazemi::Params& parameters);
-    void loadModel(String fs);
-    bool setFaceDetector(FN_FaceDetector f, void* userdata);
-    bool getFaces(InputArray image, OutputArray faces);
-    bool fit(InputArray image, InputArray faces, InputOutputArray landmarks );
+    void loadModel(String fs) CV_OVERRIDE;
+    bool setFaceDetector(FN_FaceDetector f, void* userdata) CV_OVERRIDE;
+    bool getFaces(InputArray image, OutputArray faces) CV_OVERRIDE;
+    bool fit(InputArray image, InputArray faces, OutputArrayOfArrays landmarks ) CV_OVERRIDE;
     void training(String imageList, String groundTruth);
-    bool training(vector<Mat>& images, vector< vector<Point2f> >& landmarks,string filename,Size scale,string modelFilename);
+    bool training(vector<Mat>& images, vector< vector<Point2f> >& landmarks,string filename,Size scale,string modelFilename) CV_OVERRIDE;
     // Destructor for the class.
-    virtual ~FacemarkKazemiImpl();
+    virtual ~FacemarkKazemiImpl() CV_OVERRIDE;
+
+    virtual void read( const FileNode& ) CV_OVERRIDE {}
+    virtual void write( FileStorage& ) const CV_OVERRIDE {}
 
 protected:
     FacemarkKazemi::Params params;
@@ -100,7 +103,7 @@ protected:
     // This function randomly  generates test splits to get the best split.
     splitr getTestSplits(std::vector<Point2f> pixel_coordinates,int seed);
     // This function writes a split node to the XML file storing the trained model
-    void writeSplit(std::ofstream& os,const splitr split);
+    void writeSplit(std::ofstream& os, const splitr& split);
     // This function writes a leaf node to the binary file storing the trained model
     void writeLeaf(std::ofstream& os, const std::vector<Point2f> &leaf);
     // This function writes a tree to the binary file containing the model

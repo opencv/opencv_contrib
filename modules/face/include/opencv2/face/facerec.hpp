@@ -25,18 +25,18 @@ public:
     /** @copybrief getNumComponents @see getNumComponents */
     CV_WRAP void setNumComponents(int val);
     /** @see setThreshold */
-    CV_WRAP double getThreshold() const;
+    CV_WRAP double getThreshold() const CV_OVERRIDE;
     /** @copybrief getThreshold @see getThreshold */
-    CV_WRAP void setThreshold(double val);
+    CV_WRAP void setThreshold(double val) CV_OVERRIDE;
     CV_WRAP std::vector<cv::Mat> getProjections() const;
     CV_WRAP cv::Mat getLabels() const;
     CV_WRAP cv::Mat getEigenValues() const;
     CV_WRAP cv::Mat getEigenVectors() const;
     CV_WRAP cv::Mat getMean() const;
 
-    virtual void read(const FileNode& fn);
-    virtual void write(FileStorage& fs) const;
-    virtual bool empty() const;
+    virtual void read(const FileNode& fn) CV_OVERRIDE;
+    virtual void write(FileStorage& fs) const CV_OVERRIDE;
+    virtual bool empty() const CV_OVERRIDE;
 
     using FaceRecognizer::read;
     using FaceRecognizer::write;
@@ -143,9 +143,9 @@ public:
     /** @copybrief getNeighbors @see getNeighbors */
     CV_WRAP virtual void setNeighbors(int val) = 0;
     /** @see setThreshold */
-    CV_WRAP virtual double getThreshold() const = 0;
+    CV_WRAP virtual double getThreshold() const CV_OVERRIDE = 0;
     /** @copybrief getThreshold @see getThreshold */
-    CV_WRAP virtual void setThreshold(double val) = 0;
+    CV_WRAP virtual void setThreshold(double val) CV_OVERRIDE = 0;
     CV_WRAP virtual std::vector<cv::Mat> getHistograms() const = 0;
     CV_WRAP virtual cv::Mat getLabels() const = 0;
 

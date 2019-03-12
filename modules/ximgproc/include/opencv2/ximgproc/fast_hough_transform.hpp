@@ -130,12 +130,12 @@ typedef enum {
 * The function calculates the fast Hough transform for full, half or quarter
 * range of angles.
 */
-CV_EXPORTS void FastHoughTransform( InputArray  src,
-                                    OutputArray dst,
-                                    int         dstMatDepth,
-                                    int         angleRange = ARO_315_135,
-                                    int         op = FHT_ADD,
-                                    int         makeSkew = HDO_DESKEW );
+CV_EXPORTS_W void FastHoughTransform( InputArray  src,
+                                      OutputArray dst,
+                                      int         dstMatDepth,
+                                      int         angleRange = ARO_315_135,
+                                      int         op = FHT_ADD,
+                                      int         makeSkew = HDO_DESKEW );
 
 /**
 * @brief   Calculates coordinates of line segment corresponded by point in Hough space.
@@ -152,11 +152,11 @@ CV_EXPORTS void FastHoughTransform( InputArray  src,
 *
 * The function calculates coordinates of line segment corresponded by point in Hough space.
 */
-CV_EXPORTS Vec4i HoughPoint2Line(const Point &houghPoint,
-                                 InputArray  srcImgInfo,
-                                 int         angleRange = ARO_315_135,
-                                 int         makeSkew = HDO_DESKEW,
-                                 int         rules = RO_IGNORE_BORDERS );
+CV_EXPORTS_W Vec4i HoughPoint2Line(const Point &houghPoint,
+                                   InputArray  srcImgInfo,
+                                   int         angleRange = ARO_315_135,
+                                   int         makeSkew = HDO_DESKEW,
+                                   int         rules = RO_IGNORE_BORDERS );
 
 } }// namespace cv::ximgproc
 

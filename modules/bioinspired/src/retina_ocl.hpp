@@ -627,44 +627,44 @@ private:
     void _runGrayToneMapping(const UMat &grayImageInput, UMat &grayImageOutput , const float PhotoreceptorsCompression = 0.6, const float ganglionCellsCompression = 0.6);
 };
 
-class RetinaOCLImpl : public Retina
+class RetinaOCLImpl CV_FINAL : public Retina
 {
 public:
     RetinaOCLImpl(Size getInputSize);
     RetinaOCLImpl(Size getInputSize, const bool colorMode, int colorSamplingMethod = RETINA_COLOR_BAYER, const bool useRetinaLogSampling = false, const double reductionFactor = 1.0, const double samplingStrenght = 10.0);
-    virtual ~RetinaOCLImpl();
+    virtual ~RetinaOCLImpl() CV_OVERRIDE;
 
-    Size getInputSize();
-    Size getOutputSize();
+    Size getInputSize() CV_OVERRIDE;
+    Size getOutputSize() CV_OVERRIDE;
 
-    void setup(String retinaParameterFile = "", const bool applyDefaultSetupOnFailure = true);
-    void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure = true);
-    void setup(RetinaParameters newParameters);
+    void setup(String retinaParameterFile = "", const bool applyDefaultSetupOnFailure = true) CV_OVERRIDE;
+    void setup(cv::FileStorage &fs, const bool applyDefaultSetupOnFailure = true) CV_OVERRIDE;
+    void setup(RetinaParameters newParameters) CV_OVERRIDE;
 
-    RetinaParameters getParameters();
+    RetinaParameters getParameters() CV_OVERRIDE;
 
-    const String printSetup();
-    virtual void write(String fs) const;
-    virtual void write(FileStorage& fs) const;
+    const String printSetup() CV_OVERRIDE;
+    virtual void write(String fs) const CV_OVERRIDE;
+    virtual void write(FileStorage& fs) const CV_OVERRIDE;
 
-    void setupOPLandIPLParvoChannel(const bool colorMode = true, const bool normaliseOutput = true, const float photoreceptorsLocalAdaptationSensitivity = 0.7, const float photoreceptorsTemporalConstant = 0.5, const float photoreceptorsSpatialConstant = 0.53, const float horizontalCellsGain = 0, const float HcellsTemporalConstant = 1, const float HcellsSpatialConstant = 7, const float ganglionCellsSensitivity = 0.7);
-    void setupIPLMagnoChannel(const bool normaliseOutput = true, const float parasolCells_beta = 0, const float parasolCells_tau = 0, const float parasolCells_k = 7, const float amacrinCellsTemporalCutFrequency = 1.2, const float V0CompressionParameter = 0.95, const float localAdaptintegration_tau = 0, const float localAdaptintegration_k = 7);
+    void setupOPLandIPLParvoChannel(const bool colorMode = true, const bool normaliseOutput = true, const float photoreceptorsLocalAdaptationSensitivity = 0.7, const float photoreceptorsTemporalConstant = 0.5, const float photoreceptorsSpatialConstant = 0.53, const float horizontalCellsGain = 0, const float HcellsTemporalConstant = 1, const float HcellsSpatialConstant = 7, const float ganglionCellsSensitivity = 0.7) CV_OVERRIDE;
+    void setupIPLMagnoChannel(const bool normaliseOutput = true, const float parasolCells_beta = 0, const float parasolCells_tau = 0, const float parasolCells_k = 7, const float amacrinCellsTemporalCutFrequency = 1.2, const float V0CompressionParameter = 0.95, const float localAdaptintegration_tau = 0, const float localAdaptintegration_k = 7) CV_OVERRIDE;
 
-    void run(InputArray inputImage);
-    void getParvo(OutputArray retinaOutput_parvo);
-    void getMagno(OutputArray retinaOutput_magno);
+    void run(InputArray inputImage) CV_OVERRIDE;
+    void getParvo(OutputArray retinaOutput_parvo) CV_OVERRIDE;
+    void getMagno(OutputArray retinaOutput_magno) CV_OVERRIDE;
 
-    void setColorSaturation(const bool saturateColors = true, const float colorSaturationValue = 4.0);
-    void clearBuffers();
-    void activateMovingContoursProcessing(const bool activate);
-    void activateContoursProcessing(const bool activate);
+    void setColorSaturation(const bool saturateColors = true, const float colorSaturationValue = 4.0) CV_OVERRIDE;
+    void clearBuffers() CV_OVERRIDE;
+    void activateMovingContoursProcessing(const bool activate) CV_OVERRIDE;
+    void activateContoursProcessing(const bool activate) CV_OVERRIDE;
 
     // unimplemented interfaces:
-    void applyFastToneMapping(InputArray /*inputImage*/, OutputArray /*outputToneMappedImage*/);
-    void getParvoRAW(OutputArray /*retinaOutput_parvo*/);
-    void getMagnoRAW(OutputArray /*retinaOutput_magno*/);
-    const Mat getMagnoRAW() const;
-    const Mat getParvoRAW() const;
+    void applyFastToneMapping(InputArray /*inputImage*/, OutputArray /*outputToneMappedImage*/) CV_OVERRIDE;
+    void getParvoRAW(OutputArray /*retinaOutput_parvo*/) CV_OVERRIDE;
+    void getMagnoRAW(OutputArray /*retinaOutput_magno*/) CV_OVERRIDE;
+    const Mat getMagnoRAW() const CV_OVERRIDE;
+    const Mat getParvoRAW() const CV_OVERRIDE;
 
 protected:
     RetinaParameters _retinaParameters;

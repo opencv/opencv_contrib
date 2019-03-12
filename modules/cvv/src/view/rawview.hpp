@@ -88,9 +88,9 @@ public:
 	 */
 	bool doesShowShowInViewMenu();
 
-	virtual std::vector<cv::DMatch> getMatchSelection();
+    virtual std::vector<cv::DMatch> getMatchSelection() CV_OVERRIDE;
 
-	virtual std::vector<cv::KeyPoint> getKeyPointSelection();
+    virtual std::vector<cv::KeyPoint> getKeyPointSelection() CV_OVERRIDE;
 
 signals:
 	/**
@@ -139,9 +139,9 @@ public slots:
 	void selectKeyPoints(const std::vector<cv::KeyPoint> &keyPoints);
 
 
-	virtual void setMatchSelection(std::vector<cv::DMatch> matches);
+    virtual void setMatchSelection(std::vector<cv::DMatch> matches) CV_OVERRIDE;
 
-	virtual void setKeyPointSelection(std::vector<cv::KeyPoint> keyPoints);
+    virtual void setKeyPointSelection(std::vector<cv::KeyPoint> keyPoints) CV_OVERRIDE;
 
 	/**
 	 * @brief Issues the matchesSelected and the keyPointsSelected signal.

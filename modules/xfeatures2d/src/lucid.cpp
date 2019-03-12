@@ -62,15 +62,15 @@ namespace cv {
                 LUCIDImpl(const int lucid_kernel = 1, const int blur_kernel = 2);
 
                 /** returns the descriptor length */
-                virtual int descriptorSize() const;
+                virtual int descriptorSize() const CV_OVERRIDE;
 
                 /** returns the descriptor type */
-                virtual int descriptorType() const;
+                virtual int descriptorType() const CV_OVERRIDE;
 
                 /** returns the default norm type */
-                virtual int defaultNorm() const;
+                virtual int defaultNorm() const CV_OVERRIDE;
 
-                virtual void compute(InputArray _src, std::vector<KeyPoint> &keypoints, OutputArray _desc);
+                virtual void compute(InputArray _src, std::vector<KeyPoint> &keypoints, OutputArray _desc) CV_OVERRIDE;
 
             protected:
                 int l_kernel, b_kernel;

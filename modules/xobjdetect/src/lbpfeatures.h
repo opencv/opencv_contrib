@@ -64,15 +64,15 @@ class CvLBPEvaluator : public CvFeatureEvaluator
 public:
     virtual ~CvLBPEvaluator() {}
     virtual void init(const CvFeatureParams *_featureParams,
-        int _maxSampleCount, cv::Size _winSize );
-    virtual void setImage(const cv::Mat& img, uchar clsLabel, int idx, const std::vector<int> &feature_ind);
-    virtual void setWindow(const cv::Point& p)
+        int _maxSampleCount, cv::Size _winSize ) CV_OVERRIDE;
+    virtual void setImage(const cv::Mat& img, uchar clsLabel, int idx, const std::vector<int> &feature_ind) CV_OVERRIDE;
+    virtual void setWindow(const cv::Point& p) CV_OVERRIDE
     { cur_sum = sum.rowRange(p.y, p.y + winSize.height).colRange(p.x, p.x + winSize.width); }
-    virtual float operator()(int featureIdx)
+    virtual float operator()(int featureIdx) CV_OVERRIDE
     { return (float)features[featureIdx].calc( cur_sum ); }
-    virtual void writeFeatures( cv::FileStorage &fs, const cv::Mat& featureMap ) const;
+    virtual void writeFeatures( cv::FileStorage &fs, const cv::Mat& featureMap ) const CV_OVERRIDE;
 protected:
-    virtual void generateFeatures();
+    virtual void generateFeatures() CV_OVERRIDE;
 
     class Feature
     {

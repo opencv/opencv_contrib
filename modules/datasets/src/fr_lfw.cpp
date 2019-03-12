@@ -51,14 +51,14 @@ namespace datasets
 
 using namespace std;
 
-class FR_lfwImp : public FR_lfw
+class FR_lfwImp CV_FINAL : public FR_lfw
 {
 public:
     FR_lfwImp() {}
     //FR_lfwImp(const string &path);
     virtual ~FR_lfwImp() {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

@@ -137,7 +137,7 @@ template <int depth> std::string printPixel(const cv::Mat &mat, int i, int j)
  * @return The channels of pixel mat,col from mat as a string. (or ">6
  * channels")
  */
-std::string printPixel(const cv::Mat &mat, int i, int j)
+static std::string printPixel(const cv::Mat &mat, int i, int j)
 {
 	if (i >= 0 && j >= 0)
 	{

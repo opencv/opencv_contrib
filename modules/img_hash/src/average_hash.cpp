@@ -10,7 +10,7 @@ using namespace img_hash;
 
 namespace {
 
-class AverageHashImpl : public ImgHashBase::ImgHashImpl
+class AverageHashImpl CV_FINAL : public ImgHashBase::ImgHashImpl
 {
 private:
     cv::Mat bitsImg;
@@ -19,7 +19,7 @@ private:
 
 public:
 
-    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr)
+    virtual void compute(cv::InputArray inputArr, cv::OutputArray outputArr) CV_OVERRIDE
     {
         cv::Mat const input = inputArr.getMat();
         CV_Assert(input.type() == CV_8UC4 ||
@@ -27,18 +27,10 @@ public:
                   input.type() == CV_8U);
 
         cv::resize(input, resizeImg, cv::Size(8,8), 0, 0, INTER_LINEAR_EXACT);
-        if(input.type() == CV_8UC3)
-        {
-            cv::cvtColor(resizeImg, grayImg, CV_BGR2GRAY);
-        }
-        else if(input.type() == CV_8UC4)
-        {
-            cv::cvtColor(resizeImg, grayImg, CV_BGRA2GRAY);
-        }
+        if(input.channels() > 1)
+            cv::cvtColor(resizeImg, grayImg, COLOR_BGR2GRAY);
         else
-        {
             grayImg = resizeImg;
-        }
 
         uchar const imgMean = static_cast<uchar>(cvRound(cv::mean(grayImg)[0]));
         cv::compare(grayImg, imgMean, bitsImg, CMP_GT);
@@ -59,7 +51,7 @@ public:
         }
     }
 
-    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const
+    virtual double compare(cv::InputArray hashOne, cv::InputArray hashTwo) const CV_OVERRIDE
     {
         return norm(hashOne, hashTwo, NORM_HAMMING);
     }

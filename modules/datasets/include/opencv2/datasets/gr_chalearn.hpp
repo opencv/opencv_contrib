@@ -83,7 +83,7 @@ struct GR_chalearnObj : public Object
 class CV_EXPORTS GR_chalearn : public Dataset
 {
 public:
-    virtual void load(const std::string &path) = 0;
+    virtual void load(const std::string &path) CV_OVERRIDE = 0;
 
     static Ptr<GR_chalearn> create();
 };

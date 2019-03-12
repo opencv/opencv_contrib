@@ -24,9 +24,8 @@ PERF_TEST_P( GuidedFilterPerfTest, perf, Combine(GuideTypes::all(), SrcTypes::al
     Mat src(sz, srcType);
     Mat dst(sz, srcType);
 
-    declare.in(guide, src, WARMUP_RNG).out(dst).tbb_threads(cv::getNumberOfCPUs());
+    declare.in(guide, src, WARMUP_RNG).out(dst);
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
     TEST_CYCLE_N(3)
     {
         int radius = rng.uniform(5, 30);

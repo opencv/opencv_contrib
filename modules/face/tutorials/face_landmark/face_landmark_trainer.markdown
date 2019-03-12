@@ -65,7 +65,7 @@ bool myDetector( InputArray image, OutputArray ROIs ){
     Mat gray;
     std::vector<Rect> faces;
     if(image.channels()>1){
-        cvtColor(image.getMat(),gray,CV_BGR2GRAY);
+        cvtColor(image.getMat(),gray,COLOR_BGR2GRAY);
     }
     else{
         gray = image.getMat().clone();

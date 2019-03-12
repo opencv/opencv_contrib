@@ -93,7 +93,7 @@ int main(int argc, const char *argv[]) {
     // input filename is given.
     try {
         read_csv(fn_csv, images, labels, labelsInfo);
-    } catch (cv::Exception& e) {
+    } catch (const cv::Exception& e) {
         cerr << "Error opening file \"" << fn_csv << "\". Reason: " << e.msg << endl;
         // nothing more we can do
         exit(1);

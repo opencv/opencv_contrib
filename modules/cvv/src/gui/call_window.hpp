@@ -153,7 +153,7 @@ protected:
 
 	void initFooter();
 
-	void closeEvent(QCloseEvent *event);
+    void closeEvent(QCloseEvent *event) CV_OVERRIDE;
 
 	size_t getCallTabIdByTabIndex(int index);
 

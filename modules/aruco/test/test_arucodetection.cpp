@@ -96,6 +96,7 @@ void CV_ArucoDetectionSimple::run(int) {
         vector< vector< Point2f > > corners;
         vector< int > ids;
         Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
+
         aruco::detectMarkers(img, dictionary, corners, ids, params);
 
         // check detection results
@@ -245,7 +246,7 @@ class CV_ArucoDetectionPerspective : public cvtest::BaseTest {
 CV_ArucoDetectionPerspective::CV_ArucoDetectionPerspective() {}
 
 
-void CV_ArucoDetectionPerspective::run(int) {
+void CV_ArucoDetectionPerspective::run(int aprilDecimate) {
 
     int iter = 0;
     Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
@@ -274,6 +275,11 @@ void CV_ArucoDetectionPerspective::run(int) {
                 Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
                 params->minDistanceToBorder = 1;
                 params->markerBorderBits = markerBorder;
+
+                if(aprilDecimate == 1){
+                        params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_APRILTAG;
+                }
+
                 aruco::detectMarkers(img, dictionary, corners, ids, params);
 
                 // check results
@@ -481,8 +487,12 @@ void CV_ArucoBitCorrection::run(int) {
     }
 }
 
+typedef CV_ArucoDetectionPerspective CV_AprilTagDetectionPerspective;
 
-
+TEST(CV_AprilTagDetectionPerspective, algorithmic) {
+    CV_AprilTagDetectionPerspective test;
+    test.safe_run(1);
+}
 
 TEST(CV_ArucoDetectionSimple, algorithmic) {
     CV_ArucoDetectionSimple test;

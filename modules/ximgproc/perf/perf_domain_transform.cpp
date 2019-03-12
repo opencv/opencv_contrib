@@ -34,9 +34,8 @@ PERF_TEST_P( DomainTransformTest, perf,
     Mat src(size, srcType);
     Mat dst(size, srcType);
 
-    declare.in(guide, src, WARMUP_RNG).out(dst).tbb_threads(cv::getNumberOfCPUs());
+    declare.in(guide, src, WARMUP_RNG).out(dst);
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
     TEST_CYCLE_N(5)
     {
         dtFilter(guide, src, dst, sigmaSpatial, sigmaColor, dtfType);

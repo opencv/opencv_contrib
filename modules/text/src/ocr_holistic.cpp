@@ -13,7 +13,7 @@ using namespace std;
 
 namespace cv { namespace text {
 
-class OCRHolisticWordRecognizerImpl : public OCRHolisticWordRecognizer
+class OCRHolisticWordRecognizerImpl CV_FINAL : public OCRHolisticWordRecognizer
 {
 private:
     dnn::Net net;
@@ -34,7 +34,7 @@ public:
         CV_Assert(getClassCount() == words.size());
     }
 
-    void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL, std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL, int component_level=0)
+    void run(Mat& image, std::string& output_text, std::vector<Rect>* component_rects=NULL, std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL, int component_level=0) CV_OVERRIDE
     {
         CV_Assert(component_level==OCR_LEVEL_WORD); //Componnents not applicable for word spotting
         double confidence;
@@ -53,7 +53,7 @@ public:
         }
     }
 
-    void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL, std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL, int component_level=0)
+    void run(Mat& image, Mat& mask, std::string& output_text, std::vector<Rect>* component_rects=NULL, std::vector<std::string>* component_texts=NULL, std::vector<float>* component_confidences=NULL, int component_level=0) CV_OVERRIDE
     {
         //Mask is ignored because the CNN operates on a full image
         CV_Assert(mask.cols == image.cols && mask.rows == image.rows);

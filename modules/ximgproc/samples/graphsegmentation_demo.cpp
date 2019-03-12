@@ -91,9 +91,6 @@ int main(int argc, char** argv) {
         return -1;
     }
 
-    setUseOptimized(true);
-    setNumThreads(8);
-
     Ptr<GraphSegmentation> gs = createGraphSegmentation();
 
     if (argc > 3)

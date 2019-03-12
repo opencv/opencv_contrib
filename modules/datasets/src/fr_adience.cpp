@@ -52,14 +52,14 @@ namespace datasets
 
 using namespace std;
 
-class FR_adienceImp : public FR_adience
+class FR_adienceImp CV_FINAL : public FR_adience
 {
 public:
     FR_adienceImp() {}
     //FR_adienceImp(const string &path);
     virtual ~FR_adienceImp() {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDataset(const string &path);

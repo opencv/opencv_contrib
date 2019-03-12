@@ -130,7 +130,7 @@ public:
 
     static Ptr<GuidedFilterImpl> create(InputArray guide, int radius, double eps);
 
-    void filter(InputArray src, OutputArray dst, int dDepth = -1);
+    void filter(InputArray src, OutputArray dst, int dDepth = -1) CV_OVERRIDE;
 
 protected:
 
@@ -181,7 +181,7 @@ private: /*Routines to parallelize boxFilter and convertTo*/
         GFTransform_ParBody(GuidedFilterImpl& gf_, vector<Mat>& srcv, vector<Mat>& dstv, TransformFunc func_);
         GFTransform_ParBody(GuidedFilterImpl& gf_, vector<vector<Mat> >& srcvv, vector<vector<Mat> >& dstvv, TransformFunc func_);
 
-        void operator () (const Range& range) const;
+        void operator () (const Range& range) const CV_OVERRIDE;
 
         Range getRange() const
         {
@@ -218,7 +218,7 @@ private: /*Parallel body classes*/
         MulChannelsGuide_ParBody(GuidedFilterImpl& gf_, SymArray2D<Mat>& covars_)
             : gf(gf_), covars(covars_) {}
 
-        void operator () (const Range& range) const;
+        void operator () (const Range& range) const CV_OVERRIDE;
     };
 
     struct ComputeCovGuideFromChannelsMul_ParBody : public ParallelLoopBody
@@ -229,7 +229,7 @@ private: /*Parallel body classes*/
         ComputeCovGuideFromChannelsMul_ParBody(GuidedFilterImpl& gf_, SymArray2D<Mat>& covars_)
             : gf(gf_), covars(covars_) {}
 
-        void operator () (const Range& range) const;
+        void operator () (const Range& range) const CV_OVERRIDE;
     };
 
     struct ComputeCovGuideInv_ParBody : public ParallelLoopBody
@@ -239,7 +239,7 @@ private: /*Parallel body classes*/
 
         ComputeCovGuideInv_ParBody(GuidedFilterImpl& gf_, SymArray2D<Mat>& covars_);
 
-        void operator () (const Range& range) const;
+        void operator () (const Range& range) const CV_OVERRIDE;
     };
 
 
@@ -252,7 +252,7 @@ private: /*Parallel body classes*/
         MulChannelsGuideAndSrc_ParBody(GuidedFilterImpl& gf_, vector<Mat>& srcCn_, vector<vector<Mat> >& cov_)
             : gf(gf_), cov(cov_), srcCn(srcCn_) {}
 
-        void operator () (const Range& range) const;
+        void operator () (const Range& range) const CV_OVERRIDE;
     };
 
     struct ComputeCovFromSrcChannelsMul_ParBody : public ParallelLoopBody
@@ -264,7 +264,7 @@ private: /*Parallel body classes*/
         ComputeCovFromSrcChannelsMul_ParBody(GuidedFilterImpl& gf_, vector<Mat>& srcCnMean_, vector<vector<Mat> >& cov_)
             : gf(gf_), cov(cov_), srcCnMean(srcCnMean_) {}
 
-        void operator () (const Range& range) const;
+        void operator () (const Range& range) const CV_OVERRIDE;
     };
 
     struct ComputeAlpha_ParBody : public ParallelLoopBody
@@ -276,7 +276,7 @@ private: /*Parallel body classes*/
         ComputeAlpha_ParBody(GuidedFilterImpl& gf_, vector<vector<Mat> >& alpha_, vector<vector<Mat> >& covSrc_)
             : gf(gf_), alpha(alpha_), covSrc(covSrc_) {}
 
-        void operator () (const Range& range) const;
+        void operator () (const Range& range) const CV_OVERRIDE;
     };
 
     struct ComputeBeta_ParBody : public ParallelLoopBody
@@ -289,7 +289,7 @@ private: /*Parallel body classes*/
         ComputeBeta_ParBody(GuidedFilterImpl& gf_, vector<vector<Mat> >& alpha_, vector<Mat>& srcCnMean_, vector<Mat>& beta_)
             : gf(gf_), alpha(alpha_), srcCnMean(srcCnMean_), beta(beta_) {}
 
-        void operator () (const Range& range) const;
+        void operator () (const Range& range) const CV_OVERRIDE;
     };
 
     struct ApplyTransform_ParBody : public ParallelLoopBody
@@ -301,7 +301,7 @@ private: /*Parallel body classes*/
         ApplyTransform_ParBody(GuidedFilterImpl& gf_, vector<vector<Mat> >& alpha_, vector<Mat>& beta_)
             : gf(gf_),  alpha(alpha_), beta(beta_) {}
 
-        void operator () (const Range& range) const;
+        void operator () (const Range& range) const CV_OVERRIDE;
     };
 };
 

@@ -142,7 +142,7 @@ void KeyPointManagement::setSelection(
 
 void KeyPointManagement::addSetting()
 {
-	addSetting(std::move(util::make_unique<KeyPointSettingsSelector>(univers_)));
+    addSetting(util::make_unique<KeyPointSettingsSelector>(univers_));
 }
 
 
@@ -176,7 +176,7 @@ void KeyPointManagement::removeSetting(KeyPointSettingsSelector *setting)
 
 void KeyPointManagement::addSelection()
 {
-	addSelection(std::move(util::make_unique<KeyPointSelectionSelector>(univers_)));
+    addSelection(util::make_unique<KeyPointSelectionSelector>(univers_));
 }
 
 void KeyPointManagement::addSelection(std::unique_ptr<KeyPointSelectionSelector> selection)

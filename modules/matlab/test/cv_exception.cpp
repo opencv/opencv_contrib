@@ -25,7 +25,7 @@ void mexFunction(int nlhs, mxArray* plhs[],
   // [out =] namespace.fun(src1, ..., srcn, dst1, ..., dstn, opt1, ..., optn);
   try {
     throw cv::Exception(-1, "OpenCV exception thrown", __func__, __FILE__, __LINE__);
-  } catch(cv::Exception& e) {
+  } catch(const cv::Exception& e) {
     mexErrMsgTxt(e.what());
   } catch(...) {
     mexErrMsgTxt("Incorrect exception caught!");

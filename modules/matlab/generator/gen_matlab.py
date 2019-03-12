@@ -4,6 +4,26 @@ from string import Template
 from parse_tree import ParseTree, todict, constants
 from filters import *
 
+updated_files = []
+
+def update_file(fname, content):
+    if fname in updated_files:
+        print('ERROR(gen_matlab.py): attemption to write file multiple times: {}'.format(fname))
+        return
+    updated_files.append(fname)
+    if os.path.exists(fname):
+        with open(fname, 'rb') as f:
+            old_content = f.read()
+        if old_content == content:
+            #print('Up-to-date: {}'.format(fname))
+            return
+        print('Updating: {}'.format(fname))
+    else:
+        print('Writing: {}'.format(fname))
+    with open(fname, 'wb') as f:
+        f.write(content)
+
+
 class MatlabWrapperGenerator(object):
     """
     MatlabWrapperGenerator is a class for generating Matlab mex sources from
@@ -107,24 +127,20 @@ class MatlabWrapperGenerator(object):
             # functions
             for method in namespace.methods:
                 populated = tfunction.render(fun=method, time=time, includes=namespace.name)
-                with open(output_source_dir+'/'+method.name+'.cpp', 'wb') as f:
-                    f.write(populated.encode('utf-8'))
+                update_file(output_source_dir+'/'+method.name+'.cpp', populated.encode('utf-8'))
             # classes
             for clss in namespace.classes:
                 # cpp converter
                 populated = tclassc.render(clss=clss, time=time)
-                with open(output_private_dir+'/'+clss.name+'Bridge.cpp', 'wb') as f:
-                    f.write(populated.encode('utf-8'))
+                update_file(output_private_dir+'/'+clss.name+'Bridge.cpp', populated.encode('utf-8'))
                 # matlab classdef
                 populated = tclassm.render(clss=clss, time=time)
-                with open(output_class_dir+'/'+clss.name+'.m', 'wb') as f:
-                    f.write(populated.encode('utf-8'))
+                update_file(output_class_dir+'/'+clss.name+'.m', populated.encode('utf-8'))
 
         # create a global constants lookup table
         const = dict(constants(todict(parse_tree.namespaces)))
         populated = tconst.render(constants=const, time=time)
-        with open(output_dir+'/cv.m', 'wb') as f:
-            f.write(populated.encode('utf-8'))
+        update_file(output_dir+'/cv.m', populated.encode('utf-8'))
 
 
 if __name__ == "__main__":

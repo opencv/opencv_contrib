@@ -102,24 +102,24 @@ class FacemarkLBFImpl : public FacemarkLBF {
 public:
     FacemarkLBFImpl( const FacemarkLBF::Params &parameters = FacemarkLBF::Params() );
 
-    void read( const FileNode& /*fn*/ );
-    void write( FileStorage& /*fs*/ ) const;
+    void read( const FileNode& /*fn*/ ) CV_OVERRIDE;
+    void write( FileStorage& /*fs*/ ) const CV_OVERRIDE;
 
-    void loadModel(String fs);
+    void loadModel(String fs) CV_OVERRIDE;
 
-    bool setFaceDetector(bool(*f)(InputArray , OutputArray, void * extra_params ), void* userData);
-    bool getFaces(InputArray image, OutputArray faces);
-    bool getData(void * items);
+    bool setFaceDetector(bool(*f)(InputArray , OutputArray, void * extra_params ), void* userData) CV_OVERRIDE;
+    bool getFaces(InputArray image, OutputArray faces) CV_OVERRIDE;
+    bool getData(void * items) CV_OVERRIDE;
 
     Params params;
 
 protected:
 
-    bool fit( InputArray image, InputArray faces, InputOutputArray landmarks, void * runtime_params );//!< from many ROIs
+    bool fit( InputArray image, InputArray faces, OutputArrayOfArrays landmarks ) CV_OVERRIDE;//!< from many ROIs
     bool fitImpl( const Mat image, std::vector<Point2f> & landmarks );//!< from a face
 
-    bool addTrainingSample(InputArray image, InputArray landmarks);
-    void training(void* parameters);
+    bool addTrainingSample(InputArray image, InputArray landmarks) CV_OVERRIDE;
+    void training(void* parameters) CV_OVERRIDE;
 
     Rect getBBox(Mat &img, const Mat_<double> shape);
     void prepareTrainingData(Mat img, std::vector<Point2f> facePoints,
@@ -248,6 +248,13 @@ private:
 Ptr<FacemarkLBF> FacemarkLBF::create(const FacemarkLBF::Params &parameters){
     return Ptr<FacemarkLBFImpl>(new FacemarkLBFImpl(parameters));
 }
+/*
+* Constructor
+*/
+Ptr<Facemark> createFacemarkLBF(){
+    const FacemarkLBF::Params parameters;
+    return Ptr<FacemarkLBFImpl>(new FacemarkLBFImpl(parameters));
+}
 
 FacemarkLBFImpl::FacemarkLBFImpl( const FacemarkLBF::Params &parameters ) :
     faceDetector(NULL), faceDetectorData(NULL)
@@ -363,10 +370,8 @@ void FacemarkLBFImpl::training(void* parameters){
     isModelTrained = true;
 }
 
-bool FacemarkLBFImpl::fit( InputArray image, InputArray roi, InputOutputArray  _landmarks, void * runtime_params )
+bool FacemarkLBFImpl::fit( InputArray image, InputArray roi, OutputArrayOfArrays  _landmarks )
 {
-    CV_UNUSED(runtime_params);
-
     // FIXIT
     std::vector<Rect> & faces = *(std::vector<Rect> *)roi.getObj();
     if (faces.empty()) return false;
@@ -461,7 +466,7 @@ Rect FacemarkLBFImpl::getBBox(Mat &img, const Mat_<double> shape) {
     if(!faceDetector){
         defaultFaceDetector(img, rects);
     }else{
-        faceDetector(img, rects,0);
+        faceDetector(img, rects, faceDetectorData);
     }
 
     if (rects.size() == 0) return Rect(-1, -1, -1, -1);
@@ -628,7 +633,7 @@ Mat FacemarkLBFImpl::BBox::project(const Mat &shape) const {
         res(i, 0) = (shape_(i, 0) - x_center) / x_scale;
         res(i, 1) = (shape_(i, 1) - y_center) / y_scale;
     }
-    return res;
+    return std::move(res);
 }
 
 // Project relative shape to absolute shape binding to this bbox
@@ -639,7 +644,7 @@ Mat FacemarkLBFImpl::BBox::reproject(const Mat &shape) const {
         res(i, 0) = shape_(i, 0)*x_scale + x_center;
         res(i, 1) = shape_(i, 1)*y_scale + y_center;
     }
-    return res;
+    return std::move(res);
 }
 
 Mat FacemarkLBFImpl::getMeanShape(std::vector<Mat> &gt_shapes, std::vector<BBox> &bboxes) {
@@ -1000,7 +1005,7 @@ Mat FacemarkLBFImpl::RandomForest::generateLBF(Mat &img, Mat &current_shape, BBo
             lbf_feat(i*trees_n + j) = (i*trees_n + j)*base + code;
         }
     }
-    return lbf_feat;
+    return std::move(lbf_feat);
 }
 
 void FacemarkLBFImpl::RandomForest::write(FileStorage fs, int k) {
@@ -1342,7 +1347,7 @@ Mat FacemarkLBFImpl::Regressor::globalRegressionPredict(const Mat &lbf, int stag
         for (int j = 0; j < lbf.cols; j++) y += w_ptr[lbf_ptr[j]];
         delta_shape(i, 1) = y;
     }
-    return delta_shape;
+    return std::move(delta_shape);
 } // Regressor::globalRegressionPredict
 
 Mat FacemarkLBFImpl::Regressor::predict(Mat &img, BBox &bbox) {

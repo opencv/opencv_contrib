@@ -20,7 +20,6 @@ PERF_TEST_P(DenseOpticalFlow_DeepFlow, perf, Values(szVGA, sz720p))
     randu(frame1, 0, 255);
     randu(frame2, 0, 255);
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
     TEST_CYCLE_N(1)
     {
         Ptr<DenseOpticalFlow> algo = createOptFlow_DeepFlow();

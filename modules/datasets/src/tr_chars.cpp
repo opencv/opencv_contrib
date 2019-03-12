@@ -49,14 +49,14 @@ namespace datasets
 
 using namespace std;
 
-class TR_charsImp : public TR_chars
+class TR_charsImp CV_FINAL : public TR_chars
 {
 public:
     TR_charsImp() {}
     //TR_charsImp(const string &path, int number = 0);
-    virtual ~TR_charsImp() {}
+    virtual ~TR_charsImp() CV_OVERRIDE {}
 
-    virtual void load(const string &path);
+    virtual void load(const string &path) CV_OVERRIDE;
 
 private:
     void loadDatasetSplit(const string &path, int number);

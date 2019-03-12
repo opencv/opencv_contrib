@@ -35,7 +35,7 @@ public:
         this->col_len = col_len;
         this->result = result;
     }
-    virtual void operator ()(const Range& range) const
+    virtual void operator ()(const Range& range) const CV_OVERRIDE
     {
         for (int s = range.start; s < range.end; s++) {
             Size patch_sz = Size(static_cast<int>(current_scale * scale_factors[s] * base_target_sz.width),

@@ -41,7 +41,6 @@ PERF_TEST_P( DisparityWLSFilterPerfTest, perf, Combine(GuideTypes::all(), SrcTyp
         ROI = Rect(ROI.x/2,ROI.y/2,ROI.width/2,ROI.height/2);
     }
 
-    cv::setNumThreads(cv::getNumberOfCPUs());
     TEST_CYCLE_N(10)
     {
         Ptr<DisparityWLSFilter> wls_filter = createDisparityWLSFilterGeneric(use_conf);

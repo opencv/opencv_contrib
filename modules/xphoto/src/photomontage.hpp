@@ -98,7 +98,7 @@ private:
         ParallelExpansion(Photomontage <Tp> *_main) : main(_main){}
         ~ParallelExpansion(){};
 
-        void operator () (const cv::Range &range) const
+        void operator () (const cv::Range &range) const CV_OVERRIDE
         {
             for (int i = range.start; i <= range.end - 1; ++i)
                 main->distances[i] = main->singleExpansion(i);

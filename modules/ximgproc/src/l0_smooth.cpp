@@ -54,7 +54,7 @@ namespace
         {
             src_ = s;
         }
-        void operator() (const Range& range) const
+        void operator() (const Range& range) const CV_OVERRIDE
         {
             for (int i = range.start; i != range.end; i++)
             {
@@ -72,7 +72,7 @@ namespace
         {
             src_ = s;
         }
-        void operator() (const Range& range) const
+        void operator() (const Range& range) const CV_OVERRIDE
         {
             for (int i = range.start; i != range.end; i++)
             {
@@ -95,7 +95,7 @@ namespace
             denom_ = denom;
             dst_ = dst;
         }
-        void operator() (const Range& range) const
+        void operator() (const Range& range) const CV_OVERRIDE
         {
             for (int i = range.start; i != range.end; i++)
             {

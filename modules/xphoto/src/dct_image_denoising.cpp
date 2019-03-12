@@ -68,7 +68,7 @@ namespace xphoto
         grayDctDenoisingInvoker(const Mat &src, std::vector <Mat> &patches, const double sigma, const int psize);
         ~grayDctDenoisingInvoker(){};
 
-        void operator() (const Range &range) const;
+        void operator() (const Range &range) const CV_OVERRIDE;
 
     protected:
         const Mat &src;
