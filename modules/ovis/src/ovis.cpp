@@ -227,7 +227,8 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
         if (flags & SCENE_AA)
             miscParams["FSAA"] = "4";
 
-        miscParams["vsync"] = "true";
+        miscParams["vsync"] = Ogre::StringConverter::toString(
+            !utils::getConfigurationParameterBool("OPENCV_OVIS_NOVSYNC", false));
 
         OgreBites::NativeWindowPair ret =
             OgreBites::ApplicationContext::createWindow(_name, _w, _h, miscParams);
