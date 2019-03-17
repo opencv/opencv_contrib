@@ -23,7 +23,12 @@ class CV_EXPORTS_W QualityPSNR
 public:
 
     /** @brief Default maximum pixel value */
-    static CV_CONSTEXPR const double MAX_PIXEL_VALUE_DEFAULT = 255.;
+#if __cplusplus >= 201103L || (defined(_MSC_VER) && _MSC_VER >= 1900/*MSVS 2015*/)
+    static constexpr double MAX_PIXEL_VALUE_DEFAULT = 255.;
+#else
+    // support MSVS 2013
+    static const int MAX_PIXEL_VALUE_DEFAULT = 255;
+#endif
 
     /**
     @brief Create an object which calculates quality via mean square error

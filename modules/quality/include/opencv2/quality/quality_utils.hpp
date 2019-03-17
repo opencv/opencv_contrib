@@ -16,7 +16,7 @@ namespace quality_utils
 {
 
 // default type of matrix to expand to
-static CV_CONSTEXPR const int EXPANDED_MAT_DEFAULT_TYPE = CV_32F;
+static CV_CONSTEXPR int EXPANDED_MAT_DEFAULT_TYPE = CV_32F;
 
 // expand matrix to target type
 template <typename OutT, typename InT>
