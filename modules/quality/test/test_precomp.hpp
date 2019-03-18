@@ -62,7 +62,7 @@ inline void quality_expect_near( const cv::Scalar& a, const cv::Scalar& b, doubl
 
 // execute quality test for a pair of images
 template <typename TMat>
-inline void quality_test(cv::Ptr<quality::QualityBase> ptr, const TMat& cmp, const Scalar& expected, const std::size_t quality_maps_expected = 1)
+inline void quality_test(cv::Ptr<quality::QualityBase> ptr, const TMat& cmp, const Scalar& expected, const std::size_t quality_maps_expected = 1, const bool empty_expected = false )
 {
     std::vector<cv::Mat> qMats = {};
     ptr->getQualityMaps(qMats);
@@ -70,8 +70,13 @@ inline void quality_test(cv::Ptr<quality::QualityBase> ptr, const TMat& cmp, con
 
     quality_expect_near( expected, ptr->compute(cmp));
 
-    EXPECT_FALSE(ptr->empty());
+    if (empty_expected)
+        EXPECT_TRUE(ptr->empty());
+    else
+        EXPECT_FALSE(ptr->empty());
+
     ptr->getQualityMaps(qMats);
+
     EXPECT_EQ( qMats.size(), quality_maps_expected);
     for (auto& qm : qMats)
     {
@@ -106,6 +111,7 @@ inline void quality_performance_test( const char* name, Fn&& op )
 #endif
 }
 */
+
 }
 }
 

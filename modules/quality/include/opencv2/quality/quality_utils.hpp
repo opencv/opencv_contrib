@@ -18,6 +18,41 @@ namespace quality_utils
 // default type of matrix to expand to
 static CV_CONSTEXPR const int EXPANDED_MAT_DEFAULT_TYPE = CV_32F;
 
+// convert input array to vector of specified mat types.  set type == -1 to preserve existing type
+template <typename R>
+inline std::vector<R> extract_mats( InputArrayOfArrays arr, const int type = -1 )
+{
+    std::vector<R> result = {};
+    std::vector<UMat> umats = {};
+    std::vector<Mat> mats = {};
+
+    if (arr.isUMatVector())
+        arr.getUMatVector(umats);
+    else if (arr.isUMat())
+        umats.emplace_back(arr.getUMat());
+    else if (arr.isMatVector())
+        arr.getMatVector(mats);
+    else if (arr.isMat())
+        mats.emplace_back(arr.getMat());
+    else
+        CV_Error(Error::StsNotImplemented, "Unsupported input type");
+
+    // convert umats, mats to desired type
+    for (auto& umat : umats)
+    {
+        result.emplace_back(R{});
+        umat.convertTo(result.back(), ( type != -1 ) ? type : umat.type() );
+    }
+
+    for (auto& mat : mats)
+    {
+        result.emplace_back(R{});
+        mat.convertTo(result.back(), (type != -1) ? type : mat.type() );
+    }
+
+    return result;
+}
+
 // expand matrix to target type
 template <typename OutT, typename InT>
 inline OutT expand_mat(const InT& src, int TYPE_DEFAULT = EXPANDED_MAT_DEFAULT_TYPE)
@@ -46,26 +81,10 @@ template <typename R>
 inline std::vector<R> expand_mats(InputArrayOfArrays arr, int TYPE_DEFAULT = EXPANDED_MAT_DEFAULT_TYPE)
 {
     std::vector<R> result = {};
-    std::vector<UMat> umats = {};
-    std::vector<Mat> mats = {};
 
-    if (arr.isUMatVector())
-        arr.getUMatVector(umats);
-    else if (arr.isUMat())
-        umats.emplace_back(arr.getUMat());
-    else if (arr.isMatVector())
-        arr.getMatVector(mats);
-    else if (arr.isMat())
-        mats.emplace_back(arr.getMat());
-    else
-        CV_Error(Error::StsNotImplemented, "Unsupported input type");
-
-    // convert umats, mats to expanded internal type
-    for (auto& umat : umats)
-        result.emplace_back(expand_mat<R>(umat, TYPE_DEFAULT ));
-
+    auto mats = extract_mats<R>(arr, -1);
     for (auto& mat : mats)
-        result.emplace_back(expand_mat<R>(mat, TYPE_DEFAULT ));
+        result.emplace_back(expand_mat<R>(mat, TYPE_DEFAULT));
 
     return result;
 }
@@ -85,6 +104,54 @@ inline cv::Scalar mse_to_psnr(cv::Scalar mse, double max_pixel_value)
     for (int i = 0; i < mse.rows; ++i)
         mse(i) = mse_to_psnr(mse(i), max_pixel_value);
     return mse;
+}
+
+// return mat of observed min/max pair per column
+//  row 0:  min per column
+//  row 1:  max per column
+// template <typename T>
+inline cv::Mat get_column_range( const cv::Mat& data )
+{
+    CV_Assert(data.channels() == 1);
+    CV_Assert(data.rows > 0);
+
+    cv::Mat result( cv::Size( data.cols, 2 ), data.type() );
+
+    auto
+        row_min = result.row(0)
+        , row_max = result.row(1)
+        ;
+
+    // set initial min/max
+    data.row(0).copyTo(row_min);
+    data.row(0).copyTo(row_max);
+
+    for (int y = 1; y < data.rows; ++y)
+    {
+        auto row = data.row(y);
+        cv::min(row,row_min, row_min);
+        cv::max(row, row_max, row_max);
+    }
+    return result;
+}   // get_column_range
+
+// linear scale of each column from min to max
+//  range is column-wise pair of observed min/max.  See get_column_range
+template <typename T>
+inline void scale( cv::Mat& mat, const cv::Mat& range, const T min, const T max )
+{
+    // value = lower + (upper - lower) * (value - feature_min[index]) / (feature_max[index] - feature_min[index]);
+    // where [lower] = lower bound, [upper] = upper bound
+
+    for (int y = 0; y < mat.rows; ++y)
+    {
+        auto row = mat.row(y);
+        auto row_min = range.row(0);
+        auto row_max = range.row(1);
+
+        for (int x = 0; x < mat.cols; ++x)
+            row.at<T>(x) = min + (max - min) * (row.at<T>(x) - row_min.at<T>(x) ) / (row_max.at<T>(x) - row_min.at<T>(x));
+    }
 }
 
 }   // quality_utils
