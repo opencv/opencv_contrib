@@ -223,8 +223,8 @@ namespace
         inline void setIterations(int val) CV_OVERRIDE { iterations_ = val; }
         inline double getTau() const CV_OVERRIDE { return tau_; }
         inline void setTau(double val) CV_OVERRIDE { tau_ = val; }
-        inline double getLabmda() const CV_OVERRIDE { return lambda_; }
-        inline void setLabmda(double val) CV_OVERRIDE { lambda_ = val; }
+        inline double getLambda() const CV_OVERRIDE { return lambda_; }
+        inline void setLambda(double val) CV_OVERRIDE { lambda_ = val; }
         inline double getAlpha() const CV_OVERRIDE { return alpha_; }
         inline void setAlpha(double val) CV_OVERRIDE { alpha_ = val; }
         inline int getKernelSize() const CV_OVERRIDE { return btvKernelSize_; }
