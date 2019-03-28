@@ -470,22 +470,23 @@ int main(int argc, const char **argv)
         // visWriter and visOutputPath must not be defined inside the if statement
         VideoWriter visWriter;
         string visOutputPath;
-        if (arg("vis-output") != "no") 
+        if (arg("vis-output") != "no")
         {
             visOutputPath = arg("vis-output");
-            std::function<void(Mat)> featureVisualizationCallback = [&visWriter, &visOutputPath](Mat featureVisualization){ 
+            std::function<void(Mat)> featureVisualizationCallback = [&visWriter, &visOutputPath](Mat featureVisualization){
                 // init visWriter (once) and save visualization frame
-                if (!featureVisualization.empty()) {
+                if (!featureVisualization.empty())
+                {
                     if (!visWriter.isOpened())
                         visWriter.open(visOutputPath, VideoWriter::fourcc('X','V','I','D'),
                                     outputFps, featureVisualization.size());
-                    visWriter << featureVisualization;        
-                } 
+                    visWriter << featureVisualization;
+                }
             };
             // must be called before
             // "stabilizer->setMotionEstimator(makePtr<ToFileMotionWriter>(arg("save-motions"), stabilizer->motionEstimator()));"
             stabilizer->motionEstimator()->setFeatureVisualizationCallback(featureVisualizationCallback);
-        } 
+        }
 
         MotionModel model = stabilizer->motionEstimator()->motionModel();
         if (arg("load-motions") != "no")
