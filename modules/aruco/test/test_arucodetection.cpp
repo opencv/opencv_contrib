@@ -293,32 +293,25 @@ void CV_ArucoDetectionPerspective::run(int tryWith) {
                 params->markerBorderBits = markerBorder;
 
                 /// create synthetic image
-                Mat img;
-                // marker :: Inverted
-                if(CV_ArucoDetectionPerspective::DETECT_INVERTED_MARKER == tryWith){
-                    img =
+                Mat img=
                     projectMarker(dictionary, currentId, cameraMatrix, deg2rad(yaw), deg2rad(pitch),
                                       distance, imgSize, markerBorder, groundTruthCorners, szEnclosed);
+                // marker :: Inverted
+                if(CV_ArucoDetectionPerspective::DETECT_INVERTED_MARKER == tryWith){
                     img = ~img;
                     params->detectInvertedMarker = true;
-                }
-                // marker :: Default
-                else{
-                    img =
-                    projectMarker(dictionary, currentId, cameraMatrix, deg2rad(yaw), deg2rad(pitch),
-                                      distance, imgSize, markerBorder, groundTruthCorners);
                 }
 
                 if(CV_ArucoDetectionPerspective::USE_APRILTAG == tryWith){
                     params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_APRILTAG;
                 }
 
-                /// detect markers
+                // detect markers
                 vector< vector< Point2f > > corners;
                 vector< int > ids;
                 aruco::detectMarkers(img, dictionary, corners, ids, params);
 
-                /// check results
+                // check results
                 if(ids.size() != 1 || (ids.size() == 1 && ids[0] != currentId)) {
                     if(ids.size() != 1)
                         ts->printf(cvtest::TS::LOG, "Incorrect number of detected markers");

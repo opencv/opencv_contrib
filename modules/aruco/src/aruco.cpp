@@ -516,12 +516,13 @@ static bool _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArray 
 
     // check if it is a white marker
     if(params->detectInvertedMarker){
-	// to get from 255 to 1
-        int invBError = _getBorderErrors(~candidateBits-254, dictionary->markerSize, params->markerBorderBits);
-	// white marker
+        // to get from 255 to 1
+        Mat invertedImg = ~candidateBits-254;
+        int invBError = _getBorderErrors(invertedImg, dictionary->markerSize, params->markerBorderBits);
+        // white marker
         if(invBError<borderErrors){
             borderErrors = invBError;
-            candidateBits=~candidateBits-254;
+            invertedImg.copyTo(candidateBits);
         }
     }
     if(borderErrors > maximumErrorsInBorder) return false;
