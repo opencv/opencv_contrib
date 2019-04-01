@@ -168,16 +168,20 @@ void FacemarkKazemiImpl :: loadModel(String filename){
     f.close();
     isModelLoaded = true;
 }
-bool FacemarkKazemiImpl::fit(InputArray img, std::vector<Rect>& roi, CV_OUT std::vector<std::vector<Point2f> >& landmarks){
+bool FacemarkKazemiImpl::fit(InputArray img, InputArray roi, OutputArrayOfArrays landmarks){
     if(!isModelLoaded){
         String error_message = "No model loaded. Aborting....";
         CV_Error(Error::StsBadArg, error_message);
         return false;
     }
     Mat image  = img.getMat();
-    std::vector<Rect> & faces = roi;
-    std::vector<std::vector<Point2f> > & shapes = landmarks;
-    shapes.resize(faces.size());
+    // std::vector<Rect> & faces = *(std::vector<Rect>*)roi.getObj();
+    // std::vector<std::vector<Point2f> > & shapes = *(std::vector<std::vector<Point2f> >*) landmarks.getObj();
+    // shapes.resize(faces.size());
+    Mat roimat = roi.getMat();
+    std::vector<Rect> faces = roimat.reshape(4,roimat.rows);
+
+    std::vector<std::vector<Point2f> > shapes(faces.size());
 
     if(image.empty()){
         String error_message = "No image found.Aborting..";
@@ -243,6 +247,10 @@ bool FacemarkKazemiImpl::fit(InputArray img, std::vector<Rect>& roi, CV_OUT std:
                 shapes[e][j].y=float(D.at<double>(1,0));
         }
     }
+    std::vector<Mat> &v = *(std::vector<Mat>*) landmarks.getObj();
+        for (size_t i=0; i<faces.size(); i++)
+            v.push_back(Mat(shapes[i]));
+
     return true;
 }
 }//cv

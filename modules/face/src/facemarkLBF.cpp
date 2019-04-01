@@ -115,7 +115,7 @@ public:
 
 protected:
 
-    bool fit( InputArray image, std::vector<Rect> & faces, std::vector<std::vector<Point2f> > & landmarks ) CV_OVERRIDE;//!< from many ROIs
+    bool fit( InputArray image, InputArray faces, OutputArrayOfArrays landmarks ) CV_OVERRIDE;//!< from many ROIs
     bool fitImpl( const Mat image, std::vector<Point2f> & landmarks );//!< from a face
 
     bool addTrainingSample(InputArray image, InputArray landmarks) CV_OVERRIDE;
@@ -370,45 +370,25 @@ void FacemarkLBFImpl::training(void* parameters){
     isModelTrained = true;
 }
 
-bool FacemarkLBFImpl::fit( InputArray image, std::vector<Rect> & roi, CV_OUT std::vector<std::vector<Point2f> > &  _landmarks )
+bool FacemarkLBFImpl::fit( InputArray image, InputArray roi, OutputArrayOfArrays  _landmarks )
 {
     // FIXIT
-    std::vector<Rect> & faces = roi;
-    // std::vector<Rect> & faces = *(std::vector<Rect> *)roi.getObj();
+    Mat roimat = roi.getMat();
+    std::vector<Rect> faces = roimat.reshape(4,roimat.rows);
     if (faces.empty()) return false;
 
-    std::vector<std::vector<Point2f> > & landmarks = _landmarks;
-    // std::vector<std::vector<Point2f> > & landmarks =
-        // *(std::vector<std::vector<Point2f> >*) _landmarks.getObj();
+    std::vector<std::vector<Point2f> > landmarks(faces.size());
 
-    landmarks.resize(faces.size());
-
-    for(unsigned i=0; i<faces.size();i++){
+    for (unsigned i=0; i<faces.size();i++){
         params.detectROI = faces[i];
         fitImpl(image.getMat(), landmarks[i]);
     }
 
+    std::vector<Mat> &v = *(std::vector<Mat>*) _landmarks.getObj();
+        for (size_t i=0; i<faces.size(); i++)
+            v.push_back(Mat(landmarks[i]));
+
     return true;
-    // Mat roimat = roi.getMat();
-    // std::vector<Rect> faces = roimat.reshape(4,roimat.rows);
-    // if (faces.empty()) return false;
-
-    // std::vector<std::vector<Point2f> > landmarks(faces.size());
-
-    // for (unsigned i=0; i<faces.size();i++){
-    //     params.detectROI = faces[i];
-    //     fitImpl(image.getMat(), landmarks[i]);
-    // }
-
-    // if (_landmarks.isMatVector()) { // python
-    //     std::vector<Mat> &v = *(std::vector<Mat>*) _landmarks.getObj();
-    //     for (size_t i=0; i<faces.size(); i++)
-    //         v.push_back(Mat(landmarks[i]));
-    // } else { // c++, java
-    //     std::vector<std::vector<Point2f> > &v = *(std::vector<std::vector<Point2f> >*) _landmarks.getObj();
-    //     v = landmarks;
-    // }
-    // return true;
 }
 
 bool FacemarkLBFImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks){
