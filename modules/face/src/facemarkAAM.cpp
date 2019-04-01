@@ -360,38 +360,6 @@ bool FacemarkAAMImpl::fitConfig( InputArray image, InputArray roi, OutputArrayOf
         for (size_t i=0; i<faces.size(); i++)
             v.push_back(Mat(landmarks[i]));
     return true;
-    // for (unsigned i=0; i<faces.size();i++){
-    //     params.detectROI = faces[i];
-    //     fitImpl(image.getMat(), landmarks[i]);
-    // }
-
-    // std::vector<Rect> & faces = *(std::vector<Rect> *)roi.getObj();
-    // if(faces.size()<1) return false;
-
-    // std::vector<std::vector<Point2f> > & landmarks =
-    //     *(std::vector<std::vector<Point2f> >*) _landmarks.getObj();
-    // landmarks.resize(faces.size());
-
-    // Mat img = image.getMat();
-    // if (! configs.empty()){
-
-    //     if (configs.size()!=faces.size()) {
-    //         CV_Error(Error::StsBadArg, "Number of faces and extra_parameters are different!");
-    //     }
-    //     for(size_t i=0; i<configs.size();i++){
-    //         fitImpl(img, landmarks[i], configs[i].R,configs[i].t, configs[i].scale, configs[i].model_scale_idx);
-    //     }
-    // }else{
-    //     Mat R =  Mat::eye(2, 2, CV_32F);
-    //     Point2f t = Point2f((float)(img.cols/2.0),(float)(img.rows/2.0));
-    //     float scale = 1.0;
-
-    //     for(unsigned i=0; i<faces.size();i++){
-    //         fitImpl(img, landmarks[i], R,t, scale);
-    //     }
-    // }
-
-    // return true;
 }
 
 bool FacemarkAAMImpl::fitImpl( const Mat image, std::vector<Point2f>& landmarks, const Mat R, const Point2f T, const  float scale, int _scl){
