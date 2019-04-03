@@ -4,7 +4,7 @@ This example shows the using the Facemark API(fitting) for python.
 USAGE: facemark_fit_demo.py <method - kazemi / aam / lbf > <path_to_input_image> <path to cascade classifier> <path to the pre-trained model>
 '''
 
-'''Please note - the above code will give a std::bad_alloc() error (due to the fit function) - please follow the 
+'''Please note - the above code will give a std::bad_alloc() error (due to the fit function) - please follow the
 	this link to overcome the issue:
 	https://github.com/opencv/opencv_contrib/issues/1661#issuecomment-397802106
 '''
@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
 	if(model_type == "aam"):
 		fm = cv.face.createFacemarkAAM()
-	elif model_type == "kazemi" : 
+	elif model_type == "kazemi" :
 		fm = cv.face.createFacemarkKazemi()
 
 	#loading the pre-trained model
