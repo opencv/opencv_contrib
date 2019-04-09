@@ -22,7 +22,7 @@ const char* RESOURCEGROUP_NAME = "OVIS";
 Ptr<Application> _app;
 
 static const char* RENDERSYSTEM_NAME = "OpenGL 3+ Rendering Subsystem";
-static std::vector<String> _extraResourceLocations;
+static std::set<String> _extraResourceLocations;
 
 // convert from OpenCV to Ogre coordinates:
 static Quaternion toOGRE(Degree(180), Vector3::UNIT_X);
@@ -245,10 +245,9 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
         ResourceGroupManager& rgm = ResourceGroupManager::getSingleton();
         rgm.createResourceGroup(RESOURCEGROUP_NAME);
 
-        for (size_t i = 0; i < _extraResourceLocations.size(); i++)
+        for (auto loc :_extraResourceLocations)
         {
-            String loc = _extraResourceLocations[i];
-            String type = StringUtil::endsWith(loc, ".zip") ? "Zip" : "FileSystem";
+            const char* type = StringUtil::endsWith(loc, ".zip") ? "Zip" : "FileSystem";
 
             if (!FileSystemLayer::fileExists(loc))
             {
@@ -786,7 +785,10 @@ public:
     }
 };
 
-CV_EXPORTS_W void addResourceLocation(const String& path) { _extraResourceLocations.push_back(path); }
+CV_EXPORTS_W void addResourceLocation(const String& path)
+{
+    _extraResourceLocations.insert(Ogre::StringUtil::normalizeFilePath(path, false));
+}
 
 Ptr<WindowScene> createWindow(const String& title, const Size& size, int flags)
 {
