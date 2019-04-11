@@ -10,6 +10,9 @@
 #include <fstream>
 #include <algorithm>
 
+#undef min
+#undef max
+
 using namespace cv::dnn;
 
 namespace cv

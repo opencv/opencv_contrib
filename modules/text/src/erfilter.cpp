@@ -47,6 +47,9 @@
 #include <fstream>
 #include <queue>
 
+#undef min
+#undef max
+
 #if defined _MSC_VER && _MSC_VER == 1500
     typedef int int_fast32_t;
 #else
