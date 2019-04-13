@@ -1731,29 +1731,11 @@ void drawDetectedMarkers(InputOutputArray _image, InputArrayOfArrays _corners,
 
 /**
  */
-void drawAxis(InputOutputArray _image, InputArray _cameraMatrix, InputArray _distCoeffs,
-              InputArray _rvec, InputArray _tvec, float length) {
-
-    CV_Assert(_image.getMat().total() != 0 &&
-              (_image.getMat().channels() == 1 || _image.getMat().channels() == 3));
-    CV_Assert(length > 0);
-
-    // project axis points
-    vector< Point3f > axisPoints;
-    axisPoints.push_back(Point3f(0, 0, 0));
-    axisPoints.push_back(Point3f(length, 0, 0));
-    axisPoints.push_back(Point3f(0, length, 0));
-    axisPoints.push_back(Point3f(0, 0, length));
-    vector< Point2f > imagePoints;
-    projectPoints(axisPoints, _rvec, _tvec, _cameraMatrix, _distCoeffs, imagePoints);
-
-    // draw axis lines
-    line(_image, imagePoints[0], imagePoints[1], Scalar(0, 0, 255), 3);
-    line(_image, imagePoints[0], imagePoints[2], Scalar(0, 255, 0), 3);
-    line(_image, imagePoints[0], imagePoints[3], Scalar(255, 0, 0), 3);
+void drawAxis(InputOutputArray _image, InputArray _cameraMatrix, InputArray _distCoeffs, InputArray _rvec,
+              InputArray _tvec, float length)
+{
+    drawFrameAxes(_image, _cameraMatrix, _distCoeffs, _rvec, _tvec, length, 3);
 }
-
-
 
 /**
  */
