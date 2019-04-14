@@ -281,6 +281,8 @@ class SparseRLOFOpticalFlowImpl : public SparseRLOFOpticalFlow
         CV_Assert(!prevImg.empty() && prevImg.depth() == CV_8U && (prevImg.channels() == 3 || prevImg.channels() == 1));
         CV_Assert(!nextImg.empty() && nextImg.depth() == CV_8U && (nextImg.channels() == 3 || nextImg.channels() == 1));
         CV_Assert(prevImg.sameSize(nextImg));
+        if ((param->supportRegionType == SR_CROSS) && (prevImg.channels() != 3 || nextImg.channels() != 3))
+            CV_Error(cv::Error::BadNumChannels, "if SR_CROSS is used, both images need to have 3 channels.");
 
         Mat prevImage = prevImg.getMat();
         Mat nextImage = nextImg.getMat();
