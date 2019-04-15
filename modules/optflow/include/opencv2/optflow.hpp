@@ -68,7 +68,7 @@ Functions reading and writing .flo files in "Middlebury" format, see: <http://vi
 
 #include "opencv2/optflow/pcaflow.hpp"
 #include "opencv2/optflow/sparse_matching_gpc.hpp"
-
+#include "opencv2/optflow/rlofflow.hpp"
 namespace cv
 {
 namespace optflow

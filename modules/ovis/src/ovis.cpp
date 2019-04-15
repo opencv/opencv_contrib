@@ -22,7 +22,7 @@ const char* RESOURCEGROUP_NAME = "OVIS";
 Ptr<Application> _app;
 
 static const char* RENDERSYSTEM_NAME = "OpenGL 3+ Rendering Subsystem";
-static std::vector<String> _extraResourceLocations;
+static std::set<String> _extraResourceLocations;
 
 // convert from OpenCV to Ogre coordinates:
 static Quaternion toOGRE(Degree(180), Vector3::UNIT_X);
@@ -181,7 +181,7 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
     int flags;
 
     Application(const Ogre::String& _title, const Size& sz, int _flags)
-        : OgreBites::ApplicationContext("ovis", false), sceneMgr(NULL), title(_title), w(sz.width),
+        : OgreBites::ApplicationContext("ovis"), sceneMgr(NULL), title(_title), w(sz.width),
           h(sz.height), key_pressed(-1), flags(_flags)
     {
         if(utils::getConfigurationParameterBool("OPENCV_OVIS_VERBOSE_LOG", false))
@@ -227,7 +227,8 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
         if (flags & SCENE_AA)
             miscParams["FSAA"] = "4";
 
-        miscParams["vsync"] = "true";
+        miscParams["vsync"] = Ogre::StringConverter::toString(
+            !utils::getConfigurationParameterBool("OPENCV_OVIS_NOVSYNC", false));
 
         OgreBites::NativeWindowPair ret =
             OgreBites::ApplicationContext::createWindow(_name, _w, _h, miscParams);
@@ -244,10 +245,9 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
         ResourceGroupManager& rgm = ResourceGroupManager::getSingleton();
         rgm.createResourceGroup(RESOURCEGROUP_NAME);
 
-        for (size_t i = 0; i < _extraResourceLocations.size(); i++)
+        for (auto loc :_extraResourceLocations)
         {
-            String loc = _extraResourceLocations[i];
-            String type = StringUtil::endsWith(loc, ".zip") ? "Zip" : "FileSystem";
+            const char* type = StringUtil::endsWith(loc, ".zip") ? "Zip" : "FileSystem";
 
             if (!FileSystemLayer::fileExists(loc))
             {
@@ -319,7 +319,11 @@ public:
         {
             camman.reset(new OgreBites::CameraMan(camNode));
             camman->setStyle(OgreBites::CS_ORBIT);
-            camNode->setFixedYawAxis(true, Vector3::NEGATIVE_UNIT_Y);
+#if OGRE_VERSION >= ((1 << 16) | (11 << 8) | 5)
+            camman->setFixedYaw(false);
+#else
+            camNode->setFixedYawAxis(true, Vector3::NEGATIVE_UNIT_Y); // OpenCV +Y in Ogre CS
+#endif
         }
 
         if (!app->sceneMgr)
@@ -344,10 +348,18 @@ public:
     {
         if (flags & SCENE_SEPERATE)
         {
+            TextureManager& texMgr =  TextureManager::getSingleton();
+
             MaterialManager::getSingleton().remove(bgplane->getMaterial());
             bgplane.release();
-            String texName = sceneMgr->getName() + "_Background";
-            TextureManager::getSingleton().remove(texName, RESOURCEGROUP_NAME);
+            String texName = "_"+sceneMgr->getName() + "_DefaultBackground";
+            texMgr.remove(texName, RESOURCEGROUP_NAME);
+
+            texName = sceneMgr->getName() + "_Background";
+            if(texMgr.resourceExists(texName, RESOURCEGROUP_NAME))
+            {
+                texMgr.remove(texName, RESOURCEGROUP_NAME);
+            }
         }
 
         if(_app->sceneMgr == sceneMgr && (flags & SCENE_SEPERATE))
@@ -591,7 +603,7 @@ public:
         node.setScale(value[0], value[1], value[2]);
     }
 
-    void getEntityProperty(const String& name, int prop, OutputArray value)
+    void getEntityProperty(const String& name, int prop, OutputArray value) CV_OVERRIDE
     {
         SceneNode& node = _getSceneNode(sceneMgr, name);
         switch(prop)
@@ -694,6 +706,10 @@ public:
 
     void fixCameraYawAxis(bool useFixed, InputArray _up) CV_OVERRIDE
     {
+#if OGRE_VERSION >= ((1 << 16) | (11 << 8) | 5)
+        if(camman) camman->setFixedYaw(useFixed);
+#endif
+
         Vector3 up = Vector3::NEGATIVE_UNIT_Y;
         if (!_up.empty())
         {
@@ -769,7 +785,10 @@ public:
     }
 };
 
-CV_EXPORTS_W void addResourceLocation(const String& path) { _extraResourceLocations.push_back(path); }
+CV_EXPORTS_W void addResourceLocation(const String& path)
+{
+    _extraResourceLocations.insert(Ogre::StringUtil::normalizeFilePath(path, false));
+}
 
 Ptr<WindowScene> createWindow(const String& title, const Size& size, int flags)
 {

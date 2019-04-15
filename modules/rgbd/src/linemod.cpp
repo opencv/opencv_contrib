@@ -549,6 +549,11 @@ ColorGradient::ColorGradient(float _weak_threshold, size_t _num_features, float 
 {
 }
 
+Ptr<ColorGradient> ColorGradient::create(float weak_threshold, size_t num_features, float strong_threshold)
+{
+    return makePtr<ColorGradient>(weak_threshold, num_features, strong_threshold);
+}
+
 static const char CG_NAME[] = "ColorGradient";
 
 String ColorGradient::name() const
@@ -862,6 +867,12 @@ DepthNormal::DepthNormal(int _distance_threshold, int _difference_threshold, siz
     num_features(_num_features),
     extract_threshold(_extract_threshold)
 {
+}
+
+Ptr<DepthNormal> DepthNormal::create(int distance_threshold, int difference_threshold, size_t num_features,
+                                     int extract_threshold)
+{
+    return makePtr<DepthNormal>(distance_threshold, difference_threshold, num_features, extract_threshold);
 }
 
 static const char DN_NAME[] = "DepthNormal";

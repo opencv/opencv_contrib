@@ -149,7 +149,7 @@ public:
      *
      *  \details It is assumed that the model is registered on the scene. Scene remains static, while the model transforms. The output poses transform the models onto the scene. Because of the point to plane minimization, the scene is expected to have the normals available. Expected to have the normals (Nx6).
      */
-  int registerModelToScene(const Mat& srcPC, const Mat& dstPC, std::vector<Pose3DPtr>& poses);
+  CV_WRAP int registerModelToScene(const Mat& srcPC, const Mat& dstPC, CV_IN_OUT std::vector<Pose3DPtr>& poses);
 
 private:
   float m_tolerance;

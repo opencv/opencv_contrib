@@ -184,7 +184,7 @@ CV_EXPORTS_W void thinning( InputArray src, OutputArray dst, int thinningType = 
 
  \f[ c\left(\|\nabla I\|\right)={\frac {1}{1+\left({\frac  {\|\nabla I\|}{K}}\right)^{2}}} \f]
 
- @param src Grayscale Source image.
+ @param src Source image with 3 channels.
  @param dst Destination image of the same size and the same number of channels as src .
  @param alpha The amount of time to step forward by on each iteration (normally, it's between 0 and 1).
  @param K sensitivity to the edges

@@ -55,34 +55,34 @@ namespace sfm
 
 template<typename T>
 void
-homogeneousToEuclidean(const Mat & _X, Mat & _x)
+homogeneousToEuclidean(const Mat & X_, Mat & x_)
 {
-  int d = _X.rows - 1;
+  int d = X_.rows - 1;
 
-  const Mat_<T> & X_rows = _X.rowRange(0,d);
-  const Mat_<T> h = _X.row(d);
+  const Mat_<T> & X_rows = X_.rowRange(0,d);
+  const Mat_<T> h = X_.row(d);
 
   const T * h_ptr = h[0], *h_ptr_end = h_ptr + h.cols;
   const T * X_ptr = X_rows[0];
-  T * x_ptr = _x.ptr<T>(0);
+  T * x_ptr = x_.ptr<T>(0);
   for (; h_ptr != h_ptr_end; ++h_ptr, ++X_ptr, ++x_ptr)
   {
     const T * X_col_ptr = X_ptr;
-    T * x_col_ptr = x_ptr, *x_col_ptr_end = x_col_ptr + d * _x.step1();
-    for (; x_col_ptr != x_col_ptr_end; X_col_ptr+=X_rows.step1(), x_col_ptr+=_x.step1() )
+    T * x_col_ptr = x_ptr, *x_col_ptr_end = x_col_ptr + d * x_.step1();
+    for (; x_col_ptr != x_col_ptr_end; X_col_ptr+=X_rows.step1(), x_col_ptr+=x_.step1() )
       *x_col_ptr = (*X_col_ptr) / (*h_ptr);
   }
 }
 
 void
-homogeneousToEuclidean(InputArray _X, OutputArray _x)
+homogeneousToEuclidean(InputArray X_, OutputArray x_)
 {
   // src
-  const Mat X = _X.getMat();
+  const Mat X = X_.getMat();
 
   // dst
-   _x.create(X.rows-1, X.cols, X.type());
-  Mat x = _x.getMat();
+   x_.create(X.rows-1, X.cols, X.type());
+  Mat x = x_.getMat();
 
   // type
   if( X.depth() == CV_32F )
@@ -96,11 +96,11 @@ homogeneousToEuclidean(InputArray _X, OutputArray _x)
 }
 
 void
-euclideanToHomogeneous(InputArray _x, OutputArray _X)
+euclideanToHomogeneous(InputArray x_, OutputArray X_)
 {
-  const Mat x = _x.getMat();
+  const Mat x = x_.getMat();
   const Mat last_row = Mat::ones(1, x.cols, x.type());
-  vconcat(x, last_row, _X);
+  vconcat(x, last_row, X_);
 }
 
 template<typename T>
@@ -111,16 +111,16 @@ projectionFromKRt(const Mat_<T> &K, const Mat_<T> &R, const Mat_<T> &t, Mat_<T> 
 }
 
 void
-projectionFromKRt(InputArray _K, InputArray _R, InputArray _t, OutputArray _P)
+projectionFromKRt(InputArray K_, InputArray R_, InputArray t_, OutputArray P_)
 {
-  const Mat K = _K.getMat(), R = _R.getMat(), t = _t.getMat();
+  const Mat K = K_.getMat(), R = R_.getMat(), t = t_.getMat();
   const int depth = K.depth();
   CV_Assert((K.cols == 3 && K.rows == 3) && (t.cols == 1 && t.rows == 3) && (K.size() == R.size()));
   CV_Assert((depth == CV_32F || depth == CV_64F) && depth == R.depth() && depth == t.depth());
 
-  _P.create(3, 4, depth);
+  P_.create(3, 4, depth);
 
-  Mat P = _P.getMat();
+  Mat P = P_.getMat();
 
   // type
   if( depth == CV_32F )
@@ -136,33 +136,33 @@ projectionFromKRt(InputArray _K, InputArray _R, InputArray _t, OutputArray _P)
 
 template<typename T>
 void
-KRtFromProjection( const Mat_<T> &_P, Mat_<T> _K, Mat_<T> _R, Mat_<T> _t )
+KRtFromProjection( const Mat_<T> &P_, Mat_<T> K_, Mat_<T> R_, Mat_<T> t_ )
 {
   libmv::Mat34 P;
   libmv::Mat3 K, R;
   libmv::Vec3 t;
 
-  cv2eigen( _P, P );
+  cv2eigen( P_, P );
 
   libmv::KRt_From_P( P, &K, &R, &t );
 
-  eigen2cv( K, _K );
-  eigen2cv( R, _R );
-  eigen2cv( t, _t );
+  eigen2cv( K, K_ );
+  eigen2cv( R, R_ );
+  eigen2cv( t, t_ );
 }
 
 void
-KRtFromProjection( InputArray _P, OutputArray _K, OutputArray _R, OutputArray _t )
+KRtFromProjection( InputArray P_, OutputArray K_, OutputArray R_, OutputArray t_ )
 {
-  const Mat P = _P.getMat();
+  const Mat P = P_.getMat();
   const int depth = P.depth();
   CV_Assert((P.cols == 4 && P.rows == 3) && (depth == CV_32F || depth == CV_64F));
 
-  _K.create(3, 3, depth);
-  _R.create(3, 3, depth);
-  _t.create(3, 1, depth);
+  K_.create(3, 3, depth);
+  R_.create(3, 3, depth);
+  t_.create(3, 1, depth);
 
-  Mat K = _K.getMat(), R = _R.getMat(), t = _t.getMat();
+  Mat K = K_.getMat(), R = R_.getMat(), t = t_.getMat();
 
   // type
   if( depth == CV_32F )
@@ -177,19 +177,19 @@ KRtFromProjection( InputArray _P, OutputArray _K, OutputArray _R, OutputArray _t
 
 template<typename T>
 T
-depthValue( const Mat_<T> &_R, const Mat_<T> &_t, const Mat_<T> &_X )
+depthValue( const Mat_<T> &R_, const Mat_<T> &t_, const Mat_<T> &X_ )
 {
-  Matx<T,3,3> R(_R);
-  Vec<T,3> t(_t);
+  Matx<T,3,3> R(R_);
+  Vec<T,3> t(t_);
 
-  if ( _X.rows == 3)
+  if ( X_.rows == 3)
   {
-    Vec<T,3> X(_X);
+    Vec<T,3> X(X_);
     return (R*X)(2) + t(2);
   }
   else
   {
-    Vec<T,4> X(_X);
+    Vec<T,4> X(X_);
     Vec<T,3> Xe;
     homogeneousToEuclidean(X,Xe);
     return depthValue<T>( Mat(R), Mat(t), Mat(Xe) );
@@ -197,9 +197,9 @@ depthValue( const Mat_<T> &_R, const Mat_<T> &_t, const Mat_<T> &_X )
 }
 
 double
-depth( InputArray _R, InputArray _t, InputArray _X)
+depth( InputArray R_, InputArray t_, InputArray X_)
 {
-  const Mat R = _R.getMat(), t = _t.getMat(), X = _X.getMat();
+  const Mat R = R_.getMat(), t = t_.getMat(), X = X_.getMat();
   const int depth = R.depth();
   CV_Assert( R.rows == 3 && R.cols == 3 && t.rows == 3 && t.cols == 1 );
   CV_Assert( (X.rows == 3 && X.cols == 1) || (X.rows == 4 && X.cols == 1) );
