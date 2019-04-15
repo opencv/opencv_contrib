@@ -1,7 +1,5 @@
 # Tesseract OCR
-if(COMMAND pkg_check_modules)
-  pkg_check_modules(Tesseract tesseract lept)
-endif()
+ocv_check_modules(Tesseract tesseract) # lept is excluded (not a direct dependency)
 if(NOT Tesseract_FOUND)
   find_path(Tesseract_INCLUDE_DIR tesseract/baseapi.h
     HINTS
