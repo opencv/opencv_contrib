@@ -364,9 +364,10 @@ static void rectifyPatch( const Mat& image, const KeyPoint& kp,
     }
     else
     {
-      float M_[] = {
-          1.f,  0.f, -1.f * patchSize/2.0f + kp.pt.x,
-          0.f,  1.f, -1.f * patchSize/2.0f + kp.pt.y
+        const float s = scale_factor * (float)kp.size / (float)patchSize;
+        float M_[] = {
+          s,  0.f, -s * patchSize/2.0f + kp.pt.x,
+          0.f,  s, -s * patchSize/2.0f + kp.pt.y
       };
       M = Mat( 2, 3, CV_32FC1, M_ ).clone();
     }
