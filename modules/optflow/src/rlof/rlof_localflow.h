@@ -93,7 +93,7 @@ public:
             cv::GaussianBlur(inp, m_BlurredImage, cv::Size(7,7), -1);
     }
 
-    int buildPyramid(cv::Size winSize, int maxLevel, float levelScale[2]);
+    int buildPyramid(cv::Size winSize, int maxLevel, float levelScale[2], bool withBlurredImage = false);
     cv::Mat & getImage(int level) {return m_ImagePyramid[level];}
 
     std::vector<cv::Mat>     m_ImagePyramid;

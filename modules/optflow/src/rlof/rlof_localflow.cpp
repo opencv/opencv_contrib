@@ -354,11 +354,15 @@ int buildOpticalFlowPyramidScale(InputArray _img, OutputArrayOfArrays pyramid, S
 
     return maxLevel;
 }
-int CImageBuffer::buildPyramid(cv::Size winSize, int maxLevel, float levelScale[2])
+
+int CImageBuffer::buildPyramid(cv::Size winSize, int maxLevel, float levelScale[2],bool withBlurredImage )
 {
-    if (m_Overwrite == false)
+    if (! m_Overwrite)
         return m_maxLevel;
-    m_maxLevel = buildOpticalFlowPyramidScale(m_Image, m_ImagePyramid, winSize, maxLevel, false, 4, 0, true, levelScale);
+    if (withBlurredImage)
+        m_maxLevel = buildOpticalFlowPyramidScale(m_BlurredImage, m_ImagePyramid, winSize, maxLevel, false, 4, 0, true, levelScale);
+    else
+        m_maxLevel = buildOpticalFlowPyramidScale(m_Image, m_ImagePyramid, winSize, maxLevel, false, 4, 0, true, levelScale);
     return m_maxLevel;
 }
 
@@ -407,12 +411,12 @@ void calcLocalOpticalFlowCore(
     float levelScale[2] = { 2.f,2.f };
 
     int maxLevel = prevPyramids[0]->buildPyramid(cv::Size(iWinSize, iWinSize), param.maxLevel, levelScale);
-
     maxLevel = currPyramids[0]->buildPyramid(cv::Size(iWinSize, iWinSize), maxLevel, levelScale);
+
     if (useAdditionalRGB)
     {
-        prevPyramids[1]->buildPyramid(cv::Size(iWinSize, iWinSize), maxLevel, levelScale);
-        currPyramids[1]->buildPyramid(cv::Size(iWinSize, iWinSize), maxLevel, levelScale);
+        prevPyramids[1]->buildPyramid(cv::Size(iWinSize, iWinSize), maxLevel, levelScale, true);
+        currPyramids[1]->buildPyramid(cv::Size(iWinSize, iWinSize), maxLevel, levelScale, true);
     }
 
     if ((criteria.type & TermCriteria::COUNT) == 0)
@@ -661,7 +665,8 @@ void calcLocalOpticalFlow(
         prevPyramids[0]->m_Overwrite = true;
         currPyramids[0]->m_Overwrite = true;
         prevPyramids[1]->m_Overwrite = true;
-        currPyramids[1]->m_Overwrite = true;
+        // perform blurring and build blur pyramid only for the prev image
+        currPyramids[1]->m_Overwrite = false;
         if (prevImage.type() == CV_8UC3)
         {
             prevPyramids[0]->setGrayFromRGB(prevImage);
