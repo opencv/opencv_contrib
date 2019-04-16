@@ -296,7 +296,6 @@ class SparseRLOFOpticalFlowImpl : public SparseRLOFOpticalFlow
 
         int npoints = 0;
         CV_Assert((npoints = prevPtsMat.checkVector(2, CV_32F, true)) >= 0);
-        CV_Assert(prevPtsMat.type() == CV_32F);
         if (npoints == 0)
         {
             nextPts.release();
@@ -306,7 +305,6 @@ class SparseRLOFOpticalFlowImpl : public SparseRLOFOpticalFlow
         }
         Mat nextPtsMat = nextPts.getMat();
         CV_Assert(nextPtsMat.checkVector(2, CV_32F, true) == npoints);
-        CV_Assert(nextPtsMat.type() == CV_32F);
 
         std::vector<cv::Point2f> prevPoints(npoints), nextPoints(npoints), refPoints;
 
