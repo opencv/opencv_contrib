@@ -364,8 +364,8 @@ static void rectifyPatch( const Mat& image, const KeyPoint& kp,
     }
     else
     {
-		const float s = scale_factor * (float)kp.size / (float)patchSize;
-		float M_[] = {
+        const float s = scale_factor * (float)kp.size / (float)patchSize;
+        float M_[] = {
           s,  0.f, -s * patchSize/2.0f + kp.pt.x,
           0.f,  s, -s * patchSize/2.0f + kp.pt.y
       };
