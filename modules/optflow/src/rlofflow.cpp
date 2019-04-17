@@ -303,7 +303,6 @@ class SparseRLOFOpticalFlowImpl : public SparseRLOFOpticalFlow
 
         int npoints = 0;
         CV_Assert((npoints = prevPtsMat.checkVector(2, CV_32F, true)) >= 0);
-
         if (npoints == 0)
         {
             nextPts.release();
@@ -311,14 +310,22 @@ class SparseRLOFOpticalFlowImpl : public SparseRLOFOpticalFlow
             err.release();
             return;
         }
-
         Mat nextPtsMat = nextPts.getMat();
         CV_Assert(nextPtsMat.checkVector(2, CV_32F, true) == npoints);
-        std::vector<cv::Point2f> prevPoints(npoints), nextPoints(npoints), refPoints;
-        prevPtsMat.copyTo(cv::Mat(1, npoints, CV_32FC2, &prevPoints[0]));
-        if (param->useInitialFlow )
-            nextPtsMat.copyTo(cv::Mat(1, nextPtsMat.cols, CV_32FC2, &nextPoints[0]));
 
+        std::vector<cv::Point2f> prevPoints(npoints), nextPoints(npoints), refPoints;
+
+        if (prevPtsMat.channels() != 2)
+            prevPtsMat = prevPtsMat.reshape(2, npoints);
+
+        prevPtsMat.copyTo(prevPoints);
+
+        if (param->useInitialFlow )
+        {
+            if (nextPtsMat.channels() != 2)
+                nextPtsMat = nextPtsMat.reshape(2, npoints);
+            nextPtsMat.copyTo(nextPoints);
+        }
         cv::Mat statusMat;
         cv::Mat errorMat;
         if (status.needed() || forwardBackwardThreshold > 0)
@@ -346,7 +353,7 @@ class SparseRLOFOpticalFlowImpl : public SparseRLOFOpticalFlow
         {
             Point2f diff = refPoints[r] - prevPoints[r];
             errorMat.at<float>(r) = sqrt(diff.x * diff.x + diff.y * diff.y);
-            if (errorMat.at<float>(r) <= forwardBackwardThreshold)
+            if (errorMat.at<float>(r) > forwardBackwardThreshold)
                 statusMat.at<uchar>(r) = 0;
         }
 

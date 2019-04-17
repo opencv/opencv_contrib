@@ -260,7 +260,7 @@ TEST(DenseOpticalFlow_RLOF, ReferenceAccuracy)
 
     ASSERT_EQ(GT.rows, flow.rows);
     ASSERT_EQ(GT.cols, flow.cols);
-    EXPECT_LE(calcRMSE(GT, flow), 0.44f);
+    EXPECT_LE(calcRMSE(GT, flow), 0.46f);
 
     algo->setInterpolation(INTERP_GEO);
     algo->calc(frame1, frame2, flow);
