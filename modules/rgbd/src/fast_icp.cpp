@@ -240,7 +240,7 @@ struct GetAbInvoker : ParallelLoopBody
                 // x, y, 0, 0
                 oldCoords = v_muladd(newP/v_setall_f32(pz), vfxy, vcxy);
 
-                if(!v_check_all((oldCoords >= v_setzero_f32()) & (oldCoords < vframe)))
+                if(!v_check_all(v_float32x4::fromMask((oldCoords >= v_setzero_f32()) & (oldCoords < vframe))))
                     continue;
 
                 // bilinearly interpolate oldPts and oldNrm under oldCoords point

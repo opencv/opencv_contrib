@@ -291,8 +291,7 @@ struct IntegrateInvoker : ParallelLoopBody
                     {
                         const v_float32x4& pt = projected;
                         // check coords >= 0 and < imgSize
-                        v_uint32x4 limits = v_reinterpret_as_u32(pt < v_setzero_f32()) |
-                                            v_reinterpret_as_u32(pt >= upLimits);
+                        v_uint32x4 limits = v_uint32x4::fromMask((pt < v_setzero_f32()) | (pt >= upLimits));
                         limits = limits | v_rotate_right<1>(limits);
                         if(limits.get0())
                             continue;
@@ -316,7 +315,7 @@ struct IntegrateInvoker : ParallelLoopBody
 
                         // assume correct depth is positive
                         // don't fix missing data
-                        if(v_check_all(vall > v_setzero_f32()))
+                        if(v_check_all(v_float32x4::fromMask(vall > v_setzero_f32())))
                         {
                             v_float32x4 t = pt - v_cvt_f32(ip);
                             float tx = t.get0();
@@ -556,12 +555,15 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f _p) const
 
 inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
 {
-    if(v_check_any((p < v_float32x4(1.f, 1.f, 1.f, 0.f)) +
-                   (p >= v_float32x4((float)(volResolution.x-2),
-                                     (float)(volResolution.y-2),
-                                     (float)(volResolution.z-2), 1.f))
-                   ))
-        return nanv;
+    if(v_check_any(
+        v_float32x4::fromMask(p < v_float32x4(1.f, 1.f, 1.f, 0.f)) +
+        v_float32x4::fromMask(p >= v_float32x4(
+            (float)(volResolution.x-2),
+            (float)(volResolution.y-2),
+            (float)(volResolution.z-2),
+            1.f
+        ))
+    )) return nanv;
 
     v_int32x4 ip = v_floor(p);
     v_float32x4 t = p - v_cvt_f32(ip);

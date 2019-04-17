@@ -130,8 +130,8 @@ void calculateChannelSums(uint &sumB, uint &sumG, uint &sumR, uchar *src_data, i
         v_expand(v_max_val, v_max1, v_max2);
 
         // Calculate masks
-        v_m1 = ~(v_mul_wrap(v_max1 - v_min1, v_255) > v_mul_wrap(v_thresh, v_max1));
-        v_m2 = ~(v_mul_wrap(v_max2 - v_min2, v_255) > v_mul_wrap(v_thresh, v_max2));
+        v_m1 = v_uint16x8::fromMask(v_mul_wrap(v_max1 - v_min1, v_255) <= v_mul_wrap(v_thresh, v_max1));
+        v_m2 = v_uint16x8::fromMask(v_mul_wrap(v_max2 - v_min2, v_255) <= v_mul_wrap(v_thresh, v_max2));
 
         // Apply masks
         v_iB1 = (v_iB1 & v_m1) + (v_iB2 & v_m2);
@@ -197,8 +197,8 @@ void calculateChannelSums(uint64 &sumB, uint64 &sumG, uint64 &sumR, ushort *src_
         v_expand(v_max_val, v_max1, v_max2);
 
         // Calculate masks
-        v_m1 = ~((v_max1 - v_min1) * v_65535 > v_thresh * v_max1);
-        v_m2 = ~((v_max2 - v_min2) * v_65535 > v_thresh * v_max2);
+        v_m1 = v_uint32x4::fromMask((v_max1 - v_min1) * v_65535 <= v_thresh * v_max1);
+        v_m2 = v_uint32x4::fromMask((v_max2 - v_min2) * v_65535 <= v_thresh * v_max2);
 
         // Apply masks
         v_iB1 = (v_iB1 & v_m1) + (v_iB2 & v_m2);
