@@ -387,8 +387,8 @@ class CV_EXPORTS_W GridBoard : public Board {
  * Note that returning a 0 means the pose has not been estimated.
  */
 CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, const Ptr<Board> &board,
-                                   InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec,
-                                   OutputArray tvec, bool useExtrinsicGuess = false);
+                                   InputArray cameraMatrix, InputArray distCoeffs, InputOutputArray rvec,
+                                   InputOutputArray tvec, bool useExtrinsicGuess = false);
 
 
 

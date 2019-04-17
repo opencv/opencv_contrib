@@ -1579,8 +1579,8 @@ void refineDetectedMarkers(InputArray _image, const Ptr<Board> &_board,
 /**
   */
 int estimatePoseBoard(InputArrayOfArrays _corners, InputArray _ids, const Ptr<Board> &board,
-                      InputArray _cameraMatrix, InputArray _distCoeffs, OutputArray _rvec,
-                      OutputArray _tvec, bool useExtrinsicGuess) {
+                      InputArray _cameraMatrix, InputArray _distCoeffs, InputOutputArray _rvec,
+                      InputOutputArray _tvec, bool useExtrinsicGuess) {
 
     CV_Assert(_corners.total() == _ids.total());
 
