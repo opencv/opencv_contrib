@@ -4,7 +4,6 @@
 #include "../precomp.hpp"
 
 #include "opencv2/calib3d.hpp"  // findHomography
-#include "opencv2/highgui.hpp"
 #include "rlof_localflow.h"
 #include "berlof_invoker.hpp"
 #include "rlof_invoker.hpp"
