@@ -180,6 +180,12 @@ public:
     virtual void setMotionModel(MotionModel val) { motionModel_ = val; }
     virtual MotionModel motionModel() const { return motionModel_; }
 
+    virtual void setFrameMask(InputArray mask)
+    {
+        if (!mask.empty())
+            CV_Error(Error::StsNotImplemented, "Mask support is not implemented.");
+    }
+
     virtual Mat estimate(const Mat &frame0, const Mat &frame1, bool *ok = 0) = 0;
 
 protected:
@@ -208,6 +214,8 @@ public:
     virtual void setMotionModel(MotionModel val) CV_OVERRIDE { motionEstimator_->setMotionModel(val); }
     virtual MotionModel motionModel() const CV_OVERRIDE { return motionEstimator_->motionModel(); }
 
+    virtual void setFrameMask(InputArray mask) CV_OVERRIDE { motionEstimator_->setFrameMask(mask); }
+
     virtual Mat estimate(const Mat &frame0, const Mat &frame1, bool *ok = 0) CV_OVERRIDE;
 
 private:
@@ -235,6 +243,8 @@ public:
     void setOutlierRejector(Ptr<IOutlierRejector> val) { outlierRejector_ = val; }
     Ptr<IOutlierRejector> outlierRejector() const { return outlierRejector_; }
 
+    virtual void setFrameMask(InputArray mask) CV_OVERRIDE { mask_ = mask.getMat(); }
+
     virtual Mat estimate(const Mat &frame0, const Mat &frame1, bool *ok = 0) CV_OVERRIDE;
     Mat estimate(InputArray frame0, InputArray frame1, bool *ok = 0);
 
@@ -243,6 +253,7 @@ private:
     Ptr<FeatureDetector> detector_;
     Ptr<ISparseOptFlowEstimator> optFlowEstimator_;
     Ptr<IOutlierRejector> outlierRejector_;
+    Mat mask_;
 
     std::vector<uchar> status_;
     std::vector<KeyPoint> keypointsPrev_;
@@ -263,6 +274,8 @@ public:
     void setOutlierRejector(Ptr<IOutlierRejector> val) { outlierRejector_ = val; }
     Ptr<IOutlierRejector> outlierRejector() const { return outlierRejector_; }
 
+    virtual void setFrameMask(InputArray mask) CV_OVERRIDE { mask_ = mask.getMat(); }
+
     virtual Mat estimate(const Mat &frame0, const Mat &frame1, bool *ok = 0) CV_OVERRIDE;
     Mat estimate(const cuda::GpuMat &frame0, const cuda::GpuMat &frame1, bool *ok = 0);
 
@@ -271,6 +284,7 @@ private:
     Ptr<cuda::CornersDetector> detector_;
     SparsePyrLkOptFlowEstimatorGpu optFlowEstimator_;
     Ptr<IOutlierRejector> outlierRejector_;
+    GpuMat mask_;
 
     cuda::GpuMat frame0_, grayFrame0_, frame1_;
     cuda::GpuMat pointsPrev_, points_;

@@ -77,6 +77,9 @@ public:
     void setFrameSource(Ptr<IFrameSource> val) { frameSource_ = val; }
     Ptr<IFrameSource> frameSource() const { return frameSource_; }
 
+    void setMaskSource(const Ptr<IFrameSource>& val) { maskSource_ = val; }
+    Ptr<IFrameSource> maskSource() const { return maskSource_; }
+
     void setMotionEstimator(Ptr<ImageMotionEstimatorBase> val) { motionEstimator_ = val; }
     Ptr<ImageMotionEstimatorBase> motionEstimator() const { return motionEstimator_; }
 
@@ -110,6 +113,7 @@ protected:
 
     Ptr<ILog> log_;
     Ptr<IFrameSource> frameSource_;
+    Ptr<IFrameSource> maskSource_;
     Ptr<ImageMotionEstimatorBase> motionEstimator_;
     Ptr<DeblurerBase> deblurer_;
     Ptr<InpainterBase> inpainter_;
