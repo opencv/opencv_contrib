@@ -1409,8 +1409,7 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
                    ocl::KernelArg::PtrReadOnly(volPoseGpu),
                    voxelSize,
                    voxelSizeInv,
-                   //TODO: replace by KernelArg::Local(lsz)
-                   ocl::KernelArg(ocl::KernelArg::LOCAL, 0, 1, 1, 0, lsz),
+                   ocl::KernelArg::Local(lsz),
                    ocl::KernelArg::WriteOnlyNoSize(groupedSum));
 
         if(!kscan.run(3, globalSize, localSize, true))
@@ -1455,8 +1454,7 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
                    voxelSize,
                    voxelSizeInv,
                    ((int)needNormals),
-                   //TODO: replace by ::Local(lsz)
-                   ocl::KernelArg(ocl::KernelArg::LOCAL, 0, 1, 1, 0, lsz),
+                   ocl::KernelArg::Local(lsz),
                    ocl::KernelArg::PtrReadWrite(atomicCtr),
                    ocl::KernelArg::ReadOnlyNoSize(groupedSum),
                    ocl::KernelArg::WriteOnlyNoSize(pts),

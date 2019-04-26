@@ -594,8 +594,7 @@ void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& ne
            fxy.val, cxy.val,
            distanceThreshold*distanceThreshold,
            cos(angleThreshold),
-           //TODO: replace by KernelArg::Local(lsz)
-           ocl::KernelArg(ocl::KernelArg::LOCAL, 0, 1, 1, 0, lsz),
+           ocl::KernelArg::Local(lsz),
            ocl::KernelArg::WriteOnlyNoSize(groupedSumGpu)
            );
 
