@@ -56,7 +56,8 @@ inline void calcAb7(__global const char * oldPointsptr,
     float3 newP = newPtsRow[x].xyz;
     float3 newN = newNrmRow[x].xyz;
 
-    if(any(isnan(newP)) || any(isnan(newN)))
+    if( any(isnan(newP)) || any(isnan(newN)) ||
+        any(isinf(newP)) || any(isinf(newN)) )
         return;
 
     //transform to old coord system
@@ -114,7 +115,8 @@ inline void calcAb7(__global const char * oldPointsptr,
     float3 n1 = mix(n10, n11, t.x);
     oldN = mix(n0, n1, t.y);
 
-    if(any(isnan(oldP)) || any(isnan(oldN)))
+    if( any(isnan(oldP)) || any(isnan(oldN)) ||
+        any(isinf(oldP)) || any(isinf(oldN)) )
         return;
 
     //filter by distance
@@ -198,6 +200,24 @@ __kernel void getAb(__global const char * oldPointsptr,
     // which is [A^T*A | A^T*b]
     // and gather sum
 
+    //DEBUG
+    int bad = 0;
+    for(int i = 0; i < 7; i++)
+    {
+        float v = ab[i];
+        if(any(isinf(v)) || any(isnan(v)))
+            bad = 1;
+    }
+    if(bad)
+    {
+        printf("!!! abnormal ab at (%d, %d): ", x, y);
+        for(int i = 0; i < 7; i++)
+        {
+            printf(" %f", ab[i]);
+        }
+        printf("\n");
+    }
+
     __local float* upperTriangle = reducebuf + lid*UTSIZE;
 
     int pos = 0;
@@ -232,10 +252,6 @@ __kernel void getAb(__global const char * oldPointsptr,
         __global float* groupedRow = (__global float*)(groupedSumptr +
                                                        groupedSum_offset +
                                                        gy*groupedSum_step);
-
-        //DEBUG
-        printf("icp: gx=%d gy=%d, ab[0]=%f, ab[1]=%f, upperTriangle[0]=%f, reducebuf[0]=%f\n",
-                     gx,   gy,    ab[0],    ab[1],    upperTriangle[0],    reducebuf[0]);
 
         for(int i = 0; i < UTSIZE; i++)
             groupedRow[gx*UTSIZE + i] = reducebuf[i];
