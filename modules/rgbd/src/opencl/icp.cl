@@ -233,6 +233,9 @@ __kernel void getAb(__global const char * oldPointsptr,
                                                        groupedSum_offset +
                                                        gy*groupedSum_step);
 
+        //DEBUG
+        printf("icp: gx=%d gy=%d\n", gx, gy);
+
         for(int i = 0; i < UTSIZE; i++)
             groupedRow[gx*UTSIZE + i] = reducebuf[i];
     }
