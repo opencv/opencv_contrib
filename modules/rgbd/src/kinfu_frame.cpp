@@ -616,9 +616,6 @@ void makeFrameFromDepth(InputArray _depth,
     // looks like OpenCV's bilateral filter works the same as KinFu's
     Depth smooth;
 
-    //TODO: remove it after tests
-    patchNaNs(depth);
-
     bilateralFilter(depth, smooth, kernelSize, sigmaDepth*depthFactor, sigmaSpatial);
 
     // depth truncation is not used by default
