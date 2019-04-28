@@ -93,6 +93,7 @@ bool FacemarkKazemiImpl::setMeanExtreme(){
     }
     return true;
 }
+
 bool FacemarkKazemiImpl::calcMeanShape (vector< vector<Point2f> >& trainlandmarks,vector<Mat>& trainimages,std::vector<Rect>& faces){
     //clear the loaded meanshape
     if(trainimages.empty()||trainlandmarks.size()!=trainimages.size()) {
@@ -110,14 +111,25 @@ bool FacemarkKazemiImpl::calcMeanShape (vector< vector<Point2f> >& trainlandmark
     Mat warp_mat,src,C,D;
     vector<Rect> facesp;
     Rect face;
+
+    // Shardul - addition for now - since cannot set in own detector using
+    // setFaceDetector using python
+    CascadeClassifier face_cascade;
+    face_cascade.load("../haarcascade_frontalface_alt2.xml");
+
     for(size_t i = 0;i < trainimages.size();i++){
         src = trainimages[i].clone();
         //get bounding rectangle of image for reference
         //function from facemark class
         facesp.clear();
-        if(!getFaces(src,facesp)){
-            continue;
-        }
+
+        // currently detecting a face in this manner
+        face_cascade.detectMultiScale( src, facesp );
+
+        // if(!getFaces(src,facesp)){
+        //     continue;
+        // }
+
         if(facesp.size()>1||facesp.empty())
             continue;
         face = facesp[0];
@@ -182,6 +194,7 @@ bool FacemarkKazemiImpl::scaleData( vector< vector<Point2f> > & trainlandmarks,
     }
     return true;
 }
+
 Ptr<FacemarkKazemi> FacemarkKazemi::create(const FacemarkKazemi::Params &parameters){
     return Ptr<FacemarkKazemiImpl>(new FacemarkKazemiImpl(parameters));
 }

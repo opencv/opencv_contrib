@@ -341,5 +341,31 @@ bool FacemarkKazemiImpl::training(vector<Mat>& images, vector< vector<Point2f> >
     saveModel(modelFilename);
     return true;
 }
+
+bool FacemarkKazemiImpl::trainKazemi(InputArrayOfArrays images, InputArrayOfArrays landmarks, std::string filename, InputArray scale, std::string modelFilename){
+   
+    // setting the scale according to the input given
+    Mat _scale = scale.getMat(); 
+    Size s=Size( _scale.at<int>(0,0), _scale.at<int>(0,1));
+    
+    int nimages = (int)images.total();
+    int nlandmarks = (int)landmarks.total();
+
+    vector<vector<Point2f>> _landmarks;
+    vector<Mat> _images;
+    int i ;
+
+    //storing the images and landmarks in the format to used by the actual training function
+    for(i = 0; i<nimages; i++){
+        Mat ind_landmark = landmarks.getMat(i);
+        vector<Point2f> ptvec = (ind_landmark);
+        _landmarks.push_back(ptvec);
+
+        _images.push_back(images.getMat(i));
+    }
+    bool trainingResult = training(_images, _landmarks, filename, s, modelFilename);
+    std::cout<<"Finished Training Kazemi"<<endl;
+    return trainingResult;
+}
 }//cv
 }//face
