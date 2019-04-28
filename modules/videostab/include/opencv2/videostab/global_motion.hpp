@@ -274,8 +274,6 @@ public:
     void setOutlierRejector(Ptr<IOutlierRejector> val) { outlierRejector_ = val; }
     Ptr<IOutlierRejector> outlierRejector() const { return outlierRejector_; }
 
-    virtual void setFrameMask(InputArray mask) CV_OVERRIDE { mask_ = mask.getMat(); }
-
     virtual Mat estimate(const Mat &frame0, const Mat &frame1, bool *ok = 0) CV_OVERRIDE;
     Mat estimate(const cuda::GpuMat &frame0, const cuda::GpuMat &frame1, bool *ok = 0);
 
@@ -284,7 +282,6 @@ private:
     Ptr<cuda::CornersDetector> detector_;
     SparsePyrLkOptFlowEstimatorGpu optFlowEstimator_;
     Ptr<IOutlierRejector> outlierRejector_;
-    GpuMat mask_;
 
     cuda::GpuMat frame0_, grayFrame0_, frame1_;
     cuda::GpuMat pointsPrev_, points_;
