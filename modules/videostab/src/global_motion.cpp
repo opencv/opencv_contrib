@@ -815,7 +815,7 @@ Mat KeypointBasedMotionEstimatorGpu::estimate(const cuda::GpuMat &frame0, const 
     }
 
     // find keypoints
-    detector_->detect(grayFrame0, pointsPrev_, mask_);
+    detector_->detect(grayFrame0, pointsPrev_);
 
     // find correspondences
     optFlowEstimator_.run(frame0, frame1, pointsPrev_, points_, status_);
