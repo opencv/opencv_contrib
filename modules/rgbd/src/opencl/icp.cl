@@ -255,5 +255,9 @@ __kernel void getAb(__global const char * oldPointsptr,
 
         for(int i = 0; i < UTSIZE; i++)
             groupedRow[gx*UTSIZE + i] = reducebuf[i];
+
+        //DEBUG
+        printf("icp: gx=%d gy=%d, ab[0]=%f, ab[1]=%f, upperTriangle[0]=%f, reducebuf[0]=%f\n",
+                     gx,   gy,    ab[0],    ab[1],    upperTriangle[0],    reducebuf[0]);
     }
 }
