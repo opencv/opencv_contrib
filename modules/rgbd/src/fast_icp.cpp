@@ -545,7 +545,9 @@ void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& ne
 
     cv::String errorStr;
     ocl::ProgramSource source = ocl::rgbd::icp_oclsrc;
-    cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
+    //DEBUG
+    //cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
+    cv::String options;
     ocl::Kernel k;
     k.create("getAb", source, options, &errorStr);
 

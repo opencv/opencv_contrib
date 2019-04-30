@@ -229,6 +229,14 @@ __kernel void getAb(__global const char * oldPointsptr,
         }
     }
 
+    //DEBUG
+    if(lid == 0)
+    {
+        //DEBUG
+        printf("icp: gx=%d gy=%d, ab[0]=%f, ab[1]=%f, upperTriangle[0]=%f, upperTriangle[1]=%f\n",
+                     gx,   gy,    ab[0],    ab[1],    upperTriangle[0],    upperTriangle[1]);
+    }
+
     // reduce upperTriangle to local mem
 
     // maxStep = ctz(lsz), ctz isn't supported on CUDA devices
@@ -243,6 +251,16 @@ __kernel void getAb(__global const char * oldPointsptr,
             for(int i = 0; i < UTSIZE; i++)
                 rto[i] += rfrom[i];
         }
+
+        //DEBUG
+        if(lid == 0)
+        {
+            __local float* rto   = reducebuf + UTSIZE*0;
+            __local float* rfrom = reducebuf + UTSIZE*(0+(1 << (nstep-1)));
+            printf("reduce: gx=%d gy=%d, nstep=%d, rto[0]=%f, rfrom[0]=%f\n",
+                            gx,   gy,    nstep,    rto[0],    rfrom[0]);
+        }
+
         barrier(CLK_LOCAL_MEM_FENCE);
     }
 
@@ -257,7 +275,7 @@ __kernel void getAb(__global const char * oldPointsptr,
             groupedRow[gx*UTSIZE + i] = reducebuf[i];
 
         //DEBUG
-        printf("icp: gx=%d gy=%d, ab[0]=%f, ab[1]=%f, upperTriangle[0]=%f, reducebuf[0]=%f\n",
-                     gx,   gy,    ab[0],    ab[1],    upperTriangle[0],    reducebuf[0]);
+        printf("write: gx=%d gy=%d, reducebuf[0]=%f, groupedRow[gx*UTSIZE+0]=%f\n",
+                       gx,   gy,    reducebuf[0],    groupedRow[gx*UTSIZE+0]);
     }
 }
