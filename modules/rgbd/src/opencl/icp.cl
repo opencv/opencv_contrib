@@ -200,24 +200,6 @@ __kernel void getAb(__global const char * oldPointsptr,
     // which is [A^T*A | A^T*b]
     // and gather sum
 
-    //DEBUG
-    int bad = 0;
-    for(int i = 0; i < 7; i++)
-    {
-        float v = ab[i];
-        if(any(isinf(v)) || any(isnan(v)))
-            bad = 1;
-    }
-    if(bad)
-    {
-        printf("!!! abnormal ab at (%d, %d): ", x, y);
-        for(int i = 0; i < 7; i++)
-        {
-            printf(" %f", ab[i]);
-        }
-        printf("\n");
-    }
-
     __local float* upperTriangle = reducebuf + lid*UTSIZE;
 
     int pos = 0;
@@ -227,14 +209,6 @@ __kernel void getAb(__global const char * oldPointsptr,
         {
             upperTriangle[pos++] = ab[i]*ab[j];
         }
-    }
-
-    //DEBUG
-    if(lid == 0)
-    {
-        //DEBUG
-        printf("icp: gx=%d gy=%d, ab[0]=%f, ab[1]=%f, upperTriangle[0]=%f, upperTriangle[1]=%f\n",
-                     gx,   gy,    ab[0],    ab[1],    upperTriangle[0],    upperTriangle[1]);
     }
 
     // reduce upperTriangle to local mem
@@ -251,16 +225,6 @@ __kernel void getAb(__global const char * oldPointsptr,
             for(int i = 0; i < UTSIZE; i++)
                 rto[i] += rfrom[i];
         }
-
-        //DEBUG
-        if(lid == 0)
-        {
-            __local float* rto   = reducebuf + UTSIZE*0;
-            __local float* rfrom = reducebuf + UTSIZE*(0+(1 << (nstep-1)));
-            printf("reduce: gx=%d gy=%d, nstep=%d, rto[0]=%f, rfrom[0]=%f\n",
-                            gx,   gy,    nstep,    rto[0],    rfrom[0]);
-        }
-
         barrier(CLK_LOCAL_MEM_FENCE);
     }
 
@@ -273,9 +237,5 @@ __kernel void getAb(__global const char * oldPointsptr,
 
         for(int i = 0; i < UTSIZE; i++)
             groupedRow[gx*UTSIZE + i] = reducebuf[i];
-
-        //DEBUG
-        printf("write: gx=%d gy=%d, reducebuf[0]=%f, groupedRow[gx*UTSIZE+0]=%f\n",
-                       gx,   gy,    reducebuf[0],    groupedRow[gx*UTSIZE+0]);
     }
 }

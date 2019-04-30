@@ -545,9 +545,7 @@ void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& ne
 
     cv::String errorStr;
     ocl::ProgramSource source = ocl::rgbd::icp_oclsrc;
-    //DEBUG
-    //cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
-    cv::String options;
+    cv::String options = "-cl-mad-enable";
     ocl::Kernel k;
     k.create("getAb", source, options, &errorStr);
 
@@ -600,11 +598,6 @@ void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& ne
            ocl::KernelArg::WriteOnlyNoSize(groupedSumGpu)
            );
 
-    //DEBUG
-    cout << "global size: " << globalSize[0] << 'x' << globalSize[1] << endl;
-    cout << "local  size: " << localSize[0] << 'x' << localSize[1] << endl;
-    cout << "lsz: " << lsz << endl;
-
     if(!k.run(2, globalSize, localSize, true))
         throw std::runtime_error("Failed to run kernel");
 
@@ -613,9 +606,6 @@ void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& ne
         upperTriangle[i] = 0;
 
     Mat groupedSumCpu = groupedSumGpu.getMat(ACCESS_READ);
-
-    //DEBUG
-    cout << "groupedSumCpu: " << sum(groupedSumCpu)[0] << endl;
 
     for(int y = 0; y < ngroups.height; y++)
     {
