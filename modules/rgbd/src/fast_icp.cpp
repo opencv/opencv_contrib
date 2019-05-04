@@ -545,7 +545,7 @@ void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& ne
 
     cv::String errorStr;
     ocl::ProgramSource source = ocl::rgbd::icp_oclsrc;
-    cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
+    cv::String options = "-cl-mad-enable";
     ocl::Kernel k;
     k.create("getAb", source, options, &errorStr);
 
@@ -594,8 +594,7 @@ void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& ne
            fxy.val, cxy.val,
            distanceThreshold*distanceThreshold,
            cos(angleThreshold),
-           //TODO: replace by KernelArg::Local(lsz)
-           ocl::KernelArg(ocl::KernelArg::LOCAL, 0, 1, 1, 0, lsz),
+           ocl::KernelArg::Local(lsz),
            ocl::KernelArg::WriteOnlyNoSize(groupedSumGpu)
            );
 
