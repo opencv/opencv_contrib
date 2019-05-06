@@ -2,6 +2,7 @@
 #include  <iostream>
 
 #include "opencv2/quality.hpp"
+#include "opencv2/quality/quality_utils.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/ml.hpp"
 

@@ -43,7 +43,7 @@ public:
     }
 
     /** @brief Implements Algorithm::clear()  */
-    CV_WRAP void clear() CV_OVERRIDE { _qualityMap = {}; Algorithm::clear(); }
+    CV_WRAP void clear() CV_OVERRIDE { _qualityMap = _mat_type(); Algorithm::clear(); }
 
     /** @brief Implements Algorithm::empty()  */
     CV_WRAP bool empty() const CV_OVERRIDE { return _qualityMap.empty(); }

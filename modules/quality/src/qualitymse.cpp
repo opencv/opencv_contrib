@@ -28,40 +28,6 @@ namespace
 
         return result;
     }
-
-    // computes mse and quality maps for multiple frames
-    cv::Scalar compute(const std::vector<mse_mat_type>& lhs, const std::vector<mse_mat_type>& rhs, OutputArrayOfArrays qualityMaps )
-    {
-        CV_Assert(lhs.size() > 0);
-        CV_Assert(lhs.size() == rhs.size());
-
-        cv::Scalar result = {};
-        std::vector<_quality_map_type> quality_maps = {};
-        const auto sz = lhs.size();
-
-        for (unsigned i = 0; i < sz; ++i)
-        {
-            CV_Assert(!lhs.empty() && !rhs.empty());
-
-            auto cmp = compute(lhs[i], rhs[i]);
-            cv::add(result, cmp.first, result);
-
-            if ( qualityMaps.needed() )
-                quality_maps.emplace_back(std::move(cmp.second));
-        }
-
-        if (qualityMaps.needed())
-        {
-            auto qMaps = InputArray(quality_maps);
-            qualityMaps.create(qMaps.size(), qMaps.type());
-            qualityMaps.assign(quality_maps);
-        }
-
-        if (sz > 1)
-            result /= (cv::Scalar::value_type)sz;   // average result
-
-        return result;
-    }
 }
 
 // static

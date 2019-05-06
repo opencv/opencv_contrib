@@ -28,7 +28,7 @@ public:
     CV_WRAP bool empty() const CV_OVERRIDE { return _ref.empty() && QualityBase::empty(); }
 
     /** @brief Implements Algorithm::clear()  */
-    CV_WRAP void clear() CV_OVERRIDE { _ref = {}; QualityBase::clear(); }
+    CV_WRAP void clear() CV_OVERRIDE { _ref = _mat_type(); QualityBase::clear(); }
 
     /**
     @brief Create an object which calculates quality

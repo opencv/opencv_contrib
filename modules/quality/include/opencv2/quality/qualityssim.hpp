@@ -30,7 +30,7 @@ public:
     CV_WRAP bool empty() const CV_OVERRIDE { return _refImgData.empty() && QualityBase::empty(); }
 
     /** @brief Implements Algorithm::clear()  */
-    CV_WRAP void clear() CV_OVERRIDE { _refImgData = {}; QualityBase::clear(); }
+    CV_WRAP void clear() CV_OVERRIDE { _refImgData = _mat_data(); QualityBase::clear(); }
 
     /**
     @brief Create an object which calculates quality
