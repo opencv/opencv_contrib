@@ -240,26 +240,6 @@ namespace
         result[0] = computescore(model, range, img);
         return result;
     }
-
-    cv::Scalar compute( const cv::Ptr<cv::ml::SVM>& model, const cv::Mat& range, std::vector<brisque_mat_type>& imgs)
-    {
-        CV_DbgAssert(imgs.size() > 0);
-
-        cv::Scalar result = {};
-
-        const auto sz = imgs.size();
-
-        for (unsigned i = 0; i < sz; ++i)
-        {
-            auto cmp = compute(model, range, imgs[i]);
-            cv::add(result, cmp, result);
-        }
-
-        if (sz > 1)
-            result /= (cv::Scalar::value_type)sz;   // average result
-
-        return result;
-    }
 }
 
 // static
@@ -275,10 +255,10 @@ cv::Ptr<QualityBRISQUE> QualityBRISQUE::create(const cv::Ptr<cv::ml::SVM>& model
 }
 
 // static
-cv::Scalar QualityBRISQUE::compute(InputArrayOfArrays imgs, const cv::String& model_file_path, const cv::String& range_file_path)
+cv::Scalar QualityBRISQUE::compute( InputArray img, const cv::String& model_file_path, const cv::String& range_file_path)
 {
-    auto obj = create(model_file_path, range_file_path);
-    return obj->compute(imgs);
+    auto obj = create(model_file_path, range_file_path);// call static create method
+    return obj->compute(img);
 }
 
 // QualityBRISQUE() constructor
@@ -311,16 +291,13 @@ QualityBRISQUE::QualityBRISQUE(const cv::String& model_file_path, const cv::Stri
     );
 }
 
-cv::Scalar QualityBRISQUE::compute(InputArrayOfArrays imgs)
+cv::Scalar QualityBRISQUE::compute( InputArray img )
 {
-    auto vec = quality_utils::extract_mats<brisque_mat_type>(imgs); // extract input mats
+    auto mat = quality_utils::extract_mat<brisque_mat_type>(img); // extract input mats
 
-    CV_Assert(!vec.empty());
+    mat = mat_convert(mat);// convert to gs, scale to [0,1]
 
-    for (auto& mat : vec)
-        mat = mat_convert(mat); // convert to gs, scale to [0,1]
-
-    return ::compute(this->_model, this->_range, vec);
+    return ::compute(this->_model, this->_range, mat );
 }
 
 //static

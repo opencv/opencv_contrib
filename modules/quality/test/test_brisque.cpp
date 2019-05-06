@@ -47,7 +47,7 @@ TEST(TEST_CASE_NAME, static_ )
 // single channel, instance method, with and without opencl
 TEST(TEST_CASE_NAME, single_channel )
 {
-    auto fn = []() { quality_test(create_brisque(), get_testfile_1a(), BRISQUE_EXPECTED_1, 0, true ); };
+    auto fn = []() { quality_test(create_brisque(), get_testfile_1a(), BRISQUE_EXPECTED_1, false, true ); };
     OCL_OFF( fn() );
     OCL_ON( fn() );
 }
@@ -55,25 +55,14 @@ TEST(TEST_CASE_NAME, single_channel )
 // multi-channel
 TEST(TEST_CASE_NAME, multi_channel)
 {
-    quality_test(create_brisque(), get_testfile_2a(), BRISQUE_EXPECTED_2, 0, true);
-}
-
-// multi-frame test
-TEST(TEST_CASE_NAME, multi_frame)
-{
-    // result mse == average of all frames
-    cv::Scalar expected;
-    cv::add(BRISQUE_EXPECTED_1, BRISQUE_EXPECTED_2, expected);
-    expected /= 2.;
-
-    quality_test(create_brisque(), get_testfile_1a2a(), expected, 0, true );
+    quality_test(create_brisque(), get_testfile_2a(), BRISQUE_EXPECTED_2, false, true);
 }
 
 // check brisque model/range persistence
 TEST(TEST_CASE_NAME, model_persistence )
 {
     auto ptr = create_brisque();
-    auto fn = [&ptr]() { quality_test(ptr, get_testfile_1a(), BRISQUE_EXPECTED_1, 0, true); };
+    auto fn = [&ptr]() { quality_test(ptr, get_testfile_1a(), BRISQUE_EXPECTED_1, false, true); };
     fn();
     fn();   // model/range should persist with brisque ptr through multiple invocations
 }

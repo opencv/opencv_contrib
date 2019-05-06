@@ -5,9 +5,9 @@
 #ifndef OPENCV_QUALITY_QUALITYPSNR_HPP
 #define OPENCV_QUALITY_QUALITYPSNR_HPP
 
+#include <limits>   // numeric_limits
 #include "qualitybase.hpp"
 #include "qualitymse.hpp"
-#include "quality_utils.hpp"
 
 namespace cv
 {
@@ -31,26 +31,25 @@ public:
 #endif
 
     /**
-    @brief Create an object which calculates quality via mean square error
-    @param refImgs input image(s) to use as the source for comparison
+    @brief Create an object which calculates quality
+    @param ref input image to use as the source for comparison
     @param maxPixelValue maximum per-channel value for any individual pixel; eg 255 for uint8 image
     */
-    CV_WRAP static Ptr<QualityPSNR> create(InputArrayOfArrays refImgs, double maxPixelValue = QualityPSNR::MAX_PIXEL_VALUE_DEFAULT )
+    CV_WRAP static Ptr<QualityPSNR> create( InputArray ref, double maxPixelValue = QualityPSNR::MAX_PIXEL_VALUE_DEFAULT )
     {
-        return Ptr<QualityPSNR>(new QualityPSNR(QualityMSE::create(refImgs), maxPixelValue));
+        return Ptr<QualityPSNR>(new QualityPSNR(QualityMSE::create(ref), maxPixelValue));
     }
 
     /**
-    @brief compute the PSNR
-    @param cmpImgs Comparison images
+    @brief Compute the PSNR
+    @param cmp Comparison image
     @returns Per-channel PSNR value, or std::numeric_limits<double>::infinity() if the MSE between the two images == 0
-    The PSNR for multi-frame images is computed by calculating the average MSE of all frames and then generating the PSNR from that value
     */
-    CV_WRAP cv::Scalar compute(InputArrayOfArrays cmpImgs) CV_OVERRIDE
+    CV_WRAP cv::Scalar compute( InputArray cmp ) CV_OVERRIDE
     {
-        auto result = _qualityMSE->compute(cmpImgs);
-        _qualityMSE->getQualityMaps(_qualityMaps);  // copy from internal obj to this obj
-        return quality_utils::mse_to_psnr(
+        auto result = _qualityMSE->compute( cmp );
+        _qualityMSE->getQualityMap(_qualityMap);  // copy from internal obj to this obj
+        return _mse_to_psnr(
             result
             , _maxPixelValue
         );
@@ -64,17 +63,16 @@ public:
 
     /**
     @brief static method for computing quality
-    @param refImgs reference image(s)
-    @param cmpImgs comparison image(s)
-    @param qualityMaps output quality map(s), or cv::noArray()
+    @param ref reference image
+    @param cmp comparison image
+    @param qualityMap output quality map, or cv::noArray()
     @param maxPixelValue maximum per-channel value for any individual pixel; eg 255 for uint8 image
     @returns PSNR value, or std::numeric_limits<double>::infinity() if the MSE between the two images == 0
-    The PSNR for multi-frame images is computed by calculating the average MSE of all frames and then generating the PSNR from that value
     */
-    CV_WRAP static cv::Scalar compute(InputArrayOfArrays refImgs, InputArrayOfArrays cmpImgs, OutputArrayOfArrays qualityMaps, double maxPixelValue = QualityPSNR::MAX_PIXEL_VALUE_DEFAULT)
+    CV_WRAP static cv::Scalar compute( InputArray ref, InputArray cmp, OutputArray qualityMap, double maxPixelValue = QualityPSNR::MAX_PIXEL_VALUE_DEFAULT)
     {
-        return quality_utils::mse_to_psnr(
-            QualityMSE::compute(refImgs, cmpImgs, qualityMaps)
+        return _mse_to_psnr(
+            QualityMSE::compute(ref, cmp, qualityMap)
             , maxPixelValue
         );
     }
@@ -98,6 +96,23 @@ protected:
         : _qualityMSE(std::move(qualityMSE))
         , _maxPixelValue(maxPixelValue)
     {}
+
+    // convert mse to psnr
+    static double _mse_to_psnr(double mse, double max_pixel_value)
+    {
+        return (mse == 0.)
+            ? std::numeric_limits<double>::infinity()
+            : 10. * std::log10((max_pixel_value * max_pixel_value) / mse)
+            ;
+    }
+
+    // convert scalar of mses to psnrs
+    static cv::Scalar _mse_to_psnr(cv::Scalar mse, double max_pixel_value)
+    {
+        for (int i = 0; i < mse.rows; ++i)
+            mse(i) = _mse_to_psnr(mse(i), max_pixel_value);
+        return mse;
+    }
 
 };    // QualityPSNR
 }   // quality

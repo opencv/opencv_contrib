@@ -123,36 +123,31 @@ QualityGMSD::_mat_data::_mat_data(const QualityGMSD::_mat_data::mat_type& mat)
     this->gradient_map_squared = this->gradient_map.mul(this->gradient_map);
 }
 
-// static
-Ptr<QualityGMSD> QualityGMSD::create(InputArrayOfArrays refImgs)
-{
-    return Ptr<QualityGMSD>(new QualityGMSD( _mat_data::create( refImgs )));
-}
+QualityGMSD::_mat_data::_mat_data(InputArray arr)
+    : _mat_data(quality_utils::expand_mat<mat_type>(arr))//delegate
+{}
 
 // static
-cv::Scalar QualityGMSD::compute(InputArrayOfArrays refImgs, InputArrayOfArrays cmpImgs, OutputArrayOfArrays qualityMaps)
+Ptr<QualityGMSD> QualityGMSD::create( InputArray ref )
 {
-    auto ref = _mat_data::create( refImgs );
-    auto cmp = _mat_data::create( cmpImgs );
-
-    return _mat_data::compute(ref, cmp, qualityMaps);
+    return Ptr<QualityGMSD>(new QualityGMSD( _mat_data(ref)));
 }
 
-cv::Scalar QualityGMSD::compute(InputArrayOfArrays cmpImgs)
+// static
+cv::Scalar QualityGMSD::compute( InputArray ref, InputArray cmp, OutputArray qualityMap )
 {
-    auto cmp = _mat_data::create(cmpImgs);
-    return _mat_data::compute(this->_refImgData, cmp, this->_qualityMaps);
+    auto result = _mat_data::compute( _mat_data(ref), _mat_data(cmp) );
+
+    if (qualityMap.needed())
+        qualityMap.assign(result.second);
+    return result.first;
 }
 
-// static, converts mat/umat to vector of mat_data
-std::vector<QualityGMSD::_mat_data> QualityGMSD::_mat_data::create(InputArrayOfArrays arr)
+cv::Scalar QualityGMSD::compute( InputArray cmp )
 {
-    std::vector<_mat_data> result = {};
-    auto mats = quality_utils::expand_mats<_mat_type>(arr);
-    result.reserve(mats.size());
-    for (auto& mat : mats)
-        result.emplace_back(mat);
-    return result;
+    auto result = _mat_data::compute(this->_refImgData, _mat_data(cmp));
+    OutputArray(this->_qualityMap).assign(result.second);
+    return result.first;
 }
 
 // computes gmsd and quality map for single frame
@@ -181,38 +176,3 @@ std::pair<cv::Scalar, _quality_map_type> QualityGMSD::_mat_data::compute(const Q
 
     return result;
 }   // compute
-
-// static, computes mse and quality maps for multiple frames
-cv::Scalar QualityGMSD::_mat_data::compute(const std::vector<QualityGMSD::_mat_data>& lhs, const std::vector<QualityGMSD::_mat_data>& rhs, OutputArrayOfArrays qualityMaps)
-{
-    CV_Assert(lhs.size() > 0);
-    CV_Assert(lhs.size() == rhs.size());
-
-    cv::Scalar result = {};
-    std::vector<_quality_map_type> quality_maps = {};
-    const auto sz = lhs.size();
-
-    for (unsigned i = 0; i < sz; ++i)
-    {
-        CV_Assert(!lhs.empty() && !rhs.empty());
-
-        auto cmp = compute(lhs[i], rhs[i]); // differs slightly when using umat vs mat
-
-        cv::add(result, cmp.first, result);     // result += cmp.first
-
-        if (qualityMaps.needed())
-            quality_maps.emplace_back(std::move(cmp.second));
-    }
-
-    if (qualityMaps.needed())
-    {
-        auto qMaps = InputArray(quality_maps);
-        qualityMaps.create(qMaps.size(), qMaps.type());
-        qualityMaps.assign(quality_maps);
-    }
-
-    if (sz > 1)
-        result /= (cv::Scalar::value_type)sz;  // average result
-
-    return result;
-}

@@ -34,40 +34,40 @@ QualitySSIM::_mat_data::_mat_data( const _mat_type& mat )
     cv::subtract(this->sigma_2, this->mu_2, this->sigma_2);
 }
 
-// static
-Ptr<QualitySSIM> QualitySSIM::create(InputArrayOfArrays refImgs)
-{
-    return Ptr<QualitySSIM>(new QualitySSIM( _mat_data::create( refImgs )));
-}
+QualitySSIM::_mat_data::_mat_data(InputArray arr )
+    : _mat_data( quality_utils::expand_mat<mat_type>(arr) )    // delegate
+{}
 
 // static
-cv::Scalar QualitySSIM::compute(InputArrayOfArrays refImgs, InputArrayOfArrays cmpImgs, OutputArrayOfArrays qualityMaps)
+Ptr<QualitySSIM> QualitySSIM::create( InputArray ref )
 {
-    auto ref = _mat_data::create( refImgs );
-    auto cmp = _mat_data::create( cmpImgs );
-
-    return _mat_data::compute(ref, cmp, qualityMaps);
+    return Ptr<QualitySSIM>(new QualitySSIM( _mat_data( ref )));
 }
 
-cv::Scalar QualitySSIM::compute(InputArrayOfArrays cmpImgs)
+// static
+cv::Scalar QualitySSIM::compute( InputArray ref, InputArray cmp, OutputArray qualityMap )
 {
-    auto cmp = _mat_data::create(cmpImgs);
-    return _mat_data::compute(this->_refImgData, cmp, this->_qualityMaps);
+    auto result = _mat_data::compute( _mat_data(ref), _mat_data(cmp) );
+
+    if (qualityMap.needed())
+        qualityMap.assign(result.second);
+
+    return result.first;
 }
 
-// static.  converts mat/umat to vector of mat_data
-std::vector<QualitySSIM::_mat_data> QualitySSIM::_mat_data::create(InputArrayOfArrays arr)
+cv::Scalar QualitySSIM::compute( InputArray cmp )
 {
-    std::vector<QualitySSIM::_mat_data> result = {};
-    auto mats = quality_utils::expand_mats<_mat_type>(arr);
-    result.reserve(mats.size());
-    for (auto& mat : mats)
-        result.emplace_back(mat);
-    return result;
+    auto result = _mat_data::compute(
+        this->_refImgData
+        , _mat_data(cmp)
+    );
+
+    OutputArray(this->_qualityMap).assign(result.second);
+    return result.first;
 }
 
-// computes ssim and quality map for single frame
-    // based on https://docs.opencv.org/2.4/doc/tutorials/highgui/video-input-psnr-ssim/video-input-psnr-ssim.html
+// static.  computes ssim and quality map for single frame
+// based on https://docs.opencv.org/2.4/doc/tutorials/highgui/video-input-psnr-ssim/video-input-psnr-ssim.html
 std::pair<cv::Scalar, _mat_type> QualitySSIM::_mat_data::compute(const _mat_data& lhs, const _mat_data& rhs)
 {
     const double
@@ -116,38 +116,3 @@ std::pair<cv::Scalar, _mat_type> QualitySSIM::_mat_data::compute(const _mat_data
         , std::move(t3)
     };
 }   // compute
-
-// computes mse and quality maps for multiple frames
-cv::Scalar QualitySSIM::_mat_data::compute(const std::vector<_mat_data>& lhs, const std::vector<_mat_data>& rhs, OutputArrayOfArrays qualityMaps)
-{
-    CV_Assert(lhs.size() > 0);
-    CV_Assert(lhs.size() == rhs.size());
-
-    Scalar result = {};
-    std::vector<QualityBase::_quality_map_type> quality_maps = {};
-    const auto sz = lhs.size();
-
-    for (unsigned i = 0; i < sz; ++i)
-    {
-        CV_Assert(!lhs.empty() && !rhs.empty());
-
-        auto cmp = compute(lhs[i], rhs[i]); // differs slightly when using umat vs mat
-
-        cv::add(result, cmp.first, result);     // result += cmp.first
-
-        if (qualityMaps.needed())
-            quality_maps.emplace_back(std::move(cmp.second));
-    }
-
-    if (qualityMaps.needed())
-    {
-        auto qMaps = InputArray(quality_maps);
-        qualityMaps.create(qMaps.size(), qMaps.type());
-        qualityMaps.assign(quality_maps);
-    }
-
-    if (sz > 1)
-        result /= (cv::Scalar::value_type)sz;// average result
-
-    return result;
-}
