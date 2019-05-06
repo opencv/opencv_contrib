@@ -29,6 +29,7 @@ inline cv::Ptr<quality::QualityBRISQUE> create_brisque()
     const auto model = cvtest::findDataFile(MODEL_FNAME, false);
     const auto range = cvtest::findDataFile(RANGE_FNAME, false);
     return quality::QualityBRISQUE::create(model, range);
+
 }
 
 // static method
