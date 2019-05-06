@@ -39,7 +39,6 @@ inline cv::String findDataFile(const cv::String& relative_path, bool required = 
             throw;
         throw SkipTestException("File not found: " + relative_path);
     }
-    return cv::String();
 }
 
 // instantiates a brisque object for testing
