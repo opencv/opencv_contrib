@@ -18,36 +18,15 @@ const cv::Scalar
 ;
 
 // default model and range file names
+//  opencv tests must be installed (cmake var:  INSTALL_TESTS), or BRISQUE tests will be skipped
 static const char* MODEL_FNAME = "brisque_model_live.yml";
 static const char* RANGE_FNAME = "brisque_range_live.yml";
-
-// calls cvtest::findDataFile, catches exceptions that we don't want raised and throws a skip test exception
-//  cvtest::findDataFile sometimes throws even if setting required=false
-inline cv::String findDataFile(const cv::String& relative_path, bool required = true)
-{
-    try
-    {
-        return cvtest::findDataFile(relative_path, required);
-    }
-    catch (const SkipTestException&)
-    {
-        throw;//rethrow
-    }
-    catch (...)
-    {
-        if (required)
-            throw;
-        throw SkipTestException("File not found: " + relative_path);
-    }
-}
 
 // instantiates a brisque object for testing
 inline cv::Ptr<quality::QualityBRISQUE> create_brisque()
 {
-    // location of BRISQUE model and range file
-    //  place these files in ${OPENCV_TEST_DATA_PATH}/quality/, or the tests will be skipped
-    const auto model = findDataFile(MODEL_FNAME, false);
-    const auto range = findDataFile(RANGE_FNAME, false);
+    const auto model = cvtest::findDataFile(MODEL_FNAME, false);
+    const auto range = cvtest::findDataFile(RANGE_FNAME, false);
     return quality::QualityBRISQUE::create(model, range);
 }
 
@@ -57,8 +36,8 @@ TEST(TEST_CASE_NAME, static_ )
     quality_expect_near(
         quality::QualityBRISQUE::compute(
             get_testfile_1a()
-            , findDataFile(MODEL_FNAME, false)
-            , findDataFile(RANGE_FNAME, false)
+            , cvtest::findDataFile(MODEL_FNAME, false)
+            , cvtest::findDataFile(RANGE_FNAME, false)
         )
         , BRISQUE_EXPECTED_1
     );
