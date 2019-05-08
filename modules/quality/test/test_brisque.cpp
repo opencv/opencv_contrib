@@ -17,17 +17,10 @@ const cv::Scalar
     , BRISQUE_EXPECTED_2 = { 9.7544803619384766 }   // testfile 2a
 ;
 
-// default model and range file names
-//  opencv tests must be installed (cmake var:  INSTALL_TESTS), or BRISQUE tests will be skipped
-static const char* MODEL_FNAME = "brisque_model_live.yml";
-static const char* RANGE_FNAME = "brisque_range_live.yml";
-
 // instantiates a brisque object for testing
 inline cv::Ptr<quality::QualityBRISQUE> create_brisque()
 {
-    const auto model = cvtest::findDataFile(MODEL_FNAME, false);
-    const auto range = cvtest::findDataFile(RANGE_FNAME, false);
-    return quality::QualityBRISQUE::create(model, range);
+    return quality::QualityBRISQUE::create();   // use installed model, range file for testing
 }
 
 // static method
@@ -36,8 +29,8 @@ TEST(TEST_CASE_NAME, static_ )
     quality_expect_near(
         quality::QualityBRISQUE::compute(
             get_testfile_1a()
-            , cvtest::findDataFile(MODEL_FNAME, false)
-            , cvtest::findDataFile(RANGE_FNAME, false)
+            , ""
+            , ""
         )
         , BRISQUE_EXPECTED_1
     );

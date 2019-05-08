@@ -32,6 +32,7 @@ AND THE UNIVERSITY OF TEXAS AT AUSTIN HAS NO OBLIGATION TO PROVIDE MAINTENANCE, 
 /* Original Paper: @cite Mittal2 and Original Implementation: @cite Mittal2_software */
 #include "precomp.hpp"
 #include "opencv2/imgproc.hpp"
+#include "opencv_data_config.hpp"  // OPENCV_INSTALL_PREFIX, OPENCV_DATA_INSTALL_PATH
 #include "opencv2/quality/qualitybrisque.hpp"
 #include "opencv2/quality/quality_utils.hpp"
 
@@ -52,6 +53,16 @@ namespace
     static constexpr const int BRISQUE_CALC_MAT_TYPE = CV_32F;
     // brisque intermediate matrix element type.  float if BRISQUE_CALC_MAT_TYPE == CV_32F, double if BRISQUE_CALC_MAT_TYPE == CV_64F
     using brisque_calc_element_type = float;
+
+    // returns path to a file located in the opencv install/data path
+    cv::String get_install_data_path(const cv::String& file_name)
+    {
+#if !defined( OPENCV_INSTALL_PREFIX ) || !defined( OPENCV_DATA_INSTALL_PATH )
+        return cv::String();
+#else
+        return cv::String(OPENCV_INSTALL_PREFIX) + "/" + OPENCV_DATA_INSTALL_PATH + "/quality/" + file_name;
+#endif
+    }
 
     // convert mat to grayscale, range [0-1]
     brisque_mat_type mat_convert( const brisque_mat_type& mat )
@@ -260,12 +271,16 @@ cv::Scalar QualityBRISQUE::compute( InputArray img, const cv::String& model_file
     return QualityBRISQUE(model_file_path, range_file_path).compute(img);
 }
 
-// QualityBRISQUE() constructor
+// QualityBRISQUE() constructor, internal
 QualityBRISQUE::QualityBRISQUE(const cv::String& model_file_path, const cv::String& range_file_path)
     : QualityBRISQUE(
-        cv::ml::SVM::load(model_file_path)
-        , cv::FileStorage(range_file_path, cv::FileStorage::READ)["range"].mat()
-    )
+        cv::ml::SVM::load(
+            model_file_path.empty() ? get_install_data_path( "brisque_model_live.yml") : model_file_path
+        )
+        , cv::FileStorage(
+            range_file_path.empty() ? get_install_data_path( "brisque_range_live.yml" ) : range_file_path
+            , cv::FileStorage::READ)["range"].mat()
+        )
 {}
 
 cv::Scalar QualityBRISQUE::compute( InputArray img )

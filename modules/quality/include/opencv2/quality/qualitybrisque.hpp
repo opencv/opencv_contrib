@@ -34,10 +34,12 @@ public:
 
     /**
     @brief Create an object which calculates quality
-    @param model_file_path cv::String which contains a path to the BRISQUE model data, eg. /path/to/brisque_model_live.yml
-    @param range_file_path cv::String which contains a path to the BRISQUE range data, eg. /path/to/brisque_range_live.yml
+    @param model_file_path cv::String which contains a path to the BRISQUE model data, eg. /path/to/brisque_model_live.yml.  
+        If an empty string is provided, this module uses the installed model data in the OpenCV installation directory
+    @param range_file_path cv::String which contains a path to the BRISQUE range data, eg. /path/to/brisque_range_live.yml.  
+        If an empty string is provided, this module uses the installed range data in the OpenCV installation directory
     */
-    CV_WRAP static Ptr<QualityBRISQUE> create( const cv::String& model_file_path, const cv::String& range_file_path );
+    CV_WRAP static Ptr<QualityBRISQUE> create( const cv::String& model_file_path = "", const cv::String& range_file_path = "" );
 
     /**
     @brief Create an object which calculates quality
@@ -50,7 +52,9 @@ public:
     @brief static method for computing quality
     @param img image for which to compute quality
     @param model_file_path cv::String which contains a path to the BRISQUE model data, eg. /path/to/brisque_model_live.yml
+        If an empty string is provided, this module uses the installed model data in the OpenCV installation directory
     @param range_file_path cv::String which contains a path to the BRISQUE range data, eg. /path/to/brisque_range_live.yml
+        If an empty string is provided, this module uses the installed range data in the OpenCV installation directory
     @returns cv::Scalar with the score in the first element.  The score ranges from 0 (best quality) to 100 (worst quality)
     */
     CV_WRAP static cv::Scalar compute( InputArray img, const cv::String& model_file_path, const cv::String& range_file_path );
