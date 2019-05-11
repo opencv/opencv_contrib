@@ -47,20 +47,36 @@
 #include <opencv2/core.hpp>
 
 
-namespace cv { namespace augment {
- 
-    class CV_EXPORTS Transform
-    {
-    public:
-        Transform(const Scalar& _proability);
-        virtual ~Transform();
-        virtual void image(InputArray _src, OutputArray _dst) = 0;
-
-    protected:
-        Scalar probability;
-    };
+namespace cv {
+    namespace augment {
+        //! @addtogroup augment
+           //! @{
 
 
+        class CV_EXPORTS Transform
+        {
+        public:
+            /* @brief Constructor
+               @param probability probability that this transformation will be applied to each image
+            */
+            Transform(const Scalar& _proability);
 
-}}
+            /* @brief Destructor
+            */
+            virtual ~Transform();
+
+            /* @brief Apply the transformation for a single image (this is overridden by transformations implementation)
+               @param _src Input image to be tranformed
+               @param _dst Output (transformed) image
+            */
+            virtual void image(InputArray _src, OutputArray _dst) = 0;
+
+        protected:
+            Scalar probability;
+        };
+
+        //! @}
+
+    } //augment
+} //cv
 #endif

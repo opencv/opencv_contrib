@@ -49,16 +49,29 @@
 namespace cv {
     namespace augment {
 
+        //! @addtogroup augment
+          //! @{
+
         class CV_EXPORTS FlipHorizontal : public Transform
         {
         public:
+            /* @brief Constructor
+               @param probability probability that this transformation will be applied to each image
+            */
             FlipHorizontal(const Scalar& _probability);
+
+            /* @brief Apply the horizontal flipping for a single image
+               @param _src Input image to be flipped
+               @param _dst Output (flipped) image
+            */
             void image(InputArray _src, OutputArray _dst);
 
         };
 
 
+        //! @}
 
-    }
-}
+    } //augment
+} //cv
+
 #endif
