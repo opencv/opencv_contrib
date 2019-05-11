@@ -52,12 +52,12 @@ namespace cv { namespace augment {
     class CV_EXPORTS Transform
     {
     public:
-        Transform(float _proability);
+        Transform(const Scalar& _proability);
         virtual ~Transform();
         virtual void image(InputArray _src, OutputArray _dst) = 0;
 
     protected:
-        float probability;
+        Scalar probability;
     };
 
 

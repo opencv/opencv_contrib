@@ -43,12 +43,11 @@
 
 
 #include "precomp.hpp"
-using namespace std;
 
 namespace cv {
     namespace augment {
 
-        Transform::Transform(float _proability) : probability(_proability) {}
+        Transform::Transform(const Scalar& _proability) : probability(_proability) {}
         Transform::~Transform() {}
     }
 }

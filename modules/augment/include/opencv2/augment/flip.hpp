@@ -44,7 +44,6 @@
 
 #ifndef OPENCV_AUGMENT_FLIP_HPP
 #define OPENCV_AUGMENT_FLIP_HPP
-#include <opencv2/core.hpp>
 #include <opencv2/augment/Transform.hpp>
 
 namespace cv {
@@ -53,7 +52,7 @@ namespace cv {
         class CV_EXPORTS FlipHorizontal : public Transform
         {
         public:
-            FlipHorizontal(float probability);
+            FlipHorizontal(const Scalar& _probability);
             void image(InputArray _src, OutputArray _dst);
 
         };

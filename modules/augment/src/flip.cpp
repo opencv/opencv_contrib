@@ -43,13 +43,11 @@
 
 
 #include "precomp.hpp"
-using namespace std;
-
 namespace cv {
     namespace augment {
 
 
-        FlipHorizontal::FlipHorizontal(float probability) : Transform(probability) {}
+        FlipHorizontal::FlipHorizontal(const Scalar& _probability) : Transform(_probability) {}
 
 
         void FlipHorizontal::image(InputArray _src, OutputArray _dst)
