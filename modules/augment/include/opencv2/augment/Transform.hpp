@@ -42,12 +42,25 @@
 //M*/
 
 
+#ifndef OPENCV_AUGMENT_TRANSFORM_HPP
+#define OPENCV_AUGMENT_TRANSFORM_HPP
+#include <opencv2/core.hpp>
 
-/** @defgroup augment Data augmentation for deep learning
-*/
-#ifndef OPENCV_AUGMENT_AUGMENT_HPP
-#define OPENCV_AUGMENT_AUGMENT_HPP
-#include <opencv2/augment/Transform.hpp>
-#include <opencv2/augment/flip.hpp>
 
+namespace cv { namespace augment {
+ 
+    class CV_EXPORTS Transform
+    {
+    public:
+        Transform(float _proability);
+        virtual ~Transform();
+        virtual void image(InputArray _src, OutputArray _dst) = 0;
+
+    protected:
+        float probability;
+    };
+
+
+
+}}
 #endif

@@ -42,12 +42,13 @@
 //M*/
 
 
+#include "precomp.hpp"
+using namespace std;
 
-/** @defgroup augment Data augmentation for deep learning
-*/
-#ifndef OPENCV_AUGMENT_AUGMENT_HPP
-#define OPENCV_AUGMENT_AUGMENT_HPP
-#include <opencv2/augment/Transform.hpp>
-#include <opencv2/augment/flip.hpp>
+namespace cv {
+    namespace augment {
 
-#endif
+        Transform::Transform(float _proability) : probability(_proability) {}
+        Transform::~Transform() {}
+    }
+}

@@ -42,12 +42,12 @@
 //M*/
 
 
+#ifndef __OPENCV_AUGMENT_PRECOMP_HPP__
+#define __OPENCV_AUGMENT_PRECOMP_HPP__
 
-/** @defgroup augment Data augmentation for deep learning
-*/
-#ifndef OPENCV_AUGMENT_AUGMENT_HPP
-#define OPENCV_AUGMENT_AUGMENT_HPP
-#include <opencv2/augment/Transform.hpp>
-#include <opencv2/augment/flip.hpp>
+#include <iostream>
+#include <opencv2/augment.hpp>
+#include <opencv2/core.hpp>
 
-#endif
+
+#endif // __OPENCV_AUGMENT_PRECOMP_HPP__

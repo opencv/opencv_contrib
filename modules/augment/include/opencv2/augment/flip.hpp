@@ -42,12 +42,24 @@
 //M*/
 
 
-
-/** @defgroup augment Data augmentation for deep learning
-*/
-#ifndef OPENCV_AUGMENT_AUGMENT_HPP
-#define OPENCV_AUGMENT_AUGMENT_HPP
+#ifndef OPENCV_AUGMENT_FLIP_HPP
+#define OPENCV_AUGMENT_FLIP_HPP
+#include <opencv2/core.hpp>
 #include <opencv2/augment/Transform.hpp>
-#include <opencv2/augment/flip.hpp>
 
+namespace cv {
+    namespace augment {
+
+        class CV_EXPORTS FlipHorizontal : public Transform
+        {
+        public:
+            FlipHorizontal(float probability);
+            void image(InputArray _src, OutputArray _dst);
+
+        };
+
+
+
+    }
+}
 #endif

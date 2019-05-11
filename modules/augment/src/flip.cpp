@@ -42,12 +42,22 @@
 //M*/
 
 
+#include "precomp.hpp"
+using namespace std;
 
-/** @defgroup augment Data augmentation for deep learning
-*/
-#ifndef OPENCV_AUGMENT_AUGMENT_HPP
-#define OPENCV_AUGMENT_AUGMENT_HPP
-#include <opencv2/augment/Transform.hpp>
-#include <opencv2/augment/flip.hpp>
+namespace cv {
+    namespace augment {
 
-#endif
+
+        FlipHorizontal::FlipHorizontal(float probability) : Transform(probability) {}
+
+
+        void FlipHorizontal::image(InputArray _src, OutputArray _dst)
+        {
+            Mat src = _src.getMat();
+            _dst.create(src.size(), src.type());
+            Mat dst = _dst.getMat();
+            cv::flip(src, dst, 1);
+        }
+    }
+}
