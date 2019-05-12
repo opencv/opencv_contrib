@@ -45,7 +45,7 @@
 #ifndef OPENCV_AUGMENT_TRANSFORM_HPP
 #define OPENCV_AUGMENT_TRANSFORM_HPP
 #include <opencv2/core.hpp>
-
+#include<iostream>
 
 namespace cv {
     namespace augment {
@@ -71,9 +71,14 @@ namespace cv {
             */
             CV_WRAP virtual void image(InputArray _src, OutputArray _dst);
 
+            /* @brief returns the transform probability
+            */
+            CV_WRAP Scalar getProbability();
+
         protected:
             Scalar probability;
         };
+
 
         //! @}
 

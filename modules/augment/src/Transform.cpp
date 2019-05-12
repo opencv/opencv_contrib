@@ -54,7 +54,10 @@ namespace cv {
             Mat src = _src.getMat();
             _dst.create(src.size(), src.type());
             Mat dst = _dst.getMat();
-            dst = src.clone();
+            src.copyTo(dst);
         }
+        Scalar Transform::getProbability() { return this->probability; }
+
+
     }
 }
