@@ -49,5 +49,12 @@ namespace cv {
 
         Transform::Transform(const Scalar& _proability) : probability(_proability) {}
         Transform::~Transform() {}
+        void Transform::image(InputArray _src, OutputArray _dst)
+        {
+            Mat src = _src.getMat();
+            _dst.create(src.size(), src.type());
+            Mat dst = _dst.getMat();
+            dst = src.clone();
+        }
     }
 }

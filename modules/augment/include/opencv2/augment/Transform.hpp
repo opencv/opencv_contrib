@@ -53,13 +53,13 @@ namespace cv {
            //! @{
 
 
-        class CV_EXPORTS Transform
+        class CV_EXPORTS_W Transform
         {
         public:
             /* @brief Constructor
                @param probability probability that this transformation will be applied to each image
             */
-            Transform(const Scalar& _proability);
+            CV_WRAP Transform(const Scalar& _proability);
 
             /* @brief Destructor
             */
@@ -69,7 +69,7 @@ namespace cv {
                @param _src Input image to be tranformed
                @param _dst Output (transformed) image
             */
-            virtual void image(InputArray _src, OutputArray _dst) = 0;
+            CV_WRAP virtual void image(InputArray _src, OutputArray _dst);
 
         protected:
             Scalar probability;
