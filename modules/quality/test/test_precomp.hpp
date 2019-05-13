@@ -44,7 +44,7 @@ inline cv::Mat get_testfile_1b() { return get_testfile(testfile1b, IMREAD_GRAYSC
 inline cv::Mat get_testfile_2a() { return get_testfile(testfile2a); }
 inline cv::Mat get_testfile_2b() { return get_testfile(testfile2b); }
 
-const double QUALITY_ERR_TOLERANCE = .001  // allowed margin of error
+const double QUALITY_ERR_TOLERANCE = .002  // allowed margin of error
     ;
 
 inline void quality_expect_near( const cv::Scalar& a, const cv::Scalar& b, double err_tolerance = QUALITY_ERR_TOLERANCE)
