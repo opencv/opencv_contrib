@@ -25,37 +25,37 @@ public:
     CV_WRAP cv::Scalar compute( InputArrayOfArrays cmpImgs ) CV_OVERRIDE;
 
     /** @brief Implements Algorithm::empty()  */
-    CV_WRAP bool empty() const CV_OVERRIDE { return _refImgs.empty() && QualityBase::empty(); }
+    CV_WRAP bool empty() const CV_OVERRIDE { return _ref.empty() && QualityBase::empty(); }
 
     /** @brief Implements Algorithm::clear()  */
-    CV_WRAP void clear() CV_OVERRIDE { _refImgs.clear(); QualityBase::clear(); }
+    CV_WRAP void clear() CV_OVERRIDE { _ref = _mat_type(); QualityBase::clear(); }
 
     /**
     @brief Create an object which calculates quality
-    @param refImgs input image(s) to use as the source for comparison
+    @param ref input image to use as the reference for comparison
     */
-    CV_WRAP static Ptr<QualityMSE> create(InputArrayOfArrays refImgs);
+    CV_WRAP static Ptr<QualityMSE> create(InputArray ref);
 
     /**
     @brief static method for computing quality
-    @param refImgs reference image(s)
-    @param cmpImgs comparison image(s)
-    @param qualityMaps output quality map(s), or cv::noArray()
-    @returns cv::Scalar with per-channel quality values.  Values range from 0 (best) to potentially max float (worst)
+    @param ref reference image
+    @param cmp comparison image=
+    @param qualityMap output quality map, or cv::noArray()
+    @returns cv::Scalar with per-channel quality values.  Values range from 0 (best) to max float (worst)
     */
-    CV_WRAP static cv::Scalar compute( InputArrayOfArrays refImgs, InputArrayOfArrays cmpImgs, OutputArrayOfArrays qualityMaps );
+    CV_WRAP static cv::Scalar compute( InputArray ref, InputArray cmp, OutputArray qualityMap );
 
 protected:
 
-    /** @brief Reference images, converted to internal mat type */
-    std::vector<QualityBase::_quality_map_type> _refImgs;
+    /** @brief Reference image, converted to internal mat type */
+    QualityBase::_mat_type _ref;
 
     /**
     @brief Constructor
-    @param refImgs vector of reference images, converted to internal type
+    @param ref reference image, converted to internal type
     */
-    QualityMSE(std::vector<QualityBase::_quality_map_type> refImgs)
-        : _refImgs(std::move(refImgs))
+    QualityMSE(QualityBase::_mat_type ref)
+        : _ref(std::move(ref))
     {}
 
 };  // QualityMSE

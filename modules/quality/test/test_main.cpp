@@ -4,5 +4,6 @@
 #include "test_precomp.hpp"
 
 CV_TEST_MAIN("",
-    cvtest::addDataSearchSubDirectory("quality")
+    cvtest::addDataSearchSubDirectory("contrib/quality")    // for ocv_add_testdata
+    , cvtest::addDataSearchSubDirectory("quality")          // for ${OPENCV_TEST_DATA_PATH}
 )
