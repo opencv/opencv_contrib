@@ -44,18 +44,24 @@
 
 #include "precomp.hpp"
 namespace cv {
-    namespace augment {
+namespace augment {
 
 
-        FlipHorizontal::FlipHorizontal(const Scalar& _probability) : Transform(_probability) {}
+    FlipHorizontal::FlipHorizontal(const Scalar& _probability) : Transform(_probability) {}
 
 
-        void FlipHorizontal::image(InputArray _src, OutputArray _dst)
-        {
-            Mat src = _src.getMat();
-            _dst.create(src.size(), src.type());
-            Mat dst = _dst.getMat();
-            cv::flip(src, dst, 1);
-        }
+    void FlipHorizontal::image(InputArray _src, OutputArray _dst)
+    {
+        Mat src = _src.getMat();
+        _dst.create(src.size(), src.type());
+        Mat dst = _dst.getMat();
+        cv::flip(src, dst, 1);
     }
+
+    Point2d FlipHorizontal::point(InputArray image, Point2d& src)
+    {
+        Mat imageM = image.getMat();
+        return Point2d(imageM.size().width - 1 - src.x, src.y);
+    }
+}
 }
