@@ -4,7 +4,7 @@
 
 
 #include "precomp.hpp"
-
+#include <iostream>
 namespace cv {
 namespace augment {
 
@@ -14,7 +14,7 @@ namespace augment {
 
     Scalar Transform::getProbability() { return this->probability; }
         
-    void Transform::setProbability(Scalar& _probability) { this->probability = probability; }
+    void Transform::setProbability(Scalar& _probability) { this->probability = _probability; }
         
     void Transform::image(InputArray _src, OutputArray _dst)
     {
@@ -24,17 +24,17 @@ namespace augment {
         src.copyTo(dst);
     }
 
-    Point2d Transform::point(InputArray image, Point2d& src)
+    Point2d Transform::point(InputArray, Point2d& src)
     {
         return src;
     }
 
-    Scalar Transform::rect(InputArray image, Scalar box)
+    Scalar Transform::rectangle(InputArray image,const Scalar& src)
     {
-        double x1 = box[0],
-            y1 = box[1],
-            x2 = box[2],
-            y2 = box[3];
+        double x1 = src[0],
+            y1 = src[1],
+            x2 = src[2],
+            y2 = src[3];
 
         Point2d tl(x1, y1);
         Point2d bl(x1, y2);
@@ -51,9 +51,39 @@ namespace augment {
         double x2_transformed = std::max({ tl_transformed.x, bl_transformed.x, tr_transformed.x, br_transformed.x });
         double y2_transformed = std::max({ tl_transformed.y, bl_transformed.y, tr_transformed.y, br_transformed.y });
 
-
-        return Scalar(x1_transformed, y1_transformed, x2_transformed, y2_transformed);
+        Scalar output_box({ x1_transformed ,y1_transformed ,x2_transformed ,y2_transformed });
+        return output_box;
     }
+
+
+    void Transform::polygon(InputArray image, InputArray _src, OutputArray _dst)
+    {
+        Mat src = _src.getMat();
+        CV_Assert(src.cols == 2);
+        
+        //making sure input matrix is double
+        int type = src.type();
+        uchar depth = type & CV_MAT_DEPTH_MASK;
+        if (depth != CV_64F)
+        {
+            src.convertTo(src, CV_64F);
+        }
+
+        _dst.create(src.size(), CV_64F);
+        Mat dst = _dst.getMat();
+
+        for (size_t i = 0; i < src.rows; i++)
+        {
+            Mat src_row = src.row(i);
+            Point2d src_point = Point2d(src_row.at<double>(0), src_row.at<double>(1));
+            Point2d dst_point = this->point(image, src_point);
+            dst.at<double>(i,0) = dst_point.x;
+            dst.at<double>(i,1) = dst_point.y;
+        }
+
+    }
+
+
         
 
 }

@@ -47,15 +47,19 @@ namespace augment {
         CV_WRAP virtual Point2d point(InputArray image, Point2d& src);
 
 
-        /* @brief Apply the transformation for a single point (this is overridden by transformations implementation)
-           @param image the image that has the point to be transformed
-           @param x1 Minimum x of the rect
-           @param y1 Minimum y of the rect
-           @param x2 Maximum x of the rect
-           @param y2 Maximum y of the rect
+        /* @brief Apply the transformation for a rectangle (this is overridden by transformations implementation)
+           @param image the image that has the rectangle to be transformed
+           @param box Scalar consisting of (x1, y1, x2, y1) corresponding to (top left, bottom right)
        */
-        CV_WRAP virtual Scalar rect(InputArray image, Scalar box);
+        CV_WRAP virtual Scalar rectangle(InputArray image, const Scalar& src);
 
+
+        /* @brief Apply the transformation for a rectangle (this is overridden by transformations implementation)
+           @param image the image that has the rectangle to be transformed
+           @param polygon Mat consisting of the points of the polygon to be transformed (each row is a vertix (X, Y))
+           @param _dst Output Mat that has the vertices of the transformed polygon
+        */
+        CV_WRAP virtual void polygon(InputArray image, InputArray _src, OutputArray _dst);
 
     protected:
         Scalar probability;
