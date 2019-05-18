@@ -44,22 +44,32 @@ namespace augment {
            @param image the image that has the point to be transformed
            @param src Input point to be tranformed
         */
-        CV_WRAP virtual Point2d point(InputArray image, Point2d& src);
+        virtual Point2d point(InputArray image, Point2d& src);
 
 
-        /* @brief Apply the transformation for a rectangle (this is overridden by transformations implementation)
+        /* @brief Apply the transformation for a rectangle
            @param image the image that has the rectangle to be transformed
            @param box Scalar consisting of (x1, y1, x2, y1) corresponding to (top left, bottom right)
        */
-        CV_WRAP virtual Scalar rectangle(InputArray image, const Scalar& src);
+        virtual Scalar rectangle(InputArray image, const Scalar& src);
 
 
-        /* @brief Apply the transformation for a rectangle (this is overridden by transformations implementation)
-           @param image the image that has the rectangle to be transformed
-           @param polygon Mat consisting of the points of the polygon to be transformed (each row is a vertix (X, Y))
-           @param _dst Output Mat that has the vertices of the transformed polygon
+        /* @brief Apply the transformation for array of points 
+           @param image the image that has the points to be transformed
+           @param _src Mat consisting of the points to be transformed (each row is a point (X, Y))
+           @param _dst Output Mat that has the points transformed 
         */
-        CV_WRAP virtual void polygon(InputArray image, InputArray _src, OutputArray _dst);
+        CV_WRAP virtual void points(InputArray image, InputArray _src, OutputArray _dst);
+
+        /* @brief Apply the transformation for array of rectangles
+           @param image the image that has the rectangles to be transformed
+           @param _src Mat consisting of the rectangles to be transformed (each row is a rectangle (x1, y1, x2, y2))
+           @param _dst Output Mat that has the rectangles transformed
+        */
+        CV_WRAP virtual void rectangles(InputArray image, InputArray _src, OutputArray _dst);
+
+        CV_WRAP virtual std::vector<Mat> polygons(InputArray image, std::vector<Mat> src);
+
 
     protected:
         Scalar probability;

@@ -30,7 +30,7 @@ namespace augment {
         /* @brief Apply the flipping for a single point
             @param _src Input point to be flipped
         */
-        CV_WRAP virtual Point2d point(InputArray image, Point2d& src);
+        virtual Point2d point(InputArray image, Point2d& src);
 
     };
 

@@ -56,7 +56,7 @@ namespace augment {
     }
 
 
-    void Transform::polygon(InputArray image, InputArray _src, OutputArray _dst)
+    void Transform::points(InputArray image, InputArray _src, OutputArray _dst)
     {
         Mat src = _src.getMat();
         CV_Assert(src.cols == 2);
@@ -82,6 +82,56 @@ namespace augment {
         }
 
     }
+
+
+
+
+    void Transform::rectangles(InputArray image, InputArray _src, OutputArray _dst)
+    {
+        Mat src = _src.getMat();
+        CV_Assert(src.cols == 4);
+
+        //making sure input matrix is double
+        int type = src.type();
+        uchar depth = type & CV_MAT_DEPTH_MASK;
+        if (depth != CV_64F)
+        {
+            src.convertTo(src, CV_64F);
+        }
+
+        _dst.create(src.size(), CV_64F);
+        Mat dst = _dst.getMat();
+
+        for (size_t i = 0; i < src.rows; i++)
+        {
+            Mat src_row = src.row(i);
+            Scalar src_rect = Scalar(src_row.at<double>(0), src_row.at<double>(1), src_row.at<double>(2), src_row.at<double>(3));
+            Scalar dst_rect = this->rectangle(image, src_rect);
+            dst.at<double>(i, 0) = dst_rect[0];
+            dst.at<double>(i, 1) = dst_rect[1];
+            dst.at<double>(i, 2) = dst_rect[2];
+            dst.at<double>(i, 3) = dst_rect[3];
+        }
+
+    }
+
+
+
+    std::vector<Mat> Transform::polygons(InputArray image, std::vector<Mat> src)
+    {
+        std::vector<Mat> dst(src.size());
+
+        for (size_t i = 0; i < src.size(); i++)
+        {
+            Mat src_row = src[i];
+            Mat dst_row;
+            this->points(image, src_row, dst_row);
+            dst[i] = dst_row;
+        }
+
+        return dst;
+    }
+
 
 
         
