@@ -35,7 +35,7 @@ namespace augment {
            @param image the image that has the point to be transformed
            @param src Input point to be tranformed
         */
-        virtual Point2d point(InputArray image, Point2d& src);
+        virtual Point2f point(InputArray image,const Point2f& src);
 
 
         /* @brief Apply the transformation for a rectangle
@@ -59,6 +59,11 @@ namespace augment {
         */
         CV_WRAP virtual void rectangles(InputArray image, InputArray _src, OutputArray _dst);
 
+
+        /* @brief Apply the transformation for array of polygons
+           @param image the image that has the polygons to be transformed
+           @param src vector of Mat consisting of the polygons to be transformed (each row of a polygon Mat is a vertix (X,Y))
+        */
         CV_WRAP virtual std::vector<Mat> polygons(InputArray image, std::vector<Mat> src);
 
     };

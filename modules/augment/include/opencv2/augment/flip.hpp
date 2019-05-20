@@ -30,7 +30,7 @@ namespace augment {
         /* @brief Apply the flipping for a single point
             @param _src Input point to be flipped
         */
-        virtual Point2d point(InputArray image, Point2d& src);
+        virtual Point2f point(InputArray image,const Point2f& src);
 
     };
 
@@ -52,7 +52,7 @@ namespace augment {
         /* @brief Apply the flipping for a single point
            @param _src Input point to be flipped
         */
-        virtual Point2d point(InputArray image, Point2d& src);
+        virtual Point2f point(InputArray image,const Point2f& src);
 
     };
 

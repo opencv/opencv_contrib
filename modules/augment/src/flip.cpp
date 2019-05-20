@@ -14,10 +14,10 @@ namespace augment {
         cv::flip(_src, _dst, 1);
     }
 
-    Point2d FlipHorizontal::point(InputArray image, Point2d& src)
+    Point2f FlipHorizontal::point(InputArray image,const Point2f& src)
     {
         Mat imageM = image.getMat();
-        return Point2d(imageM.cols - 1 - src.x, src.y);
+        return Point2f(imageM.cols - 1 - src.x, src.y);
     }
 
 
@@ -28,10 +28,10 @@ namespace augment {
         cv::flip(_src, _dst, 0);
     }
 
-    Point2d FlipVertical::point(InputArray image, Point2d& src)
+    Point2f FlipVertical::point(InputArray image,const Point2f& src)
     {
         Mat imageM = image.getMat();
-        return Point2d(src.x, imageM.rows - 1 - src.y);
+        return Point2f(src.x, imageM.rows - 1 - src.y);
     }
 }
 }
