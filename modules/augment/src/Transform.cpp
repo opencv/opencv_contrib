@@ -22,7 +22,7 @@ namespace augment {
         return src;
     }
 
-    Scalar Transform::rectangle(InputArray image,const Scalar& src)
+    Vec4f Transform::rectangle(InputArray image,const Vec4f& src)
     {
         float x1 = src[0],
             y1 = src[1],
@@ -44,7 +44,7 @@ namespace augment {
         float x2_transformed = std::max({ tl_transformed.x, bl_transformed.x, tr_transformed.x, br_transformed.x });
         float y2_transformed = std::max({ tl_transformed.y, bl_transformed.y, tr_transformed.y, br_transformed.y });
 
-        Scalar output_box({ x1_transformed ,y1_transformed ,x2_transformed ,y2_transformed });
+        Vec4f output_box({ x1_transformed ,y1_transformed ,x2_transformed ,y2_transformed });
         return output_box;
     }
 
@@ -94,8 +94,8 @@ namespace augment {
         for (size_t i = 0; i < src.rows; i++)
         {
             Mat src_row = src.row(i);
-            Scalar src_rect = Scalar(src_row.at<float>(0), src_row.at<float>(1), src_row.at<float>(2), src_row.at<float>(3));
-            Scalar dst_rect = this->rectangle(image, src_rect);
+            Vec4f src_rect = Vec4f(src_row.at<float>(0), src_row.at<float>(1), src_row.at<float>(2), src_row.at<float>(3));
+            Vec4f dst_rect = this->rectangle(image, src_rect);
             dst.at<float>(i, 0) = dst_rect[0];
             dst.at<float>(i, 1) = dst_rect[1];
             dst.at<float>(i, 2) = dst_rect[2];

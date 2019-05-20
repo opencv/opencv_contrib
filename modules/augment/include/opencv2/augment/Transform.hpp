@@ -40,9 +40,9 @@ namespace augment {
 
         /* @brief Apply the transformation for a rectangle
            @param image the image that has the rectangle to be transformed
-           @param box Scalar consisting of (x1, y1, x2, y1) corresponding to (top left, bottom right)
+           @param box Vec4f consisting of (x1, y1, x2, y1) corresponding to (top left, bottom right)
        */
-        virtual Scalar rectangle(InputArray image, const Scalar& src);
+        virtual Vec4f rectangle(InputArray image, const Vec4f& src);
 
 
         /* @brief Apply the transformation for array of points 
