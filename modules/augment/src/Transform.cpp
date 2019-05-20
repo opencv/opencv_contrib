@@ -51,7 +51,6 @@ namespace augment {
         return output_box;
     }
 
-
     void Transform::points(InputArray image, InputArray _src, OutputArray _dst)
     {
         Mat src = _src.getMat();
@@ -78,9 +77,6 @@ namespace augment {
         }
 
     }
-
-
-
 
     void Transform::rectangles(InputArray image, InputArray _src, OutputArray _dst)
     {
@@ -111,8 +107,6 @@ namespace augment {
 
     }
 
-
-
     std::vector<Mat> Transform::polygons(InputArray image, std::vector<Mat> src)
     {
         std::vector<Mat> dst(src.size());
@@ -126,11 +120,7 @@ namespace augment {
         }
 
         return dst;
-    }
-
-
-
-        
+    }    
 
 }
 }

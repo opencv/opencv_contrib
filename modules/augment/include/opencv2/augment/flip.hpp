@@ -35,7 +35,6 @@ namespace augment {
     };
 
 
-
     class CV_EXPORTS_W FlipVertical : public Transform
     {
     public:
