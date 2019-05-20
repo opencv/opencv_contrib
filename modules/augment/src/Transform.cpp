@@ -8,14 +8,10 @@
 namespace cv {
 namespace augment {
 
-    Transform::Transform(const Scalar& _proability) : probability(_proability) {}
+    Transform::Transform() {}
 
     Transform::~Transform() {}
-
-    Scalar Transform::getProbability() { return this->probability; }
-        
-    void Transform::setProbability(Scalar& _probability) { this->probability = _probability; }
-        
+                
     void Transform::image(InputArray _src, OutputArray _dst)
     {
         Mat src = _src.getMat();

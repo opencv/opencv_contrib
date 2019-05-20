@@ -7,7 +7,7 @@ namespace cv {
 namespace augment {
 
 
-    FlipHorizontal::FlipHorizontal(const Scalar& _probability) : Transform(_probability) {}
+    FlipHorizontal::FlipHorizontal() {}
 
 
     void FlipHorizontal::image(InputArray _src, OutputArray _dst)
@@ -28,7 +28,7 @@ namespace augment {
 
 
 
-    FlipVertical::FlipVertical(const Scalar& _probability) : Transform(_probability) {}
+    FlipVertical::FlipVertical() {}
 
 
     void FlipVertical::image(InputArray _src, OutputArray _dst)

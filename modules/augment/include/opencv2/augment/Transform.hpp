@@ -19,20 +19,11 @@ namespace augment {
         /* @brief Constructor
             @param _probability probability that this transformation will be applied to each image
         */
-        CV_WRAP Transform(const Scalar& _proability);
+        CV_WRAP Transform();
 
         /* @brief Destructor
         */
         virtual ~Transform();
-
-        /*@brief returns the transform probability
-        */
-        CV_WRAP Scalar getProbability();
-
-        /*@brief change the transform probability
-            @param _probability the new probability to be assigned to the transform
-        */
-        CV_WRAP void setProbability(Scalar& _probability);
 
         /* @brief Apply the transformation to a single image (this is overridden by transformations implementation)
             @param _src Input image to be tranformed
@@ -70,9 +61,6 @@ namespace augment {
 
         CV_WRAP virtual std::vector<Mat> polygons(InputArray image, std::vector<Mat> src);
 
-
-    protected:
-        Scalar probability;
     };
 
 

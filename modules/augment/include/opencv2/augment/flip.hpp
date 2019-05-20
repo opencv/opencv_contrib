@@ -19,7 +19,7 @@ namespace augment {
         /* @brief Constructor
             @param _probability probability that this transformation will be applied to each image
         */
-        CV_WRAP FlipHorizontal(const Scalar& _probability);
+        CV_WRAP FlipHorizontal();
 
         /* @brief Apply the horizontal flipping to a single image
             @param _src Input image to be flipped
@@ -42,7 +42,7 @@ namespace augment {
         /* @brief Constructor
            @param _probability probability that this transformation will be applied to each image
         */
-        CV_WRAP FlipVertical(const Scalar& _probability);
+        CV_WRAP FlipVertical();
 
         /* @brief Apply the vertical flipping to a single image
            @param _src Input image to be flipped
