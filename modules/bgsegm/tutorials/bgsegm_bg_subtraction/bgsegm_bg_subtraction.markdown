@@ -65,6 +65,8 @@ cv.destroyAllWindows()
 @endcode
 ( All the results are shown at the end for comparison).
 
+@note Documentation on the newer method **cv.createBackgroundSubtractorMOG2()** can be found here: @ref tutorial_background_subtraction
+
 ### BackgroundSubtractorGMG
 
 This algorithm combines statistical background image estimation and per-pixel Bayesian segmentation.
