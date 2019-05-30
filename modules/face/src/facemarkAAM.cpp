@@ -103,12 +103,11 @@ public:
 
     bool getData(void * items) CV_OVERRIDE;
 
-    bool fitConfig( InputArray image, InputArray roi, OutputArrayOfArrays _landmarks, const std::vector<Config> &runtime_params ) CV_OVERRIDE;
+    bool fitConfig( InputArray image, const std::vector<Rect>& roi, std::vector<std::vector<Point2f> >& _landmarks, const std::vector<Config> &runtime_params ) CV_OVERRIDE;
 
 protected:
 
-    bool fit( InputArray image, InputArray faces, OutputArrayOfArrays landmarks ) CV_OVERRIDE;
-    //bool fit( InputArray image, InputArray faces, InputOutputArray landmarks, void * runtime_params);//!< from many ROIs
+    bool fit( InputArray image, const std::vector<Rect>& faces, CV_OUT std::vector<std::vector<Point2f> >& landmarks ) CV_OVERRIDE;
     bool fitImpl( const Mat image, std::vector<Point2f>& landmarks,const  Mat R,const  Point2f T,const  float scale, const int sclIdx=0 );
 
     bool addTrainingSample(InputArray image, InputArray landmarks) CV_OVERRIDE;
@@ -323,19 +322,18 @@ void FacemarkAAMImpl::training(void* parameters){
     if(params.verbose) printf("Training is completed\n");
 }
 
-bool FacemarkAAMImpl::fit( InputArray image, InputArray roi, OutputArrayOfArrays _landmarks )
+bool FacemarkAAMImpl::fit( InputArray image, const std::vector<Rect>& roi, CV_OUT std::vector<std::vector<Point2f> >& _landmarks )
 {
     std::vector<Config> config; // empty
     return fitConfig(image, roi, _landmarks, config);
 }
 
-bool FacemarkAAMImpl::fitConfig( InputArray image, InputArray roi, OutputArrayOfArrays _landmarks, const std::vector<Config> &configs )
+bool FacemarkAAMImpl::fitConfig( InputArray image, const std::vector<Rect>& roi, std::vector<std::vector<Point2f> >& _landmarks, const std::vector<Config> &configs )
 {
-    std::vector<Rect> & faces = *(std::vector<Rect> *)roi.getObj();
+    const std::vector<Rect> & faces = roi;
     if(faces.size()<1) return false;
 
-    std::vector<std::vector<Point2f> > & landmarks =
-        *(std::vector<std::vector<Point2f> >*) _landmarks.getObj();
+    std::vector<std::vector<Point2f> > & landmarks = _landmarks;
     landmarks.resize(faces.size());
 
     Mat img = image.getMat();
