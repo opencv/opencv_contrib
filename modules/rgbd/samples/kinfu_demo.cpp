@@ -119,17 +119,17 @@ public:
     {
         if(cam >= 0)
         {
-            vc = VideoCapture(VideoCaptureAPIs::CAP_REALSENSE + cam);
+            vc = VideoCapture(VideoCaptureAPIs::CAP_OPENNI2 + cam);
             if(vc.isOpened())
             {
-                sourceType = Type::DEPTH_REALSENSE;
+                sourceType = Type::DEPTH_KINECT2;
             }
             else
             {
-                vc = VideoCapture(VideoCaptureAPIs::CAP_OPENNI2 + cam);
+                vc = VideoCapture(VideoCaptureAPIs::CAP_REALSENSE + cam);
                 if(vc.isOpened())
                 {
-                    sourceType = Type::DEPTH_KINECT2;
+                    sourceType = Type::DEPTH_REALSENSE;
                 }
             }
         }
