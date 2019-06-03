@@ -76,6 +76,8 @@ public:
     bool fit(InputArray image, InputArray faces, OutputArrayOfArrays landmarks ) CV_OVERRIDE;
     void training(String imageList, String groundTruth);
     bool training(vector<Mat>& images, vector< vector<Point2f> >& landmarks,string filename,Size scale,string modelFilename) CV_OVERRIDE;
+    bool trainKazemi(InputArrayOfArrays images, InputArrayOfArrays landmarks, std::string filename, InputArray scale, std::string modelFilename) CV_OVERRIDE;
+
     // Destructor for the class.
     virtual ~FacemarkKazemiImpl() CV_OVERRIDE;
 

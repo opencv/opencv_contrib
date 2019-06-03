@@ -76,6 +76,9 @@ public:
     CV_WRAP virtual bool fit( InputArray image,
                               InputArray faces,
                               OutputArrayOfArrays landmarks ) = 0;
+
+    // exposing a new function to train using the Kazemi method
+    CV_WRAP virtual bool trainKazemi(InputArrayOfArrays images, InputArrayOfArrays landmarks, std::string filename, InputArray scale, std::string modelFilename) = 0;
 }; /* Facemark*/
 
 

@@ -85,9 +85,12 @@ TEST(CV_Face_FacemarkKazemi, can_detect_landmarks) {
     //Detect faces in the current image
     EXPECT_TRUE(facemark->getFaces(img,faces));
     //vector to store the landmarks of all the faces in the image
+    
+    #ifdef _face_opencv_
     vector< vector<Point2f> > shapes;
     EXPECT_NO_THROW(facemark->fit(img,faces,shapes));
     shapes.clear();
+    #endif
 }
 
 }} // namespace

@@ -112,6 +112,9 @@ protected:
     bool fitImpl( const Mat image, std::vector<Point2f>& landmarks,const  Mat R,const  Point2f T,const  float scale, const int sclIdx=0 );
 
     bool addTrainingSample(InputArray image, InputArray landmarks) CV_OVERRIDE;
+    
+    bool trainKazemi(InputArrayOfArrays images, InputArrayOfArrays landmarks, std::string filename, InputArray scale, std::string modelFilename) CV_OVERRIDE;
+
     void training(void* parameters) CV_OVERRIDE;
 
     Mat procrustes(std::vector<Point2f> , std::vector<Point2f> , Mat & , Scalar & , float & );
@@ -209,6 +212,11 @@ bool FacemarkAAMImpl::addTrainingSample(InputArray image, InputArray landmarks){
     facePoints.push_back(_landmarks);
 
     return true;
+}
+
+bool FacemarkAAMImpl::trainKazemi(InputArrayOfArrays images, InputArrayOfArrays landmarks, std::string filename, InputArray scale, std::string modelFilename){
+    CV_Error(Error::StsBadFunc , "Function is for training Facemark Kazemi");
+    return false;
 }
 
 void FacemarkAAMImpl::training(void* parameters){
