@@ -252,6 +252,8 @@ public:
                 params.volumePose = Affine3f().translate(Vec3f(-cubeSize/2.f,
                                                                -cubeSize/2.f,
                                                                0.05f));
+                params.truncateThreshold = 2.5f;
+                params.bilateral_sigma_depth = 0.01f;
             }
 
             if(sourceType == Type::DEPTH_KINECT2)
