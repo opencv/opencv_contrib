@@ -8,22 +8,26 @@ WarpField::WarpField(): nodes() {
 
 }
 
+std::vector<Ptr<WarpNode> > WarpField::getNodes() {
+    return nodes;
+}
+
 void WarpField::updateNodesFromPoints(InputArray _points, float resolution) {
     // Build an index of points
     Mat m = _points.getMat();
 
     std::vector<float> points_vec; 
-    int w = m.size().width;
+    
     for(int i = 0; i < m.size().height; i++) {
-        kinfu::ptype p = m.at<kinfu::ptype>(i*w);
-        points_vec.push_back(p[0]);
-        points_vec.push_back(p[1]);
-        points_vec.push_back(p[2]);
-    } 
+        points_vec.push_back(m.at<float>(i, 0));
+        points_vec.push_back(m.at<float>(i, 1));
+        points_vec.push_back(m.at<float>(i, 2));
+    }
 
     ::flann::Matrix<float> points_matrix(&points_vec[0], m.size().height, 3);
 
-    ::flann::KDTreeIndex<::flann::L2_Simple <float> > searchIndex(points_matrix);
+    ::flann::KDTreeSingleIndex<::flann::L2_Simple <float> > searchIndex(points_matrix);
+    
     searchIndex.buildIndex();
 
     std::vector<bool> validIndex;
@@ -35,7 +39,7 @@ void WarpField::updateNodesFromPoints(InputArray _points, float resolution) {
 }
 
 
-void WarpField::removeSupported(::flann::KDTreeIndex<::flann::L2_Simple<float> >& ind, std::vector<bool>& validInd) {
+void WarpField::removeSupported(::flann::KDTreeSingleIndex<::flann::L2_Simple<float> >& ind, std::vector<bool>& validInd) {
     
     std::vector<bool> validIndex(ind.size(), true);
 
@@ -55,45 +59,40 @@ void WarpField::removeSupported(::flann::KDTreeIndex<::flann::L2_Simple<float> >
             }
         }
 
+        ind.buildIndex();
+
     }
 
     validInd = validIndex;
+
 }
 
-void WarpField::subsampleIndex(::flann::KDTreeIndex<::flann::L2_Simple<float> >& ind, std::vector<bool>& validIndex, const float res) {
-    for(size_t i = 0; i < ind.size(); i++) {
+void WarpField::subsampleIndex(::flann::KDTreeSingleIndex<::flann::L2_Simple<float> >& ind, std::vector<bool>& validIndex, float res) {
+    for(size_t i = 0; i < validIndex.size(); i++) {
         if(!validIndex[i])
             continue;
 
         float* pt = ind.getPoint(i);
-        ::flann::Matrix<float> query(pt, 1, 3);
+        float query_pts[] = {pt[0], pt[1], pt[2]};
+        ::flann::Matrix<float> query(query_pts, 1, 3);
 
         std::vector<std::vector<int> > indices_vec;
         std::vector<std::vector<float> > dist_vec;
-
         ind.radiusSearch(query, indices_vec, dist_vec, res, ::flann::SearchParams());
 
-        appendNodeFromCluster(ind, indices_vec[0], res);
+        appendNodeFromCluster(res, Point3f(pt[0], pt[1], pt[2]));
         
-    }
+        validIndex[i] = false;
+        for(auto vec: indices_vec)
+            for(auto pi: vec)
+                validIndex[pi] = false;
+    }      
 }
 
-void WarpField::appendNodeFromCluster(::flann::KDTreeIndex<::flann::L2_Simple<float> >& ind, std::vector<int> indices, float res) {
+void WarpField::appendNodeFromCluster(float res, Point3f p) {
     Ptr<WarpNode> wn = new WarpNode;
 
-    float avg_x=0, avg_y=0, avg_z=0;
-    for(int index: indices) {
-        float* pt = ind.getPoint(index);
-        avg_x += pt[0];
-        avg_y += pt[1];
-        avg_z += pt[2];
-    }
-
-    avg_x /= (float)ind.size();
-    avg_y /= (float)ind.size();
-    avg_z /= (float)ind.size();
-
-    wn->pos = Point3f(avg_x, avg_y, avg_z);
+    wn->pos = p;
     wn->radius = res;
     nodes.push_back(wn);
 }
