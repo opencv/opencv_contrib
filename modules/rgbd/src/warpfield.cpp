@@ -4,21 +4,24 @@
 namespace cv {
 namespace dynafu {
 
-WarpField::WarpField(): nodes() {
-
+WarpField::WarpField(): nodes()
+{
 }
 
-std::vector<Ptr<WarpNode> > WarpField::getNodes() {
+std::vector<Ptr<WarpNode> > WarpField::getNodes()
+{
     return nodes;
 }
 
-void WarpField::updateNodesFromPoints(InputArray _points, float resolution) {
+void WarpField::updateNodesFromPoints(InputArray _points, float resolution)
+{
     // Build an index of points
     Mat m = _points.getMat();
 
     std::vector<float> points_vec; 
     
-    for(int i = 0; i < m.size().height; i++) {
+    for(int i = 0; i < m.size().height; i++)
+    {
         points_vec.push_back(m.at<float>(i, 0));
         points_vec.push_back(m.at<float>(i, 1));
         points_vec.push_back(m.at<float>(i, 2));
@@ -39,11 +42,13 @@ void WarpField::updateNodesFromPoints(InputArray _points, float resolution) {
 }
 
 
-void WarpField::removeSupported(::flann::KDTreeSingleIndex<::flann::L2_Simple<float> >& ind, std::vector<bool>& validInd) {
+void WarpField::removeSupported(::flann::KDTreeSingleIndex<::flann::L2_Simple<float> >& ind, std::vector<bool>& validInd)
+{
     
     std::vector<bool> validIndex(ind.size(), true);
 
-    for(WarpNode* n: nodes) {
+    for(WarpNode* n: nodes)
+    {
         float point_array[] = {n->pos.x, n->pos.y, n->pos.y};
         ::flann::Matrix<float> query(&point_array[0], 1, 3);
 
@@ -52,8 +57,10 @@ void WarpField::removeSupported(::flann::KDTreeSingleIndex<::flann::L2_Simple<fl
 
         ind.radiusSearch(query, indices_vec, dists_vec, n->radius, ::flann::SearchParams());
         
-        for(auto vec: indices_vec) {
-            for(auto i: vec) {
+        for(auto vec: indices_vec)
+        {
+            for(auto i: vec)
+            {
                 ind.removePoint(i);
                 validIndex[i] = false;
             }
@@ -67,8 +74,10 @@ void WarpField::removeSupported(::flann::KDTreeSingleIndex<::flann::L2_Simple<fl
 
 }
 
-void WarpField::subsampleIndex(::flann::KDTreeSingleIndex<::flann::L2_Simple<float> >& ind, std::vector<bool>& validIndex, float res) {
-    for(size_t i = 0; i < validIndex.size(); i++) {
+void WarpField::subsampleIndex(::flann::KDTreeSingleIndex<::flann::L2_Simple<float> >& ind, std::vector<bool>& validIndex, float res)
+{
+    for(size_t i = 0; i < validIndex.size(); i++)
+    {
         if(!validIndex[i])
             continue;
 
@@ -89,7 +98,8 @@ void WarpField::subsampleIndex(::flann::KDTreeSingleIndex<::flann::L2_Simple<flo
     }      
 }
 
-void WarpField::appendNodeFromCluster(float res, Point3f p) {
+void WarpField::appendNodeFromCluster(float res, Point3f p)
+{
     Ptr<WarpNode> wn = new WarpNode;
 
     wn->pos = p;

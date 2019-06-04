@@ -9,12 +9,14 @@
 namespace cv {
 namespace dynafu {
 
-struct CV_EXPORTS_W WarpNode {
+struct CV_EXPORTS_W WarpNode
+{
     Point3f pos;
     float radius;
 };
 
-class CV_EXPORTS_W WarpField {
+class CV_EXPORTS_W WarpField
+{
 public:
     WarpField();
     void updateNodesFromPoints(InputArray _points, float resolution);
