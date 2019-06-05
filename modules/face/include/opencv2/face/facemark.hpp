@@ -74,8 +74,8 @@ public:
     @endcode
     */
     CV_WRAP virtual bool fit( InputArray image,
-                              InputArray faces,
-                              OutputArrayOfArrays landmarks ) = 0;
+                              const std::vector<Rect>& faces,
+                              CV_OUT std::vector<std::vector<Point2f> >& landmarks ) = 0;
 }; /* Facemark*/
 
 

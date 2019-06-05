@@ -144,6 +144,8 @@ enum CornerRefineMethod{
  *   done at full resolution.
  * - aprilTagQuadSigma: What Gaussian blur should be applied to the segmented image (used for quad detection?)
  *   Parameter is the standard deviation in pixels.  Very noisy images benefit from non-zero values (e.g. 0.8).
+ * - detectInvertedMarker: to check if there is a white marker. In order to generate a "white" marker just
+ *   invert a normal marker by using a tilde, ~markerImage. (default false)
  */
 struct CV_EXPORTS_W DetectorParameters {
 
@@ -183,6 +185,9 @@ struct CV_EXPORTS_W DetectorParameters {
     CV_PROP_RW float aprilTagMaxLineFitMse;
     CV_PROP_RW int aprilTagMinWhiteBlackDiff;
     CV_PROP_RW int aprilTagDeglitch;
+
+    // to detect white (inverted) markers
+    CV_PROP_RW bool detectInvertedMarker;
 };
 
 
