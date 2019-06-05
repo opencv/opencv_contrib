@@ -4,7 +4,7 @@
 #include "opencv2/core.hpp"
 #include "opencv2/core/mat.hpp"
 #include "opencv2/core/affine.hpp"
-#include <flann/flann.hpp>
+#include "opencv2/flann.hpp"
 
 namespace cv {
 namespace dynafu {
@@ -25,9 +25,11 @@ public:
 
 private:
     std::vector<Ptr<WarpNode> > nodes;
-    void removeSupported(::flann::KDTreeSingleIndex<::flann::L2_Simple<float> >& ind, std::vector<bool>& supInd);
-    void subsampleIndex(::flann::KDTreeSingleIndex<::flann::L2_Simple<float> >& ind, std::vector<bool>& supInd, float res);
+    void removeSupported(flann::GenericIndex<flann::L2_Simple<float> >& ind, std::vector<bool>& supInd);
+    void subsampleIndex(Mat& pmat, flann::GenericIndex<flann::L2_Simple<float> >& ind, std::vector<bool>& supInd, float res);
     void appendNodeFromCluster(float res, Point3f p);
+
+    int maxNeighbours;
 };
 
 } // namepsace dynafu
