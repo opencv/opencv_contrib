@@ -56,7 +56,8 @@ inline void calcAb7(__global const char * oldPointsptr,
     float3 newP = newPtsRow[x].xyz;
     float3 newN = newNrmRow[x].xyz;
 
-    if(any(isnan(newP)) || any(isnan(newN)))
+    if( any(isnan(newP)) || any(isnan(newN)) ||
+        any(isinf(newP)) || any(isinf(newN)) )
         return;
 
     //transform to old coord system
@@ -114,7 +115,8 @@ inline void calcAb7(__global const char * oldPointsptr,
     float3 n1 = mix(n10, n11, t.x);
     oldN = mix(n0, n1, t.y);
 
-    if(any(isnan(oldP)) || any(isnan(oldN)))
+    if( any(isnan(oldP)) || any(isnan(oldN)) ||
+        any(isinf(oldP)) || any(isinf(oldN)) )
         return;
 
     //filter by distance

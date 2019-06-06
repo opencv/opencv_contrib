@@ -144,6 +144,8 @@ enum CornerRefineMethod{
  *   done at full resolution.
  * - aprilTagQuadSigma: What Gaussian blur should be applied to the segmented image (used for quad detection?)
  *   Parameter is the standard deviation in pixels.  Very noisy images benefit from non-zero values (e.g. 0.8).
+ * - detectInvertedMarker: to check if there is a white marker. In order to generate a "white" marker just
+ *   invert a normal marker by using a tilde, ~markerImage. (default false)
  */
 struct CV_EXPORTS_W DetectorParameters {
 
@@ -183,6 +185,9 @@ struct CV_EXPORTS_W DetectorParameters {
     CV_PROP_RW float aprilTagMaxLineFitMse;
     CV_PROP_RW int aprilTagMinWhiteBlackDiff;
     CV_PROP_RW int aprilTagDeglitch;
+
+    // to detect white (inverted) markers
+    CV_PROP_RW bool detectInvertedMarker;
 };
 
 
@@ -387,8 +392,8 @@ class CV_EXPORTS_W GridBoard : public Board {
  * Note that returning a 0 means the pose has not been estimated.
  */
 CV_EXPORTS_W int estimatePoseBoard(InputArrayOfArrays corners, InputArray ids, const Ptr<Board> &board,
-                                   InputArray cameraMatrix, InputArray distCoeffs, OutputArray rvec,
-                                   OutputArray tvec, bool useExtrinsicGuess = false);
+                                   InputArray cameraMatrix, InputArray distCoeffs, InputOutputArray rvec,
+                                   InputOutputArray tvec, bool useExtrinsicGuess = false);
 
 
 
@@ -471,6 +476,8 @@ CV_EXPORTS_W void drawDetectedMarkers(InputOutputArray image, InputArrayOfArrays
  *
  * Given the pose estimation of a marker or board, this function draws the axis of the world
  * coordinate system, i.e. the system centered on the marker/board. Useful for debugging purposes.
+ *
+ * @deprecated use cv::drawFrameAxes
  */
 CV_EXPORTS_W void drawAxis(InputOutputArray image, InputArray cameraMatrix, InputArray distCoeffs,
                            InputArray rvec, InputArray tvec, float length);

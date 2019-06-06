@@ -391,6 +391,9 @@ void TwoPassStabilizer::runPrePassIfNecessary()
         {
             if (frameCount_ > 0)
             {
+                if (maskSource_)
+                    motionEstimator_->setFrameMask(maskSource_->nextFrame());
+
                 motions_.push_back(motionEstimator_->estimate(prevFrame, frame, &ok));
 
                 if (doWobbleSuppression_)

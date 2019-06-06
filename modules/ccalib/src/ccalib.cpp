@@ -425,13 +425,13 @@ double CustomPattern::calibrate(InputArrayOfArrays objectPoints, InputArrayOfArr
 }
 
 bool CustomPattern::findRt(InputArray objectPoints, InputArray imagePoints, InputArray cameraMatrix,
-                InputArray distCoeffs, OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess, int flags)
+                           InputArray distCoeffs, InputOutputArray rvec, InputOutputArray tvec, bool useExtrinsicGuess, int flags)
 {
     return solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, useExtrinsicGuess, flags);
 }
 
 bool CustomPattern::findRt(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
-                OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess, int flags)
+                           InputOutputArray rvec, InputOutputArray tvec, bool useExtrinsicGuess, int flags)
 {
     vector<Point2f> imagePoints;
     vector<Point3f> objectPoints;
@@ -442,17 +442,17 @@ bool CustomPattern::findRt(InputArray image, InputArray cameraMatrix, InputArray
 }
 
 bool CustomPattern::findRtRANSAC(InputArray objectPoints, InputArray imagePoints, InputArray cameraMatrix, InputArray distCoeffs,
-            OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess, int iterationsCount,
-            float reprojectionError, int minInliersCount, OutputArray inliers, int flags)
+                                 InputOutputArray rvec, InputOutputArray tvec, bool useExtrinsicGuess, int iterationsCount,
+                                 float reprojectionError, int minInliersCount, OutputArray inliers, int flags)
 {
     solvePnPRansac(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, useExtrinsicGuess,
-                    iterationsCount, reprojectionError, minInliersCount, inliers, flags);
+                   iterationsCount, reprojectionError, minInliersCount, inliers, flags);
     return true; // for consistency with the other methods
 }
 
 bool CustomPattern::findRtRANSAC(InputArray image, InputArray cameraMatrix, InputArray distCoeffs,
-            OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess, int iterationsCount,
-            float reprojectionError, int minInliersCount, OutputArray inliers, int flags)
+                                 InputOutputArray rvec, InputOutputArray tvec, bool useExtrinsicGuess, int iterationsCount,
+                                 float reprojectionError, int minInliersCount, OutputArray inliers, int flags)
 {
     vector<Point2f> imagePoints;
     vector<Point3f> objectPoints;
@@ -460,7 +460,7 @@ bool CustomPattern::findRtRANSAC(InputArray image, InputArray cameraMatrix, Inpu
     if (!findPattern(image, imagePoints, objectPoints))
         return false;
     solvePnPRansac(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, useExtrinsicGuess,
-                    iterationsCount, reprojectionError, minInliersCount, inliers, flags);
+                   iterationsCount, reprojectionError, minInliersCount, inliers, flags);
     return true;
 }
 

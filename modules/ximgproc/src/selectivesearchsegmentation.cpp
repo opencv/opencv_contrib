@@ -558,9 +558,14 @@ namespace cv {
 
                         center = Point((int)(img_plane_rotated.cols / 2.0), (int)(img_plane_rotated.rows / 2.0));
                         rot = cv::getRotationMatrix2D(center, -45.0, 1.0);
-                        warpAffine(tmp_gradiant, tmp_rot, rot, bbox.size());
+                        // Using this bigger box avoids clipping the ends of narrow images
+                        Rect bbox2 = cv::RotatedRect(center, img_plane_rotated.size(), -45.0).boundingRect();\
+                        warpAffine(tmp_gradiant, tmp_rot, rot, bbox2.size());
 
-                        tmp_gradiant = tmp_rot(Rect((bbox.width - img.cols) / 2, (bbox.height - img.rows) / 2, img.cols, img.rows));
+                        // for narrow images, bbox might be less tall or wide than img
+                        int start_x = std::max(0, (bbox.width - img.cols) / 2);
+                        int start_y = std::max(0, (bbox.height - img.rows) / 2);
+                        tmp_gradiant = tmp_rot(Rect(start_x, start_y, img.cols, img.rows));
 
                         threshold(tmp_gradiant, tmp_gradiant_pos, 0, 0, THRESH_TOZERO);
                         threshold(tmp_gradiant, tmp_gradiant_neg, 0, 0, THRESH_TOZERO_INV);
@@ -573,9 +578,12 @@ namespace cv {
 
                         center = Point((int)(img_plane_rotated.cols / 2.0), (int)(img_plane_rotated.rows / 2.0));
                         rot = cv::getRotationMatrix2D(center, -45.0, 1.0);
-                        warpAffine(tmp_gradiant, tmp_rot, rot, bbox.size());
+                        bbox2 = cv::RotatedRect(center, img_plane_rotated.size(), -45.0).boundingRect();\
+                        warpAffine(tmp_gradiant, tmp_rot, rot, bbox2.size());
 
-                        tmp_gradiant = tmp_rot(Rect((bbox.width - img.cols) / 2, (bbox.height - img.rows) / 2, img.cols, img.rows));
+                        start_x = std::max(0, (bbox.width - img.cols) / 2);
+                        start_y = std::max(0, (bbox.height - img.rows) / 2);
+                        tmp_gradiant = tmp_rot(Rect(start_x, start_y, img.cols, img.rows));
 
                         threshold(tmp_gradiant, tmp_gradiant_pos, 0, 0, THRESH_TOZERO);
                         threshold(tmp_gradiant, tmp_gradiant_neg, 0, 0, THRESH_TOZERO_INV);

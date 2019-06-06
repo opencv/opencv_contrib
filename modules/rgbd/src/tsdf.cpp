@@ -1204,7 +1204,7 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
     cv::String errorStr;
     cv::String name = "integrate";
     ocl::ProgramSource source = ocl::rgbd::tsdf_oclsrc;
-    cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
+    cv::String options = "-cl-mad-enable";
     ocl::Kernel k;
     k.create(name.c_str(), source, options, &errorStr);
 
@@ -1250,7 +1250,7 @@ void TSDFVolumeGPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frame
     cv::String errorStr;
     cv::String name = "raycast";
     ocl::ProgramSource source = ocl::rgbd::tsdf_oclsrc;
-    cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
+    cv::String options = "-cl-mad-enable";
     ocl::Kernel k;
     k.create(name.c_str(), source, options, &errorStr);
 
@@ -1318,7 +1318,7 @@ void TSDFVolumeGPU::fetchNormals(InputArray _points, OutputArray _normals) const
         cv::String errorStr;
         cv::String name = "getNormals";
         ocl::ProgramSource source = ocl::rgbd::tsdf_oclsrc;
-        cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
+        cv::String options = "-cl-mad-enable";
         ocl::Kernel k;
         k.create(name.c_str(), source, options, &errorStr);
 
@@ -1365,7 +1365,7 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
 
         cv::String errorStr;
         ocl::ProgramSource source = ocl::rgbd::tsdf_oclsrc;
-        cv::String options = "-cl-fast-relaxed-math -cl-mad-enable";
+        cv::String options = "-cl-mad-enable";
 
         kscan.create("scanSize", source, options, &errorStr);
 
@@ -1409,8 +1409,7 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
                    ocl::KernelArg::PtrReadOnly(volPoseGpu),
                    voxelSize,
                    voxelSizeInv,
-                   //TODO: replace by KernelArg::Local(lsz)
-                   ocl::KernelArg(ocl::KernelArg::LOCAL, 0, 1, 1, 0, lsz),
+                   ocl::KernelArg::Local(lsz),
                    ocl::KernelArg::WriteOnlyNoSize(groupedSum));
 
         if(!kscan.run(3, globalSize, localSize, true))
@@ -1455,8 +1454,7 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
                    voxelSize,
                    voxelSizeInv,
                    ((int)needNormals),
-                   //TODO: replace by ::Local(lsz)
-                   ocl::KernelArg(ocl::KernelArg::LOCAL, 0, 1, 1, 0, lsz),
+                   ocl::KernelArg::Local(lsz),
                    ocl::KernelArg::PtrReadWrite(atomicCtr),
                    ocl::KernelArg::ReadOnlyNoSize(groupedSum),
                    ocl::KernelArg::WriteOnlyNoSize(pts),

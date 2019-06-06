@@ -22,65 +22,67 @@ public:
 
     /**
     @brief Compute GMSD
-    @param cmpImgs Comparison images
-    @returns Per-channel GMSD
+    @param cmp comparison image
+    @returns cv::Scalar with per-channel quality value.  Values range from 0 (worst) to 1 (best)
     */
-    CV_WRAP cv::Scalar compute(InputArrayOfArrays cmpImgs) CV_OVERRIDE;
+    CV_WRAP cv::Scalar compute( InputArray cmp ) CV_OVERRIDE;
 
     /** @brief Implements Algorithm::empty()  */
     CV_WRAP bool empty() const CV_OVERRIDE { return _refImgData.empty() && QualityBase::empty(); }
 
     /** @brief Implements Algorithm::clear()  */
-    CV_WRAP void clear() CV_OVERRIDE { _refImgData.clear(); QualityBase::clear(); }
+    CV_WRAP void clear() CV_OVERRIDE { _refImgData = _mat_data(); QualityBase::clear(); }
 
     /**
     @brief Create an object which calculates image quality
-    @param refImgs input image(s) to use as the source for comparison
+    @param ref reference image
     */
-    CV_WRAP static Ptr<QualityGMSD> create(InputArrayOfArrays refImgs);
+    CV_WRAP static Ptr<QualityGMSD> create( InputArray ref );
 
     /**
     @brief static method for computing quality
-    @param refImgs reference image(s)
-    @param cmpImgs comparison image(s)
-    @param qualityMaps output quality map(s), or cv::noArray()
+    @param ref reference image
+    @param cmp comparison image
+    @param qualityMap output quality map, or cv::noArray()
     @returns cv::Scalar with per-channel quality value.  Values range from 0 (worst) to 1 (best)
     */
-    CV_WRAP static cv::Scalar compute(InputArrayOfArrays refImgs, InputArrayOfArrays cmpImgs, OutputArrayOfArrays qualityMaps);
+    CV_WRAP static cv::Scalar compute( InputArray ref, InputArray cmp, OutputArray qualityMap );
 
 protected:
 
-    // holds computed values for an input mat
+    // holds computed values for a mat
     struct _mat_data
     {
-        using mat_type = QualityBase::_quality_map_type;
+        // internal mat type
+        using mat_type = QualityBase::_mat_type;
 
         mat_type
             gradient_map
             , gradient_map_squared
             ;
 
+        // allow default construction
+        _mat_data() = default;
+
+        // construct from mat_type
         _mat_data(const mat_type&);
 
-        // converts mat/umat to vector of mat_data
-        static std::vector<_mat_data> create(InputArrayOfArrays arr);
+        // construct from inputarray
+        _mat_data(InputArray);
+
+        // returns flag if empty
+        bool empty() const { return this->gradient_map.empty() && this->gradient_map_squared.empty(); }
 
         // compute for a single frame
         static std::pair<cv::Scalar, mat_type> compute(const _mat_data& lhs, const _mat_data& rhs);
 
-        // compute for vector of inputs
-        static cv::Scalar compute(const std::vector<_mat_data>& lhs, const std::vector<_mat_data>& rhs, OutputArrayOfArrays qualityMaps);
-
     };  // mat_data
 
     /** @brief Reference image data */
-    std::vector<_mat_data> _refImgData;
+    _mat_data _refImgData;
 
-    /**
-    @brief Constructor
-    @param refImgData vector of reference images, converted to internal type
-    */
-    QualityGMSD(std::vector<_mat_data> refImgData)
+    // internal constructor
+    QualityGMSD(_mat_data refImgData)
         : _refImgData(std::move(refImgData))
     {}
 

@@ -244,6 +244,8 @@ void DisparityWLSFilterImpl::filter(InputArray disparity_map_left, InputArray le
     filter_(left, left_view, filt_disp, right, ROI);
     if (disparity_map_left.depth() != CV_32F){
         filt_disp.convertTo(filtered_disparity_map, disparity_map_left.depth());
+    } else {
+        filt_disp.copyTo(filtered_disparity_map);
     }
 }
 

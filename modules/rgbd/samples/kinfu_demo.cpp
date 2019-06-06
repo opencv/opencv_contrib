@@ -95,6 +95,14 @@ namespace Kinect2Params
 struct DepthSource
 {
 public:
+    enum Type
+    {
+        DEPTH_LIST,
+        DEPTH_KINECT2_LIST,
+        DEPTH_KINECT2,
+        DEPTH_REALSENSE
+    };
+
     DepthSource(int cam) :
         DepthSource("", cam)
     { }
@@ -106,11 +114,31 @@ public:
     DepthSource(String fileListName, int cam) :
         depthFileList(fileListName.empty() ? vector<string>() : readDepth(fileListName)),
         frameIdx(0),
-        vc( cam >= 0 ? VideoCapture(VideoCaptureAPIs::CAP_OPENNI2 + cam) : VideoCapture()),
         undistortMap1(),
-        undistortMap2(),
-        useKinect2Workarounds(true)
-    { }
+        undistortMap2()
+    {
+        if(cam >= 0)
+        {
+            vc = VideoCapture(VideoCaptureAPIs::CAP_OPENNI2 + cam);
+            if(vc.isOpened())
+            {
+                sourceType = Type::DEPTH_KINECT2;
+            }
+            else
+            {
+                vc = VideoCapture(VideoCaptureAPIs::CAP_REALSENSE + cam);
+                if(vc.isOpened())
+                {
+                    sourceType = Type::DEPTH_REALSENSE;
+                }
+            }
+        }
+        else
+        {
+            vc = VideoCapture();
+            sourceType = Type::DEPTH_KINECT2_LIST;
+        }
+    }
 
     UMat getDepth()
     {
@@ -130,10 +158,21 @@ public:
         else
         {
             vc.grab();
-            vc.retrieve(out, CAP_OPENNI_DEPTH_MAP);
+            switch (sourceType)
+            {
+            case Type::DEPTH_KINECT2:
+                vc.retrieve(out, CAP_OPENNI_DEPTH_MAP);
+                break;
+            case Type::DEPTH_REALSENSE:
+                vc.retrieve(out, CAP_INTELPERC_DEPTH_MAP);
+                break;
+            default:
+                // unknown depth source
+                vc.retrieve(out);
+            }
 
             // workaround for Kinect 2
-            if(useKinect2Workarounds)
+            if(sourceType == Type::DEPTH_KINECT2)
             {
                 out = out(Rect(Point(), Kinect2Params::frameSize));
 
@@ -163,12 +202,11 @@ public:
             int w = (int)vc.get(VideoCaptureProperties::CAP_PROP_FRAME_WIDTH);
             int h = (int)vc.get(VideoCaptureProperties::CAP_PROP_FRAME_HEIGHT);
 
-            float focal = (float)vc.get(CAP_OPENNI_DEPTH_GENERATOR | CAP_PROP_OPENNI_FOCAL_LENGTH);
-
             // it's recommended to calibrate sensor to obtain its intrinsics
             float fx, fy, cx, cy;
+            float depthFactor = 1000.f;
             Size frameSize;
-            if(useKinect2Workarounds)
+            if(sourceType == Type::DEPTH_KINECT2)
             {
                 fx = fy = Kinect2Params::focal;
                 cx = Kinect2Params::cx;
@@ -178,7 +216,17 @@ public:
             }
             else
             {
-                fx = fy = focal;
+                if(sourceType == Type::DEPTH_REALSENSE)
+                {
+                    fx = (float)vc.get(CAP_PROP_INTELPERC_DEPTH_FOCAL_LENGTH_HORZ);
+                    fy = (float)vc.get(CAP_PROP_INTELPERC_DEPTH_FOCAL_LENGTH_VERT);
+                    depthFactor = 1.f/(float)vc.get(CAP_PROP_INTELPERC_DEPTH_SATURATION_VALUE);
+                }
+                else
+                {
+                    fx = fy = (float)vc.get(CAP_OPENNI_DEPTH_GENERATOR | CAP_PROP_OPENNI_FOCAL_LENGTH);
+                }
+
                 cx = w/2 - 0.5f;
                 cy = h/2 - 0.5f;
 
@@ -191,16 +239,34 @@ public:
 
             params.frameSize = frameSize;
             params.intr = camMatrix;
-            params.depthFactor = 1000.f;
+            params.depthFactor = depthFactor;
 
-            Matx<float, 1, 5> distCoeffs;
-            distCoeffs(0) = Kinect2Params::k1;
-            distCoeffs(1) = Kinect2Params::k2;
-            distCoeffs(4) = Kinect2Params::k3;
-            if(useKinect2Workarounds)
+            // RealSense has shorter depth range, some params should be tuned
+            if(sourceType == Type::DEPTH_REALSENSE)
+            {
+                // all sizes in meters
+                float cubeSize = 1.f;
+                params.voxelSize = cubeSize/params.volumeDims[0];
+                params.tsdf_trunc_dist = 0.01f;
+                params.icpDistThresh = 0.01f;
+                params.volumePose = Affine3f().translate(Vec3f(-cubeSize/2.f,
+                                                               -cubeSize/2.f,
+                                                               0.05f));
+                params.truncateThreshold = 2.5f;
+                params.bilateral_sigma_depth = 0.01f;
+            }
+
+            if(sourceType == Type::DEPTH_KINECT2)
+            {
+                Matx<float, 1, 5> distCoeffs;
+                distCoeffs(0) = Kinect2Params::k1;
+                distCoeffs(1) = Kinect2Params::k2;
+                distCoeffs(4) = Kinect2Params::k3;
+
                 initUndistortRectifyMap(camMatrix, distCoeffs, cv::noArray(),
                                         camMatrix, frameSize, CV_16SC2,
                                         undistortMap1, undistortMap2);
+            }
         }
     }
 
@@ -208,7 +274,7 @@ public:
     size_t frameIdx;
     VideoCapture vc;
     UMat undistortMap1, undistortMap2;
-    bool useKinect2Workarounds;
+    Type sourceType;
 };
 
 #ifdef HAVE_OPENCV_VIZ
@@ -323,7 +389,11 @@ int main(int argc, char **argv)
     cv::setUseOptimized(true);
 
     // Scene-specific params should be tuned for each scene individually
-    //params->volumePose = params->volumePose.translate(Vec3f(0.f, 0.f, 0.5f));
+    //float cubeSize = 1.f;
+    //params->voxelSize = cubeSize/params->volumeDims[0]; //meters
+    //params->tsdf_trunc_dist = 0.01f; //meters
+    //params->icpDistThresh = 0.01f; //meters
+    //params->volumePose = Affine3f().translate(Vec3f(-cubeSize/2.f, -cubeSize/2.f, 0.25f)); //meters
     //params->tsdf_max_weight = 16;
 
     if(!idle)
