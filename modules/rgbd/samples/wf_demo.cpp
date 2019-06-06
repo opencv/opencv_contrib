@@ -366,31 +366,67 @@ int main(int argc, char **argv)
 
             Mat vec_mat = points.getMat(ACCESS_READ);
             Mat ds_points(points.size().height, 3, CV_32F);
-            for(int i = 0; i < points.size().height; i++) {
+            for(int i = 0; i < points.size().height; i++)
+            {
                 Vec4f v = vec_mat.at<Vec4f>(i, 0);
                 ds_points.at<float>(i, 0) = v[0];
                 ds_points.at<float>(i, 1) = v[1];
                 ds_points.at<float>(i, 2) = v[2];
             }
 
-            w.updateNodesFromPoints(ds_points, dynafu_res);
+            w.updateNodesFromPoints(ds_points);
             std::vector<Ptr<dynafu::WarpNode> > nodes = w.getNodes();
-            std::vector<Point3f> node_pos;
+            std::vector<dynafu::NodesLevelType> graph = w.getGraphNodes();
+
+            std::vector<std::vector<Point3f>> node_pos(4);
+            std::vector<viz::WLine> arrows;
 
             for(auto n_ptr: nodes)
-                node_pos.push_back(n_ptr->pos);
+            {
+                node_pos[0].push_back(n_ptr->pos);
+                for(Ptr<dynafu::WarpNode> child: n_ptr->children)
+                    arrows.push_back(viz::WLine(n_ptr->pos, child->pos, viz::Color::orange()));
+            }
 
+            int l=0;
+            for(auto level: graph)
+            {
+                l++;
+                for(auto n_ptr: level)
+                {
+                    node_pos[l].push_back(n_ptr->pos);
+                    for(Ptr<dynafu::WarpNode> child: n_ptr->children)
+                        arrows.push_back(viz::WLine(n_ptr->pos, child->pos, viz::Color::orange()));
+                }
+            }          
 
             if(!points.empty() && !normals.empty())
             {
                 viz::WCloud cloudWidget(points, viz::Color::white());
                 viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
-                viz::WCloud nodeCloud(node_pos, viz::Color::red());
-                nodeCloud.setRenderingProperty(viz::POINT_SIZE, 4);
+                
+                viz::WCloud nodeCloud1(node_pos[0], viz::Color::red());
+                nodeCloud1.setRenderingProperty(viz::POINT_SIZE, 4);
+                viz::WCloud nodeCloud2(node_pos[1], viz::Color::green());
+                nodeCloud2.setRenderingProperty(viz::POINT_SIZE, 4);
+                viz::WCloud nodeCloud3(node_pos[2], viz::Color::bluberry());
+                nodeCloud3.setRenderingProperty(viz::POINT_SIZE, 4);
+                viz::WCloud nodeCloud4(node_pos[3], viz::Color::yellow());
+                nodeCloud4.setRenderingProperty(viz::POINT_SIZE, 4);
+
+                int arrow_count = 0;
+                for(auto arrow: arrows){
+                    string wname = "arrow" + std::to_string(arrow_count); 
+                    window.showWidget(wname, arrow);
+                    arrow_count++;
+                }
 
                 window.showWidget("cloud", cloudWidget);
                 window.showWidget("normals", cloudNormals);
-                window.showWidget("nodes", nodeCloud);
+                window.showWidget("nodes level 1", nodeCloud1);
+                window.showWidget("nodes level 2", nodeCloud2);
+                window.showWidget("nodes level 3", nodeCloud3);
+                window.showWidget("nodes level 4", nodeCloud4);
 
                 Vec3d volSize = kf->getParams().voxelSize*Vec3d(kf->getParams().volumeDims);
                 window.showWidget("cube", viz::WCube(Vec3d::all(0),
@@ -404,7 +440,18 @@ int main(int argc, char **argv)
                 window.removeWidget("text");
                 window.removeWidget("cloud");
                 window.removeWidget("normals");
-                window.removeWidget("nodes");
+                window.removeWidget("nodes level 1");
+                window.removeWidget("nodes level 2");
+                window.removeWidget("nodes level 3");
+                window.removeWidget("nodes level 4");
+                
+                arrow_count = 0;
+                for(auto arrow: arrows){
+                    string wname = "arrow" + std::to_string(arrow_count); 
+                    window.removeWidget(wname);
+                    arrow_count++;
+                }
+
                 window.registerMouseCallback(0);
             }
 
@@ -433,25 +480,36 @@ int main(int argc, char **argv)
                         kf->getCloud(points, normals);
                         Mat vec_mat = points.getMat(ACCESS_READ);
                         Mat ds_points(points.size().height, 3, CV_32F);
-                        for(int i = 0; i < points.size().height; i++) {
+                        for(int i = 0; i < points.size().height; i++)
+                        {
                             Vec4f v = vec_mat.at<Vec4f>(i, 0);
                             ds_points.at<float>(i, 0) = v[0];
                             ds_points.at<float>(i, 1) = v[1];
                             ds_points.at<float>(i, 2) = v[2];
                         }
 
-                        w.updateNodesFromPoints(ds_points, dynafu_res);
+                        w.updateNodesFromPoints(ds_points);
                         std::vector<Ptr<dynafu::WarpNode> > nodes = w.getNodes();
-                        std::vector<Point3f> node_pos;
+                        std::vector<dynafu::NodesLevelType> graph = w.getGraphNodes();
+
+                        std::vector<std::vector<Point3f>> node_pos(4);
 
                         for(auto n_ptr: nodes)
-                            node_pos.push_back(n_ptr->pos);
+                            node_pos[0].push_back(n_ptr->pos);
+
+                        int l = 0;
+                        for(auto level: graph)
+                        {
+                            l++;
+                            for(auto n_ptr: level)
+                                node_pos[l].push_back(n_ptr->pos);
+                        }
 
                         if(!points.empty() && !normals.empty())
                         {
                             viz::WCloud cloudWidget(points, viz::Color::white());
                             viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
-                            viz::WCloud nodeCloud(node_pos, viz::Color::red());
+                            viz::WCloud nodeCloud(node_pos[0], viz::Color::red());
                             nodeCloud.setRenderingProperty(viz::POINT_SIZE, 4);
                             window.showWidget("cloud", cloudWidget);
                             window.showWidget("normals", cloudNormals);

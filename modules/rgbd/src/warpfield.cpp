@@ -4,7 +4,11 @@
 namespace cv {
 namespace dynafu {
 
-WarpField::WarpField(): nodes(), maxNeighbours(1000000) // good amount for dense kinfu pointclouds
+WarpField::WarpField(int _maxNeighbours, int K, int levels, float baseResolution, float resolutionGrowth): 
+nodes(), maxNeighbours(_maxNeighbours), // good amount for dense kinfu pointclouds
+k(K), n_levels(levels), 
+baseRes(baseResolution), resGrowthRate(resolutionGrowth),
+regGraphNodes(std::vector<NodesLevelType>(n_levels))
 {
 }
 
@@ -13,7 +17,12 @@ std::vector<Ptr<WarpNode> > WarpField::getNodes()
     return nodes;
 }
 
-void WarpField::updateNodesFromPoints(InputArray _points, float resolution)
+std::vector<NodesLevelType> WarpField::getGraphNodes()
+{
+    return regGraphNodes;
+}
+
+void WarpField::updateNodesFromPoints(InputArray _points)
 {
     // Build an index of points
     Mat m = _points.getMat();
@@ -26,7 +35,10 @@ void WarpField::updateNodesFromPoints(InputArray _points, float resolution)
     std::vector<bool> validIndex;
     removeSupported(searchIndex, validIndex);
 
-    subsampleIndex(points_matrix, searchIndex, validIndex, resolution);
+    std::vector<Ptr<WarpNode> > newNodes = subsampleIndex(points_matrix, searchIndex, validIndex, baseRes);
+    nodes.insert(nodes.end(), newNodes.begin(), newNodes.end());
+    
+    constructRegGraph();
 }
 
 
@@ -53,8 +65,10 @@ void WarpField::removeSupported(flann::GenericIndex<flann::L2_Simple<float> >& i
 
 }
 
-void WarpField::subsampleIndex(Mat& pmat, flann::GenericIndex<flann::L2_Simple<float> >& ind, std::vector<bool>& validIndex, float res)
+std::vector<Ptr<WarpNode> > WarpField::subsampleIndex(Mat& pmat, flann::GenericIndex<flann::L2_Simple<float> >& ind, std::vector<bool>& validIndex, float res)
 {
+    std::vector<Ptr<WarpNode> > temp_nodes;
+
     for(size_t i = 0; i < validIndex.size(); i++)
     {
         if(!validIndex[i])
@@ -65,19 +79,74 @@ void WarpField::subsampleIndex(Mat& pmat, flann::GenericIndex<flann::L2_Simple<f
         
         int neighbours = ind.radiusSearch(pmat.row(i), indices_vec, dist_vec, res, cvflann::SearchParams());
 
-        appendNodeFromCluster(res, Point3f(pmat.at<float>(i, 0), pmat.at<float>(i, 1), pmat.at<float>(i, 2)));
         for(int j = 0; j < neighbours; j++)
             validIndex[indices_vec[j]] = false;
+
+        Ptr<WarpNode> wn = new WarpNode;
+        wn->pos = Point3f(pmat.at<float>(i, 0), pmat.at<float>(i, 1), pmat.at<float>(i, 2));
+        wn->radius = res;
+        //wn->children.assign(k, nullptr);
+        temp_nodes.push_back(wn);
     }      
+    
+    return temp_nodes;
 }
 
-void WarpField::appendNodeFromCluster(float res, Point3f p)
+void WarpField::constructRegGraph()
 {
-    Ptr<WarpNode> wn = new WarpNode;
+    regGraphNodes.clear();
 
-    wn->pos = p;
-    wn->radius = res;
-    nodes.push_back(wn);
+    if(n_levels == 1) // First level (Nwarp) is already stored in nodes
+        return;
+
+    float effResolution = baseRes*resGrowthRate;
+    std::vector<Ptr<WarpNode> > curNodes = nodes;
+    Mat curNodeMatrix(curNodes.size(), 3, CV_32F);
+    for(Ptr<WarpNode> n: curNodes)
+    {
+        Mat row = (Mat_<float>(1, 3) << n->pos.x, n->pos.y, n->pos.z);
+        curNodeMatrix.push_back(row);
+    }
+
+    Ptr<flann::GenericIndex<flann::L2_Simple<float> > > curNodeIndex(
+        new flann::GenericIndex<flann::L2_Simple<float> >(curNodeMatrix, cvflann::KDTreeSingleIndexParams()));
+    
+    for(int l = 0; l < (n_levels-1); l++)
+    {
+        std::vector<bool> nodeValidity(curNodeIndex->size(), true);
+        std::vector<Ptr<WarpNode> > coarseNodes = subsampleIndex(curNodeMatrix, *curNodeIndex, nodeValidity, effResolution);
+
+        Mat coarseNodeMatrix(coarseNodes.size(), 3, CV_32F);
+        for(size_t i = 0; i < coarseNodes.size(); i++)
+        {
+            coarseNodeMatrix.at<float>(i, 0) = coarseNodes[i]->pos.x;
+            coarseNodeMatrix.at<float>(i, 1) = coarseNodes[i]->pos.y;
+            coarseNodeMatrix.at<float>(i, 2) = coarseNodes[i]->pos.z;
+        }
+
+        Ptr<flann::GenericIndex<flann::L2_Simple<float> > > coarseNodeIndex(
+            new flann::GenericIndex<flann::L2_Simple<float> >(coarseNodeMatrix, cvflann::KDTreeSingleIndexParams()));
+
+        for(size_t i = 0; i < curNodes.size(); i++)
+        {
+            std::vector<int> children_indices(k);
+            std::vector<float> children_dists(k);
+            
+            std::vector<float> query = {curNodeMatrix.at<float>(i, 0), curNodeMatrix.at<float>(i, 1), curNodeMatrix.at<float>(i, 2)};
+            coarseNodeIndex->knnSearch(query, children_indices, children_dists, k, cvflann::SearchParams());
+
+            curNodes[i]->children.clear();
+            for(auto index: children_indices)
+                curNodes[i]->children.push_back(coarseNodes[index]);
+        }
+
+        regGraphNodes.push_back(coarseNodes);
+        curNodes = coarseNodes;
+        curNodeMatrix = coarseNodeMatrix;
+        curNodeIndex = coarseNodeIndex;
+        effResolution *= resGrowthRate;
+    }
+
 }
 
 } // namepsace dynafu
