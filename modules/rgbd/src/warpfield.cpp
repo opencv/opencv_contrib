@@ -22,12 +22,14 @@ std::vector<NodesLevelType> WarpField::getGraphNodes()
     return regGraphNodes;
 }
 
-void WarpField::updateNodesFromPoints(InputArray _points)
+bool PtCmp(cv::Point3f a, cv::Point3f b) {
+    return (a.x < b.x) || ((a.x >= b.x) && (a.y < b.y)) || ((a.x >= b.x) && (a.y >= b.y) && (a.z < b.z));
+}
+
+void WarpField::updateNodesFromPoints(InputArray inputPoints)
 {
-    // Build an index of points
-    Mat m = _points.getMat();
-    Mat points_matrix(m.size().height, 3, CV_32F);
-    points_matrix = m.colRange(0, 3);
+    Mat points_matrix(inputPoints.getMat().size().height, 3, CV_32F);
+    points_matrix = inputPoints.getMat().colRange(0, 3);
 
     cvflann::KDTreeSingleIndexParams params;
     flann::GenericIndex<flann::L2_Simple <float> > searchIndex(points_matrix, params);
@@ -37,10 +39,12 @@ void WarpField::updateNodesFromPoints(InputArray _points)
 
     Mat nodePosMatrix(nodes.size(), 3, CV_32F);
     
-    for(auto n: nodes)
+    for(size_t i = 0; i < nodes.size(); i++)
     {
-        Mat row = (Mat_<float>(1, 3) << n->pos.x, n->pos.y, n->pos.z);
-        nodePosMatrix.push_back(row);
+        nodePosMatrix.at<float>(i, 0) = nodes[i]->pos.x;
+        nodePosMatrix.at<float>(i, 1) = nodes[i]->pos.y;
+        nodePosMatrix.at<float>(i, 2) = nodes[i]->pos.z;
+
     }
     std::vector<Ptr<WarpNode> > newNodes;
     if((int)nodes.size() > k) {
@@ -92,11 +96,22 @@ std::vector<Ptr<WarpNode> > WarpField::subsampleIndex(Mat& pmat, flann::GenericI
         
         ind.radiusSearch(pmat.row(i), indices_vec, dist_vec, res, cvflann::SearchParams());
         
-        for(auto index: indices_vec)
-            validIndex[index] = false;
 
         Ptr<WarpNode> wn = new WarpNode;
-        wn->pos = Point3f(pmat.at<float>(i, 0), pmat.at<float>(i, 1), pmat.at<float>(i, 2));
+        Point3f centre(0, 0, 0);
+        float len = 0;
+        for(int index: indices_vec)
+            if(validIndex[index])
+            {
+                centre += Point3f(pmat.at<float>(index, 0), pmat.at<float>(index, 1), pmat.at<float>(index, 2));
+                len++;
+            }
+
+        centre /= len;
+        wn->pos = centre;
+
+        for(auto index: indices_vec)
+            validIndex[index] = false;
 
         std::vector<int> indices_vec2(k+1, 0);
         std::vector<float> dist_vec2(k+1, 0);
@@ -125,10 +140,11 @@ void WarpField::constructRegGraph()
     float effResolution = baseRes*resGrowthRate;
     std::vector<Ptr<WarpNode> > curNodes = nodes;
     Mat curNodeMatrix(curNodes.size(), 3, CV_32F);
-    for(Ptr<WarpNode> n: curNodes)
-    {
-        Mat row = (Mat_<float>(1, 3) << n->pos.x, n->pos.y, n->pos.z);
-        curNodeMatrix.push_back(row);
+    for(size_t i = 0; i < curNodes.size(); i++)
+    {   
+        curNodeMatrix.at<float>(i, 0) = curNodes[i]->pos.x;
+        curNodeMatrix.at<float>(i, 1) = curNodes[i]->pos.y;
+        curNodeMatrix.at<float>(i, 2) = curNodes[i]->pos.z;
     }
 
     Ptr<flann::GenericIndex<flann::L2_Simple<float> > > curNodeIndex(
