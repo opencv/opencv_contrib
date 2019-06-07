@@ -262,7 +262,7 @@ CV_EXPORTS_W void estimatePoseSingleMarkers(InputArrayOfArrays corners, float ma
 /**
  * @brief Board of markers
  *
- * A board is a set of markers in the 3D space with a common cordinate system.
+ * A board is a set of markers in the 3D space with a common coordinate system.
  * The common form of a board of marker is a planar (2D) board, however any 3D layout can be used.
  * A Board object is composed by:
  * - The object points of the marker corners, i.e. their coordinates respect to the board system.
@@ -273,7 +273,7 @@ class CV_EXPORTS_W Board {
 
     public:
     /**
-    * @brief Provide way to create Board by passing nessesary data. Specially needed in Python.
+    * @brief Provide way to create Board by passing necessary data. Specially needed in Python.
     *
     * @param objPoints array of object points of all the marker corners in the board
     * @param dictionary the dictionary of markers employed for this board
@@ -297,7 +297,7 @@ class CV_EXPORTS_W Board {
 
 /**
  * @brief Planar board with grid arrangement of markers
- * More common type of board. All markers are placed in the same plane in a grid arrangment.
+ * More common type of board. All markers are placed in the same plane in a grid arrangement.
  * The board can be drawn using drawPlanarBoard() function (@sa drawPlanarBoard)
  */
 class CV_EXPORTS_W GridBoard : public Board {
