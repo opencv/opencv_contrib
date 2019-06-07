@@ -406,13 +406,13 @@ int main(int argc, char **argv)
                 viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
                 
                 viz::WCloud nodeCloud1(node_pos[0], viz::Color::red());
-                nodeCloud1.setRenderingProperty(viz::POINT_SIZE, 4);
+                nodeCloud1.setRenderingProperty(viz::POINT_SIZE, 10);
                 viz::WCloud nodeCloud2(node_pos[1], viz::Color::green());
-                nodeCloud2.setRenderingProperty(viz::POINT_SIZE, 4);
+                nodeCloud2.setRenderingProperty(viz::POINT_SIZE, 10);
                 viz::WCloud nodeCloud3(node_pos[2], viz::Color::bluberry());
-                nodeCloud3.setRenderingProperty(viz::POINT_SIZE, 4);
+                nodeCloud3.setRenderingProperty(viz::POINT_SIZE, 10);
                 viz::WCloud nodeCloud4(node_pos[3], viz::Color::yellow());
-                nodeCloud4.setRenderingProperty(viz::POINT_SIZE, 4);
+                nodeCloud4.setRenderingProperty(viz::POINT_SIZE, 10);
 
                 int arrow_count = 0;
                 for(auto arrow: arrows){
