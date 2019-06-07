@@ -30,7 +30,8 @@ public:
 
 private:
     void removeSupported(flann::GenericIndex<flann::L2_Simple<float> >& ind, std::vector<bool>& supInd);
-    std::vector<Ptr<WarpNode> > subsampleIndex(Mat& pmat, flann::GenericIndex<flann::L2_Simple<float> >& ind, std::vector<bool>& supInd, float res);
+    std::vector<Ptr<WarpNode> > subsampleIndex(Mat& pmat, flann::GenericIndex<flann::L2_Simple<float> >& ind, std::vector<bool>& supInd, 
+        float res, Ptr<flann::GenericIndex<flann::L2_Simple<float> > > knnIndex = nullptr);
     void constructRegGraph();
 
     std::vector<Ptr<WarpNode> > nodes; //heirarchy level 0
