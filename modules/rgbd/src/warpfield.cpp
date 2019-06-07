@@ -35,7 +35,20 @@ void WarpField::updateNodesFromPoints(InputArray _points)
     std::vector<bool> validIndex;
     removeSupported(searchIndex, validIndex);
 
-    std::vector<Ptr<WarpNode> > newNodes = subsampleIndex(points_matrix, searchIndex, validIndex, baseRes);
+    Mat nodePosMatrix(nodes.size(), 3, CV_32F);
+    
+    for(auto n: nodes)
+    {
+        Mat row = (Mat_<float>(1, 3) << n->pos.x, n->pos.y, n->pos.z);
+        nodePosMatrix.push_back(row);
+    }
+    std::vector<Ptr<WarpNode> > newNodes;
+    if((int)nodes.size() > k) {
+        Ptr<flann::GenericIndex<flann::L2_Simple<float> > > nodeIndexPtr = new flann::GenericIndex<flann::L2_Simple<float> >(nodePosMatrix, params);
+        newNodes = subsampleIndex(points_matrix, searchIndex, validIndex, baseRes, nodeIndexPtr);
+    } else
+        newNodes = subsampleIndex(points_matrix, searchIndex, validIndex, baseRes);
+
     nodes.insert(nodes.end(), newNodes.begin(), newNodes.end());
     
     constructRegGraph();
@@ -44,7 +57,6 @@ void WarpField::updateNodesFromPoints(InputArray _points)
 
 void WarpField::removeSupported(flann::GenericIndex<flann::L2_Simple<float> >& ind, std::vector<bool>& validInd)
 {
-    
     std::vector<bool> validIndex(ind.size(), true);
 
     for(WarpNode* n: nodes)
@@ -65,7 +77,8 @@ void WarpField::removeSupported(flann::GenericIndex<flann::L2_Simple<float> >& i
 
 }
 
-std::vector<Ptr<WarpNode> > WarpField::subsampleIndex(Mat& pmat, flann::GenericIndex<flann::L2_Simple<float> >& ind, std::vector<bool>& validIndex, float res)
+std::vector<Ptr<WarpNode> > WarpField::subsampleIndex(Mat& pmat, flann::GenericIndex<flann::L2_Simple<float> >& ind,
+    std::vector<bool>& validIndex, float res, Ptr<flann::GenericIndex<flann::L2_Simple<float> > > knnIndex)
 {
     std::vector<Ptr<WarpNode> > temp_nodes;
 
@@ -77,17 +90,27 @@ std::vector<Ptr<WarpNode> > WarpField::subsampleIndex(Mat& pmat, flann::GenericI
         std::vector<int> indices_vec(maxNeighbours);
         std::vector<float> dist_vec(maxNeighbours);
         
-        int neighbours = ind.radiusSearch(pmat.row(i), indices_vec, dist_vec, res, cvflann::SearchParams());
-
-        for(int j = 0; j < neighbours; j++)
-            validIndex[indices_vec[j]] = false;
+        ind.radiusSearch(pmat.row(i), indices_vec, dist_vec, res, cvflann::SearchParams());
+        
+        for(auto index: indices_vec)
+            validIndex[index] = false;
 
         Ptr<WarpNode> wn = new WarpNode;
         wn->pos = Point3f(pmat.at<float>(i, 0), pmat.at<float>(i, 1), pmat.at<float>(i, 2));
-        wn->radius = res;
-        //wn->children.assign(k, nullptr);
+
+        std::vector<int> indices_vec2(k+1, 0);
+        std::vector<float> dist_vec2(k+1, 0);
+
+        std::vector<float> query = {wn->pos.x, wn->pos.y, wn->pos.z};
+
+        if(knnIndex != nullptr)
+        {
+            knnIndex->knnSearch(query, indices_vec2, dist_vec2, (k+1), cvflann::SearchParams());
+            wn->radius = dist_vec2.back();
+        } else wn->radius = res;
+
         temp_nodes.push_back(wn);
-    }      
+    }     
     
     return temp_nodes;
 }
