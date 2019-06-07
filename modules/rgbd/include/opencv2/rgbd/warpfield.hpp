@@ -22,7 +22,7 @@ typedef std::vector<std::vector<int> > EdgesLevelType;
 class CV_EXPORTS_W WarpField
 {
 public:
-    WarpField(int _maxNeighbours=1000000, int K=4, int levels=4, float baseResolution=0.025, float resolutionGrowth=2);
+    WarpField(int _maxNeighbours=1000000, int K=4, int levels=4, float baseResolution=0.025, float resolutionGrowth=4);
     void updateNodesFromPoints(InputArray _points);
 
     std::vector<Ptr<WarpNode> > getNodes();
@@ -43,7 +43,10 @@ private:
     float resGrowthRate;
     
     std::vector<NodesLevelType> regGraphNodes; // heirarchy levels 1 to L
+
 };
+
+bool PtCmp(cv::Point3f a, cv::Point3f b);
 
 } // namepsace dynafu
 } // namespace cv
