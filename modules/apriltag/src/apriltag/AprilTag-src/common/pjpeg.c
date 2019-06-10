@@ -549,16 +549,16 @@ static int pjpeg_decode_buffer(struct pjpeg_decode_state *pjd)
                                 printf("RST SYNC\n");
                             }
 
-                            int32_t marker = bd_consume_bits(&bd, 8);
+                            int32_t marker_32 = bd_consume_bits(&bd, 8);
 
-//                            printf("%04x: RESET? %02x\n", *bd.inpos,  marker);
-                            if (marker != (0xd0 + pjd->reset_next))
+//                            printf("%04x: RESET? %02x\n", *bd.inpos,  marker_32);
+                            if (marker_32 != (0xd0 + pjd->reset_next))
                                 return PJPEG_ERR_RESET;
 
                             pjd->reset_count = 0;
                             pjd->reset_next = (pjd->reset_next + 1) & 0x7;
 
-                            memset(dcpred, 0, sizeof(dcpred));
+                            memset(dcpred, 0, sizeof(*dcpred));
                         }
 
                         for (int nsidx = 0; nsidx < ns; nsidx++) {

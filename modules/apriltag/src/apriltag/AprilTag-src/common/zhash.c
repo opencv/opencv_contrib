@@ -179,11 +179,11 @@ int zhash_put(zhash_t *zh, const void *key, const void *value, void *oldkey, voi
                                                  zh->hash, zh->equals,
                                                  zh->size);
 
-        for (int entry_idx = 0; entry_idx < zh->nentries; entry_idx++) {
+        for (int idx = 0; idx < zh->nentries; idx++) {
 
-            if (zh->entries[entry_idx * zh->entrysz]) {
-                void *this_key = &zh->entries[entry_idx * zh->entrysz + 1];
-                void *this_value = &zh->entries[entry_idx * zh->entrysz + 1 + zh->keysz];
+            if (zh->entries[idx * zh->entrysz]) {
+                void *this_key = &zh->entries[idx * zh->entrysz + 1];
+                void *this_value = &zh->entries[idx * zh->entrysz + 1 + zh->keysz];
                 if (zhash_put(newhash, this_key, this_value, NULL, NULL))
                     assert(0); // shouldn't already be present.
             }

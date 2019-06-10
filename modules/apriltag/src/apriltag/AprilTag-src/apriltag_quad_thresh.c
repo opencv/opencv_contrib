@@ -1714,10 +1714,10 @@ zarray_t* gradient_clusters(apriltag_detector_t *td, image_u8_t* threshim, int w
     clusters = zarray_create(sizeof(zarray_t*));
     zarray_ensure_capacity(clusters, zarray_size(clusters_list[0]));
     for (int i = 0; i < zarray_size(clusters_list[0]); i++) {
-        struct cluster_hash* h;
-        zarray_get(clusters_list[0], i, &h);
-        zarray_add(clusters, &h->data);
-        free(h);
+        struct cluster_hash* hash;
+        zarray_get(clusters_list[0], i, &hash);
+        zarray_add(clusters, &hash->data);
+        free(hash);
     }
     zarray_destroy(clusters_list[0]);
     free(clusters_list);
@@ -1894,9 +1894,9 @@ zarray_t *apriltag_quad_thresh(apriltag_detector_t *td, image_u8_t *im)
 
         image_u8_destroy(im2);
 
-        for (int i = 0; i < zarray_size(quads); i++) {
+        for (int idx = 0; idx < zarray_size(quads); idx++) {
             struct quad *q;
-            zarray_get_volatile(quads, i, &q);
+            zarray_get_volatile(quads, idx, &q);
 
             float rgb[3];
             int bias = 100;

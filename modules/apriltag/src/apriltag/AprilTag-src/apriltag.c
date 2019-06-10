@@ -1062,9 +1062,9 @@ zarray_t *apriltag_detector_detect(apriltag_detector_t *td, image_u8_t *im_orig)
     // adjust centers of pixels so that they correspond to the
     // original full-resolution image.
     if (td->quad_decimate > 1) {
-        for (int i = 0; i < zarray_size(quads); i++) {
+        for (int idx = 0; idx < zarray_size(quads); idx++) {
             struct quad *q;
-            zarray_get_volatile(quads, i, &q);
+            zarray_get_volatile(quads, idx, &q);
 
             for (int i = 0; i < 4; i++) {
                 if (td->quad_decimate == 1.5) {
@@ -1264,9 +1264,9 @@ zarray_t *apriltag_detector_detect(apriltag_detector_t *td, image_u8_t *im_orig)
 
         image_u8_destroy(darker);
 
-        for (int i = 0; i < zarray_size(detections); i++) {
+        for (int idx = 0; idx < zarray_size(detections); idx++) {
             apriltag_detection_t *det;
-            zarray_get(detections, i, &det);
+            zarray_get(detections, idx, &det);
 
             float rgb[3];
             int bias = 100;
@@ -1303,9 +1303,9 @@ zarray_t *apriltag_detector_detect(apriltag_detector_t *td, image_u8_t *im_orig)
 
         image_u8_destroy(darker);
 
-        for (int i = 0; i < zarray_size(detections); i++) {
+        for (int idx = 0; idx < zarray_size(detections); idx++) {
             apriltag_detection_t *det;
-            zarray_get(detections, i, &det);
+            zarray_get(detections, idx, &det);
 
             float rgb[3];
             int bias = 100;
@@ -1345,9 +1345,9 @@ zarray_t *apriltag_detector_detect(apriltag_detector_t *td, image_u8_t *im_orig)
 
         image_u8_destroy(darker);
 
-        for (int i = 0; i < zarray_size(quads); i++) {
+        for (int idx = 0; idx < zarray_size(quads); idx++) {
             struct quad *q;
-            zarray_get_volatile(quads, i, &q);
+            zarray_get_volatile(quads, idx, &q);
 
             float rgb[3];
             int bias = 100;

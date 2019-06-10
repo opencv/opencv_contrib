@@ -202,10 +202,10 @@ zarray_t *str_split_spaces(const char *str)
 	pos++;
       size_t off1 = pos;
 
-      size_t len = off1 - off0;
-      char *tok = malloc(len + 1);
-      memcpy(tok, &str[off0], len);
-      tok[len] = 0;
+      size_t len_off = off1 - off0;
+      char *tok = malloc(len_off + 1);
+      memcpy(tok, &str[off0], len_off);
+      tok[len_off] = 0;
       zarray_add(parts, &tok);
     }
   }
