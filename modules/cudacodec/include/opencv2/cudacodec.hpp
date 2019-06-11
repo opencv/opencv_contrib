@@ -250,6 +250,9 @@ enum Codec
     JPEG,
     H264_SVC,
     H264_MVC,
+    HEVC,
+    VP8,
+    VP9,
 
     Uncompressed_YUV420 = (('I'<<24)|('Y'<<16)|('U'<<8)|('V')),   //!< Y,U,V (4:2:0)
     Uncompressed_YV12   = (('Y'<<24)|('V'<<16)|('1'<<8)|('2')),   //!< Y,V,U (4:2:0)
@@ -274,6 +277,7 @@ struct FormatInfo
 {
     Codec codec;
     ChromaFormat chromaFormat;
+    int nBitDepthMinus8;
     int width;
     int height;
 };
