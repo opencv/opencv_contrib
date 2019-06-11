@@ -57,22 +57,53 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
                                             cudaVideoCreate_PreferCUVID;
 
     // Validate video format.  These are the currently supported formats via NVCUVID
-    CV_Assert(cudaVideoCodec_MPEG1 == _codec ||
-              cudaVideoCodec_MPEG2 == _codec ||
-              cudaVideoCodec_MPEG4 == _codec ||
-              cudaVideoCodec_VC1   == _codec ||
-              cudaVideoCodec_H264  == _codec ||
-              cudaVideoCodec_JPEG  == _codec ||
-              cudaVideoCodec_YUV420== _codec ||
-              cudaVideoCodec_YV12  == _codec ||
-              cudaVideoCodec_NV12  == _codec ||
-              cudaVideoCodec_YUYV  == _codec ||
-              cudaVideoCodec_UYVY  == _codec );
+    bool codecSupported =   cudaVideoCodec_MPEG1    == _codec ||
+                            cudaVideoCodec_MPEG2    == _codec ||
+                            cudaVideoCodec_MPEG4    == _codec ||
+                            cudaVideoCodec_VC1      == _codec ||
+                            cudaVideoCodec_H264     == _codec ||
+                            cudaVideoCodec_JPEG     == _codec ||
+                            cudaVideoCodec_H264_SVC == _codec ||
+                            cudaVideoCodec_H264_MVC == _codec ||
+                            cudaVideoCodec_YV12     == _codec ||
+                            cudaVideoCodec_NV12     == _codec ||
+                            cudaVideoCodec_YUYV     == _codec ||
+                            cudaVideoCodec_UYVY     == _codec;
 
-    CV_Assert(cudaVideoChromaFormat_Monochrome == _chromaFormat ||
-              cudaVideoChromaFormat_420        == _chromaFormat ||
-              cudaVideoChromaFormat_422        == _chromaFormat ||
-              cudaVideoChromaFormat_444        == _chromaFormat);
+#if defined (HAVE_CUDA)
+#if (CUDART_VERSION >= 6500)
+    codecSupported |=       cudaVideoCodec_HEVC     == _codec;
+#endif
+#if  ((CUDART_VERSION == 7500) || (CUDART_VERSION >= 9000))
+    codecSupported |=       cudaVideoCodec_VP8      == _codec ||
+                            cudaVideoCodec_VP9      == _codec ||
+                            cudaVideoCodec_YUV420   == _codec;
+#endif
+#endif
+
+    CV_Assert(codecSupported);
+    CV_Assert(  cudaVideoChromaFormat_Monochrome == _chromaFormat ||
+                cudaVideoChromaFormat_420        == _chromaFormat ||
+                cudaVideoChromaFormat_422        == _chromaFormat ||
+                cudaVideoChromaFormat_444        == _chromaFormat);
+
+#if (CUDART_VERSION >= 9000)
+    // Check video format is supported by GPU's hardware video decoder
+    if (videoFormat.nBitDepthMinus8 != -1) { // info not available call to create CuvidVideoSource() failed
+        CUVIDDECODECAPS decodeCaps = {};
+        decodeCaps.eCodecType = _codec;
+        decodeCaps.eChromaFormat = _chromaFormat;
+        decodeCaps.nBitDepthMinus8 = videoFormat.nBitDepthMinus8;
+        cuSafeCall(cuvidGetDecoderCaps(&decodeCaps));
+        if (!decodeCaps.bIsSupported)
+            CV_Error(Error::StsUnsupportedFormat, "Video source is not supported by hardware video decoder");
+
+        CV_Assert(videoFormat.width >= decodeCaps.nMinWidth &&
+            videoFormat.height >= decodeCaps.nMinHeight &&
+            videoFormat.width <= decodeCaps.nMaxWidth &&
+            videoFormat.height <= decodeCaps.nMaxHeight);
+    }
+#endif
 
     // Fill the decoder-create-info struct from the given video-format struct.
     std::memset(&createInfo_, 0, sizeof(CUVIDDECODECREATEINFO));

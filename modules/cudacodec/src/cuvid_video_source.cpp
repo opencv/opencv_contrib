@@ -70,6 +70,7 @@ cv::cudacodec::detail::CuvidVideoSource::CuvidVideoSource(const String& fname)
 
     format_.codec = static_cast<Codec>(vidfmt.codec);
     format_.chromaFormat = static_cast<ChromaFormat>(vidfmt.chroma_format);
+    format_.nBitDepthMinus8 = vidfmt.bit_depth_luma_minus8;
     format_.width = vidfmt.coded_width;
     format_.height = vidfmt.coded_height;
 }
