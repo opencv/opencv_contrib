@@ -189,6 +189,8 @@ public:
     @return true if succeded to align new frame with current scene, false if opposite
     */
     CV_WRAP virtual bool update(InputArray depth) = 0;
+
+    virtual std::vector<Point3f> getNodesPos() const = 0;
 };
 
 //! @}
