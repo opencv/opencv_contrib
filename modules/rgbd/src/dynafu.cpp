@@ -109,6 +109,8 @@ public:
 
     bool updateT(const T& depth);
 
+    std::vector<Point3f> getNodesPos() const CV_OVERRIDE;
+
 private:
     Params params;
 
@@ -123,6 +125,15 @@ private:
     WarpField warpfield;
 };
 
+template< typename T>
+std::vector<Point3f> DynaFuImpl<T>::getNodesPos() const {
+    NodeVectorType nv = warpfield.getNodes();
+    std::vector<Point3f> nodesPos(nv.size());
+    for(auto n: nv)
+        nodesPos.push_back(n->pos);
+
+    return nodesPos;
+}
 
 template< typename T >
 DynaFuImpl<T>::DynaFuImpl(const Params &_params) :
@@ -250,7 +261,8 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
                                   params.pyramidLevels);
         
         UMat wfPoints;
-        volume->fetchPointsNormals(wfPoints, noArray());
+        UMat wfNormals;
+        volume->fetchPointsNormals(wfPoints, wfNormals);
         warpfield.updateNodesFromPoints(wfPoints);
         warpfield.setAllRT(pose);
     }
