@@ -11,12 +11,11 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/calib3d.hpp>
 #include <opencv2/highgui.hpp>
-#include <opencv2/rgbd/kinfu.hpp>
 #include <opencv2/core/utils/logger.hpp>
-#include <opencv2/rgbd/warpfield.hpp>
+#include <opencv2/rgbd.hpp>
 
 using namespace cv;
-using namespace cv::kinfu;
+using namespace cv::dynafu;
 using namespace std;
 
 #ifdef HAVE_OPENCV_VIZ
@@ -220,10 +219,10 @@ const std::string vizWindowName = "cloud";
 
 struct PauseCallbackArgs
 {
-    PauseCallbackArgs(KinFu& _kf) : kf(_kf)
+    PauseCallbackArgs(DynaFu& _kf) : kf(_kf)
     { }
 
-    KinFu& kf;
+    DynaFu& kf;
 };
 
 void pauseCallback(const viz::MouseEvent& me, void* args);
@@ -250,10 +249,9 @@ static const char* keys =
     "{camera |0| Index of depth camera to be used as a depth source }"
     "{coarse | | Run on coarse settings (fast but ugly) or on default (slow but looks better),"
         " in coarse mode points and normals are displayed }"
-    "{idle   | | Do not run KinFu, just display depth frames }"
+    "{idle   | | Do not run DynaFu, just display depth frames }"
     "{record | | Write depth frames to specified file list"
         " (the same format as for the 'depth' key) }"
-    "{res    |0.1| Maximum distance between DynaFu warp nodes}"
 };
 
 static const std::string message =
@@ -266,7 +264,6 @@ int main(int argc, char **argv)
 {
     bool coarse = false;
     bool idle = false;
-    float dynafu_res = 0.1f;
     string recordPath;
 
     CommandLineParser parser(argc, argv, keys);
@@ -296,10 +293,6 @@ int main(int argc, char **argv)
     {
         idle = true;
     }
-    if(parser.has("res"))
-    {
-        dynafu_res = parser.get<float>("res");
-    }
 
     Ptr<DepthSource> ds;
     if (parser.has("depth"))
@@ -319,7 +312,7 @@ int main(int argc, char **argv)
         depthWriter = makePtr<DepthWriter>(recordPath);
 
     Ptr<Params> params;
-    Ptr<KinFu> kf;
+    Ptr<DynaFu> kf;
 
     if(coarse)
         params = Params::coarseParams();
@@ -337,7 +330,7 @@ int main(int argc, char **argv)
     //params->tsdf_max_weight = 16;
 
     if(!idle)
-        kf = KinFu::create(params);
+        kf = DynaFu::create(params);
 
 #ifdef HAVE_OPENCV_VIZ
     cv::viz::Viz3d window(vizWindowName);
@@ -350,7 +343,6 @@ int main(int argc, char **argv)
     UMat normals;
 
     int64 prevTime = getTickCount();
-    dynafu::WarpField w;
 
     for(UMat frame = ds->getDepth(); !frame.empty(); frame = ds->getDepth())
     {
@@ -364,7 +356,7 @@ int main(int argc, char **argv)
             // doesn't happen in idle mode
             kf->getCloud(points, normals);
 
-            Mat vec_mat = points.getMat(ACCESS_READ);
+            /*Mat vec_mat = points.getMat(ACCESS_READ);
             Mat ds_points(points.size().height, 3, CV_32F);
             for(int i = 0; i < points.size().height; i++)
             {
@@ -376,7 +368,7 @@ int main(int argc, char **argv)
 
             w.updateNodesFromPoints(ds_points);
             std::vector<Ptr<dynafu::WarpNode> > nodes = w.getNodes();
-            std::vector<dynafu::NodesLevelType> graph = w.getGraphNodes();
+            std::vector<dynafu::NodeVectorType> graph = w.getGraphNodes();
 
             std::vector<std::vector<Point3f>> node_pos(4);
             std::vector<viz::WLine> arrows;
@@ -385,7 +377,7 @@ int main(int argc, char **argv)
             {
                 node_pos[0].push_back(n_ptr->pos);
                 for(Ptr<dynafu::WarpNode> child: n_ptr->children)
-                    arrows.push_back(viz::WLine(n_ptr->pos, child->pos, viz::Color::orange()));
+                    arrows.push_back(viz::WLine(n_ptr->pos, child->pos, viz::Color::green()));
             }
 
             int l=0;
@@ -398,14 +390,14 @@ int main(int argc, char **argv)
                     for(Ptr<dynafu::WarpNode> child: n_ptr->children)
                         arrows.push_back(viz::WLine(n_ptr->pos, child->pos, viz::Color::orange()));
                 }
-            }          
+            }   */       
 
             if(!points.empty() && !normals.empty())
             {
                 viz::WCloud cloudWidget(points, viz::Color::white());
                 viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
                 
-                viz::WCloud nodeCloud1(node_pos[0], viz::Color::red());
+                /*viz::WCloud nodeCloud1(node_pos[0], viz::Color::red());
                 nodeCloud1.setRenderingProperty(viz::POINT_SIZE, 10);
                 viz::WCloud nodeCloud2(node_pos[1], viz::Color::green());
                 nodeCloud2.setRenderingProperty(viz::POINT_SIZE, 10);
@@ -426,7 +418,7 @@ int main(int argc, char **argv)
                 window.showWidget("nodes level 1", nodeCloud1);
                 window.showWidget("nodes level 2", nodeCloud2);
                 window.showWidget("nodes level 3", nodeCloud3);
-                window.showWidget("nodes level 4", nodeCloud4);
+                window.showWidget("nodes level 4", nodeCloud4);*/
 
                 Vec3d volSize = kf->getParams().voxelSize*Vec3d(kf->getParams().volumeDims);
                 window.showWidget("cube", viz::WCube(Vec3d::all(0),
@@ -440,7 +432,7 @@ int main(int argc, char **argv)
                 window.removeWidget("text");
                 window.removeWidget("cloud");
                 window.removeWidget("normals");
-                window.removeWidget("nodes level 1");
+                /*window.removeWidget("nodes level 1");
                 window.removeWidget("nodes level 2");
                 window.removeWidget("nodes level 3");
                 window.removeWidget("nodes level 4");
@@ -450,7 +442,7 @@ int main(int argc, char **argv)
                     string wname = "arrow" + std::to_string(arrow_count); 
                     window.removeWidget(wname);
                     arrow_count++;
-                }
+                }*/
 
                 window.registerMouseCallback(0);
             }
@@ -478,7 +470,7 @@ int main(int argc, char **argv)
                     if(coarse)
                     {
                         kf->getCloud(points, normals);
-                        Mat vec_mat = points.getMat(ACCESS_READ);
+                        /*Mat vec_mat = points.getMat(ACCESS_READ);
                         Mat ds_points(points.size().height, 3, CV_32F);
                         for(int i = 0; i < points.size().height; i++)
                         {
@@ -490,7 +482,7 @@ int main(int argc, char **argv)
 
                         w.updateNodesFromPoints(ds_points);
                         std::vector<Ptr<dynafu::WarpNode> > nodes = w.getNodes();
-                        std::vector<dynafu::NodesLevelType> graph = w.getGraphNodes();
+                        std::vector<dynafu::NodeVectorType> graph = w.getGraphNodes();
 
                         std::vector<std::vector<Point3f>> node_pos(4);
 
@@ -503,17 +495,17 @@ int main(int argc, char **argv)
                             l++;
                             for(auto n_ptr: level)
                                 node_pos[l].push_back(n_ptr->pos);
-                        }
+                        }*/
 
                         if(!points.empty() && !normals.empty())
                         {
                             viz::WCloud cloudWidget(points, viz::Color::white());
                             viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
-                            viz::WCloud nodeCloud(node_pos[0], viz::Color::red());
-                            nodeCloud.setRenderingProperty(viz::POINT_SIZE, 4);
+                            //viz::WCloud nodeCloud(node_pos[0], viz::Color::red());
+                            //nodeCloud.setRenderingProperty(viz::POINT_SIZE, 4);
                             window.showWidget("cloud", cloudWidget);
                             window.showWidget("normals", cloudNormals);
-                            window.showWidget("nodes", nodeCloud);
+                            //window.showWidget("nodes", nodeCloud);
                         }
                     }
 
