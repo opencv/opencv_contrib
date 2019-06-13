@@ -120,8 +120,6 @@ void TSDFVolumeCPU::reset()
     });
 }
 
-// SIMD version of that code is manually inlined
-#if !USE_INTRINSICS
 static const bool fixMissingData = false;
 
 static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
@@ -196,7 +194,6 @@ static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
         return v0 + ty*(v1 - v0);
     }
 }
-#endif
 
 struct IntegrateInvoker : ParallelLoopBody
 {
