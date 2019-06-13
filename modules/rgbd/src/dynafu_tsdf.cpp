@@ -267,19 +267,17 @@ struct IntegrateInvoker : ParallelLoopBody
                             std::vector<float> dists(warpfield->k);
                             
                             warpfield->getNodeIndex()->knnSearch(query, indices, dists, warpfield->k, cvflann::SearchParams());
-                            int count = 0;
 
-                            for(float d: dists) {
-                                newWeight += d;
-                                count++;
-                            }
-
-                            newWeight /= count;
+                            for(float d: dists)
+                                if(!std::isnan(d)) newWeight += d;
                             
-                        } else newWeight = 7.f;
+                        } else newWeight = 1.f;
 
-                        value = (value*weight+tsdf*newWeight) / (weight+newWeight);
-                        weight = min(weight+newWeight, 640.0f/* volume.maxWeight */);
+                        if((weight + newWeight) != 0)
+                        {
+                            value = (value*weight+tsdf*newWeight) / (weight+newWeight);
+                            weight = min(weight+newWeight, volume.maxWeight);
+                        }
                     }
                 }
             }
