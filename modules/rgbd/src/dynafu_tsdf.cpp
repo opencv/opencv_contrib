@@ -230,7 +230,6 @@ struct IntegrateInvoker : ParallelLoopBody
                     
                     Point3f globalPt = volume.pose * volPt;
                     Point3f camSpacePt = warpfield->interpolatedRT(globalPt) * globalPt;
-                    Point3f c2 = vol2cam * volPt;
 
                     if(camSpacePt.z <= 0)
                         continue;
@@ -259,28 +258,28 @@ struct IntegrateInvoker : ParallelLoopBody
                         volumeType& value = voxel.v;
 
                         // update TSDF
+                        float newWeight = 0;
 
-                        if(warpfield->getNodes().size() >= warpfield->k)
+                        if(warpfield->getNodes().size() >= (size_t)warpfield->k)
                         {
                             std::vector<float> query = {globalPt.x, globalPt.y, globalPt.z};
                             std::vector<int> indices(warpfield->k);
                             std::vector<float> dists(warpfield->k);
+                            
                             warpfield->getNodeIndex()->knnSearch(query, indices, dists, warpfield->k, cvflann::SearchParams());
-                            float newWeight = 0;
                             int count = 0;
+
                             for(float d: dists) {
-                                newWeight += d*volume.voxelSize;
+                                newWeight += d;
                                 count++;
                             }
 
                             newWeight /= count;
+                            
+                        } else newWeight = 7.f;
 
-                            value = (value*weight+tsdf*newWeight) / (weight + newWeight);
-                            weight = min(weight + newWeight, volume.maxWeight);
-                        } else {
-                            value = (value*weight+tsdf) / (weight+1);
-                            weight = min(weight+1, volume.maxWeight);
-                        }
+                        value = (value*weight+tsdf*newWeight) / (weight+newWeight);
+                        weight = min(weight+newWeight, 640.0f/* volume.maxWeight */);
                     }
                 }
             }
