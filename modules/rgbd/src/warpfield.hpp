@@ -16,7 +16,9 @@ struct WarpNode
     std::vector<Ptr<WarpNode> > children;
 
     float weight(Point3f x) {
-        return exp(-(norm(pos-x)*norm(pos-x))/(2.0*radius*radius));
+        Point3f diff = pos - x;
+        float L2 = diff.x*diff.x + diff.y*diff.y + diff.z*diff.z;
+        return expf(-L2/(2.0*radius*radius));
     }
 };
 
