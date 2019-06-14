@@ -51,7 +51,7 @@ DEF_PARAM_TEST_1(FileName, string);
 //////////////////////////////////////////////////////
 // VideoReader
 
-#if defined(HAVE_NVCUVID) && defined(HAVE_VIDEO_INPUT)
+#if defined(HAVE_NVCUVID)
 
 PERF_TEST_P(FileName, VideoReader, Values("gpu/video/768x576.avi", "gpu/video/1920x1080.avi"))
 {
