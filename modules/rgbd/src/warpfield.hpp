@@ -33,7 +33,7 @@ public:
     NodeVectorType getNodes() const;
     std::vector<NodeVectorType> getGraphNodes() const;
 
-    Affine3f interpolatedRT(Point3f p) const;
+    Point3f applyWarp(Point3f p, NodeVectorType nv) const;
 
     void setAllRT(Affine3f rt);
 
