@@ -68,7 +68,10 @@ int main(int argc, char* argv[])
     else
         videoCapture.open(parser.get<int>("camera"));
 
-    videoCapture >> inputFrame;
+    if (videoCapture.isOpened())
+    {
+        videoCapture >> inputFrame;
+    }
 
     if(inputFrame.empty())
     {
