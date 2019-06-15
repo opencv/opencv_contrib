@@ -226,40 +226,36 @@ void WarpField::constructRegGraph()
 
 }
 
-Affine3f WarpField::interpolatedRT(Point3f p) const
+Point3f WarpField::applyWarp(Point3f p, NodeVectorType neighbours) const
 {
-    Mat nodePos = getNodesPos(nodes);
-    if(nodePos.size().height == 0) return Affine3f::Identity();
-
-    std::vector<int> knnIndices(k);
-    std::vector<float> knnDists(k);
-
-    std::vector<float> query = {p.x, p.y, p.z};
-
-    nodeIndex->knnSearch(query ,knnIndices, knnDists, k, cvflann::SearchParams());
+    if(neighbours.size() == 0) return p;
 
     float totalWeight = 0;
+    Point3f WarpedPt(0,0,0);
 
-    Mat partialR(Mat::zeros(3,3,CV_32F));
-    Vec3f partialT = Vec3f::all(0);
-
-    for(int idx: knnIndices) {
-        float w = nodes[idx]->weight(p);
+    for(auto n_ptr: neighbours) {
+        float w = n_ptr->weight(p);
 
         if(w < 1e-5 && w > -1e-5) continue;
 
-        partialR = partialR * totalWeight + nodes[idx]->transform.rotation() * w;
-        partialT = partialT * totalWeight + nodes[idx]->transform.translation() * w;
+        Matx33f R = n_ptr->transform.rotation();
+        Vec3f T = n_ptr->transform.translation();
 
+        Point3f newPt = R * (p - n_ptr->pos) + n_ptr->pos;
+        newPt.x += T[0];
+        newPt.y += T[1];
+        newPt.z += T[2];
+        
+        WarpedPt += newPt * w;
         totalWeight += w;
-        partialR /= totalWeight;
-        partialT /= totalWeight;
+
+        WarpedPt /= w;
     }
 
     if(totalWeight == 0) 
-        return Affine3f::Identity();
+        return p;
     else
-        return Affine3f(partialR, partialT);
+        return WarpedPt;
 
 }
 

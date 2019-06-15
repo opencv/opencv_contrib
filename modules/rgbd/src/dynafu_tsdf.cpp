@@ -21,6 +21,8 @@ struct Voxel
 {
     volumeType v;
     float weight;
+    NodeVectorType neighbours;
+    std::vector<float> neighbourDists;
 };
 typedef Vec<uchar, sizeof(Voxel)> VecT;
 
@@ -222,11 +224,30 @@ struct IntegrateInvoker : ParallelLoopBody
 
                 for(int z = 0; z < volume.volResolution.z; z++)
                 {
-                    // optimization of the following:
-                    Point3f volPt = Point3f(x, y, z)*volume.voxelSize;
+                    Voxel& voxel = volDataY[z*volume.volDims[2]];
                     
+                    Point3f volPt = Point3f(x, y, z)*volume.voxelSize;
                     Point3f globalPt = volume.pose * volPt;
-                    Point3f camSpacePt = warpfield->interpolatedRT(globalPt) * globalPt;
+                    
+                    if(warpfield->getNodeIndex())
+                    {
+                        std::vector<float> query = {globalPt.x, globalPt.y, globalPt.z};
+                        std::vector<int> indices(warpfield->k);
+                        std::vector<float> dists(warpfield->k);
+                        warpfield->getNodeIndex()->knnSearch(query, indices, dists, warpfield->k, cvflann::SearchParams());
+
+                        voxel.neighbourDists.clear();
+                        voxel.neighbours.clear();
+                        for(size_t i = 0; i < indices.size(); i++)
+                        {
+                            if(std::isnan(dists[i])) continue;
+
+                            voxel.neighbourDists.push_back(dists[i]); 
+                            voxel.neighbours.push_back(warpfield->getNodes()[indices[i]]);
+                        }
+                    }
+
+                    Point3f camSpacePt = warpfield->applyWarp(globalPt, voxel.neighbours);
 
                     if(camSpacePt.z <= 0)
                         continue;
@@ -250,7 +271,6 @@ struct IntegrateInvoker : ParallelLoopBody
                     {
                         volumeType tsdf = fmin(1.f, sdf * truncDistInv);
 
-                        Voxel& voxel = volDataY[z*volume.volDims[2]];
                         float& weight = voxel.weight;
                         volumeType& value = voxel.v;
 
@@ -259,14 +279,8 @@ struct IntegrateInvoker : ParallelLoopBody
 
                         if(warpfield->getNodes().size() >= (size_t)warpfield->k)
                         {
-                            std::vector<float> query = {globalPt.x, globalPt.y, globalPt.z};
-                            std::vector<int> indices(warpfield->k);
-                            std::vector<float> dists(warpfield->k);
-                            
-                            warpfield->getNodeIndex()->knnSearch(query, indices, dists, warpfield->k, cvflann::SearchParams());
-
-                            for(float d: dists)
-                                if(!std::isnan(d)) newWeight += d;
+                            for(float d: voxel.neighbourDists)
+                                newWeight += d;
                             
                         } else newWeight = 1.f;
 
