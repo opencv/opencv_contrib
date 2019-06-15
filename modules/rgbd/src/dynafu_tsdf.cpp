@@ -215,6 +215,8 @@ struct IntegrateInvoker : ParallelLoopBody
 
     virtual void operator() (const Range& range) const override
     {
+        CV_TRACE_FUNCTION();
+
         for(int x = range.start; x < range.end; x++)
         {
             Voxel* volDataX = volDataStart + x*volume.volDims[0];
@@ -229,6 +231,7 @@ struct IntegrateInvoker : ParallelLoopBody
                     Point3f volPt = Point3f(x, y, z)*volume.voxelSize;
                     Point3f globalPt = volume.pose * volPt;
                     
+                    NodeVectorType warpNodes = warpfield->getNodes();
                     if(warpfield->getNodeIndex())
                     {
                         std::vector<float> query = {globalPt.x, globalPt.y, globalPt.z};
@@ -243,7 +246,7 @@ struct IntegrateInvoker : ParallelLoopBody
                             if(std::isnan(dists[i])) continue;
 
                             voxel.neighbourDists.push_back(dists[i]); 
-                            voxel.neighbours.push_back(warpfield->getNodes()[indices[i]]);
+                            voxel.neighbours.push_back(warpNodes[indices[i]]);
                         }
                     }
 
@@ -277,7 +280,7 @@ struct IntegrateInvoker : ParallelLoopBody
                         // update TSDF
                         float newWeight = 0;
 
-                        if(warpfield->getNodes().size() >= (size_t)warpfield->k)
+                        if(warpNodes.size() >= (size_t)warpfield->k)
                         {
                             for(float d: voxel.neighbourDists)
                                 newWeight += d;

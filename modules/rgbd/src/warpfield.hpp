@@ -27,7 +27,7 @@ typedef std::vector<Ptr<WarpNode> > NodeVectorType;
 class WarpField
 {
 public:
-    WarpField(int _maxNeighbours=1000000, int K=4, int levels=4, float baseResolution=0.025, float resolutionGrowth=4);
+    WarpField(int _maxNeighbours=1000000, int K=4, int levels=4, float baseResolution=0.1, float resolutionGrowth=4);
     void updateNodesFromPoints(InputArray _points);
 
     NodeVectorType getNodes() const;
