@@ -266,7 +266,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
         UMat wfNormals;
         volume->fetchPointsNormals(wfPoints, wfNormals);
         warpfield.updateNodesFromPoints(wfPoints);
-        warpfield.setAllRT(pose.inv());
+        warpfield.setAllRT(pose.inv()*volume->pose);
     }
 
     std::cout << "Frame# " << frameCounter++ << std::endl;
