@@ -50,7 +50,7 @@ void WarpField::updateNodesFromPoints(InputArray inputPoints)
     else
         points_matrix = inputPoints.getMat().reshape(1).colRange(0, 3).clone();
 
-    cvflann::KMeansIndexParams params;
+    cvflann::LinearIndexParams params;
     flann::GenericIndex<flann::L2_Simple <float> > searchIndex(points_matrix, params);
 
     std::vector<bool> validIndex;
@@ -67,7 +67,7 @@ void WarpField::updateNodesFromPoints(InputArray inputPoints)
     initTransforms(newNodes);
     nodes.insert(nodes.end(), newNodes.begin(), newNodes.end());
     //re-build index
-    nodeIndex = new flann::GenericIndex<flann::L2_Simple<float> >(getNodesPos(nodes), cvflann::KMeansIndexParams());
+    nodeIndex = new flann::GenericIndex<flann::L2_Simple<float> >(getNodesPos(nodes), cvflann::LinearIndexParams());
 
     constructRegGraph();
 }
@@ -196,7 +196,7 @@ void WarpField::constructRegGraph()
     Mat curNodeMatrix = getNodesPos(curNodes);
 
     Ptr<flann::GenericIndex<flann::L2_Simple<float> > > curNodeIndex(
-        new flann::GenericIndex<flann::L2_Simple<float> >(curNodeMatrix, cvflann::KMeansIndexParams()));
+        new flann::GenericIndex<flann::L2_Simple<float> >(curNodeMatrix, cvflann::LinearIndexParams()));
     
     for(int l = 0; l < (n_levels-1); l++)
     {
@@ -206,7 +206,7 @@ void WarpField::constructRegGraph()
         Mat coarseNodeMatrix = getNodesPos(coarseNodes);
 
         Ptr<flann::GenericIndex<flann::L2_Simple<float> > > coarseNodeIndex(
-            new flann::GenericIndex<flann::L2_Simple<float> >(coarseNodeMatrix, cvflann::KMeansIndexParams()));
+            new flann::GenericIndex<flann::L2_Simple<float> >(coarseNodeMatrix, cvflann::LinearIndexParams()));
 
         for(size_t i = 0; i < curNodes.size(); i++)
         {
@@ -255,8 +255,8 @@ Point3f WarpField::applyWarp(Point3f p, NodeVectorType neighbours) const
         WarpedPt += newPt * w;
         totalWeight += w;
 
-        WarpedPt /= w;
     }
+    WarpedPt /= totalWeight;
 
     if(totalWeight == 0) 
         return p;
