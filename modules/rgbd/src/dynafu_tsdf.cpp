@@ -287,6 +287,9 @@ struct IntegrateInvoker : ParallelLoopBody
                             
                         } else newWeight = 1.f;
 
+                        size_t nSize = voxel.neighbourDists.size();
+                        if(nSize > 0) newWeight /= nSize;
+
                         if((weight + newWeight) != 0)
                         {
                             value = (value*weight+tsdf*newWeight) / (weight+newWeight);
