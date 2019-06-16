@@ -74,8 +74,9 @@ public:
     @param edge_map edge image.
     @param orientation_map orientation map.
     @param boxes proposal boxes.
+    @param scores of the proposal boxes, provided a vector of float types.
     */
-    CV_WRAP virtual void getBoundingBoxes(InputArray edge_map, InputArray orientation_map, CV_OUT std::vector<Rect> &boxes) = 0;
+    CV_WRAP virtual void getBoundingBoxes(InputArray edge_map, InputArray orientation_map, CV_OUT std::vector<Rect> &boxes, OutputArray scores = noArray()) = 0;
 
     /** @brief Returns the step size of sliding window search.
     */

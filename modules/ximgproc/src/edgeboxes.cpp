@@ -79,7 +79,7 @@ public:
                   float gamma,
                   float kappa);
 
-    virtual void getBoundingBoxes(InputArray edge_map, InputArray orientation_map, std::vector<Rect> &boxes) CV_OVERRIDE;
+    virtual void getBoundingBoxes(InputArray edge_map, InputArray orientation_map, std::vector<Rect> &boxes, OutputArray scores = noArray()) CV_OVERRIDE;
 
     float getAlpha() const CV_OVERRIDE { return _alpha; }
     void setAlpha(float value) CV_OVERRIDE
@@ -910,13 +910,14 @@ void EdgeBoxesImpl::boxesNms(Boxes &boxes, float thr, float eta, int maxBoxes)
 }
 
 
-void EdgeBoxesImpl::getBoundingBoxes(InputArray edge_map, InputArray orientation_map, std::vector<Rect> &boxes)
+void EdgeBoxesImpl::getBoundingBoxes(InputArray edge_map, InputArray orientation_map, std::vector<Rect> &boxes, OutputArray scores)
 {
     CV_Assert(edge_map.depth() == CV_32F);
     CV_Assert(orientation_map.depth() == CV_32F);
 
     Mat E = edge_map.getMat().t();
     Mat O = orientation_map.getMat().t();
+    std::vector<float> * _scores = (std::vector<float> *) scores.getObj();;
 
     h = E.cols;
     w = E.rows;
@@ -931,10 +932,23 @@ void EdgeBoxesImpl::getBoundingBoxes(InputArray edge_map, InputArray orientation
     // create output boxes
     int n = (int) b.size();
     boxes.resize(n);
+
+    if (scores.needed())
+    {
+        _scores->resize(n);
+    }
+
     for(int i=0; i < n; i++)
     {
         boxes[i] = Rect((int)b[i].x + 1, (int)b[i].y + 1, (int)b[i].w, (int)b[i].h);
+        if (scores.needed())
+        {
+            (*_scores)[i] = b[i].score;
+        }
     }
+
+    // return scores if asked for
+
 }
 
 
