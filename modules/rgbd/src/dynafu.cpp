@@ -193,6 +193,8 @@ bool DynaFuImpl<Mat>::update(InputArray _depth)
 template<>
 bool DynaFuImpl<UMat>::update(InputArray _depth)
 {
+    CV_TRACE_FUNCTION();
+    
     CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
 
     UMat depth;
@@ -264,7 +266,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
         UMat wfNormals;
         volume->fetchPointsNormals(wfPoints, wfNormals);
         warpfield.updateNodesFromPoints(wfPoints);
-        warpfield.setAllRT(pose);
+        warpfield.setAllRT(pose.inv());
     }
 
     std::cout << "Frame# " << frameCounter++ << std::endl;
