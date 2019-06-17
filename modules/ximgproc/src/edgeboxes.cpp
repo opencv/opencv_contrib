@@ -48,7 +48,6 @@ OpenCV port by: Leonardo Lontra <lhe dot lontra at gmail dot com>
 */
 
 #include "precomp.hpp"
-
 using namespace cv;
 using namespace std;
 
@@ -917,7 +916,7 @@ void EdgeBoxesImpl::getBoundingBoxes(InputArray edge_map, InputArray orientation
 
     Mat E = edge_map.getMat().t();
     Mat O = orientation_map.getMat().t();
-    std::vector<float> * _scores = (std::vector<float> *) scores.getObj();;
+    std::vector<float> _scores;
 
     h = E.cols;
     w = E.rows;
@@ -935,7 +934,7 @@ void EdgeBoxesImpl::getBoundingBoxes(InputArray edge_map, InputArray orientation
 
     if (scores.needed())
     {
-        _scores->resize(n);
+        _scores.resize(n);
     }
 
     for(int i=0; i < n; i++)
@@ -943,12 +942,15 @@ void EdgeBoxesImpl::getBoundingBoxes(InputArray edge_map, InputArray orientation
         boxes[i] = Rect((int)b[i].x + 1, (int)b[i].y + 1, (int)b[i].w, (int)b[i].h);
         if (scores.needed())
         {
-            (*_scores)[i] = b[i].score;
+            _scores[i] = b[i].score;
         }
     }
 
     // return scores if asked for
-
+    if (scores.needed())
+    {
+        Mat(_scores).copyTo(scores);
+    }
 }
 
 
