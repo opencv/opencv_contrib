@@ -6,7 +6,7 @@
 */
 #ifndef OPENCV_AUGMENT_AUGMENT_HPP
 #define OPENCV_AUGMENT_AUGMENT_HPP
-#include <opencv2/augment/Transform.hpp>
+#include <opencv2/augment/transform.hpp>
 #include <opencv2/augment/flip.hpp>
 
 #endif

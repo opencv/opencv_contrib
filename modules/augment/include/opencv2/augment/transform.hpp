@@ -66,6 +66,11 @@ namespace augment {
         */
         CV_WRAP virtual std::vector<Mat> polygons(InputArray image, std::vector<Mat> src);
 
+
+        /* @brief set the random variables in a transformation to be used consitently on the next data 
+        */
+        CV_WRAP virtual void resetRandom();
+
     };
 
 
