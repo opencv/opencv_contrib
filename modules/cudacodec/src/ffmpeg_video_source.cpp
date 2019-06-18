@@ -111,6 +111,7 @@ cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname)
 
     format_.codec = static_cast<Codec>(codec);
     format_.chromaFormat = static_cast<ChromaFormat>(chroma_format);
+    format_.nBitDepthMinus8 = -1;
     format_.width = width;
     format_.height = height;
 }

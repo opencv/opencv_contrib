@@ -168,15 +168,15 @@ void FacemarkKazemiImpl :: loadModel(String filename){
     f.close();
     isModelLoaded = true;
 }
-bool FacemarkKazemiImpl::fit(InputArray img, InputArray roi, OutputArrayOfArrays landmarks){
+bool FacemarkKazemiImpl::fit(InputArray img, const std::vector<Rect>& roi, CV_OUT std::vector<std::vector<Point2f> >& landmarks){
     if(!isModelLoaded){
         String error_message = "No model loaded. Aborting....";
         CV_Error(Error::StsBadArg, error_message);
         return false;
     }
     Mat image  = img.getMat();
-    std::vector<Rect> & faces = *(std::vector<Rect>*)roi.getObj();
-    std::vector<std::vector<Point2f> > & shapes = *(std::vector<std::vector<Point2f> >*) landmarks.getObj();
+    const std::vector<Rect> & faces = roi;
+    std::vector<std::vector<Point2f> > & shapes = landmarks;
     shapes.resize(faces.size());
 
     if(image.empty()){

@@ -60,8 +60,8 @@ Ptr<Params> Params::defaultParams()
     //p.lightPose = p.volume_pose.translation()/4; //meters
     p.lightPose = Vec3f::all(0.f); //meters
 
-    // depth truncation is not used by default
-    //p.icp_truncate_depth_dist = 0.f;        //meters, disabled
+    // depth truncation is not used by default but can be useful in some scenes
+    p.truncateThreshold = 0.f; //meters
 
     return makePtr<Params>(p);
 }
@@ -209,7 +209,8 @@ bool KinFuImpl<T>::updateT(const T& _depth)
                        params.depthFactor,
                        params.bilateral_sigma_depth,
                        params.bilateral_sigma_spatial,
-                       params.bilateral_kernel_size);
+                       params.bilateral_kernel_size,
+                       params.truncateThreshold);
 
     if(frameCounter == 0)
     {

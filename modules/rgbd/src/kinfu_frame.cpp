@@ -304,7 +304,8 @@ void computePointsNormals(const Intr intr, float depthFactor, const Depth depth,
 static bool ocl_renderPointsNormals(const UMat points, const UMat normals, UMat image, Affine3f lightPose);
 static bool ocl_makeFrameFromDepth(const UMat depth, OutputArrayOfArrays points, OutputArrayOfArrays normals,
                                    const Intr intr, int levels, float depthFactor,
-                                   float sigmaDepth, float sigmaSpatial, int kernelSize);
+                                   float sigmaDepth, float sigmaSpatial, int kernelSize,
+                                   float truncateThreshold);
 static bool ocl_buildPyramidPointsNormals(const UMat points, const UMat normals,
                                           OutputArrayOfArrays pyrPoints, OutputArrayOfArrays pyrNormals,
                                           int levels);
@@ -490,20 +491,22 @@ static bool ocl_renderPointsNormals(const UMat points, const UMat normals,
 
 static bool ocl_makeFrameFromDepth(const UMat depth, OutputArrayOfArrays points, OutputArrayOfArrays normals,
                                    const Intr intr, int levels, float depthFactor,
-                                   float sigmaDepth, float sigmaSpatial, int kernelSize)
+                                   float sigmaDepth, float sigmaSpatial, int kernelSize,
+                                   float truncateThreshold)
 {
     CV_TRACE_FUNCTION();
 
     // looks like OpenCV's bilateral filter works the same as KinFu's
     UMat smooth;
     //TODO: fix that
-    // until 32f isn't implemented in OpenCV, we should use our workarounds
+    // until 32f isn't implemented in OpenCV in OpenCL, we should use our workarounds
     //bilateralFilter(udepth, smooth, kernelSize, sigmaDepth*depthFactor, sigmaSpatial);
     if(!customBilateralFilterGpu(depth, smooth, kernelSize, sigmaDepth*depthFactor, sigmaSpatial))
-        return  false;
+        return false;
 
-    // depth truncation is not used by default
-    //if (p.icp_truncate_depth_dist > 0) kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
+    // depth truncation can be used in some scenes
+    if(truncateThreshold > 0.f)
+        threshold(depth, depth, truncateThreshold*depthFactor, 0.0, THRESH_TOZERO_INV);
 
     UMat scaled = smooth;
     Size sz = smooth.size();
@@ -596,7 +599,8 @@ void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray im
 void makeFrameFromDepth(InputArray _depth,
                         OutputArray pyrPoints, OutputArray pyrNormals,
                         const Intr intr, int levels, float depthFactor,
-                        float sigmaDepth, float sigmaSpatial, int kernelSize)
+                        float sigmaDepth, float sigmaSpatial, int kernelSize,
+                        float truncateThreshold)
 {
     CV_TRACE_FUNCTION();
 
@@ -605,7 +609,8 @@ void makeFrameFromDepth(InputArray _depth,
     CV_OCL_RUN(_depth.isUMat() && pyrPoints.isUMatVector() && pyrNormals.isUMatVector(),
                ocl_makeFrameFromDepth(_depth.getUMat(), pyrPoints, pyrNormals,
                                       intr, levels, depthFactor,
-                                      sigmaDepth, sigmaSpatial, kernelSize));
+                                      sigmaDepth, sigmaSpatial, kernelSize,
+                                      truncateThreshold));
 
     int kp = pyrPoints.kind(), kn = pyrNormals.kind();
     CV_Assert(kp == _InputArray::STD_ARRAY_MAT || kp == _InputArray::STD_VECTOR_MAT);
@@ -618,8 +623,9 @@ void makeFrameFromDepth(InputArray _depth,
 
     bilateralFilter(depth, smooth, kernelSize, sigmaDepth*depthFactor, sigmaSpatial);
 
-    // depth truncation is not used by default
-    //if (p.icp_truncate_depth_dist > 0) kfusion::cuda::depthTruncation(curr_.depth_pyr[0], p.icp_truncate_depth_dist);
+    // depth truncation can be used in some scenes
+    if(truncateThreshold > 0.f)
+        threshold(depth, depth, truncateThreshold, 0.0, THRESH_TOZERO_INV);
 
     // we don't need depth pyramid outside this method
     // if we do, the code is to be refactored
