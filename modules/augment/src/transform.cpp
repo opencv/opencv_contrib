@@ -117,7 +117,8 @@ namespace augment {
         }
 
         return dst;
-    }    
+    }   
 
+    void Transform::resetRandom() {}
 }
 }

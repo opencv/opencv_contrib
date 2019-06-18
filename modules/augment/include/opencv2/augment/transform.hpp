@@ -17,7 +17,6 @@ namespace augment {
     {
     public:
         /* @brief Constructor
-            @param _probability probability that this transformation will be applied to each image
         */
         CV_WRAP Transform();
 

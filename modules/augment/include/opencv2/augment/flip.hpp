@@ -17,7 +17,6 @@ namespace augment {
     {
     public:
         /* @brief Constructor
-            @param _probability probability that this transformation will be applied to each image
         */
         CV_WRAP FlipHorizontal();
 
@@ -30,7 +29,7 @@ namespace augment {
         /* @brief Apply the flipping for a single point
             @param _src Input point to be flipped
         */
-        virtual Point2f point(InputArray image,const Point2f& src);
+        Point2f point(InputArray image,const Point2f& src);
 
     };
 
@@ -39,7 +38,6 @@ namespace augment {
     {
     public:
         /* @brief Constructor
-           @param _probability probability that this transformation will be applied to each image
         */
         CV_WRAP FlipVertical();
 
@@ -52,7 +50,7 @@ namespace augment {
         /* @brief Apply the flipping for a single point
            @param _src Input point to be flipped
         */
-        virtual Point2f point(InputArray image,const Point2f& src);
+        Point2f point(InputArray image,const Point2f& src);
 
     };
 
