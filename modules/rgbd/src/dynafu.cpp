@@ -63,8 +63,8 @@ Ptr<Params> Params::defaultParams()
     //p.lightPose = p.volume_pose.translation()/4; //meters
     p.lightPose = Vec3f::all(0.f); //meters
 
-    // depth truncation is not used by default
-    //p.icp_truncate_depth_dist = 0.f;        //meters, disabled
+    // depth truncation is not used by default but can be useful in some scenes
+    p.truncateThreshold = 0.f; //meters
 
     return makePtr<Params>(p);
 }
@@ -227,7 +227,8 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
                        params.depthFactor,
                        params.bilateral_sigma_depth,
                        params.bilateral_sigma_spatial,
-                       params.bilateral_kernel_size);
+                       params.bilateral_kernel_size,
+                       params.truncateThreshold);
 
     if(frameCounter == 0)
     {
@@ -239,12 +240,19 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
     }
     else
     {
+        
+        UMat wfPoints;
+        UMat wfNormals;
+        volume->fetchPointsNormals(wfPoints, wfNormals);
+        warpfield.updateNodesFromPoints(wfPoints);
+
         Affine3f affine;
         bool success = icp->estimateTransform(affine, pyrPoints, pyrNormals, newPoints, newNormals);
         if(!success)
             return false;
 
         pose = pose * affine;
+        warpfield.setAllRT(pose.inv());
 
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
@@ -261,12 +269,6 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
         // build a pyramid of points and normals
         buildPyramidPointsNormals(points, normals, pyrPoints, pyrNormals,
                                   params.pyramidLevels);
-        
-        UMat wfPoints;
-        UMat wfNormals;
-        volume->fetchPointsNormals(wfPoints, wfNormals);
-        warpfield.updateNodesFromPoints(wfPoints);
-        warpfield.setAllRT(pose.inv()*volume->pose);
     }
 
     std::cout << "Frame# " << frameCounter++ << std::endl;

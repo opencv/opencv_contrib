@@ -230,24 +230,24 @@ void WarpField::constructRegGraph()
 
 }
 
-Point3f WarpField::applyWarp(Point3f p, NodeVectorType neighbours) const
+Point3f WarpField::applyWarp(Point3f p, WarpNode neighbours[], int n) const
 {
     CV_TRACE_FUNCTION();
     
-    if(neighbours.size() == 0) return p;
+    if(n == 0) return p;
 
     float totalWeight = 0;
     Point3f WarpedPt(0,0,0);
 
-    for(auto n_ptr: neighbours) {
-        float w = n_ptr->weight(p);
+    for(int i = 0; i < n; i++)
+    {
+        float w = neighbours[i].weight(p);
+        if(w < 0.01) continue;
 
-        if(w < 1e-5 && w > -1e-5) continue;
+        Matx33f R = neighbours[i].transform.rotation();
+        Vec3f T = neighbours[i].transform.translation();
 
-        Matx33f R = n_ptr->transform.rotation();
-        Vec3f T = n_ptr->transform.translation();
-
-        Point3f newPt = R * (p - n_ptr->pos) + n_ptr->pos;
+        Point3f newPt = R * (p - neighbours[i].pos) + neighbours[i].pos;
         newPt.x += T[0];
         newPt.y += T[1];
         newPt.z += T[2];
