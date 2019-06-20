@@ -3,35 +3,31 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include "precomp.hpp"
-namespace cv {
-namespace augment {
+namespace cv { namespace augment {
 
+FlipHorizontal::FlipHorizontal() {}
 
-    FlipHorizontal::FlipHorizontal() {}
-
-    void FlipHorizontal::image(InputArray _src, OutputArray _dst)
-    {
-        cv::flip(_src, _dst, 1);
-    }
-
-    Point2f FlipHorizontal::point(InputArray image,const Point2f& src)
-    {
-        Mat imageM = image.getMat();
-        return Point2f(imageM.cols - 1 - src.x, src.y);
-    }
-
-
-    FlipVertical::FlipVertical() {}
-
-    void FlipVertical::image(InputArray _src, OutputArray _dst)
-    {
-        cv::flip(_src, _dst, 0);
-    }
-
-    Point2f FlipVertical::point(InputArray image,const Point2f& src)
-    {
-        Mat imageM = image.getMat();
-        return Point2f(src.x, imageM.rows - 1 - src.y);
-    }
+void FlipHorizontal::image(InputArray _src, OutputArray _dst)
+{
+    cv::flip(_src, _dst, 1);
 }
+
+Point2f FlipHorizontal::point(const Point2f& src)
+{
+    return Point2f(srcImageCols - 1 - src.x, src.y);
 }
+
+
+FlipVertical::FlipVertical() {}
+
+void FlipVertical::image(InputArray _src, OutputArray _dst)
+{
+    cv::flip(_src, _dst, 0);
+}
+
+Point2f FlipVertical::point(const Point2f& src)
+{
+    return Point2f(src.x, srcImageRows - 1 - src.y);
+}
+
+}}
