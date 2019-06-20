@@ -9,8 +9,9 @@ k(K), nodes(), maxNeighbours(_maxNeighbours), // good amount for dense kinfu poi
 n_levels(levels), baseRes(baseResolution), 
 resGrowthRate(resolutionGrowth),
 regGraphNodes(std::vector<NodeVectorType>(n_levels)),
-nodeIndex(nullptr)
+nodeIndex(nullptr), cameraPoseInv(Affine3f::Identity())
 {
+    CV_Assert(k <= DYNAFU_MAX_NEIGHBOURS);
 }
 
 NodeVectorType WarpField::getNodes() const
@@ -230,7 +231,7 @@ void WarpField::constructRegGraph()
 
 }
 
-Point3f WarpField::applyWarp(Point3f p, WarpNode neighbours[], int n) const
+Point3f WarpField::applyWarp(Point3f p, int neighbours[], int n) const
 {
     CV_TRACE_FUNCTION();
     
@@ -241,13 +242,14 @@ Point3f WarpField::applyWarp(Point3f p, WarpNode neighbours[], int n) const
 
     for(int i = 0; i < n; i++)
     {
-        float w = neighbours[i].weight(p);
+        Ptr<WarpNode> neigh = nodes[neighbours[i]];
+        float w = neigh->weight(p);
         if(w < 0.01) continue;
 
-        Matx33f R = neighbours[i].transform.rotation();
-        Vec3f T = neighbours[i].transform.translation();
+        Matx33f R = neigh->transform.rotation();
+        Vec3f T = neigh->transform.translation();
 
-        Point3f newPt = R * (p - neighbours[i].pos) + neighbours[i].pos;
+        Point3f newPt = R * (p - neigh->pos) + neigh->pos;
         newPt.x += T[0];
         newPt.y += T[1];
         newPt.z += T[2];
@@ -259,15 +261,16 @@ Point3f WarpField::applyWarp(Point3f p, WarpNode neighbours[], int n) const
     WarpedPt /= totalWeight;
 
     if(totalWeight == 0) 
-        return p;
+        return cameraPoseInv * p;
     else
-        return WarpedPt;
+        return cameraPoseInv * WarpedPt;
 
 }
 
-void WarpField::setAllRT(Affine3f rt) {
+void WarpField::setAllRT(Affine3f warpRT, Affine3f invCamPose) {
+    cameraPoseInv = invCamPose;
     for(auto n: nodes)
-        n->transform = rt;
+        n->transform = warpRT;
 }
 
 } // namepsace dynafu

@@ -21,8 +21,8 @@ struct Voxel
 {
     volumeType v;
     float weight;
-    WarpNode neighbours[4];
-    float neighbourDists[4];
+    int neighbours[DYNAFU_MAX_NEIGHBOURS];
+    float neighbourDists[DYNAFU_MAX_NEIGHBOURS];
     int n;
 };
 typedef Vec<uchar, sizeof(Voxel)> VecT;
@@ -218,7 +218,6 @@ struct IntegrateInvoker : ParallelLoopBody
     {
         CV_TRACE_FUNCTION();
 
-        float max = 0;
         for(int x = range.start; x < range.end; x++)
         {
             Voxel* volDataX = volDataStart + x*volume.volDims[0];
@@ -233,7 +232,6 @@ struct IntegrateInvoker : ParallelLoopBody
                     Point3f volPt = Point3f(x, y, z)*volume.voxelSize;
                     Point3f globalPt = volume.pose * volPt;
                     
-                    NodeVectorType warpNodes = warpfield->getNodes();
                     if(warpfield->getNodeIndex())
                     {
                         std::vector<float> query = {globalPt.x, globalPt.y, globalPt.z};
@@ -247,15 +245,11 @@ struct IntegrateInvoker : ParallelLoopBody
                             if(std::isnan(dists[i])) continue;
 
                             voxel.neighbourDists[voxel.n] = dists[i]; 
-                            voxel.neighbours[voxel.n++] = *warpNodes[indices[i]];
+                            voxel.neighbours[voxel.n++] = indices[i];
                         }
                     }
 
                     Point3f camSpacePt = warpfield->applyWarp(globalPt, voxel.neighbours, voxel.n);
-                    Point3f camSpacePt2 = vol2cam * volPt;
-                    Point3f diff = camSpacePt2 - camSpacePt;
-                    float normdiff = diff.x*diff.x + diff.y*diff.y + diff.z*diff.z;
-                    if(normdiff > max) max = normdiff;
 
                     if(camSpacePt.z <= 0)
                         continue;
@@ -285,7 +279,7 @@ struct IntegrateInvoker : ParallelLoopBody
                         // update TSDF
                         float newWeight = 0;
 
-                        if(warpNodes.size() >= (size_t)warpfield->k)
+                        if(warpfield->getNodesLen() >= (size_t)warpfield->k)
                         {
                             for(int i = 0; i < voxel.n; i++)
                                 newWeight += sqrt(voxel.neighbourDists[i]);
@@ -303,7 +297,6 @@ struct IntegrateInvoker : ParallelLoopBody
                 }
             }
         }
-        std::cout << "Max error in averaging: " << sqrt(max) << std::endl; 
     }
 
     TSDFVolumeCPU& volume;

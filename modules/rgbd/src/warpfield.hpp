@@ -4,6 +4,8 @@
 #include "opencv2/core.hpp"
 #include "opencv2/flann.hpp"
 
+#define DYNAFU_MAX_NEIGHBOURS 10
+
 namespace cv {
 namespace dynafu {
 
@@ -27,15 +29,16 @@ typedef std::vector<Ptr<WarpNode> > NodeVectorType;
 class WarpField
 {
 public:
-    WarpField(int _maxNeighbours=1000000, int K=4, int levels=4, float baseResolution=.025f, float resolutionGrowth=4);
+    WarpField(int _maxNeighbours=1000000, int K=4, int levels=4, float baseResolution=.010f, float resolutionGrowth=4);
     void updateNodesFromPoints(InputArray _points);
 
     NodeVectorType getNodes() const;
     std::vector<NodeVectorType> getGraphNodes() const;
+    size_t getNodesLen() const {return nodes.size();}
 
-    Point3f applyWarp(Point3f p, WarpNode neighbours[4], int n) const;
+    Point3f applyWarp(Point3f p, int neighbours[4], int n) const;
 
-    void setAllRT(Affine3f rt);
+    void setAllRT(Affine3f warpRT, Affine3f invCamPose);
 
     Ptr<flann::GenericIndex<flann::L2_Simple<float> > > getNodeIndex() const;
     int k; //k-nearest neighbours will be used
@@ -58,6 +61,8 @@ private:
     std::vector<NodeVectorType> regGraphNodes; // heirarchy levels 1 to L
 
     Ptr<flann::GenericIndex<flann::L2_Simple<float> > > nodeIndex;
+
+    Affine3f cameraPoseInv;
 
 };
 

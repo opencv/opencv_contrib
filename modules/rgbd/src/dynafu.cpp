@@ -252,7 +252,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
             return false;
 
         pose = pose * affine;
-        warpfield.setAllRT(pose.inv());
+        warpfield.setAllRT(Affine3f::Identity(), pose.inv());
 
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
