@@ -277,6 +277,7 @@ class WindowSceneImpl : public WindowScene
     RenderWindow* rWin;
     Ptr<OgreBites::CameraMan> camman;
     Ptr<Rectangle2D> bgplane;
+    std::unordered_map<String, Controller<Real>*> frameCtrlrs;
 
     Ogre::RenderTarget* depthRTT;
     int flags;
@@ -495,7 +496,8 @@ public:
         node->attachObject(ent);
     }
 
-    void removeEntity(const String& name) CV_OVERRIDE {
+    void removeEntity(const String& name) CV_OVERRIDE
+    {
         SceneNode& node = _getSceneNode(sceneMgr, name);
         node.getAttachedObject(name)->detachFromParent();
 
@@ -576,6 +578,52 @@ public:
         node.setPosition(t);
     }
 
+    void getEntityAnimations(const String& name, std::vector<String>& out) CV_OVERRIDE
+    {
+        SceneNode& node = _getSceneNode(sceneMgr, name);
+        Entity* ent = dynamic_cast<Entity*>(node.getAttachedObject(name));
+        CV_Assert(ent && "invalid entity");
+        for (auto const& anim : ent->getAllAnimationStates()->getAnimationStates())
+        {
+            out.push_back(anim.first);
+        }
+    }
+
+    void playEntityAnimation(const String& name, const String& animname, bool loop = true) CV_OVERRIDE
+    {
+        SceneNode& node = _getSceneNode(sceneMgr, name);
+        Entity* ent = dynamic_cast<Entity*>(node.getAttachedObject(name));
+        CV_Assert(ent && "invalid entity");
+        AnimationState* animstate = ent->getAnimationState(animname);
+
+        animstate->setTimePosition(0);
+        animstate->setEnabled(true);
+        animstate->setLoop(loop);
+
+        if (frameCtrlrs.find(animname) != frameCtrlrs.end()) return;
+        frameCtrlrs.insert({
+            animname,
+            Ogre::ControllerManager::getSingleton().createFrameTimePassthroughController(
+                Ogre::AnimationStateControllerValue::create(animstate, true)
+            )
+        });
+    }
+
+    void stopEntityAnimation(const String& name, const String& animname) CV_OVERRIDE
+    {
+        SceneNode& node = _getSceneNode(sceneMgr, name);
+        Entity* ent = dynamic_cast<Entity*>(node.getAttachedObject(name));
+        CV_Assert(ent && "invalid entity");
+        AnimationState* animstate = ent->getAnimationState(animname);
+
+        if (!animstate->getEnabled()) return;
+
+        animstate->setEnabled(false);
+        animstate->setTimePosition(0);
+        Ogre::ControllerManager::getSingleton().destroyController(frameCtrlrs[animname]);
+        frameCtrlrs.erase(animname);
+    }
+
     void setEntityProperty(const String& name, int prop, const String& value) CV_OVERRIDE
     {
         CV_Assert(prop == ENTITY_MATERIAL);
@@ -598,9 +646,25 @@ public:
 
     void setEntityProperty(const String& name, int prop, const Scalar& value) CV_OVERRIDE
     {
-        CV_Assert(prop == ENTITY_SCALE);
         SceneNode& node = _getSceneNode(sceneMgr, name);
-        node.setScale(value[0], value[1], value[2]);
+        switch(prop)
+        {
+        case ENTITY_SCALE:
+        {
+            node.setScale(value[0], value[1], value[2]);
+            break;
+        }
+        case ENTITY_ANIMBLEND_MODE:
+        {
+            Entity* ent = dynamic_cast<Entity*>(node.getAttachedObject(name));
+            CV_Assert(ent && "invalid entity");
+
+            ent->getSkeleton()->setBlendMode(static_cast<Ogre::SkeletonAnimationBlendMode>(value[0]));
+            break;
+        }
+        default:
+            CV_Error(Error::StsBadArg, "unsupported property");
+        }
     }
 
     void getEntityProperty(const String& name, int prop, OutputArray value) CV_OVERRIDE
