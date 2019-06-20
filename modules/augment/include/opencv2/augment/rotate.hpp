@@ -13,13 +13,13 @@ class CV_EXPORTS_W Rotate : public Transform
 {
 public:
     /* @brief Constructor
-        @param _angleRange the range of angle values to rotate the image
+        @param _angleRange the range of angle (in degrees) values to rotate the image
     */
-    CV_WRAP Rotate(Vec2f angleRange);
+    CV_WRAP Rotate(float minAngle, float maxAngle);
 
-    /* @brief Constructor to initialize the rotation transformation with a specific angle
+    /* @brief Constructor to initialize the rotation transformation with a specific angle (in degrees)
     */
-    CV_WRAP Rotate(float angle = 0.f);
+    CV_WRAP Rotate(float angle);
 
     /* @brief Apply the rotation to a single image
         @param _src Input image to be flipped

@@ -5,9 +5,9 @@
 #include "precomp.hpp"
 namespace cv { namespace augment {
 
-Rotate::Rotate(Vec2f angleRange)
+Rotate::Rotate(float minAngle, float maxAngle)
 {
-    this->angleRange = angleRange;
+    this->angleRange = Vec2f({minAngle, maxAngle});
 }
 
 Rotate::Rotate(float angle) { angleRange = Vec2f({ angle , angle }); }
