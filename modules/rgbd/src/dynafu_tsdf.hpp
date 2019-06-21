@@ -19,7 +19,9 @@ public:
     TSDFVolume(Point3i _res, float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                float _raycastStepFactor, bool zFirstMemOrder = true);
 
-    virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, Ptr<WarpField> wf) = 0;
+    virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, 
+                           cv::kinfu::Intr intrinsics, Ptr<WarpField> wf) = 0;
+                           
     virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
                          cv::OutputArray points, cv::OutputArray normals) const = 0;
 
