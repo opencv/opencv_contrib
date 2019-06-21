@@ -107,27 +107,27 @@ struct CV_EXPORTS_W Params
     CV_PROP_RW float truncateThreshold;
 };
 
-/** @brief KinectFusion implementation
+/** @brief DynamicFusion implementation
 
-  This class implements a 3d reconstruction algorithm described in
-  @cite kinectfusion paper.
+  This class implements a 3d reconstruction algorithm as described in @cite dynamicfusion.
 
   It takes a sequence of depth images taken from depth sensor
   (or any depth images source such as stereo camera matching algorithm or even raymarching renderer).
   The output can be obtained as a vector of points and their normals
   or can be Phong-rendered from given camera pose.
 
+  It extends the KinectFusion algorithm to handle non-rigidly deforming scenes by maintaining a sparse
+  set of nodes covering the geometry such that each node contains a warp to transform it from a canonical
+  space to the live frame.
+
   An internal representation of a model is a voxel cuboid that keeps TSDF values
   which are a sort of distances to the surface (for details read the @cite kinectfusion article about TSDF).
   There is no interface to that representation yet.
 
-  DynaFu uses OpenCL acceleration automatically if available.
-  To enable or disable it explicitly use cv::setUseOptimized() or cv::ocl::setUseOpenCL().
+  Note that DynamicFusion is based on the KinectFusion algorithm which is patented and its use may be 
+  restricted by the list of patents mentioned in README.md file in this module directory.
 
-  Note that the KinectFusion algorithm was patented and its use may be restricted by
-  the list of patents mentioned in README.md file in this module directory.
-
-  That's why you need to set the OPENCV_ENABLE_NONFREE option in CMake to use KinectFusion.
+  That's why you need to set the OPENCV_ENABLE_NONFREE option in CMake to use DynamicFusion.
 */
 class CV_EXPORTS_W DynaFu
 {
