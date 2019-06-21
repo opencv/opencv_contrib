@@ -113,7 +113,8 @@ public:
         undistortMap1(),
         undistortMap2(),
         useKinect2Workarounds(true)
-    { }
+    { 
+    }
 
     UMat getDepth()
     {
@@ -219,10 +220,10 @@ const std::string vizWindowName = "cloud";
 
 struct PauseCallbackArgs
 {
-    PauseCallbackArgs(DynaFu& _kf) : kf(_kf)
+    PauseCallbackArgs(DynaFu& _df) : df(_df)
     { }
 
-    DynaFu& kf;
+    DynaFu& df;
 };
 
 void pauseCallback(const viz::MouseEvent& me, void* args);
@@ -235,7 +236,7 @@ void pauseCallback(const viz::MouseEvent& me, void* args)
         PauseCallbackArgs pca = *((PauseCallbackArgs*)(args));
         viz::Viz3d window(vizWindowName);
         UMat rendered;
-        pca.kf.render(rendered, window.getViewerPose().matrix);
+        pca.df.render(rendered, window.getViewerPose().matrix);
         imshow("render", rendered);
         waitKey(1);
     }
@@ -312,7 +313,7 @@ int main(int argc, char **argv)
         depthWriter = makePtr<DepthWriter>(recordPath);
 
     Ptr<Params> params;
-    Ptr<DynaFu> kf;
+    Ptr<DynaFu> df;
 
     if(coarse)
         params = Params::coarseParams();
@@ -330,7 +331,7 @@ int main(int argc, char **argv)
     //params->tsdf_max_weight = 16;
 
     if(!idle)
-        kf = DynaFu::create(params);
+        df = DynaFu::create(params);
 
 #ifdef HAVE_OPENCV_VIZ
     cv::viz::Viz3d window(vizWindowName);
@@ -354,77 +355,18 @@ int main(int argc, char **argv)
         if(pause)
         {
             // doesn't happen in idle mode
-            kf->getCloud(points, normals);
-
-            /*Mat vec_mat = points.getMat(ACCESS_READ);
-            Mat ds_points(points.size().height, 3, CV_32F);
-            for(int i = 0; i < points.size().height; i++)
-            {
-                Vec4f v = vec_mat.at<Vec4f>(i, 0);
-                ds_points.at<float>(i, 0) = v[0];
-                ds_points.at<float>(i, 1) = v[1];
-                ds_points.at<float>(i, 2) = v[2];
-            }
-
-            w.updateNodesFromPoints(ds_points);
-            std::vector<Ptr<dynafu::WarpNode> > nodes = w.getNodes();
-            std::vector<dynafu::NodeVectorType> graph = w.getGraphNodes();
-
-            std::vector<std::vector<Point3f>> node_pos(4);
-            std::vector<viz::WLine> arrows;
-
-            for(auto n_ptr: nodes)
-            {
-                node_pos[0].push_back(n_ptr->pos);
-                for(Ptr<dynafu::WarpNode> child: n_ptr->children)
-                    arrows.push_back(viz::WLine(n_ptr->pos, child->pos, viz::Color::green()));
-            }
-
-            int l=0;
-            for(auto level: graph)
-            {
-                l++;
-                for(auto n_ptr: level)
-                {
-                    node_pos[l].push_back(n_ptr->pos);
-                    for(Ptr<dynafu::WarpNode> child: n_ptr->children)
-                        arrows.push_back(viz::WLine(n_ptr->pos, child->pos, viz::Color::orange()));
-                }
-            }   */       
+            df->getCloud(points, normals);
 
             if(!points.empty() && !normals.empty())
             {
                 viz::WCloud cloudWidget(points, viz::Color::white());
                 viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
-                
-                /*viz::WCloud nodeCloud1(node_pos[0], viz::Color::red());
-                nodeCloud1.setRenderingProperty(viz::POINT_SIZE, 10);
-                viz::WCloud nodeCloud2(node_pos[1], viz::Color::green());
-                nodeCloud2.setRenderingProperty(viz::POINT_SIZE, 10);
-                viz::WCloud nodeCloud3(node_pos[2], viz::Color::bluberry());
-                nodeCloud3.setRenderingProperty(viz::POINT_SIZE, 10);
-                viz::WCloud nodeCloud4(node_pos[3], viz::Color::yellow());
-                nodeCloud4.setRenderingProperty(viz::POINT_SIZE, 10);
 
-                int arrow_count = 0;
-                for(auto arrow: arrows){
-                    string wname = "arrow" + std::to_string(arrow_count); 
-                    window.showWidget(wname, arrow);
-                    arrow_count++;
-                }
-
-                window.showWidget("cloud", cloudWidget);
-                window.showWidget("normals", cloudNormals);
-                window.showWidget("nodes level 1", nodeCloud1);
-                window.showWidget("nodes level 2", nodeCloud2);
-                window.showWidget("nodes level 3", nodeCloud3);
-                window.showWidget("nodes level 4", nodeCloud4);*/
-
-                Vec3d volSize = kf->getParams().voxelSize*Vec3d(kf->getParams().volumeDims);
+                Vec3d volSize = df->getParams().voxelSize*Vec3d(df->getParams().volumeDims);
                 window.showWidget("cube", viz::WCube(Vec3d::all(0),
                                                      volSize),
-                                  kf->getParams().volumePose);
-                PauseCallbackArgs pca(*kf);
+                                  df->getParams().volumePose);
+                PauseCallbackArgs pca(*df);
                 window.registerMouseCallback(pauseCallback, (void*)&pca);
                 window.showWidget("text", viz::WText(cv::String("Move camera in this window. "
                                                                 "Close the window or press Q to resume"), Point()));
@@ -432,17 +374,6 @@ int main(int argc, char **argv)
                 window.removeWidget("text");
                 window.removeWidget("cloud");
                 window.removeWidget("normals");
-                /*window.removeWidget("nodes level 1");
-                window.removeWidget("nodes level 2");
-                window.removeWidget("nodes level 3");
-                window.removeWidget("nodes level 4");
-                
-                arrow_count = 0;
-                for(auto arrow: arrows){
-                    string wname = "arrow" + std::to_string(arrow_count); 
-                    window.removeWidget(wname);
-                    arrow_count++;
-                }*/
 
                 window.registerMouseCallback(0);
             }
@@ -459,9 +390,9 @@ int main(int argc, char **argv)
             {
                 imshow("depth", cvt8);
 
-                if(!kf->update(frame))
+                if(!df->update(frame))
                 {
-                    kf->reset();
+                    df->reset();
                     std::cout << "reset" << std::endl;
                 }
 #ifdef HAVE_OPENCV_VIZ
@@ -469,25 +400,15 @@ int main(int argc, char **argv)
                 {
                     if(coarse)
                     {
-                        kf->getCloud(points, normals);
-                        /*Mat vec_mat = points.getMat(ACCESS_READ);
-                        Mat ds_points(points.size().height, 3, CV_32F);
-                        for(int i = 0; i < points.size().height; i++)
-                        {
-                            Vec4f v = vec_mat.at<Vec4f>(i, 0);
-                            ds_points.at<float>(i, 0) = v[0];
-                            ds_points.at<float>(i, 1) = v[1];
-                            ds_points.at<float>(i, 2) = v[2];
-                        }
+                        df->getCloud(points, normals);
+                        
+                        //std::vector<Ptr<dynafu::WarpNode> > nodes = df->getNodesPos();
+                        /*std::vector<dynafu::NodeVectorType> graph = w.getGraphNodes();
 
-                        w.updateNodesFromPoints(ds_points);
-                        std::vector<Ptr<dynafu::WarpNode> > nodes = w.getNodes();
-                        std::vector<dynafu::NodeVectorType> graph = w.getGraphNodes();
-
-                        std::vector<std::vector<Point3f>> node_pos(4);
+                        std::vector<Point3f> node_pos;
 
                         for(auto n_ptr: nodes)
-                            node_pos[0].push_back(n_ptr->pos);
+                            node_pos.push_back(n_ptr->pos);
 
                         int l = 0;
                         for(auto level: graph)
@@ -501,25 +422,28 @@ int main(int argc, char **argv)
                         {
                             viz::WCloud cloudWidget(points, viz::Color::white());
                             viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
-                            //viz::WCloud nodeCloud(node_pos[0], viz::Color::red());
-                            //nodeCloud.setRenderingProperty(viz::POINT_SIZE, 4);
                             window.showWidget("cloud", cloudWidget);
                             window.showWidget("normals", cloudNormals);
-                            //window.showWidget("nodes", nodeCloud);
+                            if(!df->getNodesPos().empty())
+                            {
+                                viz::WCloud nodeCloud(df->getNodesPos(), viz::Color::red());
+                                nodeCloud.setRenderingProperty(viz::POINT_SIZE, 4);
+                                window.showWidget("nodes", nodeCloud);
+                            }
                         }
                     }
 
                     //window.showWidget("worldAxes", viz::WCoordinateSystem());
-                    Vec3d volSize = kf->getParams().voxelSize*kf->getParams().volumeDims;
+                    Vec3d volSize = df->getParams().voxelSize*df->getParams().volumeDims;
                     window.showWidget("cube", viz::WCube(Vec3d::all(0),
                                                          volSize),
-                                      kf->getParams().volumePose);
-                    window.setViewerPose(kf->getPose());
+                                      df->getParams().volumePose);
+                    window.setViewerPose(df->getPose());
                     window.spinOnce(1, true);
                 }
 #endif
 
-                kf->render(rendered);
+                df->render(rendered);
             }
             else
             {
@@ -540,7 +464,7 @@ int main(int argc, char **argv)
         {
         case 'r':
             if(!idle)
-                kf->reset();
+                df->reset();
             break;
         case 'q':
             return 0;
