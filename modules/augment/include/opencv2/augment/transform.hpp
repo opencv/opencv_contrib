@@ -33,7 +33,7 @@ public:
 
 
     /* @brief Apply the transformation for a rectangle
-        @param box Vec4f consisting of (x1, y1, x2, y1) corresponding to (top left, bottom right)
+        @param box Vec4f consisting of (x1, y1, x2, y2) corresponding to (top left, bottom right)
     */
     virtual Vec4f rectangle(const Vec4f& src);
 
@@ -59,7 +59,7 @@ public:
 
     /* @brief set the random variables in a transformation to be used consitently on the next data 
     */
-    CV_WRAP virtual void init(Mat srcImage);
+    CV_WRAP virtual void init(const Mat& srcImage);
 
 
 protected:

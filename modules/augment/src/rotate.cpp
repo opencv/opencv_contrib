@@ -7,21 +7,26 @@ namespace cv { namespace augment {
 
 Rotate::Rotate(float minAngle, float maxAngle)
 {
-    this->angleRange = Vec2f({minAngle, maxAngle});
+    this->minAngle = minAngle;
+    this->maxAngle = maxAngle;
 }
 
-Rotate::Rotate(float angle) { angleRange = Vec2f({ angle , angle }); }
+Rotate::Rotate(float angle) 
+{
+    this->minAngle = angle;
+    this->maxAngle = angle;
+}
 
-void Rotate::init(Mat srcImage) 
+void Rotate::init(const Mat& srcImage)
 {
     Transform::init(srcImage);
-    float currentAngle = Transform::rng.uniform(angleRange[0], angleRange[1]);
+    float currentAngle = Transform::rng.uniform(minAngle, maxAngle);
     rotationMat = getRotationMatrix2D(Point2f(srcImageCols / 2, srcImageRows / 2), currentAngle, 1);
 }
 
-void Rotate::image(InputArray _src, OutputArray _dst)
+void Rotate::image(InputArray src, OutputArray dst)
 {
-    warpAffine(_src, _dst, rotationMat, Size(srcImageCols, srcImageRows));
+    warpAffine(src, dst, rotationMat, src.size());
 }
 
 Point2f Rotate::point(const Point2f& src)

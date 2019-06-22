@@ -118,7 +118,7 @@ std::vector<Mat> Transform::polygons(std::vector<Mat> src)
     return dst;
 }   
 
-void Transform::init(Mat srcImage) 
+void Transform::init(const Mat& srcImage)
 {
     srcImageRows = srcImage.rows;
     srcImageCols = srcImage.cols;

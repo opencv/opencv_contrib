@@ -25,7 +25,7 @@ public:
         @param _src Input image to be flipped
         @param _dst Output (rotated) image
     */
-    CV_WRAP virtual void image(InputArray _src, OutputArray _dst);
+    CV_WRAP virtual void image(InputArray src, OutputArray dst);
 
     /* @brief Apply the rotation for a single point
         @param _src Input point to be rotated
@@ -34,10 +34,10 @@ public:
 
     /* @brief choose an angle from the specified range to apply in next transformations
     */
-    void virtual init(Mat srcImage);
+    void virtual init(const Mat& srcImage);
 
 private :
-    Vec2f angleRange;
+    float minAngle, maxAngle;
     Mat rotationMat;
 
 };
