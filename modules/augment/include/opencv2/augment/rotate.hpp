@@ -13,7 +13,8 @@ class CV_EXPORTS_W Rotate : public Transform
 {
 public:
     /* @brief Constructor
-        @param _angleRange the range of angle (in degrees) values to rotate the image
+        @param minAngle the minimum angle of rotation
+        @param maxAngle the maximum angle of rotation
     */
     CV_WRAP Rotate(float minAngle, float maxAngle);
 
@@ -22,8 +23,8 @@ public:
     CV_WRAP Rotate(float angle);
 
     /* @brief Apply the rotation to a single image
-        @param _src Input image to be flipped
-        @param _dst Output (rotated) image
+        @param src Input image to be rotated
+        @param dst Output (rotated) image
     */
     CV_WRAP virtual void image(InputArray src, OutputArray dst);
 

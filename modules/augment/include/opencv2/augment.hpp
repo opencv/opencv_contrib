@@ -9,5 +9,6 @@
 #include <opencv2/augment/transform.hpp>
 #include <opencv2/augment/flip.hpp>
 #include <opencv2/augment/rotate.hpp>
+#include <opencv2/augment/gaussianblur.hpp>
 
 #endif
