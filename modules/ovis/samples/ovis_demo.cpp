@@ -2,7 +2,6 @@
 #include <opencv2/videoio.hpp>
 
 #include <opencv2/ovis.hpp>
-#include <opencv2/aruco.hpp>
 
 #include <iostream>
 
@@ -35,12 +34,17 @@ int main()
   ovis::createGridMesh("ground", Size2i(10, 10), Size2i(10, 10));
   owin->createEntity("ground", "ground", Vec3f(1.57, 0, 0));
   owin->createCameraEntity("cam", K, imsize, 5);
-  owin->createEntity("figure", "Sinbad.mesh", Vec3i(0, 0, 5), Vec3f(CV_PI/2.0, 0.0, 0.0)); // externally defined mesh
+  owin->createEntity("sinbad", "Sinbad.mesh", Vec3i(0, 0, 5), Vec3f(CV_PI/2.0, 0.0, 0.0)); // externally defined mesh
   owin->createLightEntity("sun", Vec3i(0, 0, -100));
+
+  // setup and play idle animation
+  owin->setEntityProperty("sinbad", ovis::EntityProperty::ENTITY_ANIMBLEND_MODE, Scalar(1)); // 1 = cumulative
+  owin->playEntityAnimation("sinbad", "IdleBase");
+  owin->playEntityAnimation("sinbad", "IdleTop");
 
   //interaction scene
   Ptr<ovis::WindowScene> iwin = ovis::createWindow(String("AR"), imsize, ovis::SCENE_SEPERATE | ovis::SCENE_INTERACTIVE);
-  iwin->createEntity("figure", "Sinbad.mesh", Vec3i(0, -5, 0), Vec3f(CV_PI, 0.0, 0.0));
+  iwin->createEntity("sinbad", "Sinbad.mesh", Vec3i(0, -5, 0), Vec3f(CV_PI, 0.0, 0.0));
   iwin->createLightEntity("sun", Vec3i(0, 0, -100));
   iwin->setCameraIntrinsics(K, imsize);
 
@@ -50,5 +54,5 @@ int main()
       owin->setEntityPose("cam", t, R);
   }
 
-  return 0;
+  return 1;
 }
