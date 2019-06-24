@@ -63,19 +63,20 @@ void WarpField::updateNodesFromPoints(InputArray inputPoints)
     cvflann::LinearIndexParams params;
     flann::GenericIndex<flann::L2_Simple <float> > searchIndex(points_matrix, params);
 
-    std::vector<bool> validIndex;
-    removeSupported(searchIndex, validIndex);
+    bool* validIndex;
+    size_t validIndexSize = removeSupported(searchIndex, &validIndex);
 
     Mat nodePosMatrix = getNodesPos(nodes);
 
     NodeVectorType newNodes;
     if((int)nodes.size() > k)
     {
-        newNodes = subsampleIndex(points_matrix, searchIndex, validIndex, baseRes, nodeIndex);
+        newNodes = subsampleIndex(points_matrix, searchIndex, validIndex,
+                                  validIndexSize, baseRes, nodeIndex);
     }
     else
     {
-        newNodes = subsampleIndex(points_matrix, searchIndex, validIndex, baseRes);
+        newNodes = subsampleIndex(points_matrix, searchIndex, validIndex, validIndexSize, baseRes);
     }
 
     initTransforms(newNodes);
@@ -88,10 +89,11 @@ void WarpField::updateNodesFromPoints(InputArray inputPoints)
 }
 
 
-void WarpField::removeSupported(flann::GenericIndex<flann::L2_Simple<float> >& ind,
-                                std::vector<bool>& validInd)
+size_t WarpField::removeSupported(flann::GenericIndex<flann::L2_Simple<float> >& ind,
+                                  bool** validInd)
 {
-    std::vector<bool> validIndex(ind.size(), true);
+    (*validInd) = new bool[ind.size()];
+    std::fill_n(*validInd, ind.size(), true);
 
     for(WarpNode* n: nodes)
     {
@@ -104,25 +106,25 @@ void WarpField::removeSupported(flann::GenericIndex<flann::L2_Simple<float> >& i
 
         for(auto i: indices_vec)
         {
-            validIndex[i] = false;
+            (*validInd)[i] = false;
         }
 
     }
 
-    validInd = validIndex;
+    return ind.size();
 
 }
 
 NodeVectorType WarpField::subsampleIndex(Mat& pmat,
                                          flann::GenericIndex<flann::L2_Simple<float> >& ind,
-                                         std::vector<bool>& validIndex, float res,
+                                         bool* validIndex, size_t validIndexSize, float res,
                                          Ptr<flann::GenericIndex<flann::L2_Simple<float> > > knnIndex)
 {
     CV_TRACE_FUNCTION();
 
     NodeVectorType temp_nodes;
 
-    for(size_t i = 0; i < validIndex.size(); i++)
+    for(size_t i = 0; i < validIndexSize; i++)
     {
         if(!validIndex[i])
         {
@@ -238,9 +240,10 @@ void WarpField::constructRegGraph()
 
     for(int l = 0; l < (n_levels-1); l++)
     {
-        std::vector<bool> nodeValidity(curNodeIndex->size(), true);
-        NodeVectorType coarseNodes = subsampleIndex(curNodeMatrix, *curNodeIndex,
-                                                    nodeValidity, effResolution);
+        bool* nodeValidity = new bool[curNodeIndex->size()];
+        std::fill_n(nodeValidity, curNodeIndex->size(), true);
+        NodeVectorType coarseNodes = subsampleIndex(curNodeMatrix, *curNodeIndex, nodeValidity,
+                                                    curNodeIndex->size(), effResolution);
 
         Mat coarseNodeMatrix = getNodesPos(coarseNodes);
 
