@@ -12,6 +12,7 @@
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/utils/configuration.private.hpp>
 
+
 namespace cv
 {
 namespace ovis
@@ -277,7 +278,7 @@ class WindowSceneImpl : public WindowScene
     RenderWindow* rWin;
     Ptr<OgreBites::CameraMan> camman;
     Ptr<Rectangle2D> bgplane;
-    std::unordered_map<String, Controller<Real>*> frameCtrlrs;
+    std::unordered_map<AnimationState*, Controller<Real>*> frameCtrlrs;
 
     Ogre::RenderTarget* depthRTT;
     int flags;
@@ -600,9 +601,9 @@ public:
         animstate->setEnabled(true);
         animstate->setLoop(loop);
 
-        if (frameCtrlrs.find(animname) != frameCtrlrs.end()) return;
+        if (frameCtrlrs.find(animstate) != frameCtrlrs.end()) return;
         frameCtrlrs.insert({
-            animname,
+            animstate,
             Ogre::ControllerManager::getSingleton().createFrameTimePassthroughController(
                 Ogre::AnimationStateControllerValue::create(animstate, true)
             )
@@ -620,8 +621,8 @@ public:
 
         animstate->setEnabled(false);
         animstate->setTimePosition(0);
-        Ogre::ControllerManager::getSingleton().destroyController(frameCtrlrs[animname]);
-        frameCtrlrs.erase(animname);
+        Ogre::ControllerManager::getSingleton().destroyController(frameCtrlrs[animstate]);
+        frameCtrlrs.erase(animstate);
     }
 
     void setEntityProperty(const String& name, int prop, const String& value) CV_OVERRIDE
@@ -659,7 +660,7 @@ public:
             Entity* ent = dynamic_cast<Entity*>(node.getAttachedObject(name));
             CV_Assert(ent && "invalid entity");
 
-            ent->getSkeleton()->setBlendMode(static_cast<Ogre::SkeletonAnimationBlendMode>(value[0]));
+            ent->getSkeleton()->setBlendMode(static_cast<Ogre::SkeletonAnimationBlendMode>(int(value[0])));
             break;
         }
         default:
