@@ -15,12 +15,15 @@ cv.ovis.createGridMesh("ground", (10, 10), (10, 10))
 owin.createEntity("ground", "ground", rot=(1.57, 0, 0))
 owin.createCameraEntity("cam", K, imsize, 5)
 owin.createEntity("sinbad", "Sinbad.mesh", tvec=(0, -5, 0), rot=(np.pi, 0, 0))  # externally defined mesh
+owin.createEntityAttached("sinbad_sword_r", "Sword.mesh", "sinbad", "Handle.R")
+owin.createEntityAttached("sinbad_sword_l", "Sword.mesh", "sinbad", "Handle.L")
 owin.createLightEntity("sun", (0, 0, -100))
 
 # setup and play idle animation
 owin.setEntityProperty("sinbad", cv.ovis.ENTITY_ANIMBLEND_MODE, 1) # 1 = cumulative
 owin.playEntityAnimation("sinbad", "IdleBase")
 owin.playEntityAnimation("sinbad", "IdleTop")
+owin.playEntityAnimation("sinbad", "HandsClosed")
 
 # interaction scene
 iwin = cv.ovis.createWindow("AR", imsize, cv.ovis.SCENE_SEPERATE | cv.ovis.SCENE_INTERACTIVE)

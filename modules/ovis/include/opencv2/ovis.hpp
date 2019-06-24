@@ -92,10 +92,30 @@ public:
                                       InputArray tvec = noArray(), InputArray rot = noArray()) = 0;
 
     /**
+     * place an entity of a mesh attached to a bone of another entity
+     *
+     * @param name entity name
+     * @param meshname mesh name
+     * @param othername name of entity to attach to
+     * @param bonename name of bone to attach to
+     * @see createEntity
+     * @see getEntityBones
+     */
+    CV_WRAP virtual void createEntityAttached(const String& name, const String& meshname,
+                                              const String& othername, const String& bonename) = 0;
+
+    /**
      * remove an entity from the scene
      * @param name entity name
      */
     CV_WRAP virtual void removeEntity(const String& name) = 0;
+
+    /**
+     * remove an entity attached to another entity from the scene
+     * @param name entity name
+     * @param othername name of entity attached to
+     */
+    CV_WRAP virtual void removeEntityAttached(const String& name, const String& othername) = 0;
 
     /**
      * set the property of an entity to the given value
@@ -164,6 +184,14 @@ public:
      */
     CV_WRAP virtual void setEntityPose(const String& name, InputArray tvec = noArray(),
                                        InputArray rot = noArray(), bool invert = false) = 0;
+
+    /**
+     * get a list of available entity bones (used for attachment)
+     * @param name entity name
+     * @param out the bone names
+     * @see createEntityAttached
+     */
+    CV_WRAP virtual void getEntityBones(const String& name, std::vector<String>& out) = 0;
 
     /**
      * get a list of available entity animations
