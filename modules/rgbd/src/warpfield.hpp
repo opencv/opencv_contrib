@@ -48,6 +48,13 @@ public:
     void setAllRT(Affine3f warpRT, Affine3f invCamPose);
 
     Ptr<flann::GenericIndex<flann::L2_Simple<float> > > getNodeIndex() const;
+
+    inline void findNeighbours(Point3f queryPt, std::vector<int>& indices, std::vector<float>& dists)
+    {
+        std::vector<float> query = {queryPt.x, queryPt.y, queryPt.z};
+        nodeIndex->knnSearch(query, indices, dists, k, cvflann::SearchParams());
+    }
+
     int k; //k-nearest neighbours will be used
 
 private:

@@ -234,10 +234,9 @@ struct IntegrateInvoker : ParallelLoopBody
 
                     if(warpfield->getNodeIndex())
                     {
-                        std::vector<float> query = {globalPt.x, globalPt.y, globalPt.z};
                         std::vector<int> indices(warpfield->k);
                         std::vector<float> dists(warpfield->k);
-                        warpfield->getNodeIndex()->knnSearch(query, indices, dists, warpfield->k, cvflann::SearchParams());
+                        warpfield->findNeighbours(globalPt, indices, dists);
 
                         voxel.n = 0;
                         for(size_t i = 0; i < indices.size(); i++)
