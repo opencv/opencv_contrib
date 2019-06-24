@@ -30,15 +30,15 @@ typedef std::vector<Ptr<WarpNode> > NodeVectorType;
 class WarpField
 {
 public:
-    WarpField(int _maxNeighbours=1000000, int K=4, int levels=4, float baseResolution=.010f, 
+    WarpField(int _maxNeighbours=1000000, int K=4, int levels=4, float baseResolution=.010f,
               float resolutionGrowth=4);
-              
+
     void updateNodesFromPoints(InputArray _points);
 
     NodeVectorType getNodes() const;
     std::vector<NodeVectorType> getGraphNodes() const;
-    
-    size_t getNodesLen() const 
+
+    size_t getNodesLen() const
     {
         return nodes.size();
     }
@@ -53,9 +53,9 @@ public:
 private:
     void removeSupported(flann::GenericIndex<flann::L2_Simple<float> >& ind,
                          std::vector<bool>& supInd);
-                         
-    NodeVectorType subsampleIndex(Mat& pmat, flann::GenericIndex<flann::L2_Simple<float> >& ind, 
-                                  std::vector<bool>& supInd, float res, 
+
+    NodeVectorType subsampleIndex(Mat& pmat, flann::GenericIndex<flann::L2_Simple<float> >& ind,
+                                  std::vector<bool>& supInd, float res,
                                   Ptr<flann::GenericIndex<flann::L2_Simple<float> > > knnIndex = nullptr);
     void constructRegGraph();
 
@@ -67,7 +67,7 @@ private:
     int n_levels; // number of levels in the heirarchy
     float baseRes;
     float resGrowthRate;
-    
+
     std::vector<NodeVectorType> regGraphNodes; // heirarchy levels 1 to L
 
     Ptr<flann::GenericIndex<flann::L2_Simple<float> > > nodeIndex;

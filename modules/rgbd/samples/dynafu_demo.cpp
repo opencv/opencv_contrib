@@ -113,7 +113,7 @@ public:
         undistortMap1(),
         undistortMap2(),
         useKinect2Workarounds(true)
-    { 
+    {
     }
 
     UMat getDepth()
@@ -347,7 +347,7 @@ int main(int argc, char **argv)
 
     for(UMat frame = ds->getDepth(); !frame.empty(); frame = ds->getDepth())
     {
-        
+
         if(depthWriter)
             depthWriter->append(frame);
 
@@ -401,7 +401,7 @@ int main(int argc, char **argv)
                     if(coarse)
                     {
                         df->getCloud(points, normals);
-                        
+
                         //std::vector<Ptr<dynafu::WarpNode> > nodes = df->getNodesPos();
                         /*std::vector<dynafu::NodeVectorType> graph = w.getGraphNodes();
 

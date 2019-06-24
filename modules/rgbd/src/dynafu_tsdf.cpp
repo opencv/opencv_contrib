@@ -228,10 +228,10 @@ struct IntegrateInvoker : ParallelLoopBody
                 for(int z = 0; z < volume.volResolution.z; z++)
                 {
                     Voxel& voxel = volDataY[z*volume.volDims[2]];
-                    
+
                     Point3f volPt = Point3f(x, y, z)*volume.voxelSize;
                     Point3f globalPt = volume.pose * volPt;
-                    
+
                     if(warpfield->getNodeIndex())
                     {
                         std::vector<float> query = {globalPt.x, globalPt.y, globalPt.z};
@@ -244,7 +244,7 @@ struct IntegrateInvoker : ParallelLoopBody
                         {
                             if(std::isnan(dists[i])) continue;
 
-                            voxel.neighbourDists[voxel.n] = dists[i]; 
+                            voxel.neighbourDists[voxel.n] = dists[i];
                             voxel.neighbours[voxel.n++] = indices[i];
                         }
                     }
@@ -283,9 +283,9 @@ struct IntegrateInvoker : ParallelLoopBody
                         {
                             for(int i = 0; i < voxel.n; i++)
                                 newWeight += sqrt(voxel.neighbourDists[i]);
-                            
+
                             if(voxel.n > 0) newWeight /= voxel.n;
-                            
+
                         } else newWeight = 1.f;
 
                         if((weight + newWeight) != 0)

@@ -4,9 +4,9 @@
 namespace cv {
 namespace dynafu {
 
-WarpField::WarpField(int _maxNeighbours, int K, int levels, float baseResolution, float resolutionGrowth): 
+WarpField::WarpField(int _maxNeighbours, int K, int levels, float baseResolution, float resolutionGrowth):
 k(K), nodes(), maxNeighbours(_maxNeighbours), // good amount for dense kinfu pointclouds
-n_levels(levels), baseRes(baseResolution), 
+n_levels(levels), baseRes(baseResolution),
 resGrowthRate(resolutionGrowth),
 regGraphNodes(std::vector<NodeVectorType>(n_levels)),
 nodeIndex(nullptr), cameraPoseInv(Affine3f::Identity())
@@ -26,14 +26,14 @@ std::vector<NodeVectorType> WarpField::getGraphNodes() const
 
 bool PtCmp(cv::Point3f a, cv::Point3f b)
 {
-    return (a.x < b.x) || 
+    return (a.x < b.x) ||
             ((a.x >= b.x) && (a.y < b.y)) ||
             ((a.x >= b.x) && (a.y >= b.y) && (a.z < b.z));
 }
 
 Ptr<flann::GenericIndex<flann::L2_Simple<float> > > WarpField::getNodeIndex() const
 {
-    return nodeIndex; 
+    return nodeIndex;
 }
 
 Mat getNodesPos(NodeVectorType nv)
@@ -81,7 +81,7 @@ void WarpField::updateNodesFromPoints(InputArray inputPoints)
     initTransforms(newNodes);
     nodes.insert(nodes.end(), newNodes.begin(), newNodes.end());
     //re-build index
-    nodeIndex = new flann::GenericIndex<flann::L2_Simple<float> >(getNodesPos(nodes), 
+    nodeIndex = new flann::GenericIndex<flann::L2_Simple<float> >(getNodesPos(nodes),
                                                                   cvflann::LinearIndexParams());
 
     constructRegGraph();
@@ -101,7 +101,7 @@ void WarpField::removeSupported(flann::GenericIndex<flann::L2_Simple<float> >& i
         std::vector<float> dists_vec(maxNeighbours);
 
         ind.radiusSearch(query, indices_vec, dists_vec, n->radius, cvflann::SearchParams());
-        
+
         for(auto i: indices_vec)
         {
             validIndex[i] = false;
@@ -131,9 +131,9 @@ NodeVectorType WarpField::subsampleIndex(Mat& pmat,
 
         std::vector<int> indices_vec(maxNeighbours);
         std::vector<float> dist_vec(maxNeighbours);
-        
+
         ind.radiusSearch(pmat.row(i), indices_vec, dist_vec, res, cvflann::SearchParams());
-        
+
 
         Ptr<WarpNode> wn = new WarpNode;
         Point3f centre(0, 0, 0);
@@ -175,8 +175,8 @@ NodeVectorType WarpField::subsampleIndex(Mat& pmat,
         wn->transform = Affine3f::Identity();
 
         temp_nodes.push_back(wn);
-    }     
-    
+    }
+
     return temp_nodes;
 }
 
@@ -200,7 +200,7 @@ void WarpField::initTransforms(NodeVectorType nv)
         float totalWeight = 0;
         Mat partialR(3,3,CV_32F);
         Vec3f partialT = Vec3f::all(0);
-    
+
         for(int idx: knnIndices)
         {
             float w = nodes[idx]->weight(nodePtr->pos);
@@ -233,31 +233,31 @@ void WarpField::constructRegGraph()
     Mat curNodeMatrix = getNodesPos(curNodes);
 
     Ptr<flann::GenericIndex<flann::L2_Simple<float> > > curNodeIndex(
-        new flann::GenericIndex<flann::L2_Simple<float> >(curNodeMatrix, 
+        new flann::GenericIndex<flann::L2_Simple<float> >(curNodeMatrix,
                                                           cvflann::LinearIndexParams()));
-    
+
     for(int l = 0; l < (n_levels-1); l++)
     {
         std::vector<bool> nodeValidity(curNodeIndex->size(), true);
-        NodeVectorType coarseNodes = subsampleIndex(curNodeMatrix, *curNodeIndex, 
+        NodeVectorType coarseNodes = subsampleIndex(curNodeMatrix, *curNodeIndex,
                                                     nodeValidity, effResolution);
 
         Mat coarseNodeMatrix = getNodesPos(coarseNodes);
 
         Ptr<flann::GenericIndex<flann::L2_Simple<float> > > coarseNodeIndex(
-            new flann::GenericIndex<flann::L2_Simple<float> >(coarseNodeMatrix, 
+            new flann::GenericIndex<flann::L2_Simple<float> >(coarseNodeMatrix,
                                                               cvflann::LinearIndexParams()));
 
         for(size_t i = 0; i < curNodes.size(); i++)
         {
             std::vector<int> children_indices(k);
             std::vector<float> children_dists(k);
-            
-            std::vector<float> query = {curNodeMatrix.at<float>(i, 0), 
+
+            std::vector<float> query = {curNodeMatrix.at<float>(i, 0),
                                         curNodeMatrix.at<float>(i, 1),
                                         curNodeMatrix.at<float>(i, 2)};
 
-            coarseNodeIndex->knnSearch(query, children_indices, children_dists, k, 
+            coarseNodeIndex->knnSearch(query, children_indices, children_dists, k,
                                        cvflann::SearchParams());
 
             curNodes[i]->children.clear();
@@ -279,7 +279,7 @@ void WarpField::constructRegGraph()
 Point3f WarpField::applyWarp(Point3f p, int neighbours[], int n) const
 {
     CV_TRACE_FUNCTION();
-    
+
     if(n == 0)
     {
         return p;
@@ -304,7 +304,7 @@ Point3f WarpField::applyWarp(Point3f p, int neighbours[], int n) const
         newPt.x += T[0];
         newPt.y += T[1];
         newPt.z += T[2];
-        
+
         WarpedPt += newPt * w;
         totalWeight += w;
 

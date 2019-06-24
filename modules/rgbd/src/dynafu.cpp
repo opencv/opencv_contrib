@@ -194,7 +194,7 @@ template<>
 bool DynaFuImpl<UMat>::update(InputArray _depth)
 {
     CV_TRACE_FUNCTION();
-    
+
     CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
 
     UMat depth;
@@ -240,7 +240,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
     }
     else
     {
-        
+
         UMat wfPoints;
         UMat wfNormals;
         volume->fetchPointsNormals(wfPoints, wfNormals);
