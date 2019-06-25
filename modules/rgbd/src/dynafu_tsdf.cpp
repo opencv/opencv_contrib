@@ -59,7 +59,7 @@ TSDFVolume::TSDFVolume(Point3i _res, float _voxelSize, Affine3f _pose, float _tr
     voxelSize(_voxelSize),
     voxelSizeInv(1.f/_voxelSize),
     volResolution(_res),
-    maxWeight(_maxWeight),
+    maxWeight((float)_maxWeight),
     pose(_pose),
     raycastStepFactor(_raycastStepFactor)
 {
@@ -229,7 +229,7 @@ struct IntegrateInvoker : ParallelLoopBody
                 {
                     Voxel& voxel = volDataY[z*volume.volDims[2]];
 
-                    Point3f volPt = Point3f(x, y, z)*volume.voxelSize;
+                    Point3f volPt = Point3f((float)x, (float)y, (float)z)*volume.voxelSize;
                     Point3f globalPt = volume.pose * volPt;
 
                     if(warpfield->getNodeIndex())
@@ -435,7 +435,7 @@ struct RaycastInvoker : ParallelLoopBody
 
                 Point3f orig = camTrans;
                 // direction through pixel in volume space
-                Point3f dir = normalize(Vec3f(camRot * reproj(Point3f(x, y, 1.f))));
+                Point3f dir = normalize(Vec3f(camRot * reproj(Point3f((float)x, (float)y, 1.f))));
 
                 // compute intersection of ray with all six bbox planes
                 Vec3f rayinv(1.f/dir.x, 1.f/dir.y, 1.f/dir.z);
@@ -467,7 +467,7 @@ struct RaycastInvoker : ParallelLoopBody
 
                     //raymarch
                     int steps = 0;
-                    int nSteps = floor((tmax - tmin)/tstep);
+                    int nSteps = (int)floor((tmax - tmin)/tstep);
                     for(; steps < nSteps; steps++)
                     {
                         next += rayStep;

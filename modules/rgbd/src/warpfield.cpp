@@ -38,8 +38,8 @@ Ptr<flann::GenericIndex<flann::L2_Simple<float> > > WarpField::getNodeIndex() co
 
 Mat getNodesPos(NodeVectorType nv)
 {
-    Mat nodePos(nv.size(), 3, CV_32F);
-    for(size_t i = 0; i < nv.size(); i++)
+    Mat nodePos((int)nv.size(), 3, CV_32F);
+    for(int i = 0; i < (int)nv.size(); i++)
     {
         nodePos.at<float>(i, 0) = nv[i]->pos.x;
         nodePos.at<float>(i, 1) = nv[i]->pos.y;
@@ -123,7 +123,7 @@ NodeVectorType WarpField::subsampleIndex(Mat& pmat,
 
     NodeVectorType temp_nodes;
 
-    for(size_t i = 0; i < validIndexSize; i++)
+    for(int i = 0; i < (int)validIndexSize; i++)
     {
         if(!validIndex[i])
         {
@@ -249,7 +249,7 @@ void WarpField::constructRegGraph()
             new flann::GenericIndex<flann::L2_Simple<float> >(coarseNodeMatrix,
                                                               cvflann::LinearIndexParams()));
 
-        for(size_t i = 0; i < curNodes.size(); i++)
+        for(int i = 0; i < (int)curNodes.size(); i++)
         {
             std::vector<int> children_indices(k);
             std::vector<float> children_dists(k);
