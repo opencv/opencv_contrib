@@ -80,6 +80,8 @@ private:
 
     Affine3f cameraPoseInv;
 
+    Mat nodesPos;
+
 };
 
 bool PtCmp(cv::Point3f a, cv::Point3f b);

@@ -66,8 +66,6 @@ void WarpField::updateNodesFromPoints(InputArray inputPoints)
     bool* validIndex;
     size_t validIndexSize = removeSupported(searchIndex, &validIndex);
 
-    Mat nodePosMatrix = getNodesPos(nodes);
-
     NodeVectorType newNodes;
     if((int)nodes.size() > k)
     {
@@ -81,8 +79,9 @@ void WarpField::updateNodesFromPoints(InputArray inputPoints)
 
     initTransforms(newNodes);
     nodes.insert(nodes.end(), newNodes.begin(), newNodes.end());
+    nodesPos = getNodesPos(nodes);
     //re-build index
-    nodeIndex = new flann::GenericIndex<flann::L2_Simple<float> >(getNodesPos(nodes),
+    nodeIndex = new flann::GenericIndex<flann::L2_Simple<float> >(nodesPos,
                                                                   cvflann::LinearIndexParams());
 
     constructRegGraph();
@@ -184,8 +183,7 @@ NodeVectorType WarpField::subsampleIndex(Mat& pmat,
 
 void WarpField::initTransforms(NodeVectorType nv)
 {
-    Mat nodePos = getNodesPos(nodes);
-    if(nodePos.size().height == 0)
+    if(nodesPos.size().height == 0)
     {
         return;
     }
