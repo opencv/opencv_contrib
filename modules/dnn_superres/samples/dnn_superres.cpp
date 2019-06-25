@@ -44,8 +44,8 @@ int main(int argc, char *argv[])
         resize(img, img_new, Size(), scale, scale, 3);
     }
     else{ //one of the neural networks
-        sr.setModel(algorithm);
-        sr.upsample(img, img_new, 2);
+        sr.setModel(algorithm, scale);
+        sr.upsample(img, img_new);
     }
 
     if (img_new.empty())
