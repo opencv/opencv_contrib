@@ -248,7 +248,10 @@ struct IntegrateInvoker : ParallelLoopBody
                         }
                     }
 
-                    Point3f camSpacePt = warpfield->applyWarp(globalPt, voxel.neighbours, voxel.n);
+                    Affine3f globalToCam = vol2cam * volume.pose.inv();
+
+                    Point3f camSpacePt =
+                    globalToCam * warpfield->applyWarp(globalPt, voxel.neighbours, voxel.n);
 
                     if(camSpacePt.z <= 0)
                         continue;

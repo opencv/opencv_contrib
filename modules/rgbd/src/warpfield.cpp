@@ -9,7 +9,7 @@ k(K), nodes(), maxNeighbours(_maxNeighbours), // good amount for dense kinfu poi
 n_levels(levels), baseRes(baseResolution),
 resGrowthRate(resolutionGrowth),
 regGraphNodes(std::vector<NodeVectorType>(n_levels)),
-nodeIndex(nullptr), cameraPoseInv(Affine3f::Identity())
+nodeIndex(nullptr)
 {
     CV_Assert(k <= DYNAFU_MAX_NEIGHBOURS);
 }
@@ -314,18 +314,17 @@ Point3f WarpField::applyWarp(Point3f p, int neighbours[], int n) const
 
     if(totalWeight == 0)
     {
-        return cameraPoseInv * p;
+        return p;
     }
     else
     {
-        return cameraPoseInv * WarpedPt;
+        return WarpedPt;
     }
 
 }
 
-void WarpField::setAllRT(Affine3f warpRT, Affine3f invCamPose)
+void WarpField::setAllRT(Affine3f warpRT)
 {
-    cameraPoseInv = invCamPose;
     for(auto n: nodes)
     {
         n->transform = warpRT;

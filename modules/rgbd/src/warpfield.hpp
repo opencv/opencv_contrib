@@ -45,7 +45,7 @@ public:
 
     Point3f applyWarp(Point3f p, int neighbours[4], int n) const;
 
-    void setAllRT(Affine3f warpRT, Affine3f invCamPose);
+    void setAllRT(Affine3f warpRT);
 
     Ptr<flann::GenericIndex<flann::L2_Simple<float> > > getNodeIndex() const;
 
@@ -77,8 +77,6 @@ private:
     std::vector<NodeVectorType> regGraphNodes; // heirarchy levels 1 to L
 
     Ptr<flann::GenericIndex<flann::L2_Simple<float> > > nodeIndex;
-
-    Affine3f cameraPoseInv;
 
     Mat nodesPos;
 
