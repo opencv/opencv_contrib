@@ -15,7 +15,7 @@ Resize::Resize(Size size, std::vector<int>& interpolations)
 Resize::Resize(Size size, int interpolation)
 {
     this->size = size;
-    interpolations = vector<int>({ interpolation });
+    interpolations = std::vector<int>({ interpolation });
     useSize = true;
 }
 
@@ -31,7 +31,7 @@ Resize::Resize(float fx, float fy, int interpolation)
 {
     this->fx = fx;
     this->fy = fy;
-    interpolations = vector<int>({ interpolation });
+    interpolations = std::vector<int>({ interpolation });
     useSize = false;
 }
 
@@ -53,8 +53,17 @@ void Resize::image(InputArray src, OutputArray dst)
 
 Point2f Resize::point(const Point2f& src)
 {
-    float x = (src.x / srcImageCols)*size.width;
-    float y = (src.y / srcImageRows)*size.height;
+    float x, y;
+    if (useSize)
+    {
+        x = (src.x / srcImageCols)*size.width;
+        y = (src.y / srcImageRows)*size.height;
+    }
+    else 
+    {
+        x = src.x*fx;
+        y = src.y*fy;
+    }
     return Point2f(x, y);
 }
 
