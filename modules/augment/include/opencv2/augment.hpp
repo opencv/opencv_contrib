@@ -11,5 +11,6 @@
 #include <opencv2/augment/rotate.hpp>
 #include <opencv2/augment/gaussianblur.hpp>
 #include <opencv2/augment/averageblur.hpp>
+#include <opencv2/augment/resize.hpp>
 
 #endif
