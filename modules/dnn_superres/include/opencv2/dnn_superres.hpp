@@ -53,28 +53,28 @@ namespace dnn_superres
             DnnSuperResImpl();
 
             /** @brief Constructor which immediately sets the desired model
-            @param _algo String containing one of the desired models:
+            @param algo String containing one of the desired models:
                 - __edsr__
                 - __espcn__
                 - __fsrcnn__
                 - __lapsrn__
-            @param _scale Integer specifying the upscale factor
+            @param scale Integer specifying the upscale factor
              */
             DnnSuperResImpl(std::string algo, int scale);
 
             /** @brief Set desired model
-            @param _algo String containing one of the desired models:
+            @param algo String containing one of the desired models:
                 - __edsr__
                 - __espcn__
                 - __fsrcnn__
                 - __lapsrn__
-            @param _scale Integer specifying the upscale factor
+            @param scale Integer specifying the upscale factor
              */
             void setModel(std::string algo, int scale);
 
             /** @brief Upsample via neural network
-            @param _img Image to upscale
-            @param _img_new Destination upscaled image
+            @param img Image to upscale
+            @param img_new Destination upscaled image
              */
             void upsample(Mat img, Mat img_new);
     };
