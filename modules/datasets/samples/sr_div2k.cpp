@@ -38,7 +38,7 @@ int main(int argc, char *argv[])
 
     SR_div2kObj *example = static_cast<SR_div2kObj *>(dataset->getTrain()[0].get());
     printf("first image name: %s\n", example->imageName.c_str());
-    
+
     SR_div2kObj *example2 = static_cast<SR_div2kObj *>(dataset->getTrain()[1].get());
     string fullPath = path + "/" + example2->imageName.c_str();
     printf("second image full path: %s\n", fullPath.c_str());

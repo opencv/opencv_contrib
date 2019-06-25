@@ -44,12 +44,12 @@ void SR_div2kImp::loadDataset(const string &path)
     vector<string> fileNames;
     getDirList(path, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
-    {   
+    {
         string &imageName = *it;
         Ptr<SR_div2kObj> curr(new SR_div2kObj);
         curr->imageName = imageName;
         train.back().push_back(curr);
-    
+
     }
 }
 

@@ -41,12 +41,12 @@ namespace dnn_superres
     - lapsrn
      */
     class CV_EXPORTS DnnSuperResImpl
-    {   
+    {
         private:
             /** @brief Net which holds the desired neural network
              */
             Net net;
-        
+
         public:
             /** @brief Empty constructor
              */
@@ -58,8 +58,9 @@ namespace dnn_superres
                 - __espcn__
                 - __fsrcnn__
                 - __lapsrn__
+            @param _scale Integer specifying the upscale factor
              */
-            DnnSuperResImpl(std::string algo);
+            DnnSuperResImpl(std::string algo, int scale);
 
             /** @brief Set desired model
             @param _algo String containing one of the desired models:
@@ -67,15 +68,15 @@ namespace dnn_superres
                 - __espcn__
                 - __fsrcnn__
                 - __lapsrn__
+            @param _scale Integer specifying the upscale factor
              */
-            void setModel(std::string algo);
+            void setModel(std::string algo, int scale);
 
             /** @brief Upsample via neural network
             @param _img Image to upscale
             @param _img_new Destination upscaled image
-            @param _scale Upscale factor
              */
-            void upsample(Mat img, Mat img_new, int scale);
+            void upsample(Mat img, Mat img_new);
     };
     //! @}
 }

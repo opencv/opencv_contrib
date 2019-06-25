@@ -451,7 +451,7 @@ Usage:
 ./opencv/build/bin/example_datasets_sr_bsds -p=/home/user/path_to_unpacked_folder/
 ~~~
 
-### DIV2K dataset: DIVerse 2K 
+### DIV2K dataset: DIVerse 2K
 
 Implements loading dataset:
 
@@ -467,10 +467,10 @@ Usage:
 
 ### The General-100 Dataset
 
-Implements loading dataset: 
+Implements loading dataset:
 
-"General-100 dataset contains 100 bmp-format images (with no compression). 
-We used this dataset in our FSRCNN ECCV 2016 paper. The size of these 100 images ranges from 710 x 704 (large) to 131 x 112 (small). 
+"General-100 dataset contains 100 bmp-format images (with no compression).
+We used this dataset in our FSRCNN ECCV 2016 paper. The size of these 100 images ranges from 710 x 704 (large) to 131 x 112 (small).
 They are all of good quality with clear edges but fewer smooth regions (e.g., sky and ocean), thus are very suitable for the super-resolution training.":
 <http://mmlab.ie.cuhk.edu.hk/projects/FSRCNN.html>
 

@@ -41,7 +41,7 @@ int main(int argc, char *argv[])
     SR_bsdsObj *example1 = static_cast<SR_bsdsObj *>(dataset->getTrain()[0].get());
     string fullPath(path + "images/train/" + example1->imageName + ".jpg");
     printf("first train image: %s\n", fullPath.c_str());
-    
+
     SR_bsdsObj *example2 = static_cast<SR_bsdsObj *>(dataset->getTest()[0].get());
     fullPath = path + "images/test/" + example2->imageName + ".jpg";
     printf("first test image: %s\n", fullPath.c_str());

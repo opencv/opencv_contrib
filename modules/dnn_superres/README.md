@@ -3,8 +3,8 @@
 This module contains several learning-based algorithms for upscaling an image.
 
 ## Dependencies
-- 
-- 
+-
+-
 
 ## Building this module
 

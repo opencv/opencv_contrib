@@ -1,4 +1,4 @@
-Interface for interfacing with existing computer vision databases 
+Interface for interfacing with existing computer vision databases
 =================================================================
 
 In the src directory, there is code for reading many of the existing computer vision databases.

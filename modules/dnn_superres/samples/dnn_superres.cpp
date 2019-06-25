@@ -8,7 +8,7 @@ using namespace dnn;
 using namespace dnn_superres;
 
 int main(int argc, char *argv[])
-{   
+{
     // Check for valid command line arguments, print usage
     // if insufficient arguments were given.
     if (argc < 4) {
@@ -17,7 +17,7 @@ int main(int argc, char *argv[])
         cout << "\t Arg 3: scale     | 2, 3 or 4 \n";
         return -1;
     }
-    
+
     string img_path = string(argv[1]);
     string algorithm = string(argv[2]);
     int scale = atoi(argv[3]);
@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
 
     //Make dnn super resolution instance
     DnnSuperResImpl sr;
-    
+
     Mat img_new;
 
     if(algorithm == "bilinear"){
@@ -53,7 +53,7 @@ int main(int argc, char *argv[])
         std::cerr << "Upsampling failed. \n";
         return -3;
     }
-    cout << "Upsampling succeeded. \n";    
+    cout << "Upsampling succeeded. \n";
 
     // Display image
     cv::namedWindow("Initial Image", WINDOW_AUTOSIZE);
