@@ -73,7 +73,7 @@ public:
     void loadModel(String fs) CV_OVERRIDE;
     bool setFaceDetector(FN_FaceDetector f, void* userdata) CV_OVERRIDE;
     bool getFaces(InputArray image, OutputArray faces) CV_OVERRIDE;
-    bool fit(InputArray image, const std::vector<Rect>& faces, CV_OUT std::vector<std::vector<Point2f> >& landmarks ) CV_OVERRIDE;
+    bool fit(InputArray image, InputArray faces, OutputArrayOfArrays landmarks ) CV_OVERRIDE;
     void training(String imageList, String groundTruth);
     bool training(vector<Mat>& images, vector< vector<Point2f> >& landmarks,string filename,Size scale,string modelFilename) CV_OVERRIDE;
     // Destructor for the class.

@@ -168,15 +168,53 @@ void FacemarkKazemiImpl :: loadModel(String filename){
     f.close();
     isModelLoaded = true;
 }
-bool FacemarkKazemiImpl::fit(InputArray img, const std::vector<Rect>& roi, CV_OUT std::vector<std::vector<Point2f> >& landmarks){
+
+/**
+ * @brief Copy the contents of a corners vector to an OutputArray, settings its size.
+ */
+static void _copyVector2Output(std::vector< std::vector< Point2f > > &vec, OutputArrayOfArrays out)
+{
+    out.create((int)vec.size(), 1, CV_32FC2);
+
+    if (out.isMatVector()) {
+        for (unsigned int i = 0; i < vec.size(); i++) {
+            out.create(68, 1, CV_32FC2, i);
+            Mat &m = out.getMatRef(i);
+            Mat(Mat(vec[i]).t()).copyTo(m);
+        }
+    }
+    else if (out.isUMatVector()) {
+        for (unsigned int i = 0; i < vec.size(); i++) {
+            out.create(68, 1, CV_32FC2, i);
+            UMat &m = out.getUMatRef(i);
+            Mat(Mat(vec[i]).t()).copyTo(m);
+        }
+    }
+    else if (out.kind() == _OutputArray::STD_VECTOR_VECTOR) {
+        for (unsigned int i = 0; i < vec.size(); i++) {
+            out.create(68, 1, CV_32FC2, i);
+            Mat m = out.getMat(i);
+            Mat(Mat(vec[i]).t()).copyTo(m);
+        }
+    }
+    else {
+        CV_Error(cv::Error::StsNotImplemented,
+            "Only Mat vector, UMat vector, and vector<vector> OutputArrays are currently supported.");
+    }
+}
+
+
+bool FacemarkKazemiImpl::fit(InputArray img, InputArray roi, OutputArrayOfArrays _landmarks)
+{
     if(!isModelLoaded){
         String error_message = "No model loaded. Aborting....";
         CV_Error(Error::StsBadArg, error_message);
         return false;
     }
     Mat image  = img.getMat();
-    const std::vector<Rect> & faces = roi;
-    std::vector<std::vector<Point2f> > & shapes = landmarks;
+    Mat roimat = roi.getMat();
+    std::vector<Rect> faces = roimat.reshape(4, roimat.rows);
+    std::vector<std::vector<Point2f> > shapes;
     shapes.resize(faces.size());
 
     if(image.empty()){
@@ -243,6 +281,7 @@ bool FacemarkKazemiImpl::fit(InputArray img, const std::vector<Rect>& roi, CV_OU
                 shapes[e][j].y=float(D.at<double>(1,0));
         }
     }
+    _copyVector2Output(shapes, _landmarks);
     return true;
 }
 }//cv
