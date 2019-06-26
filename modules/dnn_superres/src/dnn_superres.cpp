@@ -205,22 +205,17 @@ namespace cv
                 std::vector<int> outShape(4);
                 outShape[0] = inputs[0][0];
                 outShape[1] = 1;
-                outShape[2] = sqrt(inputs[0][1]) * inputs[0][2];
-                outShape[3] = sqrt(inputs[0][1]) * inputs[0][3];
+                outShape[2] = static_cast<int>(sqrt(inputs[0][1])) * inputs[0][2];
+                outShape[3] = static_cast<int>(sqrt(inputs[0][1])) * inputs[0][3];
 
                 outputs.assign(4, outShape);
 
                 return false;
             }
 
-            void DnnSuperResImpl::DepthToSpace::finalize(cv::InputArrayOfArrays inputs_arr, cv::OutputArrayOfArrays outputs_arr)
-            {
-
-            }
-
             void DnnSuperResImpl::DepthToSpace::forward(cv::InputArrayOfArrays inputs_arr,
                                                         cv::OutputArrayOfArrays outputs_arr,
-                                                        cv::OutputArrayOfArrays internals_arr)
+                                                        cv::OutputArrayOfArrays)
             {
                 std::vector <cv::Mat> inputs, outputs;
                 inputs_arr.getMatVector(inputs);
@@ -243,8 +238,8 @@ namespace cv
                 {
                     for (int x = 0; x < width; x++)
                     {
-                        int x_coord = floor((y / scale));
-                        int y_coord = floor((x / scale));
+                        int x_coord = static_cast<int>(floor((y / scale)));
+                        int y_coord = static_cast<int>(floor((x / scale)));
                         int c_coord = scale * (y % scale) + (x % scale);
 
                         int index = (((c_coord * inpHeight) + x_coord) * inpWidth) + y_coord;

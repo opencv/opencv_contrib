@@ -126,15 +126,12 @@ namespace dnn_superres
                 virtual bool getMemoryShapes(const std::vector<std::vector<int> > &inputs,
                                              const int,
                                              std::vector<std::vector<int> > &outputs,
-                std::vector<std::vector<int> > &) const CV_OVERRIDE;
-
-                /// @private
-                virtual void finalize(cv::InputArrayOfArrays inputs_arr, cv::OutputArrayOfArrays outputs_arr) CV_OVERRIDE;
+                                             std::vector<std::vector<int> > &) const CV_OVERRIDE;
 
                 /// @private
                 virtual void forward(cv::InputArrayOfArrays inputs_arr,
                                      cv::OutputArrayOfArrays outputs_arr,
-                cv::OutputArrayOfArrays internals_arr) CV_OVERRIDE;
+                                     cv::OutputArrayOfArrays) CV_OVERRIDE;
             };
     };
     //! @}

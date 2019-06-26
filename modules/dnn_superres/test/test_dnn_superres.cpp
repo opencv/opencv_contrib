@@ -49,14 +49,14 @@ namespace opencv_test { namespace {
 
         if( this->dnn_sr->getScale() != scale )
         {
-            ts->printf( cvtest::TS::LOG, "Scale factor could not be set for scale algorithm %s and scale factor %d!\n", algorithm, scale);
+            ts->printf( cvtest::TS::LOG, "Scale factor could not be set for scale algorithm %s and scale factor %d!\n", algorithm.c_str(), scale);
             ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
             return;
         }
 
         if( this->dnn_sr->getAlgorithm() != algorithm )
         {
-            ts->printf( cvtest::TS::LOG, "Algorithm could not be set for scale algorithm %s and scale factor %d!\n", algorithm, scale);
+            ts->printf( cvtest::TS::LOG, "Algorithm could not be set for scale algorithm %s and scale factor %d!\n", algorithm.c_str(), scale);
             ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
             return;
         }
@@ -66,7 +66,7 @@ namespace opencv_test { namespace {
 
         if( img_new.empty() )
         {
-            ts->printf( cvtest::TS::LOG, "Could not perform upsampling for scale algorithm %s and scale factor %d!\n", algorithm, scale);
+            ts->printf( cvtest::TS::LOG, "Could not perform upsampling for scale algorithm %s and scale factor %d!\n", algorithm.c_str(), scale);
             ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
             return;
         }
@@ -75,7 +75,7 @@ namespace opencv_test { namespace {
         int new_rows = img.rows * scale;
         if( img_new.cols != new_cols || img_new.rows != new_rows )
         {
-            ts->printf( cvtest::TS::LOG, "Dimensions are not correct for scale algorithm %s and scale factor %d!\n", algorithm, scale);
+            ts->printf( cvtest::TS::LOG, "Dimensions are not correct for scale algorithm %s and scale factor %d!\n", algorithm.c_str(), scale);
             ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
             return;
         }
