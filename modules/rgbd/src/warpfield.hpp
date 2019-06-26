@@ -58,10 +58,10 @@ public:
     int k; //k-nearest neighbours will be used
 
 private:
-    size_t removeSupported(flann::GenericIndex<flann::L2_Simple<float> >& ind, bool** supInd);
+    void removeSupported(flann::GenericIndex<flann::L2_Simple<float> >& ind, AutoBuffer<bool>& supInd);
 
     NodeVectorType subsampleIndex(Mat& pmat, flann::GenericIndex<flann::L2_Simple<float> >& ind,
-                                  bool* supInd, size_t supIndSize, float res,
+                                  AutoBuffer<bool>& supInd, float res,
                                   Ptr<flann::GenericIndex<flann::L2_Simple<float> > > knnIndex = nullptr);
     void constructRegGraph();
 
