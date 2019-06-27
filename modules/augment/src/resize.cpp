@@ -35,8 +35,8 @@ void Resize::image(InputArray src, OutputArray dst)
 Point2f Resize::point(const Point2f& src)
 {
     float x, y;
-    x = (src.x / srcImageCols)*size.width;
-    y = (src.y / srcImageRows)*size.height;
+    x = (src.x / (srcImageCols - 1))*(size.width - 1);
+    y = (src.y / (srcImageRows - 1))*(size.height - 1);
     return Point2f(x, y);
 }
 
