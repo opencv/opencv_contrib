@@ -29,7 +29,7 @@ public:
     CV_WRAP virtual void image(InputArray src, OutputArray dst);
 
     /* @brief Apply the rotation for a single point
-        @param _src Input point to be rotated
+        @param src Input point to be rotated
     */
     Point2f virtual point(const Point2f& src);
 

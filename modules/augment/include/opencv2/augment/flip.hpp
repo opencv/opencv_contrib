@@ -23,7 +23,7 @@ public:
     CV_WRAP void image(InputArray _src, OutputArray _dst);
 
     /* @brief Apply the flipping for a single point
-        @param _src Input point to be flipped
+        @param src Input point to be flipped
     */
     Point2f point(const Point2f& src);
 
@@ -44,7 +44,7 @@ public:
     CV_WRAP virtual void image(InputArray _src, OutputArray _dst);
 
     /* @brief Apply the flipping for a single point
-        @param _src Input point to be flipped
+        @param src Input point to be flipped
     */
     Point2f virtual point(const Point2f& src);
 
