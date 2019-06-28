@@ -194,6 +194,8 @@ public:
     CV_WRAP virtual bool update(InputArray depth) = 0;
 
     virtual std::vector<Point3f> getNodesPos() const = 0;
+
+    virtual void marchCubes(OutputArray mesh) const = 0;
 };
 
 //! @}

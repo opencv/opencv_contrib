@@ -372,9 +372,9 @@ int main(int argc, char **argv)
                                                                 "Close the window or press Q to resume"), Point()));
                 window.spin();
                 window.removeWidget("text");
-                window.removeWidget("cloud");
-                window.removeWidget("normals");
-
+                //window.removeWidget("cloud");
+                //window.removeWidget("normals");
+                window.removeWidget("mesh");
                 window.registerMouseCallback(0);
             }
 
@@ -398,32 +398,29 @@ int main(int argc, char **argv)
 #ifdef HAVE_OPENCV_VIZ
                 else
                 {
+                    Mat meshCloud, meshPoly;
+                    df->marchCubes(meshCloud);
+                    for(int i = 0; i < meshCloud.size().height; i += 3)
+                    {
+                        meshPoly.push_back<int>(3);
+                        meshPoly.push_back<int>(i);
+                        meshPoly.push_back<int>(i+1);
+                        meshPoly.push_back<int>(i+2);
+                    }
+
+                    viz::WMesh mesh(meshCloud.t(), meshPoly);
+                    window.showWidget("mesh", mesh);
+
                     if(coarse)
                     {
                         df->getCloud(points, normals);
-
-                        //std::vector<Ptr<dynafu::WarpNode> > nodes = df->getNodesPos();
-                        /*std::vector<dynafu::NodeVectorType> graph = w.getGraphNodes();
-
-                        std::vector<Point3f> node_pos;
-
-                        for(auto n_ptr: nodes)
-                            node_pos.push_back(n_ptr->pos);
-
-                        int l = 0;
-                        for(auto level: graph)
-                        {
-                            l++;
-                            for(auto n_ptr: level)
-                                node_pos[l].push_back(n_ptr->pos);
-                        }*/
 
                         if(!points.empty() && !normals.empty())
                         {
                             viz::WCloud cloudWidget(points, viz::Color::white());
                             viz::WCloudNormals cloudNormals(points, normals, /*level*/1, /*scale*/0.05, viz::Color::gray());
-                            window.showWidget("cloud", cloudWidget);
-                            window.showWidget("normals", cloudNormals);
+                            //window.showWidget("cloud", cloudWidget);
+                            //window.showWidget("normals", cloudNormals);
                             if(!df->getNodesPos().empty())
                             {
                                 viz::WCloud nodeCloud(df->getNodesPos(), viz::Color::red());

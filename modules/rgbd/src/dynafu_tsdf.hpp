@@ -28,6 +28,8 @@ public:
     virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const = 0;
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const = 0;
 
+    virtual void marchCubes(OutputArray mesh) const = 0;
+
     virtual void reset() = 0;
 
     virtual ~TSDFVolume() { }

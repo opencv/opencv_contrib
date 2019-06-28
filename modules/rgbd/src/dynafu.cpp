@@ -111,6 +111,8 @@ public:
 
     std::vector<Point3f> getNodesPos() const CV_OVERRIDE;
 
+    void marchCubes(OutputArray mesh) const CV_OVERRIDE;
+
 private:
     Params params;
 
@@ -316,6 +318,12 @@ template< typename T >
 void DynaFuImpl<T>::getNormals(InputArray points, OutputArray normals) const
 {
     volume->fetchNormals(points, normals);
+}
+
+template< typename T >
+void DynaFuImpl<T>::marchCubes(OutputArray mesh) const
+{
+    volume->marchCubes(mesh);
 }
 
 // importing class
