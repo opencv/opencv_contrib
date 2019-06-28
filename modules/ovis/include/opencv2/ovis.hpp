@@ -165,6 +165,16 @@ public:
     CV_WRAP virtual void setEntityPose(const String& name, InputArray tvec = noArray(),
                                        InputArray rot = noArray(), bool invert = false) = 0;
 
+	/**
+     * Retrieves the current pose of an entity
+	 * @param name entity name
+     * @param R 3x3 rotation matrix
+     * @param tvec translation vector
+     * @param invert return the inverted pose
+     */
+	CV_WRAP virtual void getEntityPose(const String& name, OutputArray R = noArray(), OutputArray tvec = noArray(),
+                                       bool invert = false) = 0;
+
     /**
      * get a list of available entity animations
      * @param name entity name
@@ -235,6 +245,15 @@ public:
      * @param offset offset from entity centre
      */
     CV_WRAP virtual void setCameraLookAt(const String& target, InputArray offset = noArray()) = 0;
+
+	/**
+     * convenience method to orient an entity to a specific entity.
+	 * If target is an empty string the entity looks at the given offset point
+	 * @param origin entity to make look at
+     * @param target name of target entity
+	 * @param offset offset from entity centre
+     */
+	CV_WRAP virtual void setEntityLookAt(const String& origin, const String& target, InputArray offset = noArray()) = 0;
 
     /**
      * Retrieves the current camera pose

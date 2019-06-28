@@ -578,6 +578,36 @@ public:
         node.setPosition(t);
     }
 
+	void getEntityPose(const String& name ,OutputArray R, OutputArray tvec, bool invert) CV_OVERRIDE
+    {
+		SceneNode* node = sceneMgr->getEntity(name)->getParentSceneNode();
+        Matrix3 _R;
+        // toOGRE.Inverse() == toOGRE
+        (node->getOrientation()*toOGRE).ToRotationMatrix(_R);
+
+        if (invert)
+        {
+            _R = _R.Transpose();
+        }
+
+        if (tvec.needed())
+        {
+            Vector3 _tvec = node->getPosition();
+
+            if (invert)
+            {
+                _tvec = _R * -_tvec;
+            }
+
+            Mat_<Real>(3, 1, _tvec.ptr()).copyTo(tvec);
+        }
+
+        if (R.needed())
+        {
+            Mat_<Real>(3, 3, _R[0]).copyTo(R);
+        }
+    }
+
     void getEntityAnimations(const String& name, std::vector<String>& out) CV_OVERRIDE
     {
         SceneNode& node = _getSceneNode(sceneMgr, name);
@@ -659,7 +689,7 @@ public:
             Entity* ent = dynamic_cast<Entity*>(node.getAttachedObject(name));
             CV_Assert(ent && "invalid entity");
 
-            ent->getSkeleton()->setBlendMode(static_cast<Ogre::SkeletonAnimationBlendMode>(value[0]));
+            ent->getSkeleton()->setBlendMode(static_cast<Ogre::SkeletonAnimationBlendMode>(int(value[0])));
             break;
         }
         default:
@@ -847,6 +877,26 @@ public:
 
         camNode->lookAt(tgt->_getDerivedPosition() + _offset, Ogre::Node::TS_WORLD);
     }
+
+	void setEntityLookAt(const String& origin, const String& target, InputArray offset) CV_OVERRIDE
+    {
+		SceneNode* orig = sceneMgr->getEntity(origin)->getParentSceneNode();
+
+		Vector3 _offset = Vector3::ZERO;
+
+        if (!offset.empty())
+        {
+            offset.copyTo(Mat_<Real>(3, 1, _offset.ptr()));
+        }
+
+		if(target.compare("") != 0){
+        SceneNode* tgt = sceneMgr->getEntity(target)->getParentSceneNode();
+		orig->lookAt(tgt->_getDerivedPosition() + _offset, Ogre::Node::TS_WORLD, Ogre::Vector3::UNIT_Z);
+		}else{
+			orig->lookAt(_offset, Ogre::Node::TS_WORLD, Ogre::Vector3::UNIT_Z);
+		}
+    }
+
 };
 
 CV_EXPORTS_W void addResourceLocation(const String& path)
