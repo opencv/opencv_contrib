@@ -41,39 +41,6 @@ std::vector<Mat> Augmenter::applyImages(const std::vector<Mat>& imgs)
 }
 
 
-//std::tuple<std::vector<Mat>, std::vector<Mat>> 
-//Augmenter::applyImagesWithMasks(const std::vector<Mat>& imgs, const std::vector<Mat>& masks)
-//{
-//    CV_Assert(imgs.size() == masks.size());
-//    std::vector<Mat> dstImgs, dstMasks;
-//    RNG rng;
-//
-//    for (size_t i = 0; i < imgs.size(); i++)
-//    {
-//        Mat img = imgs[i].clone();
-//        Mat mask = masks[i].clone();
-//
-//        for (size_t j = 0; j < transformations.size(); j++)
-//        {
-//            float prob = rng.uniform(0.f, 1.f);
-//
-//            if (prob <= std::get<1>(transformations[j]))
-//            {
-//                std::get<0>(transformations[j])->init(imgs[i]);
-//                std::get<0>(transformations[j])->image(img, img);
-//                std::get<0>(transformations[j])->image(mask, mask);
-//            }
-//
-//        }
-//
-//        dstImgs.push_back(img);
-//        dstMasks.push_back(mask);
-//    }
-//
-//    return std::make_tuple(dstImgs, dstMasks);
-//}
-
-
 
 
 

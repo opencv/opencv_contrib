@@ -27,11 +27,6 @@ public:
     */
     CV_WRAP std::vector<Mat> applyImages(const std::vector<Mat>& imgs);
 
-    ///* @brief apply the transformations to both images and masks
-    //   @param imgs the images that the transformations will be applied to
-    //   @param masks the masks of the images to apply the same transformations to
-    //*/
-    //CV_WRAP std::tuple<std::vector<Mat>, std::vector<Mat>> applyImagesWithMasks(const std::vector<Mat>& imgs, const std::vector<Mat>& masks);
 private:
     std::vector<Ptr<Transform>> transformations;
     std::vector<float> probs;
