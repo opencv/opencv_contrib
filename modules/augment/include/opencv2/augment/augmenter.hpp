@@ -17,8 +17,12 @@ public:
     CV_WRAP Augmenter();
 
     /* @brief add a transformation to the augmenter
+       @param t the transformation to be added to the augmenter
+       @param prob the probability of applying the transformation t
     */
     CV_WRAP void add(Ptr<Transform> t, float prob=1.f);
+
+    CV_WRAP std::vector<Mat> applyImages(const std::vector<Mat>& imgs);
 
 private:
     std::vector< std::tuple<Ptr<Transform> , float> > transformations;
