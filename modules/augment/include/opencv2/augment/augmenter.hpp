@@ -25,7 +25,7 @@ public:
     /* @brief apply the transformations to vector of images
        @param imgs the images that the transformations will be applied to
     */
-    CV_WRAP std::vector<Mat> applyImages(const std::vector<Mat>& imgs);
+    CV_WRAP void applyImages(const std::vector<Mat>& imgs, OutputArrayOfArrays dstImgs);
 
 private:
     std::vector<Ptr<Transform>> transformations;

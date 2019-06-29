@@ -52,9 +52,10 @@ public:
 
 
     /* @brief Apply the transformation for array of polygons
-        @param src vector of Mat consisting of the polygons to be transformed (each row of a polygon Mat is a vertix (X,Y))
+       @param src vector of Mat consisting of the polygons to be transformed (each row of a polygon Mat is a vertix (X,Y))
+       @param dst the vector of Mat containing the point after applying the transformation 
     */
-    CV_WRAP virtual std::vector<Mat> polygons(std::vector<Mat> src);
+    CV_WRAP virtual void polygons(std::vector<Mat> src, OutputArrayOfArrays dst);
 
 
     /* @brief set the random variables in a transformation to be used consitently on the next data 

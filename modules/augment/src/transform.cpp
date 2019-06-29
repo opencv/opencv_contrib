@@ -4,7 +4,6 @@
 
 
 #include "precomp.hpp"
-#include <iostream>
 namespace cv { namespace augment {
 
 Transform::Transform() {}
@@ -103,19 +102,17 @@ void Transform::rectangles(InputArray _src, OutputArray _dst)
 
 }
 
-std::vector<Mat> Transform::polygons(std::vector<Mat> src)
+void Transform::polygons(std::vector<Mat> src, OutputArrayOfArrays dst)
 {
-    std::vector<Mat> dst(src.size());
+    dst.create(src.size(), 1, 0, -1, true);
 
     for (size_t i = 0; i < src.size(); i++)
     {
         Mat src_row = src[i];
-        Mat dst_row;
+        dst.create(src_row.size(), CV_32F, i, true);
+        Mat dst_row = dst.getMat(i);
         this->points(src_row, dst_row);
-        dst[i] = dst_row;
     }
-
-    return dst;
 }   
 
 void Transform::init(const Mat& srcImage)

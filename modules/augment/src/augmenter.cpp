@@ -13,9 +13,9 @@ void Augmenter::add(Ptr<Transform> transformation, float prob)
     probs.push_back(prob);
 }
 
-std::vector<Mat> Augmenter::applyImages(const std::vector<Mat>& imgs)
+void Augmenter::applyImages(const std::vector<Mat>& imgs, OutputArrayOfArrays dstImgs)
 {
-    std::vector<Mat> dstImgs;
+    dstImgs.create(imgs.size(), 1, 0, -1, true);
     RNG rng;
 
     for (size_t i = 0; i < imgs.size(); i++)
@@ -34,10 +34,12 @@ std::vector<Mat> Augmenter::applyImages(const std::vector<Mat>& imgs)
 
             }
 
-        dstImgs.push_back(img);
+            dstImgs.create(img.size(), img.type(), i, true);
+            Mat dstImg = dstImgs.getMat(i);
+            img.copyTo(dstImg);
+
     }
 
-    return dstImgs;
 }
 
 
