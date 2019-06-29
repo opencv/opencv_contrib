@@ -22,10 +22,19 @@ public:
     */
     CV_WRAP void add(Ptr<Transform> t, float prob=1.f);
 
+    /* @brief apply the transformations to vector of images
+       @param imgs the images that the transformations will be applied to
+    */
     CV_WRAP std::vector<Mat> applyImages(const std::vector<Mat>& imgs);
 
+    ///* @brief apply the transformations to both images and masks
+    //   @param imgs the images that the transformations will be applied to
+    //   @param masks the masks of the images to apply the same transformations to
+    //*/
+    //CV_WRAP std::tuple<std::vector<Mat>, std::vector<Mat>> applyImagesWithMasks(const std::vector<Mat>& imgs, const std::vector<Mat>& masks);
 private:
-    std::vector< std::tuple<Ptr<Transform> , float> > transformations;
+    std::vector<Ptr<Transform>> transformations;
+    std::vector<float> probs;
 };
 
 }} //namespace cv::augment
