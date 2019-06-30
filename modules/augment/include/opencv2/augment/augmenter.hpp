@@ -23,9 +23,18 @@ public:
     CV_WRAP void add(Ptr<Transform> t, float prob=1.f);
 
     /* @brief apply the transformations to vector of images
-       @param imgs the images that the transformations will be applied to
+       @param imgs the images that to be augmented
+       @param dstImgs the augmented images 
     */
     CV_WRAP void applyImages(const std::vector<Mat>& imgs, OutputArrayOfArrays dstImgs);
+
+     /* @brief apply the transformations to vector of images
+        @param imgs the images to be augmented
+        @param dstImgs the augmented images
+        @param masks the masks to be augmented
+        @param dstMasks the augmented masks
+     */
+    CV_WRAP void applyImagesWithMasks(const std::vector<Mat>& imgs, const std::vector<Mat>& masks, OutputArrayOfArrays dstImgs, OutputArrayOfArrays dstMasks);
 
 private:
     std::vector<Ptr<Transform>> transformations;
