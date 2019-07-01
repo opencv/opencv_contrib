@@ -225,7 +225,7 @@ protected:
 
 public:
     MosseImpl() { isInit = 0; }
-    MosseImpl(const TrackerMOSSE::Params& params) : MosseImpl{} { this->params = params; }
+    MosseImpl(const TrackerMOSSE::Params& params) : MosseImpl() { this->params = params; }
 
     // dummy implementation.
     virtual void read(const FileNode&) CV_OVERRIDE {}
