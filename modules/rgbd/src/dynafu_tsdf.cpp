@@ -764,16 +764,28 @@ void TSDFVolumeCPU::marchCubes(OutputArray _mesh) const
 {
     const Voxel *volData = volume.ptr<Voxel>();
     std::vector<Point3f> meshPoints;
-    Point3f neighbourPts[8] =
-        {
+    Point3f mcNeighbourPts[8] =
+    {
             Point3f(0.f, 0.f, 0.f),
             Point3f(0.f, 0.f, 1.f),
-            Point3f(0.f, 1.f, 0.f),
             Point3f(0.f, 1.f, 1.f),
+            Point3f(0.f, 1.f, 0.f),
             Point3f(1.f, 0.f, 0.f),
             Point3f(1.f, 0.f, 1.f),
-            Point3f(1.f, 1.f, 0.f),
-            Point3f(1.f, 1.f, 1.f)};
+            Point3f(1.f, 1.f, 1.f),
+            Point3f(1.f, 1.f, 0.f)
+    };
+
+    Vec8i mcNeighbourCoords = Vec8i(
+        volDims.dot(Vec4i(0, 0, 0)),
+        volDims.dot(Vec4i(0, 0, 1)),
+        volDims.dot(Vec4i(0, 1, 1)),
+        volDims.dot(Vec4i(0, 1, 0)),
+        volDims.dot(Vec4i(1, 0, 0)),
+        volDims.dot(Vec4i(1, 0, 1)),
+        volDims.dot(Vec4i(1, 1, 1)),
+        volDims.dot(Vec4i(1, 1, 0))
+    );
 
     for (int x = 0; x < volResolution.x - 1; x++)
     {
@@ -792,10 +804,10 @@ void TSDFVolumeCPU::marchCubes(OutputArray _mesh) const
                 float tsdfValues[8] = {0};
                 for (int i = 0; i < 8; i++)
                 {
-                    if (volData[neighbourCoords[i] + coordBase].weight == 0)
+                    if (volData[mcNeighbourCoords[i] + coordBase].weight == 0)
                         continue;
 
-                    tsdfValues[i] = volData[neighbourCoords[i] + coordBase].v;
+                    tsdfValues[i] = volData[mcNeighbourCoords[i] + coordBase].v;
                     if (tsdfValues[i] <= 0)
                         cubeIndex |= (1 << i);
                 }
@@ -807,40 +819,40 @@ void TSDFVolumeCPU::marchCubes(OutputArray _mesh) const
                 Point3f basePt((float)x, (float)y, (float)z);
 
                 if (edgeTable[cubeIndex] & 1)
-                    vertices[0] = basePt + interpolate(neighbourPts[0], neighbourPts[1],
+                    vertices[0] = basePt + interpolate(mcNeighbourPts[0], mcNeighbourPts[1],
                                                        tsdfValues[0], tsdfValues[1]);
                 if (edgeTable[cubeIndex] & 2)
-                    vertices[1] = basePt + interpolate(neighbourPts[1], neighbourPts[2],
+                    vertices[1] = basePt + interpolate(mcNeighbourPts[1], mcNeighbourPts[2],
                                                        tsdfValues[1], tsdfValues[2]);
                 if (edgeTable[cubeIndex] & 4)
-                    vertices[2] = basePt + interpolate(neighbourPts[2], neighbourPts[3],
+                    vertices[2] = basePt + interpolate(mcNeighbourPts[2], mcNeighbourPts[3],
                                                        tsdfValues[2], tsdfValues[3]);
                 if (edgeTable[cubeIndex] & 8)
-                    vertices[3] = basePt + interpolate(neighbourPts[3], neighbourPts[0],
+                    vertices[3] = basePt + interpolate(mcNeighbourPts[3], mcNeighbourPts[0],
                                                        tsdfValues[3], tsdfValues[0]);
                 if (edgeTable[cubeIndex] & 16)
-                    vertices[4] = basePt + interpolate(neighbourPts[4], neighbourPts[5],
+                    vertices[4] = basePt + interpolate(mcNeighbourPts[4], mcNeighbourPts[5],
                                                        tsdfValues[4], tsdfValues[5]);
                 if (edgeTable[cubeIndex] & 32)
-                    vertices[5] = basePt + interpolate(neighbourPts[5], neighbourPts[6],
+                    vertices[5] = basePt + interpolate(mcNeighbourPts[5], mcNeighbourPts[6],
                                                        tsdfValues[5], tsdfValues[6]);
                 if (edgeTable[cubeIndex] & 64)
-                    vertices[6] = basePt + interpolate(neighbourPts[6], neighbourPts[7],
+                    vertices[6] = basePt + interpolate(mcNeighbourPts[6], mcNeighbourPts[7],
                                                        tsdfValues[6], tsdfValues[7]);
                 if (edgeTable[cubeIndex] & 128)
-                    vertices[7] = basePt + interpolate(neighbourPts[7], neighbourPts[4],
+                    vertices[7] = basePt + interpolate(mcNeighbourPts[7], mcNeighbourPts[4],
                                                        tsdfValues[7], tsdfValues[4]);
                 if (edgeTable[cubeIndex] & 256)
-                    vertices[8] = basePt + interpolate(neighbourPts[0], neighbourPts[4],
+                    vertices[8] = basePt + interpolate(mcNeighbourPts[0], mcNeighbourPts[4],
                                                        tsdfValues[0], tsdfValues[4]);
                 if (edgeTable[cubeIndex] & 512)
-                    vertices[9] = basePt + interpolate(neighbourPts[1], neighbourPts[5],
+                    vertices[9] = basePt + interpolate(mcNeighbourPts[1], mcNeighbourPts[5],
                                                        tsdfValues[1], tsdfValues[5]);
                 if (edgeTable[cubeIndex] & 1024)
-                    vertices[10] = basePt + interpolate(neighbourPts[2], neighbourPts[6],
+                    vertices[10] = basePt + interpolate(mcNeighbourPts[2], mcNeighbourPts[6],
                                                         tsdfValues[2], tsdfValues[6]);
                 if (edgeTable[cubeIndex] & 2048)
-                    vertices[11] = basePt + interpolate(neighbourPts[3], neighbourPts[7],
+                    vertices[11] = basePt + interpolate(mcNeighbourPts[3], mcNeighbourPts[7],
                                                         tsdfValues[3], tsdfValues[7]);
 
                 for (int i = 0; triTable[cubeIndex][i] != -1; i++)
