@@ -497,6 +497,17 @@ public:
         node->attachObject(ent);
     }
 
+    void createEntityAttached(const String& name, const String& meshname, const String& othername, const String& bonename) CV_OVERRIDE
+    {
+        SceneNode& othernode = _getSceneNode(sceneMgr, othername);
+        Entity* otherent = dynamic_cast<Entity*>(othernode.getAttachedObject(othername));
+        CV_Assert(otherent && "invalid entity");
+
+        Entity* ent = sceneMgr->createEntity(name, meshname, RESOURCEGROUP_NAME);
+
+        otherent->attachObjectToBone(bonename, ent);
+    }
+
     void removeEntity(const String& name) CV_OVERRIDE
     {
         SceneNode& node = _getSceneNode(sceneMgr, name);
@@ -508,6 +519,16 @@ public:
         sceneMgr->destroyCamera(name);
 
         sceneMgr->destroySceneNode(&node);
+    }
+
+    void removeEntityAttached(const String& name, const String& othername) CV_OVERRIDE
+    {
+        SceneNode& othernode = _getSceneNode(sceneMgr, othername);
+        Entity* otherent = dynamic_cast<Entity*>(othernode.getAttachedObject(othername));
+        CV_Assert(otherent && "invalid entity");
+
+        otherent->detachObjectFromBone(name);
+        sceneMgr->destroyEntity(name);
     }
 
     Rect2d createCameraEntity(const String& name, InputArray K, const Size& imsize, float zFar,
@@ -577,6 +598,17 @@ public:
         _convertRT(rot, tvec, q, t, invert);
         node.setOrientation(q);
         node.setPosition(t);
+    }
+
+    void getEntityBones(const String& name, std::vector<String>& out) CV_OVERRIDE
+    {
+        SceneNode& node = _getSceneNode(sceneMgr, name);
+        Entity* ent = dynamic_cast<Entity*>(node.getAttachedObject(name));
+        CV_Assert(ent && "invalid entity");
+        for (auto const& bone : ent->getSkeleton()->getBones())
+        {
+            out.push_back(bone->getName());
+        }
     }
 
     void getEntityAnimations(const String& name, std::vector<String>& out) CV_OVERRIDE

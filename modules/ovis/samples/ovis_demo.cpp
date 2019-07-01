@@ -35,12 +35,15 @@ int main()
   owin->createEntity("ground", "ground", Vec3f(1.57, 0, 0));
   owin->createCameraEntity("cam", K, imsize, 5);
   owin->createEntity("sinbad", "Sinbad.mesh", Vec3i(0, 0, 5), Vec3f(CV_PI/2.0, 0.0, 0.0)); // externally defined mesh
+  owin->createEntityAttached("sinbad_sword_r", "Sword.mesh", "sinbad", "Handle.R");
+  owin->createEntityAttached("sinbad_sword_l", "Sword.mesh", "sinbad", "Handle.L");
   owin->createLightEntity("sun", Vec3i(0, 0, -100));
 
   // setup and play idle animation
   owin->setEntityProperty("sinbad", ovis::EntityProperty::ENTITY_ANIMBLEND_MODE, Scalar(1)); // 1 = cumulative
   owin->playEntityAnimation("sinbad", "IdleBase");
   owin->playEntityAnimation("sinbad", "IdleTop");
+  owin->playEntityAnimation("sinbad", "HandsClosed");
 
   //interaction scene
   Ptr<ovis::WindowScene> iwin = ovis::createWindow(String("AR"), imsize, ovis::SCENE_SEPERATE | ovis::SCENE_INTERACTIVE);
@@ -50,8 +53,8 @@ int main()
 
   std::cout << "Press ESCAPE to exit demo" << std::endl;
   while (ovis::waitKey(1) != KEY_ESCAPE) {
-      iwin->getCameraPose(R, t);
-      owin->setEntityPose("cam", t, R);
+    iwin->getCameraPose(R, t);
+    owin->setEntityPose("cam", t, R);
   }
 
   return 1;
