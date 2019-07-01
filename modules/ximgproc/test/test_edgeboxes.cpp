@@ -11,7 +11,7 @@ TEST(ximpgroc_Edgeboxes, regression)
 	//on a simple test image from the PASCAL VOC 2012 dataset.
     std::vector<Rect> boxes;
     std::vector<float> scores;
-    float expectedScore = 0.48742563;
+    float expectedScore = 0.48742563f;
     Rect expectedProposal(158, 69, 125, 154);
 
     //Using sample model file, compute orientations map for use with edge detection.
