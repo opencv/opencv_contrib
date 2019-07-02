@@ -115,6 +115,12 @@ void Transform::polygons(std::vector<Mat> src, OutputArrayOfArrays dst)
     }
 }   
 
+void Transform::mask(InputArray src, OutputArray dst)
+{
+    image(src, dst);
+}
+
+
 void Transform::init(const Mat& srcImage)
 {
     srcImageRows = srcImage.rows;

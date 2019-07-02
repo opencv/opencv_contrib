@@ -32,6 +32,11 @@ void Resize::image(InputArray src, OutputArray dst)
     resize(src, dst, size, 0, 0, interpolation);
 }
 
+void Resize::mask(InputArray src, OutputArray dst)
+{
+    resize(src, dst, size, 0, 0, INTER_NEAREST);
+}
+
 Point2f Resize::point(const Point2f& src)
 {
     float x, y;

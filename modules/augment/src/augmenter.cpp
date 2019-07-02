@@ -65,7 +65,7 @@ void Augmenter::applyImagesWithMasks(const std::vector<Mat>& imgs,
             {
                 transformations[j]->init(imgs[i]);
                 transformations[j]->image(img, img);
-                transformations[j]->image(mask, mask);
+                transformations[j]->mask(mask, mask);
             }
 
         }
@@ -80,9 +80,6 @@ void Augmenter::applyImagesWithMasks(const std::vector<Mat>& imgs,
 
     }
 }
-
-
-
 
 
 }}

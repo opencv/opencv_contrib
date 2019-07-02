@@ -30,6 +30,12 @@ public:
     */
     CV_WRAP virtual void image(InputArray src, OutputArray dst);
 
+    /* @brief Apply the resizing to a single mask
+      @param src Input mask to be resized
+      @param dst Output (resized) mask
+    */
+    CV_WRAP virtual void mask(InputArray src, OutputArray dst);
+
     /* @brief Apply the resizing transformation a single point
        @param src Input point to be mapped to the new coordinates after resizing
     */

@@ -28,13 +28,14 @@ public:
     */
     CV_WRAP void applyImages(const std::vector<Mat>& imgs, OutputArrayOfArrays dstImgs);
 
-     /* @brief apply the transformations to vector of images
+     /* @brief apply the transformations to vector of images and corresponding masks
         @param imgs the images to be augmented
         @param dstImgs the augmented images
         @param masks the masks to be augmented
         @param dstMasks the augmented masks
      */
     CV_WRAP void applyImagesWithMasks(const std::vector<Mat>& imgs, const std::vector<Mat>& masks, OutputArrayOfArrays dstImgs, OutputArrayOfArrays dstMasks);
+
 
 private:
     std::vector<Ptr<Transform>> transformations;

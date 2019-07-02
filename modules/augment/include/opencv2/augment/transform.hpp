@@ -57,6 +57,11 @@ public:
     */
     CV_WRAP virtual void polygons(std::vector<Mat> src, OutputArrayOfArrays dst);
 
+    /* @brief Apply the transformation to a single mask (this is overridden by transformations implementation)
+        @param src Input image to be tranformed
+        @param dst Output (transformed) image
+    */
+    CV_WRAP virtual void mask(InputArray src, OutputArray dst);
 
     /* @brief set the random variables in a transformation to be used consitently on the next data 
     */
