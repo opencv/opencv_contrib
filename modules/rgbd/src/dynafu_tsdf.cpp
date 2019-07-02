@@ -6,6 +6,7 @@
 
 #include "precomp.hpp"
 #include "dynafu_tsdf.hpp"
+#include "marchingcubes.hpp"
 
 namespace cv {
 
@@ -42,6 +43,8 @@ public:
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const override;
     virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
 
+    virtual void marchCubes(OutputArray _vertices, OutputArray _edges) const override;
+
     virtual void reset() override;
 
     volumeType interpolateVoxel(cv::Point3f p) const;
@@ -51,6 +54,9 @@ public:
     // for the array layout info
     // Consist of Voxel elements
     Mat volume;
+
+private:
+    Point3f interpolate(Point3f p1, Point3f p2, float v1, float v2) const;
 };
 
 
@@ -59,7 +65,7 @@ TSDFVolume::TSDFVolume(Point3i _res, float _voxelSize, Affine3f _pose, float _tr
     voxelSize(_voxelSize),
     voxelSizeInv(1.f/_voxelSize),
     volResolution(_res),
-    maxWeight(_maxWeight),
+    maxWeight((float)_maxWeight),
     pose(_pose),
     raycastStepFactor(_raycastStepFactor)
 {
@@ -228,28 +234,30 @@ struct IntegrateInvoker : ParallelLoopBody
                 for(int z = 0; z < volume.volResolution.z; z++)
                 {
                     Voxel& voxel = volDataY[z*volume.volDims[2]];
-                    
-                    Point3f volPt = Point3f(x, y, z)*volume.voxelSize;
+
+                    Point3f volPt = Point3f((float)x, (float)y, (float)z)*volume.voxelSize;
                     Point3f globalPt = volume.pose * volPt;
-                    
+
                     if(warpfield->getNodeIndex())
                     {
-                        std::vector<float> query = {globalPt.x, globalPt.y, globalPt.z};
                         std::vector<int> indices(warpfield->k);
                         std::vector<float> dists(warpfield->k);
-                        warpfield->getNodeIndex()->knnSearch(query, indices, dists, warpfield->k, cvflann::SearchParams());
+                        warpfield->findNeighbours(globalPt, indices, dists);
 
                         voxel.n = 0;
                         for(size_t i = 0; i < indices.size(); i++)
                         {
                             if(std::isnan(dists[i])) continue;
 
-                            voxel.neighbourDists[voxel.n] = dists[i]; 
+                            voxel.neighbourDists[voxel.n] = dists[i];
                             voxel.neighbours[voxel.n++] = indices[i];
                         }
                     }
 
-                    Point3f camSpacePt = warpfield->applyWarp(globalPt, voxel.neighbours, voxel.n);
+                    Affine3f globalToCam = vol2cam * volume.pose.inv();
+
+                    Point3f camSpacePt =
+                    globalToCam * warpfield->applyWarp(globalPt, voxel.neighbours, voxel.n);
 
                     if(camSpacePt.z <= 0)
                         continue;
@@ -283,9 +291,9 @@ struct IntegrateInvoker : ParallelLoopBody
                         {
                             for(int i = 0; i < voxel.n; i++)
                                 newWeight += sqrt(voxel.neighbourDists[i]);
-                            
+
                             if(voxel.n > 0) newWeight /= voxel.n;
-                            
+
                         } else newWeight = 1.f;
 
                         if((weight + newWeight) != 0)
@@ -436,7 +444,7 @@ struct RaycastInvoker : ParallelLoopBody
 
                 Point3f orig = camTrans;
                 // direction through pixel in volume space
-                Point3f dir = normalize(Vec3f(camRot * reproj(Point3f(x, y, 1.f))));
+                Point3f dir = normalize(Vec3f(camRot * reproj(Point3f((float)x, (float)y, 1.f))));
 
                 // compute intersection of ray with all six bbox planes
                 Vec3f rayinv(1.f/dir.x, 1.f/dir.y, 1.f/dir.z);
@@ -468,7 +476,7 @@ struct RaycastInvoker : ParallelLoopBody
 
                     //raymarch
                     int steps = 0;
-                    int nSteps = floor((tmax - tmin)/tstep);
+                    int nSteps = (int)floor((tmax - tmin)/tstep);
                     for(; steps < nSteps; steps++)
                     {
                         next += rayStep;
@@ -742,6 +750,149 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
     }
 }
 
+Point3f TSDFVolumeCPU::interpolate(Point3f p1, Point3f p2, float v1, float v2) const
+{
+    float dV = 0.5f;
+    if(abs(v1 - v2) > 0.0001f)
+        dV = v1 / (v1 - v2);
+
+    Point3f p = p1 + dV * (p2 - p1);
+    return p;
+}
+
+void TSDFVolumeCPU::marchCubes(OutputArray _vertices, OutputArray _edges) const
+{
+    const Voxel *volData = volume.ptr<Voxel>();
+    Mat meshPoints(0, 1, CV_16FC3);
+    Mat meshEdges(0, 2, CV_16U);
+
+    Point3f mcNeighbourPts[8] =
+        {
+            Point3f(0.f, 0.f, 0.f),
+            Point3f(0.f, 0.f, 1.f),
+            Point3f(0.f, 1.f, 1.f),
+            Point3f(0.f, 1.f, 0.f),
+            Point3f(1.f, 0.f, 0.f),
+            Point3f(1.f, 0.f, 1.f),
+            Point3f(1.f, 1.f, 1.f),
+            Point3f(1.f, 1.f, 0.f)};
+
+    Vec8i mcNeighbourCoords = Vec8i(
+        volDims.dot(Vec4i(0, 0, 0)),
+        volDims.dot(Vec4i(0, 0, 1)),
+        volDims.dot(Vec4i(0, 1, 1)),
+        volDims.dot(Vec4i(0, 1, 0)),
+        volDims.dot(Vec4i(1, 0, 0)),
+        volDims.dot(Vec4i(1, 0, 1)),
+        volDims.dot(Vec4i(1, 1, 1)),
+        volDims.dot(Vec4i(1, 1, 0)));
+
+    for (int x = 0; x < volResolution.x - 1; x++)
+    {
+        int coordBaseX = x * volDims[0];
+        for (int y = 0; y < volResolution.y - 1; y++)
+        {
+            int coordBaseY = coordBaseX + y * volDims[1];
+            for (int z = 0; z < volResolution.z - 1; z++)
+            {
+                int coordBase = coordBaseY + z * volDims[2];
+
+                if (volData[coordBase].weight == 0)
+                    continue;
+
+                uint8_t cubeIndex = 0;
+                float tsdfValues[8] = {0};
+                for (int i = 0; i < 8; i++)
+                {
+                    if (volData[mcNeighbourCoords[i] + coordBase].weight == 0)
+                        continue;
+
+                    tsdfValues[i] = volData[mcNeighbourCoords[i] + coordBase].v;
+                    if (tsdfValues[i] <= 0)
+                        cubeIndex |= (1 << i);
+                }
+
+                if (edgeTable[cubeIndex] == 0)
+                    continue;
+
+                Point3f vertices[12];
+                Point3f basePt((float)x, (float)y, (float)z);
+
+                if (edgeTable[cubeIndex] & 1)
+                    vertices[0] = basePt + interpolate(mcNeighbourPts[0], mcNeighbourPts[1],
+                                                       tsdfValues[0], tsdfValues[1]);
+                if (edgeTable[cubeIndex] & 2)
+                    vertices[1] = basePt + interpolate(mcNeighbourPts[1], mcNeighbourPts[2],
+                                                       tsdfValues[1], tsdfValues[2]);
+                if (edgeTable[cubeIndex] & 4)
+                    vertices[2] = basePt + interpolate(mcNeighbourPts[2], mcNeighbourPts[3],
+                                                       tsdfValues[2], tsdfValues[3]);
+                if (edgeTable[cubeIndex] & 8)
+                    vertices[3] = basePt + interpolate(mcNeighbourPts[3], mcNeighbourPts[0],
+                                                       tsdfValues[3], tsdfValues[0]);
+                if (edgeTable[cubeIndex] & 16)
+                    vertices[4] = basePt + interpolate(mcNeighbourPts[4], mcNeighbourPts[5],
+                                                       tsdfValues[4], tsdfValues[5]);
+                if (edgeTable[cubeIndex] & 32)
+                    vertices[5] = basePt + interpolate(mcNeighbourPts[5], mcNeighbourPts[6],
+                                                       tsdfValues[5], tsdfValues[6]);
+                if (edgeTable[cubeIndex] & 64)
+                    vertices[6] = basePt + interpolate(mcNeighbourPts[6], mcNeighbourPts[7],
+                                                       tsdfValues[6], tsdfValues[7]);
+                if (edgeTable[cubeIndex] & 128)
+                    vertices[7] = basePt + interpolate(mcNeighbourPts[7], mcNeighbourPts[4],
+                                                       tsdfValues[7], tsdfValues[4]);
+                if (edgeTable[cubeIndex] & 256)
+                    vertices[8] = basePt + interpolate(mcNeighbourPts[0], mcNeighbourPts[4],
+                                                       tsdfValues[0], tsdfValues[4]);
+                if (edgeTable[cubeIndex] & 512)
+                    vertices[9] = basePt + interpolate(mcNeighbourPts[1], mcNeighbourPts[5],
+                                                       tsdfValues[1], tsdfValues[5]);
+                if (edgeTable[cubeIndex] & 1024)
+                    vertices[10] = basePt + interpolate(mcNeighbourPts[2], mcNeighbourPts[6],
+                                                        tsdfValues[2], tsdfValues[6]);
+                if (edgeTable[cubeIndex] & 2048)
+                    vertices[11] = basePt + interpolate(mcNeighbourPts[3], mcNeighbourPts[7],
+                                                        tsdfValues[3], tsdfValues[7]);
+
+                for (int i = 0; triTable[cubeIndex][i] != -1; i += 3)
+                {
+                    size_t pointsIndex = meshPoints.size().height;
+
+                    Point3f p = pose * (vertices[triTable[cubeIndex][i]] * voxelSize);
+                    Mat vertex = (Mat_<Point3f>(1, 1) << p);
+                    meshPoints.push_back(vertex);
+
+                    p = pose * (vertices[triTable[cubeIndex][i + 1]] * voxelSize);
+                    vertex = (Mat_<Point3f>(1, 1) << p);
+                    meshPoints.push_back(vertex);
+
+                    p = pose * (vertices[triTable[cubeIndex][i + 2]] * voxelSize);
+                    vertex = (Mat_<Point3f>(1, 1) << p);
+                    meshPoints.push_back(vertex);
+
+                    if (_edges.needed())
+                    {
+                        Mat edge = (Mat_<int>(1, 2) << pointsIndex, pointsIndex + 1);
+                        meshEdges.push_back(edge);
+
+                        edge = (Mat_<int>(1, 2) << pointsIndex + 1, pointsIndex + 2);
+                        meshEdges.push_back(edge);
+
+                        edge = (Mat_<int>(1, 2) << pointsIndex + 2, pointsIndex);
+                        meshEdges.push_back(edge);
+                    }
+                }
+            }
+        }
+    }
+
+    if (_vertices.needed())
+        meshPoints.copyTo(_vertices);
+
+    if (_edges.needed())
+        meshEdges.copyTo(_edges);
+}
 
 cv::Ptr<TSDFVolume> makeTSDFVolume(Point3i _res,  float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
                                    float _raycastStepFactor)

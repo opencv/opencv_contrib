@@ -21,7 +21,7 @@ struct WarpNode
     {
         Point3f diff = pos - x;
         float L2 = diff.x*diff.x + diff.y*diff.y + diff.z*diff.z;
-        return expf(-L2/(2.0*radius*radius));
+        return expf(-L2/(2.f*radius*radius));
     }
 };
 
@@ -30,32 +30,38 @@ typedef std::vector<Ptr<WarpNode> > NodeVectorType;
 class WarpField
 {
 public:
-    WarpField(int _maxNeighbours=1000000, int K=4, int levels=4, float baseResolution=.010f, 
+    WarpField(int _maxNeighbours=1000000, int K=4, int levels=4, float baseResolution=.010f,
               float resolutionGrowth=4);
-              
+
     void updateNodesFromPoints(InputArray _points);
 
     NodeVectorType getNodes() const;
     std::vector<NodeVectorType> getGraphNodes() const;
-    
-    size_t getNodesLen() const 
+
+    size_t getNodesLen() const
     {
         return nodes.size();
     }
 
     Point3f applyWarp(Point3f p, int neighbours[4], int n) const;
 
-    void setAllRT(Affine3f warpRT, Affine3f invCamPose);
+    void setAllRT(Affine3f warpRT);
 
     Ptr<flann::GenericIndex<flann::L2_Simple<float> > > getNodeIndex() const;
+
+    inline void findNeighbours(Point3f queryPt, std::vector<int>& indices, std::vector<float>& dists)
+    {
+        std::vector<float> query = {queryPt.x, queryPt.y, queryPt.z};
+        nodeIndex->knnSearch(query, indices, dists, k, cvflann::SearchParams());
+    }
+
     int k; //k-nearest neighbours will be used
 
 private:
-    void removeSupported(flann::GenericIndex<flann::L2_Simple<float> >& ind,
-                         std::vector<bool>& supInd);
-                         
-    NodeVectorType subsampleIndex(Mat& pmat, flann::GenericIndex<flann::L2_Simple<float> >& ind, 
-                                  std::vector<bool>& supInd, float res, 
+    void removeSupported(flann::GenericIndex<flann::L2_Simple<float> >& ind, AutoBuffer<bool>& supInd);
+
+    NodeVectorType subsampleIndex(Mat& pmat, flann::GenericIndex<flann::L2_Simple<float> >& ind,
+                                  AutoBuffer<bool>& supInd, float res,
                                   Ptr<flann::GenericIndex<flann::L2_Simple<float> > > knnIndex = nullptr);
     void constructRegGraph();
 
@@ -67,12 +73,12 @@ private:
     int n_levels; // number of levels in the heirarchy
     float baseRes;
     float resGrowthRate;
-    
+
     std::vector<NodeVectorType> regGraphNodes; // heirarchy levels 1 to L
 
     Ptr<flann::GenericIndex<flann::L2_Simple<float> > > nodeIndex;
 
-    Affine3f cameraPoseInv;
+    Mat nodesPos;
 
 };
 

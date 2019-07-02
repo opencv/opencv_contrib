@@ -111,6 +111,8 @@ public:
 
     std::vector<Point3f> getNodesPos() const CV_OVERRIDE;
 
+    void marchCubes(OutputArray vertices, OutputArray edges) const CV_OVERRIDE;
+
 private:
     Params params;
 
@@ -194,7 +196,7 @@ template<>
 bool DynaFuImpl<UMat>::update(InputArray _depth)
 {
     CV_TRACE_FUNCTION();
-    
+
     CV_Assert(!_depth.empty() && _depth.size() == params.frameSize);
 
     UMat depth;
@@ -240,7 +242,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
     }
     else
     {
-        
+
         UMat wfPoints;
         UMat wfNormals;
         volume->fetchPointsNormals(wfPoints, wfNormals);
@@ -252,7 +254,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
             return false;
 
         pose = pose * affine;
-        warpfield.setAllRT(Affine3f::Identity(), pose.inv());
+        warpfield.setAllRT(Affine3f::Identity());
 
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
@@ -316,6 +318,12 @@ template< typename T >
 void DynaFuImpl<T>::getNormals(InputArray points, OutputArray normals) const
 {
     volume->fetchNormals(points, normals);
+}
+
+template< typename T >
+void DynaFuImpl<T>::marchCubes(OutputArray vertices, OutputArray edges) const
+{
+    volume->marchCubes(vertices, edges);
 }
 
 // importing class
