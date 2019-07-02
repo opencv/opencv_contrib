@@ -195,7 +195,7 @@ public:
 
     virtual std::vector<Point3f> getNodesPos() const = 0;
 
-    virtual void marchCubes(OutputArray mesh) const = 0;
+    virtual void marchCubes(OutputArray vertices, OutputArray edges) const = 0;
 };
 
 //! @}

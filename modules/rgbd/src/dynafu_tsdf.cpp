@@ -43,7 +43,7 @@ public:
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const override;
     virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
 
-    virtual void marchCubes(OutputArray mesh) const override;
+    virtual void marchCubes(OutputArray _vertices, OutputArray _edges) const override;
 
     virtual void reset() override;
 
@@ -760,12 +760,14 @@ Point3f TSDFVolumeCPU::interpolate(Point3f p1, Point3f p2, float v1, float v2) c
     return p;
 }
 
-void TSDFVolumeCPU::marchCubes(OutputArray _mesh) const
+void TSDFVolumeCPU::marchCubes(OutputArray _vertices, OutputArray _edges) const
 {
     const Voxel *volData = volume.ptr<Voxel>();
-    std::vector<Point3f> meshPoints;
+    Mat meshPoints(0, 1, CV_16FC3);
+    Mat meshEdges(0, 2, CV_16U);
+
     Point3f mcNeighbourPts[8] =
-    {
+        {
             Point3f(0.f, 0.f, 0.f),
             Point3f(0.f, 0.f, 1.f),
             Point3f(0.f, 1.f, 1.f),
@@ -773,8 +775,7 @@ void TSDFVolumeCPU::marchCubes(OutputArray _mesh) const
             Point3f(1.f, 0.f, 0.f),
             Point3f(1.f, 0.f, 1.f),
             Point3f(1.f, 1.f, 1.f),
-            Point3f(1.f, 1.f, 0.f)
-    };
+            Point3f(1.f, 1.f, 0.f)};
 
     Vec8i mcNeighbourCoords = Vec8i(
         volDims.dot(Vec4i(0, 0, 0)),
@@ -784,8 +785,7 @@ void TSDFVolumeCPU::marchCubes(OutputArray _mesh) const
         volDims.dot(Vec4i(1, 0, 0)),
         volDims.dot(Vec4i(1, 0, 1)),
         volDims.dot(Vec4i(1, 1, 1)),
-        volDims.dot(Vec4i(1, 1, 0))
-    );
+        volDims.dot(Vec4i(1, 1, 0)));
 
     for (int x = 0; x < volResolution.x - 1; x++)
     {
@@ -855,16 +855,43 @@ void TSDFVolumeCPU::marchCubes(OutputArray _mesh) const
                     vertices[11] = basePt + interpolate(mcNeighbourPts[3], mcNeighbourPts[7],
                                                         tsdfValues[3], tsdfValues[7]);
 
-                for (int i = 0; triTable[cubeIndex][i] != -1; i++)
+                for (int i = 0; triTable[cubeIndex][i] != -1; i += 3)
                 {
+                    size_t pointsIndex = meshPoints.size().height;
+
                     Point3f p = pose * (vertices[triTable[cubeIndex][i]] * voxelSize);
-                    meshPoints.push_back(p);
+                    Mat vertex = (Mat_<Point3f>(1, 1) << p);
+                    meshPoints.push_back(vertex);
+
+                    p = pose * (vertices[triTable[cubeIndex][i + 1]] * voxelSize);
+                    vertex = (Mat_<Point3f>(1, 1) << p);
+                    meshPoints.push_back(vertex);
+
+                    p = pose * (vertices[triTable[cubeIndex][i + 2]] * voxelSize);
+                    vertex = (Mat_<Point3f>(1, 1) << p);
+                    meshPoints.push_back(vertex);
+
+                    if (_edges.needed())
+                    {
+                        Mat edge = (Mat_<int>(1, 2) << pointsIndex, pointsIndex + 1);
+                        meshEdges.push_back(edge);
+
+                        edge = (Mat_<int>(1, 2) << pointsIndex + 1, pointsIndex + 2);
+                        meshEdges.push_back(edge);
+
+                        edge = (Mat_<int>(1, 2) << pointsIndex + 2, pointsIndex);
+                        meshEdges.push_back(edge);
+                    }
                 }
             }
         }
     }
 
-    Mat(meshPoints).copyTo(_mesh);
+    if (_vertices.needed())
+        meshPoints.copyTo(_vertices);
+
+    if (_edges.needed())
+        meshEdges.copyTo(_edges);
 }
 
 cv::Ptr<TSDFVolume> makeTSDFVolume(Point3i _res,  float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,

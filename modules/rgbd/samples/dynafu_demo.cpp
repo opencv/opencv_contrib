@@ -374,7 +374,6 @@ int main(int argc, char **argv)
                 window.removeWidget("text");
                 //window.removeWidget("cloud");
                 //window.removeWidget("normals");
-                window.removeWidget("mesh");
                 window.registerMouseCallback(0);
             }
 
@@ -398,14 +397,14 @@ int main(int argc, char **argv)
 #ifdef HAVE_OPENCV_VIZ
                 else
                 {
-                    Mat meshCloud, meshPoly;
-                    df->marchCubes(meshCloud);
-                    for(int i = 0; i < meshCloud.size().height; i += 3)
+                    Mat meshCloud, meshEdges, meshPoly;
+                    df->marchCubes(meshCloud, meshEdges);
+                    for(int i = 0; i < meshEdges.size().height; i += 3)
                     {
                         meshPoly.push_back<int>(3);
-                        meshPoly.push_back<int>(i);
-                        meshPoly.push_back<int>(i+1);
-                        meshPoly.push_back<int>(i+2);
+                        meshPoly.push_back<int>(meshEdges.at<int>(i, 0));
+                        meshPoly.push_back<int>(meshEdges.at<int>(i+1, 0));
+                        meshPoly.push_back<int>(meshEdges.at<int>(i+2, 0));
                     }
 
                     viz::WMesh mesh(meshCloud.t(), meshPoly);
