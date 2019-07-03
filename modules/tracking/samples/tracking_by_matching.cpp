@@ -117,18 +117,12 @@ private:
 };
 #endif
 
-std::unique_ptr<PedestrianTracker>
-CreatePedestrianTracker(bool should_keep_tracking_info = false) {
+cv::Ptr<IPedestrianTracker>
+CreatePedestrianTrackerWithFastDescriptor() {
     cv::tbm::TrackerParams params;
 
-    if (should_keep_tracking_info) {
-        params.drop_forgotten_tracks = false;
-        params.max_num_objects_in_track = -1;
-    }
+    cv::Ptr<IPedestrianTracker> tracker = CreatePedestrianTracker(params);
 
-    std::unique_ptr<PedestrianTracker> tracker(new PedestrianTracker(params));
-
-    // Load reid-model.
     std::shared_ptr<IImageDescriptor> descriptor_fast =
         std::make_shared<ResizedImageDescriptor>(
             cv::Size(16, 32), cv::InterpolationFlags::INTER_LINEAR);
@@ -142,7 +136,7 @@ CreatePedestrianTracker(bool should_keep_tracking_info = false) {
 }
 int main( int argc, char** argv ){
     CommandLineParser parser( argc, argv, keys );
-    std::unique_ptr<PedestrianTracker> tracker = CreatePedestrianTracker();
+    cv::Ptr<IPedestrianTracker> tracker = CreatePedestrianTrackerWithFastDescriptor();
 
     String video_name = parser.get<String>("video_name");
     int start_frame = parser.get<int>("start_frame");
