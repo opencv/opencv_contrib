@@ -260,7 +260,7 @@ private:
 };
 
 ///
-/// \brief The TrackerParams struct stores parameters of PedestrianTracker
+/// \brief The TrackerParams struct stores parameters of TrackerByMatching
 ///
 struct CV_EXPORTS TrackerParams {
     size_t min_track_duration;  ///< Min track duration in milliseconds.
@@ -394,7 +394,7 @@ struct CV_EXPORTS Track {
                     /// removed from track in order to avoid memory usage growth.
 };
 
-class CV_EXPORTS IPedestrianTracker {
+class CV_EXPORTS ITrackerByMatching {
 public:
     using Descriptor = std::shared_ptr<IImageDescriptor>;
     using Distance = std::shared_ptr<IDescriptorDistance>;
@@ -404,7 +404,7 @@ public:
     /// parameters.
     /// \param[in] params - the pedestrian tracker parameters.
     ///
-    virtual ~IPedestrianTracker() {}
+    virtual ~ITrackerByMatching() {}
 
     ///
     /// \brief Process given frame.
@@ -536,7 +536,7 @@ public:
     virtual void DropForgottenTrack(size_t track_id) = 0;
 };
 
-CV_EXPORTS cv::Ptr<IPedestrianTracker> CreatePedestrianTracker(const TrackerParams &params = TrackerParams());
+CV_EXPORTS cv::Ptr<ITrackerByMatching> CreateTrackerByMatching(const TrackerParams &params = TrackerParams());
 
 } // namespace tbm
 } // namespace cv

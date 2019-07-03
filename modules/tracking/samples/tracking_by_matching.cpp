@@ -117,11 +117,11 @@ private:
 };
 #endif
 
-cv::Ptr<IPedestrianTracker>
-CreatePedestrianTrackerWithFastDescriptor() {
+cv::Ptr<ITrackerByMatching>
+CreateTrackerByMatchingWithFastDescriptor() {
     cv::tbm::TrackerParams params;
 
-    cv::Ptr<IPedestrianTracker> tracker = CreatePedestrianTracker(params);
+    cv::Ptr<ITrackerByMatching> tracker = CreateTrackerByMatching(params);
 
     std::shared_ptr<IImageDescriptor> descriptor_fast =
         std::make_shared<ResizedImageDescriptor>(
@@ -136,7 +136,7 @@ CreatePedestrianTrackerWithFastDescriptor() {
 }
 int main( int argc, char** argv ){
     CommandLineParser parser( argc, argv, keys );
-    cv::Ptr<IPedestrianTracker> tracker = CreatePedestrianTrackerWithFastDescriptor();
+    cv::Ptr<ITrackerByMatching> tracker = CreateTrackerByMatchingWithFastDescriptor();
 
     String video_name = parser.get<String>("video_name");
     int start_frame = parser.get<int>("start_frame");

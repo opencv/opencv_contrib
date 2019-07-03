@@ -9,24 +9,13 @@
 #include <limits>
 #include <vector>
 
-#define PT_CHECK(cond) CV_Assert(cond)
-
-#define PT_CHECK_BINARY(actual, expected, op)  CV_Assert(actual op expected)
-
-#define PT_CHECK_EQ(actual, expected) PT_CHECK_BINARY(actual, expected, ==)
-#define PT_CHECK_NE(actual, expected) PT_CHECK_BINARY(actual, expected, !=)
-#define PT_CHECK_LT(actual, expected) PT_CHECK_BINARY(actual, expected, <)
-#define PT_CHECK_GT(actual, expected) PT_CHECK_BINARY(actual, expected, >)
-#define PT_CHECK_LE(actual, expected) PT_CHECK_BINARY(actual, expected, <=)
-#define PT_CHECK_GE(actual, expected) PT_CHECK_BINARY(actual, expected, >=)
-
 KuhnMunkres::KuhnMunkres() : n_() {}
 
 std::vector<size_t> KuhnMunkres::Solve(const cv::Mat& dissimilarity_matrix) {
-    PT_CHECK(dissimilarity_matrix.type() == CV_32F);
+    CV_Assert(dissimilarity_matrix.type() == CV_32F);
     double min_val;
     cv::minMaxLoc(dissimilarity_matrix, &min_val);
-    PT_CHECK(min_val >= 0);
+    CV_Assert(min_val >= 0);
 
     n_ = std::max(dissimilarity_matrix.rows, dissimilarity_matrix.cols);
     dm_ = cv::Mat(n_, n_, CV_32F, cv::Scalar(0));
