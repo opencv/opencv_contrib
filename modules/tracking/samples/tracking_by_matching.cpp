@@ -1,12 +1,10 @@
-
-#include <opencv2/core/utility.hpp>
-#include <opencv2/tracking.hpp>
-#include <opencv2/videoio.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/tracking/tracking_by_matching.hpp>
+#ifdef HAVE_OPENCV_DNN
+#include <opencv2/dnn.hpp>
+#endif
+
 #include <iostream>
-#include <cstring>
-#include "samples_utility.hpp"
 
 using namespace std;
 using namespace cv;
@@ -46,8 +44,9 @@ static void help()
        "\tp - pause/resume video\n";
 }
 
+cv::Ptr<ITrackerByMatching> CreateTrackerByMatchingWithFastDescriptor();
+
 #ifdef HAVE_OPENCV_DNN
-#include <opencv2/dnn.hpp>
 class DnnObjectDetector
 {
 public:
@@ -195,7 +194,7 @@ int main( int argc, char** argv ){
     Mat frame;
     namedWindow( "Tracking by Matching", 1 );
 
-    int frame_counter = 0;
+    int frame_counter = -1;
     int64 time_total = 0;
     bool paused = false;
     for ( ;; )
@@ -214,10 +213,11 @@ int main( int argc, char** argv ){
         if(frame.empty()){
             break;
         }
-        if (frame_counter < start_frame) {
-            frame_counter++;
+        frame_counter++;
+        if (frame_counter < start_frame)
             continue;
-        }
+        if (frame_counter % frame_step != 0)
+            continue;
 
 
         int64 frame_time = getTickCount();
@@ -251,7 +251,6 @@ int main( int argc, char** argv ){
         }
 
         imshow( "Tracking by Matching", frame );
-        frame_counter++;
 
         char c = (char) waitKey( 2 );
         if (c == 'q')

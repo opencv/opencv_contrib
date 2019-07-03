@@ -1,3 +1,43 @@
+/*M///////////////////////////////////////////////////////////////////////////////////////
+ //
+ //  IMPORTANT: READ BEFORE DOWNLOADING, COPYING, INSTALLING OR USING.
+ //
+ //  By downloading, copying, installing or using the software you agree to this license.
+ //  If you do not agree to this license, do not download, install,
+ //  copy or use the software.
+ //
+ //
+ //                           License Agreement
+ //                For Open Source Computer Vision Library
+ //
+ // Copyright (C) 2015, OpenCV Foundation, all rights reserved.
+ // Third party copyrights are property of their respective owners.
+ //
+ // Redistribution and use in source and binary forms, with or without modification,
+ // are permitted provided that the following conditions are met:
+ //
+ //   * Redistribution's of source code must retain the above copyright notice,
+ //     this list of conditions and the following disclaimer.
+ //
+ //   * Redistribution's in binary form must reproduce the above copyright notice,
+ //     this list of conditions and the following disclaimer in the documentation
+ //     and/or other materials provided with the distribution.
+ //
+ //   * The name of the copyright holders may not be used to endorse or promote products
+ //     derived from this software without specific prior written permission.
+ //
+ // This software is provided by the copyright holders and contributors "as is" and
+ // any express or implied warranties, including, but not limited to, the implied
+ // warranties of merchantability and fitness for a particular purpose are disclaimed.
+ // In no event shall the Intel Corporation or contributors be liable for any direct,
+ // indirect, incidental, special, exemplary, or consequential damages
+ // (including, but not limited to, procurement of substitute goods or services;
+ // loss of use, data, or profits; or business interruption) however caused
+ // and on any theory of liability, whether in contract, strict liability,
+ // or tort (including negligence or otherwise) arising in any way out of
+ // the use of this software, even if advised of the possibility of such damage.
+ //
+ //M*/
 
 #include <map>
 #include <set>
@@ -127,6 +167,55 @@ void DrawPolyline(const std::vector<cv::Point>& polyline,
 
     for (size_t i = 1; i < polyline.size(); i++) {
         cv::line(*image, polyline[i - 1], polyline[i], color, lwd);
+    }
+}
+
+void ValidateParams(const TrackerParams &p) {
+    PT_CHECK_GE(p.min_track_duration, static_cast<size_t>(500));
+    PT_CHECK_LE(p.min_track_duration, static_cast<size_t>(10000));
+
+    PT_CHECK_LE(p.forget_delay, static_cast<size_t>(10000));
+
+    PT_CHECK_GE(p.aff_thr_fast, 0.0f);
+    PT_CHECK_LE(p.aff_thr_fast, 1.0f);
+
+    PT_CHECK_GE(p.aff_thr_strong, 0.0f);
+    PT_CHECK_LE(p.aff_thr_strong, 1.0f);
+
+    PT_CHECK_GE(p.shape_affinity_w, 0.0f);
+    PT_CHECK_LE(p.shape_affinity_w, 100.0f);
+
+    PT_CHECK_GE(p.motion_affinity_w, 0.0f);
+    PT_CHECK_LE(p.motion_affinity_w, 100.0f);
+
+    PT_CHECK_GE(p.time_affinity_w, 0.0f);
+    PT_CHECK_LE(p.time_affinity_w, 100.0f);
+
+    PT_CHECK_GE(p.min_det_conf, 0.0f);
+    PT_CHECK_LE(p.min_det_conf, 1.0f);
+
+    PT_CHECK_GE(p.bbox_aspect_ratios_range[0], 0.0f);
+    PT_CHECK_LE(p.bbox_aspect_ratios_range[1], 10.0f);
+    PT_CHECK_LT(p.bbox_aspect_ratios_range[0], p.bbox_aspect_ratios_range[1]);
+
+    PT_CHECK_GE(p.bbox_heights_range[0], 10.0f);
+    PT_CHECK_LE(p.bbox_heights_range[1], 1080.0f);
+    PT_CHECK_LT(p.bbox_heights_range[0], p.bbox_heights_range[1]);
+
+    PT_CHECK_GE(p.predict, 0);
+    PT_CHECK_LE(p.predict, 10000);
+
+    PT_CHECK_GE(p.strong_affinity_thr, 0.0f);
+    PT_CHECK_LE(p.strong_affinity_thr, 1.0f);
+
+    PT_CHECK_GE(p.reid_thr, 0.0f);
+    PT_CHECK_LE(p.reid_thr, 1.0f);
+
+
+    if (p.max_num_objects_in_track > 0) {
+        int min_required_track_length = static_cast<int>(p.forget_delay);
+        PT_CHECK_GE(p.max_num_objects_in_track, min_required_track_length);
+        PT_CHECK_LE(p.max_num_objects_in_track, 10000);
     }
 }
 
@@ -355,7 +444,7 @@ private:
 
     void SolveAssignmentProblem(
         const std::set<size_t> &track_ids, const TrackedObjects &detections,
-        const std::vector<cv::Mat> &descriptors, float thr,
+        const std::vector<cv::Mat> &descriptors,
         std::set<size_t> *unmatched_tracks,
         std::set<size_t> *unmatched_detections,
         std::set<std::tuple<size_t, size_t, float>> *matches);
@@ -519,55 +608,6 @@ TrackerParams::TrackerParams()
     drop_forgotten_tracks(true),
     max_num_objects_in_track(300) {}
 
-void ValidateParams(const TrackerParams &p) {
-    PT_CHECK_GE(p.min_track_duration, static_cast<size_t>(500));
-    PT_CHECK_LE(p.min_track_duration, static_cast<size_t>(10000));
-
-    PT_CHECK_LE(p.forget_delay, static_cast<size_t>(10000));
-
-    PT_CHECK_GE(p.aff_thr_fast, 0.0f);
-    PT_CHECK_LE(p.aff_thr_fast, 1.0f);
-
-    PT_CHECK_GE(p.aff_thr_strong, 0.0f);
-    PT_CHECK_LE(p.aff_thr_strong, 1.0f);
-
-    PT_CHECK_GE(p.shape_affinity_w, 0.0f);
-    PT_CHECK_LE(p.shape_affinity_w, 100.0f);
-
-    PT_CHECK_GE(p.motion_affinity_w, 0.0f);
-    PT_CHECK_LE(p.motion_affinity_w, 100.0f);
-
-    PT_CHECK_GE(p.time_affinity_w, 0.0f);
-    PT_CHECK_LE(p.time_affinity_w, 100.0f);
-
-    PT_CHECK_GE(p.min_det_conf, 0.0f);
-    PT_CHECK_LE(p.min_det_conf, 1.0f);
-
-    PT_CHECK_GE(p.bbox_aspect_ratios_range[0], 0.0f);
-    PT_CHECK_LE(p.bbox_aspect_ratios_range[1], 10.0f);
-    PT_CHECK_LT(p.bbox_aspect_ratios_range[0], p.bbox_aspect_ratios_range[1]);
-
-    PT_CHECK_GE(p.bbox_heights_range[0], 10.0f);
-    PT_CHECK_LE(p.bbox_heights_range[1], 1080.0f);
-    PT_CHECK_LT(p.bbox_heights_range[0], p.bbox_heights_range[1]);
-
-    PT_CHECK_GE(p.predict, 0);
-    PT_CHECK_LE(p.predict, 10000);
-
-    PT_CHECK_GE(p.strong_affinity_thr, 0.0f);
-    PT_CHECK_LE(p.strong_affinity_thr, 1.0f);
-
-    PT_CHECK_GE(p.reid_thr, 0.0f);
-    PT_CHECK_LE(p.reid_thr, 1.0f);
-
-
-    if (p.max_num_objects_in_track > 0) {
-        int min_required_track_length = static_cast<int>(p.forget_delay);
-        PT_CHECK_GE(p.max_num_objects_in_track, min_required_track_length);
-        PT_CHECK_LE(p.max_num_objects_in_track, 10000);
-    }
-}
-
 // Returns confusion matrix as:
 //   |tp fn|
 //   |fp tn|
@@ -681,7 +721,7 @@ TrackedObjects TrackerByMatching::FilterDetections(
 
 void TrackerByMatching::SolveAssignmentProblem(
     const std::set<size_t> &track_ids, const TrackedObjects &detections,
-    const std::vector<cv::Mat> &descriptors, float thr,
+    const std::vector<cv::Mat> &descriptors,
     std::set<size_t> *unmatched_tracks, std::set<size_t> *unmatched_detections,
     std::set<std::tuple<size_t, size_t, float>> *matches) {
     PT_CHECK(unmatched_tracks);
@@ -704,8 +744,6 @@ void TrackerByMatching::SolveAssignmentProblem(
     for (size_t i = 0; i < detections.size(); i++) {
         unmatched_detections->insert(i);
     }
-
-    constexpr float kMinIOUForPossibleDuplicates = 0.3;
 
     size_t i = 0;
     for (auto id : track_ids) {
@@ -860,7 +898,7 @@ void TrackerByMatching::Process(const cv::Mat &frame,
         std::set<std::tuple<size_t, size_t, float>> matches;
 
         SolveAssignmentProblem(active_tracks, detections, descriptors_fast,
-                               params_.aff_thr_fast, &unmatched_tracks,
+                               &unmatched_tracks,
                                &unmatched_detections, &matches);
 
         std::map<size_t, std::pair<bool, cv::Mat>> is_matching_to_track;
