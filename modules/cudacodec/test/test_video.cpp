@@ -120,9 +120,16 @@ CUDA_TEST_P(Video, Writer)
 
 #endif // _WIN32
 
+#if defined(HAVE_FFMPEG_WRAPPER) // should this be set in preprocessor or in cvconfig.h
+#define VIDEO_SRC "768x576.avi", "1920x1080.avi"
+#else
+// CUDA demuxer has to fall back to ffmpeg to process "gpu/video/768x576.avi"
+#define VIDEO_SRC  "1920x1080.avi"
+#endif
+
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, Video, testing::Combine(
     ALL_DEVICES,
-    testing::Values(std::string("768x576.avi"), std::string("1920x1080.avi"))));
+    testing::Values(VIDEO_SRC)));
 
 #endif // HAVE_NVCUVID
 }} // namespace

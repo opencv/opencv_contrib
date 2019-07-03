@@ -81,7 +81,9 @@
     #include "video_decoder.hpp"
     #include "video_parser.hpp"
 
-    #include "cuvid_ffmpeg_api.hpp"
+    #ifdef HAVE_FFMPEG_WRAPPER
+        #include "cuvid_ffmpeg_api.hpp"
+    #endif
 #endif
 
 #endif /* OPENCV_PRECOMP_H */

@@ -60,7 +60,7 @@ Ptr<VideoWriter> cv::cudacodec::createVideoWriter(const String&, Size, double, c
 Ptr<VideoWriter> cv::cudacodec::createVideoWriter(const Ptr<EncoderCallBack>&, Size, double, SurfaceFormat) { throw_no_cuda(); return Ptr<VideoWriter>(); }
 Ptr<VideoWriter> cv::cudacodec::createVideoWriter(const Ptr<EncoderCallBack>&, Size, double, const EncoderParams&, SurfaceFormat) { throw_no_cuda(); return Ptr<VideoWriter>(); }
 
-#else // !defined HAVE_NVCUVENC || !defined _WIN32
+#elif defined(HAVE_FFMPEG_WRAPPER) // !defined HAVE_NVCUVENC || !defined _WIN32 || defined HAVE_FFMPEG_WRAPPER
 
 void RGB_to_YV12(const GpuMat& src, GpuMat& dst);
 
@@ -913,4 +913,4 @@ Ptr<VideoWriter> cv::cudacodec::createVideoWriter(const Ptr<EncoderCallBack>& en
     return makePtr<VideoWriterImpl>(encoderCallback, frameSize, fps, params, format);
 }
 
-#endif // !defined HAVE_NVCUVENC || !defined _WIN32
+#endif // !defined HAVE_NVCUVENC || !defined _WIN32 || defined HAVE_FFMPEG_WRAPPER

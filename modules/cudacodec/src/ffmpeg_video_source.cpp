@@ -44,6 +44,7 @@
 #include "precomp.hpp"
 
 #ifdef HAVE_NVCUVID
+#ifdef HAVE_FFMPEG_WRAPPER
 
 using namespace cv;
 using namespace cv::cudacodec;
@@ -137,4 +138,5 @@ bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** dat
     return res != 0;
 }
 
+#endif // HAVE_FFMPEG_WRAPPER
 #endif // HAVE_CUDA

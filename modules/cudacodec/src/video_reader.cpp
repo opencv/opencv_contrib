@@ -207,8 +207,12 @@ Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename)
     }
     catch (...)
     {
+#if defined HAVE_FFMPEG_WRAPPER
         Ptr<RawVideoSource> source(new FFmpegVideoSource(filename));
         videoSource.reset(new RawVideoSourceWrapper(source));
+#else
+        CV_Error(cv::Error::StsNotImplemented, "The called functionality is disabled for current build or platform");
+#endif
     }
 
     return makePtr<VideoReaderImpl>(videoSource);
