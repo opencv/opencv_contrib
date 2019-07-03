@@ -44,6 +44,14 @@ public:
      */
     CV_WRAP void applyImagesWithPoints(InputArrayOfArrays imgs, InputArrayOfArrays points, OutputArrayOfArrays dstImgs, OutputArrayOfArrays dstPoints);
 
+    /* @brief apply the transformations to vector of images and corresponding points
+       @param imgs the images to be augmented
+       @param dstImgs the augmented images
+       @param rects the rectangles to be augmented
+       @param dstRects the augmented rectangles
+    */
+    CV_WRAP void applyImagesWithRectangles(InputArrayOfArrays imgs, InputArrayOfArrays rects, OutputArrayOfArrays dstImgs, OutputArrayOfArrays dstRects);
+
 
 private:
     std::vector<Ptr<Transform>> transformations;

@@ -127,3 +127,43 @@ void Augmenter::applyImagesWithPoints(InputArrayOfArrays imgs,
 }
 
 
+void Augmenter::applyImagesWithRectangles(InputArrayOfArrays imgs,
+    InputArrayOfArrays rects,
+    OutputArrayOfArrays dstImgs,
+    OutputArrayOfArrays dstRects)
+{
+    dstImgs.create(imgs.cols(), 1, 0, -1, true);
+    dstRects.create(rects.cols(), 1, 0, -1, true);
+    RNG rng;
+
+    for (size_t i = 0; i < imgs.cols(); i++)
+    {
+        Mat originalImg = imgs.getMat(i);
+        Mat originalRects = rects.getMat(i);
+        Mat augmentedImg = originalImg.clone();
+        Mat augmentedRects = originalRects.clone();
+
+        for (size_t j = 0; j < transformations.size(); j++)
+        {
+            float prob = rng.uniform(0.f, 1.f);
+
+            if (prob <= probs[j])
+            {
+                transformations[j]->init(augmentedImg);
+                transformations[j]->image(augmentedImg, augmentedImg);
+                transformations[j]->rectangles(augmentedRects, augmentedRects);
+            }
+
+        }
+
+        dstImgs.create(augmentedImg.size(), augmentedImg.type(), i, true);
+        Mat dstImg = dstImgs.getMat(i);
+        augmentedImg.copyTo(dstImg);
+
+        dstRects.create(augmentedRects.size(), augmentedRects.type(), i, true);
+        Mat dstImgRects = dstRects.getMat(i);
+        augmentedRects.copyTo(dstImgRects);
+
+    }
+}
+}}
