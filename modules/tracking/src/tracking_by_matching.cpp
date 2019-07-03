@@ -25,7 +25,6 @@
 
 using namespace cv::tbm;
 
-//from distance.cpp
 CosDistance::CosDistance(const cv::Size &descriptor_size)
     : descriptor_size_(descriptor_size) {
     PT_CHECK(descriptor_size.area() != 0);
@@ -79,7 +78,6 @@ std::vector<float> MatchTemplateDistance::Compute(const std::vector<cv::Mat> &de
     return result;
 }
 
-//from tracker.cpp
 namespace {
 cv::Point Center(const cv::Rect& rect) {
     return cv::Point(rect.x + rect.width * .5, rect.y + rect.height * .5);

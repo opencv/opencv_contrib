@@ -175,7 +175,6 @@ public:
     virtual ~IDescriptorDistance() {}
 };
 
-// TODO: move to cpp, only factory here
 ///
 /// \brief The CosDistance class allows computing cosine distance between two
 /// reidentification descriptors.
@@ -211,8 +210,6 @@ private:
 };
 
 
-
-// TODO: move to cpp, only factory here
 ///
 /// \brief Computes distance between images
 ///        using MatchTemplate function from OpenCV library

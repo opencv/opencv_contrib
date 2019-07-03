@@ -8,8 +8,6 @@
 #include <cstring>
 #include "samples_utility.hpp"
 
-//TODO: ifdef HAVE_DNN!!!!!!!!!!!!!!!!!!!!!!!!!
-
 using namespace std;
 using namespace cv;
 using namespace cv::tbm;
@@ -98,7 +96,6 @@ public:
 
             Rect cur_rect(x_left, y_bottom, (x_right - x_left), (y_top - y_bottom));
 
-            //TODO cout << "detectObjectsByNet: " << cur_rect << " conf=" << cur_confidence << " class=" << cur_class_id << endl;
             if (cur_confidence < confidence_threshold)
                 continue;
             if ((desired_class_id >= 0) && (cur_class_id != desired_class_id))
@@ -108,9 +105,6 @@ public:
             cur_rect = cur_rect & Rect(Point(), frame.size());
             if (cur_rect.empty())
                 continue;
-
-            //TODO: remove it
-            //cout << "detectObjectsByNet:+" << cur_rect << " conf=" << cur_confidence << " class=" << cur_class_id << endl;
 
             TrackedObject cur_obj(cur_rect, cur_confidence, frame_idx, -1);
             res.push_back(cur_obj);
