@@ -3,6 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include "precomp.hpp"
+#include <iostream>
 namespace cv { namespace augment {
 
 Augmenter::Augmenter() {}
@@ -13,14 +14,15 @@ void Augmenter::add(Ptr<Transform> transformation, float prob)
     probs.push_back(prob);
 }
 
-void Augmenter::applyImages(const std::vector<Mat>& imgs, OutputArrayOfArrays dstImgs)
+void Augmenter::applyImages(InputArrayOfArrays imgs, OutputArrayOfArrays dstImgs)
 {
-    dstImgs.create(imgs.size(), 1, 0, -1, true);
+    dstImgs.create(imgs.cols(), 1, 0, -1, true);
     RNG rng;
 
-    for (size_t i = 0; i < imgs.size(); i++)
+    for (size_t i = 0; i < imgs.cols(); i++)
     {
-        Mat img = imgs[i].clone();
+        Mat originalImg = imgs.getMat(i);
+        Mat img = originalImg.clone();
 
             for (size_t j = 0; j < transformations.size(); j++)
             {
@@ -28,7 +30,7 @@ void Augmenter::applyImages(const std::vector<Mat>& imgs, OutputArrayOfArrays ds
 
                 if (prob <= probs[j])
                 {
-                    transformations[j]->init(imgs[i]);
+                    transformations[j]->init(originalImg);
                     transformations[j]->image(img, img);
                 }
 
@@ -43,19 +45,21 @@ void Augmenter::applyImages(const std::vector<Mat>& imgs, OutputArrayOfArrays ds
 }
 
 
-void Augmenter::applyImagesWithMasks(const std::vector<Mat>& imgs,
-    const std::vector<Mat>& masks,
+void Augmenter::applyImagesWithMasks(InputArrayOfArrays imgs,
+    InputArrayOfArrays masks,
     OutputArrayOfArrays dstImgs,
     OutputArrayOfArrays dstMasks)
 {
-    dstImgs.create(imgs.size(), 1, 0, -1, true);
-    dstMasks.create(masks.size(), 1, 0, -1, true);
+    dstImgs.create(imgs.cols(), 1, 0, -1, true);
+    dstMasks.create(masks.cols(), 1, 0, -1, true);
     RNG rng;
 
-    for (size_t i = 0; i < imgs.size(); i++)
+    for (size_t i = 0; i < imgs.cols(); i++)
     {
-        Mat img = imgs[i].clone();
-        Mat mask = masks[i].clone();
+        Mat originalImg = imgs.getMat(i);
+        Mat originalMask = masks.getMat(i);
+        Mat augmentedImg = originalImg.clone();
+        Mat augmentedMask = originalMask.clone();
 
         for (size_t j = 0; j < transformations.size(); j++)
         {
@@ -63,23 +67,22 @@ void Augmenter::applyImagesWithMasks(const std::vector<Mat>& imgs,
 
             if (prob <= probs[j])
             {
-                transformations[j]->init(imgs[i]);
-                transformations[j]->image(img, img);
-                transformations[j]->mask(mask, mask);
+                transformations[j]->init(originalImg);
+                transformations[j]->image(augmentedImg, augmentedImg);
+                transformations[j]->mask(augmentedMask, augmentedMask);
             }
 
         }
 
-        dstImgs.create(img.size(), img.type(), i, true);
+        dstImgs.create(augmentedImg.size(), augmentedImg.type(), i, true);
         Mat dstImg = dstImgs.getMat(i);
-        img.copyTo(dstImg);
+        augmentedImg.copyTo(dstImg);
 
-        dstMasks.create(mask.size(), mask.type(), i, true);
+        dstMasks.create(augmentedMask.size(), augmentedMask.type(), i, true);
         Mat dstMask = dstMasks.getMat(i);
-        mask.copyTo(dstMask);
+        augmentedMask.copyTo(dstMask);
 
     }
 }
 
 
-}}
