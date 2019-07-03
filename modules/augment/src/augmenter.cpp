@@ -67,7 +67,7 @@ void Augmenter::applyImagesWithMasks(InputArrayOfArrays imgs,
 
             if (prob <= probs[j])
             {
-                transformations[j]->init(originalImg);
+                transformations[j]->init(augmentedImg);
                 transformations[j]->image(augmentedImg, augmentedImg);
                 transformations[j]->mask(augmentedMask, augmentedMask);
             }
@@ -81,6 +81,47 @@ void Augmenter::applyImagesWithMasks(InputArrayOfArrays imgs,
         dstMasks.create(augmentedMask.size(), augmentedMask.type(), i, true);
         Mat dstMask = dstMasks.getMat(i);
         augmentedMask.copyTo(dstMask);
+
+    }
+}
+
+
+void Augmenter::applyImagesWithPoints(InputArrayOfArrays imgs,
+    InputArrayOfArrays points,
+    OutputArrayOfArrays dstImgs,
+    OutputArrayOfArrays dstPoints)
+{
+    dstImgs.create(imgs.cols(), 1, 0, -1, true);
+    dstPoints.create(points.cols(), 1, 0, -1, true);
+    RNG rng;
+
+    for (size_t i = 0; i < imgs.cols(); i++)
+    {
+        Mat originalImg = imgs.getMat(i);
+        Mat originalPoints = points.getMat(i);
+        Mat augmentedImg = originalImg.clone();
+        Mat augmentedPoints = originalPoints.clone();
+
+        for (size_t j = 0; j < transformations.size(); j++)
+        {
+            float prob = rng.uniform(0.f, 1.f);
+
+            if (prob <= probs[j])
+            {
+                transformations[j]->init(augmentedImg);
+                transformations[j]->image(augmentedImg, augmentedImg);
+                transformations[j]->points(augmentedPoints, augmentedPoints);
+            }
+
+        }
+
+        dstImgs.create(augmentedImg.size(), augmentedImg.type(), i, true);
+        Mat dstImg = dstImgs.getMat(i);
+        augmentedImg.copyTo(dstImg);
+
+        dstPoints.create(augmentedPoints.size(), augmentedPoints.type(), i, true);
+        Mat dstImgPoints = dstPoints.getMat(i);
+        augmentedPoints.copyTo(dstImgPoints);
 
     }
 }

@@ -36,6 +36,14 @@ public:
      */
     CV_WRAP void applyImagesWithMasks(InputArrayOfArrays imgs, InputArrayOfArrays masks, OutputArrayOfArrays dstImgs, OutputArrayOfArrays dstMasks);
 
+    /* @brief apply the transformations to vector of images and corresponding points
+        @param imgs the images to be augmented
+        @param dstImgs the augmented images
+        @param points the points to be augmented
+        @param dstPoints the augmented points
+     */
+    CV_WRAP void applyImagesWithPoints(InputArrayOfArrays imgs, InputArrayOfArrays points, OutputArrayOfArrays dstImgs, OutputArrayOfArrays dstPoints);
+
 
 private:
     std::vector<Ptr<Transform>> transformations;
