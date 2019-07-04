@@ -47,4 +47,3 @@ private:
     int FindInCol(int col, int what);
     void Run();
 };
-
