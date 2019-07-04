@@ -391,6 +391,23 @@ struct CV_EXPORTS Track {
                     /// removed from track in order to avoid memory usage growth.
 };
 
+///
+/// \brief Tracker-by-Matching algorithm interface.
+///
+/// This class is implementation of tracking-by-matching system. It uses two
+/// different appearance measures to compute affinity between bounding boxes:
+/// some fast descriptor and some strong descriptor. Each time the assignment
+/// problem is solved. The assignment problem in our case is how to establish
+/// correspondence between existing tracklets and recently detected objects.
+/// First step is to compute an affinity matrix between tracklets and
+/// detections. The affinity equals to
+///       appearance_affinity * motion_affinity * shape_affinity.
+/// Where appearance is 1 - distance(tracklet_fast_dscr, detection_fast_dscr).
+/// Second step is to solve the assignment problem using Kuhn-Munkres
+/// algorithm. If correspondence between some tracklet and detection is
+/// established with low confidence (affinity) then the strong descriptor is
+/// used to determine if there is correspondence between tracklet and detection.
+///
 class CV_EXPORTS ITrackerByMatching {
 public:
     using Descriptor = std::shared_ptr<IImageDescriptor>;
@@ -531,6 +548,9 @@ public:
     virtual void DropForgottenTrack(size_t track_id) = 0;
 };
 
+///
+/// \brief The factory to create Tracker-by-Matching algorithm implementation.
+///
 CV_EXPORTS cv::Ptr<ITrackerByMatching> CreateTrackerByMatching(const TrackerParams &params = TrackerParams());
 
 } // namespace tbm
