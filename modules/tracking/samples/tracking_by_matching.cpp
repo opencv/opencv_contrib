@@ -13,7 +13,7 @@ using namespace cv::tbm;
 static const char* keys =
 {   "{video_name       | | video name                       }"
     "{start_frame      |0| Start frame                      }"
-    "{frame_step       |5| Frame step                       }"
+    "{frame_step       |2| Frame step                       }"
     "{detector_model   | | Path to detector's Caffe model   }"
     "{detector_weights | | Path to detector's Caffe weights }"
     "{desired_class_id |-1| The desired class that should be tracked }"
@@ -25,7 +25,7 @@ static void help()
       " detector is used to detect objects on frames, \n"
       "matching is used to find correspondences between new detections and tracked objects.\n"
       "Detection is made by DNN detection network every `--frame_step` frame.\n"
-      "Point .prototxt file of the network as the parameter `--detector_model`, and .caffemodel file"
+      "Point a .prototxt file of the network as the parameter `--detector_model`, and a .caffemodel file"
       " as the parameter `--detector_weights`.\n"
       "(As an example of such detection network is a popular MobileNet_SSD network trained on VOC dataset.)\n"
       "If `--desired_class_id` parameter is set, the detection result is filtered by class id,"
@@ -52,7 +52,7 @@ class DnnObjectDetector
 public:
     DnnObjectDetector(const String& net_caffe_model_path, const String& net_caffe_weights_path,
                       int desired_class_id=-1,
-                      float confidence_threshold = 0.2,
+                      float confidence_threshold = 0.4,
                       //the following parameters are default for popular MobileNet_SSD caffe model
                       const String& net_input_name="data",
                       const String& net_output_name="detection_out",
