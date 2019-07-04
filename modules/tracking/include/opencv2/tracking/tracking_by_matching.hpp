@@ -397,9 +397,7 @@ public:
     using Distance = std::shared_ptr<IDescriptorDistance>;
 
     ///
-    /// \brief Constructor that creates an instance of the pedestrian tracker with
-    /// parameters.
-    /// \param[in] params - the pedestrian tracker parameters.
+    /// \brief Destructor for the tracker
     ///
     virtual ~ITrackerByMatching() {}
 

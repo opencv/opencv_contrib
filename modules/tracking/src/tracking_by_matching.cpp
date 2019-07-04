@@ -11,29 +11,29 @@
 #include "opencv2/tracking/tracking_by_matching.hpp"
 #include "kuhn_munkres.hpp"
 
-#define PT_CHECK(cond) CV_Assert(cond)
+#define TBM_CHECK(cond) CV_Assert(cond)
 
-#define PT_CHECK_BINARY(actual, expected, op)  CV_Assert(actual op expected)
+#define TBM_CHECK_BINARY(actual, expected, op)  CV_Assert(actual op expected)
 
-#define PT_CHECK_EQ(actual, expected) PT_CHECK_BINARY(actual, expected, ==)
-#define PT_CHECK_NE(actual, expected) PT_CHECK_BINARY(actual, expected, !=)
-#define PT_CHECK_LT(actual, expected) PT_CHECK_BINARY(actual, expected, <)
-#define PT_CHECK_GT(actual, expected) PT_CHECK_BINARY(actual, expected, >)
-#define PT_CHECK_LE(actual, expected) PT_CHECK_BINARY(actual, expected, <=)
-#define PT_CHECK_GE(actual, expected) PT_CHECK_BINARY(actual, expected, >=)
+#define TBM_CHECK_EQ(actual, expected) TBM_CHECK_BINARY(actual, expected, ==)
+#define TBM_CHECK_NE(actual, expected) TBM_CHECK_BINARY(actual, expected, !=)
+#define TBM_CHECK_LT(actual, expected) TBM_CHECK_BINARY(actual, expected, <)
+#define TBM_CHECK_GT(actual, expected) TBM_CHECK_BINARY(actual, expected, >)
+#define TBM_CHECK_LE(actual, expected) TBM_CHECK_BINARY(actual, expected, <=)
+#define TBM_CHECK_GE(actual, expected) TBM_CHECK_BINARY(actual, expected, >=)
 
 using namespace cv::tbm;
 
 CosDistance::CosDistance(const cv::Size &descriptor_size)
     : descriptor_size_(descriptor_size) {
-    PT_CHECK(descriptor_size.area() != 0);
+    TBM_CHECK(descriptor_size.area() != 0);
 }
 
 float CosDistance::Compute(const cv::Mat &descr1, const cv::Mat &descr2) {
-    PT_CHECK(!descr1.empty());
-    PT_CHECK(!descr2.empty());
-    PT_CHECK(descr1.size() == descriptor_size_);
-    PT_CHECK(descr2.size() == descriptor_size_);
+    TBM_CHECK(!descr1.empty());
+    TBM_CHECK(!descr2.empty());
+    TBM_CHECK(descr1.size() == descriptor_size_);
+    TBM_CHECK(descr2.size() == descriptor_size_);
 
     double xy = descr1.dot(descr2);
     double xx = descr1.dot(descr1);
@@ -44,8 +44,8 @@ float CosDistance::Compute(const cv::Mat &descr1, const cv::Mat &descr2) {
 
 std::vector<float> CosDistance::Compute(const std::vector<cv::Mat> &descrs1,
                                         const std::vector<cv::Mat> &descrs2) {
-    PT_CHECK(descrs1.size() != 0);
-    PT_CHECK(descrs1.size() == descrs2.size());
+    TBM_CHECK(descrs1.size() != 0);
+    TBM_CHECK(descrs1.size() == descrs2.size());
 
     std::vector<float> distances(descrs1.size(), 1.f);
     for (size_t i = 0; i < descrs1.size(); i++) {
@@ -58,12 +58,12 @@ std::vector<float> CosDistance::Compute(const std::vector<cv::Mat> &descrs1,
 
 float MatchTemplateDistance::Compute(const cv::Mat &descr1,
                                      const cv::Mat &descr2) {
-    PT_CHECK(!descr1.empty() && !descr2.empty());
-    PT_CHECK_EQ(descr1.size(), descr2.size());
-    PT_CHECK_EQ(descr1.type(), descr2.type());
+    TBM_CHECK(!descr1.empty() && !descr2.empty());
+    TBM_CHECK_EQ(descr1.size(), descr2.size());
+    TBM_CHECK_EQ(descr1.type(), descr2.type());
     cv::Mat res;
     cv::matchTemplate(descr1, descr2, res, type_);
-    PT_CHECK(res.size() == cv::Size(1, 1));
+    TBM_CHECK(res.size() == cv::Size(1, 1));
     float dist = res.at<float>(0, 0);
     return scale_ * dist + offset_;
 }
@@ -118,11 +118,11 @@ std::vector<cv::Scalar> GenRandomColors(int colors_num) {
 void DrawPolyline(const std::vector<cv::Point>& polyline,
                   const cv::Scalar& color, cv::Mat* image,
                   int lwd = 5) {
-    PT_CHECK(image);
-    PT_CHECK(!image->empty());
-    PT_CHECK_EQ(image->type(), CV_8UC3);
-    PT_CHECK_GT(lwd, 0);
-    PT_CHECK_LT(lwd, 20);
+    TBM_CHECK(image);
+    TBM_CHECK(!image->empty());
+    TBM_CHECK_EQ(image->type(), CV_8UC3);
+    TBM_CHECK_GT(lwd, 0);
+    TBM_CHECK_LT(lwd, 20);
 
     for (size_t i = 1; i < polyline.size(); i++) {
         cv::line(*image, polyline[i - 1], polyline[i], color, lwd);
@@ -130,60 +130,60 @@ void DrawPolyline(const std::vector<cv::Point>& polyline,
 }
 
 void ValidateParams(const TrackerParams &p) {
-    PT_CHECK_GE(p.min_track_duration, static_cast<size_t>(500));
-    PT_CHECK_LE(p.min_track_duration, static_cast<size_t>(10000));
+    TBM_CHECK_GE(p.min_track_duration, static_cast<size_t>(500));
+    TBM_CHECK_LE(p.min_track_duration, static_cast<size_t>(10000));
 
-    PT_CHECK_LE(p.forget_delay, static_cast<size_t>(10000));
+    TBM_CHECK_LE(p.forget_delay, static_cast<size_t>(10000));
 
-    PT_CHECK_GE(p.aff_thr_fast, 0.0f);
-    PT_CHECK_LE(p.aff_thr_fast, 1.0f);
+    TBM_CHECK_GE(p.aff_thr_fast, 0.0f);
+    TBM_CHECK_LE(p.aff_thr_fast, 1.0f);
 
-    PT_CHECK_GE(p.aff_thr_strong, 0.0f);
-    PT_CHECK_LE(p.aff_thr_strong, 1.0f);
+    TBM_CHECK_GE(p.aff_thr_strong, 0.0f);
+    TBM_CHECK_LE(p.aff_thr_strong, 1.0f);
 
-    PT_CHECK_GE(p.shape_affinity_w, 0.0f);
-    PT_CHECK_LE(p.shape_affinity_w, 100.0f);
+    TBM_CHECK_GE(p.shape_affinity_w, 0.0f);
+    TBM_CHECK_LE(p.shape_affinity_w, 100.0f);
 
-    PT_CHECK_GE(p.motion_affinity_w, 0.0f);
-    PT_CHECK_LE(p.motion_affinity_w, 100.0f);
+    TBM_CHECK_GE(p.motion_affinity_w, 0.0f);
+    TBM_CHECK_LE(p.motion_affinity_w, 100.0f);
 
-    PT_CHECK_GE(p.time_affinity_w, 0.0f);
-    PT_CHECK_LE(p.time_affinity_w, 100.0f);
+    TBM_CHECK_GE(p.time_affinity_w, 0.0f);
+    TBM_CHECK_LE(p.time_affinity_w, 100.0f);
 
-    PT_CHECK_GE(p.min_det_conf, 0.0f);
-    PT_CHECK_LE(p.min_det_conf, 1.0f);
+    TBM_CHECK_GE(p.min_det_conf, 0.0f);
+    TBM_CHECK_LE(p.min_det_conf, 1.0f);
 
-    PT_CHECK_GE(p.bbox_aspect_ratios_range[0], 0.0f);
-    PT_CHECK_LE(p.bbox_aspect_ratios_range[1], 10.0f);
-    PT_CHECK_LT(p.bbox_aspect_ratios_range[0], p.bbox_aspect_ratios_range[1]);
+    TBM_CHECK_GE(p.bbox_aspect_ratios_range[0], 0.0f);
+    TBM_CHECK_LE(p.bbox_aspect_ratios_range[1], 10.0f);
+    TBM_CHECK_LT(p.bbox_aspect_ratios_range[0], p.bbox_aspect_ratios_range[1]);
 
-    PT_CHECK_GE(p.bbox_heights_range[0], 10.0f);
-    PT_CHECK_LE(p.bbox_heights_range[1], 1080.0f);
-    PT_CHECK_LT(p.bbox_heights_range[0], p.bbox_heights_range[1]);
+    TBM_CHECK_GE(p.bbox_heights_range[0], 10.0f);
+    TBM_CHECK_LE(p.bbox_heights_range[1], 1080.0f);
+    TBM_CHECK_LT(p.bbox_heights_range[0], p.bbox_heights_range[1]);
 
-    PT_CHECK_GE(p.predict, 0);
-    PT_CHECK_LE(p.predict, 10000);
+    TBM_CHECK_GE(p.predict, 0);
+    TBM_CHECK_LE(p.predict, 10000);
 
-    PT_CHECK_GE(p.strong_affinity_thr, 0.0f);
-    PT_CHECK_LE(p.strong_affinity_thr, 1.0f);
+    TBM_CHECK_GE(p.strong_affinity_thr, 0.0f);
+    TBM_CHECK_LE(p.strong_affinity_thr, 1.0f);
 
-    PT_CHECK_GE(p.reid_thr, 0.0f);
-    PT_CHECK_LE(p.reid_thr, 1.0f);
+    TBM_CHECK_GE(p.reid_thr, 0.0f);
+    TBM_CHECK_LE(p.reid_thr, 1.0f);
 
 
     if (p.max_num_objects_in_track > 0) {
         int min_required_track_length = static_cast<int>(p.forget_delay);
-        PT_CHECK_GE(p.max_num_objects_in_track, min_required_track_length);
-        PT_CHECK_LE(p.max_num_objects_in_track, 10000);
+        TBM_CHECK_GE(p.max_num_objects_in_track, min_required_track_length);
+        TBM_CHECK_LE(p.max_num_objects_in_track, 10000);
     }
 }
 
 }  // anonymous namespace
 
 ///
-/// \brief Online pedestrian tracker algorithm implementation.
+/// \brief Tracker-by-Matching algorithm implementation.
 ///
-/// This class is implementation of pedestrian tracking system. It uses two
+/// This class is implementation of tracking-by-matching system. It uses two
 /// different appearance measures to compute affinity between bounding boxes:
 /// some fast descriptor and some strong descriptor. Each time the assignment
 /// problem is solved. The assignment problem in our case is how to establish
@@ -203,9 +203,9 @@ public:
     using Distance = std::shared_ptr<IDescriptorDistance>;
 
     ///
-    /// \brief Constructor that creates an instance of the pedestrian tracker with
+    /// \brief Constructor that creates an instance of the tracker with
     /// parameters.
-    /// \param[in] params - the pedestrian tracker parameters.
+    /// \param[in] params - the tracker parameters.
     ///
     explicit TrackerByMatching(const TrackerParams &params = TrackerParams());
     virtual ~TrackerByMatching() {}
@@ -683,15 +683,15 @@ void TrackerByMatching::SolveAssignmentProblem(
     const std::vector<cv::Mat> &descriptors,
     std::set<size_t> *unmatched_tracks, std::set<size_t> *unmatched_detections,
     std::set<std::tuple<size_t, size_t, float>> *matches) {
-    PT_CHECK(unmatched_tracks);
-    PT_CHECK(unmatched_detections);
+    TBM_CHECK(unmatched_tracks);
+    TBM_CHECK(unmatched_detections);
     unmatched_tracks->clear();
     unmatched_detections->clear();
 
-    PT_CHECK(!track_ids.empty());
-    PT_CHECK(!detections.empty());
-    PT_CHECK(descriptors.size() == detections.size());
-    PT_CHECK(matches);
+    TBM_CHECK(!track_ids.empty());
+    TBM_CHECK(!detections.empty());
+    TBM_CHECK(descriptors.size() == detections.size());
+    TBM_CHECK(matches);
     matches->clear();
 
     cv::Mat dissimilarity;
@@ -740,7 +740,7 @@ const ObjectTracks TrackerByMatching::all_tracks(bool valid_only) const {
 cv::Rect TrackerByMatching::PredictRect(size_t id, size_t k,
                                         size_t s) const {
     const auto &track = tracks_.at(id);
-    PT_CHECK(!track.empty());
+    TBM_CHECK(!track.empty());
 
     if (track.size() == 1) {
         return track[0].rect;
@@ -754,7 +754,7 @@ cv::Rect TrackerByMatching::PredictRect(size_t id, size_t k,
         height += track[i].rect.height;
     }
 
-    PT_CHECK(track.size() - start_i > 0);
+    TBM_CHECK(track.size() - start_i > 0);
     width /= (track.size() - start_i);
     height /= (track.size() - start_i);
 
@@ -834,12 +834,12 @@ void TrackerByMatching::Process(const cv::Mat &frame,
                                 const TrackedObjects &input_detections,
                                 uint64_t timestamp) {
     if (prev_timestamp_ != std::numeric_limits<uint64_t>::max())
-        PT_CHECK_LT(prev_timestamp_, timestamp);
+        TBM_CHECK_LT(prev_timestamp_, timestamp);
 
     if (frame_size_ == cv::Size(0, 0)) {
         frame_size_ = frame.size();
     } else {
-        PT_CHECK_EQ(frame_size_, frame.size());
+        TBM_CHECK_EQ(frame_size_, frame.size());
     }
 
     TrackedObjects detections = FilterDetections(input_detections);
@@ -960,8 +960,8 @@ void TrackerByMatching::DropForgottenTracks() {
 }
 
 void TrackerByMatching::DropForgottenTrack(size_t track_id) {
-    PT_CHECK(IsTrackForgotten(track_id));
-    PT_CHECK(active_track_ids_.count(track_id) == 0);
+    TBM_CHECK(IsTrackForgotten(track_id));
+    TBM_CHECK(active_track_ids_.count(track_id) == 0);
     tracks_.erase(track_id);
 }
 
@@ -1133,7 +1133,7 @@ TrackerByMatching::StrongMatching(
 void TrackerByMatching::AddNewTracks(
     const cv::Mat &frame, const TrackedObjects &detections,
     const std::vector<cv::Mat> &descriptors_fast) {
-    PT_CHECK(detections.size() == descriptors_fast.size());
+    TBM_CHECK(detections.size() == descriptors_fast.size());
     for (size_t i = 0; i < detections.size(); i++) {
         AddNewTrack(frame, detections[i], descriptors_fast[i]);
     }
@@ -1142,9 +1142,9 @@ void TrackerByMatching::AddNewTracks(
 void TrackerByMatching::AddNewTracks(
     const cv::Mat &frame, const TrackedObjects &detections,
     const std::vector<cv::Mat> &descriptors_fast, const std::set<size_t> &ids) {
-    PT_CHECK(detections.size() == descriptors_fast.size());
+    TBM_CHECK(detections.size() == descriptors_fast.size());
     for (size_t i : ids) {
-        PT_CHECK(i < detections.size());
+        TBM_CHECK(i < detections.size());
         AddNewTrack(frame, detections[i], descriptors_fast[i]);
     }
 }
@@ -1174,7 +1174,7 @@ void TrackerByMatching::AppendToTrack(const cv::Mat &frame,
                                       const TrackedObject &detection,
                                       const cv::Mat &descriptor_fast,
                                       const cv::Mat &descriptor_strong) {
-    PT_CHECK(!IsTrackForgotten(track_id));
+    TBM_CHECK(!IsTrackForgotten(track_id));
 
     auto detection_with_id = detection;
     detection_with_id.object_id = track_id;
