@@ -75,7 +75,7 @@ public:
     /// \param[in] mat Color image.
     /// \param[out] descr Computed descriptor.
     ///
-    virtual void Compute(const cv::Mat &mat, cv::Mat *descr) = 0;
+    virtual void Compute(const cv::Mat &mat, CV_OUT cv::Mat& descr) = 0;
 
     ///
     /// \brief Computes image descriptors in batches.
@@ -83,7 +83,7 @@ public:
     /// \param[out] descrs Matrices to store the computed descriptors.
     ///
     virtual void Compute(const std::vector<cv::Mat> &mats,
-                         std::vector<cv::Mat> *descrs) = 0;
+                         CV_OUT std::vector<cv::Mat>& descrs) = 0;
 
     ///
     /// \brief Prints performance counts for CNN-based descriptors
@@ -122,10 +122,9 @@ public:
     /// \param[in] mat Frame containing the image of interest.
     /// \param[out] descr Matrix to store the computed descriptor.
     ///
-    void Compute(const cv::Mat &mat, cv::Mat *descr) override {
-        CV_Assert(descr != nullptr);
+    void Compute(const cv::Mat &mat, CV_OUT cv::Mat& descr) override {
         CV_Assert(!mat.empty());
-        cv::resize(mat, *descr, descr_size_, 0, 0, interpolation_);
+        cv::resize(mat, descr, descr_size_, 0, 0, interpolation_);
     }
 
     ///
@@ -134,11 +133,10 @@ public:
     /// \param[out] descrs Matrices to store the computed descriptors.
     //
     void Compute(const std::vector<cv::Mat> &mats,
-                 std::vector<cv::Mat> *descrs) override  {
-        CV_Assert(descrs != nullptr);
-        descrs->resize(mats.size());
+                 CV_OUT std::vector<cv::Mat>& descrs) override  {
+        descrs.resize(mats.size());
         for (size_t i = 0; i < mats.size(); i++)  {
-            Compute(mats[i], &(descrs[i]));
+            Compute(mats[i], descrs[i]);
         }
     }
 

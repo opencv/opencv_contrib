@@ -116,16 +116,15 @@ std::vector<cv::Scalar> GenRandomColors(int colors_num) {
 /// \param[in] lwd Line width.
 ///
 void DrawPolyline(const std::vector<cv::Point>& polyline,
-                  const cv::Scalar& color, cv::Mat* image,
+                  const cv::Scalar& color, CV_OUT cv::Mat& image,
                   int lwd = 5) {
-    TBM_CHECK(image);
-    TBM_CHECK(!image->empty());
-    TBM_CHECK_EQ(image->type(), CV_8UC3);
+    TBM_CHECK(!image.empty());
+    TBM_CHECK_EQ(image.type(), CV_8UC3);
     TBM_CHECK_GT(lwd, 0);
     TBM_CHECK_LT(lwd, 20);
 
     for (size_t i = 1; i < polyline.size(); i++) {
-        cv::line(*image, polyline[i - 1], polyline[i], color, lwd);
+        cv::line(image, polyline[i - 1], polyline[i], color, lwd);
     }
 }
 
@@ -404,24 +403,24 @@ private:
     void SolveAssignmentProblem(
         const std::set<size_t> &track_ids, const TrackedObjects &detections,
         const std::vector<cv::Mat> &descriptors,
-        std::set<size_t> *unmatched_tracks,
-        std::set<size_t> *unmatched_detections,
-        std::set<std::tuple<size_t, size_t, float>> *matches);
+        CV_OUT std::set<size_t>& unmatched_tracks,
+        CV_OUT std::set<size_t>& unmatched_detections,
+        CV_OUT std::set<std::tuple<size_t, size_t, float>>& matches);
 
     void ComputeFastDesciptors(const cv::Mat &frame,
                                const TrackedObjects &detections,
-                               std::vector<cv::Mat> *desriptors);
+                               CV_OUT std::vector<cv::Mat>& desriptors);
 
     void ComputeDissimilarityMatrix(const std::set<size_t> &active_track_ids,
                                     const TrackedObjects &detections,
                                     const std::vector<cv::Mat> &fast_descriptors,
-                                    cv::Mat *dissimilarity_matrix);
+                                    CV_OUT cv::Mat& dissimilarity_matrix);
 
     std::vector<float> ComputeDistances(
         const cv::Mat &frame,
         const TrackedObjects& detections,
         const std::vector<std::pair<size_t, size_t>> &track_and_det_ids,
-        std::map<size_t, cv::Mat> *det_id_to_descriptor);
+        CV_OUT std::map<size_t, cv::Mat>& det_id_to_descriptor);
 
     std::map<size_t, std::pair<bool, cv::Mat>> StrongMatching(
         const cv::Mat &frame,
@@ -681,35 +680,32 @@ TrackedObjects TrackerByMatching::FilterDetections(
 void TrackerByMatching::SolveAssignmentProblem(
     const std::set<size_t> &track_ids, const TrackedObjects &detections,
     const std::vector<cv::Mat> &descriptors,
-    std::set<size_t> *unmatched_tracks, std::set<size_t> *unmatched_detections,
-    std::set<std::tuple<size_t, size_t, float>> *matches) {
-    TBM_CHECK(unmatched_tracks);
-    TBM_CHECK(unmatched_detections);
-    unmatched_tracks->clear();
-    unmatched_detections->clear();
+    std::set<size_t>& unmatched_tracks, std::set<size_t>& unmatched_detections,
+    std::set<std::tuple<size_t, size_t, float>>& matches) {
+    unmatched_tracks.clear();
+    unmatched_detections.clear();
 
     TBM_CHECK(!track_ids.empty());
     TBM_CHECK(!detections.empty());
     TBM_CHECK(descriptors.size() == detections.size());
-    TBM_CHECK(matches);
-    matches->clear();
+    matches.clear();
 
     cv::Mat dissimilarity;
     ComputeDissimilarityMatrix(track_ids, detections, descriptors,
-                               &dissimilarity);
+                               dissimilarity);
 
     auto res = KuhnMunkres().Solve(dissimilarity);
 
     for (size_t i = 0; i < detections.size(); i++) {
-        unmatched_detections->insert(i);
+        unmatched_detections.insert(i);
     }
 
     size_t i = 0;
     for (auto id : track_ids) {
         if (res[i] < detections.size()) {
-            matches->emplace(id, res[i], 1 - dissimilarity.at<float>(i, res[i]));
+            matches.emplace(id, res[i], 1 - dissimilarity.at<float>(i, res[i]));
         } else {
-            unmatched_tracks->insert(id);
+            unmatched_tracks.insert(id);
         }
         i++;
     }
@@ -848,7 +844,7 @@ void TrackerByMatching::Process(const cv::Mat &frame,
     }
 
     std::vector<cv::Mat> descriptors_fast;
-    ComputeFastDesciptors(frame, detections, &descriptors_fast);
+    ComputeFastDesciptors(frame, detections, descriptors_fast);
 
     auto active_tracks = active_track_ids_;
 
@@ -857,8 +853,8 @@ void TrackerByMatching::Process(const cv::Mat &frame,
         std::set<std::tuple<size_t, size_t, float>> matches;
 
         SolveAssignmentProblem(active_tracks, detections, descriptors_fast,
-                               &unmatched_tracks,
-                               &unmatched_detections, &matches);
+                               unmatched_tracks,
+                               unmatched_detections, matches);
 
         std::map<size_t, std::pair<bool, cv::Mat>> is_matching_to_track;
 
@@ -988,18 +984,18 @@ float TrackerByMatching::TimeAffinity(float weight, const float &trk_time,
 
 void TrackerByMatching::ComputeFastDesciptors(
     const cv::Mat &frame, const TrackedObjects &detections,
-    std::vector<cv::Mat> *desriptors) {
-    *desriptors = std::vector<cv::Mat>(detections.size(), cv::Mat());
+    std::vector<cv::Mat>& desriptors) {
+    desriptors = std::vector<cv::Mat>(detections.size(), cv::Mat());
     for (size_t i = 0; i < detections.size(); i++) {
         descriptor_fast_->Compute(frame(detections[i].rect).clone(),
-                                  &((*desriptors)[i]));
+                                  desriptors[i]);
     }
 }
 
 void TrackerByMatching::ComputeDissimilarityMatrix(
     const std::set<size_t> &active_tracks, const TrackedObjects &detections,
     const std::vector<cv::Mat> &descriptors_fast,
-    cv::Mat *dissimilarity_matrix) {
+    cv::Mat& dissimilarity_matrix) {
     cv::Mat am(active_tracks.size(), detections.size(), CV_32F, cv::Scalar(0));
     size_t i = 0;
     for (auto id : active_tracks) {
@@ -1012,14 +1008,14 @@ void TrackerByMatching::ComputeDissimilarityMatrix(
         }
         i++;
     }
-    *dissimilarity_matrix = 1.0 - am;
+    dissimilarity_matrix = 1.0 - am;
 }
 
 std::vector<float> TrackerByMatching::ComputeDistances(
     const cv::Mat &frame,
     const TrackedObjects& detections,
     const std::vector<std::pair<size_t, size_t>> &track_and_det_ids,
-    std::map<size_t, cv::Mat> *det_id_to_descriptor) {
+    std::map<size_t, cv::Mat>& det_id_to_descriptor) {
     std::map<size_t, size_t> det_to_batch_ids;
     std::map<size_t, size_t> track_to_batch_ids;
 
@@ -1040,7 +1036,7 @@ std::vector<float> TrackerByMatching::ComputeDistances(
         det_to_batch_ids[det_id] = descriptors.size() - 1;
     }
 
-    descriptor_strong_->Compute(images, &descriptors);
+    descriptor_strong_->Compute(images, descriptors);
 
     std::vector<cv::Mat> descriptors1;
     std::vector<cv::Mat> descriptors2;
@@ -1052,7 +1048,7 @@ std::vector<float> TrackerByMatching::ComputeDistances(
             tracks_.at(track_id).descriptor_strong =
                 descriptors[track_to_batch_ids[track_id]].clone();
         }
-        (*det_id_to_descriptor)[det_id] = descriptors[det_to_batch_ids[det_id]];
+        det_id_to_descriptor[det_id] = descriptors[det_to_batch_ids[det_id]];
 
         descriptors1.push_back(descriptors[det_to_batch_ids[det_id]]);
         descriptors2.push_back(tracks_.at(track_id).descriptor_strong);
@@ -1094,7 +1090,7 @@ TrackerByMatching::StrongMatching(
     std::map<size_t, cv::Mat> det_ids_to_descriptors;
     std::vector<float> distances =
         ComputeDistances(frame, detections,
-                         track_and_det_ids, &det_ids_to_descriptors);
+                         track_and_det_ids, det_ids_to_descriptors);
 
     for (size_t i = 0; i < track_and_det_ids.size(); i++) {
         auto reid_affinity = 1.0 - distances[i];
@@ -1297,7 +1293,7 @@ cv::Mat TrackerByMatching::DrawActiveTracks(const cv::Mat &frame) {
     for (auto active_track : active_tracks) {
         size_t idx = active_track.first;
         auto centers = active_track.second;
-        DrawPolyline(centers, colors_[idx % colors_.size()], &out_frame);
+        DrawPolyline(centers, colors_[idx % colors_.size()], out_frame);
         std::stringstream ss;
         ss << idx;
         cv::putText(out_frame, ss.str(), centers.back(), cv::FONT_HERSHEY_SCRIPT_COMPLEX, 2.0,
