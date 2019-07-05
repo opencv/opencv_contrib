@@ -1,10 +1,10 @@
+#include <opencv2/core.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/tracking/tracking_by_matching.hpp>
+#include <iostream>
+
 #ifdef HAVE_OPENCV_DNN
 #include <opencv2/dnn.hpp>
-#endif
-
-#include <iostream>
 
 using namespace std;
 using namespace cv;
@@ -46,7 +46,6 @@ static void help()
 
 cv::Ptr<ITrackerByMatching> createTrackerByMatchingWithFastDescriptor();
 
-#ifdef HAVE_OPENCV_DNN
 class DnnObjectDetector
 {
 public:
@@ -121,18 +120,6 @@ private:
     Scalar net_mean;
     bool net_swapRB;
 };
-#else
-/// Stub for the case when opencv_dnn module is not built
-class DnnObjectDetector
-{
-public:
-    DnnObjectDetector(const String& , const String& , ...) {}
-    TrackedObjects detect(const cv::Mat& frame, int frame_idx)
-    {
-        return TrackedObjects();
-    }
-};
-#endif
 
 cv::Ptr<ITrackerByMatching>
 createTrackerByMatchingWithFastDescriptor() {
@@ -152,10 +139,6 @@ createTrackerByMatchingWithFastDescriptor() {
     return tracker;
 }
 int main( int argc, char** argv ){
-#ifndef HAVE_OPENCV_DNN
-    CV_Error(Error::StsNotImplemented, "At the moment the sample 'tracking_by_matching' can work only when opencv_dnn module is built.");
-#endif
-
     CommandLineParser parser( argc, argv, keys );
     cv::Ptr<ITrackerByMatching> tracker = createTrackerByMatchingWithFastDescriptor();
 
@@ -264,3 +247,8 @@ int main( int argc, char** argv ){
 
     return 0;
 }
+#else // #ifdef HAVE_OPENCV_DNN
+int main(int, char**){
+    CV_Error(cv::Error::StsNotImplemented, "At the moment the sample 'tracking_by_matching' can work only when opencv_dnn module is built.");
+}
+#endif // #ifdef HAVE_OPENCV_DNN
