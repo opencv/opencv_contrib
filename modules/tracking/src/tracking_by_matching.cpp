@@ -819,7 +819,7 @@ void TrackerByMatching::process(const cv::Mat &frame,
                                 const TrackedObjects &input_detections,
                                 uint64_t timestamp) {
     if (prev_timestamp_ != std::numeric_limits<uint64_t>::max())
-        TBM_CHECK_LT(prev_timestamp_, timestamp);
+        TBM_CHECK_LT(static_cast<size_t>(prev_timestamp_), static_cast<size_t>(timestamp));
 
     if (frame_size_ == cv::Size(0, 0)) {
         frame_size_ = frame.size();
