@@ -235,49 +235,49 @@ public:
     /// \brief Fast descriptor getter.
     /// \return Fast descriptor used in pipeline.
     ///
-    const Descriptor &descriptor_fast() const override;
+    const Descriptor &descriptorFast() const override;
 
     ///
     /// \brief Fast descriptor setter.
     /// \param[in] val Fast descriptor used in pipeline.
     ///
-    void set_descriptor_fast(const Descriptor &val) override;
+    void setDescriptorFast(const Descriptor &val) override;
 
     ///
     /// \brief Strong descriptor getter.
     /// \return Strong descriptor used in pipeline.
     ///
-    const Descriptor &descriptor_strong() const override;
+    const Descriptor &descriptorStrong() const override;
 
     ///
     /// \brief Strong descriptor setter.
     /// \param[in] val Strong descriptor used in pipeline.
     ///
-    void set_descriptor_strong(const Descriptor &val) override;
+    void setDescriptorStrong(const Descriptor &val) override;
 
     ///
     /// \brief Fast distance getter.
     /// \return Fast distance used in pipeline.
     ///
-    const Distance &distance_fast() const override;
+    const Distance &distanceFast() const override;
 
     ///
     /// \brief Fast distance setter.
     /// \param[in] val Fast distance used in pipeline.
     ///
-    void set_distance_fast(const Distance &val) override;
+    void setDistanceFast(const Distance &val) override;
 
     ///
     /// \brief Strong distance getter.
     /// \return Strong distance used in pipeline.
     ///
-    const Distance &distance_strong() const override;
+    const Distance &distanceStrong() const override;
 
     ///
     /// \brief Strong distance setter.
     /// \param[in] val Strong distance used in pipeline.
     ///
-    void set_distance_strong(const Distance &val) override;
+    void setDistanceStrong(const Distance &val) override;
 
     ///
     /// \brief Returns number of counted people.
@@ -589,36 +589,36 @@ void TrackerByMatching::setParams(const TrackerParams &params) {
 }
 
 // Descriptor fast getter.
-const TrackerByMatching::Descriptor &TrackerByMatching::descriptor_fast() const {
+const TrackerByMatching::Descriptor &TrackerByMatching::descriptorFast() const {
     return descriptor_fast_;
 }
 
 // Descriptor fast setter.
-void TrackerByMatching::set_descriptor_fast(const Descriptor &val) {
+void TrackerByMatching::setDescriptorFast(const Descriptor &val) {
     descriptor_fast_ = val;
 }
 
 // Descriptor strong getter.
-const TrackerByMatching::Descriptor &TrackerByMatching::descriptor_strong() const {
+const TrackerByMatching::Descriptor &TrackerByMatching::descriptorStrong() const {
     return descriptor_strong_;
 }
 
 // Descriptor strong setter.
-void TrackerByMatching::set_descriptor_strong(const Descriptor &val) {
+void TrackerByMatching::setDescriptorStrong(const Descriptor &val) {
     descriptor_strong_ = val;
 }
 
 // Distance fast getter.
-const TrackerByMatching::Distance &TrackerByMatching::distance_fast() const { return distance_fast_; }
+const TrackerByMatching::Distance &TrackerByMatching::distanceFast() const { return distance_fast_; }
 
 // Distance fast setter.
-void TrackerByMatching::set_distance_fast(const Distance &val) { distance_fast_ = val; }
+void TrackerByMatching::setDistanceFast(const Distance &val) { distance_fast_ = val; }
 
 // Distance strong getter.
-const TrackerByMatching::Distance &TrackerByMatching::distance_strong() const { return distance_strong_; }
+const TrackerByMatching::Distance &TrackerByMatching::distanceStrong() const { return distance_strong_; }
 
 // Distance strong setter.
-void TrackerByMatching::set_distance_strong(const Distance &val) { distance_strong_ = val; }
+void TrackerByMatching::setDistanceStrong(const Distance &val) { distance_strong_ = val; }
 
 // Returns all tracks including forgotten (lost too many frames ago).
 const std::unordered_map<size_t, Track> &

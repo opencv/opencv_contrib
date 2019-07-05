@@ -146,8 +146,8 @@ createTrackerByMatchingWithFastDescriptor() {
     std::shared_ptr<IDescriptorDistance> distance_fast =
         std::make_shared<MatchTemplateDistance>();
 
-    tracker->set_descriptor_fast(descriptor_fast);
-    tracker->set_distance_fast(distance_fast);
+    tracker->setDescriptorFast(descriptor_fast);
+    tracker->setDistanceFast(distance_fast);
 
     return tracker;
 }

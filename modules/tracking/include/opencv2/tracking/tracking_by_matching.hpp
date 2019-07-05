@@ -439,49 +439,49 @@ public:
     /// \brief Fast descriptor getter.
     /// \return Fast descriptor used in pipeline.
     ///
-    virtual const Descriptor &descriptor_fast() const = 0;
+    virtual const Descriptor &descriptorFast() const = 0;
 
     ///
     /// \brief Fast descriptor setter.
     /// \param[in] val Fast descriptor used in pipeline.
     ///
-    virtual void set_descriptor_fast(const Descriptor &val) = 0;
+    virtual void setDescriptorFast(const Descriptor &val) = 0;
 
     ///
     /// \brief Strong descriptor getter.
     /// \return Strong descriptor used in pipeline.
     ///
-    virtual const Descriptor &descriptor_strong() const = 0;
+    virtual const Descriptor &descriptorStrong() const = 0;
 
     ///
     /// \brief Strong descriptor setter.
     /// \param[in] val Strong descriptor used in pipeline.
     ///
-    virtual void set_descriptor_strong(const Descriptor &val) = 0;
+    virtual void setDescriptorStrong(const Descriptor &val) = 0;
 
     ///
     /// \brief Fast distance getter.
     /// \return Fast distance used in pipeline.
     ///
-    virtual const Distance &distance_fast() const = 0;
+    virtual const Distance &distanceFast() const = 0;
 
     ///
     /// \brief Fast distance setter.
     /// \param[in] val Fast distance used in pipeline.
     ///
-    virtual void set_distance_fast(const Distance &val) = 0;
+    virtual void setDistanceFast(const Distance &val) = 0;
 
     ///
     /// \brief Strong distance getter.
     /// \return Strong distance used in pipeline.
     ///
-    virtual const Distance &distance_strong() const = 0;
+    virtual const Distance &distanceStrong() const = 0;
 
     ///
     /// \brief Strong distance setter.
     /// \param[in] val Strong distance used in pipeline.
     ///
-    virtual void set_distance_strong(const Distance &val) = 0;
+    virtual void setDistanceStrong(const Distance &val) = 0;
 
     ///
     /// \brief Returns number of counted people.
