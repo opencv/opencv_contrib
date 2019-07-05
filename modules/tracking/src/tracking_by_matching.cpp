@@ -9,18 +9,17 @@
 #include <algorithm>
 
 #include "opencv2/tracking/tracking_by_matching.hpp"
+#include "opencv2/core/check.hpp"
 #include "kuhn_munkres.hpp"
 
 #define TBM_CHECK(cond) CV_Assert(cond)
 
-#define TBM_CHECK_BINARY(actual, expected, op)  CV_Assert(actual op expected)
-
-#define TBM_CHECK_EQ(actual, expected) TBM_CHECK_BINARY(actual, expected, ==)
-#define TBM_CHECK_NE(actual, expected) TBM_CHECK_BINARY(actual, expected, !=)
-#define TBM_CHECK_LT(actual, expected) TBM_CHECK_BINARY(actual, expected, <)
-#define TBM_CHECK_GT(actual, expected) TBM_CHECK_BINARY(actual, expected, >)
-#define TBM_CHECK_LE(actual, expected) TBM_CHECK_BINARY(actual, expected, <=)
-#define TBM_CHECK_GE(actual, expected) TBM_CHECK_BINARY(actual, expected, >=)
+#define TBM_CHECK_EQ(actual, expected) CV_CheckEQ(actual, expected, "Assertion error:")
+#define TBM_CHECK_NE(actual, expected) CV_CheckNE(actual, expected, "Assertion error:")
+#define TBM_CHECK_LT(actual, expected) CV_CheckLT(actual, expected, "Assertion error:")
+#define TBM_CHECK_GT(actual, expected) CV_CheckGT(actual, expected, "Assertion error:")
+#define TBM_CHECK_LE(actual, expected) CV_CheckLE(actual, expected, "Assertion error:")
+#define TBM_CHECK_GE(actual, expected) CV_CheckGE(actual, expected, "Assertion error:")
 
 using namespace cv::tbm;
 
