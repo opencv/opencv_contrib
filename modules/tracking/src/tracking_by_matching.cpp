@@ -29,7 +29,7 @@ CosDistance::CosDistance(const cv::Size &descriptor_size)
     TBM_CHECK(descriptor_size.area() != 0);
 }
 
-float CosDistance::Compute(const cv::Mat &descr1, const cv::Mat &descr2) {
+float CosDistance::compute(const cv::Mat &descr1, const cv::Mat &descr2) {
     TBM_CHECK(!descr1.empty());
     TBM_CHECK(!descr2.empty());
     TBM_CHECK(descr1.size() == descriptor_size_);
@@ -42,21 +42,21 @@ float CosDistance::Compute(const cv::Mat &descr1, const cv::Mat &descr2) {
     return 0.5f * static_cast<float>(1.0 - xy / norm);
 }
 
-std::vector<float> CosDistance::Compute(const std::vector<cv::Mat> &descrs1,
+std::vector<float> CosDistance::compute(const std::vector<cv::Mat> &descrs1,
                                         const std::vector<cv::Mat> &descrs2) {
     TBM_CHECK(descrs1.size() != 0);
     TBM_CHECK(descrs1.size() == descrs2.size());
 
     std::vector<float> distances(descrs1.size(), 1.f);
     for (size_t i = 0; i < descrs1.size(); i++) {
-        distances.at(i) = Compute(descrs1.at(i), descrs2.at(i));
+        distances.at(i) = compute(descrs1.at(i), descrs2.at(i));
     }
 
     return distances;
 }
 
 
-float MatchTemplateDistance::Compute(const cv::Mat &descr1,
+float MatchTemplateDistance::compute(const cv::Mat &descr1,
                                      const cv::Mat &descr2) {
     TBM_CHECK(!descr1.empty() && !descr2.empty());
     TBM_CHECK_EQ(descr1.size(), descr2.size());
@@ -68,11 +68,11 @@ float MatchTemplateDistance::Compute(const cv::Mat &descr1,
     return scale_ * dist + offset_;
 }
 
-std::vector<float> MatchTemplateDistance::Compute(const std::vector<cv::Mat> &descrs1,
+std::vector<float> MatchTemplateDistance::compute(const std::vector<cv::Mat> &descrs1,
                                                   const std::vector<cv::Mat> &descrs2) {
     std::vector<float> result;
     for (size_t i = 0; i < descrs1.size(); i++) {
-        result.push_back(Compute(descrs1[i], descrs2[i]));
+        result.push_back(compute(descrs1[i], descrs2[i]));
     }
     return result;
 }
@@ -216,7 +216,7 @@ public:
     /// \param[in] timestamp Timestamp must be positive and measured in
     /// milliseconds
     ///
-    void Process(const cv::Mat &frame, const TrackedObjects &detections,
+    void process(const cv::Mat &frame, const TrackedObjects &detections,
                  uint64_t timestamp) override;
 
     ///
@@ -229,7 +229,7 @@ public:
     /// \brief Pipeline parameters setter.
     /// \param[in] params Parameters of pipeline.
     ///
-    void set_params(const TrackerParams &params) override;
+    void setParams(const TrackerParams &params) override;
 
     ///
     /// \brief Fast descriptor getter.
@@ -283,26 +283,26 @@ public:
     /// \brief Returns number of counted people.
     /// \return a number of counted people.
     ///
-    size_t Count() const override;
+    size_t count() const override;
 
     ///
     /// \brief Get active tracks to draw
     /// \return Active tracks.
     ///
-    std::unordered_map<size_t, std::vector<cv::Point> > GetActiveTracks() const override;
+    std::unordered_map<size_t, std::vector<cv::Point> > getActiveTracks() const override;
 
     ///
     /// \brief Get tracked detections.
     /// \return Tracked detections.
     ///
-    TrackedObjects TrackedDetections() const override;
+    TrackedObjects trackedDetections() const override;
 
     ///
     /// \brief Draws active tracks on a given frame.
     /// \param[in] frame Colored image (CV_8UC3).
     /// \return Colored image with drawn active tracks.
     ///
-    cv::Mat DrawActiveTracks(const cv::Mat &frame) override;
+    cv::Mat drawActiveTracks(const cv::Mat &frame) override;
 
     ///
     /// \brief Print confusion matrices of data association classifiers.
@@ -312,11 +312,11 @@ public:
     void PrintConfusionMatrices() const;
 
     ///
-    /// \brief IsTrackForgotten returns true if track is forgotten.
+    /// \brief isTrackForgotten returns true if track is forgotten.
     /// \param id Track ID.
     /// \return true if track is forgotten.
     ///
-    bool IsTrackForgotten(size_t id) const override;
+    bool isTrackForgotten(size_t id) const override;
 
     ///
     /// \brief tracks Returns all tracks including forgotten (lost too many frames
@@ -326,24 +326,24 @@ public:
     const std::unordered_map<size_t, Track> &tracks() const override;
 
     ///
-    /// \brief IsTrackValid Checks whether track is valid (duration > threshold).
+    /// \brief isTrackValid Checks whether track is valid (duration > threshold).
     /// \param track_id Index of checked track.
     /// \return True if track duration exceeds some predefined value.
     ///
-    bool IsTrackValid(size_t track_id) const override;
+    bool isTrackValid(size_t track_id) const override;
 
     ///
-    /// \brief DropForgottenTracks Removes tracks from memory that were lost too
+    /// \brief dropForgottenTracks Removes tracks from memory that were lost too
     /// many frames ago.
     ///
-    void DropForgottenTracks() override;
+    void dropForgottenTracks() override;
 
     ///
-    /// \brief DropForgottenTracks Check that the track was lost too many frames
+    /// \brief dropForgottenTrack Check that the track was lost too many frames
     /// ago
     /// and removes it frm memory.
     ///
-    void DropForgottenTrack(size_t track_id) override;
+    void dropForgottenTrack(size_t track_id) override;
 
 private:
     struct Match {
@@ -464,7 +464,7 @@ private:
     const std::vector<Match> &reid_classifier_matches() const;
 
     TrackedObjects FilterDetections(const TrackedObjects &detections) const;
-    bool IsTrackForgotten(const Track &track) const;
+    bool isTrackForgotten(const Track &track) const;
 
     // Parameters of the pipeline.
     TrackerParams params_;
@@ -531,7 +531,7 @@ private:
     uint64_t prev_timestamp_;
 };
 
-cv::Ptr<ITrackerByMatching> cv::tbm::CreateTrackerByMatching(const TrackerParams &params)
+cv::Ptr<ITrackerByMatching> cv::tbm::createTrackerByMatching(const TrackerParams &params)
 {
     ITrackerByMatching* ptr = new TrackerByMatching(params);
     return cv::Ptr<ITrackerByMatching>(ptr);
@@ -583,7 +583,7 @@ TrackerByMatching::TrackerByMatching(const TrackerParams &params)
 const TrackerParams &TrackerByMatching::params() const { return params_; }
 
 // Pipeline parameters setter.
-void TrackerByMatching::set_params(const TrackerParams &params) {
+void TrackerByMatching::setParams(const TrackerParams &params) {
     ValidateParams(params);
     params_ = params;
 }
@@ -709,7 +709,7 @@ const ObjectTracks TrackerByMatching::all_tracks(bool valid_only) const {
     }
 
     for (size_t id : sorted_ids) {
-        if (!valid_only || IsTrackValid(id)) {
+        if (!valid_only || isTrackValid(id)) {
             TrackedObjects filtered_objects;
             for (const auto &object : tracks().at(id).objects) {
                 filtered_objects.emplace_back(object);
@@ -816,7 +816,7 @@ void TrackerByMatching::UpdateLostTracks(
     }
 }
 
-void TrackerByMatching::Process(const cv::Mat &frame,
+void TrackerByMatching::process(const cv::Mat &frame,
                                 const TrackedObjects &input_detections,
                                 uint64_t timestamp) {
     if (prev_timestamp_ != std::numeric_limits<uint64_t>::max())
@@ -908,13 +908,13 @@ void TrackerByMatching::Process(const cv::Mat &frame,
     }
 
     prev_frame_size_ = frame.size();
-    if (params_.drop_forgotten_tracks) DropForgottenTracks();
+    if (params_.drop_forgotten_tracks) dropForgottenTracks();
 
     tracks_dists_.clear();
     prev_timestamp_ = timestamp;
 }
 
-void TrackerByMatching::DropForgottenTracks() {
+void TrackerByMatching::dropForgottenTracks() {
     std::unordered_map<size_t, Track> new_tracks;
     std::set<size_t> new_active_tracks;
 
@@ -928,13 +928,13 @@ void TrackerByMatching::DropForgottenTracks() {
 
     size_t counter = 0;
     for (const auto &pair : tracks_) {
-        if (!IsTrackForgotten(pair.first)) {
+        if (!isTrackForgotten(pair.first)) {
             new_tracks.emplace(reassign_id ? counter : pair.first, pair.second);
             new_active_tracks.emplace(reassign_id ? counter : pair.first);
             counter++;
 
         } else {
-            if (IsTrackValid(pair.first)) {
+            if (isTrackValid(pair.first)) {
                 valid_tracks_counter_++;
             }
         }
@@ -945,8 +945,8 @@ void TrackerByMatching::DropForgottenTracks() {
     tracks_counter_ = reassign_id ? counter : tracks_counter_;
 }
 
-void TrackerByMatching::DropForgottenTrack(size_t track_id) {
-    TBM_CHECK(IsTrackForgotten(track_id));
+void TrackerByMatching::dropForgottenTrack(size_t track_id) {
+    TBM_CHECK(isTrackForgotten(track_id));
     TBM_CHECK(active_track_ids_.count(track_id) == 0);
     tracks_.erase(track_id);
 }
@@ -977,7 +977,7 @@ void TrackerByMatching::ComputeFastDesciptors(
     std::vector<cv::Mat>& desriptors) {
     desriptors = std::vector<cv::Mat>(detections.size(), cv::Mat());
     for (size_t i = 0; i < detections.size(); i++) {
-        descriptor_fast_->Compute(frame(detections[i].rect).clone(),
+        descriptor_fast_->compute(frame(detections[i].rect).clone(),
                                   desriptors[i]);
     }
 }
@@ -1026,7 +1026,7 @@ std::vector<float> TrackerByMatching::ComputeDistances(
         det_to_batch_ids[det_id] = descriptors.size() - 1;
     }
 
-    descriptor_strong_->Compute(images, descriptors);
+    descriptor_strong_->compute(images, descriptors);
 
     std::vector<cv::Mat> descriptors1;
     std::vector<cv::Mat> descriptors2;
@@ -1045,7 +1045,7 @@ std::vector<float> TrackerByMatching::ComputeDistances(
     }
 
     std::vector<float> distances =
-        distance_strong_->Compute(descriptors1, descriptors2);
+        distance_strong_->compute(descriptors1, descriptors2);
 
     return distances;
 }
@@ -1160,7 +1160,7 @@ void TrackerByMatching::AppendToTrack(const cv::Mat &frame,
                                       const TrackedObject &detection,
                                       const cv::Mat &descriptor_fast,
                                       const cv::Mat &descriptor_strong) {
-    TBM_CHECK(!IsTrackForgotten(track_id));
+    TBM_CHECK(!isTrackForgotten(track_id));
 
     auto detection_with_id = detection;
     detection_with_id.object_id = static_cast<int>(track_id);
@@ -1205,7 +1205,7 @@ float TrackerByMatching::AffinityFast(const cv::Mat &descriptor1,
 
     if (time_aff < eps) return 0.0;
 
-    float app_aff = static_cast<float>(1.0 - distance_fast_->Compute(descriptor1, descriptor2));
+    float app_aff = static_cast<float>(1.0 - distance_fast_->compute(descriptor1, descriptor2));
 
     return shp_aff * mot_aff * app_aff * time_aff;
 }
@@ -1220,7 +1220,7 @@ float TrackerByMatching::Affinity(const TrackedObject &obj1,
     return shp_aff * mot_aff * time_aff;
 }
 
-bool TrackerByMatching::IsTrackValid(size_t id) const {
+bool TrackerByMatching::isTrackValid(size_t id) const {
     const auto& track = tracks_.at(id);
     const auto &objects = track.objects;
     if (objects.empty()) {
@@ -1232,46 +1232,46 @@ bool TrackerByMatching::IsTrackValid(size_t id) const {
     return true;
 }
 
-bool TrackerByMatching::IsTrackForgotten(size_t id) const {
-    return IsTrackForgotten(tracks_.at(id));
+bool TrackerByMatching::isTrackForgotten(size_t id) const {
+    return isTrackForgotten(tracks_.at(id));
 }
 
-bool TrackerByMatching::IsTrackForgotten(const Track &track) const {
+bool TrackerByMatching::isTrackForgotten(const Track &track) const {
     return (track.lost > params_.forget_delay);
 }
 
-size_t TrackerByMatching::Count() const {
+size_t TrackerByMatching::count() const {
     size_t count = valid_tracks_counter_;
     for (const auto &pair : tracks_) {
-        count += (IsTrackValid(pair.first) ? 1 : 0);
+        count += (isTrackValid(pair.first) ? 1 : 0);
     }
     return count;
 }
 
 std::unordered_map<size_t, std::vector<cv::Point>>
-TrackerByMatching::GetActiveTracks() const {
+TrackerByMatching::getActiveTracks() const {
     std::unordered_map<size_t, std::vector<cv::Point>> active_tracks;
     for (size_t idx : active_track_ids()) {
         auto track = tracks().at(idx);
-        if (IsTrackValid(idx) && !IsTrackForgotten(idx)) {
+        if (isTrackValid(idx) && !isTrackForgotten(idx)) {
             active_tracks.emplace(idx, Centers(track.objects));
         }
     }
     return active_tracks;
 }
 
-TrackedObjects TrackerByMatching::TrackedDetections() const {
+TrackedObjects TrackerByMatching::trackedDetections() const {
     TrackedObjects detections;
     for (size_t idx : active_track_ids()) {
         auto track = tracks().at(idx);
-        if (IsTrackValid(idx) && !track.lost) {
+        if (isTrackValid(idx) && !track.lost) {
             detections.emplace_back(track.objects.back());
         }
     }
     return detections;
 }
 
-cv::Mat TrackerByMatching::DrawActiveTracks(const cv::Mat &frame) {
+cv::Mat TrackerByMatching::drawActiveTracks(const cv::Mat &frame) {
     cv::Mat out_frame = frame.clone();
 
     if (colors_.empty()) {
@@ -1279,7 +1279,7 @@ cv::Mat TrackerByMatching::DrawActiveTracks(const cv::Mat &frame) {
         colors_ = GenRandomColors(num_colors);
     }
 
-    auto active_tracks = GetActiveTracks();
+    auto active_tracks = getActiveTracks();
     for (auto active_track : active_tracks) {
         size_t idx = active_track.first;
         auto centers = active_track.second;

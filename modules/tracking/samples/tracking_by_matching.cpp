@@ -44,7 +44,7 @@ static void help()
        "\tp - pause/resume video\n";
 }
 
-cv::Ptr<ITrackerByMatching> CreateTrackerByMatchingWithFastDescriptor();
+cv::Ptr<ITrackerByMatching> createTrackerByMatchingWithFastDescriptor();
 
 #ifdef HAVE_OPENCV_DNN
 class DnnObjectDetector
@@ -135,10 +135,10 @@ public:
 #endif
 
 cv::Ptr<ITrackerByMatching>
-CreateTrackerByMatchingWithFastDescriptor() {
+createTrackerByMatchingWithFastDescriptor() {
     cv::tbm::TrackerParams params;
 
-    cv::Ptr<ITrackerByMatching> tracker = CreateTrackerByMatching(params);
+    cv::Ptr<ITrackerByMatching> tracker = createTrackerByMatching(params);
 
     std::shared_ptr<IImageDescriptor> descriptor_fast =
         std::make_shared<ResizedImageDescriptor>(
@@ -157,7 +157,7 @@ int main( int argc, char** argv ){
 #endif
 
     CommandLineParser parser( argc, argv, keys );
-    cv::Ptr<ITrackerByMatching> tracker = CreateTrackerByMatchingWithFastDescriptor();
+    cv::Ptr<ITrackerByMatching> tracker = createTrackerByMatchingWithFastDescriptor();
 
     String video_name = parser.get<String>("video_name");
     int start_frame = parser.get<int>("start_frame");
@@ -226,13 +226,13 @@ int main( int argc, char** argv ){
 
         // timestamp in milliseconds
         uint64_t cur_timestamp = static_cast<uint64_t>(1000.0 / 30 * frame_counter);
-        tracker->Process(frame, detections, cur_timestamp);
+        tracker->process(frame, detections, cur_timestamp);
 
         frame_time = getTickCount() - frame_time;
         time_total += frame_time;
 
         // Drawing colored "worms" (tracks).
-        frame = tracker->DrawActiveTracks(frame);
+        frame = tracker->drawActiveTracks(frame);
 
 
         // Drawing all detected objects on a frame by BLUE COLOR
@@ -242,7 +242,7 @@ int main( int argc, char** argv ){
 
         // Drawing tracked detections only by RED color and print ID and detection
         // confidence level.
-        for (const auto &detection : tracker->TrackedDetections()) {
+        for (const auto &detection : tracker->trackedDetections()) {
             cv::rectangle(frame, detection.rect, cv::Scalar(0, 0, 255), 3);
             std::string text = std::to_string(detection.object_id) +
                 " conf: " + std::to_string(detection.confidence);

@@ -76,14 +76,14 @@ public:
     /// \param[in] mat Color image.
     /// \param[out] descr Computed descriptor.
     ///
-    virtual void Compute(const cv::Mat &mat, CV_OUT cv::Mat& descr) = 0;
+    virtual void compute(const cv::Mat &mat, CV_OUT cv::Mat& descr) = 0;
 
     ///
     /// \brief Computes image descriptors in batches.
     /// \param[in] mats Images of interest.
     /// \param[out] descrs Matrices to store the computed descriptors.
     ///
-    virtual void Compute(const std::vector<cv::Mat> &mats,
+    virtual void compute(const std::vector<cv::Mat> &mats,
                          CV_OUT std::vector<cv::Mat>& descrs) = 0;
 
     virtual ~IImageDescriptor() {}
@@ -118,7 +118,7 @@ public:
     /// \param[in] mat Frame containing the image of interest.
     /// \param[out] descr Matrix to store the computed descriptor.
     ///
-    void Compute(const cv::Mat &mat, CV_OUT cv::Mat& descr) override {
+    void compute(const cv::Mat &mat, CV_OUT cv::Mat& descr) override {
         CV_Assert(!mat.empty());
         cv::resize(mat, descr, descr_size_, 0, 0, interpolation_);
     }
@@ -128,11 +128,11 @@ public:
     /// \param[in] mats Frames containing images of interest.
     /// \param[out] descrs Matrices to store the computed descriptors.
     //
-    void Compute(const std::vector<cv::Mat> &mats,
+    void compute(const std::vector<cv::Mat> &mats,
                  CV_OUT std::vector<cv::Mat>& descrs) override  {
         descrs.resize(mats.size());
         for (size_t i = 0; i < mats.size(); i++)  {
-            Compute(mats[i], descrs[i]);
+            compute(mats[i], descrs[i]);
         }
     }
 
@@ -155,7 +155,7 @@ public:
     /// \param[in] descr2 Second descriptor.
     /// \return Distance between two descriptors.
     ///
-    virtual float Compute(const cv::Mat &descr1, const cv::Mat &descr2) = 0;
+    virtual float compute(const cv::Mat &descr1, const cv::Mat &descr2) = 0;
 
     ///
     /// \brief Computes distances between two descriptors in batches.
@@ -163,7 +163,7 @@ public:
     /// \param[in] descrs2 Batch of second descriptors.
     /// \return Distances between descriptors.
     ///
-    virtual std::vector<float> Compute(const std::vector<cv::Mat> &descrs1,
+    virtual std::vector<float> compute(const std::vector<cv::Mat> &descrs1,
                                        const std::vector<cv::Mat> &descrs2) = 0;
 
     virtual ~IDescriptorDistance() {}
@@ -187,7 +187,7 @@ public:
     /// \param descr2 Second descriptor.
     /// \return Distance between two descriptors.
     ///
-    float Compute(const cv::Mat &descr1, const cv::Mat &descr2) override;
+    float compute(const cv::Mat &descr1, const cv::Mat &descr2) override;
 
     ///
     /// \brief Computes distances between two descriptors in batches.
@@ -195,7 +195,7 @@ public:
     /// \param[in] descrs2 Batch of second descriptors.
     /// \return Distances between descriptors.
     ///
-    std::vector<float> Compute(
+    std::vector<float> compute(
         const std::vector<cv::Mat> &descrs1,
         const std::vector<cv::Mat> &descrs2) override;
 
@@ -231,14 +231,14 @@ public:
     /// \param[in] descr2 Second image descriptor.
     /// \return Distance between image descriptors.
     ///
-    float Compute(const cv::Mat &descr1, const cv::Mat &descr2) override;
+    float compute(const cv::Mat &descr1, const cv::Mat &descr2) override;
     ///
     /// \brief Computes distances between two descriptors in batches.
     /// \param[in] descrs1 Batch of first descriptors.
     /// \param[in] descrs2 Batch of second descriptors.
     /// \return Distances between descriptors.
     ///
-    std::vector<float> Compute(const std::vector<cv::Mat> &descrs1,
+    std::vector<float> compute(const std::vector<cv::Mat> &descrs1,
                                const std::vector<cv::Mat> &descrs2) override;
     virtual ~MatchTemplateDistance() {}
 
@@ -303,9 +303,10 @@ struct CV_EXPORTS TrackerParams {
 };
 
 ///
-/// \brief The Track struct describes tracks.
+/// \brief The Track class describes tracks.
 ///
-struct CV_EXPORTS Track {
+class CV_EXPORTS Track {
+public:
     ///
     /// \brief Track constructor.
     /// \param objs Detected objects sequence.
@@ -419,7 +420,7 @@ public:
     /// \param[in] timestamp Timestamp must be positive and measured in
     /// milliseconds
     ///
-    virtual void Process(const cv::Mat &frame, const TrackedObjects &detections,
+    virtual void process(const cv::Mat &frame, const TrackedObjects &detections,
                          uint64_t timestamp) = 0;
 
     ///
@@ -432,7 +433,7 @@ public:
     /// \brief Pipeline parameters setter.
     /// \param[in] params Parameters of pipeline.
     ///
-    virtual void set_params(const TrackerParams &params) = 0;
+    virtual void setParams(const TrackerParams &params) = 0;
 
     ///
     /// \brief Fast descriptor getter.
@@ -486,33 +487,33 @@ public:
     /// \brief Returns number of counted people.
     /// \return a number of counted people.
     ///
-    virtual size_t Count() const = 0;
+    virtual size_t count() const = 0;
 
     ///
     /// \brief Get active tracks to draw
     /// \return Active tracks.
     ///
-    virtual std::unordered_map<size_t, std::vector<cv::Point> > GetActiveTracks() const = 0;
+    virtual std::unordered_map<size_t, std::vector<cv::Point> > getActiveTracks() const = 0;
 
     ///
     /// \brief Get tracked detections.
     /// \return Tracked detections.
     ///
-    virtual TrackedObjects TrackedDetections() const = 0;
+    virtual TrackedObjects trackedDetections() const = 0;
 
     ///
     /// \brief Draws active tracks on a given frame.
     /// \param[in] frame Colored image (CV_8UC3).
     /// \return Colored image with drawn active tracks.
     ///
-    virtual cv::Mat DrawActiveTracks(const cv::Mat &frame) = 0;
+    virtual cv::Mat drawActiveTracks(const cv::Mat &frame) = 0;
 
     ///
-    /// \brief IsTrackForgotten returns true if track is forgotten.
+    /// \brief isTrackForgotten returns true if track is forgotten.
     /// \param id Track ID.
     /// \return true if track is forgotten.
     ///
-    virtual bool IsTrackForgotten(size_t id) const = 0;
+    virtual bool isTrackForgotten(size_t id) const = 0;
 
     ///
     /// \brief tracks Returns all tracks including forgotten (lost too many frames
@@ -522,30 +523,30 @@ public:
     virtual const std::unordered_map<size_t, Track> &tracks() const = 0;
 
     ///
-    /// \brief IsTrackValid Checks whether track is valid (duration > threshold).
+    /// \brief isTrackValid Checks whether track is valid (duration > threshold).
     /// \param track_id Index of checked track.
     /// \return True if track duration exceeds some predefined value.
     ///
-    virtual bool IsTrackValid(size_t track_id) const = 0;
+    virtual bool isTrackValid(size_t track_id) const = 0;
 
     ///
-    /// \brief DropForgottenTracks Removes tracks from memory that were lost too
+    /// \brief dropForgottenTracks Removes tracks from memory that were lost too
     /// many frames ago.
     ///
-    virtual void DropForgottenTracks() = 0;
+    virtual void dropForgottenTracks() = 0;
 
     ///
-    /// \brief DropForgottenTracks Check that the track was lost too many frames
+    /// \brief dropForgottenTrack Check that the track was lost too many frames
     /// ago
     /// and removes it frm memory.
     ///
-    virtual void DropForgottenTrack(size_t track_id) = 0;
+    virtual void dropForgottenTrack(size_t track_id) = 0;
 };
 
 ///
 /// \brief The factory to create Tracker-by-Matching algorithm implementation.
 ///
-CV_EXPORTS cv::Ptr<ITrackerByMatching> CreateTrackerByMatching(const TrackerParams &params = TrackerParams());
+CV_EXPORTS cv::Ptr<ITrackerByMatching> createTrackerByMatching(const TrackerParams &params = TrackerParams());
 
 } // namespace tbm
 } // namespace cv
