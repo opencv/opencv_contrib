@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __OPENCV_TRACKING_KUHN_MUNKRES_HPP__
+#define __OPENCV_TRACKING_KUHN_MUNKRES_HPP__
 
 #include "opencv2/core.hpp"
 
@@ -47,3 +48,4 @@ private:
     int FindInCol(int col, int what);
     void Run();
 };
+#endif // #ifndef __OPENCV_TRACKING_KUHN_MUNKRES_HPP__

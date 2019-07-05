@@ -1,4 +1,5 @@
-#pragma once
+#ifndef __OPENCV_TRACKING_TRACKING_BY_MATCHING_HPP__
+#define __OPENCV_TRACKING_TRACKING_BY_MATCHING_HPP__
 
 #include <deque>
 #include <iostream>
@@ -548,3 +549,4 @@ CV_EXPORTS cv::Ptr<ITrackerByMatching> CreateTrackerByMatching(const TrackerPara
 
 } // namespace tbm
 } // namespace cv
+#endif // #ifndef __OPENCV_TRACKING_TRACKING_BY_MATCHING_HPP__
