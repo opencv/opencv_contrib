@@ -763,8 +763,8 @@ Point3f TSDFVolumeCPU::interpolate(Point3f p1, Point3f p2, float v1, float v2) c
 void TSDFVolumeCPU::marchCubes(OutputArray _vertices, OutputArray _edges) const
 {
     const Voxel *volData = volume.ptr<Voxel>();
-    Mat meshPoints(0, 1, CV_16FC3);
-    Mat meshEdges(0, 2, CV_16U);
+    Mat meshPoints(0, 1, CV_16FC4);
+    Mat meshEdges(0, 2, CV_32S);
 
     Point3f mcNeighbourPts[8] =
         {
@@ -860,16 +860,13 @@ void TSDFVolumeCPU::marchCubes(OutputArray _vertices, OutputArray _edges) const
                     size_t pointsIndex = meshPoints.size().height;
 
                     Point3f p = pose * (vertices[triTable[cubeIndex][i]] * voxelSize);
-                    Mat vertex = (Mat_<Point3f>(1, 1) << p);
-                    meshPoints.push_back(vertex);
+                    meshPoints.push_back(Vec4f(p.x, p.y, p.z, 1.f));
 
                     p = pose * (vertices[triTable[cubeIndex][i + 1]] * voxelSize);
-                    vertex = (Mat_<Point3f>(1, 1) << p);
-                    meshPoints.push_back(vertex);
+                    meshPoints.push_back(Vec4f(p.x, p.y, p.z, 1.f));
 
                     p = pose * (vertices[triTable[cubeIndex][i + 2]] * voxelSize);
-                    vertex = (Mat_<Point3f>(1, 1) << p);
-                    meshPoints.push_back(vertex);
+                    meshPoints.push_back(Vec4f(p.x, p.y, p.z, 1.f));
 
                     if (_edges.needed())
                     {
