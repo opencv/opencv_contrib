@@ -25,7 +25,7 @@ std::vector<size_t> KuhnMunkres::Solve(const cv::Mat& dissimilarity_matrix) {
 
     Run();
 
-    std::vector<size_t> results(marked_.rows, -1);
+    std::vector<size_t> results(static_cast<size_t>(marked_.rows), static_cast<size_t>(-1));
     for (int i = 0; i < marked_.rows; i++) {
         const auto ptr = marked_.ptr<char>(i);
         for (int j = 0; j < marked_.cols; j++) {
@@ -139,9 +139,9 @@ void KuhnMunkres::Run() {
                         if (row >= 0) {
                             count++;
                             points_[count] = cv::Point(points_[count - 1].x, row);
-                            int col = FindInRow(points_[count].y, kPrime);
+                            int col1 = FindInRow(points_[count].y, kPrime);
                             count++;
-                            points_[count] = cv::Point(col, points_[count - 1].y);
+                            points_[count] = cv::Point(col1, points_[count - 1].y);
                         } else {
                             break;
                         }

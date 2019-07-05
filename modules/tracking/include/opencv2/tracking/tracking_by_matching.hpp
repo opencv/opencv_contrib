@@ -85,11 +85,6 @@ public:
     virtual void Compute(const std::vector<cv::Mat> &mats,
                          CV_OUT std::vector<cv::Mat>& descrs) = 0;
 
-    ///
-    /// \brief Prints performance counts for CNN-based descriptors
-    ///
-    virtual void PrintPerformanceCounts() const {}
-
     virtual ~IImageDescriptor() {}
 };
 

@@ -79,7 +79,7 @@ std::vector<float> MatchTemplateDistance::Compute(const std::vector<cv::Mat> &de
 
 namespace {
 cv::Point Center(const cv::Rect& rect) {
-    return cv::Point(rect.x + rect.width * .5, rect.y + rect.height * .5);
+    return cv::Point((int)(rect.x + rect.width * .5), (int)(rect.y + rect.height * .5));
 }
 
 std::vector<cv::Point> Centers(const TrackedObjects &detections) {
@@ -217,99 +217,92 @@ public:
     /// milliseconds
     ///
     void Process(const cv::Mat &frame, const TrackedObjects &detections,
-                 uint64_t timestamp);
+                 uint64_t timestamp) override;
 
     ///
     /// \brief Pipeline parameters getter.
     /// \return Parameters of pipeline.
     ///
-    const TrackerParams &params() const;
+    const TrackerParams &params() const override;
 
     ///
     /// \brief Pipeline parameters setter.
     /// \param[in] params Parameters of pipeline.
     ///
-    void set_params(const TrackerParams &params);
+    void set_params(const TrackerParams &params) override;
 
     ///
     /// \brief Fast descriptor getter.
     /// \return Fast descriptor used in pipeline.
     ///
-    const Descriptor &descriptor_fast() const;
+    const Descriptor &descriptor_fast() const override;
 
     ///
     /// \brief Fast descriptor setter.
     /// \param[in] val Fast descriptor used in pipeline.
     ///
-    void set_descriptor_fast(const Descriptor &val);
+    void set_descriptor_fast(const Descriptor &val) override;
 
     ///
     /// \brief Strong descriptor getter.
     /// \return Strong descriptor used in pipeline.
     ///
-    const Descriptor &descriptor_strong() const;
+    const Descriptor &descriptor_strong() const override;
 
     ///
     /// \brief Strong descriptor setter.
     /// \param[in] val Strong descriptor used in pipeline.
     ///
-    void set_descriptor_strong(const Descriptor &val);
+    void set_descriptor_strong(const Descriptor &val) override;
 
     ///
     /// \brief Fast distance getter.
     /// \return Fast distance used in pipeline.
     ///
-    const Distance &distance_fast() const;
+    const Distance &distance_fast() const override;
 
     ///
     /// \brief Fast distance setter.
     /// \param[in] val Fast distance used in pipeline.
     ///
-    void set_distance_fast(const Distance &val);
+    void set_distance_fast(const Distance &val) override;
 
     ///
     /// \brief Strong distance getter.
     /// \return Strong distance used in pipeline.
     ///
-    const Distance &distance_strong() const;
+    const Distance &distance_strong() const override;
 
     ///
     /// \brief Strong distance setter.
     /// \param[in] val Strong distance used in pipeline.
     ///
-    void set_distance_strong(const Distance &val);
+    void set_distance_strong(const Distance &val) override;
 
     ///
     /// \brief Returns number of counted people.
     /// \return a number of counted people.
     ///
-    size_t Count() const;
-
-    ///
-    /// \brief Returns a detection log which is used for tracks saving.
-    /// \param[in] valid_only If it is true the method returns valid track only.
-    /// \return a detection log which is used for tracks saving.
-    ///
-    //DetectionLog GetDetectionLog(const bool valid_only) const;
+    size_t Count() const override;
 
     ///
     /// \brief Get active tracks to draw
     /// \return Active tracks.
     ///
-    std::unordered_map<size_t, std::vector<cv::Point> > GetActiveTracks() const;
+    std::unordered_map<size_t, std::vector<cv::Point> > GetActiveTracks() const override;
 
     ///
     /// \brief Get tracked detections.
     /// \return Tracked detections.
     ///
-    TrackedObjects TrackedDetections() const;
+    TrackedObjects TrackedDetections() const override;
 
     ///
     /// \brief Draws active tracks on a given frame.
     /// \param[in] frame Colored image (CV_8UC3).
     /// \return Colored image with drawn active tracks.
     ///
-    cv::Mat DrawActiveTracks(const cv::Mat &frame);
+    cv::Mat DrawActiveTracks(const cv::Mat &frame) override;
 
     ///
     /// \brief Print confusion matrices of data association classifiers.
@@ -323,39 +316,34 @@ public:
     /// \param id Track ID.
     /// \return true if track is forgotten.
     ///
-    bool IsTrackForgotten(size_t id) const;
+    bool IsTrackForgotten(size_t id) const override;
 
     ///
     /// \brief tracks Returns all tracks including forgotten (lost too many frames
     /// ago).
     /// \return Set of tracks {id, track}.
     ///
-    const std::unordered_map<size_t, Track> &tracks() const;
+    const std::unordered_map<size_t, Track> &tracks() const override;
 
     ///
     /// \brief IsTrackValid Checks whether track is valid (duration > threshold).
     /// \param track_id Index of checked track.
     /// \return True if track duration exceeds some predefined value.
     ///
-    bool IsTrackValid(size_t track_id) const;
+    bool IsTrackValid(size_t track_id) const override;
 
     ///
     /// \brief DropForgottenTracks Removes tracks from memory that were lost too
     /// many frames ago.
     ///
-    void DropForgottenTracks();
+    void DropForgottenTracks() override;
 
     ///
     /// \brief DropForgottenTracks Check that the track was lost too many frames
     /// ago
     /// and removes it frm memory.
     ///
-    void DropForgottenTrack(size_t track_id);
-
-    ///
-    /// \brief Prints reid performance counter
-    ///
-    void PrintReidPerformanceCounts() const;
+    void DropForgottenTrack(size_t track_id) override;
 
 private:
     struct Match {
@@ -505,7 +493,7 @@ private:
     struct pair_hash {
         std::size_t operator()(const std::pair<size_t, size_t> &p) const {
             CV_Assert(p.first < 1e6 && p.second < 1e6);
-            return p.first * 1e6 + p.second;
+            return static_cast<size_t>(p.first * 1e6 + p.second);
         }
     };
 
@@ -1340,11 +1328,5 @@ void TrackerByMatching::PrintConfusionMatrices() const {
         cm.row(0) = cm.row(0) / std::max(1.0, cv::sum(cm.row(0))[0]);
         cm.row(1) = cm.row(1) / std::max(1.0, cv::sum(cm.row(1))[0]);
         std::cout << cm << std::endl << std::endl;
-    }
-}
-
-void TrackerByMatching::PrintReidPerformanceCounts() const {
-    if (descriptor_strong_) {
-        descriptor_strong_->PrintPerformanceCounts();
     }
 }
