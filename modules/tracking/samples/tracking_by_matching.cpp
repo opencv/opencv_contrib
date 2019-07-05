@@ -13,7 +13,7 @@ using namespace cv::tbm;
 static const char* keys =
 {   "{video_name       | | video name                       }"
     "{start_frame      |0| Start frame                      }"
-    "{frame_step       |2| Frame step                       }"
+    "{frame_step       |1| Frame step                       }"
     "{detector_model   | | Path to detector's Caffe model   }"
     "{detector_weights | | Path to detector's Caffe weights }"
     "{desired_class_id |-1| The desired class that should be tracked }"
@@ -52,7 +52,7 @@ class DnnObjectDetector
 public:
     DnnObjectDetector(const String& net_caffe_model_path, const String& net_caffe_weights_path,
                       int desired_class_id=-1,
-                      float confidence_threshold = 0.4,
+                      float confidence_threshold = 0.2,
                       //the following parameters are default for popular MobileNet_SSD caffe model
                       const String& net_input_name="data",
                       const String& net_output_name="detection_out",

@@ -540,17 +540,17 @@ cv::Ptr<ITrackerByMatching> cv::tbm::CreateTrackerByMatching(const TrackerParams
 TrackerParams::TrackerParams()
     : min_track_duration(1000),
     forget_delay(150),
-    aff_thr_fast(0.8),
-    aff_thr_strong(0.75),
-    shape_affinity_w(0.5),
-    motion_affinity_w(0.2),
-    time_affinity_w(0.0),
-    min_det_conf(0.2),
+    aff_thr_fast(0.8f),
+    aff_thr_strong(0.75f),
+    shape_affinity_w(0.5f),
+    motion_affinity_w(0.2f),
+    time_affinity_w(0.0f),
+    min_det_conf(0.1f),
     bbox_aspect_ratios_range(0.666, 5.0),
     bbox_heights_range(40, 1000),
     predict(25),
-    strong_affinity_thr(0.2805),
-    reid_thr(0.61),
+    strong_affinity_thr(0.2805f),
+    reid_thr(0.61f),
     drop_forgotten_tracks(true),
     max_num_objects_in_track(300) {}
 
@@ -658,7 +658,7 @@ TrackedObjects TrackerByMatching::FilterDetections(
         float aspect_ratio = static_cast<float>(det.rect.height) / det.rect.width;
         if (det.confidence > params_.min_det_conf &&
             IsInRange(aspect_ratio, params_.bbox_aspect_ratios_range) &&
-            IsInRange(det.rect.height, params_.bbox_heights_range)) {
+            IsInRange(static_cast<float>(det.rect.height), params_.bbox_heights_range)) {
             filtered_detections.emplace_back(det);
         }
     }
@@ -688,10 +688,10 @@ void TrackerByMatching::SolveAssignmentProblem(
         unmatched_detections.insert(i);
     }
 
-    size_t i = 0;
+    int i = 0;
     for (auto id : track_ids) {
         if (res[i] < detections.size()) {
-            matches.emplace(id, res[i], 1 - dissimilarity.at<float>(i, res[i]));
+            matches.emplace(id, res[i], 1 - dissimilarity.at<float>(i, static_cast<int>(res[i])));
         } else {
             unmatched_tracks.insert(id);
         }
@@ -713,7 +713,7 @@ const ObjectTracks TrackerByMatching::all_tracks(bool valid_only) const {
             TrackedObjects filtered_objects;
             for (const auto &object : tracks().at(id).objects) {
                 filtered_objects.emplace_back(object);
-                filtered_objects.back().object_id = counter;
+                filtered_objects.back().object_id = static_cast<int>(counter);
             }
             all_objects.emplace(counter++, filtered_objects);
         }
@@ -757,8 +757,10 @@ cv::Rect TrackerByMatching::PredictRect(size_t id, size_t k,
     s += 1;
 
     cv::Point c = Center(track.back().rect);
-    return cv::Rect(c.x - width / 2 + d.x * s, c.y - height / 2 + d.y * s, width,
-                    height);
+    return cv::Rect(static_cast<int>(c.x - width / 2 + d.x * s),
+                    static_cast<int>(c.y - height / 2 + d.y * s),
+                    static_cast<int>(width),
+                    static_cast<int>(height));
 }
 
 
