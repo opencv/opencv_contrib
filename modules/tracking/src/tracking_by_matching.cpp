@@ -546,8 +546,8 @@ TrackerParams::TrackerParams()
     motion_affinity_w(0.2f),
     time_affinity_w(0.0f),
     min_det_conf(0.1f),
-    bbox_aspect_ratios_range(0.666, 5.0),
-    bbox_heights_range(40, 1000),
+    bbox_aspect_ratios_range(0.666f, 5.0f),
+    bbox_heights_range(40.f, 1000.f),
     predict(25),
     strong_affinity_thr(0.2805f),
     reid_thr(0.61f),
@@ -701,7 +701,7 @@ void TrackerByMatching::SolveAssignmentProblem(
 
 const ObjectTracks TrackerByMatching::all_tracks(bool valid_only) const {
     ObjectTracks all_objects;
-    size_t counter = 0;
+    int counter = 0;
 
     std::set<size_t> sorted_ids;
     for (const auto &pair : tracks()) {
@@ -713,7 +713,7 @@ const ObjectTracks TrackerByMatching::all_tracks(bool valid_only) const {
             TrackedObjects filtered_objects;
             for (const auto &object : tracks().at(id).objects) {
                 filtered_objects.emplace_back(object);
-                filtered_objects.back().object_id = static_cast<int>(counter);
+                filtered_objects.back().object_id = counter;
             }
             all_objects.emplace(counter++, filtered_objects);
         }
@@ -953,8 +953,8 @@ void TrackerByMatching::DropForgottenTrack(size_t track_id) {
 
 float TrackerByMatching::ShapeAffinity(float weight, const cv::Rect &trk,
                                        const cv::Rect &det) {
-    float w_dist = std::fabs(trk.width - det.width) / (trk.width + det.width);
-    float h_dist = std::fabs(trk.height - det.height) / (trk.height + det.height);
+    float w_dist = static_cast<float>(std::fabs(trk.width - det.width) / (trk.width + det.width));
+    float h_dist = static_cast<float>(std::fabs(trk.height - det.height) / (trk.height + det.height));
     return exp(-weight * (w_dist + h_dist));
 }
 
@@ -986,8 +986,8 @@ void TrackerByMatching::ComputeDissimilarityMatrix(
     const std::set<size_t> &active_tracks, const TrackedObjects &detections,
     const std::vector<cv::Mat> &descriptors_fast,
     cv::Mat& dissimilarity_matrix) {
-    cv::Mat am(active_tracks.size(), detections.size(), CV_32F, cv::Scalar(0));
-    size_t i = 0;
+    cv::Mat am(static_cast<int>(active_tracks.size()), static_cast<int>(detections.size()), CV_32F, cv::Scalar(0));
+    int i = 0;
     for (auto id : active_tracks) {
         auto ptr = am.ptr<float>(i);
         for (size_t j = 0; j < descriptors_fast.size(); j++) {
@@ -1094,7 +1094,7 @@ TrackerByMatching::StrongMatching(
         auto last_det = track.objects.back();
         last_det.rect = track.predicted_rect;
 
-        float affinity = reid_affinity * Affinity(last_det, detection);
+        float affinity = static_cast<float>(reid_affinity * Affinity(last_det, detection));
 
         if (collect_matches_ && last_det.object_id >= 0 &&
             detection.object_id >= 0) {
@@ -1140,7 +1140,7 @@ void TrackerByMatching::AddNewTrack(const cv::Mat &frame,
                                     const cv::Mat &descriptor_fast,
                                     const cv::Mat &descriptor_strong) {
     auto detection_with_id = detection;
-    detection_with_id.object_id = tracks_counter_;
+    detection_with_id.object_id = static_cast<int>(tracks_counter_);
     tracks_.emplace(std::pair<size_t, Track>(
             tracks_counter_,
             Track({detection_with_id}, frame(detection.rect).clone(),
@@ -1163,7 +1163,7 @@ void TrackerByMatching::AppendToTrack(const cv::Mat &frame,
     TBM_CHECK(!IsTrackForgotten(track_id));
 
     auto detection_with_id = detection;
-    detection_with_id.object_id = track_id;
+    detection_with_id.object_id = static_cast<int>(track_id);
 
     auto &cur_track = tracks_.at(track_id);
     cur_track.objects.emplace_back(detection_with_id);
@@ -1193,7 +1193,7 @@ float TrackerByMatching::AffinityFast(const cv::Mat &descriptor1,
                                       const TrackedObject &obj1,
                                       const cv::Mat &descriptor2,
                                       const TrackedObject &obj2) {
-    const float eps = 1e-6;
+    const float eps = static_cast<float>(1e-6);
     float shp_aff = ShapeAffinity(params_.shape_affinity_w, obj1.rect, obj2.rect);
     if (shp_aff < eps) return 0.0;
 
@@ -1201,11 +1201,11 @@ float TrackerByMatching::AffinityFast(const cv::Mat &descriptor1,
         MotionAffinity(params_.motion_affinity_w, obj1.rect, obj2.rect);
     if (mot_aff < eps) return 0.0;
     float time_aff =
-        TimeAffinity(params_.time_affinity_w, obj1.frame_idx, obj2.frame_idx);
+        TimeAffinity(params_.time_affinity_w, static_cast<float>(obj1.frame_idx), static_cast<float>(obj2.frame_idx));
 
     if (time_aff < eps) return 0.0;
 
-    float app_aff = 1.0 - distance_fast_->Compute(descriptor1, descriptor2);
+    float app_aff = static_cast<float>(1.0 - distance_fast_->Compute(descriptor1, descriptor2));
 
     return shp_aff * mot_aff * app_aff * time_aff;
 }
@@ -1216,7 +1216,7 @@ float TrackerByMatching::Affinity(const TrackedObject &obj1,
     float mot_aff =
         MotionAffinity(params_.motion_affinity_w, obj1.rect, obj2.rect);
     float time_aff =
-        TimeAffinity(params_.time_affinity_w, obj1.frame_idx, obj2.frame_idx);
+        TimeAffinity(params_.time_affinity_w, static_cast<float>(obj1.frame_idx), static_cast<float>(obj2.frame_idx));
     return shp_aff * mot_aff * time_aff;
 }
 

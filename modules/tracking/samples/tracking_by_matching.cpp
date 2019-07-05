@@ -225,7 +225,7 @@ int main( int argc, char** argv ){
         TrackedObjects detections = detector.detect(frame, frame_counter);
 
         // timestamp in milliseconds
-        uint64_t cur_timestamp = 1000.0 / 30 * frame_counter;
+        uint64_t cur_timestamp = static_cast<uint64_t>(1000.0 / 30 * frame_counter);
         tracker->Process(frame, detections, cur_timestamp);
 
         frame_time = getTickCount() - frame_time;
