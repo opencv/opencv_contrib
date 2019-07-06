@@ -763,7 +763,7 @@ Point3f TSDFVolumeCPU::interpolate(Point3f p1, Point3f p2, float v1, float v2) c
 void TSDFVolumeCPU::marchCubes(OutputArray _vertices, OutputArray _edges) const
 {
     const Voxel *volData = volume.ptr<Voxel>();
-    Mat meshPoints(0, 1, CV_16FC4);
+    Mat meshPoints(0, 1, CV_32FC4);
     Mat meshEdges(0, 2, CV_32S);
 
     Point3f mcNeighbourPts[8] =
