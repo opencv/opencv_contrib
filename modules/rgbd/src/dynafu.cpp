@@ -13,6 +13,7 @@
 
 #include "opencv2/core/opengl.hpp"
 
+#ifdef HAVE_OPENGL
 #define GL_GLEXT_PROTOTYPES
 #ifdef __APPLE__
 # include <OpenGL/gl.h>
@@ -22,6 +23,7 @@
 # include <windows.h>
 #endif
 # include <GL/gl.h>
+#endif
 #endif
 
 namespace cv {
@@ -166,7 +168,7 @@ DynaFuImpl<T>::DynaFuImpl(const Params &_params) :
                           params.raycast_step_factor)),
     pyrPoints(), pyrNormals(), warpfield()
 {
-    glEnable(GL_DEPTH_TEST);
+#ifdef HAVE_OPENGL
     // Bind framebuffer for off-screen rendering
     unsigned int fbo_depth;
     glGenRenderbuffersEXT(1, &fbo_depth);
@@ -178,6 +180,7 @@ DynaFuImpl<T>::DynaFuImpl(const Params &_params) :
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
 
     glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, fbo_depth);
+#endif
 
     reset();
 }
@@ -185,6 +188,7 @@ DynaFuImpl<T>::DynaFuImpl(const Params &_params) :
 template< typename T >
 void DynaFuImpl<T>::drawScene(OutputArray image)
 {
+#ifdef HAVE_OPENGL
     glViewport(0, 0, params.frameSize.width, params.frameSize.height);
 
     glEnable(GL_DEPTH_TEST);
@@ -217,6 +221,9 @@ void DynaFuImpl<T>::drawScene(OutputArray image)
     Mat depthData;
     Mat(params.frameSize.height, params.frameSize.width, CV_32F, f).convertTo(depthData, CV_8U, 255);
     depthData.copyTo(image);
+#else
+    CV_Error(cv::Error::StsBadFunc, "OpenGL support not enabled. Please rebuild the library with OpenGL support");
+#endif
 }
 
 template< typename T >
