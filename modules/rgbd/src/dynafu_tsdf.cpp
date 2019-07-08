@@ -763,8 +763,8 @@ Point3f TSDFVolumeCPU::interpolate(Point3f p1, Point3f p2, float v1, float v2) c
 void TSDFVolumeCPU::marchCubes(OutputArray _vertices, OutputArray _edges) const
 {
     const Voxel *volData = volume.ptr<Voxel>();
-    Mat meshPoints(0, 1, CV_32FC4);
-    Mat meshEdges(0, 2, CV_32S);
+    std::vector<Vec4f> meshPoints;
+    std::vector<int> meshEdges;
 
     Point3f mcNeighbourPts[8] =
         {
@@ -857,7 +857,7 @@ void TSDFVolumeCPU::marchCubes(OutputArray _vertices, OutputArray _edges) const
 
                 for (int i = 0; triTable[cubeIndex][i] != -1; i += 3)
                 {
-                    size_t pointsIndex = meshPoints.size().height;
+                    size_t pointsIndex = meshPoints.size();
 
                     Point3f p = pose * (vertices[triTable[cubeIndex][i]] * voxelSize);
                     meshPoints.push_back(Vec4f(p.x, p.y, p.z, 1.f));
@@ -870,14 +870,14 @@ void TSDFVolumeCPU::marchCubes(OutputArray _vertices, OutputArray _edges) const
 
                     if (_edges.needed())
                     {
-                        Mat edge = (Mat_<int>(1, 2) << pointsIndex, pointsIndex + 1);
-                        meshEdges.push_back(edge);
+                        meshEdges.push_back(pointsIndex);
+                        meshEdges.push_back(pointsIndex+1);
 
-                        edge = (Mat_<int>(1, 2) << pointsIndex + 1, pointsIndex + 2);
-                        meshEdges.push_back(edge);
+                        meshEdges.push_back(pointsIndex+1);
+                        meshEdges.push_back(pointsIndex+2);
 
-                        edge = (Mat_<int>(1, 2) << pointsIndex + 2, pointsIndex);
-                        meshEdges.push_back(edge);
+                        meshEdges.push_back(pointsIndex+2);
+                        meshEdges.push_back(pointsIndex);
                     }
                 }
             }
@@ -885,10 +885,10 @@ void TSDFVolumeCPU::marchCubes(OutputArray _vertices, OutputArray _edges) const
     }
 
     if (_vertices.needed())
-        meshPoints.copyTo(_vertices);
+        Mat(meshPoints.size(), 1, CV_32FC4, &meshPoints[0]).copyTo(_vertices);
 
     if (_edges.needed())
-        meshEdges.copyTo(_edges);
+        Mat(meshPoints.size(), 2, CV_32S, &meshEdges[0]).copyTo(_edges);
 }
 
 cv::Ptr<TSDFVolume> makeTSDFVolume(Point3i _res,  float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
