@@ -24,6 +24,9 @@
 #endif
 # include <GL/gl.h>
 #endif
+#else
+# define NO_OGL_ERR CV_Error(cv::Error::OpenGlNotSupported, \
+                    "OpenGL support not enabled. Please rebuild the library with OpenGL support");
 #endif
 
 namespace cv {
@@ -143,9 +146,10 @@ private:
 
     WarpField warpfield;
 
+#ifdef HAVE_OPENGL
     ogl::Arrays arr;
     ogl::Buffer idx;
-
+#endif
     void drawScene(OutputArray img);
 };
 
@@ -222,7 +226,8 @@ void DynaFuImpl<T>::drawScene(OutputArray image)
     Mat(params.frameSize.height, params.frameSize.width, CV_32F, f).convertTo(depthData, CV_8U, 255);
     depthData.copyTo(image);
 #else
-    CV_Error(cv::Error::StsBadFunc, "OpenGL support not enabled. Please rebuild the library with OpenGL support");
+    CV_UNUSED(image);
+    NO_OGL_ERR;
 #endif
 }
 
@@ -406,6 +411,7 @@ void DynaFuImpl<T>::marchCubes(OutputArray vertices, OutputArray edges) const
 template<typename T>
 void DynaFuImpl<T>::renderSurface(OutputArray image)
 {
+#ifdef HAVE_OPENGL
     Mat vertices, meshIdx;
     volume->marchCubes(vertices, noArray());
     if(vertices.empty()) return;
@@ -424,6 +430,10 @@ void DynaFuImpl<T>::renderSurface(OutputArray image)
     idx.copyFrom(meshIdx);
 
     drawScene(image);
+#else
+    CV_UNUSED(image);
+    NO_OGL_ERR;
+#endif
 }
 
 // importing class
