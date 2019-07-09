@@ -19,9 +19,9 @@ const cv::Scalar
 // static method
 TEST(TEST_CASE_NAME, static_)
 {
-    std::vector<cv::Mat> qMats = {};
-    quality_expect_near(quality::QualityPSNR::compute(get_testfile_1a(), get_testfile_1a(), qMats), cv::Scalar(INFINITY,INFINITY,INFINITY,INFINITY)); // ref vs ref == inf
-    EXPECT_EQ(qMats.size(), 1U);
+    cv::Mat qMat = {};
+    quality_expect_near(quality::QualityPSNR::compute(get_testfile_1a(), get_testfile_1a(), qMat), cv::Scalar(INFINITY, INFINITY, INFINITY, INFINITY)); // ref vs ref == inf
+    check_quality_map(qMat);
 }
 
 // single channel, with/without opencl
@@ -36,18 +36,6 @@ TEST(TEST_CASE_NAME, single_channel)
 TEST(TEST_CASE_NAME, multi_channel)
 {
     quality_test(quality::QualityPSNR::create(get_testfile_2a()), get_testfile_2b(), PSNR_EXPECTED_2);
-}
-
-// multi-frame test
-TEST(TEST_CASE_NAME, multi_frame)
-{
-    cv::Scalar expected;
-    cv::add(MSE_EXPECTED_1, MSE_EXPECTED_2, expected);
-    expected /= 2.;
-
-    expected = quality::quality_utils::mse_to_psnr(expected, quality::QualityPSNR::MAX_PIXEL_VALUE_DEFAULT );
-
-    quality_test(quality::QualityPSNR::create(get_testfile_1a2a()), get_testfile_1b2b(), expected, 2);
 }
 
 // internal a/b test

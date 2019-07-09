@@ -35,7 +35,8 @@ enum InterpolationType
 
 /** @brief This is used store and set up the parameters of the robust local optical flow (RLOF) algoritm.
  *
- * The RLOF is a fast local optical flow approach similar to the pyramidal iterative Lucas-Kanade method as
+ * The RLOF is a fast local optical flow approach described in @cite Senst2012 @cite Senst2013 @cite Senst2014
+ * and @cite Senst2016 similar to the pyramidal iterative Lucas-Kanade method as
  * proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK().
  * This RLOF implementation can be seen as an improved pyramidal iterative Lucas-Kanade and includes
  * a set of improving modules. The main improvements in respect to the pyramidal iterative Lucas-Kanade
@@ -197,7 +198,8 @@ public:
 /** @brief Fast dense optical flow computation based on robust local optical flow (RLOF) algorithms and sparse-to-dense interpolation
  * scheme.
  *
- * The RLOF is a fast local optical flow approach similar to the pyramidal iterative Lucas-Kanade method as
+ * The RLOF is a fast local optical flow approach described in @cite Senst2012 @cite Senst2013 @cite Senst2014
+ * and @cite Senst2016 similar to the pyramidal iterative Lucas-Kanade method as
  * proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK().
  *
  * The sparse-to-dense interpolation scheme allows for fast computation of dense optical flow using RLOF (see @cite Geistert2016).
@@ -350,7 +352,8 @@ public:
 
 /** @brief Class used for calculation sparse optical flow and feature tracking with robust local optical flow (RLOF) algorithms.
 *
-* The RLOF is a fast local optical flow approach similar to the pyramidal iterative Lucas-Kanade method as
+* The RLOF is a fast local optical flow approach described in @cite Senst2012 @cite Senst2013 @cite Senst2014
+ * and @cite Senst2016 similar to the pyramidal iterative Lucas-Kanade method as
 * proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK().
 *
 * For the RLOF configuration see optflow::RLOFOpticalFlowParameter for further details.
@@ -396,7 +399,8 @@ public:
 
 /** @brief Fast dense optical flow computation based on robust local optical flow (RLOF) algorithms and sparse-to-dense interpolation scheme.
  *
- * The RLOF is a fast local optical flow approach similar to the pyramidal iterative Lucas-Kanade method as
+ * The RLOF is a fast local optical flow approach described in @cite Senst2012 @cite Senst2013 @cite Senst2014
+ * and @cite Senst2016 similar to the pyramidal iterative Lucas-Kanade method as
  * proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK().
  *
  * The sparse-to-dense interpolation scheme allows for fast computation of dense optical flow using RLOF (see @cite Geistert2016).
@@ -452,7 +456,8 @@ CV_EXPORTS_W void calcOpticalFlowDenseRLOF(InputArray I0, InputArray I1, InputOu
 /** @brief Calculates fast optical flow for a sparse feature set using the robust local optical flow (RLOF) similar
 * to optflow::calcOpticalFlowPyrLK().
 *
-* The RLOF is a fast local optical flow approach similar to the pyramidal iterative Lucas-Kanade method as
+* The RLOF is a fast local optical flow approach described in @cite Senst2012 @cite Senst2013 @cite Senst2014
+ * and @cite Senst2016 similar to the pyramidal iterative Lucas-Kanade method as
 * proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK().
 *
 * @param prevImg first 8-bit input image. If The cross-based RLOF is used (by selecting optflow::RLOFOpticalFlowParameter::supportRegionType

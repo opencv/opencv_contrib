@@ -75,7 +75,7 @@ public:
     */
     CV_WRAP virtual bool fit( InputArray image,
                               InputArray faces,
-                              OutputArrayOfArrays landmarks ) = 0;
+                              OutputArrayOfArrays landmarks) = 0;
 }; /* Facemark*/
 
 

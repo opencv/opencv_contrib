@@ -725,7 +725,7 @@ Mat KeypointBasedMotionEstimator::estimate(const Mat &frame0, const Mat &frame1,
 Mat KeypointBasedMotionEstimator::estimate(InputArray frame0, InputArray frame1, bool *ok)
 {
     // find keypoints
-    detector_->detect(frame0, keypointsPrev_);
+    detector_->detect(frame0, keypointsPrev_, mask_);
     if (keypointsPrev_.empty())
         return Mat::eye(3, 3, CV_32F);
 

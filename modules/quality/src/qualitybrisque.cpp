@@ -240,26 +240,6 @@ namespace
         result[0] = computescore(model, range, img);
         return result;
     }
-
-    cv::Scalar compute( const cv::Ptr<cv::ml::SVM>& model, const cv::Mat& range, std::vector<brisque_mat_type>& imgs)
-    {
-        CV_DbgAssert(imgs.size() > 0);
-
-        cv::Scalar result = {};
-
-        const auto sz = imgs.size();
-
-        for (unsigned i = 0; i < sz; ++i)
-        {
-            auto cmp = compute(model, range, imgs[i]);
-            cv::add(result, cmp, result);
-        }
-
-        if (sz > 1)
-            result /= (cv::Scalar::value_type)sz;   // average result
-
-        return result;
-    }
 }
 
 // static
@@ -275,52 +255,26 @@ cv::Ptr<QualityBRISQUE> QualityBRISQUE::create(const cv::Ptr<cv::ml::SVM>& model
 }
 
 // static
-cv::Scalar QualityBRISQUE::compute(InputArrayOfArrays imgs, const cv::String& model_file_path, const cv::String& range_file_path)
+cv::Scalar QualityBRISQUE::compute( InputArray img, const cv::String& model_file_path, const cv::String& range_file_path)
 {
-    auto obj = create(model_file_path, range_file_path);
-    return obj->compute(imgs);
+    return QualityBRISQUE(model_file_path, range_file_path).compute(img);
 }
 
 // QualityBRISQUE() constructor
 QualityBRISQUE::QualityBRISQUE(const cv::String& model_file_path, const cv::String& range_file_path)
+    : QualityBRISQUE(
+        cv::ml::SVM::load(model_file_path)
+        , cv::FileStorage(range_file_path, cv::FileStorage::READ)["range"].mat()
+    )
+{}
+
+cv::Scalar QualityBRISQUE::compute( InputArray img )
 {
-    // construct data file path from OPENCV_DIR env var and quality subdir
-    const auto get_data_path = [](const cv::String& fname)
-    {
-        cv::String path{ std::getenv("OPENCV_DIR") };
-        return path.empty()
-            ? path  // empty
-            : path + "/testdata/contrib/quality/" + fname
-            ;
-    };
+    auto mat = quality_utils::extract_mat<brisque_mat_type>(img); // extract input mats
 
-    const auto
-        modelpath = model_file_path.empty() ? get_data_path("brisque_model_live.yml") : model_file_path
-        , rangepath = range_file_path.empty() ? get_data_path("brisque_range_live.yml") : range_file_path
-        ;
+    mat = mat_convert(mat);// convert to gs, scale to [0,1]
 
-    if (modelpath.empty())
-        CV_Error(cv::Error::StsObjectNotFound, "BRISQUE model data not found");
-
-    if (rangepath.empty())
-        CV_Error(cv::Error::StsObjectNotFound, "BRISQUE range data not found");
-
-    *this = QualityBRISQUE(
-        cv::ml::SVM::load(modelpath)
-        , cv::FileStorage(rangepath, cv::FileStorage::READ)["range"].mat()
-    );
-}
-
-cv::Scalar QualityBRISQUE::compute(InputArrayOfArrays imgs)
-{
-    auto vec = quality_utils::extract_mats<brisque_mat_type>(imgs); // extract input mats
-
-    CV_Assert(!vec.empty());
-
-    for (auto& mat : vec)
-        mat = mat_convert(mat); // convert to gs, scale to [0,1]
-
-    return ::compute(this->_model, this->_range, vec);
+    return ::compute(this->_model, this->_range, mat );
 }
 
 //static

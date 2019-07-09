@@ -46,14 +46,14 @@ Quick Start/Usage
 
 ```cpp
     #include <opencv2/quality.hpp>
-    cv::Mat img1, img2; /* your cv::Mat images */
-    std::vector<cv::Mat> quality_maps;  /* output quality map(s) (optional) */
+    cv::Mat img1, img2; /* your cv::Mat images to compare */
+    cv::Mat quality_map;  /* output quality map (optional) */
     /* compute MSE via static method */
-    cv::Scalar result_static = quality::QualityMSE::compute(img1, img2, quality_maps);  /* or cv::noArray() if not interested in output quality maps */
+    cv::Scalar result_static = quality::QualityMSE::compute(img1, img2, quality_map);  /* or cv::noArray() if not interested in output quality maps */
     /* alternatively, compute MSE via instance */
     cv::Ptr<quality::QualityBase> ptr = quality::QualityMSE::create(img1);
     cv::Scalar result = ptr->compute( img2 );  /* compute MSE, compare img1 vs img2 */
-    ptr->getQualityMaps(quality_maps);  /* optionally, access output quality maps */
+    ptr->getQualityMap(quality_map);  /* optionally, access output quality maps */
 ```
 
 **For No Reference IQA Algorithm (BRISQUE)**
@@ -81,11 +81,11 @@ model_path, range_path);
     img1 = cv2.imread(img1, 1) # specify img1
     img2 = cv2.imread(img2_path, 1) # specify img2_path
     # compute MSE score and quality maps via static method
-    result_static, quality_maps = cv2.quality.QualityMSE_compute(img1, img2)
+    result_static, quality_map = cv2.quality.QualityMSE_compute(img1, img2)
     # compute MSE score and quality maps via Instance
     obj = cv2.quality.QualityMSE_create(img1)
     result = obj.compute(img2)
-    quality_maps = obj.getQualityMaps()
+    quality_map = obj.getQualityMap()
 ```
 
 **For No Reference IQA Algorithm (BRISQUE)**
@@ -94,28 +94,26 @@ model_path, range_path);
     import cv2
     # read image
     img = cv2.imread(img_path, 1) # mention img_path
-    # make a list of image to be passed
-    img_list = [img]
     # compute brisque quality score via static method
-    score = cv2.quality.QualityBRISQUE_compute(img_list, model_path,
+    score = cv2.quality.QualityBRISQUE_compute(img, model_path,
 range_path) # specify model_path and range_path
     # compute brisque quality score via instance
     # specify model_path and range_path
     obj = cv2.quality.QualityBRISQUE_create(model_path, range_path)
-    score = obj.compute(img_list)
+    score = obj.compute(img)
 ```
 
 Library Design
 -----------------------------------------
 Each implemented algorithm shall:
 - Inherit from `QualityBase`, and properly implement/override `compute`, `empty` and `clear` instance methods, along with a static `compute` method.
-- Accept one or more `cv::Mat` or `cv::UMat` via `InputArrayOfArrays` for computation.  Each input `cv::Mat` or `cv::UMat` may contain one or more channels.  If the algorithm does not support multiple channels or multiple inputs, it should be documented and an appropriate assertion should be in place.
-- Return a `cv::Scalar` with per-channel computed value.  If multiple input images are provided, the resulting scalar should return the average result per channel.
+- Accept one `cv::Mat` or `cv::UMat` via `InputArray` for computation.  Each input `cv::Mat` or `cv::UMat` may contain one or more channels.  If the algorithm does not support multiple channels, it should be documented and an appropriate assertion should be in place.
+- Return a `cv::Scalar` with per-channel computed value
 - Compute result via a single, static method named `compute` and via an overridden instance method (see `compute` in `qualitybase.hpp`).
-- Perform any setup and/or pre-processing of reference images in the constructor, allowing for efficient computation when comparing the reference image(s) versus multiple comparison image(s).  No-reference algorithms should accept images for evaluation in the `compute` method.
-- Optionally compute resulting quality maps.  Instance `compute` method should store them in `QualityBase::_qualityMaps` as the mat type defined by `QualityBase::_quality_map_type`, or override `QualityBase::getQualityMaps`.  Static `compute` method should return them in an `OutputArrayOfArrays` parameter.
-- Document algorithm in this readme and in its respective header.  Documentation should include interpretation for the results of `compute` as well as the format of the output quality maps (if supported), along with any other notable usage information.
-- Implement tests of static `compute` method and instance methods using single- and multi-channel images, multi-frame images, and OpenCL enabled and disabled
+- Perform any setup and/or pre-processing of reference images in the constructor, allowing for efficient computation when comparing the reference image versus multiple comparison image(s).  No-reference algorithms should accept images for evaluation in the `compute` method.
+- Optionally compute resulting quality map.  Instance `compute` method should store them in `QualityBase::_qualityMap` as the mat type defined by `QualityBase::_mat_type`, or override `QualityBase::getQualityMap`.  Static `compute` method should return the quality map in an `OutputArray` parameter.
+- Document algorithm in this readme and in its respective header.  Documentation should include interpretation for the results of `compute` as well as the format of the output quality map (if supported), along with any other notable usage information.
+- Implement tests of static `compute` method and instance methods using single- and multi-channel images and OpenCL enabled and disabled
 
 To Do
 -----------------------------------------
