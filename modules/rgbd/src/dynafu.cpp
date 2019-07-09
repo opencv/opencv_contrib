@@ -156,7 +156,7 @@ private:
 template< typename T>
 std::vector<Point3f> DynaFuImpl<T>::getNodesPos() const {
     NodeVectorType nv = warpfield.getNodes();
-    std::vector<Point3f> nodesPos(nv.size());
+    std::vector<Point3f> nodesPos;
     for(auto n: nv)
         nodesPos.push_back(n->pos);
 
@@ -324,6 +324,19 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
     }
     else
     {
+
+        T _render, estdDepth;
+        renderSurface(_render);
+        _render.convertTo(estdDepth, DEPTH_TYPE);
+
+        std::vector<T> estdPoints, estdNormals;
+        makeFrameFromDepth(estdDepth, estdPoints, estdNormals, params.intr,
+                       params.pyramidLevels,
+                       params.depthFactor,
+                       params.bilateral_sigma_depth,
+                       params.bilateral_sigma_spatial,
+                       params.bilateral_kernel_size,
+                       params.truncateThreshold);
 
         UMat wfPoints;
         UMat wfNormals;
