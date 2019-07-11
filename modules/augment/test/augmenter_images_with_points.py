@@ -35,4 +35,4 @@ if __name__ == "__main__":
         points = np.random.rand(numberOfPoints, 2)
         pointsArr.append(points)
 
-    imgs2, pointsArr2 = aug.applyImagesWithMasks(imgs, pointsArr)
+    imgs2, pointsArr2 = aug.applyImagesWithPoints(imgs, pointsArr)
