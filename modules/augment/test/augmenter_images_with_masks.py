@@ -23,6 +23,7 @@ if __name__ == "__main__":
     aug.add(cv.augment_Resize((1200,900)),0.4)
 
     imgs = []
+    masks = []
 
     for i in range(10):
         widthOfImages = np.random.randint(400, 2000)
@@ -30,6 +31,7 @@ if __name__ == "__main__":
 
         img = np.random.rand(heightOfImages, widthOfImages)
         imgs.append(img)
+        mask = np.random.rand(heightOfImages, widthOfImages)
+        masks.append(mask)
 
-    imgs = imgs
-    imgs2 = aug.applyImages(imgs)
+    imgs2, masks2 = aug.applyImagesWithMasks(imgs, masks)

@@ -23,13 +23,16 @@ if __name__ == "__main__":
     aug.add(cv.augment_Resize((1200,900)),0.4)
 
     imgs = []
+    rectsArr = []
 
     for i in range(10):
         widthOfImages = np.random.randint(400, 2000)
         heightOfImages = np.random.randint(400, 2000)
+        numberOfRects = np.random.randint(1,100)
 
         img = np.random.rand(heightOfImages, widthOfImages)
         imgs.append(img)
+        rects = np.random.rand(numberOfRects, 4)
+        rectsArr.append(rects)
 
-    imgs = imgs
-    imgs2 = aug.applyImages(imgs)
+    imgs2, rectsArr2 = aug.applyImagesWithMasks(imgs, rectsArr)

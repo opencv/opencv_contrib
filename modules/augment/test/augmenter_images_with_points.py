@@ -23,13 +23,16 @@ if __name__ == "__main__":
     aug.add(cv.augment_Resize((1200,900)),0.4)
 
     imgs = []
+    pointsArr = []
 
     for i in range(10):
         widthOfImages = np.random.randint(400, 2000)
         heightOfImages = np.random.randint(400, 2000)
+        numberOfPoints = np.random.randint(1,100)
 
         img = np.random.rand(heightOfImages, widthOfImages)
         imgs.append(img)
+        points = np.random.rand(numberOfPoints, 2)
+        pointsArr.append(points)
 
-    imgs = imgs
-    imgs2 = aug.applyImages(imgs)
+    imgs2, pointsArr2 = aug.applyImagesWithMasks(imgs, pointsArr)
