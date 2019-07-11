@@ -35,4 +35,4 @@ if __name__ == "__main__":
         rects = np.random.rand(numberOfRects, 4)
         rectsArr.append(rects)
 
-    imgs2, rectsArr2 = aug.applyImagesWithMasks(imgs, rectsArr)
+    imgs2, rectsArr2 = aug.applyImagesWithRectangles(imgs, rectsArr)
