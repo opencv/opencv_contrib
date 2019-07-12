@@ -196,6 +196,8 @@ public:
     virtual std::vector<Point3f> getNodesPos() const = 0;
 
     virtual void marchCubes(OutputArray vertices, OutputArray edges) const = 0;
+
+    virtual void renderSurface(OutputArray image) = 0;
 };
 
 //! @}

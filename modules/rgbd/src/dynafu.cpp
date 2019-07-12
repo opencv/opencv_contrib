@@ -11,6 +11,24 @@
 #include "fast_icp.hpp"
 #include "kinfu_frame.hpp"
 
+#include "opencv2/core/opengl.hpp"
+
+#ifdef HAVE_OPENGL
+#define GL_GLEXT_PROTOTYPES
+#ifdef __APPLE__
+# include <OpenGL/gl.h>
+#else
+#ifdef _WIN32
+# define WIN32_LEAN_AND_MEAN
+# include <windows.h>
+#endif
+# include <GL/gl.h>
+#endif
+#else
+# define NO_OGL_ERR CV_Error(cv::Error::OpenGlNotSupported, \
+                    "OpenGL support not enabled. Please rebuild the library with OpenGL support");
+#endif
+
 namespace cv {
 namespace dynafu {
 using namespace kinfu;
@@ -113,6 +131,8 @@ public:
 
     void marchCubes(OutputArray vertices, OutputArray edges) const CV_OVERRIDE;
 
+    void renderSurface(OutputArray image) CV_OVERRIDE;
+
 private:
     Params params;
 
@@ -125,12 +145,18 @@ private:
     std::vector<T> pyrNormals;
 
     WarpField warpfield;
+
+#ifdef HAVE_OPENGL
+    ogl::Arrays arr;
+    ogl::Buffer idx;
+#endif
+    void drawScene(OutputArray img);
 };
 
 template< typename T>
 std::vector<Point3f> DynaFuImpl<T>::getNodesPos() const {
     NodeVectorType nv = warpfield.getNodes();
-    std::vector<Point3f> nodesPos(nv.size());
+    std::vector<Point3f> nodesPos;
     for(auto n: nv)
         nodesPos.push_back(n->pos);
 
@@ -146,7 +172,63 @@ DynaFuImpl<T>::DynaFuImpl(const Params &_params) :
                           params.raycast_step_factor)),
     pyrPoints(), pyrNormals(), warpfield()
 {
+#ifdef HAVE_OPENGL
+    // Bind framebuffer for off-screen rendering
+    unsigned int fbo_depth;
+    glGenRenderbuffersEXT(1, &fbo_depth);
+    glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, fbo_depth);
+    glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT, params.frameSize.width, params.frameSize.height);
+
+    unsigned int fbo;
+    glGenFramebuffersEXT(1, &fbo);
+    glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
+
+    glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, fbo_depth);
+#endif
+
     reset();
+}
+
+template< typename T >
+void DynaFuImpl<T>::drawScene(OutputArray image)
+{
+#ifdef HAVE_OPENGL
+    glViewport(0, 0, params.frameSize.width, params.frameSize.height);
+
+    glEnable(GL_DEPTH_TEST);
+    glClear(GL_DEPTH_BUFFER_BIT);
+
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+
+    float fovX = params.frameSize.width/params.intr(0, 0);
+    float fovY = params.frameSize.height/params.intr(1, 1);
+
+    Vec3f t;
+    t = params.volumePose.translation();
+
+    double nearZ = t[2];
+    double farZ = params.volumeDims[2] * params.voxelSize + nearZ;
+
+    // Define viewing volume
+    glFrustum(-nearZ*fovX/2, nearZ*fovX/2, -nearZ*fovY/2, nearZ*fovY/2, nearZ, farZ);
+
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    glScalef(1.f, 1.f, -1.f); //Flip Z as camera points towards -ve Z axis
+
+    ogl::render(arr, idx, ogl::TRIANGLES);
+
+    float f[params.frameSize.width*params.frameSize.height];
+    glReadPixels(0, 0, params.frameSize.width, params.frameSize.height, GL_DEPTH_COMPONENT, GL_FLOAT, &f[0]);
+
+    Mat depthData;
+    Mat(params.frameSize.height, params.frameSize.width, CV_32F, f).convertTo(depthData, CV_8U, 255);
+    depthData.copyTo(image);
+#else
+    CV_UNUSED(image);
+    NO_OGL_ERR;
+#endif
 }
 
 template< typename T >
@@ -243,6 +325,19 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
     else
     {
 
+        T _render, estdDepth;
+        renderSurface(_render);
+        _render.convertTo(estdDepth, DEPTH_TYPE);
+
+        std::vector<T> estdPoints, estdNormals;
+        makeFrameFromDepth(estdDepth, estdPoints, estdNormals, params.intr,
+                       params.pyramidLevels,
+                       params.depthFactor,
+                       params.bilateral_sigma_depth,
+                       params.bilateral_sigma_spatial,
+                       params.bilateral_kernel_size,
+                       params.truncateThreshold);
+
         UMat wfPoints;
         UMat wfNormals;
         volume->fetchPointsNormals(wfPoints, wfNormals);
@@ -324,6 +419,34 @@ template< typename T >
 void DynaFuImpl<T>::marchCubes(OutputArray vertices, OutputArray edges) const
 {
     volume->marchCubes(vertices, edges);
+}
+
+template<typename T>
+void DynaFuImpl<T>::renderSurface(OutputArray image)
+{
+#ifdef HAVE_OPENGL
+    Mat vertices, meshIdx;
+    volume->marchCubes(vertices, noArray());
+    if(vertices.empty()) return;
+
+    Affine3f invCamPose(pose.inv());
+    for(int i = 0; i < vertices.size().height; i++) {
+        Vec4f v = vertices.at<Vec4f>(i);
+        Point3f p = invCamPose * Point3f(v[0], v[1], v[2]);
+        vertices.at<Vec4f>(i) = Vec4f(p.x, p.y, p.z, 1.f);
+    }
+
+    for(int i = 0; i < vertices.size().height; i++)
+        meshIdx.push_back<int>(i);
+
+    arr.setVertexArray(vertices);
+    idx.copyFrom(meshIdx);
+
+    drawScene(image);
+#else
+    CV_UNUSED(image);
+    NO_OGL_ERR;
+#endif
 }
 
 // importing class

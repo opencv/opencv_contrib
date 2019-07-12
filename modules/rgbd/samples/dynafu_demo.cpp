@@ -330,6 +330,8 @@ int main(int argc, char **argv)
     //params->volumePose = params->volumePose.translate(Vec3f(0.f, 0.f, 0.5f));
     //params->tsdf_max_weight = 16;
 
+    namedWindow("OpenGL Window", WINDOW_OPENGL);
+    resizeWindow("OpenGL Window", 1, 1);
     if(!idle)
         df = DynaFu::create(params);
 
@@ -345,8 +347,14 @@ int main(int argc, char **argv)
 
     int64 prevTime = getTickCount();
 
+
     for(UMat frame = ds->getDepth(); !frame.empty(); frame = ds->getDepth())
     {
+        Mat renderImg;
+        setOpenGlContext("OpenGL Window");
+        df->renderSurface(renderImg);
+        if(!renderImg.empty())
+            imshow("Surface prediction", renderImg);
 
         if(depthWriter)
             depthWriter->append(frame);

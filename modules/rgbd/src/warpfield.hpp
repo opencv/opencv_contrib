@@ -21,7 +21,7 @@ struct WarpNode
     {
         Point3f diff = pos - x;
         float L2 = diff.x*diff.x + diff.y*diff.y + diff.z*diff.z;
-        return expf(-L2/(2.f*radius*radius));
+        return expf(-L2/(2.f*radius));
     }
 };
 
