@@ -10,11 +10,11 @@ if __name__ == "__main__":
     numberOfImages = np.random.randint(10,100)
 
     aug = cv.augment_Augmenter()
-    aug.add(cv.augment_FlipHorizontal(), 0.7)
-    aug.add(cv.augment_FlipVertical(), 0.5)
-    aug.add(cv.augment_GaussianBlur(5,12), .7)
-    aug.add(cv.augment_Rotate(0,180), 0.3)
-    aug.add(cv.augment_Resize((1200,900)),0.4)
+    aug.add(t=cv.augment_FlipHorizontal(), prob=0.7)
+    aug.add(t=cv.augment_FlipVertical(), prob=0.5)
+    aug.add(t=cv.augment_GaussianBlur(5,12), prob=0.7)
+    aug.add(t=cv.augment_Rotate(0,180), prob=0.3)
+    aug.add(t=cv.augment_Resize((1200,900)), prob=0.4)
 
     imgs = []
     pointsArr = []
