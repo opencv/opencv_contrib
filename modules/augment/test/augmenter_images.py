@@ -1,12 +1,6 @@
-try:
-    import cv2 as cv
-except ImportError:
-    raise ImportError('Can\'t find OpenCV Python module. If you\'ve built it from sources without installation, '
-                      'configure environment variable PYTHONPATH to "opencv_build_dir/lib" directory (with "python3" subdirectory if required)')
-try:
-    import numpy as np
-except ImportError:
-    raise ImportError('Can\'t find numpy library, please make sure it is installed')
+import cv2 as cv
+import numpy as np
+
 
 if __name__ == "__main__":
     ## for consistency
@@ -24,7 +18,7 @@ if __name__ == "__main__":
 
     imgs = []
 
-    for i in range(10):
+    for i in range(numberOfImages):
         widthOfImages = np.random.randint(400, 2000)
         heightOfImages = np.random.randint(400, 2000)
 
