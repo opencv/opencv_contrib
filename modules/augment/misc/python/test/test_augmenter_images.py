@@ -79,7 +79,7 @@ class augmenter_test(NewOpenCVTests):
 
         aug.applyImagesWithPoints(imgs, pointsArr)
 
-    def test_augmenter_with_rectangles(self):
+    def test_augmenter_images_with_rectangles(self):
         numberOfImages = np.random.randint(10, 100)
 
         aug = cv.augment_Augmenter()
