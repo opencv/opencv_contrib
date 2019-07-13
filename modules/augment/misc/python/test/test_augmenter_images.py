@@ -9,7 +9,7 @@ cv.setRNGSeed(seed=1)
 
 class augmenter_test(NewOpenCVTests):
     def test_augmenter_images(self):
-        numberOfImages = np.random.randint(10, 100)
+        numberOfImages = np.random.randint(low=10, high=100)
 
         aug = cv.augment_Augmenter()
         aug.add(t=cv.augment_FlipHorizontal(), prob=0.7)
@@ -21,8 +21,8 @@ class augmenter_test(NewOpenCVTests):
         imgs = []
 
         for i in range(numberOfImages):
-            widthOfImages = np.random.randint(400, 2000)
-            heightOfImages = np.random.randint(400, 2000)
+            widthOfImages = np.random.randint(low=400, high=2000)
+            heightOfImages = np.random.randint(low=400, high=2000)
 
             img = np.random.rand(heightOfImages, widthOfImages)
             imgs.append(img)
@@ -31,7 +31,7 @@ class augmenter_test(NewOpenCVTests):
         aug.applyImages(imgs)
 
     def test_augmenter_images_with_masks(self):
-        numberOfImages = np.random.randint(10, 100)
+        numberOfImages = np.random.randint(low=10, high=100)
 
         aug = cv.augment_Augmenter()
         aug.add(t=cv.augment_FlipHorizontal(), prob=0.7)
@@ -44,8 +44,8 @@ class augmenter_test(NewOpenCVTests):
         masks = []
 
         for i in range(numberOfImages):
-            widthOfImages = np.random.randint(400, 2000)
-            heightOfImages = np.random.randint(400, 2000)
+            widthOfImages = np.random.randint(low=400, high=2000)
+            heightOfImages = np.random.randint(low=400, high=2000)
 
             img = np.random.rand(heightOfImages, widthOfImages)
             imgs.append(img)
@@ -55,7 +55,7 @@ class augmenter_test(NewOpenCVTests):
         aug.applyImagesWithMasks(imgs, masks)
 
     def test_augmenter_images_with_points(self):
-        numberOfImages = np.random.randint(10, 100)
+        numberOfImages = np.random.randint(low=10, high=100)
 
         aug = cv.augment_Augmenter()
         aug.add(t=cv.augment_FlipHorizontal(), prob=0.7)
@@ -68,9 +68,9 @@ class augmenter_test(NewOpenCVTests):
         pointsArr = []
 
         for i in range(numberOfImages):
-            widthOfImages = np.random.randint(400, 2000)
-            heightOfImages = np.random.randint(400, 2000)
-            numberOfPoints = np.random.randint(1, 100)
+            widthOfImages = np.random.randint(low=400, high=2000)
+            heightOfImages = np.random.randint(low=400, high=2000)
+            numberOfPoints = np.random.randint(low=1, high=100)
 
             img = np.random.rand(heightOfImages, widthOfImages)
             imgs.append(img)
@@ -93,9 +93,9 @@ class augmenter_test(NewOpenCVTests):
         rectsArr = []
 
         for i in range(numberOfImages):
-            widthOfImages = np.random.randint(400, 2000)
-            heightOfImages = np.random.randint(400, 2000)
-            numberOfRects = np.random.randint(1, 100)
+            widthOfImages = np.random.randint(low=400, high=2000)
+            heightOfImages = np.random.randint(low=400, high=2000)
+            numberOfRects = np.random.randint(low=1, high=100)
 
             img = np.random.rand(heightOfImages, widthOfImages)
             imgs.append(img)
