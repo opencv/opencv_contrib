@@ -31,7 +31,7 @@ AverageBlur::AverageBlur(Size kernelSize)
     sameXY = false;
 }
 
-void AverageBlur::init(const Mat& image)
+void AverageBlur::init(const Mat&)
 {
     kernelSize.height = Transform::rng.uniform(minKernelSize.height / 2, maxKernelSize.height / 2 + maxKernelSize.height % 2) * 2 + 1; //generate only random odd numbers
     kernelSize.width = sameXY? kernelSize.height : Transform::rng.uniform(minKernelSize.width / 2, maxKernelSize.width / 2 + maxKernelSize.width % 2) * 2 + 1; //generate only random odd numbers

@@ -43,7 +43,7 @@ public:
 
     /* @brief choose an random kernel size and sigma from the specified ranges to apply in next transformations
     */
-    void virtual init(const Mat& srcImage);
+    void virtual init(const Mat&);
 
 private :
     Size minKernelSize;

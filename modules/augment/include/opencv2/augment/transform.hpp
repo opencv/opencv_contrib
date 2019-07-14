@@ -70,8 +70,8 @@ public:
 
 protected:
     static RNG rng;
-    size_t srcImageRows;
-    size_t srcImageCols;
+    int srcImageRows;
+    int srcImageCols;
 };
 
 }} //namespacw cv::augment

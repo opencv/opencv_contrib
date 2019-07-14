@@ -23,7 +23,7 @@ Resize::Resize(Size size, int interpolation)
 void Resize::init(const Mat& srcImage)
 {
     Transform::init(srcImage);
-    int index = Transform::rng.uniform(0, interpolations.size());
+    int index = Transform::rng.uniform(0, int(interpolations.size()));
     interpolation = interpolations[index];
 }
 

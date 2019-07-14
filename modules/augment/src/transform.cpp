@@ -62,7 +62,7 @@ void Transform::points(InputArray _src, OutputArray _dst)
     _dst.create(src.size(), CV_32F);
     Mat dst = _dst.getMat();
 
-    for (size_t i = 0; i < src.rows; i++)
+    for (int i = 0; i < src.rows; i++)
     {
         Mat src_row = src.row(i);
         Point2f src_point = Point2f(src_row.at<float>(0), src_row.at<float>(1));
@@ -89,7 +89,7 @@ void Transform::rectangles(InputArray _src, OutputArray _dst)
     _dst.create(src.size(), CV_32F);
     Mat dst = _dst.getMat();
 
-    for (size_t i = 0; i < src.rows; i++)
+    for (int i = 0; i < src.rows; i++)
     {
         Mat src_row = src.row(i);
         Vec4f src_rect = Vec4f(src_row.at<float>(0), src_row.at<float>(1), src_row.at<float>(2), src_row.at<float>(3));
@@ -104,9 +104,9 @@ void Transform::rectangles(InputArray _src, OutputArray _dst)
 
 void Transform::polygons(std::vector<Mat> src, OutputArrayOfArrays dst)
 {
-    dst.create(src.size(), 1, 0, -1, true);
+    dst.create(int(src.size()), 1, 0, -1, true);
 
-    for (size_t i = 0; i < src.size(); i++)
+    for (int i = 0; i < src.size(); i++)
     {
         Mat src_row = src[i];
         dst.create(src_row.size(), CV_32F, i, true);

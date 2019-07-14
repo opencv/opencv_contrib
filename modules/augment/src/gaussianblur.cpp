@@ -5,7 +5,7 @@
 #include "precomp.hpp"
 namespace cv { namespace augment {
 
-GaussianBlur::GaussianBlur(Size minKernelSize, Size maxKernelSize, double minSigmaX, double maxSigmaX, double minSigmaY, double maxSigmaY)
+GaussianBlur::GaussianBlur(Size minKernelSize, Size maxKernelSize, float minSigmaX, float maxSigmaX, float minSigmaY, float maxSigmaY)
 {
     this->minKernelSize = minKernelSize;
     this->maxKernelSize = maxKernelSize;
@@ -16,7 +16,7 @@ GaussianBlur::GaussianBlur(Size minKernelSize, Size maxKernelSize, double minSig
     sameXY = false;
 }
 
-GaussianBlur::GaussianBlur(int minKernelSize, int maxKernelSize, double minSigma, double maxSigma)
+GaussianBlur::GaussianBlur(int minKernelSize, int maxKernelSize, float minSigma, float maxSigma)
 {
     this->minKernelSize = Size(minKernelSize, minKernelSize);
     this->maxKernelSize = Size(maxKernelSize, maxKernelSize);
@@ -25,14 +25,14 @@ GaussianBlur::GaussianBlur(int minKernelSize, int maxKernelSize, double minSigma
     sameXY = true;
 }
 
-GaussianBlur::GaussianBlur(int kernelSize, double sigma)
+GaussianBlur::GaussianBlur(int kernelSize, float sigma)
 {
     minKernelSize = maxKernelSize = Size(kernelSize, kernelSize);
     minSigmaX = minSigmaY = maxSigmaY = maxSigmaX = sigma;
     sameXY = true;
 }
 
-GaussianBlur::GaussianBlur(Size kernelSize, double sigmaX, double sigmaY)
+GaussianBlur::GaussianBlur(Size kernelSize, float sigmaX, float sigmaY)
 {
     minKernelSize = maxKernelSize = kernelSize;
     minSigmaX = maxSigmaX = sigmaX;
@@ -40,7 +40,7 @@ GaussianBlur::GaussianBlur(Size kernelSize, double sigmaX, double sigmaY)
     sameXY = false;
 }
 
-void GaussianBlur::init(const Mat& image)
+void GaussianBlur::init(const Mat&)
 {
     kernelSize.height = Transform::rng.uniform(minKernelSize.height / 2, maxKernelSize.height / 2 + maxKernelSize.height % 2) * 2 + 1; //generate only random odd numbers
     kernelSize.width = sameXY? kernelSize.height : Transform::rng.uniform(minKernelSize.width / 2, maxKernelSize.width / 2 + maxKernelSize.width % 2) * 2 + 1; //generate only random odd numbers

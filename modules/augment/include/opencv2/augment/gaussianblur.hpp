@@ -20,7 +20,7 @@ public:
        @param minSigmaY the min standard deviation in the y direction of the gaussian blur kernel
        @param maxSigmaY the max standard deviation in the y direction of the gaussian blur kernel
     */
-    CV_WRAP GaussianBlur(Size minKernelSize, Size maxKernelSize, double minSigmaX, double maxSigmaX, double minSigmaY = 0, double maxSigmaY = 0);
+    CV_WRAP GaussianBlur(Size minKernelSize, Size maxKernelSize, float minSigmaX, float maxSigmaX, float minSigmaY = 0, float maxSigmaY = 0);
 
     /* @brief Constructor to initialize the gaussian blur transformation with a range of kernel sizes and range of sigma values (sigma in both directions is the same)
        @param minKernelSize the min size of gaussian blur kernel
@@ -28,20 +28,20 @@ public:
        @param minSigma the min standard deviation in both directions of the gaussian blur kernel
        @param maxSigma the max standard deviation in both directions of the gaussian blur kernel
     */
-    CV_WRAP GaussianBlur(int minKernelSize, int maxKernelSize, double minSigma = 0, double maxSigma = 0);
+    CV_WRAP GaussianBlur(int minKernelSize, int maxKernelSize, float minSigma = 0, float maxSigma = 0);
 
     /* @brief Constructor to initialize the gaussian blur transformation with a specific kernel size and a same standard deviation in both directions
        @param kernelSize the size of gaussian blur kernel
        @param sigma the standard deviation in both directions of the gaussian blur kernel
     */
-    CV_WRAP GaussianBlur(int kernelSize, double sigma = 0);
+    CV_WRAP GaussianBlur(int kernelSize, float sigma = 0);
 
     /* @brief Constructor to initialize the gaussian blur transformation with a specific kernel size and sigmaX and sigmaY
        @param kernelSize the size of gaussian blur kernel
        @param sigmaX the standard deviation in x direction of the gaussian blur kernel
        @param sigmaY the standard deviation in y direction of the gaussian blur kernel
     */
-    CV_WRAP GaussianBlur(Size kernelSize, double sigmaX, double sigmaY = 0);
+    CV_WRAP GaussianBlur(Size kernelSize, float sigmaX, float sigmaY = 0);
 
 
     /* @brief Apply the gaussian blue to a single image
@@ -52,7 +52,7 @@ public:
 
     /* @brief choose an random kernel size and sigma from the specified ranges to apply in next transformations
     */
-    void virtual init(const Mat& srcImage);
+    void virtual init(const Mat&);
 
 private :
     Size minKernelSize;
