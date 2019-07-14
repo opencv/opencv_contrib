@@ -10,7 +10,7 @@ cv.setRNGSeed(seed=1)
 
 class augmenter_test(NewOpenCVTests):
     def test_augmenter_images(self):
-        numberOfImages = np.random.randint(low=MIN_NUMBER_OF_TESTS, high=MAX_NUMBER_OF_TESTS)
+        numberOfImages = np.random.randint(MIN_NUMBER_OF_TESTS, MAX_NUMBER_OF_TESTS)
 
         aug = cv.augment_Augmenter()
         aug.add(t=cv.augment_FlipHorizontal(), prob=0.7)
@@ -22,8 +22,8 @@ class augmenter_test(NewOpenCVTests):
         imgs = []
 
         for i in range(numberOfImages):
-            widthOfImages = np.random.randint(low=MIN_IMAGE_DIM_SIZE, high=MAX_IMAGE_DIM_SIZE)
-            heightOfImages = np.random.randint(low=MIN_IMAGE_DIM_SIZE, high=MAX_IMAGE_DIM_SIZE)
+            widthOfImages = np.random.randint(MIN_IMAGE_DIM_SIZE, MAX_IMAGE_DIM_SIZE)
+            heightOfImages = np.random.randint(MIN_IMAGE_DIM_SIZE, MAX_IMAGE_DIM_SIZE)
 
             img = np.random.rand(heightOfImages, widthOfImages)
             imgs.append(img)
@@ -32,7 +32,7 @@ class augmenter_test(NewOpenCVTests):
         aug.applyImages(imgs)
 
     def test_augmenter_images_with_masks(self):
-        numberOfImages = np.random.randint(low=MIN_NUMBER_OF_TESTS, high=MAX_NUMBER_OF_TESTS)
+        numberOfImages = np.random.randint(MIN_NUMBER_OF_TESTS, MAX_NUMBER_OF_TESTS)
 
         aug = cv.augment_Augmenter()
         aug.add(t=cv.augment_FlipHorizontal(), prob=0.7)
@@ -45,8 +45,8 @@ class augmenter_test(NewOpenCVTests):
         masks = []
 
         for i in range(numberOfImages):
-            widthOfImages = np.random.randint(low=MIN_IMAGE_DIM_SIZE, high=MAX_IMAGE_DIM_SIZE)
-            heightOfImages = np.random.randint(low=MIN_IMAGE_DIM_SIZE, high=MAX_IMAGE_DIM_SIZE)
+            widthOfImages = np.random.randint(MIN_IMAGE_DIM_SIZE, MAX_IMAGE_DIM_SIZE)
+            heightOfImages = np.random.randint(MIN_IMAGE_DIM_SIZE, MAX_IMAGE_DIM_SIZE)
 
             img = np.random.rand(heightOfImages, widthOfImages)
             imgs.append(img)
@@ -56,7 +56,7 @@ class augmenter_test(NewOpenCVTests):
         aug.applyImagesWithMasks(imgs, masks)
 
     def test_augmenter_images_with_points(self):
-        numberOfImages = np.random.randint(low=MIN_NUMBER_OF_TESTS, high=MAX_NUMBER_OF_TESTS)
+        numberOfImages = np.random.randint(MIN_NUMBER_OF_TESTS, MAX_NUMBER_OF_TESTS)
 
         aug = cv.augment_Augmenter()
         aug.add(t=cv.augment_FlipHorizontal(), prob=0.7)
@@ -69,9 +69,9 @@ class augmenter_test(NewOpenCVTests):
         pointsArr = []
 
         for i in range(numberOfImages):
-            widthOfImages = np.random.randint(low=MIN_IMAGE_DIM_SIZE, high=MAX_IMAGE_DIM_SIZE)
-            heightOfImages = np.random.randint(low=MIN_IMAGE_DIM_SIZE, high=MAX_IMAGE_DIM_SIZE)
-            numberOfPoints = np.random.randint(low=MIN_NUMBER_OF_GROUND_TRUTH_DATA, high=MAX_NUMBER_OF_GROUND_TRUTH_DATA)
+            widthOfImages = np.random.randint(MIN_IMAGE_DIM_SIZE, MAX_IMAGE_DIM_SIZE)
+            heightOfImages = np.random.randint(MIN_IMAGE_DIM_SIZE, MAX_IMAGE_DIM_SIZE)
+            numberOfPoints = np.random.randint(MIN_NUMBER_OF_GROUND_TRUTH_DATA, MAX_NUMBER_OF_GROUND_TRUTH_DATA)
 
             img = np.random.rand(heightOfImages, widthOfImages)
             imgs.append(img)
@@ -81,7 +81,7 @@ class augmenter_test(NewOpenCVTests):
         aug.applyImagesWithPoints(imgs, pointsArr)
 
     def test_augmenter_images_with_rectangles(self):
-        numberOfImages = np.random.randint(low=MIN_NUMBER_OF_TESTS, high=MAX_NUMBER_OF_TESTS)
+        numberOfImages = np.random.randint(MIN_NUMBER_OF_TESTS, MAX_NUMBER_OF_TESTS)
 
         aug = cv.augment_Augmenter()
         aug.add(t=cv.augment_FlipHorizontal(), prob=0.7)
@@ -94,9 +94,9 @@ class augmenter_test(NewOpenCVTests):
         rectsArr = []
 
         for i in range(numberOfImages):
-            widthOfImages = np.random.randint(low=MIN_IMAGE_DIM_SIZE, high=MAX_IMAGE_DIM_SIZE)
-            heightOfImages = np.random.randint(low=MIN_IMAGE_DIM_SIZE, high=MAX_IMAGE_DIM_SIZE)
-            numberOfRects = np.random.randint(low=MIN_NUMBER_OF_GROUND_TRUTH_DATA, high=MAX_NUMBER_OF_GROUND_TRUTH_DATA)
+            widthOfImages = np.random.randint(MIN_IMAGE_DIM_SIZE, MAX_IMAGE_DIM_SIZE)
+            heightOfImages = np.random.randint(MIN_IMAGE_DIM_SIZE, MAX_IMAGE_DIM_SIZE)
+            numberOfRects = np.random.randint(MIN_NUMBER_OF_GROUND_TRUTH_DATA, MAX_NUMBER_OF_GROUND_TRUTH_DATA)
 
             img = np.random.rand(heightOfImages, widthOfImages)
             imgs.append(img)

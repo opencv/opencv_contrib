@@ -3,11 +3,11 @@ import numpy as np
 from config import MIN_NUMBER_OF_TESTS, MAX_NUMBER_OF_TESTS, MIN_IMAGE_DIM_SIZE, MAX_IMAGE_DIM_SIZE, MIN_NUMBER_OF_GROUND_TRUTH_DATA, MAX_NUMBER_OF_GROUND_TRUTH_DATA
 
 def test_image(transformations):
-    numberOfImages = np.random.randint(low=MIN_NUMBER_OF_TESTS, high=MAX_NUMBER_OF_TESTS)
+    numberOfImages = np.random.randint(MIN_NUMBER_OF_TESTS, MAX_NUMBER_OF_TESTS)
 
     for i in range(numberOfImages):
-        widthOfImage = np.random.randint(low=MIN_IMAGE_DIM_SIZE, high=MAX_IMAGE_DIM_SIZE)
-        heightOfImage = np.random.randint(low=MIN_IMAGE_DIM_SIZE, high=MAX_IMAGE_DIM_SIZE)
+        widthOfImage = np.random.randint(MIN_IMAGE_DIM_SIZE, MAX_IMAGE_DIM_SIZE)
+        heightOfImage = np.random.randint(MIN_IMAGE_DIM_SIZE, MAX_IMAGE_DIM_SIZE)
 
         img = np.random.rand(heightOfImage, widthOfImage)
         for t in transformations:
@@ -16,12 +16,12 @@ def test_image(transformations):
 
 
 def test_points(transformations):
-    numberOfImages = np.random.randint(low=MIN_NUMBER_OF_TESTS, high=MAX_NUMBER_OF_TESTS)
+    numberOfImages = np.random.randint(MIN_NUMBER_OF_TESTS, MAX_NUMBER_OF_TESTS)
 
     for i in range(numberOfImages):
-        widthOfImage = np.random.randint(low=MIN_IMAGE_DIM_SIZE, high=MAX_IMAGE_DIM_SIZE)
-        heightOfImage = np.random.randint(low=MIN_IMAGE_DIM_SIZE, high=MAX_IMAGE_DIM_SIZE)
-        numberOfPoints = np.random.randint(low=MIN_NUMBER_OF_GROUND_TRUTH_DATA, high=MAX_NUMBER_OF_GROUND_TRUTH_DATA)
+        widthOfImage = np.random.randint(MIN_IMAGE_DIM_SIZE, MAX_IMAGE_DIM_SIZE)
+        heightOfImage = np.random.randint(MIN_IMAGE_DIM_SIZE, MAX_IMAGE_DIM_SIZE)
+        numberOfPoints = np.random.randint(MIN_NUMBER_OF_GROUND_TRUTH_DATA, MAX_NUMBER_OF_GROUND_TRUTH_DATA)
 
         img = np.random.rand(heightOfImage, widthOfImage)
         points = np.random.rand(numberOfPoints, 2)
@@ -32,12 +32,12 @@ def test_points(transformations):
 
 
 def test_rectangles(transformations):
-    numberOfImages = np.random.randint(low=10, high=100)
+    numberOfImages = np.random.randint(10, 100)
 
     for i in range(numberOfImages):
-        widthOfImage = np.random.randint(low=MIN_IMAGE_DIM_SIZE, high=MAX_IMAGE_DIM_SIZE)
-        heightOfImage = np.random.randint(low=MIN_IMAGE_DIM_SIZE, high=MAX_IMAGE_DIM_SIZE)
-        numberOfRects = np.random.randint(low=MIN_NUMBER_OF_GROUND_TRUTH_DATA, high=MAX_NUMBER_OF_GROUND_TRUTH_DATA)
+        widthOfImage = np.random.randint(MIN_IMAGE_DIM_SIZE, MAX_IMAGE_DIM_SIZE)
+        heightOfImage = np.random.randint(MIN_IMAGE_DIM_SIZE, MAX_IMAGE_DIM_SIZE)
+        numberOfRects = np.random.randint(MIN_NUMBER_OF_GROUND_TRUTH_DATA, MAX_NUMBER_OF_GROUND_TRUTH_DATA)
 
         img = np.random.rand(heightOfImage, widthOfImage)
         rects = np.random.rand(numberOfRects, 4)
@@ -48,16 +48,16 @@ def test_rectangles(transformations):
 
 
 def test_polygons(transformations):
-    numberOfImages = np.random.randint(low=10, high=100)
+    numberOfImages = np.random.randint(10, 100)
 
     for i in range(numberOfImages):
-        widthOfImage = np.random.randint(low=MIN_IMAGE_DIM_SIZE, high=MAX_IMAGE_DIM_SIZE)
-        heightOfImage = np.random.randint(low=MIN_IMAGE_DIM_SIZE, high=MAX_IMAGE_DIM_SIZE)
-        numberOfPolys = np.random.randint(low=1, high=100)
+        widthOfImage = np.random.randint(MIN_IMAGE_DIM_SIZE, MAX_IMAGE_DIM_SIZE)
+        heightOfImage = np.random.randint(MIN_IMAGE_DIM_SIZE, MAX_IMAGE_DIM_SIZE)
+        numberOfPolys = np.random.randint(MIN_NUMBER_OF_GROUND_TRUTH_DATA, MAX_NUMBER_OF_GROUND_TRUTH_DATA)
 
         polys = []
         for i in range(numberOfPolys):
-            numberOfPoints = np.random.randint(low=MIN_NUMBER_OF_GROUND_TRUTH_DATA, high=MAX_NUMBER_OF_GROUND_TRUTH_DATA)
+            numberOfPoints = np.random.randint(MIN_NUMBER_OF_GROUND_TRUTH_DATA, MAX_NUMBER_OF_GROUND_TRUTH_DATA)
             poly = np.random.rand(numberOfPoints, 2)
             polys.append(poly)
 
