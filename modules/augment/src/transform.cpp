@@ -106,7 +106,7 @@ void Transform::polygons(std::vector<Mat> src, OutputArrayOfArrays dst)
 {
     dst.create(int(src.size()), 1, 0, -1, true);
 
-    for (int i = 0; i < src.size(); i++)
+    for (unsigned int i = 0; i < src.size(); i++)
     {
         Mat src_row = src[i];
         dst.create(src_row.size(), CV_32F, i, true);

@@ -26,4 +26,3 @@ class resizeTest(NewOpenCVTests):
 
     def test_polygon(self):
         utils.test_polygons(transformations)
-

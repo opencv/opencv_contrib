@@ -24,7 +24,7 @@ void Augmenter::applyImages(InputArrayOfArrays imgs, OutputArrayOfArrays dstImgs
         Mat originalImg = imgs.getMat(i);
         Mat img = originalImg.clone();
 
-            for (int j = 0; j < transformations.size(); j++)
+            for (unsigned int j = 0; j < transformations.size(); j++)
             {
                 float prob = rng.uniform(0.f, 1.f);
 
@@ -61,7 +61,7 @@ void Augmenter::applyImagesWithMasks(InputArrayOfArrays imgs,
         Mat augmentedImg = originalImg.clone();
         Mat augmentedMask = originalMask.clone();
 
-        for (int j = 0; j < transformations.size(); j++)
+        for (unsigned int j = 0; j < transformations.size(); j++)
         {
             float prob = rng.uniform(0.f, 1.f);
 
@@ -102,7 +102,7 @@ void Augmenter::applyImagesWithPoints(InputArrayOfArrays imgs,
         Mat augmentedImg = originalImg.clone();
         Mat augmentedPoints = originalPoints.clone();
 
-        for (int j = 0; j < transformations.size(); j++)
+        for (unsigned int j = 0; j < transformations.size(); j++)
         {
             float prob = rng.uniform(0.f, 1.f);
 
@@ -143,7 +143,7 @@ void Augmenter::applyImagesWithRectangles(InputArrayOfArrays imgs,
         Mat augmentedImg = originalImg.clone();
         Mat augmentedRects = originalRects.clone();
 
-        for (int j = 0; j < transformations.size(); j++)
+        for (unsigned int j = 0; j < transformations.size(); j++)
         {
             float prob = rng.uniform(0.f, 1.f);
 

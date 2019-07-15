@@ -25,4 +25,3 @@ class rotateTest(NewOpenCVTests):
 
     def test_polygon(self):
         utils.test_polygons(transformations)
-
