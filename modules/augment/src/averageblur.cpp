@@ -19,15 +19,15 @@ AverageBlur::AverageBlur(int _minKernelSize, int _maxKernelSize)
     sameXY = true;
 }
 
-AverageBlur::AverageBlur(int kernelSize)
+AverageBlur::AverageBlur(int _kernelSize)
 {
-    minKernelSize = maxKernelSize = Size(kernelSize, kernelSize);
+    minKernelSize = maxKernelSize = Size(_kernelSize, _kernelSize);
     sameXY = true;
 }
 
-AverageBlur::AverageBlur(Size kernelSize)
+AverageBlur::AverageBlur(Size _kernelSize)
 {
-    minKernelSize = maxKernelSize = kernelSize;
+    minKernelSize = maxKernelSize = _kernelSize;
     sameXY = false;
 }
 

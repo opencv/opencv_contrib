@@ -28,21 +28,21 @@ public:
        @param src Input image to be resized
        @param dst Output (resized) image
     */
-    CV_WRAP virtual void image(InputArray src, OutputArray dst);
+    CV_WRAP virtual void image(InputArray src, OutputArray dst) override;
 
     /* @brief Apply the resizing to a single mask
       @param src Input mask to be resized
       @param dst Output (resized) mask
     */
-    CV_WRAP virtual void mask(InputArray src, OutputArray dst);
+    CV_WRAP virtual void mask(InputArray src, OutputArray dst) override;
 
     /* @brief Apply the resizing transformation a single point
        @param src Input point to be mapped to the new coordinates after resizing
     */
-    Point2f virtual point(const Point2f& src);
+    Point2f virtual point(const Point2f& src) override;
 
  
-    void virtual init(const Mat& srcImage);
+    void virtual init(const Mat& srcImage) override;
 
 private :
     Size size;

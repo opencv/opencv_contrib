@@ -22,16 +22,16 @@ public:
         @param src Input image to be cropped
         @param dst Output (cropped) image
     */
-    CV_WRAP virtual void image(InputArray src, OutputArray dst);
+    CV_WRAP virtual void image(InputArray src, OutputArray dst) override;
 
     /* @brief Apply the cropping transformation a single point
         @param src Input point to be mapped to the new coordinates after cropping
     */
-    Point2f virtual point(const Point2f& src);
+    Point2f virtual point(const Point2f& src) override;
 
     /* @brief choose the center of the random cropping
     */
-    void virtual init(const Mat& srcImage);
+    void virtual init(const Mat& srcImage) override;
 
 private:
     int width, height;

@@ -26,16 +26,16 @@ public:
         @param src Input image to be rotated
         @param dst Output (rotated) image
     */
-    CV_WRAP virtual void image(InputArray src, OutputArray dst);
+    CV_WRAP virtual void image(InputArray src, OutputArray dst) override;
 
     /* @brief Apply the rotation for a single point
         @param src Input point to be rotated
     */
-    Point2f virtual point(const Point2f& src);
+    Point2f virtual point(const Point2f& src) override;
 
     /* @brief choose an angle from the specified range to apply in next transformations
     */
-    void virtual init(const Mat& srcImage);
+    void virtual init(const Mat& srcImage) override;
 
 private :
     float minAngle, maxAngle;

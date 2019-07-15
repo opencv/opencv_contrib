@@ -25,18 +25,18 @@ GaussianBlur::GaussianBlur(int _minKernelSize, int _maxKernelSize, float _minSig
     sameXY = true;
 }
 
-GaussianBlur::GaussianBlur(int kernelSize, float sigma)
+GaussianBlur::GaussianBlur(int _kernelSize, float sigma)
 {
-    minKernelSize = maxKernelSize = Size(kernelSize, kernelSize);
+    minKernelSize = maxKernelSize = Size(_kernelSize, _kernelSize);
     minSigmaX = minSigmaY = maxSigmaY = maxSigmaX = sigma;
     sameXY = true;
 }
 
-GaussianBlur::GaussianBlur(Size kernelSize, float sigmaX, float sigmaY)
+GaussianBlur::GaussianBlur(Size _kernelSize, float _sigmaX, float _sigmaY)
 {
-    minKernelSize = maxKernelSize = kernelSize;
-    minSigmaX = maxSigmaX = sigmaX;
-    minSigmaY = maxSigmaY = sigmaY;
+    minKernelSize = maxKernelSize = _kernelSize;
+    minSigmaX = maxSigmaX = _sigmaX;
+    minSigmaY = maxSigmaY = _sigmaY;
     sameXY = false;
 }
 

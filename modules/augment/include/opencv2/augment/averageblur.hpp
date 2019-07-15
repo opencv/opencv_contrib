@@ -39,11 +39,11 @@ public:
         @param src Input image to be blurred
         @param dst Output (blurred) image
     */
-    CV_WRAP virtual void image(InputArray src, OutputArray dst);
+    CV_WRAP virtual void image(InputArray src, OutputArray dst) override;
 
     /* @brief choose an random kernel size and sigma from the specified ranges to apply in next transformations
     */
-    void virtual init(const Mat&);
+    void virtual init(const Mat&) override;
 
 private :
     Size minKernelSize;

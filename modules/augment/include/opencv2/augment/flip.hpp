@@ -20,12 +20,12 @@ public:
        @param src Input image to be flipped
        @param dst Output (flipped) image
     */
-    CV_WRAP void image(InputArray src, OutputArray dst);
+    CV_WRAP void image(InputArray src, OutputArray dst) override;
 
     /* @brief Apply the flipping for a single point
        @param src Input point to be flipped
     */
-    Point2f point(const Point2f& src);
+    Point2f point(const Point2f& src) override;
 
 };
 
@@ -41,12 +41,12 @@ public:
        @param _src Input image to be flipped
        @param _dst Output (flipped) image
     */
-    CV_WRAP virtual void image(InputArray src, OutputArray dst);
+    CV_WRAP virtual void image(InputArray src, OutputArray dst) override;
 
     /* @brief Apply the flipping for a single point
        @param src Input point to be flipped
     */
-    Point2f virtual point(const Point2f& src);
+    Point2f virtual point(const Point2f& src) override;
 
 };
 
