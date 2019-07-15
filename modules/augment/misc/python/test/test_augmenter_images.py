@@ -13,11 +13,11 @@ class augmenter_test(NewOpenCVTests):
         numberOfImages = np.random.randint(MIN_NUMBER_OF_TESTS, MAX_NUMBER_OF_TESTS)
 
         aug = cv.augment_Augmenter()
-        aug.add(t=cv.augment_FlipHorizontal(), prob=0.7)
-        aug.add(t=cv.augment_FlipVertical(), prob=0.5)
-        aug.add(t=cv.augment_GaussianBlur(kernelSize=5, sigma=12), prob=0.7)
-        aug.add(t=cv.augment_Rotate(minAngle=0, maxAngle=180), prob=0.3)
-        aug.add(t=cv.augment_Resize(size=(1200, 900)), prob=0.4)
+        aug.add(cv.augment_FlipHorizontal(), prob=0.7)
+        aug.add(cv.augment_FlipVertical(), prob=0.5)
+        aug.add(cv.augment_GaussianBlur(kernelSize=5, sigma=12), prob=0.7)
+        aug.add(cv.augment_Rotate(minAngle=0, maxAngle=180), prob=0.3)
+        aug.add(cv.augment_Resize(size=(1200, 900)), prob=0.4)
 
         imgs = []
 
@@ -35,11 +35,11 @@ class augmenter_test(NewOpenCVTests):
         numberOfImages = np.random.randint(MIN_NUMBER_OF_TESTS, MAX_NUMBER_OF_TESTS)
 
         aug = cv.augment_Augmenter()
-        aug.add(t=cv.augment_FlipHorizontal(), prob=0.7)
-        aug.add(t=cv.augment_FlipVertical(), prob=0.5)
-        aug.add(t=cv.augment_GaussianBlur(kernelSize=5, sigma=12), prob=0.7)
-        aug.add(t=cv.augment_Rotate(minAngle=0, maxAngle=180), prob=0.3)
-        aug.add(t=cv.augment_Resize(size=(1200, 900)), prob=0.4)
+        aug.add(cv.augment_FlipHorizontal(), prob=0.7)
+        aug.add(cv.augment_FlipVertical(), prob=0.5)
+        aug.add(cv.augment_GaussianBlur(kernelSize=5, sigma=12), prob=0.7)
+        aug.add(cv.augment_Rotate(minAngle=0, maxAngle=180), prob=0.3)
+        aug.add(cv.augment_Resize(size=(1200, 900)), prob=0.4)
 
         imgs = []
         masks = []
@@ -59,11 +59,11 @@ class augmenter_test(NewOpenCVTests):
         numberOfImages = np.random.randint(MIN_NUMBER_OF_TESTS, MAX_NUMBER_OF_TESTS)
 
         aug = cv.augment_Augmenter()
-        aug.add(t=cv.augment_FlipHorizontal(), prob=0.7)
-        aug.add(t=cv.augment_FlipVertical(), prob=0.5)
-        aug.add(t=cv.augment_GaussianBlur(kernelSize=5, sigma=12), prob=0.7)
-        aug.add(t=cv.augment_Rotate(minAngle=0, maxAngle=180), prob=0.3)
-        aug.add(t=cv.augment_Resize(size=(1200, 900)), prob=0.4)
+        aug.add(cv.augment_FlipHorizontal(), prob=0.7)
+        aug.add(cv.augment_FlipVertical(), prob=0.5)
+        aug.add(cv.augment_GaussianBlur(kernelSize=5, sigma=12), prob=0.7)
+        aug.add(cv.augment_Rotate(minAngle=0, maxAngle=180), prob=0.3)
+        aug.add(cv.augment_Resize(size=(1200, 900)), prob=0.4)
 
         imgs = []
         pointsArr = []
@@ -84,11 +84,11 @@ class augmenter_test(NewOpenCVTests):
         numberOfImages = np.random.randint(MIN_NUMBER_OF_TESTS, MAX_NUMBER_OF_TESTS)
 
         aug = cv.augment_Augmenter()
-        aug.add(t=cv.augment_FlipHorizontal(), prob=0.7)
-        aug.add(t=cv.augment_FlipVertical(), prob=0.5)
-        aug.add(t=cv.augment_GaussianBlur(kernelSize=5, sigma=12), prob=0.7)
-        aug.add(t=cv.augment_Rotate(minAngle=0, maxAngle=180), prob=0.3)
-        aug.add(t=cv.augment_Resize(size=(1200, 900)), prob=0.4)
+        aug.add(cv.augment_FlipHorizontal(), prob=0.7)
+        aug.add(cv.augment_FlipVertical(), prob=0.5)
+        aug.add(cv.augment_GaussianBlur(kernelSize=5, sigma=12), prob=0.7)
+        aug.add(cv.augment_Rotate(minAngle=0, maxAngle=180), prob=0.3)
+        aug.add(cv.augment_Resize(size=(1200, 900)), prob=0.4)
 
         imgs = []
         rectsArr = []
