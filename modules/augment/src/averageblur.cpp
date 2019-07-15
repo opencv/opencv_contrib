@@ -5,17 +5,17 @@
 #include "precomp.hpp"
 namespace cv { namespace augment {
 
-AverageBlur::AverageBlur(Size minKernelSize, Size maxKernelSize)
+AverageBlur::AverageBlur(Size _minKernelSize, Size _maxKernelSize)
 {
-    this->minKernelSize = minKernelSize;
-    this->maxKernelSize = maxKernelSize;
+    minKernelSize = _minKernelSize;
+    maxKernelSize = _maxKernelSize;
     sameXY = false;
 }
 
-AverageBlur::AverageBlur(int minKernelSize, int maxKernelSize)
+AverageBlur::AverageBlur(int _minKernelSize, int _maxKernelSize)
 {
-    this->minKernelSize = Size(minKernelSize, minKernelSize);
-    this->maxKernelSize = Size(maxKernelSize, maxKernelSize);
+    minKernelSize = Size(_minKernelSize, _minKernelSize);
+    maxKernelSize = Size(_maxKernelSize, _maxKernelSize);
     sameXY = true;
 }
 

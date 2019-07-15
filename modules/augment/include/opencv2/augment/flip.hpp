@@ -17,13 +17,13 @@ public:
     CV_WRAP FlipHorizontal();
 
     /* @brief Apply the horizontal flipping to a single image
-        @param _src Input image to be flipped
-        @param _dst Output (flipped) image
+       @param src Input image to be flipped
+       @param dst Output (flipped) image
     */
-    CV_WRAP void image(InputArray _src, OutputArray _dst);
+    CV_WRAP void image(InputArray src, OutputArray dst);
 
     /* @brief Apply the flipping for a single point
-        @param src Input point to be flipped
+       @param src Input point to be flipped
     */
     Point2f point(const Point2f& src);
 
@@ -38,13 +38,13 @@ public:
     CV_WRAP FlipVertical();
 
     /* @brief Apply the vertical flipping to a single image
-        @param _src Input image to be flipped
-        @param _dst Output (flipped) image
+       @param _src Input image to be flipped
+       @param _dst Output (flipped) image
     */
-    CV_WRAP virtual void image(InputArray _src, OutputArray _dst);
+    CV_WRAP virtual void image(InputArray src, OutputArray dst);
 
     /* @brief Apply the flipping for a single point
-        @param src Input point to be flipped
+       @param src Input point to be flipped
     */
     Point2f virtual point(const Point2f& src);
 

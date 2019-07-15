@@ -5,19 +5,19 @@
 #include "precomp.hpp"
 namespace cv { namespace augment {
 
-Resize::Resize(Size size,const std::vector<int>& interpolations)
+Resize::Resize(Size _size,const std::vector<int>& _interpolations)
 {
-    this->size = size;
-    if (interpolations.size() > 0)
-        this->interpolations = interpolations;
+    size = _size;
+    if (_interpolations.size() > 0)
+        interpolations = _interpolations;
     else
-        this->interpolations = { INTER_NEAREST , INTER_LINEAR , INTER_AREA , INTER_CUBIC , INTER_LANCZOS4 };
+        interpolations = { INTER_NEAREST , INTER_LINEAR , INTER_AREA , INTER_CUBIC , INTER_LANCZOS4 };
 }
 
-Resize::Resize(Size size, int interpolation)
+Resize::Resize(Size _size, int _interpolation)
 {
-    this->size = size;
-    interpolations = { interpolation };
+    size = _size;
+    interpolations = { _interpolation };
 }
 
 void Resize::init(const Mat& srcImage)

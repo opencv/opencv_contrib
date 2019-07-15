@@ -7,9 +7,9 @@ namespace cv { namespace augment {
 
 FlipHorizontal::FlipHorizontal() {}
 
-void FlipHorizontal::image(InputArray _src, OutputArray _dst)
+void FlipHorizontal::image(InputArray src, OutputArray dst)
 {
-    cv::flip(_src, _dst, 1);
+    cv::flip(src, dst, 1);
 }
 
 Point2f FlipHorizontal::point(const Point2f& src)
@@ -20,9 +20,9 @@ Point2f FlipHorizontal::point(const Point2f& src)
 
 FlipVertical::FlipVertical() {}
 
-void FlipVertical::image(InputArray _src, OutputArray _dst)
+void FlipVertical::image(InputArray src, OutputArray dst)
 {
-    cv::flip(_src, _dst, 0);
+    cv::flip(src, dst, 0);
 }
 
 Point2f FlipVertical::point(const Point2f& src)

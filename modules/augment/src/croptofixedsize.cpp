@@ -7,10 +7,10 @@ namespace cv { namespace augment {
 
 
 
-CropToFixedSize::CropToFixedSize(int width, int height)
+CropToFixedSize::CropToFixedSize(int _width, int _height)
 {
-    this->width = width;
-    this->height = height;
+    width = _width;
+    height = _height;
 }
 
 void CropToFixedSize::init(const Mat& srcImage)
