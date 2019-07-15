@@ -55,16 +55,16 @@ public:
     void virtual init(const Mat&);
 
 private :
-    Size _minKernelSize;
-    Size _maxKernelSize;
-    float _minSigmaX;
-    float _minSigmaY;
-    float _maxSigmaX;
-    float _maxSigmaY;
-    Size _kernelSize;
-    float _sigmaX;
-    float _sigmaY;
-    bool _sameXY;
+    Size minKernelSize;
+    Size maxKernelSize;
+    float minSigmaX;
+    float minSigmaY;
+    float maxSigmaX;
+    float maxSigmaY;
+    Size kernelSize;
+    float sigmaX;
+    float sigmaY;
+    bool sameXY;
 
 };
 

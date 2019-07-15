@@ -5,52 +5,52 @@
 #include "precomp.hpp"
 namespace cv { namespace augment {
 
-GaussianBlur::GaussianBlur(Size minKernelSize, Size maxKernelSize, float minSigmaX, float maxSigmaX, float minSigmaY, float maxSigmaY)
+GaussianBlur::GaussianBlur(Size _minKernelSize, Size _maxKernelSize, float _minSigmaX, float _maxSigmaX, float _minSigmaY, float _maxSigmaY)
 {
-    _minKernelSize = minKernelSize;
-    _maxKernelSize = maxKernelSize;
-    _minSigmaX = minSigmaX;
-    _minSigmaY = minSigmaY;
-    _maxSigmaX = maxSigmaX;
-    _maxSigmaY = maxSigmaY;
-    _sameXY = false;
+    minKernelSize = _minKernelSize;
+    maxKernelSize = _maxKernelSize;
+    minSigmaX = _minSigmaX;
+    minSigmaY = _minSigmaY;
+    maxSigmaX = _maxSigmaX;
+    maxSigmaY = _maxSigmaY;
+    sameXY = false;
 }
 
-GaussianBlur::GaussianBlur(int minKernelSize, int maxKernelSize, float minSigma, float maxSigma)
+GaussianBlur::GaussianBlur(int _minKernelSize, int _maxKernelSize, float _minSigma, float _maxSigma)
 {
-    _minKernelSize = Size(minKernelSize, minKernelSize);
-    _maxKernelSize = Size(maxKernelSize, maxKernelSize);
-    _minSigmaX = _minSigmaY = minSigma;
-    _maxSigmaX = _maxSigmaY = maxSigma;
-    _sameXY = true;
+    minKernelSize = Size(_minKernelSize, _minKernelSize);
+    maxKernelSize = Size(_maxKernelSize, _maxKernelSize);
+    minSigmaX = minSigmaY = _minSigma;
+    maxSigmaX = maxSigmaY = _maxSigma;
+    sameXY = true;
 }
 
 GaussianBlur::GaussianBlur(int kernelSize, float sigma)
 {
-    _minKernelSize = _maxKernelSize = Size(kernelSize, kernelSize);
-    _minSigmaX = _minSigmaY = _maxSigmaY = _maxSigmaX = sigma;
-    _sameXY = true;
+    minKernelSize = maxKernelSize = Size(kernelSize, kernelSize);
+    minSigmaX = minSigmaY = maxSigmaY = maxSigmaX = sigma;
+    sameXY = true;
 }
 
 GaussianBlur::GaussianBlur(Size kernelSize, float sigmaX, float sigmaY)
 {
-    _minKernelSize = _maxKernelSize = kernelSize;
-    _minSigmaX = _maxSigmaX = sigmaX;
-    _minSigmaY = _maxSigmaY = sigmaY;
-    _sameXY = false;
+    minKernelSize = maxKernelSize = kernelSize;
+    minSigmaX = maxSigmaX = sigmaX;
+    minSigmaY = maxSigmaY = sigmaY;
+    sameXY = false;
 }
 
 void GaussianBlur::init(const Mat&)
 {
-    _kernelSize.height = Transform::rng.uniform(_minKernelSize.height / 2, _maxKernelSize.height / 2 + _maxKernelSize.height % 2) * 2 + 1; //generate only random odd numbers
-    _kernelSize.width = _sameXY? _kernelSize.height : Transform::rng.uniform(_minKernelSize.width / 2, _maxKernelSize.width / 2 + _maxKernelSize.width % 2) * 2 + 1; //generate only random odd numbers
-    _sigmaX = Transform::rng.uniform(_minSigmaX, _maxSigmaX);
-    _sigmaY = _sameXY? _sigmaX : Transform::rng.uniform(_minSigmaY, _maxSigmaY);
+    kernelSize.height = Transform::rng.uniform(minKernelSize.height / 2, maxKernelSize.height / 2 + maxKernelSize.height % 2) * 2 + 1; //generate only random odd numbers
+    kernelSize.width = sameXY? kernelSize.height : Transform::rng.uniform(minKernelSize.width / 2, maxKernelSize.width / 2 + maxKernelSize.width % 2) * 2 + 1; //generate only random odd numbers
+    sigmaX = Transform::rng.uniform(minSigmaX, maxSigmaX);
+    sigmaY = sameXY? sigmaX : Transform::rng.uniform(minSigmaY, maxSigmaY);
 }
 
 void GaussianBlur::image(InputArray src, OutputArray dst)
 {
-    cv::GaussianBlur(src, dst, _kernelSize, _sigmaX, _sigmaY);
+    cv::GaussianBlur(src, dst, kernelSize, sigmaX, sigmaY);
 }
 
 }}

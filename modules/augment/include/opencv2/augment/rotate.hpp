@@ -38,8 +38,8 @@ public:
     void virtual init(const Mat& srcImage);
 
 private :
-    float _minAngle, _maxAngle;
-    Mat _rotationMat;
+    float minAngle, maxAngle;
+    Mat rotationMat;
 
 };
 
