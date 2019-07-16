@@ -327,6 +327,7 @@ void flyTest(bool hiDense, bool inequal)
     ASSERT_LT(cv::norm(dfPose.translation() - pose.translation()), poseThreshold);
 }
 
+#ifdef HAVE_OPENGL
 #ifdef OPENCV_ENABLE_NONFREE
 TEST( DynamicFusion, lowDense )
 #else
@@ -357,6 +358,7 @@ TEST(DynamicFusion, DISABLED_OCL)
     cv::ocl::setUseOpenCL(true);
     flyTest(false, false);
 }
+#endif
 #endif
 
 
