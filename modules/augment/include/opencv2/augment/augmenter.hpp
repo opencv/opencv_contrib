@@ -24,7 +24,7 @@ public:
 
     /* @brief apply the transformations to vector of images
        @param imgs the images that to be augmented
-       @param dstImgs the augmented images 
+       @param dstImgs the augmented images
     */
     CV_WRAP void applyImages(InputArrayOfArrays imgs, OutputArrayOfArrays dstImgs);
 

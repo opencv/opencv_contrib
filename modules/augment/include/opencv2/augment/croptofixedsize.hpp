@@ -36,7 +36,6 @@ public:
 private:
     int width, height;
     int originX, originY;
-        
 };
 
 }} //namespace cv::augment

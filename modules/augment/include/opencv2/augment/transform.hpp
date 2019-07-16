@@ -38,9 +38,9 @@ public:
     virtual Vec4f rectangle(const Vec4f& src);
 
 
-    /* @brief Apply the transformation for array of points 
+    /* @brief Apply the transformation for array of points
         @param _src Mat consisting of the points to be transformed (each row is a point (X, Y))
-        @param _dst Output Mat that has the points transformed 
+        @param _dst Output Mat that has the points transformed
     */
     CV_WRAP virtual void points(InputArray _src, OutputArray _dst);
 
@@ -53,7 +53,7 @@ public:
 
     /* @brief Apply the transformation for array of polygons
        @param src vector of Mat consisting of the polygons to be transformed (each row of a polygon Mat is a vertix (X,Y))
-       @param dst the vector of Mat containing the point after applying the transformation 
+       @param dst the vector of Mat containing the point after applying the transformation
     */
     CV_WRAP virtual void polygons(std::vector<Mat> src, OutputArrayOfArrays dst);
 
@@ -63,7 +63,7 @@ public:
     */
     CV_WRAP virtual void mask(InputArray src, OutputArray dst);
 
-    /* @brief set the random variables in a transformation to be used consitently on the next data 
+    /* @brief set the random variables in a transformation to be used consitently on the next data
     */
     CV_WRAP virtual void init(const Mat& srcImage);
 

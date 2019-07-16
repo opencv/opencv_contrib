@@ -9,7 +9,7 @@ namespace cv { namespace augment {
 Transform::Transform() {}
 
 Transform::~Transform() {}
-                
+
 void Transform::image(InputArray _src, OutputArray _dst)
 {
     _src.copyTo(_dst);
@@ -50,7 +50,7 @@ void Transform::points(InputArray _src, OutputArray _dst)
 {
     Mat src = _src.getMat();
     CV_Assert(src.cols == 2);
-        
+
     //making sure input matrix is float
     int type = src.type();
     uchar depth = type & CV_MAT_DEPTH_MASK;
@@ -113,7 +113,7 @@ void Transform::polygons(std::vector<Mat> src, OutputArrayOfArrays dst)
         Mat dst_row = dst.getMat(i);
         this->points(src_row, dst_row);
     }
-}   
+}
 
 void Transform::mask(InputArray src, OutputArray dst)
 {

@@ -13,7 +13,7 @@ class CV_EXPORTS_W Resize : public Transform
 {
 public:
     /* @brief Constructor
-       @param size the size the images will be resized to 
+       @param size the size the images will be resized to
        @param interpolations vector of the interpolation techniques to be chosen at random
     */
     CV_WRAP Resize(Size size, const std::vector<int>& interpolations = std::vector<int>());
@@ -41,7 +41,6 @@ public:
     */
     Point2f virtual point(const Point2f& src) override;
 
- 
     void virtual init(const Mat& srcImage) override;
 
 private :

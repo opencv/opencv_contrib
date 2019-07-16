@@ -11,7 +11,7 @@ Rotate::Rotate(float _minAngle, float _maxAngle)
     maxAngle = _maxAngle;
 }
 
-Rotate::Rotate(float angle) 
+Rotate::Rotate(float angle)
 {
     minAngle = angle;
     maxAngle = angle;

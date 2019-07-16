@@ -17,10 +17,8 @@ void CropToFixedSize::init(const Mat& srcImage)
 {
     Transform::init(srcImage);
     CV_Assert(width <= srcImageCols && height <= srcImageRows);
-
     int differenceX = srcImageCols - width; //the amount of pixels available to shift the center of the new image in X directon
     int differenceY = srcImageRows - height; //the amount of pixels available to shift the center of the new image in Y directon
-  
     originX = Transform::rng.uniform(0, differenceX);
     originY = Transform::rng.uniform(0, differenceY);
 }
