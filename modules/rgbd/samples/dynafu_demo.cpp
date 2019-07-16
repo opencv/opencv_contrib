@@ -354,7 +354,11 @@ int main(int argc, char **argv)
         setOpenGlContext("OpenGL Window");
         df->renderSurface(renderImg);
         if(!renderImg.empty())
-            imshow("Surface prediction", renderImg);
+        {
+            UMat cvt8;
+            convertScaleAbs(renderImg, cvt8, 0.33*255);
+            imshow("Surface prediction", cvt8);
+        }
 
         if(depthWriter)
             depthWriter->append(frame);

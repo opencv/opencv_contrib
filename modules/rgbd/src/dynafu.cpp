@@ -222,8 +222,16 @@ void DynaFuImpl<T>::drawScene(OutputArray image)
     float f[params.frameSize.width*params.frameSize.height];
     glReadPixels(0, 0, params.frameSize.width, params.frameSize.height, GL_DEPTH_COMPONENT, GL_FLOAT, &f[0]);
 
-    Mat depthData;
-    Mat(params.frameSize.height, params.frameSize.width, CV_32F, f).convertTo(depthData, CV_8U, 255);
+    // linearise depth
+    for(int i = 0; i < params.frameSize.width*params.frameSize.height; i++)
+    {
+        f[i] = farZ * nearZ / (f[i]*(nearZ - farZ) + farZ);
+
+        if(f[i] >= farZ)
+            f[i] = std::numeric_limits<float>::quiet_NaN();
+    }
+
+    Mat depthData(params.frameSize.height, params.frameSize.width, CV_32F, f);
     depthData.copyTo(image);
 #else
     CV_UNUSED(image);
@@ -324,20 +332,6 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
     }
     else
     {
-
-        T _render, estdDepth;
-        renderSurface(_render);
-        _render.convertTo(estdDepth, DEPTH_TYPE);
-
-        std::vector<T> estdPoints, estdNormals;
-        makeFrameFromDepth(estdDepth, estdPoints, estdNormals, params.intr,
-                       params.pyramidLevels,
-                       params.depthFactor,
-                       params.bilateral_sigma_depth,
-                       params.bilateral_sigma_spatial,
-                       params.bilateral_kernel_size,
-                       params.truncateThreshold);
-
         UMat wfPoints;
         UMat wfNormals;
         volume->fetchPointsNormals(wfPoints, wfNormals);
@@ -360,12 +354,21 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
             volume->integrate(depth, params.depthFactor, pose, params.intr, makePtr<WarpField>(warpfield));
         }
 
-        T& points  = pyrPoints [0];
-        T& normals = pyrNormals[0];
-        volume->raycast(pose, params.intr, params.frameSize, points, normals);
-        // build a pyramid of points and normals
-        buildPyramidPointsNormals(points, normals, pyrPoints, pyrNormals,
-                                  params.pyramidLevels);
+        T _render, estdDepth;
+        renderSurface(_render);
+        _render.convertTo(estdDepth, DEPTH_TYPE);
+
+        std::vector<T> estdPoints, estdNormals;
+        makeFrameFromDepth(estdDepth, estdPoints, estdNormals, params.intr,
+                    params.pyramidLevels,
+                    1.f,
+                    params.bilateral_sigma_depth,
+                    params.bilateral_sigma_spatial,
+                    params.bilateral_kernel_size,
+                    params.truncateThreshold);
+
+        pyrPoints = estdPoints;
+        pyrNormals = estdNormals;
     }
 
     std::cout << "Frame# " << frameCounter++ << std::endl;
