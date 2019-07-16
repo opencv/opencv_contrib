@@ -34,7 +34,7 @@ void CropToFixedSize::image(InputArray src, OutputArray dst)
 
 
 Point2f CropToFixedSize::point(const Point2f& src)
-{ 
+{
     return Point2f(src.x - originX, src.y - originY);
 }
 
