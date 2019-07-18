@@ -20,12 +20,12 @@ Point2f Transform::point(const Point2f& src)
     return src;
 }
 
-Vec4f Transform::rectangle(const Vec4f& src)
+Rect2f Transform::rectangle(const Rect2f& src)
 {
-    float x1 = src[0],
-        y1 = src[1],
-        x2 = src[2],
-        y2 = src[3];
+    float x1 = src.x,
+        y1 = src.y,
+        x2 = src.x + src.width,
+        y2 = src.y + src.height;
 
     Point2f tl(x1, y1);
     Point2f bl(x1, y2);
@@ -42,7 +42,7 @@ Vec4f Transform::rectangle(const Vec4f& src)
     float x2_transformed = std::max({ tl_transformed.x, bl_transformed.x, tr_transformed.x, br_transformed.x });
     float y2_transformed = std::max({ tl_transformed.y, bl_transformed.y, tr_transformed.y, br_transformed.y });
 
-    Vec4f output_box({ x1_transformed ,y1_transformed ,x2_transformed ,y2_transformed });
+    Rect2f output_box(Point2f(x1_transformed ,y1_transformed),  Point2f(x2_transformed ,y2_transformed));
     return output_box;
 }
 
@@ -92,12 +92,12 @@ void Transform::rectangles(InputArray _src, OutputArray _dst)
     for (int i = 0; i < src.rows; i++)
     {
         Mat src_row = src.row(i);
-        Vec4f src_rect = Vec4f(src_row.at<float>(0), src_row.at<float>(1), src_row.at<float>(2), src_row.at<float>(3));
-        Vec4f dst_rect = this->rectangle(src_rect);
-        dst.at<float>(i, 0) = dst_rect[0];
-        dst.at<float>(i, 1) = dst_rect[1];
-        dst.at<float>(i, 2) = dst_rect[2];
-        dst.at<float>(i, 3) = dst_rect[3];
+        Rect2f src_rect = Rect2f(Point2f(src_row.at<float>(0), src_row.at<float>(1)), Size(src_row.at<float>(2), src_row.at<float>(3)));
+        Rect2f dst_rect = this->rectangle(src_rect);
+        dst.at<float>(i, 0) = dst_rect.x;
+        dst.at<float>(i, 1) = dst_rect.y;
+        dst.at<float>(i, 2) = dst_rect.width;
+        dst.at<float>(i, 3) = dst_rect.height;
     }
 
 }

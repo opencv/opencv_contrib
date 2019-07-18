@@ -35,7 +35,7 @@ public:
     /* @brief Apply the transformation for a rectangle
         @param box Vec4f consisting of (x1, y1, x2, y2) corresponding to (top left, bottom right)
     */
-    virtual Vec4f rectangle(const Vec4f& src);
+    virtual Rect2f rectangle(const Rect2f& src);
 
 
     /* @brief Apply the transformation for array of points
