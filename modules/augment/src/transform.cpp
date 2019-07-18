@@ -92,7 +92,7 @@ void Transform::rectangles(InputArray _src, OutputArray _dst)
     for (int i = 0; i < src.rows; i++)
     {
         Mat src_row = src.row(i);
-        Rect2f src_rect = Rect2f(Point2f(src_row.at<float>(0), src_row.at<float>(1)), Size(src_row.at<float>(2), src_row.at<float>(3)));
+        Rect2f src_rect = Rect2f(src_row.at<float>(0), src_row.at<float>(1), src_row.at<float>(2), src_row.at<float>(3));
         Rect2f dst_rect = this->rectangle(src_rect);
         dst.at<float>(i, 0) = dst_rect.x;
         dst.at<float>(i, 1) = dst_rect.y;
