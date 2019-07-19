@@ -8,6 +8,8 @@ np.random.seed(seed=1)
 cv.setRNGSeed(seed=1)
 
 transformations = [cv.augment_AverageBlur(minKernelSize=(5,7), maxKernelSize=(13,15)),
+                   cv.augment_AverageBlur(minKernelSize=3, maxKernelSize=7),
+                   cv.augment_AverageBlur(kernelSize=5),
                    cv.augment_AverageBlur(kernelSize=(5,7), borderType=cv.BORDER_REPLICATE)]
 
 class averageBlurTest(NewOpenCVTests):

@@ -15,13 +15,27 @@ public:
     /* @brief Constructor to initialize the average blur transformation with a range of kernel sizes
        @param minKernelSize the min size of average blur kernel
        @param maxKernelSize the max size of average blur kernel
+       @param borderType the std::vector containing the different types of padding used
     */
     CV_WRAP AverageBlur(Size minKernelSize, Size maxKernelSize,const std::vector<int>& borderTypes = std::vector<int>());
+
+    /* @brief Constructor to initialize the average blur transformation with a range of kernel sizes
+       @param minKernelSize the min size of average blur kernel
+       @param maxKernelSize the max size of average blur kernel
+       @param borderType the type of padding used
+    */
+    CV_WRAP AverageBlur(int minKernelSize, int maxKernelSize, int borderType = BORDER_DEFAULT);
+
+    /* @brief Constructor to initialize the average blur transformation with a specific kernel size
+       @param kernelSize the size of average blur kernel
+       @param borderType the type of padding used
+    */
+    CV_WRAP AverageBlur(Size kernelSize, int borderType = BORDER_DEFAULT);
 
     /* @brief Constructor to initialize the average blur transformation with a specific kernel size
        @param kernelSize the size of average blur kernel
     */
-    CV_WRAP AverageBlur(Size kernelSize, int borderType = BORDER_DEFAULT);
+    CV_WRAP AverageBlur(int kernelSize);
 
     /* @brief Apply the gaussian blue to a single image
         @param src Input image to be blurred

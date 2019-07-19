@@ -9,11 +9,11 @@ AverageBlur::AverageBlur(Size _minKernelSize, Size _maxKernelSize, const std::ve
 {
     if (_borderTypes.size() > 0) borderTypes = _borderTypes;
 
-    else borderTypes = { BORDER_CONSTANT , BORDER_REPLICATE , BORDER_REFLECT};
+    else borderTypes = { BORDER_CONSTANT , BORDER_REPLICATE , BORDER_REFLECT, BORDER_REFLECT_101};
 
     minKernelSize = _minKernelSize;
     maxKernelSize = _maxKernelSize;
-    kernelSize = _minKernelSize;
+    kernelSize = minKernelSize;
     sameXY = false;
 }
 
@@ -21,18 +21,34 @@ AverageBlur::AverageBlur(Size _kernelSize, int _borderType)
 {
     borderTypes = { _borderType };
     minKernelSize = maxKernelSize = _kernelSize;
+    kernelSize = minKernelSize;
     sameXY = false;
+}
+
+AverageBlur::AverageBlur(int _minKernelSize, int _maxKernelSize, int _borderType)
+{
+    borderTypes = { _borderType };
+    minKernelSize = Size(_minKernelSize, _minKernelSize);
+    maxKernelSize = Size(_maxKernelSize, _maxKernelSize);
+    kernelSize = minKernelSize;
+    sameXY = true;
+}
+
+AverageBlur::AverageBlur(int _kernelSize)
+{
+    borderTypes = { BORDER_DEFAULT };
+    minKernelSize = maxKernelSize = Size(_kernelSize, _kernelSize);
+    kernelSize = minKernelSize;
+    sameXY = true;
 }
 
 void AverageBlur::init(const Mat&)
 {
-    if (minKernelSize == maxKernelSize) kernelSize = minKernelSize;
-    else
+    if (minKernelSize != maxKernelSize)
     {
         kernelSize.height = Transform::rng.uniform(minKernelSize.height / 2, maxKernelSize.height / 2 + maxKernelSize.height % 2) * 2 + 1; //generate only random odd numbers
         kernelSize.width = sameXY ? kernelSize.height : Transform::rng.uniform(minKernelSize.width / 2, maxKernelSize.width / 2 + maxKernelSize.width % 2) * 2 + 1; //generate only random odd numbers
     }
-
     int index = Transform::rng.uniform(0, int(borderTypes.size()));
     borderType = borderTypes[index];
 }
