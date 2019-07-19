@@ -7,9 +7,11 @@ namespace cv { namespace augment {
 
 AverageBlur::AverageBlur(Size _minKernelSize, Size _maxKernelSize, const std::vector<int>& _borderTypes)
 {
-    if (_borderTypes.size() > 0) borderTypes = _borderTypes;
+    if (_borderTypes.size() > 0) 
+        borderTypes = _borderTypes;
 
-    else borderTypes = { BORDER_CONSTANT , BORDER_REPLICATE , BORDER_REFLECT, BORDER_REFLECT_101};
+    else
+        borderTypes = { BORDER_CONSTANT , BORDER_REPLICATE , BORDER_REFLECT, BORDER_REFLECT_101};
 
     minKernelSize = _minKernelSize;
     maxKernelSize = _maxKernelSize;
