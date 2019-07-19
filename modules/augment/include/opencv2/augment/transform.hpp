@@ -48,7 +48,7 @@ public:
        @param dst Output Mat that has the rectangles transformed
     */
     CV_WRAP virtual void rectangles(InputArray src, OutputArray dst);
-
+ 
     /* @brief Apply the transformation for array of polygons
        @param src vector of Mat consisting of the polygons to be transformed (each row of a polygon Mat is a vertix (X,Y))
        @param dst the vector of Mat containing the point after applying the transformation

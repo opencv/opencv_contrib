@@ -13,19 +13,26 @@ class CV_EXPORTS_W CropToFixedSize : public Transform
 {
 public:
     /* @brief Constructor
-        @param width the width the images will be cropped to
-        @param width the height the images will be cropped to
+       @param width the width the images will be cropped to
+       @param width the height the images will be cropped to
     */
     CV_WRAP CropToFixedSize(int width, int height);
 
+    /* @brief Constructor
+       @param width the width the images will be cropped to
+       @param width the height the images will be cropped to
+       @param origin is the coordinate of the new origin
+    */
+    CV_WRAP CropToFixedSize(int width, int height, Point origin);
+
     /* @brief Apply the cropping to a single image
-        @param src Input image to be cropped
-        @param dst Output (cropped) image
+       @param src Input image to be cropped
+       @param dst Output (cropped) image
     */
     CV_WRAP virtual void image(InputArray src, OutputArray dst) override;
 
     /* @brief Apply the cropping transformation a single point
-        @param src Input point to be mapped to the new coordinates after cropping
+       @param src Input point to be mapped to the new coordinates after cropping
     */
     Point2f virtual point(const Point2f& src) override;
 
@@ -36,6 +43,7 @@ public:
 private:
     int width, height;
     int originX, originY;
+    bool randomXY;
 };
 
 }} //namespace cv::augment

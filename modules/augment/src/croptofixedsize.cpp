@@ -11,12 +11,25 @@ CropToFixedSize::CropToFixedSize(int _width, int _height)
 {
     width = _width;
     height = _height;
+    originX = 0;
+    originY = 0;
+    randomXY = true;
+}
+
+CropToFixedSize::CropToFixedSize(int _width, int _height, Point origin)
+{
+    width = _width;
+    height = _height;
+    originX = origin.x;
+    originY = origin.y;
+    randomXY = false;
 }
 
 void CropToFixedSize::init(const Mat& srcImage)
 {
     Transform::init(srcImage);
     CV_Assert(width <= srcImageCols && height <= srcImageRows);
+    if (!randomXY) return;
     int differenceX = srcImageCols - width; //the amount of pixels available to shift the center of the new image in X directon
     int differenceY = srcImageRows - height; //the amount of pixels available to shift the center of the new image in Y directon
     originX = Transform::rng.uniform(0, differenceX);
