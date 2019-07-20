@@ -7,7 +7,7 @@ namespace cv { namespace augment {
 
 AverageBlur::AverageBlur(Size _minKernelSize, Size _maxKernelSize, const std::vector<int>& _borderTypes)
 {
-    if (_borderTypes.size() > 0) 
+    if (_borderTypes.size() > 0)
         borderTypes = _borderTypes;
 
     else
