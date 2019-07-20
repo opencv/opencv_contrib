@@ -13,6 +13,6 @@
 #include <opencv2/augment/averageblur.hpp>
 #include <opencv2/augment/resize.hpp>
 #include <opencv2/augment/augmenter.hpp>
-#include <opencv2/augment/croptofixedsize.hpp>
+#include <opencv2/augment/crop.hpp>
 
 #endif

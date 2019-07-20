@@ -3,27 +3,36 @@
 // of this distribution and at http://opencv.org/license.html.
 
 
-#ifndef OPENCV_AUGMENT_CROPTOFIXEDSIZE_HPP
-#define OPENCV_AUGMENT_CROPTOFIXEDSIZE_HPP
+#ifndef OPENCV_AUGMENT_Crop_HPP
+#define OPENCV_AUGMENT_Crop_HPP
 #include <opencv2/augment/transform.hpp>
 
 namespace cv { namespace augment {
 
-class CV_EXPORTS_W CropToFixedSize : public Transform
+class CV_EXPORTS_W Crop : public Transform
 {
 public:
     /* @brief Constructor
-       @param width the width the images will be cropped to
-       @param width the height the images will be cropped to
+       @param size the size the images will be cropped to
     */
-    CV_WRAP CropToFixedSize(int width, int height);
+    CV_WRAP Crop(Size size);
 
     /* @brief Constructor
-       @param width the width the images will be cropped to
-       @param width the height the images will be cropped to
+       @param size the size the images will be cropped to
+    */
+    CV_WRAP Crop(Size minSize, Size maxSize);
+
+    /* @brief Constructor
+       @param size the size the images will be cropped to
        @param origin is the coordinate of the new origin
     */
-    CV_WRAP CropToFixedSize(int width, int height, Point origin);
+    CV_WRAP Crop(Size size, Point origin);
+
+    /* @brief Constructor
+       @param size the size the images will be cropped to
+    */
+    CV_WRAP Crop(Size minSize, Size maxSize, Point origin);
+
 
     /* @brief Apply the cropping to a single image
        @param src Input image to be cropped
@@ -46,9 +55,12 @@ public:
     void virtual init(const Mat& srcImage) override;
 
 private:
-    int width, height;
-    int originX, originY;
+    Size minSize;
+    Size maxSize;
+    Size size;
+    Point origin;
     bool randomXY;
+    bool randomSize;
 };
 
 }} //namespace cv::augment
