@@ -19,7 +19,7 @@ Point2f FlipHorizontal::point(const Point2f& src)
 
 Rect2f FlipHorizontal::rectangle(const Rect2f& src)
 {
-    return basicRectangle(src);
+    return Rect2f(srcImageCols - 1 - (src.x + src.width), src.y, src.width, src.height);
 }
 
 
@@ -37,7 +37,7 @@ Point2f FlipVertical::point(const Point2f& src)
 
 Rect2f FlipVertical::rectangle(const Rect2f& src)
 {
-    return basicRectangle(src);
+    return Rect2f(src.x, srcImageRows - 1 - (src.y + src.height), src.width, src.height);
 }
 
 }}
