@@ -7,9 +7,12 @@ import utils
 np.random.seed(seed=1)
 cv.setRNGSeed(seed=1)
 
-transformations = [cv.augment_CropToFixedSize(width=15, height=20)]
+transformations = [cv.augment_Crop(size=(30,40)),
+                   cv.augment_Crop(size=(30, 40), origin=(15,20)),
+                   cv.augment_Crop(minSize=(15, 20), maxSize=(30,40)),
+                   cv.augment_Crop(minSize=(15, 20), maxSize=(30, 40), origin=(15,15))]
 
-class cropToFixedSizeTest(NewOpenCVTests):
+class cropTest(NewOpenCVTests):
     def test_image(self):
         utils.test_image(transformations)
 
