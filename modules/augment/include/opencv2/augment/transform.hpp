@@ -29,7 +29,7 @@ public:
     /* @brief Apply the transformation for a single point (this is overridden by transformations implementation)
        @param src Input point to be tranformed
     */
-    virtual Point2f point(const Point2f& src);
+    CV_WRAP virtual Point2f point(const Point2f& src);
 
     /* @brief Apply the transformation for a rectangle
        @param box Rect2f consisting of (x1, y1, w, h) corresponding to (top left point, size)
