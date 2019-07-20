@@ -27,6 +27,11 @@ public:
     */
     Point2f point(const Point2f& src) override;
 
+    /* @brief Apply the transformation for a rectangle
+       @param box Rect2f consisting of (x1, y1, w, h) corresponding to (top left point, size)
+    */
+    virtual Rect2f rectangle(const Rect2f& src) override;
+
 };
 
 
@@ -47,6 +52,11 @@ public:
        @param src Input point to be flipped
     */
     Point2f virtual point(const Point2f& src) override;
+
+    /* @brief Apply the transformation for a rectangle
+       @param box Rect2f consisting of (x1, y1, w, h) corresponding to (top left point, size)
+   */
+    virtual Rect2f rectangle(const Rect2f& src) override;
 
 };
 

@@ -43,6 +43,11 @@ public:
     */
     CV_WRAP virtual void image(InputArray src, OutputArray dst) override;
 
+    /* @brief Apply the transformation for a rectangle
+       @param box Rect2f consisting of (x1, y1, w, h) corresponding to (top left point, size)
+    */
+    virtual Rect2f rectangle(const Rect2f& src) override;
+
     /* @brief choose an random kernel size and sigma from the specified ranges to apply in next transformations
     */
     void virtual init(const Mat&) override;

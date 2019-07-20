@@ -51,4 +51,10 @@ Point2f CropToFixedSize::point(const Point2f& src)
     return Point2f(src.x - originX, src.y - originY);
 }
 
+
+Rect2f CropToFixedSize::rectangle(const Rect2f& src)
+{
+    return basicRectangle(src);
+}
+
 }}

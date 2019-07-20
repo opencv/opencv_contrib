@@ -45,4 +45,9 @@ Point2f Resize::point(const Point2f& src)
     return Point2f(x, y);
 }
 
+Rect2f Resize::rectangle(const Rect2f& src)
+{
+    return basicRectangle(src);
+}
+
 }}

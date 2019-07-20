@@ -60,4 +60,9 @@ void AverageBlur::image(InputArray src, OutputArray dst)
     cv::blur(src, dst, kernelSize, Point(-1, -1), borderType);
 }
 
+Rect2f AverageBlur::rectangle(const Rect2f& src)
+{
+    return src;
+}
+
 }}

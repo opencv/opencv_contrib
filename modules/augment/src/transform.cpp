@@ -46,6 +46,23 @@ Rect2f Transform::rectangle(const Rect2f& src)
     return output_box;
 }
 
+Rect2f Transform::basicRectangle(const Rect2f& src)
+{
+    float x1 = src.x,
+        y1 = src.y,
+        x2 = src.x + src.width,
+        y2 = src.y + src.height;
+
+    Point2f tl(x1, y1);
+    Point2f br(x2, y2);
+
+    Point2f tl_transformed = this->point(tl);
+    Point2f br_transformed = this->point(br);
+
+    Rect2f output_box(tl_transformed, br_transformed);
+    return output_box;
+}
+
 void Transform::points(InputArray _src, OutputArray _dst)
 {
     Mat src = _src.getMat();

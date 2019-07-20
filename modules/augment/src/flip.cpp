@@ -17,6 +17,11 @@ Point2f FlipHorizontal::point(const Point2f& src)
     return Point2f(srcImageCols - 1 - src.x, src.y);
 }
 
+Rect2f FlipHorizontal::rectangle(const Rect2f& src)
+{
+    return basicRectangle(src);
+}
+
 
 FlipVertical::FlipVertical() {}
 
@@ -28,6 +33,11 @@ void FlipVertical::image(InputArray src, OutputArray dst)
 Point2f FlipVertical::point(const Point2f& src)
 {
     return Point2f(src.x, srcImageRows - 1 - src.y);
+}
+
+Rect2f FlipVertical::rectangle(const Rect2f& src)
+{
+    return basicRectangle(src);
 }
 
 }}

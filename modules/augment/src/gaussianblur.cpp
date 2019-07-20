@@ -53,4 +53,9 @@ void GaussianBlur::image(InputArray src, OutputArray dst)
     cv::GaussianBlur(src, dst, kernelSize, sigmaX, sigmaY);
 }
 
+Rect2f GaussianBlur::rectangle(const Rect2f& src)
+{
+    return src;
+}
+
 }}
