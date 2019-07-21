@@ -8,7 +8,7 @@ np.random.seed(seed=1)
 cv.setRNGSeed(seed=1)
 
 transformations = [cv.augment_Rotate(minAngle=0, maxAngle=180),
-                   cv.augment_Rotate(angle=45)]
+                   cv.augment_Rotate(angle=45, borderValue=128)]
 
 class rotateTest(NewOpenCVTests):
     def test_image(self):

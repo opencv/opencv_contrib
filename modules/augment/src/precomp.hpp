@@ -10,6 +10,5 @@
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 #include <vector>
-#include <tuple>
 
 #endif // __OPENCV_AUGMENT_PRECOMP_HPP__

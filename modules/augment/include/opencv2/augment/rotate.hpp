@@ -6,6 +6,7 @@
 #ifndef OPENCV_AUGMENT_ROTATE_HPP
 #define OPENCV_AUGMENT_ROTATE_HPP
 #include <opencv2/augment/transform.hpp>
+#include <opencv2/imgproc.hpp>
 
 namespace cv { namespace augment {
 
@@ -15,12 +16,19 @@ public:
     /* @brief Constructor
         @param minAngle the minimum angle of rotation
         @param maxAngle the maximum angle of rotation
-    */
-    CV_WRAP Rotate(float minAngle, float maxAngle);
+        @param interpolations the vector of interpolations used randomly in rotation
+        @param borderType the vector of types of the border used when the image is rotated
+        @param borderValue the value used in case of consant border
+   */
+    CV_WRAP Rotate(float minAngle, float maxAngle, std::vector<int> interpolations = std::vector<int>(), std::vector<int> borderTypes = std::vector<int>(), const Scalar&  borderValue=0);
 
     /* @brief Constructor to initialize the rotation transformation with a specific angle (in degrees)
+       @param angle the angle used in rotation
+       @param interpolation the interpolation type used in rotation
+       @param borderType the type of image border when rotated
+       @param borderValue the value used in case of constant border
     */
-    CV_WRAP Rotate(float angle);
+    CV_WRAP Rotate(float angle, int interpolation=INTER_LINEAR, int borderType=BORDER_CONSTANT, int borderValue=0);
 
     /* @brief Apply the rotation to a single image
         @param src Input image to be rotated
@@ -38,8 +46,12 @@ public:
     void virtual init(const Mat& srcImage) override;
 
 private :
-    float minAngle, maxAngle;
+    float minAngle, maxAngle, angle;
     Mat rotationMat;
+    std::vector<int> interpolations, borderTypes;
+    int interpolation, borderType;
+    Scalar borderValue;
+    bool random;
 
 };
 
