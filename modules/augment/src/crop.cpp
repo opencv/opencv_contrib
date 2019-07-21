@@ -51,9 +51,6 @@ void Crop::init(const Mat& srcImage)
         size.height = Transform::rng.uniform(minSize.height, maxSize.height);
     }
 
-    else
-        CV_Assert(size.width <= srcImageCols && size.height <= srcImageRows);
-
     if (randomXY)
     {
         int differenceX = srcImageCols - size.width; //the amount of pixels available to shift the center of the new image in X directon
@@ -65,6 +62,12 @@ void Crop::init(const Mat& srcImage)
 
 void Crop::image(InputArray src, OutputArray dst)
 {
+    if (size.width > srcImageCols || size.height > srcImageRows)
+    {
+        boxImage(src, dst);
+        return;
+    }
+
     Rect rect(origin.x, origin.y, size.width, size.height);
     Mat dstMat;
     Mat srcMat = src.getMat();
@@ -72,16 +75,52 @@ void Crop::image(InputArray src, OutputArray dst)
     dstMat.copyTo(dst);
 }
 
+void Crop::boxImage(InputArray src, OutputArray dst)
+{
+    Mat srcMat = src.getMat();
+    float scaleW, scaleH;
+    scaleW = float(size.width) / srcImageCols;
+    scaleH = float(size.height) / srcImageRows;
+    float scale = std::min(scaleW, scaleH);
+    Mat resized;
+    resize(src, resized, Size(), scale, scale, INTER_NEAREST);
+    dst.create(size, srcMat.type());
+    Mat dstMat = dst.getMat();
+    Rect rect(int((dstMat.cols - resized.cols) / 2), int((dstMat.rows - resized.rows) / 2), resized.cols, resized.rows);
+    resized.copyTo(dstMat(rect));
+}
 
 Point2f Crop::point(const Point2f& src)
 {
+    if (size.width > srcImageCols || size.height > srcImageRows)
+    {
+        float scaleW, scaleH;
+        scaleW = float(size.width) / srcImageCols;
+        scaleH = float(size.height) / srcImageRows;
+        float scale = std::min(scaleW, scaleH);
+        int resizedCols = int(scale*srcImageCols);
+        int resizedRows = int(scale*srcImageRows);
+        return Point(src.x / (srcImageCols - 1)*(resizedCols - 1) + int((size.width - resizedCols) / 2), 
+                     src.y / (srcImageRows - 1)*(resizedRows - 1) + int((size.height - resizedRows) / 2));
+    }
+
     return Point2f(src.x - origin.x, src.y - origin.y);
 }
 
 
 Rect2f Crop::rectangle(const Rect2f& src)
 {
-    return basicRectangle(src);
+    if (size.width > srcImageCols || size.height > srcImageRows)
+    {
+        float scaleW, scaleH;
+        scaleW = float(size.width) / srcImageCols;
+        scaleH = float(size.height) / srcImageRows;
+        float scale = std::min(scaleW, scaleH);
+        Point2f tl = point(Point2f(src.x, src.y));
+        return Rect2f(tl.x , tl.y, src.width*scale, src.height*scale);
+    }
+
+    return Rect2f(src.x - origin.x, src.y - origin.y, src.width, src.height);
 }
 
 }}

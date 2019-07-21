@@ -49,6 +49,11 @@ public:
        @param box Rect2f consisting of (x1, y1, w, h) corresponding to (top left point, size)
     */
     virtual Rect2f rectangle(const Rect2f& src) override;
+    /* @brief resize image to a certain size without changing aspect ratio
+       @param src image to bo resized
+       @param resized image
+    */
+    void boxImage(InputArray src, OutputArray dst);
 
     /* @brief choose the center of the random cropping
     */
