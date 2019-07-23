@@ -48,7 +48,7 @@ Crop::Crop(Size _minSize, Size _maxSize, Point _origin)
 void Crop::init(const Mat& srcImage)
 {
     Transform::init(srcImage);
-    
+
     if (randomSize)
     {
         size.width = Transform::rng.uniform(minSize.width, maxSize.width);

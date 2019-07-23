@@ -14,5 +14,6 @@
 #include <opencv2/augment/resize.hpp>
 #include <opencv2/augment/augmenter.hpp>
 #include <opencv2/augment/crop.hpp>
+#include <opencv2/augment/shift.hpp>
 
 #endif

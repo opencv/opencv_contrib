@@ -5,7 +5,7 @@
 #include "precomp.hpp"
 namespace cv { namespace augment {
 
-Resize::Resize(Size _size,const std::vector<int>& _interpolations)
+Resize::Resize(Size _size, const std::vector<int>& _interpolations)
 {
     size = _size;
     if (_interpolations.size() > 0)
