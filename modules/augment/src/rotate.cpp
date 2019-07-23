@@ -44,9 +44,9 @@ void Rotate::init(const Mat& srcImage)
     if (random)
     {
         angle = Transform::rng.uniform(minAngle, maxAngle);
-        int indexInterpolation = Transform::rng.uniform(0, interpolations.size());
+        int indexInterpolation = Transform::rng.uniform(0, int(interpolations.size()));
         interpolation = interpolations[indexInterpolation];
-        int indexBorderType = Transform::rng.uniform(0, borderTypes.size());
+        int indexBorderType = Transform::rng.uniform(0, int(borderTypes.size()));
         borderType = borderTypes[indexBorderType];
     }
     rotationMat = getRotationMatrix2D(Point2f(float(srcImageCols) / 2, float(srcImageRows) / 2), angle, 1);

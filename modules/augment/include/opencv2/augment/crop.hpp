@@ -55,6 +55,10 @@ public:
     */
     void boxImage(InputArray src, OutputArray dst);
 
+    /* @breif it calculates the scale that the image will be resized swith if the image was smaller than the crop size
+    */
+    void calculateScale();
+
     /* @brief choose the center of the random cropping
     */
     void virtual init(const Mat& srcImage) override;
@@ -66,6 +70,7 @@ private:
     Point origin;
     bool randomXY;
     bool randomSize;
+    float scale; //used when the crop size is bigger than the image size
 };
 
 }} //namespace cv::augment

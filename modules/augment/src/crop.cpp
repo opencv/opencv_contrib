@@ -13,6 +13,7 @@ Crop::Crop(Size _size)
     origin = Point(0, 0);
     randomXY = true;
     randomSize = false;
+    scale = 1.f;
 }
 
 Crop::Crop(Size _minSize, Size _maxSize)
@@ -22,6 +23,7 @@ Crop::Crop(Size _minSize, Size _maxSize)
     origin = Point(0, 0);
     randomXY = true;
     randomSize = true;
+    scale = 1.f;
 }
 
 Crop::Crop(Size _size, Point _origin)
@@ -30,6 +32,7 @@ Crop::Crop(Size _size, Point _origin)
     origin = _origin;
     randomXY = false;
     randomSize = false;
+    scale = 1.f;
 }
 
 Crop::Crop(Size _minSize, Size _maxSize, Point _origin)
@@ -39,12 +42,13 @@ Crop::Crop(Size _minSize, Size _maxSize, Point _origin)
     origin = _origin;
     randomXY = false;
     randomSize = true;
+    scale = 1.f;
 }
 
 void Crop::init(const Mat& srcImage)
 {
     Transform::init(srcImage);
-
+    
     if (randomSize)
     {
         size.width = Transform::rng.uniform(minSize.width, maxSize.width);
@@ -58,6 +62,10 @@ void Crop::init(const Mat& srcImage)
         origin.x = Transform::rng.uniform(0, differenceX);
         origin.y = Transform::rng.uniform(0, differenceY);
     }
+
+    if (size.width > srcImageCols || size.height > srcImageRows)
+        calculateScale();
+
 }
 
 void Crop::image(InputArray src, OutputArray dst)
@@ -78,10 +86,6 @@ void Crop::image(InputArray src, OutputArray dst)
 void Crop::boxImage(InputArray src, OutputArray dst)
 {
     Mat srcMat = src.getMat();
-    float scaleW, scaleH;
-    scaleW = float(size.width) / srcImageCols;
-    scaleH = float(size.height) / srcImageRows;
-    float scale = std::min(scaleW, scaleH);
     Mat resized;
     resize(src, resized, Size(), scale, scale, INTER_NEAREST);
     dst.create(size, srcMat.type());
@@ -94,13 +98,9 @@ Point2f Crop::point(const Point2f& src)
 {
     if (size.width > srcImageCols || size.height > srcImageRows)
     {
-        float scaleW, scaleH;
-        scaleW = float(size.width) / srcImageCols;
-        scaleH = float(size.height) / srcImageRows;
-        float scale = std::min(scaleW, scaleH);
         int resizedCols = int(scale*srcImageCols);
         int resizedRows = int(scale*srcImageRows);
-        return Point(src.x / (srcImageCols - 1)*(resizedCols - 1) + int((size.width - resizedCols) / 2), 
+        return Point2f(src.x / (srcImageCols - 1)*(resizedCols - 1) + int((size.width - resizedCols) / 2),
                      src.y / (srcImageRows - 1)*(resizedRows - 1) + int((size.height - resizedRows) / 2));
     }
 
@@ -112,15 +112,19 @@ Rect2f Crop::rectangle(const Rect2f& src)
 {
     if (size.width > srcImageCols || size.height > srcImageRows)
     {
-        float scaleW, scaleH;
-        scaleW = float(size.width) / srcImageCols;
-        scaleH = float(size.height) / srcImageRows;
-        float scale = std::min(scaleW, scaleH);
         Point2f tl = point(Point2f(src.x, src.y));
         return Rect2f(tl.x , tl.y, src.width*scale, src.height*scale);
     }
 
     return Rect2f(src.x - origin.x, src.y - origin.y, src.width, src.height);
+}
+
+void Crop::calculateScale()
+{
+    float scaleW, scaleH;
+    scaleW = float(size.width) / srcImageCols;
+    scaleH = float(size.height) / srcImageRows;
+    scale = std::min(scaleW, scaleH);
 }
 
 }}
