@@ -3,22 +3,22 @@
 // of this distribution and at http://opencv.org/license.html.
 
 
-#ifndef OPENCV_AUGMENT_GAUSSIANNOISE_HPP
-#define OPENCV_AUGMENT_GAUSSIANNOISE_HPP
+#ifndef OPENCV_AUGMENT_UNIFORMNOISE_HPP
+#define OPENCV_AUGMENT_UNIFORMNOISE_HPP
 #include <opencv2/augment/transform.hpp>
 
 namespace cv { namespace augment {
 
-class CV_EXPORTS_W GaussianNoise : public Transform
+class CV_EXPORTS_W UniformNoise : public Transform
 {
 public:
-    /* @brief Constructor to initialize the gaussian noise transformation with a specific mean and stddev
-       @param mean the mean of the gaussian noise
-       @param stddev the standard deviation of the gaussian noise
+    /* @brief Constructor to initialize the noise noise transformation with a specific mean and stddev
+       @param low the lowest value of the noise added
+       @param high the highest value of the noise added
     */
-    CV_WRAP GaussianNoise(float mean, float stddev);
+    CV_WRAP UniformNoise(float low, float high);
 
-    /* @brief Apply the gaussian noise to a single image
+    /* @brief Apply the uniform noise to a single image
        @param src Input image that the noise will be added to
        @param dst Output (noisy) image
     */
@@ -34,7 +34,7 @@ public:
     void virtual init(const Mat& srcImage) override;
 
 private :
-  float mean, stddev;
+  float low, high;
   Mat noise;
 
 };

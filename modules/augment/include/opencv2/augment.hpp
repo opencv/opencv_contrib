@@ -16,5 +16,6 @@
 #include <opencv2/augment/crop.hpp>
 #include <opencv2/augment/shift.hpp>
 #include <opencv2/augment/gaussiannoise.hpp>
+#include <opencv2/augment/uniformnoise.hpp>
 
 #endif
