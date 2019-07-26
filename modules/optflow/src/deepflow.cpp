@@ -145,5 +145,7 @@ void OpticalFlowDeepFlow::calc( InputArray _I0, InputArray _I1, InputOutputArray
 
 void OpticalFlowDeepFlow::collectGarbage() {}
 
+Ptr<DenseOpticalFlow> createOptFlow_DeepFlow() { return makePtr<OpticalFlowDeepFlow>(); }
+
 }//optflow
 }//cv

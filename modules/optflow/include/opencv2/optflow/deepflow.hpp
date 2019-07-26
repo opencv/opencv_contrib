@@ -1,4 +1,3 @@
-#pragma once
 /*
 By downloading, copying, installing or using the software you agree to this
 license. If you do not agree to this license, do not download, install,
@@ -49,6 +48,11 @@ namespace cv
 namespace optflow
 {
 
+//! @addtogroup optflow
+//! @{
+
+/** @brief DeepFlow algorithm.
+ */
 class CV_EXPORTS_W OpticalFlowDeepFlow: public DenseOpticalFlow
 {
 public:
@@ -99,7 +103,11 @@ private:
 
 };
 
-CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_DeepFlow() { return makePtr<OpticalFlowDeepFlow>(); }
+/** @brief Creates an instance of PCAFlow
+*/
+CV_EXPORTS_W Ptr<DenseOpticalFlow> createOptFlow_DeepFlow();
+
+//! @}
 
 }
 }
