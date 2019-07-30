@@ -131,7 +131,7 @@ public:
 
     void marchCubes(OutputArray vertices, OutputArray edges) const CV_OVERRIDE;
 
-    void renderSurface(OutputArray image) CV_OVERRIDE;
+    void renderSurface(OutputArray depthImage, OutputArray vertImage, OutputArray normImage) CV_OVERRIDE;
 
 private:
     Params params;
@@ -150,7 +150,7 @@ private:
     ogl::Arrays arr;
     ogl::Buffer idx;
 #endif
-    void drawScene(OutputArray img);
+    void drawScene(OutputArray depthImg, OutputArray shadedImg);
 };
 
 template< typename T>
@@ -184,19 +184,28 @@ DynaFuImpl<T>::DynaFuImpl(const Params &_params) :
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
 
     glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, fbo_depth);
+
+    // Make a color attachment to this framebuffer
+    unsigned int fbo_color;
+    glGenRenderbuffersEXT(1, &fbo_color);
+    glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, fbo_color);
+    glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_RGB, params.frameSize.width, params.frameSize.height);
+
+    glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_RENDERBUFFER_EXT, fbo_color);
+
 #endif
 
     reset();
 }
 
 template< typename T >
-void DynaFuImpl<T>::drawScene(OutputArray image)
+void DynaFuImpl<T>::drawScene(OutputArray depthImage, OutputArray shadedImage)
 {
 #ifdef HAVE_OPENGL
     glViewport(0, 0, params.frameSize.width, params.frameSize.height);
 
     glEnable(GL_DEPTH_TEST);
-    glClear(GL_DEPTH_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -220,7 +229,9 @@ void DynaFuImpl<T>::drawScene(OutputArray image)
     ogl::render(arr, idx, ogl::TRIANGLES);
 
     float f[params.frameSize.width*params.frameSize.height];
+    uint8_t pixels[params.frameSize.width*params.frameSize.height][3];
     glReadPixels(0, 0, params.frameSize.width, params.frameSize.height, GL_DEPTH_COMPONENT, GL_FLOAT, &f[0]);
+    glReadPixels(0, 0, params.frameSize.width, params.frameSize.height, GL_RGB, GL_UNSIGNED_BYTE, &pixels[0][0]);
 
     // linearise depth
     for(int i = 0; i < params.frameSize.width*params.frameSize.height; i++)
@@ -231,8 +242,15 @@ void DynaFuImpl<T>::drawScene(OutputArray image)
             f[i] = std::numeric_limits<float>::quiet_NaN();
     }
 
-    Mat depthData(params.frameSize.height, params.frameSize.width, CV_32F, f);
-    depthData.copyTo(image);
+    if(depthImage.needed()) {
+        Mat depthData(params.frameSize.height, params.frameSize.width, CV_32F, f);
+        depthData.copyTo(depthImage);
+    }
+
+    if(shadedImage.needed()) {
+        Mat shadeData(params.frameSize.height, params.frameSize.width, CV_8UC3, pixels);
+        shadeData.copyTo(shadedImage);
+    }
 #else
     CV_UNUSED(image);
     NO_OGL_ERR;
@@ -354,9 +372,9 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
             volume->integrate(depth, params.depthFactor, pose, params.intr, makePtr<WarpField>(warpfield));
         }
 
-        T _render, estdDepth;
-        renderSurface(_render);
-        _render.convertTo(estdDepth, DEPTH_TYPE);
+        T _depthRender, estdDepth, _vertRender, _normRender;
+        renderSurface(_depthRender, _vertRender, _normRender);
+        _depthRender.convertTo(estdDepth, DEPTH_TYPE);
 
         std::vector<T> estdPoints, estdNormals;
         makeFrameFromDepth(estdDepth, estdPoints, estdNormals, params.intr,
@@ -425,29 +443,55 @@ void DynaFuImpl<T>::marchCubes(OutputArray vertices, OutputArray edges) const
 }
 
 template<typename T>
-void DynaFuImpl<T>::renderSurface(OutputArray image)
+void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage, OutputArray normImage)
 {
 #ifdef HAVE_OPENGL
-    Mat vertices, meshIdx;
-    volume->marchCubes(vertices, noArray());
-    if(vertices.empty()) return;
+    Mat _vertices, vertices, normals, meshIdx;
+    volume->marchCubes(_vertices, noArray());
+    if(_vertices.empty()) return;
+
+    _vertices.convertTo(vertices, POINT_TYPE);
+    getNormals(vertices, normals);
+
+    Mat warpedVerts(vertices.size(), vertices.type());
 
     Affine3f invCamPose(pose.inv());
     for(int i = 0; i < vertices.size().height; i++) {
-        Vec4f v = vertices.at<Vec4f>(i);
+        ptype v = vertices.at<ptype>(i);
         Point3f p = invCamPose * Point3f(v[0], v[1], v[2]);
-        vertices.at<Vec4f>(i) = Vec4f(p.x, p.y, p.z, 1.f);
+        warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
+
+        // transform vertex to RGB space
+        Point3f pGlobal = params.volumePose.inv() * Point3f(v[0], v[1], v[2]);
+        pGlobal.x *= 1.0/(params.voxelSize*params.volumeDims[0]);
+        pGlobal.y *= 1.0/(params.voxelSize*params.volumeDims[1]);
+        pGlobal.z *= 1.0/(params.voxelSize*params.volumeDims[2]);
+        vertices.at<ptype>(i) = ptype(pGlobal.x, pGlobal.y, pGlobal.z, 1.f);
+
+        // transform normals to RGB space
+        ptype n = normals.at<ptype>(i);
+        Point3f nGlobal = params.volumePose.rotation().inv() * Point3f(n[0], n[1], n[2]);
+        nGlobal.x = (nGlobal.x + 1)/2;
+        nGlobal.y = (nGlobal.y + 1)/2;
+        nGlobal.z = (nGlobal.z + 1)/2;
+        normals.at<ptype>(i) = ptype(nGlobal.x, nGlobal.y, nGlobal.z, 1.f);
     }
 
     for(int i = 0; i < vertices.size().height; i++)
         meshIdx.push_back<int>(i);
 
-    arr.setVertexArray(vertices);
+    arr.setVertexArray(warpedVerts);
+    arr.setColorArray(vertices);
     idx.copyFrom(meshIdx);
 
-    drawScene(image);
+    drawScene(depthImage, vertImage);
+
+    arr.setVertexArray(warpedVerts);
+    arr.setColorArray(normals);
+    drawScene(noArray(), normImage);
 #else
-    CV_UNUSED(image);
+    CV_UNUSED(depthImage);
+    CV_UNUSED(vertImage);
     NO_OGL_ERR;
 #endif
 }

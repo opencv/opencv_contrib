@@ -350,14 +350,16 @@ int main(int argc, char **argv)
 
     for(UMat frame = ds->getDepth(); !frame.empty(); frame = ds->getDepth())
     {
-        Mat renderImg;
+        Mat depthImg, vertImg, normImg;
         setOpenGlContext("OpenGL Window");
-        df->renderSurface(renderImg);
-        if(!renderImg.empty())
+        df->renderSurface(depthImg, vertImg, normImg);
+        if(!depthImg.empty())
         {
             UMat cvt8;
-            convertScaleAbs(renderImg, cvt8, 0.33*255);
+            convertScaleAbs(depthImg, cvt8, 0.33*255);
             imshow("Surface prediction", cvt8);
+            imshow("vertex prediction", vertImg);
+            imshow("normal prediction", normImg);
         }
 
         if(depthWriter)
