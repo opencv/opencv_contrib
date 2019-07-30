@@ -89,7 +89,7 @@ namespace cv
 
                         Mat Y = ycbcr_channels[0];
 
-                        //Create blob from image so it has size 1,1,Width,Height
+                        //Create blob from image so it has size [1,1,Width,Height]
                         cv::Mat blob;
                         dnn::blobFromImage(Y, blob, 1.0);
 
@@ -107,14 +107,14 @@ namespace cv
                     }
                     else if( this->alg == "edsr" )
                     {
-                        //BGR mean of the Div2K dataset.
+                        //BGR mean of the Div2K dataset
                         Scalar mean =  Scalar(103.1545782, 111.561547, 114.35629928);
 
                         //Convert to float
                         Mat float_img;
                         img.convertTo(float_img, CV_32F, 1.0);
 
-                        //Create blob from image so it has size [1,3,Width,Height] and subtract dataset mean.
+                        //Create blob from image so it has size [1,3,Width,Height] and subtract dataset mean
                         cv::Mat blob;
                         dnn::blobFromImage(float_img, blob, 1.0, Size(), mean);
 
@@ -127,7 +127,7 @@ namespace cv
                         dnn::imagesFromBlob(blob_output, model_outs);
                         img_new = model_outs[0];
 
-                        //Post-process - add mean.
+                        //Post-process: add mean.
                         img_new = img_new + Scalar(103.1545782, 111.561547, 114.35629928);
 
                         img_new.convertTo(img_new, CV_8U);

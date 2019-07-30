@@ -51,8 +51,7 @@ Explanation
     sr.setModel("fsrcnn", 2);
     @endcode
 
-    Depending on the model you want to run, you have to set the algorithm and upscale factor. For example: if you chose FSRCNN_x2.pb, your
-    algorithm and scale will be 'fsrcnn' and 2, respectively. (Other algorithm options include "edsr", "espcn" and "lapsrn".)
+    Depending on the model you want to run, you have to set the algorithm and upscale factor. This is to know the desired algorithm and scale, even if you change the .pb file's name. For example: if you chose FSRCNN_x2.pb, your algorithm and scale will be 'fsrcnn' and 2, respectively. (Other algorithm options include "edsr", "espcn" and "lapsrn".)
 -#  **Upscale an image**
     @code{.cpp}
     Mat img = cv::imread(img_path);
