@@ -303,7 +303,7 @@ namespace cv
                 }
 
                 outShape[0] = inputs[0][0];
-                outShape[1] = static_cast<int>(inputs[0][1]) / pow(scale,2);
+                outShape[1] = static_cast<int>(inputs[0][1]) / static_cast<int>pow(scale,2);
                 outShape[2] = static_cast<int>(scale * inputs[0][2]);
                 outShape[3] = static_cast<int>(scale * inputs[0][3]);
 

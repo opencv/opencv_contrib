@@ -111,7 +111,7 @@ namespace dnn_superres
 
             /** @brief Upsample via neural network of multiple outputs
             @param img Image to upscale
-            @param img_new Destination upscaled images
+            @param imgs_new Destination upscaled images
             @param scale_factors Scaling factors of the output nodes
             @param node_names Names of the output nodes in the neural network
             */

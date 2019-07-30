@@ -16,13 +16,13 @@ There are four models which are trained. (Not all are implemented yet!!)
 
 #### EDSR
 
-- Size of the model:
-- This model was trained for <> iterations with a batch size of <>
-- Link to model code:
-- Link to model:
+- Size of the model: ~38.5MB. This is a quantized version, so that it can be uploaded to GitHub. (Original was 150MB.)
+- This model was trained for <> iterations with a batch size of 16
+- Link to model code: https://github.com/Saafke/EDSR_Tensorflow
+- Link to model: https://github.com/Saafke/EDSR_Tensorflow/tree/master/models
 - Advantage: Highly accurate
-- Disadvantage: Slow and big
-- Speed:
+- Disadvantage: Slow and large filesize
+- Speed: ~12.0sec for a 256x256 image | ~49.0sec for a 512x512 image
 
 #### ESPCN
 
