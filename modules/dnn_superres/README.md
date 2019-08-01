@@ -29,10 +29,12 @@ There are four models which are trained. (Not yet implemented!!)
 
 #### ESPCN
 
+Trained models can be downloaded from [here](https://github.com/fannymonori/TF-ESPCN/tree/master/export).
+
 - Size of the model: ~100kb
 - This model was trained for 100 iterations with a batch size of 32
-- Link to model code: https://github.com/fannymonori/TF-ESPCN
-- Trained models: /models/ESPCN_x2.pb, /models/ESPCN_x3.pb, /models/ESPCN_x4.pb
+- Link to implementation code: https://github.com/fannymonori/TF-ESPCN
+- x2, x3, x4 trained models available
 - Advantage: It is tiny, and fast, and still perform well.
 - Disadvantage: Perform worse visually than newer, more robust models.
 - Speed:
@@ -48,10 +50,12 @@ There are four models which are trained. (Not yet implemented!!)
 
 #### LapSRN
 
+Trained models can be downloaded from [here](https://github.com/fannymonori/TF-LapSRN/tree/master/export).
+
 - Size of the model: between 1-5Mb
 - This model was trained for ~50 iterations with a batch size of 32
-- Link to model code: https://github.com/fannymonori/TF-LAPSRN
-- Link to model: /models/LapSRN_x2.pb, /models/LapSRN_x4.pb, /models/LapSRN_x8.pb
+- Link to implementation code: https://github.com/fannymonori/TF-LAPSRN
+- x2, x4, x8 trained models available
 - Advantage: The model can do multi-scale super-resolution with one forward pass. It can now support 2x, 4x, 8x, and [2x, 4x] and [2x, 4x, 8x] super-resolution.
 - Disadvantage: It is a slower model.
 - Speed

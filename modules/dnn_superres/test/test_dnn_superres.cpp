@@ -95,7 +95,6 @@ namespace opencv_test
 
         void CV_DnnSuperResSingleOutputTest::run(int)
         {
-            //ESPCN
             //x2
             runOneModel("espcn", 2, "ESPCN_x2.pb");
 
@@ -104,16 +103,6 @@ namespace opencv_test
 
             //x4
             runOneModel("espcn", 4, "ESPCN_x4.pb");
-
-            //LAPSRN
-            //x2
-            runOneModel("espcn", 2, "LapSRN_x2.pb");
-
-            //x4
-            runOneModel("espcn", 4, "LapSRN_x4.pb");
-
-            //x8
-            runOneModel("espcn", 8, "LapSRN_x8.pb");
         }
 
         TEST(CV_DnnSuperResSingleOutputTest, accuracy)
@@ -215,11 +204,6 @@ namespace opencv_test
             std::vector<String> names_4x {"NCHW_output_2x", "NCHW_output_4x"};
             std::vector<int> scales_4x {2, 4};
             runOneModel("lapsrn", 4, "LapSRN_x4.pb", scales_4x, names_4x);
-
-            //x8
-            std::vector<String> names_8x {"NCHW_output_2x", "NCHW_output_4x", "NCHW_output_8x"};
-            std::vector<int> scales_8x  {2, 4, 8};
-            runOneModel("lapsrn", 8, "LapSRN_x8.pb", scales_8x, names_8x);
         }
 
         TEST(CV_DnnSuperResMultiOutputTest, accuracy)
