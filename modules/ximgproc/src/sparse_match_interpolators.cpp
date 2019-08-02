@@ -78,7 +78,6 @@ public:
 protected:
     int w,h;
     int match_num;
-
     //internal buffers:
     vector<node>* g;
     Mat labels;
@@ -234,7 +233,7 @@ void EdgeAwareInterpolatorImpl::computeGradientMagnitude(Mat& src, Mat& dst)
     Mat dx,dy;
     Sobel(src, dx, CV_16S, 1, 0);
     Sobel(src, dy, CV_16S, 0, 1);
-    float norm_coef = src.channels()*4.0f*255.0f;
+    float norm_coef = src.channels()*4*255.0f;
 
     if(src.channels()==1)
     {
