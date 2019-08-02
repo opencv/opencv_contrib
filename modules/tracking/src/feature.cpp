@@ -100,7 +100,7 @@ bool CvFeatureParams::read( const FileNode &node )
   return ( maxCatCount >= 0 && featSize >= 1 );
 }
 
-Ptr<CvFeatureParams> CvFeatureParams::create( int featureType )
+Ptr<CvFeatureParams> CvFeatureParams::create(FeatureType featureType)
 {
   return featureType == HAAR ? Ptr<CvFeatureParams>( new CvHaarFeatureParams ) : featureType == LBP ? Ptr<CvFeatureParams>( new CvLBPFeatureParams ) :
          featureType == HOG ? Ptr<CvFeatureParams>( new CvHOGFeatureParams ) : Ptr<CvFeatureParams>();
@@ -128,7 +128,7 @@ void CvFeatureEvaluator::setImage( const Mat &img, uchar clsLabel, int idx )
   cls.ptr<float>( idx )[0] = clsLabel;
 }
 
-Ptr<CvFeatureEvaluator> CvFeatureEvaluator::create( int type )
+Ptr<CvFeatureEvaluator> CvFeatureEvaluator::create(CvFeatureParams::FeatureType type)
 {
   return type == CvFeatureParams::HAAR ? Ptr<CvFeatureEvaluator>( new CvHaarEvaluator ) :
          type == CvFeatureParams::LBP ? Ptr<CvFeatureEvaluator>( new CvLBPEvaluator ) :
@@ -908,7 +908,7 @@ void CvHOGEvaluator::Feature::write( FileStorage &fs ) const
 //}
 
 //cell[0] and featComponent idx writing. By cell[0] it's possible to recover all block
-//All block is nessesary for block normalization
+//All block is necessary for block normalization
 void CvHOGEvaluator::Feature::write( FileStorage &fs, int featComponentIdx ) const
 {
   fs << CC_RECT << "[:" << rect[0].x << rect[0].y << rect[0].width << rect[0].height << featComponentIdx << "]";

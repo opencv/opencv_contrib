@@ -36,12 +36,13 @@
 
 #include "precomp.hpp"
 #include "opencv2/ximgproc/sparse_match_interpolator.hpp"
+#include "opencv2/ximgproc/structured_edge_detection.hpp"
 #include <algorithm>
 #include <vector>
 #include "opencv2/core/hal/hal.hpp"
 
 using namespace std;
-
+#define MAX_MATCH_TYPE short 
 #define INF 1E+20F
 
 namespace cv {
@@ -69,7 +70,106 @@ struct node
     node(int l,float d): dist(d), label(l) {}
 };
 
-class EdgeAwareInterpolatorImpl CV_FINAL : public EdgeAwareInterpolator
+class EdgeAwareInterpolatorImplBase
+{
+public:
+    void geodesicDistanceTransform(Mat& distances, Mat& cost_map);
+};
+
+void EdgeAwareInterpolatorImplBase::geodesicDistanceTransform(Mat& distances, Mat& cost_map)
+{
+    float c1 = 1.0f / 2.0f;
+    float c2 = sqrt(2.0f) / 2.0f;
+    float d = 0.0f;
+    int i, j;
+    float *dist_row, *cost_row;
+    float *dist_row_prev, *cost_row_prev;
+    MAX_MATCH_TYPE *label_row;
+    MAX_MATCH_TYPE *label_row_prev;
+
+#define CHECK(cur_dist,cur_label,cur_cost,prev_dist,prev_label,prev_cost,coef)\
+{\
+    d = prev_dist + coef*(cur_cost+prev_cost);\
+    if(cur_dist>d){\
+        cur_dist=d;\
+        cur_label = prev_label;}\
+}
+
+    for (int it = 0; it < distance_transform_num_iter; it++)
+    {
+        //first pass (left-to-right, top-to-bottom):
+        dist_row = distances.ptr<float>(0);
+        label_row = labels.ptr<MAX_MATCH_TYPE>(0);
+        cost_row = cost_map.ptr<float>(0);
+        for (j = 1; j < w; j++)
+            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
+
+        for (i = 1; i < h; i++)
+        {
+            dist_row = distances.ptr<float>(i);
+            dist_row_prev = distances.ptr<float>(i - 1);
+
+            label_row = labels.ptr<MAX_MATCH_TYPE>(i);
+            label_row_prev = labels.ptr<MAX_MATCH_TYPE>(i - 1);
+
+            cost_row = cost_map.ptr<float>(i);
+            cost_row_prev = cost_map.ptr<float>(i - 1);
+
+            j = 0;
+            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
+            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
+            j++;
+            for (; j < w - 1; j++)
+            {
+                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
+                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
+                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
+                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
+            }
+            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
+            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
+            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
+        }
+
+        //second pass (right-to-left, bottom-to-top):
+        dist_row = distances.ptr<float>(h - 1);
+        label_row = labels.ptr<MAX_MATCH_TYPE>(h - 1);
+        cost_row = cost_map.ptr<float>(h - 1);
+        for (j = w - 2; j >= 0; j--)
+            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j + 1], label_row[j + 1], cost_row[j + 1], c1);
+
+        for (i = h - 2; i >= 0; i--)
+        {
+            dist_row = distances.ptr<float>(i);
+            dist_row_prev = distances.ptr<float>(i + 1);
+
+            label_row = labels.ptr<MAX_MATCH_TYPE>(i);
+            label_row_prev = labels.ptr<MAX_MATCH_TYPE>(i + 1);
+
+            cost_row = cost_map.ptr<float>(i);
+            cost_row_prev = cost_map.ptr<float>(i + 1);
+
+            j = w - 1;
+            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
+            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
+            j--;
+            for (; j > 0; j--)
+            {
+                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j + 1], label_row[j + 1], cost_row[j + 1], c1);
+                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
+                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
+                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
+            }
+            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j + 1], label_row[j + 1], cost_row[j + 1], c1);
+            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
+            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
+        }
+    }
+#undef CHECK
+}
+
+
+class EdgeAwareInterpolatorImpl CV_FINAL : public EdgeAwareInterpolator, EdgeAwareInterpolatorImplBase
 {
 public:
     static Ptr<EdgeAwareInterpolatorImpl> create();
@@ -103,7 +203,7 @@ protected:
     void init();
     void preprocessData(Mat& src, vector<SparseMatch>& matches);
     void computeGradientMagnitude(Mat& src, Mat& dst);
-    void geodesicDistanceTransform(Mat& distances, Mat& cost_map);
+    //void geodesicDistanceTransform(Mat& distances, Mat& cost_map);
     void buildGraph(Mat& distances, Mat& cost_map);
     void ransacInterpolation(vector<SparseMatch>& matches, Mat& dst_dense_flow);
 
@@ -399,7 +499,6 @@ void EdgeAwareInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
 
         label_row      = labels.ptr<int>(i);
         label_row_prev = labels.ptr<int>(i-1);
-
         cost_row      = cost_map.ptr<float>(i);
         cost_row_prev = cost_map.ptr<float>(i-1);
 
@@ -703,6 +802,7 @@ void generateHypothesis(int* labels, int count, RNG& rng, unsigned char* is_used
     getAffineTransform(src_points,dst_points).convertTo(dst,CV_32F);
 }
 
+
 void verifyHypothesis(int* labels, float* weights, int count, SparseMatch* matches, float eps, float lambda, Mat& hypothesis_transform, Mat& old_transform, float& old_weighted_num_inliers)
 {
     float* tr = hypothesis_transform.ptr<float>(0);
@@ -877,6 +977,219 @@ bool operator<(const SparseMatch& lhs,const SparseMatch& rhs)
     else
         return (lhs.reference_image_pos.x<rhs.reference_image_pos.x);
 }
+
+class RICInterpolatorImpl CV_FINAL : public EdgeAwareInterpolatorImplBase //: public RICInterpolatorImpl
+{
+public:
+    static Ptr<RICInterpolatorImpl> create();
+    void interpolate(InputArray from_image, InputArray from_points, InputArray to_image, InputArray to_points, OutputArray dense_flow); // CV_OVERRIDE;
+
+protected:
+    Mat getCostMap(const Mat img, std::string modelFilename = "/model.yml.gz");
+    std::string m_ModelFilename;
+protected:
+  
+public:
+    /*
+    void  setK(int _k) CV_OVERRIDE { k = _k; }
+    int   getK() CV_OVERRIDE { return k; }
+    void  setSigma(float _sigma) CV_OVERRIDE { sigma = _sigma; }
+    float getSigma() CV_OVERRIDE { return sigma; }
+    void  setLambda(float _lambda) CV_OVERRIDE { lambda = _lambda; }
+    float getLambda() CV_OVERRIDE { return lambda; }
+    void  setUsePostProcessing(bool _use_post_proc) CV_OVERRIDE { use_post_proc = _use_post_proc; }
+    bool  getUsePostProcessing() CV_OVERRIDE { return use_post_proc; }
+    void  setFGSLambda(float _lambda) CV_OVERRIDE { fgs_lambda = _lambda; }
+    float getFGSLambda() CV_OVERRIDE { return fgs_lambda; }
+    void  setFGSSigma(float _sigma) CV_OVERRIDE { fgs_sigma = _sigma; }
+    float getFGSSigma() CV_OVERRIDE { return fgs_sigma; }
+    */
+};
+
+Mat RICInterpolatorImpl::getCostMap(const Mat img, std::string modelFilename)
+{
+    Mat fImg;
+    img.convertTo(fImg, CV_32F, 1 / 255.0);
+    int borderSize = 10;
+    cv::copyMakeBorder(fImg, fImg, borderSize, borderSize, borderSize, borderSize, cv::BORDER_REPLICATE);
+    Mat edges(fImg.size(), fImg.type());
+    Ptr<cv::ximgproc::StructuredEdgeDetection> sEdge = ximgproc::createStructuredEdgeDetection(modelFilename);
+    sEdge->detectEdges(fImg, edges);
+    return edges;
+}
+
+//void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_points, InputArray to_image, InputArray to_points, OutputArray dense_flow)
+//{
+//    CV_Assert(!from_image.empty() && (from_image.depth() == CV_8U) && (from_image.channels() == 3 || from_image.channels() == 1));
+//    CV_Assert(!from_points.empty() && from_points.isVector() &&
+//        !to_points.empty() && to_points.isVector() &&
+//        from_points.sameSize(to_points));
+//
+//    int w = from_image.cols();
+//    int h = from_image.rows();
+//
+//    vector<Point2f> from_vector = *(const vector<Point2f>*)from_points.getObj();
+//    vector<Point2f> to_vector = *(const vector<Point2f>*)to_points.getObj();
+//    vector<SparseMatch> matches_vector(from_vector.size());
+//    for (unsigned int i = 0; i < from_vector.size(); i++)
+//        matches_vector[i] = SparseMatch(from_vector[i], to_vector[i]);
+//    
+//
+//    Mat src = from_image.getMat();
+//    // from here
+//
+//    Size src_size = src.size();
+//    Mat costMap = getCostMap(src, m_ModelFilename) + 0.001f;
+//   
+//    Mat matDistanceMap(src_size, CV_32FC1);
+//    Mat matLabels(src_size, CV_32SC1);
+//    matLabels.setTo(-1);
+//    matDistanceMap.setTo(1e10);
+//   
+//    for (unsigned int i = 0; i < matches_vector.size(); i++)
+//    {
+//        const SparseMatch & p = matches_vector[i];
+//        Point pos(static_cast<int>(p.reference_image_pos.y), static_cast<int>(p.reference_image_pos.x));
+//        //
+//        matLabels.at<int>(pos) = i;
+//        matDistanceMap.at<float>(pos) = costMap.at<float>(pos);
+//    }
+//    // some components will have the same label, 
+//    geodesicDistanceTransform(matDistanceMap, costMap);
+//   
+//    IntImage matNN; // nearest neighbors of each matching
+//    FImage matNNDis; // the corresponding distances
+//    MatchingNeighborConstruction(matDistanceMap, matLabels, matchingCnt, matNN, matNNDis);
+//
+//    // debug
+//#if 0
+//    // show matching cells
+//    FImage tu(w, h), tv(w, h); // tmp u and v
+//    for (int i = 0; i < w*h; i++) {
+//        int id = matLabels[i];
+//        float* p = inputMatches.rowPtr(id);
+//        float u = p[2] - p[0];
+//        float v = p[3] - p[1];
+//        tu[i] = u;
+//        tv[i] = v;
+//    }
+//    OpticFlowIO::ShowFlow("matching cells", tu.pData, tv.pData, w, h);
+//#endif
+//    /************************************************************************/
+//    /*       Construct Superpixel Graph                                     */
+//    /************************************************************************/
+//
+//    IntImage spLabels;
+//    IntImage spNN; // nearest neighbors of each superpixel
+//    FImage spPos;
+//    IntImage spItems;
+//
+//    int spCnt = OverSegmentaion(img1, spLabels, _sp_size);
+//    SuperpixelNeighborConstruction(spLabels, spCnt, spNN);
+//    SuperpixelLayoutAnalysis(spLabels, spCnt, spPos, spItems);
+//
+//    //printf("superpixel count: %d\n", spCnt);
+//    //spLabels.imshow("sp", 0);
+//
+//    /************************************************************************/
+//    /*     Find Support Neighbors                                           */
+//    /************************************************************************/
+//
+//    int* srcMatchIds = new int[spCnt];
+//    for (int i = 0; i < spCnt; i++) {
+//        float* pos = spPos.rowPtr(i);
+//        int x = pos[0] + 0.5;
+//        int y = pos[1] + 0.5;
+//        srcMatchIds[i] = matLabels[y*w + x];
+//    }
+//
+//    int supportCnt = _sp_nncnt;
+//    int* supportMatchIds = new int[spCnt*supportCnt];  // support matches for each superpixel
+//    float* supportMatchDis = new float[spCnt*supportCnt];
+//
+//    FindSupportMatches(srcMatchIds, spCnt, supportCnt, matNN, matNNDis, supportMatchIds, supportMatchDis);
+//
+//    t.toc("Graph Construction: ");
+//
+//    /************************************************************************/
+//    /*    Affine fitting                                                    */
+//    /************************************************************************/
+//    // affine fit for every seed
+//
+//    FImage transModels(6, spCnt); // models for each superpixel
+//    FImage fitModels(6, spCnt);
+//    //init models (translation model)
+//    float rawModel[6] = { 1, 0, 0, 0, 1, 0 };
+//    for (int i = 0; i < spCnt; i++) {
+//        int matId = supportMatchIds[i*supportCnt + 0]; // the nearest support matching
+//        float* p = inputMatches.rowPtr(matId);
+//        float u = p[2] - p[0];
+//        float v = p[3] - p[1];
+//
+//        float* pModel = transModels.rowPtr(i);
+//        memcpy(pModel, rawModel, 6 * sizeof(float));
+//#if 0
+//        pModel[2] = rand() % (2 * MAX_DISPLACEMENT) - MAX_DISPLACEMENT;
+//        pModel[5] = rand() % (2 * MAX_DISPLACEMENT) - MAX_DISPLACEMENT;
+//#else
+//        pModel[2] = u;
+//        pModel[5] = v;
+//#endif
+//        memcpy(fitModels.rowPtr(i), pModel, 6 * sizeof(float));
+//    }
+//
+//    PropagateModels(spCnt, spNN, supportMatchIds, supportMatchDis, supportCnt, inputMatches, fitModels);
+//
+//    t.toc("Fitting: ");
+//
+//    /************************************************************************/
+//    /* Apply fitting models                                                 */
+//    /************************************************************************/
+//    outU.allocate(w, h);
+//    outV.allocate(w, h);
+//    for (int i = 0; i < spCnt; i++) {
+//        float* pModel = fitModels.rowPtr(i);
+//        int* pixelItems = spItems.rowPtr(i);
+//        int maxPixelCnt = spItems.width();
+//        for (int k = 0; k < maxPixelCnt; k++) {
+//            int x = pixelItems[2 * k];
+//            int y = pixelItems[2 * k + 1];
+//            if (x < 0 || y < 0) {
+//                break;
+//            }
+//            float fx = pModel[0] * x + pModel[1] * y + pModel[2];
+//            float fy = pModel[3] * x + pModel[4] * y + pModel[5];
+//            int idx = y * w + x;
+//            outU[idx] = fx - x;
+//            outV[idx] = fy - y;
+//            if (abs(fx - x) > _maxFlow || abs(fy - y) > _maxFlow) {
+//                // use the translational model directly
+//                pModel = transModels.rowPtr(i);
+//                fx = pModel[0] * x + pModel[1] * y + pModel[2];
+//                fy = pModel[3] * x + pModel[4] * y + pModel[5];
+//                outU[idx] = fx - x;
+//                outV[idx] = fy - y;
+//            }
+//        }
+//    }
+//
+//    t.toc("Apply fitting: ");
+//
+//    /************************************************************************/
+//    /* Variational Refinement                                               */
+//    /************************************************************************/
+//#if 1
+//    VariationalRefine(img1, img2, outU, outV, outU, outV);
+//    t.toc("Variational: ");
+//#endif
+//
+//    delete[] srcMatchIds;
+//    delete[] supportMatchIds;
+//    delete[] supportMatchDis;
+//
+//    total.toc("RIC total: ");
+//
+//}
 
 }
 }

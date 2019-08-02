@@ -101,7 +101,7 @@ int main( int argc, const char **argv )
 
   Mat from = imread( fromPath );
   Mat to = imread( toPath );
-  Mat gt = optflow::readOpticalFlow( gtPath );
+  Mat gt = readOpticalFlow( gtPath );
   std::vector< std::pair< Point2i, Point2i > > corr;
 
   TickMeter meter;

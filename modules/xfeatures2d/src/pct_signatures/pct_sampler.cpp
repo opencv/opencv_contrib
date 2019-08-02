@@ -157,7 +157,7 @@ namespace cv
                     if (weights.size() != mWeights.size())
                     {
                         CV_Error_(Error::StsUnmatchedSizes,
-                            ("Invalid weights dimension %d (max %d)", weights.size(), mWeights.size()));
+                            ("Invalid weights dimension %zu (max %zu)", weights.size(), mWeights.size()));
                     }
                     else
                     {
@@ -178,7 +178,7 @@ namespace cv
                     if (translations.size() != mTranslations.size())
                     {
                         CV_Error_(Error::StsUnmatchedSizes,
-                            ("Invalid translations dimension %d (max %d)", translations.size(), mTranslations.size()));
+                            ("Invalid translations dimension %zu (max %zu)", translations.size(), mTranslations.size()));
                     }
                     else
                     {

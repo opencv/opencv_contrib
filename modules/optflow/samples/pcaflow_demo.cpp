@@ -135,7 +135,7 @@ int main( int argc, const char **argv )
 
   Mat i1 = imread( img1 );
   Mat i2 = imread( img2 );
-  Mat gt = optflow::readOpticalFlow( groundtruth );
+  Mat gt = readOpticalFlow( groundtruth );
 
   Mat i1g, i2g;
   cvtColor( i1, i1g, COLOR_BGR2GRAY );

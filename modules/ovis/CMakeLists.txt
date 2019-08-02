@@ -16,9 +16,19 @@ elseif(OGRE_VERSION VERSION_GREATER 1.10) # we need C++11 for OGRE 1.11
   endif()
 endif()
 
+if(OGRE_VERSION VERSION_LESS 1.10.10)
+    message(WARNING "opencv_ovis: Ogre >= 1.10.10 recommended for interactive windows")
+endif()
+
 include_directories(${OGRE_INCLUDE_DIRS})
 link_directories(${OGRE_LIBRARY_DIRS})
 
-ocv_define_module(ovis opencv_core opencv_imgproc opencv_calib3d WRAP python)
+ocv_add_module(ovis opencv_core opencv_imgproc opencv_calib3d WRAP python)
+ocv_glob_module_sources()
+ocv_module_include_directories()
+ocv_create_module()
+
+ocv_add_samples(opencv_aruco)
+
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wunused-parameter)
 ocv_target_link_libraries(${the_module} ${OGRE_LIBRARIES})

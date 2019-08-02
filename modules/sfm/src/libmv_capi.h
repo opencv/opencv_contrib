@@ -203,8 +203,8 @@ static bool selectTwoKeyframesBasedOnGRICAndVariance(
 static void libmv_cameraIntrinsicsFillFromOptions(
     const libmv_CameraIntrinsicsOptions* camera_intrinsics_options,
     CameraIntrinsics* camera_intrinsics) {
-  camera_intrinsics->SetFocalLength(camera_intrinsics_options->focal_length,
-                                    camera_intrinsics_options->focal_length);
+  camera_intrinsics->SetFocalLength(camera_intrinsics_options->focal_length_x,
+                                    camera_intrinsics_options->focal_length_y);
 
   camera_intrinsics->SetPrincipalPoint(
       camera_intrinsics_options->principal_point_x,

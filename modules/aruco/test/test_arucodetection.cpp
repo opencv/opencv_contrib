@@ -182,12 +182,29 @@ static void getSyntheticRT(double yaw, double pitch, double distance, Mat &rvec,
  */
 static Mat projectMarker(Ptr<aruco::Dictionary> &dictionary, int id, Mat cameraMatrix, double yaw,
                          double pitch, double distance, Size imageSize, int markerBorder,
-                         vector< Point2f > &corners) {
+                         vector< Point2f > &corners, int encloseMarker=0) {
 
     // canonical image
-    Mat markerImg;
+    Mat marker, markerImg;
     const int markerSizePixels = 100;
-    aruco::drawMarker(dictionary, id, markerSizePixels, markerImg, markerBorder);
+
+    aruco::drawMarker(dictionary, id, markerSizePixels, marker, markerBorder);
+    marker.copyTo(markerImg);
+
+    if(encloseMarker){ //to enclose the marker
+        int enclose = int(marker.rows/4);
+        markerImg = Mat::zeros(marker.rows+(2*enclose), marker.cols+(enclose*2), CV_8UC1);
+
+        Mat field= markerImg.rowRange(int(enclose), int(markerImg.rows-enclose))
+                            .colRange(int(0), int(markerImg.cols));
+        field.setTo(255);
+        field= markerImg.rowRange(int(0), int(markerImg.rows))
+                            .colRange(int(enclose), int(markerImg.cols-enclose));
+        field.setTo(255);
+
+        field = markerImg(Rect(enclose,enclose,marker.rows,marker.cols));
+        marker.copyTo(field);
+    }
 
     // get rvec and tvec for the perspective
     Mat rvec, tvec;
@@ -205,10 +222,10 @@ static Mat projectMarker(Ptr<aruco::Dictionary> &dictionary, int id, Mat cameraM
     projectPoints(markerObjPoints, rvec, tvec, cameraMatrix, distCoeffs, corners);
 
     vector< Point2f > originalCorners;
-    originalCorners.push_back(Point2f(0, 0));
-    originalCorners.push_back(Point2f((float)markerSizePixels, 0));
-    originalCorners.push_back(Point2f((float)markerSizePixels, (float)markerSizePixels));
-    originalCorners.push_back(Point2f(0, (float)markerSizePixels));
+    originalCorners.push_back(Point2f(0+float(encloseMarker*markerSizePixels/4), 0+float(encloseMarker*markerSizePixels/4)));
+    originalCorners.push_back(originalCorners[0]+Point2f((float)markerSizePixels, 0));
+    originalCorners.push_back(originalCorners[0]+Point2f((float)markerSizePixels, (float)markerSizePixels));
+    originalCorners.push_back(originalCorners[0]+Point2f(0, (float)markerSizePixels));
 
     Mat transformation = getPerspectiveTransform(originalCorners, corners);
 
@@ -238,6 +255,11 @@ class CV_ArucoDetectionPerspective : public cvtest::BaseTest {
     public:
     CV_ArucoDetectionPerspective();
 
+    enum checkWithParameter{
+        USE_APRILTAG=1,             /// Detect marker candidates :: using AprilTag
+        DETECT_INVERTED_MARKER,     /// Check if there is a white marker
+    };
+
     protected:
     void run(int);
 };
@@ -246,9 +268,10 @@ class CV_ArucoDetectionPerspective : public cvtest::BaseTest {
 CV_ArucoDetectionPerspective::CV_ArucoDetectionPerspective() {}
 
 
-void CV_ArucoDetectionPerspective::run(int aprilDecimate) {
+void CV_ArucoDetectionPerspective::run(int tryWith) {
 
     int iter = 0;
+    int szEnclosed = 0;
     Mat cameraMatrix = Mat::eye(3, 3, CV_64FC1);
     Size imgSize(500, 500);
     cameraMatrix.at< double >(0, 0) = cameraMatrix.at< double >(1, 1) = 650;
@@ -257,29 +280,35 @@ void CV_ArucoDetectionPerspective::run(int aprilDecimate) {
     Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
 
     // detect from different positions
-    for(double distance = 0.1; distance <= 0.5; distance += 0.2) {
-        for(int pitch = 0; pitch < 360; pitch += 60) {
-            for(int yaw = 30; yaw <= 90; yaw += 50) {
+    for(double distance = 0.1; distance < 0.7; distance += 0.2) {
+        for(int pitch = 0; pitch < 360; pitch += (distance == 0.1? 60:180)) {
+            for(int yaw = 70; yaw <= 120; yaw += 40){
                 int currentId = iter % 250;
                 int markerBorder = iter % 2 + 1;
                 iter++;
                 vector< Point2f > groundTruthCorners;
-                // create synthetic image
-                Mat img =
-                    projectMarker(dictionary, currentId, cameraMatrix, deg2rad(yaw), deg2rad(pitch),
-                                  distance, imgSize, markerBorder, groundTruthCorners);
 
-                // detect markers
-                vector< vector< Point2f > > corners;
-                vector< int > ids;
                 Ptr<aruco::DetectorParameters> params = aruco::DetectorParameters::create();
                 params->minDistanceToBorder = 1;
                 params->markerBorderBits = markerBorder;
 
-                if(aprilDecimate == 1){
-                        params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_APRILTAG;
+                /// create synthetic image
+                Mat img=
+                    projectMarker(dictionary, currentId, cameraMatrix, deg2rad(yaw), deg2rad(pitch),
+                                      distance, imgSize, markerBorder, groundTruthCorners, szEnclosed);
+                // marker :: Inverted
+                if(CV_ArucoDetectionPerspective::DETECT_INVERTED_MARKER == tryWith){
+                    img = ~img;
+                    params->detectInvertedMarker = true;
                 }
 
+                if(CV_ArucoDetectionPerspective::USE_APRILTAG == tryWith){
+                    params->cornerRefinementMethod = cv::aruco::CORNER_REFINE_APRILTAG;
+                }
+
+                // detect markers
+                vector< vector< Point2f > > corners;
+                vector< int > ids;
                 aruco::detectMarkers(img, dictionary, corners, ids, params);
 
                 // check results
@@ -293,13 +322,32 @@ void CV_ArucoDetectionPerspective::run(int aprilDecimate) {
                 }
                 for(int c = 0; c < 4; c++) {
                     double dist = cv::norm(groundTruthCorners[c] - corners[0][c]);  // TODO cvtest
-                    if(dist > 5) {
-                        ts->printf(cvtest::TS::LOG, "Incorrect marker corners position");
-                        ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
-                        return;
+                    if(CV_ArucoDetectionPerspective::DETECT_INVERTED_MARKER == tryWith){
+                        if(szEnclosed && dist > 3){
+                            ts->printf(cvtest::TS::LOG, "Incorrect marker corners position");
+                            ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
+                            return;
+                        }
+                        if(!szEnclosed && dist >15){
+                            ts->printf(cvtest::TS::LOG, "Incorrect marker corners position");
+                            ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
+                            return;
+                        }
+                    }
+                    else{
+                        if(dist > 5) {
+                            ts->printf(cvtest::TS::LOG, "Incorrect marker corners position");
+                            ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
+                            return;
+                        }
                     }
                 }
             }
+        }
+        // change the state :: to detect an enclosed inverted marker
+        if( CV_ArucoDetectionPerspective::DETECT_INVERTED_MARKER == tryWith && distance == 0.1 ){
+            distance -= 0.1;
+            szEnclosed++;
         }
     }
 }
@@ -488,10 +536,16 @@ void CV_ArucoBitCorrection::run(int) {
 }
 
 typedef CV_ArucoDetectionPerspective CV_AprilTagDetectionPerspective;
+typedef CV_ArucoDetectionPerspective CV_InvertedArucoDetectionPerspective;
+
+TEST(CV_InvertedArucoDetectionPerspective, algorithmic) {
+    CV_InvertedArucoDetectionPerspective test;
+    test.safe_run(CV_ArucoDetectionPerspective::DETECT_INVERTED_MARKER);
+}
 
 TEST(CV_AprilTagDetectionPerspective, algorithmic) {
     CV_AprilTagDetectionPerspective test;
-    test.safe_run(1);
+    test.safe_run(CV_ArucoDetectionPerspective::USE_APRILTAG);
 }
 
 TEST(CV_ArucoDetectionSimple, algorithmic) {

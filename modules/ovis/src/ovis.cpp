@@ -12,6 +12,7 @@
 #include <opencv2/calib3d.hpp>
 #include <opencv2/core/utils/configuration.private.hpp>
 
+
 namespace cv
 {
 namespace ovis
@@ -22,7 +23,7 @@ const char* RESOURCEGROUP_NAME = "OVIS";
 Ptr<Application> _app;
 
 static const char* RENDERSYSTEM_NAME = "OpenGL 3+ Rendering Subsystem";
-static std::vector<String> _extraResourceLocations;
+static std::set<String> _extraResourceLocations;
 
 // convert from OpenCV to Ogre coordinates:
 static Quaternion toOGRE(Degree(180), Vector3::UNIT_X);
@@ -122,11 +123,11 @@ static void _setCameraIntrinsics(Camera* cam, InputArray _K, const Size& imsize)
 
     Matx33f K = _K.getMat();
 
-    float near = cam->getNearClipDistance();
-    float top = near * K(1, 2) / K(1, 1);
-    float left = -near * K(0, 2) / K(0, 0);
-    float right = near * (imsize.width - K(0, 2)) / K(0, 0);
-    float bottom = -near * (imsize.height - K(1, 2)) / K(1, 1);
+    float zNear = cam->getNearClipDistance();
+    float top = zNear * K(1, 2) / K(1, 1);
+    float left = -zNear * K(0, 2) / K(0, 0);
+    float right = zNear * (imsize.width - K(0, 2)) / K(0, 0);
+    float bottom = -zNear * (imsize.height - K(1, 2)) / K(1, 1);
 
     // use frustum extents instead of setFrustumOffset as the latter
     // assumes centered FOV, which is not the case
@@ -181,7 +182,7 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
     int flags;
 
     Application(const Ogre::String& _title, const Size& sz, int _flags)
-        : OgreBites::ApplicationContext("ovis", false), sceneMgr(NULL), title(_title), w(sz.width),
+        : OgreBites::ApplicationContext("ovis"), sceneMgr(NULL), title(_title), w(sz.width),
           h(sz.height), key_pressed(-1), flags(_flags)
     {
         if(utils::getConfigurationParameterBool("OPENCV_OVIS_VERBOSE_LOG", false))
@@ -227,7 +228,8 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
         if (flags & SCENE_AA)
             miscParams["FSAA"] = "4";
 
-        miscParams["vsync"] = "true";
+        miscParams["vsync"] = Ogre::StringConverter::toString(
+            !utils::getConfigurationParameterBool("OPENCV_OVIS_NOVSYNC", false));
 
         OgreBites::NativeWindowPair ret =
             OgreBites::ApplicationContext::createWindow(_name, _w, _h, miscParams);
@@ -244,10 +246,9 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
         ResourceGroupManager& rgm = ResourceGroupManager::getSingleton();
         rgm.createResourceGroup(RESOURCEGROUP_NAME);
 
-        for (size_t i = 0; i < _extraResourceLocations.size(); i++)
+        for (auto loc :_extraResourceLocations)
         {
-            String loc = _extraResourceLocations[i];
-            String type = StringUtil::endsWith(loc, ".zip") ? "Zip" : "FileSystem";
+            const char* type = StringUtil::endsWith(loc, ".zip") ? "Zip" : "FileSystem";
 
             if (!FileSystemLayer::fileExists(loc))
             {
@@ -277,6 +278,7 @@ class WindowSceneImpl : public WindowScene
     RenderWindow* rWin;
     Ptr<OgreBites::CameraMan> camman;
     Ptr<Rectangle2D> bgplane;
+    std::unordered_map<AnimationState*, Controller<Real>*> frameCtrlrs;
 
     Ogre::RenderTarget* depthRTT;
     int flags;
@@ -319,7 +321,11 @@ public:
         {
             camman.reset(new OgreBites::CameraMan(camNode));
             camman->setStyle(OgreBites::CS_ORBIT);
-            camNode->setFixedYawAxis(true, Vector3::NEGATIVE_UNIT_Y);
+#if OGRE_VERSION >= ((1 << 16) | (11 << 8) | 5)
+            camman->setFixedYaw(false);
+#else
+            camNode->setFixedYawAxis(true, Vector3::NEGATIVE_UNIT_Y); // OpenCV +Y in Ogre CS
+#endif
         }
 
         if (!app->sceneMgr)
@@ -344,10 +350,18 @@ public:
     {
         if (flags & SCENE_SEPERATE)
         {
+            TextureManager& texMgr =  TextureManager::getSingleton();
+
             MaterialManager::getSingleton().remove(bgplane->getMaterial());
             bgplane.release();
-            String texName = sceneMgr->getName() + "_Background";
-            TextureManager::getSingleton().remove(texName, RESOURCEGROUP_NAME);
+            String texName = "_"+sceneMgr->getName() + "_DefaultBackground";
+            texMgr.remove(texName, RESOURCEGROUP_NAME);
+
+            texName = sceneMgr->getName() + "_Background";
+            if(texMgr.resourceExists(texName, RESOURCEGROUP_NAME))
+            {
+                texMgr.remove(texName, RESOURCEGROUP_NAME);
+            }
         }
 
         if(_app->sceneMgr == sceneMgr && (flags & SCENE_SEPERATE))
@@ -483,7 +497,8 @@ public:
         node->attachObject(ent);
     }
 
-    void removeEntity(const String& name) CV_OVERRIDE {
+    void removeEntity(const String& name) CV_OVERRIDE
+    {
         SceneNode& node = _getSceneNode(sceneMgr, name);
         node.getAttachedObject(name)->detachFromParent();
 
@@ -564,6 +579,82 @@ public:
         node.setPosition(t);
     }
 
+	void getEntityPose(const String& name ,OutputArray R, OutputArray tvec, bool invert) CV_OVERRIDE
+    {
+		SceneNode* node = sceneMgr->getEntity(name)->getParentSceneNode();
+        Matrix3 _R;
+        // toOGRE.Inverse() == toOGRE
+        (node->getOrientation()*toOGRE).ToRotationMatrix(_R);
+
+        if (invert)
+        {
+            _R = _R.Transpose();
+        }
+
+        if (tvec.needed())
+        {
+            Vector3 _tvec = node->getPosition();
+
+            if (invert)
+            {
+                _tvec = _R * -_tvec;
+            }
+
+            Mat_<Real>(3, 1, _tvec.ptr()).copyTo(tvec);
+        }
+
+        if (R.needed())
+        {
+            Mat_<Real>(3, 3, _R[0]).copyTo(R);
+        }
+    }
+
+    void getEntityAnimations(const String& name, std::vector<String>& out) CV_OVERRIDE
+    {
+        SceneNode& node = _getSceneNode(sceneMgr, name);
+        Entity* ent = dynamic_cast<Entity*>(node.getAttachedObject(name));
+        CV_Assert(ent && "invalid entity");
+        for (auto const& anim : ent->getAllAnimationStates()->getAnimationStates())
+        {
+            out.push_back(anim.first);
+        }
+    }
+
+    void playEntityAnimation(const String& name, const String& animname, bool loop = true) CV_OVERRIDE
+    {
+        SceneNode& node = _getSceneNode(sceneMgr, name);
+        Entity* ent = dynamic_cast<Entity*>(node.getAttachedObject(name));
+        CV_Assert(ent && "invalid entity");
+        AnimationState* animstate = ent->getAnimationState(animname);
+
+        animstate->setTimePosition(0);
+        animstate->setEnabled(true);
+        animstate->setLoop(loop);
+
+        if (frameCtrlrs.find(animstate) != frameCtrlrs.end()) return;
+        frameCtrlrs.insert({
+            animstate,
+            Ogre::ControllerManager::getSingleton().createFrameTimePassthroughController(
+                Ogre::AnimationStateControllerValue::create(animstate, true)
+            )
+        });
+    }
+
+    void stopEntityAnimation(const String& name, const String& animname) CV_OVERRIDE
+    {
+        SceneNode& node = _getSceneNode(sceneMgr, name);
+        Entity* ent = dynamic_cast<Entity*>(node.getAttachedObject(name));
+        CV_Assert(ent && "invalid entity");
+        AnimationState* animstate = ent->getAnimationState(animname);
+
+        if (!animstate->getEnabled()) return;
+
+        animstate->setEnabled(false);
+        animstate->setTimePosition(0);
+        Ogre::ControllerManager::getSingleton().destroyController(frameCtrlrs[animstate]);
+        frameCtrlrs.erase(animstate);
+    }
+
     void setEntityProperty(const String& name, int prop, const String& value) CV_OVERRIDE
     {
         CV_Assert(prop == ENTITY_MATERIAL);
@@ -586,12 +677,28 @@ public:
 
     void setEntityProperty(const String& name, int prop, const Scalar& value) CV_OVERRIDE
     {
-        CV_Assert(prop == ENTITY_SCALE);
         SceneNode& node = _getSceneNode(sceneMgr, name);
-        node.setScale(value[0], value[1], value[2]);
+        switch(prop)
+        {
+        case ENTITY_SCALE:
+        {
+            node.setScale(value[0], value[1], value[2]);
+            break;
+        }
+        case ENTITY_ANIMBLEND_MODE:
+        {
+            Entity* ent = dynamic_cast<Entity*>(node.getAttachedObject(name));
+            CV_Assert(ent && "invalid entity");
+
+            ent->getSkeleton()->setBlendMode(static_cast<Ogre::SkeletonAnimationBlendMode>(int(value[0])));
+            break;
+        }
+        default:
+            CV_Error(Error::StsBadArg, "unsupported property");
+        }
     }
 
-    void getEntityProperty(const String& name, int prop, OutputArray value)
+    void getEntityProperty(const String& name, int prop, OutputArray value) CV_OVERRIDE
     {
         SceneNode& node = _getSceneNode(sceneMgr, name);
         switch(prop)
@@ -694,6 +801,10 @@ public:
 
     void fixCameraYawAxis(bool useFixed, InputArray _up) CV_OVERRIDE
     {
+#if OGRE_VERSION >= ((1 << 16) | (11 << 8) | 5)
+        if(camman) camman->setFixedYaw(useFixed);
+#endif
+
         Vector3 up = Vector3::NEGATIVE_UNIT_Y;
         if (!_up.empty())
         {
@@ -767,9 +878,32 @@ public:
 
         camNode->lookAt(tgt->_getDerivedPosition() + _offset, Ogre::Node::TS_WORLD);
     }
+
+	void setEntityLookAt(const String& origin, const String& target, InputArray offset) CV_OVERRIDE
+    {
+		SceneNode* orig = sceneMgr->getEntity(origin)->getParentSceneNode();
+
+		Vector3 _offset = Vector3::ZERO;
+
+        if (!offset.empty())
+        {
+            offset.copyTo(Mat_<Real>(3, 1, _offset.ptr()));
+        }
+
+		if(target.compare("") != 0){
+        SceneNode* tgt = sceneMgr->getEntity(target)->getParentSceneNode();
+		orig->lookAt(tgt->_getDerivedPosition() + _offset, Ogre::Node::TS_WORLD, Ogre::Vector3::UNIT_Z);
+		}else{
+			orig->lookAt(_offset, Ogre::Node::TS_WORLD, Ogre::Vector3::UNIT_Z);
+		}
+    }
+
 };
 
-CV_EXPORTS_W void addResourceLocation(const String& path) { _extraResourceLocations.push_back(path); }
+CV_EXPORTS_W void addResourceLocation(const String& path)
+{
+    _extraResourceLocations.insert(Ogre::StringUtil::normalizeFilePath(path, false));
+}
 
 Ptr<WindowScene> createWindow(const String& title, const Size& size, int flags)
 {

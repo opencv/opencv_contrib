@@ -107,7 +107,7 @@ guided image then use DTFilter interface to avoid extra computations on initiali
 @param guide guided image (also called as joint image) with unsigned 8-bit or floating-point 32-bit
 depth and up to 4 channels.
 @param src filtering image with unsigned 8-bit or floating-point 32-bit depth and up to 4 channels.
-@param dst
+@param dst destination image
 @param sigmaSpatial \f${\sigma}_H\f$ parameter in the original article, it's similar to the sigma in the
 coordinate space into bilateralFilter.
 @param sigmaColor \f${\sigma}_r\f$ parameter in the original article, it's similar to the sigma in the
@@ -415,6 +415,7 @@ For more details about the Fast Bilateral Solver parameters, see the original pa
 
 */
 CV_EXPORTS_W Ptr<FastBilateralSolverFilter> createFastBilateralSolverFilter(InputArray guide, double sigma_spatial, double sigma_luma, double sigma_chroma, double lambda = 128.0, int num_iter = 25, double max_tol = 1e-5);
+
 
 
 /** @brief Simple one-line Fast Bilateral Solver filter call. If you have multiple images to filter with the same

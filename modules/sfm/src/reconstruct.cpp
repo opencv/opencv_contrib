@@ -69,7 +69,8 @@ namespace sfm
 
     // Camera data
     Matx33d Ka = K.getMat();
-    const double focal_length = Ka(0,0);
+    const double focal_length_x = Ka(0,0);
+    const double focal_length_y = Ka(1,1);
     const double principal_x = Ka(0,2), principal_y = Ka(1,2), k1 = 0, k2 = 0, k3 = 0;
 
     // Set reconstruction options
@@ -77,7 +78,8 @@ namespace sfm
 
     libmv_CameraIntrinsicsOptions camera_instrinsic_options =
       libmv_CameraIntrinsicsOptions(SFM_DISTORTION_MODEL_POLYNOMIAL,
-                                    focal_length, principal_x, principal_y,
+                                    focal_length_x, focal_length_y,
+                                    principal_x, principal_y,
                                     k1, k2, k3);
 
     //-- Instantiate reconstruction pipeline

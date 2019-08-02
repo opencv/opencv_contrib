@@ -269,11 +269,11 @@ int main( int argc, char** argv )
             algorithm = createOptFlow_PCAFlow();
     }
     else if ( method == "DISflow_ultrafast" )
-        algorithm = createOptFlow_DIS(DISOpticalFlow::PRESET_ULTRAFAST);
+        algorithm = DISOpticalFlow::create(DISOpticalFlow::PRESET_ULTRAFAST);
     else if (method == "DISflow_fast")
-        algorithm = createOptFlow_DIS(DISOpticalFlow::PRESET_FAST);
+        algorithm = DISOpticalFlow::create(DISOpticalFlow::PRESET_FAST);
     else if (method == "DISflow_medium")
-        algorithm = createOptFlow_DIS(DISOpticalFlow::PRESET_MEDIUM);
+        algorithm = DISOpticalFlow::create(DISOpticalFlow::PRESET_MEDIUM);
     else
     {
         printf("Wrong method!\n");
@@ -300,7 +300,7 @@ int main( int argc, char** argv )
 
     if ( !groundtruth_path.empty() )
     { // compare to ground truth
-        ground_truth = optflow::readOpticalFlow(groundtruth_path);
+        ground_truth = readOpticalFlow(groundtruth_path);
         if ( flow.size() != ground_truth.size() || flow.channels() != 2
                 || ground_truth.channels() != 2 )
         {

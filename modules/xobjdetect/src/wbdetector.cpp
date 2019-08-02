@@ -63,7 +63,7 @@ static vector<Mat> sample_patches(
     vector<Mat> patches;
     size_t patch_count = 0;
     for (size_t i = 0; i < filenames.size(); ++i) {
-        Mat img = imread(filenames[i], CV_LOAD_IMAGE_GRAYSCALE);
+        Mat img = imread(filenames[i], IMREAD_GRAYSCALE);
         for (int row = 0; row + n_rows < img.rows; row += n_rows) {
             for (int col = 0; col + n_cols < img.cols; col += n_cols) {
                 patches.push_back(img(Rect(col, row, n_cols, n_rows)).clone());
@@ -84,7 +84,7 @@ static vector<Mat> read_imgs(const string& path)
     glob(path, filenames);
     vector<Mat> imgs;
     for (size_t i = 0; i < filenames.size(); ++i) {
-        imgs.push_back(imread(filenames[i], CV_LOAD_IMAGE_GRAYSCALE));
+        imgs.push_back(imread(filenames[i], IMREAD_GRAYSCALE));
     }
     return imgs;
 }
@@ -165,7 +165,7 @@ void WBDetectorImpl::train(
         for (; img_i < neg_filenames.size(); ++img_i) {
             cerr << "win " << bootstrap_count << "/" << stage_neg
                  << " img " << (img_i + 1) << "/" << neg_filenames.size() << "\r";
-            Mat img = imread(neg_filenames[img_i], CV_LOAD_IMAGE_GRAYSCALE);
+            Mat img = imread(neg_filenames[img_i], IMREAD_GRAYSCALE);
             vector<Rect> bboxes;
             Mat1f confidences;
             boost_.detect(eval, img, scales, bboxes, confidences);

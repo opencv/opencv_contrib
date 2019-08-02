@@ -627,7 +627,7 @@ depending if the mean value is higher or lower than 128.
 
 Default value: 5.0
 
- - ```int perpectiveRemovePixelPerCell```
+ - ```int perspectiveRemovePixelPerCell```
 
 This parameter determines the number of pixels (per cell) in the obtained image after removing perspective
 distortion (including the border). This is the size of the red squares in the image above.
@@ -636,7 +636,7 @@ For instance, lets assume we are dealing with markers of 5x5 bits and border siz
 (see ```markerBorderBits```). Then, the total number of cells/bits per dimension is 5 + 2*1 = 7 (the border
 has to be counted twice). The total number of cells is 7x7.
 
-If the value of ```perpectiveRemovePixelPerCell``` is 10, then the size of the obtained image will be
+If the value of ```perspectiveRemovePixelPerCell``` is 10, then the size of the obtained image will be
 10*7 = 70 -> 70x70 pixels.
 
 A higher value of this parameter can improve the bits extraction process (up to some degree), however it can penalize

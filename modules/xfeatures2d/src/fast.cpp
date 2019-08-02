@@ -456,7 +456,7 @@ namespace {
 namespace cv {
     namespace xfeatures2d {
 
-        void FASTForPointSet(InputArray _img, std::vector<KeyPoint>& keypoints, int threshold, bool nonmax_suppression, int type)
+        void FASTForPointSet(InputArray _img, std::vector<KeyPoint>& keypoints, int threshold, bool nonmax_suppression, FastFeatureDetector::DetectorType type)
         {
             if (keypoints.empty()) {
                 FAST(_img, keypoints, threshold, nonmax_suppression, type);
