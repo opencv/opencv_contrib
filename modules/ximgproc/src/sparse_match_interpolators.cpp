@@ -185,9 +185,9 @@ void EdgeAwareInterpolatorImpl::interpolate(InputArray from_image, InputArray fr
     CV_Assert(match_num<SHRT_MAX);
 
     Mat src = from_image.getMat();
-    labels = Mat(h,w,CV_16S);
+    labels = Mat(h,w,CV_32S);
     labels = Scalar(-1);
-    NNlabels = Mat(match_num,k,CV_16S);
+    NNlabels = Mat(match_num,k,CV_32S);
     NNlabels = Scalar(-1);
     NNdistances = Mat(match_num,k,CV_32F);
     NNdistances = Scalar(0.0f);
