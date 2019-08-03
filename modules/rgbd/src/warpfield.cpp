@@ -275,7 +275,7 @@ void WarpField::constructRegGraph()
 
 }
 
-Point3f WarpField::applyWarp(Point3f p, int neighbours[], int n) const
+Point3f WarpField::applyWarp(Point3f p, const neighbourNodes_t neighbours, int n) const
 {
     CV_TRACE_FUNCTION();
 

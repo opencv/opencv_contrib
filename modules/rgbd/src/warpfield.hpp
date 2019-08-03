@@ -5,6 +5,7 @@
 #include "opencv2/flann.hpp"
 
 #define DYNAFU_MAX_NEIGHBOURS 10
+typedef std::array<int, DYNAFU_MAX_NEIGHBOURS> neighbourNodes_t;
 
 namespace cv {
 namespace dynafu {
@@ -43,7 +44,7 @@ public:
         return nodes.size();
     }
 
-    Point3f applyWarp(Point3f p, int neighbours[4], int n) const;
+    Point3f applyWarp(Point3f p, const neighbourNodes_t neighbours, int n) const;
 
     void setAllRT(Affine3f warpRT);
 

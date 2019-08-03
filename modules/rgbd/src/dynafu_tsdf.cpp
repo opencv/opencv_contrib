@@ -22,7 +22,7 @@ struct Voxel
 {
     volumeType v;
     float weight;
-    int neighbours[DYNAFU_MAX_NEIGHBOURS];
+    neighbourNodes_t neighbours;
     float neighbourDists[DYNAFU_MAX_NEIGHBOURS];
     int n;
 };
@@ -49,6 +49,8 @@ public:
 
     volumeType interpolateVoxel(cv::Point3f p) const;
     Point3f getNormalVoxel(cv::Point3f p) const;
+
+    neighbourNodes_t const& getVoxelNeighbours(Point3i coords, int& n) const override;
 
     // See zFirstMemOrder arg of parent class constructor
     // for the array layout info
@@ -916,6 +918,17 @@ void TSDFVolumeCPU::marchCubes(OutputArray _vertices, OutputArray _edges) const
 
     if (_edges.needed())
         Mat((int)meshPoints.size(), 2, CV_32S, &meshEdges[0]).copyTo(_edges);
+}
+
+neighbourNodes_t const& TSDFVolumeCPU::getVoxelNeighbours(Point3i v, int& n) const
+{
+    int baseX = v.x * volDims[0];
+    int baseY = baseX + v.y * volDims[1];
+    int base = baseY + v.z * volDims[2];
+    const Voxel *vox = volume.ptr<Voxel>()+base;
+
+    n = vox->n;
+    return vox->neighbours;
 }
 
 cv::Ptr<TSDFVolume> makeTSDFVolume(Point3i _res,  float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,

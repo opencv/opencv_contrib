@@ -458,8 +458,6 @@ void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage,
     Affine3f invCamPose(pose.inv());
     for(int i = 0; i < vertices.size().height; i++) {
         ptype v = vertices.at<ptype>(i);
-        Point3f p = invCamPose * Point3f(v[0], v[1], v[2]);
-        warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
 
         // transform vertex to RGB space
         Point3f pGlobal = params.volumePose.inv() * Point3f(v[0], v[1], v[2]);
@@ -475,6 +473,13 @@ void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage,
         nGlobal.y = (nGlobal.y + 1)/2;
         nGlobal.z = (nGlobal.z + 1)/2;
         normals.at<ptype>(i) = ptype(nGlobal.x, nGlobal.y, nGlobal.z, 1.f);
+
+        Point3f p = invCamPose * Point3f(v[0], v[1], v[2]);
+
+        int numNeighbours;
+        const neighbourNodes_t neighbours = volume->getVoxelNeighbours(pGlobal, numNeighbours);
+        p = invCamPose * warpfield.applyWarp(p, neighbours, numNeighbours);
+        warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
     }
 
     for(int i = 0; i < vertices.size().height; i++)

@@ -11,7 +11,6 @@
 namespace cv {
 namespace dynafu {
 
-
 class TSDFVolume
 {
 public:
@@ -31,6 +30,8 @@ public:
     virtual void marchCubes(OutputArray _vertices, OutputArray _edges) const = 0;
 
     virtual void reset() = 0;
+
+    virtual neighbourNodes_t const& getVoxelNeighbours(Point3i v, int& n) const = 0;
 
     virtual ~TSDFVolume() { }
 
