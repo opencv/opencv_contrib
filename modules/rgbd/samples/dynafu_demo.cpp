@@ -355,11 +355,14 @@ int main(int argc, char **argv)
         df->renderSurface(depthImg, vertImg, normImg);
         if(!depthImg.empty())
         {
-            UMat cvt8;
-            convertScaleAbs(depthImg, cvt8, 0.33*255);
-            imshow("Surface prediction", cvt8);
-            imshow("vertex prediction", vertImg);
-            imshow("normal prediction", normImg);
+            UMat depthCvt8, vertCvt8, normCvt8;
+            convertScaleAbs(depthImg, depthCvt8, 0.33*255);
+            vertImg.convertTo(vertCvt8, CV_8UC3, 255);
+            normImg.convertTo(normCvt8, CV_8UC3, 255);
+
+            imshow("Surface prediction", depthCvt8);
+            imshow("vertex prediction", vertCvt8);
+            imshow("normal prediction", normCvt8);
         }
 
         if(depthWriter)

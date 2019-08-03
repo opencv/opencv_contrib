@@ -229,9 +229,9 @@ void DynaFuImpl<T>::drawScene(OutputArray depthImage, OutputArray shadedImage)
     ogl::render(arr, idx, ogl::TRIANGLES);
 
     float f[params.frameSize.width*params.frameSize.height];
-    uint8_t pixels[params.frameSize.width*params.frameSize.height][3];
+    float pixels[params.frameSize.width*params.frameSize.height][3];
     glReadPixels(0, 0, params.frameSize.width, params.frameSize.height, GL_DEPTH_COMPONENT, GL_FLOAT, &f[0]);
-    glReadPixels(0, 0, params.frameSize.width, params.frameSize.height, GL_RGB, GL_UNSIGNED_BYTE, &pixels[0][0]);
+    glReadPixels(0, 0, params.frameSize.width, params.frameSize.height, GL_RGB, GL_FLOAT, &pixels[0][0]);
 
     // linearise depth
     for(int i = 0; i < params.frameSize.width*params.frameSize.height; i++)
@@ -248,7 +248,7 @@ void DynaFuImpl<T>::drawScene(OutputArray depthImage, OutputArray shadedImage)
     }
 
     if(shadedImage.needed()) {
-        Mat shadeData(params.frameSize.height, params.frameSize.width, CV_8UC3, pixels);
+        Mat shadeData(params.frameSize.height, params.frameSize.width, CV_32FC3, pixels);
         shadeData.copyTo(shadedImage);
     }
 #else
