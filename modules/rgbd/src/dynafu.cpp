@@ -9,6 +9,7 @@
 #include "warpfield.hpp"
 
 #include "fast_icp.hpp"
+#include "nonrigid_icp.hpp"
 #include "kinfu_frame.hpp"
 
 #include "opencv2/core/opengl.hpp"
@@ -137,6 +138,7 @@ private:
     Params params;
 
     cv::Ptr<ICP> icp;
+    cv::Ptr<NonRigidICP> dynafuICP;
     cv::Ptr<TSDFVolume> volume;
 
     int frameCounter;
@@ -167,6 +169,7 @@ template< typename T >
 DynaFuImpl<T>::DynaFuImpl(const Params &_params) :
     params(_params),
     icp(makeICP(params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
+    dynafuICP(makeNonRigidICP(params.intr, volume, 2)),
     volume(makeTSDFVolume(params.volumeDims, params.voxelSize, params.volumePose,
                           params.tsdf_trunc_dist, params.tsdf_max_weight,
                           params.raycast_step_factor)),
@@ -350,10 +353,6 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
     }
     else
     {
-        UMat wfPoints;
-        UMat wfNormals;
-        volume->fetchPointsNormals(wfPoints, wfNormals);
-        warpfield.updateNodesFromPoints(wfPoints);
 
         Affine3f affine;
         bool success = icp->estimateTransform(affine, pyrPoints, pyrNormals, newPoints, newNormals);
@@ -361,6 +360,15 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
             return false;
 
         pose = pose * affine;
+
+        Mat _depthRender, estdDepth, _vertRender, _normRender;
+        renderSurface(_depthRender, _vertRender, _normRender);
+        _depthRender.convertTo(estdDepth, DEPTH_TYPE);
+
+        success = dynafuICP->estimateWarpNodes(warpfield, affine, _vertRender, _normRender, newPoints[0]);
+        if(!success)
+            return false;
+
         warpfield.setAllRT(Affine3f::Identity());
 
         float rnorm = (float)cv::norm(affine.rvec());
@@ -371,10 +379,6 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
             // use depth instead of distance
             volume->integrate(depth, params.depthFactor, pose, params.intr, makePtr<WarpField>(warpfield));
         }
-
-        T _depthRender, estdDepth, _vertRender, _normRender;
-        renderSurface(_depthRender, _vertRender, _normRender);
-        _depthRender.convertTo(estdDepth, DEPTH_TYPE);
 
         std::vector<T> estdPoints, estdNormals;
         makeFrameFromDepth(estdDepth, estdPoints, estdNormals, params.intr,
@@ -387,7 +391,12 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
 
         pyrPoints = estdPoints;
         pyrNormals = estdNormals;
+
     }
+
+    UMat wfPoints;
+    volume->fetchPointsNormals(wfPoints, noArray(), true);
+    warpfield.updateNodesFromPoints(wfPoints);
 
     std::cout << "Frame# " << frameCounter++ << std::endl;
     return true;
@@ -476,8 +485,8 @@ void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage,
 
         Point3f p = invCamPose * Point3f(v[0], v[1], v[2]);
 
-        int numNeighbours;
-        const neighbourNodes_t neighbours = volume->getVoxelNeighbours(pGlobal, numNeighbours);
+        int numNeighbours = 0;
+        const nodeNeighboursType neighbours = volume->getVoxelNeighbours(pGlobal, numNeighbours);
         p = invCamPose * warpfield.applyWarp(p, neighbours, numNeighbours);
         warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
     }

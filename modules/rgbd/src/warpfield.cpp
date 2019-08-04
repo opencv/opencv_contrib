@@ -14,12 +14,12 @@ nodeIndex(nullptr)
     CV_Assert(k <= DYNAFU_MAX_NEIGHBOURS);
 }
 
-NodeVectorType WarpField::getNodes() const
+NodeVectorType const& WarpField::getNodes() const
 {
     return nodes;
 }
 
-std::vector<NodeVectorType> WarpField::getGraphNodes() const
+std::vector<NodeVectorType> const& WarpField::getGraphNodes() const
 {
     return regGraphNodes;
 }
@@ -275,7 +275,7 @@ void WarpField::constructRegGraph()
 
 }
 
-Point3f WarpField::applyWarp(Point3f p, const neighbourNodes_t neighbours, int n) const
+Point3f WarpField::applyWarp(Point3f p, const nodeNeighboursType neighbours, int n, bool normal) const
 {
     CV_TRACE_FUNCTION();
 
@@ -297,12 +297,14 @@ Point3f WarpField::applyWarp(Point3f p, const neighbourNodes_t neighbours, int n
         }
 
         Matx33f R = neigh->transform.rotation();
-        Vec3f T = neigh->transform.translation();
-
         Point3f newPt = R * (p - neigh->pos) + neigh->pos;
-        newPt.x += T[0];
-        newPt.y += T[1];
-        newPt.z += T[2];
+
+        if(!normal) {
+            Vec3f T = neigh->transform.translation();
+            newPt.x += T[0];
+            newPt.y += T[1];
+            newPt.z += T[2];
+        }
 
         WarpedPt += newPt * w;
         totalWeight += w;
