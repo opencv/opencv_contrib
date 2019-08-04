@@ -255,7 +255,8 @@ void DynaFuImpl<T>::drawScene(OutputArray depthImage, OutputArray shadedImage)
         shadeData.copyTo(shadedImage);
     }
 #else
-    CV_UNUSED(image);
+    CV_UNUSED(depthImage);
+    CV_UNUSED(shadedImage);
     NO_OGL_ERR;
 #endif
 }

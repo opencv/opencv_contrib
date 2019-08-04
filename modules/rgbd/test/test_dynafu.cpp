@@ -5,10 +5,10 @@
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
 #include "test_precomp.hpp"
-
 // Inspired by Inigo Quilez' raymarching guide:
 // http://iquilezles.org/www/articles/distfunctions/distfunctions.htm
 
+#ifdef HAVE_OPENGL
 namespace opencv_test { namespace {
 
 using namespace cv;
@@ -327,7 +327,6 @@ void flyTest(bool hiDense, bool inequal)
     ASSERT_LT(cv::norm(dfPose.translation() - pose.translation()), poseThreshold);
 }
 
-#ifdef HAVE_OPENGL
 #ifdef OPENCV_ENABLE_NONFREE
 TEST( DynamicFusion, lowDense )
 #else
@@ -359,7 +358,8 @@ TEST(DynamicFusion, DISABLED_OCL)
     flyTest(false, false);
 }
 #endif
-#endif
 
 
 }} // namespace
+
+#endif
