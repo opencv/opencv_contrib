@@ -30,11 +30,62 @@ CV_Error(cv::Error::HeaderIsNull, "Nvidia Optical Flow headers not found. Make s
 //macro for dll loading
 #if defined(_WIN64)
 #define MODULENAME TEXT("nvofapi64.dll")
+#define FUNCTION_NAME(name) MACRO_STRINGIFY(name)
+#define MACRO_STRINGIFY(name) #name
 #elif defined(_WIN32)
 #define MODULENAME TEXT("nvofapi.dll")
 #else
 #define MODULENAME "libnvidia-opticalflow.so.1"
 #endif
+
+class NVCudaDynamicBridge
+{
+  public:
+    NVCudaDynamicBridge(void)
+    {
+      const char* cuCtxGetCurrent_name = FUNCTION_NAME(cuCtxGetCurrent);
+      const char* cuCtxPopCurrent_name = FUNCTION_NAME(cuCtxPopCurrent);
+      const char* cuCtxPushCurrent_name = FUNCTION_NAME(cuCtxPushCurrent);
+      const char* cuCtxSynchronize_name = FUNCTION_NAME(cuCtxSynchronize);
+      #if defined(WIN64) || defined(_WIN32)
+      hNVCuda = LoadLibraryEx("nvcuda.dll", 0, LOAD_LIBRARY_SEARCH_DEFAULT_DIRS);
+      m_cuCtxGetCurrent = !hNVCuda ? nullptr : (cuCtxGetCurrent_t)GetProcAddress(hNVCuda, cuCtxGetCurrent_name);
+      m_cuCtxPopCurrent = !hNVCuda ? nullptr : (cuCtxPopCurrent_t)GetProcAddress(hNVCuda, cuCtxPopCurrent_name);
+      m_cuCtxPushCurrent = !hNVCuda ? nullptr : (cuCtxPushCurrent_t)GetProcAddress(hNVCuda, cuCtxPushCurrent_name);
+      m_cuCtxSynchronize = !hNVCuda ? nullptr : (cuCtxSynchronize_t)GetProcAddress(hNVCuda, cuCtxSynchronize_name);
+      #else
+      #pragma TODO
+      hNVCuda = dlopen("libnvcuda.so.1", RTLD_NOW);
+      m_cuCtxGetCurrent = !hNVCuda ? nullptr : (cuCtxGetCurrent_t)dlsym(hNVCuda, cuCtxGetCurrent_name);
+      m_cuCtxPopCurrent = !hNVCuda ? nullptr : (cuCtxPopCurrent_t)dlsym(hNVCuda, cuCtxPopCurrent_name);
+      m_cuCtxPushCurrent = !hNVCuda ? nullptr : (cuCtxPushCurrent_t)dlsym(hNVCuda, cuCtxPushCurrent_name);
+      m_cuCtxSynchronize = !hNVCuda ? nullptr : (cuCtxSynchronize_t)dlsym(hNVCuda, cuCtxSynchronize_name);
+      #endif
+    }
+    ~NVCudaDynamicBridge() = default;
+  public:
+    bool getAvailable(void) {
+      return m_cuCtxGetCurrent && m_cuCtxPopCurrent && m_cuCtxPushCurrent && m_cuCtxSynchronize;
+    }
+    CUresult ctxGetCurrent(CUcontext* ctx) {return !m_cuCtxGetCurrent ? CUDA_ERROR_INVALID_HANDLE : m_cuCtxGetCurrent(ctx);}
+    CUresult ctxPopCurrent(CUcontext* ctx) {return !m_cuCtxPopCurrent ? CUDA_ERROR_INVALID_HANDLE : m_cuCtxPopCurrent(ctx);}
+    CUresult ctxPushCurrent(CUcontext ctx) {return !m_cuCtxPushCurrent ? CUDA_ERROR_INVALID_HANDLE : m_cuCtxPushCurrent(ctx);}
+    CUresult ctxSynchronize(void) {return !m_cuCtxSynchronize ? CUDA_ERROR_INVALID_HANDLE : m_cuCtxSynchronize();}
+  private:
+    #if defined(WIN64) || defined(_WIN32)
+    HMODULE hNVCuda;
+    #else
+    void* hNVCuda;
+    #endif
+    typedef decltype(&cuCtxGetCurrent) cuCtxGetCurrent_t;
+    typedef decltype(&cuCtxPopCurrent) cuCtxPopCurrent_t;
+    typedef decltype(&cuCtxPushCurrent) cuCtxPushCurrent_t;
+    typedef decltype(&cuCtxSynchronize) cuCtxSynchronize_t;
+    cuCtxGetCurrent_t m_cuCtxGetCurrent;
+    cuCtxPopCurrent_t m_cuCtxPopCurrent;
+    cuCtxPushCurrent_t m_cuCtxPushCurrent;
+    cuCtxSynchronize_t m_cuCtxSynchronize;
+};
 
 #define NVOF_API_CALL(nvOFAPI)                                                                      \
     do                                                                                              \
@@ -115,6 +166,7 @@ namespace
 class NvidiaOpticalFlowImpl : public cv::cuda::NvidiaOpticalFlow_1_0
 {
 private:
+    NVCudaDynamicBridge m_nvCudaDynamicBridge;
     int m_width;
     int m_height;
     NV_OF_PERF_LEVEL m_preset;
@@ -208,7 +260,7 @@ NvidiaOpticalFlowImpl::NvidiaOpticalFlowImpl(
 
     cuSafeCall(cudaSetDevice(m_gpuId));
     cuSafeCall(cudaFree(m_cuContext));
-    cuSafeCall(cuCtxGetCurrent(&m_cuContext));
+    cuSafeCall(m_nvCudaDynamicBridge.ctxGetCurrent(&m_cuContext));
 
     if (m_gridSize != NV_OF_OUTPUT_VECTOR_GRID_SIZE_4)
     {
@@ -416,9 +468,9 @@ void NvidiaOpticalFlowImpl::calc(InputArray _frame0, InputArray _frame1, InputOu
         }
     }
 
-    cuSafeCall(cuCtxPushCurrent(m_cuContext));
+    cuSafeCall(m_nvCudaDynamicBridge.ctxPushCurrent(m_cuContext));
     inputStream.waitForCompletion();
-    cuSafeCall(cuCtxPopCurrent(&m_cuContext));
+    cuSafeCall(m_nvCudaDynamicBridge.ctxPopCurrent(&m_cuContext));
 
     //Execute Call
     NV_OF_EXECUTE_INPUT_PARAMS exeInParams;
@@ -436,9 +488,9 @@ void NvidiaOpticalFlowImpl::calc(InputArray _frame0, InputArray _frame1, InputOu
         m_hCostBuffer : nullptr;;
     NVOF_API_CALL(GetAPI()->nvOFExecute(GetHandle(), &exeInParams, &exeOutParams));
 
-    cuSafeCall(cuCtxPushCurrent(m_cuContext));
+    cuSafeCall(m_nvCudaDynamicBridge.ctxPushCurrent(m_cuContext));
     outputStream.waitForCompletion();
-    cuSafeCall(cuCtxPopCurrent(&m_cuContext));
+    cuSafeCall(m_nvCudaDynamicBridge.ctxPopCurrent(&m_cuContext));
 
     if (_flow.isMat())
         flowXYGpuMat.download(_flow);
@@ -460,7 +512,7 @@ void NvidiaOpticalFlowImpl::calc(InputArray _frame0, InputArray _frame1, InputOu
         else
             CV_Error(Error::StsBadArg, "Incorrect cost buffer passed. Pass Mat or GpuMat");
     }
-    cuSafeCall(cuCtxSynchronize());
+    cuSafeCall(m_nvCudaDynamicBridge.ctxSynchronize());
 }
 
 void NvidiaOpticalFlowImpl::collectGarbage()
