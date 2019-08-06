@@ -76,6 +76,82 @@ public:
     CV_WRAP virtual bool fit( InputArray image,
                               InputArray faces,
                               OutputArrayOfArrays landmarks) = 0;
+
+    /** @brief Add one training sample to the trainer.
+
+    @param image Input image.
+    @param landmarks The ground-truth of facial landmarks points corresponds to the image.
+
+    <B>Example of usage</B>
+    @code
+    String imageFiles = "../data/images_train.txt";
+    String ptsFiles = "../data/points_train.txt";
+    std::vector<String> images_train;
+    std::vector<String> landmarks_train;
+
+    // load the list of dataset: image paths and landmark file paths
+    loadDatasetList(imageFiles,ptsFiles,images_train,landmarks_train);
+
+    Mat image;
+    std::vector<Point2f> facial_points;
+    for(size_t i=0;i<images_train.size();i++){
+        image = imread(images_train[i].c_str());
+        loadFacePoints(landmarks_train[i],facial_points);
+        facemark->addTrainingSample(image, facial_points);
+    }
+    @endcode
+
+    The contents in the training files should follows the standard format.
+    Here are examples for the contents in these files.
+    example of content in the images_train.txt
+    @code
+    /home/user/ibug/image_003_1.jpg
+    /home/user/ibug/image_004_1.jpg
+    /home/user/ibug/image_005_1.jpg
+    /home/user/ibug/image_006.jpg
+    @endcode
+
+    example of content in the points_train.txt
+    @code
+    /home/user/ibug/image_003_1.pts
+    /home/user/ibug/image_004_1.pts
+    /home/user/ibug/image_005_1.pts
+    /home/user/ibug/image_006.pts
+    @endcode
+
+    */
+    CV_WRAP virtual bool addTrainingSample(InputArray image, std::vector<Point2f> & landmarks)=0;
+
+    /** @brief Set parameters in the Facemark Instance.
+
+    @param face_cascade_name Path to the face cascade model
+    @param facemark_model_name Path to the facemark model
+    @param config_file_path Path to the Config file (only for FacemarkKazemi)
+    @param scale vector of floats represent scale (only for FacemarkAAM, FacemarkKazemi)
+
+    <B>Example of usage</B>
+    @code
+    facemark->setParams(filename,modelfilename,configfile_name,scale)
+    @endcode
+    */
+    CV_WRAP virtual bool setParams(const String& face_cascade_name,const String& facemark_model_name, const String& config_file_path, InputArray scale)=0;
+
+    /** @brief Trains a Facemark algorithm using the given dataset.
+    Before the training process, training samples should be added to the trainer
+    using face::addTrainingSample function.
+
+    <B>Example of usage</B>
+    @code
+    FacemarkLBF::Params params;
+    params.model_filename = "ibug68.model"; // filename to save the trained model
+    Ptr<Facemark> facemark = FacemarkLBF::create(params);
+
+    // add training samples (see Facemark::addTrainingSample)
+
+    facemark->training();
+    @endcode
+    */
+    CV_WRAP virtual void training()=0;
 }; /* Facemark*/
 
 

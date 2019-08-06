@@ -92,8 +92,8 @@ loadDatasetList(imageFiles,ptsFiles,images_train,landmarks_train);
 */
 CV_EXPORTS_W bool loadDatasetList(String imageList,
                                   String annotationList,
-                                  std::vector<String> & images,
-                                  std::vector<String> & annotations);
+                                  CV_OUT std::vector<String> & images,
+                                  CV_OUT std::vector<String> & annotations);
 
 /** @brief A utility to load facial landmark dataset from a single file.
 
@@ -181,8 +181,8 @@ CV_EXPORTS_W bool loadTrainingData( String imageList, String groundTruth,
 * @param trainimages A vector of type cv::String which stores the name of images whose landmarks are tracked
 * @returns A boolean value. It returns true when it reads the data successfully and false otherwise
 */
-CV_EXPORTS_W bool loadTrainingData(std::vector<String> filename,std::vector< std::vector<Point2f> >
-                          &trainlandmarks,std::vector<String> & trainimages);
+CV_EXPORTS_W bool loadTrainingData(std::vector<String> filename, CV_OUT std::vector< std::vector<Point2f> >
+                          &trainlandmarks, CV_OUT std::vector<String> & trainimages);
 
 /** @brief A utility to load facial landmark information from a given file.
 
@@ -262,71 +262,6 @@ The typical pipeline for facemark detection is listed as follows:
 class CV_EXPORTS_W FacemarkTrain : public Facemark
 {
 public:
-    /** @brief Add one training sample to the trainer.
-
-    @param image Input image.
-    @param landmarks The ground-truth of facial landmarks points corresponds to the image.
-
-    <B>Example of usage</B>
-    @code
-    String imageFiles = "../data/images_train.txt";
-    String ptsFiles = "../data/points_train.txt";
-    std::vector<String> images_train;
-    std::vector<String> landmarks_train;
-
-    // load the list of dataset: image paths and landmark file paths
-    loadDatasetList(imageFiles,ptsFiles,images_train,landmarks_train);
-
-    Mat image;
-    std::vector<Point2f> facial_points;
-    for(size_t i=0;i<images_train.size();i++){
-        image = imread(images_train[i].c_str());
-        loadFacePoints(landmarks_train[i],facial_points);
-        facemark->addTrainingSample(image, facial_points);
-    }
-    @endcode
-
-    The contents in the training files should follows the standard format.
-    Here are examples for the contents in these files.
-    example of content in the images_train.txt
-    @code
-    /home/user/ibug/image_003_1.jpg
-    /home/user/ibug/image_004_1.jpg
-    /home/user/ibug/image_005_1.jpg
-    /home/user/ibug/image_006.jpg
-    @endcode
-
-    example of content in the points_train.txt
-    @code
-    /home/user/ibug/image_003_1.pts
-    /home/user/ibug/image_004_1.pts
-    /home/user/ibug/image_005_1.pts
-    /home/user/ibug/image_006.pts
-    @endcode
-
-    */
-    virtual bool addTrainingSample(InputArray image, InputArray landmarks)=0;
-
-    /** @brief Trains a Facemark algorithm using the given dataset.
-    Before the training process, training samples should be added to the trainer
-    using face::addTrainingSample function.
-
-    @param parameters Optional extra parameters (algorithm dependent).
-
-    <B>Example of usage</B>
-    @code
-    FacemarkLBF::Params params;
-    params.model_filename = "ibug68.model"; // filename to save the trained model
-    Ptr<Facemark> facemark = FacemarkLBF::create(params);
-
-    // add training samples (see Facemark::addTrainingSample)
-
-    facemark->training();
-    @endcode
-    */
-
-    virtual void training(void* parameters=0)=0;
-
     /** @brief Set a user defined face detector for the Facemark algorithm.
     @param detector The user defined face detector function
     @param userData Detector parameters

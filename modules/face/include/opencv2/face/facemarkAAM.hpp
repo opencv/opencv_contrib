@@ -65,6 +65,7 @@ public:
         void write(FileStorage& /*fs*/) const;
 
         std::string model_filename;
+        std::string cascade_filename;
         int m;
         int n;
         int n_iter;
