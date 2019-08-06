@@ -329,7 +329,6 @@ bool FacemarkLBFImpl::setParams(const String& face_cascade_name, const String& f
     if(face_cascade_name.empty() && facemark_model_name.empty())
     {
       CV_Error_(Error::StsBadArg, ("Both the face cascade name and the facemark model name are empty"));
-      return false;
     }
     if(!face_cascade_name.empty())
         params.cascade_face = face_cascade_name;

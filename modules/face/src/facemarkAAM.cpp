@@ -256,7 +256,6 @@ bool FacemarkAAMImpl::setParams(const String& face_cascade_name,const String& fa
   if(face_cascade_name.empty() && facemark_model_name.empty() && scale.empty())
   {
     CV_Error_(Error::StsBadArg, ("face cascade name, facemark model name and scale all are empty"));
-    return false;
   }
   if(!face_cascade_name.empty())
       params.cascade_filename = face_cascade_name;

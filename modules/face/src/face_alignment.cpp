@@ -80,7 +80,6 @@ bool FacemarkKazemiImpl::setParams(const String& face_cascade_name,const String&
   if(face_cascade_name.empty() && facemark_model_name.empty() && config_file_path.empty() && scale.empty())
   {
     CV_Error_(Error::StsBadArg, ("face cascade name, facemark model name, config file and scale all are empty"));
-    return false;
   }
   if(!face_cascade_name.empty())
       params.faceCascadefile = face_cascade_name;
@@ -90,7 +89,7 @@ bool FacemarkKazemiImpl::setParams(const String& face_cascade_name,const String&
       params.configfile = config_file_path;
 
   Mat scale_mat = scale.getMat();
-  std::vector<float> _scale = scale_mat.reshape(1, scale_mat.rows);
+  std::vector<int> _scale = scale_mat.reshape(1, scale_mat.rows);
   if(_scale.size() != 2){
     CV_Error(Error::StsBadArg, "Please set the scale argument properly");
     return false;
