@@ -3,6 +3,7 @@
 
 #include "opencv2/core.hpp"
 #include "opencv2/flann.hpp"
+#include "dqb.hpp"
 
 #define DYNAFU_MAX_NEIGHBOURS 10
 typedef std::array<int, DYNAFU_MAX_NEIGHBOURS> nodeNeighboursType;

@@ -193,23 +193,17 @@ void WarpField::initTransforms(NodeVectorType nv)
 
         nodeIndex->knnSearch(query ,knnIndices, knnDists, k, cvflann::SearchParams());
 
-        float totalWeight = 0;
-        Mat partialR(3,3,CV_32F);
-        Vec3f partialT = Vec3f::all(0);
+        std::vector<float> weights(knnIndices.size());
+        std::vector<Affine3f> transforms(knnIndices.size());
 
+        int i = 0;
         for(int idx: knnIndices)
         {
-            float w = nodes[idx]->weight(nodePtr->pos);
-
-            totalWeight += w;
-            partialR += nodes[idx]->transform.rotation() * w;
-            partialT += nodes[idx]->transform.translation() * w;
+            weights[i] = nodes[idx]->weight(nodePtr->pos);
+            transforms[i++] = nodes[idx]->transform;
         }
 
-        partialR /= totalWeight;
-        partialT /= totalWeight;
-
-        nodePtr->transform = Affine3f(partialR, partialT);
+        nodePtr->transform = DQB(weights, transforms);
     }
 }
 
