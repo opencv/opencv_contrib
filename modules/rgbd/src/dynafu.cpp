@@ -132,7 +132,7 @@ public:
 
     void marchCubes(OutputArray vertices, OutputArray edges) const CV_OVERRIDE;
 
-    void renderSurface(OutputArray depthImage, OutputArray vertImage, OutputArray normImage) CV_OVERRIDE;
+    void renderSurface(OutputArray depthImage, OutputArray vertImage, OutputArray normImage, bool warp=true) CV_OVERRIDE;
 
 private:
     Params params;
@@ -266,6 +266,7 @@ void DynaFuImpl<T>::reset()
 {
     frameCounter = 0;
     pose = Affine3f::Identity();
+    warpfield.setAllRT(Affine3f::Identity());
     volume->reset();
 }
 
@@ -351,35 +352,17 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
 
         pyrPoints  = newPoints;
         pyrNormals = newNormals;
+        warpfield.setAllRT(Affine3f::Identity());
     }
     else
     {
-
-        Affine3f affine;
-        bool success = icp->estimateTransform(affine, pyrPoints, pyrNormals, newPoints, newNormals);
-        if(!success)
-            return false;
-
-        pose = pose * affine;
+        UMat wfPoints;
+        volume->fetchPointsNormals(wfPoints, noArray(), true);
+        warpfield.updateNodesFromPoints(wfPoints);
 
         Mat _depthRender, estdDepth, _vertRender, _normRender;
-        renderSurface(_depthRender, _vertRender, _normRender);
+        renderSurface(_depthRender, _vertRender, _normRender, false);
         _depthRender.convertTo(estdDepth, DEPTH_TYPE);
-
-        success = dynafuICP->estimateWarpNodes(warpfield, affine, _vertRender, _normRender, newPoints[0]);
-        if(!success)
-            return false;
-
-        warpfield.setAllRT(Affine3f::Identity());
-
-        float rnorm = (float)cv::norm(affine.rvec());
-        float tnorm = (float)cv::norm(affine.translation());
-        // We do not integrate volume if camera does not move
-        if((rnorm + tnorm)/2 >= params.tsdf_min_camera_movement)
-        {
-            // use depth instead of distance
-            volume->integrate(depth, params.depthFactor, pose, params.intr, makePtr<WarpField>(warpfield));
-        }
 
         std::vector<T> estdPoints, estdNormals;
         makeFrameFromDepth(estdDepth, estdPoints, estdNormals, params.intr,
@@ -393,11 +376,34 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
         pyrPoints = estdPoints;
         pyrNormals = estdNormals;
 
-    }
+        Affine3f affine;
+        bool success = icp->estimateTransform(affine, pyrPoints, pyrNormals, newPoints, newNormals);
+        if(!success)
+            return false;
 
-    UMat wfPoints;
-    volume->fetchPointsNormals(wfPoints, noArray(), true);
-    warpfield.updateNodesFromPoints(wfPoints);
+        pose = pose * affine;
+
+        renderSurface(_depthRender, _vertRender, _normRender);
+        success = dynafuICP->estimateWarpNodes(warpfield, pose, _vertRender, _normRender, newPoints[0]);
+        if(!success)
+            return false;
+
+        renderSurface(_depthRender, _vertRender, _normRender);
+        success = dynafuICP->estimateWarpNodes(warpfield, pose, _vertRender, _normRender, newPoints[0]);
+        if(!success)
+            return false;
+
+        float rnorm = (float)cv::norm(affine.rvec());
+        float tnorm = (float)cv::norm(affine.translation());
+        // We do not integrate volume if camera does not move
+        if((rnorm + tnorm)/2 >= params.tsdf_min_camera_movement)
+        {
+            // use depth instead of distance
+            volume->integrate(depth, params.depthFactor, pose, params.intr, makePtr<WarpField>(warpfield));
+        }
+
+
+    }
 
     std::cout << "Frame# " << frameCounter++ << std::endl;
     return true;
@@ -453,7 +459,7 @@ void DynaFuImpl<T>::marchCubes(OutputArray vertices, OutputArray edges) const
 }
 
 template<typename T>
-void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage, OutputArray normImage)
+void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage, OutputArray normImage, bool warp)
 {
 #ifdef HAVE_OPENGL
     Mat _vertices, vertices, normals, meshIdx;
@@ -470,10 +476,10 @@ void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage,
         ptype v = vertices.at<ptype>(i);
 
         // transform vertex to RGB space
-        Point3f pGlobal = params.volumePose.inv() * Point3f(v[0], v[1], v[2]);
-        pGlobal.x *= 1.0/(params.voxelSize*params.volumeDims[0]);
-        pGlobal.y *= 1.0/(params.voxelSize*params.volumeDims[1]);
-        pGlobal.z *= 1.0/(params.voxelSize*params.volumeDims[2]);
+        Point3f pVoxel = (params.volumePose.inv() * Point3f(v[0], v[1], v[2])) / params.voxelSize;
+        Point3f pGlobal = Point3f(pVoxel.x / params.volumeDims[0],
+                                  pVoxel.y / params.volumeDims[1],
+                                  pVoxel.z / params.volumeDims[2]);
         vertices.at<ptype>(i) = ptype(pGlobal.x, pGlobal.y, pGlobal.z, 1.f);
 
         // transform normals to RGB space
@@ -484,12 +490,20 @@ void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage,
         nGlobal.z = (nGlobal.z + 1)/2;
         normals.at<ptype>(i) = ptype(nGlobal.x, nGlobal.y, nGlobal.z, 1.f);
 
-        Point3f p = invCamPose * Point3f(v[0], v[1], v[2]);
+        //Point3f p = Point3f(v[0], v[1], v[2]);
 
-        int numNeighbours = 0;
-        const nodeNeighboursType neighbours = volume->getVoxelNeighbours(pGlobal, numNeighbours);
-        p = invCamPose * warpfield.applyWarp(p, neighbours, numNeighbours);
-        warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
+        if(!warp)
+        {
+            Point3f p(invCamPose * params.volumePose * (pVoxel*params.voxelSize));
+            warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
+        }
+        else
+        {
+            int numNeighbours = 0;
+            const nodeNeighboursType neighbours = volume->getVoxelNeighbours(pVoxel, numNeighbours);
+            Point3f p = invCamPose * params.volumePose * warpfield.applyWarp(pVoxel*params.voxelSize, neighbours, numNeighbours);
+            warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
+        }
     }
 
     for(int i = 0; i < vertices.size().height; i++)

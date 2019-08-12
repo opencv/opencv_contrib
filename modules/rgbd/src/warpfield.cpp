@@ -291,9 +291,15 @@ Point3f WarpField::applyWarp(Point3f p, const nodeNeighboursType neighbours, int
         }
 
         Matx33f R = neigh->transform.rotation();
-        Point3f newPt = R * (p - neigh->pos) + neigh->pos;
+        Point3f newPt;
 
-        if(!normal) {
+        if(normal)
+        {
+            newPt = R * p;
+        }
+        else
+        {
+            newPt = R * (p - neigh->pos) + neigh->pos;
             Vec3f T = neigh->transform.translation();
             newPt.x += T[0];
             newPt.y += T[1];

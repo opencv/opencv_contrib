@@ -12,7 +12,7 @@ Quaternion::Quaternion(float w, float i, float j, float k) : coeff(Vec4f(w, i, j
 Quaternion::Quaternion(const Affine3f& r)
 {
     // Compute trace of matrix
-    float T = 1 + trace(r.matrix);
+    float T = trace(r.matrix);
 
     float S, X, Y, Z, W;
 

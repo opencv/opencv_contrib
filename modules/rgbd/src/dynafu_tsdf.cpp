@@ -238,13 +238,12 @@ struct IntegrateInvoker : ParallelLoopBody
                     Voxel& voxel = volDataY[z*volume.volDims[2]];
 
                     Point3f volPt = Point3f((float)x, (float)y, (float)z)*volume.voxelSize;
-                    Point3f globalPt = volume.pose * volPt;
 
                     if(warpfield->getNodeIndex())
                     {
                         std::vector<int> indices(warpfield->k);
                         std::vector<float> dists(warpfield->k);
-                        warpfield->findNeighbours(globalPt, indices, dists);
+                        warpfield->findNeighbours(volPt, indices, dists);
 
                         voxel.n = 0;
                         for(size_t i = 0; i < indices.size(); i++)
@@ -256,10 +255,8 @@ struct IntegrateInvoker : ParallelLoopBody
                         }
                     }
 
-                    Affine3f globalToCam = vol2cam * volume.pose.inv();
-
                     Point3f camSpacePt =
-                    globalToCam * warpfield->applyWarp(globalPt, voxel.neighbours, voxel.n);
+                    vol2cam * warpfield->applyWarp(volPt, voxel.neighbours, voxel.n);
 
                     if(camSpacePt.z <= 0)
                         continue;
