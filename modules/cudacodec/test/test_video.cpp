@@ -57,15 +57,24 @@ CUDA_TEST_P(Video, Reader)
 {
     cv::cuda::setDevice(GET_PARAM(0).deviceID());
 
-    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "video/" + GET_PARAM(1);
+    std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "video/" + GET_PARAM(1);
+    inputFile = "rtsp://127.0.0.1/french_guy.264";
 
+    //cv::VideoCapture cap;
+    //cap.open(inputFile);
+    //inputFile = "C:\\Users\\b8\\Videos\\jellyfish-120-mbps-4k-uhd-h264.mkv";
+    //inputFile = "rtsp://127.0.0.1/jellyfish-120-mbps-4k-uhd-h264.264";
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
 
     cv::cuda::GpuMat frame;
-
-    for (int i = 0; i < 10; ++i)
+    cv::namedWindow("jelly");
+    for (int i = 0; i < 2000; ++i)
     {
         ASSERT_TRUE(reader->nextFrame(frame));
+        Mat frameHost;
+        frame.download(frameHost);
+        cv::imshow("jelly",frameHost);
+        cv::waitKey(10);
         ASSERT_FALSE(frame.empty());
     }
 }
@@ -75,48 +84,48 @@ CUDA_TEST_P(Video, Reader)
 
 #ifdef _WIN32
 
-CUDA_TEST_P(Video, Writer)
-{
-    cv::cuda::setDevice(GET_PARAM(0).deviceID());
-
-    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "video/" + GET_PARAM(1);
-
-    std::string outputFile = cv::tempfile(".avi");
-    const double FPS = 25.0;
-
-    cv::VideoCapture reader(inputFile);
-    ASSERT_TRUE(reader.isOpened());
-
-    cv::Ptr<cv::cudacodec::VideoWriter> d_writer;
-
-    cv::Mat frame;
-    cv::cuda::GpuMat d_frame;
-
-    for (int i = 0; i < 10; ++i)
-    {
-        reader >> frame;
-        ASSERT_FALSE(frame.empty());
-
-        d_frame.upload(frame);
-
-        if (d_writer.empty())
-            d_writer = cv::cudacodec::createVideoWriter(outputFile, frame.size(), FPS);
-
-        d_writer->write(d_frame);
-    }
-
-    reader.release();
-    d_writer.release();
-
-    reader.open(outputFile);
-    ASSERT_TRUE(reader.isOpened());
-
-    for (int i = 0; i < 5; ++i)
-    {
-        reader >> frame;
-        ASSERT_FALSE(frame.empty());
-    }
-}
+//CUDA_TEST_P(Video, Writer)
+//{
+//    cv::cuda::setDevice(GET_PARAM(0).deviceID());
+//
+//    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "video/" + GET_PARAM(1);
+//
+//    std::string outputFile = cv::tempfile(".avi");
+//    const double FPS = 25.0;
+//
+//    cv::VideoCapture reader(inputFile);
+//    ASSERT_TRUE(reader.isOpened());
+//
+//    cv::Ptr<cv::cudacodec::VideoWriter> d_writer;
+//
+//    cv::Mat frame;
+//    cv::cuda::GpuMat d_frame;
+//
+//    for (int i = 0; i < 10; ++i)
+//    {
+//        reader >> frame;
+//        ASSERT_FALSE(frame.empty());
+//
+//        d_frame.upload(frame);
+//
+//        if (d_writer.empty())
+//            d_writer = cv::cudacodec::createVideoWriter(outputFile, frame.size(), FPS);
+//
+//        d_writer->write(d_frame);
+//    }
+//
+//    reader.release();
+//    d_writer.release();
+//
+//    reader.open(outputFile);
+//    ASSERT_TRUE(reader.isOpened());
+//
+//    for (int i = 0; i < 5; ++i)
+//    {
+//        reader >> frame;
+//        ASSERT_FALSE(frame.empty());
+//    }
+//}
 
 #endif // _WIN32
 

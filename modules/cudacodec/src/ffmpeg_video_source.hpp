@@ -64,6 +64,7 @@ private:
     FormatInfo format_;
 
     InputMediaStream_FFMPEG* stream_;
+    RawVideoCapture rawCap;
 };
 
 }}}

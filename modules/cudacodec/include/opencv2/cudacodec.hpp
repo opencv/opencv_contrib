@@ -242,6 +242,7 @@ CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCall
  */
 enum Codec
 {
+    //NONE = 0,
     MPEG1 = 0,
     MPEG2,
     MPEG4,

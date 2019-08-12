@@ -178,6 +178,14 @@ namespace
             // map decoded video frame to CUDA surface
             GpuMat decodedFrame = videoDecoder_->mapFrame(frameInfo.first.picture_index, frameInfo.second);
 
+            Mat hostFrame;
+            decodedFrame.download(hostFrame);
+            FILE* FP = fopen("E:\\delete\\nv12.bin", "wb");
+            int sizeImg[2] = { hostFrame.cols , hostFrame.rows };
+            //fwrite(sizeImg, 2, sizeof(int), FP);
+            size_t nWritten = fwrite(hostFrame.data, 1, hostFrame.cols * hostFrame.rows, FP);
+            fclose(FP);
+
             // perform post processing on the CUDA surface (performs colors space conversion and post processing)
             // comment this out if we include the line of code seen above
             videoDecPostProcessFrame(decodedFrame, frame, videoDecoder_->targetWidth(), videoDecoder_->targetHeight());
@@ -207,7 +215,7 @@ Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename)
     }
     catch (...)
     {
-#if defined HAVE_FFMPEG_WRAPPER
+#if defined HAVE_FFMPEG_WRAPPER || defined HAVE_FFMPEG
         Ptr<RawVideoSource> source(new FFmpegVideoSource(filename));
         videoSource.reset(new RawVideoSourceWrapper(source));
 #else

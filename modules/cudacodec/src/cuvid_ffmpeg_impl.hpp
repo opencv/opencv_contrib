@@ -3,8 +3,440 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include "../src/cap_ffmpeg_legacy_api.hpp"
-
+//#include "cuvid_ffmpeg_api.hpp"
 using namespace cv;
+
+#if !(defined(_WIN32) || defined(WINCE))
+# include <pthread.h>
+#endif
+#include <assert.h>
+#include <algorithm>
+#include <limits>
+
+#ifndef __OPENCV_BUILD
+#define CV_FOURCC(c1, c2, c3, c4) (((c1) & 255) + (((c2) & 255) << 8) + (((c3) & 255) << 16) + (((c4) & 255) << 24))
+#endif
+
+#define CALC_FFMPEG_VERSION(a,b,c) ( a<<16 | b<<8 | c )
+
+#if defined _MSC_VER && _MSC_VER >= 1200
+#pragma warning( disable: 4244 4510 4610 )
+#endif
+
+#ifdef __GNUC__
+#  pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+#endif
+
+#ifndef CV_UNUSED  // Required for standalone compilation mode (OpenCV defines this in base.hpp)
+#define CV_UNUSED(name) (void)name
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include "../src/ffmpeg_codecs.hpp"
+
+#include <libavutil/mathematics.h>
+
+#if LIBAVUTIL_BUILD > CALC_FFMPEG_VERSION(51,11,0)
+#include <libavutil/opt.h>
+#endif
+
+#if LIBAVUTIL_BUILD >= (LIBAVUTIL_VERSION_MICRO >= 100 \
+    ? CALC_FFMPEG_VERSION(51, 63, 100) : CALC_FFMPEG_VERSION(54, 6, 0))
+#include <libavutil/imgutils.h>
+#endif
+
+#include <libavcodec/avcodec.h>
+#include <libswscale/swscale.h>
+
+#ifdef __cplusplus
+}
+#endif
+
+#if defined _MSC_VER && _MSC_VER >= 1200
+#pragma warning( default: 4244 4510 4610 )
+#endif
+
+#ifdef NDEBUG
+#define CV_WARN(message)
+#else
+#define CV_WARN(message) fprintf(stderr, "warning: %s (%s:%d)\n", message, __FILE__, __LINE__)
+#endif
+
+#if defined _WIN32
+#include <windows.h>
+#if defined _MSC_VER && _MSC_VER < 1900
+struct timespec
+{
+    time_t tv_sec;
+    long   tv_nsec;
+};
+#endif
+#elif defined __linux__ || defined __APPLE__ || defined __HAIKU__
+#include <unistd.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/time.h>
+#if defined __APPLE__
+#include <sys/sysctl.h>
+#include <mach/clock.h>
+#include <mach/mach.h>
+#endif
+#endif
+
+#ifndef MIN
+#define MIN(a, b) ((a) < (b) ? (a) : (b))
+#endif
+
+#if defined(__APPLE__)
+#define AV_NOPTS_VALUE_ ((int64_t)0x8000000000000000LL)
+#else
+#define AV_NOPTS_VALUE_ ((int64_t)AV_NOPTS_VALUE)
+#endif
+
+#ifndef AVERROR_EOF
+#define AVERROR_EOF (-MKTAG( 'E','O','F',' '))
+#endif
+
+#if LIBAVCODEC_BUILD >= CALC_FFMPEG_VERSION(54,25,0)
+#  define CV_CODEC_ID AVCodecID
+#  define CV_CODEC(name) AV_##name
+#else
+#  define CV_CODEC_ID CodecID
+#  define CV_CODEC(name) name
+#endif
+
+#if LIBAVUTIL_BUILD < (LIBAVUTIL_VERSION_MICRO >= 100 \
+    ? CALC_FFMPEG_VERSION(51, 74, 100) : CALC_FFMPEG_VERSION(51, 42, 0))
+#define AVPixelFormat PixelFormat
+#define AV_PIX_FMT_BGR24 PIX_FMT_BGR24
+#define AV_PIX_FMT_RGB24 PIX_FMT_RGB24
+#define AV_PIX_FMT_GRAY8 PIX_FMT_GRAY8
+#define AV_PIX_FMT_YUV422P PIX_FMT_YUV422P
+#define AV_PIX_FMT_YUV420P PIX_FMT_YUV420P
+#define AV_PIX_FMT_YUV444P PIX_FMT_YUV444P
+#define AV_PIX_FMT_YUVJ420P PIX_FMT_YUVJ420P
+#define AV_PIX_FMT_GRAY16LE PIX_FMT_GRAY16LE
+#define AV_PIX_FMT_GRAY16BE PIX_FMT_GRAY16BE
+#endif
+
+#ifndef PKT_FLAG_KEY
+#define PKT_FLAG_KEY AV_PKT_FLAG_KEY
+#endif
+
+#if LIBAVUTIL_BUILD >= (LIBAVUTIL_VERSION_MICRO >= 100 \
+    ? CALC_FFMPEG_VERSION(52, 38, 100) : CALC_FFMPEG_VERSION(52, 13, 0))
+#define USE_AV_FRAME_GET_BUFFER 1
+#else
+#define USE_AV_FRAME_GET_BUFFER 0
+#ifndef AV_NUM_DATA_POINTERS // required for 0.7.x/0.8.x ffmpeg releases
+#define AV_NUM_DATA_POINTERS 4
+#endif
+#endif
+
+
+#ifndef USE_AV_INTERRUPT_CALLBACK
+#if LIBAVFORMAT_BUILD >= CALC_FFMPEG_VERSION(53, 21, 0)
+#define USE_AV_INTERRUPT_CALLBACK 1
+#else
+#define USE_AV_INTERRUPT_CALLBACK 0
+#endif
+#endif
+
+#if USE_AV_INTERRUPT_CALLBACK
+#define LIBAVFORMAT_INTERRUPT_OPEN_TIMEOUT_MS 30000
+#define LIBAVFORMAT_INTERRUPT_READ_TIMEOUT_MS 30000
+
+#ifdef _WIN32
+// http://stackoverflow.com/questions/5404277/porting-clock-gettime-to-windows
+
+static
+inline LARGE_INTEGER get_filetime_offset()
+{
+    SYSTEMTIME s;
+    FILETIME f;
+    LARGE_INTEGER t;
+
+    s.wYear = 1970;
+    s.wMonth = 1;
+    s.wDay = 1;
+    s.wHour = 0;
+    s.wMinute = 0;
+    s.wSecond = 0;
+    s.wMilliseconds = 0;
+    SystemTimeToFileTime(&s, &f);
+    t.QuadPart = f.dwHighDateTime;
+    t.QuadPart <<= 32;
+    t.QuadPart |= f.dwLowDateTime;
+    return t;
+}
+
+static
+inline void get_monotonic_time(timespec* tv)
+{
+    LARGE_INTEGER           t;
+    FILETIME				f;
+    double                  microseconds;
+    static LARGE_INTEGER    offset;
+    static double           frequencyToMicroseconds;
+    static int              initialized = 0;
+    static BOOL             usePerformanceCounter = 0;
+
+    if (!initialized)
+    {
+        LARGE_INTEGER performanceFrequency;
+        initialized = 1;
+        usePerformanceCounter = QueryPerformanceFrequency(&performanceFrequency);
+        if (usePerformanceCounter)
+        {
+            QueryPerformanceCounter(&offset);
+            frequencyToMicroseconds = (double)performanceFrequency.QuadPart / 1000000.;
+        }
+        else
+        {
+            offset = get_filetime_offset();
+            frequencyToMicroseconds = 10.;
+        }
+    }
+
+    if (usePerformanceCounter)
+    {
+        QueryPerformanceCounter(&t);
+    }
+    else {
+        GetSystemTimeAsFileTime(&f);
+        t.QuadPart = f.dwHighDateTime;
+        t.QuadPart <<= 32;
+        t.QuadPart |= f.dwLowDateTime;
+    }
+
+    t.QuadPart -= offset.QuadPart;
+    microseconds = (double)t.QuadPart / frequencyToMicroseconds;
+    t.QuadPart = microseconds;
+    tv->tv_sec = t.QuadPart / 1000000;
+    tv->tv_nsec = (t.QuadPart % 1000000) * 1000;
+}
+#else
+static
+inline void get_monotonic_time(timespec* time)
+{
+#if defined(__APPLE__) && defined(__MACH__)
+    clock_serv_t cclock;
+    mach_timespec_t mts;
+    host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
+    clock_get_time(cclock, &mts);
+    mach_port_deallocate(mach_task_self(), cclock);
+    time->tv_sec = mts.tv_sec;
+    time->tv_nsec = mts.tv_nsec;
+#else
+    clock_gettime(CLOCK_MONOTONIC, time);
+#endif
+}
+#endif
+
+static
+inline timespec get_monotonic_time_diff(timespec start, timespec end)
+{
+    timespec temp;
+    if (end.tv_nsec - start.tv_nsec < 0)
+    {
+        temp.tv_sec = end.tv_sec - start.tv_sec - 1;
+        temp.tv_nsec = 1000000000 + end.tv_nsec - start.tv_nsec;
+    }
+    else
+    {
+        temp.tv_sec = end.tv_sec - start.tv_sec;
+        temp.tv_nsec = end.tv_nsec - start.tv_nsec;
+    }
+    return temp;
+}
+
+static
+inline double get_monotonic_time_diff_ms(timespec time1, timespec time2)
+{
+    timespec delta = get_monotonic_time_diff(time1, time2);
+    double milliseconds = delta.tv_sec * 1000 + (double)delta.tv_nsec / 1000000.0;
+
+    return milliseconds;
+}
+#endif // USE_AV_INTERRUPT_CALLBACK
+
+static int get_number_of_cpus(void)
+{
+#if LIBAVFORMAT_BUILD < CALC_FFMPEG_VERSION(52, 111, 0)
+    return 1;
+#elif defined _WIN32
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo(&sysinfo);
+
+    return (int)sysinfo.dwNumberOfProcessors;
+#elif defined __linux__ || defined __HAIKU__
+    return (int)sysconf(_SC_NPROCESSORS_ONLN);
+#elif defined __APPLE__
+    int numCPU = 0;
+    int mib[4];
+    size_t len = sizeof(numCPU);
+
+    // set the mib for hw.ncpu
+    mib[0] = CTL_HW;
+    mib[1] = HW_AVAILCPU;  // alternatively, try HW_NCPU;
+
+    // get the number of CPUs from the system
+    sysctl(mib, 2, &numCPU, &len, NULL, 0);
+
+    if (numCPU < 1)
+    {
+        mib[1] = HW_NCPU;
+        sysctl(mib, 2, &numCPU, &len, NULL, 0);
+
+        if (numCPU < 1)
+            numCPU = 1;
+    }
+
+    return (int)numCPU;
+#else
+    return 1;
+#endif
+}
+
+
+struct Image_FFMPEG
+{
+    unsigned char* data;
+    int step;
+    int width;
+    int height;
+    int cn;
+};
+
+
+#if USE_AV_INTERRUPT_CALLBACK
+struct AVInterruptCallbackMetadata
+{
+    timespec value;
+    unsigned int timeout_after_ms;
+    int timeout;
+};
+
+// https://github.com/opencv/opencv/pull/12693#issuecomment-426236731
+static
+inline const char* _opencv_avcodec_get_name(AVCodecID id)
+{
+#if LIBAVCODEC_VERSION_MICRO >= 100 \
+    && LIBAVCODEC_BUILD >= CALC_FFMPEG_VERSION(53, 47, 100)
+    return avcodec_get_name(id);
+#else
+    const AVCodecDescriptor* cd;
+    AVCodec* codec;
+
+    if (id == AV_CODEC_ID_NONE)
+    {
+        return "none";
+    }
+    cd = avcodec_descriptor_get(id);
+    if (cd)
+    {
+        return cd->name;
+    }
+    codec = avcodec_find_decoder(id);
+    if (codec)
+    {
+        return codec->name;
+    }
+    codec = avcodec_find_encoder(id);
+    if (codec)
+    {
+        return codec->name;
+    }
+
+    return "unknown_codec";
+#endif
+}
+
+static
+inline void _opencv_ffmpeg_free(void** ptr)
+{
+    if (*ptr) free(*ptr);
+    *ptr = 0;
+}
+
+static
+inline int _opencv_ffmpeg_interrupt_callback(void* ptr)
+{
+    AVInterruptCallbackMetadata* metadata = (AVInterruptCallbackMetadata*)ptr;
+    assert(metadata);
+
+    if (metadata->timeout_after_ms == 0)
+    {
+        return 0; // timeout is disabled
+    }
+
+    timespec now;
+    get_monotonic_time(&now);
+
+    metadata->timeout = get_monotonic_time_diff_ms(metadata->value, now) > metadata->timeout_after_ms;
+
+    return metadata->timeout ? -1 : 0;
+}
+#endif
+
+static
+inline void _opencv_ffmpeg_av_packet_unref(AVPacket* pkt)
+{
+#if LIBAVCODEC_BUILD >= (LIBAVCODEC_VERSION_MICRO >= 100 \
+    ? CALC_FFMPEG_VERSION(55, 25, 100) : CALC_FFMPEG_VERSION(55, 16, 0))
+    av_packet_unref(pkt);
+#else
+    av_free_packet(pkt);
+#endif
+};
+
+static
+inline void _opencv_ffmpeg_av_image_fill_arrays(void* frame, uint8_t* ptr, enum AVPixelFormat pix_fmt, int width, int height)
+{
+#if LIBAVUTIL_BUILD >= (LIBAVUTIL_VERSION_MICRO >= 100 \
+    ? CALC_FFMPEG_VERSION(51, 63, 100) : CALC_FFMPEG_VERSION(54, 6, 0))
+    av_image_fill_arrays(((AVFrame*)frame)->data, ((AVFrame*)frame)->linesize, ptr, pix_fmt, width, height, 1);
+#else
+    avpicture_fill((AVPicture*)frame, ptr, pix_fmt, width, height);
+#endif
+};
+
+static
+inline int _opencv_ffmpeg_av_image_get_buffer_size(enum AVPixelFormat pix_fmt, int width, int height)
+{
+#if LIBAVUTIL_BUILD >= (LIBAVUTIL_VERSION_MICRO >= 100 \
+    ? CALC_FFMPEG_VERSION(51, 63, 100) : CALC_FFMPEG_VERSION(54, 6, 0))
+    return av_image_get_buffer_size(pix_fmt, width, height, 1);
+#else
+    return avpicture_get_size(pix_fmt, width, height);
+#endif
+};
+
+static AVRational _opencv_ffmpeg_get_sample_aspect_ratio(AVStream* stream)
+{
+#if LIBAVUTIL_VERSION_MICRO >= 100 && LIBAVUTIL_BUILD >= CALC_FFMPEG_VERSION(54, 5, 100)
+    return av_guess_sample_aspect_ratio(NULL, stream, NULL);
+#else
+    AVRational undef = { 0, 1 };
+
+    // stream
+    AVRational ratio = stream ? stream->sample_aspect_ratio : undef;
+    av_reduce(&ratio.num, &ratio.den, ratio.num, ratio.den, INT_MAX);
+    if (ratio.num > 0 && ratio.den > 0)
+        return ratio;
+
+    // codec
+    ratio = stream && stream->codec ? stream->codec->sample_aspect_ratio : undef;
+    av_reduce(&ratio.num, &ratio.den, ratio.num, ratio.den, INT_MAX);
+    if (ratio.num > 0 && ratio.den > 0)
+        return ratio;
+
+    return undef;
+#endif
+}
 
 /*
  * For CUDA encoder
@@ -439,7 +871,11 @@ bool InputMediaStream_FFMPEG::open(const char* fileName, int* codec, int* chroma
 
             switch (enc->pix_fmt)
             {
+                // fix from Video_Codec_SDK_9.0.20\Video_Codec_SDK_9.0.20\Samples\Utils\FFmpegDemuxer.h
             case AV_PIX_FMT_YUV420P:
+            case AV_PIX_FMT_YUVJ420P:
+            case AV_PIX_FMT_YUVJ422P:   // jpeg decoder output is subsampled to NV12 for 422/444 so treat it as 420
+            case AV_PIX_FMT_YUVJ444P:   // jpeg decoder output is subsampled to NV12 for 422/444 so treat it as 420
                 *chroma_format = ::VideoChromaFormat_YUV420;
                 break;
 
@@ -491,6 +927,8 @@ void InputMediaStream_FFMPEG::close()
         _opencv_ffmpeg_av_packet_unref(&pkt_);
 }
 
+
+// we may be able to use the inbuilt funcs in cap_ffmpeg_impl.hpp to get the packet?? - call grab then ref the packet????
 bool InputMediaStream_FFMPEG::read(unsigned char** data, int* size, int* endOfFile)
 {
     bool result = false;
