@@ -46,8 +46,6 @@
 
 #include "opencv2/cudacodec.hpp"
 
-struct InputMediaStream_FFMPEG;
-
 namespace cv { namespace cudacodec { namespace detail {
 
 class FFmpegVideoSource : public RawVideoSource
@@ -62,9 +60,8 @@ public:
 
 private:
     FormatInfo format_;
-
-    InputMediaStream_FFMPEG* stream_;
-    RawVideoCapture rawCap;
+    VideoCapture cap;
+    Mat rawFrame;
 };
 
 }}}

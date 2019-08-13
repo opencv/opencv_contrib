@@ -48,6 +48,8 @@
 void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
 {
     release();
+    if (videoFormat.nBitDepthMinus8 > 0)
+        CV_Error(Error::StsUnsupportedFormat, "Src format is not compatible with NV12 output.");
 
     cudaVideoCodec _codec = static_cast<cudaVideoCodec>(videoFormat.codec);
     cudaVideoChromaFormat _chromaFormat = static_cast<cudaVideoChromaFormat>(videoFormat.chromaFormat);
@@ -102,6 +104,8 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
             videoFormat.height >= decodeCaps.nMinHeight &&
             videoFormat.width <= decodeCaps.nMaxWidth &&
             videoFormat.height <= decodeCaps.nMaxHeight);
+
+        CV_Assert((videoFormat.width >> 4)* (videoFormat.height >> 4) <= decodeCaps.nMaxMBCount);
     }
 #endif
 
@@ -113,11 +117,6 @@ void cv::cudacodec::detail::VideoDecoder::create(const FormatInfo& videoFormat)
     createInfo_.ulWidth             = videoFormat.width;
     createInfo_.ulHeight            = videoFormat.height;
     createInfo_.ulNumDecodeSurfaces = FrameQueue::MaximumSize;
-
-    // Limit decode memory to 24MB (16M pixels at 4:2:0 = 24M bytes)
-    while (createInfo_.ulNumDecodeSurfaces * videoFormat.width * videoFormat.height > 16 * 1024 * 1024)
-        createInfo_.ulNumDecodeSurfaces--;
-
     createInfo_.ChromaFormat    = _chromaFormat;
     createInfo_.OutputFormat    = cudaVideoSurfaceFormat_NV12;
     createInfo_.DeinterlaceMode = cudaVideoDeinterlaceMode_Adaptive;

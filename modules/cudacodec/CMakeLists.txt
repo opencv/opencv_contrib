@@ -13,10 +13,6 @@ ocv_glob_module_sources()
 
 set(extra_libs "")
 
-if(HAVE_FFMPEG_WRAPPER)
-  list(APPEND cudacodec_hdrs ${CMAKE_CURRENT_LIST_DIR}/src/cuvid_ffmpeg_impl.hpp)
-endif()
-
 if(HAVE_NVCUVID)
 list(APPEND extra_libs ${CUDA_CUDA_LIBRARY} ${CUDA_nvcuvid_LIBRARY})
 endif()

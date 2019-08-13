@@ -242,7 +242,6 @@ CV_EXPORTS_W Ptr<cudacodec::VideoWriter> createVideoWriter(const Ptr<EncoderCall
  */
 enum Codec
 {
-    //NONE = 0,
     MPEG1 = 0,
     MPEG2,
     MPEG4,
@@ -254,6 +253,7 @@ enum Codec
     HEVC,
     VP8,
     VP9,
+    NumCodecs,
 
     Uncompressed_YUV420 = (('I'<<24)|('Y'<<16)|('U'<<8)|('V')),   //!< Y,U,V (4:2:0)
     Uncompressed_YV12   = (('Y'<<24)|('V'<<16)|('1'<<8)|('2')),   //!< Y,V,U (4:2:0)

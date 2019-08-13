@@ -53,7 +53,6 @@
 
 #include "opencv2/cudacodec.hpp"
 #include "opencv2/videoio.hpp"
-
 #include "opencv2/core/private.cuda.hpp"
 
 #ifdef HAVE_NVCUVID
@@ -81,9 +80,6 @@
     #include "frame_queue.hpp"
     #include "video_decoder.hpp"
     #include "video_parser.hpp"
-
-    //#ifdef HAVE_FFMPEG_WRAPPER
-    #include "cuvid_ffmpeg_api.hpp"
 
 #endif
 
