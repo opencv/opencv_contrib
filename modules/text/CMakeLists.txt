@@ -1,7 +1,7 @@
 set(the_description "Text Detection and Recognition")
 set(__extra_deps "")
 if(DEBUG_opencv_text)
-  list(APPEND __extra_deps PRIVATE opencv_highgui)
+  list(APPEND __extra_deps PRIVATE_REQUIRED opencv_highgui)
 endif()
 
 ocv_define_module(text
