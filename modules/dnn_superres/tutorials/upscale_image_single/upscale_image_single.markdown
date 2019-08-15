@@ -62,5 +62,5 @@ Explanation
     upscale. Your upscaled image is located in 'img_new'.
 
 Original: ![](images/input.jpg)
-Upscaled Image via CNN: ![](images/fsrcnnOutput.jpg)
+Upscaled Image via FSRCNN: ![](images/fsrcnnOutput.jpg)
 Upscaled Image via Bicubic Interpolation: ![](images/bicubicOutput.jpg)
