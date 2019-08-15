@@ -1,3 +1,7 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+
 #include <iostream>
 
 #include <opencv2/dnn_superres.hpp>
@@ -11,7 +15,7 @@ int main(int argc, char *argv[])
 {
     // Check for valid command line arguments, print usage
     // if insufficient arguments were given.
-    if (argc < 4) {
+    if ( argc < 4 ) {
         cout << "usage:   Arg 1: image     | Path to image" << endl;
         cout << "\t Arg 2: algorithm | bilinear, bicubic, edsr, espcn, fsrcnn or lapsrn" << endl;
         cout << "\t Arg 3: scale     | 2, 3 or 4 \n";
@@ -48,14 +52,14 @@ int main(int argc, char *argv[])
     {
         resize(img, img_new, Size(), scale, scale, 3);
     }
-    else if( algorithm == "espcn" || algorithm == "lapsrn" || algorithm == "fsrcnn" || algorithm == "edsr")
+    else if( algorithm == "edsr" || algorithm == "espcn" || algorithm == "fsrcnn" || algorithm == "lapsrn" )
     {
         sr.readModel(path);
         sr.setModel(algorithm, scale);
         sr.upsample(img, img_new);
     }
     else{
-        //
+        std::cerr << "Algorithm not recognized. \n";
     }
 
     if ( img_new.empty() )
@@ -66,8 +70,8 @@ int main(int argc, char *argv[])
     cout << "Upsampling succeeded. \n";
 
     // Display image
-    cv::namedWindow("Upscaled Image", WINDOW_AUTOSIZE);
-    cv::imshow("Upscaled Image", img_new);
+    cv::namedWindow("Initial Image", WINDOW_AUTOSIZE);
+    cv::imshow("Initial Image", img_new);
     //cv::imwrite("./saved.jpg", img_new);
     cv::waitKey(0);
 

@@ -9,7 +9,7 @@
 #include "opencv2/dnn_superres.hpp"
 
 namespace opencv_test {
-    using namespace cv::dnn::dnn_superres;
+    using namespace cv::dnn_superres;
 }
 
 #endif

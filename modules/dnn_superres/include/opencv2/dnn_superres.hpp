@@ -23,8 +23,6 @@ The following four models are implemented:
 
 namespace cv
 {
-namespace dnn
-{
 namespace dnn_superres
 {
     //! @addtogroup dnn_superres
@@ -44,29 +42,26 @@ namespace dnn_superres
 
             /** @brief Net which holds the desired neural network
              */
-            Net net;
+            dnn::Net net;
 
-            /** @brief String that specifies the model
-             */
             std::string alg; //algorithm
 
-            /** @brief Int that specifies the desired upscale factor
-             */
             int sc; //scale factor
+
+            /// @private
+            static int layer_loaded;
 
             void registerLayers();
 
             void preprocess(const Mat inpImg, Mat &outpImg);
 
-            void preprocess_YCrCb(const Mat inpImg, Mat &outpImg);
+            void reconstruct_YCrCb(const Mat inpImg, const Mat origImg, Mat &outpImg, int scale);
 
             void reconstruct_YCrCb(const Mat inpImg, const Mat origImg, Mat &outpImg);
 
-            void reconstruct_YCrCb(const Mat inpImg, const Mat origImg, Mat &outpImg, int scale);
+            void preprocess_YCrCb(const Mat inpImg, Mat &outpImg);
 
         public:
-
-            static int layer_loaded;
 
             /** @brief Empty constructor
              */
@@ -115,7 +110,13 @@ namespace dnn_superres
             @param scale_factors Scaling factors of the output nodes
             @param node_names Names of the output nodes in the neural network
             */
-            void upsample_multioutput(Mat img, std::vector<Mat> &imgs_new, std::vector<int> scale_factors, std::vector<String> node_names);
+            void upsampleMultioutput(Mat img, std::vector<Mat> &imgs_new, std::vector<int> scale_factors, std::vector<String> node_names);
+
+            /** @brief Upsamples videos via neural network and saves it into the given path.
+            @param inputPath Path to video to upscale
+            @param outputPath Destination upscaled video
+            */
+            void upsampleVideo(String inputPath, String outputPath);
 
             /** @brief Returns the scale factor of the model:
             @return Current scale factor.
@@ -153,7 +154,6 @@ namespace dnn_superres
             };
     };
     //! @}
-}
 }
 }
 #endif
