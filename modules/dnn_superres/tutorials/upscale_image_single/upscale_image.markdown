@@ -61,6 +61,6 @@ Explanation
     Now we can upscale any image. Load an image via the standard 'imread' function and create a new Mat as the destination image. Then simple
     upscale. Your upscaled image is located in 'img_new'.
 
-Original: ![](images/input.png)
-Upscaled Image via CNN: ![](images/fsrcnnOutput.png)
-Upscaled Image via Bicubic Interpolation: ![](images/bicubicOutput.png)
+Original: ![](images/input.jpg)
+Upscaled Image via CNN: ![](images/fsrcnnOutput.jpg)
+Upscaled Image via Bicubic Interpolation: ![](images/bicubicOutput.jpg)
