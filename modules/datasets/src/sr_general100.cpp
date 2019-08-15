@@ -44,12 +44,12 @@ void SR_general100Imp::loadDataset(const string &path)
     vector<string> fileNames;
     getDirList(path, fileNames);
     for (vector<string>::iterator it=fileNames.begin(); it!=fileNames.end(); ++it)
-    {   
+    {
         string &imageName = *it;
         Ptr<SR_general100Obj> curr(new SR_general100Obj);
         curr->imageName = imageName;
         train.back().push_back(curr);
-    
+
     }
 }
 
