@@ -1,0 +1,286 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
+
+#include "test_precomp.hpp"
+
+namespace opencv_test
+{
+    namespace
+    {
+
+        const std::string DNN_SUPERRES_DIR = "dnn_superres";
+        const std::string IMAGE_FILENAME = "butterfly.png";
+
+        /****************************************************************************************\
+        *                                Test single output models                               *
+        \****************************************************************************************/
+
+        class CV_DnnSuperResSingleOutputTest : public cvtest::BaseTest
+        {
+            public:
+                CV_DnnSuperResSingleOutputTest();
+
+            protected:
+                Ptr <DnnSuperResImpl> dnn_sr;
+
+                virtual void run(int);
+
+                void runOneModel(std::string algorithm, int scale, std::string model_filename);
+        };
+
+        void CV_DnnSuperResSingleOutputTest::runOneModel(std::string algorithm, int scale, std::string model_filename)
+        {
+            std::string path = std::string(ts->get_data_path()) + DNN_SUPERRES_DIR + "/" + IMAGE_FILENAME;
+
+            Mat img = imread(path);
+            if (img.empty())
+            {
+                ts->printf(cvtest::TS::LOG, "Test image not found!\n");
+                ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);
+                return;
+            }
+
+            std::string pb_path = std::string(ts->get_data_path()) + DNN_SUPERRES_DIR + "/" + model_filename;
+
+            this->dnn_sr->readModel(pb_path);
+
+            this->dnn_sr->setModel(algorithm, scale);
+
+            if (this->dnn_sr->getScale() != scale)
+            {
+                ts->printf(cvtest::TS::LOG,
+                           "Scale factor could not be set for scale algorithm %s and scale factor %d!\n",
+                           algorithm.c_str(), scale);
+                ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
+                return;
+            }
+
+            if (this->dnn_sr->getAlgorithm() != algorithm)
+            {
+                ts->printf(cvtest::TS::LOG, "Algorithm could not be set for scale algorithm %s and scale factor %d!\n",
+                           algorithm.c_str(), scale);
+                ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
+                return;
+            }
+
+            Mat img_new;
+            this->dnn_sr->upsample(img, img_new);
+
+            if (img_new.empty())
+            {
+                ts->printf(cvtest::TS::LOG,
+                           "Could not perform upsampling for scale algorithm %s and scale factor %d!\n",
+                           algorithm.c_str(), scale);
+                ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
+                return;
+            }
+
+            int new_cols = img.cols * scale;
+            int new_rows = img.rows * scale;
+            if (img_new.cols != new_cols || img_new.rows != new_rows)
+            {
+                ts->printf(cvtest::TS::LOG, "Dimensions are not correct for scale algorithm %s and scale factor %d!\n",
+                           algorithm.c_str(), scale);
+                ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
+                return;
+            }
+        }
+
+        CV_DnnSuperResSingleOutputTest::CV_DnnSuperResSingleOutputTest()
+        {
+            dnn_sr = makePtr<DnnSuperResImpl>();
+        }
+
+        void CV_DnnSuperResSingleOutputTest::run(int)
+        {
+            //x2
+            runOneModel("espcn", 2, "ESPCN_x2.pb");
+            
+        }
+
+        TEST(CV_DnnSuperResSingleOutputTest, accuracy)
+        {
+            CV_DnnSuperResSingleOutputTest test;
+            test.safe_run();
+        }
+
+        /****************************************************************************************\
+        *                                Test multi output models                               *
+        \****************************************************************************************/
+
+        class CV_DnnSuperResMultiOutputTest : public cvtest::BaseTest
+        {
+            public:
+                CV_DnnSuperResMultiOutputTest();
+
+            protected:
+                Ptr <DnnSuperResImpl> dnn_sr;
+
+                virtual void run(int);
+
+                void runOneModel(std::string algorithm, int scale, std::string model_filename,
+                             std::vector<int> scales, std::vector<String> node_names);
+        };
+
+        void CV_DnnSuperResMultiOutputTest::runOneModel(std::string algorithm, int scale, std::string model_filename,
+                std::vector<int> scales, std::vector<String> node_names)
+        {
+            std::string path = std::string(ts->get_data_path()) + DNN_SUPERRES_DIR + "/" + IMAGE_FILENAME;
+
+            Mat img = imread(path);
+            if ( img.empty() )
+            {
+                ts->printf(cvtest::TS::LOG, "Test image not found!\n");
+                ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);
+                return;
+            }
+
+            std::string pb_path = std::string(ts->get_data_path()) + DNN_SUPERRES_DIR + "/" + model_filename;
+
+            this->dnn_sr->readModel(pb_path);
+
+            this->dnn_sr->setModel(algorithm, scale);
+
+            if ( this->dnn_sr->getScale() != scale )
+            {
+                ts->printf(cvtest::TS::LOG,
+                           "Scale factor could not be set for scale algorithm %s and scale factor %d!\n",
+                           algorithm.c_str(), scale);
+                ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
+                return;
+            }
+
+            if ( this->dnn_sr->getAlgorithm() != algorithm )
+            {
+                ts->printf(cvtest::TS::LOG, "Algorithm could not be set for scale algorithm %s and scale factor %d!\n",
+                           algorithm.c_str(), scale);
+                ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
+                return;
+            }
+
+            std::vector<Mat> outputs;
+            this->dnn_sr->upsampleMultioutput(img, outputs, scales, node_names);
+
+            for(unsigned int i = 0; i < outputs.size(); i++)
+            {
+                if( outputs[i].empty() )
+                {
+                    ts->printf(cvtest::TS::LOG,
+                               "Could not perform upsampling for scale algorithm %s and scale factor %d!\n",
+                               algorithm.c_str(), scale);
+                    ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
+                    return;
+                }
+
+                int new_cols = img.cols * scales[i];
+                int new_rows = img.rows * scales[i];
+
+                if ( outputs[i].cols != new_cols || outputs[i].rows != new_rows )
+                {
+                    ts->printf(cvtest::TS::LOG, "Dimensions are not correct for scale algorithm %s and scale factor %d!\n",
+                               algorithm.c_str(), scale);
+                    ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
+                    return;
+                }
+            }
+        }
+
+        CV_DnnSuperResMultiOutputTest::CV_DnnSuperResMultiOutputTest()
+        {
+            dnn_sr = makePtr<DnnSuperResImpl>();
+        }
+
+        void CV_DnnSuperResMultiOutputTest::run(int)
+        {
+            //LAPSRN
+            //x4
+            std::vector<String> names_4x {"NCHW_output_2x", "NCHW_output_4x"};
+            std::vector<int> scales_4x {2, 4};
+            runOneModel("lapsrn", 4, "LapSRN_x4.pb", scales_4x, names_4x);
+        }
+
+        TEST(CV_DnnSuperResMultiOutputTest, accuracy)
+        {
+            CV_DnnSuperResMultiOutputTest test;
+            test.safe_run();
+        }
+
+        /****************************************************************************************\
+        *                                Test benchmarking                                       *
+        \****************************************************************************************/
+
+        class CV_DnnSuperResBenchmarkingTest : public cvtest::BaseTest
+        {
+
+            protected:
+                virtual void run(int);
+
+                void runBenchmark(std::string algorithm, int scale, std::string model_filename);
+        };
+
+        void CV_DnnSuperResBenchmarkingTest::runBenchmark(std::string algorithm, int scale, std::string model_filename)
+        {
+            DnnSuperResImpl dnn_sr;
+
+            std::string path = std::string(ts->get_data_path()) + DNN_SUPERRES_DIR + "/" + IMAGE_FILENAME;
+
+            Mat img = imread(path);
+            if ( img.empty() )
+            {
+                ts->printf(cvtest::TS::LOG, "Test image not found!\n");
+                ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);
+                return;
+            }
+
+            std::string pb_path = std::string(ts->get_data_path()) + DNN_SUPERRES_DIR + "/" + model_filename;
+
+            dnn_sr.readModel(pb_path);
+
+            dnn_sr.setModel(algorithm, scale);
+
+            ASSERT_EQ(dnn_sr.getScale(), scale);
+
+            ASSERT_EQ(dnn_sr.getAlgorithm(), algorithm);
+
+            int width = img.cols - (img.cols % scale);
+            int height = img.rows - (img.rows % scale);
+            Mat cropped = img(Rect(0, 0, width, height));
+
+            Mat img_downscaled;
+            cv::resize(cropped, img_downscaled, cv::Size(), 1.0/scale, 1.0/scale);
+
+            std::vector<double> psnrs, ssims, perfs;
+
+            DnnSuperResQuality::benchmark(dnn_sr, cropped, psnrs, ssims, perfs, 0, 0);
+
+            ASSERT_EQ(psnrs.size(), 4);
+            ASSERT_EQ(ssims.size(), 4);
+            ASSERT_EQ(perfs.size(), 4);
+
+            ASSERT_EQ(psnrs.size(), ssims.size());
+            ASSERT_EQ(psnrs.size(), perfs.size());
+
+            for(unsigned int i = 0; i < psnrs.size(); i++)
+            {
+                ASSERT_GT(psnrs[i], 0.0);
+
+                ASSERT_GE(ssims[i], 0.0);
+                ASSERT_LE(ssims[i], 1.0);
+
+                ASSERT_GT(perfs[i], 0.0);
+            }
+        }
+
+        void CV_DnnSuperResBenchmarkingTest::run(int)
+        {
+            runBenchmark("espcn", 2, "ESPCN_x2.pb");
+        }
+
+        TEST(CV_DnnSuperResBenchmarkingTest, accuracy)
+        {
+            CV_DnnSuperResBenchmarkingTest test;
+            test.safe_run();
+        }
+
+}}
