@@ -10,6 +10,11 @@
 #include <cstdarg>
 #include <sstream>
 #include <ctime>
+
+#ifdef _WIN32
+#include <Windows.h>
+#endif
+
 #include <opencv2/dnn_superres.hpp>
 #include "opencv2/dnn.hpp"
 

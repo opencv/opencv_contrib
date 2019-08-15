@@ -10,7 +10,6 @@ namespace cv
 {
     namespace dnn_superres
     {
-
         int DnnSuperResQuality::fontFace = cv::FONT_HERSHEY_COMPLEX_SMALL;
 
         double DnnSuperResQuality::fontScale = 1.0;
@@ -148,15 +147,37 @@ namespace cv
 
             resize(cropped, imgDownscaled, Size(), 1.0/scale, 1.0/scale);
 
-            timespec ts_beg, ts_end;
-
             Mat imgUpscaled;
 
-            clock_gettime(CLOCK_REALTIME, &ts_beg);
-            sr.upsample(imgDownscaled, imgUpscaled);
-            clock_gettime(CLOCK_REALTIME, &ts_end);
+			double elapsed = 0.0;
 
-            double elapsed = (ts_end.tv_sec - ts_beg.tv_sec) + (ts_end.tv_nsec - ts_beg.tv_nsec) / 1e9;
+            #ifdef _WIN32
+                LARGE_INTEGER st, et, el, fq;
+            #else
+                double start, end;
+                timespec ts_beg, ts_end;
+            #endif
+
+            #ifdef _WIN32
+                QueryPerformanceFrequency(&fq);
+                QueryPerformanceCounter(&st);
+
+                sr.upsample(imgDownscaled, imgUpscaled);
+
+                QueryPerformanceCounter(&et);
+                el.QuadPart = et.QuadPart - st.QuadPart;
+				elapsed = static_cast<double>(el.QuadPart) / static_cast<double>(fq.QuadPart);
+            #else
+                clock_gettime(CLOCK_REALTIME, &ts_beg);
+                start = ts_beg.tv_sec + ts_beg.tv_nsec;
+
+                sr.upsample(imgDownscaled, imgUpscaled);
+
+                clock_gettime(CLOCK_REALTIME, &ts_end);
+                end = ts_end.tv_sec + ts_end.tv_nsec;
+                elapsed = ((double)end-start) / 1e9;
+            #endif
+
             double psnr_value = psnr(imgUpscaled, cropped);
             double ssim_value = ssim(imgUpscaled, cropped);
 
@@ -175,11 +196,27 @@ namespace cv
 
             //BICUBIC
             Mat bicubic;
-            clock_gettime(CLOCK_REALTIME, &ts_beg);
-            resize(imgDownscaled, bicubic, Size(), scale, scale, INTER_CUBIC );
-            clock_gettime(CLOCK_REALTIME, &ts_end);
 
-            elapsed = (ts_end.tv_sec - ts_beg.tv_sec) + (ts_end.tv_nsec - ts_beg.tv_nsec) / 1e9;
+            #ifdef _WIN32
+                QueryPerformanceFrequency(&fq);
+                QueryPerformanceCounter(&st);
+
+                resize(imgDownscaled, bicubic, Size(), scale, scale, INTER_CUBIC);
+
+                QueryPerformanceCounter(&et);
+                el.QuadPart = et.QuadPart - st.QuadPart;
+                elapsed = static_cast<double>(el.QuadPart) / static_cast<double>(fq.QuadPart);
+            #else
+                clock_gettime(CLOCK_REALTIME, &ts_beg);
+                start = ts_beg.tv_sec + ts_beg.tv_nsec;
+
+                resize(imgDownscaled, bicubic, Size(), scale, scale, INTER_CUBIC );
+
+                clock_gettime(CLOCK_REALTIME, &ts_end);
+                end = ts_end.tv_sec + ts_end.tv_nsec;
+                elapsed = ((double)end-start) / 1e9;
+            #endif
+
             psnr_value = psnr(bicubic, cropped);
             ssim_value = ssim(bicubic, cropped);
 
@@ -197,11 +234,27 @@ namespace cv
 
             //NEAREST NEIGHBOR
             Mat nearest;
-            clock_gettime(CLOCK_REALTIME, &ts_beg);
-            resize(imgDownscaled, nearest, Size(), scale, scale, INTER_NEAREST );
-            clock_gettime(CLOCK_REALTIME, &ts_end);
 
-            elapsed = (ts_end.tv_sec - ts_beg.tv_sec) + (ts_end.tv_nsec - ts_beg.tv_nsec) / 1e9;
+            #ifdef _WIN32
+                QueryPerformanceFrequency(&fq);
+                QueryPerformanceCounter(&st);
+
+                resize(imgDownscaled, nearest, Size(), scale, scale, INTER_NEAREST);
+
+                QueryPerformanceCounter(&et);
+                el.QuadPart = et.QuadPart - st.QuadPart;
+                elapsed = static_cast<double>(el.QuadPart) / static_cast<double>(fq.QuadPart);
+            #else
+                clock_gettime(CLOCK_REALTIME, &ts_beg);
+                start = ts_beg.tv_sec + ts_beg.tv_nsec;
+
+                resize(imgDownscaled, nearest, Size(), scale, scale, INTER_NEAREST );
+
+                clock_gettime(CLOCK_REALTIME, &ts_end);
+                end = ts_end.tv_sec + ts_end.tv_nsec;
+                elapsed = ((double)end-start) / 1e9;
+            #endif
+
             psnr_value = psnr(nearest, cropped);
             ssim_value = ssim(nearest, cropped);
 
@@ -219,11 +272,27 @@ namespace cv
 
             //LANCZOS
             Mat lanczos;
-            clock_gettime(CLOCK_REALTIME, &ts_beg);
-            resize(imgDownscaled, lanczos, Size(), scale, scale, INTER_LANCZOS4 );
-            clock_gettime(CLOCK_REALTIME, &ts_end);
 
-            elapsed = (ts_end.tv_sec - ts_beg.tv_sec) + (ts_end.tv_nsec - ts_beg.tv_nsec) / 1e9;
+            #ifdef _WIN32
+                QueryPerformanceFrequency(&fq);
+                QueryPerformanceCounter(&st);
+
+                resize(imgDownscaled, lanczos, Size(), scale, scale, INTER_LANCZOS4 );
+
+                QueryPerformanceCounter(&et);
+                el.QuadPart = et.QuadPart - st.QuadPart;
+                elapsed = static_cast<double>(el.QuadPart) / static_cast<double>(fq.QuadPart);
+            #else
+                clock_gettime(CLOCK_REALTIME, &ts_beg);
+                start = ts_beg.tv_sec + ts_beg.tv_nsec;
+
+                resize(imgDownscaled, lanczos, Size(), scale, scale, INTER_LANCZOS4 );
+
+                clock_gettime(CLOCK_REALTIME, &ts_end);
+                end = ts_end.tv_sec + ts_end.tv_nsec;
+                elapsed = ((double)end-start) / 1e9;
+            #endif
+
             psnr_value = psnr(lanczos, cropped);
             ssim_value = ssim(lanczos, cropped);
 
@@ -254,10 +323,10 @@ namespace cv
                                                 const std::vector<double> ssimValues,
                                                 const std::vector<double> perfValues)
         {
-            CV_Assert(images.size() > 0);
+            CV_Assert(static_cast<int>(images.size()) > 0);
             CV_Assert(!orig.empty());
 
-            int len = images.size();
+            int len = static_cast<int>(images.size());
 
             if ( len > 9 )
             {

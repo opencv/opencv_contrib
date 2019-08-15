@@ -252,14 +252,14 @@ namespace opencv_test
 
             DnnSuperResQuality::benchmark(dnn_sr, cropped, psnrs, ssims, perfs, 0, 0);
 
-            ASSERT_EQ(psnrs.size(), 4);
-            ASSERT_EQ(ssims.size(), 4);
-            ASSERT_EQ(perfs.size(), 4);
+            ASSERT_EQ(static_cast<int>(psnrs.size()), 4);
+            ASSERT_EQ(static_cast<int>(ssims.size()), 4);
+            ASSERT_EQ(static_cast<int>(perfs.size()), 4);
 
             ASSERT_EQ(psnrs.size(), ssims.size());
             ASSERT_EQ(psnrs.size(), perfs.size());
 
-            for(unsigned int i = 0; i < psnrs.size(); i++)
+            for(unsigned int i = 0; i < 4; i++)
             {
                 ASSERT_GT(psnrs[i], 0.0);
 
