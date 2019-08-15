@@ -96,7 +96,6 @@ namespace opencv_test
         {
             //x2
             runOneModel("espcn", 2, "ESPCN_x2.pb");
-            
         }
 
         TEST(CV_DnnSuperResSingleOutputTest, accuracy)
@@ -212,7 +211,6 @@ namespace opencv_test
 
         class CV_DnnSuperResBenchmarkingTest : public cvtest::BaseTest
         {
-
             protected:
                 virtual void run(int);
 
