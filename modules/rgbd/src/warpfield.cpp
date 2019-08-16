@@ -162,7 +162,7 @@ NodeVectorType WarpField::subsampleIndex(Mat& pmat,
         if(knnIndex != nullptr)
         {
             knnIndex->knnSearch(query, knn_indices, knn_dists, (k+1), cvflann::SearchParams());
-            wn->radius = knn_dists.back();
+            wn->radius = *std::max_element(knn_dists.begin(), knn_dists.end());
         }
         else
         {
@@ -291,7 +291,7 @@ Point3f WarpField::applyWarp(Point3f p, const nodeNeighboursType neighbours, int
         }
 
         Matx33f R = neigh->transform.rotation();
-        Point3f newPt;
+        Point3f newPt(0, 0, 0);
 
         if(normal)
         {

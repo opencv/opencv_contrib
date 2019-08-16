@@ -21,8 +21,9 @@ public:
     NonRigidICP(const cv::kinfu::Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, int _iterations);
 
     virtual bool estimateWarpNodes(WarpField& currentWarp, const Affine3f& pose,
-                                   InputArray vertImage, InputArray normImage,
-                                   InputArray newPoints) const = 0;
+                                   InputArray vertImage, InputArray oldPoints,
+                                   InputArray oldNormals,
+                                   InputArray newPoints, InputArray newNormals) const = 0;
 
     virtual ~NonRigidICP() { }
 

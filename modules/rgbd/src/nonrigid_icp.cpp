@@ -27,8 +27,9 @@ public:
     ICPImpl(const cv::kinfu::Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, int _iterations);
 
     virtual bool estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
-                                   InputArray vertImage, InputArray normImage,
-                                   InputArray newPoints) const override;
+                                   InputArray vertImage, InputArray oldPoints,
+                                   InputArray oldNormals, InputArray newPoints,
+                                   InputArray newNormals) const override;
 
     virtual ~ICPImpl() {}
 
@@ -77,69 +78,56 @@ float ICPImpl::tukeyWeight(float r, float sigma) const
 }
 
 bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
-                                InputArray _vertImage, InputArray _normImage,
-                                InputArray _newPoints) const
+                                InputArray _vertImage, InputArray _oldPoints,
+                                InputArray _oldNormals, InputArray _newPoints,
+                                InputArray _newNormals) const
 {
     CV_Assert(_vertImage.isMat());
-    CV_Assert(_normImage.isMat());
+    CV_Assert(_oldPoints.isMat());
     CV_Assert(_newPoints.isMat());
+    CV_Assert(_newNormals.isMat());
 
     Mat vertImage = _vertImage.getMat();
-    Mat normImage = _normImage.getMat();
+    Mat oldPoints = _oldPoints.getMat();
     Mat newPoints = _newPoints.getMat();
+    Mat newNormals = _newNormals.getMat();
+    Mat oldNormals = _oldNormals.getMat();
 
-    CV_Assert(!vertImage.empty() && !normImage.empty());
-    CV_Assert(vertImage.size() == normImage.size());
+    CV_Assert(!vertImage.empty());
+    CV_Assert(!oldPoints.empty());
+    CV_Assert(!newPoints.empty());
+    CV_Assert(!newNormals.empty());
 
     const NodeVectorType& warpNodes = currentWarp.getNodes();
 
-    Affine3f T_lw = pose.inv();
+    Affine3f T_lw = pose.inv() * volume->pose;
     std::vector<Matx66f> A(warpNodes.size(), Matx66f::all(0));
     std::vector<Matx61f> b(warpNodes.size(), Matx61f::all(0));
 
     std::vector<float> residuals;
 
-    Mat Tu_Vg(vertImage.size(), CV_32FC3);
-    Mat Tu_Ng(vertImage.size(), CV_32FC3);
+    Mat Vg(oldPoints.size(), CV_32FC3, nan3);
 
-    Mat Vc(vertImage.size(), CV_32FC3);
+    Mat Vc(oldPoints.size(), CV_32FC3, nan3);
+    Mat Nc(oldPoints.size(), CV_32FC3, nan3);
+    cv::kinfu::Intr::Projector proj = intrinsics.makeProjector();
 
-    for (int y = 0; y < vertImage.size().height; y++)
+    for (int y = 0; y < oldPoints.size().height; y++)
     {
-        for (int x = 0; x < vertImage.size().width; x++)
+        for (int x = 0; x < oldPoints.size().width; x++)
         {
-            Vec3f Vg = vertImage.at<Vec3f>(y, x);
-            Vc.at<Vec3f>(y, x) = nan3;
-
-            if (Vg == Vec3f::all(0) || cvIsNaN(Vg[0]))
+            // Obtain correspondence by projecting Tu_Vg
+            Vec3f curV = oldPoints.at<Vec3f>(y, x);
+            if (curV == Vec3f::all(0) || cvIsNaN(curV[0]) || cvIsNaN(curV[1]) || cvIsNaN(curV[2]))
                 continue;
 
-            Vg[0] *= volume->volResolution.x;
-            Vg[1] *= volume->volResolution.y;
-            Vg[2] *= volume->volResolution.z;
-
-            Vec3f Ng = normImage.at<Vec3f>(y, x) * 2 - Vec3f(1, 1, 1);
-
-            Point3i p(Vg[0], Vg[1], Vg[2]);
-            int n;
-            nodeNeighboursType neighbours = volume->getVoxelNeighbours(p, n);
-
-            // TODO: Tu_Vg and Tu_Ng don't need to be calculated and can be
-            // obtained by calling makeFrameFromDepth on the predicted depth
-            Tu_Vg.at<Vec3f>(y, x) = T_lw * volume->pose *
-                                    currentWarp.applyWarp(p*volume->voxelSize, neighbours, n);
-
-            Tu_Ng.at<Vec3f>(y, x) = T_lw.rotation() * volume->pose.rotation() *
-                                    currentWarp.applyWarp(Ng, neighbours, n, true);
-
-            // Obtain correspondence by projecting Tu_Vg
-            cv::kinfu::Intr::Projector proj = intrinsics.makeProjector();
-
-            Point2f newCoords = proj(Tu_Vg.at<Point3f>(y, x));
-
+            Point2f newCoords = proj(oldPoints.at<Point3f>(y, x));
             if(!(newCoords.x >= 0 && newCoords.x < newPoints.cols - 1 &&
                  newCoords.y >= 0 && newCoords.y < newPoints.rows - 1))
                 continue;
+
+            // TODO: interpolate Vg instead of simply converting projected coords to int
+            Vg.at<Vec3f>(y, x) = vertImage.at<Vec3f>((int)newCoords.y, (int)newCoords.x);
 
             // bilinearly interpolate newPoints under newCoords point
             int xi = cvFloor(newCoords.x), yi = cvFloor(newCoords.y);
@@ -162,11 +150,31 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
             Point3f p1 = p10 + tx*(p11 - p10);
             Point3f newP = (p0 + ty*(p1 - p0));
 
-            Vec3f diff = Tu_Vg.at<Vec3f>(y, x) - Vec3f(newP);
+            const ptype* nrow0 = newNormals.ptr<ptype>(yi+0);
+            const ptype* nrow1 = newNormals.ptr<ptype>(yi+1);
+
+            Point3f n00 = fromPtype(nrow0[xi+0]);
+            Point3f n01 = fromPtype(nrow0[xi+1]);
+            Point3f n10 = fromPtype(nrow1[xi+0]);
+            Point3f n11 = fromPtype(nrow1[xi+1]);
+
+            if(!(fastCheck(n00) && fastCheck(n01) &&
+                fastCheck(n10) && fastCheck(n11)))
+                continue;
+
+            Point3f n0 = n00 + tx*(n01 - n00);
+            Point3f n1 = n10 + tx*(n11 - n10);
+            Point3f newN = n0 + ty*(n1 - n0);
 
             Vc.at<Point3f>(y, x) = newP;
+            Nc.at<Point3f>(y, x) = newN;
 
-            float rd = Tu_Vg.at<Vec3f>(y, x).dot(diff);
+            Vec3f diff = oldPoints.at<Vec3f>(y, x) - Vec3f(newP);
+            if(diff.dot(diff) > 0.0004f) continue;
+            if(abs(newN.dot(oldNormals.at<Point3f>(y, x))) < cos((float)CV_PI / 2)) continue;
+
+            float rd = newN.dot(diff);
+
 
             residuals.push_back(rd);
 
@@ -181,80 +189,75 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
     float total_error = 0;
     int pix_count = 0;
 
-    for(int y = 0; y < vertImage.size().height; y++)
+    for(int y = 0; y < oldPoints.size().height; y++)
     {
-        for(int x = 0; x < vertImage.size().width; x++)
+        for(int x = 0; x < oldPoints.size().width; x++)
         {
-            Vec3f Vg = vertImage.at<Vec3f>(y, x);
-
-            if (Vg == Vec3f::all(0) || cvIsNaN(Vg[0]))
+            Vec3f curV = oldPoints.at<Vec3f>(y, x);
+            if (curV == Vec3f::all(0) || cvIsNaN(curV[0]))
                 continue;
+
+            Vec3f V = Vg.at<Vec3f>(y, x);
+            if (V == Vec3f::all(0) || cvIsNaN(V[0]))
+                continue;
+
+            V[0] *= volume->volResolution.x;
+            V[1] *= volume->volResolution.y;
+            V[2] *= volume->volResolution.z;
 
             if(!fastCheck(Vc.at<Point3f>(y, x)))
                 continue;
 
-            Vg[0] *= volume->volResolution.x;
-            Vg[1] *= volume->volResolution.y;
-            Vg[2] *= volume->volResolution.z;
+            if(!fastCheck(Nc.at<Point3f>(y, x)))
+                continue;
 
-            Vec3f Ng = normImage.at<Vec3f>(y, x) * 2 - Vec3f(1, 1, 1);
+            Point3i p(V[0], V[1], V[2]);
+            Vec3f diff = oldPoints.at<Vec3f>(y, x) - Vc.at<Vec3f>(y, x);
 
-            Point3i p(Vg[0], Vg[1], Vg[2]);
-            int n;
-            nodeNeighboursType neighbours = volume->getVoxelNeighbours(p, n);
-            Vec3f diff = Tu_Vg.at<Vec3f>(y, x) - Vc.at<Vec3f>(y, x);
+            float rd = Nc.at<Vec3f>(y, x).dot(diff);
 
-            float rd = Tu_Ng.at<Vec3f>(y, x).dot(diff);
             total_error += tukeyWeight(rd, sigma) * rd * rd;
             pix_count++;
 
+            int n;
+            nodeNeighboursType neighbours = volume->getVoxelNeighbours(p, n);
             float totalNeighbourWeight = 0.f;
             float neighWeights[DYNAFU_MAX_NEIGHBOURS];
             for (int i = 0; i < n; i++)
             {
                 int neigh = neighbours[i];
-                neighWeights[i] = warpNodes[neigh]->weight(Point3f(Vg)*volume->voxelSize);
-                if(neighWeights[i] < 0.01) continue; // TODO: remove this line
+                neighWeights[i] = warpNodes[neigh]->weight(Point3f(V)*volume->voxelSize);
 
                 totalNeighbourWeight += neighWeights[i];
             }
 
-            if(totalNeighbourWeight == 0) continue;
+            if(totalNeighbourWeight < 1e-5) continue;
 
             for (int i = 0; i < n; i++)
             {
                 if(neighWeights[i] < 0.01) continue;
                 int neigh = neighbours[i];
 
-                Vec3f Tj_Vg_Vj = volume->pose * (warpNodes[neigh]->transform *
-                                             (Point3f(Vg)*volume->voxelSize - warpNodes[neigh]->pos));
-                Vec3f Tj_Ng = volume->pose.rotation() *
-                              (warpNodes[neigh]->transform.rotation() * Point3f(Ng));
-
-                Vec3f v1 = Tu_Ng.at<Vec3f>(y, x);
-
-
-                Matx33f Tj_Ng_x(0, -Tj_Ng[2], Tj_Ng[1],
-                                Tj_Ng[2], 0, -Tj_Ng[0],
-                                -Tj_Ng[1], Tj_Ng[0], 0);
+                Vec3f Tj_Vg_Vj = (warpNodes[neigh]->transform *
+                                 (Point3f(V)*volume->voxelSize - warpNodes[neigh]->pos));
 
                 Matx33f Tj_Vg_Vj_x(0, -Tj_Vg_Vj[2], Tj_Vg_Vj[1],
                                    Tj_Vg_Vj[2], 0, -Tj_Vg_Vj[0],
                                    -Tj_Vg_Vj[1], Tj_Vg_Vj[0], 0);
 
-                Vec3f v2 = Tj_Ng_x * T_lw.rotation().t() * diff + Tj_Vg_Vj_x * T_lw.rotation().t() * v1;
+                Vec3f v1 = (Tj_Vg_Vj_x * T_lw.rotation().t()) * Nc.at<Vec3f>(y, x);
+                Vec3f v2 = T_lw.rotation().t() * Nc.at<Vec3f>(y, x);
 
-                v1 = T_lw.rotation().t() * v1;
-
-                Matx16f J_data(v1[0], v1[1], v1[2], v2[0], v2[1], v2[2]);
-                Matx66f H_data = J_data.t() * J_data;
+                Matx61f J_dataT(v1[0], v1[1], v1[2], v2[0], v2[1], v2[2]);
+                Matx16f J_data = J_dataT.t();
+                Matx66f H_data = J_dataT * J_data;
 
                 float w = (neighWeights[i] / totalNeighbourWeight);
 
                 float robustWeight = tukeyWeight(rd, sigma);
                 A[neigh] += robustWeight * w * w * H_data;
 
-                b[neigh] += -robustWeight * rd * w * J_data.t();
+                b[neigh] += -robustWeight * rd * w * J_dataT;
             }
 
         }
@@ -267,7 +270,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
     {
         double det = cv::determinant(A[i]);
 
-        if (abs (det) < 1e-15 || cvIsNaN(det))
+        if (abs (det) < 1e-5 || cvIsNaN(det))
         {
             if(cvIsNaN(det)) nanCount++;
             continue;
@@ -277,8 +280,9 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
 
         Vec6f nodeTwist;
         solve(A[i], b[i], nodeTwist, DECOMP_SVD);
-        Affine3f tinc(expSE3(nodeTwist));
-        warpNodes[i]->transform = tinc * warpNodes[i]->transform;
+
+        Affine3f tinc(Vec3f(nodeTwist.val), Vec3f(nodeTwist.val+3));
+        warpNodes[i]->transform = warpNodes[i]->transform * tinc;
     }
 
     std::cout << "Sigma: " << sigma << std::endl;
@@ -288,26 +292,6 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
     std::cout << "Nan count: " << nanCount << "/" << warpNodes.size() << "\n" << std::endl;;
 
     return true;
-}
-
-Affine3f NonRigidICP::expSE3(const Vec6f& v) const
-{
-    const Vec3f w(v[3], v[4], v[5]);
-
-    Matx33f  wx(
-        0, -v[5], v[4],
-        v[5], 0, -v[3],
-        -v[4], v[3], 0);
-
-    float theta = norm(w);
-
-    float coeff1 = (1-cos(theta))/(theta*theta);
-    float coeff2 = (theta-sin(theta))/(theta*theta*theta);
-    Matx33f V = Matx33f::eye() + coeff1 * wx + coeff2 * wx * wx;
-
-    const Vec3f t = V*Vec3f(v[0], v[1], v[2]);
-    float fac = volume->voxelSize;
-    return Affine3f(w, t*fac);
 }
 
 cv::Ptr<NonRigidICP> makeNonRigidICP(const cv::kinfu::Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume,

@@ -37,7 +37,7 @@ public:
 
     void updateNodesFromPoints(InputArray _points);
 
-    NodeVectorType const& getNodes() const;
+    const NodeVectorType& getNodes() const;
     std::vector<NodeVectorType> const& getGraphNodes() const;
 
     size_t getNodesLen() const

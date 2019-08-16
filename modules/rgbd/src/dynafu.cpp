@@ -383,15 +383,25 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
 
         pose = pose * affine;
 
-        renderSurface(_depthRender, _vertRender, _normRender);
-        success = dynafuICP->estimateWarpNodes(warpfield, pose, _vertRender, _normRender, newPoints[0]);
-        if(!success)
-            return false;
+        for(int iter = 0; iter < 1; iter++)
+        {
+            renderSurface(_depthRender, _vertRender, _normRender);
+            _depthRender.convertTo(estdDepth, DEPTH_TYPE);
 
-        renderSurface(_depthRender, _vertRender, _normRender);
-        success = dynafuICP->estimateWarpNodes(warpfield, pose, _vertRender, _normRender, newPoints[0]);
-        if(!success)
-            return false;
+            makeFrameFromDepth(estdDepth, estdPoints, estdNormals, params.intr,
+                params.pyramidLevels,
+                1.f,
+                params.bilateral_sigma_depth,
+                params.bilateral_sigma_spatial,
+                params.bilateral_kernel_size,
+                params.truncateThreshold);
+
+            success = dynafuICP->estimateWarpNodes(warpfield, pose, _vertRender, estdPoints[0],
+                                                estdNormals[0],
+                                               newPoints[0], newNormals[0]);
+            if(!success)
+                return false;
+        }
 
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
@@ -501,7 +511,7 @@ void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage,
         {
             int numNeighbours = 0;
             const nodeNeighboursType neighbours = volume->getVoxelNeighbours(pVoxel, numNeighbours);
-            Point3f p = invCamPose * params.volumePose * warpfield.applyWarp(pVoxel*params.voxelSize, neighbours, numNeighbours);
+            Point3f p = (invCamPose * params.volumePose) * warpfield.applyWarp(pVoxel*params.voxelSize, neighbours, numNeighbours);
             warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
         }
     }
