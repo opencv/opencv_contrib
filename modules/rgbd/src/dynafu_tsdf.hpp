@@ -11,7 +11,6 @@
 namespace cv {
 namespace dynafu {
 
-
 class TSDFVolume
 {
 public:
@@ -25,12 +24,16 @@ public:
     virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
                          cv::OutputArray points, cv::OutputArray normals) const = 0;
 
-    virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const = 0;
+    virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals,
+                                    bool fetchVoxels=false) const = 0;
+
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const = 0;
 
     virtual void marchCubes(OutputArray _vertices, OutputArray _edges) const = 0;
 
     virtual void reset() = 0;
+
+    virtual nodeNeighboursType const& getVoxelNeighbours(Point3i v, int& n) const = 0;
 
     virtual ~TSDFVolume() { }
 

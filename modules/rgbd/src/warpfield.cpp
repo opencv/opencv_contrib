@@ -14,12 +14,12 @@ nodeIndex(nullptr)
     CV_Assert(k <= DYNAFU_MAX_NEIGHBOURS);
 }
 
-NodeVectorType WarpField::getNodes() const
+NodeVectorType const& WarpField::getNodes() const
 {
     return nodes;
 }
 
-std::vector<NodeVectorType> WarpField::getGraphNodes() const
+std::vector<NodeVectorType> const& WarpField::getGraphNodes() const
 {
     return regGraphNodes;
 }
@@ -162,7 +162,7 @@ NodeVectorType WarpField::subsampleIndex(Mat& pmat,
         if(knnIndex != nullptr)
         {
             knnIndex->knnSearch(query, knn_indices, knn_dists, (k+1), cvflann::SearchParams());
-            wn->radius = knn_dists.back();
+            wn->radius = *std::max_element(knn_dists.begin(), knn_dists.end());
         }
         else
         {
@@ -193,23 +193,17 @@ void WarpField::initTransforms(NodeVectorType nv)
 
         nodeIndex->knnSearch(query ,knnIndices, knnDists, k, cvflann::SearchParams());
 
-        float totalWeight = 0;
-        Mat partialR(3,3,CV_32F);
-        Vec3f partialT = Vec3f::all(0);
+        std::vector<float> weights(knnIndices.size());
+        std::vector<Affine3f> transforms(knnIndices.size());
 
+        int i = 0;
         for(int idx: knnIndices)
         {
-            float w = nodes[idx]->weight(nodePtr->pos);
-
-            totalWeight += w;
-            partialR += nodes[idx]->transform.rotation() * w;
-            partialT += nodes[idx]->transform.translation() * w;
+            weights[i] = nodes[idx]->weight(nodePtr->pos);
+            transforms[i++] = nodes[idx]->transform;
         }
 
-        partialR /= totalWeight;
-        partialT /= totalWeight;
-
-        nodePtr->transform = Affine3f(partialR, partialT);
+        nodePtr->transform = DQB(weights, transforms);
     }
 }
 
@@ -275,7 +269,7 @@ void WarpField::constructRegGraph()
 
 }
 
-Point3f WarpField::applyWarp(Point3f p, int neighbours[], int n) const
+Point3f WarpField::applyWarp(Point3f p, const nodeNeighboursType neighbours, int n, bool normal) const
 {
     CV_TRACE_FUNCTION();
 
@@ -297,12 +291,20 @@ Point3f WarpField::applyWarp(Point3f p, int neighbours[], int n) const
         }
 
         Matx33f R = neigh->transform.rotation();
-        Vec3f T = neigh->transform.translation();
+        Point3f newPt(0, 0, 0);
 
-        Point3f newPt = R * (p - neigh->pos) + neigh->pos;
-        newPt.x += T[0];
-        newPt.y += T[1];
-        newPt.z += T[2];
+        if(normal)
+        {
+            newPt = R * p;
+        }
+        else
+        {
+            newPt = R * (p - neigh->pos) + neigh->pos;
+            Vec3f T = neigh->transform.translation();
+            newPt.x += T[0];
+            newPt.y += T[1];
+            newPt.z += T[2];
+        }
 
         WarpedPt += newPt * w;
         totalWeight += w;

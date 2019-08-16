@@ -9,6 +9,7 @@
 #include "warpfield.hpp"
 
 #include "fast_icp.hpp"
+#include "nonrigid_icp.hpp"
 #include "kinfu_frame.hpp"
 
 #include "opencv2/core/opengl.hpp"
@@ -131,12 +132,13 @@ public:
 
     void marchCubes(OutputArray vertices, OutputArray edges) const CV_OVERRIDE;
 
-    void renderSurface(OutputArray image) CV_OVERRIDE;
+    void renderSurface(OutputArray depthImage, OutputArray vertImage, OutputArray normImage, bool warp=true) CV_OVERRIDE;
 
 private:
     Params params;
 
     cv::Ptr<ICP> icp;
+    cv::Ptr<NonRigidICP> dynafuICP;
     cv::Ptr<TSDFVolume> volume;
 
     int frameCounter;
@@ -150,7 +152,7 @@ private:
     ogl::Arrays arr;
     ogl::Buffer idx;
 #endif
-    void drawScene(OutputArray img);
+    void drawScene(OutputArray depthImg, OutputArray shadedImg);
 };
 
 template< typename T>
@@ -167,6 +169,7 @@ template< typename T >
 DynaFuImpl<T>::DynaFuImpl(const Params &_params) :
     params(_params),
     icp(makeICP(params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
+    dynafuICP(makeNonRigidICP(params.intr, volume, 2)),
     volume(makeTSDFVolume(params.volumeDims, params.voxelSize, params.volumePose,
                           params.tsdf_trunc_dist, params.tsdf_max_weight,
                           params.raycast_step_factor)),
@@ -184,19 +187,28 @@ DynaFuImpl<T>::DynaFuImpl(const Params &_params) :
     glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, fbo);
 
     glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, fbo_depth);
+
+    // Make a color attachment to this framebuffer
+    unsigned int fbo_color;
+    glGenRenderbuffersEXT(1, &fbo_color);
+    glBindRenderbufferEXT(GL_RENDERBUFFER_EXT, fbo_color);
+    glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_RGB, params.frameSize.width, params.frameSize.height);
+
+    glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT, GL_RENDERBUFFER_EXT, fbo_color);
+
 #endif
 
     reset();
 }
 
 template< typename T >
-void DynaFuImpl<T>::drawScene(OutputArray image)
+void DynaFuImpl<T>::drawScene(OutputArray depthImage, OutputArray shadedImage)
 {
 #ifdef HAVE_OPENGL
     glViewport(0, 0, params.frameSize.width, params.frameSize.height);
 
     glEnable(GL_DEPTH_TEST);
-    glClear(GL_DEPTH_BUFFER_BIT);
+    glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
 
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -220,13 +232,31 @@ void DynaFuImpl<T>::drawScene(OutputArray image)
     ogl::render(arr, idx, ogl::TRIANGLES);
 
     float f[params.frameSize.width*params.frameSize.height];
+    float pixels[params.frameSize.width*params.frameSize.height][3];
     glReadPixels(0, 0, params.frameSize.width, params.frameSize.height, GL_DEPTH_COMPONENT, GL_FLOAT, &f[0]);
+    glReadPixels(0, 0, params.frameSize.width, params.frameSize.height, GL_RGB, GL_FLOAT, &pixels[0][0]);
 
-    Mat depthData;
-    Mat(params.frameSize.height, params.frameSize.width, CV_32F, f).convertTo(depthData, CV_8U, 255);
-    depthData.copyTo(image);
+    // linearise depth
+    for(int i = 0; i < params.frameSize.width*params.frameSize.height; i++)
+    {
+        f[i] = farZ * nearZ / (f[i]*(nearZ - farZ) + farZ);
+
+        if(f[i] >= farZ)
+            f[i] = std::numeric_limits<float>::quiet_NaN();
+    }
+
+    if(depthImage.needed()) {
+        Mat depthData(params.frameSize.height, params.frameSize.width, CV_32F, f);
+        depthData.copyTo(depthImage);
+    }
+
+    if(shadedImage.needed()) {
+        Mat shadeData(params.frameSize.height, params.frameSize.width, CV_32FC3, pixels);
+        shadeData.copyTo(shadedImage);
+    }
 #else
-    CV_UNUSED(image);
+    CV_UNUSED(depthImage);
+    CV_UNUSED(shadedImage);
     NO_OGL_ERR;
 #endif
 }
@@ -236,6 +266,7 @@ void DynaFuImpl<T>::reset()
 {
     frameCounter = 0;
     pose = Affine3f::Identity();
+    warpfield.setAllRT(Affine3f::Identity());
     volume->reset();
 }
 
@@ -321,27 +352,29 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
 
         pyrPoints  = newPoints;
         pyrNormals = newNormals;
+        warpfield.setAllRT(Affine3f::Identity());
     }
     else
     {
+        UMat wfPoints;
+        volume->fetchPointsNormals(wfPoints, noArray(), true);
+        warpfield.updateNodesFromPoints(wfPoints);
 
-        T _render, estdDepth;
-        renderSurface(_render);
-        _render.convertTo(estdDepth, DEPTH_TYPE);
+        Mat _depthRender, estdDepth, _vertRender, _normRender;
+        renderSurface(_depthRender, _vertRender, _normRender, false);
+        _depthRender.convertTo(estdDepth, DEPTH_TYPE);
 
         std::vector<T> estdPoints, estdNormals;
         makeFrameFromDepth(estdDepth, estdPoints, estdNormals, params.intr,
-                       params.pyramidLevels,
-                       params.depthFactor,
-                       params.bilateral_sigma_depth,
-                       params.bilateral_sigma_spatial,
-                       params.bilateral_kernel_size,
-                       params.truncateThreshold);
+                    params.pyramidLevels,
+                    1.f,
+                    params.bilateral_sigma_depth,
+                    params.bilateral_sigma_spatial,
+                    params.bilateral_kernel_size,
+                    params.truncateThreshold);
 
-        UMat wfPoints;
-        UMat wfNormals;
-        volume->fetchPointsNormals(wfPoints, wfNormals);
-        warpfield.updateNodesFromPoints(wfPoints);
+        pyrPoints = estdPoints;
+        pyrNormals = estdNormals;
 
         Affine3f affine;
         bool success = icp->estimateTransform(affine, pyrPoints, pyrNormals, newPoints, newNormals);
@@ -349,7 +382,26 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
             return false;
 
         pose = pose * affine;
-        warpfield.setAllRT(Affine3f::Identity());
+
+        for(int iter = 0; iter < 1; iter++)
+        {
+            renderSurface(_depthRender, _vertRender, _normRender);
+            _depthRender.convertTo(estdDepth, DEPTH_TYPE);
+
+            makeFrameFromDepth(estdDepth, estdPoints, estdNormals, params.intr,
+                params.pyramidLevels,
+                1.f,
+                params.bilateral_sigma_depth,
+                params.bilateral_sigma_spatial,
+                params.bilateral_kernel_size,
+                params.truncateThreshold);
+
+            success = dynafuICP->estimateWarpNodes(warpfield, pose, _vertRender, estdPoints[0],
+                                                estdNormals[0],
+                                               newPoints[0], newNormals[0]);
+            if(!success)
+                return false;
+        }
 
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
@@ -360,12 +412,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
             volume->integrate(depth, params.depthFactor, pose, params.intr, makePtr<WarpField>(warpfield));
         }
 
-        T& points  = pyrPoints [0];
-        T& normals = pyrNormals[0];
-        volume->raycast(pose, params.intr, params.frameSize, points, normals);
-        // build a pyramid of points and normals
-        buildPyramidPointsNormals(points, normals, pyrPoints, pyrNormals,
-                                  params.pyramidLevels);
+
     }
 
     std::cout << "Frame# " << frameCounter++ << std::endl;
@@ -422,29 +469,69 @@ void DynaFuImpl<T>::marchCubes(OutputArray vertices, OutputArray edges) const
 }
 
 template<typename T>
-void DynaFuImpl<T>::renderSurface(OutputArray image)
+void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage, OutputArray normImage, bool warp)
 {
 #ifdef HAVE_OPENGL
-    Mat vertices, meshIdx;
-    volume->marchCubes(vertices, noArray());
-    if(vertices.empty()) return;
+    Mat _vertices, vertices, normals, meshIdx;
+    volume->marchCubes(_vertices, noArray());
+    if(_vertices.empty()) return;
+
+    _vertices.convertTo(vertices, POINT_TYPE);
+    getNormals(vertices, normals);
+
+    Mat warpedVerts(vertices.size(), vertices.type());
 
     Affine3f invCamPose(pose.inv());
     for(int i = 0; i < vertices.size().height; i++) {
-        Vec4f v = vertices.at<Vec4f>(i);
-        Point3f p = invCamPose * Point3f(v[0], v[1], v[2]);
-        vertices.at<Vec4f>(i) = Vec4f(p.x, p.y, p.z, 1.f);
+        ptype v = vertices.at<ptype>(i);
+
+        // transform vertex to RGB space
+        Point3f pVoxel = (params.volumePose.inv() * Point3f(v[0], v[1], v[2])) / params.voxelSize;
+        Point3f pGlobal = Point3f(pVoxel.x / params.volumeDims[0],
+                                  pVoxel.y / params.volumeDims[1],
+                                  pVoxel.z / params.volumeDims[2]);
+        vertices.at<ptype>(i) = ptype(pGlobal.x, pGlobal.y, pGlobal.z, 1.f);
+
+        // transform normals to RGB space
+        ptype n = normals.at<ptype>(i);
+        Point3f nGlobal = params.volumePose.rotation().inv() * Point3f(n[0], n[1], n[2]);
+        nGlobal.x = (nGlobal.x + 1)/2;
+        nGlobal.y = (nGlobal.y + 1)/2;
+        nGlobal.z = (nGlobal.z + 1)/2;
+        normals.at<ptype>(i) = ptype(nGlobal.x, nGlobal.y, nGlobal.z, 1.f);
+
+        //Point3f p = Point3f(v[0], v[1], v[2]);
+
+        if(!warp)
+        {
+            Point3f p(invCamPose * params.volumePose * (pVoxel*params.voxelSize));
+            warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
+        }
+        else
+        {
+            int numNeighbours = 0;
+            const nodeNeighboursType neighbours = volume->getVoxelNeighbours(pVoxel, numNeighbours);
+            Point3f p = (invCamPose * params.volumePose) * warpfield.applyWarp(pVoxel*params.voxelSize, neighbours, numNeighbours);
+            warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
+        }
     }
 
     for(int i = 0; i < vertices.size().height; i++)
         meshIdx.push_back<int>(i);
 
-    arr.setVertexArray(vertices);
+    arr.setVertexArray(warpedVerts);
+    arr.setColorArray(vertices);
     idx.copyFrom(meshIdx);
 
-    drawScene(image);
+    drawScene(depthImage, vertImage);
+
+    arr.setVertexArray(warpedVerts);
+    arr.setColorArray(normals);
+    drawScene(noArray(), normImage);
 #else
-    CV_UNUSED(image);
+    CV_UNUSED(depthImage);
+    CV_UNUSED(vertImage);
+    CV_UNUSED(normImage);
     NO_OGL_ERR;
 #endif
 }

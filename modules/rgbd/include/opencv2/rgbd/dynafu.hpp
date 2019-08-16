@@ -197,7 +197,7 @@ public:
 
     virtual void marchCubes(OutputArray vertices, OutputArray edges) const = 0;
 
-    virtual void renderSurface(OutputArray image) = 0;
+    virtual void renderSurface(OutputArray depthImage, OutputArray vertImage, OutputArray normImage, bool warp=true) = 0;
 };
 
 //! @}

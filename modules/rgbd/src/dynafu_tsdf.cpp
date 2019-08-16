@@ -22,7 +22,7 @@ struct Voxel
 {
     volumeType v;
     float weight;
-    int neighbours[DYNAFU_MAX_NEIGHBOURS];
+    nodeNeighboursType neighbours;
     float neighbourDists[DYNAFU_MAX_NEIGHBOURS];
     int n;
 };
@@ -41,7 +41,7 @@ public:
                          cv::OutputArray points, cv::OutputArray normals) const override;
 
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const override;
-    virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
+    virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals, bool fetchVoxels) const override;
 
     virtual void marchCubes(OutputArray _vertices, OutputArray _edges) const override;
 
@@ -49,6 +49,8 @@ public:
 
     volumeType interpolateVoxel(cv::Point3f p) const;
     Point3f getNormalVoxel(cv::Point3f p) const;
+
+    nodeNeighboursType const& getVoxelNeighbours(Point3i coords, int& n) const override;
 
     // See zFirstMemOrder arg of parent class constructor
     // for the array layout info
@@ -236,13 +238,12 @@ struct IntegrateInvoker : ParallelLoopBody
                     Voxel& voxel = volDataY[z*volume.volDims[2]];
 
                     Point3f volPt = Point3f((float)x, (float)y, (float)z)*volume.voxelSize;
-                    Point3f globalPt = volume.pose * volPt;
 
                     if(warpfield->getNodeIndex())
                     {
                         std::vector<int> indices(warpfield->k);
                         std::vector<float> dists(warpfield->k);
-                        warpfield->findNeighbours(globalPt, indices, dists);
+                        warpfield->findNeighbours(volPt, indices, dists);
 
                         voxel.n = 0;
                         for(size_t i = 0; i < indices.size(); i++)
@@ -254,10 +255,8 @@ struct IntegrateInvoker : ParallelLoopBody
                         }
                     }
 
-                    Affine3f globalToCam = vol2cam * volume.pose.inv();
-
                     Point3f camSpacePt =
-                    globalToCam * warpfield->applyWarp(globalPt, voxel.neighbours, voxel.n);
+                    vol2cam * warpfield->applyWarp(volPt, voxel.neighbours, voxel.n);
 
                     if(camSpacePt.z <= 0)
                         continue;
@@ -573,12 +572,13 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
     FetchPointsNormalsInvoker(const TSDFVolumeCPU& _volume,
                               std::vector< std::vector<ptype> >& _pVecs,
                               std::vector< std::vector<ptype> >& _nVecs,
-                              bool _needNormals) :
+                              bool _needNormals, bool _fetchVoxels) :
         ParallelLoopBody(),
         vol(_volume),
         pVecs(_pVecs),
         nVecs(_nVecs),
-        needNormals(_needNormals)
+        needNormals(_needNormals),
+        fetchVoxels(_fetchVoxels)
     {
         volDataStart = vol.volume.ptr<Voxel>();
     }
@@ -629,10 +629,18 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
                               shift.y ? inter : V.y,
                               shift.z ? inter : V.z);
                     {
-                        points.push_back(toPtype(vol.pose * p));
-                        if(needNormals)
-                            normals.push_back(toPtype(vol.pose.rotation() *
-                                                      vol.getNormalVoxel(p*vol.voxelSizeInv)));
+                        if(fetchVoxels)
+                        {
+                            points.push_back(toPtype(p));
+                            if(needNormals)
+                                normals.push_back(toPtype(vol.getNormalVoxel(p*vol.voxelSizeInv)));
+                        } else {
+
+                            points.push_back(toPtype(vol.pose * p));
+                            if(needNormals)
+                                normals.push_back(toPtype(vol.pose.rotation() *
+                                                          vol.getNormalVoxel(p*vol.voxelSizeInv)));
+                        }
                     }
                 }
             }
@@ -675,17 +683,18 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
     std::vector< std::vector<ptype> >& nVecs;
     const Voxel* volDataStart;
     bool needNormals;
+    bool fetchVoxels;
     mutable Mutex mutex;
 };
 
-void TSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _normals) const
+void TSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _normals, bool fetchVoxels) const
 {
     CV_TRACE_FUNCTION();
 
     if(_points.needed())
     {
         std::vector< std::vector<ptype> > pVecs, nVecs;
-        FetchPointsNormalsInvoker fi(*this, pVecs, nVecs, _normals.needed());
+        FetchPointsNormalsInvoker fi(*this, pVecs, nVecs, _normals.needed(), fetchVoxels);
         Range range(0, volResolution.x);
         const int nstripes = -1;
         parallel_for_(range, fi, nstripes);
@@ -916,6 +925,17 @@ void TSDFVolumeCPU::marchCubes(OutputArray _vertices, OutputArray _edges) const
 
     if (_edges.needed())
         Mat((int)meshPoints.size(), 2, CV_32S, &meshEdges[0]).copyTo(_edges);
+}
+
+nodeNeighboursType const& TSDFVolumeCPU::getVoxelNeighbours(Point3i v, int& n) const
+{
+    int baseX = v.x * volDims[0];
+    int baseY = baseX + v.y * volDims[1];
+    int base = baseY + v.z * volDims[2];
+    const Voxel *vox = volume.ptr<Voxel>()+base;
+
+    n = vox->n;
+    return vox->neighbours;
 }
 
 cv::Ptr<TSDFVolume> makeTSDFVolume(Point3i _res,  float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
