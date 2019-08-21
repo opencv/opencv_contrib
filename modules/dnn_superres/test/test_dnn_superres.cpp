@@ -11,7 +11,6 @@ namespace opencv_test
 
         const std::string DNN_SUPERRES_DIR = "dnn_superres";
         const std::string IMAGE_FILENAME = "butterfly.png";
-        const std::string VIDEO_FILENAME = "768x576.avi";
 
         /****************************************************************************************\
         *                                Test single output models                               *
