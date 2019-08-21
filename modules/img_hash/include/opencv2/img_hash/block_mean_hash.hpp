@@ -27,7 +27,7 @@ class CV_EXPORTS_W BlockMeanHash : public ImgHashBase
 {
 public:
     /** @brief Create BlockMeanHash object
-        @param mode
+        @param mode the mode
     */
     CV_WRAP void setMode(int mode);
     CV_WRAP std::vector<double> getMean() const;
@@ -39,7 +39,7 @@ protected:
 /** @brief Computes block mean hash of the input image
     @param inputArr input image want to compute hash value, type should be CV_8UC4, CV_8UC3 or CV_8UC1.
     @param outputArr Hash value of input, it will contain 16 hex decimal number, return type is CV_8U
-    @param mode
+    @param mode the mode
 */
 CV_EXPORTS_W void blockMeanHash(cv::InputArray inputArr,
                                 cv::OutputArray outputArr,

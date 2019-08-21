@@ -103,11 +103,11 @@ public:
 
     bool getData(void * items) CV_OVERRIDE;
 
-    bool fitConfig( InputArray image, const std::vector<Rect>& roi, std::vector<std::vector<Point2f> >& _landmarks, const std::vector<Config> &runtime_params ) CV_OVERRIDE;
+    bool fitConfig( InputArray image, InputArray roi, OutputArrayOfArrays _landmarks, const std::vector<Config> &runtime_params ) CV_OVERRIDE;
 
 protected:
 
-    bool fit( InputArray image, const std::vector<Rect>& faces, CV_OUT std::vector<std::vector<Point2f> >& landmarks ) CV_OVERRIDE;
+    bool fit( InputArray image, InputArray faces, OutputArrayOfArrays landmarks ) CV_OVERRIDE;
     bool fitImpl( const Mat image, std::vector<Point2f>& landmarks,const  Mat R,const  Point2f T,const  float scale, const int sclIdx=0 );
 
     bool addTrainingSample(InputArray image, InputArray landmarks) CV_OVERRIDE;
@@ -322,18 +322,54 @@ void FacemarkAAMImpl::training(void* parameters){
     if(params.verbose) printf("Training is completed\n");
 }
 
-bool FacemarkAAMImpl::fit( InputArray image, const std::vector<Rect>& roi, CV_OUT std::vector<std::vector<Point2f> >& _landmarks )
+/**
+ * @brief Copy the contents of a corners vector to an OutputArray, settings its size.
+ */
+static void _copyVector2Output(std::vector< std::vector< Point2f > > &vec, OutputArrayOfArrays out)
+{
+    out.create((int)vec.size(), 1, CV_32FC2);
+
+    if (out.isMatVector()) {
+        for (unsigned int i = 0; i < vec.size(); i++) {
+            out.create(68, 1, CV_32FC2, i);
+            Mat &m = out.getMatRef(i);
+            Mat(Mat(vec[i]).t()).copyTo(m);
+        }
+    }
+    else if (out.isUMatVector()) {
+        for (unsigned int i = 0; i < vec.size(); i++) {
+            out.create(68, 1, CV_32FC2, i);
+            UMat &m = out.getUMatRef(i);
+            Mat(Mat(vec[i]).t()).copyTo(m);
+        }
+    }
+    else if (out.kind() == _OutputArray::STD_VECTOR_VECTOR) {
+        for (unsigned int i = 0; i < vec.size(); i++) {
+            out.create(68, 1, CV_32FC2, i);
+            Mat m = out.getMat(i);
+            Mat(Mat(vec[i]).t()).copyTo(m);
+        }
+    }
+    else {
+        CV_Error(cv::Error::StsNotImplemented,
+            "Only Mat vector, UMat vector, and vector<vector> OutputArrays are currently supported.");
+    }
+}
+
+
+bool FacemarkAAMImpl::fit( InputArray image, InputArray roi, OutputArrayOfArrays _landmarks )
 {
     std::vector<Config> config; // empty
     return fitConfig(image, roi, _landmarks, config);
 }
 
-bool FacemarkAAMImpl::fitConfig( InputArray image, const std::vector<Rect>& roi, std::vector<std::vector<Point2f> >& _landmarks, const std::vector<Config> &configs )
+bool FacemarkAAMImpl::fitConfig( InputArray image, InputArray roi, OutputArrayOfArrays _landmarks, const std::vector<Config> &configs )
 {
-    const std::vector<Rect> & faces = roi;
+    Mat roimat = roi.getMat();
+    std::vector<Rect> faces = roimat.reshape(4, roimat.rows);
     if(faces.size()<1) return false;
 
-    std::vector<std::vector<Point2f> > & landmarks = _landmarks;
+    std::vector<std::vector<Point2f> > landmarks;
     landmarks.resize(faces.size());
 
     Mat img = image.getMat();
@@ -354,6 +390,7 @@ bool FacemarkAAMImpl::fitConfig( InputArray image, const std::vector<Rect>& roi,
             fitImpl(img, landmarks[i], R,t, scale);
         }
     }
+    _copyVector2Output(landmarks, _landmarks);
 
     return true;
 }

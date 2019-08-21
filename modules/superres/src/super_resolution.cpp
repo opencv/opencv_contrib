@@ -63,7 +63,7 @@ void cv::superres::SuperResolution::nextFrame(OutputArray frame)
 {
     CV_INSTRUMENT_REGION();
 
-    isUmat_ = frame.isUMat();
+    isUmat_ = frame.isUMat() && cv::ocl::useOpenCL();
 
     if (firstCall_)
     {

@@ -409,6 +409,106 @@ INSTANTIATE_TEST_CASE_P(CUDA_OptFlow, OpticalFlowDual_TVL1, testing::Combine(
     ALL_DEVICES,
     testing::Values(Gamma(0.0), Gamma(1.0))));
 
+//////////////////////////////////////////////////////
+// NvidiaOpticalFlow_1_0
+
+struct NvidiaOpticalFlow_1_0 : testing::TestWithParam<cv::cuda::DeviceInfo>
+{
+    cv::cuda::DeviceInfo devInfo;
+
+    virtual void SetUp()
+    {
+        devInfo = GetParam();
+
+        cv::cuda::setDevice(devInfo.deviceID());
+    }
+};
+
+CUDA_TEST_P(NvidiaOpticalFlow_1_0, Regression)
+{
+    cv::Mat frame0 = readImage("opticalflow/frame0.png", cv::IMREAD_GRAYSCALE);
+    ASSERT_FALSE(frame0.empty());
+
+    cv::Mat frame1 = readImage("opticalflow/frame1.png", cv::IMREAD_GRAYSCALE);
+    ASSERT_FALSE(frame1.empty());
+
+    const int width = frame0.size().width;
+    const int height = frame0.size().height;
+    const bool enableTemporalHints = false;
+    const bool enableExternalHints = false;
+    const bool enableCostBuffer = false;
+    const int gpuid = 0;
+
+    cv::Ptr<cv::cuda::NvidiaOpticalFlow_1_0> d_nvof;
+    try
+    {
+        d_nvof = cv::cuda::NvidiaOpticalFlow_1_0::create(width, height,
+            cv::cuda::NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW,
+            enableTemporalHints, enableExternalHints, enableCostBuffer, gpuid);
+    }
+    catch (const cv::Exception& e)
+    {
+        if (e.code == Error::StsBadFunc || e.code == Error::StsBadArg || e.code == Error::StsNullPtr)
+            throw SkipTestException("Current configuration is not supported");
+        throw;
+    }
+    const int gridSize = d_nvof->getGridSize();
+
+    Mat flow, upsampledFlow;
+    d_nvof->calc(loadMat(frame0), loadMat(frame1), flow);
+    d_nvof->upSampler(flow, width, height, gridSize, upsampledFlow);
+
+    std::string fname(cvtest::TS::ptr()->get_data_path());
+    fname += "opticalflow/nvofGolden.flo";
+    cv::Mat golden = cv::readOpticalFlow(fname.c_str());
+    ASSERT_FALSE(golden.empty());
+
+    EXPECT_MAT_SIMILAR(golden, upsampledFlow, 1e-10);
+}
+
+CUDA_TEST_P(NvidiaOpticalFlow_1_0, OpticalFlowNan)
+{
+    cv::Mat frame0 = readImage("opticalflow/rubberwhale1.png", cv::IMREAD_GRAYSCALE);
+    ASSERT_FALSE(frame0.empty());
+
+    cv::Mat frame1 = readImage("opticalflow/rubberwhale2.png", cv::IMREAD_GRAYSCALE);
+    ASSERT_FALSE(frame1.empty());
+
+    cv::Mat r_frame0, r_frame1;
+
+    const int width = frame0.size().width;
+    const int height = frame0.size().height;
+    const bool enableTemporalHints = false;
+    const bool enableExternalHints = false;
+    const bool enableCostBuffer = false;
+    const int gpuid = 0;
+
+    cv::Ptr<cv::cuda::NvidiaOpticalFlow_1_0> d_nvof;
+    try
+    {
+        d_nvof = cv::cuda::NvidiaOpticalFlow_1_0::create(width, height,
+            cv::cuda::NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_SLOW,
+            enableTemporalHints, enableExternalHints, enableCostBuffer, gpuid);
+    }
+    catch (const cv::Exception& e)
+    {
+        if (e.code == Error::StsBadFunc || e.code == Error::StsBadArg || e.code == Error::StsNullPtr)
+            throw SkipTestException("Current configuration is not supported");
+        throw;
+    }
+
+    Mat flow, flowx, flowy;
+    d_nvof->calc(loadMat(frame0), loadMat(frame1), flow);
+
+    Mat planes[] = { flowx, flowy };
+    split(flow, planes);
+    flowx = planes[0]; flowy = planes[1];
+
+    EXPECT_TRUE(cv::checkRange(flowx));
+    EXPECT_TRUE(cv::checkRange(flowy));
+};
+
+INSTANTIATE_TEST_CASE_P(CUDA_OptFlow, NvidiaOpticalFlow_1_0, ALL_DEVICES);
 
 }} // namespace
 #endif // HAVE_CUDA
