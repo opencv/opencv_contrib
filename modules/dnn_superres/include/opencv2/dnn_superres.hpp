@@ -12,10 +12,10 @@
 /** @defgroup dnn_superres DNN used for super resolution
 This module contains functionality for upscaling an image via convolutional neural networks.
 The following four models are implemented:
-- EDSR <https://arxiv.org/abs/1707.02921>
-- ESPCN <https://arxiv.org/abs/1609.05158>
-- FSRCNN <https://arxiv.org/abs/1608.00367>
-- LapSRN <https://arxiv.org/abs/1710.01992>
+- EDSR <http://openaccess.thecvf.com/content_cvpr_2017_workshops/w12/papers/Lim_Enhanced_Deep_Residual_CVPR_2017_paper.pdf>
+- ESPCN <http://openaccess.thecvf.com/content_cvpr_2016/papers/Shi_Real-Time_Single_Image_CVPR_2016_paper.pdf>
+- FSRCNN <http://personal.ie.cuhk.edu.hk/~ccloy/files/eccv_2016_accelerating.pdf>
+- LapSRN <http://openaccess.thecvf.com/content_cvpr_2017/papers/Lai_Deep_Laplacian_Pyramid_CVPR_2017_paper.pdf>
 */
 
 namespace cv
