@@ -82,7 +82,7 @@ float ICPImpl::tukeyWeight(float r, float sigma) const
 float ICPImpl::huberWeight(Vec3f v, float sigma) const
 {
     if(sigma == 0) return 0.f;
-    float x = std::abs(norm(v)/sigma);
+    float x = (float)std::abs(norm(v)/sigma);
     return (x > HUBER_K)? HUBER_K/x : 1.f;
 }
 
@@ -115,7 +115,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
     const std::vector<NodeVectorType>& regNodes = currentWarp.getGraphNodes();
     const heirarchyType& regGraph = currentWarp.getRegGraph();
 
-    size_t totalNodes = warpNodes.size();
+    int totalNodes = (int)warpNodes.size();
     for(const auto& nodes: regNodes) totalNodes += nodes.size();
 
     // level-wise regularisation components of A and b (from Ax = b) for each node in heirarchy
@@ -130,7 +130,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
 
     for(int l = currentWarp.n_levels-2; l >= 0; l--)
     {
-        baseIndices[l] = baseIndices[l+1]+6*regNodes[l].size();
+        baseIndices[l] = baseIndices[l+1]+6*((int)regNodes[l].size());
     }
 
     for(const int& i: baseIndices) std::cout << i << ", ";
@@ -167,8 +167,8 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
                            - (childTranslation + childPos);
                 numEdges++;
 
-                reg_residuals.push_back(norm(re));
-                RegEnergy += norm(re);
+                reg_residuals.push_back((float)norm(re));
+                RegEnergy += (float)norm(re);
             }
         }
     }
@@ -200,7 +200,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
             Vec3f nodePos = currentLevelNodes[node]->pos;
             Affine3f nodeTransform = currentLevelNodes[node]->transform;
 
-            int parentIndex = baseIndices[l]+6*node;
+            int parentIndex = baseIndices[l]+6*(int)node;
 
             for(int edge = 0; edge < currentWarp.k; edge++)
             {
@@ -390,7 +390,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
             if(!fastCheck(Nc.at<Point3f>(y, x)))
                 continue;
 
-            Point3i p(V[0], V[1], V[2]);
+            Point3i p((int)V[0], (int)V[1], (int)V[2]);
             Vec3f diff = oldPoints.at<Vec3f>(y, x) - Vc.at<Vec3f>(y, x);
 
             float rd = Nc.at<Vec3f>(y, x).dot(diff);
@@ -447,16 +447,15 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
         }
     }
 
-    float det = determinant(A_reg);
+    double det = determinant(A_reg);
     std::cout << "A_reg det:" << det  << std::endl;
-    //if(det < 1e-5) return true;
-    std::cout << "Solving " << 6*totalNodes << std::endl;
 
+    std::cout << "Solving " << 6*totalNodes << std::endl;
     Mat_<float> nodeTwists(6*totalNodes, 1, 0.f);
     bool result = solve(A_reg, b_reg, nodeTwists, DECOMP_SVD);
     std::cout << "Done " << result << std::endl;
 
-    for(size_t i = 0; i < warpNodes.size(); i++)
+    for(int i = 0; i < (int)warpNodes.size(); i++)
     {
         int idx = baseIndices[0]+6*i;
         Vec3f r(nodeTwists(idx), nodeTwists(idx+1), nodeTwists(idx+2));

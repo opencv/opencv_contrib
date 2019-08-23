@@ -203,7 +203,7 @@ void WarpField::initTransforms(NodeVectorType nv)
         std::vector<float> weights(knnIndices.size());
         std::vector<Affine3f> transforms(knnIndices.size());
 
-        int i = 0;
+        size_t i = 0;
         for(int idx: knnIndices)
         {
             weights[i] = nodes[idx]->weight(nodePtr->pos);
@@ -214,7 +214,7 @@ void WarpField::initTransforms(NodeVectorType nv)
         // linearly interpolate translations
         Vec3f translation(0,0,0);
         float totalWeight = 0;
-        for(int i = 0; i < transforms.size(); i++)
+        for(i = 0; i < transforms.size(); i++)
         {
             translation += weights[i]*transforms[i].translation();
             totalWeight += weights[i];

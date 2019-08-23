@@ -12,7 +12,7 @@ Quaternion::Quaternion(float w, float i, float j, float k) : coeff(Vec4f(w, i, j
 Quaternion::Quaternion(const Affine3f& r)
 {
     // Compute trace of matrix
-    float T = trace(r.matrix);
+    float T = (float)trace(r.matrix);
 
     float S, X, Y, Z, W;
 
@@ -172,7 +172,7 @@ DualQuaternion DQB(std::vector<float>& weights, std::vector<DualQuaternion>& qua
 
 Affine3f DQB(std::vector<float>& weights, std::vector<Affine3f>& transforms)
 {
-    int n = transforms.size();
+    size_t n = transforms.size();
     std::vector<DualQuaternion> quats(n);
 
     std::transform(transforms.begin(), transforms.end(),

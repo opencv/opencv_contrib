@@ -18,7 +18,7 @@ public:
 
     float normalize()
     {
-        float n = cv::norm(coeff);
+        float n = (float)cv::norm(coeff);
         coeff /= n;
         return n;
     }
@@ -30,7 +30,7 @@ public:
     float j() const {return coeff[2];}
     float k() const {return coeff[3];}
 
-    float norm() const {return cv::norm(coeff);}
+    float norm() const {return (float)cv::norm(coeff);}
 
     friend Quaternion operator*(float a, const Quaternion& q);
     friend Quaternion operator*(const Quaternion& q, float a);
