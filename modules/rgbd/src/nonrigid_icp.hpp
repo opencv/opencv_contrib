@@ -32,9 +32,6 @@ protected:
     int iterations;
     const cv::Ptr<TSDFVolume>& volume;
     cv::kinfu::Intr intrinsics;
-
-    // calculates the exponential map from se(3) to SE(3)
-    Affine3f expSE3(const Vec6f& w) const;
 };
 
 cv::Ptr<NonRigidICP> makeNonRigidICP(const cv::kinfu::Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume,

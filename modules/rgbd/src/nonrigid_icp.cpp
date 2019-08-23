@@ -10,6 +10,7 @@
 
 #define MAD_SCALE 1.4826f
 #define TUKEY_B 4.6851f
+#define HUBER_K 1.345f
 
 namespace cv
 {
@@ -34,8 +35,9 @@ public:
     virtual ~ICPImpl() {}
 
 private:
-    float median(std::vector<float>& v) const;
+    float median(std::vector<float> v) const;
     float tukeyWeight(float x, float sigma) const;
+    float huberWeight(Vec3f v, float sigma) const;
 };
 
 ICPImpl::ICPImpl(const Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, int _iterations) :
@@ -47,7 +49,7 @@ static inline bool fastCheck(const Point3f& p)
     return !cvIsNaN(p.x);
 }
 
-float ICPImpl::median(std::vector<float>& v) const
+float ICPImpl::median(std::vector<float> v) const
 {
     size_t n = v.size()/2;
     if(n == 0) return 0;
@@ -77,6 +79,13 @@ float ICPImpl::tukeyWeight(float r, float sigma) const
     } else return 0;
 }
 
+float ICPImpl::huberWeight(Vec3f v, float sigma) const
+{
+    if(sigma == 0) return 0.f;
+    float x = std::abs(norm(v)/sigma);
+    return (x > HUBER_K)? HUBER_K/x : 1.f;
+}
+
 bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
                                 InputArray _vertImage, InputArray _oldPoints,
                                 InputArray _oldNormals, InputArray _newPoints,
@@ -101,8 +110,178 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
     const NodeVectorType& warpNodes = currentWarp.getNodes();
 
     Affine3f T_lw = pose.inv() * volume->pose;
-    std::vector<Matx66f> A(warpNodes.size(), Matx66f::all(0));
-    std::vector<Matx61f> b(warpNodes.size(), Matx61f::all(0));
+
+    // Accumulate regularisation term for each node in the heiarchy
+    const std::vector<NodeVectorType>& regNodes = currentWarp.getGraphNodes();
+    const heirarchyType& regGraph = currentWarp.getRegGraph();
+
+    size_t totalNodes = warpNodes.size();
+    for(const auto& nodes: regNodes) totalNodes += nodes.size();
+
+    // level-wise regularisation components of A and b (from Ax = b) for each node in heirarchy
+    Mat_<float> b_reg(6*totalNodes, 1, 0.f);
+    Mat_<float> A_reg(6*totalNodes, 6*totalNodes, 0.f);
+
+
+    // indices for each node block to A,b matrices. It determines the order
+    // in which paramters are laid out
+
+    std::vector<int> baseIndices(currentWarp.n_levels, 0);
+
+    for(int l = currentWarp.n_levels-2; l >= 0; l--)
+    {
+        baseIndices[l] = baseIndices[l+1]+6*regNodes[l].size();
+    }
+
+    for(const int& i: baseIndices) std::cout << i << ", ";
+    std::cout << std::endl;
+
+    // populate residuals for each edge in the graph to calculate sigma
+    std::vector<float> reg_residuals;
+    float RegEnergy = 0;
+    int numEdges = 0;
+    for(int l = 0; l < (currentWarp.n_levels-1); l++)
+    {
+        const std::vector<nodeNeighboursType>& level = regGraph[l];
+
+        const NodeVectorType& currentLevelNodes = (l == 0)? warpNodes : regNodes[l-1];
+
+        const NodeVectorType& nextLevelNodes = regNodes[l];
+
+        std::cout << currentLevelNodes.size() << " " << nextLevelNodes.size() << std::endl;
+
+
+        for(size_t node = 0; node < level.size(); node++)
+        {
+            const nodeNeighboursType& children = level[node];
+            Vec3f nodePos = currentLevelNodes[node]->pos;
+            Affine3f nodeTransform = currentLevelNodes[node]->transform;
+
+            for(int c = 0; c < currentWarp.k; c++)
+            {
+                const int child = children[c];
+                Vec3f childPos = nextLevelNodes[child]->pos;
+                Vec3f childTranslation = nextLevelNodes[child]->transform.translation();
+
+                Vec3f re = nodeTransform * (childPos - nodePos) + nodePos
+                           - (childTranslation + childPos);
+                numEdges++;
+
+                reg_residuals.push_back(norm(re));
+                RegEnergy += norm(re);
+            }
+        }
+    }
+
+    Mat_<float> J_reg(6*numEdges, 6*totalNodes, 0.f);
+
+    std::cout << "Total reg energy: " << RegEnergy << ", Average: " << RegEnergy/numEdges << std::endl;
+
+    float reg_med = median(reg_residuals);
+    std::for_each(reg_residuals.begin(), reg_residuals.end(),
+                  [reg_med](float& x)
+                  {
+                      x = std::abs(x-reg_med);
+                  });
+
+    float reg_sigma = MAD_SCALE * median(reg_residuals);
+    std::cout << "[Reg] Sigma: " << reg_sigma << " from " << reg_residuals.size() << " residuals " << std::endl;
+
+    for(int l = 0; l < (currentWarp.n_levels-1); l++)
+    {
+        const std::vector<nodeNeighboursType>& level = regGraph[l];
+
+        const NodeVectorType& currentLevelNodes = (l == 0)? warpNodes : regNodes[l-1];
+        const NodeVectorType& nextLevelNodes = regNodes[l];
+
+        for(size_t node = 0; node < level.size(); node++)
+        {
+            const nodeNeighboursType& children = level[node];
+            Vec3f nodePos = currentLevelNodes[node]->pos;
+            Affine3f nodeTransform = currentLevelNodes[node]->transform;
+
+            int parentIndex = baseIndices[l]+6*node;
+
+            for(int edge = 0; edge < currentWarp.k; edge++)
+            {
+                const int child = children[edge];
+                const Ptr<WarpNode> childNode = nextLevelNodes[child];
+                Vec3f childTranslation = childNode->transform.translation();
+
+                Vec3f childPos = childNode->pos;
+                Vec3f transformedChild = nodeTransform * (childPos - nodePos);
+                Vec3f r_edge = transformedChild + nodePos - (childTranslation + childPos);
+
+                if(norm(r_edge) > 0.01) continue;
+
+                float robustWeight = huberWeight(r_edge, reg_sigma);
+
+                // take sqrt since radius is stored as squared distance
+                float edgeWeight = sqrt(min(childNode->radius, currentLevelNodes[node]->radius));
+
+                Vec3f v1 = transformedChild.cross(r_edge);
+
+
+                float w = 1 * robustWeight * edgeWeight;
+                b_reg(parentIndex+0) += -w * v1[0];
+                b_reg(parentIndex+1) += -w * v1[1];
+                b_reg(parentIndex+2) += -w * v1[2];
+                b_reg(parentIndex+3) += -w * r_edge[0];
+                b_reg(parentIndex+4) += -w * r_edge[1];
+                b_reg(parentIndex+5) += -w * r_edge[2];
+
+                int childIndex = baseIndices[l+1]+6*child;
+                Vec3f v2 = childTranslation.cross(r_edge);
+                b_reg(childIndex+0) += w * v2[0];
+                b_reg(childIndex+1) += w * v2[1];
+                b_reg(childIndex+2) += w * v2[2];
+                b_reg(childIndex+3) += w * r_edge[0];
+                b_reg(childIndex+4) += w * r_edge[1];
+                b_reg(childIndex+5) += w * r_edge[2];
+
+
+                Matx33f Tj_Vj_Vi_cross(0, -transformedChild[2], transformedChild[1],
+                                       transformedChild[2], 0, -transformedChild[0],
+                                       -transformedChild[1], transformedChild[0], 0);
+                Matx33f tj_cross(0, -childTranslation[2], childTranslation[1],
+                                 childTranslation[2], 0, -childTranslation[0],
+                                 -childTranslation[1], childTranslation[0], 0);
+
+                // place top left elements
+                Matx33f top_left = Tj_Vj_Vi_cross * tj_cross;
+                for(int i = 0; i < 3; i++)
+                    for (int j = 0; j < 3; j++)
+                    {
+                        A_reg(parentIndex+i, childIndex+j) += w * top_left(i, j);
+                        A_reg(childIndex+i, parentIndex+j) += w * top_left(i, j);
+                    }
+
+                // place top right elements
+                for(int i = 0; i < 3; i++)
+                    for(int j = 0; j < 3; j++)
+                    {
+                        A_reg(parentIndex+i, childIndex+j+3) += - w * Tj_Vj_Vi_cross(i, j);
+                        A_reg(childIndex+i, parentIndex+j+3) += - w * Tj_Vj_Vi_cross(i, j);
+                    }
+
+                // place bottom left elements
+                for(int i = 0; i < 3; i++)
+                    for(int j = 0; j < 3; j++)
+                    {
+                        A_reg(parentIndex+i+3, childIndex+j) += w * tj_cross(i, j);
+                        A_reg(childIndex+i+3, parentIndex+j) += w * tj_cross(i, j);
+                    }
+
+                // place bottom right elements (which is -I_3)
+                for(int i = 0; i < 3; i++)
+                {
+                    A_reg(parentIndex+i+3, childIndex+i+3) += -w;
+                    A_reg(childIndex+i+3, parentIndex+i+3) += -w;
+                }
+
+            }
+        }
+    }
 
     std::vector<float> residuals;
 
@@ -255,41 +434,38 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
                 float w = (neighWeights[i] / totalNeighbourWeight);
 
                 float robustWeight = tukeyWeight(rd, sigma);
-                A[neigh] += robustWeight * w * w * H_data;
 
-                b[neigh] += -robustWeight * rd * w * J_dataT;
+                int blockIndex = baseIndices[0]+6*neigh;
+                for(int row = 0; row < 6; row++)
+                    for(int col = 0; col < 6; col++)
+                        A_reg(blockIndex+row, blockIndex+col) += robustWeight * w * w * H_data(row, col);
+
+                for(int row = 0; row < 6; row++)
+                    b_reg(blockIndex+row) += -robustWeight * rd * w * J_dataT(row);
             }
 
         }
     }
 
-    // solve Ax = b for each warp node and update its transform
-    float total_det = 0;
-    int count = 0, nanCount = 0;
+    float det = determinant(A_reg);
+    std::cout << "A_reg det:" << det  << std::endl;
+    //if(det < 1e-5) return true;
+    std::cout << "Solving " << 6*totalNodes << std::endl;
+
+    Mat_<float> nodeTwists(6*totalNodes, 1, 0.f);
+    bool result = solve(A_reg, b_reg, nodeTwists, DECOMP_SVD);
+    std::cout << "Done " << result << std::endl;
+
     for(size_t i = 0; i < warpNodes.size(); i++)
     {
-        double det = cv::determinant(A[i]);
-
-        if (abs (det) < 1e-5 || cvIsNaN(det))
-        {
-            if(cvIsNaN(det)) nanCount++;
-            continue;
-        }
-        total_det += abs(det);
-        count++;
-
-        Vec6f nodeTwist;
-        solve(A[i], b[i], nodeTwist, DECOMP_SVD);
-
-        Affine3f tinc(Vec3f(nodeTwist.val), Vec3f(nodeTwist.val+3));
+        int idx = baseIndices[0]+6*i;
+        Vec3f r(nodeTwists(idx), nodeTwists(idx+1), nodeTwists(idx+2));
+        Vec3f t(nodeTwists(idx+3), nodeTwists(idx+4), nodeTwists(idx+5));
+        Affine3f tinc(r, t);
         warpNodes[i]->transform = warpNodes[i]->transform * tinc;
     }
 
-    std::cout << "Sigma: " << sigma << std::endl;
-    std::cout << "Avg det: " << total_det/count << " from "  << count << std::endl;
-    std::cout << "Total energy: " << total_error << " from " << pix_count << " pixels";
-    std::cout << "(Average: " << total_error/pix_count << ")" << std::endl;
-    std::cout << "Nan count: " << nanCount << "/" << warpNodes.size() << "\n" << std::endl;;
+    std::cout << "Nan count: " << "/" << warpNodes.size() << "\n" << std::endl;
 
     return true;
 }

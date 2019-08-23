@@ -3,7 +3,7 @@
 namespace cv {
 namespace dynafu {
 
-Quaternion::Quaternion() : coeff(Vec4f(1.f, 0.f, 0.f, 0.f))
+Quaternion::Quaternion() : coeff(Vec4f(0.f, 0.f, 0.f, 0.f))
 {}
 
 Quaternion::Quaternion(float w, float i, float j, float k) : coeff(Vec4f(w, i, j, k))
@@ -129,7 +129,6 @@ DualQuaternion::DualQuaternion(Quaternion& _q0, Quaternion& _qe) : q0(_q0), qe(_
 void DualQuaternion::normalize()
 {
     float n = q0.normalize();
-    q0 /= n;
     qe /= n;
 }
 

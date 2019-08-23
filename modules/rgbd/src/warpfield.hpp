@@ -7,6 +7,7 @@
 
 #define DYNAFU_MAX_NEIGHBOURS 10
 typedef std::array<int, DYNAFU_MAX_NEIGHBOURS> nodeNeighboursType;
+typedef std::vector<std::vector<nodeNeighboursType> > heirarchyType;
 
 namespace cv {
 namespace dynafu {
@@ -16,8 +17,6 @@ struct WarpNode
     Point3f pos;
     float radius;
     Affine3f transform;
-
-    std::vector<Ptr<WarpNode> > children;
 
     float weight(Point3f x)
     {
@@ -32,13 +31,14 @@ typedef std::vector<Ptr<WarpNode> > NodeVectorType;
 class WarpField
 {
 public:
-    WarpField(int _maxNeighbours=1000000, int K=4, int levels=4, float baseResolution=.010f,
+    WarpField(int _maxNeighbours=1000000, int K=4, int levels=4, float baseResolution=.10f,
               float resolutionGrowth=4);
 
     void updateNodesFromPoints(InputArray _points);
 
     const NodeVectorType& getNodes() const;
-    std::vector<NodeVectorType> const& getGraphNodes() const;
+    const heirarchyType& getRegGraph() const;
+    const std::vector<NodeVectorType>& getGraphNodes() const;
 
     size_t getNodesLen() const
     {
@@ -58,6 +58,7 @@ public:
     }
 
     int k; //k-nearest neighbours will be used
+    int n_levels; // number of levels in the heirarchy
 
 private:
     void removeSupported(flann::GenericIndex<flann::L2_Simple<float> >& ind, AutoBuffer<bool>& supInd);
@@ -72,11 +73,11 @@ private:
     NodeVectorType nodes; //heirarchy level 0
     int maxNeighbours;
 
-    int n_levels; // number of levels in the heirarchy
     float baseRes;
     float resGrowthRate;
 
     std::vector<NodeVectorType> regGraphNodes; // heirarchy levels 1 to L
+    heirarchyType heirarchy;
 
     Ptr<flann::GenericIndex<flann::L2_Simple<float> > > nodeIndex;
 
