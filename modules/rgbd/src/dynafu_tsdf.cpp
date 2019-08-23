@@ -286,6 +286,7 @@ struct IntegrateInvoker : ParallelLoopBody
                         // update TSDF
                         float newWeight = 0;
 
+                        //TODO: check this place for correctness
                         if(warpfield->getNodesLen() >= (size_t)warpfield->k)
                         {
                             for(int i = 0; i < voxel.n; i++)
@@ -295,6 +296,7 @@ struct IntegrateInvoker : ParallelLoopBody
 
                         } else newWeight = 1.f;
 
+                        //TODO: check this place for correctness
                         if((weight + newWeight) != 0)
                         {
                             value = (value*weight+tsdf*newWeight) / (weight+newWeight);

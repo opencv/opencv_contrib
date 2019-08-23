@@ -59,14 +59,17 @@ Quaternion::Quaternion(const Affine3f& r)
 
 Affine3f Quaternion::getRotation() const
 {
-    float W = coeff[0], X = -coeff[1], Y = -coeff[2], Z = -coeff[3];
-    float xx = X * X, xy = X * Y, xz = X * Z, xw = X * W;
-    float yy = Y * Y, yz = Y * Z, yw = Y * W, zz = Z * Z;
-    float zw = Z * W;
+    // TODO: assume the norm is 1
+    float w = coeff[0], x = -coeff[1], y = -coeff[2], z = -coeff[3];
+    float xx = x * x, xy = x * y, xz = x * z, xw = x * w;
+    float yy = y * y, yz = y * z, yw = y * w, zz = z * z;
+    float zw = z * w;
 
-    Matx33f rot(1.f - 2.f * (yy + zz),  2.f * (xy + zw),        2.f * (xz - yw),
-                2.f * (xy - zw),        1.f - 2.f * (xx + zz),  2.f * (yz + xw),
-                2.f * (xz + yw),        2.f * (yz - xw),        1.f - 2.f * (xx + yy));
+    // rot = (ww-(ww+xx+yy+zz))*I_3 + 2*(x, y, z)*(x, y, z)^T + 2*w*skewsym(x, y, z)
+
+    Matx33f rot = Matx33f::eye() + 2.f*Matx33f(-yy - zz,  xy + zw,  xz - yw,
+                                                xy - zw, -xx - zz,  yz + xw,
+                                                xz + yw,  yz - xw, -xx - yy);
 
     Affine3f Rt = Affine3f(rot, Vec3f::all(0));
     return Rt;
@@ -95,10 +98,31 @@ Quaternion operator+(const Quaternion& q1, const Quaternion& q2)
     return Quaternion(newQ[0], newQ[1], newQ[2], newQ[3]);
 }
 
+Quaternion operator-(const Quaternion& q)
+{
+    return Quaternion(-q.coeff[0], -q.coeff[1], -q.coeff[2], -q.coeff[3]);
+}
+
+Quaternion operator-(const Quaternion& q1, const Quaternion& q2)
+{
+    Vec4f newQ = q1.coeff - q2.coeff;
+    return Quaternion(newQ[0], newQ[1], newQ[2], newQ[3]);
+}
+
 Quaternion& operator+=(Quaternion& q1, const Quaternion& q2)
 {
     q1.coeff += q2.coeff;
     return q1;
+}
+
+Quaternion operator*(const Quaternion& a, const Quaternion& b)
+{
+    // [a0, av]*[b0, bv] = a0*b0 - dot(av, bv) + ijk*(a0*bv + b0*av + cross(av, bv))
+    Vec3f av(a.i(), a.j(), a.k()), bv(b.i(), b.j(), b.k());
+    float w = a.w()*b.w() - av.dot(bv);
+    Vec3f ijk = a.w()*bv + b.w()*av + av.cross(bv);
+
+    return Quaternion(w, ijk[0], ijk[1], ijk[2]);
 }
 
 Quaternion& operator/=(Quaternion& q, float a)
@@ -107,30 +131,35 @@ Quaternion& operator/=(Quaternion& q, float a)
     return q;
 }
 
+///////////////////////////////////////////////
+/// Dual Quaternions
+///////////////////////////////////////////////
 
-
-DualQuaternion::DualQuaternion() : q0(), qe()
+DualQuaternion::DualQuaternion() : q0(1, 0, 0, 0), qe(0, 0, 0, 0)
 {}
 
 DualQuaternion::DualQuaternion(const Affine3f& rt)
 {
+    // (q0 + e*q0) = (r + e*1/2*t*r)
     q0 = Quaternion(rt);
     Vec3f t = rt.translation();
-    float w = -0.5f*( t[0] * q0.i() + t[1] * q0.j() + t[2] * q0.k());
-    float i =  0.5f*( t[0] * q0.w() + t[1] * q0.k() - t[2] * q0.j());
-    float j =  0.5f*(-t[0] * q0.k() + t[1] * q0.w() + t[2] * q0.i());
-    float k =  0.5f*( t[0] * q0.j() - t[1] * q0.i() + t[2] * q0.w());
-    qe = Quaternion(w, i, j, k);
+    qe = 0.5f*(Quaternion(0, t[0], t[1], t[2])*q0);
 }
 
-DualQuaternion::DualQuaternion(Quaternion& _q0, Quaternion& _qe) : q0(_q0), qe(_qe)
+DualQuaternion::DualQuaternion(const Quaternion& _q0, const Quaternion& _qe) : q0(_q0), qe(_qe)
 {}
 
 void DualQuaternion::normalize()
 {
-    float n = q0.normalize();
-    q0 /= n;
-    qe /= n;
+    // norm(r+e*t) = norm(r) + e*dot(r,t)/norm(r)
+    // r_nr = r/norm(r), t_nr = t/norm(r)
+    // normalized(r+e*t) = r_nr + e*(t_nr-r_nr*dot(r_nr,t_nr))
+    // normalized(r+e*t) = (1+e*Im(t*inv(r)))*r_nr
+
+    float q0norm = q0.norm();
+    Quaternion qediv = qe/q0norm, q0div = q0/q0norm;
+    q0 = q0div;
+    qe = qediv - q0div * (q0div.dot(qediv));
 }
 
 DualQuaternion& operator+=(DualQuaternion& q1, const DualQuaternion& q2)
@@ -152,18 +181,18 @@ Affine3f DualQuaternion::getAffine() const
     float norm = q0.norm();
 
     Affine3f Rt = (q0/norm).getRotation();
-    Vec3f t(0.f, 0.f, 0.f);
-    t[0] = 2.f*(-qe.w()*q0.i() + qe.i()*q0.w() - qe.j()*q0.k() + qe.k()*q0.j()) / norm;
-    t[1] = 2.f*(-qe.w()*q0.j() + qe.i()*q0.k() + qe.j()*q0.w() - qe.k()*q0.i()) / norm;
-    t[2] = 2.f*(-qe.w()*q0.k() - qe.i()*q0.j() + qe.j()*q0.i() + qe.k()*q0.w()) / norm;
+    // for cases when DualQuaternion's norm is 1:
+    // Quaternion t = 2.f*(qe*(q0.conjugate()));
+    // common case for any norm:
+    Quaternion t = 2.f*(qe*(q0.invert()));
 
-    return Rt.translate(t);
+    return Rt.translate(Vec3f(t.i(), t.j(), t.k()));
 }
 
 DualQuaternion DQB(std::vector<float>& weights, std::vector<DualQuaternion>& quats)
 {
     size_t n = weights.size();
-    DualQuaternion blended;
+    DualQuaternion blended(Quaternion(0, 0, 0, 0), Quaternion(0, 0, 0, 0));
     for(size_t i = 0; i < n; i++)
         blended += weights[i] * quats[i];
 
@@ -173,13 +202,11 @@ DualQuaternion DQB(std::vector<float>& weights, std::vector<DualQuaternion>& qua
 
 Affine3f DQB(std::vector<float>& weights, std::vector<Affine3f>& transforms)
 {
-    int n = transforms.size();
-    std::vector<DualQuaternion> quats(n);
+    size_t n = transforms.size();
+    DualQuaternion blended(Quaternion(0, 0, 0, 0), Quaternion(0, 0, 0, 0));
+    for(size_t i = 0; i < n; i++)
+        blended += weights[i] * DualQuaternion(transforms[i]);
 
-    std::transform(transforms.begin(), transforms.end(),
-                   quats.begin(), [](const Affine3f& rt){return DualQuaternion(rt);});
-
-    DualQuaternion blended = DQB(weights, quats);
     return blended.getAffine();
 }
 

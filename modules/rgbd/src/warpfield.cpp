@@ -273,6 +273,7 @@ Point3f WarpField::applyWarp(Point3f p, const nodeNeighboursType neighbours, int
 {
     CV_TRACE_FUNCTION();
 
+
     if(n == 0)
     {
         return p;
@@ -321,6 +322,43 @@ Point3f WarpField::applyWarp(Point3f p, const nodeNeighboursType neighbours, int
         return WarpedPt;
     }
 
+
+    // DQB:
+/*
+    if(!n)
+        return p;
+
+    std::vector<float> weights(n);
+    std::vector<Affine3f> transforms(n);
+    float totalWeightSquare = 0.f;
+    for(int i = 0; i < n; i++)
+    {
+        Ptr<WarpNode> neigh = nodes[neighbours[i]];
+        float w = neigh->weight(p);
+        weights[i]= w;
+        Affine3f rti = neigh->transform;
+        Point3f pos = neigh->pos;
+        if(normal)
+        {
+            rti = Affine3f().rotate(rti.rotation());
+        }
+        else
+        {
+            rti = Affine3f().translate(-pos).rotate(rti.rotation()).translate(pos).translate(rti.translation());
+        }
+        transforms[i] = rti;
+        totalWeightSquare = w*w;
+    }
+    Affine3f rt = DQB(weights, transforms);
+    if(abs(totalWeightSquare) > 0.001f)
+    {
+        return rt*p;
+    }
+    else
+    {
+        return p;
+    }
+*/
 }
 
 void WarpField::setAllRT(Affine3f warpRT)
