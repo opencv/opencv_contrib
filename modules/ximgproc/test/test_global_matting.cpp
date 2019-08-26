@@ -1,8 +1,12 @@
 #include "test_precomp.hpp"
 
-const std::string INPUT_DIR       = "."
-const std::string IMAGE_FILENAME  = "Input/doll.png"
-const std::string TRIMAP_FILENAME = "Trimap/doll.png"
+namespace opencv_test
+{
+namespace
+{    
+const std::string INPUT_DIR       = "matting"
+const std::string IMAGE_FILENAME  = "input/doll.png"
+const std::string TRIMAP_FILENAME = "trimap/doll.png"
 
 
 class CV_GlobalMattingTest : public cvtest:BaseTest
@@ -64,4 +68,6 @@ TEST(CV_GlobalMattingTest,accuracy)
   CV_GlobalMattingTest test;
   test.safe_run();
 }
-
+  
+}
+}  
