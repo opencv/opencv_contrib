@@ -1,11 +1,16 @@
-#include "mattingClass.h"
-#include<iostream>
+#include <opencv2/ximgproc/globalmatting.hpp>
+#include <iostream>
 
+using namespace std;
+using namespace cv;
+using namespace ximgproc;
 int main(int argc,char** argv)
 {
     if(argc<3)
     {
-      cout<<"Enter the path of image and trimap"<<endl;
+      cout<<"arg1: Directory of Input image"<<endl;
+      cout<<"arg2: Directory of its trimap"<<endl;  
+      cout<<"arg3(optional): Enter the number of iterations to run expansion of trimap"<<endl;
       return -1;
     }
     
