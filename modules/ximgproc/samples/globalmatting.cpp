@@ -23,7 +23,7 @@ int main(int argc,char** argv)
       niter = atoi(argv[3]);
     }
     cv::Mat image = cv::imread(img_path, cv::IMREAD_COLOR);
-    cv::Mat trimap = cv::imread(tri_path, CV_LOAD_IMAGE_GRAYSCALE);
+    cv::Mat trimap = cv::imread(tri_path, cv::IMREAD_GRAYSCALE);
     if(image.empty() || trimap.empty())
     {
        cout<<"Could not load the inputs"<<endl;
