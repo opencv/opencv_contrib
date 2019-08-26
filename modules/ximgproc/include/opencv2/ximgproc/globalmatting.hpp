@@ -16,7 +16,7 @@ namespace cv
 	
 namespace ximgproc
 {	
-class GlobalMatting
+class CV_EXPORTS GlobalMatting
 {
       private:
     
