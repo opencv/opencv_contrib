@@ -1,6 +1,7 @@
 #include <string> 
 #include <cstdlib>
-
+#include <opencv2/ximgproc.hpp>
+#include "precomp.hpp"
 
 
 namespace cv
