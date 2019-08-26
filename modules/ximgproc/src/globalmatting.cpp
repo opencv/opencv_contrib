@@ -4,18 +4,14 @@
 #include <opencv2/ximgproc/edge_filter.hpp>
 
 #include <string> 
-#include <iostream>
 #include <cstdlib>
-#include "globalmatting.h"
+#include "opencv2/ximgproc/globalmatting.hpp"
 
 
-using namespace std;
-using namespace cv;
-
-
-
-
-
+namespace cv
+{
+namespace ximgproc
+{	
 std::vector<cv::Point> GlobalMatting::findBoundaryPixels(const cv::Mat_<uchar> &trimap, int a, int b)
 {
     std::vector<cv::Point> result;
@@ -546,7 +542,8 @@ GlobalMatting::GlobalMatting()
    cout<<"The Global matting object has been instantiated"<<endl;
 }
 
-  
+}
+}
  
 
 
