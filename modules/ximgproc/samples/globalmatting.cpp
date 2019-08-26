@@ -1,6 +1,6 @@
 #include <opencv2/ximgproc.hpp>
 #include <iostream>
-#include <core>
+#include <opencv2/core.hpp>
 
 using namespace std;
 using namespace cv;
