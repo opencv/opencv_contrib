@@ -1,4 +1,4 @@
-#include <opencv2/ximgproc/globalmatting.hpp>
+#include <opencv2/ximgproc.hpp>
 #include <iostream>
 #include <core>
 
