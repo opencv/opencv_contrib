@@ -288,7 +288,7 @@ void GlobalMatting::calculateAlphaPatchMatch(const cv::Mat_<cv::Vec3b> &image,
 	            int fi = s.fi + di;
 	            int bj = s.bj + dj;
 
-	            if (fi < 0 || fi >= foregroundBoundary.size() || bj < 0 || bj >= backgroundBoundary.size())
+	            if (fi < 0 || (unsigned)fi >= foregroundBoundary.size() || bj < 0 || (unsigned)bj >= backgroundBoundary.size())
 	                continue;
 
 	            const cv::Point &fp = foregroundBoundary[fi];
