@@ -1,3 +1,6 @@
+#ifndef GLOBAL_MATTING_H
+#define GLOBAL_MATTING_H
+
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/ximgproc/edge_filter.hpp>
@@ -8,8 +11,7 @@
 
 
 
-#ifndef GLOBAL_MATTING_H
-#define GLOBAL_MATTING_H
+
 
 namespace cv
 {
