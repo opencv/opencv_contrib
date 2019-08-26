@@ -1,4 +1,4 @@
-#include <string> 
+#include <string>
 #include <cstdlib>
 #include <opencv2/ximgproc.hpp>
 #include "precomp.hpp"
@@ -7,7 +7,7 @@
 namespace cv
 {
 namespace ximgproc
-{	
+{
 std::vector<cv::Point> GlobalMatting::findBoundaryPixels(const cv::Mat_<uchar> &trimap, int a, int b)
 {
     std::vector<cv::Point> result;
@@ -530,18 +530,11 @@ void GlobalMatting::getMat(cv::Mat image,cv::Mat trimap,cv::Mat &foreground,cv::
 		        alpha.at<uchar>(y, x) = 255;
 		}
          }
-    
 }
 
 GlobalMatting::GlobalMatting()
 {
-   
 }
 
 }
 }
- 
-
-
-
-
