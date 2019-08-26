@@ -22,7 +22,7 @@ int main(int argc,char** argv)
     {
       niter = atoi(argv[3]);
     }
-    cv::Mat image = cv::imread(img_path, CV_LOAD_IMAGE_COLOR);
+    cv::Mat image = cv::imread(img_path, cv::IMREAD_COLOR);
     cv::Mat trimap = cv::imread(tri_path, CV_LOAD_IMAGE_GRAYSCALE);
     if(image.empty() || trimap.empty())
     {
