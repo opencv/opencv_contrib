@@ -24,7 +24,7 @@ struct IntensityComp
 	return ((int)c0[0] + (int)c0[1] + (int)c0[2]) < ((int)c1[0] + (int)c1[1] + (int)c1[2]);
     }
 
-    const cv::Mat_<cv::Vec3b> &img_temp;
+    const cv::Mat_<cv::Vec3b> &img;
 };
 
 
