@@ -11,20 +11,20 @@
 // for sorting the boundary pixels according to intensity
 struct IntensityComp
 {
-    IntensityComp(const cv::Mat_<cv::Vec3b> &image) : image(image)
+    IntensityComp(const cv::Mat_<cv::Vec3b> &img) : img(img)
     {
 
     }
 
     bool operator()(const cv::Point &p0, const cv::Point &p1) const
     {
-	const cv::Vec3b &c0 = image(p0.y, p0.x);
-	const cv::Vec3b &c1 = image(p1.y, p1.x);
+	const cv::Vec3b &c0 = img(p0.y, p0.x);
+	const cv::Vec3b &c1 = img(p1.y, p1.x);
 
 	return ((int)c0[0] + (int)c0[1] + (int)c0[2]) < ((int)c1[0] + (int)c1[1] + (int)c1[2]);
     }
 
-    const cv::Mat_<cv::Vec3b> &image;
+    const cv::Mat_<cv::Vec3b> &img;
 };
 
 
