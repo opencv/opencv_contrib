@@ -6,7 +6,7 @@
 #include <string> 
 #include <iostream>
 #include <cstdlib>
-#include "mattingClass.h"
+#include "globalmatting.h"
 
 
 using namespace std;
@@ -550,52 +550,5 @@ GlobalMatting::GlobalMatting()
  
 
 
-#include "globalmatting.h"
-
-// you can get the guided filter implementation
-// from https://github.com/atilimcetin/guided-filter
-#include "guidedfilter.h"
-
-/*
-int main(int argc,char** argv)
-{
-    if(argc<3)
-    {
-      cout<<"Enter the path of image and trimap"<<endl;
-      return 0;
-    }
-    
-    string img_path = argv[1];
-    string tri_path = argv[2];
-    int niter = 9;
-    if(argc==4)
-    {
-      niter = atoi(argv[3]);
-    } 
-      
-    cv::Mat image = cv::imread(img_path, CV_LOAD_IMAGE_COLOR);
-    cv::Mat trimap = cv::imread(tri_path, CV_LOAD_IMAGE_GRAYSCALE);
-
-    // (optional) exploit the affinity of neighboring pixels to reduce the 
-    // size of the unknown region. please refer to the paper
-    // 'Shared Sampling for Real-Time Alpha Matting'.
-    expansionOfKnownRegions(image, trimap, niter);
-
-    cv::Mat foreground, alpha;
-    globalMatting(image, trimap, foreground, alpha);
 
 
-    for (int x = 0; x < trimap.cols; ++x)
-        for (int y = 0; y < trimap.rows; ++y)
-        {
-            if (trimap.at<uchar>(y, x) == 0)
-                alpha.at<uchar>(y, x) = 0;
-            else if (trimap.at<uchar>(y, x) == 255)
-                alpha.at<uchar>(y, x) = 255;
-        }
-
-    cv::imwrite("GT04-alpha.png", alpha);
-
-    return 0;
-}
-*/
