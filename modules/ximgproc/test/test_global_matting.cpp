@@ -4,12 +4,12 @@ namespace opencv_test
 {
 namespace
 {    
-const std::string INPUT_DIR       = "matting"
-const std::string IMAGE_FILENAME  = "input/doll.png"
-const std::string TRIMAP_FILENAME = "trimap/doll.png"
+const std::string INPUT_DIR       = "matting";
+const std::string IMAGE_FILENAME  = "input/doll.png";
+const std::string TRIMAP_FILENAME = "trimap/doll.png";
 
 
-class CV_GlobalMattingTest : public cvtest:BaseTest
+class CV_GlobalMattingTest : public cvtest::BaseTest
 {
   public:
      CV_GlobalMattingTest();
