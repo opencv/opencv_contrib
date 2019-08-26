@@ -8,14 +8,16 @@
 #include <cstdlib>
 
 
-using namespace std;
-using namespace cv;
+
 
 #ifndef GLOBAL_MATTING_H
 #define GLOBAL_MATTING_H
 
-
-
+namespace cv
+{
+	
+namespace ximgproc
+{	
 class GlobalMatting
 {
       private:
@@ -114,6 +116,9 @@ class GlobalMatting
 		
                 
 };
+	
+}
+}	
 
 #endif
 /*
