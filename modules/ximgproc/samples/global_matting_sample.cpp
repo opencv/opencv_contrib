@@ -1,5 +1,6 @@
 #include <opencv2/ximgproc/globalmatting.hpp>
 #include <iostream>
+#include <core>
 
 using namespace std;
 using namespace cv;
