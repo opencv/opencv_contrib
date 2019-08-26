@@ -535,7 +535,7 @@ void GlobalMatting::getMat(cv::Mat image,cv::Mat trimap,cv::Mat &foreground,cv::
 
 GlobalMatting::GlobalMatting()
 {
-   cout<<"The Global matting object has been instantiated"<<endl;
+   
 }
 
 }
