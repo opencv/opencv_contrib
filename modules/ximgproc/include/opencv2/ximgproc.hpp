@@ -59,7 +59,7 @@
 #include "ximgproc/run_length_morphology.hpp"
 #include "ximgproc/edgepreserving_filter.hpp"
 #include "ximgproc/color_match.hpp"
-#include "ximgproc.global_matting.hpp"
+#include "ximgproc.globalmatting.hpp"
 
 
 /** @defgroup ximgproc Extended Image Processing
