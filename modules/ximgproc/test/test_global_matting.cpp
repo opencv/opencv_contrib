@@ -3,7 +3,7 @@
 namespace opencv_test
 {
 namespace
-{    
+{
 const std::string INPUT_DIR       = "matting";
 const std::string IMAGE_FILENAME  = "input/doll.png";
 const std::string TRIMAP_FILENAME = "trimap/doll.png";
@@ -13,7 +13,7 @@ class CV_GlobalMattingTest : public cvtest::BaseTest
 {
   public:
      CV_GlobalMattingTest();
-  
+
   protected:
      Ptr<GlobalMatting> gm;
      void runModel();
@@ -23,7 +23,7 @@ void CV_GlobalMattingTest::runModel()
 {
   std::string img_path     = std::string(ts->get_data_path()) + INPUT_DIR + "/" + IMAGE_FILENAME;
   std::string trimap_path  = std::string(ts->get_data_path()) + INPUT_DIR + "/" + TRIMAP_FILENAME;
-  
+
   Mat img     = imread(img_path);
   Mat trimap  = imread(trimap_path);
   if(img.empty() || trimap.empty())
@@ -38,11 +38,9 @@ void CV_GlobalMattingTest::runModel()
     ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);
     return;
   }
-  
   Mat foreground,alpha;
   int niter = 9;
   this->gm->getMat(img,trimap,foreground,alpha,niter);
-  
   if(alpha.empty())
   {
     ts->printf(cvtest::TS::LOG,"Could not find the alpha matte for the image\n");
@@ -70,4 +68,4 @@ TEST(CV_GlobalMattingTest,accuracy)
 }
   
 }
-}  
+}
