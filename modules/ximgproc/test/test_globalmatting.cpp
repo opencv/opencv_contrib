@@ -1,4 +1,5 @@
 #include "test_precomp.hpp"
+using namespace cv;
 
 namespace opencv_test
 {
@@ -26,8 +27,8 @@ void CV_GlobalMattingTest::runModel()
   std::string img_path     = std::string(ts->get_data_path()) + INPUT_DIR + "/" + IMAGE_FILENAME;
   std::string trimap_path  = std::string(ts->get_data_path()) + INPUT_DIR + "/" + TRIMAP_FILENAME;
 
-  Mat img     = imread(img_path);
-  Mat trimap  = imread(trimap_path);
+  Mat img     = cv::imread(img_path,cv::IMREAD_COLOR);
+  Mat trimap  = cv::imread(trimap_path,cv::IMREAD_GRAYSCALE);
   if(img.empty() || trimap.empty())
   {
     ts->printf(cvtest::TS::LOG,"Test images not found!\n");
