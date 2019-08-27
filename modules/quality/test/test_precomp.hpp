@@ -43,10 +43,8 @@ inline cv::Mat get_testfile_1a() { return get_testfile(testfile1a, IMREAD_GRAYSC
 inline cv::Mat get_testfile_1b() { return get_testfile(testfile1b, IMREAD_GRAYSCALE); }
 inline cv::Mat get_testfile_2a() { return get_testfile(testfile2a); }
 inline cv::Mat get_testfile_2b() { return get_testfile(testfile2b); }
-inline std::vector<cv::Mat> get_testfile_1a2a() { return { get_testfile_1a(), get_testfile_2a() }; }
-inline std::vector<cv::Mat> get_testfile_1b2b() { return { get_testfile_1b(), get_testfile_2b() }; }
 
-const double QUALITY_ERR_TOLERANCE = .001  // allowed margin of error
+const double QUALITY_ERR_TOLERANCE = .002  // allowed margin of error
     ;
 
 inline void quality_expect_near( const cv::Scalar& a, const cv::Scalar& b, double err_tolerance = QUALITY_ERR_TOLERANCE)
@@ -60,25 +58,45 @@ inline void quality_expect_near( const cv::Scalar& a, const cv::Scalar& b, doubl
     }
 }
 
+template <typename TMat>
+inline void check_quality_map( const TMat& mat, const bool expect_empty = false )
+{
+    EXPECT_EQ( mat.empty(), expect_empty );
+    if ( !expect_empty )
+    {
+        EXPECT_GT(mat.rows, 0);
+        EXPECT_GT(mat.cols, 0);
+    }
+}
+
 // execute quality test for a pair of images
 template <typename TMat>
-inline void quality_test(cv::Ptr<quality::QualityBase> ptr, const TMat& cmp, const Scalar& expected, const std::size_t quality_maps_expected = 1)
+inline void quality_test(cv::Ptr<quality::QualityBase> ptr, const TMat& cmp, const Scalar& expected, const bool quality_map_expected = true, const bool empty_expected = false )
 {
-    std::vector<cv::Mat> qMats = {};
-    ptr->getQualityMaps(qMats);
-    EXPECT_TRUE( qMats.empty());
+    cv::Mat qMat = {};
+    cv::UMat qUMat = {};
 
+    // quality map should return empty in initial state
+    ptr->getQualityMap(qMat);
+    EXPECT_TRUE( qMat.empty() );
+
+    // compute quality, check result
     quality_expect_near( expected, ptr->compute(cmp));
 
-    EXPECT_FALSE(ptr->empty());
-    ptr->getQualityMaps(qMats);
-    EXPECT_EQ( qMats.size(), quality_maps_expected);
-    for (auto& qm : qMats)
-    {
-        EXPECT_GT(qm.rows, 0);
-        EXPECT_GT(qm.cols, 0);
-    }
+    if (empty_expected)
+        EXPECT_TRUE(ptr->empty());
+    else
+        EXPECT_FALSE(ptr->empty());
 
+    // getQualityMap to Mat, UMat
+    ptr->getQualityMap(qMat);
+    ptr->getQualityMap(qUMat);
+
+    // check them
+    check_quality_map(qMat, !quality_map_expected);
+    check_quality_map(qUMat, !quality_map_expected);
+
+    // reset algorithm, should now be empty
     ptr->clear();
     EXPECT_TRUE(ptr->empty());
 }
@@ -106,6 +124,7 @@ inline void quality_performance_test( const char* name, Fn&& op )
 #endif
 }
 */
+
 }
 }
 

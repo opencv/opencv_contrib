@@ -21,38 +21,39 @@ public:
 
     /**
     @brief Computes SSIM
-    @param cmpImgs Comparison images
+    @param cmp Comparison image
     @returns cv::Scalar with per-channel quality values.  Values range from 0 (worst) to 1 (best)
     */
-    CV_WRAP cv::Scalar compute(InputArrayOfArrays cmpImgs) CV_OVERRIDE;
+    CV_WRAP cv::Scalar compute( InputArray cmp ) CV_OVERRIDE;
 
     /** @brief Implements Algorithm::empty()  */
     CV_WRAP bool empty() const CV_OVERRIDE { return _refImgData.empty() && QualityBase::empty(); }
 
     /** @brief Implements Algorithm::clear()  */
-    CV_WRAP void clear() CV_OVERRIDE { _refImgData.clear(); QualityBase::clear(); }
+    CV_WRAP void clear() CV_OVERRIDE { _refImgData = _mat_data(); QualityBase::clear(); }
 
     /**
-    @brief Create an object which calculates quality via mean square error
-    @param refImgs input image(s) to use as the source for comparison
+    @brief Create an object which calculates quality
+    @param ref input image to use as the reference image for comparison
     */
-    CV_WRAP static Ptr<QualitySSIM> create(InputArrayOfArrays refImgs);
+    CV_WRAP static Ptr<QualitySSIM> create( InputArray ref );
 
     /**
     @brief static method for computing quality
-    @param refImgs reference image(s)
-    @param cmpImgs comparison image(s)
-    @param qualityMaps output quality map(s), or cv::noArray()
+    @param ref reference image
+    @param cmp comparison image
+    @param qualityMap output quality map, or cv::noArray()
     @returns cv::Scalar with per-channel quality values.  Values range from 0 (worst) to 1 (best)
     */
-    CV_WRAP static cv::Scalar compute(InputArrayOfArrays refImgs, InputArrayOfArrays cmpImgs, OutputArrayOfArrays qualityMaps);
+    CV_WRAP static cv::Scalar compute( InputArray ref, InputArray cmp, OutputArray qualityMap );
 
 protected:
 
     // holds computed values for a mat
     struct _mat_data
     {
-        using mat_type = QualityBase::_quality_map_type;
+        // internal mat type
+        using mat_type = QualityBase::_mat_type;
 
         mat_type
             I
@@ -62,28 +63,32 @@ protected:
             , sigma_2
             ;
 
+        // allow default construction
+        _mat_data() = default;
+
+        // construct from mat_type
         _mat_data(const mat_type&);
 
-        // construct vector of _mat_data for input mats
-        static std::vector<_mat_data> create(InputArrayOfArrays arr);
+        // construct from inputarray
+        _mat_data(InputArray);
+
+        // return flag if this is empty
+        bool empty() const { return I.empty() && I_2.empty() && mu.empty() && mu_2.empty() && sigma_2.empty(); }
 
         // computes ssim and quality map for single frame
         static std::pair<cv::Scalar, mat_type> compute(const _mat_data& lhs, const _mat_data& rhs);
 
-        // computes mse and quality maps for multiple frames
-        static cv::Scalar compute(const std::vector<_mat_data>& lhs, const std::vector<_mat_data>& rhs, OutputArrayOfArrays qualityMaps);
-
     };  // mat_data
 
     /** @brief Reference image data */
-    std::vector<_mat_data> _refImgData;
+    _mat_data _refImgData;
 
     /**
     @brief Constructor
-    @param refImgData vector of reference images, converted to internal type
+    @param refImgData reference image, converted to internal type
     */
-    QualitySSIM(std::vector<_mat_data> refImgData)
-        : _refImgData(std::move(refImgData))
+    QualitySSIM( _mat_data refImgData )
+        : _refImgData( std::move(refImgData) )
     {}
 
 };  // QualitySSIM

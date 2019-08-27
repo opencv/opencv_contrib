@@ -5,7 +5,6 @@
 #ifndef OPENCV_QUALITY_QUALITY_UTILS_HPP
 #define OPENCV_QUALITY_QUALITY_UTILS_HPP
 
-#include <limits>   // numeric_limits
 #include "qualitybase.hpp"
 
 namespace cv
@@ -18,18 +17,33 @@ namespace quality_utils
 // default type of matrix to expand to
 static CV_CONSTEXPR const int EXPANDED_MAT_DEFAULT_TYPE = CV_32F;
 
-// expand matrix to target type
-template <typename OutT, typename InT>
-inline OutT expand_mat(const InT& src, int TYPE_DEFAULT = EXPANDED_MAT_DEFAULT_TYPE)
+// convert inputarray to specified mat type.  set type == -1 to preserve existing type
+template <typename R>
+inline R extract_mat(InputArray in, const int type = -1)
 {
-    OutT result = {};
+    R result = {};
+    if ( in.isMat() )
+        in.getMat().convertTo( result, (type != -1) ? type : in.getMat().type());
+    else if ( in.isUMat() )
+        in.getUMat().convertTo( result, (type != -1) ? type : in.getUMat().type());
+    else
+        CV_Error(Error::StsNotImplemented, "Unsupported input type");
+
+    return result;
+}
+
+// extract and expand matrix to target type
+template <typename R>
+inline R expand_mat( InputArray src, int TYPE_DEFAULT = EXPANDED_MAT_DEFAULT_TYPE)
+{
+    auto result = extract_mat<R>(src, -1);
 
     // by default, expand to 32F unless we already have >= 32 bits, then go to 64
     //  if/when we can detect OpenCL CV_16F support, opt for that when input depth == 8
     //  note that this may impact the precision of the algorithms and would need testing
     int type = TYPE_DEFAULT;
 
-    switch (src.depth())
+    switch (result.depth())
     {
     case CV_32F:
     case CV_32S:
@@ -37,54 +51,56 @@ inline OutT expand_mat(const InT& src, int TYPE_DEFAULT = EXPANDED_MAT_DEFAULT_T
         type = CV_64F;
     };  // switch
 
-    src.convertTo(result, type);
+    result.convertTo(result, type);
     return result;
 }
 
-// convert input array to vector of expanded mat types
-template <typename R>
-inline std::vector<R> expand_mats(InputArrayOfArrays arr, int TYPE_DEFAULT = EXPANDED_MAT_DEFAULT_TYPE)
+// return mat of observed min/max pair per column
+//  row 0:  min per column
+//  row 1:  max per column
+// template <typename T>
+inline cv::Mat get_column_range( const cv::Mat& data )
 {
-    std::vector<R> result = {};
-    std::vector<UMat> umats = {};
-    std::vector<Mat> mats = {};
+    CV_Assert(data.channels() == 1);
+    CV_Assert(data.rows > 0);
 
-    if (arr.isUMatVector())
-        arr.getUMatVector(umats);
-    else if (arr.isUMat())
-        umats.emplace_back(arr.getUMat());
-    else if (arr.isMatVector())
-        arr.getMatVector(mats);
-    else if (arr.isMat())
-        mats.emplace_back(arr.getMat());
-    else
-        CV_Error(Error::StsNotImplemented, "Unsupported input type");
+    cv::Mat result( cv::Size( data.cols, 2 ), data.type() );
 
-    // convert umats, mats to expanded internal type
-    for (auto& umat : umats)
-        result.emplace_back(expand_mat<R>(umat, TYPE_DEFAULT ));
-
-    for (auto& mat : mats)
-        result.emplace_back(expand_mat<R>(mat, TYPE_DEFAULT ));
-
-    return result;
-}
-
-// convert mse to psnr
-inline double mse_to_psnr(double mse, double max_pixel_value)
-{
-    return (mse == 0.)
-        ? std::numeric_limits<double>::infinity()
-        : 10. * std::log10((max_pixel_value * max_pixel_value) / mse)
+    auto
+        row_min = result.row(0)
+        , row_max = result.row(1)
         ;
-}
 
-// convert scalar of mses to psnrs
-inline cv::Scalar mse_to_psnr(cv::Scalar mse, double max_pixel_value)
+    // set initial min/max
+    data.row(0).copyTo(row_min);
+    data.row(0).copyTo(row_max);
+
+    for (int y = 1; y < data.rows; ++y)
+    {
+        auto row = data.row(y);
+        cv::min(row,row_min, row_min);
+        cv::max(row, row_max, row_max);
+    }
+    return result;
+}   // get_column_range
+
+// linear scale of each column from min to max
+//  range is column-wise pair of observed min/max.  See get_column_range
+template <typename T>
+inline void scale( cv::Mat& mat, const cv::Mat& range, const T min, const T max )
 {
-    for (int i = 0; i < mse.rows; ++i)
-        mse(i) = mse_to_psnr(mse(i), max_pixel_value);
-    return mse;
+    // value = lower + (upper - lower) * (value - feature_min[index]) / (feature_max[index] - feature_min[index]);
+    // where [lower] = lower bound, [upper] = upper bound
+
+    for (int y = 0; y < mat.rows; ++y)
+    {
+        auto row = mat.row(y);
+        auto row_min = range.row(0);
+        auto row_max = range.row(1);
+
+        for (int x = 0; x < mat.cols; ++x)
+            row.at<T>(x) = min + (max - min) * (row.at<T>(x) - row_min.at<T>(x) ) / (row_max.at<T>(x) - row_min.at<T>(x));
+    }
 }
 
 }   // quality_utils

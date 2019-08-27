@@ -1,17 +1,19 @@
 set(the_description "Text Detection and Recognition")
-ocv_define_module(text opencv_ml opencv_imgproc opencv_core opencv_features2d opencv_dnn OPTIONAL opencv_highgui WRAP python java)
+set(__extra_deps "")
+if(DEBUG_opencv_text)
+  list(APPEND __extra_deps PRIVATE_REQUIRED opencv_highgui)
+endif()
 
-if(NOT CMAKE_CROSSCOMPILING OR OPENCV_FIND_TESSERACT)
-  set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${CMAKE_CURRENT_SOURCE_DIR}/cmake)
-  find_package(Tesseract QUIET)
-  if(Tesseract_FOUND)
-    message(STATUS "Tesseract:   YES")
-    set(HAVE_TESSERACT 1)
-    ocv_include_directories(${Tesseract_INCLUDE_DIRS})
-    ocv_target_link_libraries(${the_module} ${Tesseract_LIBRARIES})
-  else()
-    message(STATUS "Tesseract:   NO")
-  endif()
+ocv_define_module(text
+    opencv_ml opencv_imgproc opencv_core opencv_features2d opencv_dnn
+    ${__extra_deps}
+    WRAP
+      python
+      java
+)
+
+if(TARGET ocv.3rdparty.tesseract)
+  ocv_target_link_libraries(${the_module} LINK_PRIVATE ocv.3rdparty.tesseract)
 endif()
 
 configure_file(${CMAKE_CURRENT_SOURCE_DIR}/text_config.hpp.in

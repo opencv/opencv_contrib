@@ -76,7 +76,7 @@ CV_EXPORTS_W
 void
 importReconstruction(const cv::String &file, OutputArrayOfArrays Rs,
                      OutputArrayOfArrays Ts, OutputArrayOfArrays Ks,
-                     OutputArray points3d, int file_format = SFM_IO_BUNDLER);
+                     OutputArrayOfArrays points3d, int file_format = SFM_IO_BUNDLER);
 
 //! @} sfm
 

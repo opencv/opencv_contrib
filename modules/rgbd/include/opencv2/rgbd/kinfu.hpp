@@ -102,8 +102,11 @@ struct CV_EXPORTS_W Params
     /** number of ICP iterations for each pyramid level */
     CV_PROP std::vector<int> icpIterations;
 
-    // depth truncation is not used by default
-    // float icp_truncate_depth_dist; //meters
+    /** @brief Threshold for depth truncation in meters
+
+    All depth values beyond this threshold will be set to zero
+    */
+    CV_PROP_RW float truncateThreshold;
 };
 
 /** @brief KinectFusion implementation

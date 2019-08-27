@@ -123,10 +123,10 @@ namespace cv
             virtual void setTau(double val) = 0;
 
             //! @brief Weight parameter to balance data term and smoothness term
-            /** @see setLabmda */
-            virtual double getLabmda() const = 0;
-            /** @copybrief getLabmda @see getLabmda */
-            virtual void setLabmda(double val) = 0;
+            /** @see setLambda */
+            virtual double getLambda() const = 0;
+            /** @copybrief getLambda @see getLambda */
+            virtual void setLambda(double val) = 0;
 
             //! @brief Parameter of spacial distribution in Bilateral-TV
             /** @see setAlpha */

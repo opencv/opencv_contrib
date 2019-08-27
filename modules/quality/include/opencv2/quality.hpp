@@ -10,5 +10,6 @@
 #include "quality/qualitypsnr.hpp"
 #include "quality/qualityssim.hpp"
 #include "quality/qualitygmsd.hpp"
+#include "quality/qualitybrisque.hpp"
 
 #endif

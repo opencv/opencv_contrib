@@ -180,8 +180,8 @@ public:
     CV_WRAP virtual void run(InputArray inputToSegment, const int channelIndex=0)=0;
 
     /** @brief access function
-    @return the last segmentation result: a boolean picture which is resampled between 0 and 255 for a display purpose
-   */
+    return the last segmentation result: a boolean picture which is resampled between 0 and 255 for a display purpose
+    */
     CV_WRAP virtual void getSegmentationPicture(OutputArray transientAreas)=0;
 
     /** @brief cleans all the buffers of the instance

@@ -1492,8 +1492,9 @@ Size FastICPOdometry::prepareFrameCache(Ptr<OdometryFrame>& frame, int cacheType
     // mask isn't used by FastICP
     Intr intr(cameraMatrix);
     float depthFactor = 1.f; // user should rescale depth manually
+    float truncateThreshold = 0.f; // disabled
     makeFrameFromDepth(frame->depth, frame->pyramidCloud, frame->pyramidNormals, intr, (int)iterCounts.total(),
-                       depthFactor, sigmaDepth, sigmaSpatial, kernelSize);
+                       depthFactor, sigmaDepth, sigmaSpatial, kernelSize, truncateThreshold);
 
     return frame->depth.size();
 }

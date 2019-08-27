@@ -102,13 +102,13 @@ void getLocalPatch(
             bounds = src.at<cv::Vec4i>(_r,c);
             roi.x      = bounds.val[0] - border_left;
             roi.width = bounds.val[1] - bounds.val[0];
+            cv::Mat(winPointMask, roi).setTo(1);
         }
         else
         {
             bounds.val[0] = border_left;
             bounds.val[1] = border_left + roi.width;
         }
-        cv::Mat(winPointMask, roi).setTo(1);
         min_c = MIN(min_c, bounds.val[0]);
         max_c = MAX(max_c, bounds.val[1]);
         noPoints += roi.width;

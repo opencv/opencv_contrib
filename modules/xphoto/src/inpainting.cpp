@@ -83,7 +83,7 @@ namespace xphoto
         cv::resize(_src,  src,  _src.size()/ls,  0, 0,    cv::INTER_AREA);
 
         src.convertTo( img, CV_32F );
-        img.setTo(0, 255 - mask);
+        img.setTo(0, ~(mask > 0));
 
         cv::erode( mask,  dmask, cv::Mat(), cv::Point(-1,-1), 2);
         cv::erode(dmask, ddmask, cv::Mat(), cv::Point(-1,-1), 2);

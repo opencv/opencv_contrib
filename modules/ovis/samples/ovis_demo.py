@@ -14,12 +14,17 @@ owin = cv.ovis.createWindow("VR", imsize)
 cv.ovis.createGridMesh("ground", (10, 10), (10, 10))
 owin.createEntity("ground", "ground", rot=(1.57, 0, 0))
 owin.createCameraEntity("cam", K, imsize, 5)
-owin.createEntity("figure", "Sinbad.mesh", tvec=(0, -5, 0), rot=(np.pi, 0, 0))  # externally defined mesh
+owin.createEntity("sinbad", "Sinbad.mesh", tvec=(0, -5, 0), rot=(np.pi, 0, 0))  # externally defined mesh
 owin.createLightEntity("sun", (0, 0, -100))
+
+# setup and play idle animation
+owin.setEntityProperty("sinbad", cv.ovis.ENTITY_ANIMBLEND_MODE, 1) # 1 = cumulative
+owin.playEntityAnimation("sinbad", "IdleBase")
+owin.playEntityAnimation("sinbad", "IdleTop")
 
 # interaction scene
 iwin = cv.ovis.createWindow("AR", imsize, cv.ovis.SCENE_SEPERATE | cv.ovis.SCENE_INTERACTIVE)
-iwin.createEntity("figure", "Sinbad.mesh", tvec=(0, -5, 0), rot=(np.pi, 0, 0))
+iwin.createEntity("sinbad", "Sinbad.mesh", tvec=(0, -5, 0), rot=(np.pi, 0, 0))
 iwin.createLightEntity("sun", (0, 0, -100))
 iwin.setCameraIntrinsics(K, imsize)
 
