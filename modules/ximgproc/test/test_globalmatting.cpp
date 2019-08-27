@@ -35,7 +35,7 @@ void CV_GlobalMattingTest::runModel()
     ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);
     return;
   }
-  if(img.cols!=trimap.cols || img.rows!=trimap.cols)
+  if(img.cols!=trimap.cols || img.rows!=trimap.rows)
   {
     ts->printf(cvtest::TS::LOG,"Dimensions of trimap and the image are not the same");
     ts->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);
