@@ -58,16 +58,17 @@ void CV_GlobalMattingTest::runModel()
   }
 }
   
+CV_GlobalMattingTest::CV_GlobalMattingTest()
+{
+  gm = makePtr<GlobalMatting>();
+}  
 void CV_GlobalMattingTest::run(int)
 {
   runModel();
 } 
 
-CV_GlobalMattingTest::CV_GlobalMattingTest()
-{
-  gm = makePtr<GlobalMatting>();
-}
-CV_
+
+
 TEST(CV_GlobalMattingTest,accuracy)
 {
   CV_GlobalMattingTest test;
