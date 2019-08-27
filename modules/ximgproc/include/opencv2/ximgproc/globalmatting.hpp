@@ -93,15 +93,15 @@ class CV_EXPORTS GlobalMatting
 	// erode foreground and background regions to increase the size of unknown region
 	void erodeFB(cv::Mat &_trimap, int r);
 
-	void expansionOfKnownRegions(cv::InputArray _img, cv::InputOutputArray _trimap, int niter);	
-	void globalMattingHelper(cv::Mat _image, cv::Mat _trimap, cv::Mat &_foreground, cv::Mat &_alpha, cv::Mat &_conf);		    
+	void expansionOfKnownRegions(cv::InputArray _img, cv::InputOutputArray _trimap, int niter);
+	void globalMattingHelper(cv::Mat _image, cv::Mat _trimap, cv::Mat &_foreground, cv::Mat &_alpha, cv::Mat &_conf);	    
         public:
                 GlobalMatting();
 
 		void globalMatting(cv::InputArray _image, cv::InputArray _trimap, cv::OutputArray _foreground, cv::OutputArray _alpha, cv::OutputArray _conf);
 
                 void getMat(cv::Mat image,cv::Mat trimap,cv::Mat &foreground,cv:: Mat &alpha,int niter=9);
-           
+
 };
 
 }
