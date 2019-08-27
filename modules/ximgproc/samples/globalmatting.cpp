@@ -11,7 +11,7 @@ int main(int argc,char** argv)
     if(argc<3)
     {
       cout<<"arg1: Directory of Input image"<<endl;
-      cout<<"arg2: Directory of its trimap"<<endl; 
+      cout<<"arg2: Directory of its trimap"<<endl;
       cout<<"arg3(optional): Enter the number of iterations to run expansion of trimap"<<endl;
       return -1;
     }
