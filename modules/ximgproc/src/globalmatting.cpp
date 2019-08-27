@@ -282,8 +282,8 @@ void GlobalMatting::calculateAlphaPatchMatch(const cv::Mat_<cv::Vec3b> &image,
 	            if (r < 1)
 	                break;
 
-	            int di = r * (rand() / (RAND_MAX + 1.f));
-	            int dj = r * (rand() / (RAND_MAX + 1.f));
+	            int di = int(r * (rand() / (RAND_MAX + 1.f)));
+	            int dj = int(r * (rand() / (RAND_MAX + 1.f)));
 
 	            int fi = s.fi + di;
 	            int bj = s.bj + dj;
@@ -419,7 +419,7 @@ void GlobalMatting::expansionOfKnownRegions(cv::InputArray _img, cv::InputOutput
 	CV_Error(CV_StsBadArg, "image and trimap mush have same size");
 
     for (int i = 0; i < niter; ++i)
-	expansionOfKnownRegionsHelper(img, trimap, i + 1, niter - i);
+	expansionOfKnownRegionsHelper(img, trimap, i + 1, float(niter - i));
     erodeFB(trimap, 2);
 }
 
@@ -470,8 +470,8 @@ void GlobalMatting::globalMattingHelper(cv::Mat _image, cv::Mat _trimap, cv::Mat
 	            break;
 	        case 128:
 	        {
-	            alpha(y, x) = 255 * samples[y][x].alpha;
-	            conf(y, x) = 255 * exp(-samples[y][x].cost / 6);
+	            alpha(y, x) = uchar(255 * samples[y][x].alpha);
+	            conf(y, x) = uchar(255 * exp(-samples[y][x].cost / 6));
 	            cv::Point p = foregroundBoundary[samples[y][x].fi];
 	            foreground(y, x) = image(p.y, p.x);
 	            break;
