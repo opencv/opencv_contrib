@@ -16,7 +16,9 @@ class CV_GlobalMattingTest : public cvtest::BaseTest
 
   protected:
      Ptr<GlobalMatting> gm;
+     virtual void run(int);
      void runModel();
+     
 };
 
 void CV_GlobalMattingTest::runModel()
@@ -55,12 +57,17 @@ void CV_GlobalMattingTest::runModel()
     return;
   }
 }
+  
+void CV_GlobalMattingTest::run(int)
+{
+  runModel();
+} 
 
 CV_GlobalMattingTest::CV_GlobalMattingTest()
 {
   gm = makePtr<GlobalMatting>();
 }
-
+CV_
 TEST(CV_GlobalMattingTest,accuracy)
 {
   CV_GlobalMattingTest test;
