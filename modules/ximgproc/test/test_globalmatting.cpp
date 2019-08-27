@@ -4,7 +4,7 @@ namespace opencv_test
 {
 namespace
 {
-const std::string INPUT_DIR       = "matting";
+const std::string INPUT_DIR       = "ximgproc";
 const std::string IMAGE_FILENAME  = "input/doll.png";
 const std::string TRIMAP_FILENAME = "trimap/doll.png";
 
