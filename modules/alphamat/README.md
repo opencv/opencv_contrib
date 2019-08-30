@@ -9,5 +9,5 @@ Using these information flow, energy/error(E) is obtained as a weighted local co
 E represents the deviation of unknown pixels opacity or colour from what we predict it to be using other pixels. So, the algorithm aims at minimizing this error. This is coded in **alphac.cpp**
 
 To run the code - 
-*g++ -std=c++11 alphac.cpp \`pkg-config --cflags --libs opencv\`*
+**g++ -std=c++11 alphac.cpp \`pkg-config --cflags --libs opencv\`**
 
