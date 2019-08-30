@@ -5,9 +5,8 @@ This is a pixel-affinity based alpha matting algorithm which solves a linear sys
 * Intra U information flow - They distribute the information inside U effectively by encouraging pixels with similar colors inside U to have similar opacity. This is coded in **intraU.hpp** 
 * Local information flow - Spatial connectivity is one of the main cues for information flow which is achieved by connecting each pixel in U to its immediate neighbors to ensure spatially smooth mattes. This is coded in **local_info.hpp**
 
-Using these information flow, energy/error(E) is obtained as a weighted local composite of E<sub>CM</sub>, E<sub>KU</sub>(K-to-U information flow), E<sub>UU</sub>(Intra U information flow), E<sub>L</sub>(Local information flow.
+Using these information flow, energy/error(E) is obtained as a weighted local composite of E<sub>CM</sub>, E<sub>KU</sub>(K-to-U information flow), E<sub>UU</sub>(Intra U information flow), E<sub>L</sub>(Local information flow).
 E represents the deviation of unknown pixels opacity or colour from what we predict it to be using other pixels. So, the algorithm aims at minimizing this error. This is coded in **alphac.cpp**
 
 To run the code - 
 **g++ -std=c++11 alphac.cpp \`pkg-config --cflags --libs opencv\`**
-
