@@ -2,9 +2,8 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+const int dim = 5; //dimension of feature vectors 
 #include "precomp.hpp"
-
-// const int dim = 5; //dimension of feature vectors 
 
 using namespace std;
 using namespace cv; 
@@ -22,7 +21,6 @@ int check_image(Mat& image){
         cout <<  "Could not open or find the image" << endl ;
         return -1;
     }
-    else cout<<"cool"<<endl;
     return 0;
 }
 
