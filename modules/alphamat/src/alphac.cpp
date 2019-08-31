@@ -174,7 +174,7 @@ void infoFlow(Mat& image, Mat& tmap, Mat& result, bool useKU, bool trim){
     // cout<<"Trimmed"<<endl;
     // char* res_path = argv[3];
     result = trim_alpha;
-    imwrite("elephant_alpha_res.png", trim_alpha);
+    imwrite("result.png", trim_alpha);
     // imwrite(res_path, trim_alpha);
 
     /*
