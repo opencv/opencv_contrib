@@ -8,7 +8,7 @@ namespace cv
 {
 namespace ximgproc
 {
- 
+
 struct IntensityComp
 {
 	    IntensityComp(const cv::Mat_<cv::Vec3b> &image) : image(image)
@@ -28,7 +28,7 @@ struct IntensityComp
 };
 
 
-	
+
 std::vector<cv::Point> GlobalMatting::findBoundaryPixels(const cv::Mat_<uchar> &trimap, int a, int b)
 {
     std::vector<cv::Point> result;
