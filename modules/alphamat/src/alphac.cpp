@@ -188,8 +188,8 @@ void infoFlow(Mat& image, Mat& tmap, Mat& result, bool useKU, bool trim){
 int main(int argc, char** argv){
   
     Mat image,tmap;
-    const char* img_path = "../../data/input_lowres/elephant.png";
-    // char* img_path = argv[1];
+    // const char* img_path = "../../data/input_lowres/elephant.png";
+    char* img_path = argv[1];
     // cout<<img_path<<endl;
     image = imread(img_path, CV_LOAD_IMAGE_COLOR);   // Read the file
 
@@ -198,8 +198,8 @@ int main(int argc, char** argv){
     // cout<<image.size<<endl;
     // cout<<image.channels()<<endl;
 
-    const char* tmap_path = "../../data/trimap_lowres/Trimap1/elephant.png";
-    // char* tmap_path = argv[2];
+    // const char* tmap_path = "../../data/trimap_lowres/Trimap1/elephant.png";
+    char* tmap_path = argv[2];
     tmap = imread(tmap_path, CV_LOAD_IMAGE_GRAYSCALE);
     check_image(tmap);
     // show(tmap);
