@@ -12,3 +12,5 @@ Pre-processing and post-processing is implemented in **trimming.hpp**
 
 To run the code - 
 **g++ -std=c++11 alphac.cpp \`pkg-config --cflags --libs opencv\`**
+**./a.out \<path to image> \<path to corresponding trimap>**
+Sample image and trimap are in opencv_contrib/modules/alphamat/src/img and opencv_contrib/modules/alphamat/src/trimap
