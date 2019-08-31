@@ -242,7 +242,7 @@ void trimming(Mat &img, Mat &tmap, Mat &new_tmap, bool post){
     		}
 		}
 	}
-	imwrite("2.png", new_tmap);
+	// imwrite("2.png", new_tmap);
 
 	if(post)
 		return;
