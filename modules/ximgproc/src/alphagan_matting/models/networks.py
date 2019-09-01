@@ -272,10 +272,10 @@ class AlphaPredictionLoss(nn.Module):
 
 class CompLoss(nn.Module):
 
-        """
-        Compostion Loss : Absolute difference between the ground truth RGB colors and the predicted RGB colors composited
-        by the groundtruth foreground, the ground truth background and the predicted alpha mattes
-        """
+    """
+    Compostion Loss : Absolute difference between the ground truth RGB colors and the predicted RGB colors composited
+    by the groundtruth foreground, the ground truth background and the predicted alpha mattes
+    """
 
     def __init__(self):
         super(CompLoss, self).__init__()
