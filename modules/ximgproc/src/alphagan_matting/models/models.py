@@ -3,7 +3,8 @@ import torch.nn as nn
 def create_model(opt):
     model = None
     print(opt.model)
-
+       
+    if opt.model == 'simple':    
         assert(opt.dataset_mode == 'generated_simple')
         from .simple_gan import SimpleModel
         model = SimpleModel()
