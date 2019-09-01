@@ -5,7 +5,7 @@ from data.base_data_loader import BaseDataLoader
 def CreateDataset(opt):
     dataset = None
 
-    elif opt.dataset_mode == 'testData':
+    if opt.dataset_mode == 'testData':
         from data.test_dataset import TestDataset
         dataset = TestDataset()
     elif opt.dataset_mode == 'generated_simple':
