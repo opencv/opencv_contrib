@@ -15,7 +15,7 @@ After evaluating this implementation on alphamatting.com, the results are almost
 Following were the results:
 
 |     Error type              |      Original implementation    | This implementation  |
-|     -----------             |      ------------------------   | -------------------  |  
+|     -----------             |      ------------------------   | -------------------  |
 | Sum of absolute differences |       31                        | 31.3                 |
 | Mean square error           |       28.3                      | 29.5                 |
 | Gradient error              |       25                        | 26.3                 |
