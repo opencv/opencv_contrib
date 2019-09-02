@@ -17,7 +17,6 @@ PERF_TEST_P( Size_MatType_OutMatDepth, integral1,
             testing::Values( CV_8UC1, CV_8UC4 ),
             testing::Values( CV_32S, CV_32F, CV_64F ) ) )
 {
-   
     string folder = "cv/alphamat/";
     string image_path = folder + "img/elephant.png";
     string trimap_path = folder + "trimap/elephant.png";
@@ -37,5 +36,4 @@ PERF_TEST_P( Size_MatType_OutMatDepth, integral1,
 
     SANITY_CHECK_NOTHING();
 }
-
 } // namespace
