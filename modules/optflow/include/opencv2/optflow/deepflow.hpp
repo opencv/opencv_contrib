@@ -43,7 +43,7 @@ public:
     CV_WRAP virtual void setInterpolationType(int val) = 0;
     CV_WRAP virtual int getInterpolationType() const = 0;
 
-    /** @brief Creates instance of cv::DeepFlow*/
+    /** @brief Creates instance of cv::optflow::OpticalFlowDeepFlow*/
     CV_WRAP static Ptr<OpticalFlowDeepFlow> create(
                                             float sigma = 0.6f,
                                             int minSize = 25,
