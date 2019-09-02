@@ -183,7 +183,6 @@ void cm(Mat& image, Mat& tmap, SparseMatrix<double>& Wcm, SparseMatrix<double>& 
   cout << "cm DONE" << endl;
 }
 
-
 /*
 int main()
 {
@@ -198,7 +197,5 @@ int main()
   SparseMatrix<double> Wcm(N,N), Dcm(N,N);
   cm(image, tmap, Wcm, Dcm);
 }
-
 */
 // #endif
-
