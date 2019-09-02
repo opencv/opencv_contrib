@@ -2,7 +2,7 @@
 
 Alphamatting is the problem of extracting the foreground from an image. Given the input of image and its corresponding trimap, we try to extract the foreground from the background. Following is an example -
 
-Input Image                | Input trimap              | Ouput Alpha matte  
+Input Image                | Input trimap              | Ouput Alpha matte
 :-------------------------:|:-------------------------:|:-------------------------:
 <img src="https://github.com/muskaankularia/opencv_contrib/blob/alphamatting/modules/alphamat/img/net.png" alt="alt text" width="300" height="200"> | <img src="https://github.com/muskaankularia/opencv_contrib/blob/alphamatting/modules/alphamat/trimap/net.png" alt="alt text" width="300" height="200"> | <img src="https://github.com/muskaankularia/opencv_contrib/blob/alphamatting/modules/alphamat/Result/result_net.png" alt="alt text" width="300" height="200">
 
@@ -30,7 +30,7 @@ Sample image and trimap are in opencv_contrib/modules/alphamat/src/img and openc
 Results for input_lowres are available here -
 https://docs.google.com/document/d/1BJG4633_U5K-Z0QLp3RTi43q25NI0hrTw-Q4w_85NrA/edit?usp=sharing
 
-Input Image             | Ouput Alpha matte 
+Input Image             | Ouput Alpha matte
 :-------------------------:|:-------------------------:
 <img src="https://github.com/muskaankularia/opencv_contrib/blob/alphamatting/modules/alphamat/img/net.png" alt="alt text" width="200" height="155">  |  <img src="https://github.com/muskaankularia/opencv_contrib/blob/alphamatting/modules/alphamat/Result/result_net.png" alt="alt text" width="200" height="155">
 <img src="https://github.com/muskaankularia/opencv_contrib/blob/alphamatting/modules/alphamat/img/doll.png" alt="alt text" width="200" height="155">  |  <img src="https://github.com/muskaankularia/opencv_contrib/blob/alphamatting/modules/alphamat/Result/result_doll.png" alt="alt text" width="200" height="155">
