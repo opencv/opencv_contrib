@@ -15,3 +15,8 @@ To run the code -
 1. **./a.out \<path to image> \<path to corresponding trimap>**
 
 Sample image and trimap are in opencv_contrib/modules/alphamat/src/img and opencv_contrib/modules/alphamat/src/trimap
+
+Results for input_lowres are available here -
+https://docs.google.com/document/d/1BJG4633_U5K-Z0QLp3RTi43q25NI0hrTw-Q4w_85NrA/edit?usp=sharing
+
+Average time taken to compute the different flows is 40s, but solving of linear equations using preconditioned conjugate gradient method takes another 2-3 min, which can be lessened by allowing lesser iterations.
