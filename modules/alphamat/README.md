@@ -1,4 +1,12 @@
 ## Designing Effective Inter-Pixel Information Flow for Natural Image Matting:
+Alphamatting is the problem of extracting the foreground from an image. Given the input of image and its corresponding trimap, we try to extract the foreground from the background. Following is an example - 
+
+Input Image                | Input trimap              | Ouput Alpha matte  
+:-------------------------:|:-------------------------:|:-------------------------:
+<img src="https://github.com/muskaankularia/opencv_contrib/blob/alphamatting/modules/alphamat/img/net.png" alt="alt text" width="300" height="200"> | <img src="https://github.com/muskaankularia/opencv_contrib/blob/alphamatting/modules/alphamat/trimap/net.png" alt="alt text" width="300" height="200"> | <img src="https://github.com/muskaankularia/opencv_contrib/blob/alphamatting/modules/alphamat/Result/result_net.png" alt="alt text" width="300" height="200">
+
+This project is implementation of Information-Flow Matting [Yağız Aksoy, Tunç Ozan Aydın, Marc Pollefeys] https://arxiv.org/pdf/1707.05055.pdf.
+
 This is a pixel-affinity based alpha matting algorithm which solves a linear system of equations using preconditioned conjugate gradient method. Affinity-based methods operate by propagating opacity information from known opacity regions(K) into unknown opacity regions(U) using a variety of affinity definitions mentioned as -
 * Color mixture information flow - Opacity transitions in a matte occur as a result of the original colors in the image getting mixed with each other due to transparency or intricate parts of an object. They make use of this fact by representing each pixel in U as a mixture of similarly-colored pixels and the difference is the energy term ECM,  which is to be reduced. This is coded in **cm.hpp**
 * K-to-U information flow - Connections from every pixel in U to both F(foreground pixels) and B(background pixels) are made to facilitate direct information flow from known-opacity regions to even the most remote opacity-transition regions in the image. This is coded in **KtoU.hpp**
