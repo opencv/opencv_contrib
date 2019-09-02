@@ -8,6 +8,5 @@ ocv_define_module(alphamat opencv_core
     opencv_imgproc
     opencv_objdetect
     opencv_imgcodecs
-    opencv_photo     # seamlessClone() (face_swap sample)
-    WRAP python java
+    opencv_photo     
 )
