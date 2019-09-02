@@ -43,6 +43,11 @@ Input Image             | Ouput Alpha matte
 
 Average time taken to compute the different flows is 40s, but solving of linear equations using preconditioned conjugate gradient method takes another 2-3 min, which can be lessened by allowing lesser iterations.
 
+## TO DO
+* Results need to be improved by extensively comparing each flow's matrix with yaksoy MATLAB implementation. 
+* Runtime needs improvement. 
+* Third part library(Eigen, nanoflann) dependencies can be removed. 
+
 ## References
 
 [1] Yagiz Aksoy, Tunc Ozan Aydin, Marc Pollefeys, "Designing Effective Inter-Pixel Information Flow for Natural Image Matting", CVPR, 2017. [[link](http://people.inf.ethz.ch/aksoyy/ifm/)]
