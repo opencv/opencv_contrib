@@ -204,4 +204,3 @@ int main(int argc, char** argv){
     infoFlow(image, tmap, result, false, true);
     return 0;
 }
-
