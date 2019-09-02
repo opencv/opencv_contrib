@@ -7,6 +7,7 @@ To turn off building one of these module repositories, set the names in bold bel
 ```
 $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<reponame>=OFF <opencv_source_directory>
 ```
+- **alphamat**: Information flow algorithm that estimates alpha value for every pixel using the image and its corresponding trimap.
 
 - **aruco**: ArUco and ChArUco Markers -- Augmented reality ArUco marker and "ChARUco" markers where ArUco markers embedded inside the white areas of the checker board.
 
