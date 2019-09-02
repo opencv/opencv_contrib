@@ -128,6 +128,4 @@ TEST(Alphamat_infoFlow, regression)
     double errorL1 = cvtest::norm(reference, result, NORM_L1);
     EXPECT_LE(errorL1, reference.total() * numerical_precision) << "size=" << reference.size();
 }
-	
-
 }} //namespace
