@@ -3,7 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include "precomp.hpp"
-#include "../include/opencv2/infoflow.hpp"
+#include "opencv2/infoflow.hpp"
 
 namespace cv{
 namespace alphamat{

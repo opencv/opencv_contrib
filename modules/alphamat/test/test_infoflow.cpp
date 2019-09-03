@@ -18,11 +18,11 @@ namespace opencv_test {
             string trimap_path = folder + "trimap/elephant.png";
             string reference_path = folder + "reference/elephant.png";
 
-            Mat image = imread(original_path, IMREAD_COLOR);
-            Mat trimap = imread(original_path, IMREAD_COLOR);
-            Mat reference = imread(expected_path, IMREAD_GRAYSCALE);
+            Mat image = imread(image_path, IMREAD_COLOR);
+            Mat trimap = imread(trimap_path, IMREAD_COLOR);
+            Mat reference = imread(reference_path, IMREAD_GRAYSCALE);
 
-            ASSERT_FALSE(image.empty()) << "Could not load input image " << original_path;
+            ASSERT_FALSE(image.empty()) << "Could not load input image " << image_path;
             ASSERT_FALSE(trimap.empty()) << "Could not load input trimap " << trimap_path;
             ASSERT_FALSE(reference.empty()) << "Could not load reference image " << reference_path;
 
