@@ -29,5 +29,9 @@ namespace cv{ namespace alphamat{
     
     void infoFlow(Mat& image, Mat& tmap, Mat& result, bool useKU, bool trim);
 
+    void abc(){
+    	std::cout << "testing"; 
+    }
+
 }}
 #endif

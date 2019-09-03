@@ -24,7 +24,7 @@ void generateFVectorKtoU(my_vector_of_vectors_t& fv_unk, my_vector_of_vectors_t&
   int nCols = img.cols;
 
   int fg = 0, bg = 0, unk = 0, c1 = 0, c2 = 0, c3 = 0;
-  int i, j, k;
+  int i, j;
   for (i = 0; i < nRows; ++i)
     for (j = 0; j < nCols; ++j){
       double pix = tmap.at<uchar>(i, j);
