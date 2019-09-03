@@ -7,7 +7,17 @@
 
 #include <iostream>
 #include <vector>
-#include <opencv2/opencv.hpp>
+#include <unordered_set>
+#include <set>
+
+#include <opencv2/core/base.hpp>
+#include <opencv2/core/utility.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
+#include "nanoflann.hpp"
+#include "KDTreeVectorOfVectorsAdaptor.h"
+#include "Eigen/Sparse"
 
 #include "KtoU.hpp"
 #include "intraU.hpp"

@@ -7,14 +7,7 @@
 // header file content
 
 
-#include <iostream>
-#include <vector>
-#include <unordered_set>
 
-#include <opencv2/opencv.hpp>
-#include "nanoflann.hpp"
-#include "KDTreeVectorOfVectorsAdaptor.h"
-#include "Eigen/Sparse"
 using namespace Eigen;
 using namespace nanoflann;
 using namespace std;

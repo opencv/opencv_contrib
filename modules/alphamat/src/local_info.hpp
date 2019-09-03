@@ -5,11 +5,6 @@
 // #ifndef local_info
 // #define local_info
 
-#include <iostream>
-#include <vector>
-
-#include <opencv2/opencv.hpp>
-#include "Eigen/Sparse"
 using namespace Eigen;
 using namespace std;
 using namespace cv;
