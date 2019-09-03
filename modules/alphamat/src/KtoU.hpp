@@ -5,7 +5,10 @@
 // #ifndef KtoU
 // #define KtoU
 
-#include <bits/stdc++.h>
+#include <iostream>
+#include <vector>
+#include <set>
+
 #include <opencv2/opencv.hpp>
 #include "nanoflann.hpp"
 #include "KDTreeVectorOfVectorsAdaptor.h"

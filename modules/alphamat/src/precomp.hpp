@@ -5,8 +5,10 @@
 #ifndef __OPENCV_PRECOMP_H__
 #define __OPENCV_PRECOMP_H__
 
-#include <bits/stdc++.h>
+#include <iostream>
+#include <vector>
 #include <opencv2/opencv.hpp>
+
 #include "KtoU.hpp"
 #include "intraU.hpp"
 #include "cm.hpp"
