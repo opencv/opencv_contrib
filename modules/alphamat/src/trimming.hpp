@@ -284,8 +284,8 @@ void trimming(Mat &img, Mat &tmap, Mat &new_tmap, bool post){
     // else remain unknown
   }
 
-  imwrite("1.png", tmap);
-  imwrite("3.png", new_tmap);
+  // imwrite("1.png", tmap);
+  // imwrite("3.png", new_tmap);
 }
 
 

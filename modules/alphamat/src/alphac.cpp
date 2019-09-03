@@ -8,11 +8,13 @@ const int dim = 5;  // dimension of feature vectors
 using namespace std;
 using namespace cv;
 
+/*
 void show(Mat& image){
     namedWindow( "Display window", WINDOW_AUTOSIZE );    // Create a window for display.
     imshow( "Display window", image );                   // Show our image inside it.
     waitKey(0);                                          // Wait for a keystroke in the window
 }
+*/
 
 int check_image(Mat& image){
     if ( !image.data )                              // Check for invalid input
@@ -172,7 +174,6 @@ void infoFlow(Mat& image, Mat& tmap, Mat& result, bool useKU, bool trim){
     // cout<<"Trimmed"<<endl;
     // char* res_path = argv[3];
     result = trim_alpha;
-    imwrite("result.png", trim_alpha);
     // imwrite(res_path, trim_alpha);
 
     /*
@@ -182,7 +183,7 @@ void infoFlow(Mat& image, Mat& tmap, Mat& result, bool useKU, bool trim){
     */
 }
 
-
+/*
 int main(int argc, char** argv){
     Mat image, tmap;
     // const char* img_path = "../../data/input_lowres/elephant.png";
@@ -202,5 +203,7 @@ int main(int argc, char** argv){
     // show(tmap);
     Mat result;
     infoFlow(image, tmap, result, false, true);
+    imwrite("result1.png", result);
     return 0;
 }
+*/
