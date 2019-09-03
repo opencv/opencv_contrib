@@ -7,7 +7,10 @@
 // header file content
 
 
-#include <bits/stdc++.h>
+#include <iostream>
+#include <vector>
+#include <unordered_set>
+
 #include <opencv2/opencv.hpp>
 #include "nanoflann.hpp"
 #include "KDTreeVectorOfVectorsAdaptor.h"
@@ -18,9 +21,8 @@ using namespace std;
 using namespace cv;
 
 
-
 typedef vector<vector<double>> my_vector_of_vectors_t;
-typedef vector<set<int, greater<int>>> my_vector_of_set_t;
+// typedef vector<set<int, greater<int>>> my_vector_of_set_t;
 
 
 void generateFVectorCM(my_vector_of_vectors_t &samples, Mat &img)

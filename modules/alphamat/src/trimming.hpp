@@ -2,7 +2,10 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
-#include <bits/stdc++.h>
+#include <iostream>
+#include <vector>
+#include <set>
+
 #include <opencv2/opencv.hpp>
 #include "nanoflann.hpp"
 #include "KDTreeVectorOfVectorsAdaptor.h"
