@@ -4,7 +4,7 @@ The Global sampling based method uses all known samples(from a trimap), Unlike o
 which collect only nearby samples.<br/>
 It first estimates the foreground and background color and then computes the alpha matte.
 
-Input to the model is the Image and the trimap, and the output is the alpha matte.
+Input to the model is the Image and the trimap, and the output is the alpha matte of the image.
 
 This [blog post](https://medium.com/vedacv/paper-summary-a-global-sampling-method-for-alpha-matting-490a4217eb2) gives a summary of the paper.
 
