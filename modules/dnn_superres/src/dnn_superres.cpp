@@ -48,7 +48,7 @@ namespace cv
             }
             else
             {
-                std::cout << "Could not load model. \n";
+                CV_Error(cv::Error::StsBadArg,"Could not load model.");
             }
         }
 
@@ -61,7 +61,7 @@ namespace cv
             }
             else
             {
-                std::cout << "Could not load model. \n";
+                CV_Error(cv::Error::StsBadArg,"Could not load model.");
             }
         }
 
@@ -138,7 +138,7 @@ namespace cv
             }
             else
             {
-                std::cout << "Model not specified. Please set model via setModel(). \n";
+                CV_Error(cv::Error::StsError, "Model not specified. Please set model via setModel().");
             }
         }
 
@@ -150,7 +150,7 @@ namespace cv
 
             if ( this->alg != "lapsrn" )
             {
-                std::cout << "Only LapSRN support multiscale upsampling for now!" << std::endl;
+                CV_Error(cv::Error::StsBadArg, "Only LapSRN support multiscale upsampling for now.");
                 return;
             }
 
@@ -194,7 +194,7 @@ namespace cv
             }
             else
             {
-                std::cout << "Model not specified. Please set model via setModel(). \n";
+                CV_Error(cv::Error::StsError, "Model not specified. Please set model via setModel().");
             }
         }
 
@@ -211,7 +211,7 @@ namespace cv
 
             if (!inputVideo.isOpened())
             {
-                std::cout  << "Could not open the video." << std::endl;
+                CV_Error(cv::Error::StsBadArg, "Could not open the video.");
                 return;
             }
 
@@ -267,7 +267,7 @@ namespace cv
             }
             else
             {
-                std::cout << "Not supported image type!" << std::endl;
+                CV_Error(cv::Error::StsBadArg, "Not supported image type!");
             }
         }
 
@@ -301,7 +301,7 @@ namespace cv
             }
             else
             {
-                std::cout << "Not supported image type!" << std::endl;
+                CV_Error(cv::Error::StsBadArg, "Not supported image type!");
             }
         }
 

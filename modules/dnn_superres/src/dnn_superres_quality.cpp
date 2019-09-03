@@ -330,7 +330,7 @@ namespace cv
 
             if ( len > 9 )
             {
-                std::cout << "showBenchmark() supports up to 9 images" << std::endl;
+                CV_Error(cv::Error::StsError, "showBenchmark() supports up to 9 images.");
                 return;
             }
 
