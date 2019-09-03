@@ -18,6 +18,8 @@ The following four models are implemented:
 - LapSRN <https://arxiv.org/abs/1710.01992>
 
 */
+#include "Eigen/Sparse"
+using namespace Eigen; 
 
 namespace cv{ namespace alphamat{
 
