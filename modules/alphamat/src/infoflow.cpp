@@ -4,7 +4,7 @@
 
 const int dim = 5;  // dimension of feature vectors
 #include "precomp.hpp"
-#include "opencv2/infoflow.hpp"
+#include "../include/opencv2/infoflow.hpp"
 
 // #include <opencv2/opencv.hpp>
 
@@ -56,8 +56,7 @@ void type2str(int type) {
 
 
 
-namespace cv{
-    namespace alphamat{
+namespace alphamat{
 
         // using namespace cv::alphamat;
         // void cv::alphamat::compute_local_info(Mat&, Mat&, SparseMatrix<double>& Wl, SparseMatrix<double>& Dl);
@@ -196,9 +195,7 @@ namespace cv{
             cout<<"total time: "<<elapsed_secs<<endl;
             */
         }
-    }
-}
-  
+    }}
 
 /*
 int main(int argc, char** argv){

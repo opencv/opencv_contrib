@@ -19,16 +19,13 @@ The following four models are implemented:
 
 */
 
-namespace cv
-{
-namespace alphamat
-{
+namespace cv{ namespace alphamat{
+
     void solve(SparseMatrix<double> Wcm,SparseMatrix<double> Wuu,SparseMatrix<double> Wl,SparseMatrix<double> Dcm,
             SparseMatrix<double> Duu,SparseMatrix<double> Dl,SparseMatrix<double> H,SparseMatrix<double> T,
             Mat &ak, Mat &wf, bool useKU, Mat &alpha);
     
     void infoFlow(Mat& image, Mat& tmap, Mat& result, bool useKU, bool trim);
 
-}
-}
+}}
 #endif
