@@ -37,7 +37,7 @@ namespace opencv_test {
 
             Mat result;
               
-            cv::alphamat::infoFlow(image, trimap, result, false, true);
+            alphamat::infoFlow(image, trimap, result, false, true);
 
             SAVE(result);
 
