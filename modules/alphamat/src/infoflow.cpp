@@ -4,7 +4,7 @@
 
 const int dim = 5;  // dimension of feature vectors
 #include "precomp.hpp"
-#include "include/opencv2/infoflow.hpp"
+#include "opencv2/infoflow.hpp"
 
 // #include <opencv2/opencv.hpp>
 
