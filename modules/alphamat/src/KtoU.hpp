@@ -7,18 +7,19 @@
 
 using namespace Eigen;
 using namespace nanoflann;
-using namespace std;
-using namespace cv;
-// const int dim = 5;
 
-typedef vector<vector<double>> my_vector_of_vectors_t;
-typedef vector<set<int, greater<int>>> my_vector_of_set_t;
-map<pair<int, int>, int> ind; //original index mapping set - (unk, fg, bg)
+
+namespace cv{
+  namespace alphamat{
+
+typedef std::vector<std::vector<double>> my_vector_of_vectors_t;
+typedef std::vector<std::set<int, std::greater<int>>> my_vector_of_set_t;
+std::map<std::pair<int, int>, int> ind; //original index mapping set - (unk, fg, bg)
 
 void generateFVectorKtoU(my_vector_of_vectors_t& fv_unk, my_vector_of_vectors_t& fv_fg, my_vector_of_vectors_t& fv_bg,
              Mat &img, Mat &tmap)
 {
-  // CV_Assert(img.depth() == CV_8U);
+
   int nRows = img.rows;
   int nCols = img.cols;
 
@@ -99,8 +100,8 @@ void kdtree_KtoU(Mat &img, Mat &tmap, my_vector_of_vectors_t& indm, my_vector_of
 
   int N = fv_unk.size();
 
-  vector<size_t> ret_indexes(num_results);
-  vector<double> out_dists_sqr(num_results);
+  std::vector<size_t> ret_indexes(num_results);
+  std::vector<double> out_dists_sqr(num_results);
   nanoflann::KNNResultSet<double> resultSet(num_results);
 
   indm.resize(N);
@@ -134,7 +135,7 @@ SparseMatrix<double> lle_KtoU(my_vector_of_vectors_t& indm, my_vector_of_vectors
   int N = fv_unk.size()+fv_fg.size()+fv_bg.size();
   SparseMatrix<double> Wku(N, N), H(N, N);
   typedef Triplet<double> T;
-    vector<T> triplets, tripletsH;
+    std::vector<T> triplets, tripletsH;
     triplets.reserve(k*n);
     tripletsH.reserve(n);
 
@@ -244,10 +245,12 @@ SparseMatrix<double> KtoU(Mat& image, Mat& tmap, Mat& wf){
   double eps = 0.001;
   // cout<<"lle done"<<endl;
   SparseMatrix<double> H = lle_KtoU(indm, fv_unk, fv_fg, fv_bg, eps, wf);
-  cout << "KToU Done" << endl;
+  std::cout << "KToU Done" << std::endl;
   return H;
 }
 
+}
+}
 
 /*
 int main()

@@ -10,11 +10,11 @@
 
 using namespace Eigen;
 using namespace nanoflann;
-using namespace std;
-using namespace cv;
 
+namespace cv{
+  namespace alphamat{
 
-typedef vector<vector<double>> my_vector_of_vectors_t;
+typedef std::vector<std::vector<double>> my_vector_of_vectors_t;
 // typedef vector<set<int, greater<int>>> my_vector_of_set_t;
 
 
@@ -43,7 +43,7 @@ void generateFVectorCM(my_vector_of_vectors_t &samples, Mat &img)
 }
 
 
-void kdtree_CM(Mat &img, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, unordered_set<int>& unk)
+void kdtree_CM(Mat &img, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, std::unordered_set<int>& unk)
 {
   // Generate feature vectors for intra U:
   generateFVectorCM(samples, img);
@@ -62,13 +62,13 @@ void kdtree_CM(Mat &img, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& s
 
   int N = unk.size();
 
-  vector<size_t> ret_indexes(num_results);
-  vector<double> out_dists_sqr(num_results);
+  std::vector<size_t> ret_indexes(num_results);
+  std::vector<double> out_dists_sqr(num_results);
   nanoflann::KNNResultSet<double> resultSet(num_results);
 
   indm.resize(N);
   int i = 0;
-  for (unordered_set<int>::iterator it = unk.begin(); it != unk.end(); it++){
+  for (std::unordered_set<int>::iterator it = unk.begin(); it != unk.end(); it++){
     resultSet.init(&ret_indexes[0], &out_dists_sqr[0] );
     mat_index.index->findNeighbors(resultSet, &samples[*it][0], nanoflann::SearchParams(10));
 
@@ -84,14 +84,14 @@ void kdtree_CM(Mat &img, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& s
 
 
 
-void lle(my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, float eps, unordered_set<int>& unk
+void lle(my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, float eps, std::unordered_set<int>& unk
              , SparseMatrix<double>& Wcm, SparseMatrix<double>& Dcm){
   int k = indm[0].size();  // number of neighbours that we are considering
   int n = indm.size();  // number of unknown pixels
   int N = samples.size();
   // SparseMatrix<double> Wcm(N, N), Dcm(N, N);
   typedef Triplet<double> T;
-  vector<T> triplets, td;
+  std::vector<T> triplets, td;
   triplets.reserve(k*n);
   td.reserve(k*n);
 
@@ -104,7 +104,7 @@ void lle(my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, float ep
 
   int i, ind = 0;
   // cout<<n<<" "<<k<<endl;
-  for (unordered_set<int>::iterator it = unk.begin(); it != unk.end(); it++){
+  for (std::unordered_set<int>::iterator it = unk.begin(); it != unk.end(); it++){
     // filling values in Z
     i = *it;
     int index_nbr;
@@ -161,7 +161,7 @@ void cm(Mat& image, Mat& tmap, SparseMatrix<double>& Wcm, SparseMatrix<double>& 
   my_vector_of_vectors_t samples, indm, Euu;
 
   int i, j;
-  unordered_set<int> unk;
+  std::unordered_set<int> unk;
   for (i = 0; i < tmap.rows; i++)
     for (j = 0; j < tmap.cols; j++){
       float pix = tmap.at<uchar>(i, j);
@@ -175,8 +175,10 @@ void cm(Mat& image, Mat& tmap, SparseMatrix<double>& Wcm, SparseMatrix<double>& 
   // cout<<"KD Tree done"<<endl;
   float eps = 0.001;
   lle(indm, samples, eps, unk, Wcm, Dcm);
-  cout << "cm DONE" << endl;
+  std::cout << "cm DONE" << std::endl;
 }
+
+}}
 
 /*
 int main()

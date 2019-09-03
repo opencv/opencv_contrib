@@ -6,17 +6,9 @@
 // #define local_info
 
 using namespace Eigen;
-using namespace std;
-using namespace cv;
 
-// const int dim = 5;
-
-// void show(Mat& image){
-//     namedWindow( "Display window", WINDOW_AUTOSIZE );// Create a window for display.
-//     imshow( "Display window", image );                   // Show our image inside it.
-//     waitKey(0);                                          // Wait for a keystroke in the window
-// }
-
+namespace cv{
+  namespace alphamat{
 
 void local_info(Mat& img, Mat& tmap, SparseMatrix<double>& Wl, SparseMatrix<double>& Dl){
   float eps = 0.001;
@@ -61,7 +53,7 @@ void local_info(Mat& img, Mat& tmap, SparseMatrix<double>& Wl, SparseMatrix<doub
 
   // SparseMatrix<double> Wl(N,N), Dl(N,N);
   typedef Triplet<double> T;
-    vector<T> triplets, td;
+    std::vector<T> triplets, td;
 
     int x[] = {-1, -1, -1, 0, 0, 0, 1, 1, 1};
     int y[] = {-1, 0, 1, -1, 0, 1, -1, 0, 1};
@@ -127,9 +119,10 @@ void local_info(Mat& img, Mat& tmap, SparseMatrix<double>& Wl, SparseMatrix<doub
 
   Wl.setFromTriplets(triplets.begin(), triplets.end());
   Dl.setFromTriplets(triplets.begin(), triplets.end());
-  cout << "local_info DONE" << endl;
+  std::cout << "local_info DONE" << std::endl;
   // return Wl;
 }
+}}
 
 
 /*

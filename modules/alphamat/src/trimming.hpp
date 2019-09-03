@@ -3,14 +3,14 @@
 // of this distribution and at http://opencv.org/license.html.
 
 using namespace nanoflann;
-using namespace std;
-using namespace cv;
 
+namespace cv{
+  namespace alphamat{
 
-typedef vector<vector<double>> my_vector_of_vectors_t;
-typedef vector<set<int, greater<int>>> my_vector_of_set_t;
-typedef vector<Mat> my_vector_of_Mat;
-typedef vector<pair<int, int>> my_vector_of_pair;
+typedef std::vector<std::vector<double>> my_vector_of_vectors_t;
+typedef std::vector<std::set<int, std::greater<int>>> my_vector_of_set_t;
+typedef std::vector<Mat> my_vector_of_Mat;
+typedef std::vector<std::pair<int, int>> my_vector_of_pair;
 
 my_vector_of_vectors_t fv_unk, fv_fg, fv_bg;
 my_vector_of_Mat unkmean, fgmean, bgmean, unkcov, fgcov, bgcov;
@@ -119,7 +119,7 @@ void generateMean(Mat &img, Mat &tmap, my_vector_of_pair &map){
         unkcov[c1] = covariance;
         map[c1] = {i, j};
         if (c1 == 0){
-          cout << i << " " << j << endl << endl;
+          std::cout << i << " " << j << std::endl << std::endl;
         }
         c1++;
       }else if(pix < 10){
@@ -157,8 +157,8 @@ void findNearestNbr(my_vector_of_vectors_t& indm){
 
   int N = fv_unk.size();
 
-  vector<size_t> ret_indexes(num_results);
-  vector<double> out_dists_sqr(num_results);
+  std::vector<size_t> ret_indexes(num_results);
+  std::vector<double> out_dists_sqr(num_results);
   nanoflann::KNNResultSet<double> resultSet(num_results);
 
   indm.resize(N);
@@ -276,10 +276,10 @@ void trimming(Mat &img, Mat &tmap, Mat &new_tmap, bool post){
     // cout<<minfg<<" "<<minbg<<endl;
     if (minfg < tauc && minbg > tauf){
       new_tmap.at<uchar>(imgi, imgj) = 255;  // fg
-      cout << "fg" << endl;
+      std::cout << "fg" << std::endl;
     }else if (minbg < tauc && minfg > tauf){
       new_tmap.at<uchar>(imgi, imgj) = 0;  // bg
-      cout << "bg" << endl;
+      std::cout << "bg" << std::endl;
     }
     // else remain unknown
   }
@@ -287,7 +287,7 @@ void trimming(Mat &img, Mat &tmap, Mat &new_tmap, bool post){
   // imwrite("1.png", tmap);
   // imwrite("3.png", new_tmap);
 }
-
+}
 
 
 /*

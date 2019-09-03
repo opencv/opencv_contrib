@@ -5,13 +5,13 @@
 
 using namespace Eigen;
 using namespace nanoflann;
-using namespace std;
-using namespace cv;
 
+namespace cv{
+  namespace alphamat{
 
-typedef vector<vector<double>> my_vector_of_vectors_t;
-typedef vector<set<int, greater<int>>> my_vector_of_set_t;
-vector<int> orig_ind;
+typedef std::vector<std::vector<double>> my_vector_of_vectors_t;
+typedef std::vector<std::set<int, std::greater<int>>> my_vector_of_set_t;
+std::vector<int> orig_ind;
 
 void generateFVectorIntraU(my_vector_of_vectors_t &samples, Mat &img, Mat& tmap)
 {
@@ -77,8 +77,8 @@ void kdtree_intraU(Mat &img, Mat& tmap, my_vector_of_vectors_t& indm, my_vector_
   // just for testing purpose ...delete this later!
   int c = 0;
 
-  vector<size_t> ret_indexes(num_results);
-  vector<double> out_dists_sqr(num_results);
+  std::vector<size_t> ret_indexes(num_results);
+  std::vector<double> out_dists_sqr(num_results);
   nanoflann::KNNResultSet<double> resultSet(num_results);
 
 
@@ -102,7 +102,7 @@ void kdtree_intraU(Mat &img, Mat& tmap, my_vector_of_vectors_t& indm, my_vector_
   }
 }
 
-double l1norm(vector<double>& x, vector<double>& y){
+double l1norm(std::vector<double>& x, std::vector<double>& y){
   double sum = 0;
   for (int i = 0; i < dim; i++)
     sum += abs(x[i]-y[i]);
@@ -133,7 +133,7 @@ void intraU(my_vector_of_vectors_t& indm, my_vector_of_set_t& inds, my_vector_of
   my_vector_of_vectors_t weights;
   // SparseMatrix<double> Wuu(N, N), Duu(N, N);
   typedef Triplet<double> T;
-    vector<T> triplets, td;
+    std::vector<T> triplets, td;
     triplets.reserve(num_nbr*n + count);
     td.reserve(num_nbr*n + count);
 
@@ -169,7 +169,10 @@ void UU(Mat& image, Mat& tmap, SparseMatrix<double>& Wuu, SparseMatrix<double>& 
   // cout<<"KD Tree done"<<endl;
   int N = image.rows * image.cols;
   intraU(indm, inds, samples, Euu, Wuu, Duu);
-  cout << "Intra U Done" << endl;
+  std::cout << "Intra U Done" << std::endl;
+}
+
+}
 }
 
 /*
