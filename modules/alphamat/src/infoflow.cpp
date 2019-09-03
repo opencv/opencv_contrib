@@ -2,13 +2,13 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
-const int dim = 5;  // dimension of feature vectors
 #include "precomp.hpp"
 #include "../include/opencv2/infoflow.hpp"
 
-
 namespace cv{
 namespace alphamat{
+
+// const int dim = 5;  // dimension of feature vectors
 
 void solve(SparseMatrix<double> Wcm,SparseMatrix<double> Wuu,SparseMatrix<double> Wl,SparseMatrix<double> Dcm,
     SparseMatrix<double> Duu,SparseMatrix<double> Dl,SparseMatrix<double> H,SparseMatrix<double> T,
@@ -88,6 +88,8 @@ void infoFlow(Mat& image, Mat& tmap, Mat& result, bool useKU, bool trim){
     SparseMatrix<double> Wl(N, N), Dl(N, N);
     local_info(image, tmap, Wl, Dl);
 
+    
+
     SparseMatrix<double> Wcm(N, N), Dcm(N, N);
     cm(image, tmap, Wcm, Dcm);
 
@@ -135,6 +137,8 @@ void infoFlow(Mat& image, Mat& tmap, Mat& result, bool useKU, bool trim){
 
     // cout<<"Trimmed"<<endl;
     // char* res_path = argv[3];
+
+
     result = trim_alpha;
     // imwrite(res_path, trim_alpha);
 
@@ -143,6 +147,10 @@ void infoFlow(Mat& image, Mat& tmap, Mat& result, bool useKU, bool trim){
     elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
     cout<<"total time: "<<elapsed_secs<<endl;
     */
+
+
+
+
 }
 }} // namespace ccalib, cv
 

@@ -19,6 +19,12 @@
 #include "KDTreeVectorOfVectorsAdaptor.h"
 #include "Eigen/Sparse"
 
+namespace cv{
+	namespace alphamat{
+		const int dim = 5;  // dimension of feature vectors
+	}
+}
+
 #include "KtoU.hpp"
 #include "intraU.hpp"
 #include "cm.hpp"
