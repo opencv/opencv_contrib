@@ -20,9 +20,9 @@ namespace opencv_test {
             // string trimap_path = folder + "trimap/elephant.png";
             // string reference_path = folder + "reference/elephant.png";
 
-            string image_path = "../img/elephant.png";
-            string trimap_path = "../trimap/elephant.png";
-            string reference_path = "../reference/elephant.png";
+            string image_path = "../src/img/elephant.png";
+            string trimap_path = "../src/trimap/elephant.png";
+            string reference_path = "../src/reference/elephant.png";
 
             Mat image = imread(image_path, IMREAD_COLOR);
             Mat trimap = imread(trimap_path, IMREAD_COLOR);

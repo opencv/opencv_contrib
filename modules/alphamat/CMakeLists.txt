@@ -1,11 +1,10 @@
-cmake_minimum_required(VERSION 2.6)
+cmake_minimum_required (VERSION 3.0)
+project (myproject)
+set (CMAKE_CXX_STANDARD 11)
 
-project(mylib)
-
-include_directories(include)
-
-option (WITH_TESTS "build tests" ON)
-
-if (WITH_TESTS)
-  add_subdirectory(test)
-endif()
+ocv_define_module(alphamat opencv_core
+    opencv_imgproc
+    opencv_objdetect
+    opencv_imgcodecs
+    opencv_photo
+)
