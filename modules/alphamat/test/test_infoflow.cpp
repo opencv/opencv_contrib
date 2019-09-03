@@ -3,9 +3,10 @@
 // of this distribution and at http://opencv.org/license.html.
 // #include "test_precomp.hpp"
 
+#include "test_precomp.hpp"
+
 namespace opencv_test { 
 
-    // using namespace cv::alphamat;
     namespace {
         
         #define SAVE(x) imwrite(folder + "output.png", x);

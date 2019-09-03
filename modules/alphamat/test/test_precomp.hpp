@@ -7,4 +7,9 @@
 #include "opencv2/ts.hpp"
 #include "opencv2/infoflow.hpp"
 
+namespace opencv_test { 
+    using namespace cv::alphamat;
+}
+
+
 #endif
