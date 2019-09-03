@@ -15,10 +15,14 @@ namespace opencv_test {
 
         TEST(Alphamat_infoFlow, regression)
         {
-            string folder = string(cvtest::TS::ptr()->get_data_path()) + "alphamat/";
-            string image_path = folder + "img/elephant.png";
-            string trimap_path = folder + "trimap/elephant.png";
-            string reference_path = folder + "reference/elephant.png";
+            string folder = string(cvtest::TS::ptr()->get_data_path()) + "cv/alphamat/";
+            // string image_path = folder + "img/elephant.png";
+            // string trimap_path = folder + "trimap/elephant.png";
+            // string reference_path = folder + "reference/elephant.png";
+
+            string image_path = "../img/elephant.png";
+            string trimap_path = "../trimap/elephant.png";
+            string reference_path = "../reference/elephant.png";
 
             Mat image = imread(image_path, IMREAD_COLOR);
             Mat trimap = imread(trimap_path, IMREAD_COLOR);
@@ -32,9 +36,8 @@ namespace opencv_test {
             ASSERT_EQ(image.cols, trimap.cols) << "Height of image and trimap dont match";
 
             Mat result;
-            
-            /*
-            infoFlow(image, trimap, result, true, true);
+              
+            cv::alphamat::infoFlow(image, trimap, result, false, true);
 
             SAVE(result);
 
@@ -42,7 +45,7 @@ namespace opencv_test {
             EXPECT_LE(errorINF, 1);
             double errorL1 = cvtest::norm(reference, result, NORM_L1);
             EXPECT_LE(errorL1, reference.total() * numerical_precision) << "size=" << reference.size();
-            */
+            
         }
 
 }}
