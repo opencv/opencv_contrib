@@ -6,12 +6,14 @@
 
 #include <iostream>
 #include <vector>
-#include <memory>
 #include <string>
-#include <map>
-#include <numeric>
-#include <algorithm>
+#include <sstream>
 
 #include "opencv2/core.hpp"
+#include "opencv2/dnn.hpp"
+#include "opencv2/highgui.hpp"
+#include "opencv2/imgproc.hpp"
+
+#include "opencv2/dnn_superres.hpp"
 
 #endif // __OPENCV_DNN_SUPERRES_PRECOMP_HPP__

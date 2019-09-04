@@ -5,10 +5,6 @@
 #ifndef _OPENCV_DNN_SUPERRES_DNNSUPERRESIMPL_HPP_
 #define _OPENCV_DNN_SUPERRES_DNNSUPERRESIMPL_HPP_
 
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgproc.hpp>
-#include "opencv2/dnn.hpp"
-
 /** @defgroup dnn_superres DNN used for super resolution
 
 This module contains functionality for upscaling an image via convolutional neural networks.
@@ -20,6 +16,9 @@ The following four models are implemented:
 - LapSRN <https://arxiv.org/abs/1710.01992>
 
 */
+
+#include "opencv2/core.hpp"
+#include "opencv2/dnn.hpp"
 
 namespace cv
 {

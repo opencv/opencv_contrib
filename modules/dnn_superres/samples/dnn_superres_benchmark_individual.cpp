@@ -6,6 +6,8 @@
 
 #include <opencv2/dnn_superres.hpp>
 #include <opencv2/dnn_superres_quality.hpp>
+#include <opencv2/imgproc.hpp>
+#include <opencv2/highgui.hpp>
 
 using namespace std;
 using namespace cv;

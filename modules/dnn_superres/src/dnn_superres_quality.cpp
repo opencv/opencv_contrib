@@ -6,6 +6,10 @@
 
 #include "opencv2/dnn_superres_quality.hpp"
 
+#ifdef _WIN32
+#include  <Windows.h>
+#endif
+
 namespace cv
 {
 namespace dnn_superres

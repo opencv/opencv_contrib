@@ -5,18 +5,7 @@
 #ifndef OPENCV_CONTRIB_DNN_SUPERRES_QUALITY_HPP
 #define OPENCV_CONTRIB_DNN_SUPERRES_QUALITY_HPP
 
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgproc.hpp>
-#include <cstdarg>
-#include <sstream>
-#include <ctime>
-
-#ifdef _WIN32
-#include <Windows.h>
-#endif
-
-#include <opencv2/dnn_superres.hpp>
-#include "opencv2/dnn.hpp"
+#include "opencv2/dnn_superres.hpp"
 
 namespace cv
 {
