@@ -11,6 +11,9 @@ namespace cv{
 using namespace Eigen;
 using namespace nanoflann;
 
+typedef std::vector<std::vector<double>> my_vector_of_vectors_t;
+typedef std::vector<std::set<int, std::greater<int>>> my_vector_of_set_t;
+
 void generateFVectorKtoU(my_vector_of_vectors_t& fv_unk, my_vector_of_vectors_t& fv_fg, my_vector_of_vectors_t& fv_bg,
              Mat &img, Mat &tmap);
 

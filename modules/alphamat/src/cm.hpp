@@ -11,6 +11,9 @@ namespace cv{
 using namespace Eigen;
 using namespace nanoflann;
 
+typedef std::vector<std::vector<double>> my_vector_of_vectors_t;
+// typedef vector<set<int, greater<int>>> my_vector_of_set_t;
+
 void generateFVectorCM(my_vector_of_vectors_t &samples, Mat &img);
 
 void kdtree_CM(Mat &img, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, std::unordered_set<int>& unk);

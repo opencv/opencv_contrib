@@ -11,6 +11,11 @@ namespace cv{
 
 using namespace nanoflann;
 
+typedef std::vector<std::vector<double>> my_vector_of_vectors_t;
+typedef std::vector<std::set<int, std::greater<int>>> my_vector_of_set_t;
+typedef std::vector<Mat> my_vector_of_Mat;
+typedef std::vector<std::pair<int, int>> my_vector_of_pair;
+
 double l2norm(int x1, int y1, int x2, int y2);
 
 void generateMean(Mat &img, Mat &tmap, my_vector_of_pair &map);

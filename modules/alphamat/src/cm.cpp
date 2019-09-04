@@ -12,9 +12,6 @@
 namespace cv{
   namespace alphamat{
 
-typedef std::vector<std::vector<double>> my_vector_of_vectors_t;
-// typedef vector<set<int, greater<int>>> my_vector_of_set_t;
-
 void generateFVectorCM(my_vector_of_vectors_t &samples, Mat &img)
 {
   // CV_Assert(img.depth() == CV_8U);

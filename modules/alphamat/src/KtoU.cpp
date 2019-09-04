@@ -11,8 +11,6 @@
 namespace cv{
   namespace alphamat{
 
-typedef std::vector<std::vector<double>> my_vector_of_vectors_t;
-typedef std::vector<std::set<int, std::greater<int>>> my_vector_of_set_t;
 std::map<std::pair<int, int>, int> ind; //original index mapping set - (unk, fg, bg)
 
 void generateFVectorKtoU(my_vector_of_vectors_t& fv_unk, my_vector_of_vectors_t& fv_fg, my_vector_of_vectors_t& fv_bg,
