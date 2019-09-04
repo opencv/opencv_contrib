@@ -2,6 +2,9 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
+#ifndef __OPENCV_INTRAU_H__
+#define __OPENCV_INTRAU_H__
+
 namespace cv{
   namespace alphamat{
 
@@ -25,18 +28,4 @@ void UU(Mat& image, Mat& tmap, SparseMatrix<double>& Wuu, SparseMatrix<double>& 
 }
 }
 
-/*
-
-int main()
-{
-  Mat image,tmap;
-  string img_path = "../../data/input_lowres/plasticbag.png";
-  image = imread(img_path, CV_LOAD_IMAGE_COLOR);   // Read the file
-
-  string tmap_path = "../../data/trimap_lowres/Trimap1/plasticbag.png";
-    tmap = imread(tmap_path, CV_LOAD_IMAGE_GRAYSCALE);
-    // SparseMatrix<double> Wuu = UU(image, tmap);
-
-}
-
-*/
+#endif

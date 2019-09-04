@@ -5,8 +5,6 @@
 #ifndef _OPENCV_ALPHAMAT_INFOFLOW_HPP_
 #define _OPENCV_ALPHAMAT_INFOFLOW_HPP_
 
-
-
 /** Information Flow algorithm implementaton for alphamatting
 
 This module contains functionality for extracting the 

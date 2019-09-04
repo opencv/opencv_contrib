@@ -2,9 +2,8 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
-// #ifndef cm
-// #define cm
-// header file content
+#ifndef __OPENCV_CM_H__
+#define __OPENCV_CM_H__
 
 namespace cv{
   namespace alphamat{
@@ -25,3 +24,5 @@ void lle(my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, float ep
 void cm(Mat& image, Mat& tmap, SparseMatrix<double>& Wcm, SparseMatrix<double>& Dcm);
 
 }}
+
+#endif

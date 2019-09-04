@@ -2,8 +2,9 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
-// #ifndef local_info
-// #define local_info
+#ifndef __OPENCV_LOCAL_INFO_H__
+#define __OPENCV_LOCAL_INFO_H__
+
 
 namespace cv{
   namespace alphamat{
@@ -13,4 +14,4 @@ using namespace Eigen;
 void local_info(Mat& img, Mat& tmap, SparseMatrix<double>& Wl, SparseMatrix<double>& Dl);
 }}
 
-// #endif
+#endif

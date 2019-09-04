@@ -80,7 +80,7 @@ void kdtree_intraU(Mat &img, Mat& tmap, my_vector_of_vectors_t& indm, my_vector_
 
   indm.resize(N);
   inds.resize(N);
-  for (std::size_t i = 0; i < N; i++){
+  for (int i = 0; i < N; i++){
     resultSet.init(&ret_indexes[0], &out_dists_sqr[0] );
     mat_index.index->findNeighbors(resultSet, &samples[i][0], nanoflann::SearchParams(10));
 

@@ -2,9 +2,8 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
-// #ifndef KtoU
-// #define KtoU
-
+#ifndef __OPENCV_KTOU_H__
+#define __OPENCV_KTOU_H__
 
 namespace cv{
   namespace alphamat{
@@ -30,5 +29,4 @@ SparseMatrix<double> KtoU(Mat& image, Mat& tmap, Mat& wf);
 }
 }
 
-
-// #endif
+#endif
