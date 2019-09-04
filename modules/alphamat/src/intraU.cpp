@@ -8,10 +8,6 @@
 namespace cv{
   namespace alphamat{
 
-typedef std::vector<std::vector<double>> my_vector_of_vectors_t;
-typedef std::vector<std::set<int, std::greater<int>>> my_vector_of_set_t;
-std::vector<int> orig_ind;
-
 void generateFVectorIntraU(my_vector_of_vectors_t &samples, Mat &img, Mat& tmap)
 {
   // CV_Assert(img.depth() == CV_8U);
@@ -89,8 +85,8 @@ void kdtree_intraU(Mat &img, Mat& tmap, my_vector_of_vectors_t& indm, my_vector_
     mat_index.index->findNeighbors(resultSet, &samples[i][0], nanoflann::SearchParams(10));
 
     // cout << "knnSearch(nn="<<num_results<<"): \n";
-    indm[i].resize(num_results-1);
-    for (int j = 1; j < num_results; j++){
+    indm[i].resize(static_cast<int>(num_results)-1);
+    for (std::size_t j = 1; j < num_results; j++){
       // cout << "ret_index["<<j<<"]=" << ret_indexes[j] << " out_dist_sqr=" << out_dists_sqr[j] << endl;
       inds[i].insert(ret_indexes[j]);
       indm[i][j-1] = ret_indexes[j];

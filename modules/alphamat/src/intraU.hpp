@@ -16,9 +16,9 @@ void generateFVectorIntraU(my_vector_of_vectors_t &samples, Mat &img, Mat& tmap)
 
 void kdtree_intraU(Mat &img, Mat& tmap, my_vector_of_vectors_t& indm, my_vector_of_set_t& inds, my_vector_of_vectors_t& samples);
 
-double l1norm(std::vector<double>& x, std::vector<double>& y)
+double l1norm(std::vector<double>& x, std::vector<double>& y);
 
-void intraU(my_vector_of_vectors_t& indm, my_vector_of_set_t& inds, my_vector_of_vectors_t& samples, my_vector_of_vectors_t& Euu, SparseMatrix<double>& Wuu, SparseMatrix<double>& Duu);
+void intraU(my_vector_of_vectors_t& indm, my_vector_of_set_t& inds, my_vector_of_vectors_t& samples, SparseMatrix<double>& Wuu, SparseMatrix<double>& Duu);
 
 void UU(Mat& image, Mat& tmap, SparseMatrix<double>& Wuu, SparseMatrix<double>& Duu);
 
