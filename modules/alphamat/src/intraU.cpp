@@ -8,6 +8,10 @@
 namespace cv{
   namespace alphamat{
 
+typedef std::vector<std::vector<double>> my_vector_of_vectors_t;
+typedef std::vector<std::set<int, std::greater<int>>> my_vector_of_set_t;
+std::vector<int> orig_ind;
+
 void generateFVectorIntraU(my_vector_of_vectors_t &samples, Mat &img, Mat& tmap)
 {
   // CV_Assert(img.depth() == CV_8U);

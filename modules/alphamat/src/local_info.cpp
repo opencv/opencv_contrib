@@ -17,7 +17,7 @@ void local_info(Mat& img, Mat& tmap, SparseMatrix<double>& Wl, SparseMatrix<doub
   float eps = 0.001;
   int win_size = 1;
 
-  int channels = img.channels();
+  // int channels = img.channels();
   int nRows = img.rows;
   int nCols = img.cols;
   Mat unk_img;
@@ -26,7 +26,7 @@ void local_info(Mat& img, Mat& tmap, SparseMatrix<double>& Wl, SparseMatrix<doub
   // cout<<unk_img.size<<endl;exit(0);
 
   // cout<<nRows<<" "<<nCols<<endl;
-  int c1 = 0;
+  // int c1 = 0;
   for (int i = 0; i < nRows; ++i)
     for (int j = 0; j < nCols; ++j){
       float pix = tmap.at<uchar>(i, j);
@@ -46,7 +46,7 @@ void local_info(Mat& img, Mat& tmap, SparseMatrix<double>& Wl, SparseMatrix<doub
 
   int num_win = (win_size*2 + 1)*(win_size*2 + 1);  // number of pixels in window
   int num_win_sq = num_win*num_win;
-  int N = img.rows*img.cols;
+  // int N = img.rows*img.cols;
 
   // Leaving this computation ---can edit
   // int sparse_ent = 0; //count of sparse entries

@@ -8,6 +8,13 @@
 namespace cv{
   namespace alphamat{
 
+typedef std::vector<std::vector<double>> my_vector_of_vectors_t;
+typedef std::vector<std::set<int, std::greater<int>>> my_vector_of_set_t;
+typedef std::vector<Mat> my_vector_of_Mat;
+typedef std::vector<std::pair<int, int>> my_vector_of_pair;
+
+my_vector_of_vectors_t fv_unk, fv_fg, fv_bg;
+my_vector_of_Mat unkmean, fgmean, bgmean, unkcov, fgcov, bgcov;
 double l2norm(int x1, int y1, int x2, int y2){
   return sqrt((x1-x2)*(x1-x2) + (y1-y2)*(y1-y2));
 }
@@ -208,13 +215,13 @@ void trimming(Mat &img, Mat &tmap, Mat &new_tmap, bool post){
   generateMean(img, new_tmap, map);
   findNearestNbr(indm);
 
-  std::size_t k = indm[0].size();  // number of neighbours that we are considering
+  int k = indm[0].size();  // number of neighbours that we are considering
   int n = indm.size();  // number of unknown pixels
 
   double minfg = 100, minbg = 100;  // set to random values
   float tauc = 0.25, tauf = 0.9;
   int imgi, imgj;
-  for (std::size_t i = 0; i < n; i++){
+  for (int i = 0; i < n; i++){
     // filling values in Z
     int j, index_nbr;
     mean1 = unkmean[i];
