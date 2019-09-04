@@ -7,7 +7,7 @@
 
 /** Information Flow algorithm implementaton for alphamatting
 
-This module contains functionality for extracting the 
+This module contains functionality for extracting the
 The following four models are implemented:
 
 - EDSR <https://arxiv.org/abs/1707.02921>
@@ -17,14 +17,14 @@ The following four models are implemented:
 
 */
 #include <Eigen/Sparse>
-using namespace Eigen; 
+using namespace Eigen;
 
 namespace cv{ namespace alphamat{
 
     void solve(SparseMatrix<double> Wcm,SparseMatrix<double> Wuu,SparseMatrix<double> Wl,SparseMatrix<double> Dcm,
             SparseMatrix<double> Duu,SparseMatrix<double> Dl,SparseMatrix<double> H,SparseMatrix<double> T,
             Mat& ak, Mat& wf, bool useKU, Mat& alpha);
-    
+
     CV_EXPORTS_W void infoFlow(Mat& image, Mat& tmap, Mat& result, bool useKU, bool trim);
 
 }}
