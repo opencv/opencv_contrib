@@ -17,7 +17,7 @@
 
 #include "nanoflann.hpp"
 #include "KDTreeVectorOfVectorsAdaptor.h"
-#include "Eigen/Sparse"
+#include <Eigen/Sparse>
 
 namespace cv{
 	namespace alphamat{
@@ -29,7 +29,7 @@ namespace cv{
 #include "intraU.hpp"
 #include "cm.hpp"
 #include "local_info.hpp"
-#include "Eigen/IterativeLinearSolvers"
+#include <Eigen/IterativeLinearSolvers>
 #include "trimming.hpp"
 
 #endif
