@@ -737,6 +737,7 @@ void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage,
     CV_UNUSED(depthImage);
     CV_UNUSED(vertImage);
     CV_UNUSED(normImage);
+    CV_UNUSED(warp);
     NO_OGL_ERR;
 #endif
 }
