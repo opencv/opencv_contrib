@@ -15,4 +15,3 @@ ocv_define_module(alphamat opencv_core
     opencv_imgcodecs
     opencv_photo
 )
-
