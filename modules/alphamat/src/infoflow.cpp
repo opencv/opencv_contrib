@@ -88,8 +88,6 @@ void infoFlow(Mat& image, Mat& tmap, Mat& result, bool useKU, bool trim){
     SparseMatrix<double> Wl(N, N), Dl(N, N);
     local_info(image, tmap, Wl, Dl);
 
-    
-
     SparseMatrix<double> Wcm(N, N), Dcm(N, N);
     cm(image, tmap, Wcm, Dcm);
 
