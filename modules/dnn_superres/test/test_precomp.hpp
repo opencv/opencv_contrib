@@ -7,7 +7,6 @@
 
 #include "opencv2/ts.hpp"
 #include "opencv2/dnn_superres.hpp"
-#include "opencv2/dnn_superres_quality.hpp"
 
 namespace opencv_test {
     using namespace cv::dnn_superres;

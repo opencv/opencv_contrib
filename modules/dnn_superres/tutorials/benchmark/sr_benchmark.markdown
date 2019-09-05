@@ -1,36 +1,28 @@
 Super-resolution benchmarking {#tutorial_dnn_superres_benchmark}
 ===========================
 
-The super-resolution module contains a benchmarking functionality, in order to compare different models and algorithms.
-Here is presented a sample code for using the benchmarking class, and then a few benchmarking results are collected.
-The benchmarking was performed on an Intel i7-9700K CPU.
+Benchmarking
+----
+
+The super-resolution module contains sample codes for benchmarking, in order to compare different models and algorithms.
+Here is presented a sample code for performing benchmarking, and then a few benchmarking results are collected.
+It was performed on an Intel i7-9700K CPU on an Ubuntu 18.04.02 OS.
 
 Source Code of the sample
 -----------
 
-@includelineno dnn_superres/samples/dnn_superres_benchmark.cpp
+@includelineno dnn_superres/samples/dnn_superres_benchmark_quality.cpp
 
 Explanation
 -----------
 
--#  **Set header and namespaces**
-    @code{.cpp}
-    #include <iostream>
-    #include <opencv2/dnn_superres.hpp>
-    #include <opencv2/dnn_superres_quality.hpp>
-    using namespace std;
-    using namespace cv;
-    using namespace dnn_superres;
-    @endcode
-
 -#  **Read and downscale the image**
     @code{.cpp}
-    Mat img = cv::imread(path);
-    int width = img.cols - (img.cols % scale);
-    int height = img.rows - (img.rows % scale);
-    Mat cropped = img(Rect(0, 0, width, height));
-    Mat img_downscaled;
-    resize(cropped, img_downscaled, cv::Size(), 1.0/scale, 1.0/scale);
+     int width = img.cols - (img.cols % scale);
+     int height = img.rows - (img.rows % scale);
+     Mat cropped = img(Rect(0, 0, width, height));
+     Mat img_downscaled;
+     cv::resize(cropped, img_downscaled, cv::Size(), 1.0 / scale, 1.0 / scale);
     @endcode
 
     Resize the image by the scaling factor. Before that a cropping is necessary, so the images will align.
@@ -38,7 +30,6 @@ Explanation
 -#  **Set the model**
     @code{.cpp}
     DnnSuperResImpl sr;
-    path = "models/ESPCN_x2.pb"
     sr.readModel(path);
     sr.setModel(algorithm, scale);
     sr.upsample(img_downscaled, img_new);
@@ -48,15 +39,13 @@ Explanation
 
 -#  **Perform benchmarking**
     @code{.cpp}
-    std::vector<double> psnrs, ssims, perfs;
-    DnnSuperResQuality::setFontColor(cv::Scalar(255,0,0));
-    DnnSuperResQuality::setFontScale(1.0);
-    DnnSuperResQuality::setFontFace(cv::FONT_HERSHEY_COMPLEX_SMALL);
-    DnnSuperResQuality::benchmark(sr, cropped, psnrs, ssims, perfs, 1, 1);
+    double psnr = PSNR(img_new, cropped);
+    Scalar q = cv::quality::QualitySSIM::compute(img_new, cropped, cv::noArray());
+    double ssim = mean(cv::Vec3f(q[0], q[1], q[2]))[0];
     @endcode
 
-    Perform the benchmarking. The result psnrs, ssims, and speed values will be saved to the corresponding vectors.
-    There is an option to set the font color, scale and face for the displaying.
+    Calculate PSNR and SSIM. Use OpenCVs PSNR (core opencv) and SSIM (contrib) functions to compare the images.
+    Repeat it with other upscaling algorithms, such as other DL models or interpolation methods (eg. bicubic, nearest neighbor).
 
 
 Benchmarking results
