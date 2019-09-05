@@ -116,7 +116,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
     const heirarchyType& regGraph = currentWarp.getRegGraph();
 
     int totalNodes = (int)warpNodes.size();
-    for(const auto& nodes: regNodes) totalNodes += nodes.size();
+    for(const auto& nodes: regNodes) totalNodes += (int)nodes.size();
 
     // level-wise regularisation components of A and b (from Ax = b) for each node in heirarchy
     Mat_<float> b_reg(6*totalNodes, 1, 0.f);
