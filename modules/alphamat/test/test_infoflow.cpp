@@ -15,7 +15,7 @@ namespace opencv_test {
 
         TEST(Alphamat_infoFlow, regression)
         {
-/*            string folder = string(cvtest::TS::ptr()->get_data_path()) + "alphamat/";
+            string folder = string(cvtest::TS::ptr()->get_data_path()) + "alphamat/";
             string image_path = folder + "img/elephant.png";
             string trimap_path = folder + "trimap/elephant.png";
             string reference_path = folder + "reference/elephant.png";
@@ -40,7 +40,7 @@ namespace opencv_test {
             infoFlow(image, trimap, result, false, true);
 
             SAVE(result);
-*/
+
             // double errorINF = cvtest::norm(reference, result, NORM_INF);
             // EXPECT_LE(errorINF, 1);
             // double errorL1 = cvtest::norm(reference, result, NORM_L1);
