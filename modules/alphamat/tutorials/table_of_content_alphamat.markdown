@@ -1,5 +1,5 @@
-Tutorials for alphamat module {#tutorial_table_of_content_alphamat}
-===============================================================
+Information Flow Alpha Matting {#tutorial_table_of_content_alphamat}
+=======================
 
 -   @subpage tutorial_alphamat_information_flow
 
