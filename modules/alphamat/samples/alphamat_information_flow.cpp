@@ -3,14 +3,15 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include <iostream>
-
+#include <opencv2/opencv.hpp>
 #include <opencv2/infoflow.hpp>
 
 using namespace std;
 using namespace cv;
 using namespace cv::alphamat;
 
-int check_image(Mat& image){
+int check_image(Mat& image)
+{
     if ( !image.data )                              // Check for invalid input
     {
         cout <<  "Could not open or find the image" << endl;
