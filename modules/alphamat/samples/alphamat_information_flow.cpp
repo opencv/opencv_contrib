@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
     bool show_help = (argc == 1);
     show_help = show_help || (argc == 2 && string(argv[1]) == "--help");
     show_help = show_help || (argc == 2 && string(argv[1]) == "-h");
-    
+
     if (show_help)
     {
         printf("\nThis sample demonstrates Information Flow alpha matting\n"
@@ -33,20 +33,20 @@ int main(int argc, char *argv[])
                "    alphamat_information_flow -img=<string> -tri=<string> [-out=<string>]\n\n");
         return 0;
     }
-    
+
     CommandLineParser parser(argc, argv, keys);
     if (!parser.check())
     {
         parser.printErrors();
         return -1;
     }
-    
+
     string img_path = parser.get<std::string>("img");
     string trimap_path = parser.get<std::string>("tri");
     string result_path = parser.get<std::string>("out");
-    
+
     Mat image, tmap;
-    
+
     image = imread(img_path, IMREAD_COLOR);   // Read the input image file
     if (image.empty())
     {
@@ -63,7 +63,7 @@ int main(int argc, char *argv[])
 
     Mat result;
     infoFlow(image, tmap, result, false, true);
-    
+
     if (result_path.empty())
     {
         namedWindow("result alpha matte", WINDOW_NORMAL);
@@ -77,5 +77,5 @@ int main(int argc, char *argv[])
 
     imshow("Result Matte", result);
     return 0;
-    
+
 }
