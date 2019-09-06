@@ -3,6 +3,7 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include <iostream>
+#include "opencv2/highgui.hpp"
 #include <opencv2/core/base.hpp>
 #include <opencv2/core/utility.hpp>
 #include <opencv2/imgproc.hpp>
@@ -26,11 +27,11 @@ int main(int argc, char *argv[])
 {
     Mat image, tmap;
     char* img_path = argv[1];
-    image = imread(img_path, CV_LOAD_IMAGE_COLOR);   // Read the file
+    image = imread(img_path);   // Read the file
     check_image(image);
 
     char* tmap_path = argv[2];
-    tmap = imread(tmap_path, CV_LOAD_IMAGE_GRAYSCALE);
+    tmap = imread(tmap_path);
     check_image(tmap);
 
     Mat result;
