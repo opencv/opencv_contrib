@@ -38,15 +38,20 @@ Explanation
     @code{.cpp}
     path = "models/ESPCN_x2.pb"
     sr.readModel(path);
-    @endcode
-    Read the model from the given path.
--#  **Set the model**
-    @code{.cpp}
     sr.setModel("espcn", 2);
     @endcode
-    Sets the algorithm and scaling factor.
+    Read the model from the given path and sets the algorithm and scaling factor.
 -#  **Upscale a video**
     @code{.cpp}
-    sr.upsampleVideo(input_path, output_path);
+    for(;;)
+    {
+        Mat frame, output_frame;
+        input_video >> frame;
+        if ( frame.empty() )
+            break;
+        sr.upsample(frame, output_frame);
+        ...
+    }
     @endcode
-    Now we can upscale a video. Input path is the path to the video file to be upscaled, and output_path is the upscaled video file that will be saved.
+    Process and upsample video frame by frame.
+

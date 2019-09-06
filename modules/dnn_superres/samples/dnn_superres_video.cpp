@@ -32,41 +32,48 @@ int main(int argc, char *argv[])
     int scale = atoi(argv[4]);
     string path = string(argv[5]);
 
-    //Make dnn super resolution instance
-    DnnSuperResImpl sr;
+    VideoCapture input_video(input_path);
+    int ex = static_cast<int>(input_video.get(CAP_PROP_FOURCC));
+    Size S = Size((int) input_video.get(CAP_PROP_FRAME_WIDTH) * scale,
+                  (int) input_video.get(CAP_PROP_FRAME_HEIGHT) * scale);
 
-    //Set model, algorithm, scale, and do the upsampling
-    sr.readModel(path);
-    sr.setModel(algorithm, scale);
-    sr.upsampleVideo(input_path, output_path);
+    VideoWriter output_video;
+    output_video.open(output_path, ex, input_video.get(CAP_PROP_FPS), S, true);
 
-    cout << "Upsampling succeeded. \n";
-
-    //Show the result
-    VideoCapture video(output_path);
-
-    if (!video.isOpened())
+    if (!input_video.isOpened())
     {
-        std::cout  << "Could not open the video." << std::endl;
+        std::cerr << "Could not open the video." << std::endl;
         return -1;
     }
 
-    Mat frame;
+    DnnSuperResImpl sr;
+    sr.readModel(path);
+    sr.setModel(algorithm, scale);
+
     for(;;)
     {
-        video >> frame;
+        Mat frame, output_frame;
+        input_video >> frame;
 
         if ( frame.empty() )
             break;
 
+        sr.upsample(frame, output_frame);
+        output_video << output_frame;
+
+        namedWindow("Upsampled video", WINDOW_AUTOSIZE);
+        imshow("Upsampled video", output_frame);
+
+        namedWindow("Original video", WINDOW_AUTOSIZE);
+        imshow("Original video", frame);
+
         char c=(char)waitKey(25);
         if(c==27)
             break;
-
-        imshow( "Frame", frame );
     }
 
-    video.release();
+    input_video.release();
+    output_video.release();
 
     return 0;
 }

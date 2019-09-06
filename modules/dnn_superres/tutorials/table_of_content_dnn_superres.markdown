@@ -11,7 +11,7 @@ Super Resolution using CNNs {#tutorial_table_of_content_dnn_superres}
 
     *Author:* Fanny Monori
 
-    How to upscale video using the 'dnn_superres' interface.
+    How to upscale a video using the 'dnn_superres' interface.
 
 -   @subpage tutorial_dnn_superres_benchmark
 

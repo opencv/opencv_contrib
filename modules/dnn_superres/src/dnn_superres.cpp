@@ -198,38 +198,6 @@ void DnnSuperResImpl::upsampleMultioutput(Mat img, std::vector<Mat> &imgs_new, s
     }
 }
 
-void DnnSuperResImpl::upsampleVideo(String inputPath, String outputPath)
-{
-    VideoCapture inputVideo(inputPath);
-    int ex = static_cast<int>(inputVideo.get(CAP_PROP_FOURCC));
-    Size S = Size((int) inputVideo.get(CAP_PROP_FRAME_WIDTH) * this->sc,
-                (int) inputVideo.get(CAP_PROP_FRAME_HEIGHT) * this->sc);
-
-    VideoWriter outputVideo;
-    outputVideo.open(outputPath, ex, inputVideo.get(CAP_PROP_FPS), S, true);
-
-    if (!inputVideo.isOpened())
-    {
-        CV_Error(cv::Error::StsBadArg, "Could not open the video.");
-        return;
-    }
-
-    for(;;)
-    {
-        Mat frame, outputFrame;
-        inputVideo >> frame;
-
-        if ( frame.empty() )
-        break;
-
-        upsample(frame, outputFrame);
-        outputVideo << outputFrame;
-    }
-
-    inputVideo.release();
-    outputVideo.release();
-}
-
 int DnnSuperResImpl::getScale()
 {
     return this->sc;

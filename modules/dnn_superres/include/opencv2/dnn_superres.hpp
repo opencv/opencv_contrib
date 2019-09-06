@@ -113,12 +113,6 @@ public:
     */
     void upsampleMultioutput(Mat img, std::vector<Mat> &imgs_new, std::vector<int> scale_factors, std::vector<String> node_names);
 
-    /** @brief Upsamples videos via neural network and saves it into the given path.
-    @param inputPath Path to video to upscale
-    @param outputPath Destination upscaled video
-    */
-    void upsampleVideo(String inputPath, String outputPath);
-
     /** @brief Returns the scale factor of the model:
     @return Current scale factor.
     */
