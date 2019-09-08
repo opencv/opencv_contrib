@@ -27,8 +27,9 @@ class CV_GlobalMattingTest
 
 void CV_GlobalMattingTest::runModel()
 {
-  std::string img_path     = std::string(ts->get_data_path()) + INPUT_DIR + "/" + IMAGE_FILENAME;
-  std::string trimap_path  = std::string(ts->get_data_path()) + INPUT_DIR + "/" + TRIMAP_FILENAME;
+  std::string folder       = std::string(cvtest::TS::ptr()->get_data_path());
+  std::string img_path     = folder + INPUT_DIR + "/" + IMAGE_FILENAME;
+  std::string trimap_path  = folder + INPUT_DIR + "/" + TRIMAP_FILENAME;
 
   Mat img     = cv::imread(img_path,cv::IMREAD_COLOR);
   Mat trimap  = cv::imread(trimap_path,cv::IMREAD_GRAYSCALE);
