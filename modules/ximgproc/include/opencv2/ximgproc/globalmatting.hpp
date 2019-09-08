@@ -23,14 +23,6 @@ class CV_EXPORTS GlobalMatting
 {
       private:
 
-	template <typename T>
-        inline T sqr(T a)
-        {
-           return a * a;
-        }
-
-
-
 	std::vector<cv::Point> findBoundaryPixels(const cv::Mat_<uchar> &trimap, int a, int b);
 
 	// Eq. 2
