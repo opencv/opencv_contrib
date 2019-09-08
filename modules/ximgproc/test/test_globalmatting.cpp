@@ -1,3 +1,6 @@
+// This file is part of OpenCV project.
+// It is subject to the license terms in the LICENSE file found in the top-level directory
+// of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
 using namespace cv;
 
@@ -10,7 +13,7 @@ const std::string IMAGE_FILENAME  = "input/doll.png";
 const std::string TRIMAP_FILENAME = "trimap/doll.png";
 
 
-class CV_GlobalMattingTest : public cvtest::BaseTest
+class CV_GlobalMattingTest
 {
   public:
      CV_GlobalMattingTest();
