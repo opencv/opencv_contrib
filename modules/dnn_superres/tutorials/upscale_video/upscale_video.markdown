@@ -54,4 +54,3 @@ Explanation
     }
     @endcode
     Process and upsample video frame by frame.
-

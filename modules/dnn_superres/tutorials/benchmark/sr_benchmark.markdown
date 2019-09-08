@@ -47,7 +47,6 @@ Explanation
     Calculate PSNR and SSIM. Use OpenCVs PSNR (core opencv) and SSIM (contrib) functions to compare the images.
     Repeat it with other upscaling algorithms, such as other DL models or interpolation methods (eg. bicubic, nearest neighbor).
 
-
 Benchmarking results
 -----------
 

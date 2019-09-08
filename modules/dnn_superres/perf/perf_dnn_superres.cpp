@@ -38,11 +38,11 @@ PERF_TEST_P(dnn_superres, upsample, testing::Combine(MODEL, IMAGES))
 
     Mat img_new(img.rows * scale, img.cols * scale, CV_8UC3);
 
-    declare.in(img, WARMUP_RNG).out(img_new);
+    declare.in(img, WARMUP_RNG).out(img_new).iterations(10);
 
-    TEST_CYCLE_N(100) { sr.upsample(img, img_new); }
+    TEST_CYCLE() { sr.upsample(img, img_new); }
 
-    SANITY_CHECK(img_new);
+    SANITY_CHECK_NOTHING();
 }
 
 }}
