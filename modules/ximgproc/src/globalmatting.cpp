@@ -8,6 +8,11 @@ namespace cv
 {
 namespace ximgproc
 {
+template <typename T>
+inline T sqr(T a)
+{
+           return a * a;
+}
 
 struct IntensityComp
 {
