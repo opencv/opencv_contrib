@@ -351,8 +351,8 @@ void GlobalMatting::expansionOfKnownRegionsHelper(const cv::Mat &_image,
     int w = image.cols;
     int h = image.rows;
 
-    for (int x = 0; x < w; ++x)
-	for (int y = 0; y < h; ++y)
+    for (int y = 0; y < h; ++y)
+	for (int x = 0; x < w; ++x)
 	{
 	    if (trimap(y, x) != 128)
 	        continue;
@@ -383,8 +383,8 @@ void GlobalMatting::expansionOfKnownRegionsHelper(const cv::Mat &_image,
 	        }
 	}
 
-    for (int x = 0; x < trimap.cols; ++x)
-	for (int y = 0; y < trimap.rows; ++y)
+    for (int y = 0; y < trimap.rows; ++y)
+	for (int x = 0; x < trimap.cols; ++x)
 	{
 	    if (trimap(y, x) == 1)
 	        trimap(y, x) = 0;
