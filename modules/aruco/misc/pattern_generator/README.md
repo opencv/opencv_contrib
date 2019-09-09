@@ -39,7 +39,7 @@ python MarkerPrinter.py --list_dictionary
 python MarkerPrinter.py --chess --file "./chess.pdf" --size_x 16 --size_y 9 --square_length 0.09
 ```
 
-#####  ArUco
+##### Save ArUco
 ```
 python MarkerPrinter.py --aruco --file "./aruco.pdf" --dictionary DICT_ARUCO_ORIGINAL --marker_length 0.07 --marker_id 0 --border_bits 1
 ```
@@ -62,7 +62,7 @@ If you are using consumer level printer, you will suffer from not able printing 
 If you are printing the image directly, you will need add page border to protect the marker, so just set page border at the GUI pageBorder entry before saving the marker to files. If you are using command-line interface, just add --page_border_x x --page_border_y y as parameters.
 
 ### Generate aruco data:
-Install opencv-python and opencv-contrib-python, and than run
+Although there is a built-in aruco dictionary data, but if you want to update the dictionary(If aruco update predefined dictionary list), just install opencv-python and opencv-contrib-python, and than run
 ```
 python MarkerPrinter.py --generate arucoDictBytesList.npz
 ```
