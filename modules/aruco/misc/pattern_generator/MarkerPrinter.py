@@ -1109,10 +1109,10 @@ if __name__ == '__main__':
         help="Save with page border height L length (Unit: meter)", metavar="L")
 
     for group in [chessGroup, arucoGroup, arucoGridGroup, charucoGroup]:
-        parser.add_argument(
+        group.add_argument(
             "--" + group.title + "_page_border_x", dest="pageBorderX", default="0",
             help="Save with page border width L length (Unit: meter)", metavar="L")
-        parser.add_argument(
+        group.add_argument(
             "--" + group.title + "_page_border_y", dest="pageBorderY", default="0",
             help="Save with page border height L length (Unit: meter)", metavar="L")
 
