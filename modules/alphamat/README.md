@@ -25,8 +25,6 @@ cmake -DOPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -Dopencv_alphamat=ON 
 make
 ```
 
-Sample image and trimap are in opencv_contrib/modules/alphamat/src/input_images and opencv_contrib/modules/alphamat/src/trimaps
-
 ## Results
 
 Results for input_lowres are available here -
