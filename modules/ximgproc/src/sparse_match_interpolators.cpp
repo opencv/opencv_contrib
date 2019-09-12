@@ -887,6 +887,15 @@ bool operator<(const SparseMatch& lhs,const SparseMatch& rhs)
         return (lhs.reference_image_pos.x<rhs.reference_image_pos.x);
 }
 
+/* Under Process this class will provide an implementation of 
+@inproceedings{hu2017robust,
+  title={Robust interpolation of correspondences for large displacement optical flow},
+  author={Hu, Yinlin and Li, Yunsong and Song, Rui},
+  booktitle={Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition},
+  pages={481--489},
+  year={2017}
+}
+ */
 class RICInterpolatorImpl CV_FINAL : public EdgeAwareInterpolatorImplBase //: public RICInterpolatorImpl
 {
 public:
