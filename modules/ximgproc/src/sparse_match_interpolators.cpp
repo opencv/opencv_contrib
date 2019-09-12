@@ -58,16 +58,16 @@ struct SparseMatch
 
 bool operator<(const SparseMatch& lhs,const SparseMatch& rhs);
 
-void weightedLeastSquaresAffineFit(MAX_MATCH_TYPE* labels, float* weights, int count, float lambda, SparseMatch* matches, Mat& dst);
-void generateHypothesis(MAX_MATCH_TYPE* labels, int count, RNG& rng, unsigned char* is_used, SparseMatch* matches, Mat& dst);
-void verifyHypothesis(MAX_MATCH_TYPE* labels, float* weights, int count, SparseMatch* matches, float eps, float lambda, Mat& hypothesis_transform, Mat& old_transform, float& old_weighted_num_inliers);
+void weightedLeastSquaresAffineFit(int* labels, float* weights, int count, float lambda, SparseMatch* matches, Mat& dst);
+void generateHypothesis(int* labels, int count, RNG& rng, unsigned char* is_used, SparseMatch* matches, Mat& dst);
+void verifyHypothesis(int* labels, float* weights, int count, SparseMatch* matches, float eps, float lambda, Mat& hypothesis_transform, Mat& old_transform, float& old_weighted_num_inliers);
 
 struct node
 {
     float dist;
-    MAX_MATCH_TYPE label;
+    int label;
     node() {}
-    node(MAX_MATCH_TYPE l,float d): dist(d), label(l) {}
+    node(int l,float d): dist(d), label(l) {}
 };
 
 class EdgeAwareInterpolatorImplBase
@@ -283,12 +283,12 @@ void EdgeAwareInterpolatorImpl::interpolate(InputArray from_image, InputArray fr
         matches_vector[i] = SparseMatch(from_vector[i],to_vector[i]);
     sort(matches_vector.begin(),matches_vector.end());
     match_num = (int)matches_vector.size();
-    CV_Assert(match_num<std::numeric_limits<MAX_MATCH_TYPE>::max());
+    CV_Assert(match_num<INT_MAX);
 
     Mat src = from_image.getMat();
-    labels = Mat(h,w, DataType::<MAX_MATCH_TYPE>::type);
+    labels = Mat(h,w,CV_32S);
     labels = Scalar(-1);
-    NNlabels = Mat(match_num,k, DataType::<MAX_MATCH_TYPE>::type);
+    NNlabels = Mat(match_num,k,CV_32S);
     NNlabels = Scalar(-1);
     NNdistances = Mat(match_num,k,CV_32F);
     NNdistances = Scalar(0.0f);
@@ -318,7 +318,7 @@ void EdgeAwareInterpolatorImpl::preprocessData(Mat& src, vector<SparseMatch>& ma
         y = min((int)(matches[i].reference_image_pos.y+0.5f),h-1);
 
         distances.at<float>(y,x) = 0.0f;
-        labels.at<MAX_MATCH_TYPE>(y,x) = (MAX_MATCH_TYPE)i;
+        labels.at<int>(y,x) = (int)i;
     }
 
     computeGradientMagnitude(src,cost_map);
@@ -364,13 +364,104 @@ void EdgeAwareInterpolatorImpl::computeGradientMagnitude(Mat& src, Mat& dst)
     }
 }
 
+void EdgeAwareInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& cost_map)
+{
+    float c1 = 1.0f/2.0f;
+    float c2 = sqrt(2.0f)/2.0f;
+    float d = 0.0f;
+    int i,j;
+    float *dist_row,      *cost_row;
+    float *dist_row_prev, *cost_row_prev;
+    int *label_row;
+    int *label_row_prev;
+
+#define CHECK(cur_dist,cur_label,cur_cost,prev_dist,prev_label,prev_cost,coef)\
+{\
+    d = prev_dist + coef*(cur_cost+prev_cost);\
+    if(cur_dist>d){\
+        cur_dist=d;\
+        cur_label = prev_label;}\
+}
+
+    for(int it=0;it<distance_transform_num_iter;it++)
+    {
+        //first pass (left-to-right, top-to-bottom):
+        dist_row  = distances.ptr<float>(0);
+        label_row = labels.ptr<int>(0);
+        cost_row  = cost_map.ptr<float>(0);
+        for(j=1;j<w;j++)
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j-1],label_row[j-1],cost_row[j-1],c1);
+
+        for(i=1;i<h;i++)
+        {
+            dist_row       = distances.ptr<float>(i);
+            dist_row_prev  = distances.ptr<float>(i-1);
+
+            label_row      = labels.ptr<int>(i);
+            label_row_prev = labels.ptr<int>(i-1);
+
+            cost_row      = cost_map.ptr<float>(i);
+            cost_row_prev = cost_map.ptr<float>(i-1);
+
+            j=0;
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j]  ,label_row_prev[j]  ,cost_row_prev[j]  ,c1);
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j+1],label_row_prev[j+1],cost_row_prev[j+1],c2);
+            j++;
+            for(;j<w-1;j++)
+            {
+                CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j-1]     ,label_row[j-1]     ,cost_row[j-1]     ,c1);
+                CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j-1],label_row_prev[j-1],cost_row_prev[j-1],c2);
+                CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j]  ,label_row_prev[j]  ,cost_row_prev[j]  ,c1);
+                CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j+1],label_row_prev[j+1],cost_row_prev[j+1],c2);
+            }
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j-1]     ,label_row[j-1]     ,cost_row[j-1]     ,c1);
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j-1],label_row_prev[j-1],cost_row_prev[j-1],c2);
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j]  ,label_row_prev[j]  ,cost_row_prev[j]  ,c1);
+        }
+
+        //second pass (right-to-left, bottom-to-top):
+        dist_row  = distances.ptr<float>(h-1);
+        label_row = labels.ptr<int>(h-1);
+        cost_row  = cost_map.ptr<float>(h-1);
+        for(j=w-2;j>=0;j--)
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j+1],label_row[j+1],cost_row[j+1],c1);
+
+        for(i=h-2;i>=0;i--)
+        {
+            dist_row       = distances.ptr<float>(i);
+            dist_row_prev  = distances.ptr<float>(i+1);
+
+            label_row      = labels.ptr<int>(i);
+            label_row_prev = labels.ptr<int>(i+1);
+
+            cost_row      = cost_map.ptr<float>(i);
+            cost_row_prev = cost_map.ptr<float>(i+1);
+
+            j=w-1;
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j]  ,label_row_prev[j]  ,cost_row_prev[j]  ,c1);
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j-1],label_row_prev[j-1],cost_row_prev[j-1],c2);
+            j--;
+            for(;j>0;j--)
+            {
+                CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j+1]     ,label_row[j+1]     ,cost_row[j+1]     ,c1);
+                CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j+1],label_row_prev[j+1],cost_row_prev[j+1],c2);
+                CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j]  ,label_row_prev[j]  ,cost_row_prev[j]  ,c1);
+                CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j-1],label_row_prev[j-1],cost_row_prev[j-1],c2);
+            }
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j+1]     ,label_row[j+1]     ,cost_row[j+1]     ,c1);
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j+1],label_row_prev[j+1],cost_row_prev[j+1],c2);
+            CHECK(dist_row[j],label_row[j],cost_row[j],dist_row_prev[j]  ,label_row_prev[j]  ,cost_row_prev[j]  ,c1);
+        }
+    }
+#undef CHECK
+}
 
 void EdgeAwareInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
 {
     float *dist_row,      *cost_row;
     float *dist_row_prev, *cost_row_prev;
-    MAX_MATCH_TYPE *label_row;
-    MAX_MATCH_TYPE *label_row_prev;
+    int *label_row;
+    int *label_row_prev;
     int i,j;
     const float c1 = 1.0f/2.0f;
     const float c2 = sqrt(2.0f)/2.0f;
@@ -396,7 +487,7 @@ void EdgeAwareInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
     }
 
     dist_row  = distances.ptr<float>(0);
-    label_row = labels.ptr<MAX_>(0);
+    label_row = labels.ptr<int>(0);
     cost_row  = cost_map.ptr<float>(0);
     for(j=1;j<w;j++)
         CHECK(dist_row[j],label_row[j],cost_row[j],dist_row[j-1],label_row[j-1],cost_row[j-1],c1);
@@ -406,9 +497,8 @@ void EdgeAwareInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
         dist_row       = distances.ptr<float>(i);
         dist_row_prev  = distances.ptr<float>(i-1);
 
-        label_row      = labels.ptr<MAX_MATCH_TYPE>(i);
-        label_row_prev = labels.ptr<MAX_MATCH_TYPE>(i-1);
-
+        label_row      = labels.ptr<int>(i);
+        label_row_prev = labels.ptr<int>(i-1);
         cost_row      = cost_map.ptr<float>(i);
         cost_row_prev = cost_map.ptr<float>(i-1);
 
@@ -451,7 +541,7 @@ void EdgeAwareInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
             }
 
             if(!found)
-                g[neighbors[j].label].push_back(node((MAX_MATCH_TYPE)i,neighbors[j].dist));
+                g[neighbors[j].label].push_back(node((int)i,neighbors[j].dist));
         }
     }
 }
@@ -462,18 +552,18 @@ struct nodeHeap
     // children: 2*i, 2*i+1
     // parent: i>>1
     node* heap;
-    MAX_MATCH_TYPE* heap_pos;
+    int* heap_pos;
     node tmp_node;
-    MAX_MATCH_TYPE size;
-    MAX_MATCH_TYPE num_labels;
+    int size;
+    int num_labels;
 
-    nodeHeap(MAX_MATCH_TYPE _num_labels)
+    nodeHeap(int _num_labels)
     {
         num_labels = _num_labels;
         heap = new node[num_labels+1];
         heap[0] = node(-1,-1.0f);
-        heap_pos = new MAX_MATCH_TYPE[num_labels];
-        memset(heap_pos,0,sizeof(MAX_MATCH_TYPE)*num_labels);
+        heap_pos = new int[num_labels];
+        memset(heap_pos,0,sizeof(int)*num_labels);
         size=0;
     }
 
@@ -486,7 +576,7 @@ struct nodeHeap
     void clear()
     {
         size=0;
-        memset(heap_pos,0,sizeof(MAX_MATCH_TYPE)*num_labels);
+        memset(heap_pos,0,sizeof(int)*num_labels);
     }
 
     inline bool empty()
@@ -494,7 +584,7 @@ struct nodeHeap
         return (size==0);
     }
 
-    inline void nodeSwap(MAX_MATCH_TYPE idx1, MAX_MATCH_TYPE idx2)
+    inline void nodeSwap(int idx1, int idx2)
     {
         heap_pos[heap[idx1].label] = idx2;
         heap_pos[heap[idx2].label] = idx1;
@@ -509,8 +599,8 @@ struct nodeHeap
         size++;
         heap[size] = n;
         heap_pos[n.label] = size;
-        MAX_MATCH_TYPE i = size;
-        MAX_MATCH_TYPE parent_i = i>>1;
+        int i = size;
+        int parent_i = i>>1;
         while(heap[i].dist<heap[parent_i].dist)
         {
             nodeSwap(i,parent_i);
@@ -524,8 +614,8 @@ struct nodeHeap
         node res = heap[1];
         heap_pos[res.label] = 0;
 
-        MAX_MATCH_TYPE i=1;
-        MAX_MATCH_TYPE left,right;
+        int i=1;
+        int left,right;
         while( (left=i<<1) < size )
         {
             right = left+1;
@@ -552,7 +642,7 @@ struct nodeHeap
         heap[i] = heap[size];
         heap_pos[heap[i].label] = i;
 
-        MAX_MATCH_TYPE parent_i = i>>1;
+        int parent_i = i>>1;
         while(heap[i].dist<heap[parent_i].dist)
         {
             nodeSwap(i,parent_i);
@@ -571,9 +661,9 @@ struct nodeHeap
     {
         if(heap_pos[n.label])
         {
-            MAX_MATCH_TYPE i = heap_pos[n.label];
+            int i = heap_pos[n.label];
             heap[i].dist = min(heap[i].dist,n.dist);
-            MAX_MATCH_TYPE parent_i = i>>1;
+            int parent_i = i>>1;
             while(heap[i].dist<heap[parent_i].dist)
             {
                 nodeSwap(i,parent_i);
@@ -596,7 +686,7 @@ void EdgeAwareInterpolatorImpl::GetKNNMatches_ParBody::operator() (const Range& 
 {
     int start = std::min(range.start * stripe_sz, inst->match_num);
     int end   = std::min(range.end   * stripe_sz, inst->match_num);
-    nodeHeap q((MAX_MATCH_TYPE)inst->match_num);
+    nodeHeap q((int)inst->match_num);
     int num_expanded_vertices;
     unsigned char* expanded_flag = new unsigned char[inst->match_num];
     node* neighbors;
@@ -609,8 +699,8 @@ void EdgeAwareInterpolatorImpl::GetKNNMatches_ParBody::operator() (const Range& 
         num_expanded_vertices = 0;
         memset(expanded_flag,0,inst->match_num);
         q.clear();
-        q.add(node((MAX_MATCH_TYPE)i,0.0f));
-        MAX_MATCH_TYPE* NNlabels_row    = inst->NNlabels.ptr<MAX_MATCH_TYPE>(i);
+        q.add(node((int)i,0.0f));
+        int* NNlabels_row    = inst->NNlabels.ptr<int>(i);
         float* NNdistances_row = inst->NNdistances.ptr<float>(i);
         while(num_expanded_vertices<inst->k && !q.empty())
         {
@@ -634,7 +724,7 @@ void EdgeAwareInterpolatorImpl::GetKNNMatches_ParBody::operator() (const Range& 
     delete[] expanded_flag;
 }
 
-void weightedLeastSquaresAffineFit(MAX_MATCH_TYPE* labels, float* weights, int count, float lambda, SparseMatch* matches, Mat& dst)
+void weightedLeastSquaresAffineFit(int* labels, float* weights, int count, float lambda, SparseMatch* matches, Mat& dst)
 {
     double sa[6][6]={{0.}}, sb[6]={0.};
     Mat A (6, 6, CV_64F, &sa[0][0]),
@@ -681,7 +771,7 @@ void weightedLeastSquaresAffineFit(MAX_MATCH_TYPE* labels, float* weights, int c
     MM.reshape(2,3).convertTo(dst,CV_32F);
 }
 
-void generateHypothesis(MAX_MATCH_TYPE* labels, int count, RNG& rng, unsigned char* is_used, SparseMatch* matches, Mat& dst)
+void generateHypothesis(int* labels, int count, RNG& rng, unsigned char* is_used, SparseMatch* matches, Mat& dst)
 {
     int idx;
     Point2f src_points[3];
@@ -712,7 +802,8 @@ void generateHypothesis(MAX_MATCH_TYPE* labels, int count, RNG& rng, unsigned ch
     getAffineTransform(src_points,dst_points).convertTo(dst,CV_32F);
 }
 
-void verifyHypothesis(MAX_MATCH_TYPE* labels, float* weights, int count, SparseMatch* matches, float eps, float lambda, Mat& hypothesis_transform, Mat& old_transform, float& old_weighted_num_inliers)
+
+void verifyHypothesis(int* labels, float* weights, int count, SparseMatch* matches, float eps, float lambda, Mat& hypothesis_transform, Mat& old_transform, float& old_weighted_num_inliers)
 {
     float* tr = hypothesis_transform.ptr<float>(0);
     Point2f a,b;
@@ -758,12 +849,12 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
         start = tmp-1;
     }
 
-    MAX_MATCH_TYPE* KNNlabels;
+    int* KNNlabels;
     float* KNNdistances;
     unsigned char* is_used = new unsigned char[inst->k];
     Mat hypothesis_transform;
 
-    MAX_MATCH_TYPE* inlier_labels    = new MAX_MATCH_TYPE[inst->k];
+    int* inlier_labels    = new int[inst->k];
     float* inlier_distances = new float[inst->k];
     float* tr;
     int num_inliers;
@@ -774,7 +865,7 @@ void EdgeAwareInterpolatorImpl::RansacInterpolation_ParBody::operator() (const R
         if(inst->g[i].empty())
             continue;
 
-        KNNlabels    = inst->NNlabels.ptr<MAX_MATCH_TYPE>(i);
+        KNNlabels    = inst->NNlabels.ptr<int>(i);
         KNNdistances = inst->NNdistances.ptr<float>(i);
         if(inc>0) //forward pass
         {
@@ -855,11 +946,11 @@ void EdgeAwareInterpolatorImpl::ransacInterpolation(vector<SparseMatch>& matches
     parallel_for_(Range(0,ransac_num_stripes),RansacInterpolation_ParBody(*this,transforms,weighted_inlier_nums,eps,&matches.front(),ransac_num_stripes,-1));
 
     //construct the final piecewise-affine interpolation:
-    MAX_MATCH_TYPE* label_row;
+    int* label_row;
     float* tr;
     for(int i=0;i<h;i++)
     {
-        label_row = labels.ptr<MAX_MATCH_TYPE>(i);
+        label_row = labels.ptr<int>(i);
         Point2f* dst_row = dst_dense_flow.ptr<Point2f>(i);
         for(int j=0;j<w;j++)
         {
