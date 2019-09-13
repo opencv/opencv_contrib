@@ -50,7 +50,7 @@ namespace sfm
 void
 importReconstruction(const cv::String &file, OutputArrayOfArrays _Rs,
                      OutputArrayOfArrays _Ts, OutputArrayOfArrays _Ks,
-                     OutputArray _points3d, int file_format) {
+                     OutputArrayOfArrays _points3d, int file_format) {
 
     std::vector<Matx33d> Rs, Ks;
     std::vector<Vec3d> Ts, points3d;

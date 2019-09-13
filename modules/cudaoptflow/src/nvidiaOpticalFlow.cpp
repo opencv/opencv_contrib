@@ -29,11 +29,14 @@ CV_Error(cv::Error::HeaderIsNull, "Nvidia Optical Flow headers not found. Make s
 
 //macro for dll loading
 #if defined(_WIN64)
-#define MODULENAME TEXT("nvofapi64.dll")
+#define OF_MODULENAME TEXT("nvofapi64.dll")
+#define CUDA_MODULENAME TEXT("nvcuda.dll")
 #elif defined(_WIN32)
-#define MODULENAME TEXT("nvofapi.dll")
+#define OF_MODULENAME TEXT("nvofapi.dll")
+#define CUDA_MODULENAME TEXT("nvcuda.dll")
 #else
-#define MODULENAME "libnvidia-opticalflow.so.1"
+#define OF_MODULENAME "libnvidia-opticalflow.so.1"
+#define CUDA_MODULENAME "libcuda.so"
 #endif
 
 #define NVOF_API_CALL(nvOFAPI)                                                                      \
@@ -112,6 +115,114 @@ using namespace cv::cuda;
 
 namespace
 {
+class LoadNvidiaModules
+{
+private:
+    typedef int(*PFNCudaCuCtxGetCurrent)(CUcontext*);
+    typedef NV_OF_STATUS(NVOFAPI *PFNNvOFAPICreateInstanceCuda)
+        (uint32_t apiVer, NV_OF_CUDA_API_FUNCTION_LIST* cudaOf);
+
+    PFNCudaCuCtxGetCurrent m_cudaDriverAPIGetCurrentCtx;
+    PFNNvOFAPICreateInstanceCuda m_NvOFAPICreateInstanceCuda;
+    HMODULE m_hOFModule;
+    HMODULE m_hCudaModule;
+    bool m_isFailed;
+
+    LoadNvidiaModules() :
+        m_cudaDriverAPIGetCurrentCtx(NULL),
+        m_NvOFAPICreateInstanceCuda(NULL),
+        m_isFailed(false)
+    {
+//Loading Cuda Library
+#if defined(_WIN32) || defined(_WIN64)
+        HMODULE hCudaModule = LoadLibrary(CUDA_MODULENAME);
+#else
+        void *hCudaModule = dlopen(CUDA_MODULENAME, RTLD_LAZY);
+#endif
+
+        if (hCudaModule == NULL)
+        {
+            m_isFailed = true;
+            CV_Error(Error::StsBadFunc, "Cannot find Cuda library.");
+        }
+        m_hCudaModule = hCudaModule;
+
+#if defined(_WIN32)
+        m_cudaDriverAPIGetCurrentCtx = (PFNCudaCuCtxGetCurrent)GetProcAddress(m_hCudaModule, "cuCtxGetCurrent");
+#else
+        m_cudaDriverAPIGetCurrentCtx = (PFNCudaCuCtxGetCurrent)dlsym(m_hCudaModule, "cuCtxGetCurrent");
+#endif
+        if (!m_cudaDriverAPIGetCurrentCtx)
+        {
+            m_isFailed = true;
+            CV_Error(Error::StsBadFunc,
+                "Cannot find Cuda Driver API : cuCtxGetCurrent() entry in Cuda library");
+        }
+
+//Loading Optical Flow Library
+#if defined(_WIN32) || defined(_WIN64)
+        HMODULE hOFModule = LoadLibrary(OF_MODULENAME);
+#else
+        void *hOFModule = dlopen(OF_MODULENAME, RTLD_LAZY);
+#endif
+
+        if (hOFModule == NULL)
+        {
+            m_isFailed = true;
+            CV_Error(Error::StsBadFunc, "Cannot find NvOF library.");
+        }
+        m_hOFModule = hOFModule;
+
+#if defined(_WIN32)
+        m_NvOFAPICreateInstanceCuda = (PFNNvOFAPICreateInstanceCuda)GetProcAddress(m_hOFModule, "NvOFAPICreateInstanceCuda");
+#else
+        m_NvOFAPICreateInstanceCuda = (PFNNvOFAPICreateInstanceCuda)dlsym(m_hOFModule, "NvOFAPICreateInstanceCuda");
+#endif
+        if (!m_NvOFAPICreateInstanceCuda)
+        {
+            m_isFailed = true;
+            CV_Error(Error::StsBadFunc,
+                "Cannot find NvOFAPICreateInstanceCuda() entry in NVOF library");
+        }
+    };
+
+    ~LoadNvidiaModules()
+    {
+        if (NULL != m_hCudaModule)
+        {
+#if defined(_WIN32) || defined(_WIN64)
+            FreeLibrary(m_hCudaModule);
+#else
+            dlclose(m_hCudaModule);
+#endif
+        }
+        if (NULL != m_hOFModule)
+        {
+#if defined(_WIN32) || defined(_WIN64)
+            FreeLibrary(m_hOFModule);
+#else
+            dlclose(m_hOFModule);
+#endif
+        }
+        m_hCudaModule = NULL;
+        m_hOFModule = NULL;
+        m_cudaDriverAPIGetCurrentCtx = NULL;
+        m_NvOFAPICreateInstanceCuda = NULL;
+    }
+
+public:
+    static LoadNvidiaModules& Init()
+    {
+        static LoadNvidiaModules LoadLibraryObj;
+        if (LoadLibraryObj.m_isFailed)
+            CV_Error(Error::StsError, "Can't initialize LoadNvidiaModules Class Object");
+        return LoadLibraryObj;
+    }
+
+    PFNCudaCuCtxGetCurrent GetCudaLibraryFunctionPtr() { return m_cudaDriverAPIGetCurrentCtx; }
+    PFNNvOFAPICreateInstanceCuda GetOFLibraryFunctionPtr() { return m_NvOFAPICreateInstanceCuda; }
+};
+
 class NvidiaOpticalFlowImpl : public cv::cuda::NvidiaOpticalFlow_1_0
 {
 private:
@@ -169,7 +280,6 @@ private:
     NvOFHandle GetHandle() { return m_hOF; }
 
 protected:
-    HMODULE m_hModule; //module handle to load nvof dll
     std::mutex m_lock;
 
 public:
@@ -198,6 +308,8 @@ NvidiaOpticalFlowImpl::NvidiaOpticalFlowImpl(
     m_cuContext(nullptr), m_format(NV_OF_BUFFER_FORMAT_GRAYSCALE8),
     m_gridSize(NV_OF_OUTPUT_VECTOR_GRID_SIZE_4)
 {
+    LoadNvidiaModules& LoadNvidiaModulesObj = LoadNvidiaModules::Init();
+
     int nGpu = 0;
 
     cuSafeCall(cudaGetDeviceCount(&nGpu));
@@ -208,7 +320,8 @@ NvidiaOpticalFlowImpl::NvidiaOpticalFlowImpl(
 
     cuSafeCall(cudaSetDevice(m_gpuId));
     cuSafeCall(cudaFree(m_cuContext));
-    cuSafeCall(cuCtxGetCurrent(&m_cuContext));
+
+    cuSafeCall(LoadNvidiaModulesObj.GetCudaLibraryFunctionPtr()(&m_cuContext));
 
     if (m_gridSize != NV_OF_OUTPUT_VECTOR_GRID_SIZE_4)
     {
@@ -253,38 +366,9 @@ NvidiaOpticalFlowImpl::NvidiaOpticalFlowImpl(
         m_costBufElementSize = sizeof(uint32_t);
     }
 
-#if defined(_WIN32) || defined(_WIN64)
-HMODULE hModule = LoadLibrary(MODULENAME);
-#else
-void *hModule = dlopen(MODULENAME, RTLD_LAZY);
-#endif
-
-    if (hModule == NULL)
-    {
-        CV_Error(Error::StsBadFunc,
-            "Cannot find NvOF library.");
-    }
-    m_hModule = hModule;
-
-    typedef NV_OF_STATUS(NVOFAPI *PFNNvOFAPICreateInstanceCuda)
-        (uint32_t apiVer, NV_OF_CUDA_API_FUNCTION_LIST* cudaOf);
-
-#if defined(_WIN32)
-PFNNvOFAPICreateInstanceCuda NvOFAPICreateInstanceCuda
-    = (PFNNvOFAPICreateInstanceCuda)GetProcAddress(m_hModule, "NvOFAPICreateInstanceCuda");
-#else
-PFNNvOFAPICreateInstanceCuda NvOFAPICreateInstanceCuda
-    = (PFNNvOFAPICreateInstanceCuda)dlsym(m_hModule, "NvOFAPICreateInstanceCuda");
-#endif
-    if (!NvOFAPICreateInstanceCuda)
-    {
-        CV_Error(Error::StsBadFunc,
-            "Cannot find NvOFAPICreateInstanceCuda() entry in NVOF library");
-    }
-
     m_ofAPI.reset(new NV_OF_CUDA_API_FUNCTION_LIST());
 
-    NVOF_API_CALL(NvOFAPICreateInstanceCuda(NV_OF_API_VERSION, m_ofAPI.get()));
+    NVOF_API_CALL(LoadNvidiaModulesObj.GetOFLibraryFunctionPtr()(NV_OF_API_VERSION, m_ofAPI.get()));
     NVOF_API_CALL(GetAPI()->nvCreateOpticalFlowCuda(m_cuContext, &m_hOF));
 
     memset(&m_initParams, 0, sizeof(m_initParams));
@@ -416,9 +500,7 @@ void NvidiaOpticalFlowImpl::calc(InputArray _frame0, InputArray _frame1, InputOu
         }
     }
 
-    cuSafeCall(cuCtxPushCurrent(m_cuContext));
     inputStream.waitForCompletion();
-    cuSafeCall(cuCtxPopCurrent(&m_cuContext));
 
     //Execute Call
     NV_OF_EXECUTE_INPUT_PARAMS exeInParams;
@@ -436,9 +518,7 @@ void NvidiaOpticalFlowImpl::calc(InputArray _frame0, InputArray _frame1, InputOu
         m_hCostBuffer : nullptr;;
     NVOF_API_CALL(GetAPI()->nvOFExecute(GetHandle(), &exeInParams, &exeOutParams));
 
-    cuSafeCall(cuCtxPushCurrent(m_cuContext));
     outputStream.waitForCompletion();
-    cuSafeCall(cuCtxPopCurrent(&m_cuContext));
 
     if (_flow.isMat())
         flowXYGpuMat.download(_flow);
@@ -460,7 +540,7 @@ void NvidiaOpticalFlowImpl::calc(InputArray _frame0, InputArray _frame1, InputOu
         else
             CV_Error(Error::StsBadArg, "Incorrect cost buffer passed. Pass Mat or GpuMat");
     }
-    cuSafeCall(cuCtxSynchronize());
+    cuSafeCall(cudaDeviceSynchronize());
 }
 
 void NvidiaOpticalFlowImpl::collectGarbage()
