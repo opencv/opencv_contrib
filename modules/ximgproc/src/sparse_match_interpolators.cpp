@@ -36,13 +36,12 @@
 
 #include "precomp.hpp"
 #include "opencv2/ximgproc/sparse_match_interpolator.hpp"
-#include "opencv2/ximgproc/structured_edge_detection.hpp"
 #include <algorithm>
 #include <vector>
 #include "opencv2/core/hal/hal.hpp"
 
 using namespace std;
-#define MAX_MATCH_TYPE short 
+
 #define INF 1E+20F
 
 namespace cv {
@@ -70,106 +69,7 @@ struct node
     node(int l,float d): dist(d), label(l) {}
 };
 
-class EdgeAwareInterpolatorImplBase
-{
-public:
-    void geodesicDistanceTransform(Mat& distances, Mat& cost_map);
-};
-
-void EdgeAwareInterpolatorImplBase::geodesicDistanceTransform(Mat& distances, Mat& cost_map)
-{
-    float c1 = 1.0f / 2.0f;
-    float c2 = sqrt(2.0f) / 2.0f;
-    float d = 0.0f;
-    int i, j;
-    float *dist_row, *cost_row;
-    float *dist_row_prev, *cost_row_prev;
-    MAX_MATCH_TYPE *label_row;
-    MAX_MATCH_TYPE *label_row_prev;
-
-#define CHECK(cur_dist,cur_label,cur_cost,prev_dist,prev_label,prev_cost,coef)\
-{\
-    d = prev_dist + coef*(cur_cost+prev_cost);\
-    if(cur_dist>d){\
-        cur_dist=d;\
-        cur_label = prev_label;}\
-}
-
-    for (int it = 0; it < distance_transform_num_iter; it++)
-    {
-        //first pass (left-to-right, top-to-bottom):
-        dist_row = distances.ptr<float>(0);
-        label_row = labels.ptr<MAX_MATCH_TYPE>(0);
-        cost_row = cost_map.ptr<float>(0);
-        for (j = 1; j < w; j++)
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
-
-        for (i = 1; i < h; i++)
-        {
-            dist_row = distances.ptr<float>(i);
-            dist_row_prev = distances.ptr<float>(i - 1);
-
-            label_row = labels.ptr<MAX_MATCH_TYPE>(i);
-            label_row_prev = labels.ptr<MAX_MATCH_TYPE>(i - 1);
-
-            cost_row = cost_map.ptr<float>(i);
-            cost_row_prev = cost_map.ptr<float>(i - 1);
-
-            j = 0;
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
-            j++;
-            for (; j < w - 1; j++)
-            {
-                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
-                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
-                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
-                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
-            }
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
-        }
-
-        //second pass (right-to-left, bottom-to-top):
-        dist_row = distances.ptr<float>(h - 1);
-        label_row = labels.ptr<MAX_MATCH_TYPE>(h - 1);
-        cost_row = cost_map.ptr<float>(h - 1);
-        for (j = w - 2; j >= 0; j--)
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j + 1], label_row[j + 1], cost_row[j + 1], c1);
-
-        for (i = h - 2; i >= 0; i--)
-        {
-            dist_row = distances.ptr<float>(i);
-            dist_row_prev = distances.ptr<float>(i + 1);
-
-            label_row = labels.ptr<MAX_MATCH_TYPE>(i);
-            label_row_prev = labels.ptr<MAX_MATCH_TYPE>(i + 1);
-
-            cost_row = cost_map.ptr<float>(i);
-            cost_row_prev = cost_map.ptr<float>(i + 1);
-
-            j = w - 1;
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
-            j--;
-            for (; j > 0; j--)
-            {
-                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j + 1], label_row[j + 1], cost_row[j + 1], c1);
-                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
-                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
-                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
-            }
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j + 1], label_row[j + 1], cost_row[j + 1], c1);
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
-        }
-    }
-#undef CHECK
-}
-
-
-class EdgeAwareInterpolatorImpl CV_FINAL : public EdgeAwareInterpolator, EdgeAwareInterpolatorImplBase
+class EdgeAwareInterpolatorImpl CV_FINAL : public EdgeAwareInterpolator
 {
 public:
     static Ptr<EdgeAwareInterpolatorImpl> create();
@@ -178,7 +78,6 @@ public:
 protected:
     int w,h;
     int match_num;
-
     //internal buffers:
     vector<node>* g;
     Mat labels;
@@ -203,7 +102,7 @@ protected:
     void init();
     void preprocessData(Mat& src, vector<SparseMatch>& matches);
     void computeGradientMagnitude(Mat& src, Mat& dst);
-    //void geodesicDistanceTransform(Mat& distances, Mat& cost_map);
+    void geodesicDistanceTransform(Mat& distances, Mat& cost_map);
     void buildGraph(Mat& distances, Mat& cost_map);
     void ransacInterpolation(vector<SparseMatch>& matches, Mat& dst_dense_flow);
 
@@ -283,7 +182,7 @@ void EdgeAwareInterpolatorImpl::interpolate(InputArray from_image, InputArray fr
         matches_vector[i] = SparseMatch(from_vector[i],to_vector[i]);
     sort(matches_vector.begin(),matches_vector.end());
     match_num = (int)matches_vector.size();
-    CV_Assert(match_num<INT_MAX);
+    CV_Assert(match_num<SHRT_MAX);
 
     Mat src = from_image.getMat();
     labels = Mat(h,w,CV_32S);
@@ -334,7 +233,7 @@ void EdgeAwareInterpolatorImpl::computeGradientMagnitude(Mat& src, Mat& dst)
     Mat dx,dy;
     Sobel(src, dx, CV_16S, 1, 0);
     Sobel(src, dy, CV_16S, 0, 1);
-    float norm_coef = src.channels()*4.0f*255.0f;
+    float norm_coef = src.channels()*4*255.0f;
 
     if(src.channels()==1)
     {
@@ -499,6 +398,7 @@ void EdgeAwareInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
 
         label_row      = labels.ptr<int>(i);
         label_row_prev = labels.ptr<int>(i-1);
+
         cost_row      = cost_map.ptr<float>(i);
         cost_row_prev = cost_map.ptr<float>(i-1);
 
@@ -802,7 +702,6 @@ void generateHypothesis(int* labels, int count, RNG& rng, unsigned char* is_used
     getAffineTransform(src_points,dst_points).convertTo(dst,CV_32F);
 }
 
-
 void verifyHypothesis(int* labels, float* weights, int count, SparseMatch* matches, float eps, float lambda, Mat& hypothesis_transform, Mat& old_transform, float& old_weighted_num_inliers)
 {
     float* tr = hypothesis_transform.ptr<float>(0);
@@ -976,6 +875,9 @@ bool operator<(const SparseMatch& lhs,const SparseMatch& rhs)
         return (lhs.reference_image_pos.y<rhs.reference_image_pos.y);
     else
         return (lhs.reference_image_pos.x<rhs.reference_image_pos.x);
+}
+
+}
 }
 
 /* Under Process this class will provide an implementation of 
