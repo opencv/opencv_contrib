@@ -411,9 +411,9 @@ kernel void amacrineCellsComputing(
     float4 val_opl_off = vload4(0, opl_off);
 
     float4 magnoXonPixelResult = coeff * (vload4(0, out_on) + val_opl_on - vload4(0, prev_in_on));
-    vstore4(fmax(magnoXonPixelResult, 0), 0, out_on);
+    vstore4(fmax(magnoXonPixelResult, 0.f), 0, out_on);
     float4 magnoXoffPixelResult = coeff * (vload4(0, out_off) + val_opl_off - vload4(0, prev_in_off));
-    vstore4(fmax(magnoXoffPixelResult, 0), 0, out_off);
+    vstore4(fmax(magnoXoffPixelResult, 0.f), 0, out_off);
 
     vstore4(val_opl_on, 0, prev_in_on);
     vstore4(val_opl_off, 0, prev_in_off);

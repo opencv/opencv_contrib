@@ -474,6 +474,9 @@ public:
     //! if true, image will be blurred before descriptors calculation
     CV_WRAP virtual void setBlurForDescriptor(bool blurForDescriptor) = 0;
     CV_WRAP virtual bool getBlurForDescriptor() const = 0;
+
+    CV_WRAP virtual void setFastThreshold(int fastThreshold) = 0;
+    CV_WRAP virtual int getFastThreshold() const = 0;
 };
 
 //! @}
