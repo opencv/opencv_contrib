@@ -92,4 +92,6 @@ if __name__ == '__main__':
         prev_frame = frame.copy()
         if 0xFF & cv.waitKey(5) == 27:
             break
+    # cleanup the camera and close any open windows
+    cam.release()
     cv.destroyAllWindows()
