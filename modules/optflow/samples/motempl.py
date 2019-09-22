@@ -11,7 +11,8 @@ MIN_TIME_DELTA = 0.05
 def nothing(dummy):
     pass
 
-def draw_motion_comp(vis, (x, y, w, h), angle, color):
+def draw_motion_comp(vis, rect, angle, color):
+    x, y, w, h = rect
     cv.rectangle(vis, (x, y), (x+w, y+h), (0, 255, 0))
     r = min(w/2, h/2)
     cx, cy = x+w/2, y+h/2
