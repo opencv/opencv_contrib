@@ -55,12 +55,12 @@ CV_EXPORTS_W Mat readOpticalFlow( const String& path )
     Mat_<Point2f> flow;
     std::ifstream file(path.c_str(), std::ios_base::binary);
     if ( !file.good() )
-        return flow; // no file - return empty matrix
+        return CV_CXX_MOVE(flow); // no file - return empty matrix
 
     float tag;
     file.read((char*) &tag, sizeof(float));
     if ( tag != FLOW_TAG_FLOAT )
-        return flow;
+        return CV_CXX_MOVE(flow);
 
     int width, height;
 
@@ -79,14 +79,14 @@ CV_EXPORTS_W Mat readOpticalFlow( const String& path )
             if ( !file.good() )
             {
                 flow.release();
-                return flow;
+                return CV_CXX_MOVE(flow);
             }
 
             flow(i, j) = u;
         }
     }
     file.close();
-    return flow;
+    return CV_CXX_MOVE(flow);
 }
 CV_EXPORTS_W bool writeOpticalFlow( const String& path, InputArray flow )
 {
