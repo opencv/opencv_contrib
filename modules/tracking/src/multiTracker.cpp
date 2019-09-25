@@ -75,11 +75,11 @@ namespace cv
 
     bool MultiTracker_Alt::update(InputArray image)
 	{
+ 		bool result = true;
 		for (int i = 0; i < (int)trackers.size(); i++)
-			if (!trackers[i]->update(image, boundingBoxes[i]))
-				return false;
+			result &= trackers[i]->update(image, boundingBoxes[i]);
 
-		return true;
+		return result;
 	}
 
 	//Multitracker TLD
