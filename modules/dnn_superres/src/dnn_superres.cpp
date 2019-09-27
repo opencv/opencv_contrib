@@ -11,139 +11,150 @@ namespace cv
 namespace dnn_superres
 {
 
-int DnnSuperResImpl::layer_loaded = 0;
+/** @brief Class for importing DepthToSpace layer from the ESPCN model
+*/
+class DepthToSpace CV_FINAL : public cv::dnn::Layer
+{
+public:
+    DepthToSpace(const cv::dnn::LayerParams &params);
+
+    static cv::Ptr<cv::dnn::Layer> create(cv::dnn::LayerParams& params);
+
+    virtual bool getMemoryShapes(const std::vector<std::vector<int> > &inputs,
+                                 const int,
+                                 std::vector<std::vector<int> > &outputs,
+                                 std::vector<std::vector<int> > &) const CV_OVERRIDE;
+
+    virtual void forward(cv::InputArrayOfArrays inputs_arr,
+                         cv::OutputArrayOfArrays outputs_arr,
+                         cv::OutputArrayOfArrays) CV_OVERRIDE;
+
+    /// Register this layer
+    static void registerLayer()
+    {
+        static bool initialized = false;
+        if (!initialized)
+        {
+            //Register custom layer that implements pixel shuffling
+            std::string name = "DepthToSpace";
+            dnn::LayerParams layerParams = dnn::LayerParams();
+            cv::dnn::LayerFactory::registerLayer("DepthToSpace", DepthToSpace::create);
+            initialized = true;
+        }
+    }
+};
+
 
 DnnSuperResImpl::DnnSuperResImpl()
 {
-    if( !this->layer_loaded )
-    {
-        layer_loaded = true;
-        registerLayers();
-    }
+    DepthToSpace::registerLayer();
 }
 
-DnnSuperResImpl::DnnSuperResImpl(std::string algo, int scale) : alg(algo), sc(scale)
+DnnSuperResImpl::DnnSuperResImpl(const std::string& algo, int scale)
+    : alg(algo), sc(scale)
 {
-    if( !this->layer_loaded )
-    {
-        layer_loaded = true;
-        registerLayers();
-    }
+    DepthToSpace::registerLayer();
 }
 
-void DnnSuperResImpl::registerLayers()
-{
-    //Register custom layer that implements pixel shuffling
-    std::string name = "DepthToSpace";
-    dnn::LayerParams layerParams = dnn::LayerParams();
-    cv::dnn::LayerFactory::registerLayer("DepthToSpace", DepthToSpace::create);
-}
-
-void DnnSuperResImpl::readModel(std::string path)
+void DnnSuperResImpl::readModel(const std::string& path)
 {
     if ( path.size() )
     {
         this->net = dnn::readNetFromTensorflow(path);
-        std::cout << "Successfully loaded model. \n";
+        CV_LOG_INFO(NULL, "Successfully loaded model: " << path);
     }
     else
     {
-        CV_Error(cv::Error::StsBadArg,"Could not load model.");
+        CV_Error(Error::StsBadArg, std::string("Could not load model: ") + path);
     }
 }
 
-void DnnSuperResImpl::readModel(std::string weights, std::string definition)
+void DnnSuperResImpl::readModel(const std::string& weights, const std::string& definition)
 {
     if ( weights.size() && definition.size() )
     {
         this->net = dnn::readNetFromTensorflow(weights, definition);
-        std::cout << "Successfully loaded model. \n";
+        CV_LOG_INFO(NULL, "Successfully loaded model: " << weights << " " << definition);
     }
     else
     {
-        CV_Error(cv::Error::StsBadArg,"Could not load model.");
+        CV_Error(Error::StsBadArg, std::string("Could not load model: ") + weights + " " + definition);
     }
 }
 
-void DnnSuperResImpl::setModel(std::string algo, int scale)
+void DnnSuperResImpl::setModel(const std::string& algo, int scale)
 {
     this->sc = scale;
     this->alg = algo;
 }
 
-void DnnSuperResImpl::upsample(Mat img, Mat &img_new)
+void DnnSuperResImpl::upsample(InputArray img, OutputArray result)
 {
-    if( !net.empty() )
+    if (net.empty())
+        CV_Error(Error::StsError, "Model not specified. Please set model via setModel().");
+
+    if (this->alg == "espcn" || this->alg == "lapsrn" || this->alg == "fsrcnn")
     {
-        if ( this->alg == "espcn" || this->alg == "lapsrn" || this->alg == "fsrcnn" )
-        {
-            //Preprocess the image: convert to YCrCb float image and normalize
-            Mat preproc_img;
-            preprocess_YCrCb(img, preproc_img);
+        //Preprocess the image: convert to YCrCb float image and normalize
+        Mat preproc_img;
+        preprocess_YCrCb(img, preproc_img);
 
-            //Split the image: only the Y channel is used for inference
-            Mat ycbcr_channels[3];
-            split(preproc_img, ycbcr_channels);
+        //Split the image: only the Y channel is used for inference
+        Mat ycbcr_channels[3];
+        split(preproc_img, ycbcr_channels);
 
-            Mat Y = ycbcr_channels[0];
+        Mat Y = ycbcr_channels[0];
 
-            //Create blob from image so it has size 1,1,Width,Height
-            cv::Mat blob;
-            dnn::blobFromImage(Y, blob, 1.0);
+        //Create blob from image so it has size 1,1,Width,Height
+        cv::Mat blob;
+        dnn::blobFromImage(Y, blob, 1.0);
 
-            //Get the HR output
-            this->net.setInput(blob);
+        //Get the HR output
+        this->net.setInput(blob);
 
-            Mat blob_output = this->net.forward();
+        Mat blob_output = this->net.forward();
 
-            //Convert from blob
-            std::vector <Mat> model_outs;
-            dnn::imagesFromBlob(blob_output, model_outs);
-            Mat out_img = model_outs[0];
+        //Convert from blob
+        std::vector <Mat> model_outs;
+        dnn::imagesFromBlob(blob_output, model_outs);
+        Mat out_img = model_outs[0];
 
-            //Reconstruct: upscale the Cr and Cb space and merge the three layer
-            reconstruct_YCrCb(out_img, preproc_img, img_new, this->sc);
-        }
-        else if( this->alg == "edsr" )
-        {
-            //BGR mean of the Div2K dataset
-            Scalar mean =  Scalar(103.1545782, 111.561547, 114.35629928);
+        //Reconstruct: upscale the Cr and Cb space and merge the three layer
+        reconstruct_YCrCb(out_img, preproc_img, result, this->sc);
+    }
+    else if (this->alg == "edsr")
+    {
+        //BGR mean of the Div2K dataset
+        Scalar mean = Scalar(103.1545782, 111.561547, 114.35629928);
 
-            //Convert to float
-            Mat float_img;
-            img.convertTo(float_img, CV_32F, 1.0);
+        //Convert to float
+        Mat float_img;
+        img.getMat().convertTo(float_img, CV_32F, 1.0);
 
-            //Create blob from image so it has size [1,3,Width,Height] and subtract dataset mean
-            cv::Mat blob;
-            dnn::blobFromImage(float_img, blob, 1.0, Size(), mean);
+        //Create blob from image so it has size [1,3,Width,Height] and subtract dataset mean
+        cv::Mat blob;
+        dnn::blobFromImage(float_img, blob, 1.0, Size(), mean);
 
-            //Get the HR output
-            this->net.setInput(blob);
-            Mat blob_output = this->net.forward();
+        //Get the HR output
+        this->net.setInput(blob);
+        Mat blob_output = this->net.forward();
 
-            //Convert from blob
-            std::vector <Mat> model_outs;
-            dnn::imagesFromBlob(blob_output, model_outs);
-            img_new = model_outs[0];
+        //Convert from blob
+        std::vector <Mat> model_outs;
+        dnn::imagesFromBlob(blob_output, model_outs);
 
-            //Post-process: add mean.
-            img_new = img_new + Scalar(103.1545782, 111.561547, 114.35629928);
-
-            img_new.convertTo(img_new, CV_8U);
-        }
-        else
-        {
-            //
-        }
+        //Post-process: add mean.
+        Mat(model_outs[0] + mean).convertTo(result, CV_8U);
     }
     else
     {
-        CV_Error(cv::Error::StsError, "Model not specified. Please set model via setModel().");
+        CV_Error(cv::Error::StsNotImplemented, std::string("Unknown/unsupported superres algorithm: ") + this->alg);
     }
-    }
+}
 
-void DnnSuperResImpl::upsampleMultioutput(Mat img, std::vector<Mat> &imgs_new, std::vector<int> scale_factors, std::vector<String> node_names)
+void DnnSuperResImpl::upsampleMultioutput(InputArray img, std::vector<Mat> &imgs_new, const std::vector<int>& scale_factors, const std::vector<String>& node_names)
 {
+    CV_Assert(!img.empty());
     CV_Assert(scale_factors.size() == node_names.size());
     CV_Assert(!scale_factors.empty());
     CV_Assert(!node_names.empty());
@@ -154,47 +165,43 @@ void DnnSuperResImpl::upsampleMultioutput(Mat img, std::vector<Mat> &imgs_new, s
         return;
     }
 
-    if( !net.empty() )
+    if (net.empty())
+        CV_Error(Error::StsError, "Model not specified. Please set model via setModel().");
+
+    if (this->alg == "lapsrn")
     {
-        if ( this->alg == "lapsrn" )
+        Mat orig = img.getMat();
+
+        //Preprocess the image: convert to YCrCb float image and normalize
+        Mat preproc_img;
+        preprocess_YCrCb(orig, preproc_img);
+
+        //Split the image: only the Y channel is used for inference
+        Mat ycbcr_channels[3];
+        split(preproc_img, ycbcr_channels);
+
+        Mat Y = ycbcr_channels[0];
+
+        //Create blob from image so it has size 1,1,Width,Height
+        cv::Mat blob;
+        dnn::blobFromImage(Y, blob, 1.0);
+
+        //Get the HR outputs
+        std::vector <Mat> outputs_blobs;
+        this->net.setInput(blob);
+        this->net.forward(outputs_blobs, node_names);
+
+        for(unsigned int i = 0; i < scale_factors.size(); i++)
         {
-            Mat orig = img;
+            std::vector <Mat> model_outs;
+            dnn::imagesFromBlob(outputs_blobs[i], model_outs);
+            Mat out_img = model_outs[0];
+            Mat reconstructed;
 
-            //Preprocess the image: convert to YCrCb float image and normalize
-            Mat preproc_img;
-            preprocess_YCrCb(orig, preproc_img);
+            reconstruct_YCrCb(out_img, preproc_img, reconstructed, scale_factors[i]);
 
-            //Split the image: only the Y channel is used for inference
-            Mat ycbcr_channels[3];
-            split(preproc_img, ycbcr_channels);
-
-            Mat Y = ycbcr_channels[0];
-
-            //Create blob from image so it has size 1,1,Width,Height
-            cv::Mat blob;
-            dnn::blobFromImage(Y, blob, 1.0);
-
-            //Get the HR outputs
-            std::vector <Mat> outputs_blobs;
-            this->net.setInput(blob);
-            this->net.forward(outputs_blobs, node_names);
-
-            for(unsigned int i = 0; i < scale_factors.size(); i++)
-            {
-                std::vector <Mat> model_outs;
-                dnn::imagesFromBlob(outputs_blobs[i], model_outs);
-                Mat out_img = model_outs[0];
-                Mat reconstructed;
-
-                reconstruct_YCrCb(out_img, preproc_img, reconstructed, scale_factors[i]);
-
-                imgs_new.push_back(reconstructed);
-            }
+            imgs_new.push_back(reconstructed);
         }
-    }
-    else
-    {
-        CV_Error(cv::Error::StsError, "Model not specified. Please set model via setModel().");
     }
 }
 
@@ -208,22 +215,20 @@ std::string DnnSuperResImpl::getAlgorithm()
     return this->alg;
 }
 
-void DnnSuperResImpl::preprocess_YCrCb(const Mat inpImg, Mat &outImg)
+void DnnSuperResImpl::preprocess_YCrCb(InputArray inpImg, OutputArray outImg)
 {
     if ( inpImg.type() == CV_8UC1 )
     {
-        Mat ycrcb;
-        inpImg.convertTo(outImg, CV_32F, 1.0 / 255.0);
+        inpImg.getMat().convertTo(outImg, CV_32F, 1.0 / 255.0);
     }
     else if ( inpImg.type() == CV_32FC1 )
     {
-        Mat ycrcb;
-        inpImg.convertTo(outImg, CV_32F, 1.0 / 255.0);
+        inpImg.getMat().convertTo(outImg, CV_32F, 1.0 / 255.0);
     }
     else if ( inpImg.type() == CV_32FC3 )
     {
         Mat img_float;
-        inpImg.convertTo(img_float, CV_32F, 1.0 / 255.0);
+        inpImg.getMat().convertTo(img_float, CV_32F, 1.0 / 255.0);
         cvtColor(img_float, outImg, COLOR_BGR2YCrCb);
     }
     else if ( inpImg.type() == CV_8UC3 )
@@ -234,23 +239,23 @@ void DnnSuperResImpl::preprocess_YCrCb(const Mat inpImg, Mat &outImg)
     }
     else
     {
-        CV_Error(cv::Error::StsBadArg, "Not supported image type!");
+        CV_Error(Error::StsBadArg, std::string("Not supported image type: ") + typeToString(inpImg.type()));
     }
 }
 
-void DnnSuperResImpl::reconstruct_YCrCb(const Mat inpImg, const Mat origImg, Mat &outImg, int scale)
+void DnnSuperResImpl::reconstruct_YCrCb(InputArray inpImg, InputArray origImg, OutputArray outImg, int scale)
 {
     if ( origImg.type() == CV_32FC3 )
     {
         Mat orig_channels[3];
-        split(origImg, orig_channels);
+        split(origImg.getMat(), orig_channels);
 
         Mat Cr, Cb;
         cv::resize(orig_channels[1], Cr, cv::Size(), scale, scale);
         cv::resize(orig_channels[2], Cb, cv::Size(), scale, scale);
 
         std::vector <Mat> channels;
-        channels.push_back(inpImg);
+        channels.push_back(inpImg.getMat());
         channels.push_back(Cr);
         channels.push_back(Cb);
 
@@ -264,24 +269,25 @@ void DnnSuperResImpl::reconstruct_YCrCb(const Mat inpImg, const Mat origImg, Mat
     }
     else if ( origImg.type() == CV_32FC1 )
     {
-        inpImg.convertTo(outImg, CV_8U, 255.0);
+        inpImg.getMat().convertTo(outImg, CV_8U, 255.0);
     }
     else
     {
-        CV_Error(cv::Error::StsBadArg, "Not supported image type!");
+        CV_Error(Error::StsBadArg, std::string("Not supported image type: ") + typeToString(origImg.type()));
     }
 }
 
-DnnSuperResImpl::DepthToSpace::DepthToSpace(const cv::dnn::LayerParams &params) : Layer(params)
+
+DepthToSpace::DepthToSpace(const cv::dnn::LayerParams &params) : Layer(params)
 {
 }
 
-cv::Ptr<cv::dnn::Layer> DnnSuperResImpl::DepthToSpace::create(cv::dnn::LayerParams &params)
+cv::Ptr<cv::dnn::Layer> DepthToSpace::create(cv::dnn::LayerParams &params)
 {
     return cv::Ptr<cv::dnn::Layer>(new DepthToSpace(params));
 }
 
-bool DnnSuperResImpl::DepthToSpace::getMemoryShapes(const std::vector <std::vector<int>> &inputs,
+bool DepthToSpace::getMemoryShapes(const std::vector <std::vector<int>> &inputs,
         const int, std::vector <std::vector<int>> &outputs, std::vector <std::vector<int>> &) const
 {
     std::vector<int> outShape(4);
@@ -306,7 +312,7 @@ bool DnnSuperResImpl::DepthToSpace::getMemoryShapes(const std::vector <std::vect
     return false;
 }
 
-void DnnSuperResImpl::DepthToSpace::forward(cv::InputArrayOfArrays inputs_arr, cv::OutputArrayOfArrays outputs_arr,
+void DepthToSpace::forward(cv::InputArrayOfArrays inputs_arr, cv::OutputArrayOfArrays outputs_arr,
     cv::OutputArrayOfArrays)
 {
     std::vector <cv::Mat> inputs, outputs;

@@ -4,7 +4,7 @@
 
 #include "test_precomp.hpp"
 
-namespace opencv_test{ namespace {
+namespace opencv_test { namespace {
 
 const std::string DNN_SUPERRES_DIR = "dnn_superres";
 const std::string IMAGE_FILENAME = "butterfly.png";
@@ -15,62 +15,33 @@ const std::string IMAGE_FILENAME = "butterfly.png";
 
 void runSingleModel(std::string algorithm, int scale, std::string model_filename)
 {
-Ptr <DnnSuperResImpl> dnn_sr = makePtr<DnnSuperResImpl>();
+    SCOPED_TRACE(algorithm);
 
-std::string path = std::string(TS::ptr()->get_data_path()) + DNN_SUPERRES_DIR + "/" + IMAGE_FILENAME;
+    Ptr <DnnSuperResImpl> dnn_sr = makePtr<DnnSuperResImpl>();
 
-Mat img = imread(path);
-if (img.empty())
-{
-    TS::ptr()->printf(cvtest::TS::LOG, "Test image not found!\n");
-    TS::ptr()->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);
-    return;
-    }
+    std::string path = cvtest::findDataFile(DNN_SUPERRES_DIR + "/" + IMAGE_FILENAME);
 
-std::string pb_path = std::string(TS::ptr()->get_data_path()) + DNN_SUPERRES_DIR + "/" + model_filename;
+    Mat img = imread(path);
+    ASSERT_FALSE(img.empty()) << "Test image can't be loaded: " << path;
 
-dnn_sr->readModel(pb_path);
+    std::string pb_path = cvtest::findDataFile(DNN_SUPERRES_DIR + "/" + model_filename);
 
-dnn_sr->setModel(algorithm, scale);
+    dnn_sr->readModel(pb_path);
 
-if (dnn_sr->getScale() != scale)
-{
-    TS::ptr()->printf(cvtest::TS::LOG,
-                "Scale factor could not be set for scale algorithm %s and scale factor %d!\n",
-                algorithm.c_str(), scale);
-    TS::ptr()->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
-    return;
-    }
+    dnn_sr->setModel(algorithm, scale);
 
-    if (dnn_sr->getAlgorithm() != algorithm)
-    {
-        TS::ptr()->printf(cvtest::TS::LOG, "Algorithm could not be set for scale algorithm %s and scale factor %d!\n",
-                    algorithm.c_str(), scale);
-        TS::ptr()->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
-        return;
-    }
+    ASSERT_EQ(scale, dnn_sr->getScale());
+    ASSERT_EQ(algorithm, dnn_sr->getAlgorithm());
 
-    Mat img_new;
-    dnn_sr->upsample(img, img_new);
+    Mat result;
+    dnn_sr->upsample(img, result);
 
-    if (img_new.empty())
-    {
-        TS::ptr()->printf(cvtest::TS::LOG,
-                "Could not perform upsampling for scale algorithm %s and scale factor %d!\n",
-                algorithm.c_str(), scale);
-        TS::ptr()->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
-        return;
-    }
+    ASSERT_FALSE(result.empty()) << "Could not perform upsampling for scale algorithm " << algorithm << " and scale factor " << scale;
 
     int new_cols = img.cols * scale;
     int new_rows = img.rows * scale;
-    if (img_new.cols != new_cols || img_new.rows != new_rows)
-    {
-        TS::ptr()->printf(cvtest::TS::LOG, "Dimensions are not correct for scale algorithm %s and scale factor %d!\n",
-                algorithm.c_str(), scale);
-        TS::ptr()->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
-        return;
-    }
+    ASSERT_EQ(new_cols, result.cols);
+    ASSERT_EQ(new_rows, result.rows);
 }
 
 TEST(CV_DnnSuperResSingleOutputTest, accuracy)
@@ -86,65 +57,38 @@ TEST(CV_DnnSuperResSingleOutputTest, accuracy)
 void runMultiModel(std::string algorithm, int scale, std::string model_filename,
                 std::vector<int> scales, std::vector<String> node_names)
 {
+    SCOPED_TRACE(algorithm);
+
     Ptr <DnnSuperResImpl> dnn_sr = makePtr<DnnSuperResImpl>();
 
-    std::string path = std::string(TS::ptr()->get_data_path()) + DNN_SUPERRES_DIR + "/" + IMAGE_FILENAME;
+    std::string path = cvtest::findDataFile(DNN_SUPERRES_DIR + "/" + IMAGE_FILENAME);
 
     Mat img = imread(path);
-    if ( img.empty() )
-    {
-        TS::ptr()->printf(cvtest::TS::LOG, "Test image not found!\n");
-        TS::ptr()->set_failed_test_info(cvtest::TS::FAIL_INVALID_TEST_DATA);
-        return;
-    }
+    ASSERT_FALSE(img.empty()) << "Test image can't be loaded: " << path;
 
-    std::string pb_path = std::string(TS::ptr()->get_data_path()) + DNN_SUPERRES_DIR + "/" + model_filename;
+    std::string pb_path = cvtest::findDataFile(DNN_SUPERRES_DIR + "/" + model_filename);
 
     dnn_sr->readModel(pb_path);
 
     dnn_sr->setModel(algorithm, scale);
 
-    if ( dnn_sr->getScale() != scale )
-    {
-        TS::ptr()->printf(cvtest::TS::LOG,
-                    "Scale factor could not be set for scale algorithm %s and scale factor %d!\n",
-                    algorithm.c_str(), scale);
-        TS::ptr()->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
-        return;
-    }
-
-    if ( dnn_sr->getAlgorithm() != algorithm )
-    {
-        TS::ptr()->printf(cvtest::TS::LOG, "Algorithm could not be set for scale algorithm %s and scale factor %d!\n",
-                    algorithm.c_str(), scale);
-                    TS::ptr()->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
-        return;
-    }
+    ASSERT_EQ(scale, dnn_sr->getScale());
+    ASSERT_EQ(algorithm, dnn_sr->getAlgorithm());
 
     std::vector<Mat> outputs;
     dnn_sr->upsampleMultioutput(img, outputs, scales, node_names);
 
     for(unsigned int i = 0; i < outputs.size(); i++)
     {
-        if( outputs[i].empty() )
-        {
-            TS::ptr()->printf(cvtest::TS::LOG,
-                        "Could not perform upsampling for scale algorithm %s and scale factor %d!\n",
-                        algorithm.c_str(), scale);
-            TS::ptr()->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
-            return;
-        }
+        SCOPED_TRACE(cv::format("i=%d scale[i]=%d", i, scales[i]));
+
+        ASSERT_FALSE(outputs[i].empty());
 
         int new_cols = img.cols * scales[i];
         int new_rows = img.rows * scales[i];
 
-        if ( outputs[i].cols != new_cols || outputs[i].rows != new_rows )
-        {
-            TS::ptr()->printf(cvtest::TS::LOG, "Dimensions are not correct for scale algorithm %s and scale factor %d!\n",
-                        algorithm.c_str(), scale);
-            TS::ptr()->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
-            return;
-        }
+        EXPECT_EQ(new_cols, outputs[i].cols);
+        EXPECT_EQ(new_rows, outputs[i].rows);
     }
 }
 

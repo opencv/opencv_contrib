@@ -24,6 +24,8 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 
 - **dnn_objdetect**: Object Detection using CNNs -- Implements compact CNN Model for object detection. Trained using Caffe but uses opencv_dnn modeule.
 
+- **dnn_superres**: Superresolution using CNNs -- Contains four trained convolutional neural networks to upscale images.
+
 - **dnns_easily_fooled**: Subvert DNNs -- This code can use the activations in a network to fool the networks into recognizing something else.
 
 - **dpm**: Deformable Part Model -- Felzenszwalb's Cascade with deformable parts object recognition code.

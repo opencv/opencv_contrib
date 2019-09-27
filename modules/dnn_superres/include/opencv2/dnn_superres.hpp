@@ -2,8 +2,8 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
-#ifndef _OPENCV_DNN_SUPERRES_DNNSUPERRESIMPL_HPP_
-#define _OPENCV_DNN_SUPERRES_DNNSUPERRESIMPL_HPP_
+#ifndef _OPENCV_DNN_SUPERRES_HPP_
+#define _OPENCV_DNN_SUPERRES_HPP_
 
 /** @defgroup dnn_superres DNN used for super resolution
 
@@ -49,18 +49,13 @@ private:
 
     int sc; //scale factor
 
-    /// @private
-    static int layer_loaded;
+    void preprocess(InputArray inpImg, OutputArray outpImg);
 
-    void registerLayers();
+    void reconstruct_YCrCb(InputArray inpImg, InputArray origImg, OutputArray outpImg, int scale);
 
-    void preprocess(const Mat inpImg, Mat &outpImg);
+    void reconstruct_YCrCb(InputArray inpImg, InputArray origImg, OutputArray outpImg);
 
-    void reconstruct_YCrCb(const Mat inpImg, const Mat origImg, Mat &outpImg, int scale);
-
-    void reconstruct_YCrCb(const Mat inpImg, const Mat origImg, Mat &outpImg);
-
-    void preprocess_YCrCb(const Mat inpImg, Mat &outpImg);
+    void preprocess_YCrCb(InputArray inpImg, OutputArray outpImg);
 
 public:
 
@@ -76,18 +71,18 @@ public:
         - __lapsrn__
     @param scale Integer specifying the upscale factor
      */
-    DnnSuperResImpl(std::string algo, int scale);
+    DnnSuperResImpl(const std::string& algo, int scale);
 
     /** @brief Read the model from the given path
     @param path Path to the model file.
     */
-    void readModel(std::string path);
+    void readModel(const std::string& path);
 
     /** @brief Read the model from the given path
     @param weights Path to the model weights file.
     @param definition Path to the model definition file.
     */
-    void readModel(std::string weights, std::string definition);
+    void readModel(const std::string& weights, const std::string& definition);
 
     /** @brief Set desired model
     @param algo String containing one of the desired models:
@@ -97,13 +92,13 @@ public:
         - __lapsrn__
     @param scale Integer specifying the upscale factor
      */
-    void setModel(std::string algo, int scale);
+    void setModel(const std::string& algo, int scale);
 
     /** @brief Upsample via neural network
     @param img Image to upscale
-    @param img_new Destination upscaled image
+    @param result Destination upscaled image
      */
-    void upsample(Mat img, Mat &img_new);
+    void upsample(InputArray img, OutputArray result);
 
     /** @brief Upsample via neural network of multiple outputs
     @param img Image to upscale
@@ -111,7 +106,7 @@ public:
     @param scale_factors Scaling factors of the output nodes
     @param node_names Names of the output nodes in the neural network
     */
-    void upsampleMultioutput(Mat img, std::vector<Mat> &imgs_new, std::vector<int> scale_factors, std::vector<String> node_names);
+    void upsampleMultioutput(InputArray img, std::vector<Mat> &imgs_new, const std::vector<int>& scale_factors, const std::vector<String>& node_names);
 
     /** @brief Returns the scale factor of the model:
     @return Current scale factor.
@@ -122,31 +117,6 @@ public:
     @return Current algorithm.
     */
     std::string getAlgorithm();
-
-    private:
-    /** @brief Class for importing DepthToSpace layer from the ESPCN model
-    */
-    class DepthToSpace CV_FINAL : public cv::dnn::Layer
-    {
-        public:
-
-        /// @private
-        DepthToSpace(const cv::dnn::LayerParams &params);
-
-        /// @private
-        static cv::Ptr<cv::dnn::Layer> create(cv::dnn::LayerParams& params);
-
-        /// @private
-        virtual bool getMemoryShapes(const std::vector<std::vector<int> > &inputs,
-                                     const int,
-                                     std::vector<std::vector<int> > &outputs,
-                                     std::vector<std::vector<int> > &) const CV_OVERRIDE;
-
-        /// @private
-        virtual void forward(cv::InputArrayOfArrays inputs_arr,
-                             cv::OutputArrayOfArrays outputs_arr,
-                             cv::OutputArrayOfArrays) CV_OVERRIDE;
-    };
 };
 
 //! @} dnn_superres

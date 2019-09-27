@@ -10,8 +10,9 @@
 #include <sstream>
 
 #include "opencv2/core.hpp"
+#include <opencv2/core/utils/logger.hpp>
+
 #include "opencv2/dnn.hpp"
-#include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
 
 #include "opencv2/dnn_superres.hpp"
