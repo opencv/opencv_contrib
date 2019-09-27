@@ -252,6 +252,8 @@ namespace cv
             CV_Assert(!S.empty());
             CV_Assert(S.depth() == CV_8U || S.depth() == CV_16U
             || S.depth() == CV_32F || S.depth() == CV_64F);
+            CV_Assert(lambda > 0.0);
+            CV_Assert(kappa > 1.0);
 
             dst.create(src.size(), src.type());
 
