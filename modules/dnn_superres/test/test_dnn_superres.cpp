@@ -51,12 +51,12 @@ TEST(CV_DnnSuperResSingleOutputTest, accuracy_espcn_2)
 
 TEST(CV_DnnSuperResSingleOutputTest, accuracy_fsrcnn_2)
 {
-    runOneModel("fsrcnn", 2, "FSRCNN_x2.pb");
+    runSingleModel("fsrcnn", 2, "FSRCNN_x2.pb");
 }
 
 TEST(CV_DnnSuperResSingleOutputTest, accuracy_fsrcnn_3)
 {
-    runOneModel("fsrcnn", 3, "FSRCNN_x3.pb");
+    runSingleModel("fsrcnn", 3, "FSRCNN_x3.pb");
 }
 
 
