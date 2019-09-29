@@ -268,37 +268,37 @@ Mat Dictionary::getBitsFromByteList(const Mat &byteList, int markerSize) {
 
 
 
+Ptr<Dictionary> getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name)
+{
+    // DictionaryData constructors calls
+    //    moved out of globals so construted on first use, which allows lazy-loading of opencv dll
+    static const Dictionary DICT_ARUCO_DATA = Dictionary(Mat(1024, (5 * 5 + 7) / 8, CV_8UC4, (uchar*)DICT_ARUCO_BYTES), 5, 0);
 
-// DictionaryData constructors calls
-const Dictionary DICT_ARUCO_DATA = Dictionary(Mat(1024, (5*5 + 7)/8, CV_8UC4, (uchar*)DICT_ARUCO_BYTES), 5, 0);
+    static const Dictionary DICT_4X4_50_DATA = Dictionary(Mat(50, (4 * 4 + 7) / 8, CV_8UC4, (uchar*)DICT_4X4_1000_BYTES), 4, 1);
+    static const Dictionary DICT_4X4_100_DATA = Dictionary(Mat(100, (4 * 4 + 7) / 8, CV_8UC4, (uchar*)DICT_4X4_1000_BYTES), 4, 1);
+    static const Dictionary DICT_4X4_250_DATA = Dictionary(Mat(250, (4 * 4 + 7) / 8, CV_8UC4, (uchar*)DICT_4X4_1000_BYTES), 4, 1);
+    static const Dictionary DICT_4X4_1000_DATA = Dictionary(Mat(1000, (4 * 4 + 7) / 8, CV_8UC4, (uchar*)DICT_4X4_1000_BYTES), 4, 0);
 
-const Dictionary DICT_4X4_50_DATA = Dictionary(Mat(50, (4*4 + 7)/8, CV_8UC4, (uchar*)DICT_4X4_1000_BYTES), 4, 1);
-const Dictionary DICT_4X4_100_DATA = Dictionary(Mat(100, (4*4 + 7)/8, CV_8UC4, (uchar*)DICT_4X4_1000_BYTES), 4, 1);
-const Dictionary DICT_4X4_250_DATA = Dictionary(Mat(250, (4*4 + 7)/8, CV_8UC4, (uchar*)DICT_4X4_1000_BYTES), 4, 1);
-const Dictionary DICT_4X4_1000_DATA = Dictionary(Mat(1000, (4*4 + 7)/8, CV_8UC4, (uchar*)DICT_4X4_1000_BYTES), 4, 0);
+    static const Dictionary DICT_5X5_50_DATA = Dictionary(Mat(50, (5 * 5 + 7) / 8, CV_8UC4, (uchar*)DICT_5X5_1000_BYTES), 5, 3);
+    static const Dictionary DICT_5X5_100_DATA = Dictionary(Mat(100, (5 * 5 + 7) / 8, CV_8UC4, (uchar*)DICT_5X5_1000_BYTES), 5, 3);
+    static const Dictionary DICT_5X5_250_DATA = Dictionary(Mat(250, (5 * 5 + 7) / 8, CV_8UC4, (uchar*)DICT_5X5_1000_BYTES), 5, 2);
+    static const Dictionary DICT_5X5_1000_DATA = Dictionary(Mat(1000, (5 * 5 + 7) / 8, CV_8UC4, (uchar*)DICT_5X5_1000_BYTES), 5, 2);
 
-const Dictionary DICT_5X5_50_DATA = Dictionary(Mat(50, (5*5 + 7)/8, CV_8UC4, (uchar*)DICT_5X5_1000_BYTES), 5, 3);
-const Dictionary DICT_5X5_100_DATA = Dictionary(Mat(100, (5*5 + 7)/8, CV_8UC4, (uchar*)DICT_5X5_1000_BYTES), 5, 3);
-const Dictionary DICT_5X5_250_DATA = Dictionary(Mat(250, (5*5 + 7)/8, CV_8UC4, (uchar*)DICT_5X5_1000_BYTES), 5, 2);
-const Dictionary DICT_5X5_1000_DATA = Dictionary(Mat(1000, (5*5 + 7)/8, CV_8UC4, (uchar*)DICT_5X5_1000_BYTES), 5, 2);
+    static const Dictionary DICT_6X6_50_DATA = Dictionary(Mat(50, (6 * 6 + 7) / 8, CV_8UC4, (uchar*)DICT_6X6_1000_BYTES), 6, 6);
+    static const Dictionary DICT_6X6_100_DATA = Dictionary(Mat(100, (6 * 6 + 7) / 8, CV_8UC4, (uchar*)DICT_6X6_1000_BYTES), 6, 5);
+    static const Dictionary DICT_6X6_250_DATA = Dictionary(Mat(250, (6 * 6 + 7) / 8, CV_8UC4, (uchar*)DICT_6X6_1000_BYTES), 6, 5);
+    static const Dictionary DICT_6X6_1000_DATA = Dictionary(Mat(1000, (6 * 6 + 7) / 8, CV_8UC4, (uchar*)DICT_6X6_1000_BYTES), 6, 4);
 
-const Dictionary DICT_6X6_50_DATA = Dictionary(Mat(50, (6*6 + 7)/8 ,CV_8UC4, (uchar*)DICT_6X6_1000_BYTES), 6, 6);
-const Dictionary DICT_6X6_100_DATA = Dictionary(Mat(100, (6*6 + 7)/8 ,CV_8UC4, (uchar*)DICT_6X6_1000_BYTES), 6, 5);
-const Dictionary DICT_6X6_250_DATA = Dictionary(Mat(250, (6*6 + 7)/8 ,CV_8UC4, (uchar*)DICT_6X6_1000_BYTES), 6, 5);
-const Dictionary DICT_6X6_1000_DATA = Dictionary(Mat(1000, (6*6 + 7)/8 ,CV_8UC4, (uchar*)DICT_6X6_1000_BYTES), 6, 4);
+    static const Dictionary DICT_7X7_50_DATA = Dictionary(Mat(50, (7 * 7 + 7) / 8, CV_8UC4, (uchar*)DICT_7X7_1000_BYTES), 7, 9);
+    static const Dictionary DICT_7X7_100_DATA = Dictionary(Mat(100, (7 * 7 + 7) / 8, CV_8UC4, (uchar*)DICT_7X7_1000_BYTES), 7, 8);
+    static const Dictionary DICT_7X7_250_DATA = Dictionary(Mat(250, (7 * 7 + 7) / 8, CV_8UC4, (uchar*)DICT_7X7_1000_BYTES), 7, 8);
+    static const Dictionary DICT_7X7_1000_DATA = Dictionary(Mat(1000, (7 * 7 + 7) / 8, CV_8UC4, (uchar*)DICT_7X7_1000_BYTES), 7, 6);
 
-const Dictionary DICT_7X7_50_DATA = Dictionary(Mat(50, (7*7 + 7)/8 ,CV_8UC4, (uchar*)DICT_7X7_1000_BYTES), 7, 9);
-const Dictionary DICT_7X7_100_DATA = Dictionary(Mat(100, (7*7 + 7)/8 ,CV_8UC4, (uchar*)DICT_7X7_1000_BYTES), 7, 8);
-const Dictionary DICT_7X7_250_DATA = Dictionary(Mat(250, (7*7 + 7)/8 ,CV_8UC4, (uchar*)DICT_7X7_1000_BYTES), 7, 8);
-const Dictionary DICT_7X7_1000_DATA = Dictionary(Mat(1000, (7*7 + 7)/8 ,CV_8UC4, (uchar*)DICT_7X7_1000_BYTES), 7, 6);
+    static const Dictionary DICT_APRILTAG_16h5_DATA = Dictionary(Mat(30, (4 * 4 + 7) / 8, CV_8UC4, (uchar*)DICT_APRILTAG_16h5_BYTES), 4, 0);
+    static const Dictionary DICT_APRILTAG_25h9_DATA = Dictionary(Mat(35, (5 * 5 + 7) / 8, CV_8UC4, (uchar*)DICT_APRILTAG_25h9_BYTES), 5, 0);
+    static const Dictionary DICT_APRILTAG_36h10_DATA = Dictionary(Mat(2320, (6 * 6 + 7) / 8, CV_8UC4, (uchar*)DICT_APRILTAG_36h10_BYTES), 6, 0);
+    static const Dictionary DICT_APRILTAG_36h11_DATA = Dictionary(Mat(587, (6 * 6 + 7) / 8, CV_8UC4, (uchar*)DICT_APRILTAG_36h11_BYTES), 6, 0);
 
-const Dictionary DICT_APRILTAG_16h5_DATA = Dictionary(Mat(30, (4*4 + 7)/8, CV_8UC4, (uchar*)DICT_APRILTAG_16h5_BYTES), 4, 0);
-const Dictionary DICT_APRILTAG_25h9_DATA = Dictionary(Mat(35, (5*5 + 7)/8, CV_8UC4, (uchar*)DICT_APRILTAG_25h9_BYTES), 5, 0);
-const Dictionary DICT_APRILTAG_36h10_DATA = Dictionary(Mat(2320, (6*6 + 7)/8, CV_8UC4, (uchar*)DICT_APRILTAG_36h10_BYTES), 6, 0);
-const Dictionary DICT_APRILTAG_36h11_DATA = Dictionary(Mat(587, (6*6 + 7)/8, CV_8UC4, (uchar*)DICT_APRILTAG_36h11_BYTES), 6, 0);
-
-
-Ptr<Dictionary> getPredefinedDictionary(PREDEFINED_DICTIONARY_NAME name) {
     switch(name) {
 
     case DICT_ARUCO_ORIGINAL:

@@ -27,7 +27,7 @@ Trained models can be downloaded from [here](https://github.com/Saafke/EDSR_Tens
 - Advantage: Highly accurate
 - Disadvantage: Slow and large filesize
 - Speed: < 3 sec for every scaling factor on 256x256 images on an Intel i7-9700K CPU.
-- Original paper: [Enhanced Deep Residual Networks for Single Image Super-Resolution](http://openaccess.thecvf.com/content_cvpr_2017_workshops/w12/papers/Lim_Enhanced_Deep_Residual_CVPR_2017_paper.pdf) [1]
+- Original paper: [Enhanced Deep Residual Networks for Single Image Super-Resolution](https://arxiv.org/pdf/1707.02921.pdf) [1]
 
 #### ESPCN
 
@@ -40,7 +40,7 @@ Trained models can be downloaded from [here](https://github.com/fannymonori/TF-E
 - Advantage: It is tiny and fast, and still performs well.
 - Disadvantage: Perform worse visually than newer, more robust models.
 - Speed: < 0.01 sec for every scaling factor on 256x256 images on an Intel i7-9700K CPU.
-- Original paper: [Real-Time Single Image and Video Super-Resolution Using an Efficient Sub-Pixel Convolutional Neural Network](http://openaccess.thecvf.com/content_cvpr_2016/papers/Shi_Real-Time_Single_Image_CVPR_2016_paper.pdf) [2]
+- Original paper: [Real-Time Single Image and Video Super-Resolution Using an Efficient Sub-Pixel Convolutional Neural Network](https://arxiv.org/pdf/1707.02921.pdf) [2]
 
 #### FSRCNN
 
@@ -53,7 +53,7 @@ Trained models can be downloaded from [here](https://github.com/Saafke/FSRCNN_Te
 - Disadvantage: Not state-of-the-art accuracy
 - Speed: < 0.01 sec for every scaling factor on 256x256 images on an Intel i7-9700K CPU.
 - Notes: FSRCNN-small has fewer parameters, thus less accurate but faster.
-- Original paper: [Accelerating the Super-Resolution Convolutional Neural Network](http://personal.ie.cuhk.edu.hk/~ccloy/files/eccv_2016_accelerating.pdf) [3]
+- Original paper: [Accelerating the Super-Resolution Convolutional Neural Network](http://mmlab.ie.cuhk.edu.hk/projects/FSRCNN.html) [3]
 
 #### LapSRN
 
@@ -66,7 +66,7 @@ Trained models can be downloaded from [here](https://github.com/fannymonori/TF-L
 - Advantage: The model can do multi-scale super-resolution with one forward pass. It can now support 2x, 4x, 8x, and [2x, 4x] and [2x, 4x, 8x] super-resolution.
 - Disadvantage: It is slower than ESPCN and FSRCNN, and the accuracy is worse than EDSR.
 - Speed: < 0.1 sec for every scaling factor on 256x256 images on an Intel i7-9700K CPU.
-- Original paper: [Deep laplacian pyramid networks for fast and accurate super-resolution](http://openaccess.thecvf.com/content_cvpr_2017/papers/Lai_Deep_Laplacian_Pyramid_CVPR_2017_paper.pdf) [4]
+- Original paper: [Deep laplacian pyramid networks for fast and accurate super-resolution](https://arxiv.org/pdf/1707.02921.pdf) [4]
 
 ### Benchmarks
 

@@ -39,7 +39,6 @@
 
 #include <algorithm>
 #include <iostream>
-#include <iterator>
 #include <vector>
 
 #include "opencv2/core.hpp"
@@ -59,73 +58,55 @@ void balanceWhiteSimple(std::vector<Mat_<T> > &src, Mat &dst, const float inputM
     const float s1 = p; // low quantile
     const float s2 = p; // high quantile
 
-    int depth = 2; // depth of histogram tree
-    if (src[0].depth() != CV_8U)
-        ++depth;
-    int bins = 16; // number of bins at each histogram level
+    int nElements = src[0].depth() == CV_8U ? 256 : 4096;
 
-    int nElements = int(pow((float)bins, (float)depth));
-    // number of elements in histogram tree
+    float minValue0 = inputMin;
+    float maxValue0 = inputMax;
+
+    // deal with cv::calcHist (exclusive upper bound)
+    if (src[0].depth() == CV_32F || src[0].depth() == CV_64F) // floating
+    {
+        maxValue0 += MIN((inputMax - inputMin) / (nElements - 1), 1);
+        if (inputMax == inputMin) // single value
+            maxValue0 += 1;
+    }
+    else // integer
+    {
+        maxValue0 += 1;
+    }
+
+    float interval = (maxValue0 - minValue0) / float(nElements);
 
     for (size_t i = 0; i < src.size(); ++i)
     {
-        std::vector<int> hist(nElements, 0);
+        float minValue = minValue0;
+        float maxValue = maxValue0;
 
-        typename Mat_<T>::iterator beginIt = src[i].begin();
-        typename Mat_<T>::iterator endIt = src[i].end();
+        Mat img = src[i].reshape(1);
+        Mat hist;
+        int channels[] = {0};
+        int histSize[] = {nElements};
+        float inputRange[] = {minValue, maxValue};
+        const float *ranges[] = {inputRange};
 
-        for (typename Mat_<T>::iterator it = beginIt; it != endIt; ++it)
-        // histogram filling
-        {
-            int pos = 0;
-            float minValue = inputMin - 0.5f;
-            float maxValue = inputMax + 0.5f;
-            T val = *it;
-
-            float interval = float(maxValue - minValue) / bins;
-
-            for (int j = 0; j < depth; ++j)
-            {
-                int currentBin = int((val - minValue + 1e-4f) / interval);
-                ++hist[pos + currentBin];
-
-                pos = (pos + currentBin) * bins;
-
-                minValue = minValue + currentBin * interval;
-                maxValue = minValue + interval;
-
-                interval /= bins;
-            }
-        }
+        calcHist(&img, 1, channels, Mat(), hist, 1, histSize, ranges, true, false);
 
         int total = int(src[i].total());
 
-        int p1 = 0, p2 = bins - 1;
+        int p1 = 0, p2 = nElements - 1;
         int n1 = 0, n2 = total;
 
-        float minValue = inputMin - 0.5f;
-        float maxValue = inputMax + 0.5f;
-
-        float interval = (maxValue - minValue) / float(bins);
-
-        for (int j = 0; j < depth; ++j)
         // searching for s1 and s2
+        while (n1 + hist.at<float>(p1) < s1 * total / 100.0f)
         {
-            while (n1 + hist[p1] < s1 * total / 100.0f)
-            {
-                n1 += hist[p1++];
-                minValue += interval;
-            }
-            p1 *= bins;
+            n1 += saturate_cast<int>(hist.at<float>(p1++));
+            minValue += interval;
+        }
 
-            while (n2 - hist[p2] > (100.0f - s2) * total / 100.0f)
-            {
-                n2 -= hist[p2--];
-                maxValue -= interval;
-            }
-            p2 = (p2 + 1) * bins - 1;
-
-            interval /= bins;
+        while (n2 - hist.at<float>(p2) > (100.0f - s2) * total / 100.0f)
+        {
+            n2 -= saturate_cast<int>(hist.at<float>(p2--));
+            maxValue -= interval;
         }
 
         src[i] = (outputMax - outputMin) * (src[i] - minValue) / (maxValue - minValue) + outputMin;

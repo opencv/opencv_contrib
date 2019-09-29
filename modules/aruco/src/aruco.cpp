@@ -212,17 +212,20 @@ static void _reorderCandidatesCorners(vector< vector< Point2f > > &candidates) {
 
 
 /**
-  * @brief Check candidates that are too close to each other and remove the smaller one
+  * @brief Check candidates that are too close to each other, save the potential candidates
+  *        (i.e. biggest/smallest contour) and remove the rest
   */
 static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candidatesIn,
-                                      vector< vector< Point2f > > &candidatesOut,
+                                      vector< vector< vector< Point2f > > > &candidatesSetOut,
                                       const vector< vector< Point > > &contoursIn,
-                                      vector< vector< Point > > &contoursOut,
-                                      double minMarkerDistanceRate) {
+                                      vector< vector< vector< Point > > > &contoursSetOut,
+                                      double minMarkerDistanceRate, bool detectInvertedMarker) {
 
     CV_Assert(minMarkerDistanceRate >= 0);
 
-    vector< pair< int, int > > nearCandidates;
+    vector<int> candGroup;
+    candGroup.resize(candidatesIn.size(), -1);
+    vector< vector<unsigned int> > groupedCandidates;
     for(unsigned int i = 0; i < candidatesIn.size(); i++) {
         for(unsigned int j = i + 1; j < candidatesIn.size(); j++) {
 
@@ -244,39 +247,86 @@ static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candida
                 // if mean square distance is too low, remove the smaller one of the two markers
                 double minMarkerDistancePixels = double(minimumPerimeter) * minMarkerDistanceRate;
                 if(distSq < minMarkerDistancePixels * minMarkerDistancePixels) {
-                    nearCandidates.push_back(pair< int, int >(i, j));
-                    break;
+
+                    // i and j are not related to a group
+                    if(candGroup[i]<0 && candGroup[j]<0){
+                        // mark candidates with their corresponding group number
+                        candGroup[i] = candGroup[j] = (int)groupedCandidates.size();
+
+                        // create group
+                        vector<unsigned int> grouped;
+                        grouped.push_back(i);
+                        grouped.push_back(j);
+                        groupedCandidates.push_back( grouped );
+                    }
+                    // i is related to a group
+                    else if(candGroup[i] > -1 && candGroup[j] == -1){
+                        int group = candGroup[i];
+                        candGroup[j] = group;
+
+                        // add to group
+                        groupedCandidates[group].push_back( j );
+                    }
+                    // j is related to a group
+                    else if(candGroup[j] > -1 && candGroup[i] == -1){
+                        int group = candGroup[j];
+                        candGroup[i] = group;
+
+                        // add to group
+                        groupedCandidates[group].push_back( i );
+                    }
                 }
             }
         }
     }
 
-    // mark smaller one in pairs to remove
-    vector< bool > toRemove(candidatesIn.size(), false);
-    for(unsigned int i = 0; i < nearCandidates.size(); i++) {
-        // if one of the marker has been already markerd to removed, dont need to do anything
-        if(toRemove[nearCandidates[i].first] || toRemove[nearCandidates[i].second]) continue;
-        size_t perimeter1 = contoursIn[nearCandidates[i].first].size();
-        size_t perimeter2 = contoursIn[nearCandidates[i].second].size();
-        if(perimeter1 > perimeter2)
-            toRemove[nearCandidates[i].second] = true;
-        else
-            toRemove[nearCandidates[i].first] = true;
-    }
+    // save possible candidates
+    candidatesSetOut.clear();
+    contoursSetOut.clear();
 
-    // remove extra candidates
-    candidatesOut.clear();
-    unsigned long totalRemaining = 0;
-    for(unsigned int i = 0; i < toRemove.size(); i++)
-        if(!toRemove[i]) totalRemaining++;
-    candidatesOut.resize(totalRemaining);
-    contoursOut.resize(totalRemaining);
-    for(unsigned int i = 0, currIdx = 0; i < candidatesIn.size(); i++) {
-        if(toRemove[i]) continue;
-        candidatesOut[currIdx] = candidatesIn[i];
-        contoursOut[currIdx] = contoursIn[i];
-        currIdx++;
+    vector< vector< Point2f > > biggerCandidates;
+    vector< vector< Point > > biggerContours;
+    vector< vector< Point2f > > smallerCandidates;
+    vector< vector< Point > > smallerContours;
+
+    // save possible candidates
+    for( unsigned int i = 0; i < groupedCandidates.size(); i++ ) {
+        int smallerIdx = groupedCandidates[i][0];
+        int biggerIdx = -1;
+
+        // evaluate group elements
+        for( unsigned int j = 1; j < groupedCandidates[i].size(); j++ ) {
+            size_t currPerim = contoursIn[ groupedCandidates[i][j] ].size();
+
+            // check if current contour is bigger
+            if ( biggerIdx < 0 )
+                biggerIdx = groupedCandidates[i][j];
+            else if(currPerim >= contoursIn[ biggerIdx ].size())
+                biggerIdx = groupedCandidates[i][j];
+
+            // check if current contour is smaller
+            if(currPerim < contoursIn[ smallerIdx ].size() && detectInvertedMarker)
+                smallerIdx = groupedCandidates[i][j];
+        }
+        // add contours und candidates
+        if(biggerIdx > -1){
+
+            biggerCandidates.push_back(candidatesIn[biggerIdx]);
+            biggerContours.push_back(contoursIn[biggerIdx]);
+
+            if( detectInvertedMarker ){
+                smallerCandidates.push_back(candidatesIn[smallerIdx]);
+                smallerContours.push_back(contoursIn[smallerIdx]);
+            }
+        }
     }
+    // to preserve the structure :: candidateSet< defaultCandidates, whiteCandidates >
+    // default candidates
+    candidatesSetOut.push_back(biggerCandidates);
+    contoursSetOut.push_back(biggerContours);
+    // white candidates
+    candidatesSetOut.push_back(smallerCandidates);
+    contoursSetOut.push_back(smallerContours);
 }
 
 /**
@@ -329,8 +379,8 @@ static void _detectInitialCandidates(const Mat &grey, vector< vector< Point2f > 
 /**
  * @brief Detect square candidates in the input image
  */
-static void _detectCandidates(InputArray _image, vector< vector< Point2f > >& candidatesOut,
-                              vector< vector< Point > >& contoursOut, const Ptr<DetectorParameters> &_params) {
+static void _detectCandidates(InputArray _image, vector< vector< vector< Point2f > > >& candidatesSetOut,
+                              vector< vector< vector< Point > > >& contoursSetOut, const Ptr<DetectorParameters> &_params) {
 
     Mat image = _image.getMat();
     CV_Assert(image.total() != 0);
@@ -348,8 +398,9 @@ static void _detectCandidates(InputArray _image, vector< vector< Point2f > >& ca
     _reorderCandidatesCorners(candidates);
 
     /// 4. FILTER OUT NEAR CANDIDATE PAIRS
-    _filterTooCloseCandidates(candidates, candidatesOut, contours, contoursOut,
-                              _params->minMarkerDistanceRate);
+    // save the outter/inner border (i.e. potential candidates)
+    _filterTooCloseCandidates(candidates, candidatesSetOut, contours, contoursSetOut,
+                              _params->minMarkerDistanceRate, _params->detectInvertedMarker);
 }
 
 
@@ -452,8 +503,11 @@ static int _getBorderErrors(const Mat &bits, int markerSize, int borderSize) {
 
 /**
  * @brief Tries to identify one candidate given the dictionary
+ * @return candidate typ. zero if the candidate is not valid,
+ *                           1 if the candidate is a black candidate (default candidate)
+ *                           2 if the candidate is a white candidate
  */
-static bool _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArray _image,
+static uint8_t _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArray _image,
                                   vector<Point2f>& _corners, int& idx,
                                   const Ptr<DetectorParameters>& params)
 {
@@ -461,6 +515,7 @@ static bool _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArray 
     CV_Assert(_image.getMat().total() != 0);
     CV_Assert(params->markerBorderBits > 0);
 
+    uint8_t typ=1;
     // get bits
     Mat candidateBits =
         _extractBits(_image, _corners, dictionary->markerSize, params->markerBorderBits,
@@ -482,9 +537,10 @@ static bool _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArray 
         if(invBError<borderErrors){
             borderErrors = invBError;
             invertedImg.copyTo(candidateBits);
+            typ=2;
         }
     }
-    if(borderErrors > maximumErrorsInBorder) return false;
+    if(borderErrors > maximumErrorsInBorder) return 0; // border is wrong
 
     // take only inner bits
     Mat onlyBits =
@@ -495,13 +551,13 @@ static bool _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArray 
     // try to indentify the marker
     int rotation;
     if(!dictionary->identify(onlyBits, idx, rotation, params->errorCorrectionRate))
-        return false;
+        return 0;
 
     // shift corner positions to the correct rotation
     if(rotation != 0) {
         std::rotate(_corners.begin(), _corners.begin() + 4 - rotation, _corners.end());
     }
-    return true;
+    return typ;
 }
 
 /**
@@ -542,14 +598,13 @@ static void _copyVector2Output(vector< vector< Point2f > > &vec, OutputArrayOfAr
 /**
  * @brief Identify square candidates according to a marker dictionary
  */
-static void _identifyCandidates(InputArray _image, vector< vector< Point2f > >& _candidates,
-                                vector< vector<Point> >& _contours, const Ptr<Dictionary> &_dictionary,
-                                vector< vector< Point2f > >& _accepted, vector< int >& ids,
+static void _identifyCandidates(InputArray _image, vector< vector< vector< Point2f > > >& _candidatesSet,
+                                vector< vector< vector<Point> > >& _contoursSet, const Ptr<Dictionary> &_dictionary,
+                                vector< vector< Point2f > >& _accepted, vector< vector<Point> >& _contours, vector< int >& ids,
                                 const Ptr<DetectorParameters> &params,
                                 OutputArrayOfArrays _rejected = noArray()) {
 
-    int ncandidates = (int)_candidates.size();
-
+    int ncandidates = (int)_candidatesSet[0].size();
     vector< vector< Point2f > > accepted;
     vector< vector< Point2f > > rejected;
 
@@ -561,31 +616,42 @@ static void _identifyCandidates(InputArray _image, vector< vector< Point2f > >& 
     _convertToGrey(_image.getMat(), grey);
 
     vector< int > idsTmp(ncandidates, -1);
-    vector< char > validCandidates(ncandidates, 0);
+    vector< uint8_t > validCandidates(ncandidates, 0);
 
     //// Analyze each of the candidates
     parallel_for_(Range(0, ncandidates), [&](const Range &range) {
         const int begin = range.start;
         const int end = range.end;
 
+        vector< vector< Point2f > >& candidates = params->detectInvertedMarker ? _candidatesSet[1] : _candidatesSet[0];
+
         for(int i = begin; i < end; i++) {
             int currId;
-            if(_identifyOneCandidate(_dictionary, grey, _candidates[i], currId, params)) {
-                validCandidates[i] = 1;
+            validCandidates[i] = _identifyOneCandidate(_dictionary, grey, candidates[i], currId, params);
+
+            if(validCandidates[i] > 0)
                 idsTmp[i] = currId;
-            }
         }
     });
 
     for(int i = 0; i < ncandidates; i++) {
-        if(validCandidates[i] == 1) {
-            accepted.push_back(_candidates[i]);
+        if(validCandidates[i] > 0) {
+            // add the white valid candidate
+            if( params->detectInvertedMarker && validCandidates[i] == 2 ){
+                accepted.push_back(_candidatesSet[1][i]);
+                ids.push_back(idsTmp[i]);
+
+                contours.push_back(_contoursSet[1][i]);
+                continue;
+            }
+            // add the default (black) valid candidate
+            accepted.push_back(_candidatesSet[0][i]);
             ids.push_back(idsTmp[i]);
 
-            contours.push_back(_contours[i]);
+            contours.push_back(_contoursSet[0][i]);
 
         } else {
-            rejected.push_back(_candidates[i]);
+            rejected.push_back(_candidatesSet[0][i]);
         }
     }
 
@@ -598,80 +664,6 @@ static void _identifyCandidates(InputArray _image, vector< vector< Point2f > >& 
         _copyVector2Output(rejected, _rejected);
     }
 }
-
-
-/**
-  * @brief Final filter of markers after its identification
-  */
-static void _filterDetectedMarkers(vector< vector< Point2f > >& _corners, vector< int >& _ids, vector< vector< Point> >& _contours) {
-
-    CV_Assert(_corners.size() == _ids.size());
-    if(_corners.empty()) return;
-
-    // mark markers that will be removed
-    vector< bool > toRemove(_corners.size(), false);
-    bool atLeastOneRemove = false;
-
-    // remove repeated markers with same id, if one contains the other (doble border bug)
-    for(unsigned int i = 0; i < _corners.size() - 1; i++) {
-        for(unsigned int j = i + 1; j < _corners.size(); j++) {
-            if(_ids[i] != _ids[j]) continue;
-
-            // check if first marker is inside second
-            bool inside = true;
-            for(unsigned int p = 0; p < 4; p++) {
-                Point2f point = _corners[j][p];
-                if(pointPolygonTest(_corners[i], point, false) < 0) {
-                    inside = false;
-                    break;
-                }
-            }
-            if(inside) {
-                toRemove[j] = true;
-                atLeastOneRemove = true;
-                continue;
-            }
-
-            // check the second marker
-            inside = true;
-            for(unsigned int p = 0; p < 4; p++) {
-                Point2f point = _corners[i][p];
-                if(pointPolygonTest(_corners[j], point, false) < 0) {
-                    inside = false;
-                    break;
-                }
-            }
-            if(inside) {
-                toRemove[i] = true;
-                atLeastOneRemove = true;
-                continue;
-            }
-        }
-    }
-
-    // parse output
-    if(atLeastOneRemove) {
-        vector< vector< Point2f > >::iterator filteredCorners = _corners.begin();
-        vector< int >::iterator filteredIds = _ids.begin();
-
-        vector< vector< Point > >::iterator filteredContours = _contours.begin();
-
-        for(unsigned int i = 0; i < toRemove.size(); i++) {
-            if(!toRemove[i]) {
-                *filteredCorners++ = _corners[i];
-                *filteredIds++ = _ids[i];
-
-                *filteredContours++ = _contours[i];
-            }
-        }
-
-        _ids.erase(filteredIds, _ids.end());
-        _corners.erase(filteredCorners, _corners.end());
-
-        _contours.erase(filteredContours, _contours.end());
-    }
-}
-
 
 
 /**
@@ -983,26 +975,29 @@ void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Output
     vector< vector< Point > > contours;
     vector< int > ids;
 
+    vector< vector< vector< Point2f > > > candidatesSet;
+    vector< vector< vector< Point > > > contoursSet;
     /// STEP 1.a Detect marker candidates :: using AprilTag
-    if(_params->cornerRefinementMethod == CORNER_REFINE_APRILTAG)
+    if(_params->cornerRefinementMethod == CORNER_REFINE_APRILTAG){
         _apriltag(grey, _params, candidates, contours);
+
+        candidatesSet.push_back(candidates);
+        contoursSet.push_back(contours);
+    }
 
     /// STEP 1.b Detect marker candidates :: traditional way
     else
-        _detectCandidates(grey, candidates, contours, _params);
+        _detectCandidates(grey, candidatesSet, contoursSet, _params);
 
     /// STEP 2: Check candidate codification (identify markers)
-    _identifyCandidates(grey, candidates, contours, _dictionary, candidates, ids, _params,
+    _identifyCandidates(grey, candidatesSet, contoursSet, _dictionary, candidates, contours, ids, _params,
                         _rejectedImgPoints);
-
-    /// STEP 3: Filter detected markers;
-    _filterDetectedMarkers(candidates, ids, contours);
 
     // copy to output arrays
     _copyVector2Output(candidates, _corners);
     Mat(ids).copyTo(_ids);
 
-    /// STEP 4: Corner refinement :: use corner subpix
+    /// STEP 3: Corner refinement :: use corner subpix
     if( _params->cornerRefinementMethod == CORNER_REFINE_SUBPIX ) {
         CV_Assert(_params->cornerRefinementWinSize > 0 && _params->cornerRefinementMaxIterations > 0 &&
                   _params->cornerRefinementMinAccuracy > 0);
@@ -1023,7 +1018,7 @@ void detectMarkers(InputArray _image, const Ptr<Dictionary> &_dictionary, Output
         });
     }
 
-    /// STEP 4, Optional : Corner refinement :: use contour container
+    /// STEP 3, Optional : Corner refinement :: use contour container
     if( _params->cornerRefinementMethod == CORNER_REFINE_CONTOUR){
 
         if(! _ids.empty()){

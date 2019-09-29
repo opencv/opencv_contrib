@@ -58,6 +58,10 @@
     #endif
 #endif
 
+#if defined(_MSC_VER)
+#   pragma warning(disable:4702)  // unreachable code
+#endif
+
 namespace cv
 {
 namespace text
@@ -1319,150 +1323,6 @@ void computeNMChannels(InputArray _src, CV_OUT OutputArrayOfArrays _channels, in
 /* -------------------------------- ER Grouping Algorithm -----------------------------*/
 /* ------------------------------------------------------------------------------------*/
 
-
-/*  NFA approximation functions */
-
-// ln(10)
-#ifndef M_LN10
-#define M_LN10     2.30258509299404568401799145468436421
-#endif
-// Doubles relative error factor
-#define RELATIVE_ERROR_FACTOR 100.0
-
-// Compare doubles by relative error.
-static int double_equal(double a, double b)
-{
-    double abs_diff,aa,bb,abs_max;
-
-    /* trivial case */
-    if( a == b ) return true;
-
-    abs_diff = fabs(a-b);
-    aa = fabs(a);
-    bb = fabs(b);
-    abs_max = aa > bb ? aa : bb;
-
-    /* DBL_MIN is the smallest normalized number, thus, the smallest
-       number whose relative error is bounded by DBL_EPSILON. For
-       smaller numbers, the same quantization steps as for DBL_MIN
-       are used. Then, for smaller numbers, a meaningful "relative"
-       error should be computed by dividing the difference by DBL_MIN. */
-    if( abs_max < DBL_MIN ) abs_max = DBL_MIN;
-
-    /* equal if relative error <= factor x eps */
-    return (abs_diff / abs_max) <= (RELATIVE_ERROR_FACTOR * DBL_EPSILON);
-}
-
-
-/*
-     Computes the natural logarithm of the absolute value of
-     the gamma function of x using the Lanczos approximation.
-     See http://www.rskey.org/gamma.htm
-*/
-static double log_gamma_lanczos(double x)
-{
-    static double q[7] = { 75122.6331530, 80916.6278952, 36308.2951477,
-                           8687.24529705, 1168.92649479, 83.8676043424,
-                           2.50662827511 };
-    double a = (x+0.5) * log(x+5.5) - (x+5.5);
-    double b = 0.0;
-    int n;
-
-    for(n=0;n<7;n++)
-    {
-        a -= log( x + (double) n );
-        b += q[n] * pow( x, (double) n );
-    }
-    return a + log(b);
-}
-
-/*
-     Computes the natural logarithm of the absolute value of
-     the gamma function of x using Windschitl method.
-     See http://www.rskey.org/gamma.htm
-*/
-static double log_gamma_windschitl(double x)
-{
-    return 0.918938533204673 + (x-0.5)*log(x) - x
-           + 0.5*x*log( x*sinh(1/x) + 1/(810.0*pow(x,6.0)) );
-}
-
-/*
-     Computes the natural logarithm of the absolute value of
-     the gamma function of x. When x>15 use log_gamma_windschitl(),
-     otherwise use log_gamma_lanczos().
-*/
-#define log_gamma(x) ((x)>15.0?log_gamma_windschitl(x):log_gamma_lanczos(x))
-
-// Size of the table to store already computed inverse values.
-#define TABSIZE 100000
-
-/*
-     Computes -log10(NFA).
-     NFA stands for Number of False Alarms:
-*/
-static double NFA(int n, int k, double p, double logNT)
-{
-    static double inv[TABSIZE];   /* table to keep computed inverse values */
-    double tolerance = 0.1;       /* an error of 10% in the result is accepted */
-    double log1term,term,bin_term,mult_term,bin_tail,err,p_term;
-    int i;
-
-    if (p<=0)
-        p = std::numeric_limits<double>::min();
-    if (p>=1)
-        p = 1 - std::numeric_limits<double>::epsilon();
-
-    /* check parameters */
-    if( n<0 || k<0 || k>n || p<=0.0 || p>=1.0 )
-    {
-        CV_Error(Error::StsBadArg, "erGrouping wrong n, k or p values in NFA call!");
-    }
-
-    /* trivial cases */
-    if( n==0 || k==0 ) return -logNT;
-    if( n==k ) return -logNT - (double) n * log10(p);
-
-    /* probability term */
-    p_term = p / (1.0-p);
-
-    /* compute the first term of the series */
-    log1term = log_gamma( (double) n + 1.0 ) - log_gamma( (double) k + 1.0 )
-               - log_gamma( (double) (n-k) + 1.0 )
-               + (double) k * log(p) + (double) (n-k) * log(1.0-p);
-    term = exp(log1term);
-
-    /* in some cases no more computations are needed */
-    if( double_equal(term,0.0) )              /* the first term is almost zero */
-    {
-        if( (double) k > (double) n * p )     /* at begin or end of the tail?  */
-            return -log1term / M_LN10 - logNT;  /* end: use just the first term  */
-        else
-            return -logNT;                      /* begin: the tail is roughly 1  */
-    }
-
-    /* compute more terms if needed */
-    bin_tail = term;
-    for(i=k+1;i<=n;i++)
-    {
-        bin_term = (double) (n-i+1) * ( i<TABSIZE ?
-                    ( inv[i]!=0.0 ? inv[i] : ( inv[i] = 1.0 / (double) i ) ) :
-                    1.0 / (double) i );
-
-        mult_term = bin_term * p_term;
-        term *= mult_term;
-        bin_tail += term;
-        if(bin_term<1.0)
-        {
-            err = term * ( ( 1.0 - pow( mult_term, (double) (n-i+1) ) ) /
-                           (1.0-mult_term) - 1.0 );
-            if( err < tolerance * fabs(-log10(bin_tail)-logNT) * bin_tail ) break;
-        }
-    }
-    return -log10(bin_tail) - logNT;
-}
-
-
 // Minibox : smallest enclosing box of a set of n points in d dimensions
 
 class Minibox {
@@ -2480,8 +2340,8 @@ void MaxMeaningfulClustering::build_merge_info(double *Z, double *X, int N, int 
 
 int MaxMeaningfulClustering::nfa(float sigma, int k, int N)
 {
-    // use an approximation for the nfa calculations (faster)
-    return -1*(int)NFA( N, k, (double) sigma, 0);
+    CV_UNUSED(sigma); CV_UNUSED(k); CV_UNUSED(N);
+    CV_Error(Error::StsNotImplemented, "text: NFA computation code has been removed due license conflict. Details: https://github.com/opencv/opencv_contrib/issues/2235");
 }
 
 

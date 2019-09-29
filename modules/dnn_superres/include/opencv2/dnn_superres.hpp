@@ -2,154 +2,124 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
-#ifndef _OPENCV_DNN_SUPERRES_DNNSUPERRESIMPL_HPP_
-#define _OPENCV_DNN_SUPERRES_DNNSUPERRESIMPL_HPP_
-
-#include <opencv2/highgui.hpp>
-#include <opencv2/imgproc.hpp>
-#include "opencv2/dnn.hpp"
+#ifndef _OPENCV_DNN_SUPERRES_HPP_
+#define _OPENCV_DNN_SUPERRES_HPP_
 
 /** @defgroup dnn_superres DNN used for super resolution
+
 This module contains functionality for upscaling an image via convolutional neural networks.
 The following four models are implemented:
-- EDSR <http://openaccess.thecvf.com/content_cvpr_2017_workshops/w12/papers/Lim_Enhanced_Deep_Residual_CVPR_2017_paper.pdf>
-- ESPCN <http://openaccess.thecvf.com/content_cvpr_2016/papers/Shi_Real-Time_Single_Image_CVPR_2016_paper.pdf>
-- FSRCNN <http://personal.ie.cuhk.edu.hk/~ccloy/files/eccv_2016_accelerating.pdf>
-- LapSRN <http://openaccess.thecvf.com/content_cvpr_2017/papers/Lai_Deep_Laplacian_Pyramid_CVPR_2017_paper.pdf>
+
+- EDSR <https://arxiv.org/abs/1707.02921>
+- ESPCN <https://arxiv.org/abs/1609.05158>
+- FSRCNN <https://arxiv.org/abs/1608.00367>
+- LapSRN <https://arxiv.org/abs/1710.01992>
+
 */
+
+#include "opencv2/core.hpp"
+#include "opencv2/dnn.hpp"
 
 namespace cv
 {
 namespace dnn_superres
 {
-    //! @addtogroup dnn_superres
-    //! @{
 
-    /** @brief A class to upscale images via convolutional neural networks.
-    The following four models are implemented:
-    - edsr
-    - espcn
-    - fsrcnn
-    - lapsrn
+//! @addtogroup dnn_superres
+//! @{
+
+/** @brief A class to upscale images via convolutional neural networks.
+The following four models are implemented:
+
+- edsr
+- espcn
+- fsrcnn
+- lapsrn
+ */
+
+class CV_EXPORTS DnnSuperResImpl
+{
+private:
+
+    /** @brief Net which holds the desired neural network
      */
-    class CV_EXPORTS DnnSuperResImpl
-    {
-        private:
+    dnn::Net net;
 
-            /** @brief Net which holds the desired neural network
-             */
-            dnn::Net net;
+    std::string alg; //algorithm
 
-            std::string alg; //algorithm
+    int sc; //scale factor
 
-            int sc; //scale factor
+    void preprocess(InputArray inpImg, OutputArray outpImg);
 
-            /// @private
-            static int layer_loaded;
+    void reconstruct_YCrCb(InputArray inpImg, InputArray origImg, OutputArray outpImg, int scale);
 
-            void registerLayers();
+    void reconstruct_YCrCb(InputArray inpImg, InputArray origImg, OutputArray outpImg);
 
-            void preprocess(const Mat inpImg, Mat &outpImg);
+    void preprocess_YCrCb(InputArray inpImg, OutputArray outpImg);
 
-            void reconstruct_YCrCb(const Mat inpImg, const Mat origImg, Mat &outpImg, int scale);
+public:
 
-            void reconstruct_YCrCb(const Mat inpImg, const Mat origImg, Mat &outpImg);
+    /** @brief Empty constructor
+     */
+    DnnSuperResImpl();
 
-            void preprocess_YCrCb(const Mat inpImg, Mat &outpImg);
+    /** @brief Constructor which immediately sets the desired model
+    @param algo String containing one of the desired models:
+        - __edsr__
+        - __espcn__
+        - __fsrcnn__
+        - __lapsrn__
+    @param scale Integer specifying the upscale factor
+     */
+    DnnSuperResImpl(const std::string& algo, int scale);
 
-        public:
+    /** @brief Read the model from the given path
+    @param path Path to the model file.
+    */
+    void readModel(const std::string& path);
 
-            /** @brief Empty constructor
-             */
-            DnnSuperResImpl();
+    /** @brief Read the model from the given path
+    @param weights Path to the model weights file.
+    @param definition Path to the model definition file.
+    */
+    void readModel(const std::string& weights, const std::string& definition);
 
-            /** @brief Constructor which immediately sets the desired model
-            @param algo String containing one of the desired models:
-                - __edsr__
-                - __espcn__
-                - __fsrcnn__
-                - __lapsrn__
-            @param scale Integer specifying the upscale factor
-             */
-            DnnSuperResImpl(std::string algo, int scale);
+    /** @brief Set desired model
+    @param algo String containing one of the desired models:
+        - __edsr__
+        - __espcn__
+        - __fsrcnn__
+        - __lapsrn__
+    @param scale Integer specifying the upscale factor
+     */
+    void setModel(const std::string& algo, int scale);
 
-            /** @brief Read the model from the given path
-            @param path Path to the model file.
-            */
-            void readModel(std::string path);
+    /** @brief Upsample via neural network
+    @param img Image to upscale
+    @param result Destination upscaled image
+     */
+    void upsample(InputArray img, OutputArray result);
 
-            /** @brief Read the model from the given path
-            @param weights Path to the model weights file.
-            @param definition Path to the model definition file.
-            */
-            void readModel(std::string weights, std::string definition);
+    /** @brief Upsample via neural network of multiple outputs
+    @param img Image to upscale
+    @param imgs_new Destination upscaled images
+    @param scale_factors Scaling factors of the output nodes
+    @param node_names Names of the output nodes in the neural network
+    */
+    void upsampleMultioutput(InputArray img, std::vector<Mat> &imgs_new, const std::vector<int>& scale_factors, const std::vector<String>& node_names);
 
-            /** @brief Set desired model
-            @param algo String containing one of the desired models:
-                - __edsr__
-                - __espcn__
-                - __fsrcnn__
-                - __lapsrn__
-            @param scale Integer specifying the upscale factor
-             */
-            void setModel(std::string algo, int scale);
+    /** @brief Returns the scale factor of the model:
+    @return Current scale factor.
+    */
+    int getScale();
 
-            /** @brief Upsample via neural network
-            @param img Image to upscale
-            @param img_new Destination upscaled image
-             */
-            void upsample(Mat img, Mat &img_new);
+    /** @brief Returns the scale factor of the model:
+    @return Current algorithm.
+    */
+    std::string getAlgorithm();
+};
 
-            /** @brief Upsample via neural network of multiple outputs
-            @param img Image to upscale
-            @param imgs_new Destination upscaled images
-            @param scale_factors Scaling factors of the output nodes
-            @param node_names Names of the output nodes in the neural network
-            */
-            void upsampleMultioutput(Mat img, std::vector<Mat> &imgs_new, std::vector<int> scale_factors, std::vector<String> node_names);
+//! @} dnn_superres
 
-            /** @brief Upsamples videos via neural network and saves it into the given path.
-            @param inputPath Path to video to upscale
-            @param outputPath Destination upscaled video
-            */
-            void upsampleVideo(String inputPath, String outputPath);
-
-            /** @brief Returns the scale factor of the model:
-            @return Current scale factor.
-            */
-            int getScale();
-
-            /** @brief Returns the scale factor of the model:
-            @return Current algorithm.
-            */
-            std::string getAlgorithm();
-
-            private:
-            /** @brief Class for importing DepthToSpace layer from the ESPCN model
-            */
-            class DepthToSpace CV_FINAL : public cv::dnn::Layer
-            {
-                public:
-
-                /// @private
-                DepthToSpace(const cv::dnn::LayerParams &params);
-
-                /// @private
-                static cv::Ptr<cv::dnn::Layer> create(cv::dnn::LayerParams& params);
-
-                /// @private
-                virtual bool getMemoryShapes(const std::vector<std::vector<int> > &inputs,
-                                             const int,
-                                             std::vector<std::vector<int> > &outputs,
-                                             std::vector<std::vector<int> > &) const CV_OVERRIDE;
-
-                /// @private
-                virtual void forward(cv::InputArrayOfArrays inputs_arr,
-                                     cv::OutputArrayOfArrays outputs_arr,
-                                     cv::OutputArrayOfArrays) CV_OVERRIDE;
-            };
-    };
-    //! @}
-}
-}
+}} // cv::dnn_superres::
 #endif
