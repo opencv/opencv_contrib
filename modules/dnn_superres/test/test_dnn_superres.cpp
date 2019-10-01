@@ -44,11 +44,21 @@ void runSingleModel(std::string algorithm, int scale, std::string model_filename
     ASSERT_EQ(new_rows, result.rows);
 }
 
-TEST(CV_DnnSuperResSingleOutputTest, accuracy)
+TEST(CV_DnnSuperResSingleOutputTest, accuracy_espcn_2)
 {
-    //x2
     runSingleModel("espcn", 2, "ESPCN_x2.pb");
 }
+
+TEST(CV_DnnSuperResSingleOutputTest, accuracy_fsrcnn_2)
+{
+    runSingleModel("fsrcnn", 2, "FSRCNN_x2.pb");
+}
+
+TEST(CV_DnnSuperResSingleOutputTest, accuracy_fsrcnn_3)
+{
+    runSingleModel("fsrcnn", 3, "FSRCNN_x3.pb");
+}
+
 
 /****************************************************************************************\
 *                                Test multi output models                               *

@@ -6,8 +6,11 @@
 
 #include <iostream>
 #include <vector>
+#include <memory>
 #include <string>
-#include <sstream>
+#include <map>
+#include <numeric>
+#include <algorithm>
 
 #include "opencv2/core.hpp"
 #include <opencv2/core/utils/logger.hpp>

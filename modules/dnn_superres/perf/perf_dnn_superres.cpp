@@ -27,20 +27,21 @@ PERF_TEST_P(dnn_superres, upsample, testing::Combine(MODEL, IMAGES))
     string model_filename = get<1>(model);
     int scale = get<2>(model);
 
-    string model_path = getDataPath( TEST_DIR + "/" + model_filename );
-    string image_path = getDataPath( image_name );
+    string model_path = cvtest::findDataFile(TEST_DIR + "/" + model_filename);
+    string image_path = cvtest::findDataFile(image_name);
 
     DnnSuperResImpl sr;
     sr.readModel(model_path);
     sr.setModel(model_name, scale);
 
     Mat img = imread(image_path);
+    ASSERT_FALSE(img.empty()) << image_path;
 
-    Mat img_new(img.rows * scale, img.cols * scale, CV_8UC3);
+    Mat result;
 
-    declare.in(img, WARMUP_RNG).out(img_new).iterations(10);
+    TEST_CYCLE() { sr.upsample(img, result); }
 
-    TEST_CYCLE() { sr.upsample(img, img_new); }
+    ASSERT_FALSE(result.empty());
 
     SANITY_CHECK_NOTHING();
 }

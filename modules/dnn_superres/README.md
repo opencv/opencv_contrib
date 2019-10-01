@@ -40,7 +40,7 @@ Trained models can be downloaded from [here](https://github.com/fannymonori/TF-E
 - Advantage: It is tiny and fast, and still performs well.
 - Disadvantage: Perform worse visually than newer, more robust models.
 - Speed: < 0.01 sec for every scaling factor on 256x256 images on an Intel i7-9700K CPU.
-- Original paper: [Real-Time Single Image and Video Super-Resolution Using an Efficient Sub-Pixel Convolutional Neural Network](<https://arxiv.org/abs/1609.05158>) [2]
+- Original paper: [Real-Time Single Image and Video Super-Resolution Using an Efficient Sub-Pixel Convolutional Neural Network](https://arxiv.org/pdf/1707.02921.pdf) [2]
 
 #### FSRCNN
 
@@ -66,11 +66,11 @@ Trained models can be downloaded from [here](https://github.com/fannymonori/TF-L
 - Advantage: The model can do multi-scale super-resolution with one forward pass. It can now support 2x, 4x, 8x, and [2x, 4x] and [2x, 4x, 8x] super-resolution.
 - Disadvantage: It is slower than ESPCN and FSRCNN, and the accuracy is worse than EDSR.
 - Speed: < 0.1 sec for every scaling factor on 256x256 images on an Intel i7-9700K CPU.
-- Original paper: [Deep laplacian pyramid networks for fast and accurate super-resolution](<https://arxiv.org/abs/1710.01992>) [4]
+- Original paper: [Deep laplacian pyramid networks for fast and accurate super-resolution](https://arxiv.org/pdf/1707.02921.pdf) [4]
 
 ### Benchmarks
 
-Comparing different algorithms. Scale x4 on monarch.png.
+Comparing different algorithms. Scale x4 on monarch.png (768x512 image).
 
 |               | Inference time in seconds (CPU)| PSNR | SSIM |
 | ------------- |:-------------------:| ---------:|--------:|
@@ -81,6 +81,8 @@ Comparing different algorithms. Scale x4 on monarch.png.
 | Bicubic          |0.00031 |26.0635  |0.87537  |
 | Nearest neighbor |**0.00014** |23.5628  |0.81741  |
 | Lanczos          |0.00101  |25.9115  |0.87057  |
+
+Refer to the benchmarks located in the tutorials for more detailed benchmarking.
 
 ### References
 [1] Bee Lim, Sanghyun Son, Heewon Kim, Seungjun Nah, and Kyoung Mu Lee, **"Enhanced Deep Residual Networks for Single Image Super-Resolution"**, <i> 2nd NTIRE: New Trends in Image Restoration and Enhancement workshop and challenge on image super-resolution in conjunction with **CVPR 2017**. </i> [[PDF](http://openaccess.thecvf.com/content_cvpr_2017_workshops/w12/papers/Lim_Enhanced_Deep_Residual_CVPR_2017_paper.pdf)] [[arXiv](https://arxiv.org/abs/1707.02921)] [[Slide](https://cv.snu.ac.kr/research/EDSR/Presentation_v3(release).pptx)]
