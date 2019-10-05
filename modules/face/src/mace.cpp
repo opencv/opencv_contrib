@@ -204,52 +204,18 @@ struct MACEImpl CV_FINAL : MACE {
         minMaxLoc(re, &m1, &M1, 0, 0);
         double peakCorrPlaneEnergy = M1 / sqrt(sum(re)[0]);
         re -= m1;
-        double value=0;
-        double num=0;
-        int rad_1=int(floor((double)(45.0/64.0)*(double)IMGSIZE));
-        int rad_2=int(floor((double)(27.0/64.0)*(double)IMGSIZE));
-        // cache a few pow's and sqrts
-        std::vector<double> r2(IMGSIZE_2X);
-        Mat_<double> radtab(IMGSIZE_2X,IMGSIZE_2X);
-        for (int l=0; l<IMGSIZE_2X; l++) {
-            r2[l] = (l-IMGSIZE) * (l-IMGSIZE);
-        }
-        for (int l=0; l<IMGSIZE_2X; l++) {
-            for (int m=l+1; m<IMGSIZE_2X; m++) {
-                double rad = sqrt(r2[m] + r2[l]);
-                radtab(l,m) = radtab(m,l) = rad;
-            }
-        }
-        // mean of the sidelobe area:
-        for (int l=0; l<IMGSIZE_2X; l++) {
-            for (int m=0; m<IMGSIZE_2X; m++) {
-                double rad = radtab(l,m);
-                if (rad < rad_1) {
-                    if (rad > rad_2) {
-                        value += re(l,m);
-                        num++;
-                    }
-                }
-            }
-        }
-        value /= num;
-        // normalize it
-        double std2=0;
-        for (int l=0; l<IMGSIZE_2X; l++) {
-            for (int m=0; m<IMGSIZE_2X; m++) {
-                double rad = radtab(l,m);
-                if (rad < rad_1) {
-                    if (rad > rad_2) {
-                        double d = (value - re(l,m));
-                        std2 += d * d;
-                    }
-                }
-            }
-        }
-        std2 /= num;
-        std2 = sqrt(std2);
-        double sca = re(IMGSIZE, IMGSIZE);
-        double peakToSideLobeRatio = (sca - value) / std2;
+
+        // circle mask for the sidelobe area
+        Mat mask(IMGSIZE_2X, IMGSIZE_2X, CV_8U, Scalar(0));
+        int rad_1 = int(floor((double)(45.0/64.0)*(double)IMGSIZE));
+        int rad_2 = int(floor((double)(27.0/64.0)*(double)IMGSIZE));
+        circle(mask, Point(IMGSIZE,IMGSIZE), rad_1, Scalar(255), -1);
+        circle(mask, Point(IMGSIZE,IMGSIZE), rad_2, Scalar(0), -1);
+
+        Scalar mean, dev;
+        meanStdDev(re, mean, dev, mask);
+        double peak = re(IMGSIZE, IMGSIZE);
+        double peakToSideLobeRatio = (peak - mean[0]) / dev[0];
 
         return 100.0 * peakToSideLobeRatio * peakCorrPlaneEnergy;
     }
