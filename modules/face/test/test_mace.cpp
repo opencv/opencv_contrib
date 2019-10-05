@@ -7,134 +7,62 @@
 
 namespace opencv_test { namespace {
 
-//
-// train on one person, and test against the other
-//
-#define TESTSET_NAMES testing::Values("david","dudek")
-
-const string TRACKING_DIR = "tracking";
-const string FOLDER_IMG = "data";
-
+const string FACE_DIR = "face";
+const int WINDOW_SIZE = 64;
 
 class MaceTest
 {
 public:
 
-    MaceTest(string _video, bool salt);
+    MaceTest(bool salt);
     void run();
 
 protected:
-    vector<Rect> boxes(const string &fn);
-    vector<Mat> samples(const string &name, int N,int off=0);
-    int found(const string &vid);
-
     Ptr<MACE> mace;
-
-    string video; // train
-    string vidA; // test
-
-    int nSampsTest;
-    int nSampsTrain;
-    int nStep;
     bool salt;
 };
 
-MaceTest::MaceTest(string _video, bool use_salt)
+MaceTest::MaceTest(bool use_salt)
 {
-    int Z = 64; // window size
-    mace = MACE::create(Z);
-
-    video = _video;
-    if (video=="david") { vidA="dudek"; }
-    if (video=="dudek") { vidA="david"; }
-
-    nStep = 2;
-    nSampsTest = 5;
-    nSampsTrain = 35;
+    mace = MACE::create(WINDOW_SIZE);
     salt = use_salt;
-}
-
-vector<Rect> MaceTest::boxes(const string &fn)
-{
-    std::ifstream in(fn.c_str());
-    int x,y,w,h;
-    char sep;
-    vector<Rect> _boxes;
-    while (in.good() && (in >> x >> sep >> y >> sep >> w >> sep >> h))
-    {
-        _boxes.push_back( Rect(x,y,w,h) );
-    }
-    return _boxes;
 }
 
 void MaceTest::run()
 {
-    vector<Mat> sam_train = samples(video, nSampsTrain, 0);
-    if (salt) mace->salt(video); // "owner's" salt with "two factor"
+    Rect david1 (125,66,58,56);
+    Rect david2 (132,69,73,74);
+    Rect detect (199,124,256,274);
+    string folder = cvtest::TS::ptr()->get_data_path() + FACE_DIR;
+    Mat train = imread(folder + "/david2.jpg", 0);
+    Mat tst_p = imread(folder + "/david1.jpg", 0);
+    Mat tst_n = imread(folder + "/detect.jpg", 0);
+    vector<Mat> sam_train;
+    sam_train.push_back( train(Rect(132,69,73,74)) );
+    sam_train.push_back( train(Rect(130,69,73,72)) );
+    sam_train.push_back( train(Rect(134,67,73,74)) );
+    sam_train.push_back( tst_p(Rect(125,66,58,56)) );
+    sam_train.push_back( tst_p(Rect(123,67,55,58)) );
+    sam_train.push_back( tst_p(Rect(125,65,58,60)) );
+
+    if (salt) mace->salt("it's david"); // "owner's" salt
     mace->train(sam_train);
-    int self_ok = found(video);
-    if (salt) mace->salt(vidA); // "other's" salt
-    int false_A = found(vidA);
-    ASSERT_GE(self_ok, nSampsTest/2);  // it may miss positives
-    ASSERT_EQ(false_A, 0);  // but *absolutely* no false positives allowed.
-}
-
-int MaceTest::found(const string &vid)
-{
-    vector<Mat> sam_test = samples(vid, nSampsTest, (1+nStep*nSampsTrain));
-    int hits = 0;
-    for (size_t i=0; i<sam_test.size(); i++)
-    {
-        hits += mace->same(sam_test[i]);
-    }
-    return hits;
-}
-
-vector<Mat> MaceTest::samples(const string &name, int N, int off)
-{
-    string folder = cvtest::TS::ptr()->get_data_path() + TRACKING_DIR + "/" + name;
-    string vid  = folder + "/" + FOLDER_IMG + "/" + name + ".webm";
-    string anno = folder + "/gt.txt";
-    vector<Rect> bb = boxes(anno);
-    int startFrame = (name=="david") ? 300 : 0;
-    VideoCapture c;
-    EXPECT_TRUE(c.open(vid));
-    vector<Mat> samps;
-    while (samps.size() < size_t(N))
-    {
-        int frameNo = startFrame + off;
-        c.set(CAP_PROP_POS_FRAMES, frameNo);
-        Mat frame;
-        c >> frame;
-        Rect r = bb[off];
-        off += nStep;
-        samps.push_back(frame(r));
-    }
-    c.release();
-    return samps;
-}
-
-//[TESTDATA]
-PARAM_TEST_CASE(MACE_, string)
-{
-    string dataset;
-    virtual void SetUp()
-    {
-        dataset = GET_PARAM(0);
-    }
-};
-
-
-TEST_P(MACE_, unsalted)
-{
-    MaceTest test(dataset, false); test.run();
-}
-TEST_P(MACE_, salted)
-{
-    MaceTest test(dataset, true); test.run();
+    bool self_ok = mace->same(train(david2));
+    if (salt) mace->salt("this is a test"); // "other's" salt
+    bool false_A = mace->same(tst_n(detect));
+    ASSERT_TRUE(self_ok);
+    ASSERT_FALSE(false_A);
 }
 
 
-INSTANTIATE_TEST_CASE_P(Face, MACE_, TESTSET_NAMES);
+TEST(MACE_, unsalted)
+{
+    MaceTest test(false); test.run();
+}
+TEST(MACE_, salted)
+{
+    MaceTest test(true); test.run();
+}
+
 
 }} // namespace
