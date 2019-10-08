@@ -84,10 +84,11 @@ struct HaarFeature64
     __host__ NCVStatus setRect(Ncv32u rectX, Ncv32u rectY, Ncv32u rectWidth, Ncv32u rectHeight, Ncv32u /*clsWidth*/, Ncv32u /*clsHeight*/)
     {
         ncvAssertReturn(rectWidth <= HaarFeature64_CreateCheck_MaxRectField && rectHeight <= HaarFeature64_CreateCheck_MaxRectField, NCV_HAAR_TOO_LARGE_FEATURES);
-        ((NcvRect8u*)&(this->_ui2.x))->x = (Ncv8u)rectX;
-        ((NcvRect8u*)&(this->_ui2.x))->y = (Ncv8u)rectY;
-        ((NcvRect8u*)&(this->_ui2.x))->width = (Ncv8u)rectWidth;
-        ((NcvRect8u*)&(this->_ui2.x))->height = (Ncv8u)rectHeight;
+        NcvRect8u* tmpRect = (NcvRect8u*)&this->_ui2.x;
+        tmpRect->x = (Ncv8u)rectX;
+        tmpRect->y = (Ncv8u)rectY;
+        tmpRect->width = (Ncv8u)rectWidth;
+        tmpRect->height = (Ncv8u)rectHeight;
         return NCV_SUCCESS;
     }
 
@@ -99,11 +100,11 @@ struct HaarFeature64
 
     __device__ __host__ void getRect(Ncv32u *rectX, Ncv32u *rectY, Ncv32u *rectWidth, Ncv32u *rectHeight)
     {
-        NcvRect8u tmpRect = *(NcvRect8u*)(&this->_ui2.x);
-        *rectX = tmpRect.x;
-        *rectY = tmpRect.y;
-        *rectWidth = tmpRect.width;
-        *rectHeight = tmpRect.height;
+        NcvRect8u* tmpRect = (NcvRect8u*)&this->_ui2.x;
+        *rectX = tmpRect->x;
+        *rectY = tmpRect->y;
+        *rectWidth = tmpRect->width;
+        *rectHeight = tmpRect->height;
     }
 
     __device__ __host__ Ncv32f getWeight(void)
