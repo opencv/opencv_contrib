@@ -41,104 +41,94 @@
 //M*/
 
 #include "test_precomp.hpp"
+#include <windows.h>
+namespace opencv_test {
+    namespace {
 
-namespace opencv_test { namespace {
+#if defined(HAVE_NVCUVID) || defined(HAVE_NVCUVENC)
+        PARAM_TEST_CASE(Video, cv::cuda::DeviceInfo, std::string)
+        {
+        };
 
-#ifdef HAVE_NVCUVID
+#if defined(HAVE_NVCUVID)
+        //////////////////////////////////////////////////////
+        // VideoReader
 
-PARAM_TEST_CASE(Video, cv::cuda::DeviceInfo, std::string)
-{
-};
+        CUDA_TEST_P(Video, Reader)
+        {
+            cv::cuda::setDevice(GET_PARAM(0).deviceID());
 
+            // CUDA demuxer has to fall back to ffmpeg to process "gpu/video/768x576.avi"
+            if (GET_PARAM(1) == "gpu/video/768x576.avi" && !videoio_registry::hasBackend(CAP_FFMPEG))
+                throw SkipTestException("FFmpeg backend not found");
+
+            std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + GET_PARAM(1);
+            cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
+
+            cv::cuda::GpuMat frame;
+            for (int i = 0; i < 100; i++)
+            {
+                ASSERT_TRUE(reader->nextFrame(frame));
+                ASSERT_FALSE(frame.empty());
+            }
+}
+#endif // HAVE_NVCUVID
+
+#if defined(_WIN32) && defined(HAVE_NVCUVENC)
 //////////////////////////////////////////////////////
-// VideoReader
+// VideoWriter
 
-CUDA_TEST_P(Video, Reader)
+CUDA_TEST_P(Video, Writer)
 {
     cv::cuda::setDevice(GET_PARAM(0).deviceID());
 
-    std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "video/" + GET_PARAM(1);
-    inputFile = "rtsp://127.0.0.1/french_guy.264";
+    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "video/" + GET_PARAM(1);
 
-    //cv::VideoCapture cap;
-    //cap.open(inputFile);
-    //inputFile = "C:\\Users\\b8\\Videos\\jellyfish-120-mbps-4k-uhd-h264.mkv";
-    //inputFile = "rtsp://127.0.0.1/jellyfish-120-mbps-4k-uhd-h264.264";
-    cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
+    std::string outputFile = cv::tempfile(".avi");
+    const double FPS = 25.0;
 
-    cv::cuda::GpuMat frame;
-    cv::namedWindow("jelly");
-    for (int i = 0; i < 2000; ++i)
+    cv::VideoCapture reader(inputFile);
+    ASSERT_TRUE(reader.isOpened());
+
+    cv::Ptr<cv::cudacodec::VideoWriter> d_writer;
+
+    cv::Mat frame;
+    cv::cuda::GpuMat d_frame;
+
+    for (int i = 0; i < 10; ++i)
     {
-        ASSERT_TRUE(reader->nextFrame(frame));
-        Mat frameHost;
-        frame.download(frameHost);
-        cv::imshow("jelly",frameHost);
-        cv::waitKey(10);
+        reader >> frame;
+        ASSERT_FALSE(frame.empty());
+
+        d_frame.upload(frame);
+
+        if (d_writer.empty())
+            d_writer = cv::cudacodec::createVideoWriter(outputFile, frame.size(), FPS);
+
+        d_writer->write(d_frame);
+    }
+
+    reader.release();
+    d_writer.release();
+
+    reader.open(outputFile);
+    ASSERT_TRUE(reader.isOpened());
+
+    for (int i = 0; i < 5; ++i)
+    {
+        reader >> frame;
         ASSERT_FALSE(frame.empty());
     }
 }
 
-//////////////////////////////////////////////////////
-// VideoWriter
+#endif // _WIN32, HAVE_NVCUVENC
 
-#ifdef _WIN32
-
-//CUDA_TEST_P(Video, Writer)
-//{
-//    cv::cuda::setDevice(GET_PARAM(0).deviceID());
-//
-//    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "video/" + GET_PARAM(1);
-//
-//    std::string outputFile = cv::tempfile(".avi");
-//    const double FPS = 25.0;
-//
-//    cv::VideoCapture reader(inputFile);
-//    ASSERT_TRUE(reader.isOpened());
-//
-//    cv::Ptr<cv::cudacodec::VideoWriter> d_writer;
-//
-//    cv::Mat frame;
-//    cv::cuda::GpuMat d_frame;
-//
-//    for (int i = 0; i < 10; ++i)
-//    {
-//        reader >> frame;
-//        ASSERT_FALSE(frame.empty());
-//
-//        d_frame.upload(frame);
-//
-//        if (d_writer.empty())
-//            d_writer = cv::cudacodec::createVideoWriter(outputFile, frame.size(), FPS);
-//
-//        d_writer->write(d_frame);
-//    }
-//
-//    reader.release();
-//    d_writer.release();
-//
-//    reader.open(outputFile);
-//    ASSERT_TRUE(reader.isOpened());
-//
-//    for (int i = 0; i < 5; ++i)
-//    {
-//        reader >> frame;
-//        ASSERT_FALSE(frame.empty());
-//    }
-//}
-
-#endif // _WIN32
-
-#if defined(HAVE_FFMPEG_WRAPPER) // should this be set in preprocessor or in cvconfig.h
-#define VIDEO_SRC "768x576.avi", "1920x1080.avi"
-#else
-// CUDA demuxer has to fall back to ffmpeg to process "gpu/video/768x576.avi"
-#define VIDEO_SRC  "1920x1080.avi"
-#endif
-
+#define VIDEO_SRC "gpu/video/768x576.avi", "gpu/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
+    "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265", "highgui/video/big_buck_bunny.mpg", \
+    "highgui/video/big_buck_bunny.mpg"
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, Video, testing::Combine(
     ALL_DEVICES,
     testing::Values(VIDEO_SRC)));
 
-#endif // HAVE_NVCUVID
+#endif // HAVE_NVCUVID || HAVE_NVCUVENC
 }} // namespace

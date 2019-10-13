@@ -53,7 +53,9 @@
 
 #include "opencv2/cudacodec.hpp"
 #include "opencv2/videoio.hpp"
+#include "opencv2/videoio/registry.hpp"
 #include "opencv2/core/private.cuda.hpp"
+#include <opencv2/core/utils/logger.hpp>
 
 #ifdef HAVE_NVCUVID
     #if CUDA_VERSION >= 9000 && CUDA_VERSION < 10000

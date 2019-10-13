@@ -48,9 +48,9 @@ using namespace cv;
 using namespace cv::cudacodec;
 using namespace cv::cudacodec::detail;
 
-Codec RawToCodec(RawCodec raw_codec)
+Codec RawToCodec(double rawCodec)
 {
-    switch (raw_codec)
+    switch (static_cast<RawCodec>(static_cast<int>(rawCodec)))
     {
     case RawCodec::VideoCodec_MPEG1 :   return MPEG1;
     case RawCodec::VideoCodec_MPEG2 :   return MPEG2;
@@ -70,32 +70,59 @@ Codec RawToCodec(RawCodec raw_codec)
     }
 }
 
-ChromaFormat RawToChromaFormat(RawPixelFormat raw_px_format)
+void RawToChromaFormat(const double rawPxFormat, ChromaFormat &chromaFormat, int & nBitDepthMinus8)
 {
-    switch (raw_px_format)
+    switch (static_cast<RawPixelFormat>(static_cast<int>(rawPxFormat)))
     {
-    case RawPixelFormat::VideoChromaFormat_Monochrome   :   return Monochrome;
-    case RawPixelFormat::VideoChromaFormat_YUV420       :   return YUV420;
-    case RawPixelFormat::VideoChromaFormat_YUV422       :   return YUV422;
-    case RawPixelFormat::VideoChromaFormat_YUV444       :   return YUV444;
+    case RawPixelFormat::VideoChromaFormat_Monochrome   :
+        chromaFormat =  Monochrome;
+        nBitDepthMinus8 = 0;
+        break;
+    case RawPixelFormat::VideoChromaFormat_YUV420P10LE  :
+    case RawPixelFormat::VideoChromaFormat_YUV420P12LE  :
+        chromaFormat = YUV420;
+        nBitDepthMinus8 = 1;
+        break;
+    case RawPixelFormat::VideoChromaFormat_YUV420       :
+    case RawPixelFormat::VideoChromaFormat_YUVJ420      :
+    case RawPixelFormat::VideoChromaFormat_YUVJ422      :   // jpeg decoder output is subsampled to NV12 for 422/444 so treat it as 420
+    case RawPixelFormat::VideoChromaFormat_YUVJ444      :   // jpeg decoder output is subsampled to NV12 for 422/444 so treat it as 420
+        chromaFormat = YUV420;
+        nBitDepthMinus8 = 0;
+        break;
+    case RawPixelFormat::VideoChromaFormat_YUV422       :
+        chromaFormat = YUV422;
+        nBitDepthMinus8 = 0;
+        break;
+    case RawPixelFormat::VideoChromaFormat_YUV444P10LE  :
+    case RawPixelFormat::VideoChromaFormat_YUV444P12LE  :
+        nBitDepthMinus8 = 0;
+    case RawPixelFormat::VideoChromaFormat_YUV444       :
+        chromaFormat = YUV444;
+        nBitDepthMinus8 = 0;
+        break;
+
+    default:
+        CV_LOG_WARNING(NULL, "ChromaFormat not recognized. Assuming 420");
+        chromaFormat = YUV420;
+        nBitDepthMinus8 = 0;
+        break;
     }
 }
 
 cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname)
 {
+    if (!videoio_registry::hasBackend(CAP_FFMPEG))
+        CV_Error(Error::StsNotImplemented, "FFmpeg backend not found");
+
     cap.open(fname);
     if(!cap.isOpened())
         CV_Error(Error::StsUnsupportedFormat, "Unsupported video source");
 
-    RawCodec raw_codec = static_cast<RawCodec>(static_cast<int>(cap.get(CAP_PROP_INT_CODEC)));
-    format_.codec = RawToCodec(raw_codec);
-
+    format_.codec = RawToCodec(cap.get(CAP_PROP_INT_CODEC));
     format_.height = cap.get(CAP_PROP_FRAME_HEIGHT);
     format_.width = cap.get(CAP_PROP_FRAME_WIDTH);
-
-    RawPixelFormat raw_px_format = static_cast<RawPixelFormat>(static_cast<int>(cap.get(CAP_PROP_INT_PX_FORMAT)));
-    format_.chromaFormat = RawToChromaFormat(raw_px_format);
-    format_.nBitDepthMinus8 = -1;
+    RawToChromaFormat(cap.get(CAP_PROP_INT_PX_FORMAT), format_.chromaFormat, format_.nBitDepthMinus8);
 }
 
 cv::cudacodec::detail::FFmpegVideoSource::~FFmpegVideoSource()
@@ -109,12 +136,11 @@ FormatInfo cv::cudacodec::detail::FFmpegVideoSource::format() const
     return format_;
 }
 
-bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** data, int* size, bool* bEndOfFile)
+bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** data, size_t* size, bool* bEndOfFile)
 {
-    *bEndOfFile = cap.readRaw(rawFrame);
-    *data = rawFrame.data;
-    *size = rawFrame.step;
-    return *bEndOfFile;
+    const bool frameRead = cap.read(data, size);
+    *bEndOfFile = !frameRead;
+    return frameRead;
 }
 
 #endif // HAVE_CUDA

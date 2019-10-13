@@ -105,7 +105,8 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandleVideoSequence(void* userDa
     if (format->codec         != thiz->videoDecoder_->codec()       ||
         format->coded_width   != thiz->videoDecoder_->frameWidth()  ||
         format->coded_height  != thiz->videoDecoder_->frameHeight() ||
-        format->chroma_format != thiz->videoDecoder_->chromaFormat())
+        format->chroma_format != thiz->videoDecoder_->chromaFormat()||
+        format->bit_depth_luma_minus8 != thiz->videoDecoder_->nBitDepthMinus8())
     {
         FormatInfo newFormat;
 
@@ -113,6 +114,7 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandleVideoSequence(void* userDa
         newFormat.chromaFormat = static_cast<ChromaFormat>(format->chroma_format);
         newFormat.width = format->coded_width;
         newFormat.height = format->coded_height;
+        newFormat.nBitDepthMinus8 = format->bit_depth_luma_minus8;
 
         try
         {

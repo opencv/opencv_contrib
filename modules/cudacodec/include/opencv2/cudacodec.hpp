@@ -269,7 +269,8 @@ enum ChromaFormat
     Monochrome = 0,
     YUV420,
     YUV422,
-    YUV444
+    YUV444,
+    NumFormats
 };
 
 /** @brief Struct providing information about video file format. :
@@ -283,6 +284,7 @@ struct FormatInfo
     int height;
 };
 
+using namespace cuda;
 /** @brief Video reader interface.
 
 @note
@@ -299,7 +301,7 @@ public:
     If no frames has been grabbed (there are no more frames in video file), the methods return false .
     The method throws Exception if error occurs.
      */
-    CV_WRAP virtual bool nextFrame(OutputArray frame) = 0;
+    CV_WRAP virtual bool nextFrame(OutputArray frame, Stream &stream = Stream::Null()) = 0;
 
     /** @brief Returns information about video file format.
     */
@@ -321,7 +323,7 @@ public:
     @param size Size in bytes of current frame.
     @param endOfFile Indicates that it is end of stream.
      */
-    virtual bool getNextPacket(unsigned char** data, int* size, bool* endOfFile) = 0;
+    virtual bool getNextPacket(unsigned char** data, size_t* size, bool* endOfFile) = 0;
 
     /** @brief Returns information about video file format.
     */

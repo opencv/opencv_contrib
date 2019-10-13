@@ -96,7 +96,7 @@ void cv::cudacodec::detail::RawVideoSourceWrapper::readLoop(void* userData)
     for (;;)
     {
         unsigned char* data;
-        int size;
+        size_t size;
         bool endOfFile;
 
         if (!thiz->source_->getNextPacket(&data, &size, &endOfFile))

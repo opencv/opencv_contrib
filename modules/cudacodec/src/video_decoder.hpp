@@ -59,7 +59,7 @@ namespace cv { namespace cudacodec { namespace detail
 class VideoDecoder
 {
 public:
-    VideoDecoder(const FormatInfo& videoFormat, CUvideoctxlock lock) : lock_(lock), decoder_(0)
+    VideoDecoder(const FormatInfo& videoFormat, CUcontext ctx, CUvideoctxlock lock) : ctx_(ctx), lock_(lock), decoder_(0)
     {
         create(videoFormat);
     }
@@ -83,6 +83,7 @@ public:
     unsigned long targetHeight() const { return createInfo_.ulTargetHeight; }
 
     cudaVideoChromaFormat chromaFormat() const { return createInfo_.ChromaFormat; }
+    int nBitDepthMinus8() const { return createInfo_.bitDepthMinus8; }
 
     bool decodePicture(CUVIDPICPARAMS* picParams)
     {
@@ -108,6 +109,7 @@ public:
 
 private:
     CUvideoctxlock lock_;
+    CUcontext ctx_;
     CUVIDDECODECREATEINFO createInfo_;
     CUvideodecoder        decoder_;
 };

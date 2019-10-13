@@ -54,13 +54,13 @@ public:
     FFmpegVideoSource(const String& fname);
     ~FFmpegVideoSource();
 
-    bool getNextPacket(unsigned char** data, int* size, bool* endOfFile) CV_OVERRIDE;
+    bool getNextPacket(unsigned char** data, size_t* size, bool* endOfFile) CV_OVERRIDE;
 
     FormatInfo format() const CV_OVERRIDE;
 
 private:
     FormatInfo format_;
-    VideoCapture cap;
+    VideoContainer cap;
     Mat rawFrame;
 };
 
