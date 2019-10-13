@@ -41,7 +41,6 @@
 //M*/
 
 #include "test_precomp.hpp"
-#include <windows.h>
 namespace opencv_test {
     namespace {
 
