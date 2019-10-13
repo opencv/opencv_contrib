@@ -60,7 +60,7 @@
 using namespace cv;
 using namespace cv::cudev;
 
-void videoDecPostProcessFrame(const GpuMat& decodedFrame, OutputArray _outFrame, int width, int height);
+void videoDecPostProcessFrame(const GpuMat& decodedFrame, OutputArray _outFrame, int width, int height, cudaStream_t stream);
 
 namespace
 {
