@@ -56,6 +56,8 @@
 #include <time.h>
 #include <functional>
 #include <string>
+#include <tuple>
+#include <cmath>
 
 #include "opencv2/xphoto.hpp"
 
@@ -1230,7 +1232,6 @@ namespace xphoto
                 }
                 break;
             case xphoto::INPAINT_FSR_BEST:
-            case xphoto::INPAINT_FSR_COMPROMISE:
             case xphoto::INPAINT_FSR_FAST:
                 CV_Assert( src.channels() == 1 || src.channels() == 3 );
                 double minRange, maxRange;
