@@ -76,7 +76,6 @@ namespace cv
 {
 namespace xphoto
 {
-    typedef std::vector< std::tuple< int, int >> indexList;
 
     struct fsr_parameters
     {
@@ -233,7 +232,7 @@ namespace xphoto
         int fft_y_offset = cvFloor((fft_size - M) / 2);
 
         // weighting function
-        cv::Mat w = cv::Mat::zeros(fft_size, fft_size, CV_64F);
+        cv::Mat w = cv::Mat::zeros(fsr_params.fft_size, fsr_params.fft_size, CV_64F);
         error_mask.copyTo(w(cv::Range(fft_y_offset, fft_y_offset + M), cv::Range(fft_x_offset, fft_x_offset + N)));
         for (int u = 0; u < fft_size; ++u)
         {
@@ -249,7 +248,7 @@ namespace xphoto
         cv::vconcat(W_padded, W_padded, W_padded);
 
         // frequency weighting
-        cv::Mat frequency_weighting = cv::Mat::ones(fft_size, fft_size / 2 + 1, CV_64F);
+        cv::Mat frequency_weighting = cv::Mat::ones(fsr_params.fft_size, fsr_params.fft_size / 2 + 1, CV_64F);
         for (int y = 0; y < fft_size; ++y)
         {
             for (int x = 0; x < (fft_size / 2 + 1); ++x)
@@ -260,23 +259,23 @@ namespace xphoto
             }
         }
         // pad image to fft window size
-        cv::Mat f(cv::Size(fft_size, fft_size), CV_64F);
+        cv::Mat f(cv::Size(fsr_params.fft_size, fsr_params.fft_size), CV_64F);
         distorted_block.copyTo(f(cv::Range(fft_y_offset, fft_y_offset + M), cv::Range(fft_x_offset, fft_x_offset + N)));
 
         // create initial model
-        cv::Mat G = cv::Mat::zeros(fft_size, fft_size, CV_64FC2); // complex
+        cv::Mat G = cv::Mat::zeros(fsr_params.fft_size, fsr_params.fft_size, CV_64FC2); // complex
 
         // calculate initial residual
         cv::Mat Rw_tmp, Rw;
         cv::dft(f.mul(w), Rw_tmp, cv::DFT_COMPLEX_OUTPUT);
-        Rw = Rw_tmp(cv::Range(0, fft_size), cv::Range(0, fft_size / 2 + 1));
+        Rw = Rw_tmp(cv::Range(0, fsr_params.fft_size), cv::Range(0, fsr_params.fft_size / 2 + 1));
 
         // estimate ideal number of iterations (GenserIWSSIP2017)
         // calculate stddev if not available (e.g., for smallest block size)
         if (normedStdDev == 0) {
             normedStdDev = icvStandardDeviation(distorted_block, error_mask);
         }
-        int num_iters = std::round(fsr_params.iter_const * normedStdDev);
+        int num_iters = static_cast<int>(std::round(fsr_params.iter_const * normedStdDev));
         if (num_iters < fsr_params.min_iter) {
             num_iters = fsr_params.min_iter;
         }
@@ -316,16 +315,16 @@ namespace xphoto
                 }
             }
             int bf2select = maxLocy + maxLocx * projection_distances.rows;
-            int v = std::max(0.0, std::floor(bf2select / fft_size));
-            int u = std::max(0, bf2select % fsr_params.fft_size);
+            int v = static_cast<int>(std::max(0.0, std::floor(bf2select / fft_size)));
+            int u = static_cast<int>(std::max(0, bf2select % fsr_params.fft_size));
 
 
             // exclude second half of first and middle col
             if ((v == 0 && u > fft_size / 2) || (v == fft_size / 2 && u > fft_size / 2))
             {
                 int u_prev = u;
-                u = fft_size - u;
-                Rw.at<std::complex<double>>(u, v) = std::conj(Rw.at<std::complex<double>>(u_prev, v));
+                u = fsr_params.fft_size - u;
+                Rw.at<std::complex<double> >(u, v) = std::conj(Rw.at<std::complex<double> >(u_prev, v));
             }
 
             // calculate complex conjugate solution
@@ -334,50 +333,50 @@ namespace xphoto
             // fill first lower col (copy from first upper col)
             if (u >= 1 && u < fft_size / 2 && v == 0)
             {
-                u_cj = fft_size - u;
+                u_cj = fsr_params.fft_size - u;
                 v_cj = v;
             }
             // fill middle lower col (copy from first middle col)
             if (u >= 1 && u < fft_size / 2 && v == fft_size / 2)
             {
-                u_cj = fft_size - u;
+                u_cj = fsr_params.fft_size - u;
                 v_cj = v;
             }
             // fill first row right (copy from first row left)
             if (u == 0 && v >= 1 && v < fft_size / 2)
             {
                 u_cj = u;
-                v_cj = fft_size - v;
+                v_cj = fsr_params.fft_size - v;
             }
             // fill middle row right (copy from middle row left)
             if (u == fft_size / 2 && v >= 1 && v < fft_size / 2)
             {
                 u_cj = u;
-                v_cj = fft_size - v;
+                v_cj = fsr_params.fft_size - v;
             }
             // fill cell upper right (copy from lower cell left)
             if (u >= fft_size / 2 + 1 && v >= 1 && v < fft_size / 2)
             {
-                u_cj = fft_size - u;
-                v_cj = fft_size - v;
+                u_cj = fsr_params.fft_size - u;
+                v_cj = fsr_params.fft_size - v;
             }
             // fill cell lower right (copy from upper cell left)
             if (u >= 1 && u < fft_size / 2 && v >= 1 && v < fft_size / 2)
             {
-                u_cj = fft_size - u;
-                v_cj = fft_size - v;
+                u_cj = fsr_params.fft_size - u;
+                v_cj = fsr_params.fft_size - v;
             }
 
             /// add coef to model and update residual
             if (u_cj != -1 && v_cj != -1)
             {
-                std::complex<double> expansion_coefficient = orthogonality_correction * Rw.at<std::complex<double>>(u, v) / W.at<std::complex<double>>(0, 0);
-                G.at<std::complex<double>>(u, v) += fft_size * fft_size * expansion_coefficient;
-                G.at<std::complex<double>>(u_cj, v_cj) = std::conj(G.at<std::complex<double>>(u, v));
+                std::complex< double> expansion_coefficient = orthogonality_correction * Rw.at< std::complex<double> >(u, v) / W.at<std::complex<double> >(0, 0);
+                G.at< std::complex<double> >(u, v) += fft_size * fft_size * expansion_coefficient;
+                G.at< std::complex<double> >(u_cj, v_cj) = std::conj(G.at< std::complex<double> >(u, v));
 
                 cv::Mat expansion_mat(Rw.size(), CV_64FC2, cv::Scalar(expansion_coefficient.real(), expansion_coefficient.imag()));
-                cv::Mat W_tmp1 = W_padded(cv::Range(fft_size - u, fft_size - u + Rw.rows), cv::Range(fft_size - v, fft_size - v + Rw.cols));
-                cv::Mat W_tmp2 = W_padded(cv::Range(fft_size - u_cj, fft_size - u_cj + Rw.rows), cv::Range(fft_size - v_cj, fft_size - v_cj + Rw.cols));
+                cv::Mat W_tmp1 = W_padded(cv::Range(fsr_params.fft_size - u, fsr_params.fft_size - u + Rw.rows), cv::Range(fsr_params.fft_size - v, fsr_params.fft_size - v + Rw.cols));
+                cv::Mat W_tmp2 = W_padded(cv::Range(fsr_params.fft_size - u_cj, fft_size - u_cj + Rw.rows), cv::Range(fsr_params.fft_size - v_cj, fsr_params.fft_size - v_cj + Rw.cols));
                 cv::Mat res_1(W_tmp1.size(), W_tmp1.type());
                 cv::mulSpectrums(expansion_mat, W_tmp1, res_1, 0);
                 expansion_mat.setTo(cv::Scalar(expansion_coefficient.real(), -expansion_coefficient.imag()));
@@ -389,10 +388,10 @@ namespace xphoto
             }
             else
             {
-                std::complex<double> expansion_coefficient = orthogonality_correction * Rw.at<std::complex<double>>(u, v) / W.at<std::complex<double>>(0, 0);
-                G.at<std::complex<double>>(u, v) += fft_size * fft_size * expansion_coefficient;
+                std::complex<double> expansion_coefficient = orthogonality_correction * Rw.at< std::complex<double> >(u, v) / W.at< std::complex<double> >(0, 0);
+                G.at< std::complex<double> >(u, v) += fft_size * fft_size * expansion_coefficient;
                 cv::Mat expansion_mat(Rw.size(), CV_64FC2, cv::Scalar(expansion_coefficient.real(), expansion_coefficient.imag()));
-                cv::Mat W_tmp = W_padded(cv::Range(fft_size - u, fft_size - u + Rw.rows), cv::Range(fft_size - v, fft_size - v + Rw.cols));
+                cv::Mat W_tmp = W_padded(cv::Range(fsr_params.fft_size - u, fsr_params.fft_size - u + Rw.rows), cv::Range(fsr_params.fft_size - v, fsr_params.fft_size - v + Rw.cols));
                 cv::Mat res_tmp(W_tmp.size(), W_tmp.type());
                 cv::mulSpectrums(expansion_mat, W_tmp, res_tmp, 0);
                 Rw -= res_tmp;
@@ -411,7 +410,7 @@ namespace xphoto
         {
             for (int y = 0; y < N; ++y)
             {
-                g_real.at<double>(x, y) = g.at<std::complex<double>>(fft_y_offset + x, fft_x_offset + y).real();
+                g_real.at<double>(x, y) = g.at< std::complex<double> >(fft_y_offset + x, fft_x_offset + y).real();
             }
         }
         g_real.copyTo(extrapolated_block);
@@ -422,9 +421,9 @@ namespace xphoto
 
 
     static void
-    icvGetTodoBlocks(cv::Mat& sampled_img, cv::Mat& sampling_mask, indexList& set_todo, int block_size, int block_size_min, int border_width, double homo_threshold, cv::Mat& set_process_this_block_size, indexList& set_later, cv::Mat& sigma_n_array)
+    icvGetTodoBlocks(cv::Mat& sampled_img, cv::Mat& sampling_mask, std::vector< std::tuple< int, int > >& set_todo, int block_size, int block_size_min, int border_width, double homo_threshold, cv::Mat& set_process_this_block_size, std::vector< std::tuple< int, int > >& set_later, cv::Mat& sigma_n_array)
     {
-        indexList set_now;
+        std::vector< std::tuple< int, int > > set_now;
         set_later.clear();
         size_t list_length = set_todo.size();
         int img_height = sampled_img.rows;
@@ -464,8 +463,8 @@ namespace xphoto
                 {
                     int yblock_counter_quadernary = yblock_counter * 2;
                     int xblock_counter_quadernary = xblock_counter * 2;
-                    int yblock_offset;
-                    int xblock_offset;
+                    int yblock_offset = 0;
+                    int xblock_offset = 0;
 
                     for (int quader_counter = 0; quader_counter < 4; ++quader_counter)
                     {
@@ -550,12 +549,12 @@ namespace xphoto
 
         double threshold_stddev = threshold_stddev_LUT[0];
 
-        indexList set_later;
+        std::vector< std::tuple< int, int > > set_later;
         int img_height = sampled_img.rows;
         int img_width = sampled_img.cols;
 
         // inital scan of distorted blocks
-        indexList set_todo;
+        std::vector< std::tuple< int, int > > set_todo;
         int blocks_column = cvCeil(static_cast<double>(img_height) / block_size);
         int blocks_line = cvCeil(static_cast<double>(img_width) / block_size);
         for (int y = 0; y < blocks_column; ++y)
@@ -725,7 +724,7 @@ namespace xphoto
                 // add all homogeneous blocks that shall be processed to list
                 // using same priority
                 // begins with highest prioroty or lowest nen array value
-                indexList block_list;
+                std::vector< std::tuple< int, int > > block_list;
                 for (int yblock_counter = 0; yblock_counter < blocks_per_column; ++yblock_counter)
                 {
                     for (int xblock_counter = 0; xblock_counter < blocks_per_line; ++xblock_counter)
@@ -1231,6 +1230,7 @@ namespace xphoto
                 }
                 break;
             case xphoto::INPAINT_FSR_BEST:
+            case xphoto::INPAINT_FSR_COMPROMISE:
             case xphoto::INPAINT_FSR_FAST:
                 CV_Assert( src.channels() == 1 || src.channels() == 3 );
                 double minRange, maxRange;
