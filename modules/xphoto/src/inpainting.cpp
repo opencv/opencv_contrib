@@ -377,7 +377,7 @@ namespace xphoto
 
                 cv::Mat expansion_mat(Rw.size(), CV_64FC2, cv::Scalar(expansion_coefficient.real(), expansion_coefficient.imag()));
                 cv::Mat W_tmp1 = W_padded(cv::Range(fsr_params.fft_size - u, fsr_params.fft_size - u + Rw.rows), cv::Range(fsr_params.fft_size - v, fsr_params.fft_size - v + Rw.cols));
-                cv::Mat W_tmp2 = W_padded(cv::Range(fsr_params.fft_size - u_cj, fft_size - u_cj + Rw.rows), cv::Range(fsr_params.fft_size - v_cj, fsr_params.fft_size - v_cj + Rw.cols));
+                cv::Mat W_tmp2 = W_padded(cv::Range(fsr_params.fft_size - u_cj, fsr_params.fft_size - u_cj + Rw.rows), cv::Range(fsr_params.fft_size - v_cj, fsr_params.fft_size - v_cj + Rw.cols));
                 cv::Mat res_1(W_tmp1.size(), W_tmp1.type());
                 cv::mulSpectrums(expansion_mat, W_tmp1, res_1, 0);
                 expansion_mat.setTo(cv::Scalar(expansion_coefficient.real(), -expansion_coefficient.imag()));
