@@ -277,7 +277,7 @@ namespace xphoto
         if (normedStdDev == 0) {
             normedStdDev = icvStandardDeviation(distorted_block, error_mask);
         }
-        int num_iters = static_cast<int>(std::round(fsr_params.iter_const * normedStdDev));
+        int num_iters = cvRound(fsr_params.iter_const * normedStdDev);
         if (num_iters < fsr_params.min_iter) {
             num_iters = fsr_params.min_iter;
         }
