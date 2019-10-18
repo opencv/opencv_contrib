@@ -1153,13 +1153,13 @@ void SIFT_Impl::detectAndCompute(InputArray _image, InputArray _mask,
     //double t, tf = getTickFrequency();
     //t = (double)getTickCount();
     buildGaussianPyramid(base, gpyr, nOctaves);
-    buildDoGPyramid(gpyr, dogpyr);
 
     //t = (double)getTickCount() - t;
     //printf("pyramid construction time: %g\n", t*1000./tf);
 
     if( !useProvidedKeypoints )
     {
+        buildDoGPyramid(gpyr, dogpyr);
         //t = (double)getTickCount();
         findScaleSpaceExtrema(gpyr, dogpyr, keypoints);
         KeyPointsFilter::removeDuplicatedSorted( keypoints );
