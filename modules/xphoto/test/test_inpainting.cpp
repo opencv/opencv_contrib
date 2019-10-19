@@ -16,7 +16,7 @@ TEST(xphoto_inpainting, regression)
     ASSERT_FALSE(mask.empty()) << "Could not load error mask " << mask_path;
 
     Mat mask_;
-    bitwise_not(mask, mask_); 
+    bitwise_not(mask, mask_);
     mask_ = mask_ / 255;
     Mat mask_resized;
     if (mask.rows != original.rows || mask.cols != original.cols)
@@ -36,7 +36,6 @@ TEST(xphoto_inpainting, regression)
     double adiff_psnr_best = cvtest::PSNR(original, reconstructed_best);
     ASSERT_GT(adiff_psnr_fast, 39.5);
     ASSERT_GT(adiff_psnr_best, 39.6);
-} 
-
+}
 
 }} // namespace
