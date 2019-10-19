@@ -111,7 +111,7 @@ namespace xphoto
             }
             else
             {
-                CV_Error(cv::Error::StsBadArg, "Unknown quality level set, supported: FAST, COMPROMISE, BEST");
+                CV_Error(cv::Error::StsBadArg, "Unknown quality level set, supported: FAST, BEST");
 
             }
         }
@@ -119,80 +119,20 @@ namespace xphoto
 
 
     static void
-    icvBGR2YCbCr(const cv::Mat& bgr, cv::Mat& Y, cv::Mat& Cb, cv::Mat& Cr)
-    {
-        // same behavior as matlab rgb2ycbcr when rgb image is of type uint8
-        int height = bgr.rows;
-        int width = bgr.cols;
-        Y = cv::Mat::zeros(height, width, CV_8U);
-        Cb = cv::Mat::zeros(height, width, CV_8U);
-        Cr = cv::Mat::zeros(height, width, CV_8U);
-
-        cv::Mat channels_bgr[3];
-        cv::split(bgr, channels_bgr);
-        uchar* rData = (uchar*)channels_bgr[2].data;
-        uchar* gData = (uchar*)channels_bgr[1].data;
-        uchar* bData = (uchar*)channels_bgr[0].data;
-        uchar* yData = (uchar*)Y.data;
-        uchar* cbData = (uchar*)Cb.data;
-        uchar* crData = (uchar*)Cr.data;
-        for (int y = 0; y < height; ++y)
-        {
-            for (int x = 0; x < width; ++x)
-            {
-                uchar R = rData[y*channels_bgr[2].step1() + x];
-                uchar G = gData[y*channels_bgr[1].step1() + x];
-                uchar B = bData[y*channels_bgr[0].step1() + x];
-                yData[y*Y.step1() + x] = cv::saturate_cast<uchar>(0.256788235294118 * R + 0.504129411764706 * G + 0.0979058823529412 * B + 16);
-                cbData[y*Cb.step1() + x] = cv::saturate_cast<uchar>(-0.148223529411765 * R - 0.290992156862745* G + 0.439215686274510 * B + 128.0);
-                crData[y*Cr.step1() + x] = cv::saturate_cast<uchar>(0.439215686274510 * R - 0.367788235294118 * G - 0.0714274509803922 * B + 128);
-            }
-        }
-    }
-
-
-    static void
-    icvYCbCr2BGR(cv::Mat& Y, cv::Mat& Cb, cv::Mat& Cr, cv::Mat& bgr)
-    {
-        // same behavior as matlab ycbcr2rgb, when ycbcr image is of type uint8
-        int height = Y.rows;
-        int width = Y.cols;
-
-        uchar* bgrData = (uchar*)bgr.data;
-        double* yData = (double*)Y.data;
-        double* cbData = (double*)Cb.data;
-        double* crData = (double*)Cr.data;
-        for (int y = 0; y < height; ++y)
-        {
-            for (int x = 0; x < width; ++x)
-            {
-                double Y_curr = yData[y*Y.step1() + x];
-                double Cb_curr = cbData[y*Cb.step1() + x];
-                double Cr_curr = crData[y*Cr.step1() + x];
-                bgrData[y*bgr.step1() + 3 * x] = cv::saturate_cast<uchar>(1.16438356164384 * Y_curr + 2.01723263955646* Cb_curr + 0.000003054 * Cr_curr - 276.836305795032);
-                bgrData[y*bgr.step1() + 3 * x + 1] = cv::saturate_cast<uchar>(1.16438356164384 * Y_curr - 0.391762539941450 * Cb_curr - 0.812968292162205 * Cr_curr + 135.575409522967);
-                bgrData[y*bgr.step1() + 3 * x + 2] = cv::saturate_cast<uchar>(1.16438356164384 * Y_curr + 3.01124397411008e-07 * Cb_curr + 1.59602688733570 * Cr_curr - 222.921617109194);
-            }
-        }
-    }
-
-
-    static void
     icvSgnMat(const cv::Mat& src, cv::Mat& dst) {
         dst = cv::Mat::zeros(src.size(), CV_64F);
-        double* srcData = (double*)src.data;
         for (int y = 0; y < src.rows; ++y)
         {
             for (int x = 0; x < src.cols; ++x)
             {
-                double curr_val = srcData[y*src.step1() + x];
+                double curr_val = src.at<double>(y,x);
                 if (curr_val > 0)
                 {
-                    srcData[y*src.step1() + x] = 1;
+                    dst.at<double>(y,x) = 1;
                 }
                 else if (curr_val)
                 {
-                    srcData[y*src.step1() + x] = -1;
+                    dst.at<double>(y,x) = -1;
                 }
             }
         }
@@ -203,12 +143,11 @@ namespace xphoto
     icvStandardDeviation(const cv::Mat& distorted_block_2d, const cv::Mat& error_mask_2d) {
         if (cv::countNonZero(error_mask_2d) < 1)
         {
-            return NAN; // align to matlab behavior
-            // block with no undistorted pixels shouldn't be chosen for processing (only if block_size_min is reached)
+            return NAN; // block with no undistorted pixels shouldn't be chosen for processing (only if block_size_min is reached)
         }
         cv::Scalar tmp_stddev, tmp_mean;
-        cv::Mat mask8u = error_mask_2d*2;
-        mask8u.convertTo(mask8u, CV_8U);
+        cv::Mat mask8u;
+        error_mask_2d.convertTo(mask8u, CV_8U, 2.0);
         cv::meanStdDev(distorted_block_2d, tmp_mean, tmp_stddev, mask8u);
         double sigma_n = tmp_stddev[0] / 255;
         if (sigma_n < 0)
@@ -556,8 +495,8 @@ namespace xphoto
 
         // inital scan of distorted blocks
         std::vector< std::tuple< int, int > > set_todo;
-        int blocks_column = cvCeil(static_cast<double>(img_height) / block_size);
-        int blocks_line = cvCeil(static_cast<double>(img_width) / block_size);
+        int blocks_column = cv::divUp(img_height, block_size);
+        int blocks_line = cv::divUp(img_width, block_size);
         for (int y = 0; y < blocks_column; ++y)
         {
             for (int x = 0; x < blocks_line; ++x)
@@ -1237,28 +1176,9 @@ namespace xphoto
                 switch ( src.type() )
                 {
                     case CV_8UC1:
-                        break;
                     case CV_8UC3:
                         break;
                     case CV_16UC1:
-                        cv::minMaxLoc(src, &minRange, &maxRange);
-                        if (minRange < 0 || maxRange > 65535)
-                        {
-                            CV_Error(cv::Error::StsUnsupportedFormat, "Unsupported source image format!");
-                            break;
-                        }
-                        src.convertTo(src, CV_8UC1, 1/257.0);
-                        break;
-                    case CV_32FC1:
-                    case CV_64FC1:
-                        cv::minMaxLoc(src, &minRange, &maxRange);
-                        if (minRange < 0 || maxRange > 1)
-                        {
-                            CV_Error(cv::Error::StsUnsupportedFormat, "Unsupported source image format!");
-                            break;
-                        }
-                        src.convertTo(src, CV_8UC1, 255.0);
-                        break;
                     case CV_16UC3:
                         cv::minMaxLoc(src, &minRange, &maxRange);
                         if (minRange < 0 || maxRange > 65535)
@@ -1266,8 +1186,10 @@ namespace xphoto
                             CV_Error(cv::Error::StsUnsupportedFormat, "Unsupported source image format!");
                             break;
                         }
-                        src.convertTo(src, CV_8UC3, 1 / 257.0);
+                        src.convertTo(src, CV_8U, 1/257.0);
                         break;
+                    case CV_32FC1:
+                    case CV_64FC1:
                     case CV_32FC3:
                     case CV_64FC3:
                         cv::minMaxLoc(src, &minRange, &maxRange);
@@ -1276,7 +1198,7 @@ namespace xphoto
                             CV_Error(cv::Error::StsUnsupportedFormat, "Unsupported source image format!");
                             break;
                         }
-                        src.convertTo(src, CV_8UC3, 255.0);
+                        src.convertTo(src, CV_8U, 255.0);
                         break;
                     default:
                         CV_Error(cv::Error::StsUnsupportedFormat, "Unsupported source image format!");
@@ -1287,23 +1209,17 @@ namespace xphoto
                 { // grayscale image
                     cv::Mat y_reconstructed;
                     icvDetermineProcessingOrder( src, mask, algorithmType, "Y", y_reconstructed );
-                    int height = y_reconstructed.rows;
-                    int width = y_reconstructed.cols;
-                    double* yData = (double*)y_reconstructed.data;
-                    uchar* recData = (uchar*)dst.data;
-                    for (int y = 0; y < height; ++y)
-                    {
-                        for (int x = 0; x < width; ++x)
-                        {
-                            recData[y*dst.step1() + x] = cv::saturate_cast<uchar>(yData[y*y_reconstructed.step1() + x]);
-                        }
-                    }
+                    y_reconstructed.convertTo(dst, CV_8U);
                 }
                 else if (src.channels() == 3)
                 { // RGB image
-                    cv::Mat y, cb, cr;
-                    icvBGR2YCbCr( src, y, cb, cr );
-
+                    cv::Mat ycrcb;
+                    cv::cvtColor( src, ycrcb, cv::COLOR_BGR2YCrCb );
+                    std::vector<cv::Mat> channels(3);
+                    cv::split(ycrcb, channels);
+                    cv::Mat y = channels[0];
+                    cv::Mat cb = channels[2];
+                    cv::Mat cr = channels[1];
                     cv::Mat y_reconstructed, cb_reconstructed, cr_reconstructed;
                     y = y.mul( mask );
                     cb = cb.mul( mask );
@@ -1311,8 +1227,12 @@ namespace xphoto
                     icvDetermineProcessingOrder( y, mask, algorithmType, "Y", y_reconstructed );
                     icvDetermineProcessingOrder( cb, mask, algorithmType, "Cx", cb_reconstructed );
                     icvDetermineProcessingOrder( cr, mask, algorithmType, "Cx", cr_reconstructed );
-
-                    icvYCbCr2BGR(y_reconstructed, cb_reconstructed, cr_reconstructed, dst);
+                    cv::Mat ycrcb_reconstructed;
+                    y_reconstructed.convertTo(channels[0], CV_8U);
+                    cr_reconstructed.convertTo(channels[1], CV_8U);
+                    cb_reconstructed.convertTo(channels[2], CV_8U);
+                    cv::merge(channels, ycrcb_reconstructed);
+                    cv::cvtColor( ycrcb_reconstructed, dst, cv::COLOR_YCrCb2BGR );
                 }
                 break;
             default:
