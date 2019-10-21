@@ -12,6 +12,7 @@
 #include "opencv2/rgbd/linemod.hpp"
 #include "opencv2/rgbd/depth.hpp"
 #include "opencv2/rgbd/kinfu.hpp"
+#include "opencv2/rgbd/dynafu.hpp"
 
 
 /** @defgroup rgbd RGB-Depth Processing
