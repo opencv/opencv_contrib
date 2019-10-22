@@ -2,40 +2,74 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 #include "test_precomp.hpp"
-namespace opencv_test { namespace {
 
-TEST(xphoto_inpainting, regression)
+namespace opencv_test { namespace {
+using namespace xphoto;
+
+
+static void test_inpainting(const Size inputSize, InpaintTypes mode, double expected_psnr, ImreadModes inputMode = IMREAD_COLOR)
 {
     string original_path = cvtest::findDataFile("cv/shared/lena.png");
     string mask_path = cvtest::findDataFile("cv/inpaint/mask.png");
 
-    Mat original = imread(original_path);
-    Mat mask = imread(mask_path);
+    Mat original_ = imread(original_path, inputMode);
+    ASSERT_FALSE(original_.empty()) << "Could not load input image " << original_path;
 
-    ASSERT_FALSE(original.empty()) << "Could not load input image " << original_path;
-    ASSERT_FALSE(mask.empty()) << "Could not load error mask " << mask_path;
+    Mat mask_ = imread(mask_path, IMREAD_GRAYSCALE);
+    ASSERT_FALSE(mask_.empty()) << "Could not load error mask " << mask_path;
 
-    Mat mask_;
-    bitwise_not(mask, mask_);
-    mask_ = mask_ / 255;
-    Mat mask_resized;
-    if (mask.rows != original.rows || mask.cols != original.cols)
-    {
-        resize(mask_, mask_resized, original.size(), 0.0, 0.0, cv::INTER_NEAREST);
-    }
-    Mat reconstructed_fast, reconstructed_best;
-    Mat im_distorted = original.mul(mask_resized);
-    Mat mask_1ch;
-    if (mask.channels() == 3)
-    {
-        cvtColor(mask_resized, mask_1ch, cv::COLOR_BGR2GRAY);
-    }
-    cv::xphoto::inpaint(im_distorted, mask_1ch, reconstructed_fast, cv::xphoto::INPAINT_FSR_FAST);
-    cv::xphoto::inpaint(im_distorted, mask_1ch, reconstructed_best, cv::xphoto::INPAINT_FSR_BEST);
-    double adiff_psnr_fast = cvtest::PSNR(original, reconstructed_fast);
-    double adiff_psnr_best = cvtest::PSNR(original, reconstructed_best);
-    ASSERT_GT(adiff_psnr_fast, 39.5);
-    ASSERT_GT(adiff_psnr_best, 39.6);
+    Mat original, mask;
+    resize(original_, original, inputSize, 0.0, 0.0, cv::INTER_AREA);
+    resize(mask_, mask, inputSize, 0.0, 0.0, cv::INTER_NEAREST);
+
+    Mat mask_valid = (mask == 0);
+    Mat im_distorted(inputSize, original.type(), Scalar::all(0));
+    original.copyTo(im_distorted, mask_valid);
+
+    Mat reconstructed;
+    cv::xphoto::inpaint(im_distorted, mask_valid * (1/255.0), reconstructed, mode);
+
+    double adiff_psnr = cvtest::PSNR(original, reconstructed);
+    EXPECT_LE(expected_psnr, adiff_psnr);
+
+#if 0
+    cv::imshow("original", original);
+    cv::imshow("im_distorted", im_distorted);
+    cv::imshow("reconstructed", reconstructed);
+    std::cout << "adiff_psnr=" << adiff_psnr << std::endl;
+    cv::waitKey();
+#endif
 }
+
+TEST(xphoto_inpaint, smoke_FSR_FAST)  // fast smoke test, input doesn't fit well for tested algorithm
+{
+    test_inpainting(Size(128, 128), INPAINT_FSR_FAST, 30);
+}
+TEST(xphoto_inpaint, smoke_FSR_BEST)  // fast smoke test, input doesn't fit well for tested algorithm
+{
+    applyTestTag(CV_TEST_TAG_LONG);
+    test_inpainting(Size(128, 128), INPAINT_FSR_BEST, 30);
+}
+
+TEST(xphoto_inpaint, smoke_grayscale_FSR_FAST)  // fast smoke test, input doesn't fit well for tested algorithm
+{
+    test_inpainting(Size(128, 128), INPAINT_FSR_FAST, 30, IMREAD_GRAYSCALE);
+}
+TEST(xphoto_inpaint, smoke_grayscale_FSR_BEST)  // fast smoke test, input doesn't fit well for tested algorithm
+{
+    test_inpainting(Size(128, 128), INPAINT_FSR_BEST, 30, IMREAD_GRAYSCALE);
+}
+
+
+TEST(xphoto_inpaint, regression_FSR_FAST)
+{
+    test_inpainting(Size(512, 512), INPAINT_FSR_FAST, 39.5);
+}
+TEST(xphoto_inpaint, regression_FSR_BEST)
+{
+    applyTestTag(CV_TEST_TAG_VERYLONG);  // add --test_tag_enable=verylong to run this test
+    test_inpainting(Size(512, 512), INPAINT_FSR_BEST, 39.6);
+}
+
 
 }} // namespace
