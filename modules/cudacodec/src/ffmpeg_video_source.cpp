@@ -61,11 +61,6 @@ Codec RawToCodec(double rawCodec)
     case RawCodec::VideoCodec_HEVC  :   return HEVC;
     case RawCodec::VideoCodec_VP8   :   return VP8;
     case RawCodec::VideoCodec_VP9   :   return VP9;
-    case RawCodec::VideoCodec_YUV420:   return Uncompressed_YUV420;
-    case RawCodec::VideoCodec_YV12  :   return Uncompressed_YV12;
-    case RawCodec::VideoCodec_NV12  :   return Uncompressed_NV12;
-    case RawCodec::VideoCodec_YUYV  :   return Uncompressed_YUYV;
-    case RawCodec::VideoCodec_UYVY  :   return Uncompressed_UYVY;
     default:    return NumCodecs;
     }
 }
