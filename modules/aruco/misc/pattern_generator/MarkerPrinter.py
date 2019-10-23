@@ -123,7 +123,15 @@ class MarkerPrinter:
         if((squareLength is None) or (markerLength is None)):
             raise ValueError("lenght is None")
 
-        if((( blockX % 2 == 0 ) == ( blockY % 2 == 0 )) or mode == "ARUCOGRID"):
+        dawMarkerBlock = False
+        if ((mode == "ARUCO") or (mode == "ARUCOGRID")):
+            dawMarkerBlock = True
+        elif(chessboardSize[1] % 2 == 0):
+            dawMarkerBlock = (( blockX % 2 == 0 ) == ( blockY % 2 == 0 ))
+        else:
+            dawMarkerBlock = (( blockX % 2 == 0 ) != ( blockY % 2 == 0 ))
+
+        if(dawMarkerBlock):
             if (mode != "CHESS"):
                 if(dictionary is None):
                     raise ValueError("dictionary is None")
