@@ -4,7 +4,7 @@ compiler:
   - clang
 before_script:
   - cd ../
-  - git clone --depth=1 https://github.com/opencv/opencv.git
+  - git clone --branch master --depth=1 https://github.com/opencv/opencv.git
   - mkdir build-opencv
   - cd build-opencv
   - cmake 
