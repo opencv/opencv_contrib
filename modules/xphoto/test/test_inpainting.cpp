@@ -27,7 +27,7 @@ static void test_inpainting(const Size inputSize, InpaintTypes mode, double expe
     original.copyTo(im_distorted, mask_valid);
 
     Mat reconstructed;
-    cv::xphoto::inpaint(im_distorted, mask_valid * (1/255.0), reconstructed, mode);
+    cv::xphoto::inpaint(im_distorted, mask_valid, reconstructed, mode);
 
     double adiff_psnr = cvtest::PSNR(original, reconstructed);
     EXPECT_LE(expected_psnr, adiff_psnr);

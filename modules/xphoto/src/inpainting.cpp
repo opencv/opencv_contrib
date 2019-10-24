@@ -453,23 +453,6 @@ namespace xphoto
         _sampled_img.convertTo(sampled_img, CV_64F);
         reconstructed_img = sampled_img.clone();
 
-        int height = _sampling_mask.rows;
-        int width = _sampling_mask.cols;
-        uchar* maskData = (uchar*)_sampling_mask.data;
-        for (int y = 0; y < height; ++y)
-        {
-            for (int x = 0; x < width; ++x)
-            {
-                if (maskData[y*_sampling_mask.step1() + x] > 0)
-                {
-                    maskData[y*_sampling_mask.step1() + x] = 1;
-                }
-                else
-                {
-                    maskData[y*_sampling_mask.step1() + x] = 0;
-                }
-            }
-        }
         _sampling_mask.convertTo(sampling_mask, CV_64F);
 
         double threshold_stddev_LUT[3];
@@ -1072,6 +1055,7 @@ namespace xphoto
     {
         CV_Assert( mask.channels() == 1 && mask.depth() == CV_8U );
         CV_Assert( src.rows == mask.rows && src.cols == mask.cols );
+        cv::Mat mask_01;
 
         switch ( algorithmType )
         {
@@ -1205,10 +1189,11 @@ namespace xphoto
                         break;
                 }
                 dst.create( src.size(), src.type() );
+                threshold(mask , mask_01, 0.0, 1.0, cv::THRESH_BINARY);
                 if (src.channels() == 1)
                 { // grayscale image
                     cv::Mat y_reconstructed;
-                    icvDetermineProcessingOrder( src, mask, algorithmType, "Y", y_reconstructed );
+                    icvDetermineProcessingOrder( src, mask_01, algorithmType, "Y", y_reconstructed );
                     y_reconstructed.convertTo(dst, CV_8U);
                 }
                 else if (src.channels() == 3)
@@ -1221,12 +1206,12 @@ namespace xphoto
                     cv::Mat cb = channels[2];
                     cv::Mat cr = channels[1];
                     cv::Mat y_reconstructed, cb_reconstructed, cr_reconstructed;
-                    y = y.mul( mask );
-                    cb = cb.mul( mask );
-                    cr = cr.mul( mask );
-                    icvDetermineProcessingOrder( y, mask, algorithmType, "Y", y_reconstructed );
-                    icvDetermineProcessingOrder( cb, mask, algorithmType, "Cx", cb_reconstructed );
-                    icvDetermineProcessingOrder( cr, mask, algorithmType, "Cx", cr_reconstructed );
+                    y = y.mul( mask_01 );
+                    cb = cb.mul( mask_01 );
+                    cr = cr.mul( mask_01 );
+                    icvDetermineProcessingOrder( y, mask_01, algorithmType, "Y", y_reconstructed );
+                    icvDetermineProcessingOrder( cb, mask_01, algorithmType, "Cx", cb_reconstructed );
+                    icvDetermineProcessingOrder( cr, mask_01, algorithmType, "Cx", cr_reconstructed );
                     cv::Mat ycrcb_reconstructed;
                     y_reconstructed.convertTo(channels[0], CV_8U);
                     cr_reconstructed.convertTo(channels[1], CV_8U);
