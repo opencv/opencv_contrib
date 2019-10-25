@@ -446,6 +446,9 @@ public:
         case PF_BYTE_RGBA:
             dst_type = CV_8UC4;
             break;
+#if OGRE_VERSION >= ((1 << 16) | (12 << 8) | 3)
+        case PF_DEPTH32F:
+#endif
         case PF_FLOAT32_R:
             dst_type = CV_32F;
             break;
