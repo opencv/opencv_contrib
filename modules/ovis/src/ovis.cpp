@@ -238,6 +238,20 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
         return ret;
     }
 
+#if OGRE_VERSION < ((1 << 16) | (12 << 8) | 3)
+    void destroyWindow(const Ogre::String& name)
+    {
+        for (auto it = mWindows.begin(); it != mWindows.end(); ++it)
+        {
+            if (it->render->getName() != name)
+                continue;
+            mRoot->destroyRenderTarget(it->render);
+            mWindows.erase(it);
+            return;
+        }
+    }
+#endif
+
     size_t numWindows() const { return mWindows.size(); }
 
     void locateResources() CV_OVERRIDE
@@ -370,6 +384,10 @@ public:
             CV_Assert(_app->numWindows() == 1 && "the first OVIS window must be deleted last");
             _app->closeApp();
             _app.release();
+        }
+        else
+        {
+            _app->destroyWindow(title);
         }
     }
 

@@ -31,3 +31,5 @@ iwin.setCameraIntrinsics(K, imsize)
 while cv.ovis.waitKey(1) != 27:
     R, t = iwin.getCameraPose()
     owin.setEntityPose("cam", t, R)
+
+del iwin # must be destroyed in reverse creation order
