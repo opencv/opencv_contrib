@@ -238,6 +238,20 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
         return ret;
     }
 
+#if OGRE_VERSION < ((1 << 16) | (12 << 8) | 3)
+    void destroyWindow(const Ogre::String& name)
+    {
+        for (auto it = mWindows.begin(); it != mWindows.end(); ++it)
+        {
+            if (it->render->getName() != name)
+                continue;
+            mRoot->destroyRenderTarget(it->render);
+            mWindows.erase(it);
+            return;
+        }
+    }
+#endif
+
     size_t numWindows() const { return mWindows.size(); }
 
     void locateResources() CV_OVERRIDE
@@ -371,6 +385,10 @@ public:
             _app->closeApp();
             _app.release();
         }
+        else
+        {
+            _app->destroyWindow(title);
+        }
     }
 
     void setBackground(InputArray image) CV_OVERRIDE
@@ -446,6 +464,9 @@ public:
         case PF_BYTE_RGBA:
             dst_type = CV_8UC4;
             break;
+#if OGRE_VERSION >= ((1 << 16) | (12 << 8) | 3)
+        case PF_DEPTH32F:
+#endif
         case PF_FLOAT32_R:
             dst_type = CV_32F;
             break;
