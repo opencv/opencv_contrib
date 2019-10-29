@@ -107,6 +107,8 @@
 #include <stdarg.h>
 #include <opencv2/core/hal/hal.hpp>
 
+#include <opencv2/core/utils/tls.hpp>
+
 namespace cv
 {
 namespace xfeatures2d
@@ -709,7 +711,7 @@ void SIFT_Impl::findScaleSpaceExtrema( const std::vector<Mat>& gauss_pyr, const 
     const int threshold = cvFloor(0.5 * contrastThreshold / nOctaveLayers * 255 * SIFT_FIXPT_SCALE);
 
     keypoints.clear();
-    TLSData<std::vector<KeyPoint> > tls_kpts_struct;
+    TLSDataAccumulator<std::vector<KeyPoint> > tls_kpts_struct;
 
     for( int o = 0; o < nOctaves; o++ )
         for( int i = 1; i <= nOctaveLayers; i++ )
