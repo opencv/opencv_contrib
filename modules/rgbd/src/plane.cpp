@@ -555,8 +555,8 @@ private:
         plane = Ptr<PlaneBase>(new PlaneABC(plane_grid.m_(y, x), n, (int)index_plane,
 			(float)sensor_error_a_, (float)sensor_error_b_, (float)sensor_error_c_));
 
-      Mat_<unsigned char> plane_mask = Mat_<unsigned char>::zeros(points3d.rows / block_size_,
-                                                                          points3d.cols / block_size_);
+      Mat_<unsigned char> plane_mask = Mat_<unsigned char>::zeros(divUp(points3d.rows, block_size_),
+                                                                  divUp(points3d.cols, block_size_));
       std::set<TileQueue::PlaneTile> neighboring_tiles;
       neighboring_tiles.insert(front_tile);
       plane_queue.remove(front_tile.y_, front_tile.x_);
