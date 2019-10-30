@@ -107,7 +107,7 @@
 #include <stdarg.h>
 #include <opencv2/core/hal/hal.hpp>
 
-#include <opencv2/core/utils/tls.hpp>
+#include <opencv2/core/utility.hpp>
 
 namespace cv
 {
