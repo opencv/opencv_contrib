@@ -18,7 +18,7 @@ namespace ovis {
 
 enum SceneSettings
 {
-    /// the window will use a seperate scene. The scene will be shared otherwise.
+    /// the window will use a separate scene. The scene will be shared otherwise.
     SCENE_SEPERATE = 1,
     /// allow the user to control the camera.
     SCENE_INTERACTIVE = 2,
