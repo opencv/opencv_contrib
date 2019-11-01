@@ -1147,7 +1147,7 @@ void SIFT_Impl::detectAndCompute(InputArray _image, InputArray _mask,
     }
 
     Mat base = createInitialImage(image, firstOctave < 0, (float)sigma);
-    std::vector<Mat> gpyr, dogpyr;
+    std::vector<Mat> gpyr;
     int nOctaves = actualNOctaves > 0 ? actualNOctaves : cvRound(std::log( (double)std::min( base.cols, base.rows ) ) / std::log(2.) - 2) - firstOctave;
 
     //double t, tf = getTickFrequency();
@@ -1159,6 +1159,7 @@ void SIFT_Impl::detectAndCompute(InputArray _image, InputArray _mask,
 
     if( !useProvidedKeypoints )
     {
+        std::vector<Mat> dogpyr;
         buildDoGPyramid(gpyr, dogpyr);
         //t = (double)getTickCount();
         findScaleSpaceExtrema(gpyr, dogpyr, keypoints);
