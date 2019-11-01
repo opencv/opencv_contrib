@@ -64,7 +64,8 @@ namespace xphoto
 //! @addtogroup xphoto
 //! @{
 
-    //! various inpainting algorithms
+    //! @brief Various inpainting algorithms
+    //! @sa inpaint
     enum InpaintTypes
     {
         /** This algorithm searches for dominant correspondences (transformations) of
@@ -72,33 +73,39 @@ namespace xphoto
         transformations */
         INPAINT_SHIFTMAP = 0,
         /** Performs Frequency Selective Reconstruction (FSR).
-         One of the two quality profiles BEST and FAST can be chosen, depending on the time available for reconstruction.
-         See @cite GenserPCS2018 and @cite SeilerTIP2015 for details.
-         The algorithm may be utilized for the following areas of application:
-          1. Error Concealment (Inpainting).
-             The sampling mask indicates the missing pixels of the distorted input
-             image to be reconstructed.
-          2. Non-Regular Sampling.
-             For more information on how to choose a good sampling mask, please review
-             @cite GroscheICIP2018 and @cite GroscheIST2018.  */
+        One of the two quality profiles BEST and FAST can be chosen, depending on the time available for reconstruction.
+        See @cite GenserPCS2018 and @cite SeilerTIP2015 for details.
+
+        The algorithm may be utilized for the following areas of application:
+        1. %Error Concealment (Inpainting).
+           The sampling mask indicates the missing pixels of the distorted input
+           image to be reconstructed.
+        2. Non-Regular Sampling.
+           For more information on how to choose a good sampling mask, please review
+           @cite GroscheICIP2018 and @cite GroscheIST2018.
+
+        1-channel grayscale or 3-channel BGR image are accepted.
+
+        Conventional accepted ranges:
+        - 0-255 for CV_8U
+        - 0-65535 for CV_16U
+        - 0-1 for CV_32F/CV_64F.
+        */
         INPAINT_FSR_BEST = 1,
-        INPAINT_FSR_FAST = 2
+        INPAINT_FSR_FAST = 2                     //!< See #INPAINT_FSR_BEST
     };
 
     /** @brief The function implements different single-image inpainting algorithms.
 
     See the original papers @cite He2012 (Shiftmap) or @cite GenserPCS2018 and @cite SeilerTIP2015 (FSR) for details.
 
-    @param src source image,
-    xphoto::InpaintTypes::INPAINT_SHIFTMAP: it could be of any type and any number of channels from 1 to 4. In case of
+    @param src source image
+    - #INPAINT_SHIFTMAP: it could be of any type and any number of channels from 1 to 4. In case of
     3- and 4-channels images the function expect them in CIELab colorspace or similar one, where first
     color component shows intensity, while second and third shows colors. Nonetheless you can try any
     colorspaces.
-    xphoto::InpaintTypes::INPAINT_FSR_*: 1-channel grayscale or 3-channel BGR image.
-    Conventional accepted ranges:  - 0-255 for CV_8U
-                                   - 0-65535 for CV_16U
-                                   - 0-1 for CV_32F/CV_64F.
-    @param mask mask (CV_8UC1), where non-zero pixels indicate valid image area, while zero pixels
+    - #INPAINT_FSR_BEST or #INPAINT_FSR_FAST: 1-channel grayscale or 3-channel BGR image.
+    @param mask mask (#CV_8UC1), where non-zero pixels indicate valid image area, while zero pixels
     indicate area to be inpainted
     @param dst destination image
     @param algorithmType see xphoto::InpaintTypes
