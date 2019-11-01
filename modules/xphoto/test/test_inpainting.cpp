@@ -19,25 +19,25 @@ static void test_inpainting(const Size inputSize, InpaintTypes mode, double expe
     ASSERT_FALSE(mask_.empty()) << "Could not load error mask " << mask_path;
 
     Mat original, mask;
-    resize(original_, original, inputSize, 0.0, 0.0, cv::INTER_AREA);
-    resize(mask_, mask, inputSize, 0.0, 0.0, cv::INTER_NEAREST);
+    resize(original_, original, inputSize, 0.0, 0.0, INTER_AREA);
+    resize(mask_, mask, inputSize, 0.0, 0.0, INTER_NEAREST);
 
     Mat mask_valid = (mask == 0);
     Mat im_distorted(inputSize, original.type(), Scalar::all(0));
     original.copyTo(im_distorted, mask_valid);
 
     Mat reconstructed;
-    cv::xphoto::inpaint(im_distorted, mask_valid, reconstructed, mode);
+    xphoto::inpaint(im_distorted, mask_valid, reconstructed, mode);
 
     double adiff_psnr = cvtest::PSNR(original, reconstructed);
     EXPECT_LE(expected_psnr, adiff_psnr);
 
 #if 0
-    cv::imshow("original", original);
-    cv::imshow("im_distorted", im_distorted);
-    cv::imshow("reconstructed", reconstructed);
+    imshow("original", original);
+    imshow("im_distorted", im_distorted);
+    imshow("reconstructed", reconstructed);
     std::cout << "adiff_psnr=" << adiff_psnr << std::endl;
-    cv::waitKey();
+    waitKey();
 #endif
 }
 
