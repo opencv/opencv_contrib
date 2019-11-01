@@ -21,8 +21,6 @@ Mentor: Delia Passalacqua
 namespace cv {
 namespace face {
 
-using namespace std;
-
 CParams::CParams(String s, double sf, int minN, Size minSz, Size maxSz){
     cascade = s;
     scaleFactor = sf;
@@ -161,7 +159,7 @@ bool loadTrainingData(String imageList, String groundTruth, std::vector<String> 
 }
 
 bool loadFacePoints(String filename, OutputArray points, float offset){
-    vector<Point2f> pts;
+    std::vector<Point2f> pts;
 
     std::string line, item;
     std::ifstream infile(filename.c_str());
@@ -205,7 +203,7 @@ bool loadFacePoints(String filename, OutputArray points, float offset){
 bool getFacesHAAR(InputArray image, OutputArray faces, const String& face_cascade_name)
 {
     Mat gray;
-    vector<Rect> roi;
+    std::vector<Rect> roi;
     CascadeClassifier face_cascade;
     CV_Assert(face_cascade.load(face_cascade_name) && "Can't loading face_cascade");
     cvtColor(image.getMat(), gray, COLOR_BGR2GRAY);
@@ -215,19 +213,19 @@ bool getFacesHAAR(InputArray image, OutputArray faces, const String& face_cascad
     return true;
 }
 
-bool loadTrainingData(vector<String> filename,vector< vector<Point2f> >
-                          & trainlandmarks,vector<String> & trainimages)
+bool loadTrainingData(std::vector<String> filename,std::vector< std::vector<Point2f> >
+                          & trainlandmarks,std::vector<String> & trainimages)
 {
-    string img;
-    vector<Point2f> temp;
-    string s;
-    string tok;
-    vector<string> coordinates;
-    ifstream f1;
+    std::string img;
+    std::vector<Point2f> temp;
+    std::string s;
+    std::string tok;
+    std::vector<std::string> coordinates;
+    std::ifstream f1;
     for(unsigned long j=0;j<filename.size();j++){
-        f1.open(filename[j].c_str(),ios::in);
+        f1.open(filename[j].c_str(),std::ios::in);
         if(!f1.is_open()){
-            cout<<filename[j]<<endl;
+            std::cout<<filename[j]<<std::endl;
             CV_Error(Error::StsError, "File can't be opened for reading!");
         }
         //get the path of the image whose landmarks have to be detected
@@ -237,7 +235,7 @@ bool loadTrainingData(vector<String> filename,vector< vector<Point2f> >
         img.clear();
         while(getline(f1,s)){
             Point2f pt;
-            stringstream ss(s); // Turn the string into a stream.
+            std::stringstream ss(s); // Turn the string into a stream.
             while(getline(ss, tok,',')) {
                 coordinates.push_back(tok);
                 tok.clear();
@@ -256,7 +254,7 @@ bool loadTrainingData(vector<String> filename,vector< vector<Point2f> >
 
 void drawFacemarks(InputOutputArray image, InputArray points, Scalar color){
     Mat img = image.getMat();
-    vector<Point2f> pts = points.getMat();
+    std::vector<Point2f> pts = points.getMat();
     for(size_t i=0;i<pts.size();i++){
         circle(img, pts[i],3, color,-1);
     }

@@ -6,8 +6,6 @@
 #include "face_alignmentimpl.hpp"
 #include <vector>
 
-using namespace std;
-
 namespace cv{
 namespace face{
 
@@ -93,22 +91,22 @@ bool FacemarkKazemiImpl::setMeanExtreme(){
     }
     return true;
 }
-bool FacemarkKazemiImpl::calcMeanShape (vector< vector<Point2f> >& trainlandmarks,vector<Mat>& trainimages,std::vector<Rect>& faces){
+bool FacemarkKazemiImpl::calcMeanShape (std::vector< std::vector<Point2f> >& trainlandmarks, std::vector<Mat>& trainimages, std::vector<Rect>& faces){
     //clear the loaded meanshape
     if(trainimages.empty()||trainlandmarks.size()!=trainimages.size()) {
         // throw error if no data (or simply return -1?)
         CV_Error(Error::StsBadArg, "Number of images is not equal to corresponding landmarks. Aborting...");
     }
     meanshape.clear();
-    vector<Mat> finalimages;
-    vector< vector<Point2f> > finallandmarks;
+    std::vector<Mat> finalimages;
+    std::vector< std::vector<Point2f> > finallandmarks;
     float xmean[200] = {0.0};
     //array to store mean of y coordinates
     float ymean[200] = {0.0};
     size_t k=0;
     //loop to calculate mean
     Mat warp_mat,src,C,D;
-    vector<Rect> facesp;
+    std::vector<Rect> facesp;
     Rect face;
     for(size_t i = 0;i < trainimages.size();i++){
         src = trainimages[i].clone();
@@ -159,8 +157,8 @@ bool FacemarkKazemiImpl::calcMeanShape (vector< vector<Point2f> >& trainlandmark
     finallandmarks.clear();
     return true;
 }
-bool FacemarkKazemiImpl::scaleData( vector< vector<Point2f> > & trainlandmarks,
-                                vector<Mat> & trainimages ,Size s)
+bool FacemarkKazemiImpl::scaleData( std::vector< std::vector<Point2f> > & trainlandmarks,
+                                std::vector<Mat> & trainimages ,Size s)
 {
     if(trainimages.empty()||trainimages.size()!=trainlandmarks.size()){
         // throw error if no data (or simply return -1?)
@@ -173,7 +171,7 @@ bool FacemarkKazemiImpl::scaleData( vector< vector<Point2f> > & trainlandmarks,
         scalex=float(s.width)/float(trainimages[i].cols);
         scaley=float(s.height)/float(trainimages[i].rows);
         resize(trainimages[i],trainimages[i],s,0,0,INTER_LINEAR_EXACT);
-        for (vector<Point2f>::iterator it = trainlandmarks[i].begin(); it != trainlandmarks[i].end(); it++) {
+        for (std::vector<Point2f>::iterator it = trainlandmarks[i].begin(); it != trainlandmarks[i].end(); it++) {
             Point2f pt = (*it);
             pt.x = pt.x*scalex;
             pt.y = pt.y*scaley;

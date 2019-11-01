@@ -7,14 +7,13 @@
 #include "opencv2/video/tracking.hpp"
 #include <climits>
 
-using namespace std;
 namespace cv{
 namespace face{
 // Threading helper classes
 class getDiffShape : public ParallelLoopBody
 {
     public:
-        getDiffShape(vector<training_sample>* samples_) :
+        getDiffShape(std::vector<training_sample>* samples_) :
         samples(samples_)
         {
         }
@@ -27,12 +26,12 @@ class getDiffShape : public ParallelLoopBody
             }
         }
     private:
-        vector<training_sample>* samples;
+        std::vector<training_sample>* samples;
 };
 class getRelPixels : public ParallelLoopBody
 {
     public:
-        getRelPixels(vector<training_sample>* samples_,FacemarkKazemiImpl& object_) :
+        getRelPixels(std::vector<training_sample>* samples_,FacemarkKazemiImpl& object_) :
         samples(samples_),
         object(object_)
         {
@@ -44,12 +43,12 @@ class getRelPixels : public ParallelLoopBody
             }
         }
     private:
-        vector<training_sample>* samples;
+        std::vector<training_sample>* samples;
         FacemarkKazemiImpl& object;
 };
 //This function initialises the training parameters.
 bool FacemarkKazemiImpl::setTrainingParameters(String filename){
-    cout << "Reading Training Parameters " << endl;
+    std::cout << "Reading Training Parameters " << std::endl;
     FileStorage fs;
     fs.open(filename, FileStorage::READ);
     if (!fs.isOpened())
@@ -81,13 +80,13 @@ bool FacemarkKazemiImpl::setTrainingParameters(String filename){
     params.lambda = (float) lambda_;
     params.num_test_splits = (unsigned long) num_test_splits_;
     fs.release();
-    cout<<"Parameters loaded"<<endl;
+    std::cout<<"Parameters loaded"<<std::endl;
     return true;
 }
 void FacemarkKazemiImpl::getTestCoordinates ()
 {
     for(unsigned long i = 0; i < params.cascade_depth; ++i){
-        vector<Point2f> temp;
+        std::vector<Point2f> temp;
         RNG rng = theRNG();
         for(unsigned long j = 0; j < params.num_test_coordinates; ++j)
         {
@@ -117,7 +116,7 @@ unsigned long FacemarkKazemiImpl::  getNearestLandmark(Point2f pixel)
     }
     return index;
 }
-bool FacemarkKazemiImpl :: getRelativePixels(vector<Point2f> sample,vector<Point2f>& pixel_coordinates,std::vector<int> nearest){
+bool FacemarkKazemiImpl :: getRelativePixels(std::vector<Point2f> sample,std::vector<Point2f>& pixel_coordinates,std::vector<int> nearest){
     if(sample.size()!=meanshape.size()){
         String error_message = "Error while finding relative shape. Aborting....";
         CV_Error(Error::StsBadArg, error_message);
@@ -140,7 +139,7 @@ bool FacemarkKazemiImpl :: getRelativePixels(vector<Point2f> sample,vector<Point
     }
     return true;
 }
-bool FacemarkKazemiImpl::getPixelIntensities(Mat img,vector<Point2f> pixel_coordinates,vector<int>& pixel_intensities,Rect face){
+bool FacemarkKazemiImpl::getPixelIntensities(Mat img,std::vector<Point2f> pixel_coordinates,std::vector<int>& pixel_intensities,Rect face){
     if(pixel_coordinates.size()==0){
         String error_message = "No pixel coordinates found. Aborting.....";
         CV_Error(Error::StsBadArg, error_message);
@@ -167,9 +166,9 @@ bool FacemarkKazemiImpl::getPixelIntensities(Mat img,vector<Point2f> pixel_coord
     }
     return true;
 }
-vector<regtree> FacemarkKazemiImpl::gradientBoosting(vector<training_sample>& samples,vector<Point2f> pixel_coordinates){
-    vector<regtree> forest;
-    vector<Point2f> meanresidual;
+std::vector<regtree> FacemarkKazemiImpl::gradientBoosting(std::vector<training_sample>& samples,std::vector<Point2f> pixel_coordinates){
+    std::vector<regtree> forest;
+    std::vector<Point2f> meanresidual;
     meanresidual.resize(samples[0].shapeResiduals.size());
     for(unsigned long i=0;i<samples.size();i++){
         for(unsigned long j=0;j<samples[i].shapeResiduals.size();j++){
@@ -191,7 +190,7 @@ vector<regtree> FacemarkKazemiImpl::gradientBoosting(vector<training_sample>& sa
     }
     return forest;
 }
-bool FacemarkKazemiImpl::createTrainingSamples(vector<training_sample> &samples,vector<Mat> images,vector< vector<Point2f> > landmarks,vector<Rect> rectangle){
+bool FacemarkKazemiImpl::createTrainingSamples(std::vector<training_sample> &samples,std::vector<Mat> images,std::vector< std::vector<Point2f> > landmarks,std::vector<Rect> rectangle){
     unsigned long in=0;
     samples.resize(params.oversampling_amount*images.size());
     for(unsigned long i=0;i<images.size();i++){
@@ -213,13 +212,13 @@ bool FacemarkKazemiImpl::createTrainingSamples(vector<training_sample> &samples,
     parallel_for_(Range(0,(int)samples.size()),getDiffShape(&samples));
     return true;
 }
-void FacemarkKazemiImpl :: writeLeaf(ofstream& os, const vector<Point2f> &leaf)
+void FacemarkKazemiImpl :: writeLeaf(std::ofstream& os, const std::vector<Point2f> &leaf)
 {
     uint64_t size = leaf.size();
     os.write((char*)&size, sizeof(size));
     os.write((char*)&leaf[0], leaf.size() * sizeof(Point2f));
 }
-void FacemarkKazemiImpl :: writeSplit(ofstream& os, const splitr& vec)
+void FacemarkKazemiImpl :: writeSplit(std::ofstream& os, const splitr& vec)
 {
     os.write((char*)&vec.index1, sizeof(vec.index1));
     os.write((char*)&vec.index2, sizeof(vec.index2));
@@ -229,9 +228,9 @@ void FacemarkKazemiImpl :: writeSplit(ofstream& os, const splitr& vec)
     CV_CheckEQ((int)(sizeof(vec.index1) + sizeof(vec.index2) + sizeof(vec.thresh) + sizeof(dummy_)), 24, "Invalid build configuration");
 
 }
-void FacemarkKazemiImpl :: writeTree(ofstream &f,regtree tree)
+void FacemarkKazemiImpl :: writeTree(std::ofstream &f,regtree tree)
 {
-    string s("num_nodes");
+    std::string s("num_nodes");
     uint64_t len = s.size();
     f.write((char*)&len, sizeof(len));
     f.write(s.c_str(), len);
@@ -239,14 +238,14 @@ void FacemarkKazemiImpl :: writeTree(ofstream &f,regtree tree)
     f.write((char*)&num_nodes,sizeof(num_nodes));
     for(size_t i=0;i<tree.nodes.size();i++){
         if(tree.nodes[i].leaf.empty()){
-            s = string("split");
+            s = std::string("split");
             len = s.size();
             f.write((char*)&len, sizeof(len));
             f.write(s.c_str(), len);
             writeSplit(f,tree.nodes[i].split);
         }
         else{
-            s = string("leaf");
+            s = std::string("leaf");
             len = s.size();
             f.write((char*)&len, sizeof(len));
             f.write(s.c_str(), len);
@@ -254,11 +253,11 @@ void FacemarkKazemiImpl :: writeTree(ofstream &f,regtree tree)
         }
     }
 }
-void FacemarkKazemiImpl :: writePixels(ofstream& f,int index){
+void FacemarkKazemiImpl :: writePixels(std::ofstream& f,int index){
     f.write((char*)&loaded_pixel_coordinates[index][0], loaded_pixel_coordinates[index].size() * sizeof(Point2f));
 }
 bool FacemarkKazemiImpl :: saveModel(String filename){
-    ofstream f(filename.c_str(),ios::binary);
+    std::ofstream f(filename.c_str(),std::ios::binary);
     if(!f.is_open()){
         String error_message = "Error while opening file to write model. Aborting....";
         CV_Error(Error::StsBadArg, error_message);
@@ -267,13 +266,13 @@ bool FacemarkKazemiImpl :: saveModel(String filename){
         String error_message = "Incorrect training data. Aborting....";
         CV_Error(Error::StsBadArg, error_message);
     }
-    string s("cascade_depth");
+    std::string s("cascade_depth");
     uint64_t len = s.size();
     f.write((char*)&len, sizeof(len));
     f.write(s.c_str(), len);
     uint64_t cascade_size = loaded_forests.size();
     f.write((char*)&cascade_size,sizeof(cascade_size));
-    s = string("pixel_coordinates");
+    s = std::string("pixel_coordinates");
     len = s.size();
     f.write((char*)&len, sizeof(len));
     f.write(s.c_str(), len);
@@ -282,14 +281,14 @@ bool FacemarkKazemiImpl :: saveModel(String filename){
     for(unsigned long i=0;i< loaded_pixel_coordinates.size();i++){
         writePixels(f,i);
     }
-    s = string("mean_shape");
+    s = std::string("mean_shape");
     uint64_t len1 = s.size();
     f.write((char*)&len1, sizeof(len1));
     f.write(s.c_str(), len1);
     uint64_t mean_shape_size = meanshape.size();
     f.write((char*)&mean_shape_size,sizeof(mean_shape_size));
     f.write((char*)&meanshape[0], meanshape.size() * sizeof(Point2f));
-    s = string("num_trees");
+    s = std::string("num_trees");
     len = s.size();
     f.write((char*)&len, sizeof(len));
     f.write(s.c_str(), len);
@@ -308,12 +307,12 @@ void FacemarkKazemiImpl::training(String imageList, String groundTruth){
     String error_message = "Less arguments than required";
     CV_Error(Error::StsBadArg, error_message);
 }
-bool FacemarkKazemiImpl::training(vector<Mat>& images, vector< vector<Point2f> >& landmarks,string filename,Size scale,string modelFilename){
+bool FacemarkKazemiImpl::training(std::vector<Mat>& images, std::vector< std::vector<Point2f> >& landmarks,std::string filename,Size scale,std::string modelFilename){
     if(!setTrainingParameters(filename)){
         String error_message = "Error while loading training parameters";
         CV_Error(Error::StsBadArg, error_message);
     }
-    vector<Rect> rectangles;
+    std::vector<Rect> rectangles;
     scaleData(landmarks,images,scale);
     calcMeanShape(landmarks,images,rectangles);
     if(images.size()!=landmarks.size()){
@@ -321,14 +320,14 @@ bool FacemarkKazemiImpl::training(vector<Mat>& images, vector< vector<Point2f> >
         String error_message = "The data is not loaded properly. Aborting training function....";
         CV_Error(Error::StsBadArg, error_message);
     }
-    vector<training_sample> samples;
+    std::vector<training_sample> samples;
     getTestCoordinates();
     createTrainingSamples(samples,images,landmarks,rectangles);
     images.clear();
     landmarks.clear();
     rectangles.clear();
     for(unsigned long i=0;i< params.cascade_depth;i++){
-        cout<<"Training regressor "<<i<<"..."<<endl;
+        std::cout<<"Training regressor "<<i<<"..."<<std::endl;
         for (std::vector<training_sample>::iterator it = samples.begin(); it != samples.end(); it++) {
             (*it).pixel_coordinates = loaded_pixel_coordinates[i];
         }

@@ -7,8 +7,7 @@
 
 #include "precomp.hpp"
 
-using namespace cv;
-
+namespace cv {
 inline Mat asRowMatrix(InputArrayOfArrays src, int rtype, double alpha=1, double beta=0) {
     // make sure the input data is a vector of matrices or vector of vector
     if(src.kind() != _InputArray::STD_VECTOR_MAT && src.kind() != _InputArray::STD_VECTOR_VECTOR) {
@@ -104,5 +103,5 @@ inline void read(const cv::FileNode& node, LabelInfo& x, const LabelInfo& defaul
     else
         x.read(node);
 }
-
+} //cv
 #endif

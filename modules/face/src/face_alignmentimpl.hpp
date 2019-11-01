@@ -13,7 +13,6 @@
 #include <algorithm>
 #include <ctime>
 
-using namespace std;
 namespace cv{
 namespace face{
 /**@brief structure determining split in regression tree
@@ -75,7 +74,7 @@ public:
     bool getFaces(InputArray image, OutputArray faces) CV_OVERRIDE;
     bool fit(InputArray image, InputArray faces, OutputArrayOfArrays landmarks ) CV_OVERRIDE;
     void training(String imageList, String groundTruth);
-    bool training(vector<Mat>& images, vector< vector<Point2f> >& landmarks,string filename,Size scale,string modelFilename) CV_OVERRIDE;
+    bool training(std::vector<Mat>& images, std::vector< std::vector<Point2f> >& landmarks, std::string filename,Size scale, std::string modelFilename) CV_OVERRIDE;
     // Destructor for the class.
     virtual ~FacemarkKazemiImpl() CV_OVERRIDE;
 

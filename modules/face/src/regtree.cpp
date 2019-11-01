@@ -5,15 +5,13 @@
 #include "precomp.hpp"
 #include "face_alignmentimpl.hpp"
 
-using namespace std;
-
 namespace cv{
 namespace face{
 //Threading helper classes
 class doSum : public ParallelLoopBody
 {
     public:
-        doSum(vector<training_sample>* samples_,vector<Point2f>* sum_) :
+        doSum(std::vector<training_sample>* samples_,std::vector<Point2f>* sum_) :
         samples(samples_),
         sum(sum_)
         {
@@ -27,13 +25,13 @@ class doSum : public ParallelLoopBody
             }
         }
     private:
-        vector<training_sample>* samples;
-        vector<Point2f>* sum;
+        std::vector<training_sample>* samples;
+        std::vector<Point2f>* sum;
 };
 class modifySamples : public ParallelLoopBody
 {
     public:
-        modifySamples(vector<training_sample>* samples_,vector<Point2f>* temp_) :
+        modifySamples(std::vector<training_sample>* samples_,std::vector<Point2f>* temp_) :
         samples(samples_),
         temp(temp_)
         {
@@ -48,13 +46,13 @@ class modifySamples : public ParallelLoopBody
             }
         }
     private:
-        vector<training_sample>* samples;
-        vector<Point2f>* temp;
+        std::vector<training_sample>* samples;
+        std::vector<Point2f>* temp;
 };
 class splitSamples : public ParallelLoopBody
 {
     public:
-        splitSamples(vector<training_sample>* samples_,vector< vector<Point2f> >* leftsumresiduals_,vector<unsigned long>* left_count_,unsigned long* num_test_splits_,vector<splitr>* feats_) :
+        splitSamples(std::vector<training_sample>* samples_,std::vector< std::vector<Point2f> >* leftsumresiduals_,std::vector<unsigned long>* left_count_,unsigned long* num_test_splits_,std::vector<splitr>* feats_) :
         samples(samples_),
         leftsumresiduals(leftsumresiduals_),
         left_count(left_count_),
@@ -76,13 +74,13 @@ class splitSamples : public ParallelLoopBody
             }
         }
     private:
-        vector<training_sample>* samples;
-        vector< vector<Point2f> >* leftsumresiduals;
-        vector<unsigned long>* left_count;
+        std::vector<training_sample>* samples;
+        std::vector< std::vector<Point2f> >* leftsumresiduals;
+        std::vector<unsigned long>* left_count;
         unsigned long* num_test_splits;
-        vector<splitr>* feats;
+        std::vector<splitr>* feats;
 };
-splitr FacemarkKazemiImpl::getTestSplits(vector<Point2f> pixel_coordinates,int seed)
+splitr FacemarkKazemiImpl::getTestSplits(std::vector<Point2f> pixel_coordinates,int seed)
 {
     splitr feat;
     //generates splits whose probability is above a particular threshold.
@@ -108,8 +106,8 @@ splitr FacemarkKazemiImpl::getTestSplits(vector<Point2f> pixel_coordinates,int s
     feat.thresh =(float)(((rng.uniform(double(0),double(1)))*256 - 128)/2.0);
     return feat;
 }
-bool FacemarkKazemiImpl:: getBestSplit(vector<Point2f> pixel_coordinates, vector<training_sample>& samples,unsigned long start ,
-                                        unsigned long end,splitr& split,vector< vector<Point2f> >& sum,long node_no)
+bool FacemarkKazemiImpl:: getBestSplit(std::vector<Point2f> pixel_coordinates, std::vector<training_sample>& samples,unsigned long start ,
+                                        unsigned long end,splitr& split,std::vector< std::vector<Point2f> >& sum,long node_no)
 {
     if(samples[0].shapeResiduals.size()!=samples[0].current_shape.size()){
         String error_message = "Error while generating split.Residuals are not complete.Aborting....";
@@ -118,24 +116,24 @@ bool FacemarkKazemiImpl:: getBestSplit(vector<Point2f> pixel_coordinates, vector
     //This vector stores the matrices where each matrix represents
     //sum of the residuals of shapes of samples which go to the left
     //child after split
-    vector< vector<Point2f> > leftsumresiduals;
+    std::vector< std::vector<Point2f> > leftsumresiduals;
     leftsumresiduals.resize(params.num_test_splits);
-    vector<splitr> feats;
+    std::vector<splitr> feats;
     //generate random splits and selects the best split amongst them.
     for (unsigned long i = 0; i < params.num_test_splits; ++i){
         feats.push_back(getTestSplits(pixel_coordinates,i+(int)time(0)));
         leftsumresiduals[i].resize(samples[0].shapeResiduals.size());
     }
-    vector<unsigned long> left_count;
+    std::vector<unsigned long> left_count;
     left_count.resize(params.num_test_splits);
     parallel_for_(Range(start,end),splitSamples(&samples,&leftsumresiduals,&left_count,&params.num_test_splits,&feats));
     //Selecting the best split
     double best_score =-1;
     unsigned long best_feat = 0;
     double score = -1;
-    vector<Point2f> right_sum;
+    std::vector<Point2f> right_sum;
     right_sum.resize(sum[node_no].size());
-    vector<Point2f> left_sum;
+    std::vector<Point2f> left_sum;
     left_sum.resize(sum[node_no].size());
     unsigned long right_cnt;
     for(unsigned long i=0;i<leftsumresiduals.size();i++){
@@ -183,15 +181,15 @@ void FacemarkKazemiImpl::createSplitNode(regtree& tree, splitr split,long node_n
     node.leaf.clear();
     tree.nodes[node_no]=node;
 }
-void FacemarkKazemiImpl::createLeafNode(regtree& tree,long node_no,vector<Point2f> assign){
+void FacemarkKazemiImpl::createLeafNode(regtree& tree,long node_no,std::vector<Point2f> assign){
     tree_node node;
     node.split.index1 = (uint64_t)(-1);
     node.split.index2 = (uint64_t)(-1);
     node.leaf = assign;
     tree.nodes[node_no] = node;
 }
-bool FacemarkKazemiImpl :: generateSplit(queue<node_info>& curr,vector<Point2f> pixel_coordinates, vector<training_sample>& samples,
-                                        splitr &split , vector< vector<Point2f> >& sum){
+bool FacemarkKazemiImpl :: generateSplit(std::queue<node_info>& curr,std::vector<Point2f> pixel_coordinates, std::vector<training_sample>& samples,
+                                        splitr &split , std::vector< std::vector<Point2f> >& sum){
 
     long start = curr.front().index1;
     long end = curr.front().index2;
@@ -218,7 +216,7 @@ bool FacemarkKazemiImpl :: generateSplit(queue<node_info>& curr,vector<Point2f> 
     curr.push(_right);
     return true;
 }
-bool FacemarkKazemiImpl :: buildRegtree(regtree& tree,vector<training_sample>& samples,vector<Point2f> pixel_coordinates){
+bool FacemarkKazemiImpl :: buildRegtree(regtree& tree,std::vector<training_sample>& samples,std::vector<Point2f> pixel_coordinates){
     if(samples.size()==0){
         String error_message = "Error while building regression tree.Empty samples. Aborting....";
         CV_Error(Error::StsBadArg, error_message);
@@ -227,9 +225,9 @@ bool FacemarkKazemiImpl :: buildRegtree(regtree& tree,vector<training_sample>& s
         String error_message = "Error while building regression tree.No pixel coordinates. Aborting....";
         CV_Error(Error::StsBadArg, error_message);
     }
-    queue<node_info> curr;
+    std::queue<node_info> curr;
     node_info parent;
-    vector< vector<Point2f> > sum;
+    std::vector< std::vector<Point2f> > sum;
     const long numNodes =(long)pow(2,params.tree_depth);
     const long numSplitNodes = numNodes/2 - 1;
     sum.resize(numNodes+1);
@@ -243,7 +241,7 @@ bool FacemarkKazemiImpl :: buildRegtree(regtree& tree,vector<training_sample>& s
     tree.nodes.resize(numNodes+1);
     //Total number of split nodes
     while(!curr.empty()){
-        pair<long,long> range= make_pair(curr.front().index1,curr.front().index2);
+        std::pair<long,long> range= std::make_pair(curr.front().index1,curr.front().index2);
         long node_no = curr.front().node_no;
         splitr split;
         //generate a split
@@ -254,7 +252,7 @@ bool FacemarkKazemiImpl :: buildRegtree(regtree& tree,vector<training_sample>& s
         //create leaf
             else{
                 long count = range.second-range.first +1;
-                vector<Point2f> temp;
+                std::vector<Point2f> temp;
                 temp.resize(samples[range.first].shapeResiduals.size());
                 parallel_for_(Range(range.first, range.second), doSum(&(samples),&(temp)));
                 for(unsigned long k=0;k<temp.size();k++){
@@ -269,7 +267,7 @@ bool FacemarkKazemiImpl :: buildRegtree(regtree& tree,vector<training_sample>& s
         else
         {
             unsigned long count = range.second-range.first +1;
-            vector<Point2f> temp;
+            std::vector<Point2f> temp;
             temp.resize(samples[range.first].shapeResiduals.size());
             parallel_for_(Range(range.first, range.second), doSum(&(samples),&(temp)));
             for(unsigned long k=0;k<temp.size();k++){
@@ -284,7 +282,7 @@ bool FacemarkKazemiImpl :: buildRegtree(regtree& tree,vector<training_sample>& s
     }
     return true;
 }
-unsigned long FacemarkKazemiImpl::divideSamples (splitr split,vector<training_sample>& samples,unsigned long start,unsigned long end)
+unsigned long FacemarkKazemiImpl::divideSamples (splitr split,std::vector<training_sample>& samples,unsigned long start,unsigned long end)
 {
     if(samples.size()==0){
         String error_message = "Error while dividing samples. Sample array empty. Aborting....";

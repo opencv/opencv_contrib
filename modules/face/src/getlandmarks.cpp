@@ -7,10 +7,9 @@
 #include <fstream>
 #include <ctime>
 
-using namespace std;
 namespace cv{
 namespace face{
-bool FacemarkKazemiImpl :: findNearestLandmarks( vector< vector<int> >& nearest){
+bool FacemarkKazemiImpl :: findNearestLandmarks( std::vector< std::vector<int> >& nearest){
     if(meanshape.empty()||loaded_pixel_coordinates.empty()){
         String error_message = "Model not loaded properly.Aborting...";
         CV_Error(Error::StsBadArg, error_message);
@@ -24,7 +23,7 @@ bool FacemarkKazemiImpl :: findNearestLandmarks( vector< vector<int> >& nearest)
     }
     return true;
 }
-void FacemarkKazemiImpl :: readSplit(ifstream& is, splitr &vec)
+void FacemarkKazemiImpl :: readSplit(std::ifstream& is, splitr &vec)
 {
     is.read((char*)&vec.index1, sizeof(vec.index1));
     is.read((char*)&vec.index2, sizeof(vec.index2));
@@ -33,14 +32,14 @@ void FacemarkKazemiImpl :: readSplit(ifstream& is, splitr &vec)
     is.read((char*)&dummy_, sizeof(dummy_)); // buggy writer structure alignment
     CV_CheckEQ((int)(sizeof(vec.index1) + sizeof(vec.index2) + sizeof(vec.thresh) + sizeof(dummy_)), 24, "Invalid build configuration");
 }
-void FacemarkKazemiImpl :: readLeaf(ifstream& is, vector<Point2f> &leaf)
+void FacemarkKazemiImpl :: readLeaf(std::ifstream& is, std::vector<Point2f> &leaf)
 {
     uint64_t size;
     is.read((char*)&size, sizeof(size));
     leaf.resize((size_t)size);
     is.read((char*)&leaf[0], leaf.size() * sizeof(Point2f));
 }
-void FacemarkKazemiImpl :: readPixels(ifstream& is,uint64_t index)
+void FacemarkKazemiImpl :: readPixels(std::ifstream& is,uint64_t index)
 {
     is.read((char*)&loaded_pixel_coordinates[(unsigned long)index][0], loaded_pixel_coordinates[(unsigned long)index].size() * sizeof(Point2f));
 }
@@ -50,7 +49,7 @@ void FacemarkKazemiImpl :: loadModel(String filename){
         CV_Error(Error::StsBadArg, error_message);
         return ;
     }
-    ifstream f(filename.c_str(),ios::binary);
+    std::ifstream f(filename.c_str(),std::ios::binary);
     if(!f.is_open()){
         String error_message = "No file with given name found.Aborting....";
         CV_Error(Error::StsBadArg, error_message);
@@ -61,7 +60,7 @@ void FacemarkKazemiImpl :: loadModel(String filename){
     char* temp = new char[(size_t)len+1];
     f.read(temp, len);
     temp[len] = '\0';
-    string s(temp);
+    std::string s(temp);
     delete [] temp;
     if(s.compare("cascade_depth")!=0){
         String error_message = "Data not saved properly.Aborting.....";
@@ -75,7 +74,7 @@ void FacemarkKazemiImpl :: loadModel(String filename){
     temp = new char[(unsigned long)len+1];
     f.read(temp, len);
     temp[len] = '\0';
-    s = string(temp);
+    s = std::string(temp);
     delete [] temp;
     if(s.compare("pixel_coordinates")!=0){
         String error_message = "Data not saved properly.Aborting.....";
@@ -93,7 +92,7 @@ void FacemarkKazemiImpl :: loadModel(String filename){
     temp = new char[(unsigned long)len+1];
     f.read(temp, len);
     temp[len] = '\0';
-    s = string(temp);
+    s = std::string(temp);
     delete [] temp;
     if(s.compare("mean_shape")!=0){
         String error_message = "Data not saved properly.Aborting.....";
@@ -110,7 +109,7 @@ void FacemarkKazemiImpl :: loadModel(String filename){
     temp = new char[(unsigned long)len+1];
     f.read(temp, len);
     temp[len] = '\0';
-    s = string(temp);
+    s = std::string(temp);
     delete [] temp;
     if(s.compare("num_trees")!=0){
         String error_message = "Data not saved properly.Aborting.....";
@@ -126,7 +125,7 @@ void FacemarkKazemiImpl :: loadModel(String filename){
             char* temp2 = new char[(unsigned long)len+1];
             f.read(temp2, len);
             temp2[len] = '\0';
-            s =string(temp2);
+            s =std::string(temp2);
             delete [] temp2;
             if(s.compare("num_nodes")!=0){
                 String error_message = "Data not saved properly.Aborting.....";
@@ -141,7 +140,7 @@ void FacemarkKazemiImpl :: loadModel(String filename){
                 char* temp3 = new char[(unsigned long)len+1];
                 f.read(temp3, len);
                 temp3[len] = '\0';
-                s =string(temp3);
+                s =std::string(temp3);
                 delete [] temp3;
                 tree_node node;
                 if(s.compare("split")==0){
@@ -151,7 +150,7 @@ void FacemarkKazemiImpl :: loadModel(String filename){
                     node.leaf.clear();
                 }
                 else if(s.compare("leaf")==0){
-                    vector<Point2f> leaf;
+                    std::vector<Point2f> leaf;
                     readLeaf(f,leaf);
                     node.leaf = leaf;
                 }
@@ -242,11 +241,11 @@ bool FacemarkKazemiImpl::fit(InputArray img, InputArray roi, OutputArrayOfArrays
         CV_Error(Error::StsBadArg, error_message);
         return false;
     }
-    vector< vector<int> > nearest_landmarks;
+    std::vector< std::vector<int> > nearest_landmarks;
     findNearestLandmarks(nearest_landmarks);
     tree_node curr_node;
-    vector<Point2f> pixel_relative;
-    vector<int> pixel_intensity;
+    std::vector<Point2f> pixel_relative;
+    std::vector<int> pixel_intensity;
     Mat warp_mat;
     for(size_t e=0;e<faces.size();e++){
         shapes[e]=meanshape;

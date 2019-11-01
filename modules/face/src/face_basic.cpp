@@ -2,55 +2,53 @@
 #include "face_utils.hpp"
 #include "precomp.hpp"
 
-using namespace cv;
-using namespace face;
 
-int BasicFaceRecognizer::getNumComponents() const
+int cv::face::BasicFaceRecognizer::getNumComponents() const
 {
     return _num_components;
 }
 
-void BasicFaceRecognizer::setNumComponents(int val)
+void cv::face::BasicFaceRecognizer::setNumComponents(int val)
 {
     _num_components = val;
 }
 
-double BasicFaceRecognizer::getThreshold() const
+double cv::face::BasicFaceRecognizer::getThreshold() const
 {
     return _threshold;
 }
 
-void BasicFaceRecognizer::setThreshold(double val)
+void cv::face::BasicFaceRecognizer::setThreshold(double val)
 {
     _threshold = val;
 }
 
-std::vector<cv::Mat> BasicFaceRecognizer::getProjections() const
+std::vector<cv::Mat> cv::face::BasicFaceRecognizer::getProjections() const
 {
     return _projections;
 }
 
-cv::Mat BasicFaceRecognizer::getLabels() const
+cv::Mat cv::face::BasicFaceRecognizer::getLabels() const
 {
     return _labels;
 }
 
-cv::Mat BasicFaceRecognizer::getEigenValues() const
+cv::Mat cv::face::BasicFaceRecognizer::getEigenValues() const
 {
     return _eigenvalues;
 }
 
-cv::Mat BasicFaceRecognizer::getEigenVectors() const
+cv::Mat cv::face::BasicFaceRecognizer::getEigenVectors() const
 {
     return _eigenvectors;
 }
 
-cv::Mat BasicFaceRecognizer::getMean() const
+cv::Mat cv::face::BasicFaceRecognizer::getMean() const
 {
     return _mean;
 }
 
-void BasicFaceRecognizer::read(const FileNode& fs)
+void cv::face::BasicFaceRecognizer::read(const FileNode& fs)
 {
     //read matrices
     double _t = 0;
@@ -77,7 +75,7 @@ void BasicFaceRecognizer::read(const FileNode& fs)
     }
 }
 
-void BasicFaceRecognizer::write(FileStorage& fs) const
+void cv::face::BasicFaceRecognizer::write(FileStorage& fs) const
 {
     // write matrices
     fs << "threshold" << _threshold;
@@ -94,7 +92,7 @@ void BasicFaceRecognizer::write(FileStorage& fs) const
     fs << "]";
 }
 
-bool BasicFaceRecognizer::empty() const
+bool cv::face::BasicFaceRecognizer::empty() const
 {
     return (_labels.empty());
 }
