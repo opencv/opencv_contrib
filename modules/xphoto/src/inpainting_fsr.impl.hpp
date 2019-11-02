@@ -130,7 +130,7 @@ icvExtrapolateBlock(Mat& distorted_block, Mat& error_mask, fsr_parameters& fsr_p
         }
     }
     // pad image to fft window size
-    Mat f(Size(fsr_params.fft_size, fsr_params.fft_size), CV_64F);
+    Mat f(Size(fsr_params.fft_size, fsr_params.fft_size), CV_64F, Scalar::all(0));
     distorted_block.copyTo(f(Range(fft_y_offset, fft_y_offset + M), Range(fft_x_offset, fft_x_offset + N)));
 
     // create initial model
