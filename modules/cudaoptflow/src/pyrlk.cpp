@@ -89,13 +89,14 @@ namespace
 
         void dense(const GpuMat& prevImg, const GpuMat& nextImg, GpuMat& u, GpuMat& v, Stream& stream);
 
+        void buildImagePyramid(const GpuMat& prevImg, std::vector<GpuMat>& prevPyr, const GpuMat& nextImg, std::vector<GpuMat>& nextPyr, Stream stream);
+
     protected:
         int winSize_[2];
         int halfWinSize_[2];
         int maxLevel_;
         int iters_;
         bool useInitialFlow_;
-        void buildImagePyramid(const GpuMat& prevImg, std::vector<GpuMat>& prevPyr, const GpuMat& nextImg, std::vector<GpuMat>& nextPyr, Stream stream);
     private:
         friend class SparsePyrLKOpticalFlowImpl;
         std::vector<GpuMat> prevPyr_;
