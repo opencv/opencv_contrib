@@ -73,7 +73,7 @@ the use of this software, even if advised of the possibility of such damage.
 
 As CNN based learning algorithm shows better performance on the classification issues,
 the rich labeled data could be more useful in the training stage. 3D object classification and pose estimation
-is a jointed mission aimming at seperate different posed apart in the descriptor form.
+is a jointed mission aiming at separate different posed apart in the descriptor form.
 
 In the training stage, we prepare 2D training images generated from our module with their
 class label and pose label. We fully exploit the information lies in their labels
