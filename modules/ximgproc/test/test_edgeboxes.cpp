@@ -7,16 +7,17 @@ namespace opencv_test { namespace {
 
 TEST(ximpgroc_Edgeboxes, regression)
 {
-	//Testing Edgeboxes implementation by asking for one proposal
-	//on a simple test image from the PASCAL VOC 2012 dataset.
+    //Testing Edgeboxes implementation by asking for one proposal
+    //on a simple test image from the PASCAL VOC 2012 dataset.
     std::vector<Rect> boxes;
     std::vector<float> scores;
     float expectedScore = 0.48742563f;
     Rect expectedProposal(158, 69, 125, 154);
 
     //Using sample model file, compute orientations map for use with edge detection.
-    cv::String testImagePath = cvtest::TS::ptr()->get_data_path() + "cv/ximgproc/" + "pascal_voc_bird.jpg";
+    cv::String testImagePath = cvtest::TS::ptr()->get_data_path() + "cv/ximgproc/" + "pascal_voc_bird.png";
     Mat testImg = imread(testImagePath);
+    ASSERT_FALSE(testImg.empty()) << "Could not load input image " << testImagePath;
     cvtColor(testImg, testImg, COLOR_BGR2RGB);
     testImg.convertTo(testImg, CV_32F, 1.0 / 255.0f);
 
@@ -37,8 +38,11 @@ TEST(ximpgroc_Edgeboxes, regression)
     ASSERT_TRUE(scores.size() == 1);
 
     //Check the proposal and its score.
-    EXPECT_FLOAT_EQ(scores[0], expectedScore);
-    EXPECT_TRUE(expectedProposal.x == boxes[0].x && expectedProposal.y == boxes[0].y && expectedProposal.height == boxes[0].height && expectedProposal.width == boxes[0].width);
+    EXPECT_NEAR(scores[0], expectedScore, 1e-8);
+    EXPECT_EQ(expectedProposal.x, boxes[0].x);
+    EXPECT_EQ(expectedProposal.y, boxes[0].y);
+    EXPECT_EQ(expectedProposal.height, boxes[0].height);
+    EXPECT_EQ(expectedProposal.width, boxes[0].width);
 }
 
 }} // namespace
