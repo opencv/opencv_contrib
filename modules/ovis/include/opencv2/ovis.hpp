@@ -360,6 +360,17 @@ CV_EXPORTS_W void createPointCloudMesh(const String& name, InputArray vertices, 
 CV_EXPORTS_W void createGridMesh(const String& name, const Size2f& size, const Size& segments = Size(1, 1));
 
 /**
+ * creates a triangle mesh from vertex-vertex or face-vertex representation
+ *
+ * creates a material with the same name
+ * @param name name of the mesh
+ * @param vertices float vector of positions
+ * @param normals float vector of normals
+ * @param indices int vector of indices
+ */
+CV_EXPORTS_W void createTriangleMesh(const String& name, InputArray vertices, InputArray normals = noArray(), InputArray indices = noArray());
+
+/**
  * updates an existing texture
  *
  * A new texture can be created with @ref createPlaneMesh
