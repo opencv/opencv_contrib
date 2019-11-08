@@ -20,10 +20,8 @@ TEST(ximgproc_ridgedetectionfilter, ReferenceAccuracy)
     rdf->getRidgeFilteredImage(src, out);
     Mat out_cmp;
     out.convertTo(out_cmp, CV_8UC1);
-    Mat sb;
-    subtract(out_cmp, n_ref, sb);
-    int zeros = countNonZero(sb);
-    EXPECT_EQ(zeros, 0);
+    EXPECT_LE(cvtest::norm(out, ref, NORM_INF), 0.0f);
+    EXPECT_LE(cvtest::norm(out, ref, NORM_L2 | NORM_RELATIVE), .0f);
 }
 
 }} // namespace
