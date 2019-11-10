@@ -12,7 +12,10 @@ Ptr<NvidiaOpticalFlow_1_0> cv::cuda::NvidiaOpticalFlow_1_0::create(int, int, int
 
 #elif !defined HAVE_NVIDIA_OPTFLOW
 
-CV_Error(cv::Error::HeaderIsNull, "Nvidia Optical Flow headers not found. Make sure cmake downloads it properly");
+Ptr<NvidiaOpticalFlow_1_0> cv::cuda::NvidiaOpticalFlow_1_0::create(int, int, int, NVIDIA_OF_PERF_LEVEL, bool, bool)
+{
+    CV_Error(cv::Error::HeaderIsNull, "OpenCV was build without NVIDIA OpticalFlow support");
+}
 
 #else
 
