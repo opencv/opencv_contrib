@@ -23,7 +23,7 @@ owin.playEntityAnimation("sinbad", "IdleBase")
 owin.playEntityAnimation("sinbad", "IdleTop")
 
 # interaction scene
-iwin = cv.ovis.createWindow("AR", imsize, cv.ovis.SCENE_SEPERATE | cv.ovis.SCENE_INTERACTIVE)
+iwin = cv.ovis.createWindow("AR", imsize, cv.ovis.SCENE_SEPARATE | cv.ovis.SCENE_INTERACTIVE)
 iwin.createEntity("sinbad", "Sinbad.mesh", tvec=(0, -5, 0), rot=(np.pi, 0, 0))
 iwin.createLightEntity("sun", (0, 0, -100))
 iwin.setCameraIntrinsics(K, imsize)

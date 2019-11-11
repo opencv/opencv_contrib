@@ -57,4 +57,4 @@ In order to keep a clean overview containing all contributed modules the followi
 
 1. Update the README.md file under the modules folder. Here you add your model with a single line description.
 
-2. Add a README.md inside your own module folder. This README explains which functionality (seperate functions) is available, links to the corresponding samples and explains in somewhat more detail what the module is expected to do. If any extra requirements are needed to build the module without problems, add them here also.
+2. Add a README.md inside your own module folder. This README explains which functionality (separate functions) is available, links to the corresponding samples and explains in somewhat more detail what the module is expected to do. If any extra requirements are needed to build the module without problems, add them here also.

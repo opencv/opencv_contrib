@@ -302,10 +302,10 @@ public:
     {
         if (!app->sceneMgr)
         {
-            flags |= SCENE_SEPERATE;
+            flags |= SCENE_SEPARATE;
         }
 
-        if (flags & SCENE_SEPERATE)
+        if (flags & SCENE_SEPARATE)
         {
             sceneMgr = root->createSceneManager("DefaultSceneManager", title);
             RTShader::ShaderGenerator& shadergen = RTShader::ShaderGenerator::getSingleton();
@@ -362,7 +362,7 @@ public:
 
     ~WindowSceneImpl()
     {
-        if (flags & SCENE_SEPERATE)
+        if (flags & SCENE_SEPARATE)
         {
             TextureManager& texMgr =  TextureManager::getSingleton();
 
@@ -378,7 +378,7 @@ public:
             }
         }
 
-        if(_app->sceneMgr == sceneMgr && (flags & SCENE_SEPERATE))
+        if(_app->sceneMgr == sceneMgr && (flags & SCENE_SEPARATE))
         {
             // this is the root window owning the context
             CV_Assert(_app->numWindows() == 1 && "the first OVIS window must be deleted last");
