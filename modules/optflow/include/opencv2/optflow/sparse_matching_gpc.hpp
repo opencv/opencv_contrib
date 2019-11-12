@@ -135,13 +135,6 @@ struct GPCTrainingParams
     CV_Assert( check() );
   }
 
-  GPCTrainingParams( const GPCTrainingParams &params )
-      : maxTreeDepth( params.maxTreeDepth ), minNumberOfSamples( params.minNumberOfSamples ), descriptorType( params.descriptorType ),
-        printProgress( params.printProgress )
-  {
-    CV_Assert( check() );
-  }
-
   bool check() const { return maxTreeDepth > 1 && minNumberOfSamples > 1; }
 };
 
