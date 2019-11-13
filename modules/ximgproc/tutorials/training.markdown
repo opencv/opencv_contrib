@@ -103,7 +103,7 @@ Training pipeline
 
 -#  The final step is converting trained model from Matlab binary format to YAML which you can use
     with our ocv::StructuredEdgeDetection. For this purpose run
-    opencv_contrib/ximpgroc/tutorials/scripts/modelConvert(model, "model.yml")
+    opencv_contrib/ximgproc/tutorials/scripts/modelConvert(model, "model.yml")
 
 How to use your model
 ---------------------
