@@ -48,57 +48,64 @@ using namespace cv;
 using namespace cv::cudacodec;
 using namespace cv::cudacodec::detail;
 
-Codec RawToCodec(double rawCodec)
+#ifndef CV_FOURCC_MACRO
+#define CV_FOURCC_MACRO(c1, c2, c3, c4) (((c1) & 255) + (((c2) & 255) << 8) + (((c3) & 255) << 16) + (((c4) & 255) << 24))
+#endif
+
+static std::string fourccToString(int fourcc)
 {
-    switch (static_cast<RawCodec>(static_cast<int>(rawCodec)))
-    {
-    case RawCodec::VideoCodec_MPEG1 :   return MPEG1;
-    case RawCodec::VideoCodec_MPEG2 :   return MPEG2;
-    case RawCodec::VideoCodec_MPEG4 :   return MPEG4;
-    case RawCodec::VideoCodec_VC1   :   return VC1;
-    case RawCodec::VideoCodec_H264  :   return H264;
-    case RawCodec::VideoCodec_JPEG  :   return JPEG;
-    case RawCodec::VideoCodec_HEVC  :   return HEVC;
-    case RawCodec::VideoCodec_VP8   :   return VP8;
-    case RawCodec::VideoCodec_VP9   :   return VP9;
-    default:    return NumCodecs;
-    }
+    union {
+        int u32;
+        unsigned char c[4];
+    } i32_c;
+    i32_c.u32 = fourcc;
+    return cv::format("%c%c%c%c",
+        (i32_c.c[0] >= ' ' && i32_c.c[0] < 128) ? i32_c.c[0] : '?',
+        (i32_c.c[1] >= ' ' && i32_c.c[1] < 128) ? i32_c.c[1] : '?',
+        (i32_c.c[2] >= ' ' && i32_c.c[2] < 128) ? i32_c.c[2] : '?',
+        (i32_c.c[3] >= ' ' && i32_c.c[3] < 128) ? i32_c.c[3] : '?');
 }
 
-void RawToChromaFormat(const double rawPxFormat, ChromaFormat &chromaFormat, int & nBitDepthMinus8)
+static
+Codec FourccToCodec(int codec)
 {
-    switch (static_cast<RawPixelFormat>(static_cast<int>(rawPxFormat)))
+    switch (codec)
     {
-    case RawPixelFormat::VideoChromaFormat_Monochrome   :
-        chromaFormat =  Monochrome;
-        nBitDepthMinus8 = 0;
-        break;
-    case RawPixelFormat::VideoChromaFormat_YUV420P10LE  :
-    case RawPixelFormat::VideoChromaFormat_YUV420P12LE  :
-        chromaFormat = YUV420;
-        nBitDepthMinus8 = 1;
-        break;
-    case RawPixelFormat::VideoChromaFormat_YUV420       :
-    case RawPixelFormat::VideoChromaFormat_YUVJ420      :
-    case RawPixelFormat::VideoChromaFormat_YUVJ422      :   // jpeg decoder output is subsampled to NV12 for 422/444 so treat it as 420
-    case RawPixelFormat::VideoChromaFormat_YUVJ444      :   // jpeg decoder output is subsampled to NV12 for 422/444 so treat it as 420
-        chromaFormat = YUV420;
-        nBitDepthMinus8 = 0;
-        break;
-    case RawPixelFormat::VideoChromaFormat_YUV422       :
-        chromaFormat = YUV422;
-        nBitDepthMinus8 = 0;
-        break;
-    case RawPixelFormat::VideoChromaFormat_YUV444P10LE  :
-    case RawPixelFormat::VideoChromaFormat_YUV444P12LE  :
-        nBitDepthMinus8 = 0;
-    case RawPixelFormat::VideoChromaFormat_YUV444       :
-        chromaFormat = YUV444;
-        nBitDepthMinus8 = 0;
-        break;
-
+    case CV_FOURCC_MACRO('m', 'p', 'e', 'g'): // fallthru
+    case CV_FOURCC_MACRO('M', 'P', 'G', '1'): return MPEG1;
+    case CV_FOURCC_MACRO('M', 'P', 'G', '2'): return MPEG2;
+    case CV_FOURCC_MACRO('X', 'V', 'I', 'D'): // fallthru
+    case CV_FOURCC_MACRO('D', 'I', 'V', 'X'): return MPEG4;
+    case CV_FOURCC_MACRO('W', 'V', 'C', '1'): return VC1;
+    case CV_FOURCC_MACRO('H', '2', '6', '4'): // fallthru
+    case CV_FOURCC_MACRO('h', '2', '6', '4'): // fallthru
+    case CV_FOURCC_MACRO('a', 'v', 'c', '1'): return H264;
+    case CV_FOURCC_MACRO('H', '2', '6', '5'): // fallthru
+    case CV_FOURCC_MACRO('h', '2', '6', '5'): // fallthru
+    case CV_FOURCC_MACRO('h', 'e', 'v', 'c'): return HEVC;
+    case CV_FOURCC_MACRO('M', 'J', 'P', 'G'): return JPEG;
+    case CV_FOURCC_MACRO('V', 'P', '8', '0'): return VP8;
+    case CV_FOURCC_MACRO('V', 'P', '9', '0'): return VP9;
     default:
-        CV_LOG_WARNING(NULL, "ChromaFormat not recognized. Assuming 420");
+        break;
+    }
+
+    std::string msg = cv::format("Unknown codec FOURCC: 0x%08X (%s)", codec, fourccToString(codec).c_str());
+    CV_LOG_WARNING(NULL, msg);
+    CV_Error(Error::StsUnsupportedFormat, msg);
+}
+
+static
+void FourccToChromaFormat(const int pixelFormat, ChromaFormat &chromaFormat, int & nBitDepthMinus8)
+{
+    switch (pixelFormat)
+    {
+    case CV_FOURCC_MACRO('I', '4', '2', '0'):
+        chromaFormat = YUV420;
+        nBitDepthMinus8 = 0;
+        break;
+    default:
+        CV_LOG_WARNING(NULL, cv::format("ChromaFormat not recognized: 0x%08X (%s). Assuming I420", pixelFormat, fourccToString(pixelFormat).c_str()));
         chromaFormat = YUV420;
         nBitDepthMinus8 = 0;
         break;
@@ -110,14 +117,21 @@ cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname)
     if (!videoio_registry::hasBackend(CAP_FFMPEG))
         CV_Error(Error::StsNotImplemented, "FFmpeg backend not found");
 
-    cap.open(fname);
-    if(!cap.isOpened())
+    cap.open(fname, CAP_FFMPEG);
+    if (!cap.isOpened())
         CV_Error(Error::StsUnsupportedFormat, "Unsupported video source");
 
-    format_.codec = RawToCodec(cap.get(CAP_PROP_INT_CODEC));
+    if (!cap.set(CAP_PROP_FORMAT, -1))  // turn off video decoder (extract stream)
+        CV_Error(Error::StsUnsupportedFormat, "Fetching of RAW video streams is not supported");
+    CV_Assert(cap.get(CAP_PROP_FORMAT) == -1);
+
+    int codec = (int)cap.get(CAP_PROP_FOURCC);
+    int pixelFormat = (int)cap.get(CAP_PROP_CODEC_PIXEL_FORMAT);
+
+    format_.codec = FourccToCodec(codec);
     format_.height = cap.get(CAP_PROP_FRAME_HEIGHT);
     format_.width = cap.get(CAP_PROP_FRAME_WIDTH);
-    RawToChromaFormat(cap.get(CAP_PROP_INT_PX_FORMAT), format_.chromaFormat, format_.nBitDepthMinus8);
+    FourccToChromaFormat(pixelFormat, format_.chromaFormat, format_.nBitDepthMinus8);
 }
 
 cv::cudacodec::detail::FFmpegVideoSource::~FFmpegVideoSource()
@@ -133,7 +147,11 @@ FormatInfo cv::cudacodec::detail::FFmpegVideoSource::format() const
 
 bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** data, size_t* size, bool* bEndOfFile)
 {
-    const bool frameRead = cap.read(data, size);
+    cap >> rawFrame;
+    *data = rawFrame.data;
+    size_t sz = rawFrame.total();
+    bool frameRead = sz != 0;
+    *size = sz;
     *bEndOfFile = !frameRead;
     return frameRead;
 }

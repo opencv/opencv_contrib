@@ -60,7 +60,7 @@ public:
 
 private:
     FormatInfo format_;
-    VideoContainer cap;
+    VideoCapture cap;
     Mat rawFrame;
 };
 
