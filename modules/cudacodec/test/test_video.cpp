@@ -45,31 +45,31 @@ namespace opencv_test {
     namespace {
 
 #if defined(HAVE_NVCUVID) || defined(HAVE_NVCUVENC)
-        PARAM_TEST_CASE(Video, cv::cuda::DeviceInfo, std::string)
-        {
-        };
+PARAM_TEST_CASE(Video, cv::cuda::DeviceInfo, std::string)
+{
+};
 
 #if defined(HAVE_NVCUVID)
-        //////////////////////////////////////////////////////
-        // VideoReader
+//////////////////////////////////////////////////////
+// VideoReader
 
-        CUDA_TEST_P(Video, Reader)
-        {
-            cv::cuda::setDevice(GET_PARAM(0).deviceID());
+CUDA_TEST_P(Video, Reader)
+{
+    cv::cuda::setDevice(GET_PARAM(0).deviceID());
 
-            // CUDA demuxer has to fall back to ffmpeg to process "gpu/video/768x576.avi"
-            if (GET_PARAM(1) == "gpu/video/768x576.avi" && !videoio_registry::hasBackend(CAP_FFMPEG))
-                throw SkipTestException("FFmpeg backend not found");
+    // CUDA demuxer has to fall back to ffmpeg to process "gpu/video/768x576.avi"
+    if (GET_PARAM(1) == "gpu/video/768x576.avi" && !videoio_registry::hasBackend(CAP_FFMPEG))
+        throw SkipTestException("FFmpeg backend not found");
 
-            std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + GET_PARAM(1);
-            cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
+    std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + GET_PARAM(1);
+    cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
 
-            cv::cuda::GpuMat frame;
-            for (int i = 0; i < 100; i++)
-            {
-                ASSERT_TRUE(reader->nextFrame(frame));
-                ASSERT_FALSE(frame.empty());
-            }
+    cv::cuda::GpuMat frame;
+    for (int i = 0; i < 100; i++)
+    {
+        ASSERT_TRUE(reader->nextFrame(frame));
+        ASSERT_FALSE(frame.empty());
+    }
 }
 #endif // HAVE_NVCUVID
 

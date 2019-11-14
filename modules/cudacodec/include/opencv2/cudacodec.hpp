@@ -59,6 +59,8 @@
 
 namespace cv { namespace cudacodec {
 
+using namespace cuda;  // Stream
+
 //! @addtogroup cudacodec
 //! @{
 
@@ -284,7 +286,6 @@ struct FormatInfo
     int height;
 };
 
-using namespace cuda;
 /** @brief Video reader interface.
 
 @note
