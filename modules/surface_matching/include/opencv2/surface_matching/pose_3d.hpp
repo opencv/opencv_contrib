@@ -67,7 +67,7 @@ typedef Ptr<PoseCluster3D> PoseCluster3DPtr;
 * various helper methods to work with poses
 *
 */
-class CV_EXPORTS Pose3D
+class CV_EXPORTS_W Pose3D
 {
 public:
   Pose3D()
