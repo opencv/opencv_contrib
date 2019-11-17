@@ -29,19 +29,19 @@ CV_GMSMatcherTest::CV_GMSMatcherTest()
 
     //Threshold = truncate(min(acc_win32, acc_win64))
     eps[0][0] = 0.9313;
-    eps[0][1] = 0.9223;
+    eps[0][1] = 0.92;
     eps[0][2] = 0.9313;
-    eps[0][3] = 0.9223;
+    eps[0][3] = 0.92;
 
     eps[1][0] = 0.8199;
     eps[1][1] = 0.7964;
     eps[1][2] = 0.8199;
     eps[1][3] = 0.7964;
 
-    eps[2][0] = 0.7098;
-    eps[2][1] = 0.6659;
-    eps[2][2] = 0.6939;
-    eps[2][3] = 0.6457;
+    eps[2][0] = 0.6;
+    eps[2][1] = 0.6;
+    eps[2][2] = 0.6;
+    eps[2][3] = 0.6;
 
     correctMatchDistThreshold = 5.0;
 }

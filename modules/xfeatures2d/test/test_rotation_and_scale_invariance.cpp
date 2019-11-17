@@ -352,6 +352,8 @@ protected:
         const int maxAngle = 360, angleStep = 15;
         for(int angle = 0; angle < maxAngle; angle += angleStep)
         {
+            SCOPED_TRACE(cv::format("angle=%d", angle));
+
             Mat H = rotateImage(image0, static_cast<float>(angle), image1, mask1);
 
             vector<KeyPoint> keypoints1;
@@ -374,16 +376,10 @@ protected:
                 }
             }
 
-            float descInliersRatio = static_cast<float>(descInliersCount) / keypoints0.size();
-            if(descInliersRatio < minDescInliersRatio)
-            {
-                ts->printf(cvtest::TS::LOG, "Incorrect descInliersRatio: curr = %f, min = %f.\n",
-                           descInliersRatio, minDescInliersRatio);
-                ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
-                return;
-            }
+            EXPECT_GE(descInliersCount, keypoints0.size() * minDescInliersRatio)
+                << "minDescInliersRatio=" << minDescInliersRatio << " keypoints0.size()=" << keypoints0.size();
 #if SHOW_DEBUG_LOG
-            std::cout << "descInliersRatio " << static_cast<float>(descInliersCount) / keypoints0.size() << std::endl;
+            std::cout << "angle=" << angle << " descInliersRatio=" << static_cast<float>(descInliersCount) / keypoints0.size() << std::endl;
 #endif
         }
         ts->set_failed_test_info( cvtest::TS::OK );
@@ -558,6 +554,7 @@ protected:
         for(int scaleIdx = 1; scaleIdx <= 3; scaleIdx++)
         {
             float scale = 1.f + scaleIdx * 0.5f;
+            SCOPED_TRACE(cv::format("scale=%g", scale));
 
             Mat image1;
             resize(image0, image1, Size(), 1./scale, 1./scale, INTER_LINEAR_EXACT);
@@ -583,16 +580,10 @@ protected:
                 }
             }
 
-            float descInliersRatio = static_cast<float>(descInliersCount) / keypoints0.size();
-            if(descInliersRatio < minDescInliersRatio)
-            {
-                ts->printf(cvtest::TS::LOG, "Incorrect descInliersRatio: curr = %f, min = %f.\n",
-                           descInliersRatio, minDescInliersRatio);
-                ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
-                return;
-            }
+            EXPECT_GE(descInliersCount, keypoints0.size() * minDescInliersRatio)
+                << "minDescInliersRatio=" << minDescInliersRatio << " keypoints0.size()=" << keypoints0.size();
 #if SHOW_DEBUG_LOG
-            std::cout << "descInliersRatio " << static_cast<float>(descInliersCount) / keypoints0.size() << std::endl;
+            std::cout << "scale=" << scale << " descInliersRatio=" << static_cast<float>(descInliersCount) / keypoints0.size() << std::endl;
 #endif
         }
         ts->set_failed_test_info( cvtest::TS::OK );
@@ -653,7 +644,7 @@ TEST(Features2d_RotationInvariance_Descriptor_LATCH, regression)
     DescriptorRotationInvarianceTest test(SIFT::create(),
                                           LATCH::create(),
                                           NORM_HAMMING,
-                                          0.9999f);
+                                          0.98f);
     test.safe_run();
 }
 #endif // NONFREE
@@ -672,7 +663,7 @@ TEST(Features2d_RotationInvariance_Descriptor_VGG120, regression)
     DescriptorRotationInvarianceTest test(KAZE::create(),
                                           VGG::create(VGG::VGG_120, 1.4f, true, true, 48.0f, false),
                                           NORM_L1,
-                                          1.00f);
+                                          0.98f);
     test.safe_run();
 }
 
@@ -681,7 +672,7 @@ TEST(Features2d_RotationInvariance_Descriptor_VGG80, regression)
     DescriptorRotationInvarianceTest test(KAZE::create(),
                                           VGG::create(VGG::VGG_80, 1.4f, true, true, 48.0f, false),
                                           NORM_L1,
-                                          1.00f);
+                                          0.98f);
     test.safe_run();
 }
 
@@ -690,7 +681,7 @@ TEST(Features2d_RotationInvariance_Descriptor_VGG64, regression)
     DescriptorRotationInvarianceTest test(KAZE::create(),
                                           VGG::create(VGG::VGG_64, 1.4f, true, true, 48.0f, false),
                                           NORM_L1,
-                                          1.00f);
+                                          0.98f);
     test.safe_run();
 }
 
@@ -699,7 +690,7 @@ TEST(Features2d_RotationInvariance_Descriptor_VGG48, regression)
     DescriptorRotationInvarianceTest test(KAZE::create(),
                                           VGG::create(VGG::VGG_48, 1.4f, true, true, 48.0f, false),
                                           NORM_L1,
-                                          1.00f);
+                                          0.98f);
     test.safe_run();
 }
 
@@ -746,7 +737,7 @@ TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_BGM, regression)
     DescriptorRotationInvarianceTest test(SURF::create(),
                                           BoostDesc::create(BoostDesc::BGM,true,6.25f),
                                           NORM_HAMMING,
-                                          0.999f);
+                                          0.98f);
     test.safe_run();
 }
 
@@ -773,7 +764,7 @@ TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_LBGM, regression)
     DescriptorRotationInvarianceTest test(SURF::create(),
                                           BoostDesc::create(BoostDesc::LBGM,true,6.25f),
                                           NORM_L1,
-                                          0.999f);
+                                          0.98f);
     test.safe_run();
 }
 
@@ -800,7 +791,7 @@ TEST(Features2d_RotationInvariance_Descriptor_BoostDesc_BINBOOST_256, regression
     DescriptorRotationInvarianceTest test(SURF::create(),
                                           BoostDesc::create(BoostDesc::BINBOOST_256,true,6.25f),
                                           NORM_HAMMING,
-                                          0.999f);
+                                          0.98f);
     test.safe_run();
 }
 
@@ -819,7 +810,7 @@ TEST(Features2d_ScaleInvariance_Detector_SIFT, regression)
 {
     DetectorScaleInvarianceTest test(SIFT::create(),
                                      0.69f,
-                                     0.99f);
+                                     0.98f);
     test.safe_run();
 }
 
@@ -889,7 +880,7 @@ TEST(Features2d_ScaleInvariance_Descriptor_VGG120, regression)
     DescriptorScaleInvarianceTest test(KAZE::create(),
                                        VGG::create(VGG::VGG_120, 1.4f, true, true, 48.0f, false),
                                        NORM_L1,
-                                       0.99f);
+                                       0.98f);
     test.safe_run();
 }
 
