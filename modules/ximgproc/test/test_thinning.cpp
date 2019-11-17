@@ -18,7 +18,7 @@ static int createTestImage(Mat& src)
     return src_pixels;
 }
 
-TEST(ximpgroc_Thinning, simple_ZHANGSUEN)
+TEST(ximgproc_Thinning, simple_ZHANGSUEN)
 {
     Mat src;
     int src_pixels = createTestImage(src);
@@ -33,7 +33,7 @@ TEST(ximpgroc_Thinning, simple_ZHANGSUEN)
 #endif
 }
 
-TEST(ximpgroc_Thinning, simple_GUOHALL)
+TEST(ximgproc_Thinning, simple_GUOHALL)
 {
     Mat src;
     int src_pixels = createTestImage(src);

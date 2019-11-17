@@ -7,5 +7,8 @@ ocv_warnings_disable(CMAKE_CXX_FLAGS -Winconsistent-missing-override -Wsuggest-o
 if(CV_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 8.0)
   ocv_warnings_disable(CMAKE_CXX_FLAGS -Wclass-memaccess)
 endif()
+if(CV_GCC AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER 9.0)
+  ocv_warnings_disable(CMAKE_CXX_FLAGS -Wdeprecated-copy)
+endif()
 
 add_subdirectory(libmv)

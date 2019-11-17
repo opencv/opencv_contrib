@@ -37,10 +37,10 @@ CV_GMSMatcherTest::CV_GMSMatcherTest()
     eps[1][2] = 0.80;
     eps[1][3] = 0.78;
 
-    eps[2][0] = 0.70;
-    eps[2][1] = 0.66;
-    eps[2][2] = 0.68;
-    eps[2][3] = 0.63;
+    eps[2][0] = 0.6;
+    eps[2][1] = 0.6;
+    eps[2][2] = 0.6;
+    eps[2][3] = 0.6;
 
     correctMatchDistThreshold = 5.0;
 }

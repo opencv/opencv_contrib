@@ -82,10 +82,10 @@ static KeyType hashPPF(const Vec4d& f, const double AngleStep, const double Dist
       (int)(f[1] / AngleStep),
       (int)(f[2] / AngleStep),
       (int)(f[3] / DistanceStep));
-  KeyType hashKey = 0;
+  KeyType hashKey[2] = {0, 0};  // hashMurmurx64() fills two values
 
-  murmurHash(key.val, 4*sizeof(int), 42, &hashKey);
-  return hashKey;
+  murmurHash(key.val, 4*sizeof(int), 42, &hashKey[0]);
+  return hashKey[0];
 }
 
 /*static size_t hashMurmur(uint key)

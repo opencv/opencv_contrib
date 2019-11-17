@@ -100,19 +100,7 @@ class CV_BD_DescriptorsTest : public cvtest::BaseTest
         curMaxDist = dist;
     }
 
-    std::stringstream ss;
-    ss << "Max distance between valid and computed descriptors " << curMaxDist;
-
-    if( curMaxDist < maxDist )
-      ss << "." << std::endl;
-
-    else
-    {
-      ss << ">" << maxDist << " - bad accuracy!" << "\n";
-      ts->set_failed_test_info( cvtest::TS::FAIL_BAD_ACCURACY );
-    }
-
-    ts->printf( cvtest::TS::LOG, ss.str().c_str() );
+    EXPECT_LT(curMaxDist, maxDist) << "Max distance between valid and computed descriptors";
   }
 
   Mat readDescriptors()
@@ -286,25 +274,11 @@ class CV_BD_DescriptorsTest : public cvtest::BaseTest
       ts->printf( cvtest::TS::LOG, "\nAverage time of computing one descriptor = %g ms.\n",
                   t / ( (double) getTickFrequency() * 1000. ) / calcDescriptors.rows );
 
-      if( calcDescriptors.rows != (int) keylines.size() )
-      {
-        ts->printf( cvtest::TS::LOG, "Count of computed descriptors and keylines count must be equal.\n" );
-        ts->printf( cvtest::TS::LOG, "Count of keylines is            %d.\n", (int) keylines.size() );
-        ts->printf( cvtest::TS::LOG, "Count of computed descriptors is %d.\n", calcDescriptors.rows );
-        ts->set_failed_test_info( cvtest::TS::FAIL_INVALID_OUTPUT );
-        return;
-      }
+      ASSERT_EQ((int)keylines.size(), calcDescriptors.rows)
+          << "Count of computed descriptors and keylines count must be equal";
 
-      if( calcDescriptors.cols != bd->descriptorSize() / 8 || calcDescriptors.type() != bd->descriptorType() )
-      {
-        ts->printf( cvtest::TS::LOG, "Incorrect descriptor size or descriptor type.\n" );
-        ts->printf( cvtest::TS::LOG, "Expected size is   %d.\n", bd->descriptorSize() );
-        ts->printf( cvtest::TS::LOG, "Calculated size is %d.\n", calcDescriptors.cols );
-        ts->printf( cvtest::TS::LOG, "Expected type is   %d.\n", bd->descriptorType() );
-        ts->printf( cvtest::TS::LOG, "Calculated type is %d.\n", calcDescriptors.type() );
-        ts->set_failed_test_info( cvtest::TS::FAIL_INVALID_OUTPUT );
-        return;
-      }
+      ASSERT_EQ(bd->descriptorSize() / 8, calcDescriptors.cols);
+      ASSERT_EQ(bd->descriptorType(), calcDescriptors.type());
 
       // TODO read and write descriptor extractor parameters and check them
       Mat validDescriptors = readDescriptors();

@@ -5,7 +5,7 @@
 
 namespace opencv_test { namespace {
 
-TEST(ximpgroc_Edgeboxes, DISABLED_regression)
+TEST(ximgproc_Edgeboxes, regression)
 {
     //Testing Edgeboxes implementation by asking for one proposal
     //on a simple test image from the PASCAL VOC 2012 dataset.

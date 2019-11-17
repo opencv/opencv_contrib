@@ -7,7 +7,7 @@
 namespace opencv_test { namespace {
 
 
-TEST(ximpgroc_matchcolortemplate,test_QFFT)
+TEST(ximgproc_matchcolortemplate,test_QFFT)
 {
     String openCVExtraDir = cvtest::TS::ptr()->get_data_path();
     String dataPath = openCVExtraDir;
@@ -58,7 +58,7 @@ TEST(ximpgroc_matchcolortemplate,test_QFFT)
     }
 }
 
-TEST(ximpgroc_matchcolortemplate, test_COLORMATCHTEMPLATE)
+TEST(ximgproc_matchcolortemplate, test_COLORMATCHTEMPLATE)
 {
     String openCVExtraDir = cvtest::TS::ptr()->get_data_path();
     String dataPath = openCVExtraDir + "cv/ximgproc/corr.yml.gz";
