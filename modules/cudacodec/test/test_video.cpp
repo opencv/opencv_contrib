@@ -41,15 +41,15 @@
 //M*/
 
 #include "test_precomp.hpp"
+namespace opencv_test {
+    namespace {
 
-namespace opencv_test { namespace {
-
-#ifdef HAVE_NVCUVID
-
+#if defined(HAVE_NVCUVID) || defined(HAVE_NVCUVENC)
 PARAM_TEST_CASE(Video, cv::cuda::DeviceInfo, std::string)
 {
 };
 
+#if defined(HAVE_NVCUVID)
 //////////////////////////////////////////////////////
 // VideoReader
 
@@ -57,23 +57,25 @@ CUDA_TEST_P(Video, Reader)
 {
     cv::cuda::setDevice(GET_PARAM(0).deviceID());
 
-    const std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "video/" + GET_PARAM(1);
+    // CUDA demuxer has to fall back to ffmpeg to process "gpu/video/768x576.avi"
+    if (GET_PARAM(1) == "gpu/video/768x576.avi" && !videoio_registry::hasBackend(CAP_FFMPEG))
+        throw SkipTestException("FFmpeg backend not found");
 
+    std::string inputFile = std::string(cvtest::TS::ptr()->get_data_path()) + "../" + GET_PARAM(1);
     cv::Ptr<cv::cudacodec::VideoReader> reader = cv::cudacodec::createVideoReader(inputFile);
 
     cv::cuda::GpuMat frame;
-
-    for (int i = 0; i < 10; ++i)
+    for (int i = 0; i < 100; i++)
     {
         ASSERT_TRUE(reader->nextFrame(frame));
         ASSERT_FALSE(frame.empty());
     }
 }
+#endif // HAVE_NVCUVID
 
+#if defined(_WIN32) && defined(HAVE_NVCUVENC)
 //////////////////////////////////////////////////////
 // VideoWriter
-
-#ifdef _WIN32
 
 CUDA_TEST_P(Video, Writer)
 {
@@ -118,11 +120,14 @@ CUDA_TEST_P(Video, Writer)
     }
 }
 
-#endif // _WIN32
+#endif // _WIN32, HAVE_NVCUVENC
 
+#define VIDEO_SRC "gpu/video/768x576.avi", "gpu/video/1920x1080.avi", "highgui/video/big_buck_bunny.avi", \
+    "highgui/video/big_buck_bunny.h264", "highgui/video/big_buck_bunny.h265", "highgui/video/big_buck_bunny.mpg", \
+    "highgui/video/big_buck_bunny.mpg"
 INSTANTIATE_TEST_CASE_P(CUDA_Codec, Video, testing::Combine(
     ALL_DEVICES,
-    testing::Values(std::string("768x576.avi"), std::string("1920x1080.avi"))));
+    testing::Values(VIDEO_SRC)));
 
-#endif // HAVE_NVCUVID
+#endif // HAVE_NVCUVID || HAVE_NVCUVENC
 }} // namespace

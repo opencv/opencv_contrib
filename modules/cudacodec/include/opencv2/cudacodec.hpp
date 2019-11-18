@@ -59,6 +59,8 @@
 
 namespace cv { namespace cudacodec {
 
+using namespace cuda;  // Stream
+
 //! @addtogroup cudacodec
 //! @{
 
@@ -253,6 +255,7 @@ enum Codec
     HEVC,
     VP8,
     VP9,
+    NumCodecs,
 
     Uncompressed_YUV420 = (('I'<<24)|('Y'<<16)|('U'<<8)|('V')),   //!< Y,U,V (4:2:0)
     Uncompressed_YV12   = (('Y'<<24)|('V'<<16)|('1'<<8)|('2')),   //!< Y,V,U (4:2:0)
@@ -268,7 +271,8 @@ enum ChromaFormat
     Monochrome = 0,
     YUV420,
     YUV422,
-    YUV444
+    YUV444,
+    NumFormats
 };
 
 /** @brief Struct providing information about video file format. :
@@ -298,7 +302,7 @@ public:
     If no frames has been grabbed (there are no more frames in video file), the methods return false .
     The method throws Exception if error occurs.
      */
-    CV_WRAP virtual bool nextFrame(OutputArray frame) = 0;
+    CV_WRAP virtual bool nextFrame(OutputArray frame, Stream &stream = Stream::Null()) = 0;
 
     /** @brief Returns information about video file format.
     */
@@ -318,9 +322,8 @@ public:
 
     @param data Pointer to frame data.
     @param size Size in bytes of current frame.
-    @param endOfFile Indicates that it is end of stream.
      */
-    virtual bool getNextPacket(unsigned char** data, int* size, bool* endOfFile) = 0;
+    virtual bool getNextPacket(unsigned char** data, size_t* size) = 0;
 
     /** @brief Returns information about video file format.
     */
