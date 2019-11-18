@@ -322,9 +322,8 @@ public:
 
     @param data Pointer to frame data.
     @param size Size in bytes of current frame.
-    @param endOfFile Indicates that it is end of stream.
      */
-    virtual bool getNextPacket(unsigned char** data, size_t* size, bool* endOfFile) = 0;
+    virtual bool getNextPacket(unsigned char** data, size_t* size) = 0;
 
     /** @brief Returns information about video file format.
     */

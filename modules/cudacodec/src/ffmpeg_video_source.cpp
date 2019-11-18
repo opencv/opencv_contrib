@@ -145,15 +145,12 @@ FormatInfo cv::cudacodec::detail::FFmpegVideoSource::format() const
     return format_;
 }
 
-bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** data, size_t* size, bool* bEndOfFile)
+bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** data, size_t* size)
 {
     cap >> rawFrame;
     *data = rawFrame.data;
-    size_t sz = rawFrame.total();
-    bool frameRead = sz != 0;
-    *size = sz;
-    *bEndOfFile = !frameRead;
-    return frameRead;
+    *size = rawFrame.total();
+    return *size != 0;
 }
 
 #endif // HAVE_CUDA

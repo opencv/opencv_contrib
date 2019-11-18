@@ -97,11 +97,10 @@ void cv::cudacodec::detail::RawVideoSourceWrapper::readLoop(void* userData)
     {
         unsigned char* data;
         size_t size;
-        bool endOfFile;
 
-        if (!thiz->source_->getNextPacket(&data, &size, &endOfFile))
+        if (!thiz->source_->getNextPacket(&data, &size))
         {
-            thiz->hasError_ = !endOfFile;
+            thiz->hasError_ = false;
             break;
         }
 
