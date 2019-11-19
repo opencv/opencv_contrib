@@ -2,7 +2,7 @@
 
 template<> struct pyopencvVecConverter<line_descriptor::KeyLine>
 {
-    static bool to(PyObject* obj, std::vector<line_descriptor::KeyLine>& value, const ArgInfo info)
+    static bool to(PyObject* obj, std::vector<line_descriptor::KeyLine>& value, const ArgInfo& info)
     {
         return pyopencv_to_generic_vec(obj, value, info);
     }
