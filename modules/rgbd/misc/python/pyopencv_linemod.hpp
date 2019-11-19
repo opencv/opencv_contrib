@@ -3,7 +3,7 @@
 
 template<> struct pyopencvVecConverter<linemod::Match>
 {
-    static bool to(PyObject* obj, std::vector<linemod::Match>& value, const ArgInfo info)
+    static bool to(PyObject* obj, std::vector<linemod::Match>& value, const ArgInfo& info)
     {
         return pyopencv_to_generic_vec(obj, value, info);
     }
@@ -16,7 +16,7 @@ template<> struct pyopencvVecConverter<linemod::Match>
 
 template<> struct pyopencvVecConverter<linemod::Template>
 {
-    static bool to(PyObject* obj, std::vector<linemod::Template>& value, const ArgInfo info)
+    static bool to(PyObject* obj, std::vector<linemod::Template>& value, const ArgInfo& info)
     {
         return pyopencv_to_generic_vec(obj, value, info);
     }
@@ -29,7 +29,7 @@ template<> struct pyopencvVecConverter<linemod::Template>
 
 template<> struct pyopencvVecConverter<linemod::Feature>
 {
-    static bool to(PyObject* obj, std::vector<linemod::Feature>& value, const ArgInfo info)
+    static bool to(PyObject* obj, std::vector<linemod::Feature>& value, const ArgInfo& info)
     {
         return pyopencv_to_generic_vec(obj, value, info);
     }
@@ -42,7 +42,7 @@ template<> struct pyopencvVecConverter<linemod::Feature>
 
 template<> struct pyopencvVecConverter<Ptr<linemod::Modality> >
 {
-    static bool to(PyObject* obj, std::vector<Ptr<linemod::Modality> >& value, const ArgInfo info)
+    static bool to(PyObject* obj, std::vector<Ptr<linemod::Modality> >& value, const ArgInfo& info)
     {
         return pyopencv_to_generic_vec(obj, value, info);
     }
