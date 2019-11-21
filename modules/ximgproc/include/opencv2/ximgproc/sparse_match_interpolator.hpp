@@ -125,6 +125,26 @@ EdgeAwareInterpolator.
 CV_EXPORTS_W
 Ptr<EdgeAwareInterpolator> createEdgeAwareInterpolator();
 
+/** @brief Sparse match interpolation algorithm based on modified locally-weighted affine
+estimator from @cite Revaud2015 and Fast Global Smoother as post-processing filter.
+ */
+class CV_EXPORTS_W RICInterpolator : public SparseMatchInterpolator
+{
+public:
+    /** @brief K is a number of nearest-neighbor matches considered, when fitting a locally affine
+   model. Usually it should be around 128. However, lower values would make the interpolation
+   noticeably faster.
+    */
+    CV_WRAP virtual void setSuperpixelSize(int val) = 0;
+    /** @see setK */
+    CV_WRAP virtual int  getSuperpixelSize() = 0;
+};
+
+/** @brief Factory method that creates an instance of the
+RICInterpolator.
+*/
+CV_EXPORTS_W
+Ptr<RICInterpolator> createRICInterpolator();
 //! @}
 }
 }
