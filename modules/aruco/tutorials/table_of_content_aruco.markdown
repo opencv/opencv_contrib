@@ -15,7 +15,7 @@ ChArUco corners and use them for pose estimation and camera calibration.
 
     *Compatibility:* \> OpenCV 3.0
 
-    *Author:* Sergio Garrido
+    *Author:* Sergio Garrido, Steve Nicholson
 
     Basic detection and pose estimation from single ArUco markers.
 
