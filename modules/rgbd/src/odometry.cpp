@@ -983,28 +983,6 @@ Ptr<DepthCleaner> DepthCleaner::create(int depth_in, int window_size_in, int met
   return makePtr<DepthCleaner>(depth_in, window_size_in, method_in);
 }
 
-RgbdPlane::RgbdPlane(int method, int block_size,
-                     int min_size, double threshold, double sensor_error_a,
-                     double sensor_error_b, double sensor_error_c) :
-                     method_(method),
-                     block_size_(block_size),
-                     min_size_(min_size),
-                     threshold_(threshold),
-                     sensor_error_a_(sensor_error_a),
-                     sensor_error_b_(sensor_error_b),
-                     sensor_error_c_(sensor_error_c)
-{}
-
-Ptr<RgbdPlane> RgbdPlane::create(int method, int block_size, int min_size, double threshold,
-                                 double sensor_error_a, double sensor_error_b,
-                                 double sensor_error_c ) {
-    return makePtr<RgbdPlane>(method, block_size, min_size, threshold,
-                              sensor_error_a, sensor_error_b, sensor_error_c);
-}
-
-RgbdPlane::~RgbdPlane()
-{}
-
 RgbdFrame::RgbdFrame() : ID(-1)
 {}
 
