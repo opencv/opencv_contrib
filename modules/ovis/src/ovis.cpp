@@ -939,6 +939,7 @@ public:
 
 CV_EXPORTS_W void addResourceLocation(const String& path)
 {
+    CV_Assert(!_app && "must be called before the first createWindow");
     _extraResourceLocations.insert(Ogre::StringUtil::normalizeFilePath(path, false));
 }
 
