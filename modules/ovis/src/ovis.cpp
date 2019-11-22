@@ -289,7 +289,7 @@ class WindowSceneImpl : public WindowScene
     Root* root;
     SceneManager* sceneMgr;
     SceneNode* camNode;
-    RenderWindow* rWin;
+    RenderTarget* rWin;
     Ptr<OgreBites::CameraMan> camman;
     Ptr<Rectangle2D> bgplane;
     std::unordered_map<AnimationState*, Controller<Real>*> frameCtrlrs;
@@ -344,10 +344,21 @@ public:
 
         if (!app->sceneMgr)
         {
+            CV_Assert((flags & SCENE_OFFSCREEN) == 0 && "off-screen rendering for main window not supported");
+
             app->sceneMgr = sceneMgr;
             rWin = app->getRenderWindow();
             if (camman)
                 app->addInputListener(camman.get());
+        }
+        else if (flags & SCENE_OFFSCREEN)
+        {
+            // render into an offscreen texture
+            TexturePtr tex = TextureManager::getSingleton().createManual(
+                title, RESOURCEGROUP_NAME, TEX_TYPE_2D, sz.width, sz.height, 0, PF_BYTE_RGB,
+                TU_RENDERTARGET, NULL, false, flags & SCENE_AA ? 4 : 0);
+            rWin = tex->getBuffer()->getRenderTarget();
+            rWin->setAutoUpdated(false); // only update when requested
         }
         else
         {
@@ -818,6 +829,11 @@ public:
         Mat ndc = depth.getMat();
         ndc = -ndc * (f - n) + (f + n);
         ndc = (2 * f * n) / ndc;
+    }
+
+    void update()
+    {
+        rWin->update(false);
     }
 
     void fixCameraYawAxis(bool useFixed, InputArray _up) CV_OVERRIDE

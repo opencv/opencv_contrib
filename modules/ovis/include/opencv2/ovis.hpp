@@ -25,7 +25,9 @@ enum SceneSettings
     /// draw coordinate system crosses for debugging
     SCENE_SHOW_CS_CROSS = 4,
     /// Apply anti-aliasing. The first window determines the setting for all windows.
-    SCENE_AA = 8
+    SCENE_AA = 8,
+    /// Render off-screen without a window. Allows separate AA setting. Requires manual update via @ref WindowScene::update
+    SCENE_OFFSCREEN = 16
 };
 
 enum MaterialProperty
@@ -276,6 +278,10 @@ public:
     CV_WRAP virtual void setCameraIntrinsics(InputArray K, const Size& imsize,
                                              float zNear = -1,
                                              float zFar = -1) = 0;
+    /**
+     * render this window, but do not swap buffers. Automatically called by @ref ovis::waitKey
+     */
+    CV_WRAP virtual void update() = 0;
 };
 
 /**
