@@ -40,7 +40,7 @@
 #include "opencv2/video.hpp"
 #include <algorithm>
 #include <vector>
-
+#include <iostream>
 #include "opencv2/core/hal/hal.hpp"
 
 using namespace std;
@@ -94,7 +94,7 @@ void computeGradientMagnitude(Mat& src, Mat& dst)
         }
     }
 }
-void weightedLeastSquaresAffineFit(int* labels, float* weights, int count, float lambda, SparseMatch* matches, Mat& dst);
+void weightedLeastSquaresAffineFit(int* labels, float* weights, int count, float lambda, const SparseMatch* matches, Mat& dst);
 void generateHypothesis(int* labels, int count, RNG& rng, unsigned char* is_used, SparseMatch* matches, Mat& dst);
 void verifyHypothesis(int* labels, float* weights, int count, SparseMatch* matches, float eps, float lambda, Mat& hypothesis_transform, Mat& old_transform, float& old_weighted_num_inliers);
 
@@ -629,7 +629,7 @@ void EdgeAwareInterpolatorImpl::GetKNNMatches_ParBody::operator() (const Range& 
     delete[] expanded_flag;
 }
 
-void weightedLeastSquaresAffineFit(int* labels, float* weights, int count, float lambda, SparseMatch* matches, Mat& dst)
+void weightedLeastSquaresAffineFit(int* labels, float* weights, int count, float lambda, const SparseMatch* matches, Mat& dst)
 {
     double sa[6][6]={{0.}}, sb[6]={0.};
     Mat A (6, 6, CV_64F, &sa[0][0]),
@@ -895,24 +895,143 @@ class RICInterpolatorImpl CV_FINAL : public RICInterpolator
 {
 public:
     static Ptr<RICInterpolatorImpl> create();
-    void interpolate(InputArray from_image, InputArray from_points, InputArray to_image, InputArray to_points, OutputArray dense_flow); // CV_OVERRIDE;
+    void interpolate(InputArray from_image, InputArray from_points, InputArray to_image, InputArray to_points, OutputArray dense_flow) CV_OVERRIDE;
 
 protected:
-
+    // internal buffers
+    int match_num;
+    vector<node>* g;
+    Mat NNlabels;
+    Mat NNdistances;
+    Mat labels;
     static const int distance_transform_num_iter = 1;
-
+    
     //tunable parameters:
-    float alpha = 0.7f;
-    int sp_size = 100;
-    int sp_nncnt = 150;
-    int model_iter = 4;
-    int refine_models = 1;
-    float cost_suffix = 0.001f;
-    float maxFlow = 250.f;
+    int max_neighbors;
+    float alpha;
+    int sp_size;
+    int sp_nncnt;
+    float sp_ruler;
+    int model_iter;
+    bool refine_models;
+    bool use_variational_refinement;
+    float cost_suffix;
+    float max_flow;
+    bool use_global_smoother_filter;
+    float fgs_lambda;
+    float fgs_sigma;
+    SLICType slic_type;
 
+    class GetKNNMatches_ParBody : public ParallelLoopBody
+    {
+    protected:
+        RICInterpolatorImpl* inst;
+        int num_stripes;
+        int stripe_sz;
+    public:
+        GetKNNMatches_ParBody(RICInterpolatorImpl& _inst, int _num_stripes);
+        void operator () (const Range& range) const CV_OVERRIDE;
+    };
+    class VerifyHypothesis_ParBody : public ParallelLoopBody
+    {
+    protected:
+        RICInterpolatorImpl* inst;
+        float * bestCost;
+        const Mat & outModels;
+        int supportCnt;
+        int  * supportMatchIds;
+        float * supportMatchDis;
+        const vector<SparseMatch> & inputMatches;
+        Mat & inlierFlag;
+    public:      
+        VerifyHypothesis_ParBody(RICInterpolatorImpl& _inst,
+            float * _bestCost,
+            const Mat & _outModels,
+            int _supportCnt,
+            int * _supportMatchIds,
+            float * _supportMatchDis,
+            const vector<SparseMatch> & _inputMatches,
+            Mat & _inlierFlag)
+            : inst(&_inst)
+            , bestCost(_bestCost)
+            , outModels(_outModels)
+            , supportMatchIds(_supportMatchIds)
+            , supportMatchDis(_supportMatchDis)
+            , supportCnt(_supportCnt)
+            , inputMatches(_inputMatches)
+            , inlierFlag(_inlierFlag)
+        {}
+        void operator () (const Range& range) const CV_OVERRIDE;
+    };
+    class GenerateHypothesis_ParBody : public ParallelLoopBody
+    {
+    protected:
+        RICInterpolatorImpl* inst;
+        float * bestCost;
+        const Mat & outModels;
+        int spCnt;
+        const Mat & spNN;
+        int supportCnt;
+        int  * supportMatchIds;
+        float * supportMatchDis;
+        const vector<SparseMatch> & inputMatches;
+        Mat & inlierFlag;
+    public:
+        GenerateHypothesis_ParBody(RICInterpolatorImpl& _inst,
+            float * _bestCost,
+            const Mat & _outModels,
+            int _supportCnt,
+            int _spCnt,
+            const Mat & _spNN,
+            int * _supportMatchIds,
+            float * _supportMatchDis,
+            const vector<SparseMatch> & _inputMatches,
+            Mat & _inlierFlag)
+            : inst(&_inst)
+            , bestCost(_bestCost)
+            , outModels(_outModels)
+            , spNN(_spNN)
+            , supportCnt(_supportCnt)
+            , spCnt(_spCnt)
+            , supportMatchIds(_supportMatchIds)
+            , supportMatchDis(_supportMatchDis)
+            , inputMatches(_inputMatches)
+            , inlierFlag(_inlierFlag)
+        {}
+        void operator () (const Range& range) const CV_OVERRIDE;
+    };
+    class RefineModels_ParBody : public ParallelLoopBody
+    {
+    protected:
+        RICInterpolatorImpl* inst;
+        Mat   & outModels;
+        int     supportCnt;
+        int   * supportMatchIds;
+        float * supportMatchDis;
+        const vector<SparseMatch> & inputMatches;
+        const Mat & inlierFlag;
+    public:
+        RefineModels_ParBody(RICInterpolatorImpl& _inst,
+            Mat & _outModels,
+            int   _supportCnt,
+            int * _supportMatchIds,
+            float * _supportMatchDis,
+            const vector<SparseMatch> & _inputMatches,
+            const Mat & _inlierFlag)
+            : inst(&_inst)
+            , outModels(_outModels)
+            , supportMatchIds(_supportMatchIds)
+            , supportMatchDis(_supportMatchDis)
+            , supportCnt(_supportCnt)
+            , inputMatches(_inputMatches)
+            , inlierFlag(_inlierFlag)
+        {}
+        void operator () (const Range& range) const CV_OVERRIDE;
+    };
+    
+    void init();
+    void buildGraph(Mat& distances, Mat& cost_map);
     void geodesicDistanceTransform(Mat& distances, Mat& cost_map, Mat & labels);
-    Mat  getCostMap(const Mat img, std::string modelFilename = "/model.yml.gz");
-    void matchingNeighborConstruction(Mat & disMap, Mat & labels, int labelCnt, Mat & outNeighbor, Mat & outNeighborDis);
     int  overSegmentaion(const Mat & img, Mat & outLabels, const int spSize);
     void superpixelNeighborConstruction(const Mat & labels, int labelCnt, Mat& outNeighbor);
     void superpixelLayoutAnalysis(const Mat & labels, int labelCnt, Mat & outCenterPositions, Mat & outNodeItemLists);
@@ -920,69 +1039,73 @@ protected:
         Mat & matNNDis, vector<int> & outSupportIds, vector<float> &  outSupportDis);
     float GetWeightFromDistance(float dis);
     int PropagateModels(int spCnt, Mat & spNN, vector<int> & supportMatchIds, vector<float> & supportMatchDis, int supportCnt,
-        vector<SparseMatch> &inputMatches, Mat & outModels);
-    float HypothesisEvaluation(Mat & inModel, int * matNodes, float * matDis, int matCnt, vector<SparseMatch> & inputMatches, Mat & outInLier);
-    int HypothesisGeneration(int* matNodes, int matCnt, vector<SparseMatch> & inputMatches, Mat & outModel);
-    Mat AffineFitting(const Mat &pt1, const Mat &pt2, const Mat & weight, int ptCnt);
-    std::string m_ModelFilename;
+        const vector<SparseMatch> &inputMatches, Mat & outModels);
+    float HypothesisEvaluation(Mat & inModel, int * matNodes, float * matDis, int matCnt, const vector<SparseMatch> & inputMatches, Mat & outInLier);
+    int HypothesisGeneration(int* matNodes, int matCnt, const vector<SparseMatch> & inputMatches, Mat & outModel);
 
 public:
-    void  setSuperpixelSize(int val)  CV_OVERRIDE { sp_size = val; }
-    int   getSuperpixelSize() CV_OVERRIDE { return sp_size; }
+    void setK(int val) CV_OVERRIDE { max_neighbors  = val; }
+    int  getK() CV_OVERRIDE { return max_neighbors; }
+    void setSuperpixelSize(int val) CV_OVERRIDE { sp_size = val; }
+    int  getSuperpixelSize() CV_OVERRIDE { return sp_size; }
+    void setSuperpixelNNCnt(int val) CV_OVERRIDE { sp_nncnt = val; }
+    int  getSuperpixelNNCnt() CV_OVERRIDE { return sp_nncnt; }
+    void setSuperpixelRuler(float val) CV_OVERRIDE { sp_ruler = val; }
+    float getSuperpixelRuler() CV_OVERRIDE { return sp_ruler; }
+    void setSuperpixelMode(int val) CV_OVERRIDE { slic_type = static_cast<SLICType>(val); }
+    int  getSuperpixelMode() CV_OVERRIDE { return slic_type; }
+    void setAlpha(float val) CV_OVERRIDE { alpha = val; }
+    float getAlpha() CV_OVERRIDE { return alpha; }
+    void setModelIter(int val) CV_OVERRIDE { model_iter = val; }
+    int  getModelIter() CV_OVERRIDE { return model_iter; }
+    void setRefineModels(bool val) CV_OVERRIDE { refine_models = static_cast<int>(val); }
+    bool getRefineModels() CV_OVERRIDE { return refine_models; }
+    void setMaxFlow(int val) CV_OVERRIDE { max_flow = val; }
+    bool getMaxFlow() CV_OVERRIDE { return max_flow; }
+    void setUseVariationalRefinement(bool val) CV_OVERRIDE { use_variational_refinement = val; }
+    bool getUseVariationalRefinement() CV_OVERRIDE { return use_variational_refinement; }
+    void  setUseGlobalSmootherFilter(bool val) CV_OVERRIDE { use_global_smoother_filter = val; }
+    bool  getUseGlobalSmootherFilter() CV_OVERRIDE { return use_global_smoother_filter; }
+    void  setFGSLambda(float _lambda) CV_OVERRIDE { fgs_lambda = _lambda; }
+    float getFGSLambda() CV_OVERRIDE { return fgs_lambda; }
+    void  setFGSSigma(float _sigma) CV_OVERRIDE { fgs_sigma = _sigma; }
+    float getFGSSigma() CV_OVERRIDE { return fgs_sigma; }
 };
 Ptr<RICInterpolatorImpl> RICInterpolatorImpl::create()
 {
     RICInterpolatorImpl *eai = new RICInterpolatorImpl();
-    //eai->init();
+    eai->init();
     return Ptr<RICInterpolatorImpl>(eai);
 }
 
-    template <class T>
-    class RICHeap
-    {
-    public:
-        RICHeap(int size, bool isMinHeap = false); // default is max-heap
-        RICHeap();
+void RICInterpolatorImpl::init()
+{
+    max_neighbors = 32; // 32;
+    alpha = 0.7f;
+    sp_size = 15;
+    sp_nncnt = 150;
+    sp_ruler = 15.f;
+    model_iter = 4;
+    refine_models = true;
+    use_variational_refinement = false;
+    cost_suffix = 0.001f;
+    max_flow = 250.f;
+    use_global_smoother_filter = true;
+    fgs_lambda = 500.0f;
+    fgs_sigma = 1.5f;
+    slic_type = SLIC;
+}
 
-        ~RICHeap();
-
-        int Init(int size, bool isMinHeap = false);
-        int Push(T index, T weight);
-        void Push(T* index, T* weight, int count);
-        T Pop(T* weight = NULL);
-        T Top(T* weight = NULL);
-        void Clear();
-        int Size();
-
-        void Print();
-        void Test();
-
-    private:
-        inline void swap(T& a, T& b);
-        inline bool prior(T w1, T w2); // is w1 prior to w2?
-
-        bool m_isMinHeap; // min heap or max heap
-        T* m_index;
-        T* m_weight;
-        int m_size;
-        int m_validSize;
-    };
-
-    template <class T>
-    RICHeap<T>::RICHeap(int size, bool isMinHeap/* = false*/)
+struct MinHeap
+{
+public:
+    MinHeap(int size)
     {
         memset(this, 0, sizeof(*this));
-        Init(size, isMinHeap);
+        Init(size);
     }
-
-    template <class T>
-    RICHeap<T>::RICHeap()
-    {
-        memset(this, 0, sizeof(*this));
-    }
-
-    template <class T>
-    RICHeap<T>::~RICHeap()
+   
+    ~MinHeap()
     {
         if (m_index) {
             delete[] m_index;
@@ -992,11 +1115,8 @@ Ptr<RICInterpolatorImpl> RICInterpolatorImpl::create()
         }
     }
 
-    template <class T>
-    int RICHeap<T>::Init(int size, bool isMinHeap /*= false*/)
+    int Init(int size)
     {
-        m_isMinHeap = isMinHeap;
-
         if (m_index) {
             delete m_index;
         }
@@ -1004,23 +1124,23 @@ Ptr<RICInterpolatorImpl> RICInterpolatorImpl::create()
             delete m_weight;
         }
 
-        m_index = new T[size];
-        m_weight = new T[size];
+        m_index = new double[size];
+        m_weight = new double[size];
         m_size = size;
         m_validSize = 0;
 
         return 0;
     }
-
-    template <class T>
-    int RICHeap<T>::Push(T index, T weight)
-    {
-        // insert at the last
+    int Push(double index, double weight) 
+    {   
+        if (m_validSize >= m_size)
+        {
+            CV_Error(CV_StsOutOfRange, " m_validSize >= m_size this problem can be resolved my decreasig k parameter");
+        };
         m_index[m_validSize] = index;
         m_weight[m_validSize] = weight;
         m_validSize++;
 
-        // adjust the heap from bottom to top
         int i = m_validSize - 1;
         while (prior(m_weight[i], m_weight[(i - 1) / 2])) {
             swap(m_weight[i], m_weight[(i - 1) / 2]);
@@ -1031,16 +1151,7 @@ Ptr<RICInterpolatorImpl> RICInterpolatorImpl::create()
         return i;
     }
 
-    template <class T>
-    void RICHeap<T>::Push(T* index, T* weight, int count)
-    {
-        for (int i = 0; i < count; i++) {
-            Push(index[i], weight[i]);
-        }
-    }
-
-    template <class T>
-    T RICHeap<T>::Pop(T* weight)
+    double Pop(double* weight = NULL) 
     {
         if (m_validSize == 0) {
             return -1;
@@ -1049,7 +1160,7 @@ Ptr<RICInterpolatorImpl> RICInterpolatorImpl::create()
         if (weight) {
             *weight = m_weight[0];
         }
-        T outIdx = m_index[0];
+        double outIdx = m_index[0];
 
         // use the last item to overwrite the first
         m_index[0] = m_index[m_validSize - 1];
@@ -1057,8 +1168,8 @@ Ptr<RICInterpolatorImpl> RICInterpolatorImpl::create()
         m_validSize--;
 
         // adjust the heap from top to bottom
-        T rawIdx = m_index[0];
-        T rawWt = m_weight[0];
+        double rawIdx = m_index[0];
+        double rawWt = m_weight[0];
         int candiPos = 0; // the root
         int i = 1; // left child of the root
         while (i < m_validSize) {
@@ -1080,76 +1191,32 @@ Ptr<RICInterpolatorImpl> RICInterpolatorImpl::create()
 
         return outIdx;
     }
-
-    template <class T>
-    T RICHeap<T>::Top(T* weight /*= NULL*/)
-    {
-        if (m_validSize == 0) {
-            return -1;
-        }
-
-        if (weight) {
-            *weight = m_weight[0];
-        }
-        return m_index[0];
-    }
-
-    template <class T>
-    void RICHeap<T>::Clear()
+    void Clear() 
     {
         m_validSize = 0;
     }
-
-    template <class T>
-    int RICHeap<T>::Size()
+    int Size()
     {
         return m_validSize;
     }
 
-    template <class T>
-    void RICHeap<T>::swap(T& a, T& b)
+private:
+    inline void swap(double & a, double & b) 
     {
-        T c = a;
+        double c = a;
         a = b;
         b = c;
     }
-
-    template <class T>
-    bool RICHeap<T>::prior(T w1, T w2)
+    inline bool prior(double w1, double w2) 
     {
-        if (m_isMinHeap) {
             return w1 < w2;
-        }
-        else {
-            return w1 > w2;
-        }
     }
 
-static inline int64_t Key(int i, int j)
-{
-    // swap: always i<j
-    if (i > j) { int t = i; i = j; j = t; };
-    return (int64_t)i + ((int64_t)j << 32);
-}
-
-static inline int KeyFirst(int64_t i) { return int(i); }
-static inline int KeySecond(int64_t i) { return int(i >> 32); }
-
-Mat RICInterpolatorImpl::getCostMap(const Mat img, std::string modelFilename)
-{
-
-    
-    
-    Mat fImg, cost_map;
-    img.convertTo(fImg, CV_32F, 1 / 255.0);
-    int borderSize = 10;
-    cv::copyMakeBorder(fImg, fImg, borderSize, borderSize, borderSize, borderSize, cv::BORDER_REPLICATE);
-    Mat edges(fImg.size(), fImg.type());
-    Ptr<cv::ximgproc::StructuredEdgeDetection> sEdge = ximgproc::createStructuredEdgeDetection(modelFilename);
-    sEdge->detectEdges(fImg, edges);
-    
-    return cost_map;
-}
+    double* m_index;
+    double* m_weight;
+    int m_size;
+    int m_validSize;
+};
 
 void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_points, InputArray to_image, InputArray to_points, OutputArray dense_flow)
 {
@@ -1165,46 +1232,45 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
     for (unsigned int i = 0; i < from_vector.size(); i++)
         matches_vector[i] = SparseMatch(from_vector[i], to_vector[i]);
     
+    match_num = static_cast<int>(from_vector.size());
 
     Mat src = from_image.getMat();
     Mat src2 = to_image.getMat();
-    // from here
-
     Size src_size = src.size();
-    m_ModelFilename = "B:/workspace/git/RIC/Ric/win32/model.yml.gz";
-    //Mat costMap = getCostMap(src, m_ModelFilename) + 0.001f;
-    Mat costMap(src_size, CV_32FC1);
-    float lambda = 0.001f;
-    computeGradientMagnitude(src, costMap);
-    costMap = (1000.0f - lambda) + lambda * costMap;
+
+    labels = Mat(src_size, CV_32SC1);
+    labels.setTo(-1);
+    NNlabels = Mat(match_num, max_neighbors, CV_32S);
+    NNlabels = Scalar(-1);
+    NNdistances = Mat(match_num, max_neighbors, CV_32F);
+    NNdistances = Scalar(0.0f);
 
     Mat matDistanceMap(src_size, CV_32FC1);
-    Mat matLabels(src_size, CV_32SC1);
-    matLabels.setTo(-1);
     matDistanceMap.setTo(1e10);
-   
+    Mat costMap(src_size, CV_32FC1);
+    
+    float lambda = 0.001f;
+    float lambda2 = 999.0f;
+    
+    computeGradientMagnitude(src, costMap);
+    costMap = (1000.0f - lambda2) + lambda2 * costMap;
+           
     for (unsigned int i = 0; i < matches_vector.size(); i++)
     {
         const SparseMatch & p = matches_vector[i];
         Point pos(static_cast<int>(p.reference_image_pos.x), static_cast<int>(p.reference_image_pos.y));
-        //
-        matLabels.at<int>(pos) = i;
+        labels.at<int>(pos) = i;
         matDistanceMap.at<float>(pos) = costMap.at<float>(pos);
     }
-    // some components will have the same label, 
-    geodesicDistanceTransform(matDistanceMap, costMap, matLabels);
-   
-    Mat matNN; // nearest neighbors of each matching
-    Mat matNNDis; // the corresponding distances
+    
+    geodesicDistanceTransform(matDistanceMap, costMap, labels);
 
-    matchingNeighborConstruction(matDistanceMap, matLabels, from_vector.size(), matNN, matNNDis);
-
-    /************************************************************************/
-    /*       Construct Superpixel Graph                                     */
-    /************************************************************************/
-
+    g = new vector<node>[match_num];
+    buildGraph(matDistanceMap, costMap);
+    parallel_for_(Range(0, getNumThreads()), GetKNNMatches_ParBody(*this, getNumThreads()));
+        
     Mat spLabels;
-    Mat spNN; // nearest neighbors of each superpixel
+    Mat spNN;
     Mat spPos;
     Mat spItems;
 
@@ -1212,40 +1278,30 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
     superpixelNeighborConstruction(spLabels, spCnt, spNN);
     superpixelLayoutAnalysis(spLabels, spCnt, spPos, spItems);
 
-  
-    /************************************************************************/
-    /*     Find Support Neighbors                                           */
-    /************************************************************************/
-
     vector<int> srcMatchIds(spCnt);
     for (int i = 0; i < spCnt; i++) 
     {
         Point pos = static_cast<Point>(spPos.at<Point2f>(i) + Point2f(0.5f,0.5f));
-        
-        srcMatchIds[i] = matLabels.at<int>(pos);
+        pos.x = MIN(labels.cols - 1, pos.x);
+        pos.y = MIN(labels.rows - 1, pos.y);
+        srcMatchIds[i] = labels.at<int>(pos);
     }
 
     int supportCnt = sp_nncnt;
     vector<int> supportMatchIds(spCnt*supportCnt);  // support matches for each superpixel
     vector<float> supportMatchDis(spCnt*supportCnt);
 
-    findSupportMatches(srcMatchIds, spCnt, supportCnt, matNN, matNNDis, supportMatchIds, supportMatchDis);
-
-    /************************************************************************/
-    /*    Affine fitting                                                    */
-    /************************************************************************/
-    // affine fit for every seed
-
-    Mat transModels(spCnt,6, CV_32FC1); // models for each superpixel
+    findSupportMatches(srcMatchIds, spCnt, supportCnt, NNlabels, NNdistances, supportMatchIds, supportMatchDis);
+  
+    Mat transModels(spCnt,6, CV_32FC1); 
     Mat fitModels(spCnt, 6, CV_32FC1);
-    //init models (translation model)
     Mat rawModel(1, 6, CV_32FC1);
     rawModel.setTo(0);
     rawModel.at<float>(0) = 1;
     rawModel.at<float>(4) = 1;
-    // { 1, 0, 0, 0, 1, 0 };
+
     for (int i = 0; i < spCnt; i++) {
-        int matId = supportMatchIds[i*supportCnt + 0]; // the nearest support matching
+        int matId = supportMatchIds[i*supportCnt + 0];
 
         const SparseMatch & p = matches_vector[matId];
         float u = p.target_image_pos.x - p.reference_image_pos.x;
@@ -1259,10 +1315,6 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
 
     PropagateModels(spCnt, spNN, supportMatchIds, supportMatchDis, supportCnt, matches_vector, fitModels);
 
-
-    /************************************************************************/
-    /* Apply fitting models                                                 */
-    /************************************************************************/
     dense_flow.create(from_image.size(), CV_32FC2);
     
     Mat U = Mat(src.rows, src.cols, CV_32FC1);
@@ -1276,9 +1328,10 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
             }
             float fx = fitModels.at<float>(i, 0) * x + fitModels.at<float>(i, 1) * y + fitModels.at<float>(i, 2);
             float fy = fitModels.at<float>(i, 3) * x + fitModels.at<float>(i, 4) * y + fitModels.at<float>(i, 5);
+            //cout << fitModels << endl;
             U.at<float>(y, x) = fx - x;
             V.at<float>(y, x) = fy - y;
-            if (abs(fx - x) > maxFlow || abs(fy - y) > maxFlow) 
+            if (abs(fx - x) > max_flow || abs(fy - y) > max_flow) 
             {
                 // use the translational model directly
                 fx = transModels.at<float>(i, 0) * x + transModels.at<float>(i, 1) * y + transModels.at<float>(i, 2);
@@ -1288,26 +1341,31 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
             }
         }
     }
-
    
     Mat dst = dense_flow.getMat();
-
-    /************************************************************************/
-    /* Variational Refinement                                               */
-    /************************************************************************/
-
-    cv::medianBlur(U, U, 3);
-    cv::medianBlur(V, V, 3);
-    Ptr<VariationalRefinement > variationalrefine = VariationalRefinement::create();
     Mat prevGrey, currGrey;
-    cvtColor(src, prevGrey, COLOR_BGR2GRAY);
-    cvtColor(src2, currGrey, COLOR_BGR2GRAY);
-    variationalrefine->setOmega(1.9);
-    //variationalrefine->calcUV(prevGrey, currGrey, U,V);
-    Mat UV[2];
-    UV[0] = U;
-    UV[1] = V;
+
+    
+    if (use_variational_refinement)
+    {
+        cv::medianBlur(U, U, 3);
+        cv::medianBlur(V, V, 3);
+        Ptr<VariationalRefinement > variationalrefine = VariationalRefinement::create();
+        cvtColor(src, prevGrey, COLOR_BGR2GRAY);
+        cvtColor(src2, currGrey, COLOR_BGR2GRAY);
+        variationalrefine->setOmega(1.9);
+        variationalrefine->calcUV(prevGrey, currGrey, U,V);
+    }
+    Mat UV[2] = { U,V };
     merge(UV, 2, dst);
+
+    if (use_global_smoother_filter)
+    {
+        if (prevGrey.empty())
+            cvtColor(src, prevGrey, COLOR_BGR2GRAY);
+        fastGlobalSmootherFilter(prevGrey, dst, dst, fgs_lambda, fgs_sigma);
+    }
+    delete[] g;
 }
 
 void RICInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& cost_map, Mat & labels)
@@ -1402,79 +1460,264 @@ void RICInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& cost_ma
 #undef CHECK
 }
 
-void RICInterpolatorImpl::matchingNeighborConstruction( Mat & disMap, Mat & labels, int labelCnt, Mat & outNeighbor, Mat & outNeighborDis)
+void RICInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
 {
-    int w = disMap.cols;
-    int h = disMap.rows;
-  
+    float *dist_row, *cost_row;
+    float *dist_row_prev, *cost_row_prev;
+    const int *label_row;
+    const int *label_row_prev;
+    int i, j;
+    const float c1 = 1.0f / 2.0f;
+    const float c2 = sqrt(2.0f) / 2.0f;
+    float d;
+    bool found;
+    int h = labels.rows;
+    int w = labels.cols;
+#define CHECK(cur_dist,cur_label,cur_cost,prev_dist,prev_label,prev_cost,coef)\
+    if(cur_label!=prev_label)\
+    {\
+        d = prev_dist + cur_dist + coef*(cur_cost+prev_cost);\
+        found = false;\
+        for(unsigned int n=0;n<g[prev_label].size();n++)\
+        {\
+            if(g[prev_label][n].label==cur_label)\
+            {\
+                g[prev_label][n].dist = min(g[prev_label][n].dist,d);\
+                found=true;\
+                break;\
+            }\
+        }\
+        if(!found)\
+            g[prev_label].push_back(node(cur_label ,d));\
+    }
 
-    // init
-    vector<int> neighborCount(labelCnt, 0);
-  
-    int maxNeighbors = 32;
-    outNeighbor = Mat(labelCnt, maxNeighbors, CV_32SC1); // only support 32 neighbors
-    outNeighbor.setTo(-1);
+    dist_row = distances.ptr<float>(0);
+    label_row = labels.ptr<int>(0);
+    cost_row = cost_map.ptr<float>(0);
+    for (j = 1; j < w; j++)
+        CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
 
-    outNeighborDis = Mat(labelCnt, maxNeighbors, CV_32SC1);
-    outNeighborDis.setTo(1e6);
+    for (i = 1; i < h; i++)
+    {
+        dist_row = distances.ptr<float>(i);
+        dist_row_prev = distances.ptr<float>(i - 1);
 
-    RICHeap<double> H(w*h * 2, true);
-    for (int i = 1; i < h; i++) {
-        for (int j = 1; j < w; j++) {
-            int idx = i * w + j;
+        label_row = labels.ptr<int>(i);
+        label_row_prev = labels.ptr<int>(i - 1);
 
-            int l0 = labels.at<int>(idx);
-            int l1 = labels.at<int>(idx - 1);
-            int l2 = labels.at<int>(idx - w);
+        cost_row = cost_map.ptr<float>(i);
+        cost_row_prev = cost_map.ptr<float>(i - 1);
 
-            if (l0 != l1) {
-                int64_t k = Key(l0, l1);
-                double v = disMap.at<float>(idx) + disMap.at<float>(idx - 1);
-                H.Push(&v, (double*)&k, 1);
+        j = 0;
+        CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
+        CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
+        j++;
+        for (; j < w - 1; j++)
+        {
+            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
+            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
+            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
+            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
+        }
+        CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
+        CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
+        CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
+    }
+#undef CHECK
+
+    // force equal distances in both directions:
+    node* neighbors;
+    for (i = 0; i < match_num; i++)
+    {
+        if (g[i].empty())
+            continue;
+        neighbors = &g[i].front();
+        for (j = 0; j < (int)g[i].size(); j++)
+        {
+            found = false;
+
+            for (unsigned int n = 0; n < g[neighbors[j].label].size(); n++)
+            {
+                if (g[neighbors[j].label][n].label == i)
+                {
+                    neighbors[j].dist = g[neighbors[j].label][n].dist = min(neighbors[j].dist, g[neighbors[j].label][n].dist);
+                    found = true;
+                    break;
+                }
             }
 
-            if (l0 != l2) {
-                int64_t k = Key(l0, l2);
-                double v = disMap.at<float>(idx) + disMap.at<float>(idx - w);
-                H.Push(&v, (double*)&k, 1);
+            if (!found)
+                g[neighbors[j].label].push_back(node((int)i, neighbors[j].dist));
+        }
+    }
+}
+
+RICInterpolatorImpl::GetKNNMatches_ParBody::GetKNNMatches_ParBody(RICInterpolatorImpl& _inst, int _num_stripes) :
+    inst(&_inst), num_stripes(_num_stripes)
+{
+    stripe_sz = (int)ceil(inst->match_num / (double)num_stripes);
+}
+
+void RICInterpolatorImpl::GetKNNMatches_ParBody::operator() (const Range& range) const
+{
+    int start = std::min(range.start * stripe_sz, inst->match_num);
+    int end = std::min(range.end   * stripe_sz, inst->match_num);
+    nodeHeap q((int)inst->match_num);
+    int num_expanded_vertices;
+    unsigned char* expanded_flag = new unsigned char[inst->match_num];
+    node* neighbors;
+
+    for (int i = start; i < end; i++)
+    {
+        if (inst->g[i].empty())
+            continue;
+
+        num_expanded_vertices = 0;
+        memset(expanded_flag, 0, inst->match_num);
+        q.clear();
+        q.add(node((int)i, 0.0f));
+        int* NNlabels_row = inst->NNlabels.ptr<int>(i);
+        float* NNdistances_row = inst->NNdistances.ptr<float>(i);
+        while (num_expanded_vertices < inst->max_neighbors && !q.empty())
+        {
+            node vert_for_expansion = q.getMin();
+            expanded_flag[vert_for_expansion.label] = 1;
+
+            //write the expanded vertex to the dst:
+            NNlabels_row[num_expanded_vertices] = vert_for_expansion.label;
+            NNdistances_row[num_expanded_vertices] = vert_for_expansion.dist;
+            num_expanded_vertices++;
+
+            //update the heap:
+            neighbors = &inst->g[vert_for_expansion.label].front();
+            for (int j = 0; j < (int)inst->g[vert_for_expansion.label].size(); j++)
+            {
+                if (!expanded_flag[neighbors[j].label])
+                    q.updateNode(node(neighbors[j].label, vert_for_expansion.dist + neighbors[j].dist));
             }
         }
     }
+    delete[] expanded_flag;
+}
 
-    while (H.Size()) {
-        int64_t newK, currK;
+void RICInterpolatorImpl::VerifyHypothesis_ParBody::operator() (const Range& range) const
+{
+    
+    for (int i = range.start; i < range.end; i++)
+    {
+        Mat outModelRow = outModels.row(i);
+        Mat inlierFlagRow = inlierFlag.row(i);
+        bestCost[i] = inst->HypothesisEvaluation(
+            outModelRow,
+            supportMatchIds + i * supportCnt,
+            supportMatchDis + i * supportCnt,
+            supportCnt,
+            inputMatches,
+            inlierFlagRow);
+    }
+    
+}
 
-        float minDis = H.Top((double*)&currK);
-        int l0 = KeyFirst(currK);
-        int l1 = KeySecond(currK);
+void RICInterpolatorImpl::GenerateHypothesis_ParBody::operator() (const Range& range) const
+{
+    Mat tmpInlierFlag(1, supportCnt, CV_32SC1);
+    Mat tmpModel(1, 6, CV_32FC1);
+    vector<int> vFlags(spCnt);
+    for (int iter = range.start; iter < range.end; iter++)
+    {
+        fill(vFlags.begin(), vFlags.end(), 0);
 
-        while (H.Size()) {
-            float dis = H.Top((double*)&newK);
-            if (newK != currK) {
-                break;
+        int startPos = 0, endPos = spCnt, step = 1;
+        if (iter % 2 == 1) {
+            startPos = spCnt - 1; endPos = -1; step = -1;
+        }
+
+        for (int idx = startPos; idx != endPos; idx += step) {
+
+            //if (idx >= 3 * (endPos + startPos) / 4) {
+                //break;
+            //}
+
+            // propagate
+            for (int i = 0; i < spNN.cols; i++) {
+                int nb = spNN.at<int>(idx, i);
+                if (nb < 0) break;
+                if (!vFlags[nb]) continue;
+                Mat NNModel = outModels.row(nb);
+                float cost = inst->HypothesisEvaluation(
+                    outModels.row(nb),
+                    &supportMatchIds[idx * supportCnt],
+                    &supportMatchDis[idx * supportCnt],
+                    supportCnt,
+                    inputMatches,
+                    tmpInlierFlag);
+                if (cost < bestCost[idx])
+                {
+                    outModels.row(nb).copyTo(outModels.row(idx));
+                    tmpInlierFlag.copyTo(inlierFlag.row(idx));
+                    bestCost[idx] = cost;
+                }
             }
-            H.Pop();
 
-            if (dis < minDis) {
-                minDis = dis;
+            // random test
+            int testCnt = 1;
+            for (int i = 0; i < testCnt; i++) {
+                if (inst->HypothesisGeneration(&supportMatchIds[idx * supportCnt], supportCnt, inputMatches, tmpModel) == 0)
+                {
+                    float cost = inst->HypothesisEvaluation(
+                        tmpModel,
+                        &supportMatchIds[idx * supportCnt],
+                        &supportMatchDis[idx * supportCnt],
+                        supportCnt,
+                        inputMatches,
+                        tmpInlierFlag);
+                    if (cost < bestCost[idx])
+                    {
+                        tmpModel.copyTo(outModels.row(idx));
+                        tmpInlierFlag.copyTo(inlierFlag.row(idx));
+                        bestCost[idx] = cost;
+                    }
+                }
+            }
+            vFlags[idx] = 1;
+        }
+    }
+}
+
+void RICInterpolatorImpl::RefineModels_ParBody::operator() (const Range& range) const
+{
+    int averInlier = 0;
+    int minPtCnt = 30;
+    for (int i = range.start; i < range.end; i++)
+    {
+        
+        Mat pt1(supportCnt, 1, CV_32FC2);
+        Mat pt2(supportCnt, 1, CV_32FC2);
+        vector<int>   inlier_labels(supportCnt);
+        vector<float> inlier_distances(supportCnt);
+        Mat fitModel;
+
+        int* matNodes = &supportMatchIds[i * supportCnt];
+        float* matDis = &supportMatchDis[i * supportCnt];
+
+        int inlierCnt = 0;
+        for (int k = 0; k < supportCnt; k++) {
+            if (inlierFlag.at<int>(i, k))
+            {
+                int matId = matNodes[k];
+                inlier_labels[inlierCnt] = matId;
+                inlier_distances[inlierCnt] = inst->GetWeightFromDistance(matDis[k]);
+                inlierCnt++;
             }
         }
+        if (inlierCnt >= minPtCnt)
+        {
+            Mat fitModel;
+            weightedLeastSquaresAffineFit(&inlier_labels[0], &inlier_distances[0], inlierCnt, 0.01f, &inputMatches[0], fitModel);
+            fitModel.reshape(1, 1).copyTo(outModels.row(i));
 
-
-        // add neighbors, no direction
-        if (neighborCount[l0] < maxNeighbors) {
-            outNeighbor.at<int>(l0,neighborCount[l0]) = l1;
-            outNeighborDis.at<int>(l0,neighborCount[l0]) = minDis;
-            neighborCount[l0]++;
         }
-        if (neighborCount[l1] < maxNeighbors) {
-            outNeighbor.at<int>(l1,neighborCount[l1]) = l0;
-            outNeighborDis.at<int>(l1,neighborCount[l1]) = minDis;
-            neighborCount[l1]++;
-        }
-
-        //
-        currK = newK;
+        averInlier += inlierCnt;
     }
 }
 
@@ -1483,23 +1726,17 @@ int RICInterpolatorImpl::overSegmentaion(const Mat & img, Mat & outLabels, const
  
     int numLabels = 0;
     Mat labImg;
-    cv::imshow("slic_img", img);
     cvtColor(img, labImg, COLOR_BGR2Lab);
-    
-    Ptr< SuperpixelSLIC> slic = createSuperpixelSLIC(labImg, SLICType::SLIC, spSize, 150);
+    Ptr< SuperpixelSLIC> slic = createSuperpixelSLIC(labImg, slic_type, spSize, sp_ruler);
     slic->iterate(5);
     slic->getLabels(outLabels);
-    Mat image;
-    slic->getLabelContourMask(image, true);
-    cv::imshow("slic", image);
-    //cv::waitKey(-1);
     return slic->getNumberOfSuperpixels();
 }
+
 void RICInterpolatorImpl::superpixelNeighborConstruction(const Mat & labels, int labelCnt, Mat& outNeighbor)
 {
     // init
-    int maxNeighbors = 32;
-    outNeighbor = Mat(labelCnt, maxNeighbors, CV_32SC1); // only support 32 neighbors
+    outNeighbor = Mat(labelCnt, max_neighbors, CV_32SC1); // only support 32 neighbors
     outNeighbor.setTo(-1);
 
     //
@@ -1533,7 +1770,7 @@ void RICInterpolatorImpl::superpixelNeighborConstruction(const Mat & labels, int
         int k = 0;
 
         // add to neighbor list of a
-        for (k = 0; k < maxNeighbors; k++) {
+        for (k = 0; k < max_neighbors; k++) {
             if (outNeighbor.at<int>(a, k) < 0) {
                 break;
             }
@@ -1542,12 +1779,12 @@ void RICInterpolatorImpl::superpixelNeighborConstruction(const Mat & labels, int
                 break;
             }
         }
-        if (k >= 0 && k < maxNeighbors) {
+        if (k >= 0 && k < max_neighbors) {
             outNeighbor.at<int>(a, k) = b;
         }
 
         // add to neighbor list of b
-        for (k = 0; k < maxNeighbors; k++) {
+        for (k = 0; k < max_neighbors; k++) {
             if (outNeighbor.at<int>(b, k) < 0) {
                 break;
             }
@@ -1556,12 +1793,13 @@ void RICInterpolatorImpl::superpixelNeighborConstruction(const Mat & labels, int
                 break;
             }
         }
-        if (k >= 0 && k < maxNeighbors) {
+        if (k >= 0 && k < max_neighbors) {
             outNeighbor.at<int>(b, k) = a;
         }
     }
 
 }
+
 void RICInterpolatorImpl::superpixelLayoutAnalysis(const Mat & labels, int labelCnt, Mat & outCenterPositions, Mat & outNodeItemLists)
 {
     
@@ -1606,14 +1844,15 @@ void RICInterpolatorImpl::superpixelLayoutAnalysis(const Mat & labels, int label
     }
 
 }
+
 void RICInterpolatorImpl::findSupportMatches(vector<int> & srcIds, int srcCnt, int supportCnt, Mat & matNN, 
                                             Mat & matNNDis, vector<int> & outSupportIds, vector<float> &  outSupportDis)
 {
-    fill(outSupportIds.begin(), outSupportIds.end(), 0xFF); // -1
-    fill(outSupportDis.begin(), outSupportDis.end(), 0xFF); // -1
+    fill(outSupportIds.begin(), outSupportIds.end(), -1); // -1
+    fill(outSupportDis.begin(), outSupportDis.end(), -1); // -1
 
     int allNodeCnt = matNN.rows;
-    RICHeap<double> H(allNodeCnt, true); // min-heap
+    MinHeap H(allNodeCnt); // min-heap
     vector<float> currDis(allNodeCnt);
 
     for (int i = 0; i < srcCnt; i++)
@@ -1623,7 +1862,7 @@ void RICInterpolatorImpl::findSupportMatches(vector<int> & srcIds, int srcCnt, i
         float* pSupportDis = &outSupportDis[i * supportCnt];
 
         H.Clear();
-        fill(currDis.begin(), currDis.end(), 0x7F); // max float
+        fill(currDis.begin(), currDis.end(), 9999999); // max float
 
         int validSupportCnt = 0;
 
@@ -1661,7 +1900,7 @@ void RICInterpolatorImpl::findSupportMatches(vector<int> & srcIds, int srcCnt, i
 }
 
 int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & supportMatchIds, vector<float> & supportMatchDis, int supportCnt, 
-    vector<SparseMatch> &inputMatches, Mat & outModels)
+    const vector<SparseMatch> &inputMatches, Mat & outModels)
 {
     int iterCnt = model_iter;
 
@@ -1673,133 +1912,23 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
 
     // prepare data
     vector<float> bestCost(spCnt);
-//#ifdef WITH_OPENMP
-//#pragma omp parallel for num_threads(8)
-//#endif
-    for (int i = 0; i < spCnt; i++) {
-        bestCost[i] = HypothesisEvaluation(
-            outModels.row(i),
-            &supportMatchIds[i * supportCnt],
-            &supportMatchDis[i * supportCnt],
-            supportCnt,
-            inputMatches,
-            inLierFlag.row(i));
-    }
-
-    // propation
-    vector<int> vFlags(spCnt);
-    for (int iter = 0; iter < iterCnt; iter++)
-    {
-        fill(vFlags.begin(), vFlags.end(), 0);
-
-        int startPos = 0, endPos = spCnt, step = 1;
-        if (iter % 2 == 1) {
-            startPos = spCnt - 1; endPos = -1; step = -1;
-        }
-
-        for (int idx = startPos; idx != endPos; idx += step) {
-            
-            if (idx >= 3 * (endPos + startPos) / 4) {
-                //break;
-            }
-
-            // propagate
-            for (int i = 0; i < spNN.cols; i++) {
-                int nb = spNN.at<int>(idx,i);
-                if (nb < 0) break;
-                if (!vFlags[nb]) continue;
-                Mat NNModel = outModels.row(nb);
-                //float* pNNModel = outModels.rowPtr(nb);
-                float cost = HypothesisEvaluation(
-                    outModels.row(nb),
-                    &supportMatchIds[idx * supportCnt],
-                    &supportMatchDis[idx * supportCnt],
-                    supportCnt,
-                    inputMatches,
-                    tmpInlierFlag);
-                if (cost < bestCost[idx]) 
-                {
-                    outModels.row(nb).copyTo(outModels.row(idx));
-                    tmpInlierFlag.copyTo(inLierFlag.row(idx));
-                    bestCost[idx] = cost;
-                }
-            }
-
-            // random test
-            int testCnt = 1;
-            for (int i = 0; i < testCnt; i++) {
-                if (HypothesisGeneration(&supportMatchIds[idx * supportCnt], supportCnt, inputMatches, tmpModel) == 0) 
-                {
-                    float cost = HypothesisEvaluation(
-                        tmpModel,
-                        &supportMatchIds[idx * supportCnt],
-                        &supportMatchDis[idx * supportCnt],
-                        supportCnt,
-                        inputMatches,
-                        tmpInlierFlag);
-                    if (cost < bestCost[idx]) 
-                    {
-                        tmpModel.copyTo(outModels.row(idx));
-                        tmpInlierFlag.copyTo(inLierFlag.row(idx));
-                        bestCost[idx] = cost;
-                    }
-                }
-            }
-
-            vFlags[idx] = 1;
-        }
-    }
-
+    parallel_for_(Range(0, spCnt), VerifyHypothesis_ParBody(*this, &bestCost[0], outModels, supportCnt, &supportMatchIds[0], &supportMatchDis[0], inputMatches, inLierFlag));
+  
+    parallel_for_(Range(0, iterCnt), GenerateHypothesis_ParBody(*this, &bestCost[0], outModels, supportCnt, spCnt, spNN, &supportMatchIds[0], &supportMatchDis[0], inputMatches, inLierFlag));
+   
     // refinement
-    if (refine_models) {
-        int averInlier = 0;
-#ifdef WITH_OPENMP
-#pragma omp parallel for num_threads(8)
-#endif
-        int minPtCnt = 30;
-        for (int i = 0; i < spCnt; i++) {
-            Mat pt1(supportCnt, 1, CV_32FC2);
-            Mat pt2(supportCnt, 1, CV_32FC2);
-            vector<int>   inlier_labels(supportCnt);
-            vector<float> inlier_distances(supportCnt);
-            Mat fitModel;
-
-            int* matNodes = &supportMatchIds[i * supportCnt];
-            float* matDis = &supportMatchDis[i * supportCnt];
-
-            int inlierCnt = 0;
-            for (int k = 0; k < supportCnt; k++) {
-                if (inLierFlag.at<int>(i, k))
-                {
-                    int matId = matNodes[k];
-                    //const SparseMatch & p = inputMatches[matId];
-                    //pt1.at<Point2f>(inlierCnt) = p.reference_image_pos;
-                    //pt2.at<Point2f>(inlierCnt) = p.target_image_pos;
-                    inlier_labels[inlierCnt] = matId;
-                    inlier_distances[inlierCnt] = GetWeightFromDistance(matDis[k]);
-                    inlierCnt++;
-                }
-            }
-            if (inlierCnt >= minPtCnt) 
-            {
-                Mat fitModel;
-                weightedLeastSquaresAffineFit(&inlier_labels[0], &inlier_distances[0], inlierCnt, 0.01f, &inputMatches[0], fitModel);
-               // fitModel = AffineFitting(pt1, pt2, wt, inlierCnt);
-                fitModel.reshape(1,1).copyTo(outModels.row(i));
-                
-            }
-            averInlier += inlierCnt;
-        }
-    }
-
+    if (refine_models) 
+        parallel_for_(Range(0, spCnt), RefineModels_ParBody(*this, outModels, supportCnt, &supportMatchIds[0], &supportMatchDis[0], inputMatches, inLierFlag));
+   
     return 0;
 }
 
 float RICInterpolatorImpl::GetWeightFromDistance(float dis)
 {
-    return exp(-dis / alpha);
+    return exp(-dis / (alpha * 1000));
 }
-float RICInterpolatorImpl::HypothesisEvaluation(Mat & inModel, int * matNodes, float * matDis, int matCnt, vector<SparseMatch> & inputMatches, Mat & outInLier)
+
+float RICInterpolatorImpl::HypothesisEvaluation(Mat & inModel, int * matNodes, float * matDis, int matCnt, const vector<SparseMatch> & inputMatches, Mat & outInLier)
 {
     float errTh = 5.;
 
@@ -1808,7 +1937,6 @@ float RICInterpolatorImpl::HypothesisEvaluation(Mat & inModel, int * matNodes, f
     double cost = 0;
     for (int k = 0; k < matCnt; k++) {
         int matId = matNodes[k];
-        //float* p = inputMatches.row(matId);
         const SparseMatch & p = inputMatches[matId];
         float x1 = p.reference_image_pos.x;
         float y1 = p.reference_image_pos.y;
@@ -1839,7 +1967,8 @@ float RICInterpolatorImpl::HypothesisEvaluation(Mat & inModel, int * matNodes, f
     }
     return cost;
 }
-int RICInterpolatorImpl::HypothesisGeneration(int* matNodes, int matCnt, vector<SparseMatch> & inputMatches, Mat & outModel)
+
+int RICInterpolatorImpl::HypothesisGeneration(int* matNodes, int matCnt, const vector<SparseMatch> & inputMatches, Mat & outModel)
 {
     if (matCnt < 3) 
     {
@@ -1897,42 +2026,8 @@ int RICInterpolatorImpl::HypothesisGeneration(int* matNodes, int matCnt, vector<
 
     return 0;
 }
-Mat RICInterpolatorImpl::AffineFitting(const Mat &pt1, const Mat &pt2, const Mat & weight, int ptCnt)
-{
-    // m11, m12, b1 
-    // m21, m22, b2
-    Mat param = Mat::zeros(6,1, CV_32FC1);
-
-    int cnt = ptCnt;
-   
-    if (pt1.rows < 6)
-        return param;
- 
-
-    // construct A
-    Mat A(2 * cnt, 6, CV_32FC1);
-    Mat b(2 * cnt, 1, CV_32FC1);
-    
-
-    for (int i = 0; i < cnt; i++) 
-    {
-        A.at<float>(i * 12 + 0) = weight.at<float>(i) * pt1.at<Point2f>(i).x;
-        A.at<float>(i * 12 + 1) = weight.at<float>(i) * pt1.at<Point2f>(i).y;
-        A.at<float>(i * 12 + 2) = weight.at<float>(i) * 1;
-
-        A.at<float>(i * 12 + 9) = weight.at<float>(i)  * pt1.at<Point2f>(i).x;
-        A.at<float>(i * 12 + 10) = weight.at<float>(i) * pt1.at<Point2f>(i).y;
-        A.at<float>(i * 12 + 11) = weight.at<float>(i) * 1;
-        
-        b.at<float>(2 * i) = weight.at<float>(i) * pt2.at<Point2f>(i).x;
-        b.at<float>(2 * i + 1) = weight.at<float>(i) * pt2.at<Point2f>(i).y;
-    }
-    solve(A, b, param, DECOMP_EIG);
-    param= param.reshape(1, 1);
-    param.convertTo(param, CV_32F);
-    return param;
-}
 CV_EXPORTS_W
+
 Ptr<RICInterpolator> createRICInterpolator()
 {
     return Ptr<RICInterpolator>(RICInterpolatorImpl::create());

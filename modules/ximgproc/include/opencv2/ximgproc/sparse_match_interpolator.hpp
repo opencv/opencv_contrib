@@ -135,9 +135,61 @@ public:
    model. Usually it should be around 128. However, lower values would make the interpolation
    noticeably faster.
     */
+    CV_WRAP virtual void setK(int val) = 0;
+    /** @see setK */
+    CV_WRAP virtual int  getK() = 0;
+    
     CV_WRAP virtual void setSuperpixelSize(int val) = 0;
     /** @see setK */
     CV_WRAP virtual int  getSuperpixelSize() = 0;
+
+    CV_WRAP virtual void setSuperpixelNNCnt(int val) = 0;
+    /** @see setK */
+    CV_WRAP virtual int  getSuperpixelNNCnt() = 0;
+
+    CV_WRAP virtual void setSuperpixelRuler(float val) = 0;
+    /** @see setK */
+    CV_WRAP virtual float  getSuperpixelRuler() = 0;
+    
+    CV_WRAP virtual void setSuperpixelMode(int val) = 0;
+    /** @see setK */
+    CV_WRAP virtual int  getSuperpixelMode() = 0;
+
+    CV_WRAP virtual void setAlpha(float val) = 0;
+    /** @see setK */
+    CV_WRAP virtual float  getAlpha() = 0;
+
+    CV_WRAP virtual void setModelIter(int val) = 0;
+    /** @see setK */
+    CV_WRAP virtual int  getModelIter() = 0;
+
+    CV_WRAP virtual void setRefineModels(bool val) = 0;
+    /** @see setK */
+    CV_WRAP virtual bool  getRefineModels() = 0;
+
+    CV_WRAP virtual void setMaxFlow(int val) = 0;
+    /** @see setK */
+    CV_WRAP virtual bool  getMaxFlow() = 0;
+
+    CV_WRAP virtual void setUseVariationalRefinement(bool val) = 0;
+    /** @see setK */
+    CV_WRAP virtual bool  getUseVariationalRefinement() = 0;
+    /** @brief Sets whether the fastGlobalSmootherFilter() post-processing is employed. It is turned on by
+    default.
+    */
+    CV_WRAP virtual void setUseGlobalSmootherFilter(bool val) = 0;
+    /** @see setUsePostProcessing */
+    CV_WRAP virtual bool getUseGlobalSmootherFilter() = 0;
+    /** @brief Sets the respective fastGlobalSmootherFilter() parameter.
+     */
+    CV_WRAP virtual void  setFGSLambda(float _lambda) = 0;
+    /** @see setFGSLambda */
+    CV_WRAP virtual float getFGSLambda() = 0;
+
+    /** @see setFGSLambda */
+    CV_WRAP virtual void  setFGSSigma(float _sigma) = 0;
+    /** @see setFGSLambda */
+    CV_WRAP virtual float getFGSSigma() = 0;
 };
 
 /** @brief Factory method that creates an instance of the
