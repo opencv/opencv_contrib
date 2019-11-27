@@ -335,11 +335,7 @@ public:
         {
             camman.reset(new OgreBites::CameraMan(camNode));
             camman->setStyle(OgreBites::CS_ORBIT);
-#if OGRE_VERSION >= ((1 << 16) | (11 << 8) | 5)
             camman->setFixedYaw(false);
-#else
-            camNode->setFixedYawAxis(true, Vector3::NEGATIVE_UNIT_Y); // OpenCV +Y in Ogre CS
-#endif
         }
 
         if (!app->sceneMgr)
@@ -579,7 +575,6 @@ public:
                            const Scalar& specularColour) CV_OVERRIDE
     {
         Light* light = sceneMgr->createLight(name);
-        light->setDirection(Vector3::NEGATIVE_UNIT_Z);
         // convert to BGR
         light->setDiffuseColour(ColourValue(diffuseColour[2], diffuseColour[1], diffuseColour[0]));
         light->setSpecularColour(ColourValue(specularColour[2], specularColour[1], specularColour[0]));
@@ -838,9 +833,7 @@ public:
 
     void fixCameraYawAxis(bool useFixed, InputArray _up) CV_OVERRIDE
     {
-#if OGRE_VERSION >= ((1 << 16) | (11 << 8) | 5)
         if(camman) camman->setFixedYaw(useFixed);
-#endif
 
         Vector3 up = Vector3::NEGATIVE_UNIT_Y;
         if (!_up.empty())
@@ -997,11 +990,7 @@ void setMaterialProperty(const String& name, int prop, const Scalar& val)
         rpass->setEmissive(col);
         break;
     case MATERIAL_LINE_WIDTH:
-#if OGRE_VERSION >= ((1 << 16) | (11 << 8) | 2)
         rpass->setLineWidth(val[0]);
-#else
-        CV_Error(Error::StsError, "needs OGRE 1.11.2+ for this");
-#endif
         break;
     default:
         CV_Error(Error::StsBadArg, "invalid or non Scalar property");
