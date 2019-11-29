@@ -262,7 +262,10 @@ void EdgeAwareInterpolatorImpl::preprocessData(Mat& src, vector<SparseMatch>& ma
     }
 
     if (costMap.empty())
+    {
+        costMap.create(h, w, CV_32FC1);
         computeGradientMagnitude(src, costMap);
+    }
     else
         CV_Assert(costMap.cols == w & costMap.rows == h);
     
@@ -1255,13 +1258,15 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
 
     Mat matDistanceMap(src_size, CV_32FC1);
     matDistanceMap.setTo(1e10);
-    Mat costMap(src_size, CV_32FC1);
     
     float lambda = 0.001f;
     float lambda2 = 999.0f;
     
     if (costMap.empty())
+    {
+        costMap.create(src_size, CV_32FC1);
         computeGradientMagnitude(src, costMap);
+    }
     else
         CV_Assert(costMap.rows == src.rows && costMap.cols == src.cols );
  
