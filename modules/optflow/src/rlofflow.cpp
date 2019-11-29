@@ -274,10 +274,10 @@ Ptr<DenseRLOFOpticalFlow> DenseRLOFOpticalFlow::create(
     InterpolationType interp_type,
     int epicK,
     float epicSigma,
-    float epicLambda, 
-    int ricSPSize, 
+    float epicLambda,
+    int ricSPSize,
     int ricSLICType,
-    bool use_post_proc, 
+    bool use_post_proc,
     float fgs_lambda,
     float fgs_sigma,
     bool use_variational_refinement)

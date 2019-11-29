@@ -259,7 +259,7 @@ int main( int argc, char** argv )
         algorithm = createOptFlow_DeepFlow();
     else if ( method == "sparsetodenseflow" )
         algorithm = createOptFlow_SparseToDense();
-    else if (method == "RLOF_EPIC") 
+    else if (method == "RLOF_EPIC")
     {
         algorithm = createOptFlow_DenseRLOF();
         Ptr<DenseRLOFOpticalFlow> rlof = algorithm.dynamicCast< DenseRLOFOpticalFlow>();
