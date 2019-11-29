@@ -157,7 +157,7 @@ int main( int argc, char** argv )
         int ndet = int(saliencyMap.size());
         std::cout << "Objectness done " << ndet << std::endl;
         // The result are sorted by objectness. We only use the first maxd boxes here.
-        int maxd = 7, step = 255 / maxd, jitter=9; // jitter to seperate single rects
+        int maxd = 7, step = 255 / maxd, jitter=9; // jitter to separate single rects
         Mat draw = image.clone();
         for (int i = 0; i < std::min(maxd, ndet); i++) {
           Vec4i bb = saliencyMap[i];

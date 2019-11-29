@@ -222,7 +222,7 @@ namespace cv
                     for (int j = n2 + 2; j <= width - n2 - 2; j++)
                     {
                         int c[nr_img];
-                        memset(c,0,nr_img);
+                        memset(c, 0, sizeof(c[0]) * nr_img);
                         for(int step = step_start; step <= step_end; step += step_inc)
                         {
                             for (int ii = - n2; ii <= + n2_stop; ii += step)

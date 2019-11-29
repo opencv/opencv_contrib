@@ -1,23 +1,19 @@
 set(the_description "OGRE 3D Visualiser.")
 
-find_package(OGRE 1.10 QUIET)
+find_package(OGRE QUIET)
 
 if(NOT OGRE_FOUND)
   message(STATUS "Module opencv_ovis disabled because OGRE3D was not found")
   ocv_module_disable(ovis)
-elseif(OGRE_VERSION VERSION_LESS 1.10 OR OGRE_VERSION VERSION_GREATER 2.0)
+elseif(OGRE_VERSION VERSION_LESS 1.11.5 OR OGRE_VERSION VERSION_GREATER 2.0)
   message(STATUS "Module opencv_ovis disabled because of incompatible OGRE3D version (${OGRE_VERSION})")
   ocv_module_disable(ovis)
-elseif(OGRE_VERSION VERSION_GREATER 1.10) # we need C++11 for OGRE 1.11
+else() # we need C++11 for OGRE 1.11
   if(MSVC)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qstd=c++11")
   else()
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
   endif()
-endif()
-
-if(OGRE_VERSION VERSION_LESS 1.10.10)
-    message(WARNING "opencv_ovis: Ogre >= 1.10.10 recommended for interactive windows")
 endif()
 
 include_directories(${OGRE_INCLUDE_DIRS})

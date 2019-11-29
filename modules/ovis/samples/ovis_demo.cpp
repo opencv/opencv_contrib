@@ -43,7 +43,7 @@ int main()
   owin->playEntityAnimation("sinbad", "IdleTop");
 
   //interaction scene
-  Ptr<ovis::WindowScene> iwin = ovis::createWindow(String("AR"), imsize, ovis::SCENE_SEPERATE | ovis::SCENE_INTERACTIVE);
+  Ptr<ovis::WindowScene> iwin = ovis::createWindow(String("AR"), imsize, ovis::SCENE_SEPARATE | ovis::SCENE_INTERACTIVE);
   iwin->createEntity("sinbad", "Sinbad.mesh", Vec3i(0, -5, 0), Vec3f(CV_PI, 0.0, 0.0));
   iwin->createLightEntity("sun", Vec3i(0, 0, -100));
   iwin->setCameraIntrinsics(K, imsize);

@@ -10,11 +10,20 @@ using namespace cv::datasets;
 int main(int argc, char *argv[])
 {
     const char *keys =
-            "{ help h usage ? |    | show this message }"
-            "{ path p         |true| path to dataset }";
+            "{ help h usage ? |     | show this message }"
+            "{ path p         |true | path to dataset }"
+            "{ save s         |false| save resized positive images }"
+            "{ rwidth rw      |64   | width of resized positive images }"
+            "{ rheight rh     |128  | height of resized positive images }"
+            "{ padding        |8    | vertical padding of resized positive images }";
 
     CommandLineParser parser(argc, argv, keys);
+    bool savebbox = parser.get<bool>("save");
+    int rwidth = parser.get<int>("rwidth");
+    int rheight = parser.get<int>("rheight");
+    int padding = parser.get<int>("padding");
     string path(parser.get<string>("path"));
+
     if (parser.has("help") || path=="true")
     {
         parser.printMessage();
@@ -28,6 +37,8 @@ int main(int argc, char *argv[])
     size_t test_size = dataset->getTest().size();
     cout << "train size: " << train_size << endl;
     cout << "test size: " << test_size << endl;
+
+    int bbox_count = 0;
 
     for( size_t i = 0; i < train_size; i++ )
     {
@@ -46,18 +57,42 @@ int main(int argc, char *argv[])
         // bounding boxes
         for ( size_t j = 0; j < example->bndboxes.size(); j++ )
         {
-            cout << "object " << j << endl;
-            int x = example->bndboxes[j].x;
-            int y = example->bndboxes[j].y;
-            cout << "  - xmin = " << x << endl;
-            cout << "  - ymin = " << y << endl;
-            cout << "  - xmax = " << example->bndboxes[j].width + x << endl;
-            cout << "  - ymax = " << example->bndboxes[j].height + y << endl;
-            rectangle( img, example->bndboxes[j], Scalar( 0, 0, 255 ), 2 );
+            Rect obj_bndbox = example->bndboxes[j]; // bounding box of object
+            cout << "  - bounding box: " << j << " - " << obj_bndbox << endl;
+
+            int vpadding, hpadding;
+            Rect ex_bndbox; // variable used for calculating expanded bounding box
+
+            vpadding = cvRound(padding * obj_bndbox.height / rheight); // calculate vertical padding
+            ex_bndbox.y = obj_bndbox.y - vpadding;
+            ex_bndbox.height = 2 * vpadding + obj_bndbox.height;
+            ex_bndbox.x = obj_bndbox.x + (obj_bndbox.width / 2);
+            ex_bndbox.width = ex_bndbox.height * rwidth / rheight;
+            ex_bndbox.x -= (ex_bndbox.width + 1) / 2;
+
+            if (obj_bndbox.width > ex_bndbox.width)
+            {
+                obj_bndbox.x += (obj_bndbox.width - ex_bndbox.width + 1) / 2;
+                obj_bndbox.width = ex_bndbox.width;
+            }
+
+            hpadding = obj_bndbox.x - ex_bndbox.x; // calculate horizontal padding
+
+            if(savebbox)
+            {
+                Mat dst;
+                copyMakeBorder(img(obj_bndbox), dst, vpadding, vpadding, hpadding, hpadding, BORDER_REFLECT);
+                resize(dst, dst, Size(rwidth, rheight), 0, 0, INTER_AREA);
+                imwrite(path + format("person_%04d.png", bbox_count++), dst);
+            }
+            else
+                rectangle(img, obj_bndbox, Scalar(0, 0, 255), 2);
         }
 
-        imshow("INRIAPerson Dataset Train Images", img);
+        if (savebbox)
+            continue; // skip UI updates
 
+        imshow("INRIAPerson Dataset Train Images", img);
         cout << "\nPress a key to continue or ESC to exit." << endl;
         int key = waitKey();
         if( key == 27 ) break;

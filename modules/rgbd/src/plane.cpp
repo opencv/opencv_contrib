@@ -501,6 +501,28 @@ private:
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+  RgbdPlane::RgbdPlane(int method, int block_size,
+                     int min_size, double threshold, double sensor_error_a,
+                     double sensor_error_b, double sensor_error_c) :
+                     method_(method),
+                     block_size_(block_size),
+                     min_size_(min_size),
+                     threshold_(threshold),
+                     sensor_error_a_(sensor_error_a),
+                     sensor_error_b_(sensor_error_b),
+                     sensor_error_c_(sensor_error_c)
+  {}
+
+  Ptr<RgbdPlane> RgbdPlane::create(int method, int block_size, int min_size, double threshold,
+                                 double sensor_error_a, double sensor_error_b,
+                                 double sensor_error_c ) {
+    return makePtr<RgbdPlane>(method, block_size, min_size, threshold,
+                              sensor_error_a, sensor_error_b, sensor_error_c);
+  }
+
+  RgbdPlane::~RgbdPlane()
+  {}
+
   void
   RgbdPlane::operator()(InputArray points3d_in, OutputArray mask_out, OutputArray plane_coefficients)
   {
@@ -555,8 +577,8 @@ private:
         plane = Ptr<PlaneBase>(new PlaneABC(plane_grid.m_(y, x), n, (int)index_plane,
 			(float)sensor_error_a_, (float)sensor_error_b_, (float)sensor_error_c_));
 
-      Mat_<unsigned char> plane_mask = Mat_<unsigned char>::zeros(points3d.rows / block_size_,
-                                                                          points3d.cols / block_size_);
+      Mat_<unsigned char> plane_mask = Mat_<unsigned char>::zeros(divUp(points3d.rows, block_size_),
+                                                                  divUp(points3d.cols, block_size_));
       std::set<TileQueue::PlaneTile> neighboring_tiles;
       neighboring_tiles.insert(front_tile);
       plane_queue.remove(front_tile.y_, front_tile.x_);

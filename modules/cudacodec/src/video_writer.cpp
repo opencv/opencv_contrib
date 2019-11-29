@@ -54,11 +54,11 @@ cv::cudacodec::EncoderParams::EncoderParams(const String&) { throw_no_cuda(); }
 void cv::cudacodec::EncoderParams::load(const String&) { throw_no_cuda(); }
 void cv::cudacodec::EncoderParams::save(const String&) const { throw_no_cuda(); }
 
-Ptr<VideoWriter> cv::cudacodec::createVideoWriter(const String&, Size, double, SurfaceFormat) { throw_no_cuda(); return Ptr<VideoWriter>(); }
-Ptr<VideoWriter> cv::cudacodec::createVideoWriter(const String&, Size, double, const EncoderParams&, SurfaceFormat) { throw_no_cuda(); return Ptr<VideoWriter>(); }
+Ptr<cv::cudacodec::VideoWriter> cv::cudacodec::createVideoWriter(const String&, Size, double, SurfaceFormat) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
+Ptr<cv::cudacodec::VideoWriter> cv::cudacodec::createVideoWriter(const String&, Size, double, const EncoderParams&, SurfaceFormat) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
 
-Ptr<VideoWriter> cv::cudacodec::createVideoWriter(const Ptr<EncoderCallBack>&, Size, double, SurfaceFormat) { throw_no_cuda(); return Ptr<VideoWriter>(); }
-Ptr<VideoWriter> cv::cudacodec::createVideoWriter(const Ptr<EncoderCallBack>&, Size, double, const EncoderParams&, SurfaceFormat) { throw_no_cuda(); return Ptr<VideoWriter>(); }
+Ptr<cv::cudacodec::VideoWriter> cv::cudacodec::createVideoWriter(const Ptr<EncoderCallBack>&, Size, double, SurfaceFormat) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
+Ptr<cv::cudacodec::VideoWriter> cv::cudacodec::createVideoWriter(const Ptr<EncoderCallBack>&, Size, double, const EncoderParams&, SurfaceFormat) { throw_no_cuda(); return Ptr<cv::cudacodec::VideoWriter>(); }
 
 #else // !defined HAVE_NVCUVENC || !defined _WIN32
 
@@ -913,4 +913,4 @@ Ptr<VideoWriter> cv::cudacodec::createVideoWriter(const Ptr<EncoderCallBack>& en
     return makePtr<VideoWriterImpl>(encoderCallback, frameSize, fps, params, format);
 }
 
-#endif // !defined HAVE_NVCUVENC || !defined _WIN32
+#endif // !defined HAVE_NVCUVENC || !defined _WIN32 || defined HAVE_FFMPEG_WRAPPER

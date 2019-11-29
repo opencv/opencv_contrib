@@ -29,26 +29,29 @@ protected:
     {
         for(int k = 0; k < nbrTextBoxes; k++)
         {
-            float x_min = buffer[k*nCol + 3]*inputShape.width;
-            float y_min = buffer[k*nCol + 4]*inputShape.height;
+            float confidence_ = buffer[k*nCol + 2];
+            if (confidence_ <= FLT_EPSILON) continue;
 
-            float x_max = buffer[k*nCol + 5]*inputShape.width;
-            float y_max = buffer[k*nCol + 6]*inputShape.height;
+            float x_min_f = buffer[k*nCol + 3]*inputShape.width;
+            float y_min_f = buffer[k*nCol + 4]*inputShape.height;
 
-            CV_CheckLT(x_min, x_max, "");
-            CV_CheckLT(y_min, y_max, "");
+            float x_max_f = buffer[k*nCol + 5]*inputShape.width;
+            float y_max_f = buffer[k*nCol + 6]*inputShape.height;
 
-            x_min = std::max(0.f, x_min);
-            y_min = std::max(0.f, y_min);
+            int x_min = cvRound(std::max(0.f, x_min_f));
+            int y_min = cvRound(std::max(0.f, y_min_f));
 
-            x_max = std::min(inputShape.width - 1.f,  x_max);
-            y_max = std::min(inputShape.height - 1.f,  y_max);
+            int x_max = std::min(inputShape.width - 1,  cvRound(x_max_f));
+            int y_max = std::min(inputShape.height - 1,  cvRound(y_max_f));
 
-            int wd = cvRound(x_max - x_min);
-            int ht = cvRound(y_max - y_min);
+            if (x_min >= x_max) continue;
+            if (y_min >= y_max) continue;
 
-            Bbox.push_back(Rect(cvRound(x_min), cvRound(y_min), wd, ht));
-            confidence.push_back(buffer[k*nCol + 2]);
+            int wd = x_max - x_min;
+            int ht = y_max - y_min;
+
+            Bbox.push_back(Rect(x_min, y_min, wd, ht));
+            confidence.push_back(confidence_);
         }
     }
 

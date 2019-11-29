@@ -171,6 +171,14 @@ static SceneNode& _getSceneNode(SceneManager* sceneMgr, const String& name)
     return *mo->getParentSceneNode();
 }
 
+static ColourValue convertColor(const Scalar& val)
+{
+    // BGR 0..255 (uchar) to RGB 0..1
+    ColourValue ret = ColourValue(val[2], val[1], val[0]) / 255;
+    ret.saturate();
+    return ret;
+}
+
 struct Application : public OgreBites::ApplicationContext, public OgreBites::InputListener
 {
     Ptr<LogManager> logMgr;
@@ -238,6 +246,20 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
         return ret;
     }
 
+#if OGRE_VERSION < ((1 << 16) | (12 << 8) | 3)
+    void destroyWindow(const Ogre::String& name)
+    {
+        for (auto it = mWindows.begin(); it != mWindows.end(); ++it)
+        {
+            if (it->render->getName() != name)
+                continue;
+            mRoot->destroyRenderTarget(it->render);
+            mWindows.erase(it);
+            return;
+        }
+    }
+#endif
+
     size_t numWindows() const { return mWindows.size(); }
 
     void locateResources() CV_OVERRIDE
@@ -275,7 +297,7 @@ class WindowSceneImpl : public WindowScene
     Root* root;
     SceneManager* sceneMgr;
     SceneNode* camNode;
-    RenderWindow* rWin;
+    RenderTarget* rWin;
     Ptr<OgreBites::CameraMan> camman;
     Ptr<Rectangle2D> bgplane;
     std::unordered_map<AnimationState*, Controller<Real>*> frameCtrlrs;
@@ -288,10 +310,10 @@ public:
     {
         if (!app->sceneMgr)
         {
-            flags |= SCENE_SEPERATE;
+            flags |= SCENE_SEPARATE;
         }
 
-        if (flags & SCENE_SEPERATE)
+        if (flags & SCENE_SEPARATE)
         {
             sceneMgr = root->createSceneManager("DefaultSceneManager", title);
             RTShader::ShaderGenerator& shadergen = RTShader::ShaderGenerator::getSingleton();
@@ -321,19 +343,26 @@ public:
         {
             camman.reset(new OgreBites::CameraMan(camNode));
             camman->setStyle(OgreBites::CS_ORBIT);
-#if OGRE_VERSION >= ((1 << 16) | (11 << 8) | 5)
             camman->setFixedYaw(false);
-#else
-            camNode->setFixedYawAxis(true, Vector3::NEGATIVE_UNIT_Y); // OpenCV +Y in Ogre CS
-#endif
         }
 
         if (!app->sceneMgr)
         {
+            CV_Assert((flags & SCENE_OFFSCREEN) == 0 && "off-screen rendering for main window not supported");
+
             app->sceneMgr = sceneMgr;
             rWin = app->getRenderWindow();
             if (camman)
                 app->addInputListener(camman.get());
+        }
+        else if (flags & SCENE_OFFSCREEN)
+        {
+            // render into an offscreen texture
+            TexturePtr tex = TextureManager::getSingleton().createManual(
+                title, RESOURCEGROUP_NAME, TEX_TYPE_2D, sz.width, sz.height, 0, PF_BYTE_RGB,
+                TU_RENDERTARGET, NULL, false, flags & SCENE_AA ? 4 : 0);
+            rWin = tex->getBuffer()->getRenderTarget();
+            rWin->setAutoUpdated(false); // only update when requested
         }
         else
         {
@@ -348,7 +377,7 @@ public:
 
     ~WindowSceneImpl()
     {
-        if (flags & SCENE_SEPERATE)
+        if (flags & SCENE_SEPARATE)
         {
             TextureManager& texMgr =  TextureManager::getSingleton();
 
@@ -364,12 +393,16 @@ public:
             }
         }
 
-        if(_app->sceneMgr == sceneMgr && (flags & SCENE_SEPERATE))
+        if(_app->sceneMgr == sceneMgr && (flags & SCENE_SEPARATE))
         {
             // this is the root window owning the context
             CV_Assert(_app->numWindows() == 1 && "the first OVIS window must be deleted last");
             _app->closeApp();
             _app.release();
+        }
+        else
+        {
+            _app->destroyWindow(title);
         }
     }
 
@@ -446,6 +479,9 @@ public:
         case PF_BYTE_RGBA:
             dst_type = CV_8UC4;
             break;
+#if OGRE_VERSION >= ((1 << 16) | (12 << 8) | 3)
+        case PF_DEPTH32F:
+#endif
         case PF_FLOAT32_R:
             dst_type = CV_32F;
             break;
@@ -480,10 +516,7 @@ public:
     {
         // hide background plane
         bgplane->setVisible(false);
-
-        // BGRA as uchar
-        ColourValue _color = ColourValue(color[2], color[1], color[0], color[3]) / 255;
-        rWin->getViewport(0)->setBackgroundColour(_color);
+        rWin->getViewport(0)->setBackgroundColour(convertColor(color));
     }
 
     void createEntity(const String& name, const String& meshname, InputArray tvec, InputArray rot) CV_OVERRIDE
@@ -547,7 +580,6 @@ public:
                            const Scalar& specularColour) CV_OVERRIDE
     {
         Light* light = sceneMgr->createLight(name);
-        light->setDirection(Vector3::NEGATIVE_UNIT_Z);
         // convert to BGR
         light->setDiffuseColour(ColourValue(diffuseColour[2], diffuseColour[1], diffuseColour[0]));
         light->setSpecularColour(ColourValue(specularColour[2], specularColour[1], specularColour[0]));
@@ -799,11 +831,14 @@ public:
         ndc = (2 * f * n) / ndc;
     }
 
+    void update()
+    {
+        rWin->update(false);
+    }
+
     void fixCameraYawAxis(bool useFixed, InputArray _up) CV_OVERRIDE
     {
-#if OGRE_VERSION >= ((1 << 16) | (11 << 8) | 5)
         if(camman) camman->setFixedYaw(useFixed);
-#endif
 
         Vector3 up = Vector3::NEGATIVE_UNIT_Y;
         if (!_up.empty())
@@ -902,6 +937,7 @@ public:
 
 CV_EXPORTS_W void addResourceLocation(const String& path)
 {
+    CV_Assert(!_app && "must be called before the first createWindow");
     _extraResourceLocations.insert(Ogre::StringUtil::normalizeFilePath(path, false));
 }
 
@@ -939,8 +975,8 @@ void setMaterialProperty(const String& name, int prop, const Scalar& val)
     CV_Assert(mat);
 
     Pass* rpass = mat->getTechniques()[0]->getPasses()[0];
-    ColourValue col;
 
+    ColourValue col;
     switch (prop)
     {
     case MATERIAL_POINT_SIZE:
@@ -953,17 +989,16 @@ void setMaterialProperty(const String& name, int prop, const Scalar& val)
         rpass->setSceneBlending(SBT_TRANSPARENT_ALPHA);
         rpass->setDepthWriteEnabled(false);
         break;
+    case MATERIAL_DIFFUSE:
+        col = convertColor(val);
+        col.a = rpass->getDiffuse().a;
+        rpass->setDiffuse(col);
+        break;
     case MATERIAL_EMISSIVE:
-        col = ColourValue(val[2], val[1], val[0]) / 255; // BGR as uchar
-        col.saturate();
-        rpass->setEmissive(col);
+        rpass->setEmissive(convertColor(val));
         break;
     case MATERIAL_LINE_WIDTH:
-#if OGRE_VERSION >= ((1 << 16) | (11 << 8) | 2)
         rpass->setLineWidth(val[0]);
-#else
-        CV_Error(Error::StsError, "needs OGRE 1.11.2+ for this");
-#endif
         break;
     default:
         CV_Error(Error::StsBadArg, "invalid or non Scalar property");
