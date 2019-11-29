@@ -77,6 +77,18 @@ estimator from @cite Revaud2015 and Fast Global Smoother as post-processing filt
 class CV_EXPORTS_W EdgeAwareInterpolator : public SparseMatchInterpolator
 {
 public:
+    /** @brief Interface to provide a more elaborated cost map, i.e. edge map, for the edge-aware term.
+     *  This implementation is based on a rather simple gradient-based edge map estimation.
+     *  To used more complex edge map estimator (e.g. StructuredEdgeDetection that has been
+     *  used in the original publication) that may lead to improved accuracies, the internal
+     *  edge map estimation can be bypassed here.
+     *  @param _costMap a type CV_32FC1 Mat is required.
+     *  @see cv::ximgproc::createSuperpixelSLIC
+    */
+    CV_WRAP virtual void setCostMap(const Mat & _costMap) = 0;
+    /** @brief Parameter to tune the approximate size of the superpixel used for oversegmentation.
+     *  @see cv::ximgproc::createSuperpixelSLIC
+    */
     /** @brief K is a number of nearest-neighbor matches considered, when fitting a locally affine
     model. Usually it should be around 128. However, lower values would make the interpolation
     noticeably faster.
@@ -143,9 +155,18 @@ public:
      *    @see setK
      */
     CV_WRAP virtual int  getK() const = 0;
-    /** @brief Parameter to tune the approximate size of the superpixel used for oversegmentation.
+    /** @brief Interface to provide a more elaborated cost map, i.e. edge map, for the edge-aware term.
+     *  This implementation is based on a rather simple gradient-based edge map estimation. 
+     *  To used more complex edge map estimator (e.g. StructuredEdgeDetection that has been 
+     *  used in the original publication) that may lead to improved accuracies, the internal 
+     *  edge map estimation can be bypassed here.
+     *  @param _costMap a type CV_32FC1 Mat is required.
      *  @see cv::ximgproc::createSuperpixelSLIC
     */
+    CV_WRAP virtual void setCostMap(const Mat & _costMap) = 0;
+    /** @brief Get the internal cost, i.e. edge map, used for estimating the edge-aware term.
+     *    @see setCostMap
+     */
     CV_WRAP virtual void setSuperpixelSize(int _spSize = 15) = 0;
     /** @copybrief setSuperpixelSize
      *    @see setSuperpixelSize

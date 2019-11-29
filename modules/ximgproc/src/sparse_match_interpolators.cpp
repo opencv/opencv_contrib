@@ -35,7 +35,6 @@
  */
 
 #include "precomp.hpp"
-#include "opencv2/highgui.hpp"
 #include "opencv2/ximgproc/sparse_match_interpolator.hpp"
 #include "opencv2/video.hpp"
 #include <algorithm>
@@ -123,7 +122,7 @@ protected:
     Mat NNlabels;
     Mat NNdistances;
     Mat labels;
-
+    Mat costMap;
     //tunable parameters:
     float lambda;
     int k;
@@ -173,6 +172,7 @@ protected:
     };
 
 public:
+    void setCostMap(const Mat & _costMap) CV_OVERRIDE { _costMap.copyTo(costMap); }
     void  setK(int _k) CV_OVERRIDE {k=_k;}
     int   getK() CV_OVERRIDE {return k;}
     void  setSigma(float _sigma) CV_OVERRIDE {sigma=_sigma;}
@@ -196,6 +196,7 @@ void EdgeAwareInterpolatorImpl::init()
     fgs_lambda    = 500.0f;
     fgs_sigma     = 1.5f;
     regularization_coef = 0.01f;
+    costMap = Mat();
 }
 
 Ptr<EdgeAwareInterpolatorImpl> EdgeAwareInterpolatorImpl::create()
@@ -241,13 +242,13 @@ void EdgeAwareInterpolatorImpl::interpolate(InputArray from_image, InputArray fr
     if(use_post_proc)
         fastGlobalSmootherFilter(src,dst,dst,fgs_lambda,fgs_sigma);
 
+    costMap = Mat();
     delete[] g;
 }
 
 void EdgeAwareInterpolatorImpl::preprocessData(Mat& src, vector<SparseMatch>& matches)
 {
     Mat distances(h,w,CV_32F);
-    Mat cost_map (h,w,CV_32F);
     distances = Scalar(INF);
 
     int x,y;
@@ -260,11 +261,15 @@ void EdgeAwareInterpolatorImpl::preprocessData(Mat& src, vector<SparseMatch>& ma
         labels.at<int>(y,x) = (int)i;
     }
 
-    computeGradientMagnitude(src,cost_map);
-    cost_map = (1000.0f-lambda) + lambda*cost_map;
+    if (costMap.empty())
+        computeGradientMagnitude(src, costMap);
+    else
+        CV_Assert(costMap.cols == w & costMap.rows == h);
+    
+    costMap = (1000.0f-lambda) + lambda* costMap;
 
-    geodesicDistanceTransform(distances,cost_map);
-    buildGraph(distances,cost_map);
+    geodesicDistanceTransform(distances, costMap);
+    buildGraph(distances, costMap);
     parallel_for_(Range(0,getNumThreads()),GetKNNMatches_ParBody(*this,getNumThreads()));
 }
 
@@ -904,6 +909,7 @@ protected:
     Mat NNlabels;
     Mat NNdistances;
     Mat labels;
+    Mat costMap;
     static const int distance_transform_num_iter = 1;
     
     //tunable parameters:
@@ -1044,6 +1050,7 @@ protected:
     int HypothesisGeneration(int* matNodes, int matCnt, const vector<SparseMatch> & inputMatches, Mat & outModel);
 
 public:
+    void setCostMap(const Mat & _costMap) CV_OVERRIDE { _costMap.copyTo(costMap); }
     void setK(int val) CV_OVERRIDE { max_neighbors  = val; }
     int  getK() const CV_OVERRIDE { return max_neighbors; }
     void setSuperpixelSize(int val) CV_OVERRIDE { sp_size = val; }
@@ -1094,6 +1101,7 @@ void RICInterpolatorImpl::init()
     fgs_lambda = 500.0f;
     fgs_sigma = 1.5f;
     slic_type = SLIC;
+    costMap = Mat();
 }
 
 struct MinHeap
@@ -1252,7 +1260,11 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
     float lambda = 0.001f;
     float lambda2 = 999.0f;
     
-    computeGradientMagnitude(src, costMap);
+    if (costMap.empty())
+        computeGradientMagnitude(src, costMap);
+    else
+        CV_Assert(costMap.rows == src.rows && costMap.cols == src.cols );
+ 
     costMap = (1000.0f - lambda2) + lambda2 * costMap;
            
     for (unsigned int i = 0; i < matches_vector.size(); i++)
@@ -1365,6 +1377,7 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
             cvtColor(src, prevGrey, COLOR_BGR2GRAY);
         fastGlobalSmootherFilter(prevGrey, dst, dst, fgs_lambda, fgs_sigma);
     }
+    costMap = Mat();
     delete[] g;
 }
 
