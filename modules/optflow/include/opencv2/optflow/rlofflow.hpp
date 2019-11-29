@@ -38,7 +38,8 @@ enum InterpolationType
  *
  * The RLOF is a fast local optical flow approach described in @cite Senst2012 @cite Senst2013 @cite Senst2014
  * and @cite Senst2016 similar to the pyramidal iterative Lucas-Kanade method as
- * proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK().
+ * proposed by @cite Bouguet00. More details and experiments can be found in the following thesis @cite Senst2019.
+ * The implementation is derived from optflow::calcOpticalFlowPyrLK().
  * This RLOF implementation can be seen as an improved pyramidal iterative Lucas-Kanade and includes
  * a set of improving modules. The main improvements in respect to the pyramidal iterative Lucas-Kanade
  * are:
@@ -201,7 +202,8 @@ public:
  *
  * The RLOF is a fast local optical flow approach described in @cite Senst2012 @cite Senst2013 @cite Senst2014
  * and @cite Senst2016 similar to the pyramidal iterative Lucas-Kanade method as
- * proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK().
+ * proposed by @cite Bouguet00. More details and experiments can be found in the following thesis @cite Senst2019.
+ * The implementation is derived from optflow::calcOpticalFlowPyrLK().
  *
  * The sparse-to-dense interpolation scheme allows for fast computation of dense optical flow using RLOF (see @cite Geistert2016).
  * For this scheme the following steps are applied:
@@ -378,7 +380,7 @@ public:
         int epicK = 128,
         float epicSigma = 0.05f,
         float epicLambda = 999.0f,
-        int ricSPSize = 15, 
+        int ricSPSize = 15,
         int ricSLICType = 100,
         bool use_post_proc = true,
         float fgsLambda = 500.0f,
@@ -390,7 +392,8 @@ public:
 *
 * The RLOF is a fast local optical flow approach described in @cite Senst2012 @cite Senst2013 @cite Senst2014
  * and @cite Senst2016 similar to the pyramidal iterative Lucas-Kanade method as
-* proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK().
+* proposed by @cite Bouguet00. More details and experiments can be found in the following thesis @cite Senst2019.
+* The implementation is derived from optflow::calcOpticalFlowPyrLK().
 *
 * For the RLOF configuration see optflow::RLOFOpticalFlowParameter for further details.
 * Parameters have been described in @cite Senst2012, @cite Senst2013, @cite Senst2014 and @cite Senst2016.
@@ -437,7 +440,8 @@ public:
  *
  * The RLOF is a fast local optical flow approach described in @cite Senst2012 @cite Senst2013 @cite Senst2014
  * and @cite Senst2016 similar to the pyramidal iterative Lucas-Kanade method as
- * proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK().
+ * proposed by @cite Bouguet00. More details and experiments can be found in the following thesis @cite Senst2019.
+ * The implementation is derived from optflow::calcOpticalFlowPyrLK().
  *
  * The sparse-to-dense interpolation scheme allows for fast computation of dense optical flow using RLOF (see @cite Geistert2016).
  * For this scheme the following steps are applied:
@@ -491,7 +495,7 @@ CV_EXPORTS_W void calcOpticalFlowDenseRLOF(InputArray I0, InputArray I1, InputOu
     InterpolationType interp_type = InterpolationType::INTERP_EPIC,
     int epicK = 128, float epicSigma = 0.05f, float epicLambda = 100.f,
     int ricSPSize = 15, int ricSLICType = 100,
-    bool use_post_proc = true, float fgsLambda = 500.0f, float fgsSigma = 1.5f, 
+    bool use_post_proc = true, float fgsLambda = 500.0f, float fgsSigma = 1.5f,
     bool use_variational_refinement = false);
 
 /** @brief Calculates fast optical flow for a sparse feature set using the robust local optical flow (RLOF) similar
@@ -499,7 +503,8 @@ CV_EXPORTS_W void calcOpticalFlowDenseRLOF(InputArray I0, InputArray I1, InputOu
 *
 * The RLOF is a fast local optical flow approach described in @cite Senst2012 @cite Senst2013 @cite Senst2014
  * and @cite Senst2016 similar to the pyramidal iterative Lucas-Kanade method as
-* proposed by @cite Bouguet00. The implementation is derived from optflow::calcOpticalFlowPyrLK().
+* proposed by @cite Bouguet00. More details and experiments can be found in the following thesis @cite Senst2019.
+* The implementation is derived from optflow::calcOpticalFlowPyrLK().
 *
 * @param prevImg first 8-bit input image. If The cross-based RLOF is used (by selecting optflow::RLOFOpticalFlowParameter::supportRegionType
 * = SupportRegionType::SR_CROSS) image has to be a 8-bit 3 channel image.

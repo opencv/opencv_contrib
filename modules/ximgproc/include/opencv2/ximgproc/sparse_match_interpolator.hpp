@@ -156,9 +156,9 @@ public:
      */
     CV_WRAP virtual int  getK() const = 0;
     /** @brief Interface to provide a more elaborated cost map, i.e. edge map, for the edge-aware term.
-     *  This implementation is based on a rather simple gradient-based edge map estimation. 
-     *  To used more complex edge map estimator (e.g. StructuredEdgeDetection that has been 
-     *  used in the original publication) that may lead to improved accuracies, the internal 
+     *  This implementation is based on a rather simple gradient-based edge map estimation.
+     *  To used more complex edge map estimator (e.g. StructuredEdgeDetection that has been
+     *  used in the original publication) that may lead to improved accuracies, the internal
      *  edge map estimation can be bypassed here.
      *  @param _costMap a type CV_32FC1 Mat is required.
      *  @see cv::ximgproc::createSuperpixelSLIC
@@ -173,7 +173,7 @@ public:
      */
     CV_WRAP virtual int  getSuperpixelSize() const = 0;
     /** @brief Parameter defines the number of nearest-neighbor matches for each superpixel considered, when fitting a locally affine
-     *model. 
+     *model.
     */
     CV_WRAP virtual void setSuperpixelNNCnt(int _spNN = 150) = 0;
     /** @copybrief setSuperpixelNNCnt
@@ -188,7 +188,7 @@ public:
      *    @see setSuperpixelRuler
      */
     CV_WRAP virtual float  getSuperpixelRuler() const = 0;
-    /** @brief Parameter to choose superpixel algorithm variant to use: 
+    /** @brief Parameter to choose superpixel algorithm variant to use:
      * - cv::ximgproc::SLICType SLIC segments image using a desired region_size (value: 100)
      * - cv::ximgproc::SLICType SLICO will optimize using adaptive compactness factor (value: 101)
      * - cv::ximgproc::SLICType MSLIC will optimize using manifold methods resulting in more content-sensitive superpixels (value: 102).
@@ -246,7 +246,7 @@ public:
      */ 
     CV_WRAP virtual void  setFGSLambda(float _lambda = 500.f) = 0;
     /**  @copybrief setFGSLambda
-     *     @see setFGSLambda 
+     *     @see setFGSLambda
      */
     CV_WRAP virtual float getFGSLambda() const = 0;
     /** @brief Sets the respective fastGlobalSmootherFilter() parameter.
