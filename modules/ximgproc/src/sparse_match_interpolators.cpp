@@ -1045,31 +1045,31 @@ protected:
 
 public:
     void setK(int val) CV_OVERRIDE { max_neighbors  = val; }
-    int  getK() CV_OVERRIDE { return max_neighbors; }
+    int  getK() const CV_OVERRIDE { return max_neighbors; }
     void setSuperpixelSize(int val) CV_OVERRIDE { sp_size = val; }
-    int  getSuperpixelSize() CV_OVERRIDE { return sp_size; }
+    int  getSuperpixelSize() const CV_OVERRIDE { return sp_size; }
     void setSuperpixelNNCnt(int val) CV_OVERRIDE { sp_nncnt = val; }
-    int  getSuperpixelNNCnt() CV_OVERRIDE { return sp_nncnt; }
+    int  getSuperpixelNNCnt() const CV_OVERRIDE { return sp_nncnt; }
     void setSuperpixelRuler(float val) CV_OVERRIDE { sp_ruler = val; }
-    float getSuperpixelRuler() CV_OVERRIDE { return sp_ruler; }
+    float getSuperpixelRuler() const CV_OVERRIDE { return sp_ruler; }
     void setSuperpixelMode(int val) CV_OVERRIDE { slic_type = static_cast<SLICType>(val); }
-    int  getSuperpixelMode() CV_OVERRIDE { return slic_type; }
+    int  getSuperpixelMode() const CV_OVERRIDE { return slic_type; }
     void setAlpha(float val) CV_OVERRIDE { alpha = val; }
-    float getAlpha() CV_OVERRIDE { return alpha; }
+    float getAlpha() const CV_OVERRIDE { return alpha; }
     void setModelIter(int val) CV_OVERRIDE { model_iter = val; }
-    int  getModelIter() CV_OVERRIDE { return model_iter; }
+    int  getModelIter() const CV_OVERRIDE { return model_iter; }
     void setRefineModels(bool val) CV_OVERRIDE { refine_models = static_cast<int>(val); }
-    bool getRefineModels() CV_OVERRIDE { return refine_models; }
-    void setMaxFlow(int val) CV_OVERRIDE { max_flow = val; }
-    bool getMaxFlow() CV_OVERRIDE { return max_flow; }
+    bool getRefineModels() const CV_OVERRIDE { return refine_models; }
+    void setMaxFlow(float val) CV_OVERRIDE { max_flow = val; }
+    float getMaxFlow() const CV_OVERRIDE { return max_flow; }
     void setUseVariationalRefinement(bool val) CV_OVERRIDE { use_variational_refinement = val; }
-    bool getUseVariationalRefinement() CV_OVERRIDE { return use_variational_refinement; }
+    bool getUseVariationalRefinement() const CV_OVERRIDE { return use_variational_refinement; }
     void  setUseGlobalSmootherFilter(bool val) CV_OVERRIDE { use_global_smoother_filter = val; }
-    bool  getUseGlobalSmootherFilter() CV_OVERRIDE { return use_global_smoother_filter; }
+    bool  getUseGlobalSmootherFilter() const CV_OVERRIDE { return use_global_smoother_filter; }
     void  setFGSLambda(float _lambda) CV_OVERRIDE { fgs_lambda = _lambda; }
-    float getFGSLambda() CV_OVERRIDE { return fgs_lambda; }
+    float getFGSLambda() const CV_OVERRIDE { return fgs_lambda; }
     void  setFGSSigma(float _sigma) CV_OVERRIDE { fgs_sigma = _sigma; }
-    float getFGSSigma() CV_OVERRIDE { return fgs_sigma; }
+    float getFGSSigma() const CV_OVERRIDE { return fgs_sigma; }
 };
 Ptr<RICInterpolatorImpl> RICInterpolatorImpl::create()
 {
@@ -1080,7 +1080,7 @@ Ptr<RICInterpolatorImpl> RICInterpolatorImpl::create()
 
 void RICInterpolatorImpl::init()
 {
-    max_neighbors = 32; // 32;
+    max_neighbors = 32; 
     alpha = 0.7f;
     sp_size = 15;
     sp_nncnt = 150;
@@ -1345,7 +1345,6 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
     Mat dst = dense_flow.getMat();
     Mat prevGrey, currGrey;
 
-    
     if (use_variational_refinement)
     {
         cv::medianBlur(U, U, 3);

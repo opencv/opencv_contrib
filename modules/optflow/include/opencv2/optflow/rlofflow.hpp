@@ -30,7 +30,8 @@ enum SolverType {
 enum InterpolationType
 {
     INTERP_GEO = 0,    /**<  Fast geodesic interpolation, see @cite Geistert2016 */
-    INTERP_EPIC = 1,    /**<  Edge-preserving interpolation, see @cite Revaud2015,Geistert2016. */
+    INTERP_EPIC = 1,   /**<  Edge-preserving interpolation using ximgproc::EdgeAwareInterpolator, see @cite Revaud2015,Geistert2016. */
+    INTERP_RIC = 2,    /**<  SLIC based robust interpolation using ximgproc::RICInterpolator, see @cite Hu2017. */
 };
 
 /** @brief This is used store and set up the parameters of the robust local optical flow (RLOF) algoritm.
@@ -324,6 +325,35 @@ public:
      *    @see ximgproc::fastGlobalSmootherFilter, setUsePostProc
      */
     CV_WRAP virtual bool getUsePostProc() const = 0;
+    //! @brief enables VariationalRefinement
+    /**
+     * @see getUseVariationalRefinement
+     */
+    CV_WRAP virtual void setUseVariationalRefinement(bool val) = 0;
+    /** @copybrief setUseVariationalRefinement
+     *    @see ximgproc::fastGlobalSmootherFilter, setUsePostProc
+     */
+    CV_WRAP virtual bool getUseVariationalRefinement() const = 0;
+    //! @brief Parameter to tune the approximate size of the superpixel used for oversegmentation.
+    /**
+     * @see cv::ximgproc::createSuperpixelSLIC, cv::ximgproc::RICInterpolator
+     */
+    CV_WRAP virtual void setRICSPSize(int val) = 0;
+    /** @copybrief setRICSPSize
+    *    @see setRICSPSize
+    */
+    CV_WRAP virtual int  getRICSPSize() const = 0;
+    /** @brief Parameter to choose superpixel algorithm variant to use:
+     * - cv::ximgproc::SLICType SLIC segments image using a desired region_size (value: 100)
+     * - cv::ximgproc::SLICType SLICO will optimize using adaptive compactness factor (value: 101)
+     * - cv::ximgproc::SLICType MSLIC will optimize using manifold methods resulting in more content-sensitive superpixels (value: 102).
+     *  @see cv::ximgproc::createSuperpixelSLIC, cv::ximgproc::RICInterpolator
+    */
+    CV_WRAP virtual void setRICSLICType(int val) = 0;
+    /** @copybrief setRICSLICType
+     *    @see setRICSLICType
+     */
+    CV_WRAP virtual int  getRICSLICType() const = 0;
     //! @brief Creates instance of optflow::DenseRLOFOpticalFlow
     /**
      *    @param rlofParam see optflow::RLOFOpticalFlowParameter
@@ -333,9 +363,12 @@ public:
      *    @param epicK see setEPICK
      *    @param epicSigma see setEPICSigma
      *    @param epicLambda see setEPICLambda
+     *    @param ricSPSize see setRICSPSize
+     *    @param ricSLICType see setRICSLICType
      *    @param use_post_proc see setUsePostProc
      *    @param fgsLambda see setFgsLambda
      *    @param fgsSigma see setFgsSigma
+     *    @param use_variational_refinement see setUseVariationalRefinement
     */
     CV_WRAP static Ptr<DenseRLOFOpticalFlow> create(
         Ptr<RLOFOpticalFlowParameter> rlofParam = Ptr<RLOFOpticalFlowParameter>(),
@@ -345,9 +378,12 @@ public:
         int epicK = 128,
         float epicSigma = 0.05f,
         float epicLambda = 999.0f,
+        int ricSPSize = 15, 
+        int ricSLICType = 100,
         bool use_post_proc = true,
         float fgsLambda = 500.0f,
-        float fgsSigma = 1.5f);
+        float fgsSigma = 1.5f,
+        bool use_variational_refinement = false);
 };
 
 /** @brief Class used for calculation sparse optical flow and feature tracking with robust local optical flow (RLOF) algorithms.
@@ -430,12 +466,15 @@ public:
  * supported:
  * - **INTERP_GEO** applies the fast geodesic interpolation, see @cite Geistert2016.
  * - **INTERP_EPIC_RESIDUAL** applies the edge-preserving interpolation, see @cite Revaud2015,Geistert2016.
- * @param epicK see ximgproc::EdgeAwareInterpolator() sets the respective parameter.
- * @param epicSigma see ximgproc::EdgeAwareInterpolator() sets the respective parameter.
- * @param epicLambda see ximgproc::EdgeAwareInterpolator() sets the respective parameter.
+ * @param epicK see ximgproc::EdgeAwareInterpolator sets the respective parameter.
+ * @param epicSigma see ximgproc::EdgeAwareInterpolator sets the respective parameter.
+ * @param epicLambda see ximgproc::EdgeAwareInterpolator sets the respective parameter.
+ * @param ricSPSize  see ximgproc::RICInterpolator sets the respective parameter.
+ * @param ricSLICType see ximgproc::RICInterpolator sets the respective parameter.
  * @param use_post_proc enables ximgproc::fastGlobalSmootherFilter() parameter.
  * @param fgsLambda sets the respective ximgproc::fastGlobalSmootherFilter() parameter.
  * @param fgsSigma sets the respective ximgproc::fastGlobalSmootherFilter() parameter.
+ * @param use_variational_refinement enables VariationalRefinement
  *
  * Parameters have been described in @cite Senst2012, @cite Senst2013, @cite Senst2014, @cite Senst2016.
  * For the RLOF configuration see optflow::RLOFOpticalFlowParameter for further details.
@@ -451,7 +490,9 @@ CV_EXPORTS_W void calcOpticalFlowDenseRLOF(InputArray I0, InputArray I1, InputOu
     float forwardBackwardThreshold = 0, Size gridStep = Size(6, 6),
     InterpolationType interp_type = InterpolationType::INTERP_EPIC,
     int epicK = 128, float epicSigma = 0.05f, float epicLambda = 100.f,
-    bool use_post_proc = true, float fgsLambda = 500.0f, float fgsSigma = 1.5f);
+    int ricSPSize = 15, int ricSLICType = 100,
+    bool use_post_proc = true, float fgsLambda = 500.0f, float fgsSigma = 1.5f, 
+    bool use_variational_refinement = false);
 
 /** @brief Calculates fast optical flow for a sparse feature set using the robust local optical flow (RLOF) similar
 * to optflow::calcOpticalFlowPyrLK().

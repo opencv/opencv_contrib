@@ -125,71 +125,116 @@ EdgeAwareInterpolator.
 CV_EXPORTS_W
 Ptr<EdgeAwareInterpolator> createEdgeAwareInterpolator();
 
-/** @brief Sparse match interpolation algorithm based on modified locally-weighted affine
-estimator from @cite Revaud2015 and Fast Global Smoother as post-processing filter.
+/** @brief Sparse match interpolation algorithm based on modified piecewise locally-weighted affine
+ * estimator called Robust Interpolation method of Correspondences or RIC from @cite Hu2017 and Variational 
+ * and Fast Global Smoother as post-processing filter. The RICInterpolator is a extension of the EdgeAwareInterpolator.
+ * Main concept of this extension is an piece-wise affine model based on over-segmentation via SLIC superpixel estimation.
+ * The method contains an efficient propagation mechanism to estimate among the pieces-wise models.
  */
 class CV_EXPORTS_W RICInterpolator : public SparseMatchInterpolator
 {
 public:
     /** @brief K is a number of nearest-neighbor matches considered, when fitting a locally affine
-   model. Usually it should be around 128. However, lower values would make the interpolation
-   noticeably faster.
+     *model for a superpixel segment. However, lower values would make the interpolation
+     *noticeably faster. The original implementation of @cite Hu2017 uses 32. 
     */
-    CV_WRAP virtual void setK(int val) = 0;
-    /** @see setK */
-    CV_WRAP virtual int  getK() = 0;
-    
-    CV_WRAP virtual void setSuperpixelSize(int val) = 0;
-    /** @see setK */
-    CV_WRAP virtual int  getSuperpixelSize() = 0;
-
-    CV_WRAP virtual void setSuperpixelNNCnt(int val) = 0;
-    /** @see setK */
-    CV_WRAP virtual int  getSuperpixelNNCnt() = 0;
-
-    CV_WRAP virtual void setSuperpixelRuler(float val) = 0;
-    /** @see setK */
-    CV_WRAP virtual float  getSuperpixelRuler() = 0;
-    
-    CV_WRAP virtual void setSuperpixelMode(int val) = 0;
-    /** @see setK */
-    CV_WRAP virtual int  getSuperpixelMode() = 0;
-
-    CV_WRAP virtual void setAlpha(float val) = 0;
-    /** @see setK */
-    CV_WRAP virtual float  getAlpha() = 0;
-
-    CV_WRAP virtual void setModelIter(int val) = 0;
-    /** @see setK */
-    CV_WRAP virtual int  getModelIter() = 0;
-
-    CV_WRAP virtual void setRefineModels(bool val) = 0;
-    /** @see setK */
-    CV_WRAP virtual bool  getRefineModels() = 0;
-
-    CV_WRAP virtual void setMaxFlow(int val) = 0;
-    /** @see setK */
-    CV_WRAP virtual bool  getMaxFlow() = 0;
-
-    CV_WRAP virtual void setUseVariationalRefinement(bool val) = 0;
-    /** @see setK */
-    CV_WRAP virtual bool  getUseVariationalRefinement() = 0;
-    /** @brief Sets whether the fastGlobalSmootherFilter() post-processing is employed. It is turned on by
-    default.
+    CV_WRAP virtual void setK(int _k = 32) = 0;
+    /** @copybrief setK
+     *    @see setK
+     */
+    CV_WRAP virtual int  getK() const = 0;
+    /** @brief Parameter to tune the approximate size of the superpixel used for oversegmentation.
+     *  @see cv::ximgproc::createSuperpixelSLIC
     */
-    CV_WRAP virtual void setUseGlobalSmootherFilter(bool val) = 0;
-    /** @see setUsePostProcessing */
-    CV_WRAP virtual bool getUseGlobalSmootherFilter() = 0;
+    CV_WRAP virtual void setSuperpixelSize(int _spSize = 15) = 0;
+    /** @copybrief setSuperpixelSize
+     *    @see setSuperpixelSize
+     */
+    CV_WRAP virtual int  getSuperpixelSize() const = 0;
+    /** @brief Parameter defines the number of nearest-neighbor matches for each superpixel considered, when fitting a locally affine
+     *model. 
+    */
+    CV_WRAP virtual void setSuperpixelNNCnt(int _spNN = 150) = 0;
+    /** @copybrief setSuperpixelNNCnt
+     *    @see setSuperpixelNNCnt
+    */
+    CV_WRAP virtual int  getSuperpixelNNCnt() const = 0;
+    /** @brief Parameter to tune enforcement of superpixel smoothness factor used for oversegmentation.
+     *  @see cv::ximgproc::createSuperpixelSLIC
+    */
+    CV_WRAP virtual void setSuperpixelRuler(float _ruler = 15.f) = 0;
+    /** @copybrief setSuperpixelRuler
+     *    @see setSuperpixelRuler
+     */
+    CV_WRAP virtual float  getSuperpixelRuler() const = 0;
+    /** @brief Parameter to choose superpixel algorithm variant to use: 
+     * - cv::ximgproc::SLICType SLIC segments image using a desired region_size (value: 100)
+     * - cv::ximgproc::SLICType SLICO will optimize using adaptive compactness factor (value: 101)
+     * - cv::ximgproc::SLICType MSLIC will optimize using manifold methods resulting in more content-sensitive superpixels (value: 102).
+     *  @see cv::ximgproc::createSuperpixelSLIC
+    */
+    CV_WRAP virtual void setSuperpixelMode(int _mode = 100) = 0;
+    /** @copybrief setSuperpixelMode
+     *    @see setSuperpixelMode
+     */
+    CV_WRAP virtual int  getSuperpixelMode() const = 0;
+    /** @brief Alpha is a parameter defining a global weight for transforming geodesic distance into weight.
+     */
+    CV_WRAP virtual void setAlpha(float _alpha = 0.7f) = 0;
+    /** @copybrief setAlpha
+     *    @see setAlpha
+     */
+    CV_WRAP virtual float  getAlpha() const = 0;
+    /** @brief Parameter defining the number of iterations for piece-wise affine model estimation.
+     */
+    CV_WRAP virtual void setModelIter(int _modelIter = 4) = 0;
+    /** @copybrief setModelIter
+     *    @see setModelIter
+     */
+    CV_WRAP virtual int  getModelIter() const = 0;
+    /** @brief Parameter to choose wether additional refinement of the piece-wise affine models is employed.
+    */
+    CV_WRAP virtual void setRefineModels(bool _refineModles = true) = 0;
+    /** @copybrief setRefineModels
+     *    @see setRefineModels
+     */
+    CV_WRAP virtual bool  getRefineModels() const = 0;
+    /** @brief MaxFlow is a threshold to validate the predictions using a certain piece-wise affine model.
+     * If the prediction exceeds the treshold the translational model will be applied instead.
+    */
+    CV_WRAP virtual void setMaxFlow(float _maxFlow = 250.f) = 0;
+    /** @copybrief setMaxFlow
+     *    @see setMaxFlow
+     */
+    CV_WRAP virtual float  getMaxFlow() const = 0;
+    /** @brief Parameter to choose wether the VariationalRefinement post-processing  is employed.
+    */
+    CV_WRAP virtual void setUseVariationalRefinement(bool _use_variational_refinement = false) = 0;
+    /** @copybrief setUseVariationalRefinement
+     *    @see setUseVariationalRefinement
+     */
+    CV_WRAP virtual bool  getUseVariationalRefinement() const = 0;
+    /** @brief Sets whether the fastGlobalSmootherFilter() post-processing is employed.
+    */
+    CV_WRAP virtual void setUseGlobalSmootherFilter(bool _use_FGS = true) = 0;
+    /** @copybrief setUseGlobalSmootherFilter
+     *    @see setUseGlobalSmootherFilter
+     */
+    CV_WRAP virtual bool getUseGlobalSmootherFilter() const = 0;
+    /** @brief Sets the respective fastGlobalSmootherFilter() parameter.
+     */ 
+    CV_WRAP virtual void  setFGSLambda(float _lambda = 500.f) = 0;
+    /**  @copybrief setFGSLambda
+     *     @see setFGSLambda 
+     */
+    CV_WRAP virtual float getFGSLambda() const = 0;
     /** @brief Sets the respective fastGlobalSmootherFilter() parameter.
      */
-    CV_WRAP virtual void  setFGSLambda(float _lambda) = 0;
-    /** @see setFGSLambda */
-    CV_WRAP virtual float getFGSLambda() = 0;
-
-    /** @see setFGSLambda */
-    CV_WRAP virtual void  setFGSSigma(float _sigma) = 0;
-    /** @see setFGSLambda */
-    CV_WRAP virtual float getFGSSigma() = 0;
+    CV_WRAP virtual void  setFGSSigma(float _sigma = 1.5f) = 0;
+    /**  @copybrief setFGSSigma
+     *     @see setFGSSigma
+     */
+    CV_WRAP virtual float getFGSSigma() const = 0;
 };
 
 /** @brief Factory method that creates an instance of the
