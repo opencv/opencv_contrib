@@ -243,7 +243,7 @@ public:
      */
     CV_WRAP virtual bool getUseGlobalSmootherFilter() const = 0;
     /** @brief Sets the respective fastGlobalSmootherFilter() parameter.
-     */ 
+     */
     CV_WRAP virtual void  setFGSLambda(float _lambda = 500.f) = 0;
     /**  @copybrief setFGSLambda
      *     @see setFGSLambda

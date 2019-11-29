@@ -232,7 +232,7 @@ public:
             Ptr<VariationalRefinement > variationalrefine = VariationalRefinement::create();
             cvtColor(prevImage, prevGrey, COLOR_BGR2GRAY);
             cvtColor(currImage, currGrey, COLOR_BGR2GRAY);
-            variationalrefine->setOmega(1.9);
+            variationalrefine->setOmega(1.9f);
             variationalrefine->calc(prevGrey, currGrey, flow);
         }
         if (use_post_proc)
