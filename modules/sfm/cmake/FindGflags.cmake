@@ -482,7 +482,7 @@ if (NOT GFLAGS_FOUND)
   endif (NOT GFLAGS_INCLUDE_DIR OR
     NOT EXISTS ${GFLAGS_INCLUDE_DIR})
 
-  find_library(GFLAGS_LIBRARY NAMES gflags
+  find_library(GFLAGS_LIBRARY NAMES gflags gflags_debug gflags_nothreads gflags_nothreads_debug
     PATHS ${GFLAGS_LIBRARY_DIR_HINTS}
     ${GFLAGS_CHECK_LIBRARY_DIRS}
     PATH_SUFFIXES ${GFLAGS_CHECK_LIBRARY_SUFFIXES})

@@ -7,7 +7,7 @@
 namespace opencv_test { namespace {
 
 
-TEST(ximpgroc_fourierdescriptors,test_FD_AND_FIT)
+TEST(ximgproc_fourierdescriptors,test_FD_AND_FIT)
 {
     Mat fd;
     vector<Point2f> ctr(16);

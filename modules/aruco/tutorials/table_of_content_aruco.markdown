@@ -11,6 +11,11 @@ Also, the ChArUco functionalities combine ArUco markers with traditional chessbo
 an easy and versatile corner detection. The module also includes the functions to detect
 ChArUco corners and use them for pose estimation and camera calibration.
 
+If you are going to print out the markers, an useful script/GUI tool is place at
+opencv_contrib/modules/aruco/misc/pattern_generator/ that can generate vector graphics
+of ArUco, ArUcoGrid and ChArUco boards. It can help you to print out the pattern with real size
+and without artifacts.
+
 -   @subpage tutorial_aruco_detection
 
     *Compatibility:* \> OpenCV 3.0

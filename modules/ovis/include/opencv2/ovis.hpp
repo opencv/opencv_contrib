@@ -18,14 +18,16 @@ namespace ovis {
 
 enum SceneSettings
 {
-    /// the window will use a seperate scene. The scene will be shared otherwise.
-    SCENE_SEPERATE = 1,
+    /// the window will use a separate scene. The scene will be shared otherwise.
+    SCENE_SEPARATE = 1,
     /// allow the user to control the camera.
     SCENE_INTERACTIVE = 2,
     /// draw coordinate system crosses for debugging
     SCENE_SHOW_CS_CROSS = 4,
     /// Apply anti-aliasing. The first window determines the setting for all windows.
-    SCENE_AA = 8
+    SCENE_AA = 8,
+    /// Render off-screen without a window. Allows separate AA setting. Requires manual update via @ref WindowScene::update
+    SCENE_OFFSCREEN = 16
 };
 
 enum MaterialProperty
@@ -34,6 +36,7 @@ enum MaterialProperty
     MATERIAL_LINE_WIDTH,
     MATERIAL_OPACITY,
     MATERIAL_EMISSIVE,
+    MATERIAL_DIFFUSE,
     MATERIAL_TEXTURE0,
     MATERIAL_TEXTURE = MATERIAL_TEXTURE0,
     MATERIAL_TEXTURE1,
@@ -276,6 +279,10 @@ public:
     CV_WRAP virtual void setCameraIntrinsics(InputArray K, const Size& imsize,
                                              float zNear = -1,
                                              float zFar = -1) = 0;
+    /**
+     * render this window, but do not swap buffers. Automatically called by @ref ovis::waitKey
+     */
+    CV_WRAP virtual void update() = 0;
 };
 
 /**
@@ -358,6 +365,17 @@ CV_EXPORTS_W void createPointCloudMesh(const String& name, InputArray vertices, 
  * @param segments number of segments per side
  */
 CV_EXPORTS_W void createGridMesh(const String& name, const Size2f& size, const Size& segments = Size(1, 1));
+
+/**
+ * creates a triangle mesh from vertex-vertex or face-vertex representation
+ *
+ * creates a material with the same name
+ * @param name name of the mesh
+ * @param vertices float vector of positions
+ * @param normals float vector of normals
+ * @param indices int vector of indices
+ */
+CV_EXPORTS_W void createTriangleMesh(const String& name, InputArray vertices, InputArray normals = noArray(), InputArray indices = noArray());
 
 /**
  * updates an existing texture

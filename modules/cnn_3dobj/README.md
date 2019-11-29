@@ -79,7 +79,7 @@ $ ./example_cnn_3dobj_classify -mean_file=../data/images_mean/triplet_mean.binar
 ```
 ===========================================================
 ##Demo3: Model performance test
-####This demo will run a performance test of a trained CNN model on several images. If the the model fails on telling different samples from seperate classes apart, or is confused on samples with similar pose but from different classes, this will give some information for model analysis.
+####This demo will run a performance test of a trained CNN model on several images. If the the model fails on telling different samples from separate classes apart, or is confused on samples with similar pose but from different classes, this will give some information for model analysis.
 ```
 $ ./example_cnn_3dobj_model_analysis
 ```

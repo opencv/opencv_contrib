@@ -68,6 +68,7 @@ cv::cudacodec::detail::CuvidVideoSource::CuvidVideoSource(const String& fname)
     CUVIDEOFORMAT vidfmt;
     cuSafeCall( cuvidGetSourceVideoFormat(videoSource_, &vidfmt, 0) );
 
+    CV_Assert(Codec::NumCodecs == cudaVideoCodec::cudaVideoCodec_NumCodecs);
     format_.codec = static_cast<Codec>(vidfmt.codec);
     format_.chromaFormat = static_cast<ChromaFormat>(vidfmt.chroma_format);
     format_.nBitDepthMinus8 = vidfmt.bit_depth_luma_minus8;

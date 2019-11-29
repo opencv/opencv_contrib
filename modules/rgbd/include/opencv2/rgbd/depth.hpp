@@ -345,6 +345,25 @@ namespace rgbd
     {
     }
 
+    /** Constructor
+     * @param block_size The size of the blocks to look at for a stable MSE
+     * @param min_size The minimum size of a cluster to be considered a plane
+     * @param threshold The maximum distance of a point from a plane to belong to it (in meters)
+     * @param sensor_error_a coefficient of the sensor error. 0 by default, 0.0075 for a Kinect
+     * @param sensor_error_b coefficient of the sensor error. 0 by default
+     * @param sensor_error_c coefficient of the sensor error. 0 by default
+     * @param method The method to use to compute the planes.
+     */
+    RgbdPlane(int method, int block_size,
+              int min_size, double threshold, double sensor_error_a = 0,
+              double sensor_error_b = 0, double sensor_error_c = 0);
+
+    ~RgbdPlane();
+
+    CV_WRAP static Ptr<RgbdPlane> create(int method, int block_size, int min_size, double threshold,
+                                         double sensor_error_a = 0, double sensor_error_b = 0,
+                                         double sensor_error_c = 0);
+
     /** Find The planes in a depth image
      * @param points3d the 3d points organized like the depth image: rows x cols with 3 channels
      * @param normals the normals for every point in the depth image

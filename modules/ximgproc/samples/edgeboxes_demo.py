@@ -27,10 +27,17 @@ if __name__ == '__main__':
     edge_boxes = cv.ximgproc.createEdgeBoxes()
     edge_boxes.setMaxBoxes(30)
     boxes = edge_boxes.getBoundingBoxes(edges, orimap)
+    boxes, scores = edge_boxes.getBoundingBoxes(edges, orimap)
 
-    for b in boxes:
-        x, y, w, h = b
-        cv.rectangle(im, (x, y), (x+w, y+h), (0, 255, 0), 1, cv.LINE_AA)
+    if len(boxes) > 0:
+        boxes_scores = zip(boxes, scores)
+        for b_s in boxes_scores:
+            box = b_s[0]
+            x, y, w, h = box
+            cv.rectangle(im, (x, y), (x+w, y+h), (0, 255, 0), 1, cv.LINE_AA)
+            score = b_s[1][0]
+            cv.putText(im, "{:.2f}".format(score), (x, y), cv.FONT_HERSHEY_PLAIN, 0.8, (255, 255, 255), 1, cv.LINE_AA)
+            print("Box at (x,y)=({:d},{:d}); score={:f}".format(x, y, score))
 
     cv.imshow("edges", edges)
     cv.imshow("edgeboxes", im)

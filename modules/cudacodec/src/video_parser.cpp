@@ -80,7 +80,7 @@ bool cv::cudacodec::detail::VideoParser::parseVideoData(const unsigned char* dat
         return false;
     }
 
-    const int maxUnparsedPackets = 15;
+    const int maxUnparsedPackets = 20;
 
     ++unparsedPackets_;
     if (unparsedPackets_ > maxUnparsedPackets)
@@ -105,7 +105,8 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandleVideoSequence(void* userDa
     if (format->codec         != thiz->videoDecoder_->codec()       ||
         format->coded_width   != thiz->videoDecoder_->frameWidth()  ||
         format->coded_height  != thiz->videoDecoder_->frameHeight() ||
-        format->chroma_format != thiz->videoDecoder_->chromaFormat())
+        format->chroma_format != thiz->videoDecoder_->chromaFormat()||
+        format->bit_depth_luma_minus8 != thiz->videoDecoder_->nBitDepthMinus8())
     {
         FormatInfo newFormat;
 
@@ -113,6 +114,7 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandleVideoSequence(void* userDa
         newFormat.chromaFormat = static_cast<ChromaFormat>(format->chroma_format);
         newFormat.width = format->coded_width;
         newFormat.height = format->coded_height;
+        newFormat.nBitDepthMinus8 = format->bit_depth_luma_minus8;
 
         try
         {

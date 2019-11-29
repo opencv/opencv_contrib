@@ -322,24 +322,10 @@ void CV_ArucoDetectionPerspective::run(int tryWith) {
                 }
                 for(int c = 0; c < 4; c++) {
                     double dist = cv::norm(groundTruthCorners[c] - corners[0][c]);  // TODO cvtest
-                    if(CV_ArucoDetectionPerspective::DETECT_INVERTED_MARKER == tryWith){
-                        if(szEnclosed && dist > 3){
+                    if(dist > 5) {
                             ts->printf(cvtest::TS::LOG, "Incorrect marker corners position");
                             ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
                             return;
-                        }
-                        if(!szEnclosed && dist >15){
-                            ts->printf(cvtest::TS::LOG, "Incorrect marker corners position");
-                            ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
-                            return;
-                        }
-                    }
-                    else{
-                        if(dist > 5) {
-                            ts->printf(cvtest::TS::LOG, "Incorrect marker corners position");
-                            ts->set_failed_test_info(cvtest::TS::FAIL_BAD_ACCURACY);
-                            return;
-                        }
                     }
                 }
             }

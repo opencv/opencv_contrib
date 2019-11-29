@@ -53,7 +53,7 @@ Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>&) { 
 
 #else // HAVE_NVCUVID
 
-void videoDecPostProcessFrame(const GpuMat& decodedFrame, OutputArray _outFrame, int width, int height);
+void videoDecPostProcessFrame(const GpuMat& decodedFrame, OutputArray _outFrame, int width, int height, cudaStream_t stream);
 
 using namespace cv::cudacodec::detail;
 
@@ -65,7 +65,7 @@ namespace
         explicit VideoReaderImpl(const Ptr<VideoSource>& source);
         ~VideoReaderImpl();
 
-        bool nextFrame(OutputArray frame) CV_OVERRIDE;
+        bool nextFrame(OutputArray frame, Stream& stream) CV_OVERRIDE;
 
         FormatInfo format() const CV_OVERRIDE;
 
@@ -99,7 +99,7 @@ namespace
         cuSafeCall( cuvidCtxLockCreate(&lock_, ctx) );
 
         frameQueue_.reset(new FrameQueue);
-        videoDecoder_.reset(new VideoDecoder(videoSource_->format(), lock_));
+        videoDecoder_.reset(new VideoDecoder(videoSource_->format(), ctx, lock_));
         videoParser_.reset(new VideoParser(videoDecoder_, frameQueue_));
 
         videoSource_->setVideoParser(videoParser_);
@@ -122,13 +122,10 @@ namespace
         CUvideoctxlock m_lock;
     };
 
-    bool VideoReaderImpl::nextFrame(OutputArray frame)
+    bool VideoReaderImpl::nextFrame(OutputArray frame, Stream& stream)
     {
         if (videoSource_->hasError() || videoParser_->hasError())
             CV_Error(Error::StsUnsupportedFormat, "Unsupported video source");
-
-        if (!videoSource_->isStarted() || frameQueue_->isEndOfDecode())
-            return false;
 
         if (frames_.empty())
         {
@@ -180,7 +177,7 @@ namespace
 
             // perform post processing on the CUDA surface (performs colors space conversion and post processing)
             // comment this out if we include the line of code seen above
-            videoDecPostProcessFrame(decodedFrame, frame, videoDecoder_->targetWidth(), videoDecoder_->targetHeight());
+            videoDecPostProcessFrame(decodedFrame, frame, videoDecoder_->targetWidth(), videoDecoder_->targetHeight(), StreamAccessor::getStream(stream));
 
             // unmap video frame
             // unmapFrame() synchronizes with the VideoDecode API (ensures the frame has finished decoding)
@@ -203,12 +200,13 @@ Ptr<VideoReader> cv::cudacodec::createVideoReader(const String& filename)
 
     try
     {
-        videoSource.reset(new CuvidVideoSource(filename));
+        // prefer ffmpeg to cuvidGetSourceVideoFormat() which doesn't always return the corrct raw pixel format
+        Ptr<RawVideoSource> source(new FFmpegVideoSource(filename));
+        videoSource.reset(new RawVideoSourceWrapper(source));
     }
     catch (...)
     {
-        Ptr<RawVideoSource> source(new FFmpegVideoSource(filename));
-        videoSource.reset(new RawVideoSourceWrapper(source));
+        videoSource.reset(new CuvidVideoSource(filename));
     }
 
     return makePtr<VideoReaderImpl>(videoSource);

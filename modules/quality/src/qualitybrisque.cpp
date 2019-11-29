@@ -230,7 +230,7 @@ namespace
 
         cv::Mat result;
         model->predict(feat_mat, result);
-        return result.at<float>(0);
+        return std::min( std::max( result.at<float>(0), 0.f ), 100.f ); // clamp to [0-100]
     }
 
     // computes score for a single frame
