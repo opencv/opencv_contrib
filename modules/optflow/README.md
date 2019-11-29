@@ -1,4 +1,4 @@
 Optical Flow Algorithms
 =======================
 
-Algorithms for running and evaluating deepflow, simpleflow, sparsetodenseflow and motion templates (silhouette flow).
+Algorithms for running and evaluating deepflow, simpleflow, sparsetodenseflow, robust local optical flow and motion templates (silhouette flow).

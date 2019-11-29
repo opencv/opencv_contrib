@@ -1221,6 +1221,7 @@ private:
 void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_points, InputArray to_image, InputArray to_points, OutputArray dense_flow)
 {
     CV_Assert(!from_image.empty() && (from_image.depth() == CV_8U) && (from_image.channels() == 3 || from_image.channels() == 1));
+    CV_Assert( use_variational_refinement == false || (!to_image.empty() && (to_image.depth() == CV_8U) && (to_image.channels() == 3 || to_image.channels() == 1)));
     CV_Assert(!from_points.empty() && from_points.isVector() &&
         !to_points.empty() && to_points.isVector() &&
         from_points.sameSize(to_points));
@@ -1235,7 +1236,6 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
     match_num = static_cast<int>(from_vector.size());
 
     Mat src = from_image.getMat();
-    Mat src2 = to_image.getMat();
     Size src_size = src.size();
 
     labels = Mat(src_size, CV_32SC1);
@@ -1347,6 +1347,7 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
 
     if (use_variational_refinement)
     {
+        Mat src2 = to_image.getMat();
         cv::medianBlur(U, U, 3);
         cv::medianBlur(V, V, 3);
         Ptr<VariationalRefinement > variationalrefine = VariationalRefinement::create();
