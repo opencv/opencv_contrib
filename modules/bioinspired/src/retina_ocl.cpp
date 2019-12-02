@@ -1367,7 +1367,7 @@ void RetinaFilter::setGlobalParameters(const float OPLspatialResponse1, const fl
     _normalizeMagnoOutput_0_maxOutputValue = normalizeMagnoOutput_0_maxOutputValue;
     _maxOutputValue = maxOutputValue;
     _photoreceptorsPrefilter.setV0CompressionParameter(0.9f, maxInputValue, meanValue);
-    _photoreceptorsPrefilter.setLPfilterParameters(0, 0, 10, 3); // keeps low pass filter with low cut frequency in memory (usefull for the tone mapping function)
+    _photoreceptorsPrefilter.setLPfilterParameters(0, 0, 10, 3); // keeps low pass filter with low cut frequency in memory (useful for the tone mapping function)
     _ParvoRetinaFilter.setOPLandParvoFiltersParameters(0, OPLtemporalresponse1, OPLspatialResponse1, OPLassymetryGain, OPLtemporalresponse2, OPLspatialResponse2);
     _ParvoRetinaFilter.setV0CompressionParameter(0.9f, maxInputValue, meanValue);
     _MagnoRetinaFilter.setCoefficientsTable(LPfilterGain, LPfilterTemporalresponse, LPfilterSpatialResponse, MovingContoursExtractorCoefficient, 0, 2.0f * LPfilterSpatialResponse);
@@ -1433,7 +1433,7 @@ bool RetinaFilter::runFilter(const UMat &imageInput, const bool useAdaptiveFilte
 
     if (_useParvoOutput)
     {
-        _ParvoRetinaFilter.normalizeGrayOutputCentredSigmoide(); // models the saturation of the cells, usefull for visualisation of the ON-OFF Parvo Output, Bipolar cells outputs do not change !!!
+        _ParvoRetinaFilter.normalizeGrayOutputCentredSigmoide(); // models the saturation of the cells, useful for visualisation of the ON-OFF Parvo Output, Bipolar cells outputs do not change !!!
         _ParvoRetinaFilter.centerReductImageLuminance(); // best for further spectrum analysis
 
         if (_normalizeParvoOutput_0_maxOutputValue)

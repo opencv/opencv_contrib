@@ -134,7 +134,7 @@ For more information, refer to the following papers :
 
 -   Please have a look at the reference work of Jeanny Herault that you can read in his book : @cite Herault2010
 
-This retina filter code includes the research contributions of phd/research collegues from which
+This retina filter code includes the research contributions of phd/research colleagues from which
 code has been redrawn by the author :
 
 -   take a look at the *retinacolor.hpp* module to discover Brice Chaix de Lavarene phD color

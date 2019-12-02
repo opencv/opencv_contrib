@@ -574,7 +574,7 @@ void drawDetectedCornersCharuco(InputOutputArray _image, InputArray _charucoCorn
 
 /**
   * Check if a set of 3d points are enough for calibration. Z coordinate is ignored.
-  * Only axis paralel lines are considered
+  * Only axis parallel lines are considered
   */
 static bool _arePointsEnoughForPoseEstimation(const vector< Point3f > &points) {
 

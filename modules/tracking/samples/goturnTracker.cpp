@@ -143,7 +143,7 @@ int main(int argc, char *argv[])
     Ptr<Tracker> tracker = TrackerGOTURN::create();
 
     //Load and init full ALOV300++ dataset with a given datasetID, as alternative you can use loadAnnotatedOnly(..)
-    //to load only frames with labled ground truth ~ every 5-th frame
+    //to load only frames with labelled ground truth ~ every 5-th frame
     Ptr<cv::datasets::TRACK_alov> dataset = TRACK_alov::create();
     dataset->load(datasetRootPath);
     dataset->initDataset(datasetID);

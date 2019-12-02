@@ -153,7 +153,7 @@ The first step of stereo reconstruction is stereo rectification so that epipolar
 
 The API of stereo reconstruction for omnidrectional camera is ```omnidir::stereoReconstruct```. Here we use an example to show how it works.
 
-First, calibrate a stereo pair of cameras as describe above and get parameters like ```K1```, ```D1```, ```xi1```, ```K2```, ```D2```, ```xi2```, ```rvec```, ```tvec```. Then read two images from the first and second camera respectively, for instance, ```image1``` and ```image2```, which are shown below.
+First, calibrate a stereo pair of cameras as described above and get parameters like ```K1```, ```D1```, ```xi1```, ```K2```, ```D2```, ```xi2```, ```rvec```, ```tvec```. Then read two images from the first and second camera respectively, for instance, ```image1``` and ```image2```, which are shown below.
 
 ![image](img/imgs.jpg)
 

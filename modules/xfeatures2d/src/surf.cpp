@@ -7,7 +7,7 @@
  *
  * There are still serveral lacks for this experimental implementation:
  * 1.The interpolation of sub-pixel mentioned in article was not implemented yet;
- * 2.A comparision with original libSurf.so shows that the hessian detector is not a 100% match to their implementation;
+ * 2.A comparison with original libSurf.so shows that the hessian detector is not a 100% match to their implementation;
  * 3.Due to above reasons, I recommanded the original one for study and reuse;
  *
  * However, the speed of this implementation is something comparable to original one.
