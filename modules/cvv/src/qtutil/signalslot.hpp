@@ -44,7 +44,7 @@ class Signal : public QObject
 	}
 signals:
 	/**
-	 * @brief The signal emited by emitSignal.
+	 * @brief The signal emitted by emitSignal.
 	 */
 	void signal() const;
 };
@@ -158,7 +158,7 @@ class SignalMatRef : public QObject
 	}
 signals:
 	/**
-	 * @brief The signal emited by emitSignal.
+	 * @brief The signal emitted by emitSignal.
 	 */
 	void signal(cv::Mat &mat) const;
 };

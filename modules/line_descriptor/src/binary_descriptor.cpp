@@ -807,7 +807,7 @@ int BinaryDescriptor::OctaveKeyLines( cv::Mat& image, ScaleLines &keyLines )
         float diffNearThreshold = ( tempValue > 6 ) ? ( tempValue ) : 6;
         diffNearThreshold = ( diffNearThreshold < 12 ) ? diffNearThreshold : 12;
 
-        /* compute scaled lenght of current line */
+        /* compute scaled length of current line */
         dx = fabs( edLineVec_[octaveCount]->lineEndpoints_[lineCurId][0] - edLineVec_[octaveCount]->lineEndpoints_[lineCurId][2] );  //x1-x2
         dy = fabs( edLineVec_[octaveCount]->lineEndpoints_[lineCurId][1] - edLineVec_[octaveCount]->lineEndpoints_[lineCurId][3] );  //y1-y2
         length = scale[octaveCount] * sqrt( dx * dx + dy * dy );

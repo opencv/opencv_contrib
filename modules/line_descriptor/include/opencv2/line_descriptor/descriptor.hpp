@@ -214,7 +214,7 @@ class CV_EXPORTS_W BinaryDescriptor : public Algorithm
   @param parameters configuration parameters BinaryDescriptor::Params
 
   If no argument is provided, constructor sets default values (see comments in the code snippet in
-  previous section). Default values are strongly reccomended.
+  previous section). Default values are strongly recommended.
   */
   BinaryDescriptor( const BinaryDescriptor::Params &parameters = BinaryDescriptor::Params() );
 

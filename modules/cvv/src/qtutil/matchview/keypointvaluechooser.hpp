@@ -11,7 +11,7 @@ namespace cvv{ namespace qtutil{
 
 /**
  * @brief this widget contains a combobox with the attributes of an keypoint as entry.
- * you cann call the method getChoosenValue which return the choosen value of the given keypoint
+ * you can call the method getChoosenValue which return the chosen value of the given keypoint
  */
 class KeyPointValueChooser:public QWidget{
 
@@ -25,8 +25,8 @@ public:
 	KeyPointValueChooser(QWidget *parent=nullptr);
 
 	/**
-	 * @brief returns the choosen value of the given keypoint
-	 * @return the choosen value of the given keypoint
+	 * @brief returns the chosen value of the given keypoint
+	 * @return the chosen value of the given keypoint
 	 */
 	double getChoosenValue(cv::KeyPoint keypoint);
 

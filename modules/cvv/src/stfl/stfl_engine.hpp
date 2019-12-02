@@ -47,7 +47,7 @@ template <typename Element> class STFLEngine
 	/**
 	 * @brief Constructs (and initializes) a new engine.
 	 * 
-	 * Use this constructor only if you want to have controll about everything.
+	 * Use this constructor only if you want to have control about everything.
 	 * Consider using the simple constructor in combination with the add*
 	 * commands instead.
 	 *

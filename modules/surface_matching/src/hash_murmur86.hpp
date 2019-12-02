@@ -261,7 +261,7 @@ uint32_t PMurHash32_Result(uint32_t h, uint32_t carry, uint32_t total_length)
 
 /*---------------------------------------------------------------------------*/
 
-/* Murmur3A compatable all-at-once */
+/* Murmur3A compatible all-at-once */
 uint32_t PMurHash32(uint32_t seed, const void *key, int len)
 {
     uint32_t h1=seed, carry=0;
