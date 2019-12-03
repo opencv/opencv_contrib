@@ -944,9 +944,9 @@ public:
     int  getSuperpixelNNCnt() const CV_OVERRIDE { return sp_nncnt; }
     void setSuperpixelRuler(float val) CV_OVERRIDE { sp_ruler = val; }
     float getSuperpixelRuler() const CV_OVERRIDE { return sp_ruler; }
-    void setSuperpixelMode(int val) CV_OVERRIDE 
+    void setSuperpixelMode(int val) CV_OVERRIDE
     {
-        slic_type = static_cast<SLICType>(val); 
+        slic_type = static_cast<SLICType>(val);
         CV_Assert(slic_type == SLICO || slic_type == SLIC || slic_type == MSLIC);
     }
     int  getSuperpixelMode() const CV_OVERRIDE { return slic_type; }
@@ -1683,7 +1683,7 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
         {
             Mat outModelRow = outModels.row(i);
             Mat inlierFlagRow = inLierFlag.row(i);
-            bestCost[i] = 
+            bestCost[i] =
                 HypothesisEvaluation(
                 outModelRow,
                 &supportMatchIds[i * supportCnt],
