@@ -60,7 +60,7 @@
 using namespace cv;
 using namespace cv::cudev;
 
-void videoDecPostProcessFrame(const GpuMat& decodedFrame, OutputArray _outFrame, int width, int height, cudaStream_t stream);
+void videoDecPostProcessFrame(const GpuMat& decodedFrame, GpuMat& _outFrame, int width, int height, cudaStream_t stream);
 
 namespace
 {
@@ -186,12 +186,11 @@ namespace
     }
 }
 
-void videoDecPostProcessFrame(const GpuMat& decodedFrame, OutputArray _outFrame, int width, int height, cudaStream_t stream)
+void videoDecPostProcessFrame(const GpuMat& decodedFrame, GpuMat& outFrame, int width, int height, cudaStream_t stream)
 {
     // Final Stage: NV12toARGB color space conversion
 
-    _outFrame.create(height, width, CV_8UC4);
-    GpuMat outFrame = _outFrame.getGpuMat();
+    outFrame.create(height, width, CV_8UC4);
 
     dim3 block(32, 8);
     dim3 grid(divUp(width, 2 * block.x), divUp(height, block.y));
