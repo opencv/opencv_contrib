@@ -160,7 +160,7 @@ public:
      *  To used more complex edge map estimator (e.g. StructuredEdgeDetection that has been
      *  used in the original publication) that may lead to improved accuracies, the internal
      *  edge map estimation can be bypassed here.
-     *  @param _costMap a type CV_32FC1 Mat is required.
+     *  @param costMap a type CV_32FC1 Mat is required.
      *  @see cv::ximgproc::createSuperpixelSLIC
     */
     CV_WRAP virtual void setCostMap(const Mat & costMap) = 0;
