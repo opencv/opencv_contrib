@@ -210,6 +210,22 @@ static void _reorderCandidatesCorners(vector< vector< Point2f > > &candidates) {
     }
 }
 
+/**
+  * @brief to make sure that the corner's order of both candidates (default/white) is the same
+  */
+static vector< Point2f > alignContourOrder( Point2f corner, vector< Point2f > candidate){
+    uint8_t r=0;
+    double min = cv::norm( Vec2f( corner - candidate[0] ), NORM_L2SQR);
+    for(uint8_t pos=1; pos < 4; pos++) {
+        double nDiff = cv::norm( Vec2f( corner - candidate[pos] ), NORM_L2SQR);
+        if(nDiff < min){
+            r = pos;
+            min =nDiff;
+        }
+    }
+    std::rotate(candidate.begin(), candidate.begin() + r, candidate.end());
+    return candidate;
+}
 
 /**
   * @brief Check candidates that are too close to each other, save the potential candidates
@@ -315,7 +331,7 @@ static void _filterTooCloseCandidates(const vector< vector< Point2f > > &candida
             biggerContours.push_back(contoursIn[biggerIdx]);
 
             if( detectInvertedMarker ){
-                smallerCandidates.push_back(candidatesIn[smallerIdx]);
+                smallerCandidates.push_back(alignContourOrder(candidatesIn[biggerIdx][0], candidatesIn[smallerIdx]));
                 smallerContours.push_back(contoursIn[smallerIdx]);
             }
         }
@@ -509,7 +525,7 @@ static int _getBorderErrors(const Mat &bits, int markerSize, int borderSize) {
  */
 static uint8_t _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArray _image,
                                   vector<Point2f>& _corners, int& idx,
-                                  const Ptr<DetectorParameters>& params)
+                                  const Ptr<DetectorParameters>& params, int& rotation)
 {
     CV_Assert(_corners.size() == 4);
     CV_Assert(_image.getMat().total() != 0);
@@ -549,14 +565,9 @@ static uint8_t _identifyOneCandidate(const Ptr<Dictionary>& dictionary, InputArr
             .colRange(params->markerBorderBits, candidateBits.rows - params->markerBorderBits);
 
     // try to indentify the marker
-    int rotation;
     if(!dictionary->identify(onlyBits, idx, rotation, params->errorCorrectionRate))
         return 0;
 
-    // shift corner positions to the correct rotation
-    if(rotation != 0) {
-        std::rotate(_corners.begin(), _corners.begin() + 4 - rotation, _corners.end());
-    }
     return typ;
 }
 
@@ -593,7 +604,12 @@ static void _copyVector2Output(vector< vector< Point2f > > &vec, OutputArrayOfAr
     }
 }
 
-
+/**
+ * @brief rotate the initial corner to get to the right position
+ */
+static void correctCornerPosition( vector< Point2f >& _candidate, int rotate){
+    std::rotate(_candidate.begin(), _candidate.begin() + 4 - rotate, _candidate.end());
+}
 
 /**
  * @brief Identify square candidates according to a marker dictionary
@@ -616,6 +632,7 @@ static void _identifyCandidates(InputArray _image, vector< vector< vector< Point
     _convertToGrey(_image.getMat(), grey);
 
     vector< int > idsTmp(ncandidates, -1);
+    vector< int > rotated(ncandidates, 0);
     vector< uint8_t > validCandidates(ncandidates, 0);
 
     //// Analyze each of the candidates
@@ -627,7 +644,7 @@ static void _identifyCandidates(InputArray _image, vector< vector< vector< Point
 
         for(int i = begin; i < end; i++) {
             int currId;
-            validCandidates[i] = _identifyOneCandidate(_dictionary, grey, candidates[i], currId, params);
+            validCandidates[i] = _identifyOneCandidate(_dictionary, grey, candidates[i], currId, params, rotated[i]);
 
             if(validCandidates[i] > 0)
                 idsTmp[i] = currId;
@@ -636,19 +653,20 @@ static void _identifyCandidates(InputArray _image, vector< vector< vector< Point
 
     for(int i = 0; i < ncandidates; i++) {
         if(validCandidates[i] > 0) {
-            // add the white valid candidate
-            if( params->detectInvertedMarker && validCandidates[i] == 2 ){
-                accepted.push_back(_candidatesSet[1][i]);
-                ids.push_back(idsTmp[i]);
+            // to choose the right set of candidates :: 0 for default, 1 for white markers
+            uint8_t set = validCandidates[i]-1;
 
-                contours.push_back(_contoursSet[1][i]);
+            // shift corner positions to the correct rotation
+            correctCornerPosition(_candidatesSet[set][i], rotated[i]);
+
+            if( !params->detectInvertedMarker && validCandidates[i] == 2 )
                 continue;
-            }
-            // add the default (black) valid candidate
-            accepted.push_back(_candidatesSet[0][i]);
+
+            // add valid candidate
+            accepted.push_back(_candidatesSet[set][i]);
             ids.push_back(idsTmp[i]);
 
-            contours.push_back(_contoursSet[0][i]);
+            contours.push_back(_contoursSet[set][i]);
 
         } else {
             rejected.push_back(_candidatesSet[0][i]);
