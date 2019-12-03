@@ -1696,8 +1696,6 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
 
     parallel_for_(Range(0, iterCnt), [&](const Range& range)
     {
-        Mat tmpInlierFlag(1, supportCnt, CV_32SC1);
-        Mat tmpModel(1, 6, CV_32FC1);
         vector<int> vFlags(spCnt);
         for (int iter = range.start; iter < range.end; iter++)
         {
