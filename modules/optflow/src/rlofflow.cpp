@@ -128,7 +128,7 @@ public:
             param = Ptr<RLOFOpticalFlowParameter>(new RLOFOpticalFlowParameter());
         if (param->supportRegionType == SR_CROSS)
             CV_Assert( I0.channels() == 3 && I1.channels() == 3);
-        CV_Assert(interp_type == InterpolationType::INTERP_EPIC || interp_type == InterpolationType::INTERP_GEO);
+        CV_Assert(interp_type == InterpolationType::INTERP_EPIC || interp_type == InterpolationType::INTERP_GEO || interp_type == InterpolationType::INTERP_RIC);
         // if no parameter is used use the default parameter
 
         Mat prevImage = I0.getMat();

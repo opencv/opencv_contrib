@@ -150,11 +150,11 @@ public:
      *model for a superpixel segment. However, lower values would make the interpolation
      *noticeably faster. The original implementation of @cite Hu2017 uses 32.
     */
-    CV_WRAP virtual void setK(int _k = 32) = 0;
+    CV_WRAP virtual void setK(int k = 32) = 0;
     /** @copybrief setK
      *    @see setK
      */
-    CV_WRAP virtual int  getK() const = 0;
+    CV_WRAP virtual int getK() const = 0;
     /** @brief Interface to provide a more elaborated cost map, i.e. edge map, for the edge-aware term.
      *  This implementation is based on a rather simple gradient-based edge map estimation.
      *  To used more complex edge map estimator (e.g. StructuredEdgeDetection that has been
@@ -163,27 +163,27 @@ public:
      *  @param _costMap a type CV_32FC1 Mat is required.
      *  @see cv::ximgproc::createSuperpixelSLIC
     */
-    CV_WRAP virtual void setCostMap(const Mat & _costMap) = 0;
+    CV_WRAP virtual void setCostMap(const Mat & costMap) = 0;
     /** @brief Get the internal cost, i.e. edge map, used for estimating the edge-aware term.
      *    @see setCostMap
      */
-    CV_WRAP virtual void setSuperpixelSize(int _spSize = 15) = 0;
+    CV_WRAP virtual void setSuperpixelSize(int spSize = 15) = 0;
     /** @copybrief setSuperpixelSize
      *    @see setSuperpixelSize
      */
-    CV_WRAP virtual int  getSuperpixelSize() const = 0;
+    CV_WRAP virtual int getSuperpixelSize() const = 0;
     /** @brief Parameter defines the number of nearest-neighbor matches for each superpixel considered, when fitting a locally affine
      *model.
     */
-    CV_WRAP virtual void setSuperpixelNNCnt(int _spNN = 150) = 0;
+    CV_WRAP virtual void setSuperpixelNNCnt(int spNN = 150) = 0;
     /** @copybrief setSuperpixelNNCnt
      *    @see setSuperpixelNNCnt
     */
-    CV_WRAP virtual int  getSuperpixelNNCnt() const = 0;
+    CV_WRAP virtual int getSuperpixelNNCnt() const = 0;
     /** @brief Parameter to tune enforcement of superpixel smoothness factor used for oversegmentation.
      *  @see cv::ximgproc::createSuperpixelSLIC
     */
-    CV_WRAP virtual void setSuperpixelRuler(float _ruler = 15.f) = 0;
+    CV_WRAP virtual void setSuperpixelRuler(float ruler = 15.f) = 0;
     /** @copybrief setSuperpixelRuler
      *    @see setSuperpixelRuler
      */
@@ -194,64 +194,64 @@ public:
      * - cv::ximgproc::SLICType MSLIC will optimize using manifold methods resulting in more content-sensitive superpixels (value: 102).
      *  @see cv::ximgproc::createSuperpixelSLIC
     */
-    CV_WRAP virtual void setSuperpixelMode(int _mode = 100) = 0;
+    CV_WRAP virtual void setSuperpixelMode(int mode = 100) = 0;
     /** @copybrief setSuperpixelMode
      *    @see setSuperpixelMode
      */
-    CV_WRAP virtual int  getSuperpixelMode() const = 0;
+    CV_WRAP virtual int getSuperpixelMode() const = 0;
     /** @brief Alpha is a parameter defining a global weight for transforming geodesic distance into weight.
      */
-    CV_WRAP virtual void setAlpha(float _alpha = 0.7f) = 0;
+    CV_WRAP virtual void setAlpha(float alpha = 0.7f) = 0;
     /** @copybrief setAlpha
      *    @see setAlpha
      */
-    CV_WRAP virtual float  getAlpha() const = 0;
+    CV_WRAP virtual float getAlpha() const = 0;
     /** @brief Parameter defining the number of iterations for piece-wise affine model estimation.
      */
-    CV_WRAP virtual void setModelIter(int _modelIter = 4) = 0;
+    CV_WRAP virtual void setModelIter(int modelIter = 4) = 0;
     /** @copybrief setModelIter
      *    @see setModelIter
      */
-    CV_WRAP virtual int  getModelIter() const = 0;
+    CV_WRAP virtual int getModelIter() const = 0;
     /** @brief Parameter to choose wether additional refinement of the piece-wise affine models is employed.
     */
-    CV_WRAP virtual void setRefineModels(bool _refineModles = true) = 0;
+    CV_WRAP virtual void setRefineModels(bool refineModles = true) = 0;
     /** @copybrief setRefineModels
      *    @see setRefineModels
      */
-    CV_WRAP virtual bool  getRefineModels() const = 0;
+    CV_WRAP virtual bool getRefineModels() const = 0;
     /** @brief MaxFlow is a threshold to validate the predictions using a certain piece-wise affine model.
      * If the prediction exceeds the treshold the translational model will be applied instead.
     */
-    CV_WRAP virtual void setMaxFlow(float _maxFlow = 250.f) = 0;
+    CV_WRAP virtual void setMaxFlow(float maxFlow = 250.f) = 0;
     /** @copybrief setMaxFlow
      *    @see setMaxFlow
      */
-    CV_WRAP virtual float  getMaxFlow() const = 0;
+    CV_WRAP virtual float getMaxFlow() const = 0;
     /** @brief Parameter to choose wether the VariationalRefinement post-processing  is employed.
     */
-    CV_WRAP virtual void setUseVariationalRefinement(bool _use_variational_refinement = false) = 0;
+    CV_WRAP virtual void setUseVariationalRefinement(bool use_variational_refinement = false) = 0;
     /** @copybrief setUseVariationalRefinement
      *    @see setUseVariationalRefinement
      */
     CV_WRAP virtual bool  getUseVariationalRefinement() const = 0;
     /** @brief Sets whether the fastGlobalSmootherFilter() post-processing is employed.
     */
-    CV_WRAP virtual void setUseGlobalSmootherFilter(bool _use_FGS = true) = 0;
+    CV_WRAP virtual void setUseGlobalSmootherFilter(bool use_FGS = true) = 0;
     /** @copybrief setUseGlobalSmootherFilter
      *    @see setUseGlobalSmootherFilter
      */
     CV_WRAP virtual bool getUseGlobalSmootherFilter() const = 0;
     /** @brief Sets the respective fastGlobalSmootherFilter() parameter.
      */
-    CV_WRAP virtual void  setFGSLambda(float _lambda = 500.f) = 0;
+    CV_WRAP virtual void  setFGSLambda(float lambda = 500.f) = 0;
     /**  @copybrief setFGSLambda
      *     @see setFGSLambda
      */
     CV_WRAP virtual float getFGSLambda() const = 0;
     /** @brief Sets the respective fastGlobalSmootherFilter() parameter.
      */
-    CV_WRAP virtual void  setFGSSigma(float _sigma = 1.5f) = 0;
+    CV_WRAP virtual void  setFGSSigma(float sigma = 1.5f) = 0;
     /**  @copybrief setFGSSigma
      *     @see setFGSSigma
      */
