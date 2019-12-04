@@ -18,7 +18,7 @@ def ninputs(fun):
 def outputs(args):
     '''Determines whether any of the given arguments is an output
     reference, and returns a list of only those elements.
-    In OpenCV, output references are preceeded by CV_OUT or has *OutputArray* type
+    In OpenCV, output references are preceded by CV_OUT or has *OutputArray* type
     '''
     try:
       return [arg for arg in args['only'] if arg.O and not arg.I]

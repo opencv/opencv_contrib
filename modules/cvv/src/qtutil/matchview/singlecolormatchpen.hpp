@@ -16,7 +16,7 @@ namespace qtutil
 
 /**
  * This MatchPen return for all CVVMatches the same Color,
- * the Color can be choosen by an QColorDialog
+ * the Color can be chosen by an QColorDialog
  */
 
 class SingleColorMatchPen : public MatchSettings

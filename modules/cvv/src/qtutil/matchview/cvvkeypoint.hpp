@@ -93,7 +93,7 @@ class CVVKeyPoint : public QGraphicsObject,public cv::KeyPoint
 
 signals:
 	/**
-	 * @brief this signal will be emited when the imagepoint in the scene
+	 * @brief this signal will be emitted when the imagepoint in the scene
 	 * has changed
 	 * @param visible it is true if this keypoint is in the visibleArea
 	 */

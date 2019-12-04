@@ -1104,7 +1104,7 @@ float SuperpixelSEEDSImpl::intersectConf(int level1, int label1A, int label1B,
      * - intersection B =
      *     intersection of (level1, label1B) - (level2, label2) and (level2, label2)
      *   where (level1, label1B) - (level2, label2)
-     *     is the substraction of 2 histograms (-> delete_block method)
+     *     is the subtraction of 2 histograms (-> delete_block method)
      * - returns the difference between the 2 intersections: intA - intB
      */
 

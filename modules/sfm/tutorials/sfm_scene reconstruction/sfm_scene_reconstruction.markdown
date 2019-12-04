@@ -67,7 +67,7 @@ Finally, the obtained results will be shown in Viz.
 Usage and Results
 -----------------
 
-In order to run this sample we need to specify the path to the image paths files, the focal lenght of the camera in addition to the center projection coordinates (in pixels).
+In order to run this sample we need to specify the path to the image paths files, the focal length of the camera in addition to the center projection coordinates (in pixels).
 
 **1. Middlebury temple**
 

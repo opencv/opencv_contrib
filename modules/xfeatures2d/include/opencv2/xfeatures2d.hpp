@@ -947,7 +947,7 @@ public:
 /** @brief Estimates cornerness for prespecified KeyPoints using the FAST algorithm
 
 @param image grayscale image where keypoints (corners) are detected.
-@param keypoints keypoints which should be tested to fit the FAST criteria. Keypoints not beeing
+@param keypoints keypoints which should be tested to fit the FAST criteria. Keypoints not being
 detected as corners are removed.
 @param threshold threshold on difference between intensity of the central pixel and pixels of a
 circle around this pixel.

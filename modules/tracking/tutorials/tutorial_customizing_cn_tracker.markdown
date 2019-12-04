@@ -61,7 +61,7 @@ If you need a more detailed information to use @ref cv::Tracker, please refer to
 
 -#  **Defining the feature**
 
-    In this tutorial, the extracted feature is reponse of the Sobel filter in x and y direction.
+    In this tutorial, the extracted feature is response of the Sobel filter in x and y direction.
     Those Sobel filter responses are concatenated, resulting a feature with 2 channels.
 
     @snippet tracking/samples/tutorial_customizing_cn_tracker.cpp sobel

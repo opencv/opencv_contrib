@@ -96,7 +96,7 @@ i.e. algorithms which somehow takes into account pixel affinities in natural ima
     Run length encoded images are stored in standard opencv images. Images have a single column of cv::Point3i elements. The number of rows is the number of run + 1. The first row contains
     the size of the original (not encoded) image.  For the runs the following mapping is used (x: column begin, y: column end (last column), z: row).
 
-    The size of the original image is required for compatiblity with the imgproc functions when the boundary handling requires that pixel outside the image boundary are
+    The size of the original image is required for compatibility with the imgproc functions when the boundary handling requires that pixel outside the image boundary are
     "on".
 
     @}

@@ -62,7 +62,7 @@ There are three main components: the TrackerSampler, the TrackerFeatureSet and t
 first component is the object that computes the patches over the frame based on the last target
 location. The TrackerFeatureSet is the class that manages the Features, is possible plug many kind
 of these (HAAR, HOG, LBP, Feature2D, etc). The last component is the internal representation of the
-target, it is the appearence model. It stores all state candidates and compute the trajectory (the
+target, it is the appearance model. It stores all state candidates and compute the trajectory (the
 most likely target states). The class TrackerTargetState represents a possible state of the target.
 The TrackerSampler and the TrackerFeatureSet are the visual representation of the target, instead
 the TrackerModel is the statistical model.

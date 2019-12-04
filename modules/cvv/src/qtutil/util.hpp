@@ -73,9 +73,9 @@ QSet<QString> createStringSet(QString string);
 std::pair<bool, QString> typeToQString(const cv::Mat &mat);
 
 /**
- * @brief Returns a string descripton to a image conversion result.
+ * @brief Returns a string description to a image conversion result.
  * @param result The image conversion result.
- * @return The descripton.
+ * @return The description.
  */
 QString conversionResultToString(const ImageConversionResult &result);
 

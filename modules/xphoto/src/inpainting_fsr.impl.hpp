@@ -410,7 +410,7 @@ icvDetermineProcessingOrder(
     int img_height = sampled_img.rows;
     int img_width = sampled_img.cols;
 
-    // inital scan of distorted blocks
+    // initial scan of distorted blocks
     std::vector< std::tuple< int, int > > set_todo;
     int blocks_column = divUp(img_height, block_size);
     int blocks_line = divUp(img_width, block_size);

@@ -11,7 +11,7 @@
 namespace cvv{ namespace qtutil{
 
 /**
- * @brief this class can use diffrent MatchSettings
+ * @brief this class can use different MatchSettings
  * you can register functios which take a std::vector<cv::DMatch> as argument.
  */
 class MatchSettingsSelector:public MatchSettings, public RegisterHelper<MatchSettings,std::vector<cv::DMatch>>{

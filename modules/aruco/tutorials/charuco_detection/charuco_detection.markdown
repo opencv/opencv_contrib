@@ -32,7 +32,7 @@ This class, as the rest of ChArUco functionalities, are defined in:
     #include <opencv2/aruco/charuco.hpp>
 @endcode
 
-To define a ```CharucoBoard```, it is necesary:
+To define a ```CharucoBoard```, it is necessary:
 
 - Number of chessboard squares in X direction.
 - Number of chessboard squares in Y direction.
