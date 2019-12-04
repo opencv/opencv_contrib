@@ -53,7 +53,7 @@ Ptr<VideoReader> cv::cudacodec::createVideoReader(const Ptr<RawVideoSource>&) { 
 
 #else // HAVE_NVCUVID
 
-void videoDecPostProcessFrame(const GpuMat& decodedFrame, OutputArray _outFrame, int width, int height, cudaStream_t stream);
+void videoDecPostProcessFrame(const GpuMat& decodedFrame, GpuMat& _outFrame, int width, int height, cudaStream_t stream);
 
 using namespace cv::cudacodec::detail;
 
@@ -65,7 +65,7 @@ namespace
         explicit VideoReaderImpl(const Ptr<VideoSource>& source);
         ~VideoReaderImpl();
 
-        bool nextFrame(OutputArray frame, Stream& stream) CV_OVERRIDE;
+        bool nextFrame(GpuMat& frame, Stream& stream) CV_OVERRIDE;
 
         FormatInfo format() const CV_OVERRIDE;
 
@@ -122,7 +122,7 @@ namespace
         CUvideoctxlock m_lock;
     };
 
-    bool VideoReaderImpl::nextFrame(OutputArray frame, Stream& stream)
+    bool VideoReaderImpl::nextFrame(GpuMat& frame, Stream& stream)
     {
         if (videoSource_->hasError() || videoParser_->hasError())
             CV_Error(Error::StsUnsupportedFormat, "Unsupported video source");

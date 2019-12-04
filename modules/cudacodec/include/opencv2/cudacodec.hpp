@@ -302,7 +302,7 @@ public:
     If no frames has been grabbed (there are no more frames in video file), the methods return false .
     The method throws Exception if error occurs.
      */
-    CV_WRAP virtual bool nextFrame(OutputArray frame, Stream &stream = Stream::Null()) = 0;
+    CV_WRAP virtual bool nextFrame(CV_OUT GpuMat& frame, Stream &stream = Stream::Null()) = 0;
 
     /** @brief Returns information about video file format.
     */
