@@ -152,7 +152,7 @@ public:
     */
     CV_WRAP virtual void setK(int k = 32) = 0;
     /** @copybrief setK
-     *    @see setK
+     *  @see setK
      */
     CV_WRAP virtual int getK() const = 0;
     /** @brief Interface to provide a more elaborated cost map, i.e. edge map, for the edge-aware term.
@@ -165,11 +165,11 @@ public:
     */
     CV_WRAP virtual void setCostMap(const Mat & costMap) = 0;
     /** @brief Get the internal cost, i.e. edge map, used for estimating the edge-aware term.
-     *    @see setCostMap
+     *  @see setCostMap
      */
     CV_WRAP virtual void setSuperpixelSize(int spSize = 15) = 0;
     /** @copybrief setSuperpixelSize
-     *    @see setSuperpixelSize
+     *  @see setSuperpixelSize
      */
     CV_WRAP virtual int getSuperpixelSize() const = 0;
     /** @brief Parameter defines the number of nearest-neighbor matches for each superpixel considered, when fitting a locally affine
@@ -177,7 +177,7 @@ public:
     */
     CV_WRAP virtual void setSuperpixelNNCnt(int spNN = 150) = 0;
     /** @copybrief setSuperpixelNNCnt
-     *    @see setSuperpixelNNCnt
+     *  @see setSuperpixelNNCnt
     */
     CV_WRAP virtual int getSuperpixelNNCnt() const = 0;
     /** @brief Parameter to tune enforcement of superpixel smoothness factor used for oversegmentation.
@@ -185,7 +185,7 @@ public:
     */
     CV_WRAP virtual void setSuperpixelRuler(float ruler = 15.f) = 0;
     /** @copybrief setSuperpixelRuler
-     *    @see setSuperpixelRuler
+     *  @see setSuperpixelRuler
      */
     CV_WRAP virtual float  getSuperpixelRuler() const = 0;
     /** @brief Parameter to choose superpixel algorithm variant to use:
@@ -203,21 +203,21 @@ public:
      */
     CV_WRAP virtual void setAlpha(float alpha = 0.7f) = 0;
     /** @copybrief setAlpha
-     *    @see setAlpha
+     *  @see setAlpha
      */
     CV_WRAP virtual float getAlpha() const = 0;
     /** @brief Parameter defining the number of iterations for piece-wise affine model estimation.
      */
     CV_WRAP virtual void setModelIter(int modelIter = 4) = 0;
     /** @copybrief setModelIter
-     *    @see setModelIter
+     *  @see setModelIter
      */
     CV_WRAP virtual int getModelIter() const = 0;
     /** @brief Parameter to choose wether additional refinement of the piece-wise affine models is employed.
     */
     CV_WRAP virtual void setRefineModels(bool refineModles = true) = 0;
     /** @copybrief setRefineModels
-     *    @see setRefineModels
+     *  @see setRefineModels
      */
     CV_WRAP virtual bool getRefineModels() const = 0;
     /** @brief MaxFlow is a threshold to validate the predictions using a certain piece-wise affine model.
@@ -225,35 +225,35 @@ public:
     */
     CV_WRAP virtual void setMaxFlow(float maxFlow = 250.f) = 0;
     /** @copybrief setMaxFlow
-     *    @see setMaxFlow
+     *  @see setMaxFlow
      */
     CV_WRAP virtual float getMaxFlow() const = 0;
     /** @brief Parameter to choose wether the VariationalRefinement post-processing  is employed.
     */
     CV_WRAP virtual void setUseVariationalRefinement(bool use_variational_refinement = false) = 0;
     /** @copybrief setUseVariationalRefinement
-     *    @see setUseVariationalRefinement
+     *  @see setUseVariationalRefinement
      */
     CV_WRAP virtual bool  getUseVariationalRefinement() const = 0;
     /** @brief Sets whether the fastGlobalSmootherFilter() post-processing is employed.
     */
     CV_WRAP virtual void setUseGlobalSmootherFilter(bool use_FGS = true) = 0;
     /** @copybrief setUseGlobalSmootherFilter
-     *    @see setUseGlobalSmootherFilter
+     *  @see setUseGlobalSmootherFilter
      */
     CV_WRAP virtual bool getUseGlobalSmootherFilter() const = 0;
     /** @brief Sets the respective fastGlobalSmootherFilter() parameter.
      */
     CV_WRAP virtual void  setFGSLambda(float lambda = 500.f) = 0;
-    /**  @copybrief setFGSLambda
-     *     @see setFGSLambda
+    /** @copybrief setFGSLambda
+     *  @see setFGSLambda
      */
     CV_WRAP virtual float getFGSLambda() const = 0;
     /** @brief Sets the respective fastGlobalSmootherFilter() parameter.
      */
     CV_WRAP virtual void  setFGSSigma(float sigma = 1.5f) = 0;
-    /**  @copybrief setFGSSigma
-     *     @see setFGSSigma
+    /** @copybrief setFGSSigma
+     *  @see setFGSSigma
      */
     CV_WRAP virtual float getFGSSigma() const = 0;
 };

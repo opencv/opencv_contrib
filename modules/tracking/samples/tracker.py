@@ -2,15 +2,13 @@ import numpy as np
 import cv2 as cv
 import sys
 
-#if len(sys.argv) != 2:
-#    print('Input video name is missing')
-#    exit()
+if len(sys.argv) != 2:
+    print('Input video name is missing')
+    exit()
 
 cv.namedWindow("tracking")
-camera = cv.VideoCapture('0')
-ok = True
-image=camera.read()
-cv.imshow("test", image)
+camera = cv.VideoCapture(sys.argv[1])
+ok, image=camera.read()
 if not ok:
     print('Failed to read video')
     exit()
@@ -21,7 +19,7 @@ init_once = False
 while camera.isOpened():
     ok, image=camera.read()
     if not ok:
-        print ('no image to read')
+        print 'no image to read'
         break
 
     if not init_once:
@@ -29,7 +27,7 @@ while camera.isOpened():
         init_once = True
 
     ok, newbox = tracker.update(image)
-    print (ok, newbox)
+    print ok, newbox
 
     if ok:
         p1 = (int(newbox[0]), int(newbox[1]))

@@ -58,10 +58,10 @@ struct SparseMatch
 
 bool operator<(const SparseMatch& lhs,const SparseMatch& rhs);
 
-void computeGradientMagnitude(Mat& src, Mat& dst);
-void weightedLeastSquaresAffineFit(int* labels, float* weights, int count, float lambda, const SparseMatch* matches, Mat& dst);
-void generateHypothesis(int* labels, int count, RNG& rng, unsigned char* is_used, SparseMatch* matches, Mat& dst);
-void verifyHypothesis(int* labels, float* weights, int count, SparseMatch* matches, float eps, float lambda, Mat& hypothesis_transform, Mat& old_transform, float& old_weighted_num_inliers);
+static void computeGradientMagnitude(Mat& src, Mat& dst);
+static void weightedLeastSquaresAffineFit(int* labels, float* weights, int count, float lambda, const SparseMatch* matches, Mat& dst);
+static void generateHypothesis(int* labels, int count, RNG& rng, unsigned char* is_used, SparseMatch* matches, Mat& dst);
+static void verifyHypothesis(int* labels, float* weights, int count, SparseMatch* matches, float eps, float lambda, Mat& hypothesis_transform, Mat& old_transform, float& old_weighted_num_inliers);
 
 struct node
 {
@@ -206,7 +206,7 @@ void EdgeAwareInterpolatorImpl::interpolate(InputArray from_image, InputArray fr
     if(use_post_proc)
         fastGlobalSmootherFilter(src,dst,dst,fgs_lambda,fgs_sigma);
 
-    costMap = Mat();
+    costMap.release();
     delete[] g;
 }
 
@@ -599,7 +599,7 @@ void EdgeAwareInterpolatorImpl::GetKNNMatches_ParBody::operator() (const Range& 
     delete[] expanded_flag;
 }
 
-void weightedLeastSquaresAffineFit(int* labels, float* weights, int count, float lambda, const SparseMatch* matches, Mat& dst)
+static void weightedLeastSquaresAffineFit(int* labels, float* weights, int count, float lambda, const SparseMatch* matches, Mat& dst)
 {
     double sa[6][6]={{0.}}, sb[6]={0.};
     Mat A (6, 6, CV_64F, &sa[0][0]),
@@ -646,7 +646,7 @@ void weightedLeastSquaresAffineFit(int* labels, float* weights, int count, float
     MM.reshape(2,3).convertTo(dst,CV_32F);
 }
 
-void generateHypothesis(int* labels, int count, RNG& rng, unsigned char* is_used, SparseMatch* matches, Mat& dst)
+static void generateHypothesis(int* labels, int count, RNG& rng, unsigned char* is_used, SparseMatch* matches, Mat& dst)
 {
     int idx;
     Point2f src_points[3];
@@ -677,7 +677,7 @@ void generateHypothesis(int* labels, int count, RNG& rng, unsigned char* is_used
     getAffineTransform(src_points,dst_points).convertTo(dst,CV_32F);
 }
 
-void verifyHypothesis(int* labels, float* weights, int count, SparseMatch* matches, float eps, float lambda, Mat& hypothesis_transform, Mat& old_transform, float& old_weighted_num_inliers)
+static void verifyHypothesis(int* labels, float* weights, int count, SparseMatch* matches, float eps, float lambda, Mat& hypothesis_transform, Mat& old_transform, float& old_weighted_num_inliers)
 {
     float* tr = hypothesis_transform.ptr<float>(0);
     Point2f a,b;
@@ -699,7 +699,7 @@ void verifyHypothesis(int* labels, float* weights, int count, SparseMatch* match
     }
 }
 
-void computeGradientMagnitude(Mat& src, Mat& dst)
+static void computeGradientMagnitude(Mat& src, Mat& dst)
 {
     Mat dx, dy;
     Sobel(src, dx, CV_16S, 1, 0);
@@ -896,7 +896,7 @@ public:
 protected:
     // internal buffers
     int match_num;
-    vector<node>* g;
+    vector<vector<node>> g;
     Mat NNlabels;
     Mat NNdistances;
     Mat labels;
@@ -970,9 +970,9 @@ public:
 
 Ptr<RICInterpolatorImpl> RICInterpolatorImpl::create()
 {
-    RICInterpolatorImpl *eai = new RICInterpolatorImpl();
+    auto eai = makePtr<RICInterpolatorImpl>();
     eai->init();
-    return Ptr<RICInterpolatorImpl>(eai);
+    return eai;
 }
 
 void RICInterpolatorImpl::init()
@@ -1000,31 +1000,14 @@ struct MinHeap
 public:
     MinHeap(int size)
     {
-        memset(this, 0, sizeof(*this));
+        //memset(this, 0, sizeof(*this));
         Init(size);
-    }
-
-    ~MinHeap()
-    {
-        if (m_index) {
-            delete[] m_index;
-        }
-        if (m_weight) {
-            delete[] m_weight;
-        }
     }
 
     int Init(int size)
     {
-        if (m_index) {
-            delete m_index;
-        }
-        if (m_weight) {
-            delete m_weight;
-        }
-
-        m_index = new float[size];
-        m_weight = new float[size];
+        m_index.resize(size);
+        m_weight.resize(size);
         m_size = size;
         m_validSize = 0;
 
@@ -1105,8 +1088,8 @@ private:
             return w1 < w2;
     }
 
-    float* m_index;
-    float* m_weight;
+    vector<float> m_index;
+    vector<float> m_weight;
     int m_size;
     int m_validSize;
 };
@@ -1164,7 +1147,7 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
 
     geodesicDistanceTransform(matDistanceMap, costMap);
 
-    g = new vector<node>[match_num];
+    g.resize(match_num);
     buildGraph(matDistanceMap, costMap);
     parallel_for_(Range(0, getNumThreads()), [&](const Range & range)
     {
@@ -1173,14 +1156,14 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
         int end = std::min(range.end   * stripe_sz, match_num);
         nodeHeap q((int)match_num);
         int num_expanded_vertices;
-        unsigned char* expanded_flag = new unsigned char[match_num];
+        vector<unsigned int> expanded_flag(match_num);
         node* neighbors;
         for (int i = start; i < end; i++)
         {
             if (g[i].empty())
                 continue;
             num_expanded_vertices = 0;
-            memset(expanded_flag, 0, match_num);
+            fill(expanded_flag.begin(), expanded_flag.end(), 0);
             q.clear();
             q.add(node((int)i, 0.0f));
             int* NNlabels_row = NNlabels.ptr<int>(i);
@@ -1204,7 +1187,6 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
                 }
             }
         }
-        delete[] expanded_flag;
     });
 
     Mat spLabels;
@@ -1280,7 +1262,7 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
         }
     }
 
-    Mat dst = dense_flow.getMat();
+    Mat dst;
     Mat prevGrey, currGrey;
 
     if (use_variational_refinement)
@@ -1303,8 +1285,8 @@ void RICInterpolatorImpl::interpolate(InputArray from_image, InputArray from_poi
             cvtColor(src, prevGrey, COLOR_BGR2GRAY);
         fastGlobalSmootherFilter(prevGrey, dst, dst, fgs_lambda, fgs_sigma);
     }
+    dst.copyTo(dense_flow.getMat());
     costMap.release();
-    delete[] g;
 }
 
 void RICInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& cost_map)
@@ -1677,7 +1659,8 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
 
     // prepare data
     vector<float> bestCost(spCnt);
-    parallel_for_(Range(0, spCnt), [&](const Range& range)
+    Range range(0, spCnt);
+    //parallel_for_(Range(0, spCnt), [&](const Range& range)
     {
         for (int i = range.start; i < range.end; i++)
         {
@@ -1692,9 +1675,10 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
                 inputMatches,
                 inlierFlagRow);
         }
-    });
-
-    parallel_for_(Range(0, iterCnt), [&](const Range& range)
+    }
+    //);
+    range = Range(0, iterCnt);
+    //parallel_for_(Range(0, iterCnt), [&](const Range& range)
     {
         vector<int> vFlags(spCnt);
         for (int iter = range.start; iter < range.end; iter++)
@@ -1751,14 +1735,13 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
                 vFlags[idx] = 1;
             }
         }
-    });
-
-    //parallel_for_(Range(0, iterCnt), GenerateHypothesis_ParBody(*this, &bestCost[0], outModels, supportCnt, spCnt, spNN, &supportMatchIds[0], &supportMatchDis[0], inputMatches, inLierFlag));
-
+    }
+    //);
     // refinement
     if (refine_models)
     {
-        parallel_for_(Range(0, spCnt), [&](const Range& range)
+        range = Range(0, spCnt);
+        //parallel_for_(Range(0, spCnt), [&](const Range& range)
         {
             int averInlier = 0;
             int minPtCnt = 30;
@@ -1792,7 +1775,8 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
                 }
                 averInlier += inlierCnt;
             }
-        });
+        }
+        //);
     }
 
     return 0;
