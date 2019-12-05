@@ -30,7 +30,7 @@ static void help() {
       << " \n"
       << "        Each row corresponds to a different point.\n"
       << " \n"
-      << "        f  is the focal lenght in pixels. \n"
+      << "        f  is the focal length in pixels. \n"
       << "        cx is the image principal point x coordinates in pixels. \n"
       << "        cy is the image principal point y coordinates in pixels. \n"
       << "------------------------------------------------------------------\n\n"

@@ -36,7 +36,7 @@ Mat gaussian_shaped_labels(const float sigma, const int w, const int h)
             y.at<float>(i,j) = (float)exp((-0.5 / pow(sigma, 2)) * (pow((i+1-h2), 2) + pow((j+1-w2), 2)));
         }
     }
-    // wrap-arround with the circulat shifting
+    // wrap-around with the circulat shifting
     y = circshift(y, -cvFloor(y.cols / 2), -cvFloor(y.rows / 2));
     Mat yf;
     dft(y, yf, DFT_COMPLEX_OUTPUT);

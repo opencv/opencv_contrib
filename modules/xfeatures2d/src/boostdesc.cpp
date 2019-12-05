@@ -138,7 +138,7 @@ protected:
     // patch size
     int m_patch_size;
 
-    // orient quantitiy
+    // orient quantity
     int m_orient_q;
 
     // patch scale factor

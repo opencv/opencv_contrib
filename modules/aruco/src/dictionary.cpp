@@ -122,7 +122,7 @@ bool Dictionary::identify(const Mat &onlyBits, int &idx, int &rotation,
             }
         }
 
-        // if maxCorrection is fullfilled, return this one
+        // if maxCorrection is fulfilled, return this one
         if(currentMinDistance <= maxCorrectionRecalculed) {
             idx = m;
             rotation = currentRotation;

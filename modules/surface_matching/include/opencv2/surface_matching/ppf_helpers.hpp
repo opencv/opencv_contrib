@@ -59,7 +59,7 @@ namespace ppf_match_3d
  *  @param [in] fileName The PLY model to read
  *  @param [in] withNormals Flag wheather the input PLY contains normal information,
  *  and whether it should be loaded or not
- *  @return Returns the matrix on successfull load
+ *  @return Returns the matrix on successful load
  */
 CV_EXPORTS_W Mat loadPLYSimple(const char* fileName, int withNormals = 0);
 

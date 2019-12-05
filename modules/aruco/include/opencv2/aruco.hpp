@@ -354,7 +354,7 @@ class CV_EXPORTS_W GridBoard : public Board {
     // number of markers in X and Y directions
     int _markersX, _markersY;
 
-    // marker side lenght (normally in meters)
+    // marker side length (normally in meters)
     float _markerLength;
 
     // separation between markers in the grid

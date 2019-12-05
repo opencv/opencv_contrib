@@ -72,7 +72,7 @@ Using the masks, we applied three different kind of corruption on the same input
 
 ![input1, input2 and input3](images/fuzzy_inp_input.jpg)
 
-> Do not forget that in real life usage, images `input1`, `input2` and `input3` are created naturaly and used as the input directly.
+> Do not forget that in real life usage, images `input1`, `input2` and `input3` are created naturally and used as the input directly.
 
 Declaration of output images follows. In the following lines, the method of inpainting is applied. Let me explain three different algorithms one by one.
 

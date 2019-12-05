@@ -23,7 +23,7 @@ public:
         unsigned long tree_depth;
         /// num_trees_per_cascade_level This stores number of trees fit per cascade level.
         unsigned long num_trees_per_cascade_level;
-        /// learning_rate stores the learning rate in gradient boosting, also reffered as shrinkage.
+        /// learning_rate stores the learning rate in gradient boosting, also referred as shrinkage.
         float learning_rate;
         /// oversampling_amount stores number of initialisations used to create training samples.
         unsigned long oversampling_amount;

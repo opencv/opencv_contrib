@@ -661,7 +661,7 @@ int fit_quad(const Ptr<DetectorParameters> &_params, const Mat im, zarray_t *clu
     if (dot < 0)
         return 0;
 
-    // we now sort the points according to theta. This is a prepatory
+    // we now sort the points according to theta. This is a preparatory
     // step for segmenting them into four lines.
     if (1) {
         //        zarray_sort(cluster, pt_compare_theta);

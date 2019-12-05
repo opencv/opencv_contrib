@@ -244,7 +244,7 @@ void PPF3DDetector::trainModel(const Mat &PC)
     //printf("///////////////////// NEW REFERENCE ////////////////////////\n");
     for (int j=0; j<numRefPoints; j++)
     {
-      // cannnot compute the ppf with myself
+      // cannot compute the ppf with myself
       if (i!=j)
       {
         const Vec3f p2(sampled.ptr<float>(j));

@@ -100,7 +100,7 @@ CV_WRAP virtual float getSpatialWeight() = 0;
 * above(the SLIC stage). It describes the size of each
 * superpixel when initializing SLIC. Every superpixel
 * approximately has \f$slicSpixelSize \times slicSpixelSize\f$
-* pixels in the begining.
+* pixels in the beginning.
 */
 CV_WRAP virtual void setSlicSpixelSize(int n) = 0;
 CV_WRAP virtual int getSlicSpixelSize() = 0;
