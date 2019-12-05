@@ -1,5 +1,5 @@
 import argparse
-import cv2
+import cv2 as cv
 import glob
 import numpy as np
 import os
@@ -12,15 +12,15 @@ import time
 
 
 ALGORITHMS_TO_EVALUATE = [
-    (cv2.bgsegm.createBackgroundSubtractorMOG, 'MOG', {}),
-    (cv2.bgsegm.createBackgroundSubtractorGMG, 'GMG', {}),
-    (cv2.bgsegm.createBackgroundSubtractorCNT, 'CNT', {}),
-    (cv2.bgsegm.createBackgroundSubtractorLSBP, 'LSBP-vanilla', {'nSamples': 20, 'LSBPRadius': 4, 'Tlower': 2.0, 'Tupper': 200.0, 'Tinc': 1.0, 'Tdec': 0.05, 'Rscale': 5.0, 'Rincdec': 0.05, 'LSBPthreshold': 8}),
-    (cv2.bgsegm.createBackgroundSubtractorLSBP, 'LSBP-speed', {'nSamples': 10, 'LSBPRadius': 16, 'Tlower': 2.0, 'Tupper': 32.0, 'Tinc': 1.0, 'Tdec': 0.05, 'Rscale': 10.0, 'Rincdec': 0.005, 'LSBPthreshold': 8}),
-    (cv2.bgsegm.createBackgroundSubtractorLSBP, 'LSBP-quality', {'nSamples': 20, 'LSBPRadius': 16, 'Tlower': 2.0, 'Tupper': 32.0, 'Tinc': 1.0, 'Tdec': 0.05, 'Rscale': 10.0, 'Rincdec': 0.005, 'LSBPthreshold': 8}),
-    (cv2.bgsegm.createBackgroundSubtractorLSBP, 'LSBP-camera-motion-compensation', {'mc': 1}),
-    (cv2.bgsegm.createBackgroundSubtractorGSOC, 'GSOC', {}),
-    (cv2.bgsegm.createBackgroundSubtractorGSOC, 'GSOC-camera-motion-compensation', {'mc': 1})
+    (cv.bgsegm.createBackgroundSubtractorMOG, 'MOG', {}),
+    (cv.bgsegm.createBackgroundSubtractorGMG, 'GMG', {}),
+    (cv.bgsegm.createBackgroundSubtractorCNT, 'CNT', {}),
+    (cv.bgsegm.createBackgroundSubtractorLSBP, 'LSBP-vanilla', {'nSamples': 20, 'LSBPRadius': 4, 'Tlower': 2.0, 'Tupper': 200.0, 'Tinc': 1.0, 'Tdec': 0.05, 'Rscale': 5.0, 'Rincdec': 0.05, 'LSBPthreshold': 8}),
+    (cv.bgsegm.createBackgroundSubtractorLSBP, 'LSBP-speed', {'nSamples': 10, 'LSBPRadius': 16, 'Tlower': 2.0, 'Tupper': 32.0, 'Tinc': 1.0, 'Tdec': 0.05, 'Rscale': 10.0, 'Rincdec': 0.005, 'LSBPthreshold': 8}),
+    (cv.bgsegm.createBackgroundSubtractorLSBP, 'LSBP-quality', {'nSamples': 20, 'LSBPRadius': 16, 'Tlower': 2.0, 'Tupper': 32.0, 'Tinc': 1.0, 'Tdec': 0.05, 'Rscale': 10.0, 'Rincdec': 0.005, 'LSBPthreshold': 8}),
+    (cv.bgsegm.createBackgroundSubtractorLSBP, 'LSBP-camera-motion-compensation', {'mc': 1}),
+    (cv.bgsegm.createBackgroundSubtractorGSOC, 'GSOC', {}),
+    (cv.bgsegm.createBackgroundSubtractorGSOC, 'GSOC-camera-motion-compensation', {'mc': 1})
 ]
 
 
@@ -54,14 +54,14 @@ def evaluate_algorithm(gt, frames, algo, algo_arguments):
     t_start = time.time()
 
     for i in range(len(gt)):
-        frame = np.uint8(cv2.imread(frames[i], cv2.IMREAD_COLOR))
+        frame = np.uint8(cv.imread(frames[i], cv.IMREAD_COLOR))
         mask.append(bgs.apply(frame))
 
     average_duration = (time.time() - t_start) / len(gt)
     average_precision, average_recall, average_f1, average_accuracy = [], [], [], []
 
     for i in range(len(gt)):
-        gt_mask = np.uint8(cv2.imread(gt[i], cv2.IMREAD_GRAYSCALE))
+        gt_mask = np.uint8(cv.imread(gt[i], cv.IMREAD_GRAYSCALE))
         roi = ((gt_mask == 255) | (gt_mask == 0))
         if roi.sum() > 0:
             gt_answer, answer = gt_mask[roi], mask[i][roi]

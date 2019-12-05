@@ -1659,8 +1659,7 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
 
     // prepare data
     vector<float> bestCost(spCnt);
-    Range range(0, spCnt);
-    //parallel_for_(Range(0, spCnt), [&](const Range& range)
+    parallel_for_(Range(0, spCnt), [&](const Range& range)
     {
         for (int i = range.start; i < range.end; i++)
         {
@@ -1676,9 +1675,8 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
                 inlierFlagRow);
         }
     }
-    //);
-    range = Range(0, iterCnt);
-    //parallel_for_(Range(0, iterCnt), [&](const Range& range)
+    );
+    parallel_for_(Range(0, iterCnt), [&](const Range& range)
     {
         vector<int> vFlags(spCnt);
         for (int iter = range.start; iter < range.end; iter++)
@@ -1736,12 +1734,11 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
             }
         }
     }
-    //);
+    );
     // refinement
     if (refine_models)
     {
-        range = Range(0, spCnt);
-        //parallel_for_(Range(0, spCnt), [&](const Range& range)
+        parallel_for_(Range(0, spCnt), [&](const Range& range)
         {
             int averInlier = 0;
             int minPtCnt = 30;
@@ -1776,7 +1773,7 @@ int RICInterpolatorImpl::PropagateModels(int spCnt, Mat & spNN, vector<int> & su
                 averInlier += inlierCnt;
             }
         }
-        //);
+        );
     }
 
     return 0;
