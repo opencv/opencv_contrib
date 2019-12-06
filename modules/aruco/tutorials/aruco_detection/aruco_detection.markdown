@@ -4,9 +4,9 @@ Detection of ArUco Markers {#tutorial_aruco_detection}
 Pose estimation is of great importance in many computer vision applications: robot navigation,
 augmented reality, and many more. This process is based on finding correspondences between points in
 the real environment and their 2d image projection. This is usually a difficult step, and thus it is
-common the use of synthetic or fiducial markers to make it easier.
+common to use synthetic or fiducial markers to make it easier.
 
-One of the most popular approach is the use of binary square fiducial markers. The main benefit
+One of the most popular approaches is the use of binary square fiducial markers. The main benefit
 of these markers is that a single marker provides enough correspondences (its four corners)
 to obtain the camera pose. Also, the inner binary codification makes them specially robust, allowing
 the possibility of applying error detection and correction techniques.
@@ -20,14 +20,14 @@ a popular library for detection of square fiducial markers developed by Rafael M
 
 The aruco functionalities are included in:
 @code{.cpp}
-    #include <opencv2/aruco.hpp>
+#include <opencv2/aruco.hpp>
 @endcode
 
 
 Markers and Dictionaries
 ------
 
-An ArUco marker is a synthetic square marker composed by a wide black border and a inner binary
+An ArUco marker is a synthetic square marker composed by a wide black border and an inner binary
 matrix which determines its identifier (id). The black border facilitates its fast detection in the
 image and the binary codification allows its identification and the application of error detection
 and correction techniques. The marker size determines the size of the internal matrix. For instance
@@ -41,12 +41,12 @@ It must be noted that a marker can be found rotated in the environment, however,
 process needs to be able to determine its original rotation, so that each corner is identified
 unequivocally. This is also done based on the binary codification.
 
-A dictionary of markers is a set of markers that are considered in an specific application. It is
+A dictionary of markers is the set of markers that are considered in a specific application. It is
 simply the list of binary codifications of each of its markers.
 
 The main properties of a dictionary are the dictionary size and the marker size.
 
-- The dictionary size is the number of markers that composed the dictionary.
+- The dictionary size is the number of markers that compose the dictionary.
 - The marker size is the size of those markers (the number of bits).
 
 The aruco module includes some predefined dictionaries covering a range of different dictionary
@@ -54,9 +54,9 @@ sizes and marker sizes.
 
 One may think that the marker id is the number obtained from converting the binary codification to
 a decimal base number. However, this is not possible since for high marker sizes the number of bits
-is too high and managing so huge numbers is not practical. Instead, a marker id is simply
-the marker index inside the dictionary it belongs to. For instance, the first 5 markers inside a
-dictionary has the ids: 0, 1, 2, 3 and 4.
+is too high and managing such huge numbers is not practical. Instead, a marker id is simply
+the marker index within the dictionary it belongs to. For instance, the first 5 markers in a
+dictionary have the ids: 0, 1, 2, 3 and 4.
 
 More information about dictionaries is provided in the "Selecting a dictionary" section.
 
@@ -65,24 +65,25 @@ Marker Creation
 ------
 
 Before their detection, markers need to be printed in order to be placed in the environment.
-Marker images can be generated using the ```drawMarker()``` function.
+Marker images can be generated using the `drawMarker()` function.
 
 For example, lets analyze the following call:
 
 @code{.cpp}
-    cv::Mat markerImage;
-    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-    cv::aruco::drawMarker(dictionary, 23, 200, markerImage, 1);
+cv::Mat markerImage;
+cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+cv::aruco::drawMarker(dictionary, 23, 200, markerImage, 1);
+cv::imwrite("marker23.png", markerImage);
 @endcode
 
-First, the ```Dictionary``` object is created by choosing one of the predefined dictionaries in the aruco module.
-Concretely, this dictionary is composed by 250 markers and a marker size of 6x6 bits (```DICT_6X6_250```).
+First, the `Dictionary` object is created by choosing one of the predefined dictionaries in the aruco module.
+Concretely, this dictionary is composed of 250 markers and a marker size of 6x6 bits (`DICT_6X6_250`).
 
-The parameters of ```drawMarker``` are:
+The parameters of `drawMarker` are:
 
-- The first parameter is the ```Dictionary``` object previously created.
-- The second parameter is the marker id, in this case the marker 23 of the dictionary ```DICT_6X6_250```.
-Note that each dictionary is composed by a different number of markers. In this case, the valid ids
+- The first parameter is the `Dictionary` object previously created.
+- The second parameter is the marker id, in this case the marker 23 of the dictionary `DICT_6X6_250`.
+Note that each dictionary is composed of a different number of markers. In this case, the valid ids
 go from 0 to 249. Any specific id out of the valid range will produce an exception.
 - The third parameter, 200, is the size of the output marker image. In this case, the output image
 will have a size of 200x200 pixels. Note that this parameter should be large enough to store the
@@ -91,7 +92,7 @@ number of bits for the specific dictionary. So, for instance, you cannot generat
 Furthermore, to avoid deformations, this parameter should be proportional to the number of bits +
 border size, or at least much higher than the marker size (like 200 in the example), so that
 deformations are insignificant.
-- The forth parameter is the output image.
+- The fourth parameter is the output image.
 - Finally, the last parameter is an optional parameter to specify the width of the marker black
 border. The size is specified proportional to the number of bits. For instance a value of 2 means
 that the border will have a width equivalent to the size of two internal bits. The default value
@@ -99,140 +100,142 @@ is 1.
 
 The generated image is:
 
-![Generated marker](images/marker23.jpg)
+![Generated marker](images/marker23.png)
 
-A full working example is included in the ```create_marker.cpp``` inside the module samples folder.
+A full working example is included in the `create_marker.cpp` inside the module samples folder.
 
-Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
+Note: The samples now take input from the command line using cv::CommandLineParser. For this file the example parameters will look like
 @code{.cpp}
-    "/Users/Sarthak/Dropbox/OpenCV_GSoC/marker.png" -d=10 -id=1
+"marker23.png" -d=10 -id=23
 @endcode
 
 Marker Detection
 ------
 
-Given an image where some ArUco markers are visible, the detection process has to return a list of
+Given an image containing ArUco markers, the detection process has to return a list of
 detected markers. Each detected marker includes:
 
 - The position of its four corners in the image (in their original order).
 - The id of the marker.
 
-The marker detection process is comprised by two main steps:
+The marker detection process is comprised of two main steps:
 
 1. Detection of marker candidates. In this step the image is analyzed in order to find square shapes
 that are candidates to be markers. It begins with an adaptive thresholding to segment the markers,
 then contours are extracted from the thresholded image and those that are not convex or do not
-approximate to a square shape are discarded. Some extra filtering are also applied (removing
-too small or too big contours, removing contours too close to each other, etc).
+approximate to a square shape are discarded. Some extra filtering is also applied (removing contours that are
+too small or too big, removing contours too close to each other, etc).
 
 2. After the candidate detection, it is necessary to determine if they are actually markers by
 analyzing their inner codification. This step starts by extracting the marker bits of each marker.
-To do so, first, perspective transformation is applied to obtain the marker in its canonical form. Then, the
-canonical image is thresholded using Otsu to separate white and black bits. The image is divided in
-different cells according to the marker size and the border size and the amount of black or white
-pixels on each cell is counted to determine if it is a white or a black bit. Finally, the bits
-are analyzed to determine if the marker belongs to the specific dictionary and error correction
+To do so, a perspective transformation is first applied to obtain the marker in its canonical form. Then, the
+canonical image is thresholded using Otsu to separate white and black bits. The image is divided into
+different cells according to the marker size and the border size. Then the number of black or white
+pixels in each cell is counted to determine if it is a white or a black bit. Finally, the bits
+are analyzed to determine if the marker belongs to the specific dictionary. Error correction
 techniques are employed when necessary.
 
 
 Consider the following image:
 
-![Original image with markers](images/singlemarkersoriginal.png)
+![Image with an assortment of markers](images/singlemarkerssource.png)
 
-These are the detected markers (in green):
+And a printout of this image in a photo:
 
-![Image with detected markers](images/singlemarkersdetection.png)
+![Original image with markers](images/singlemarkersoriginal.jpg)
+
+These are the detected markers (in green). Note that some markers are rotated. The small red square indicates the marker’s top left corner.:
+
+![Image with detected markers](images/singlemarkersdetection.jpg)
 
 And these are the marker candidates that have been rejected during the identification step (in pink):
 
-![Image with rejected candidates](images/singlemarkersrejected.png)
+![Image with rejected candidates](images/singlemarkersrejected.jpg)
 
-In the aruco module, the detection is performed in the ```detectMarkers()``` function. This function is
-the most important in the module, since all the rest of functionalities are based on the
-previous detected markers returned by ```detectMarkers()```.
+In the aruco module, the detection is performed in the `detectMarkers()` function. This function is
+the most important in the module, since all the rest of the functionality is based on the
+detected markers returned by `detectMarkers()`.
 
 An example of marker detection:
 
 @code{.cpp}
-    cv::Mat inputImage;
-    ...
-    std::vector<int> markerIds;
-    std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
-    cv::Ptr<cv::aruco::DetectorParameters> parameters;
-    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-    cv::aruco::detectMarkers(inputImage, dictionary, markerCorners, markerIds, parameters, rejectedCandidates);
+cv::Mat inputImage;
+...
+std::vector<int> markerIds;
+std::vector<std::vector<cv::Point2f>> markerCorners, rejectedCandidates;
+cv::Ptr<cv::aruco::DetectorParameters> parameters = cv::aruco::DetectorParameters::create();
+cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+cv::aruco::detectMarkers(inputImage, dictionary, markerCorners, markerIds, parameters, rejectedCandidates);
 @endcode
 
-The parameters of ```detectMarkers``` are:
+The parameters of `detectMarkers` are:
 
-- The first parameter is the image where the markers are going to be detected.
-- The second parameter is the dictionary object, in this case one of the predefined dictionaries (```DICT_6X6_250```).
-- The detected markers are stored in the ```markerCorners``` and ```markerIds``` structures:
-    - ```markerCorners``` is the list of corners of the detected markers. For each marker, its four
+- The first parameter is the image containing the markers to be detected.
+- The second parameter is the dictionary object, in this case one of the predefined dictionaries (`DICT_6X6_250`).
+- The detected markers are stored in the `markerCorners` and `markerIds` structures:
+    - `markerCorners` is the list of corners of the detected markers. For each marker, its four
     corners are returned in their original order (which is clockwise starting with top left). So, the first corner is the top left corner, followed by the top right, bottom right and bottom left.
-    - ```markerIds``` is the list of ids of each of the detected markers in ```markerCorners```.
-    Note that the returned ```markerCorners``` and ```markerIds``` vectors have the same sizes.
-- The fourth parameter is the object of type ```DetectionParameters```. This object includes all the
-parameters that can be customized during the detection process. This parameters are commented in
-detail in the next section.
-- The final parameter, ```rejectedCandidates```, is a returned list of marker candidates, i.e. those
-squares that have been found but they do not present a valid codification. Each candidate is also
-defined by its four corners, and its format is the same than the ```markerCorners``` parameter. This
-parameter can be omitted and is only useful for debugging purposes and for 'refind' strategies (see ```refineDetectedMarkers()``` ).
+    - `markerIds` is the list of ids of each of the detected markers in `markerCorners`.
+    Note that the returned `markerCorners` and `markerIds` vectors have the same size.
+- The fourth parameter is the object of type `DetectionParameters`. This object includes all the
+parameters that can be customized during the detection process. These parameters are explained in the next section.
+- The final parameter, `rejectedCandidates`, is a returned list of marker candidates, i.e.
+shapes that were found and considered but did not contain a valid marker. Each candidate is also
+defined by its four corners, and its format is the same as the `markerCorners` parameter. This
+parameter can be omitted and is only useful for debugging purposes and for ‘refind’ strategies (see `refineDetectedMarkers()` ).
 
 
-The next thing you probably want to do after ```detectMarkers()``` is checking that your markers have
+The next thing you probably want to do after `detectMarkers()` is check that your markers have
 been correctly detected. Fortunately, the aruco module provides a function to draw the detected
-markers in the input image, this function is ```drawDetectedMarkers()```. For example:
+markers in the input image, this function is `drawDetectedMarkers()`. For example:
 
 @code{.cpp}
-    cv::Mat outputImage
-    cv::aruco::drawDetectedMarkers(image, markerCorners, markerIds);
+cv::Mat outputImage = inputImage.clone();
+cv::aruco::drawDetectedMarkers(outputImage, markerCorners, markerIds);
 @endcode
 
-- ```image``` is the input/output image where the markers will be drawn (it will normally be the same image where the markers were detected).
-- ```markerCorners``` and ```markerIds``` are the structures of the detected markers in the same format
-provided by the ```detectMarkers()``` function.
+- `outputImage ` is the input/output image where the markers will be drawn (it will normally be the same as the image where the markers were detected).
+- `markerCorners` and `markerIds` are the structures of the detected markers returned by the `detectMarkers()` function.
 
-![Image with detected markers](images/singlemarkersdetection.png)
+![Image with detected markers](images/singlemarkersdetection.jpg)
 
-Note that this function is only provided for visualization and its use can be perfectly omitted.
+Note that this function is only provided for visualization and its use can be omitted.
 
 With these two functions we can create a basic marker detection loop to detect markers from our
 camera:
 
 @code{.cpp}
-    cv::VideoCapture inputVideo;
-    inputVideo.open(0);
-    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
-    while (inputVideo.grab()) {
-        cv::Mat image, imageCopy;
-        inputVideo.retrieve(image);
-        image.copyTo(imageCopy);
+cv::VideoCapture inputVideo;
+inputVideo.open(0);
+cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+while (inputVideo.grab()) {
+    cv::Mat image, imageCopy;
+    inputVideo.retrieve(image);
+    image.copyTo(imageCopy);
 
-        std::vector<int> ids;
-        std::vector<std::vector<cv::Point2f> > corners;
-        cv::aruco::detectMarkers(image, dictionary, corners, ids);
+    std::vector<int> ids;
+    std::vector<std::vector<cv::Point2f> > corners;
+    cv::aruco::detectMarkers(image, dictionary, corners, ids);
 
-        // if at least one marker detected
-        if (ids.size() > 0)
-            cv::aruco::drawDetectedMarkers(imageCopy, corners, ids);
+    // if at least one marker detected
+    if (ids.size() > 0)
+        cv::aruco::drawDetectedMarkers(imageCopy, corners, ids);
 
-        cv::imshow("out", imageCopy);
-        char key = (char) cv::waitKey(waitTime);
-        if (key == 27)
-            break;
-    }
+    cv::imshow("out", imageCopy);
+    char key = (char) cv::waitKey(waitTime);
+    if (key == 27)
+        break;
+}
 @endcode
 
-Note that some of the optional parameters have been omitted, like the detection parameter object or the
+Note that some of the optional parameters have been omitted, like the detection parameter object and the
 output vector of rejected candidates.
 
-A full working example is included in the ```detect_markers.cpp``` inside the module samples folder.
+A full working example is included in the `detect_markers.cpp` inside the module samples folder.
 
-Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
+Note: The samples now take input from the command line using cv::CommandLineParser. For this file the example parameters will look like
 @code{.cpp}
-    -c="_path_/calib.txt" -d=10
+-c="_path_/calib.txt" -d=10
 @endcode
 
 
@@ -242,94 +245,99 @@ Pose Estimation
 
 The next thing you probably want to do after detecting the markers is to obtain the camera pose from them.
 
-To perform camera pose estimation you need to know the calibration parameters of your camera. This is
+To perform camera pose estimation you need to know the calibration parameters of your camera. These are
 the camera matrix and distortion coefficients. If you do not know how to calibrate your camera, you can
-take a look to the ```calibrateCamera()``` function and the Calibration tutorial of OpenCV. You can also calibrate your camera using the aruco module
-as it is explained in the Calibration with aruco tutorial. Note that this only need to be done once unless the
+take a look at the `calibrateCamera()` function and the Calibration tutorial of OpenCV. You can also calibrate your camera using the aruco module
+as explained in the **Calibration with ArUco and ChArUco** tutorial. Note that this only needs to be done once unless the
 camera optics are modified (for instance changing its focus).
 
-At the end, what you get after the calibration is the camera matrix: a matrix of 3x3 elements with the
+In the end, what you get after the calibration is the camera matrix: a matrix of 3x3 elements with the
 focal distances and the camera center coordinates (a.k.a intrinsic parameters), and the distortion
-coefficients: a vector of 5 elements or more that models the distortion produced by your camera.
+coefficients: a vector of 5 or more elements that models the distortion produced by your camera.
 
 When you estimate the pose with ArUco markers, you can estimate the pose of each marker individually.
-If you want to estimate one pose from a set of markers, what you want to use is aruco Boards (see ArUco
-Boards tutorial).
+If you want to estimate one pose from a set of markers, use ArUco Boards (see the **Detection of ArUco
+Boards** tutorial). Using ArUco boards instead of single markers allows some markers to be occluded.
 
-The camera pose respect to a marker is the 3d transformation from the marker coordinate system to the
-camera coordinate system. It is specified by a rotation and a translation vector (see ```solvePnP()``` function for more
+The camera pose with respect to a marker is the 3d transformation from the marker coordinate system to the
+camera coordinate system. It is specified by rotation and translation vectors (see `solvePnP()` function for more
 information).
 
 The aruco module provides a function to estimate the poses of all the detected markers:
 
 @code{.cpp}
-    cv::Mat cameraMatrix, distCoeffs;
-    ...
-    std::vector<cv::Vec3d> rvecs, tvecs;
-    cv::aruco::estimatePoseSingleMarkers(corners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
+cv::Mat cameraMatrix, distCoeffs;
+...
+std::vector<cv::Vec3d> rvecs, tvecs;
+cv::aruco::estimatePoseSingleMarkers(markerCorners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
 @endcode
 
-- The ```corners``` parameter is the vector of marker corners returned by the ```detectMarkers()``` function.
+- The `markerCorners` parameter is the vector of marker corners returned by the `detectMarkers()` function.
 - The second parameter is the size of the marker side in meters or in any other unit. Note that the
 translation vectors of the estimated poses will be in the same unit
-- ```cameraMatrix``` and ```distCoeffs``` are the camera calibration parameters that need to be known a priori.
-- ```rvecs``` and ```tvecs``` are the rotation and translation vectors respectively, for each of the markers
-in corners.
+- `cameraMatrix` and `distCoeffs` are the camera calibration parameters that were created during the camera calibration process.
+- The output parameters `rvecs` and `tvecs` are the rotation and translation vectors respectively, for each of the markers
+in `markerCorners`.
 
 The marker coordinate system that is assumed by this function is placed at the center of the marker
-with the Z axis pointing out, as in the following image. Axis-color correspondences are X:red, Y:green, Z:blue.
+with the Z axis pointing out, as in the following image. Axis-color correspondences are X: red, Y: green, Z: blue. Note the axis directions of the rotated markers in this image.
 
-![Image with axis drawn](images/singlemarkersaxis.png)
+![Image with axes drawn](images/singlemarkersaxes.jpg)
 
 The aruco module provides a function to draw the axis as in the image above, so pose estimation can be
 checked:
 
 @code{.cpp}
-    cv::aruco::drawAxis(image, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
+inputImage.copyTo(outputImage);
+for (int i = 0; i < rvecs.size(); ++i) {
+    auto rvec = rvecs[i];
+    auto tvec = tvecs[i];
+    cv::aruco::drawAxis(outputImage, cameraMatrix, distCoeffs, rvec, tvec, 0.1);
+}
 @endcode
 
-- ```image``` is the input/output image where the axis will be drawn (it will normally be the same image where the markers were detected).
-- ```cameraMatrix``` and ```distCoeffs``` are the camera calibration parameters.
-- ```rvec``` and ```tvec``` are the pose parameters whose axis want to be drawn.
-- The last parameter is the length of the axis, in the same unit that tvec (usually meters)
+- `outputImage ` is the input/output image where the markers will be drawn (it will normally be the same image where the markers were detected).
+- `cameraMatrix` and `distCoeffs` are the camera calibration parameters.
+- `rvec` and `tvec` are the pose parameters for the marker whose axis is to be drawn.
+- The last parameter is the length of the axis, in the same unit as tvec (usually meters).
 
 A basic full example for pose estimation from single markers:
 
 @code{.cpp}
-    cv::VideoCapture inputVideo;
-    inputVideo.open(0);
+cv::VideoCapture inputVideo;
+inputVideo.open(0);
 
-    cv::Mat cameraMatrix, distCoeffs;
-    // camera parameters are read from somewhere
-    readCameraParameters(cameraMatrix, distCoeffs);
+cv::Mat cameraMatrix, distCoeffs;
+// camera parameters are read from somewhere
+readCameraParameters(cameraMatrix, distCoeffs);
 
-    cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
 
-    while (inputVideo.grab()) {
-        cv::Mat image, imageCopy;
-        inputVideo.retrieve(image);
-        image.copyTo(imageCopy);
+while (inputVideo.grab()) {
+    cv::Mat image, imageCopy;
+    inputVideo.retrieve(image);
+    image.copyTo(imageCopy);
 
-        std::vector<int> ids;
-        std::vector<std::vector<cv::Point2f>> corners;
-        cv::aruco::detectMarkers(image, dictionary, corners, ids);
+    std::vector<int> ids;
+    std::vector<std::vector<cv::Point2f>> corners;
+    cv::aruco::detectMarkers(image, dictionary, corners, ids);
 
-        // if at least one marker detected
-        if (ids.size() > 0) {
-            cv::aruco::drawDetectedMarkers(imageCopy, corners, ids);
+    // if at least one marker detected
+    if (ids.size() > 0) {
+        cv::aruco::drawDetectedMarkers(imageCopy, corners, ids);
 
-            std::vector<cv::Vec3d> rvecs, tvecs;
-            cv::aruco::estimatePoseSingleMarkers(corners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
-            // draw axis for each marker
-            for(int i=0; i<ids.size(); i++)
-                cv::aruco::drawAxis(imageCopy, cameraMatrix, distCoeffs, rvecs[i], tvecs[i], 0.1);
-        }
-
-        cv::imshow("out", imageCopy);
-        char key = (char) cv::waitKey(waitTime);
-        if (key == 27)
-            break;
+        std::vector<cv::Vec3d> rvecs, tvecs;
+        cv::aruco::estimatePoseSingleMarkers(corners, 0.05, cameraMatrix, distCoeffs, rvecs, tvecs);
+        // draw axis for each marker
+        for(int i=0; i<ids.size(); i++)
+            cv::aruco::drawAxis(imageCopy, cameraMatrix, distCoeffs, rvecs[i], tvecs[i], 0.1);
     }
+
+    cv::imshow("out", imageCopy);
+    char key = (char) cv::waitKey(waitTime);
+    if (key == 27)
+        break;
+}
 @endcode
 
 Sample video:
@@ -338,9 +346,9 @@ Sample video:
 <iframe width="420" height="315" src="https://www.youtube.com/embed/IsXWrcB_Hvs" frameborder="0" allowfullscreen></iframe>
 @endhtmlonly
 
-A full working example is included in the ```detect_markers.cpp``` inside the module samples folder.
+A full working example is included in the `detect_markers.cpp` inside the module samples folder.
 
-Note: The samples now take input via commandline via the [OpenCV Commandline Parser](http://docs.opencv.org/trunk/d0/d2e/classcv_1_1CommandLineParser.html#gsc.tab=0). For this file the example parameters will look like
+Note: The samples now take input from the command line using cv::CommandLineParser. For this file the example parameters will look like
 @code{.cpp}
     -c="_path_/calib.txt" -d=10
 @endcode
@@ -350,41 +358,42 @@ Note: The samples now take input via commandline via the [OpenCV Commandline Par
 Selecting a dictionary
 ------
 
-The aruco module provides the ```Dictionary``` class to represent a dictionary of markers.
+The aruco module provides the `Dictionary` class to represent a dictionary of markers.
 
-Apart of the marker size and the number of markers in the dictionary, there is another important dictionary
+In addition to the marker size and the number of markers in the dictionary, there is another important dictionary
 parameter, the inter-marker distance. The inter-marker distance is the minimum distance among its markers
 and it determines the error detection and correction capabilities of the dictionary.
 
 In general, lower dictionary sizes and higher marker sizes increase the inter-marker distance and
 vice-versa. However, the detection of markers with higher sizes is more complex, due to the higher
-amount of bits that need to be extracted from the image.
+number of bits that need to be extracted from the image.
 
-For instance, if you need only 10 markers in your application, it is better to use a dictionary only
-composed by those 10 markers than using one dictionary composed by 1000 markers. The reason is that
-the dictionary composed by 10 markers will have a higher inter-marker distance and, thus, it will be
+For instance, if you need only 10 markers in your application, it is better to use a dictionary composed only of those 10 markers than using a dictionary composed of 1000 markers. The reason is that
+the dictionary composed of 10 markers will have a higher inter-marker distance and, thus, it will be
 more robust to errors.
 
 As a consequence, the aruco module includes several ways to select your dictionary of markers, so that
 you can increase your system robustness:
 
-- Predefined dictionaries:
+### Predefined dictionaries
 
 This is the easiest way to select a dictionary. The aruco module includes a set of predefined dictionaries
- of a variety of marker sizes and number of markers. For instance:
+ in a variety of marker sizes and number of markers. For instance:
 
 @code{.cpp}
     cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
 @endcode
 
-DICT_6X6_250 is an example of predefined dictionary of markers with 6x6 bits and a total of 250
+`DICT_6X6_250` is an example of predefined dictionary of markers with 6x6 bits and a total of 250
 markers.
 
-From all the provided dictionaries, it is recommended to choose the smaller one that fits to your application.
-For instance, if you need 200 markers of 6x6 bits, it is better to use DICT_6X6_250 than DICT_6X6_1000.
+From all the provided dictionaries, it is recommended to choose the smallest one that fits your application.
+For instance, if you need 200 markers of 6x6 bits, it is better to use `DICT_6X6_250` than `DICT_6X6_1000`.
 The smaller the dictionary, the higher the inter-marker distance.
 
-- Automatic dictionary generation:
+The list of available predefined dictionaries can be found in the documentation for the `PREDEFINED_DICTIONARY_NAME` enum.
+
+### Automatic dictionary generation
 
 The dictionary can be generated automatically to adjust to the desired number of markers and bits, so that
 the inter-marker distance is optimized:
@@ -393,16 +402,16 @@ the inter-marker distance is optimized:
     cv::Ptr<cv::aruco::Dictionary> dictionary = cv::aruco::generateCustomDictionary(36, 5);
 @endcode
 
-This will generate a customized dictionary composed by 36 markers of 5x5 bits. The process can take several
-seconds, depending on the parameters (it is slower for larger dictionaries and higher number of bits).
+This will generate a customized dictionary composed of 36 markers of 5x5 bits. The process can take several
+seconds, depending on the parameters (it is slower for larger dictionaries and higher numbers of bits).
 
-- Manually dictionary generation:
+### Manual dictionary generation
 
 Finally, the dictionary can be configured manually, so that any codification can be employed. To do that,
-the ```Dictionary``` object parameters need to be assigned manually. It must be noted that, unless you have
+the `Dictionary` object parameters need to be assigned manually. It must be noted that, unless you have
  a special reason to do this manually, it is preferable to use one of the previous alternatives.
 
-The ```Dictionary``` parameters are:
+The `Dictionary` parameters are:
 
 
 @code{.cpp}
@@ -418,15 +427,15 @@ The ```Dictionary``` parameters are:
     }
 @endcode
 
-<code>bytesList</code> is the array that contains all the information about the marker codes. ```markerSize``` is the size
- of each marker dimension (for instance, 5 for markers with 5x5 bits). Finally, ```maxCorrectionBits``` is
+<code>bytesList</code> is the array that contains all the information about the marker codes. `markerSize` is the size
+ of each marker dimension (for instance, 5 for markers with 5x5 bits). Finally, `maxCorrectionBits` is
 the maximum number of erroneous bits that can be corrected during the marker detection. If this value is too
-high, it can lead to a high amount of false positives.
+high, it can lead to a high number of false positives.
 
-Each row in ```bytesList``` represents one of the dictionary markers. However, the markers are not stored in its
-binary form, instead they are stored in a special format to simplificate their detection.
+Each row in `bytesList` represents one of the dictionary markers. However, the markers are not stored in their
+binary form, instead they are stored in a special format to simplify their detection.
 
-Fortunately, a marker can be easily transformed to this form using the static method ```Dictionary::getByteListFromBits()```.
+Fortunately, a marker can be easily transformed to this form using the static method `Dictionary::getByteListFromBits()`.
 
 For example:
 
@@ -440,7 +449,7 @@ For example:
     // lets create a dictionary of 100 markers
     for(int i=0; i<100; i++)
     {
-        // assume generateMarkerBits() generate a new marker in binary format, so that
+        // assume generateMarkerBits() generates a new marker in binary format, so that
         // markerBits is a 6x6 matrix of CV_8UC1 type, only containing 0s and 1s
         cv::Mat markerBits = generateMarkerBits();
         cv::Mat markerCompressed = cv::aruco::Dictionary::getByteListFromBits(markerBits);
@@ -455,13 +464,13 @@ For example:
 Detector Parameters
 ------
 
-One of the parameters of ```detectMarkers()``` function is a ```DetectorParameters``` object. This object
+One of the parameters of `detectMarkers()` function is a `DetectorParameters` object. This object
 includes all the options that can be customized during the marker detection process.
 
-In this section, all these parameters are commented. The parameters can be classified depending on
-the process they are involved:
+This section describes each detector parameter. The parameters can be classified depending on
+the process in which they’re involved:
 
-#### Thresholding
+### Thresholding
 
 One of the first steps of the marker detection process is an adaptive thresholding of the input image.
 
@@ -469,47 +478,49 @@ For instance, the thresholded image for the sample image used above is:
 
 ![Thresholded image](images/singlemarkersthresh.png)
 
-This thresholding can be customized in the following parameters:
+This thresholding can be customized with the following parameters:
 
-- ```int adaptiveThreshWinSizeMin```, ```int adaptiveThreshWinSizeMax```, ```int adaptiveThreshWinSizeStep```
+#### adaptiveThreshWinSizeMin, adaptiveThreshWinSizeMax, and adaptiveThreshWinSizeStep
 
-The ```adaptiveThreshWinSizeMin``` and ```adaptiveThreshWinSizeMax``` parameters represent the interval where the
+The `adaptiveThreshWinSizeMin` and `adaptiveThreshWinSizeMax` parameters represent the interval where the
 thresholding window sizes (in pixels) are selected for the adaptive thresholding (see OpenCV
-```threshold()``` function for more details).
+`threshold()` function for more details).
 
-The parameter ```adaptiveThreshWinSizeStep``` indicates the increments on the window size from
-```adaptiveThreshWinSizeMin``` to adaptiveThreshWinSizeMax```.
+The parameter `adaptiveThreshWinSizeStep` indicates the increments of the window size from
+`adaptiveThreshWinSizeMin` to `adaptiveThreshWinSizeMax`.
 
-For instance, for the values ```adaptiveThreshWinSizeMin``` = 5 and adaptiveThreshWinSizeMax``` = 21 and
-```adaptiveThreshWinSizeStep``` = 4, there will be 5 thresholding steps with window sizes 5, 9, 13, 17 and 21.
+For instance, for the values `adaptiveThreshWinSizeMin` = 5 and `adaptiveThreshWinSizeMax` = 21 and
+`adaptiveThreshWinSizeStep` = 4, there will be 5 thresholding steps with window sizes 5, 9, 13, 17 and 21.
 On each thresholding image, marker candidates will be extracted.
 
-Low values of window size can 'break' the marker border if the marker size is too large, and
-it would not be detected, like in the following image:
+Low values of window size can ‘break’ the marker border if the marker size is too large, causing it to not be detected, as in the following image:
 
 ![Broken marker image](images/singlemarkersbrokenthresh.png)
 
-On the other hand, too high values can produce the same effect if the markers are too small, and it can also
+On the other hand, values that are too high can produce the same effect if the markers are too small, and it can also
 reduce the performance. Moreover the process would tend to a global thresholding, losing the adaptive benefits.
 
-The simplest case is using the same value for ```adaptiveThreshWinSizeMin``` and
- ```adaptiveThreshWinSizeMax```, which produces a single thresholding step. However, it is usually better using a
+The simplest case is using the same value for `adaptiveThreshWinSizeMin` and
+ `adaptiveThreshWinSizeMax`, which produces a single thresholding step. However, it is usually better to use a
  range of values for the window size, although many thresholding steps can also reduce the performance considerably.
 
 Default values:
 
-```adaptiveThreshWinSizeMin```: 3, ```adaptiveThreshWinSizeMax```: 23, ```adaptiveThreshWinSizeStep```: 10
+- `int adaptiveThreshWinSizeMin = 3`
+- `int adaptiveThreshWinSizeMax = 23`
+- `int adaptiveThreshWinSizeStep = 10`
+
+#### adaptiveThreshConstant
+
+The `adaptiveThreshConstant` parameter represents the constant value added in the thresholding operation (see OpenCV
+`threshold()` function for more details). Its default value is a good option in most cases.
+
+Default value:
+
+- `double adaptiveThreshConstant = 7`
 
 
-- ```double adaptiveThreshConstant```
-
-This parameter represents the constant value added in the thresholding condition (see OpenCV
-```threshold()``` function for more details). Its default value is a good option in most cases.
-
-Default value: 7
-
-
-#### Contour filtering
+### Contour filtering
 
 After thresholding, contours are detected. However, not all contours
 are considered as marker candidates. They are filtered out in different steps so that contours that are
@@ -518,77 +529,83 @@ this filtering process.
 
 It must be noted that in most cases it is a question of balance between detection capacity
 and performance. All the considered contours will be processed in the following stages, which usually have
-a higher computational cost. So, it is preferred to discard wrong candidates in this stage than in the later stages.
+a higher computational cost. So, it is preferred to discard invalid candidates in this stage than in the later stages.
 
 On the other hand, if the filtering conditions are too strict, the real marker contours could be discarded and,
 hence, not detected.
 
-- ```double minMarkerPerimeterRate```, ```double maxMarkerPerimeterRate```
+#### minMarkerPerimeterRate and maxMarkerPerimeterRate
 
-These parameters determine the minimum and maximum size of a marker, concretely the maximum and
-minimum marker perimeter. They are not specified in absolute pixels values, instead they are
+These parameters determine the minimum and maximum size of a marker, specifically the minimum and maximum marker perimeter. They are not specified in absolute pixel values, instead they are
 specified relative to the maximum dimension of the input image.
 
 For instance, a image with size 640x480 and a minimum relative marker perimeter of 0.05 will lead
 to a minimum marker perimeter of 640x0.05 = 32 pixels, since 640 is the maximum dimension of the
-image. The same applies for the ```maxMarkerPerimeterRate``` parameter.
+image. The same applies for the `maxMarkerPerimeterRate` parameter.
 
-If the ```minMarkerPerimeterRate``` is too low, it can penalize considerably the detection performance since
+If the `minMarkerPerimeterRate` is too low, it can penalize considerably the detection performance since
 many more contours would be considered for future stages.
-This penalization is not so noticeable for the ```maxMarkerPerimeterRate``` parameter, since there are
+This penalization is not so noticeable for the `maxMarkerPerimeterRate` parameter, since there are
 usually many more small contours than big contours.
-A ```minMarkerPerimeterRate``` value of 0 and a ```maxMarkerPerimeterRate``` value of 4 (or more) will be
+A `minMarkerPerimeterRate` value of 0 and a `maxMarkerPerimeterRate` value of 4 (or more) will be
 equivalent to consider all the contours in the image, however this is not recommended for
-the performance reasons.
+performance reasons.
 
 Default values:
 
- ```minMarkerPerimeterRate``` : 0.03, ```maxMarkerPerimeterRate``` : 4.0
+- `double minMarkerPerimeterRate = 0.03`
+- `double maxMarkerPerimeterRate = 4.0`
 
-
-- ```double polygonalApproxAccuracyRate```
+#### polygonalApproxAccuracyRate
 
 A polygonal approximation is applied to each candidate and only those that approximate to a square
 shape are accepted. This value determines the maximum error that the polygonal approximation can
-produce (see ```approxPolyDP()``` function for more information).
+produce (see `approxPolyDP()` function for more information).
 
 This parameter is relative to the candidate length (in pixels). So if the candidate has
-a perimeter of 100 pixels and the value of ```polygonalApproxAccuracyRate``` is 0.04, the maximum error
+a perimeter of 100 pixels and the value of `polygonalApproxAccuracyRate` is 0.04, the maximum error
 would be 100x0.04=5.4 pixels.
 
-In most cases, the default value works fine, but higher error values could be necessary for high
+In most cases, the default value works fine, but higher error values could be necessary for highly
 distorted images.
 
-Default value: 0.05
+Default value:
 
+- `double polygonalApproxAccuracyRate = 0.05`
 
-- ```double minCornerDistanceRate```
+#### minCornerDistanceRate
 
 Minimum distance between any pair of corners in the same marker. It is expressed relative to the marker
 perimeter. Minimum distance in pixels is Perimeter * minCornerDistanceRate.
 
-Default value: 0.05
+Default value:
 
-- ```double minMarkerDistanceRate```
+- `double minCornerDistanceRate = 0.05`
+
+#### minMarkerDistanceRate
 
 Minimum distance between any pair of corners from two different markers. It is expressed relative to
 the minimum marker perimeter of the two markers. If two candidates are too close, the smaller one is ignored.
 
-Default value: 0.05
+Default value:
 
-- ```int minDistanceToBorder```
+- `double minMarkerDistanceRate = 0.05`
+
+#### minDistanceToBorder
 
 Minimum distance to any of the marker corners to the image border (in pixels). Markers partially occluded
-by the image border can be correctly detected if the occlusion is small. However, if one of the corner
+by the image border can be correctly detected if the occlusion is small. However, if one of the corners
 is occluded, the returned corner is usually placed in a wrong position near the image border.
 
 If the position of marker corners is important, for instance if you want to do pose estimation, it is
-better to discard markers with any of their corners are too close to the image border. Elsewhere, it is not necessary.
+better to discard any markers whose corners are too close to the image border. Elsewhere, it is not necessary.
 
-Default value: 3
+Default value:
+
+- `int minDistanceToBorder = 3`
 
 
-#### Bits Extraction
+### Bits Extraction
 
 After candidate detection, the bits of each candidate are analyzed in order to determine if they
 are markers or not.
@@ -599,58 +616,64 @@ black and white pixels.
 
 This is an example of the image obtained after removing the perspective distortion of a marker:
 
-![Perspective removing](images/removeperspective.png)
+![Perspective removing](images/removeperspective.jpg)
 
-Then, the image is divided in a grid with the same cells than the number of bits in the marker.
-On each cell, the number of black and white pixels are counted to decide the bit assigned to the cell (from the majority value):
+Then, the image is divided into a grid with the same number of cells as the number of bits in the marker.
+In each cell, the number of black and white pixels are counted to determine the bit value assigned to the cell (from the majority value):
 
 ![Marker cells](images/bitsextraction1.png)
 
 There are several parameters that can customize this process:
 
-- ```int markerBorderBits```
+#### markerBorderBits
 
 This parameter indicates the width of the marker border. It is relative to the size of each bit. So, a
 value of 2 indicates the border has the width of two internal bits.
 
 This parameter needs to coincide with the border size of the markers you are using. The border size
-can be configured in the marker drawing functions such as ```drawMarker()```.
+can be configured in the marker drawing functions such as `drawMarker()`.
 
-Default value: 1
+Default value:
 
-- ```double minOtsuStdDev```
+- `int markerBorderBits = 1`
 
-This value determines the minimum standard deviation on the pixels values to perform Otsu
+#### minOtsuStdDev
+
+This value determines the minimum standard deviation of the pixel values to perform Otsu
 thresholding. If the deviation is low, it probably means that all the square is black (or white)
 and applying Otsu does not make sense. If this is the case, all the bits are set to 0 (or 1)
-depending if the mean value is higher or lower than 128.
+depending on whether the mean value is higher or lower than 128.
 
-Default value: 5.0
+Default value:
 
- - ```int perspectiveRemovePixelPerCell```
+- `double minOtsuStdDev = 5.0`
+
+#### perspectiveRemovePixelPerCell
 
 This parameter determines the number of pixels (per cell) in the obtained image after removing perspective
 distortion (including the border). This is the size of the red squares in the image above.
 
-For instance, lets assume we are dealing with markers of 5x5 bits and border size of 1 bit
-(see ```markerBorderBits```). Then, the total number of cells/bits per dimension is 5 + 2*1 = 7 (the border
+For instance, let’s assume we are dealing with markers of 5x5 bits and border size of 1 bit
+(see `markerBorderBits`). Then, the total number of cells/bits per dimension is 5 + 2*1 = 7 (the border
 has to be counted twice). The total number of cells is 7x7.
 
-If the value of ```perspectiveRemovePixelPerCell``` is 10, then the size of the obtained image will be
+If the value of `perspectiveRemovePixelPerCell` is 10, then the size of the obtained image will be
 10*7 = 70 -> 70x70 pixels.
 
 A higher value of this parameter can improve the bits extraction process (up to some degree), however it can penalize
 the performance.
 
-Default value: 4
+Default value:
 
-- ```double perspectiveRemoveIgnoredMarginPerCell```
+- `int perspectiveRemovePixelPerCell = 4`
+
+#### perspectiveRemoveIgnoredMarginPerCell
 
 When extracting the bits of each cell, the numbers of black and white pixels are counted. In general, it is
 not recommended to consider all the cell pixels. Instead it is better to ignore some pixels in the
 margins of the cells.
 
-The reason of this is that, after removing the perspective distortion, the cells' colors are, in general, not
+The reason for this is that, after removing the perspective distortion, the cells’ colors are, in general, not
 perfectly separated and white cells can invade some pixels of black cells (and vice-versa). Thus, it is
 better to ignore some pixels just to avoid counting erroneous pixels.
 
@@ -660,78 +683,87 @@ For instance, in the following image:
 
 only the pixels inside the green squares are considered. It can be seen in the right image that
 the resulting pixels contain a lower amount of noise from neighbor cells.
-The ```perspectiveRemoveIgnoredMarginPerCell``` parameter indicates the difference between the red and
+The `perspectiveRemoveIgnoredMarginPerCell` parameter indicates the difference between the red and
 the green squares.
 
 This parameter is relative to the total size of the cell. For instance if the cell size is 40 pixels and the
 value of this parameter is 0.1, a margin of 40*0.1=4 pixels is ignored in the cells. This means that the total
-amount of pixels that would be analyzed on each cell would actually be 32x32, instead of 40x40.
+number of pixels that would be analyzed in each cell would actually be 32x32, instead of 40x40.
 
-Default value: 0.13
+Default value:
+
+- `double perspectiveRemoveIgnoredMarginPerCell = 0.13`
 
 
-#### Marker identification
+### Marker identification
 
-After the bits have been extracted, the next step is checking if the extracted code belongs to the marker
+After the bits have been extracted, the next step is checking whether the extracted code belongs to the marker
 dictionary and, if necessary, error correction can be performed.
 
-- ```double maxErroneousBitsInBorderRate```
+#### maxErroneousBitsInBorderRate
 
 The bits of the marker border should be black. This parameter specifies the allowed number of erroneous
 bits in the border, i.e. the maximum number of white bits in the border. It is represented
 relative to the total number of bits in the marker.
 
-Default value: 0.35
+Default value:
 
+- `double maxErroneousBitsInBorderRate = 0.35`
 
-- ```double errorCorrectionRate```
+#### errorCorrectionRate
 
-Each marker dictionary has a theoretical maximum number of bits that can be corrected (```Dictionary.maxCorrectionBits```).
-However, this value can be modified by the ```errorCorrectionRate``` parameter.
+Each marker dictionary has a theoretical maximum number of bits that can be corrected (`Dictionary.maxCorrectionBits`).
+However, this value can be modified by the `errorCorrectionRate` parameter.
 
-For instance, if the allowed number of bits that can be corrected (for the used dictionary) is 6 and the value of ```errorCorrectionRate``` is
+For instance, if the allowed number of bits that can be corrected (for the used dictionary) is 6 and the value of `errorCorrectionRate` is
 0.5, the real maximum number of bits that can be corrected is 6*0.5=3 bits.
 
 This value is useful to reduce the error correction capabilities in order to avoid false positives.
 
-Default value: 0.6
+Default value:
+
+- `double errorCorrectionRate = 0.6`
 
 
-#### Corner Refinement
+### Corner Refinement
 
 After markers have been detected and identified, the last step is performing subpixel refinement
-in the corner positions (see OpenCV ```cornerSubPix()``` and ```cv::aruco::CornerRefineMethod```)
+of the corner positions (see OpenCV `cornerSubPix()` and `cv::aruco::CornerRefineMethod`).
 
-Note that this step is optional and it only makes sense if the position of the marker corners have to
-be accurate, for instance for pose estimation. It is usually a time consuming step and it is disabled by default.
+Note that this step is optional and it only makes sense if the positions of the marker corners have to
+be accurate, for instance for pose estimation. It is usually a time-consuming step and therefore is disabled by default.
 
-- ```int cornerRefinementMethod```
+#### cornerRefinementMethod
 
-This parameter determines if the corner subpixel process is performed or not. It can be disabled
-if accurate corners are not necessary.
+This parameter determines whether the corner subpixel process is performed or not and which method to use if it is being performed. It can be disabled
+if accurate corners are not necessary. Possible values are `CORNER_REFINE_NONE`, `CORNER_REFINE_SUBPIX`, `CORNER_REFINE_CONTOUR`, and `CORNER_REFINE_APRILTAG`.
 
-Default value: ```CORNER_REFINE_NONE```.
+Default value:
 
- - ```int cornerRefinementWinSize```
+- `int cornerRefinementMethod = CORNER_REFINE_NONE`
+
+#### cornerRefinementWinSize
 
 This parameter determines the window size of the subpixel refinement process.
 
 High values can produce the effect that close image corners are included in the window region, so that the
 marker corner moves to a different and wrong location during the process. Furthermore
-it can affect to performance.
+it can affect performance.
 
-Default value: 5
+Default value:
 
+- `int cornerRefinementWinSize = 5`
 
-- ```int cornerRefinementMaxIterations```, ```double cornerRefinementMinAccuracy```
+#### cornerRefinementMaxIterations and cornerRefinementMinAccuracy
 
-These two parameters determine the stop criterion of the subpixel refinement process. The
-```cornerRefinementMaxIterations``` indicates the maximum number of iterations and
-```cornerRefinementMinAccuracy``` the minimum error value before stopping the process.
+These two parameters determine the stop criteria of the subpixel refinement process. The
+`cornerRefinementMaxIterations` indicates the maximum number of iterations and
+`cornerRefinementMinAccuracy` the minimum error value before stopping the process.
 
 If the number of iterations is too high, it can affect the performance. On the other hand, if it is
 too low, it can produce a poor subpixel refinement.
 
 Default values:
 
-```cornerRefinementMaxIterations```: 30, ```cornerRefinementMinAccuracy```: 0.1
+- `int cornerRefinementMaxIterations = 30`
+- `double cornerRefinementMinAccuracy = 0.1`
