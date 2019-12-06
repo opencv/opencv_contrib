@@ -118,6 +118,7 @@ int CUDAAPI cv::cudacodec::detail::VideoParser::HandleVideoSequence(void* userDa
 
         try
         {
+            thiz->videoDecoder_->release();
             thiz->videoDecoder_->create(newFormat);
         }
         catch (const cv::Exception&)
