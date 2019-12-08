@@ -1018,7 +1018,7 @@ public:
         if (m_validSize >= m_size)
         {
             CV_Error(CV_StsOutOfRange, " m_validSize >= m_size this problem can be resolved my decreasig k parameter");
-        };
+        }
         m_index[m_validSize] = index;
         m_weight[m_validSize] = weight;
         m_validSize++;
@@ -1300,7 +1300,7 @@ void RICInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& cost_ma
     int *label_row;
     int *label_row_prev;
 
-#define CHECK(cur_dist,cur_label,cur_cost,prev_dist,prev_label,prev_cost,coef)\
+#define CHK_GD(cur_dist,cur_label,cur_cost,prev_dist,prev_label,prev_cost,coef)\
 {\
     d = prev_dist + coef*(cur_cost+prev_cost);\
     if(cur_dist>d){\
@@ -1315,7 +1315,7 @@ void RICInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& cost_ma
         label_row = labels.ptr<int>(0);
         cost_row = cost_map.ptr<float>(0);
         for (j = 1; j < distances.cols; j++)
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
+            CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
 
         for (i = 1; i < distances.rows; i++)
         {
@@ -1329,19 +1329,19 @@ void RICInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& cost_ma
             cost_row_prev = cost_map.ptr<float>(i - 1);
 
             j = 0;
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
+            CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
+            CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
             j++;
             for (; j < distances.cols - 1; j++)
             {
-                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
-                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
-                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
-                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
+                CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
+                CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
+                CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
+                CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
             }
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
+            CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
+            CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
+            CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
         }
 
         //second pass (right-to-left, bottom-to-top):
@@ -1349,7 +1349,7 @@ void RICInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& cost_ma
         label_row = labels.ptr<int>(distances.rows - 1);
         cost_row = cost_map.ptr<float>(distances.rows - 1);
         for (j = distances.cols - 2; j >= 0; j--)
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j + 1], label_row[j + 1], cost_row[j + 1], c1);
+            CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row[j + 1], label_row[j + 1], cost_row[j + 1], c1);
 
         for (i = distances.rows - 2; i >= 0; i--)
         {
@@ -1363,22 +1363,22 @@ void RICInterpolatorImpl::geodesicDistanceTransform(Mat& distances, Mat& cost_ma
             cost_row_prev = cost_map.ptr<float>(i + 1);
 
             j = distances.cols - 1;
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
+            CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
+            CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
             j--;
             for (; j > 0; j--)
             {
-                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j + 1], label_row[j + 1], cost_row[j + 1], c1);
-                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
-                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
-                CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
+                CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row[j + 1], label_row[j + 1], cost_row[j + 1], c1);
+                CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
+                CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
+                CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
             }
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j + 1], label_row[j + 1], cost_row[j + 1], c1);
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
+            CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row[j + 1], label_row[j + 1], cost_row[j + 1], c1);
+            CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
+            CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
         }
     }
-#undef CHECK
+#undef CHK_GD
 }
 
 void RICInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
@@ -1394,7 +1394,7 @@ void RICInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
     bool found;
     int h = labels.rows;
     int w = labels.cols;
-#define CHECK(cur_dist,cur_label,cur_cost,prev_dist,prev_label,prev_cost,coef)\
+#define CHK_GD(cur_dist,cur_label,cur_cost,prev_dist,prev_label,prev_cost,coef)\
     if(cur_label!=prev_label)\
     {\
         d = prev_dist + cur_dist + coef*(cur_cost+prev_cost);\
@@ -1416,7 +1416,7 @@ void RICInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
     label_row = labels.ptr<int>(0);
     cost_row = cost_map.ptr<float>(0);
     for (j = 1; j < w; j++)
-        CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
+        CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
 
     for (i = 1; i < h; i++)
     {
@@ -1430,21 +1430,21 @@ void RICInterpolatorImpl::buildGraph(Mat& distances, Mat& cost_map)
         cost_row_prev = cost_map.ptr<float>(i - 1);
 
         j = 0;
-        CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
-        CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
+        CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
+        CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
         j++;
         for (; j < w - 1; j++)
         {
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
-            CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
+            CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
+            CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
+            CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
+            CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j + 1], label_row_prev[j + 1], cost_row_prev[j + 1], c2);
         }
-        CHECK(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
-        CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
-        CHECK(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
+        CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row[j - 1], label_row[j - 1], cost_row[j - 1], c1);
+        CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j - 1], label_row_prev[j - 1], cost_row_prev[j - 1], c2);
+        CHK_GD(dist_row[j], label_row[j], cost_row[j], dist_row_prev[j], label_row_prev[j], cost_row_prev[j], c1);
     }
-#undef CHECK
+#undef CHK_GD
 
     // force equal distances in both directions:
     node* neighbors;
@@ -1489,7 +1489,6 @@ void RICInterpolatorImpl::superpixelNeighborConstruction(const Mat & _labels, in
     outNeighbor = Mat(labelCnt, max_neighbors, CV_32SC1); // only support 32 neighbors
     outNeighbor.setTo(-1);
 
-    //
     vector<int> diffPairs(labels.cols*_labels.rows * 4, 0);
     int diffPairCnt = 0;
     for (int i = 1; i < _labels.rows; i++) {
