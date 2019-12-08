@@ -196,7 +196,7 @@ public:
     */
     CV_WRAP virtual void setSuperpixelMode(int mode = 100) = 0;
     /** @copybrief setSuperpixelMode
-     *    @see setSuperpixelMode
+     *  @see setSuperpixelMode
      */
     CV_WRAP virtual int getSuperpixelMode() const = 0;
     /** @brief Alpha is a parameter defining a global weight for transforming geodesic distance into weight.
