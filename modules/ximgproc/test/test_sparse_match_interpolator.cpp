@@ -95,6 +95,54 @@ TEST(InterpolatorTest, ReferenceAccuracy)
     EXPECT_LE(cv::norm(res_flow, ref_flow, NORM_L1) , MAX_MEAN_DIF*res_flow.total());
 }
 
+TEST(InterpolatorTest, RICReferenceAccuracy)
+{
+    double MAX_DIF = 6.0;
+    double MAX_MEAN_DIF = 60.0 / 256.0;
+    string dir = getDataDir() + "cv/sparse_match_interpolator";
+
+    Mat src = imread(getDataDir() + "cv/optflow/RubberWhale1.png", IMREAD_COLOR);
+    ASSERT_FALSE(src.empty());
+
+    Mat ref_flow = readOpticalFlow(dir + "/RubberWhale_reference_result.flo");
+    ASSERT_FALSE(ref_flow.empty());
+
+    Mat src1 = imread(getDataDir() + "cv/optflow/RubberWhale2.png", IMREAD_COLOR);
+    ASSERT_FALSE(src.empty());
+
+    std::ifstream file((dir + "/RubberWhale_sparse_matches.txt").c_str());
+    float from_x, from_y, to_x, to_y;
+    vector<Point2f> from_points;
+    vector<Point2f> to_points;
+
+    while (file >> from_x >> from_y >> to_x >> to_y)
+    {
+        from_points.push_back(Point2f(from_x, from_y));
+        to_points.push_back(Point2f(to_x, to_y));
+    }
+
+    Mat res_flow;
+
+    Ptr<RICInterpolator> interpolator = createRICInterpolator();
+    interpolator->setK(32);
+    interpolator->setSuperpixelSize(15);
+    interpolator->setSuperpixelNNCnt(150);
+    interpolator->setSuperpixelRuler(15.f);
+    interpolator->setSuperpixelMode(ximgproc::SLIC);
+    interpolator->setAlpha(0.7f);
+    interpolator->setModelIter(4);
+    interpolator->setRefineModels(true);
+    interpolator->setMaxFlow(250.f);
+    interpolator->setUseVariationalRefinement(true);
+    interpolator->setUseGlobalSmootherFilter(true);
+    interpolator->setFGSLambda(500.f);
+    interpolator->setFGSSigma(1.5f);
+    interpolator->interpolate(src, from_points, src1, to_points, res_flow);
+
+    EXPECT_LE(cv::norm(res_flow, ref_flow, NORM_INF), MAX_DIF);
+    EXPECT_LE(cv::norm(res_flow, ref_flow, NORM_L1), MAX_MEAN_DIF*res_flow.total());
+}
+
 TEST_P(InterpolatorTest, MultiThreadReproducibility)
 {
     if (cv::getNumberOfCPUs() == 1)

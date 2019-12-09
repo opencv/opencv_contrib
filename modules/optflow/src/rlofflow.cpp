@@ -70,6 +70,9 @@ public:
         , fgs_lambda(500.0f)
         , fgs_sigma(1.5f)
         , use_post_proc(true)
+        , use_variational_refinement(false)
+        , sp_size(15)
+        , slic_type(ximgproc::SLIC)
 
     {
         prevPyramid[0] = cv::Ptr<CImageBuffer>(new CImageBuffer);
@@ -107,6 +110,15 @@ public:
     virtual bool getUsePostProc() const CV_OVERRIDE { return use_post_proc; }
     virtual void setUsePostProc(bool val) CV_OVERRIDE { use_post_proc = val; }
 
+    virtual void setUseVariationalRefinement(bool val) CV_OVERRIDE { use_variational_refinement = val; }
+    virtual bool getUseVariationalRefinement() const CV_OVERRIDE { return use_variational_refinement; }
+
+    virtual void setRICSPSize(int val) CV_OVERRIDE { sp_size = val; }
+    virtual int  getRICSPSize() const CV_OVERRIDE { return sp_size; }
+
+    virtual void setRICSLICType(int val) CV_OVERRIDE { slic_type = static_cast<ximgproc::SLICType>(val); }
+    virtual int  getRICSLICType() const CV_OVERRIDE { return slic_type; }
+
     virtual void calc(InputArray I0, InputArray I1, InputOutputArray flow) CV_OVERRIDE
     {
         CV_Assert(!I0.empty() && I0.depth() == CV_8U && (I0.channels() == 3 || I0.channels() == 1));
@@ -116,7 +128,7 @@ public:
             param = Ptr<RLOFOpticalFlowParameter>(new RLOFOpticalFlowParameter());
         if (param->supportRegionType == SR_CROSS)
             CV_Assert( I0.channels() == 3 && I1.channels() == 3);
-        CV_Assert(interp_type == InterpolationType::INTERP_EPIC || interp_type == InterpolationType::INTERP_GEO);
+        CV_Assert(interp_type == InterpolationType::INTERP_EPIC || interp_type == InterpolationType::INTERP_GEO || interp_type == InterpolationType::INTERP_RIC);
         // if no parameter is used use the default parameter
 
         Mat prevImage = I0.getMat();
@@ -184,7 +196,21 @@ public:
             gd->setK(k);
             gd->setSigma(sigma);
             gd->setLambda(lambda);
+            gd->setFGSLambda(fgs_lambda);
+            gd->setFGSSigma(fgs_sigma);
             gd->setUsePostProcessing(false);
+            gd->interpolate(prevImage, filtered_prevPoints, currImage, filtered_currPoints, dense_flow);
+        }
+        else if (interp_type == InterpolationType::INTERP_RIC)
+        {
+            Ptr<ximgproc::RICInterpolator> gd = ximgproc::createRICInterpolator();
+            gd->setK(k);
+            gd->setFGSLambda(fgs_lambda);
+            gd->setFGSSigma(fgs_sigma);
+            gd->setSuperpixelSize(sp_size);
+            gd->setSuperpixelMode(slic_type);
+            gd->setUseGlobalSmootherFilter(false);
+            gd->setUseVariationalRefinement(false);
             gd->interpolate(prevImage, filtered_prevPoints, currImage, filtered_currPoints, dense_flow);
         }
         else
@@ -199,6 +225,15 @@ public:
             cv::bilateralFilter(vecMats[0], vecMats2[0], 5, 2, 20);
             cv::bilateralFilter(vecMats[1], vecMats2[1], 5, 2, 20);
             cv::merge(vecMats2, dense_flow);
+        }
+        if (use_variational_refinement)
+        {
+            Mat prevGrey, currGrey;
+            Ptr<VariationalRefinement > variationalrefine = VariationalRefinement::create();
+            cvtColor(prevImage, prevGrey, COLOR_BGR2GRAY);
+            cvtColor(currImage, currGrey, COLOR_BGR2GRAY);
+            variationalrefine->setOmega(1.9f);
+            variationalrefine->calc(prevGrey, currGrey, flow);
         }
         if (use_post_proc)
         {
@@ -227,6 +262,9 @@ protected:
     float                         fgs_lambda;
     float                         fgs_sigma;
     bool                          use_post_proc;
+    bool                          use_variational_refinement;
+    int                           sp_size;
+    ximgproc::SLICType            slic_type;
 };
 
 Ptr<DenseRLOFOpticalFlow> DenseRLOFOpticalFlow::create(
@@ -237,9 +275,12 @@ Ptr<DenseRLOFOpticalFlow> DenseRLOFOpticalFlow::create(
     int epicK,
     float epicSigma,
     float epicLambda,
+    int ricSPSize,
+    int ricSLICType,
     bool use_post_proc,
     float fgs_lambda,
-    float fgs_sigma)
+    float fgs_sigma,
+    bool use_variational_refinement)
 {
     Ptr<DenseRLOFOpticalFlow> algo = makePtr<DenseOpticalFlowRLOFImpl>();
     algo->setRLOFOpticalFlowParameter(rlofParam);
@@ -252,6 +293,9 @@ Ptr<DenseRLOFOpticalFlow> DenseRLOFOpticalFlow::create(
     algo->setUsePostProc(use_post_proc);
     algo->setFgsLambda(fgs_lambda);
     algo->setFgsSigma(fgs_sigma);
+    algo->setRICSLICType(ricSLICType);
+    algo->setRICSPSize(ricSPSize);
+    algo->setUseVariationalRefinement(use_variational_refinement);
     return algo;
 }
 
@@ -381,11 +425,13 @@ void calcOpticalFlowDenseRLOF(InputArray I0, InputArray I1, InputOutputArray flo
     float forewardBackwardThreshold, Size gridStep,
     InterpolationType interp_type,
     int epicK, float epicSigma, float epicLambda,
-    bool use_post_proc, float fgsLambda, float fgsSigma)
+    int superpixelSize, int superpixelType,
+    bool use_post_proc, float fgsLambda, float fgsSigma, bool use_variational_refinement)
 {
     Ptr<DenseRLOFOpticalFlow> algo = DenseRLOFOpticalFlow::create(
         rlofParam, forewardBackwardThreshold, gridStep, interp_type,
-        epicK, epicSigma, epicLambda, use_post_proc, fgsLambda, fgsSigma);
+        epicK, epicSigma, epicLambda, superpixelSize, superpixelType,
+        use_post_proc, fgsLambda, fgsSigma, use_variational_refinement);
     algo->calc(I0, I1, flow);
     algo->collectGarbage();
 }
