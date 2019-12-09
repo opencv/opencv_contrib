@@ -62,7 +62,7 @@ cv::cudacodec::detail::CuvidVideoSource::CuvidVideoSource(const String& fname)
     // now create the actual source
     CUresult cuRes = cuvidCreateVideoSource(&videoSource_, fname.c_str(), &params);
     if (cuRes == CUDA_ERROR_INVALID_SOURCE)
-        throw std::runtime_error("");
+        CV_Error(Error::StsUnsupportedFormat, "Unsupported video source");
     cuSafeCall( cuRes );
 
     CUVIDEOFORMAT vidfmt;
