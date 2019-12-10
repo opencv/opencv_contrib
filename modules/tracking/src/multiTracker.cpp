@@ -127,6 +127,7 @@ namespace cv
 #endif
 			detect_all(imageForDetector, image_blurred, tmpCandidates, detectorResults, detect_flgs, trackers);
 
+		bool success = false;
 		for (int k = 0; k < targetNum; k++)
 		{
 			//TLD Tracker data extraction
@@ -174,10 +175,11 @@ namespace cv
 
 				data->confident = false;
 				data->failedLastTime = true;
-				return false;
+				continue;
 			}
 			else
 			{
+				success = true;
 				boundingBoxes[k] = candidates[k][it - candidatesRes[k].begin()];
 				data->failedLastTime = false;
 				if (trackerNeedsReInit[k] || it != candidatesRes[k].begin())
@@ -244,7 +246,7 @@ namespace cv
 
 		}
 
-		return true;
+		return success;
 	}
 
 	void detect_all(const Mat& img, const Mat& imgBlurred, std::vector<Rect2d>& res, std::vector < std::vector < tld::TLDDetector::LabeledPatch > > &patches, std::vector<bool> &detect_flgs,
