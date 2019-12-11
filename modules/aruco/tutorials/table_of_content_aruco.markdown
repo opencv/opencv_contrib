@@ -20,7 +20,7 @@ and without artifacts.
 
     *Compatibility:* \> OpenCV 3.0
 
-    *Author:* Sergio Garrido
+    *Author:* Sergio Garrido, Steve Nicholson
 
     Basic detection and pose estimation from single ArUco markers.
 
