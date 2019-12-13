@@ -35,10 +35,10 @@ ocv_add_accuracy_tests()
 ocv_add_perf_tests()
 ocv_add_samples(opencv_imgproc opencv_calib3d opencv_features2d opencv_flann)
 
-ocv_target_link_libraries(${the_module} LINK_PRIVATE ${VTK_LIBRARIES})
+ocv_target_link_libraries(${the_module} PRIVATE ${VTK_LIBRARIES})
 
 if(APPLE AND BUILD_opencv_viz)
-  ocv_target_link_libraries(${the_module} LINK_PRIVATE "-framework Cocoa")
+  ocv_target_link_libraries(${the_module} PRIVATE "-framework Cocoa")
 endif()
 
 if(TARGET opencv_test_viz)
