@@ -438,7 +438,7 @@ CV_EXPORTS_W void polarToCart(InputArray magnitude, InputArray angle, OutputArra
 
 @sa merge
  */
-CV_EXPORTS_W void merge(const GpuMat* src, size_t n, OutputArray dst, Stream& stream = Stream::Null());
+CV_EXPORTS void merge(const GpuMat* src, size_t n, OutputArray dst, Stream& stream = Stream::Null());
 /** @overload */
 CV_EXPORTS_W void merge(const std::vector<GpuMat>& src, OutputArray dst, Stream& stream = Stream::Null());
 
@@ -450,9 +450,9 @@ CV_EXPORTS_W void merge(const std::vector<GpuMat>& src, OutputArray dst, Stream&
 
 @sa split
  */
-CV_EXPORTS_W void split(InputArray src, GpuMat* dst, Stream& stream = Stream::Null());
+CV_EXPORTS void split(InputArray src, GpuMat* dst, Stream& stream = Stream::Null());
 /** @overload */
-CV_EXPORTS_W void split(InputArray src, std::vector<GpuMat>& dst, Stream& stream = Stream::Null());
+CV_EXPORTS_W void split(InputArray src, CV_OUT std::vector<GpuMat>& dst, Stream& stream = Stream::Null());
 
 /** @brief Transposes a matrix.
 
