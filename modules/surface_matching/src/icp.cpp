@@ -246,6 +246,7 @@ static hashtable_int* getHashtable(int* data, size_t length, int numMaxElement)
 int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residual, Matx44d& pose)
 {
   int n = srcPC.rows;
+  CV_CheckGT(n, 0, "");
 
   const bool useRobustReject = m_rejectionScale>0;
 
@@ -283,7 +284,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
     const double impact = 2;
     double div = pow((double)impact, (double)level);
     //double div2 = div*div;
-    const int numSamples = cvRound((double)n/(double)div) + 1;
+    const int numSamples = divUp(n, div);
     const double TolP = m_tolerance*(double)(level+1)*(level+1);
     const int MaxIterationsPyr = cvRound((double)m_maxIterations/(level+1));
 
@@ -291,6 +292,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
     Mat srcPCT = transformPCPose(srcPC0, pose);
 
     const int sampleStep = cvRound((double)n/(double)numSamples);
+
     srcPCT = samplePCUniform(srcPCT, sampleStep);
     /*
     Tolga Birdal thinks that downsampling the scene points might decrease the accuracy.
@@ -302,7 +304,6 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
     double fval_old=9999999999;
     double fval_perc=0;
     double fval_min=9999999999;
-    // std::cout<<srcPCT.rows<<" "<<srcPCT.cols<<std::endl;
     Mat Src_Moved = srcPCT.clone();
 
     int i=0;
@@ -327,6 +328,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
     while ( (!(fval_perc<(1+TolP) && fval_perc>(1-TolP))) && i<MaxIterationsPyr)
     {
       uint di=0, selInd = 0;
+
       queryPCFlann(flann, Src_Moved, Indices, Distances);
 
       for (di=0; di<numElSrc; di++)

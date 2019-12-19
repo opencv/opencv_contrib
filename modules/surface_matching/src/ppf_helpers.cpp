@@ -250,7 +250,7 @@ void writePLYVisibleNormals(Mat PC, const char* FileName)
 
 Mat samplePCUniform(Mat PC, int sampleStep)
 {
-  int numRows = cvRound((double)PC.rows/(double)sampleStep);
+  int numRows = PC.rows/sampleStep;
   Mat sampledPC = Mat(numRows, PC.cols, PC.type());
 
   int c=0;
@@ -280,7 +280,7 @@ Mat samplePCUniformInd(Mat PC, int sampleStep, std::vector<int> &indices)
 
 void* indexPCFlann(Mat pc)
 {
-  Mat dest_32f = Mat(pc.rows, 4, pc.type());
+  Mat dest_32f;
   pc.colRange(0,3).copyTo(dest_32f);
   return new FlannIndex(dest_32f, cvflann::KDTreeSingleIndexParams(8));
 }
@@ -298,7 +298,7 @@ void queryPCFlann(void* flannIndex, Mat& pc, Mat& indices, Mat& distances)
 
 void queryPCFlann(void* flannIndex, Mat& pc, Mat& indices, Mat& distances, const int numNeighbors)
 {
-  Mat obj_32f = Mat(pc.rows, 4, pc.type());
+  Mat obj_32f;
   pc.colRange(0, 3).copyTo(obj_32f);
   ((FlannIndex*)flannIndex)->knnSearch(obj_32f, indices, distances, numNeighbors, cvflann::SearchParams(32));
 }
