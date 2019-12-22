@@ -858,7 +858,7 @@ public:
     @param ccorr Flags to evaluate cross-correlation instead of convolution.
     @param stream Stream for the asynchronous version.
      */
-    virtual void convolve(InputArray image, InputArray templ, OutputArray result, bool ccorr = false, Stream& stream = Stream::Null()) = 0;
+    CV_WRAP virtual void convolve(InputArray image, InputArray templ, OutputArray result, bool ccorr = false, Stream& stream = Stream::Null()) = 0;
 };
 
 /** @brief Creates implementation for cuda::Convolution .
