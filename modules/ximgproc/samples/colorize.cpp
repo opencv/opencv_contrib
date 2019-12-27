@@ -159,7 +159,7 @@ int main(int argc, char* argv[])
             if(show_count%5==0)
             {
                 cv::Mat target_temp(target.size(),target.type());
-                filtering_time = (double)getTickCount();
+                filtering_time = static_cast<float>(getTickCount());
                 if(mouseDraw)
                 {
                     cv::cvtColor(target, target_temp, cv::COLOR_BGR2YCrCb);
@@ -184,7 +184,7 @@ int main(int argc, char* argv[])
                 {
                   target_temp = target.clone();
                 }
-                filtering_time = ((double)getTickCount() - filtering_time)/getTickFrequency();
+                filtering_time = static_cast<float>(((double)getTickCount() - filtering_time)/getTickFrequency());
                 std::cout << "solver time: " << filtering_time << "s" << std::endl;
 
                 cv::Mat color_selected(target_temp.rows-mat_pallet.rows,PALLET_RADIUS*2,CV_8UC3,cv::Scalar(selected_b, selected_g, selected_r));
@@ -209,7 +209,7 @@ int main(int argc, char* argv[])
     cv::Mat result1 = cv::Mat(mat_input_gray.size(),mat_input_gray.type());
     cv::Mat result2 = cv::Mat(mat_input_gray.size(),mat_input_gray.type());
 
-    filtering_time = (double)getTickCount();
+    filtering_time = static_cast<float>(getTickCount());
 
     // dst_channels.push_back(src_channels[0]);
     dst_channels.push_back(mat_input_gray);
@@ -221,7 +221,7 @@ int main(int argc, char* argv[])
     cv::merge(dst_channels,target);
     cv::cvtColor(target, target, cv::COLOR_YCrCb2BGR);
 
-    filtering_time = ((double)getTickCount() - filtering_time)/getTickFrequency();
+    filtering_time = static_cast<float>(((double)getTickCount() - filtering_time)/getTickFrequency());
     std::cout << "solver time: " << filtering_time << "s" << std::endl;
 
 
@@ -331,7 +331,7 @@ void drawTrajectoryByReference(cv::Mat& img)
                 gray = *grayPix;
                 grayPix++;
                 mat_input_confidence.at<uchar>(y,x) = 255;
-                float draw_y = 0.229*(float(selected_r)) + 0.587*(float(selected_g)) + 0.114*(float(selected_b));
+                float draw_y = 0.229f*(float(selected_r)) + 0.587f*(float(selected_g)) + 0.114f*(float(selected_b));
                 int draw_b = int(float(selected_b)*(gray/draw_y));
                 int draw_g = int(float(selected_g)*(gray/draw_y));
                 int draw_r = int(float(selected_r)*(gray/draw_y));
@@ -397,13 +397,13 @@ void createPlate(Mat &im1, int radius)
 			Point pt2(j - cx, i - cy);
 			if (inCircle(Point(0, 0), pt2, radius))
 			{
-				int theta = angle(pt1, pt2) * 180 / CV_PI;
+				int theta = static_cast<int>(angle(pt1, pt2) * 180 / CV_PI);
 				if (i > cx)
 				{
 					theta = -theta + 360;
 				}
-				hsvImag.at<Vec3b>(i, j)[0] = theta / 2;
-				hsvImag.at<Vec3b>(i, j)[1] = module(pt2) / cx * 255;
+				hsvImag.at<Vec3b>(i, j)[0] = saturate_cast<uchar>(theta / 2);
+				hsvImag.at<Vec3b>(i, j)[1] = saturate_cast<uchar>(module(pt2) / cx * 255);
 				hsvImag.at<Vec3b>(i, j)[2] = 255;
 			}
 		}

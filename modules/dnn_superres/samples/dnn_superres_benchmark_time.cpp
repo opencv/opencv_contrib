@@ -5,7 +5,6 @@
 #include <iostream>
 
 #include <opencv2/dnn_superres.hpp>
-#include <opencv2/quality.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 
