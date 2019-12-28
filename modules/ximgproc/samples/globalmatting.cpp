@@ -1,6 +1,3 @@
-// This file is part of OpenCV project.
-// It is subject to the license terms in the LICENSE file found in the top-level directory
-// of this distribution and at http://opencv.org/license.html.
 #include <opencv2/ximgproc.hpp>
 #include <iostream>
 #include <opencv2/core.hpp>
@@ -9,40 +6,46 @@
 using namespace std;
 using namespace cv;
 using namespace ximgproc;
-int main(int argc,char** argv)
+
+int main(int argc, char** argv)
 {
-    if(argc<3)
+    if (argc < 3)
     {
-      cout<<"arg1: Directory of Input image"<<endl;
-      cout<<"arg2: Directory of its trimap"<<endl;
-      cout<<"arg3(optional): Enter the number of iterations to run expansion of trimap"<<endl;
-      return -1;
+        cout << "arg1: location of input image" << endl;
+        cout << "arg2: location of its trimap" << endl;
+        cout << "arg3(optional): number of iterations to run expansion of trimap" << endl;
+        return -1;
     }
     string img_path = argv[1];
     string tri_path = argv[2];
     int niter = 9;
-    if(argc==4)
+    if (argc == 4)
     {
-      niter = atoi(argv[3]);
+        niter = atoi(argv[3]);
     }
-    cv::Mat image = cv::imread(img_path, cv::IMREAD_COLOR);
-    cv::Mat trimap = cv::imread(tri_path, cv::IMREAD_GRAYSCALE);
-    if(image.empty() || trimap.empty())
+    Mat image = imread(img_path, IMREAD_COLOR);
+    Mat trimap = imread(tri_path, IMREAD_GRAYSCALE);
+    if (image.empty() || trimap.empty())
     {
-       cout<<"Could not load the inputs"<<endl;
-       return -2;
+        cout << "Could not load the inputs" << endl;
+        return -2;
     }
     // (optional) exploit the affinity of neighboring pixels to reduce the
     // size of the unknown region. please refer to the paper
     // 'Shared Sampling for Real-Time Alpha Matting'.
 
-    cv::Mat foreground, alpha;
+    Mat foreground, alpha;
 
-    GlobalMatting gm;
+    Ptr<GlobalMatting> gm = createGlobalMatting();
 
-    gm.getMat(image,trimap,foreground,alpha,niter);
+    gm->getMat(image, trimap, foreground, alpha, niter);
 
-    cv::imwrite("alpha-matte.png", alpha);
+    imwrite("alpha-matte.png", alpha);
+
+    imshow("input", input);
+    imshow("trimap", trimap);
+    imshow("alpha-matte", alpha);
+    waitKey();
 
     return 0;
 }
