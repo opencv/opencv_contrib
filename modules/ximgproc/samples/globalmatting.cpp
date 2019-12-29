@@ -42,7 +42,7 @@ int main(int argc, char** argv)
 
     imwrite("alpha-matte.png", alpha);
 
-    imshow("input", input);
+    imshow("input", image);
     imshow("trimap", trimap);
     imshow("alpha-matte", alpha);
     waitKey();
