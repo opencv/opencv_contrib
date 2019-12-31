@@ -68,6 +68,6 @@ If you need a more detailed information to use @ref cv::Tracker, please refer to
 
 -#  **Post processing**
 
-    Make sure to convert the feature into @ref cv::CV_64F data format and normalize its value with range -0.5 to 0.5
+    Make sure to normalize the feature with range -0.5 to 0.5
 
     @snippet tracking/samples/tutorial_customizing_cn_tracker.cpp postprocess
