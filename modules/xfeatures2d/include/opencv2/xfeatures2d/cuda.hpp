@@ -105,13 +105,13 @@ public:
          int _nOctaveLayers=2, bool _extended=false, float _keypointsRatio=0.01f, bool _upright = false);
 
     /**
-    @param hessianThreshold Threshold for hessian keypoint detector used in SURF.
-    @param nOctaves Number of pyramid octaves the keypoint detector will use.
-    @param nOctaveLayers Number of octave layers within each octave.
-    @param extended Extended descriptor flag (true - use extended 128-element descriptors; false - use
+    @param _hessianThreshold Threshold for hessian keypoint detector used in SURF.
+    @param _nOctaves Number of pyramid octaves the keypoint detector will use.
+    @param _nOctaveLayers Number of octave layers within each octave.
+    @param _extended Extended descriptor flag (true - use extended 128-element descriptors; false - use
     64-element descriptors).
     @param _keypointsRatio
-    @param upright Up-right or rotated features flag (true - do not compute orientation of features;
+    @param _upright Up-right or rotated features flag (true - do not compute orientation of features;
     false - compute orientation).
     */
     CV_WRAP static Ptr<SURF_CUDA> create(double _hessianThreshold, int _nOctaves = 4,

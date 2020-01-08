@@ -34,7 +34,10 @@ class cudaimgproc_test(NewOpenCVTests):
         cv.cuda.bilateralFilter(cuC3, 3, 16, 3)
         cv.cuda.blendLinear
 
-        cv.cuda.meanShiftSegmentation(cuC4, 10, 5, 5).download()
+        cuRes = cv.cuda.meanShiftSegmentation(cuC4, 10, 5, 5)
+        cuDst = cv.cuda_GpuMat(cuC4.size(),cuC4.type())
+        cv.cuda.meanShiftSegmentation(cuC4, 10, 5, 5, cuDst)
+        self.assertTrue(np.allclose(cuRes.download(),cuDst.download()))
 
         clahe = cv.cuda.createCLAHE()
         clahe.apply(cuC1, cv.cuda_Stream.Null())
