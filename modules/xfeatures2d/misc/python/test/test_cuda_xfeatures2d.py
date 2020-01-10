@@ -26,7 +26,7 @@ class xfeatures2d_test(NewOpenCVTests):
         cuMat = cv.cuda_GpuMat(npMat)
 
         try:
-            cuSurf = cv.cuda_SURF_CUDA(hessianThreshold,nOctaves,nOctaveLayers,extended,keypointsRatio,upright)
+            cuSurf = cv.cuda_SURF_CUDA.create(hessianThreshold,nOctaves,nOctaveLayers,extended,keypointsRatio,upright)
             surf = cv.xfeatures2d_SURF.create(hessianThreshold,nOctaves,nOctaveLayers,extended,upright)
         except cv.error as e:
             self.assertEqual(e.code, cv.Error.StsNotImplemented)
