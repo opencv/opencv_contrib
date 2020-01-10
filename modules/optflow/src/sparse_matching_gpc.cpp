@@ -41,6 +41,7 @@
  //M*/
 
 #include "precomp.hpp"
+#undef CV_FORCE_SIMD128_CPP  // mixed HAL SIMD/SSE code
 #include "opencv2/core/core_c.h"
 #include "opencv2/core/private.hpp"
 #include "opencv2/flann/miniflann.hpp"
