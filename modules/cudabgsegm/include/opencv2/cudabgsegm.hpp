@@ -85,7 +85,11 @@ public:
     CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate, Stream& stream) = 0;
 
     using cv::BackgroundSubtractor::getBackgroundImage;
-    CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage, Stream& stream) const = 0;
+    virtual void getBackgroundImage(OutputArray backgroundImage, Stream& stream) const = 0;
+
+    CV_WRAP inline void getBackgroundImage(CV_OUT GpuMat& backgroundImage, Stream& stream) {
+        getBackgroundImage(OutputArray(backgroundImage), stream);
+    }
 
     CV_WRAP virtual int getHistory() const = 0;
     CV_WRAP virtual void setHistory(int nframes) = 0;
@@ -131,7 +135,11 @@ public:
 
     CV_WRAP virtual void apply(InputArray image, OutputArray fgmask, double learningRate, Stream& stream) = 0;
 
-    CV_WRAP virtual void getBackgroundImage(OutputArray backgroundImage, Stream& stream) const = 0;
+    virtual void getBackgroundImage(OutputArray backgroundImage, Stream& stream) const = 0;
+
+    CV_WRAP inline void getBackgroundImage(CV_OUT GpuMat &backgroundImage, Stream& stream) {
+        getBackgroundImage(OutputArray(backgroundImage), stream);
+    }
 };
 
 /** @brief Creates MOG2 Background Subtractor

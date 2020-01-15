@@ -112,7 +112,7 @@ CV_EXPORTS_W void resize(InputArray src, OutputArray dst, Size dsize, double fx=
 @param src Source image. CV_8U , CV_16U , CV_32S , or CV_32F depth and 1, 3, or 4 channels are
 supported.
 @param dst Destination image with the same type as src . The size is dsize .
-@param M *2x3* transformation matrix.
+@param M *2x3* Mat or UMat transformation matrix.
 @param dsize Size of the destination image.
 @param flags Combination of interpolation methods (see resize) and the optional flag
 WARP_INVERSE_MAP specifying that M is an inverse transformation ( dst=\>src ). Only
@@ -138,7 +138,7 @@ CV_EXPORTS_W inline void warpAffine(InputArray src, OutputArray dst, Mat M, Size
 
 /** @brief Builds transformation maps for affine transformation.
 
-@param M *2x3* transformation matrix.
+@param M *2x3* Mat or UMat transformation matrix.
 @param inverse Flag specifying that M is an inverse transformation ( dst=\>src ).
 @param dsize Size of the destination image.
 @param xmap X values with CV_32FC1 type.
@@ -162,7 +162,7 @@ CV_EXPORTS_W inline void buildWarpAffineMaps(Mat M, bool inverse, Size dsize, CV
 @param src Source image. CV_8U , CV_16U , CV_32S , or CV_32F depth and 1, 3, or 4 channels are
 supported.
 @param dst Destination image with the same type as src . The size is dsize .
-@param M *3x3* transformation matrix.
+@param M *3x3* Mat or UMat transformation matrix.
 @param dsize Size of the destination image.
 @param flags Combination of interpolation methods (see resize ) and the optional flag
 WARP_INVERSE_MAP specifying that M is the inverse transformation ( dst =\> src ). Only
@@ -188,7 +188,7 @@ CV_EXPORTS_W inline void warpPerspective(InputArray src, OutputArray dst, Mat M,
 
 /** @brief Builds transformation maps for perspective transformation.
 
-@param M *3x3* transformation matrix.
+@param M *3x3* Mat or UMat transformation matrix.
 @param inverse Flag specifying that M is an inverse transformation ( dst=\>src ).
 @param dsize Size of the destination image.
 @param xmap X values with CV_32FC1 type.

@@ -11,13 +11,27 @@ class cudabgsegm_test(NewOpenCVTests):
         if not cv.cuda.getCudaEnabledDeviceCount():
             self.skipTest("No CUDA-capable device is detected")
 
-    def test_existence(self):
-        #Test at least the existence of wrapped functions for now
+    def test_cudabgsegm(self):
+        lr = 0.05
+        sz = (128,128,1)
+        npMat = (np.random.random(sz) * 255).astype(np.uint8)
+        cuMat = cv.cuda_GpuMat(npMat)
+        cuMatBg = cv.cuda_GpuMat(cuMat.size(),cuMat.type())
+        cuMatFg = cv.cuda_GpuMat(cuMat.size(),cuMat.type())
 
-        _bgsub = cv.cuda.createBackgroundSubtractorMOG()
-        _bgsub = cv.cuda.createBackgroundSubtractorMOG2()
+        mog = cv.cuda.createBackgroundSubtractorMOG()
+        mog.apply(cuMat, lr, cv.cuda.Stream_Null(), cuMatFg)
+        mog.getBackgroundImage(cv.cuda.Stream_Null(),cuMatBg)
+        mog = cv.cuda.createBackgroundSubtractorMOG()
+        self.assertTrue(np.allclose(cuMatFg.download(),mog.apply(cuMat, lr, cv.cuda.Stream_Null()).download()))
+        self.assertTrue(np.allclose(cuMatBg.download(),mog.getBackgroundImage(cv.cuda.Stream_Null()).download()))
 
-        self.assertTrue(True) #It is sufficient that no exceptions have been there
+        mog2 = cv.cuda.createBackgroundSubtractorMOG2()
+        mog2.apply(cuMat, lr, cv.cuda.Stream_Null(), cuMatFg)
+        mog2.getBackgroundImage(cv.cuda.Stream_Null(),cuMatBg)
+        mog2 = cv.cuda.createBackgroundSubtractorMOG2()
+        self.assertTrue(np.allclose(cuMatFg.download(),mog2.apply(cuMat, lr, cv.cuda.Stream_Null()).download()))
+        self.assertTrue(np.allclose(cuMatBg.download(),mog2.getBackgroundImage(cv.cuda.Stream_Null()).download()))
 
 if __name__ == '__main__':
     NewOpenCVTests.bootstrap()
