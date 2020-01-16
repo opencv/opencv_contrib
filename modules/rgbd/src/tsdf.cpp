@@ -1393,7 +1393,7 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
                       (int)divUp(globalSize[2], (unsigned int)localSize[2]));
 
         const size_t counterSize = sizeof(int);
-        size_t lsz = localSize[0]*localSize[1]*localSize[2]*counterSize;
+        size_t lszscan = localSize[0]*localSize[1]*localSize[2]*counterSize;
 
         const int gsz[3] = {ngroups[2], ngroups[1], ngroups[0]};
         UMat groupedSum(3, gsz, CV_32S, Scalar(0));
@@ -1409,7 +1409,7 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
                    ocl::KernelArg::PtrReadOnly(volPoseGpu),
                    voxelSize,
                    voxelSizeInv,
-                   ocl::KernelArg::Local(lsz),
+                   ocl::KernelArg::Local(lszscan),
                    ocl::KernelArg::WriteOnlyNoSize(groupedSum));
 
         if(!kscan.run(3, globalSize, localSize, true))
@@ -1441,13 +1441,13 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
             ocl::Kernel kfill;
             kfill.create("fillPtsNrm", source, options, &errorStr);
 
-            UMat atomicCtr(1, 1, CV_32S, Scalar(0));
-
             if(kfill.empty())
                 throw std::runtime_error("Failed to create kernel: " + errorStr);
 
+            UMat atomicCtr(1, 1, CV_32S, Scalar(0));
+
             // mem size to keep pts (and normals optionally) for all work-items in a group
-            lsz = localSize[0]*localSize[1]*localSize[2]*elemSize;
+            size_t lszfill = localSize[0]*localSize[1]*localSize[2]*elemSize;
 
             kfill.args(ocl::KernelArg::PtrReadOnly(volume),
                        volResGpu.val,
@@ -1457,7 +1457,7 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
                        voxelSize,
                        voxelSizeInv,
                        ((int)needNormals),
-                       ocl::KernelArg::Local(lsz),
+                       ocl::KernelArg::Local(lszfill),
                        ocl::KernelArg::PtrReadWrite(atomicCtr),
                        ocl::KernelArg::ReadOnlyNoSize(groupedSum),
                        ocl::KernelArg::WriteOnlyNoSize(pts),
