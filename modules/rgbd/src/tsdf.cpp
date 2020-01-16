@@ -1422,12 +1422,6 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
 
         // 2. fill output arrays according to per-group points count
 
-        ocl::Kernel kfill;
-        kfill.create("fillPtsNrm", source, options, &errorStr);
-
-        if(kfill.empty())
-            throw std::runtime_error("Failed to create kernel: " + errorStr);
-
         points.create(gpuSum, 1, POINT_TYPE);
         UMat pts = points.getUMat();
         UMat nrm;
@@ -1438,31 +1432,41 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
         }
         else
         {
-            // it won't access but empty args are forbidden
+            // it won't be accessed but empty args are forbidden
             nrm = UMat(1, 1, POINT_TYPE);
         }
-        UMat atomicCtr(1, 1, CV_32S, Scalar(0));
 
-        // mem size to keep pts (and normals optionally) for all work-items in a group
-        lsz = localSize[0]*localSize[1]*localSize[2]*elemSize;
+        if (gpuSum)
+        {
+            ocl::Kernel kfill;
+            kfill.create("fillPtsNrm", source, options, &errorStr);
 
-        kfill.args(ocl::KernelArg::PtrReadOnly(volume),
-                   volResGpu.val,
-                   volDims.val,
-                   neighbourCoords.val,
-                   ocl::KernelArg::PtrReadOnly(volPoseGpu),
-                   voxelSize,
-                   voxelSizeInv,
-                   ((int)needNormals),
-                   ocl::KernelArg::Local(lsz),
-                   ocl::KernelArg::PtrReadWrite(atomicCtr),
-                   ocl::KernelArg::ReadOnlyNoSize(groupedSum),
-                   ocl::KernelArg::WriteOnlyNoSize(pts),
-                   ocl::KernelArg::WriteOnlyNoSize(nrm)
-                   );
+            UMat atomicCtr(1, 1, CV_32S, Scalar(0));
 
-        if(!kfill.run(3, globalSize, localSize, true))
-            throw std::runtime_error("Failed to run kernel");
+            if(kfill.empty())
+                throw std::runtime_error("Failed to create kernel: " + errorStr);
+
+            // mem size to keep pts (and normals optionally) for all work-items in a group
+            lsz = localSize[0]*localSize[1]*localSize[2]*elemSize;
+
+            kfill.args(ocl::KernelArg::PtrReadOnly(volume),
+                       volResGpu.val,
+                       volDims.val,
+                       neighbourCoords.val,
+                       ocl::KernelArg::PtrReadOnly(volPoseGpu),
+                       voxelSize,
+                       voxelSizeInv,
+                       ((int)needNormals),
+                       ocl::KernelArg::Local(lsz),
+                       ocl::KernelArg::PtrReadWrite(atomicCtr),
+                       ocl::KernelArg::ReadOnlyNoSize(groupedSum),
+                       ocl::KernelArg::WriteOnlyNoSize(pts),
+                       ocl::KernelArg::WriteOnlyNoSize(nrm)
+                       );
+
+            if(!kfill.run(3, globalSize, localSize, true))
+                throw std::runtime_error("Failed to run kernel");
+        }
     }
 }
 
