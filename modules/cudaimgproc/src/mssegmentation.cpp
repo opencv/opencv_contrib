@@ -392,15 +392,10 @@ void cv::cuda::meanShiftSegmentation(InputArray _src, OutputArray _dst, int sp, 
     if (_dst.kind() == _InputArray::CUDA_GPU_MAT)
     {
         GpuMat dstGpuMat = getOutputMat(_dst, src.size(), src.type(), stream);
-        if (stream)
-            dstGpuMat.upload(dst, stream);
-        else
-            dstGpuMat.upload(dst);
+        dstGpuMat.upload(dst, stream);
     }
     else {
-        _dst.create(src.size(), src.type());
-        Mat dstMat = _dst.getMat();
-        dst.copyTo(dstMat);
+        dst.copyTo(_dst);
     }
 }
 

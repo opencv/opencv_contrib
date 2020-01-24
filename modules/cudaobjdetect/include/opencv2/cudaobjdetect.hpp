@@ -162,7 +162,7 @@ public:
                         std::vector<Point>& found_locations,
                         std::vector<double>* confidences = NULL) = 0;
 
-    CV_WRAP inline virtual void detect(InputArray img,
+    CV_WRAP inline void detect(InputArray img,
         CV_OUT std::vector<Point>& found_locations,
         CV_OUT std::vector<double>& confidences) {
         detect(img, found_locations, &confidences);
@@ -173,7 +173,7 @@ public:
     @param img Source image. CV_8UC1 and CV_8UC4 types are supported for now.
     @param found_locations Left-top corner points of detected objects boundaries.
      */
-    CV_WRAP inline virtual void detectWithoutConf(InputArray img,
+    CV_WRAP inline void detectWithoutConf(InputArray img,
         CV_OUT std::vector<Point>& found_locations) {
         detect(img, found_locations, NULL);
     }
@@ -188,7 +188,7 @@ public:
                                   std::vector<Rect>& found_locations,
                                   std::vector<double>* confidences = NULL) = 0;
 
-    CV_WRAP inline virtual void detectMultiScale(InputArray img,
+    CV_WRAP inline void detectMultiScale(InputArray img,
         CV_OUT std::vector<Rect>& found_locations,
         CV_OUT std::vector<double>& confidences) {
         detectMultiScale(img, found_locations, &confidences);
@@ -199,7 +199,7 @@ public:
     @param img Source image. See cuda::HOGDescriptor::detect for type limitations.
     @param found_locations Detected objects boundaries.
      */
-    CV_WRAP inline virtual void detectMultiScaleWithoutConf(InputArray img,
+    CV_WRAP inline void detectMultiScaleWithoutConf(InputArray img,
         CV_OUT std::vector<Rect>& found_locations) {
         detectMultiScale(img, found_locations, NULL);
     }
