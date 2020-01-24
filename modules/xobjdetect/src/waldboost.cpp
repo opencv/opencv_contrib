@@ -333,7 +333,14 @@ void WaldBoost::fit(Mat& data_pos, Mat& data_neg)
 
 
         if (loss < 1e-50 || min_err > 0.5) {
-            std::cerr << "Stopping early" << std::endl;
+            std::cerr << "Stopping early. loss=" << loss << " min_err=" << min_err << std::endl;
+            weak_count_ = i + 1;
+            break;
+        }
+
+        // Avoid crashing on next Mat creation
+        if (pos <= 1) {
+            std::cerr << "Stopping early. pos=" << pos << std::endl;
             weak_count_ = i + 1;
             break;
         }

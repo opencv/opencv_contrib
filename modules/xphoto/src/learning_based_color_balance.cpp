@@ -262,26 +262,26 @@ void LearningBasedWBImpl::getAverageAndBrightestColorChromaticity(Vec2f &average
         uint sumB = 0, sumG = 0, sumR = 0;
         uchar *src_ptr = src.ptr<uchar>();
 #if CV_SIMD128
-        v_uint8x16 v_inB, v_inG, v_inR, v_mask;
-        v_uint16x8 v_sR1, v_sR2, v_sG1, v_sG2, v_sB1, v_sB2, v_sum;
-        v_uint16x8 v_max_sum = v_setall_u16(0), v_max_mask, v_brightestR, v_brightestG, v_brightestB;
-        v_uint32x4 v_uint1, v_uint2, v_SB = v_setzero_u32(), v_SG = v_setzero_u32(), v_SR = v_setzero_u32();
+        v_uint16x8 v_max_sum = v_setall_u16(0), v_brightestR = v_setall_u16(0), v_brightestG = v_setall_u16(0), v_brightestB = v_setall_u16(0);
+        v_uint32x4 v_SB = v_setzero_u32(), v_SG = v_setzero_u32(), v_SR = v_setzero_u32();
         for (; i < src_len - 15; i += 16)
         {
+            v_uint8x16 v_inB, v_inG, v_inR;
             v_load_deinterleave(src_ptr + 3 * i, v_inB, v_inG, v_inR);
-            v_mask = v_load(mask_ptr + i);
+            v_uint8x16 v_mask = v_load(mask_ptr + i);
 
             v_inB &= v_mask;
             v_inG &= v_mask;
             v_inR &= v_mask;
 
+            v_uint16x8 v_sR1, v_sR2, v_sG1, v_sG2, v_sB1, v_sB2;
             v_expand(v_inB, v_sB1, v_sB2);
             v_expand(v_inG, v_sG1, v_sG2);
             v_expand(v_inR, v_sR1, v_sR2);
 
             // update the brightest (R,G,B) tuple (process left half):
-            v_sum = v_sB1 + v_sG1 + v_sR1;
-            v_max_mask = (v_sum > v_max_sum);
+            v_uint16x8 v_sum = v_sB1 + v_sG1 + v_sR1;
+            v_uint16x8 v_max_mask = (v_sum > v_max_sum);
             v_max_sum = v_max(v_sum, v_max_sum);
             v_brightestB = (v_sB1 & v_max_mask) + (v_brightestB & (~v_max_mask));
             v_brightestG = (v_sG1 & v_max_mask) + (v_brightestG & (~v_max_mask));
@@ -299,6 +299,8 @@ void LearningBasedWBImpl::getAverageAndBrightestColorChromaticity(Vec2f &average
             v_sB1 = v_sB1 + v_sB2;
             v_sG1 = v_sG1 + v_sG2;
             v_sR1 = v_sR1 + v_sR2;
+
+            v_uint32x4 v_uint1, v_uint2;
             v_expand(v_sB1, v_uint1, v_uint2);
             v_SB += v_uint1 + v_uint2;
             v_expand(v_sG1, v_uint1, v_uint2);
@@ -351,27 +353,28 @@ void LearningBasedWBImpl::getAverageAndBrightestColorChromaticity(Vec2f &average
         uint64 sumB = 0, sumG = 0, sumR = 0;
         ushort *src_ptr = src.ptr<ushort>();
 #if CV_SIMD128
-        v_uint16x8 v_inB, v_inG, v_inR, v_mask, v_mask_lower = v_setall_u16(255);
-        v_uint32x4 v_iR1, v_iR2, v_iG1, v_iG2, v_iB1, v_iB2, v_sum;
-        v_uint32x4 v_max_sum = v_setall_u32(0), v_max_mask, v_brightestR, v_brightestG, v_brightestB;
-        v_uint64x2 v_uint64_1, v_uint64_2, v_SB = v_setzero_u64(), v_SG = v_setzero_u64(), v_SR = v_setzero_u64();
+        const v_uint16x8 v_mask_lower = v_setall_u16(255);
+        v_uint32x4 v_max_sum = v_setall_u32(0), v_brightestR = v_setall_u32(0), v_brightestG = v_setall_u32(0), v_brightestB = v_setall_u32(0);
+        v_uint64x2 v_SB = v_setzero_u64(), v_SG = v_setzero_u64(), v_SR = v_setzero_u64();
         for (; i < src_len - 7; i += 8)
         {
+            v_uint16x8 v_inB, v_inG, v_inR;
             v_load_deinterleave(src_ptr + 3 * i, v_inB, v_inG, v_inR);
-            v_mask = v_load_expand(mask_ptr + i);
+            v_uint16x8 v_mask = v_load_expand(mask_ptr + i);
             v_mask = v_mask | ((v_mask & v_mask_lower) << 8);
 
             v_inB &= v_mask;
             v_inG &= v_mask;
             v_inR &= v_mask;
 
+            v_uint32x4 v_iR1, v_iR2, v_iG1, v_iG2, v_iB1, v_iB2;
             v_expand(v_inB, v_iB1, v_iB2);
             v_expand(v_inG, v_iG1, v_iG2);
             v_expand(v_inR, v_iR1, v_iR2);
 
             // update the brightest (R,G,B) tuple (process left half):
-            v_sum = v_iB1 + v_iG1 + v_iR1;
-            v_max_mask = (v_sum > v_max_sum);
+            v_uint32x4 v_sum = v_iB1 + v_iG1 + v_iR1;
+            v_uint32x4 v_max_mask = (v_sum > v_max_sum);
             v_max_sum = v_max(v_sum, v_max_sum);
             v_brightestB = (v_iB1 & v_max_mask) + (v_brightestB & (~v_max_mask));
             v_brightestG = (v_iG1 & v_max_mask) + (v_brightestG & (~v_max_mask));
@@ -389,6 +392,7 @@ void LearningBasedWBImpl::getAverageAndBrightestColorChromaticity(Vec2f &average
             v_iB1 = v_iB1 + v_iB2;
             v_iG1 = v_iG1 + v_iG2;
             v_iR1 = v_iR1 + v_iR2;
+            v_uint64x2 v_uint64_1, v_uint64_2;
             v_expand(v_iB1, v_uint64_1, v_uint64_2);
             v_SB += v_uint64_1 + v_uint64_2;
             v_expand(v_iG1, v_uint64_1, v_uint64_2);

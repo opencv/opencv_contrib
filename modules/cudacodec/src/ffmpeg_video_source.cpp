@@ -44,82 +44,100 @@
 #include "precomp.hpp"
 
 #ifdef HAVE_NVCUVID
-
 using namespace cv;
 using namespace cv::cudacodec;
 using namespace cv::cudacodec::detail;
 
-namespace
+#ifndef CV_FOURCC_MACRO
+#define CV_FOURCC_MACRO(c1, c2, c3, c4) (((c1) & 255) + (((c2) & 255) << 8) + (((c3) & 255) << 16) + (((c4) & 255) << 24))
+#endif
+
+static std::string fourccToString(int fourcc)
 {
-    Create_InputMediaStream_FFMPEG_Plugin create_InputMediaStream_FFMPEG_p = 0;
-    Release_InputMediaStream_FFMPEG_Plugin release_InputMediaStream_FFMPEG_p = 0;
-    Read_InputMediaStream_FFMPEG_Plugin read_InputMediaStream_FFMPEG_p = 0;
+    union {
+        int u32;
+        unsigned char c[4];
+    } i32_c;
+    i32_c.u32 = fourcc;
+    return cv::format("%c%c%c%c",
+        (i32_c.c[0] >= ' ' && i32_c.c[0] < 128) ? i32_c.c[0] : '?',
+        (i32_c.c[1] >= ' ' && i32_c.c[1] < 128) ? i32_c.c[1] : '?',
+        (i32_c.c[2] >= ' ' && i32_c.c[2] < 128) ? i32_c.c[2] : '?',
+        (i32_c.c[3] >= ' ' && i32_c.c[3] < 128) ? i32_c.c[3] : '?');
+}
 
-    bool init_MediaStream_FFMPEG()
+static
+Codec FourccToCodec(int codec)
+{
+    switch (codec)
     {
-        static bool initialized = 0;
+    case CV_FOURCC_MACRO('m', 'p', 'e', 'g'): // fallthru
+    case CV_FOURCC_MACRO('M', 'P', 'G', '1'): return MPEG1;
+    case CV_FOURCC_MACRO('M', 'P', 'G', '2'): return MPEG2;
+    case CV_FOURCC_MACRO('X', 'V', 'I', 'D'): // fallthru
+    case CV_FOURCC_MACRO('D', 'I', 'V', 'X'): return MPEG4;
+    case CV_FOURCC_MACRO('W', 'V', 'C', '1'): return VC1;
+    case CV_FOURCC_MACRO('H', '2', '6', '4'): // fallthru
+    case CV_FOURCC_MACRO('h', '2', '6', '4'): // fallthru
+    case CV_FOURCC_MACRO('a', 'v', 'c', '1'): return H264;
+    case CV_FOURCC_MACRO('H', '2', '6', '5'): // fallthru
+    case CV_FOURCC_MACRO('h', '2', '6', '5'): // fallthru
+    case CV_FOURCC_MACRO('h', 'e', 'v', 'c'): return HEVC;
+    case CV_FOURCC_MACRO('M', 'J', 'P', 'G'): return JPEG;
+    case CV_FOURCC_MACRO('V', 'P', '8', '0'): return VP8;
+    case CV_FOURCC_MACRO('V', 'P', '9', '0'): return VP9;
+    default:
+        break;
+    }
 
-        if (!initialized)
-        {
-            #if defined _WIN32
-                const char* module_name = "opencv_ffmpeg"
-                    CVAUX_STR(CV_VERSION_MAJOR) CVAUX_STR(CV_VERSION_MINOR) CVAUX_STR(CV_VERSION_REVISION)
-                #if (defined _MSC_VER && defined _M_X64) || (defined __GNUC__ && defined __x86_64__)
-                    "_64"
-                #endif
-                    ".dll";
+    std::string msg = cv::format("Unknown codec FOURCC: 0x%08X (%s)", codec, fourccToString(codec).c_str());
+    CV_LOG_WARNING(NULL, msg);
+    CV_Error(Error::StsUnsupportedFormat, msg);
+}
 
-                static HMODULE cvFFOpenCV = LoadLibrary(module_name);
-
-                if (cvFFOpenCV)
-                {
-                    create_InputMediaStream_FFMPEG_p =
-                        (Create_InputMediaStream_FFMPEG_Plugin)GetProcAddress(cvFFOpenCV, "create_InputMediaStream_FFMPEG");
-                    release_InputMediaStream_FFMPEG_p =
-                        (Release_InputMediaStream_FFMPEG_Plugin)GetProcAddress(cvFFOpenCV, "release_InputMediaStream_FFMPEG");
-                    read_InputMediaStream_FFMPEG_p =
-                        (Read_InputMediaStream_FFMPEG_Plugin)GetProcAddress(cvFFOpenCV, "read_InputMediaStream_FFMPEG");
-
-                    initialized = create_InputMediaStream_FFMPEG_p != 0 && release_InputMediaStream_FFMPEG_p != 0 && read_InputMediaStream_FFMPEG_p != 0;
-                }
-            #elif defined HAVE_FFMPEG
-                create_InputMediaStream_FFMPEG_p = create_InputMediaStream_FFMPEG;
-                release_InputMediaStream_FFMPEG_p = release_InputMediaStream_FFMPEG;
-                read_InputMediaStream_FFMPEG_p = read_InputMediaStream_FFMPEG;
-
-                initialized = true;
-            #endif
-        }
-
-        return initialized;
+static
+void FourccToChromaFormat(const int pixelFormat, ChromaFormat &chromaFormat, int & nBitDepthMinus8)
+{
+    switch (pixelFormat)
+    {
+    case CV_FOURCC_MACRO('I', '4', '2', '0'):
+        chromaFormat = YUV420;
+        nBitDepthMinus8 = 0;
+        break;
+    default:
+        CV_LOG_WARNING(NULL, cv::format("ChromaFormat not recognized: 0x%08X (%s). Assuming I420", pixelFormat, fourccToString(pixelFormat).c_str()));
+        chromaFormat = YUV420;
+        nBitDepthMinus8 = 0;
+        break;
     }
 }
 
-cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname) :
-    stream_(0)
+cv::cudacodec::detail::FFmpegVideoSource::FFmpegVideoSource(const String& fname)
 {
-    CV_Assert( init_MediaStream_FFMPEG() );
+    if (!videoio_registry::hasBackend(CAP_FFMPEG))
+        CV_Error(Error::StsNotImplemented, "FFmpeg backend not found");
 
-    int codec;
-    int chroma_format;
-    int width;
-    int height;
-
-    stream_ = create_InputMediaStream_FFMPEG_p(fname.c_str(), &codec, &chroma_format, &width, &height);
-    if (!stream_)
+    cap.open(fname, CAP_FFMPEG);
+    if (!cap.isOpened())
         CV_Error(Error::StsUnsupportedFormat, "Unsupported video source");
 
-    format_.codec = static_cast<Codec>(codec);
-    format_.chromaFormat = static_cast<ChromaFormat>(chroma_format);
-    format_.nBitDepthMinus8 = -1;
-    format_.width = width;
-    format_.height = height;
+    if (!cap.set(CAP_PROP_FORMAT, -1))  // turn off video decoder (extract stream)
+        CV_Error(Error::StsUnsupportedFormat, "Fetching of RAW video streams is not supported");
+    CV_Assert(cap.get(CAP_PROP_FORMAT) == -1);
+
+    int codec = (int)cap.get(CAP_PROP_FOURCC);
+    int pixelFormat = (int)cap.get(CAP_PROP_CODEC_PIXEL_FORMAT);
+
+    format_.codec = FourccToCodec(codec);
+    format_.height = cap.get(CAP_PROP_FRAME_HEIGHT);
+    format_.width = cap.get(CAP_PROP_FRAME_WIDTH);
+    FourccToChromaFormat(pixelFormat, format_.chromaFormat, format_.nBitDepthMinus8);
 }
 
 cv::cudacodec::detail::FFmpegVideoSource::~FFmpegVideoSource()
 {
-    if (stream_)
-        release_InputMediaStream_FFMPEG_p(stream_);
+    if (cap.isOpened())
+        cap.release();
 }
 
 FormatInfo cv::cudacodec::detail::FFmpegVideoSource::format() const
@@ -127,14 +145,12 @@ FormatInfo cv::cudacodec::detail::FFmpegVideoSource::format() const
     return format_;
 }
 
-bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** data, int* size, bool* bEndOfFile)
+bool cv::cudacodec::detail::FFmpegVideoSource::getNextPacket(unsigned char** data, size_t* size)
 {
-    int endOfFile;
-
-    int res = read_InputMediaStream_FFMPEG_p(stream_, data, size, &endOfFile);
-
-    *bEndOfFile = (endOfFile != 0);
-    return res != 0;
+    cap >> rawFrame;
+    *data = rawFrame.data;
+    *size = rawFrame.total();
+    return *size != 0;
 }
 
 #endif // HAVE_CUDA

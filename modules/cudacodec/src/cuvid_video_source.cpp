@@ -62,12 +62,13 @@ cv::cudacodec::detail::CuvidVideoSource::CuvidVideoSource(const String& fname)
     // now create the actual source
     CUresult cuRes = cuvidCreateVideoSource(&videoSource_, fname.c_str(), &params);
     if (cuRes == CUDA_ERROR_INVALID_SOURCE)
-        throw std::runtime_error("");
+        CV_Error(Error::StsUnsupportedFormat, "Unsupported video source");
     cuSafeCall( cuRes );
 
     CUVIDEOFORMAT vidfmt;
     cuSafeCall( cuvidGetSourceVideoFormat(videoSource_, &vidfmt, 0) );
 
+    CV_Assert(Codec::NumCodecs == cudaVideoCodec::cudaVideoCodec_NumCodecs);
     format_.codec = static_cast<Codec>(vidfmt.codec);
     format_.chromaFormat = static_cast<ChromaFormat>(vidfmt.chroma_format);
     format_.nBitDepthMinus8 = vidfmt.bit_depth_luma_minus8;

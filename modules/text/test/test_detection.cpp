@@ -37,6 +37,8 @@ TEST_P(Detection, sample)
 
     std::string imageName = GET_PARAM(0);
     bool anyDirection = GET_PARAM(1);
+    if (anyDirection)
+        throw SkipTestException("ERGROUPING_ORIENTATION_ANY mode is not supported");
     std::cout << "Image: " << imageName << std::endl;
     std::cout << "Orientation: " << (anyDirection ? "any" : "horiz") << std::endl;
     Mat src = cv::imread(findDataFile(imageName));

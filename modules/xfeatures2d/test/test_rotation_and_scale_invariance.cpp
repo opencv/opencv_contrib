@@ -33,7 +33,7 @@ INSTANTIATE_TEST_CASE_P(SIFT, DescriptorRotationInvariance, Values(
 ));
 
 INSTANTIATE_TEST_CASE_P(LATCH, DescriptorRotationInvariance, Values(
-    make_tuple(IMAGE_TSUKUBA, SIFT::create(), LATCH::create(), 0.9999f)
+    make_tuple(IMAGE_TSUKUBA, SIFT::create(), LATCH::create(), 0.98f)
 ));
 
 #endif // NONFREE
@@ -153,7 +153,6 @@ INSTANTIATE_TEST_CASE_P(BoostDesc_BINBOOST_256, DescriptorRotationInvariance, Va
 
 
 // ============================ SCALE INVARIANCE ==============================
-
 
 #ifdef OPENCV_ENABLE_NONFREE
 INSTANTIATE_TEST_CASE_P(SURF, DetectorScaleInvariance, Values(
@@ -284,6 +283,7 @@ TEST(Features2d_RotationInvariance2_Detector_SURF, regression)
             ASSERT_LT(fabs(keypoints[i1].response - keypoints[i].response) / keypoints[i1].response, 1e-6);
     }
 }
+
 #endif // NONFREE
 
 }} // namespace

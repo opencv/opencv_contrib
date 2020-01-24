@@ -55,7 +55,9 @@ known to be patented. You need to set the OPENCV_ENABLE_NONFREE option in cmake 
 
     @defgroup xfeatures2d_match Experimental 2D Features Matching Algorithm
 
-This section describes the GMS (Grid-based Motion Statistics) matching strategy.
+This section describes the following matching strategies:
+    - GMS: Grid-based Motion Statistics, @cite Bian2017gms
+    - LOGOS: Local geometric support for high-outlier spatial verification, @cite Lowry2018LOGOSLG
 
 @}
 */
@@ -947,7 +949,7 @@ public:
 /** @brief Estimates cornerness for prespecified KeyPoints using the FAST algorithm
 
 @param image grayscale image where keypoints (corners) are detected.
-@param keypoints keypoints which should be tested to fit the FAST criteria. Keypoints not beeing
+@param keypoints keypoints which should be tested to fit the FAST criteria. Keypoints not being
 detected as corners are removed.
 @param threshold threshold on difference between intensity of the central pixel and pixels of a
 circle around this pixel.
@@ -969,7 +971,7 @@ CV_EXPORTS void FASTForPointSet( InputArray image, CV_IN_OUT std::vector<KeyPoin
 //! @addtogroup xfeatures2d_match
 //! @{
 
-/** @brief GMS  (Grid-based Motion Statistics) feature matching strategy by @cite Bian2017gms .
+/** @brief GMS (Grid-based Motion Statistics) feature matching strategy described in @cite Bian2017gms .
     @param size1 Input size of image1.
     @param size2 Input size of image2.
     @param keypoints1 Input keypoints of image1.
@@ -984,10 +986,24 @@ CV_EXPORTS void FASTForPointSet( InputArray image, CV_IN_OUT std::vector<KeyPoin
         If matching results are not satisfying, please add more features. (We use 10000 for images with 640 X 480).
         If your images have big rotation and scale changes, please set withRotation or withScale to true.
  */
+CV_EXPORTS_W void matchGMS(const Size& size1, const Size& size2, const std::vector<KeyPoint>& keypoints1, const std::vector<KeyPoint>& keypoints2,
+                           const std::vector<DMatch>& matches1to2, CV_OUT std::vector<DMatch>& matchesGMS, const bool withRotation = false,
+                           const bool withScale = false, const double thresholdFactor = 6.0);
 
-CV_EXPORTS_W void matchGMS( const Size& size1, const Size& size2, const std::vector<KeyPoint>& keypoints1, const std::vector<KeyPoint>& keypoints2,
-                          const std::vector<DMatch>& matches1to2, CV_OUT std::vector<DMatch>& matchesGMS, const bool withRotation = false,
-                          const bool withScale = false, const double thresholdFactor = 6.0 );
+/** @brief LOGOS (Local geometric support for high-outlier spatial verification) feature matching strategy described in @cite Lowry2018LOGOSLG .
+    @param keypoints1 Input keypoints of image1.
+    @param keypoints2 Input keypoints of image2.
+    @param nn1 Index to the closest BoW centroid for each descriptors of image1.
+    @param nn2 Index to the closest BoW centroid for each descriptors of image2.
+    @param matches1to2 Matches returned by the LOGOS matching strategy.
+    @note
+        This matching strategy is suitable for features matching against large scale database.
+        First step consists in constructing the bag-of-words (BoW) from a representative image database.
+        Image descriptors are then represented by their closest codevector (nearest BoW centroid).
+ */
+CV_EXPORTS_W void matchLOGOS(const std::vector<KeyPoint>& keypoints1, const std::vector<KeyPoint>& keypoints2,
+                             const std::vector<int>& nn1, const std::vector<int>& nn2,
+                             std::vector<DMatch>& matches1to2);
 
 //! @}
 

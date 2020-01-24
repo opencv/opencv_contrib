@@ -37,15 +37,23 @@
 //
 //M*/
 
+#include "precomp.hpp"
+
 #include <vector>
 #include <algorithm>
 #include <iterator>
 #include <iostream>
 #include <cmath>
 
-#include "precomp.hpp"
-
 #include "advanced_types.hpp"
+
+#ifdef CV_CXX11
+#define CV_USE_PARALLEL_PREDICT_EDGES_1 1
+#define CV_USE_PARALLEL_PREDICT_EDGES_2 0  //1, see https://github.com/opencv/opencv_contrib/issues/2346
+#else
+#define CV_USE_PARALLEL_PREDICT_EDGES_1 0
+#define CV_USE_PARALLEL_PREDICT_EDGES_2 0
+#endif
 
 /********************* Helper functions *********************/
 
@@ -730,7 +738,7 @@ protected:
             }
             // lookup tables for mapping linear index to offset pairs
 
-        #ifdef CV_CXX11
+        #if CV_USE_PARALLEL_PREDICT_EDGES_1
         parallel_for_(cv::Range(0, height), [&](const cv::Range& range)
         #else
         const cv::Range range(0, height);
@@ -779,7 +787,7 @@ protected:
                 }
             }
         }
-        #ifdef CV_CXX11
+        #if CV_USE_PARALLEL_PREDICT_EDGES_1
         );
         #endif
 
@@ -788,8 +796,10 @@ protected:
         dstM.setTo(0);
 
         float step = 2.0f * CV_SQR(stride) / CV_SQR(ipSize) / nTreesEval;
-        #ifdef CV_CXX11
+        #if CV_USE_PARALLEL_PREDICT_EDGES_2
         parallel_for_(cv::Range(0, height), [&](const cv::Range& range)
+        #elif CV_USE_PARALLEL_PREDICT_EDGES_1
+        const cv::Range range(0, height);
         #endif
         {
             for(int i = range.start; i < range.end; ++i)
@@ -816,7 +826,7 @@ protected:
                 }
             }
         }
-        #ifdef CV_CXX11
+        #if CV_USE_PARALLEL_PREDICT_EDGES_2
         );
         #endif
 

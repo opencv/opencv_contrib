@@ -2,7 +2,7 @@
 
 template<> struct pyopencvVecConverter<ppf_match_3d::Pose3DPtr >
 {
-    static bool to(PyObject* obj, std::vector<ppf_match_3d::Pose3DPtr >& value, const ArgInfo info)
+    static bool to(PyObject* obj, std::vector<ppf_match_3d::Pose3DPtr >& value, const ArgInfo& info)
     {
         return pyopencv_to_generic_vec(obj, value, info);
     }

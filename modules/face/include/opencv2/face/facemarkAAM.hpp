@@ -146,7 +146,7 @@ public:
     };
 
     //! overload with additional Config structures
-    virtual bool fitConfig( InputArray image, const std::vector<Rect>& roi, std::vector<std::vector<Point2f> >& _landmarks, const std::vector<Config> &runtime_params ) = 0;
+    virtual bool fitConfig( InputArray image, InputArray roi, OutputArrayOfArrays _landmarks, const std::vector<Config> &runtime_params ) = 0;
 
 
     //!  initializer

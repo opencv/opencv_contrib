@@ -219,7 +219,7 @@ namespace cv {
                 // Sort edges
                 std::sort(edges, edges + nb_edges);
 
-                // Create a set with all point (by default mapped to themselfs)
+                // Create a set with all point (by default mapped to themselves)
                 *es = new PointSet(img_filtered.cols * img_filtered.rows);
 
                 // Thresholds

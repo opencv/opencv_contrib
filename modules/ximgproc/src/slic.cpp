@@ -247,14 +247,14 @@ void SuperpixelSLICImpl::initialize()
     // intitialize label storage
     m_klabels = Mat( m_height, m_width, CV_32S, Scalar::all(0) );
 
-    // storage for edge magnitudes
-    Mat edgemag = Mat( m_height, m_width, CV_32F, Scalar::all(0) );
-
     // perturb seeds is not absolutely necessary,
     // one can set this flag to false
     bool perturbseeds = true;
 
-    if ( perturbseeds ) DetectChEdges( edgemag );
+    // storage for edge magnitudes
+    Mat edgemag;
+    if (perturbseeds)
+      DetectChEdges(edgemag);
 
     if( m_algorithm == SLICO )
       GetChSeedsK();
@@ -268,7 +268,8 @@ void SuperpixelSLICImpl::initialize()
     m_numlabels = (int)m_kseeds[0].size();
 
     // perturb seeds given edges
-    if ( perturbseeds ) PerturbSeeds( edgemag );
+    if (perturbseeds)
+      PerturbSeeds(edgemag);
 
     if( m_algorithm == MSLIC )
     {
@@ -569,12 +570,21 @@ inline void SuperpixelSLICImpl::DetectChEdges( Mat &edgemag )
         Sobel( m_chvec[c], dy, CV_32F, 0, 1, 1, 1.0f, 0.0f, BORDER_DEFAULT );
 
         // acumulate ^2 derivate
-        S_dx = S_dx + dx.mul(dx);
-        S_dy = S_dy + dy.mul(dy);
-
+        MatExpr dx2 = dx.mul(dx);
+        MatExpr dy2 = dy.mul(dy);
+        if (S_dx.empty())
+        {
+            S_dx = dx2;
+            S_dy = dy2;
+        }
+        else
+        {
+            S_dx += dx2;
+            S_dy += dy2;
+        }
     }
     // total magnitude
-    edgemag += S_dx + S_dy;
+    edgemag = S_dx + S_dy;
 }
 
 /*

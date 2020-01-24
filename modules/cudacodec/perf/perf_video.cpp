@@ -46,14 +46,21 @@
 
 namespace opencv_test { namespace {
 
+#if defined(HAVE_NVCUVID)
+
+#if defined(HAVE_FFMPEG_WRAPPER) // should this be set in preprocessor or in cvconfig.h
+#define VIDEO_SRC Values("gpu/video/768x576.avi", "gpu/video/1920x1080.avi")
+#else
+// CUDA demuxer has to fall back to ffmpeg to process "gpu/video/768x576.avi"
+#define VIDEO_SRC Values( "gpu/video/1920x1080.avi")
+#endif
+
 DEF_PARAM_TEST_1(FileName, string);
 
 //////////////////////////////////////////////////////
 // VideoReader
 
-#if defined(HAVE_NVCUVID)
-
-PERF_TEST_P(FileName, VideoReader, Values("gpu/video/768x576.avi", "gpu/video/1920x1080.avi"))
+PERF_TEST_P(FileName, VideoReader, VIDEO_SRC)
 {
     declare.time(20);
 
@@ -89,7 +96,7 @@ PERF_TEST_P(FileName, VideoReader, Values("gpu/video/768x576.avi", "gpu/video/19
 
 #if defined(HAVE_NVCUVID) && defined(_WIN32)
 
-PERF_TEST_P(FileName, VideoWriter, Values("gpu/video/768x576.avi", "gpu/video/1920x1080.avi"))
+PERF_TEST_P(FileName, VideoWriter, VIDEO_SRC)
 {
     declare.time(30);
 

@@ -291,7 +291,6 @@ Point3f WarpField::applyWarp(Point3f p, const nodeNeighboursType neighbours, int
 {
     CV_TRACE_FUNCTION();
 
-
     if(n == 0)
     {
         return p;

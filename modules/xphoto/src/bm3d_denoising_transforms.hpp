@@ -49,7 +49,7 @@ namespace cv
 namespace xphoto
 {
 
-// Following class contains interface of the tranform domain functions.
+// Following class contains interface of the transform domain functions.
 template <typename T, typename TT>
 class Transform
 {
