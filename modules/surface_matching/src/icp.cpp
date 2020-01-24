@@ -281,10 +281,7 @@ int ICP::registerModelToScene(const Mat& srcPC, const Mat& dstPC, double& residu
   // walk the pyramid
   for (int level = m_numLevels-1; level >=0; level--)
   {
-    const double impact = 2;
-    double div = pow((double)impact, (double)level);
-    //double div2 = div*div;
-    const int numSamples = divUp(n, div);
+    const int numSamples = divUp(n, 1 << level);
     const double TolP = m_tolerance*(double)(level+1)*(level+1);
     const int MaxIterationsPyr = cvRound((double)m_maxIterations/(level+1));
 
