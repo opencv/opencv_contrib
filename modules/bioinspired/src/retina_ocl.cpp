@@ -81,9 +81,9 @@ RetinaOCLImpl::RetinaOCLImpl(const cv::Size inputSz)
     _init(inputSz, true, RETINA_COLOR_BAYER, false);
 }
 
-RetinaOCLImpl::RetinaOCLImpl(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const double reductionFactor, const double samplingStrenght)
+RetinaOCLImpl::RetinaOCLImpl(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const double reductionFactor, const double samplingStrength)
 {
-    _init(inputSz, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
+    _init(inputSz, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrength);
 }
 
 RetinaOCLImpl::~RetinaOCLImpl()
@@ -347,7 +347,7 @@ void RetinaOCLImpl::getMagno(OutputArray output)
     output.assign(retinaOutput_magno);
 }
 // private method called by constructors
-void RetinaOCLImpl::_init(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const double reductionFactor, const double samplingStrenght)
+void RetinaOCLImpl::_init(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const double reductionFactor, const double samplingStrength)
 {
     // basic error check
     if (inputSz.height*inputSz.width <= 0)
@@ -356,7 +356,7 @@ void RetinaOCLImpl::_init(const cv::Size inputSz, const bool colorMode, int colo
     }
 
     // allocate the retina model
-    _retinaFilter.reset(new RetinaFilter(inputSz.height, inputSz.width, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght));
+    _retinaFilter.reset(new RetinaFilter(inputSz.height, inputSz.width, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrength));
 
     // prepare the default parameter XML file with default setup
     setup(_retinaParameters);

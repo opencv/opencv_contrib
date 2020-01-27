@@ -113,7 +113,7 @@ A ```GridBoard``` object can be defined using the following parameters:
 
 - Number of markers in the X direction.
 - Number of markers in the Y direction.
-- Lenght of the marker side.
+- Length of the marker side.
 - Length of the marker separation.
 - The dictionary of the markers.
 - Ids of all the markers (X*Y markers).
