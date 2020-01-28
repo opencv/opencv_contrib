@@ -438,13 +438,13 @@ public:
     @param reductionFactor only usefull if param useRetinaLogSampling=true, specifies the reduction
     factor of the output frame (as the center (fovea) is high resolution and corners can be
     underscaled, then a reduction of the output is allowed without precision leak
-    @param samplingStrenght only usefull if param useRetinaLogSampling=true, specifies the strenght of
+    @param samplingStrength only usefull if param useRetinaLogSampling=true, specifies the strength of
     the log scale that is applied
      */
     CV_WRAP static Ptr<Retina> create(Size inputSize, const bool colorMode,
                                            int colorSamplingMethod=RETINA_COLOR_BAYER,
                                            const bool useRetinaLogSampling=false,
-                                           const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
+                                           const float reductionFactor=1.0f, const float samplingStrength=10.0f);
 };
 
 //! @}

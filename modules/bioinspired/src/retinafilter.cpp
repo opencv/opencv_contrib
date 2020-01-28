@@ -76,7 +76,7 @@ namespace cv
 namespace bioinspired
 {
     // standard constructor without any log sampling of the input frame
-    RetinaFilter::RetinaFilter(const unsigned int sizeRows, const unsigned int sizeColumns, const bool colorMode, const int samplingMethod, const bool useRetinaLogSampling, const double reductionFactor, const double samplingStrenght)
+    RetinaFilter::RetinaFilter(const unsigned int sizeRows, const unsigned int sizeColumns, const bool colorMode, const int samplingMethod, const bool useRetinaLogSampling, const double reductionFactor, const double samplingStrength)
         :
     _retinaParvoMagnoMappedFrame(0),
         _retinaParvoMagnoMapCoefTable(0),
@@ -94,7 +94,7 @@ namespace bioinspired
         if (useRetinaLogSampling)
         {
             _photoreceptorsLogSampling = new ImageLogPolProjection(sizeRows, sizeColumns, ImageLogPolProjection::RETINALOGPROJECTION, true);
-            if (!_photoreceptorsLogSampling->initProjection(reductionFactor, samplingStrenght))
+            if (!_photoreceptorsLogSampling->initProjection(reductionFactor, samplingStrength))
             {
                 std::cerr<<"RetinaFilter::Problem initializing photoreceptors log sampling, could not setup retina filter"<<std::endl;
                 delete _photoreceptorsLogSampling;
