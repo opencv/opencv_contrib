@@ -126,12 +126,12 @@ INTER_NEAREST , INTER_LINEAR , and INTER_CUBIC interpolation methods are support
 CV_EXPORTS void warpAffine(InputArray src, OutputArray dst, InputArray M, Size dsize, int flags = INTER_LINEAR,
     int borderMode = BORDER_CONSTANT, Scalar borderValue = Scalar(), Stream& stream = Stream::Null());
 
-CV_EXPORTS_W inline void warpAffine(InputArray src, OutputArray dst, UMat M, Size dsize, int flags = INTER_LINEAR,
+CV_WRAP inline void warpAffine(InputArray src, OutputArray dst, UMat M, Size dsize, int flags = INTER_LINEAR,
     int borderMode = BORDER_CONSTANT, Scalar borderValue = Scalar(), Stream& stream = Stream::Null()) {
     warpAffine(src, dst, InputArray(M), dsize, flags, borderMode, borderValue, stream);
 }
 
-CV_EXPORTS_W inline void warpAffine(InputArray src, OutputArray dst, Mat M, Size dsize, int flags = INTER_LINEAR,
+CV_WRAP inline void warpAffine(InputArray src, OutputArray dst, Mat M, Size dsize, int flags = INTER_LINEAR,
     int borderMode = BORDER_CONSTANT, Scalar borderValue = Scalar(), Stream& stream = Stream::Null()) {
     warpAffine(src, dst, InputArray(M), dsize, flags, borderMode, borderValue, stream);
 }
@@ -149,11 +149,11 @@ CV_EXPORTS_W inline void warpAffine(InputArray src, OutputArray dst, Mat M, Size
  */
 CV_EXPORTS void buildWarpAffineMaps(InputArray M, bool inverse, Size dsize, OutputArray xmap, OutputArray ymap, Stream& stream = Stream::Null());
 
-CV_EXPORTS_W inline void buildWarpAffineMaps(UMat M, bool inverse, Size dsize, CV_OUT GpuMat& xmap, CV_OUT GpuMat& ymap, Stream& stream = Stream::Null()) {
+CV_WRAP inline void buildWarpAffineMaps(UMat M, bool inverse, Size dsize, CV_OUT GpuMat& xmap, CV_OUT GpuMat& ymap, Stream& stream = Stream::Null()) {
     buildWarpAffineMaps(InputArray(M), inverse, dsize, OutputArray(xmap), OutputArray(ymap), stream);
 }
 
-CV_EXPORTS_W inline void buildWarpAffineMaps(Mat M, bool inverse, Size dsize, CV_OUT GpuMat& xmap, CV_OUT GpuMat& ymap, Stream& stream = Stream::Null()) {
+CV_WRAP inline void buildWarpAffineMaps(Mat M, bool inverse, Size dsize, CV_OUT GpuMat& xmap, CV_OUT GpuMat& ymap, Stream& stream = Stream::Null()) {
     buildWarpAffineMaps(InputArray(M), inverse, dsize, OutputArray(xmap), OutputArray(ymap), stream);
 }
 
@@ -176,12 +176,12 @@ INTER_NEAREST , INTER_LINEAR , and INTER_CUBIC interpolation methods are support
 CV_EXPORTS void warpPerspective(InputArray src, OutputArray dst, InputArray M, Size dsize, int flags = INTER_LINEAR,
     int borderMode = BORDER_CONSTANT, Scalar borderValue = Scalar(), Stream& stream = Stream::Null());
 
-CV_EXPORTS_W inline void warpPerspective(InputArray src, OutputArray dst, UMat M, Size dsize, int flags = INTER_LINEAR,
+CV_WRAP inline void warpPerspective(InputArray src, OutputArray dst, UMat M, Size dsize, int flags = INTER_LINEAR,
     int borderMode = BORDER_CONSTANT, Scalar borderValue = Scalar(), Stream& stream = Stream::Null()) {
     warpPerspective(src, dst, InputArray(M), dsize, flags, borderMode, borderValue, stream);
 }
 
-CV_EXPORTS_W inline void warpPerspective(InputArray src, OutputArray dst, Mat M, Size dsize, int flags = INTER_LINEAR,
+CV_WRAP inline void warpPerspective(InputArray src, OutputArray dst, Mat M, Size dsize, int flags = INTER_LINEAR,
     int borderMode = BORDER_CONSTANT, Scalar borderValue = Scalar(), Stream& stream = Stream::Null()) {
     warpPerspective(src, dst, InputArray(M), dsize, flags, borderMode, borderValue, stream);
 }
@@ -199,11 +199,11 @@ CV_EXPORTS_W inline void warpPerspective(InputArray src, OutputArray dst, Mat M,
  */
 CV_EXPORTS void buildWarpPerspectiveMaps(InputArray M, bool inverse, Size dsize, OutputArray xmap, OutputArray ymap, Stream& stream = Stream::Null());
 
-CV_EXPORTS_W inline void buildWarpPerspectiveMaps(UMat M, bool inverse, Size dsize, CV_OUT GpuMat& xmap, CV_OUT GpuMat& ymap, Stream& stream = Stream::Null()) {
+CV_WRAP inline void buildWarpPerspectiveMaps(UMat M, bool inverse, Size dsize, CV_OUT GpuMat& xmap, CV_OUT GpuMat& ymap, Stream& stream = Stream::Null()) {
     buildWarpPerspectiveMaps(InputArray(M), inverse, dsize, OutputArray(xmap), OutputArray(ymap), stream);
 }
 
-CV_EXPORTS_W inline void buildWarpPerspectiveMaps(Mat M, bool inverse, Size dsize, CV_OUT GpuMat& xmap, CV_OUT GpuMat& ymap, Stream& stream = Stream::Null()) {
+CV_WRAP inline void buildWarpPerspectiveMaps(Mat M, bool inverse, Size dsize, CV_OUT GpuMat& xmap, CV_OUT GpuMat& ymap, Stream& stream = Stream::Null()) {
     buildWarpPerspectiveMaps(InputArray(M), inverse, dsize, OutputArray(xmap), OutputArray(ymap), stream);
 }
 
