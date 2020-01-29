@@ -388,7 +388,15 @@ void cv::cuda::meanShiftSegmentation(InputArray _src, OutputArray _dst, int sp, 
             dstcol[3] = 255;
         }
     }
-    dst.copyTo(_dst);
+
+    if (_dst.kind() == _InputArray::CUDA_GPU_MAT)
+    {
+        GpuMat dstGpuMat = getOutputMat(_dst, src.size(), src.type(), stream);
+        dstGpuMat.upload(dst, stream);
+    }
+    else {
+        dst.copyTo(_dst);
+    }
 }
 
 #endif // #if !defined (HAVE_CUDA) || defined (CUDA_DISABLER)
