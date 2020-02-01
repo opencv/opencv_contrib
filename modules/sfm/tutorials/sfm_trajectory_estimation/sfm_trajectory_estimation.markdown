@@ -71,7 +71,7 @@ Finally, the obtained results will be shown in Viz, in this case reproducing the
 Usage and Results
 -----------------
 
-In order to run this sample we need to specify the path to the tracked points file, the focal lenght of the camera in addition to the center projection coordinates (in pixels). You can find a sample file in samples/data/desktop_trakcks.txt
+In order to run this sample we need to specify the path to the tracked points file, the focal length of the camera in addition to the center projection coordinates (in pixels). You can find a sample file in samples/data/desktop_trakcks.txt
 
 @code{.bash}
   ./example_sfm_trajectory_reconstruction desktop_tracks.txt 1914 640 360

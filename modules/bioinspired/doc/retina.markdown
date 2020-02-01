@@ -207,7 +207,7 @@ functions (C++, Java, Python) :
 
       // Allocators
       cv::Ptr<Retina> Retina::create (Size inputSize);
-      cv::Ptr<Retina> Retina::create (Size inputSize, const bool colorMode, RETINA_COLORSAMPLINGMETHOD colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
+      cv::Ptr<Retina> Retina::create (Size inputSize, const bool colorMode, RETINA_COLORSAMPLINGMETHOD colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrength=10.0);
       }} // cv and bioinspired namespaces end
 @endcode
 

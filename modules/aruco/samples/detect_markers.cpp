@@ -55,7 +55,7 @@ const char* keys  =
         "{v        |       | Input from video file, if ommited, input comes from camera }"
         "{ci       | 0     | Camera id if input doesnt come from video (-v) }"
         "{c        |       | Camera intrinsic parameters. Needed for camera pose }"
-        "{l        | 0.1   | Marker side lenght (in meters). Needed for correct scale in camera pose }"
+        "{l        | 0.1   | Marker side length (in meters). Needed for correct scale in camera pose }"
         "{dp       |       | File of marker detector parameters }"
         "{r        |       | show rejected candidates too }"
         "{refine   |       | Corner refinement: CORNER_REFINE_NONE=0, CORNER_REFINE_SUBPIX=1,"

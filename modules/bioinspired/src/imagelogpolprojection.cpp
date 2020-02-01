@@ -125,7 +125,7 @@ void ImageLogPolProjection::clearAllBuffers()
 void ImageLogPolProjection::resize(const unsigned int NBrows, const unsigned int NBcolumns)
 {
     BasicRetinaFilter::resize(NBrows, NBcolumns);
-    initProjection(_reductionFactor, _samplingStrenght);
+    initProjection(_reductionFactor, _samplingStrength);
 
     // reset buffers method
     clearAllBuffers();
@@ -133,25 +133,25 @@ void ImageLogPolProjection::resize(const unsigned int NBrows, const unsigned int
 }
 
 // init functions depending on the projection type
-bool ImageLogPolProjection::initProjection(const double reductionFactor, const double samplingStrenght)
+bool ImageLogPolProjection::initProjection(const double reductionFactor, const double samplingStrength)
 {
     switch(_selectedProjection)
     {
     case RETINALOGPROJECTION:
-        return _initLogRetinaSampling(reductionFactor, samplingStrenght);
+        return _initLogRetinaSampling(reductionFactor, samplingStrength);
         break;
     case CORTEXLOGPOLARPROJECTION:
-        return _initLogPolarCortexSampling(reductionFactor, samplingStrenght);
+        return _initLogPolarCortexSampling(reductionFactor, samplingStrength);
         break;
     default:
         std::cout<<"ImageLogPolProjection::no projection setted up... performing default retina projection... take care"<<std::endl;
-        return _initLogRetinaSampling(reductionFactor, samplingStrenght);
+        return _initLogRetinaSampling(reductionFactor, samplingStrength);
         break;
     }
 }
 
 // -> private init functions dedicated to each projection
-bool ImageLogPolProjection::_initLogRetinaSampling(const double reductionFactor, const double samplingStrenght)
+bool ImageLogPolProjection::_initLogRetinaSampling(const double reductionFactor, const double samplingStrength)
 {
     _initOK=false;
 
@@ -173,7 +173,7 @@ bool ImageLogPolProjection::_initLogRetinaSampling(const double reductionFactor,
     _outputDoubleNBpixels=_outputNBrows*_outputNBcolumns*2;
 
 #ifdef IMAGELOGPOLPROJECTION_DEBUG
-    std::cout<<"ImageLogPolProjection::initLogRetinaSampling: Log resampled image resampling factor: "<<reductionFactor<<", strenght:"<<samplingStrenght<<std::endl;
+    std::cout<<"ImageLogPolProjection::initLogRetinaSampling: Log resampled image resampling factor: "<<reductionFactor<<", strength:"<<samplingStrength<<std::endl;
     std::cout<<"ImageLogPolProjection::initLogRetinaSampling: Log resampled image size: "<<_outputNBrows<<"*"<<_outputNBcolumns<<std::endl;
 #endif
 
@@ -185,16 +185,16 @@ bool ImageLogPolProjection::_initLogRetinaSampling(const double reductionFactor,
 
     // specifiying new reduction factor after preliminar checks
     _reductionFactor=reductionFactor;
-    _samplingStrenght=samplingStrenght;
+    _samplingStrength=samplingStrength;
 
     // compute the rlim for symetric rows/columns sampling, then, the rlim is based on the smallest dimension
     _minDimension=(double)(_filterOutput.getNBrows() < _filterOutput.getNBcolumns() ? _filterOutput.getNBrows() : _filterOutput.getNBcolumns());
 
     // input frame dimensions dependent log sampling:
-    //double rlim=1.0/reductionFactor*(minDimension/2.0+samplingStrenght);
+    //double rlim=1.0/reductionFactor*(minDimension/2.0+samplingStrength);
 
     // input frame dimensions INdependent log sampling:
-    _azero=(1.0+reductionFactor*std::sqrt(samplingStrenght))/(reductionFactor*reductionFactor*samplingStrenght-1.0);
+    _azero=(1.0+reductionFactor*std::sqrt(samplingStrength))/(reductionFactor*reductionFactor*samplingStrength-1.0);
     _alim=(1.0+_azero)/reductionFactor;
 #ifdef IMAGELOGPOLPROJECTION_DEBUG
     std::cout<<"ImageLogPolProjection::initLogRetinaSampling: rlim= "<<rlim<<std::endl;
@@ -224,7 +224,7 @@ bool ImageLogPolProjection::_initLogRetinaSampling(const double reductionFactor,
             // get the pixel position in the original picture
 
             // -> input frame dimensions dependent log sampling:
-            //double scale = samplingStrenght/(rlim-(double)std::sqrt(idRow*idRow+idColumn*idColumn));
+            //double scale = samplingStrength/(rlim-(double)std::sqrt(idRow*idRow+idColumn*idColumn));
 
             // -> input frame dimensions INdependent log sampling:
             double scale=getOriginalRadiusLength((double)std::sqrt((double)(idRow*idRow+idColumn*idColumn)));
@@ -363,14 +363,14 @@ bool ImageLogPolProjection::_initLogPolarCortexSampling(const double reductionFa
 
     //std::cout<<"ImageLogPolProjection::Starting cortex projection"<<std::endl;
     // compute transformation, get theta and Radius in reagrd of the output sampled pixel
-    double diagonalLenght=std::sqrt((double)(_outputNBcolumns*_outputNBcolumns+_outputNBrows*_outputNBrows));
+    double diagonalLength=std::sqrt((double)(_outputNBcolumns*_outputNBcolumns+_outputNBrows*_outputNBrows));
     for (unsigned int radiusIndex=0;radiusIndex<_outputNBcolumns;++radiusIndex)
         for(unsigned int orientationIndex=0;orientationIndex<_outputNBrows;++orientationIndex)
         {
             double x=1.0+sinh(radiusAxis[radiusIndex])*cos(orientationAxis[orientationIndex]);
             double y=sinh(radiusAxis[radiusIndex])*sin(orientationAxis[orientationIndex]);
             // get the input picture coordinate
-            double R=diagonalLenght*std::sqrt(x*x+y*y)/(5.0+std::sqrt(x*x+y*y));
+            double R=diagonalLength*std::sqrt(x*x+y*y)/(5.0+std::sqrt(x*x+y*y));
             double theta=atan2(y,x);
             // convert input polar coord into cartesian/C compatble coordinate
             unsigned int columnIndex=(unsigned int)(cos(theta)*R)+halfInputColumns;

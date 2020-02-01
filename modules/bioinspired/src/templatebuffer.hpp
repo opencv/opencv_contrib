@@ -280,7 +280,7 @@ public:
         /**
         * sigmoide image normalization function (saturates min and max values)
         * @param meanValue: specifies the mean value of th pixels to be processed
-        * @param sensitivity: strenght of the sigmoide
+        * @param sensitivity: strength of the sigmoide
         * @param inputPicture: the image to be normalized if no parameter, then, the built in buffer reachable by getOutput() function is normalized
         * @param outputBuffer: the ouput buffer on which the result is writed, if no parameter, then, the built in buffer reachable by getOutput() function is normalized
         * @param maxOutputValue: the maximum output value
@@ -290,7 +290,7 @@ public:
         /**
         * sigmoide image normalization function on the current buffer (saturates min and max values)
         * @param meanValue: specifies the mean value of th pixels to be processed
-        * @param sensitivity: strenght of the sigmoide
+        * @param sensitivity: strength of the sigmoide
         * @param maxOutputValue: the maximum output value
         */
         inline void normalizeGrayOutputCentredSigmoide(const type meanValue=(type)0.0, const type sensitivity=(type)2.0, const type maxOutputValue=(type)255.0) {  CV_UNUSED(maxOutputValue); normalizeGrayOutputCentredSigmoide(meanValue, sensitivity, 255.0, this->Buffer(), this->Buffer(), this->getNBpixels()); }
@@ -299,7 +299,7 @@ public:
         * sigmoide image normalization function (saturates min and max values), in this function, the sigmoide is centered on low values (high saturation of the medium and high values
         * @param inputPicture: the image to be normalized if no parameter, then, the built in buffer reachable by getOutput() function is normalized
         * @param outputBuffer: the ouput buffer on which the result is writed, if no parameter, then, the built in buffer reachable by getOutput() function is normalized
-        * @param sensitivity: strenght of the sigmoide
+        * @param sensitivity: strength of the sigmoide
         * @param maxOutputValue: the maximum output value
         */
         void normalizeGrayOutputNearZeroCentreredSigmoide(type *inputPicture=(type*)NULL, type *outputBuffer=(type*)NULL, const type sensitivity=(type)40, const type maxOutputValue=(type)255.0);

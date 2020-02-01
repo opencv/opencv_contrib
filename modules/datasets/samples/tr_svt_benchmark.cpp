@@ -65,7 +65,7 @@ using namespace cv::text;
 size_t edit_distance(const string& A, const string& B);
 size_t min(size_t x, size_t y, size_t z);
 bool   isRepetitive(const string& s);
-bool   sort_by_lenght(const string &a, const string &b);
+bool   sort_by_length(const string &a, const string &b);
 //Draw ER's in an image via floodFill
 void   er_draw(vector<Mat> &channels, vector<vector<ERStat> > &regions, vector<Vec2i> group, Mat& segmentation);
 
@@ -99,7 +99,7 @@ size_t edit_distance(const string& A, const string& B)
     return M[A.size()][B.size()];
 }
 
-bool sort_by_lenght(const string &a, const string &b){return (a.size()>b.size());}
+bool sort_by_length(const string &a, const string &b){return (a.size()>b.size());}
 
 bool isRepetitive(const string& s)
 {
