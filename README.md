@@ -23,12 +23,16 @@ $ cmake -DOPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules <opencv_source_dire
 $ make -j5
 ```
 
-As the result, OpenCV will be built in the `<opencv_build_directory>` with all
-modules from `opencv_contrib` repository. If you don't want all of the modules,
-use CMake's `BUILD_opencv_*` options. Like in this example:
+As a result, OpenCV will build in the `<opencv_build_directory>` with all
+modules from the `opencv_contrib` repository by default. If you don't want all of the modules,
+use CMake's `BUILD_opencv_*` options to disable specific modules. Like in this example:
 
 ```
 $ cmake -DOPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -DBUILD_opencv_legacy=OFF <opencv_source_directory>
+```
+Alternatively, if you only want some of the modules, use CMake's `BUILD_LIST` option. Like in this example
+```
+$ cmake -DOPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -DBUILD_LIST=core,imgcodecs <opencv_source_directory>
 ```
 
 If you also want to build the samples from the "samples" folder of each module, also include the "-DBUILD_EXAMPLES=ON" option.
