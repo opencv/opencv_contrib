@@ -35,21 +35,21 @@ If you also want to build the samples from the "samples" folder of each module, 
 
 If you prefer using the gui version of cmake (cmake-gui), then, you can add `opencv_contrib` modules within `opencv` core by doing the following:
 
-1. start cmake-gui
+1. Start cmake-gui
 
-2. select the opencv source code folder and the folder where binaries will be built (the 2 upper forms of the interface)
+2. Select the opencv source code folder and the folder where binaries will be built (the 2 upper forms of the interface)
 
-3. press the `configure` button. you will see all the opencv build parameters in the central interface
+3. Press the `configure` button. you will see all the opencv build parameters in the central interface
 
-4. browse the parameters and look for the form called `OPENCV_EXTRA_MODULES_PATH` (use the search form to focus rapidly on it)
+4. Browse the parameters and look for the form called `OPENCV_EXTRA_MODULES_PATH` (use the search form to focus rapidly on it)
 
-5. complete this `OPENCV_EXTRA_MODULES_PATH` by the proper pathname to the `<opencv_contrib>/modules` value using its browse button.
+5. Complete this `OPENCV_EXTRA_MODULES_PATH` by the proper pathname to the `<opencv_contrib>/modules` value using its browse button.
 
-6. press the `configure` button followed by the `generate` button (the first time, you will be asked which makefile style to use)
+6. Press the `configure` button followed by the `generate` button (the first time, you will be asked which makefile style to use)
 
-7. build the `opencv` core with the method you chose (make and make install if you chose Unix makefile at step 6)
+7. Build the `opencv` core with the method you chose (make and make install if you chose Unix makefile at step 6)
 
-8. to run, linker flags to contrib modules will need to be added to use them in your code/IDE. For example to use the aruco module, "-lopencv_aruco" flag will be added.
+8. To run, linker flags to contrib modules will need to be added to use them in your code/IDE. For example to use the aruco module, "-lopencv_aruco" flag will be added.
 
 ### Update the repository documentation
 
