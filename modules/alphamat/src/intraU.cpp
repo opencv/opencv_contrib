@@ -8,15 +8,13 @@
 namespace cv{
   namespace alphamat{
 
-std::vector<int> orig_ind;
-
 int findColMajorInd(int rowMajorInd, int nRows, int nCols) {
   int iInd = rowMajorInd/nCols;
   int jInd = rowMajorInd%nCols;
   return (jInd*nRows+iInd);
 }
 
-void generateFVectorIntraU(my_vector_of_vectors_t &samples, Mat &img, Mat& tmap)
+void generateFVectorIntraU(my_vector_of_vectors_t &samples, Mat &img, Mat& tmap, std::vector<int>& orig_ind)
 {
   int nRows = img.rows;
   int nCols = img.cols;
@@ -50,10 +48,10 @@ void generateFVectorIntraU(my_vector_of_vectors_t &samples, Mat &img, Mat& tmap)
     std::cout << "Total number of unknown pixels : " << c1 << std::endl;
 }
 
-void kdtree_intraU(Mat &img, Mat& tmap, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples)
+void kdtree_intraU(Mat &img, Mat& tmap, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, std::vector<int>& orig_ind)
 {
   // Generate feature vectors for intra U:
-  generateFVectorIntraU(samples, img, tmap);
+  generateFVectorIntraU(samples, img, tmap, orig_ind);
 
   typedef KDTreeVectorOfVectorsAdaptor< my_vector_of_vectors_t, double >  my_kd_tree_t;
   my_kd_tree_t mat_index(dim /*dim*/, samples, 10 /* max leaf */ );
@@ -86,7 +84,7 @@ double l1norm(std::vector<double>& x, std::vector<double>& y){
   return sum/dim;
 }
 
-void intraU(Mat& img, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, SparseMatrix<double>& Wuu, SparseMatrix<double>& Duu){
+void intraU(Mat& img, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, std::vector<int>& orig_ind, SparseMatrix<double>& Wuu, SparseMatrix<double>& Duu){
   // input: indm, samples
   int n = indm.size();  // num of unknown samples
     std::cout << "num of unknown samples, n : " << n << std::endl;
@@ -125,11 +123,14 @@ void intraU(Mat& img, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samp
 }
 
 void UU(Mat& image, Mat& tmap, SparseMatrix<double>& Wuu, SparseMatrix<double>& Duu){
-  my_vector_of_vectors_t samples, indm;
 
-  kdtree_intraU(image, tmap, indm, samples);
-  intraU(image, indm, samples, Wuu, Duu);
+  my_vector_of_vectors_t samples, indm;
+  std::vector<int> orig_ind;
+
+  kdtree_intraU(image, tmap, indm, samples, orig_ind);
+  intraU(image, indm, samples, orig_ind, Wuu, Duu);
   std::cout << "Intra U Done" << std::endl;
+
 }
 
 }
