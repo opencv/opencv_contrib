@@ -11,7 +11,7 @@
 namespace cvv{ namespace qtutil{
 
 /**
- * @brief this class can use diffrent KeyPointSelection
+ * @brief this class can use different KeyPointSelection
  * you can register functions which take a std::vector<cv::KeyPoint> as argument.
  */
 class KeyPointSelectionSelector:public KeyPointSelection,public RegisterHelper<KeyPointSelection,std::vector<cv::KeyPoint>>{

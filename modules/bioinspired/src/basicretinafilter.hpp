@@ -257,7 +257,7 @@ namespace bioinspired
         * @param beta: gain of the filter (generally set to zero)
         * @param tau: time constant of the filter (unit is frame for video processing)
         * @param alpha0: spatial constant of the filter (unit is pixels) on the border of the image
-        * @param accuracyMap an image (float format) which values range is between 0 and 1, where 0 means, apply no filtering and 1 means apply the filtering as specified in the parameters set, intermediate values allow to smooth variations of the filtering strenght
+        * @param accuracyMap an image (float format) which values range is between 0 and 1, where 0 means, apply no filtering and 1 means apply the filtering as specified in the parameters set, intermediate values allow to smooth variations of the filtering strength
         * @param filterIndex: the index which specifies the parameter set that should be used for the filtering
         */
         void setProgressiveFilterConstants_CustomAccuracy(const float beta, const float tau, const float alpha0, const std::valarray<float> &accuracyMap, const unsigned int filterIndex=0);

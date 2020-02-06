@@ -125,9 +125,9 @@ public:
     * @param samplingMethod: specifies which kind of color sampling will be used
     * @param useRetinaLogSampling: activate retina log sampling, if true, the 2 following parameters can be used
     * @param reductionFactor: only usefull if param useRetinaLogSampling=true, specifies the reduction factor of the output frame (as the center (fovea) is high resolution and corners can be underscaled, then a reduction of the output is allowed without precision leak
-    * @param samplingStrenght: only usefull if param useRetinaLogSampling=true, specifies the strenght of the log scale that is applied
+    * @param samplingStrength: only usefull if param useRetinaLogSampling=true, specifies the strength of the log scale that is applied
     */
-    RetinaFilter(const unsigned int sizeRows, const unsigned int sizeColumns, const bool colorMode=false, const int samplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
+    RetinaFilter(const unsigned int sizeRows, const unsigned int sizeColumns, const bool colorMode=false, const int samplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrength=10.0);
 
     /**
     * standard destructor

@@ -49,11 +49,7 @@ private:
 
     int sc; //scale factor
 
-    void preprocess(InputArray inpImg, OutputArray outpImg);
-
     void reconstruct_YCrCb(InputArray inpImg, InputArray origImg, OutputArray outpImg, int scale);
-
-    void reconstruct_YCrCb(InputArray inpImg, InputArray origImg, OutputArray outpImg);
 
     void preprocess_YCrCb(InputArray inpImg, OutputArray outpImg);
 

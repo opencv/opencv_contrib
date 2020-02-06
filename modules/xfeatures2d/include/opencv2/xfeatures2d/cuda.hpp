@@ -83,7 +83,7 @@ between function calls.
         opencv_source_code/samples/gpu/surf_keypoint_matcher.cpp
 
  */
-class CV_EXPORTS SURF_CUDA
+class CV_EXPORTS_W SURF_CUDA
 {
 public:
     enum KeypointLayout
@@ -104,15 +104,28 @@ public:
     explicit SURF_CUDA(double _hessianThreshold, int _nOctaves=4,
          int _nOctaveLayers=2, bool _extended=false, float _keypointsRatio=0.01f, bool _upright = false);
 
+    /**
+    @param _hessianThreshold Threshold for hessian keypoint detector used in SURF.
+    @param _nOctaves Number of pyramid octaves the keypoint detector will use.
+    @param _nOctaveLayers Number of octave layers within each octave.
+    @param _extended Extended descriptor flag (true - use extended 128-element descriptors; false - use
+    64-element descriptors).
+    @param _keypointsRatio
+    @param _upright Up-right or rotated features flag (true - do not compute orientation of features;
+    false - compute orientation).
+    */
+    CV_WRAP static Ptr<SURF_CUDA> create(double _hessianThreshold, int _nOctaves = 4,
+        int _nOctaveLayers = 2, bool _extended = false, float _keypointsRatio = 0.01f, bool _upright = false);
+
     //! returns the descriptor size in float's (64 or 128)
-    int descriptorSize() const;
+    CV_WRAP int descriptorSize() const;
     //! returns the default norm type
-    int defaultNorm() const;
+    CV_WRAP int defaultNorm() const;
 
     //! upload host keypoints to device memory
     void uploadKeypoints(const std::vector<KeyPoint>& keypoints, GpuMat& keypointsGPU);
     //! download keypoints from device to host memory
-    void downloadKeypoints(const GpuMat& keypointsGPU, std::vector<KeyPoint>& keypoints);
+    CV_WRAP void downloadKeypoints(const GpuMat& keypointsGPU, CV_OUT std::vector<KeyPoint>& keypoints);
 
     //! download descriptors from device to host memory
     void downloadDescriptors(const GpuMat& descriptorsGPU, std::vector<float>& descriptors);
@@ -133,9 +146,32 @@ public:
     void operator()(const GpuMat& img, const GpuMat& mask, GpuMat& keypoints, GpuMat& descriptors,
         bool useProvidedKeypoints = false);
 
+    /** @brief Finds the keypoints using fast hessian detector used in SURF
+
+    @param img Source image, currently supports only CV_8UC1 images.
+    @param mask A mask image same size as src and of type CV_8UC1.
+    @param keypoints Detected keypoints.
+     */
+    CV_WRAP inline void detect(const GpuMat& img, const GpuMat& mask, CV_OUT GpuMat& keypoints) {
+        (*this)(img, mask, keypoints);
+    }
+
     void operator()(const GpuMat& img, const GpuMat& mask, std::vector<KeyPoint>& keypoints);
     void operator()(const GpuMat& img, const GpuMat& mask, std::vector<KeyPoint>& keypoints, GpuMat& descriptors,
         bool useProvidedKeypoints = false);
+
+    /** @brief Finds the keypoints and computes their descriptors using fast hessian detector used in SURF
+
+    @param img Source image, currently supports only CV_8UC1 images.
+    @param mask A mask image same size as src and of type CV_8UC1.
+    @param keypoints Detected keypoints.
+    @param descriptors Keypoint descriptors.
+    @param useProvidedKeypoints Compute descriptors for the user-provided keypoints and recompute keypoints direction.
+     */
+    CV_WRAP inline void detectWithDescriptors(const GpuMat& img, const GpuMat& mask, CV_OUT GpuMat& keypoints, CV_OUT GpuMat& descriptors,
+        bool useProvidedKeypoints = false) {
+        (*this)(img, mask, keypoints, descriptors, useProvidedKeypoints);
+    }
 
     void operator()(const GpuMat& img, const GpuMat& mask, std::vector<KeyPoint>& keypoints, std::vector<float>& descriptors,
         bool useProvidedKeypoints = false);
@@ -143,14 +179,14 @@ public:
     void releaseMemory();
 
     // SURF parameters
-    double hessianThreshold;
-    int nOctaves;
-    int nOctaveLayers;
-    bool extended;
-    bool upright;
+    CV_PROP double hessianThreshold;
+    CV_PROP int nOctaves;
+    CV_PROP int nOctaveLayers;
+    CV_PROP bool extended;
+    CV_PROP bool upright;
 
     //! max keypoints = min(keypointsRatio * img.size().area(), 65535)
-    float keypointsRatio;
+    CV_PROP float keypointsRatio;
 
     GpuMat sum, mask1, maskSum;
 

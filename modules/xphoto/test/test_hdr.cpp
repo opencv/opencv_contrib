@@ -38,6 +38,34 @@ TEST(Photo_Tonemap, Durand_regression)
     checkEqual(result, expected, 3, "Durand");
 }
 
+TEST(Photo_Tonemap, Durand_property_regression)
+{
+    const float gamma = 1.0f;
+    const float contrast = 2.0f;
+    const float saturation = 3.0f;
+    const float sigma_color = 4.0f;
+    const float sigma_space = 5.0f;
+
+    const Ptr<TonemapDurand> durand1 = createTonemapDurand(gamma, contrast, saturation, sigma_color, sigma_space);
+    ASSERT_EQ(gamma, durand1->getGamma());
+    ASSERT_EQ(contrast, durand1->getContrast());
+    ASSERT_EQ(saturation, durand1->getSaturation());
+    ASSERT_EQ(sigma_space, durand1->getSigmaSpace());
+    ASSERT_EQ(sigma_color, durand1->getSigmaColor());
+
+    const Ptr<TonemapDurand> durand2 = createTonemapDurand();
+    durand2->setGamma(gamma);
+    durand2->setContrast(contrast);
+    durand2->setSaturation(saturation);
+    durand2->setSigmaColor(sigma_color);
+    durand2->setSigmaSpace(sigma_space);
+    ASSERT_EQ(gamma, durand2->getGamma());
+    ASSERT_EQ(contrast, durand2->getContrast());
+    ASSERT_EQ(saturation, durand2->getSaturation());
+    ASSERT_EQ(sigma_color, durand2->getSigmaColor());
+    ASSERT_EQ(sigma_space, durand2->getSigmaSpace());
+}
+
 #endif // OPENCV_ENABLE_NONFREE
 
 }} // namespace

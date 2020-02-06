@@ -50,7 +50,7 @@ const char* about = "Pose estimation using a ArUco Planar Grid board";
 const char* keys  =
         "{w        |       | Number of squares in X direction }"
         "{h        |       | Number of squares in Y direction }"
-        "{l        |       | Marker side lenght (in pixels) }"
+        "{l        |       | Marker side length (in pixels) }"
         "{s        |       | Separation between two consecutive markers in the grid (in pixels)}"
         "{d        |       | dictionary: DICT_4X4_50=0, DICT_4X4_100=1, DICT_4X4_250=2,"
         "DICT_4X4_1000=3, DICT_5X5_50=4, DICT_5X5_100=5, DICT_5X5_250=6, DICT_5X5_1000=7, "

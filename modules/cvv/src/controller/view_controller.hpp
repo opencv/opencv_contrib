@@ -191,13 +191,13 @@ class ViewController
 	void showCallTab(size_t tabId);
 
 	/**
-	 * @brief Shows the tab and opens it if neccessary.
+	 * @brief Shows the tab and opens it if necessary.
 	 * @param tabId id of the tab
 	 */
 	void showAndOpenCallTab(size_t tabId);
 	
 	/**
-	 * @brief Opens the tab it if neccessary.
+	 * @brief Opens the tab if necessary.
 	 * @param tabId id of the tab
 	 */
 	void openCallTab(size_t tabId);

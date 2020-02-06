@@ -189,7 +189,7 @@ public:
       Input image is converted to CV_32F internally if has another type.
 
     @param depth one-channel image which size and depth scale is described in algorithm's parameters
-    @return true if succeded to align new frame with current scene, false if opposite
+    @return true if succeeded to align new frame with current scene, false if opposite
     */
     CV_WRAP virtual bool update(InputArray depth) = 0;
 

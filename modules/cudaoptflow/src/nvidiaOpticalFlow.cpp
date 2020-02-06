@@ -8,11 +8,11 @@
 
 #if !defined HAVE_CUDA || defined(CUDA_DISABLER)
 
-Ptr<NvidiaOpticalFlow_1_0> cv::cuda::NvidiaOpticalFlow_1_0::create(int, int, int, NVIDIA_OF_PERF_LEVEL, bool, bool) { throw_no_cuda(); return Ptr<NvidiaOpticalFlow_1_0>(); }
+cv::Ptr<cv::cuda::NvidiaOpticalFlow_1_0> cv::cuda::NvidiaOpticalFlow_1_0::create(int, int, NVIDIA_OF_PERF_LEVEL, bool, bool, bool, int) { throw_no_cuda(); return cv::Ptr<cv::cuda::NvidiaOpticalFlow_1_0>(); }
 
 #elif !defined HAVE_NVIDIA_OPTFLOW
 
-Ptr<NvidiaOpticalFlow_1_0> cv::cuda::NvidiaOpticalFlow_1_0::create(int, int, int, NVIDIA_OF_PERF_LEVEL, bool, bool)
+cv::Ptr<cv::cuda::NvidiaOpticalFlow_1_0> cv::cuda::NvidiaOpticalFlow_1_0::create(int, int, NVIDIA_OF_PERF_LEVEL, bool, bool, bool, int)
 {
     CV_Error(cv::Error::HeaderIsNull, "OpenCV was build without NVIDIA OpticalFlow support");
 }

@@ -124,7 +124,7 @@ class CV_EXPORTS_W CharucoBoard : public Board {
     // size of chessboard squares side (normally in meters)
     float _squareLength;
 
-    // marker side lenght (normally in meters)
+    // marker side length (normally in meters)
     float _markerLength;
 };
 

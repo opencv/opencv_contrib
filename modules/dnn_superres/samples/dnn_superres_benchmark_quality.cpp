@@ -3,7 +3,9 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include <iostream>
+#include <opencv2/opencv_modules.hpp>
 
+#ifdef HAVE_OPENCV_QUALITY
 #include <opencv2/dnn_superres.hpp>
 #include <opencv2/quality.hpp>
 #include <opencv2/imgproc.hpp>
@@ -197,3 +199,10 @@ int main(int argc, char *argv[])
 
     return 0;
 }
+#else
+int main()
+{
+    std::cout << "This sample requires the OpenCV Quality module." << std::endl;
+    return 0;
+}
+#endif

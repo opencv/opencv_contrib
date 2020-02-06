@@ -71,7 +71,7 @@ to efficiently generate compact, nearly uniform superpixels. The simplicity of a
 extremely easy to use a lone parameter specifies the number of superpixels and the efficiency of
 the algorithm makes it very practical.
 Several optimizations are available for SLIC class:
-SLICO stands for "Zero parameter SLIC" and it is an optimization of baseline SLIC descibed in @cite Achanta2012.
+SLICO stands for "Zero parameter SLIC" and it is an optimization of baseline SLIC described in @cite Achanta2012.
 MSLIC stands for "Manifold SLIC" and it is an optimization of baseline SLIC described in @cite Liu_2017_IEEE.
  */
 

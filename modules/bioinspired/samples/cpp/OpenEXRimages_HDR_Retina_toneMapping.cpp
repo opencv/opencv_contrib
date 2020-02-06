@@ -74,7 +74,7 @@ static void drawPlot(const cv::Mat curve, const std::string figureTitle, const i
          cvtColor(rgbIntImg, intGrayImage, cv::COLOR_BGR2GRAY);
      }
 
-     // get histogram density probability in order to cut values under above edges limits (here 5-95%)... usefull for HDR pixel errors cancellation
+     // get histogram density probability in order to cut values under above edges limits (here 5-95%)... useful for HDR pixel errors cancellation
      cv::Mat dst, hist;
      int histSize = 256;
      calcHist(&intGrayImage, 1, 0, cv::Mat(), hist, 1, &histSize, 0);
@@ -231,7 +231,7 @@ static void drawPlot(const cv::Mat curve, const std::string figureTitle, const i
          // save default retina parameters file in order to let you see this and maybe modify it and reload using method "setup"
          retina->write("RetinaDefaultParameters.xml");
 
-         // desactivate Magnocellular pathway processing (motion information extraction) since it is not usefull here
+         // desactivate Magnocellular pathway processing (motion information extraction) since it is not useful here
          retina->activateMovingContoursProcessing(false);
 
          // declare retina output buffers

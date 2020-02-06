@@ -2868,8 +2868,8 @@ static float extract_features(Mat &grey, Mat& channel, vector<ERStat> &regions, 
                               Scene Text Extraction, arXiv:1407.7504 [cs.CV].
     Gomez L. and Karatzas D.: Multi-script Text Extraction from Natural Scenes, ICDAR 2013.
 
-    \param  _image         Original RGB image from wich the regions were extracted.
-    \param  _src           Vector of sinle channel images CV_8UC1 from wich the regions were extracted.
+    \param  _image         Original RGB image from which the regions were extracted.
+    \param  _src           Vector of sinle channel images CV_8UC1 from which the regions were extracted.
     \param  regions        Vector of ER's retrieved from the ERFilter algorithm from each channel
     \param  groups         The output of the algorithm are stored in this parameter as list of indexes to provided regions.
     \param  text_boxes     The output of the algorithm are stored in this parameter as list of rectangles.
@@ -3591,8 +3591,8 @@ bool sort_couples (Vec3i i,Vec3i j) { return (i[0]<j[0]); }
     Neumann L., Matas J.: Real-Time Scene Text Localization and Recognition, CVPR 2012
     Neumann L., Matas J.: A method for text localization and detection, ACCV 2010
 
-    \param  _img           Original RGB image from wich the regions were extracted.
-    \param  _src           Vector of sinle channel images CV_8UC1 from wich the regions were extracted.
+    \param  _img           Original RGB image from which the regions were extracted.
+    \param  _src           Vector of sinle channel images CV_8UC1 from which the regions were extracted.
     \param  regions        Vector of ER's retrieved from the ERFilter algorithm from each channel
     \param  out_groups     The output of the algorithm are stored in this parameter as list of indexes to provided regions.
     \param  out_boxes      The output of the algorithm are stored in this parameter as list of rectangles.

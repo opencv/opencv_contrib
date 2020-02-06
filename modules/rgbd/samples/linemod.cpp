@@ -1,11 +1,3 @@
-// This file is part of OpenCV project.
-// It is subject to the license terms in the LICENSE file found in the top-level directory
-// of this distribution and at http://opencv.org/license.html
-
-// This code is also subject to the license terms in the LICENSE_WillowGarage.md file found in this module's directory
-
-#define CV__ENABLE_C_API_CTORS // enable C API ctors (must be removed)
-
 #include <opencv2/core.hpp>
 #include <opencv2/core/utility.hpp>
 #include <opencv2/imgproc/imgproc_c.h> // cvFindContours
@@ -75,7 +67,7 @@ int Mouse::m_y;
 
 static void help()
 {
-  printf("Usage: openni_demo [templates.yml]\n\n"
+  printf("Usage: example_rgbd_linemod [templates.yml]\n\n"
          "Place your object on a planar, featureless surface. With the mouse,\n"
          "frame it in the 'color' window and right click to learn a first template.\n"
          "Then press 'l' to enter online learning mode, and move the camera around.\n"
@@ -237,10 +229,10 @@ int main(int argc, char * argv[])
       {
         // Compute object mask by subtracting the plane within the ROI
         std::vector<CvPoint> chain(4);
-        chain[0] = pt1;
-        chain[1] = cv::Point(pt2.x, pt1.y);
-        chain[2] = pt2;
-        chain[3] = cv::Point(pt1.x, pt2.y);
+        chain[0] = cvPoint(pt1);
+        chain[1] = cvPoint(pt2.x, pt1.y);
+        chain[2] = cvPoint(pt2);
+        chain[3] = cvPoint(pt1.x, pt2.y);
         cv::Mat mask;
         subtractPlane(depth, mask, chain, focal_length);
 
@@ -580,9 +572,9 @@ void subtractPlane(const cv::Mat& depth, cv::Mat& mask, std::vector<CvPoint>& ch
 {
   mask = cv::Mat::zeros(depth.size(), CV_8U);
   std::vector<IplImage*> tmp;
-  IplImage mask_ipl = mask;
+  IplImage mask_ipl = cvIplImage(mask);
   tmp.push_back(&mask_ipl);
-  IplImage depth_ipl = depth;
+  IplImage depth_ipl = cvIplImage(depth);
   filterPlane(&depth_ipl, tmp, chain, f);
 }
 
@@ -601,7 +593,7 @@ std::vector<CvPoint> maskFromTemplate(const std::vector<cv::linemod::Template>& 
   CvSeq * lp_contour = 0;
 
   cv::Mat mask_copy = mask.clone();
-  IplImage mask_copy_ipl = mask_copy;
+  IplImage mask_copy_ipl = cvIplImage(mask_copy);
   cvFindContours(&mask_copy_ipl, lp_storage, &lp_contour, sizeof(CvContour),
                  CV_RETR_CCOMP, CV_CHAIN_APPROX_SIMPLE);
 

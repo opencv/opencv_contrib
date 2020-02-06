@@ -81,9 +81,9 @@ RetinaOCLImpl::RetinaOCLImpl(const cv::Size inputSz)
     _init(inputSz, true, RETINA_COLOR_BAYER, false);
 }
 
-RetinaOCLImpl::RetinaOCLImpl(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const double reductionFactor, const double samplingStrenght)
+RetinaOCLImpl::RetinaOCLImpl(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const double reductionFactor, const double samplingStrength)
 {
-    _init(inputSz, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
+    _init(inputSz, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrength);
 }
 
 RetinaOCLImpl::~RetinaOCLImpl()
@@ -347,7 +347,7 @@ void RetinaOCLImpl::getMagno(OutputArray output)
     output.assign(retinaOutput_magno);
 }
 // private method called by constructors
-void RetinaOCLImpl::_init(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const double reductionFactor, const double samplingStrenght)
+void RetinaOCLImpl::_init(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const double reductionFactor, const double samplingStrength)
 {
     // basic error check
     if (inputSz.height*inputSz.width <= 0)
@@ -356,7 +356,7 @@ void RetinaOCLImpl::_init(const cv::Size inputSz, const bool colorMode, int colo
     }
 
     // allocate the retina model
-    _retinaFilter.reset(new RetinaFilter(inputSz.height, inputSz.width, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght));
+    _retinaFilter.reset(new RetinaFilter(inputSz.height, inputSz.width, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrength));
 
     // prepare the default parameter XML file with default setup
     setup(_retinaParameters);
@@ -1367,7 +1367,7 @@ void RetinaFilter::setGlobalParameters(const float OPLspatialResponse1, const fl
     _normalizeMagnoOutput_0_maxOutputValue = normalizeMagnoOutput_0_maxOutputValue;
     _maxOutputValue = maxOutputValue;
     _photoreceptorsPrefilter.setV0CompressionParameter(0.9f, maxInputValue, meanValue);
-    _photoreceptorsPrefilter.setLPfilterParameters(0, 0, 10, 3); // keeps low pass filter with low cut frequency in memory (usefull for the tone mapping function)
+    _photoreceptorsPrefilter.setLPfilterParameters(0, 0, 10, 3); // keeps low pass filter with low cut frequency in memory (useful for the tone mapping function)
     _ParvoRetinaFilter.setOPLandParvoFiltersParameters(0, OPLtemporalresponse1, OPLspatialResponse1, OPLassymetryGain, OPLtemporalresponse2, OPLspatialResponse2);
     _ParvoRetinaFilter.setV0CompressionParameter(0.9f, maxInputValue, meanValue);
     _MagnoRetinaFilter.setCoefficientsTable(LPfilterGain, LPfilterTemporalresponse, LPfilterSpatialResponse, MovingContoursExtractorCoefficient, 0, 2.0f * LPfilterSpatialResponse);
@@ -1433,7 +1433,7 @@ bool RetinaFilter::runFilter(const UMat &imageInput, const bool useAdaptiveFilte
 
     if (_useParvoOutput)
     {
-        _ParvoRetinaFilter.normalizeGrayOutputCentredSigmoide(); // models the saturation of the cells, usefull for visualisation of the ON-OFF Parvo Output, Bipolar cells outputs do not change !!!
+        _ParvoRetinaFilter.normalizeGrayOutputCentredSigmoide(); // models the saturation of the cells, useful for visualisation of the ON-OFF Parvo Output, Bipolar cells outputs do not change !!!
         _ParvoRetinaFilter.centerReductImageLuminance(); // best for further spectrum analysis
 
         if (_normalizeParvoOutput_0_maxOutputValue)

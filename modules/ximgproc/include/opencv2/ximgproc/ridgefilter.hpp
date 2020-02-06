@@ -5,7 +5,7 @@
 /*
 Ridge Detection Filter.
 OpenCV port by : Kushal Vyas (@kushalvyas), Venkatesh Vijaykumar(@venkateshvijaykumar)
-Adapted from Niki Estner's explaination of RidgeFilter.
+Adapted from Niki Estner's explanation of RidgeFilter.
 */
 
 #ifndef __OPENCV_XIMGPROC_RIDGEFILTER_HPP__

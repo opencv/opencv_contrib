@@ -231,27 +231,25 @@ void DynaFuImpl<T>::drawScene(OutputArray depthImage, OutputArray shadedImage)
 
     ogl::render(arr, idx, ogl::TRIANGLES);
 
-    float f[params.frameSize.width*params.frameSize.height];
-    float pixels[params.frameSize.width*params.frameSize.height][3];
-    glReadPixels(0, 0, params.frameSize.width, params.frameSize.height, GL_DEPTH_COMPONENT, GL_FLOAT, &f[0]);
-    glReadPixels(0, 0, params.frameSize.width, params.frameSize.height, GL_RGB, GL_FLOAT, &pixels[0][0]);
+    Mat depthData(params.frameSize.height, params.frameSize.width, CV_32F);
+    Mat shadeData(params.frameSize.height, params.frameSize.width, CV_32FC3);
+    glReadPixels(0, 0, params.frameSize.width, params.frameSize.height, GL_DEPTH_COMPONENT, GL_FLOAT, depthData.ptr());
+    glReadPixels(0, 0, params.frameSize.width, params.frameSize.height, GL_RGB, GL_FLOAT, shadeData.ptr());
 
     // linearise depth
-    for(int i = 0; i < params.frameSize.width*params.frameSize.height; i++)
+    for(auto it = depthData.begin<float>(); it != depthData.end<float>(); ++it)
     {
-        f[i] = farZ * nearZ / (f[i]*(nearZ - farZ) + farZ);
+        *it = farZ * nearZ / ((*it)*(nearZ - farZ) + farZ);
 
-        if(f[i] >= farZ)
-            f[i] = std::numeric_limits<float>::quiet_NaN();
+        if(*it >= farZ)
+            *it = std::numeric_limits<float>::quiet_NaN();
     }
 
     if(depthImage.needed()) {
-        Mat depthData(params.frameSize.height, params.frameSize.width, CV_32F, f);
         depthData.copyTo(depthImage);
     }
 
     if(shadedImage.needed()) {
-        Mat shadeData(params.frameSize.height, params.frameSize.width, CV_32FC3, pixels);
         shadeData.copyTo(shadedImage);
     }
 #else

@@ -43,7 +43,7 @@ template <class MView> void addMatchView(const QString name)
 using TabFactory = controller::TabFactory;
 /**
  * @brief Introduces a new call-type.
- * @param factory A function that recieves a reference to a call and should
+ * @param factory A function that receives a reference to a call and should
  * return the appropriate
  * window.
  */

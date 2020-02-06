@@ -102,7 +102,7 @@ function and, for each diamond, the corners are represented in the same order th
 starting with the top-left corner. The second returned parameter, ```diamondIds```, contains all the ids of the returned
 diamond corners in ```diamondCorners```. Each id is actually an array of 4 integers that can be represented with ```Vec4i```.
 
-The detected diamond can be visualized using the function ```drawDetectedDiamonds()``` which simply recieves the image and the diamond
+The detected diamond can be visualized using the function ```drawDetectedDiamonds()``` which simply receives the image and the diamond
 corners and ids:
 
 @code{.cpp}

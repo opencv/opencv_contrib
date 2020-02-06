@@ -112,7 +112,7 @@ Here is an example of setting a threshold for the Eigenfaces method, when creati
 int num_components = 10;
 double threshold = 10.0;
 // Then if you want to have a cv::FaceRecognizer with a confidence threshold,
-// create the concrete implementation with the appropiate parameters:
+// create the concrete implementation with the appropriate parameters:
 Ptr<FaceRecognizer> model = EigenFaceRecognizer::create(num_components, threshold);
 @endcode
 

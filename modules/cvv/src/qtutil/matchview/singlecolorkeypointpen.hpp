@@ -13,7 +13,7 @@ namespace qtutil
 
 /**
  * This KeyPointPen return for all CVVKeyPoints the same Color,
- * the Color can be choosen by an QColorDialog
+ * the Color can be chosen by an QColorDialog
  */
 
 class SingleColorKeyPen : public KeyPointSettings

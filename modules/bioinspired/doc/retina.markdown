@@ -134,7 +134,7 @@ For more information, refer to the following papers :
 
 -   Please have a look at the reference work of Jeanny Herault that you can read in his book : @cite Herault2010
 
-This retina filter code includes the research contributions of phd/research collegues from which
+This retina filter code includes the research contributions of phd/research colleagues from which
 code has been redrawn by the author :
 
 -   take a look at the *retinacolor.hpp* module to discover Brice Chaix de Lavarene phD color
@@ -207,7 +207,7 @@ functions (C++, Java, Python) :
 
       // Allocators
       cv::Ptr<Retina> Retina::create (Size inputSize);
-      cv::Ptr<Retina> Retina::create (Size inputSize, const bool colorMode, RETINA_COLORSAMPLINGMETHOD colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrenght=10.0);
+      cv::Ptr<Retina> Retina::create (Size inputSize, const bool colorMode, RETINA_COLORSAMPLINGMETHOD colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const double reductionFactor=1.0, const double samplingStrength=10.0);
       }} // cv and bioinspired namespaces end
 @endcode
 

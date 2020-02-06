@@ -96,9 +96,9 @@ public:
      * @param colorSamplingMethod: specifies which kind of color sampling will be used
      * @param useRetinaLogSampling: activate retina log sampling, if true, the 2 following parameters can be used
      * @param reductionFactor: only usefull if param useRetinaLogSampling=true, specifies the reduction factor of the output frame (as the center (fovea) is high resolution and corners can be underscaled, then a reduction of the output is allowed without precision leak
-     * @param samplingStrenght: only usefull if param useRetinaLogSampling=true, specifies the strenght of the log scale that is applied
+     * @param samplingStrength: only usefull if param useRetinaLogSampling=true, specifies the strength of the log scale that is applied
      */
-    RetinaImpl(const Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
+    RetinaImpl(const Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrength=10.0f);
 
     virtual ~RetinaImpl() CV_OVERRIDE;
     /**
@@ -272,7 +272,7 @@ private:
     cv::Ptr<RetinaFilter> _retinaFilter; //!< the pointer to the retina module, allocated with instance construction
 
     //! private method called by constructors, gathers their parameters and use them in a unified way
-    void _init(const Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrenght=10.0f);
+    void _init(const Size inputSize, const bool colorMode, int colorSamplingMethod=RETINA_COLOR_BAYER, const bool useRetinaLogSampling=false, const float reductionFactor=1.0f, const float samplingStrength=10.0f);
 
     /**
      * exports a valarray buffer outing from bioinspired objects to a cv::Mat in CV_8UC1 (gray level picture) or CV_8UC3 (color) format
@@ -311,9 +311,9 @@ Ptr<Retina> Retina::create(Size inputSize)
     return makePtr<RetinaImpl>(inputSize);
 }
 
-Ptr<Retina> Retina::create(Size inputSize, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const float reductionFactor, const float samplingStrenght)
+Ptr<Retina> Retina::create(Size inputSize, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const float reductionFactor, const float samplingStrength)
 {
-    return makePtr<RetinaImpl>(inputSize, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
+    return makePtr<RetinaImpl>(inputSize, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrength);
 }
 
 
@@ -327,13 +327,13 @@ RetinaImpl::RetinaImpl(const cv::Size inputSz)
 #endif
 }
 
-RetinaImpl::RetinaImpl(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const float reductionFactor, const float samplingStrenght)
+RetinaImpl::RetinaImpl(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const float reductionFactor, const float samplingStrength)
 {
-    _init(inputSz, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght);
+    _init(inputSz, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrength);
 #ifdef HAVE_OPENCL
     if (inputSz.width % 4 == 0 && !useRetinaLogSampling && cv::ocl::useOpenCL())
         _ocl_retina.reset(new ocl::RetinaOCLImpl(inputSz, colorMode, colorSamplingMethod,
-                                                 useRetinaLogSampling, reductionFactor, samplingStrenght));
+                                                 useRetinaLogSampling, reductionFactor, samplingStrength));
 #endif
 }
 
@@ -712,7 +712,7 @@ const Mat RetinaImpl::getParvoRAW() const {
 }
 
 // private method called by constructors
-void RetinaImpl::_init(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const float reductionFactor, const float samplingStrenght)
+void RetinaImpl::_init(const cv::Size inputSz, const bool colorMode, int colorSamplingMethod, const bool useRetinaLogSampling, const float reductionFactor, const float samplingStrength)
 {
     _wasOCLRunCalled = false;
     // basic error check
@@ -724,7 +724,7 @@ void RetinaImpl::_init(const cv::Size inputSz, const bool colorMode, int colorSa
     _inputBuffer.resize(nbPixels*3); // buffer supports gray images but also 3 channels color buffers... (larger is better...)
 
     // allocate the retina model
-    _retinaFilter.reset(new RetinaFilter(inputSz.height, inputSz.width, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrenght));
+    _retinaFilter.reset(new RetinaFilter(inputSz.height, inputSz.width, colorMode, colorSamplingMethod, useRetinaLogSampling, reductionFactor, samplingStrength));
 
     _retinaParameters.OPLandIplParvo.colorMode = colorMode;
     // prepare the default parameter XML file with default setup

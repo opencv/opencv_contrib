@@ -12,7 +12,7 @@ using namespace optflow;
 const String keys = "{help h usage ? |      | print this message   }"
         "{@image1        |      | image1               }"
         "{@image2        |      | image2               }"
-        "{@algorithm     |      | [farneback, simpleflow, tvl1, deepflow, sparsetodenseflow, pcaflow, DISflow_ultrafast, DISflow_fast, DISflow_medium] }"
+        "{@algorithm     |      | [farneback, simpleflow, tvl1, deepflow, sparsetodenseflow, RLOF_EPIC, RLOF_RIC, pcaflow, DISflow_ultrafast, DISflow_fast, DISflow_medium] }"
         "{@groundtruth   |      | path to the .flo file  (optional), Middlebury format }"
         "{m measure      |endpoint| error measure - [endpoint or angular] }"
         "{r region       |all   | region to compute stats about [all, discontinuities, untextured] }"
@@ -259,6 +259,20 @@ int main( int argc, char** argv )
         algorithm = createOptFlow_DeepFlow();
     else if ( method == "sparsetodenseflow" )
         algorithm = createOptFlow_SparseToDense();
+    else if (method == "RLOF_EPIC")
+    {
+        algorithm = createOptFlow_DenseRLOF();
+        Ptr<DenseRLOFOpticalFlow> rlof = algorithm.dynamicCast< DenseRLOFOpticalFlow>();
+        rlof->setInterpolation(INTERP_EPIC);
+        rlof->setForwardBackward(1.f);
+    }
+    else if (method == "RLOF_RIC")
+    {
+        algorithm = createOptFlow_DenseRLOF();
+        Ptr<DenseRLOFOpticalFlow> rlof = algorithm.dynamicCast< DenseRLOFOpticalFlow>();;
+        rlof->setInterpolation(INTERP_RIC);
+        rlof->setForwardBackward(1.f);
+    }
     else if ( method == "pcaflow" ) {
         if ( parser.has("prior") ) {
             String prior = parser.get<String>("prior");
