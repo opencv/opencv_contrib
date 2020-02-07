@@ -6,6 +6,7 @@
 #include "rlof/geo_interpolation.hpp"
 #include "opencv2/ximgproc.hpp"
 
+
 namespace cv {
 namespace optflow {
 
@@ -14,6 +15,19 @@ Ptr<RLOFOpticalFlowParameter> RLOFOpticalFlowParameter::create()
     return Ptr<RLOFOpticalFlowParameter>(new RLOFOpticalFlowParameter);
 }
 
+void RLOFOpticalFlowParameter::useMEstimator(bool val)
+{
+    if (val)
+    {
+        this->setNormSigma0(3.2f);
+        this->setNormSigma1(7.f);
+    }
+    else
+    {
+        this->setNormSigma0(std::numeric_limits<float>::max());
+        this->setNormSigma1(std::numeric_limits<float>::max());
+    }
+}
 void RLOFOpticalFlowParameter::setSolverType(SolverType val){ solverType = val;}
 SolverType RLOFOpticalFlowParameter::getSolverType() const { return solverType;}
 
