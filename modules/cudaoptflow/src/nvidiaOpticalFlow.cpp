@@ -578,11 +578,6 @@ void NvidiaOpticalFlowImpl::collectGarbage()
     {
         NVOF_API_CALL(GetAPI()->nvOFDestroy(m_hOF));
     }
-    if (m_cuContext)
-    {
-        cuSafeCall(cudaDeviceReset());
-        m_cuContext = nullptr;
-    }
 }
 
 void NvidiaOpticalFlowImpl::upSampler(InputArray _flow, int width, int height,
