@@ -1013,8 +1013,8 @@ public:
                                 mmDiffc_epi16_t = _mm_and_si128(bSet2_epi16, mmDiffc_epi16_t);
 
                                 // It == val ? sigma0 < |It| < sigma1
-                                mmDiffc_epi16_t = _mm_blendv_epi8(mmDiffc_epi16_t, tmpParam1_epi16, bSet1_epi16);
-                                __m128i tale_epi16_ = _mm_blendv_epi8(mmOness_epi16, mmParam2_epi16, bSet1_epi16); // mask for 0 - 3
+                                mmDiffc_epi16_t = BLENDV_EPI8(mmDiffc_epi16_t, tmpParam1_epi16, bSet1_epi16);
+                                __m128i tale_epi16_ = BLENDV_EPI8(mmOness_epi16, mmParam2_epi16, bSet1_epi16); // mask for 0 - 3
                                 // diff = diff * sigma2
                                 lo = _mm_mullo_epi16(tale_epi16_, mmDiffc_epi16_t);
                                 hi = _mm_mulhi_epi16(tale_epi16_, mmDiffc_epi16_t);
@@ -1065,13 +1065,13 @@ public:
                                 __m128 bSet2_0_3_ps = _mm_cvtepi32_ps(_mm_cvtepi16_epi32(bSet2_epi16));
                                 __m128 bSet2_4_7_ps = _mm_cvtepi32_ps(_mm_srai_epi32(_mm_unpackhi_epi16(bSet2_epi16, bSet2_epi16),16));
 
-                                __m128 tale_0_3_ps = _mm_blendv_ps(mmOnes, mmParam2s2, bSet1_0_3_ps);
-                                __m128 tale_4_7_ps = _mm_blendv_ps(mmOnes, mmParam2s2, bSet1_4_7_ps);
-                                tale_0_3_ps = _mm_blendv_ps(mmParam2s, tale_0_3_ps, bSet2_0_3_ps);
-                                tale_4_7_ps = _mm_blendv_ps(mmParam2s, tale_4_7_ps, bSet2_4_7_ps);
+                                __m128 tale_0_3_ps = BLENDV_PS(mmOnes, mmParam2s2, bSet1_0_3_ps);
+                                __m128 tale_4_7_ps = BLENDV_PS(mmOnes, mmParam2s2, bSet1_4_7_ps);
+                                tale_0_3_ps = BLENDV_PS(mmParam2s, tale_0_3_ps, bSet2_0_3_ps);
+                                tale_4_7_ps = BLENDV_PS(mmParam2s, tale_4_7_ps, bSet2_4_7_ps);
 
-                                tale_0_3_ps = _mm_blendv_ps(_mm_set1_ps(0), tale_0_3_ps, mask_0_4_ps);
-                                tale_4_7_ps = _mm_blendv_ps(_mm_set1_ps(0), tale_4_7_ps, mask_4_7_ps);
+                                tale_0_3_ps = BLENDV_PS(_mm_set1_ps(0), tale_0_3_ps, mask_0_4_ps);
+                                tale_4_7_ps = BLENDV_PS(_mm_set1_ps(0), tale_4_7_ps, mask_4_7_ps);
 
                                 t0 = _mm_srai_epi32(Ixy_0, 16); // Iy0 Iy1 Iy2 Iy3
                                 t1 = _mm_srai_epi32(_mm_slli_epi32(Ixy_0, 16), 16); // Ix0 Ix1 Ix2 Ix3

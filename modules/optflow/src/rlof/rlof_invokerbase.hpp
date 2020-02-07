@@ -5,9 +5,10 @@
 #define _RLOF_INVOKERBASE_HPP_
 
 
-#if CV_SSE4_1
+#if CV_SSE2 | CV_SSE3 | CV_SSE4_1
 #define RLOF_SSE
 #endif
+
 
 //#define DEBUG_INVOKER
 
@@ -28,8 +29,39 @@ using namespace cv;
 namespace cv {
 namespace optflow {
 
+
 typedef short deriv_type;
 #ifdef RLOF_SSE
+
+#if CV_SSE4_1 | CV_SSE4_2
+#define BLENDV_EPI8(a, b, mask) _mm_blendv_epi8(a, b, mask)
+#define BLENDV_PS(a, b, mask) _mm_blendv_ps(a, b, mask)
+#else
+static inline __m128i blendv_epi8(__m128i a, __m128i b, __m128i mask)
+{
+    __m128i res;
+    res.m128i_i16[0] = (mask.m128i_u16[0] < 0) ? a.m128i_i16[0] : b.m128i_i16[0];
+    res.m128i_i16[1] = (mask.m128i_u16[1] < 0) ? a.m128i_i16[1] : b.m128i_i16[1];
+    res.m128i_i16[2] = (mask.m128i_u16[2] < 0) ? a.m128i_i16[2] : b.m128i_i16[2];
+    res.m128i_i16[3] = (mask.m128i_u16[3] < 0) ? a.m128i_i16[3] : b.m128i_i16[3];
+    res.m128i_i16[4] = (mask.m128i_u16[4] < 0) ? a.m128i_i16[4] : b.m128i_i16[4];
+    res.m128i_i16[5] = (mask.m128i_u16[5] < 0) ? a.m128i_i16[5] : b.m128i_i16[5];
+    res.m128i_i16[6] = (mask.m128i_u16[6] < 0) ? a.m128i_i16[6] : b.m128i_i16[6];
+    res.m128i_i16[7] = (mask.m128i_u16[7] < 0) ? a.m128i_i16[7] : b.m128i_i16[7];
+    return res;
+}
+static inline __m128 blendv_ps(__m128 a, __m128 b, __m128 mask)
+{
+    __m128 res;
+    res.m128_f32[0] = (mask.m128_f32[0] < 0) ? a.m128_f32[0] : b.m128_f32[0];
+    res.m128_f32[1] = (mask.m128_f32[1] < 0) ? a.m128_f32[1] : b.m128_f32[1];
+    res.m128_f32[2] = (mask.m128_f32[2] < 0) ? a.m128_f32[2] : b.m128_f32[2];
+    res.m128_f32[3] = (mask.m128_f32[3] < 0) ? a.m128_f32[3] : b.m128_f32[3];
+    return res;
+}
+#define BLENDV_EPI8(a, b, mask) blendv_epi8(a, b, mask)
+#define BLENDV_PS(a, b, mask) blendv_ps(a, b, mask)
+#endif
 static inline void get4BitMask(const int & width, __m128i & mask)
 {
     int noBits = width - static_cast<int>(floor(width / 4.f) * 4.f);

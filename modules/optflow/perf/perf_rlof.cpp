@@ -47,7 +47,7 @@ typedef tuple<std::string, int> INTERP_GRID_Dense_t;
 typedef TestBaseWithParam<INTERP_GRID_Dense_t> INTERP_GRID_Dense;
 PERF_TEST_P(INTERP_GRID_Dense, OpticalFlow_DenseRLOF,
     testing::Combine(
-        testing::Values<std::string>("INTERP_EPIC", "INTERP_GEO"),
+        testing::Values<std::string>("INTERP_EPIC", "INTERP_GEO", "INTERP_RIC"),
         testing::Values<int>(4,10))
 )
 {
@@ -63,6 +63,8 @@ PERF_TEST_P(INTERP_GRID_Dense, OpticalFlow_DenseRLOF,
         interp_type = INTERP_EPIC;
     if (get<0>(GetParam()) == "INTERP_GEO")
         interp_type = INTERP_GEO;
+    if (get<0>(GetParam()) == "INTERP_RIC")
+        interp_type = INTERP_RIC;
     PERF_SAMPLE_BEGIN()
         calcOpticalFlowDenseRLOF(frame1, frame2,flow, param, 1.0f, Size(get<1>(GetParam()), get<1>(GetParam())), interp_type);
     PERF_SAMPLE_END()

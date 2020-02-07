@@ -398,8 +398,8 @@ public:
                             t0 = _mm_srai_epi32(Ixy_0, 16); // Iy0 Iy1 Iy2 Iy3
                             t1 = _mm_srai_epi32(_mm_slli_epi32(Ixy_0, 16), 16); // Ix0 Ix1 Ix2 Ix3
 
-                            __m128 fy = _mm_blendv_ps(_mm_set1_ps(0), _mm_cvtepi32_ps(t0), mask_0_4_ps);
-                            __m128 fx = _mm_blendv_ps(_mm_set1_ps(0), _mm_cvtepi32_ps(t1), mask_0_4_ps);
+                            __m128 fy = BLENDV_PS(_mm_set1_ps(0), _mm_cvtepi32_ps(t0), mask_0_4_ps);
+                            __m128 fx = BLENDV_PS(_mm_set1_ps(0), _mm_cvtepi32_ps(t1), mask_0_4_ps);
 
                             // 0 ... 3
                             __m128 I_ps = _mm_cvtepi32_ps(_mm_srai_epi32(_mm_unpacklo_epi16(I_0_7_epi16, I_0_7_epi16), 16));
@@ -417,7 +417,7 @@ public:
                             mmSumW2 = _mm_add_ps(mmSumW2, _mm_mul_ps(I_ps, fy));
 
                             // sumI
-                            I_ps  = _mm_blendv_ps(_mm_set1_ps(0), I_ps, mask_0_4_ps);
+                            I_ps  = BLENDV_PS(_mm_set1_ps(0), I_ps, mask_0_4_ps);
                             mmSumI = _mm_add_ps(mmSumI,I_ps);
 
                             // sumDI
@@ -426,8 +426,8 @@ public:
                             t0 = _mm_srai_epi32(Ixy_1, 16); // Iy8 Iy9 Iy10 Iy11
                             t1 = _mm_srai_epi32(_mm_slli_epi32(Ixy_1, 16), 16); // Ix0 Ix1 Ix2 Ix3
 
-                            fy = _mm_blendv_ps(_mm_set1_ps(0), _mm_cvtepi32_ps(t0), mask_4_7_ps);
-                            fx = _mm_blendv_ps(_mm_set1_ps(0), _mm_cvtepi32_ps(t1), mask_4_7_ps);
+                            fy = BLENDV_PS(_mm_set1_ps(0), _mm_cvtepi32_ps(t0), mask_4_7_ps);
+                            fx = BLENDV_PS(_mm_set1_ps(0), _mm_cvtepi32_ps(t1), mask_4_7_ps);
 
                             // 4 ... 7
                             I_ps = _mm_cvtepi32_ps(_mm_srai_epi32(_mm_unpackhi_epi16(I_0_7_epi16, I_0_7_epi16), 16));
@@ -446,7 +446,7 @@ public:
                             mmSumW2 = _mm_add_ps(mmSumW2, _mm_mul_ps(I_ps, fy));
 
                             // sumI
-                            I_ps  = _mm_blendv_ps(_mm_set1_ps(0), I_ps, mask_4_7_ps);
+                            I_ps  = BLENDV_PS(_mm_set1_ps(0), I_ps, mask_4_7_ps);
                             mmSumI = _mm_add_ps(mmSumI, I_ps);
 
                             // sumW
