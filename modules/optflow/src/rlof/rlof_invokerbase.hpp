@@ -31,11 +31,8 @@ namespace optflow {
 typedef short deriv_type;
 #ifdef RLOF_SSE
 
-#if CV_SSE3 | CV_SSE4_1 | CV_SSE4_2
-#define ABS_EPI16(a) _mm_abs_epi16(a)
-#endif
-
 #if CV_SSE4_1 | CV_SSE4_2
+#define ABS_EPI16(a) _mm_abs_epi16(a)
 #define CVTEPI8_EPI16(a) _mm_cvtepi8_epi16(a)
 #define CVTEPI16_EPI32(a) _mm_cvtepi16_epi32(a)
 #define BLENDV_EPI8(a, b, mask) _mm_blendv_epi8(a, b, mask)
