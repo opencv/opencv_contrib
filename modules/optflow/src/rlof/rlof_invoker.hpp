@@ -164,7 +164,7 @@ public:
 
                 for (; x <= winSize.width*cn; x += 4, dsrc += 4 * 2, dsrc1 += 8, dIptr += 4 * 2)
                 {
-                    __m128i mask_0_7_epi16 = _mm_mullo_epi16(_mm_cvtepi8_epi16(_mm_loadl_epi64((const __m128i*)(maskPtr + x))), mmMaskSet_epi16);
+                    __m128i mask_0_7_epi16 = _mm_mullo_epi16(CVTEPI8_EPI16(_mm_loadl_epi64((const __m128i*)(maskPtr + x))), mmMaskSet_epi16);
                     __m128i mask_0_3_epi16 = _mm_unpacklo_epi16(mask_0_7_epi16, mask_0_7_epi16);
 
                     __m128i v00, v01, v10, v11, t0, t1;
@@ -331,7 +331,7 @@ public:
 #ifdef RLOF_SSE
                     for (; x <= winSize.width*cn; x += 8, dIptr += 8 * 2)
                     {
-                        __m128i mask_0_7_epi16 = _mm_mullo_epi16(_mm_cvtepi8_epi16(_mm_loadl_epi64((const __m128i*)(maskPtr + x))), mmMaskSet_epi16);
+                        __m128i mask_0_7_epi16 = _mm_mullo_epi16(CVTEPI8_EPI16(_mm_loadl_epi64((const __m128i*)(maskPtr + x))), mmMaskSet_epi16);
                         __m128i diff0, diff1;
                         __m128i I_0_7_epi16 = _mm_loadu_si128((const __m128i*)(Iptr + x)); // von element 0 bis 7
 
@@ -359,7 +359,7 @@ public:
                         __m128i Ixy_0 = _mm_loadu_si128((const __m128i*)(dIptr)); // Ix0 Iy0 Ix1 Iy1 ...
                         __m128i Ixy_1 = _mm_loadu_si128((const __m128i*)(dIptr + 8));
 
-                        __m128i abs_epi16 = _mm_abs_epi16(mmDiff_epi16);
+                        __m128i abs_epi16 = ABS_EPI16(mmDiff_epi16);
                         __m128i bSet2_epi16, bSet1_epi16;
                         // |It| < sigma1 ?
                         bSet2_epi16 = _mm_cmplt_epi16(abs_epi16, mmParam1);
@@ -408,12 +408,12 @@ public:
 
                         if (j == 0)
                         {
-                            __m128 bSet1_0_3_ps = _mm_cvtepi32_ps(_mm_cvtepi16_epi32(bSet1_epi16));
+                            __m128 bSet1_0_3_ps = _mm_cvtepi32_ps(CVTEPI16_EPI32(bSet1_epi16));
                             __m128 bSet1_4_7_ps = _mm_cvtepi32_ps(_mm_srai_epi32(_mm_unpackhi_epi16(bSet1_epi16, bSet1_epi16), 16));
-                            __m128 mask_0_4_ps = _mm_cvtepi32_ps(_mm_cvtepi16_epi32(mask_0_7_epi16));
+                            __m128 mask_0_4_ps = _mm_cvtepi32_ps(CVTEPI16_EPI32(mask_0_7_epi16));
                             __m128 mask_4_7_ps = _mm_cvtepi32_ps((_mm_srai_epi32(_mm_unpackhi_epi16(mask_0_7_epi16, mask_0_7_epi16), 16)));
 
-                            __m128 bSet2_0_3_ps = _mm_cvtepi32_ps(_mm_cvtepi16_epi32(bSet2_epi16));
+                            __m128 bSet2_0_3_ps = _mm_cvtepi32_ps(CVTEPI16_EPI32(bSet2_epi16));
                             __m128 bSet2_4_7_ps = _mm_cvtepi32_ps(_mm_srai_epi32(_mm_unpackhi_epi16(bSet2_epi16, bSet2_epi16), 16));
 
                             __m128 tale_0_3_ps = BLENDV_PS(mmOnes, mmParam2s2, bSet1_0_3_ps);
@@ -798,7 +798,7 @@ public:
                 const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
                 for (; x <= winBufSize.width*cn - 4; x += 4, dsrc += 4 * 2, dsrc1 += 8, dIptr += 4 * 2)
                 {
-                    __m128i mask_0_7_epi16 = _mm_mullo_epi16(_mm_cvtepi8_epi16(_mm_loadl_epi64((const __m128i*)(maskPtr + x))), mmMaskSet_epi16);
+                    __m128i mask_0_7_epi16 = _mm_mullo_epi16(CVTEPI8_EPI16(_mm_loadl_epi64((const __m128i*)(maskPtr + x))), mmMaskSet_epi16);
                     __m128i mask_0_3_epi16 = _mm_unpacklo_epi16(mask_0_7_epi16, mask_0_7_epi16);
                     __m128i v00, v01, v10, v11, t0, t1;
                     v00 = _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(const int*)(src + x)), z);
@@ -1004,7 +1004,7 @@ public:
 
                     for (; x <= _winSize.width*cn; x += 8, dIptr += 8 * 2)
                     {
-                        __m128i mask_0_7_epi16 = _mm_mullo_epi16(_mm_cvtepi8_epi16(_mm_loadl_epi64((const __m128i*)(maskPtr + x))), mmMaskSet_epi16);
+                        __m128i mask_0_7_epi16 = _mm_mullo_epi16(CVTEPI8_EPI16(_mm_loadl_epi64((const __m128i*)(maskPtr + x))), mmMaskSet_epi16);
                         __m128i diff0, diff1;
                         __m128i I_0_7_epi16 = _mm_loadu_si128((const __m128i*)(Iptr + x)); // von element 0 bis 7
                            __m128i v00 = _mm_unpacklo_epi8(
@@ -1049,7 +1049,7 @@ public:
                         __m128i Ixy_1 = _mm_loadu_si128((const __m128i*)(dIptr + 8));
 
 
-                        __m128i abs_epi16 = _mm_abs_epi16(mmDiff_epi16);
+                        __m128i abs_epi16 = ABS_EPI16(mmDiff_epi16);
                         __m128i bSet2_epi16, bSet1_epi16;
                         // |It| < sigma1 ?
                         bSet2_epi16 = _mm_cmplt_epi16(abs_epi16, mmParam1);
@@ -1111,12 +1111,12 @@ public:
 
                         if (j == 0)
                         {
-                            __m128 bSet1_0_3_ps = _mm_cvtepi32_ps(_mm_cvtepi16_epi32(bSet1_epi16));
+                            __m128 bSet1_0_3_ps = _mm_cvtepi32_ps(CVTEPI16_EPI32(bSet1_epi16));
                             __m128 bSet1_4_7_ps = _mm_cvtepi32_ps(_mm_srai_epi32(_mm_unpackhi_epi16(bSet1_epi16, bSet1_epi16), 16));
-                            __m128 mask_0_4_ps = _mm_cvtepi32_ps(_mm_cvtepi16_epi32(mask_0_7_epi16));
+                            __m128 mask_0_4_ps = _mm_cvtepi32_ps(CVTEPI16_EPI32(mask_0_7_epi16));
                             __m128 mask_4_7_ps = _mm_cvtepi32_ps((_mm_srai_epi32(_mm_unpackhi_epi16(mask_0_7_epi16, mask_0_7_epi16), 16)));
 
-                            __m128 bSet2_0_3_ps = _mm_cvtepi32_ps(_mm_cvtepi16_epi32(bSet2_epi16));
+                            __m128 bSet2_0_3_ps = _mm_cvtepi32_ps(CVTEPI16_EPI32(bSet2_epi16));
                             __m128 bSet2_4_7_ps = _mm_cvtepi32_ps(_mm_srai_epi32(_mm_unpackhi_epi16(bSet2_epi16, bSet2_epi16), 16));
 
                             __m128 tale_0_3_ps = BLENDV_PS(mmOnes, mmParam2s2, bSet1_0_3_ps);
