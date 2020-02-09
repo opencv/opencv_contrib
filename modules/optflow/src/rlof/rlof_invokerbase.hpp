@@ -32,9 +32,26 @@ typedef short deriv_type;
 #ifdef RLOF_SSE
 
 #if CV_SSE4_1 | CV_SSE4_2
+#define CVTEPI8_EPI16(a) _mm_cvtepi8_epi16(a)
+#define CVTEPI16_EPI32(a) _mm_cvtepi16_epi32(a)
 #define BLENDV_EPI8(a, b, mask) _mm_blendv_epi8(a, b, mask)
 #define BLENDV_PS(a, b, mask) _mm_blendv_ps(a, b, mask)
 #else
+static inline __m128i cvtepi8_epi16(__m128i _a)
+{
+    char CV_DECL_ALIGNED(8) a[64];
+    _mm_storeu_si128((__m128i*)a, _a);
+    return _mm_set_epi16(static_cast<int>(a[7]), static_cast<int>(a[6]),
+                         static_cast<int>(a[5]), static_cast<int>(a[4]),
+                         static_cast<int>(a[3]), static_cast<int>(a[2]),
+                         static_cast<int>(a[1]), static_cast<int>(a[0]));
+}
+static inline __m128i cvtepi16_epi32(__m128i _a)
+{
+   short CV_DECL_ALIGNED(16) a[8];
+   _mm_storeu_si128((__m128i*)a, _a);
+   return _mm_set_epi32(static_cast<int>(a[3]), static_cast<int>(a[2]), static_cast<int>(a[1]), static_cast<int>(a[0]));
+}
 static inline __m128i blendv_epi8(__m128i _a, __m128i _b, __m128i _mask)
 {
     short CV_DECL_ALIGNED(16) a[8], b[8], res[8];
@@ -65,6 +82,8 @@ static inline __m128 blendv_ps(__m128 _a, __m128 _b, __m128 _mask)
     res[3] = (mask[3] < 0) ? b[3] : a[3];
     return _mm_load_ps(res);
 }
+#define CVTEPI8_EPI16(a) cvtepi8_epi16(a)
+#define CVTEPI16_EPI32(a) cvtepi16_epi32(a)
 #define BLENDV_EPI8(a, b, mask)  blendv_epi8(a, b, mask)
 #define BLENDV_PS(a, b, mask) blendv_ps(a, b, mask)
 #endif

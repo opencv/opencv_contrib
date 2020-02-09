@@ -177,7 +177,7 @@ public:
 #ifdef RLOF_SSE
                for( ; x <= winBufSize.width*cn - 4; x += 4, dsrc += 4*2, dsrc1 += 8, dIptr += 4*2 )
                 {
-                    __m128i mask_0_7_epi16 = _mm_mullo_epi16(_mm_cvtepi8_epi16(_mm_loadl_epi64((const __m128i*)(maskPtr+x))), mmMaskSet_epi16);
+                    __m128i mask_0_7_epi16 = _mm_mullo_epi16(CVTEPI8_EPI16(_mm_loadl_epi64((const __m128i*)(maskPtr+x))), mmMaskSet_epi16);
                     __m128i mask_0_3_epi16 = _mm_unpacklo_epi16(mask_0_7_epi16, mask_0_7_epi16);
                     __m128i v00, v01, v10, v11, t0, t1;
                     v00 = _mm_unpacklo_epi8(_mm_cvtsi32_si128(*(const int*)(src + x)), z);
@@ -314,7 +314,7 @@ public:
                     {
                         // iw = iw << 14 (16384 short / 2)
                         // iq0 =  iw01 |iw00, iw01 |iw00, iw01 |iw00, iw01 |iw00    16 bit
-                        __m128i mask_0_7_epi16 = _mm_mullo_epi16(_mm_cvtepi8_epi16(_mm_loadl_epi64((const __m128i*)(maskPtr+x))), mmMaskSet_epi16);
+                        __m128i mask_0_7_epi16 = _mm_mullo_epi16(CVTEPI8_EPI16(_mm_loadl_epi64((const __m128i*)(maskPtr+x))), mmMaskSet_epi16);
 
                         // I [0...8]
                         __m128i diff0, diff1;
@@ -386,13 +386,13 @@ public:
                         qb2 = _mm_add_ps(qb2, _mm_cvtepi32_ps(v10));
 
                         // b4+= diff
-                        __m128 mmDiff_0_3_ps  = _mm_cvtepi32_ps(_mm_cvtepi16_epi32(mmDiff_epi16)); // (_mm_srai_epi32(_mm_unpacklo_epi16(mmDiff_epi16, mmDiff_epi16),16));
+                        __m128 mmDiff_0_3_ps  = _mm_cvtepi32_ps(CVTEPI16_EPI32(mmDiff_epi16)); // (_mm_srai_epi32(_mm_unpacklo_epi16(mmDiff_epi16, mmDiff_epi16),16));
                         __m128 mmDiff_4_7_ps  = _mm_cvtepi32_ps((_mm_srai_epi32(_mm_unpackhi_epi16(mmDiff_epi16, mmDiff_epi16),16)));
                         qb3 = _mm_add_ps(qb3, mmDiff_0_3_ps);
                         qb3 = _mm_add_ps(qb3, mmDiff_4_7_ps);
                         if( j == 0 )
                         {
-                            __m128 mask_0_4_ps = _mm_cvtepi32_ps(_mm_cvtepi16_epi32(mask_0_7_epi16));
+                            __m128 mask_0_4_ps = _mm_cvtepi32_ps(CVTEPI16_EPI32(mask_0_7_epi16));
                             __m128 mask_4_7_ps = _mm_cvtepi32_ps((_mm_srai_epi32(_mm_unpackhi_epi16(mask_0_7_epi16, mask_0_7_epi16), 16)));
 
                             t0 = _mm_srai_epi32(Ixy_0, 16); // Iy0 Iy1 Iy2 Iy3
