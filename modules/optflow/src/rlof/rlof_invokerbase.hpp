@@ -35,27 +35,35 @@ typedef short deriv_type;
 #define BLENDV_EPI8(a, b, mask) _mm_blendv_epi8(a, b, mask)
 #define BLENDV_PS(a, b, mask) _mm_blendv_ps(a, b, mask)
 #else
-static inline __m128i blendv_epi8(__m128i a, __m128i b, __m128i mask)
+static inline __m128i blendv_epi8(__m128i _a, __m128i _b, __m128i _mask)
 {
-    __m128i res;
-    res.m128i_i16[0] = (mask.m128i_u16[0] > 0) ? b.m128i_i16[0] : a.m128i_i16[0];
-    res.m128i_i16[1] = (mask.m128i_u16[1] > 0) ? b.m128i_i16[1] : a.m128i_i16[1];
-    res.m128i_i16[2] = (mask.m128i_u16[2] > 0) ? b.m128i_i16[2] : a.m128i_i16[2];
-    res.m128i_i16[3] = (mask.m128i_u16[3] > 0) ? b.m128i_i16[3] : a.m128i_i16[3];
-    res.m128i_i16[4] = (mask.m128i_u16[4] > 0) ? b.m128i_i16[4] : a.m128i_i16[4];
-    res.m128i_i16[5] = (mask.m128i_u16[5] > 0) ? b.m128i_i16[5] : a.m128i_i16[5];
-    res.m128i_i16[6] = (mask.m128i_u16[6] > 0) ? b.m128i_i16[6] : a.m128i_i16[6];
-    res.m128i_i16[7] = (mask.m128i_u16[7] > 0) ? b.m128i_i16[7] : a.m128i_i16[7];
-    return res;
+    short CV_DECL_ALIGNED(16) a[8], b[8], res[8];
+    unsigned short CV_DECL_ALIGNED(16) mask[8];
+    _mm_storeu_si128((__m128i*)a, _a);
+    _mm_storeu_si128((__m128i*)b, _b);
+    _mm_storeu_si128((__m128i*)mask, _mask);
+    res[0] = (mask[0] > 0) ? b[0] : a[0];
+    res[1] = (mask[1] > 0) ? b[1] : a[1];
+    res[2] = (mask[2] > 0) ? b[2] : a[2];
+    res[3] = (mask[3] > 0) ? b[3] : a[3];
+    res[4] = (mask[4] > 0) ? b[4] : a[4];
+    res[5] = (mask[5] > 0) ? b[5] : a[5];
+    res[6] = (mask[6] > 0) ? b[6] : a[6];
+    res[7] = (mask[7] > 0) ? b[7] : a[7];
+    return _mm_loadu_si128((__m128i*)res);
 }
-static inline __m128 blendv_ps(__m128 a, __m128 b, __m128 mask)
+static inline __m128 blendv_ps(__m128 _a, __m128 _b, __m128 _mask)
 {
-    __m128 res;
-    res.m128_f32[0] = (mask.m128_u32[0] > 0) ? b.m128_f32[0] : a.m128_f32[0];
-    res.m128_f32[1] = (mask.m128_u32[1] > 0) ? b.m128_f32[1] : a.m128_f32[1];
-    res.m128_f32[2] = (mask.m128_u32[2] > 0) ? b.m128_f32[2] : a.m128_f32[2];
-    res.m128_f32[3] = (mask.m128_u32[3] > 0) ? b.m128_f32[3] : a.m128_f32[3];
-    return res;
+    float CV_DECL_ALIGNED(32) a[4], b[4], res[4];
+    float CV_DECL_ALIGNED(32) mask[4];
+    _mm_store_ps(a, _a);
+    _mm_store_ps(b, _b);
+    _mm_store_ps(mask, _mask);
+    res[0] = (mask[0] < 0) ? b[0] : a[0];
+    res[1] = (mask[1] < 0) ? b[1] : a[1];
+    res[2] = (mask[2] < 0) ? b[2] : a[2];
+    res[3] = (mask[3] < 0) ? b[3] : a[3];
+    return _mm_load_ps(res);
 }
 #define BLENDV_EPI8(a, b, mask)  blendv_epi8(a, b, mask)
 #define BLENDV_PS(a, b, mask) blendv_ps(a, b, mask)
