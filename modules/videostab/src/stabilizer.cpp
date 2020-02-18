@@ -199,7 +199,7 @@ void StabilizerBase::stabilizeFrame()
     if (doDeblurring_)
     {
         at(curStabilizedPos_, frames_).copyTo(preProcessedFrame_);
-        deblurer_->deblur(curStabilizedPos_, preProcessedFrame_, std::make_pair(0, curPos_));
+        deblurer_->deblur(curStabilizedPos_, preProcessedFrame_, Range(0, curPos_));
     }
     else
         preProcessedFrame_ = at(curStabilizedPos_, frames_);
@@ -299,7 +299,7 @@ Mat OnePassStabilizer::estimateMotion()
 
 Mat OnePassStabilizer::estimateStabilizationMotion()
 {
-    return motionFilter_->stabilize(curStabilizedPos_, motions_, std::make_pair(0, curPos_));
+    return motionFilter_->stabilize(curStabilizedPos_, motions_, Range(0, curPos_));
 }
 
 
@@ -436,7 +436,7 @@ void TwoPassStabilizer::runPrePassIfNecessary()
 
         stabilizationMotions_.resize(frameCount_);
         motionStabilizer_->stabilize(
-            frameCount_, motions_, std::make_pair(0, frameCount_ - 1), &stabilizationMotions_[0]);
+            frameCount_, motions_, Range(0, frameCount_ - 1), &stabilizationMotions_[0]);
 
         elapsedTime = clock() - startTime;
         log_->print("motion stabilization time: %.3f sec\n",

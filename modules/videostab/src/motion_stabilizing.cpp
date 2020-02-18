@@ -52,7 +52,7 @@ namespace videostab
 {
 
 void MotionStabilizationPipeline::stabilize(
-        int size, const std::vector<Mat> &motions, std::pair<int,int> range, Mat *stabilizationMotions)
+        int size, const std::vector<Mat> &motions, const Range &range, Mat *stabilizationMotions)
 {
     std::vector<Mat> updatedMotions(motions.size());
     for (size_t i = 0; i < motions.size(); ++i)
@@ -81,7 +81,7 @@ void MotionStabilizationPipeline::stabilize(
 
 
 void MotionFilterBase::stabilize(
-        int size, const std::vector<Mat> &motions, std::pair<int,int> range, Mat *stabilizationMotions)
+        int size, const std::vector<Mat> &motions, const Range &range, Mat *stabilizationMotions)
 {
     for (int i = 0; i < size; ++i)
         stabilizationMotions[i] = stabilize(i, motions, range);
@@ -102,13 +102,13 @@ void GaussianMotionFilter::setParams(int _radius, float _stdev)
 }
 
 
-Mat GaussianMotionFilter::stabilize(int idx, const std::vector<Mat> &motions, std::pair<int,int> range)
+Mat GaussianMotionFilter::stabilize(int idx, const std::vector<Mat> &motions, const Range &range)
 {
     const Mat &cur = at(idx, motions);
     Mat res = Mat::zeros(cur.size(), cur.type());
     float sum = 0.f;
-    int iMin = std::max(idx - radius_, range.first);
-    int iMax = std::min(idx + radius_, range.second);
+    int iMin = std::max(idx - radius_, range.start);
+    int iMax = std::min(idx + radius_, range.end);
     for (int i = iMin; i <= iMax; ++i)
     {
         res += weight_[radius_ + i - idx] * getMotion(idx, i, motions);
@@ -132,7 +132,7 @@ LpMotionStabilizer::LpMotionStabilizer(MotionModel model)
 
 #ifndef HAVE_CLP
 
-void LpMotionStabilizer::stabilize(int, const std::vector<Mat>&, std::pair<int,int>, Mat*)
+void LpMotionStabilizer::stabilize(int, const std::vector<Mat>&, const Range &, Mat*)
 {
     CV_Error(Error::StsError, "The library is built without Clp support");
 }
@@ -140,7 +140,7 @@ void LpMotionStabilizer::stabilize(int, const std::vector<Mat>&, std::pair<int,i
 #else
 
 void LpMotionStabilizer::stabilize(
-        int size, const std::vector<Mat> &motions, std::pair<int,int> /*range*/, Mat *stabilizationMotions)
+        int size, const std::vector<Mat> &motions, const Range &/*range*/, Mat *stabilizationMotions)
 {
     CV_Assert(model_ <= MM_AFFINE);
 

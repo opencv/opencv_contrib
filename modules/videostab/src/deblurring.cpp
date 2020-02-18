@@ -70,7 +70,7 @@ WeightingDeblurer::WeightingDeblurer()
 }
 
 
-void WeightingDeblurer::deblur(int idx, Mat &frame, std::pair<int,int> range)
+void WeightingDeblurer::deblur(int idx, Mat &frame, const Range &range)
 {
     CV_INSTRUMENT_REGION();
 
@@ -93,8 +93,8 @@ void WeightingDeblurer::deblur(int idx, Mat &frame, std::pair<int,int> range)
         }
     }
 
-    int iMin = std::max(idx - radius_, range.first);
-    int iMax = std::min(idx + radius_, range.second);
+    int iMin = std::max(idx - radius_, range.start);
+    int iMax = std::min(idx + radius_, range.end);
     for (int k = iMin; k <= iMax; ++k)
     {
         const Mat &neighbor = at(k, *frames_);
