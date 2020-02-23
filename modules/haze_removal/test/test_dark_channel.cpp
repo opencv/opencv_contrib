@@ -23,16 +23,7 @@ TEST(dark_channel_haze_removal_test, accuracy)
     ASSERT_EQ((int)output.rows, (int)expectedOutput.rows);
     ASSERT_EQ((int)output.cols, (int)expectedOutput.cols);
 
-    for (int r = 0; r < output.rows; r++)
-    {
-        for (int c = 0; c < output.cols; c++)
-        {
-            for (int channel = 0; channel < 3; channel++)
-            {
-                EXPECT_NEAR(output.at<cv::Vec3b>(r, c)[channel], expectedOutput.at<cv::Vec3b>(r, c)[channel], 5);
-            }
-        }
-    }
+    EXPECT_LE(cvtest::norm(output, expectedOutput, NORM_INF), 5);
 }
 
 }} // opencv_test::namespace::

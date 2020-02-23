@@ -21,7 +21,7 @@ class CV_EXPORTS_W DarkChannelPriorHazeRemoval : public HazeRemovalBase
 {
 public:
     CV_WRAP void setKernel(int _erosionSize, int _erosionType);
-    CV_WRAP void setKernel(cv::InputArray _kernelForEroding);
+    CV_WRAP void setKernel(InputArray _kernelForEroding);
     CV_WRAP void setPercentageBrightestPixelsForAtmoLight(float _percentageBrightestPixelsForAtmoLight);
     CV_WRAP void setOmega(float _omega);
     CV_WRAP void setGuidedFilterRadius(float _guidedFilterRadius);
@@ -35,11 +35,11 @@ protected:
 };
 
 /** @brief Dehazes using haze_removal::DarkChannelPriorHazeRemoval in one call
-@param inputMat input image you want to dehaze, must be a CV_8UC3  image
-@param outputMat dehazed image with same number of rows and columns as input in CV_8UC3 format
+@param _src input image you want to dehaze, must be a CV_8UC3  image
+@param _dst dehazed image with same number of rows and columns as input in CV_8UC3 format
 */
 
-CV_EXPORTS_W void darkChannelPriorHazeRemoval(cv::InputArray _src, cv::OutputArray _dst);
+CV_EXPORTS_W void darkChannelPriorHazeRemoval(InputArray _src, OutputArray _dst);
 
 //! @}
 

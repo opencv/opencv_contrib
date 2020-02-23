@@ -26,7 +26,7 @@ public:
         @param _src hazy image as input
         @param _dst output image with haze removed
     */
-    CV_WRAP void dehaze(cv::InputArray _src, cv::OutputArray _dst);
+    CV_WRAP void dehaze(InputArray _src, OutputArray _dst);
 
 protected:
     HazeRemovalBase();

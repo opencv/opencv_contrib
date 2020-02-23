@@ -14,7 +14,7 @@ namespace cv{ namespace haze_removal {
 class HazeRemovalBase::HazeRemovalImpl
 {
 public:
-    virtual void dehaze(cv::InputArray _src, cv::OutputArray _dst) = 0;
+    virtual void dehaze(InputArray _src, OutputArray _dst) = 0;
     virtual ~HazeRemovalImpl() {}
 };
 

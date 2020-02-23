@@ -12,7 +12,7 @@ using namespace cv::haze_removal;
 
 namespace {
 
-int intensityOfNthBrightestPixel(cv::InputArray _src, int n)
+int intensityOfNthBrightestPixel(InputArray _src, int n)
 {
     const Mat src = _src.getMat();
 
@@ -35,7 +35,7 @@ int intensityOfNthBrightestPixel(cv::InputArray _src, int n)
     return max_threshold;
 }
 
-class HazeRemovalHeImpl CV_FINAL : public HazeRemovalBase::HazeRemovalImpl
+class DarkChannelPriorHazeRemovalImpl CV_FINAL : public HazeRemovalBase::HazeRemovalImpl
 {
 private:
     int erosionSize; //Size of kernel to use for computing Dark Channeal
@@ -50,7 +50,7 @@ private:
     Mat kernelForEroding; // The kernel used for eroding
 
 public:
-    HazeRemovalHeImpl()
+    DarkChannelPriorHazeRemovalImpl()
     {
         erosionSize = 15;
         erosionType = MORPH_RECT;
@@ -95,7 +95,7 @@ public:
         transmissionLowerBound = _transmissionLowerBound;
     }
 
-    void getDarkChannel(cv::InputArray _src, cv::OutputArray _dst)
+    void getDarkChannel(InputArray _src, OutputArray _dst)
     {
         const Mat src = _src.getMat();
         if (src.channels() != 3)
@@ -108,7 +108,7 @@ public:
         return;
     }
 
-    Scalar getAtmoLight(cv::InputArray _src)
+    Scalar getAtmoLight(InputArray _src)
     {
 
         const Mat src = _src.getMat();
@@ -127,7 +127,7 @@ public:
         return atmoLight;
     }
 
-    void getTransmission(cv::InputArray _src, cv::OutputArray _dst, Scalar atmoLight)
+    void getTransmission(InputArray _src, OutputArray _dst, Scalar atmoLight)
     {
         const Mat src = _src.getMat();
         Mat dst;
@@ -139,16 +139,16 @@ public:
         _dst.assign(dst);
     }
 
-    void refineTransmission(cv::InputArray _src, cv::InputArray _unrefinedTransmission, cv::OutputArray _refinedTransmission)
+    void refineTransmission(InputArray _src, InputArray _unrefinedTransmission, OutputArray _refinedTransmission)
     {
         Mat gray;
         cvtColor(_src, gray, COLOR_BGR2GRAY);
         ximgproc::guidedFilter(gray, _unrefinedTransmission, _refinedTransmission, guidedFilterRadius, guidedFilterEps);
     }
 
-    virtual void dehaze(cv::InputArray _src, cv::OutputArray _dst) CV_OVERRIDE
+    virtual void dehaze(InputArray _src, OutputArray _dst) CV_OVERRIDE
     {
-        const cv::Mat src = _src.getMat();
+        const Mat src = _src.getMat();
         CV_Assert(src.channels() == 3);
         CV_Assert(src.type() == CV_8UC3);
 
@@ -184,9 +184,9 @@ public:
     }
 };
 
-inline HazeRemovalHeImpl *getLocalImpl(HazeRemovalBase::HazeRemovalImpl *ptr)
+inline DarkChannelPriorHazeRemovalImpl *getLocalImpl(HazeRemovalBase::HazeRemovalImpl *ptr)
 {
-    HazeRemovalHeImpl *impl = static_cast<HazeRemovalHeImpl *>(ptr);
+    DarkChannelPriorHazeRemovalImpl *impl = dynamic_cast<DarkChannelPriorHazeRemovalImpl *>(ptr);
     CV_Assert(impl);
     return impl;
 }
@@ -202,7 +202,7 @@ Ptr<DarkChannelPriorHazeRemoval> DarkChannelPriorHazeRemoval::create()
 {
 
     Ptr<DarkChannelPriorHazeRemoval> res(new DarkChannelPriorHazeRemoval());
-    res->pImpl = makePtr<HazeRemovalHeImpl>();
+    res->pImpl = makePtr<DarkChannelPriorHazeRemovalImpl>();
     return res;
 }
 
@@ -247,9 +247,9 @@ void DarkChannelPriorHazeRemoval::setTransmissionLowerBound(float _transmissionL
     getLocalImpl(pImpl)->setTransmissionLowerBound(_transmissionLowerBoundsetPlotLineColor);
 }
 
-void darkChannelPriorHazeRemoval(cv::InputArray _src, cv::OutputArray _dst)
+void darkChannelPriorHazeRemoval(InputArray _src, OutputArray _dst)
 {
-    HazeRemovalHeImpl().dehaze(_src, _dst);
+    DarkChannelPriorHazeRemovalImpl().dehaze(_src, _dst);
 }
 
 }} // cv::haze_removal::

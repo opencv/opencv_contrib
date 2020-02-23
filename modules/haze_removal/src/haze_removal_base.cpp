@@ -15,7 +15,7 @@ HazeRemovalBase::~HazeRemovalBase()
 {
 }
 
-void HazeRemovalBase::dehaze(cv::InputArray _src, cv::OutputArray _dst)
+void HazeRemovalBase::dehaze(InputArray _src, OutputArray _dst)
 {
     pImpl->dehaze(_src, _dst);
 }
