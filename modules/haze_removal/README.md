@@ -5,7 +5,7 @@ This module contains functions which can dehaze hazy/foggy images.
 
 Currently the following algorithms are implemented:
 
-* Single image haze removal using dark channel priors
+* Single image haze removal using dark channel priors (Guided Filter is used in place of soft matting.)
 
 
 Note that the " Single image haze removal using dark channel priors " algorithm was patented and its use may be restricted by following (but not limited to) list of patents:
