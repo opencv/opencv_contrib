@@ -9,7 +9,7 @@ namespace {
 TEST(dark_channel_haze_removal_test, accuracy)
 {
     string inputFilepath = cvtest::findDataFile("haze_removal/input.png");
-    string expectedOutputFilepath = cvtest::findDataFile("haze_removal/expectedOutput.png");
+    string expectedOutputFilepath = cvtest::findDataFile("haze_removal/expected_output.png");
 
     cv::Mat input, expectedOutput, output;
     input = cv::imread(inputFilepath);
