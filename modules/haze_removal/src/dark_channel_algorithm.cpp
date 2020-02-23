@@ -25,7 +25,7 @@ int intensityOfNthBrightestPixel(InputArray _src, int n)
         histogram[src.at<uchar>(i)]++;
 
     // find max threshold value (pixels from [0-max_threshold] will be removed)
-    int max_threshold = (int)histogram.size() - 1;
+    int max_threshold = static_cast<int>(histogram.size()) - 1;
     for (; max_threshold >= 0 && n > 0; --max_threshold)
     {
         n -= histogram[max_threshold];
@@ -43,7 +43,7 @@ private:
 
     float percentageBrightestPixelsForAtmoLight; //See the papers "Estimating the Atmospheric Light" section for details
     float omega;                                 // controls how much fog to remove :range[0,1]: 1 means remove all fog, 0 means no fog
-    float guidedFilterRadius;
+    int guidedFilterRadius;
     float guidedFilterEps;
     float transmissionLowerBound; //each element of transmission matrix must be atleast this
 
@@ -54,11 +54,11 @@ public:
     {
         erosionSize = 15;
         erosionType = MORPH_RECT;
-        percentageBrightestPixelsForAtmoLight = 0.001;
-        omega = 0.95;
+        percentageBrightestPixelsForAtmoLight = 0.001f;
+        omega = 0.95f;
         guidedFilterRadius = 60;
-        guidedFilterEps = 0.0001;
-        transmissionLowerBound = 0.1;
+        guidedFilterEps = 0.0001f;
+        transmissionLowerBound = 0.1f;
 
         kernelForEroding = getStructuringElement(erosionType, Size(erosionSize, erosionSize));
     }
@@ -82,7 +82,7 @@ public:
     {
         omega = _omega;
     }
-    void setGuidedFilterRadius(float _guidedFilterRadius)
+    void setGuidedFilterRadius(int _guidedFilterRadius)
     {
         guidedFilterRadius = _guidedFilterRadius;
     }
@@ -115,7 +115,7 @@ public:
         Mat darkChannel;
         getDarkChannel(src, darkChannel);
 
-        int pixelsToKeep = src.rows * src.cols * percentageBrightestPixelsForAtmoLight;
+        int pixelsToKeep = static_cast<int>(src.rows * src.cols * percentageBrightestPixelsForAtmoLight);
         int thresholdAtmo = intensityOfNthBrightestPixel(darkChannel, pixelsToKeep);
 
         // Apply a threshold to get a mask of the $percentAtmo brightest pixels.
@@ -234,7 +234,7 @@ void DarkChannelPriorHazeRemoval::setOmega(float _omega)
 {
     getLocalImpl(pImpl)->setOmega(_omega);
 }
-void DarkChannelPriorHazeRemoval::setGuidedFilterRadius(float _guidedFilterRadius)
+void DarkChannelPriorHazeRemoval::setGuidedFilterRadius(int _guidedFilterRadius)
 {
     getLocalImpl(pImpl)->setGuidedFilterRadius(_guidedFilterRadius);
 }

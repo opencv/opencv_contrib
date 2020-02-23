@@ -24,7 +24,7 @@ public:
     CV_WRAP void setKernel(InputArray _kernelForEroding);
     CV_WRAP void setPercentageBrightestPixelsForAtmoLight(float _percentageBrightestPixelsForAtmoLight);
     CV_WRAP void setOmega(float _omega);
-    CV_WRAP void setGuidedFilterRadius(float _guidedFilterRadius);
+    CV_WRAP void setGuidedFilterRadius(int _guidedFilterRadius);
     CV_WRAP void setGuidedFilterEps(float _guidedFilterEps);
     CV_WRAP void setTransmissionLowerBound(float _transmissionLowerBoundsetPlotLineColor);
 
