@@ -70,7 +70,7 @@ WeightingDeblurer::WeightingDeblurer()
 }
 
 
-void WeightingDeblurer::deblur(int idx, Mat &frame)
+void WeightingDeblurer::deblur(int idx, Mat &frame, const Range &range)
 {
     CV_INSTRUMENT_REGION();
 
@@ -93,7 +93,9 @@ void WeightingDeblurer::deblur(int idx, Mat &frame)
         }
     }
 
-    for (int k = idx - radius_; k <= idx + radius_; ++k)
+    int iMin = std::max(idx - radius_, range.start);
+    int iMax = std::min(idx + radius_, range.end);
+    for (int k = iMin; k <= iMax; ++k)
     {
         const Mat &neighbor = at(k, *frames_);
         float bRatio = at(idx, *blurrinessRates_) / at(k, *blurrinessRates_);

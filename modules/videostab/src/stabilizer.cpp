@@ -63,11 +63,11 @@ StabilizerBase::StabilizerBase()
     setTrimRatio(0);
     setCorrectionForInclusion(false);
     setBorderMode(BORDER_REPLICATE);
-    curPos_ = 0;
+    curPos_ = -1;
+    curStabilizedPos_ = -1;
     doDeblurring_ = false;
     doInpainting_ = false;
     processingStartTime_ = 0;
-    curStabilizedPos_ = 0;
 }
 
 
@@ -143,12 +143,10 @@ bool StabilizerBase::doOneIteration()
         log_->print(".");
         return true;
     }
-
-    if (curStabilizedPos_ < curPos_)
+    else if (curStabilizedPos_ < curPos_)
     {
         curStabilizedPos_++;
-        at(curStabilizedPos_ + radius_, frames_) = at(curPos_, frames_);
-        at(curStabilizedPos_ + radius_ - 1, motions_) = Mat::eye(3, 3, CV_32F);
+        at(curPos_, motions_) = Mat::eye(3, 3, CV_32F);
         stabilizeFrame();
 
         log_->print(".");
@@ -201,7 +199,7 @@ void StabilizerBase::stabilizeFrame()
     if (doDeblurring_)
     {
         at(curStabilizedPos_, frames_).copyTo(preProcessedFrame_);
-        deblurer_->deblur(curStabilizedPos_, preProcessedFrame_);
+        deblurer_->deblur(curStabilizedPos_, preProcessedFrame_, Range(0, curPos_));
     }
     else
         preProcessedFrame_ = at(curStabilizedPos_, frames_);
@@ -301,7 +299,7 @@ Mat OnePassStabilizer::estimateMotion()
 
 Mat OnePassStabilizer::estimateStabilizationMotion()
 {
-    return motionFilter_->stabilize(curStabilizedPos_, motions_, std::make_pair(0, curPos_));
+    return motionFilter_->stabilize(curStabilizedPos_, motions_, Range(0, curPos_));
 }
 
 
@@ -438,7 +436,7 @@ void TwoPassStabilizer::runPrePassIfNecessary()
 
         stabilizationMotions_.resize(frameCount_);
         motionStabilizer_->stabilize(
-            frameCount_, motions_, std::make_pair(0, frameCount_ - 1), &stabilizationMotions_[0]);
+            frameCount_, motions_, Range(0, frameCount_ - 1), &stabilizationMotions_[0]);
 
         elapsedTime = clock() - startTime;
         log_->print("motion stabilization time: %.3f sec\n",

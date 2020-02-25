@@ -66,7 +66,7 @@ public:
     virtual void setRadius(int val) { radius_ = val; }
     virtual int radius() const { return radius_; }
 
-    virtual void deblur(int idx, Mat &frame) = 0;
+    virtual void deblur(int idx, Mat &frame, const Range &range) = 0;
 
 
     // data from stabilizer
@@ -90,7 +90,7 @@ protected:
 class CV_EXPORTS NullDeblurer : public DeblurerBase
 {
 public:
-    virtual void deblur(int /*idx*/, Mat &/*frame*/) CV_OVERRIDE {}
+    virtual void deblur(int /*idx*/, Mat &/*frame*/, const Range &/*range*/) CV_OVERRIDE {}
 };
 
 class CV_EXPORTS WeightingDeblurer : public DeblurerBase
@@ -101,7 +101,7 @@ public:
     void setSensitivity(float val) { sensitivity_ = val; }
     float sensitivity() const { return sensitivity_; }
 
-    virtual void deblur(int idx, Mat &frame) CV_OVERRIDE;
+    virtual void deblur(int idx, Mat &frame, const Range &range) CV_OVERRIDE;
 
 private:
     float sensitivity_;

@@ -63,7 +63,7 @@ public:
 
     //! assumes that [0, size-1) is in or equals to [range.first, range.second)
     virtual void stabilize(
-            int size, const std::vector<Mat> &motions, std::pair<int,int> range,
+            int size, const std::vector<Mat> &motions, const Range &range,
             Mat *stabilizationMotions) = 0;
 };
 
@@ -74,7 +74,7 @@ public:
     bool empty() const { return stabilizers_.empty(); }
 
     virtual void stabilize(
-            int size, const std::vector<Mat> &motions, std::pair<int,int> range,
+            int size, const std::vector<Mat> &motions, const Range &range,
             Mat *stabilizationMotions) CV_OVERRIDE;
 
 private:
@@ -87,10 +87,10 @@ public:
     virtual ~MotionFilterBase() {}
 
     virtual Mat stabilize(
-            int idx, const std::vector<Mat> &motions, std::pair<int,int> range) = 0;
+            int idx, const std::vector<Mat> &motions, const Range &range) = 0;
 
     virtual void stabilize(
-            int size, const std::vector<Mat> &motions, std::pair<int,int> range,
+            int size, const std::vector<Mat> &motions, const Range &range,
             Mat *stabilizationMotions) CV_OVERRIDE;
 };
 
@@ -104,7 +104,7 @@ public:
     float stdev() const { return stdev_; }
 
     virtual Mat stabilize(
-            int idx, const std::vector<Mat> &motions, std::pair<int,int> range) CV_OVERRIDE;
+            int idx, const std::vector<Mat> &motions, const Range &range) CV_OVERRIDE;
 
 private:
     int radius_;
@@ -141,7 +141,7 @@ public:
     float weight4() const { return w4_; }
 
     virtual void stabilize(
-            int size, const std::vector<Mat> &motions, std::pair<int,int> range,
+            int size, const std::vector<Mat> &motions, const Range &range,
             Mat *stabilizationMotions) CV_OVERRIDE;
 
 private:
