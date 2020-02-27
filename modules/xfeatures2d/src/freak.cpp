@@ -287,8 +287,8 @@ void FREAK_Impl::buildPattern()
         const float dx = patternLookup[orientationPairs[m].i].x-patternLookup[orientationPairs[m].j].x;
         const float dy = patternLookup[orientationPairs[m].i].y-patternLookup[orientationPairs[m].j].y;
         const float norm_sq = (dx*dx+dy*dy);
-        orientationPairs[m].weight_dx = int((dx/(norm_sq))*4096.0+0.5);
-        orientationPairs[m].weight_dy = int((dy/(norm_sq))*4096.0+0.5);
+        orientationPairs[m].weight_dx = int((dx/(norm_sq))*4096.0+0.5*((dx>0)-(dx<0)));
+        orientationPairs[m].weight_dy = int((dy/(norm_sq))*4096.0+0.5*((dy>0)-(dy<0)));
     }
 
     // build the list of description pairs
