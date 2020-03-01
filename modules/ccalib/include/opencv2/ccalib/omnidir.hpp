@@ -39,11 +39,12 @@
 //
 //M*/
 
-#include <opencv2/core.hpp>
-#include <vector>
-
 #ifndef __OPENCV_OMNIDIR_HPP__
 #define __OPENCV_OMNIDIR_HPP__
+
+#include "opencv2/core.hpp"
+#include "opencv2/core/affine.hpp"
+#include <vector>
 
 namespace cv
 {
@@ -102,6 +103,10 @@ namespace omnidir
     CV_EXPORTS_W void projectPoints(InputArray objectPoints, OutputArray imagePoints, InputArray rvec, InputArray tvec,
                        InputArray K, double xi, InputArray D, OutputArray jacobian = noArray());
 
+    /** @overload */
+    CV_EXPORTS void projectPoints(InputArray objectPoints, OutputArray imagePoints, const Affine3d& affine,
+                        InputArray K, double xi, InputArray D, OutputArray jacobian = noArray());
+
     /** @brief Undistort 2D image points for omnidirectional camera using CMei's model
 
     @param distorted Array of distorted image points, vector of Vec2f
@@ -126,7 +131,7 @@ namespace omnidir
     @param R Rotation transform between the original and object space : 3x3 1-channel, or vector: 3x1/1x3, with depth CV_32F or CV_64F
     @param P New camera matrix (3x3) or new projection matrix (3x4)
     @param size Undistorted image size.
-    @param mltype Type of the first output map that can be CV_32FC1 or CV_16SC2 . See convertMaps()
+    @param m1type Type of the first output map that can be CV_32FC1 or CV_16SC2 . See convertMaps()
     for details.
     @param map1 The first output map.
     @param map2 The second output map.
@@ -134,7 +139,7 @@ namespace omnidir
     are supported.
      */
     CV_EXPORTS_W void initUndistortRectifyMap(InputArray K, InputArray D, InputArray xi, InputArray R, InputArray P, const cv::Size& size,
-        int mltype, OutputArray map1, OutputArray map2, int flags);
+        int m1type, OutputArray map1, OutputArray map2, int flags);
 
     /** @brief Undistort omnidirectional images to perspective images
 
