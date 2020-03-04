@@ -76,6 +76,12 @@ namespace cv { namespace
 /////////////////////////////////////////////////////////////////////////////
 //////// projectPoints
 void cv::omnidir::projectPoints(InputArray objectPoints, OutputArray imagePoints,
+                const Affine3d& affine, InputArray K, double xi, InputArray D, OutputArray jacobian)
+{
+    projectPoints(objectPoints, imagePoints, affine.rvec(), affine.translation(), K, xi, D, jacobian);
+}
+
+void cv::omnidir::projectPoints(InputArray objectPoints, OutputArray imagePoints,
                 InputArray rvec, InputArray tvec, InputArray K, double xi, InputArray D, OutputArray jacobian)
 {
 
