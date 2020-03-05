@@ -96,6 +96,9 @@ public:
         outerIterations(outerIterations_), useInitialFlow(useInitialFlow_),
         scaleStep(scaleStep_), medianFiltering(medianFiltering_)
     {
+#ifdef HAVE_OPENCL
+        kernelsOk = createOpenCLKernels();
+#endif
     }
     OpticalFlowDual_TVL1();
 
@@ -148,6 +151,29 @@ private:
     bool procOneScale_ocl(const UMat& I0, const UMat& I1, UMat& u1, UMat& u2);
 
     bool calc_ocl(InputArray I0, InputArray I1, InputOutputArray flow);
+    bool centeredGradient_ocl(const UMat &src, UMat &dx, UMat &dy);
+
+    bool warpBackward_ocl(const UMat &I0, const UMat &I1, UMat &I1x, UMat &I1y,
+        UMat &u1, UMat &u2, UMat &I1w, UMat &I1wx, UMat &I1wy,
+        UMat &grad, UMat &rho);
+
+    bool estimateU_ocl(UMat &I1wx, UMat &I1wy, UMat &grad,
+        UMat &rho_c, UMat &p11, UMat &p12,
+        UMat &p21, UMat &p22, UMat &u1,
+        UMat &u2, UMat &error, float l_t, float theta, char calc_error);
+
+    bool estimateDualVariables_ocl(UMat &u1, UMat &u2,
+        UMat &p11, UMat &p12, UMat &p21, UMat &p22, float taut);
+
+    ocl::Kernel centeredGradientKernel;
+    ocl::Kernel warpBackwardKernel;
+    ocl::Kernel estimateUKernel;
+    ocl::Kernel estimateDualVariablesKernel;
+
+
+    bool createOpenCLKernels();
+    bool kernelsOk;
+
 #endif
     struct dataMat
     {
@@ -223,30 +249,32 @@ private:
 };
 
 #ifdef HAVE_OPENCL
-namespace cv_ocl_tvl1flow
+
+bool OpticalFlowDual_TVL1::createOpenCLKernels()
 {
-    bool centeredGradient(const UMat &src, UMat &dx, UMat &dy);
+    if (!centeredGradientKernel.create("centeredGradientKernel", ocl::optflow::optical_flow_tvl1_oclsrc, ""))
+        return false;
 
-    bool warpBackward(const UMat &I0, const UMat &I1, UMat &I1x, UMat &I1y,
-        UMat &u1, UMat &u2, UMat &I1w, UMat &I1wx, UMat &I1wy,
-        UMat &grad, UMat &rho);
+    if (!warpBackwardKernel.create("warpBackwardKernel", ocl::optflow::optical_flow_tvl1_oclsrc, ""))
+        return false;
 
-    bool estimateU(UMat &I1wx, UMat &I1wy, UMat &grad,
-        UMat &rho_c, UMat &p11, UMat &p12,
-        UMat &p21, UMat &p22, UMat &u1,
-        UMat &u2, UMat &error, float l_t, float theta, char calc_error);
+    if (!estimateUKernel.create("estimateUKernel", ocl::optflow::optical_flow_tvl1_oclsrc, ""))
+        return false;
 
-    bool estimateDualVariables(UMat &u1, UMat &u2,
-        UMat &p11, UMat &p12, UMat &p21, UMat &p22, float taut);
+    if (!estimateDualVariablesKernel.create("estimateDualVariablesKernel", ocl::optflow::optical_flow_tvl1_oclsrc, ""))
+        return false;
+
+    return true;
 }
 
-bool cv_ocl_tvl1flow::centeredGradient(const UMat &src, UMat &dx, UMat &dy)
+bool OpticalFlowDual_TVL1::centeredGradient_ocl(const UMat &src, UMat &dx, UMat &dy)
 {
+    if (!kernelsOk)
+        return false;
+
     size_t globalsize[2] = { (size_t)src.cols, (size_t)src.rows };
 
-    ocl::Kernel kernel;
-    if (!kernel.create("centeredGradientKernel", ocl::optflow::optical_flow_tvl1_oclsrc, ""))
-        return false;
+    ocl::Kernel kernel = centeredGradientKernel;
 
     int idxArg = 0;
     idxArg = kernel.set(idxArg, ocl::KernelArg::PtrReadOnly(src));//src mat
@@ -259,15 +287,16 @@ bool cv_ocl_tvl1flow::centeredGradient(const UMat &src, UMat &dx, UMat &dy)
     return kernel.run(2, globalsize, NULL, false);
 }
 
-bool cv_ocl_tvl1flow::warpBackward(const UMat &I0, const UMat &I1, UMat &I1x, UMat &I1y,
+bool OpticalFlowDual_TVL1::warpBackward_ocl(const UMat &I0, const UMat &I1, UMat &I1x, UMat &I1y,
     UMat &u1, UMat &u2, UMat &I1w, UMat &I1wx, UMat &I1wy,
     UMat &grad, UMat &rho)
 {
+    if (!kernelsOk)
+        return false;
+
     size_t globalsize[2] = { (size_t)I0.cols, (size_t)I0.rows };
 
-    ocl::Kernel kernel;
-    if (!kernel.create("warpBackwardKernel", ocl::optflow::optical_flow_tvl1_oclsrc, ""))
-        return false;
+    ocl::Kernel kernel = warpBackwardKernel;
 
     int idxArg = 0;
     idxArg = kernel.set(idxArg, ocl::KernelArg::PtrReadOnly(I0));//I0 mat
@@ -302,16 +331,17 @@ bool cv_ocl_tvl1flow::warpBackward(const UMat &I0, const UMat &I1, UMat &I1x, UM
     return kernel.run(2, globalsize, NULL, false);
 }
 
-bool cv_ocl_tvl1flow::estimateU(UMat &I1wx, UMat &I1wy, UMat &grad,
+bool OpticalFlowDual_TVL1::estimateU_ocl(UMat &I1wx, UMat &I1wy, UMat &grad,
     UMat &rho_c, UMat &p11, UMat &p12,
     UMat &p21, UMat &p22, UMat &u1,
     UMat &u2, UMat &error, float l_t, float theta, char calc_error)
 {
+    if (!kernelsOk)
+        return false;
+
     size_t globalsize[2] = { (size_t)I1wx.cols, (size_t)I1wx.rows };
 
-    ocl::Kernel kernel;
-    if (!kernel.create("estimateUKernel", ocl::optflow::optical_flow_tvl1_oclsrc, ""))
-        return false;
+    ocl::Kernel kernel = estimateUKernel;
 
     int idxArg = 0;
     idxArg = kernel.set(idxArg, ocl::KernelArg::PtrReadOnly(I1wx)); //const float* I1wx
@@ -345,14 +375,15 @@ bool cv_ocl_tvl1flow::estimateU(UMat &I1wx, UMat &I1wy, UMat &grad,
     return kernel.run(2, globalsize, NULL, false);
 }
 
-bool cv_ocl_tvl1flow::estimateDualVariables(UMat &u1, UMat &u2,
+bool OpticalFlowDual_TVL1::estimateDualVariables_ocl(UMat &u1, UMat &u2,
     UMat &p11, UMat &p12, UMat &p21, UMat &p22, float taut)
 {
+    if (!kernelsOk)
+        return false;
+
     size_t globalsize[2] = { (size_t)u1.cols, (size_t)u1.rows };
 
-    ocl::Kernel kernel;
-    if (!kernel.create("estimateDualVariablesKernel", ocl::optflow::optical_flow_tvl1_oclsrc, ""))
-        return false;
+    ocl::Kernel kernel = estimateDualVariablesKernel;
 
     int idxArg = 0;
     idxArg = kernel.set(idxArg, ocl::KernelArg::PtrReadOnly(u1));// const float* u1
@@ -395,6 +426,10 @@ OpticalFlowDual_TVL1::OpticalFlowDual_TVL1()
     useInitialFlow = false;
     medianFiltering = 5;
     scaleStep      = 0.8;
+
+#ifdef HAVE_OPENCL
+    kernelsOk = createOpenCLKernels();
+#endif
 }
 
 void OpticalFlowDual_TVL1::calc(InputArray _I0, InputArray _I1, InputOutputArray _flow)
@@ -1221,7 +1256,6 @@ static void estimateDualVariables(const Mat_<float>& u1x, const Mat_<float>& u1y
 #ifdef HAVE_OPENCL
 bool OpticalFlowDual_TVL1::procOneScale_ocl(const UMat& I0, const UMat& I1, UMat& u1, UMat& u2)
 {
-    using namespace cv_ocl_tvl1flow;
 
     const double scaledEpsilon = epsilon * epsilon * I0.size().area();
 
@@ -1242,7 +1276,7 @@ bool OpticalFlowDual_TVL1::procOneScale_ocl(const UMat& I0, const UMat& I1, UMat
     UMat I1x = dum.I1x_buf(Rect(0, 0, I0.cols, I0.rows));
     UMat I1y = dum.I1y_buf(Rect(0, 0, I0.cols, I0.rows));
 
-    if (!centeredGradient(I1, I1x, I1y))
+    if (!centeredGradient_ocl(I1, I1x, I1y))
         return false;
 
     UMat I1w = dum.I1w_buf(Rect(0, 0, I0.cols, I0.rows));
@@ -1269,7 +1303,7 @@ bool OpticalFlowDual_TVL1::procOneScale_ocl(const UMat& I0, const UMat& I1, UMat
 
     for (int warpings = 0; warpings < warps; ++warpings)
     {
-        if (!warpBackward(I0, I1, I1x, I1y, u1, u2, I1w, I1wx, I1wy, grad, rho_c))
+        if (!warpBackward_ocl(I0, I1, I1x, I1y, u1, u2, I1w, I1wx, I1wy, grad, rho_c))
             return false;
 
         double error = std::numeric_limits<double>::max();
@@ -1286,7 +1320,7 @@ bool OpticalFlowDual_TVL1::procOneScale_ocl(const UMat& I0, const UMat& I1, UMat
                 // some tweaks to make sum operation less frequently
                 n = n_inner + n_outer*innerIterations;
                 char calc_error = (n & 0x1) && (prev_error < scaledEpsilon);
-                if (!estimateU(I1wx, I1wy, grad, rho_c, p11, p12, p21, p22,
+                if (!estimateU_ocl(I1wx, I1wy, grad, rho_c, p11, p12, p21, p22,
                     u1, u2, diff, l_t, static_cast<float>(theta), calc_error))
                     return false;
                 if (calc_error)
@@ -1299,7 +1333,7 @@ bool OpticalFlowDual_TVL1::procOneScale_ocl(const UMat& I0, const UMat& I1, UMat
                     error = std::numeric_limits<double>::max();
                     prev_error -= scaledEpsilon;
                 }
-                if (!estimateDualVariables(u1, u2, p11, p12, p21, p22, taut))
+                if (!estimateDualVariables_ocl(u1, u2, p11, p12, p21, p22, taut))
                     return false;
             }
         }
