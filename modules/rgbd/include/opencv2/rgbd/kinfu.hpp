@@ -17,9 +17,21 @@ namespace kinfu {
 
 struct CV_EXPORTS_W Params
 {
-    /** @brief Default parameters
-    A set of parameters which provides better model quality, can be very slow.
-    */
+
+    CV_WRAP Params(){}
+
+    /** 
+     * @brief Set Initial Volume Pose
+     * Sets the initial pose of the TSDF volume.
+     * @param R rotation matrix
+     * @param t translation vector
+     */
+    CV_WRAP void setInitialVolumePose(Matx33f R, Vec3f t);
+
+    /** 
+     * @brief Default parameters
+     * A set of parameters which provides better model quality, can be very slow.
+     */
     CV_WRAP static Ptr<Params> defaultParams();
 
     /** @brief Coarse parameters
@@ -32,7 +44,7 @@ struct CV_EXPORTS_W Params
     CV_PROP_RW Size frameSize;
 
     /** @brief camera intrinsics */
-    CV_PROP Matx33f intr;
+    CV_PROP_RW Matx33f intr;
 
     /** @brief pre-scale per 1 meter for input values
 
@@ -93,14 +105,14 @@ struct CV_EXPORTS_W Params
     // float gradient_delta_factor;
 
     /** @brief light pose for rendering in meters */
-    CV_PROP Vec3f lightPose;
+    CV_PROP_RW Vec3f lightPose;
 
     /** @brief distance theshold for ICP in meters */
     CV_PROP_RW float icpDistThresh;
     /** angle threshold for ICP in radians */
     CV_PROP_RW float icpAngleThresh;
     /** number of ICP iterations for each pyramid level */
-    CV_PROP std::vector<int> icpIterations;
+    CV_PROP_RW std::vector<int> icpIterations;
 
     /** @brief Threshold for depth truncation in meters
 

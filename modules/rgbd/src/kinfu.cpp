@@ -12,6 +12,11 @@
 namespace cv {
 namespace kinfu {
 
+void Params::setInitialVolumePose(Matx33f R, Vec3f t)
+{
+    Params::volumePose.matrix = Affine3f(R,t).matrix;
+}
+
 Ptr<Params> Params::defaultParams()
 {
     Params p;
@@ -299,6 +304,8 @@ void KinFuImpl<T>::getNormals(InputArray points, OutputArray normals) const
 
 Ptr<KinFu> KinFu::create(const Ptr<Params>& params)
 {
+    CV_Assert((int)params->icpIterations.size() == params->pyramidLevels);
+    CV_Assert(params->intr(0,1) == 0 && params->intr(1,0) == 0 && params->intr(2,0) == 0 && params->intr(2,1) == 0 && params->intr(2,2) == 1);
 #ifdef HAVE_OPENCL
     if(cv::ocl::useOpenCL())
         return makePtr< KinFuImpl<UMat> >(*params);
