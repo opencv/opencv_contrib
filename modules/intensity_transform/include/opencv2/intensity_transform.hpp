@@ -17,6 +17,7 @@
  * - Log Transformations
  * - Power-Law (Gamma) Transformations
  * - Contrast Stretching
+ * - BIMEF, A Bio-Inspired Multi-Exposure Fusion Framework for Low-light Image Enhancement @cite ying2017bio @cite ying2017new
  *
  * Reference from following book and websites:
  * - Digital Image Processing 4th Edition Chapter 3 [Rafael C. Gonzalez, Richard E. Woods] @cite Gonzalez2018
@@ -70,6 +71,30 @@ CV_EXPORTS_W void autoscaling(const Mat input, Mat& output);
  * @param s2 y coordinate of second point (r2, s2) in the transformation function.
 */
 CV_EXPORTS_W void contrastStretching(const Mat input, Mat& output, const int r1, const int s1, const int r2, const int s2);
+
+/**
+ * @brief Given an input color image, enhance low-light images using the BIMEF method (@cite ying2017bio @cite ying2017new).
+ *
+ * @param input input color image.
+ * @param output resulting image.
+ * @param mu enhancement ratio.
+ * @param a a-parameter in the Camera Response Function (CRF).
+ * @param b b-parameter in the Camera Response Function (CRF).
+*/
+CV_EXPORTS_W void BIMEF(InputArray input, OutputArray output, float mu=0.5f, float a=-0.3293f, float b=1.1258f);
+
+/**
+ * @brief Given an input color image, enhance low-light images using the BIMEF method (@cite ying2017bio @cite ying2017new).
+ * This is an overload function with the exposure ratio given as parameter.
+ *
+ * @param input input color image.
+ * @param output resulting image.
+ * @param k exposure ratio.
+ * @param mu enhancement ratio.
+ * @param a a-parameter in the Camera Response Function (CRF).
+ * @param b b-parameter in the Camera Response Function (CRF).
+*/
+CV_EXPORTS_AS(BIMEF2) void BIMEF(InputArray input, OutputArray output, float k, float mu, float a, float b);
 
 //! @}
 
