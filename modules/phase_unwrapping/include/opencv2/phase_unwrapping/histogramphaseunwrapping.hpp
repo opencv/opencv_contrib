@@ -75,20 +75,21 @@ public:
      * @param nbrOfSmallBins Number of bins between 0 and "histThresh". Default value is 10.
      * @param nbrOfLargeBins Number of bins between "histThresh" and 32*pi*pi (highest edge reliability value). Default value is 5.
      */
-    struct CV_EXPORTS Params
+    struct CV_EXPORTS_W_SIMPLE Params
     {
-        Params();
-        int width;
-        int height;
-        float histThresh;
-        int nbrOfSmallBins;
-        int nbrOfLargeBins;
+        CV_WRAP Params();
+        CV_PROP_RW int width;
+        CV_PROP_RW int height;
+        CV_PROP_RW float histThresh;
+        CV_PROP_RW int nbrOfSmallBins;
+        CV_PROP_RW int nbrOfLargeBins;
     };
     /**
      * @brief Constructor
 
      * @param parameters HistogramPhaseUnwrapping parameters HistogramPhaseUnwrapping::Params: width,height of the phase map and histogram characteristics.
      */
+    CV_WRAP
     static Ptr<HistogramPhaseUnwrapping> create( const HistogramPhaseUnwrapping::Params &parameters =
                                                  HistogramPhaseUnwrapping::Params() );
 
