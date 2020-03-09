@@ -53,13 +53,13 @@ const string IMAGE_FILENAME = "tsukuba.png";
 
 namespace opencv_test { namespace {
 
-#ifdef OPENCV_ENABLE_NONFREE
-TEST( Features2d_Detector_SIFT, regression)
+TEST( Features2d_Detector_SIFT, regression )
 {
     CV_FeatureDetectorTest test( "detector-sift", SIFT::create() );
     test.safe_run();
 }
 
+#ifdef OPENCV_ENABLE_NONFREE
 TEST( Features2d_Detector_SURF, regression )
 {
     CV_FeatureDetectorTest test( "detector-surf", SURF::create() );
@@ -94,7 +94,6 @@ TEST( Features2d_Detector_Harris_Laplace_Affine, regression )
 /*
  * Descriptors
  */
-#ifdef OPENCV_ENABLE_NONFREE
 TEST( Features2d_DescriptorExtractor_SIFT, regression )
 {
     CV_DescriptorExtractorTest<L1<float> > test( "descriptor-sift", 1.0f,
@@ -102,6 +101,7 @@ TEST( Features2d_DescriptorExtractor_SIFT, regression )
     test.safe_run();
 }
 
+#ifdef OPENCV_ENABLE_NONFREE
 TEST( Features2d_DescriptorExtractor_SURF, regression )
 {
 #ifdef HAVE_OPENCL
@@ -375,8 +375,9 @@ protected:
     Ptr<Feature2D> f2d;
 };
 
-#ifdef OPENCV_ENABLE_NONFREE
 TEST(Features2d_SIFTHomographyTest, regression) { CV_DetectPlanarTest test("SIFT", 80, SIFT::create()); test.safe_run(); }
+
+#ifdef OPENCV_ENABLE_NONFREE
 TEST(Features2d_SURFHomographyTest, regression) { CV_DetectPlanarTest test("SURF", 80, SURF::create()); test.safe_run(); }
 #endif
 
@@ -441,13 +442,13 @@ protected:
     Ptr<FeatureDetector> featureDetector_;
 };
 
-#ifdef OPENCV_ENABLE_NONFREE
 TEST(Features2d_SIFT_using_mask, regression)
 {
     FeatureDetectorUsingMaskTest test(SIFT::create());
     test.safe_run();
 }
 
+#ifdef OPENCV_ENABLE_NONFREE
 TEST(DISABLED_Features2d_SURF_using_mask, regression)
 {
     FeatureDetectorUsingMaskTest test(SURF::create());
