@@ -109,7 +109,8 @@ public:
     CV_WRAP virtual void setEntityProperty(const String& name, int prop, const Scalar& value) = 0;
 
     /// @overload
-    CV_WRAP virtual void setEntityProperty(const String& name, int prop, const String& value) = 0;
+    CV_WRAP virtual void setEntityProperty(const String& name, int prop, const String& value,
+                                           int subEntityIdx = -1) = 0;
 
     /**
      * get the property of an entity
