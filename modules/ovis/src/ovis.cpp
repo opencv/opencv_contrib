@@ -687,7 +687,7 @@ public:
         frameCtrlrs.erase(animstate);
     }
 
-    void setEntityProperty(const String& name, int prop, const String& value) CV_OVERRIDE
+    void setEntityProperty(const String& name, int prop, const String& value, int subEntityIdx) CV_OVERRIDE
     {
         CV_Assert(prop == ENTITY_MATERIAL);
         SceneNode& node = _getSceneNode(sceneMgr, name);
@@ -698,13 +698,18 @@ public:
         Camera* cam = dynamic_cast<Camera*>(node.getAttachedObject(name));
         if(cam)
         {
+            CV_Assert(subEntityIdx == -1 && "Camera Entities do not have SubEntities");
             cam->setMaterial(mat);
             return;
         }
 
         Entity* ent = dynamic_cast<Entity*>(node.getAttachedObject(name));
         CV_Assert(ent && "invalid entity");
-        ent->setMaterial(mat);
+
+        if (subEntityIdx < 0)
+            ent->setMaterial(mat);
+        else
+            ent->getSubEntities()[subEntityIdx]->setMaterial(mat);
     }
 
     void setEntityProperty(const String& name, int prop, const Scalar& value) CV_OVERRIDE
