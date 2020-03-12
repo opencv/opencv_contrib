@@ -20,7 +20,7 @@ struct CV_EXPORTS_W Params
 
     CV_WRAP Params(){}
 
-    /** 
+    /**
      * @brief Set Initial Volume Pose
      * Sets the initial pose of the TSDF volume.
      * @param R rotation matrix
@@ -28,7 +28,7 @@ struct CV_EXPORTS_W Params
      */
     CV_WRAP void setInitialVolumePose(Matx33f R, Vec3f t);
 
-    /** 
+    /**
      * @brief Default parameters
      * A set of parameters which provides better model quality, can be very slow.
      */
