@@ -309,7 +309,6 @@ namespace rgbd
 
             } // iterate cols
         } // iterate rows
-        
     }
 
 
