@@ -21,12 +21,40 @@ struct CV_EXPORTS_W Params
     CV_WRAP Params(){}
 
     /**
+     * @brief Constructor for Params
+     * Sets the initial pose of the TSDF volume.
+     * @param volumeIntialPoseRot rotation matrix
+     * @param volumeIntialPoseTransl translation vector
+     */
+    CV_WRAP Params(Matx33f volumeIntialPoseRot, Vec3f volumeIntialPoseTransl)
+    {
+      setInitialVolumePose(volumeIntialPoseRot,volumeIntialPoseTransl);
+    }
+
+    /**
+     * @brief Constructor for Params
+     * Sets the initial pose of the TSDF volume.
+     * @param volumeIntialPose 4 by 4 Homogeneous Transform matrix to set the intial pose of TSDF volume
+     */
+    CV_WRAP Params(Matx44f volumeIntialPose)
+    {
+      setInitialVolumePose(volumeIntialPose);
+    }
+
+    /**
      * @brief Set Initial Volume Pose
      * Sets the initial pose of the TSDF volume.
      * @param R rotation matrix
      * @param t translation vector
      */
     CV_WRAP void setInitialVolumePose(Matx33f R, Vec3f t);
+
+    /**
+     * @brief Set Initial Volume Pose
+     * Sets the initial pose of the TSDF volume.
+     * @param homogen_tf 4 by 4 Homogeneous Transform matrix to set the intial pose of TSDF volume
+     */
+    CV_WRAP void setInitialVolumePose(Matx44f homogen_tf);
 
     /**
      * @brief Default parameters

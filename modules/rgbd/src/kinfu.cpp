@@ -14,7 +14,12 @@ namespace kinfu {
 
 void Params::setInitialVolumePose(Matx33f R, Vec3f t)
 {
-    Params::volumePose.matrix = Affine3f(R,t).matrix;
+    setInitialVolumePose(Affine3f(R,t).matrix);
+}
+
+void Params::setInitialVolumePose(Matx44f homogen_tf)
+{
+    Params::volumePose.matrix = homogen_tf;
 }
 
 Ptr<Params> Params::defaultParams()
