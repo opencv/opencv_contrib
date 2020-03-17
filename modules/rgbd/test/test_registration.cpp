@@ -153,9 +153,8 @@ TEST(Rgbd_DepthRegistration, compute)
 
 TEST(Rgbd_DepthRegistration, issue_2234)
 {
-    Matx33f intrinsicsDepth, intrinsicsColor;
-    intrinsicsDepth << 100., 0., 50., 0., 100., 50., 0., 0., 1.;
-    intrinsicsColor << 100., 0., 200., 0., 100., 50., 0., 0., 1.;
+    Matx33f intrinsicsDepth(100, 0,  50, 0, 100, 50, 0, 0, 1);
+    Matx33f intrinsicsColor(100, 0, 200, 0, 100, 50, 0, 0, 1);
 
     Mat_<float> depthMat(100, 100, (float)0.);
     for(int i = 1; i <= 100; i++)
