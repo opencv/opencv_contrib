@@ -119,7 +119,7 @@ public:
      * @param shadowMask Mask used to discard shadow regions.
      */
     CV_WRAP
-    virtual void unwrapPhaseMap( InputArrayOfArrays wrappedPhaseMap,
+    virtual void unwrapPhaseMap( InputArray wrappedPhaseMap,
                                  OutputArray unwrappedPhaseMap,
                                  cv::Size camSize,
                                  InputArray shadowMask = noArray() ) = 0;
