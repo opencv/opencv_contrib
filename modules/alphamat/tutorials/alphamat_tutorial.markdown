@@ -27,7 +27,7 @@ cmake -DOPENCV_EXTRA_MODULES_PATH=<path to opencv_contrib modules> -DBUILD_EXAMP
 
 cmake --build . --config Release --target example_alphamat_information_flow_matting
 ```
-Please refer to OpenCV building tutorials for further details, if needed. 
+Please refer to OpenCV building tutorials for further details, if needed.
 
 # Testing
 

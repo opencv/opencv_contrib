@@ -57,7 +57,7 @@ void infoFlow(InputArray image_ia, InputArray tmap_ia, OutputArray result){
 
     Mat image = image_ia.getMat();
     Mat tmap = tmap_ia.getMat();
-    
+
     clock_t begin = clock();
     int nRows = image.rows;
     int nCols = image.cols;
@@ -114,7 +114,7 @@ void infoFlow(InputArray image_ia, InputArray tmap_ia, OutputArray result){
     solve(Wcm, Wuu, Wl, Dcm, Duu, Dl, T, wf, alpha);
 
     alpha.copyTo(result);
-    
+
     end = clock();
     elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
     std::cout<<"total time: "<<elapsed_secs<<std::endl;
