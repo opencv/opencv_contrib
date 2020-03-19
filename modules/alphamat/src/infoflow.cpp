@@ -49,7 +49,7 @@ void solve(SparseMatrix<double> Wcm,SparseMatrix<double> Wuu,SparseMatrix<double
             pix_alpha = x(i+j*nRows);
             if (pix_alpha<0) pix_alpha=0;
             if (pix_alpha>1) pix_alpha=1;
-            alpha.at<uchar>(i, j, 0) = uchar(pix_alpha*255);
+            alpha.at<uchar>(i, j) = uchar(pix_alpha*255);
         }
 }
 

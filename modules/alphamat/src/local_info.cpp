@@ -18,7 +18,7 @@ void local_info(Mat& img, Mat& tmap, SparseMatrix<double>& Wl, SparseMatrix<doub
   int nRows = img.rows;
   int nCols = img.cols;
     int N = img.rows*img.cols;
-  Mat unk_img = Mat::zeros(cv::Size(nRows, nCols), CV_32FC1);
+  Mat unk_img = Mat::zeros(cv::Size(nCols, nRows), CV_32FC1);
 
   for (int i = 0; i < nRows; ++i)
     for (int j = 0; j < nCols; ++j){
