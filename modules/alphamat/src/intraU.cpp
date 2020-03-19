@@ -14,7 +14,7 @@ int findColMajorInd(int rowMajorInd, int nRows, int nCols) {
   return (jInd*nRows+iInd);
 }
 
-void generateFVectorIntraU(my_vector_of_vectors_t &samples, Mat &img, Mat& tmap, std::vector<int>& orig_ind)
+static void generateFVectorIntraU(my_vector_of_vectors_t &samples, Mat &img, Mat& tmap, std::vector<int>& orig_ind)
 {
   int nRows = img.rows;
   int nCols = img.cols;
@@ -48,7 +48,7 @@ void generateFVectorIntraU(my_vector_of_vectors_t &samples, Mat &img, Mat& tmap,
     std::cout << "Total number of unknown pixels : " << c1 << std::endl;
 }
 
-void kdtree_intraU(Mat &img, Mat& tmap, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, std::vector<int>& orig_ind)
+static void kdtree_intraU(Mat &img, Mat& tmap, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, std::vector<int>& orig_ind)
 {
   // Generate feature vectors for intra U:
   generateFVectorIntraU(samples, img, tmap, orig_ind);
@@ -84,7 +84,7 @@ double l1norm(std::vector<double>& x, std::vector<double>& y){
   return sum/dim;
 }
 
-void intraU(Mat& img, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, std::vector<int>& orig_ind, SparseMatrix<double>& Wuu, SparseMatrix<double>& Duu){
+static void intraU(Mat& img, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, std::vector<int>& orig_ind, SparseMatrix<double>& Wuu, SparseMatrix<double>& Duu){
   // input: indm, samples
   int n = indm.size();  // num of unknown samples
     std::cout << "num of unknown samples, n : " << n << std::endl;

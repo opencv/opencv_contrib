@@ -53,8 +53,11 @@ void solve(SparseMatrix<double> Wcm,SparseMatrix<double> Wuu,SparseMatrix<double
         }
 }
 
-void infoFlow(Mat& image, Mat& tmap, Mat& result){
+void infoFlow(InputArray image_ia, InputArray tmap_ia, Mat& result){
 
+    Mat image = image_ia.getMat();
+    Mat tmap = tmap_ia.getMat();
+    
     clock_t begin = clock();
     int nRows = image.rows;
     int nCols = image.cols;

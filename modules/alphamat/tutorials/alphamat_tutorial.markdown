@@ -23,7 +23,7 @@ This module uses the Eigen package.
 
 Build the sample code of the alphamat module using the following cmake command, followed by  `make` command.
 ```
-cmake -DOPENCV_EXTRA_MODULES_PATH=<path to opencv_contrib modules> -DBUILD_EXAMPLES=ON ..
+cmake -DCMAKE_BUILD_TYPE=RELEASE -DOPENCV_EXTRA_MODULES_PATH=<path to opencv_contrib modules> -DBUILD_EXAMPLES=ON ..
 
 make
 ```
@@ -37,7 +37,7 @@ example_alphamat_information_flow_matting -img=<path to input image file> -tri=<
 ```
 # Source Code of the sample
 
-@includelineno alphamat/samples/information\_flow\_matting.cpp
+@includelineno alphamat/samples/information_flow_matting.cpp
 
 
 # References

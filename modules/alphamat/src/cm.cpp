@@ -2,10 +2,6 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html.
 
-// #ifndef cm
-// #define cm
-// header file content
-
 #include "precomp.hpp"
 #include "intraU.hpp"
 #include "cm.hpp"
@@ -13,9 +9,8 @@
 namespace cv{
 namespace alphamat{
 
-void generateFVectorCM(my_vector_of_vectors_t &samples, Mat &img)
+static void generateFVectorCM(my_vector_of_vectors_t &samples, Mat &img)
 {
-  // CV_Assert(img.depth() == CV_8U);
 
   int nRows = img.rows;
   int nCols = img.cols;
@@ -35,7 +30,7 @@ void generateFVectorCM(my_vector_of_vectors_t &samples, Mat &img)
      }
 }
 
-void kdtree_CM(Mat &img, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, std::unordered_set<int>& unk)
+static void kdtree_CM(Mat &img, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, std::unordered_set<int>& unk)
 {
   // Generate feature vectors for intra U:
   generateFVectorCM(samples, img);
@@ -72,7 +67,7 @@ void kdtree_CM(Mat &img, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& s
   }
 }
 
-void lle(my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, float eps, std::unordered_set<int>& unk
+static void lle(my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, float eps, std::unordered_set<int>& unk
        , SparseMatrix<double>& Wcm, SparseMatrix<double>& Dcm, Mat &img){
   std::cout << "In cm's lle function" << std::endl;
   int k = indm[0].size(); //number of neighbours that we are considering

@@ -13,18 +13,11 @@ using namespace nanoflann;
 
 typedef std::vector<std::vector<double>> my_vector_of_vectors_t;
 
-void generateFVectorIntraU(my_vector_of_vectors_t &samples, Mat &img, Mat& tmap, std::vector<int>& orig_ind);
-
-void kdtree_intraU(Mat &img, Mat& tmap, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, std::vector<int>& orig_ind);
-
 double l1norm(std::vector<double>& x, std::vector<double>& y);
-
-void intraU(Mat& image, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, std::vector<int>& orig_ind, SparseMatrix<double>& Wuu, SparseMatrix<double>& Duu);
-
-void UU(Mat& image, Mat& tmap, SparseMatrix<double>& Wuu, SparseMatrix<double>& Duu);
 
 int findColMajorInd(int rowMajorInd, int nRows, int nCols);
 
+void UU(Mat& image, Mat& tmap, SparseMatrix<double>& Wuu, SparseMatrix<double>& Duu);
 
   }
 }
