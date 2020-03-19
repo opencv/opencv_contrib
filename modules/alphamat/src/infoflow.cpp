@@ -53,7 +53,7 @@ void solve(SparseMatrix<double> Wcm,SparseMatrix<double> Wuu,SparseMatrix<double
         }
 }
 
-void infoFlow(InputArray image_ia, InputArray tmap_ia, Mat& result){
+void infoFlow(InputArray image_ia, InputArray tmap_ia, OutputArray result){
 
     Mat image = image_ia.getMat();
     Mat tmap = tmap_ia.getMat();
@@ -113,8 +113,8 @@ void infoFlow(InputArray image_ia, InputArray tmap_ia, Mat& result){
     Mat alpha = Mat::zeros(nRows, nCols, CV_8UC1);
     solve(Wcm, Wuu, Wl, Dcm, Duu, Dl, T, wf, alpha);
 
-    result = alpha;
-
+    alpha.copyTo(result);
+    
     end = clock();
     elapsed_secs = double(end - begin) / CLOCKS_PER_SEC;
     std::cout<<"total time: "<<elapsed_secs<<std::endl;

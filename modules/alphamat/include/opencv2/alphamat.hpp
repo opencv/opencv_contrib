@@ -21,7 +21,7 @@
 
 namespace cv{ namespace alphamat{
 
-CV_EXPORTS_W void infoFlow(InputArray image, InputArray tmap, Mat& result);
+CV_EXPORTS_W void infoFlow(InputArray image, InputArray tmap, OutputArray result);
 
 }}
 #endif
