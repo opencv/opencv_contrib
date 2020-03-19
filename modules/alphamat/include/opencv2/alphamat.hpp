@@ -11,17 +11,22 @@
  * @defgroup alphamat Alpha Matting
  * This module is dedicated to compute alpha matting of images, given the input image and an input trimap.
  * The samples directory includes easy examples of how to use the module.
- *
+ */
+
+namespace cv { namespace alphamat {
+//! @addtogroup alphamat
+//! @{
+
+/**
  * The implementation is based on Designing Effective Inter-Pixel Information Flow for Natural Image Matting by Yağız Aksoy, Tunç Ozan Aydın and Marc Pollefeys, CVPR 2019.
  *
  * This module has been originally developed by Muskaan Kularia and Sunita Nayak as a project
  * for Google Summer of Code 2019 (GSoC 19).
  *
  */
-
-namespace cv{ namespace alphamat{
-
 CV_EXPORTS_W void infoFlow(InputArray image, InputArray tmap, OutputArray result);
 
-}}
+//! @}
+}}  // namespace
+
 #endif
