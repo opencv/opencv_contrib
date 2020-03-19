@@ -6,12 +6,10 @@
 #include "intraU.hpp"
 #include "cm.hpp"
 
-namespace cv{
-namespace alphamat{
+namespace cv { namespace alphamat {
 
 static void generateFVectorCM(my_vector_of_vectors_t &samples, Mat &img)
 {
-
   int nRows = img.rows;
   int nCols = img.cols;
 
@@ -20,14 +18,17 @@ static void generateFVectorCM(my_vector_of_vectors_t &samples, Mat &img)
   int i, j;
 
   for (i = 0; i < nRows; ++i)
-     for (j = 0; j < nCols; ++j){
-         samples[i*nCols+j].resize(dim);
+  {
+     for (j = 0; j < nCols; ++j)
+     {
+         samples[i*nCols+j].resize(ALPHAMAT_DIM);
          samples[i*nCols+j][0] = img.at<cv::Vec3b>(i, j)[0]/255.0;
          samples[i*nCols+j][1] = img.at<cv::Vec3b>(i, j)[1]/255.0;
          samples[i*nCols+j][2] = img.at<cv::Vec3b>(i, j)[2]/255.0;
          samples[i*nCols+j][3] = double(i)/nRows;
          samples[i*nCols+j][4] = double(j)/nCols;
      }
+  }
 }
 
 static void kdtree_CM(Mat &img, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, std::unordered_set<int>& unk)
@@ -41,7 +42,7 @@ static void kdtree_CM(Mat &img, my_vector_of_vectors_t& indm, my_vector_of_vecto
   // Dimensionality set at run-time (default: L2)
   // ------------------------------------------------------------
   typedef KDTreeVectorOfVectorsAdaptor< my_vector_of_vectors_t, double >  my_kd_tree_t;
-  my_kd_tree_t mat_index(dim /*dim*/, samples, 10 /* max leaf */ );
+  my_kd_tree_t mat_index(ALPHAMAT_DIM /*dim*/, samples, 10 /* max leaf */ );
   mat_index.index->buildIndex();
 
   // do a knn search with cm = 20
@@ -55,12 +56,14 @@ static void kdtree_CM(Mat &img, my_vector_of_vectors_t& indm, my_vector_of_vecto
 
   indm.resize(N);
   int i = 0;
-  for (std::unordered_set<int>::iterator it = unk.begin(); it != unk.end(); it++){
-    resultSet.init(&ret_indexes[0], &out_dists_sqr[0] );
+  for (std::unordered_set<int>::iterator it = unk.begin(); it != unk.end(); it++)
+  {
+    resultSet.init(&ret_indexes[0], &out_dists_sqr[0]);
     mat_index.index->findNeighbors(resultSet, &samples[*it][0], nanoflann::SearchParams(10));
 
     indm[i].resize(num_results-1);
-    for (std::size_t j = 1; j < num_results; j++){
+    for (std::size_t j = 1; j < num_results; j++)
+    {
         indm[i][j-1] = ret_indexes[j];
     }
     i++;
@@ -68,8 +71,9 @@ static void kdtree_CM(Mat &img, my_vector_of_vectors_t& indm, my_vector_of_vecto
 }
 
 static void lle(my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, float eps, std::unordered_set<int>& unk
-       , SparseMatrix<double>& Wcm, SparseMatrix<double>& Dcm, Mat &img){
-  std::cout << "In cm's lle function" << std::endl;
+       , SparseMatrix<double>& Wcm, SparseMatrix<double>& Dcm, Mat &img)
+{
+  CV_LOG_INFO(NULL, "ALPHAMAT: In cm's lle function");
   int k = indm[0].size(); //number of neighbours that we are considering
   int n = indm.size(); //number of unknown pixels
 
@@ -81,7 +85,7 @@ static void lle(my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, f
 
   Mat C(20, 20, DataType<float>::type), rhs(20, 1, DataType<float>::type), Z(3, 20, DataType<float>::type), weights(20, 1, DataType<float>::type), pt(3, 1, DataType<float>::type);
   Mat ptDotN(20, 1, DataType<float>::type), imd(20, 1, DataType<float>::type);
-    Mat Cones(20, 1, DataType<float>::type), Cinv(20, 1, DataType<float>::type);
+  Mat Cones(20, 1, DataType<float>::type), Cinv(20, 1, DataType<float>::type);
   float alpha, beta, lagrangeMult;
   Cones += 1;
 
@@ -89,14 +93,17 @@ static void lle(my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, f
   rhs = 1;
 
   int i, ind = 0;
-  for(std::unordered_set<int>::iterator it = unk.begin(); it != unk.end(); it++){
+  for(std::unordered_set<int>::iterator it = unk.begin(); it != unk.end(); it++)
+  {
       // filling values in Z
       i = *it;
 
       int index_nbr;
-      for(int j = 0; j < k; j++){
+      for(int j = 0; j < k; j++)
+      {
           index_nbr = indm[ind][j];
-          for(int p = 0; p < dim-2; p++){
+          for(int p = 0; p < ALPHAMAT_DIM-2; p++)
+          {
               Z.at<float>(p,j) = samples[index_nbr][p];
           }
       }
@@ -105,8 +112,10 @@ static void lle(my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, f
       pt.at<float>(2,0) = samples[i][2];
 
       C = Z.t()*Z;
-      for(int p=0; p<k; p++)
+      for (int p=0; p<k; p++)
+      {
           C.at<float>(p,p) += eps;
+      }
 
       ptDotN = Z.t() * pt;
       solve(C, ptDotN, imd);
@@ -121,7 +130,8 @@ static void lle(my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, f
 
       int cMaj_i = findColMajorInd(i, img.rows, img.cols);
 
-      for(int j = 0; j < k; j++){
+      for(int j = 0; j < k; j++)
+      {
           int cMaj_ind_j = findColMajorInd(indm[ind][j], img.rows, img.cols);
           triplets.push_back(T(cMaj_i, cMaj_ind_j, weights.at<float>(j,0)));
           td.push_back(T(cMaj_i, cMaj_i, weights.at<float>(j,0)));
@@ -140,18 +150,19 @@ void cm(Mat& image, Mat& tmap, SparseMatrix<double>& Wcm, SparseMatrix<double>& 
   int i, j;
   std::unordered_set<int> unk;
   for (i = 0; i < tmap.rows; i++)
-    for (j = 0; j < tmap.cols; j++){
-      float pix = tmap.at<uchar>(i, j);
+  {
+    for (j = 0; j < tmap.cols; j++)
+    {
+      uchar pix = tmap.at<uchar>(i, j);
       if (pix == 128)
         unk.insert(i*tmap.cols+j);
     }
+  }
 
   kdtree_CM(image, indm, samples, unk);
   float eps = 0.00001;
   lle(indm, samples, eps, unk, Wcm, Dcm, image);
-  std::cout << "cm DONE" << std::endl;
+  CV_LOG_INFO(NULL, "ALPHAMAT: cm DONE");
 }
 
-}
-
-}
+}}  // namespace

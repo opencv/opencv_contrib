@@ -5,13 +5,15 @@
 #ifndef __OPENCV_PRECOMP_H__
 #define __OPENCV_PRECOMP_H__
 
-#include <iostream>
 #include <vector>
 #include <unordered_set>
 #include <set>
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/core/utils/logger.hpp>
+
+#include <opencv2/alphamat.hpp>
 
 #include "3rdparty/nanoflann.hpp"
 #include "3rdparty/KDTreeVectorOfVectorsAdaptor.h"
@@ -21,12 +23,6 @@
 #include <opencv2/core/eigen.hpp>
 #include <Eigen/IterativeLinearSolvers>
 #endif
-
-namespace cv{
-namespace alphamat{
-const int dim = 5;  // dimension of feature vectors
-}
-}
 
 #include "intraU.hpp"
 #include "cm.hpp"
