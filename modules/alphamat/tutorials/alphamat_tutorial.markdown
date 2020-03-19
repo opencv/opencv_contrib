@@ -21,13 +21,13 @@ This project is implementation of @cite aksoy2017designing . It required impleme
 
 This module uses the Eigen package.
 
-Build the sample code of the alphamat module using the following cmake command, followed by  `make` command.
+Build the sample code of the alphamat module using the following two cmake commands run inside the build folder:
 ```
-cmake -DCMAKE_BUILD_TYPE=RELEASE -DOPENCV_EXTRA_MODULES_PATH=<path to opencv_contrib modules> -DBUILD_EXAMPLES=ON ..
+cmake -DOPENCV_EXTRA_MODULES_PATH=<path to opencv_contrib modules> -DBUILD_EXAMPLES=ON ..
 
-make
+cmake --build . --config Release --target example_alphamat_information_flow_matting
 ```
-Please refer to OpenCV building tutorials for further details, if needed. The following target needs to be build for testing the sample code below: example_alphamat_information_flow_matting
+Please refer to OpenCV building tutorials for further details, if needed. 
 
 # Testing
 
