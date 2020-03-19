@@ -8,6 +8,13 @@
 #include "precomp.hpp"
 #include "nonrigid_icp.hpp"
 
+#if defined(HAVE_EIGEN)
+#    include <Eigen/Sparse>
+//#    include <Eigen/SparseCholesky>
+#    include <Eigen/SparseQR>
+#endif
+
+
 #define MAD_SCALE 1.4826f
 #define TUKEY_B 4.6851f
 #define HUBER_K 1.345f
@@ -33,11 +40,6 @@ public:
                                    InputArray newNormals) const override;
 
     virtual ~ICPImpl() {}
-
-private:
-    float median(std::vector<float> v) const;
-    float tukeyWeight(float x, float sigma) const;
-    float huberWeight(Vec3f v, float sigma) const;
 };
 
 ICPImpl::ICPImpl(const Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, int _iterations) :
@@ -49,7 +51,7 @@ static inline bool fastCheck(const Point3f& p)
     return !cvIsNaN(p.x);
 }
 
-float ICPImpl::median(std::vector<float> v) const
+static float median(std::vector<float> v)
 {
     size_t n = v.size()/2;
     if(n == 0) return 0;
@@ -68,7 +70,7 @@ float ICPImpl::median(std::vector<float> v) const
     }
 }
 
-float ICPImpl::tukeyWeight(float r, float sigma) const
+static float tukeyWeight(float r, float sigma)
 {
     float x = r/sigma;
     if(std::abs(x) <= TUKEY_B)
@@ -79,68 +81,29 @@ float ICPImpl::tukeyWeight(float r, float sigma) const
     } else return 0;
 }
 
-float ICPImpl::huberWeight(Vec3f v, float sigma) const
+static float huberWeight(Vec3f v, float sigma)
 {
     if(sigma == 0) return 0.f;
     float x = (float)std::abs(norm(v)/sigma);
     return (x > HUBER_K)? HUBER_K/x : 1.f;
 }
 
-bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
-                                InputArray _vertImage, InputArray _oldPoints,
-                                InputArray _oldNormals, InputArray _newPoints,
-                                InputArray _newNormals) const
+static void fillRegularization(Mat_<float>& A_reg, Mat_<float>& b_reg, WarpField& currentWarp,
+                               int totalNodes, std::vector<int> baseIndices)
 {
-    CV_Assert(_vertImage.isMat());
-    CV_Assert(_oldPoints.isMat());
-    CV_Assert(_newPoints.isMat());
-    CV_Assert(_newNormals.isMat());
-
-    Mat vertImage = _vertImage.getMat();
-    Mat oldPoints = _oldPoints.getMat();
-    Mat newPoints = _newPoints.getMat();
-    Mat newNormals = _newNormals.getMat();
-    Mat oldNormals = _oldNormals.getMat();
-
-    CV_Assert(!vertImage.empty());
-    CV_Assert(!oldPoints.empty());
-    CV_Assert(!newPoints.empty());
-    CV_Assert(!newNormals.empty());
+    int nLevels = currentWarp.n_levels;
+    int k = currentWarp.k;
 
     const NodeVectorType& warpNodes = currentWarp.getNodes();
-
-    Affine3f T_lw = pose.inv() * volume->pose;
-
     // Accumulate regularisation term for each node in the heiarchy
     const std::vector<NodeVectorType>& regNodes = currentWarp.getGraphNodes();
-    const heirarchyType& regGraph = currentWarp.getRegGraph();
-
-    int totalNodes = (int)warpNodes.size();
-    for(const auto& nodes: regNodes) totalNodes += (int)nodes.size();
-
-    // level-wise regularisation components of A and b (from Ax = b) for each node in hierarchy
-    Mat_<float> b_reg(6*totalNodes, 1, 0.f);
-    Mat_<float> A_reg(6*totalNodes, 6*totalNodes, 0.f);
-
-
-    // indices for each node block to A,b matrices. It determines the order
-    // in which paramters are laid out
-
-    std::vector<int> baseIndices(currentWarp.n_levels, 0);
-
-    for(int l = currentWarp.n_levels-2; l >= 0; l--)
-    {
-        baseIndices[l] = baseIndices[l+1]+6*((int)regNodes[l].size());
-    }
-
-    for(const int& i: baseIndices) std::cout << i << ", ";
-    std::cout << std::endl;
+    const hierarchyType& regGraph = currentWarp.getRegGraph();
 
     // populate residuals for each edge in the graph to calculate sigma
     std::vector<float> reg_residuals;
     float RegEnergy = 0;
     int numEdges = 0;
-    for(int l = 0; l < (currentWarp.n_levels-1); l++)
+    for(int l = 0; l < (nLevels-1); l++)
     {
         const std::vector<nodeNeighboursType>& level = regGraph[l];
 
@@ -157,7 +120,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
             Vec3f nodePos = currentLevelNodes[node]->pos;
             Affine3f nodeTransform = currentLevelNodes[node]->transform;
 
-            for(int c = 0; c < currentWarp.k; c++)
+            for(int c = 0; c < k; c++)
             {
                 const int child = children[c];
                 Vec3f childPos = nextLevelNodes[child]->pos;
@@ -187,7 +150,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
     float reg_sigma = MAD_SCALE * median(reg_residuals);
     std::cout << "[Reg] Sigma: " << reg_sigma << " from " << reg_residuals.size() << " residuals " << std::endl;
 
-    for(int l = 0; l < (currentWarp.n_levels-1); l++)
+    for(int l = 0; l < (nLevels-1); l++)
     {
         const std::vector<nodeNeighboursType>& level = regGraph[l];
 
@@ -202,7 +165,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
 
             int parentIndex = baseIndices[l]+6*(int)node;
 
-            for(int edge = 0; edge < currentWarp.k; edge++)
+            for(int edge = 0; edge < k; edge++)
             {
                 const int child = children[edge];
                 const Ptr<WarpNode> childNode = nextLevelNodes[child];
@@ -282,6 +245,305 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
             }
         }
     }
+}
+
+
+bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
+                                InputArray _vertImage, InputArray _oldPoints,
+                                InputArray _oldNormals, InputArray _newPoints,
+                                InputArray _newNormals) const
+{
+    CV_Assert(_vertImage.isMat());
+    CV_Assert(_oldPoints.isMat());
+    CV_Assert(_newPoints.isMat());
+    CV_Assert(_newNormals.isMat());
+
+    Mat vertImage = _vertImage.getMat();
+    Mat oldPoints = _oldPoints.getMat();
+    Mat newPoints = _newPoints.getMat();
+    Mat newNormals = _newNormals.getMat();
+    Mat oldNormals = _oldNormals.getMat();
+
+    CV_Assert(!vertImage.empty());
+    CV_Assert(!oldPoints.empty());
+    CV_Assert(!newPoints.empty());
+    CV_Assert(!newNormals.empty());
+
+
+
+    // let's start from porting Python script to c++ code
+    float damping = 0.f;
+
+    uint32_t nIter = 0;
+    bool decorrelate = false;
+    bool useTukey = true;
+    bool bendInitial = true;
+    bool signFix = false;
+    bool disableCentering = false; //TODO
+    bool atZero = false;
+    bool useExp = false;
+    bool tryLevMarq = true;
+
+    double lambdaLevMarq = 0.1;
+    uint32_t nNodes = len(nodesParams);
+    std::vector<Point3f> ptsInitial(oldPoints.total());
+    oldPoints.copyTo(ptsInitial);
+    std::vector<Point3f> ptsOut(newPoints.total());
+    newPoints.copyTo(ptsOut);
+
+    std::vector<Point3f> ptsIn = ptsInitial;
+    std::vector<DualQuaternion> dqcum(nNodes, DualQuaternion());
+    std::vector< std::map<int, float> > weights;
+    // Calculate distance-based weights
+    for (unsigned int i = 0; i < ptsInitial.size(); i++)
+    {
+        unsigned int npnodes; // TODO: this
+        unsigned int pnodes[DYNAFU_MAX_NEIGHBOURS]; //TODO: this
+        for (unsigned int wi = 0; wi < npnodes; wi++)
+        {
+            unsigned int nodeIdx = pnodes[wi];
+            //TODO
+            float distWeight = dist_weight(ptsInitial[i], nodes[nodeIdx].center, csize);
+            weights[i][nodeIdx] = distWeight;
+        }
+    }
+
+    for (unsigned int it = 0; it < nIter; it++)
+    {
+        std::vector<Point3f> ptsDelta(ptsInitial.size());
+        for (unsigned int i = 0; i < ptsInitial.size(); i++)
+        {
+            ptsDelta[i] = ptsOut[i] - ptsIn[i];
+        }
+
+        const int jacobDataType = CV_64FC1;
+        const int block = 6;
+        Mat jtj(block*nNodes, block*nNodes, jacobDataType); // 64F sic!
+        Mat jtb(block*nNodes, 1, jacobDataType);
+
+        // Build per-node jacobians (don't depend on vertices)
+        std::vector<Mat> jpernode(nNodes);
+        for(unsigned int i = 0; i < nNodes; i++)
+        {
+            jpernode[i] = Mat::zeros(8, block, CV_32FC1);
+            // Current node's center
+            Point3f c = nodes[i].center; // TODO
+            // Current rotation, translation
+            DualQuaternion dq = atZero ? DualQuaternion() : nodes[i].rt;
+            Affine3f rt = dq.getAffineUnit(); // TODO
+
+            Mat jpn;
+            if(useExp)
+            {
+                jpn = j_centered(c) * j_dq_exp_val(dq);
+            }
+            else
+            {
+                jpn = j_pernode(rt, c);
+            }
+            jpernode[i] = jpn;
+        }
+
+        //TODO: BIG ONE regularization
+
+        // Build vertex-dependent part of jacobian
+        for(unsigned int i = 0; i < ptsInitial.size(); i++)
+        {
+            //TODO: BIG ONES projection, normals
+
+
+            Point3f v = ptsIn[i];
+            Point3f d = ptsDelta[i];
+            DualQuaternion dqsum = DualQuaternion(Quaternion(0, 0, 0, 0), Quaternion(0, 0, 0, 0));
+            float wsum = 0.f;
+            std::vector<Mat> jnode, jpernodeweighted;
+            //TODO: take only nodes that belong to a point
+            for(unsigned int node = 0; node < nNodes; node++)
+            {
+                jnode[node] = Mat::zeros(3, block, CV_32FC1);
+                jpernodeweighted[node] = Mat::zeros(8, block, CV_32FC1);
+                // Current node's center
+                Point3f c = nodes[node].center; // TODO
+                // Current weight
+                float w = weights[i][node];
+                // Current rotation, translation
+                DualQuaternion dq = nodes[i].rt; // TODO
+                Affine3f rt = dq.getAffineUnit();
+
+                // center(x) := (1+e*1/2*с)*x*(1-e*1/2*c)
+                // TODO: or dq.centered(c);
+                DualQuaternion centered = DualQuaternion::from_rt_centered(rt, c);
+
+                jpernodeweighted[node] = w*jpernode[node];
+                dqsum += w*centered;
+                wsum += w;
+            }
+
+            dqsum = DualQuaternion::damped_dqsum(dqsum, nNodes, wsum, damping);
+            Quaternion a = dqsum.real(), b = dqsum.dual();
+
+            // Jacobian of normalization+application to a point
+            Mat jnormapply = Mat::zeros(3, 8, CV_32FC1);
+            jnormapply = j_normapply(a, b, v);
+            //TODO: take only nodes that belong to a point
+            for(unsigned int node = 0; node < nNodes; node++)
+            {
+                jnode[node] = jnormapply * jpernodeweighted[node];
+            }
+
+            // TODO: maybe less memory?
+            Mat jm = Mat::zeros(3, block*nNodes, CV_32FC1);
+            for(unsigned int node = 0; node < nNodes; node++)
+            {
+                jnode[node].copyTo(jm(Rect(block*node, 0, block*(node+1), 3)));
+            }
+
+            // TODO: maybe more effective?
+            Mat left  = jm.t() * jm;
+            Mat right = jm.t() * Matx31f(d);
+
+            float lsweight = useTukey ? tukey(norm(d)) : 1.f;
+
+            jtj += left*lsweight;
+            jtb += right*lsweight;
+        }
+
+        // Used in DynaFu, simplifies calculation
+        if(decorrelate)
+        {
+            jtj = decorrelated(jtj, nNodes);
+        }
+
+        if(tryLevMarq)
+        {
+            for (int row = 0; row < jtj.rows; row++)
+            {
+                jtj.at<float>(row, row) = jtj.at<float>(row, row)*(1.0 + lambdaLevMarq);
+            }
+        }
+
+        // Solve and get delta transform
+        x = solve(jtj, jtb);
+
+
+    /*
+
+
+
+    # Build transforms from params
+    dqits = []
+    for node in range(nNodes):
+        blockNode = x[block*node : block*(node+1)]
+
+        if useExp:
+            # the order is the opposite
+            dualx = blockNode[0:3]
+            realx = blockNode[3:6]
+
+            qrx = np.quaternion(0, *realx)
+            qdx = np.quaternion(0, *dualx)
+            # delta dq
+            dqit = DualQuaternion(qrx, qdx).exp()
+
+        else:
+            rotparams   = blockNode[0:3]
+            transparams = blockNode[3:6]
+
+            # this function expects input vector to be a norm of full angle
+            # while it contains just 1/2 of an angle
+            qx = quaternion.from_rotation_vector(rotparams*2)
+            tx = quaternion.from_float_array([0, *transparams])
+            # delta dq
+            dqit = DualQuaternion.from_rt(qx, tx)
+
+        dqits.append(dqit)
+
+        # dqcum_i = dqx_i * dqcum_i
+        dqc = dqcum[node]
+        dqc = DualQuaternion(dqit.real * dqc.real, dqit.real*dqc.dual + dqit.dual*dqc.real)
+        dqcum[node] = dqc
+
+    # Sign fix for DQB
+    if signFix:
+        dqcum = my_dq.dqb_sign_fixed(dqcum)
+        dqits = my_dq.dqb_sign_fixed(dqits)
+
+    # build effective (centered) DQs for dq_bend()
+    dqit_effective = []
+    dqcum_effective = []
+    for node in range(nNodes):
+        c = cs[node]
+        dqcum_effective.append(dqcum[node].centered(c))
+        dqit_effective.append(dqits[node].centered(c))
+
+        #rcum1, tcum1 = dqcum1.get_rt()
+        #vx1 = quaternion.as_rotation_vector(rcum1)
+        #vxnorm1 = math.sqrt(np.dot(vx1, vx1))
+        #print('vx1 a/a:', vxnorm1, vx1/vxnorm1)
+
+        if it == nIter - 1:
+            draw_dq(dqcum[node], c, 0.95*it/nIter, 'magenta')
+        else:
+            #draw_dq(dqcum[node], c, 0.95*it/nIter, 'magenta')
+            pass
+
+    # Transform vertices
+    if bendInitial:
+        ptsi = ptsInitial.copy()
+        dq_effective = dqcum_effective
+    else:
+        ptsi = ptsin.copy()
+        dq_effective = dqit_effective
+    for i in range(ptsin.shape[0]):
+        inp = ptsi[i]
+        #DEBUG
+        #ptsi[i] = my_dq.dq_bend(inp, dq_effective, cs, csize, damping)
+        ptsi[i] = my_dq.dq_bend(inp, dq_effective, cs, csize, damping, sign_fix=False)
+    ptsin = ptsi
+
+    diff = np.linalg.norm(ptsout - ptsin, axis=1)
+    print('mean, stddev:', np.mean(diff), np.std(diff))
+
+    if it == nIter - 1:
+        scati = ax.scatter(ptsin[:, 0], ptsin[:, 1], ptsin[:, 2], zdir = 'z', s=sz, c = colors[it])
+        pass
+    else:
+        #scati = ax.scatter(ptsin[:, 0], ptsin[:, 1], ptsin[:, 2], zdir = 'z', s=sz, c = colors[it])
+        pass
+*/
+    }
+
+    //TODO: visualize iteration by iteration
+    //TODO: less code duplication
+
+    const NodeVectorType& warpNodes = currentWarp.getNodes();
+
+    Affine3f T_lw = pose.inv() * volume->pose;
+
+    // Accumulate regularisation term for each node in the heiarchy
+    const std::vector<NodeVectorType>& regNodes = currentWarp.getGraphNodes();
+
+    int totalNodes = (int)warpNodes.size();
+    for(const auto& nodes: regNodes) totalNodes += (int)nodes.size();
+
+    // level-wise regularisation components of A and b (from Ax = b) for each node in heirarchy
+    Mat_<float> b_reg(6*totalNodes, 1, 0.f);
+    Mat_<float> A_reg(6*totalNodes, 6*totalNodes, 0.f);
+
+    // indices for each node block to A,b matrices. It determines the order
+    // in which paramters are laid out
+
+    std::vector<int> baseIndices(currentWarp.n_levels, 0);
+
+    for(int l = currentWarp.n_levels-2; l >= 0; l--)
+    {
+        baseIndices[l] = baseIndices[l+1]+6*((int)regNodes[l].size());
+    }
+
+    for(const int& i: baseIndices) std::cout << i << ", ";
+    std::cout << std::endl;
+
+    fillRegularization(A_reg, b_reg, currentWarp, totalNodes, baseIndices);
 
     std::vector<float> residuals;
 
@@ -300,7 +562,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
             if (curV == Vec3f::all(0) || cvIsNaN(curV[0]) || cvIsNaN(curV[1]) || cvIsNaN(curV[2]))
                 continue;
 
-            Point2f newCoords = proj(oldPoints.at<Point3f>(y, x));
+            Point2f newCoords = proj(Point3f(curV));
             if(!(newCoords.x >= 0 && newCoords.x < newPoints.cols - 1 &&
                  newCoords.y >= 0 && newCoords.y < newPoints.rows - 1))
                 continue;
@@ -322,7 +584,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
 
             //do not fix missing data
             if(!(fastCheck(p00) && fastCheck(p01) &&
-                fastCheck(p10) && fastCheck(p11)))
+                 fastCheck(p10) && fastCheck(p11)))
                 continue;
 
             Point3f p0 = p00 + tx*(p01 - p00);
@@ -338,7 +600,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
             Point3f n11 = fromPtype(nrow1[xi+1]);
 
             if(!(fastCheck(n00) && fastCheck(n01) &&
-                fastCheck(n10) && fastCheck(n11)))
+                 fastCheck(n10) && fastCheck(n11)))
                 continue;
 
             Point3f n0 = n00 + tx*(n01 - n00);
@@ -354,9 +616,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
 
             float rd = newN.dot(diff);
 
-
             residuals.push_back(rd);
-
         }
     }
 
@@ -435,6 +695,10 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
 
                 float robustWeight = tukeyWeight(rd, sigma);
 
+                //DEBUG:
+                //std::cout << "robw: " << robustWeight << std::endl;
+                robustWeight = 1.0f;
+
                 int blockIndex = baseIndices[0]+6*neigh;
                 for(int row = 0; row < 6; row++)
                     for(int col = 0; col < 6; col++)
@@ -452,8 +716,66 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
 
     std::cout << "Solving " << 6*totalNodes << std::endl;
     Mat_<float> nodeTwists(6*totalNodes, 1, 0.f);
-    bool result = solve(A_reg, b_reg, nodeTwists, DECOMP_SVD);
+    bool result;
+
+#if defined(HAVE_EIGEN)
+    std::cout << "starting eigen-insertion..." << std::endl;
+    Eigen::SparseMatrix<float> sA_reg(6*totalNodes, 6*totalNodes);
+    //TODO: batch insertion/offload here and everywhere
+    for (int y = 0; y < 6*totalNodes; y++)
+    {
+        for (int x = 0; x < 6*totalNodes; x++)
+        {
+            float v = A_reg(y, x);
+            //TODO: add real check
+            if(abs(v) > 0.01f)
+            {
+                sA_reg.insert(y, x) = v;
+            }
+        }
+    }
+    sA_reg.makeCompressed();
+    Eigen::VectorXf sb_reg(6*totalNodes);
+    for (int y = 0; y < 6*totalNodes; y++)
+    {
+        sb_reg(y) = b_reg(y);
+    }
+    //Eigen::SimplicialCholesky<Eigen::SparseMatrix<float>> solver;
+    Eigen::SparseQR<Eigen::SparseMatrix<float>, Eigen::NaturalOrdering<int>> solver;
+    std::cout << "starting eigen-compute..." << std::endl;
+    solver.compute(sA_reg);
+    if(solver.info() != Eigen::Success)
+    {
+        std::cout << "failed to eigen-decompose" << std::endl;
+        result = false;
+    }
+    else
+    {
+        std::cout << "starting eigen-solve..." << std::endl;
+        Eigen::VectorXf sx = solver.solve(sb_reg);
+        if(solver.info() != Eigen::Success)
+        {
+            std::cout << "failed to eigen-solve" << std::endl;
+            result = false;
+        }
+        else
+        {
+            for (int y = 0; y < 6*totalNodes; y++)
+            {
+                nodeTwists(y) = sx(y);
+            }
+            result = true;
+        }
+    }
+#else
+    std::cout << "no eigen" << std::endl;
+    result = solve(A_reg, b_reg, nodeTwists, DECOMP_SVD);
+#endif
+
     std::cout << "Done " << result << std::endl;
+
+    if(!result)
+        return false;
 
     for(int i = 0; i < (int)warpNodes.size(); i++)
     {

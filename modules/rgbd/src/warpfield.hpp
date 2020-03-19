@@ -7,7 +7,7 @@
 
 #define DYNAFU_MAX_NEIGHBOURS 10
 typedef std::array<int, DYNAFU_MAX_NEIGHBOURS> nodeNeighboursType;
-typedef std::vector<std::vector<nodeNeighboursType> > heirarchyType;
+typedef std::vector<std::vector<nodeNeighboursType> > hierarchyType;
 
 namespace cv {
 namespace dynafu {
@@ -18,11 +18,21 @@ struct WarpNode
     float radius;
     Affine3f transform;
 
-    float weight(Point3f x)
+    float weight(Point3f x) const
     {
         Point3f diff = pos - x;
         float L2 = diff.x*diff.x + diff.y*diff.y + diff.z*diff.z;
         return expf(-L2/(2.f*radius));
+    }
+
+    // Returns transform applied to node's center
+    Affine3f rt_centered() const
+    {
+        Affine3f r = Affine3f().translate(-pos)
+                               .rotate(transform.rotation())
+                               .translate(pos)
+                               .translate(transform.translation());
+        return r;
     }
 };
 
@@ -37,7 +47,7 @@ public:
     void updateNodesFromPoints(InputArray _points);
 
     const NodeVectorType& getNodes() const;
-    const heirarchyType& getRegGraph() const;
+    const hierarchyType& getRegGraph() const;
     const std::vector<NodeVectorType>& getGraphNodes() const;
 
     size_t getNodesLen() const
@@ -70,14 +80,22 @@ private:
 
     void initTransforms(NodeVectorType nv);
 
-    NodeVectorType nodes; //heirarchy level 0
+    NodeVectorType nodes; //hierarchy level 0
     int maxNeighbours;
 
     float baseRes;
     float resGrowthRate;
 
-    std::vector<NodeVectorType> regGraphNodes; // heirarchy levels 1 to L
-    heirarchyType heirarchy;
+    /*
+    Regularization graph nodes level by level, from coarse to fine
+    Excluding level 0
+    */
+    std::vector<NodeVectorType> regGraphNodes;
+    /*
+    Regularization graph structure
+    for each node of each level: nearest neighbours indices among nodes on next level
+    */
+    hierarchyType hierarchy;
 
     Ptr<flann::GenericIndex<flann::L2_Simple<float> > > nodeIndex;
 

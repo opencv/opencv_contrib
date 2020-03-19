@@ -10,7 +10,7 @@ nodes(), maxNeighbours(_maxNeighbours), // good amount for dense kinfu pointclou
 baseRes(baseResolution),
 resGrowthRate(resolutionGrowth),
 regGraphNodes(n_levels-1),
-heirarchy(n_levels-1),
+hierarchy(n_levels-1),
 nodeIndex(nullptr)
 {
     CV_Assert(k <= DYNAFU_MAX_NEIGHBOURS);
@@ -26,9 +26,9 @@ std::vector<NodeVectorType> const& WarpField::getGraphNodes() const
     return regGraphNodes;
 }
 
-heirarchyType const& WarpField::getRegGraph() const
+hierarchyType const& WarpField::getRegGraph() const
 {
-    return heirarchy;
+    return hierarchy;
 }
 
 bool PtCmp(cv::Point3f a, cv::Point3f b)
@@ -55,6 +55,12 @@ Mat getNodesPos(NodeVectorType nv)
     return nodePos;
 }
 
+/*
+1. Find a set of new points that are not covered by existing nodes yet
+2. Covers them by a new set of nodes
+3. Adds these nodes to a set of nodes
+4. Rebuilds an index
+*/
 void WarpField::updateNodesFromPoints(InputArray inputPoints)
 {
     Mat points_matrix(inputPoints.size().height, 3, CV_32F);
@@ -113,10 +119,14 @@ void WarpField::removeSupported(flann::GenericIndex<flann::L2_Simple<float> >& i
         {
             validInd[i] = false;
         }
-
     }
 }
 
+/*
+Covers given (valid) points `pmat` and their search index `ind` by nodes with radius `res`.
+Returns a set of nodes that cover the points.
+*/
+//TODO: fix its undefined order of coverage
 NodeVectorType WarpField::subsampleIndex(Mat& pmat,
                                          flann::GenericIndex<flann::L2_Simple<float> >& ind,
                                          AutoBuffer<bool>& validIndex, float res,
@@ -137,7 +147,6 @@ NodeVectorType WarpField::subsampleIndex(Mat& pmat,
         std::vector<float> dist_vec(maxNeighbours);
 
         ind.radiusSearch(pmat.row(i), indices_vec, dist_vec, res, cvflann::SearchParams());
-
 
         Ptr<WarpNode> wn = new WarpNode;
         Point3f centre(0, 0, 0);
@@ -184,6 +193,10 @@ NodeVectorType WarpField::subsampleIndex(Mat& pmat,
     return temp_nodes;
 }
 
+
+/*
+Sets each node's transform to a DQB-interpolated transform of other nodes in the node's center.
+*/
 void WarpField::initTransforms(NodeVectorType nv)
 {
     if(nodesPos.size().height == 0)
@@ -198,7 +211,7 @@ void WarpField::initTransforms(NodeVectorType nv)
 
         std::vector<float> query = {nodePtr->pos.x, nodePtr->pos.y, nodePtr->pos.z};
 
-        nodeIndex->knnSearch(query ,knnIndices, knnDists, k, cvflann::SearchParams());
+        nodeIndex->knnSearch(query, knnIndices, knnDists, k, cvflann::SearchParams());
 
         std::vector<float> weights(knnIndices.size());
         std::vector<Affine3f> transforms(knnIndices.size());
@@ -211,6 +224,8 @@ void WarpField::initTransforms(NodeVectorType nv)
         }
 
         Affine3f pose = DQB(weights, transforms);
+        //TODO: check that and remove that
+        /*
         // linearly interpolate translations
         Vec3f translation(0,0,0);
         float totalWeight = 0;
@@ -222,10 +237,19 @@ void WarpField::initTransforms(NodeVectorType nv)
 
         if(totalWeight < 1e-5) translation = Vec3f(0, 0, 0);
         else translation /= totalWeight;
+
         nodePtr->transform = Affine3f(pose.rotation(), translation);
+        */
+        nodePtr->transform = pose;
     }
 }
 
+
+/*
+ At each level l of nodes:
+ * subsample them -> nodes[l+1]
+ *
+*/
 void WarpField::constructRegGraph()
 {
     CV_TRACE_FUNCTION();
@@ -262,7 +286,7 @@ void WarpField::constructRegGraph()
             new flann::GenericIndex<flann::L2_Simple<float> >(coarseNodeMatrix,
                                                               cvflann::LinearIndexParams()));
 
-        heirarchy[l] = std::vector<nodeNeighboursType>(curNodes.size());
+        hierarchy[l] = std::vector<nodeNeighboursType>(curNodes.size());
         for(int i = 0; i < (int)curNodes.size(); i++)
         {
             std::vector<int> children_indices(k);
@@ -274,8 +298,8 @@ void WarpField::constructRegGraph()
 
             coarseNodeIndex->knnSearch(query, children_indices, children_dists, k,
                                        cvflann::SearchParams());
-            heirarchy[l][i].fill(-1);
-            std::copy(children_indices.begin(), children_indices.end(), heirarchy[l][i].begin());
+            hierarchy[l][i].fill(-1);
+            std::copy(children_indices.begin(), children_indices.end(), hierarchy[l][i].begin());
         }
 
         regGraphNodes.push_back(coarseNodes);
@@ -284,13 +308,17 @@ void WarpField::constructRegGraph()
         curNodeIndex = coarseNodeIndex;
         effResolution *= resGrowthRate;
     }
-
 }
 
+
+/*
+Calculate DQB transform at point p and apply it to p
+Normal calculation is done the same way but translation is not applied
+*/
 Point3f WarpField::applyWarp(Point3f p, const nodeNeighboursType neighbours, int n, bool normal) const
 {
     CV_TRACE_FUNCTION();
-
+/*
     if(n == 0)
     {
         return p;
@@ -338,10 +366,10 @@ Point3f WarpField::applyWarp(Point3f p, const nodeNeighboursType neighbours, int
     {
         return WarpedPt;
     }
-
+*/
 
     // DQB:
-/*
+
     if(!n)
         return p;
 
@@ -351,31 +379,28 @@ Point3f WarpField::applyWarp(Point3f p, const nodeNeighboursType neighbours, int
     for(int i = 0; i < n; i++)
     {
         Ptr<WarpNode> neigh = nodes[neighbours[i]];
+        transforms[i] = neigh->rt_centered();
         float w = neigh->weight(p);
         weights[i]= w;
-        Affine3f rti = neigh->transform;
-        Point3f pos = neigh->pos;
-        if(normal)
-        {
-            rti = Affine3f().rotate(rti.rotation());
-        }
-        else
-        {
-            rti = Affine3f().translate(-pos).rotate(rti.rotation()).translate(pos).translate(rti.translation());
-        }
-        transforms[i] = rti;
         totalWeightSquare = w*w;
     }
     Affine3f rt = DQB(weights, transforms);
     if(abs(totalWeightSquare) > 0.001f)
     {
-        return rt*p;
+        if(normal)
+        {
+            Affine3f r(rt.rotation());
+            return r*p;
+        }
+        else
+        {
+            return rt*p;
+        }
     }
     else
     {
         return p;
     }
-*/
 }
 
 void WarpField::setAllRT(Affine3f warpRT)

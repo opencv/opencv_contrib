@@ -208,6 +208,9 @@ DynaFuImpl<T>::DynaFuImpl(const Params &_params) :
 template< typename T >
 void DynaFuImpl<T>::drawScene(OutputArray depthImage, OutputArray shadedImage)
 {
+
+    //TODO: no anti-aliased edges
+
 #ifdef HAVE_OPENGL
     glViewport(0, 0, params.frameSize.width, params.frameSize.height);
 
@@ -332,8 +335,9 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
 {
     CV_TRACE_FUNCTION();
 
+
     //VEEEEEERY DEBUG
-    if(true)
+    if(false)
     {
         Vec3f axis1(0.f, 1.f, 0.f);
         Vec3f axis2(0.f, 1.f, 1.f);
@@ -383,8 +387,6 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
         cubes.finalize();
         debug.showWidget("cubes", cubes);
 
-
-
         viz::WGrid grid;
         viz::WCoordinateSystem coords;
         debug.showWidget("coords", coords);
@@ -393,6 +395,8 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
 
         throw std::runtime_error("this is the end, my friend");
     }
+
+
 
     T depth;
     if(_depth.type() != DEPTH_TYPE)
@@ -421,6 +425,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
     }
     else
     {
+        //TODO: what if to use marchCubes() instead?
         UMat wfPoints;
         volume->fetchPointsNormals(wfPoints, noArray(), true);
         warpfield.updateNodesFromPoints(wfPoints);
@@ -446,6 +451,25 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
         if(!success)
             return false;
 
+        //VEEEERY DEBUG
+        if(false)
+        {
+            std::cout << "r: " << affine.rvec() << ", t:" << affine.translation() << std::endl;
+
+            viz::Viz3d debug("debug");
+
+            viz::WCloud woldPts(pyrPoints[0], viz::Color::green());
+            viz::WCloud wnewPts(newPoints[0], viz::Color::red());
+
+            debug.showWidget("old", woldPts);
+            debug.showWidget("new", wnewPts, affine);
+            viz::WCoordinateSystem coords;
+            debug.showWidget("coords", coords);
+            debug.spin();
+
+            throw std::runtime_error("this is the end, my friend");
+        }
+
         pose = pose * affine;
 
         for(int iter = 0; iter < 1; iter++)
@@ -462,26 +486,26 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
                 params.truncateThreshold);
 
             success = dynafuICP->estimateWarpNodes(warpfield, pose, _vertRender, estdPoints[0],
-                                                estdNormals[0],
-                                               newPoints[0], newNormals[0]);
+                                                   estdNormals[0],
+                                                   newPoints[0], newNormals[0]);
             if(!success)
                 return false;
         }
 
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
+        // TODO: measure warpfield too
         // We do not integrate volume if camera does not move
         if((rnorm + tnorm)/2 >= params.tsdf_min_camera_movement)
         {
             // use depth instead of distance
             volume->integrate(depth, params.depthFactor, pose, params.intr, makePtr<WarpField>(warpfield));
         }
-
-
     }
 
     //VEEERRY DEBUG
-    if(frameCounter == 2)
+    if(false)
+    //if(frameCounter == 2)
     {
         Mat _vertices, vertices, normals, newVertices, newNormals;
         volume->marchCubes(_vertices, noArray());
@@ -497,7 +521,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
 
         viz::Viz3d debug("debug");
 
-        int nfix = 99;
+        int nfix = 50;
 //        Affine3f tfix = warpfield.getNodes()[nfix]->transform;
         for(int debugLoop = 0; debugLoop < 1000000; debugLoop++)
         {
@@ -516,7 +540,8 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
             Matx33f mr{cc, 0, ss,
                         0, 1, 0,
                       -ss, 0, cc};
-            warpfield.getNodes()[nfix]->transform = Affine3f(mr);
+            Vec3f mt {0.05f*cc, 0, 0.03f*ss };
+            warpfield.getNodes()[nfix]->transform = Affine3f(mr, mt);
 
 
             std::vector<Point3f> nodesTo = nodesPts;
@@ -569,11 +594,13 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
                         throw std::runtime_error("w is nan aaaaaa");
 
                     weights[nnum]= w;
-                    Affine3f rti = neigh->transform;
-                    Point3f pos = neigh->pos;
-                    rti = Affine3f().translate(-pos).rotate(rti.rotation()).translate(pos).translate(rti.translation());
+                    transforms[nnum] = neigh->rt_centered();
+
+                    //Affine3f rti = neigh->transform;
+                    //Point3f pos = neigh->pos;
+                    //rti = Affine3f().translate(-pos).rotate(rti.rotation()).translate(pos).translate(rti.translation());
                     //rti = (Affine3f().translate(-pos) * rti).translate(pos);
-                    transforms[nnum] = rti;
+                    //transforms[nnum] = rti;
 
                     totalWeightSquare += w*w;
                 }
@@ -685,7 +712,8 @@ void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage,
     Mat warpedVerts(vertices.size(), vertices.type());
 
     Affine3f invCamPose(pose.inv());
-    for(int i = 0; i < vertices.size().height; i++) {
+    for(int i = 0; i < vertices.size().height; i++)
+    {
         ptype v = vertices.at<ptype>(i);
 
         // transform vertex to RGB space

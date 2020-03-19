@@ -421,6 +421,7 @@ void computeProjectiveMatrix(const Mat& ksi, Mat& Rt)
 #else
     // TODO: check computeProjectiveMatrix when there is not eigen library,
     //       because it gives less accurate pose of the camera
+    // (sure, because Eigen lib does true exponent)
     Rt = Mat::eye(4, 4, CV_64FC1);
 
     Mat R = Rt(Rect(0,0,3,3));
@@ -428,6 +429,9 @@ void computeProjectiveMatrix(const Mat& ksi, Mat& Rt)
 
     Rodrigues(rvec, R);
 
+    // TODO: replace t by true exponent V*t
+    // where V = I_3 + (1-cos(angle))/pow(angle, 2)*skew(rvec) + (angle-sin(angle))/pow(angle, 3)*pow(skew(rvec), 2)
+    // not forgetting about asympthotics
     Rt.at<double>(0,3) = ksi.at<double>(3);
     Rt.at<double>(1,3) = ksi.at<double>(4);
     Rt.at<double>(2,3) = ksi.at<double>(5);
