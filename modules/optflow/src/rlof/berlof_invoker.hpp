@@ -216,8 +216,8 @@ public:
             Point2f prevDelta(0,0);    //denotes h(t-1)
             cv::Size _winSize = winSize;
 #ifdef RLOF_SSE
-            __m128i mmMask0, mmMask1, mmMask;
-            getWBitMask(_winSize.width, mmMask0, mmMask1, mmMask);
+            //__m128i mmMask0, mmMask1, mmMask;
+            //getWBitMask(_winSize.width, mmMask0, mmMask1, mmMask);
 #endif
             float MEstimatorScale = 1;
             int buffIdx = 0;
@@ -798,8 +798,8 @@ public:
             cv::Size _winSize = winSize;
             int j;
 #ifdef RLOF_SSE
-            __m128i mmMask0, mmMask1, mmMask;
-            getWBitMask(_winSize.width, mmMask0, mmMask1, mmMask);
+            //__m128i mmMask0, mmMask1, mmMask;
+            //getWBitMask(_winSize.width, mmMask0, mmMask1, mmMask);
             __m128  mmOnes   = _mm_set1_ps(1.f );
 #endif
             float MEstimatorScale = 1;

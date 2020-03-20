@@ -137,7 +137,9 @@ public:
             float D = 0;
             float minEig;
 
+//#define OLD
 #ifdef RLOF_SSE
+#ifdef OLD
             __m128i qw0 = _mm_set1_epi32(iw00 + (iw01 << 16));
             __m128i qw1 = _mm_set1_epi32(iw10 + (iw11 << 16));
             __m128i z = _mm_setzero_si128();
@@ -146,6 +148,15 @@ public:
             __m128i mmMask4_epi32;
             __m128i mmMaskSet_epi16 = _mm_set1_epi16(std::numeric_limits<unsigned short>::max());
             get4BitMask(winSize.width, mmMask4_epi32);
+#else
+            v_int16x8 vqw0((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
+            v_int16x8 vqw1((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
+            v_int32x4 vqdelta_d = v_setall_s32(1 << (W_BITS1 - 1));
+            v_int32x4 vqdelta = v_setall_s32(1 << (W_BITS1 - 5 - 1));
+            v_int32x4 vmax_val_32 = v_setall_s32(std::numeric_limits<unsigned int>::max());
+            v_int32x4 vmask_border_0, vmask_border_1;
+            getVBitMask(winSize.width, vmask_border_0, vmask_border_1);
+#endif
 #endif
 
             // extract the patch from the first image, compute covariation matrix of derivatives
@@ -162,8 +173,13 @@ public:
                 x = 0;
 #ifdef RLOF_SSE
 
+#ifdef OLD
                 for (; x <= winSize.width*cn; x += 4, dsrc += 4 * 2, dsrc1 += 8, dIptr += 4 * 2)
+#else
+                for (; x <= winSize.width*cn; x += 8, dsrc += 8 * 2, dsrc1 += 8*2, dIptr += 8 * 2)
+#endif
                 {
+#ifdef OLD
                     __m128i mask_0_7_epi16 = _mm_mullo_epi16(CVTEPI8_EPI16(_mm_loadl_epi64((const __m128i*)(maskPtr + x))), mmMaskSet_epi16);
                     __m128i mask_0_3_epi16 = _mm_unpacklo_epi16(mask_0_7_epi16, mask_0_7_epi16);
 
@@ -201,6 +217,72 @@ public:
                     }
                     v00 = _mm_and_si128(v00, mask_0_3_epi16);
                     _mm_storeu_si128((__m128i*)dIptr, v00);
+                    
+#else
+                    v_int16x8 vmask_16 = v_reinterpret_as_s16(v_load_expand(maskPtr + x));
+                    //v_int32x4 vmask_0 = v_expand_low(vmask_16) * vmax_val_32;
+                    //v_int32x4 vmask_1 = v_expand_high(vmask_16) * vmax_val_32;
+                    v_int32x4 vmask_0 = v_reinterpret_as_s32(v_load_expand_q(maskPtr + x)) * vmax_val_32;
+                    v_int32x4 vmask_1 = v_reinterpret_as_s32(v_load_expand_q(maskPtr + x + 4)) * vmax_val_32;
+                    if (x + 4 > winSize.width)
+                    {
+                        vmask_0 = vmask_0 & vmask_border_0;
+                    }
+                    if (x + 8 > winSize.width)
+                    {
+                        vmask_1 = vmask_1 & vmask_border_1;
+                    }
+
+                    v_int32x4 t0, t1;
+                    v_int16x8 v00, v01, v10, v11, t00, t01, t10, t11;
+                    v00 = v_reinterpret_as_s16(v_load_expand(src + x));
+                    v01 = v_reinterpret_as_s16(v_load_expand(src + x + cn));
+                    v10 = v_reinterpret_as_s16(v_load_expand(src1 + x));
+                    v11 = v_reinterpret_as_s16(v_load_expand(src1 + x + cn));
+
+                    v_zip(v00, v01, t00, t01);
+                    v_zip(v10, v11, t10, t11);
+                    t0 = v_dotprod(t00, vqw0, vqdelta) + v_dotprod(t10, vqw1);
+                    t1 = v_dotprod(t01, vqw0, vqdelta) + v_dotprod(t11, vqw1);
+                    t0 = t0 >> (W_BITS1 - 5);
+                    t1 = t1 >> (W_BITS1 - 5);
+                    t0 = t0 & vmask_0;
+                    t1 = t1 & vmask_1;
+                    v_store(Iptr + x, v_pack(t0, t1));
+
+                    v00 = v_reinterpret_as_s16(v_load(dsrc));
+                    v01 = v_reinterpret_as_s16(v_load(dsrc + cn2));
+                    v10 = v_reinterpret_as_s16(v_load(dsrc1));
+                    v11 = v_reinterpret_as_s16(v_load(dsrc1 + cn2));
+
+                    v_zip(v00, v01, t00, t01);
+                    v_zip(v10, v11, t10, t11);
+
+                    t0 = v_dotprod(t00, vqw0, vqdelta_d) + v_dotprod(t10, vqw1);
+                    t1 = v_dotprod(t01, vqw0, vqdelta_d) + v_dotprod(t11, vqw1);
+                    t0 = t0 >> W_BITS1;
+                    t1 = t1 >> W_BITS1;
+                    v00 = v_pack(t0, t1); // Ix0 Iy0 Ix1 Iy1 ...
+                    v00 = v00 & v_reinterpret_as_s16(vmask_0);
+                    v_store(dIptr, v00);
+
+                    v00 = v_reinterpret_as_s16(v_load(dsrc + 4 * 2));
+                    v01 = v_reinterpret_as_s16(v_load(dsrc + 4 * 2 + cn2));
+                    v10 = v_reinterpret_as_s16(v_load(dsrc1 + 4 * 2));
+                    v11 = v_reinterpret_as_s16(v_load(dsrc1 + 4 * 2 + cn2));
+
+                    v_zip(v00, v01, t00, t01);
+                    v_zip(v10, v11, t10, t11);
+
+                    t0 = v_dotprod(t00, vqw0, vqdelta_d) + v_dotprod(t10, vqw1);
+                    t1 = v_dotprod(t01, vqw0, vqdelta_d) + v_dotprod(t11, vqw1);
+                    t0 = t0 >> W_BITS1;
+                    t1 = t1 >> W_BITS1;
+                    v00 = v_pack(t0, t1); // Ix0 Iy0 Ix1 Iy1 ...
+                    v00 = v00 & v_reinterpret_as_s16(vmask_1);
+                    v_store(dIptr + 4 * 2, v00);
+#endif
+                    
                 }
 #else
 
@@ -232,8 +314,8 @@ public:
             nextPt += halfWin;
             int j;
 #ifdef RLOF_SSE
-            __m128i mmMask0, mmMask1, mmMask;
-            getWBitMask(winSize.width, mmMask0, mmMask1, mmMask);
+            //__m128i mmMask0, mmMask1, mmMask;
+            //getWBitMask(winSize.width, mmMask0, mmMask1, mmMask);
 #endif
             float MEstimatorScale = 1;
             int buffIdx = 0;
@@ -301,6 +383,7 @@ public:
                 fParam0 = normSigma0 * MEstimatorScale;
                 fParam1 = normSigma1 * MEstimatorScale;
 #ifdef RLOF_SSE
+#if OLD
                 qw0 = _mm_set1_epi32(iw00 + (iw01 << 16));
                 qw1 = _mm_set1_epi32(iw10 + (iw11 << 16));
                 __m128 qb0 = _mm_setzero_ps(), qb1 = _mm_setzero_ps();
@@ -316,7 +399,29 @@ public:
                 __m128  mmOnes = _mm_set1_ps(1.f);
                 __m128i mmEta = _mm_setzero_si128();
                 __m128i mmScale = _mm_set1_epi16(static_cast<short>(MEstimatorScale));
+#else
+                vqw0 = v_int16x8((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
+                vqw1 = v_int16x8((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
+                v_float32x4 vqb0 = v_setzero_f32(), vqb1 = v_setzero_f32();
+                v_float32x4 vAxx = v_setzero_f32(), vAxy = v_setzero_f32(), vAyy = v_setzero_f32();
 
+                v_int32x4 vdelta_d = v_setall_s32(1 << (W_BITS1 - 1));
+                v_int32x4 vdelta = v_setall_s32(1 << (W_BITS1 - 5 - 1));
+                v_int16x8 vscale = v_setall_s16(static_cast<short>(MEstimatorScale));
+                v_int16x8 veta = v_setzero_s16();
+                v_int16x8 vzero = v_setzero_s16();
+                v_int16x8 vparam0 = v_setall_s16(MIN(std::numeric_limits<short>::max() - 1, static_cast<short>(fParam0)));
+                v_int16x8 vparam1 = v_setall_s16(MIN(std::numeric_limits<short>::max() - 1, static_cast<short>(fParam1)));
+                v_int16x8 vneg_param1 = v_setall_s16(-MIN(std::numeric_limits<short>::max() - 1, static_cast<short>(fParam1)));
+                int s2bitShift = normSigma2 == 0 ? 1 : cvCeil(log(200.f / std::fabs(normSigma2)) / log(2.f));
+                v_int16x8 vparam2 = v_setall_s16(static_cast<short>(normSigma2 * (float)(1 << s2bitShift)));
+                v_int16x8 voness = v_setall_s16(1 << s2bitShift);
+                v_float32x4 vparam2s = v_setall_f32(0.01f * normSigma2);
+                v_float32x4 vparam2s2 = v_setall_f32(normSigma2 * normSigma2);
+                v_float32x4 vones = v_setall_f32(1.f);
+                v_float32x4 vzeros = v_setzero_f32();
+                v_int16x8 vmax_val_16 = v_setall_s16(std::numeric_limits<unsigned short>::max());
+#endif
 #endif
 
                 buffIdx = 0;
@@ -331,6 +436,7 @@ public:
 #ifdef RLOF_SSE
                     for (; x <= winSize.width*cn; x += 8, dIptr += 8 * 2)
                     {
+#ifdef OLD
                         __m128i mask_0_7_epi16 = _mm_mullo_epi16(CVTEPI8_EPI16(_mm_loadl_epi64((const __m128i*)(maskPtr + x))), mmMaskSet_epi16);
                         __m128i diff0, diff1;
                         __m128i I_0_7_epi16 = _mm_loadu_si128((const __m128i*)(Iptr + x)); // von element 0 bis 7
@@ -452,6 +558,106 @@ public:
                             mmAxy = _mm_add_ps(mmAxy, _mm_mul_ps(fx, fytale));
                             mmAxx = _mm_add_ps(mmAxx, _mm_mul_ps(fx, fxtale));
                         }
+#else
+                        v_int16x8 diff0 = v_reinterpret_as_s16(v_load(Iptr + x)), diff1, diff2;
+                        v_int16x8 v00 = v_reinterpret_as_s16(v_load_expand(Jptr + x));
+                        v_int16x8 v01 = v_reinterpret_as_s16(v_load_expand(Jptr + x + cn));
+                        v_int16x8 v10 = v_reinterpret_as_s16(v_load_expand(Jptr1 + x));
+                        v_int16x8 v11 = v_reinterpret_as_s16(v_load_expand(Jptr1 + x + cn));
+                        v_int16x8 vmask = v_reinterpret_as_s16(v_load_expand(maskPtr + x)) * vmax_val_16;
+
+                        v_int32x4 t0, t1;
+                        v_int16x8 t00, t01, t10, t11;
+                        v_zip(v00, v01, t00, t01);
+                        v_zip(v10, v11, t10, t11);
+
+                        t0 = v_dotprod(t00, vqw0, vqdelta) + v_dotprod(t10, vqw1);
+                        t1 = v_dotprod(t01, vqw0, vqdelta) + v_dotprod(t11, vqw1);
+                        t0 = t0 >> (W_BITS1 - 5);
+                        t1 = t1 >> (W_BITS1 - 5);
+                        diff0 = v_pack(t0, t1) - diff0;
+                        diff0 = diff0 & vmask;
+
+                        v_int16x8 vscale_diff_is_pos = diff0 > vscale;
+                        veta = veta + (vscale_diff_is_pos & v_setall_s16(2)) + v_setall_s16(-1);
+                        // since there is no abs vor int16x8 we have to do this hack
+                        v_int16x8 vabs_diff = v_reinterpret_as_s16(v_abs(diff0));
+                        v_int16x8 vset2, vset1;
+                        // |It| < sigma1 ?
+                        vset2 = vabs_diff < vparam1;
+                        // It > 0 ?
+                        v_int16x8 vdiff_is_pos = diff0 > vzero;
+                        // sigma0 < |It| < sigma1 ?
+                        vset1 = vset2 & (vabs_diff > vparam0);
+                        // val = |It| -/+ sigma1
+                        v_int16x8 vtmp_param1 = diff0 + v_select(vdiff_is_pos, vneg_param1, vparam1);
+                        // It == 0     ? |It| > sigma13
+                        diff0 = vset2 & diff0;
+                        // It == val ? sigma0 < |It| < sigma1
+                        diff0 = v_select(vset1, vtmp_param1, diff0);
+
+                        v_int16x8 tale_ = v_select(vset1, vparam2, voness); // mask for 0 - 3
+                        // diff = diff * sigma2
+                        v_int32x4 diff_int_0, diff_int_1;
+                        v_mul_expand(diff0, tale_, diff_int_0, diff_int_1);
+                        diff0 = v_pack(diff_int_0 >> s2bitShift, diff_int_1 >> s2bitShift);
+                        v_zip(diff0, diff0, diff2, diff1); // It0 It0 It1 It1 ...
+
+                        v_int16x8 vIxy_0 = v_reinterpret_as_s16(v_load(dIptr)); // Ix0 Iy0 Ix1 Iy1 ...
+                        v_int16x8 vIxy_1 = v_reinterpret_as_s16(v_load(dIptr + 8));
+                        v_zip(vIxy_0, vIxy_1, v10, v11);
+                        v_zip(diff2, diff1, v00, v01);
+
+                        vqb0 += v_cvt_f32(v_dotprod(v00, v10));
+                        vqb1 += v_cvt_f32(v_dotprod(v01, v11));
+                        if (j == 0)
+                        {
+
+                            v_float32x4 bSet1_0_3_ps = v_reinterpret_as_f32(v_expand_low(vset1));
+                            v_float32x4 bSet1_4_7_ps = v_reinterpret_as_f32(v_expand_high(vset1));
+                            v_float32x4 mask_0_4_ps = v_reinterpret_as_f32(v_expand_low(vmask));
+                            v_float32x4 mask_4_7_ps = v_reinterpret_as_f32(v_expand_high(vmask));
+
+                            v_float32x4 bSet2_0_3_ps = v_reinterpret_as_f32(v_expand_low(vset2));
+                            v_float32x4 bSet2_4_7_ps = v_reinterpret_as_f32(v_expand_high(vset2));
+
+                            v_float32x4 tale_0_3_ps = v_select(bSet1_0_3_ps, vparam2s2, vones);
+                            v_float32x4 tale_4_7_ps = v_select(bSet1_4_7_ps, vparam2s2, vones);
+                            tale_0_3_ps = v_select(bSet2_0_3_ps, tale_0_3_ps, vparam2s);
+                            tale_4_7_ps = v_select(bSet2_4_7_ps, tale_4_7_ps, vparam2s);
+
+                            tale_0_3_ps = v_select(mask_0_4_ps, tale_0_3_ps, vzeros);
+                            tale_4_7_ps = v_select(mask_4_7_ps, tale_4_7_ps, vzeros);
+
+                            v00 = v_reinterpret_as_s16(v_interleave_pairs(v_reinterpret_as_s32(v_interleave_pairs(vIxy_0))));
+                            v_expand(v00, t1, t0);
+
+                            v_float32x4 fy = v_cvt_f32(t0);
+                            v_float32x4 fx = v_cvt_f32(t1);
+
+                            // A11 - A22
+                            v_float32x4 fxtale = fx * tale_0_3_ps;
+                            v_float32x4 fytale = fy * tale_0_3_ps;
+
+                            vAyy = v_muladd(fy, fytale, vAyy);
+                            vAxy = v_muladd(fx, fytale, vAxy);
+                            vAxx = v_muladd(fx, fxtale, vAxx);
+
+                            v01 = v_reinterpret_as_s16(v_interleave_pairs(v_reinterpret_as_s32(v_interleave_pairs(vIxy_1))));
+                            v_expand(v01, t1, t0);
+
+                            fy = v_cvt_f32(t0);
+                            fx = v_cvt_f32(t1);
+
+                            // A11 - A22
+                            fxtale = fx * tale_4_7_ps;
+                            fytale = fy * tale_4_7_ps;
+
+                            vAyy = v_muladd(fy, fytale, vAyy);
+                            vAxy = v_muladd(fx, fytale, vAxy);
+                            vAxx = v_muladd(fx, fxtale, vAxx);
+                        }
+#endif
                     }
 #else
                     for (; x < winSize.width*cn; x++, dIptr += 2)
@@ -519,27 +725,37 @@ public:
                 }
 
 #ifdef RLOF_SSE
+#ifdef OLD
                 short etaValues[8];
                 _mm_storeu_si128((__m128i*)(etaValues), mmEta);
+
                 MEstimatorScale += eta * (etaValues[0] + etaValues[1] + etaValues[2] + etaValues[3]
                         + etaValues[4] + etaValues[5] + etaValues[6] + etaValues[7]);
+#else
+                MEstimatorScale += eta * v_reduce_sum(veta);
+#endif
 
 
 #endif
                 if (j == 0)
                 {
 #ifdef RLOF_SSE
-                    float CV_DECL_ALIGNED(16) A11buf[4], A12buf[4], A22buf[4];//
-
+#ifdef OLD
+                    float CV_DECL_ALIGNED(16) A11buf[4], A12buf[4], A22buf[4];
                     _mm_store_ps(A11buf, mmAxx);
                     _mm_store_ps(A12buf, mmAxy);
                     _mm_store_ps(A22buf, mmAyy);
 
-
                     A11 = A11buf[0] + A11buf[1] + A11buf[2] + A11buf[3];
                     A12 = A12buf[0] + A12buf[1] + A12buf[2] + A12buf[3];
                     A22 = A22buf[0] + A22buf[1] + A22buf[2] + A22buf[3];
+#else
+                    A11 = v_reduce_sum(vAxx);
+                    A12 = v_reduce_sum(vAxy);
+                    A22 = v_reduce_sum(vAyy);
 #endif
+#endif
+
                     A11 *= FLT_SCALE;
                     A12 *= FLT_SCALE;
                     A22 *= FLT_SCALE;
@@ -564,7 +780,11 @@ public:
 
 #ifdef RLOF_SSE
                 float CV_DECL_ALIGNED(16) bbuf[4];
+#ifdef OLD
                 _mm_store_ps(bbuf, _mm_add_ps(qb0, qb1));
+#else
+                v_store_aligned(bbuf, vqb0 + vqb1);
+#endif
                 b1 += bbuf[0] + bbuf[2];
                 b2 += bbuf[1] + bbuf[3];
 #endif
@@ -872,8 +1092,8 @@ public:
             cv::Size _winSize = winSize;
             int j;
 #ifdef RLOF_SSE
-            __m128i mmMask0, mmMask1, mmMask;
-            getWBitMask(_winSize.width, mmMask0, mmMask1, mmMask);
+            //__m128i mmMask0, mmMask1, mmMask;
+            //getWBitMask(_winSize.width, mmMask0, mmMask1, mmMask);
             __m128  mmOnes = _mm_set1_ps(1.f);
 #endif
             float MEstimatorScale = 1;

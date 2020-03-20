@@ -120,6 +120,19 @@ static inline void get4BitMask(const int & width, __m128i & mask)
     mask = _mm_set_epi32(val[3], val[2], val[1], val[0]);
 
 }
+
+static inline void getVBitMask(const int & width, v_int32x4 & mask0, v_int32x4 & mask1)
+{
+    int noBits = width - static_cast<int>(floor(width / 8.f) * 8.f);
+    unsigned int val[8];
+    for (int n = 0; n < 8; n++)
+    {
+        val[n] = (noBits > n) ? (std::numeric_limits<unsigned int>::max()) : 0;
+    }
+    mask0 = v_int32x4(val[0], val[1], val[2], val[3]);
+    mask1 = v_int32x4(val[4], val[5], val[6], val[7]);
+}
+
 static inline void getWBitMask(const int & width, __m128i & t0, __m128i & t1, __m128i & t2)
 {
     int noBits = width - static_cast<int>(floor(width / 8.f) * 8.f);
@@ -132,6 +145,7 @@ static inline void getWBitMask(const int & width, __m128i & t0, __m128i & t1, __
     t0 = _mm_set_epi16(val[3], val[3], val[2], val[2], val[1], val[1], val[0], val[0]);
     t2 = _mm_set_epi16(val[7], val[6], val[5], val[4], val[3], val[2], val[1], val[0]);
 }
+
 #endif
 typedef uchar tMaskType;
 #define tCVMaskType CV_8UC1
