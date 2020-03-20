@@ -113,5 +113,26 @@ TEST(Rgbd_DepthRegistration, compute)
   test.safe_run();
 }
 
+TEST(Rgbd_DepthRegistration, issue_2234)
+{
+    Matx33f intrinsicsDepth(100, 0,  50, 0, 100, 50, 0, 0, 1);
+    Matx33f intrinsicsColor(100, 0, 200, 0, 100, 50, 0, 0, 1);
+
+    Mat_<float> depthMat(100, 100, (float)0.);
+    for(int i = 1; i <= 100; i++)
+    {
+        for(int j = 1; j <= 100; j++)
+            depthMat(i-1,j-1) = (float)j;
+    }
+
+    Mat registeredDepth;
+    registerDepth(intrinsicsDepth, intrinsicsColor, Mat(), Matx44f::eye(), depthMat, Size(400, 100), registeredDepth);
+
+    Rect roi( 150, 0, 100, 100 );
+    Mat subM(registeredDepth,roi);
+
+    EXPECT_EQ(0, cvtest::norm(subM, depthMat, NORM_INF));
+}
+
 
 }} // namespace

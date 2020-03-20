@@ -146,14 +146,14 @@ namespace rgbd
         // Apply the initial projection to the input depth
         Mat_<Point3f> transformedCloud;
         {
-            Mat_<Point3f> point_tmp(outputImagePlaneSize);
+            Mat_<Point3f> point_tmp(outputImagePlaneSize,Point3f(0.,0.,0.));
 
-            for(int j = 0; j < point_tmp.rows; ++j)
+            for(int j = 0; j < unregisteredDepth.rows; ++j)
             {
                 const DepthDepth *unregisteredDepthPtr = unregisteredDepth[j];
 
                 Point3f *point = point_tmp[j];
-                for(int i = 0; i < point_tmp.cols; ++i, ++unregisteredDepthPtr, ++point)
+                for(int i = 0; i < unregisteredDepth.cols; ++i, ++unregisteredDepthPtr, ++point)
                 {
                     float rescaled_depth = float(*unregisteredDepthPtr) * inputDepthToMetersScale;
 
@@ -270,7 +270,6 @@ namespace rgbd
 
             } // iterate cols
         } // iterate rows
-
     }
 
 
