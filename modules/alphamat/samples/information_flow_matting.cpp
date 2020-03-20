@@ -19,7 +19,7 @@ const char* keys =
     "{help h || print help message}"
 ;
 
-int main(int argc, char *argv[])
+int main(int argc, char* argv[])
 {
     CommandLineParser parser(argc, argv, keys);
     parser.about("This sample demonstrates Information Flow Alpha Matting");
@@ -35,8 +35,7 @@ int main(int argc, char *argv[])
     string result_path = parser.get<std::string>("out");
 
     if (!parser.check()
-        || img_path.empty() || trimap_path.empty()
-    )
+            || img_path.empty() || trimap_path.empty())
     {
         parser.printMessage();
         parser.printErrors();
@@ -45,7 +44,7 @@ int main(int argc, char *argv[])
 
     Mat image, tmap;
 
-    image = imread(img_path, IMREAD_COLOR);   // Read the input image file
+    image = imread(img_path, IMREAD_COLOR);  // Read the input image file
     if (image.empty())
     {
         printf("Cannot read image file: '%s'\n", img_path.c_str());

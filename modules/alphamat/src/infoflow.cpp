@@ -10,14 +10,13 @@ using namespace Eigen;
 
 namespace cv { namespace alphamat {
 
-static
-void solve(SparseMatrix<double> Wcm,SparseMatrix<double> Wuu,SparseMatrix<double> Wl,SparseMatrix<double> Dcm,
+static void solve(SparseMatrix<double> Wcm, SparseMatrix<double> Wuu, SparseMatrix<double> Wl, SparseMatrix<double> Dcm,
         SparseMatrix<double> Duu, SparseMatrix<double> Dl, SparseMatrix<double> T,
-        Mat &wf, Mat &alpha)
+        Mat& wf, Mat& alpha)
 {
     float suu = 0.01, sl = 0.1, lamd = 100;
 
-    SparseMatrix<double> Lifm = ((Dcm-Wcm).transpose())*(Dcm-Wcm) + sl*(Dl-Wl) + suu*(Duu-Wuu);
+    SparseMatrix<double> Lifm = ((Dcm - Wcm).transpose()) * (Dcm - Wcm) + sl * (Dl - Wl) + suu * (Duu - Wuu);
 
     SparseMatrix<double> A;
     int n = wf.rows;
@@ -26,10 +25,10 @@ void solve(SparseMatrix<double> Wcm,SparseMatrix<double> Wuu,SparseMatrix<double
     Eigen::VectorXd wf_;
     cv2eigen(wf, wf_);
 
-    A = Lifm + lamd*T;
-    b = (lamd*T)*(wf_);
+    A = Lifm + lamd * T;
+    b = (lamd * T) * (wf_);
 
-    ConjugateGradient<SparseMatrix<double>, Lower|Upper> cg;
+    ConjugateGradient<SparseMatrix<double>, Lower | Upper> cg;
 
     cg.setMaxIterations(500);
     cg.compute(A);
@@ -44,10 +43,12 @@ void solve(SparseMatrix<double> Wcm,SparseMatrix<double> Wuu,SparseMatrix<double
     {
         for (int i = 0; i < nRows; ++i)
         {
-            pix_alpha = x(i+j*nRows);
-            if (pix_alpha<0) pix_alpha=0;
-            if (pix_alpha>1) pix_alpha=1;
-            alpha.at<uchar>(i, j) = uchar(pix_alpha*255);
+            pix_alpha = x(i + j * nRows);
+            if (pix_alpha < 0)
+                pix_alpha = 0;
+            if (pix_alpha > 1)
+                pix_alpha = 1;
+            alpha.at<uchar>(i, j) = uchar(pix_alpha * 255);
         }
     }
 }
@@ -61,7 +62,7 @@ void infoFlow(InputArray image_ia, InputArray tmap_ia, OutputArray result)
 
     int nRows = image.rows;
     int nCols = image.cols;
-    int N = nRows*nCols;
+    int N = nRows * nCols;
 
     SparseMatrix<double> T(N, N);
     typedef Triplet<double> Tr;
@@ -70,15 +71,19 @@ void infoFlow(InputArray image_ia, InputArray tmap_ia, OutputArray result)
     //Pre-process trimap
     for (int i = 0; i < nRows; ++i)
     {
-        for (int j = 0; j < nCols; ++j){
+        for (int j = 0; j < nCols; ++j)
+        {
             uchar& pix = tmap.at<uchar>(i, j);
-            if (pix <= 0.2f * 255) pix = 0;
-            else if (pix >= 0.8f * 255) pix = 255;
-            else pix = 128;
+            if (pix <= 0.2f * 255)
+                pix = 0;
+            else if (pix >= 0.8f * 255)
+                pix = 255;
+            else
+                pix = 128;
         }
     }
 
-    Mat wf = Mat::zeros(nRows*nCols, 1, CV_8U);
+    Mat wf = Mat::zeros(nRows * nCols, 1, CV_8U);
 
     // Column Major Interpretation for working with SparseMatrix
     for (int i = 0; i < nRows; ++i)
@@ -88,10 +93,10 @@ void infoFlow(InputArray image_ia, InputArray tmap_ia, OutputArray result)
             uchar pix = tmap.at<uchar>(i, j);
 
             // collection of known pixels samples
-            triplets.push_back(Tr(i+j*nRows, i+j*nRows, (pix != 128) ? 1 : 0));
+            triplets.push_back(Tr(i + j * nRows, i + j * nRows, (pix != 128) ? 1 : 0));
 
             // foreground pixel
-            wf.at<uchar>(i+j*nRows, 0) = (pix > 200) ? 1 : 0;
+            wf.at<uchar>(i + j * nRows, 0) = (pix > 200) ? 1 : 0;
         }
     }
 
@@ -121,4 +126,4 @@ void infoFlow(InputArray image_ia, InputArray tmap_ia, OutputArray result)
     CV_LOG_INFO(NULL, "ALPHAMAT: total time: " << elapsed_secs);
 }
 
-}} // namespace
+}}  // namespace cv::alphamat
