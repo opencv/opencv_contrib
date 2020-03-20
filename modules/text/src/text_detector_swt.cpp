@@ -4,7 +4,6 @@
 #include "precomp.hpp"
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
-#include <cassert>
 #include <cmath>
 #include <math.h>
 #include <utility>
@@ -20,6 +19,9 @@ using namespace std;
 
 namespace cv {
 namespace text {
+    std::vector<cv::Rect> SWTTextDetection (const Mat& input_image, bool dark_on_light);
+
+namespace {
 struct SWTPoint {
     int x;
     int y;
@@ -86,57 +88,51 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
 vector<cv::Rect> getComponentBBs (std::vector<Component> components);
 bool chainSortDist (ChainedComponent Chainl, ChainedComponent Chainr);
 bool chainSortLength (ChainedComponent Chainl, ChainedComponent Chainr);
-std::vector<cv::Rect> SWTTextDetection (const Mat& input_image, bool dark_on_light);
 
 
-// A utility function to add an edge in an 
-// undirected graph. 
-void addEdge(std::vector<int> adj[], int u, int v) { 
-    adj[u].push_back(v); 
-    adj[v].push_back(u); 
+// A utility function to add an edge in an
+// undirected graph.
+void addEdge(std::vector<int> adj[], int u, int v) {
+    adj[u].push_back(v);
+    adj[v].push_back(u);
 }
 
-void DFSUtil(int v, bool visited[], std::vector<int> adj[], int label, std::vector<int> &component_id) 
-{ 
+void DFSUtil(int v, bool visited[], std::vector<int> adj[], int label, std::vector<int> &component_id)
+{
     // Mark the current node as visited and label it as belonging to the current component
-    visited[v] = true; 
+    visited[v] = true;
     component_id[v] = label;
-    // Recur for all the vertices 
-    // adjacent to this vertex 
+    // Recur for all the vertices
+    // adjacent to this vertex
     for (unsigned int i = 0; i < adj[v].size(); i++) {
         int neighbour = adj[v][i];
         if (!visited[neighbour]) {
-            DFSUtil(neighbour, visited, adj, label, component_id); 
+            DFSUtil(neighbour, visited, adj, label, component_id);
         }
     }
-} 
+}
 
 int connected_components(std::vector<int> adj[], std::vector<int> &component_id, int num_vertices) {
-    bool *visited = new bool[num_vertices]; 
-    for(int v = 0; v < num_vertices; v++) 
-        visited[v] = false; 
+    bool *visited = new bool[num_vertices];
+    for(int v = 0; v < num_vertices; v++)
+        visited[v] = false;
     int label = 0;
-    for (int v=0; v<num_vertices; v++) 
-    { 
-        if (visited[v] == false) 
-        { 
-            DFSUtil(v, visited, adj, label, component_id); 
+    for (int v=0; v<num_vertices; v++)
+    {
+        if (visited[v] == false)
+        {
+            DFSUtil(v, visited, adj, label, component_id);
             label++;
-        } 
-    } 
+        }
+    }
 
     delete [] visited;
     return label;
 }
 
 void SWTFirstPass (Mat edgeImage, Mat gradientX, Mat gradientY, bool dark_on_light, Mat & SWTImage, std::vector<Ray> & rays) {
-    for(int row = 0; row < SWTImage.rows; row++ ){
-        float* ptr = (float*)SWTImage.ptr(row);
-        for ( int col = 0; col < SWTImage.cols; col++ ){
-            *ptr++ = -1;
-        }
-    }
-    
+
+    SWTImage.setTo(Scalar::all(-1));
 
     for(int row = 0; row < edgeImage.rows; row++ ){
         for ( int col = 0; col < edgeImage.cols; col++ ){
@@ -152,7 +148,7 @@ void SWTFirstPass (Mat edgeImage, Mat gradientX, Mat gradientY, bool dark_on_lig
             if (dark_on_light){
                 dx = -dx;
                 dy = -dy;
-            } 
+            }
 
             Ray ray;
             SWTPoint p;
@@ -203,14 +199,14 @@ void SWTFirstPass (Mat edgeImage, Mat gradientX, Mat gradientY, bool dark_on_lig
                             ray.points = points;
                             rays.push_back(ray);
                         }
-                        break; 
+                        break;
                     }
                 }
             }
-                
+
         }
     }
-    
+
 }
 
 bool sortBySWT (const SWTPoint &lhs, const SWTPoint &rhs) {
@@ -232,10 +228,8 @@ void SWTSecondPass (Mat & SWTImage, std::vector<Ray> & rays) {
 }
 
 void normalizeAndScale (const Mat& SWTImage, Mat& output) {
-    assert (SWTImage.depth() == CV_32F );
-    assert (SWTImage.channels() == 1);
-    assert (output.depth() == CV_8U);
-    assert (output.channels() == 1);
+    CV_CheckTypeEQ(SWTImage.type(), CV_32FC1, "");
+    CV_CheckTypeEQ(output.type(), CV_8UC1, "");
 
     Mat outputTemp(output.size(), CV_32FC1);
 
@@ -269,7 +263,7 @@ std::vector<std::vector<SWTPoint>> getComponents (Mat& SWTImage) {
     std::unordered_map<int, int> Pix2Node;
     std::unordered_map<int, SWTPoint> Node2Pix;
 
-    
+
     int num_vertices = 0;
 
     for(int row = 0; row < SWTImage.rows; row++){
@@ -288,7 +282,7 @@ std::vector<std::vector<SWTPoint>> getComponents (Mat& SWTImage) {
             }
         }
     }
-    vector<int>* graph = new vector<int> [num_vertices]; 
+    vector<int>* graph = new vector<int> [num_vertices];
 
 
     for(int row = 0; row < SWTImage.rows; row++){
@@ -357,7 +351,7 @@ ComponentAttr getAttributes(vector<SWTPoint> component, Mat& SWTImage) {
     attributes.ymax = 0;
 
     float sum = 0;
-    
+
     for (unsigned int i = 0; i < component.size(); i++) {
         float val = SWTImage.at<float> (component[i].y, component[i].x);
         sum += val;
@@ -371,7 +365,7 @@ ComponentAttr getAttributes(vector<SWTPoint> component, Mat& SWTImage) {
     for (unsigned int i = 0; i < component.size(); i++) {
         attributes.variance += (temp[i] - attributes.mean) * (temp[i] - attributes.mean);
     }
-    
+
     attributes.variance = attributes.variance / ((float)component.size());
     std::sort(temp.begin(),temp.end());
     attributes.median = temp[temp.size()/2];
@@ -432,43 +426,43 @@ std::vector<Component> filterComponents(Mat& SWTImage, std::vector<std::vector<S
     filteredComponents.reserve(components.size());
     for (unsigned int i = 0; i < components.size(); i++) {
         vector<SWTPoint> component = components[i];
-        ComponentAttr attributes = getAttributes(component, SWTImage);  
+        ComponentAttr attributes = getAttributes(component, SWTImage);
         if (!skipChecks && attributes.variance > 0.5 * attributes.mean) continue;
         if (!skipChecks && attributes.width > 300) continue;
-        
+
 
         float area = attributes.length * attributes.width;
-        
+
         // compute the rotated bounding box
         float increment = 1./36.;
         for (float theta = increment * PI; theta<PI/2.0; theta += increment * PI) {
-            float xmin,xmax,ymin,ymax,xtemp,ytemp,ltemp,wtemp;
+            float xmin,xmax,ymin,ymax;
                 xmin = 1000000;
                 ymin = 1000000;
                 xmax = 0;
                 ymax = 0;
             for (unsigned int j = 0; j < components[i].size(); j++) {
-                xtemp = components[i][j].x * cos(theta) + components[i][j].y * -sin(theta);
-                ytemp = components[i][j].x * sin(theta) + components[i][j].y * cos(theta);
+                float xtemp = components[i][j].x * cos(theta) + components[i][j].y * -sin(theta);
+                float ytemp = components[i][j].x * sin(theta) + components[i][j].y * cos(theta);
                 xmin = std::min(xtemp,xmin);
                 xmax = std::max(xtemp,xmax);
                 ymin = std::min(ytemp,ymin);
                 ymax = std::max(ytemp,ymax);
             }
-            ltemp = xmax - xmin + 1;
-            wtemp = ymax - ymin + 1;
+            float ltemp = xmax - xmin + 1;
+            float wtemp = ymax - ymin + 1;
             if (ltemp*wtemp < area) {
                 area = ltemp*wtemp;
                 attributes.length = ltemp;
                 attributes.width = wtemp;
             }
         }
-        
+
         if (!skipChecks && (attributes.length/attributes.width < 1./10. || attributes.length/attributes.width > 10.)) continue;
 
         Component acceptedComponent;
         acceptedComponent.length = attributes.length;
-        
+
         acceptedComponent.cx = ((float) (attributes.xmax+attributes.xmin)) / 2;
         acceptedComponent.cy = ((float) (attributes.ymax+attributes.ymin)) / 2;
 
@@ -485,13 +479,13 @@ std::vector<Component> filterComponents(Mat& SWTImage, std::vector<std::vector<S
         acceptedComponent.median = attributes.median;
 
         acceptedComponent.points = component;
-        
+
         filteredComponents.push_back(acceptedComponent);
     }
 
     std::vector<Component> tempComp;
     tempComp.reserve(filteredComponents.size());
-    
+
     for (unsigned int i = 0; i < filteredComponents.size(); i++) {
         int count = 0;
         Component compi = filteredComponents[i];
@@ -576,8 +570,8 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
         }
         avgCompi.Red /= compi.points.size();
         avgCompi.Green /= compi.points.size();
-        avgCompi.Blue /= compi.points.size(); 
-        colorAverages.push_back(avgCompi);      
+        avgCompi.Blue /= compi.points.size();
+        colorAverages.push_back(avgCompi);
     }
     int count = 0;
     std::vector<ChainedComponent> chains;
@@ -585,7 +579,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
         Component compi = components[i];
         for (unsigned int j = i+1; j < components.size(); j++) {
             Component compj = components[j];
-            if ((compi.median / compj.median <= 2.0 || compj.median / compi.median <= 2.0) 
+            if ((compi.median / compj.median <= 2.0 || compj.median / compi.median <= 2.0)
                 && (compi.width/compj.width <= 2.0 || compj.width/compi.width <= 2.0)) {
                     float dist = (compi.cx - compj.cx) * (compi.cx - compj.cx) +
                                     (compi.cy - compj.cy) * (compi.cy - compj.cy);
@@ -620,7 +614,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
             }
         }
     }
-    
+
     std::sort(chains.begin(), chains.end(), chainSortDist);
 
     const float alignmentThreshold = PI / 6;
@@ -679,7 +673,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
                         }
                     } else if (chains[i].chainIndexB == chains[j].chainIndexA) {
                         if (acos(chains[i].dir.x * chains[j].dir.x + chains[i].dir.y * chains[j].dir.y) < alignmentThreshold) {
-                            // std::cout << "here3" << endl;    
+                            // std::cout << "here3" << endl;
                             chains[i].chainIndexB = chains[j].chainIndexA;
                             for (std::vector<int>::iterator it = chains[j].componentIndices.begin(); it != chains[j].componentIndices.end(); it++) {
                                 chains[i].componentIndices.push_back(*it);
@@ -717,7 +711,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
                             dir.y = d_y;
                             chains[i].dir = dir;
                             chains[j].merged = true;
-                            merges++;                                
+                            merges++;
                         }
                     }
                 }
@@ -730,7 +724,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
             }
         }
         chains = newchains;
-        std::stable_sort(chains.begin(), chains.end(), chainSortLength);                
+        std::stable_sort(chains.begin(), chains.end(), chainSortLength);
     }
 
     std::vector<ChainedComponent> newchains;
@@ -739,7 +733,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
         for (unsigned int i = 0; i < chains.size(); i++) {
             if (chains[i].componentIndices.size() >= 3) {
                 newchains.push_back(chains[i]);
-                for (unsigned int j = 0; j < chains[i].componentIndices.size(); j++) { 
+                for (unsigned int j = 0; j < chains[i].componentIndices.size(); j++) {
                     Component acceptedComponent = components[chains[i].componentIndices[j]];
                     std::vector<SWTPoint> componentPoints;
                     for (unsigned int k = 0; k < acceptedComponent.points.size(); k++) {
@@ -756,43 +750,44 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
         // std::cout << chains.size() << " chains formed after merging" << std::endl;
         renderComponents(SWTImage, finalComponents, output);
         renderComponentBBs(finalComponents, output);
-        return getComponentBBs(finalComponents);    
+        return getComponentBBs(finalComponents);
+}
 }
 
-std::vector<cv::Rect> SWTTextDetection (const Mat& input_image, bool dark_on_light) {
-    assert (input_image.depth() == CV_8U);
-    assert (input_image.channels() == 3);
+CV_EXPORTS_W void detectTextSWT (InputArray input, CV_OUT std::vector<cv::Rect>& result, bool dark_on_light) {
+    CV_CheckTypeEQ(input.type(), CV_8UC3, "");
+
 
     // Convert to grayscale
-    Mat grayImage(input_image.size(), CV_8UC1);
-    cvtColor(input_image, grayImage, COLOR_RGB2GRAY);
+    Mat grayImage(input.size(), CV_8UC1);
+    cvtColor(input, grayImage, COLOR_RGB2GRAY);
     // Create Canny Image
     double threshold_low = 175;
     double threshold_high = 320;
-    Mat canny_edge_image(input_image.size(), CV_8UC1);
+    Mat canny_edge_image(input.size(), CV_8UC1);
     Canny (grayImage, canny_edge_image, threshold_low, threshold_high, 3);
 
     // Create gradient X, gradient Y
-    Mat gaussianImage( input_image.size(), CV_32FC1);
+    Mat gaussianImage( input.size(), CV_32FC1);
     grayImage.convertTo(gaussianImage, CV_32FC1, 1./255.);
-    
-    
-    Mat gradientX( input_image.size(), CV_32FC1 );
-    Mat gradientY( input_image.size(), CV_32FC1 );
+
+
+    Mat gradientX( input.size(), CV_32FC1 );
+    Mat gradientY( input.size(), CV_32FC1 );
     GaussianBlur(gaussianImage, gaussianImage, Size(5, 5), 0);
     Scharr(gaussianImage, gradientX, -1, 1, 0);
     Scharr(gaussianImage, gradientY, -1, 0, 1);
     GaussianBlur(gradientX, gradientX, Size(3, 3), 0);
     GaussianBlur(gradientY, gradientY, Size(3, 3), 0);
-    
+
     std::vector<Ray> rays;
-    Mat SWTImage( input_image.size(), CV_32FC1 );
-    
+    Mat SWTImage( input.size(), CV_32FC1 );
+
     SWTFirstPass (canny_edge_image, gradientX, gradientY, dark_on_light, SWTImage, rays );
 
     SWTSecondPass ( SWTImage, rays );
 
-    Mat normalised_image (input_image.size(), CV_8UC1);
+    Mat normalised_image (input.size(), CV_8UC1);
     normalizeAndScale(SWTImage, normalised_image);
 
     // Calculate legally connected components from SWT and gradient image.
@@ -801,14 +796,13 @@ std::vector<cv::Rect> SWTTextDetection (const Mat& input_image, bool dark_on_lig
     std::vector<std::vector<SWTPoint> > components = getComponents(SWTImage);
     std::vector<Component> validComponents = filterComponents(SWTImage, components, false);
 
-    Mat outTemp( input_image.size(), CV_32FC1 );
+    Mat outTemp( input.size(), CV_32FC1 );
     renderComponents(SWTImage, validComponents, outTemp);
     renderComponentBBs(validComponents, outTemp);
-    
-    Mat out( input_image.size(), CV_32FC1 );
-    return findValidChains(input_image, SWTImage, validComponents, out);
-}
-}
-}
 
-
+    Mat out( input.size(), CV_32FC1 );
+    Mat input_image = input.getMat();
+    result = findValidChains(input_image, SWTImage, validComponents, out);
+}
+}
+}
