@@ -10,7 +10,8 @@ using namespace Eigen;
 
 namespace cv { namespace alphamat {
 
-static void solve(SparseMatrix<double> Wcm, SparseMatrix<double> Wuu, SparseMatrix<double> Wl, SparseMatrix<double> Dcm,
+static
+void solve(SparseMatrix<double> Wcm, SparseMatrix<double> Wuu, SparseMatrix<double> Wl, SparseMatrix<double> Dcm,
         SparseMatrix<double> Duu, SparseMatrix<double> Dl, SparseMatrix<double> T,
         Mat& wf, Mat& alpha)
 {

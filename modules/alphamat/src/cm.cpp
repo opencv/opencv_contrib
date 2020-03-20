@@ -8,7 +8,8 @@
 
 namespace cv { namespace alphamat {
 
-static void generateFVectorCM(my_vector_of_vectors_t& samples, Mat& img)
+static
+void generateFVectorCM(my_vector_of_vectors_t& samples, Mat& img)
 {
     int nRows = img.rows;
     int nCols = img.cols;
@@ -31,7 +32,8 @@ static void generateFVectorCM(my_vector_of_vectors_t& samples, Mat& img)
     }
 }
 
-static void kdtree_CM(Mat& img, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, std::unordered_set<int>& unk)
+static
+void kdtree_CM(Mat& img, my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, std::unordered_set<int>& unk)
 {
     // Generate feature vectors for intra U:
     generateFVectorCM(samples, img);
@@ -70,7 +72,9 @@ static void kdtree_CM(Mat& img, my_vector_of_vectors_t& indm, my_vector_of_vecto
     }
 }
 
-static void lle(my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, float eps, std::unordered_set<int>& unk, SparseMatrix<double>& Wcm, SparseMatrix<double>& Dcm, Mat& img)
+static
+void lle(my_vector_of_vectors_t& indm, my_vector_of_vectors_t& samples, float eps, std::unordered_set<int>& unk,
+        SparseMatrix<double>& Wcm, SparseMatrix<double>& Dcm, Mat& img)
 {
     CV_LOG_INFO(NULL, "ALPHAMAT: In cm's lle function");
     int k = indm[0].size();  //number of neighbours that we are considering
