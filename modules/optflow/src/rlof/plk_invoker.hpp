@@ -568,8 +568,6 @@ public:
         cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType);
         winMaskMatBuf.setTo(1);
 
-
-
         const float FLT_SCALE = (1.f/(1 << 20)); // 20
 
         int j, cn = I.channels(), cn2 = cn*2;
@@ -633,17 +631,6 @@ public:
             int iw11 = (1 << W_BITS) - iw00 - iw01 - iw10;
             float A11 = 0, A12 = 0, A22 = 0;
 
-#ifdef RLOF_SSE
-            __m128i qw0 = _mm_set1_epi32(iw00 + (iw01 << 16));
-            __m128i qw1 = _mm_set1_epi32(iw10 + (iw11 << 16));
-            __m128i z = _mm_setzero_si128();
-            __m128i qdelta_d = _mm_set1_epi32(1 << (W_BITS1-1));
-            __m128i qdelta = _mm_set1_epi32(1 << (W_BITS1-5-1));
-            __m128 qA11 = _mm_setzero_ps(), qA12 = _mm_setzero_ps(), qA22 = _mm_setzero_ps();
-            __m128i mmMask4_epi32;
-            get4BitMask(winSize.width, mmMask4_epi32);
-#endif
-
             // extract the patch from the first image, compute covariation matrix of derivatives
             int x, y;
             copyWinBuffers(iw00, iw01, iw10, iw11, winSize, I, derivI, winMaskMat, IWinBuf, derivIWinBuf, A11, A22, A12, iprevPt);
@@ -666,10 +653,6 @@ public:
 
             nextPt += halfWin;
             Point2f prevDelta(0,0);    //relates to h(t-1)
-#ifdef RLOF_SSE
-            __m128i mmMask0, mmMask1, mmMask;
-            getWBitMask(winSize.width, mmMask0, mmMask1, mmMask);
-#endif
             for( j = 0; j < criteria.maxCount; j++ )
             {
                 status[ptidx] = static_cast<uchar>(j);
@@ -691,12 +674,13 @@ public:
                 iw10 = cvRound((1.f - a)*b*(1 << W_BITS));
                 iw11 = (1 << W_BITS) - iw00 - iw01 - iw10;
                 float b1 = 0, b2 = 0;
-#ifdef RLOF_SSE
-                qw0 = _mm_set1_epi32(iw00 + (iw01 << 16));
-                qw1 = _mm_set1_epi32(iw10 + (iw11 << 16));
-                __m128 qb0 = _mm_setzero_ps(), qb1 = _mm_setzero_ps();
-
-
+#ifdef CV_SIMD128
+                v_int16x8 vqw0 = v_int16x8((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
+                v_int16x8 vqw1 = v_int16x8((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
+                v_float32x4 vqb0 = v_setzero_f32(), vqb1 = v_setzero_f32();
+                v_float32x4 vAxx = v_setzero_f32(), vAxy = v_setzero_f32(), vAyy = v_setzero_f32();
+                v_int16x8 vmax_val_16 = v_setall_s16(std::numeric_limits<unsigned short>::max());
+                v_int32x4 vdelta = v_setall_s32(1 << (W_BITS1 - 5 - 1));
 #endif
                 for( y = 0; y < winSize.height; y++ )
                 {
@@ -706,58 +690,38 @@ public:
                     const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
 
                     x = 0;
-#ifdef RLOF_SSE
+#ifdef CV_SIMD128
                     const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
                     for( ; x <= winSize.width*cn; x += 8, dIptr += 8*2 )
                     {
-                        if( maskPtr[x  ] == 0 && maskPtr[x+1] == 0 && maskPtr[x+2] == 0 && maskPtr[x+3] == 0
-                        &&    maskPtr[x+4] == 0 && maskPtr[x+5] == 0 && maskPtr[x+6] == 0 && maskPtr[x+7] == 0)
-                            continue;
-                        __m128i diff0 = _mm_loadu_si128((const __m128i*)(Iptr + x)), diff1;
-                        __m128i v00 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(Jptr + x)), z);
-                        __m128i v01 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(Jptr + x + cn)), z);
-                        __m128i v10 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(Jptr1 + x)), z);
-                        __m128i v11 = _mm_unpacklo_epi8(_mm_loadl_epi64((const __m128i*)(Jptr1 + x + cn)), z);
+                        v_int16x8 diff0 = v_reinterpret_as_s16(v_load(Iptr + x)), diff1, diff2;
+                        v_int16x8 v00 = v_reinterpret_as_s16(v_load_expand(Jptr + x));
+                        v_int16x8 v01 = v_reinterpret_as_s16(v_load_expand(Jptr + x + cn));
+                        v_int16x8 v10 = v_reinterpret_as_s16(v_load_expand(Jptr1 + x));
+                        v_int16x8 v11 = v_reinterpret_as_s16(v_load_expand(Jptr1 + x + cn));
+                        v_int16x8 vmask = v_reinterpret_as_s16(v_load_expand(maskPtr + x)) * vmax_val_16;
 
-                        __m128i t0 = _mm_add_epi32(_mm_madd_epi16(_mm_unpacklo_epi16(v00, v01), qw0),
-                                                   _mm_madd_epi16(_mm_unpacklo_epi16(v10, v11), qw1));
-                        __m128i t1 = _mm_add_epi32(_mm_madd_epi16(_mm_unpackhi_epi16(v00, v01), qw0),
-                                                   _mm_madd_epi16(_mm_unpackhi_epi16(v10, v11), qw1));
-                        t0 = _mm_srai_epi32(_mm_add_epi32(t0, qdelta), W_BITS1-5);
-                        t1 = _mm_srai_epi32(_mm_add_epi32(t1, qdelta), W_BITS1-5);
+                        v_int32x4 t0, t1;
+                        v_int16x8 t00, t01, t10, t11;
+                        v_zip(v00, v01, t00, t01);
+                        v_zip(v10, v11, t10, t11);
 
-                        __m128i mmDiff_epi16 = _mm_subs_epi16(_mm_packs_epi32(t0, t1), diff0);
+                        t0 = v_dotprod(t00, vqw0, vdelta) + v_dotprod(t10, vqw1);
+                        t1 = v_dotprod(t01, vqw0, vdelta) + v_dotprod(t11, vqw1);
+                        t0 = t0 >> (W_BITS1 - 5);
+                        t1 = t1 >> (W_BITS1 - 5);
+                        diff0 = v_pack(t0, t1) - diff0;
+                        diff0 = diff0 & vmask;
 
-                        __m128i Ixy_0 = _mm_loadu_si128((const __m128i*)(dIptr)); // Ix0 Iy0 Ix1 Iy1 ...
-                        __m128i Ixy_1 = _mm_loadu_si128((const __m128i*)(dIptr + 8));
+                        v_zip(diff0, diff0, diff2, diff1); // It0 It0 It1 It1 ...
 
-                        if(  x > winSize.width*cn - 8)
-                        {
-                            Ixy_0 = _mm_and_si128(Ixy_0, mmMask0);
-                            Ixy_1 = _mm_and_si128(Ixy_1, mmMask1);
-                        }
+                        v_int16x8 vIxy_0 = v_reinterpret_as_s16(v_load(dIptr)); // Ix0 Iy0 Ix1 Iy1 ...
+                        v_int16x8 vIxy_1 = v_reinterpret_as_s16(v_load(dIptr + 8));
+                        v_zip(vIxy_0, vIxy_1, v10, v11);
+                        v_zip(diff2, diff1, v00, v01);
 
-
-                        diff1 = _mm_unpackhi_epi16(mmDiff_epi16, mmDiff_epi16); // It4 It4 It5 It5 It6 It6 It7 It7   | It12 It12 It13 It13...
-                        diff0 = _mm_unpacklo_epi16(mmDiff_epi16, mmDiff_epi16); // It0 It0 It1 It1 It2 It2 It3 It3   | It8 It8 It9 It9...
-
-
-                        v10 = _mm_mullo_epi16(Ixy_0, diff0);
-                        v11 = _mm_mulhi_epi16(Ixy_0, diff0);
-                        v00 = _mm_unpacklo_epi16(v10, v11);
-                        v10 = _mm_unpackhi_epi16(v10, v11);
-                        qb0 = _mm_add_ps(qb0, _mm_cvtepi32_ps(v00));
-                        qb1 = _mm_add_ps(qb1, _mm_cvtepi32_ps(v10));
-
-                        // It * Ix It * Iy [4 ... 7]
-                        // for set 1 hi sigma 1
-
-                        v10 = _mm_mullo_epi16(Ixy_1, diff1);
-                        v11 = _mm_mulhi_epi16(Ixy_1, diff1);
-                        v00 = _mm_unpacklo_epi16(v10, v11);
-                        v10 = _mm_unpackhi_epi16(v10, v11);
-                        qb0 = _mm_add_ps(qb0, _mm_cvtepi32_ps(v00));
-                        qb1 = _mm_add_ps(qb1, _mm_cvtepi32_ps(v10));
+                        vqb0 += v_cvt_f32(v_dotprod(v00, v10));
+                        vqb1 += v_cvt_f32(v_dotprod(v01, v11));
                     }
 #else
                     for( ; x < winSize.width*cn; x++, dIptr += 2 )
@@ -774,11 +738,11 @@ public:
 #endif
                 }
 
-#ifdef RLOF_SSE
+#ifdef CV_SIMD128
                 float CV_DECL_ALIGNED(16) bbuf[4];
-                _mm_store_ps(bbuf, _mm_add_ps(qb0, qb1));
-                b1 += bbuf[0] + bbuf[2];
-                b2 += bbuf[1] + bbuf[3];
+                v_store_aligned(bbuf, vqb0 + vqb1);
+                b1 = bbuf[0] + bbuf[2];
+                b2 = bbuf[1] + bbuf[3];
 #endif
 
                 b1 *= FLT_SCALE;
