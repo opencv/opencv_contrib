@@ -125,7 +125,7 @@ namespace cv
         //the sencond modified census transform is invariant to noise; i.e.
         //if the current pixel with whom we are dooing the comparison is a noise, this descriptor will provide a better result by comparing with the mean of the window
         //otherwise if the pixel is not noise the information is strengthend
-        CV_EXPORTS void modifiedCensusTransform(const Mat &img1, const Mat &img2, int kernelSize, Mat &dist1,Mat &dist2, const int type, int t, const Mat &IntegralImage1, const Mat &IntegralImage2 )
+        CV_EXPORTS void modifiedCensusTransform(const Mat &img1, const Mat &img2, int kernelSize, Mat &dist1,Mat &dist2, const int type, int t, const Mat& integralImage1, const Mat& integralImage2)
         {
             CV_Assert(img1.size() == img2.size());
             CV_Assert(kernelSize % 2 != 0);
@@ -145,14 +145,25 @@ namespace cv
             else if(type == CV_MEAN_VARIATION)
             {
                 //MV
-                int *integral[2];
-                integral[0] = (int *)IntegralImage1.data;
-                integral[1] = (int *)IntegralImage2.data;
+                CV_Assert(!integralImage1.empty());
+                CV_Assert(!integralImage1.isContinuous());
+                CV_CheckTypeEQ(integralImage1.type(), CV_32SC1, "");
+                CV_CheckGE(integralImage1.cols, img1.cols, "");
+                CV_CheckGE(integralImage1.rows, img1.rows, "");
+                CV_Assert(!integralImage2.empty());
+                CV_Assert(!integralImage2.isContinuous());
+                CV_CheckTypeEQ(integralImage2.type(), CV_32SC1, "");
+                CV_CheckGE(integralImage2.cols, img2.cols, "");
+                CV_CheckGE(integralImage2.rows, img2.rows, "");
+                int *integral[2] = {
+                        (int *)integralImage1.data,
+                        (int *)integralImage2.data
+                };
                 parallel_for_(  Range(n2, img1.rows - n2),
                     CombinedDescriptor<2,3,2,2, MVKernel<2> >(img1.cols, img1.rows,stride,n2,date,MVKernel<2>(images,integral),n2));
             }
         }
-        CV_EXPORTS void modifiedCensusTransform(const Mat &img1, int kernelSize, Mat &dist, const int type, int t , Mat const &IntegralImage)
+        CV_EXPORTS void modifiedCensusTransform(const Mat &img1, int kernelSize, Mat &dist, const int type, int t , Mat const &integralImage)
         {
             CV_Assert(img1.size() == dist.size());
             CV_Assert(kernelSize % 2 != 0);
@@ -172,7 +183,12 @@ namespace cv
             else if(type == CV_MEAN_VARIATION)
             {
                 //MV
-                int *integral[] = { (int *)IntegralImage.data};
+                CV_Assert(!integralImage.empty());
+                CV_Assert(!integralImage.isContinuous());
+                CV_CheckTypeEQ(integralImage.type(), CV_32SC1, "");
+                CV_CheckGE(integralImage.cols, img1.cols, "");
+                CV_CheckGE(integralImage.rows, img1.rows, "");
+                int *integral[] = { (int *)integralImage.data};
                 parallel_for_(Range(n2, img1.rows - n2),
                     CombinedDescriptor<2,3,2,1, MVKernel<1> >(img1.cols, img1.rows,stride,n2,date,MVKernel<1>(images,integral),n2));
             }
