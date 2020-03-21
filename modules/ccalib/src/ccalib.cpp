@@ -445,8 +445,11 @@ bool CustomPattern::findRtRANSAC(InputArray objectPoints, InputArray imagePoints
             OutputArray rvec, OutputArray tvec, bool useExtrinsicGuess, int iterationsCount,
             float reprojectionError, int minInliersCount, OutputArray inliers, int flags)
 {
+    float confidence_factor = minInliersCount / (imagePoints.total()/2);
+    float confidence = confidence_factor < 0.001 ? 0.001 : confidence_factor > 0.999 ? 0.999 : confidence_factor;
+
     solvePnPRansac(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, useExtrinsicGuess,
-                    iterationsCount, reprojectionError, minInliersCount, inliers, flags);
+                   iterationsCount, reprojectionError, confidence, inliers, flags);
     return true; // for consistency with the other methods
 }
 
@@ -459,6 +462,10 @@ bool CustomPattern::findRtRANSAC(InputArray image, InputArray cameraMatrix, Inpu
 
     if (!findPattern(image, imagePoints, objectPoints))
         return false;
+
+    float confidence_factor = minInliersCount / imagePoints.size();
+    float confidence = confidence_factor < 0.001 ? 0.001 : confidence_factor > 0.999 ? 0.999 : confidence_factor;
+
     solvePnPRansac(objectPoints, imagePoints, cameraMatrix, distCoeffs, rvec, tvec, useExtrinsicGuess,
                     iterationsCount, reprojectionError, minInliersCount, inliers, flags);
     return true;
