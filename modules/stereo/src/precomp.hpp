@@ -42,16 +42,13 @@
 #ifndef __OPENCV_STEREO_PRECOMP_H__
 #define __OPENCV_STEREO_PRECOMP_H__
 
-#include "opencv2/stereo.hpp"
-#include "opencv2/imgproc.hpp"
-#include "opencv2/features2d.hpp"
 #include "opencv2/core.hpp"
-#include "opencv2/core/utility.hpp"
-#include "opencv2/core/private.hpp"
-#include "opencv2/core/cvdef.h"
+#include "opencv2/imgproc.hpp"
 #include "opencv2/calib3d.hpp"
 
-#include <algorithm>
-#include <cmath>
+#include "opencv2/stereo.hpp"
+
+#include "descriptor.hpp"
+#include "matching.hpp"
 
 #endif
