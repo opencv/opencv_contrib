@@ -74,7 +74,7 @@ PERF_TEST_P( s_bm, sgm_perf,
     {
         sgbm->compute(left, right, out1);
     }
-    SANITY_CHECK(out1);
+    SANITY_CHECK_NOTHING();
 }
 PERF_TEST_P( s_bm, bm_perf,
             testing::Combine(
@@ -115,7 +115,7 @@ PERF_TEST_P( s_bm, bm_perf,
     {
         sbm->compute(left, right, out1);
     }
-    SANITY_CHECK(out1);
+    SANITY_CHECK_NOTHING();
 }
 
 
