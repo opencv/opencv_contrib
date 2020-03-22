@@ -402,7 +402,7 @@ namespace cv
 
                 if(params.regionRemoval == CV_SPECKLE_REMOVAL_AVG_ALGORITHM)
                 {
-                    smallRegionRemoval<uint8_t>(disp0,params.speckleWindowSize,disp0);
+                    smallRegionRemoval<uint8_t>(disp0.clone(),params.speckleWindowSize,disp0);
                 }
                 else if(params.regionRemoval == CV_SPECKLE_REMOVAL_ALGORITHM)
                 {

@@ -697,7 +697,7 @@ namespace cv
                     aux.create(height,width,CV_16S);
                     Median1x9Filter<short>(disp, aux);
                     Median9x1Filter<short>(aux,disp);
-                    smallRegionRemoval<short>(disp, params.speckleWindowSize, disp);
+                    smallRegionRemoval<short>(disp.clone(), params.speckleWindowSize, disp);
                 }
                 else if(params.regionRemoval == CV_SPECKLE_REMOVAL_ALGORITHM)
                 {

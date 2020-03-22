@@ -493,6 +493,7 @@ namespace cv
             template <typename T>
             void smallRegionRemoval(const Mat &currentMap, int t, Mat &out)
             {
+                CV_Assert(currentMap.data != out.data && "inplace is not supported");
                 CV_Assert(currentMap.cols == out.cols);
                 CV_Assert(currentMap.rows == out.rows);
                 CV_Assert(t >= 0);
@@ -511,16 +512,22 @@ namespace cv
                 int speckle_size = 0;
                 st = 0;
                 dr = 0;
-                for (int i = 1; i < height - 1; i++)
+                for (int i = 0; i < height; i++)
                 {
                     int iw = i * width;
-                    for (int j = 1; j < width - 1; j++)
+                    for (int j = 0; j < width; j++)
                     {
+                        if (i < 1 || i >= height - 1 || j < 1 || j >= width - 1)
+                        {
+                            outputMap[iw + j] = 0;
+                            continue;
+                        }
+
                         if (map[iw + j] != 0)
                         {
                             outputMap[iw + j] = map[iw + j];
                         }
-                        else if (map[iw + j] == 0)
+                        else // if (map[iw + j] == 0)
                         {
                             T nr = 1;
                             T avg = 0;
