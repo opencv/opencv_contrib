@@ -64,12 +64,12 @@ namespace cv
             int stride = (int)image1.step;
             if(type == CV_DENSE_CENSUS)
             {
-                parallel_for_(  Range(n2, image1.rows - n2),
+                parallel_for_(Range(0, image1.rows),
                     CombinedDescriptor<1,1,1,2,CensusKernel<2> >(image1.cols, image1.rows,stride,n2,costs,CensusKernel<2>(images),n2));
             }
             else if(type == CV_SPARSE_CENSUS)
             {
-                parallel_for_( Range(n2, image1.rows - n2),
+                parallel_for_(Range(0, image1.rows),
                     CombinedDescriptor<2,2,1,2,CensusKernel<2> >(image1.cols, image1.rows, stride,n2,costs,CensusKernel<2>(images),n2));
             }
         }
@@ -87,12 +87,12 @@ namespace cv
             int stride = (int)image1.step;
             if(type == CV_DENSE_CENSUS)
             {
-                parallel_for_( Range(n2, image1.rows - n2),
+                parallel_for_(Range(0, image1.rows),
                     CombinedDescriptor<1,1,1,1,CensusKernel<1> >(image1.cols, image1.rows,stride,n2,costs,CensusKernel<1>(images),n2));
             }
             else if(type == CV_SPARSE_CENSUS)
             {
-                parallel_for_( Range(n2, image1.rows - n2),
+                parallel_for_(Range(0, image1.rows),
                     CombinedDescriptor<2,2,1,1,CensusKernel<1> >(image1.cols, image1.rows,stride,n2,costs,CensusKernel<1>(images),n2));
             }
         }
@@ -106,7 +106,7 @@ namespace cv
             int n2 = (kernelSize) >> 1;
             Mat images[] = {img1, img2};
             int *date[] = { (int *)dist1.data, (int *)dist2.data};
-            parallel_for_(Range(n2, img1.rows - n2), StarKernelCensus<2>(images, n2,date));
+            parallel_for_(Range(0, img1.rows), StarKernelCensus<2>(images, n2,date));
         }
         //single version of star census
         CV_EXPORTS void starCensusTransform(const Mat &img1, int kernelSize, Mat &dist)
@@ -118,7 +118,7 @@ namespace cv
             int n2 = (kernelSize) >> 1;
             Mat images[] = {img1};
             int *date[] = { (int *)dist.data};
-            parallel_for_(Range(n2, img1.rows - n2), StarKernelCensus<1>(images, n2,date));
+            parallel_for_(Range(0, img1.rows), StarKernelCensus<1>(images, n2,date));
         }
         //Modified census transforms
         //the first one deals with small illumination changes
@@ -139,7 +139,7 @@ namespace cv
             if(type == CV_MODIFIED_CENSUS_TRANSFORM)
             {
                 //MCT
-                parallel_for_(  Range(n2, img1.rows - n2),
+                parallel_for_(Range(0, img1.rows),
                     CombinedDescriptor<2,4,2, 2,MCTKernel<2> >(img1.cols, img1.rows,stride,n2,date,MCTKernel<2>(images,t),n2));
             }
             else if(type == CV_MEAN_VARIATION)
@@ -159,7 +159,7 @@ namespace cv
                         (int *)integralImage1.data,
                         (int *)integralImage2.data
                 };
-                parallel_for_(  Range(n2, img1.rows - n2),
+                parallel_for_(Range(0, img1.rows),
                     CombinedDescriptor<2,3,2,2, MVKernel<2> >(img1.cols, img1.rows,stride,n2,date,MVKernel<2>(images,integral),n2));
             }
         }
@@ -177,7 +177,7 @@ namespace cv
             if(type == CV_MODIFIED_CENSUS_TRANSFORM)
             {
                 //MCT
-                parallel_for_(Range(n2, img1.rows - n2),
+                parallel_for_(Range(0, img1.rows),
                     CombinedDescriptor<2,4,2, 1,MCTKernel<1> >(img1.cols, img1.rows,stride,n2,date,MCTKernel<1>(images,t),n2));
             }
             else if(type == CV_MEAN_VARIATION)
@@ -189,7 +189,7 @@ namespace cv
                 CV_CheckGE(integralImage.cols, img1.cols, "");
                 CV_CheckGE(integralImage.rows, img1.rows, "");
                 int *integral[] = { (int *)integralImage.data};
-                parallel_for_(Range(n2, img1.rows - n2),
+                parallel_for_(Range(0, img1.rows),
                     CombinedDescriptor<2,3,2,1, MVKernel<1> >(img1.cols, img1.rows,stride,n2,date,MVKernel<1>(images,integral),n2));
             }
         }
@@ -209,11 +209,11 @@ namespace cv
             int stride = (int)img1.step;
             if(type == CV_CS_CENSUS)
             {
-                parallel_for_(Range(n2, img1.rows - n2), SymetricCensus<2>(imag, n2,date));
+                parallel_for_(Range(0, img1.rows), SymetricCensus<2>(imag, n2,date));
             }
             else if(type == CV_MODIFIED_CS_CENSUS)
             {
-                parallel_for_(Range(n2, img1.rows - n2),
+                parallel_for_(Range(0, img1.rows),
                     CombinedDescriptor<1,1,1,2,ModifiedCsCensus<2> >(img1.cols, img1.rows,stride,n2,date,ModifiedCsCensus<2>(images,n2),1));
             }
         }
@@ -231,11 +231,11 @@ namespace cv
             int stride = (int)img1.step;
             if(type == CV_CS_CENSUS)
             {
-                parallel_for_( Range(n2, img1.rows - n2), SymetricCensus<1>(imag, n2,date));
+                parallel_for_(Range(0, img1.rows), SymetricCensus<1>(imag, n2,date));
             }
             else if(type == CV_MODIFIED_CS_CENSUS)
             {
-                parallel_for_( Range(n2, img1.rows - n2),
+                parallel_for_( Range(0, img1.rows),
                     CombinedDescriptor<1,1,1,1,ModifiedCsCensus<1> >(img1.cols, img1.rows,stride,n2,date,ModifiedCsCensus<1>(images,n2),1));
             }
         }
@@ -250,7 +250,7 @@ namespace cv
             int height = image.rows;
             cost.setTo(0);
             int *c = (int *)cost.data;
-            parallel_for_(Range(win + 1, height - win - 1),MeanKernelIntegralImage(image,win,scalling,c));
+            parallel_for_(Range(0, height), MeanKernelIntegralImage(image, win, scalling, c));
         }
     }
 }

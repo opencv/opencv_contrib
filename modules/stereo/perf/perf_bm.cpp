@@ -64,7 +64,9 @@ PERF_TEST_P( s_bm, sgm_perf,
     Mat out1(sz, sdepth);
     Ptr<StereoBinarySGBM> sgbm = StereoBinarySGBM::create(0, 16, 5);
     sgbm->setBinaryKernelType(CV_DENSE_CENSUS);
-    declare.in(left, WARMUP_RNG)
+    declare
+        .in(left, WARMUP_RNG)
+        .in(right, WARMUP_RNG)
         .out(out1)
         .time(0.1)
         .iterations(20);
@@ -103,7 +105,9 @@ PERF_TEST_P( s_bm, bm_perf,
     sbm->setSpekleRemovalTechnique(CV_SPECKLE_REMOVAL_AVG_ALGORITHM);
     sbm->setUsePrefilter(false);
 
-    declare.in(left, WARMUP_RNG)
+    declare
+        .in(left, WARMUP_RNG)
+        .in(right, WARMUP_RNG)
         .out(out1)
         .time(0.1)
         .iterations(20);

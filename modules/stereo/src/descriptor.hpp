@@ -210,11 +210,18 @@ namespace cv
                 n2_stop = k2Stop;
             }
             void operator()(const cv::Range &r) const CV_OVERRIDE {
-                for (int i = r.start; i <= r.end ; i++)
+                for (int i = r.start; i < r.end ; i++)
                 {
                     int rWidth = i * stride_;
-                    for (int j = n2 + 2; j <= width - n2 - 2; j++)
+                    for (int j = 0; j < width; j++)
                     {
+                        if (i < n2 || i >= height - n2 || j < n2 + 2 || j >= width - n2 - 2)
+                        {
+                            for(int l = 0; l < nr_img; l++)
+                                dst[l][rWidth + j] = 0;  // TODO out of range value?
+                            continue;
+                        }
+
                         int c[nr_img];
                         memset(c, 0, sizeof(c[0]) * nr_img);
                         for(int step = step_start; step <= step_end; step += step_inc)
@@ -243,21 +250,33 @@ namespace cv
         class MeanKernelIntegralImage : public ParallelLoopBody
         {
         private:
-            int *img;
-            int windowSize,width;
+            const Mat& img;
+            int windowSize;
             float scalling;
             int *c;
         public:
             MeanKernelIntegralImage(const cv::Mat &image, int window,float scale, int *cost):
-                img((int *)image.data),windowSize(window) ,width(image.cols) ,scalling(scale) , c(cost){};
-            void operator()(const cv::Range &r) const CV_OVERRIDE {
-                for (int i = r.start; i <= r.end; i++)
+                img(image),windowSize(window), scalling(scale), c(cost)
+            {}
+            void operator()(const cv::Range &r) const CV_OVERRIDE
+            {
+                const int width = img.cols;
+                const int height = img.rows;
+                for (int i = r.start; i < r.end; i++)
                 {
+                    int y0 = std::max(0, i - windowSize + 1);
+                    int y1 = std::min(height - 1, i + windowSize);
                     int iw = i * width;
-                    for (int j = windowSize + 1; j <= width - windowSize - 1; j++)
+                    for (int j = 0; j < width; j++)
                     {
-                        c[iw + j] = (int)((img[(i + windowSize - 1) * width + j + windowSize - 1] + img[(i - windowSize - 1) * width + j - windowSize - 1]
-                        - img[(i + windowSize) * width + j - windowSize] - img[(i - windowSize) * width + j + windowSize]) * scalling);
+                        int x0 = std::max(0, j - windowSize + 1);
+                        int x1 = std::min(height - 1, j + windowSize);
+
+                        c[iw + j] = (int)(
+                                (
+                                    img.at<int>(y0, x0) + img.at<int>(y0, x0) -
+                                    img.at<int>(y1, x0) - img.at<int>(y0, x1)
+                                ) * scalling);
                     }
                 }
             }
@@ -285,13 +304,18 @@ namespace cv
                 stride_ = (int)img[0].step;
             }
             void operator()(const cv::Range &r) const CV_OVERRIDE {
-                for (int i = r.start; i <= r.end ; i++)
+                for (int i = r.start; i < r.end; i++)
                 {
                     int rWidth = i * stride_;
-                    for (int j = n2; j <= width - n2; j++)
+                    for (int j = 0; j < width; j++)
                     {
                         for(int d = 0 ; d < im_num; d++)
                         {
+                            if (i < n2 || i >= height - n2 || j < n2 || j >= width - n2)
+                            {
+                                dst[d][rWidth + j] = 0;  // TODO out of range value?
+                                continue;
+                            }
                             int c = 0;
                             for(int step = 4; step > 0; step--)
                             {
@@ -377,13 +401,18 @@ namespace cv
                 stride_ = (int)img[0].step;
             }
             void operator()(const cv::Range &r) const CV_OVERRIDE {
-                for (int i = r.start; i <= r.end ; i++)
+                for (int i = r.start; i < r.end ; i++)
                 {
                     int distV = i*stride_;
-                    for (int j = n2; j <= width - n2; j++)
+                    for (int j = 0; j < width; j++)
                     {
                         for(int d = 0; d < im_num; d++)
                         {
+                            if (i < n2 || i >= height - n2 || j < n2 || j >= width - n2)
+                            {
+                                dst[d][distV + j] = 0;  // TODO out of range value?
+                                continue;
+                            }
                             int c = 0;
                             //the classic center symetric census which compares the curent pixel with its symetric not its center.
                             for (int ii = -n2; ii <= 0; ii++)
