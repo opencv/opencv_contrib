@@ -4,22 +4,16 @@
 #ifndef _RLOF_INVOKERBASE_HPP_
 #define _RLOF_INVOKERBASE_HPP_
 
-
 #ifndef CV_DESCALE
 #define CV_DESCALE(x, n)     (((x) + (1 << ((n)-1))) >> (n))
 #endif
-
 #define FLT_RESCALE 1
-
 
 #include "rlof_localflow.h"
 #include <unordered_map>
 #include "opencv2/core/hal/intrin.hpp"
 using namespace std;
 using namespace cv;
-#ifdef OLD
-#undef CV_SIMD128
-#endif
 namespace cv {
 namespace optflow {
 
