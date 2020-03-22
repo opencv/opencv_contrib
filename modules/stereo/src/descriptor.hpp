@@ -245,42 +245,6 @@ namespace cv
                 }
             }
         };
-        //!calculate the mean of every windowSizexWindwoSize block from the integral Image
-        //!this is a preprocessing for MV kernel
-        class MeanKernelIntegralImage : public ParallelLoopBody
-        {
-        private:
-            const Mat& img;
-            int windowSize;
-            float scalling;
-            int *c;
-        public:
-            MeanKernelIntegralImage(const cv::Mat &image, int window,float scale, int *cost):
-                img(image),windowSize(window), scalling(scale), c(cost)
-            {}
-            void operator()(const cv::Range &r) const CV_OVERRIDE
-            {
-                const int width = img.cols;
-                const int height = img.rows;
-                for (int i = r.start; i < r.end; i++)
-                {
-                    int y0 = std::max(0, i - windowSize + 1);
-                    int y1 = std::min(height - 1, i + windowSize);
-                    int iw = i * width;
-                    for (int j = 0; j < width; j++)
-                    {
-                        int x0 = std::max(0, j - windowSize + 1);
-                        int x1 = std::min(height - 1, j + windowSize);
-
-                        c[iw + j] = (int)(
-                                (
-                                    img.at<int>(y0, x0) + img.at<int>(y0, x0) -
-                                    img.at<int>(y1, x0) - img.at<int>(y0, x1)
-                                ) * scalling);
-                    }
-                }
-            }
-        };
         //!implementation for the star kernel descriptor
         template<int num_images>
         class StarKernelCensus:public ParallelLoopBody
@@ -441,8 +405,6 @@ namespace cv
                 }
             }
         };
-        //integral image computation used in the Mean Variation Census Transform
-        void imageMeanKernelSize(const cv::Mat &img, int windowSize, cv::Mat &c);
     }
 }
 #endif

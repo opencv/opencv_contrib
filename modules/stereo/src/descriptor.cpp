@@ -239,18 +239,5 @@ namespace cv
                     CombinedDescriptor<1,1,1,1,ModifiedCsCensus<1> >(img1.cols, img1.rows,stride,n2,date,ModifiedCsCensus<1>(images,n2),1));
             }
         }
-        //integral image computation used in the Mean Variation Census Transform
-        void imageMeanKernelSize(const Mat &image, int windowSize, Mat &cost)
-        {
-            CV_Assert(!image.empty());
-            CV_Assert(!cost.empty());
-            CV_Assert(windowSize % 2 != 0);
-            int win = windowSize / 2;
-            float scalling = ((float) 1) / (windowSize * windowSize);
-            int height = image.rows;
-            cost.setTo(0);
-            int *c = (int *)cost.data;
-            parallel_for_(Range(0, height), MeanKernelIntegralImage(image, win, scalling, c));
-        }
     }
 }
