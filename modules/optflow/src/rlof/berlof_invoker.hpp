@@ -179,46 +179,13 @@ public:
             float A11 = 0, A12 = 0, A22 = 0;
             float D = 0;
 
-            // extract the patch from the first image, compute covariation matrix of derivatives
-            int x, y;
-            for( y = 0; y < winSize.height; y++ )
-            {
-                const uchar* src = I.ptr<uchar>(y + iprevPt.y, 0) + iprevPt.x*cn;
-                const uchar* src1 = I.ptr<uchar>(y + iprevPt.y + 1, 0) + iprevPt.x*cn;
-                const short* dsrc = derivI.ptr<short>(y + iprevPt.y, 0) + iprevPt.x*cn2;
-                const short* dsrc1 = derivI.ptr<short>(y + iprevPt.y + 1, 0) + iprevPt.x*cn2;
-                short* Iptr  = IWinBuf.ptr<short>(y, 0);
-                short* dIptr = derivIWinBuf.ptr<short>(y, 0);
-                x = 0;
-                for( ; x < winSize.width*cn; x++, dsrc += 2, dsrc1 += 2, dIptr += 2 )
-                {
-                    if( winMaskMat.at<uchar>(y,x) == 0)
-                    {
-                        dIptr[0] = 0;
-                        dIptr[1] = 0;
-                        continue;
-                    }
-                    int ival = CV_DESCALE(src[x]*iw00 + src[x+cn]*iw01 +
-                                          src1[x]*iw10 + src1[x+cn]*iw11, W_BITS1-5);
-                    int ixval = CV_DESCALE(dsrc[0]*iw00 + dsrc[cn2]*iw01 +
-                                           dsrc1[0]*iw10 + dsrc1[cn2]*iw11, W_BITS1);
-                    int iyval = CV_DESCALE(dsrc[1]*iw00 + dsrc[cn2+1]*iw01 +
-                                           dsrc1[1]*iw10 + dsrc1[cn2+1]*iw11, W_BITS1);
-                    Iptr[x] = (short)ival;
-                    dIptr[0] = (short)ixval;
-                    dIptr[1] = (short)iyval;
-                }
-            }
+            copyWinBuffers(iw00, iw01, iw10, iw11, winSize, I, derivI, winMaskMat, IWinBuf, derivIWinBuf, iprevPt);
 
             cv::Mat residualMat = cv::Mat::zeros(winSize.height * (winSize.width + 8) * cn, 1, CV_16SC1);
             cv::Point2f backUpNextPt = nextPt;
             nextPt += halfWin;
             Point2f prevDelta(0,0);    //denotes h(t-1)
             cv::Size _winSize = winSize;
-#ifdef RLOF_SSE
-            //__m128i mmMask0, mmMask1, mmMask;
-            //getWBitMask(_winSize.width, mmMask0, mmMask1, mmMask);
-#endif
             float MEstimatorScale = 1;
             int buffIdx = 0;
             float c[8];
@@ -267,15 +234,14 @@ public:
                     if ( j == 0 )
                     {
                         buffIdx = 0;
-                        for( y = 0; y < winSize.height; y++ )
+                        for(int y = 0; y < winSize.height; y++ )
                         {
                             const uchar* Jptr = J.ptr<uchar>(y + inextPt.y, inextPt.x*cn);
                             const uchar* Jptr1 = J.ptr<uchar>(y + inextPt.y + 1, inextPt.x*cn);
                             const short* Iptr  = IWinBuf.ptr<short>(y, 0);
                             const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
                             const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
-                            x = 0;
-                            for( ; x < winSize.width*cn; x++, dIptr += 2)
+                            for(int x = 0 ; x < winSize.width*cn; x++, dIptr += 2)
                             {
                                 if( maskPtr[x] == 0)
                                     continue;
@@ -299,18 +265,167 @@ public:
                     buffIdx = 0;
                     float _b0[4] = {0,0,0,0};
                     float _b1[4] = {0,0,0,0};
+#ifdef CV_SIMD128
+                    v_int16x8 vqw0 = v_int16x8((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
+                    v_int16x8 vqw1 = v_int16x8((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
+                    v_float32x4 vqb0[4] = { v_setzero_f32(), v_setzero_f32(), v_setzero_f32(), v_setzero_f32() };
+                    v_float32x4 vqb1[4] = { v_setzero_f32(), v_setzero_f32(), v_setzero_f32(), v_setzero_f32() };
+                    v_float32x4 vqb2[4] = { v_setzero_f32(), v_setzero_f32(), v_setzero_f32(), v_setzero_f32() };
+                    v_float32x4 vqb3[4] = { v_setzero_f32(), v_setzero_f32(), v_setzero_f32(), v_setzero_f32() };
+                    v_float32x4 vsumW1 = v_setzero_f32(), vsumW2 = v_setzero_f32(), vsumW = v_setzero_f32();
+                    v_float32x4 vsumIy = v_setzero_f32(), vsumIx = v_setzero_f32(), vsumI = v_setzero_f32(), vsumDI = v_setzero_f32();
+                    v_float32x4 vAxx = v_setzero_f32(), vAxy = v_setzero_f32(), vAyy = v_setzero_f32();
 
-                    /*
-                    */
-                    for( y = 0; y < _winSize.height; y++ )
+                    int s2bitShift = normSigma2 == 0 ? 1 : cvCeil(log(200.f / std::fabs(normSigma2)) / log(2.f));
+                    v_int32x4 vdelta_d = v_setall_s32(1 << (W_BITS1 - 1));
+                    v_int32x4 vdelta = v_setall_s32(1 << (W_BITS1 - 5 - 1));
+                    v_int16x8 vzero = v_setzero_s16();
+                    v_int16x8 voness = v_setall_s16(1 << s2bitShift);
+                    v_float32x4 vones = v_setall_f32(1.f);
+                    v_float32x4 vzeros = v_setzero_f32();
+                    v_int16x8 vmax_val_16 = v_setall_s16(std::numeric_limits<unsigned short>::max());
+
+                    v_int16x8 vscale = v_setall_s16(static_cast<short>(MEstimatorScale));
+                    v_int16x8 veta = v_setzero_s16();
+                    v_int16x8 vparam0 = v_setall_s16(MIN(std::numeric_limits<short>::max() - 1, static_cast<short>(fParam0)));
+                    v_int16x8 vparam1 = v_setall_s16(MIN(std::numeric_limits<short>::max() - 1, static_cast<short>(fParam1)));
+                    v_int16x8 vneg_param1 = v_setall_s16(-MIN(std::numeric_limits<short>::max() - 1, static_cast<short>(fParam1)));
+                    v_int16x8 vparam2 = v_setall_s16(static_cast<short>(normSigma2 * (float)(1 << s2bitShift)));
+                    v_float32x4 vparam2s = v_setall_f32(0.01f * normSigma2);
+                    v_float32x4 vparam2s2 = v_setall_f32(normSigma2 * normSigma2);
+#endif
+                    for(int y = 0; y < _winSize.height; y++ )
                     {
                         const uchar* Jptr = J.ptr<uchar>(y + inextPt.y, inextPt.x*cn);
                         const uchar* Jptr1 = J.ptr<uchar>(y + inextPt.y + 1, inextPt.x*cn);
                         const short* Iptr  = IWinBuf.ptr<short>(y, 0);
                         const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
                         const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
-                        x = 0;
-                        for( ; x < _winSize.width*cn; x++, dIptr += 2 )
+#ifdef CV_SIMD128
+                        for (int x = 0; x <= _winSize.width*cn; x += 8, dIptr += 8 * 2)
+                        {
+                            v_int16x8 vI = v_reinterpret_as_s16(v_load(Iptr + x)), diff0, diff1, diff2;
+                            v_int16x8 v00 = v_reinterpret_as_s16(v_load_expand(Jptr + x));
+                            v_int16x8 v01 = v_reinterpret_as_s16(v_load_expand(Jptr + x + cn));
+                            v_int16x8 v10 = v_reinterpret_as_s16(v_load_expand(Jptr1 + x));
+                            v_int16x8 v11 = v_reinterpret_as_s16(v_load_expand(Jptr1 + x + cn));
+                            v_int16x8 vmask = v_reinterpret_as_s16(v_load_expand(maskPtr + x)) * vmax_val_16;
+
+                            v_int32x4 t0, t1;
+                            v_int16x8 t00, t01, t10, t11;
+                            v_zip(v00, v01, t00, t01);
+                            v_zip(v10, v11, t10, t11);
+
+                            //subpixel interpolation
+                            t0 = v_dotprod(t00, vqw0, vdelta) + v_dotprod(t10, vqw1);
+                            t1 = v_dotprod(t01, vqw0, vdelta) + v_dotprod(t11, vqw1);
+                            t0 = t0 >> (W_BITS1 - 5);
+                            t1 = t1 >> (W_BITS1 - 5);
+                            diff0 = v_pack(t0, t1);
+                            // I*gain.x + gain.x
+                            v_int16x8 diff[4] =
+                            {
+                                ((v11 << 5) - vI) & vmask,
+                                ((v01 << 5) - vI) & vmask,
+                                ((v10 << 5) - vI) & vmask,
+                                ((v00 << 5) - vI) & vmask
+                            };
+                            diff0 = diff0 - vI;
+                            diff0 = diff0 & vmask;
+
+                            v_int16x8 vscale_diff_is_pos = diff0 > vscale;
+                            veta = veta + (vscale_diff_is_pos & v_setall_s16(2)) + v_setall_s16(-1);
+                            // since there is no abs vor int16x8 we have to do this hack
+                            v_int16x8 vabs_diff = v_reinterpret_as_s16(v_abs(diff0));
+                            v_int16x8 vset2, vset1;
+                            // |It| < sigma1 ?
+                            vset2 = vabs_diff < vparam1;
+                            // It > 0 ?
+                            v_int16x8 vdiff_is_pos = diff0 > vzero;
+                            // sigma0 < |It| < sigma1 ?
+                            vset1 = vset2 & (vabs_diff > vparam0);
+                            // val = |It| -/+ sigma1
+                            v_int16x8 vtmp_param1 = diff0 + v_select(vdiff_is_pos, vneg_param1, vparam1);
+
+                            v_int16x8 vIxy_0 = v_reinterpret_as_s16(v_load(dIptr)); // Ix0 Iy0 Ix1 Iy1 ...
+                            v_int16x8 vIxy_1 = v_reinterpret_as_s16(v_load(dIptr + 8));
+                            v_int32x4 vI0, vI1;
+                            v_expand(vI, vI0, vI1);
+
+                            for (unsigned int mmi = 0; mmi < 4; mmi++)
+                            {
+                                // It == 0     ? |It| > sigma13
+                                diff0 = vset2 & diff[mmi];
+                                // It == val ? sigma0 < |It| < sigma1
+                                diff0 = v_select(vset1, vtmp_param1, diff0);
+
+                                v_int16x8 tale_ = v_select(vset1, vparam2, voness); // mask for 0 - 3
+                                // diff = diff * sigma2
+                                v_int32x4 diff_int_0, diff_int_1;
+                                v_mul_expand(diff0, tale_, diff_int_0, diff_int_1);
+                                v_int32x4 diff0_0 = diff_int_0 >> s2bitShift;
+                                v_int32x4 diff0_1 = diff_int_1 >> s2bitShift;
+                                diff0 = v_pack(diff0_0, diff0_1);
+                                v_zip(diff0, diff0, diff2, diff1); // It0 It0 It1 It1 ...
+
+                                v_zip(vIxy_0, vIxy_1, v10, v11);
+                                v_zip(diff2, diff1, v00, v01);
+
+                                vqb0[mmi] += v_cvt_f32(v_dotprod(v00, v10));
+                                vqb1[mmi] += v_cvt_f32(v_dotprod(v01, v11));
+                            }
+                            if (j == 0)
+                            {
+                                v_int32x4 vset1_0, vset1_1, vset2_0, vset2_1;
+                                v_int32x4 vmask_0, vmask_1;
+
+                                v_expand(vset1, vset1_0, vset1_1);
+                                v_expand(vset2, vset2_0, vset2_1);
+                                v_expand(vmask, vmask_0, vmask_1);
+
+                                v_float32x4 vtale_0 = v_select(v_reinterpret_as_f32(vset1_0), vparam2s2, vones);
+                                v_float32x4 vtale_1 = v_select(v_reinterpret_as_f32(vset1_1), vparam2s2, vones);
+                                vtale_0 = v_select(v_reinterpret_as_f32(vset2_0), vtale_0, vparam2s);
+                                vtale_1 = v_select(v_reinterpret_as_f32(vset2_1), vtale_1, vparam2s);
+
+                                vtale_0 = v_select(v_reinterpret_as_f32(vmask_0), vtale_0, vzeros);
+                                vtale_1 = v_select(v_reinterpret_as_f32(vmask_1), vtale_1, vzeros);
+
+                                v00 = v_reinterpret_as_s16(v_interleave_pairs(v_reinterpret_as_s32(v_interleave_pairs(vIxy_0))));
+                                v_expand(v00, t1, t0);
+
+                                v_float32x4 vI_ps = v_cvt_f32(vI0);
+
+                                v_float32x4 fy = v_cvt_f32(t0);
+                                v_float32x4 fx = v_cvt_f32(t1);
+
+                                // A11 - A22
+                                v_float32x4 fxtale = fx * vtale_0;
+                                v_float32x4 fytale = fy * vtale_0;
+
+                                vAyy = v_muladd(fy, fytale, vAyy);
+                                vAxy = v_muladd(fx, fytale, vAxy);
+                                vAxx = v_muladd(fx, fxtale, vAxx);
+
+                                v01 = v_reinterpret_as_s16(v_interleave_pairs(v_reinterpret_as_s32(v_interleave_pairs(vIxy_1))));
+                                v_expand(v01, t1, t0);
+                                vI_ps = v_cvt_f32(vI1);
+
+                                fy = v_cvt_f32(t0);
+                                fx = v_cvt_f32(t1);
+
+                                // A11 - A22
+                                fxtale = fx * vtale_1;
+                                fytale = fy * vtale_1;
+
+                                vAyy = v_muladd(fy, fytale, vAyy);
+                                vAxy = v_muladd(fx, fytale, vAxy);
+                                vAxx = v_muladd(fx, fxtale, vAxx);
+                            }
+                        }
+
+#else
+                        for(int x = 0 ; x < _winSize.width*cn; x++, dIptr += 2 )
                         {
                             if( maskPtr[x] == 0)
                                 continue;
@@ -398,14 +513,24 @@ public:
                                 A11 += (float)(ixval*ixval)*tale;
                                 A12 += (float)(ixval*iyval)*tale;
                                 A22 += (float)(iyval*iyval)*tale;
-
                             }
+
                         }
+#endif
                     }
+
+#ifdef CV_SIMD128
+                    MEstimatorScale += eta * v_reduce_sum(veta);
+#endif
+
 
                     if( j == 0 )
                     {
-
+#ifdef CV_SIMD128
+                        A11 = v_reduce_sum(vAxx);
+                        A12 = v_reduce_sum(vAxy);
+                        A22 = v_reduce_sum(vAyy);
+#endif
                         A11 *= FLT_SCALE; // 54866744.
                         A12 *= FLT_SCALE; // -628764.00
                         A22 *= FLT_SCALE; // 19730.000
@@ -430,6 +555,15 @@ public:
 
                     }
 
+#ifdef CV_SIMD128
+                    float CV_DECL_ALIGNED(16) bbuf[4];
+                    for (int mmi = 0; mmi < 4; mmi++)
+                    {
+                        v_store_aligned(bbuf, vqb0[mmi] + vqb1[mmi]);
+                        _b0[mmi] = bbuf[0] + bbuf[2];
+                        _b1[mmi] = bbuf[1] + bbuf[3];
+                    }
+#endif
                     _b0[0] *= FLT_SCALE;_b0[1] *= FLT_SCALE;_b0[2] *= FLT_SCALE;_b0[3] *= FLT_SCALE;
                     _b1[0] *= FLT_SCALE;_b1[1] *= FLT_SCALE;_b1[2] *= FLT_SCALE;_b1[3] *= FLT_SCALE;
 
