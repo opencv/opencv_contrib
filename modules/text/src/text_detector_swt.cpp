@@ -14,12 +14,9 @@
 
 using namespace std;
 
-
-#define PI 3.14159265
-
 namespace cv {
 namespace text {
-    std::vector<cv::Rect> SWTTextDetection (const Mat& input_image, bool dark_on_light);
+    void detectTextSWT (InputArray input, CV_OUT std::vector<cv::Rect>& result, bool dark_on_light, OutputArray & draw /*=noArray()*/);
 
 namespace {
 struct SWTPoint {
@@ -187,7 +184,7 @@ void SWTFirstPass (Mat edgeImage, Mat gradientX, Mat gradientY, bool dark_on_lig
                             G_yt = -G_yt;
                         }
 
-                        if (acos(dx * -G_xt + dy * -G_yt) < PI/2.0 ) {
+                        if (acos(dx * -G_xt + dy * -G_yt) < CV_PI/2.0 ) {
                             float length = sqrt( ((float)ray.q.x - (float)ray.p.x)*((float)ray.q.x - (float)ray.p.x) + ((float)ray.q.y - (float)ray.p.y)*((float)ray.q.y - (float)ray.p.y));
                             for (std::vector<SWTPoint>::iterator pit = points.begin(); pit != points.end(); pit++) {
                                 if (SWTImage.at<float>(pit->y, pit->x) < 0) {
@@ -435,7 +432,7 @@ std::vector<Component> filterComponents(Mat& SWTImage, std::vector<std::vector<S
 
         // compute the rotated bounding box
         float increment = 1./36.;
-        for (float theta = increment * PI; theta<PI/2.0; theta += increment * PI) {
+        for (float theta = increment * CV_PI; theta<CV_PI/2.0; theta += increment * CV_PI) {
             float xmin,xmax,ymin,ymax;
                 xmin = 1000000;
                 ymin = 1000000;
@@ -504,15 +501,14 @@ std::vector<Component> filterComponents(Mat& SWTImage, std::vector<std::vector<S
     }
     filteredComponents = tempComp;
 
-
     return filteredComponents;
 };
 
 void renderComponentBBs (std::vector<Component> components, Mat& output) {
-    Mat outTemp( output.size(), CV_8UC1 );
+    // Mat outTemp( output.size(), CV_8UC1 );
 
-    output.convertTo(outTemp, CV_8UC1, 255.);
-    cvtColor (outTemp, output, COLOR_GRAY2RGB);
+    // output.convertTo(outTemp, CV_8UC1, 255.);
+    // cvtColor (outTemp, output, COLOR_GRAY2RGB);
 
     for (unsigned int i = 0; i < components.size(); i++) {
         Component compi = components[i];
@@ -617,7 +613,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
 
     std::sort(chains.begin(), chains.end(), chainSortDist);
 
-    const float alignmentThreshold = PI / 6;
+    const float alignmentThreshold = CV_PI / 6;
     int merges = 1;
     while (merges > 0) {
         for (unsigned int i = 0; i < chains.size(); i++) {
@@ -631,7 +627,6 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
                     if (chains[i].chainIndexA == chains[j].chainIndexA) {
                         // cout << chains[i].dir.x << " " << chains[i].dir.y << " " << chains[j].dir.x << " " << chains[j].dir.y << endl;
                         if (acos(chains[i].dir.x * -chains[j].dir.x + chains[i].dir.y * -chains[j].dir.y) < alignmentThreshold) {
-                            // std::cout << "here1" << endl;
                             chains[i].chainIndexA = chains[j].chainIndexB;
                             for (std::vector<int>::iterator it = chains[j].componentIndices.begin(); it != chains[j].componentIndices.end(); it++) {
                                 chains[i].componentIndices.push_back(*it);
@@ -652,7 +647,6 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
                         }
                     } else if (chains[i].chainIndexA == chains[j].chainIndexB) {
                         if (acos(chains[i].dir.x * chains[j].dir.x + chains[i].dir.y * chains[j].dir.y) < alignmentThreshold) {
-                            // std::cout << "here2" << endl;
                             chains[i].chainIndexA = chains[j].chainIndexA;
                             for (std::vector<int>::iterator it = chains[j].componentIndices.begin(); it != chains[j].componentIndices.end(); it++) {
                                 chains[i].componentIndices.push_back(*it);
@@ -673,7 +667,6 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
                         }
                     } else if (chains[i].chainIndexB == chains[j].chainIndexA) {
                         if (acos(chains[i].dir.x * chains[j].dir.x + chains[i].dir.y * chains[j].dir.y) < alignmentThreshold) {
-                            // std::cout << "here3" << endl;
                             chains[i].chainIndexB = chains[j].chainIndexA;
                             for (std::vector<int>::iterator it = chains[j].componentIndices.begin(); it != chains[j].componentIndices.end(); it++) {
                                 chains[i].componentIndices.push_back(*it);
@@ -694,7 +687,6 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
                         }
                     } else if (chains[i].chainIndexB == chains[j].chainIndexB) {
                         if (acos(chains[i].dir.x * -chains[j].dir.x + chains[i].dir.y * -chains[j].dir.y) < alignmentThreshold) {
-                            // std::cout << "here4" << endl;
                             chains[i].chainIndexB = chains[j].chainIndexA;
                             for (std::vector<int>::iterator it = chains[j].componentIndices.begin(); it != chains[j].componentIndices.end(); it++) {
                                 chains[i].componentIndices.push_back(*it);
@@ -748,13 +740,16 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
         std::stable_sort(chains.begin(), chains.end(), chainSortLength);
 
         // std::cout << chains.size() << " chains formed after merging" << std::endl;
-        renderComponents(SWTImage, finalComponents, output);
+        Mat outTemp( output.size(), CV_32FC1 );
+        renderComponents(SWTImage, finalComponents, outTemp);
+        outTemp.convertTo(outTemp, CV_8UC1, 255.);
+        cvtColor (outTemp, output, COLOR_GRAY2RGB);
         renderComponentBBs(finalComponents, output);
         return getComponentBBs(finalComponents);
 }
 }
 
-CV_EXPORTS_W void detectTextSWT (InputArray input, CV_OUT std::vector<cv::Rect>& result, bool dark_on_light) {
+CV_EXPORTS_W void detectTextSWT (InputArray input, CV_OUT std::vector<cv::Rect>& result, bool dark_on_light, OutputArray & draw /*=noArray()*/) {
     CV_CheckTypeEQ(input.type(), CV_8UC3, "");
 
 
@@ -796,11 +791,10 @@ CV_EXPORTS_W void detectTextSWT (InputArray input, CV_OUT std::vector<cv::Rect>&
     std::vector<std::vector<SWTPoint> > components = getComponents(SWTImage);
     std::vector<Component> validComponents = filterComponents(SWTImage, components, false);
 
-    Mat outTemp( input.size(), CV_32FC1 );
-    renderComponents(SWTImage, validComponents, outTemp);
-    renderComponentBBs(validComponents, outTemp);
-
-    Mat out( input.size(), CV_32FC1 );
+    Mat out( input.size(), CV_8UC3 );
+    if (draw.needed()) {
+        out = draw.getMat();
+    }
     Mat input_image = input.getMat();
     result = findValidChains(input_image, SWTImage, validComponents, out);
 }
