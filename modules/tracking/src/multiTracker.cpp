@@ -47,7 +47,7 @@ namespace cv
     bool MultiTracker_Alt::addTarget(InputArray image, const Rect2d& boundingBox, Ptr<Tracker> tracker_algorithm)
 	{
         Ptr<Tracker> tracker = tracker_algorithm;
-		if (tracker == NULL)
+		if (!tracker)
 			return false;
 
 		if (!tracker->init(image, boundingBox))

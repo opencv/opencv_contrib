@@ -83,7 +83,20 @@ static float calcRMSE(Mat flow1, Mat flow2)
     }
     return (float)sqrt(sum / (1e-9 + counter));
 }
-
+static float calcRMSE(vector<Point2f> prevPts, vector<Point2f> currPts, Mat flow)
+{
+    vector<float> ee;
+    for (unsigned int n = 0; n < prevPts.size(); n++)
+    {
+        Point2f gtFlow = flow.at<Point2f>(prevPts[n]);
+        if (isFlowCorrect(gtFlow.x) && isFlowCorrect(gtFlow.y))
+        {
+            Point2f diffFlow = (currPts[n] - prevPts[n]) - gtFlow;
+            ee.push_back(sqrt(diffFlow.x * diffFlow.x + diffFlow.y * diffFlow.y));
+        }
+    }
+    return static_cast<float>(mean(ee).val[0]);
+}
 static float calcAvgEPE(vector< pair<Point2i, Point2i> > corr, Mat flow)
 {
     double sum = 0;
@@ -111,9 +124,13 @@ static float calcAvgEPE(vector< pair<Point2i, Point2i> > corr, Mat flow)
 
 bool readRubberWhale(Mat &dst_frame_1, Mat &dst_frame_2, Mat &dst_GT)
 {
-    const string frame1_path = getRubberWhaleFrame1();
-    const string frame2_path = getRubberWhaleFrame2();
-    const string gt_flow_path = getRubberWhaleGroundTruth();
+    string frame1_path = getRubberWhaleFrame1();
+    string frame2_path = getRubberWhaleFrame2();
+    string gt_flow_path = getRubberWhaleGroundTruth();
+    // removing space may be an issue on windows machines
+    frame1_path.erase(std::remove_if(frame1_path.begin(), frame1_path.end(), isspace), frame1_path.end());
+    frame2_path.erase(std::remove_if(frame2_path.begin(), frame2_path.end(), isspace), frame2_path.end());
+    gt_flow_path.erase(std::remove_if(gt_flow_path.begin(), gt_flow_path.end(), isspace), gt_flow_path.end());
 
     dst_frame_1 = imread(frame1_path);
     dst_frame_2 = imread(frame2_path);
@@ -124,6 +141,7 @@ bool readRubberWhale(Mat &dst_frame_1, Mat &dst_frame_2, Mat &dst_GT)
     else
         return true;
 }
+
 
 TEST(DenseOpticalFlow_SimpleFlow, ReferenceAccuracy)
 {
@@ -157,6 +175,102 @@ TEST(DenseOpticalFlow_DeepFlow, ReferenceAccuracy)
     EXPECT_LE(calcRMSE(GT, flow), target_RMSE);
 }
 
+TEST(SparseOpticalFlow, ReferenceAccuracy)
+{
+    // with the following test each invoker class should be tested once
+    Mat frame1, frame2, GT;
+    ASSERT_TRUE(readRubberWhale(frame1, frame2, GT));
+    vector<Point2f> prevPts, currPts;
+    for (int r = 0; r < frame1.rows; r+=10)
+    {
+        for (int c = 0; c < frame1.cols; c+=10)
+        {
+            prevPts.push_back(Point2f(static_cast<float>(c), static_cast<float>(r)));
+        }
+    }
+    vector<uchar> status(prevPts.size());
+    vector<float> err(prevPts.size());
+    Ptr<SparseRLOFOpticalFlow> algo = SparseRLOFOpticalFlow::create();
+    algo->setForwardBackward(0.0f);
+    Ptr<RLOFOpticalFlowParameter> param = Ptr<RLOFOpticalFlowParameter>(new RLOFOpticalFlowParameter);
+    param->supportRegionType = SR_CROSS;
+    param->useIlluminationModel = true;
+    param->solverType = ST_BILINEAR;
+    algo->setRLOFOpticalFlowParameter(param);
+    algo->calc(frame1, frame2, prevPts, currPts, status, err);
+    EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.3f);
+
+    param->solverType = ST_STANDART;
+    algo->setRLOFOpticalFlowParameter(param);
+    algo->calc(frame1, frame2, prevPts, currPts, status, err);
+    EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.34f);
+
+    param->useIlluminationModel = false;
+    param->solverType = ST_BILINEAR;
+    algo->setRLOFOpticalFlowParameter(param);
+    algo->calc(frame1, frame2, prevPts, currPts, status, err);
+    EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.27f);
+
+    param->solverType = ST_STANDART;
+    algo->setRLOFOpticalFlowParameter(param);
+    algo->calc(frame1, frame2, prevPts, currPts, status, err);
+    EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.27f);
+
+    param->normSigma0 = numeric_limits<float>::max();
+    param->normSigma1 = numeric_limits<float>::max();
+    param->useIlluminationModel = true;
+
+    param->solverType = ST_BILINEAR;
+    algo->setRLOFOpticalFlowParameter(param);
+    algo->calc(frame1, frame2, prevPts, currPts, status, err);
+    EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.28f);
+
+    param->solverType = ST_STANDART;
+    algo->setRLOFOpticalFlowParameter(param);
+    algo->calc(frame1, frame2, prevPts, currPts, status, err);
+    EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.28f);
+
+    param->useIlluminationModel = false;
+
+    param->solverType = ST_BILINEAR;
+    algo->setRLOFOpticalFlowParameter(param);
+    algo->calc(frame1, frame2, prevPts, currPts, status, err);
+    EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.80f);
+
+    param->solverType = ST_STANDART;
+    algo->setRLOFOpticalFlowParameter(param);
+    algo->calc(frame1, frame2, prevPts, currPts, status, err);
+    EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.28f);
+}
+
+TEST(DenseOpticalFlow_RLOF, ReferenceAccuracy)
+{
+    Mat frame1, frame2, GT;
+    ASSERT_TRUE(readRubberWhale(frame1, frame2, GT));
+    Mat flow;
+    Ptr<DenseRLOFOpticalFlow> algo = DenseRLOFOpticalFlow::create();
+    Ptr<RLOFOpticalFlowParameter> param = Ptr<RLOFOpticalFlowParameter>(new RLOFOpticalFlowParameter);
+    param->supportRegionType = SR_CROSS;
+    param->solverType = ST_BILINEAR;
+    algo->setRLOFOpticalFlowParameter(param);
+    algo->setForwardBackward(1.0f);
+    algo->setGridStep(cv::Size(4, 4));
+    algo->setInterpolation(INTERP_EPIC);
+    algo->calc(frame1, frame2, flow);
+
+    ASSERT_EQ(GT.rows, flow.rows);
+    ASSERT_EQ(GT.cols, flow.cols);
+    EXPECT_LE(calcRMSE(GT, flow), 0.46f);
+
+    algo->setInterpolation(INTERP_GEO);
+    algo->calc(frame1, frame2, flow);
+
+    ASSERT_EQ(GT.rows, flow.rows);
+    ASSERT_EQ(GT.cols, flow.cols);
+    EXPECT_LE(calcRMSE(GT, flow), 0.55f);
+
+}
+
 TEST(DenseOpticalFlow_SparseToDenseFlow, ReferenceAccuracy)
 {
     Mat frame1, frame2, GT;
@@ -167,52 +281,6 @@ TEST(DenseOpticalFlow_SparseToDenseFlow, ReferenceAccuracy)
     Ptr<DenseOpticalFlow> algo;
     algo = createOptFlow_SparseToDense();
     algo->calc(frame1, frame2, flow);
-    ASSERT_EQ(GT.rows, flow.rows);
-    ASSERT_EQ(GT.cols, flow.cols);
-    EXPECT_LE(calcRMSE(GT, flow), target_RMSE);
-}
-
-TEST(DenseOpticalFlow_DIS, ReferenceAccuracy)
-{
-    Mat frame1, frame2, GT;
-    ASSERT_TRUE(readRubberWhale(frame1, frame2, GT));
-    int presets[] = {DISOpticalFlow::PRESET_ULTRAFAST, DISOpticalFlow::PRESET_FAST, DISOpticalFlow::PRESET_MEDIUM};
-    float target_RMSE[] = {0.86f, 0.74f, 0.49f};
-    cvtColor(frame1, frame1, COLOR_BGR2GRAY);
-    cvtColor(frame2, frame2, COLOR_BGR2GRAY);
-
-    Ptr<DenseOpticalFlow> algo;
-
-    // iterate over presets:
-    for (int i = 0; i < 3; i++)
-    {
-        Mat flow;
-        algo = createOptFlow_DIS(presets[i]);
-        algo->calc(frame1, frame2, flow);
-        ASSERT_EQ(GT.rows, flow.rows);
-        ASSERT_EQ(GT.cols, flow.cols);
-        EXPECT_LE(calcRMSE(GT, flow), target_RMSE[i]);
-    }
-}
-
-TEST(DenseOpticalFlow_VariationalRefinement, ReferenceAccuracy)
-{
-    Mat frame1, frame2, GT;
-    ASSERT_TRUE(readRubberWhale(frame1, frame2, GT));
-    float target_RMSE = 0.86f;
-    cvtColor(frame1, frame1, COLOR_BGR2GRAY);
-    cvtColor(frame2, frame2, COLOR_BGR2GRAY);
-
-    Ptr<VariationalRefinement> var_ref;
-    var_ref = createVariationalFlowRefinement();
-    var_ref->setAlpha(20.0f);
-    var_ref->setDelta(5.0f);
-    var_ref->setGamma(10.0f);
-    var_ref->setSorIterations(25);
-    var_ref->setFixedPointIterations(25);
-    Mat flow(frame1.size(), CV_32FC2);
-    flow.setTo(0.0f);
-    var_ref->calc(frame1, frame2, flow);
     ASSERT_EQ(GT.rows, flow.rows);
     ASSERT_EQ(GT.cols, flow.cols);
     EXPECT_LE(calcRMSE(GT, flow), target_RMSE);

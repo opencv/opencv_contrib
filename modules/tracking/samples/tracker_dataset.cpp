@@ -145,7 +145,7 @@ int main(int argc, char *argv[])
 
 	//Create Tracker
     Ptr<Tracker> tracker = createTrackerByName(tracker_algorithm);
-	if (tracker == NULL)
+	if (!tracker)
 	{
 		cout << "***Error in the instantiation of the tracker...***\n";
 		getchar();

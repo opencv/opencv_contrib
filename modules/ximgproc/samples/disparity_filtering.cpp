@@ -3,7 +3,6 @@
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/core/utility.hpp"
-#include "opencv2/ximgproc/disparity_filter.hpp"
 #include "opencv2/ximgproc.hpp"
 #include <iostream>
 #include <string>
@@ -308,7 +307,6 @@ int main(int argc, char** argv)
         (void)fbs_luma;
         (void)fbs_chroma;
         (void)fbs_lambda;
-
 #endif
     }
     else if(filter=="wls_no_conf")
