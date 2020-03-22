@@ -17,7 +17,6 @@ class TrackerInvoker : public cv::ParallelLoopBody
 {
 public:
     TrackerInvoker(
-
         const Mat&      _prevImg,
         const Mat&      _prevDeriv,
         const Mat&      _nextImg,
@@ -325,7 +324,7 @@ public:
                         }
                     }
 #else
-                    for( ; x < winSize.width*cn; x++, dIptr += 2 )
+                    for(int x = 0 ; x < winSize.width*cn; x++, dIptr += 2 )
                     {
                         if( maskPtr[x] == 0)
                             continue;

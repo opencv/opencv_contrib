@@ -5,11 +5,6 @@
 #define _RLOF_INVOKERBASE_HPP_
 
 
-#if CV_SSE2 | CV_SSE3 | CV_SSE4_1
-#define RLOF_SSE
-#endif
-
-
 #ifndef CV_DESCALE
 #define CV_DESCALE(x, n)     (((x) + (1 << ((n)-1))) >> (n))
 #endif
@@ -22,93 +17,16 @@
 #include "opencv2/core/hal/intrin.hpp"
 using namespace std;
 using namespace cv;
-
-
+#ifdef OLD
+#undef CV_SIMD128
+#endif
 namespace cv {
 namespace optflow {
 
 
 typedef short deriv_type;
-#ifdef RLOF_SSE
+#ifdef CV_SIMD128
 
-#if CV_SSE4_1 | CV_SSE4_2
-#define ABS_EPI16(a) _mm_abs_epi16(a)
-#define CVTEPI8_EPI16(a) _mm_cvtepi8_epi16(a)
-#define CVTEPI16_EPI32(a) _mm_cvtepi16_epi32(a)
-#define BLENDV_EPI8(a, b, mask) _mm_blendv_epi8(a, b, mask)
-#define BLENDV_PS(a, b, mask) _mm_blendv_ps(a, b, mask)
-#endif
-
-#ifndef ABS_EPI16
-static inline __m128i cabs_epi16(__m128i _a)
-{
-    short CV_DECL_ALIGNED(16) a[8];
-    _mm_storeu_si128((__m128i*)a, _a);
-    return _mm_set_epi16(
-        static_cast<short>(std::abs(a[7])), static_cast<short>(std::abs(a[6])),
-        static_cast<short>(std::abs(a[5])), static_cast<short>(std::abs(a[4])),
-        static_cast<short>(std::abs(a[3])), static_cast<short>(std::abs(a[2])),
-        static_cast<short>(std::abs(a[1])), static_cast<short>(std::abs(a[0])));
-}
-#define ABS_EPI16(a) cabs_epi16(a)
-#endif
-#ifndef CVTEPI8_EPI16
-static inline __m128i cvtepi8_epi16(__m128i _a)
-{
-    char CV_DECL_ALIGNED(8) a[64];
-    _mm_storeu_si128((__m128i*)a, _a);
-    return _mm_set_epi16(static_cast<int>(a[7]), static_cast<int>(a[6]),
-                         static_cast<int>(a[5]), static_cast<int>(a[4]),
-                         static_cast<int>(a[3]), static_cast<int>(a[2]),
-                         static_cast<int>(a[1]), static_cast<int>(a[0]));
-}
-#define CVTEPI8_EPI16(a) cvtepi8_epi16(a)
-#endif
-#ifndef CVTEPI16_EPI32
-static inline __m128i cvtepi16_epi32(__m128i _a)
-{
-   short CV_DECL_ALIGNED(16) a[8];
-   _mm_storeu_si128((__m128i*)a, _a);
-   return _mm_set_epi32(static_cast<int>(a[3]), static_cast<int>(a[2]), static_cast<int>(a[1]), static_cast<int>(a[0]));
-}
-#define CVTEPI16_EPI32(a) cvtepi16_epi32(a)
-#endif
-#ifndef BLENDV_EPI8
-static inline __m128i blendv_epi8(__m128i _a, __m128i _b, __m128i _mask)
-{
-    short CV_DECL_ALIGNED(16) a[8], b[8], res[8];
-    unsigned short CV_DECL_ALIGNED(16) mask[8];
-    _mm_storeu_si128((__m128i*)a, _a);
-    _mm_storeu_si128((__m128i*)b, _b);
-    _mm_storeu_si128((__m128i*)mask, _mask);
-    res[0] = (mask[0] > 0) ? b[0] : a[0];
-    res[1] = (mask[1] > 0) ? b[1] : a[1];
-    res[2] = (mask[2] > 0) ? b[2] : a[2];
-    res[3] = (mask[3] > 0) ? b[3] : a[3];
-    res[4] = (mask[4] > 0) ? b[4] : a[4];
-    res[5] = (mask[5] > 0) ? b[5] : a[5];
-    res[6] = (mask[6] > 0) ? b[6] : a[6];
-    res[7] = (mask[7] > 0) ? b[7] : a[7];
-    return _mm_loadu_si128((__m128i*)res);
-}
-#define BLENDV_EPI8(a, b, mask)  blendv_epi8(a, b, mask)
-#endif
-#ifndef BLENDV_PS
-static inline __m128 blendv_ps(__m128 _a, __m128 _b, __m128 _mask)
-{
-    float CV_DECL_ALIGNED(32) a[4], b[4], res[4];
-    float CV_DECL_ALIGNED(32) mask[4];
-    _mm_store_ps(a, _a);
-    _mm_store_ps(b, _b);
-    _mm_store_ps(mask, _mask);
-    res[0] = (mask[0] < 0) ? b[0] : a[0];
-    res[1] = (mask[1] < 0) ? b[1] : a[1];
-    res[2] = (mask[2] < 0) ? b[2] : a[2];
-    res[3] = (mask[3] < 0) ? b[3] : a[3];
-    return _mm_load_ps(res);
-}
-#define BLENDV_PS(a, b, mask) blendv_ps(a, b, mask)
-#endif
 static inline void get4BitMask(const int & width, __m128i & mask)
 {
     int noBits = width - static_cast<int>(floor(width / 4.f) * 4.f);
@@ -132,20 +50,6 @@ static inline void getVBitMask(const int & width, v_int32x4 & mask0, v_int32x4 &
     mask0 = v_int32x4(val[0], val[1], val[2], val[3]);
     mask1 = v_int32x4(val[4], val[5], val[6], val[7]);
 }
-
-static inline void getWBitMask(const int & width, __m128i & t0, __m128i & t1, __m128i & t2)
-{
-    int noBits = width - static_cast<int>(floor(width / 8.f) * 8.f);
-    unsigned short val[8];
-    for (int n = 0; n < 8; n++)
-    {
-        val[n] = (noBits > n) ? (0xffff) : 0;
-    }
-    t1 = _mm_set_epi16(val[7], val[7], val[6], val[6], val[5], val[5], val[4], val[4]);
-    t0 = _mm_set_epi16(val[3], val[3], val[2], val[2], val[1], val[1], val[0], val[0]);
-    t2 = _mm_set_epi16(val[7], val[6], val[5], val[4], val[3], val[2], val[1], val[0]);
-}
-
 #endif
 typedef uchar tMaskType;
 #define tCVMaskType CV_8UC1
@@ -383,7 +287,7 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
             vA11 = v_muladd(fx, fx, vA11);
         }
 #else
-        for (; x < winSize.width*cn; x++, dsrc += 2, dsrc1 += 2, dIptr += 2)
+        for (int x = 0; x < winSize.width*cn; x++, dsrc += 2, dsrc1 += 2, dIptr += 2)
         {
             if (maskPtr[x] == 0)
             {
