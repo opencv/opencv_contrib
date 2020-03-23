@@ -1593,7 +1593,7 @@ public:
 
             float a = prevPt.x - iprevPt.x;
             float b = prevPt.y - iprevPt.y;
-            const int W_BITS = 14, W_BITS1 = 14;
+            const int W_BITS = 14;
 
             int iw00 = cvRound((1.f - a)*(1.f - b)*(1 << W_BITS));
             int iw01 = cvRound(a*(1.f - b)*(1 << W_BITS));

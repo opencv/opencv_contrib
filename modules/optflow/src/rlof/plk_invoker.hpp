@@ -676,7 +676,6 @@ public:
                 v_int16x8 vqw0 = v_int16x8((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
                 v_int16x8 vqw1 = v_int16x8((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
                 v_float32x4 vqb0 = v_setzero_f32(), vqb1 = v_setzero_f32();
-               // v_float32x4 vAxx = v_setzero_f32(), vAxy = v_setzero_f32(), vAyy = v_setzero_f32();
                 v_int16x8 vmax_val_16 = v_setall_s16(std::numeric_limits<unsigned short>::max());
                 v_int32x4 vdelta = v_setall_s32(1 << (W_BITS1 - 5 - 1));
 #endif
