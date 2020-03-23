@@ -64,7 +64,7 @@ namespace cv
             //!the confidence to which a min disparity found is good or not
             double confidenceCheck;
             //!the LUT used in case SSE is not available
-            int hamLut[65537];
+            int hamLut[65536];  // FIXIT use preferined 8-bit lookup table for hamming
             //!function used for getting the minimum disparity from the cost volume"
             static int minim(short *c, int iwpj, int widthDisp,const double confidence, const int search_region)
             {
@@ -131,7 +131,7 @@ namespace cv
             //!a pre processing function that generates the Hamming LUT in case the algorithm will ever be used on platform where SSE is not available
             void hammingLut()
             {
-                for (int i = 0; i <= 65536; i++)
+                for (int i = 0; i < 65536; i++)
                 {
                     int dist = 0;
                     int j = i;
@@ -157,19 +157,16 @@ namespace cv
                 hammingDistance(const Mat &leftImage, const Mat &rightImage, short *cost, int maxDisp, int kerSize, int *hammingLUT):
                     left((int *)leftImage.data), right((int *)rightImage.data), c(cost), v(maxDisp),kernelSize(kerSize),width(leftImage.cols), MASK(65535), hammLut(hammingLUT){}
                 void operator()(const cv::Range &r) const CV_OVERRIDE {
-                    for (int i = r.start; i <= r.end ; i++)
+                    for (int i = r.start; i < r.end ; i++)
                     {
                         int iw = i * width;
                         for (int j = kernelSize; j < width - kernelSize; j++)
                         {
-                            int j2;
-                            int xorul;
-                            int iwj;
-                            iwj = iw + j;
+                            int iwj = iw + j;
                             for (int d = 0; d <= v; d++)
                             {
-                                j2 = (0 > j - d) ? (0) : (j - d);
-                                xorul = left[(iwj)] ^ right[(iw + j2)];
+                                int j2 = std::max(0, j - d);
+                                int xorul = left[(iwj)] ^ right[(iw + j2)];
 #if CV_POPCNT
                                 if (checkHardwareSupport(CV_CPU_POPCNT))
                                 {
@@ -203,16 +200,25 @@ namespace cv
                     parSum = (short *)partialSums.data;
                 }
                 void operator()(const cv::Range &r) const CV_OVERRIDE {
-                    for (int i = r.start; i <= r.end; i++)
+                    for (int i = r.start; i < r.end; i++)
                     {
-                        int iwi = (i - 1) * width;
-                        for (int j = win + 1; j <= width - win - 1; j++)
+                        int iwi = i * width;
+                        for (int j = 0; j <= width; j++)
                         {
+                            int w = (iwi + j) * (maxDisp + 1);
+                            if (i < win + 1 || i >= height - win - 1 || j < win + 1 || j >= width - win - 1)
+                            {
+                                for (int d = 0; d <= maxDisp; d++)
+                                {
+                                    c[w + d] = 0;
+                                }
+                                continue;
+                            }
+
                             int w1 = ((i + win + 1) * width + j + win) * (maxDisp + 1);
                             int w2 = ((i - win) * width + j - win - 1) * (maxDisp + 1);
                             int w3 = ((i + win + 1) * width + j - win - 1) * (maxDisp + 1);
                             int w4 = ((i - win) * width + j + win) * (maxDisp + 1);
-                            int w = (iwi + j - 1) * (maxDisp + 1);
                             for (int d = 0; d <= maxDisp; d++)
                             {
                                 c[w + d] = parSum[w1 + d] + parSum[w2 + d]
@@ -244,7 +250,7 @@ namespace cv
                     confCheck = confidence;
                 }
                 void operator()(const cv::Range &r) const CV_OVERRIDE {
-                    for (int i = r.start; i <= r.end ; i++)
+                    for (int i = r.start; i < r.end ; i++)
                     {
                         int lr;
                         int v = -1;
@@ -301,10 +307,16 @@ namespace cv
                     width = originalImage.cols;
                 }
                 void operator()(const cv::Range &r) const CV_OVERRIDE {
-                    for (int m = r.start; m <= r.end; m++)
+                    for (int m = r.start; m < r.end; m++)
                     {
-                        for (int n = 4; n < width - 4; ++n)
+                        for (int n = 0; n < width; ++n)
                         {
+                            if (m < 1 || m >= height - 1 || n < 4 || n >= width - 4)
+                            {
+                                filtered[m * width + n] = original[m * width + n];  // FIXIT replace with OpenCV function
+                                continue;
+                            }
+
                             int k = 0;
                             T window[9];
                             for (int i = n - 4; i <= n + 4; ++i)
@@ -341,10 +353,16 @@ namespace cv
                     width = originalImage.cols;
                 }
                 void operator()(const Range &r) const CV_OVERRIDE {
-                    for (int n = r.start; n <= r.end; ++n)
+                    for (int n = r.start; n < r.end; ++n)
                     {
                         for (int m = 4; m < height - 4; ++m)
                         {
+                            if (m < 4 || m >= height - 4 || n < 1 || n >= width - 1)
+                            {
+                                filtered[m * width + n] = original[m * width + n];  // FIXIT replace with OpenCV function
+                                continue;
+                            }
+
                             int k = 0;
                             T window[9];
                             for (int i = m - 4; i <= m + 4; ++i)
@@ -430,11 +448,11 @@ namespace cv
                 short *c = (short *)cost.data;
                 short *ham = (short *)hammingDistanceCost.data;
                 memset(c, 0, sizeof(c[0]) * (width + 1) * (height + 1) * (maxDisp + 1));
-                for (int i = 1; i <= height; i++)
+                for (int i = 1; i < height; i++)
                 {
                     int iw = i * width;
                     int iwi = (i - 1) * width;
-                    for (int j = 1; j <= width; j++)
+                    for (int j = 1; j < width; j++)
                     {
                         int iwj = (iw + j) * (maxDisp + 1);
                         int iwjmu = (iw + j - 1) * (maxDisp + 1);
@@ -445,9 +463,9 @@ namespace cv
                         }
                     }
                 }
-                for (int i = 1; i <= height; i++)
+                for (int i = 1; i < height; i++)
                 {
-                    for (int j = 1; j <= width; j++)
+                    for (int j = 1; j < width; j++)
                     {
                         int iwj = (i * width + j) * (maxDisp + 1);
                         int iwjmu = ((i - 1)  * width + j) * (maxDisp + 1);
@@ -464,18 +482,18 @@ namespace cv
                 CV_Assert(windowSize % 2 != 0);
                 CV_Assert(partialSums.rows == cost.rows);
                 CV_Assert(partialSums.cols == cost.cols);
-                int win = windowSize / 2;
                 short *c = (short *)cost.data;
                 int maxDisp = maxDisparity;
                 int width = cost.cols / ( maxDisp + 1) - 1;
                 int height = cost.rows - 1;
                 memset(c, 0, sizeof(c[0]) * width * height * (maxDisp + 1));
-                parallel_for_(cv::Range(win + 1,height - win - 1), agregateCost(partialSums,windowSize,maxDisp,cost));
+                parallel_for_(cv::Range(0, height), agregateCost(partialSums,windowSize, maxDisp, cost));
             }
             //!remove small regions that have an area smaller than t, we fill the region with the average of the good pixels around it
             template <typename T>
             void smallRegionRemoval(const Mat &currentMap, int t, Mat &out)
             {
+                CV_Assert(currentMap.data != out.data && "inplace is not supported");
                 CV_Assert(currentMap.cols == out.cols);
                 CV_Assert(currentMap.rows == out.rows);
                 CV_Assert(t >= 0);
@@ -494,16 +512,22 @@ namespace cv
                 int speckle_size = 0;
                 st = 0;
                 dr = 0;
-                for (int i = 1; i < height - 1; i++)
+                for (int i = 0; i < height; i++)
                 {
                     int iw = i * width;
-                    for (int j = 1; j < width - 1; j++)
+                    for (int j = 0; j < width; j++)
                     {
+                        if (i < 1 || i >= height - 1 || j < 1 || j >= width - 1)
+                        {
+                            outputMap[iw + j] = 0;
+                            continue;
+                        }
+
                         if (map[iw + j] != 0)
                         {
                             outputMap[iw + j] = map[iw + j];
                         }
-                        else if (map[iw + j] == 0)
+                        else // if (map[iw + j] == 0)
                         {
                             T nr = 1;
                             T avg = 0;
@@ -571,7 +595,7 @@ namespace cv
                 int width = costVolume.cols / ( disparity + 1) - 1;
                 int height = costVolume.rows - 1;
                 memset(map, 0, sizeof(map[0]) * width * height);
-                parallel_for_(Range(0,height - 1), makeMap(costVolume,th,disparity,confidenceCheck,scallingFactor,mapFinal));
+                parallel_for_(Range(0, height), makeMap(costVolume,th,disparity,confidenceCheck,scallingFactor,mapFinal));
             }
         public:
             //!a median filter of 1x9 and 9x1
@@ -581,7 +605,7 @@ namespace cv
             {
                 CV_Assert(originalImage.rows == filteredImage.rows);
                 CV_Assert(originalImage.cols == filteredImage.cols);
-                parallel_for_(Range(1,originalImage.rows - 2), Median1x9<T>(originalImage,filteredImage));
+                parallel_for_(Range(0, originalImage.rows), Median1x9<T>(originalImage,filteredImage));
             }
             //!9x1 median filter
             template<typename T>
@@ -589,7 +613,7 @@ namespace cv
             {
                 CV_Assert(originalImage.cols == filteredImage.cols);
                 CV_Assert(originalImage.cols == filteredImage.cols);
-                parallel_for_(Range(1,originalImage.cols - 2), Median9x1<T>(originalImage,filteredImage));
+                parallel_for_(Range(0, originalImage.cols), Median9x1<T>(originalImage,filteredImage));
             }
             //!constructor for the matching class
             //!maxDisp - represents the maximum disparity

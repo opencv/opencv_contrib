@@ -669,15 +669,10 @@ namespace cv
                 }
                 else if(params.kernelType == CV_MEAN_VARIATION)
                 {
-                    parSumsIntensityImage[0].create(left.rows, left.cols,CV_32SC4);
-                    parSumsIntensityImage[1].create(left.rows, left.cols,CV_32SC4);
-                    Integral[0].create(left.rows,left.cols,CV_32SC4);
-                    Integral[1].create(left.rows,left.cols,CV_32SC4);
-                    integral(left, parSumsIntensityImage[0],CV_32S);
-                    integral(right, parSumsIntensityImage[1],CV_32S);
-                    imageMeanKernelSize(parSumsIntensityImage[0], params.kernelSize,Integral[0]);
-                    imageMeanKernelSize(parSumsIntensityImage[1], params.kernelSize, Integral[1]);
-                    modifiedCensusTransform(left,right,params.kernelSize,censusImageLeft,censusImageRight,CV_MEAN_VARIATION,0,Integral[0], Integral[1]);
+                    Mat blurLeft; blur(left, blurLeft, Size(params.kernelSize, params.kernelSize));
+                    Mat blurRight; blur(right, blurRight, Size(params.kernelSize, params.kernelSize));
+                    modifiedCensusTransform(left, right, params.kernelSize, censusImageLeft, censusImageRight, CV_MEAN_VARIATION, 0,
+                        blurLeft, blurRight);
                 }
                 else if(params.kernelType == CV_STAR_KERNEL)
                 {
@@ -702,7 +697,7 @@ namespace cv
                     aux.create(height,width,CV_16S);
                     Median1x9Filter<short>(disp, aux);
                     Median9x1Filter<short>(aux,disp);
-                    smallRegionRemoval<short>(disp, params.speckleWindowSize, disp);
+                    smallRegionRemoval<short>(disp.clone(), params.speckleWindowSize, disp);
                 }
                 else if(params.regionRemoval == CV_SPECKLE_REMOVAL_ALGORITHM)
                 {
@@ -800,8 +795,6 @@ namespace cv
             Mat partialSumsLR;
             Mat agregatedHammingLRCost;
             Mat hamDist;
-            Mat parSumsIntensityImage[2];
-            Mat Integral[2];
         };
 
         const char* StereoBinarySGBMImpl::name_ = "StereoBinaryMatcher.SGBM";
