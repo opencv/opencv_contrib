@@ -213,7 +213,6 @@ public:
                 v_int16x8 vqw1 = v_int16x8((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
                 v_float32x4 vqb0 = v_setzero_f32(), vqb1 = v_setzero_f32();
                 v_float32x4 vAxx = v_setzero_f32(), vAxy = v_setzero_f32(), vAyy = v_setzero_f32();
-                v_int32x4 vdelta_d = v_setall_s32(1 << (W_BITS1 - 1));
                 v_int32x4 vdelta = v_setall_s32(1 << (W_BITS1 - 5 - 1));
                 v_int16x8 vscale = v_setall_s16(static_cast<short>(MEstimatorScale));
                 v_int16x8 veta = v_setzero_s16();
@@ -733,7 +732,6 @@ public:
                 v_float32x4 vAxx = v_setzero_f32(), vAxy = v_setzero_f32(), vAyy = v_setzero_f32();
 
                 int s2bitShift = normSigma2 == 0 ? 1 : cvCeil(log(200.f / std::fabs(normSigma2)) / log(2.f));
-                v_int32x4 vdelta_d = v_setall_s32(1 << (W_BITS1 - 1));
                 v_int32x4 vdelta = v_setall_s32(1 << (W_BITS1 - 5 - 1));
                 v_int16x8 vzero = v_setzero_s16();
                 v_int16x8 voness = v_setall_s16(1 << s2bitShift);

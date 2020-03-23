@@ -269,14 +269,8 @@ public:
                     v_int16x8 vqw1 = v_int16x8((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
                     v_float32x4 vqb0[4] = { v_setzero_f32(), v_setzero_f32(), v_setzero_f32(), v_setzero_f32() };
                     v_float32x4 vqb1[4] = { v_setzero_f32(), v_setzero_f32(), v_setzero_f32(), v_setzero_f32() };
-                    v_float32x4 vqb2[4] = { v_setzero_f32(), v_setzero_f32(), v_setzero_f32(), v_setzero_f32() };
-                    v_float32x4 vqb3[4] = { v_setzero_f32(), v_setzero_f32(), v_setzero_f32(), v_setzero_f32() };
-                    v_float32x4 vsumW1 = v_setzero_f32(), vsumW2 = v_setzero_f32(), vsumW = v_setzero_f32();
-                    v_float32x4 vsumIy = v_setzero_f32(), vsumIx = v_setzero_f32(), vsumI = v_setzero_f32(), vsumDI = v_setzero_f32();
                     v_float32x4 vAxx = v_setzero_f32(), vAxy = v_setzero_f32(), vAyy = v_setzero_f32();
-
                     int s2bitShift = normSigma2 == 0 ? 1 : cvCeil(log(200.f / std::fabs(normSigma2)) / log(2.f));
-                    v_int32x4 vdelta_d = v_setall_s32(1 << (W_BITS1 - 1));
                     v_int32x4 vdelta = v_setall_s32(1 << (W_BITS1 - 5 - 1));
                     v_int16x8 vzero = v_setzero_s16();
                     v_int16x8 voness = v_setall_s16(1 << s2bitShift);
@@ -940,7 +934,6 @@ public:
                     v_float32x4 vAxx = v_setzero_f32(), vAxy = v_setzero_f32(), vAyy = v_setzero_f32();
 
                     int s2bitShift = normSigma2 == 0 ? 1 : cvCeil(log(200.f / std::fabs(normSigma2)) / log(2.f));
-                    v_int32x4 vdelta_d = v_setall_s32(1 << (W_BITS1 - 1));
                     v_int32x4 vdelta = v_setall_s32(1 << (W_BITS1 - 5 - 1));
                     v_int16x8 vzero = v_setzero_s16();
                     v_int16x8 voness = v_setall_s16(1 << s2bitShift);
@@ -1278,8 +1271,6 @@ public:
                     w1 *= -FLT_SCALE;
                     w2 *= -FLT_SCALE;
                     dI *= FLT_SCALE;
-                    
-
                     A11 *= FLT_SCALE;
                     A12 *= FLT_SCALE;
                     A22 *= FLT_SCALE;
@@ -1665,13 +1656,9 @@ public:
                     float _b1[4] = {0,0,0,0};
                     float _b2[4] = {0,0,0,0};
 #ifdef CV_SIMD128
-                    v_int16x8 vqw0 = v_int16x8((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
-                    v_int16x8 vqw1 = v_int16x8((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
                     v_float32x4 vqb0[4] = {v_setzero_f32(), v_setzero_f32(), v_setzero_f32(), v_setzero_f32()};
-                    v_float32x4 vqb1[4] = {v_setzero_f32(), v_setzero_f32(), v_setzero_f32(), v_setzero_f32()}; 
-                    v_float32x4 vAxx = v_setzero_f32(), vAxy = v_setzero_f32(), vAyy = v_setzero_f32();
+                    v_float32x4 vqb1[4] = {v_setzero_f32(), v_setzero_f32(), v_setzero_f32(), v_setzero_f32()};
                     v_int16x8 vmax_val_16 = v_setall_s16(std::numeric_limits<unsigned short>::max());
-                    v_int32x4 vdelta = v_setall_s32(1 << (W_BITS1 - 5 - 1));
 #endif
                     for(int y = 0; y < winSize.height; y++ )
                     {
@@ -1700,7 +1687,6 @@ public:
 
                             v_int16x8 vIxy_0 = v_reinterpret_as_s16(v_load(dIptr)); // Ix0 Iy0 Ix1 Iy1 ...
                             v_int16x8 vIxy_1 = v_reinterpret_as_s16(v_load(dIptr + 8));
-                            
                             for (unsigned int mmi = 0; mmi < 4; mmi++)
                             {
                                 v_zip(diff[mmi], diff[mmi], diff1, diff0);
@@ -1890,7 +1876,7 @@ namespace radial {
             int             _supportRegionType,
             int             _crossSegmentationThreshold,
             float           _minEigenValue
-        ) 
+        )
         {
             prevImg = &_prevImg;
             prevDeriv = &_prevDeriv;
@@ -2084,7 +2070,6 @@ namespace radial {
                         v_float32x4 vsumIy = v_setzero_f32(), vsumIx = v_setzero_f32(), vsumI = v_setzero_f32(), vsumDI = v_setzero_f32();
                         v_float32x4 vAxx = v_setzero_f32(), vAxy = v_setzero_f32(), vAyy = v_setzero_f32();
 
-                        v_int32x4 vdelta_d = v_setall_s32(1 << (W_BITS1 - 1));
                         v_int32x4 vdelta = v_setall_s32(1 << (W_BITS1 - 5 - 1));
                         v_int16x8 vmax_val_16 = v_setall_s16(std::numeric_limits<unsigned short>::max());
 
@@ -2238,7 +2223,7 @@ namespace radial {
                                 int diff = J_val + illValue;
                                 int abss = (diff < 0) ? -diff : diff;
 
-                                // compute the missmatch vector                                
+                                // compute the missmatch vector
                                 _b0[0] += (float)(It[0] * dIptr[0]);
                                 _b0[1] += (float)(It[1] * dIptr[0]);
                                 _b0[2] += (float)(It[2] * dIptr[0]);

@@ -30,7 +30,6 @@ static inline void get4BitMask(const int & width, __m128i & mask)
         val[n] = (noBits > n) ? (std::numeric_limits<unsigned int>::max()) : 0;
     }
     mask = _mm_set_epi32(val[3], val[2], val[1], val[0]);
-
 }
 
 static inline void getVBitMask(const int & width, v_int32x4 & mask0, v_int32x4 & mask1)
@@ -56,7 +55,7 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
     Point iprevPt)
 {
     int cn = I.channels(), cn2 = cn * 2;
-    const int W_BITS = 14, W_BITS1 = 14;
+    const int W_BITS1 = 14;
 #ifdef CV_SIMD128
     v_int16x8 vqw0((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
     v_int16x8 vqw1((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
@@ -174,7 +173,7 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
 {
     const float FLT_SCALE = (1.f / (1 << 20));
     int cn = I.channels(), cn2 = cn * 2;
-    const int W_BITS = 14, W_BITS1 = 14;
+    const int W_BITS1 = 14;
 #ifdef CV_SIMD128
     v_int16x8 vqw0((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
     v_int16x8 vqw1((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
@@ -199,7 +198,6 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
 #ifdef CV_SIMD128
         for (int x = 0; x <= winSize.width*cn; x += 8, dsrc += 8 * 2, dsrc1 += 8 * 2, dIptr += 8 * 2)
         {
-            v_int16x8 vmask_16 = v_reinterpret_as_s16(v_load_expand(maskPtr + x));
             v_int32x4 vmask0 = v_reinterpret_as_s32(v_load_expand_q(maskPtr + x)) * vmax_val_32;
             v_int32x4 vmask1 = v_reinterpret_as_s32(v_load_expand_q(maskPtr + x + 4)) * vmax_val_32;
             if (x + 4 > winSize.width)
