@@ -1999,7 +1999,6 @@ namespace radial {
                 cv::Point2f backUpGain = gainVec;
                 cv::Size _winSize = winSize;
                 int j;
-                int buffIdx = 0;
                 float c[8];
                 cv::Mat GMc0, GMc1, GMc2, GMc3;
                 cv::Vec4f Mc0, Mc1, Mc2, Mc3;
@@ -2078,8 +2077,6 @@ namespace radial {
                         v_int16x8 vgain_value = v_setall_s16(static_cast<short>(gainVec.x * (float)(1 << bitShift)));
                         v_int16x8 vconst_value = v_setall_s16(static_cast<short>(gainVec.y));
 #endif
-
-                        buffIdx = 0;
                         float _b0[4] = { 0,0,0,0 };
                         float _b1[4] = { 0,0,0,0 };
                         float _b2[4] = { 0,0,0,0 };
