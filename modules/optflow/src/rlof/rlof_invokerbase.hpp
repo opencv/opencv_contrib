@@ -21,17 +21,6 @@ namespace optflow {
 typedef short deriv_type;
 #ifdef CV_SIMD128
 
-static inline void get4BitMask(const int & width, __m128i & mask)
-{
-    int noBits = width - static_cast<int>(floor(width / 4.f) * 4.f);
-    unsigned int val[4];
-    for (int n = 0; n < 4; n++)
-    {
-        val[n] = (noBits > n) ? (std::numeric_limits<unsigned int>::max()) : 0;
-    }
-    mask = _mm_set_epi32(val[3], val[2], val[1], val[0]);
-}
-
 static inline void getVBitMask(const int & width, v_int32x4 & mask0, v_int32x4 & mask1)
 {
     int noBits = width - static_cast<int>(floor(width / 8.f) * 8.f);
