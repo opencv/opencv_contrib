@@ -245,7 +245,7 @@ bool FacemarkKazemiImpl :: buildRegtree(regtree& tree,vector<training_sample>& s
     while(!curr.empty()){
         pair<long,long> range= make_pair(curr.front().index1,curr.front().index2);
         long node_no = curr.front().node_no;
-        splitr split;
+        splitr split = {0, 0, 0};
         //generate a split
         if(node_no<=numSplitNodes){
             if(generateSplit(curr,pixel_coordinates,samples,split,sum)){
