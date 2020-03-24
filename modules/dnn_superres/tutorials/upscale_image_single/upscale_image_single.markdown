@@ -23,7 +23,7 @@ Or make sure you check the dnn_superres module in the GUI version of CMake: cmak
 Source Code of the sample
 -----------
 
-You can run the sample code by doing 
+You can run the sample code by doing
 
 ```run
 <path_of_your_opencv_build_directory>/bin/example_dnn_superres_dnn_superres <path_to_image.png> <algo_string> <upscale_int> <model_path.pb>
@@ -102,7 +102,7 @@ sr.setModel("edsr", 4)
 result = sr.upsample(image)
 
 # Save the image
-cv2.imwrite("./upscaled.png", result) 
+cv2.imwrite("./upscaled.png", result)
 @endcode
 
 
