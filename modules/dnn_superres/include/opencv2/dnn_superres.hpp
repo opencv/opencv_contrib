@@ -82,8 +82,7 @@ public:
     @param weights Path to the model weights file.
     @param definition Path to the model definition file.
     */
-
-    CV_EXPORTS_AS(readModel2) void readModel(const String& weights, const String& definition);
+    void readModel(const String& weights, const String& definition);
 
     /** @brief Set desired model
     @param algo String containing one of the desired models:
