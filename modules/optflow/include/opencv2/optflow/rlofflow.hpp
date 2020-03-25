@@ -224,7 +224,7 @@ public:
  * For the RLOF configuration see optflow::RLOFOpticalFlowParameter for further details.
  * Parameters have been described in @cite Senst2012 @cite Senst2013 @cite Senst2014 and @cite Senst2016.
  *
- * @note If the grid size is set to (1,1) and the forward backward threshold <= 0 than pixelwise dense optical flow field is 
+ * @note If the grid size is set to (1,1) and the forward backward threshold <= 0 than pixelwise dense optical flow field is
  * computed by RLOF without using interpolation.
  *
  * @see optflow::calcOpticalFlowDenseRLOF(), optflow::RLOFOpticalFlowParameter
