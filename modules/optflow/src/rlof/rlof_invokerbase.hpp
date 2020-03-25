@@ -17,9 +17,12 @@ using namespace cv;
 namespace cv {
 namespace optflow {
 
+#ifdef OLD
+#define CV_SIMD128 0
+#endif
 
 typedef short deriv_type;
-#ifdef CV_SIMD128
+#if CV_SIMD128
 
 static inline void getVBitMask(const int & width, v_int32x4 & mask0, v_int32x4 & mask1)
 {
@@ -45,7 +48,7 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
 {
     int cn = I.channels(), cn2 = cn * 2;
     const int W_BITS1 = 14;
-#ifdef CV_SIMD128
+#if CV_SIMD128
     v_int16x8 vqw0((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
     v_int16x8 vqw1((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
     v_int32x4 vdelta_d = v_setall_s32(1 << (W_BITS1 - 1));
@@ -67,7 +70,7 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
         short* dIptr = derivIWinBuf.ptr<short>(y, 0);
         const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
         x = 0;
-#ifdef CV_SIMD128
+#if CV_SIMD128
 
         for (; x <= winSize.width*cn; x += 8, dsrc += 8 * 2, dsrc1 += 8 * 2, dIptr += 8 * 2)
         {
@@ -163,7 +166,7 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
     const float FLT_SCALE = (1.f / (1 << 20));
     int cn = I.channels(), cn2 = cn * 2;
     const int W_BITS1 = 14;
-#ifdef CV_SIMD128
+#if CV_SIMD128
     v_int16x8 vqw0((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
     v_int16x8 vqw1((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
     v_int32x4 vdelta_d = v_setall_s32(1 << (W_BITS1 - 1));
@@ -184,7 +187,7 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
         short* Iptr = IWinBuf.ptr<short>(y, 0);
         short* dIptr = derivIWinBuf.ptr<short>(y, 0);
         const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
-#ifdef CV_SIMD128
+#if CV_SIMD128
         for (int x = 0; x <= winSize.width*cn; x += 8, dsrc += 8 * 2, dsrc1 += 8 * 2, dIptr += 8 * 2)
         {
             v_int32x4 vmask0 = v_reinterpret_as_s32(v_load_expand_q(maskPtr + x)) * vmax_val_32;
@@ -292,7 +295,7 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
         }
 #endif
     }
-#ifdef CV_SIMD128
+#if CV_SIMD128
     A11 += v_reduce_sum(vA11);
     A12 += v_reduce_sum(vA12);
     A22 += v_reduce_sum(vA22);

@@ -15,7 +15,7 @@ Ptr<RLOFOpticalFlowParameter> RLOFOpticalFlowParameter::create()
     return Ptr<RLOFOpticalFlowParameter>(new RLOFOpticalFlowParameter);
 }
 
-void RLOFOpticalFlowParameter::useMEstimator(bool val)
+void RLOFOpticalFlowParameter::setUseMEstimator(bool val)
 {
     if (val)
     {

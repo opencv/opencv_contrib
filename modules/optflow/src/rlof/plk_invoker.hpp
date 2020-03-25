@@ -72,7 +72,7 @@ public:
         int winMaskwidth = roundUp(winSize.width, 16);
         cv::Mat winMaskMatBuf(winMaskwidth, winMaskwidth, tCVMaskType);
         winMaskMatBuf.setTo(1);
-        const float FLT_SCALE = (1.f/(1 << 16));//(1.f/(1 << 20)); // 20
+        const float FLT_SCALE = (1.f/(1 << 16));
 
         int cn = I.channels(), cn2 = cn*2;
         int winbufwidth = roundUp(winSize.width, 16);
@@ -200,7 +200,7 @@ public:
                     A12 = 0;
                     A22 = 0;
                 }
-#ifdef CV_SIMD128
+#if CV_SIMD128
                 v_int16x8 vqw0 = v_int16x8((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
                 v_int16x8 vqw1 = v_int16x8((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
                 v_float32x4 vqb0 = v_setzero_f32(), vqb1 = v_setzero_f32(), vqb2 = v_setzero_f32(), vqb3 = v_setzero_f32();
@@ -221,7 +221,7 @@ public:
                     const short* Iptr  = IWinBuf.ptr<short>(y, 0);
                     const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
                     const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
-#ifdef CV_SIMD128
+#if CV_SIMD128
                     for(int x = 0 ; x <= winSize.width*cn; x += 8, dIptr += 8*2 )
                     {
                         v_int16x8 vI = v_reinterpret_as_s16(v_load(Iptr + x)), diff0, diff1, diff2;
@@ -361,7 +361,7 @@ public:
                 }
                 if( j == 0 )
                 {
-#ifdef CV_SIMD128
+#if CV_SIMD128
 
                     w1 = v_reduce_sum(vsumW1);
                     w2 = v_reduce_sum(vsumW2);
@@ -386,7 +386,7 @@ public:
                     A22 *= FLT_SCALE;
                 }
 
-#ifdef CV_SIMD128
+#if CV_SIMD128
                 float CV_DECL_ALIGNED(16) bbuf[4];
                 v_store_aligned(bbuf, vqb0 + vqb1);
                 b1 = bbuf[0] + bbuf[2];
@@ -672,7 +672,7 @@ public:
                 iw10 = cvRound((1.f - a)*b*(1 << W_BITS));
                 iw11 = (1 << W_BITS) - iw00 - iw01 - iw10;
                 float b1 = 0, b2 = 0;
-#ifdef CV_SIMD128
+#if CV_SIMD128
                 v_int16x8 vqw0 = v_int16x8((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
                 v_int16x8 vqw1 = v_int16x8((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
                 v_float32x4 vqb0 = v_setzero_f32(), vqb1 = v_setzero_f32();
@@ -687,7 +687,7 @@ public:
                     const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
 
                     x = 0;
-#ifdef CV_SIMD128
+#if CV_SIMD128
                     const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
                     for( ; x <= winSize.width*cn; x += 8, dIptr += 8*2 )
                     {
@@ -735,7 +735,7 @@ public:
 #endif
                 }
 
-#ifdef CV_SIMD128
+#if CV_SIMD128
                 float CV_DECL_ALIGNED(16) bbuf[4];
                 v_store_aligned(bbuf, vqb0 + vqb1);
                 b1 = bbuf[0] + bbuf[2];

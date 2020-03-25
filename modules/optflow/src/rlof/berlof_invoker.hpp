@@ -259,12 +259,10 @@ public:
                     float fParam1 = normSigma1 * 32.f;
                     fParam0 = normSigma0 * MEstimatorScale;
                     fParam1 = normSigma1 * MEstimatorScale;
-
-
                     buffIdx = 0;
                     float _b0[4] = {0,0,0,0};
                     float _b1[4] = {0,0,0,0};
-#ifdef CV_SIMD128
+#if CV_SIMD128
                     v_int16x8 vqw0 = v_int16x8((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
                     v_int16x8 vqw1 = v_int16x8((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
                     v_float32x4 vqb0[4] = { v_setzero_f32(), v_setzero_f32(), v_setzero_f32(), v_setzero_f32() };
@@ -294,7 +292,7 @@ public:
                         const short* Iptr  = IWinBuf.ptr<short>(y, 0);
                         const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
                         const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
-#ifdef CV_SIMD128
+#if CV_SIMD128
                         for (int x = 0; x <= _winSize.width*cn; x += 8, dIptr += 8 * 2)
                         {
                             v_int16x8 vI = v_reinterpret_as_s16(v_load(Iptr + x)), diff0, diff1, diff2;
@@ -512,14 +510,14 @@ public:
 #endif
                     }
 
-#ifdef CV_SIMD128
+#if CV_SIMD128
                     MEstimatorScale += eta * v_reduce_sum(veta);
 #endif
 
 
                     if( j == 0 )
                     {
-#ifdef CV_SIMD128
+#if CV_SIMD128
                         A11 = v_reduce_sum(vAxx);
                         A12 = v_reduce_sum(vAxy);
                         A22 = v_reduce_sum(vAyy);
@@ -548,7 +546,7 @@ public:
 
                     }
 
-#ifdef CV_SIMD128
+#if CV_SIMD128
                     float CV_DECL_ALIGNED(16) bbuf[4];
                     for (int mmi = 0; mmi < 4; mmi++)
                     {
@@ -922,7 +920,7 @@ public:
                     fParam0 = normSigma0 * MEstimatorScale;
                     fParam1 = normSigma1 * MEstimatorScale;
 
-#ifdef CV_SIMD128
+#if CV_SIMD128
                     v_int16x8 vqw0 = v_int16x8((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
                     v_int16x8 vqw1 = v_int16x8((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
                     v_float32x4 vqb0[4] = { v_setzero_f32(), v_setzero_f32(), v_setzero_f32(), v_setzero_f32() };
@@ -968,7 +966,7 @@ public:
                         const short* Iptr  = IWinBuf.ptr<short>(y, 0);
                         const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
                         const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
-#ifdef CV_SIMD128
+#if CV_SIMD128
                         for(int x = 0 ; x <= _winSize.width*cn; x += 8, dIptr += 8*2 )
                         {
                             v_int16x8 vI = v_reinterpret_as_s16(v_load(Iptr + x)), diff0, diff1, diff2;
@@ -1247,12 +1245,12 @@ public:
 #endif
                 }
 
-#ifdef CV_SIMD128
+#if CV_SIMD128
                 MEstimatorScale += eta * v_reduce_sum(veta);
 #endif
                 if( j == 0 )
                 {
-#ifdef CV_SIMD128
+#if CV_SIMD128
                     w1 = v_reduce_sum(vsumW1);
                     w2 = v_reduce_sum(vsumW2);
                     dI = v_reduce_sum(vsumDI);
@@ -1317,7 +1315,7 @@ public:
                 }
 
 
-#ifdef CV_SIMD128
+#if CV_SIMD128
                 float CV_DECL_ALIGNED(16) bbuf[4];
                 for(int mmi = 0; mmi < 4; mmi++)
                 {
@@ -1655,7 +1653,7 @@ public:
 
                     float _b1[4] = {0,0,0,0};
                     float _b2[4] = {0,0,0,0};
-#ifdef CV_SIMD128
+#if CV_SIMD128
                     v_float32x4 vqb0[4] = {v_setzero_f32(), v_setzero_f32(), v_setzero_f32(), v_setzero_f32()};
                     v_float32x4 vqb1[4] = {v_setzero_f32(), v_setzero_f32(), v_setzero_f32(), v_setzero_f32()};
                     v_int16x8 vmax_val_16 = v_setall_s16(std::numeric_limits<unsigned short>::max());
@@ -1666,7 +1664,7 @@ public:
                         const uchar* Jptr1 = J.ptr<uchar>(y + inextPt.y + 1, inextPt.x*cn);
                         const short* Iptr  = IWinBuf.ptr<short>(y, 0);
                         const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
- #ifdef CV_SIMD128
+ #if CV_SIMD128
                         const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
                         for(int x = 0 ; x <= winSize.width*cn; x += 8, dIptr += 8*2 )
                         {
@@ -1720,7 +1718,7 @@ public:
 #endif
                     }
 
-#ifdef CV_SIMD128
+#if CV_SIMD128
                     float CV_DECL_ALIGNED(16) bbuf[4];
                     for (int mmi = 0; mmi < 4; mmi++)
                     {
@@ -2058,7 +2056,7 @@ namespace radial {
                             A22 = 0;
                         }
 
-#ifdef CV_SIMD128
+#if CV_SIMD128
                         v_int16x8 vqw0 = v_int16x8((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
                         v_int16x8 vqw1 = v_int16x8((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
                         v_float32x4 vqb0[4] = { v_setzero_f32(), v_setzero_f32(), v_setzero_f32(), v_setzero_f32() };
@@ -2088,7 +2086,7 @@ namespace radial {
                             const short* Iptr = IWinBuf.ptr<short>(y, 0);
                             const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
                             const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
-#ifdef CV_SIMD128
+#if CV_SIMD128
                             for (int x = 0; x <= _winSize.width*cn; x += 8, dIptr += 8 * 2)
                             {
                                 v_int16x8 vI = v_reinterpret_as_s16(v_load(Iptr + x)), diff0, diff1, diff2;
@@ -2263,7 +2261,7 @@ namespace radial {
 
                         if (j == 0)
                         {
-#ifdef CV_SIMD128
+#if CV_SIMD128
                             w1 = v_reduce_sum(vsumW1);
                             w2 = v_reduce_sum(vsumW2);
                             dI = v_reduce_sum(vsumDI);
@@ -2329,7 +2327,7 @@ namespace radial {
                         }
 
 
-#ifdef CV_SIMD128
+#if CV_SIMD128
                         float CV_DECL_ALIGNED(16) bbuf[4];
                         for (int mmi = 0; mmi < 4; mmi++)
                         {

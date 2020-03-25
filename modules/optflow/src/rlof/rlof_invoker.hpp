@@ -208,7 +208,7 @@ public:
                 float fParam1 = normSigma1 * 32.f;
                 fParam0 = normSigma0 * MEstimatorScale;
                 fParam1 = normSigma1 * MEstimatorScale;
-#ifdef CV_SIMD128
+#if CV_SIMD128
                 v_int16x8 vqw0 = v_int16x8((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
                 v_int16x8 vqw1 = v_int16x8((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
                 v_float32x4 vqb0 = v_setzero_f32(), vqb1 = v_setzero_f32();
@@ -238,7 +238,7 @@ public:
                     const short* Iptr  = IWinBuf.ptr<short>(y, 0);
                     const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
                     const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
-#ifdef CV_SIMD128
+#if CV_SIMD128
                     for (int x = 0; x <= winSize.width*cn; x += 8, dIptr += 8 * 2)
                     {
                         v_int16x8 diff0 = v_reinterpret_as_s16(v_load(Iptr + x)), diff1, diff2;
@@ -397,12 +397,12 @@ public:
 #endif
                 }
 
-#ifdef CV_SIMD128
+#if CV_SIMD128
                 MEstimatorScale += eta * v_reduce_sum(veta);
 #endif
                 if (j == 0)
                 {
-#ifdef CV_SIMD128
+#if CV_SIMD128
                     A11 = v_reduce_sum(vAxx);
                     A12 = v_reduce_sum(vAxy);
                     A22 = v_reduce_sum(vAyy);
@@ -429,7 +429,7 @@ public:
                     }
                 }
 
-#ifdef CV_SIMD128
+#if CV_SIMD128
                 float CV_DECL_ALIGNED(16) bbuf[4];
                 v_store_aligned(bbuf, vqb0 + vqb1);
                 b1 += bbuf[0] + bbuf[2];
@@ -723,7 +723,7 @@ public:
                 fParam0 = normSigma0 * MEstimatorScale;
                 fParam1 = normSigma1 * MEstimatorScale;
 
-#ifdef CV_SIMD128
+#if CV_SIMD128
                 v_int16x8 vqw0 = v_int16x8((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
                 v_int16x8 vqw1 = v_int16x8((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
                 v_float32x4 vqb0 = v_setzero_f32(), vqb1 = v_setzero_f32(), vqb2 = v_setzero_f32(), vqb3 = v_setzero_f32();
@@ -761,7 +761,7 @@ public:
                     const short* Iptr  = IWinBuf.ptr<short>(y, 0);
                     const short* dIptr = derivIWinBuf.ptr<short>(y, 0);
                     const tMaskType* maskPtr = winMaskMat.ptr<tMaskType>(y, 0);
-#ifdef CV_SIMD128
+#if CV_SIMD128
                     for (int x = 0; x <= _winSize.width*cn; x += 8, dIptr += 8 * 2)
                     {
                         v_int16x8 vI = v_reinterpret_as_s16(v_load(Iptr + x)), diff0, diff1, diff2;
@@ -985,12 +985,12 @@ public:
                     }
 #endif
                 }
-#ifdef CV_SIMD128
+#if CV_SIMD128
                 MEstimatorScale += eta * v_reduce_sum(veta);
 #endif
                 if (j == 0)
                 {
-#ifdef CV_SIMD128
+#if CV_SIMD128
                     w1 = v_reduce_sum(vsumW1);
                     w2 = v_reduce_sum(vsumW2);
                     dI = v_reduce_sum(vsumDI);
@@ -1009,13 +1009,13 @@ public:
                     w1 *= -FLT_SCALE;
                     w2 *= -FLT_SCALE;
                     dI *= FLT_SCALE;
-#ifdef CV_SIMD128
+#if CV_SIMD128
 #endif
                     A11 *= FLT_SCALE;
                     A12 *= FLT_SCALE;
                     A22 *= FLT_SCALE;
                 }
-#ifdef CV_SIMD128
+#if CV_SIMD128
                 float CV_DECL_ALIGNED(16) bbuf[4];
                 v_store_aligned(bbuf, vqb0 + vqb1);
                 b1 = bbuf[0] + bbuf[2];

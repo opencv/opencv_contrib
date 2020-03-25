@@ -196,7 +196,7 @@ TEST(SparseOpticalFlow, ReferenceAccuracy)
     param->supportRegionType = SR_CROSS;
     param->useIlluminationModel = true;
     param->solverType = ST_BILINEAR;
-    param->useMEstimator(true);
+    param->setUseMEstimator(true);
     algo->setRLOFOpticalFlowParameter(param);
     algo->calc(frame1, frame2, prevPts, currPts, status, err);
     EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.3f);
@@ -217,7 +217,7 @@ TEST(SparseOpticalFlow, ReferenceAccuracy)
     algo->calc(frame1, frame2, prevPts, currPts, status, err);
     EXPECT_LE(calcRMSE(prevPts, currPts, GT), 0.27f);
 
-    param->useMEstimator(false);
+    param->setUseMEstimator(false);
     param->useIlluminationModel = true;
 
     param->solverType = ST_BILINEAR;
@@ -250,7 +250,7 @@ TEST(DenseOpticalFlow_RLOF, ReferenceAccuracy)
     Mat flow;
     Ptr<DenseRLOFOpticalFlow> algo = DenseRLOFOpticalFlow::create();
     Ptr<RLOFOpticalFlowParameter> param = Ptr<RLOFOpticalFlowParameter>(new RLOFOpticalFlowParameter);
-    param->useMEstimator(true);
+    param->setUseMEstimator(true);
     param->supportRegionType = SR_CROSS;
     param->solverType = ST_BILINEAR;
     algo->setRLOFOpticalFlowParameter(param);

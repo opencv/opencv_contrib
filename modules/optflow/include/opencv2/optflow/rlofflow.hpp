@@ -157,7 +157,7 @@ public:
      *  @param val If true M-estimator is used. If false least-square estimator is used.
      *    @see setNormSigma0, setNormSigma1
     */
-    CV_WRAP void useMEstimator(bool val);
+    CV_WRAP void setUseMEstimator(bool val);
 
     CV_WRAP void setSolverType(SolverType val);
     CV_WRAP SolverType getSolverType() const;
@@ -224,9 +224,8 @@ public:
  * For the RLOF configuration see optflow::RLOFOpticalFlowParameter for further details.
  * Parameters have been described in @cite Senst2012 @cite Senst2013 @cite Senst2014 and @cite Senst2016.
  *
- * @note Full SIMD parallelization is only available when compiling with SSE4.1. If the grid size is set to (1,1) and the
- * forward backward threshold <= 0 that the dense optical flow field is purely.
- * computed with the RLOF.
+ * @note If the grid size is set to (1,1) and the forward backward threshold <= 0 than pixelwise dense optical flow field is 
+ * computed by RLOF without using interpolation.
  *
  * @see optflow::calcOpticalFlowDenseRLOF(), optflow::RLOFOpticalFlowParameter
 */
