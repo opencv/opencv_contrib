@@ -1165,6 +1165,13 @@ class CV_EXPORTS_W TrackerMedianFlow : public Tracker
 
   CV_WRAP static Ptr<TrackerMedianFlow> create();
 
+  CV_WRAP virtual void setPointsInGrid(int pointsInGrid)=0;
+  CV_WRAP virtual void setWinSize(Size winSize)=0;
+  CV_WRAP virtual void setMaxLevel(int maxLevel)=0;
+  CV_WRAP virtual void setTermCriteria(TermCriteria termCriteria)=0;
+  CV_WRAP virtual void setWinSizeNCC(Size winSizeNCC)=0;
+  CV_WRAP virtual void setMaxMedianLengthOfDisplacementDifference(double maxMedianLengthOfDisplacementDifference)=0;
+
   virtual ~TrackerMedianFlow() CV_OVERRIDE {}
 };
 
