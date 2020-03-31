@@ -421,7 +421,6 @@ public:
                             if( maskPtr[x] == 0)
                                 continue;
                             int illValue =   - Iptr[x];
-
                             float It[4] = {static_cast<float>((Jptr1[x+cn]<< 5)    + illValue),
                                          static_cast<float>((Jptr[x+cn]<< 5)        + illValue),
                                          static_cast<float>((Jptr1[x]<< 5)        + illValue),
@@ -2214,9 +2213,6 @@ namespace radial {
                                 int J_val = CV_DESCALE(Jptr[x] * iw00 + Jptr[x + cn] * iw01 +
                                     Jptr1[x] * iw10 + Jptr1[x + cn] * iw11,
                                     W_BITS1 - 5);
-
-                                int diff = J_val + illValue;
-                                int abss = (diff < 0) ? -diff : diff;
 
                                 // compute the missmatch vector
                                 _b0[0] += (float)(It[0] * dIptr[0]);
