@@ -2209,11 +2209,6 @@ namespace radial {
                                                 (Jptr1[x] << 5) + illValue,
                                                 (Jptr[x] << 5) + illValue };
 
-
-                                int J_val = CV_DESCALE(Jptr[x] * iw00 + Jptr[x + cn] * iw01 +
-                                    Jptr1[x] * iw10 + Jptr1[x + cn] * iw11,
-                                    W_BITS1 - 5);
-
                                 // compute the missmatch vector
                                 _b0[0] += (float)(It[0] * dIptr[0]);
                                 _b0[1] += (float)(It[1] * dIptr[0]);

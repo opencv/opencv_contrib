@@ -17,9 +17,6 @@ using namespace cv;
 namespace cv {
 namespace optflow {
 
-#ifdef OLD
-#define CV_SIMD128 0
-#endif
 
 typedef short deriv_type;
 #if CV_SIMD128
