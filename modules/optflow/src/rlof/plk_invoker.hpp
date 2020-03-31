@@ -136,7 +136,7 @@ public:
 
             float a = prevPt.x - iprevPt.x;
             float b = prevPt.y - iprevPt.y;
-            const int W_BITS = 14, W_BITS1 = 14;
+            const int W_BITS = 14;
             int iw00 = cvRound((1.f - a)*(1.f - b)*(1 << W_BITS));
             int iw01 = cvRound(a*(1.f - b)*(1 << W_BITS));
             int iw10 = cvRound((1.f - a)*b*(1 << W_BITS));
@@ -207,7 +207,7 @@ public:
                 v_float32x4 vsumW1 = v_setzero_f32(), vsumW2 = v_setzero_f32();
                 v_float32x4 vsumIy = v_setzero_f32(), vsumIx = v_setzero_f32(), vsumI = v_setzero_f32(), vsumDI = v_setzero_f32();
                 v_float32x4 vAxx = v_setzero_f32(), vAxy = v_setzero_f32(), vAyy = v_setzero_f32();
-                v_int32x4 vdelta = v_setall_s32(1 << (W_BITS1 - 5 - 1));
+                v_int32x4 vdelta = v_setall_s32(1 << (W_BITS - 5 - 1));
                 v_int16x8 vmax_val_16 = v_setall_s16(std::numeric_limits<unsigned short>::max());
                 float gainVal = gainVec.x > 0 ? gainVec.x : -gainVec.x;
                 int bitShift = gainVec.x == 0 ? 1 : cvCeil(log(200.f / gainVal) / log(2.f));
@@ -239,8 +239,8 @@ public:
                         //subpixel interpolation
                         t0 = v_dotprod(t00, vqw0, vdelta) + v_dotprod(t10, vqw1);
                         t1 = v_dotprod(t01, vqw0, vdelta) + v_dotprod(t11, vqw1);
-                        t0 = t0 >> (W_BITS1 - 5);
-                        t1 = t1 >> (W_BITS1 - 5);
+                        t0 = t0 >> (W_BITS - 5);
+                        t1 = t1 >> (W_BITS - 5);
 
                         // diff = J - I
                         diff0 = v_pack(t0, t1) - vI;
@@ -329,7 +329,7 @@ public:
                             continue;
                         int J_val = CV_DESCALE(Jptr[x]*iw00 + Jptr[x+cn]*iw01 +
                                               Jptr1[x]*iw10 + Jptr1[x+cn]*iw11,
-                                              W_BITS1-5);
+                                              W_BITS-5);
                         int diff = static_cast<int>(J_val - Iptr[x] + Iptr[x] * gainVec.x + gainVec.y);
 
                         b1 += (float)(diff*dIptr[0])  * FLT_RESCALE;
@@ -621,7 +621,7 @@ public:
 
             float a = prevPt.x - iprevPt.x;
             float b = prevPt.y - iprevPt.y;
-            const int W_BITS = 14, W_BITS1 = 14;
+            const int W_BITS = 14;
 
             int iw00 = cvRound((1.f - a)*(1.f - b)*(1 << W_BITS));
             int iw01 = cvRound(a*(1.f - b)*(1 << W_BITS));
@@ -677,7 +677,7 @@ public:
                 v_int16x8 vqw1 = v_int16x8((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
                 v_float32x4 vqb0 = v_setzero_f32(), vqb1 = v_setzero_f32();
                 v_int16x8 vmax_val_16 = v_setall_s16(std::numeric_limits<unsigned short>::max());
-                v_int32x4 vdelta = v_setall_s32(1 << (W_BITS1 - 5 - 1));
+                v_int32x4 vdelta = v_setall_s32(1 << (W_BITS - 5 - 1));
 #endif
                 for( y = 0; y < winSize.height; y++ )
                 {
@@ -705,8 +705,8 @@ public:
 
                         t0 = v_dotprod(t00, vqw0, vdelta) + v_dotprod(t10, vqw1);
                         t1 = v_dotprod(t01, vqw0, vdelta) + v_dotprod(t11, vqw1);
-                        t0 = t0 >> (W_BITS1 - 5);
-                        t1 = t1 >> (W_BITS1 - 5);
+                        t0 = t0 >> (W_BITS - 5);
+                        t1 = t1 >> (W_BITS - 5);
                         diff0 = v_pack(t0, t1) - diff0;
                         diff0 = diff0 & vmask;
 
@@ -727,7 +727,7 @@ public:
                             continue;
                         int diff = CV_DESCALE(Jptr[x]*iw00 + Jptr[x+cn]*iw01 +
                                               Jptr1[x]*iw10 + Jptr1[x+cn]*iw11,
-                                              W_BITS1-5) - Iptr[x];
+                                              W_BITS-5) - Iptr[x];
 
                         b1 += (float)(diff*dIptr[0]) * FLT_RESCALE;
                         b2 += (float)(diff*dIptr[1]) * FLT_RESCALE;

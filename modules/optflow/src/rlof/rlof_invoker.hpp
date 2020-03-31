@@ -126,7 +126,7 @@ public:
 
             float a = prevPt.x - iprevPt.x;
             float b = prevPt.y - iprevPt.y;
-            const int W_BITS = 14, W_BITS1 = 14;
+            const int W_BITS = 14;
 
             int iw00 = cvRound((1.f - a)*(1.f - b)*(1 << W_BITS));
             int iw01 = cvRound(a*(1.f - b)*(1 << W_BITS));
@@ -194,7 +194,7 @@ public:
                         {
                             if (maskPtr[x] == 0)
                                 continue;
-                            int diff = CV_DESCALE(Jptr[x] * iw00 + Jptr[x + cn] * iw01 + Jptr1[x] * iw10 + Jptr1[x + cn] * iw11, W_BITS1 - 5) - Iptr[x];
+                            int diff = CV_DESCALE(Jptr[x] * iw00 + Jptr[x + cn] * iw01 + Jptr1[x] * iw10 + Jptr1[x + cn] * iw11, W_BITS - 5) - Iptr[x];
                             residualMat.at<short>(buffIdx++) = static_cast<short>(diff);
                         }
                     }
@@ -213,7 +213,7 @@ public:
                 v_int16x8 vqw1 = v_int16x8((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
                 v_float32x4 vqb0 = v_setzero_f32(), vqb1 = v_setzero_f32();
                 v_float32x4 vAxx = v_setzero_f32(), vAxy = v_setzero_f32(), vAyy = v_setzero_f32();
-                v_int32x4 vdelta = v_setall_s32(1 << (W_BITS1 - 5 - 1));
+                v_int32x4 vdelta = v_setall_s32(1 << (W_BITS - 5 - 1));
                 v_int16x8 vscale = v_setall_s16(static_cast<short>(MEstimatorScale));
                 v_int16x8 veta = v_setzero_s16();
                 v_int16x8 vzero = v_setzero_s16();
@@ -255,8 +255,8 @@ public:
 
                         t0 = v_dotprod(t00, vqw0, vdelta) + v_dotprod(t10, vqw1);
                         t1 = v_dotprod(t01, vqw0, vdelta) + v_dotprod(t11, vqw1);
-                        t0 = t0 >> (W_BITS1 - 5);
-                        t1 = t1 >> (W_BITS1 - 5);
+                        t0 = t0 >> (W_BITS - 5);
+                        t1 = t1 >> (W_BITS - 5);
                         diff0 = v_pack(t0, t1) - diff0;
                         diff0 = diff0 & vmask;
 
@@ -345,7 +345,7 @@ public:
                             continue;
                         int diff = CV_DESCALE(Jptr[x] * iw00 + Jptr[x + cn] * iw01 +
                             Jptr1[x] * iw10 + Jptr1[x + cn] * iw11,
-                            W_BITS1 - 5) - Iptr[x];
+                            W_BITS - 5) - Iptr[x];
 
                         if (diff > MEstimatorScale)
                             MEstimatorScale += eta;
@@ -611,7 +611,7 @@ public:
 
             float a = prevPt.x - iprevPt.x;
             float b = prevPt.y - iprevPt.y;
-            const int W_BITS = 14, W_BITS1 = 14;
+            const int W_BITS = 14;
 
             int iw00 = cvRound((1.f - a)*(1.f - b)*(1 << W_BITS));
             int iw01 = cvRound(a*(1.f - b)*(1 << W_BITS));
@@ -707,7 +707,7 @@ public:
                             int diff = static_cast<int>(CV_DESCALE(    Jptr[x] * iw00 +
                                                     Jptr[x + cn] * iw01 +
                                                     Jptr1[x] * iw10 +
-                                                    Jptr1[x + cn] * iw11, W_BITS1 - 5)
+                                                    Jptr1[x + cn] * iw11, W_BITS - 5)
                                 - Iptr[x] + Iptr[x] * gainVec.x + gainVec.y);
                             residualMat.at<short>(buffIdx++) = static_cast<short>(diff);
                         }
@@ -732,7 +732,7 @@ public:
                 v_float32x4 vAxx = v_setzero_f32(), vAxy = v_setzero_f32(), vAyy = v_setzero_f32();
 
                 int s2bitShift = normSigma2 == 0 ? 1 : cvCeil(log(200.f / std::fabs(normSigma2)) / log(2.f));
-                v_int32x4 vdelta = v_setall_s32(1 << (W_BITS1 - 5 - 1));
+                v_int32x4 vdelta = v_setall_s32(1 << (W_BITS - 5 - 1));
                 v_int16x8 vzero = v_setzero_s16();
                 v_int16x8 voness = v_setall_s16(1 << s2bitShift);
                 v_float32x4 vones = v_setall_f32(1.f);
@@ -779,8 +779,8 @@ public:
                         //subpixel interpolation
                         t0 = v_dotprod(t00, vqw0, vdelta) + v_dotprod(t10, vqw1);
                         t1 = v_dotprod(t01, vqw0, vdelta) + v_dotprod(t11, vqw1);
-                        t0 = t0 >> (W_BITS1 - 5);
-                        t1 = t1 >> (W_BITS1 - 5);
+                        t0 = t0 >> (W_BITS - 5);
+                        t1 = t1 >> (W_BITS - 5);
 
                         // diff = J - I
                         diff0 = v_pack(t0, t1) - vI;
@@ -921,7 +921,7 @@ public:
                         if (maskPtr[x] == 0)
                             continue;
                         int J_val = CV_DESCALE(Jptr[x] * iw00 + Jptr[x + cn] * iw01 + Jptr1[x] * iw10 + Jptr1[x + cn] * iw11,
-                            W_BITS1 - 5);
+                            W_BITS - 5);
                         short ixval = static_cast<short>(dIptr[0]);
                         short iyval = static_cast<short>(dIptr[1]);
                         int diff = static_cast<int>(J_val - Iptr[x] + Iptr[x] * gainVec.x + gainVec.y);

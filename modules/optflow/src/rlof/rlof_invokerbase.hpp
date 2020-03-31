@@ -44,12 +44,12 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
     Point iprevPt)
 {
     int cn = I.channels(), cn2 = cn * 2;
-    const int W_BITS1 = 14;
+    const int W_BITS = 14;
 #if CV_SIMD128
     v_int16x8 vqw0((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
     v_int16x8 vqw1((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
-    v_int32x4 vdelta_d = v_setall_s32(1 << (W_BITS1 - 1));
-    v_int32x4 vdelta = v_setall_s32(1 << (W_BITS1 - 5 - 1));
+    v_int32x4 vdelta_d = v_setall_s32(1 << (W_BITS - 1));
+    v_int32x4 vdelta = v_setall_s32(1 << (W_BITS - 5 - 1));
     v_int32x4 vmax_val_32 = v_setall_s32(std::numeric_limits<unsigned int>::max());
     v_int32x4 vmask_border_0, vmask_border_1;
     getVBitMask(winSize.width, vmask_border_0, vmask_border_1);
@@ -93,8 +93,8 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
             v_zip(v10, v11, t10, t11);
             t0 = v_dotprod(t00, vqw0, vdelta) + v_dotprod(t10, vqw1);
             t1 = v_dotprod(t01, vqw0, vdelta) + v_dotprod(t11, vqw1);
-            t0 = t0 >> (W_BITS1 - 5)  & vmask0;
-            t1 = t1 >> (W_BITS1 - 5)  & vmask1;
+            t0 = t0 >> (W_BITS - 5)  & vmask0;
+            t1 = t1 >> (W_BITS - 5)  & vmask1;
             v_store(Iptr + x, v_pack(t0, t1));
 
             v00 = v_reinterpret_as_s16(v_load(dsrc));
@@ -107,8 +107,8 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
 
             t0 = v_dotprod(t00, vqw0, vdelta_d) + v_dotprod(t10, vqw1);
             t1 = v_dotprod(t01, vqw0, vdelta_d) + v_dotprod(t11, vqw1);
-            t0 = t0 >> W_BITS1;
-            t1 = t1 >> W_BITS1;
+            t0 = t0 >> W_BITS;
+            t1 = t1 >> W_BITS;
             v00 = v_pack(t0, t1); // Ix0 Iy0 Ix1 Iy1 ...
             v00 = v00 & v_reinterpret_as_s16(vmask0);
             v_store(dIptr, v00);
@@ -123,8 +123,8 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
 
             t0 = v_dotprod(t00, vqw0, vdelta_d) + v_dotprod(t10, vqw1);
             t1 = v_dotprod(t01, vqw0, vdelta_d) + v_dotprod(t11, vqw1);
-            t0 = t0 >> W_BITS1;
-            t1 = t1 >> W_BITS1;
+            t0 = t0 >> W_BITS;
+            t1 = t1 >> W_BITS;
             v00 = v_pack(t0, t1); // Ix0 Iy0 Ix1 Iy1 ...
             v00 = v00 & v_reinterpret_as_s16(vmask1);
             v_store(dIptr + 4 * 2, v00);
@@ -139,11 +139,11 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
                 continue;
             }
             int ival = CV_DESCALE(src[x] * iw00 + src[x + cn] * iw01 +
-                src1[x] * iw10 + src1[x + cn] * iw11, W_BITS1 - 5);
+                src1[x] * iw10 + src1[x + cn] * iw11, W_BITS - 5);
             int ixval = CV_DESCALE(dsrc[0] * iw00 + dsrc[cn2] * iw01 +
-                dsrc1[0] * iw10 + dsrc1[cn2] * iw11, W_BITS1);
+                dsrc1[0] * iw10 + dsrc1[cn2] * iw11, W_BITS);
             int iyval = CV_DESCALE(dsrc[1] * iw00 + dsrc[cn2 + 1] * iw01 + dsrc1[1] * iw10 +
-                dsrc1[cn2 + 1] * iw11, W_BITS1);
+                dsrc1[cn2 + 1] * iw11, W_BITS);
 
             Iptr[x] = (short)ival;
             dIptr[0] = (short)ixval;
@@ -162,12 +162,12 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
 {
     const float FLT_SCALE = (1.f / (1 << 20));
     int cn = I.channels(), cn2 = cn * 2;
-    const int W_BITS1 = 14;
+    const int W_BITS = 14;
 #if CV_SIMD128
     v_int16x8 vqw0((short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01), (short)(iw00), (short)(iw01));
     v_int16x8 vqw1((short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11), (short)(iw10), (short)(iw11));
-    v_int32x4 vdelta_d = v_setall_s32(1 << (W_BITS1 - 1));
-    v_int32x4 vdelta = v_setall_s32(1 << (W_BITS1 - 5 - 1));
+    v_int32x4 vdelta_d = v_setall_s32(1 << (W_BITS - 1));
+    v_int32x4 vdelta = v_setall_s32(1 << (W_BITS - 5 - 1));
     v_int32x4 vmax_val_32 = v_setall_s32(std::numeric_limits<unsigned int>::max());
     v_int32x4 vmask_border0, vmask_border1;
     v_float32x4 vA11 = v_setzero_f32(), vA22 = v_setzero_f32(), vA12 = v_setzero_f32();
@@ -209,8 +209,8 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
             v_zip(v10, v11, t10, t11);
             t0 = v_dotprod(t00, vqw0, vdelta) + v_dotprod(t10, vqw1);
             t1 = v_dotprod(t01, vqw0, vdelta) + v_dotprod(t11, vqw1);
-            t0 = t0 >> (W_BITS1 - 5);
-            t1 = t1 >> (W_BITS1 - 5);
+            t0 = t0 >> (W_BITS - 5);
+            t1 = t1 >> (W_BITS - 5);
             t0 = t0 & vmask0;
             t1 = t1 & vmask1;
             v_store(Iptr + x, v_pack(t0, t1));
@@ -225,8 +225,8 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
 
             t0 = v_dotprod(t00, vqw0, vdelta_d) + v_dotprod(t10, vqw1);
             t1 = v_dotprod(t01, vqw0, vdelta_d) + v_dotprod(t11, vqw1);
-            t0 = t0 >> W_BITS1;
-            t1 = t1 >> W_BITS1;
+            t0 = t0 >> W_BITS;
+            t1 = t1 >> W_BITS;
             v00 = v_pack(t0, t1); // Ix0 Iy0 Ix1 Iy1 ...
             v00 = v00 & v_reinterpret_as_s16(vmask0);
             v_store(dIptr, v00);
@@ -251,8 +251,8 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
 
             t0 = v_dotprod(t00, vqw0, vdelta_d) + v_dotprod(t10, vqw1);
             t1 = v_dotprod(t01, vqw0, vdelta_d) + v_dotprod(t11, vqw1);
-            t0 = t0 >> W_BITS1;
-            t1 = t1 >> W_BITS1;
+            t0 = t0 >> W_BITS;
+            t1 = t1 >> W_BITS;
             v00 = v_pack(t0, t1); // Ix0 Iy0 Ix1 Iy1 ...
             v00 = v00 & v_reinterpret_as_s16(vmask1);
             v_store(dIptr + 4 * 2, v00);
@@ -277,11 +277,11 @@ static inline void copyWinBuffers(int iw00, int iw01, int iw10, int iw11,
                 continue;
             }
             int ival = CV_DESCALE(src[x] * iw00 + src[x + cn] * iw01 +
-                src1[x] * iw10 + src1[x + cn] * iw11, W_BITS1 - 5);
+                src1[x] * iw10 + src1[x + cn] * iw11, W_BITS - 5);
             int ixval = CV_DESCALE(dsrc[0] * iw00 + dsrc[cn2] * iw01 +
-                dsrc1[0] * iw10 + dsrc1[cn2] * iw11, W_BITS1);
+                dsrc1[0] * iw10 + dsrc1[cn2] * iw11, W_BITS);
             int iyval = CV_DESCALE(dsrc[1] * iw00 + dsrc[cn2 + 1] * iw01 + dsrc1[1] * iw10 +
-                dsrc1[cn2 + 1] * iw11, W_BITS1);
+                dsrc1[cn2 + 1] * iw11, W_BITS);
 
             Iptr[x] = (short)ival;
             dIptr[0] = (short)ixval;
