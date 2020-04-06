@@ -7,9 +7,9 @@ namespace opencv_test { namespace {
 
 TEST(ximgproc_niBlackThreshold, sauvola)
 {
-    Mat src = (Mat_<uchar>(3, 3) << 0, 0, 0, 1, 1, 1, 2, 2, 2);
+    Mat src = (Mat_<uchar>(3, 3) << 1, 1, 1, 2, 2, 2, 3, 3, 3);
     Mat dst;
-    cv::ximgproc::niBlackThreshold(src, dst, 255, THRESH_BINARY, 3, 1, BINARIZATION_SAUVOLA, 64);
+    cv::ximgproc::niBlackThreshold(src, dst, 255, THRESH_BINARY, 3, 1, BINARIZATION_SAUVOLA, 1);
 
     EXPECT_EQ(CV_8U, dst.type());
     EXPECT_EQ(3, dst.rows);
@@ -18,9 +18,9 @@ TEST(ximgproc_niBlackThreshold, sauvola)
     EXPECT_EQ(0, dst.at<uchar>(0, 0));
     EXPECT_EQ(0, dst.at<uchar>(0, 1));
     EXPECT_EQ(0, dst.at<uchar>(0, 2));
-    EXPECT_EQ(255, dst.at<uchar>(1, 0));
-    EXPECT_EQ(255, dst.at<uchar>(1, 1));
-    EXPECT_EQ(255, dst.at<uchar>(1, 2));
+    EXPECT_EQ(0, dst.at<uchar>(1, 0));
+    EXPECT_EQ(0, dst.at<uchar>(1, 1));
+    EXPECT_EQ(0, dst.at<uchar>(1, 2));
     EXPECT_EQ(255, dst.at<uchar>(2, 0));
     EXPECT_EQ(255, dst.at<uchar>(2, 1));
     EXPECT_EQ(255, dst.at<uchar>(2, 2));
