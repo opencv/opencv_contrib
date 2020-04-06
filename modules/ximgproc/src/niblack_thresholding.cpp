@@ -47,7 +47,7 @@ namespace cv {
 namespace ximgproc {
 
 void niBlackThreshold( InputArray _src, OutputArray _dst, double maxValue,
-        int type, int blockSize, double k, int binarizationMethod )
+        int type, int blockSize, double k, int binarizationMethod, double r)
 {
     // Input grayscale image
     Mat src = _src.getMat();
@@ -55,6 +55,7 @@ void niBlackThreshold( InputArray _src, OutputArray _dst, double maxValue,
     CV_Assert(blockSize % 2 == 1 && blockSize > 1);
     if (binarizationMethod == BINARIZATION_SAUVOLA) {
 	CV_Assert(src.depth() == CV_8U);
+    CV_Assert(r != 0);
     }
     type &= THRESH_MASK;
 
@@ -78,7 +79,7 @@ void niBlackThreshold( InputArray _src, OutputArray _dst, double maxValue,
 		thresh = mean + stddev * static_cast<float>(k);
 		break;
         case BINARIZATION_SAUVOLA:
-		thresh = mean.mul(1. + static_cast<float>(k) * (stddev / 128.0 - 1.));
+		thresh = mean.mul(1. + static_cast<float>(k) * (stddev / r - 1.));
 		break;
         case BINARIZATION_WOLF:
 		minMaxIdx(src, &srcMin);
