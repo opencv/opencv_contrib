@@ -159,7 +159,7 @@ of standard deviation.
  */
 CV_EXPORTS_W void niBlackThreshold( InputArray _src, OutputArray _dst,
                                     double maxValue, int type,
-                                    int blockSize, double k, int binarizationMethod = BINARIZATION_NIBLACK, 
+                                    int blockSize, double k, int binarizationMethod = BINARIZATION_NIBLACK,
                                     double r = 128 );
 
 /** @brief Applies a binary blob thinning operation, to achieve a skeletization of the input image.
