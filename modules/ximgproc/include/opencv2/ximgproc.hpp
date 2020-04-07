@@ -153,12 +153,14 @@ normally a value between 0 and 1 that is multiplied with the standard deviation 
 the mean.
 @param binarizationMethod Binarization method to use. By default, Niblack's technique is used.
 Other techniques can be specified, see cv::ximgproc::LocalBinarizationMethods.
-
+@param r The user-adjustable parameter used by Sauvola's technique. This is the dynamic range
+of standard deviation.
 @sa  threshold, adaptiveThreshold
  */
 CV_EXPORTS_W void niBlackThreshold( InputArray _src, OutputArray _dst,
                                     double maxValue, int type,
-                                    int blockSize, double k, int binarizationMethod = BINARIZATION_NIBLACK );
+                                    int blockSize, double k, int binarizationMethod = BINARIZATION_NIBLACK,
+                                    double r = 128 );
 
 /** @brief Applies a binary blob thinning operation, to achieve a skeletization of the input image.
 
