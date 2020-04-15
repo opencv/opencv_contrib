@@ -41,7 +41,7 @@ TEST (TextDetectionSWT, regression_natural_scene) {
     Mat image = imread(dataPath, IMREAD_COLOR);
     vector<Rect> light_components;
     detectTextSWT(image, light_components, false);
-    EXPECT_EQ((unsigned) 81, light_components.size());
+    EXPECT_EQ((unsigned) 68, light_components.size());
 
     vector<Rect> dark_components;
     detectTextSWT(image, dark_components, true);
