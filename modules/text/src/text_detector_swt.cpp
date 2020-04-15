@@ -672,7 +672,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
                             merges++;
                         }
                     } else if (chains[i].chainIndexB == chains[j].chainIndexB) {
-                        if (chains[i].dir.x * -chains[j].dir.x + chains[i].dir.y * -chains[j].dir.y) > alignmentThreshold_cos) {
+                        if (chains[i].dir.x * -chains[j].dir.x + chains[i].dir.y * -chains[j].dir.y > alignmentThreshold_cos) {
                             chains[i].chainIndexB = chains[j].chainIndexA;
                             for (std::vector<int>::iterator it = chains[j].componentIndices.begin(); it != chains[j].componentIndices.end(); it++) {
                                 chains[i].componentIndices.push_back(*it);
