@@ -1,11 +1,8 @@
-// // This file is part of OpenCV project.
-// // It is subject to the license terms in the LICENSE file found in the top-level directory
-// // of this distribution and at http://opencv.org/license.html.
+// Sample code which demonstrates the working of
+// stroke width transform in the text module of OpenCV
 #include <opencv2/text.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
-#include <opencv2/dnn.hpp>
-
 
 #include  <iostream>
 #include  <fstream>
@@ -29,23 +26,31 @@ int main(int argc, const char * argv[])
         cout << "Insuficient parameters. Aborting!" << endl;
         cout << "Usage: textdetection_swt file_path dark_on_light" << endl;
         cout << "Usage: To detect dark text on light background pass dark_on_light as 1, otherwise pass 0" << endl;
+        cout << "Example: textdetection_swt ./scenetext_segmented_word02.jpg 0" << endl;
+        exit(1);
+    }
+
+    string filepath = argv[1];
+    if (!fileExists(filepath)) {
+        cout << "Error: The input image does not exist" << endl;
+        cout << "Please check the path to image file." << endl;
+        cout << "Usage: textdetection_swt file_path dark_on_light" << endl;
+        cout << "Usage: To detect dark text on light background pass dark_on_light as 1, otherwise pass 0" << endl;
         cout << "Example: ./swt ./scenetext_segmented_word02.jpg 0" << endl;
         exit(1);
     }
 
     bool dark_on_light = (argv[2][0] != '0');
 
-    Mat image = imread("/home/opencv-dev/OSS/opencv_contrib/modules/text/samples/scenetext_segmented_word03.jpg", IMREAD_COLOR);
-    namedWindow( "Input Image", WINDOW_AUTOSIZE );
+    Mat image = imread(argv[1], IMREAD_COLOR);
     imshow("Input Image", image);
 
-    cout << "Starting SWT Text Detection Demo with Dark on Light set to 0" << endl;
+    cout << "Starting SWT Text Detection Demo with dark_on_light variable set to 0" << endl;
 
     vector<cv::Rect> components;
-    Mat out( image.size(), CV_8UC3 );
+    Mat out;
     vector<cv::Rect> regions;
     cv::text::detectTextSWT(image, components, dark_on_light, out, regions);
-    namedWindow( "Letter Candidates", WINDOW_AUTOSIZE );
     imshow ("Letter Candidates", out);
     waitKey();
 
@@ -57,7 +62,6 @@ int main(int argc, const char * argv[])
         rectangle(image_copy, regions[i], cv::Scalar(0, 0, 0), 3);
     }
     cout << regions.size() << "chains were obtained after merging suitable pairs" << endl;
-    namedWindow( "Chains After Merging", WINDOW_AUTOSIZE );
     imshow ("Chains After Merging", image_copy);
     cout << "Recognition finished. Press any key to exit.\n";
     waitKey();

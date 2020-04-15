@@ -608,6 +608,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
     std::sort(chains.begin(), chains.end(), chainSortDist);
 
     const float alignmentThreshold = CV_PI / 6;
+    const float alignmentThreshold_cos = cos(alignmentThreshold);
     int merges = 1;
     while (merges > 0) {
         for (unsigned int i = 0; i < chains.size(); i++) {
@@ -619,7 +620,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
             for (unsigned int j = 0; j < chains.size(); j++){
                 if (i!=j && !chains[i].merged && !chains[j].merged) {
                     if (chains[i].chainIndexA == chains[j].chainIndexA) {
-                        if (acos(chains[i].dir.x * -chains[j].dir.x + chains[i].dir.y * -chains[j].dir.y) < alignmentThreshold) {
+                        if (abs(chains[i].dir.x * -chains[j].dir.x + chains[i].dir.y * -chains[j].dir.y) > alignmentThreshold_cos) {
                             chains[i].chainIndexA = chains[j].chainIndexB;
                             for (std::vector<int>::iterator it = chains[j].componentIndices.begin(); it != chains[j].componentIndices.end(); it++) {
                                 chains[i].componentIndices.push_back(*it);
@@ -639,7 +640,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
                             merges++;
                         }
                     } else if (chains[i].chainIndexA == chains[j].chainIndexB) {
-                        if (acos(chains[i].dir.x * chains[j].dir.x + chains[i].dir.y * chains[j].dir.y) < alignmentThreshold) {
+                        if (abs(chains[i].dir.x * chains[j].dir.x + chains[i].dir.y * chains[j].dir.y) > alignmentThreshold_cos) {
                             chains[i].chainIndexA = chains[j].chainIndexA;
                             for (std::vector<int>::iterator it = chains[j].componentIndices.begin(); it != chains[j].componentIndices.end(); it++) {
                                 chains[i].componentIndices.push_back(*it);
@@ -659,7 +660,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
                             merges++;
                         }
                     } else if (chains[i].chainIndexB == chains[j].chainIndexA) {
-                        if (acos(chains[i].dir.x * chains[j].dir.x + chains[i].dir.y * chains[j].dir.y) < alignmentThreshold) {
+                        if (abs(chains[i].dir.x * chains[j].dir.x + chains[i].dir.y * chains[j].dir.y) > alignmentThreshold_cos) {
                             chains[i].chainIndexB = chains[j].chainIndexB;
                             for (std::vector<int>::iterator it = chains[j].componentIndices.begin(); it != chains[j].componentIndices.end(); it++) {
                                 chains[i].componentIndices.push_back(*it);
@@ -679,7 +680,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
                             merges++;
                         }
                     } else if (chains[i].chainIndexB == chains[j].chainIndexB) {
-                        if (acos(chains[i].dir.x * -chains[j].dir.x + chains[i].dir.y * -chains[j].dir.y) < alignmentThreshold) {
+                        if (abs(chains[i].dir.x * -chains[j].dir.x + chains[i].dir.y * -chains[j].dir.y) > alignmentThreshold_cos) {
                             chains[i].chainIndexB = chains[j].chainIndexA;
                             for (std::vector<int>::iterator it = chains[j].componentIndices.begin(); it != chains[j].componentIndices.end(); it++) {
                                 chains[i].componentIndices.push_back(*it);
@@ -763,21 +764,21 @@ CV_EXPORTS_W void detectTextSWT (InputArray input, CV_OUT std::vector<cv::Rect>&
 
 
     // Convert to grayscale
-    Mat grayImage(input.size(), CV_8UC1);
-    cvtColor(input, grayImage, COLOR_RGB2GRAY);
+    Mat grayImage;
+    cvtColor(input, grayImage, COLOR_BGR2GRAY);
     // Create Canny Image
     double threshold_low = 175;
     double threshold_high = 320;
-    Mat canny_edge_image(input.size(), CV_8UC1);
+    Mat canny_edge_image;
     Canny (grayImage, canny_edge_image, threshold_low, threshold_high, 3);
 
     // Create gradient X, gradient Y
-    Mat gaussianImage( input.size(), CV_32FC1);
+    Mat gaussianImage;
     grayImage.convertTo(gaussianImage, CV_32FC1, 1./255.);
 
 
-    Mat gradientX( input.size(), CV_32FC1 );
-    Mat gradientY( input.size(), CV_32FC1 );
+    Mat gradientX;
+    Mat gradientY;
     GaussianBlur(gaussianImage, gaussianImage, Size(5, 5), 0);
     Scharr(gaussianImage, gradientX, -1, 1, 0);
     Scharr(gaussianImage, gradientY, -1, 0, 1);
@@ -800,13 +801,19 @@ CV_EXPORTS_W void detectTextSWT (InputArray input, CV_OUT std::vector<cv::Rect>&
     std::vector<std::vector<SWTPoint> > components = getComponents(SWTImage);
     std::vector<Component> validComponents = filterComponents(SWTImage, components, false);
     Mat outDrawing( input.size(), CV_8UC3 );
-    if (draw.needed()) {
-        outDrawing = draw.getMat();
-    }
+
     Mat input_image = input.getMat();
-    vector<cv::Rect> tempVec;
-    std::vector<cv::Rect>& outTextRegions = chainBBs.isVector() ? *reinterpret_cast<vector<cv::Rect> *>(chainBBs.getObj()): tempVec;
+    vector<cv::Rect> outTextRegions;
+
     result = findValidChains(input_image, SWTImage, validComponents, outDrawing, outTextRegions);
+
+    if (draw.needed()) {
+        outDrawing.copyTo(draw);
+    }
+
+    if (chainBBs.needed()) {
+         _InputArray(outTextRegions).copyTo(chainBBs);
+    }
 }
 }
 }

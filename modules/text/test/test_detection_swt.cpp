@@ -10,66 +10,56 @@ using namespace std;
 namespace opencv_test { namespace {
 
 TEST (TextDetectionSWT, accuracy_light_on_dark) {
-    std::vector<cv::Rect> letters;
     String dataPath = cvtest::TS::ptr()->get_data_path() + "cv/mser/mser_test.png";
     Mat image = imread(dataPath, IMREAD_COLOR);
-    vector<cv::Rect> components;
-    cv::text::detectTextSWT(image, components, false);
-    cout << components.size();
+    vector<Rect> components;
+    detectTextSWT(image, components, false);
     /* all 5 letter candidates should be identified (R9888) */
-    EXPECT_EQ(components.size(), (unsigned) 5);
+    EXPECT_EQ((unsigned) 5, components.size());
 }
 
 TEST (TextDetectionSWT, accuracy_dark_on_light) {
-    std::vector<cv::Rect> letters;
     String dataPath = cvtest::TS::ptr()->get_data_path() + "cv/mser/mser_test2.png";
     Mat image = imread(dataPath, IMREAD_COLOR);
-    vector<cv::Rect> components;
-    cv::text::detectTextSWT(image, components, true);
-    cout << components.size();
+    vector<Rect> components;
+    detectTextSWT(image, components, true);
     /* all 3 letter candidates should be identified 2, 5, 8 */
-    EXPECT_EQ(components.size(), (unsigned) 3);
+    EXPECT_EQ((unsigned) 3, components.size());
 }
 
 TEST (TextDetectionSWT, accuracy_handwriting) {
-    std::vector<cv::Rect> letters;
     String dataPath = cvtest::TS::ptr()->get_data_path() + "cv/cloning/Mixed_Cloning/source1.png";
     Mat image = imread(dataPath, IMREAD_COLOR);
-    vector<cv::Rect> components;
-    cv::text::detectTextSWT(image, components, true);
-    cout << components.size();
+    vector<Rect> components;
+    detectTextSWT(image, components, true);
     /* Handwritten Text is generally more difficult to detect using SWT algorithm due to high variation in stroke width. */
-    EXPECT_GT(components.size(), (unsigned) 11);
+    EXPECT_LT((unsigned) 11, components.size());
     /* Although the text contains 15 characters, the current implementation of algorithm outputs 14, including three wrong guesses. So, we check at least 11 (14 - 3) letters are detected.*/
 }
 
 TEST (TextDetectionSWT, regression_natural_scene) {
-    std::vector<cv::Rect> letters;
     String dataPath = cvtest::TS::ptr()->get_data_path() + "cv/shared/box_in_scene.png";
     Mat image = imread(dataPath, IMREAD_COLOR);
-    vector<cv::Rect> light_components;
-    cv::text::detectTextSWT(image, light_components, false);
-    cout << light_components.size();
-    EXPECT_EQ(light_components.size(), (unsigned) 68);
+    vector<Rect> light_components;
+    detectTextSWT(image, light_components, false);
+    EXPECT_EQ((unsigned) 68, light_components.size());
 
-    vector<cv::Rect> dark_components;
-    cv::text::detectTextSWT(image, dark_components, true);
-    cout << dark_components.size();
-    EXPECT_EQ(dark_components.size(), (unsigned) 14);
+    vector<Rect> dark_components;
+    detectTextSWT(image, dark_components, true);
+    EXPECT_EQ((unsigned) 14, dark_components.size());
     /* Verifies that both modes of algorithm run on natural scenes */
 }
 
 TEST (TextDetectionSWT, accuracy_chaining) {
-    std::vector<cv::Rect> letters;
     String dataPath = cvtest::TS::ptr()->get_data_path() + "cv/mser/mser_test.png";
     Mat image = imread(dataPath, IMREAD_COLOR);
-    vector<cv::Rect> components;
+    vector<Rect> components;
     Mat out( image.size(), CV_8UC3 );
-    vector<cv::Rect> chains;
-    cv::text::detectTextSWT(image, components, false, out, chains);
-    cv::Rect chain = chains[0];
+    vector<Rect> chains;
+    detectTextSWT(image, components, false, out, chains);
+    Rect chain = chains[0];
     /* Since the word is already segmented and cropped, most of the area is covered by text. It confirms that chaining works. */
-    EXPECT_GT(chain.area(), 0.95 * image.rows * image.cols);
+    EXPECT_LT(0.95 * image.rows * image.cols, chain.area());
 }
 
 }} // namespace
