@@ -45,7 +45,7 @@ TEST (TextDetectionSWT, regression_natural_scene) {
 
     vector<Rect> dark_components;
     detectTextSWT(image, dark_components, true);
-    EXPECT_EQ((unsigned) 17, dark_components.size());
+    EXPECT_EQ((unsigned) 14, dark_components.size());
     /* Verifies that both modes of algorithm run on natural scenes */
 }
 

@@ -4,10 +4,6 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "opencv2/core.hpp"
-#include "opencv2/imgproc.hpp"
-#include "opencv2/highgui.hpp"
-
 #include <iostream>
 #include <fstream>
 #include <vector>
@@ -83,7 +79,7 @@ int main(int argc, const char * argv[])
     for (unsigned int i = 0; i < regions.size(); i++) {
         rectangle(image_copy, regions[i], cv::Scalar(0, 0, 0), 3);
     }
-    cout << regions.size() << "chains were obtained after merging suitable pairs" << endl;
+    cout << regions.size() << " chains were obtained after merging suitable pairs" << endl;
     imshow ("Chains After Merging", image_copy);
 
     cout << "Recognition finished. Press any key to exit.\n";
