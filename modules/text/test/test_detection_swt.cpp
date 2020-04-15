@@ -5,8 +5,6 @@
 #include "test_precomp.hpp"
 #include "opencv2/imgcodecs.hpp"
 
-using namespace cv;
-using namespace std;
 namespace opencv_test { namespace {
 
 TEST (TextDetectionSWT, accuracy_light_on_dark) {

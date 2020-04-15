@@ -4,57 +4,79 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include  <iostream>
-#include  <fstream>
+#include "opencv2/core.hpp"
+#include "opencv2/imgproc.hpp"
+#include "opencv2/highgui.hpp"
+
+#include <iostream>
+#include <fstream>
 #include <vector>
 #include <string>
-using namespace cv;
 using namespace std;
+using namespace cv;
 
-bool fileExists (const string& filename)
+static void help(CommandLineParser cmd, const String& errorMessage)
+{
+    cout << errorMessage << endl;
+    cout << "Avaible options:" << endl;
+    cmd.printMessage();
+}
+
+static bool fileExists (const string& filename)
 {
     ifstream f(filename.c_str());
     return f.good();
 }
 
-
-
 int main(int argc, const char * argv[])
 {
-    if (argc < 3)
+
+    const String keys =
+        "{help h usage ? |false      | print this message   }"
+        "{@image        |      | path to image   }"
+        "{@darkOnLight        |false     | indicates whether text to be extracted is dark on a light brackground. Defaults to false. }"
+        ;
+
+
+    CommandLineParser cmd(argc, argv, keys);
+
+    if(cmd.get<bool>("help"))
     {
-        cout << "Insuficient parameters. Aborting!" << endl;
-        cout << "Usage: textdetection_swt file_path dark_on_light" << endl;
-        cout << "Usage: To detect dark text on light background pass dark_on_light as 1, otherwise pass 0" << endl;
-        cout << "Example: textdetection_swt ./scenetext_segmented_word02.jpg 0" << endl;
-        exit(1);
+        help(cmd, "Usage: ./textdetection_swt [options] \nExample: ./textdetection_swt scenetext_segmented_word03.jpg true");
+        return EXIT_FAILURE;
     }
 
-    string filepath = argv[1];
+    string filepath = cmd.get<string>("@image");
+
     if (!fileExists(filepath)) {
-        cout << "Error: The input image does not exist" << endl;
-        cout << "Please check the path to image file." << endl;
-        cout << "Usage: textdetection_swt file_path dark_on_light" << endl;
-        cout << "Usage: To detect dark text on light background pass dark_on_light as 1, otherwise pass 0" << endl;
-        cout << "Example: ./swt ./scenetext_segmented_word02.jpg 0" << endl;
-        exit(1);
+        help(cmd, "ERROR: Could not find the image file. Please check the path.");
+        return EXIT_FAILURE;
     }
 
-    bool dark_on_light = (argv[2][0] != '0');
+    bool dark_on_light = cmd.get<bool>("@darkOnLight");
 
-    Mat image = imread(argv[1], IMREAD_COLOR);
+    Mat image = imread(filepath, IMREAD_COLOR);
+
+    if (!image.data)
+    {
+        help(cmd, "ERROR: Could not load the image file.");
+        return EXIT_FAILURE;
+    }
+
     imshow("Input Image", image);
 
-    cout << "Starting SWT Text Detection Demo with dark_on_light variable set to 0" << endl;
+    cout << "Starting SWT Text Detection Demo with dark_on_light variable set to " << dark_on_light << endl;
+    cout << "Press any key to continue." << endl;
+    waitKey();
 
     vector<cv::Rect> components;
     Mat out;
     vector<cv::Rect> regions;
     cv::text::detectTextSWT(image, components, dark_on_light, out, regions);
     imshow ("Letter Candidates", out);
-    waitKey();
 
-    cout << components.size() << " letter candidates found" << endl;
+    cout << components.size() << " letter candidates found. Press any key to exit.\n";
+    waitKey();
 
     Mat image_copy = image.clone();
 
@@ -63,6 +85,7 @@ int main(int argc, const char * argv[])
     }
     cout << regions.size() << "chains were obtained after merging suitable pairs" << endl;
     imshow ("Chains After Merging", image_copy);
+
     cout << "Recognition finished. Press any key to exit.\n";
     waitKey();
     return 0;

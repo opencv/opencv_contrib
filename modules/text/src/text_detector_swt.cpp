@@ -4,13 +4,7 @@
 #include "precomp.hpp"
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
-#include <cmath>
-#include <math.h>
-#include <utility>
-#include <iostream>
-#include <algorithm>
 #include <unordered_map>
-#include <vector>
 
 using namespace std;
 
@@ -618,7 +612,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
             for (unsigned int j = 0; j < chains.size(); j++){
                 if (i!=j && !chains[i].merged && !chains[j].merged) {
                     if (chains[i].chainIndexA == chains[j].chainIndexA) {
-                        if (abs(chains[i].dir.x * -chains[j].dir.x + chains[i].dir.y * -chains[j].dir.y) > alignmentThreshold_cos) {
+                        if (chains[i].dir.x * -chains[j].dir.x + chains[i].dir.y * -chains[j].dir.y > alignmentThreshold_cos) {
                             chains[i].chainIndexA = chains[j].chainIndexB;
                             for (std::vector<int>::iterator it = chains[j].componentIndices.begin(); it != chains[j].componentIndices.end(); it++) {
                                 chains[i].componentIndices.push_back(*it);
@@ -638,7 +632,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
                             merges++;
                         }
                     } else if (chains[i].chainIndexA == chains[j].chainIndexB) {
-                        if (abs(chains[i].dir.x * chains[j].dir.x + chains[i].dir.y * chains[j].dir.y) > alignmentThreshold_cos) {
+                        if (chains[i].dir.x * chains[j].dir.x + chains[i].dir.y * chains[j].dir.y > alignmentThreshold_cos) {
                             chains[i].chainIndexA = chains[j].chainIndexA;
                             for (std::vector<int>::iterator it = chains[j].componentIndices.begin(); it != chains[j].componentIndices.end(); it++) {
                                 chains[i].componentIndices.push_back(*it);
@@ -658,7 +652,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
                             merges++;
                         }
                     } else if (chains[i].chainIndexB == chains[j].chainIndexA) {
-                        if (abs(chains[i].dir.x * chains[j].dir.x + chains[i].dir.y * chains[j].dir.y) > alignmentThreshold_cos) {
+                        if (chains[i].dir.x * chains[j].dir.x + chains[i].dir.y * chains[j].dir.y > alignmentThreshold_cos) {
                             chains[i].chainIndexB = chains[j].chainIndexB;
                             for (std::vector<int>::iterator it = chains[j].componentIndices.begin(); it != chains[j].componentIndices.end(); it++) {
                                 chains[i].componentIndices.push_back(*it);
@@ -678,7 +672,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
                             merges++;
                         }
                     } else if (chains[i].chainIndexB == chains[j].chainIndexB) {
-                        if (abs(chains[i].dir.x * -chains[j].dir.x + chains[i].dir.y * -chains[j].dir.y) > alignmentThreshold_cos) {
+                        if (chains[i].dir.x * -chains[j].dir.x + chains[i].dir.y * -chains[j].dir.y) > alignmentThreshold_cos) {
                             chains[i].chainIndexB = chains[j].chainIndexA;
                             for (std::vector<int>::iterator it = chains[j].componentIndices.begin(); it != chains[j].componentIndices.end(); it++) {
                                 chains[i].componentIndices.push_back(*it);
@@ -716,7 +710,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
     std::vector<std::vector<SWTPoint>> componentsPointsVector;
     vector<Component> finalComponents;
     finalComponents.reserve(components.size());
-    bool componentIncluded [components.size()] = {false};
+    std::vector<bool> componentIncluded(components.size(), false);
     for (unsigned int i = 0; i < chains.size(); i++) {
         if (chains[i].componentIndices.size() >= 3) {
             newchains.push_back(chains[i]);
@@ -757,7 +751,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
 }
 }
 
-CV_EXPORTS_W void detectTextSWT (InputArray input, CV_OUT std::vector<cv::Rect>& result, bool dark_on_light, OutputArray & draw /*=noArray()*/, OutputArray & chainBBs /*=noArray()*/) {
+void detectTextSWT (InputArray input, CV_OUT std::vector<cv::Rect>& result, bool dark_on_light, OutputArray & draw /*=noArray()*/, OutputArray & chainBBs /*=noArray()*/) {
     CV_CheckTypeEQ(input.type(), CV_8UC3, "");
 
 
