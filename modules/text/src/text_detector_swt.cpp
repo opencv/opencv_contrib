@@ -68,7 +68,7 @@ const Scalar BLUE (255, 0, 0);
 const Scalar GREEN(0, 255, 0);
 const Scalar RED  (0, 0, 255);
 void addEdge(std::vector<int> adj[], int u, int v);
-void DFSUtil(int v, bool visited[], std::vector<int> adj[], int label, std::vector<int> &component_id);
+void DFSUtil(int v, std::vector<bool> & visited, std::vector<int> adj[], int label, std::vector<int> &component_id);
 int connected_components(std::vector<int> adj[], std::vector<int> &component_id, int num_vertices);
 void SWTFirstPass (Mat edgeImage, Mat gradientX, Mat gradientY, bool dark_on_light, Mat & SWTImage, std::vector<Ray> & rays);
 bool sortBySWT (const SWTPoint &lhs, const SWTPoint &rhs);
@@ -92,7 +92,7 @@ void addEdge(std::vector<int> adj[], int u, int v) {
     adj[v].push_back(u);
 }
 
-void DFSUtil(int v, bool visited[], std::vector<int> adj[], int label, std::vector<int> &component_id)
+void DFSUtil(int v, std::vector<bool> & visited, std::vector<int> adj[], int label, std::vector<int> &component_id)
 {
     // Mark the current node as visited and label it as belonging to the current component
     visited[v] = true;
@@ -108,9 +108,8 @@ void DFSUtil(int v, bool visited[], std::vector<int> adj[], int label, std::vect
 }
 
 int connected_components(std::vector<int> adj[], std::vector<int> &component_id, int num_vertices) {
-    bool *visited = new bool[num_vertices];
-    for(int v = 0; v < num_vertices; v++)
-        visited[v] = false;
+    std::vector<bool> visited(num_vertices, false);
+
     int label = 0;
     for (int v=0; v<num_vertices; v++)
     {
@@ -121,7 +120,6 @@ int connected_components(std::vector<int> adj[], std::vector<int> &component_id,
         }
     }
 
-    delete [] visited;
     return label;
 }
 

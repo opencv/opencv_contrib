@@ -10,7 +10,7 @@ using namespace std;
 namespace opencv_test { namespace {
 
 TEST (TextDetectionSWT, accuracy_light_on_dark) {
-    String dataPath = cvtest::TS::ptr()->get_data_path() + "cv/mser/mser_test.png";
+    const string dataPath = cvtest::findDataFile("cv/mser/mser_test.png");
     Mat image = imread(dataPath, IMREAD_COLOR);
     vector<Rect> components;
     detectTextSWT(image, components, false);
@@ -19,7 +19,7 @@ TEST (TextDetectionSWT, accuracy_light_on_dark) {
 }
 
 TEST (TextDetectionSWT, accuracy_dark_on_light) {
-    String dataPath = cvtest::TS::ptr()->get_data_path() + "cv/mser/mser_test2.png";
+    const string dataPath = cvtest::findDataFile("cv/mser/mser_test2.png");
     Mat image = imread(dataPath, IMREAD_COLOR);
     vector<Rect> components;
     detectTextSWT(image, components, true);
@@ -28,7 +28,7 @@ TEST (TextDetectionSWT, accuracy_dark_on_light) {
 }
 
 TEST (TextDetectionSWT, accuracy_handwriting) {
-    String dataPath = cvtest::TS::ptr()->get_data_path() + "cv/cloning/Mixed_Cloning/source1.png";
+    const string dataPath = cvtest::findDataFile("cv/cloning/Mixed_Cloning/source1.png");
     Mat image = imread(dataPath, IMREAD_COLOR);
     vector<Rect> components;
     detectTextSWT(image, components, true);
@@ -38,20 +38,21 @@ TEST (TextDetectionSWT, accuracy_handwriting) {
 }
 
 TEST (TextDetectionSWT, regression_natural_scene) {
-    String dataPath = cvtest::TS::ptr()->get_data_path() + "cv/shared/box_in_scene.png";
+    const string dataPath = cvtest::findDataFile("cv/shared/box_in_scene.png");
+
     Mat image = imread(dataPath, IMREAD_COLOR);
     vector<Rect> light_components;
     detectTextSWT(image, light_components, false);
-    EXPECT_EQ((unsigned) 68, light_components.size());
+    EXPECT_EQ((unsigned) 81, light_components.size());
 
     vector<Rect> dark_components;
     detectTextSWT(image, dark_components, true);
-    EXPECT_EQ((unsigned) 14, dark_components.size());
+    EXPECT_EQ((unsigned) 17, dark_components.size());
     /* Verifies that both modes of algorithm run on natural scenes */
 }
 
 TEST (TextDetectionSWT, accuracy_chaining) {
-    String dataPath = cvtest::TS::ptr()->get_data_path() + "cv/mser/mser_test.png";
+    const string dataPath = cvtest::findDataFile("cv/mser/mser_test.png");
     Mat image = imread(dataPath, IMREAD_COLOR);
     vector<Rect> components;
     Mat out( image.size(), CV_8UC3 );
