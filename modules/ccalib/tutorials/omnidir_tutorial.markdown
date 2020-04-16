@@ -1,4 +1,4 @@
-Omnidirectional Cameara Calibration {#tutorial_omnidir_calib_main}
+Omnidirectional Camera Calibration {#tutorial_omnidir_calib_main}
 ======================
 
 This module includes calibration, rectification and stereo reconstruction of omnidirectional camearas. The camera model is described in this paper:
