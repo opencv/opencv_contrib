@@ -421,7 +421,7 @@ std::vector<Component> filterComponents(Mat& SWTImage, std::vector<std::vector<S
         float area = attributes.length * attributes.width;
 
         // compute the rotated bounding box
-        float increment = (float) 1./36.;
+        float increment = ((float) 1. )/ (float) 36.;
         for (float theta = increment * (float) CV_PI; theta<CV_PI/2.0; theta += increment * (float) CV_PI) {
             float xmin,xmax,ymin,ymax;
                 xmin = 1000000;

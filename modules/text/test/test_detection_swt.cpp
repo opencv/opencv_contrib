@@ -35,20 +35,6 @@ TEST (TextDetectionSWT, accuracy_handwriting) {
     /* Although the text contains 15 characters, the current implementation of algorithm outputs 14, including three wrong guesses. So, we check at least 11 (14 - 3) letters are detected.*/
 }
 
-TEST (TextDetectionSWT, regression_natural_scene) {
-    const string dataPath = cvtest::findDataFile("cv/stereomatching/datasets/poster/im6.png");
-
-    Mat image = imread(dataPath, IMREAD_COLOR);
-    vector<Rect> light_components;
-    detectTextSWT(image, light_components, false);
-    EXPECT_LT((unsigned) 30, light_components.size());
-
-    vector<Rect> dark_components;
-    detectTextSWT(image, dark_components, true);
-    EXPECT_LT((unsigned) 30, dark_components.size());
-    /* Verifies that both modes of algorithm run on natural scenes */
-}
-
 TEST (TextDetectionSWT, accuracy_chaining) {
     const string dataPath = cvtest::findDataFile("cv/mser/mser_test.png");
     Mat image = imread(dataPath, IMREAD_COLOR);
