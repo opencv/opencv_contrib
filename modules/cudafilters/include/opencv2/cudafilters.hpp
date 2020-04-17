@@ -322,7 +322,11 @@ CV_EXPORTS_W Ptr<Filter> createColumnSumFilter(int srcType, int dstType, int ksi
 @param windowSize Size of the kernerl used for the filtering. Uses a (windowSize x windowSize) filter.
 @param partition Specifies the parallel granularity of the workload. This parameter should be used GPU experts when optimizing performance.
 
-Outputs an image that has been filtered using median-filtering formulation.
+Outputs an image that has been filtered using a median-filtering formulation.
+
+Details on this algorithm can be found in:
+Green, O., 2017. "Efficient scalable median filtering using histogram-based operations",
+                  IEEE Transactions on Image Processing, 27(5), pp.2217-2228.
  */
 CV_EXPORTS_W Ptr<Filter> createMedianFilter(int srcType, int windowSize, int partition = 128);
 
