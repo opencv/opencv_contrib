@@ -36,16 +36,16 @@ TEST (TextDetectionSWT, accuracy_handwriting) {
 }
 
 TEST (TextDetectionSWT, regression_natural_scene) {
-    const string dataPath = cvtest::findDataFile("cv/shared/box_in_scene.png");
+    const string dataPath = cvtest::findDataFile("cv/stereomatching/datasets/poster/im6.png");
 
     Mat image = imread(dataPath, IMREAD_COLOR);
     vector<Rect> light_components;
     detectTextSWT(image, light_components, false);
-    EXPECT_EQ((unsigned) 68, light_components.size());
+    EXPECT_LT((unsigned) 30, light_components.size());
 
     vector<Rect> dark_components;
     detectTextSWT(image, dark_components, true);
-    EXPECT_EQ((unsigned) 14, dark_components.size());
+    EXPECT_LT((unsigned) 30, dark_components.size());
     /* Verifies that both modes of algorithm run on natural scenes */
 }
 

@@ -5,7 +5,7 @@
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
 #include <unordered_map>
-
+#include <limits>
 using namespace std;
 
 namespace cv {
@@ -144,11 +144,11 @@ void SWTFirstPass (Mat edgeImage, Mat gradientX, Mat gradientY, bool dark_on_lig
             ray.p = p;
             std::vector<SWTPoint> points;
             points.push_back(p);
-            float curPosX = (float) col + 0.5;
-            float curPosY = (float) row + 0.5;
+            float curPosX = (float) col + (float) 0.5;
+            float curPosY = (float) row + (float) 0.5;
             int curPixX = col;
             int curPixY = row;
-            float inc = 0.05;
+            float inc = (float) 0.05;
             while (true) {
                 curPosX += inc * dx;
                 curPosY += inc * dy;
@@ -221,7 +221,7 @@ void normalizeAndScale (const Mat& SWTImage, Mat& output) {
     Mat outputTemp(output.size(), CV_32FC1);
 
     float maxSWT = 0;
-    float minSWT = 1e100;
+    float minSWT = (float) FLT_MAX;
     for(int row = 0; row < SWTImage.rows; row++){
         for (int col = 0; col < SWTImage.cols; col++){
             float val  = SWTImage.at<float>(row, col);
@@ -381,7 +381,7 @@ void renderComponents (const Mat& SWTImage, std::vector<Component> components, M
         }
     }
     float maxVal = 0;
-    float minVal = 1e100;
+    float minVal = (float) FLT_MAX;
     for(int row = 0; row < output.rows; row++ ){
         const float* ptr = (const float*)output.ptr(row);
         for ( int col = 0; col < output.cols; col++ ){
@@ -421,8 +421,8 @@ std::vector<Component> filterComponents(Mat& SWTImage, std::vector<std::vector<S
         float area = attributes.length * attributes.width;
 
         // compute the rotated bounding box
-        float increment = 1./36.;
-        for (float theta = increment * CV_PI; theta<CV_PI/2.0; theta += increment * CV_PI) {
+        float increment = (float) 1./36.;
+        for (float theta = increment * (float) CV_PI; theta<CV_PI/2.0; theta += increment * (float) CV_PI) {
             float xmin,xmax,ymin,ymax;
                 xmin = 1000000;
                 ymin = 1000000;
@@ -448,7 +448,7 @@ std::vector<Component> filterComponents(Mat& SWTImage, std::vector<std::vector<S
         if (!skipChecks && (attributes.length/attributes.width < 1./10. || attributes.length/attributes.width > 10.)) continue;
 
         Component acceptedComponent;
-        acceptedComponent.length = attributes.length;
+        acceptedComponent.length = (int) attributes.length;
 
         acceptedComponent.cx = ((float) (attributes.xmax+attributes.xmin)) / 2;
         acceptedComponent.cy = ((float) (attributes.ymax+attributes.ymin)) / 2;
@@ -599,7 +599,7 @@ vector<cv::Rect> findValidChains(Mat input_image, Mat SWTImage, std::vector<Comp
 
     std::sort(chains.begin(), chains.end(), chainSortDist);
 
-    const float alignmentThreshold = CV_PI / 6;
+    const float alignmentThreshold = (float) CV_PI / 6;
     const float alignmentThreshold_cos = cos(alignmentThreshold);
     int merges = 1;
     while (merges > 0) {
