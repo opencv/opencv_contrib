@@ -3,15 +3,17 @@
 #include <opencv2/text.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <opencv2/imgcodecs.hpp>
 
 #include <iostream>
 #include <fstream>
 #include <vector>
 #include <string>
+
 using namespace std;
 using namespace cv;
 
-static void help(CommandLineParser cmd, const String& errorMessage)
+static void help(const CommandLineParser& cmd, const string& errorMessage)
 {
     cout << errorMessage << endl;
     cout << "Avaible options:" << endl;
@@ -26,13 +28,11 @@ static bool fileExists (const string& filename)
 
 int main(int argc, const char * argv[])
 {
-
-    const String keys =
-        "{help h usage ? |false      | print this message   }"
-        "{@image        |      | path to image   }"
-        "{@darkOnLight        |false     | indicates whether text to be extracted is dark on a light brackground. Defaults to false. }"
+    const char* keys =
+        "{help h usage ? |false | print this message }"
+        "{@image         |      | path to image }"
+        "{@darkOnLight   |false | indicates whether text to be extracted is dark on a light brackground. Defaults to false. }"
         ;
-
 
     CommandLineParser cmd(argc, argv, keys);
 
@@ -53,26 +53,26 @@ int main(int argc, const char * argv[])
 
     Mat image = imread(filepath, IMREAD_COLOR);
 
-    if (!image.data)
+    if (image.empty())
     {
-        help(cmd, "ERROR: Could not load the image file.");
+        help(cmd, "ERROR: Could not load the image file");
         return EXIT_FAILURE;
     }
 
-    imshow("Input Image", image);
-
     cout << "Starting SWT Text Detection Demo with dark_on_light variable set to " << dark_on_light << endl;
-    cout << "Press any key to continue." << endl;
-    waitKey();
+
+    imshow("Input Image", image);
+    waitKey(1);
 
     vector<cv::Rect> components;
     Mat out;
     vector<cv::Rect> regions;
     cv::text::detectTextSWT(image, components, dark_on_light, out, regions);
-    imshow ("Letter Candidates", out);
 
-    cout << components.size() << " letter candidates found. Press any key to exit.\n";
-    waitKey();
+    imshow ("Letter Candidates", out);
+    waitKey(1);
+
+    cout << components.size() << " letter candidates found." << endl;
 
     Mat image_copy = image.clone();
 
@@ -80,9 +80,10 @@ int main(int argc, const char * argv[])
         rectangle(image_copy, regions[i], cv::Scalar(0, 0, 0), 3);
     }
     cout << regions.size() << " chains were obtained after merging suitable pairs" << endl;
-    imshow ("Chains After Merging", image_copy);
+    cout << "Recognition finished. Press any key to exit..." << endl;
 
-    cout << "Recognition finished. Press any key to exit.\n";
+    imshow ("Chains After Merging", image_copy);
     waitKey();
+
     return 0;
 }

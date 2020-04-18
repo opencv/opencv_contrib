@@ -3,7 +3,6 @@
 // of this distribution and at http://opencv.org/license.html.
 
 #include "test_precomp.hpp"
-#include "opencv2/imgcodecs.hpp"
 
 namespace opencv_test { namespace {
 
@@ -13,7 +12,7 @@ TEST (TextDetectionSWT, accuracy_light_on_dark) {
     vector<Rect> components;
     detectTextSWT(image, components, false);
     /* all 5 letter candidates should be identified (R9888) */
-    EXPECT_EQ((unsigned) 5, components.size());
+    EXPECT_EQ(5u, components.size());
 }
 
 TEST (TextDetectionSWT, accuracy_dark_on_light) {
@@ -22,7 +21,7 @@ TEST (TextDetectionSWT, accuracy_dark_on_light) {
     vector<Rect> components;
     detectTextSWT(image, components, true);
     /* all 3 letter candidates should be identified 2, 5, 8 */
-    EXPECT_EQ((unsigned) 3, components.size());
+    EXPECT_EQ(3u, components.size());
 }
 
 TEST (TextDetectionSWT, accuracy_handwriting) {
@@ -31,7 +30,7 @@ TEST (TextDetectionSWT, accuracy_handwriting) {
     vector<Rect> components;
     detectTextSWT(image, components, true);
     /* Handwritten Text is generally more difficult to detect using SWT algorithm due to high variation in stroke width. */
-    EXPECT_LT((unsigned) 11, components.size());
+    EXPECT_LT(11u, components.size());
     /* Although the text contains 15 characters, the current implementation of algorithm outputs 14, including three wrong guesses. So, we check at least 11 (14 - 3) letters are detected.*/
 }
 
@@ -39,12 +38,12 @@ TEST (TextDetectionSWT, accuracy_chaining) {
     const string dataPath = cvtest::findDataFile("cv/mser/mser_test.png");
     Mat image = imread(dataPath, IMREAD_COLOR);
     vector<Rect> components;
-    Mat out( image.size(), CV_8UC3 );
+    Mat out(image.size(), CV_8UC3);
     vector<Rect> chains;
     detectTextSWT(image, components, false, out, chains);
     Rect chain = chains[0];
     /* Since the word is already segmented and cropped, most of the area is covered by text. It confirms that chaining works. */
-    EXPECT_LT(0.95 * image.rows * image.cols, chain.area());
+    EXPECT_LT(0.95 * image.total(), (double)chain.area());
 }
 
 }} // namespace
