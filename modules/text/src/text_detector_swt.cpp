@@ -441,9 +441,9 @@ std::vector<Component> filterComponents(const Mat& SWTImage, const std::vector<s
         float area = attributes.length * attributes.width;
 
         // compute the rotated bounding box
-        for (int theta_i = 1; theta_i < (NUM_THETA / 2); theta_i++)
+        for (int theta_i = 0; theta_i < (NUM_THETA / 2); theta_i++)
         {
-            float theta = (float)(i * (CV_PI / NUM_THETA));
+            float theta = (float)(theta_i * (CV_PI / NUM_THETA));
             float
                 xmin = 1000000,
                 ymin = 1000000,
@@ -785,7 +785,7 @@ vector<cv::Rect> findValidChains(const Mat& input_image, const Mat& SWTImage, co
 
     if (output.needed())
     {
-        Mat outTemp(output.size(), CV_32FC1);
+        Mat outTemp(input_image.size(), CV_32FC1);
         renderComponents(SWTImage, finalComponents, outTemp);
         Mat outTemp_8u;
         outTemp.convertTo(outTemp_8u, CV_8UC1, 255.);
