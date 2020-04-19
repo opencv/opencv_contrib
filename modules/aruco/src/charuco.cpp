@@ -490,14 +490,12 @@ static int _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners,
               _markerIds.getMat().total() > 0);
 
     unsigned int nMarkers = (unsigned int)_markerIds.getMat().total();
-    double det = 0;
 
     // calculate local homographies for each marker
     vector< Mat > transformations;
     transformations.resize(nMarkers);
 
-    vector< bool > validTransform;
-    validTransform.resize(nMarkers, false);
+    vector< bool > validTransform(nMarkers, false);
 
     for(unsigned int i = 0; i < nMarkers; i++) {
         vector< Point2f > markerObjPoints2D;
@@ -511,13 +509,10 @@ static int _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners,
                 Point2f(_board->objPoints[boardIdx][j].x, _board->objPoints[boardIdx][j].y);
 
         transformations[i] = getPerspectiveTransform(markerObjPoints2D, _markerCorners.getMat(i));
-        det = determinant(transformations[i]);
 
         // set transform as valid if transformation is non-singular
-        if (det != 0.){
-            validTransform[i] = true;
-        }
-
+        double det = determinant(transformations[i]);
+        validTransform[i] = std::abs(det) > 1e-6;
     }
 
     unsigned int nCharucoCorners = (unsigned int)_board->chessboardCorners.size();
@@ -538,13 +533,13 @@ static int _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners,
                     break;
                 }
             }
-            if(markerIdx != -1) {
-                if (validTransform[markerIdx] == true){
-                    vector< Point2f > in, out;
-                    in.push_back(objPoint2D);
-                    perspectiveTransform(in, out, transformations[markerIdx]);
-                    interpolatedPositions.push_back(out[0]);
-                }
+            if (markerIdx != -1 &&
+                validTransform[markerIdx])
+            {
+                vector< Point2f > in, out;
+                in.push_back(objPoint2D);
+                perspectiveTransform(in, out, transformations[markerIdx]);
+                interpolatedPositions.push_back(out[0]);
             }
         }
 
