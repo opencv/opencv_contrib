@@ -198,4 +198,42 @@ TEST(intensity_transform_contrastStretching, accuracy)
     EXPECT_LE(cvtest::norm(res, expectedRes, NORM_INF), 1);
 }
 
+typedef testing::TestWithParam<std::string> intensity_transform_BIMEF;
+
+TEST_P(intensity_transform_BIMEF, accuracy)
+{
+#ifdef HAVE_EIGEN
+    const std::string directory = "intensity_transform/BIMEF/";
+    std::string filename = GetParam();
+
+    const std::string inputFilename = cvtest::findDataFile(directory + filename + ".png");
+    Mat img = imread(inputFilename);
+    EXPECT_TRUE(!img.empty());
+    Mat imgBIMEF;
+    BIMEF(img, imgBIMEF);
+
+    const std::string referenceFilename = cvtest::findDataFile(directory + filename + "_ref.png");
+    Mat imgRef = imread(referenceFilename);
+    EXPECT_TRUE(!imgRef.empty());
+
+    EXPECT_EQ(imgBIMEF.rows, imgRef.rows);
+    EXPECT_EQ(imgBIMEF.cols, imgRef.cols);
+    EXPECT_EQ(imgBIMEF.type(), imgRef.type());
+    double rmse = sqrt(cv::norm(imgBIMEF, imgRef, NORM_L2SQR) / (imgRef.total()*imgRef.channels()));
+    std::cout << "BIMEF, RMSE for " << filename << ": " << rmse << std::endl;
+    const float max_rmse = 9;
+    EXPECT_LE(rmse, max_rmse);
+#endif
+}
+
+const string BIMEF_accuracy_cases[] = {
+    "P1000205_resize",
+    "P1010676_resize",
+    "P1010815_resize"
+};
+
+INSTANTIATE_TEST_CASE_P(/*nothing*/, intensity_transform_BIMEF,
+    testing::ValuesIn(BIMEF_accuracy_cases)
+);
+
 }} // namespace

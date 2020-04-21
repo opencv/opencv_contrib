@@ -7,6 +7,7 @@
 
 #include "opencv2/core.hpp"
 #include "opencv2/intensity_transform.hpp"
+#include "opencv2/core/private.hpp"
 #include <array>
 
 #endif
