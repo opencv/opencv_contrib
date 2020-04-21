@@ -452,6 +452,9 @@ static int _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners,
     // calculate local homographies for each marker
     vector< Mat > transformations;
     transformations.resize(nMarkers);
+
+    vector< bool > validTransform(nMarkers, false);
+
     for(unsigned int i = 0; i < nMarkers; i++) {
         vector< Point2f > markerObjPoints2D;
         int markerId = _markerIds.getMat().at< int >(i);
@@ -464,6 +467,10 @@ static int _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners,
                 Point2f(_board->objPoints[boardIdx][j].x, _board->objPoints[boardIdx][j].y);
 
         transformations[i] = getPerspectiveTransform(markerObjPoints2D, _markerCorners.getMat(i));
+
+        // set transform as valid if transformation is non-singular
+        double det = determinant(transformations[i]);
+        validTransform[i] = std::abs(det) > 1e-6;
     }
 
     unsigned int nCharucoCorners = (unsigned int)_board->chessboardCorners.size();
@@ -484,7 +491,9 @@ static int _interpolateCornersCharucoLocalHom(InputArrayOfArrays _markerCorners,
                     break;
                 }
             }
-            if(markerIdx != -1) {
+            if (markerIdx != -1 &&
+                validTransform[markerIdx])
+            {
                 vector< Point2f > in, out;
                 in.push_back(objPoint2D);
                 perspectiveTransform(in, out, transformations[markerIdx]);
