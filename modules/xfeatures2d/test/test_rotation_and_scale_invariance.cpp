@@ -610,14 +610,6 @@ TEST(Features2d_RotationInvariance_Detector_SURF, regression)
     test.safe_run();
 }
 
-TEST(Features2d_RotationInvariance_Detector_SIFT, DISABLED_regression)
-{
-    DetectorRotationInvarianceTest test(SIFT::create(),
-                                        0.45f,
-                                        0.70f);
-    test.safe_run();
-}
-
 /*
  * Descriptors's rotation invariance check
  */
@@ -629,15 +621,7 @@ TEST(Features2d_RotationInvariance_Descriptor_SURF, regression)
                                           0.83f);
     test.safe_run();
 }
-
-TEST(Features2d_RotationInvariance_Descriptor_SIFT, regression)
-{
-    DescriptorRotationInvarianceTest test(SIFT::create(),
-                                          SIFT::create(),
-                                          NORM_L1,
-                                          0.98f);
-    test.safe_run();
-}
+#endif // NONFREE
 
 TEST(Features2d_RotationInvariance_Descriptor_LATCH, regression)
 {
@@ -647,7 +631,6 @@ TEST(Features2d_RotationInvariance_Descriptor_LATCH, regression)
                                           0.98f);
     test.safe_run();
 }
-#endif // NONFREE
 
 TEST(DISABLED_Features2d_RotationInvariance_Descriptor_DAISY, regression)
 {
@@ -806,14 +789,6 @@ TEST(Features2d_ScaleInvariance_Detector_SURF, regression)
     test.safe_run();
 }
 
-TEST(Features2d_ScaleInvariance_Detector_SIFT, regression)
-{
-    DetectorScaleInvarianceTest test(SIFT::create(),
-                                     0.69f,
-                                     0.98f);
-    test.safe_run();
-}
-
 /*
  * Descriptor's scale invariance check
  */
@@ -825,16 +800,6 @@ TEST(Features2d_ScaleInvariance_Descriptor_SURF, regression)
                                        0.61f);
     test.safe_run();
 }
-
-TEST(Features2d_ScaleInvariance_Descriptor_SIFT, regression)
-{
-    DescriptorScaleInvarianceTest test(SIFT::create(),
-                                       SIFT::create(),
-                                       NORM_L1,
-                                       0.78f);
-    test.safe_run();
-}
-
 
 TEST(Features2d_RotationInvariance2_Detector_SURF, regression)
 {
