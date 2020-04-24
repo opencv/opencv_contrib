@@ -121,12 +121,6 @@ TEST(Features2d_Detector_Keypoints_SURF, validation)
     CV_FeatureDetectorKeypointsTest test(xfeatures2d::SURF::create());
     test.safe_run();
 }
-
-TEST(Features2d_Detector_Keypoints_SIFT, validation)
-{
-    CV_FeatureDetectorKeypointsTest test(xfeatures2d::SIFT::create());
-    test.safe_run();
-}
 #endif // NONFREE
 
 
