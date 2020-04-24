@@ -10,3 +10,5 @@ tags
 tegra/
 *.i
 .download*
+*.caffemodel
+*.prototxt
