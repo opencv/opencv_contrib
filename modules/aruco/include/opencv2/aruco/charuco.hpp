@@ -337,8 +337,8 @@ CV_EXPORTS void drawCharucoDiamond(const Ptr<Dictionary> &dictionary, Vec4i ids,
 /**
  * @brief test whether the ChArUco markers are collinear
  *
- * @param board layout of ChArUco board.
- * @param image charucoIds list of identifiers for each corner in charucoCorners.
+ * @param _board layout of ChArUco board.
+ * @param _charucoIds list of identifiers for each corner in charucoCorners per frame.
  * @return bool value, 1 (true) if detected corners form a line, 0 (false) if they do not.
       solvePnP, calibration functions will fail if the corners are collinear (true).
  *
