@@ -21,9 +21,9 @@ trackers = [None for _ in range(6)]
 #trackers = [None for _ in range(7)]
 trackers[0] = "MedianFlow"
 trackers[1] = "MIL"
-trackers[2] = "KCF"
+trackers[2] = "CSRT"
 trackers[3] = "Boosting"
-trackers[4] = "CSRT"
+trackers[4] = "KCF"
 trackers[5] = "MOSSE"
 #trackers[6] = "GOTURN"
 
@@ -110,14 +110,14 @@ for tracker_id in range(len(trackers)):
 
             temp, new_bb = tracker.update(frame)
             # Coordinates of points of bounding boxes
-            new_bb_xmin = new_bb[0] - new_bb[2] / 2
-            new_bb_xmax = new_bb[0] + new_bb[2] / 2
-            new_bb_ymin = new_bb[1] - new_bb[3] / 2
-            new_bb_ymax = new_bb[1] + new_bb[3] / 2
-            ground_truth_xmin = ground_truth_bb[0] - ground_truth_bb[2] / 2
-            ground_truth_xmax = ground_truth_bb[0] + ground_truth_bb[2] / 2
-            ground_truth_ymin = ground_truth_bb[1] - ground_truth_bb[3] / 2
-            ground_truth_ymax = ground_truth_bb[1] + ground_truth_bb[3] / 2
+            new_bb_xmin = new_bb[0]
+            new_bb_xmax = new_bb[0] + new_bb[2]
+            new_bb_ymin = new_bb[1]
+            new_bb_ymax = new_bb[1] + new_bb[3]
+            ground_truth_xmin = ground_truth_bb[0]
+            ground_truth_xmax = ground_truth_bb[0] + ground_truth_bb[2] 
+            ground_truth_ymin = ground_truth_bb[1]
+            ground_truth_ymax = ground_truth_bb[1] + ground_truth_bb[3]
             # Width and height of overlap
             dx = min(new_bb_xmax, ground_truth_xmax) - \
                 max(new_bb_xmin, ground_truth_xmin)
@@ -132,13 +132,14 @@ for tracker_id in range(len(trackers)):
                 # Area of Union
                 AoU = (new_bb_xmax - new_bb_xmin) * (new_bb_ymax - new_bb_ymin) + (
                     ground_truth_xmax - ground_truth_xmin) * (ground_truth_ymax - ground_truth_ymin) - AoO
-                # Intersection over Union
-                IoU = AoO / AoU
-                # Threshold of success = 0.5
-                if IoU > 0.5:
-                    true_positive += 1
-                elif IoU < 0.5 and IoU > 0:
-                    false_positive += 1
+                if (AoU != 0):
+                    # Intersection over Union
+                    IoU = AoO / AoU
+                    # Threshold of success = 0.5
+                    if IoU > 0.5:
+                        true_positive += 1
+                    elif IoU < 0.5 and IoU > 0:
+                        false_positive += 1
             ground_truth_bb = ground_truth.readline().replace("\n", "").split(",")
         # Evaluation of average precision
         print("After evaluation :\nTrue Positive = " + str(true_positive) + " False Positive = " +
