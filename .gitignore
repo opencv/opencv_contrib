@@ -12,3 +12,4 @@ tegra/
 .download*
 *.caffemodel
 *.prototxt
+build_dir/
