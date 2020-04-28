@@ -947,22 +947,23 @@ void drawDetectedDiamonds(InputOutputArray _image, InputArrayOfArrays _corners,
   * Check that the set of charuco markers in _charucoIds does not identify a straight line on
     the charuco board.  Axis parallel, as well as diagonal and other straight lines detected.
   */
-bool testCharucoCornersCollinear(const Ptr<CharucoBoard> &_board, InputArray _charucoIds){
+ bool testCharucoCornersCollinear(const Ptr<CharucoBoard> &_board, InputArray _charucoIds){
 
     unsigned int nCharucoCorners = (unsigned int)_charucoIds.getMat().total();
 
-    // only test if there are 3 or more corners
-    if (nCharucoCorners > 2){
+    if (nCharucoCorners <= 2)
+        return true;
 
+    // only test if there are 3 or more corners
     CV_Assert( _board->chessboardCorners.size() >= _charucoIds.getMat().total());
 
     Vec<double, 3> point0( _board->chessboardCorners[_charucoIds.getMat().at< int >(0)].x,
-                           _board->chessboardCorners[_charucoIds.getMat().at< int >(0)].y,
-                           1);
+            _board->chessboardCorners[_charucoIds.getMat().at< int >(0)].y,
+            1);
 
     Vec<double, 3> point1( _board->chessboardCorners[_charucoIds.getMat().at< int >(1)].x,
-                           _board->chessboardCorners[_charucoIds.getMat().at< int >(1)].y,
-                           1);
+            _board->chessboardCorners[_charucoIds.getMat().at< int >(1)].y,
+            1);
 
     // create a line from the first two points.
     Vec<double, 3> testLine = point0.cross(point1);
@@ -973,26 +974,23 @@ bool testCharucoCornersCollinear(const Ptr<CharucoBoard> &_board, InputArray _ch
 
     CV_Assert( divisor != 0);
 
-     // normalize the line with normal
-     testLine /= divisor;
+    // normalize the line with normal
+    testLine /= divisor;
 
-     double dotProduct;
-     for (unsigned int i = 2; i < nCharucoCorners; i++){
-         testPoint(0) = _board->chessboardCorners[_charucoIds.getMat().at< int >(i)].x;
-         testPoint(1) = _board->chessboardCorners[_charucoIds.getMat().at< int >(i)].y;
+    double dotProduct;
+    for (unsigned int i = 2; i < nCharucoCorners; i++){
+        testPoint(0) = _board->chessboardCorners[_charucoIds.getMat().at< int >(i)].x;
+        testPoint(1) = _board->chessboardCorners[_charucoIds.getMat().at< int >(i)].y;
 
-         // if testPoint is on testLine, dotProduct will be zero (or very, very close)
-         dotProduct = testPoint.dot(testLine);
+        // if testPoint is on testLine, dotProduct will be zero (or very, very close)
+        dotProduct = testPoint.dot(testLine);
 
-         if (std::abs(dotProduct) > 1e-6){
-             return false;
-         }
-     }
-
-    // no points found that were off of testLine, return true that all points collinear.
-    return true;
+        if (std::abs(dotProduct) > 1e-6){
+            return false;
+        }
     }
 
+    // no points found that were off of testLine, return true that all points collinear.
     return true;
 }
 }
