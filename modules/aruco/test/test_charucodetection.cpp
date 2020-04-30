@@ -616,9 +616,21 @@ TEST(Charuco, testCharucoCornersCollinear_true)
     Ptr<aruco::CharucoBoard> charucoBoard =
             aruco::CharucoBoard::create(squaresX, squaresY, squareLength, markerLength, dictionary);
 
-    vector<int> charucoIdsAxisLine {192, 204, 216, 228, 240, 252, 264, 276, 288};
+    // consistency with C++98
+    const int arrLine[9] = {192, 204, 216, 228, 240, 252, 264, 276, 288};
+    vector<int> charucoIdsAxisLine(9, 0);
 
-    vector<int> charucoIdsDiagonalLine {198, 209, 220, 231, 242, 253, 264};
+    for (int i = 0; i < 9; i++){
+        charucoIdsAxisLine[i] = arrLine[i];
+    }
+
+    const int arrDiag[7] = {198, 209, 220, 231, 242, 253, 264};
+
+    vector<int> charucoIdsDiagonalLine(7, 0);
+
+    for (int i = 0; i < 7; i++){
+        charucoIdsDiagonalLine[i] = arrDiag[i];
+    }
 
     bool resultAxisLine = cv::aruco::testCharucoCornersCollinear(charucoBoard, charucoIdsAxisLine);
 
@@ -646,12 +658,19 @@ TEST(Charuco, testCharucoCornersCollinear_false)
     Ptr<aruco::CharucoBoard> charucoBoard =
             aruco::CharucoBoard::create(squaresX, squaresY, squareLength, markerLength, dictionary);
 
-    vector<int> charucoIds {192, 193, 194, 195, 196, 197, 198, 204, 205, 206, 207, 208,
-                            209, 210, 216, 217, 218, 219, 220, 221, 222, 228, 229, 230,
-                            231, 232, 233, 234, 240, 241, 242, 243, 244, 245, 246, 252,
-                            253, 254, 255, 256, 257, 258, 264, 265, 266, 267, 268, 269,
-                            270, 276, 277, 278, 279, 280, 281, 282, 288, 289, 290, 291,
-                            292, 293, 294};
+    // consistency with C++98
+    const int arr[63] = {192, 193, 194, 195, 196, 197, 198, 204, 205, 206, 207, 208,
+                                209, 210, 216, 217, 218, 219, 220, 221, 222, 228, 229, 230,
+                                231, 232, 233, 234, 240, 241, 242, 243, 244, 245, 246, 252,
+                                253, 254, 255, 256, 257, 258, 264, 265, 266, 267, 268, 269,
+                                270, 276, 277, 278, 279, 280, 281, 282, 288, 289, 290, 291,
+                                292, 293, 294};
+
+    vector<int> charucoIds(63, 0);
+    for (int i = 0; i < 63; i++){
+        charucoIds[i] = arr[i];
+    }
+
 
     bool result = cv::aruco::testCharucoCornersCollinear(charucoBoard, charucoIds);
 
