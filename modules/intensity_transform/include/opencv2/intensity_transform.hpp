@@ -10,7 +10,7 @@
 /**
  * @defgroup intensity_transform The module brings implementations of intensity transformation algorithms to adjust image contrast.
  *
- * Namespace for all functions is cv::intensity_trasnform.
+ * Namespace for all functions is `cv::intensity_transform`.
  *
  * ### Supported Algorithms
  * - Autoscaling
@@ -19,7 +19,7 @@
  * - Contrast Stretching
  * - BIMEF, A Bio-Inspired Multi-Exposure Fusion Framework for Low-light Image Enhancement @cite ying2017bio @cite ying2017new
  *
- * Reference from following book and websites:
+ * References from following book and websites:
  * - Digital Image Processing 4th Edition Chapter 3 [Rafael C. Gonzalez, Richard E. Woods] @cite Gonzalez2018
  * - http://www.cs.uregina.ca/Links/class-info/425/Lab3/ @cite lcs435lab
  * - https://theailearner.com/2019/01/30/contrast-stretching/ @cite theailearner
@@ -80,12 +80,17 @@ CV_EXPORTS_W void contrastStretching(const Mat input, Mat& output, const int r1,
  * @param mu enhancement ratio.
  * @param a a-parameter in the Camera Response Function (CRF).
  * @param b b-parameter in the Camera Response Function (CRF).
+ *
+ * @warning This is a C++ implementation of the [original MATLAB algorithm](https://github.com/baidut/BIMEF).
+ * Compared to the original code, this implementation is a little bit slower and does not provide the same results.
+ * In particular, quality of the image enhancement is degraded for the bright areas in certain conditions.
 */
 CV_EXPORTS_W void BIMEF(InputArray input, OutputArray output, float mu=0.5f, float a=-0.3293f, float b=1.1258f);
 
 /**
  * @brief Given an input color image, enhance low-light images using the BIMEF method (@cite ying2017bio @cite ying2017new).
- * This is an overload function with the exposure ratio given as parameter.
+ *
+ * This is an overloaded function with the exposure ratio given as parameter.
  *
  * @param input input color image.
  * @param output resulting image.
@@ -93,6 +98,10 @@ CV_EXPORTS_W void BIMEF(InputArray input, OutputArray output, float mu=0.5f, flo
  * @param mu enhancement ratio.
  * @param a a-parameter in the Camera Response Function (CRF).
  * @param b b-parameter in the Camera Response Function (CRF).
+ *
+ * @warning This is a C++ implementation of the [original MATLAB algorithm](https://github.com/baidut/BIMEF).
+ * Compared to the original code, this implementation is a little bit slower and does not provide the same results.
+ * In particular, quality of the image enhancement is degraded for the bright areas in certain conditions.
 */
 CV_EXPORTS_AS(BIMEF2) void BIMEF(InputArray input, OutputArray output, float k, float mu, float a, float b);
 
