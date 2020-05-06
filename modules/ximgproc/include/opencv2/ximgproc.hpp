@@ -172,7 +172,7 @@ The function transforms a binary blob image into a skeletized form using the tec
  */
 CV_EXPORTS_W void thinning( InputArray src, OutputArray dst, int thinningType = THINNING_ZHANGSUEN);
 
-/** @brief Performs anisotropic diffusian on an image.
+/** @brief Performs anisotropic diffusion on an image.
 
  The function applies Perona-Malik anisotropic diffusion to an image. This is the solution to the partial differential equation:
 
