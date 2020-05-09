@@ -37,7 +37,7 @@ The following four models are implemented:
 - lapsrn
  */
 
-class CV_EXPORTS DnnSuperResImpl
+class CV_EXPORTS_W DnnSuperResImpl
 {
 private:
 
@@ -55,8 +55,12 @@ private:
 
 public:
 
-    /** @brief Empty constructor
+    /** @brief Empty constructor for python
      */
+    CV_WRAP static Ptr<DnnSuperResImpl> create();
+
+    // /** @brief Empty constructor
+    //  */
     DnnSuperResImpl();
 
     /** @brief Constructor which immediately sets the desired model
@@ -67,18 +71,18 @@ public:
         - __lapsrn__
     @param scale Integer specifying the upscale factor
      */
-    DnnSuperResImpl(const std::string& algo, int scale);
+    DnnSuperResImpl(const String& algo, int scale);
 
     /** @brief Read the model from the given path
     @param path Path to the model file.
     */
-    void readModel(const std::string& path);
+    CV_WRAP void readModel(const String& path);
 
     /** @brief Read the model from the given path
     @param weights Path to the model weights file.
     @param definition Path to the model definition file.
     */
-    void readModel(const std::string& weights, const std::string& definition);
+    void readModel(const String& weights, const String& definition);
 
     /** @brief Set desired model
     @param algo String containing one of the desired models:
@@ -88,13 +92,13 @@ public:
         - __lapsrn__
     @param scale Integer specifying the upscale factor
      */
-    void setModel(const std::string& algo, int scale);
+    CV_WRAP void setModel(const String& algo, int scale);
 
     /** @brief Upsample via neural network
     @param img Image to upscale
     @param result Destination upscaled image
      */
-    void upsample(InputArray img, OutputArray result);
+    CV_WRAP void upsample(InputArray img, OutputArray result);
 
     /** @brief Upsample via neural network of multiple outputs
     @param img Image to upscale
@@ -102,17 +106,17 @@ public:
     @param scale_factors Scaling factors of the output nodes
     @param node_names Names of the output nodes in the neural network
     */
-    void upsampleMultioutput(InputArray img, std::vector<Mat> &imgs_new, const std::vector<int>& scale_factors, const std::vector<String>& node_names);
+    CV_WRAP void upsampleMultioutput(InputArray img, std::vector<Mat> &imgs_new, const std::vector<int>& scale_factors, const std::vector<String>& node_names);
 
     /** @brief Returns the scale factor of the model:
     @return Current scale factor.
     */
-    int getScale();
+    CV_WRAP int getScale();
 
     /** @brief Returns the scale factor of the model:
     @return Current algorithm.
     */
-    std::string getAlgorithm();
+    CV_WRAP String getAlgorithm();
 };
 
 //! @} dnn_superres

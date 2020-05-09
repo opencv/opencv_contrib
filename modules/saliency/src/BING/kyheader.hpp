@@ -152,17 +152,6 @@ inline cv::Rect Vec4i2Rect( cv::Vec4i &v )
 }
 
 
-#if defined(_MSC_VER)
-# include <intrin.h>
-# define POPCNT(x) __popcnt(x)
-# define POPCNT64(x) (__popcnt((unsigned)(x)) + __popcnt((unsigned)((uint64_t)(x) >> 32)))
-#endif
-
-#if defined(__GNUC__)
-# define POPCNT(x) __builtin_popcount(x)
-# define POPCNT64(x) __builtin_popcountll(x)
-#endif
-
 inline int popcnt64( uint64_t u )
 {
   u = ( u & 0x5555555555555555 ) + ( ( u >> 1 ) & 0x5555555555555555 );
@@ -251,6 +240,22 @@ inline int popcnt_byte( uint32_t u )
   }
   return (int)c;
 }
+
+#if defined(_MSC_VER)
+#if defined(_M_ARM) || defined(_M_ARM64)
+# define POPCNT(x) popcnt((x))
+# define POPCNT64(x) popcnt64((x))
+#else
+# include <intrin.h>
+# define POPCNT(x) __popcnt(x)
+# define POPCNT64(x) (__popcnt((unsigned)(x)) + __popcnt((unsigned)((uint64_t)(x) >> 32)))
+#endif
+#endif
+
+#if defined(__GNUC__)
+# define POPCNT(x) __builtin_popcount(x)
+# define POPCNT64(x) __builtin_popcountll(x)
+#endif
 
 }
 }

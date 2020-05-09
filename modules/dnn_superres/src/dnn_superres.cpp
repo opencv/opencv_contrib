@@ -44,19 +44,22 @@ public:
     }
 };
 
+Ptr<DnnSuperResImpl> DnnSuperResImpl::create(){
+    return Ptr<DnnSuperResImpl>(new DnnSuperResImpl());
+}
 
 DnnSuperResImpl::DnnSuperResImpl()
 {
     DepthToSpace::registerLayer();
 }
 
-DnnSuperResImpl::DnnSuperResImpl(const std::string& algo, int scale)
+DnnSuperResImpl::DnnSuperResImpl(const String& algo, int scale)
     : alg(algo), sc(scale)
 {
     DepthToSpace::registerLayer();
 }
 
-void DnnSuperResImpl::readModel(const std::string& path)
+void DnnSuperResImpl::readModel(const String& path)
 {
     if ( path.size() )
     {
@@ -65,11 +68,11 @@ void DnnSuperResImpl::readModel(const std::string& path)
     }
     else
     {
-        CV_Error(Error::StsBadArg, std::string("Could not load model: ") + path);
+        CV_Error(Error::StsBadArg, String("Could not load model: ") + path);
     }
 }
 
-void DnnSuperResImpl::readModel(const std::string& weights, const std::string& definition)
+void DnnSuperResImpl::readModel(const String& weights, const String& definition)
 {
     if ( weights.size() && definition.size() )
     {
@@ -78,11 +81,11 @@ void DnnSuperResImpl::readModel(const std::string& weights, const std::string& d
     }
     else
     {
-        CV_Error(Error::StsBadArg, std::string("Could not load model: ") + weights + " " + definition);
+        CV_Error(Error::StsBadArg, String("Could not load model: ") + weights + " " + definition);
     }
 }
 
-void DnnSuperResImpl::setModel(const std::string& algo, int scale)
+void DnnSuperResImpl::setModel(const String& algo, int scale)
 {
     this->sc = scale;
     this->alg = algo;
@@ -148,7 +151,7 @@ void DnnSuperResImpl::upsample(InputArray img, OutputArray result)
     }
     else
     {
-        CV_Error(cv::Error::StsNotImplemented, std::string("Unknown/unsupported superres algorithm: ") + this->alg);
+        CV_Error(cv::Error::StsNotImplemented, String("Unknown/unsupported superres algorithm: ") + this->alg);
     }
 }
 
@@ -210,7 +213,7 @@ int DnnSuperResImpl::getScale()
     return this->sc;
 }
 
-std::string DnnSuperResImpl::getAlgorithm()
+String DnnSuperResImpl::getAlgorithm()
 {
     return this->alg;
 }
@@ -239,7 +242,7 @@ void DnnSuperResImpl::preprocess_YCrCb(InputArray inpImg, OutputArray outImg)
     }
     else
     {
-        CV_Error(Error::StsBadArg, std::string("Not supported image type: ") + typeToString(inpImg.type()));
+        CV_Error(Error::StsBadArg, String("Not supported image type: ") + typeToString(inpImg.type()));
     }
 }
 
@@ -273,7 +276,7 @@ void DnnSuperResImpl::reconstruct_YCrCb(InputArray inpImg, InputArray origImg, O
     }
     else
     {
-        CV_Error(Error::StsBadArg, std::string("Not supported image type: ") + typeToString(origImg.type()));
+        CV_Error(Error::StsBadArg, String("Not supported image type: ") + typeToString(origImg.type()));
     }
 }
 

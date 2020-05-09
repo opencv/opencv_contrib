@@ -55,7 +55,7 @@ public:
         // close the loop
         idx.push_back(idx[0]);
 
-        cum_dist.resize(ipts2d.rows);
+        cum_dist.resize(idx.size());
         perimeter = 0.0f;
 
         for (size_t i = 1; i < idx.size(); i++) {

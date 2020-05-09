@@ -21,6 +21,6 @@ Super Resolution using CNNs {#tutorial_table_of_content_dnn_superres}
 
 -   @subpage tutorial_dnn_superres_benchmark
 
-    Authors:* Fanny Monori & Xavier Weber
+    *Authors:* Fanny Monori & Xavier Weber
 
     Benchmarking of the algorithms.

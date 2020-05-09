@@ -60,7 +60,7 @@ namespace
     IMPLEMENT_PARAM_CLASS(SURF_Upright, bool)
 }
 
-PARAM_TEST_CASE(SURF, SURF_HessianThreshold, SURF_Octaves, SURF_OctaveLayers, SURF_Extended, SURF_Upright)
+PARAM_TEST_CASE(CUDA_SURF, SURF_HessianThreshold, SURF_Octaves, SURF_OctaveLayers, SURF_Extended, SURF_Upright)
 {
     double hessianThreshold;
     int nOctaves;
@@ -78,7 +78,7 @@ PARAM_TEST_CASE(SURF, SURF_HessianThreshold, SURF_Octaves, SURF_OctaveLayers, SU
     }
 };
 
-CUDA_TEST_P(SURF, Detector)
+CUDA_TEST_P(CUDA_SURF, Detector)
 {
     cv::Mat image = readImage("../gpu/features2d/aloe.png", cv::IMREAD_GRAYSCALE);
     ASSERT_FALSE(image.empty());
@@ -106,7 +106,7 @@ CUDA_TEST_P(SURF, Detector)
     EXPECT_GT(matchedRatio, 0.95);
 }
 
-CUDA_TEST_P(SURF, Detector_Masked)
+CUDA_TEST_P(CUDA_SURF, Detector_Masked)
 {
     cv::Mat image = readImage("../gpu/features2d/aloe.png", cv::IMREAD_GRAYSCALE);
     ASSERT_FALSE(image.empty());
@@ -137,7 +137,7 @@ CUDA_TEST_P(SURF, Detector_Masked)
     EXPECT_GT(matchedRatio, 0.95);
 }
 
-CUDA_TEST_P(SURF, Descriptor)
+CUDA_TEST_P(CUDA_SURF, Descriptor)
 {
     cv::Mat image = readImage("../gpu/features2d/aloe.png", cv::IMREAD_GRAYSCALE);
     ASSERT_FALSE(image.empty());
@@ -171,7 +171,7 @@ CUDA_TEST_P(SURF, Descriptor)
     EXPECT_GT(matchedRatio, 0.6);
 }
 
-INSTANTIATE_TEST_CASE_P(CUDA_Features2D, SURF, testing::Combine(
+INSTANTIATE_TEST_CASE_P(CUDA_Features2D, CUDA_SURF, testing::Combine(
     testing::Values(SURF_HessianThreshold(100.0), SURF_HessianThreshold(500.0), SURF_HessianThreshold(1000.0)),
     testing::Values(SURF_Octaves(3), SURF_Octaves(4)),
     testing::Values(SURF_OctaveLayers(2), SURF_OctaveLayers(3)),

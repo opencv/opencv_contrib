@@ -64,12 +64,12 @@ namespace cv
             int stride = (int)image1.step;
             if(type == CV_DENSE_CENSUS)
             {
-                parallel_for_(  Range(n2, image1.rows - n2),
+                parallel_for_(Range(0, image1.rows),
                     CombinedDescriptor<1,1,1,2,CensusKernel<2> >(image1.cols, image1.rows,stride,n2,costs,CensusKernel<2>(images),n2));
             }
             else if(type == CV_SPARSE_CENSUS)
             {
-                parallel_for_( Range(n2, image1.rows - n2),
+                parallel_for_(Range(0, image1.rows),
                     CombinedDescriptor<2,2,1,2,CensusKernel<2> >(image1.cols, image1.rows, stride,n2,costs,CensusKernel<2>(images),n2));
             }
         }
@@ -87,12 +87,12 @@ namespace cv
             int stride = (int)image1.step;
             if(type == CV_DENSE_CENSUS)
             {
-                parallel_for_( Range(n2, image1.rows - n2),
+                parallel_for_(Range(0, image1.rows),
                     CombinedDescriptor<1,1,1,1,CensusKernel<1> >(image1.cols, image1.rows,stride,n2,costs,CensusKernel<1>(images),n2));
             }
             else if(type == CV_SPARSE_CENSUS)
             {
-                parallel_for_( Range(n2, image1.rows - n2),
+                parallel_for_(Range(0, image1.rows),
                     CombinedDescriptor<2,2,1,1,CensusKernel<1> >(image1.cols, image1.rows,stride,n2,costs,CensusKernel<1>(images),n2));
             }
         }
@@ -106,7 +106,7 @@ namespace cv
             int n2 = (kernelSize) >> 1;
             Mat images[] = {img1, img2};
             int *date[] = { (int *)dist1.data, (int *)dist2.data};
-            parallel_for_(Range(n2, img1.rows - n2), StarKernelCensus<2>(images, n2,date));
+            parallel_for_(Range(0, img1.rows), StarKernelCensus<2>(images, n2,date));
         }
         //single version of star census
         CV_EXPORTS void starCensusTransform(const Mat &img1, int kernelSize, Mat &dist)
@@ -118,14 +118,14 @@ namespace cv
             int n2 = (kernelSize) >> 1;
             Mat images[] = {img1};
             int *date[] = { (int *)dist.data};
-            parallel_for_(Range(n2, img1.rows - n2), StarKernelCensus<1>(images, n2,date));
+            parallel_for_(Range(0, img1.rows), StarKernelCensus<1>(images, n2,date));
         }
         //Modified census transforms
         //the first one deals with small illumination changes
         //the sencond modified census transform is invariant to noise; i.e.
         //if the current pixel with whom we are dooing the comparison is a noise, this descriptor will provide a better result by comparing with the mean of the window
         //otherwise if the pixel is not noise the information is strengthend
-        CV_EXPORTS void modifiedCensusTransform(const Mat &img1, const Mat &img2, int kernelSize, Mat &dist1,Mat &dist2, const int type, int t, const Mat &IntegralImage1, const Mat &IntegralImage2 )
+        CV_EXPORTS void modifiedCensusTransform(const Mat &img1, const Mat &img2, int kernelSize, Mat &dist1,Mat &dist2, const int type, int t, const Mat& integralImage1, const Mat& integralImage2)
         {
             CV_Assert(img1.size() == img2.size());
             CV_Assert(kernelSize % 2 != 0);
@@ -139,20 +139,31 @@ namespace cv
             if(type == CV_MODIFIED_CENSUS_TRANSFORM)
             {
                 //MCT
-                parallel_for_(  Range(n2, img1.rows - n2),
+                parallel_for_(Range(0, img1.rows),
                     CombinedDescriptor<2,4,2, 2,MCTKernel<2> >(img1.cols, img1.rows,stride,n2,date,MCTKernel<2>(images,t),n2));
             }
             else if(type == CV_MEAN_VARIATION)
             {
                 //MV
-                int *integral[2];
-                integral[0] = (int *)IntegralImage1.data;
-                integral[1] = (int *)IntegralImage2.data;
-                parallel_for_(  Range(n2, img1.rows - n2),
+                CV_Assert(!integralImage1.empty());
+                CV_Assert(!integralImage1.isContinuous());
+                CV_CheckTypeEQ(integralImage1.type(), CV_32SC1, "");
+                CV_CheckGE(integralImage1.cols, img1.cols, "");
+                CV_CheckGE(integralImage1.rows, img1.rows, "");
+                CV_Assert(!integralImage2.empty());
+                CV_Assert(!integralImage2.isContinuous());
+                CV_CheckTypeEQ(integralImage2.type(), CV_32SC1, "");
+                CV_CheckGE(integralImage2.cols, img2.cols, "");
+                CV_CheckGE(integralImage2.rows, img2.rows, "");
+                int *integral[2] = {
+                        (int *)integralImage1.data,
+                        (int *)integralImage2.data
+                };
+                parallel_for_(Range(0, img1.rows),
                     CombinedDescriptor<2,3,2,2, MVKernel<2> >(img1.cols, img1.rows,stride,n2,date,MVKernel<2>(images,integral),n2));
             }
         }
-        CV_EXPORTS void modifiedCensusTransform(const Mat &img1, int kernelSize, Mat &dist, const int type, int t , Mat const &IntegralImage)
+        CV_EXPORTS void modifiedCensusTransform(const Mat &img1, int kernelSize, Mat &dist, const int type, int t , Mat const &integralImage)
         {
             CV_Assert(img1.size() == dist.size());
             CV_Assert(kernelSize % 2 != 0);
@@ -166,14 +177,19 @@ namespace cv
             if(type == CV_MODIFIED_CENSUS_TRANSFORM)
             {
                 //MCT
-                parallel_for_(Range(n2, img1.rows - n2),
+                parallel_for_(Range(0, img1.rows),
                     CombinedDescriptor<2,4,2, 1,MCTKernel<1> >(img1.cols, img1.rows,stride,n2,date,MCTKernel<1>(images,t),n2));
             }
             else if(type == CV_MEAN_VARIATION)
             {
                 //MV
-                int *integral[] = { (int *)IntegralImage.data};
-                parallel_for_(Range(n2, img1.rows - n2),
+                CV_Assert(!integralImage.empty());
+                CV_Assert(!integralImage.isContinuous());
+                CV_CheckTypeEQ(integralImage.type(), CV_32SC1, "");
+                CV_CheckGE(integralImage.cols, img1.cols, "");
+                CV_CheckGE(integralImage.rows, img1.rows, "");
+                int *integral[] = { (int *)integralImage.data};
+                parallel_for_(Range(0, img1.rows),
                     CombinedDescriptor<2,3,2,1, MVKernel<1> >(img1.cols, img1.rows,stride,n2,date,MVKernel<1>(images,integral),n2));
             }
         }
@@ -193,11 +209,11 @@ namespace cv
             int stride = (int)img1.step;
             if(type == CV_CS_CENSUS)
             {
-                parallel_for_(Range(n2, img1.rows - n2), SymetricCensus<2>(imag, n2,date));
+                parallel_for_(Range(0, img1.rows), SymetricCensus<2>(imag, n2,date));
             }
             else if(type == CV_MODIFIED_CS_CENSUS)
             {
-                parallel_for_(Range(n2, img1.rows - n2),
+                parallel_for_(Range(0, img1.rows),
                     CombinedDescriptor<1,1,1,2,ModifiedCsCensus<2> >(img1.cols, img1.rows,stride,n2,date,ModifiedCsCensus<2>(images,n2),1));
             }
         }
@@ -215,26 +231,13 @@ namespace cv
             int stride = (int)img1.step;
             if(type == CV_CS_CENSUS)
             {
-                parallel_for_( Range(n2, img1.rows - n2), SymetricCensus<1>(imag, n2,date));
+                parallel_for_(Range(0, img1.rows), SymetricCensus<1>(imag, n2,date));
             }
             else if(type == CV_MODIFIED_CS_CENSUS)
             {
-                parallel_for_( Range(n2, img1.rows - n2),
+                parallel_for_( Range(0, img1.rows),
                     CombinedDescriptor<1,1,1,1,ModifiedCsCensus<1> >(img1.cols, img1.rows,stride,n2,date,ModifiedCsCensus<1>(images,n2),1));
             }
-        }
-        //integral image computation used in the Mean Variation Census Transform
-        void imageMeanKernelSize(const Mat &image, int windowSize, Mat &cost)
-        {
-            CV_Assert(!image.empty());
-            CV_Assert(!cost.empty());
-            CV_Assert(windowSize % 2 != 0);
-            int win = windowSize / 2;
-            float scalling = ((float) 1) / (windowSize * windowSize);
-            int height = image.rows;
-            cost.setTo(0);
-            int *c = (int *)cost.data;
-            parallel_for_(Range(win + 1, height - win - 1),MeanKernelIntegralImage(image,win,scalling,c));
         }
     }
 }
