@@ -5,8 +5,10 @@ import glob
 import argparse
 
 parser = argparse.ArgumentParser(description="Run benchmark")
-parser.add_argument("--path_to_dataset", type=str, default="LaSOT", help="Full path to LaSOT folder")
-parser.add_argument("--path_to_results", type=str, default="results.txt", help="Full path to file with results")
+parser.add_argument("--path_to_dataset", type=str,
+                    default="LaSOT", help="Full path to LaSOT folder")
+parser.add_argument("--path_to_results", type=str,
+                    default="results.txt", help="Full path to file with results")
 args = parser.parse_args()
 
 list_of_videos = [None for _ in range(280)]
@@ -17,23 +19,22 @@ results = open(args.path_to_results, "w")
 for i in range(280):
     list_of_videos[i] = file_with_video_names.readline()
 
-trackers = [None for _ in range(6)]
-#trackers = [None for _ in range(7)]
-trackers[0] = "MedianFlow"
+trackers = [None for _ in range(7)]
+trackers[0] = "Boosting"
 trackers[1] = "MIL"
-trackers[2] = "CSRT"
-trackers[3] = "Boosting"
-trackers[4] = "KCF"
+trackers[2] = "KCF"
+trackers[3] = "MedianFlow"
+trackers[4] = "GOTURN"
 trackers[5] = "MOSSE"
-#trackers[6] = "GOTURN"
+trackers[6] = "CSRT"
 
-
-# Loop for trackers
+#For every tracker
 for tracker_id in range(len(trackers)):
-    tracker_name = trackers[tracker_id]
 
-    average_precisions = []
-    # Loop for videos
+    tracker_name = trackers[tracker_id]
+    print(tracker_name)
+
+    #For every video
     for video_name in list_of_videos:
 
         if tracker_name == "Boosting":
@@ -44,49 +45,69 @@ for tracker_id in range(len(trackers)):
             tracker = cv.TrackerKCF_create()
         elif tracker_name == "MedianFlow":
             tracker = cv.TrackerMedianFlow_create()
+        elif tracker_name == "GOTURN":
+            tracker = cv.TrackerGOTURN_create()
         elif tracker_name == "MOSSE":
             tracker = cv.TrackerMOSSE_create()
         elif tracker_name == "CSRT":
             tracker = cv.TrackerCSRT_create()
-        elif tracker_name == "GOTURN":
-            tracker = cv.TrackerGOTURN_create()
-
-        print("Tracker: ", tracker)
 
         init_once = False
 
         print("Video: " + str(video_name))
 
-        true_positive = 0
-        false_positive = 0
-        false_negative = 0
-
         video_name = video_name.replace("\n", "")
-        ground_truth = open(args.path_to_dataset +
-                            video_name + "/groundtruth.txt", "r")
-        ground_truth_bb = ground_truth.readline().replace("\n", "").split(",")
-        init_bb = ground_truth_bb
+        gt_file = open(
+            args.path_to_dataset + video_name + "/groundtruth.txt", "r")
+        gt_bb = gt_file.readline().replace("\n", "").split(",")
+        init_bb = gt_bb
 
         for _ in range(len(init_bb)):
             init_bb[_] = float(init_bb[_])
 
         init_bb = tuple(init_bb)
 
+        print("Initial bounding box: ", init_bb)
+
         video_sequence = sorted(
             glob.glob(str(args.path_to_dataset + str(video_name) + "/img/*.jpg")))
 
-        print("Number of frames: " + str(len(video_sequence)))
-        # Loop for frames
-        for f, image in enumerate(video_sequence):
+        print("Number of frames in video: " + str(len(video_sequence)))
 
-            for _ in range(len(ground_truth_bb)):
-                ground_truth_bb[_] = float(ground_truth_bb[_])
+        sum_iou = 0
+        sum_pr = 0
+        sum_norm_pr = 0
+        frame_counter = len(video_sequence)
 
-            ground_truth_bb = tuple(ground_truth_bb)
+        #For every frame in video
+        for number_of_the_frame, image in enumerate(video_sequence):
+
+            for _ in range(len(gt_bb)):
+                gt_bb[_] = float(gt_bb[_])
+            gt_bb = tuple(gt_bb)
 
             frame = cv.imread(image)
 
-            if ((f + 1) % 100 == 0) and (f != 0):
+            #Re-initializing rate in frames
+            if tracker_name == "Boosting":
+                frames_before_reinit = 500
+            elif tracker_name == "MIL":
+                frames_before_reinit = 1000
+            elif tracker_name == "KCF":
+                frames_before_reinit = 110
+            elif tracker_name == "MedianFlow":
+                frames_before_reinit = 20
+            elif tracker_name == "GOTURN":
+                frames_before_reinit = 20
+            elif tracker_name == "MOSSE":
+                frames_before_reinit = 20
+            elif tracker_name == "CSRT":
+                frames_before_reinit = 250
+
+            #Initialization and re-initialization of tracker
+            if ((number_of_the_frame + 1) % frames_before_reinit == 0) and (
+                number_of_the_frame != 0):
+
                 if tracker_name == "Boosting":
                     tracker = cv.TrackerBoosting_create()
                 elif tracker_name == "MIL":
@@ -101,54 +122,62 @@ for tracker_id in range(len(trackers)):
                     tracker = cv.TrackerMOSSE_create()
                 elif tracker_name == "CSRT":
                     tracker = cv.TrackerCSRT_create()
+
                 init_once = False
-                init_bb = new_bb
+                init_bb = gt_bb
+                first_frame = cv.imread(image)
 
             if not init_once:
                 temp = tracker.init(frame, init_bb)
                 init_once = True
 
+            #Update tracker state
             temp, new_bb = tracker.update(frame)
-            # Coordinates of points of bounding boxes
+
+            #Evaluation of coordinates of corners and centers from [x, y, w, h]
             new_bb_xmin = new_bb[0]
-            new_bb_xmax = new_bb[0] + new_bb[2]
+            new_bb_xmax = new_bb[0] + new_bb[2] - 1.0
             new_bb_ymin = new_bb[1]
-            new_bb_ymax = new_bb[1] + new_bb[3]
-            ground_truth_xmin = ground_truth_bb[0]
-            ground_truth_xmax = ground_truth_bb[0] + ground_truth_bb[2] 
-            ground_truth_ymin = ground_truth_bb[1]
-            ground_truth_ymax = ground_truth_bb[1] + ground_truth_bb[3]
+            new_bb_ymax = new_bb[1] + new_bb[3] - 1.0
+            gt_xmin = gt_bb[0]
+            gt_xmax = gt_bb[0] + gt_bb[2] - 1.0
+            gt_ymin = gt_bb[1]
+            gt_ymax = gt_bb[1] + gt_bb[3] - 1.0
+            new_cx = new_bb[0] + (new_bb[2] + 1.0) / 2
+            new_cy = new_bb[1] + (new_bb[3] + 1.0) / 2
+            gt_cx = gt_bb[0] + (gt_bb[2] + 1.0) / 2
+            gt_cy = gt_bb[1] + (gt_bb[3] + 1.0) / 2
+
             # Width and height of overlap
-            dx = min(new_bb_xmax, ground_truth_xmax) - \
-                max(new_bb_xmin, ground_truth_xmin)
-            dy = min(new_bb_ymax, ground_truth_ymax) - \
-                max(new_bb_ymin, ground_truth_ymin)
-            # Checking existance of intersection
-            if (dx < 0) or (dy < 0):
-                false_negative += 1
+            dx = max(0, min(new_bb_xmax, gt_xmax) - max(new_bb_xmin, gt_xmin))
+            dy = max(0, min(new_bb_ymax, gt_ymax) - max(new_bb_ymin, gt_ymin))
+            area_of_overlap = dx * dy
+            area_of_union = (new_bb_xmax - new_bb_xmin) * (new_bb_ymax - new_bb_ymin) + (
+                gt_xmax - gt_xmin) * (gt_ymax - gt_ymin) - area_of_overlap
+            if (area_of_union != 0):
+                # Intersection over Union
+                intersection_over_union = area_of_overlap / area_of_union
+                sum_iou += intersection_over_union
+
+            precision = np.sqrt((new_cx - gt_cx) * (new_cx - gt_cx) + (new_cy - gt_cy) * (new_cy - gt_cy))
+            if precision > 20.0:
+                precision_value = 0.0
             else:
-                # Area of Overlap
-                AoO = dx * dy
-                # Area of Union
-                AoU = (new_bb_xmax - new_bb_xmin) * (new_bb_ymax - new_bb_ymin) + (
-                    ground_truth_xmax - ground_truth_xmin) * (ground_truth_ymax - ground_truth_ymin) - AoO
-                if (AoU != 0):
-                    # Intersection over Union
-                    IoU = AoO / AoU
-                    # Threshold of success = 0.5
-                    if IoU > 0.5:
-                        true_positive += 1
-                    elif IoU < 0.5 and IoU > 0:
-                        false_positive += 1
-            ground_truth_bb = ground_truth.readline().replace("\n", "").split(",")
-        # Evaluation of average precision
-        print("After evaluation :\nTrue Positive = " + str(true_positive) + " False Positive = " +
-              str(false_positive) + " False Negative = " + str(false_negative) + "\n")
-        precision = true_positive / (true_positive + false_positive)
-        recall = true_positive / (true_positive + false_negative)
-        average_precision = precision * recall
-        average_precisions.append(average_precision)
-    # Evaluate mAP and write results in txt file
-    mean_average_precision = sum(average_precisions) / len(average_precisions)
-    results.write("Mean average precision of " + tracker_name +
-                  " = " + str(mean_average_precision) + "\n")
+                precision_value = 1.0
+            sum_pr += precision_value
+
+            normalized_precision = np.sqrt((new_cx - gt_cx) / gt_bb[2] * (new_cx - gt_cx) / gt_bb[2] + (
+                new_cy - gt_cy) / gt_bb[3] * (new_cy - gt_cy) / gt_bb[3])
+            sum_norm_pr += normalized_precision
+
+            gt_bb = gt_file.readline().replace("\n", "").split(",")
+
+        iou_values += sum_iou / frame_counter
+        pr_values += sum_pr / frame_counter
+        norm_pr_values += sum_norm_pr / frame_counter
+
+    mean_iou = iou_values / 280
+    mean_pr = pr_values / 280
+    mean_norm_pr = norm_pr_values / 280
+
+    results.write(tracker_name + ":\n\tmean IoU = " + str(mean_iou) + "\n\tmean precision = " + str(mean_pr) + "\n\tmean normalized precision = " + str(mean_norm_pr) + "\n\n")
