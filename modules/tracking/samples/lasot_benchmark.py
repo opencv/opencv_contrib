@@ -168,7 +168,11 @@ for tracker_id in range(len(trackers)):
 
             normalized_precision = np.sqrt((new_cx - gt_cx) / gt_bb[2] * (new_cx - gt_cx) / gt_bb[2] + (
                 new_cy - gt_cy) / gt_bb[3] * (new_cy - gt_cy) / gt_bb[3])
-            sum_norm_pr += normalized_precision
+            if normalized_precision < 0.5:
+                normalized_precision_value = 0.0
+            else:
+                normalized_precision_value = 1.0
+            sum_norm_pr += normalized_precision_value
 
             gt_bb = gt_file.readline().replace("\n", "").split(",")
 
