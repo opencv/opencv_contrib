@@ -10,6 +10,3 @@ tags
 tegra/
 *.i
 .download*
-*.caffemodel
-*.prototxt
-build_dir/

@@ -4,29 +4,19 @@ import sys
 import glob
 import argparse
 
-parser = argparse.ArgumentParser(description="Run benchmark")
+parser = argparse.ArgumentParser(description="Run LaSOT-based benchmark for visual object trackers")
 parser.add_argument("--path_to_dataset", type=str,
-                    default="LaSOT", help="Full path to LaSOT folder")
-parser.add_argument("--path_to_results", type=str,
-                    default="results.txt", help="Full path to file with results")
+                    default="Test part of LaSOT dataset", help="Full path to LaSOT folder")
 args = parser.parse_args()
 
 list_of_videos = [None for _ in range(280)]
 file_with_video_names = open(args.path_to_dataset + "/testing_set.txt", "r")
 
-results = open(args.path_to_results, "w")
-
 for i in range(280):
     list_of_videos[i] = file_with_video_names.readline()
 
 trackers = [None for _ in range(7)]
-trackers[0] = "Boosting"
-trackers[1] = "MIL"
-trackers[2] = "KCF"
-trackers[3] = "MedianFlow"
-trackers[4] = "GOTURN"
-trackers[5] = "MOSSE"
-trackers[6] = "CSRT"
+trackers = ["Boosting", "MIL", "KCF", "MedianFlow", "GOTURN", "MOSSE", "CSRT"]
 
 #For every tracker
 for tracker_id in range(len(trackers)):
@@ -184,4 +174,4 @@ for tracker_id in range(len(trackers)):
     mean_pr = pr_values / 280
     mean_norm_pr = norm_pr_values / 280
 
-    results.write(tracker_name + ":\n\tmean IoU = " + str(mean_iou) + "\n\tmean precision = " + str(mean_pr) + "\n\tmean normalized precision = " + str(mean_norm_pr) + "\n\n")
+    print(tracker_name + ":\n\tmean IoU = " + str(mean_iou) + "\n\tmean precision = " + str(mean_pr) + "\n\tmean normalized precision = " + str(mean_norm_pr) + "\n\n")
