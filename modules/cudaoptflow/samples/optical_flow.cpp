@@ -181,8 +181,8 @@ int main(int argc, const char* argv[])
     Ptr<cuda::DensePyrLKOpticalFlow> lk = cuda::DensePyrLKOpticalFlow::create(Size(7, 7));
     Ptr<cuda::FarnebackOpticalFlow> farn = cuda::FarnebackOpticalFlow::create();
     Ptr<cuda::OpticalFlowDual_TVL1> tvl1 = cuda::OpticalFlowDual_TVL1::create();
-    Ptr<cuda::NvidiaOpticalFlow_1_0> nvof = cuda::NvidiaOpticalFlow_1_0::create(
-        frame0.size().width, frame0.size().height, NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_FAST);
+    Ptr<cuda::NvidiaOpticalFlow_1_0> nvof = cuda::NvidiaOpticalFlow_1_0::create(frame0.size().width, frame0.size().height,
+        NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_FAST, false, false, false, 0, Stream(), Stream());
 
     {
         GpuMat d_frame0f;
