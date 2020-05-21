@@ -18,13 +18,18 @@ elseif (${ARCH} EQUAL 64 AND NOT ${Julia_WORD_SIZE} MATCHES "64")
     return()
 endif()
 
+if(NOT JlCxx_DIR)
 execute_process(
     COMMAND "${Julia_EXECUTABLE}" --startup-file=no -e "using CxxWrap; print(CxxWrap.CxxWrapCore.prefix_path())"
-    OUTPUT_VARIABLE JlCxx_DIR
+    OUTPUT_VARIABLE JlCxx_DIR_prefix
 )
 
+if(JlCxx_DIR_prefix)
+    set(JlCxx_DIR "${JlCxx_DIR_prefix}/lib/cmake/JlCxx")
+endif()    
+endif()
 
-find_package(JlCxx REQUIRED)
+find_package(JlCxx QUIET)
 
 if(NOT JlCxx_FOUND)
     ocv_module_disable(julia)
@@ -34,7 +39,7 @@ else()
 endif()
 
 set(the_description "The Julia bindings")
-ocv_add_module(julia    BINDINGS
+ocv_add_module(julia
                                  opencv_core
                                  opencv_imgproc 
                                  opencv_imgcodecs
@@ -91,9 +96,9 @@ message(STATUS \"Install output: \${JULIA_INSTALL_OUT}\")
 
 # ocv_create_module()
 
-ocv_add_accuracy_tests()
-ocv_add_perf_tests()
-ocv_add_samples()
+#ocv_add_accuracy_tests()
+#ocv_add_perf_tests()
+#ocv_add_samples()
 
 message(STATUS     ${OPENCV_MODULE_${the_module}_DEPS_TO_LINK})
 
