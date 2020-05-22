@@ -4,6 +4,17 @@ This module contains some limited functionality that allows OpenCV functions be 
 
 This module requires Julia 1.4 and the CxxWrap.jl 0.10.
 
+CxxWrap Installation
+----
+Installation of CxxWrap is like any other Julia Package. Just start the REPL. Hit `]` and then type `add CxxWrap`. 
+
+```
+$ julia
+...
+julia> ]
+pkg> add CxxWrap
+```
+
 Build
 -----
 The Julia module is fully integrated into the OpenCV build system. If cmake finds a Julia executable available on the host system while configuring OpenCV, it will attempt to generate Julia wrappers for all OpenCV modules. If cmake is having trouble finding your Julia installation, you can explicitly point it to the Julia executable by defining the `Julia_EXECUTABLE` variable. For example:

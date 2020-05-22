@@ -23,13 +23,17 @@ execute_process(
     COMMAND "${Julia_EXECUTABLE}" --startup-file=no -e "using CxxWrap; print(CxxWrap.CxxWrapCore.prefix_path())"
     OUTPUT_VARIABLE JlCxx_DIR_prefix
 )
-
-if(JlCxx_DIR_prefix)
-    set(JlCxx_DIR ${JlCxx_DIR_prefix})
-endif()    
 endif()
 
-find_package(JlCxx REQUIRED)
+if(JlCxx_DIR_prefix)
+    if(EXISTS ${JlCxx_DIR_prefix}/JlCxxConfig.cmake)
+        set(JlCxx_DIR ${JlCxx_DIR_prefix})
+    else()
+        set(JlCxx_DIR ${JlCxx_DIR_prefix}/lib/cmake/JlCxx)
+    endif()
+endif()
+
+find_package(JlCxx QUIET)
 
 if(NOT JlCxx_FOUND)
     message(STATUS "JlCxx not found")
