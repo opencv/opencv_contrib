@@ -21,19 +21,22 @@ Run
 ---
 
 In order to use the bindings, simply type
-```Julia
-using OpenCV
+```
+$ julia
+...
+julia> using OpenCV
 ```
 in your Julia REPL or script. The Julia package does not export any symbols so all functions/structs/constants must be prefixed with OpenCV
 
 
 ```Julia
 using OpenCV
-img = OpenCV.imread('cameraman.tif');
+const cv = OpenCV
+img = cv.imread('cameraman.tif');
 
-OpenCV.imshow("window name", img)
+cv.imshow("window name", img)
 
-OpenCV.waitKey(Int32(0))
+cv.waitKey(Int32(0))
 ```
 
 Finally, because Julia does not support OOP paradigm some changes had to be made. To access functions like `obj.function(ARGS)` you should instead use `function(obj, ARGS)`. The below example of reading frames from a VideoCapture should make it more clear.

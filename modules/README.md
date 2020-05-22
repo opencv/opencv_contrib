@@ -76,4 +76,4 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 
 - **xphoto**: Extra Computational Photography -- Additional photo processing algorithms: Color balance / Denoising / Inpainting.
 
-- **Julia**: Julia Interface -- OpenCV Julia wrapping code with some basic functionality and samples.
+- **julia**: Julia language wrappers with samples and tests.
