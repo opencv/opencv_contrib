@@ -118,7 +118,9 @@ public:
     @param inputImage Input image.
     @param referenceImage Reference image of the same size and the same type as input image.
     @param flow A buffer consisting of inputImage.Size() / getGridSize() flow vectors in CV_16SC2 format.
-    @param stream Stream for the asynchronous version.
+    @param stream It is highly recommended that CUDA streams for pre and post processing of optical flow vectors should be set once per session in create() function as a part of optical flow session creation.
+                  This parameter is left here for backward compatibility and may be removed in the future.
+                  Default value is NULL stream;
     @param hint Hint buffer if client provides external hints. Must have same size as flow buffer.
                 Caller can provide flow vectors as hints for optical flow calculation.
     @param cost Cost buffer contains numbers indicating the confidence associated with each of the generated flow vectors.
@@ -435,6 +437,12 @@ public:
     @param enableExternalHints Optional Parameter. Flag to enable passing external hints buffer to calc(). Defaults to false.
     @param enableCostBuffer Optional Parameter. Flag to enable cost buffer output from calc(). Defaults to false.
     @param gpuId Optional parameter to select the GPU ID on which the optical flow should be computed. Useful in multi-GPU systems. Defaults to 0.
+    @param inputStream Optical flow algorithm may optionally involve cuda preprocessing on the input buffers.
+                       The input cuda stream can be used to pipeline and synchronize the cuda preprocessing tasks with OF HW engine.
+                       If input stream is not set, the execute function will use default stream which is NULL stream;
+    @param outputStream Optical flow algorithm may optionally involve cuda post processing on the output flow vectors.
+                        The output cuda stream can be used to pipeline and synchronize the cuda post processing tasks with OF HW engine.
+                        If output stream is not set, the execute function will use default stream which is NULL stream;
     */
     CV_WRAP static Ptr<NvidiaOpticalFlow_1_0> create(
         int width,
@@ -444,7 +452,9 @@ public:
         bool enableTemporalHints = false,
         bool enableExternalHints = false,
         bool enableCostBuffer = false,
-        int gpuId = 0);
+        int gpuId = 0,
+        Stream& inputStream = Stream::Null(),
+        Stream& outputStream = Stream::Null());
 };
 
 //! @}

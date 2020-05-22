@@ -896,5 +896,60 @@ void drawDetectedDiamonds(InputOutputArray _image, InputArrayOfArrays _corners,
         }
     }
 }
+
+/**
+   @param board layout of ChArUco board.
+ * @param image charucoIds list of identifiers for each corner in charucoCorners.
+ * @return bool value, 1 (true) for detected corners form a line, 0 for non-linear.
+      solvePnP will fail if the corners are collinear (true).
+  * Check that the set of charuco markers in _charucoIds does not identify a straight line on
+    the charuco board.  Axis parallel, as well as diagonal and other straight lines detected.
+  */
+ bool testCharucoCornersCollinear(const Ptr<CharucoBoard> &_board, InputArray _charucoIds){
+
+    unsigned int nCharucoCorners = (unsigned int)_charucoIds.getMat().total();
+
+    if (nCharucoCorners <= 2)
+        return true;
+
+    // only test if there are 3 or more corners
+    CV_Assert( _board->chessboardCorners.size() >= _charucoIds.getMat().total());
+
+    Vec<double, 3> point0( _board->chessboardCorners[_charucoIds.getMat().at< int >(0)].x,
+            _board->chessboardCorners[_charucoIds.getMat().at< int >(0)].y,
+            1);
+
+    Vec<double, 3> point1( _board->chessboardCorners[_charucoIds.getMat().at< int >(1)].x,
+            _board->chessboardCorners[_charucoIds.getMat().at< int >(1)].y,
+            1);
+
+    // create a line from the first two points.
+    Vec<double, 3> testLine = point0.cross(point1);
+
+    Vec<double, 3> testPoint(0, 0, 1);
+
+    double divisor = sqrt(testLine[0]*testLine[0] + testLine[1]*testLine[1]);
+
+    CV_Assert( divisor != 0);
+
+    // normalize the line with normal
+    testLine /= divisor;
+
+    double dotProduct;
+    for (unsigned int i = 2; i < nCharucoCorners; i++){
+        testPoint(0) = _board->chessboardCorners[_charucoIds.getMat().at< int >(i)].x;
+        testPoint(1) = _board->chessboardCorners[_charucoIds.getMat().at< int >(i)].y;
+
+        // if testPoint is on testLine, dotProduct will be zero (or very, very close)
+        dotProduct = testPoint.dot(testLine);
+
+        if (std::abs(dotProduct) > 1e-6){
+            return false;
+        }
+    }
+
+    // no points found that were off of testLine, return true that all points collinear.
+    return true;
+}
 }
 }
