@@ -15,20 +15,27 @@ If you prefer using the gui version of cmake (cmake-gui), you can use the *Add E
 
 Install
 -------
-By default the Julia package is installed in `CMAKE_CURRENT_BINARY_DIR`, you can change this by setting the `JULIA_PKG_INSTALL_PATH` cmake variable. The package is automatically registered with the Julia package manager.
+By default the Julia package is installed in `CMAKE_BINARY_DIR`, you can change this by setting the `JULIA_PKG_INSTALL_PATH` cmake variable. The package is automatically registered with the Julia package manager.
 
 Run
 ---
 
 In order to use the bindings, simply type
-```
+```bash
 $ julia
 ...
 julia> using OpenCV
 ```
-in your Julia REPL or script. The Julia package does not export any symbols so all functions/structs/constants must be prefixed with OpenCV
 
+Note that this works only if you called `make install`. To run the wrapper package without making the installation target you must first set the environment variable `JULIA_LOAD_PATH` to the directory containing the OpenCV package. For example if in the build directory
+```bash
+$ export JULIA_LOAD_PATH=$PWD\OpenCV
+$ julia
+...
+julia> using OpenCV
+```
 
+The Julia package does not export any symbols so all functions/structs/constants must be prefixed with OpenCV
 ```Julia
 using OpenCV
 const cv = OpenCV

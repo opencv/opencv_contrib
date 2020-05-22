@@ -25,13 +25,14 @@ execute_process(
 )
 
 if(JlCxx_DIR_prefix)
-    set(JlCxx_DIR "${JlCxx_DIR_prefix}/lib/cmake/JlCxx")
+    set(JlCxx_DIR ${JlCxx_DIR_prefix})
 endif()    
 endif()
 
-find_package(JlCxx QUIET)
+find_package(JlCxx REQUIRED)
 
 if(NOT JlCxx_FOUND)
+    message(STATUS "JlCxx not found")
     ocv_module_disable(julia)
     return()
 else()
@@ -55,7 +56,7 @@ ocv_module_include_directories()
 ocv_add_library(${the_module} SHARED ${OPENCV_MODULE_${the_module}_HEADERS} ${OPENCV_MODULE_${the_module}_SOURCES})
 
 if(NOT JULIA_PKG_INSTALL_PATH)
-    set(JULIA_PKG_INSTALL_PATH ${CMAKE_CURRENT_BINARY_DIR})
+    set(JULIA_PKG_INSTALL_PATH ${CMAKE_BINARY_DIR})
 endif()
 message(STATUS "Installing ${the_module} bindings at ${JULIA_PKG_INSTALL_PATH}")
 
@@ -112,6 +113,15 @@ ocv_target_link_libraries(${the_module} PRIVATE ${OPENCV_LINKER_LIBS} ${OPENCV_H
 
 ocv_target_link_libraries(${the_module} JlCxx::cxxwrap_julia)
 ocv_target_link_libraries(${the_module} JlCxx::cxxwrap_julia_stl)
+
+# targets# opencv_julia_sources --> opencv_julia
+
+add_custom_command(TARGET ${the_module} 
+                   POST_BUILD
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/package/OpenCV ${CMAKE_BINARY_DIR}/OpenCV
+                   COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${the_module}> ${CMAKE_BINARY_DIR}/OpenCV/src/lib/libopencv_julia
+                   COMMENT "Copying over julia package"
+                   )
 
 
 if (BUILD_TESTS)

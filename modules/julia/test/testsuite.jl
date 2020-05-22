@@ -1,5 +1,3 @@
-using Test
-
 print("Loading module")
 
 @show @time using OpenCV
@@ -7,7 +5,7 @@ print("Loading module")
 # Test waitkey
 t = @timed OpenCV.waitKey(Int32(500))
 
-@show @test t[2]> 0.5
+@show t[2]> 0.5
 
 # Create a random image
 @show img = rand(UInt8 , 3, 500, 500)
@@ -18,8 +16,11 @@ t = @timed OpenCV.waitKey(Int32(500))
 @show size(img_gray)
 
 # Exception test
-@show @test_throws ErrorException OpenCV.cvtColor(img_gray, OpenCV.COLOR_RGB2GRAY)
-
+try
+    @show OpenCV.cvtColor(img_gray, OpenCV.COLOR_RGB2GRAY)
+    exit(1)
+catch
+end
 # Non-continous memory test
 @show ve = view(img, :,200:300, 200:300)
 
@@ -27,7 +28,7 @@ t = @timed OpenCV.waitKey(Int32(500))
 @show ve_gray = OpenCV.cvtColor(ve, OpenCV.COLOR_RGB2GRAY)
 
 # Sanity check
-@show @test size(ve_gray)[1] == 1 && size(img_gray)[1] == 1
+@show size(ve_gray)[1] == 1 && size(img_gray)[1] == 1
 
 # If we got this far everything has passed. 
 exit(0)
