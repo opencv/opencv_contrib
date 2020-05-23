@@ -177,12 +177,15 @@ int main(int argc, const char* argv[])
 
     GpuMat d_flow(frame0.size(), CV_32FC2), d_flowxy;
 
+    Stream inputStream;
+    Stream outputStream;
+
     Ptr<cuda::BroxOpticalFlow> brox = cuda::BroxOpticalFlow::create(0.197f, 50.0f, 0.8f, 10, 77, 10);
     Ptr<cuda::DensePyrLKOpticalFlow> lk = cuda::DensePyrLKOpticalFlow::create(Size(7, 7));
     Ptr<cuda::FarnebackOpticalFlow> farn = cuda::FarnebackOpticalFlow::create();
     Ptr<cuda::OpticalFlowDual_TVL1> tvl1 = cuda::OpticalFlowDual_TVL1::create();
     Ptr<cuda::NvidiaOpticalFlow_1_0> nvof = cuda::NvidiaOpticalFlow_1_0::create(frame0.size().width, frame0.size().height,
-        NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_FAST, false, false, false, 0, Stream(), Stream());
+        NvidiaOpticalFlow_1_0::NVIDIA_OF_PERF_LEVEL::NV_OF_PERF_LEVEL_FAST, false, false, false, 0, inputStream, outputStream);
 
     {
         GpuMat d_frame0f;
