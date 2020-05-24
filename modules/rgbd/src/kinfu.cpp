@@ -7,6 +7,7 @@
 #include "precomp.hpp"
 #include "fast_icp.hpp"
 #include "tsdf.hpp"
+#include "hash_tsdf.hpp"
 #include "kinfu_frame.hpp"
 
 namespace cv {

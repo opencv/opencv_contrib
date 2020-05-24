@@ -29,7 +29,7 @@ class TSDFVolumeCPU : public TSDFVolume
 public:
     // dimension in voxels, size in meters
     TSDFVolumeCPU(Point3i _res, float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-                  float _raycastStepFactor, bool zFirstMemOrder = true);
+                  float _raycastStepFactor, Point3f _origin, bool zFirstMemOrder = true);
 
     virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) override;
     virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
@@ -56,10 +56,11 @@ public:
 
 
 TSDFVolume::TSDFVolume(Point3i _res, float _voxelSize, Affine3f _pose, float _truncDist, int _maxWeight,
-                       float _raycastStepFactor, bool zFirstMemOrder) :
+                       float _raycastStepFactor, Point3f _origin, bool zFirstMemOrder) :
     voxelSize(_voxelSize),
     voxelSizeInv(1.f/_voxelSize),
     volResolution(_res),
+    origin(_origin),
     maxWeight(_maxWeight),
     pose(_pose),
     raycastStepFactor(_raycastStepFactor)
@@ -104,8 +105,8 @@ TSDFVolume::TSDFVolume(Point3i _res, float _voxelSize, Affine3f _pose, float _tr
 
 // dimension in voxels, size in meters
 TSDFVolumeCPU::TSDFVolumeCPU(Point3i _res, float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-                             float _raycastStepFactor, bool zFirstMemOrder) :
-    TSDFVolume(_res, _voxelSize, _pose, _truncDist, _maxWeight, _raycastStepFactor, zFirstMemOrder)
+                             float _raycastStepFactor, Point3f _origin, bool zFirstMemOrder) :
+    TSDFVolume(_res, _voxelSize, _pose, _truncDist, _maxWeight, _raycastStepFactor, _origin, zFirstMemOrder)
 {
     volume = Mat(1, volResolution.x * volResolution.y * volResolution.z, rawType<Voxel>());
 
@@ -367,8 +368,9 @@ struct IntegrateInvoker : ParallelLoopBody
                 Voxel* volDataY = volDataX+y*volume.volDims[1];
                 // optimization of camSpace transformation (vector addition instead of matmul at each z)
                 Point3f basePt = vol2cam*(Point3f(x, y, 0)*volume.voxelSize);
-                Point3f camSpacePt = basePt;
+                Point3f camSpacePt = basePt + volume.origin;
                 // zStep == vol2cam*(Point3f(x, y, 1)*voxelSize) - basePt;
+                // zStep == vol2cam*[Point3f(x, y, 1) - Point3f(x, y, 0)]*voxelSize
                 Point3f zStep = Point3f(vol2cam.matrix(0, 2),
                                         vol2cam.matrix(1, 2),
                                         vol2cam.matrix(2, 2))*volume.voxelSize;
@@ -1155,7 +1157,7 @@ class TSDFVolumeGPU : public TSDFVolume
 public:
     // dimension in voxels, size in meters
     TSDFVolumeGPU(Point3i _res, float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-                  float _raycastStepFactor);
+                  float _raycastStepFactor, Point3f _origin);
 
     virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) override;
     virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
@@ -1175,8 +1177,8 @@ public:
 
 
 TSDFVolumeGPU::TSDFVolumeGPU(Point3i _res, float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-                             float _raycastStepFactor) :
-    TSDFVolume(_res, _voxelSize, _pose, _truncDist, _maxWeight, _raycastStepFactor, false)
+                             float _raycastStepFactor, Point3f _origin) :
+    TSDFVolume(_res, _voxelSize, _pose, _truncDist, _maxWeight, _raycastStepFactor, _origin, false)
 {
     volume = UMat(1, volResolution.x * volResolution.y * volResolution.z, CV_32FC2);
 
@@ -1473,13 +1475,13 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
 #endif
 
 cv::Ptr<TSDFVolume> makeTSDFVolume(Point3i _res,  float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-                                   float _raycastStepFactor)
+                                   float _raycastStepFactor, Point3f _origin)
 {
 #ifdef HAVE_OPENCL
     if(cv::ocl::useOpenCL())
-        return cv::makePtr<TSDFVolumeGPU>(_res, _voxelSize, _pose, _truncDist, _maxWeight, _raycastStepFactor);
+        return cv::makePtr<TSDFVolumeGPU>(_res, _voxelSize, _pose, _truncDist, _maxWeight, _raycastStepFactor, _origin);
 #endif
-    return cv::makePtr<TSDFVolumeCPU>(_res, _voxelSize, _pose, _truncDist, _maxWeight, _raycastStepFactor);
+    return cv::makePtr<TSDFVolumeCPU>(_res, _voxelSize, _pose, _truncDist, _maxWeight, _raycastStepFactor, _origin);
 }
 
 } // namespace kinfu

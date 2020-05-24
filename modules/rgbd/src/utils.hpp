@@ -9,6 +9,7 @@
 #ifndef __OPENCV_RGBD_UTILS_HPP__
 #define __OPENCV_RGBD_UTILS_HPP__
 
+#include "opencv2/core/matx.hpp"
 namespace cv
 {
 namespace rgbd
@@ -124,6 +125,8 @@ struct Intr
     }
     inline Reprojector makeReprojector() const { return Reprojector(*this); }
     inline Projector   makeProjector()   const { return Projector(*this);   }
+
+    inline cv::Matx33f getMat() const { return Matx33f(fx, 0, cx, 0, fy, cy, 0, 0, 1); }
 
     float fx, fy, cx, cy;
 };

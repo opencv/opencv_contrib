@@ -18,7 +18,7 @@ class TSDFVolume
 public:
     // dimension in voxels, size in meters
     TSDFVolume(Point3i _res, float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-               float _raycastStepFactor, bool zFirstMemOrder = true);
+               float _raycastStepFactor, cv::Point3f _origin, bool zFirstMemOrder = true);
 
     virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) = 0;
     virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
@@ -34,6 +34,7 @@ public:
     float voxelSize;
     float voxelSizeInv;
     Point3i volResolution;
+    Point3f origin;
     int maxWeight;
     cv::Affine3f pose;
     float raycastStepFactor;
@@ -45,7 +46,7 @@ public:
 };
 
 cv::Ptr<TSDFVolume> makeTSDFVolume(Point3i _res,  float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-                                   float _raycastStepFactor);
+                                   float _raycastStepFactor, cv::Point3f origin = Point3f(0, 0, 0));
 
 } // namespace kinfu
 } // namespace cv
