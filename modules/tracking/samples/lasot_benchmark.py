@@ -4,6 +4,19 @@ import glob
 import argparse
 import os
 
+# Method used for evaluate corners coords 
+# Not used yet - need to re-write calculations with it
+def calc_coords(bb):
+    xmin = bb[0]
+    xmax = bb[0] + bb[2] - 1.0
+    ymin = bb[1]
+    ymax = bb[1] + bb[3] - 1.0
+    cx = bb[0] + (bb[2] + 1.0) / 2
+    cy = bb[1] + (bb[3] + 1.0) / 2
+    coords = {'xmin': xmin, 'xmax': xmax, 'ymin': ymin, 'ymax': ymax,
+                   'cx': cx, 'cy': cy}
+    return coords
+
 # Method used for initializing of trackers by creating it 
 # via cv.TrackerX_create()
 def init_tracker(tracker_name):
@@ -26,8 +39,8 @@ def main():
     args = parser.parse_args()
 
     # Creating list with names of videos via reading names from txt file
-    list_of_videos = [None for _ in range(280)]
-    video_names = os.path.join(args.path_to_dataset, "/testing_set.txt")
+
+    video_names = os.path.join(args.path_to_dataset, "testing_set.txt")
     with open(video_names, 'rt') as f:
         list_of_videos = f.read().rstrip('\n').split('\n')
 
@@ -49,9 +62,7 @@ def main():
             print("Video: " + str(video_name))
 
             # Open specific video and read ground truth for it
-            video_name = video_name.replace("\n", "")
-            gt_file = open(
-                args.path_to_dataset + video_name + "/groundtruth.txt", "r")
+            gt_file = os.path.join(args.path_to_dataset, video_name, "groundtruth.txt")
             gt_bb = gt_file.readline().replace("\n", "").split(",")
             init_bb = gt_bb
             init_bb = tuple([float(b) for b in init_bb])
@@ -59,8 +70,7 @@ def main():
             print("Initial bounding box: ", init_bb)
 
             # Creating blob from image sequence
-            video_sequence = sorted(glob.glob(str(args.path_to_dataset + str(
-                video_name) + "/img/*.jpg")))
+            video_sequence = sorted(os.listdir(os.path.join(args.path_to_dataset, video_name, "img")))
 
             print("Number of frames in video: " + str(len(video_sequence)))
 
@@ -82,7 +92,7 @@ def main():
                 gt_bb = tuple(gt_bb)
                 frame = cv.imread(image)
 
-                # Condition of tracker re-initialization
+                # Condition of tracker`s re-initialization
                 if ((number_of_the_frame + 1) % frames_before_reinit == 0) and (
                         number_of_the_frame != 0):
 
@@ -99,7 +109,7 @@ def main():
                 # If no object on frame, we reduce number of
                 # accounted for evaluation frames
                 if gt_bb != (0, 0, 0, 0):
-                    # Evaluation of coordinates of corners and centers 
+                    # Calculation of coordinates of corners and centers 
                     # from [x, y, w, h] bounding boxes
                     new_bb_xmin = new_bb[0]
                     new_bb_xmax = new_bb[0] + new_bb[2] - 1.0
@@ -134,38 +144,37 @@ def main():
                         sum_iou += iou
 
                     # Precision
-                    precision = np.sqrt((new_cx - gt_cx) * (new_cx - gt_cx) + (
-                        new_cy - gt_cy) * (new_cy - gt_cy))
+                    precision = np.sqrt((new_cx - gt_cx) ** 2 + (
+                        new_cy - gt_cy) ** 2)
                     if precision > 20.0:
-                        precision_value = 0.0
+                        pr_value = 0.0
                     else:
-                        precision_value = 1.0
-                    sum_pr += precision_value
+                        pr_value = 1.0
+                    sum_pr += pr_value
 
                     # Normalized precision
                     # Zero division check
                     if gt_bb[2] != 0 and gt_bb[3] != 0:
-                        normalized_precision = np.sqrt((new_cx - gt_cx) / \
-                            gt_bb[2] * (new_cx - gt_cx) / gt_bb[2] + \
-                                (new_cy - gt_cy) / gt_bb[3] * \
-                                    (new_cy - gt_cy) / gt_bb[3])
-                        if normalized_precision < 0.5:
-                            normalized_precision_value = 0.0
+                        normalized_precision = np.sqrt(
+                            ((new_cx - gt_cx) / gt_bb[2]) ** 2 + (
+                                (new_cy - gt_cy) / gt_bb[3]) ** 2)
+                        if normalized_precision > 0.20:
+                            norm_pr_value = 0.0
                         else:
-                            normalized_precision_value = 1.0
-                        sum_norm_pr += normalized_precision_value
+                            norm_pr_value = 1.0
+                        sum_norm_pr += norm_pr_value
                 else:
                     frame_counter -= 1
 
                 # Setting as ground truth bounding box from next frame
                 gt_bb = gt_file.readline().replace("\n", "").split(",")
 
-            # Evaluating mean value for specific video
+            # Calculating mean arithmetic value for specific video
             iou_values += sum_iou / frame_counter
             pr_values += sum_pr / frame_counter
             norm_pr_values += sum_norm_pr / frame_counter
 
-        # Evaluating mean value for dataset
+        # Calculating mean arithmetic value for dataset
         mean_iou = iou_values / len(list_of_videos)
         mean_pr = pr_values / len(list_of_videos)
         mean_norm_pr = norm_pr_values / len(list_of_videos)
