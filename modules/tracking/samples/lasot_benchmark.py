@@ -1,8 +1,8 @@
 import numpy as np
 import cv2 as cv
-import glob
 import argparse
 import os
+import glob
 
 # Method used for evaluate corners coords 
 # Not used yet - need to re-write calculations with it
@@ -22,10 +22,10 @@ def calc_coords(bb):
 def init_tracker(tracker_name):
     config = {"Boosting": (cv.TrackerBoosting_create(), 500),
     "MIL": (cv.TrackerMIL_create(), 1000),
-    "KCF": (cv.TrackerKCF_create(), 110),
-    "MedianFlow": (cv.TrackerMedianFlow_create(), 20),
-    "GOTURN": (cv.TrackerGOTURN_create(), 20),
-    "MOSSE": (cv.TrackerMOSSE_create(), 20),
+    "KCF": (cv.TrackerKCF_create(), 250),
+    "MedianFlow": (cv.TrackerMedianFlow_create(), 500),
+    "GOTURN": (cv.TrackerGOTURN_create(), 250),
+    "MOSSE": (cv.TrackerMOSSE_create(), 250),
     "CSRT": (cv.TrackerCSRT_create(), 250)}
     return config[tracker_name]
 
@@ -36,6 +36,8 @@ def main():
     # original dataset folder
     parser.add_argument("--path_to_dataset", type=str,
                         default="LaSOTTesting", help="Full path to LaSOT")
+    parser.add_argument("--visualization", type=str,
+                        default=False, help="Showing process of tracking on video")
     args = parser.parse_args()
 
     # Creating list with names of videos via reading names from txt file
@@ -48,9 +50,9 @@ def main():
         'Boosting', 'MIL', 'KCF', 'MedianFlow', 'GOTURN', 'MOSSE', 'CSRT']
 
     # Loop for every tracker
-    for tracker_id in range(len(trackers)):
+    for tracker_id in trackers:
 
-        tracker_name = trackers[tracker_id]
+        tracker_name = tracker_id
         print(tracker_name)
 
         # Loop for every video
@@ -62,16 +64,19 @@ def main():
             print("Video: " + str(video_name))
 
             # Open specific video and read ground truth for it
-            gt_file = os.path.join(args.path_to_dataset, video_name, "groundtruth.txt")
+            gt_file = open(os.path.join(args.path_to_dataset, video_name, "groundtruth.txt"), "r")
             gt_bb = gt_file.readline().replace("\n", "").split(",")
+            print(gt_bb)
             init_bb = gt_bb
             init_bb = tuple([float(b) for b in init_bb])
 
             print("Initial bounding box: ", init_bb)
 
             # Creating blob from image sequence
-            video_sequence = sorted(os.listdir(os.path.join(args.path_to_dataset, video_name, "img")))
-
+            #video_sequence = sorted(os.listdir(os.path.join(args.path_to_dataset, video_name, "img")))
+            video_sequence = sorted(glob.glob(str("D:/lasot/" + str(video_name) +
+                                                  "/img/*.jpg")))
+            #print(video_sequence)
             print("Number of frames in video: " + str(len(video_sequence)))
 
             # Variables for saving sum of every metric for every frame and
@@ -111,32 +116,31 @@ def main():
                 if gt_bb != (0, 0, 0, 0):
                     # Calculation of coordinates of corners and centers 
                     # from [x, y, w, h] bounding boxes
-                    new_bb_xmin = new_bb[0]
-                    new_bb_xmax = new_bb[0] + new_bb[2] - 1.0
-                    new_bb_ymin = new_bb[1]
-                    new_bb_ymax = new_bb[1] + new_bb[3] - 1.0
-                    gt_xmin = gt_bb[0]
-                    gt_xmax = gt_bb[0] + gt_bb[2] - 1.0
-                    gt_ymin = gt_bb[1]
-                    gt_ymax = gt_bb[1] + gt_bb[3] - 1.0
-                    new_cx = new_bb[0] + (new_bb[2] + 1.0) / 2
-                    new_cy = new_bb[1] + (new_bb[3] + 1.0) / 2
-                    gt_cx = gt_bb[0] + (gt_bb[2] + 1.0) / 2
-                    gt_cy = gt_bb[1] + (gt_bb[3] + 1.0) / 2
 
+                    new_coords = calc_coords(new_bb)
+                    gt_coords = calc_coords(gt_bb)
+                    new_xmin, new_xmax, new_ymin, new_ymax, new_cx, new_cy = list(
+                        new_coords.values())
+                    gt_xmin, gt_xmax, gt_ymin, gt_ymax, gt_cx, gt_cy = list(gt_coords.values())
+
+                    if args.visualization:
+                        cv.rectangle(frame, (int(new_xmin), int(new_ymin)), (
+                            int(new_xmax), int(new_ymax)), (200, 0, 0))
+                        cv.imshow("Tracking", frame)
+                        cv.waitKey(1)
                     # Metrics: Intersection over Union, Precision, 
                     # Normalized Precision
 
                     # Width and height of overlap
-                    dx = max(0, min(new_bb_xmax, gt_xmax) - max(
-                        new_bb_xmin, gt_xmin))
-                    dy = max(0, min(new_bb_ymax, gt_ymax) - max(
-                        new_bb_ymin, gt_ymin))
+                    dx = max(0, min(new_xmax, gt_xmax) - max(
+                        new_xmin, gt_xmin))
+                    dy = max(0, min(new_ymax, gt_ymax) - max(
+                        new_ymin, gt_ymin))
 
                     # Intersection over Union
                     area_of_overlap = dx * dy
-                    area_of_union = (new_bb_xmax - new_bb_xmin) * (
-                        new_bb_ymax - new_bb_ymin) + (gt_xmax - gt_xmin) * (
+                    area_of_union = (new_xmax - new_xmin) * (
+                        new_ymax - new_ymin) + (gt_xmax - gt_xmin) * (
                             gt_ymax - gt_ymin) - area_of_overlap
                     # Zero division check
                     if area_of_union != 0:
@@ -158,7 +162,7 @@ def main():
                         normalized_precision = np.sqrt(
                             ((new_cx - gt_cx) / gt_bb[2]) ** 2 + (
                                 (new_cy - gt_cy) / gt_bb[3]) ** 2)
-                        if normalized_precision > 0.20:
+                        if normalized_precision > 0.1:
                             norm_pr_value = 0.0
                         else:
                             norm_pr_value = 1.0
@@ -179,10 +183,11 @@ def main():
         mean_pr = pr_values / len(list_of_videos)
         mean_norm_pr = norm_pr_values / len(list_of_videos)
 
-        print(tracker_name + ":\n\tmean IoU = " + str(
-            mean_iou) + "\n\tmean precision = " + str(
-                mean_pr) + "\n\tmean normalized precision = " + str(
-                    mean_norm_pr) + "\n\n")
+        print(tracker_name + ":")
+        print("\n\t" + str("Mean Intersection over Union = " + str(mean_iou)))
+        print("\n\t" + str("Mean Precision = ") + str(mean_pr))
+        print("\n\t" + str("Mean Normalized Precision = ") + str(mean_norm_pr))
+        print("\n\n")
 
 if __name__ == '__main__':
     main()
