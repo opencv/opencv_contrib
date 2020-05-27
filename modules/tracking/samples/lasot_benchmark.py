@@ -80,11 +80,9 @@ def main():
     args = parser.parse_args()
 
     # Creating list with names of videos via reading names from txt file
-    #video_names = os.path.join(args.path_to_dataset, "testing_set.txt")
-    #with open(video_names, 'rt') as f:
-    #    list_of_videos = f.read().rstrip('\n').split('\n')
-    list_of_videos = ['airplane-1']
-    #trackers = ['GOTURN']
+    video_names = os.path.join(args.path_to_dataset, "testing_set.txt")
+    with open(video_names, 'rt') as f:
+        list_of_videos = f.read().rstrip('\n').split('\n')
     trackers = [
         'Boosting', 'MIL', 'KCF', 'MedianFlow', 'GOTURN', 'MOSSE', 'CSRT']
 
