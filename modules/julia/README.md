@@ -15,11 +15,13 @@ julia> ]
 pkg> add CxxWrap
 ```
 
+For now, Julia module is only compatible with Ubuntu and MacOS. Also, you must use a source build of [libcxxwrap-julia](https://github.com/JuliaInterop/libcxxwrap-julia). Follow the link for instructions on how to do that.
+
 Build
 -----
-The Julia module is fully integrated into the OpenCV build system. If cmake finds a Julia executable available on the host system while configuring OpenCV, it will attempt to generate Julia wrappers for all OpenCV modules. If cmake is having trouble finding your Julia installation, you can explicitly point it to the Julia executable by defining the `Julia_EXECUTABLE` variable. For example:
+The Julia module is fully integrated into the OpenCV build system. While compiling add this to your command line `-DWITH_JULIA=ON`. If cmake finds a Julia executable available on the host system while configuring OpenCV, it will attempt to generate Julia wrappers for all OpenCV modules. If cmake is having trouble finding your Julia installation, you can explicitly point it to the Julia executable by defining the `Julia_EXECUTABLE` variable. For example:
 
-    cmake -DJulia_EXECUTABLE=/home/user/julia-1.4.1/bin ..
+    cmake -DWITH_JULIA=ON -DJulia_EXECUTABLE=/home/user/julia-1.4.1/bin ..
 
 If you prefer using the gui version of cmake (cmake-gui), you can use the *Add Entry* option in the GUI to manually add the *path* variable `Julia_EXECUTABLE`.
 

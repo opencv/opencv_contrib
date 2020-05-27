@@ -8,28 +8,21 @@ endif()
 # Julia Executable #
 ####################
 
-if(Julia_PREFIX)
-    message(STATUS "Adding path ${Julia_PREFIX} to search path")
-    list(APPEND CMAKE_PREFIX_PATH ${Julia_PREFIX})
-    message(STATUS "THIS BRANCH")
-else()
-    find_program(Julia_EXECUTABLE julia DOC "Julia executable")
-    message(STATUS "Found Julia executable: " ${Julia_EXECUTABLE})
-endif()
+find_program(Julia_EXECUTABLE julia DOC "Julia executable")
 
 #################
 # Julia Version #
 #################
 
 if(Julia_EXECUTABLE)
+    message(STATUS "Found Julia executable: " ${Julia_EXECUTABLE})
+
     execute_process(
         COMMAND "${Julia_EXECUTABLE}" --startup-file=no --version
         OUTPUT_VARIABLE Julia_VERSION_STRING
     )
 else()
-    find_file(Julia_VERSION_INCLUDE julia_version.h PATH_SUFFIXES include/julia)
-    file(READ ${Julia_VERSION_INCLUDE} Julia_VERSION_STRING)
-    string(REGEX MATCH "JULIA_VERSION_STRING.*" Julia_VERSION_STRING ${Julia_VERSION_STRING})
+    return()
 endif()
 
 string(

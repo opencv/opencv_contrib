@@ -1,6 +1,6 @@
-include(${CMAKE_CURRENT_LIST_DIR}/FindJulia.cmake)
 
 if(NOT Julia_FOUND)
+    message(STATUS "Julia not found. Not compiling Julia Bindings")
     ocv_module_disable(julia)
 elseif(NOT PYTHON3_EXECUTABLE)
 #    message(WARNING "Python 3 required for Julia bindings...disabling")
@@ -21,15 +21,15 @@ endif()
 if(NOT JlCxx_DIR)
 execute_process(
     COMMAND "${Julia_EXECUTABLE}" --startup-file=no -e "using CxxWrap; print(CxxWrap.CxxWrapCore.prefix_path())"
-    OUTPUT_VARIABLE JlCxx_DIR_prefix
+    OUTPUT_VARIABLE JlCxx_DIR
 )
 endif()
 
-if(JlCxx_DIR_prefix)
-    if(EXISTS ${JlCxx_DIR_prefix}/JlCxxConfig.cmake)
-        set(JlCxx_DIR ${JlCxx_DIR_prefix})
+if(JlCxx_DIR)
+    if(EXISTS ${JlCxx_DIR}/JlCxxConfig.cmake)
     else()
-        set(JlCxx_DIR ${JlCxx_DIR_prefix}/lib/cmake/JlCxx)
+        message(STATUS "JlCxx found but not source build - disabling Julia module")
+        ocv_module_disable(julia)
     endif()
 endif()
 
@@ -42,6 +42,10 @@ if(NOT JlCxx_FOUND)
 else()
     message(STATUS "JlCxx_DIR: ${JlCxx_DIR}")
 endif()
+
+set(JlCxx_DIR "${JlCxx_DIR}" CACHE STRING ADVANCED)
+set(Julia_BUILD "Yes" CACHE STRING ADVANCED)
+
 
 set(the_description "The Julia bindings")
 ocv_add_module(julia
@@ -62,6 +66,10 @@ ocv_add_library(${the_module} SHARED ${OPENCV_MODULE_${the_module}_HEADERS} ${OP
 if(NOT JULIA_PKG_INSTALL_PATH)
     set(JULIA_PKG_INSTALL_PATH ${CMAKE_BINARY_DIR})
 endif()
+set(JULIA_PKG_INSTALL_PATH_HOOK ${JULIA_PKG_INSTALL_PATH} CACHE STRING "" FORCE)
+mark_as_advanced(JULIA_PKG_INSTALL_PATH_HOOK)
+
+
 message(STATUS "Installing ${the_module} bindings at ${JULIA_PKG_INSTALL_PATH}")
 
 
@@ -75,7 +83,7 @@ endif()
 
 
 set(JULIA_COMMAND "\"${Julia_EXECUTABLE}\" -e \"using Pkg; ${JULIA_PKG_EXECS}\"")
-message(STATUS "Installing Julia bindings using ${JULIA_COMMAND}")
+# message(STATUS "Installing Julia bindings using ${JULIA_COMMAND}")
 
 
 install(CODE "

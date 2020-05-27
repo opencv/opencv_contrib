@@ -5,3 +5,4 @@ version = "0.1.0"
 
 [deps]
 CxxWrap = "1f15a43c-97ca-5a2a-ae31-89f07a497df4"
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"

@@ -1,34 +1,13 @@
 print("Loading module")
 
-@show @time using OpenCV
-
-# Test waitkey
-t = @timed OpenCV.waitKey(Int32(500))
-
-@show t[2]> 0.5
-
-# Create a random image
-@show img = rand(UInt8 , 3, 500, 500)
-
-# Test input as AbstractArray and cvtColor
-@show img_gray = OpenCV.cvtColor(img, OpenCV.COLOR_RGB2GRAY)
-
-@show size(img_gray)
-
-# Exception test
-try
-    @show OpenCV.cvtColor(img_gray, OpenCV.COLOR_RGB2GRAY)
-    exit(1)
-catch
-end
-# Non-continous memory test
-@show ve = view(img, :,200:300, 200:300)
-
-# Auto-conversion from-to OpenCV types
-@show ve_gray = OpenCV.cvtColor(ve, OpenCV.COLOR_RGB2GRAY)
-
-# Sanity check
-@show size(ve_gray)[1] == 1 && size(img_gray)[1] == 1
+using OpenCV
+using Test
 
 # If we got this far everything has passed. 
+
+
+# include("test_feature2d.jl")
+# include("test_imgproc.jl")
+# include("test_objdetect.jl")
+
 exit(0)
