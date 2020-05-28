@@ -82,5 +82,3 @@ The function signatures are identical to Python bindings except the previously m
 The output arrays of all OpenCV functions are of the type `OpenCV.Mat{T}`. Currently, all array input and output is restricted to 3D only (2D Mat and an additional dimension for color channels). The `OpenCV.Mat` type inherits from `AbstractArray{T, 3}` and can be directly passed to any Julia function that accepts AbstractArray types. It internally maintains a pointer to the original C++ `Mat` type to make sure that the memory is never deallocated. However, if you copy the `OpenCV.Mat` type object then the pointer is not copied and array moves to a Julia owned memory space.
 
 All other types map directly to the corresponding types on C++. Unlike Python, `Point`, `Size`, `Rect` etc are represented not as tuples but as appropriate objects like `OpenCV.Point{Float32}` and so on. However, `Scalar` types are a tuple of numbers where the tuple has a size of 1-4.
-
-

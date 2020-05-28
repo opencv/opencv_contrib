@@ -60,6 +60,7 @@ ocv_add_module(julia
 
 ocv_glob_module_sources()
 ocv_module_include_directories()
+ocv_warnings_disable(CMAKE_CXX_FLAGS -Wmissing-prototypes -Wmissing-declarations)
 
 ocv_add_library(${the_module} SHARED ${OPENCV_MODULE_${the_module}_HEADERS} ${OPENCV_MODULE_${the_module}_SOURCES})
 
@@ -139,4 +140,3 @@ add_custom_command(TARGET ${the_module}
 if (BUILD_TESTS)
     add_subdirectory(test)
 endif()
-
