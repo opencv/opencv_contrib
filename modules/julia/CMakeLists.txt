@@ -50,7 +50,7 @@ set(Julia_BUILD "Yes" CACHE STRING ADVANCED)
 set(the_description "The Julia bindings")
 ocv_add_module(julia
                                  opencv_core
-                                 opencv_imgproc 
+                                 opencv_imgproc
                                  opencv_imgcodecs
                                  opencv_objdetect
                                  opencv_highgui
@@ -128,7 +128,7 @@ ocv_target_link_libraries(${the_module} JlCxx::cxxwrap_julia_stl)
 
 # targets# opencv_julia_sources --> opencv_julia
 
-add_custom_command(TARGET ${the_module} 
+add_custom_command(TARGET ${the_module}
                    POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/package/OpenCV ${CMAKE_BINARY_DIR}/OpenCV
                    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${the_module}> ${CMAKE_BINARY_DIR}/OpenCV/src/lib/libopencv_julia

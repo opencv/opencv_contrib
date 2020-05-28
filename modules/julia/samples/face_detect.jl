@@ -3,8 +3,8 @@ using OpenCV
 function detect(img::OpenCV.InputArray, cascade)
     rects = OpenCV.detectMultiScale(cascade, img, scaleFactor=1.3, minNeighbors=Int32(4), minSize=OpenCV.Size{Int32}(30, 30), flags=OpenCV.CASCADE_SCALE_IMAGE)
     processed_rects = []
-    for ind in 1:size(rects, 1)
-        push!(processed_rects, (rects[ind].x, rects[ind].y, rects[ind].width+rects[ind].x, rects[ind].height+rects[ind].y))
+    for rect in rects
+        push!(processed_rects, (rect.x, rect.y, rect.width+rect.x, rect.height+rect.y))
     end
     return processed_rects
 end
@@ -22,9 +22,12 @@ cap = OpenCV.VideoCapture(Int32(0))
 cascade = OpenCV.CascadeClassifier("haarcascade_frontalface_alt.xml")
 nested = OpenCV.CascadeClassifier("haarcascade_eye.xml")
 
+OpenCV.namedWindow("facedetect")
+
 while true
     ret, img = OpenCV.read(cap)
     if ret==false
+        print("Webcam stopped")
         break
     end
     gray = OpenCV.cvtColor(img, OpenCV.COLOR_BGR2GRAY)
@@ -52,3 +55,5 @@ end
 OpenCV.release(cap)
 
 OpenCV.destroyAllWindows()
+
+print("Stopped")

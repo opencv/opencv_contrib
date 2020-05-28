@@ -1,6 +1,6 @@
 #Adapted from IndirectArray
 
-struct Vec{T, N} <: AbstractArray{T,1} 
+struct Vec{T, N} <: AbstractArray{T,1}
     cpp_object
     data::AbstractArray{T, 1}
     cpp_allocated::Bool

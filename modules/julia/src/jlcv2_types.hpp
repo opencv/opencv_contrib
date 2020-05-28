@@ -45,9 +45,9 @@ struct CxxRange
 
 struct CxxTermCriteria
 {
-    int type; 
-    int maxCount; 
-    double epsilon; 
+    int type;
+    int maxCount;
+    double epsilon;
 };
 
 

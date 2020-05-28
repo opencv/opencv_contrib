@@ -27,21 +27,23 @@ function julia_to_cpp(var)
 end
 
 
-function julia_to_cpp(var::Array{T, 1}) where {T}
-    ret = CxxWrap.StdLib.StdVector{T}()
-    for x in var
-        push!(ret, julia_to_cpp(x)) # When converting an array keep expected type as final type. 
-    end
-    return ret
-end
+# TODO: Vector to array conversion. There's some problems with the copy constructor.
 
-function cpp_to_julia(var::CxxWrap.StdLib.StdVector{T}) where {T}
-    ret = Array{T, 1}()
-    for x in var
-        push!(ret, cpp_to_julia(x))
-    end
-    return ret
-end
+# function julia_to_cpp(var::Array{T, 1}) where {T}
+#     ret = CxxWrap.StdLib.StdVector{T}()
+#     for x in var
+#         push!(ret, julia_to_cpp(x)) # When converting an array keep expected type as final type.
+#     end
+#     return ret
+# end
+
+# function cpp_to_julia(var::CxxWrap.StdLib.StdVector{T}) where {T}
+#     ret = Array{T, 1}()
+#     for x in var
+#         push!(ret, cpp_to_julia(x))
+#     end
+#     return ret
+# end
 
 function cpp_to_julia(var::Tuple)
     ret_arr = Array{Any, 1}()

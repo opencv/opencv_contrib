@@ -240,7 +240,7 @@ public:
     {
       return data()[i];
     }
-    else if constexpr(std::is_same<julia_t, static_julia_type<ValueT>>::value && !std::is_same<julia_t, WrappedCppPtr>::value) 
+    else if constexpr(std::is_same<julia_t, static_julia_type<ValueT>>::value && !std::is_same<julia_t, WrappedCppPtr>::value)
     {
       return *reinterpret_cast<ValueT*>(&data()[i]);
     }
@@ -256,7 +256,7 @@ public:
     {
       return data()[i];
     }
-     else if constexpr(std::is_same<julia_t, static_julia_type<ValueT>>::value && !std::is_same<julia_t, WrappedCppPtr>::value) 
+     else if constexpr(std::is_same<julia_t, static_julia_type<ValueT>>::value && !std::is_same<julia_t, WrappedCppPtr>::value)
     {
       return *reinterpret_cast<ValueT*>(&data()[i]);
     }

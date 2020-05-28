@@ -36,9 +36,9 @@ struct Range
 end
 
 struct TermCriteria
-    type::Int32 
-    maxCount::Int32 
-    epsilon::Float64 
+    type::Int32
+    maxCount::Int32
+    epsilon::Float64
 end
 
 struct cvComplex{T}

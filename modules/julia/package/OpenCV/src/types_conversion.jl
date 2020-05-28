@@ -1,6 +1,6 @@
 function cpp_to_julia(var::CxxScalar{T}) where {T}
     var = Vec{T, 4}(var)
-    return (var[1], var[2], var[3], var[4])   
+    return (var[1], var[2], var[3], var[4])
 end
 
 function cpp_to_julia(var::CxxVec{T, N}) where {T, N}

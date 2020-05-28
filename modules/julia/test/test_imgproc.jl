@@ -25,3 +25,4 @@ ve_gray = OpenCV.cvtColor(ve, OpenCV.COLOR_RGB2GRAY)
 
 
 
+print("imgproc test passed\n")
