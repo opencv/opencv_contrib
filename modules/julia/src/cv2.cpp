@@ -47,8 +47,16 @@ struct SuperType<cv::SimpleBlobDetector>
 {
     typedef cv::Feature2D type;
 };
-} // namespace jlcxx
-// namespace jlcxx
+}
+
+// Needed to prevent documentation warning
+
+namespace cv { namespace julia {
+void initJulia(int, char**) {}
+}}
+
+
+
 JLCXX_MODULE cv_wrap(jlcxx::Module &mod)
 {
     mod.map_type<RotatedRect>("RotatedRect");
