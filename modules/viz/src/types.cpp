@@ -100,7 +100,8 @@ cv::viz::Mesh cv::viz::Mesh::load(const String& file, int type)
     int* poly_ptr = mesh.polygons.ptr<int>();
 
     polygons->InitTraversal();
-    vtkIdType nr_cell_points, *cell_points;
+    vtkIdType nr_cell_points;
+    CellIterT cell_points;
     while (polygons->GetNextCell(nr_cell_points, cell_points))
     {
         *poly_ptr++ = nr_cell_points;

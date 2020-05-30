@@ -3,7 +3,9 @@ if(NOT HAVE_VTK)
 endif()
 
 set(the_description "Viz")
-include(${VTK_USE_FILE})
+if(VTK_VERSION VERSION_LESS 8.90)
+  include(${VTK_USE_FILE})
+endif()
 
 if(NOT BUILD_SHARED_LIBS)
   # We observed conflict between builtin 3rdparty libraries and
