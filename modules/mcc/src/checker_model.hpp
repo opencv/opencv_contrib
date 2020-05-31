@@ -22,7 +22,7 @@ namespace mcc{
 	  * @brief ColorChecker� Classic
 	  * @note
 
-	  * @autor Pedro Marrero Fern�ndez
+	  * @author Pedro Marrero Fern�ndez
 	  */
 
     class CChartModel
@@ -91,7 +91,7 @@ namespace mcc{
 	/** CChecker
 	  *
 	  * \brief checker model
-	  * \autor Pedro Marrero Fernandez
+	  * \author Pedro Marrero Fernandez
 	  *
 	  */
 	class CCheckerImpl:public CChecker
@@ -130,7 +130,7 @@ namespace mcc{
 	// CheckerDraw
 
 	/** \brief checker draw
-	  * \autor Pedro Marrero Fernandez
+	  * \author Pedro Marrero Fernandez
 	  */
 	class CCheckerDrawImpl : public CCheckerDraw
 	{

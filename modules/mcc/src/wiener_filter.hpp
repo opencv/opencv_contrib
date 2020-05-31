@@ -1,7 +1,7 @@
 /**
   *  @file wiener_filter
   *  @brief filter wiener for denoise
-  *  @autor: Pedro D. Marrero Fernandez
+  *  @author: Pedro D. Marrero Fernandez
   *  @data: 17/05/2016
   */
 
@@ -15,7 +15,7 @@ namespace mcc{
 
 	/// CWienerFilter
 	/**  @brief wiener class filter for denoise
-	  *  @autor: Pedro D. Marrero Fernandez
+	  *  @author: Pedro D. Marrero Fernandez
 	  *  @data: 17/05/2016
 	  */
 	class CWienerFilter

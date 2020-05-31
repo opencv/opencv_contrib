@@ -20,7 +20,7 @@ namespace mcc {
 	  * |        |
 	  * .--------.
 	  *
-	  * \autor Pedro Marrero Fern�ndez
+	  * \author Pedro Marrero Fern�ndez
 	  */
 
 	class CChart

@@ -112,7 +112,7 @@ process(const cv::Mat & image, const std::string &pathOut, const int chartType)
 
 
 #ifdef SHOW_DEBUG_IMAGES
-	printf(">> Original Image Time:	%.4f sec \n", 0);
+	printf(">> Original Image Time:	%.4f sec \n", 0.0);
 	showAndSave("original_image", image, pathOut);
 #endif
 
@@ -140,7 +140,6 @@ process(const cv::Mat & image, const std::string &pathOut, const int chartType)
 	//-------------------------------------------------------------------
 
 	cv::Mat img_bw;
-	int step, wndx, wndy; step = 10; wndx = 57; wndy = 57;
 
 	tic = getcputime();
 	performThreshold(img_gray, img_bw);
@@ -293,7 +292,7 @@ process(const cv::Mat & image, const std::string &pathOut, const int chartType)
 	printf(">> Checker analysis Time: %.4f sec \n", mili2sectime(dt));
 	cv::Mat image_checker;
 	image.copyTo(image_checker);
-	for (int ck = 0; ck < checkers.size(); ck++)
+	for (size_t ck = 0; ck < checkers.size(); ck++)
 	{
 		Ptr<CCheckerDraw> cdraw = CCheckerDraw::create((checkers[ck]));
 		cdraw->draw(image_checker, chartType);
@@ -441,8 +440,8 @@ findContours(
 		// KORDECKI, A., & PALUS, H. (2014). Automatic detection of colour charts in images.
 		// Przegl?d Elektrotechniczny, 90(9), 197-202.
 		// 0.65 < \frac{4*pi*A}{P^2} < 0.97
-		// double Cf = 4 * pi*area / (perm*perm);
-		// if (Cf < 0.65 || Cf > 0.97) continue;
+		double Cf = 4 * pi*area / (perm*perm);
+		if (Cf < 0.65 || Cf > 0.97) continue;
 
 
 		// Soliditys
@@ -494,9 +493,9 @@ findCandidates(
 		// Ensure that the distance between consecutive points is large enough
 		float minDist = INFINITY;
 
-		for (int i = 0; i < 4; i++)
+		for (size_t j = 0; j < 4; j++)
 		{
-			cv::Point side = approxCurve[i] - approxCurve[(i + 1) % 4];
+			cv::Point side = approxCurve[j] - approxCurve[(j + 1) % 4];
 			float squaredSideLength = side.dot(side);
 			minDist = std::min(minDist, squaredSideLength);
 		}
@@ -509,10 +508,9 @@ findCandidates(
 		CChart chart;
 
 		std::vector<cv::Point2f> corners(4);
-		for (int i = 0; i<4; i++)
-		corners[i] = cv::Point2f(approxCurve[i].x, approxCurve[i].y);
+		for (int j = 0; i<4; i++)
+			corners[j] = cv::Point2f(approxCurve[j].x, approxCurve[j].y);
 		chart.setCorners(corners);
-
 
 		possibleCharts.push_back(chart);
 
@@ -583,7 +581,7 @@ clustersAnalysis(
 	std::vector<int>& groups)
 {
 
-	int N = detectedCharts.size();
+	size_t N = detectedCharts.size();
 	std::vector<cv::Point> X(N);
 	std::vector<float> B0(N), W(N);
 	std::vector<int> G;
@@ -631,9 +629,9 @@ checkerRecognize(
 
 		std::vector<CChart> chartSub;
 		for (size_t i = 0; i < Ncc; i++)
-			if (G[i] == g) chartSub.push_back(detectedCharts[i]);
+			if (G[i] == (int)g) chartSub.push_back(detectedCharts[i]);
 
-		int Nsc = chartSub.size();
+		size_t Nsc = chartSub.size();
 		if (Nsc < 4) continue;
 
 		///-------------------------------------------------
@@ -713,9 +711,9 @@ checkerRecognize(
 
 		int k = 0;
 
-		for (size_t i = 0; i < colorSize.height; i++)
+		for (int i = 0; i < colorSize.height; i++)
 		{
-			for (size_t j = 0; j < colorSize.width; j++)
+			for (int j = 0; j < colorSize.width; j++)
 			{
 				cv::Point2f vc = cv::Point2f(cxr[j], cyr[i]);
 				cte[k] = vc;
@@ -839,7 +837,7 @@ checkerAnalysis(
 	)
 {
 
-	int N, sl;
+	size_t N;
 	std::vector< cv::Point2f > ibox;
 
 	N = colorCharts.size();
@@ -853,7 +851,7 @@ checkerAnalysis(
 	std::vector<int> idx;
 	sort(J, idx);
 	float invAsp = 1 / asp;
-	int n = cv::min(m_num_ch, N);
+	size_t n = cv::min(m_num_ch,(unsigned) N);
 	Ptr<CChecker> checker = CChecker::create();
 	checkers.clear();
 
@@ -864,8 +862,8 @@ checkerAnalysis(
 			continue;
 
 		// redimention box
-		for (size_t i = 0; i < 4; i++)
-			ibox[i] = invAsp*ibox[i];
+		for (size_t j = 0; j < 4; j++)
+			ibox[j] = invAsp*ibox[j];
 
 		cv::Mat charts_rgb, charts_ycbcr;
 		get_profile(img_org, ibox,chartType, charts_rgb, charts_ycbcr);
@@ -909,7 +907,7 @@ void CCheckerDetectorImpl::
 reduce_array(const std::vector<float>& x, std::vector<float>& x_new, float tol)
 {
 
-	int n = x.size(), nn;
+	size_t n = x.size(), nn;
 	std::vector<float> xx = x;
 	x_new.clear();
 
@@ -918,11 +916,11 @@ reduce_array(const std::vector<float>& x, std::vector<float>& x_new, float tol)
 
 	// label array
 	std::vector<int> label(n);
-	for (int i = 0; i < n; i++)
+	for (size_t i = 0; i < n; i++)
 		label[i] = abs(xx[(n + i - 1) % n] - xx[i]) > tol;
 
 	// diff array
-	for (int i = 1, j; i < n; i++)  label[i] += label[i - 1];
+	for (size_t i = 1; i < n; i++)  label[i] += label[i - 1];
 
 	// unique array
 	std::vector<int> ulabel;
@@ -930,10 +928,10 @@ reduce_array(const std::vector<float>& x, std::vector<float>& x_new, float tol)
 
 	// mean for group
 	nn = ulabel.size(); x_new.resize(nn);
-	for (int i = 0; i < nn; i++)
+	for (size_t i = 0; i < nn; i++)
 	{
 		float mu = 0, s = 0;
-		for (int j = 0; j < n; j++)
+		for (size_t j = 0; j < n; j++)
 		{
 			mu += (label[j] == ulabel[i])*xx[j];
 			s += (label[j] == ulabel[i]);
@@ -943,12 +941,12 @@ reduce_array(const std::vector<float>& x, std::vector<float>& x_new, float tol)
 
 	// diff array
 	std::vector<float> dif(nn - 1);
-	for (int i = 0, j; i < nn - 1; i++)
+	for (size_t i = 0; i < nn - 1; i++)
 		dif[i] = (x_new[(i + 1) % nn] - x_new[i]);
 
 	// max and idx
 	float fmax = 0; int idx = 0;
-	for (int i = 0; i < nn - 1; i++)
+	for (size_t i = 0; i < nn - 1; i++)
 		if (fmax < dif[i]) { fmax = dif[i];  idx = i; }
 
 	// add ... X[i] MAX X[i+] ...
@@ -997,7 +995,6 @@ get_profile(
 	// color chart classic model
 	CChartModel cccm(chartType);
 	cv::Mat lab;
-	float J = 0;
 	size_t N;
 	std::vector<cv::Point2f> fbox = cccm.box;
 	std::vector<cv::Point2f> cellchart = cccm.cellchart;
@@ -1113,7 +1110,7 @@ float CCheckerDetectorImpl::
 	CChartModel cccm(chartType);
 	cv::Mat lab;
 	float J = 0;
-	int N;
+	size_t N;
 	std::vector<cv::Point2f> fbox = cccm.box;
 	std::vector<cv::Point2f> cellchart = cccm.cellchart;
 
@@ -1133,7 +1130,6 @@ float CCheckerDetectorImpl::
 	cv::Mat mask;
 	std::vector<cv::Point2f> bch(4), bcht(4);
 	N = cellchart.size() / 4;
-	cv::Point3f r;
 
 	float ec = 0, es = 0;
 	for (size_t i = 0, k; i < N; i++)

@@ -147,7 +147,7 @@ protected:
 
 	std::vector<Ptr<CChecker>> m_checkers;
 	int m_fact_size;
-	int m_num_ch;
+	unsigned int m_num_ch;
 	float m_min_error;
 
 

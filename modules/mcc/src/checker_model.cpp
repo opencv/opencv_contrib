@@ -100,10 +100,10 @@ void CChartModel::
 	{
 		for (size_t j = 0; j < M; j++)
 		{
-			cv::Vec3f &lab = im_lab_org.at<cv::Vec3f>(i, j);
-			lab[0] = chart[k][type_color + 0];
-			lab[1] = chart[k][type_color + 1];
-			lab[2] = chart[k][type_color + 2];
+			cv::Vec3f &lab_values = im_lab_org.at<cv::Vec3f>(i, j);
+			lab_values[0] = chart[k][type_color + 0];
+			lab_values[1] = chart[k][type_color + 1];
+			lab_values[2] = chart[k][type_color + 2];
 			k++;
 		}
 	}
@@ -124,9 +124,9 @@ rotate90() {
   std::vector<cv::Point2f> _center(center.size());
 
   int k=0;
-  for (size_t i = 0; i < size.width; i++)
+  for (int i = 0; i < size.width; i++)
   {
-    for (size_t j = 0; j < size.height; j++)
+    for (int j = 0; j < size.height; j++)
     {
       //k contains the new coordintes,
       int old_i = size.height - j -1 ;
@@ -163,9 +163,9 @@ flip() {
   std::vector<cv::Point2f> _center(center.size());
 
   int k=0;
-  for (size_t i = 0; i < size.width; i++)
+  for (int i = 0; i < size.width; i++)
   {
-    for (size_t j = 0; j < size.height; j++)
+    for (int j = 0; j < size.height; j++)
     {
       //k contains the new coordintes,
       int old_i = i ;
@@ -193,7 +193,7 @@ float CChartModel::
 	int N = lab1.rows;
 	float dist = 0, dist_i;
 
-	for (size_t i = 0; i < N; i++)
+	for (int i = 0; i < N; i++)
 	{
 		cv::Vec3f v1 = lab1.at<cv::Vec3f>(i, 0);
 		cv::Vec3f v2 = lab2.at<cv::Vec3f>(i, 0);
@@ -356,8 +356,7 @@ void CCheckerDrawImpl::
 	// color chart classic model
 	CChartModel cccm(chartType);
 	cv::Mat lab;
-	float J = 0;
-	int N;
+	size_t N;
 	std::vector<cv::Point2f> fbox = cccm.box;
 	std::vector<cv::Point2f> cellchart = cccm.cellchart;
 
@@ -375,7 +374,7 @@ void CCheckerDrawImpl::
 		bch[2] = cellchart[k + 2];
 		bch[3] = cellchart[k + 3];
 
-		for (int i = 0; i < 4; i++)
+		for (int j = 0; j < 4; i++)
 		{
 			cout << m_pChecker->box[i].x << " " << m_pChecker->box[i].y << endl;
 		}
@@ -400,7 +399,7 @@ void CCheckerDrawImpl::
 	transform_points_forward(const cv::Matx33f &T, const std::vector<cv::Point2f> &X, std::vector<cv::Point2f> &Xt)
 {
 
-	int N = X.size();
+	size_t N = X.size();
 	Xt.clear();
 	Xt.resize(N);
 	if (N == 0)

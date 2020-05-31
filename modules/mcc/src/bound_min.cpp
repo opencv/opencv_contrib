@@ -36,7 +36,6 @@ calculate()
 	for (size_t i = 0; i < 4 * N; i++) mu += X[i];
 	mu /= (4 * (int)N);
 
-	// estandarizando
 	for (size_t i = 0; i < 4 * N; i++) X[i] -= mu;
 
 	// calculate all line

@@ -10,16 +10,11 @@ class CV_EXPORTS_W CCheckerDetector: public Algorithm
 {
 public:
 
-	/// process
-	/** \brief process image
-	* \param[in] path image
-	* \return state
-	*/
-
 
 	/// process
 	/** \brief process image
-	* \param[in] image in color space BGR
+	* \param image image in color space BGR
+	* \param chartType type of the chart to detect
 	* \return state
 	*/
 	virtual bool process(const cv::Mat & image, const int chartType)=0;

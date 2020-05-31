@@ -34,7 +34,7 @@ namespace mcc{
 
 	};
 /** \brief checker draw
-	  * \autor Pedro Marrero Fernandez
+	  * \author Pedro Marrero Fernandez
 	  */
 	class CV_EXPORTS_W CCheckerDraw
 	{
