@@ -43,7 +43,7 @@
 #ifndef __OPENCV_MCC_HPP__
 #define __OPENCV_MCC_HPP__
 
-/** @defgroup mcc
+/** @defgroup mcc Macbeth Chart module
 */
 
 #include "mcc/checker_detector.hpp"
