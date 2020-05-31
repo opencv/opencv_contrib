@@ -1,4 +1,4 @@
-#include "opencv2/mcc/debug.hpp"
+#include "debug.hpp"
 #include <time.h>
 
 

@@ -1,5 +1,5 @@
-#include "opencv2/mcc/graph_cluster.hpp"
-#include "opencv2/mcc/core.hpp"
+#include "graph_cluster.hpp"
+#include "core.hpp"
 
 namespace cv{
 namespace mcc{
@@ -19,7 +19,7 @@ void CB0cluster::
 group()
 {
 
-	int n = X.size();
+	size_t n = X.size();
 	G.clear(); G.resize(n);
 
 	for (size_t i = 0; i < n - 1; i++)
@@ -36,11 +36,11 @@ group()
 			dist = norm(X[i] - X[j]);
 
 			//\frac{|W_i - W_j|}{W_i + W_j}
-			w = abs(W[i] - W[j]) / (W[i] + W[j]);
-			w = (w < 0.3);
+		    w = min(abs(W[i] - W[j]) / (W[i] + W[j]), abs(max(W[i], W[j])- 24/11.0f*min(W[i], W[j]))/(max(W[i], W[j])+24/11.0f*min(W[i], W[j])));
+			w = (w < 0.2);
 
 			y = w*dist;
-			Y[k] = (y<B0[i])*y;
+			Y[k] = (y<min(B0[i], B0[j]))*y;;
 
 		}
 
@@ -53,7 +53,7 @@ group()
 
 		// 3. Analisis de la casuistica
 
-		int m = pos_b0.size();
+		size_t m = pos_b0.size();
 		if (!m) continue;
 
 		//reajuste de las coordenadas

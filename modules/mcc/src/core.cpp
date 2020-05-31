@@ -1,1 +1,1 @@
-#include "opencv2/mcc/core.hpp"
+#include "core.hpp"

@@ -17,8 +17,7 @@
 #endif
 
 
+
 #include "common.hpp"
-
-
 
 #endif //_MCC_CORE_H

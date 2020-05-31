@@ -1,4 +1,4 @@
-#include "opencv2/mcc/wiener_filter.hpp"
+#include "wiener_filter.hpp"
 
 namespace cv{
 namespace mcc{
@@ -46,7 +46,6 @@ cvWiener2(const Mat& srcMat, Mat& dstMat, int szWindowX, int szWindowY)
 
     //Local variance of input
     p_tmpMat2 = srcMat.mul(  srcMat);
-	// Mul(srcMat, srcMat, p_tmpMat2); //in^2
 	filter2D(p_tmpMat2, p_tmpMat3, -1 , p_kernel, Point(nCols / 2, nRows / 2));
 
 	//Subtract off local_mean^2 from local variance
@@ -81,7 +80,6 @@ wiener2(cv::Mat & src, cv::Mat & dest, int szWindowX, int szWindowY)
 	if (szWindowY < 0)szWindowY = szWindowX;
 	if (dest.empty())dest.create(src.size(), src.type());
 
-//	IplImage p1 = IplImage(src), p2 = IplImage(dest);
 	cvWiener2( src, dest, szWindowX, szWindowY);
 }
 

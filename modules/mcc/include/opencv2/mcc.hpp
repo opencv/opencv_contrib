@@ -46,15 +46,7 @@
 /** @defgroup mcc
 */
 
-#include "mcc/bound_min.hpp"
-#include "mcc/charts.hpp"
 #include "mcc/checker_detector.hpp"
 #include "mcc/checker_model.hpp"
-#include "mcc/common.hpp"
-#include "mcc/core.hpp"
-#include "mcc/debug.hpp"
-#include "mcc/graph_cluster.hpp"
-#include "mcc/mcc.hpp"
-#include "mcc/wiener_filter.hpp"
 
 #endif

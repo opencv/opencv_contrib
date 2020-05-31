@@ -1,4 +1,4 @@
-#include "opencv2/mcc/charts.hpp"
+#include "charts.hpp"
 
 
 namespace cv{

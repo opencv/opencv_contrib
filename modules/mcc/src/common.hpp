@@ -58,7 +58,21 @@ namespace mcc {
 			std::swap(points[1], points[3]);
 
 	}
+	template<typename T>
+	void polyclockwise(std::vector<T> &points)
+	{
+		// Sort the points in anti-clockwise order
+		// Trace a line between the first and second point.
+		// If the third point is at the right side, then the points are anti-clockwise
+		cv::Point v1 = points[1] - points[0];
+		cv::Point v2 = points[2] - points[0];
 
+		double o = (v1.x * v2.y) - (v1.y * v2.x);
+
+		if (o > 0.0)	//if the third point is in the left side, then sort in anti-clockwise order
+			std::swap(points[1], points[3]);
+
+	}
 	// Does lexical cast of the input argument to string
 	template <typename T>
 	std::string ToString(const T& value)
@@ -74,7 +88,7 @@ namespace mcc {
 	template<typename T>
 	void sort(std::vector<T> &A, std::vector<int> &idx, bool ord = true)
 	{
-		int N = A.size();
+		size_t N = A.size();
 		if (N == 0) return;
 
 		idx.clear(); idx.resize(N);
@@ -83,7 +97,7 @@ namespace mcc {
 		for (size_t i = 0; i < N - 1; i++)
 		{
 
-			int k = i; T valor = A[i];
+			size_t k = i; T valor = A[i];
 			for (size_t j = i + 1; j < N; j++)
 			{
 				if ((A[j] < valor && ord) || (A[j] > valor && !ord))

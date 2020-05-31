@@ -1,4 +1,4 @@
-#include "opencv2/mcc/common.hpp"
+#include "common.hpp"
 
 namespace cv{
 namespace mcc{
@@ -9,7 +9,6 @@ cv::Mat poly2mask(const std::vector<cv::Point2f> &poly, cv::Size size)
 	cv::Mat mask(size, CV_8UC1);
 
 	// Create black image with the same size as the original
-	int k = 0;
 	for (int i = 0; i < mask.cols; i++)
 		for (int j = 0; j < mask.rows; j++)
 			mask.at<uchar>(Point(i, j)) = 0;
@@ -31,7 +30,7 @@ float perimeter(const std::vector<cv::Point2f> &ps)
 {
 	float sum = 0, dx, dy;
 
-	for (int i = 0;i<ps.size();i++)
+	for (size_t i = 0;i<ps.size();i++)
 	{
 		int i2 = (i + 1) % ps.size();
 

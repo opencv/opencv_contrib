@@ -1,1 +1,1 @@
-#include "opencv2/mcc/mcc.hpp"
+#include "opencv2/mcc.hpp"

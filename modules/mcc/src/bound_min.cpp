@@ -1,10 +1,9 @@
-#include "opencv2/mcc/bound_min.hpp"
-
-
+#include "bound_min.hpp"
 
 namespace cv{
 namespace mcc{
 CBoundMin::CBoundMin()
+
 {
 }
 
@@ -18,22 +17,24 @@ calculate()
 {
 
 	corners.clear();
-	int N = chart.size();
+	size_t N = chart.size();
 	if (!N) return;
 
 
 	std::vector<cv::Point2f> X(4 * N);
 	for (size_t i = 0; i < N; i++)
 	{
-		CChart cc = chart[i];
+		mcc::CChart cc = chart[i];
 		for (size_t j = 0; j < 4; j++)
+		{
 			X[i * 4 + j] = cc.corners[j];
+		}
 	}
 
 	// media
 	cv::Point2f mu(0, 0);
 	for (size_t i = 0; i < 4 * N; i++) mu += X[i];
-	mu /= (4 * N);
+	mu /= (4 * (int)N);
 
 	// estandarizando
 	for (size_t i = 0; i < 4 * N; i++) X[i] -= mu;
@@ -52,6 +53,7 @@ calculate()
 		L[4 * i + 1] = v1.cross(v2);
 		L[4 * i + 2] = v2.cross(v3);
 		L[4 * i + 3] = v3.cross(v0);
+
 
 	}
 
@@ -78,31 +80,31 @@ calculate()
 	for (size_t i = 0; i < 4 * N; i++)
 		Ls[i] = L[idx[i]];
 
-	std::vector<cv::Point3f> Lc; Lc.resize(4);
+	std::vector<cv::Point3f> Lc; Lc.resize(4*N);
 	Lc[0] = Ls[0];
 	cv::Point3f ln;
 
 
-	int j, k = 1;
-	for (size_t i = 1; i < 4 * N; i++)
+	int j, k = 0;
+	for (size_t i = 0; i < 4 * N; i++)
 	{
 
 		ln = Ls[i]; //current line
 		if ( !validateLine(Lc, ln, k, j) )
 		{
+
 			Lc[k] = ln;
 			k++;
 
 		}
 		else if ((abs(Lc[j].z) < abs(ln.z)) && (abs(dist[i] - dist[j]) < 2))
+		{
 			Lc[j] = ln;
-
-		if ( k == 4 ) // && abs(dist[i] - dist[k - 1]) > 2
+		}
+		if ( k == 4  && abs(dist[i] - dist[k - 1]) > 2)
 			break;
 
 	}
-
-
 	if (k < 4) return;
 
 
@@ -130,7 +132,6 @@ calculate()
 	}
 
 	corners = V;
-
 }
-}
-}
+} // namespace mcc
+} // namespace cv
