@@ -37,12 +37,14 @@ def get_iou(new, gt):
     new[0],gt[0] -> xmin, new[1],gt[1] -> xmax, new[2],gt[2] -> ymin
     new[3],gt[3] -> ymax, new[4],gt[4] -> cx, new[5],gt[5] -> cy
     '''
-    dx = max(0, min(new[1], gt[1]) - max(new[0], gt[0]))
-    dy = max(0, min(new[3], gt[3]) - max(new[2], gt[2]))
+    new_xmin, new_xmax, new_ymin, new_ymax, new_cx, new_cy = new
+    gt_xmin, gt_xmax, gt_ymin, gt_ymax, gt_cx, gt_cy = gt
+    dx = max(0, min(new_xmax, gt_xmax) - max(new_xmin, gt_xmin))
+    dy = max(0, min(new_ymax, gt_ymax) - max(new_ymin, gt_ymin))
     area_of_overlap = dx * dy
     if area_of_overlap != 0:
-        area_of_union = (new[1] - new[0]) * (new[3] - new[2]) + (
-            gt[1] - gt[0]) * (gt[3] - gt[2]) - area_of_overlap
+        area_of_union = (new_xmax - new_xmin) * (new_ymax - new_ymin) + (
+            gt_xmax - gt_xmin) * (gt_ymax - gt_ymin) - area_of_overlap
         iou = area_of_overlap / area_of_union
     else:
         iou = 0
@@ -61,7 +63,9 @@ def get_pr(new, gt):
     new[0],gt[0] -> xmin, new[1],gt[1] -> xmax, new[2],gt[2] -> ymin
     new[3],gt[3] -> ymax, new[4],gt[4] -> cx, new[5],gt[5] -> cy
     '''
-    precision = np.sqrt((new[4] - gt[4]) ** 2 + (new[5] - gt[5]) ** 2)
+    new_xmin, new_xmax, new_ymin, new_ymax, new_cx, new_cy = new
+    gt_xmin, gt_xmax, gt_ymin, gt_ymax, gt_cx, gt_cy = gt
+    precision = np.sqrt((new_cx - gt_cx) ** 2 + (new_cy - gt_cy) ** 2)
     return precision
 
 
@@ -77,8 +81,10 @@ def get_norm_pr(new, gt, gt_bb_w, gt_bb_h):
     new[0],gt[0] -> xmin, new[1],gt[1] -> xmax, new[2],gt[2] -> ymin
     new[3],gt[3] -> ymax, new[4],gt[4] -> cx, new[5],gt[5] -> cy
     '''
-    normalized_precision = np.sqrt(((new[4] - gt[4]) / gt_bb_w) ** 2 + (
-            (new[5] - gt[5]) / gt_bb_h) ** 2)
+    new_xmin, new_xmax, new_ymin, new_ymax, new_cx, new_cy = new
+    gt_xmin, gt_xmax, gt_ymin, gt_ymax, gt_cx, gt_cy = gt
+    normalized_precision = np.sqrt(((new_cx - gt_cx) / gt_bb_w) ** 2 + (
+        (new_cy - gt_cy) / gt_bb_h) ** 2)
     return normalized_precision
 
 
@@ -94,11 +100,11 @@ def init_tracker(tracker_name):
     '''
     config = {"Boosting": (cv.TrackerBoosting_create(), 500),
               "MIL": (cv.TrackerMIL_create(), 1000),
-              "KCF": (cv.TrackerKCF_create(), 250),
-              "MedianFlow": (cv.TrackerMedianFlow_create(), 500),
+              "KCF": (cv.TrackerKCF_create(), 1000),
+              "MedianFlow": (cv.TrackerMedianFlow_create(), 1000),
               "GOTURN": (cv.TrackerGOTURN_create(), 250),
-              "MOSSE": (cv.TrackerMOSSE_create(), 250),
-              "CSRT": (cv.TrackerCSRT_create(), 250)}
+              "MOSSE": (cv.TrackerMOSSE_create(), 1000),
+              "CSRT": (cv.TrackerCSRT_create(), 1000)}
     return config[tracker_name]
 
 
@@ -169,7 +175,6 @@ def main():
                 for i in range(len(gt_bb)):
                     gt_bb[i] = float(gt_bb[i])
                 gt_bb = tuple(gt_bb)
-                # frame = cv.imread(image)
 
                 # Condition of tracker`s re-initialization
                 if ((number_of_the_frame + 1) % frames_for_reinit == 0) and (
@@ -223,9 +228,9 @@ def main():
         pr_avg = np.array(pr_video) / len(list_of_videos)
         n_pr_avg = np.array(n_pr_video) / len(list_of_videos)
 
-        iou = np.trapz(iou_avg, x=iou_thr) * 100
-        pr = np.trapz(pr_avg, x=pr_thr) * 100
-        n_pr = np.trapz(n_pr_avg, x=n_pr_thr) * 100
+        iou = np.trapz(iou_avg, x=iou_thr) / iou_thr[-1]
+        pr = np.trapz(pr_avg, x=pr_thr) / pr_thr[-1]
+        n_pr = np.trapz(n_pr_avg, x=n_pr_thr) / n_pr_thr[-1]
 
         list_iou.append('%.4f' % iou)
         list_pr.append('%.4f' % pr)
