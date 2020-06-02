@@ -403,6 +403,10 @@ public:
             _app->closeApp();
             _app.release();
         }
+        else if (flags & SCENE_OFFSCREEN)
+        {
+            TextureManager::getSingleton().remove(title, RESOURCEGROUP_NAME);
+        }
         else
         {
             _app->destroyWindow(title);
