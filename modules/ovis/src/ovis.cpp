@@ -179,10 +179,12 @@ static ColourValue convertColor(const Scalar& val)
     return ret;
 }
 
+class WindowSceneImpl;
+
 struct Application : public OgreBites::ApplicationContext, public OgreBites::InputListener
 {
     Ptr<LogManager> logMgr;
-    Ogre::SceneManager* sceneMgr;
+    WindowSceneImpl* mainWin;
     Ogre::String title;
     uint32_t w;
     uint32_t h;
@@ -190,7 +192,7 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
     int flags;
 
     Application(const Ogre::String& _title, const Size& sz, int _flags)
-        : OgreBites::ApplicationContext("ovis"), sceneMgr(NULL), title(_title), w(sz.width),
+        : OgreBites::ApplicationContext("ovis"), mainWin(NULL), title(_title), w(sz.width),
           h(sz.height), key_pressed(-1), flags(_flags)
     {
         if(utils::getConfigurationParameterBool("OPENCV_OVIS_VERBOSE_LOG", false))
@@ -226,7 +228,7 @@ struct Application : public OgreBites::ApplicationContext, public OgreBites::Inp
                                              NameValuePairList miscParams = NameValuePairList()) CV_OVERRIDE
     {
         Ogre::String _name = name;
-        if (!sceneMgr)
+        if (!mainWin)
         {
             _w = w;
             _h = h;
@@ -308,7 +310,7 @@ public:
     WindowSceneImpl(Ptr<Application> app, const String& _title, const Size& sz, int _flags)
         : title(_title), root(app->getRoot()), depthRTT(NULL), flags(_flags)
     {
-        if (!app->sceneMgr)
+        if (!app->mainWin)
         {
             flags |= SCENE_SEPARATE;
         }
@@ -324,7 +326,8 @@ public:
         }
         else
         {
-            sceneMgr = app->sceneMgr;
+            sceneMgr = app->mainWin->sceneMgr;
+            bgplane = app->mainWin->bgplane;
         }
 
         if(flags & SCENE_SHOW_CS_CROSS)
@@ -346,11 +349,11 @@ public:
             camman->setFixedYaw(false);
         }
 
-        if (!app->sceneMgr)
+        if (!app->mainWin)
         {
             CV_Assert((flags & SCENE_OFFSCREEN) == 0 && "off-screen rendering for main window not supported");
 
-            app->sceneMgr = sceneMgr;
+            app->mainWin = this;
             rWin = app->getRenderWindow();
             if (camman)
                 app->addInputListener(camman.get());
@@ -393,7 +396,7 @@ public:
             }
         }
 
-        if(_app->sceneMgr == sceneMgr && (flags & SCENE_SEPARATE))
+        if(_app->mainWin == this && (flags & SCENE_SEPARATE))
         {
             // this is the root window owning the context
             CV_Assert(_app->numWindows() == 1 && "the first OVIS window must be deleted last");
