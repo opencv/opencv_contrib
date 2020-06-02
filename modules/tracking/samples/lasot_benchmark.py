@@ -62,11 +62,7 @@ def get_pr(new, gt):
     new[3],gt[3] -> ymax, new[4],gt[4] -> cx, new[5],gt[5] -> cy
     '''
     precision = np.sqrt((new[4] - gt[4]) ** 2 + (new[5] - gt[5]) ** 2)
-    if precision > 20.0:
-        pr_value = 0.0
-    else:
-        pr_value = 1.0
-    return pr_value
+    return precision
 
 
 def get_norm_pr(new, gt, gt_bb_w, gt_bb_h):
@@ -83,11 +79,7 @@ def get_norm_pr(new, gt, gt_bb_w, gt_bb_h):
     '''
     normalized_precision = np.sqrt(((new[4] - gt[4]) / gt_bb_w) ** 2 + (
             (new[5] - gt[5]) / gt_bb_h) ** 2)
-    if normalized_precision > 0.1:
-        norm_pr_value = 0.0
-    else:
-        norm_pr_value = 1.0
-    return norm_pr_value
+    return normalized_precision
 
 
 def init_tracker(tracker_name):
@@ -137,6 +129,13 @@ def main():
 
         print("Tracker name: ", tracker_name)
 
+        iou_video = np.zeros(21)
+        pr_video = np.zeros(21)
+        n_pr_video = np.zeros(21)
+        iou_thr = np.linspace(0, 1, 21)
+        pr_thr = np.linspace(0, 50, 21)
+        n_pr_thr = np.linspace(0, 0.5, 21)
+
         # Loop for every video
         for video_name in list_of_videos:
 
@@ -158,12 +157,9 @@ def main():
 
             # Variables for saving sum of every metric for every frame and
             # every video respectively
-            sum_iou = 0
-            sum_pr = 0
-            sum_norm_pr = 0
-            iou_values = 0
-            pr_values = 0
-            norm_pr_values = 0
+            iou_list = []
+            pr_list = []
+            n_pr_list = []
             frame_counter = len(video_sequence)
 
             # For every frame in video
@@ -205,10 +201,10 @@ def main():
                         cv.imshow("Tracking", frame)
                         cv.waitKey(1)
 
-                    sum_iou += get_iou(new_coords, gt_coords)
-                    sum_pr += get_pr(new_coords, gt_coords)
-                    sum_norm_pr += get_norm_pr(
-                        new_coords, gt_coords, gt_bb[2], gt_bb[3])
+                    iou_list.append(get_iou(new_coords, gt_coords))
+                    pr_list.append(get_pr(new_coords, gt_coords))
+                    n_pr_list.append(get_norm_pr(
+                        new_coords, gt_coords, gt_bb[2], gt_bb[3]))
                 else:
                     frame_counter -= 1
 
@@ -216,19 +212,31 @@ def main():
                 gt_bb = gt_file.readline().replace("\n", "").split(",")
 
             # Calculating mean arithmetic value for specific video
-            iou_values += sum_iou / frame_counter
-            pr_values += sum_pr / frame_counter
-            norm_pr_values += sum_norm_pr / frame_counter
+            iou_video += (np.fromiter([sum(i >= thr for i in iou_list).astype(
+                float) / frame_counter for thr in iou_thr], dtype=float))
+            pr_video += (np.fromiter([sum(i <= thr for i in pr_list).astype(
+                float) / frame_counter for thr in pr_thr], dtype=float))
+            n_pr_video += (np.fromiter([sum(i <= thr for i in n_pr_list).astype(
+                float) / frame_counter for thr in n_pr_thr], dtype=float))
 
-        list_iou.append(np.mean(iou_values))
-        list_pr.append(np.mean(pr_values))
-        list_n_pr.append(np.mean(norm_pr_values))
+        iou_avg = np.array(iou_video) / len(list_of_videos)
+        pr_avg = np.array(pr_video) / len(list_of_videos)
+        n_pr_avg = np.array(n_pr_video) / len(list_of_videos)
+
+        iou = np.trapz(iou_avg, x=iou_thr) * 100
+        pr = np.trapz(pr_avg, x=pr_thr) * 100
+        n_pr = np.trapz(n_pr_avg, x=n_pr_thr) * 100
+
+        list_iou.append('%.4f' % iou)
+        list_pr.append('%.4f' % pr)
+        list_n_pr.append('%.4f' % n_pr)
+
     titles = ["Names:", "IoU:", "Precision:", "N.Precision:"]
     data = [titles] + list(zip(trackers, list_iou, list_pr, list_n_pr))
     for number, for_tracker in enumerate(data):
         line = '|'.join(str(x).ljust(20) for x in for_tracker)
         print(line)
-        if i == 0:
+        if number == 0:
             print('-' * len(line))
 
 
