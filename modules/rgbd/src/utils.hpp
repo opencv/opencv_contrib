@@ -48,6 +48,7 @@ namespace kinfu {
 
 // One place to turn intrinsics on and off
 #define USE_INTRINSICS CV_SIMD128
+#undef USE_INTRINSICS
 
 typedef float depthType;
 

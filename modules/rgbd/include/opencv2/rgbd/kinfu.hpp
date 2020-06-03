@@ -202,7 +202,7 @@ public:
         @param points vector of points which are 4-float vectors
         @param normals vector of normals which are 4-float vectors
      */
-    CV_WRAP virtual void getCloud(OutputArray points, OutputArray normals) const = 0;
+    /* CV_WRAP virtual void getCloud(OutputArray points, OutputArray normals) const = 0; */
 
     /** @brief Gets points of current 3d mesh
 
@@ -210,13 +210,13 @@ public:
 
         @param points vector of points which are 4-float vectors
      */
-    CV_WRAP virtual void getPoints(OutputArray points) const = 0;
+    /* CV_WRAP virtual void getPoints(OutputArray points) const = 0; */
 
     /** @brief Calculates normals for given points
         @param points input vector of points which are 4-float vectors
         @param normals output vector of corresponding normals which are 4-float vectors
      */
-    CV_WRAP virtual  void getNormals(InputArray points, OutputArray normals) const = 0;
+    /* CV_WRAP virtual  void getNormals(InputArray points, OutputArray normals) const = 0; */
 
     /** @brief Resets the algorithm
 

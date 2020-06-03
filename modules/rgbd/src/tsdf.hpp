@@ -18,7 +18,7 @@ class TSDFVolume
 public:
     // dimension in voxels, size in meters
     TSDFVolume(Point3i _res, float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-               float _raycastStepFactor, cv::Point3f _origin, bool zFirstMemOrder = true);
+               float _raycastStepFactor, bool zFirstMemOrder = true);
 
     virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) = 0;
     virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
@@ -34,7 +34,6 @@ public:
     float voxelSize;
     float voxelSizeInv;
     Point3i volResolution;
-    Point3f origin;
     int maxWeight;
     cv::Affine3f pose;
     float raycastStepFactor;
@@ -45,8 +44,74 @@ public:
     Vec8i neighbourCoords;
 };
 
+// TODO: Optimization possible:
+// * TsdfType can be FP16
+// * weight can be int16
+typedef float TsdfType;
+struct Voxel
+{
+    TsdfType tsdf;
+    int      weight;
+};
+typedef Vec<uchar, sizeof(Voxel)> VecT;
+
+class TSDFVolumeCPU : public TSDFVolume
+{
+public:
+    // dimension in voxels, size in meters
+    TSDFVolumeCPU(Point3i _res, float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+                  float _raycastStepFactor, bool zFirstMemOrder = true);
+
+    virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) override;
+    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
+                         cv::OutputArray points, cv::OutputArray normals) const override;
+
+    virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const override;
+    virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
+
+    virtual void reset() override;
+    virtual Voxel at(const cv::Vec3i &volumeIdx) const;
+
+    TsdfType interpolateVoxel(cv::Point3f p) const;
+    Point3f getNormalVoxel(cv::Point3f p) const;
+
+#if USE_INTRINSICS
+    TsdfType interpolateVoxel(const v_float32x4& p) const;
+    v_float32x4 getNormalVoxel(const v_float32x4& p) const;
+#endif
+
+    // See zFirstMemOrder arg of parent class constructor
+    // for the array layout info
+    // Consist of Voxel elements
+    Mat volume;
+};
+
+#ifdef HAVE_OPENCL
+class TSDFVolumeGPU : public TSDFVolume
+{
+public:
+    // dimension in voxels, size in meters
+    TSDFVolumeGPU(Point3i _res, float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
+                  float _raycastStepFactor);
+
+    virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics) override;
+    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
+                         cv::OutputArray _points, cv::OutputArray _normals) const override;
+
+    virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
+    virtual void fetchNormals(cv::InputArray points, cv::OutputArray normals) const override;
+
+    virtual void reset() override;
+
+    // See zFirstMemOrder arg of parent class constructor
+    // for the array layout info
+    // Array elem is CV_32FC2, read as (float, int)
+    // TODO: optimization possible to (fp16, int16), see Voxel definition
+    UMat volume;
+};
+#endif
 cv::Ptr<TSDFVolume> makeTSDFVolume(Point3i _res,  float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,
-                                   float _raycastStepFactor, cv::Point3f origin = Point3f(0, 0, 0));
+                                   float _raycastStepFactor);
 
 } // namespace kinfu
 } // namespace cv

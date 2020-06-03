@@ -386,7 +386,7 @@ int main(int argc, char **argv)
     ds->updateParams(*params);
 
     // Enables OpenCL explicitly (by default can be switched-off)
-    cv::setUseOptimized(true);
+    cv::setUseOptimized(false);
 
     // Scene-specific params should be tuned for each scene individually
     //float cubeSize = 1.f;
@@ -420,7 +420,7 @@ int main(int argc, char **argv)
         if(pause)
         {
             // doesn't happen in idle mode
-            kf->getCloud(points, normals);
+            /* kf->getCloud(points, normals); */
             if(!points.empty() && !normals.empty())
             {
                 viz::WCloud cloudWidget(points, viz::Color::white());
@@ -457,7 +457,7 @@ int main(int argc, char **argv)
 
                 if(!kf->update(frame))
                 {
-                    kf->reset();
+                    /* kf->reset(); */
                     std::cout << "reset" << std::endl;
                 }
 #ifdef HAVE_OPENCV_VIZ
@@ -465,7 +465,7 @@ int main(int argc, char **argv)
                 {
                     if(coarse)
                     {
-                        kf->getCloud(points, normals);
+                        /* kf->getCloud(points, normals); */
                         if(!points.empty() && !normals.empty())
                         {
                             viz::WCloud cloudWidget(points, viz::Color::white());
