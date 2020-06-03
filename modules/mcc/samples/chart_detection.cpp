@@ -50,6 +50,7 @@ const char *about = "Basic chart detection";
 const char *keys = {
     "{t              |         | chartType: 0-Standard, 1-DigitalSG, 2-Vinyl}"
     "{v        |       | Input from video file, if ommited, input comes from camera }"
+    "{i        |       | File path of image  }"
     "{ci       | 0     | Camera id if input doesnt come from video (-v) }"};
 
 int main(int argc, char *argv[])
@@ -64,7 +65,7 @@ int main(int argc, char *argv[])
     }
 
     int chartType = parser.get<int>("t");
-
+    string imagepath = parser.get<string> ("i");
     int camId = parser.get<int>("ci");
 
     String video;
@@ -96,10 +97,9 @@ int main(int argc, char *argv[])
     {
         Mat image, imageCopy;
         inputVideo.retrieve(image);
-
+        image = imread(imagepath);
         imageCopy=image.clone();
-        Ptr<CCheckerDetector> detector = CCheckerDetector::create();
-        Ptr<CChecker> det = CChecker::create();
+        Ptr<CCheckerDetector> detector = CCheckerDetector::create(2, 10);
 
         // Marker type to detect
         if (!detector->process(image, chartType))
@@ -113,12 +113,11 @@ int main(int argc, char *argv[])
             std::vector<Ptr<mcc::CChecker>> checkers;
             detector->getListColorChecker(checkers);
             Ptr<mcc::CChecker> checker;
-
             for (size_t ck = 0; ck < checkers.size(); ck++)
             {
                 // current checker
                 checker = checkers[ck];
-
+                cout<<"checker"<<checker<<endl;
                 Ptr<CCheckerDraw> cdraw = CCheckerDraw::create(checker);
                 cdraw->draw(image, chartType);
             }

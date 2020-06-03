@@ -14,8 +14,8 @@
 #include <opencv2/photo.hpp>
 #include <vector>
 
-#define _DEBUG
-#define SHOW_DEBUG_IMAGES
+// #define _DEBUG
+// #define SHOW_DEBUG_IMAGES
 
 #include "debug.hpp"
 #include <time.h>
@@ -48,6 +48,9 @@ public:
 	* \return state
 	*/
 	bool process(const cv::Mat & image, const int chartType) CV_OVERRIDE;
+
+	bool process(const cv::Mat & image, const int chartType, std::vector<cv::Rect> regionsOfInterest) CV_OVERRIDE;
+
 
 	#ifdef _DEBUG
 	bool process(const cv::Mat & image, const std::string &pathOut, const int chartType) CV_OVERRIDE ;

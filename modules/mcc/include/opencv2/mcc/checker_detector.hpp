@@ -19,6 +19,8 @@ public:
 	*/
 	virtual bool process(const cv::Mat & image, const int chartType)=0;
 
+	virtual bool process(const cv::Mat & image, const int chartType, std::vector<Rect> regionsOfInterest)=0;
+
 	#ifdef _DEBUG
 	virtual bool process(const cv::Mat & image, const std::string &pathOut, const int chartType)=0;
 	#endif
