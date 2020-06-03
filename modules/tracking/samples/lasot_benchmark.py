@@ -135,12 +135,13 @@ def main():
 
         print("Tracker name: ", tracker_name)
 
-        iou_video = np.zeros(21)
-        pr_video = np.zeros(21)
-        n_pr_video = np.zeros(21)
-        iou_thr = np.linspace(0, 1, 21)
-        pr_thr = np.linspace(0, 50, 21)
-        n_pr_thr = np.linspace(0, 0.5, 21)
+        number_of_thresholds = 21
+        iou_video = np.zeros(number_of_thresholds)
+        pr_video = np.zeros(number_of_thresholds)
+        n_pr_video = np.zeros(number_of_thresholds)
+        iou_thr = np.linspace(0, 1, number_of_thresholds)
+        pr_thr = np.linspace(0, 50, number_of_thresholds)
+        n_pr_thr = np.linspace(0, 0.5, number_of_thresholds)
 
         # Loop for every video
         for video_name in list_of_videos:
@@ -172,13 +173,10 @@ def main():
             for number_of_the_frame, image in enumerate(video_sequence):
                 frame = cv.imread(os.path.join(
                     args.path_to_dataset, video_name, "img", image))
-                for i in range(len(gt_bb)):
-                    gt_bb[i] = float(gt_bb[i])
-                gt_bb = tuple(gt_bb)
+                gt_bb = tuple([float(x) for x in gt_bb])
 
                 # Condition of tracker`s re-initialization
-                if ((number_of_the_frame + 1) % frames_for_reinit == 0) and (
-                        number_of_the_frame != 0):
+                if ((number_of_the_frame + 1) % frames_for_reinit == 0):
 
                     tracker, frames_for_reinit = init_tracker(tracker_name)
                     init_once = False
