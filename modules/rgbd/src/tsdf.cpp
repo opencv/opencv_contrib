@@ -421,8 +421,8 @@ struct IntegrateInvoker : ParallelLoopBody
                         // update TSDF
                         value = (value*weight+tsdf) / (weight + 1);
                         weight = min(weight + 1, volume.maxWeight);
-                        /* std::cout << "Voxel coord: (" << x << ", " << y << ", " << z << ") "; */
-                        /* std::cout << "Updated value: " << value << " Updated weight: " << weight << "\n"; */
+                        std::cout << "Voxel coord: (" << x << ", " << y << ", " << z << ") ";
+                        std::cout << "Updated value: " << value << " Updated weight: " << weight << "\n";
                     }
                 }
             }

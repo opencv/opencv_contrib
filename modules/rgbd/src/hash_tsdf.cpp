@@ -20,6 +20,7 @@
 #include "opencl_kernels_rgbd.hpp"
 #include <functional>
 #include <limits>
+#include <vector>
 #include "depth_to_3d.hpp"
 #include "utils.hpp"
 
@@ -116,14 +117,14 @@ struct AccessedVolumeUnitsInvoker : ParallelLoopBody
                                                            volume.volumeUnitResolution);
                                     //! Translate the origin of the subvolume to the correct position in volume coordinate frame
                                 cv::Affine3f subvolumePose = volume.pose.translate(volume.volumeUnitIdxToVolume(-tsdf_idx));
-                                volumeUnit.p_volume = cv::makePtr<TSDFVolumeCPU>(volumeDims,
+                                volumeUnit.pVolume = cv::makePtr<TSDFVolumeCPU>(volumeDims,
                                                             volume.volumeUnitSize,
                                                             subvolumePose,
                                                             volume.truncDist,
                                                             volume.maxWeight,
                                                             volume.raycastStepFactor);
                                 volumeUnit.index = tsdf_idx;
-
+                                volumeUnit.isActive = false;
                                 volume.volume_units_[tsdf_idx] = volumeUnit;
                             }
                         }
@@ -144,11 +145,11 @@ struct AccessedVolumeUnitsInvoker : ParallelLoopBody
 
 struct IntegrateSubvolumeInvoker : ParallelLoopBody
 {
-    IntegrateSubvolumeInvoker(HashTSDFVolumeCPU& _volume, std::vector<cv::Vec3i> _accessVolUnitVec,
+    IntegrateSubvolumeInvoker(HashTSDFVolumeCPU& _volume, std::vector<cv::Vec3i> _allocatedVolUnits,
             const Depth& _depth, Intr _intrinsics, cv::Affine3f _cameraPose, float _depthFactor) :
         ParallelLoopBody(),
         volume(_volume),
-        accessVolUnitsVec(_accessVolUnitVec),
+        allocatedVolUnits(_allocatedVolUnits),
         depth(_depth),
         depthFactor(_depthFactor),
         cameraPose(_cameraPose),
@@ -160,26 +161,81 @@ struct IntegrateSubvolumeInvoker : ParallelLoopBody
     {
         for (int i = range.start; i < range.end; i++)
         {
-            cv::Vec3i tsdf_idx = accessVolUnitsVec[i];
+            cv::Vec3i tsdf_idx = allocatedVolUnits[i];
 
-            VolumeUnitMap::iterator accessedVolUnit = volume.volume_units_.find(tsdf_idx);
-            assert(accessedVolUnit != volume.volume_units_.end());
-
-            VolumeUnit volumeUnit = accessedVolUnit->second;
-            /* std::cout << "Integrating unit: " << accessedVolUnit->first << std::endl; */
-            //! The volume unit should already be added into the Volume from the allocator
-            volumeUnit.p_volume->integrate(depth, depthFactor, cameraPose, intrinsics);
+            VolumeUnitMap::iterator it = volume.volume_units_.find(tsdf_idx);
+            assert(it != volume.volume_units_.end());
+            VolumeUnit& volumeUnit = it->second;
+            AutoLock al(mutex);
+            if(volumeUnit.isActive)
+            {
+                std::cout << "Integrating unit: " << it->first << std::endl;
+                //! The volume unit should already be added into the Volume from the allocator
+                volumeUnit.pVolume->integrate(depth, depthFactor, cameraPose, intrinsics);
+                //! Ensure all active volumeUnits are set to inactive for next integration
+                volumeUnit.isActive = false;
+            }
         }
     }
 
     HashTSDFVolumeCPU& volume;
-    std::vector<cv::Vec3i> accessVolUnitsVec;
+    std::vector<cv::Vec3i> allocatedVolUnits;
     const Depth& depth;
     float depthFactor;
     cv::Affine3f cameraPose;
     Intr intrinsics;
+    mutable Mutex mutex;
 };
 
+struct VolumeUnitInFrustumInvoker : ParallelLoopBody
+{
+    VolumeUnitInFrustumInvoker(HashTSDFVolumeCPU& _volume, const std::vector<cv::Vec3i>& _allAllocatedUnits, const Depth& _depth, Intr _intrinsics,
+            cv::Affine3f _cameraPose, float _depthFactor) :
+        ParallelLoopBody(),
+        volume(_volume),
+        allAllocatedUnits(_allAllocatedUnits),
+        depth(_depth),
+        proj(_intrinsics.makeProjector()),
+        cameraPose(_cameraPose),
+        depthFactor(_depthFactor),
+        cam2vol(_volume.pose.inv() * cameraPose)
+    {}
+
+    virtual void operator() (const Range& range) const override
+    {
+        for (int i = range.start; i < range.end; ++i)
+        {
+            cv::Vec3i tsdf_idx = allAllocatedUnits[i];
+            Point3f volumeUnitPos = volume.volumeUnitIdxToVolume(tsdf_idx);
+            AutoLock al(mutex);
+            if (volumeUnitPos.z < rgbd::Odometry::DEFAULT_MIN_DEPTH() ||
+                volumeUnitPos.z > rgbd::Odometry::DEFAULT_MAX_DEPTH())
+            {
+                VolumeUnitMap::iterator it = volume.volume_units_.find(tsdf_idx);
+                assert(it != volume.volume_units_.end());
+                it->second.isActive = false;
+                return;
+            }
+            Point2f cameraPoint  = proj(volumeUnitPos);
+            if(cameraPoint.x >= 0 && cameraPoint.y >= 0 &&
+               cameraPoint.x < (depth.rows - 1) && cameraPoint.y < (depth.cols - 1))
+            {
+                VolumeUnitMap::iterator it = volume.volume_units_.find(tsdf_idx);
+                assert(it != volume.volume_units_.end());
+                it->second.isActive = true;
+                /* std::cout << " Active VolumeUnit: " << tsdf_idx << "\n"; */
+            }
+        }
+    }
+    HashTSDFVolumeCPU& volume;
+    const std::vector<cv::Vec3i> allAllocatedUnits;
+    const Depth& depth;
+    const Intr::Projector proj;
+    const Affine3f cameraPose;
+    const float depthFactor;
+    const Affine3f cam2vol;
+    mutable Mutex mutex;
+};
 
 void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose, Intr intrinsics)
 {
@@ -194,11 +250,19 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, cv::Affi
     Range range(0, depth.rows);
     parallel_for_(range, allocate_i);
 
-    std::vector<Vec3i> accessVolUnitsVec;
-    accessVolUnitsVec.assign(accessVolUnits.begin(), accessVolUnits.end());
-    std::cout << "Number of active subvolumes: " << accessVolUnitsVec.size() << "\n";
-    IntegrateSubvolumeInvoker integrate_i(*this, accessVolUnitsVec, depth, intrinsics, cameraPose, depthFactor);
-    Range accessed_units_range(0, accessVolUnitsVec.size());
+    std::vector<Vec3i> allocatedVolUnits;
+    //! TODO(Akash): Actually only need to integrate over volumeunits in current frustum
+    for(const auto& keyvalue : volume_units_)
+    {
+        allocatedVolUnits.push_back(keyvalue.first);
+    }
+    std::cout << "Number of allocated subvolumes: " << allocatedVolUnits.size() << "\n";
+    VolumeUnitInFrustumInvoker infrustum_i(*this, allocatedVolUnits, depth, intrinsics, cameraPose, depthFactor);
+    Range in_frustum_range(0, allocatedVolUnits.size());
+    parallel_for_(in_frustum_range, infrustum_i);
+
+    IntegrateSubvolumeInvoker integrate_i(*this, allocatedVolUnits, depth, intrinsics, cameraPose, depthFactor);
+    Range accessed_units_range(0, allocatedVolUnits.size());
     parallel_for_(accessed_units_range, integrate_i);
     std::cout << "Integration complete \n";
 }
@@ -249,7 +313,7 @@ inline Voxel HashTSDFVolumeCPU::at(const cv::Vec3i &volumeIdx) const
         dummy.tsdf = 0.f; dummy.weight = 0;
         return dummy;
     }
-    cv::Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.p_volume);
+    cv::Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
     return volumeUnit->at(volUnitLocalIdx);
 }
 
@@ -265,7 +329,7 @@ inline Voxel HashTSDFVolumeCPU::at(const cv::Point3f &point) const
         dummy.tsdf = 0; dummy.weight = 0;
         return dummy;
     }
-    cv::Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.p_volume);
+    cv::Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
     /* std::cout << "volumeUnitIdx: " << volumeUnitIdx << "volUnitLocalIdx: " << volUnitLocalIdx << std::endl; */
     /* std::cout << volumeUnit->at(volUnitLocalIdx).tsdf << std::endl; */
     return volumeUnit->at(volUnitLocalIdx);
@@ -440,7 +504,7 @@ struct RaycastInvoker : ParallelLoopBody
                     //! Is the subvolume exists in hashtable
                     if(it != volume.volume_units_.end())
                     {
-                        currVolumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.p_volume);
+                        currVolumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
                         cv::Point3f currVolUnitPos = volume.volumeUnitIdxToVolume(currVolumeUnitIdx);
                         volUnitLocalIdx = volume.volumeToVoxelCoord(currRayPos - currVolUnitPos);
 
@@ -454,11 +518,11 @@ struct RaycastInvoker : ParallelLoopBody
                     //! Surface crossing
                     if(prevTsdf > 0.f && currTsdf <= 0.f && currWeight > 0)
                     {
-                        std::cout << "subvolume coords: " << volUnitLocalIdx << "\n";
-                        std::cout << "current TSDF:     " << currTsdf << "\n";
-                        std::cout << "current weight:   " << currWeight << "\n";
-                        std::cout << "previous TSDF:    " << prevTsdf << "\n";
-                        std::cout << "tcurr:            " << tcurr    << "\n";
+                        /* std::cout << "subvolume coords: " << volUnitLocalIdx << "\n"; */
+                        /* std::cout << "current TSDF:     " << currTsdf << "\n"; */
+                        /* std::cout << "current weight:   " << currWeight << "\n"; */
+                        /* std::cout << "previous TSDF:    " << prevTsdf << "\n"; */
+                        /* std::cout << "tcurr:            " << tcurr    << "\n"; */
                         float tInterp = (tcurr * prevTsdf - tprev * currTsdf)/(prevTsdf - currTsdf);
 
                         if(!cvIsNaN(tInterp) && !cvIsInf(tInterp))

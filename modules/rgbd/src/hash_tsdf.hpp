@@ -51,11 +51,12 @@ public:
 
 struct VolumeUnit
 {
-    explicit VolumeUnit() : p_volume(nullptr) {};
+    explicit VolumeUnit() : pVolume(nullptr) {};
     ~VolumeUnit() = default;
 
-    cv::Ptr<TSDFVolume> p_volume;
+    cv::Ptr<TSDFVolume> pVolume;
     cv::Vec3i  index;
+    bool isActive;
 };
 
 //! Spatial hashing
