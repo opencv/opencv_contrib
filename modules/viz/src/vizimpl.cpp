@@ -55,8 +55,17 @@ cv::viz::Viz3d::VizImpl::VizImpl(const String &name) : spin_once_state_(false),
 
     // Create render window
     window_ = vtkSmartPointer<vtkRenderWindow>::New();
-    cv::Vec2i window_size = cv::Vec2i(window_->GetScreenSize()) / 2;
-    window_->SetSize(window_size.val);
+    int * sz = window_->GetScreenSize();
+    if (sz)
+    {
+        cv::Vec2i window_size = cv::Vec2i(sz) / 2;
+        window_->SetSize(window_size.val);
+    }
+    else
+    {
+        int new_sz[2] = { 640, 480 };
+        window_->SetSize(new_sz);
+    }
     window_->AddRenderer(renderer_);
 
     // Create the interactor style
