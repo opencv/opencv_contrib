@@ -90,7 +90,7 @@ Ptr<Params> Params::coarseParams()
     p->voxelSize  = volSize/128.f;
     p->tsdf_trunc_dist = 5 * p->voxelSize;
 
-    p->raycast_step_factor = 0.75f;  //in voxel sizes
+    p->raycast_step_factor = 0.25f;  //in voxel sizes
 
     return p;
 }
@@ -108,7 +108,7 @@ public:
     void render(OutputArray image, const Matx44f& cameraPose) const CV_OVERRIDE;
 
     //! TODO(Akash): Add back later
-    /* void getCloud(OutputArray points, OutputArray normals) const CV_OVERRIDE; */
+    /* virtual void getCloud(OutputArray points, OutputArray normals, const Matx44f& cameraPose) const CV_OVERRIDE; */
     /* void getPoints(OutputArray points) const CV_OVERRIDE; */
     /* void getNormals(InputArray points, OutputArray normals) const CV_OVERRIDE; */
 
@@ -259,7 +259,7 @@ bool KinFuImpl<T>::updateT(const T& _depth)
         T& points  = pyrPoints [0];
         T& normals = pyrNormals[0];
         volume->raycast(pose, params.intr, params.frameSize, points, normals);
-        std::cout << "Raycast complete \n";
+        /* std::cout << "Raycast complete \n"; */
         /* std::cout << "Waiting: " << std::endl; */
         /* std::cin >> number; */
         // build a pyramid of points and normals
@@ -297,9 +297,10 @@ void KinFuImpl<T>::render(OutputArray image, const Matx44f& _cameraPose) const
 
 
 /* template< typename T > */
-/* void KinFuImpl<T>::getCloud(OutputArray p, OutputArray n) const */
+/* void KinFuImpl<T>::getCloud(cv::OutputArray p, OutputArray n, const Matx44f& _cameraPose) const */
 /* { */
-/*     volume->fetchPointsNormals(p, n); */
+/*     /1* volume->fetchPointsNormals(p, n); *1/ */
+/*     /1* volume->raycast(pose, params.intr, params.frameSize, p, n); *1/ */
 /* } */
 
 

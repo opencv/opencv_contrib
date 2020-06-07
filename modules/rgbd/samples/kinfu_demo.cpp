@@ -420,7 +420,7 @@ int main(int argc, char **argv)
         if(pause)
         {
             // doesn't happen in idle mode
-            /* kf->getCloud(points, normals); */
+            kf->getCloud(points, normals);
             if(!points.empty() && !normals.empty())
             {
                 viz::WCloud cloudWidget(points, viz::Color::white());
@@ -465,7 +465,7 @@ int main(int argc, char **argv)
                 {
                     if(coarse)
                     {
-                        /* kf->getCloud(points, normals); */
+                        kf->getCloud(points, normals);
                         if(!points.empty() && !normals.empty())
                         {
                             viz::WCloud cloudWidget(points, viz::Color::white());

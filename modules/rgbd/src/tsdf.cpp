@@ -347,6 +347,7 @@ struct IntegrateInvoker : ParallelLoopBody
                 Voxel* volDataY = volDataX+y*volume.volDims[1];
                 // optimization of camSpace transformation (vector addition instead of matmul at each z)
                 Point3f basePt = vol2cam*(Point3f(x, y, 0)*volume.voxelSize);
+                /* std::cout << "Base Point: " << basePt << " VoxelSize: " << volume.voxelSize << "\n"; */
                 Point3f camSpacePt = basePt;
                 // zStep == vol2cam*(Point3f(x, y, 1)*voxelSize) - basePt;
                 // zStep == vol2cam*[Point3f(x, y, 1) - Point3f(x, y, 0)]*voxelSize
@@ -421,8 +422,8 @@ struct IntegrateInvoker : ParallelLoopBody
                         // update TSDF
                         value = (value*weight+tsdf) / (weight + 1);
                         weight = min(weight + 1, volume.maxWeight);
-                        std::cout << "Voxel coord: (" << x << ", " << y << ", " << z << ") ";
-                        std::cout << "Updated value: " << value << " Updated weight: " << weight << "\n";
+                        /* std::cout << "Voxel coord: (" << x << ", " << y << ", " << z << ") "; */
+                        /* std::cout << "Updated value: " << value << " Updated weight: " << weight << "\n"; */
                     }
                 }
             }
