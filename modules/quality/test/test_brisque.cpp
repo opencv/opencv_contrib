@@ -84,7 +84,7 @@ TEST(TEST_CASE_NAME, check_empty)
     EXPECT_FALSE(ptr1->empty());
 
     const auto model = cvtest::findDataFile(MODEL_FNAME, false);
-    const auto range = cvtest::findDataFile("some_wrong_range_name", false);
+    const auto range = "some_wrong_range_name";
     auto ptr2 = quality::QualityBRISQUE::create(model, range);
     EXPECT_TRUE(ptr1->empty());
 }
