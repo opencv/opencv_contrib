@@ -113,14 +113,14 @@ def main():
         description="Run LaSOT-based benchmark for visual object trackers")
     # As a default argument used name of
     # original dataset folder
-    parser.add_argument("--path_to_dataset", type=str,
+    parser.add_argument("--dataset", type=str,
                         default="LaSOTTesting", help="Full path to LaSOT")
-    parser.add_argument("--visualization", action='store_true',
+    parser.add_argument("--v", dest="visualization", action='store_true',
                         help="Showing process of tracking")
     args = parser.parse_args()
 
     # Creating list with names of videos via reading names from txt file
-    video_names = os.path.join(args.path_to_dataset, "testing_set.txt")
+    video_names = os.path.join(args.dataset, "testing_set.txt")
     with open(video_names, 'rt') as f:
         list_of_videos = f.read().rstrip('\n').split('\n')
     trackers = [
@@ -152,15 +152,14 @@ def main():
             print("\tVideo name: " + str(video_name))
 
             # Open specific video and read ground truth for it
-            gt_file = open(os.path.join(args.path_to_dataset, video_name,
+            gt_file = open(os.path.join(args.dataset, video_name,
                            "groundtruth.txt"), "r")
-            gt_bb = gt_file.readline().replace("\n", "").split(",")
-            init_bb = gt_bb
-            init_bb = tuple([float(b) for b in init_bb])
+            gt_bb = gt_file.readline().rstrip("\n").split(",")
+            init_bb = tuple([float(b) for b in gt_bb])
 
             # Creating blob from image sequence
             video_sequence = sorted(os.listdir(os.path.join(
-                args.path_to_dataset, video_name, "img")))
+                args.dataset, video_name, "img")))
 
             # Variables for saving sum of every metric for every frame and
             # every video respectively
@@ -172,7 +171,7 @@ def main():
             # For every frame in video
             for number_of_the_frame, image in enumerate(video_sequence):
                 frame = cv.imread(os.path.join(
-                    args.path_to_dataset, video_name, "img", image))
+                    args.dataset, video_name, "img", image))
                 gt_bb = tuple([float(x) for x in gt_bb])
 
                 # Condition of tracker`s re-initialization
@@ -212,7 +211,7 @@ def main():
                     frame_counter -= 1
 
                 # Setting as ground truth bounding box from next frame
-                gt_bb = gt_file.readline().replace("\n", "").split(",")
+                gt_bb = gt_file.readline().rstrip("\n").split(",")
 
             # Calculating mean arithmetic value for specific video
             iou_video += (np.fromiter([sum(i >= thr for i in iou_list).astype(
