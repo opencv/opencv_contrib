@@ -7,6 +7,15 @@ elseif(NOT PYTHON3_EXECUTABLE)
 #    ocv_module_disable(julia)
 endif()
 
+# WARN_MIXED_PRECISION
+macro(WARN_MIXED_PRECISION COMPILER_BITNESS JULIA_BITNESS)
+    set(MSG "Your compiler is ${COMPILER_BITNESS}-bit")
+    set(MSG "${MSG} but your version of Julia is ${JULIA_BITNESS}-bit.")
+    set(MSG "${MSG} To build Julia bindings, please switch to a ${JULIA_BITNESS}-bit compiler.")
+    message(WARNING ${MSG})
+endmacro()
+
+
 math(EXPR ARCH "${CMAKE_SIZEOF_VOID_P} * 8")
 if (${ARCH} EQUAL 32 AND ${Julia_WORD_SIZE} MATCHES "64")
     warn_mixed_precision("32" "64")
@@ -44,7 +53,7 @@ else()
 endif()
 
 set(JlCxx_DIR "${JlCxx_DIR}" CACHE STRING ADVANCED)
-set(Julia_BUILD "Yes" CACHE STRING ADVANCED)
+set(HAVE_JULIA "Yes" CACHE STRING ADVANCED)
 
 
 set(the_description "The Julia bindings")

@@ -42,7 +42,7 @@ julia> using OpenCV
 
 Note that this works only if you called `make install`. To run the wrapper package without making the installation target you must first set the environment variable `JULIA_LOAD_PATH` to the directory containing the OpenCV package. For example if in the build directory
 ```bash
-$ export JULIA_LOAD_PATH=$PWD\OpenCV
+$ export JULIA_LOAD_PATH=$PWD/OpenCV
 $ julia
 ...
 julia> using OpenCV

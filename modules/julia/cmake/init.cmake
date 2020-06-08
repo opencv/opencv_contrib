@@ -6,8 +6,6 @@ if(WITH_JULIA OR DEFINED Julia_FOUND)
   ocv_cmake_hook_append(STATUS_DUMP_EXTRA "${CMAKE_CURRENT_LIST_DIR}/hooks/STATUS_DUMP_EXTRA.cmake")
 endif()
 
-set(Julia_BUILD "No" PARENT_SCOPE)
-
 # --- Julia/Octave ---
 if(WITH_JULIA AND NOT DEFINED Julia_FOUND)
   include(${CMAKE_CURRENT_LIST_DIR}/FindJulia.cmake)
@@ -19,6 +17,6 @@ if(WITH_JULIA AND NOT DEFINED Julia_FOUND)
   # publish vars for status() dumper
   set(Julia_FOUND "${Julia_FOUND}" PARENT_SCOPE)
   set(Julia_EXECUTABLE "${Julia_EXECUTABLE}" PARENT_SCOPE)
-  set(Julia_BUILD "Yes" PARENT_SCOPE)
+  set(HAVE_JULIA "Yes" PARENT_SCOPE)
 
 endif()

@@ -1,7 +1,7 @@
-// Copyright (C) 2020 by Archit Rungta
 // This file is part of OpenCV project.
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html
+// Copyright (C) 2020 by Archit Rungta
 
 #ifndef OPENCV_JULIA_HPP
 #define OPENCV_JULIA_HPP
@@ -19,18 +19,18 @@ For installation instructions, see README.md in this module or OpenCV wiki (http
 
 namespace cv
 {
-    namespace julia
-    {
+namespace julia
+{
 
-        //! @addtogroup julia
-        //! @{
+    //! @addtogroup julia
+    //! @{
 
-        // initializes Julia bindings module
-        CV_WRAP void initJulia(int argc, char **argv);
+    // initializes Julia bindings module
+    CV_WRAP void initJulia(int argc, char **argv);
 
-        //! @} julia
+    //! @} julia
 
-    } // namespace julia
+} // namespace julia
 } // namespace cv
 
 #endif
