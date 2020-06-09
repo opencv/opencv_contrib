@@ -9,8 +9,8 @@
 
 #include <unordered_map>
 #include <unordered_set>
+
 #include "opencv2/core/affine.hpp"
-#include "kinfu_frame.hpp"
 #include "tsdf.hpp"
 
 namespace cv {
@@ -94,7 +94,11 @@ public:
     /* virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override; */
 
     virtual void reset() override;
+
+    //! Return the voxel given the voxel index in the universal volume (1 unit = 1 voxel_length)
     virtual Voxel at(const cv::Vec3i &volumeIdx) const;
+
+    //! Return the voxel given the point in volume coordinate system i.e., (metric scale 1 unit = 1m)
     virtual Voxel at(const cv::Point3f &point) const;
 
     TsdfType interpolateVoxel(cv::Point3f p) const;
@@ -107,11 +111,9 @@ public:
     cv::Point3f voxelCoordToVolume(cv::Vec3i voxelIdx) const;
     cv::Vec3i   volumeToVoxelCoord(cv::Point3f point) const;
 
-
-//! TODO: Make this private
 public:
     //! Hashtable of individual smaller volume units
-    VolumeUnitMap volume_units_;
+    VolumeUnitMap volumeUnits;
 };
 
 cv::Ptr<HashTSDFVolume> makeHashTSDFVolume(float _voxelSize, cv::Affine3f _pose, float _truncDist, int _maxWeight,

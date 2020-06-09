@@ -249,20 +249,11 @@ bool KinFuImpl<T>::updateT(const T& _depth)
         if((rnorm + tnorm)/2 >= params.tsdf_min_camera_movement)
         {
             // use depth instead of distance
-            std::cout << "Starting integration: " << std::endl;
             volume->integrate(depth, params.depthFactor, pose, params.intr);
-            std::cout << "Completed integration: "  << frameCounter << std::endl;
         }
-        /* int number; */
-        /* std::cout << "Waiting: " << std::endl; */
-        /* std::cin >> number; */
         T& points  = pyrPoints [0];
         T& normals = pyrNormals[0];
         volume->raycast(pose, params.intr, params.frameSize, points, normals);
-        /* std::cout << "Raycast complete \n"; */
-        /* std::cout << "Waiting: " << std::endl; */
-        /* std::cin >> number; */
-        // build a pyramid of points and normals
         buildPyramidPointsNormals(points, normals, pyrPoints, pyrNormals,
                                   params.pyramidLevels);
         std::cout << "Built Point normal pyramids\n";

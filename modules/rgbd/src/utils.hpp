@@ -10,6 +10,7 @@
 #define __OPENCV_RGBD_UTILS_HPP__
 
 #include "opencv2/core/matx.hpp"
+#include "opencv2/rgbd/depth.hpp"
 namespace cv
 {
 namespace rgbd
@@ -23,6 +24,8 @@ namespace rgbd
  * @param the desired output depth (floats or double)
  * @param out The rescaled float depth image
  */
+/* void rescaleDepth(InputArray in_in, int depth, OutputArray out_out); */
+
 template<typename T>
 void
 rescaleDepthTemplated(const Mat& in, Mat& out);
