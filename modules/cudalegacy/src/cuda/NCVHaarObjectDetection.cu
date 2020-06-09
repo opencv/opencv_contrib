@@ -2092,7 +2092,6 @@ static NCVStatus loadFromXML(const cv::String &filename,
         // iterate over the trees
         const cv::FileNode &fnTrees = fnStage[CUDA_CC_TREES];
         cv::FileNodeIterator it1 = fnTrees.begin(), it1_end = fnTrees.end();
-        //int treesCnt = fnTrees.size();
 
         for (; it1 != it1_end; ++it1) // by trees
         {
