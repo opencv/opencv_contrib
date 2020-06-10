@@ -40,7 +40,9 @@ the use of this software, even if advised of the possibility of such damage.
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/mcc.hpp>
+#include <opencv2/dnn.hpp>
 #include <iostream>
+
 
 using namespace std;
 using namespace cv;
@@ -50,6 +52,9 @@ const char *about = "Basic chart detection";
 const char *keys = {
     "{t              |         | chartType: 0-Standard, 1-DigitalSG, 2-Vinyl}"
     "{v        |       | Input from video file, if ommited, input comes from camera }"
+    // "{i        |       | File path of image  }"
+    "{m        |       | File path of model  }"
+    "{pb        |       | File path of pbtxt file  }"
     "{ci       | 0     | Camera id if input doesnt come from video (-v) }"};
 
 int main(int argc, char *argv[])
@@ -64,6 +69,10 @@ int main(int argc, char *argv[])
     }
 
     int chartType = parser.get<int>("t");
+
+    // string imagepath = parser.get<string> ("i");
+    string model_path = parser.get<string> ("m");
+    string pbtxt_path = parser.get<string> ("pb");
     int camId = parser.get<int>("ci");
 
     String video;
@@ -91,15 +100,28 @@ int main(int argc, char *argv[])
         waitTime = 10;
     }
 
+    //load the network
+
+	cv::dnn::Net net = cv::dnn::readNetFromTensorflow(model_path, pbtxt_path);
+
     while (inputVideo.grab())
     {
         Mat image, imageCopy;
         inputVideo.retrieve(image);
-        imageCopy=image.clone();
-        Ptr<CCheckerDetector> detector = CCheckerDetector::create(2, 10);
 
+        // image = imread(imagepath);
+
+        imageCopy=image.clone();
+        Ptr<CCheckerDetector> detector = CCheckerDetector::create(2, 5);
+        if(!detector->setNet(net))
+        {
+            cout<<"Loading Model failed: Falling back to standard techniques"<<endl;
+        }
+        Ptr<CChecker> det = CChecker::create();
+        cv::Rect region = Rect(Point2f(0,0), image.size());
+        vector<cv::Rect> regions(1, region);
         // Marker type to detect
-        if (!detector->process(image, chartType))
+        if (!detector->process(image, chartType, regions, true ))
         {
             printf("ChartColor not detected \n");
         }
@@ -110,10 +132,12 @@ int main(int argc, char *argv[])
             std::vector<Ptr<mcc::CChecker>> checkers;
             detector->getListColorChecker(checkers);
             Ptr<mcc::CChecker> checker;
+
             for (size_t ck = 0; ck < checkers.size(); ck++)
             {
                 // current checker
                 checker = checkers[ck];
+
                 Ptr<CCheckerDraw> cdraw = CCheckerDraw::create(checker);
                 cdraw->draw(image, chartType);
             }

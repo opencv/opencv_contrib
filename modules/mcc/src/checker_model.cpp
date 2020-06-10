@@ -374,10 +374,6 @@ void CCheckerDrawImpl::
 		bch[2] = cellchart[k + 2];
 		bch[3] = cellchart[k + 3];
 
-		for (int j = 0; j < 4; j++)
-		{
-			cout << m_pChecker->box[j].x << " " << m_pChecker->box[j].y << endl;
-		}
 		polyanticlockwise(bch);
 		transform_points_forward(ccT, bch, bcht);
 

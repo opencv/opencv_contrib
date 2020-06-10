@@ -2,8 +2,9 @@
 #define __OPENCV_MCC_CHECKER_DETECTOR_HPP__
 #include <opencv2/core.hpp>
 #include "checker_model.hpp"
-#define _DEBUG
-#define SHOW_DEBUG_IMAGES
+#include <opencv2/dnn.hpp>
+// #define _DEBUG
+// #define SHOW_DEBUG_IMAGES
 namespace cv{
 namespace mcc{
 class CV_EXPORTS_W CCheckerDetector: public Algorithm
@@ -11,18 +12,18 @@ class CV_EXPORTS_W CCheckerDetector: public Algorithm
 public:
 
 
+	virtual bool setNet(dnn::Net net) = 0;
 	/// process
 	/** \brief process image
 	* \param image image in color space BGR
 	* \param chartType type of the chart to detect
 	* \return state
 	*/
-	virtual bool process(const cv::Mat & image, const int chartType)=0;
 
-	virtual bool process(const cv::Mat & image, const int chartType, std::vector<Rect> regionsOfInterest)=0;
+	virtual bool process(const Mat & image, const int chartType, std::vector<Rect> regionsOfInterest = std::vector<Rect>(), bool use_net=false)=0;
 
 	#ifdef _DEBUG
-	virtual bool process(const cv::Mat & image, const std::string &pathOut, const int chartType)=0;
+	virtual bool process(const Mat & image, const std::string &pathOut, const int chartType)=0;
 	#endif
 
 	/// getColorChecker

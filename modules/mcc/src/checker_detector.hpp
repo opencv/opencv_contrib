@@ -14,8 +14,7 @@
 #include <opencv2/photo.hpp>
 #include <vector>
 
-// #define _DEBUG
-// #define SHOW_DEBUG_IMAGES
+
 
 #include "debug.hpp"
 #include <time.h>
@@ -40,16 +39,15 @@ public:
 
 
 
-
+	bool setNet(cv::dnn::Net _net) CV_OVERRIDE;
 
 	/// process
 	/** \brief process image
 	* \param[in] image in color space BGR
 	* \return state
 	*/
-	bool process(const cv::Mat & image, const int chartType) CV_OVERRIDE;
 
-	bool process(const cv::Mat & image, const int chartType, std::vector<cv::Rect> regionsOfInterest) CV_OVERRIDE;
+	bool process(const cv::Mat & image, const int chartType, std::vector<cv::Rect> regionsOfInterest = std::vector<cv::Rect>(), bool use_net=false) CV_OVERRIDE;
 
 
 	#ifdef _DEBUG
@@ -73,6 +71,7 @@ public:
 protected: // methods pipeline
 
 
+	bool _no_net_process(const cv::Mat & image, const int chartType, std::vector<cv::Rect> regionsOfInterest);
 	/// prepareImage
 	/** \brief Prepare Image
 	  * \param[in] bgrMat image in color space BGR
@@ -152,7 +151,7 @@ protected:
 	int m_fact_size;
 	unsigned int m_num_ch;
 	float m_min_error;
-
+	cv::dnn::Net net;
 
 private: // methods aux
 
