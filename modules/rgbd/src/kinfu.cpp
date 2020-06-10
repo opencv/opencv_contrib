@@ -108,7 +108,7 @@ public:
     void render(OutputArray image, const Matx44f& cameraPose) const CV_OVERRIDE;
 
     //! TODO(Akash): Add back later
-    /* virtual void getCloud(OutputArray points, OutputArray normals, const Matx44f& cameraPose) const CV_OVERRIDE; */
+    virtual void getCloud(OutputArray points, OutputArray normals) const CV_OVERRIDE;
     /* void getPoints(OutputArray points) const CV_OVERRIDE; */
     /* void getNormals(InputArray points, OutputArray normals) const CV_OVERRIDE; */
 
@@ -275,24 +275,24 @@ void KinFuImpl<T>::render(OutputArray image, const Matx44f& _cameraPose) const
     if((cameraPose.rotation() == pose.rotation() && cameraPose.translation() == pose.translation()) ||
        (cameraPose.rotation() == id.rotation()   && cameraPose.translation() == id.translation()))
     {
+        std::cout << " Render without raycast: " << std::endl;
         renderPointsNormals(pyrPoints[0], pyrNormals[0], image, params.lightPose);
     }
     else
     {
         T points, normals;
+        std::cout << " Raycasted render: " << std::endl;
         volume->raycast(cameraPose, params.intr, params.frameSize, points, normals);
-        std::cout << "Raycasted render" << std::endl;
         renderPointsNormals(points, normals, image, params.lightPose);
     }
 }
 
 
-/* template< typename T > */
-/* void KinFuImpl<T>::getCloud(cv::OutputArray p, OutputArray n, const Matx44f& _cameraPose) const */
-/* { */
-/*     /1* volume->fetchPointsNormals(p, n); *1/ */
-/*     /1* volume->raycast(pose, params.intr, params.frameSize, p, n); *1/ */
-/* } */
+template< typename T >
+void KinFuImpl<T>::getCloud(cv::OutputArray p, OutputArray n) const
+{
+    volume->fetchPointsNormals(p, n);
+}
 
 
 /* template< typename T > */
@@ -324,7 +324,7 @@ Ptr<KinFu> KinFu::create(const Ptr<Params>& params)
 }
 
 #else
-Ptr<KinFu> KinFu::create(const Ptr<Params>& /*params*/)
+Ptr<KinFu> KinFu::create(const Ptr<Params>& /* params */)
 {
     CV_Error(Error::StsNotImplemented,
              "This algorithm is patented and is excluded in this configuration; "

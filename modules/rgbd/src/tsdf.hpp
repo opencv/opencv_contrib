@@ -7,6 +7,7 @@
 #ifndef __OPENCV_KINFU_TSDF_H__
 #define __OPENCV_KINFU_TSDF_H__
 
+#include "opencv2/core/affine.hpp"
 #include "kinfu_frame.hpp"
 
 namespace cv {

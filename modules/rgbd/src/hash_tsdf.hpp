@@ -10,7 +10,6 @@
 #include <unordered_map>
 #include <unordered_set>
 
-#include "opencv2/core/affine.hpp"
 #include "tsdf.hpp"
 
 namespace cv {
@@ -31,7 +30,7 @@ public:
                          cv::OutputArray points, cv::OutputArray normals) const = 0;
 
     /* virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const = 0; */
-    /* virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const = 0; */
+    virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const = 0;
 
     virtual void reset() = 0;
 
@@ -46,7 +45,6 @@ public:
     uint16_t        volumeUnitResolution;
     float           volumeUnitSize;
     bool            zFirstMemOrder;
-
 };
 
 struct VolumeUnit
@@ -91,7 +89,7 @@ public:
                          cv::OutputArray points, cv::OutputArray normals) const override;
 
     /* virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const override; */
-    /* virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override; */
+    virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
 
     virtual void reset() override;
 
@@ -101,7 +99,7 @@ public:
     //! Return the voxel given the point in volume coordinate system i.e., (metric scale 1 unit = 1m)
     virtual Voxel at(const cv::Point3f &point) const;
 
-    TsdfType interpolateVoxel(cv::Point3f p) const;
+    inline TsdfType interpolateVoxel(const cv::Point3f& point) const;
     Point3f getNormalVoxel(cv::Point3f p) const;
 
     //! Utility functions for coordinate transformations

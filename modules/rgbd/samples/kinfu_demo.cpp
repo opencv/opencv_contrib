@@ -411,7 +411,7 @@ int main(int argc, char** argv)
                 viz::WCloudNormals cloudNormals(points, normals, /*level*/ 1, /*scale*/ 0.05,
                                                 viz::Color::gray());
                 window.showWidget("cloud", cloudWidget);
-                window.showWidget("normals", cloudNormals);
+                /* window.showWidget("normals", cloudNormals); */
 
                 Vec3d volSize = kf->getParams().voxelSize * Vec3d(kf->getParams().volumeDims);
                 window.showWidget("cube", viz::WCube(Vec3d::all(0), volSize),
@@ -424,7 +424,7 @@ int main(int argc, char** argv)
                                              Point()));
                 window.spin();
                 window.removeWidget("text");
-                window.removeWidget("cloud");
+                /* window.removeWidget("cloud"); */
                 window.removeWidget("normals");
                 window.registerMouseCallback(0);
             }
