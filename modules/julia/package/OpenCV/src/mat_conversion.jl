@@ -1,4 +1,3 @@
-
 const CV_CN_MAX = 512
 const CV_CN_SHIFT = 3
 const CV_DEPTH_MAX = (1 << CV_CN_SHIFT)

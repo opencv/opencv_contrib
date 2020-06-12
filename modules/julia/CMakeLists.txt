@@ -1,4 +1,3 @@
-
 if(NOT Julia_FOUND)
     message(STATUS "Julia not found. Not compiling Julia Bindings")
     ocv_module_disable(julia)

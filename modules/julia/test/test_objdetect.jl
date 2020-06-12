@@ -1,4 +1,3 @@
-
 function detect(img::OpenCV.InputArray, cascade)
     rects = OpenCV.detectMultiScale(cascade, img)
     return (rects[1].x, rects[1].y, rects[1].width+rects[1].x, rects[1].height+rects[1].y)

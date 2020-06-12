@@ -6,7 +6,7 @@ if(WITH_JULIA OR DEFINED Julia_FOUND)
   ocv_cmake_hook_append(STATUS_DUMP_EXTRA "${CMAKE_CURRENT_LIST_DIR}/hooks/STATUS_DUMP_EXTRA.cmake")
 endif()
 
-# --- Julia/Octave ---
+# --- Julia ---
 if(WITH_JULIA AND NOT DEFINED Julia_FOUND)
   include(${CMAKE_CURRENT_LIST_DIR}/FindJulia.cmake)
   if(NOT Julia_FOUND)

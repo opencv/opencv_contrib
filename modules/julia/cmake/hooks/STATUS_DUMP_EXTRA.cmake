@@ -1,11 +1,10 @@
 # ========================= julia =========================
 if(WITH_JULIA OR Julia_FOUND)
   status("")
-  status("  JULIA:" Julia_FOUND THEN "YES" ELSE "NO")
+  status("  JULIA:" HAVE_JULIA THEN "YES" ELSE "NO")
   if(Julia_FOUND)
     status("    Julia_EXECUTABLE:"         ${Julia_EXECUTABLE})
     status("    JlCxx_DIR:"         ${JlCxx_DIR})
-    status("    HAVE_JULIA:"         ${HAVE_JULIA})
     if(DEFINED HAVE_JULIA AND HAVE_JULIA MATCHES "Yes")
         status("    JULIA_PKG_INSTALL_PATH:"         ${JULIA_PKG_INSTALL_PATH_HOOK})
     endif()
