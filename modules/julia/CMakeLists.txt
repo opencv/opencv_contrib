@@ -1,5 +1,5 @@
-if(NOT Julia_FOUND)
-    message(STATUS "Julia not found. Not compiling Julia Bindings")
+if(NOT HAVE_JULIA MATCHES "YES")
+    message(STATUS "Julia not found. Not compiling Julia Bindings. ${HAVE_JULIA}")
     ocv_module_disable(julia)
 elseif(NOT PYTHON3_EXECUTABLE)
 #    message(WARNING "Python 3 required for Julia bindings...disabling")
@@ -52,7 +52,7 @@ else()
 endif()
 
 set(JlCxx_DIR "${JlCxx_DIR}" CACHE STRING ADVANCED)
-set(HAVE_JULIA "Yes" CACHE STRING ADVANCED)
+set(HAVE_JULIA "YES" CACHE STRING ADVANCED)
 
 
 set(the_description "The Julia bindings")
