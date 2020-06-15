@@ -29,6 +29,8 @@ Ptr<Params> Params::defaultParams()
 
     p.frameSize = Size(640, 480);
 
+    p.volumeType = VolumeType::TSDF;
+
     float fx, fy, cx, cy;
     fx = fy = 525.f;
     cx = p.frameSize.width/2 - 0.5f;
@@ -61,11 +63,10 @@ Ptr<Params> Params::defaultParams()
 
     // default pose of volume cube
     p.volumePose = Affine3f().translate(Vec3f(-volSize/2.f, -volSize/2.f, 0.5f));
-    /* p.volumePose  = Affine3f(); */
     p.tsdf_trunc_dist = 5 * p.voxelSize; //meters;
     p.tsdf_max_weight = 64;   //frames
 
-    p.raycast_step_factor = 0.25f;  //in voxel sizes
+    p.raycastStepFactor = 0.25f;  //in voxel sizes
     // gradient delta factor is fixed at 1.0f and is not used
     //p.gradient_delta_factor = 0.5f; //in voxel sizes
 
@@ -90,13 +91,24 @@ Ptr<Params> Params::coarseParams()
     p->voxelSize  = volSize/128.f;
     p->tsdf_trunc_dist = 5 * p->voxelSize;
 
-    p->raycast_step_factor = 0.25f;  //in voxel sizes
+    p->raycastStepFactor = 0.75f;  //in voxel sizes
 
     return p;
 }
+Ptr<Params> Params::hashTSDFParams(bool isCoarse)
+{
+    Ptr<Params> p;
+    if(isCoarse)
+        p = coarseParams();
+    else
+        p = defaultParams();
+    p->volumeType = VolumeType::HASHTSDF;
+    p->truncateThreshold = rgbd::Odometry::DEFAULT_MAX_DEPTH();
+    return p;
+}
 
-// T should be Mat or UMat
-template< typename T >
+// MatType should be Mat or UMat
+template< typename MatType>
 class KinFuImpl : public KinFu
 {
 public:
@@ -118,53 +130,56 @@ public:
 
     bool update(InputArray depth) CV_OVERRIDE;
 
-    bool updateT(const T& depth);
+    bool updateT(const MatType& depth);
 
 private:
     Params params;
 
     cv::Ptr<ICP> icp;
-    cv::Ptr<HashTSDFVolume> volume;
+    cv::Ptr<Volume> volume;
 
     int frameCounter;
     Affine3f pose;
-    std::vector<T> pyrPoints;
-    std::vector<T> pyrNormals;
+    std::vector<MatType> pyrPoints;
+    std::vector<MatType> pyrNormals;
 };
 
 
-template< typename T >
-KinFuImpl<T>::KinFuImpl(const Params &_params) :
+template< typename MatType >
+KinFuImpl<MatType>::KinFuImpl(const Params &_params) :
     params(_params),
     icp(makeICP(params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
-    volume(makeHashTSDFVolume(params.voxelSize, params.volumePose,
-                          params.tsdf_trunc_dist, params.tsdf_max_weight,
-                          params.raycast_step_factor)),
     pyrPoints(), pyrNormals()
 {
+    if(params.volumeType == Params::VolumeType::TSDF)
+        volume = makeTSDFVolume(params.voxelSize, params.volumePose, params.raycastStepFactor,
+                params.tsdf_trunc_dist, params.tsdf_max_weight, params.volumeDims);
+    else
+        volume = makeHashTSDFVolume(params.voxelSize, params.volumePose, params.raycastStepFactor,
+                params.tsdf_trunc_dist, params.tsdf_max_weight, params.truncateThreshold);
     reset();
 }
 
-template< typename T >
-void KinFuImpl<T>::reset()
+template< typename MatType >
+void KinFuImpl<MatType >::reset()
 {
     frameCounter = 0;
     pose = Affine3f::Identity();
     volume->reset();
 }
 
-template< typename T >
-KinFuImpl<T>::~KinFuImpl()
+template< typename MatType >
+KinFuImpl<MatType>::~KinFuImpl()
 { }
 
-template< typename T >
-const Params& KinFuImpl<T>::getParams() const
+template< typename MatType >
+const Params& KinFuImpl<MatType>::getParams() const
 {
     return params;
 }
 
-template< typename T >
-const Affine3f KinFuImpl<T>::getPose() const
+template< typename MatType >
+const Affine3f KinFuImpl<MatType>::getPose() const
 {
     return pose;
 }
@@ -206,18 +221,19 @@ bool KinFuImpl<UMat>::update(InputArray _depth)
 }
 
 
-template< typename T >
-bool KinFuImpl<T>::updateT(const T& _depth)
+template< typename MatType >
+bool KinFuImpl<MatType>::updateT(const MatType& _depth)
 {
     CV_TRACE_FUNCTION();
 
-    T depth;
+    MatType depth;
     if(_depth.type() != DEPTH_TYPE)
         _depth.convertTo(depth, DEPTH_TYPE);
     else
         depth = _depth;
 
-    std::vector<T> newPoints, newNormals;
+
+    std::vector<MatType> newPoints, newNormals;
     makeFrameFromDepth(depth, newPoints, newNormals, params.intr,
                        params.pyramidLevels,
                        params.depthFactor,
@@ -225,7 +241,7 @@ bool KinFuImpl<T>::updateT(const T& _depth)
                        params.bilateral_sigma_spatial,
                        params.bilateral_kernel_size,
                        params.truncateThreshold);
-    std::cout << "Created Frame from depth FrameID: " << frameCounter << "\n";
+    /* std::cout << "Created Frame from depth FrameID: " << frameCounter << "\n"; */
     if(frameCounter == 0)
     {
         // use depth instead of distance
@@ -241,7 +257,7 @@ bool KinFuImpl<T>::updateT(const T& _depth)
             return false;
 
         pose = pose * affine;
-        std::cout << "Obtained pose:\n " << pose.matrix << "\n";
+        /* std::cout << "Obtained pose:\n " << pose.matrix << "\n"; */
 
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
@@ -251,12 +267,12 @@ bool KinFuImpl<T>::updateT(const T& _depth)
             // use depth instead of distance
             volume->integrate(depth, params.depthFactor, pose, params.intr);
         }
-        T& points  = pyrPoints [0];
-        T& normals = pyrNormals[0];
+        MatType& points  = pyrPoints [0];
+        MatType& normals = pyrNormals[0];
         volume->raycast(pose, params.intr, params.frameSize, points, normals);
         buildPyramidPointsNormals(points, normals, pyrPoints, pyrNormals,
                                   params.pyramidLevels);
-        std::cout << "Built Point normal pyramids\n";
+        /* std::cout << "Built Point normal pyramids\n"; */
     }
 
     frameCounter++;
@@ -264,8 +280,8 @@ bool KinFuImpl<T>::updateT(const T& _depth)
 }
 
 
-template< typename T >
-void KinFuImpl<T>::render(OutputArray image, const Matx44f& _cameraPose) const
+template< typename MatType >
+void KinFuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPose) const
 {
     CV_TRACE_FUNCTION();
 
@@ -275,35 +291,35 @@ void KinFuImpl<T>::render(OutputArray image, const Matx44f& _cameraPose) const
     if((cameraPose.rotation() == pose.rotation() && cameraPose.translation() == pose.translation()) ||
        (cameraPose.rotation() == id.rotation()   && cameraPose.translation() == id.translation()))
     {
-        std::cout << " Render without raycast: " << std::endl;
+        /* std::cout << " Render without raycast: " << std::endl; */
         renderPointsNormals(pyrPoints[0], pyrNormals[0], image, params.lightPose);
     }
     else
     {
-        T points, normals;
-        std::cout << " Raycasted render: " << std::endl;
+        MatType points, normals;
+        /* std::cout << " Raycasted render: " << std::endl; */
         volume->raycast(cameraPose, params.intr, params.frameSize, points, normals);
         renderPointsNormals(points, normals, image, params.lightPose);
     }
 }
 
 
-template< typename T >
-void KinFuImpl<T>::getCloud(cv::OutputArray p, OutputArray n) const
+template< typename MatType >
+void KinFuImpl<MatType>::getCloud(cv::OutputArray p, OutputArray n) const
 {
     volume->fetchPointsNormals(p, n);
 }
 
 
-/* template< typename T > */
-/* void KinFuImpl<T>::getPoints(OutputArray points) const */
+/* template< typename MatType > */
+/* void KinFuImpl<MatType>::getPoints(OutputArray points) const */
 /* { */
 /*     volume->fetchPointsNormals(points, noArray()); */
 /* } */
 
 
-/* template< typename T > */
-/* void KinFuImpl<T>::getNormals(InputArray points, OutputArray normals) const */
+/* template< typename MatType > */
+/* void KinFuImpl<MatType>::getNormals(InputArray points, OutputArray normals) const */
 /* { */
 /*     volume->fetchNormals(points, normals); */
 /* } */
@@ -320,7 +336,7 @@ Ptr<KinFu> KinFu::create(const Ptr<Params>& params)
     if(cv::ocl::useOpenCL())
         return makePtr< KinFuImpl<UMat> >(*params);
 #endif
-    return makePtr< KinFuImpl<Mat> >(*params);
+        return makePtr< KinFuImpl<Mat> >(*params);
 }
 
 #else

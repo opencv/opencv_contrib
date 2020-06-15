@@ -624,13 +624,16 @@ void makeFrameFromDepth(InputArray _depth,
     bilateralFilter(depth, smooth, kernelSize, sigmaDepth*depthFactor, sigmaSpatial);
 
     // depth truncation can be used in some scenes
+    Depth depthThreshold;
     if(truncateThreshold > 0.f)
-        threshold(depth, depth, truncateThreshold, 0.0, THRESH_TOZERO_INV);
+        threshold(smooth, depthThreshold, truncateThreshold * depthFactor, 0.0, THRESH_TOZERO_INV);
+    else
+        depthThreshold = smooth;
 
     // we don't need depth pyramid outside this method
     // if we do, the code is to be refactored
 
-    Depth scaled = smooth;
+    Depth scaled = depthThreshold;
     Size sz = smooth.size();
     pyrPoints.create(levels, 1, POINT_TYPE);
     pyrNormals.create(levels, 1, POINT_TYPE);

@@ -297,6 +297,7 @@ static const char* keys = {
     "{camera |0| Index of depth camera to be used as a depth source }"
     "{coarse | | Run on coarse settings (fast but ugly) or on default (slow but looks better),"
     " in coarse mode points and normals are displayed }"
+    "{useHashTSDF | | Use the newer hashtable based TSDFVolume (relatively fast) and for larger reconstructions}"
     "{idle   | | Do not run KinFu, just display depth frames }"
     "{record | | Write depth frames to specified file list"
     " (the same format as for the 'depth' key) }"
@@ -311,6 +312,7 @@ int main(int argc, char** argv)
 {
     bool coarse = false;
     bool idle   = false;
+    bool useHashTSDF = false;
     string recordPath;
 
     CommandLineParser parser(argc, argv, keys);
@@ -336,10 +338,15 @@ int main(int argc, char** argv)
     {
         recordPath = parser.get<String>("record");
     }
+    if (parser.has("useHashTSDF"))
+    {
+        useHashTSDF = true;
+    }
     if (parser.has("idle"))
     {
         idle = true;
     }
+
 
     Ptr<DepthSource> ds;
     if (parser.has("depth"))
@@ -366,11 +373,14 @@ int main(int argc, char** argv)
     else
         params = Params::defaultParams();
 
+    if(useHashTSDF)
+        params = Params::hashTSDFParams(coarse);
+
     // These params can be different for each depth sensor
     ds->updateParams(*params);
 
     // Enables OpenCL explicitly (by default can be switched-off)
-    cv::setUseOptimized(false);
+    cv::setUseOptimized(true);
 
     // Scene-specific params should be tuned for each scene individually
     // float cubeSize = 1.f;

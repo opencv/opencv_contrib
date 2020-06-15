@@ -9,8 +9,8 @@
 #ifndef __OPENCV_RGBD_UTILS_HPP__
 #define __OPENCV_RGBD_UTILS_HPP__
 
-#include "opencv2/core/matx.hpp"
-#include "opencv2/rgbd/depth.hpp"
+#include "precomp.hpp"
+
 namespace cv
 {
 namespace rgbd
@@ -51,7 +51,6 @@ namespace kinfu {
 
 // One place to turn intrinsics on and off
 #define USE_INTRINSICS CV_SIMD128
-#undef USE_INTRINSICS
 
 typedef float depthType;
 
