@@ -10,23 +10,19 @@ def get_iou(new, gt):
     numerical value of area_of_overlap, because if it is equal to 0,
     we have no intersection.
     '''
-    new_xmin = new[0]
-    new_xmax = new[0] + new[2] - 1.0
-    new_ymin = new[1]
-    new_ymax = new[1] + new[3] - 1.0
-    gt_xmin = gt[0]
-    gt_xmax = gt[0] + gt[2] - 1.0
-    gt_ymin = gt[1]
-    gt_ymax = gt[1] + gt[3] - 1.0
+    new_xmin, new_ymin, new_w, new_h = new
+    gt_xmin, gt_ymin, gt_w, gt_h = gt
+    def get_max_coord(coord, size): return coord + size - 1.0
+    new_xmax, new_ymax = get_max_coord(new_xmin, new_w), get_max_coord(
+        new_ymin, new_h)
+    gt_xmax, gt_ymax = get_max_coord(gt_xmin, gt_w), get_max_coord(
+        gt_ymin, gt_h)
     dx = max(0, min(new_xmax, gt_xmax) - max(new_xmin, gt_xmin))
     dy = max(0, min(new_ymax, gt_ymax) - max(new_ymin, gt_ymin))
     area_of_overlap = dx * dy
     area_of_union = (new_xmax - new_xmin) * (new_ymax - new_ymin) + (
         gt_xmax - gt_xmin) * (gt_ymax - gt_ymin) - area_of_overlap
-    if area_of_overlap != 0 and area_of_union != 0:
-        iou = area_of_overlap / area_of_union
-    else:
-        iou = 0
+    iou = area_of_overlap / area_of_union if area_of_union != 0 else 0
     return iou
 
 
@@ -37,17 +33,16 @@ def get_pr(new, gt, is_norm):
     normalized precision, if it is "False" - we calculate precision without
     normalization
     '''
-    new_cx = new[0] + (new[2] + 1.0) / 2
-    new_cy = new[1] + (new[3] + 1.0) / 2
-    gt_cx = gt[0] + (gt[2] + 1.0) / 2
-    gt_cy = gt[1] + (gt[3] + 1.0) / 2
-    gt_bb_w = gt[2]
-    gt_bb_h = gt[3]
+    new_x, new_y, new_w, new_h = new
+    gt_x, gt_y, gt_w, gt_h = gt
+    def get_center(coord, size): return coord + (size + 1.0) / 2
+    new_cx, new_cy, gt_cx, gt_cy = get_center(new_x, new_w), get_center(
+        new_y, new_h), get_center(gt_x, gt_w), get_center(gt_y, gt_h)
     dx = new_cx - gt_cx
     dy = new_cy - gt_cy
     if is_norm:
-        dx /= gt_bb_w
-        dy /= gt_bb_h
+        dx /= gt_w
+        dy /= gt_h
     return np.sqrt(dx ** 2 + dy ** 2)
 
 
@@ -159,8 +154,8 @@ def main():
                     cv.waitKey(1)
 
                 iou_values.append(get_iou(new_bb, gt_bb))
-                pr_values.append(get_pr(new_bb, gt_bb, False))
-                n_pr_values.append(get_pr(new_bb, gt_bb, True))
+                pr_values.append(get_pr(new_bb, gt_bb, is_norm=False))
+                n_pr_values.append(get_pr(new_bb, gt_bb, is_norm=True))
 
                 # Setting as ground truth bounding box of the next frame
                 gt_bb = gt_file.readline().rstrip("\n").split(",")
