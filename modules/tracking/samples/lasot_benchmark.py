@@ -33,7 +33,9 @@ def get_iou(new, gt):
 def get_pr(new, gt, is_norm):
     '''
     In calculations of precision and normalized precision are used thresholds
-    from original TrackingNet paper.
+    from original TrackingNet paper. If third argument is "True" - we calculate
+    normalized precision, if it is "False" - we calculate precision without
+    normalization
     '''
     new_cx = new[0] + (new[2] + 1.0) / 2
     new_cy = new[1] + (new[3] + 1.0) / 2
@@ -72,15 +74,14 @@ def init_tracker(tracker_name):
 def main():
     parser = argparse.ArgumentParser(
         description="Run LaSOT-based benchmark for visual object trackers")
-    # As a default argument used name of
-    # original dataset folder
+    # As a default argument used name of the original dataset folder
     parser.add_argument("--dataset", type=str,
                         default="LaSOTTesting", help="Full path to LaSOT")
     parser.add_argument("--v", dest="visualization", action='store_true',
                         help="Showing process of tracking")
     args = parser.parse_args()
 
-    # Creating list with names of videos via reading names from txt file
+    # Creating list of names of the videos via reading names from the txt file
     video_names = os.path.join(args.dataset, "testing_set.txt")
     with open(video_names, 'rt') as f:
         list_of_videos = f.read().rstrip('\n').split('\n')
@@ -118,30 +119,27 @@ def main():
             gt_bb = gt_file.readline().rstrip("\n").split(",")
             init_bb = tuple([float(b) for b in gt_bb])
 
-            # Creating blob from image sequence
             video_sequence = sorted(os.listdir(os.path.join(
                 args.dataset, video_name, "img")))
 
-            # Variables for saving sum of every metric for every frame and
-            # every video respectively
             iou_values = []
             pr_values = []
             n_pr_values = []
             frame_counter = len(video_sequence)
 
-            # For every frame in video
+            # Loop for every frame in the video
             for number_of_the_frame, image in enumerate(video_sequence):
                 frame = cv.imread(os.path.join(
                     args.dataset, video_name, "img", image))
                 gt_bb = tuple([float(x) for x in gt_bb])
 
-                # Check for presence of object on the frame
-                # If no object on frame, we ignoring that frame
+                # Check for presence of the object on the image
+                # Image is ignored if no object on it
                 if gt_bb[2] == 0 or gt_bb[3] == 0:
                     gt_bb = gt_file.readline().rstrip("\n").split(",")
                     continue
 
-                # Condition of tracker`s re-initialization
+                # Condition for reinitialization of the tracker
                 if ((number_of_the_frame + 1) % frames_for_reinit == 0):
 
                     tracker, frames_for_reinit = init_tracker(tracker_name)
@@ -164,10 +162,10 @@ def main():
                 pr_values.append(get_pr(new_bb, gt_bb, False))
                 n_pr_values.append(get_pr(new_bb, gt_bb, True))
 
-                # Setting as ground truth bounding box from next frame
+                # Setting as ground truth bounding box of the next frame
                 gt_bb = gt_file.readline().rstrip("\n").split(",")
 
-            # Calculating mean arithmetic value for specific video
+            # Calculating mean arithmetic value for the specific video
             iou_video += (np.fromiter([sum(
                 i >= thr for i in iou_values).astype(
                     float) / frame_counter for thr in iou_thr], dtype=float))
