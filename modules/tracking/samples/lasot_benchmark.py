@@ -168,18 +168,21 @@ def main():
                 gt_bb = gt_file.readline().rstrip("\n").split(",")
 
             # Calculating mean arithmetic value for specific video
-            iou_video += (np.fromiter([sum(i >= thr for i in iou_values).astype(
-                float) / frame_counter for thr in iou_thr], dtype=float))
-            pr_video += (np.fromiter([sum(i <= thr for i in pr_values).astype(
-                float) / frame_counter for thr in pr_thr], dtype=float))
-            n_pr_video += (np.fromiter([sum(i <= thr for i in n_pr_values).astype(
-                float) / frame_counter for thr in n_pr_thr], dtype=float))
+            iou_video += (np.fromiter([sum(
+                i >= thr for i in iou_values).astype(
+                    float) / frame_counter for thr in iou_thr], dtype=float))
+            pr_video += (np.fromiter([sum(
+                i <= thr for i in pr_values).astype(
+                    float) / frame_counter for thr in pr_thr], dtype=float))
+            n_pr_video += (np.fromiter([sum(
+                i <= thr for i in n_pr_values).astype(
+                    float) / frame_counter for thr in n_pr_thr], dtype=float))
 
         iou_mean_avg = np.array(iou_video) / len(list_of_videos)
         pr_mean_avg = np.array(pr_video) / len(list_of_videos)
         n_pr_mean_avg = np.array(n_pr_video) / len(list_of_videos)
 
-        # We find the area under the curve according to the trapezoid rule 
+        # We find the area under the curve according to the trapezoid rule
         # and normalize by the maximum threshold value
         iou = np.trapz(iou_mean_avg, x=iou_thr) / iou_thr[-1]
         pr = np.trapz(pr_mean_avg, x=pr_thr) / pr_thr[-1]
