@@ -147,9 +147,9 @@ def main():
                 init_state, new_bb = tracker.update(frame)
 
                 if args.visualization:
-                    cv.rectangle(frame, (int(new_bb[0]), int(new_bb[1])), (int(
-                        new_bb[0] + new_bb[2]), int(new_bb[1] + new_bb[3])), (
-                            200, 0, 0))
+                    new_x, new_y, new_w, new_h = list(map(int, new_bb))
+                    cv.rectangle(frame, (new_x, new_y), ((
+                        new_x + new_w), (new_y + new_h)), (200, 0, 0))
                     cv.imshow("Tracking", frame)
                     cv.waitKey(1)
 
