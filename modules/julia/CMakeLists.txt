@@ -27,10 +27,10 @@ elseif (${ARCH} EQUAL 64 AND NOT ${Julia_WORD_SIZE} MATCHES "64")
 endif()
 
 if(NOT JlCxx_DIR)
-execute_process(
-    COMMAND "${Julia_EXECUTABLE}" --startup-file=no -e "using CxxWrap; print(CxxWrap.CxxWrapCore.prefix_path())"
-    OUTPUT_VARIABLE JlCxx_DIR
-)
+    execute_process(
+        COMMAND "${Julia_EXECUTABLE}" --startup-file=no -e "using CxxWrap; print(CxxWrap.CxxWrapCore.prefix_path())"
+        OUTPUT_VARIABLE JlCxx_DIR
+    )
 endif()
 
 if(JlCxx_DIR)
@@ -56,14 +56,15 @@ set(HAVE_JULIA "YES" CACHE STRING ADVANCED)
 
 
 set(the_description "The Julia bindings")
-ocv_add_module(julia
-                                 opencv_core
-                                 opencv_imgproc
-                                 opencv_imgcodecs
-                                 opencv_objdetect
-                                 opencv_highgui
-                                 opencv_features2d
-                                 opencv_videoio
+ocv_add_module(
+    julia
+    opencv_core
+    opencv_imgproc
+    opencv_imgcodecs
+    opencv_objdetect
+    opencv_highgui
+    opencv_features2d
+    opencv_videoio
 )
 
 ocv_glob_module_sources()
@@ -95,24 +96,26 @@ set(JULIA_COMMAND "\"${Julia_EXECUTABLE}\" -e \"using Pkg; ${JULIA_PKG_EXECS}\""
 # message(STATUS "Installing Julia bindings using ${JULIA_COMMAND}")
 
 
-install(CODE "
-set(JULIA_PKG_PATH \"${JULIA_PKG_INSTALL_PATH}/OpenCV\")
-execute_process(COMMAND \"${Julia_EXECUTABLE}\" ${CMAKE_CURRENT_LIST_DIR}/package/install_package.jl \${JULIA_PKG_PATH} OUTPUT_VARIABLE JULIA_INSTALL_OUT)
+if(NOT INSTALL_CREATE_DISTRIB)
+    install(CODE "
+    set(JULIA_PKG_PATH \"${JULIA_PKG_INSTALL_PATH}/OpenCV\")
+    execute_process(COMMAND \"${Julia_EXECUTABLE}\" ${CMAKE_CURRENT_LIST_DIR}/package/install_package.jl \${JULIA_PKG_PATH} OUTPUT_VARIABLE JULIA_INSTALL_OUT)
 
 
-# set(JULIA_PKG_EXECS \"Pkg.develop(PackageSpec(path=\\\\\\\"${JULIA_PKG_INSTALL_PATH}/OpenCV\\\\\\\"));\")
+    # set(JULIA_PKG_EXECS \"Pkg.develop(PackageSpec(path=\\\\\\\"${JULIA_PKG_INSTALL_PATH}/OpenCV\\\\\\\"));\")
 
-# if(${JULIA_PKG_INSTALL_ENV})
-#     set(JULIA_PKG_EXECS \"Pkg.activate(${JULIA_PKG_INSTALL_ENV});\${JULIA_PKG_EXECS}\")
-# endif()
-# set(JULIA_COMMAND \"\\\"using Pkg; \${JULIA_PKG_EXECS}\\\"\")
+    # if(${JULIA_PKG_INSTALL_ENV})
+    #     set(JULIA_PKG_EXECS \"Pkg.activate(${JULIA_PKG_INSTALL_ENV});\${JULIA_PKG_EXECS}\")
+    # endif()
+    # set(JULIA_COMMAND \"\\\"using Pkg; \${JULIA_PKG_EXECS}\\\"\")
 
-# message(STATUS \"Installing Julia bindings using \${JULIA_COMMAND}\")
+    # message(STATUS \"Installing Julia bindings using \${JULIA_COMMAND}\")
 
-# execute_process(COMMAND \"${Julia_EXECUTABLE}\" -e \${JULIA_COMMAND} OUTPUT_VARIABLE JULIA_INSTALL_OUT)
+    # execute_process(COMMAND \"${Julia_EXECUTABLE}\" -e \${JULIA_COMMAND} OUTPUT_VARIABLE JULIA_INSTALL_OUT)
 
-message(STATUS \"Install output: \${JULIA_INSTALL_OUT}\")
-")
+    message(STATUS \"Install output: \${JULIA_INSTALL_OUT}\")
+    ")
+endif()
 
 # set(JULIA_COMMAND \"\"${Julia_EXECUTABLE}\" -e \"using Pkg; \${JULIA_PKG_EXECS}\"\")
 
