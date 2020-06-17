@@ -21,15 +21,15 @@ group()
 	size_t n = X.size();
 	G.clear(); G.resize(n);
 
-	for (size_t i = 0; i < n - 1; i++)
+	for (int i = 0; i < (int)n - 1; i++)
 	{
-		std::vector<float> Y;
+		std::vector<double> Y;
 		Y.clear(); Y.resize(n - i);
 		Y[0] = 0;
 
 		// 1. group similar blobs
-		float dist, w, y;
-		for (size_t j = i + 1, k = 1; j < n; j++, k++)
+		double dist, w, y;
+		for (int j = i + 1, k = 1; j < n; j++, k++)
 		{
 			//dist(X_i,X_j)
 			dist = norm(X[i] - X[j]);
@@ -54,14 +54,14 @@ group()
 		if (!m) continue;
 
 		std::vector<int> pos_nz, pos_z;
-		for (size_t j = 0; j < m; j++)
+		for (int j = 0; j < (int)m; j++)
 		{
 			pos_b0[j] = pos_b0[j] + i;
 			if (G[pos_b0[j]]) pos_nz.push_back(j);
 			else pos_z.push_back(j);
 		}
 
-		for (size_t j = 0; j < pos_z.size(); j++)
+		for (int j = 0; j < (int)pos_z.size(); j++)
 		{
 			pos_z[j] = pos_b0[pos_z[j]];
 			G[pos_z[j]] = G[i];
@@ -88,16 +88,16 @@ group()
 		}
 	}
 
-	if (!G[n - 1]) G[n - 1] = n;
+	if (!G[n - 1]) G[n - 1] = (int)n;
 
 
 
 	std::vector<int> S;
 	S = G; unique(S, S);
-	for (size_t k = 0; k < S.size(); k++)
+	for (int k = 0; k < (int)S.size(); k++)
 	{
 		int gk = S[k];
-		for (size_t j = 0; j < G.size(); j++)
+		for (int j = 0; j < (int)G.size(); j++)
 			if (G[j] == gk)G[j] = k;
 	}
 

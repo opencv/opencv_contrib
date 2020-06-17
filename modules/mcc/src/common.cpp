@@ -18,7 +18,7 @@ cv::Mat poly2mask(const std::vector<cv::Point2f> &poly, cv::Size size)
 	approxPolyDP(poly, roi_poly, 1.0, true);
 
 	// Fill polygon white
-	fillConvexPoly(mask, &roi_poly[0], roi_poly.size(), 1, 8, 0);
+	fillConvexPoly(mask, &roi_poly[0], (int)roi_poly.size(), 1, 8, 0);
 
 	// return the mask
 	return mask;
@@ -32,7 +32,7 @@ float perimeter(const std::vector<cv::Point2f> &ps)
 
 	for (size_t i = 0;i<ps.size();i++)
 	{
-		int i2 = (i + 1) % ps.size();
+		int i2 = (i + 1) % (int)ps.size();
 
 		dx = ps[i].x - ps[i2].x;
 		dy = ps[i].y - ps[i2].y;
@@ -51,7 +51,7 @@ mace_center(const std::vector<cv::Point2f> &ps)
 	int n;
 
 	center = cv::Point2f(0);
-	n = ps.size();
+	n = (int)ps.size();
 	for (int i = 0; i < n; i++)
 		center += ps[i];
 	center /= n;

@@ -268,7 +268,7 @@ bool CChartModel::
 			lab_roi = im_lab_org(cv::Rect((int)j, (int)i, (int)m, (int)n));
 			lab_roi.copyTo(lab_curr);
 			lab_curr = lab_curr.t();
-			lab_curr = lab_curr.reshape(3, n * m);
+			lab_curr = lab_curr.reshape(3, (int)n * (int)m);
 
 			// Mean squared error
 			// ECM = 1 / N sum_i(Y - Yp) ^ 2
@@ -280,7 +280,7 @@ bool CChartModel::
 	// minimo
 	error = lEcm[0];
 	ierror = 0;
-	for (size_t i = 1; i < lEcm.size(); i++)
+	for (int i = 1; i < (int)lEcm.size(); i++)
 		if (error > lEcm[i])
 		{
 			error = lEcm[i];

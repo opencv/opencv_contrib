@@ -31,7 +31,7 @@ namespace mcc {
 	void unique(const std::vector<T> &A, std::vector<T> &U)
 	{
 
-		int n = A.size();
+		int n = (int)A.size();
 		std::vector<T> Tm = A;
 
 		std::sort(Tm.begin(), Tm.end());
@@ -92,7 +92,7 @@ namespace mcc {
 		if (N == 0) return;
 
 		idx.clear(); idx.resize(N);
-		for (size_t i = 0; i < N; i++) idx[i] = i;
+		for (size_t i = 0; i < N; i++) idx[i] = (int)i;
 
 		for (size_t i = 0; i < N - 1; i++)
 		{

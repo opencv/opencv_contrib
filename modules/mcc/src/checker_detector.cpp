@@ -349,7 +349,7 @@ void CCheckerDetectorImpl::
 	if (params->minImageSize > min_size)
 	{
 		aspOut = (float)params->minImageSize / min_size;
-		cv::resize(bgr, bgrOut, cv::Size(size.width * aspOut, size.height * aspOut));
+		cv::resize(bgr, bgrOut, cv::Size(int(size.width * aspOut), int(size.height * aspOut)));
 	}
 
 	// Convert to grayscale
@@ -558,11 +558,11 @@ void CCheckerDetectorImpl::
 {
 	size_t N = detectedCharts.size();
 	std::vector<cv::Point> X(N);
-	std::vector<float> B0(N), W(N);
+	std::vector<double> B0(N), W(N);
 	std::vector<int> G;
 
 	CChart chart;
-	float b0;
+	double b0;
 	for (size_t i = 0; i < N; i++)
 	{
 		chart = detectedCharts[i];
@@ -683,7 +683,7 @@ void CCheckerDetectorImpl::
 		if (cxr.size() == 1 || cyr.size() == 1) //no information can be extracted if only one row or columns in present
 			continue;
 		// color and center rectificate
-		cv::Size2i colorSize = cv::Size2i(cxr.size(), cyr.size());
+		cv::Size2i colorSize = cv::Size2i((int)cxr.size(), (int)cyr.size());
 		cv::Mat colorMat(colorSize, CV_32FC3);
 		std::vector<cv::Point2f> cte(colorSize.area());
 
@@ -929,7 +929,7 @@ void CCheckerDetectorImpl::
 	chartPhy[2] = cv::Point2f(w, h);
 	chartPhy[3] = cv::Point2f(0, h);
 
-	size = cv::Size(w, h);
+	size = cv::Size((int)w, (int)h);
 }
 
 void CCheckerDetectorImpl::
@@ -976,7 +976,7 @@ void CCheckerDetectorImpl::
 
 	// max and idx
 	float fmax = 0;
-	int idx = 0;
+	size_t idx = 0;
 	for (size_t i = 0; i < nn - 1; i++)
 		if (fmax < dif[i])
 		{
@@ -992,7 +992,7 @@ void CCheckerDetectorImpl::
 void CCheckerDetectorImpl::
 	transform_points_forward(const cv::Matx33f &T, const std::vector<cv::Point2f> &X, std::vector<cv::Point2f> &Xt)
 {
-	int N = X.size();
+	size_t N = X.size();
 	if (N == 0)
 		return;
 
@@ -1056,13 +1056,13 @@ void CCheckerDetectorImpl::
 	//	RGB   |      |       |      |   |   |
 	//  YCbCr |
 
-	charts_rgb = cv::Mat(cv::Size(5, 3 * N), CV_64F);
-	charts_ycbcr = cv::Mat(cv::Size(5, 3 * N), CV_64F);
+	charts_rgb = cv::Mat(cv::Size(5, 3 * (int)N), CV_64F);
+	charts_ycbcr = cv::Mat(cv::Size(5, 3 * (int)N), CV_64F);
 
 	cv::Scalar mu_rgb, st_rgb, mu_ycb, st_ycb, p_size;
 	double max_rgb[3], min_rgb[3], max_ycb[3], min_ycb[3];
 
-	for (size_t i = 0, k; i < N; i++)
+	for (int i = 0, k; (int)i < N; i++)
 	{
 		k = 4 * i;
 		bch[0] = cellchart[k + 0];
@@ -1073,7 +1073,7 @@ void CCheckerDetectorImpl::
 		transform_points_forward(ccT, bch, bcht);
 
 		cv::Point2f c(0, 0);
-		for (size_t j = 0; j < 4; j++)
+		for (int j = 0; j < 4; j++)
 			c += bcht[j];
 		c /= 4;
 		for (size_t j = 0; j < 4; j++)
@@ -1166,7 +1166,7 @@ float CCheckerDetectorImpl::
 	N = cellchart.size() / 4;
 
 	float ec = 0, es = 0;
-	for (size_t i = 0, k; i < N; i++)
+	for (int i = 0, k; i < (int)N; i++)
 	{
 
 		cv::Vec3f r = lab.at<cv::Vec3f>(i);
@@ -1180,10 +1180,10 @@ float CCheckerDetectorImpl::
 		transform_points_forward(ccT, bch, bcht);
 
 		cv::Point2f c(0, 0);
-		for (size_t j = 0; j < 4; j++)
+		for (int j = 0; j < 4; j++)
 			c += bcht[j];
 		c /= 4;
-		for (size_t j = 0; j < 4; j++)
+		for (int j = 0; j < 4; j++)
 			bcht[j] = ((bcht[j] - c) * 0.75) + c;
 
 		cv::Scalar mu, st;
@@ -1192,11 +1192,11 @@ float CCheckerDetectorImpl::
 
 		// cos error
 		float costh;
-		costh = (float)mu.dot(cv::Scalar(r)) / (norm(mu) * norm(r) + FLT_EPSILON);
+		costh = (float)(mu.dot(cv::Scalar(r)) / (norm(mu) * norm(r) + FLT_EPSILON));
 		ec += (1 - (1 + costh) / 2);
 
 		// standar desviation
-		es += st.dot(st);
+		es += (float)st.dot(st);
 	}
 
 	// J = arg min ec + es
