@@ -178,7 +178,9 @@ bool CCheckerDetectorImpl::
 				cv::Rect innerRegion(topLeft, bottomRight);
 				cv::Mat innerCroppedImage = croppedImage(innerRegion);
 
+#ifdef SHOW_DEBUG_IMAGES
 				string pathOut = "./";
+#endif
 				//-------------------------------------------------------------------
 				// prepare image
 				//-------------------------------------------------------------------
