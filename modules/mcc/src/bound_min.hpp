@@ -1,7 +1,7 @@
-#ifndef _MCC_BOUND_MIN_H
-#define _MCC_BOUND_MIN_H
+#ifndef _MCC_BOUND_MIN_HPP
+#define _MCC_BOUND_MIN_HPP
 
-#include "core.hpp"
+#include "precomp.hpp"
 #include "charts.hpp"
 
 #include <opencv2/core.hpp>
@@ -66,4 +66,4 @@ private:
 }
 
 }
-#endif //_MCC_BOUND_MIN_H
+#endif //_MCC_BOUND_MIN_HPP

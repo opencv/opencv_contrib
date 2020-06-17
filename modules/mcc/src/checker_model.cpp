@@ -11,12 +11,11 @@ namespace mcc{
 
 ///////////////////////////////////////////////////////////////////////////////
 /// CChartModel
-CChartModel::CChartModel(const int chartType)
+CChartModel::CChartModel(const TYPECHART chartType)
 {
-	CV_Assert( 0<=chartType && chartType<=2);
 	switch(chartType)
 	{
-		case 0: //Standard
+		case MCC24: //Standard
 			size = cv::Size2i(4,6);
 			boxsize = cv::Size2f(11.25, 16.75);
 			box.resize(4);
@@ -28,7 +27,7 @@ CChartModel::CChartModel(const int chartType)
 			center = CChartClassicModelCenter;
 			chart  = CChartClassicModelColors;
 			break;
-		case 1: //DigitalSG
+		case SG140: //DigitalSG
 			size = cv::Size2i(10, 14);
 			boxsize = cv::Size2f(27.75, 38.75);
 			box.resize(4);
@@ -41,7 +40,7 @@ CChartModel::CChartModel(const int chartType)
 			center = CChartDigitalSGCenter;
 			chart  = CChartDigitalSGColors;
 			break;
-		case 2: //Vinyl
+		case VINYL18: //Vinyl
 			size = cv::Size2i(3, 6);
 			boxsize = cv::Size2f(12.50, 18.25);
 			box.resize(4);
@@ -147,11 +146,6 @@ rotate90() {
   center    = _center;
 
   boxsize = cv::Size2f(boxsize.height, boxsize.width);
-//   box[0] = cv::Point2f(0.00, 0.00);
-//   box[1] = cv::Point2f(boxsize.width, 0.00);
-//   box[2] = cv::Point2f(boxsize.width, boxsize.height);
-//   box[3] = cv::Point2f(0.00, boxsize.height);;
-
 
 
 }
@@ -200,12 +194,12 @@ float CChartModel::
 		v1[0] = 1;
 		v2[0] = 1; // L <- 0
 
-		// eculidian
+		// euclidean
 		cv::Vec3f v = v1 - v2;
 		dist_i = v.dot(v);
 		dist += sqrt(dist_i);
 
-		// coseno
+		// cosine
 		//float costh = v1.dot(v2) / (norm(v1)*norm(v2));
 		//dist += 1 - (1 + costh) / 2;
 	}
@@ -337,6 +331,7 @@ void CChartModel::
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 // // CChecker
+
 Ptr<CChecker> CChecker::create()
 {
 	return makePtr<CCheckerImpl>();
@@ -350,11 +345,11 @@ Ptr<CCheckerDraw> CCheckerDraw::create(Ptr<CChecker> pChecker, cv::Scalar color/
 
 
 void CCheckerDrawImpl::
-	draw(cv::Mat &img, const int chartType)
+	draw(cv::Mat &img)
 {
 
 	// color chart classic model
-	CChartModel cccm(chartType);
+	CChartModel cccm(m_pChecker->target);
 	cv::Mat lab;
 	size_t N;
 	std::vector<cv::Point2f> fbox = cccm.box;
@@ -367,7 +362,6 @@ void CCheckerDrawImpl::
 	N = cellchart.size() / 4;
 	for (size_t i = 0, k; i < N; i++)
 	{
-
 		k = 4 * i;
 		bch[0] = cellchart[k + 0];
 		bch[1] = cellchart[k + 1];

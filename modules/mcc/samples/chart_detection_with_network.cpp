@@ -48,13 +48,12 @@ using namespace std;
 using namespace cv;
 using namespace mcc;
 
-const char *about = "Basic chart detection";
+const char *about = "Basic chart detection using neural network";
 const char *keys = {
     "{t              |         | chartType: 0-Standard, 1-DigitalSG, 2-Vinyl}"
+    "{m        |       | File path of model, if you don't have the model you can find the link in the documentation}"
+    "{pb        |       | File path of pbtxt file, available along with with the model file }"
     "{v        |       | Input from video file, if ommited, input comes from camera }"
-    // "{i        |       | File path of image  }"
-    "{m        |       | File path of model  }"
-    "{pb        |       | File path of pbtxt file  }"
     "{ci       | 0     | Camera id if input doesnt come from video (-v) }"};
 
 int main(int argc, char *argv[])
@@ -62,15 +61,14 @@ int main(int argc, char *argv[])
     CommandLineParser parser(argc, argv, keys);
     parser.about(about);
 
-    if (argc < 2)
+    if (argc < 4)
     {
         parser.printMessage();
         return 0;
     }
 
-    int chartType = parser.get<int>("t");
-
-    // string imagepath = parser.get<string> ("i");
+    CV_Assert(0<=parser.get<int>("t") && parser.get<int>("t")<3);
+    TYPECHART chartType = TYPECHART(parser.get<int>("t"));
     string model_path = parser.get<string> ("m");
     string pbtxt_path = parser.get<string> ("pb");
     int camId = parser.get<int>("ci");
@@ -92,7 +90,7 @@ int main(int argc, char *argv[])
     if (!video.empty())
     {
         inputVideo.open(video);
-        waitTime = 0;
+        waitTime = 10;
     }
     else
     {
@@ -103,25 +101,27 @@ int main(int argc, char *argv[])
     //load the network
 
 	cv::dnn::Net net = cv::dnn::readNetFromTensorflow(model_path, pbtxt_path);
+    net.setPreferableBackend(dnn::DNN_BACKEND_CUDA);
+    net.setPreferableTarget(dnn::DNN_TARGET_CUDA);
+
+    Ptr<CCheckerDetector> detector = CCheckerDetector::create();
+    if(!detector->setNet(net))
+    {
+        cout<<"Loading Model failed: Falling back to standard techniques"<<endl;
+    }
 
     while (inputVideo.grab())
     {
         Mat image, imageCopy;
         inputVideo.retrieve(image);
 
-        // image = imread(imagepath);
-
         imageCopy=image.clone();
-        Ptr<CCheckerDetector> detector = CCheckerDetector::create(2, 5);
-        if(!detector->setNet(net))
-        {
-            cout<<"Loading Model failed: Falling back to standard techniques"<<endl;
-        }
-        Ptr<CChecker> det = CChecker::create();
         cv::Rect region = Rect(Point2f(0,0), image.size());
-        vector<cv::Rect> regions(1, region);
+
+        int max_number_of_charts_in_image = 2;
+
         // Marker type to detect
-        if (!detector->process(image, chartType, regions, true ))
+        if (!detector->process(image, chartType, max_number_of_charts_in_image, true))
         {
             printf("ChartColor not detected \n");
         }
@@ -131,20 +131,17 @@ int main(int argc, char *argv[])
             // get checker
             std::vector<Ptr<mcc::CChecker>> checkers;
             detector->getListColorChecker(checkers);
-            Ptr<mcc::CChecker> checker;
-
-            for (size_t ck = 0; ck < checkers.size(); ck++)
+            for(Ptr<mcc::CChecker> checker: checkers)
             {
                 // current checker
-                checker = checkers[ck];
 
                 Ptr<CCheckerDraw> cdraw = CCheckerDraw::create(checker);
-                cdraw->draw(image, chartType);
+                cdraw->draw(image);
             }
 
         }
 
-         imshow("image result | q or esc to quit", image);
+        imshow("image result | q or esc to quit", image);
         imshow("original", imageCopy);
         char key = (char)waitKey(waitTime);
         if (key == 27)

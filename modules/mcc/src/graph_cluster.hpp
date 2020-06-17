@@ -1,7 +1,7 @@
-#ifndef _MCC_GRAPH_CLUSTERS_H
-#define _MCC_GRAPH_CLUSTERS_H
+#ifndef _MCC_GRAPH_CLUSTERS_HPP
+#define _MCC_GRAPH_CLUSTERS_HPP
 
-#include "core.hpp"
+#include "precomp.hpp"
 
 #include <opencv2/core.hpp>
 #include <vector>
@@ -51,4 +51,4 @@ private:
 }
 }
 
-#endif //_MCC_GRAPH_CLUSTERS_H
+#endif //_MCC_GRAPH_CLUSTERS_HPP

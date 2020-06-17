@@ -1,7 +1,7 @@
-#ifndef _MCC_COMMON_H
-#define _MCC_COMMON_H
+#ifndef _MCC_COMMON_HPP
+#define _MCC_COMMON_HPP
 
-#include "core.hpp"
+#include "precomp.hpp"
 
 using namespace std;
 namespace cv{
@@ -61,15 +61,15 @@ namespace mcc {
 	template<typename T>
 	void polyclockwise(std::vector<T> &points)
 	{
-		// Sort the points in anti-clockwise order
+		// Sort the points in clockwise order
 		// Trace a line between the first and second point.
-		// If the third point is at the right side, then the points are anti-clockwise
+		// If the third point is at the right side, then the points are clockwise
 		cv::Point v1 = points[1] - points[0];
 		cv::Point v2 = points[2] - points[0];
 
 		double o = (v1.x * v2.y) - (v1.y * v2.x);
 
-		if (o > 0.0)	//if the third point is in the left side, then sort in anti-clockwise order
+		if (o > 0.0)	//if the third point is in the left side, then sort in clockwise order
 			std::swap(points[1], points[3]);
 
 	}
@@ -119,4 +119,4 @@ namespace mcc {
 }
 }
 
-#endif //_MCC_COMMON_H
+#endif //_MCC_COMMON_HPP

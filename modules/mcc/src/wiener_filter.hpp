@@ -6,10 +6,10 @@
   */
 
 
-#ifndef _WIENER_FILTER_H
-#define _WIENER_FILTER_H
+#ifndef _WIENER_FILTER_HPP
+#define _WIENER_FILTER_HPP
 
-#include "core.hpp"
+#include "precomp.hpp"
 namespace cv{
 namespace mcc{
 
@@ -30,12 +30,9 @@ namespace mcc{
 		  * @author: Ray Juang / rayver{ _at_ } hkn{ / _dot_ / } berkeley(_dot_) edu
 		  * @date : 12.1.2006
 		  */
-		void wiener2(cv::Mat & src, cv::Mat & dest, int szWindowX, int szWindowY);
-
-	private:
+		void wiener2(const cv::Mat & src, cv::Mat & dest, int szWindowX, int szWindowY);
 
 
-		void cvWiener2(const Mat& srcMat, Mat& dstMat, int szWindowX, int szWindowY);
 
 
 	};
@@ -45,4 +42,4 @@ namespace mcc{
 
 }
 
-#endif //_WIENER_FILTER_H
+#endif //_WIENER_FILTER_HPP

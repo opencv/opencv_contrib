@@ -52,6 +52,7 @@ const char *keys = {
     "{v        |       | Input from video file, if ommited, input comes from camera }"
     "{ci       | 0     | Camera id if input doesnt come from video (-v) }"};
 
+
 int main(int argc, char *argv[])
 {
     CommandLineParser parser(argc, argv, keys);
@@ -63,9 +64,9 @@ int main(int argc, char *argv[])
         return 0;
     }
 
-    int chartType = parser.get<int>("t");
+    CV_Assert(0<=parser.get<int>("t") && parser.get<int>("t")<3);
+    TYPECHART chartType = TYPECHART(parser.get<int>("t"));
     int camId = parser.get<int>("ci");
-
     String video;
     if (parser.has("v"))
     {
@@ -95,8 +96,7 @@ int main(int argc, char *argv[])
     {
         Mat image, imageCopy;
         inputVideo.retrieve(image);
-        imageCopy=image.clone();
-        Ptr<CCheckerDetector> detector = CCheckerDetector::create(2, 10);
+        Ptr<CCheckerDetector> detector = CCheckerDetector::create();
 
         // Marker type to detect
         if (!detector->process(image, chartType))
@@ -109,18 +109,16 @@ int main(int argc, char *argv[])
             // get checker
             std::vector<Ptr<mcc::CChecker>> checkers;
             detector->getListColorChecker(checkers);
-            Ptr<mcc::CChecker> checker;
-            for (size_t ck = 0; ck < checkers.size(); ck++)
+
+            for(Ptr<mcc::CChecker> checker : checkers)
             {
                 // current checker
-                checker = checkers[ck];
                 Ptr<CCheckerDraw> cdraw = CCheckerDraw::create(checker);
-                cdraw->draw(image, chartType);
+                cdraw->draw(image);
             }
 
         }
-
-         imshow("image result | q or esc to quit", image);
+        imshow("image result | q or esc to quit", image);
         imshow("original", imageCopy);
         char key = (char)waitKey(waitTime);
         if (key == 27)

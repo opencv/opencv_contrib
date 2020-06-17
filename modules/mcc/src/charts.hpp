@@ -1,7 +1,7 @@
-#ifndef _MCC_CHARTS_H
-#define _MCC_CHARTS_H
+#ifndef _MCC_CHARTS_HPP
+#define _MCC_CHARTS_HPP
 
-#include "core.hpp"
+#include "precomp.hpp"
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -20,7 +20,7 @@ namespace mcc {
 	  * |        |
 	  * .--------.
 	  *
-	  * \author Pedro Marrero Fern�ndez
+	  * \author Pedro Marrero Fernndez
 	  */
 
 	class CChart
@@ -76,4 +76,4 @@ namespace mcc {
 }
 }
 
-#endif //_MCC_CHARTS_H
+#endif //_MCC_CHARTS_HPP

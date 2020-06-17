@@ -1,7 +1,7 @@
 
 
-#ifndef _MCC_DICTIONARY_H
-#define _MCC_DICTIONARY_H
+#ifndef _MCC_DICTIONARY_HPP
+#define _MCC_DICTIONARY_HPP
 #include <opencv2/core.hpp>
 #include <vector>
 

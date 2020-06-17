@@ -1,5 +1,4 @@
 #include "graph_cluster.hpp"
-#include "core.hpp"
 
 namespace cv{
 namespace mcc{
@@ -28,7 +27,7 @@ group()
 		Y.clear(); Y.resize(n - i);
 		Y[0] = 0;
 
-		// 1. semejanza intergrupo
+		// 1. group similar blobs
 		float dist, w, y;
 		for (size_t j = i + 1, k = 1; j < n; j++, k++)
 		{
@@ -37,26 +36,23 @@ group()
 
 			//\frac{|W_i - W_j|}{W_i + W_j}
 		    w = min(abs(W[i] - W[j]) / (W[i] + W[j]), abs(max(W[i], W[j])- 24/11.0f*min(W[i], W[j]))/(max(W[i], W[j])+24/11.0f*min(W[i], W[j])));
-			w = (w < 0.2);
+			w = (w < 0.1);
 
 			y = w*dist;
-			Y[k] = (y<min(B0[i], B0[j]))*y;;
+			Y[k] = (y<B0[i])*y;;
 
 		}
 
 
-		// 2. Buscar los b0-semejantes
 		if (!G[i]) G[i] = i + 1;
 
 		std::vector<int> pos_b0;
 		find(Y, pos_b0);
 
-		// 3. Analisis de la casuistica
 
 		size_t m = pos_b0.size();
 		if (!m) continue;
 
-		//reajuste de las coordenadas
 		std::vector<int> pos_nz, pos_z;
 		for (size_t j = 0; j < m; j++)
 		{
@@ -65,7 +61,6 @@ group()
 			else pos_z.push_back(j);
 		}
 
-		//marcados
 		for (size_t j = 0; j < pos_z.size(); j++)
 		{
 			pos_z[j] = pos_b0[pos_z[j]];
@@ -73,12 +68,6 @@ group()
 
 		}
 
-
-		//no marcados
-		//Se unir�n todos los grupos presentes en
-		//G(j) con los de G(i) y el representante
-		//ser� el menor de todos
-		//UNIR(G(i), G(j));
 
 		if (!pos_nz.size()) continue;
 
@@ -99,12 +88,9 @@ group()
 		}
 	}
 
-	//ultimo caso
 	if (!G[n - 1]) G[n - 1] = n;
 
-	//formar grupos
-	//Organizamos los  grupos de manera tal que exista una correspodencia con
-	//el eje num�rico
+
 
 	std::vector<int> S;
 	S = G; unique(S, S);

@@ -1,7 +1,7 @@
-#ifndef _MCC_DEBUG_H
-#define _MCC_DEBUG_H
+#ifndef _MCC_DEBUG_HPP
+#define _MCC_DEBUG_HPP
 
-#include "core.hpp"
+#include "precomp.hpp"
 
 namespace cv{
 namespace mcc{
@@ -25,4 +25,4 @@ inline void showAndSave(std::string name, const cv::Mat& m, std::string path = "
 }
 
 
-#endif //_MCC_DEBUG_H
+#endif //_MCC_DEBUG_HPP
