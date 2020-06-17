@@ -29,7 +29,7 @@ group()
 
 		// 1. group similar blobs
 		double dist, w, y;
-		for (int j = i + 1, k = 1; j < n; j++, k++)
+		for (int j = i + 1, k = 1; j < (int)n; j++, k++)
 		{
 			//dist(X_i,X_j)
 			dist = norm(X[i] - X[j]);

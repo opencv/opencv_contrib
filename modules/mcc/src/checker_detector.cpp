@@ -474,7 +474,7 @@ void CCheckerDetectorImpl::
 		for (size_t j = 0; j < 4; j++)
 		{
 			cv::Point side = approxCurve[j] - approxCurve[(j + 1) % 4];
-			float squaredSideLength = side.dot(side);
+			float squaredSideLength = (float)side.dot(side);
 			minDist = std::min(minDist, squaredSideLength);
 		}
 
@@ -1001,7 +1001,7 @@ void CCheckerDetectorImpl::
 	cv::Matx31f p, xt;
 	cv::Point2f pt;
 
-	for (int i = 0; i < N; i++)
+	for (int i = 0; i < (int)N; i++)
 	{
 		p(0, 0) = X[i].x;
 		p(1, 0) = X[i].y;
@@ -1062,7 +1062,7 @@ void CCheckerDetectorImpl::
 	cv::Scalar mu_rgb, st_rgb, mu_ycb, st_ycb, p_size;
 	double max_rgb[3], min_rgb[3], max_ycb[3], min_ycb[3];
 
-	for (int i = 0, k; (int)i < N; i++)
+	for (int i = 0, k; i < (int)N; i++)
 	{
 		k = 4 * i;
 		bch[0] = cellchart[k + 0];
