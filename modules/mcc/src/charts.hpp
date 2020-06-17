@@ -41,9 +41,9 @@ namespace mcc {
 
 		std::vector<cv::Point2f> corners;
 		cv::Point2f center;
-		float perimetro;
-		float area;
-		float large_side;
+		double perimetro;
+		double area;
+		double large_side;
 
 	};
 

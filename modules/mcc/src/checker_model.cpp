@@ -91,7 +91,7 @@ void CChartModel::
 
 	N = size.width;
 	M = size.height;
-	cv::Mat im_lab_org(N, M, CV_32FC3);
+	cv::Mat im_lab_org((int)N, (int)M, CV_32FC3);
 	int type_color = 3 * cs;
 	k = 0;
 
@@ -99,7 +99,7 @@ void CChartModel::
 	{
 		for (size_t j = 0; j < M; j++)
 		{
-			cv::Vec3f &lab_values = im_lab_org.at<cv::Vec3f>(i, j);
+			cv::Vec3f &lab_values = im_lab_org.at<cv::Vec3f>((int)i, (int)j);
 			lab_values[0] = chart[k][type_color + 0];
 			lab_values[1] = chart[k][type_color + 1];
 			lab_values[2] = chart[k][type_color + 2];
@@ -216,7 +216,7 @@ bool CChartModel::
 
 	N = size.width;
 	M = size.height;
-	cv::Mat im_lab_org(N, M, CV_32FC3);
+	cv::Mat im_lab_org((int)N, (int)M, CV_32FC3);
 	int type_color = 3;
 	k = 0;
 
@@ -224,7 +224,7 @@ bool CChartModel::
 	{
 		for (size_t j = 0; j < M; j++)
 		{
-			cv::Vec3f &lab = im_lab_org.at<cv::Vec3f>(i, j);
+			cv::Vec3f &lab = im_lab_org.at<cv::Vec3f>((int)i, (int)j);
 			lab[0] = chart[k][type_color + 0];
 			lab[1] = chart[k][type_color + 1];
 			lab[2] = chart[k][type_color + 2];
@@ -265,7 +265,7 @@ bool CChartModel::
 		for (size_t j = 0; j < mM; j++)
 		{
 			cv::Mat lab_curr, lab_roi;
-			lab_roi = im_lab_org(cv::Rect(j, i, m, n));
+			lab_roi = im_lab_org(cv::Rect((int)j, (int)i, (int)m, (int)n));
 			lab_roi.copyTo(lab_curr);
 			lab_curr = lab_curr.t();
 			lab_curr = lab_curr.reshape(3, n * m);

@@ -59,7 +59,7 @@ drawContour(cv::Scalar color /*= CV_RGB(0, 250, 0)*/) const
 
 
 	//Draw lines
-	float thickness = 2;
+	int thickness = 2;
 	cv::line(*m_image, (*m_pChart).corners[0], (*m_pChart).corners[1], color, thickness, LINE_AA);
 	cv::line(*m_image, (*m_pChart).corners[1], (*m_pChart).corners[2], color, thickness, LINE_AA);
 	cv::line(*m_image, (*m_pChart).corners[2], (*m_pChart).corners[3], color, thickness, LINE_AA);

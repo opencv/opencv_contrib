@@ -30,7 +30,7 @@ struct CV_EXPORTS_W DetectorParameters {
 	CV_PROP_RW double confidenceThreshold;///<minimum confidence for a bounding box detected by neural network to classify as detection. (default 0.5) (0<=confidenceThreshold<=1)
 	CV_PROP_RW double minContourSolidity;///<minimum solidity of a contour for it be detected as a square in the chart. (default 0.9).
 	CV_PROP_RW double findCandidatesApproxPolyDPEpsMultiplier;///<multipler to be used in cv::ApproxPolyDP function (default 0.05)
-	CV_PROP_RW float borderWidth;///<width of the padding used to pass the inital neural network detection in the succeeding system.(default 0)
+	CV_PROP_RW int borderWidth;///<width of the padding used to pass the inital neural network detection in the succeeding system.(default 0)
 	CV_PROP_RW float B0factor;///< distance between two neighbours squares of the same chart. Defined as the ratio between distance and large dimension of square (default 1.25)
 	CV_PROP_RW float maxError;///<maximum allowed error in the detection of a chart. default(2)
 	CV_PROP_RW int minContourPointsAllowed;///< minium points in a detected contour. default(4)
@@ -75,7 +75,7 @@ public:
 	* \param chartType type of the chart to detect
 	* \param nc number of charts in the image, if you don't know the exact
     *           then keeping this number high helps.
-	* \param use_net if it is true the network provided using the setNet()
+	* \param useNet if it is true the network provided using the setNet()
 	*                is used for preliminary search for regions where chart
 	*                could be present, inside the regionsOfInterest provied.
 	* \param params parameters of the detection system. More information
@@ -95,12 +95,12 @@ public:
 
 	/** \brief Get the best color checker. By the best it means the one
 	*         detected with the highest confidence.
-	* \param[out] A single colorchecker
+	* \param checker [out] A single colorchecker
 	*/
 	CV_WRAP virtual void getBestColorChecker(Ptr<mcc::CChecker> &checker) = 0;
 
 	/** \brief Get the list of all detected colorcheckers
-	* \param[out] vector of colorcheckers
+	* \param checkers [out] vector of colorcheckers
 	*/
 	CV_WRAP virtual void getListColorChecker(std::vector<Ptr<CChecker>> &checkers) = 0;
 

@@ -39,7 +39,7 @@ private:
 	bool validateLine(const std::vector<cv::Point3f> &Lc, cv::Point3f ln, int k, int &j)
 	{
 
-		float theta;
+		double theta;
 		cv::Point2d v0, v1;
 
 		for (j = 0; j < k; j++)

@@ -116,7 +116,6 @@ int main(int argc, char *argv[])
         inputVideo.retrieve(image);
 
         imageCopy=image.clone();
-        cv::Rect region = Rect(Point2f(0,0), image.size());
 
         int max_number_of_charts_in_image = 2;
 

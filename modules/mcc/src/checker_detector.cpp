@@ -67,7 +67,7 @@ bool CCheckerDetectorImpl::
 
 		std::vector<cv::Mat> img_bw;
 		performThreshold(img_gray, img_bw, params);
-		parallel_for_(Range(0, img_bw.size()), [&](const Range &range) {
+		parallel_for_(Range(0, (int)img_bw.size()), [&](const Range &range) {
 			const int begin = range.start;
 			const int end = range.end;
 
@@ -407,7 +407,7 @@ void CCheckerDetectorImpl::
 		PointsVector contour;
 		contour = allContours[i];
 
-		int contourSize = contour.size();
+		int contourSize = (int)contour.size();
 		if (contourSize <= params->minContourPointsAllowed)
 			continue;
 
@@ -485,7 +485,7 @@ void CCheckerDetectorImpl::
 
 		std::vector<cv::Point2f> corners(4);
 		for (int j = 0; j < 4; j++)
-			corners[j] = cv::Point2f(approxCurve[j].x, approxCurve[j].y);
+			corners[j] = cv::Point2f((float)approxCurve[j].x, (float)approxCurve[j].y);
 		chart.setCorners(corners);
 
 		possibleCharts.push_back(chart);
@@ -661,8 +661,8 @@ void CCheckerDetectorImpl::
 			k = i * 4;
 			cv::Point2f v1 = cht[k + 1] - cht[k + 0];
 			cv::Point2f v2 = cht[k + 3] - cht[k + 0];
-			wchart += norm(v1);
-			hchart += norm(v2);
+			wchart += (float)norm(v1);
+			hchart += (float)norm(v2);
 			cx[i] = ct[i].x;
 			cy[i] = ct[i].y;
 		}
@@ -707,8 +707,8 @@ void CCheckerDetectorImpl::
 
 				// color
 				int x, y;
-				x = cti.x;
-				y = cti.y;
+				x = (int)cti.x;
+				y = (int)cti.y;
 				Vec3f &srgb = colorMat.at<Vec3f>(i, j);
 				Vec3b rgb;
 				if (0 <= y && y < img.rows && 0 <= x && x < img.cols)
@@ -915,10 +915,10 @@ void CCheckerDetectorImpl::
 	float w, h;
 	cv::Point2f v1 = points[1] - points[0];
 	cv::Point2f v2 = points[3] - points[0];
-	float asp = norm(v2) / norm(v1);
+	float asp = (float) (norm(v2) / norm(v1));
 
 	w = 100;
-	h = floor(100 * asp + 0.5);
+	h = (float)floor(100 * asp + 0.5);
 
 	chartPhy.clear();
 	chartPhy.resize(4);
@@ -1054,8 +1054,8 @@ void CCheckerDetectorImpl::
 	//	RGB   |      |       |      |   |   |
 	//  YCbCr |
 
-	charts_rgb = cv::Mat(cv::Size(5, 3 * N), CV_32F);
-	charts_ycbcr = cv::Mat(cv::Size(5, 3 * N), CV_32F);
+	charts_rgb = cv::Mat(cv::Size(5, 3 * N), CV_64F);
+	charts_ycbcr = cv::Mat(cv::Size(5, 3 * N), CV_64F);
 
 	cv::Scalar mu_rgb, st_rgb, mu_ycb, st_ycb, p_size;
 	double max_rgb[3], min_rgb[3], max_ycb[3], min_ycb[3];
@@ -1089,23 +1089,23 @@ void CCheckerDetectorImpl::
 		// create tabla
 		//|p_size|average|stddev|max|min|
 		// raw_r
-		charts_rgb.at<float>(3 * i + 0, 0) = p_size(0);
-		charts_rgb.at<float>(3 * i + 0, 1) = mu_rgb(0);
-		charts_rgb.at<float>(3 * i + 0, 2) = st_rgb(0);
-		charts_rgb.at<float>(3 * i + 0, 3) = min_rgb[0];
-		charts_rgb.at<float>(3 * i + 0, 4) = max_rgb[0];
+		charts_rgb.at<double>(3 * i + 0, 0) = p_size(0);
+		charts_rgb.at<double>(3 * i + 0, 1) = mu_rgb(0);
+		charts_rgb.at<double>(3 * i + 0, 2) = st_rgb(0);
+		charts_rgb.at<double>(3 * i + 0, 3) = min_rgb[0];
+		charts_rgb.at<double>(3 * i + 0, 4) = max_rgb[0];
 		// raw_g
-		charts_rgb.at<float>(3 * i + 1, 0) = p_size(0);
-		charts_rgb.at<float>(3 * i + 1, 1) = mu_rgb(1);
-		charts_rgb.at<float>(3 * i + 1, 2) = st_rgb(1);
-		charts_rgb.at<float>(3 * i + 1, 3) = min_rgb[1];
-		charts_rgb.at<float>(3 * i + 1, 4) = max_rgb[1];
+		charts_rgb.at<double>(3 * i + 1, 0) = p_size(0);
+		charts_rgb.at<double>(3 * i + 1, 1) = mu_rgb(1);
+		charts_rgb.at<double>(3 * i + 1, 2) = st_rgb(1);
+		charts_rgb.at<double>(3 * i + 1, 3) = min_rgb[1];
+		charts_rgb.at<double>(3 * i + 1, 4) = max_rgb[1];
 		// raw_b
-		charts_rgb.at<float>(3 * i + 2, 0) = p_size(0);
-		charts_rgb.at<float>(3 * i + 2, 1) = mu_rgb(2);
-		charts_rgb.at<float>(3 * i + 2, 2) = st_rgb(2);
-		charts_rgb.at<float>(3 * i + 2, 3) = min_rgb[2];
-		charts_rgb.at<float>(3 * i + 2, 4) = max_rgb[2];
+		charts_rgb.at<double>(3 * i + 2, 0) = p_size(0);
+		charts_rgb.at<double>(3 * i + 2, 1) = mu_rgb(2);
+		charts_rgb.at<double>(3 * i + 2, 2) = st_rgb(2);
+		charts_rgb.at<double>(3 * i + 2, 3) = min_rgb[2];
+		charts_rgb.at<double>(3 * i + 2, 4) = max_rgb[2];
 
 		// YCbCr space
 		cv::meanStdDev(im_ycbcr, mu_ycb, st_ycb, mask);
@@ -1116,23 +1116,23 @@ void CCheckerDetectorImpl::
 		// create tabla
 		//|p_size|average|stddev|max|min|
 		// raw_Y
-		charts_ycbcr.at<float>(3 * i + 0, 0) = p_size(0);
-		charts_ycbcr.at<float>(3 * i + 0, 1) = mu_ycb(0);
-		charts_ycbcr.at<float>(3 * i + 0, 2) = st_ycb(0);
-		charts_ycbcr.at<float>(3 * i + 0, 3) = min_ycb[0];
-		charts_ycbcr.at<float>(3 * i + 0, 4) = max_ycb[0];
+		charts_ycbcr.at<double>(3 * i + 0, 0) = p_size(0);
+		charts_ycbcr.at<double>(3 * i + 0, 1) = mu_ycb(0);
+		charts_ycbcr.at<double>(3 * i + 0, 2) = st_ycb(0);
+		charts_ycbcr.at<double>(3 * i + 0, 3) = min_ycb[0];
+		charts_ycbcr.at<double>(3 * i + 0, 4) = max_ycb[0];
 		// raw_Cb
-		charts_ycbcr.at<float>(3 * i + 1, 0) = p_size(0);
-		charts_ycbcr.at<float>(3 * i + 1, 1) = mu_ycb(1);
-		charts_ycbcr.at<float>(3 * i + 1, 2) = st_ycb(1);
-		charts_ycbcr.at<float>(3 * i + 1, 3) = min_ycb[1];
-		charts_ycbcr.at<float>(3 * i + 1, 4) = max_ycb[1];
+		charts_ycbcr.at<double>(3 * i + 1, 0) = p_size(0);
+		charts_ycbcr.at<double>(3 * i + 1, 1) = mu_ycb(1);
+		charts_ycbcr.at<double>(3 * i + 1, 2) = st_ycb(1);
+		charts_ycbcr.at<double>(3 * i + 1, 3) = min_ycb[1];
+		charts_ycbcr.at<double>(3 * i + 1, 4) = max_ycb[1];
 		// raw_Cr
-		charts_ycbcr.at<float>(3 * i + 2, 0) = p_size(0);
-		charts_ycbcr.at<float>(3 * i + 2, 1) = mu_ycb(2);
-		charts_ycbcr.at<float>(3 * i + 2, 2) = st_ycb(2);
-		charts_ycbcr.at<float>(3 * i + 2, 3) = min_ycb[2];
-		charts_ycbcr.at<float>(3 * i + 2, 4) = max_ycb[2];
+		charts_ycbcr.at<double>(3 * i + 2, 0) = p_size(0);
+		charts_ycbcr.at<double>(3 * i + 2, 1) = mu_ycb(2);
+		charts_ycbcr.at<double>(3 * i + 2, 2) = st_ycb(2);
+		charts_ycbcr.at<double>(3 * i + 2, 3) = min_ycb[2];
+		charts_ycbcr.at<double>(3 * i + 2, 4) = max_ycb[2];
 	}
 }
 float CCheckerDetectorImpl::
@@ -1190,7 +1190,7 @@ float CCheckerDetectorImpl::
 
 		// cos error
 		float costh;
-		costh = mu.dot(cv::Scalar(r)) / (norm(mu) * norm(r) + FLT_EPSILON);
+		costh = (float)mu.dot(cv::Scalar(r)) / (norm(mu) * norm(r) + FLT_EPSILON);
 		ec += (1 - (1 + costh) / 2);
 
 		// standar desviation

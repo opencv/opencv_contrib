@@ -13,7 +13,7 @@ using namespace std;
  *                Test drawing works properly
 \****************************************************************************************/
 
-void runCCheckerDraw(Ptr<CChecker> pChecker, int rows, int cols, int number_of_cells_in_colorchecker)
+void runCCheckerDraw(Ptr<CChecker> pChecker, int rows, int cols, unsigned int number_of_cells_in_colorchecker)
 {
     cv::Mat img(rows, cols, CV_8UC3, {0,0,0});
 
