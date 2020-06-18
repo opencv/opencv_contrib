@@ -128,7 +128,7 @@ namespace canny
     template <
         class T,
         class Norm,
-        typename = std::enable_if_t<std::is_base_of<SrcTex, T>::value>
+        typename = typename std::enable_if<std::is_base_of<SrcTex, T>::value>::type
     >
     __global__ void calcMagnitudeKernel(const T src, PtrStepi dx, PtrStepi dy, PtrStepSzf mag, const Norm norm)
     {
