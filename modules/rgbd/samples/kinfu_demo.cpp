@@ -387,8 +387,8 @@ int main(int argc, char** argv)
     // params->voxelSize = cubeSize/params->volumeDims[0]; //meters
     // params->tsdf_trunc_dist = 0.01f; //meters
     // params->icpDistThresh = 0.01f; //meters
-    // params->volumePose = Affine3f().translate(Vec3f(-cubeSize/2.f, -cubeSize/2.f, 0.25f));
-    // //meters params->tsdf_max_weight = 16;
+    // params->volumePose = Affine3f().translate(Vec3f(-cubeSize/2.f, -cubeSize/2.f, 0.25f)); //meters
+    // params->tsdf_max_weight = 16;
 
     if (!idle)
         kf = KinFu::create(params);

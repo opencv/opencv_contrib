@@ -8,14 +8,14 @@
 #ifndef __OPENCV_VOLUME_H__
 #define __OPENCV_VOLUME_H__
 
-#include "precomp.hpp"
-#include "kinfu_frame.hpp"
+#include "intrinsics.hpp"
 #include "opencv2/core/affine.hpp"
 
 namespace cv
 {
 namespace kinfu
 {
+
 class Volume
 {
    public:
@@ -33,6 +33,7 @@ class Volume
                            cv::kinfu::Intr intrinsics)                                     = 0;
     virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
                          cv::OutputArray points, cv::OutputArray normals) const            = 0;
+    virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const       = 0;
     virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const = 0;
     virtual void reset()                                                                   = 0;
 
@@ -43,17 +44,15 @@ class Volume
     const float raycastStepFactor;
 };
 
-// TODO: Optimization possible:
-// * TsdfType can be FP16
-// * weight can be uint16
-typedef float TsdfType;
-struct TsdfVoxel
+enum class VolumeType
 {
-    TsdfType tsdf;
-    int weight;
+    TSDF     = 0,
+    HASHTSDF = 1
 };
-typedef Vec<uchar, sizeof(TsdfVoxel)> VecTsdfVoxel;
 
-}  // namespace kinfu
+cv::Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, cv::Affine3f _pose,
+                           float _raycastStepFactor, float _truncDist, int _maxWeight,
+                           float _truncateThreshold, Point3i _resolution);
+}  // namespace rgbd
 }  // namespace cv
 #endif

@@ -63,10 +63,10 @@ Ptr<Params> Params::defaultParams()
 
     // default pose of volume cube
     p.volumePose = Affine3f().translate(Vec3f(-volSize/2.f, -volSize/2.f, 0.5f));
-    p.tsdf_trunc_dist = 5 * p.voxelSize; //meters;
+    p.tsdf_trunc_dist = 7 * p.voxelSize; // about 0.04f in meters
     p.tsdf_max_weight = 64;   //frames
 
-    p.raycastStepFactor = 0.25f;  //in voxel sizes
+    p.raycast_step_factor = 0.25f;  //in voxel sizes
     // gradient delta factor is fixed at 1.0f and is not used
     //p.gradient_delta_factor = 0.5f; //in voxel sizes
 
@@ -89,9 +89,9 @@ Ptr<Params> Params::coarseParams()
     float volSize = 3.f;
     p->volumeDims = Vec3i::all(128); //number of voxels
     p->voxelSize  = volSize/128.f;
-    p->tsdf_trunc_dist = 5 * p->voxelSize;
+    p->tsdf_trunc_dist = 2 * p->voxelSize; // 0.04f in meters
 
-    p->raycastStepFactor = 0.75f;  //in voxel sizes
+    p->raycast_step_factor = 0.75f;  //in voxel sizes
 
     return p;
 }
@@ -121,8 +121,8 @@ public:
 
     //! TODO(Akash): Add back later
     virtual void getCloud(OutputArray points, OutputArray normals) const CV_OVERRIDE;
-    /* void getPoints(OutputArray points) const CV_OVERRIDE; */
-    /* void getNormals(InputArray points, OutputArray normals) const CV_OVERRIDE; */
+    void getPoints(OutputArray points) const CV_OVERRIDE;
+    void getNormals(InputArray points, OutputArray normals) const CV_OVERRIDE;
 
     void reset() CV_OVERRIDE;
 
@@ -151,12 +151,8 @@ KinFuImpl<MatType>::KinFuImpl(const Params &_params) :
     icp(makeICP(params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
     pyrPoints(), pyrNormals()
 {
-    if(params.volumeType == Params::VolumeType::TSDF)
-        volume = makeTSDFVolume(params.voxelSize, params.volumePose, params.raycastStepFactor,
-                params.tsdf_trunc_dist, params.tsdf_max_weight, params.volumeDims);
-    else
-        volume = makeHashTSDFVolume(params.voxelSize, params.volumePose, params.raycastStepFactor,
-                params.tsdf_trunc_dist, params.tsdf_max_weight, params.truncateThreshold);
+    volume = makeVolume(params.volumeType, params.voxelSize, params.volumePose, params.raycast_step_factor,
+                        params.tsdf_trunc_dist, params.tsdf_max_weight, params.truncateThreshold, params.volumeDims);
     reset();
 }
 
@@ -241,7 +237,6 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
                        params.bilateral_sigma_spatial,
                        params.bilateral_kernel_size,
                        params.truncateThreshold);
-    /* std::cout << "Created Frame from depth FrameID: " << frameCounter << "\n"; */
     if(frameCounter == 0)
     {
         // use depth instead of distance
@@ -257,7 +252,6 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
             return false;
 
         pose = pose * affine;
-        /* std::cout << "Obtained pose:\n " << pose.matrix << "\n"; */
 
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
@@ -272,7 +266,6 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
         volume->raycast(pose, params.intr, params.frameSize, points, normals);
         buildPyramidPointsNormals(points, normals, pyrPoints, pyrNormals,
                                   params.pyramidLevels);
-        /* std::cout << "Built Point normal pyramids\n"; */
     }
 
     frameCounter++;
@@ -291,13 +284,11 @@ void KinFuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPose) c
     if((cameraPose.rotation() == pose.rotation() && cameraPose.translation() == pose.translation()) ||
        (cameraPose.rotation() == id.rotation()   && cameraPose.translation() == id.translation()))
     {
-        /* std::cout << " Render without raycast: " << std::endl; */
         renderPointsNormals(pyrPoints[0], pyrNormals[0], image, params.lightPose);
     }
     else
     {
         MatType points, normals;
-        /* std::cout << " Raycasted render: " << std::endl; */
         volume->raycast(cameraPose, params.intr, params.frameSize, points, normals);
         renderPointsNormals(points, normals, image, params.lightPose);
     }
@@ -305,24 +296,24 @@ void KinFuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPose) c
 
 
 template< typename MatType >
-void KinFuImpl<MatType>::getCloud(cv::OutputArray p, OutputArray n) const
+void KinFuImpl<MatType>::getCloud(OutputArray p, OutputArray n) const
 {
     volume->fetchPointsNormals(p, n);
 }
 
 
-/* template< typename MatType > */
-/* void KinFuImpl<MatType>::getPoints(OutputArray points) const */
-/* { */
-/*     volume->fetchPointsNormals(points, noArray()); */
-/* } */
+template< typename MatType >
+void KinFuImpl<MatType>::getPoints(OutputArray points) const
+{
+    volume->fetchPointsNormals(points, noArray());
+}
 
 
-/* template< typename MatType > */
-/* void KinFuImpl<MatType>::getNormals(InputArray points, OutputArray normals) const */
-/* { */
-/*     volume->fetchNormals(points, normals); */
-/* } */
+template< typename MatType >
+void KinFuImpl<MatType>::getNormals(InputArray points, OutputArray normals) const
+{
+    volume->fetchNormals(points, normals);
+}
 
 // importing class
 
@@ -352,4 +343,3 @@ KinFu::~KinFu() {}
 
 } // namespace kinfu
 } // namespace cv
-

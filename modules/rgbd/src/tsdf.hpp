@@ -8,12 +8,26 @@
 #ifndef __OPENCV_KINFU_TSDF_H__
 #define __OPENCV_KINFU_TSDF_H__
 
-#include "volume.hpp"
+#include <opencv2/rgbd/volume.hpp>
+#include "kinfu_frame.hpp"
+#include "utils.hpp"
 
 namespace cv
 {
 namespace kinfu
 {
+
+// TODO: Optimization possible:
+// * TsdfType can be FP16
+// * weight can be uint16
+typedef float TsdfType;
+struct TsdfVoxel
+{
+    TsdfType tsdf;
+    int weight;
+};
+typedef Vec<uchar, sizeof(TsdfVoxel)> VecTsdfVoxel;
+
 class TSDFVolume : public Volume
 {
    public:
@@ -22,8 +36,6 @@ class TSDFVolume : public Volume
                         float _truncDist, int _maxWeight, Point3i _resolution,
                         bool zFirstMemOrder = true);
     virtual ~TSDFVolume() = default;
-
-    virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const = 0;
 
    public:
     Point3i volResolution;
@@ -94,7 +106,6 @@ class TSDFVolumeGPU : public TSDFVolume
 #endif
 cv::Ptr<TSDFVolume> makeTSDFVolume(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor,
                                    float _truncDist, int _maxWeight, Point3i _resolution);
-
 }  // namespace kinfu
 }  // namespace cv
 #endif

@@ -9,6 +9,7 @@
 
 #include "opencv2/core.hpp"
 #include "opencv2/core/affine.hpp"
+#include <opencv2/rgbd/volume.hpp>
 
 namespace cv {
 namespace kinfu {
@@ -17,11 +18,6 @@ namespace kinfu {
 
 struct CV_EXPORTS_W Params
 {
-    enum VolumeType
-    {
-        TSDF = 0,
-        HASHTSDF = 1
-    };
 
     CV_WRAP Params(){}
 
@@ -81,7 +77,7 @@ struct CV_EXPORTS_W Params
     /** @brief frame size in pixels */
     CV_PROP_RW Size frameSize;
 
-    CV_PROP_RW VolumeType volumeType;
+    CV_PROP_RW cv::kinfu::VolumeType volumeType;
 
     /** @brief camera intrinsics */
     CV_PROP_RW Matx33f intr;
@@ -138,7 +134,7 @@ struct CV_EXPORTS_W Params
 
     How much voxel sizes we skip each raycast step
     */
-    CV_PROP_RW float raycastStepFactor;
+    CV_PROP_RW float raycast_step_factor;
 
     // gradient delta in voxel sizes
     // fixed at 1.0f
@@ -222,13 +218,13 @@ public:
 
         @param points vector of points which are 4-float vectors
      */
-    /* CV_WRAP virtual void getPoints(OutputArray points) const = 0; */
+    CV_WRAP virtual void getPoints(OutputArray points) const = 0;
 
     /** @brief Calculates normals for given points
         @param points input vector of points which are 4-float vectors
         @param normals output vector of corresponding normals which are 4-float vectors
      */
-    /* CV_WRAP virtual  void getNormals(InputArray points, OutputArray normals) const = 0; */
+    CV_WRAP virtual  void getNormals(InputArray points, OutputArray normals) const = 0;
 
     /** @brief Resets the algorithm
 

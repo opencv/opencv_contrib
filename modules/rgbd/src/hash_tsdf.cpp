@@ -12,8 +12,10 @@
 #include <limits>
 #include <vector>
 
+#include "kinfu_frame.hpp"
 #include "opencv2/core/cvstd.hpp"
 #include "opencv2/core/utils/trace.hpp"
+#include "utils.hpp"
 
 namespace cv
 {
@@ -313,7 +315,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
     if (it == volumeUnits.end())
     {
         TsdfVoxel dummy;
-        dummy.tsdf   = float16_t(1.f);
+        dummy.tsdf   = 1.f;
         dummy.weight = 0;
         return dummy;
     }
@@ -336,7 +338,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Point3f& point) const
     if (it == volumeUnits.end())
     {
         TsdfVoxel dummy;
-        dummy.tsdf   = float16_t(1.f);
+        dummy.tsdf   = 1.f;
         dummy.weight = 0;
         return dummy;
     }
@@ -408,7 +410,6 @@ struct RaycastInvoker : ParallelLoopBody
                 //! Ray origin and direction in the volume coordinate frame
                 Point3f orig     = cam2volTrans;
                 Point3f rayDirV  = normalize(Vec3f(cam2volRot * reproj(Point3f(x, y, 1.f))));
-                Vec3f rayDirInvV = cv::Vec3f(1.f / rayDirV.x, 1.f / rayDirV.y, 1.f / rayDirV.z);
 
                 float tmin = 0;
                 float tmax = volume.truncateThreshold / rayDirV.z;
@@ -419,7 +420,7 @@ struct RaycastInvoker : ParallelLoopBody
                               std::numeric_limits<int>::min());
 
                 float tprev = tcurr;
-                TsdfType prevTsdf = float16_t(volume.truncDist);
+                TsdfType prevTsdf = volume.truncDist;
                 cv::Ptr<TSDFVolumeCPU> currVolumeUnit;
                 while (tcurr < tmax)
                 {
@@ -462,9 +463,9 @@ struct RaycastInvoker : ParallelLoopBody
                             {
                                 normal = vol2camRot * nv;
                                 point  = vol2cam * pv;
-                                break;
                             }
                         }
+                        break;
                     }
                     prevVolumeUnitIdx = currVolumeUnitIdx;
                     prevTsdf          = currTsdf;
@@ -583,8 +584,6 @@ void HashTSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
         {
             totalVolUnits.push_back(keyvalue.first);
         }
-        std::cout << "Number of volumeUnits in volume(fetchPoints): " << totalVolUnits.size()
-                  << "\n";
         FetchPointsNormalsInvoker fi(*this, totalVolUnits, pVecs, nVecs, _normals.needed());
         Range range(0, totalVolUnits.size());
         const int nstripes = -1;
@@ -606,6 +605,44 @@ void HashTSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
             if (!normals.empty())
                 Mat((int)normals.size(), 1, POINT_TYPE, &normals[0]).copyTo(_normals.getMat());
         }
+    }
+}
+
+struct PushNormals
+{
+    PushNormals(const HashTSDFVolumeCPU& _volume, Normals& _normals) :
+        volume(_volume), normals(_normals), invPose(volume.pose.inv())
+    {}
+
+    void operator ()(const ptype &point, const int* position) const
+    {
+        Point3f p = fromPtype(point);
+        Point3f n = nan3;
+        if(!isNaN(p))
+        {
+            Point3f voxelPoint = invPose * p;
+            n = volume.pose.rotation() * volume.getNormalVoxel(voxelPoint);
+        }
+        normals(position[0], position[1]) = toPtype(n);
+    }
+    const HashTSDFVolumeCPU& volume;
+    Normals& normals;
+    Affine3f invPose;
+};
+
+void HashTSDFVolumeCPU::fetchNormals(cv::InputArray _points, cv::OutputArray _normals) const
+{
+    CV_TRACE_FUNCTION();
+
+    if(_normals.needed())
+    {
+        Points points = _points.getMat();
+        CV_Assert(points.type() == POINT_TYPE);
+
+        _normals.createSameSize(_points, _points.type());
+        Normals normals = _normals.getMat();
+
+        points.forEach(PushNormals(*this, normals));
     }
 }
 

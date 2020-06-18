@@ -11,8 +11,8 @@
 #include <unordered_map>
 #include <unordered_set>
 
+#include <opencv2/rgbd/volume.hpp>
 #include "tsdf.hpp"
-#include "volume.hpp"
 
 namespace cv
 {
@@ -29,7 +29,6 @@ class HashTSDFVolume : public Volume
 
     virtual ~HashTSDFVolume() = default;
 
-    /* virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const = 0; */
    public:
     int maxWeight;
     float truncDist;
@@ -80,7 +79,7 @@ class HashTSDFVolumeCPU : public HashTSDFVolume
     virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
                          cv::OutputArray points, cv::OutputArray normals) const override;
 
-    /* virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const override; */
+    virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const override;
     virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
 
     virtual void reset() override;
@@ -106,7 +105,6 @@ class HashTSDFVolumeCPU : public HashTSDFVolume
     //! Hashtable of individual smaller volume units
     VolumeUnitMap volumeUnits;
 };
-
 cv::Ptr<HashTSDFVolume> makeHashTSDFVolume(float _voxelSize, cv::Affine3f _pose,
                                            float _raycastStepFactor, float _truncDist,
                                            int _maxWeight, float truncateThreshold,

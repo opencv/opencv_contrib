@@ -505,10 +505,13 @@ static bool ocl_makeFrameFromDepth(const UMat depth, OutputArrayOfArrays points,
         return false;
 
     // depth truncation can be used in some scenes
+    UMat depthThreshold;
     if(truncateThreshold > 0.f)
-        threshold(depth, depth, truncateThreshold*depthFactor, 0.0, THRESH_TOZERO_INV);
+        threshold(smooth, depthThreshold, truncateThreshold * depthFactor, 0.0, THRESH_TOZERO_INV);
+    else
+        depthThreshold = smooth;
 
-    UMat scaled = smooth;
+    UMat scaled = depthThreshold;
     Size sz = smooth.size();
     points.create(levels, 1, POINT_TYPE);
     normals.create(levels, 1, POINT_TYPE);
