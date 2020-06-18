@@ -199,7 +199,7 @@ void extractLineBundle(int len, InputArray ctl2d, InputArray img, OutputArray bu
           INTER_NEAREST); // inter_nearest as we use integer locations
 }
 
-static void compute1DSobel(const Mat& src, Mat& dst)
+void compute1DSobel(const Mat& src, Mat& dst)
 {
     CV_CheckDepthEQ(src.depth(), CV_8U, "only uchar images supported");
     int channels = src.channels();
@@ -357,6 +357,51 @@ float rapid(InputArray img, int num, int len, InputArray vtx, InputArray tris, I
     solvePnPRefineLM(pts3d, pts2d, K, cv::noArray(), rvec, tvec);
 
     return float(pts2d.rows) / num;
+}
+
+Tracker::~Tracker() {}
+
+struct RapidImpl : public Rapid
+{
+    Mat pts3d;
+    Mat tris;
+    RapidImpl(InputArray _pts3d, InputArray _tris)
+    {
+        CV_Assert(_tris.getMat().checkVector(3, CV_32S) > 0);
+        CV_Assert(_pts3d.getMat().checkVector(3, CV_32F) > 0);
+        pts3d = _pts3d.getMat();
+        tris = _tris.getMat();
+    }
+    float compute(InputArray img, int num, int len, InputArray K, InputOutputArray rvec,
+                  InputOutputArray tvec, const TermCriteria& termcrit) CV_OVERRIDE
+    {
+        float ret = 0;
+        int niter = std::max(1, termcrit.maxCount);
+
+        double rmsd;
+        Mat cols;
+        for(int i = 0; i < niter; i++)
+        {
+            ret = rapid(img, num, len, pts3d, tris, K, rvec, tvec,
+                        termcrit.type & TermCriteria::EPS ? &rmsd : NULL);
+
+            if((termcrit.type & TermCriteria::EPS) && rmsd < termcrit.epsilon)
+            {
+                break;
+            }
+        }
+        return ret;
+    }
+
+    void clearState() CV_OVERRIDE
+    {
+        // nothing to do
+    }
+};
+
+Ptr<Rapid> Rapid::create(InputArray pts3d, InputArray tris)
+{
+    return makePtr<RapidImpl>(pts3d, tris);
 }
 
 } /* namespace rapid */

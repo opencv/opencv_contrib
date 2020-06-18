@@ -8,4 +8,12 @@
 #include <vector>
 #include <opencv2/calib3d.hpp>
 
+namespace cv
+{
+namespace rapid
+{
+void compute1DSobel(const Mat& src, Mat& dst);
+}
+} // namespace cv
+
 #endif

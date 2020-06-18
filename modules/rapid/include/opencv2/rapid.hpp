@@ -122,6 +122,33 @@ CV_EXPORTS_W void convertCorrespondencies(InputArray cols, InputArray srcLocatio
  */
 CV_EXPORTS_W float rapid(InputArray img, int num, int len, InputArray pts3d, InputArray tris, InputArray K,
                          InputOutputArray rvec, InputOutputArray tvec, CV_OUT double* rmsd = 0);
+
+/// Abstract base class for stateful silhouette trackers
+class CV_EXPORTS_W Tracker : public Algorithm
+{
+public:
+    virtual ~Tracker();
+    CV_WRAP virtual float
+    compute(InputArray img, int num, int len, InputArray K, InputOutputArray rvec, InputOutputArray tvec,
+            const TermCriteria& termcrit = TermCriteria(TermCriteria::MAX_ITER | TermCriteria::EPS, 5, 1.5)) = 0;
+    CV_WRAP virtual void clearState() = 0;
+};
+
+/// wrapper around @ref rapid function for uniform access
+class CV_EXPORTS_W Rapid : public Tracker
+{
+public:
+    CV_WRAP static Ptr<Rapid> create(InputArray pts3d, InputArray tris);
+};
+
+/** implements "Optimal local searching for fast and robust textureless 3D object tracking in highly
+ * cluttered backgrounds" @cite seo2013optimal
+ */
+class CV_EXPORTS_W OLSTracker : public Tracker
+{
+public:
+    CV_WRAP static Ptr<OLSTracker> create(InputArray pts3d, InputArray tris, int histBins = 8, uchar sobelThesh = 10);
+};
 //! @}
 } /* namespace rapid */
 } /* namespace cv */
