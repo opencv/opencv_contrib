@@ -497,12 +497,12 @@ void CCheckerDetectorImpl::
 	// Eliminate overlaps!!!
 	// First detect candidates for removal:
 	std::vector<std::pair<int, int>> tooNearCandidates;
-	for (size_t i = 0; i < possibleCharts.size(); i++)
+	for (int i = 0; i < (int) possibleCharts.size(); i++)
 	{
 		const CChart &m1 = possibleCharts[i];
 
 		//calculate the average distance of each corner to the nearest corner of the other chart candidate
-		for (size_t j = i + 1; j < possibleCharts.size(); j++)
+		for (int j = i + 1; j < (int) possibleCharts.size(); j++)
 		{
 			const CChart &m2 = possibleCharts[j];
 
