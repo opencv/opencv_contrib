@@ -177,7 +177,7 @@ static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
 
 struct IntegrateInvoker : ParallelLoopBody
 {
-    IntegrateInvoker(TSDFVolumeCPU& _volume, const Depth& _depth, Intr intrinsics, cv::Affine3f cameraPose,
+    IntegrateInvoker(TSDFVolumeCPU& _volume, const Depth& _depth, const Intr& intrinsics, const cv::Affine3f& cameraPose,
                      float depthFactor) :
         ParallelLoopBody(),
         volume(_volume),
@@ -426,8 +426,8 @@ struct IntegrateInvoker : ParallelLoopBody
 };
 
 // use depth instead of distance (optimization)
-void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose,
-                              Intr intrinsics)
+void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Affine3f& cameraPose,
+                              const Intr& intrinsics)
 {
     CV_TRACE_FUNCTION();
 
@@ -633,8 +633,8 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 
 struct RaycastInvoker : ParallelLoopBody
 {
-    RaycastInvoker(Points& _points, Normals& _normals, Affine3f cameraPose,
-                   Intr intrinsics, const TSDFVolumeCPU& _volume) :
+    RaycastInvoker(Points& _points, Normals& _normals, const Affine3f& cameraPose,
+                  const Intr& intrinsics, const TSDFVolumeCPU& _volume) :
         ParallelLoopBody(),
         points(_points),
         normals(_normals),
@@ -915,7 +915,7 @@ struct RaycastInvoker : ParallelLoopBody
 };
 
 
-void TSDFVolumeCPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frameSize,
+void TSDFVolumeCPU::raycast(const cv::Affine3f& cameraPose, const Intr& intrinsics, Size frameSize,
                             cv::OutputArray _points, cv::OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
@@ -1140,7 +1140,7 @@ void TSDFVolumeGPU::reset()
 
 // use depth instead of distance (optimization)
 void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
-                              cv::Affine3f cameraPose, Intr intrinsics)
+                              const cv::Affine3f& cameraPose, const Intr& intrinsics)
 {
     CV_TRACE_FUNCTION();
 
@@ -1185,7 +1185,7 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
 }
 
 
-void TSDFVolumeGPU::raycast(cv::Affine3f cameraPose, Intr intrinsics, Size frameSize,
+void TSDFVolumeGPU::raycast(const cv::Affine3f& cameraPose, const Intr& intrinsics, Size frameSize,
                             cv::OutputArray _points, cv::OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();

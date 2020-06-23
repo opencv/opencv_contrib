@@ -2,13 +2,13 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html
 
-// This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this
-// module's directory
+// This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
 #ifndef __OPENCV_KINFU_TSDF_H__
 #define __OPENCV_KINFU_TSDF_H__
 
 #include <opencv2/rgbd/volume.hpp>
+
 #include "kinfu_frame.hpp"
 #include "utils.hpp"
 
@@ -16,7 +16,6 @@ namespace cv
 {
 namespace kinfu
 {
-
 // TODO: Optimization possible:
 // * TsdfType can be FP16
 // * weight can be uint16
@@ -32,9 +31,8 @@ class TSDFVolume : public Volume
 {
    public:
     // dimension in voxels, size in meters
-    explicit TSDFVolume(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor,
-                        float _truncDist, int _maxWeight, Point3i _resolution,
-                        bool zFirstMemOrder = true);
+    TSDFVolume(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor, float _truncDist,
+               int _maxWeight, Point3i _resolution, bool zFirstMemOrder = true);
     virtual ~TSDFVolume() = default;
 
    public:
@@ -54,10 +52,11 @@ class TSDFVolumeCPU : public TSDFVolume
     TSDFVolumeCPU(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor, float _truncDist,
                   int _maxWeight, Point3i _resolution, bool zFirstMemOrder = true);
 
-    virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose,
-                           cv::kinfu::Intr intrinsics) override;
-    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
-                         cv::OutputArray points, cv::OutputArray normals) const override;
+    virtual void integrate(InputArray _depth, float depthFactor, const cv::Affine3f& cameraPose,
+                           const cv::kinfu::Intr& intrinsics) override;
+    virtual void raycast(const cv::Affine3f& cameraPose, const cv::kinfu::Intr& intrinsics,
+                         cv::Size frameSize, cv::OutputArray points,
+                         cv::OutputArray normals) const override;
 
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const override;
     virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
@@ -87,10 +86,11 @@ class TSDFVolumeGPU : public TSDFVolume
     TSDFVolumeGPU(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor, float _truncDist,
                   int _maxWeight, Point3i _resolution);
 
-    virtual void integrate(InputArray _depth, float depthFactor, cv::Affine3f cameraPose,
-                           cv::kinfu::Intr intrinsics) override;
-    virtual void raycast(cv::Affine3f cameraPose, cv::kinfu::Intr intrinsics, cv::Size frameSize,
-                         cv::OutputArray _points, cv::OutputArray _normals) const override;
+    virtual void integrate(InputArray _depth, float depthFactor, const cv::Affine3f& cameraPose,
+                           const cv::kinfu::Intr& intrinsics) override;
+    virtual void raycast(const cv::Affine3f& cameraPose, const cv::kinfu::Intr& intrinsics,
+                         cv::Size frameSize, cv::OutputArray _points,
+                         cv::OutputArray _normals) const override;
 
     virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const override;
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray normals) const override;
