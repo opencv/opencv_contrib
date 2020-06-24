@@ -418,12 +418,11 @@ public:
 
         _createTexture(name, image.getMat());
 
-        // correct for pixel centers
-        Vector2 pc(0.5 / image.cols(), 0.5 / image.rows());
-        bgplane->setUVs(pc, Vector2(pc[0], 1 - pc[1]), Vector2(1 - pc[0], pc[1]), Vector2(1, 1) - pc);
+        bgplane->setDefaultUVs();
 
         Pass* rpass = bgplane->getMaterial()->getBestTechnique()->getPasses()[0];
         rpass->getTextureUnitStates()[0]->setTextureName(name);
+        rpass->getTextureUnitStates()[0]->setTextureAddressingMode(TAM_CLAMP);
 
         // ensure bgplane is visible
         bgplane->setVisible(true);
@@ -785,7 +784,7 @@ public:
         bgplane.reset(new Rectangle2D(true));
         bgplane->setCorners(-1.0, 1.0, 1.0, -1.0);
 
-        // correct for pixel centers
+        // use pixel centers. See https://stackoverflow.com/a/37484800/927543
         Vector2 pc(0.5 / img.cols, 0.5 / img.rows);
         bgplane->setUVs(pc, Vector2(pc[0], 1 - pc[1]), Vector2(1 - pc[0], pc[1]), Vector2(1, 1) - pc);
 
