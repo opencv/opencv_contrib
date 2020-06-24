@@ -59,18 +59,15 @@ void _createTexture(const String& name, Mat image)
     TextureManager& texMgr = TextureManager::getSingleton();
     TexturePtr tex = texMgr.getByName(name, RESOURCEGROUP_NAME);
 
-    Image im;
-    im.loadDynamicImage(image.ptr(), image.cols, image.rows, 1, format);
-
-    if (tex)
+    if(!tex)
     {
-        // update
-        PixelBox box = im.getPixelBox();
-        tex->getBuffer()->blitFromMemory(box, box);
-        return;
+        tex = texMgr.createManual(name, RESOURCEGROUP_NAME, TEX_TYPE_2D, image.cols, image.rows,
+                                  MIP_DEFAULT, format);
     }
 
-    texMgr.loadImage(name, RESOURCEGROUP_NAME, im);
+    PixelBox box(image.cols, image.rows, 1, format, image.ptr());
+    box.rowPitch = image.step[0] / PixelUtil::getNumElemBytes(format);
+    tex->getBuffer()->blitFromMemory(box);
 }
 
 static void _convertRT(InputArray rot, InputArray tvec, Quaternion& q, Vector3& t, bool invert = false)
