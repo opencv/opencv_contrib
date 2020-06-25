@@ -12,11 +12,15 @@
 #include "checker_model.hpp"
 
 #include <iostream>
+#include <mutex>          // std::mutex
+
 
 namespace cv
 {
 namespace mcc
 {
+
+std::mutex mtx;           // mutex for critical section
 
 Ptr<CCheckerDetector> CCheckerDetector::create()
 {
@@ -50,7 +54,6 @@ bool CCheckerDetectorImpl::
 		//-------------------------------------------------------------------
 		// Run the model to find good regions
 		//-------------------------------------------------------------------
-
 		cv::Mat croppedImage = image(region);
 
 		//-------------------------------------------------------------------
@@ -70,7 +73,6 @@ bool CCheckerDetectorImpl::
 		parallel_for_(Range(0, (int)img_bw.size()), [&](const Range &range) {
 			const int begin = range.start;
 			const int end = range.end;
-
 			for (int i = begin; i < end; i++)
 			{
 
@@ -87,6 +89,7 @@ bool CCheckerDetectorImpl::
 
 				std::vector<CChart> detectedCharts;
 				findCandidates(contours, detectedCharts, params);
+
 
 				if (detectedCharts.empty())
 					continue;
@@ -121,7 +124,10 @@ bool CCheckerDetectorImpl::
 				{
 					for (cv::Point2f &corner : checker->box)
 						corner += static_cast<cv::Point2f>(region.tl());
+
+					mtx.lock(); // push_back is not thread safe
 					m_checkers.push_back(checker);
+					mtx.unlock();
 				}
 			}
 		});
@@ -316,7 +322,9 @@ bool CCheckerDetectorImpl::
 						{
 							for (cv::Point2f &corner : checker->box)
 								corner += static_cast<cv::Point2f>(region.tl() + innerRegion.tl());
+							mtx.lock(); // push_back is not thread safe
 							m_checkers.push_back(checker);
+							mtx.unlock();
 						}
 					}
 				});

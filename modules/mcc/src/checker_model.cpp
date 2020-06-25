@@ -191,8 +191,8 @@ float CChartModel::
 	{
 		cv::Vec3f v1 = lab1.at<cv::Vec3f>(i, 0);
 		cv::Vec3f v2 = lab2.at<cv::Vec3f>(i, 0);
-		v1[0] = 1;
-		v2[0] = 1; // L <- 0
+		// v1[0] = 1;
+		// v2[0] = 1; // L <- 0
 
 		// euclidean
 		cv::Vec3f v = v1 - v2;

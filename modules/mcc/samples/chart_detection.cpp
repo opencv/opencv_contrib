@@ -79,25 +79,27 @@ int main(int argc, char *argv[])
         return 0;
     }
 
+
     VideoCapture inputVideo;
     int waitTime;
     if (!video.empty())
     {
         inputVideo.open(video);
-        waitTime = 0;
+        waitTime = 10;
     }
     else
     {
         inputVideo.open(camId);
         waitTime = 10;
     }
-
     while (inputVideo.grab())
     {
+
         Mat image, imageCopy;
         inputVideo.retrieve(image);
-        Ptr<CCheckerDetector> detector = CCheckerDetector::create();
+        imageCopy = image.clone();
 
+        Ptr<CCheckerDetector> detector = CCheckerDetector::create();
         // Marker type to detect
         if (!detector->process(image, chartType))
         {

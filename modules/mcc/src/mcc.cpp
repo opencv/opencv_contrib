@@ -17,7 +17,7 @@ DetectorParameters::DetectorParameters()
       findCandidatesApproxPolyDPEpsMultiplier(0.05),
       borderWidth(0),
       B0factor(1.25f),
-      maxError(1.5f),
+      maxError(0.1f),
       minContourPointsAllowed(4),
       minContourLengthAllowed(100),
       minInterContourDistance(100),
