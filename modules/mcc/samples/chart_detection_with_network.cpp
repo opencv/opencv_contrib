@@ -54,7 +54,8 @@ const char *keys = {
     "{m        |       | File path of model, if you don't have the model you can find the link in the documentation}"
     "{pb        |       | File path of pbtxt file, available along with with the model file }"
     "{v        |       | Input from video file, if ommited, input comes from camera }"
-    "{ci       | 0     | Camera id if input doesnt come from video (-v) }"};
+    "{ci       | 0     | Camera id if input doesnt come from video (-v) }"
+    "{nc       | 1     | Maximum number of charts in the image }"};
 
 int main(int argc, char *argv[])
 {
@@ -72,7 +73,7 @@ int main(int argc, char *argv[])
     string model_path = parser.get<string> ("m");
     string pbtxt_path = parser.get<string> ("pb");
     int camId = parser.get<int>("ci");
-
+    int nc = parser.get<int>("nc");
     String video;
     if (parser.has("v"))
     {
@@ -117,10 +118,9 @@ int main(int argc, char *argv[])
 
         imageCopy=image.clone();
 
-        int max_number_of_charts_in_image = 2;
 
         // Marker type to detect
-        if (!detector->process(image, chartType, max_number_of_charts_in_image, true))
+        if (!detector->process(image, chartType, nc, true))
         {
             printf("ChartColor not detected \n");
         }

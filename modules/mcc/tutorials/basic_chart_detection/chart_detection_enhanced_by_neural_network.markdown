@@ -26,7 +26,7 @@ Source Code of the sample
 You can run the sample code by doing
 
 ```run
-<path_of_your_opencv_build_directory>/bin/example_mcc_chart_detection_with_network -t=<type_of_chart> -m=<path_to_neural_network> -pb=<path_to_models_pbtxt> -v=<optional_path_to_video_if_not_provided_webcam_will_be_used.mp4> -ci=<optional_camera_id_needed_only_if_video_not_provided>
+<path_of_your_opencv_build_directory>/bin/example_mcc_chart_detection_with_network -t=<type_of_chart> -m=<path_to_neural_network> -pb=<path_to_models_pbtxt> -v=<optional_path_to_video_if_not_provided_webcam_will_be_used.mp4> -ci=<optional_camera_id_needed_only_if_video_not_provided> -nc=<optional_maximum_number_of_charts_in_image>
 
 ``'
 

@@ -48,14 +48,16 @@ bool CCheckerDetectorImpl::
 	_no_net_process(const cv::Mat &image, const TYPECHART chartType, const int nc, const Ptr<DetectorParameters> &params, std::vector<cv::Rect> regionsOfInterest)
 {
 	m_checkers.clear();
-
+	this->net_used=false;
 	for (cv::Rect region : regionsOfInterest)
 	{
 		//-------------------------------------------------------------------
 		// Run the model to find good regions
 		//-------------------------------------------------------------------
 		cv::Mat croppedImage = image(region);
-
+#ifdef SHOW_DEBUG_IMAGES
+				string pathOut = "./";
+#endif
 		//-------------------------------------------------------------------
 		// prepare image
 		//-------------------------------------------------------------------
@@ -67,7 +69,6 @@ bool CCheckerDetectorImpl::
 		//-------------------------------------------------------------------
 		// thresholding
 		//-------------------------------------------------------------------
-
 		std::vector<cv::Mat> img_bw;
 		performThreshold(img_gray, img_bw, params);
 		parallel_for_(Range(0, (int)img_bw.size()), [&](const Range &range) {
@@ -76,6 +77,9 @@ bool CCheckerDetectorImpl::
 			for (int i = begin; i < end; i++)
 			{
 
+#ifdef SHOW_DEBUG_IMAGES
+				showAndSave("threshold_image", img_bw[i], pathOut);
+#endif
 				// find contour
 				//-------------------------------------------------------------------
 				ContoursVector contours;
@@ -83,6 +87,12 @@ bool CCheckerDetectorImpl::
 
 				if (contours.empty())
 					continue;
+#ifdef SHOW_DEBUG_IMAGES
+						cv::Mat im_contour(img_bgr.size(), CV_8UC1);
+						im_contour = cv::Scalar(0);
+						cv::drawContours(im_contour, contours, -1, cv::Scalar(255), 2, LINE_AA);
+						showAndSave("find_contour", im_contour, pathOut);
+#endif
 				//-------------------------------------------------------------------
 				// find candidate
 				//-------------------------------------------------------------------
@@ -94,6 +104,20 @@ bool CCheckerDetectorImpl::
 				if (detectedCharts.empty())
 					continue;
 
+#ifdef SHOW_DEBUG_IMAGES
+						std::printf(">> Number of detected Charts Candidates :%lu", detectedCharts.size());
+						cv::Mat img_chart;
+						img_bgr.copyTo(img_chart);
+
+						for (size_t ind = 0; ind < detectedCharts.size(); ind++)
+						{
+
+							CChartDraw chrtdrw(&(detectedCharts[ind]), &img_chart);
+							chrtdrw.drawCenter();
+							chrtdrw.drawContour();
+						}
+						showAndSave("find_candidate", img_chart, pathOut);
+#endif
 				//-------------------------------------------------------------------
 				// clusters analysis
 				//-------------------------------------------------------------------
@@ -104,6 +128,23 @@ bool CCheckerDetectorImpl::
 				if (G.empty())
 					continue;
 
+#ifdef SHOW_DEBUG_IMAGES
+						cv::Mat im_gru;
+						img_bgr.copyTo(im_gru);
+						RNG rng(0xFFFFFFFF);
+						int radius = 10, thickness = -1;
+
+						std::vector<int> g;
+						unique(G, g);
+						size_t Nc = g.size();
+						std::vector<cv::Scalar> colors(Nc);
+						for (size_t ind = 0; ind < Nc; ind++)
+							colors[ind] = randomcolor(rng);
+
+						for (size_t ind = 0; ind < detectedCharts.size(); ind++)
+							cv::circle(im_gru, detectedCharts[ind].center, radius, colors[G[ind]], thickness);
+						showAndSave("clusters_analysis", im_gru, pathOut);
+#endif
 				//-------------------------------------------------------------------
 				// checker color recognize
 				//-------------------------------------------------------------------
@@ -114,12 +155,39 @@ bool CCheckerDetectorImpl::
 				if (colorCharts.empty())
 					continue;
 
+#ifdef SHOW_DEBUG_IMAGES
+						cv::Mat image_box;
+						img_bgr.copyTo(image_box);
+						for (size_t ind = 0; ind < colorCharts.size(); ind++)
+						{
+							std::vector<cv::Point2f> ibox = colorCharts[ind];
+							cv::Scalar color_box = CV_RGB(0, 0, 255);
+							int thickness_box = 2;
+							cv::line(image_box, ibox[0], ibox[1], color_box, thickness_box, LINE_AA);
+							cv::line(image_box, ibox[1], ibox[2], color_box, thickness_box, LINE_AA);
+							cv::line(image_box, ibox[2], ibox[3], color_box, thickness_box, LINE_AA);
+							cv::line(image_box, ibox[3], ibox[0], color_box, thickness_box, LINE_AA);
+							//cv::circle(image_box, ibox[0], 10, cv::Scalar(0, 0, 255), 3);
+							//cv::circle(image_box, ibox[1], 10, cv::Scalar(0, 255, 0), 3);
+						}
+						showAndSave("checker_recognition", image_box, pathOut);
+#endif
 				//-------------------------------------------------------------------
 				// checker color analysis
 				//-------------------------------------------------------------------
 				std::vector<Ptr<CChecker>> checkers;
 				checkerAnalysis(img_bgr, image, chartType, nc, colorCharts, checkers, asp, params);
 
+#ifdef SHOW_DEBUG_IMAGES
+						cv::Mat image_checker;
+						croppedImage.copyTo(image_checker);
+						for (size_t ck = 0; ck < checkers.size(); ck++)
+						{
+							Ptr<CCheckerDraw> cdraw = CCheckerDraw::create((checkers[ck]));
+							cdraw->draw(image_checker);
+						}
+						showAndSave("checker_analysis", image_checker, pathOut);
+#endif
 				for (Ptr<CChecker> checker : checkers)
 				{
 					for (cv::Point2f &corner : checker->box)
@@ -130,6 +198,7 @@ bool CCheckerDetectorImpl::
 					mtx.unlock();
 				}
 			}
+
 		});
 	}
 	//remove too close detections
@@ -152,7 +221,7 @@ bool CCheckerDetectorImpl::
 	{
 		return _no_net_process(image, chartType, nc, params, regionsOfInterest);
 	}
-
+	this->net_used=true;
 	for (cv::Rect region : regionsOfInterest)
 	{
 		//-------------------------------------------------------------------
@@ -209,7 +278,7 @@ bool CCheckerDetectorImpl::
 					{
 
 #ifdef SHOW_DEBUG_IMAGES
-				showAndSave("threshold_image", img_bw[i], pathOut);
+				showAndSave("threshold_image", img_bw[ind], pathOut);
 #endif
 						//------------------------------------------------------------------
 						// find contour
@@ -236,14 +305,14 @@ bool CCheckerDetectorImpl::
 							continue;
 
 #ifdef SHOW_DEBUG_IMAGES
-						std::printf(">> Number of detected Charts Candidates :%d", detectedCharts.size());
+						std::printf(">> Number of detected Charts Candidates :%lu", detectedCharts.size());
 						cv::Mat img_chart;
 						img_bgr.copyTo(img_chart);
 
-						for (size_t i = 0; i < detectedCharts.size(); i++)
+						for (size_t index = 0; index < detectedCharts.size(); index++)
 						{
 
-							CChartDraw chrtdrw(&(detectedCharts[i]), &img_chart);
+							CChartDraw chrtdrw(&(detectedCharts[index]), &img_chart);
 							chrtdrw.drawCenter();
 							chrtdrw.drawContour();
 						}
@@ -268,11 +337,11 @@ bool CCheckerDetectorImpl::
 						unique(G, g);
 						size_t Nc = g.size();
 						std::vector<cv::Scalar> colors(Nc);
-						for (size_t i = 0; i < Nc; i++)
-							colors[i] = randomcolor(rng);
+						for (size_t index = 0; index < Nc; index++)
+							colors[index] = randomcolor(rng);
 
-						for (size_t i = 0; i < detectedCharts.size(); i++)
-							cv::circle(im_gru, detectedCharts[i].center, radius, colors[G[i]], thickness);
+						for (size_t index = 0; index < detectedCharts.size(); index++)
+							cv::circle(im_gru, detectedCharts[index].center, radius, colors[G[index]], thickness);
 						showAndSave("clusters_analysis", im_gru, pathOut);
 #endif
 
@@ -289,9 +358,9 @@ bool CCheckerDetectorImpl::
 #ifdef SHOW_DEBUG_IMAGES
 						cv::Mat image_box;
 						img_bgr.copyTo(image_box);
-						for (size_t i = 0; i < colorCharts.size(); i++)
+						for (size_t index = 0; index < colorCharts.size(); index++)
 						{
-							std::vector<cv::Point2f> ibox = colorCharts[i];
+							std::vector<cv::Point2f> ibox = colorCharts[index];
 							cv::Scalar color_box = CV_RGB(0, 0, 255);
 							int thickness_box = 2;
 							cv::line(image_box, ibox[0], ibox[1], color_box, thickness_box, LINE_AA);
@@ -424,9 +493,11 @@ void CCheckerDetectorImpl::
 		double area = cv::contourArea(contour);
 		// double perm = cv::arcLength(contour, true);
 
-		if (area / srcImgArea < params->minContoursAreaRate)
+		if (this->net_used && area/srcImgArea < params->minContoursAreaRate)
 			continue;
 
+		if (!this->net_used && area < params->minContoursArea)
+			continue;
 		// Circularity factor condition
 		// KORDECKI, A., & PALUS, H. (2014). Automatic detection of colour charts in images.
 		// Przegl?d Elektrotechniczny, 90(9), 197-202.

@@ -157,7 +157,7 @@ protected:
 
 	std::vector<Ptr<CChecker>> m_checkers;
 	cv::dnn::Net net;
-
+	bool net_used = false;
 private: // methods aux
 
 	void get_subbox_chart_physical(

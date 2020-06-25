@@ -3,8 +3,11 @@
 #include <opencv2/core.hpp>
 #include "checker_model.hpp"
 #include <opencv2/dnn.hpp>
+
+//uncomment the following two lines to view debugging output
 // #define _DEBUG
 // #define SHOW_DEBUG_IMAGES
+
 namespace cv{
 namespace mcc{
 using namespace dnn;
@@ -26,13 +29,14 @@ struct CV_EXPORTS_W DetectorParameters {
     CV_PROP_RW int adaptiveThreshWinSizeMax; ///<maximum window size for adaptive thresholding before finding contours (default 153).
     CV_PROP_RW int adaptiveThreshWinSizeStep;///<increments from adaptiveThreshWinSizeMin to adaptiveThreshWinSizeMax during the thresholding (default 10).
     CV_PROP_RW double adaptiveThreshConstant; ///<constant for adaptive thresholding before finding contours (default 0)
-    CV_PROP_RW double minContoursAreaRate;///<determine minimum area for marker contour to be detected. This is defined as a rate respect to the area of the input image (default 0.003).
+    CV_PROP_RW double minContoursAreaRate;///<determine minimum area for marker contour to be detected. This is defined as a rate respect to the area of the input image. Used only if neural network is used (default 0.003).
+    CV_PROP_RW double minContoursArea;///<determine minimum area for marker contour to be detected. This is defined as the actual area. Used only if neural network is not used (default 200).
 	CV_PROP_RW double confidenceThreshold;///<minimum confidence for a bounding box detected by neural network to classify as detection. (default 0.5) (0<=confidenceThreshold<=1)
 	CV_PROP_RW double minContourSolidity;///<minimum solidity of a contour for it be detected as a square in the chart. (default 0.9).
 	CV_PROP_RW double findCandidatesApproxPolyDPEpsMultiplier;///<multipler to be used in cv::ApproxPolyDP function (default 0.05)
 	CV_PROP_RW int borderWidth;///<width of the padding used to pass the inital neural network detection in the succeeding system.(default 0)
 	CV_PROP_RW float B0factor;///< distance between two neighbours squares of the same chart. Defined as the ratio between distance and large dimension of square (default 1.25)
-	CV_PROP_RW float maxError;///<maximum allowed error in the detection of a chart. default(2)
+	CV_PROP_RW float maxError;///<maximum allowed error in the detection of a chart. default(0.1)
 	CV_PROP_RW int minContourPointsAllowed;///< minium points in a detected contour. default(4)
 	CV_PROP_RW int minContourLengthAllowed;///<minimum length of a countour. default(100)
 	CV_PROP_RW int minInterContourDistance;///< minimum distance between two contours. default(100)

@@ -50,7 +50,8 @@ const char *about = "Basic chart detection";
 const char *keys = {
     "{t              |         | chartType: 0-Standard, 1-DigitalSG, 2-Vinyl}"
     "{v        |       | Input from video file, if ommited, input comes from camera }"
-    "{ci       | 0     | Camera id if input doesnt come from video (-v) }"};
+    "{ci       | 0     | Camera id if input doesnt come from video (-v) }"
+    "{nc       | 1     | Maximum number of charts in the image }"};
 
 
 int main(int argc, char *argv[])
@@ -67,6 +68,7 @@ int main(int argc, char *argv[])
     CV_Assert(0<=parser.get<int>("t") && parser.get<int>("t")<3);
     TYPECHART chartType = TYPECHART(parser.get<int>("t"));
     int camId = parser.get<int>("ci");
+    int nc = parser.get<int>("nc");
     String video;
     if (parser.has("v"))
     {
@@ -101,7 +103,7 @@ int main(int argc, char *argv[])
 
         Ptr<CCheckerDetector> detector = CCheckerDetector::create();
         // Marker type to detect
-        if (!detector->process(image, chartType))
+        if (!detector->process(image, chartType, nc))
         {
             printf("ChartColor not detected \n");
         }

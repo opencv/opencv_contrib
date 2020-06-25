@@ -12,6 +12,7 @@ DetectorParameters::DetectorParameters()
       adaptiveThreshWinSizeStep(10),
       adaptiveThreshConstant(7),
       minContoursAreaRate(0.003),
+      minContoursArea(200),
       confidenceThreshold(0.5),
       minContourSolidity(0.9),
       findCandidatesApproxPolyDPEpsMultiplier(0.05),
