@@ -25,16 +25,22 @@ Or make sure you check the mcc module in the GUI version of CMake: cmake-gui.
 Source Code of the sample
 -----------
 
-You can run the sample code by doing
+```
+run
+<path_of_your_opencv_build_directory>/bin/example_mcc_chart_detection -t=<type_of_chart> -v=<optional_path_to_video_if_not_provided_webcam_will_be_used.mp4> -ci=<optional_camera_id_needed_only_if_video_not_provided>
+```
 
-```run
-<path_of_your_opencv_build_directory>/bin/example_mcc_chart_detection -t=<type_of_chart> -v=<optional_path_to_video_if_not_provided_webcam_will_be_used.mp4> -ci=<optional_camera_id_needed_only_if_video_not_provided> -nc=<optional_maximum_number_of_charts_in_image>
-``'
+* -t=#  is the chart type where 0 (Standard), 1 (DigitalSG), 2 (Vinyl)
+* -ci=#  is the camera ID where 0 (default is the main camera), 1 (secondary camera) etc
 
-Example:
+Examples:
 
-```run
+```
+Run a movie on a standard macbeth chart:
 /home/opencv/build/bin/example_mcc_chart_detection -t=0 -v=mcc24.mp4
+
+Or run on a vinyl macbeth chart from camera 0:
+/home/opencv/build/bin/example_mcc_chart_detection -t=2 -ci=0
 ```
 
 @includelineno mcc/samples/chart_detection.cpp
