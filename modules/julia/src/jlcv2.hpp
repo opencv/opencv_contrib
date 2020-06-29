@@ -50,6 +50,12 @@ typedef cv::flann::IndexParams flann_IndexParams;
 typedef cv::flann::SearchParams flann_SearchParams;
 #endif
 
+
+#ifdef HAVE_OPENCV_DNN
+typedef cv::dnn::DictValue LayerId;
+typedef cv::dnn::Backend dnn_Backend;
+#endif
+
 using namespace cv;
 using namespace std;
 using namespace jlcxx;
@@ -85,5 +91,7 @@ template<typename T>
 struct force_enum_int{
   using Type = typename force_enum<T, std::is_enum<T>::value>::Type;
 };
+
+typedef std::vector<Mat> vector_Mat;
 
 #include "jlcv2_types.hpp"

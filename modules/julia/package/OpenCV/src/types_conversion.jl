@@ -8,7 +8,9 @@ function cpp_to_julia(var::CxxVec{T, N}) where {T, N}
 end
 
 function julia_to_cpp(sc::Scalar)
-    if size(sc,1)==1
+    if size(sc,1)==0
+        return CxxScalar{Float64}(0,0,0,0)
+    elseif size(sc, 1) == 1
         return CxxScalar{Float64}(Float64(sc[1]), 0, 0, 0)
     elseif size(sc,1) == 2
         return CxxScalar{Float64}(Float64(sc[1]), Float64(sc[2]), 0, 0)
