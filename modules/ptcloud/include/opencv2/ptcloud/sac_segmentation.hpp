@@ -108,7 +108,6 @@ namespace ptcloud
             This is very helpful for creating a model for the fit models using SACModelFitting class.
 
             @param Coefficients parametric coefficients for the Sphere model
-            @param radius the radius of the sphere.
             */
 
             SACSphereModel(const std::vector<double> Coefficients);
