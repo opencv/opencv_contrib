@@ -24,16 +24,17 @@ namespace ptcloud
         public:
             std::vector<double> ModelCoefficients;
             // vector<Point3f> inliers;
-            SACModel();
+            SACModel() {
+
+            }
+
             SACModel(std::vector<double> ModelCoefficients);
 
             virtual ~SACModel()
             {
 
             }
-            // virtual viz::Widget3D WindowWidget () = 0;
 
-            virtual void getModelFromPoints(Mat inliers);
     };
 
     class CV_EXPORTS_W SACPlaneModel : public SACModel {
@@ -42,9 +43,14 @@ namespace ptcloud
             Vec3d normal;
             Size2d size = Size2d(2.0, 2.0);
         public:
-            SACPlaneModel();
+            ~ SACPlaneModel()
+            {
 
-            SACPlaneModel(const std::vector<double> Coefficients);
+            }
+
+            SACPlaneModel() {
+
+            }
 
             SACPlaneModel(Vec4d coefficients, Point3d center, Size2d size=Size2d(2.0, 2.0));
 
@@ -63,7 +69,13 @@ namespace ptcloud
             Point3d center;
             double radius;
 
+            ~ SACSphereModel()
+            {
+
+            }
+
             SACSphereModel() {
+
             }
 
             SACSphereModel(Point3d center, double radius);
@@ -88,7 +100,9 @@ namespace ptcloud
             long unsigned max_iters;
 
         public:
-            cv::Mat remainingCloud;
+            // cv::Mat remainingCloud; // will be used while segmentation
+
+            // Inlier indices only, not the points themselves. It would work like a mask output for segmentation in 2d.
             vector<vector<unsigned>> inliers;
             vector<SACModel> model_instances;
 
@@ -101,7 +115,11 @@ namespace ptcloud
 
             // Get one model (plane), this function would call RANSAC on the given set of points and get the biggest model (plane).
             void fit_once();
-            };
+
+            void set_threshold (double);
+
+            void set_iterations (long unsigned);
+    };
 
     bool getSphereFromPoints(const Vec3f*&, const vector<unsigned int>&, Point3d&, double&);
 

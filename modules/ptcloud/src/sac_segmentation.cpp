@@ -138,32 +138,6 @@ namespace ptcloud
         return coefficients;
     }
 
-
-
-    SACPlaneModel::SACPlaneModel(vector<double> Coefficients ) {
-        this->ModelCoefficients.reserve(4);
-        this->ModelCoefficients = Coefficients;
-
-        for (unsigned i = 0; i < 3; i++) normal[i] = Coefficients[i];
-
-        // Since the plane viz widget would be finite, it must have a center, we give it an arbitrary center
-        // from the model coefficients.
-        if (Coefficients[2] != 0) {
-            center.x = 0;
-            center.y = 0;
-            center.z = -Coefficients[3] / Coefficients[2];
-        } else if (Coefficients[1] != 0) {
-            center.x = 0;
-            center.y = -Coefficients[3] / Coefficients[1];
-            center.z = 0;
-        } else if (Coefficients[0] != 0) {
-            center.x = -Coefficients[3] / Coefficients[0];
-            center.y = 0;
-            center.z = 0;
-        }
-
-    }
-
     SACPlaneModel::SACPlaneModel(Vec4d coefficients, Point3d set_center, Size2d set_size) {
         this->ModelCoefficients.reserve(4);
         for (int i = 0; i < 4; i++) {
@@ -212,9 +186,21 @@ namespace ptcloud
         // Assign normal vector
         for (unsigned i = 0; i < 3; i++) normal[i] = coefficients[i];
 
-        center.x = 0;
-        center.y = 0;
-        center.z = 0;
+        // Since the plane viz widget would be finite, it must have a center, we give it an arbitrary center
+        // from the model coefficients.
+        if (coefficients[2] != 0) {
+            center.x = 0;
+            center.y = 0;
+            center.z = -coefficients[3] / coefficients[2];
+        } else if (coefficients[1] != 0) {
+            center.x = 0;
+            center.y = -coefficients[3] / coefficients[1];
+            center.z = 0;
+        } else if (coefficients[0] != 0) {
+            center.x = -coefficients[3] / coefficients[0];
+            center.y = 0;
+            center.z = 0;
+        }
     }
     // void SACPlaneModel::addToWindow(viz::Viz3d & window) {
     //     viz::WPlane plane(this->center, this->normal, Vec3d(1, 0, 0), this->size, viz::Color::green());
@@ -301,7 +287,7 @@ namespace ptcloud
         return viz::WSphere(this->center, this->radius, 10, viz::Color::green());;
     }
 
-    double euclideanDist(Point3d& p, Point3d& q) {
+    double SACSphereModel::euclideanDist(Point3d& p, Point3d& q) {
         Point3d diff = p - q;
         return cv::sqrt(diff.x*diff.x + diff.y*diff.y + diff.z*diff.z);
     }
@@ -352,91 +338,101 @@ namespace ptcloud
 
     void SACModelFitting::fit_once() {
 
-            // creates an array of indices for the points in the point cloud which will be appended as masks to denote inliers and outliers.
-            const Vec3f* points = cloud.ptr<Vec3f>(0);
-            unsigned num_points = cloud.cols;
-            std::vector<unsigned> indices(num_points);
-            std::iota(std::begin(indices), std::end(indices), 0);
+        if (method_type != SAC_METHOD_RANSAC) return; // Only RANSAC supported ATM, need to integrate with Maksym's framework.
+
+        // creates an array of indices for the points in the point cloud which will be appended as masks to denote inliers and outliers.
+        const Vec3f* points = cloud.ptr<Vec3f>(0);
+        unsigned num_points = cloud.cols;
+        std::vector<unsigned> indices(num_points);
+        std::iota(std::begin(indices), std::end(indices), 0);
 
 
-            vector<unsigned> inliers_indices;
+        vector<unsigned> inliers_indices;
 
-            // Initialize the best plane model.
-            SACModel bestModel;
-            pair<double, double> bestResult(0, 0);
+        // Initialize the best plane model.
+        SACModel bestModel;
+        pair<double, double> bestResult(0, 0);
 
-            if (model_type == PLANE_MODEL) {
-                const unsigned num_rnd_model_points = 3;
-                RNG rng((uint64)-1);
-                for (unsigned i = 0; i < max_iters; ++i) {
-                    vector<unsigned> current_model_inliers;
-                    SACModel model;
+        if (model_type == PLANE_MODEL) {
+            const unsigned num_rnd_model_points = 3;
+            RNG rng((uint64)-1);
+            for (unsigned i = 0; i < max_iters; ++i) {
+                vector<unsigned> current_model_inliers;
+                SACModel model;
 
-                    for (unsigned j = 0; j < num_rnd_model_points; ++j) {
-                        std::swap(indices[i], indices[rng.uniform(0, num_points)]);
-                    }
-
-                    for (unsigned j = 0; j < num_rnd_model_points; j++) {
-                        unsigned idx = indices[i];
-                        current_model_inliers.emplace_back(idx);
-                    }
-
-                    Point3d center;
-                    Vec4d coefficients = getPlaneFromPoints(points, current_model_inliers, center);
-                    SACPlaneModel planeModel (coefficients, center);
-                    pair<double, double> result = planeModel.getInliers(cloud, indices, threshold, current_model_inliers);
-
-                    // Compare fitness first.
-                    if (bestResult.first < result.first || (bestResult.first == result.first && bestResult.second > result.second )) {
-                        bestResult = result;
-                        bestModel.ModelCoefficients = planeModel.ModelCoefficients;
-                        inliers_indices = current_model_inliers;
-                    }
-
+                for (unsigned j = 0; j < num_rnd_model_points; ++j) {
+                    std::swap(indices[i], indices[rng.uniform(0, num_points)]);
                 }
-                inliers.push_back(inliers_indices);
-                model_instances.push_back(bestModel);
-            }
 
-            if (model_type == SPHERE_MODEL) {
-                RNG rng((uint64)-1);
-                const unsigned num_rnd_model_points = 4;
-                double bestRadius = 10000000;
-                for (unsigned i = 0; i < max_iters; ++i) {
-                    vector<unsigned> current_model_inliers;
-                    SACModel model;
-
-                    for (unsigned j = 0; j < num_rnd_model_points; ++j) {
-                        std::swap(indices[i], indices[rng.uniform(0, num_points)]);
-                    }
-
-                    for (unsigned j = 0; j < num_rnd_model_points; j++) {
-                        unsigned idx = indices[i];
-                        current_model_inliers.emplace_back(idx);
-                    }
-
-                    Point3d center;
-                    double radius;
-
-                    getSphereFromPoints(points, current_model_inliers, center, radius);
-                    SACSphereModel sphereModel (center, radius);
-                    pair<double, double> result = sphereModel.getInliers(cloud, indices, threshold, current_model_inliers);
-                    // Compare fitness first.
-                    if (bestResult.first < result.first || (bestResult.first == result.first && bestResult.second > result.second)
-                        || (bestResult.first == result.first)) {
-
-                        if (bestResult.first == result.first && bestModel.ModelCoefficients.size() == 4 && sphereModel.radius > bestRadius) continue;
-                        bestResult = result;
-                        bestModel.ModelCoefficients = sphereModel.ModelCoefficients;
-                        bestModel.ModelCoefficients = sphereModel.ModelCoefficients;
-                        inliers_indices = current_model_inliers;
-                    }
-
+                for (unsigned j = 0; j < num_rnd_model_points; j++) {
+                    unsigned idx = indices[i];
+                    current_model_inliers.emplace_back(idx);
                 }
-                inliers.push_back(inliers_indices);
-                model_instances.push_back(bestModel);
+
+                Point3d center;
+                Vec4d coefficients = getPlaneFromPoints(points, current_model_inliers, center);
+                SACPlaneModel planeModel (coefficients, center);
+                pair<double, double> result = planeModel.getInliers(cloud, indices, threshold, current_model_inliers);
+
+                // Compare fitness first.
+                if (bestResult.first < result.first || (bestResult.first == result.first && bestResult.second > result.second )) {
+                    bestResult = result;
+                    bestModel.ModelCoefficients = planeModel.ModelCoefficients;
+                    inliers_indices = current_model_inliers;
+                }
+
             }
+            inliers.push_back(inliers_indices);
+            model_instances.push_back(bestModel);
         }
+
+        if (model_type == SPHERE_MODEL) {
+            RNG rng((uint64)-1);
+            const unsigned num_rnd_model_points = 4;
+            double bestRadius = 10000000;
+            for (unsigned i = 0; i < max_iters; ++i) {
+                vector<unsigned> current_model_inliers;
+                SACModel model;
+
+                for (unsigned j = 0; j < num_rnd_model_points; ++j) {
+                    std::swap(indices[i], indices[rng.uniform(0, num_points)]);
+                }
+
+                for (unsigned j = 0; j < num_rnd_model_points; j++) {
+                    unsigned idx = indices[i];
+                    current_model_inliers.emplace_back(idx);
+                }
+
+                Point3d center;
+                double radius;
+
+                getSphereFromPoints(points, current_model_inliers, center, radius);
+                SACSphereModel sphereModel (center, radius);
+                pair<double, double> result = sphereModel.getInliers(cloud, indices, threshold, current_model_inliers);
+                // Compare fitness first.
+                if (bestResult.first < result.first || (bestResult.first == result.first && bestResult.second > result.second)
+                    || (bestResult.first == result.first)) {
+
+                    if (bestResult.first == result.first && bestModel.ModelCoefficients.size() == 4 && sphereModel.radius > bestRadius) continue;
+                    bestResult = result;
+                    bestModel.ModelCoefficients = sphereModel.ModelCoefficients;
+                    bestModel.ModelCoefficients = sphereModel.ModelCoefficients;
+                    inliers_indices = current_model_inliers;
+                }
+
+            }
+            inliers.push_back(inliers_indices);
+            model_instances.push_back(bestModel);
+        }
+    }
+
+    void SACModelFitting::set_threshold (double threshold_value) {
+        threshold = threshold_value;
+    }
+
+    void SACModelFitting::set_iterations (long unsigned iterations) {
+        max_iters = iterations;
+    }
 
 } // ptcloud
 }   // cv
