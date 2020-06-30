@@ -199,7 +199,7 @@ void extractLineBundle(int len, InputArray ctl2d, InputArray img, OutputArray bu
           INTER_NEAREST); // inter_nearest as we use integer locations
 }
 
-static void compute1DSobel(const Mat& src, Mat& dst)
+void compute1DSobel(const Mat& src, Mat& dst)
 {
     CV_CheckDepthEQ(src.depth(), CV_8U, "only uchar images supported");
     int channels = src.channels();
@@ -223,19 +223,13 @@ static void compute1DSobel(const Mat& src, Mat& dst)
     }
 }
 
-void findCorrespondencies(InputArray bundle, InputArray _srcLocations, OutputArray _newLocations,
-                          OutputArray _response)
+void findCorrespondencies(InputArray bundle, OutputArray _cols, OutputArray _response)
 {
-    CV_Assert(bundle.size() == _srcLocations.size());
-    CV_CheckTypeEQ(_srcLocations.type(), CV_16SC2, "Vec2s data type expected");
-
     Mat_<uchar> sobel;
     compute1DSobel(bundle.getMat(), sobel);
 
-    _newLocations.create(sobel.rows, 1, CV_16SC2);
-
-    Mat newLocations = _newLocations.getMat();
-    Mat srcLocations = _srcLocations.getMat();
+    _cols.create(sobel.rows, 1, CV_32S);
+    Mat_<int> cols = _cols.getMat();
 
     Mat_<uchar> response;
     if (_response.needed()) {
@@ -267,64 +261,75 @@ void findCorrespondencies(InputArray bundle, InputArray _srcLocations, OutputArr
         if (!response.empty())
             response(i) = mx;
 
-        newLocations.at<Vec2s>(i, 0) = srcLocations.at<Vec2s>(i, pos);
+        cols(i) = pos;
     }
 }
 
-void drawCorrespondencies(InputOutputArray _bundle, InputArray _srcLocations, InputArray _newLocations,
-                          InputArray _colors)
+void drawCorrespondencies(InputOutputArray _bundle, InputArray _cols, InputArray _colors)
 {
-    CV_CheckTypeEQ(_srcLocations.type(), CV_16SC2, "Vec2s data type expected");
-    CV_CheckTypeEQ(_newLocations.type(), CV_16SC2, "Vec2s data type expected");
-    CV_Assert(_bundle.size() == _srcLocations.size());
-    CV_Assert(_colors.empty() || _colors.rows() == _srcLocations.rows());
+    CV_CheckTypeEQ(_cols.type(), CV_32S, "cols must be of int type");
+    CV_Assert(_bundle.rows() == _cols.rows());
+    CV_Assert(_colors.empty() || _colors.rows() == _cols.rows());
 
     Mat bundle = _bundle.getMat();
-    Mat_<Vec2s> srcLocations = _srcLocations.getMat();
-    Mat_<Vec2s> newLocations = _newLocations.getMat();
+    Mat_<int> cols = _cols.getMat();
     Mat_<Vec4d> colors = _colors.getMat();
 
     for (int i = 0; i < bundle.rows; i++) {
-        const Vec2s& ref = newLocations(i);
-        for (int j = 1; j < bundle.cols - 1; j++) {
-            if (ref == srcLocations(i, j)) {
-                bundle(Rect(Point(j, i), Size(1, 1))) = colors.empty() ? Scalar::all(255) : colors(i);
-            }
-        }
+        bundle(Rect(Point(cols(i), i), Size(1, 1))) = colors.empty() ? Scalar::all(255) : colors(i);
     }
 }
 
-void filterCorrespondencies(InputOutputArray _pts2d, InputOutputArray _pts3d, InputArray _mask)
+void convertCorrespondencies(InputArray _cols, InputArray _srcLocations, OutputArray _pts2d,
+                             InputOutputArray _pts3d, InputArray _mask)
 {
-    CV_CheckTypeEQ(_mask.type(), CV_8UC1, "mask must be of uchar type");
-    CV_Assert(_pts2d.rows() == _pts3d.rows() && _pts2d.rows() == _mask.rows());
+    CV_CheckTypeEQ(_cols.type(), CV_32S, "cols must be of int type");
+    CV_CheckTypeEQ(_srcLocations.type(), CV_16SC2, "Vec2s data type expected");
+    CV_Assert(_srcLocations.rows() == _cols.rows());
 
-    Mat pts2d = _pts2d.getMat();
-    Mat pts3d = _pts3d.getMat();
-    Mat_<uchar> mask = _mask.getMat();
+    Mat_<cv::Vec2s> srcLocations = _srcLocations.getMat();
+    Mat_<int> cols = _cols.getMat();
 
-    Mat opts3d(0, 1, pts3d.type());
-    opts3d.reserve(mask.rows);
-    Mat opts2d(0, 1, pts2d.type());
-    opts2d.reserve(mask.rows);
+    Mat pts2d = Mat(0, 1, CV_16SC2);
+    pts2d.reserve(cols.rows);
 
-    for (int i = 0; i < mask.rows; i++) {
-        if (!mask(i))
-            continue;
-
-        opts2d.push_back(pts2d.row(i));
-        opts3d.push_back(pts3d.row(i));
+    Mat_<uchar> mask;
+    if (!_mask.empty())
+    {
+        CV_CheckTypeEQ(_mask.type(), CV_8UC1, "mask must be of uchar type");
+        CV_Assert(_cols.rows() == _mask.rows());
+        mask = _mask.getMat();
     }
 
-    Mat(opts3d).copyTo(_pts3d);
-    Mat(opts2d).copyTo(_pts2d);
+    Mat pts3d;
+    Mat opts3d;
+    if(!_pts3d.empty())
+    {
+        CV_Assert(_cols.rows() == _pts3d.rows());
+        pts3d = _pts3d.getMat();
+        opts3d.create(0, 1, pts3d.type());
+        opts3d.reserve(cols.rows);
+    }
+
+    for (int i = 0; i < cols.rows; i++) {
+        if (!mask.empty() && !mask(i))
+            continue;
+
+        pts2d.push_back(srcLocations(i, cols(i)));
+        if(!pts3d.empty())
+            opts3d.push_back(pts3d.row(i));
+    }
+
+    pts2d.copyTo(_pts2d);
+    if(!pts3d.empty())
+        opts3d.copyTo(_pts3d);
 }
 
 float rapid(InputArray img, int num, int len, InputArray vtx, InputArray tris, InputArray K,
-            InputOutputArray rvec, InputOutputArray tvec)
+            InputOutputArray rvec, InputOutputArray tvec, double* rmsd)
 {
     CV_Assert(num >= 3);
-    Mat pts2d, pts3d, correspondencies;
+    Mat pts2d, pts3d;
     extractControlPoints(num, len, vtx, rvec, tvec, K, img.size(), tris, pts2d, pts3d);
     if (pts2d.empty())
         return 0;
@@ -332,18 +337,71 @@ float rapid(InputArray img, int num, int len, InputArray vtx, InputArray tris, I
     Mat lineBundle, imgLoc;
     extractLineBundle(len, pts2d, img, lineBundle, imgLoc);
 
-    Mat response;
-    findCorrespondencies(lineBundle, imgLoc, correspondencies, response);
+    Mat cols, response;
+    findCorrespondencies(lineBundle, cols, response);
 
     const uchar sobel_thresh = 20;
-    filterCorrespondencies(correspondencies, pts3d, response > sobel_thresh);
+    Mat mask = response > sobel_thresh;
+    convertCorrespondencies(cols, imgLoc, pts2d, pts3d, mask);
 
-    if (correspondencies.rows < 3)
+    if(rmsd)
+    {
+        cols.copyTo(cols, mask);
+        cols -= len + 1;
+        *rmsd = std::sqrt(norm(cols, NORM_L2SQR) / cols.rows);
+    }
+
+    if (pts2d.rows < 3)
         return 0;
 
-    solvePnPRefineLM(pts3d, correspondencies, K, cv::noArray(), rvec, tvec);
+    solvePnPRefineLM(pts3d, pts2d, K, cv::noArray(), rvec, tvec);
 
-    return float(correspondencies.rows) / num;
+    return float(pts2d.rows) / num;
+}
+
+Tracker::~Tracker() {}
+
+struct RapidImpl : public Rapid
+{
+    Mat pts3d;
+    Mat tris;
+    RapidImpl(InputArray _pts3d, InputArray _tris)
+    {
+        CV_Assert(_tris.getMat().checkVector(3, CV_32S) > 0);
+        CV_Assert(_pts3d.getMat().checkVector(3, CV_32F) > 0);
+        pts3d = _pts3d.getMat();
+        tris = _tris.getMat();
+    }
+    float compute(InputArray img, int num, int len, InputArray K, InputOutputArray rvec,
+                  InputOutputArray tvec, const TermCriteria& termcrit) CV_OVERRIDE
+    {
+        float ret = 0;
+        int niter = std::max(1, termcrit.maxCount);
+
+        double rmsd;
+        Mat cols;
+        for(int i = 0; i < niter; i++)
+        {
+            ret = rapid(img, num, len, pts3d, tris, K, rvec, tvec,
+                        termcrit.type & TermCriteria::EPS ? &rmsd : NULL);
+
+            if((termcrit.type & TermCriteria::EPS) && rmsd < termcrit.epsilon)
+            {
+                break;
+            }
+        }
+        return ret;
+    }
+
+    void clearState() CV_OVERRIDE
+    {
+        // nothing to do
+    }
+};
+
+Ptr<Rapid> Rapid::create(InputArray pts3d, InputArray tris)
+{
+    return makePtr<RapidImpl>(pts3d, tris);
 }
 
 } /* namespace rapid */

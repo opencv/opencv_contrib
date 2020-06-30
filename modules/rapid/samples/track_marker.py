@@ -35,7 +35,7 @@ while cv.waitKey(1) != 27:
     # tracking and refinement with rapid
     if rot is not None:
         for i in range(5):  # multiple iterations
-            ratio, rot, trans = cv.rapid.rapid(img, 40, line_len, obj_points, tris, K, rot, trans)
+            ratio, rot, trans = cv.rapid.rapid(img, 40, line_len, obj_points, tris, K, rot, trans)[:3]
             if ratio < 0.8:
                 # bad quality, force re-detect
                 rot, trans = None, None
