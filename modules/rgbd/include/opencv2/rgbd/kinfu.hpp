@@ -9,6 +9,7 @@
 
 #include "opencv2/core.hpp"
 #include "opencv2/core/affine.hpp"
+#include <opencv2/rgbd/volume.hpp>
 
 namespace cv {
 namespace kinfu {
@@ -68,8 +69,15 @@ struct CV_EXPORTS_W Params
     */
     CV_WRAP static Ptr<Params> coarseParams();
 
+    /** @brief HashTSDF parameters
+      A set of parameters suitable for use with HashTSDFVolume
+    */
+    CV_WRAP static Ptr<Params> hashTSDFParams(bool isCoarse);
+
     /** @brief frame size in pixels */
     CV_PROP_RW Size frameSize;
+
+    CV_PROP_RW cv::kinfu::VolumeType volumeType;
 
     /** @brief camera intrinsics */
     CV_PROP_RW Matx33f intr;
