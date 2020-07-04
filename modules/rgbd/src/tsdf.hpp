@@ -106,6 +106,7 @@ class TSDFVolumeGPU : public TSDFVolume
 #endif
 cv::Ptr<TSDFVolume> makeTSDFVolume(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor,
                                    float _truncDist, int _maxWeight, Point3i _resolution);
+cv::Ptr<TSDFVolume> makeTSDFVolume(const VolumeParams& _params);
 }  // namespace kinfu
 }  // namespace cv
 #endif

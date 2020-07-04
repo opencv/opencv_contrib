@@ -1,7 +1,6 @@
 // This file is part of OpenCV project.
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html
-#include "precomp.hpp"
 #include "hash_tsdf.hpp"
 
 #include <atomic>
@@ -14,15 +13,18 @@
 #include "opencv2/core/cvstd.hpp"
 #include "opencv2/core/utility.hpp"
 #include "opencv2/core/utils/trace.hpp"
+#include "precomp.hpp"
 #include "utils.hpp"
 
 namespace cv
 {
 namespace kinfu
 {
-HashTSDFVolume::HashTSDFVolume(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor,
-                               float _truncDist, int _maxWeight, float _truncateThreshold,
-                               int _volumeUnitRes, bool _zFirstMemOrder)
+template<typename Derived>
+HashTSDFVolume<Derived>::HashTSDFVolume(float _voxelSize, cv::Affine3f _pose,
+                                        float _raycastStepFactor, float _truncDist, int _maxWeight,
+                                        float _truncateThreshold, int _volumeUnitRes,
+                                        bool _zFirstMemOrder)
     : Volume(_voxelSize, _pose, _raycastStepFactor),
       maxWeight(_maxWeight),
       truncateThreshold(_truncateThreshold),
@@ -36,13 +38,19 @@ HashTSDFVolume::HashTSDFVolume(float _voxelSize, cv::Affine3f _pose, float _rayc
 HashTSDFVolumeCPU::HashTSDFVolumeCPU(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor,
                                      float _truncDist, int _maxWeight, float _truncateThreshold,
                                      int _volumeUnitRes, bool _zFirstMemOrder)
-    : HashTSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
-                     _truncateThreshold, _volumeUnitRes, _zFirstMemOrder)
+    : Base(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _truncateThreshold,
+           _volumeUnitRes, _zFirstMemOrder)
 {
 }
 
+HashTSDFVolumeCPU::HashTSDFVolumeCPU(const VolumeParams& _params, bool _zFirstMemOrder)
+    : Base(_params.voxelSize, _params.volumePose, _params.raycastStepFactor, _params.truncDist,
+           _params.maxWeight, _params.depthTruncThreshold, _params.volumeUnitResolution,
+           _zFirstMemOrder)
+{
+}
 // zero volume, leave rest params the same
-void HashTSDFVolumeCPU::reset()
+void HashTSDFVolumeCPU::reset_()
 {
     CV_TRACE_FUNCTION();
     volumeUnits.clear();
@@ -127,9 +135,8 @@ struct AllocateVolumeUnitsInvoker : ParallelLoopBody
     mutable Mutex mutex;
 };
 
-
-void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor,
-                                  const cv::Affine3f& cameraPose, const Intr& intrinsics)
+void HashTSDFVolumeCPU::integrate_(InputArray _depth, float depthFactor,
+                                   const cv::Affine3f& cameraPose, const Intr& intrinsics)
 {
     CV_TRACE_FUNCTION();
 
@@ -199,30 +206,30 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor,
     });
 }
 
-cv::Vec3i HashTSDFVolumeCPU::volumeToVolumeUnitIdx(cv::Point3f p) const
+cv::Vec3i HashTSDFVolumeCPU::volumeToVolumeUnitIdx_(cv::Point3f p) const
 {
     return cv::Vec3i(cvFloor(p.x / volumeUnitSize), cvFloor(p.y / volumeUnitSize),
                      cvFloor(p.z / volumeUnitSize));
 }
 
-cv::Point3f HashTSDFVolumeCPU::volumeUnitIdxToVolume(cv::Vec3i volumeUnitIdx) const
+cv::Point3f HashTSDFVolumeCPU::volumeUnitIdxToVolume_(cv::Vec3i volumeUnitIdx) const
 {
     return cv::Point3f(volumeUnitIdx[0] * volumeUnitSize, volumeUnitIdx[1] * volumeUnitSize,
                        volumeUnitIdx[2] * volumeUnitSize);
 }
 
-cv::Point3f HashTSDFVolumeCPU::voxelCoordToVolume(cv::Vec3i voxelIdx) const
+cv::Point3f HashTSDFVolumeCPU::voxelCoordToVolume_(cv::Vec3i voxelIdx) const
 {
     return cv::Point3f(voxelIdx[0] * voxelSize, voxelIdx[1] * voxelSize, voxelIdx[2] * voxelSize);
 }
 
-cv::Vec3i HashTSDFVolumeCPU::volumeToVoxelCoord(cv::Point3f point) const
+cv::Vec3i HashTSDFVolumeCPU::volumeToVoxelCoord_(cv::Point3f point) const
 {
     return cv::Vec3i(cvFloor(point.x * voxelSizeInv), cvFloor(point.y * voxelSizeInv),
                      cvFloor(point.z * voxelSizeInv));
 }
 
-inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
+inline TsdfVoxel HashTSDFVolumeCPU::at_(const cv::Vec3i& volumeIdx) const
 {
     cv::Vec3i volumeUnitIdx = cv::Vec3i(cvFloor(volumeIdx[0] / volumeUnitResolution),
                                         cvFloor(volumeIdx[1] / volumeUnitResolution),
@@ -248,7 +255,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
     return volumeUnit->at(volUnitLocalIdx);
 }
 
-inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Point3f& point) const
+inline TsdfVoxel HashTSDFVolumeCPU::at_(const cv::Point3f& point) const
 {
     cv::Vec3i volumeUnitIdx          = volumeToVolumeUnitIdx(point);
     VolumeUnitMap::const_iterator it = volumeUnits.find(volumeUnitIdx);
@@ -269,7 +276,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Point3f& point) const
     return volumeUnit->at(volUnitLocalIdx);
 }
 
-inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
+inline Point3f HashTSDFVolumeCPU::getNormalVoxel_(Point3f point) const
 {
     Vec3f pointVec(point);
     Vec3f normal = Vec3f(0, 0, 0);
@@ -405,9 +412,9 @@ struct HashRaycastInvoker : ParallelLoopBody
     const Intr::Reprojector reproj;
 };
 
-void HashTSDFVolumeCPU::raycast(const cv::Affine3f& cameraPose, const cv::kinfu::Intr& intrinsics,
-                                cv::Size frameSize, cv::OutputArray _points,
-                                cv::OutputArray _normals) const
+void HashTSDFVolumeCPU::raycast_(const cv::Affine3f& cameraPose, const cv::kinfu::Intr& intrinsics,
+                                 cv::Size frameSize, cv::OutputArray _points,
+                                 cv::OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
     CV_Assert(frameSize.area() > 0);
@@ -489,7 +496,7 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
     mutable Mutex mutex;
 };
 
-void HashTSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _normals) const
+void HashTSDFVolumeCPU::fetchPointsNormals_(OutputArray _points, OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
 
@@ -549,7 +556,7 @@ struct PushNormals
     Affine3f invPose;
 };
 
-void HashTSDFVolumeCPU::fetchNormals(cv::InputArray _points, cv::OutputArray _normals) const
+void HashTSDFVolumeCPU::fetchNormals_(cv::InputArray _points, cv::OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
 
@@ -563,15 +570,6 @@ void HashTSDFVolumeCPU::fetchNormals(cv::InputArray _points, cv::OutputArray _no
 
         points.forEach(PushNormals(*this, normals));
     }
-}
-
-cv::Ptr<HashTSDFVolume> makeHashTSDFVolume(float _voxelSize, cv::Affine3f _pose,
-                                           float _raycastStepFactor, float _truncDist,
-                                           int _maxWeight, float _truncateThreshold,
-                                           int _volumeUnitResolution)
-{
-    return cv::makePtr<HashTSDFVolumeCPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist,
-                                          _maxWeight, _truncateThreshold, _volumeUnitResolution);
 }
 
 }  // namespace kinfu

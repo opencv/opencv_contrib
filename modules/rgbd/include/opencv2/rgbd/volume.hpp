@@ -29,7 +29,7 @@ class Volume
     virtual ~Volume(){};
 
     virtual void integrate(InputArray _depth, float depthFactor, const cv::Affine3f& cameraPose,
-                           const cv::kinfu::Intr& intrinsics)                        = 0;
+                           const cv::kinfu::Intr& intrinsics)                              = 0;
     virtual void raycast(const cv::Affine3f& cameraPose, const cv::kinfu::Intr& intrinsics,
                          cv::Size frameSize, cv::OutputArray points,
                          cv::OutputArray normals) const                                    = 0;
@@ -49,6 +49,28 @@ enum class VolumeType
     TSDF     = 0,
     HASHTSDF = 1
 };
+
+//! TODO: Tagged union for volumeParams
+struct VolumeParams
+{
+    VolumeType volumeType;
+    cv::Affine3f volumePose;
+    float voxelSize;
+    float truncDist;
+    int maxWeight;
+    float depthTruncThreshold;
+    float raycastStepFactor;
+
+    float volumeSize;
+    Point3i volumeResolution;
+    int volumeUnitResolution;
+
+    static Ptr<VolumeParams> defaultParams(VolumeType _volumeType);
+
+    static Ptr<VolumeParams> coarseParams(VolumeType _volumeType);
+};
+
+cv::Ptr<Volume> makeVolume(const VolumeParams& _volumeParams);
 
 cv::Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, cv::Affine3f _pose,
                            float _raycastStepFactor, float _truncDist, int _maxWeight,
