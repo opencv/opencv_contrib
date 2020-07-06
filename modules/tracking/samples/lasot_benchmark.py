@@ -56,7 +56,7 @@ def init_tracker(tracker_name):
     as keys and tuple with call method and number of frames for
     reinitialization as values
     '''
-    config = {"Boosting": (cv.TrackerBoosting_create(), 500),
+    config = {"Boosting": (cv.TrackerBoosting_create(), 1000),
               "MIL": (cv.TrackerMIL_create(), 1000),
               "KCF": (cv.TrackerKCF_create(), 1000),
               "MedianFlow": (cv.TrackerMedianFlow_create(), 1000),
@@ -72,7 +72,7 @@ def main():
     # As a default argument used name of the original dataset folder
     parser.add_argument("--dataset", type=str,
                         default="LaSOTTesting", help="Full path to LaSOT")
-    parser.add_argument("--v", dest="visualization", action='store_true',
+    parser.add_argument("-v", dest="visualization", action='store_true',
                         help="Showing process of tracking")
     args = parser.parse_args()
 
@@ -132,11 +132,11 @@ def main():
                 # Image is ignored if no object on it
                 if gt_bb[2] == 0 or gt_bb[3] == 0:
                     gt_bb = gt_file.readline().rstrip("\n").split(",")
+                    frame_counter -= 1
                     continue
 
                 # Condition for reinitialization of the tracker
                 if ((number_of_the_frame + 1) % frames_for_reinit == 0):
-
                     tracker, frames_for_reinit = init_tracker(tracker_name)
                     init_once = False
                     init_bb = gt_bb
