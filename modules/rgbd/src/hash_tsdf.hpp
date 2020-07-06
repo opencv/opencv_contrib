@@ -28,10 +28,10 @@ class HashTSDFVolume : public Volume
     }
 
     virtual void integrate(InputArray _depth, float depthFactor, const cv::Affine3f& cameraPose,
-                           const cv::kinfu::Intr& intrinsics) override
+                           const cv::kinfu::Intr& intrinsics, const int frameId = 0) override
     {
         Derived* derived = static_cast<Derived*>(this);
-        derived->integrate_(_depth, depthFactor, cameraPose, intrinsics);
+        derived->integrate_(_depth, depthFactor, cameraPose, intrinsics, frameId);
     }
     virtual void raycast(const cv::Affine3f& cameraPose, const cv::kinfu::Intr& intrinsics,
                          cv::Size frameSize, cv::OutputArray points,
@@ -52,7 +52,11 @@ class HashTSDFVolume : public Volume
     }
     size_t getTotalVolumeUnits() const
     {
-        return static_cast<const Derived*>(this)->getTotalVolumeUnits();
+        return static_cast<const Derived*>(this)->getTotalVolumeUnits_();
+    }
+    int getVisibleBlocks(int currFrameId, int frameThreshold) const
+    {
+        return static_cast<const Derived*>(this)->getVisibleBlocks_(currFrameId, frameThreshold);
     }
 
     TsdfVoxel at(const cv::Vec3i& volumeIdx) const
@@ -123,6 +127,7 @@ struct VolumeUnit
 
     cv::Ptr<TSDFVolume> pVolume;
     cv::Vec3i index;
+    int lastVisibleIndex = 0;
     bool isActive;
 };
 
@@ -157,7 +162,7 @@ class HashTSDFVolumeCPU : public HashTSDFVolume<HashTSDFVolumeCPU>
     HashTSDFVolumeCPU(const VolumeParams& _volumeParams, bool zFirstMemOrder = true);
 
     void integrate_(InputArray _depth, float depthFactor, const cv::Affine3f& cameraPose,
-                    const cv::kinfu::Intr& intrinsics);
+                    const cv::kinfu::Intr& intrinsics, const int frameId = 0);
     void raycast_(const cv::Affine3f& cameraPose, const cv::kinfu::Intr& intrinsics,
                   cv::Size frameSize, cv::OutputArray points, cv::OutputArray normals) const;
 
@@ -166,6 +171,7 @@ class HashTSDFVolumeCPU : public HashTSDFVolume<HashTSDFVolumeCPU>
 
     void reset_();
     size_t getTotalVolumeUnits_() const { return volumeUnits.size(); }
+    int getVisibleBlocks_(int currFrameId, int frameThreshold) const;
 
     //! Return the voxel given the voxel index in the universal volume (1 unit = 1 voxel_length)
     TsdfVoxel at_(const cv::Vec3i& volumeIdx) const;

@@ -427,7 +427,7 @@ struct IntegrateInvoker : ParallelLoopBody
 
 // use depth instead of distance (optimization)
 void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Affine3f& cameraPose,
-                              const Intr& intrinsics)
+                              const Intr& intrinsics, const int frameId)
 {
     CV_TRACE_FUNCTION();
 
@@ -1140,7 +1140,7 @@ void TSDFVolumeGPU::reset()
 
 // use depth instead of distance (optimization)
 void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
-                              const cv::Affine3f& cameraPose, const Intr& intrinsics)
+                              const cv::Affine3f& cameraPose, const Intr& intrinsics, const int frameId)
 {
     CV_TRACE_FUNCTION();
 
@@ -1427,6 +1427,18 @@ cv::Ptr<TSDFVolume> makeTSDFVolume(float _voxelSize, cv::Affine3f _pose, float _
 #endif
     return cv::makePtr<TSDFVolumeCPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
                                       _resolution);
+}
+
+cv::Ptr<TSDFVolume> makeTSDFVolume(const VolumeParams& _params)
+{
+#ifdef HAVE_OPENCL
+    if (cv::ocl::useOpenCL())
+        return cv::makePtr<TSDFVolumeGPU>(_params.voxelSize, _params.pose, _params.raycastStepFactor, _params.tsdfTruncDist, _params.maxWeight,
+                                          _params.resolution);
+#endif
+    return cv::makePtr<TSDFVolumeCPU>(_params.voxelSize, _params.pose, _params.raycastStepFactor, _params.tsdfTruncDist, _params.maxWeight,
+                                          _params.resolution);
+
 }
 
 } // namespace kinfu

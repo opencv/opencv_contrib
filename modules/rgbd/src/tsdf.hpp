@@ -53,7 +53,7 @@ class TSDFVolumeCPU : public TSDFVolume
                   int _maxWeight, Point3i _resolution, bool zFirstMemOrder = true);
 
     virtual void integrate(InputArray _depth, float depthFactor, const cv::Affine3f& cameraPose,
-                           const cv::kinfu::Intr& intrinsics) override;
+                           const cv::kinfu::Intr& intrinsics, const int frameId = 0) override;
     virtual void raycast(const cv::Affine3f& cameraPose, const cv::kinfu::Intr& intrinsics,
                          cv::Size frameSize, cv::OutputArray points,
                          cv::OutputArray normals) const override;
@@ -87,7 +87,7 @@ class TSDFVolumeGPU : public TSDFVolume
                   int _maxWeight, Point3i _resolution);
 
     virtual void integrate(InputArray _depth, float depthFactor, const cv::Affine3f& cameraPose,
-                           const cv::kinfu::Intr& intrinsics) override;
+                           const cv::kinfu::Intr& intrinsics, const int frameId = 0) override;
     virtual void raycast(const cv::Affine3f& cameraPose, const cv::kinfu::Intr& intrinsics,
                          cv::Size frameSize, cv::OutputArray _points,
                          cv::OutputArray _normals) const override;
