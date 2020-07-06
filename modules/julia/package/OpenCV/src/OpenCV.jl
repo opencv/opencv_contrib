@@ -10,7 +10,7 @@ using CxxWrap
 function __init__()
     @initcxx
 end
-const Scalar = Union{Tuple{Number}, Tuple{Number, Number}, Tuple{Number, Number, Number}, NTuple{4, Number}}
+const Scalar = Union{Tuple{}, Tuple{Number}, Tuple{Number, Number}, Tuple{Number, Number, Number}, NTuple{4, Number}}
 
 include("Mat.jl")
 
@@ -52,6 +52,15 @@ function cpp_to_julia(var::Tuple)
     end
     return tuple(ret_arr...)
 end
+
+function cpp_to_julia(var::CxxBool)
+    return Bool(var)
+end
+
+function julia_to_cpp(var::Bool)
+    return CxxBool(var)
+end
+
 # using StaticArrays
 
 include("cv_wrap.jl")

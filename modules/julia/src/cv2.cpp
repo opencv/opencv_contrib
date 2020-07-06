@@ -16,8 +16,9 @@
 #include <opencv2/core/utility.hpp>
 #include <opencv2/objdetect.hpp>
 #include <opencv2/imgproc.hpp>
-#include "opencv2/highgui.hpp"
 #include "opencv2/videoio.hpp"
+#include "opencv2/dnn.hpp"
+
 
 using namespace cv;
 using namespace std;
@@ -27,40 +28,79 @@ using namespace jlcxx;
 
 namespace jlcxx
 {
-template <typename T>
-struct IsSmartPointerType<cv::Ptr<T>> : std::true_type
-{
-};
-template <typename T>
-struct ConstructorPointerType<cv::Ptr<T>>
-{
-    typedef T *type;
-};
+    template <typename T>
+    struct IsSmartPointerType<cv::Ptr<T>> : std::true_type
+    {
+    };
+    template <typename T>
+    struct ConstructorPointerType<cv::Ptr<T>>
+    {
+        typedef T *type;
+    };
 
-template <typename T, int Val>
-struct BuildParameterList<cv::Vec<T, Val>>
-{
-    typedef ParameterList<T, std::integral_constant<int, Val>> type;
-};
-template <>
-struct SuperType<cv::Feature2D>
-{
-    typedef cv::Algorithm type;
-};
-template <>
-struct SuperType<cv::SimpleBlobDetector>
-{
-    typedef cv::Feature2D type;
-};
-}
+    template <typename T, int Val>
+    struct BuildParameterList<cv::Vec<T, Val>>
+    {
+        typedef ParameterList<T, std::integral_constant<int, Val>> type;
+    };
+    template <>
+    struct SuperType<cv::Feature2D>
+    {
+        typedef cv::Algorithm type;
+    };
+    template <>
+    struct SuperType<cv::SimpleBlobDetector>
+    {
+        typedef cv::Feature2D type;
+    };
+
+    template <>
+    struct SuperType<cv::dnn::Layer>
+    {
+        typedef cv::Algorithm type;
+    };
+
+    template <>
+    struct SuperType<cv::dnn::Model>
+    {
+        typedef cv::dnn::Net type;
+    };
+
+    template <>
+    struct SuperType<cv::dnn::ClassificationModel>
+    {
+        typedef cv::dnn::Model type;
+    };
+
+    template <>
+    struct SuperType<cv::dnn::KeypointsModel>
+    {
+        typedef cv::dnn::Model type;
+    };
+
+    template <>
+    struct SuperType<cv::dnn::SegmentationModel>
+    {
+        typedef cv::dnn::Model type;
+    };
+
+    template <>
+    struct SuperType<cv::dnn::DetectionModel>
+    {
+        typedef cv::dnn::Model type;
+    };
+
+} // namespace jlcxx
 
 // Needed to prevent documentation warning
 
-namespace cv { namespace julia {
-void initJulia(int, char**) {}
-}}
-
-
+namespace cv
+{
+    namespace julia
+    {
+        void initJulia(int, char **) {}
+    } // namespace julia
+} // namespace cv
 
 JLCXX_MODULE cv_wrap(jlcxx::Module &mod)
 {
@@ -130,7 +170,11 @@ JLCXX_MODULE cv_wrap(jlcxx::Module &mod)
     mod.method("jlopencv_cv_cv_imshow", [](string &winname, Mat &mat) { cv::imshow(winname, mat); ; });
     mod.method("jlopencv_cv_cv_namedWindow", [](string &winname, int &flags) { cv::namedWindow(winname, flags); ; });
     mod.method("jlopencv_cv_cv_waitKey", [](int &delay) { auto retval = cv::waitKey(delay); return retval; });
+
+    mod.method("jlopencv_cv_cv_getTextSize", [](string &text, int &fontFace, double &fontScale, int &thickness) {int baseLine; auto retval = cv::getTextSize(text, fontFace, fontScale, thickness, &baseLine); return make_tuple(move(retval),move(baseLine)); });
+    mod.method("jlopencv_cv_cv_putText", [](Mat &img, string &text, Point &org, int &fontFace, double &fontScale, Scalar &color, int &thickness, int &lineType, bool bottomLeftOrigin) { cv::putText(img, text, org, fontFace, fontScale, color, thickness, lineType, bottomLeftOrigin); return img; });
     mod.method("jlopencv_cv_cv_rectangle", [](Mat &img, Point &pt1, Point &pt2, Scalar &color, int &thickness, int &lineType, int &shift) { cv::rectangle(img, pt1, pt2, color, thickness, lineType, shift); return img; });
+
     mod.method("jlopencv_cv_cv_cvtColor", [](Mat &src, int &code, Mat &dst, int &dstCn) { cv::cvtColor(src, dst, code, dstCn); return dst; });
     mod.method("jlopencv_cv_cv_equalizeHist", [](Mat &src, Mat &dst) { cv::equalizeHist(src, dst); return dst; });
     mod.method("jlopencv_cv_cv_destroyAllWindows", []() { cv::destroyAllWindows(); ; });
@@ -432,4 +476,151 @@ JLCXX_MODULE cv_wrap(jlcxx::Module &mod)
     mod.set_const("COLOR_M_RGBA2RGBA", (int)cv::COLOR_mRGBA2RGBA);
 
     mod.set_const("CAP_ANY", (int)cv::CAP_ANY);
+
+    mod.set_const("FONT_HERSHEY_COMPLEX", (int)cv::FONT_HERSHEY_COMPLEX);
+    mod.set_const("FONT_HERSHEY_COMPLEX_SMALL", (int)cv::FONT_HERSHEY_COMPLEX_SMALL);
+    mod.set_const("FONT_HERSHEY_DUPLEX", (int)cv::FONT_HERSHEY_DUPLEX);
+    mod.set_const("FONT_HERSHEY_PLAIN", (int)cv::FONT_HERSHEY_PLAIN);
+    mod.set_const("FONT_HERSHEY_SCRIPT_COMPLEX", (int)cv::FONT_HERSHEY_SCRIPT_COMPLEX);
+    mod.set_const("FONT_HERSHEY_SCRIPT_SIMPLEX", (int)cv::FONT_HERSHEY_SCRIPT_SIMPLEX);
+    mod.set_const("FONT_HERSHEY_SIMPLEX", (int)cv::FONT_HERSHEY_SIMPLEX);
+    mod.set_const("FONT_HERSHEY_TRIPLEX", (int)cv::FONT_HERSHEY_TRIPLEX);
+    mod.set_const("FONT_ITALIC", (int)cv::FONT_ITALIC);
+
+    // DNN Module
+
+    using namespace cv::dnn;
+
+    mod.add_type<cv::dnn::Layer>("dnn_Layer", jlcxx::julia_base_type<cv::Algorithm>());
+    mod.add_type<cv::dnn::Net>("dnn_Net");
+    mod.add_type<cv::dnn::Model>("dnn_Model", jlcxx::julia_base_type<cv::dnn::Net>());
+    mod.add_type<cv::dnn::ClassificationModel>("dnn_ClassificationModel", jlcxx::julia_base_type<cv::dnn::Model>());
+    mod.add_type<cv::dnn::KeypointsModel>("dnn_KeypointsModel", jlcxx::julia_base_type<cv::dnn::Model>());
+    mod.add_type<cv::dnn::SegmentationModel>("dnn_SegmentationModel", jlcxx::julia_base_type<cv::dnn::Model>());
+    mod.add_type<cv::dnn::DetectionModel>("dnn_DetectionModel", jlcxx::julia_base_type<cv::dnn::Model>());
+
+
+    mod.add_type<LayerId>("dnn_LayerId");
+    mod.add_type<AsyncArray>("AsyncArray");
+
+    mod.method("jlopencv_Layer_set_blobs", [](cv::Ptr<cv::dnn::Layer> cobj, const vector_Mat &v) { cobj->blobs = (vector_Mat)v; });
+
+    mod.method("jlopencv_Layer_get_blobs", [](const cv::Ptr<cv::dnn::Layer> &cobj) { return cobj->blobs; });
+    mod.method("jlopencv_Layer_get_name", [](const cv::Ptr<cv::dnn::Layer> &cobj) { return cobj->name; });
+    mod.method("jlopencv_Layer_get_type", [](const cv::Ptr<cv::dnn::Layer> &cobj) { return cobj->type; });
+    mod.method("jlopencv_Layer_get_preferableTarget", [](const cv::Ptr<cv::dnn::Layer> &cobj) { return cobj->preferableTarget; });
+
+    mod.method("jlopencv_cv_dnn_cv_dnn_Layer_cv_dnn_Layer_finalize", [](cv::Ptr<cv::dnn::Layer> &cobj, vector<Mat> &inputs, vector<Mat> &outputs) { cobj->finalize(inputs, outputs);  return outputs; });
+    // mod.method("jlopencv_cv_dnn_cv_dnn_Layer_cv_dnn_Layer_run", [](cv::Ptr<cv::dnn::Layer> &cobj, vector<Mat> &inputs, vector<Mat> &internals, vector<Mat> &outputs) { cobj->run(inputs, outputs, internals);  return make_tuple(move(outputs),move(internals)); });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Layer_cv_dnn_Layer_outputNameToIndex", [](cv::Ptr<cv::dnn::Layer> &cobj, string &outputName) { auto retval = cobj->outputNameToIndex(outputName);  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_Net", []() { return jlcxx::create<cv::dnn::Net>(); });
+
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_empty", [](cv::dnn::Net &cobj) { auto retval = cobj.empty();  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_dump", [](cv::dnn::Net &cobj) { auto retval = cobj.dump();  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_dumpToFile", [](cv::dnn::Net &cobj, string &path) { cobj.dumpToFile(path);  ; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_getLayerId", [](cv::dnn::Net &cobj, string &layer) { auto retval = cobj.getLayerId(layer);  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_getLayerNames", [](cv::dnn::Net &cobj) { auto retval = cobj.getLayerNames();  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_getLayer", [](cv::dnn::Net &cobj, LayerId &layerId) { auto retval = cobj.getLayer(layerId);  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_connect", [](cv::dnn::Net &cobj, string &outPin, string &inpPin) { cobj.connect(outPin, inpPin);  ; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_setInputsNames", [](cv::dnn::Net &cobj, vector<string> &inputBlobNames) { cobj.setInputsNames(inputBlobNames);  ; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_setInputShape", [](cv::dnn::Net &cobj, string &inputName, MatShape &shape) { cobj.setInputShape(inputName, shape);  ; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_forward", [](cv::dnn::Net &cobj, string &outputName) { auto retval = cobj.forward(outputName);  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_forward", [](cv::dnn::Net &cobj, vector<Mat> &outputBlobs, string &outputName) { cobj.forward(outputBlobs, outputName);  return outputBlobs; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_forward", [](cv::dnn::Net &cobj, vector<string> &outBlobNames, vector<Mat> &outputBlobs) { cobj.forward(outputBlobs, outBlobNames);  return outputBlobs; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_forward", [](cv::dnn::Net &cobj, vector<string> &outBlobNames) {vector<vector<Mat>> outputBlobs; cobj.forward(outputBlobs, outBlobNames);  return outputBlobs; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_forwardAsync", [](cv::dnn::Net &cobj, string &outputName) { auto retval = cobj.forwardAsync(outputName);  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_setHalideScheduler", [](cv::dnn::Net &cobj, string &scheduler) { cobj.setHalideScheduler(scheduler);  ; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_setPreferableBackend", [](cv::dnn::Net &cobj, int &backendId) { cobj.setPreferableBackend(backendId);  ; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_setPreferableTarget", [](cv::dnn::Net &cobj, int &targetId) { cobj.setPreferableTarget(targetId);  ; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_setInput", [](cv::dnn::Net &cobj, Mat &blob, string &name, double &scalefactor, Scalar &mean) { cobj.setInput(blob, name, scalefactor, mean);  ; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_setParam", [](cv::dnn::Net &cobj, LayerId &layer, int &numParam, Mat &blob) { cobj.setParam(layer, numParam, blob);  ; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_getParam", [](cv::dnn::Net &cobj, LayerId &layer, int &numParam) { auto retval = cobj.getParam(layer, numParam);  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_getUnconnectedOutLayers", [](cv::dnn::Net &cobj) { auto retval = cobj.getUnconnectedOutLayers();  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_getUnconnectedOutLayersNames", [](cv::dnn::Net &cobj) { auto retval = cobj.getUnconnectedOutLayersNames();  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_getLayersShapes", [](cv::dnn::Net &cobj, vector<MatShape> &netInputShapes) {vector<int> layersIds;vector<vector<MatShape>> inLayersShapes;vector<vector<MatShape>> outLayersShapes; cobj.getLayersShapes(netInputShapes, layersIds, inLayersShapes, outLayersShapes);  return make_tuple(move(layersIds),move(inLayersShapes),move(outLayersShapes)); });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_getLayersShapes", [](cv::dnn::Net &cobj, MatShape &netInputShape) {vector<int> layersIds;vector<vector<MatShape>> inLayersShapes;vector<vector<MatShape>> outLayersShapes; cobj.getLayersShapes(netInputShape, layersIds, inLayersShapes, outLayersShapes);  return make_tuple(move(layersIds),move(inLayersShapes),move(outLayersShapes)); });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_getFLOPS", [](cv::dnn::Net &cobj, vector<MatShape> &netInputShapes) { auto retval = cobj.getFLOPS(netInputShapes);  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_getFLOPS", [](cv::dnn::Net &cobj, MatShape &netInputShape) { auto retval = cobj.getFLOPS(netInputShape);  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_getFLOPS", [](cv::dnn::Net &cobj, int &layerId, vector<MatShape> &netInputShapes) { auto retval = cobj.getFLOPS(layerId, netInputShapes);  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_getFLOPS", [](cv::dnn::Net &cobj, int &layerId, MatShape &netInputShape) { auto retval = cobj.getFLOPS(layerId, netInputShape);  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_getLayerTypes", [](cv::dnn::Net &cobj) {vector<string> layersTypes; cobj.getLayerTypes(layersTypes);  return layersTypes; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_getLayersCount", [](cv::dnn::Net &cobj, string &layerType) { auto retval = cobj.getLayersCount(layerType);  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_getMemoryConsumption", [](cv::dnn::Net &cobj, MatShape &netInputShape) {size_t weights;size_t blobs; cobj.getMemoryConsumption(netInputShape, weights, blobs);  return make_tuple(move(weights),move(blobs)); });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_getMemoryConsumption", [](cv::dnn::Net &cobj, int &layerId, vector<MatShape> &netInputShapes) {size_t weights;size_t blobs; cobj.getMemoryConsumption(layerId, netInputShapes, weights, blobs);  return make_tuple(move(weights),move(blobs)); });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_getMemoryConsumption", [](cv::dnn::Net &cobj, int &layerId, MatShape &netInputShape) {size_t weights;size_t blobs; cobj.getMemoryConsumption(layerId, netInputShape, weights, blobs);  return make_tuple(move(weights),move(blobs)); });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_enableFusion", [](cv::dnn::Net &cobj, bool &fusion) { cobj.enableFusion(fusion);  ; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_cv_dnn_Net_getPerfProfile", [](cv::dnn::Net &cobj) {vector<double> timings; auto retval = cobj.getPerfProfile(timings);  return make_tuple(move(retval),move(timings)); });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Model_cv_dnn_Model_Model", [](string &model, string &config) { return jlcxx::create<cv::dnn::Model>(model, config); });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Model_cv_dnn_Model_Model", [](Net &network) { return jlcxx::create<cv::dnn::Model>(network); });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Model_cv_dnn_Model_setInputSize", [](cv::dnn::Model &cobj, Size &size) { auto retval = cobj.setInputSize(size);  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Model_cv_dnn_Model_setInputSize", [](cv::dnn::Model &cobj, int &width, int &height) { auto retval = cobj.setInputSize(width, height);  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Model_cv_dnn_Model_setInputMean", [](cv::dnn::Model &cobj, Scalar &mean) { auto retval = cobj.setInputMean(mean);  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Model_cv_dnn_Model_setInputScale", [](cv::dnn::Model &cobj, double &scale) { auto retval = cobj.setInputScale(scale);  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Model_cv_dnn_Model_setInputCrop", [](cv::dnn::Model &cobj, bool &crop) { auto retval = cobj.setInputCrop(crop);  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Model_cv_dnn_Model_setInputSwapRB", [](cv::dnn::Model &cobj, bool &swapRB) { auto retval = cobj.setInputSwapRB(swapRB);  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Model_cv_dnn_Model_setInputParams", [](cv::dnn::Model &cobj, double &scale, Size &size, Scalar &mean, bool &swapRB, bool &crop) { cobj.setInputParams(scale, size, mean, swapRB, crop);  ; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Model_cv_dnn_Model_predict", [](cv::dnn::Model &cobj, Mat &frame, vector<Mat> &outs) { cobj.predict(frame, outs);  return outs; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_ClassificationModel_cv_dnn_ClassificationModel_ClassificationModel", [](string &model, string &config) { return jlcxx::create<cv::dnn::ClassificationModel>(model, config); });
+    mod.method("jlopencv_cv_dnn_cv_dnn_ClassificationModel_cv_dnn_ClassificationModel_ClassificationModel", [](Net &network) { return jlcxx::create<cv::dnn::ClassificationModel>(network); });
+
+    mod.method("jlopencv_cv_dnn_cv_dnn_ClassificationModel_cv_dnn_ClassificationModel_classify", [](cv::dnn::ClassificationModel &cobj, Mat &frame) {int classId;float conf; cobj.classify(frame, classId, conf);  return make_tuple(move(classId),move(conf)); });
+    mod.method("jlopencv_cv_dnn_cv_dnn_KeypointsModel_cv_dnn_KeypointsModel_KeypointsModel", [](string &model, string &config) { return jlcxx::create<cv::dnn::KeypointsModel>(model, config); });
+    mod.method("jlopencv_cv_dnn_cv_dnn_KeypointsModel_cv_dnn_KeypointsModel_KeypointsModel", [](Net &network) { return jlcxx::create<cv::dnn::KeypointsModel>(network); });
+
+    mod.method("jlopencv_cv_dnn_cv_dnn_KeypointsModel_cv_dnn_KeypointsModel_estimate", [](cv::dnn::KeypointsModel &cobj, Mat &frame, float &thresh) { auto retval = cobj.estimate(frame, thresh);  return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_SegmentationModel_cv_dnn_SegmentationModel_SegmentationModel", [](string &model, string &config) { return jlcxx::create<cv::dnn::SegmentationModel>(model, config); });
+    mod.method("jlopencv_cv_dnn_cv_dnn_SegmentationModel_cv_dnn_SegmentationModel_SegmentationModel", [](Net &network) { return jlcxx::create<cv::dnn::SegmentationModel>(network); });
+
+    mod.method("jlopencv_cv_dnn_cv_dnn_SegmentationModel_cv_dnn_SegmentationModel_segment", [](cv::dnn::SegmentationModel &cobj, Mat &frame, Mat &mask) { cobj.segment(frame, mask);  return mask; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_DetectionModel_cv_dnn_DetectionModel_DetectionModel", [](string &model, string &config) { return jlcxx::create<cv::dnn::DetectionModel>(model, config); });
+    mod.method("jlopencv_cv_dnn_cv_dnn_DetectionModel_cv_dnn_DetectionModel_DetectionModel", [](Net &network) { return jlcxx::create<cv::dnn::DetectionModel>(network); });
+
+    mod.method("jlopencv_cv_dnn_cv_dnn_DetectionModel_cv_dnn_DetectionModel_detect", [](cv::dnn::DetectionModel &cobj, Mat &frame, float &confThreshold, float &nmsThreshold) {vector<int> classIds;vector<float> confidences;vector<Rect> boxes; cobj.detect(frame, classIds, confidences, boxes, confThreshold, nmsThreshold);  return make_tuple(move(classIds),move(confidences),move(boxes)); });
+
+    // Fix later int-enum auto conversion
+    // mod.method("jlopencv_cv_dnn_cv_dnn_getAvailableTargets", [](dnn_Backend &be) { auto retval = cv::dnn::getAvailableTargets(be); return retval; });
+
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_readFromModelOptimizer", [](string &xml, string &bin) { auto retval = cv::dnn::Net::readFromModelOptimizer(xml, bin); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_Net_readFromModelOptimizer", [](vector<uchar> &bufferModelConfig, vector<uchar> &bufferWeights) { auto retval = cv::dnn::Net::readFromModelOptimizer(bufferModelConfig, bufferWeights); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_readNetFromDarknet", [](string &cfgFile, string &darknetModel) { auto retval = cv::dnn::readNetFromDarknet(cfgFile, darknetModel); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_readNetFromDarknet", [](vector<uchar> &bufferCfg, vector<uchar> &bufferModel) { auto retval = cv::dnn::readNetFromDarknet(bufferCfg, bufferModel); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_readNetFromCaffe", [](string &prototxt, string &caffeModel) { auto retval = cv::dnn::readNetFromCaffe(prototxt, caffeModel); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_readNetFromCaffe", [](vector<uchar> &bufferProto, vector<uchar> &bufferModel) { auto retval = cv::dnn::readNetFromCaffe(bufferProto, bufferModel); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_readNetFromTensorflow", [](string &model, string &config) { auto retval = cv::dnn::readNetFromTensorflow(model, config); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_readNetFromTensorflow", [](vector<uchar> &bufferModel, vector<uchar> &bufferConfig) { auto retval = cv::dnn::readNetFromTensorflow(bufferModel, bufferConfig); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_readNetFromTorch", [](string &model, bool &isBinary, bool &evaluate) { auto retval = cv::dnn::readNetFromTorch(model, isBinary, evaluate); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_readNet", [](string &model, string &config, string &framework) { auto retval = cv::dnn::readNet(model, config, framework); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_readNet", [](string &framework, vector<uchar> &bufferModel, vector<uchar> &bufferConfig) { auto retval = cv::dnn::readNet(framework, bufferModel, bufferConfig); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_readTorchBlob", [](string &filename, bool &isBinary) { auto retval = cv::dnn::readTorchBlob(filename, isBinary); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_readNetFromModelOptimizer", [](string &xml, string &bin) { auto retval = cv::dnn::readNetFromModelOptimizer(xml, bin); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_readNetFromModelOptimizer", [](vector<uchar> &bufferModelConfig, vector<uchar> &bufferWeights) { auto retval = cv::dnn::readNetFromModelOptimizer(bufferModelConfig, bufferWeights); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_readNetFromONNX", [](string &onnxFile) { auto retval = cv::dnn::readNetFromONNX(onnxFile); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_readNetFromONNX", [](vector<uchar> &buffer) { auto retval = cv::dnn::readNetFromONNX(buffer); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_readTensorFromONNX", [](string &path) { auto retval = cv::dnn::readTensorFromONNX(path); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_blobFromImage", [](Mat &image, double &scalefactor, Size &size, Scalar &mean, bool &swapRB, bool &crop, int &ddepth) { auto retval = cv::dnn::blobFromImage(image, scalefactor, size, mean, swapRB, crop, ddepth); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_blobFromImages", [](vector<Mat> &images, double &scalefactor, Size &size, Scalar &mean, bool &swapRB, bool &crop, int &ddepth) { auto retval = cv::dnn::blobFromImages(images, scalefactor, size, mean, swapRB, crop, ddepth); return retval; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_imagesFromBlob", [](Mat &blob_, vector<Mat> &images_) { cv::dnn::imagesFromBlob(blob_, images_); return images_; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_shrinkCaffeModel", [](string &src, string &dst, vector<string> &layersTypes) { cv::dnn::shrinkCaffeModel(src, dst, layersTypes); ; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_writeTextGraph", [](string &model, string &output) { cv::dnn::writeTextGraph(model, output); ; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_NMSBoxes", [](vector<Rect2d> &bboxes, vector<float> &scores, float &score_threshold, float &nms_threshold, float &eta, int &top_k) {vector<int> indices; cv::dnn::NMSBoxes(bboxes, scores, score_threshold, nms_threshold, indices, eta, top_k); return indices; });
+    mod.method("jlopencv_cv_dnn_cv_dnn_NMSBoxes", [](vector<RotatedRect> &bboxes, vector<float> &scores, float &score_threshold, float &nms_threshold, float &eta, int &top_k) {vector<int> indices; cv::dnn::NMSBoxes(bboxes, scores, score_threshold, nms_threshold, indices, eta, top_k); return indices; });
+    mod.set_const("DNN_BACKEND_CUDA", (int)cv::dnn::DNN_BACKEND_CUDA);
+    mod.set_const("DNN_BACKEND_DEFAULT", (int)cv::dnn::DNN_BACKEND_DEFAULT);
+    mod.set_const("DNN_BACKEND_HALIDE", (int)cv::dnn::DNN_BACKEND_HALIDE);
+    mod.set_const("DNN_BACKEND_INFERENCE_ENGINE", (int)cv::dnn::DNN_BACKEND_INFERENCE_ENGINE);
+    mod.set_const("DNN_BACKEND_OPENCV", (int)cv::dnn::DNN_BACKEND_OPENCV);
+    mod.set_const("DNN_BACKEND_VKCOM", (int)cv::dnn::DNN_BACKEND_VKCOM);
+    mod.set_const("DNN_TARGET_CPU", (int)cv::dnn::DNN_TARGET_CPU);
+    mod.set_const("DNN_TARGET_CUDA", (int)cv::dnn::DNN_TARGET_CUDA);
+    mod.set_const("DNN_TARGET_CUDA_FP16", (int)cv::dnn::DNN_TARGET_CUDA_FP16);
+    mod.set_const("DNN_TARGET_FPGA", (int)cv::dnn::DNN_TARGET_FPGA);
+    mod.set_const("DNN_TARGET_MYRIAD", (int)cv::dnn::DNN_TARGET_MYRIAD);
+    mod.set_const("DNN_TARGET_OPENCL", (int)cv::dnn::DNN_TARGET_OPENCL);
+    mod.set_const("DNN_TARGET_OPENCL_FP16", (int)cv::dnn::DNN_TARGET_OPENCL_FP16);
+    mod.set_const("DNN_TARGET_VULKAN", (int)cv::dnn::DNN_TARGET_VULKAN);
+
+// Hack for more complex default parameters
+    mod.method("stdggvectoriStringkOP", [](){return std::vector<String>();});
+    mod.method("stdggvectoriucharkOP", [](){return std::vector<uchar>();});
+    mod.method("SizeOP", [](){return Size();});
 }

@@ -20,7 +20,7 @@ function Base.getproperty(m::KeyPoint, s::Symbol)
     return Base.getfield(m, s)
 end
 function Base.setproperty!(m::KeyPoint, s::Symbol, v)
-    return Base.setfield(m, s, v)
+    return Base.setfield!(m, s, v)
 end
 
 function KeyPoint(x::Float32, y::Float32, _size::Float32, _angle::Float32, _response::Float32, _octave::Int32, _class_id::Int32)
@@ -112,3 +112,14 @@ equalizeHist(src::InputArray; dst::InputArray = (CxxMat())) = equalizeHist(src, 
 function destroyAllWindows()
 	return cpp_to_julia(jlopencv_cv_cv_destroyAllWindows())
 end
+
+function getTextSize(text::String, fontFace::Int32, fontScale::Float64, thickness::Int32)
+	return cpp_to_julia(jlopencv_cv_cv_getTextSize(julia_to_cpp(text),julia_to_cpp(fontFace),julia_to_cpp(fontScale),julia_to_cpp(thickness)))
+end
+
+function putText(img::InputArray, text::String, org::Point{Int32}, fontFace::Int32, fontScale::Float64, color::Scalar, thickness::Int32, lineType::Int32, bottomLeftOrigin::Bool)
+	return cpp_to_julia(jlopencv_cv_cv_putText(julia_to_cpp(img),julia_to_cpp(text),julia_to_cpp(org),julia_to_cpp(fontFace),julia_to_cpp(fontScale),julia_to_cpp(color),julia_to_cpp(thickness),julia_to_cpp(lineType),julia_to_cpp(bottomLeftOrigin)))
+end
+putText(img::InputArray, text::String, org::Point{Int32}, fontFace::Int32, fontScale::Float64, color::Scalar; thickness::Int32 = Int32(1), lineType::Int32 = Int32(LINE_8), bottomLeftOrigin::Bool = (false)) = putText(img, text, org, fontFace, fontScale, color, thickness, lineType, bottomLeftOrigin)
+
+include("cv_dnn_wrap.jl")
