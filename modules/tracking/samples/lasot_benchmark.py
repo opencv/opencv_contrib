@@ -56,7 +56,7 @@ def init_tracker(tracker_name):
     as keys and tuple with call method and number of frames for
     reinitialization as values
     '''
-    config = {"Boosting": (cv.TrackerBoosting_create(), 500),
+    config = {"Boosting": (cv.TrackerBoosting_create(), 1000),
               "MIL": (cv.TrackerMIL_create(), 1000),
               "KCF": (cv.TrackerKCF_create(), 1000),
               "MedianFlow": (cv.TrackerMedianFlow_create(), 1000),
