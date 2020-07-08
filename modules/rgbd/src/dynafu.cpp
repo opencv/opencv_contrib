@@ -478,15 +478,15 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
             _depthRender.convertTo(estdDepth, DEPTH_TYPE);
 
             makeFrameFromDepth(estdDepth, estdPoints, estdNormals, params.intr,
-                params.pyramidLevels,
-                1.f,
-                params.bilateral_sigma_depth,
-                params.bilateral_sigma_spatial,
-                params.bilateral_kernel_size,
-                params.truncateThreshold);
+                               params.pyramidLevels,
+                               1.f,
+                               params.bilateral_sigma_depth,
+                               params.bilateral_sigma_spatial,
+                               params.bilateral_kernel_size,
+                               params.truncateThreshold);
 
-            success = dynafuICP->estimateWarpNodes(warpfield, pose, _vertRender, estdPoints[0],
-                                                   estdNormals[0],
+            success = dynafuICP->estimateWarpNodes(warpfield, pose, _vertRender, _normRender,
+                                                   estdPoints[0], estdNormals[0],
                                                    newPoints[0], newNormals[0]);
             if(!success)
                 return false;

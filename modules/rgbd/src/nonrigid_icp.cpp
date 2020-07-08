@@ -5,6 +5,8 @@
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
 #include <algorithm>
+#include <unordered_map>
+
 #include "precomp.hpp"
 #include "nonrigid_icp.hpp"
 
@@ -34,10 +36,10 @@ class ICPImpl : public NonRigidICP
 public:
     ICPImpl(const cv::kinfu::Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume, int _iterations);
 
-    virtual bool estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
-                                   InputArray vertImage, InputArray oldPoints,
-                                   InputArray oldNormals, InputArray newPoints,
-                                   InputArray newNormals) const override;
+    virtual bool estimateWarpNodes(WarpField& warp, const Affine3f &pose,
+                                   InputArray vertImage, InputArray normImage,
+                                   InputArray oldPoints, InputArray oldNormals,
+                                   InputArray newPoints, InputArray newNormals) const override;
 
     virtual ~ICPImpl() {}
 };
@@ -50,6 +52,24 @@ static inline bool fastCheck(const Point3f& p)
 {
     return !cvIsNaN(p.x);
 }
+
+
+// TODO: the following code was used like that, maybe reuse it
+/*
+data:
+
+    float med = median(residuals);
+    std::for_each(residuals.begin(), residuals.end(), [med](float& x) {x = std::abs(x - med); });
+    float sigma = MAD_SCALE * median(residuals);
+
+    float robustWeight = tukeyWeight(rd, sigma);
+
+reg:
+
+    float reg_sigma = MAD_SCALE * median(reg_residuals);
+    float robustWeight = huberWeight(r_edge, reg_sigma);
+*/
+
 
 static float median(std::vector<float> v)
 {
@@ -70,34 +90,68 @@ static float median(std::vector<float> v)
     }
 }
 
-static float tukeyWeight(float r, float sigma)
+
+static float tukeyWeight(float v, float sigma = 1.f)
 {
-    float x = r/sigma;
-    if(std::abs(x) <= TUKEY_B)
+    v /= sigma;
+    const float b2 = TUKEY_B * TUKEY_B;
+    if (std::abs(v) <= TUKEY_B)
     {
-        float y = 1 - (x*x)/(TUKEY_B * TUKEY_B);
+        float y = 1.f - (v*v) / b2;
         return y*y;
-
-    } else return 0;
+    }
+    else return 0;
 }
 
-static float huberWeight(Vec3f v, float sigma)
+
+// Works the same as above but takes squared norm
+// Can be optimized in the future to interpolated LUTs
+static float tukeyWeightSq(float vv, float sigma = 1.f)
 {
-    if(sigma == 0) return 0.f;
-    float x = (float)std::abs(norm(v)/sigma);
-    return (x > HUBER_K)? HUBER_K/x : 1.f;
+    vv /= sigma*sigma;
+    const float b2 = TUKEY_B * TUKEY_B;
+    if (vv <= b2)
+    {
+        float y = 1.f - vv / b2;
+        return y * y;
+    }
+    else return 0;
 }
 
-static void fillRegularization(Mat_<float>& A_reg, Mat_<float>& b_reg, WarpField& currentWarp,
+
+static float huberWeight(float vnorm, float sigma = 1.f)
+{
+    if (std::abs(sigma) < 0.001f) return 0.f;
+    float x = (float)std::abs(vnorm/sigma);
+    return (x > HUBER_K) ? HUBER_K / x : 1.f;
+}
+
+
+// Works the same as above but takes squared norm
+// Can be optimized in the future to interpolated LUTs
+static float huberWeightSq(float vnorm2, float sigma = 1.f)
+{
+    if (std::abs(sigma) < 0.001f) return 0.f;
+    float vnorm = std::sqrt(vnorm2);
+    float x = (float)std::abs(vnorm / sigma);
+    return (x > HUBER_K) ? HUBER_K / x : 1.f;
+}
+
+/*
+TODO: remove it in the end
+-----------------------------
+-----------------------------
+
+static void fillRegularization(Mat_<float>& A_reg, Mat_<float>& b_reg, WarpField& warp,
                                int totalNodes, std::vector<int> baseIndices)
 {
-    int nLevels = currentWarp.n_levels;
-    int k = currentWarp.k;
+    int nLevels = warp.n_levels;
+    int k = warp.k;
 
-    const NodeVectorType& warpNodes = currentWarp.getNodes();
+    const std::vector<Ptr<WarpNode> >& warpNodes = warp.getNodes();
     // Accumulate regularisation term for each node in the heiarchy
-    const std::vector<NodeVectorType>& regNodes = currentWarp.getGraphNodes();
-    const hierarchyType& regGraph = currentWarp.getRegGraph();
+    const std::vector<std::vector<Ptr<WarpNode> > >& regNodes = warp.getGraphNodes();
+    const std::vector<std::vector<NodeNeighboursType> >& regGraph = warp.getRegGraph();
 
     // populate residuals for each edge in the graph to calculate sigma
     std::vector<float> reg_residuals;
@@ -105,18 +159,18 @@ static void fillRegularization(Mat_<float>& A_reg, Mat_<float>& b_reg, WarpField
     int numEdges = 0;
     for(int l = 0; l < (nLevels-1); l++)
     {
-        const std::vector<nodeNeighboursType>& level = regGraph[l];
+        const std::vector<NodeNeighboursType>& level = regGraph[l];
 
-        const NodeVectorType& currentLevelNodes = (l == 0)? warpNodes : regNodes[l-1];
+        const std::vector<Ptr<WarpNode> >& currentLevelNodes = (l == 0)? warpNodes : regNodes[l-1];
 
-        const NodeVectorType& nextLevelNodes = regNodes[l];
+        const std::vector<Ptr<WarpNode> >& nextLevelNodes = regNodes[l];
 
         std::cout << currentLevelNodes.size() << " " << nextLevelNodes.size() << std::endl;
 
 
         for(size_t node = 0; node < level.size(); node++)
         {
-            const nodeNeighboursType& children = level[node];
+            const NodeNeighboursType& children = level[node];
             Vec3f nodePos = currentLevelNodes[node]->pos;
             Affine3f nodeTransform = currentLevelNodes[node]->transform;
 
@@ -152,14 +206,14 @@ static void fillRegularization(Mat_<float>& A_reg, Mat_<float>& b_reg, WarpField
 
     for(int l = 0; l < (nLevels-1); l++)
     {
-        const std::vector<nodeNeighboursType>& level = regGraph[l];
+        const std::vector<NodeNeighboursType>& level = regGraph[l];
 
         const NodeVectorType& currentLevelNodes = (l == 0)? warpNodes : regNodes[l-1];
         const NodeVectorType& nextLevelNodes = regNodes[l];
 
         for(size_t node = 0; node < level.size(); node++)
         {
-            const nodeNeighboursType& children = level[node];
+            const NodeNeighboursType& children = level[node];
             Vec3f nodePos = currentLevelNodes[node]->pos;
             Affine3f nodeTransform = currentLevelNodes[node]->transform;
 
@@ -247,11 +301,437 @@ static void fillRegularization(Mat_<float>& A_reg, Mat_<float>& b_reg, WarpField
     }
 }
 
+-----------------------------
+-----------------------------
+*/
 
-bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
-                                InputArray _vertImage, InputArray _oldPoints,
-                                InputArray _oldNormals, InputArray _newPoints,
-                                InputArray _newNormals) const
+// GOOD CODE STARTS HERE --------------------------------------------------------------------------
+
+bool interpolateP3f(Point2f pt, const ptype* data, size_t width, Point3f& out)
+{
+    // bilinearly interpolate newPoints under newCoords point
+    int xi = cvFloor(pt.x), yi = cvFloor(pt.y);
+    float tx = pt.x - xi, ty = pt.y - yi;
+
+    const ptype* prow0 = data + yi*width;
+    const ptype* prow1 = data + (yi + 1)*width;
+
+    Point3f p00 = fromPtype(prow0[xi + 0]);
+    Point3f p01 = fromPtype(prow0[xi + 1]);
+    Point3f p10 = fromPtype(prow1[xi + 0]);
+    Point3f p11 = fromPtype(prow1[xi + 1]);
+
+    //do not fix missing data
+    if (!(fastCheck(p00) && fastCheck(p01) &&
+          fastCheck(p10) && fastCheck(p11)))
+        return false;
+
+    Point3f p0 = p00 + tx * (p01 - p00);
+    Point3f p1 = p10 + tx * (p11 - p10);
+    out = (p0 + ty * (p1 - p0));
+    
+    return true;
+}
+
+// Per-pixel structure to keep neighbours and weights
+// neighbours[i] < 0 indicates last neighbour
+struct WeightsNeighbours
+{
+    WeightsNeighbours()
+    {
+        for (int i = 0; i < DYNAFU_MAX_NEIGHBOURS; i++)
+        {
+            neighbours[i] = -1;
+            weights[i] = 0;
+        }
+    }
+    int    neighbours[DYNAFU_MAX_NEIGHBOURS];
+    float     weights[DYNAFU_MAX_NEIGHBOURS];
+};
+
+// keeps jtj matrix between building and solving
+struct BlockSparseMat
+{
+    static const int blockSize = 6;
+    BlockSparseMat(int _nBlocks) :
+        nBlocks(_nBlocks), ijv()
+    { }
+       
+    Matx66f& refBlock(int i, int j)
+    {
+        Point2i p(i, j);
+        auto it = ijv.find(p);
+        if (it == ijv.end())
+        {
+            it = ijv.insert({ p, Matx66f()}).first;
+        }
+        return it->second;
+    }
+
+    float& refElem(int i, int j)
+    {
+        Point2i ib(i / blockSize, j / blockSize), iv(i % blockSize, j % blockSize);
+        return refBlock(ib.x, ib.y)(iv.x, iv.y);
+    }
+
+    int nBlocks;
+    std::unordered_map< Point2i, Matx66f > ijv;
+};
+
+static bool sparseSolve(const BlockSparseMat& jtj, const std::vector<float>& jtb, std::vector<float>& x)
+{
+    const float matValThreshold = 0.001f;
+
+    bool result = false;
+
+#if defined(HAVE_EIGEN)
+
+    std::cout << "starting eigen-insertion..." << std::endl;
+
+    std::vector<Eigen::Triplet<double>> tripletList;
+    tripletList.reserve(jtj.ijv.size()*jtj.blockSize*jtj.blockSize);
+    for (auto ijv : jtj.ijv)
+    {
+        int xb = ijv.first.x, yb = ijv.first.y;
+        Matx66f vblock = ijv.second;
+        for (int i = 0; i < jtj.blockSize; i++)
+        {
+            for (int j = 0; j < jtj.blockSize; j++)
+            {
+                float val = vblock(i, j);
+                if (abs(val) >= matValThreshold)
+                {
+                    tripletList.push_back(Eigen::Triplet<double>(jtj.blockSize * xb + i,
+                                                                 jtj.blockSize * yb + j,
+                                                                 val));
+                }
+            }
+        }
+    }
+    
+    Eigen::SparseMatrix<float> abig(jtj.blockSize * jtj.nBlocks, jtj.blockSize * jtj.nBlocks);
+    abig.setFromTriplets(tripletList.begin(), tripletList.end());
+
+    // TODO: do we need this?
+    abig.makeCompressed();
+
+    Eigen::VectorXf bBig(jtb);
+
+    //TODO: try this, LLT and Cholesky
+    //Eigen::SimplicialLDLT<Eigen::SparseMatrix<float>> solver;
+    Eigen::SparseQR<Eigen::SparseMatrix<float>, Eigen::NaturalOrdering<int>> solver;
+
+    std::cout << "starting eigen-compute..." << std::endl;
+    solver.compute(abig);
+
+    if (solver.info() != Eigen::Success)
+    {
+        std::cout << "failed to eigen-decompose" << std::endl;
+        result = false;
+    }
+    else
+    {
+        std::cout << "starting eigen-solve..." << std::endl;
+
+        Eigen::VectorXf sx = solver.solve(bBig);
+        if (solver.info() != Eigen::Success)
+        {
+            std::cout << "failed to eigen-solve" << std::endl;
+            result = false;
+        }
+        else
+        {
+            x.resize(jtb.size);
+            for (size_t i = 0; i < x.size(); i++)
+            {
+                x[i] = sx[i];
+            }
+            result = true;
+        }
+    }
+
+#else
+    std::cout << "no eigen library" << std::endl;
+
+    CV_Error(Error::StsNotImplemented,
+             "Eigen library required for matrix solve, dense solver is not implemented");
+#endif
+
+    return result;
+}
+
+
+static DualQuaternion dampedDQ(int nNodes, float wsum, float coeff)
+{
+    float wdamp = nNodes - wsum;
+    return DualQuaternion() * wdamp * coeff;
+}
+
+
+// residual norm for sigma estimation
+static float resNormEdge(const WarpNode& actNode, const WarpNode& pasNode, const bool disableCentering)
+{
+    DualQuaternion dqAct = actNode.transform;
+    DualQuaternion dqPas = pasNode.transform;
+    Point3f cAct = actNode.pos;
+    Point3f cPas = pasNode.pos;
+    int nAct = actNode.place, nPas = pasNode.place;
+
+    DualQuaternion dqActCentered, dqPasCentered;
+    //TODO URGENT: getAffineUnit
+    Point3f tPas = dqPas.getAffineUnit().translation();
+    if (disableCentering)
+    {
+        dqActCentered = dqAct;
+        dqPasCentered = dqPas;
+    }
+    else
+    {
+        //TODO URGENT: dq.centered()
+        dqActCentered = dqAct.centered(cAct);
+        dqPasCentered = dqPas.centered(cPas);
+    }
+
+    // TODO URGENT: dq.applyUnit()
+    Vec3f vMoveActC = dqActCentered.applyUnit(cPas);
+
+    Vec3f vMovePasC;
+    if (disableCentering)
+    {
+        // TODO URGENT: dq.applyUnit()
+        vMovePasC = dqPasCentered.applyUnit(cPas);
+    }
+    else
+    {
+        vMovePasC = cPas + tPas;
+    }
+
+    // -delta_x from Gauss-Newton
+    Vec3f vDiffActC = -vMoveActC + vMovePasC;
+
+    float resNorm = std::sqrt(vDiffActC.dot(vDiffActC));
+
+    return resNorm;
+}
+
+
+// Passive node's center is moved by both active and passive nodes
+static void fillEdge(BlockSparseMat& jtj, std::vector<float>& jtb,
+                     const WarpNode& actNode, const WarpNode& pasNode,
+                     const float regTermWeight, const float huberSigma,
+                     const bool disableCentering, const bool useExp, const bool useNormApply)
+{
+    DualQuaternion dqAct = actNode.transform;
+    DualQuaternion dqPas = pasNode.transform;
+    Point3f cAct = actNode.pos;
+    Point3f cPas = pasNode.pos;
+    int nAct = actNode.place, nPas = pasNode.place;
+    cv::Matx<float, 8, 6> jAct = actNode.cachedJac;
+    cv::Matx<float, 8, 6> jPas = pasNode.cachedJac;
+
+    DualQuaternion dqActCentered, dqPasCentered;
+    //TODO URGENT: getAffineUnit
+    Point3f tPas = dqPas.getAffineUnit().translation();
+    if (disableCentering)
+    {
+        dqActCentered = dqAct;
+        dqPasCentered = dqPas;
+    }
+    else
+    {
+        //TODO URGENT: dq.centered()
+        dqActCentered = dqAct.centered(cAct);
+        dqPasCentered = dqPas.centered(cPas);
+    }
+    
+    Matx<float, 3, 8> jNormApplyActC, jNormApplyPasC, jUnitApplyActC, jUnitApplyPasC;
+
+    // TODO URGENT: dq.j_normapply(point), dq.j_apply(point) as methods
+    jNormApplyActC = my_dq.j_normapply(dqActCentered.qreal(), dqActCentered.dual(), cPas);
+    jUnitApplyActC = my_dq.j_apply(dqActCentered, cPas);
+    jNormApplyPasC = my_dq.j_normapply(dqPasCentered.qreal(), dqPasCentered.dual(), cPas);
+    jUnitApplyPasC = my_dq.j_apply(dqPasCentered, cPas);
+
+    Matx<float, 3, 8> jApplyActC, jApplyPasC;
+    if (useNormApply)
+    {
+        jApplyActC = jNormApplyActC;
+        jApplyPasC = jNormApplyPasC;
+    }
+    else
+    {
+        jApplyActC = jUnitApplyActC;
+        jApplyPasC = jUnitApplyPasC;
+    }
+
+    Matx<float, 3, 6> jMoveActC = jApplyActC * jAct;
+    // TODO URGENT: dq.applyUnit()
+    Vec3f vMoveActC = dqActCentered.applyUnit(cPas);
+
+    Matx<float, 3, 6> jMovePasC;
+    Vec3f vMovePasC;
+    if (disableCentering)
+    {
+        // TODO URGENT: dq.applyUnit()
+        vMovePasC = dqPasCentered.applyUnit(cPas);
+        jMovePasC = jApplyPasC * jPas;
+    }
+    else
+    {
+        vMovePasC = cPas + tPas;
+        if (!useExp)
+        {
+            jMovePasC = cv::Matx<float, 3, 6>({ 0, 0, 0, 1, 0, 0,
+                                                0, 0, 0, 0, 1, 0,
+                                                0, 0, 0, 0, 0, 1 });
+        }
+        else
+        {
+            jMovePasC = jApplyPasC * jPas;
+        }
+    }
+
+    // -delta_x from Gauss-Newton
+    Vec3f vDiffActC = - vMoveActC + vMovePasC;
+
+    float weight = 1.f;
+    if (huberSigma >= 0.f)
+    {
+        // TODO: try real values of sigma, gather histogram
+        // maybe split by levels
+        weight = huberWeightSq(vDiffActC.dot(vDiffActC), huberSigma);
+    }
+
+    // Building J^T * J and J^T*b
+
+    //TODO: add node's own weight
+    //based on how many pts it covers
+    //TODO: less level, less difference is important
+    //on the highest level we shouldn't care about that difference at all
+    //DEBUG
+    weight *= regTermWeight;
+    //weight = weight*reg_term_weight*min(act_node.amt, c_node["amt"])/nPts
+    weight *= min(actNode.radius, pasNode.radius);
+
+    // emulating jtjEdge = jEdge.t() * jEdge
+    // where jEdge is a jacobian of an edge
+    // act node goes positive, c node goes negative
+    BlockSparseMat jtjNode(jtj.nBlocks);
+    
+    jtj.refBlock(nPas, nPas) +=   weight * jMovePasC.t() * jMovePasC;
+    jtj.refBlock(nAct, nAct) +=   weight * jMoveActC.t() * jMoveActC;
+    jtj.refBlock(nAct, nPas) += - weight * jMoveActC.t() * jMovePasC;
+    jtj.refBlock(nPas, nAct) += - weight * jMovePasC.t() * jMoveActC;
+
+    // emulating jEdge.t() * vDiffActC
+    Vec6f jtbPas, jtbAct;
+    jtbPas = - jMovePasC.t() * vDiffActC;
+    jtbAct =   jMoveActC.t() * vDiffActC;
+
+    for (int i = 0; i < 6; i++)
+    {
+        jtb[6 * nPas + i] += weight * jtbPas[i];
+        jtb[6 * nAct + i] += weight * jtbAct[i];
+    }
+}
+
+
+static void fillVertex(BlockSparseMat& jtj, std::vector<float>& jtb,
+                       const std::vector<WarpNode>& nodes, WeightsNeighbours knns,
+                       // no need to pass diff, pointPlaneDistance is enough
+                       //Point3f inp, Point3f diff, Point3f outVolN,
+                       Point3f inp, float pointPlaneDistance, Point3f outVolN, 
+                       float damping, float tukeySigma, bool decorrelate, bool disableCentering)
+{
+    size_t knn = nodes.size();
+
+    // run through DQB
+    DualQuaternion dqsum = DualQuaternion::zero();
+    float wsum = 0;
+     
+    std::vector<int> places(knn);
+    std::vector<Matx<float, 8, 6>> jPerNodeWeighted(knn);
+    for (int k = 0; k < knn; k++)
+    {
+        int nei = knns.neighbours[k];
+        float w = knns.weights[k];
+
+        const WarpNode& node = nodes[k];
+
+        Point3f c;
+        if (!disableCentering)
+        {
+            c = node.pos;
+        }
+
+        // center(x) := (1+e*1/2*с)*x*(1-e*1/2*c)
+        // TODO URGENT: centered
+        DualQuaternion centered = node.transform.centered(c);
+        places[k] = node.place;
+        jPerNodeWeighted[node.place] = w * node.cachedJac;
+        dqsum += w * centered;
+        wsum += w;
+    }
+
+    dqsum += dampedDQ(knn, wsum, damping);
+
+    // jacobian of normalization+application to a point
+    // TODO URGENT: jNormApply(point) as a method of dq
+    Matx<float, 3, 8> jNormApply = my_dq.j_normapply(dqsum.qreal, dqsum.dual, inp);
+
+    std::vector<Matx<float, 3, 6>> jPerNode(knn);
+
+    // emulating jNormApply * jPerNodeWeighted
+    for (int k = 0; k < knn; k++)
+    {
+        jPerNode[k] = jNormApply * jPerNodeWeighted[k];
+    }    
+
+    // no need to pass diff, pointPlaneDistance is enough
+    //float pointPlaneDistance = outVolN.dot(diff);
+
+    float weight = 1.f;
+    if (tukeySigma >= 0.f)
+    {
+        weight = tukeyWeightSq(pointPlaneDistance * pointPlaneDistance, tukeySigma);
+    }
+
+    // for point-plane distance jacobian
+    Matx33f nnt = Vec3f(outVolN) * Vec3f(outVolN).t();
+
+    // emulate jVertex^T * jVertex and jVertex^T*b
+    for (int k = 0; k < knn; k++)
+    {
+        int kplace = places[k];
+        if (decorrelate)
+        {
+            jtj.refBlock(kplace, kplace) += weight * jPerNode[k].t() * nnt * jPerNode[k];
+        }
+        else
+        {
+            for (int l = 0; l < knn; l++)
+            {
+                int lplace = places[l];
+                jtj.refBlock(kplace, lplace) += weight * jPerNode[k].t() * nnt * jPerNode[l];
+            }
+        }
+
+        // no need to pass diff, pointPlaneDistance is enough
+        //Vec6f jtbBlock = jPerNode[k].t() * nnt * Vec3f(diff);
+        Vec6f jtbBlock = jPerNode[k].t() * Vec3f(outVolN) * pointPlaneDistance;
+        for (int i = 0; i < 6; i++)
+        {
+            jtb[6 * kplace + i] += weight * jtbBlock[i];
+        }
+    }
+}
+
+
+// TODO URGENT THINGS: things are to be done before expecting that stuff is compiled
+bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
+                                InputArray _vertImage, InputArray _normImage,
+                                InputArray _oldPoints, InputArray _oldNormals,
+                                InputArray _newPoints, InputArray _newNormals) const
 {
     CV_Assert(_vertImage.isMat());
     CV_Assert(_oldPoints.isMat());
@@ -259,269 +739,705 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
     CV_Assert(_newNormals.isMat());
 
     Mat vertImage = _vertImage.getMat();
+    Mat normImage = _normImage.getMat();
     Mat oldPoints = _oldPoints.getMat();
     Mat newPoints = _newPoints.getMat();
     Mat newNormals = _newNormals.getMat();
     Mat oldNormals = _oldNormals.getMat();
 
     CV_Assert(!vertImage.empty());
+    CV_Assert(!normImage.empty());
     CV_Assert(!oldPoints.empty());
     CV_Assert(!newPoints.empty());
     CV_Assert(!newNormals.empty());
 
+    Size size = vertImage.size();
+    int nPts = size.area();
 
+    CV_Assert(normImage.size() == size);
+    CV_Assert(oldPoints.size() == size);
+    CV_Assert(newPoints.size() == size);
+    CV_Assert(newNormals.size() == size);
 
-    // let's start from porting Python script to c++ code
-    float damping = 0.f;
+    //TODO: check this
+    //possibly this should be connected to baseRadius
+    //const float csize = 1.0f;
+    //TODO: move all params to one place;
 
-    uint32_t nIter = 0;
-    bool decorrelate = false;
-    bool useTukey = true;
-    bool bendInitial = true;
-    bool signFix = false;
-    bool disableCentering = false; //TODO
-    bool atZero = false;
-    bool useExp = false;
-    bool tryLevMarq = true;
+    // Can be used to fade transformation to identity far from nodes centers
+    // To make them local even w/o knn nodes choice
+    constexpr float damping = 0.f;
 
-    double lambdaLevMarq = 0.1;
-    uint32_t nNodes = len(nodesParams);
-    std::vector<Point3f> ptsInitial(oldPoints.total());
-    oldPoints.copyTo(ptsInitial);
-    std::vector<Point3f> ptsOut(newPoints.total());
-    newPoints.copyTo(ptsOut);
+    uint32_t nIter = this->iterations;
 
-    std::vector<Point3f> ptsIn = ptsInitial;
-    std::vector<DualQuaternion> dqcum(nNodes, DualQuaternion());
-    std::vector< std::map<int, float> > weights;
-    // Calculate distance-based weights
-    for (unsigned int i = 0; i < ptsInitial.size(); i++)
+    // calc j_rt params :
+    const bool atZero = false;
+    const bool useExp = false;
+    // TODO: we can calculate first T, then R, then RT both
+    const bool needR = true;
+    const bool needT = true;
+    const bool disableCentering = false;
+    // reg params :
+    const bool needReg = true;
+    const bool parentMovesChild = true;
+    const bool childMovesParent = true;
+    const bool useNormApply = false;
+    const bool useHuber = true;
+    const bool precalcHuberSigma = true;
+
+    //TODO: find good one
+    const float reg_term_weight = nPts * 0.0001;
+    //TODO: find good one
+    const float diffThreshold = 50.f;
+    //TODO: find good one
+    const float critAngleCos = cos((float)CV_PI / 2);
+
+    // data term params :
+    const bool needData = false;
+    const bool useTukey = true;
+    const bool precalcTukeySigma = true;
+
+    // tries to fix dual quaternions before DQB so that they will form shortest paths
+    // the algorithm is described in [Kavan and Zara 2005], Kavan'08
+    // to make it deterministic we choose a reference dq according to relative flag
+    const bool signFix = false;
+    const bool signFixRelative = true;
+
+    // solve params
+    // Used in DynaFu paper, simplifies calculation
+    const bool decorrelate = false;
+    const bool tryLevMarq = true;
+    const bool addItoLM = true;
+    const float lambdaLevMarq = 0.1f;
+    const float coeffILM = 0.1f;
+    
+    /*
+    newPoints: points from camera to match to
+    vertImage: [0-1] in volumeDims
+    ptsIn = (vertImage*volumeSize) = (vertImage*volumeDims*voxelSize)
+    */
+
+    // Warped points in camera coordinates
+    // Used for correspondence search
+    // oldPoints = ptsInWarpedRendered = invCamPose * volPose * ptsInWarped
+    cv::AutoBuffer<ptype> ptsInWarpedRendered(nPts);
+    // Used to filter out bad points based on their normals
+    cv::AutoBuffer<ptype> ptsInWarpedRenderedNormals(nPts);
+    // Warped points in volume coordinates
+    // Used for delta calculation as f(x_i)
+    // ptsInWarped = warped(ptsIn) = (invVolPose * camPose) * ptsInWarpedRendered
+    cv::AutoBuffer<ptype> ptsInWarped(nPts);
+    cv::AutoBuffer<ptype> ptsInWarpedNormals(nPts);
+    // Camera points (and normals) in volume coordinates
+    // Used for delta calculation as y_i
+    // ptsOutVol = (invVolPose * camPose) * newPoints
+    cv::AutoBuffer<ptype> ptsOutVolP(nPts);
+    cv::AutoBuffer<ptype> ptsOutVolN(nPts);
+
+    // for data calculation
+    //TODO URGENT: this
+    //inp, pointPlaneDistance, outVolN
+
+    cv::kinfu::Intr::Projector proj = intrinsics.makeProjector();
+    DualQuaternion cam2vol = DualQuaternion(volume->pose.inv()) * DualQuaternion(pose);
+    DualQuaternion vol2cam = DualQuaternion(pose) * DualQuaternion(volume->pose.inv());
+
+    // Precalculate knns and dists
+    const int knn = warp.k;
+    cv::AutoBuffer<WeightsNeighbours> cachedKnns(nPts);
+
+    // For MAD sigma estimation
+    std::vector<float> vertResiduals;
+    vertResiduals.reserve(nPts);
+
+    for (int y = 0; y < size.height; y++)
     {
-        unsigned int npnodes; // TODO: this
-        unsigned int pnodes[DYNAFU_MAX_NEIGHBOURS]; //TODO: this
-        for (unsigned int wi = 0; wi < npnodes; wi++)
+        for (int x = 0; x < size.width; x++)
         {
-            unsigned int nodeIdx = pnodes[wi];
-            //TODO
-            float distWeight = dist_weight(ptsInitial[i], nodes[nodeIdx].center, csize);
-            weights[i][nodeIdx] = distWeight;
+            // Fill ptsInWarped and ptsInWarpedRendered initially
+
+            //TODO: Mat::ptr() instead
+            Point3f inrp = fromPtype(oldPoints.at<ptype>(y, x));
+            ptsInWarpedRendered[y * size.width + x] = toPtype(inrp);
+            Point3f inWarped = cam2vol.getAffine() * inrp;
+            ptsInWarped[y * size.width + x] = toPtype(inWarped);
+            Point3f inrn = fromPtype(oldNormals.at<ptype>(y, x));
+            ptsInWarpedRenderedNormals[y * size.width + x] = toPtype(inrn);
+            ptsInWarpedNormals[y * size.width + x] = toPtype(cam2vol.getAffine().rotation() * inrn);
+
+            // Get newPoint and newNormal
+            Point3f outp = fromPtype(newPoints.at<ptype>(y, x));
+            Point3f outn = fromPtype(newNormals.at<ptype>(y, x));
+            // Transform them to coords in volume
+            Point3f outVolP = cam2vol.getAffine() * outp;
+            Point3f outVolN = cam2vol.getAffine().rotation() * outn;
+            ptsOutVolP[y * size.width + x] = toPtype(outVolP);
+            ptsOutVolN[y * size.width + x] = toPtype(outVolN);
+
+            // Precalculate knns and dists
+
+            // Get ptsIn from shaded data
+            Point3f vshad = vertImage.at<Point3f>(y, x);
+            Point3f inp(vshad.x * volume->volSize.x,
+                        vshad.y * volume->volSize.y,
+                        vshad.z * volume->volSize.z);
+
+            std::vector<float> dists;
+            std::vector<int> indices;
+
+            WeightsNeighbours wn;
+            //TODO: maybe use this: volume->getVoxelNeighbours(p, n)
+            warp.findNeighbours(inp, indices, dists);
+            int k = 0;
+            for (size_t i = 0; i < indices.size(); i++)
+            {
+                if (std::isnan(dists[i]))
+                    continue;
+
+                wn.neighbours[k] = indices[i];
+                wn.weights[k] = dists[i];
+                k++;
+            }
+
+            cachedKnns[y * size.width + x] = wn;
+
+            {
+                // ptsIn warped and rendered from camera
+                // Point3f inrp;
+
+                // Project it to screen to get corresponding out point to calc delta
+                Point2f outXY = proj(inrp);
+
+                if (!(outXY.x >= 0 && outXY.x < size.width  - 1 &&
+                      outXY.y >= 0 && outXY.y < size.height - 1))
+                    continue;
+
+                // Get newPoint and newNormal
+                // (here's volume coords)
+                if(!(interpolateP3f(outXY, ptsOutVolP.data(), size.width, outVolP) &&
+                     interpolateP3f(outXY, ptsOutVolN.data(), size.width, outVolN)))
+                    continue;
+
+                // Normalize
+                outVolN = outVolN / norm(outVolN);
+
+                // Get ptsInWarped (in volume coords)
+                // Point3f inWarped;
+
+                // Get ptsIn from shaded data
+                // Point3f vshad, inp;
+
+                Point3f diff = outVolP - inWarped;
+
+                float pointPlaneDistance = outVolN.dot(diff);
+
+                if (!cvIsInf(pointPlaneDistance) && !cvIsNaN(pointPlaneDistance))
+                    vertResiduals.push_back(pointPlaneDistance);
+            }
         }
     }
 
-    for (unsigned int it = 0; it < nIter; it++)
+    float vertSigma = 1.f;
     {
-        std::vector<Point3f> ptsDelta(ptsInitial.size());
-        for (unsigned int i = 0; i < ptsInitial.size(); i++)
+        float vertMed = median(vertResiduals);
+        std::for_each(vertResiduals.begin(), vertResiduals.end(),
+                      [vertMed](float& x) {x = std::abs(x - vertMed); });
+        vertSigma = MAD_SCALE * median(vertResiduals);
+    }
+    
+    auto graph = warp.getRegGraph();
+    
+    std::vector<float> regSigmas(graph.size(), 1.f);
+
+    {
+        for (int level = 0; level < graph.size(); level++)
         {
-            ptsDelta[i] = ptsOut[i] - ptsIn[i];
+            auto childLevelNodes = (level == 0) ? warp.getNodes() : warp.getGraphNodes()[level - 1];
+            auto levelNodes = warp.getGraphNodes()[level];
+            auto levelChildIdx = graph[level];
+
+            std::vector<float> regLevResiduals;
+            regLevResiduals.reserve(levelNodes.size());
+
+            for (int ixn = 0; ixn < levelNodes.size(); ixn++)
+            {
+                Ptr<WarpNode> node = levelNodes[ixn];
+
+                auto children = levelChildIdx[ixn];
+
+                for (int ixc = 0; ixc < children.size(); ixc++)
+                {
+                    Ptr<WarpNode> child = childLevelNodes[children[ixc]];
+
+                    if (parentMovesChild)
+                    {
+                        float rn = resNormEdge(*node, *child, disableCentering);
+                        regLevResiduals.push_back(rn);
+                    }
+                    if (childMovesParent)
+                    {
+                        float rn = resNormEdge(*child, *node, disableCentering);
+                        regLevResiduals.push_back(rn);
+                    }
+                }
+            }
+
+            float regMed = median(regLevResiduals);
+            std::for_each(regLevResiduals.begin(), regLevResiduals.end(),
+                          [regMed](float& x) {x = std::abs(x - regMed); });
+            regSigmas[level] = MAD_SCALE * median(regLevResiduals);
+        }
+    }
+    
+    int nNodes = warp.getNodesLen();
+    int nNodesAll = warp.getNodesLen() + warp.getRegNodesLen();
+
+    // Find a place for each node params in x vector
+    {
+        size_t idx = 0;
+        for (int level = 0; level < graph.size(); level++)
+        {
+            auto levelNodes = (level == 0) ? warp.getNodes() : warp.getGraphNodes()[level - 1];
+            for (int ixn = 0; ixn < levelNodes.size(); ixn++)
+            {
+                Ptr<WarpNode> node = levelNodes[ixn];
+                node->place = idx++;
+            }
+        }
+    }
+    
+    // Gauss-Newton iteration themselves
+    unsigned int it;
+    for (it = 0; it < nIter; it++)
+    {
+        BlockSparseMat jtj(nNodesAll);
+        std::vector<float> jtb(nNodesAll * 6);
+
+        // j_rt caching
+        for (int level = 0; level < graph.size(); level++)
+        {
+            auto levelNodes = (level == 0) ? warp.getNodes() : warp.getGraphNodes()[level - 1];
+            for (int ixn = 0; ixn < levelNodes.size(); ixn++)
+            {
+                Ptr<WarpNode> node = levelNodes[ixn];
+                int place = node->place;
+
+                // TODO URGENT: j_rt
+                node->cachedJac = node->transform.j_rt(node->pos, atZero, disableCentering, useExp, needR, needT);
+            }
         }
 
-        const int jacobDataType = CV_64FC1;
-        const int block = 6;
-        Mat jtj(block*nNodes, block*nNodes, jacobDataType); // 64F sic!
-        Mat jtb(block*nNodes, 1, jacobDataType);
-
-        // Build per-node jacobians (don't depend on vertices)
-        std::vector<Mat> jpernode(nNodes);
-        for(unsigned int i = 0; i < nNodes; i++)
+        // regularization
+        if (needReg)
         {
-            jpernode[i] = Mat::zeros(8, block, CV_32FC1);
-            // Current node's center
-            Point3f c = nodes[i].center; // TODO
-            // Current rotation, translation
-            DualQuaternion dq = atZero ? DualQuaternion() : nodes[i].rt;
-            Affine3f rt = dq.getAffineUnit(); // TODO
+            for (int level = 0; level < graph.size(); level++)
+            {
+                auto childLevelNodes = (level == 0) ? warp.getNodes() : warp.getGraphNodes()[level - 1];
+                auto levelNodes = warp.getGraphNodes()[level];
+                auto levelChildIdx = graph[level];
 
-            Mat jpn;
-            if(useExp)
-            {
-                jpn = j_centered(c) * j_dq_exp_val(dq);
+                for (int ixn = 0; ixn < levelNodes.size(); ixn++)
+                {
+                    Ptr<WarpNode> node = levelNodes[ixn];
+
+                    auto children = levelChildIdx[ixn];
+
+                    for (int ixc = 0; ixc < children.size(); ixc++)
+                    {
+                        Ptr<WarpNode> child = childLevelNodes[children[ixc]];
+
+                        if (parentMovesChild)
+                        {
+                            fillEdge(jtj, jtb, *node, *child,
+                                     reg_term_weight, (useHuber ? regSigmas[level] : -1.f),
+                                     disableCentering, useExp, useNormApply);
+                        }
+                        if (childMovesParent)
+                        {
+                            fillEdge(jtj, jtb, *child, *node,
+                                     reg_term_weight, (useHuber ? regSigmas[level] : -1.f),
+                                     disableCentering, useExp, useNormApply);
+                        }
+                    }
+                }
             }
-            else
-            {
-                jpn = j_pernode(rt, c);
-            }
-            jpernode[i] = jpn;
         }
 
-        //TODO: BIG ONE regularization
-
-        // Build vertex-dependent part of jacobian
-        for(unsigned int i = 0; i < ptsInitial.size(); i++)
+        if (needData)
         {
-            //TODO: BIG ONES projection, normals
-
-
-            Point3f v = ptsIn[i];
-            Point3f d = ptsDelta[i];
-            DualQuaternion dqsum = DualQuaternion(Quaternion(0, 0, 0, 0), Quaternion(0, 0, 0, 0));
-            float wsum = 0.f;
-            std::vector<Mat> jnode, jpernodeweighted;
-            //TODO: take only nodes that belong to a point
-            for(unsigned int node = 0; node < nNodes; node++)
+            int usedPixels = 0;
+            for (int y = 0; y < size.height; y++)
             {
-                jnode[node] = Mat::zeros(3, block, CV_32FC1);
-                jpernodeweighted[node] = Mat::zeros(8, block, CV_32FC1);
-                // Current node's center
-                Point3f c = nodes[node].center; // TODO
-                // Current weight
-                float w = weights[i][node];
-                // Current rotation, translation
-                DualQuaternion dq = nodes[i].rt; // TODO
-                Affine3f rt = dq.getAffineUnit();
+                for (int x = 0; x < size.width; x++)
+                {
+                    //TODO: Mat::ptr() instead
+                    // ptsIn warped and rendered from camera
+                    Point3f inrp = fromPtype(ptsInWarpedRendered[y * size.width + x]);
 
-                // center(x) := (1+e*1/2*с)*x*(1-e*1/2*c)
-                // TODO: or dq.centered(c);
-                DualQuaternion centered = DualQuaternion::from_rt_centered(rt, c);
+                    // Project it to screen to get corresponding out point to calc delta
+                    Point2f outXY = proj(inrp);
 
-                jpernodeweighted[node] = w*jpernode[node];
-                dqsum += w*centered;
-                wsum += w;
-            }
+                    if (!(outXY.x >= 0 && outXY.x < size.width  - 1 &&
+                          outXY.y >= 0 && outXY.y < size.height - 1))
+                        continue;
 
-            dqsum = DualQuaternion::damped_dqsum(dqsum, nNodes, wsum, damping);
-            Quaternion a = dqsum.real(), b = dqsum.dual();
+                    // Get newPoint and newNormal
+                    Point3f outVolP, outVolN;
+                    // (here's volume coords)
+                    if(!(interpolateP3f(outXY, ptsOutVolP.data(), size.width, outVolP) &&
+                         interpolateP3f(outXY, ptsOutVolN.data(), size.width, outVolN)))
+                        continue;
 
-            // Jacobian of normalization+application to a point
-            Mat jnormapply = Mat::zeros(3, 8, CV_32FC1);
-            jnormapply = j_normapply(a, b, v);
-            //TODO: take only nodes that belong to a point
-            for(unsigned int node = 0; node < nNodes; node++)
-            {
-                jnode[node] = jnormapply * jpernodeweighted[node];
-            }
+                    // Normalize
+                    outVolN = outVolN / norm(outVolN);
 
-            // TODO: maybe less memory?
-            Mat jm = Mat::zeros(3, block*nNodes, CV_32FC1);
-            for(unsigned int node = 0; node < nNodes; node++)
-            {
-                jnode[node].copyTo(jm(Rect(block*node, 0, block*(node+1), 3)));
-            }
+                    // Get ptsInWarped (in volume coords)
+                    Point3f inWarped = fromPtype(ptsInWarped[y * size.width + x]);
+                    // Get ptsIn from shaded data
+                    Point3f vshad = vertImage.at<Point3f>(y, x);
+                    Point3f inp(vshad.x * volume->volSize.x,
+                                vshad.y * volume->volSize.y,
+                                vshad.z * volume->volSize.z);
 
-            // TODO: maybe more effective?
-            Mat left  = jm.t() * jm;
-            Mat right = jm.t() * Matx31f(d);
+                    // Get normals for filtering out
+                    //Point3f inrn = fromPtype(ptsInWarpedRenderedNormals[y * size.width + x]);
+                    Point3f inVolumeN = fromPtype(ptsInWarpedNormals[y * size.width + x]);
 
-            float lsweight = useTukey ? tukey(norm(d)) : 1.f;
+                    Point3f diff = outVolP - inWarped;
+                    if (diff.dot(diff) > diffThreshold)
+                        continue;
+                    if (abs(inVolumeN.dot(outVolN) < critAngleCos))
+                        continue;
 
-            jtj += left*lsweight;
-            jtb += right*lsweight;
-        }
+                    float pointPlaneDistance = outVolN.dot(diff);
 
-        // Used in DynaFu, simplifies calculation
-        if(decorrelate)
-        {
-            jtj = decorrelated(jtj, nNodes);
-        }
+                    WeightsNeighbours knns = cachedKnns[y*size.width + x];
 
-        if(tryLevMarq)
-        {
-            for (int row = 0; row < jtj.rows; row++)
-            {
-                jtj.at<float>(row, row) = jtj.at<float>(row, row)*(1.0 + lambdaLevMarq);
+                    std::vector<WarpNode> nodes;
+                    for (int k = 0; k < knn; k++)
+                    {
+                        int nei = knns.neighbours[k];
+                        if (nei < 0)
+                            break;
+                        const WarpNode node = *(warp.getNodes()[nei]);
+                        nodes.push_back(node);
+                    }
+
+                    fillVertex(jtj, jtb, nodes, knns, inp, pointPlaneDistance, outVolN,
+                               damping, (useTukey ? vertSigma : -1.f), decorrelate, disableCentering);
+                    usedPixels++;
+                }
             }
         }
 
         // Solve and get delta transform
-        x = solve(jtj, jtb);
+        if (tryLevMarq)
+        {
+            for (int i = 0; i < nNodesAll; i++)
+            {
+                float& v = jtj.refElem(i, i);
+                v += lambdaLevMarq * (v + coeffILM);
+            }
+            //TODO: true LevMarq changes lambda according to error
+            //and falls back to prev if error is too big, see g2o docs about it
+        }
 
+        std::vector<float> x;
+        if (!sparseSolve(jtj, jtb, x))
+        {
+            break;
+        }
 
-    /*
+        // Update nodes using x
 
+        // for sign fix
+        DualQuaternion ref;
+        float refnorm = std::numeric_limits<float>::max();
 
+        for (int level = 0; level < graph.size(); level++)
+        {
+            auto levelNodes = (level == 0) ? warp.getNodes() : warp.getGraphNodes()[level - 1];
+            for (int ixn = 0; ixn < levelNodes.size(); ixn++)
+            {
+                Ptr<WarpNode> node = levelNodes[ixn];
+                int place = node->place;
 
-    # Build transforms from params
-    dqits = []
-    for node in range(nNodes):
-        blockNode = x[block*node : block*(node+1)]
+                // blockNode = x[6 * n:6 * (n + 1)]
+                float blockNode[6];
+                for (int i = 0; i < 6; i++)
+                {
+                    blockNode[i] = x[6 * place + i];
+                }
 
-        if useExp:
-            # the order is the opposite
-            dualx = blockNode[0:3]
-            realx = blockNode[3:6]
+                DualQuaternion dq = node->transform;
+                Point3d c = node->pos;
 
-            qrx = np.quaternion(0, *realx)
-            qdx = np.quaternion(0, *dualx)
-            # delta dq
-            dqit = DualQuaternion(qrx, qdx).exp()
+                DualQuaternion dqit;
+                if (useExp)
+                {
+                    // the order is the opposite to !useExp
+                    Quaternion dualx(0, blockNode[0], blockNode[1], blockNode[2]);
+                    Quaternion realx(0, blockNode[3], blockNode[4], blockNode[5]);
 
-        else:
-            rotparams   = blockNode[0:3]
-            transparams = blockNode[3:6]
+                    //TODO URGENT: THIS
+                    dqit = DualQuaternion(realx, dualx).exp();
+                }
+                else
+                {
+                    Vec3f rotParams(blockNode[0], blockNode[1], blockNode[2]);
+                    Vec3f transParams(blockNode[3], blockNode[4], blockNode[5]);
 
-            # this function expects input vector to be a norm of full angle
-            # while it contains just 1/2 of an angle
-            qx = quaternion.from_rotation_vector(rotparams*2)
-            tx = quaternion.from_float_array([0, *transparams])
-            # delta dq
-            dqit = DualQuaternion.from_rt(qx, tx)
+                    // this function expects input vector to be a norm of full angle
+                    // while it contains just 1 / 2 of an angle
 
-        dqits.append(dqit)
+                    //TODO URGENT: this using DQs
+                    Affine3f aff(rotParams * 2, transParams);
 
-        # dqcum_i = dqx_i * dqcum_i
-        dqc = dqcum[node]
-        dqc = DualQuaternion(dqit.real * dqc.real, dqit.real*dqc.dual + dqit.dual*dqc.real)
-        dqcum[node] = dqc
+                    dqit = DualQuaternion(aff);
+                }
+                
+                DualQuaternion dqnew = dqit * dq;
+                node->transform = dqnew;
 
-    # Sign fix for DQB
-    if signFix:
-        dqcum = my_dq.dqb_sign_fixed(dqcum)
-        dqits = my_dq.dqb_sign_fixed(dqits)
+                if (signFixRelative && level == 0)
+                {
+                    float norm = dqnew.dot(dqnew);
+                    if (norm < refnorm)
+                    {
+                        refnorm = norm;
+                        ref = dqnew;
+                    }
+                }
+            }
 
-    # build effective (centered) DQs for dq_bend()
-    dqit_effective = []
-    dqcum_effective = []
-    for node in range(nNodes):
-        c = cs[node]
-        dqcum_effective.append(dqcum[node].centered(c))
-        dqit_effective.append(dqits[node].centered(c))
+            if (signFix && level == 0)
+            {
+                for (int ixn = 0; ixn < levelNodes.size(); ixn++)
+                {
+                    Ptr<WarpNode> node = levelNodes[ixn];
+                    DualQuaternion& dq = node->transform;
 
-        #rcum1, tcum1 = dqcum1.get_rt()
-        #vx1 = quaternion.as_rotation_vector(rcum1)
-        #vxnorm1 = math.sqrt(np.dot(vx1, vx1))
-        #print('vx1 a/a:', vxnorm1, vx1/vxnorm1)
+                    dq = ref.dot(dq) >= 0 ? dq : -dq;
+                }
+            }
+        }
 
-        if it == nIter - 1:
-            draw_dq(dqcum[node], c, 0.95*it/nIter, 'magenta')
-        else:
-            #draw_dq(dqcum[node], c, 0.95*it/nIter, 'magenta')
-            pass
+        // Warping and error calculation
+        double sumError = 0, sumSqError = 0;
+        int nPixelsError = 0;
+        vertResiduals.clear();
+        vertResiduals.reserve(nPts);
 
-    # Transform vertices
-    if bendInitial:
-        ptsi = ptsInitial.copy()
-        dq_effective = dqcum_effective
-    else:
-        ptsi = ptsin.copy()
-        dq_effective = dqit_effective
-    for i in range(ptsin.shape[0]):
-        inp = ptsi[i]
-        #DEBUG
-        #ptsi[i] = my_dq.dq_bend(inp, dq_effective, cs, csize, damping)
-        ptsi[i] = my_dq.dq_bend(inp, dq_effective, cs, csize, damping, sign_fix=False)
-    ptsin = ptsi
+        auto nodes = warp.getNodes();
+        for (int y = 0; y < size.height; y++)
+        {
+            for (int x = 0; x < size.width; x++)
+            {
+                //TODO: Mat::ptr() instead
+                // Get ptsIn from shaded data
+                Point3f vshad = vertImage.at<Point3f>(y, x);
+                Point3f inp(vshad.x * volume->volSize.x,
+                            vshad.y * volume->volSize.y,
+                            vshad.z * volume->volSize.z);
+                // Get initial normals for transformation
+                Point3f nshad = normImage.at<Point3f>(y, x);
+                Point3f inn(nshad*2.f - Point3f(1.f, 1.f, 1.f));
 
-    diff = np.linalg.norm(ptsout - ptsin, axis=1)
-    print('mean, stddev:', np.mean(diff), np.std(diff))
+                WeightsNeighbours knns = cachedKnns[y*size.width+x];
 
-    if it == nIter - 1:
-        scati = ax.scatter(ptsin[:, 0], ptsin[:, 1], ptsin[:, 2], zdir = 'z', s=sz, c = colors[it])
-        pass
-    else:
-        #scati = ax.scatter(ptsin[:, 0], ptsin[:, 1], ptsin[:, 2], zdir = 'z', s=sz, c = colors[it])
-        pass
-*/
+                DualQuaternion dqsum = DualQuaternion(Quaternion(0, 0, 0, 0), Quaternion(0, 0, 0, 0));
+                float wsum = 0; int nValid = 0;
+                for (int k = 0; k < knn; k++)
+                {
+                    int ixn = knns.neighbours[k];
+                    if (ixn >= 0)
+                    {
+                        float w = knns.weights[k];
+
+                        Ptr<WarpNode> node = nodes[ixn];
+                        Point3f c = node->pos;
+
+                        //TODO URGENT: centered
+                        DualQuaternion dqi = node->transform.centered(node->pos);
+
+                        dqsum += w * dqi;
+                        wsum += w;
+                        nValid++;
+                    }
+                }
+
+                dqsum += dampedDQ(knn, wsum, damping);
+
+                DualQuaternion dqn = dqsum.normalized();
+                // We don't use commondq here, it's done at other stages of pipeline
+                DualQuaternion dqfull = dqn; // dqfull = dqn * commondq;
+
+                //TODO URGENT: get_rt_unit
+                //TODO URGENT: make function dq.apply(point3f)
+                Affine3f rt = dqfull.getAffine();
+
+                Point3f warpedP = rt * inp;
+                ptsInWarped[y * size.width + x] = toPtype(warpedP);
+                //TODO URGENT: dq.inv()
+                Point3f inrp = vol2cam.getAffine() * warpedP;
+                ptsInWarpedRendered[y*size.width+x] = toPtype(inrp);
+
+                // Fill transformed normals
+                Point3f warpedN = rt.rotation() * inn;
+                ptsInWarpedNormals[y * size.width + x] = toPtype(warpedN);
+                Point3f inrn = vol2cam.getAffine().rotation() * warpedN;
+                ptsInWarpedRenderedNormals[y * size.width + x] = toPtype(inrn);
+
+                // Calculate current step error
+                {
+                    // Project it to screen to get corresponding out point to calc delta
+                    Point2f outXY = proj(inrp);
+                    // Get newPoint and newNormal
+                    Point3f outVolP, outVolN;
+                    if (!(interpolateP3f(outXY, ptsOutVolP.data(), size.width, outVolP) &&
+                          interpolateP3f(outXY, ptsOutVolN.data(), size.width, outVolN)))
+                        continue;
+
+                    float pointToPlaneDistance = outVolN.dot(outVolP - warpedP);
+
+                    if (!cvIsInf(pointToPlaneDistance) && !cvIsNaN(pointToPlaneDistance))
+                        vertResiduals.push_back(pointToPlaneDistance);
+
+                    sumError += pointToPlaneDistance;
+                    sumSqError += pointToPlaneDistance * pointToPlaneDistance;
+                    nPixelsError++;
+                }
+            }
+        }
+
+        vertSigma = 1.f;
+        {
+            float vertMed = median(vertResiduals);
+            std::for_each(vertResiduals.begin(), vertResiduals.end(),
+                          [vertMed](float& x) {x = std::abs(x - vertMed); });
+            vertSigma = MAD_SCALE * median(vertResiduals);
+        }
+
+        double meanError = sumError / nPixelsError;
+        double stddevError = sqrt(sumSqError / nPixelsError - meanError);
+
+        // Calculate residuals by edges
+        regSigmas = std::vector<float>(graph.size(), 1.f);
+        for (int level = 0; level < graph.size(); level++)
+        {
+            auto childLevelNodes = (level == 0) ? warp.getNodes() : warp.getGraphNodes()[level - 1];
+            auto levelNodes = warp.getGraphNodes()[level];
+            auto levelChildIdx = graph[level];
+
+            std::vector<float> regLevResiduals;
+            regLevResiduals.reserve(levelNodes.size());
+
+            for (int ixn = 0; ixn < levelNodes.size(); ixn++)
+            {
+                Ptr<WarpNode> node = levelNodes[ixn];
+
+                auto children = levelChildIdx[ixn];
+
+                for (int ixc = 0; ixc < children.size(); ixc++)
+                {
+                    Ptr<WarpNode> child = childLevelNodes[children[ixc]];
+
+                    if (parentMovesChild)
+                    {
+                        float rn = resNormEdge(*node, *child, disableCentering);
+                        regLevResiduals.push_back(rn);
+                    }
+                    if (childMovesParent)
+                    {
+                        float rn = resNormEdge(*child, *node, disableCentering);
+                        regLevResiduals.push_back(rn);
+                    }
+                }
+            }
+
+            float regMed = median(regLevResiduals);
+            std::for_each(regLevResiduals.begin(), regLevResiduals.end(),
+                          [regMed](float& x) {x = std::abs(x - regMed); });
+            regSigmas[level] = MAD_SCALE * median(regLevResiduals);
+        }
+
+        //TODO: visualize iteration by iteration
+
+        //DEBUG
+        std::cout << "#" << nIter << " mean: " << meanError << ", std: " << stddevError;
+        std::cout << ", vertSigma: " << vertSigma;
+        std::cout << ", regSigmas: ";
+        for (auto f : regSigmas) std::cout << f;
+        std::cout << std::endl;
     }
 
-    //TODO: visualize iteration by iteration
-    //TODO: less code duplication
+    //TODO URGENT: factor out common Rt
+    {
+        std::vector<Point3f> inPts, outPts;
+        inPts.reserve(nPts); outPts.reserve(nPts);
+        for (int y = 0; y < size.height; y++)
+        {
+            for (int x = 0; x < size.width; x++)
+            {
+                //TODO: Mat::ptr() instead
+                // Get ptsIn from shaded data
+                Point3f vshad = vertImage.at<Point3f>(y, x);
+                Point3f inp(vshad.x * volume->volSize.x,
+                            vshad.y * volume->volSize.y,
+                            vshad.z * volume->volSize.z);
+                Point3f outp = fromPtype(ptsInWarped[y * size.width + x]);
+                if (fastCheck(inp) && fastCheck(outp))
+                {
+                    inPts.push_back(inp);
+                    outPts.push_back(outp);
+                }
+            }
+        }
 
-    const NodeVectorType& warpNodes = currentWarp.getNodes();
+        Matx44f commonM;
+        estimateAffine3D(inPts, outPts, commonM, noArray());
+        Affine3f common(commonM);
+
+        // Looks like procedure is the same for all levels
+        for (int level = 0; level < graph.size(); level++)
+        {
+            auto levelNodes = (level == 0) ? warp.getNodes() : warp.getGraphNodes()[level - 1];
+            for (int ixn = 0; ixn < levelNodes.size(); ixn++)
+            {
+                Ptr<WarpNode> node = levelNodes[ixn];
+                //TODO URGENT: factored out
+                node->transform = node->transform.factored_out(node->transform, node->pos);
+            }
+        }
+    }
+
+
+    if (it != nIter)
+    {
+        //DEBUG
+        std::cout << "Failed at iteration #" << it << "/" << nIter << std::endl;
+        return false;
+    }
+    else
+    {
+        return true;
+    }
+
+
+    //TODO: where to factor out?
+    //let's do it after the optimization
+
+
+    //TODO: discard this when refactoring is over
+    /*
+    ---------------------------------------------------------------------------------------------------- 
+
+    const NodeVectorType& warpNodes = warp.getNodes();
 
     Affine3f T_lw = pose.inv() * volume->pose;
 
     // Accumulate regularisation term for each node in the heiarchy
-    const std::vector<NodeVectorType>& regNodes = currentWarp.getGraphNodes();
+    const std::vector<NodeVectorType>& regNodes = warp.getGraphNodes();
 
     int totalNodes = (int)warpNodes.size();
     for(const auto& nodes: regNodes) totalNodes += (int)nodes.size();
@@ -533,9 +1449,9 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
     // indices for each node block to A,b matrices. It determines the order
     // in which paramters are laid out
 
-    std::vector<int> baseIndices(currentWarp.n_levels, 0);
+    std::vector<int> baseIndices(warp.n_levels, 0);
 
-    for(int l = currentWarp.n_levels-2; l >= 0; l--)
+    for(int l = warp.n_levels-2; l >= 0; l--)
     {
         baseIndices[l] = baseIndices[l+1]+6*((int)regNodes[l].size());
     }
@@ -543,7 +1459,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
     for(const int& i: baseIndices) std::cout << i << ", ";
     std::cout << std::endl;
 
-    fillRegularization(A_reg, b_reg, currentWarp, totalNodes, baseIndices);
+    fillRegularization(A_reg, b_reg, warp, totalNodes, baseIndices);
 
     std::vector<float> residuals;
 
@@ -659,7 +1575,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
             pix_count++;
 
             int n;
-            nodeNeighboursType neighbours = volume->getVoxelNeighbours(p, n);
+            NodeNeighboursType neighbours = volume->getVoxelNeighbours(p, n);
             float totalNeighbourWeight = 0.f;
             float neighWeights[DYNAFU_MAX_NEIGHBOURS];
             for (int i = 0; i < n; i++)
@@ -710,85 +1626,8 @@ bool ICPImpl::estimateWarpNodes(WarpField& currentWarp, const Affine3f &pose,
 
         }
     }
-
-    double det = determinant(A_reg);
-    std::cout << "A_reg det:" << det  << std::endl;
-
-    std::cout << "Solving " << 6*totalNodes << std::endl;
-    Mat_<float> nodeTwists(6*totalNodes, 1, 0.f);
-    bool result;
-
-#if defined(HAVE_EIGEN)
-    std::cout << "starting eigen-insertion..." << std::endl;
-    Eigen::SparseMatrix<float> sA_reg(6*totalNodes, 6*totalNodes);
-    //TODO: batch insertion/offload here and everywhere
-    for (int y = 0; y < 6*totalNodes; y++)
-    {
-        for (int x = 0; x < 6*totalNodes; x++)
-        {
-            float v = A_reg(y, x);
-            //TODO: add real check
-            if(abs(v) > 0.01f)
-            {
-                sA_reg.insert(y, x) = v;
-            }
-        }
-    }
-    sA_reg.makeCompressed();
-    Eigen::VectorXf sb_reg(6*totalNodes);
-    for (int y = 0; y < 6*totalNodes; y++)
-    {
-        sb_reg(y) = b_reg(y);
-    }
-    //Eigen::SimplicialCholesky<Eigen::SparseMatrix<float>> solver;
-    Eigen::SparseQR<Eigen::SparseMatrix<float>, Eigen::NaturalOrdering<int>> solver;
-    std::cout << "starting eigen-compute..." << std::endl;
-    solver.compute(sA_reg);
-    if(solver.info() != Eigen::Success)
-    {
-        std::cout << "failed to eigen-decompose" << std::endl;
-        result = false;
-    }
-    else
-    {
-        std::cout << "starting eigen-solve..." << std::endl;
-        Eigen::VectorXf sx = solver.solve(sb_reg);
-        if(solver.info() != Eigen::Success)
-        {
-            std::cout << "failed to eigen-solve" << std::endl;
-            result = false;
-        }
-        else
-        {
-            for (int y = 0; y < 6*totalNodes; y++)
-            {
-                nodeTwists(y) = sx(y);
-            }
-            result = true;
-        }
-    }
-#else
-    std::cout << "no eigen" << std::endl;
-    result = solve(A_reg, b_reg, nodeTwists, DECOMP_SVD);
-#endif
-
-    std::cout << "Done " << result << std::endl;
-
-    if(!result)
-        return false;
-
-    for(int i = 0; i < (int)warpNodes.size(); i++)
-    {
-        int idx = baseIndices[0]+6*i;
-        Vec3f r(nodeTwists(idx), nodeTwists(idx+1), nodeTwists(idx+2));
-        Vec3f t(nodeTwists(idx+3), nodeTwists(idx+4), nodeTwists(idx+5));
-        Affine3f tinc(r, t);
-        warpNodes[i]->transform = warpNodes[i]->transform * tinc;
-    }
-
-    std::cout << "Nan count: " << "/" << warpNodes.size() << "\n" << std::endl;
-
-    return true;
+    -------------------------------------------
+    */
 }
 
 cv::Ptr<NonRigidICP> makeNonRigidICP(const cv::kinfu::Intr _intrinsics, const cv::Ptr<TSDFVolume>& _volume,
