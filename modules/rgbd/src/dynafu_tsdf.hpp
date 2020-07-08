@@ -33,7 +33,7 @@ public:
 
     virtual void reset() = 0;
 
-    virtual nodeNeighboursType const& getVoxelNeighbours(Point3i v, int& n) const = 0;
+    virtual NodeNeighboursType const& getVoxelNeighbours(Point3i v, int& n) const = 0;
 
     virtual ~TSDFVolume() { }
 

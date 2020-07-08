@@ -568,7 +568,7 @@ bool DynaFuImpl<T>::updateT(const T& _depth)
                                    volPt[1]/volume->voxelSize,
                                    volPt[2]/volume->voxelSize);
                 int n;
-                nodeNeighboursType neighbours = volume->getVoxelNeighbours(voxelCoord, n);
+                NodeNeighboursType neighbours = volume->getVoxelNeighbours(voxelCoord, n);
 
                 bool found = false;
                 for(int nnum = 0; nnum < n; nnum++)
@@ -741,7 +741,7 @@ void DynaFuImpl<T>::renderSurface(OutputArray depthImage, OutputArray vertImage,
         else
         {
             int numNeighbours = 0;
-            const nodeNeighboursType neighbours = volume->getVoxelNeighbours(pVoxel, numNeighbours);
+            const NodeNeighboursType neighbours = volume->getVoxelNeighbours(pVoxel, numNeighbours);
             Point3f p = (invCamPose * params.volumePose) * warpfield.applyWarp(pVoxel*params.voxelSize, neighbours, numNeighbours);
             warpedVerts.at<ptype>(i) = ptype(p.x, p.y, p.z, 1.f);
         }
