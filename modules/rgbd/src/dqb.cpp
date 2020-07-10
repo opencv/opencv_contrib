@@ -53,6 +53,7 @@ Vec4f rotMat2quat(Matx33f m)
 }
 
 
+// convert unit quaternion to rotation matrix
 Matx33f quat2rotMat(Vec4f q)
 {
     float w = q[0], x = -q[1], y = -q[2], z = -q[3];

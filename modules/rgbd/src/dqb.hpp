@@ -103,6 +103,90 @@ float one15(float x)
     }
 }
 
+// Matrix functions
+
+// concatenate matrices vertically
+template<typename _Tp, int m, int n, int k> static inline
+Matx<_Tp, m + k, n> concatVert(const Matx<_Tp, m, n>& a, const Matx<_Tp, k, n>& b)
+{
+    Matx<_Tp, m + k, n> res;
+    for (int i = 0; i < m; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            res(i, j) = a(i, j);
+        }
+    }
+    for (int i = 0; i < k; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            res(m + i, j) = b(i, j);
+        }
+    }
+    return res;
+}
+
+// concatenate matrices horizontally
+template<typename _Tp, int m, int n, int k> static inline
+Matx<_Tp, m, n + k> concatHor(const Matx<_Tp, m, n>& a, const Matx<_Tp, m, k>& b)
+{
+    Matx<_Tp, m, n + k> res;
+
+    for (int i = 0; i < m; i++)
+    {
+        for (int j = 0; j < n; j++)
+        {
+            res(i, j) = a(i, j);
+        }
+    }
+    for (int i = 0; i < m; i++)
+    {
+        for (int j = 0; j < k; j++)
+        {
+            res(i, n + j) = b(i, j);
+        }
+    }
+    return res;
+}
+
+// TODO URGENT: make them ?static? class methods
+
+const Matx43f Z43 = Matx43f::zeros();
+const Matx44f Z4  = Matx44f::zeros();
+const Matx33f I3  = Matx33f::eye();
+const Matx44f I4  = Matx44f::eye();
+
+Matx33f skew(Vec3f v)
+{
+    return {    0, -v[2],  v[1],
+             v[2],     0, -v[0],
+            -v[1],  v[0],     0 };
+}
+
+// jacobian for rotation quaternion from known exp arg
+Matx43f jExpRogArg(Vec3f er)
+{
+    float normv = norm(er);
+    float sincv = sinc(normv);
+    Vec3f up = -er * sincv;
+    Matx33f m = I3 * sincv + er * er.t() * csiii(normv);
+    return concatVert(up.t(), m);
+}
+
+// matrix form of Im(a)
+const Matx44f M_Im { 0, 0, 0, 0,
+                     0, 1, 0, 0,
+                     0, 0, 1, 0,
+                     0, 0, 0, 1 };
+
+// matrix form of conjugation
+const Matx44f M_Conj { 1,  0,  0,  0,
+                       0, -1,  0,  0,
+                       0,  0, -1,  0,
+                       0,  0,  0, -1 };
+
+
 Vec4f rotMat2quat(Matx33f m);
 Matx33f quat2rotMat(Vec4f q);
 
@@ -141,7 +225,7 @@ public:
     float i() const {return coeff[1];}
     float j() const {return coeff[2];}
     float k() const {return coeff[3];}
-    Vec3f ijk() const { return { i(), j(), k() }; }
+    Vec3f vec() const { return { i(), j(), k() }; }
 
     float dot(const Quaternion& q) const { return q.coeff.dot(coeff); }
     float norm() const { return sqrt(dot(*this)); }
@@ -175,6 +259,44 @@ public:
     Quaternion conjugated() const
     {
         return Quaternion(w(), -i(), -j(), -k());
+    }
+
+    // matrix form of quaternion multiplication from left side
+    Matx44f m_left()
+    {
+        // M_left(a)* V(b) =
+        //    = (I_4 * a0 + [ 0 | -av    [    0 | 0_1x3
+        //                   av | 0_3] +  0_3x1 | skew(av)]) * V(b)
+
+        float r = w(), x = i(), y = j(), z = k();
+        return { r, -x, -y, -z,
+                 x,  r, -z,  y,
+                 y,  z,  r, -x,
+                 z, -y,  x,  r };
+    }
+
+    // matrix form of quaternion multiplication from right side
+    Matx44f m_right()
+    {
+        // M_right(b)* V(a) =
+        //    = (I_4 * b0 + [ 0 | -bv    [    0 | 0_1x3
+        //                   bv | 0_3] +  0_3x1 | skew(-bv)]) * V(a)
+
+        float r = w(), x = i(), y = j(), z = k();
+        return { r, -x, -y, -z,
+                 x,  r,  z, -y,
+                 y, -z,  r,  x,
+                 z,  y, -x,  r };
+    }
+
+    // matrix form of a*b - b*a
+    // a cross product in fact
+    Matx44f m_lrdiff()
+    {
+        // M_lrdiff(a)*V(b) =
+        //    = [    0 | 0_1x3
+        //       0_3x1 | skew(2 * av)]*V(b)
+        return concatVert(Vec4f::zeros().t(), concatHor(Vec3f::zeros(), skew(2.f * vec())));
     }
 
     Quaternion& operator+=(const Quaternion& q)
@@ -270,7 +392,7 @@ public:
         coeff(q.normalized().coeff)
     { }
 
-    // Here the full angle is used, not half as in exp()
+    // Here the full angle is used, not half as in expForm constructor
     UnitQuaternion(float alpha, Vec3f axis)
     {
         *this = fromAxisAngle(alpha, axis);
@@ -292,8 +414,10 @@ public:
     float i() const { return coeff[1]; }
     float j() const { return coeff[2]; }
     float k() const { return coeff[3]; }
-    Vec3f ijk() const { return { i(), j(), k() }; }
+    Vec3f vec() const { return { i(), j(), k() }; }
+    Vec4f coeffs() const { return coeff;  }
 
+    // axisAngle = axis*angle, using sinc() to avoid singularities
     static UnitQuaternion fromAxisAngle(Vec3f axisAngle)
     {
         // exp(v) = cos(norm(v)) + ijk*sin(norm(v))/norm(v)*v =
@@ -350,9 +474,38 @@ public:
         // of `q*v*q.conj()`. In this function, I will further reduce the operation count to
         // 18 and 12 by skipping the normalization by `m`.
         // "
-        Vec3f ijk(i(), j(), k());
+        Vec3f ijk(vec());
         Vec3f rotated = point + 2 * ijk.cross(w() * point + ijk.cross(point));
         return rotated;
+    }
+
+    // jacobian for rotation quaternion from known value
+    Matx43f jExpRotVal()
+    {
+        Vec3f er = this->toAxisAngle() / 2.f;
+        // upper part is slightly better optimized than in jExpRotArg() function
+        float normv = norm(er);
+        Matx33f m = Matx33f::eye() * sinc(normv) + er * er.t() * csiii(normv);
+        return concatVert(-this->vec().t(), m);
+    }
+
+    // matrix form of quaternion multiplication from left side
+    Matx44f m_left()
+    {
+        return Quaternion(*this).m_left();
+    }
+
+    // matrix form of quaternion multiplication from right side
+    Matx44f m_right()
+    {
+        return Quaternion(*this).m_right();
+    }
+
+    // matrix form of a*b - b*a
+    // a cross product in fact
+    Matx44f m_lrdiff()
+    {
+        return Quaternion(*this).m_lrdiff();
     }
 
     UnitQuaternion operator-() const
@@ -378,231 +531,76 @@ private:
     Vec4f coeff;
 };
 
-// TODO URGENT: make them ?static? class methods
 
-// jacobian for rotation quaternion from known exp arg
-Matx43f jExpRogArg(Vec3f er)
+// Jacobians
+
+// node's jacobian for exponential representation
+//TODO: docs, see derivations in ipynb
+Matx<float, 8, 6> j_dq_exp_arg(Vec3f w_real, Vec3f w_dual)
 {
-    float normv = norm(er);
+    Matx43f jexp_rot = jExpRogArg(w_real);
+
+    float normv = norm(w_real);
     float sincv = sinc(normv);
-    Vec3f up = -er * sincv;
-    Matx33f m = Matx33f::eye() * sincv + er * er.t() * csiii(normv);
-    Matx43f jexp = { up[0],   up[1],   up[2],
-                     m(0, 0), m(0, 1), m(0, 2),
-                     m(1, 0), m(1, 1), m(1, 2),
-                     m(2, 0), m(2, 1), m(2, 2) };
-    return jexp;
+    float csiiiv = csiii(normv);
+    float one15v = one15(normv);
+
+    Matx33f wrwr = w_real * w_real.t(), wdwr = w_dual * w_real.t();
+    float dot_dr = w_dual.dot(w_real);
+
+    Matx13f ddr_up = - w_dual.t() * (sincv * I3 + csiiiv * wrwr);
+    Matx33f ddr_dn = one15v * (wrwr * wdwr) + csiiiv * (wdwr.t() + dot_dr * I3 + wdwr);
+    Matx43f jexp_dual_dr = concatVert(ddr_up, ddr_dn);
+
+    Matx43f jexp_dual_dd = jexp_rot;
+
+    // made for typical se(3) vars order : (dual, real)
+    return concatVert(concatHor(         Z43,     jexp_rot),
+                      concatHor(jexp_dual_dd, jexp_dual_dr));
 }
 
 
-// jacobian for rotation quaternion from known value
-Matx43f jExpRotVal(UnitQuaternion r)
+// when a node is represented as dual quaternion instead of (r, t)
+Matx<float, 8, 8> j_centered(Vec3f c)
 {
-    Vec3f er = r.toAxisAngle() / 2.f;
-    // upper part is slightly better optimized than in ..arg() function
-    float normv = norm(er);
-    Matx33f m = Matx33f::eye() * sinc(normv) + er * er.t() * csiii(normv);
-    Matx43f jexp = {  -r.i(),  -r.j(),  -r.k(),
-                     m(0, 0), m(0, 1), m(0, 2),
-                     m(1, 0), m(1, 1), m(1, 2),
-                     m(2, 0), m(2, 1), m(2, 2) };
-    return jexp;
+    // center(x) := (1+e*1/2*с)*x*(1-e*1/2*c)
+    // d(center(x))/dreal = I_4 + e*1/2*M_lrdiff(c)
+    // d(center(x))/ddual = e*I_4
+    Matx44f dcdreal = 0.5f * Quaternion(0, c).m_lrdiff();
+    return concatVert(concatHor(     I4, Z4),
+                      concatHor(dcdreal, I4));
 }
 
-//TODO URGENT: move them above Quaternion class
-// Matrix functions
 
-Matx33f skew(Vec3f v)
+// centered node's jacobian
+Matx<float, 8, 6> j_pernode(UnitQuaternion r, Vec3f t, Vec3f c)
 {
-    return {    0, -v[2],  v[1],
-             v[2],     0, -v[0],
-            -v[1],  v[0],    0  };
+    // getting Lie derivative of dq for current r, t
+    // exp(r, t)->dq by r and t
+    // exp(r, t) = [exp(r) as rot, t translation then]
+
+    Matx<float, 8, 6> jcombine = j_combined(r);
+
+    // center(x) := (1+e*1/2*с)*x*(1-e*1/2*c)
+    // centered = DualQuaternion.from_rt_centered(r, t, c)
+    // d(center(x))/dr = I_4 + e*1/2*(M_left(t) + M_lrdiff(c))
+    // d(center(x))/dt = e*1/2*M_right(r)
+
+    Matx44f dcdr = 0.5f * (Quaternion(0, t).m_left() + Quaternion(0, c).m_lrdiff());
+    Matx44f dcdt = 0.5f * r.m_right();
+
+    Matx<float, 8, 8> jcenter = concatVert(concatHor(  I4, Z4),
+                                           concatHor(dcdr, dcdt));
+    return jcenter * jcombine;
 }
 
-// matrix form of quaternion multiplication from left side
-Matx44f m_left(Vec4f v)
+
+// node's Jacobian for (r, t) representation
+Matx<float, 8, 6> j_combined(UnitQuaternion r)
 {
-    // M_left(a)* V(b) =
-    //    = (I_4 * a0 + [ 0 | -av    [    0 | 0_1x3
-    //                   av | 0_3] +  0_3x1 | skew(av)]) * V(b)
-
-    float w = v[0], x = v[1], y = v[2], z = v[3];
-    return { w, -x, -y, -z,
-             x,  w, -z,  y,
-             y,  z,  w, -x,
-             z, -y,  x,  w };
+    return concatVert(concatHor(r.jExpRotVal(), Z43),
+                      concatHor(           Z43, concatVert(Matx13f::zeros(), I3)));
 }
-
-// matrix form of quaternion multiplication from right side
-Matx44f m_right(Vec4f v)
-{
-    // M_right(b)* V(a) =
-    //    = (I_4 * b0 + [ 0 | -bv    [    0 | 0_1x3
-    //                   bv | 0_3] +  0_3x1 | skew(-bv)]) * V(a)
-
-    float w = v[0], x = v[1], y = v[2], z = v[3];
-    return { w, -x, -y, -z,
-             x,  w,  z, -y,
-             y, -z,  w,  x,
-             z,  y, -x,  w };
-}
-
-// matrix form of a*b - b*a
-// a cross product in fact
-Matx44f m_lrdiff(Vec4f v)
-{
-    // M_lrdiff(a)*V(b) =
-    //    = [    0 | 0_1x3
-    //       0_3x1 | skew(2 * av)]*V(b)
-    Matx44f m;
-    Matx33f sk3 = skew(2.f * Vec3f(v[1], v[2], v[3]));
-    for (int i = 0; i < 3; i++)
-        for (int j = 0; j < 3; j++)
-            m(i + 1, j + 1) = sk3(i, j);
-    return m;
-}
-
-// matrix form of Im(a)
-Matx44f m_im()
-{
-    return { 0, 0, 0, 0,
-             0, 1, 0, 0,
-             0, 0, 1, 0,
-             0, 0, 0, 1};
-}
-
-// matrix form of conjugation
-Matx44f m_conj()
-{
-    return { 1,  0,  0,  0,
-             0, -1,  0,  0,
-             0,  0, -1,  0,
-             0,  0,  0, -1 };
-}
-
-//TODO URGENT: from python to c++
-/*
-# Standard matrices
-I_3 = np.eye(3)
-I_4 = np.eye(4)
-Z_4 = np.zeros((4, 4))
-Z_43 = np.zeros((4, 3))
-
-# Jacobians
-
-block = 6 # num of vars, 3 per rot, 3 per transl
-
-# node's jacobian for exponential representation
-# see derivations in ipynb
-def j_dq_exp_arg(w_real, w_dual):
-    assert w_real.size == 3, "w_real should contain 3 elems!"
-    assert w_dual.size == 3, "w_real should contain 3 elems!"
-
-    jexp_rot = j_exp_rot_arg(w_real)
-
-    normv = np.linalg.norm(w_real) # euclidean norm
-    sincv = sinc(normv)
-    csiiiv = csiii(normv)
-    one15v = one15(normv)
-
-    wrwr = np.outer(w_real, w_real.T)
-    wdwr = np.outer(w_dual, w_real.T)
-    dot_dr = np.dot(w_dual, w_real)
-
-    jexp_dual_dr = np.concatenate((-w_dual.reshape(1, 3) @ (sincv*I_3 + csiiiv*wrwr),
-                                   one15v*(wrwr @ wdwr) + csiiiv*(wdwr.T + dot_dr*I_3 + wdwr)))
-
-    jexp_dual_dd = jexp_rot
-
-    # made for typical se(3) vars order: (dual, real)
-    jexp_up = np.concatenate((Z_43, jexp_rot), axis=1)
-    jexp_dn = np.concatenate((jexp_dual_dd, jexp_dual_dr), axis=1)
-    jexp = np.concatenate((jexp_up, jexp_dn))
-    return jexp
-
-# node's exponential Jacobian based on its value
-def j_dq_exp_val(dq):
-    assert isinstance(dq, DualQuaternion), "dq should be DualQuaternion!"
-    w = dq.log()
-    return j_dq_exp_arg(w.real.vec, w.dual.vec)
-
-# node's Jacobian for (r, t) representation
-def j_combined(r):
-    assert isinstance(r, np.quaternion), "r should be np.quaternion!"
-    jexp = j_exp_rot_val(r)
-    jcombineup = np.concatenate((jexp, Z_43), axis=1)
-    jcombinedn = np.concatenate((Z_43, np.concatenate((np.zeros((1, 3)),
-                                                       I_3))), axis=1)
-    jcombine = np.concatenate((jcombineup, jcombinedn))
-    return jcombine
-
-# when a node is represented as dual quaternion instead of (r, t)
-def j_centered(c):
-    # center(x) := (1+e*1/2*с)*x*(1-e*1/2*c)
-    # d(center(x))/dreal = I_4 + e*1/2*M_lrdiff(c)
-    # d(center(x))/ddual = e*I_4
-    dcdreal = 1/2*M_lrdiff(c)
-    jcenter = np.concatenate((np.concatenate((I_4,  Z_4), axis=1),
-                              np.concatenate((dcdreal, I_4), axis=1)))
-    return jcenter
-
-# centered node's jacobian
-def j_pernode(r, t, c):
-    assert isinstance(r, np.quaternion), "r should be np.quaternion!"
-    assert isinstance(t, np.quaternion), "t should be np.quaternion!"
-    assert isinstance(c, np.quaternion), "c should be np.quaternion!"
-
-    # getting Lie derivative of dq for current r, t
-    # exp(r, t)->dq by r and t
-    # exp(r, t) = [exp(r) as rot, t translation then]
-
-    jcombine = j_combined(r)
-
-    # center(x) := (1+e*1/2*с)*x*(1-e*1/2*c)
-    #centered = DualQuaternion.from_rt_centered(r, t, c)
-    #d(center(x))/dr = I_4 + e*1/2*(M_left(t) + M_lrdiff(c))
-    #d(center(x))/dt = e*1/2*M_right(r)
-    dcdr = 1/2*(M_left(t) + M_lrdiff(c))
-    dcdt = 1/2*M_right(r)
-    jcenter = np.concatenate((np.concatenate((I_4,  Z_4), axis=1),
-                              np.concatenate((dcdr, dcdt), axis=1)))
-    return jcenter @ jcombine
-
-# jacobian of normalization+application to a point
-def j_normapply(a, b, v):
-    assert isinstance(a, np.quaternion), "a should be np.quaternion!"
-    assert isinstance(b, np.quaternion), "b should be np.quaternion!"
-    assert isinstance(v, np.quaternion), "v should be np.quaternion!"
-    # normalize:
-    # d(nr)/da = 1/norm^3(a)*M_right(a)*M_Im*M_right(a^)
-    # d(nr)/db = 0
-    # d(nt)/da = -2*M_Im*M_right(a^-1)*M_left(b*(a^-1))
-    # d(nt)/db =  2*M_Im*M_right(a^-1)
-    # apply:
-    # d(apply(nr, nt, v))/dnr = 2*M_Im*M_right(v*r^)
-    # d(apply(nr, nt, v))/dnt = I
-    # normalize and apply can be joined: jnormapply = japply @ jnormalize
-    # also all norms are factorized out
-    # d(apply(norm()))/da = 2*M_Im*M_right(a^)/norm4(a)*(M_right(a*v)*M_Im*M_right(a^) - M_left(b*a^))
-    # d(apply(norm()))/db = 2*M_Im*M_right(a^)/norm2(a)
-
-    aconj = a.conjugate()
-    norm2 = a.norm()
-    mul = 2*M_right(aconj)/norm2
-    danda = (M_right(a*v) @ M_Im @ M_right(aconj) - M_left(b*aconj))/norm2
-    jnormapply = np.concatenate((mul @ danda, mul), axis=1)[1:4, :]
-    return jnormapply
-
-# assume dq is unit
-def j_apply(dq, v):
-    # d(apply(...))/dr = 2*(M_Im*M_right(v*r^) + M_left(dual)*M_conj)
-    # d(apply(...))/ddual = 2*M_right(r^)
-    j_apply_dr = 2*(M_Im @ M_right(v*dq.real.conj()) + M_left(dq.dual) @ M_conj)
-    j_apply_dd = 2*M_right(dq.real.conj())
-    ja = np.concatenate((j_apply_dr, j_apply_dd), axis=1)[1:4, :]
-    return ja
-
-*/
 
 
 // TODO URGENT: add UnitDualQuaternion class
@@ -667,7 +665,7 @@ public:
     DualQuaternion exp() const
     {
         Quaternion er = qreal.exp();
-        Vec4f edv = jExpRogArg(qreal.ijk()) * qdual.ijk();
+        Vec4f edv = jExpRogArg(qreal.vec()) * qdual.vec();
         Quaternion ed(edv);
         return { er, ed };
     }
@@ -675,7 +673,7 @@ public:
     DualQuaternion log() const
     {
         Quaternion lr = qreal.log();
-        Matx43f jexp = jExpRogArg(lr.ijk());
+        Matx43f jexp = jExpRogArg(lr.vec());
 
         // J_exp_quat(w_real) * w_dual = self.dual
         // let's estimate w_dual with least squares
@@ -694,8 +692,8 @@ public:
         // shifts from c to 0, performs transformation of dq (rotation then translation),
         // then shifts back to c
         // center(x) = (1 + e*1/2*с) * (r + e*d) * (1 - e*1/2*c) = r + e * (d + 1/2 * (c*r - r*c))
-        // c*r - r*c == ijk*2*cross(c.ijk(), r.ijk())
-        Vec3f cross = c.cross(qreal.ijk());
+        // c*r - r*c == ijk*2*cross(c.vec(), r.vec())
+        Vec3f cross = c.cross(qreal.vec());
 
         return { qreal, qdual + Quaternion(0, cross) };
     }
@@ -721,7 +719,7 @@ public:
         Affine3f aff = qr.getRotation();
 
         Quaternion t = 2.f * (qdual * (qreal.conjugated()));
-        aff.translate(t.ijk());
+        aff.translate(t.vec());
         return aff;
     }
 
@@ -732,7 +730,7 @@ public:
         Affine3f aff = UnitQuaternion(qreal).getRotation();
 
         Quaternion t = 2.f * (qdual * (qreal.inverted()));
-        aff.translate(t.ijk());
+        aff.translate(t.vec());
         return aff;
     }
 
@@ -742,21 +740,21 @@ public:
     //TODO URGENT: return type
     auto jRt(Vec3f c, bool atZero, bool disableCentering, bool useExp, bool needR, bool needT)
     {
+        //TODO URGENT: should be UnitDualQuaternion
         DualQuaternion dqEffective = atZero ? one() : (*this);
 
         Vec3f cc = disableCentering ? Vec3f() : c;
 
-        auto j;
+        Matx<float, 8, 6> j;
         //TODO URGENT: all the functions below
         if (useExp)
         {
-            j = j_centered(cc) * j_dq_exp_val(dqEffective);
+            j = j_centered(cc) * dqEffective.j_dq_exp_val();
         }
         else
         {
             Affine3f rt = dqEffective.getRtUnit();
-                //TODO URGENT: what should accept j_pernode?
-            j = j_pernode(rt, cc);
+            j = j_pernode(dqEffective.real(), rt.translation(), cc);
         }
 
         // limit degrees of freedom
@@ -764,49 +762,16 @@ public:
         zero1st = (useExp && (!needT)) || (!useExp && (!needR));
         zero2nd = (useExp && (!needR)) || (!useExp && (!needT));
 
-        //TODO URGENT: this
+        auto z = Matx<float, 8, 3>::zeros();
+        auto jleft  = j.get_minor<8, 3>(0, 0);
+        auto jright = j.get_minor<8, 3>(0, 3);
         if (zero1st)
-            j[all, from0to3] = 0.f;
+            j = concatHor(z, jright);
         if (zero2nd)
-            j[all, from3to6] = 0.f;
+            j = concatHor(jleft, z);
 
         return j;
     }
-    /*
-        # Get jacobian of dual quaternion
-    def j_rt(self, c, atZero, disable_centering, useExp, needR, needT):
-        if atZero:
-            dq_effective = DualQuaternion.one()
-        else:
-            dq_effective = self
-
-        if disable_centering:
-            cc = np.quaternion(0, 0, 0, 0)
-        else:
-            cc = c
-
-        if useExp:
-            j = j_centered(cc) @ j_dq_exp_val(dq_effective)
-        else:
-            r, t = dq_effective.get_rt_unit()
-            j = j_pernode(r, t, cc)
-
-        # limit degrees of freedom
-        if useExp:
-            if not needR:
-                j[:, 3:6] = 0
-            if not needT:
-                j[:, 0:3] = 0
-        else:
-            if not needR:
-                j[:, 0:3] = 0
-            if not needT:
-                j[:, 3:6] = 0
-
-        return j
-    */
-
-
 
     //TODO URGENT: make constructors for UnitDualQuaternion
     static DualQuaternion fromRt(Affine3f rt)
@@ -858,7 +823,53 @@ public:
         Quaternion invr = qreal.inverted();
         return { invr, -invr*qdual*invr };
     }
+    
+    // jacobian of normalization+application to a point
+    Matx<float, 3, 8> j_normapply(Vec3f v)
+    {
+        Quaternion a = real(), b = dual();
+        // normalize:
+        // d(nr)/da = 1/norm^3(a)*M_right(a)*M_Im*M_right(a^)
+        // d(nr)/db = 0
+        // d(nt)/da = -2*M_Im*M_right(a^-1)*M_left(b*(a^-1))
+        // d(nt)/db =  2*M_Im*M_right(a^-1)
+        // apply:
+        // d(apply(nr, nt, v))/dnr = 2*M_Im*M_right(v*r^)
+        // d(apply(nr, nt, v))/dnt = I
+        // normalize and apply can be joined: jnormapply = japply @ jnormalize
+        // also all norms are factorized out
+        // d(apply(norm()))/da = 2*M_Im*M_right(a^)/norm4(a)*(M_right(a*v)*M_Im*M_right(a^) - M_left(b*a^))
+        // d(apply(norm()))/db = 2*M_Im*M_right(a^)/norm2(a)
 
+        Quaternion aconj = a.conjugated();
+        float norm2 = a.dot(a);
+        Matx44f mul = 2.f / norm2 * aconj.m_right();
+        Matx44f danda = ((a * Quaternion(0, v)).m_right() * M_Im * aconj.m_right() - (b * aconj).m_left()) / norm2;
+        // concatenate and skip 1st row
+        return concatHor(mul * danda, mul).get_minor<3, 8>(1, 0);
+    }
+
+    // assume dq is unit
+    //TODO URGENT: to UnitDualQuaternion member
+    Matx<float, 3, 8> j_apply(Vec3f v)
+    {
+        // d(apply(...))/dr = 2*(M_Im*M_right(v*r^) + M_left(dual)*M_conj)
+        // d(apply(...))/ddual = 2*M_right(r^)
+        Matx44f j_apply_dr = 2.f * (M_Im * (Quaternion(0, v) * real().conjugated()).m_right() +
+                                    dual().m_left() * M_Conj);
+        Matx44f j_apply_dd = 2.f * real().conjugated().m_right();
+
+        // concatenate and skip 1st row
+        return concatHor(j_apply_dr, j_apply_dd).get_minor<3, 8>(1, 0);
+    }
+
+    // node's exponential Jacobian based on its value
+    Matx<float, 8, 6> j_dq_exp_val()
+    {
+        DualQuaternion w = log();
+        return j_dq_exp_arg(w.real().vec(), w.dual().vec());
+    }
+    
     DualQuaternion& operator+=(const DualQuaternion& dq)
     {
         qreal += dq.qreal;
@@ -919,10 +930,12 @@ public:
     Quaternion qdual; // translation quaternion
 };
 
+
 DualQuaternion operator*(float a, const DualQuaternion& dq)
 {
     return (DualQuaternion(dq) *= a);
 }
+
 
 DualQuaternion DQB(std::vector<float>& weights, std::vector<DualQuaternion>& quats)
 {
@@ -933,6 +946,7 @@ DualQuaternion DQB(std::vector<float>& weights, std::vector<DualQuaternion>& qua
 
     return blended.normalized();
 }
+
 
 cv::Affine3f DQB(std::vector<float>& weights, std::vector<Affine3f>& transforms)
 {
@@ -973,17 +987,13 @@ void signFix(std::vector<DualQuaternion>& dqs, bool relative = false)
         // in absolute mode reference is just 1 which simplifies all the procedure
         for (auto& dq : dqs)
         {
-            dq = (dq.qreal().w() >= 0) ? dq : -dq;
+            dq = (dq.real().w() >= 0) ? dq : -dq;
         }
     }
 }
 
+//TODO URGENT: this to c++
 /*
-
-# damping: from 0 to 1
-def damped_dqsum(dqsum, nNodes, wsum, damping):
-    wdamp = nNodes - wsum
-    return dqsum + damping*wdamp*DualQuaternion.one()
 
 def dist_weight(p, c, csize):
     diff = p-c.vec

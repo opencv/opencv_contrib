@@ -388,6 +388,8 @@ static bool sparseSolve(const BlockSparseMat& jtj, const std::vector<float>& jtb
 
     std::cout << "starting eigen-insertion..." << std::endl;
 
+    //TODO: Consider COLAMD column reordering before solving matrix. This improves speed by a significant amount
+
     std::vector<Eigen::Triplet<double>> tripletList;
     tripletList.reserve(jtj.ijv.size()*jtj.blockSize*jtj.blockSize);
     for (auto ijv : jtj.ijv)
@@ -460,7 +462,7 @@ static bool sparseSolve(const BlockSparseMat& jtj, const std::vector<float>& jtb
     return result;
 }
 
-
+//TODO URGENT: when we write DualQuaternion() we mean one, not zero, until UnitDualQuaternion rewriting
 static DualQuaternion dampedDQ(int nNodes, float wsum, float coeff)
 {
     float wdamp = nNodes - wsum;
@@ -1172,6 +1174,7 @@ bool ICPImpl::estimateWarpNodes(WarpField& warp, const Affine3f &pose,
                 DualQuaternion dq = node->transform;
                 Point3d c = node->pos;
 
+                //TODO: maybe calc Jacobians w/o exp and then apply using exp?? highly experimental
                 DualQuaternion dqit;
                 if (useExp)
                 {
