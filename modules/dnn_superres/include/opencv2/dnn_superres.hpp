@@ -94,6 +94,10 @@ public:
      */
     CV_WRAP void setModel(const String& algo, int scale);
 
+    /** @brief Set CUDA backend and target
+    */
+    CV_WRAP void setCUDA();
+
     /** @brief Upsample via neural network
     @param img Image to upscale
     @param result Destination upscaled image

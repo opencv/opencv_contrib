@@ -91,6 +91,13 @@ void DnnSuperResImpl::setModel(const String& algo, int scale)
     this->alg = algo;
 }
 
+void DnnSuperResImpl::setCUDA()
+{
+    net.setPreferableBackend(cv::dnn::DNN_BACKEND_CUDA);
+    net.setPreferableTarget(cv::dnn::DNN_TARGET_CUDA);
+    CV_LOG_INFO(NULL, "Successfully set CUDA backend and target.");
+}
+
 void DnnSuperResImpl::upsample(InputArray img, OutputArray result)
 {
     if (net.empty())
