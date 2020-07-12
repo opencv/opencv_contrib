@@ -92,7 +92,7 @@ void DnnSuperResImpl::setModel(const String& algo, int scale)
 }
 
 void DnnSuperResImpl::setPreferableBackend(int backendId)
-{   
+{
     if (net.empty())
         CV_Error(Error::StsError, "Model is emtpy. Please read a model before setting the backend.");
 
@@ -101,7 +101,7 @@ void DnnSuperResImpl::setPreferableBackend(int backendId)
 }
 
 void DnnSuperResImpl::setPreferableTarget(int targetId)
-{   
+{
     if (net.empty())
         CV_Error(Error::StsError, "Model is empty. Please read a model before setting the target.");
 
