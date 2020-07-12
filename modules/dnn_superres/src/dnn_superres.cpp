@@ -91,11 +91,22 @@ void DnnSuperResImpl::setModel(const String& algo, int scale)
     this->alg = algo;
 }
 
-void DnnSuperResImpl::setCUDA()
-{
-    net.setPreferableBackend(cv::dnn::DNN_BACKEND_CUDA);
-    net.setPreferableTarget(cv::dnn::DNN_TARGET_CUDA);
-    CV_LOG_INFO(NULL, "Successfully set CUDA backend and target.");
+void DnnSuperResImpl::setPreferableBackend(int backendId)
+{   
+    if (net.empty())
+        CV_Error(Error::StsError, "Model is emtpy. Please read a model before setting the backend.");
+
+    net.setPreferableBackend(backendId);
+    CV_LOG_INFO(NULL, "Successfully set computation backend.");
+}
+
+void DnnSuperResImpl::setPreferableTarget(int targetId)
+{   
+    if (net.empty())
+        CV_Error(Error::StsError, "Model is empty. Please read a model before setting the target.");
+
+    net.setPreferableTarget(targetId);
+    CV_LOG_INFO(NULL, "Successfully set target device.");
 }
 
 void DnnSuperResImpl::upsample(InputArray img, OutputArray result)
