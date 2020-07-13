@@ -1,3 +1,12 @@
+"""
+The benchmark for trackers in the "tracking" module of the "opencv-contrib"
+repository. For evaluations used testing set of the LaSOT dataset:
+https://cis.temple.edu/lasot/
+For evaluations used metrics from LaSOT and TrackingNet papers.
+Link to LaSOT paper: https://arxiv.org/abs/1809.07845
+Link to TrackingNet paper: https://arxiv.org/abs/1803.10794
+"""
+
 import numpy as np
 import cv2 as cv
 import argparse
