@@ -2,29 +2,21 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html
 
-#include "submap.hpp"
-
-#include "hash_tsdf.hpp"
-#include "opencv2/core/cvstd_wrapper.hpp"
-#include "pose_graph.h"
 #include "precomp.hpp"
+#include "submap.hpp"
+#include "hash_tsdf.hpp"
+
 namespace cv
 {
 namespace kinfu
 {
-Submap::Submap(SubmapId _submapId, const VolumeParams& volumeParams, const cv::Affine3f& _pose)
-    : submapId(_submapId), pose(_pose)
-{
-    volume = cv::makePtr<HashTSDFVolumeCPU>(volumeParams);
-    std::cout << "Created volume\n";
-}
 
 SubmapManager::SubmapManager(const VolumeParams& _volumeParams) : volumeParams(_volumeParams) {}
 
-SubmapId SubmapManager::createNewSubmap(bool isCurrentActiveMap, const Affine3f& pose)
+int SubmapManager::createNewSubmap(bool isCurrentActiveMap, const Affine3f& pose)
 {
-    SubmapId newSubmapId       = submaps.size();
-    cv::Ptr<Submap> prevSubmap = getCurrentSubmap();
+    int newSubmapId       = int(submaps.size());
+    const Submap& prevSubmap = getCurrentSubmap();
 
     cv::Ptr<Submap> newSubmap = cv::makePtr<Submap>(newSubmapId, volumeParams, pose);
 
@@ -43,13 +35,13 @@ SubmapId SubmapManager::createNewSubmap(bool isCurrentActiveMap, const Affine3f&
     return idx;
 }
 
-void SubmapManager::addPriorConstraint(SubmapId currId, const Affine3f& currPose)
+void SubmapManager::addPriorConstraint(int currId, const Affine3f& currPose)
 {
     poseGraph.addNode(currId, cv::makePtr<PoseGraphNode>(currPose));
     poseGraph.addEdge
 }
 
-void SubmapManager::addCameraCameraConstraint(SubmapId prevId, SubmapId currId, const Affine3f& prevPose,
+void SubmapManager::addCameraCameraConstraint(int prevId, int currId, const Affine3f& prevPose,
                                               const Affine3f& currPose)
 {
     //! 1. Add new posegraph node
@@ -67,22 +59,12 @@ void SubmapManager::addCameraCameraConstraint(SubmapId prevId, SubmapId currId, 
     poseGraph.addEdge(cv::makePtr<PoseGraphEdge>(prevId, currId, Tprev2curr, information));
 }
 
-cv::Ptr<Submap> SubmapManager::getCurrentSubmap(void)
+Submap SubmapManager::getCurrentSubmap(void)
 {
     if (submaps.size() > 0)
         return submaps.at(submaps.size() - 1);
     else
-        return nullptr;
-}
 
-void SubmapManager::reset()
-{
-    //! Technically should delete all the submaps;
-    for (const auto& submap : submaps)
-    {
-        submap->volume->reset();
-    }
-    submaps.clear();
 }
 
 bool SubmapManager::shouldCreateSubmap(int currFrameId)
