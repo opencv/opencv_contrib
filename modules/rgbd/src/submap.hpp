@@ -11,6 +11,7 @@
 #include <unordered_map>
 
 #include "hash_tsdf.hpp"
+#include "pose_graph.h"
 
 namespace cv
 {
@@ -31,6 +32,9 @@ class Submap
 
     virtual void setStartFrameId(FrameId _startFrameId) { startFrameId = _startFrameId; };
     virtual void setStopFrameId(FrameId _stopFrameId) { stopFrameId = _stopFrameId; };
+
+    virtual SubmapId getId() const { return submapId; }
+    virtual cv::Affine3f getPose() const { return pose; }
 
    public:
     //! TODO: Should we support submaps for regular volumes?
@@ -73,9 +77,13 @@ class SubmapManager
     void setPose(SubmapId _submapId);
 
    protected:
+
+    void addCameraCameraConstraint(SubmapId prevId, SubmapId currId, const Affine3f& prevPose, const Affine3f& currPose);
     VolumeParams volumeParams;
     std::vector<cv::Ptr<Submap>> submaps;
     std::vector<Constraint> constraints;
+
+    PoseGraph poseGraph;
 };
 
 }  // namespace kinfu

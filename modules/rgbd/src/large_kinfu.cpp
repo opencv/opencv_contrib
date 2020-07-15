@@ -159,7 +159,6 @@ void LargeKinfuImpl<MatType>::reset()
     frameCounter = 0;
     pose         = Affine3f::Identity();
     submapMgr->reset();
-    submapMgr->createNewSubmap(true);
 }
 
 template<typename MatType>
@@ -224,7 +223,6 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
     else
         depth = _depth;
 
-    currSubmap = submapMgr->getCurrentSubmap();
     std::vector<MatType> newPoints, newNormals;
     makeFrameFromDepth(depth, newPoints, newNormals, params.intr, params.pyramidLevels, params.depthFactor,
                        params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
@@ -232,12 +230,16 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
     if (frameCounter == 0)
     {
         // use depth instead of distance
+        submapMgr->createNewSubmap(true);
+        currSubmap = submapMgr->getCurrentSubmap();
         currSubmap->volume->integrate(depth, params.depthFactor, pose, params.intr, frameCounter);
         pyrPoints  = newPoints;
         pyrNormals = newNormals;
+
     }
     else
     {
+        currSubmap = submapMgr->getCurrentSubmap();
         Affine3f affine;
         bool success = icp->estimateTransform(affine, pyrPoints, pyrNormals, newPoints, newNormals);
         if (!success)
@@ -260,7 +262,11 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
 
         std::cout << "Total allocated blocks: " << currSubmap->getTotalAllocatedBlocks() << "\n";
         std::cout << "Visible blocks: " << currSubmap->getVisibleBlocks(frameCounter) << "\n";
-        submapMgr->shouldCreateSubmap(frameCounter);
+        if(submapMgr->shouldCreateSubmap(frameCounter))
+        {
+            int newIdx = submapMgr->createNewSubmap(true, pose, newPoints, newNormals);
+        }
+        std::cout << "Number of submaps: " << submapMgr->getTotalSubmaps() << "\n";
     }
     frameCounter++;
     return true;
