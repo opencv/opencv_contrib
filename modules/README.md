@@ -8,9 +8,9 @@ To turn off building one of these module repositories, set the names in bold bel
 $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<reponame>=OFF <opencv_source_directory>
 ```
 
-- **aruco**: ArUco and ChArUco Markers -- Augmented reality ArUco marker and "ChARUco" markers where ArUco markers embedded inside the white areas of the checker board.
-
 - **alphamat**: Computer Vision based Alpha Matting -- Given an input image and a trimap, generate an alpha matte.
+
+- **aruco**: ArUco and ChArUco Markers -- Augmented reality ArUco marker and "ChARUco" markers where ArUco markers embedded inside the white areas of the checker board.
 
 - **bgsegm**: Background segmentation algorithm combining statistical background image estimation and per-pixel Bayesian segmentation.
 
@@ -34,11 +34,13 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 
 - **face**: Face Recognition -- Face recognition techniques: Eigen, Fisher and Local Binary Pattern Histograms LBPH methods.
 
-- **fuzzy**: Fuzzy Logic in Vision -- Fuzzy logic image transform and inverse; Fuzzy image processing.
-
 - **freetype**: Drawing text using freetype and harfbuzz.
 
+- **fuzzy**: Fuzzy Logic in Vision -- Fuzzy logic image transform and inverse; Fuzzy image processing.
+
 - **hdf**: Hierarchical Data Storage -- This module contains I/O routines for Hierarchical Data Format: https://en.m.wikipedia.org/wiki/Hierarchical_Data_Format meant to store large amounts of data.
+
+- **julia**: Julia language wrappers with samples and tests.
 
 - **line_descriptor**: Line Segment Extract and Match -- Methods of extracting, describing and latching line segments using binary descriptors.
 
@@ -75,5 +77,3 @@ $ cmake -D OPENCV_EXTRA_MODULES_PATH=<opencv_contrib>/modules -D BUILD_opencv_<r
 - **xobjdetect**: Boosted 2D Object Detection -- Uses a Waldboost cascade and local binary patterns computed as integral features for 2D object detection.
 
 - **xphoto**: Extra Computational Photography -- Additional photo processing algorithms: Color balance / Denoising / Inpainting.
-
-- **julia**: Julia language wrappers with samples and tests.
