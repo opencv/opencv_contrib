@@ -432,6 +432,7 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Af
     CV_TRACE_FUNCTION();
 
     CV_Assert(_depth.type() == DEPTH_TYPE);
+    CV_Assert(!_depth.empty());
     Depth depth = _depth.getMat();
     IntegrateInvoker ii(*this, depth, intrinsics, cameraPose, depthFactor);
     Range range(0, volResolution.x);
@@ -1103,7 +1104,7 @@ struct PushNormals
 void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
-
+    CV_Assert(!_points.empty());
     if(_normals.needed())
     {
         Points points = _points.getMat();
@@ -1143,6 +1144,7 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
                               const cv::Affine3f& cameraPose, const Intr& intrinsics)
 {
     CV_TRACE_FUNCTION();
+    CV_Assert(!_depth.empty());
 
     UMat depth = _depth.getUMat();
 
@@ -1251,6 +1253,7 @@ void TSDFVolumeGPU::raycast(const cv::Affine3f& cameraPose, const Intr& intrinsi
 void TSDFVolumeGPU::fetchNormals(InputArray _points, OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
+    CV_Assert(!_points.empty());
 
     if(_normals.needed())
     {
