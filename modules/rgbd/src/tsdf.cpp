@@ -56,7 +56,7 @@ TSDFVolume::TSDFVolume(float _voxelSize, Affine3f _pose, float _raycastStepFacto
 
 // dimension in voxels, size in meters
 TSDFVolumeCPU::TSDFVolumeCPU(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor,
-                             float _truncDist, int _maxWeight, Point3i _resolution,
+                             float _truncDist, WeightType _maxWeight, Point3i _resolution,
                              bool zFirstMemOrder)
     : TSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution,
                  zFirstMemOrder)
@@ -317,7 +317,7 @@ struct IntegrateInvoker : ParallelLoopBody
                         TsdfType tsdf = fmin(1.f, sdf * truncDistInv);
 
                         TsdfVoxel& voxel = volDataY[z*volume.volDims[2]];
-                        int& weight      = voxel.weight;
+                        WeightType& weight      = voxel.weight;
                         TsdfType& value  = voxel.tsdf;
 
                         // update TSDF
@@ -403,7 +403,7 @@ struct IntegrateInvoker : ParallelLoopBody
                         TsdfType tsdf = fmin(1.f, sdf * truncDistInv);
 
                         TsdfVoxel& voxel = volDataY[z*volume.volDims[2]];
-                        int& weight      = voxel.weight;
+                        WeightType& weight      = voxel.weight;
                         TsdfType& value  = voxel.tsdf;
 
                         // update TSDF

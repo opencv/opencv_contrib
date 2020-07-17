@@ -18,12 +18,14 @@ namespace kinfu
 {
 // TODO: Optimization possible:
 // * TsdfType can be FP16
-// * weight can be uint16
+// * WeightType can be uint16
 typedef float TsdfType;
+typedef int WeightType;
+
 struct TsdfVoxel
 {
     TsdfType tsdf;
-    int weight;
+    WeightType weight;
 };
 typedef Vec<uchar, sizeof(TsdfVoxel)> VecTsdfVoxel;
 
@@ -37,7 +39,7 @@ class TSDFVolume : public Volume
 
    public:
     Point3i volResolution;
-    int maxWeight;
+    WeightType maxWeight;
 
     Point3f volSize;
     float truncDist;
@@ -50,7 +52,7 @@ class TSDFVolumeCPU : public TSDFVolume
    public:
     // dimension in voxels, size in meters
     TSDFVolumeCPU(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor, float _truncDist,
-                  int _maxWeight, Point3i _resolution, bool zFirstMemOrder = true);
+                  WeightType _maxWeight, Point3i _resolution, bool zFirstMemOrder = true);
 
     virtual void integrate(InputArray _depth, float depthFactor, const cv::Affine3f& cameraPose,
                            const cv::kinfu::Intr& intrinsics) override;
