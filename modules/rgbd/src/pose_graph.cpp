@@ -2,7 +2,7 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html
 
-#include "pose_graph.h"
+#include "pose_graph.hpp"
 
 #include <unordered_set>
 #include <vector>
@@ -15,10 +15,11 @@ namespace cv
 {
 namespace kinfu
 {
-bool PoseGraph::isValid()
+
+bool PoseGraph::isValid() const
 {
-    size_t numNodes = nodes.size();
-    size_t numEdges = edges.size();
+    int numNodes = int(nodes.size());
+    int numEdges = int(edges.size());
 
     if (numNodes <= 0 || numEdges <= 0)
         return false;
@@ -26,8 +27,8 @@ bool PoseGraph::isValid()
     std::unordered_set<int> nodeSet;
     std::vector<int> nodeList;
 
-    nodeList.push_back(nodes.at(0)->getId());
-    nodeSet.insert(nodes.at(0)->getId());
+    nodeList.push_back(nodes.at(0).getId());
+    nodeSet.insert(nodes.at(0).getId());
 
     bool isGraphConnected = false;
     if (!nodeList.empty())
@@ -35,9 +36,9 @@ bool PoseGraph::isValid()
         int currNodeId = nodeList.back();
         nodeList.pop_back();
 
-        for (size_t i = 0; i < numEdges; i++)
+        for (int i = 0; i < numEdges; i++)
         {
-            const PoseGraphEdge& potentialEdge = *edges.at(i);
+            const PoseGraphEdge& potentialEdge = edges.at(i);
             int nextNodeId                     = -1;
 
             if (potentialEdge.getSourceNodeId() == currNodeId)
@@ -56,12 +57,12 @@ bool PoseGraph::isValid()
             }
         }
 
-        isGraphConnected = (nodeSet.size() == numNodes);
+        isGraphConnected = (int(nodeSet.size()) == numNodes);
 
         bool invalidEdgeNode = false;
-        for (size_t i = 0; i < numEdges; i++)
+        for (int i = 0; i < numEdges; i++)
         {
-            const PoseGraphEdge& edge = *edges.at(i);
+            const PoseGraphEdge& edge = edges.at(i);
             if ((nodeSet.count(edge.getSourceNodeId()) != 1) || (nodeSet.count(edge.getTargetNodeId()) != 1))
             {
                 invalidEdgeNode = true;
@@ -70,14 +71,11 @@ bool PoseGraph::isValid()
         }
         return isGraphConnected && !invalidEdgeNode;
     }
+    return false;
 }
-
-//! TODO: Reference: Open3D and linearizeOplus in g2o
-void calcErrorJacobian() {}
 
 float PoseGraph::createLinearSystem(BlockSparseMat<float, 6, 6>& H, Mat& B)
 {
-    int numNodes = int(nodes.size());
     int numEdges = int(edges.size());
 
     float residual = 0;
@@ -89,14 +87,14 @@ float PoseGraph::createLinearSystem(BlockSparseMat<float, 6, 6>& H, Mat& B)
         const Affine3f targetPose_inv       = targetPose.inv();
         for (int i = 0; i < 6; i++)
         {
-            Affine3f dError_dSource = relativePoseMeas_inv * targetPose_inv * generatorJacobian[i] * sourcePose;
+            Affine3f dError_dSource = relativePoseMeas_inv * targetPose_inv * cv::Affine3f(generatorJacobian[i]) * sourcePose;
             Vec3f rot               = dError_dSource.rvec();
             Vec3f trans             = dError_dSource.translation();
             jacSource.col(i)        = Vec6f(rot(0), rot(1), rot(2), trans(0), trans(1), trans(2));
         }
         for (int i = 0; i < 6; i++)
         {
-            Affine3f dError_dSource = relativePoseMeas_inv * targetPose_inv * -generatorJacobian[i] * sourcePose;
+            Affine3f dError_dSource = relativePoseMeas_inv * targetPose_inv * cv::Affine3f(-generatorJacobian[i]) * sourcePose;
             Vec3f rot               = dError_dSource.rvec();
             Vec3f trans             = dError_dSource.translation();
             jacTarget.col(i)        = Vec6f(rot(0), rot(1), rot(2), trans(0), trans(1), trans(2));
@@ -109,8 +107,8 @@ float PoseGraph::createLinearSystem(BlockSparseMat<float, 6, 6>& H, Mat& B)
         const PoseGraphEdge& currEdge = edges.at(currEdgeNum);
         int sourceNodeId              = currEdge.getSourceNodeId();
         int targetNodeId              = currEdge.getTargetNodeId();
-        const Affine3f& sourcePose    = nodes.at(sourceNodeId)->getPose();
-        const Affine3f& targetPose    = nodes.at(targetNodeId)->getPose();
+        const Affine3f& sourcePose    = nodes.at(sourceNodeId).getPose();
+        const Affine3f& targetPose    = nodes.at(targetNodeId).getPose();
 
         Affine3f relativeSourceToTarget = targetPose.inv() * sourcePose;
         //! Edge transformation is source to target. (relativeConstraint should be identity if no error)
@@ -128,7 +126,7 @@ float PoseGraph::createLinearSystem(BlockSparseMat<float, 6, 6>& H, Mat& B)
         error[5] = trans[2];
 
         Matx66f jacSource, jacTarget;
-        calcErrorJacobian(currEdge.transformation, sourcePose, targetPose, jacSource, jacTarget);
+        calcErrorJacobian(jacSource, jacTarget, currEdge.transformation, sourcePose, targetPose);
 
         Matx16f errorTransposeInfo     = error.t() * currEdge.information;
         Matx66f jacSourceTransposeInfo = jacSource.t() * currEdge.information;
@@ -151,7 +149,6 @@ float PoseGraph::createLinearSystem(BlockSparseMat<float, 6, 6>& H, Mat& B)
 PoseGraph PoseGraph::update(const Mat& deltaVec)
 {
     int numNodes = int(nodes.size());
-    int numEdges = int(edges.size());
 
     //! Check: This should create a copy of the posegraph
     PoseGraph updatedPoseGraph(*this);
@@ -159,11 +156,11 @@ PoseGraph PoseGraph::update(const Mat& deltaVec)
     for (int currentNodeId = 0; currentNodeId < numNodes; currentNodeId++)
     {
         Vec6f delta          = deltaVec.rowRange(6 * currentNodeId, 6 * (currentNodeId + 1));
-        Affine3f pose        = nodes.at(currentNodeId)->getPose();
+        Affine3f pose        = nodes.at(currentNodeId).getPose();
         Affine3f currDelta   = Affine3f(Vec3f(delta.val), Vec3f(delta.val + 3));
         Affine3f updatedPose = currDelta * pose;
 
-        updatedPoseGraph.nodes.at(currentNodeId)->setPose(updatedPose);
+        updatedPoseGraph.nodes.at(currentNodeId).setPose(updatedPose);
     }
 
     return updatedPoseGraph;
@@ -181,24 +178,24 @@ void Optimizer::optimizeGaussNewton(const Optimizer::Params& params, PoseGraph& 
         return;
     }
 
-    int numNodes = int(poseGraph.nodes.size());
-    int numEdges = int(poseGraph.edges.size());
+    int numNodes = poseGraph.getNumNodes();
+    int numEdges = poseGraph.getNumEdges();
 
     std::cout << "Optimizing posegraph with nodes: " << numNodes << " edges: " << numEdges << std::endl;
 
-    //! ApproxH = Approximate Hessian = J^T * information * J
     int iter = 0;
     //! converged is set to true when error/residual is within some limit
     bool converged     = false;
     float prevResidual = std::numeric_limits<float>::max();
     do
     {
+        //! ApproxH = Approximate Hessian = J^T * information * J
         BlockSparseMat<float, 6, 6> ApproxH(numNodes);
-        Mat B(6 * numNodes, 1, float);
+        Mat B(6 * numNodes, 1, CV_32F);
 
         float currentResidual = poseGraph.createLinearSystem(ApproxH, B);
 
-        Mat delta(6 * numNodes, 1, float);
+        Mat delta(6 * numNodes, 1, CV_32F);
         bool success = sparseSolve(ApproxH, B, delta);
         if (!success)
         {
@@ -218,7 +215,7 @@ void Optimizer::optimizeGaussNewton(const Optimizer::Params& params, PoseGraph& 
 
         prevResidual = currentResidual;
 
-    } while (iter < params.maxNumIters && !converged)
+    } while (iter < params.maxNumIters && !converged);
 }
 }  // namespace kinfu
 }  // namespace cv

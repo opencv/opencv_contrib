@@ -5,7 +5,7 @@
 #include <unordered_map>
 
 #include "opencv2/core/affine.hpp"
-#include "sparse_block_matrix.h"
+#include "sparse_block_matrix.hpp"
 namespace cv
 {
 namespace kinfu
@@ -18,7 +18,7 @@ namespace kinfu
 struct PoseGraphNode
 {
    public:
-    explicit PoseGraphNode(int nodeId, const Affine3f& _pose) : pose(_pose) {}
+    explicit PoseGraphNode(int _nodeId, const Affine3f& _pose) : nodeId(_nodeId), pose(_pose) {}
     virtual ~PoseGraphNode();
 
     int getId() const { return nodeId; }
@@ -62,36 +62,36 @@ struct PoseGraphEdge
 //! Jose Luis Blanco
 //! Compactly represents the jacobian of the SE3 generator
 // clang-format off
-static const std::array<Affine3f, 6> generatorJacobian = {  // alpha
-    Affine3f(Matx44f(0, 0,  0, 0,
-                     0, 0, -1, 0,
-                     0, 1,  0, 0,
-                     0, 0,  0, 0)),
+static const std::array<Matx44f, 6> generatorJacobian = {  // alpha
+    Matx44f(0, 0,  0, 0,
+            0, 0, -1, 0,
+            0, 1,  0, 0,
+            0, 0,  0, 0),
     // beta
-    Affine3f(Matx44f( 0, 0, 1, 0,
-                      0, 0, 0, 0,
-                     -1, 0, 0, 0,
-                      0, 0, 0, 0)),
+    Matx44f( 0, 0, 1, 0,
+             0, 0, 0, 0,
+            -1, 0, 0, 0,
+             0, 0, 0, 0),
     // gamma
-    Affine3f(Matx44f(0, -1, 0, 0,
-                     1,  0, 0, 0,
-                     0,  0, 0, 0,
-                     0,  0, 0, 0)),
+    Matx44f(0, -1, 0, 0,
+            1,  0, 0, 0,
+            0,  0, 0, 0,
+            0,  0, 0, 0),
     // x
-    Affine3f(Matx44f(0, 0, 0, 1,
-                     0, 0, 0, 0,
-                     0, 0, 0, 0,
-                     0, 0, 0, 0)),
+    Matx44f(0, 0, 0, 1,
+            0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 0),
     // y
-    Affine3f(Matx44f(0, 0, 0, 0,
-                     0, 0, 0, 1,
-                     0, 0, 0, 0,
-                     0, 0, 0, 0)),
+    Matx44f(0, 0, 0, 0,
+            0, 0, 0, 1,
+            0, 0, 0, 0,
+            0, 0, 0, 0),
     // z
-    Affine3f(Matx44f(0, 0, 0, 0,
-                     0, 0, 0, 0,
-                     0, 0, 0, 1,
-                     0, 0, 0, 0))
+    Matx44f(0, 0, 0, 0,
+            0, 0, 0, 0,
+            0, 0, 0, 1,
+            0, 0, 0, 0)
 };
 // clang-format on
 
@@ -120,30 +120,36 @@ class PoseGraph
     bool isValid() const;
 
     PoseGraph update(const Mat& delta);
-   private:
+
+    int getNumNodes() const { return nodes.size(); }
+    int getNumEdges() const { return edges.size(); }
+
     //! @brief: Constructs a linear system and returns the residual of the current system
     float createLinearSystem(BlockSparseMat<float, 6, 6>& H, Mat& B);
 
+   private:
+
     NodeVector nodes;
     EdgeVector edges;
-
-};  // namespace large_kinfu
+};
 
 namespace Optimizer
 {
-    struct Params
-    {
-        int maxNumIters;
-        float minResidual;
-        float maxAcceptableResIncre;
+struct Params
+{
+    int maxNumIters;
+    float minResidual;
+    float maxAcceptableResIncre;
 
-        //TODO: Refine these constants
-        Params(): maxNumIters(40), minResidual(1e-3f), maxAcceptableResIncre(1e-3f) {};
-        virtual ~Params() = default;
-    };
+    // TODO: Refine these constants
+    Params() : maxNumIters(40), minResidual(1e-3f), maxAcceptableResIncre(1e-3f){};
+    virtual ~Params() = default;
+};
 
-    void optimizeGaussNewton(const Params& params, PoseGraph& poseGraph);
-    void optimizeLevenberg(const Params& params, PoseGraph& poseGraph);
-}
+void optimizeGaussNewton(const Params& params, PoseGraph& poseGraph);
+void optimizeLevenberg(const Params& params, PoseGraph& poseGraph);
+}  // namespace Optimizer
+
 }  // namespace kinfu
+}  // namespace cv
 #endif /* ifndef OPENCV_RGBD_GRAPH_NODE_H */
