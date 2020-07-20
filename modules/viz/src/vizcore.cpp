@@ -138,18 +138,13 @@ void cv::viz::VizStorage::removeUnreferenced()
 
 cv::String cv::viz::VizStorage::generateWindowName(const String &window_name)
 {
-    String output = "Viz";
-    // Already is Viz
-    if (window_name == output)
-        return output;
+    cv::String output = "Viz";
 
-    String prefixed = output + " - ";
+    cv::String prefixed = output + " - ";
     if (window_name.substr(0, prefixed.length()) == prefixed)
         output = window_name; // Already has "Viz - "
-    else if (window_name.substr(0, output.length()) == output)
-        output = prefixed + window_name; // Doesn't have prefix
     else
-        output = (window_name == "" ? output : prefixed + window_name);
+        output = prefixed + window_name; // Doesn't have prefix
 
     return output;
 }
