@@ -98,7 +98,7 @@ struct Scene
 struct SemisphereScene : Scene
 {
     const int framesPerCycle = 72;
-    const float nCycles = 0.5f;
+    const float nCycles = 0.25f;
     const Affine3f startPose = Affine3f(Vec3f(0.f, 0.f, 0.f), Vec3f(1.5f, 0.3f, -1.5f));
 
     Size frameSize;
@@ -128,7 +128,12 @@ struct SemisphereScene : Scene
         float sphere = (float)cv::norm(spherePose) - sphereRadius;
         float sphereMinusBox = max(sphere, -roundBox);
 
-        return sphereMinusBox;
+        float subSphereRadius = 0.05f;
+        Point3f subSpherePose = p - Point3f(0.3f, -0.1f, -0.3f);
+        float subSphere = (float)cv::norm(subSpherePose) - subSphereRadius;
+
+        float res = min({plane, sphereMinusBox, subSphere});
+        return res;
     }
 
     Mat depth(Affine3f pose) override
@@ -172,10 +177,11 @@ struct Operator {
     {
         if ( !isnan(vector[0]) )
         {
-            float tmp = vector[0] * vector[0] +
+            float length = vector[0] * vector[0] +
                         vector[1] * vector[1] +
                         vector[2] * vector[2];
-            cout << tmp << endl;
+            //cout << length << endl;
+            ASSERT_TRUE(0.95f < length && length < 1.02f);
         }
     }
 };
@@ -196,13 +202,15 @@ void nolmal_test(bool hiDense)
         Mat depth = scene->depth(poses[i]);
         kf->update(depth);
 
-        //UMat points, normals;
-        //kf->getPoints(points);
-        //kf->getNormals(points, normals);
+        UMat points, normals;
+        kf->getPoints(points);
+        kf->getNormals(points, normals);
 
-        //AccessFlag af = ACCESS_READ;
-        //Mat norm = normals.getMat(af);
-        //norm.forEach<Vec4f>(Operator());
+        
+
+        AccessFlag af = ACCESS_READ;
+        Mat norm = normals.getMat(af);
+        norm.forEach<Vec4f>(Operator());
 
         if (display)
         {
@@ -210,7 +218,7 @@ void nolmal_test(bool hiDense)
             Mat rendered;
             kf->render(rendered);
             imshow("render", rendered);
-            waitKey(500);
+            waitKey(250);
         }
     }
 }
