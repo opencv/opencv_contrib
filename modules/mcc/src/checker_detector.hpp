@@ -143,11 +143,15 @@ protected: // methods pipeline
 	* \param[in] asp
 	*/
 	virtual void
-	checkerAnalysis(const cv::Mat &img, const cv::Mat &img_org,
+	checkerAnalysis(const cv::Mat &img_rgb_f,
 		const TYPECHART chartType, const unsigned int nc,
-		std::vector< std::vector< cv::Point2f > > colorCharts,
+		const std::vector< std::vector< cv::Point2f > >& colorCharts,
 		std::vector<Ptr<CChecker> > &checkers, float asp,
-		const Ptr<DetectorParameters>& params);
+		const Ptr<DetectorParameters>& params,
+        const cv::Mat& img_rgb_org,
+        const cv::Mat& img_ycbcr_org,
+        std::vector<cv::Mat>& rgb_planes,
+        std::vector<cv::Mat>& ycbcr_planes);
 
 	virtual void
 	removeTooCloseDetections(const Ptr<DetectorParameters> &params);
@@ -190,11 +194,14 @@ private: // methods aux
 
 
 	void get_profile(
-		const cv::Mat &img,
 		const std::vector< cv::Point2f > &ibox,
 		const TYPECHART chartType,
 		cv::Mat &charts_rgb,
-		cv::Mat &charts_ycbcr
+		cv::Mat &charts_ycbcr,
+        const cv::Mat& im_rgb,
+        const cv::Mat& im_ycbcr,
+        std::vector<cv::Mat>& rgb_planes,
+        std::vector<cv::Mat>& ycbcr_planes
 		);
 
 
@@ -203,9 +210,9 @@ private: // methods aux
 	 *  e(p) = ||f(p)||^2 = \sum_k (mu_{k,p}*r_k')/||mu_{k,p}||||r_k|| + ...
 	 *                   + \sum_k || \sigma_{k,p} ||^2
 	 */
-
-	float cost_function( const cv::Mat &img, const std::vector<cv::Point2f > &ibox , const TYPECHART chartType);
-
+	float cost_function( const cv::Mat &img, cv::Mat& mask, const cv::Mat& lab,
+                         const std::vector<cv::Point2f > &ibox,
+                         const TYPECHART chartType);
 
 };
 

@@ -2,27 +2,25 @@
 
 namespace cv{
 namespace mcc{
-cv::Mat poly2mask(const std::vector<cv::Point2f> &poly, cv::Size size)
+Rect poly2mask(const std::vector<cv::Point2f> &poly, cv::Size size, cv::Mat& mask)
 {
-
-	/* ROI by creating mask for the parallelogram */
-	cv::Mat mask(size, CV_8UC1);
-
-	// Create black image with the same size as the original
-	for (int i = 0; i < mask.cols; i++)
-		for (int j = 0; j < mask.rows; j++)
-			mask.at<uchar>(Point(i, j)) = 0;
+    // Create black image with the same size as the original
+    //mask.create(size, CV_8UC1);
+    //mask.setTo(Scalar::all(0));
 
 	// Create Polygon from vertices
 	vector<Point> roi_poly;
 	approxPolyDP(poly, roi_poly, 1.0, true);
 
+    Rect roi = boundingRect(roi_poly);
+
 	// Fill polygon white
 	fillConvexPoly(mask, &roi_poly[0], (int)roi_poly.size(), 1, 8, 0);
 
-	// return the mask
-	return mask;
-
+    roi &= Rect(0, 0, size.width, size.height);
+    if(roi.empty())
+        roi = Rect(0, 0, 1, 1);
+    return roi;
 }
 
 

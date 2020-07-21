@@ -7,7 +7,7 @@ using namespace std;
 namespace cv{
 namespace mcc {
 
-	cv::Mat poly2mask(const std::vector<cv::Point2f> &poly, cv::Size size);
+	Rect poly2mask(const std::vector<Point2f> &poly, Size size, Mat& mask);
 
 	template <typename T>
 	void circshift(std::vector<T> &A, int shiff)

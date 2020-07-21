@@ -9,10 +9,10 @@ namespace mcc{
 DetectorParameters::DetectorParameters()
     : adaptiveThreshWinSizeMin(23),
       adaptiveThreshWinSizeMax(153),
-      adaptiveThreshWinSizeStep(10),
+      adaptiveThreshWinSizeStep(16),
       adaptiveThreshConstant(7),
       minContoursAreaRate(0.003),
-      minContoursArea(200),
+      minContoursArea(100),
       confidenceThreshold(0.5),
       minContourSolidity(0.9),
       findCandidatesApproxPolyDPEpsMultiplier(0.05),
@@ -23,7 +23,7 @@ DetectorParameters::DetectorParameters()
       minContourLengthAllowed(100),
       minInterContourDistance(100),
       minInterCheckerDistance(10000),
-      minImageSize(2000),
+      minImageSize(1000),
       minGroupSize(4)
 
 {

@@ -71,6 +71,23 @@ bool CCheckerDetectorImpl::
 		//-------------------------------------------------------------------
 		std::vector<cv::Mat> img_bw;
 		performThreshold(img_gray, img_bw, params);
+        //printf("nthresholds = %d; img_size=%d x %d\n", (int)img_bw.size(), image.rows, image.cols);
+
+        cv::Mat3f img_rgb_f(img_bgr);
+        cv::cvtColor(img_rgb_f, img_rgb_f, COLOR_BGR2RGB);
+        img_rgb_f /= 255;
+
+        cv::Mat img_rgb_org, img_ycbcr_org;
+        std::vector<cv::Mat> rgb_planes(3), ycbcr_planes(3);
+
+        // Convert to RGB and YCbCr space
+        cv::cvtColor(image, img_rgb_org, COLOR_BGR2RGB);
+        cv::cvtColor(image, img_ycbcr_org, COLOR_BGR2YCrCb);
+
+        // Get chanels
+        split(img_rgb_org, rgb_planes);
+        split(img_ycbcr_org, ycbcr_planes);
+
 		parallel_for_(Range(0, (int)img_bw.size()), [&](const Range &range) {
 			const int begin = range.start;
 			const int end = range.end;
@@ -176,7 +193,8 @@ bool CCheckerDetectorImpl::
 				// checker color analysis
 				//-------------------------------------------------------------------
 				std::vector<Ptr<CChecker>> checkers;
-				checkerAnalysis(img_bgr, image, chartType, nc, colorCharts, checkers, asp, params);
+				checkerAnalysis(img_rgb_f, chartType, nc, colorCharts, checkers, asp, params,
+                                img_rgb_org, img_ycbcr_org, rgb_planes, ycbcr_planes);
 
 #ifdef SHOW_DEBUG_IMAGES
 						cv::Mat image_checker;
@@ -198,8 +216,7 @@ bool CCheckerDetectorImpl::
 					mtx.unlock();
 				}
 			}
-
-		});
+        });
 	}
 	//remove too close detections
 	removeTooCloseDetections(params);
@@ -210,6 +227,16 @@ bool CCheckerDetectorImpl::
 bool CCheckerDetectorImpl::
 	process(const cv::Mat &image, const TYPECHART chartType, const int nc /*= 1*/,bool useNet/*=false*/, const Ptr<DetectorParameters> &params /* = DetectorParameters::create()*/, std::vector<cv::Rect> regionsOfInterest /*= std::vector<cv::Rect>()*/)
 {
+    cv::Mat img_rgb_org, img_ycbcr_org;
+    std::vector<cv::Mat> rgb_planes(3), ycbcr_planes(3);
+
+    // Convert to RGB and YCbCr space
+    cv::cvtColor(image, img_rgb_org, COLOR_BGR2RGB);
+    cv::cvtColor(image, img_ycbcr_org, COLOR_BGR2YCrCb);
+
+    // Get chanels
+    split(img_rgb_org, rgb_planes);
+    split(img_ycbcr_org, ycbcr_planes);
 
 	m_checkers.clear();
 
@@ -270,6 +297,11 @@ bool CCheckerDetectorImpl::
 
 				std::vector<cv::Mat> img_bw;
 				performThreshold(img_gray, img_bw, params);
+
+                cv::Mat3f img_rgb_f(img_bgr);
+                cv::cvtColor(img_rgb_f, img_rgb_f, COLOR_BGR2RGB);
+                img_rgb_f /= 255;
+
 				parallel_for_(Range(0, (int)img_bw.size()), [&](const Range &range) {
 					const int begin = range.start;
 					const int end = range.end;
@@ -376,7 +408,8 @@ bool CCheckerDetectorImpl::
 						// checker color analysis
 						//-------------------------------------------------------------------
 						std::vector<Ptr<CChecker>> checkers;
-						checkerAnalysis(img_bgr, image, chartType, nc, colorCharts, checkers, asp, params);
+						checkerAnalysis(img_rgb_f, chartType, nc, colorCharts, checkers, asp, params,
+                                        img_rgb_org, img_ycbcr_org, rgb_planes, ycbcr_planes);
 #ifdef SHOW_DEBUG_IMAGES
 						cv::Mat image_checker;
 						innerCroppedImage.copyTo(image_checker);
@@ -876,24 +909,37 @@ void CCheckerDetectorImpl::
 
 void CCheckerDetectorImpl::
 	checkerAnalysis(
-		const cv::Mat &img,
-		const cv::Mat &img_org,
+		const cv::Mat &img_f,
 		const TYPECHART chartType,
 		const unsigned int nc,
-		std::vector<std::vector<cv::Point2f>> colorCharts,
+		const std::vector<std::vector<cv::Point2f>>& colorCharts,
 		std::vector<Ptr<CChecker>> &checkers,
 		float asp,
-		const Ptr<DetectorParameters> &params)
+		const Ptr<DetectorParameters> &params,
+        const cv::Mat& img_rgb_org,
+        const cv::Mat& img_ycbcr_org,
+        std::vector<cv::Mat>& rgb_planes,
+        std::vector<cv::Mat>& ycbcr_planes)
 {
 	size_t N;
 	std::vector<cv::Point2f> ibox;
 
-	N = colorCharts.size();
+    // color chart classic model
+    CChartModel cccm(chartType);
+    cv::Mat lab;
+    cccm.copyToColorMat(lab, 0);
+    lab = lab.reshape(3, lab.size().area());
+    lab /= 255;
+
+    cv::Mat mask(img_f.size(), CV_8U);
+    mask.setTo(Scalar::all(0));
+
+    N = colorCharts.size();
 	std::vector<float> J(N);
 	for (size_t i = 0; i < N; i++)
 	{
 		ibox = colorCharts[i];
-		J[i] = cost_function(img, ibox, chartType);
+        J[i] = cost_function(img_f, mask, lab, ibox, chartType);
 	}
 
 	std::vector<int> idx;
@@ -914,7 +960,7 @@ void CCheckerDetectorImpl::
 			ibox[j] = invAsp * ibox[j];
 
 		cv::Mat charts_rgb, charts_ycbcr;
-		get_profile(img_org, ibox, chartType, charts_rgb, charts_ycbcr);
+		get_profile(ibox, chartType, charts_rgb, charts_ycbcr, img_rgb_org, img_ycbcr_org, rgb_planes, ycbcr_planes);
 
 		// result
 		Ptr<CChecker> checker = CChecker::create();
@@ -1100,11 +1146,14 @@ void CCheckerDetectorImpl::
 }
 void CCheckerDetectorImpl::
 	get_profile(
-		const cv::Mat &img,
 		const std::vector<cv::Point2f> &ibox,
 		const TYPECHART chartType,
 		cv::Mat &charts_rgb,
-		cv::Mat &charts_ycbcr)
+		cv::Mat &charts_ycbcr,
+        const cv::Mat& im_rgb,
+        const cv::Mat& im_ycbcr,
+        std::vector<cv::Mat>& rgb_planes,
+        std::vector<cv::Mat>& ycbcr_planes)
 {
 	// color chart classic model
 	CChartModel cccm(chartType);
@@ -1112,21 +1161,12 @@ void CCheckerDetectorImpl::
 	size_t N;
 	std::vector<cv::Point2f> fbox = cccm.box;
 	std::vector<cv::Point2f> cellchart = cccm.cellchart;
-	cv::Mat3f im_rgb, im_ycbcr, im_bgr(img);
-	cv::Mat rgb[3], ycbcr[3];
-
-	// Convert to RGB and YCbCr space
-	cv::cvtColor(im_bgr, im_rgb, COLOR_BGR2RGB);
-	cv::cvtColor(im_bgr, im_ycbcr, COLOR_BGR2YCrCb);
-
-	// Get chanels
-	split(im_rgb, rgb);
-	split(im_ycbcr, ycbcr);
 
 	// tranformation
 	Matx33f ccT = cv::getPerspectiveTransform(fbox, ibox);
 
-	cv::Mat mask;
+    cv::Mat mask(im_rgb.size(), CV_8U);
+    mask.setTo(Scalar::all(0));
 	std::vector<cv::Point2f> bch(4), bcht(4);
 	N = cellchart.size() / 4;
 
@@ -1158,14 +1198,15 @@ void CCheckerDetectorImpl::
 		for (size_t j = 0; j < 4; j++)
 			bcht[j] = ((bcht[j] - c) * 0.50) + c;
 
-		mask = poly2mask(bcht, img.size());
-		p_size = cv::sum(mask);
+		Rect roi = poly2mask(bcht, im_rgb.size(), mask);
+        Mat submask = mask(roi);
+		p_size = cv::sum(submask);
 
 		// rgb space
-		cv::meanStdDev(im_rgb, mu_rgb, st_rgb, mask);
-		cv::minMaxLoc(rgb[0], &min_rgb[0], &max_rgb[0], NULL, NULL, mask);
-		cv::minMaxLoc(rgb[1], &min_rgb[1], &max_rgb[1], NULL, NULL, mask);
-		cv::minMaxLoc(rgb[2], &min_rgb[2], &max_rgb[2], NULL, NULL, mask);
+		cv::meanStdDev(im_rgb(roi), mu_rgb, st_rgb, submask);
+		cv::minMaxLoc(rgb_planes[0](roi), &min_rgb[0], &max_rgb[0], NULL, NULL, submask);
+		cv::minMaxLoc(rgb_planes[1](roi), &min_rgb[1], &max_rgb[1], NULL, NULL, submask);
+		cv::minMaxLoc(rgb_planes[2](roi), &min_rgb[2], &max_rgb[2], NULL, NULL, submask);
 
 		// create tabla
 		//|p_size|average|stddev|max|min|
@@ -1189,10 +1230,10 @@ void CCheckerDetectorImpl::
 		charts_rgb.at<double>(3 * i + 2, 4) = max_rgb[2];
 
 		// YCbCr space
-		cv::meanStdDev(im_ycbcr, mu_ycb, st_ycb, mask);
-		cv::minMaxLoc(ycbcr[0], &min_ycb[0], &max_ycb[0], NULL, NULL, mask);
-		cv::minMaxLoc(ycbcr[1], &min_ycb[1], &max_ycb[1], NULL, NULL, mask);
-		cv::minMaxLoc(ycbcr[2], &min_ycb[2], &max_ycb[2], NULL, NULL, mask);
+		cv::meanStdDev(im_ycbcr(roi), mu_ycb, st_ycb, submask);
+		cv::minMaxLoc(ycbcr_planes[0](roi), &min_ycb[0], &max_ycb[0], NULL, NULL, submask);
+		cv::minMaxLoc(ycbcr_planes[1](roi), &min_ycb[1], &max_ycb[1], NULL, NULL, submask);
+		cv::minMaxLoc(ycbcr_planes[2](roi), &min_ycb[2], &max_ycb[2], NULL, NULL, submask);
 
 		// create tabla
 		//|p_size|average|stddev|max|min|
@@ -1214,40 +1255,28 @@ void CCheckerDetectorImpl::
 		charts_ycbcr.at<double>(3 * i + 2, 2) = st_ycb(2);
 		charts_ycbcr.at<double>(3 * i + 2, 3) = min_ycb[2];
 		charts_ycbcr.at<double>(3 * i + 2, 4) = max_ycb[2];
+
+        submask.setTo(Scalar::all(0));
 	}
 }
+
 float CCheckerDetectorImpl::
-	cost_function(const cv::Mat &img, const std::vector<cv::Point2f> &ibox, const TYPECHART chartType)
+cost_function(const cv::Mat &im_rgb, cv::Mat& mask, const cv::Mat& lab,
+              const std::vector<cv::Point2f> &ibox, const TYPECHART chartType)
 {
-	// color chart classic model
-	CChartModel cccm(chartType);
-	cv::Mat lab;
-	float J = 0;
-	size_t N;
+    CChartModel cccm(chartType);
 	std::vector<cv::Point2f> fbox = cccm.box;
 	std::vector<cv::Point2f> cellchart = cccm.cellchart;
 
-	cccm.copyToColorMat(lab, 0);
-	lab = lab.reshape(3, lab.size().area());
-
-	cv::Mat3f im_lab, im_rgb(img);
-	//cv::cvtColor(im_rgb, im_lab, COLOR_BGR2Lab);
-	cv::cvtColor(im_rgb, im_lab, COLOR_BGR2RGB);
-
-	lab /= 255;
-	im_lab /= 255;
-
 	// tranformation
 	Matx33f ccT = cv::getPerspectiveTransform(fbox, ibox);
-
-	cv::Mat mask;
 	std::vector<cv::Point2f> bch(4), bcht(4);
-	N = cellchart.size() / 4;
+
+    int N = (int)(cellchart.size()/ 4);
 
 	float ec = 0, es = 0;
-	for (int i = 0, k; i < (int)N; i++)
+	for (int i = 0, k; i < N; i++)
 	{
-
 		cv::Vec3f r = lab.at<cv::Vec3f>(i);
 
 		k = 4 * i;
@@ -1266,20 +1295,25 @@ float CCheckerDetectorImpl::
 			bcht[j] = ((bcht[j] - c) * 0.75) + c;
 
 		cv::Scalar mu, st;
-		mask = poly2mask(bcht, img.size());
-		cv::meanStdDev(im_lab, mu, st, mask);
+		Rect roi = poly2mask(bcht, im_rgb.size(), mask);
+        if( !roi.empty() )
+        {
+            Mat submask = mask(roi);
+            cv::meanStdDev(im_rgb(roi), mu, st, submask);
+            submask.setTo(Scalar::all(0));
 
-		// cos error
-		float costh;
-		costh = (float)(mu.dot(cv::Scalar(r)) / (norm(mu) * norm(r) + FLT_EPSILON));
-		ec += (1 - (1 + costh) / 2);
+            // cos error
+            float costh;
+            costh = (float)(mu.dot(cv::Scalar(r)) / (norm(mu) * norm(r) + FLT_EPSILON));
+            ec += (1 - (1 + costh) / 2);
 
-		// standar desviation
-		es += (float)st.dot(st);
+            // standar desviation
+            es += (float)st.dot(st);
+        }
 	}
 
 	// J = arg min ec + es
-	J = ec + es;
+	float J = ec + es;
 	return J/N;
 }
 
