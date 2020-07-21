@@ -74,6 +74,8 @@ struct CV_EXPORTS_W Params
     */
     CV_WRAP static Ptr<Params> hashTSDFParams(bool isCoarse);
 
+    CV_WRAP static Ptr<Params> TSDFParams(bool isCoarse);
+
     /** @brief frame size in pixels */
     CV_PROP_RW Size frameSize;
 
