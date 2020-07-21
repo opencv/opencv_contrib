@@ -215,12 +215,12 @@ void nolmal_test(bool hiDense)
     }
 }
 
-TEST(TSDF, normals, lowDense)
+TEST(TSDF, normals_lowDense)
 {
     nolmal_test(false);
 }
 
-TEST(TSDF, normals, highDense)
+TEST(TSDF, normals_highDense)
 {
     nolmal_test(true);
 }
