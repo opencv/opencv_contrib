@@ -15,7 +15,6 @@ namespace cv {
 namespace kinfu {
 //! @addtogroup kinect_fusion
 //! @{
-
 struct CV_EXPORTS_W Params
 {
 
@@ -73,8 +72,6 @@ struct CV_EXPORTS_W Params
       A set of parameters suitable for use with HashTSDFVolume
     */
     CV_WRAP static Ptr<Params> hashTSDFParams(bool isCoarse);
-
-    CV_WRAP static Ptr<Params> TSDFParams(bool hiDense);
 
     /** @brief frame size in pixels */
     CV_PROP_RW Size frameSize;

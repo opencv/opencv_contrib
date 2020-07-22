@@ -107,17 +107,6 @@ Ptr<Params> Params::hashTSDFParams(bool isCoarse)
     return p;
 }
 
-Ptr<Params> Params::TSDFParams(bool hiDense)
-{
-    Ptr<Params> p = defaultParams();
-    if (hiDense)
-        p = defaultParams();
-    else
-        p = coarseParams();
-
-    return p;
-}
-
 // MatType should be Mat or UMat
 template< typename MatType>
 class KinFuImpl : public KinFu
