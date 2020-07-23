@@ -188,7 +188,81 @@ struct Operator {
 
 static const bool display = false;
 
-void normal_test(bool isHashTSDF)
+void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, bool isFetchNormals)
+{
+    Ptr<kinfu::Params> _params;
+    if (isHashTSDF)
+        _params = kinfu::Params::hashTSDFParams(true);
+    else
+        _params = kinfu::Params::coarseParams();
+
+    Ptr<Scene> scene = Scene::create(_params->frameSize, _params->intr, _params->depthFactor);
+    std::vector<Affine3f> poses = scene->getPoses();
+
+    Mat depth = scene->depth(poses[0]);
+    UMat _points, _normals, _tmpnormals;
+    UMat _newPoints, _newNormals;
+    Mat  points,  normals;
+    Mat image;
+    AccessFlag af = ACCESS_READ;
+    
+    Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose, 
+                                _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight, 
+                                _params->truncateThreshold, _params->volumeDims);
+    volume->integrate(depth, _params->depthFactor, poses[0], _params->intr);
+    
+    if (isRaycast)
+    { 
+        volume->raycast(poses[0], _params->intr, _params->frameSize, _points, _normals);
+    }
+    if (isFetchPointsNormals)
+    {
+        volume->fetchPointsNormals(_points, _normals);
+    }
+    if (isFetchNormals)
+    {
+        volume->raycast(poses[0], _params->intr, _params->frameSize, _points, _tmpnormals);
+        volume->fetchNormals(_points, _normals);
+    }
+
+    normals = _normals.getMat(af);
+    normals.forEach<Vec4f>(Operator());
+    
+    if (display)
+    {
+        imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
+        points = _points.getMat(af);
+        //renderPointsNormals(points, normals, image, _params->lightPose);
+        imshow("render", image);
+        waitKey(30000);
+    }
+    
+    if (isRaycast)
+    {
+    volume->raycast(poses[17], _params->intr, _params->frameSize, _newPoints, _newNormals);
+
+    normals = _newNormals.getMat(af);
+    normals.forEach<Vec4f>(Operator());
+
+    if (display)
+    {
+        imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
+        points = _newPoints.getMat(af);
+        //renderPointsNormals(points, normals, image, _params->lightPose);
+        imshow("render", image);
+        waitKey(30000);
+    }
+
+    }
+
+    depth.release(); image.release();
+    _normals.release(); _points.release();
+    _newNormals.release(); _newPoints.release();
+    points.release(); normals.release();
+    
+}
+
+void valid_points_test(bool isHashTSDF)
 {
     Ptr<kinfu::Params> _params;
     if (isHashTSDF)
@@ -201,56 +275,92 @@ void normal_test(bool isHashTSDF)
 
     Mat depth = scene->depth(poses[0]);
     UMat _points, _normals;
-
-    Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose, 
-                                _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight, 
-                                _params->truncateThreshold, _params->volumeDims);
-
-    volume->integrate(depth, _params->depthFactor, poses[0], _params->intr);
-    volume->raycast(poses[0], _params->intr, _params->frameSize, _points, _normals);
-    
-    //volume->fetchPointsNormals(_points, _normals);
-    //volume->fetchNormals(_points, _normals);
- 
+    UMat _newPoints, _newNormals;
+    Mat  points, normals;
+    Mat image;
+    int anfas, profile;
     AccessFlag af = ACCESS_READ;
-    Mat normals = _normals.getMat(af);
-    normals.forEach<Vec4f>(Operator());
 
+    Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose,
+        _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight,
+        _params->truncateThreshold, _params->volumeDims);
+    volume->integrate(depth, _params->depthFactor, poses[0], _params->intr);
+
+    volume->raycast(poses[0], _params->intr, _params->frameSize, _points, _normals);
+    normals = _normals.getMat(af);
+    points = _points.getMat(af);
+    
+    //Mat mask(points.rows, points.cols, points.type(), Scalar::all(0));
+    //points = points & mask;
+    //cout << points;
+    //anfas = countNonZero(points);
+    
     if (display)
     {
         imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
-        Mat points = _points.getMat(af);
-        Mat image;
+        
         //renderPointsNormals(points, normals, image, _params->lightPose);
         imshow("render", image);
         waitKey(30000);
     }
 
-    UMat _newPoints, _newNormals;
     volume->raycast(poses[17], _params->intr, _params->frameSize, _newPoints, _newNormals);
 
     normals = _newNormals.getMat(af);
-    normals.forEach<Vec4f>(Operator());
+    points = _newPoints.getMat(af);
+    profile = countNonZero(points);
 
     if (display)
     {
         imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
-        Mat points = _newPoints.getMat(af);
-        Mat image;
+        
         //renderPointsNormals(points, normals, image, _params->lightPose);
         imshow("render", image);
         waitKey(30000);
     }
+    cout << "---------------------" << endl;
+    cout << anfas << "|" << profile << endl;
+    cout << "+++++++++++++++++++++" << endl;
 }
 
 TEST(TSDF, raycast_normals)
 {
-    normal_test(false);
+    normal_test(false, true, false, false);
 }
 
 TEST(HashTSDF, raycast_normals)
 {
-    normal_test(true);
+    normal_test(true, true, false, false);
+}
+
+TEST(TSDF, fetch_points_normals)
+{
+    normal_test(false, false, true, false);
+}
+
+TEST(HashTSDF, fetch_points_normals)
+{
+    normal_test(true, false, true, false);
+}
+
+TEST(TSDF, fetch_normals)
+{
+    normal_test(false, false, false, true);
+}
+
+TEST(HashTSDF, fetch_normals)
+{
+    normal_test(true, false, false, true);
+}
+
+TEST(TSDF, valid_points)
+{
+    valid_points_test(false);
+}
+
+TEST(HashTSDF, valid_points)
+{
+    valid_points_test(true);
 }
 
 }}  // namespace

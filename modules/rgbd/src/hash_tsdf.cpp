@@ -271,6 +271,12 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Point3f& point) const
 
 inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
 {
+
+    if (point.x < 1 || point.x >= volumeUnitResolution - 2 ||
+        point.y < 1 || point.y >= volumeUnitResolution - 2 ||
+        point.z < 1 || point.z >= volumeUnitResolution - 2)
+        return nan3;
+
     Vec3f pointVec(point);
     Vec3f normal = Vec3f(0, 0, 0);
 
