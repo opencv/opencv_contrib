@@ -90,7 +90,7 @@ struct RenderInvoker : ParallelLoopBody
 struct Scene
 {
     virtual ~Scene() {}
-    static Ptr<Scene> create(int nScene, Size sz, Matx33f _intr, float _depthFactor);
+    static Ptr<Scene> create(Size sz, Matx33f _intr, float _depthFactor);
     virtual Mat depth(Affine3f pose) = 0;
     virtual std::vector<Affine3f> getPoses() = 0;
 };
@@ -167,7 +167,7 @@ struct SemisphereScene : Scene
 
 };
 
-Ptr<Scene> Scene::create(int nScene, Size sz, Matx33f _intr, float _depthFactor)
+Ptr<Scene> Scene::create(Size sz, Matx33f _intr, float _depthFactor)
 {
     return makePtr<SemisphereScene>(sz, _intr, _depthFactor);
 }
@@ -181,14 +181,14 @@ struct Operator {
                            vector[1] * vector[1] +
                            vector[2] * vector[2];
             //cout << length;
-            ASSERT_TRUE(0.9999f < length && length < 1.0001f);
+            ASSERT_LT(abs(1-length), 0.0001f);
         }
     }
 };
 
 static const bool display = false;
 
-void normal_test(bool hiDense, bool isHashTSDF)
+void normal_test(bool isHashTSDF)
 {
     Ptr<kinfu::Params> _params;
     if (isHashTSDF)
@@ -196,7 +196,7 @@ void normal_test(bool hiDense, bool isHashTSDF)
     else
         _params = kinfu::Params::coarseParams();
 
-    Ptr<Scene> scene = Scene::create(hiDense, _params->frameSize, _params->intr, _params->depthFactor);
+    Ptr<Scene> scene = Scene::create(_params->frameSize, _params->intr, _params->depthFactor);
     std::vector<Affine3f> poses = scene->getPoses();
 
     Mat depth = scene->depth(poses[0]);
@@ -243,14 +243,14 @@ void normal_test(bool hiDense, bool isHashTSDF)
     }
 }
 
-TEST(TSDF, normals)
+TEST(TSDF, raycast_normals)
 {
-    normal_test(false, false);
+    normal_test(false);
 }
 
-TEST(HashTSDF, normals)
+TEST(HashTSDF, raycast_normals)
 {
-    normal_test(false, true);
+    normal_test(true);
 }
 
 }}  // namespace

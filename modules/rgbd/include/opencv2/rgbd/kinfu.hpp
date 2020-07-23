@@ -15,6 +15,7 @@ namespace cv {
 namespace kinfu {
 //! @addtogroup kinect_fusion
 //! @{
+
 struct CV_EXPORTS_W Params
 {
 
