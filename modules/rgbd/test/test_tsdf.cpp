@@ -172,20 +172,6 @@ Ptr<Scene> Scene::create(Size sz, Matx33f _intr, float _depthFactor)
     return makePtr<SemisphereScene>(sz, _intr, _depthFactor);
 }
 
-struct Operator {
-    void operator ()(Vec4f& vector, const int* position) const
-    {
-        if ( !isnan(vector[0]) )
-        {
-            float length = vector[0] * vector[0] +
-                           vector[1] * vector[1] +
-                           vector[2] * vector[2];
-            //cout << length;
-            ASSERT_LT(abs(1-length), 0.0001f);
-        }
-    }
-};
-
 static const bool display = false;
 
 void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, bool isFetchNormals)
@@ -221,12 +207,21 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     }
     if (isFetchNormals)
     {
-        volume->raycast(poses[0], _params->intr, _params->frameSize, _points, _tmpnormals);
+        volume->fetchPointsNormals(_points, _tmpnormals);
         volume->fetchNormals(_points, _normals);
     }
 
     normals = _normals.getMat(af);
-    normals.forEach<Vec4f>(Operator());
+    normals.forEach<Vec4f>([](Vec4f& vector, const int* position)
+        {
+            if (!isnan(vector[0]))
+            {
+                float length = vector[0] * vector[0] +
+                    vector[1] * vector[1] +
+                    vector[2] * vector[2];
+                ASSERT_LT(abs(1 - length), 0.0001f);
+            }
+        });
     
     if (display)
     {
@@ -242,7 +237,16 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     volume->raycast(poses[17], _params->intr, _params->frameSize, _newPoints, _newNormals);
 
     normals = _newNormals.getMat(af);
-    normals.forEach<Vec4f>(Operator());
+    normals.forEach<Vec4f>([](Vec4f& vector, const int* position)
+        {
+            if (!isnan(vector[0]))
+            {
+                float length = vector[0] * vector[0] +
+                    vector[1] * vector[1] +
+                    vector[2] * vector[2];
+                ASSERT_LT(abs(1 - length), 0.0001f);
+            }
+        });
 
     if (display)
     {
@@ -255,9 +259,6 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
 
     }
 
-    depth.release(); image.release();
-    _normals.release(); _points.release();
-    _newNormals.release(); _newPoints.release();
     points.release(); normals.release();
     
 }
