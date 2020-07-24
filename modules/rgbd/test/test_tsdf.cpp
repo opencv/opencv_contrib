@@ -263,6 +263,27 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     
 }
 
+int counterOfValid(Mat points)
+{
+    Vec4f* v;
+    int i, j;
+    int count = 0;
+    for (i = 0; i < points.rows; ++i)
+    {
+        v = (points.ptr<Vec4f>(i));
+        for (j = 0; j < points.cols; ++j)
+        {
+            if ((v[j])[0] != 0 ||
+                (v[j])[1] != 0 ||
+                (v[j])[2] != 0)
+            {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
 void valid_points_test(bool isHashTSDF)
 {
     Ptr<kinfu::Params> _params;
@@ -279,7 +300,8 @@ void valid_points_test(bool isHashTSDF)
     UMat _newPoints, _newNormals;
     Mat  points, normals;
     Mat image;
-    int anfas, profile;
+    int i, j, anfas, profile;
+    Vec4f *v;
     AccessFlag af = ACCESS_READ;
 
     Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose,
@@ -290,16 +312,12 @@ void valid_points_test(bool isHashTSDF)
     volume->raycast(poses[0], _params->intr, _params->frameSize, _points, _normals);
     normals = _normals.getMat(af);
     points = _points.getMat(af);
-    
-    //Mat mask(points.rows, points.cols, points.type(), Scalar::all(0));
-    //points = points & mask;
-    //cout << points;
-    //anfas = countNonZero(points);
-    
+    patchNaNs(points);
+    anfas = counterOfValid(points);
+
     if (display)
     {
         imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
-        
         //renderPointsNormals(points, normals, image, _params->lightPose);
         imshow("render", image);
         waitKey(30000);
@@ -309,19 +327,21 @@ void valid_points_test(bool isHashTSDF)
 
     normals = _newNormals.getMat(af);
     points = _newPoints.getMat(af);
-    profile = countNonZero(points);
+    patchNaNs(points);
+    profile = counterOfValid(points);
 
     if (display)
     {
         imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
-        
         //renderPointsNormals(points, normals, image, _params->lightPose);
         imshow("render", image);
         waitKey(30000);
     }
     cout << "---------------------" << endl;
-    cout << anfas << "|" << profile << endl;
-    cout << "+++++++++++++++++++++" << endl;
+    cout << profile << "|" << anfas << endl;
+    cout << "---------------------"  << endl;
+    float percentValidity = float(profile) / float(anfas);
+    ASSERT_LT(0.5 - percentValidity, 0.1);
 }
 
 TEST(TSDF, raycast_normals)
