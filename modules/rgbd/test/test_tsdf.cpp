@@ -192,6 +192,17 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     Mat image;
     AccessFlag af = ACCESS_READ;
     
+    auto normalCheck = [](Vec4f& vector, const int* position)
+    {
+        if (!isnan(vector[0]))
+        {
+            float length = vector[0] * vector[0] +
+                vector[1] * vector[1] +
+                vector[2] * vector[2];
+            ASSERT_LT(abs(1 - length), 0.0001f);
+        }
+    };
+
     Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose, 
                                 _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight, 
                                 _params->truncateThreshold, _params->volumeDims);
@@ -212,16 +223,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     }
 
     normals = _normals.getMat(af);
-    normals.forEach<Vec4f>([](Vec4f& vector, const int* position)
-        {
-            if (!isnan(vector[0]))
-            {
-                float length = vector[0] * vector[0] +
-                    vector[1] * vector[1] +
-                    vector[2] * vector[2];
-                ASSERT_LT(abs(1 - length), 0.0001f);
-            }
-        });
+    normals.forEach<Vec4f>(normalCheck);
     
     if (display)
     {
@@ -234,28 +236,19 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     
     if (isRaycast)
     {
-    volume->raycast(poses[17], _params->intr, _params->frameSize, _newPoints, _newNormals);
+        volume->raycast(poses[17], _params->intr, _params->frameSize, _newPoints, _newNormals);
 
-    normals = _newNormals.getMat(af);
-    normals.forEach<Vec4f>([](Vec4f& vector, const int* position)
+        normals = _newNormals.getMat(af);
+        normals.forEach<Vec4f>(normalCheck);
+
+        if (display)
         {
-            if (!isnan(vector[0]))
-            {
-                float length = vector[0] * vector[0] +
-                    vector[1] * vector[1] +
-                    vector[2] * vector[2];
-                ASSERT_LT(abs(1 - length), 0.0001f);
-            }
-        });
-
-    if (display)
-    {
-        imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
-        points = _newPoints.getMat(af);
-        //renderPointsNormals(points, normals, image, _params->lightPose);
-        imshow("render", image);
-        waitKey(30000);
-    }
+            imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
+            points = _newPoints.getMat(af);
+            //renderPointsNormals(points, normals, image, _params->lightPose);
+            imshow("render", image);
+            waitKey(30000);
+        }
 
     }
 
@@ -337,9 +330,9 @@ void valid_points_test(bool isHashTSDF)
         imshow("render", image);
         waitKey(30000);
     }
-    cout << "---------------------" << endl;
-    cout << profile << "|" << anfas << endl;
-    cout << "---------------------"  << endl;
+    //cout << "---------------------" << endl;
+    //cout << profile << "|" << anfas << endl;
+    //cout << "---------------------"  << endl;
     float percentValidity = float(profile) / float(anfas);
     ASSERT_LT(0.5 - percentValidity, 0.1);
 }
