@@ -1,5 +1,5 @@
 set(the_description "Point Cloud Object Fitting API")
-ocv_define_module(ptcloud opencv_core opencv_highgui opencv_viz WRAP python)
+ocv_define_module(ptcloud opencv_core opencv_highgui opencv_viz opencv_surface_matching WRAP python)
 
 # add test data from samples dir to contrib/ptcloud
 ocv_add_testdata(samples/ contrib/ptcloud FILES_MATCHING PATTERN "*.ply")

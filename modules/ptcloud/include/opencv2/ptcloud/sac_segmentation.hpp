@@ -121,13 +121,54 @@ namespace ptcloud
             std::pair<double, double> getInliers(Mat cloud, std::vector<unsigned> indices, const double threshold, std::vector<unsigned>& inliers);
     };
 
+    class CV_EXPORTS_W SACCylinderModel : public SACModel {
+        public:
+            Point3d pt_on_axis;
+            Vec3d axis_dir;
+            double radius;
+            double size = 20;
+
+            ~ SACCylinderModel()
+            {
+
+            }
+
+            SACCylinderModel() {
+
+            }
+
+            // /** @brief Create a spherical model based on the given center and radius.
+
+            // @param center the center point of the sphere
+            // @param radius the radius of the sphere.
+            // */
+
+            // SACCylinderModel(const std::vector<double> Coefficients);
+
+            /** @brief Create a spherical model based on the parametric coefficients.
+
+            This is very helpful for creating a model for the fit models using SACModelFitting class.
+
+            @param Coefficients parametric coefficients for the Sphere model
+            */
+
+            SACCylinderModel(const std::vector<double> Coefficients);
+
+            viz::WCylinder WindowWidget ();
+
+            std::pair<double, double> getInliers(Mat cloud, Mat normals, std::vector<unsigned> indices, const double threshold, std::vector<unsigned>& inliers, double normal_distance_weight_ = 0);
+    };
+    
     class CV_EXPORTS_W SACModelFitting {
         private:
             Mat cloud;
+            Mat normals;
+            bool normals_available = false;
             int model_type;
             int method_type;
             double threshold;
             long unsigned max_iters;
+            double normal_distance_weight_ = 0;
 
         public:
             // cv::Mat remainingCloud; // will be used while segmentation
@@ -168,6 +209,10 @@ namespace ptcloud
             */
             void fit_once();
 
+            void setCloud(Mat cloud);
+
+            void setCloud(Mat cloud, bool with_normals=false);
+
             /** @brief Set the threshold for the fitting.
             The threshold is usually the distance from the boundary of model, but may vary from model to model.
 
@@ -182,12 +227,21 @@ namespace ptcloud
             @param iterations the threshold to set.
             */
             void set_iterations (long unsigned iterations);
+
+            /** @brief Set the weight given to normal alignment before comparing overall error with threshold.
+             *  By default it is set to 0. 
+            @param weight the desired normal alignment weight (between 0 to 1).
+            */
+            void set_normal_distance_weight(double weight);
     };
 
     bool getSphereFromPoints(const Vec3f*&, const vector<unsigned int>&, Point3d&, double&);
 
     Vec4d getPlaneFromPoints(const Vec3f*&, const std::vector<unsigned int>&, cv::Point3d&);
-
+    
+    bool getCylinderFromPoints(Mat cloud, Mat normal,
+                                    const std::vector<unsigned> &inliers, vector<double> & coefficients) ;
+    
     double euclideanDist(Point3d& p, Point3d& q);
 
 } // ptcloud
