@@ -277,7 +277,7 @@ void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray im
 }
 // ----------------------------
 
-static const bool display = true;
+static const bool display = false;
 
 void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, bool isFetchNormals)
 {
@@ -308,7 +308,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
         }
     };
 
-    Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose, 
+    Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix, 
                                 _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight, 
                                 _params->truncateThreshold, _params->volumeDims);
     volume->integrate(depth, _params->depthFactor, poses[0], _params->intr);
@@ -402,7 +402,7 @@ void valid_points_test(bool isHashTSDF)
     Vec4f *v;
     AccessFlag af = ACCESS_READ;
 
-    Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose,
+    Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix,
         _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight,
         _params->truncateThreshold, _params->volumeDims);
     volume->integrate(depth, _params->depthFactor, poses[0], _params->intr);

@@ -12,18 +12,19 @@ namespace cv
 {
 namespace kinfu
 {
-cv::Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, cv::Affine3f _pose,
+cv::Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, cv::Matx44f _pose,
                            float _raycastStepFactor, float _truncDist, int _maxWeight,
                            float _truncateThreshold, Point3i _resolution)
 {
+    cv::Affine3f _apose = _pose;
     if (_volumeType == VolumeType::TSDF)
     {
-        return makeTSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
+        return makeTSDFVolume(_voxelSize, _apose, _raycastStepFactor, _truncDist, _maxWeight,
                               _resolution);
     }
     else if (_volumeType == VolumeType::HASHTSDF)
     {
-        return makeHashTSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
+        return makeHashTSDFVolume(_voxelSize, _apose, _raycastStepFactor, _truncDist, _maxWeight,
                                   _truncateThreshold);
     }
     else

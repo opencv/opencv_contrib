@@ -50,7 +50,7 @@ enum class VolumeType
     HASHTSDF = 1
 };
 
-CV_EXPORTS_W cv::Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, cv::Affine3f _pose,
+CV_EXPORTS_W cv::Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, cv::Matx44f _pose,
                            float _raycastStepFactor, float _truncDist, int _maxWeight,
                            float _truncateThreshold, Point3i _resolution);
 }  // namespace kinfu

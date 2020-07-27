@@ -151,7 +151,7 @@ KinFuImpl<MatType>::KinFuImpl(const Params &_params) :
     icp(makeICP(params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh)),
     pyrPoints(), pyrNormals()
 {
-    volume = makeVolume(params.volumeType, params.voxelSize, params.volumePose, params.raycast_step_factor,
+    volume = makeVolume(params.volumeType, params.voxelSize, params.volumePose.matrix, params.raycast_step_factor,
                         params.tsdf_trunc_dist, params.tsdf_max_weight, params.truncateThreshold, params.volumeDims);
     reset();
 }
