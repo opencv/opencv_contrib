@@ -173,12 +173,12 @@ private: // methods aux
         float tol);
 
     void transform_points_forward(
-        const cv::Matx33f &T,
+        InputArray T,
         const std::vector<cv::Point2f> &X,
         std::vector<cv::Point2f> &Xt);
 
     void transform_points_inverse(
-        const cv::Matx33f &T,
+        InputArray T,
         const std::vector<cv::Point2f> &X,
         std::vector<cv::Point2f> &Xt);
 
