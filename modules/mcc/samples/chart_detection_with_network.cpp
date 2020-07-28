@@ -1,48 +1,9 @@
-/*
-By downloading, copying, installing or using the software you agree to this
-license. If you do not agree to this license, do not download, install,
-copy or use the software.
-
-                          License Agreement
-               For Open Source Computer Vision Library
-                       (3-clause BSD License)
-
-Copyright (C) 2013, OpenCV Foundation, all rights reserved.
-Third party copyrights are property of their respective owners.
-
-Redistribution and use in source and binary forms, with or without modification,
-are permitted provided that the following conditions are met:
-
-  * Redistributions of source code must retain the above copyright notice,
-    this list of conditions and the following disclaimer.
-
-  * Redistributions in binary form must reproduce the above copyright notice,
-    this list of conditions and the following disclaimer in the documentation
-    and/or other materials provided with the distribution.
-
-  * Neither the names of the copyright holders nor the names of the contributors
-    may be used to endorse or promote products derived from this software
-    without specific prior written permission.
-
-This software is provided by the copyright holders and contributors "as is" and
-any express or implied warranties, including, but not limited to, the implied
-warranties of merchantability and fitness for a particular purpose are
-disclaimed. In no event shall copyright holders or contributors be liable for
-any direct, indirect, incidental, special, exemplary, or consequential damages
-(including, but not limited to, procurement of substitute goods or services;
-loss of use, data, or profits; or business interruption) however caused
-and on any theory of liability, whether in contract, strict liability,
-or tort (including negligence or otherwise) arising in any way out of
-the use of this software, even if advised of the possibility of such damage.
-*/
-
-#include <opencv2/opencv_modules.hpp>
+#include <opencv2/core.hpp>
 
 #include <opencv2/highgui.hpp>
 #include <opencv2/mcc.hpp>
 #include <opencv2/dnn.hpp>
 #include <iostream>
-
 
 using namespace std;
 using namespace cv;
@@ -50,35 +11,49 @@ using namespace mcc;
 
 const char *about = "Basic chart detection using neural network";
 const char *keys = {
-    "{t              |         | chartType: 0-Standard, 1-DigitalSG, 2-Vinyl}"
-    "{m        |       | File path of model, if you don't have the model you can find the link in the documentation}"
-    "{pb        |       | File path of pbtxt file, available along with with the model file }"
-    "{v        |       | Input from video file, if ommited, input comes from camera }"
-    "{ci       | 0     | Camera id if input doesnt come from video (-v) }"
-    "{nc       | 1     | Maximum number of charts in the image }"};
+    "{ help h usage ? |    | show this message }"
+    "{t       | 0   | chartType: 0-Standard, 1-DigitalSG, 2-Vinyl, default:0}"
+    "{m       |     | File path of model, if you don't have the model you can \
+                      find the link in the documentation}"
+    "{pb      |     | File path of pbtxt file, available along with with the model \
+                      file }"
+    "{v       |     | Input from video file, if ommited, input comes from camera }"
+    "{ci      | 0   | Camera id if input doesnt come from video (-v) }"
+    "{nc      | 1   | Maximum number of charts in the image }"
+    "{use_gpu |     | Add this flag if you want to use gpu}"};
 
 int main(int argc, char *argv[])
 {
+    // ----------------------------------------------------------
+    // Scroll down a bit (~50 lines) to find actual relevant code
+    // ----------------------------------------------------------
+
     CommandLineParser parser(argc, argv, keys);
     parser.about(about);
 
-    if (argc < 4)
+    if (parser.has("help"))
     {
         parser.printMessage();
-        return 0;
+        return -1;
     }
 
-    CV_Assert(0<=parser.get<int>("t") && parser.get<int>("t")<3);
-    TYPECHART chartType = TYPECHART(parser.get<int>("t"));
-    string model_path = parser.get<string> ("m");
-    string pbtxt_path = parser.get<string> ("pb");
+    int t = parser.get<int>("t");
+
+    CV_Assert(0 <= t && t <= 2);
+    TYPECHART chartType = TYPECHART(t);
+
+    string model_path = parser.get<string>("m");
+    string pbtxt_path = parser.get<string>("pb");
+
     int camId = parser.get<int>("ci");
     int nc = parser.get<int>("nc");
+
     String video;
+
     if (parser.has("v"))
-    {
         video = parser.get<String>("v");
-    }
+
+    bool use_gpu = parser.has("use_gpu");
 
     if (!parser.check())
     {
@@ -99,16 +74,25 @@ int main(int argc, char *argv[])
         waitTime = 10;
     }
 
+    //--------------------------------------------------------------------------
+    //-------------------------Actual Relevant Code-----------------------------
+    //--------------------------------------------------------------------------
+
     //load the network
 
-	cv::dnn::Net net = cv::dnn::readNetFromTensorflow(model_path, pbtxt_path);
-    net.setPreferableBackend(dnn::DNN_BACKEND_CUDA);
-    net.setPreferableTarget(dnn::DNN_TARGET_CUDA);
+    cv::dnn::Net net = cv::dnn::readNetFromTensorflow(model_path, pbtxt_path);
+
+    if (use_gpu)
+    {
+        net.setPreferableBackend(dnn::DNN_BACKEND_CUDA);
+        net.setPreferableTarget(dnn::DNN_TARGET_CUDA);
+    }
 
     Ptr<CCheckerDetector> detector = CCheckerDetector::create();
-    if(!detector->setNet(net))
+    if (!detector->setNet(net))
     {
-        cout<<"Loading Model failed: Falling back to standard techniques"<<endl;
+        cout << "Loading Model failed: Aborting" << endl;
+        return 0;
     }
 
     while (inputVideo.grab())
@@ -116,8 +100,7 @@ int main(int argc, char *argv[])
         Mat image, imageCopy;
         inputVideo.retrieve(image);
 
-        imageCopy=image.clone();
-
+        imageCopy = image.clone();
 
         // Marker type to detect
         if (!detector->process(image, chartType, nc, true))
@@ -128,16 +111,14 @@ int main(int argc, char *argv[])
         {
 
             // get checker
-            std::vector<Ptr<mcc::CChecker>> checkers;
-            detector->getListColorChecker(checkers);
-            for(Ptr<mcc::CChecker> checker: checkers)
+            std::vector<Ptr<mcc::CChecker>> checkers = detector->getListColorChecker();
+            for (Ptr<mcc::CChecker> checker : checkers)
             {
                 // current checker
 
                 Ptr<CCheckerDraw> cdraw = CCheckerDraw::create(checker);
                 cdraw->draw(image);
             }
-
         }
 
         imshow("image result | q or esc to quit", image);

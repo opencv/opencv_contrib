@@ -6,7 +6,10 @@
 
 #include <vector>
 
-namespace opencv_test { namespace {
+namespace opencv_test
+{
+namespace
+{
 
 using namespace std;
 /****************************************************************************************\
@@ -15,40 +18,39 @@ using namespace std;
 
 void runCCheckerDraw(Ptr<CChecker> pChecker, int rows, int cols, unsigned int number_of_cells_in_colorchecker)
 {
-    cv::Mat img(rows, cols, CV_8UC3, {0,0,0});
+    cv::Mat img(rows, cols, CV_8UC3, {0, 0, 0});
 
     Ptr<CCheckerDraw> cdraw = CCheckerDraw::create(pChecker);
 
     cdraw->draw(img);
 
     //make sure this contains extacly as many rectangles as in the pChecker
-    vector<vector<Point> > contours;
+    vector<vector<Point>> contours;
     cv::cvtColor(img, img, COLOR_BGR2GRAY);
-    findContours( img, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
+    findContours(img, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
 
     ASSERT_EQ(contours.size(), number_of_cells_in_colorchecker);
-
 }
 
 TEST(CV_mccRunCCheckerDrawTest, accuracy_MCC24)
 {
     Ptr<CChecker> pChecker = CChecker::create();
-    pChecker->target = MCC24;
-    pChecker->box = {{0,0} , {480,0} , {480, 640}, {0, 640} };
+    pChecker->setTarget(MCC24);
+    pChecker->setBox({{0, 0}, {480, 0}, {480, 640}, {0, 640}});
     runCCheckerDraw(pChecker, 640, 480, 24);
 }
 TEST(CV_mccRunCCheckerDrawTest, accuracy_SG140)
 {
     Ptr<CChecker> pChecker = CChecker::create();
-    pChecker->target = SG140;
-    pChecker->box = {{0,0} , {480,0} , {480, 640}, {0, 640} };
+    pChecker->setTarget(SG140);
+    pChecker->setBox({{0, 0}, {480, 0}, {480, 640}, {0, 640}});
     runCCheckerDraw(pChecker, 640, 480, 140);
 }
 TEST(CV_mccRunCCheckerDrawTest, accuracy_VINYL18)
 {
     Ptr<CChecker> pChecker = CChecker::create();
-    pChecker->target = VINYL18;
-    pChecker->box = {{0,0} , {480,0} , {480, 640}, {0, 640} };
+    pChecker->setTarget(VINYL18);
+    pChecker->setBox({{0, 0}, {480, 0}, {480, 640}, {0, 640}});
     runCCheckerDraw(pChecker, 640, 480, 18);
 }
 
@@ -59,15 +61,11 @@ TEST(CV_mccRunCCheckerDrawTest, accuracy_VINYL18)
 void runCCheckerDetectorBasic(std::string image_name, TYPECHART chartType)
 {
     Ptr<CCheckerDetector> detector = CCheckerDetector::create();
-    std::string path = cvtest::findDataFile("mcc/"+image_name);
+    std::string path = cvtest::findDataFile("mcc/" + image_name);
     cv::Mat img = imread(path);
     ASSERT_FALSE(img.empty()) << "Test image can't be loaded: " << path;
 
-
     ASSERT_TRUE(detector->process(img, chartType));
-
-
-
 }
 TEST(CV_mccRunCCheckerDetectorBasic, accuracy_SG140)
 {

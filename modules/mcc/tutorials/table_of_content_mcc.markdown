@@ -12,3 +12,9 @@ ColorChecker Detection {#tutorial_table_of_content_mcc}
     *Author:* Ajit Pant
 
     Boosting up the detection accuracy by using a neural network.
+
+-   @subpage tutorial_mcc_debugging_the_system
+
+    *Author:* Ajit Pant
+
+    How to configure the hyperparameters.

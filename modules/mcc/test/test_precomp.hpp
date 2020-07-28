@@ -8,8 +8,9 @@
 #include "opencv2/ts.hpp"
 #include "opencv2/mcc.hpp"
 
-namespace opencv_test {
-    using namespace cv::mcc;
+namespace opencv_test
+{
+using namespace cv::mcc;
 }
 
 #endif
