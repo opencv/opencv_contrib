@@ -24,18 +24,18 @@ bool PoseGraph::isValid() const
     if (numNodes <= 0 || numEdges <= 0)
         return false;
 
-    std::unordered_set<int> nodeSet;
-    std::vector<int> nodeList;
+    std::unordered_set<int> nodesVisited;
+    std::vector<int> nodesToVisit;
 
-    nodeList.push_back(nodes.at(0).getId());
-    nodeSet.insert(nodes.at(0).getId());
+    nodesToVisit.push_back(nodes.at(0).getId());
 
     bool isGraphConnected = false;
-    if (!nodeList.empty())
+    while (!nodesToVisit.empty())
     {
-        int currNodeId = nodeList.back();
-        nodeList.pop_back();
+        int currNodeId = nodesToVisit.back();
+        nodesToVisit.pop_back();
 
+        // Since each node does not maintain its neighbor list
         for (int i = 0; i < numEdges; i++)
         {
             const PoseGraphEdge& potentialEdge = edges.at(i);
@@ -52,26 +52,29 @@ bool PoseGraph::isValid() const
 
             if (nextNodeId != -1)
             {
-                nodeList.push_back(nextNodeId);
-                nodeSet.insert(nextNodeId);
+                if(nodesVisited.count(currNodeId) == 0)
+                {
+                    nodesVisited.insert(currNodeId);
+                }
+                nodesToVisit.push_back(nextNodeId);
             }
         }
-
-        isGraphConnected = (int(nodeSet.size()) == numNodes);
-
-        bool invalidEdgeNode = false;
-        for (int i = 0; i < numEdges; i++)
-        {
-            const PoseGraphEdge& edge = edges.at(i);
-            if ((nodeSet.count(edge.getSourceNodeId()) != 1) || (nodeSet.count(edge.getTargetNodeId()) != 1))
-            {
-                invalidEdgeNode = true;
-                break;
-            }
-        }
-        return isGraphConnected && !invalidEdgeNode;
     }
-    return false;
+
+    isGraphConnected = (int(nodesVisited.size()) == numNodes);
+
+    bool invalidEdgeNode = false;
+    for (int i = 0; i < numEdges; i++)
+    {
+        const PoseGraphEdge& edge = edges.at(i);
+        // edges have spurious source/target nodes
+        if ((nodesVisited.count(edge.getSourceNodeId()) != 1) || (nodesVisited.count(edge.getTargetNodeId()) != 1))
+        {
+            invalidEdgeNode = true;
+            break;
+        }
+    }
+    return isGraphConnected && !invalidEdgeNode;
 }
 
 float PoseGraph::createLinearSystem(BlockSparseMat<float, 6, 6>& H, Mat& B)
@@ -166,7 +169,7 @@ PoseGraph PoseGraph::update(const Mat& deltaVec)
     return updatedPoseGraph;
 }
 
-//! NOTE: We follow the left-composition for the infinitesimal pose update
+//! NOTE: We follow left-composition for the infinitesimal pose update
 void Optimizer::optimizeGaussNewton(const Optimizer::Params& params, PoseGraph& poseGraph)
 {
     PoseGraph poseGraphOriginal = poseGraph;

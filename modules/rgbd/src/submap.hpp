@@ -29,7 +29,7 @@ class Submap
     };
 
     Submap(int _id, Type _type, const VolumeParams& volumeParams, const cv::Affine3f& _pose = cv::Affine3f::Identity(), int _startFrameId = 0)
-        : id(_id), type(_type), pose(_pose), volume(volumeParams), startFrameId(_startFrameId)
+        : id(_id), type(_type), pose(_pose), startFrameId(_startFrameId), volume(volumeParams)
     {
         //! First camera pose is identity w.r.t submap pose
         cameraTraj.emplace_back(Matx44f::eye());
@@ -71,13 +71,6 @@ class Submap
         return cameraTraj.size() > 0 ? cameraTraj.back() : cv::Affine3f::Identity();
     }
 
-   public:
-    //! TODO: Should we support submaps for regular volumes?
-    static constexpr int FRAME_VISIBILITY_THRESHOLD = 5;
-    //! TODO: Add support for GPU arrays (UMat)
-    std::vector<MatType> pyrPoints;
-    std::vector<MatType> pyrNormals;
-    HashTSDFVolumeCPU volume;
 
    private:
     const int id;
@@ -88,6 +81,14 @@ class Submap
 
     int startFrameId;
     int stopFrameId;
+
+   public:
+    //! TODO: Should we support submaps for regular volumes?
+    static constexpr int FRAME_VISIBILITY_THRESHOLD = 5;
+    //! TODO: Add support for GPU arrays (UMat)
+    std::vector<MatType> pyrPoints;
+    std::vector<MatType> pyrNormals;
+    HashTSDFVolumeCPU volume;
 };
 
 template<typename MatType>
@@ -146,6 +147,8 @@ class SubmapManager
 
     void setPose(int _id);
 
+    /* void updatePoseGraph(); */
+
    protected:
     /* void addCameraCameraConstraint(int prevId, int currId, const Affine3f& prevPose, const Affine3f& currPose); */
 
@@ -188,9 +191,9 @@ cv::Ptr<Submap<MatType>> SubmapManager<MatType>::getCurrentSubmap(void) const
 template<typename MatType>
 bool SubmapManager<MatType>::shouldCreateSubmap(int currFrameId)
 {
-    cv::Ptr<Submap<MatType>> curr_submap = getCurrentSubmap();
-    int allocate_blocks                  = curr_submap->getTotalAllocatedBlocks();
-    int visible_blocks                   = curr_submap->getVisibleBlocks(currFrameId);
+    cv::Ptr<Submap<MatType>> currSubmap = getCurrentSubmap();
+    int allocate_blocks                  = currSubmap->getTotalAllocatedBlocks();
+    int visible_blocks                   = currSubmap->getVisibleBlocks(currFrameId);
     float ratio                          = float(visible_blocks) / float(allocate_blocks);
     std::cout << "Ratio: " << ratio << "\n";
 
@@ -198,6 +201,33 @@ bool SubmapManager<MatType>::shouldCreateSubmap(int currFrameId)
         return true;
     return false;
 }
+
+/* template<typename MatType> */
+/* void SubmapManager<MatType>::constructPoseGraph() */
+/* { */
+/*     for(int i = 0; i < submapList.size(); i++) */
+/*     { */
+/*         cv::Ptr<Submap<MatType>> currSubmap = submapList.at(i); */
+/*         PoseGraphNode node(currSubmap->getId(), currSubmap->getPose()); */
+
+/*         if(currSubmap->getId() == 0) */
+/*             node.setFixed(); */
+
+/*         poseGraph.addNode(node); */
+/*     } */
+
+/*     //! TODO: How to add edges between pose graphs */
+/*     for(int i = 0; i < submapList.size(); i++) */
+/*     { */
+
+/*     } */
+/* } */
+
+/* template<typename MatType> */
+/* void SubmapManager<MatType>::updatePoseGraph() */
+/* { */
+/*     constructPoseGraph(); */
+/* } */
 
 }  // namespace kinfu
 }  // namespace cv

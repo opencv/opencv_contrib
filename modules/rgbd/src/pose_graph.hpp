@@ -18,15 +18,17 @@ namespace kinfu
 struct PoseGraphNode
 {
    public:
-    explicit PoseGraphNode(int _nodeId, const Affine3f& _pose) : nodeId(_nodeId), pose(_pose) {}
+    explicit PoseGraphNode(int _nodeId, const Affine3f& _pose) : nodeId(_nodeId), isFixed(false), pose(_pose)  {}
     virtual ~PoseGraphNode();
 
     int getId() const { return nodeId; }
     Affine3f getPose() const { return pose; }
     void setPose(const Affine3f& _pose) { pose = _pose; }
+    void setFixed(bool val = true) { isFixed = val; }
 
    private:
     int nodeId;
+    bool isFixed;
     Affine3f pose;
 };
 

@@ -396,7 +396,7 @@ int main(int argc, char **argv)
     ds->updateParams(*params);
 
     // Enables OpenCL explicitly (by default can be switched-off)
-    cv::setUseOptimized(true);
+    cv::setUseOptimized(false);
 
     if(!idle)
         largeKinfu = LargeKinfu::create(params);

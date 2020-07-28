@@ -62,7 +62,7 @@ struct VolumeParams
         Number of voxels in each dimension for volumeUnit
         Applicable only for hashTSDF.
     */
-    int unitResolution;
+    int unitResolution = 0;
 
     /** @brief Initial pose of the volume in meters */
     cv::Affine3f pose;

@@ -37,11 +37,14 @@ struct BlockSparseMat
             return seed;
         }
     };
-    typedef std::unordered_map<Point2i, Matx<_Tp, blockM, blockN>, Point2iHash> IDtoBlockValueMap;
+    typedef Matx<_Tp, blockM, blockN> MatType;
+    typedef std::unordered_map<Point2i, MatType, Point2iHash> IDtoBlockValueMap;
     static constexpr int blockSize = blockM * blockN;
+
+
     BlockSparseMat(int _nBlocks) : nBlocks(_nBlocks), ijValue() {}
 
-    Matx66f& refBlock(int i, int j)
+    MatType& refBlock(int i, int j)
     {
         Point2i p(i, j);
         auto it = ijValue.find(p);
@@ -67,7 +70,7 @@ struct BlockSparseMat
         for (auto ijv : ijValue)
         {
             int xb = ijv.first.x, yb = ijv.first.y;
-            Matx66f vblock = ijv.second;
+            MatType vblock = ijv.second;
             for (int i = 0; i < blockSize; i++)
             {
                 for (int j = 0; j < blockSize; j++)

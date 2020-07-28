@@ -240,12 +240,14 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
             cv::Ptr<Submap<MatType>> currTrackingSubmap = submapMgr->getSubmap(i);
             Affine3f affine;
 
-            trackingSuccess =
-                icp->estimateTransform(affine, currTrackingSubmap->pyrPoints, currTrackingSubmap->pyrNormals, newPoints, newNormals);
+            int numInliers = 0;
+            std::tie(trackingSuccess, numInliers) =
+                icp->estimateTransformInliers(affine, currTrackingSubmap->pyrPoints, currTrackingSubmap->pyrNormals, newPoints, newNormals);
             if (trackingSuccess)
             {
                 //! Compose current pose and add to camera trajectory
                 currTrackingSubmap->updateCameraPose(affine);
+                std::cout << "Number of inliers: " << numInliers << "\n";
             }
 
             if (currTrackingSubmap->getType() == Submap<MatType>::Type::CURRENT_ACTIVE)
