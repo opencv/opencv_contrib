@@ -15,3 +15,4 @@ struct pyopencvVecConverter<Ptr<mcc::CChecker>>
     }
 };
 typedef std::vector<cv::Ptr<mcc::CChecker>> vector_Ptr_CChecker;
+typedef dnn::Net dnn_Net;

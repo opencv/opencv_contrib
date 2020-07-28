@@ -47,8 +47,6 @@ namespace mcc
 //! @addtogroup mcc
 //! @{
 
-using namespace dnn;
-
 /**
  * @brief Parameters for the detectMarker process:
  * - int adaptiveThreshWinSizeMin : minimum window size for adaptive
@@ -143,7 +141,7 @@ public:
     *         false otherwise.
     */
 
-    CV_WRAP virtual bool setNet(Net net) = 0;
+    CV_WRAP virtual bool setNet(dnn::Net net) = 0;
 
     /** \brief Find the ColorCharts in the given image.
     *
@@ -165,8 +163,8 @@ public:
     * \return true if atleast one chart is detected otherwise false
     */
 
-    CV_WRAP virtual bool
-    process(const InputArray &image, const TYPECHART chartType,
+    CV_WRAP_AS(processWithROI) virtual bool
+    process(InputArray image, const TYPECHART chartType,
             const std::vector<Rect> &regionsOfInterest,
             const int nc = 1, bool useNet = false,
             const Ptr<DetectorParameters> &params = DetectorParameters::create()) = 0;
@@ -194,7 +192,7 @@ public:
     */
 
     CV_WRAP virtual bool
-    process(const InputArray &image, const TYPECHART chartType,
+    process(InputArray image, const TYPECHART chartType,
             const int nc = 1, bool useNet = false,
             const Ptr<DetectorParameters> &params = DetectorParameters::create()) = 0;
 
