@@ -370,6 +370,47 @@ struct HashRaycastInvoker : ParallelLoopBody
                         currTsdf            = currVoxel.tsdf;
                         currWeight          = currVoxel.weight;
                         stepSize            = tstep;
+
+                        if (true)
+                        {
+                            //std::cout << "=============" << std::endl;
+                            //std::cout << currTsdf << " " << currWeight << std::endl;
+                            //std::cout << currVolUnitPos << std::endl;
+                            //std::cout << volUnitLocalIdx << std::endl;
+
+                            cv::Vec3i neighbourCoords[] = {
+                                Vec3i(0, 0, 0),
+                                Vec3i(0, 0, 1),
+                                Vec3i(0, 1, 0),
+                                Vec3i(0, 1, 1),
+                                Vec3i(1, 0, 0),
+                                Vec3i(1, 0, 1),
+                                Vec3i(1, 1, 0),
+                                Vec3i(1, 1, 1) };
+
+                            int ix = cvFloor(currVolUnitPos.x);
+                            int iy = cvFloor(currVolUnitPos.y);
+                            int iz = cvFloor(currVolUnitPos.z);
+
+                            float tx = currVolUnitPos.x - ix;
+                            float ty = currVolUnitPos.y - iy;
+                            float tz = currVolUnitPos.z - iz;
+                            std::cout << tx << " " << ty << " " << tx << std::endl;
+                            TsdfType vx[8];
+                            for (int i = 0; i < 8; i++)
+                                vx[i] = currVolumeUnit->at(neighbourCoords[i] + volUnitLocalIdx).tsdf;
+
+                            TsdfType v00 = vx[0] + tz * (vx[1] - vx[0]);
+                            TsdfType v01 = vx[2] + tz * (vx[3] - vx[2]);
+                            TsdfType v10 = vx[4] + tz * (vx[5] - vx[4]);
+                            TsdfType v11 = vx[6] + tz * (vx[7] - vx[6]);
+
+                            TsdfType v0 = v00 + ty * (v01 - v00);
+                            TsdfType v1 = v10 + ty * (v11 - v10);
+
+                            currTsdf = v0 + tx * (v1 - v0);
+                        }
+
                     }
                     //! Surface crossing
                     if (prevTsdf > 0.f && currTsdf <= 0.f && currWeight > 0)

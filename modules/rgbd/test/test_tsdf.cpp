@@ -132,7 +132,7 @@ struct SemisphereScene : Scene
         Point3f subSpherePose = p - Point3f(0.3f, -0.1f, -0.3f);
         float subSphere = (float)cv::norm(subSpherePose) - subSphereRadius;
 
-        float res = min({plane, sphereMinusBox, subSphere});
+        float res = min({sphereMinusBox, subSphere, plane});
         return res;
     }
 
@@ -277,7 +277,7 @@ void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray im
 }
 // ----------------------------
 
-static const bool display = false;
+static const bool display = true;
 
 void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, bool isFetchNormals)
 {
