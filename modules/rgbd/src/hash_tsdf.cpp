@@ -271,10 +271,6 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Point3f& point) const
 
 inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
 {
-
-    if (point.x < 1 || point.y < 1 || point.z < 1)
-        return nan3;
-
     Vec3f pointVec(point);
     Vec3f normal = Vec3f(0, 0, 0);
 
@@ -293,7 +289,7 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
         pointNext[c] = pointVec[c];
     }
 
-    double nv = sqrt(normal[0] * normal[0] +
+    float nv = sqrt(normal[0] * normal[0] +
                      normal[1] * normal[1] + 
                      normal[2] * normal[2]);
     return nv < 0.0001 ? nan3 : normal/nv;

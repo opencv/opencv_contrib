@@ -628,7 +628,7 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
         nv = v0 + tx*(v1 - v0);
     }
 
-    double nv = sqrt(na[0] * na[0] +
+    float nv = sqrt(na[0] * na[0] +
                      na[1] * na[1] +
                      na[2] * na[2]);
     return nv < 0.0001 ? nan3 : normal / nv;
