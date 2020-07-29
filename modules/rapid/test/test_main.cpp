@@ -35,8 +35,10 @@ TEST(CV_Rapid, rapid)
 
     // recover pose form different position
     Vec3f t_init = Vec3f(0.1f, 0, 5);
-    for(int i = 0; i < 2; i++) // do two iteration
-        rapid::rapid(img, 100, 20, vtx, tris, K, rot, t_init);
+    auto tracker = rapid::Rapid::create(vtx, tris);
+    // do two iterations
+    TermCriteria term(TermCriteria::MAX_ITER, 2, 0);
+    tracker->compute(img, 100, 20, K, rot, t_init, term);
 
     // assert that it improved from init
     ASSERT_LT(cv::norm(trans - t_init), 0.075);

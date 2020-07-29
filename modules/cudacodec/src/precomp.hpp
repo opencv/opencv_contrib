@@ -58,9 +58,9 @@
 #include <opencv2/core/utils/logger.hpp>
 
 #ifdef HAVE_NVCUVID
-    #if CUDA_VERSION >= 9000 && CUDA_VERSION < 10000
+    #if defined(HAVE_DYNLINK_NVCUVID_HEADER)
         #include <dynlink_nvcuvid.h>
-    #else
+    #elif defined(HAVE_NVCUVID_HEADER)
         #include <nvcuvid.h>
     #endif
 

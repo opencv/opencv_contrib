@@ -60,6 +60,7 @@
 #include <cstdio>
 
 #include "opencv2/cudev.hpp"
+#include "opencv2/core/persistence.hpp"
 
 #include "opencv2/opencv_modules.hpp"
 
@@ -2019,19 +2020,34 @@ NCVStatus ncvGrowDetectionsVector_host(NCVVector<Ncv32u> &pixelMask,
     return ncvStat;
 }
 
+#define RECT_X_IDX              0
+#define RECT_Y_IDX              1
+#define RECT_W_IDX              2
+#define RECT_H_IDX              3
+#define RECT_WEIGHT_IDX         4
+
+#define CUDA_CC_SIZE_W          0
+#define CUDA_CC_SIZE_H          1
+
 static NCVStatus loadFromXML(const cv::String &filename,
                       HaarClassifierCascadeDescriptor &haar,
                       std::vector<HaarStage64> &haarStages,
                       std::vector<HaarClassifierNode128> &haarClassifierNodes,
                       std::vector<HaarFeature64> &haarFeatures)
 {
-    CV_UNUSED(filename);
-    CV_UNUSED(haar);
-    CV_UNUSED(haarStages);
-    CV_UNUSED(haarClassifierNodes);
-    CV_UNUSED(haarFeatures);
-    CV_Error(cv::Error::StsNotImplemented, "Loading from XML file is not available");
-#if 0 // CvLoad is not available since OpenCV 4.0
+    const char *CUDA_CC_SIZE = "size";
+    const char *CUDA_CC_STAGES = "stages";
+    const char *CUDA_CC_STAGE_THRESHOLD = "stage_threshold";
+    const char *CUDA_CC_TREES = "trees";
+    const char *CUDA_CC_FEATURE = "feature";
+    const char *CUDA_CC_RECT = "rects";
+    const char *CUDA_CC_TILTED = "tilted";
+    const char *CUDA_CC_THRESHOLD = "threshold";
+    const char *CUDA_CC_LEFT_VAL = "left_val";
+    const char *CUDA_CC_RIGHT_VAL = "right_val";
+    const char *CUDA_CC_LEFT_NODE = "left_node";
+    const char *CUDA_CC_RIGHT_NODE = "right_node";
+
     NCVStatus ncvStat;
 
     haar.NumStages = 0;
@@ -2049,121 +2065,137 @@ static NCVStatus loadFromXML(const cv::String &filename,
     haarClassifierNodes.resize(0);
     haarFeatures.resize(0);
 
-    cv::Ptr<CvHaarClassifierCascade> oldCascade((CvHaarClassifierCascade*)cvLoad(filename.c_str(), 0, 0, 0));
-    if (!oldCascade)
-    {
-        return NCV_HAAR_XML_LOADING_EXCEPTION;
-    }
+    cv::FileStorage fs(filename, cv::FileStorage::READ | cv::FileStorage::FORMAT_XML);
 
-    haar.ClassifierSize.width = oldCascade->orig_window_size.width;
-    haar.ClassifierSize.height = oldCascade->orig_window_size.height;
+    if (!fs.isOpened())
+        return NCV_FILE_ERROR;
 
-    int stagesCount = oldCascade->count;
-    for(int s = 0; s < stagesCount; ++s) // by stages
+    const cv::FileNode &root = fs.getFirstTopLevelNode();
+    const cv::FileNode &fnSize = root[CUDA_CC_SIZE];
+
+    // collect the cascade classifier window size
+    haar.ClassifierSize.width = (int)fnSize[CUDA_CC_SIZE_W];
+    haar.ClassifierSize.height = (int)fnSize[CUDA_CC_SIZE_H];
+    CV_Assert(haar.ClassifierSize.height > 0 && haar.ClassifierSize.width > 0);
+
+    const cv::FileNode &fnStages = root[CUDA_CC_STAGES];
+    cv::FileNodeIterator it = fnStages.begin(), it_end = fnStages.end();
+
+    for (; it != it_end; ++it) // by stages
     {
+        cv::FileNode fnStage = *it;
         HaarStage64 curStage;
+
         curStage.setStartClassifierRootNodeOffset(static_cast<Ncv32u>(haarClassifierNodes.size()));
+        curStage.setStageThreshold((float)fnStage[CUDA_CC_STAGE_THRESHOLD]);
 
-        curStage.setStageThreshold(oldCascade->stage_classifier[s].threshold);
+        // iterate over the trees
+        const cv::FileNode &fnTrees = fnStage[CUDA_CC_TREES];
+        cv::FileNodeIterator it1 = fnTrees.begin(), it1_end = fnTrees.end();
 
-        int treesCount = oldCascade->stage_classifier[s].count;
-        for(int t = 0; t < treesCount; ++t) // by trees
+        for (; it1 != it1_end; ++it1) // by trees
         {
-            Ncv32u nodeId = 0;
-            CvHaarClassifier* tree = &oldCascade->stage_classifier[s].classifier[t];
+            cv::FileNode tree = *it1;
+            Ncv32u nodeId = (size_t)0;
+            HaarClassifierNode128 curNode;
 
-            int nodesCount = tree->count;
-            for(int n = 0; n < nodesCount; ++n)  //by features
+            curNode.setThreshold((float)tree[0][CUDA_CC_THRESHOLD]);
+
+            NcvBool bIsLeftNodeLeaf = false;
+            NcvBool bIsRightNodeLeaf = false;
+
+            HaarClassifierNodeDescriptor32 nodeLeft;
+
+            cv::FileNode leftNode = tree[0][CUDA_CC_LEFT_NODE];
+
+            if (leftNode.fs == NULL)
             {
-                CvHaarFeature* feature = &tree->haar_feature[n];
-
-                HaarClassifierNode128 curNode;
-                curNode.setThreshold(tree->threshold[n]);
-
-                NcvBool bIsLeftNodeLeaf = false;
-                NcvBool bIsRightNodeLeaf = false;
-
-                HaarClassifierNodeDescriptor32 nodeLeft;
-                if ( tree->left[n] <= 0 )
-                {
-                    Ncv32f leftVal = tree->alpha[-tree->left[n]];
-                    ncvStat = nodeLeft.create(leftVal);
-                    ncvAssertReturn(ncvStat == NCV_SUCCESS, ncvStat);
-                    bIsLeftNodeLeaf = true;
-                }
-                else
-                {
-                    Ncv32u leftNodeOffset = tree->left[n];
-                    nodeLeft.create((Ncv32u)(h_TmpClassifierNotRootNodes.size() + leftNodeOffset - 1));
-                    haar.bHasStumpsOnly = false;
-                }
-                curNode.setLeftNodeDesc(nodeLeft);
-
-                HaarClassifierNodeDescriptor32 nodeRight;
-                if ( tree->right[n] <= 0 )
-                {
-                    Ncv32f rightVal = tree->alpha[-tree->right[n]];
-                    ncvStat = nodeRight.create(rightVal);
-                    ncvAssertReturn(ncvStat == NCV_SUCCESS, ncvStat);
-                    bIsRightNodeLeaf = true;
-                }
-                else
-                {
-                    Ncv32u rightNodeOffset = tree->right[n];
-                    nodeRight.create((Ncv32u)(h_TmpClassifierNotRootNodes.size() + rightNodeOffset - 1));
-                    haar.bHasStumpsOnly = false;
-                }
-                curNode.setRightNodeDesc(nodeRight);
-
-                Ncv32u tiltedVal = feature->tilted;
-                haar.bNeedsTiltedII = (tiltedVal != 0);
-
-                Ncv32u featureId = 0;
-                for(int l = 0; l < CV_HAAR_FEATURE_MAX; ++l) //by rects
-                {
-                    Ncv32u rectX = feature->rect[l].r.x;
-                    Ncv32u rectY = feature->rect[l].r.y;
-                    Ncv32u rectWidth = feature->rect[l].r.width;
-                    Ncv32u rectHeight = feature->rect[l].r.height;
-
-                    Ncv32f rectWeight = feature->rect[l].weight;
-
-                    if (rectWeight == 0/* && rectX == 0 &&rectY == 0 && rectWidth == 0 && rectHeight == 0*/)
-                        break;
-
-                    HaarFeature64 curFeature;
-                    ncvStat = curFeature.setRect(rectX, rectY, rectWidth, rectHeight, haar.ClassifierSize.width, haar.ClassifierSize.height);
-                    curFeature.setWeight(rectWeight);
-                    ncvAssertReturn(NCV_SUCCESS == ncvStat, ncvStat);
-                    haarFeatures.push_back(curFeature);
-
-                    featureId++;
-                }
-
-                HaarFeatureDescriptor32 tmpFeatureDesc;
-                ncvStat = tmpFeatureDesc.create(haar.bNeedsTiltedII, bIsLeftNodeLeaf, bIsRightNodeLeaf,
-                    featureId, static_cast<Ncv32u>(haarFeatures.size()) - featureId);
-                ncvAssertReturn(NCV_SUCCESS == ncvStat, ncvStat);
-                curNode.setFeatureDesc(tmpFeatureDesc);
-
-                if (!nodeId)
-                {
-                    //root node
-                    haarClassifierNodes.push_back(curNode);
-                    curMaxTreeDepth = 1;
-                }
-                else
-                {
-                    //other node
-                    h_TmpClassifierNotRootNodes.push_back(curNode);
-                    curMaxTreeDepth++;
-                }
-
-                nodeId++;
+                Ncv32f leftVal = tree[0][CUDA_CC_LEFT_VAL];
+                ncvStat = nodeLeft.create(leftVal);
+                ncvAssertReturn(ncvStat == NCV_SUCCESS, ncvStat);
+                bIsLeftNodeLeaf = true;
             }
+            else
+            {
+                Ncv32u leftNodeOffset = (int)tree[0][CUDA_CC_LEFT_NODE];
+                nodeLeft.create((Ncv32u)(h_TmpClassifierNotRootNodes.size() + leftNodeOffset - 1));
+                haar.bHasStumpsOnly = false;
+            }
+
+            curNode.setLeftNodeDesc(nodeLeft);
+
+            HaarClassifierNodeDescriptor32 nodeRight;
+            cv::FileNode rightNode = tree[0][CUDA_CC_RIGHT_NODE];
+
+            if (rightNode.fs == NULL)
+            {
+                Ncv32f rightVal = tree[0][CUDA_CC_RIGHT_VAL];
+                ncvStat = nodeRight.create(rightVal);
+                ncvAssertReturn(ncvStat == NCV_SUCCESS, ncvStat);
+                bIsRightNodeLeaf = true;
+            }
+            else
+            {
+                Ncv32u rightNodeOffset = (int)tree[0][CUDA_CC_RIGHT_NODE];
+                nodeRight.create((Ncv32u)(h_TmpClassifierNotRootNodes.size() + rightNodeOffset - 1));
+                haar.bHasStumpsOnly = false;
+            }
+
+            curNode.setRightNodeDesc(nodeRight);
+
+            cv::FileNode fnFeature = tree[0][CUDA_CC_FEATURE];
+            Ncv32u tiltedVal = (int)fnFeature[CUDA_CC_TILTED];
+            haar.bNeedsTiltedII = (tiltedVal != 0);
+
+            cv::FileNodeIterator it2 = fnFeature[CUDA_CC_RECT].begin(), it2_end = fnFeature[CUDA_CC_RECT].end();
+
+            Ncv32u featureId = 0;
+            for (; it2 != it2_end; ++it2) // by feature
+            {
+                cv::FileNode rect = *it2;
+
+                Ncv32u rectX = (int)rect[RECT_X_IDX];
+                Ncv32u rectY = (int)rect[RECT_Y_IDX];
+                Ncv32u rectWidth = (int)rect[RECT_W_IDX];
+                Ncv32u rectHeight = (int)rect[RECT_H_IDX];
+
+                Ncv32f rectWeight = (float)rect[RECT_WEIGHT_IDX];
+
+                if (rectWeight == 0)
+                    break;
+
+                HaarFeature64 curFeature;
+                ncvStat = curFeature.setRect(rectX, rectY, rectWidth, rectHeight, haar.ClassifierSize.width, haar.ClassifierSize.height);
+                curFeature.setWeight(rectWeight);
+                ncvAssertReturn(NCV_SUCCESS == ncvStat, ncvStat);
+
+                haarFeatures.push_back(curFeature);
+                featureId++;
+            }
+
+            HaarFeatureDescriptor32 tmpFeatureDesc;
+            ncvStat = tmpFeatureDesc.create(haar.bNeedsTiltedII, bIsLeftNodeLeaf, bIsRightNodeLeaf,
+                featureId, static_cast<Ncv32u>(haarFeatures.size()) - featureId);
+            ncvAssertReturn(NCV_SUCCESS == ncvStat, ncvStat);
+            curNode.setFeatureDesc(tmpFeatureDesc);
+
+            if (!nodeId)
+            {
+                //root node
+                haarClassifierNodes.push_back(curNode);
+                curMaxTreeDepth = 1;
+            }
+            else
+            {
+                //other node
+                h_TmpClassifierNotRootNodes.push_back(curNode);
+                curMaxTreeDepth++;
+            }
+
+            nodeId++;
         }
 
-        curStage.setNumClassifierRootNodes(treesCount);
+        curStage.setNumClassifierRootNodes((Ncv32u)fnTrees.size());
         haarStages.push_back(curStage);
     }
 
@@ -2220,7 +2252,6 @@ static NCVStatus loadFromXML(const cv::String &filename,
     }
 
     return NCV_SUCCESS;
-#endif
 }
 
 

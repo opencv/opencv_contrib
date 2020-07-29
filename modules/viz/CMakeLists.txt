@@ -3,7 +3,6 @@ if(NOT HAVE_VTK)
 endif()
 
 set(the_description "Viz")
-include(${VTK_USE_FILE})
 
 if(NOT BUILD_SHARED_LIBS)
   # We observed conflict between builtin 3rdparty libraries and
@@ -35,7 +34,14 @@ ocv_add_accuracy_tests()
 ocv_add_perf_tests()
 ocv_add_samples(opencv_imgproc opencv_calib3d opencv_features2d opencv_flann)
 
-ocv_target_link_libraries(${the_module} PRIVATE ${VTK_LIBRARIES})
+
+if (VTK_VERSION VERSION_LESS "8.90.0")
+  include(${VTK_USE_FILE})
+  ocv_target_link_libraries(${the_module} PRIVATE ${VTK_LIBRARIES})
+else ()
+  ocv_target_link_libraries(${the_module} PRIVATE ${VTK_LIBRARIES})
+  vtk_module_autoinit(TARGETS ${the_module} MODULES ${VTK_LIBRARIES})
+endif()
 
 if(APPLE AND BUILD_opencv_viz)
   ocv_target_link_libraries(${the_module} PRIVATE "-framework Cocoa")
