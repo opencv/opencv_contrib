@@ -291,7 +291,7 @@ inline TsdfType HashTSDFVolumeCPU::interpolateVoxel(const cv::Point3f& point) co
     
     TsdfType vx[8];
     for (int i = 0; i < 8; i++)
-        vx[i] = at( neighbourCoords[i] + point).tsdf;
+        vx[i] = at(neighbourCoords[i] * voxelSize + point).tsdf;
 
     TsdfType v00 = vx[0] + tz * (vx[1] - vx[0]);
     TsdfType v01 = vx[2] + tz * (vx[3] - vx[2]);
@@ -314,13 +314,11 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
 
     for (int c = 0; c < 3; c++)
     {
-        pointPrev[c] -= voxelSize * 0.5f;
-        pointNext[c] += voxelSize * 0.5f;
+        pointPrev[c] -= voxelSize;
+        pointNext[c] += voxelSize;
 
         //normal[c] = at(Point3f(pointNext)).tsdf - at(Point3f(pointPrev)).tsdf;
         normal[c] = interpolateVoxel(Point3f(pointNext)) - interpolateVoxel(Point3f(pointPrev));
-        //normal[c] = interpolateVoxel(point);
-        normal[c] *= 0.5f;
 
         pointPrev[c] = pointVec[c];
         pointNext[c] = pointVec[c];
