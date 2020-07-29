@@ -269,6 +269,41 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Point3f& point) const
     return volumeUnit->at(volUnitLocalIdx);
 }
 
+inline TsdfType HashTSDFVolumeCPU::interpolateVoxel(const cv::Point3f& point) const
+{
+    cv::Point3f neighbourCoords[] = {
+                                Point3f(0, 0, 0),
+                                Point3f(0, 0, 1),
+                                Point3f(0, 1, 0),
+                                Point3f(0, 1, 1),
+                                Point3f(1, 0, 0),
+                                Point3f(1, 0, 1),
+                                Point3f(1, 1, 0),
+                                Point3f(1, 1, 1) };
+
+    int ix = cvFloor(point.x);
+    int iy = cvFloor(point.y);
+    int iz = cvFloor(point.z);
+
+    float tx = point.x - ix;
+    float ty = point.y - iy;
+    float tz = point.z - iz;
+    
+    TsdfType vx[8];
+    for (int i = 0; i < 8; i++)
+        vx[i] = at( (neighbourCoords[i] * voxelSize * 0.5f) + point).tsdf;
+
+    TsdfType v00 = vx[0] + tz * (vx[1] - vx[0]);
+    TsdfType v01 = vx[2] + tz * (vx[3] - vx[2]);
+    TsdfType v10 = vx[4] + tz * (vx[5] - vx[4]);
+    TsdfType v11 = vx[6] + tz * (vx[7] - vx[6]);
+
+    TsdfType v0 = v00 + ty * (v01 - v00);
+    TsdfType v1 = v10 + ty * (v11 - v10);
+
+    return v0 + tx * (v1 - v0);
+}
+
 inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
 {
     Vec3f pointVec(point);
@@ -283,12 +318,13 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
         pointNext[c] += voxelSize * 0.5f;
 
         normal[c] = at(Point3f(pointNext)).tsdf - at(Point3f(pointPrev)).tsdf;
+        //normal[c] = interpolateVoxel(point);
         normal[c] *= 0.5f;
 
         pointPrev[c] = pointVec[c];
         pointNext[c] = pointVec[c];
     }
-
+    std::cout << normal << std::endl;
     float nv = sqrt(normal[0] * normal[0] +
                      normal[1] * normal[1] + 
                      normal[2] * normal[2]);
@@ -370,8 +406,7 @@ struct HashRaycastInvoker : ParallelLoopBody
                         currTsdf            = currVoxel.tsdf;
                         currWeight          = currVoxel.weight;
                         stepSize            = tstep;
-
-                        if (true)
+                        if (false)
                         {
                             //std::cout << "=============" << std::endl;
                             //std::cout << currTsdf << " " << currWeight << std::endl;
