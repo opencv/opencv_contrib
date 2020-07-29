@@ -583,6 +583,7 @@ inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
 
     v_float32x4 n       = v_load_aligned(an);
     v_float32x4 invNorm = v_invsqrt(v_setall_f32(v_reduce_sum(n*n)));
+    std::cout << invNorm.get0() << std::endl;
     return n*invNorm;
 }
 #else
@@ -924,6 +925,8 @@ struct RaycastInvoker : ParallelLoopBody
 void TSDFVolumeCPU::raycast(const cv::Affine3f& cameraPose, const Intr& intrinsics, Size frameSize,
                             cv::OutputArray _points, cv::OutputArray _normals) const
 {
+    std::cout << 2;
+
     CV_TRACE_FUNCTION();
 
     CV_Assert(frameSize.area() > 0);
@@ -1195,6 +1198,7 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
 void TSDFVolumeGPU::raycast(const cv::Affine3f& cameraPose, const Intr& intrinsics, Size frameSize,
                             cv::OutputArray _points, cv::OutputArray _normals) const
 {
+    std::cout << 22;
     CV_TRACE_FUNCTION();
 
     CV_Assert(frameSize.area() > 0);

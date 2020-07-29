@@ -291,7 +291,7 @@ inline TsdfType HashTSDFVolumeCPU::interpolateVoxel(const cv::Point3f& point) co
     
     TsdfType vx[8];
     for (int i = 0; i < 8; i++)
-        vx[i] = at( (neighbourCoords[i] * voxelSize * 0.5f) + point).tsdf;
+        vx[i] = at( neighbourCoords[i] + point).tsdf;
 
     TsdfType v00 = vx[0] + tz * (vx[1] - vx[0]);
     TsdfType v01 = vx[2] + tz * (vx[3] - vx[2]);
@@ -317,14 +317,15 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
         pointPrev[c] -= voxelSize * 0.5f;
         pointNext[c] += voxelSize * 0.5f;
 
-        normal[c] = at(Point3f(pointNext)).tsdf - at(Point3f(pointPrev)).tsdf;
+        //normal[c] = at(Point3f(pointNext)).tsdf - at(Point3f(pointPrev)).tsdf;
+        normal[c] = interpolateVoxel(Point3f(pointNext)) - interpolateVoxel(Point3f(pointPrev));
         //normal[c] = interpolateVoxel(point);
         normal[c] *= 0.5f;
 
         pointPrev[c] = pointVec[c];
         pointNext[c] = pointVec[c];
     }
-    std::cout << normal << std::endl;
+    //std::cout << normal << std::endl;
     float nv = sqrt(normal[0] * normal[0] +
                      normal[1] * normal[1] + 
                      normal[2] * normal[2]);
@@ -430,7 +431,7 @@ struct HashRaycastInvoker : ParallelLoopBody
                             float tx = currVolUnitPos.x - ix;
                             float ty = currVolUnitPos.y - iy;
                             float tz = currVolUnitPos.z - iz;
-                            std::cout << tx << " " << ty << " " << tx << std::endl;
+                            //std::cout << tx << " " << ty << " " << tx << std::endl;
                             TsdfType vx[8];
                             for (int i = 0; i < 8; i++)
                                 vx[i] = currVolumeUnit->at(neighbourCoords[i] + volUnitLocalIdx).tsdf;
