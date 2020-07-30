@@ -203,11 +203,21 @@ namespace ptcloud
             SACModelFitting (int model_type = PLANE_MODEL, int method_type = SAC_METHOD_RANSAC, double threshold = 20,int max_iters = 1000);
                 // :model_type(model_type), method_type(method_type), threshold(threshold), max_iters(max_iters) {}
 
-            /** @brief Get one model (plane), this function would get the best fitting model on the given set of points.
+            /** @brief Fit one model, this function would get the best fitting model on the given set of points.
 
-            note: This stores the model in the public class member model_instances, and the mask for inliers in inliers.
+            This stores the model in the public class member model_instances, and the mask for inliers in inliers.
             */
-            void fit_once();
+            bool fit_once(vector<unsigned> remaining_indices = {});
+
+            /** @brief Fit multiple models of the same type, this function would get the best fitting models on the given set of points.
+
+            This stores the models in the public class member model_instances, and the corresponding masks for inliers in inliers. 
+            
+            Returns False if no valid model could be fit.
+
+            @param remaining_cloud_threshold set the threshold for the remaining cloud (from 0 to 1) until which the segmentation should continue.
+            */
+            void segment(float remaining_cloud_threshold = 0.3);
 
             void setCloud(Mat cloud);
 

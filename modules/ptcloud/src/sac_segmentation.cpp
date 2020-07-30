@@ -493,7 +493,7 @@ namespace ptcloud
             // the cloud should have three channels.
             assert(inp_cloud.channels() == 3 || (inp_cloud.channels() == 1 && (inp_cloud.cols == 3 || inp_cloud.rows == 3)));
             if (inp_cloud.rows == 1 && inp_cloud.channels() == 3) {
-                cloud = inp_cloud;
+                cloud = inp_cloud.clone();
                 return;
             }
 
@@ -524,21 +524,29 @@ namespace ptcloud
     }
 
     SACModelFitting::SACModelFitting (Mat set_cloud, int set_model_type, int set_method_type, double set_threshold, int set_max_iters)
-            :cloud(set_cloud), model_type(set_model_type), method_type(set_method_type), threshold(set_threshold), max_iters(set_max_iters) {}
+            :cloud(set_cloud.clone()), model_type(set_model_type), method_type(set_method_type), threshold(set_threshold), max_iters(set_max_iters) {}
 
     SACModelFitting::SACModelFitting (int set_model_type, int set_method_type, double set_threshold, int set_max_iters)
         :model_type(set_model_type), method_type(set_method_type), threshold(set_threshold), max_iters(set_max_iters) {}
 
-    void SACModelFitting::fit_once() {
+    bool SACModelFitting::fit_once(vector<unsigned> labels /* = {} */) {
 
-        if (method_type != SAC_METHOD_RANSAC) return; // Only RANSAC supported ATM, need to integrate with Maksym's framework.
+        if (method_type != SAC_METHOD_RANSAC) return false; // Only RANSAC supported ATM, need to integrate with Maksym's framework.
 
         // creates an array of indices for the points in the point cloud which will be appended as masks to denote inliers and outliers.
         const Vec3f* points = cloud.ptr<Vec3f>(0);
         unsigned num_points = cloud.cols;
-        std::vector<unsigned> indices(num_points);
-        std::iota(std::begin(indices), std::end(indices), 0);
 
+        std::vector<unsigned> indices;
+
+        if (labels.size() != num_points) {
+            indices = std::vector<unsigned> (num_points);
+            std::iota(std::begin(indices), std::end(indices), 0);
+        } else {
+            for (unsigned i = 0; i < num_points; i++) {
+                if (labels[i] == -1) indices.push_back(i);
+            }
+        }
 
         vector<unsigned> inliers_indices;
 
@@ -551,10 +559,11 @@ namespace ptcloud
             RNG rng((uint64)-1);
             for (unsigned i = 0; i < max_iters; ++i) {
                 vector<unsigned> current_model_inliers;
-                SACModel model;
+                SACModel model; 
 
-                for (unsigned j = 0; j < num_rnd_model_points; ++j) {
+                for (unsigned j = 0; j < num_rnd_model_points;) {
                     std::swap(indices[j], indices[rng.uniform(0, num_points)]);
+                    j++;
                 }
 
                 for (unsigned j = 0; j < num_rnd_model_points; j++) {
@@ -564,6 +573,7 @@ namespace ptcloud
 
                 Point3d center;
                 Vec4d coefficients = getPlaneFromPoints(points, current_model_inliers, center);
+                if (coefficients == Vec4d(0, 0, 0, 0)) continue;
                 SACPlaneModel planeModel (coefficients, center);
                 pair<double, double> result = planeModel.getInliers(cloud, indices, threshold, current_model_inliers);
 
@@ -575,8 +585,11 @@ namespace ptcloud
                 }
 
             }
-            inliers.push_back(inliers_indices);
-            model_instances.push_back(bestModel);
+            if (bestModel.ModelCoefficients.size()) { 
+                inliers.push_back(inliers_indices);
+                model_instances.push_back(bestModel);
+                return true;
+            }
         }
 
         if (model_type == SPHERE_MODEL) {
@@ -587,8 +600,9 @@ namespace ptcloud
                 vector<unsigned> current_model_inliers;
                 SACModel model;
 
-                for (unsigned j = 0; j < num_rnd_model_points; ++j) {
+                for (unsigned j = 0; j < num_rnd_model_points;) {
                     std::swap(indices[j], indices[rng.uniform(0, num_points)]);
+                    j++;
                 }
 
                 for (unsigned j = 0; j < num_rnd_model_points; j++) {
@@ -614,8 +628,11 @@ namespace ptcloud
                 }
 
             }
-            inliers.push_back(inliers_indices);
-            model_instances.push_back(bestModel);
+            if (bestModel.ModelCoefficients.size()) { 
+                inliers.push_back(inliers_indices);
+                model_instances.push_back(bestModel);
+                return true;
+            }
         }
 
         if (model_type == CYLINDER_MODEL) {
@@ -636,15 +653,14 @@ namespace ptcloud
                 long unsigned num_points = cloud.cols;
                 normals = normals.reshape(3, num_points);
                 normals = normals.t();
-                // cout << cloud.cols << endl;
-                // cout << normals.size();
             }
             for (unsigned i = 0; i < max_iters; ++i) {
                 vector<unsigned> current_model_inliers;
                 SACModel model;
 
-                for (unsigned j = 0; j < num_rnd_model_points; ++j) {
+                for (unsigned j = 0; j < num_rnd_model_points;) {
                     std::swap(indices[j], indices[rng.uniform(0, num_points)]);
+                    j++;
                 }
 
                 for (unsigned j = 0; j < num_rnd_model_points; j++) {
@@ -674,8 +690,54 @@ namespace ptcloud
                 }
 
             }
-            inliers.push_back(inliers_indices);
-            model_instances.push_back(bestModel);
+            if (bestModel.ModelCoefficients.size()) { 
+                inliers.push_back(inliers_indices);
+                model_instances.push_back(bestModel);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    void SACModelFitting::segment(float remaining_cloud_threshold /*=0.3*/) {
+        const Vec3f* points = cloud.ptr<Vec3f>(0);
+        unsigned num_points = cloud.cols;
+
+        std::vector<unsigned> indices (num_points);
+        std::iota(std::begin(indices), std::end(indices), 0);
+
+        std::vector<unsigned> point_labels (num_points, -1);
+
+        unsigned long num_segmented_points = 0;
+        
+        unsigned label = 0;
+        while ( (float) num_segmented_points / num_points < (1 - remaining_cloud_threshold )) {
+            label = label + 1;
+            bool successful_fitting = fit_once(point_labels);
+            
+            if (!successful_fitting) {
+                cout << "Could not fit the required model" << endl;
+                break;
+            }
+            vector<unsigned> latest_model_inliers = inliers.back();
+            num_segmented_points += latest_model_inliers.size();
+
+            // This loop erases all occurences of latest inliers in the indices array
+            // for(int i = 0; i < latest_model_inliers.size(); i++)
+            // {
+            //     auto iter = std::find(indices.begin(),indices.end(),latest_model_inliers[i]);
+            //     if(iter != indices.end())
+            //     {
+            //         indices.erase(iter);
+            //     }
+            // }
+
+            // This loop erases all occurences of latest inliers in the indices array
+            for(int i = 0; i < latest_model_inliers.size(); i++)
+            {
+                point_labels[latest_model_inliers[i]] = label;
+            }
+            label++;
         }
     }
 
