@@ -19,7 +19,6 @@ int main() {
     viz::WCloud original_cloud(cloud);
     window.showWidget("cloud", original_cloud);
 
-
     planar_segmentation.set_threshold(0.001);
     planar_segmentation.set_iterations(1000);
     planar_segmentation.fit_once();

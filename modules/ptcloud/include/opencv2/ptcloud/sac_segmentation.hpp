@@ -158,7 +158,7 @@ namespace ptcloud
 
             std::pair<double, double> getInliers(Mat cloud, Mat normals, std::vector<unsigned> indices, const double threshold, std::vector<unsigned>& inliers, double normal_distance_weight_ = 0);
     };
-    
+
     class CV_EXPORTS_W SACModelFitting {
         private:
             Mat cloud;
@@ -207,12 +207,12 @@ namespace ptcloud
 
             This stores the model in the public class member model_instances, and the mask for inliers in inliers.
             */
-            bool fit_once(vector<unsigned> remaining_indices = {});
+            bool fit_once(vector<int> remaining_indices = {});
 
             /** @brief Fit multiple models of the same type, this function would get the best fitting models on the given set of points.
 
-            This stores the models in the public class member model_instances, and the corresponding masks for inliers in inliers. 
-            
+            This stores the models in the public class member model_instances, and the corresponding masks for inliers in inliers.
+
             Returns False if no valid model could be fit.
 
             @param remaining_cloud_threshold set the threshold for the remaining cloud (from 0 to 1) until which the segmentation should continue.
@@ -239,7 +239,7 @@ namespace ptcloud
             void set_iterations (long unsigned iterations);
 
             /** @brief Set the weight given to normal alignment before comparing overall error with threshold.
-             *  By default it is set to 0. 
+             *  By default it is set to 0.
             @param weight the desired normal alignment weight (between 0 to 1).
             */
             void set_normal_distance_weight(double weight);
@@ -248,10 +248,10 @@ namespace ptcloud
     bool getSphereFromPoints(const Vec3f*&, const vector<unsigned int>&, Point3d&, double&);
 
     Vec4d getPlaneFromPoints(const Vec3f*&, const std::vector<unsigned int>&, cv::Point3d&);
-    
+
     bool getCylinderFromPoints(Mat cloud, Mat normal,
                                     const std::vector<unsigned> &inliers, vector<double> & coefficients) ;
-    
+
     double euclideanDist(Point3d& p, Point3d& q);
 
 } // ptcloud

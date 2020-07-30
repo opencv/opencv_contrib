@@ -12,7 +12,7 @@ using namespace std;
 
 int main() {
     Mat cloud = cv::viz::readCloud("./data/CobbleStones.obj");
-    
+
     cv::ptcloud::SACModelFitting planar_segmentation(cloud);
 
     // add original cloud to window
@@ -25,14 +25,14 @@ int main() {
     planar_segmentation.set_iterations(1000);
     planar_segmentation.segment();
 
-    
+
     const Vec3f* points = cloud.ptr<Vec3f>(0);
-    
+
     // Initialise a colors array. These colors will be used (in a cyclic order) to visualise all the segmented planes.
     const vector<viz::Color> colors({viz::Color::green(), viz::Color::blue(), viz::Color::red(), viz::Color::yellow(), viz::Color::orange(),viz::Color::olive()});
 
     // Adds segmented planes to window
-    for (int model_idx = 0; model_idx < planar_segmentation.inliers.size(); model_idx++) {
+    for (unsigned model_idx = 0; model_idx < planar_segmentation.inliers.size(); model_idx++) {
         vector<unsigned> inlier_vec =  planar_segmentation.inliers.at(model_idx);
         cv::Mat fit_cloud(1, inlier_vec.size(), CV_32FC3);
         for(int j=0; j<fit_cloud.cols; ++j)
@@ -46,7 +46,6 @@ int main() {
         viz::WCloud cloud_widget2(fit_cloud, cloud_color);
         fitted.showWidget("fit plane", cloud_widget2);
         window.showWidget("fit plane " + to_string(model_idx + 1), cloud_widget2);
-
 
         vector<double> model_coefficients = planar_segmentation.model_instances.at(0).ModelCoefficients;
         cv::ptcloud::SACPlaneModel SACplane (model_coefficients);

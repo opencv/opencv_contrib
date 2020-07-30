@@ -144,19 +144,17 @@ namespace ptcloud
     bool getCylinderFromPoints(const Mat cloud, const Mat normals_cld,
                                     const std::vector<unsigned> &inliers, vector<double> & model_coefficients) {
         assert(inliers.size() == 2);
-        unsigned int num_points = cloud.cols;
-    
+
         Mat _pointsAndNormals;
 
         assert(normals_cld.cols == cloud.cols);
 
         const Point3d* points = cloud.ptr<Point3d>(0);
         const Vec3f* normals = normals_cld.ptr<Vec3f>(0);
-        num_points = cloud.cols;
 
-        if (fabs (points[inliers[0]].x - points[inliers[1]].x) <= std::numeric_limits<float>::epsilon () && 
-            fabs (points[inliers[0]].y - points[inliers[1]].y) <= std::numeric_limits<float>::epsilon () && 
-            fabs (points[inliers[0]].z - points[inliers[1]].z) <= std::numeric_limits<float>::epsilon ()) 
+        if (fabs (points[inliers[0]].x - points[inliers[1]].x) <= std::numeric_limits<float>::epsilon () &&
+            fabs (points[inliers[0]].y - points[inliers[1]].y) <= std::numeric_limits<float>::epsilon () &&
+            fabs (points[inliers[0]].z - points[inliers[1]].z) <= std::numeric_limits<float>::epsilon ())
         {
             return (false);
         }
@@ -205,10 +203,10 @@ namespace ptcloud
         model_coefficients[5] = line_dir[2] / divide_by;
 
         double radius_squared = fabs((line_dir.cross(line_pt - p1)).dot(line_dir.cross(line_pt - p1)) / line_dir.dot(line_dir));
-        
+
         // radius of cylinder
         model_coefficients[6] = sqrt(radius_squared);
-        
+
         if (radius_squared == 0) return false;
 
         return (true);
@@ -416,7 +414,7 @@ namespace ptcloud
         this -> pt_on_axis = Point3d(coefficients[0], coefficients[1], coefficients[2]);
         this -> axis_dir = Vec3d(coefficients[3], coefficients[4], coefficients[5]);
         this -> radius = coefficients[6];
-        
+
     }
 
     std::pair<double, double> SACCylinderModel::getInliers(Mat cloud, Mat normal_cloud, std::vector<unsigned> indices, const double threshold, std::vector<unsigned>& inliers, double normal_distance_weight_) {
@@ -489,6 +487,7 @@ namespace ptcloud
 
     void SACModelFitting::setCloud(Mat inp_cloud, bool with_normals) {
         if (! with_normals) {
+
             // normals are not required.
             // the cloud should have three channels.
             assert(inp_cloud.channels() == 3 || (inp_cloud.channels() == 1 && (inp_cloud.cols == 3 || inp_cloud.rows == 3)));
@@ -500,20 +499,21 @@ namespace ptcloud
             if (inp_cloud.channels() != 3 && inp_cloud.rows == 3) {
                 inp_cloud = inp_cloud.t();
             }
+
             const long unsigned num_points = inp_cloud.rows;
             cloud = inp_cloud.reshape(3, num_points);
             cloud = cloud.t();
 
-            const Vec3f* points = cloud.ptr<Vec3f>(0);
         }
         else {
             assert(inp_cloud.channels() == 1 && (inp_cloud.cols == 6 || inp_cloud.rows == 6));
             if (inp_cloud.rows == 6) {
                 inp_cloud = inp_cloud.t();
             }
+
             Mat _cld;
             inp_cloud.colRange(0, 3).copyTo(_cld);
-        
+
             Mat _normals;
             inp_cloud.colRange(3, 6).copyTo(_normals);
 
@@ -529,9 +529,10 @@ namespace ptcloud
     SACModelFitting::SACModelFitting (int set_model_type, int set_method_type, double set_threshold, int set_max_iters)
         :model_type(set_model_type), method_type(set_method_type), threshold(set_threshold), max_iters(set_max_iters) {}
 
-    bool SACModelFitting::fit_once(vector<unsigned> labels /* = {} */) {
+    bool SACModelFitting::fit_once(vector<int> labels /* = {} */) {
 
-        if (method_type != SAC_METHOD_RANSAC) return false; // Only RANSAC supported ATM, need to integrate with Maksym's framework.
+        // Only RANSAC supported ATM, need to integrate with Maksym's framework.
+        if (method_type != SAC_METHOD_RANSAC) return false;
 
         // creates an array of indices for the points in the point cloud which will be appended as masks to denote inliers and outliers.
         const Vec3f* points = cloud.ptr<Vec3f>(0);
@@ -559,7 +560,7 @@ namespace ptcloud
             RNG rng((uint64)-1);
             for (unsigned i = 0; i < max_iters; ++i) {
                 vector<unsigned> current_model_inliers;
-                SACModel model; 
+                SACModel model;
 
                 for (unsigned j = 0; j < num_rnd_model_points;) {
                     std::swap(indices[j], indices[rng.uniform(0, num_points)]);
@@ -585,7 +586,7 @@ namespace ptcloud
                 }
 
             }
-            if (bestModel.ModelCoefficients.size()) { 
+            if (bestModel.ModelCoefficients.size()) {
                 inliers.push_back(inliers_indices);
                 model_instances.push_back(bestModel);
                 return true;
@@ -616,6 +617,7 @@ namespace ptcloud
                 getSphereFromPoints(points, current_model_inliers, center, radius);
                 SACSphereModel sphereModel (center, radius);
                 pair<double, double> result = sphereModel.getInliers(cloud, indices, threshold, current_model_inliers);
+
                 // Compare fitness first.
                 if (bestResult.first < result.first || (bestResult.first == result.first && bestResult.second > result.second)
                     || (bestResult.first == result.first)) {
@@ -628,7 +630,7 @@ namespace ptcloud
                 }
 
             }
-            if (bestModel.ModelCoefficients.size()) { 
+            if (bestModel.ModelCoefficients.size()) {
                 inliers.push_back(inliers_indices);
                 model_instances.push_back(bestModel);
                 return true;
@@ -639,7 +641,6 @@ namespace ptcloud
             assert(this->normals_available == true);
             RNG rng((uint64)-1);
             const unsigned num_rnd_model_points = 2;
-            double bestRadius = 10000000;
 
             if (!normals_available) {
                 // Reshape the cloud for Compute Normals Function
@@ -648,12 +649,12 @@ namespace ptcloud
                 Mat _cld_reshaped = Mat(cloud).t();
                 _cld_reshaped = _cld_reshaped.reshape(1);
                 ppf_match_3d::computeNormalsPC3d(_cld_reshaped, _pointsAndNormals, 12, false, viewpoint);
-                
+
                 Mat(_pointsAndNormals.colRange(3,6)).copyTo(normals);
-                long unsigned num_points = cloud.cols;
                 normals = normals.reshape(3, num_points);
                 normals = normals.t();
             }
+
             for (unsigned i = 0; i < max_iters; ++i) {
                 vector<unsigned> current_model_inliers;
                 SACModel model;
@@ -669,16 +670,15 @@ namespace ptcloud
                 }
 
                 Point3d center;
-                double radius;
                 vector<double> coefficients;
                 bool valid_model = getCylinderFromPoints(cloud, normals, current_model_inliers, coefficients);
-                
+
                 if (!valid_model) continue;
 
                 SACCylinderModel cylinderModel (coefficients);
 
                 pair<double, double> result = cylinderModel.getInliers(cloud, normals, indices, threshold, current_model_inliers, normal_distance_weight_);
-                
+
                 // Compare fitness first.
                 if (bestResult.first < result.first || (bestResult.first == result.first && bestResult.second > result.second)) {
                     // if (bestResult.first == result.first && bestModel.ModelCoefficients.size() == 7) continue;
@@ -690,31 +690,32 @@ namespace ptcloud
                 }
 
             }
-            if (bestModel.ModelCoefficients.size()) { 
+
+            if (bestModel.ModelCoefficients.size()) {
                 inliers.push_back(inliers_indices);
                 model_instances.push_back(bestModel);
                 return true;
             }
+
         }
         return false;
     }
 
     void SACModelFitting::segment(float remaining_cloud_threshold /*=0.3*/) {
-        const Vec3f* points = cloud.ptr<Vec3f>(0);
         unsigned num_points = cloud.cols;
 
         std::vector<unsigned> indices (num_points);
         std::iota(std::begin(indices), std::end(indices), 0);
 
-        std::vector<unsigned> point_labels (num_points, -1);
+        std::vector<int> point_labels (num_points, -1);
 
-        unsigned long num_segmented_points = 0;
-        
-        unsigned label = 0;
+        long num_segmented_points = 0;
+
+        int label = 0;
         while ( (float) num_segmented_points / num_points < (1 - remaining_cloud_threshold )) {
             label = label + 1;
             bool successful_fitting = fit_once(point_labels);
-            
+
             if (!successful_fitting) {
                 cout << "Could not fit the required model" << endl;
                 break;
@@ -722,18 +723,10 @@ namespace ptcloud
             vector<unsigned> latest_model_inliers = inliers.back();
             num_segmented_points += latest_model_inliers.size();
 
-            // This loop erases all occurences of latest inliers in the indices array
-            // for(int i = 0; i < latest_model_inliers.size(); i++)
-            // {
-            //     auto iter = std::find(indices.begin(),indices.end(),latest_model_inliers[i]);
-            //     if(iter != indices.end())
-            //     {
-            //         indices.erase(iter);
-            //     }
-            // }
-
-            // This loop erases all occurences of latest inliers in the indices array
-            for(int i = 0; i < latest_model_inliers.size(); i++)
+            // This loop is for implementation purposes only, and maps each point to a label.
+            // All the points still labelled with -1 are non-segmented.
+            // This way, complexity of the finding non-segmented is decreased to O(n).
+            for(unsigned long i = 0; i < latest_model_inliers.size(); i++)
             {
                 point_labels[latest_model_inliers[i]] = label;
             }
