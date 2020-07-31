@@ -584,7 +584,7 @@ inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
     v_float32x4 n       = v_load_aligned(an);
     v_float32x4 Norm = v_sqrt(v_setall_f32(v_reduce_sum(n*n)));
     
-    return Norm.get0() < 0.0001 ? nanv : n*Norm;
+    return Norm.get0() < 0.0001 ? nanv : n/Norm;
 }
 #else
 inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
