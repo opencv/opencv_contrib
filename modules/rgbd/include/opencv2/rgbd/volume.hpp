@@ -52,7 +52,7 @@ enum class VolumeType
 
 CV_EXPORTS_W cv::Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, cv::Matx44f _pose,
                            float _raycastStepFactor, float _truncDist, int _maxWeight,
-                           float _truncateThreshold, Point3i _resolution);
+                           float _truncateThreshold, Vec3i _resolution);
 }  // namespace kinfu
 }  // namespace cv
 #endif
