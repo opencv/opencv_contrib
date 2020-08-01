@@ -176,6 +176,7 @@ void HashTSDFVolumeCPU::integrate_(InputArray _depth, float depthFactor, const c
             if (cameraPoint.x >= 0 && cameraPoint.y >= 0 && cameraPoint.x < depth.cols && cameraPoint.y < depth.rows)
             {
                 assert(it != volumeUnits.end());
+                it->second.lastVisibleIndex = frameId;
                 it->second.isActive = true;
             }
         }

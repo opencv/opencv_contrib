@@ -132,7 +132,6 @@ class LargeKinfuImpl : public LargeKinfu
     cv::Ptr<ICP> icp;
     //! TODO: Submap manager and Pose graph optimizer
     cv::Ptr<SubmapManager<MatType>> submapMgr;
-    cv::Ptr<Submap<MatType>> currSubmap;
 
     int frameCounter;
     Affine3f pose;
@@ -140,12 +139,14 @@ class LargeKinfuImpl : public LargeKinfu
 
 template<typename MatType>
 LargeKinfuImpl<MatType>::LargeKinfuImpl(const Params& _params)
-    : params(_params), currSubmap(nullptr)
+    : params(_params)
 {
     icp = makeICP(params.intr, params.icpIterations, params.icpAngleThresh, params.icpDistThresh);
 
     submapMgr = cv::makePtr<SubmapManager<MatType>>(params.volumeParams);
     reset();
+    submapMgr->createNewSubmap(true);
+
 }
 
 template<typename MatType>
@@ -222,59 +223,53 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
     makeFrameFromDepth(depth, newPoints, newNormals, params.intr, params.pyramidLevels, params.depthFactor,
                        params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
                        params.truncateThreshold);
-    if (frameCounter == 0)
+
+    for (const auto& pActiveSubmapPair : submapMgr->activeSubmapList)
     {
-        // use depth instead of distance
-        submapMgr->createNewSubmap(true);
-        currSubmap = submapMgr->getCurrentSubmap();
-        currSubmap->integrate(depth, params.depthFactor, params.intr, frameCounter);
-        std::cout << "Integrated 1st frame" << std::endl;
-        currSubmap->pyrPoints  = newPoints;
-        currSubmap->pyrNormals = newNormals;
-    }
-    else
-    {
+        //! Iterate over map?
+        int currTrackingId = pActiveSubmapPair.first;
+        Ptr<Submap<MatType>> currTrackingSubmap = pActiveSubmapPair.second;
+        Affine3f affine;
+        std::cout << "Current tracking ID: " << currTrackingId << std::endl;
+
+        if(frameCounter == 0) //! Only one current tracking map
+        {
+            currTrackingSubmap->integrate(depth, params.depthFactor, params.intr, frameCounter);
+            currTrackingSubmap->pyrPoints = newPoints;
+            currTrackingSubmap->pyrNormals = newNormals;
+            continue;
+        }
+
+        //1. Track
+        int numInliers = 0;
         bool trackingSuccess = false;
-        for (int i = 0; i < int(submapMgr->getTotalSubmaps()); i++)
+        std::tie(trackingSuccess, numInliers) =
+            icp->estimateTransformInliers(affine, currTrackingSubmap->pyrPoints, currTrackingSubmap->pyrNormals, newPoints, newNormals);
+        if (trackingSuccess)
         {
-            cv::Ptr<Submap<MatType>> currTrackingSubmap = submapMgr->getSubmap(i);
-            Affine3f affine;
-
-            int numInliers = 0;
-            std::tie(trackingSuccess, numInliers) =
-                icp->estimateTransformInliers(affine, currTrackingSubmap->pyrPoints, currTrackingSubmap->pyrNormals, newPoints, newNormals);
-            if (trackingSuccess)
-            {
-                //! Compose current pose and add to camera trajectory
-                currTrackingSubmap->updateCameraPose(affine);
-                std::cout << "Number of inliers: " << numInliers << "\n";
-            }
-
-            if (currTrackingSubmap->getType() == Submap<MatType>::Type::CURRENT_ACTIVE)
-            {
-                float rnorm = (float)cv::norm(affine.rvec());
-                float tnorm = (float)cv::norm(affine.translation());
-                // We do not integrate volume if camera does not move
-                if ((rnorm + tnorm) / 2 >= params.tsdf_min_camera_movement)
-                    currTrackingSubmap->integrate(depth, params.depthFactor, params.intr, frameCounter);
-            }
-            currTrackingSubmap->raycast(currTrackingSubmap->getCurrentCameraPose(), params.intr, params.frameSize, currTrackingSubmap->pyrPoints[0], currTrackingSubmap->pyrNormals[0]);
-
-            currTrackingSubmap->updatePyrPointsNormals(params.pyramidLevels);
-
-            std::cout << "Submap: " << i << " Total allocated blocks: " << currTrackingSubmap->getTotalAllocatedBlocks() << "\n";
-            std::cout << "Submap: " << i << " Visible blocks: " << currTrackingSubmap->getVisibleBlocks(frameCounter) << "\n";
+            //! Compose current pose and add to camera trajectory
+            currTrackingSubmap->composeCameraPose(affine);
+            std::cout << "Number of inliers: " << numInliers << "\n";
         }
 
-        if (submapMgr->shouldCreateSubmap(frameCounter))
-        {
-            submapMgr->createNewSubmap(true, frameCounter, pose);
-            currSubmap = submapMgr->getCurrentSubmap();
-            currSubmap->integrate(depth, params.depthFactor, params.intr, frameCounter);
-            currSubmap->pyrPoints = newPoints;
-            currSubmap->pyrNormals = newNormals;
-        }
-        std::cout << "Number of submaps: " << submapMgr->getTotalSubmaps() << "\n";
+        //2. Integrate
+        float rnorm = (float)cv::norm(affine.rvec());
+        float tnorm = (float)cv::norm(affine.translation());
+        // We do not integrate volume if camera does not move
+        if ((rnorm + tnorm) / 2 >= params.tsdf_min_camera_movement)
+            currTrackingSubmap->integrate(depth, params.depthFactor, params.intr, frameCounter);
+
+        //3. Raycast
+        currTrackingSubmap->raycast(currTrackingSubmap->cameraPose, params.intr, params.frameSize, currTrackingSubmap->pyrPoints[0], currTrackingSubmap->pyrNormals[0]);
+
+        currTrackingSubmap->updatePyrPointsNormals(params.pyramidLevels);
+
+        std::cout << "Submap: " << currTrackingId << " Total allocated blocks: " << currTrackingSubmap->getTotalAllocatedBlocks() << "\n";
+        std::cout << "Submap: " << currTrackingId << " Visible blocks: " << currTrackingSubmap->getVisibleBlocks(frameCounter) << "\n";
+
+        //4. Update map
+        submapMgr->updateMap(frameCounter, newPoints, newNormals);
+        std::cout << "Number of submaps: " << submapMgr->submapList.size() << "\n";
     }
     frameCounter++;
     return true;
@@ -287,6 +282,7 @@ void LargeKinfuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPo
 
     Affine3f cameraPose(_cameraPose);
 
+    auto currSubmap = submapMgr->getCurrentSubmap();
     const Affine3f id = Affine3f::Identity();
     if ((cameraPose.rotation() == pose.rotation() && cameraPose.translation() == pose.translation()) ||
         (cameraPose.rotation() == id.rotation() && cameraPose.translation() == id.translation()))
@@ -305,18 +301,21 @@ void LargeKinfuImpl<MatType>::render(OutputArray image, const Matx44f& _cameraPo
 template<typename MatType>
 void LargeKinfuImpl<MatType>::getCloud(OutputArray p, OutputArray n) const
 {
+    auto currSubmap = submapMgr->getCurrentSubmap();
     currSubmap->volume.fetchPointsNormals(p, n);
 }
 
 template<typename MatType>
 void LargeKinfuImpl<MatType>::getPoints(OutputArray points) const
 {
+    auto currSubmap = submapMgr->getCurrentSubmap();
     currSubmap->volume.fetchPointsNormals(points, noArray());
 }
 
 template<typename MatType>
 void LargeKinfuImpl<MatType>::getNormals(InputArray points, OutputArray normals) const
 {
+    auto currSubmap = submapMgr->getCurrentSubmap();
     currSubmap->volume.fetchNormals(points, normals);
 }
 
