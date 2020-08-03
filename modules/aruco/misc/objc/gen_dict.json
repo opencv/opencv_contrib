@@ -1,0 +1,7 @@
+{
+    "AdditionalImports" : {
+        "*" : [ "\"aruco.hpp\"" ],
+        "CharucoBoard" : [ "\"aruco/charuco.hpp\"" ],
+        "Dictionary" : [ "\"aruco/dictionary.hpp\"" ]
+    }
+}
