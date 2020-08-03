@@ -330,13 +330,13 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     normals = _normals.getMat(af);
     normals.forEach<Vec4f>(normalCheck);
     
-    if (display)
+    if (isRaycast && display)
     {
         imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
         points = _points.getMat(af);
         renderPointsNormals(points, normals, image, _params->lightPose);
         imshow("render", image);
-        waitKey(30000);
+        waitKey(20000);
     }
     
     if (isRaycast)
@@ -352,7 +352,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
             points = _newPoints.getMat(af);
             renderPointsNormals(points, normals, image, _params->lightPose);
             imshow("render", image);
-            waitKey(30000);
+            waitKey(20000);
         }
 
     }
@@ -416,9 +416,9 @@ void valid_points_test(bool isHashTSDF)
     if (display)
     {
         imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
-        //renderPointsNormals(points, normals, image, _params->lightPose);
+        renderPointsNormals(points, normals, image, _params->lightPose);
         imshow("render", image);
-        waitKey(30000);
+        waitKey(20000);
     }
 
     volume->raycast(poses[17], _params->intr, _params->frameSize, _newPoints, _newNormals);
@@ -431,15 +431,13 @@ void valid_points_test(bool isHashTSDF)
     if (display)
     {
         imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
-        //renderPointsNormals(points, normals, image, _params->lightPose);
+        renderPointsNormals(points, normals, image, _params->lightPose);
         imshow("render", image);
-        waitKey(30000);
+        waitKey(20000);
     }
-    //cout << "---------------------" << endl;
-    //cout << profile << "|" << anfas << endl;
-    //cout << "---------------------"  << endl;
+
     float percentValidity = float(profile) / float(anfas);
-    ASSERT_LT(0.5 - percentValidity, 0.1);
+    ASSERT_LT(0.5 - percentValidity, 0.3);
 }
 
 TEST(TSDF, raycast_normals)
