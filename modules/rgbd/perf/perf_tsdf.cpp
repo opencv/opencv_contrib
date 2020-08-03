@@ -172,6 +172,29 @@ Ptr<Scene> Scene::create(Size sz, Matx33f _intr, float _depthFactor)
     return makePtr<SemisphereScene>(sz, _intr, _depthFactor);
 }
 
+PERF_TEST(Perf_TSDF, integrate)
+{
+    Ptr<kinfu::Params> _params;
+    _params = kinfu::Params::coarseParams();
+
+    Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix,
+        _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight,
+        _params->truncateThreshold, _params->volumeDims);
+
+    Ptr<Scene> scene = Scene::create(_params->frameSize, _params->intr, _params->depthFactor);
+    std::vector<Affine3f> poses = scene->getPoses();
+
+    for (size_t i = 0; i < poses.size(); i++)
+    {
+        UMat _points, _normals;
+        Affine3f pose = poses[i];
+        Mat depth = scene->depth(pose);
+        startTimer();
+        volume->integrate(depth, _params->depthFactor, pose, _params->intr);
+        stopTimer();
+    }
+    SANITY_CHECK_NOTHING();
+}
 
 PERF_TEST(Perf_TSDF, raycast) 
 {
@@ -192,10 +215,11 @@ PERF_TEST(Perf_TSDF, raycast)
         Mat depth = scene->depth(pose);
 
         volume->integrate(depth, _params->depthFactor, pose, _params->intr);
-        PERF_SAMPLE_BEGIN();
-            volume->raycast(pose, _params->intr, _params->frameSize, _points, _normals);
-        PERF_SAMPLE_END();
+        startTimer();
+        volume->raycast(pose, _params->intr, _params->frameSize, _points, _normals);
+        stopTimer();
     }
+    SANITY_CHECK_NOTHING();
 }
 
 }} // namespace
