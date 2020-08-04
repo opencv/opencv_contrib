@@ -230,7 +230,7 @@ void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray im
 
     Range range(0, sz.height);
     const int nstripes = -1;
-    parallel_for_(range, [&](const Range& range)
+    parallel_for_(range, [&](const Range& range) 
         {
             for (int y = range.start; y < range.end; y++)
             {
@@ -299,7 +299,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     
     auto normalCheck = [](Vec4f& vector, const int* position)
     {
-        if (!isnan(vector[0]))
+        if (!_isnanf(vector[0]))
         {
             float length = vector[0] * vector[0] +
                 vector[1] * vector[1] +
