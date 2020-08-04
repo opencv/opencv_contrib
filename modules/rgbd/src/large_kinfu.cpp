@@ -224,6 +224,7 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
                        params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
                        params.truncateThreshold);
 
+    std::cout << "Current frameID: " << frameCounter << "\n";
     for (const auto& it : submapMgr->activeSubmaps)
     {
         //! Iterate over map?
@@ -246,13 +247,20 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
             icp->estimateTransform(affine, currTrackingSubmap->pyrPoints, currTrackingSubmap->pyrNormals, newPoints, newNormals);
         if (trackingSuccess)
             currTrackingSubmap->composeCameraPose(affine);
+        else
+        {
+            std::cout << "Tracking failed" << std::endl;
+        }
 
         //2. Integrate
-        float rnorm = (float)cv::norm(affine.rvec());
-        float tnorm = (float)cv::norm(affine.translation());
-        // We do not integrate volume if camera does not move
-        if ((rnorm + tnorm) / 2 >= params.tsdf_min_camera_movement)
-            currTrackingSubmap->integrate(depth, params.depthFactor, params.intr, frameCounter);
+        if(submapData.type == SubmapManager<MatType>::Type::NEW || submapData.type == SubmapManager<MatType>::Type::CURRENT)
+        {
+            float rnorm = (float)cv::norm(affine.rvec());
+            float tnorm = (float)cv::norm(affine.translation());
+            // We do not integrate volume if camera does not move
+            if ((rnorm + tnorm) / 2 >= params.tsdf_min_camera_movement)
+                currTrackingSubmap->integrate(depth, params.depthFactor, params.intr, frameCounter);
+        }
 
         //3. Raycast
         currTrackingSubmap->raycast(currTrackingSubmap->cameraPose, params.intr, params.frameSize, currTrackingSubmap->pyrPoints[0], currTrackingSubmap->pyrNormals[0]);
@@ -262,10 +270,11 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
         std::cout << "Submap: " << currTrackingId << " Total allocated blocks: " << currTrackingSubmap->getTotalAllocatedBlocks() << "\n";
         std::cout << "Submap: " << currTrackingId << " Visible blocks: " << currTrackingSubmap->getVisibleBlocks(frameCounter) << "\n";
 
-        //4. Update map
-        submapMgr->updateMap(frameCounter, newPoints, newNormals);
-        std::cout << "Number of submaps: " << submapMgr->submapList.size() << "\n";
     }
+    //4. Update map
+    submapMgr->updateMap(frameCounter, newPoints, newNormals);
+    std::cout << "Number of submaps: " << submapMgr->submapList.size() << "\n";
+
     frameCounter++;
     return true;
 }

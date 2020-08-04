@@ -253,7 +253,7 @@ bool SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId
     static constexpr int MIN_INLIERS                 = 10;
 
     //! thresh = HUBER_THRESH
-    auto huberWeight = [](float residual, float thresh = 0.05f) -> float {
+    auto huberWeight = [](float residual, float thresh = 0.1f) -> float {
         float rAbs = abs(residual);
         if (rAbs < thresh)
             return 1.0;
@@ -273,16 +273,16 @@ bool SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId
     fromSubmapData.trackingAttempts++;
     fromSubmapData.constraints.push_back(candidateConstraint);
 
-    std::cout << "Candidate constraint from: " << fromSubmap->id << " to " << toSubmap->id << "\n"
-              << candidateConstraint.matrix << "\n";
-    std::cout << "Constraint observations size: " << fromSubmapData.constraints.size() << "\n";
+    /* std::cout << "Candidate constraint from: " << fromSubmap->id << " to " << toSubmap->id << "\n" */
+    /*           << candidateConstraint.matrix << "\n"; */
+    /* std::cout << "Constraint observations size: " << fromSubmapData.constraints.size() << "\n"; */
 
     std::vector<float> weights(fromSubmapData.constraints.size() + 1, 1.0f);
 
     Affine3f prevConstraint = fromSubmap->getConstraint(toSubmap->id).estimatedPose;
     int prevWeight          = fromSubmap->getConstraint(toSubmap->id).weight;
 
-    std::cout << "Previous constraint pose: \n" << prevConstraint.matrix << "\n previous Weight: " << prevWeight << "\n";
+    /* std::cout << "Previous constraint pose: \n" << prevConstraint.matrix << "\n previous Weight: " << prevWeight << "\n"; */
 
     // Iterative reweighted least squares with huber threshold to find the inliers in the past observations
     Vec6f meanConstraint;
@@ -321,13 +321,13 @@ bool SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId
                 w = 1.0f;
             }
 
-            std::cout << "meanConstraint: " << meanConstraint << " ConstraintVec: " << constraintVec << "\n";
+            /* std::cout << "meanConstraint: " << meanConstraint << " ConstraintVec: " << constraintVec << "\n"; */
             cv::Vec6f residualVec = (constraintVec - meanConstraint);
-            std::cout << "Residual Vec: " << residualVec << "\n";
+            /* std::cout << "Residual Vec: " << residualVec << "\n"; */
             residual         = norm(residualVec);
             double newWeight = huberWeight(residual);
-            std::cout << "iteration: " << i << " residual: " << residual << " " << j
-                      << "th weight before update: " << weights[j] << " after update: " << newWeight << "\n";
+            /* std::cout << "iteration: " << i << " residual: " << residual << " " << j */
+            /*           << "th weight before update: " << weights[j] << " after update: " << newWeight << "\n"; */
             diff += w * abs(newWeight - weights[j]);
             weights[j] = newWeight;
         }
@@ -353,9 +353,8 @@ bool SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId
     inlierPose = Affine3f(inlierConstraint);
     inliers    = localInliers;
 
-    /* std::cout << "Rvec: " << rvec << " tvec: " << tvec << "\n"; */
-    std::cout << inlierPose.matrix << "\n";
-    std::cout << " inliers: " << inliers << "\n";
+    /* std::cout << inlierPose.matrix << "\n"; */
+    /* std::cout << " inliers: " << inliers << "\n"; */
 
     if (inliers >= MIN_INLIERS)
     {
@@ -404,7 +403,6 @@ void SubmapManager<MatType>::updateMap(int _frameId, std::vector<MatType> _frame
             if (success)
             {
                 typename SubmapT::PoseConstraint& submapConstraint = getSubmap(submapId)->getConstraint(currSubmapId);
-                std::cout << "Updated fixed constraint with inlierPose: \n" << inlierPose.matrix << "\n";
                 submapConstraint.accumulatePose(inlierPose, inliers);
                 std::cout << "Submap constraint estimated pose: \n" << submapConstraint.estimatedPose.matrix << "\n";
                 submapData.constraints.clear();
@@ -474,6 +472,21 @@ void SubmapManager<MatType>::updateMap(int _frameId, std::vector<MatType> _frame
         auto newSubmap                = getSubmap(submapId);
         newSubmap->pyrPoints          = _framePoints;
         newSubmap->pyrNormals         = _frameNormals;
+    }
+
+    if(_frameId%100 == 0)
+    {
+        for(size_t i = 0; i < submapList.size(); i++)
+        {
+            Ptr<SubmapT> currSubmap = submapList.at(i);
+            typename SubmapT::Constraints::const_iterator itBegin = currSubmap->constraints.begin();
+            std::cout << "Constraint list for SubmapID: " << currSubmap->id << "\n";
+            for(typename SubmapT::Constraints::const_iterator it = itBegin; it != currSubmap->constraints.end(); ++it)
+            {
+                const typename SubmapT::PoseConstraint& constraint = it->second;
+                std::cout << "[" << it->first << "] weight: "  << constraint.weight << "\n " << constraint.estimatedPose.matrix << " \n";
+            }
+        }
     }
 }
 

@@ -34,16 +34,14 @@ static vector<string> readDepth(std::string fileList)
     size_t slashIdx = fileList.rfind('/');
     slashIdx = slashIdx != std::string::npos ? slashIdx : fileList.rfind('\\');
     dir = fileList.substr(0, slashIdx);
-
     while(!file.eof())
     {
         std::string s, imgPath;
         std::getline(file, s);
         if(s.empty() || s[0] == '#') continue;
-        std::stringstream ss;
-        ss << s;
-        double thumb;
-        ss >> thumb >> imgPath;
+        size_t spaceIdx = s.rfind(' ');
+        spaceIdx = spaceIdx != std::string::npos ? spaceIdx+1 : 0;
+        imgPath = s.substr(spaceIdx, s.size());
         v.push_back(dir+'/'+imgPath);
     }
 
