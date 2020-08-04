@@ -398,8 +398,7 @@ void valid_points_test(bool isHashTSDF)
     UMat _newPoints, _newNormals;
     Mat  points, normals;
     Mat image;
-    int i, j, anfas, profile;
-    Vec4f *v;
+    int anfas, profile;
     AccessFlag af = ACCESS_READ;
 
     Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix,
