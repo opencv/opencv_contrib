@@ -242,16 +242,10 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
         }
 
         //1. Track
-        int numInliers = 0;
-        bool trackingSuccess = false;
-        std::tie(trackingSuccess, numInliers) =
-            icp->estimateTransformInliers(affine, currTrackingSubmap->pyrPoints, currTrackingSubmap->pyrNormals, newPoints, newNormals);
+        bool trackingSuccess =
+            icp->estimateTransform(affine, currTrackingSubmap->pyrPoints, currTrackingSubmap->pyrNormals, newPoints, newNormals);
         if (trackingSuccess)
-        {
-            //! Compose current pose and add to camera trajectory
             currTrackingSubmap->composeCameraPose(affine);
-            std::cout << "Number of inliers: " << numInliers << "\n";
-        }
 
         //2. Integrate
         float rnorm = (float)cv::norm(affine.rvec());

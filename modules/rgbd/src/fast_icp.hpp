@@ -22,10 +22,6 @@ public:
                                    InputArray oldPoints, InputArray oldNormals,
                                    InputArray newPoints, InputArray newNormals
                                    ) const = 0;
-    virtual std::tuple<bool, int> estimateTransformInliers(cv::Affine3f& transform,
-                                                           InputArray oldPoints, InputArray oldNormals,
-                                                           InputArray newPoints, InputArray newNormals
-                                                           ) const = 0;
     virtual ~ICP() { }
 
 protected:

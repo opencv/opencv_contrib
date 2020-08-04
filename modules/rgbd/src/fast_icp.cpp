@@ -33,12 +33,8 @@ public:
                                    InputArray oldPoints, InputArray oldNormals,
                                    InputArray newPoints, InputArray newNormals
                                    ) const override;
-    virtual std::tuple<bool, int> estimateTransformInliers(cv::Affine3f& transform,
-                                                           InputArray oldPoints, InputArray oldNormals,
-                                                           InputArray newPoints, InputArray newNormals
-                                                           ) const override;
     template < typename T >
-    bool estimateTransformT(cv::Affine3f& transform, int& numInliers,
+    bool estimateTransformT(cv::Affine3f& transform,
                             const vector<T>& oldPoints, const vector<T>& oldNormals,
                             const vector<T>& newPoints, const vector<T>& newNormals
                             ) const;
@@ -46,7 +42,7 @@ public:
     virtual ~ICPImpl() { }
 
     template < typename T >
-    int getAb(const T& oldPts, const T& oldNrm, const T& newPts, const T& newNrm,
+    void getAb(const T& oldPts, const T& oldNrm, const T& newPts, const T& newNrm,
                cv::Affine3f pose, int level, cv::Matx66f& A, cv::Vec6f& b) const;
 
 private:
@@ -61,10 +57,10 @@ ICPImpl::ICPImpl(const Intr _intrinsics, const std::vector<int> &_iterations, fl
 { }
 
 
-std::tuple<bool, int> ICPImpl::estimateTransformInliers(cv::Affine3f &transform,
-                                                        InputArray _oldPoints, InputArray _oldNormals,
-                                                        InputArray _newPoints, InputArray _newNormals
-                                                        ) const
+bool ICPImpl::estimateTransform(cv::Affine3f& transform,
+                                InputArray _oldPoints, InputArray _oldNormals,
+                                InputArray _newPoints, InputArray _newNormals
+                                ) const
 {
     CV_TRACE_FUNCTION();
 
@@ -72,8 +68,6 @@ std::tuple<bool, int> ICPImpl::estimateTransformInliers(cv::Affine3f &transform,
     CV_Assert(_newPoints.size() == _newNormals.size());
     CV_Assert(_oldPoints.size() == _newPoints.size());
 
-    int numInliers;
-    bool success;
 #ifdef HAVE_OPENCL
     if(cv::ocl::isOpenCLActivated() &&
        _oldPoints.isUMatVector() && _oldNormals.isUMatVector() &&
@@ -84,8 +78,7 @@ std::tuple<bool, int> ICPImpl::estimateTransformInliers(cv::Affine3f &transform,
         _newPoints.getUMatVector(np);
         _oldNormals.getUMatVector(on);
         _newNormals.getUMatVector(nn);
-        success = estimateTransformT<UMat>(transform, numInliers, op, on, np, nn);
-        return std::make_tuple(success, numInliers);
+        return estimateTransformT<UMat>(transform, op, on, np, nn);
     }
 #endif
 
@@ -94,21 +87,11 @@ std::tuple<bool, int> ICPImpl::estimateTransformInliers(cv::Affine3f &transform,
     _newPoints.getMatVector(np);
     _oldNormals.getMatVector(on);
     _newNormals.getMatVector(nn);
-    success = estimateTransformT<Mat>(transform, numInliers, op, on, np, nn);
-    return std::make_tuple(success, numInliers);
-}
-
-bool ICPImpl::estimateTransform(cv::Affine3f& transform,
-                                InputArray _oldPoints, InputArray _oldNormals,
-                                InputArray _newPoints, InputArray _newNormals
-                                ) const
-{
-    auto value = estimateTransformInliers(transform, _oldPoints, _oldNormals, _newPoints, _newNormals);
-    return std::get<0>(value);
+    return estimateTransformT<Mat>(transform, op, on, np, nn);
 }
 
 template < typename T >
-bool ICPImpl::estimateTransformT(cv::Affine3f& transform, int& numInliers,
+bool ICPImpl::estimateTransformT(cv::Affine3f& transform,
                                  const vector<T>& oldPoints, const vector<T>& oldNormals,
                                  const vector<T>& newPoints, const vector<T>& newNormals
                                  ) const
@@ -116,7 +99,6 @@ bool ICPImpl::estimateTransformT(cv::Affine3f& transform, int& numInliers,
     CV_TRACE_FUNCTION();
 
     transform = Affine3f::Identity();
-    numInliers = 0; // Finally after ICP completion, if ICP succeeds numInliers will contain final iteration inliers
     for(size_t l = 0; l < iterations.size(); l++)
     {
         size_t level = iterations.size() - 1 - l;
@@ -129,15 +111,12 @@ bool ICPImpl::estimateTransformT(cv::Affine3f& transform, int& numInliers,
             Matx66f A;
             Vec6f b;
 
-            numInliers = getAb(oldPts, oldNrm, newPts, newNrm, transform, (int)level, A, b);
+            getAb(oldPts, oldNrm, newPts, newNrm, transform, (int)level, A, b);
 
             double det = cv::determinant(A);
 
             if (abs (det) < 1e-15 || cvIsNaN(det))
-            {
-                numInliers = 0;
                 return false;
-            }
 
             Vec6f x;
             // theoretically, any method of solving is applicable
@@ -196,11 +175,11 @@ typedef Matx<float, 6, 7> ABtype;
 
 struct GetAbInvoker : ParallelLoopBody
 {
-    GetAbInvoker(ABtype& _globalAb, int& _numInliers, Mutex& _mtx,
+    GetAbInvoker(ABtype& _globalAb, Mutex& _mtx,
                  const Points& _oldPts, const Normals& _oldNrm, const Points& _newPts, const Normals& _newNrm,
                  Affine3f _pose, Intr::Projector _proj, float _sqDistanceThresh, float _minCos) :
         ParallelLoopBody(),
-        globalSumAb(_globalAb), numInliers(_numInliers), mtx(_mtx),
+        globalSumAb(_globalAb), mtx(_mtx),
         oldPts(_oldPts), oldNrm(_oldNrm), newPts(_newPts), newNrm(_newNrm), pose(_pose),
         proj(_proj), sqDistanceThresh(_sqDistanceThresh), minCos(_minCos)
     { }
@@ -499,11 +478,9 @@ struct GetAbInvoker : ParallelLoopBody
 
         AutoLock al(mtx);
         globalSumAb += sumAB;
-        numInliers += localNumInliers;
     }
 
     ABtype& globalSumAb;
-    int& numInliers;
     Mutex& mtx;
     const Points& oldPts;
     const Normals& oldNrm;
@@ -517,7 +494,7 @@ struct GetAbInvoker : ParallelLoopBody
 
 
 template <>
-int ICPImpl::getAb<Mat>(const Mat& oldPts, const Mat& oldNrm, const Mat& newPts, const Mat& newNrm,
+void ICPImpl::getAb<Mat>(const Mat& oldPts, const Mat& oldNrm, const Mat& newPts, const Mat& newNrm,
                          cv::Affine3f pose, int level, cv::Matx66f& A, cv::Vec6f& b) const
 {
     CV_TRACE_FUNCTION();
@@ -526,11 +503,10 @@ int ICPImpl::getAb<Mat>(const Mat& oldPts, const Mat& oldNrm, const Mat& newPts,
     CV_Assert(newPts.size() == newNrm.size());
 
     ABtype sumAB = ABtype::zeros();
-    int numInliers = 0;
     Mutex mutex;
     const Points  op(oldPts), on(oldNrm);
     const Normals np(newPts), nn(newNrm);
-    GetAbInvoker invoker(sumAB, numInliers, mutex, op, on, np, nn, pose,
+    GetAbInvoker invoker(sumAB, mutex, op, on, np, nn, pose,
                          intrinsics.scale(level).makeProjector(),
                          distanceThreshold*distanceThreshold, cos(angleThreshold));
     Range range(0, newPts.rows);
@@ -548,7 +524,6 @@ int ICPImpl::getAb<Mat>(const Mat& oldPts, const Mat& oldNrm, const Mat& newPts,
 
         b(i) = sumAB(i, 6);
     }
-    return numInliers;
 }
 
 ///////// GPU implementation /////////
@@ -556,7 +531,7 @@ int ICPImpl::getAb<Mat>(const Mat& oldPts, const Mat& oldNrm, const Mat& newPts,
 #ifdef HAVE_OPENCL
 
 template <>
-int ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, const UMat& newNrm,
+void ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& newPts, const UMat& newNrm,
                           Affine3f pose, int level, Matx66f &A, Vec6f &b) const
 {
     CV_TRACE_FUNCTION();
@@ -602,7 +577,6 @@ int ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& new
     Intr::Projector proj = intrinsics.scale(level).makeProjector();
     Vec2f fxy(proj.fx, proj.fy), cxy(proj.cx, proj.cy);
 
-    int numInliers = 0;
     UMat& groupedSumGpu = groupedSumBuffers[level];
     groupedSumGpu.create(Size(ngroups.width*UTSIZE, ngroups.height),
                          CV_32F);
@@ -669,8 +643,6 @@ int ICPImpl::getAb<UMat>(const UMat& oldPts, const UMat& oldNrm, const UMat& new
 
         b(i) = sumAB(i, 6);
     }
-    // TODO: Figure out changes for GPU ICP
-    return numInliers;
 }
 
 #endif
