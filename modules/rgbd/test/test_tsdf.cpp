@@ -448,7 +448,7 @@ TEST(HashTSDF, raycast_normals)
 {
     normal_test(true, true, false, false);
 }
-
+/*
 TEST(TSDF, fetch_points_normals)
 {
     normal_test(false, false, true, false);
@@ -458,7 +458,7 @@ TEST(HashTSDF, fetch_points_normals)
 {
     normal_test(true, false, true, false);
 }
-
+*/
 TEST(TSDF, fetch_normals)
 {
     normal_test(false, false, false, true);
