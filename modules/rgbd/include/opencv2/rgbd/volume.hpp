@@ -15,7 +15,7 @@ namespace cv
 {
 namespace kinfu
 {
-class Volume
+class CV_EXPORTS_W Volume
 {
    public:
     Volume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor)
@@ -28,9 +28,9 @@ class Volume
 
     virtual ~Volume(){};
 
-    virtual void integrate(InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
+    CV_WRAP virtual void integrate(InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
                            const cv::kinfu::Intr& intrinsics)                        = 0;
-    virtual void raycast(const cv::Matx44f& cameraPose, const cv::kinfu::Intr& intrinsics,
+    CV_WRAP virtual void raycast(const cv::Matx44f& cameraPose, const cv::kinfu::Intr& intrinsics,
                          cv::Size frameSize, cv::OutputArray points,
                          cv::OutputArray normals) const                                    = 0;
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const       = 0;
