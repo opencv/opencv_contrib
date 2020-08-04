@@ -187,7 +187,7 @@ PERF_TEST(Perf_TSDF, integrate)
     for (size_t i = 0; i < poses.size(); i++)
     {
         UMat _points, _normals;
-        Affine3f pose = poses[i];
+        Matx44f pose = poses[i].matrix;
         Mat depth = scene->depth(pose);
         startTimer();
         volume->integrate(depth, _params->depthFactor, pose, _params->intr);
@@ -211,7 +211,7 @@ PERF_TEST(Perf_TSDF, raycast)
     for (size_t i = 0; i < poses.size(); i++)
     {
         UMat _points, _normals;
-        Affine3f pose = poses[i];
+        Matx44f pose = poses[i].matrix;
         Mat depth = scene->depth(pose);
 
         volume->integrate(depth, _params->depthFactor, pose, _params->intr);

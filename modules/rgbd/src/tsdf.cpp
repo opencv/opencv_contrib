@@ -12,7 +12,7 @@ namespace cv {
 
 namespace kinfu {
 
-TSDFVolume::TSDFVolume(float _voxelSize, Affine3f _pose, float _raycastStepFactor, float _truncDist,
+TSDFVolume::TSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist,
                        int _maxWeight, Point3i _resolution, bool zFirstMemOrder)
     : Volume(_voxelSize, _pose, _raycastStepFactor),
       volResolution(_resolution),
@@ -55,7 +55,7 @@ TSDFVolume::TSDFVolume(float _voxelSize, Affine3f _pose, float _raycastStepFacto
 }
 
 // dimension in voxels, size in meters
-TSDFVolumeCPU::TSDFVolumeCPU(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor,
+TSDFVolumeCPU::TSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
                              float _truncDist, WeightType _maxWeight, Point3i _resolution,
                              bool zFirstMemOrder)
     : TSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution,
@@ -177,13 +177,13 @@ static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
 
 struct IntegrateInvoker : ParallelLoopBody
 {
-    IntegrateInvoker(TSDFVolumeCPU& _volume, const Depth& _depth, const Intr& intrinsics, const cv::Affine3f& cameraPose,
+    IntegrateInvoker(TSDFVolumeCPU& _volume, const Depth& _depth, const Intr& intrinsics, const cv::Matx44f& cameraPose,
                      float depthFactor) :
         ParallelLoopBody(),
         volume(_volume),
         depth(_depth),
         proj(intrinsics.makeProjector()),
-        vol2cam(cameraPose.inv() * _volume.pose),
+        vol2cam(Affine3f(cameraPose.inv()) * _volume.pose),
         truncDistInv(1.f/_volume.truncDist),
         dfac(1.f/depthFactor)
     {
@@ -426,7 +426,7 @@ struct IntegrateInvoker : ParallelLoopBody
 };
 
 // use depth instead of distance (optimization)
-void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Affine3f& cameraPose,
+void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
                               const Intr& intrinsics)
 {
     CV_TRACE_FUNCTION();
@@ -638,7 +638,7 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 
 struct RaycastInvoker : ParallelLoopBody
 {
-    RaycastInvoker(Points& _points, Normals& _normals, const Affine3f& cameraPose,
+    RaycastInvoker(Points& _points, Normals& _normals, const Matx44f& cameraPose,
                   const Intr& intrinsics, const TSDFVolumeCPU& _volume) :
         ParallelLoopBody(),
         points(_points),
@@ -652,8 +652,8 @@ struct RaycastInvoker : ParallelLoopBody
                                         volume.voxelSize,
                                         volume.voxelSize)),
         boxMin(),
-        cam2vol(volume.pose.inv() * cameraPose),
-        vol2cam(cameraPose.inv() * volume.pose),
+        cam2vol(volume.pose.inv() * Affine3f(cameraPose)),
+        vol2cam(Affine3f(cameraPose.inv()) * volume.pose),
         reproj(intrinsics.makeReprojector())
     {  }
 
@@ -922,7 +922,7 @@ struct RaycastInvoker : ParallelLoopBody
 };
 
 
-void TSDFVolumeCPU::raycast(const cv::Affine3f& cameraPose, const Intr& intrinsics, Size frameSize,
+void TSDFVolumeCPU::raycast(const cv::Matx44f& cameraPose, const Intr& intrinsics, Size frameSize,
                             cv::OutputArray _points, cv::OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
@@ -1126,7 +1126,7 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
 ///////// GPU implementation /////////
 
 #ifdef HAVE_OPENCL
-TSDFVolumeGPU::TSDFVolumeGPU(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
+TSDFVolumeGPU::TSDFVolumeGPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
                              Point3i _resolution) :
     TSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution, false)
 {
@@ -1147,7 +1147,7 @@ void TSDFVolumeGPU::reset()
 
 // use depth instead of distance (optimization)
 void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
-                              const cv::Affine3f& cameraPose, const Intr& intrinsics)
+                              const cv::Matx44f& cameraPose, const Intr& intrinsics)
 {
     CV_TRACE_FUNCTION();
     CV_Assert(!_depth.empty());
@@ -1164,7 +1164,7 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
     if(k.empty())
         throw std::runtime_error("Failed to create kernel: " + errorStr);
 
-    cv::Affine3f vol2cam(cameraPose.inv() * pose);
+    cv::Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
     float dfac = 1.f/depthFactor;
     Vec4i volResGpu(volResolution.x, volResolution.y, volResolution.z);
     Vec2f fxy(intrinsics.fx, intrinsics.fy), cxy(intrinsics.cx, intrinsics.cy);
@@ -1193,7 +1193,7 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
 }
 
 
-void TSDFVolumeGPU::raycast(const cv::Affine3f& cameraPose, const Intr& intrinsics, Size frameSize,
+void TSDFVolumeGPU::raycast(const cv::Matx44f& cameraPose, const Intr& intrinsics, Size frameSize,
                             cv::OutputArray _points, cv::OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
@@ -1217,8 +1217,8 @@ void TSDFVolumeGPU::raycast(const cv::Affine3f& cameraPose, const Intr& intrinsi
     UMat normals = _normals.getUMat();
 
     UMat vol2camGpu, cam2volGpu;
-    Affine3f vol2cam = cameraPose.inv() * pose;
-    Affine3f cam2vol = pose.inv() * cameraPose;
+    Affine3f vol2cam = Affine3f(cameraPose.inv()) * pose;
+    Affine3f cam2vol = pose.inv() * Affine3f(cameraPose);
     Mat(cam2vol.matrix).copyTo(cam2volGpu);
     Mat(vol2cam.matrix).copyTo(vol2camGpu);
     Intr::Reprojector r = intrinsics.makeReprojector();
@@ -1426,7 +1426,7 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
 
 #endif
 
-cv::Ptr<TSDFVolume> makeTSDFVolume(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor,
+cv::Ptr<TSDFVolume> makeTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
                                    float _truncDist, int _maxWeight, Point3i _resolution)
 {
 #ifdef HAVE_OPENCL

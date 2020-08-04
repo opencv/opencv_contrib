@@ -311,11 +311,11 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix, 
                                 _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight, 
                                 _params->truncateThreshold, _params->volumeDims);
-    volume->integrate(depth, _params->depthFactor, poses[0], _params->intr);
+    volume->integrate(depth, _params->depthFactor, poses[0].matrix, _params->intr);
     
     if (isRaycast)
     { 
-        volume->raycast(poses[0], _params->intr, _params->frameSize, _points, _normals);
+        volume->raycast(poses[0].matrix, _params->intr, _params->frameSize, _points, _normals);
     }
     if (isFetchPointsNormals)
     {
@@ -341,7 +341,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     
     if (isRaycast)
     {
-        volume->raycast(poses[17], _params->intr, _params->frameSize, _newPoints, _newNormals);
+        volume->raycast(poses[17].matrix, _params->intr, _params->frameSize, _newPoints, _newNormals);
 
         normals = _newNormals.getMat(af);
         normals.forEach<Vec4f>(normalCheck);
@@ -405,9 +405,9 @@ void valid_points_test(bool isHashTSDF)
     Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix,
         _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight,
         _params->truncateThreshold, _params->volumeDims);
-    volume->integrate(depth, _params->depthFactor, poses[0], _params->intr);
+    volume->integrate(depth, _params->depthFactor, poses[0].matrix, _params->intr);
 
-    volume->raycast(poses[0], _params->intr, _params->frameSize, _points, _normals);
+    volume->raycast(poses[0].matrix, _params->intr, _params->frameSize, _points, _normals);
     normals = _normals.getMat(af);
     points = _points.getMat(af);
     patchNaNs(points);
@@ -421,7 +421,7 @@ void valid_points_test(bool isHashTSDF)
         waitKey(20000);
     }
 
-    volume->raycast(poses[17], _params->intr, _params->frameSize, _newPoints, _newNormals);
+    volume->raycast(poses[17].matrix, _params->intr, _params->frameSize, _newPoints, _newNormals);
 
     normals = _newNormals.getMat(af);
     points = _newPoints.getMat(af);

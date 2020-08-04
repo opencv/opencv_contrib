@@ -33,7 +33,7 @@ class TSDFVolume : public Volume
 {
    public:
     // dimension in voxels, size in meters
-    TSDFVolume(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor, float _truncDist,
+    TSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist,
                int _maxWeight, Point3i _resolution, bool zFirstMemOrder = true);
     virtual ~TSDFVolume() = default;
 
@@ -51,12 +51,12 @@ class TSDFVolumeCPU : public TSDFVolume
 {
    public:
     // dimension in voxels, size in meters
-    TSDFVolumeCPU(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor, float _truncDist,
+    TSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist,
                   WeightType _maxWeight, Point3i _resolution, bool zFirstMemOrder = true);
 
-    virtual void integrate(InputArray _depth, float depthFactor, const cv::Affine3f& cameraPose,
+    virtual void integrate(InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
                            const cv::kinfu::Intr& intrinsics) override;
-    virtual void raycast(const cv::Affine3f& cameraPose, const cv::kinfu::Intr& intrinsics,
+    virtual void raycast(const cv::Matx44f& cameraPose, const cv::kinfu::Intr& intrinsics,
                          cv::Size frameSize, cv::OutputArray points,
                          cv::OutputArray normals) const override;
 
@@ -85,12 +85,12 @@ class TSDFVolumeGPU : public TSDFVolume
 {
    public:
     // dimension in voxels, size in meters
-    TSDFVolumeGPU(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor, float _truncDist,
+    TSDFVolumeGPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist,
                   int _maxWeight, Point3i _resolution);
 
-    virtual void integrate(InputArray _depth, float depthFactor, const cv::Affine3f& cameraPose,
+    virtual void integrate(InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
                            const cv::kinfu::Intr& intrinsics) override;
-    virtual void raycast(const cv::Affine3f& cameraPose, const cv::kinfu::Intr& intrinsics,
+    virtual void raycast(const cv::Matx44f& cameraPose, const cv::kinfu::Intr& intrinsics,
                          cv::Size frameSize, cv::OutputArray _points,
                          cv::OutputArray _normals) const override;
 
@@ -106,7 +106,7 @@ class TSDFVolumeGPU : public TSDFVolume
     UMat volume;
 };
 #endif
-cv::Ptr<TSDFVolume> makeTSDFVolume(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor,
+cv::Ptr<TSDFVolume> makeTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
                                    float _truncDist, int _maxWeight, Point3i _resolution);
 }  // namespace kinfu
 }  // namespace cv

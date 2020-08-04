@@ -20,7 +20,7 @@ namespace cv
 {
 namespace kinfu
 {
-HashTSDFVolume::HashTSDFVolume(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor,
+HashTSDFVolume::HashTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
                                float _truncDist, int _maxWeight, float _truncateThreshold,
                                int _volumeUnitRes, bool _zFirstMemOrder)
     : Volume(_voxelSize, _pose, _raycastStepFactor),
@@ -33,7 +33,7 @@ HashTSDFVolume::HashTSDFVolume(float _voxelSize, cv::Affine3f _pose, float _rayc
     truncDist = std::max(_truncDist, 4.0f * voxelSize);
 }
 
-HashTSDFVolumeCPU::HashTSDFVolumeCPU(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor,
+HashTSDFVolumeCPU::HashTSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
                                      float _truncDist, int _maxWeight, float _truncateThreshold,
                                      int _volumeUnitRes, bool _zFirstMemOrder)
     : HashTSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
@@ -51,12 +51,12 @@ void HashTSDFVolumeCPU::reset()
 struct AllocateVolumeUnitsInvoker : ParallelLoopBody
 {
     AllocateVolumeUnitsInvoker(HashTSDFVolumeCPU& _volume, const Depth& _depth, Intr intrinsics,
-                               cv::Affine3f cameraPose, float _depthFactor, int _depthStride = 4)
+                               cv::Matx44f cameraPose, float _depthFactor, int _depthStride = 4)
         : ParallelLoopBody(),
           volume(_volume),
           depth(_depth),
           reproj(intrinsics.makeReprojector()),
-          cam2vol(_volume.pose.inv() * cameraPose),
+          cam2vol(_volume.pose.inv() * Affine3f(cameraPose)),
           depthFactor(1.0f / _depthFactor),
           depthStride(_depthStride)
     {
@@ -103,8 +103,8 @@ struct AllocateVolumeUnitsInvoker : ParallelLoopBody
                                                volume.volumeUnitResolution,
                                                volume.volumeUnitResolution);
 
-                        cv::Affine3f subvolumePose =
-                            volume.pose.translate(volume.volumeUnitIdxToVolume(tsdf_idx));
+                        cv::Matx44f subvolumePose =
+                            volume.pose.translate(volume.volumeUnitIdxToVolume(tsdf_idx)).matrix;
                         volumeUnit.pVolume = cv::makePtr<TSDFVolumeCPU>(
                             volume.voxelSize, subvolumePose, volume.raycastStepFactor,
                             volume.truncDist, volume.maxWeight, volumeDims);
@@ -129,7 +129,7 @@ struct AllocateVolumeUnitsInvoker : ParallelLoopBody
 
 
 void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor,
-                                  const cv::Affine3f& cameraPose, const Intr& intrinsics)
+                                  const cv::Matx44f& cameraPose, const Intr& intrinsics)
 {
     CV_TRACE_FUNCTION();
 
@@ -151,7 +151,7 @@ void HashTSDFVolumeCPU::integrate(InputArray _depth, float depthFactor,
     //! Mark volumes in the camera frustum as active
     Range inFrustumRange(0, (int)volumeUnits.size());
     parallel_for_(inFrustumRange, [&](const Range& range) {
-        const Affine3f vol2cam(cameraPose.inv() * pose);
+        const Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
         const Intr::Projector proj(intrinsics.makeProjector());
 
         for (int i = range.start; i < range.end; ++i)
@@ -332,15 +332,15 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
 
 struct HashRaycastInvoker : ParallelLoopBody
 {
-    HashRaycastInvoker(Points& _points, Normals& _normals, const Affine3f& cameraPose,
+    HashRaycastInvoker(Points& _points, Normals& _normals, const Matx44f& cameraPose,
                        const Intr& intrinsics, const HashTSDFVolumeCPU& _volume)
         : ParallelLoopBody(),
           points(_points),
           normals(_normals),
           volume(_volume),
           tstep(_volume.truncDist * _volume.raycastStepFactor),
-          cam2vol(volume.pose.inv() * cameraPose),
-          vol2cam(cameraPose.inv() * volume.pose),
+          cam2vol(volume.pose.inv() * Affine3f(cameraPose)),
+          vol2cam(Affine3f(cameraPose.inv()) * volume.pose),
           reproj(intrinsics.makeReprojector())
     {
     }
@@ -444,7 +444,7 @@ struct HashRaycastInvoker : ParallelLoopBody
     const Intr::Reprojector reproj;
 };
 
-void HashTSDFVolumeCPU::raycast(const cv::Affine3f& cameraPose, const cv::kinfu::Intr& intrinsics,
+void HashTSDFVolumeCPU::raycast(const cv::Matx44f& cameraPose, const cv::kinfu::Intr& intrinsics,
                                 cv::Size frameSize, cv::OutputArray _points,
                                 cv::OutputArray _normals) const
 {
@@ -579,7 +579,7 @@ struct PushNormals
         if (!isNaN(p))
         {
             Point3f voxelPoint = invPose * p;
-            n                  = volume.pose.rotation() * volume.getNormalVoxel(voxelPoint);
+            n                  = volume.pose * volume.getNormalVoxel(voxelPoint);
         }
         normals(position[0], position[1]) = toPtype(n);
     }
@@ -604,7 +604,7 @@ void HashTSDFVolumeCPU::fetchNormals(cv::InputArray _points, cv::OutputArray _no
     }
 }
 
-cv::Ptr<HashTSDFVolume> makeHashTSDFVolume(float _voxelSize, cv::Affine3f _pose,
+cv::Ptr<HashTSDFVolume> makeHashTSDFVolume(float _voxelSize, cv::Matx44f _pose,
                                            float _raycastStepFactor, float _truncDist,
                                            int _maxWeight, float _truncateThreshold,
                                            int _volumeUnitResolution)
