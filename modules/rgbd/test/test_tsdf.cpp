@@ -299,7 +299,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     
     auto normalCheck = [](Vec4f& vector, const int* position)
     {
-        if (!_isnanf(vector[0]))
+        if (!cvIsNaN(vector[0]))
         {
             float length = vector[0] * vector[0] +
                 vector[1] * vector[1] +
