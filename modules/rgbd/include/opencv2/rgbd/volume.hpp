@@ -28,9 +28,9 @@ class CV_EXPORTS_W Volume
 
     virtual ~Volume(){};
 
-    CV_WRAP virtual void integrate(InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
+    virtual void integrate(InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
                            const cv::kinfu::Intr& intrinsics)                        = 0;
-    CV_WRAP virtual void raycast(const cv::Matx44f& cameraPose, const cv::kinfu::Intr& intrinsics,
+    virtual void raycast(const cv::Matx44f& cameraPose, const cv::kinfu::Intr& intrinsics,
                          cv::Size frameSize, cv::OutputArray points,
                          cv::OutputArray normals) const                                    = 0;
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const       = 0;
