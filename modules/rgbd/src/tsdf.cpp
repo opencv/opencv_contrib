@@ -56,7 +56,7 @@ TSDFVolume::TSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor
 
 // dimension in voxels, size in meters
 TSDFVolumeCPU::TSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
-                             float _truncDist, WeightType _maxWeight, Point3i _resolution,
+                             float _truncDist, WeightType _maxWeight, Vec3i _resolution,
                              bool zFirstMemOrder)
     : TSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution,
                  zFirstMemOrder)
