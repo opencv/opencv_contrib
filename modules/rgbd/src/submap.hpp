@@ -12,6 +12,7 @@
 #include <vector>
 
 #include "hash_tsdf.hpp"
+#include "opencv2/core/mat.inl.hpp"
 #include "pose_graph.hpp"
 
 namespace cv
@@ -32,25 +33,19 @@ class Submap
         void accumulatePose(const Affine3f& _pose, int _weight = 1)
         {
             Matx44f accPose = estimatedPose.matrix * weight + _pose.matrix * _weight;
-            weight += _weight;
-            accPose = accPose * (1/float(weight));
-            estimatedPose = Affine3f(accPose);
+            weight         += _weight;
+            accPose        /= float(weight);
+            estimatedPose   = Affine3f(accPose);
         }
     };
-
     typedef std::map<int, PoseConstraint> Constraints;
 
     Submap(int _id, const VolumeParams& volumeParams, const cv::Affine3f& _pose = cv::Affine3f::Identity(),
            int _startFrameId = 0)
-        : id(_id),
-          pose(_pose),
-          cameraPose(Affine3f::Identity()),
-          startFrameId(_startFrameId),
-          volume(volumeParams)
+        : id(_id), pose(_pose), cameraPose(Affine3f::Identity()), startFrameId(_startFrameId), volume(volumeParams)
     {
         std::cout << "Created volume\n";
     }
-
     virtual ~Submap() = default;
 
     virtual void integrate(InputArray _depth, float depthFactor, const cv::kinfu::Intr& intrinsics, const int currframeId);
@@ -172,8 +167,8 @@ class SubmapManager
     void updateMap(int _frameId, std::vector<MatType> _framePoints, std::vector<MatType> _frameNormals);
 
     VolumeParams volumeParams;
+
     std::vector<Ptr<SubmapT>> submapList;
-    //! Maintains a pointer to active submaps in the entire submapList
     IdToActiveSubmaps activeSubmaps;
 
     PoseGraph poseGraph;
@@ -184,13 +179,13 @@ int SubmapManager<MatType>::createNewSubmap(bool isCurrentMap, int currFrameId, 
 {
     int newId = int(submapList.size());
 
-    Ptr<SubmapT> newSubmap      = cv::makePtr<SubmapT>(newId, volumeParams, pose, currFrameId);
+    Ptr<SubmapT> newSubmap = cv::makePtr<SubmapT>(newId, volumeParams, pose, currFrameId);
     submapList.push_back(newSubmap);
 
     ActiveSubmapData newSubmapData;
     newSubmapData.trackingAttempts = 0;
-    newSubmapData.type = isCurrentMap ? Type::CURRENT : Type::NEW;
-    activeSubmaps[newId] = newSubmapData;
+    newSubmapData.type             = isCurrentMap ? Type::CURRENT : Type::NEW;
+    activeSubmaps[newId]           = newSubmapData;
 
     std::cout << "Created new submap\n";
 
@@ -240,7 +235,7 @@ bool SubmapManager<MatType>::shouldCreateSubmap(int currFrameId)
     }
 
     Ptr<SubmapT> currSubmap = getSubmap(currSubmapId);
-    float ratio = currSubmap->calcVisibilityRatio(currFrameId);
+    float ratio             = currSubmap->calcVisibilityRatio(currFrameId);
 
     std::cout << "Ratio: " << ratio << "\n";
 
@@ -266,8 +261,8 @@ bool SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId
         return numerator / rAbs;
     };
 
-    Ptr<SubmapT> fromSubmap = getSubmap(fromSubmapId);
-    Ptr<SubmapT> toSubmap   = getSubmap(toSubmapId);
+    Ptr<SubmapT> fromSubmap          = getSubmap(fromSubmapId);
+    Ptr<SubmapT> toSubmap            = getSubmap(toSubmapId);
     ActiveSubmapData& fromSubmapData = activeSubmaps.at(fromSubmapId);
 
     Affine3f TcameraToFromSubmap = fromSubmap->cameraPose;
@@ -306,7 +301,8 @@ bool SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId
         cv::vconcat(prevConstraint.rvec(), prevConstraint.translation(), constraintVec);
         meanConstraint += weights.back() * prevWeight * constraintVec;
         sumWeight += prevWeight;
-        meanConstraint = meanConstraint * (1 / sumWeight);
+        /* std::cout << "meanConstraint before average: " << meanConstraint << " sumWeight: " << sumWeight << "\n"; */
+        meanConstraint /= float(sumWeight);
 
         float residual = 0.0f;
         float diff     = 0;
@@ -325,7 +321,10 @@ bool SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId
                 w = 1.0f;
             }
 
-            residual         = norm(constraintVec - meanConstraint);
+            std::cout << "meanConstraint: " << meanConstraint << " ConstraintVec: " << constraintVec << "\n";
+            cv::Vec6f residualVec = (constraintVec - meanConstraint);
+            std::cout << "Residual Vec: " << residualVec << "\n";
+            residual         = norm(residualVec);
             double newWeight = huberWeight(residual);
             std::cout << "iteration: " << i << " residual: " << residual << " " << j
                       << "th weight before update: " << weights[j] << " after update: " << newWeight << "\n";
@@ -344,12 +343,15 @@ bool SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId
         if (weights[i] > INLIER_WEIGHT_THRESH)
         {
             localInliers++;
-            inlierConstraint += fromSubmapData.constraints[i].matrix;
+            if (i == int(weights.size() - 1))
+                inlierConstraint += prevConstraint.matrix;
+            else
+                inlierConstraint += fromSubmapData.constraints[i].matrix;
         }
     }
     inlierConstraint /= float(max(localInliers, 1));
     inlierPose = Affine3f(inlierConstraint);
-    inliers = localInliers;
+    inliers    = localInliers;
 
     /* std::cout << "Rvec: " << rvec << " tvec: " << tvec << "\n"; */
     std::cout << inlierPose.matrix << "\n";
@@ -365,10 +367,9 @@ bool SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId
 template<typename MatType>
 bool SubmapManager<MatType>::shouldChangeCurrSubmap(int _frameId, int toSubmapId)
 {
-    auto toSubmap = getSubmap(toSubmapId);
-    auto toSubmapData = activeSubmaps.at(toSubmapId);
+    auto toSubmap         = getSubmap(toSubmapId);
+    auto toSubmapData     = activeSubmaps.at(toSubmapId);
     auto currActiveSubmap = getCurrentSubmap();
-
 
     int blocksInNewMap = toSubmap->getTotalAllocatedBlocks();
     float newRatio     = toSubmap->calcVisibilityRatio(_frameId);
@@ -387,12 +388,12 @@ bool SubmapManager<MatType>::shouldChangeCurrSubmap(int _frameId, int toSubmapId
 template<typename MatType>
 void SubmapManager<MatType>::updateMap(int _frameId, std::vector<MatType> _framePoints, std::vector<MatType> _frameNormals)
 {
-    const int currSubmapId = getCurrentSubmap()->id;
-    int changedCurrentMapId       = -1;
+    const int currSubmapId  = getCurrentSubmap()->id;
+    int changedCurrentMapId = -1;
     for (auto& it : activeSubmaps)
     {
-        int submapId = it.first;
-        auto& submapData  = it.second;
+        int submapId     = it.first;
+        auto& submapData = it.second;
         if (submapData.type == Type::NEW || submapData.type == Type::LOOP_CLOSURE)
         {
             // Check with previous estimate
@@ -417,72 +418,62 @@ void SubmapManager<MatType>::updateMap(int _frameId, std::vector<MatType> _frame
                     changedCurrentMapId = submapId;
                 }
             }
+            else
+            {
+                //! If tried tracking for threshold number of times, mark the data as lost
+            }
         }
     }
 
     std::vector<int> createNewConstraintsList;
     for (auto& it : activeSubmaps)
     {
-        int submapId = it.first;
-        auto& submapData  = it.second;
-        std::cout << "submapId: " << submapId << " SubmapType: " << static_cast<int>(submapData.type) << "\n";
-        std::cout << "changedCurrentMapId: " << changedCurrentMapId << "\n";
+        int submapId     = it.first;
+        auto& submapData = it.second;
 
         if (submapId == changedCurrentMapId)
         {
             submapData.type = Type::CURRENT;
-            std::cout << "Changed submapId: " << submapId << " to currentMap\n";
         }
         if ((submapData.type == Type::CURRENT) && (changedCurrentMapId >= 0) && (submapId != changedCurrentMapId))
         {
             submapData.type = Type::LOST;
             createNewConstraintsList.push_back(submapId);
-            std::cout << "Marked submapId: " << submapId << " as lost\n";
         }
         if ((submapData.type == Type::NEW || submapData.type == Type::LOOP_CLOSURE) && (changedCurrentMapId >= 0))
         {
             //! TODO: Add a new type called NEW_LOST?
             submapData.type = Type::LOST;
             createNewConstraintsList.push_back(submapId);
-            std::cout << "Marked submapId: " << submapId << " as lost\n";
         }
     }
 
-    for (typename IdToActiveSubmaps::iterator it = activeSubmaps.begin(); it != activeSubmaps.end(); )
+    for (typename IdToActiveSubmaps::iterator it = activeSubmaps.begin(); it != activeSubmaps.end();)
     {
         auto& submapData = it->second;
-        std::cout << "submapId: " << it->first << " submapData type: " << static_cast<int>(submapData.type) << "\n";
         if (submapData.type == Type::LOST)
-        {
-            std::cout << "Erased element: " << it->first;
             it = activeSubmaps.erase(it);
-        }
         else
-        {
             it++;
-        }
     }
-
-    std::cout << "Active submap Data size after removing lost: " << activeSubmaps.size() << "\n";
 
     for (std::vector<int>::const_iterator it = createNewConstraintsList.begin(); it != createNewConstraintsList.end(); ++it)
     {
         int dataId = *it;
         ActiveSubmapData newSubmapData;
         newSubmapData.trackingAttempts = 0;
-        newSubmapData.type = Type::LOOP_CLOSURE;
-        activeSubmaps[dataId] = newSubmapData;
+        newSubmapData.type             = Type::LOOP_CLOSURE;
+        activeSubmaps[dataId]          = newSubmapData;
     }
-    std::cout << "Active submap Data size after adding new data: " << activeSubmaps.size() << "\n";
 
     if (shouldCreateSubmap(_frameId))
     {
         Ptr<SubmapT> currActiveSubmap = getCurrentSubmap();
-        Affine3f newSubmapPose = currActiveSubmap->pose * currActiveSubmap->cameraPose;
-        int submapId           = createNewSubmap(false, _frameId, newSubmapPose);
-        auto newSubmap         = getSubmap(submapId);
-        newSubmap->pyrPoints   = _framePoints;
-        newSubmap->pyrNormals  = _frameNormals;
+        Affine3f newSubmapPose        = currActiveSubmap->pose * currActiveSubmap->cameraPose;
+        int submapId                  = createNewSubmap(false, _frameId, newSubmapPose);
+        auto newSubmap                = getSubmap(submapId);
+        newSubmap->pyrPoints          = _framePoints;
+        newSubmap->pyrNormals         = _frameNormals;
     }
 }
 

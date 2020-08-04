@@ -126,7 +126,6 @@ struct VolumeUnit
     ~VolumeUnit() = default;
 
     cv::Ptr<TSDFVolume> pVolume;
-    cv::Vec3i index;
     int lastVisibleIndex = 0;
     bool isActive;
 };

@@ -75,7 +75,7 @@ struct AllocateVolumeUnitsInvoker : ParallelLoopBody
             for (int x = 0; x < depth.cols; x += depthStride)
             {
                 depthType z = depthRow[x] * depthFactor;
-                if (z <= 0)
+                if (z <= 0 || z > volume.truncateThreshold)
                     continue;
 
                 Point3f camPoint = reproj(Point3f((float)x, (float)y, z));
@@ -112,7 +112,6 @@ struct AllocateVolumeUnitsInvoker : ParallelLoopBody
                             cv::makePtr<TSDFVolumeCPU>(volume.voxelSize, subvolumePose, volume.raycastStepFactor,
                                                        volume.truncDist, volume.maxWeight, volumeDims);
                         //! This volume unit will definitely be required for current integration
-                        volumeUnit.index             = tsdf_idx;
                         volumeUnit.isActive          = true;
                         volumeUnit.lastVisibleIndex  = frameId;
                         volume.volumeUnits[tsdf_idx] = volumeUnit;
@@ -145,7 +144,7 @@ void HashTSDFVolumeCPU::integrate_(InputArray _depth, float depthFactor, const c
     Range allocateRange(0, depth.rows);
     parallel_for_(allocateRange, allocate_i);
 
-    //! Get volumes that are in the current camera frame
+    //! Get keys for all the allocated volume Units
     std::vector<Vec3i> totalVolUnits;
     for (const auto& keyvalue : volumeUnits)
     {
@@ -558,33 +557,14 @@ void HashTSDFVolumeCPU::fetchNormals_(cv::InputArray _points, cv::OutputArray _n
 int HashTSDFVolumeCPU::getVisibleBlocks_(int currFrameId, int frameThreshold) const
 {
     int numVisibleBlocks = 0;
-    std::vector<Vec3i> totalVolUnits;
+    //! TODO: Iterate over map parallely?
     for (const auto& keyvalue : volumeUnits)
     {
-        totalVolUnits.push_back(keyvalue.first);
+        const VolumeUnit& volumeUnit = keyvalue.second;
+        if(volumeUnit.lastVisibleIndex > (currFrameId - frameThreshold))
+            numVisibleBlocks++;
     }
-
-    Range checkVisibleRange(0, volumeUnits.size());
-    //! TODO: Sum up via reduction
-    /* parallel_for_(checkVisibleRange, [&](const Range& range) { */
-
-        for (int i = checkVisibleRange.start; i < checkVisibleRange.end; ++i)
-        {
-            cv::Vec3i tsdf_idx         = totalVolUnits[i];
-            VolumeUnitMap::const_iterator it = volumeUnits.find(tsdf_idx);
-            if (it == volumeUnits.end())
-                continue;
-
-            if(it->second.lastVisibleIndex > (currFrameId - frameThreshold))
-            {
-                //! Add count (parallel?)
-                numVisibleBlocks++;
-            }
-        }
-
     return numVisibleBlocks;
-    /* }); */
-
 }
 
 }  // namespace kinfu
