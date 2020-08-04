@@ -224,11 +224,12 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
                        params.bilateral_sigma_depth, params.bilateral_sigma_spatial, params.bilateral_kernel_size,
                        params.truncateThreshold);
 
-    for (const auto& pActiveSubmapPair : submapMgr->activeSubmapList)
+    for (const auto& it : submapMgr->activeSubmaps)
     {
         //! Iterate over map?
-        int currTrackingId = pActiveSubmapPair.first;
-        Ptr<Submap<MatType>> currTrackingSubmap = pActiveSubmapPair.second;
+        int currTrackingId = it.first;
+        auto submapData = it.second;
+        Ptr<Submap<MatType>> currTrackingSubmap = submapMgr->getSubmap(currTrackingId);
         Affine3f affine;
         std::cout << "Current tracking ID: " << currTrackingId << std::endl;
 

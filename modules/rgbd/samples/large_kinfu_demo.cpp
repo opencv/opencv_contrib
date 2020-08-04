@@ -502,7 +502,6 @@ int main(int argc, char **argv)
                                      (int)(getTickFrequency()/(newTime - prevTime))),
                 Point(0, rendered.rows-1), FONT_HERSHEY_SIMPLEX, 0.5, Scalar(0, 255, 255));
         prevTime = newTime;
-        std::cout << "Trying to render image: " << rendered.rows << " "<< rendered.cols << "\n";
         imshow("render", rendered);
 
         int c = waitKey(1);
