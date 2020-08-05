@@ -579,7 +579,7 @@ struct PushNormals
         if (!isNaN(p))
         {
             Point3f voxelPoint = invPose * p;
-            n                  = volume.pose * volume.getNormalVoxel(voxelPoint);
+            n                  = volume.pose.rotation() * volume.getNormalVoxel(voxelPoint);
         }
         normals(position[0], position[1]) = toPtype(n);
     }
