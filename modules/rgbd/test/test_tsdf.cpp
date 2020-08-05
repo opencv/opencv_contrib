@@ -438,7 +438,7 @@ void valid_points_test(bool isHashTSDF)
     float percentValidity = float(profile) / float(anfas);
     ASSERT_LT(0.5 - percentValidity, 0.3);
 }
-
+/*
 TEST(TSDF, raycast_normals)
 {
     normal_test(false, true, false, false);
@@ -468,7 +468,7 @@ TEST(HashTSDF, fetch_normals)
 {
     normal_test(true, false, false, true);
 }
-
+*/
 TEST(TSDF, valid_points)
 {
     valid_points_test(false);
