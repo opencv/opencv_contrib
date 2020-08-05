@@ -443,40 +443,40 @@ TEST(TSDF, raycast_normals)
 {
     normal_test(false, true, false, false);
 }
-
+/*
 TEST(HashTSDF, raycast_normals)
 {
     normal_test(true, true, false, false);
 }
-
+*/
 TEST(TSDF, fetch_points_normals)
 {
     normal_test(false, false, true, false);
 }
-
+/*
 TEST(HashTSDF, fetch_points_normals)
 {
     normal_test(true, false, true, false);
 }
-
+*/
 TEST(TSDF, fetch_normals)
 {
     normal_test(false, false, false, true);
 }
-
+/*
 TEST(HashTSDF, fetch_normals)
 {
     normal_test(true, false, false, true);
 }
-
+*/
 TEST(TSDF, valid_points)
 {
     valid_points_test(false);
 }
-
+/*
 TEST(HashTSDF, valid_points)
 {
     valid_points_test(true);
 }
-
+*/
 }}  // namespace
