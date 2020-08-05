@@ -230,7 +230,7 @@ void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray im
 
     Range range(0, sz.height);
     const int nstripes = -1;
-    parallel_for_(range, [&](const Range& range) 
+    parallel_for_(range, [&](const Range&) 
         {
             for (int y = range.start; y < range.end; y++)
             {
@@ -297,7 +297,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     Mat image;
     AccessFlag af = ACCESS_READ;
     
-    auto normalCheck = [](Vec4f& vector, const int* position)
+    auto normalCheck = [](Vec4f& vector, const int*)
     {
         if (!cvIsNaN(vector[0]))
         {
@@ -448,7 +448,7 @@ TEST(HashTSDF, raycast_normals)
 {
     normal_test(true, true, false, false);
 }
-/*
+
 TEST(TSDF, fetch_points_normals)
 {
     normal_test(false, false, true, false);
@@ -458,7 +458,7 @@ TEST(HashTSDF, fetch_points_normals)
 {
     normal_test(true, false, true, false);
 }
-*/
+
 TEST(TSDF, fetch_normals)
 {
     normal_test(false, false, false, true);
