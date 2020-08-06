@@ -251,7 +251,7 @@ bool KinFuImpl<MatType>::updateT(const MatType& _depth)
         if(!success)
             return false;
 
-        pose = pose * affine.matrix;
+        pose = (Affine3f(pose) * affine).matrix;
 
         float rnorm = (float)cv::norm(affine.rvec());
         float tnorm = (float)cv::norm(affine.translation());
