@@ -9,6 +9,31 @@
 
 /**
 @defgroup ovis OGRE 3D Visualiser
+
+ovis is a simplified rendering wrapper around [ogre3d](https://www.ogre3d.org/).
+The [Ogre terminology](https://ogrecave.github.io/ogre/api/latest/_the-_core-_objects.html) is used in the API
+and [Ogre Script](https://ogrecave.github.io/ogre/api/latest/_scripts.html) is assumed to be used for advanced customization.
+
+Besides the API you see here, there are several environment variables that control the behavior of ovis.
+They are documented in @ref createWindow.
+
+## Loading geometry
+
+You can create geometry [on the fly](@ref createTriangleMesh) or by loading Ogre `.mesh` files.
+
+### Blender
+For converting/ creating geometry [Blender](https://www.blender.org/) is recommended.
+- Blender 2.7x is better tested, but Blender 2.8x should work too
+- install [blender2ogre](https://github.com/OGRECave/blender2ogre) matching your Blender version
+- download the [Ogre MSVC SDK](https://www.ogre3d.org/download/sdk/sdk-ogre) which contains `OgreXMLConverter.exe` (in `bin/`) and set the path in the blender2ogre settings
+- get [ogre-meshviewer](https://github.com/OGRECave/ogre-meshviewer) to enable the preview function in blender2ogre as well as for verifying the exported files
+- in case the exported materials are not exactly how you want them, consult the [Ogre Manual](https://ogrecave.github.io/ogre/api/latest/_material-_scripts.html)
+
+### Assimp
+When using Ogre 1.12.9 or later, enabling the Assimp plugin allows to load arbitrary geometry.
+Simply pass `bunny.obj` instead of `bunny.mesh` as `meshname` in @ref WindowScene::createEntity.
+
+You should still use ogre-meshviewer to verify that the geometry is converted correctly.
 */
 
 namespace cv {
