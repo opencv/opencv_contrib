@@ -18,8 +18,8 @@ namespace kinfu
 struct PoseGraphNode
 {
    public:
-    explicit PoseGraphNode(int _nodeId, const Affine3f& _pose) : nodeId(_nodeId), isFixed(false), pose(_pose)  {}
-    virtual ~PoseGraphNode();
+    explicit PoseGraphNode(int _nodeId, const Affine3f& _pose) : nodeId(_nodeId), isFixed(false), pose(_pose) {}
+    virtual ~PoseGraphNode() = default;
 
     int getId() const { return nodeId; }
     Affine3f getPose() const { return pose; }
@@ -64,7 +64,8 @@ struct PoseGraphEdge
 //! Jose Luis Blanco
 //! Compactly represents the jacobian of the SE3 generator
 // clang-format off
-static const std::array<Matx44f, 6> generatorJacobian = {  // alpha
+static const std::array<Matx44f, 6> generatorJacobian = {
+    // alpha
     Matx44f(0, 0,  0, 0,
             0, 0, -1, 0,
             0, 1,  0, 0,
@@ -126,11 +127,12 @@ class PoseGraph
     int getNumNodes() const { return nodes.size(); }
     int getNumEdges() const { return edges.size(); }
 
+    Mat getVector();
+
     //! @brief: Constructs a linear system and returns the residual of the current system
     float createLinearSystem(BlockSparseMat<float, 6, 6>& H, Mat& B);
 
    private:
-
     NodeVector nodes;
     EdgeVector edges;
 };
@@ -144,7 +146,7 @@ struct Params
     float maxAcceptableResIncre;
 
     // TODO: Refine these constants
-    Params() : maxNumIters(40), minResidual(1e-3f), maxAcceptableResIncre(1e-3f){};
+    Params() : maxNumIters(40), minResidual(1e-3f), maxAcceptableResIncre(1e-2f){};
     virtual ~Params() = default;
 };
 

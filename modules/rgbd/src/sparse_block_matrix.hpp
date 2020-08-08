@@ -9,9 +9,10 @@
 
 #if defined(HAVE_EIGEN)
 #include <Eigen/Core>
-#include "opencv2/core/eigen.hpp"
 #include <Eigen/Sparse>
 #include <Eigen/SparseCholesky>
+
+#include "opencv2/core/eigen.hpp"
 #endif
 
 namespace cv
@@ -25,7 +26,6 @@ namespace kinfu
 template<typename _Tp, int blockM, int blockN>
 struct BlockSparseMat
 {
-
     struct Point2iHash
     {
         size_t operator()(const cv::Point2i& point) const noexcept
@@ -41,7 +41,6 @@ struct BlockSparseMat
     typedef std::unordered_map<Point2i, MatType, Point2iHash> IDtoBlockValueMap;
     static constexpr int blockSize = blockM * blockN;
 
-
     BlockSparseMat(int _nBlocks) : nBlocks(_nBlocks), ijValue() {}
 
     MatType& refBlock(int i, int j)
@@ -50,7 +49,7 @@ struct BlockSparseMat
         auto it = ijValue.find(p);
         if (it == ijValue.end())
         {
-            it = ijValue.insert({ p, Matx<_Tp, blockM, blockN>() }).first;
+            it = ijValue.insert({ p, Matx<_Tp, blockM, blockN>::zeros() }).first;
         }
         return it->second;
     }
@@ -61,29 +60,28 @@ struct BlockSparseMat
         return refBlock(ib.x, ib.y)(iv.x, iv.y);
     }
 
-#if defined (HAVE_EIGEN)
+#if defined(HAVE_EIGEN)
     Eigen::SparseMatrix<_Tp> toEigen() const
     {
         std::vector<Eigen::Triplet<double>> tripletList;
-        tripletList.reserve(ijValue.size() * blockSize * blockSize);
-
+        tripletList.reserve(ijValue.size() * blockSize);
         for (auto ijv : ijValue)
         {
             int xb = ijv.first.x, yb = ijv.first.y;
             MatType vblock = ijv.second;
-            for (int i = 0; i < blockSize; i++)
+            for (int i = 0; i < blockM; i++)
             {
-                for (int j = 0; j < blockSize; j++)
+                for (int j = 0; j < blockN; j++)
                 {
                     float val = vblock(i, j);
                     if (abs(val) >= NON_ZERO_VAL_THRESHOLD)
                     {
-                        tripletList.push_back(Eigen::Triplet<double>(blockSize * xb + i, blockSize * yb + j, val));
+                        tripletList.push_back(Eigen::Triplet<double>(blockM * xb + i, blockN * yb + j, val));
                     }
                 }
             }
         }
-        Eigen::SparseMatrix<_Tp> EigenMat(blockSize * nBlocks, blockSize * nBlocks);
+        Eigen::SparseMatrix<_Tp> EigenMat(blockM * nBlocks, blockN * nBlocks);
         EigenMat.setFromTriplets(tripletList.begin(), tripletList.end());
         EigenMat.makeCompressed();
 
@@ -104,13 +102,11 @@ static bool sparseSolve(const BlockSparseMat<float, 6, 6>& H, const Mat& B, Mat&
     bool result = false;
 
 #if defined(HAVE_EIGEN)
-    std::cout << "starting eigen-insertion..." << std::endl;
-
     Eigen::SparseMatrix<float> bigA = H.toEigen();
     Eigen::VectorXf bigB;
     cv2eigen(B, bigB);
 
-    //!TODO: Check if this is required
+    //! TODO: Check if this is required
     Eigen::SparseMatrix<float> bigATranspose = bigA.transpose();
     if (!bigA.isApprox(bigATranspose))
     {
@@ -118,13 +114,11 @@ static bool sparseSolve(const BlockSparseMat<float, 6, 6>& H, const Mat& B, Mat&
         return result;
     }
 
-
     // TODO: try this, LLT and Cholesky
     Eigen::SimplicialLDLT<Eigen::SparseMatrix<float>> solver;
 
     std::cout << "starting eigen-compute..." << std::endl;
     solver.compute(bigA);
-
     if (solver.info() != Eigen::Success)
     {
         std::cout << "failed to eigen-decompose" << std::endl;

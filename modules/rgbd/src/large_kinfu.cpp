@@ -227,7 +227,6 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
     std::cout << "Current frameID: " << frameCounter << "\n";
     for (const auto& it : submapMgr->activeSubmaps)
     {
-        //! Iterate over map?
         int currTrackingId = it.first;
         auto submapData = it.second;
         Ptr<Submap<MatType>> currTrackingSubmap = submapMgr->getSubmap(currTrackingId);
@@ -250,6 +249,7 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
         else
         {
             std::cout << "Tracking failed" << std::endl;
+            continue;
         }
 
         //2. Integrate
@@ -272,7 +272,17 @@ bool LargeKinfuImpl<MatType>::updateT(const MatType& _depth)
 
     }
     //4. Update map
-    submapMgr->updateMap(frameCounter, newPoints, newNormals);
+    bool isMapUpdated = submapMgr->updateMap(frameCounter, newPoints, newNormals);
+
+    if(isMapUpdated)
+    {
+        // TODO: Convert constraints to posegraph
+        PoseGraph poseGraph = submapMgr->createPoseGraph();
+        std::cout << "Created posegraph\n";
+        Optimizer::optimizeGaussNewton(Optimizer::Params(), poseGraph);
+        /* submapMgr->adjustMap(poseGraph); */
+
+    }
     std::cout << "Number of submaps: " << submapMgr->submapList.size() << "\n";
 
     frameCounter++;

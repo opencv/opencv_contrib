@@ -163,8 +163,10 @@ class SubmapManager
     Ptr<SubmapT> getSubmap(int _id) const;
     Ptr<SubmapT> getCurrentSubmap(void) const;
 
-    bool estimateConstraint(int fromSubmapId, int toSubmapId, int& inliers, Affine3f& inlierPose);
-    void updateMap(int _frameId, std::vector<MatType> _framePoints, std::vector<MatType> _frameNormals);
+    int estimateConstraint(int fromSubmapId, int toSubmapId, int& inliers, Affine3f& inlierPose);
+    bool updateMap(int _frameId, std::vector<MatType> _framePoints, std::vector<MatType> _frameNormals);
+
+    PoseGraph createPoseGraph();
 
     VolumeParams volumeParams;
 
@@ -245,12 +247,13 @@ bool SubmapManager<MatType>::shouldCreateSubmap(int currFrameId)
 }
 
 template<typename MatType>
-bool SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId, int& inliers, Affine3f& inlierPose)
+int SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId, int& inliers, Affine3f& inlierPose)
 {
     static constexpr int MAX_ITER                    = 10;
     static constexpr float CONVERGE_WEIGHT_THRESHOLD = 0.01f;
     static constexpr float INLIER_WEIGHT_THRESH      = 0.8f;
     static constexpr int MIN_INLIERS                 = 10;
+    static constexpr int MAX_TRACKING_ATTEMPTS = 25;
 
     //! thresh = HUBER_THRESH
     auto huberWeight = [](float residual, float thresh = 0.1f) -> float {
@@ -358,9 +361,14 @@ bool SubmapManager<MatType>::estimateConstraint(int fromSubmapId, int toSubmapId
 
     if (inliers >= MIN_INLIERS)
     {
-        return true;
+        return 1;
     }
-    return false;
+    if(fromSubmapData.trackingAttempts - inliers > (MAX_TRACKING_ATTEMPTS - MIN_INLIERS))
+    {
+        return -1;
+    }
+
+    return 0;
 }
 
 template<typename MatType>
@@ -385,10 +393,13 @@ bool SubmapManager<MatType>::shouldChangeCurrSubmap(int _frameId, int toSubmapId
 }
 
 template<typename MatType>
-void SubmapManager<MatType>::updateMap(int _frameId, std::vector<MatType> _framePoints, std::vector<MatType> _frameNormals)
+bool SubmapManager<MatType>::updateMap(int _frameId, std::vector<MatType> _framePoints, std::vector<MatType> _frameNormals)
 {
-    const int currSubmapId  = getCurrentSubmap()->id;
+    bool mapUpdated = false;
     int changedCurrentMapId = -1;
+
+    const int currSubmapId  = getCurrentSubmap()->id;
+
     for (auto& it : activeSubmaps)
     {
         int submapId     = it.first;
@@ -398,9 +409,9 @@ void SubmapManager<MatType>::updateMap(int _frameId, std::vector<MatType> _frame
             // Check with previous estimate
             int inliers;
             Affine3f inlierPose;
-            bool success = estimateConstraint(submapId, currSubmapId, inliers, inlierPose);
+            int constraintUpdate = estimateConstraint(submapId, currSubmapId, inliers, inlierPose);
             std::cout << "SubmapId: " << submapId << " Tracking attempts: " << submapData.trackingAttempts << "\n";
-            if (success)
+            if (constraintUpdate == 1)
             {
                 typename SubmapT::PoseConstraint& submapConstraint = getSubmap(submapId)->getConstraint(currSubmapId);
                 submapConstraint.accumulatePose(inlierPose, inliers);
@@ -408,17 +419,16 @@ void SubmapManager<MatType>::updateMap(int _frameId, std::vector<MatType> _frame
                 submapData.constraints.clear();
                 submapData.trackingAttempts = 0;
 
-                //! TODO: Check for visibility and change currentActiveMap
                 if (shouldChangeCurrSubmap(_frameId, submapId))
                 {
-                    //! TODO: Change submap and update constraints accordingly
                     std::cout << "Should change current map to the new map\n";
                     changedCurrentMapId = submapId;
                 }
+                mapUpdated = true;
             }
-            else
+            else if(constraintUpdate == -1)
             {
-                //! If tried tracking for threshold number of times, mark the data as lost
+                submapData.type = Type::LOST;
             }
         }
     }
@@ -474,6 +484,7 @@ void SubmapManager<MatType>::updateMap(int _frameId, std::vector<MatType> _frame
         newSubmap->pyrNormals         = _frameNormals;
     }
 
+    // Debugging only
     if(_frameId%100 == 0)
     {
         for(size_t i = 0; i < submapList.size(); i++)
@@ -488,6 +499,37 @@ void SubmapManager<MatType>::updateMap(int _frameId, std::vector<MatType> _frame
             }
         }
     }
+
+    return mapUpdated;
+}
+
+template<typename MatType>
+PoseGraph SubmapManager<MatType>::createPoseGraph()
+{
+    PoseGraph localPoseGraph;
+
+    for(const Ptr<SubmapT> currSubmap : submapList)
+    {
+        PoseGraphNode currNode(currSubmap->id, currSubmap->pose);
+        if(currSubmap->id == 0)
+        {
+            currNode.setFixed();
+        }
+        localPoseGraph.addNode(currNode);
+    }
+
+    for(const Ptr<SubmapT> currSubmap : submapList)
+    {
+        const typename SubmapT::Constraints& constraintList = currSubmap->constraints;
+        for(const auto& currConstraintPair : constraintList)
+        {
+            // TODO: Handle case with duplicate constraints A -> B and B -> A
+            Matx66f informationMatrix = Matx66f::eye() * (currConstraintPair.second.weight/10);
+            PoseGraphEdge currEdge(currSubmap->id, currConstraintPair.first, currConstraintPair.second.estimatedPose, informationMatrix);
+            localPoseGraph.addEdge(currEdge);
+        }
+    }
+    return localPoseGraph;
 }
 
 }  // namespace kinfu
