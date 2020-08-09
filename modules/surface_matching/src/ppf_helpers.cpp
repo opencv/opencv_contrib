@@ -123,12 +123,12 @@ Mat loadPLYSimple(const char* fileName, int withNormals)
     int col = 0;
     for (; col < (withNormals ? 6 : 3); ++col)
     {
-      ifs >> data[col];
+      ifs.read(reinterpret_cast<char*>(&data[col]), sizeof(float));
     }
     for (; col < numCols; ++col)
     {
       float tmp;
-      ifs >> tmp;
+      ifs.read(reinterpret_cast<char*>(&tmp), sizeof(float));
     }
     if (withNormals)
     {
