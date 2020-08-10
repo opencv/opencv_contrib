@@ -12,6 +12,8 @@ import cv2 as cv
 import argparse
 import os
 
+from dasiamrpn_tracker import DaSiamRPNTracker
+
 
 def get_iou(new, gt):
     '''
@@ -63,7 +65,9 @@ def init_tracker(tracker_name):
     Output: dictionary 'config'
     Dictionary 'config' contains trackers names
     as keys and tuple with call method and number of frames for
-    reinitialization as values
+    reinitialization as values.
+    For evaluation of the DaSiamRPN tracker ONNX models should be placed
+    in the same folder with Python script and benchmark
     '''
     config = {"Boosting": (cv.TrackerBoosting_create(), 1000),
               "MIL": (cv.TrackerMIL_create(), 1000),
@@ -71,7 +75,8 @@ def init_tracker(tracker_name):
               "MedianFlow": (cv.TrackerMedianFlow_create(), 1000),
               "GOTURN": (cv.TrackerGOTURN_create(), 250),
               "MOSSE": (cv.TrackerMOSSE_create(), 1000),
-              "CSRT": (cv.TrackerCSRT_create(), 1000)}
+              "CSRT": (cv.TrackerCSRT_create(), 1000),
+              "DaSiamRPN": (DaSiamRPNTracker(), 250)}
     return config[tracker_name]
 
 
@@ -90,7 +95,8 @@ def main():
     with open(video_names, 'rt') as f:
         list_of_videos = f.read().rstrip('\n').split('\n')
     trackers = [
-        'Boosting', 'MIL', 'KCF', 'MedianFlow', 'GOTURN', 'MOSSE', 'CSRT']
+        'Boosting', 'MIL', 'KCF', 'MedianFlow',\
+        'GOTURN', 'MOSSE', 'CSRT', 'DaSiamRPN']
 
     iou_avg = []
     pr_avg = []
