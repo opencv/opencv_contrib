@@ -288,7 +288,7 @@ inline TsdfType HashTSDFVolumeCPU::interpolateVoxel(const cv::Point3f& point) co
     float tx = point.x - ix;
     float ty = point.y - iy;
     float tz = point.z - iz;
-    
+
     TsdfType vx[8];
     for (int i = 0; i < 8; i++)
         vx[i] = at(neighbourCoords[i] * voxelSize + point).tsdf;
@@ -325,7 +325,7 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
     }
     //std::cout << normal << std::endl;
     float nv = sqrt(normal[0] * normal[0] +
-                     normal[1] * normal[1] + 
+                     normal[1] * normal[1] +
                      normal[2] * normal[2]);
     return nv < 0.0001f ? nan3 : normal/nv;
 }

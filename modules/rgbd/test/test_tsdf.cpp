@@ -229,7 +229,7 @@ void renderPointsNormals(InputArray _points, InputArray _normals, OutputArray im
 
     Range range(0, sz.height);
     const int nstripes = -1;
-    parallel_for_(range, [&](const Range&) 
+    parallel_for_(range, [&](const Range&)
         {
             for (int y = range.start; y < range.end; y++)
             {
@@ -312,7 +312,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     Mat  points,  normals;
     Mat image;
     AccessFlag af = ACCESS_READ;
-    
+
     auto normalCheck = [](Vec4f& vector, const int*)
     {
         if (!cvIsNaN(vector[0]))
@@ -324,13 +324,13 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
         }
     };
 
-    Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix, 
-                                _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight, 
+    Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix,
+                                _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight,
                                 _params->truncateThreshold, _params->volumeDims);
     volume->integrate(depth, _params->depthFactor, poses[0].matrix, _params->intr);
-    
+
     if (isRaycast)
-    { 
+    {
         volume->raycast(poses[0].matrix, _params->intr, _params->frameSize, _points, _normals);
     }
     if (isFetchPointsNormals)
@@ -344,17 +344,16 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     }
 
     normals = _normals.getMat(af);
-    
+
     if (parallelCheck)
     {
         normals.forEach<Vec4f>(normalCheck);
-    } 
+    }
     else
     {
         normalsCheck(normals);
     }
-    
-    
+
     if (isRaycast && display)
     {
         imshow("depth", depth * (1.f / _params->depthFactor / 4.f));
@@ -363,14 +362,14 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
         imshow("render", image);
         waitKey(20000);
     }
-    
+
     if (isRaycast)
     {
         volume->raycast(poses[17].matrix, _params->intr, _params->frameSize, _newPoints, _newNormals);
 
         normals = _newNormals.getMat(af);
         normalsCheck(normals);
-        
+
         if (parallelCheck)
         {
             normals.forEach<Vec4f>(normalCheck);
@@ -379,7 +378,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
         {
             normalsCheck(normals);
         }
-        
+
 
         if (display)
         {

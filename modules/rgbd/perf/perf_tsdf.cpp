@@ -195,7 +195,7 @@ PERF_TEST(Perf_TSDF, integrate)
     SANITY_CHECK_NOTHING();
 }
 
-PERF_TEST(Perf_TSDF, raycast) 
+PERF_TEST(Perf_TSDF, raycast)
 {
     Ptr<kinfu::Params> _params;
     _params = kinfu::Params::coarseParams();
@@ -203,7 +203,7 @@ PERF_TEST(Perf_TSDF, raycast)
     Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix,
         _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight,
         _params->truncateThreshold, _params->volumeDims);
-    
+
     Ptr<Scene> scene = Scene::create(_params->frameSize, _params->intr, _params->depthFactor);
     std::vector<Affine3f> poses = scene->getPoses();
 
