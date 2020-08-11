@@ -1095,11 +1095,10 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
         _normals.createSameSize(_points, _points.type());
         Normals normals = _normals.getMat();
 
-        const TSDFVolumeCPU& _vol = *this; Normals& _nrm = normals;
+        const TSDFVolumeCPU& _vol = *this;
         auto PushNormals = [&](const ptype& pp, const int* position)
         {
             const TSDFVolumeCPU& vol(_vol);
-            Normals& normals(_nrm);
             Affine3f invPose(vol.pose.inv());
             Point3f p = fromPtype(pp);
             Point3f n = nan3;

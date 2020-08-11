@@ -577,11 +577,10 @@ void HashTSDFVolumeCPU::fetchNormals(cv::InputArray _points, cv::OutputArray _no
         _normals.createSameSize(_points, _points.type());
         Normals normals = _normals.getMat();
 
-        const HashTSDFVolumeCPU& _volume = *this; Normals& _normals = normals;
+        const HashTSDFVolumeCPU& _volume = *this;
         auto HashPushNormals = [&](const ptype& point, const int* position)
         {
             const HashTSDFVolumeCPU& volume(_volume);
-            Normals& normals(_normals);
             Affine3f invPose(volume.pose.inv());
             Point3f p = fromPtype(point);
             Point3f n = nan3;
