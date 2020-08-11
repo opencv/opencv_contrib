@@ -494,12 +494,12 @@ TEST(HashTSDF, fetch_points_normals)
 
 TEST(TSDF, fetch_normals)
 {
-    //normal_test(false, false, false, true);
+    normal_test(false, false, false, true);
 }
 
 TEST(HashTSDF, fetch_normals)
 {
-    //normal_test(true, false, false, true);
+    normal_test(true, false, false, true);
 }
 
 TEST(TSDF, valid_points)

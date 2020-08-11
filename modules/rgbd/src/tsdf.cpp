@@ -1083,9 +1083,9 @@ void TSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _normals
     }
 }
 
-struct PushNormals
+struct HashPushNormals
 {
-    PushNormals(const TSDFVolumeCPU& _vol, Normals& _nrm) :
+    HashPushNormals(const TSDFVolumeCPU& _vol, Normals& _nrm) :
         vol(_vol), normals(_nrm), invPose(vol.pose.inv())
     { }
     void operator ()(const ptype &pp, const int * position) const
@@ -1119,7 +1119,7 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
         _normals.createSameSize(_points, _points.type());
         Normals normals = _normals.getMat();
 
-        points.forEach(PushNormals(*this, normals));
+        points.forEach(HashPushNormals(*this, normals));
     }
 }
 
