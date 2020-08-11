@@ -314,19 +314,16 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     Mat image;
     AccessFlag af = ACCESS_READ;
     
-    if (parallelCheck)
+    auto normalCheck = [](Vec4f& vector, const int*)
     {
-        auto normalCheck = [](Vec4f& vector, const int*)
+        if (!cvIsNaN(vector[0]))
         {
-            if (!cvIsNaN(vector[0]))
-            {
-                float length = vector[0] * vector[0] +
-                    vector[1] * vector[1] +
-                    vector[2] * vector[2];
-                ASSERT_LT(abs(1 - length), 0.0001f);
-            }
-        };
-    }
+            float length = vector[0] * vector[0] +
+                vector[1] * vector[1] +
+                vector[2] * vector[2];
+            ASSERT_LT(abs(1 - length), 0.0001f);
+        }
+    };
 
     Ptr<kinfu::Volume> volume = kinfu::makeVolume(_params->volumeType, _params->voxelSize, _params->volumePose.matrix, 
                                 _params->raycast_step_factor, _params->tsdf_trunc_dist, _params->tsdf_max_weight, 
@@ -348,8 +345,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     }
 
     normals = _normals.getMat(af);
-    normalsCheck(normals);
-    /*
+    
     if (parallelCheck)
     {
         normals.forEach<Vec4f>(normalCheck);
@@ -358,7 +354,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     {
         normalsCheck(normals);
     }
-    */
+    
     
     if (isRaycast && display)
     {
@@ -375,7 +371,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
 
         normals = _newNormals.getMat(af);
         normalsCheck(normals);
-        /*
+        
         if (parallelCheck)
         {
             normals.forEach<Vec4f>(normalCheck);
@@ -384,7 +380,7 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
         {
             normalsCheck(normals);
         }
-        */
+        
 
         if (display)
         {
@@ -398,7 +394,6 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     }
 
     points.release(); normals.release();
-    
 }
 
 int counterOfValid(Mat points)
