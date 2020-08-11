@@ -104,7 +104,6 @@ struct SemisphereScene : Scene
     Size frameSize;
     Matx33f intr;
     float depthFactor;
-    static cv::Mat_<float> randTexture;
 
     SemisphereScene(Size sz, Matx33f _intr, float _depthFactor) :
         frameSize(sz), intr(_intr), depthFactor(_depthFactor)
