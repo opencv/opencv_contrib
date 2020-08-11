@@ -565,29 +565,6 @@ void HashTSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
     }
 }
 
-struct PushNormals
-{
-    PushNormals(const HashTSDFVolumeCPU& _volume, Normals& _normals)
-        : volume(_volume), normals(_normals), invPose(volume.pose.inv())
-    {
-    }
-
-    void operator()(const ptype& point, const int* position) const
-    {
-        Point3f p = fromPtype(point);
-        Point3f n = nan3;
-        if (!isNaN(p))
-        {
-            Point3f voxelPoint = invPose * p;
-            n                  = volume.pose.rotation() * volume.getNormalVoxel(voxelPoint);
-        }
-        normals(position[0], position[1]) = toPtype(n);
-    }
-    const HashTSDFVolumeCPU& volume;
-    Normals& normals;
-    Affine3f invPose;
-};
-
 void HashTSDFVolumeCPU::fetchNormals(cv::InputArray _points, cv::OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
@@ -600,7 +577,22 @@ void HashTSDFVolumeCPU::fetchNormals(cv::InputArray _points, cv::OutputArray _no
         _normals.createSameSize(_points, _points.type());
         Normals normals = _normals.getMat();
 
-        points.forEach(PushNormals(*this, normals));
+        const HashTSDFVolumeCPU& _volume = *this; Normals& _normals = normals;
+        auto HashPushNormals = [&](const ptype& point, const int* position)
+        {
+            const HashTSDFVolumeCPU& volume(_volume);
+            Normals& normals(_normals);
+            Affine3f invPose(volume.pose.inv());
+            Point3f p = fromPtype(point);
+            Point3f n = nan3;
+            if (!isNaN(p))
+            {
+                Point3f voxelPoint = invPose * p;
+                n = volume.pose.rotation() * volume.getNormalVoxel(voxelPoint);
+            }
+            normals(position[0], position[1]) = toPtype(n);
+        };
+        points.forEach(HashPushNormals);
     }
 }
 
