@@ -463,9 +463,9 @@ void HashTSDFVolumeCPU::raycast(const cv::Matx44f& cameraPose, const cv::kinfu::
     parallel_for_(Range(0, points.rows), ri, nstripes);
 }
 
-struct FetchPointsNormalsInvoker : ParallelLoopBody
+struct HashFetchPointsNormalsInvoker : ParallelLoopBody
 {
-    FetchPointsNormalsInvoker(const HashTSDFVolumeCPU& _volume,
+    HashFetchPointsNormalsInvoker(const HashTSDFVolumeCPU& _volume,
                               const std::vector<Vec3i>& _totalVolUnits,
                               std::vector<std::vector<ptype>>& _pVecs,
                               std::vector<std::vector<ptype>>& _nVecs, bool _needNormals)
@@ -541,7 +541,7 @@ void HashTSDFVolumeCPU::fetchPointsNormals(OutputArray _points, OutputArray _nor
         {
             totalVolUnits.push_back(keyvalue.first);
         }
-        FetchPointsNormalsInvoker fi(*this, totalVolUnits, pVecs, nVecs, _normals.needed());
+        HashFetchPointsNormalsInvoker fi(*this, totalVolUnits, pVecs, nVecs, _normals.needed());
         Range range(0, (int)totalVolUnits.size());
         const int nstripes = -1;
         parallel_for_(range, fi, nstripes);
