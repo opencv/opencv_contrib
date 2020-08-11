@@ -1,14 +1,18 @@
-module OpenCV
+# using StaticArrays
 
 include("typestructs.jl")
 include("Vec.jl")
 const dtypes = Union{UInt8, Int8, UInt16, Int16, Int32, Float32, Float64}
-const size_t = UInt
+size_t = UInt64
 
 using CxxWrap
 @wrapmodule(joinpath(@__DIR__,"lib","libopencv_julia"), :cv_wrap)
 function __init__()
     @initcxx
+
+    if jlopencv_core_get_sizet()==4
+        size_t = UInt32
+    end
 end
 const Scalar = Union{Tuple{}, Tuple{Number}, Tuple{Number, Number}, Tuple{Number, Number, Number}, NTuple{4, Number}}
 
@@ -26,25 +30,6 @@ function julia_to_cpp(var)
     return var
 end
 
-
-# TODO: Vector to array conversion. There's some problems with the copy constructor.
-
-# function julia_to_cpp(var::Array{T, 1}) where {T}
-#     ret = CxxWrap.StdLib.StdVector{T}()
-#     for x in var
-#         push!(ret, julia_to_cpp(x)) # When converting an array keep expected type as final type.
-#     end
-#     return ret
-# end
-
-# function cpp_to_julia(var::CxxWrap.StdLib.StdVector{T}) where {T}
-#     ret = Array{T, 1}()
-#     for x in var
-#         push!(ret, cpp_to_julia(x))
-#     end
-#     return ret
-# end
-
 function cpp_to_julia(var::Tuple)
     ret_arr = Array{Any, 1}()
     for it in var
@@ -61,7 +46,7 @@ function julia_to_cpp(var::Bool)
     return CxxBool(var)
 end
 
-# using StaticArrays
 
-include("cv_wrap.jl")
-end
+include("cv_cxx_wrap.jl")
+
+include("cv_manual_wrap.jl")
