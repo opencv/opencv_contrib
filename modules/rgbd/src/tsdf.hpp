@@ -20,15 +20,11 @@ namespace kinfu
 // * TsdfType can be FP16
 // * WeightType can be uint16
 
-typedef int8_t half;
-
-half floatToHalf(float num);
-float halfToFloat(half num);
-
-//typedef half halfTsdfType;
-typedef half TsdfType;
-//typedef float TsdfType;
+typedef int8_t TsdfType;
 typedef int WeightType;
+
+TsdfType floatToTsdf(float num);
+float tsdfToFloat(TsdfType num);
 
 struct TsdfVoxel
 {
@@ -36,7 +32,7 @@ struct TsdfVoxel
     WeightType weight;
 };
 
-TsdfType getTSDF(TsdfVoxel v);
+float getTSDF(TsdfVoxel v);
 
 typedef Vec<uchar, sizeof(TsdfVoxel)> VecTsdfVoxel;
 
