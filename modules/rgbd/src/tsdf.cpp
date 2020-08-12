@@ -12,6 +12,20 @@ namespace cv {
 
 namespace kinfu {
 
+half floatToHalf(float num)
+{
+    if (-1 < num && num <= 1)
+    {
+        return int8_t(int(num * 128 * (-1)));
+    }
+    return 0;
+}
+
+float halfToFloat(half num)
+{
+    return float(num) * (-1) / 128;
+}
+
 TSDFVolume::TSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist,
                        int _maxWeight, Point3i _resolution, bool zFirstMemOrder)
     : Volume(_voxelSize, _pose, _raycastStepFactor),
@@ -1116,7 +1130,7 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
 
 ///////// GPU implementation /////////
 
-#ifdef HAVE_OPENCL
+#ifdef HAVE_OPENCL_
 TSDFVolumeGPU::TSDFVolumeGPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
                              Point3i _resolution) :
     TSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution, false)
@@ -1420,7 +1434,7 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
 cv::Ptr<TSDFVolume> makeTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
                                    float _truncDist, int _maxWeight, Point3i _resolution)
 {
-#ifdef HAVE_OPENCL
+#ifdef HAVE_OPENCL_
     if (cv::ocl::useOpenCL())
         return cv::makePtr<TSDFVolumeGPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
                                           _resolution);

@@ -22,19 +22,8 @@ namespace kinfu
 
 typedef int8_t half;
 
-half floatToHalf(float num)
-{
-    if (-1 < num && num <= 1)
-    {
-        return int8_t(int(num * 128 * (-1)));
-    }
-    return 0;
-}
-
-float halfToFloat(half num)
-{
-    return float(num) * (-1) / 128;
-}
+half floatToHalf(float num);
+float halfToFloat(half num);
 
 typedef float TsdfType;
 typedef int WeightType;
