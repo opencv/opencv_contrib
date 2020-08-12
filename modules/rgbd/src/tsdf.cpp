@@ -14,22 +14,18 @@ namespace kinfu {
 
 half floatToHalf(float num)
 {
-    if (cvIsNaN(num)) 
+    if (-1 <= num && num <= 1)
     {
-        return -0;
-    }
-    else if (-1 < num && num <= 1)
-    {
-        return int8_t(int(num * 128 * (-1)));
+        return int8_t(int(num * 127 * (-1)));
     }
     return 0;
 }
 
 float halfToFloat(half num)
 {
-    if (num == -0)
-        return -0;
-    return float(num) * (-1) / 128;
+    if (num == 0)
+        return 0;
+    return float(num) * (-1) / 127;
 }
 
 TsdfType getTSDF(TsdfVoxel v)
@@ -421,6 +417,7 @@ struct IntegrateInvoker : ParallelLoopBody
                     float pixNorm = sqrt(camPixVec.dot(camPixVec));
                     // difference between distances of point and of surface to camera
                     float sdf = (pixNorm*(v*dfac - camSpacePt.z)*(v*dfac - camSpacePt.z));
+                    
                     // possible alternative is:
                     // kftype sdf = norm(camSpacePt)*(v*dfac/camSpacePt.z - 1);
                     if(sdf >= -volume.truncDist)
@@ -430,8 +427,9 @@ struct IntegrateInvoker : ParallelLoopBody
                         TsdfVoxel& voxel = volDataY[z*volume.volDims[2]];
                         WeightType& weight      = voxel.weight;
                         TsdfType& value  = voxel.tsdf;
-                        if (halfToFloat(value)!=-0)
-                            std::cout << halfToFloat(value) << std::endl;
+                        std::cout << int(-voxel.tsdf) << std::endl;
+                        //if (halfToFloat(value)!=-0)
+                        std::cout << halfToFloat(value) << std::endl;
                         // update TSDF
                         value  = floatToHalf((halfToFloat(value)*weight+ halfToFloat(tsdf)) / (weight + 1));
                         weight = min(weight + 1, volume.maxWeight);
