@@ -25,7 +25,9 @@ typedef int8_t half;
 half floatToHalf(float num);
 float halfToFloat(half num);
 
-typedef float TsdfType;
+//typedef half halfTsdfType;
+typedef half TsdfType;
+//typedef float TsdfType;
 typedef int WeightType;
 
 struct TsdfVoxel
@@ -33,6 +35,9 @@ struct TsdfVoxel
     TsdfType tsdf;
     WeightType weight;
 };
+
+TsdfType getTSDF(TsdfVoxel v);
+
 typedef Vec<uchar, sizeof(TsdfVoxel)> VecTsdfVoxel;
 
 class TSDFVolume : public Volume
@@ -44,6 +49,7 @@ class TSDFVolume : public Volume
     virtual ~TSDFVolume() = default;
 
    public:
+    
     Point3i volResolution;
     WeightType maxWeight;
 

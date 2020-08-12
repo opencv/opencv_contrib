@@ -332,10 +332,13 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     if (isRaycast)
     {
         volume->raycast(poses[0].matrix, _params->intr, _params->frameSize, _points, _normals);
+        //std::cout << _points.getMat(af);
+        //std::cout << _normals.getMat(af);
     }
     if (isFetchPointsNormals)
     {
         volume->fetchPointsNormals(_points, _normals);
+        
     }
     if (isFetchNormals)
     {

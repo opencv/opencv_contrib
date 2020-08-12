@@ -80,6 +80,11 @@ TSDFVolumeCPU::TSDFVolumeCPU(float _voxelSize, cv::Matx44f _pose, float _raycast
     reset();
 }
 
+TsdfType getTSDF(TsdfVoxel v)
+{
+    return halfToFloat(v.tsdf);
+}
+
 // zero volume, leave rest params the same
 void TSDFVolumeCPU::reset()
 {
@@ -88,7 +93,7 @@ void TSDFVolumeCPU::reset()
     volume.forEach<VecTsdfVoxel>([](VecTsdfVoxel& vv, const int* /* position */)
     {
         TsdfVoxel& v = reinterpret_cast<TsdfVoxel&>(vv);
-        v.tsdf = 0.0f; v.weight = 0;
+        v.tsdf = floatToHalf(0.0f); v.weight = 0;
     });
 }
 
@@ -100,7 +105,7 @@ TsdfVoxel TSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
         (volumeIdx[2] >= volResolution.z || volumeIdx[2] < 0))
     {
         TsdfVoxel dummy;
-        dummy.tsdf   = 1.0f;
+        dummy.tsdf   = floatToHalf(1.0f);
         dummy.weight = 0;
         return dummy;
     }
@@ -408,20 +413,20 @@ struct IntegrateInvoker : ParallelLoopBody
                     // norm(camPixVec) produces double which is too slow
                     float pixNorm = sqrt(camPixVec.dot(camPixVec));
                     // difference between distances of point and of surface to camera
-                    TsdfType sdf = pixNorm*(v*dfac - camSpacePt.z);
+                    TsdfType sdf = floatToHalf(pixNorm*(v*dfac - camSpacePt.z));
 
                     // possible alternative is:
                     // kftype sdf = norm(camSpacePt)*(v*dfac/camSpacePt.z - 1);
                     if(sdf >= -volume.truncDist)
                     {
-                        TsdfType tsdf = fmin(1.f, sdf * truncDistInv);
+                        TsdfType tsdf = floatToHalf(fmin(1.f, halfToFloat(sdf) * truncDistInv));
 
                         TsdfVoxel& voxel = volDataY[z*volume.volDims[2]];
                         WeightType& weight      = voxel.weight;
                         TsdfType& value  = voxel.tsdf;
 
                         // update TSDF
-                        value  = (value*weight+tsdf) / (weight + 1);
+                        value  = floatToHalf((halfToFloat(value)*weight+ halfToFloat(tsdf)) / (weight + 1));
                         weight = min(weight + 1, volume.maxWeight);
                     }
                 }
@@ -516,19 +521,19 @@ inline TsdfType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
     int coordBase = ix*xdim + iy*ydim + iz*zdim;
     const TsdfVoxel* volData = volume.ptr<TsdfVoxel>();
 
-    TsdfType vx[8];
+    float vx[8];
     for(int i = 0; i < 8; i++)
-        vx[i] = volData[neighbourCoords[i] + coordBase].tsdf;
+        vx[i] = halfToFloat(volData[neighbourCoords[i] + coordBase].tsdf);
 
-    TsdfType v00 = vx[0] + tz*(vx[1] - vx[0]);
-    TsdfType v01 = vx[2] + tz*(vx[3] - vx[2]);
-    TsdfType v10 = vx[4] + tz*(vx[5] - vx[4]);
-    TsdfType v11 = vx[6] + tz*(vx[7] - vx[6]);
+    float v00 = vx[0] + tz*(vx[1] - vx[0]);
+    float v01 = vx[2] + tz*(vx[3] - vx[2]);
+    float v10 = vx[4] + tz*(vx[5] - vx[4]);
+    float v11 = vx[6] + tz*(vx[7] - vx[6]);
 
-    TsdfType v0 = v00 + ty*(v01 - v00);
-    TsdfType v1 = v10 + ty*(v11 - v10);
+    float v0 = v00 + ty*(v01 - v00);
+    float v1 = v10 + ty*(v11 - v10);
 
-    return v0 + tx*(v1 - v0);
+    return floatToHalf(v0 + tx*(v1 - v0));
 }
 #endif
 
@@ -627,18 +632,18 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
         const int dim = volDims[c];
         float& nv = an[c];
 
-        TsdfType vx[8];
+        float vx[8];
         for(int i = 0; i < 8; i++)
-            vx[i] = volData[neighbourCoords[i] + coordBase + 1*dim].tsdf -
-                    volData[neighbourCoords[i] + coordBase - 1*dim].tsdf;
+            vx[i] = halfToFloat(volData[neighbourCoords[i] + coordBase + 1*dim].tsdf) -
+            halfToFloat(volData[neighbourCoords[i] + coordBase - 1*dim].tsdf);
 
-        TsdfType v00 = vx[0] + tz*(vx[1] - vx[0]);
-        TsdfType v01 = vx[2] + tz*(vx[3] - vx[2]);
-        TsdfType v10 = vx[4] + tz*(vx[5] - vx[4]);
-        TsdfType v11 = vx[6] + tz*(vx[7] - vx[6]);
+        float v00 = vx[0] + tz*(vx[1] - vx[0]);
+        float v01 = vx[2] + tz*(vx[3] - vx[2]);
+        float v10 = vx[4] + tz*(vx[5] - vx[4]);
+        float v11 = vx[6] + tz*(vx[7] - vx[6]);
 
-        TsdfType v0 = v00 + ty*(v01 - v00);
-        TsdfType v1 = v10 + ty*(v11 - v10);
+        float v0 = v00 + ty*(v01 - v00);
+        float v1 = v10 + ty*(v11 - v10);
 
         nv = v0 + tx*(v1 - v0);
     }
@@ -859,8 +864,8 @@ struct RaycastInvoker : ParallelLoopBody
 
                     Point3f rayStep = dir * tstep;
                     Point3f next = (orig + dir * tmin);
-                    TsdfType f = volume.interpolateVoxel(next), fnext = f;
-
+                    float f = halfToFloat(volume.interpolateVoxel(next)), fnext = f;
+                    std::cout << f << std::endl;
                     //raymarch
                     int steps = 0;
                     int nSteps = floor((tmax - tmin)/tstep);
@@ -876,7 +881,7 @@ struct RaycastInvoker : ParallelLoopBody
                         fnext = volume.volume.at<TsdfVoxel>(ix*xdim + iy*ydim + iz*zdim).tsdf;
                         if(fnext != f)
                         {
-                            fnext = volume.interpolateVoxel(next);
+                            fnext = halfToFloat(volume.interpolateVoxel(next));
 
                             // when ray crosses a surface
                             if(std::signbit(f) != std::signbit(fnext))
@@ -891,8 +896,8 @@ struct RaycastInvoker : ParallelLoopBody
                     if(f > 0.f && fnext < 0.f)
                     {
                         Point3f tp    = next - rayStep;
-                        TsdfType ft   = volume.interpolateVoxel(tp);
-                        TsdfType ftdt = volume.interpolateVoxel(next);
+                        float ft   = halfToFloat(volume.interpolateVoxel(tp));
+                        float ftdt = halfToFloat(volume.interpolateVoxel(next));
                         // float t = tmin + steps*tstep;
                         // float ts = t - tstep*ft/(ftdt - ft);
                         float ts = tmin + tstep*(steps - ft/(ftdt - ft));
@@ -1002,7 +1007,7 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
             const TsdfVoxel& voxeld = volDataStart[(x+shift.x)*vol.volDims[0] +
                                                    (y+shift.y)*vol.volDims[1] +
                                                    (z+shift.z)*vol.volDims[2]];
-            TsdfType vd = voxeld.tsdf;
+            float vd = halfToFloat(voxeld.tsdf);
 
             if(voxeld.weight != 0 && vd != 1.f)
             {
@@ -1039,7 +1044,7 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
                 for(int z = 0; z < vol.volResolution.z; z++)
                 {
                     const TsdfVoxel& voxel0 = volDataY[z*vol.volDims[2]];
-                    TsdfType v0             = voxel0.tsdf;
+                    float v0             = halfToFloat(voxel0.tsdf);
                     if(voxel0.weight != 0 && v0 != 1.f)
                     {
                         Point3f V(Point3f((float)x + 0.5f, (float)y + 0.5f, (float)z + 0.5f)*vol.voxelSize);
