@@ -19,6 +19,23 @@ namespace kinfu
 // TODO: Optimization possible:
 // * TsdfType can be FP16
 // * WeightType can be uint16
+
+typedef int8_t half;
+
+half floatToHalf(float num)
+{
+    if (-1 < num && num <= 1)
+    {
+        return int8_t(int(num * 128 * (-1)));
+    }
+    return 0;
+}
+
+float halfToFloat(half num)
+{
+    return float(num) * (-1) / 128;
+}
+
 typedef float TsdfType;
 typedef int WeightType;
 
