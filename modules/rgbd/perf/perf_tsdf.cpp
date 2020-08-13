@@ -2,8 +2,6 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html
 
-// This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
-
 #include "perf_precomp.hpp"
 
 namespace opencv_test { namespace {
@@ -98,7 +96,7 @@ struct Scene
 struct SemisphereScene : Scene
 {
     const int framesPerCycle = 72;
-    const float nCycles = 0.25f;
+    const float nCycles = 1.0f;
     const Affine3f startPose = Affine3f(Vec3f(0.f, 0.f, 0.f), Vec3f(1.5f, 0.3f, -1.5f));
 
     Size frameSize;
