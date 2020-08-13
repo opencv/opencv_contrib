@@ -426,7 +426,7 @@ struct IntegrateInvoker : ParallelLoopBody
                     // norm(camPixVec) produces double which is too slow
                     float pixNorm = sqrt(camPixVec.dot(camPixVec));
                     // difference between distances of point and of surface to camera
-                    float sdf = (pixNorm*(v*dfac - camSpacePt.z)*(v*dfac - camSpacePt.z));
+                    float sdf = pixNorm*(v*dfac - camSpacePt.z);
                     // possible alternative is:
                     // kftype sdf = norm(camSpacePt)*(v*dfac/camSpacePt.z - 1);
                     if(sdf >= -volume.truncDist)
