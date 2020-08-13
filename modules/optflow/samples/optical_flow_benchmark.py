@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from builtins import range
 import os, sys, shutil
 import argparse
 import json, re
@@ -47,9 +48,9 @@ def parse_evaluation_result(input_str, i):
 
 def evaluate_sequence(sequence, algorithm, dataset, executable, img_files, gt_files,
                       state, state_path):
-    if "eval_results" not in state[dataset][algorithm][-1].keys():
+    if "eval_results" not in list(state[dataset][algorithm][-1].keys()):
         state[dataset][algorithm][-1]["eval_results"] = {}
-    elif sequence in state[dataset][algorithm][-1]["eval_results"].keys():
+    elif sequence in list(state[dataset][algorithm][-1]["eval_results"].keys()):
         return
 
     res = []
@@ -127,13 +128,13 @@ def build_chart(dst_folder, state, dataset):
     marker_idx = 0
     colors = ["b", "g", "r"]
     color_idx = 0
-    for algo in state[dataset].keys():
+    for algo in list(state[dataset].keys()):
         for eval_instance in state[dataset][algo]:
             name = algo + "--" + eval_instance["timestamp"]
             average_time = 0.0
             average_error = 0.0
             num_elem = 0
-            for seq in eval_instance["eval_results"].keys():
+            for seq in list(eval_instance["eval_results"].keys()):
                 for frame in eval_instance["eval_results"][seq]:
                     average_time += frame["time"]
                     average_error += frame["error"]["average"]
@@ -232,7 +233,7 @@ if __name__ == '__main__':
     algorithm_list = parse_sequence(args.algorithms)
     dataset_list = parse_sequence(args.datasets)
     for dataset in dataset_list:
-        if dataset not in dataset_eval_functions.keys():
+        if dataset not in list(dataset_eval_functions.keys()):
             print("Error: unsupported dataset " + dataset)
             sys.exit(1)
         if dataset not in os.listdir(args.dataset_folder):
@@ -242,12 +243,12 @@ if __name__ == '__main__':
             sys.exit(1)
 
     for dataset in dataset_list:
-        if dataset not in state.keys():
+        if dataset not in list(state.keys()):
             state[dataset] = {}
         for algorithm in algorithm_list:
-            if algorithm in state[dataset].keys():
+            if algorithm in list(state[dataset].keys()):
                 last_eval_instance = state[dataset][algorithm][-1]
-                if "finished" not in last_eval_instance.keys():
+                if "finished" not in list(last_eval_instance.keys()):
                     print(("Continuing an unfinished evaluation of " +
                           algorithm + " started at " + last_eval_instance["timestamp"]))
                 else:

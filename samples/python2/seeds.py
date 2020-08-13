@@ -8,6 +8,7 @@ Usage:
   seeds.py [<video source>]
 
 '''
+from __future__ import print_function
 
 import numpy as np
 import cv2 as cv
@@ -20,7 +21,7 @@ import sys
 
 
 if __name__ == '__main__':
-    print __doc__
+    print(__doc__)
 
     try:
         fn = sys.argv[1]

@@ -5,6 +5,7 @@ This example shows the functionalities of lines extraction finished by LSDDetect
 
 USAGE: lsd_lines_extraction.py [<path_to_input_image>]
 '''
+from __future__ import print_function
 
 import sys
 import cv2 as cv

@@ -1,3 +1,7 @@
+from __future__ import print_function
+from __future__ import division
+from builtins import range
+from past.utils import old_div
 import argparse
 import cv2 as cv
 import glob
@@ -57,7 +61,7 @@ def evaluate_algorithm(gt, frames, algo, algo_arguments):
         frame = np.uint8(cv.imread(frames[i], cv.IMREAD_COLOR))
         mask.append(bgs.apply(frame))
 
-    average_duration = (time.time() - t_start) / len(gt)
+    average_duration = old_div((time.time() - t_start), len(gt))
     average_precision, average_recall, average_f1, average_accuracy = [], [], [], []
 
     for i in range(len(gt)):
@@ -76,7 +80,7 @@ def evaluate_algorithm(gt, frames, algo, algo_arguments):
             if tp + fn > 0:
                 average_recall.append(float(tp) / (tp + fn))
             if tp + fn + fp > 0:
-                average_f1.append(2.0 * tp / (2.0 * tp + fn + fp))
+                average_f1.append(old_div(2.0 * tp, (2.0 * tp + fn + fp)))
             average_accuracy.append(float(tp + tn) / (tp + tn + fp + fn))
 
     return average_duration, np.mean(average_precision), np.mean(average_recall), np.mean(average_f1), np.mean(average_accuracy)
@@ -114,7 +118,7 @@ def main():
     assert len(dataset_dirs) > 0, ("Passed directory must contain at least one sequence from the Change Detection dataset. There is no relevant directories in %s. Check that this directory is correct." % (args.dataset_path))
     if args.algorithm is not None:
         global ALGORITHMS_TO_EVALUATE
-        ALGORITHMS_TO_EVALUATE = filter(lambda a: a[1].lower() == args.algorithm.lower(), ALGORITHMS_TO_EVALUATE)
+        ALGORITHMS_TO_EVALUATE = [a for a in ALGORITHMS_TO_EVALUATE if a[1].lower() == args.algorithm.lower()]
     summary = {}
 
     for seq in dataset_dirs:

@@ -6,7 +6,9 @@ This sample demonstrates structured edge detection and edgeboxes.
 Usage:
   edgeboxes_demo.py [<model>] [<input_image>]
 '''
+from __future__ import print_function
 
+from builtins import zip
 import cv2 as cv
 import numpy as np
 import sys
@@ -30,7 +32,7 @@ if __name__ == '__main__':
     boxes, scores = edge_boxes.getBoundingBoxes(edges, orimap)
 
     if len(boxes) > 0:
-        boxes_scores = zip(boxes, scores)
+        boxes_scores = list(zip(boxes, scores))
         for b_s in boxes_scores:
             box = b_s[0]
             x, y, w, h = box

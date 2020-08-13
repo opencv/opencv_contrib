@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import print_function
+from builtins import object
 import sys, re, os, time
 from string import Template
 from parse_tree import ParseTree, todict, constants

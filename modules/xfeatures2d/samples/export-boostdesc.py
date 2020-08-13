@@ -43,7 +43,9 @@
 // [http://infoscience.epfl.ch/record/186246/files/boostDesc_1.0.tar.gz]
 
 """
+from __future__ import print_function
 
+from builtins import range
 import sys
 import struct
 
@@ -77,12 +79,12 @@ def main():
   f = open( sys.argv[2], 'rb' )
 
   # header
-  print "/*"
-  print " *"
-  print " * Header exported from binary."
-  print " * [%s %s %s]" % ( sys.argv[0], sys.argv[1], sys.argv[2] )
-  print " *"
-  print " */"
+  print("/*")
+  print(" *")
+  print(" * Header exported from binary.")
+  print(" * [%s %s %s]" % ( sys.argv[0], sys.argv[1], sys.argv[2] ))
+  print(" *")
+  print(" */")
 
   # ini
   nDim = 1;
@@ -93,9 +95,9 @@ def main():
        ( sys.argv[1] == "BINBOOST" ) ):
     nDim = struct.unpack( '<i', f.read(4) )[0]
 
-  print
-  print "// dimensionality of learner"
-  print "static const int nDim = %i;" % nDim
+  print()
+  print("// dimensionality of learner")
+  print("static const int nDim = %i;" % nDim)
 
   # week learners (where is the case)
   if ( sys.argv[1] != "BINBOOST" ):
@@ -106,17 +108,17 @@ def main():
   patchSize       = struct.unpack( '<i', f.read(4) )[0]
   iGradAssignType = struct.unpack( '<i', f.read(4) )[0]
 
-  print
-  print "// orientations"
-  print "static const int orientQuant = %i;" % orientQuant
+  print()
+  print("// orientations")
+  print("static const int orientQuant = %i;" % orientQuant)
 
-  print
-  print "// patch size"
-  print "static const int patchSize = %i;" % patchSize
+  print()
+  print("// patch size")
+  print("static const int patchSize = %i;" % patchSize)
 
-  print
-  print "// gradient assignment type"
-  print "static const int iGradAssignType = %s;" % Assign[iGradAssignType]
+  print()
+  print("// gradient assignment type")
+  print("static const int iGradAssignType = %s;" % Assign[iGradAssignType])
 
   arr_thresh = ""
   arr_orient = ""
@@ -141,9 +143,9 @@ def main():
       nWLs   = struct.unpack( '<i', f.read(4) )[0]
 
     if ( d == 0 ):
-      print
-      print "// number of weak learners"
-      print "static const int nWLs = %i;" % nWLs
+      print()
+      print("// number of weak learners")
+      print("static const int nWLs = %i;" % nWLs)
 
     # iterate each members
     for i in range( 0, nWLs ):
@@ -274,19 +276,19 @@ def main():
   f.close()
 
   # dump on screen
-  print arr_thresh
-  print arr_orient
+  print(arr_thresh)
+  print(arr_orient)
 
-  print arr__y_min
-  print arr__y_max
-  print arr__x_min
-  print arr__x_max
+  print(arr__y_min)
+  print(arr__y_max)
+  print(arr__x_min)
+  print(arr__x_max)
 
-  print arr__alpha
+  print(arr__alpha)
 
   if ( ( sys.argv[1] == "LBGM" ) or
        ( sys.argv[1] == "BINBOOST" ) ):
-    print arr___beta
+    print(arr___beta)
 
 
 if __name__ == "__main__":

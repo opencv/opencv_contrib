@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+from __future__ import division
+from builtins import range
+from past.utils import old_div
 import os
 import sys
 import numpy as np
@@ -51,8 +55,7 @@ def find_flo(pp):
             f.append(p)
         else:
             for root, subdirs, files in os.walk(p):
-                f += map(lambda x: os.path.join(root, x),
-                         filter(lambda x: x.split('.')[-1] == 'flo', files))
+                f += [os.path.join(root, x) for x in [x for x in files if x.split('.')[-1] == 'flo']]
     return list(set(f))
 
 
@@ -90,18 +93,18 @@ for flo in find_flo(args.files):
     w1.append(get_w(x))
     w2.append(get_w(y))
 
-w1mean = sum(w1) / len(w1)
-w2mean = sum(w2) / len(w2)
+w1mean = old_div(sum(w1), len(w1))
+w2mean = old_div(sum(w2), len(w2))
 
-for i in xrange(len(w1)):
+for i in range(len(w1)):
     w1[i] -= w1mean
-for i in xrange(len(w2)):
+for i in range(len(w2)):
     w2[i] -= w2mean
 
-Q1 = sum([w1[i].reshape(-1, 1).dot(w1[i].reshape(1, -1))
-          for i in xrange(len(w1))]) / len(w1)
-Q2 = sum([w2[i].reshape(-1, 1).dot(w2[i].reshape(1, -1))
-          for i in xrange(len(w2))]) / len(w2)
+Q1 = old_div(sum([w1[i].reshape(-1, 1).dot(w1[i].reshape(1, -1))
+          for i in range(len(w1))]), len(w1))
+Q2 = old_div(sum([w2[i].reshape(-1, 1).dot(w2[i].reshape(1, -1))
+          for i in range(len(w2))]), len(w2))
 Q1 = np.matrix(Q1)
 Q2 = np.matrix(Q2)
 
@@ -144,12 +147,12 @@ f = open(args.output, 'wb')
 f.write(struct.pack('I', L1.shape[0]))
 f.write(struct.pack('I', L1.shape[1]))
 
-for i in xrange(L1.shape[0]):
-    for j in xrange(L1.shape[1]):
+for i in range(L1.shape[0]):
+    for j in range(L1.shape[1]):
         f.write(struct.pack('f', L1[i, j]))
 
-for i in xrange(L2.shape[0]):
-    for j in xrange(L2.shape[1]):
+for i in range(L2.shape[0]):
+    for j in range(L2.shape[1]):
         f.write(struct.pack('f', L2[i, j]))
 
 b1 = L1.dot(w1mean.reshape(-1, 1))
@@ -157,10 +160,10 @@ b2 = L2.dot(w2mean.reshape(-1, 1))
 
 assert (L1.shape[0] == b1.shape[0])
 
-for i in xrange(b1.shape[0]):
+for i in range(b1.shape[0]):
     f.write(struct.pack('f', b1[i, 0]))
 
-for i in xrange(b2.shape[0]):
+for i in range(b2.shape[0]):
     f.write(struct.pack('f', b2[i, 0]))
 
 f.close()

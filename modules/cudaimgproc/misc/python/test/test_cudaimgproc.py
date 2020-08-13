@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import division
+from past.utils import old_div
 import os
 import cv2 as cv
 import numpy as np
@@ -48,10 +50,10 @@ class cudaimgproc_test(NewOpenCVTests):
         detector = cv.cuda.createCannyEdgeDetector(0, 100)
         detector.detect(cuC1)
 
-        detector = cv.cuda.createHoughLinesDetector(3, np.pi / 180, 20)
+        detector = cv.cuda.createHoughLinesDetector(3, old_div(np.pi, 180), 20)
         detector.detect(cuC1)
 
-        detector = cv.cuda.createHoughSegmentDetector(3, np.pi / 180, 20, 5)
+        detector = cv.cuda.createHoughSegmentDetector(3, old_div(np.pi, 180), 20, 5)
         detector.detect(cuC1)
 
         detector = cv.cuda.createHoughCirclesDetector(3, 20, 10, 10, 20, 100)

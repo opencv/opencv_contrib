@@ -1,3 +1,7 @@
+from __future__ import print_function
+from __future__ import division
+from builtins import range
+from past.utils import old_div
 import cv2 as cv
 import numpy as np
 
@@ -12,7 +16,7 @@ def rotation(theta):
 
 width = 20
 height = 10
-max_deg = np.pi / 12
+max_deg = old_div(np.pi, 12)
 
 cloud, rotated_cloud = [None]*3, [None]*3
 retval, residual, pose = [None]*3, [None]*3, [None]*3
@@ -20,8 +24,8 @@ noise = np.random.normal(0.0, 0.1, height * width * 3).reshape((-1, 3))
 noise2 = np.random.normal(0.0, 1.0, height * width)
 
 x, y = np.meshgrid(
-    range(-width//2, width//2),
-    range(-height//2, height//2),
+    list(range(-width//2, width//2)),
+    list(range(-height//2, height//2)),
     sparse=False, indexing='xy'
 )
 z = np.zeros((height, width))

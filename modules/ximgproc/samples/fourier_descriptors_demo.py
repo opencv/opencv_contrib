@@ -1,8 +1,13 @@
+from __future__ import print_function
+from __future__ import division
+from builtins import range
+from past.utils import old_div
+from builtins import object
 import numpy as np
 import cv2 as cv
 import math
 
-class ThParameters:
+class ThParameters(object):
     def __init__(self):
         self.levelNoise=6
         self.angle=45
@@ -54,7 +59,7 @@ def NoisyPolygon(pRef,n):
             step = d // n
         for j in range( 1,int(d),int(max(step, 1))):
             while  True:
-                pAct = (u*j) / (d)
+                pAct = old_div((u*j), (d))
                 r = n*np.random.random_sample()
                 theta = a + 2*math.pi*np.random.random_sample()
 #                pNew = Point(Point2d(r*cos(theta) + pAct.x + p[i].x, r*sin(theta) + pAct.y + p[i].y));
@@ -157,7 +162,7 @@ while (code!=27):
         c2 = ctrRot2d
         alphaPhiST, dist	 = fit.estimateTransformation(ctrRot2d, ctrRef2d)
         print( "Transform *********\n Origin = ", 1-alphaPhiST[0,0] ," expected ", p.origin / 100. ,"\n")
-        print( "Angle = ", alphaPhiST[0,1] * 180 / math.pi ," expected " , p.angle,"\n")
+        print( "Angle = ", old_div(alphaPhiST[0,1] * 180, math.pi) ," expected " , p.angle,"\n")
         print( "Scale = " ,alphaPhiST[0,2] ," expected " , p.scale10 / 10.0 , "\n")
         dst = cv.ximgproc.transformFD(ctrRot2d, alphaPhiST,cn, False);
         ctmp= np.reshape(dst,[dst.shape[0],2])

@@ -9,7 +9,9 @@ Usage:
     ./selectivesearchsegmentation_demo.py input_image (single|fast|quality)
 Use "a" to display less rects, 'd' to display more rects, "q" to quit.
 '''
+from __future__ import print_function
 
+from builtins import range
 import cv2 as cv
 import sys
 

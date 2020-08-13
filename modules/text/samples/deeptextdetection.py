@@ -1,5 +1,8 @@
 # -*- coding: utf-8 -*-
 #!/usr/bin/python
+from __future__ import print_function
+from builtins import str
+from builtins import range
 import sys
 import os
 import cv2 as cv
@@ -15,8 +18,8 @@ def main():
         quit()
 
     if not os.path.isfile('TextBoxes_icdar13.caffemodel') or not os.path.isfile('textbox.prototxt'):
-        print " Model files not found in current directory. Aborting"
-        print " See the documentation of text::TextDetectorCNN class to get download links."
+        print(" Model files not found in current directory. Aborting")
+        print(" See the documentation of text::TextDetectorCNN class to get download links.")
         quit()
 
     img = cv.imread(str(sys.argv[1]))

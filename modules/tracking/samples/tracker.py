@@ -1,3 +1,4 @@
+from __future__ import print_function
 import numpy as np
 import cv2 as cv
 import sys
@@ -19,7 +20,7 @@ init_once = False
 while camera.isOpened():
     ok, image=camera.read()
     if not ok:
-        print 'no image to read'
+        print('no image to read')
         break
 
     if not init_once:
@@ -27,7 +28,7 @@ while camera.isOpened():
         init_once = True
 
     ok, newbox = tracker.update(image)
-    print ok, newbox
+    print(ok, newbox)
 
     if ok:
         p1 = (int(newbox[0]), int(newbox[1]))

@@ -1,3 +1,7 @@
+from __future__ import print_function
+from __future__ import division
+from builtins import range
+from past.utils import old_div
 import argparse
 import sys
 import os
@@ -11,9 +15,9 @@ def k_means(K, data, max_iter, n_jobs, image_file):
   X = np.array(data)
   np.random.shuffle(X)
   begin = time.time()
-  print 'Running kmeans'
+  print('Running kmeans')
   kmeans = KMeans(n_clusters=K, max_iter=max_iter, n_jobs=n_jobs, verbose=1).fit(X)
-  print 'K-Means took {} seconds to complete'.format(time.time()-begin)
+  print('K-Means took {} seconds to complete'.format(time.time()-begin))
   step_size = 0.2
   xmin, xmax = X[:, 0].min()-1, X[:, 0].max()+1
   ymin, ymax = X[:, 1].min()-1, X[:, 1].max()+1
@@ -30,23 +34,23 @@ def k_means(K, data, max_iter, n_jobs, image_file):
   plt.title("Anchor shapes generated using K-Means")
   plt.xlim(xmin, xmax)
   plt.ylim(ymin, ymax)
-  print 'Mean centroids are:'
+  print('Mean centroids are:')
   for i, center in enumerate(centroids):
-    print '{}: {}, {}'.format(i, center[0], center[1])
+    print('{}: {}, {}'.format(i, center[0], center[1]))
   # plt.xticks(())
   # plt.yticks(())
   plt.show()
 
 def pre_process(directory, data_list):
   if not os.path.exists(directory):
-    print "Path {} doesn't exist".format(directory)
+    print("Path {} doesn't exist".format(directory))
     return
   files = os.listdir(directory)
-  print 'Loading data...'
+  print('Loading data...')
   for i, f in enumerate(files):
     # Progress bar
     sys.stdout.write('\r')
-    percentage = (i+1.0) / len(files)
+    percentage = old_div((i+1.0), len(files))
     progress = int(percentage * 30)
     bar = [progress*'=', ' '*(29-progress), percentage*100]
     sys.stdout.write('[{}>{}]  {:.0f}%'.format(*bar))
@@ -60,7 +64,7 @@ def pre_process(directory, data_list):
       if len(l) % 5 != 0:
         sys.stderr.write('File {} contains incorrect number of annotations'.format(f))
         return
-      num_objs = len(l) / 5
+      num_objs = old_div(len(l), 5)
       for obj in range(num_objs):
         xmin = l[obj * 5 + 0]
         ymin = l[obj * 5 + 1]
@@ -89,10 +93,10 @@ def main():
   pre_process(directory, data_list  )
   sys.stdout.write('\nDone collecting data\n')
   k_means(K, data_list, int(p.iter), int(p.jobs), p.image_file)
-  print 'Done !'
+  print('Done !')
 
 if __name__=='__main__':
   try:
     main()
   except Exception as E:
-    print E
+    print(E)

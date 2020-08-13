@@ -31,6 +31,8 @@
 # ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
 # POSSIBILITY OF SUCH DAMAGE.
 
+from __future__ import division
+from past.utils import old_div
 import sys, math, Image
 
 def Distance(p1,p2):
@@ -49,11 +51,11 @@ def ScaleRotateTranslate(image, angle, center = None, new_center = None, scale =
     (sx,sy) = (scale, scale)
   cosine = math.cos(angle)
   sine = math.sin(angle)
-  a = cosine/sx
-  b = sine/sx
+  a = old_div(cosine,sx)
+  b = old_div(sine,sx)
   c = x-nx*a-ny*b
-  d = -sine/sy
-  e = cosine/sy
+  d = old_div(-sine,sy)
+  e = old_div(cosine,sy)
   f = y-nx*d-ny*e
   return image.transform(image.size, Image.AFFINE, (a,b,c,d,e,f), resample=resample)
 

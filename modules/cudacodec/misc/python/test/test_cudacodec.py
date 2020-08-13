@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+from builtins import str
 import os
 import cv2 as cv
 import numpy as np

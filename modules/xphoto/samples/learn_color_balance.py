@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
+from builtins import map
+from builtins import str
+from builtins import range
+from past.utils import old_div
 import os, sys, argparse
 import numpy as np
 import scipy.io
@@ -22,8 +27,8 @@ def convert_to_8bit(arr, clip_percentile = 2.5):
 
 def learn_regression_tree_ensemble(img_features, gt_illuminants, num_trees, max_tree_depth):
     eps = 0.001
-    inst = [[img_features[i], gt_illuminants[i][0] / (sum(gt_illuminants[i]) + eps),
-                              gt_illuminants[i][1] / (sum(gt_illuminants[i]) + eps)] for i in range(len(img_features))]
+    inst = [[img_features[i], old_div(gt_illuminants[i][0], (sum(gt_illuminants[i]) + eps)),
+                              old_div(gt_illuminants[i][1], (sum(gt_illuminants[i]) + eps))] for i in range(len(img_features))]
 
     inst.sort(key = lambda obj: obj[1]) #sort by r chromaticity
     stride = int(np.ceil(len(inst) / float(num_trees+1)))
@@ -31,7 +36,7 @@ def learn_regression_tree_ensemble(img_features, gt_illuminants, num_trees, max_
     dst_model = []
     for tree_idx in range(num_trees):
         #local group in the training data is additionally weighted by num_trees
-        local_group_range = range(tree_idx*stride, min(tree_idx*stride+sz, len(inst)))
+        local_group_range = list(range(tree_idx*stride, min(tree_idx*stride+sz, len(inst))))
         X = num_trees * [inst[i][0] for i in local_group_range]
         y_r = num_trees * [inst[i][1] for i in local_group_range]
         y_g = num_trees * [inst[i][2] for i in local_group_range]
@@ -136,11 +141,11 @@ def load_ground_truth(gt_path):
     gt = scipy.io.loadmat(gt_path)
     base_gt_illuminants = []
     black_levels = []
-    if "groundtruth_illuminants" in gt.keys() and "darkness_level" in gt.keys():
+    if "groundtruth_illuminants" in list(gt.keys()) and "darkness_level" in list(gt.keys()):
         #NUS 8-camera dataset format
         base_gt_illuminants = gt["groundtruth_illuminants"]
         black_levels = len(base_gt_illuminants) * [gt["darkness_level"][0][0]]
-    elif "real_rgb" in gt.keys():
+    elif "real_rgb" in list(gt.keys()):
         #Gehler-Shi dataset format
         base_gt_illuminants = gt["real_rgb"]
         black_levels = 87 * [0] + (len(base_gt_illuminants) - 87) * [129]

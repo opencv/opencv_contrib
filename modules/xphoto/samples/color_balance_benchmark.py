@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 from __future__ import print_function
+from __future__ import division
+from builtins import map
+from past.utils import old_div
 import os, sys, argparse, json
 import numpy as np
 import scipy.io
@@ -59,7 +62,7 @@ def evaluate(im, algo, gt_illuminant, i, range_thresh, bin_num, dst_folder, mode
         inst.setHistBinNum(bin_num)
         new_im = inst.balanceWhite(im)
     elif algo=="GT":
-        gains = gt_illuminant / min(gt_illuminant)
+        gains = old_div(gt_illuminant, min(gt_illuminant))
         g1 = float(1.0 / gains[2])
         g2 = float(1.0 / gains[1])
         g3 = float(1.0 / gains[0])
@@ -75,13 +78,13 @@ def evaluate(im, algo, gt_illuminant, i, range_thresh, bin_num, dst_folder, mode
     #recover the illuminant from the color balancing result, assuming the standard model:
     estimated_illuminant = [0, 0, 0]
     eps = 0.01
-    estimated_illuminant[2] = np.percentile((im[:,:,0] + eps) / (new_im[:,:,0] + eps), 50)
-    estimated_illuminant[1] = np.percentile((im[:,:,1] + eps) / (new_im[:,:,1] + eps), 50)
-    estimated_illuminant[0] = np.percentile((im[:,:,2] + eps) / (new_im[:,:,2] + eps), 50)
+    estimated_illuminant[2] = np.percentile(old_div((im[:,:,0] + eps), (new_im[:,:,0] + eps)), 50)
+    estimated_illuminant[1] = np.percentile(old_div((im[:,:,1] + eps), (new_im[:,:,1] + eps)), 50)
+    estimated_illuminant[0] = np.percentile(old_div((im[:,:,2] + eps), (new_im[:,:,2] + eps)), 50)
 
-    res = np.arccos(np.dot(gt_illuminant,estimated_illuminant)/
-                   (np.linalg.norm(gt_illuminant) * np.linalg.norm(estimated_illuminant)))
-    return (time, (res / np.pi) * 180)
+    res = np.arccos(old_div(np.dot(gt_illuminant,estimated_illuminant),
+                   (np.linalg.norm(gt_illuminant) * np.linalg.norm(estimated_illuminant))))
+    return (time, (old_div(res, np.pi)) * 180)
 
 
 def build_html_table(out, state, stat_list, img_range):
@@ -111,7 +114,7 @@ def build_html_table(out, state, stat_list, img_range):
                  '      <th align="center" valign="top"> Algorithm Name </th>\n',
                  '      <th align="center" valign="top"> Average Time </th>\n']
     for stat in stat_list:
-        if stat not in stat_dict.keys():
+        if stat not in list(stat_dict.keys()):
             print("Error: unsupported statistic " + stat)
             sys.exit(1)
         html_out += ['      <th align="center" valign="top"> ' +
@@ -121,9 +124,9 @@ def build_html_table(out, state, stat_list, img_range):
                  '  </thead>\n',
                  '  <tbody>\n']
 
-    for algorithm in state.keys():
-        arr = [state[algorithm][file]["angular_error"] for file in state[algorithm].keys() if file>=img_range[0] and file<=img_range[1]]
-        average_time = "%.2f ms" % np.mean([state[algorithm][file]["time"] for file in state[algorithm].keys()
+    for algorithm in list(state.keys()):
+        arr = [state[algorithm][file]["angular_error"] for file in list(state[algorithm].keys()) if file>=img_range[0] and file<=img_range[1]]
+        average_time = "%.2f ms" % np.mean([state[algorithm][file]["time"] for file in list(state[algorithm].keys())
                                                                            if file>=img_range[0] and file<=img_range[1]])
         html_out += ['    <tr>\n',
                      '      <td>' + algorithm + '</td>\n',
@@ -241,11 +244,11 @@ if __name__ == '__main__':
 
     for algorithm in algorithm_list:
         i = 0
-        if algorithm not in state.keys():
+        if algorithm not in list(state.keys()):
             state[algorithm] = {}
         sz = len(img_files)
         for file in img_files:
-            if file not in state[algorithm].keys() and\
+            if file not in list(state[algorithm].keys()) and\
              ((i>=img_range[0] and i<img_range[1]) or img_range[0]==img_range[1]==0):
                 cur_path = os.path.join(args.input_folder, file)
                 im = cv.imread(cur_path, -1).astype(np.float32)

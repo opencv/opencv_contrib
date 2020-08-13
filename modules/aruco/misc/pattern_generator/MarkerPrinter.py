@@ -4,6 +4,12 @@
 #
 # Copyright (c) 2019, Josh Chien. All rights reserved.
 
+from __future__ import print_function
+from __future__ import division
+from builtins import str
+from builtins import range
+from builtins import object
+from past.utils import old_div
 from argparse import ArgumentParser
 import numpy as np
 from PIL import Image
@@ -51,7 +57,7 @@ def SaveArucoDictBytesList(filePath = "arucoDictBytesList.npz"):
 
     return None
 
-class MarkerPrinter:
+class MarkerPrinter(object):
 
     debugMode = None # "LINE" "BLOCK"
 
@@ -157,7 +163,7 @@ class MarkerPrinter:
 
                 marker = MarkerPrinter.ArucoBits(dictionary, markerID)
                 markerSize = marker.shape[0]
-                unitLength = markerLength / (float)(markerSize + borderBits * 2)
+                unitLength = old_div(markerLength, (float)(markerSize + borderBits * 2))
 
                 markerBitMap = np.zeros(shape = (markerSize+borderBits*2, markerSize+borderBits*2), dtype = bool)
                 markerBitMap[borderBits:-borderBits,borderBits:-borderBits] = marker
@@ -1133,7 +1139,7 @@ if __name__ == '__main__':
 
     elif(args.list_dictionary):
         print("List predefined aruco dictionary")
-        for i in MarkerPrinter.arucoDictBytesList.keys():
+        for i in list(MarkerPrinter.arucoDictBytesList.keys()):
             print(i)
 
     elif(args.chess):

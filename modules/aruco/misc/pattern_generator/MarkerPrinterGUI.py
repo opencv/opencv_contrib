@@ -4,6 +4,10 @@
 #
 # Copyright (c) 2019, Josh Chien. All rights reserved.
 
+from future import standard_library
+standard_library.install_aliases()
+from builtins import str
+from builtins import object
 from MarkerPrinter import *
 
 import tkinter as tk
@@ -14,7 +18,7 @@ import time
 import PIL.Image
 import PIL.ImageTk
 
-class MarkerPrinterGUI:
+class MarkerPrinterGUI(object):
 
     def VisDPI(self, shape):
         scale0 = float(self.displayShape[0]) / float(shape[0])
@@ -510,7 +514,7 @@ class MarkerPrinterGUI:
         self.delay = pDelay
         self.displayShape = pDisplayShape
 
-        self.dictList = MarkerPrinter.arucoDictBytesList.keys()
+        self.dictList = list(MarkerPrinter.arucoDictBytesList.keys())
 
         # GUI
         self.window = tk.Tk()

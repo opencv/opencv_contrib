@@ -1,3 +1,5 @@
+from __future__ import print_function
+from builtins import object
 import sys
 import numpy as np
 import cv2 as cv
@@ -10,7 +12,7 @@ def AddSlider(sliderName,windowName,minSlider,maxSlider,valDefault, update=[]):
     cv.setTrackbarMin(sliderName, windowName, minSlider)
     cv.setTrackbarMax(sliderName, windowName, maxSlider)
     cv.setTrackbarPos(sliderName, windowName, valDefault)
-class Filtrage:
+class Filtrage(object):
     def __init__(self):
         self.s =0
         self.alpha = 100

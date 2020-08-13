@@ -2,7 +2,9 @@
 
 # Python 2/3 compatibility
 from __future__ import print_function
+from __future__ import division
 
+from past.utils import old_div
 import os
 import cv2 as cv
 import numpy as np
@@ -35,7 +37,7 @@ class intensity_transform_test(NewOpenCVTests):
             self.assertTrue(img_BIMEF.shape == img_ref.shape)
             self.assertTrue(img_BIMEF.dtype == img_ref.dtype)
 
-            RMSE = np.sqrt(cv.norm(img_BIMEF, img_ref, cv.NORM_L2SQR) / (img_ref.shape[0]*img_ref.shape[1]*img_ref.shape[2]))
+            RMSE = np.sqrt(old_div(cv.norm(img_BIMEF, img_ref, cv.NORM_L2SQR), (img_ref.shape[0]*img_ref.shape[1]*img_ref.shape[2])))
             max_RMSE_threshold = 9.0
             self.assertLessEqual(RMSE, max_RMSE_threshold)
             print('BIMEF RMSE:', RMSE)

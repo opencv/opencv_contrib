@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import division
+from past.utils import old_div
 import os
 import cv2 as cv
 import numpy as np
@@ -6,7 +8,7 @@ import numpy as np
 from tests_common import NewOpenCVTests, unittest
 
 def create_affine_transform_matrix(size,angle):
-    return np.array([[np.cos(angle), -np.sin(angle), size[1]/2], [np.sin(angle), np.cos(angle), 0]])
+    return np.array([[np.cos(angle), -np.sin(angle), old_div(size[1],2)], [np.sin(angle), np.cos(angle), 0]])
 def create_perspective_transform_matrix(size,angle):
     return np.vstack([create_affine_transform_matrix(size,angle),[0, 0, 1]])
 
@@ -33,7 +35,7 @@ class cudawarping_test(NewOpenCVTests):
     def test_warp(self):
         npMat = (np.random.random((128,128,3))*255).astype(np.uint8)
         size = npMat.shape[:2]
-        M1 = create_affine_transform_matrix(size,np.pi/2)
+        M1 = create_affine_transform_matrix(size,old_div(np.pi,2))
 
         cuMat = cv.cuda_GpuMat(npMat)
         cuMatDst = cv.cuda_GpuMat(size,cuMat.type())
@@ -57,7 +59,7 @@ class cudawarping_test(NewOpenCVTests):
         dst = cv.remap(npMat, xmap.download(), ymap.download(),interpolation)
         self.assertTrue(np.allclose(dst,dst_gold))
 
-        M2 = create_perspective_transform_matrix(size,np.pi/2)
+        M2 = create_perspective_transform_matrix(size,old_div(np.pi,2))
         np.allclose(cv.cuda.warpPerspective(cuMat,M2,size,borderMode=borderType).download(),
                     cv.warpPerspective(npMat,M2,size,borderMode=borderType))
         cv.cuda.warpPerspective(cuMat,M2,size,cuMatDst,borderMode=borderType)

@@ -1,3 +1,4 @@
+from builtins import str
 from textwrap import TextWrapper
 import re, os
 # precompile a URL matching regular expression

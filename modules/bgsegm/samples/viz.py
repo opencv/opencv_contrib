@@ -1,3 +1,4 @@
+from builtins import range
 import numpy as np
 import cv2 as cv
 import argparse
@@ -12,20 +13,20 @@ def main():
     argparser.add_argument('-l', '--lsbp', help='Display LSBP instead of GSOC', default=False)
     args = argparser.parse_args()
 
-    gt = map(lambda x: os.path.join(args.gt, x), os.listdir(args.gt))
+    gt = [os.path.join(args.gt, x) for x in os.listdir(args.gt)]
     gt.sort()
-    f = map(lambda x: os.path.join(args.frames, x), os.listdir(args.frames))
+    f = [os.path.join(args.frames, x) for x in os.listdir(args.frames)]
     f.sort()
 
-    gt = np.uint8(map(lambda x: cv.imread(x, cv.IMREAD_GRAYSCALE), gt))
-    f = np.uint8(map(lambda x: cv.imread(x, cv.IMREAD_COLOR), f))
+    gt = np.uint8([cv.imread(x, cv.IMREAD_GRAYSCALE) for x in gt])
+    f = np.uint8([cv.imread(x, cv.IMREAD_COLOR) for x in f])
 
     if not args.lsbp:
         bgs = cv.bgsegm.createBackgroundSubtractorGSOC()
     else:
         bgs = cv.bgsegm.createBackgroundSubtractorLSBP()
 
-    for i in xrange(f.shape[0]):
+    for i in range(f.shape[0]):
         cv.imshow('Frame', f[i])
         cv.imshow('Ground-truth', gt[i])
         mask = bgs.apply(f[i])

@@ -1,4 +1,6 @@
 #!/usr/bin/env python
+from __future__ import division
+from past.utils import old_div
 import os
 import cv2 as cv
 import numpy as np
@@ -159,7 +161,7 @@ class cudaarithm_test(NewOpenCVTests):
         npDims = np.array(npMat.shape)
         kernel = (np.random.random((3, 3)) * 1).astype(np.float32)
         kernelDims = np.array(kernel.shape)
-        iS = (kernelDims/2).astype(int)
+        iS = (old_div(kernelDims,2)).astype(int)
         iE = npDims - kernelDims + iS
 
         cuMat = cv.cuda_GpuMat(npMat)

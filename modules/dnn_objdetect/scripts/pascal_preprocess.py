@@ -1,3 +1,8 @@
+from __future__ import print_function
+from __future__ import division
+from builtins import str
+from builtins import range
+from past.utils import old_div
 from skimage import io, transform
 from multiprocessing.dummy import Pool as ThreadPool
 
@@ -5,7 +10,7 @@ def rescale(root_new, root_old, img_path, ann_path, out_shape):
   try:
     img = io.imread(root_old+"/"+img_path)
   except Exception as E:
-    print E
+    print(E)
   h, w, _ = img.shape
   f_h, f_w = float(out_shape)/h, float(out_shape)/w
   trans_img = transform.rescale(img, (f_h, f_w))
@@ -15,8 +20,8 @@ def rescale(root_new, root_old, img_path, ann_path, out_shape):
     ann = ann.rstrip()
     ann = ann.split(' ')
     ann = [float(i) for i in ann]
-    num_objs = len(ann) / 5
-    for idx in xrange(num_objs):
+    num_objs = old_div(len(ann), 5)
+    for idx in range(num_objs):
       ann[idx * 5 + 0] = int(f_w * ann[idx * 5 + 0])
       ann[idx * 5 + 1] = int(f_h * ann[idx * 5 + 1])
       ann[idx * 5 + 2] = int(f_w * ann[idx * 5 + 2])
@@ -35,7 +40,7 @@ def preprocess():
   out_shape = 416
   with open(source, 'r') as src:
     lines = src.readlines()
-    print 'Processing {} images and annotations'.format(len(lines))
+    print('Processing {} images and annotations'.format(len(lines)))
     for line in lines:
       line = line.rstrip()
       line = line.split(' ')

@@ -1,3 +1,4 @@
+from __future__ import print_function
 import cv2 as cv
 
 N = 2

@@ -1,3 +1,7 @@
+from __future__ import print_function
+from builtins import str
+from past.builtins import basestring
+from builtins import object
 import collections
 from textwrap import fill
 from filters import *
@@ -99,7 +103,7 @@ class ParseTree(object):
 
     def build(self, namespaces):
         babel = Translator()
-        for name, definitions in namespaces.items():
+        for name, definitions in list(namespaces.items()):
             class_tree = {}
             methods = []
             constants = []
@@ -353,7 +357,7 @@ def constants(tree):
         for node in tree['constants']:
             yield (node['name'], node['default'])
     if isinstance(tree, dict):
-        for key, val in tree.items():
+        for key, val in list(tree.items()):
             for gen in constants(val):
                 yield gen
     if isinstance(tree, list):
@@ -370,7 +374,7 @@ def todict(obj):
     if isinstance(obj, basestring):
         return obj
     elif isinstance(obj, dict):
-        return dict((key, todict(val)) for key, val in obj.items())
+        return dict((key, todict(val)) for key, val in list(obj.items()))
     elif isinstance(obj, collections.Iterable):
         return [todict(val) for val in obj]
     elif hasattr(obj, '__dict__'):

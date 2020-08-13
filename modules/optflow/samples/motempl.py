@@ -1,4 +1,8 @@
 #!/usr/bin/env python
+from __future__ import print_function
+from __future__ import division
+from builtins import str
+from past.utils import old_div
 import numpy as np
 import cv2 as cv
 
@@ -16,7 +20,7 @@ def draw_motion_comp(vis, rect, angle, color):
     cv.rectangle(vis, (x, y), (x+w, y+h), (0, 255, 0))
     r = min(w//2, h//2)
     cx, cy = x+w//2, y+h//2
-    angle = angle*np.pi/180
+    angle = old_div(angle*np.pi,180)
     cv.circle(vis, (cx, cy), r, color, 3)
     cv.line(vis, (cx, cy), (int(cx+np.cos(angle)*r), int(cy+np.sin(angle)*r)), color, 3)
 
@@ -53,7 +57,7 @@ if __name__ == '__main__':
         gray_diff = cv.cvtColor(frame_diff, cv.COLOR_BGR2GRAY)
         thrs = cv.getTrackbarPos('threshold', 'motempl')
         ret, motion_mask = cv.threshold(gray_diff, thrs, 1, cv.THRESH_BINARY)
-        timestamp = cv.getTickCount() / cv.getTickFrequency()
+        timestamp = old_div(cv.getTickCount(), cv.getTickFrequency())
         cv.motempl.updateMotionHistory(motion_mask, motion_history, timestamp, MHI_DURATION)
         mg_mask, mg_orient = cv.motempl.calcMotionGradient( motion_history, MAX_TIME_DELTA, MIN_TIME_DELTA, apertureSize=5 )
         seg_mask, seg_bounds = cv.motempl.segmentMotion(motion_history, timestamp, MAX_TIME_DELTA)
@@ -64,10 +68,10 @@ if __name__ == '__main__':
         elif visual_name == 'frame_diff':
             vis = frame_diff.copy()
         elif visual_name == 'motion_hist':
-            vis = np.uint8(np.clip((motion_history-(timestamp-MHI_DURATION)) / MHI_DURATION, 0, 1)*255)
+            vis = np.uint8(np.clip(old_div((motion_history-(timestamp-MHI_DURATION)), MHI_DURATION), 0, 1)*255)
             vis = cv.cvtColor(vis, cv.COLOR_GRAY2BGR)
         elif visual_name == 'grad_orient':
-            hsv[:,:,0] = mg_orient/2
+            hsv[:,:,0] = old_div(mg_orient,2)
             hsv[:,:,2] = mg_mask*255
             vis = cv.cvtColor(hsv, cv.COLOR_HSV2BGR)
 

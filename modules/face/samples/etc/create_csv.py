@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 import sys
 import os.path
 
@@ -27,7 +28,7 @@ import os.path
 if __name__ == "__main__":
 
     if len(sys.argv) != 2:
-        print "usage: create_csv <base_path>"
+        print("usage: create_csv <base_path>")
         sys.exit(1)
 
     BASE_PATH=sys.argv[1]
@@ -39,5 +40,5 @@ if __name__ == "__main__":
             subject_path = os.path.join(dirname, subdirname)
             for filename in os.listdir(subject_path):
                 abs_path = "%s/%s" % (subject_path, filename)
-                print "%s%s%d" % (abs_path, SEPARATOR, label)
+                print("%s%s%d" % (abs_path, SEPARATOR, label))
             label = label + 1
