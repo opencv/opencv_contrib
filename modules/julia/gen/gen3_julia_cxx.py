@@ -1,5 +1,5 @@
+#!/usr/bin/env python
 
-#!/usr/bin/env python3
 from __future__ import unicode_literals # Needed for python2
 
 import hdr_parser, sys, re, os

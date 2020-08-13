@@ -1,4 +1,3 @@
-
 #!/usr/bin/env python
 
 import hdr_parser, sys, re, os

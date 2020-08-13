@@ -93,7 +93,6 @@ file(COPY ${CMAKE_CURRENT_BINARY_DIR}/gen/jl_cxx_files/ DESTINATION ${CMAKE_CURR
 ocv_glob_module_sources()
 ocv_module_include_directories()
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wmissing-prototypes -Wmissing-declarations)
-message(STATUS ${OPENCV_MODULE_${the_module}_SOURCES})
 
 ocv_add_library(${the_module} SHARED ${OPENCV_MODULE_${the_module}_HEADERS}
                                      ${OPENCV_MODULE_${the_module}_SOURCES}
@@ -133,8 +132,8 @@ endif()
 
 # ocv_create_module()
 
-ocv_add_accuracy_tests()
-ocv_add_perf_tests()
+# ocv_add_accuracy_tests()
+# ocv_add_perf_tests()
 ocv_add_samples()
 
 message(STATUS     ${OPENCV_MODULE_${the_module}_DEPS_TO_LINK})
