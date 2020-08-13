@@ -14,11 +14,22 @@ namespace kinfu {
 
 TsdfType floatToTsdf(float num)
 {
-    if (-1 < num && num <= 1)
+    int8_t res;
+    if (num == 0)
+        res = 0;
+    else if (-1 < num && num <= 1)
     {
-        return int8_t(int(num * 128 * (-1)));
+        res = int8_t(int(num * 128 * (-1)));
+        if (res == 0) {
+            if (num < 0)
+                res = 1;
+            else
+                res = -1;
+        }
     }
-    return 0;
+    else
+        res = 0;
+    return res;
 }
 
 float tsdfToFloat(TsdfType num)
@@ -509,6 +520,8 @@ inline TsdfType TSDFVolumeCPU::interpolateVoxel(const v_float32x4& p) const
 #else
 inline TsdfType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
 {
+    std::cout << "interpolateVoxel" << std::endl;
+
     int xdim = volDims[0], ydim = volDims[1], zdim = volDims[2];
 
     int ix = cvFloor(p.x);
@@ -525,7 +538,7 @@ inline TsdfType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
     float vx[8];
     for (int i = 0; i < 8; i++) {
         vx[i] = tsdfToFloat(volData[neighbourCoords[i] + coordBase].tsdf);
-        //std::cout << vx[i] << std::endl;
+        std::cout <<"-"<< vx[i] << std::endl;
     }
     float v00 = vx[0] + tz*(vx[1] - vx[0]);
     float v01 = vx[2] + tz*(vx[3] - vx[2]);
@@ -534,7 +547,7 @@ inline TsdfType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
 
     float v0 = v00 + ty*(v01 - v00);
     float v1 = v10 + ty*(v11 - v10);
-
+    std::cout <<"intr: " << v0 + tx * (v1 - v0) << std::endl;
     return floatToTsdf(v0 + tx*(v1 - v0));
 }
 #endif
@@ -868,8 +881,12 @@ struct RaycastInvoker : ParallelLoopBody
                     Point3f rayStep = dir * tstep;
                     Point3f next = (orig + dir * tmin);
                     float f = tsdfToFloat(volume.interpolateVoxel(next)), fnext = f;
+                    bool tmp = false;
+                    
                     if (f != 0)
-                    std::cout << "raymarch" << std::endl;
+                    {std::cout << "raymarch <==============>" << std::endl;
+                    tmp = true;}
+                    
                     //raymarch
                     int steps = 0;
                     int nSteps = floor((tmax - tmin)/tstep);
@@ -883,11 +900,11 @@ struct RaycastInvoker : ParallelLoopBody
                         int iy = cvRound(next.y);
                         int iz = cvRound(next.z);
                         fnext = tsdfToFloat(volume.volume.at<TsdfVoxel>(ix*xdim + iy*ydim + iz*zdim).tsdf);
-                        if (f != 0)std::cout << f << " " << fnext << std::endl;
+                        if (tmp) std::cout <<"["<<f<<":"<<fnext<<"]"<< std::endl;
                         if(fnext != f)
                         {
                             fnext = tsdfToFloat(volume.interpolateVoxel(next));
-
+                            if (tmp) std::cout << "-{ f: "<< f << " fnext: " << fnext << std::endl;
                             // when ray crosses a surface
                             if(std::signbit(f) != std::signbit(fnext))
                                 break;
@@ -895,8 +912,7 @@ struct RaycastInvoker : ParallelLoopBody
                             f = fnext;
                         }
                     }
-                    //if(f!=0)
-                    //std::cout << f << " " << fnext << std::endl;
+                    if(tmp) std::cout << f << " : " << fnext << " <---------------------> "<< std::endl;
                     // if ray penetrates a surface from outside
                     // linearly interpolate t between two f values
                     if(f > 0.f && fnext < 0.f)
