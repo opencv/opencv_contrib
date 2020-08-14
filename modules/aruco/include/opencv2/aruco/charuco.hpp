@@ -334,7 +334,18 @@ CV_EXPORTS void drawCharucoDiamond(const Ptr<Dictionary> &dictionary, Vec4i ids,
                                    int borderBits = 1);
 
 
-
+/**
+ * @brief test whether the ChArUco markers are collinear
+ *
+ * @param _board layout of ChArUco board.
+ * @param _charucoIds list of identifiers for each corner in charucoCorners per frame.
+ * @return bool value, 1 (true) if detected corners form a line, 0 (false) if they do not.
+      solvePnP, calibration functions will fail if the corners are collinear (true).
+ *
+ * The number of ids in charucoIDs should be <= the number of chessboard corners in the board.  This functions checks whether the charuco corners are on a straight line (returns true, if so), or not (false).  Axis parallel, as well as diagonal and other straight lines detected.  Degenerate cases: for number of charucoIDs <= 2, the function returns true.
+ */
+CV_EXPORTS_W bool testCharucoCornersCollinear(const Ptr<CharucoBoard> &_board,
+                                              InputArray _charucoIds);
 
 //! @}
 }

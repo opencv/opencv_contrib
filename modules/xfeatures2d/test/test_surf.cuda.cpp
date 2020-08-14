@@ -171,8 +171,22 @@ CUDA_TEST_P(CUDA_SURF, Descriptor)
     EXPECT_GT(matchedRatio, 0.6);
 }
 
+#if defined (__x86_64__) || defined (_M_X64)
+testing::internal::ValueArray3<SURF_HessianThreshold, SURF_HessianThreshold, SURF_HessianThreshold> thresholdValues =
+    testing::Values(
+            SURF_HessianThreshold(100.0),
+            SURF_HessianThreshold(500.0),
+            SURF_HessianThreshold(1000.0));
+#else
+// hessian computation is not bit-exact and lower threshold causes different count of detection
+testing::internal::ValueArray2<SURF_HessianThreshold, SURF_HessianThreshold> thresholdValues =
+    testing::Values(
+            SURF_HessianThreshold(813.0),
+            SURF_HessianThreshold(1000.0));
+#endif
+
 INSTANTIATE_TEST_CASE_P(CUDA_Features2D, CUDA_SURF, testing::Combine(
-    testing::Values(SURF_HessianThreshold(100.0), SURF_HessianThreshold(500.0), SURF_HessianThreshold(1000.0)),
+    thresholdValues,
     testing::Values(SURF_Octaves(3), SURF_Octaves(4)),
     testing::Values(SURF_OctaveLayers(2), SURF_OctaveLayers(3)),
     testing::Values(SURF_Extended(false), SURF_Extended(true)),

@@ -86,6 +86,15 @@ TEST(FastBilateralSolverTest, SplatSurfaceAccuracy)
     }
 }
 
+#define COUNT_EXCEED(MAT1, MAT2, THRESHOLD, PIXEL_COUNT) \
+{                                                        \
+    Mat diff, count;                                     \
+    absdiff(MAT1.reshape(1), MAT2.reshape(1), diff);     \
+    cvtest::compare(diff, THRESHOLD, count, CMP_GT);     \
+    PIXEL_COUNT = countNonZero(count.reshape(1));        \
+    PIXEL_COUNT /= MAT1.channels();                      \
+}
+
 TEST(FastBilateralSolverTest, ReferenceAccuracy)
 {
     string dir = getDataDir() + "cv/edgefilter";
@@ -104,7 +113,14 @@ TEST(FastBilateralSolverTest, ReferenceAccuracy)
     double totalMaxError = 1.0/64.0*src.total()*src.channels();
 
     EXPECT_LE(cvtest::norm(res, ref, NORM_L2), totalMaxError);
+#if defined (__x86_64__) || defined (_M_X64)
     EXPECT_LE(cvtest::norm(res, ref, NORM_INF), 1);
+#else
+    // fastBilateralSolverFilter is not bit-exact
+    int pixelCount = 0;
+    COUNT_EXCEED(res, ref, 2, pixelCount);
+    EXPECT_LE(pixelCount, (int)(res.cols*res.rows*1/100));
+#endif
 }
 
 INSTANTIATE_TEST_CASE_P(FullSet, FastBilateralSolverTest,Combine(Values(szODD, szQVGA), SrcTypes::all(), GuideTypes::all()));
