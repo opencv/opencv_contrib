@@ -19,11 +19,13 @@ static inline TsdfType floatToTsdf(float num)
     u.u += 7 << 23; // multiply by 128 == add 7 to exponent
     u.u ^= 1u << 31; // negate
     int tsdf = (int)u.f;
+    tsdf = tsdf ? tsdf : (num < 0 ? 1 : -1);
     return tsdf >= 128 ? 127 : tsdf;
 }
 
 static inline float tsdfToFloat(TsdfType num)
 {
+    if(!num) return 0.f;
     Cv32suf u;
     u.f = float(num);
     u.u -= 7 << 23; // divide by 128 == sub 7 from exponent
@@ -31,14 +33,14 @@ static inline float tsdfToFloat(TsdfType num)
     return u.f;
 }
 */
+
 static inline TsdfType floatToTsdf(float num)
 {
     int8_t res;
     if (-1 < num && num <= 1)
     {
         res = int8_t(int(num * 128 * (-1)));
-        if (res == 0) 
-            res = num < 0 ? 1 : -1;
+        res = res ? res : (num < 0 ? 1 : -1);
     }
     else
         res = 0;
@@ -540,7 +542,7 @@ inline TsdfType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
     const TsdfVoxel* volData = volume.ptr<TsdfVoxel>();
 
     float vx[8];
-    for (int i = 0; i < 8; i++) 
+    for (int i = 0; i < 8; i++)
         vx[i] = tsdfToFloat(volData[neighbourCoords[i] + coordBase].tsdf);
 
     float v00 = vx[0] + tz*(vx[1] - vx[0]);
@@ -883,7 +885,7 @@ struct RaycastInvoker : ParallelLoopBody
                     Point3f rayStep = dir * tstep;
                     Point3f next = (orig + dir * tmin);
                     float f = tsdfToFloat(volume.interpolateVoxel(next)), fnext = f;
-                    
+
                     //raymarch
                     int steps = 0;
                     int nSteps = floor((tmax - tmin)/tstep);

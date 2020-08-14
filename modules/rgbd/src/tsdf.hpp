@@ -43,7 +43,7 @@ class TSDFVolume : public Volume
     virtual ~TSDFVolume() = default;
 
    public:
-    
+
     Point3i volResolution;
     WeightType maxWeight;
 

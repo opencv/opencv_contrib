@@ -338,7 +338,6 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     if (isFetchPointsNormals)
     {
         volume->fetchPointsNormals(_points, _normals);
-        
     }
     if (isFetchNormals)
     {
