@@ -78,14 +78,14 @@ namespace cv
                 {
                     if (image[i][rrWidth + jj] > image[i][rWidth + j])
                     {
-                        c[i] = c[i] + 1;
+                        c[i] += 1;
                     }
-                    c[i] = c[i] << 1;
+                    c[i] <<= 1;
                     if (integralImage[i][rrWidth + jj] > image[i][rWidth + j])
                     {
-                        c[i] = c[i] + 1;
+                        c[i] += 1;
                     }
-                    c[i] = c[i] << 1;
+                    c[i] <<= 1;
                 }
             }
         };
@@ -113,15 +113,14 @@ namespace cv
                 {
                     if (image[i][rrWidth + jj] > image[i][rWidth + j] - t)
                     {
-                        c[i] = c[i] << 1;
-                        c[i] = c[i] + 1;
-                        c[i] = c[i] << 1;
-                        c[i] = c[i] + 1;
+                        c[i] <<= 2;
+                        c[i] |= 0x11;
                     }
-                    else if (image[i][rWidth + j] - t < image[i][rrWidth + jj] && image[i][rWidth + j] + t >= image[i][rrWidth + jj])
+                    else if (   image[i][rrWidth + jj] > image[i][rWidth + j] - t
+                             && image[i][rrWidth + jj] <= image[i][rWidth + j] + t )
                     {
-                        c[i] = c[i] << 2;
-                        c[i] = c[i] + 1;
+                        c[i] <<= 2;
+                        c[i] |= 0x01;
                     }
                     else
                     {
@@ -154,9 +153,9 @@ namespace cv
                 {
                     if (image[i][(rrWidth + jj)] > image[i][(w2 + (jj + n2))])
                     {
-                        c[i] = c[i] + 1;
+                        c[i] += 1;
                     }
-                    c[i] = c[i] * 2;
+                    c[i] <<= 1;
                 }
             }
         };
