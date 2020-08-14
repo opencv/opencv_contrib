@@ -23,8 +23,8 @@ namespace kinfu
 typedef int8_t TsdfType;
 typedef int WeightType;
 
-inline TsdfType floatToTsdf(float num);
-inline float tsdfToFloat(TsdfType num);
+//static inline TsdfType floatToTsdf(float num);
+//static inline float tsdfToFloat(TsdfType num);
 
 struct TsdfVoxel
 {
