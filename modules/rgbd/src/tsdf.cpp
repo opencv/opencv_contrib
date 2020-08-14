@@ -378,7 +378,7 @@ struct IntegrateInvoker : ParallelLoopBody
             {
                 TsdfVoxel* volDataY = volDataX+y*volume.volDims[1];
                 // optimization of camSpace transformation (vector addition instead of matmul at each z)
-                Point3f basePt = vol2cam*(Point3f(x, y, 0)*volume.voxelSize);
+                Point3f basePt = vol2cam*(Point3f(float(x), float(y), 0.0f)*volume.voxelSize);
                 Point3f camSpacePt = basePt;
                 // zStep == vol2cam*(Point3f(x, y, 1)*voxelSize) - basePt;
                 // zStep == vol2cam*[Point3f(x, y, 1) - Point3f(x, y, 0)]*voxelSize
@@ -388,7 +388,7 @@ struct IntegrateInvoker : ParallelLoopBody
                 int startZ, endZ;
                 if(abs(zStep.z) > 1e-5)
                 {
-                    int baseZ = -basePt.z / zStep.z;
+                    int baseZ = int(-basePt.z / zStep.z);
                     if(zStep.z > 0)
                     {
                         startZ = baseZ;
@@ -854,7 +854,7 @@ struct RaycastInvoker : ParallelLoopBody
 
                 Point3f orig = camTrans;
                 // direction through pixel in volume space
-                Point3f dir = normalize(Vec3f(camRot * reproj(Point3f(x, y, 1.f))));
+                Point3f dir = normalize(Vec3f(camRot * reproj(Point3f(float(x), float(y), 1.f))));
 
                 // compute intersection of ray with all six bbox planes
                 Vec3f rayinv(1.f/dir.x, 1.f/dir.y, 1.f/dir.z);
@@ -888,7 +888,7 @@ struct RaycastInvoker : ParallelLoopBody
 
                     //raymarch
                     int steps = 0;
-                    int nSteps = floor((tmax - tmin)/tstep);
+                    int nSteps = int(floor((tmax - tmin)/tstep));
                     for(; steps < nSteps; steps++)
                     {
                         next += rayStep;
