@@ -98,7 +98,7 @@ struct Scene
 struct SemisphereScene : Scene
 {
     const int framesPerCycle = 72;
-    const float nCycles = 0.25f;
+    const float nCycles = 1.0f;
     const Affine3f startPose = Affine3f(Vec3f(0.f, 0.f, 0.f), Vec3f(1.5f, 0.3f, -1.5f));
 
     Size frameSize;

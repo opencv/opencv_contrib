@@ -11,37 +11,43 @@
 namespace cv {
 
 namespace kinfu {
+/*
+static inline TsdfType floatToTsdf(float num)
+{
+    Cv32suf u;
+    u.f = num;
+    u.u += 7 << 23; // multiply by 128 == add 7 to exponent
+    u.u ^= 1u << 31; // negate
+    int tsdf = (int)u.f;
+    return tsdf >= 128 ? 127 : tsdf;
+}
 
-TsdfType floatToTsdf(float num)
+static inline float tsdfToFloat(TsdfType num)
+{
+    Cv32suf u;
+    u.f = float(num);
+    u.u -= 7 << 23; // divide by 128 == sub 7 from exponent
+    u.u ^= 1u << 31; // negate
+    return u.f;
+}
+*/
+static inline TsdfType floatToTsdf(float num)
 {
     int8_t res;
-    if (num == 0)
-        res = 0;
-    else if (-1 < num && num <= 1)
+    if (-1 < num && num <= 1)
     {
         res = int8_t(int(num * 128 * (-1)));
-        if (res == 0) {
-            if (num < 0)
-                res = 1;
-            else
-                res = -1;
-        }
+        if (res == 0) 
+            res = num < 0 ? 1 : -1;
     }
     else
         res = 0;
     return res;
 }
 
-float tsdfToFloat(TsdfType num)
+static inline float tsdfToFloat(TsdfType num)
 {
-    if (num == 0)
-        return 0;
     return float(num) * (-1) / 128;
-}
-
-float getTSDF(TsdfVoxel v)
-{
-    return tsdfToFloat(v.tsdf);
 }
 
 TSDFVolume::TSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist,
