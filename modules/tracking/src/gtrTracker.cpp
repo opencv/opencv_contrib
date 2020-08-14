@@ -75,7 +75,9 @@ class TrackerGOTURNModel : public TrackerModel{
 public:
     TrackerGOTURNModel(TrackerGOTURN::Params){}
     Rect2d getBoundingBox(){ return boundingBox_; }
-    void setBoudingBox(Rect2d boundingBox){ boundingBox_ = boundingBox; }
+    void setBoudingBox(Rect2d boundingBox) {
+        boundingBox_ = boundingBox & Rect2d(Point(0, 0), image_.size());;
+    }
     Mat getImage(){ return image_; }
     void setImage(const Mat& image){ image.copyTo(image_); }
 protected:
@@ -136,6 +138,11 @@ bool TrackerGOTURNImpl::updateImpl(const Mat& image, Rect2d& boundingBox)
     targetPatchRect.height = (float)(prevBB.height*padTargetPatch);
     targetPatchRect.x = (float)(prevCenter.x - prevBB.width*padTargetPatch / 2.0 + targetPatchRect.width);
     targetPatchRect.y = (float)(prevCenter.y - prevBB.height*padTargetPatch / 2.0 + targetPatchRect.height);
+
+    targetPatchRect.width = std::min(targetPatchRect.width, (float)prevFrame.cols);
+    targetPatchRect.height = std::min(targetPatchRect.height, (float)prevFrame.rows);
+    targetPatchRect.x = std::max(-prevFrame.cols * 0.5f, std::min(targetPatchRect.x, prevFrame.cols * 1.5f));
+    targetPatchRect.y = std::max(-prevFrame.rows * 0.5f, std::min(targetPatchRect.y, prevFrame.rows * 1.5f));
 
     copyMakeBorder(prevFrame, prevFramePadded, (int)targetPatchRect.height, (int)targetPatchRect.height, (int)targetPatchRect.width, (int)targetPatchRect.width, BORDER_REPLICATE);
     targetPatch = prevFramePadded(targetPatchRect).clone();

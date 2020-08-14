@@ -567,6 +567,26 @@ TEST_P(DistanceAndOverlap, Scaled_Data_CSRT)
   test.run();
 }
 
+TEST(GOTURN, memory_usage)
+{
+  cv::Rect2d roi(145, 70, 85, 85);
+  cv::Mat frame;
+  cv::Ptr<cv::Tracker> tracker = cv::TrackerGOTURN::create();
+  string folder = cvtest::TS::ptr()->get_data_path() + "tracking/david/data/david.webm";
+  cv::VideoCapture video( folder );
+  video >> frame;
+  tracker->init(frame, roi);
+  for (;; ) {
+      video >> frame;
+      if (frame.empty())
+          break;
+      tracker->update(frame, roi);
+      if (roi.width > frame.cols || roi.height > frame.rows)
+      {
+          FAIL() << "GOTURN tracker memory test failed: tracker trying to allocate too much memory";
+      }
+  }
+}
 
 INSTANTIATE_TEST_CASE_P( Tracking, DistanceAndOverlap, TESTSET_NAMES);
 
