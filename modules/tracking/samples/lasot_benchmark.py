@@ -12,7 +12,7 @@ import cv2 as cv
 import argparse
 import os
 
-from dasiamrpn_tracker import DaSiamRPNTracker
+from opencv.samples.dnn.dasiamrpn_tracker import DaSiamRPNTracker
 
 
 def get_iou(new, gt):
