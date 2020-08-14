@@ -581,10 +581,6 @@ TEST(GOTURN, memory_usage)
       if (frame.empty())
           break;
       tracker->update(frame, roi);
-      if (roi.width > frame.cols || roi.height > frame.rows)
-      {
-          FAIL() << "GOTURN tracker memory test failed: tracker trying to allocate too much memory";
-      }
   }
 }
 
