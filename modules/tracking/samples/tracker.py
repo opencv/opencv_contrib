@@ -13,27 +13,21 @@ if not ok:
     print('Failed to read video')
     exit()
 bbox = cv.selectROI("tracking", image)
-
-tracker = cv.TrackerBoosting_create()
-#tracker = cv.TrackerMIL_create()
-#tracker = cv.TrackerKCF_create()
-#tracker = cv.TrackerMedianFlow_create()
-#tracker = cv.TrackerGOTURN_create()
-#tracker = cv.TrackerMOSSE_create()
-#tracker = cv.TrackerCSRT_create()
-
+tracker = cv.TrackerMIL_create()
 init_once = False
+
 while camera.isOpened():
     ok, image=camera.read()
     if not ok:
-        print('no image to read')
+        print 'no image to read'
         break
 
     if not init_once:
         ok = tracker.init(image, bbox)
         init_once = True
+
     ok, newbox = tracker.update(image)
-    print(ok, newbox)
+    print ok, newbox
 
     if ok:
         p1 = (int(newbox[0]), int(newbox[1]))
