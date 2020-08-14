@@ -883,7 +883,6 @@ struct RaycastInvoker : ParallelLoopBody
                     Point3f rayStep = dir * tstep;
                     Point3f next = (orig + dir * tmin);
                     float f = tsdfToFloat(volume.interpolateVoxel(next)), fnext = f;
-                    bool tmp = false;
                     
                     //raymarch
                     int steps = 0;
@@ -973,8 +972,7 @@ void TSDFVolumeCPU::raycast(const cv::Matx44f& cameraPose, const Intr& intrinsic
     RaycastInvoker ri(points, normals, cameraPose, intrinsics, *this);
 
     const int nstripes = -1;
-    //parallel_for_(Range(0, points.rows), ri, nstripes);
-    ri(Range(0, points.rows));
+    parallel_for_(Range(0, points.rows), ri, nstripes);
 }
 
 
