@@ -71,6 +71,7 @@ namespace cv
                 }
                 stop = num_images;
             }
+
             void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int c[num_images]) const
             {
                 CV_UNUSED(w2);
@@ -89,6 +90,7 @@ namespace cv
                 }
             }
         };
+
         //!Compares pixels from a patch giving high weights to pixels in which
         //!the intensity is higher. The other pixels receive a lower weight
         template <int num_images>
@@ -106,6 +108,7 @@ namespace cv
                 imageStop = num_images;
                 t = threshold;
             }
+
             void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int c[num_images]) const
             {
                 CV_UNUSED(w2);
@@ -129,6 +132,7 @@ namespace cv
                 }
             }
         };
+
         //!A madified cs census that compares a pixel with the imediat neightbour starting
         //!from the center
         template<int num_images>
@@ -145,6 +149,7 @@ namespace cv
                 imageStop = num_images;
                 n2 = ker;
             }
+
             void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int c[num_images]) const
             {
                 CV_UNUSED(j);
@@ -159,6 +164,7 @@ namespace cv
                 }
             }
         };
+
         //!A kernel in which a pixel is compared with the center of the window
         template<int num_images>
         struct CensusKernel
@@ -172,6 +178,7 @@ namespace cv
                     image[i] = images[i];
                 imageStop = num_images;
             }
+
             void operator()(int rrWidth,int w2, int rWidth, int jj, int j, int c[num_images]) const
             {
                 CV_UNUSED(w2);
@@ -186,6 +193,7 @@ namespace cv
                 }
             }
         };
+
         //template clas which efficiently combines the descriptors
         template <int step_start, int step_end, int step_inc,int nr_img, typename Kernel>
         class CombinedDescriptor:public ParallelLoopBody
@@ -208,6 +216,7 @@ namespace cv
                 kernel_ = kernel;
                 n2_stop = k2Stop;
             }
+
             void operator()(const cv::Range &r) const CV_OVERRIDE {
                 for (int i = r.start; i < r.end ; i++)
                 {
@@ -244,6 +253,7 @@ namespace cv
                 }
             }
         };
+
         //!implementation for the star kernel descriptor
         template<int num_images>
         class StarKernelCensus:public ParallelLoopBody
@@ -266,6 +276,7 @@ namespace cv
                 im_num = num_images;
                 stride_ = (int)img[0].step;
             }
+
             void operator()(const cv::Range &r) const CV_OVERRIDE {
                 for (int i = r.start; i < r.end; i++)
                 {
@@ -341,6 +352,7 @@ namespace cv
                 }
             }
         };
+
         //!paralel implementation of the center symetric census
         template <int num_images>
         class SymetricCensus:public ParallelLoopBody
@@ -363,6 +375,7 @@ namespace cv
                 im_num = num_images;
                 stride_ = (int)img[0].step;
             }
+
             void operator()(const cv::Range &r) const CV_OVERRIDE {
                 for (int i = r.start; i < r.end ; i++)
                 {
