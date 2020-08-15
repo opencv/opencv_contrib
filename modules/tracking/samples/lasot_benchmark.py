@@ -11,9 +11,11 @@ import numpy as np
 import cv2 as cv
 import argparse
 import os
+import sys
 
-from opencv.samples.dnn.dasiamrpn_tracker import DaSiamRPNTracker
-
+path = cv.samples.findFile('samples/dnn/dasiamrpn_tracker.py')
+sys.path.append(os.path.dirname(path))
+from dasiamrpn_tracker import DaSiamRPNTracker
 
 def get_iou(new, gt):
     '''
