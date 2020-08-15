@@ -114,13 +114,12 @@ namespace cv
                 CV_UNUSED(w2);
                 for(int i = 0; i < imageStop; i++)
                 {
-                    if (image[i][rrWidth + jj] > image[i][rWidth + j] - t)
+                    if (image[i][rrWidth + jj] > image[i][rWidth + j] + t)
                     {
                         c[i] <<= 2;
                         c[i] |= 0x11;
                     }
-                    else if (   image[i][rrWidth + jj] > image[i][rWidth + j] - t
-                             && image[i][rrWidth + jj] <= image[i][rWidth + j] + t )
+                    else if (image[i][rrWidth + jj] > image[i][rWidth + j] - t)
                     {
                         c[i] <<= 2;
                         c[i] |= 0x01;
