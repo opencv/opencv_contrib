@@ -393,7 +393,7 @@ namespace cv
                 {
                     starCensusTransform(left,right,params.kernelSize,censusImage[0],censusImage[1]);
                 }
-                hammingDistanceBlockMatching(censusImage[0], censusImage[1], hammingDistance);
+                hammingDistanceBlockMatching(censusImage[0], censusImage[1], hammingDistance, params.kernelSize);
                 costGathering(hammingDistance, partialSumsLR);
                 blockAgregation(partialSumsLR, params.agregationWindowSize, agregatedHammingLRCost);
                 dispartyMapFormation(agregatedHammingLRCost, disp0, 3);
