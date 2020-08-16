@@ -679,7 +679,7 @@ namespace cv
                     starCensusTransform(left,right,params.kernelSize,censusImageLeft,censusImageRight);
                 }
 
-                hammingDistanceBlockMatching(censusImageLeft, censusImageRight, hamDist);
+                hammingDistanceBlockMatching(censusImageLeft, censusImageRight, hamDist, params.kernelSize);
 
                 computeDisparityBinarySGBM( left, right, disp, params, buffer,hamDist);
 
