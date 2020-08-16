@@ -127,7 +127,7 @@ namespace cv
         disp2cost also has the same size as img1 (or img2).
         It contains the minimum current cost, used to find the best disparity, corresponding to the minimal cost.
         */
-        static void computeDisparityBinarySGBM( const Mat& img1, const Mat& img2,
+        static void computeDisparityBinarySGBM( const Mat& img1,
             Mat& disp1, const StereoBinarySGBMParams& params,
             Mat& buffer,const Mat& hamDist)
         {
@@ -689,7 +689,7 @@ namespace cv
 
                 hammingDistanceBlockMatching(censusImageLeft, censusImageRight, hamDist, params.kernelSize);
 
-                computeDisparityBinarySGBM( left, right, disp, params, buffer,hamDist);
+                computeDisparityBinarySGBM( left, disp, params, buffer,hamDist);
 
                 if(params.regionRemoval == CV_SPECKLE_REMOVAL_AVG_ALGORITHM)
                 {
