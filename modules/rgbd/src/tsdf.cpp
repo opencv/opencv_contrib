@@ -480,13 +480,13 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const cv::Ma
 
 #if USE_INTRINSICS
 // all coordinate checks should be done in inclosing cycle
-inline TsdfType TSDFVolumeCPU::interpolateVoxel(Point3f _p) const
+inline float TSDFVolumeCPU::interpolateVoxel(Point3f _p) const
 {
     v_float32x4 p(_p.x, _p.y, _p.z, 0);
     return interpolateVoxel(p);
 }
 
-inline TsdfType TSDFVolumeCPU::interpolateVoxel(const v_float32x4& p) const
+inline float TSDFVolumeCPU::interpolateVoxel(const v_float32x4& p) const
 {
     // tx, ty, tz = floor(p)
     v_int32x4 ip  = v_floor(p);
@@ -523,10 +523,10 @@ inline TsdfType TSDFVolumeCPU::interpolateVoxel(const v_float32x4& p) const
     v0_1             = v_reinterpret_as_f32(v_rotate_right<2>(v_reinterpret_as_u32(v0_1)));
     float v1         = v0_1.get0();
 
-    return floatToTsdf(v0 + tx*(v1 - v0));
+    return v0 + tx*(v1 - v0);
 }
 #else
-inline TsdfType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
+inline float TSDFVolumeCPU::interpolateVoxel(Point3f p) const
 {
     int xdim = volDims[0], ydim = volDims[1], zdim = volDims[2];
 
@@ -553,7 +553,7 @@ inline TsdfType TSDFVolumeCPU::interpolateVoxel(Point3f p) const
     float v0 = v00 + ty*(v01 - v00);
     float v1 = v10 + ty*(v11 - v10);
 
-    return floatToTsdf(v0 + tx*(v1 - v0));
+    return v0 + tx*(v1 - v0);
 }
 #endif
 
@@ -603,8 +603,8 @@ inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
 
         float vx[8];
         for(int i = 0; i < 8; i++)
-            vx[i] = tsdfToFloat(volData[neighbourCoords[i] + coordBase + 1*dim].tsdf) -
-                    tsdfToFloat(volData[neighbourCoords[i] + coordBase - 1*dim].tsdf);
+            vx[i] = tsdfToFloat(volData[neighbourCoords[i] + coordBase + 1*dim].tsdf -
+                                volData[neighbourCoords[i] + coordBase - 1*dim].tsdf);
 
         v_float32x4 v0246(vx[0], vx[2], vx[4], vx[6]), v1357(vx[1], vx[3], vx[5], vx[7]);
         v_float32x4 vxx = v0246 + v_setall_f32(tz)*(v1357 - v0246);
@@ -654,8 +654,8 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
 
         float vx[8];
         for(int i = 0; i < 8; i++)
-            vx[i] = tsdfToFloat(volData[neighbourCoords[i] + coordBase + 1*dim].tsdf) -
-            tsdfToFloat(volData[neighbourCoords[i] + coordBase - 1*dim].tsdf);
+            vx[i] = tsdfToFloat(volData[neighbourCoords[i] + coordBase + 1*dim].tsdf -
+                                volData[neighbourCoords[i] + coordBase - 1*dim].tsdf);
 
         float v00 = vx[0] + tz*(vx[1] - vx[0]);
         float v01 = vx[2] + tz*(vx[3] - vx[2]);
@@ -775,7 +775,7 @@ struct RaycastInvoker : ParallelLoopBody
                     int zdim            = volume.volDims[2];
                     v_float32x4 rayStep = dir * v_setall_f32(tstep);
                     v_float32x4 next    = (orig + dir * v_setall_f32(tmin));
-                    float f = tsdfToFloat(volume.interpolateVoxel(next)), fnext = f;
+                    float f = volume.interpolateVoxel(next), fnext = f;
 
                     //raymarch
                     int steps = 0;
@@ -792,7 +792,7 @@ struct RaycastInvoker : ParallelLoopBody
                         fnext = tsdfToFloat(volume.volume.at<TsdfVoxel>(coord).tsdf);
                         if(fnext != f)
                         {
-                            fnext = tsdfToFloat(volume.interpolateVoxel(next));
+                            fnext = volume.interpolateVoxel(next);
 
                             // when ray crosses a surface
                             if(std::signbit(f) != std::signbit(fnext))
@@ -807,8 +807,8 @@ struct RaycastInvoker : ParallelLoopBody
                     if(f > 0.f && fnext < 0.f)
                     {
                         v_float32x4 tp = next - rayStep;
-                        float ft    = tsdfToFloat(volume.interpolateVoxel(tp));
-                        float ftdt  = tsdfToFloat(volume.interpolateVoxel(next));
+                        float ft    = volume.interpolateVoxel(tp);
+                        float ftdt  = volume.interpolateVoxel(next);
                         float ts = tmin + tstep*(steps - ft/(ftdt - ft));
 
                         // avoid division by zero
@@ -884,7 +884,7 @@ struct RaycastInvoker : ParallelLoopBody
 
                     Point3f rayStep = dir * tstep;
                     Point3f next = (orig + dir * tmin);
-                    float f = tsdfToFloat(volume.interpolateVoxel(next)), fnext = f;
+                    float f = volume.interpolateVoxel(next), fnext = f;
 
                     //raymarch
                     int steps = 0;
@@ -901,7 +901,7 @@ struct RaycastInvoker : ParallelLoopBody
                         fnext = tsdfToFloat(volume.volume.at<TsdfVoxel>(ix*xdim + iy*ydim + iz*zdim).tsdf);
                         if(fnext != f)
                         {
-                            fnext = tsdfToFloat(volume.interpolateVoxel(next));
+                            fnext = volume.interpolateVoxel(next);
                             // when ray crosses a surface
                             if(std::signbit(f) != std::signbit(fnext))
                                 break;
@@ -914,8 +914,8 @@ struct RaycastInvoker : ParallelLoopBody
                     if(f > 0.f && fnext < 0.f)
                     {
                         Point3f tp    = next - rayStep;
-                        float ft   = tsdfToFloat(volume.interpolateVoxel(tp));
-                        float ftdt = tsdfToFloat(volume.interpolateVoxel(next));
+                        float ft   = volume.interpolateVoxel(tp);
+                        float ftdt = volume.interpolateVoxel(next);
                         // float t = tmin + steps*tstep;
                         // float ts = t - tstep*ft/(ftdt - ft);
                         float ts = tmin + tstep*(steps - ft/(ftdt - ft));
