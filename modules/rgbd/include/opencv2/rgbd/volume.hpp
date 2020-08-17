@@ -15,10 +15,10 @@ namespace cv
 {
 namespace kinfu
 {
-class Volume
+class CV_EXPORTS_W Volume
 {
    public:
-    Volume(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor)
+    Volume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor)
         : voxelSize(_voxelSize),
           voxelSizeInv(1.0f / voxelSize),
           pose(_pose),
@@ -28,9 +28,9 @@ class Volume
 
     virtual ~Volume(){};
 
-    virtual void integrate(InputArray _depth, float depthFactor, const cv::Affine3f& cameraPose,
+    virtual void integrate(InputArray _depth, float depthFactor, const cv::Matx44f& cameraPose,
                            const cv::kinfu::Intr& intrinsics)                        = 0;
-    virtual void raycast(const cv::Affine3f& cameraPose, const cv::kinfu::Intr& intrinsics,
+    virtual void raycast(const cv::Matx44f& cameraPose, const cv::kinfu::Intr& intrinsics,
                          cv::Size frameSize, cv::OutputArray points,
                          cv::OutputArray normals) const                                    = 0;
     virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const       = 0;
@@ -50,9 +50,9 @@ enum class VolumeType
     HASHTSDF = 1
 };
 
-cv::Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, cv::Affine3f _pose,
+CV_EXPORTS_W cv::Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, cv::Matx44f _pose,
                            float _raycastStepFactor, float _truncDist, int _maxWeight,
-                           float _truncateThreshold, Point3i _resolution);
+                           float _truncateThreshold, Vec3i _resolution);
 }  // namespace kinfu
 }  // namespace cv
 #endif

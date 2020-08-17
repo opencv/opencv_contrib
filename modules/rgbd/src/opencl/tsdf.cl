@@ -214,7 +214,10 @@ inline float3 getNormalVoxel(float3 p, __global const float2* volumePtr,
     }
 
     //gradientDeltaFactor is fixed at 1.0 of voxel size
-    return fast_normalize(vload3(0, an));
+    float3 n = vload3(0, an);
+    float Norm = sqrt(n.x*n.x + n.y*n.y + n.z*n.z);
+    return Norm < 0.0001f ? nan((uint)0) : n / Norm;
+    //return fast_normalize(vload3(0, an));
 }
 
 typedef float4 ptype;
