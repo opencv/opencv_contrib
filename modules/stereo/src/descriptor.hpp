@@ -117,12 +117,12 @@ namespace cv
                     if (image[i][rrWidth + jj] > image[i][rWidth + j] + t)
                     {
                         c[i] <<= 2;
-                        c[i] |= 0x11;
+                        c[i] += 3;
                     }
                     else if (image[i][rrWidth + jj] > image[i][rWidth + j] - t)
                     {
                         c[i] <<= 2;
-                        c[i] |= 0x01;
+                        c[i] += 1;
                     }
                     else
                     {
