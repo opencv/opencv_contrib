@@ -4,6 +4,35 @@
 
 // This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
 
+typedef __INT8_TYPE__ int8_t;
+
+typedef int8_t TsdfType;
+typedef int WeightType;
+
+struct TsdfVoxel
+{
+    TsdfType tsdf;
+    WeightType weight;
+};
+
+static inline TsdfType floatToTsdf(float num)
+{
+    int8_t res;
+    if (-1 < num && num <= 1)
+    {
+        res = (int8_t) ( (int) (num * 128 * (-1)) );
+        res = res ? res : (num < 0 ? 1 : -1);
+    }
+    else
+        res = 0;
+    return res;
+}
+
+static inline float tsdfToFloat(TsdfType num)
+{
+    return ( (float) num ) * (-1) / 128;
+}
+
 __kernel void integrate(__global const char * depthptr,
                         int depth_step, int depth_offset,
                         int depth_rows, int depth_cols,
