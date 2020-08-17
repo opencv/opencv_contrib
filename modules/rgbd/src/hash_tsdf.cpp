@@ -347,7 +347,7 @@ struct HashRaycastInvoker : ParallelLoopBody
                     float stepSize    = 0.5f * blockSize;
                     cv::Vec3i volUnitLocalIdx;
 
-                    //! Does the subvolume exist in hashtable
+                    //! The subvolume exists in hashtable
                     if (it != volume.volumeUnits.end())
                     {
                         currVolumeUnit             = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);

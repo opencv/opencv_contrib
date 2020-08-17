@@ -166,7 +166,8 @@ class SubmapManager
     int estimateConstraint(int fromSubmapId, int toSubmapId, int& inliers, Affine3f& inlierPose);
     bool updateMap(int _frameId, std::vector<MatType> _framePoints, std::vector<MatType> _frameNormals);
 
-    PoseGraph createPoseGraph();
+    PoseGraph MapToPoseGraph();
+    void PoseGraphToMap(const PoseGraph& updatedPoseGraph);
 
     VolumeParams volumeParams;
 
@@ -504,19 +505,10 @@ bool SubmapManager<MatType>::updateMap(int _frameId, std::vector<MatType> _frame
 }
 
 template<typename MatType>
-PoseGraph SubmapManager<MatType>::createPoseGraph()
+PoseGraph SubmapManager<MatType>::MapToPoseGraph()
 {
     PoseGraph localPoseGraph;
 
-    for(const Ptr<SubmapT> currSubmap : submapList)
-    {
-        PoseGraphNode currNode(currSubmap->id, currSubmap->pose);
-        if(currSubmap->id == 0)
-        {
-            currNode.setFixed();
-        }
-        localPoseGraph.addNode(currNode);
-    }
 
     for(const Ptr<SubmapT> currSubmap : submapList)
     {
@@ -529,7 +521,31 @@ PoseGraph SubmapManager<MatType>::createPoseGraph()
             localPoseGraph.addEdge(currEdge);
         }
     }
+
+    for(const Ptr<SubmapT> currSubmap : submapList)
+    {
+        PoseGraphNode currNode(currSubmap->id, currSubmap->pose);
+        if(currSubmap->id == 0)
+        {
+            currNode.setFixed();
+        }
+        localPoseGraph.addNode(currNode);
+    }
+
+
+
     return localPoseGraph;
+}
+
+template <typename MatType>
+void SubmapManager<MatType>::PoseGraphToMap(const PoseGraph &updatedPoseGraph)
+{
+    for(const Ptr<SubmapT> currSubmap : submapList)
+    {
+        const PoseGraphNode& currNode = updatedPoseGraph.nodes.at(currSubmap->id);
+        if(!currNode.isPoseFixed())
+            currSubmap->pose = currNode.getPose();
+    }
 }
 
 }  // namespace kinfu

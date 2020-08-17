@@ -5,6 +5,7 @@
 #include <iostream>
 #include <unordered_map>
 
+#include "opencv2/core/base.hpp"
 #include "opencv2/core/types.hpp"
 
 #if defined(HAVE_EIGEN)
@@ -54,6 +55,19 @@ struct BlockSparseMat
         return it->second;
     }
 
+    Mat diagonal()
+    {
+        // Diagonal max length is the number of columns in the sparse matrix
+        int diagLength = blockN * nBlocks;
+        cv::Mat diag   = cv::Mat::zeros(diagLength, 1, CV_32F);
+
+        for (int i = 0; i < diagLength; i++)
+        {
+            diag.at<float>(i, 0) = refElem(i, i);
+        }
+        return diag;
+    }
+
     float& refElem(int i, int j)
     {
         Point2i ib(i / blockSize, j / blockSize), iv(i % blockSize, j % blockSize);
@@ -100,34 +114,29 @@ struct BlockSparseMat
 static bool sparseSolve(const BlockSparseMat<float, 6, 6>& H, const Mat& B, Mat& X)
 {
     bool result = false;
-
 #if defined(HAVE_EIGEN)
     Eigen::SparseMatrix<float> bigA = H.toEigen();
     Eigen::VectorXf bigB;
     cv2eigen(B, bigB);
 
-    //! TODO: Check if this is required
-    Eigen::SparseMatrix<float> bigATranspose = bigA.transpose();
-    if (!bigA.isApprox(bigATranspose))
+    Eigen::SparseMatrix<float> bigAtranspose = bigA.transpose();
+    if(!bigA.isApprox(bigAtranspose))
     {
-        CV_Error(Error::StsBadArg, "Sparse Matrix is not symmetric");
+        CV_Error(Error::StsBadArg, "H matrix is not symmetrical");
         return result;
     }
 
-    // TODO: try this, LLT and Cholesky
     Eigen::SimplicialLDLT<Eigen::SparseMatrix<float>> solver;
 
-    std::cout << "starting eigen-compute..." << std::endl;
     solver.compute(bigA);
     if (solver.info() != Eigen::Success)
     {
+        std::cout << "solver.info(): " << solver.info() << std::endl;
         std::cout << "failed to eigen-decompose" << std::endl;
         result = false;
     }
     else
     {
-        std::cout << "starting eigen-solve..." << std::endl;
-
         Eigen::VectorXf solutionX = solver.solve(bigB);
         if (solver.info() != Eigen::Success)
         {
@@ -146,6 +155,5 @@ static bool sparseSolve(const BlockSparseMat<float, 6, 6>& H, const Mat& B, Mat&
 #endif
     return result;
 }
-
 }  // namespace kinfu
 }  // namespace cv

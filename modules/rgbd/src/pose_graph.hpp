@@ -25,6 +25,7 @@ struct PoseGraphNode
     Affine3f getPose() const { return pose; }
     void setPose(const Affine3f& _pose) { pose = _pose; }
     void setFixed(bool val = true) { isFixed = val; }
+    bool isPoseFixed() const { return isFixed; }
 
    private:
     int nodeId;
@@ -52,6 +53,14 @@ struct PoseGraphEdge
 
     int getSourceNodeId() const { return sourceNodeId; }
     int getTargetNodeId() const { return targetNodeId; }
+
+    bool operator==(const PoseGraphEdge& edge)
+    {
+        if((edge.getSourceNodeId() == sourceNodeId && edge.getTargetNodeId() == targetNodeId) ||
+           (edge.getSourceNodeId() == targetNodeId && edge.getTargetNodeId() == sourceNodeId))
+            return true;
+        return false;
+    }
 
    public:
     int sourceNodeId;
@@ -98,6 +107,7 @@ static const std::array<Matx44f, 6> generatorJacobian = {
 };
 // clang-format on
 
+
 class PoseGraph
 {
    public:
@@ -112,7 +122,7 @@ class PoseGraph
     PoseGraph& operator=(const PoseGraph& _poseGraph) = default;
 
     void addNode(const PoseGraphNode& node) { nodes.push_back(node); }
-    void addEdge(const PoseGraphEdge& edge) { edges.push_back(edge); }
+    void addEdge(const PoseGraphEdge& edge);
 
     bool nodeExists(int nodeId) const
     {
@@ -132,7 +142,7 @@ class PoseGraph
     //! @brief: Constructs a linear system and returns the residual of the current system
     float createLinearSystem(BlockSparseMat<float, 6, 6>& H, Mat& B);
 
-   private:
+   public:
     NodeVector nodes;
     EdgeVector edges;
 };
@@ -144,14 +154,17 @@ struct Params
     int maxNumIters;
     float minResidual;
     float maxAcceptableResIncre;
+    float minStepSize;
 
     // TODO: Refine these constants
-    Params() : maxNumIters(40), minResidual(1e-3f), maxAcceptableResIncre(1e-2f){};
+    Params() : maxNumIters(40), minResidual(1e-3f), maxAcceptableResIncre(1e-3f), minStepSize(1e-4f){};
     virtual ~Params() = default;
 };
 
 void optimizeGaussNewton(const Params& params, PoseGraph& poseGraph);
 void optimizeLevenberg(const Params& params, PoseGraph& poseGraph);
+
+bool isStepSizeSmall(const Mat& delta, float minStepSize);
 }  // namespace Optimizer
 
 }  // namespace kinfu
