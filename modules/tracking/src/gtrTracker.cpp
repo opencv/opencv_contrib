@@ -76,7 +76,9 @@ public:
     TrackerGOTURNModel(TrackerGOTURN::Params){}
     Rect2d getBoundingBox(){ return boundingBox_; }
     void setBoudingBox(Rect2d boundingBox) {
-        boundingBox_ = boundingBox & Rect2d(Point(0, 0), image_.size());;
+        if (image_.empty())
+            CV_Error(Error::StsInternal, "Set image first");
+        boundingBox_ = boundingBox & Rect2d(Point(0, 0), image_.size());
     }
     Mat getImage(){ return image_; }
     void setImage(const Mat& image){ image.copyTo(image_); }
