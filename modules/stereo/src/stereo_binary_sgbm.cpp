@@ -679,7 +679,7 @@ namespace cv
                     starCensusTransform(left,right,params.kernelSize,censusImageLeft,censusImageRight);
                 }
 
-                hammingDistanceBlockMatching(censusImageLeft, censusImageRight, hamDist);
+                hammingDistanceBlockMatching(censusImageLeft, censusImageRight, hamDist, params.kernelSize);
 
                 computeDisparityBinarySGBM( left, right, disp, params, buffer,hamDist);
 
@@ -725,7 +725,8 @@ namespace cv
             void setMinDisparity(int minDisparity) CV_OVERRIDE {CV_Assert(minDisparity >= 0); params.minDisparity = minDisparity; }
 
             int getNumDisparities() const CV_OVERRIDE { return params.numDisparities; }
-            void setNumDisparities(int numDisparities) CV_OVERRIDE { CV_Assert(numDisparities > 0); params.numDisparities = numDisparities; }
+            void setNumDisparities(int numDisparities) CV_OVERRIDE { CV_Assert(numDisparities > 0); params.numDisparities = numDisparities;
+                                                                     Matching::setMaxDisparity(numDisparities /*- params.minDisparity*/);}
 
             int getBlockSize() const CV_OVERRIDE { return params.kernelSize; }
             void setBlockSize(int blockSize) CV_OVERRIDE {CV_Assert(blockSize % 2 != 0); params.kernelSize = blockSize; }

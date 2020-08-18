@@ -21,7 +21,7 @@ namespace cv
 namespace kinfu
 {
 template<typename Derived>
-HashTSDFVolume<Derived>::HashTSDFVolume(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor, float _truncDist,
+HashTSDFVolume<Derived>::HashTSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist,
                                         int _maxWeight, float _truncateThreshold, int _volumeUnitRes, bool _zFirstMemOrder)
     : Volume(_voxelSize, _pose, _raycastStepFactor),
       maxWeight(_maxWeight),
@@ -33,7 +33,7 @@ HashTSDFVolume<Derived>::HashTSDFVolume(float _voxelSize, cv::Affine3f _pose, fl
     truncDist = std::max(_truncDist, 4.0f * voxelSize);
 }
 
-HashTSDFVolumeCPU::HashTSDFVolumeCPU(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor, float _truncDist,
+HashTSDFVolumeCPU::HashTSDFVolumeCPU(float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist,
                                      int _maxWeight, float _truncateThreshold, int _volumeUnitRes, bool _zFirstMemOrder)
     : Base(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _truncateThreshold, _volumeUnitRes,
            _zFirstMemOrder)
@@ -55,13 +55,13 @@ void HashTSDFVolumeCPU::reset_()
 struct AllocateVolumeUnitsInvoker : ParallelLoopBody
 {
     AllocateVolumeUnitsInvoker(HashTSDFVolumeCPU& _volume, const int _frameId, const Depth& _depth, Intr intrinsics,
-                               cv::Affine3f cameraPose, float _depthFactor, int _depthStride = 4)
+                               Matx44f cameraPose, float _depthFactor, int _depthStride = 4)
         : ParallelLoopBody(),
           volume(_volume),
           frameId(_frameId),
           depth(_depth),
           reproj(intrinsics.makeReprojector()),
-          cam2vol(_volume.pose.inv() * cameraPose),
+          cam2vol(_volume.pose.inv() * Affine3f(cameraPose)),
           depthFactor(1.0f / _depthFactor),
           depthStride(_depthStride)
     {
@@ -82,16 +82,16 @@ struct AllocateVolumeUnitsInvoker : ParallelLoopBody
                 Point3f volPoint = cam2vol * camPoint;
 
                 //! Find accessed TSDF volume unit for valid 3D vertex
-                cv::Vec3i lower_bound = volume.volumeToVolumeUnitIdx(
-                    volPoint - cv::Point3f(volume.truncDist, volume.truncDist, volume.truncDist));
-                cv::Vec3i upper_bound = volume.volumeToVolumeUnitIdx(
-                    volPoint + cv::Point3f(volume.truncDist, volume.truncDist, volume.truncDist));
+                Vec3i lower_bound =
+                    volume.volumeToVolumeUnitIdx(volPoint - Point3f(volume.truncDist, volume.truncDist, volume.truncDist));
+                Vec3i upper_bound =
+                    volume.volumeToVolumeUnitIdx(volPoint + Point3f(volume.truncDist, volume.truncDist, volume.truncDist));
                 VolumeUnitIndexSet localAccessVolUnits;
                 for (int i = lower_bound[0]; i <= upper_bound[0]; i++)
                     for (int j = lower_bound[1]; j <= upper_bound[1]; j++)
                         for (int k = lower_bound[2]; k <= lower_bound[2]; k++)
                         {
-                            const cv::Vec3i tsdf_idx = cv::Vec3i(i, j, k);
+                            const Vec3i tsdf_idx = Vec3i(i, j, k);
                             if (!localAccessVolUnits.count(tsdf_idx))
                             {
                                 localAccessVolUnits.emplace(tsdf_idx);
@@ -104,13 +104,13 @@ struct AllocateVolumeUnitsInvoker : ParallelLoopBody
                     if (!volume.volumeUnits.count(tsdf_idx))
                     {
                         VolumeUnit volumeUnit;
-                        cv::Point3i volumeDims(volume.volumeUnitResolution, volume.volumeUnitResolution,
-                                               volume.volumeUnitResolution);
+                        Point3i volumeDims(volume.volumeUnitResolution, volume.volumeUnitResolution,
+                                           volume.volumeUnitResolution);
 
-                        cv::Affine3f subvolumePose = volume.pose.translate(volume.volumeUnitIdxToVolume(tsdf_idx));
+                        Matx44f subvolumePose = volume.pose.translate(volume.volumeUnitIdxToVolume(tsdf_idx)).matrix;
                         volumeUnit.pVolume =
-                            cv::makePtr<TSDFVolumeCPU>(volume.voxelSize, subvolumePose, volume.raycastStepFactor,
-                                                       volume.truncDist, volume.maxWeight, volumeDims);
+                            makePtr<TSDFVolumeCPU>(volume.voxelSize, subvolumePose, volume.raycastStepFactor,
+                                                   volume.truncDist, volume.maxWeight, volumeDims);
                         //! This volume unit will definitely be required for current integration
                         volumeUnit.isActive          = true;
                         volumeUnit.lastVisibleIndex  = frameId;
@@ -125,14 +125,14 @@ struct AllocateVolumeUnitsInvoker : ParallelLoopBody
     const int frameId;
     const Depth& depth;
     const Intr::Reprojector reproj;
-    const cv::Affine3f cam2vol;
+    const Affine3f cam2vol;
     const float depthFactor;
     const int depthStride;
     mutable Mutex mutex;
 };
 
-void HashTSDFVolumeCPU::integrate_(InputArray _depth, float depthFactor, const cv::Affine3f& cameraPose,
-                                   const Intr& intrinsics, const int frameId)
+void HashTSDFVolumeCPU::integrate_(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const Intr& intrinsics,
+                                   const int frameId)
 {
     CV_TRACE_FUNCTION();
 
@@ -154,12 +154,12 @@ void HashTSDFVolumeCPU::integrate_(InputArray _depth, float depthFactor, const c
     //! Mark volumes in the camera frustum as active
     Range inFrustumRange(0, (int)volumeUnits.size());
     parallel_for_(inFrustumRange, [&](const Range& range) {
-        const Affine3f vol2cam(cameraPose.inv() * pose);
+        const Affine3f vol2cam(Affine3f(cameraPose.inv()) * pose);
         const Intr::Projector proj(intrinsics.makeProjector());
 
         for (int i = range.start; i < range.end; ++i)
         {
-            cv::Vec3i tsdf_idx         = totalVolUnits[i];
+            Vec3i tsdf_idx             = totalVolUnits[i];
             VolumeUnitMap::iterator it = volumeUnits.find(tsdf_idx);
             if (it == volumeUnits.end())
                 return;
@@ -176,7 +176,7 @@ void HashTSDFVolumeCPU::integrate_(InputArray _depth, float depthFactor, const c
             {
                 assert(it != volumeUnits.end());
                 it->second.lastVisibleIndex = frameId;
-                it->second.isActive = true;
+                it->second.isActive         = true;
             }
         }
     });
@@ -185,7 +185,7 @@ void HashTSDFVolumeCPU::integrate_(InputArray _depth, float depthFactor, const c
     parallel_for_(Range(0, (int)totalVolUnits.size()), [&](const Range& range) {
         for (int i = range.start; i < range.end; i++)
         {
-            cv::Vec3i tsdf_idx         = totalVolUnits[i];
+            Vec3i tsdf_idx             = totalVolUnits[i];
             VolumeUnitMap::iterator it = volumeUnits.find(tsdf_idx);
             if (it == volumeUnits.end())
                 return;
@@ -202,32 +202,30 @@ void HashTSDFVolumeCPU::integrate_(InputArray _depth, float depthFactor, const c
     });
 }
 
-cv::Vec3i HashTSDFVolumeCPU::volumeToVolumeUnitIdx_(cv::Point3f p) const
+Vec3i HashTSDFVolumeCPU::volumeToVolumeUnitIdx_(Point3f p) const
 {
-    return cv::Vec3i(cvFloor(p.x / volumeUnitSize), cvFloor(p.y / volumeUnitSize), cvFloor(p.z / volumeUnitSize));
+    return Vec3i(cvFloor(p.x / volumeUnitSize), cvFloor(p.y / volumeUnitSize), cvFloor(p.z / volumeUnitSize));
 }
 
-cv::Point3f HashTSDFVolumeCPU::volumeUnitIdxToVolume_(cv::Vec3i volumeUnitIdx) const
+Point3f HashTSDFVolumeCPU::volumeUnitIdxToVolume_(Vec3i volumeUnitIdx) const
 {
-    return cv::Point3f(volumeUnitIdx[0] * volumeUnitSize, volumeUnitIdx[1] * volumeUnitSize,
-                       volumeUnitIdx[2] * volumeUnitSize);
+    return Point3f(volumeUnitIdx[0] * volumeUnitSize, volumeUnitIdx[1] * volumeUnitSize, volumeUnitIdx[2] * volumeUnitSize);
 }
 
-cv::Point3f HashTSDFVolumeCPU::voxelCoordToVolume_(cv::Vec3i voxelIdx) const
+Point3f HashTSDFVolumeCPU::voxelCoordToVolume_(Vec3i voxelIdx) const
 {
-    return cv::Point3f(voxelIdx[0] * voxelSize, voxelIdx[1] * voxelSize, voxelIdx[2] * voxelSize);
+    return Point3f(voxelIdx[0] * voxelSize, voxelIdx[1] * voxelSize, voxelIdx[2] * voxelSize);
 }
 
-cv::Vec3i HashTSDFVolumeCPU::volumeToVoxelCoord_(cv::Point3f point) const
+Vec3i HashTSDFVolumeCPU::volumeToVoxelCoord_(Point3f point) const
 {
-    return cv::Vec3i(cvFloor(point.x * voxelSizeInv), cvFloor(point.y * voxelSizeInv), cvFloor(point.z * voxelSizeInv));
+    return Vec3i(cvFloor(point.x * voxelSizeInv), cvFloor(point.y * voxelSizeInv), cvFloor(point.z * voxelSizeInv));
 }
 
-inline TsdfVoxel HashTSDFVolumeCPU::at_(const cv::Vec3i& volumeIdx) const
+inline TsdfVoxel HashTSDFVolumeCPU::at_(const Vec3i& volumeIdx) const
 {
-    cv::Vec3i volumeUnitIdx =
-        cv::Vec3i(cvFloor(volumeIdx[0] / volumeUnitResolution), cvFloor(volumeIdx[1] / volumeUnitResolution),
-                  cvFloor(volumeIdx[2] / volumeUnitResolution));
+    Vec3i volumeUnitIdx = Vec3i(cvFloor(volumeIdx[0] / volumeUnitResolution), cvFloor(volumeIdx[1] / volumeUnitResolution),
+                                cvFloor(volumeIdx[2] / volumeUnitResolution));
 
     VolumeUnitMap::const_iterator it = volumeUnits.find(volumeUnitIdx);
     if (it == volumeUnits.end())
@@ -237,19 +235,19 @@ inline TsdfVoxel HashTSDFVolumeCPU::at_(const cv::Vec3i& volumeIdx) const
         dummy.weight = 0;
         return dummy;
     }
-    cv::Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
+    Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
 
-    cv::Vec3i volUnitLocalIdx =
-        volumeIdx - cv::Vec3i(volumeUnitIdx[0] * volumeUnitResolution, volumeUnitIdx[1] * volumeUnitResolution,
-                              volumeUnitIdx[2] * volumeUnitResolution);
+    Vec3i volUnitLocalIdx =
+        volumeIdx - Vec3i(volumeUnitIdx[0] * volumeUnitResolution, volumeUnitIdx[1] * volumeUnitResolution,
+                          volumeUnitIdx[2] * volumeUnitResolution);
 
-    volUnitLocalIdx = cv::Vec3i(abs(volUnitLocalIdx[0]), abs(volUnitLocalIdx[1]), abs(volUnitLocalIdx[2]));
+    volUnitLocalIdx = Vec3i(abs(volUnitLocalIdx[0]), abs(volUnitLocalIdx[1]), abs(volUnitLocalIdx[2]));
     return volumeUnit->at(volUnitLocalIdx);
 }
 
-inline TsdfVoxel HashTSDFVolumeCPU::at_(const cv::Point3f& point) const
+inline TsdfVoxel HashTSDFVolumeCPU::at_(const Point3f& point) const
 {
-    cv::Vec3i volumeUnitIdx          = volumeToVolumeUnitIdx(point);
+    Vec3i volumeUnitIdx              = volumeToVolumeUnitIdx(point);
     VolumeUnitMap::const_iterator it = volumeUnits.find(volumeUnitIdx);
     if (it == volumeUnits.end())
     {
@@ -258,12 +256,40 @@ inline TsdfVoxel HashTSDFVolumeCPU::at_(const cv::Point3f& point) const
         dummy.weight = 0;
         return dummy;
     }
-    cv::Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
+    Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
 
-    cv::Point3f volumeUnitPos = volumeUnitIdxToVolume(volumeUnitIdx);
-    cv::Vec3i volUnitLocalIdx = volumeToVoxelCoord(point - volumeUnitPos);
-    volUnitLocalIdx           = cv::Vec3i(abs(volUnitLocalIdx[0]), abs(volUnitLocalIdx[1]), abs(volUnitLocalIdx[2]));
+    Point3f volumeUnitPos = volumeUnitIdxToVolume(volumeUnitIdx);
+    Vec3i volUnitLocalIdx = volumeToVoxelCoord(point - volumeUnitPos);
+    volUnitLocalIdx       = Vec3i(abs(volUnitLocalIdx[0]), abs(volUnitLocalIdx[1]), abs(volUnitLocalIdx[2]));
     return volumeUnit->at(volUnitLocalIdx);
+}
+
+inline TsdfType HashTSDFVolumeCPU::interpolateVoxel(const Point3f& point) const
+{
+    Point3f neighbourCoords[] = { Point3f(0, 0, 0), Point3f(0, 0, 1), Point3f(0, 1, 0), Point3f(0, 1, 1),
+                                  Point3f(1, 0, 0), Point3f(1, 0, 1), Point3f(1, 1, 0), Point3f(1, 1, 1) };
+
+    int ix = cvFloor(point.x);
+    int iy = cvFloor(point.y);
+    int iz = cvFloor(point.z);
+
+    float tx = point.x - ix;
+    float ty = point.y - iy;
+    float tz = point.z - iz;
+
+    TsdfType vx[8];
+    for (int i = 0; i < 8; i++)
+        vx[i] = at(neighbourCoords[i] * voxelSize + point).tsdf;
+
+    TsdfType v00 = vx[0] + tz * (vx[1] - vx[0]);
+    TsdfType v01 = vx[2] + tz * (vx[3] - vx[2]);
+    TsdfType v10 = vx[4] + tz * (vx[5] - vx[4]);
+    TsdfType v11 = vx[6] + tz * (vx[7] - vx[6]);
+
+    TsdfType v0 = v00 + ty * (v01 - v00);
+    TsdfType v1 = v10 + ty * (v11 - v10);
+
+    return v0 + tx * (v1 - v0);
 }
 
 inline Point3f HashTSDFVolumeCPU::getNormalVoxel_(Point3f point) const
@@ -276,29 +302,31 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel_(Point3f point) const
 
     for (int c = 0; c < 3; c++)
     {
-        pointPrev[c] -= voxelSize * 0.5f;
-        pointNext[c] += voxelSize * 0.5f;
+        pointPrev[c] -= voxelSize;
+        pointNext[c] += voxelSize;
 
-        normal[c] = at(Point3f(pointNext)).tsdf - at(Point3f(pointPrev)).tsdf;
-        normal[c] *= 0.5f;
+        // normal[c] = at(Point3f(pointNext)).tsdf - at(Point3f(pointPrev)).tsdf;
+        normal[c] = interpolateVoxel(Point3f(pointNext)) - interpolateVoxel(Point3f(pointPrev));
 
         pointPrev[c] = pointVec[c];
         pointNext[c] = pointVec[c];
     }
-    return normalize(normal);
+    // std::cout << normal << std::endl;
+    float nv = sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
+    return nv < 0.0001f ? nan3 : normal / nv;
 }
 
 struct HashRaycastInvoker : ParallelLoopBody
 {
-    HashRaycastInvoker(Points& _points, Normals& _normals, const Affine3f& cameraPose, const Intr& intrinsics,
+    HashRaycastInvoker(Points& _points, Normals& _normals, const Matx44f& cameraPose, const Intr& intrinsics,
                        const HashTSDFVolumeCPU& _volume)
         : ParallelLoopBody(),
           points(_points),
           normals(_normals),
           volume(_volume),
           tstep(_volume.truncDist * _volume.raycastStepFactor),
-          cam2vol(volume.pose.inv() * cameraPose),
-          vol2cam(cameraPose.inv() * volume.pose),
+          cam2vol(volume.pose.inv() * Affine3f(cameraPose)),
+          vol2cam(Affine3f(cameraPose.inv()) * volume.pose),
           reproj(intrinsics.makeReprojector())
     {
     }
@@ -329,30 +357,30 @@ struct HashRaycastInvoker : ParallelLoopBody
                 float tmax  = volume.truncateThreshold;
                 float tcurr = tmin;
 
-                cv::Vec3i prevVolumeUnitIdx = cv::Vec3i(std::numeric_limits<int>::min(), std::numeric_limits<int>::min(),
-                                                        std::numeric_limits<int>::min());
+                Vec3i prevVolumeUnitIdx =
+                    Vec3i(std::numeric_limits<int>::min(), std::numeric_limits<int>::min(), std::numeric_limits<int>::min());
 
                 float tprev       = tcurr;
                 TsdfType prevTsdf = volume.truncDist;
-                cv::Ptr<TSDFVolumeCPU> currVolumeUnit;
+                Ptr<TSDFVolumeCPU> currVolumeUnit;
                 while (tcurr < tmax)
                 {
-                    Point3f currRayPos          = orig + tcurr * rayDirV;
-                    cv::Vec3i currVolumeUnitIdx = volume.volumeToVolumeUnitIdx(currRayPos);
+                    Point3f currRayPos      = orig + tcurr * rayDirV;
+                    Vec3i currVolumeUnitIdx = volume.volumeToVolumeUnitIdx(currRayPos);
 
                     VolumeUnitMap::const_iterator it = volume.volumeUnits.find(currVolumeUnitIdx);
 
                     TsdfType currTsdf = prevTsdf;
                     int currWeight    = 0;
                     float stepSize    = 0.5f * blockSize;
-                    cv::Vec3i volUnitLocalIdx;
+                    Vec3i volUnitLocalIdx;
 
                     //! The subvolume exists in hashtable
                     if (it != volume.volumeUnits.end())
                     {
-                        currVolumeUnit             = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
-                        cv::Point3f currVolUnitPos = volume.volumeUnitIdxToVolume(currVolumeUnitIdx);
-                        volUnitLocalIdx            = volume.volumeToVoxelCoord(currRayPos - currVolUnitPos);
+                        currVolumeUnit         = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
+                        Point3f currVolUnitPos = volume.volumeUnitIdxToVolume(currVolumeUnitIdx);
+                        volUnitLocalIdx        = volume.volumeToVoxelCoord(currRayPos - currVolUnitPos);
 
                         //! TODO: Figure out voxel interpolation
                         TsdfVoxel currVoxel = currVolumeUnit->at(volUnitLocalIdx);
@@ -397,8 +425,8 @@ struct HashRaycastInvoker : ParallelLoopBody
     const Intr::Reprojector reproj;
 };
 
-void HashTSDFVolumeCPU::raycast_(const cv::Affine3f& cameraPose, const cv::kinfu::Intr& intrinsics, cv::Size frameSize,
-                                 cv::OutputArray _points, cv::OutputArray _normals) const
+void HashTSDFVolumeCPU::raycast_(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, Size frameSize,
+                                 OutputArray _points, OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
     CV_Assert(frameSize.area() > 0);
@@ -415,11 +443,11 @@ void HashTSDFVolumeCPU::raycast_(const cv::Affine3f& cameraPose, const cv::kinfu
     parallel_for_(Range(0, points.rows), ri, nstripes);
 }
 
-struct FetchPointsNormalsInvoker : ParallelLoopBody
+struct HashFetchPointsNormalsInvoker : ParallelLoopBody
 {
-    FetchPointsNormalsInvoker(const HashTSDFVolumeCPU& _volume, const std::vector<Vec3i>& _totalVolUnits,
-                              std::vector<std::vector<ptype>>& _pVecs, std::vector<std::vector<ptype>>& _nVecs,
-                              bool _needNormals)
+    HashFetchPointsNormalsInvoker(const HashTSDFVolumeCPU& _volume, const std::vector<Vec3i>& _totalVolUnits,
+                                  std::vector<std::vector<ptype>>& _pVecs, std::vector<std::vector<ptype>>& _nVecs,
+                                  bool _needNormals)
         : ParallelLoopBody(),
           volume(_volume),
           totalVolUnits(_totalVolUnits),
@@ -434,20 +462,20 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
         std::vector<ptype> points, normals;
         for (int i = range.start; i < range.end; i++)
         {
-            cv::Vec3i tsdf_idx = totalVolUnits[i];
+            Vec3i tsdf_idx = totalVolUnits[i];
 
             VolumeUnitMap::const_iterator it = volume.volumeUnits.find(tsdf_idx);
             Point3f base_point               = volume.volumeUnitIdxToVolume(tsdf_idx);
             if (it != volume.volumeUnits.end())
             {
-                cv::Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
+                Ptr<TSDFVolumeCPU> volumeUnit = std::dynamic_pointer_cast<TSDFVolumeCPU>(it->second.pVolume);
                 std::vector<ptype> localPoints;
                 std::vector<ptype> localNormals;
                 for (int x = 0; x < volume.volumeUnitResolution; x++)
                     for (int y = 0; y < volume.volumeUnitResolution; y++)
                         for (int z = 0; z < volume.volumeUnitResolution; z++)
                         {
-                            cv::Vec3i voxelIdx(x, y, z);
+                            Vec3i voxelIdx(x, y, z);
                             TsdfVoxel voxel = volumeUnit->at(voxelIdx);
 
                             if (voxel.tsdf != 1.f && voxel.weight != 0)
@@ -470,7 +498,7 @@ struct FetchPointsNormalsInvoker : ParallelLoopBody
     }
 
     const HashTSDFVolumeCPU& volume;
-    std::vector<cv::Vec3i> totalVolUnits;
+    std::vector<Vec3i> totalVolUnits;
     std::vector<std::vector<ptype>>& pVecs;
     std::vector<std::vector<ptype>>& nVecs;
     const TsdfVoxel* volDataStart;
@@ -491,7 +519,7 @@ void HashTSDFVolumeCPU::fetchPointsNormals_(OutputArray _points, OutputArray _no
         {
             totalVolUnits.push_back(keyvalue.first);
         }
-        FetchPointsNormalsInvoker fi(*this, totalVolUnits, pVecs, nVecs, _normals.needed());
+        HashFetchPointsNormalsInvoker fi(*this, totalVolUnits, pVecs, nVecs, _normals.needed());
         Range range(0, (int)totalVolUnits.size());
         const int nstripes = -1;
         parallel_for_(range, fi, nstripes);
@@ -515,30 +543,7 @@ void HashTSDFVolumeCPU::fetchPointsNormals_(OutputArray _points, OutputArray _no
     }
 }
 
-struct PushNormals
-{
-    PushNormals(const HashTSDFVolumeCPU& _volume, Normals& _normals)
-        : volume(_volume), normals(_normals), invPose(volume.pose.inv())
-    {
-    }
-
-    void operator()(const ptype& point, const int* position) const
-    {
-        Point3f p = fromPtype(point);
-        Point3f n = nan3;
-        if (!isNaN(p))
-        {
-            Point3f voxelPoint = invPose * p;
-            n                  = volume.pose.rotation() * volume.getNormalVoxel(voxelPoint);
-        }
-        normals(position[0], position[1]) = toPtype(n);
-    }
-    const HashTSDFVolumeCPU& volume;
-    Normals& normals;
-    Affine3f invPose;
-};
-
-void HashTSDFVolumeCPU::fetchNormals_(cv::InputArray _points, cv::OutputArray _normals) const
+void HashTSDFVolumeCPU::fetchNormals_(InputArray _points, OutputArray _normals) const
 {
     CV_TRACE_FUNCTION();
 
@@ -550,7 +555,20 @@ void HashTSDFVolumeCPU::fetchNormals_(cv::InputArray _points, cv::OutputArray _n
         _normals.createSameSize(_points, _points.type());
         Normals normals = _normals.getMat();
 
-        points.forEach(PushNormals(*this, normals));
+        const HashTSDFVolumeCPU& _volume = *this;
+        auto HashPushNormals             = [&](const ptype& point, const int* position) {
+            const HashTSDFVolumeCPU& volume(_volume);
+            Affine3f invPose(volume.pose.inv());
+            Point3f p = fromPtype(point);
+            Point3f n = nan3;
+            if (!isNaN(p))
+            {
+                Point3f voxelPoint = invPose * p;
+                n                  = volume.pose.rotation() * volume.getNormalVoxel(voxelPoint);
+            }
+            normals(position[0], position[1]) = toPtype(n);
+        };
+        points.forEach(HashPushNormals);
     }
 }
 
@@ -561,7 +579,7 @@ int HashTSDFVolumeCPU::getVisibleBlocks_(int currFrameId, int frameThreshold) co
     for (const auto& keyvalue : volumeUnits)
     {
         const VolumeUnit& volumeUnit = keyvalue.second;
-        if(volumeUnit.lastVisibleIndex > (currFrameId - frameThreshold))
+        if (volumeUnit.lastVisibleIndex > (currFrameId - frameThreshold))
             numVisibleBlocks++;
     }
     return numVisibleBlocks;

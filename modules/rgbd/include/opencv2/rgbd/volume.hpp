@@ -15,28 +15,28 @@ namespace cv
 {
 namespace kinfu
 {
-class Volume
+class CV_EXPORTS_W Volume
 {
    public:
-    Volume(float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor)
+    Volume(float _voxelSize, Matx44f _pose, float _raycastStepFactor)
         : voxelSize(_voxelSize), voxelSizeInv(1.0f / voxelSize), pose(_pose), raycastStepFactor(_raycastStepFactor)
     {
     }
 
     virtual ~Volume(){};
 
-    virtual void integrate(InputArray _depth, float depthFactor, const cv::Affine3f& cameraPose,
-                           const cv::kinfu::Intr& intrinsics, const int frameId = 0)       = 0;
-    virtual void raycast(const cv::Affine3f& cameraPose, const cv::kinfu::Intr& intrinsics, cv::Size frameSize,
-                         cv::OutputArray points, cv::OutputArray normals) const            = 0;
-    virtual void fetchNormals(cv::InputArray points, cv::OutputArray _normals) const       = 0;
-    virtual void fetchPointsNormals(cv::OutputArray points, cv::OutputArray normals) const = 0;
-    virtual void reset()                                                                   = 0;
+    virtual void integrate(InputArray _depth, float depthFactor, const Matx44f& cameraPose, const kinfu::Intr& intrinsics,
+                           const int frameId = 0)                                  = 0;
+    virtual void raycast(const Matx44f& cameraPose, const kinfu::Intr& intrinsics, Size frameSize, OutputArray points,
+                         OutputArray normals) const                                = 0;
+    virtual void fetchNormals(InputArray points, OutputArray _normals) const       = 0;
+    virtual void fetchPointsNormals(OutputArray points, OutputArray normals) const = 0;
+    virtual void reset()                                                           = 0;
 
    public:
     const float voxelSize;
     const float voxelSizeInv;
-    const cv::Affine3f pose;
+    const Affine3f pose;
     const float raycastStepFactor;
 };
 
@@ -65,7 +65,7 @@ struct VolumeParams
     int unitResolution = 0;
 
     /** @brief Initial pose of the volume in meters */
-    cv::Affine3f pose;
+    Affine3f pose;
 
     /** @brief Length of voxels in meters */
     float voxelSize;
@@ -101,10 +101,10 @@ struct VolumeParams
     static Ptr<VolumeParams> coarseParams(VolumeType _volumeType);
 };
 
-cv::Ptr<Volume> makeVolume(const VolumeParams& _volumeParams);
+Ptr<Volume> makeVolume(const VolumeParams& _volumeParams);
 
-cv::Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, cv::Affine3f _pose, float _raycastStepFactor,
-                           float _truncDist, int _maxWeight, float _truncateThreshold, Point3i _resolution);
+Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist,
+                       int _maxWeight, float _truncateThreshold, Vec3i _resolution);
 }  // namespace kinfu
 }  // namespace cv
 #endif
