@@ -623,7 +623,7 @@ inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
         for(int i = 0; i < 8; i++)
             vx[i] = volData[neighbourCoords[i] + coordBase + 1*dim].tsdf -
                     volData[neighbourCoords[i] + coordBase - 1*dim].tsdf;
-        
+
         v_float32x4 v0246 = tsdfToFloat_INTR(v_int32(vx[0], vx[2], vx[4], vx[6]));
         v_float32x4 v1357 = tsdfToFloat_INTR(v_int32(vx[1], vx[3], vx[5], vx[7]));
         v_float32x4 vxx = v0246 + v_setall_f32(tz)*(v1357 - v0246);
