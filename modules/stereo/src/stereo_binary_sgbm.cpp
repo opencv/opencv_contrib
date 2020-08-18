@@ -127,7 +127,7 @@ namespace cv
         disp2cost also has the same size as img1 (or img2).
         It contains the minimum current cost, used to find the best disparity, corresponding to the minimal cost.
         */
-        static void computeDisparityBinarySGBM( const Mat& img1, const Mat& img2,
+        static void computeDisparityBinarySGBM( const Mat& img1,
             Mat& disp1, const StereoBinarySGBMParams& params,
             Mat& buffer,const Mat& hamDist)
         {
@@ -151,19 +151,23 @@ namespace cv
             const int DISP_SHIFT = StereoMatcher::DISP_SHIFT;
             const int DISP_SCALE = (1 << DISP_SHIFT);
             const CostType MAX_COST = SHRT_MAX;
-            int minD = params.minDisparity, maxD = minD + params.numDisparities;
+            const int minD = params.minDisparity;
+            const int maxD = minD + params.numDisparities;
             Size kernelSize;
             kernelSize.width = kernelSize.height = params.kernelSize > 0 ? params.kernelSize : 5;
-            int uniquenessRatio = params.uniquenessRatio >= 0 ? params.uniquenessRatio : 10;
-            int disp12MaxDiff = params.disp12MaxDiff > 0 ? params.disp12MaxDiff : 1;
-            int P1 = params.P1 > 0 ? params.P1 : 2, P2 = std::max(params.P2 > 0 ? params.P2 : 5, P1+1);
-            int k, width = disp1.cols, height = disp1.rows;
-            int minX1 = std::max(-maxD, 0), maxX1 = width + std::min(minD, 0);
-            int D = maxD - minD, width1 = maxX1 - minX1;
-            int INVALID_DISP = minD - 1, INVALID_DISP_SCALED = INVALID_DISP*DISP_SCALE;
-            int SW2 = kernelSize.width/2, SH2 = kernelSize.height/2;
-            bool fullDP = params.mode == StereoBinarySGBM::MODE_HH;
-            int npasses = fullDP ? 2 : 1;
+            const int uniquenessRatio = params.uniquenessRatio >= 0 ? params.uniquenessRatio : 10;
+            const int disp12MaxDiff = params.disp12MaxDiff > 0 ? params.disp12MaxDiff : 1;
+            const int P1 = params.P1 > 0 ? params.P1 : 2;
+            const int P2 = std::max(params.P2 > 0 ? params.P2 : 5, P1+1);
+            const int width = disp1.cols, height = disp1.rows;
+            const int minX1 = std::max(-maxD, 0);
+            const int maxX1 = width + std::min(minD, 0);
+            const int D = maxD - minD;
+            const int width1 = maxX1 - minX1;
+            const int INVALID_DISP = minD - 1, INVALID_DISP_SCALED = INVALID_DISP*DISP_SCALE;
+            const int SW2 = kernelSize.width/2, SH2 = kernelSize.height/2;
+            const bool fullDP = params.mode == StereoBinarySGBM::MODE_HH;
+            const int npasses = fullDP ? 2 : 1;
 
             if( minX1 >= maxX1 )
             {
@@ -173,23 +177,23 @@ namespace cv
             CV_Assert( D % 16 == 0 );
             // NR - the number of directions. the loop on x below that computes Lr assumes that NR == 8.
             // if you change NR, please, modify the loop as well.
-            int D2 = D+16, NRD2 = NR2*D2;
+            const int D2 = D+16;
+            const int NRD2 = NR2*D2;
             // the number of L_r(.,.) and min_k L_r(.,.) lines in the buffer:
             // for 8-way dynamic programming we need the current row and
             // the previous row, i.e. 2 rows in total
             const int NLR = 2;
             const int LrBorder = NLR - 1;
-            int ww = img2.cols;
-            short *ham;
-            ham = (short *)hamDist.data;
+            short *ham = (short *)hamDist.data;
             // for each possible stereo match (img1(x,y) <=> img2(x-d,y))
             // we keep pixel difference cost (C) and the summary cost over NR directions (S).
             // we also keep all the partial costs for the previous line L_r(x,d) and also min_k L_r(x, k)
-            size_t costBufSize = width1*D;
-            size_t CSBufSize = costBufSize*(fullDP ? height : 1);
-            size_t minLrSize = (width1 + LrBorder*2)*NR2, LrSize = minLrSize*D2;
-            int hsumBufNRows = SH2*2 + 2;
-            size_t totalBufSize = (LrSize + minLrSize)*NLR*sizeof(CostType) + // minLr[] and Lr[]
+            const size_t costBufSize = width1*D;
+            const size_t CSBufSize = costBufSize*(fullDP ? height : 1);
+            const size_t minLrSize = (width1 + LrBorder*2)*NR2;
+            const size_t LrSize = minLrSize*D2;
+            const int hsumBufNRows = SH2*2 + 2;
+            const size_t totalBufSize = (LrSize + minLrSize)*NLR*sizeof(CostType) + // minLr[] and Lr[]
                 costBufSize*(hsumBufNRows + 1)*sizeof(CostType) + // hsumBuf, pixdiff
                 CSBufSize*2*sizeof(CostType) + // C, S
                 width*16*img1.channels()*sizeof(PixType) + // temp buffer for computing per-pixel cost
@@ -206,7 +210,7 @@ namespace cv
             DispType* disp2ptr = (DispType*)(disp2cost + width);
             //            PixType* tempBuf = (PixType*)(disp2ptr + width);
             // add P2 to every C(x,y). it saves a few operations in the inner loops
-            for( k = 0; k < width1*D; k++ )
+            for(int k = 0; k < width1*D; k++ )
                 Cbuf[k] = (CostType)P2;
             for( int pass = 1; pass <= npasses; pass++ )
             {
@@ -222,7 +226,7 @@ namespace cv
                     x1 = width1-1; x2 = -1; dx = -1;
                 }
                 CostType *Lr[NLR]={0}, *minLr[NLR]={0};
-                for( k = 0; k < NLR; k++ )
+                for(int k = 0; k < NLR; k++ )
                 {
                     // shift Lr[k] and minLr[k] pointers, because we allocated them with the borders,
                     // and will occasionally use negative indices with the arrays
@@ -243,22 +247,23 @@ namespace cv
                     if( pass == 1 ) // compute C on the first pass, and reuse it on the second pass, if any.
                     {
                         int dy1 = y == 0 ? 0 : y + SH2, dy2 = y == 0 ? SH2 : dy1;
-                        for( k = dy1; k <= dy2; k++ )
+                        for(int k = dy1; k <= dy2; k++ )
                         {
                             CostType* hsumAdd = hsumBuf + (std::min(k, height-1) % hsumBufNRows)*costBufSize;
                             if( k < height )
                             {
-                                for(int ii = 0; ii < ww; ii++)
+                                for(int ii = 0; ii < width; ii++)
                                 {
+                                    // fill pixDiff with the hamming costs previously processed in earlier method
                                     for(int dd = 0; dd <= params.numDisparities; dd++)
                                     {
-                                        pixDiff[ii * (params.numDisparities)+ dd] = (CostType)(ham[(k * (ww) + ii) * (params.numDisparities +1) + dd]);
+                                        pixDiff[ii * (params.numDisparities)+ dd] = (CostType)(ham[(k * width + ii) * (params.numDisparities +1) + dd]);
                                     }
                                 }
                                 memset(hsumAdd, 0, D*sizeof(CostType));
                                 for( x = 0; x <= SW2*D; x += D )
                                 {
-                                    int scale = x == 0 ? SW2 + 1 : 1;
+                                    const int scale = x == 0 ? SW2 + 1 : 1;
                                     for( d = 0; d < D; d++ )
                                         hsumAdd[d] = (CostType)(hsumAdd[d] + pixDiff[x + d]*scale);
                                 }
@@ -295,7 +300,7 @@ namespace cv
                                         {
                                             for( d = 0; d < D; d++ )
                                             {
-                                                int hv = hsumAdd[x + d] = (CostType)(hsumAdd[x - D + d] + pixAdd[d] - pixSub[d]);
+                                                const int hv = hsumAdd[x + d] = (CostType)(hsumAdd[x - D + d] + pixAdd[d] - pixSub[d]);
                                                 C[x + d] = (CostType)(Cprev[x + d] + hv - hsumSub[x + d]);
                                             }
                                         }
@@ -314,13 +319,13 @@ namespace cv
                             }
                             if( y == 0 )
                             {
-                                int scale = k == 0 ? SH2 + 1 : 1;
+                                const int scale = k == 0 ? SH2 + 1 : 1;
                                 for( x = 0; x < width1*D; x++ )
                                     C[x] = (CostType)(C[x] + hsumAdd[x]*scale);
                             }
                         }
                         // also, clear the S buffer
-                        for( k = 0; k < width1*D; k++ )
+                        for(int k = 0; k < width1*D; k++ )
                             S[k] = 0;
                     }
                     // clear the left and the right borders
@@ -348,9 +353,12 @@ namespace cv
                     */
                     for( x = x1; x != x2; x += dx )
                     {
-                        int xm = x*NR2, xd = xm*D2;
-                        int delta0 = minLr[0][xm - dx*NR2] + P2, delta1 = minLr[1][xm - NR2 + 1] + P2;
-                        int delta2 = minLr[1][xm + 2] + P2, delta3 = minLr[1][xm + NR2 + 3] + P2;
+                        const int xm = x*NR2;
+                        const int xd = xm*D2;
+                        const int delta0 = minLr[0][xm - dx*NR2] + P2;
+                        const int delta1 = minLr[1][xm - NR2 + 1] + P2;
+                        const int delta2 = minLr[1][xm + 2] + P2;
+                        const int delta3 = minLr[1][xm + NR2 + 3] + P2;
                         CostType* Lr_p0 = Lr[0] + xd - dx*NRD2;
                         CostType* Lr_p1 = Lr[1] + xd - NRD2 + D2;
                         CostType* Lr_p2 = Lr[1] + xd + D2*2;
@@ -418,12 +426,11 @@ namespace cv
 
                             for( d = 0; d < D; d++ )
                             {
-                                int Cpd = Cp[d], L0, L1, L2, L3;
-
-                                L0 = Cpd + std::min((int)Lr_p0[d], std::min(Lr_p0[d-1] + P1, std::min(Lr_p0[d+1] + P1, delta0))) - delta0;
-                                L1 = Cpd + std::min((int)Lr_p1[d], std::min(Lr_p1[d-1] + P1, std::min(Lr_p1[d+1] + P1, delta1))) - delta1;
-                                L2 = Cpd + std::min((int)Lr_p2[d], std::min(Lr_p2[d-1] + P1, std::min(Lr_p2[d+1] + P1, delta2))) - delta2;
-                                L3 = Cpd + std::min((int)Lr_p3[d], std::min(Lr_p3[d-1] + P1, std::min(Lr_p3[d+1] + P1, delta3))) - delta3;
+                                const int Cpd = Cp[d];
+                                const int L0 = Cpd + std::min((int)Lr_p0[d], std::min(Lr_p0[d-1] + P1, std::min(Lr_p0[d+1] + P1, delta0))) - delta0;
+                                const int L1 = Cpd + std::min((int)Lr_p1[d], std::min(Lr_p1[d-1] + P1, std::min(Lr_p1[d+1] + P1, delta1))) - delta1;
+                                const int L2 = Cpd + std::min((int)Lr_p2[d], std::min(Lr_p2[d-1] + P1, std::min(Lr_p2[d+1] + P1, delta2))) - delta2;
+                                const int L3 = Cpd + std::min((int)Lr_p3[d], std::min(Lr_p3[d-1] + P1, std::min(Lr_p3[d+1] + P1, delta3))) - delta3;
 
                                 Lr_p[d] = (CostType)L0;
                                 minL0 = std::min(minL0, L0);
@@ -457,14 +464,16 @@ namespace cv
                         for( x = width1 - 1; x >= 0; x-- )
                         {
                             CostType* Sp = S + x*D;
-                            int minS = MAX_COST, bestDisp = -1;
+                            int minS = MAX_COST;
+                            int bestDisp = -1;
 
                             if( npasses == 1 )
                             {
-                                int xm = x*NR2, xd = xm*D2;
+                                const int xm = x*NR2;
+                                const int xd = xm*D2;
 
                                 int minL0 = MAX_COST;
-                                int delta0 = minLr[0][xm + NR2] + P2;
+                                const int delta0 = minLr[0][xm + NR2] + P2;
                                 CostType* Lr_p0 = Lr[0] + xd + NRD2;
                                 Lr_p0[-1] = Lr_p0[D] = MAX_COST;
                                 CostType* Lr_p = Lr[0] + xd;
@@ -514,10 +523,10 @@ namespace cv
                                 {
                                     for( d = 0; d < D; d++ )
                                     {
-                                        int L0 = Cp[d] + std::min((int)Lr_p0[d], std::min(Lr_p0[d-1] + P1, std::min(Lr_p0[d+1] + P1, delta0))) - delta0;
+                                        const int L0 = Cp[d] + std::min((int)Lr_p0[d], std::min(Lr_p0[d-1] + P1, std::min(Lr_p0[d+1] + P1, delta0))) - delta0;
                                         Lr_p[d] = (CostType)L0;
                                         minL0 = std::min(minL0, L0);
-                                        int Sval = Sp[d] = saturate_cast<CostType>(Sp[d] + L0);
+                                        const int Sval = Sp[d] = saturate_cast<CostType>(Sp[d] + L0);
                                         if( Sval < minS )
                                         {
                                             minS = Sval;
@@ -531,7 +540,7 @@ namespace cv
                             {
                                 for( d = 0; d < D; d++ )
                                 {
-                                    int Sval = Sp[d];
+                                    const int Sval = Sp[d];
                                     if( Sval < minS )
                                     {
                                         minS = Sval;
@@ -547,7 +556,7 @@ namespace cv
                             if( d < D )
                                 continue;
                             d = bestDisp;
-                            int _x2 = x + minX1 - d - minD;
+                            const int _x2 = x + minX1 - d - minD;
                             if( disp2cost[_x2] > minS )
                             {
                                 disp2cost[_x2] = (CostType)minS;
@@ -557,16 +566,14 @@ namespace cv
                             {
                                 if(params.subpixelInterpolationMethod == CV_SIMETRICV_INTERPOLATION)
                                 {
-                                    double m2m1, m3m1, m3, m2, m1;
-                                    m2 = Sp[d - 1];
-                                    m3 = Sp[d + 1];
-                                    m1 = Sp[d];
-                                    m2m1 = m2 - m1;
-                                    m3m1 = m3 - m1;
+                                    const double m2 = Sp[d - 1];
+                                    const double m3 = Sp[d + 1];
+                                    const double m1 = Sp[d];
+                                    const double m2m1 = m2 - m1;
+                                    const double m3m1 = m3 - m1;
                                     if (!(m2m1 == 0 || m3m1 == 0))
                                     {
-                                        double p;
-                                        p = 0;
+                                        double p = 0;
                                         if (m2 > m3)
                                         {
                                             p = (0.5 - 0.25 * ((m3m1 * m3m1) / (m2m1 * m2m1) + (m3m1 / m2m1)));
@@ -588,7 +595,7 @@ namespace cv
                                     // do subpixel quadratic interpolation:
                                     //   fit parabola into (x1=d-1, y1=Sp[d-1]), (x2=d, y2=Sp[d]), (x3=d+1, y3=Sp[d+1])
                                     //   then find minimum of the parabola.
-                                    int denom2 = std::max(Sp[d-1] + Sp[d+1] - 2*Sp[d], 1);
+                                    const int denom2 = std::max(Sp[d-1] + Sp[d+1] - 2*Sp[d], 1);
                                     d = d*DISP_SCALE + ((Sp[d-1] - Sp[d+1])*DISP_SCALE + denom2)/(denom2*2);
                                 }
                             }
@@ -601,12 +608,13 @@ namespace cv
                             // we round the computed disparity both towards -inf and +inf and check
                             // if either of the corresponding disparities in disp2 is consistent.
                             // This is to give the computed disparity a chance to look valid if it is.
-                            int d1 = disp1ptr[x];
+                            const int d1 = disp1ptr[x];
                             if( d1 == INVALID_DISP_SCALED )
                                 continue;
-                            int _d = d1 >> DISP_SHIFT;
-                            int d_ = (d1 + DISP_SCALE-1) >> DISP_SHIFT;
-                            int _x = x - _d, x_ = x - d_;
+                            const int _d = d1 >> DISP_SHIFT;
+                            const int d_ = (d1 + DISP_SCALE-1) >> DISP_SHIFT;
+                            const int _x = x - _d;
+                            const int x_ = x - d_;
                             if( 0 <= _x && _x < width && disp2ptr[_x] >= minD && std::abs(disp2ptr[_x] - _d) > disp12MaxDiff &&
                                 0 <= x_ && x_ < width && disp2ptr[x_] >= minD && std::abs(disp2ptr[x_] - d_) > disp12MaxDiff )
                                 disp1ptr[x] = (DispType)INVALID_DISP_SCALED;
@@ -681,7 +689,7 @@ namespace cv
 
                 hammingDistanceBlockMatching(censusImageLeft, censusImageRight, hamDist, params.kernelSize);
 
-                computeDisparityBinarySGBM( left, right, disp, params, buffer,hamDist);
+                computeDisparityBinarySGBM( left, disp, params, buffer,hamDist);
 
                 if(params.regionRemoval == CV_SPECKLE_REMOVAL_AVG_ALGORITHM)
                 {
