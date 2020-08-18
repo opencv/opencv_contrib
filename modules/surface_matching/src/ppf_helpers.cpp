@@ -68,83 +68,116 @@ static std::vector<std::string> split(const std::string &text, char sep) {
 
 
 
+float readFloatPlyFormat(std::ifstream& ifs, const int& encodeType)
+{
+    float retVal;
+    // ASCII
+    if (encodeType == 0) ifs >> retVal;
+    // Little Endian
+    if (encodeType == 1) ifs.read(reinterpret_cast<char*>(&retVal), sizeof(float));
+    // Big Endian
+    if (encodeType == 2) {
+        unsigned char temp[sizeof(float)];
+        ifs.read(reinterpret_cast<char*>(temp), sizeof(float));
+        unsigned char t = temp[0];
+        temp[0] = temp[3];
+        temp[3] = t;
+        t = temp[1];
+        temp[1] = temp[2];
+        temp[2] = t;
+        retVal = reinterpret_cast<float&>(temp);
+    }
+    return retVal;
+}
+
+
 Mat loadPLYSimple(const char* fileName, int withNormals)
 {
-  Mat cloud;
-  int numVertices = 0;
-  int numCols = 3;
-  int has_normals = 0;
+    Mat cloud;
+    int numVertices = 0;
+    int numCols = 3;
+    int has_normals = 0;
 
-  std::ifstream ifs(fileName);
+    std::ifstream ifs(fileName,std::ios::binary);
 
-  if (!ifs.is_open())
-    CV_Error(Error::StsError, String("Error opening input file: ") + String(fileName) + "\n");
+    if (!ifs.is_open())
+        CV_Error(Error::StsError, String("Error opening input file: ") + String(fileName) + "\n");
 
-  std::string str;
-  while (str.substr(0, 10) != "end_header")
-  {
-    std::vector<std::string> tokens = split(str,' ');
-    if (tokens.size() == 3)
-    {
-      if (tokens[0] == "element" && tokens[1] == "vertex")
-      {
-        numVertices = atoi(tokens[2].c_str());
-      }
-      else if (tokens[0] == "property")
-      {
-        if (tokens[2] == "nx" || tokens[2] == "normal_x")
-        {
-          has_normals = -1;
-          numCols += 3;
-        }
-        else if (tokens[2] == "r" || tokens[2] == "red")
-        {
-          //has_color = true;
-          numCols += 3;
-        }
-        else if (tokens[2] == "a" || tokens[2] == "alpha")
-        {
-          //has_alpha = true;
-          numCols += 1;
-        }
-      }
-    }
-    else if (tokens.size() > 1 && tokens[0] == "format" && tokens[1] != "ascii")
-      CV_Error(Error::StsBadArg, String("Cannot read file, only ascii ply format is currently supported..."));
+    std::string str;
     std::getline(ifs, str);
-  }
-  withNormals &= has_normals;
-
-  cloud = Mat(numVertices, withNormals ? 6 : 3, CV_32FC1);
-
-  for (int i = 0; i < numVertices; i++)
-  {
-    float* data = cloud.ptr<float>(i);
-    int col = 0;
-    for (; col < (withNormals ? 6 : 3); ++col)
+    int encodeType = 0;
+    while (str.substr(0, 10) != "end_header")
     {
-      ifs.read(reinterpret_cast<char*>(&data[col]), sizeof(float));
+        std::vector<std::string> tokens = split(str,' ');
+        if (tokens.size() == 3)
+        {
+            if (tokens[1] == "binary_little_endian")
+            {
+                encodeType = 1;
+            }
+            if (tokens[1] == "binary_big_endian")
+            {
+                encodeType = 2;
+            }
+            if (tokens[0] == "element" && tokens[1] == "vertex")
+            {
+                numVertices = atoi(tokens[2].c_str());
+            }
+            else if (tokens[0] == "property")
+            {
+                if (tokens[2] == "nx" || tokens[2] == "normal_x")
+                {
+                    has_normals = -1;
+                    numCols += 3;
+                }
+                else if (tokens[2] == "r" || tokens[2] == "red")
+                {
+                    //has_color = true;
+                    numCols += 3;
+                }
+                else if (tokens[2] == "a" || tokens[2] == "alpha")
+                {
+                    //has_alpha = true;
+                    numCols += 1;
+                }
+            }
+        }
+        else if (tokens.size() > 1 && tokens[0] == "format" && tokens[1] != "ascii")
+            CV_Error(Error::StsBadArg, String("Cannot read file, only ascii ply format is currently supported..."));
+        std::getline(ifs, str);
     }
-    for (; col < numCols; ++col)
-    {
-      float tmp;
-      ifs.read(reinterpret_cast<char*>(&tmp), sizeof(float));
-    }
-    if (withNormals)
-    {
-      // normalize to unit norm
-      double norm = sqrt(data[3]*data[3] + data[4]*data[4] + data[5]*data[5]);
-      if (norm>0.00001)
-      {
-        data[3]/=static_cast<float>(norm);
-        data[4]/=static_cast<float>(norm);
-        data[5]/=static_cast<float>(norm);
-      }
-    }
-  }
+    withNormals &= has_normals;
 
-  //cloud *= 5.0f;
-  return cloud;
+    cloud = Mat(numVertices, withNormals ? 6 : 3, CV_32FC1);
+
+    for (int i = 0; i < numVertices; i++)
+    {
+        float* data = cloud.ptr<float>(i);
+        int col = 0;
+        for (; col < (withNormals ? 6 : 3); ++col)
+        {
+            data[col] = readFloatPlyFormat(ifs, encodeType);
+        }
+        for (; col < numCols; ++col)
+        {
+            float tmp;
+            tmp = readFloatPlyFormat(ifs, encodeType);
+        }
+        if (withNormals)
+        {
+            // normalize to unit norm
+            double norm = sqrt(data[3]*data[3] + data[4]*data[4] + data[5]*data[5]);
+            if (norm>0.00001)
+            {
+                data[3]/=static_cast<float>(norm);
+                data[4]/=static_cast<float>(norm);
+                data[5]/=static_cast<float>(norm);
+            }
+        }
+    }
+
+    //cloud *= 5.0f;
+    return cloud;
 }
 
 void writePLY(Mat PC, const char* FileName)
