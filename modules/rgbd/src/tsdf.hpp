@@ -20,7 +20,7 @@ namespace kinfu
 // * TsdfType can be FP16
 // * WeightType can be uint16
   
-typedef float TsdfType;
+typedef int8_t TsdfType;
 typedef int WeightType;
 
 struct TsdfVoxel
