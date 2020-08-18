@@ -1,9 +1,9 @@
 if(NOT HAVE_JULIA MATCHES "YES")
     message(STATUS "Julia not found. Not compiling Julia Bindings. ${HAVE_JULIA}")
     ocv_module_disable(julia)
-elseif(NOT PYTHON3_EXECUTABLE)
-#    message(WARNING "Python 3 required for Julia bindings...disabling")
-#    ocv_module_disable(julia)
+elseif(NOT PYTHON_DEFAULT_EXECUTABLE)
+   message(WARNING "Python required for Julia bindings...disabling")
+   ocv_module_disable(julia)
 endif()
 
 # WARN_MIXED_PRECISION
@@ -58,21 +58,45 @@ set(HAVE_JULIA "YES" CACHE STRING ADVANCED)
 set(the_description "The Julia bindings")
 ocv_add_module(
     julia
+    BINDINGS
+    OPTIONAL
     opencv_core
     opencv_imgproc
     opencv_imgcodecs
-    opencv_objdetect
     opencv_highgui
-    opencv_features2d
     opencv_videoio
     opencv_dnn
+    opencv_features2d
+    opencv_objdetect
 )
+
+set(HDR_PARSER_PATH ${CMAKE_SOURCE_DIR}/modules/python/src2/hdr_parser.py)
+
+set(opencv_hdrs "")
+foreach(m ${OPENCV_MODULES_BUILD})
+  list(APPEND opencv_hdrs ${OPENCV_MODULE_${m}_HEADERS})
+endforeach(m)
+
+file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/gen/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/gen)
+file(COPY ${HDR_PARSER_PATH} DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/gen)
+
+message(STATUS "Generating Julia Binding Files")
+
+execute_process(
+                WORKING_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}/gen"
+                COMMAND ${PYTHON_DEFAULT_EXECUTABLE} "${CMAKE_CURRENT_BINARY_DIR}/gen/gen_all.py" ${CMAKE_SOURCE_DIR}/modules ${OPENCV_MODULES_BUILD}
+                )
+
+file(COPY ${CMAKE_CURRENT_BINARY_DIR}/gen/cpp_files/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/gen/autogen_cpp)
+file(COPY ${CMAKE_CURRENT_BINARY_DIR}/gen/jl_cxx_files/ DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/gen/autogen_jl)
 
 ocv_glob_module_sources()
 ocv_module_include_directories()
 ocv_warnings_disable(CMAKE_CXX_FLAGS -Wmissing-prototypes -Wmissing-declarations)
 
-ocv_add_library(${the_module} SHARED ${OPENCV_MODULE_${the_module}_HEADERS} ${OPENCV_MODULE_${the_module}_SOURCES})
+ocv_add_library(${the_module} SHARED ${OPENCV_MODULE_${the_module}_HEADERS}
+                                     ${OPENCV_MODULE_${the_module}_SOURCES}
+                                     "${CMAKE_CURRENT_BINARY_DIR}/gen/autogen_cpp/cv_core.cpp")
 
 if(NOT JULIA_PKG_INSTALL_PATH)
     set(JULIA_PKG_INSTALL_PATH ${CMAKE_BINARY_DIR})
@@ -101,30 +125,16 @@ if(NOT INSTALL_CREATE_DISTRIB)
     install(CODE "
     set(JULIA_PKG_PATH \"${JULIA_PKG_INSTALL_PATH}/OpenCV\")
     execute_process(COMMAND \"${Julia_EXECUTABLE}\" ${CMAKE_CURRENT_LIST_DIR}/package/install_package.jl \${JULIA_PKG_PATH} OUTPUT_VARIABLE JULIA_INSTALL_OUT)
-
-
-    # set(JULIA_PKG_EXECS \"Pkg.develop(PackageSpec(path=\\\\\\\"${JULIA_PKG_INSTALL_PATH}/OpenCV\\\\\\\"));\")
-
-    # if(${JULIA_PKG_INSTALL_ENV})
-    #     set(JULIA_PKG_EXECS \"Pkg.activate(${JULIA_PKG_INSTALL_ENV});\${JULIA_PKG_EXECS}\")
-    # endif()
-    # set(JULIA_COMMAND \"\\\"using Pkg; \${JULIA_PKG_EXECS}\\\"\")
-
-    # message(STATUS \"Installing Julia bindings using \${JULIA_COMMAND}\")
-
-    # execute_process(COMMAND \"${Julia_EXECUTABLE}\" -e \${JULIA_COMMAND} OUTPUT_VARIABLE JULIA_INSTALL_OUT)
-
     message(STATUS \"Install output: \${JULIA_INSTALL_OUT}\")
     ")
 endif()
 
-# set(JULIA_COMMAND \"\"${Julia_EXECUTABLE}\" -e \"using Pkg; \${JULIA_PKG_EXECS}\"\")
 
 # ocv_create_module()
 
-#ocv_add_accuracy_tests()
-#ocv_add_perf_tests()
-#ocv_add_samples()
+# ocv_add_accuracy_tests()
+# ocv_add_perf_tests()
+ocv_add_samples()
 
 message(STATUS     ${OPENCV_MODULE_${the_module}_DEPS_TO_LINK})
 
@@ -141,12 +151,15 @@ ocv_target_link_libraries(${the_module} JlCxx::cxxwrap_julia_stl)
 
 # targets# opencv_julia_sources --> opencv_julia
 
+
 add_custom_command(TARGET ${the_module}
                    POST_BUILD
                    COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_SOURCE_DIR}/package/OpenCV ${CMAKE_BINARY_DIR}/OpenCV
+                   COMMAND ${CMAKE_COMMAND} -E copy_directory ${CMAKE_CURRENT_BINARY_DIR}/gen/autogen_jl/ ${CMAKE_BINARY_DIR}/OpenCV/src
                    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${the_module}> ${CMAKE_BINARY_DIR}/OpenCV/src/lib/libopencv_julia
                    COMMENT "Copying over julia package"
                    )
+
 
 
 if (BUILD_TESTS)

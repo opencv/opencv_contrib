@@ -25,6 +25,7 @@ The Julia module is fully integrated into the OpenCV build system. While compili
 
 If you prefer using the gui version of cmake (cmake-gui), you can use the *Add Entry* option in the GUI to manually add the *path* variable `Julia_EXECUTABLE`.
 
+Note, you need a valid Python installation to build the Julia Bindings.
 
 Install
 -------
@@ -87,4 +88,4 @@ All other types map directly to the corresponding types on C++. Unlike Python, `
 Current Functionality
 ---
 
-The total functionality implemented till now is restricted to basic image input and operations, windows, VideoCap and some drawing functions. In addition to these, most of the dnn module functionality present in `dnn.hpp` is wrapped aswell. The samples implement most of the availabe functionality but a complete list of function and function prototypes can be found [here](function_list.md).
+The bindings implement most of the functionality present in the core,imgproc,highgui,videoio,dnn and imgcodecs. The samples also implement some additional manually wrapped functionality. The complete list of automatically wrapped functionality is [here](gen/funclist.csv).

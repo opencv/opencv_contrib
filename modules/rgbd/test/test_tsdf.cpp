@@ -2,8 +2,6 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html
 
-// This code is also subject to the license terms in the LICENSE_KinectFusion.md file found in this module's directory
-
 #include "test_precomp.hpp"
 
 namespace opencv_test { namespace {
@@ -332,8 +330,6 @@ void normal_test(bool isHashTSDF, bool isRaycast, bool isFetchPointsNormals, boo
     if (isRaycast)
     {
         volume->raycast(poses[0].matrix, _params->intr, _params->frameSize, _points, _normals);
-        //std::cout << _points.getMat(af);
-        //std::cout << _normals.getMat(af);
     }
     if (isFetchPointsNormals)
     {
