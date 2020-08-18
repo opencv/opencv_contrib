@@ -36,7 +36,7 @@ static inline float tsdfToFloat(TsdfType num)
 __kernel void integrate(__global const char * depthptr,
                         int depth_step, int depth_offset,
                         int depth_rows, int depth_cols,
-                        __global float2 * volumeptr,
+                        __global struct TsdfVoxel * volumeptr,
                         const float16 vol2camMatrix,
                         const float voxelSize,
                         const int4 volResolution4,
@@ -168,23 +168,23 @@ __kernel void integrate(__global const char * depthptr,
             float tsdf = fmin(1.0f, sdf * truncDistInv);
             int volIdx = volYidx + z*volDims.z;
 
-            float2 voxel = volumeptr[volIdx];
-            float value  = voxel.s0;
-            int weight = as_int(voxel.s1);
+            struct TsdfVoxel voxel = volumeptr[volIdx];
+            float value  = tsdfToFloat(voxel.tsdf);
+            int weight = voxel.weight;
 
             // update TSDF
             value = (value*weight + tsdf) / (weight + 1);
             weight = min(weight + 1, maxWeight);
 
-            voxel.s0 = value;
-            voxel.s1 = as_float(weight);
+            voxel.tsdf = floatToTsdf(value);
+            voxel.weight = weight;
             volumeptr[volIdx] = voxel;
         }
     }
 }
 
 
-inline float interpolateVoxel(float3 p, __global const float2* volumePtr,
+inline float interpolateVoxel(float3 p, __global const struct TsdfVoxel* volumePtr,
                               int3 volDims, int8 neighbourCoords)
 {
     float3 fip = floor(p);
@@ -198,7 +198,7 @@ inline float interpolateVoxel(float3 p, __global const float2* volumePtr,
 
     float vaz[8];
     for(int i = 0; i < 8; i++)
-        vaz[i] = volumePtr[nco[i]].s0;
+        vaz[i] = tsdfToFloat(volumePtr[nco[i]].tsdf);
 
     float8 vz = vload8(0, vaz);
 
@@ -207,7 +207,7 @@ inline float interpolateVoxel(float3 p, __global const float2* volumePtr,
     return mix(vx.s0, vx.s1, t.x);
 }
 
-inline float3 getNormalVoxel(float3 p, __global const float2* volumePtr,
+inline float3 getNormalVoxel(float3 p, __global const struct TsdfVoxel* volumePtr,
                              int3 volResolution, int3 volDims, int8 neighbourCoords)
 {
     if(any(p < 1) || any(p >= convert_float3(volResolution - 2)))
@@ -231,8 +231,8 @@ inline float3 getNormalVoxel(float3 p, __global const float2* volumePtr,
 
         float vaz[8];
         for(int i = 0; i < 8; i++)
-            vaz[i] = volumePtr[nco[i] + dim].s0 -
-                     volumePtr[nco[i] - dim].s0;
+            vaz[i] = tsdfToFloat(volumePtr[nco[i] + dim].tsdf -
+                                 volumePtr[nco[i] - dim].tsdf);
 
         float8 vz = vload8(0, vaz);
 
@@ -256,7 +256,7 @@ __kernel void raycast(__global char * pointsptr,
                       __global char * normalsptr,
                       int normals_step, int normals_offset,
                       const int2 frameSize,
-                      __global const float2 * volumeptr,
+                      __global const struct TsdfVoxel * volumeptr,
                       __global const float * vol2camptr,
                       __global const float * cam2volptr,
                       const float2 fixy,
@@ -361,7 +361,7 @@ __kernel void raycast(__global char * pointsptr,
                 int3 ip = convert_int3(round(next));
                 int3 cmul = ip*volDims;
                 int idx = cmul.x + cmul.y + cmul.z;
-                fnext = volumeptr[idx].s0;
+                fnext = tsdfToFloat(volumeptr[idx].tsdf);
 
                 if(fnext != f)
                 {
@@ -424,7 +424,7 @@ __kernel void getNormals(__global const char * pointsptr,
                          __global char * normalsptr,
                          int normals_step, int normals_offset,
                          const int2 frameSize,
-                         __global const float2* volumeptr,
+                         __global const struct TsdfVoxel* volumeptr,
                          __global const float * volPoseptr,
                          __global const float * invPoseptr,
                          const float voxelSizeInv,
@@ -493,7 +493,7 @@ struct CoordReturn
 };
 
 inline struct CoordReturn coord(int x, int y, int z, float3 V, float v0, int axis,
-                                __global const float2* volumeptr,
+                                __global const struct TsdfVoxel* volumeptr,
                                 int3 volResolution, int3 volDims,
                                 int8 neighbourCoords,
                                 float voxelSize, float voxelSizeInv,
@@ -535,9 +535,10 @@ inline struct CoordReturn coord(int x, int y, int z, float3 V, float v0, int axi
         int3 ip = ((int3)(x, y, z)) + shift;
         int3 cmul = ip*volDims;
         int idx = cmul.x + cmul.y + cmul.z;
-        float2 voxel = volumeptr[idx].s0;
-        float vd  = voxel.s0;
-        int weight = as_int(voxel.s1);
+
+        struct TsdfVoxel voxel = volumeptr[idx];
+        float vd  = tsdfToFloat(voxel.tsdf);
+        int weight = voxel.weight;
 
         if(weight != 0 && vd != 1.f)
         {
@@ -581,7 +582,7 @@ inline struct CoordReturn coord(int x, int y, int z, float3 V, float v0, int axi
 }
 
 
-__kernel void scanSize(__global const float2* volumeptr,
+__kernel void scanSize(__global const struct TsdfVoxel* volumeptr,
                        const int4 volResolution4,
                        const int4 volDims4,
                        const int8 neighbourCoords,
@@ -633,9 +634,9 @@ __kernel void scanSize(__global const float2* volumeptr,
         int3 ip = (int3)(x, y, z);
         int3 cmul = ip*volDims;
         int idx = cmul.x + cmul.y + cmul.z;
-        float2 voxel = volumeptr[idx].s0;
-        float value  = voxel.s0;
-        int weight = as_int(voxel.s1);
+        struct TsdfVoxel voxel = volumeptr[idx];
+        float value  = tsdfToFloat(voxel.tsdf);
+        int weight = voxel.weight;
 
         // if voxel is not empty
         if(weight != 0 && value != 1.f)
@@ -691,7 +692,7 @@ __kernel void scanSize(__global const float2* volumeptr,
 }
 
 
-__kernel void fillPtsNrm(__global const float2* volumeptr,
+__kernel void fillPtsNrm(__global const struct TsdfVoxel* volumeptr,
                          const int4 volResolution4,
                          const int4 volDims4,
                          const int8 neighbourCoords,
@@ -760,9 +761,9 @@ __kernel void fillPtsNrm(__global const float2* volumeptr,
         int3 ip = (int3)(x, y, z);
         int3 cmul = ip*volDims;
         int idx = cmul.x + cmul.y + cmul.z;
-        float2 voxel = volumeptr[idx].s0;
-        float value  = voxel.s0;
-        int weight = as_int(voxel.s1);
+        struct TsdfVoxel voxel = volumeptr[idx];
+        float value  = tsdfToFloat(voxel.tsdf);
+        int weight = voxel.weight;
 
         // if voxel is not empty
         if(weight != 0 && value != 1.f)
