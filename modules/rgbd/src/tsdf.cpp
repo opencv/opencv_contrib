@@ -12,7 +12,7 @@ namespace cv {
 
 namespace kinfu {
 /*
-static inline TsdfType floatToTsdf(float num)
+static inline TsdfType floatToTsdf_INTR(float num)
 {
     Cv32suf u;
     u.f = num;
@@ -34,6 +34,23 @@ static inline float tsdfToFloat(TsdfType num)
 }
 */
 
+v_float32 num128(128, 128, 128, 128);
+v_float32 numneg1(-1, -1, -1, -1);
+
+//v_float32 devide128(7 << 23, 7 << 23, 7 << 23, 7 << 23);
+//v_float32 negate1(1u << 31, 1u << 31, 1u << 31, 1u << 31);
+
+static inline v_float32 tsdfToFloat_INTR(v_int32 num)
+{
+    return v_cvt_f32(num) * numneg1 / num128;
+}
+/*
+static inline v_float32 tsdfToFloat_INTR_(v_int32 num)
+{
+    v_uint32 unum = v_reinterpret_as_u32(num);
+    return v_cvt_f32(num) * numneg1 / num128;
+}
+*/
 static inline TsdfType floatToTsdf(float num)
 {
     int8_t res;
@@ -508,11 +525,12 @@ inline float TSDFVolumeCPU::interpolateVoxel(const v_float32x4& p) const
 
     int coordBase = ix*xdim + iy*ydim + iz*zdim;
 
-    float vx[8];
+    TsdfType vx[8];
     for(int i = 0; i < 8; i++)
-        vx[i] = tsdfToFloat(volData[neighbourCoords[i] + coordBase].tsdf);
+        vx[i] = volData[neighbourCoords[i] + coordBase].tsdf;
 
-    v_float32x4 v0246(vx[0], vx[2], vx[4], vx[6]), v1357(vx[1], vx[3], vx[5], vx[7]);
+    v_float32x4 v0246 = tsdfToFloat_INTR(v_int32(vx[0], vx[2], vx[4], vx[6]));
+    v_float32x4 v1357 = tsdfToFloat_INTR(v_int32(vx[1], vx[3], vx[5], vx[7]));
     v_float32x4 vxx = v0246 + v_setall_f32(tz)*(v1357 - v0246);
 
     v_float32x4 v00_10 = vxx;
@@ -601,12 +619,13 @@ inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
         const int dim = volDims[c];
         float& nv     = an[c];
 
-        float vx[8];
+        TsdfType vx[8];
         for(int i = 0; i < 8; i++)
-            vx[i] = tsdfToFloat(volData[neighbourCoords[i] + coordBase + 1*dim].tsdf -
-                                volData[neighbourCoords[i] + coordBase - 1*dim].tsdf);
-
-        v_float32x4 v0246(vx[0], vx[2], vx[4], vx[6]), v1357(vx[1], vx[3], vx[5], vx[7]);
+            vx[i] = volData[neighbourCoords[i] + coordBase + 1*dim].tsdf -
+                    volData[neighbourCoords[i] + coordBase - 1*dim].tsdf;
+        
+        v_float32x4 v0246 = tsdfToFloat_INTR(v_int32(vx[0], vx[2], vx[4], vx[6]));
+        v_float32x4 v1357 = tsdfToFloat_INTR(v_int32(vx[1], vx[3], vx[5], vx[7]));
         v_float32x4 vxx = v0246 + v_setall_f32(tz)*(v1357 - v0246);
 
         v_float32x4 v00_10 = vxx;
@@ -1152,7 +1171,7 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
 
 ///////// GPU implementation /////////
 
-#ifdef HAVE_OPENCL
+#ifdef HAVE_OPENCL_
 TSDFVolumeGPU::TSDFVolumeGPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
                              Point3i _resolution) :
     TSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution, false)
@@ -1456,7 +1475,7 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
 cv::Ptr<TSDFVolume> makeTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
                                    float _truncDist, int _maxWeight, Point3i _resolution)
 {
-#ifdef HAVE_OPENCL
+#ifdef HAVE_OPENCL_
     if (cv::ocl::useOpenCL())
         return cv::makePtr<TSDFVolumeGPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
                                           _resolution);
