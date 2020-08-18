@@ -19,8 +19,8 @@ namespace kinfu
 // TODO: Optimization possible:
 // * TsdfType can be FP16
 // * WeightType can be uint16
-
-typedef int8_t TsdfType;
+  
+typedef float TsdfType;
 typedef int WeightType;
 
 struct TsdfVoxel

@@ -57,7 +57,7 @@ namespace datasets
 {
 
 using namespace std;
-using namespace tinyxml2;
+using namespace cv::tinyxml2;
 
 class OR_pascalImp CV_FINAL : public OR_pascal
 {

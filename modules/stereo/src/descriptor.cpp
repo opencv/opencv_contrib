@@ -56,7 +56,7 @@ namespace cv
             CV_Assert(image1.size() == image2.size());
             CV_Assert(kernelSize % 2 != 0);
             CV_Assert(image1.type() == CV_8UC1 && image2.type() == CV_8UC1);
-            CV_Assert(type != CV_DENSE_CENSUS || type != CV_SPARSE_CENSUS);
+            CV_Assert(type == CV_DENSE_CENSUS || type == CV_SPARSE_CENSUS);
             CV_Assert(kernelSize <= ((type == 0) ? 5 : 11));
             int n2 = (kernelSize) / 2;
             uint8_t *images[] = {image1.data, image2.data};
@@ -79,7 +79,7 @@ namespace cv
             CV_Assert(image1.size() == dist1.size());
             CV_Assert(kernelSize % 2 != 0);
             CV_Assert(image1.type() == CV_8UC1);
-            CV_Assert(type != CV_DENSE_CENSUS || type != CV_SPARSE_CENSUS);
+            CV_Assert(type == CV_DENSE_CENSUS || type == CV_SPARSE_CENSUS);
             CV_Assert(kernelSize <= ((type == 0) ? 5 : 11));
             int n2 = (kernelSize) / 2;
             uint8_t *images[] = {image1.data};
@@ -130,7 +130,7 @@ namespace cv
             CV_Assert(img1.size() == img2.size());
             CV_Assert(kernelSize % 2 != 0);
             CV_Assert(img1.type() == CV_8UC1 && img2.type() == CV_8UC1);
-            CV_Assert(type != CV_MODIFIED_CENSUS_TRANSFORM || type != CV_MEAN_VARIATION);
+            CV_Assert(type == CV_MODIFIED_CENSUS_TRANSFORM || type == CV_MEAN_VARIATION);
             CV_Assert(kernelSize <= 9);
             int n2 = (kernelSize - 1) >> 1;
             uint8_t *images[] = {img1.data, img2.data};
@@ -168,7 +168,7 @@ namespace cv
             CV_Assert(img1.size() == dist.size());
             CV_Assert(kernelSize % 2 != 0);
             CV_Assert(img1.type() == CV_8UC1);
-            CV_Assert(type != CV_MODIFIED_CENSUS_TRANSFORM || type != CV_MEAN_VARIATION);
+            CV_Assert(type == CV_MODIFIED_CENSUS_TRANSFORM || type == CV_MEAN_VARIATION);
             CV_Assert(kernelSize <= 9);
             int n2 = (kernelSize - 1) >> 1;
             uint8_t *images[] = {img1.data};
@@ -200,7 +200,7 @@ namespace cv
             CV_Assert(img1.size() ==  img2.size());
             CV_Assert(kernelSize % 2 != 0);
             CV_Assert(img1.type() == CV_8UC1 && img2.type() == CV_8UC1);
-            CV_Assert(type != CV_CS_CENSUS || type != CV_MODIFIED_CS_CENSUS);
+            CV_Assert(type == CV_CS_CENSUS || type == CV_MODIFIED_CS_CENSUS);
             CV_Assert(kernelSize <= 7);
             int n2 = kernelSize >> 1;
             uint8_t *images[] = {img1.data, img2.data};
@@ -222,7 +222,7 @@ namespace cv
             CV_Assert(img1.size() ==  dist1.size());
             CV_Assert(kernelSize % 2 != 0);
             CV_Assert(img1.type() == CV_8UC1);
-            CV_Assert(type != CV_MODIFIED_CS_CENSUS || type != CV_CS_CENSUS);
+            CV_Assert(type == CV_MODIFIED_CS_CENSUS || type == CV_CS_CENSUS);
             CV_Assert(kernelSize <= 7);
             int n2 = kernelSize >> 1;
             uint8_t *images[] = {img1.data};

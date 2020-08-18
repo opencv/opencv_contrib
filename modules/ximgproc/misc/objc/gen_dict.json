@@ -1,0 +1,28 @@
+{
+    "AdditionalImports" : {
+        "*" : [ "\"ximgproc.hpp\"" ]
+    },
+    "missing_consts" : {
+        "Ximgproc" : {
+            "private" : [],
+            "public" : [
+                ["RO_IGNORE_BORDERS", 1], ["RO_STRICT", 0]
+            ]
+        }
+    },
+    "func_arg_fix" : {
+        "Ximgproc" : {
+            "niBlackThreshold" : { "binarizationMethod" : {"ctype" : "LocalBinarizationMethods"} },
+            "HoughPoint2Line" : { "angleRange" : {"ctype" : "AngleRangeOption"},
+                                  "makeSkew" : {"ctype" : "HoughDeskewOption"} },
+            "weightedMedianFilter" : { "weightType" : {"ctype" : "WMFWeightType"} },
+            "createDTFilter" : { "mode" : {"ctype" : "EdgeAwareFiltersList"} },
+            "dtFilter" : { "mode" : {"ctype" : "EdgeAwareFiltersList"} },
+            "thinning" : { "thinningType" : {"ctype" : "ThinningTypes"} },
+            "FastHoughTransform" : { "angleRange" : {"ctype" : "AngleRangeOption"},
+                                     "makeSkew" : {"ctype" : "HoughDeskewOption"},
+                                     "op" : {"ctype" : "HoughOp"} },
+            "createSuperpixelSLIC" : { "algorithm" : {"ctype" : "SLICType"} }
+        }
+    }
+}

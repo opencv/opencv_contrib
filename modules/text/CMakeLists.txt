@@ -10,6 +10,7 @@ ocv_define_module(text
     WRAP
       python
       java
+      objc
 )
 
 if(TARGET ocv.3rdparty.tesseract)

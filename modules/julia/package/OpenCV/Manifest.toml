@@ -5,9 +5,9 @@ uuid = "2a0f44e3-6c83-55bd-87e4-b1978d98bd5f"
 
 [[CxxWrap]]
 deps = ["Libdl", "MacroTools", "libcxxwrap_julia_jll"]
-git-tree-sha1 = "8c3ab907e1cdf3b3e5fa4e83a768db41034f8d2b"
+git-tree-sha1 = "762359626941f45b21238eb373a0bcedf6b61dd7"
 uuid = "1f15a43c-97ca-5a2a-ae31-89f07a497df4"
-version = "0.10.1"
+version = "0.11.0"
 
 [[Dates]]
 deps = ["Printf"]
@@ -79,6 +79,6 @@ uuid = "4ec0a83e-493e-50e2-b9ac-8f72acf5a8f5"
 
 [[libcxxwrap_julia_jll]]
 deps = ["Libdl", "Pkg"]
-git-tree-sha1 = "0a7089c9ccc348b4433689992046eb53837657ac"
+git-tree-sha1 = "1b2520ea0c1d5cbc12e8a97c15427133d726f743"
 uuid = "3eaa8342-bff7-56a5-9981-c04077f7cee7"
-version = "0.7.0+0"
+version = "0.8.0+0"
