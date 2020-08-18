@@ -34,15 +34,13 @@ static inline float tsdfToFloat(TsdfType num)
 }
 */
 
-v_float32 num128(128, 128, 128, 128);
-v_float32 numneg1(-1, -1, -1, -1);
-
 //v_float32 devide128(7 << 23, 7 << 23, 7 << 23, 7 << 23);
 //v_float32 negate1(1u << 31, 1u << 31, 1u << 31, 1u << 31);
 
-static inline v_float32 tsdfToFloat_INTR(v_int32 num)
+static inline v_float32x4 tsdfToFloat_INTR(v_int32x4 num)
 {
-    return v_cvt_f32(num) * numneg1 / num128;
+    v_float32x4 num128 = v_setall_f32(-128);
+    return v_cvt_f32(num) / num128;
 }
 /*
 static inline v_float32 tsdfToFloat_INTR_(v_int32 num)
@@ -53,20 +51,16 @@ static inline v_float32 tsdfToFloat_INTR_(v_int32 num)
 */
 static inline TsdfType floatToTsdf(float num)
 {
-    int8_t res;
-    if (-1 < num && num <= 1)
-    {
-        res = int8_t(int(num * 128 * (-1)));
-        res = res ? res : (num < 0 ? 1 : -1);
-    }
-    else
-        res = 0;
+    CV_Assert(num < -1);
+    CV_Assert(num >= 1);
+    int8_t res = int8_t(int(num * (-128)));
+    res = res ? res : (num < 0 ? 1 : -1);
     return res;
 }
 
 static inline float tsdfToFloat(TsdfType num)
 {
-    return float(num) * (-1) / 128;
+    return float(num) / (-128);
 }
 
 TSDFVolume::TSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist,
@@ -529,8 +523,8 @@ inline float TSDFVolumeCPU::interpolateVoxel(const v_float32x4& p) const
     for(int i = 0; i < 8; i++)
         vx[i] = volData[neighbourCoords[i] + coordBase].tsdf;
 
-    v_float32x4 v0246 = tsdfToFloat_INTR(v_int32(vx[0], vx[2], vx[4], vx[6]));
-    v_float32x4 v1357 = tsdfToFloat_INTR(v_int32(vx[1], vx[3], vx[5], vx[7]));
+    v_float32x4 v0246 = tsdfToFloat_INTR(v_int32x4(vx[0], vx[2], vx[4], vx[6]));
+    v_float32x4 v1357 = tsdfToFloat_INTR(v_int32x4(vx[1], vx[3], vx[5], vx[7]));
     v_float32x4 vxx = v0246 + v_setall_f32(tz)*(v1357 - v0246);
 
     v_float32x4 v00_10 = vxx;
@@ -624,8 +618,8 @@ inline v_float32x4 TSDFVolumeCPU::getNormalVoxel(const v_float32x4& p) const
             vx[i] = volData[neighbourCoords[i] + coordBase + 1*dim].tsdf -
                     volData[neighbourCoords[i] + coordBase - 1*dim].tsdf;
 
-        v_float32x4 v0246 = tsdfToFloat_INTR(v_int32(vx[0], vx[2], vx[4], vx[6]));
-        v_float32x4 v1357 = tsdfToFloat_INTR(v_int32(vx[1], vx[3], vx[5], vx[7]));
+        v_float32x4 v0246 = tsdfToFloat_INTR(v_int32x4(vx[0], vx[2], vx[4], vx[6]));
+        v_float32x4 v1357 = tsdfToFloat_INTR(v_int32x4(vx[1], vx[3], vx[5], vx[7]));
         v_float32x4 vxx = v0246 + v_setall_f32(tz)*(v1357 - v0246);
 
         v_float32x4 v00_10 = vxx;
