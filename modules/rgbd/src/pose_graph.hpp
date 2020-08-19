@@ -138,6 +138,7 @@ class PoseGraph
     int getNumEdges() const { return edges.size(); }
 
     Mat getVector();
+    float computeResidual();
 
     //! @brief: Constructs a linear system and returns the residual of the current system
     float createLinearSystem(BlockSparseMat<float, 6, 6>& H, Mat& B);
@@ -155,9 +156,10 @@ struct Params
     float minResidual;
     float maxAcceptableResIncre;
     float minStepSize;
+    float minResidualDecrease;
 
     // TODO: Refine these constants
-    Params() : maxNumIters(40), minResidual(1e-3f), maxAcceptableResIncre(1e-3f), minStepSize(1e-4f){};
+    Params() : maxNumIters(50), minResidual(1e-3f), maxAcceptableResIncre(1e-3f), minStepSize(1e-6f), minResidualDecrease(1e-6f){};
     virtual ~Params() = default;
 };
 

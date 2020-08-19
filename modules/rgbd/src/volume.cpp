@@ -2,16 +2,17 @@
 // It is subject to the license terms in the LICENSE file found in the top-level directory
 // of this distribution and at http://opencv.org/license.html
 
+#include "precomp.hpp"
 #include <opencv2/rgbd/volume.hpp>
 
 #include "hash_tsdf.hpp"
-#include "precomp.hpp"
 #include "tsdf.hpp"
 
 namespace cv
 {
 namespace kinfu
 {
+
 Ptr<VolumeParams> VolumeParams::defaultParams(VolumeType _volumeType)
 {
     VolumeParams params;
@@ -68,6 +69,7 @@ Ptr<Volume> makeVolume(const VolumeParams& _volumeParams)
         default: return nullptr;
     }
 }
+
 Ptr<Volume> makeVolume(VolumeType _volumeType, float _voxelSize, Matx44f _pose,
                        float _raycastStepFactor, float _truncDist, int _maxWeight,
                        float _truncateThreshold, Vec3i _resolution)

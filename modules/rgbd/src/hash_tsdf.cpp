@@ -41,7 +41,7 @@ HashTSDFVolumeCPU::HashTSDFVolumeCPU(float _voxelSize, Matx44f _pose, float _ray
 }
 
 HashTSDFVolumeCPU::HashTSDFVolumeCPU(const VolumeParams& _params, bool _zFirstMemOrder)
-    : Base(_params.voxelSize, _params.pose, _params.raycastStepFactor, _params.tsdfTruncDist, _params.maxWeight,
+    : Base(_params.voxelSize, _params.pose.matrix, _params.raycastStepFactor, _params.tsdfTruncDist, _params.maxWeight,
            _params.depthTruncThreshold, _params.unitResolution, _zFirstMemOrder)
 {
 }
@@ -264,7 +264,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::at_(const Point3f& point) const
     return volumeUnit->at(volUnitLocalIdx);
 }
 
-inline TsdfType HashTSDFVolumeCPU::interpolateVoxel(const Point3f& point) const
+inline TsdfType HashTSDFVolumeCPU::interpolateVoxel_(const Point3f& point) const
 {
     Point3f neighbourCoords[] = { Point3f(0, 0, 0), Point3f(0, 0, 1), Point3f(0, 1, 0), Point3f(0, 1, 1),
                                   Point3f(1, 0, 0), Point3f(1, 0, 1), Point3f(1, 1, 0), Point3f(1, 1, 1) };
@@ -305,8 +305,8 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel_(Point3f point) const
         pointPrev[c] -= voxelSize;
         pointNext[c] += voxelSize;
 
-        // normal[c] = at(Point3f(pointNext)).tsdf - at(Point3f(pointPrev)).tsdf;
-        normal[c] = interpolateVoxel(Point3f(pointNext)) - interpolateVoxel(Point3f(pointPrev));
+        normal[c] = at(Point3f(pointNext)).tsdf - at(Point3f(pointPrev)).tsdf;
+        /* normal[c] = interpolateVoxel(Point3f(pointNext)) - interpolateVoxel(Point3f(pointPrev)); */
 
         pointPrev[c] = pointVec[c];
         pointNext[c] = pointVec[c];

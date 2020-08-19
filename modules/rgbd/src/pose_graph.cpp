@@ -70,9 +70,9 @@ bool PoseGraph::isValid() const
             std::cout << "Next node: " << nextNodeId << std::endl;
             if (nextNodeId != -1)
             {
-                if (nodesVisited.count(currNodeId) == 0)
+                nodesVisited.insert(currNodeId);
+                if (nodesVisited.count(nextNodeId) == 0)
                 {
-                    nodesVisited.insert(currNodeId);
                     nodesToVisit.push_back(nextNodeId);
                 }
             }
@@ -86,7 +86,8 @@ bool PoseGraph::isValid() const
     {
         const PoseGraphEdge& edge = edges.at(i);
         // edges have spurious source/target nodes
-        if ((nodesVisited.count(edge.getSourceNodeId()) != 1) || (nodesVisited.count(edge.getTargetNodeId()) != 1))
+        if ((nodesVisited.count(edge.getSourceNodeId()) != 1) ||
+            (nodesVisited.count(edge.getTargetNodeId()) != 1))
         {
             invalidEdgeNode = true;
             break;
@@ -102,14 +103,15 @@ float PoseGraph::createLinearSystem(BlockSparseMat<float, 6, 6>& H, Mat& B)
     float residual = 0.0f;
 
     // Lambda to calculate the error Jacobians w.r.t source and target poses
-    auto calcErrorJacobian = [](Matx66f& jacSource, Matx66f& jacTarget, const Affine3f& relativePoseMeas,
-                                const Affine3f& sourcePose, const Affine3f& targetPose) -> void {
+    auto calcErrorJacobian = [](Matx66f& jacSource, Matx66f& jacTarget,
+                                const Affine3f& relativePoseMeas, const Affine3f& sourcePose,
+                                const Affine3f& targetPose) -> void {
         const Affine3f relativePoseMeas_inv = relativePoseMeas.inv();
         const Affine3f targetPose_inv       = targetPose.inv();
         for (int i = 0; i < 6; i++)
         {
-            Affine3f dError_dSource =
-                relativePoseMeas_inv * targetPose_inv * cv::Affine3f(generatorJacobian[i]) * sourcePose;
+            Affine3f dError_dSource = relativePoseMeas_inv * targetPose_inv *
+                                      cv::Affine3f(generatorJacobian[i]) * sourcePose;
             Vec3f rot                = dError_dSource.rvec();
             Vec3f trans              = dError_dSource.translation();
             jacSource.val[i + 6 * 0] = rot(0);
@@ -121,8 +123,8 @@ float PoseGraph::createLinearSystem(BlockSparseMat<float, 6, 6>& H, Mat& B)
         }
         for (int i = 0; i < 6; i++)
         {
-            Affine3f dError_dSource =
-                relativePoseMeas_inv * targetPose_inv * cv::Affine3f(-generatorJacobian[i]) * sourcePose;
+            Affine3f dError_dSource = relativePoseMeas_inv * targetPose_inv *
+                                      cv::Affine3f(-generatorJacobian[i]) * sourcePose;
             Vec3f rot                = dError_dSource.rvec();
             Vec3f trans              = dError_dSource.translation();
             jacTarget.val[i + 6 * 0] = rot(0);
@@ -144,12 +146,9 @@ float PoseGraph::createLinearSystem(BlockSparseMat<float, 6, 6>& H, Mat& B)
         const Affine3f& targetPose    = nodes.at(targetNodeId).getPose();
 
         Affine3f relativeSourceToTarget = targetPose.inv() * sourcePose;
-        //! Edge transformation is source to target. (relativeConstraint should be identity if no error)
+        //! Edge transformation is source to target. (relativeConstraint should be identity if no
+        //! error)
         Affine3f poseConstraint = currEdge.transformation.inv() * relativeSourceToTarget;
-
-        /* std::cout << "RelativeSourceToTarget: \n" << relativeSourceToTarget.matrix << "\n"; */
-        /* std::cout << "Edge estimated transformation: \n" << currEdge.transformation.matrix << "\n"; */
-        std::cout << "PoseConstraint: \n" << poseConstraint.matrix << "\n";
 
         Matx61f error;
         Vec3f rot   = poseConstraint.rvec();
@@ -162,35 +161,25 @@ float PoseGraph::createLinearSystem(BlockSparseMat<float, 6, 6>& H, Mat& B)
         error.val[4] = trans[1];
         error.val[5] = trans[2];
 
-        /* std::cout << "Error vector: \n" << error << std::endl; */
-
         Matx66f jacSource, jacTarget;
         calcErrorJacobian(jacSource, jacTarget, currEdge.transformation, sourcePose, targetPose);
-        /* std::cout << "Source Jacobian: \n" << jacSource << std::endl; */
-        /* std::cout << "Target Jacobian: \n" << jacTarget << std::endl; */
 
         Matx16f errorTransposeInfo     = error.t() * currEdge.information;
         Matx66f jacSourceTransposeInfo = jacSource.t() * currEdge.information;
         Matx66f jacTargetTransposeInfo = jacTarget.t() * currEdge.information;
 
-        /* std::cout << "errorTransposeInfo: " << errorTransposeInfo << "\n"; */
-        /* std::cout << "jacSourceTransposeInfo: " << jacSourceTransposeInfo << "\n"; */
-        /* std::cout << "jacTargetTransposeInfo: " << jacTargetTransposeInfo << "\n"; */
+        residual += std::sqrt((errorTransposeInfo * error).val[0]);
 
-        float res = std::sqrt((errorTransposeInfo * error).val[0]);
-        residual += res;
-
-        std::cout << "sourceNodeId: " << sourceNodeId << " targetNodeId: " << targetNodeId << std::endl;
         H.refBlock(sourceNodeId, sourceNodeId) += jacSourceTransposeInfo * jacSource;
         H.refBlock(targetNodeId, targetNodeId) += jacTargetTransposeInfo * jacTarget;
         H.refBlock(sourceNodeId, targetNodeId) += jacSourceTransposeInfo * jacTarget;
         H.refBlock(targetNodeId, sourceNodeId) += jacTargetTransposeInfo * jacSource;
 
-        B.rowRange(6 * sourceNodeId, 6 * (sourceNodeId + 1)) += (errorTransposeInfo * jacSource).reshape<6, 1>();
-        B.rowRange(6 * targetNodeId, 6 * (targetNodeId + 1)) += (errorTransposeInfo * jacTarget).reshape<6, 1>();
+        B.rowRange(6 * sourceNodeId, 6 * (sourceNodeId + 1)) +=
+            (errorTransposeInfo * jacSource).reshape<6, 1>();
+        B.rowRange(6 * targetNodeId, 6 * (targetNodeId + 1)) +=
+            (errorTransposeInfo * jacTarget).reshape<6, 1>();
     }
-
-    std::cout << "Residual value: " << residual << std::endl;
     return residual;
 }
 
@@ -203,10 +192,12 @@ PoseGraph PoseGraph::update(const Mat& deltaVec)
 
     for (int currentNodeId = 0; currentNodeId < numNodes; currentNodeId++)
     {
-        Vec6f delta   = deltaVec.rowRange(6 * currentNodeId, 6 * (currentNodeId + 1));
-        Affine3f pose = nodes.at(currentNodeId).getPose();
-        delta              = -delta;
-        Affine3f currDelta = Affine3f(Vec3f(delta.val), Vec3f(delta.val + 3));
+        if (nodes.at(currentNodeId).isPoseFixed())
+            continue;
+        Vec6f delta          = deltaVec.rowRange(6 * currentNodeId, 6 * (currentNodeId + 1));
+        Affine3f pose        = nodes.at(currentNodeId).getPose();
+        delta                = -delta;
+        Affine3f currDelta   = Affine3f(Vec3f(delta.val), Vec3f(delta.val + 3));
         Affine3f updatedPose = currDelta * pose;
 
         updatedPoseGraph.nodes.at(currentNodeId).setPose(updatedPose);
@@ -230,6 +221,39 @@ Mat PoseGraph::getVector()
     return vector;
 }
 
+float PoseGraph::computeResidual()
+{
+    int numEdges = int(edges.size());
+
+    float residual = 0.0f;
+    for (int currEdgeNum = 0; currEdgeNum < numEdges; currEdgeNum++)
+    {
+        const PoseGraphEdge& currEdge = edges.at(currEdgeNum);
+        int sourceNodeId              = currEdge.getSourceNodeId();
+        int targetNodeId              = currEdge.getTargetNodeId();
+        const Affine3f& sourcePose    = nodes.at(sourceNodeId).getPose();
+        const Affine3f& targetPose    = nodes.at(targetNodeId).getPose();
+
+        Affine3f relativeSourceToTarget = targetPose.inv() * sourcePose;
+        Affine3f poseConstraint         = currEdge.transformation.inv() * relativeSourceToTarget;
+
+        Matx61f error;
+        Vec3f rot   = poseConstraint.rvec();
+        Vec3f trans = poseConstraint.translation();
+
+        error.val[0] = rot[0];
+        error.val[1] = rot[1];
+        error.val[2] = rot[2];
+        error.val[3] = trans[0];
+        error.val[4] = trans[1];
+        error.val[5] = trans[2];
+
+        Matx16f errorTransposeInfo = error.t() * currEdge.information;
+        residual += std::sqrt((errorTransposeInfo * error).val[0]);
+    }
+    return residual;
+}
+
 bool Optimizer::isStepSizeSmall(const Mat& delta, float minStepSize)
 {
     float maxDeltaNorm = 0.0f;
@@ -250,14 +274,16 @@ void Optimizer::optimizeGaussNewton(const Optimizer::Params& params, PoseGraph& 
     if (!poseGraphOriginal.isValid())
     //! Should print some error
     {
-        CV_Error(Error::StsBadArg, "Invalid PoseGraph that is either not connected or has invalid nodes");
+        CV_Error(Error::StsBadArg,
+                 "Invalid PoseGraph that is either not connected or has invalid nodes");
         return;
     }
 
     int numNodes = poseGraph.getNumNodes();
     int numEdges = poseGraph.getNumEdges();
 
-    std::cout << "Optimizing posegraph with nodes: " << numNodes << " edges: " << numEdges << std::endl;
+    std::cout << "Optimizing posegraph with nodes: " << numNodes << " edges: " << numEdges
+              << std::endl;
 
     int iter           = 0;
     float prevResidual = std::numeric_limits<float>::max();
@@ -278,23 +304,25 @@ void Optimizer::optimizeGaussNewton(const Optimizer::Params& params, PoseGraph& 
             CV_Error(Error::StsNoConv, "Sparse solve failed");
             return;
         }
-        std::cout << "delta update: " << delta << "\n delta norm: " << cv::norm(delta) << " X norm: " << cv::norm(X)
-                  << std::endl;
+        std::cout << "delta update: " << delta << "\n delta norm: " << cv::norm(delta)
+                  << " X norm: " << cv::norm(X) << std::endl;
 
         //! Check delta
         if (isStepSizeSmall(delta, params.minStepSize))
         {
-            std::cout << "Delta norm[" << cv::norm(delta) << "] < " << params.minStepSize << std::endl;
+            std::cout << "Delta norm[" << cv::norm(delta) << "] < " << params.minStepSize
+                      << std::endl;
             break;
         }
 
-        std::cout << " Current residual: " << currentResidual << " Prev residual: " << prevResidual << "\n";
+        std::cout << " Current residual: " << currentResidual << " Prev residual: " << prevResidual
+                  << "\n";
 
         //! TODO: Improve criterion and allow small increments in residual
         if ((currentResidual - prevResidual) > params.maxAcceptableResIncre)
         {
-            std::cout << "Current residual increased from prevResidual by at least " << params.maxAcceptableResIncre
-                      << std::endl;
+            std::cout << "Current residual increased from prevResidual by at least "
+                      << params.maxAcceptableResIncre << std::endl;
             break;
         }
         //! If updates don't improve a lot means loss function basin has been reached
@@ -315,76 +343,82 @@ void Optimizer::optimizeLevenberg(const Optimizer::Params& params, PoseGraph& po
 
     if (!poseGraphOriginal.isValid())
     {
-        CV_Error(Error::StsBadArg, "Invalid PoseGraph that is either not connected or has invalid nodes");
+        CV_Error(Error::StsBadArg,
+                 "Invalid PoseGraph that is either not connected or has invalid nodes");
         return;
     }
 
     int numNodes = poseGraph.getNumNodes();
     int numEdges = poseGraph.getNumEdges();
 
-    std::cout << "Optimizing posegraph with nodes: " << numNodes << " edges: " << numEdges << std::endl;
+    std::cout << "Optimizing PoseGraph with " << numNodes << " nodes and " << numEdges << " edges" << std::endl;
     int iter           = 0;
-    float lambda       = 1e-3f;
+    float lambda       = 0.01;
     const float factor = 2;
     float prevResidual = std::numeric_limits<float>::max();
-    do
+
+    while (iter < params.maxNumIters)
     {
         std::cout << "Current iteration: " << iter << std::endl;
 
         BlockSparseMat<float, 6, 6> ApproxH(numNodes);
         Mat B = cv::Mat::zeros(6 * numNodes, 1, CV_32F);
 
-        float currentResidual = poseGraph.createLinearSystem(ApproxH, B);
-        Mat delta(6 * numNodes, 1, CV_32F);
-        Mat X = poseGraph.getVector();
-
+        prevResidual = poseGraph.createLinearSystem(ApproxH, B);
         //! H_LM = H + lambda * diag(H);
         Mat Hdiag = ApproxH.diagonal();
         for (int i = 0; i < Hdiag.rows; i++)
         {
             ApproxH.refElem(i, i) += lambda * Hdiag.at<float>(i, 0);
         }
+
+        Mat delta(6 * numNodes, 1, CV_32F);
         bool success = sparseSolve(ApproxH, B, delta);
         if (!success)
         {
             CV_Error(Error::StsNoConv, "Sparse solve failed");
             return;
         }
-        std::cout << "\n delta norm: " << cv::norm(delta) << " X norm: " << cv::norm(X)
-                  << std::endl;
 
         //! If step size is too small break
         if (isStepSizeSmall(delta, params.minStepSize))
         {
-            std::cout << "Step size is too small. stopping\n";
+            std::cout << "Step size is too small.\n";
             break;
         }
-        std::cout << " Current residual: " << currentResidual << " Prev residual: " << prevResidual << "\n";
+
+        PoseGraph poseGraphNew = poseGraph.update(delta);
+        float currentResidual  = poseGraphNew.computeResidual();
+        std::cout << " Current residual: " << currentResidual << " Prev residual: " << prevResidual
+                  << "\n";
 
         float reduction = currentResidual - prevResidual;
         if (reduction < 0)
         {
             //! Accept update
             lambda    = lambda / factor;
-            poseGraph = poseGraph.update(delta);
-            prevResidual = currentResidual;
-            std::cout << "Accepting update: " << reduction << " new lambda: " << lambda << std::endl;
+            poseGraph = poseGraphNew;
+            std::cout << "Accepting update: " << reduction << " new lambda: " << lambda
+                      << std::endl;
+
+            if (abs(reduction) < (prevResidual * params.minResidualDecrease))
+            {
+                std::cout << "Reduction in residual too small, converged " << (prevResidual * params.minResidualDecrease) << std::endl;
+                break;
+            }
         }
         else if (reduction > 0)
         {
             //! Reject update
             lambda = lambda * factor;
-            std::cout << "Rejecting update: " << reduction << " new lambda: " << lambda << std::endl;
+            std::cout << "Rejecting update: " << reduction << " new lambda: " << lambda
+                      << std::endl;
         }
 
         //! TODO: Change to another paramter, this is dummy
-        if (abs(reduction) < 1e-4f)
-        {
-            std::cout << "Reduction in residual too small, converged " << std::endl;
-            break;
-        }
+        prevResidual = currentResidual;
         iter++;
-    } while (iter < params.maxNumIters);
+    }
 }
 
 }  // namespace kinfu

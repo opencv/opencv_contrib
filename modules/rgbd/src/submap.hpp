@@ -100,14 +100,14 @@ void Submap<MatType>::integrate(InputArray _depth, float depthFactor, const cv::
                                 const int currFrameId)
 {
     CV_Assert(currFrameId >= startFrameId);
-    volume.integrate(_depth, depthFactor, cameraPose, intrinsics, currFrameId);
+    volume.integrate(_depth, depthFactor, cameraPose.matrix, intrinsics, currFrameId);
 }
 
 template<typename MatType>
 void Submap<MatType>::raycast(const cv::Affine3f& _cameraPose, const cv::kinfu::Intr& intrinsics, cv::Size frameSize,
                               OutputArray points, OutputArray normals)
 {
-    volume.raycast(_cameraPose, intrinsics, frameSize, points, normals);
+    volume.raycast(_cameraPose.matrix, intrinsics, frameSize, points, normals);
 }
 
 template<typename MatType>
@@ -517,6 +517,7 @@ PoseGraph SubmapManager<MatType>::MapToPoseGraph()
         {
             // TODO: Handle case with duplicate constraints A -> B and B -> A
             Matx66f informationMatrix = Matx66f::eye() * (currConstraintPair.second.weight/10);
+            /* Matx66f informationMatrix = Matx66f::eye(); */
             PoseGraphEdge currEdge(currSubmap->id, currConstraintPair.first, currConstraintPair.second.estimatedPose, informationMatrix);
             localPoseGraph.addEdge(currEdge);
         }
@@ -545,6 +546,7 @@ void SubmapManager<MatType>::PoseGraphToMap(const PoseGraph &updatedPoseGraph)
         const PoseGraphNode& currNode = updatedPoseGraph.nodes.at(currSubmap->id);
         if(!currNode.isPoseFixed())
             currSubmap->pose = currNode.getPose();
+        std::cout << "Current node: " << currSubmap->id << " Updated Pose: \n" << currSubmap->pose.matrix << std::endl;
     }
 }
 

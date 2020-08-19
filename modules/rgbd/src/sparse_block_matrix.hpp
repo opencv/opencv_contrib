@@ -40,7 +40,6 @@ struct BlockSparseMat
     };
     typedef Matx<_Tp, blockM, blockN> MatType;
     typedef std::unordered_map<Point2i, MatType, Point2iHash> IDtoBlockValueMap;
-    static constexpr int blockSize = blockM * blockN;
 
     BlockSparseMat(int _nBlocks) : nBlocks(_nBlocks), ijValue() {}
 
@@ -70,7 +69,7 @@ struct BlockSparseMat
 
     float& refElem(int i, int j)
     {
-        Point2i ib(i / blockSize, j / blockSize), iv(i % blockSize, j % blockSize);
+        Point2i ib(i / blockM, j / blockN), iv(i % blockM, j % blockN);
         return refBlock(ib.x, ib.y)(iv.x, iv.y);
     }
 
@@ -78,7 +77,7 @@ struct BlockSparseMat
     Eigen::SparseMatrix<_Tp> toEigen() const
     {
         std::vector<Eigen::Triplet<double>> tripletList;
-        tripletList.reserve(ijValue.size() * blockSize);
+        tripletList.reserve(ijValue.size() * blockM * blockN);
         for (auto ijv : ijValue)
         {
             int xb = ijv.first.x, yb = ijv.first.y;
@@ -131,7 +130,6 @@ static bool sparseSolve(const BlockSparseMat<float, 6, 6>& H, const Mat& B, Mat&
     solver.compute(bigA);
     if (solver.info() != Eigen::Success)
     {
-        std::cout << "solver.info(): " << solver.info() << std::endl;
         std::cout << "failed to eigen-decompose" << std::endl;
         result = false;
     }

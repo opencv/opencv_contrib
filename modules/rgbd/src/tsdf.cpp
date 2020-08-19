@@ -430,7 +430,7 @@ void TSDFVolumeCPU::integrate(InputArray _depth, float depthFactor, const Matx44
                               const Intr& intrinsics, const int frameId)
 {
     CV_TRACE_FUNCTION();
-
+    CV_UNUSED(frameId);
     CV_Assert(_depth.type() == DEPTH_TYPE);
     CV_Assert(!_depth.empty());
     Depth depth = _depth.getMat();
@@ -1141,6 +1141,7 @@ void TSDFVolumeGPU::integrate(InputArray _depth, float depthFactor,
                               const Matx44f& cameraPose, const Intr& intrinsics, const int frameId)
 {
     CV_TRACE_FUNCTION();
+    CV_UNUSED(frameId);
     CV_Assert(!_depth.empty());
 
     UMat depth = _depth.getUMat();
@@ -1423,21 +1424,21 @@ Ptr<TSDFVolume> makeTSDFVolume(float _voxelSize, Matx44f _pose, float _raycastSt
 #ifdef HAVE_OPENCL
     if (ocl::useOpenCL())
         return makePtr<TSDFVolumeGPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
-                                          _resolution);
+                                      _resolution);
 #endif
     return makePtr<TSDFVolumeCPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
-                                      _resolution);
+                                  _resolution);
 }
 
 Ptr<TSDFVolume> makeTSDFVolume(const VolumeParams& _params)
 {
 #ifdef HAVE_OPENCL
     if (ocl::useOpenCL())
-        return makePtr<TSDFVolumeGPU>(_params.voxelSize, _params.pose, _params.raycastStepFactor, _params.tsdfTruncDist, _params.maxWeight,
-                                          _params.resolution);
+        return makePtr<TSDFVolumeGPU>(_params.voxelSize, _params.pose.matrix, _params.raycastStepFactor,
+                                      _params.tsdfTruncDist, _params.maxWeight, _params.resolution);
 #endif
-    return makePtr<TSDFVolumeCPU>(_params.voxelSize, _params.pose, _params.raycastStepFactor, _params.tsdfTruncDist, _params.maxWeight,
-                                          _params.resolution);
+    return makePtr<TSDFVolumeCPU>(_params.voxelSize, _params.pose.matrix, _params.raycastStepFactor,
+                                  _params.tsdfTruncDist, _params.maxWeight, _params.resolution);
 
 }
 
