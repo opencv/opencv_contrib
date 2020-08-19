@@ -1297,9 +1297,9 @@ public:
   /** @brief Constructor
   @param parameters GOTURN parameters TrackerGOTURN::Params
   */
-  static Ptr<TrackerGOTURN> create(const TrackerGOTURN::Params &parameters);
+  static Ptr<TrackerGOTURN> create(const TrackerGOTURN::Params &parameters, const String modelTxt = "goturn.prototxt", const String modelBin = "goturn.caffemodel");
 
-  CV_WRAP static Ptr<TrackerGOTURN> create();
+  CV_WRAP static Ptr<TrackerGOTURN> create(const String modelTxt = "goturn.prototxt", const String modelBin = "goturn.caffemodel");
 
   virtual ~TrackerGOTURN() CV_OVERRIDE {}
 };

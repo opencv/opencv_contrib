@@ -52,18 +52,18 @@ void TrackerGOTURN::Params::read(const cv::FileNode& /*fn*/){}
 void TrackerGOTURN::Params::write(cv::FileStorage& /*fs*/) const {}
 
 
-Ptr<TrackerGOTURN> TrackerGOTURN::create(const TrackerGOTURN::Params &parameters)
+Ptr<TrackerGOTURN> TrackerGOTURN::create(const TrackerGOTURN::Params &parameters, const String modelTxt, const String modelBin)
 {
 #ifdef HAVE_OPENCV_DNN
-    return Ptr<gtr::TrackerGOTURNImpl>(new gtr::TrackerGOTURNImpl(parameters));
+    return Ptr<gtr::TrackerGOTURNImpl>(new gtr::TrackerGOTURNImpl(parameters, modelTxt, modelBin));
 #else
     (void)(parameters);
     CV_Error(cv::Error::StsNotImplemented , "to use GOTURN, the tracking module needs to be built with opencv_dnn !");
 #endif
 }
-Ptr<TrackerGOTURN> TrackerGOTURN::create()
+Ptr<TrackerGOTURN> TrackerGOTURN::create(const String modelTxt, const String modelBin)
 {
-    return TrackerGOTURN::create(TrackerGOTURN::Params());
+    return TrackerGOTURN::create(TrackerGOTURN::Params(), modelTxt, modelBin);
 }
 
 
@@ -89,9 +89,11 @@ protected:
     void modelUpdateImpl() CV_OVERRIDE {}
 };
 
-TrackerGOTURNImpl::TrackerGOTURNImpl(const TrackerGOTURN::Params &parameters) :
+TrackerGOTURNImpl::TrackerGOTURNImpl(const TrackerGOTURN::Params &parameters, const String modelTxt, const String modelBin) :
     params(parameters){
     isInit = false;
+    modelTxt_ = modelTxt;
+    modelBin_ = modelBin;
 };
 
 void TrackerGOTURNImpl::read(const cv::FileNode& fn)
@@ -112,9 +114,7 @@ bool TrackerGOTURNImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
     ((TrackerGOTURNModel*)static_cast<TrackerModel*>(model))->setBoudingBox(boundingBox);
 
     //Load GOTURN architecture from *.prototxt and pretrained weights from *.caffemodel
-    String modelTxt = "goturn.prototxt";
-    String modelBin = "goturn.caffemodel";
-    net = dnn::readNetFromCaffe(modelTxt, modelBin);
+    net = dnn::readNetFromCaffe(modelTxt_, modelBin_);
     return true;
 }
 

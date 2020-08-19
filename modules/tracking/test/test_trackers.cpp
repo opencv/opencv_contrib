@@ -571,8 +571,9 @@ TEST(GOTURN, memory_usage)
 {
   cv::Rect2d roi(145, 70, 85, 85);
   cv::Mat frame;
-  cv::Ptr<cv::Tracker> tracker = cv::TrackerGOTURN::create();
-  string folder = cvtest::TS::ptr()->get_data_path() + "tracking/david/data/david.webm";
+  string path_to_extra = cvtest::TS::ptr()->get_data_path();
+  cv::Ptr<cv::Tracker> tracker = cv::TrackerGOTURN::create(path_to_extra + "../dnn/gsoc2016-goturn/goturn.prototxt", path_to_extra + "../dnn/gsoc2016-goturn/goturn.caffemodel");
+  string folder = path_to_extra + "tracking/david/data/david.webm";
   cv::VideoCapture video( folder );
   video >> frame;
   tracker->init(frame, roi);
