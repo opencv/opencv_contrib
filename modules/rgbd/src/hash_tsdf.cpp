@@ -20,6 +20,20 @@ namespace cv
 {
 namespace kinfu
 {
+
+static inline TsdfType floatToTsdf(float num)
+{
+    //CV_Assert(-1 < num <= 1);
+    int8_t res = int8_t(int(num * (-128)));
+    res = res ? res : (num < 0 ? 1 : -1);
+    return res;
+}
+
+static inline float tsdfToFloat(TsdfType num)
+{
+    return float(num) / (-128);
+}
+
 HashTSDFVolume::HashTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
                                float _truncDist, int _maxWeight, float _truncateThreshold,
                                int _volumeUnitRes, bool _zFirstMemOrder)
@@ -232,7 +246,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Vec3i& volumeIdx) const
     if (it == volumeUnits.end())
     {
         TsdfVoxel dummy;
-        dummy.tsdf   = 1.f;
+        dummy.tsdf   = floatToTsdf(1.f);
         dummy.weight = 0;
         return dummy;
     }
@@ -255,7 +269,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Point3f& point) const
     if (it == volumeUnits.end())
     {
         TsdfVoxel dummy;
-        dummy.tsdf   = 1.f;
+        dummy.tsdf   = floatToTsdf(1.f);
         dummy.weight = 0;
         return dummy;
     }
@@ -269,7 +283,7 @@ inline TsdfVoxel HashTSDFVolumeCPU::at(const cv::Point3f& point) const
     return volumeUnit->at(volUnitLocalIdx);
 }
 
-inline TsdfType HashTSDFVolumeCPU::interpolateVoxel(const cv::Point3f& point) const
+inline float HashTSDFVolumeCPU::interpolateVoxel(const cv::Point3f& point) const
 {
     cv::Point3f neighbourCoords[] = {
                                 Point3f(0, 0, 0),
@@ -289,17 +303,17 @@ inline TsdfType HashTSDFVolumeCPU::interpolateVoxel(const cv::Point3f& point) co
     float ty = point.y - iy;
     float tz = point.z - iz;
 
-    TsdfType vx[8];
+    float vx[8];
     for (int i = 0; i < 8; i++)
-        vx[i] = at(neighbourCoords[i] * voxelSize + point).tsdf;
+        vx[i] = tsdfToFloat(at(neighbourCoords[i] * voxelSize + point).tsdf);
 
-    TsdfType v00 = vx[0] + tz * (vx[1] - vx[0]);
-    TsdfType v01 = vx[2] + tz * (vx[3] - vx[2]);
-    TsdfType v10 = vx[4] + tz * (vx[5] - vx[4]);
-    TsdfType v11 = vx[6] + tz * (vx[7] - vx[6]);
+    float v00 = vx[0] + tz * (vx[1] - vx[0]);
+    float v01 = vx[2] + tz * (vx[3] - vx[2]);
+    float v10 = vx[4] + tz * (vx[5] - vx[4]);
+    float v11 = vx[6] + tz * (vx[7] - vx[6]);
 
-    TsdfType v0 = v00 + ty * (v01 - v00);
-    TsdfType v1 = v10 + ty * (v11 - v10);
+    float v0 = v00 + ty * (v01 - v00);
+    float v1 = v10 + ty * (v11 - v10);
 
     return v0 + tx * (v1 - v0);
 }
@@ -323,7 +337,7 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
         pointPrev[c] = pointVec[c];
         pointNext[c] = pointVec[c];
     }
-    //std::cout << normal << std::endl;
+    
     float nv = sqrt(normal[0] * normal[0] +
                      normal[1] * normal[1] +
                      normal[2] * normal[2]);
@@ -377,7 +391,7 @@ struct HashRaycastInvoker : ParallelLoopBody
                               std::numeric_limits<int>::min());
 
                 float tprev       = tcurr;
-                TsdfType prevTsdf = volume.truncDist;
+                float prevTsdf = volume.truncDist;
                 cv::Ptr<TSDFVolumeCPU> currVolumeUnit;
                 while (tcurr < tmax)
                 {
@@ -386,7 +400,7 @@ struct HashRaycastInvoker : ParallelLoopBody
 
                     VolumeUnitMap::const_iterator it = volume.volumeUnits.find(currVolumeUnitIdx);
 
-                    TsdfType currTsdf = prevTsdf;
+                    float currTsdf = prevTsdf;
                     int currWeight    = 0;
                     float stepSize    = 0.5f * blockSize;
                     cv::Vec3i volUnitLocalIdx;
@@ -402,7 +416,7 @@ struct HashRaycastInvoker : ParallelLoopBody
 
                         //! TODO: Figure out voxel interpolation
                         TsdfVoxel currVoxel = currVolumeUnit->at(volUnitLocalIdx);
-                        currTsdf            = currVoxel.tsdf;
+                        currTsdf            = tsdfToFloat(currVoxel.tsdf);
                         currWeight          = currVoxel.weight;
                         stepSize            = tstep;
                     }
@@ -500,7 +514,7 @@ struct HashFetchPointsNormalsInvoker : ParallelLoopBody
                             cv::Vec3i voxelIdx(x, y, z);
                             TsdfVoxel voxel = volumeUnit->at(voxelIdx);
 
-                            if (voxel.tsdf != 1.f && voxel.weight != 0)
+                            if (voxel.tsdf != -128 && voxel.weight != 0)
                             {
                                 Point3f point = base_point + volume.voxelCoordToVolume(voxelIdx);
                                 localPoints.push_back(toPtype(point));

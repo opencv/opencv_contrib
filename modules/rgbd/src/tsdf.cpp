@@ -51,8 +51,7 @@ static inline v_float32 tsdfToFloat_INTR_(v_int32 num)
 */
 static inline TsdfType floatToTsdf(float num)
 {
-    CV_Assert(num < -1);
-    CV_Assert(num >= 1);
+    //CV_Assert(-1 < num <= 1);
     int8_t res = int8_t(int(num * (-128)));
     res = res ? res : (num < 0 ? 1 : -1);
     return res;
