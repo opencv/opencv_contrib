@@ -163,9 +163,7 @@ struct Params
     virtual ~Params() = default;
 };
 
-void optimizeGaussNewton(const Params& params, PoseGraph& poseGraph);
 void optimizeLevenberg(const Params& params, PoseGraph& poseGraph);
-
 bool isStepSizeSmall(const Mat& delta, float minStepSize);
 }  // namespace Optimizer
 

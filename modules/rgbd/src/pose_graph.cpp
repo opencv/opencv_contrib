@@ -19,19 +19,7 @@ namespace kinfu
 {
 void PoseGraph::addEdge(const PoseGraphEdge& edge)
 {
-    /* std::vector<PoseGraphEdge>::iterator it = std::find(edges.begin(), edges.end(), edge); */
-    /* if(it == edges.end()) */
-    /* { */
     edges.push_back(edge);
-    /* } */
-    /* else */
-    /* { */
-    /*     PoseGraphEdge& existingEdge = *it; */
-    /*     if(existingEdge.getSourceNodeId() == edge.getTargetNodeId()) */
-    /*     { */
-    /*         Affine3f transform = edge.transformation.inv(); */
-
-    /* } */
 }
 
 bool PoseGraph::isValid() const
@@ -53,6 +41,7 @@ bool PoseGraph::isValid() const
         int currNodeId = nodesToVisit.back();
         nodesToVisit.pop_back();
         std::cout << "Visiting node: " << currNodeId << "\n";
+        nodesVisited.insert(currNodeId);
         // Since each node does not maintain its neighbor list
         for (int i = 0; i < numEdges; i++)
         {
@@ -67,10 +56,9 @@ bool PoseGraph::isValid() const
             {
                 nextNodeId = potentialEdge.getSourceNodeId();
             }
-            std::cout << "Next node: " << nextNodeId << std::endl;
             if (nextNodeId != -1)
             {
-                nodesVisited.insert(currNodeId);
+                std::cout << "Next node: " << nextNodeId << std::endl;
                 if (nodesVisited.count(nextNodeId) == 0)
                 {
                     nodesToVisit.push_back(nextNodeId);
@@ -80,7 +68,7 @@ bool PoseGraph::isValid() const
     }
 
     isGraphConnected = (int(nodesVisited.size()) == numNodes);
-    std::cout << "IsGraphConnected: " << isGraphConnected << std::endl;
+    std::cout << "nodesVisited: " << nodesVisited.size() << " IsGraphConnected: " << isGraphConnected << std::endl;
     bool invalidEdgeNode = false;
     for (int i = 0; i < numEdges; i++)
     {
@@ -266,77 +254,11 @@ bool Optimizer::isStepSizeSmall(const Mat& delta, float minStepSize)
     return maxDeltaNorm < minStepSize;
 }
 
+/* float Optimizer::stepQuality(float currentResidual, float prevResidual, Mat delta, Mat B) */
+/* { */
+/* } */
+
 //! NOTE: We follow left-composition for the infinitesimal pose update
-void Optimizer::optimizeGaussNewton(const Optimizer::Params& params, PoseGraph& poseGraph)
-{
-    PoseGraph poseGraphOriginal = poseGraph;
-    //! Check if posegraph is valid
-    if (!poseGraphOriginal.isValid())
-    //! Should print some error
-    {
-        CV_Error(Error::StsBadArg,
-                 "Invalid PoseGraph that is either not connected or has invalid nodes");
-        return;
-    }
-
-    int numNodes = poseGraph.getNumNodes();
-    int numEdges = poseGraph.getNumEdges();
-
-    std::cout << "Optimizing posegraph with nodes: " << numNodes << " edges: " << numEdges
-              << std::endl;
-
-    int iter           = 0;
-    float prevResidual = std::numeric_limits<float>::max();
-    do
-    {
-        std::cout << "Current iteration: " << iter << std::endl;
-        //! ApproxH = Approximate Hessian = J^T * information * J
-        BlockSparseMat<float, 6, 6> ApproxH(numNodes);
-        Mat B = cv::Mat::zeros(6 * numNodes, 1, CV_32F);
-
-        float currentResidual = poseGraph.createLinearSystem(ApproxH, B);
-        std::cout << "Number of non-zero blocks in H: " << ApproxH.nonZeroBlocks() << "\n";
-        Mat delta(6 * numNodes, 1, CV_32F);
-        Mat X        = poseGraph.getVector();
-        bool success = sparseSolve(ApproxH, B, delta);
-        if (!success)
-        {
-            CV_Error(Error::StsNoConv, "Sparse solve failed");
-            return;
-        }
-        std::cout << "delta update: " << delta << "\n delta norm: " << cv::norm(delta)
-                  << " X norm: " << cv::norm(X) << std::endl;
-
-        //! Check delta
-        if (isStepSizeSmall(delta, params.minStepSize))
-        {
-            std::cout << "Delta norm[" << cv::norm(delta) << "] < " << params.minStepSize
-                      << std::endl;
-            break;
-        }
-
-        std::cout << " Current residual: " << currentResidual << " Prev residual: " << prevResidual
-                  << "\n";
-
-        //! TODO: Improve criterion and allow small increments in residual
-        if ((currentResidual - prevResidual) > params.maxAcceptableResIncre)
-        {
-            std::cout << "Current residual increased from prevResidual by at least "
-                      << params.maxAcceptableResIncre << std::endl;
-            break;
-        }
-        //! If updates don't improve a lot means loss function basin has been reached
-        if ((currentResidual - params.minResidual) < 1e-5f)
-        {
-            std::cout << "Gauss newton converged \n";
-            break;
-        }
-        poseGraph    = poseGraph.update(delta);
-        prevResidual = currentResidual;
-        iter++;
-    } while (iter < params.maxNumIters);
-}
-
 void Optimizer::optimizeLevenberg(const Optimizer::Params& params, PoseGraph& poseGraph)
 {
     PoseGraph poseGraphOriginal = poseGraph;
@@ -410,7 +332,7 @@ void Optimizer::optimizeLevenberg(const Optimizer::Params& params, PoseGraph& po
         else if (reduction > 0)
         {
             //! Reject update
-            lambda = lambda * factor;
+            lambda = lambda * 2 * factor;
             std::cout << "Rejecting update: " << reduction << " new lambda: " << lambda
                       << std::endl;
         }
