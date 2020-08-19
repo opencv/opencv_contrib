@@ -40,6 +40,7 @@ int main(int argc, char *argv[])
     if (!parser.check())
     {
         parser.printErrors();
+        parser.printMessage();
         return 0;
     }
 

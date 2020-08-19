@@ -130,25 +130,42 @@ public:
 
     void setTarget(TYPECHART _target)  CV_OVERRIDE;
     void setBox(std::vector<Point2f> _box) CV_OVERRIDE;
+    void setPerPatchCosts(std::vector<Point2f> cost) CV_OVERRIDE;
+
+    // Detected directly by the detector or found using geometry, useful to determine if a patch is occluded
+    void setBoxDetectionType(std::vector<std::vector<Point2f>> detectionType) CV_OVERRIDE;
     void setChartsRGB(Mat _chartsRGB) CV_OVERRIDE;
     void setChartsYCbCr(Mat _chartsYCbCr) CV_OVERRIDE;
     void setCost(float _cost) CV_OVERRIDE;
     void setCenter(Point2f _center) CV_OVERRIDE;
+    void setPatchCenters(std::vector<Point2f> _patchCenters) CV_OVERRIDE;
+    void setPatchBoundingBoxes(std::vector<Point2f> _patchBoundingBoxes) CV_OVERRIDE;
 
     TYPECHART getTarget() CV_OVERRIDE;
     std::vector<Point2f> getBox() CV_OVERRIDE;
+    std::vector<Point2f> getPerPatchCosts() CV_OVERRIDE;
+    std::vector<std::vector<Point2f>> getBoxDetectionType() CV_OVERRIDE;
     Mat getChartsRGB() CV_OVERRIDE;
     Mat getChartsYCbCr() CV_OVERRIDE;
     float getCost() CV_OVERRIDE;
     Point2f getCenter() CV_OVERRIDE;
+    std::vector<Point2f> getPatchCenters() CV_OVERRIDE;
+    std::vector<Point2f> getPatchBoundingBoxes(float sideRatio=0.5) CV_OVERRIDE;
+
+    bool calculate() CV_OVERRIDE;//basic precomp
 
 private:
     TYPECHART target;             ///< type of checkercolor
     std::vector<cv::Point2f> box; ///< positions of the corners
+    std::vector<cv::Point2f> perPatchCost; ///< Cost of each patch in chart
+    std::vector<cv::Point2f> patchBoundingBoxes; ///< Bounding box of the patches
+    std::vector<cv::Point2f> patchCenters; ///< Centers of all the patches
+    std::vector<std::vector<cv::Point2f>> boxDetectionType; ///< contours of patches directly dectected, not using geometry
     cv::Mat chartsRGB;             ///< charts profile in rgb color space
     cv::Mat chartsYCbCr;         ///< charts profile in YCbCr color space
     float cost;                     ///< cost to aproximate
     cv::Point2f center;             ///< center of the chart.
+    float defaultSideRatio = 0.5;   ///< ratio of side of patchBoundingBox and actual patch size
 };
 
 //////////////////////////////////////////////////////////////////////////////////////////////
@@ -167,19 +184,13 @@ public:
         CV_Assert(pChecker);
     }
 
-    void draw(InputOutputArray img) CV_OVERRIDE;
+    void draw(InputOutputArray img, float sideRatio =0.5,bool drawActualDetection=false) CV_OVERRIDE;
 
 private:
     Ptr<CChecker> m_pChecker;
     cv::Scalar m_color;
     int m_thickness;
 
-private:
-    /** \brief transformation perspetive*/
-    void transform_points_forward(
-        InputArray T,
-        const std::vector<cv::Point2f> &X,
-        std::vector<cv::Point2f> &Xt);
 };
 // @}
 

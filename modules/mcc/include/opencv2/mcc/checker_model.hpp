@@ -82,17 +82,29 @@ public:
 
     CV_WRAP virtual void setTarget(TYPECHART _target)  = 0;
     CV_WRAP virtual void setBox(std::vector<Point2f> _box) = 0;
+    CV_WRAP virtual void setPerPatchCosts(std::vector<Point2f> _patchCosts) = 0;
+
+    // Detected directly by the detector or found using geometry, useful to determine if a patch is occluded
+    CV_WRAP virtual void setBoxDetectionType(std::vector<std::vector<Point2f>> detectionType) = 0;
     CV_WRAP virtual void setChartsRGB(Mat _chartsRGB) = 0;
     CV_WRAP virtual void setChartsYCbCr(Mat _chartsYCbCr) = 0;
     CV_WRAP virtual void setCost(float _cost) = 0;
     CV_WRAP virtual void setCenter(Point2f _center) = 0;
+    CV_WRAP virtual void setPatchCenters(std::vector<Point2f> _patchCenters) = 0;
+    CV_WRAP virtual void setPatchBoundingBoxes(std::vector<Point2f> _patchBoundingBoxes) = 0;
 
     CV_WRAP virtual TYPECHART getTarget() = 0;
     CV_WRAP virtual std::vector<Point2f> getBox() = 0;
+    CV_WRAP virtual std::vector<Point2f> getPerPatchCosts() = 0;
+    CV_WRAP virtual std::vector<std::vector<Point2f>> getBoxDetectionType() = 0;
     CV_WRAP virtual Mat getChartsRGB() = 0;
     CV_WRAP virtual Mat getChartsYCbCr() = 0;
     CV_WRAP virtual float getCost() = 0;
     CV_WRAP virtual Point2f getCenter() = 0;
+    CV_WRAP virtual std::vector<Point2f> getPatchCenters() = 0;
+    CV_WRAP virtual std::vector<Point2f> getPatchBoundingBoxes(float sideRatio=0.5) =0;
+
+    CV_WRAP virtual bool calculate() = 0; ///< Return false if some error occured, true otherwise
 };
 
 /** \brief checker draw
@@ -115,10 +127,16 @@ class CV_EXPORTS_W CCheckerDraw
 public:
     virtual ~CCheckerDraw() {}
     /** \brief Draws the checker to the given image.
-    * \param img image in color space BGR
+    * \param img image in color space BGR, original image gets modified
+    * \param sideRatio ratio between the side length of drawed boxes, and the actual side of squares
+    *                  keeping sideRatio = 1.0 is not recommended as the border can be a bit inaccurate
+    *                  in detection, for best output keep it at less than 1.0
+    * \param drawActualDetection draw the actually detected patch,i.e,, the non occuled ones,
+    *                            useful for debugging, default (false)
     * \return void
     */
-    CV_WRAP virtual void draw(InputOutputArray img) = 0;
+    CV_WRAP virtual void draw(InputOutputArray img, float sideRatio = 0.5,
+                              bool drawActualDetection = false) = 0;
     /** \brief Create a new CCheckerDraw object.
     * \param pChecker The checker which will be drawn by this object.
     * \param color The color by with which the squares of the checker
@@ -132,6 +150,20 @@ public:
                                             int thickness = 2);
 };
 
+
+/** @brief draws a single mcc::ColorChecker on the given image
+ *         This is a functional version of the CCheckerDraw class, provided for convenience
+ * \param img image in color space BGR, it gets changed by this call
+ * \param pChecker pointer to the CChecker, which contains the detection
+ * \param color color used for drawing
+ * \param thickness thickness of the boxes drawed
+ * \param sideRatio ratio between the side length of drawed boxes, and the actual side of squares
+ *                  keeping sideRatio = 1.0 is not recommended as the border can be a bit inaccurate
+ *                  in detection, for best output keep it at less than 1.0
+ */
+CV_EXPORTS_W void drawColorChecker(InputOutputArray img, Ptr<CChecker> pChecker,
+                                  cv::Scalar color = CV_RGB(0, 255, 0), int thickness = 2, float sideRatio = 0.5,
+                                 bool drawActualDetection = false);
 //! @} mcc
 } // namespace mcc
 } // namespace cv

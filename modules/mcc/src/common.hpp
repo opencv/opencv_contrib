@@ -36,6 +36,17 @@ namespace mcc
 
 Rect poly2mask(const std::vector<Point2f> &poly, Size size, InputOutputArray mask);
 
+
+float perimeter(const std::vector<cv::Point2f> &ps);
+
+cv::Point2f mace_center(const std::vector<cv::Point2f> &ps);
+
+void transform_points_forward(InputArray T, const std::vector<cv::Point2f> &X,
+                              std::vector<cv::Point2f> &Xt);
+
+void transform_points_inverse(InputArray T, const std::vector<cv::Point2f> &X,
+                              std::vector<cv::Point2f> &Xt);
+
 template <typename T>
 void circshift(std::vector<T> &A, int shiff)
 {
@@ -52,10 +63,6 @@ void circshift(std::vector<T> &A, int shiff)
 
     A = Tmp;
 }
-
-float perimeter(const std::vector<cv::Point2f> &ps);
-
-cv::Point2f mace_center(const std::vector<cv::Point2f> &ps);
 
 template <typename T>
 void unique(const std::vector<T> &A, std::vector<T> &U)

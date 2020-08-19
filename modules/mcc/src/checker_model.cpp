@@ -31,6 +31,9 @@
 #include "checker_model.hpp"
 #include "dictionary.hpp"
 
+#include<iostream>
+using namespace std;
+
 namespace cv
 {
 namespace mcc
@@ -386,6 +389,14 @@ void CCheckerImpl::setBox(std::vector<Point2f> _box)
 {
     box = _box;
 }
+void CCheckerImpl::setPerPatchCosts(std::vector<Point2f> _perPatchCost)
+{
+    perPatchCost = _perPatchCost;
+}
+void CCheckerImpl::setBoxDetectionType(std::vector<std::vector<Point2f>> _boxDetectionType)
+{
+    boxDetectionType = _boxDetectionType;
+}
 void CCheckerImpl::setChartsRGB(Mat _chartsRGB)
 {
     chartsRGB = _chartsRGB;
@@ -402,6 +413,18 @@ void CCheckerImpl::setCenter(Point2f _center)
 {
     center = _center;
 }
+void CCheckerImpl::setPatchCenters(std::vector<Point2f> _patchCenters)
+{
+
+    patchCenters = _patchCenters;
+}
+void CCheckerImpl::setPatchBoundingBoxes(std::vector<Point2f> _patchBoundingBoxes)
+{
+    //Use of this function is not recommended as it can cause contradictory information in patBoundingBoxes and bo
+    patchBoundingBoxes = _patchBoundingBoxes;
+
+}
+
 
 TYPECHART CCheckerImpl::getTarget()
 {
@@ -410,6 +433,14 @@ TYPECHART CCheckerImpl::getTarget()
 std::vector<Point2f> CCheckerImpl::getBox()
 {
     return box;
+}
+std::vector<Point2f> CCheckerImpl::getPerPatchCosts()
+{
+    return perPatchCost;
+}
+std::vector<std::vector<Point2f>> CCheckerImpl::getBoxDetectionType()
+{
+    return boxDetectionType;
 }
 Mat CCheckerImpl::getChartsRGB()
 {
@@ -427,30 +458,51 @@ Point2f CCheckerImpl::getCenter()
 {
     return center;
 }
-
-//////////////////////////////////////////////////////////////////////////////////////////////
-// CheckerDraw
-Ptr<CCheckerDraw> CCheckerDraw::create(Ptr<CChecker> pChecker, cv::Scalar color /*= CV_RGB(0,250,0)*/, int thickness /*=2*/)
+std::vector<Point2f> CCheckerImpl::getPatchCenters()
 {
-    return makePtr<CCheckerDrawImpl>(pChecker, color, thickness);
+
+    return patchCenters;
 }
 
-void CCheckerDrawImpl::
-    draw(InputOutputArray img)
+std::vector<Point2f> CCheckerImpl::getPatchBoundingBoxes(float sideRatio)
 {
+    std::vector<Point2f> _patchBoundingBoxes;
 
-    // color chart classic model
-    CChartModel cccm(m_pChecker->getTarget());
-    cv::Mat lab;
-    size_t N;
+    size_t N = patchBoundingBoxes.size() / 4;
+
+    _patchBoundingBoxes.resize(4 * N);
+
+    for (size_t i = 0; i < N; i++)
+    {
+        for (size_t j = 0; j < 4; j++)
+            _patchBoundingBoxes[4*i+j] = ((patchBoundingBoxes[4*i+j] - patchCenters[i]  ) * sideRatio / defaultSideRatio) + patchCenters[i];
+
+    }
+    return _patchBoundingBoxes;
+}
+
+bool CCheckerImpl::calculate()
+{
+    if(box.size() != 4)
+        return false;
+    //Currently it just calculates all the patch centers
+
+
+
+    CChartModel cccm(this->getTarget());
+
     std::vector<cv::Point2f> fbox = cccm.box;
     std::vector<cv::Point2f> cellchart = cccm.cellchart;
 
     // tranformation
-    cv::Matx33f ccT = cv::getPerspectiveTransform(fbox, m_pChecker->getBox());
+    cv::Matx33f ccT = cv::getPerspectiveTransform(fbox, this->getBox());
 
     std::vector<cv::Point2f> bch(4), bcht(4);
-    N = cellchart.size() / 4;
+    size_t N = cellchart.size() / 4;
+
+    patchBoundingBoxes.resize(4 * N);
+    patchCenters.resize(N);
+
     for (size_t i = 0, k; i < N; i++)
     {
         k = 4 * i;
@@ -466,39 +518,61 @@ void CCheckerDrawImpl::
         for (size_t j = 0; j < 4; j++)
             c += bcht[j];
         c /= 4;
+        patchCenters[i] = c;
         for (size_t j = 0; j < 4; j++)
-            bcht[j] = ((bcht[j] - c) * 0.50) + c;
+            bcht[j] = ((bcht[j] - c) * defaultSideRatio) + c;
 
-        cv::line(img, bcht[0], bcht[1], m_color, m_thickness, LINE_AA);
-        cv::line(img, bcht[1], bcht[2], m_color, m_thickness, LINE_AA);
-        cv::line(img, bcht[2], bcht[3], m_color, m_thickness, LINE_AA);
-        cv::line(img, bcht[3], bcht[0], m_color, m_thickness, LINE_AA);
+        for (int j = 0; j < 4; j++)
+            patchBoundingBoxes[4 * i + j] = bcht[j];
     }
+    return true;
+
+
+
+}
+//////////////////////////////////////////////////////////////////////////////////////////////
+// CheckerDraw
+Ptr<CCheckerDraw> CCheckerDraw::create(Ptr<CChecker> pChecker, cv::Scalar color /*= CV_RGB(0,250,0)*/, int thickness /*=2*/)
+{
+    return makePtr<CCheckerDrawImpl>(pChecker, color, thickness);
 }
 
 void CCheckerDrawImpl::
-    transform_points_forward(InputArray T, const std::vector<cv::Point2f> &X, std::vector<cv::Point2f> &Xt)
+    draw(InputOutputArray img, float sideRatio, bool drawActualDetection)
 {
 
-    cv::Matx33f _T = T.getMat();
-    size_t N = X.size();
-    Xt.clear();
-    Xt.resize(N);
-    if (N == 0)
-        return;
-
-    cv::Matx31f p, xt;
-    cv::Point2f pt;
+    std::vector<Point2f> patchBoundingBoxes = m_pChecker->getPatchBoundingBoxes(sideRatio);
+    size_t N = patchBoundingBoxes.size()/4;
     for (size_t i = 0; i < N; i++)
     {
-        p(0, 0) = X[i].x;
-        p(1, 0) = X[i].y;
-        p(2, 0) = 1;
-        xt = _T * p;
-        pt.x = xt(0, 0) / xt(2, 0);
-        pt.y = xt(1, 0) / xt(2, 0);
-        Xt[i] = pt;
+
+        cv::line(img, patchBoundingBoxes[4*i +0], patchBoundingBoxes[4*i+1], m_color, m_thickness, LINE_AA);
+        cv::line(img, patchBoundingBoxes[4*i+1], patchBoundingBoxes[4*i+2], m_color, m_thickness, LINE_AA);
+        cv::line(img, patchBoundingBoxes[4*i+2], patchBoundingBoxes[4*i+3], m_color, m_thickness, LINE_AA);
+        cv::line(img, patchBoundingBoxes[4*i+3], patchBoundingBoxes[4*i+0], m_color, m_thickness, LINE_AA);
+    }
+
+    if(drawActualDetection)
+    {
+
+        vector<vector<Point>> f;
+        for (auto i : m_pChecker->getBoxDetectionType())
+        {
+            vector<Point> x;
+            for (auto j : i)
+                x.push_back(j);
+            f.push_back(x);
+        }
+        drawContours(img, f, -1, CV_RGB(255, 255, 0), 2);
     }
 }
+
+void drawColorChecker(InputOutputArray img, Ptr<CChecker> pChecker,
+                      cv::Scalar color, int thickness, float sideRatio,
+                      bool drawActualDetection)
+{
+    CCheckerDrawImpl(pChecker, color, thickness).draw(img, sideRatio, drawActualDetection);
+}
+
 } // namespace mcc
 } // namespace cv

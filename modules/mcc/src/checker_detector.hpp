@@ -130,8 +130,10 @@ protected: // methods pipeline
     * \param[out] colorChartsOut
     */
     virtual void
-    checkerRecognize(InputArray img, const std::vector<CChart> &detectedCharts, const std::vector<int> &G,
-                     const TYPECHART chartType, std::vector<std::vector<cv::Point2f>> &colorChartsOut,
+    checkerRecognize(InputArray img, const std::vector<CChart> &detectedCharts,
+                     const std::vector<int> &G, const TYPECHART chartType,
+                     std::vector<std::vector<cv::Point2f>> &colorChartsOut,
+                     std::vector<std::vector<CChart>> &groupedCharts,
                      const Ptr<DetectorParameters> &params);
 
     /// checkerAnalysis
@@ -146,6 +148,7 @@ protected: // methods pipeline
     checkerAnalysis(InputArray img_rgb_f,
                     const TYPECHART chartType, const unsigned int nc,
                     const std::vector<std::vector<cv::Point2f>> &colorCharts,
+                    const std::vector<std::vector<CChart>> &groupedCharts,
                     std::vector<Ptr<CChecker>> &checkers, float asp,
                     const Ptr<DetectorParameters> &params,
                     const cv::Mat &img_rgb_org,
@@ -172,16 +175,6 @@ private: // methods aux
         std::vector<float> &x_new,
         float tol);
 
-    void transform_points_forward(
-        InputArray T,
-        const std::vector<cv::Point2f> &X,
-        std::vector<cv::Point2f> &Xt);
-
-    void transform_points_inverse(
-        InputArray T,
-        const std::vector<cv::Point2f> &X,
-        std::vector<cv::Point2f> &Xt);
-
     void get_profile(
         const std::vector<cv::Point2f> &ibox,
         const TYPECHART chartType,
@@ -197,6 +190,7 @@ private: // methods aux
      *                   + \sum_k || \sigma_{k,p} ||^2
      */
     float cost_function(InputArray img, InputOutputArray mask, InputArray lab,
+                        std::vector<cv::Point2f> &perPatchCost,
                         const std::vector<cv::Point2f> &ibox,
                         const TYPECHART chartType);
 };
