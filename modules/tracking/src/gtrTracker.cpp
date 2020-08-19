@@ -45,25 +45,29 @@
 namespace cv
 {
 
-TrackerGOTURN::Params::Params(){}
+TrackerGOTURN::Params::Params(const String modelTxt, const String modelBin)
+{
+  modelTxt_ = modelTxt;
+  modelBin_ = modelBin;
+}
 
 void TrackerGOTURN::Params::read(const cv::FileNode& /*fn*/){}
 
 void TrackerGOTURN::Params::write(cv::FileStorage& /*fs*/) const {}
 
 
-Ptr<TrackerGOTURN> TrackerGOTURN::create(const TrackerGOTURN::Params &parameters, const String modelTxt, const String modelBin)
+Ptr<TrackerGOTURN> TrackerGOTURN::create(const TrackerGOTURN::Params &parameters)
 {
 #ifdef HAVE_OPENCV_DNN
-    return Ptr<gtr::TrackerGOTURNImpl>(new gtr::TrackerGOTURNImpl(parameters, modelTxt, modelBin));
+    return Ptr<gtr::TrackerGOTURNImpl>(new gtr::TrackerGOTURNImpl(parameters));
 #else
     (void)(parameters);
     CV_Error(cv::Error::StsNotImplemented , "to use GOTURN, the tracking module needs to be built with opencv_dnn !");
 #endif
 }
-Ptr<TrackerGOTURN> TrackerGOTURN::create(const String modelTxt, const String modelBin)
+Ptr<TrackerGOTURN> TrackerGOTURN::create()
 {
-    return TrackerGOTURN::create(TrackerGOTURN::Params(), modelTxt, modelBin);
+    return TrackerGOTURN::create(TrackerGOTURN::Params());
 }
 
 
@@ -89,11 +93,9 @@ protected:
     void modelUpdateImpl() CV_OVERRIDE {}
 };
 
-TrackerGOTURNImpl::TrackerGOTURNImpl(const TrackerGOTURN::Params &parameters, const String modelTxt, const String modelBin) :
+TrackerGOTURNImpl::TrackerGOTURNImpl(const TrackerGOTURN::Params &parameters) :
     params(parameters){
     isInit = false;
-    modelTxt_ = modelTxt;
-    modelBin_ = modelBin;
 };
 
 void TrackerGOTURNImpl::read(const cv::FileNode& fn)
@@ -114,7 +116,7 @@ bool TrackerGOTURNImpl::initImpl(const Mat& image, const Rect2d& boundingBox)
     ((TrackerGOTURNModel*)static_cast<TrackerModel*>(model))->setBoudingBox(boundingBox);
 
     //Load GOTURN architecture from *.prototxt and pretrained weights from *.caffemodel
-    net = dnn::readNetFromCaffe(modelTxt_, modelBin_);
+    net = dnn::readNetFromCaffe(params.modelTxt_, params.modelBin_);
     return true;
 }
 

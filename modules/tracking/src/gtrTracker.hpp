@@ -63,13 +63,11 @@ namespace gtr
 class TrackerGOTURNImpl : public TrackerGOTURN
 {
 public:
-    TrackerGOTURNImpl(const TrackerGOTURN::Params &parameters = TrackerGOTURN::Params(), const String modelTxt = "goturn.prototxt", const String modelBin = "goturn.caffemodel");
+    TrackerGOTURNImpl(const TrackerGOTURN::Params &parameters = TrackerGOTURN::Params());
     void read(const FileNode& fn) CV_OVERRIDE;
     void write(FileStorage& fs) const CV_OVERRIDE;
     bool initImpl(const Mat& image, const Rect2d& boundingBox) CV_OVERRIDE;
     bool updateImpl(const Mat& image, Rect2d& boundingBox) CV_OVERRIDE;
-    String modelTxt_ = "goturn.prototxt";
-    String modelBin_ = "goturn.caffemodel";
 
     TrackerGOTURN::Params params;
 

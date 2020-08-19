@@ -1289,17 +1289,19 @@ class CV_EXPORTS_W TrackerGOTURN : public Tracker
 public:
   struct CV_EXPORTS Params
   {
-    Params();
+    Params(const String modelTxt = "goturn.prototxt", const String modelBin = "goturn.caffemodel");
     void read(const FileNode& /*fn*/);
     void write(FileStorage& /*fs*/) const;
+    String modelTxt_;
+    String modelBin_;
   };
 
   /** @brief Constructor
   @param parameters GOTURN parameters TrackerGOTURN::Params
   */
-  static Ptr<TrackerGOTURN> create(const TrackerGOTURN::Params &parameters, const String modelTxt = "goturn.prototxt", const String modelBin = "goturn.caffemodel");
+  static Ptr<TrackerGOTURN> create(const TrackerGOTURN::Params &parameters);
 
-  CV_WRAP static Ptr<TrackerGOTURN> create(const String modelTxt = "goturn.prototxt", const String modelBin = "goturn.caffemodel");
+  CV_WRAP static Ptr<TrackerGOTURN> create();
 
   virtual ~TrackerGOTURN() CV_OVERRIDE {}
 };
