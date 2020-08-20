@@ -434,11 +434,19 @@ struct IntegrateInvoker : ParallelLoopBody
                 }
                 startZ = max(0, startZ);
                 endZ   = min(volume.volResolution.z, endZ);
+                
+                Point3f camPixVec;
+                Point2f projected = proj(camSpacePt, camPixVec);
+                float o = 0.004f;
+                float pixNorm = sqrt(camPixVec.dot(camPixVec)) + o;
                 for(int z = startZ; z < endZ; z++)
                 {
                     // optimization of the following:
                     //Point3f volPt = Point3f(x, y, z)*volume.voxelSize;
                     //Point3f camSpacePt = vol2cam * volPt;
+                    
+                    pixNorm += o;
+                    
                     camSpacePt += zStep;
                     if(camSpacePt.z <= 0)
                         continue;
@@ -451,7 +459,7 @@ struct IntegrateInvoker : ParallelLoopBody
                         continue;
 
                     // norm(camPixVec) produces double which is too slow
-                    float pixNorm = sqrt(camPixVec.dot(camPixVec));
+                    //float pixNorm = sqrt(camPixVec.dot(camPixVec));
                     // difference between distances of point and of surface to camera
                     float sdf = pixNorm*(v*dfac - camSpacePt.z);
                     // possible alternative is:
@@ -718,8 +726,8 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
     }
 
     float nv = sqrt(an[0] * an[0] +
-        an[1] * an[1] +
-        an[2] * an[2]);
+                    an[1] * an[1] +
+                    an[2] * an[2]);
     return nv < 0.0001f ? nan3 : an / nv;
 }
 #endif
