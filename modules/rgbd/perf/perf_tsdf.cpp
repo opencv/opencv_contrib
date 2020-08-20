@@ -193,7 +193,7 @@ PERF_TEST(Perf_TSDF, integrate)
     SANITY_CHECK_NOTHING();
 }
 
-PERF_TEST(Perf_HashTSDF, raycast)
+PERF_TEST(Perf_TSDF, raycast)
 {
     Ptr<kinfu::Params> _params;
     _params = kinfu::Params::coarseParams();
@@ -243,7 +243,7 @@ PERF_TEST(Perf_HashTSDF, integrate)
     SANITY_CHECK_NOTHING();
 }
 
-PERF_TEST(Perf_TSDF, raycast)
+PERF_TEST(Perf_HashTSDF, raycast)
 {
     Ptr<kinfu::Params> _params;
     _params = kinfu::Params::hashTSDFParams(true);
