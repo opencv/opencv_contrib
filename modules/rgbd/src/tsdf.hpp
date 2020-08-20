@@ -48,6 +48,7 @@ class TSDFVolume : public Volume
     float truncDist;
     Vec4i volDims;
     Vec8i neighbourCoords;
+    Vec6i _neighbourCoords;
 };
 
 class TSDFVolumeCPU : public TSDFVolume

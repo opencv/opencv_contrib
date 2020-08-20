@@ -48,7 +48,7 @@ rescaleDepthTemplated<double>(const Mat& in, Mat& out)
 namespace kinfu {
 
 // One place to turn intrinsics on and off
-#define USE_INTRINSICS CV_SIMD128
+#define USE_INTRINSICS 0 // CV_SIMD128
 
 typedef float depthType;
 

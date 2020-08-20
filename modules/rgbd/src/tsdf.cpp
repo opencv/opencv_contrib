@@ -102,6 +102,15 @@ TSDFVolume::TSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor
         volDims.dot(Vec4i(1, 1, 0)),
         volDims.dot(Vec4i(1, 1, 1))
     );
+
+    Vec6i _neighbourCoords = Vec6i(
+        volDims.dot(Vec4i(0, 0, 0)),
+        volDims.dot(Vec4i(0, 0, 1)),
+        volDims.dot(Vec4i(0, 1, 0)),
+        volDims.dot(Vec4i(0, 1, 1)),
+        volDims.dot(Vec4i(1, 0, 0)),
+        volDims.dot(Vec4i(1, 0, 1))
+    );
 }
 
 // dimension in voxels, size in meters
@@ -200,7 +209,7 @@ static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
             if(b10) return v10;
             if(b11) return v11;
         }
-        else if(nz == 2)
+        if(nz == 2)
         {
             if(b00 && b10) v01 = v00, v11 = v10;
             if(b01 && b11) v00 = v01, v10 = v11;
@@ -209,7 +218,7 @@ static inline depthType bilinearDepth(const Depth& m, cv::Point2f pt)
             if(b00 && b11) v01 = v10 = (v00 + v11)*0.5f;
             if(b01 && b10) v00 = v11 = (v01 + v10)*0.5f;
         }
-        else if(nz == 3)
+        if(nz == 3)
         {
             if(!b00) v00 = v10 + v01 - v11;
             if(!b01) v01 = v00 + v11 - v10;
@@ -552,6 +561,19 @@ inline float TSDFVolumeCPU::interpolateVoxel(Point3f p) const
     int coordBase = ix*xdim + iy*ydim + iz*zdim;
     const TsdfVoxel* volData = volume.ptr<TsdfVoxel>();
 
+    float vx[6];
+    for (int i = 0; i < 6; i++)
+        vx[i] = tsdfToFloat(volData[_neighbourCoords[i] + coordBase].tsdf);
+
+    float v00 = vx[0] + tz * (vx[1] - vx[0]);
+    float v01 = vx[2] + tz * (vx[3] - vx[2]);
+    float v10 = vx[4] + tz * (vx[5] - vx[4]);
+
+    float v0 = v00 + ty * (v01 - v00);
+
+    return v0 + tx * (v10 - v00);
+
+/*
     float vx[8];
     for (int i = 0; i < 8; i++)
         vx[i] = tsdfToFloat(volData[neighbourCoords[i] + coordBase].tsdf);
@@ -565,6 +587,7 @@ inline float TSDFVolumeCPU::interpolateVoxel(Point3f p) const
     float v1 = v10 + ty*(v11 - v10);
 
     return v0 + tx*(v1 - v0);
+*/
 }
 #endif
 
@@ -1164,7 +1187,7 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
 
 ///////// GPU implementation /////////
 
-#ifdef HAVE_OPENCL
+#ifdef HAVE_OPENCL_
 TSDFVolumeGPU::TSDFVolumeGPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
                              Point3i _resolution) :
     TSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution, false)
@@ -1468,7 +1491,7 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
 cv::Ptr<TSDFVolume> makeTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
                                    float _truncDist, int _maxWeight, Point3i _resolution)
 {
-#ifdef HAVE_OPENCL
+#ifdef HAVE_OPENCL_
     if (cv::ocl::useOpenCL())
         return cv::makePtr<TSDFVolumeGPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
                                           _resolution);
