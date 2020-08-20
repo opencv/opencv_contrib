@@ -687,6 +687,19 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
         const int dim = volDims[c];
         float& nv = an[c];
 
+        float vx[6];
+        for (int i = 0; i < 6; i++)
+            vx[i] = tsdfToFloat(volData[_neighbourCoords[i] + coordBase].tsdf);
+
+        float v00 = vx[0] + tz * (vx[1] - vx[0]);
+        float v01 = vx[2] + tz * (vx[3] - vx[2]);
+        float v10 = vx[4] + tz * (vx[5] - vx[4]);
+
+        float v0 = v00 + ty * (v01 - v00);
+
+        nv = v0 + tx * (v10 - v00);
+        
+        /*
         float vx[8];
         for(int i = 0; i < 8; i++)
             vx[i] = tsdfToFloat(volData[neighbourCoords[i] + coordBase + 1*dim].tsdf -
@@ -701,6 +714,7 @@ inline Point3f TSDFVolumeCPU::getNormalVoxel(Point3f p) const
         float v1 = v10 + ty*(v11 - v10);
 
         nv = v0 + tx*(v1 - v0);
+        */
     }
 
     float nv = sqrt(an[0] * an[0] +
