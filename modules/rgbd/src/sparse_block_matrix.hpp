@@ -110,7 +110,7 @@ struct BlockSparseMat
 
 //! Function to solve a sparse linear system of equations HX = B
 //! Requires Eigen
-static bool sparseSolve(const BlockSparseMat<float, 6, 6>& H, const Mat& B, Mat& X)
+static bool sparseSolve(const BlockSparseMat<float, 6, 6>& H, const Mat& B, Mat& X, Mat& predB)
 {
     bool result = false;
 #if defined(HAVE_EIGEN)
@@ -136,6 +136,7 @@ static bool sparseSolve(const BlockSparseMat<float, 6, 6>& H, const Mat& B, Mat&
     else
     {
         Eigen::VectorXf solutionX = solver.solve(bigB);
+        Eigen::VectorXf predBEigen = bigA * solutionX;
         if (solver.info() != Eigen::Success)
         {
             std::cout << "failed to eigen-solve" << std::endl;
@@ -144,6 +145,7 @@ static bool sparseSolve(const BlockSparseMat<float, 6, 6>& H, const Mat& B, Mat&
         else
         {
             eigen2cv(solutionX, X);
+            eigen2cv(predBEigen, predB);
             result = true;
         }
     }

@@ -18,7 +18,10 @@ namespace kinfu
 struct PoseGraphNode
 {
    public:
-    explicit PoseGraphNode(int _nodeId, const Affine3f& _pose) : nodeId(_nodeId), isFixed(false), pose(_pose) {}
+    explicit PoseGraphNode(int _nodeId, const Affine3f& _pose)
+        : nodeId(_nodeId), isFixed(false), pose(_pose)
+    {
+    }
     virtual ~PoseGraphNode() = default;
 
     int getId() const { return nodeId; }
@@ -56,8 +59,8 @@ struct PoseGraphEdge
 
     bool operator==(const PoseGraphEdge& edge)
     {
-        if((edge.getSourceNodeId() == sourceNodeId && edge.getTargetNodeId() == targetNodeId) ||
-           (edge.getSourceNodeId() == targetNodeId && edge.getTargetNodeId() == sourceNodeId))
+        if ((edge.getSourceNodeId() == sourceNodeId && edge.getTargetNodeId() == targetNodeId) ||
+            (edge.getSourceNodeId() == targetNodeId && edge.getTargetNodeId() == sourceNodeId))
             return true;
         return false;
     }
@@ -69,9 +72,8 @@ struct PoseGraphEdge
     Matx66f information;
 };
 
-//! @brief Reference: A tutorial on SE(3) transformation parameterizations and on-manifold optimization
-//! Jose Luis Blanco
-//! Compactly represents the jacobian of the SE3 generator
+//! @brief Reference: A tutorial on SE(3) transformation parameterizations and on-manifold
+//! optimization Jose Luis Blanco Compactly represents the jacobian of the SE3 generator
 // clang-format off
 static const std::array<Matx44f, 6> generatorJacobian = {
     // alpha
@@ -107,7 +109,6 @@ static const std::array<Matx44f, 6> generatorJacobian = {
 };
 // clang-format on
 
-
 class PoseGraph
 {
    public:
@@ -126,8 +127,9 @@ class PoseGraph
 
     bool nodeExists(int nodeId) const
     {
-        return std::find_if(nodes.begin(), nodes.end(),
-                            [nodeId](const PoseGraphNode& currNode) { return currNode.getId() == nodeId; }) != nodes.end();
+        return std::find_if(nodes.begin(), nodes.end(), [nodeId](const PoseGraphNode& currNode) {
+                   return currNode.getId() == nodeId;
+               }) != nodes.end();
     }
 
     bool isValid() const;
@@ -141,7 +143,7 @@ class PoseGraph
     float computeResidual();
 
     //! @brief: Constructs a linear system and returns the residual of the current system
-    float createLinearSystem(BlockSparseMat<float, 6, 6>& H, Mat& B);
+    float createLinearSystem(BlockSparseMat<float, 6, 6>& hessian, Mat& B);
 
    public:
     NodeVector nodes;
@@ -159,12 +161,19 @@ struct Params
     float minResidualDecrease;
 
     // TODO: Refine these constants
-    Params() : maxNumIters(50), minResidual(1e-3f), maxAcceptableResIncre(1e-3f), minStepSize(1e-6f), minResidualDecrease(1e-6f){};
+    Params()
+        : maxNumIters(50),
+          minResidual(1e-3f),
+          maxAcceptableResIncre(1e-3f),
+          minStepSize(1e-6f),
+          minResidualDecrease(1e-5f){};
     virtual ~Params() = default;
 };
 
 void optimizeLevenberg(const Params& params, PoseGraph& poseGraph);
 bool isStepSizeSmall(const Mat& delta, float minStepSize);
+float stepQuality(float currentResidual, float prevResidual, const Mat& delta, const Mat& B,
+                  const Mat& predB);
 }  // namespace Optimizer
 
 }  // namespace kinfu

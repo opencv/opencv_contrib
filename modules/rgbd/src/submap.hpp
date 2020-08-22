@@ -516,8 +516,8 @@ PoseGraph SubmapManager<MatType>::MapToPoseGraph()
         for(const auto& currConstraintPair : constraintList)
         {
             // TODO: Handle case with duplicate constraints A -> B and B -> A
-            Matx66f informationMatrix = Matx66f::eye() * (currConstraintPair.second.weight/10);
-            /* Matx66f informationMatrix = Matx66f::eye(); */
+            /* Matx66f informationMatrix = Matx66f::eye() * (currConstraintPair.second.weight/10); */
+            Matx66f informationMatrix = Matx66f::eye();
             PoseGraphEdge currEdge(currSubmap->id, currConstraintPair.first, currConstraintPair.second.estimatedPose, informationMatrix);
             localPoseGraph.addEdge(currEdge);
         }
