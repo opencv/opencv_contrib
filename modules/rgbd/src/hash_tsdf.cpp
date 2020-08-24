@@ -16,6 +16,8 @@
 #include "opencv2/core/utils/trace.hpp"
 #include "utils.hpp"
 
+#define USE_INTERPOLATION_IN_GETNORMAL 0
+
 namespace cv
 {
 namespace kinfu
@@ -331,9 +333,11 @@ inline Point3f HashTSDFVolumeCPU::getNormalVoxel(Point3f point) const
         pointPrev[c] -= voxelSize;
         pointNext[c] += voxelSize;
 
-        //normal[c] = at(Point3f(pointNext)).tsdf - at(Point3f(pointPrev)).tsdf;
+#if USE_INTERPOLATION_IN_GETNORMAL
         normal[c] = interpolateVoxel(Point3f(pointNext)) - interpolateVoxel(Point3f(pointPrev));
-
+#else
+        normal[c] = tsdfToFloat(at(Point3f(pointNext)).tsdf - at(Point3f(pointPrev)).tsdf);
+#endif
         pointPrev[c] = pointVec[c];
         pointNext[c] = pointVec[c];
     }
