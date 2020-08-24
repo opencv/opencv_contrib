@@ -34,32 +34,26 @@ static inline float tsdfToFloat(TsdfType num)
 }
 */
 
-//v_float32 devide128(7 << 23, 7 << 23, 7 << 23, 7 << 23);
-//v_float32 negate1(1u << 31, 1u << 31, 1u << 31, 1u << 31);
-
 static inline v_float32x4 tsdfToFloat_INTR(v_int32x4 num)
 {
-    v_float32x4 num128 = v_setall_f32(-128);
-    return v_cvt_f32(num) / num128;
+    //v_float32x4 num128 = v_setall_f32(-128);
+    //return v_cvt_f32(num) / num128;
+    v_float32x4 num128 = v_setall_f32(-0.0078125f); // = (-1/128)
+    return v_cvt_f32(num) * num128;
 }
-/*
-static inline v_float32 tsdfToFloat_INTR_(v_int32 num)
-{
-    v_uint32 unum = v_reinterpret_as_u32(num);
-    return v_cvt_f32(num) * numneg1 / num128;
-}
-*/
+
 static inline TsdfType floatToTsdf(float num)
 {
     //CV_Assert(-1 < num <= 1);
-    int8_t res = int8_t(int(num * (-128)));
+    int8_t res = int8_t(num * (-128));
     res = res ? res : (num < 0 ? 1 : -1);
     return res;
 }
 
 static inline float tsdfToFloat(TsdfType num)
 {
-    return float(num) / (-128);
+    //return float(num) / (-128);
+    return float(num) * (-0.0078125f); // * (-1/128)
 }
 
 TSDFVolume::TSDFVolume(float _voxelSize, Matx44f _pose, float _raycastStepFactor, float _truncDist,
@@ -1209,7 +1203,7 @@ void TSDFVolumeCPU::fetchNormals(InputArray _points, OutputArray _normals) const
 
 ///////// GPU implementation /////////
 
-#ifdef HAVE_OPENCL_
+#ifdef HAVE_OPENCL
 TSDFVolumeGPU::TSDFVolumeGPU(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor, float _truncDist, int _maxWeight,
                              Point3i _resolution) :
     TSDFVolume(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight, _resolution, false)
@@ -1513,7 +1507,7 @@ void TSDFVolumeGPU::fetchPointsNormals(OutputArray points, OutputArray normals) 
 cv::Ptr<TSDFVolume> makeTSDFVolume(float _voxelSize, cv::Matx44f _pose, float _raycastStepFactor,
                                    float _truncDist, int _maxWeight, Point3i _resolution)
 {
-#ifdef HAVE_OPENCL_
+#ifdef HAVE_OPENCL
     if (cv::ocl::useOpenCL())
         return cv::makePtr<TSDFVolumeGPU>(_voxelSize, _pose, _raycastStepFactor, _truncDist, _maxWeight,
                                           _resolution);
