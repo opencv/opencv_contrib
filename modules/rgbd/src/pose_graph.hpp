@@ -5,7 +5,16 @@
 #include <unordered_map>
 
 #include "opencv2/core/affine.hpp"
-#include "sparse_block_matrix.hpp"
+#if defined(HAVE_EIGEN)
+#include <Eigen/Core>
+#include <Eigen/Geometry>
+#include "opencv2/core/eigen.hpp"
+#endif
+
+#if defined(CERES_FOUND)
+#include <ceres/ceres.h>
+#endif
+
 namespace cv
 {
 namespace kinfu
@@ -15,25 +24,106 @@ namespace kinfu
  *
  *  Detailed description
  */
+#if defined(HAVE_EIGEN)
+struct Pose3d
+{
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+    Eigen::Vector3d t;
+    Eigen::Quaterniond r;
+
+    Pose3d()
+    {
+        t.setZero();
+        r.setIdentity();
+    };
+    Pose3d(const Eigen::Matrix3d& rotation, const Eigen::Vector3d& translation)
+        : t(translation), r(Eigen::Quaterniond(rotation))
+    {
+        normalizeRotation();
+    }
+
+    Pose3d(const Matx33d& rotation, const Vec3d& translation)
+    {
+        Eigen::Matrix3d R;
+        cv2eigen(rotation, R);
+        cv2eigen(translation, t);
+        r = Eigen::Quaterniond(R);
+        normalizeRotation();
+    }
+
+    explicit Pose3d(const Matx44f& pose)
+    {
+        Matx33d rotation(pose.val[0], pose.val[1], pose.val[2], pose.val[4], pose.val[5],
+                         pose.val[6], pose.val[8], pose.val[9], pose.val[10]);
+        Vec3d translation(pose.val[3], pose.val[7], pose.val[11]);
+        Pose3d(rotation, translation);
+    }
+
+    // NOTE: Eigen overloads quaternion multiplication appropriately
+    inline Pose3d operator*(const Pose3d& otherPose) const
+    {
+        Pose3d out(*this);
+        out.t += r * otherPose.t;
+        out.r *= otherPose.r;
+        out.normalizeRotation();
+        return out;
+    }
+
+    inline Pose3d& operator*=(const Pose3d& otherPose)
+    {
+        t += otherPose.t;
+        r *= otherPose.r;
+        normalizeRotation();
+        return *this;
+    }
+
+    inline Pose3d inverse() const
+    {
+        Pose3d out;
+        out.r = r.conjugate();
+        out.t = out.r * (t * -1.0);
+        return out;
+    }
+
+    inline void normalizeRotation()
+    {
+        if (r.w() < 0)
+            r.coeffs() *= -1.0;
+        r.normalize();
+    }
+};
+#endif
+
 struct PoseGraphNode
 {
    public:
     explicit PoseGraphNode(int _nodeId, const Affine3f& _pose)
-        : nodeId(_nodeId), isFixed(false), pose(_pose)
+        : nodeId(_nodeId), isFixed(false), pose(_pose.rotation(), _pose.translation())
     {
     }
     virtual ~PoseGraphNode() = default;
 
     int getId() const { return nodeId; }
-    Affine3f getPose() const { return pose; }
-    void setPose(const Affine3f& _pose) { pose = _pose; }
+    inline Affine3d getPose() const
+    {
+        const Eigen::Matrix3d& rotation    = pose.r.toRotationMatrix();
+        const Eigen::Vector3d& translation = pose.t;
+        Matx33d rot;
+        Vec3d trans;
+        eigen2cv(rotation, rot);
+        eigen2cv(translation, trans);
+        Affine3d poseMatrix(rot, trans);
+        return poseMatrix;
+    }
+    void setPose(const Pose3d& _pose) { pose = _pose; }
     void setFixed(bool val = true) { isFixed = val; }
     bool isPoseFixed() const { return isFixed; }
 
-   private:
+   public:
     int nodeId;
     bool isFixed;
-    Affine3f pose;
+    Pose3d pose;
 };
 
 /*! \class PoseGraphEdge
@@ -48,7 +138,7 @@ struct PoseGraphEdge
                   const Matx66f& _information = Matx66f::eye())
         : sourceNodeId(_sourceNodeId),
           targetNodeId(_targetNodeId),
-          transformation(_transformation),
+          transformation(_transformation.rotation(), _transformation.translation()),
           information(_information)
     {
     }
@@ -68,7 +158,7 @@ struct PoseGraphEdge
    public:
     int sourceNodeId;
     int targetNodeId;
-    Affine3f transformation;
+    Pose3d transformation;
     Matx66f information;
 };
 
@@ -134,16 +224,8 @@ class PoseGraph
 
     bool isValid() const;
 
-    PoseGraph update(const Mat& delta);
-
     int getNumNodes() const { return nodes.size(); }
     int getNumEdges() const { return edges.size(); }
-
-    Mat getVector();
-    float computeResidual();
-
-    //! @brief: Constructs a linear system and returns the residual of the current system
-    float createLinearSystem(BlockSparseMat<float, 6, 6>& hessian, Mat& B);
 
    public:
     NodeVector nodes;
@@ -152,28 +234,67 @@ class PoseGraph
 
 namespace Optimizer
 {
-struct Params
+void optimizeCeres(PoseGraph& poseGraph);
+
+#if defined(CERES_FOUND)
+void createOptimizationProblem(PoseGraph& poseGraph, ceres::Problem& problem);
+
+//! Error Functor required for Ceres to obtain an auto differentiable cost function
+class Pose3dErrorFunctor
 {
-    int maxNumIters;
-    float minResidual;
-    float maxAcceptableResIncre;
-    float minStepSize;
-    float minResidualDecrease;
+   public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    Pose3dErrorFunctor(const Pose3d& _poseMeasurement, const Matx66d& _sqrtInformation)
+        : poseMeasurement(_poseMeasurement)
+    {
+        cv2eigen(_sqrtInformation, sqrtInfo);
+    }
+    Pose3dErrorFunctor(const Pose3d& _poseMeasurement,
+                       const Eigen::Matrix<double, 6, 6>& _sqrtInformation)
+        : poseMeasurement(_poseMeasurement), sqrtInfo(_sqrtInformation)
+    {
+    }
 
-    // TODO: Refine these constants
-    Params()
-        : maxNumIters(50),
-          minResidual(1e-3f),
-          maxAcceptableResIncre(1e-3f),
-          minStepSize(1e-6f),
-          minResidualDecrease(1e-5f){};
-    virtual ~Params() = default;
+    template<typename T>
+    bool operator()(const T* const _pSourceTrans, const T* const _pSourceQuat,
+                    const T* const _pTargetTrans, const T* const _pTargetQuat, T* _pResidual) const
+    {
+        Eigen::Map<const Eigen::Matrix<T, 3, 1>> sourceTrans(_pSourceTrans);
+        Eigen::Map<const Eigen::Matrix<T, 3, 1>> targetTrans(_pTargetTrans);
+        Eigen::Map<const Eigen::Quaternion<T>> sourceQuat(_pSourceQuat);
+        Eigen::Map<const Eigen::Quaternion<T>> targetQuat(_pTargetQuat);
+        Eigen::Map<Eigen::Matrix<T, 6, 1>> residual(_pResidual);
+
+        Eigen::Quaternion<T> targetQuatInv = targetQuat.conjugate();
+
+        Eigen::Quaternion<T> relativeQuat    = targetQuatInv * sourceQuat;
+        Eigen::Matrix<T, 3, 1> relativeTrans = targetQuatInv * (targetTrans - sourceTrans);
+
+        //! Definition should actually be relativeQuat * poseMeasurement.r.conjugate()
+        Eigen::Quaternion<T> deltaRot =
+            poseMeasurement.r.template cast<T>() * relativeQuat.conjugate();
+
+        residual.template block<3, 1>(0, 0) = relativeTrans - poseMeasurement.t.template cast<T>();
+        residual.template block<3, 1>(3, 0) = T(2.0) * deltaRot.vec();
+
+        residual.applyOnTheLeft(sqrtInfo.template cast<T>());
+
+        return true;
+    }
+
+    static ceres::CostFunction* create(const Pose3d& _poseMeasurement,
+                                       const Matx66f& _sqrtInformation)
+    {
+        return new ceres::AutoDiffCostFunction<Pose3dErrorFunctor, 6, 3, 4, 3, 4>(
+            new Pose3dErrorFunctor(_poseMeasurement, _sqrtInformation));
+    }
+
+   private:
+    const Pose3d poseMeasurement;
+    Eigen::Matrix<double, 6, 6> sqrtInfo;
 };
+#endif
 
-void optimizeLevenberg(const Params& params, PoseGraph& poseGraph);
-bool isStepSizeSmall(const Mat& delta, float minStepSize);
-float stepQuality(float currentResidual, float prevResidual, const Mat& delta, const Mat& B,
-                  const Mat& predB);
 }  // namespace Optimizer
 
 }  // namespace kinfu
