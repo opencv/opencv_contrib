@@ -17,7 +17,7 @@ struct TsdfVoxel
 
 static inline TsdfType floatToTsdf(float num)
 {
-    int8_t res = (int8_t) ( (int) (num * (-128)) );
+    int8_t res = (int8_t) ( (num * (-128)) );
     res = res ? res : (num < 0 ? 1 : -1);
     return res;
 }
